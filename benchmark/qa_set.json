@@ -1,0 +1,89 @@
+{
+ "version": "2026-07-27-v2",
+ "note": "问数评测金标题集(C9/P20 落地)。gold 值全部经主库实测校准;gold_tables 用于出处判分(答案 SQL 必须引用这些表)。tol=相对容差。 v2 变更:Q7/Q8 问题句明确口径(以明细事实为准)——首轮评测发现合成数据分层不一致(DWS/agg 与事实层合计差异>5%,见数据质量页分层对账),口径不明的问题在不一致数据上无唯一正确答案。",
+ "items": [
+  {
+   "id": "Q1",
+   "q": "全部销售订单的总金额是多少万元?",
+   "gold": 70477.8,
+   "tol": 0.01,
+   "unit": "万元",
+   "gold_tables": [
+    "fact_sales_order"
+   ],
+   "gold_sql": "SELECT round(sum(amount)/10000,1) FROM fact_sales_order"
+  },
+  {
+   "id": "Q2",
+   "q": "2025年3月一共有多少笔销售订单?",
+   "gold": 270,
+   "tol": 0.0,
+   "gold_tables": [
+    "fact_sales_order"
+   ],
+   "gold_sql": "SELECT count(*) FROM fact_sales_order WHERE substr(order_date,1,7)='2025-03'"
+  },
+  {
+   "id": "Q3",
+   "q": "全部生产产出的总产量是多少?",
+   "gold": 41296,
+   "tol": 0.01,
+   "gold_tables": [
+    "fact_production_output"
+   ],
+   "gold_sql": "SELECT round(sum(quantity),0) FROM fact_production_output"
+  },
+  {
+   "id": "Q4",
+   "q": "系统里一共有多少台设备?",
+   "gold": 60,
+   "tol": 0.0,
+   "gold_tables": [
+    "dim_equipment"
+   ],
+   "gold_sql": "SELECT count(*) FROM dim_equipment"
+  },
+  {
+   "id": "Q5",
+   "q": "平均每笔销售订单的实际毛利是多少?",
+   "gold": 33967.2,
+   "tol": 0.01,
+   "gold_tables": [
+    "fact_sales_order"
+   ],
+   "gold_sql": "SELECT round(avg(gross_profit_actual),1) FROM fact_sales_order"
+  },
+  {
+   "id": "Q6",
+   "q": "一共有多少条退货记录?",
+   "gold": 409,
+   "tol": 0.0,
+   "gold_tables": [
+    "fact_return"
+   ],
+   "gold_sql": "SELECT count(*) FROM fact_return"
+  },
+  {
+   "id": "Q7",
+   "q": "按生产产出明细记录累计,产量最高的产线叫什么名字?",
+   "gold_str": "共混线-1",
+   "gold_tables": [
+    "fact_production_output",
+    "fact_production_order",
+    "dim_production_line"
+   ],
+   "gold_sql": "SELECT l.line_name FROM fact_production_output o JOIN fact_production_order po ON o.order_id=po.order_id JOIN dim_production_line l ON po.line_id=l.line_id GROUP BY l.line_name ORDER BY sum(o.quantity) DESC LIMIT 1"
+  },
+  {
+   "id": "Q8",
+   "q": "以销售订单明细为准,2025年的月均销售收入是多少万元?",
+   "gold": 4346.5,
+   "tol": 0.02,
+   "unit": "万元",
+   "gold_tables": [
+    "fact_sales_order"
+   ],
+   "gold_sql": "SELECT round(sum(amount)/10000.0/count(DISTINCT substr(order_date,1,7)),1) FROM fact_sales_order WHERE substr(order_date,1,4)='2025'"
+  }
+ ]
+}

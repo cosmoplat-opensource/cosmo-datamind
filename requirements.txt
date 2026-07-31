@@ -1,0 +1,18 @@
+# Cosmo DataMind 依赖
+#   pip3 install -r requirements.txt
+#
+# 分三档:核心(不装起不来)/ 语义层(不装则相关功能返回 503 提示)/ 按需(外部库与 Excel)。
+# 未固定版本:本项目为本地原型,依赖面窄且均为稳定 API;如需可复现构建请自行 pip freeze。
+
+# ── 核心:缺失则服务无法启动 ───────────────────────────────
+flask                 # HTTP 层
+requests              # 平台代理、健康探测、test_all.py
+
+# ── 语义层:缺失不影响启动,相关端点返回 503 并提示安装 ──────
+rdflib                # SPARQL 查询、OWL/JSON-LD/RDF-XML 导出、锻造
+pyshacl               # 锻造时的 SHACL 形状校验(缺失则跳过校验并如实标注)
+
+# ── 按需:仅在用到对应数据源/文件类型时需要 ──────────────────
+openpyxl              # 上传 .xlsx 知识包(CSV/TSV 无此依赖)
+pymysql               # 外部 MySQL / Doris 实连
+# psycopg2-binary     # 外部 PostgreSQL 实连(按需取消注释)
