@@ -1,0 +1,44 @@
+# ── Python ──────────────────────────────────────────────
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# ── 数据底座(体积大,由使用者自行提供或用 quick_build 生成)──
+demo_metrics.db
+*.db-journal
+*.db-wal
+
+# ── 凭据与连接配置:务必不入库 ────────────────────────────
+.env
+workdir/conn_secrets.json
+workdir/engine_config.json
+workdir/build_connections.json
+
+# ── 运行时产物:日志 ────────────────────────────────────
+workdir/*.log
+
+# ── 运行时产物:会话与可变状态 ──────────────────────────
+# 由应用在运行中读-改-写,入库只会制造无意义 diff
+workdir/ont_chats.json
+workdir/action_log.json
+workdir/qa_feedback.json
+workdir/eval_results.json
+workdir/skill_compare.json
+workdir/edits_*.json
+workdir/viz_boards.json
+
+# ── 运行时产物:构建出的本体版本 ─────────────────────────
+workdir/built_*.json
+
+# ── 用户上传与派生库 ────────────────────────────────────
+workdir/uploads.db
+workdir/uploads_*
+workdir/chat_uploads/
+workdir/custom_skills/
+
+# ── 临时脚本 ────────────────────────────────────────────
+workdir/_*.py
+
+# ── 操作系统 ────────────────────────────────────────────
+.DS_Store

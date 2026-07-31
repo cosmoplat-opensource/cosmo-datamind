@@ -1,0 +1,2949 @@
+{
+  "scenario": {
+    "name": "示例应用本体图谱(skill构建)",
+    "style": "application(周琪式)",
+    "tenant": 100021264,
+    "object_count": 149,
+    "relation_count": 166,
+    "field_count": 1164,
+    "indicator_binding": 193
+  },
+  "objects": [
+    {
+      "name": "部门",
+      "kind": "object",
+      "appScene": "运营管理",
+      "tables": [
+        "dim_department"
+      ],
+      "field_count": 3,
+      "indicators": [],
+      "remark": "企业职能部门维度，按区域分组管理，是费用归集的基本单元"
+    },
+    {
+      "name": "区域",
+      "kind": "object",
+      "appScene": "运营管理",
+      "tables": [
+        "dim_region"
+      ],
+      "field_count": 2,
+      "indicators": [],
+      "remark": "按地理区域组织销售和市场活动，管理各区域内的部门和人员"
+    },
+    {
+      "name": "员工",
+      "kind": "object",
+      "appScene": "运营管理",
+      "tables": [
+        "dim_employee",
+        "dws_org_performance_daily",
+        "dws_org_target_daily",
+        "dws_org_expense_daily",
+        "fact_sales_target"
+      ],
+      "field_count": 43,
+      "indicators": [
+        "销量",
+        "销售收入",
+        "实际毛利",
+        "应收账款余额",
+        "销量目标",
+        "毛利目标",
+        "回款目标",
+        "销售费用",
+        "费用预算"
+      ],
+      "remark": "员工基本信息，业务员与销售业绩、费用报销直接关联"
+    },
+    {
+      "name": "会计科目",
+      "kind": "object",
+      "appScene": "运营管理",
+      "tables": [
+        "dim_coa",
+        "dim_account"
+      ],
+      "field_count": 11,
+      "indicators": [],
+      "remark": "会计科目维度，包括科目编码、名称、类型和借贷方向"
+    },
+    {
+      "name": "成本中心",
+      "kind": "object",
+      "appScene": "运营管理",
+      "tables": [
+        "dim_cost_center"
+      ],
+      "field_count": 6,
+      "indicators": [],
+      "remark": "成本中心用于费用归集和成本核算"
+    },
+    {
+      "name": "利润中心",
+      "kind": "object",
+      "appScene": "运营管理",
+      "tables": [
+        "dim_profit_center"
+      ],
+      "field_count": 4,
+      "indicators": [],
+      "remark": "利润中心与业务单元关联，用于利润考核"
+    },
+    {
+      "name": "预算",
+      "kind": "object",
+      "appScene": "运营管理",
+      "tables": [
+        "fact_budget",
+        "fact_budget_expense",
+        "dws_finance_daily",
+        "dws_org_expense_daily"
+      ],
+      "field_count": 33,
+      "indicators": [
+        "预算金额",
+        "预算实际金额",
+        "费用金额",
+        "材料成本",
+        "人工成本",
+        "制造费用",
+        "产品总成本",
+        "折旧额",
+        "销售费用",
+        "费用预算"
+      ],
+      "remark": "按年月×成本中心编制的预算，记录预算金额和实际发生金额"
+    },
+    {
+      "name": "费用",
+      "kind": "object",
+      "appScene": "运营管理",
+      "tables": [
+        "fact_expense",
+        "dws_org_expense_daily"
+      ],
+      "field_count": 15,
+      "indicators": [
+        "销售费用",
+        "费用预算"
+      ],
+      "remark": "记录员工的销售费用明细，按费用类型归集"
+    },
+    {
+      "name": "产品成本",
+      "kind": "object",
+      "appScene": "运营管理",
+      "tables": [
+        "fact_product_cost",
+        "dws_finance_daily"
+      ],
+      "field_count": 21,
+      "indicators": [
+        "预算金额",
+        "预算实际金额",
+        "费用金额",
+        "材料成本",
+        "人工成本",
+        "制造费用",
+        "产品总成本",
+        "折旧额"
+      ],
+      "remark": "按产品×批次×期间核算的材料成本、人工成本、制造费用和总成本"
+    },
+    {
+      "name": "销售目标",
+      "kind": "object",
+      "appScene": "运营管理",
+      "tables": [
+        "fact_sales_target",
+        "dws_org_target_daily",
+        "dws_org_performance_daily"
+      ],
+      "field_count": 29,
+      "indicators": [
+        "销量",
+        "销售收入",
+        "实际毛利",
+        "应收账款余额",
+        "销量目标",
+        "毛利目标",
+        "回款目标"
+      ],
+      "remark": "按业务员×月份制定销量、毛利和回款目标，作为业绩考核的基准"
+    },
+    {
+      "name": "编制预算",
+      "kind": "action",
+      "appScene": "运营管理",
+      "tables": [],
+      "field_count": 0,
+      "indicators": [],
+      "remark": "按成本中心编制年度/月度预算，作为费用控制的基准"
+    },
+    {
+      "name": "费用报销",
+      "kind": "action",
+      "appScene": "运营管理",
+      "tables": [],
+      "field_count": 0,
+      "indicators": [],
+      "remark": "员工提交费用报销，审核后计入费用"
+    },
+    {
+      "name": "开具发票",
+      "kind": "action",
+      "appScene": "运营管理",
+      "tables": [],
+      "field_count": 0,
+      "indicators": [],
+      "remark": "向客户开具增值税发票"
+    },
+    {
+      "name": "成本核算",
+      "kind": "action",
+      "appScene": "运营管理",
+      "tables": [],
+      "field_count": 0,
+      "indicators": [],
+      "remark": "月末归集材料、人工、制造费用，核算产品实际成本"
+    },
+    {
+      "name": "计提折旧",
+      "kind": "action",
+      "appScene": "运营管理",
+      "tables": [],
+      "field_count": 0,
+      "indicators": [],
+      "remark": "按月计提固定资产折旧，计入制造费用"
+    },
+    {
+      "name": "预算已下达",
+      "kind": "event",
+      "appScene": "运营管理",
+      "tables": [],
+      "field_count": 0,
+      "indicators": [],
+      "remark": "预算已录入并下达至各成本中心"
+    },
+    {
+      "name": "成本已核算",
+      "kind": "event",
+      "appScene": "运营管理",
+      "tables": [],
+      "field_count": 0,
+      "indicators": [],
+      "remark": "月末成本核算完成"
+    },
+    {
+      "name": "折旧已计提",
+      "kind": "event",
+      "appScene": "运营管理",
+      "tables": [],
+      "field_count": 0,
+      "indicators": [],
+      "remark": "月度折旧已计提完成"
+    },
+    {
+      "name": "预算超支预警",
+      "kind": "event",
+      "appScene": "运营管理",
+      "tables": [],
+      "field_count": 0,
+      "indicators": [],
+      "remark": "费用实际发生额超出预算时自动触发预警"
+    },
+    {
+      "name": "应收账款超期预警",
+      "kind": "event",
+      "appScene": "运营管理",
+      "tables": [],
+      "field_count": 0,
+      "indicators": [],
+      "remark": "账龄超90天自动触发预警"
+    },
+    {
+      "name": "安全计划",
+      "kind": "object",
+      "appScene": "运营管理",
+      "tables": [
+        "fact_safety_plan",
+        "fact_safety_objective"
+      ],
+      "field_count": 14,
+      "indicators": [],
+      "remark": "年度安全工作计划及分解目标（如重大事故为零、损时事故率等）"
+    },
+    {
+      "name": "危险源",
+      "kind": "object",
+      "appScene": "运营管理",
+      "tables": [
+        "dim_hazard"
+      ],
+      "field_count": 6,
+      "indicators": [],
+      "remark": "识别和登记企业内的各类危险源（物理性/化学性/生物性/人机工程）"
+    },
+    {
+      "name": "风险评估",
+      "kind": "object",
+      "appScene": "运营管理",
+      "tables": [
+        "fact_risk_assessment",
+        "dim_risk_level"
+      ],
+      "field_count": 13,
+      "indicators": [],
+      "remark": "对危险源进行风险评估，确定可能性和后果等级，制定控制措施"
+    },
+    {
+      "name": "作业许可",
+      "kind": "object",
+      "appScene": "运营管理",
+      "tables": [
+        "fact_work_permit"
+      ],
+      "field_count": 11,
+      "indicators": [],
+      "remark": "危险作业（动火、高处、受限空间等）的审批许可"
+    },
+    {
+      "name": "事故",
+      "kind": "object",
+      "appScene": "运营管理",
+      "tables": [
+        "fact_incident",
+        "dws_safety_daily"
+      ],
+      "field_count": 26,
+      "indicators": [
+        "事故数",
+        "未遂事件数",
+        "风险评估数",
+        "高风险数",
+        "许可签发数",
+        "安全培训数",
+        "安全审计评分",
+        "排放合规率"
+      ],
+      "remark": "安全事故记录，包括类型、严重度、伤亡人数和财产损失"
+    },
+    {
+      "name": "事故调查",
+      "kind": "object",
+      "appScene": "运营管理",
+      "tables": [
+        "fact_incident_inv"
+      ],
+      "field_count": 8,
+      "indicators": [],
+      "remark": "对事故进行根因分析和调查，找出根本原因和影响因素"
+    },
+    {
+      "name": "安全培训",
+      "kind": "object",
+      "appScene": "运营管理",
+      "tables": [
+        "fact_safety_training"
+      ],
+      "field_count": 9,
+      "indicators": [],
+      "remark": "安全培训的组织、参与和考核记录"
+    },
+    {
+      "name": "安全审计",
+      "kind": "object",
+      "appScene": "运营管理",
+      "tables": [
+        "fact_safety_audit"
+      ],
+      "field_count": 9,
+      "indicators": [],
+      "remark": "对车间进行定期安全审计，评分和发现不符合项"
+    },
+    {
+      "name": "环境监测",
+      "kind": "object",
+      "appScene": "运营管理",
+      "tables": [
+        "fact_env_record"
+      ],
+      "field_count": 8,
+      "indicators": [],
+      "remark": "定期监测废水、废气和噪声排放，与法定限值对比"
+    },
+    {
+      "name": "风险评估动作",
+      "kind": "action",
+      "appScene": "运营管理",
+      "tables": [],
+      "field_count": 0,
+      "indicators": [],
+      "remark": "对危险源进行定期风险评估，更新风险等级和控制措施"
+    },
+    {
+      "name": "签发作业许可",
+      "kind": "action",
+      "appScene": "运营管理",
+      "tables": [],
+      "field_count": 0,
+      "indicators": [],
+      "remark": "审批签发危险作业许可证"
+    },
+    {
+      "name": "事故报告",
+      "kind": "action",
+      "appScene": "运营管理",
+      "tables": [],
+      "field_count": 0,
+      "indicators": [],
+      "remark": "发生安全事故后立即上报，记录事故基本信息"
+    },
+    {
+      "name": "事故调查动作",
+      "kind": "action",
+      "appScene": "运营管理",
+      "tables": [],
+      "field_count": 0,
+      "indicators": [],
+      "remark": "对事故进行根因分析，出具调查报告"
+    },
+    {
+      "name": "安全审计动作",
+      "kind": "action",
+      "appScene": "运营管理",
+      "tables": [],
+      "field_count": 0,
+      "indicators": [],
+      "remark": "对车间执行安全审计检查"
+    },
+    {
+      "name": "事故已报告",
+      "kind": "event",
+      "appScene": "运营管理",
+      "tables": [],
+      "field_count": 0,
+      "indicators": [],
+      "remark": "事故上报完成，触发事故调查流程"
+    },
+    {
+      "name": "事故调查已完成",
+      "kind": "event",
+      "appScene": "运营管理",
+      "tables": [],
+      "field_count": 0,
+      "indicators": [],
+      "remark": "事故调查报告出具，安全行动建议生成"
+    },
+    {
+      "name": "作业许可已签发",
+      "kind": "event",
+      "appScene": "运营管理",
+      "tables": [],
+      "field_count": 0,
+      "indicators": [],
+      "remark": "危险作业许可证签发完成"
+    },
+    {
+      "name": "风险不可容忍告警",
+      "kind": "event",
+      "appScene": "运营管理",
+      "tables": [],
+      "field_count": 0,
+      "indicators": [],
+      "remark": "风险评估结果为L3/L4不可容忍级别，需立即控制"
+    },
+    {
+      "name": "许可即将到期",
+      "kind": "event",
+      "appScene": "运营管理",
+      "tables": [],
+      "field_count": 0,
+      "indicators": [],
+      "remark": "作业许可即将到期提醒"
+    },
+    {
+      "name": "排放超标告警",
+      "kind": "event",
+      "appScene": "运营管理",
+      "tables": [],
+      "field_count": 0,
+      "indicators": [],
+      "remark": "排放监测超限值自动告警"
+    },
+    {
+      "name": "车间",
+      "kind": "object",
+      "appScene": "生产作业",
+      "tables": [
+        "dim_workshop"
+      ],
+      "field_count": 3,
+      "indicators": [],
+      "remark": "生产车间的组织单元，包含多条产线，是能耗核算和成本归集的基本单元"
+    },
+    {
+      "name": "产线",
+      "kind": "object",
+      "appScene": "生产作业",
+      "tables": [
+        "dim_production_line",
+        "dws_production_daily"
+      ],
+      "field_count": 29,
+      "indicators": [
+        "计划产量",
+        "实际产量",
+        "成材率",
+        "优等品率",
+        "工单数",
+        "投料量",
+        "损耗量",
+        "设备运行时长",
+        "设备OEE",
+        "用电量"
+      ],
+      "remark": "具体的生产产线（挤出线、共混线等），承载生产工单的执行，具有设计产能"
+    },
+    {
+      "name": "工作中心",
+      "kind": "object",
+      "appScene": "生产作业",
+      "tables": [
+        "dim_work_center"
+      ],
+      "field_count": 7,
+      "indicators": [],
+      "remark": "产线下的具体工位，是工序执行和产能管理的最小单元"
+    },
+    {
+      "name": "产品",
+      "kind": "object",
+      "appScene": "生产作业",
+      "tables": [
+        "dim_product",
+        "dws_production_daily",
+        "dws_org_performance_daily"
+      ],
+      "field_count": 43,
+      "indicators": [
+        "计划产量",
+        "实际产量",
+        "成材率",
+        "优等品率",
+        "工单数",
+        "投料量",
+        "损耗量",
+        "设备运行时长",
+        "设备OEE",
+        "用电量",
+        "销量",
+        "销售收入",
+        "实际毛利",
+        "应收账款余额"
+      ],
+      "remark": "成品主数据，记录产品编码、规格、成本信息，是销售和生产的基本对象"
+    },
+    {
+      "name": "原材料",
+      "kind": "object",
+      "appScene": "生产作业",
+      "tables": [
+        "dim_material"
+      ],
+      "field_count": 11,
+      "indicators": [],
+      "remark": "原材料/物料主数据，记录采购物料信息、安全库存和采购提前期"
+    },
+    {
+      "name": "物料清单",
+      "kind": "object",
+      "appScene": "生产作业",
+      "tables": [
+        "dim_bom",
+        "dim_bom_line"
+      ],
+      "field_count": 13,
+      "indicators": [],
+      "remark": "产品配方/物料清单，记录产品与原料的用量关系"
+    },
+    {
+      "name": "工艺路线",
+      "kind": "object",
+      "appScene": "生产作业",
+      "tables": [
+        "dim_routing",
+        "dim_operation"
+      ],
+      "field_count": 13,
+      "indicators": [],
+      "remark": "产品生产工艺路线，包含多个工序，定义生产流程"
+    },
+    {
+      "name": "生产计划",
+      "kind": "object",
+      "appScene": "生产作业",
+      "tables": [
+        "fact_production_plan",
+        "dws_production_daily"
+      ],
+      "field_count": 30,
+      "indicators": [
+        "计划产量",
+        "实际产量",
+        "成材率",
+        "优等品率",
+        "工单数",
+        "投料量",
+        "损耗量",
+        "设备运行时长",
+        "设备OEE",
+        "用电量"
+      ],
+      "remark": "按月编制产线的生产计划量，跟踪实际产出与计划的达成情况"
+    },
+    {
+      "name": "生产工单",
+      "kind": "object",
+      "appScene": "生产作业",
+      "tables": [
+        "fact_production_order",
+        "dws_production_daily"
+      ],
+      "field_count": 36,
+      "indicators": [
+        "计划产量",
+        "实际产量",
+        "成材率",
+        "优等品率",
+        "工单数",
+        "投料量",
+        "损耗量",
+        "设备运行时长",
+        "设备OEE",
+        "用电量"
+      ],
+      "remark": "生产执行的基本单元，记录工单的计划量、实际产出、成材率、运行时长和状态"
+    },
+    {
+      "name": "生产批次",
+      "kind": "object",
+      "appScene": "生产作业",
+      "tables": [
+        "fact_production_order",
+        "dws_production_daily"
+      ],
+      "field_count": 36,
+      "indicators": [
+        "计划产量",
+        "实际产量",
+        "成材率",
+        "优等品率",
+        "工单数",
+        "投料量",
+        "损耗量",
+        "设备运行时长",
+        "设备OEE",
+        "用电量"
+      ],
+      "remark": "工单执行的具体批次，是投料、产出、质检的追溯单元"
+    },
+    {
+      "name": "投料记录",
+      "kind": "object",
+      "appScene": "生产作业",
+      "tables": [
+        "fact_material_consumption"
+      ],
+      "field_count": 8,
+      "indicators": [],
+      "remark": "按工单记录原料的配方用量、实际投料量和损耗量"
+    },
+    {
+      "name": "产出记录",
+      "kind": "object",
+      "appScene": "生产作业",
+      "tables": [
+        "fact_production_output"
+      ],
+      "field_count": 7,
+      "indicators": [],
+      "remark": "工单完工后的产出记录，按等级分类，统计优等品率"
+    },
+    {
+      "name": "质量检验",
+      "kind": "object",
+      "appScene": "生产作业",
+      "tables": [
+        "fact_quality_inspection"
+      ],
+      "field_count": 9,
+      "indicators": [],
+      "remark": "对每批次产品进行物理性能检测，判定是否合格"
+    },
+    {
+      "name": "班组",
+      "kind": "object",
+      "appScene": "生产作业",
+      "tables": [
+        "dim_team"
+      ],
+      "field_count": 5,
+      "indicators": [],
+      "remark": "生产班组，负责具体产线的生产操作"
+    },
+    {
+      "name": "编制计划",
+      "kind": "action",
+      "appScene": "生产作业",
+      "tables": [],
+      "field_count": 0,
+      "indicators": [],
+      "remark": "根据销售订单和产能约束，编制月度生产计划"
+    },
+    {
+      "name": "下达工单",
+      "kind": "action",
+      "appScene": "生产作业",
+      "tables": [],
+      "field_count": 0,
+      "indicators": [],
+      "remark": "将生产计划分解为具体工单，分配产线和BOM"
+    },
+    {
+      "name": "执行投料",
+      "kind": "action",
+      "appScene": "生产作业",
+      "tables": [],
+      "field_count": 0,
+      "indicators": [],
+      "remark": "按BOM配方执行投料，记录实际用量和损耗"
+    },
+    {
+      "name": "产出入库",
+      "kind": "action",
+      "appScene": "生产作业",
+      "tables": [],
+      "field_count": 0,
+      "indicators": [],
+      "remark": "将完工产品入库，记录产出量和等级"
+    },
+    {
+      "name": "生产计划已发布",
+      "kind": "event",
+      "appScene": "生产作业",
+      "tables": [],
+      "field_count": 0,
+      "indicators": [],
+      "remark": "生产计划编制完成并发布，触发下游排产动作"
+    },
+    {
+      "name": "工单已下达",
+      "kind": "event",
+      "appScene": "生产作业",
+      "tables": [],
+      "field_count": 0,
+      "indicators": [],
+      "remark": "工单下达至产线，触发物料齐套检查和投料准备"
+    },
+    {
+      "name": "批次已开工",
+      "kind": "event",
+      "appScene": "生产作业",
+      "tables": [],
+      "field_count": 0,
+      "indicators": [],
+      "remark": "生产批次开始执行，投料生产正式开始"
+    },
+    {
+      "name": "投料已完成",
+      "kind": "event",
+      "appScene": "生产作业",
+      "tables": [],
+      "field_count": 0,
+      "indicators": [],
+      "remark": "批次投料执行完毕，进入生产加工阶段"
+    },
+    {
+      "name": "批次已完工",
+      "kind": "event",
+      "appScene": "生产作业",
+      "tables": [],
+      "field_count": 0,
+      "indicators": [],
+      "remark": "批次生产完成，进入质检和入库流程"
+    },
+    {
+      "name": "产出已入库",
+      "kind": "event",
+      "appScene": "生产作业",
+      "tables": [],
+      "field_count": 0,
+      "indicators": [],
+      "remark": "成品入库完成，更新可用库存，触发发货流程"
+    },
+    {
+      "name": "物料齐套确认",
+      "kind": "event",
+      "appScene": "生产作业",
+      "tables": [],
+      "field_count": 0,
+      "indicators": [],
+      "remark": "物料齐套检查通过，确认投料可执行"
+    },
+    {
+      "name": "物料缺货告警",
+      "kind": "event",
+      "appScene": "生产作业",
+      "tables": [],
+      "field_count": 0,
+      "indicators": [],
+      "remark": "物料不足触发缺货告警，反向触发补货"
+    },
+    {
+      "name": "客户",
+      "kind": "object",
+      "appScene": "运营管理",
+      "tables": [
+        "dim_customer",
+        "dim_customer_credit",
+        "dws_market_daily",
+        "dws_cash_daily"
+      ],
+      "field_count": 39,
+      "indicators": [
+        "市场容量",
+        "市场份额",
+        "存量客户数",
+        "休眠客户数",
+        "风险客户数",
+        "指导价偏差",
+        "发出商品量",
+        "发出商品金额",
+        "平均开票工业数据平台",
+        "银承比率"
+      ],
+      "remark": "管理客户基本信息、行业属性、市场容量与份额、信用状态，是营销活动的核心对象"
+    },
+    {
+      "name": "商机",
+      "kind": "object",
+      "appScene": "运营管理",
+      "tables": [
+        "fact_opportunity",
+        "dws_pre_sales_daily"
+      ],
+      "field_count": 22,
+      "indicators": [
+        "商机数量",
+        "商机预估销量",
+        "丢失商机数",
+        "送样量",
+        "送样次数"
+      ],
+      "remark": "跟踪销售机会从创建到赢单或丢失的全过程，评估商机质量和销售活动活跃度"
+    },
+    {
+      "name": "报价单",
+      "kind": "object",
+      "appScene": "运营管理",
+      "tables": [
+        "fact_quotation"
+      ],
+      "field_count": 11,
+      "indicators": [],
+      "remark": "向客户提供的产品报价，记录报价日期、有效期、产品和价格"
+    },
+    {
+      "name": "销售订单",
+      "kind": "object",
+      "appScene": "运营管理",
+      "tables": [
+        "fact_sales_order",
+        "dws_in_sales_daily",
+        "dws_org_performance_daily",
+        "agg_metric_monthly",
+        "dws_risk_daily",
+        "dws_org_target_daily"
+      ],
+      "field_count": 78,
+      "indicators": [
+        "接单数量",
+        "未交付订单数",
+        "销量",
+        "销售收入",
+        "实际毛利",
+        "应收账款余额",
+        "销量目标",
+        "毛利目标",
+        "回款目标",
+        "超期库存量",
+        "负毛利订单量",
+        "超期货款金额",
+        "超期次数"
+      ],
+      "remark": "销售订单的创建与执行，记录产品的销售量、价格、成本与毛利信息"
+    },
+    {
+      "name": "发货单",
+      "kind": "object",
+      "appScene": "运营管理",
+      "tables": [
+        "fact_delivery",
+        "dws_cash_daily"
+      ],
+      "field_count": 13,
+      "indicators": [
+        "发出商品量",
+        "发出商品金额",
+        "平均开票工业数据平台",
+        "银承比率"
+      ],
+      "remark": "销售订单的发货执行，跟踪发货数量、金额及寄售情况"
+    },
+    {
+      "name": "发票",
+      "kind": "object",
+      "appScene": "运营管理",
+      "tables": [
+        "fact_invoice"
+      ],
+      "field_count": 7,
+      "indicators": [],
+      "remark": "发货后的发票开具，计算开票工业数据平台和开票效率"
+    },
+    {
+      "name": "应收账款",
+      "kind": "object",
+      "appScene": "运营管理",
+      "tables": [
+        "fact_ar_aging",
+        "dws_risk_daily"
+      ],
+      "field_count": 27,
+      "indicators": [
+        "超期库存量",
+        "负毛利订单量",
+        "超期货款金额",
+        "超期次数"
+      ],
+      "remark": "按客户、业务员追踪应收账款的账龄分布和超期情况"
+    },
+    {
+      "name": "收款",
+      "kind": "object",
+      "appScene": "运营管理",
+      "tables": [
+        "fact_payment",
+        "dws_cash_daily"
+      ],
+      "field_count": 13,
+      "indicators": [
+        "发出商品量",
+        "发出商品金额",
+        "平均开票工业数据平台",
+        "银承比率"
+      ],
+      "remark": "记录回款的金额、方式和时间，监控银承占比"
+    },
+    {
+      "name": "退货单",
+      "kind": "object",
+      "appScene": "运营管理",
+      "tables": [
+        "fact_return",
+        "dws_after_sales_daily"
+      ],
+      "field_count": 11,
+      "indicators": [
+        "退货次数",
+        "退货量"
+      ],
+      "remark": "记录客户退货的数量、金额及原因"
+    },
+    {
+      "name": "送样记录",
+      "kind": "object",
+      "appScene": "运营管理",
+      "tables": [
+        "fact_sample",
+        "dws_pre_sales_daily"
+      ],
+      "field_count": 20,
+      "indicators": [
+        "商机数量",
+        "商机预估销量",
+        "丢失商机数",
+        "送样量",
+        "送样次数"
+      ],
+      "remark": "记录向客户送样的重量、次数及反馈结果，评估样品转化效率"
+    },
+    {
+      "name": "创建订单",
+      "kind": "action",
+      "appScene": "运营管理",
+      "tables": [],
+      "field_count": 0,
+      "indicators": [],
+      "remark": "客户下达销售订单，经信用检查后确认"
+    },
+    {
+      "name": "发货执行",
+      "kind": "action",
+      "appScene": "运营管理",
+      "tables": [],
+      "field_count": 0,
+      "indicators": [],
+      "remark": "按订单执行发货，扣减库存"
+    },
+    {
+      "name": "开票",
+      "kind": "action",
+      "appScene": "运营管理",
+      "tables": [],
+      "field_count": 0,
+      "indicators": [],
+      "remark": "发货后开具增值税发票，确认收入"
+    },
+    {
+      "name": "收款核销",
+      "kind": "action",
+      "appScene": "运营管理",
+      "tables": [],
+      "field_count": 0,
+      "indicators": [],
+      "remark": "客户回款到账后核销应收账款"
+    },
+    {
+      "name": "订单已创建",
+      "kind": "event",
+      "appScene": "运营管理",
+      "tables": [],
+      "field_count": 0,
+      "indicators": [],
+      "remark": "销售订单创建成功，触发信用审批和生产排产"
+    },
+    {
+      "name": "发货已完成",
+      "kind": "event",
+      "appScene": "运营管理",
+      "tables": [],
+      "field_count": 0,
+      "indicators": [],
+      "remark": "发货执行完毕，触发开票流程"
+    },
+    {
+      "name": "发票已过账",
+      "kind": "event",
+      "appScene": "运营管理",
+      "tables": [],
+      "field_count": 0,
+      "indicators": [],
+      "remark": "发票已过账确认收入，生成应收账款"
+    },
+    {
+      "name": "收款已到账",
+      "kind": "event",
+      "appScene": "运营管理",
+      "tables": [],
+      "field_count": 0,
+      "indicators": [],
+      "remark": "客户回款到账，触发应收核销和业财对账"
+    },
+    {
+      "name": "客户信用审批通过",
+      "kind": "event",
+      "appScene": "运营管理",
+      "tables": [],
+      "field_count": 0,
+      "indicators": [],
+      "remark": "信用检查通过，订单可正常确认"
+    },
+    {
+      "name": "客户升级为战略客户",
+      "kind": "event",
+      "appScene": "运营管理",
+      "tables": [],
+      "field_count": 0,
+      "indicators": [],
+      "remark": "年采购额达标自动升级为战略客户"
+    },
+    {
+      "name": "客户标记为休眠",
+      "kind": "event",
+      "appScene": "运营管理",
+      "tables": [],
+      "field_count": 0,
+      "indicators": [],
+      "remark": "连续6月无订单自动归为休眠客户"
+    },
+    {
+      "name": "客户风险标记",
+      "kind": "event",
+      "appScene": "运营管理",
+      "tables": [],
+      "field_count": 0,
+      "indicators": [],
+      "remark": "账龄超90天自动标记客户为风险"
+    },
+    {
+      "name": "应付账款",
+      "kind": "object",
+      "appScene": "供应链管理",
+      "tables": [
+        "fact_ap",
+        "dws_procurement_daily"
+      ],
+      "field_count": 18,
+      "indicators": [
+        "采购订单数",
+        "采购金额",
+        "收货次数",
+        "收货数量",
+        "来料检验合格率",
+        "应付账款余额",
+        "付款金额"
+      ],
+      "remark": "记录对供应商的应付金额、到期日和支付状态"
+    },
+    {
+      "name": "付款",
+      "kind": "object",
+      "appScene": "供应链管理",
+      "tables": [
+        "fact_payment_out"
+      ],
+      "field_count": 6,
+      "indicators": [],
+      "remark": "记录向供应商的实际付款金额、日期和支付方式"
+    },
+    {
+      "name": "供应商评估",
+      "kind": "object",
+      "appScene": "供应链管理",
+      "tables": [
+        "fact_supplier_eval"
+      ],
+      "field_count": 9,
+      "indicators": [],
+      "remark": "定期对供应商进行绩效评估，包括交付、质量、服务维度"
+    },
+    {
+      "name": "选择供应商下订单",
+      "kind": "action",
+      "appScene": "供应链管理",
+      "tables": [],
+      "field_count": 0,
+      "indicators": [],
+      "remark": "根据请购需求和供应商评估结果，选择供应商并下达采购订单"
+    },
+    {
+      "name": "收货检验",
+      "kind": "action",
+      "appScene": "供应链管理",
+      "tables": [],
+      "field_count": 0,
+      "indicators": [],
+      "remark": "收到供应商货物后执行数量验收和质量检验"
+    },
+    {
+      "name": "三单匹配付款",
+      "kind": "action",
+      "appScene": "供应链管理",
+      "tables": [],
+      "field_count": 0,
+      "indicators": [],
+      "remark": "采购订单、收货单、发票三单匹配后执行付款"
+    },
+    {
+      "name": "采购订单已下达",
+      "kind": "event",
+      "appScene": "供应链管理",
+      "tables": [],
+      "field_count": 0,
+      "indicators": [],
+      "remark": "采购订单下达给供应商，等待交付"
+    },
+    {
+      "name": "物料已收货",
+      "kind": "event",
+      "appScene": "供应链管理",
+      "tables": [],
+      "field_count": 0,
+      "indicators": [],
+      "remark": "供应商来料已收货，库存增加"
+    },
+    {
+      "name": "来料检验通过",
+      "kind": "event",
+      "appScene": "供应链管理",
+      "tables": [],
+      "field_count": 0,
+      "indicators": [],
+      "remark": "来料质量检验合格，可入库使用"
+    },
+    {
+      "name": "来料检验不合格",
+      "kind": "event",
+      "appScene": "供应链管理",
+      "tables": [],
+      "field_count": 0,
+      "indicators": [],
+      "remark": "来料质量检验不合格，触发退货流程"
+    },
+    {
+      "name": "付款已完成",
+      "kind": "event",
+      "appScene": "供应链管理",
+      "tables": [],
+      "field_count": 0,
+      "indicators": [],
+      "remark": "应付账款支付完成"
+    },
+    {
+      "name": "供应商升级为战略",
+      "kind": "event",
+      "appScene": "供应链管理",
+      "tables": [],
+      "field_count": 0,
+      "indicators": [],
+      "remark": "准时率超95%且合格率超98%自动升级"
+    },
+    {
+      "name": "库存低于安全库存",
+      "kind": "event",
+      "appScene": "供应链管理",
+      "tables": [],
+      "field_count": 0,
+      "indicators": [],
+      "remark": "库存低于安全库存触发补货建议"
+    },
+    {
+      "name": "物料替代建议",
+      "kind": "event",
+      "appScene": "供应链管理",
+      "tables": [],
+      "field_count": 0,
+      "indicators": [],
+      "remark": "缺货时若有替代关系自动推荐替代物料"
+    },
+    {
+      "name": "设备",
+      "kind": "object",
+      "appScene": "生产管理",
+      "tables": [
+        "dim_equipment",
+        "dim_equipment_type",
+        "dws_equipment_daily"
+      ],
+      "field_count": 28,
+      "indicators": [
+        "设备运行小时",
+        "设备停机小时",
+        "设备停机次数",
+        "设备告警次数",
+        "维护工单数",
+        "维护完成数",
+        "设备OEE-资产"
+      ],
+      "remark": "生产设备主数据，记录设备编码、名称、类型、制造商、安装日期、功率等信息"
+    },
+    {
+      "name": "传感器",
+      "kind": "object",
+      "appScene": "生产管理",
+      "tables": [
+        "dim_sensor"
+      ],
+      "field_count": 7,
+      "indicators": [],
+      "remark": "设备上安装的传感器，采集温度、压力、转速等运行参数"
+    },
+    {
+      "name": "IoT数据",
+      "kind": "object",
+      "appScene": "生产管理",
+      "tables": [
+        "fact_iot_data"
+      ],
+      "field_count": 6,
+      "indicators": [],
+      "remark": "传感器采集的实时数据流，带有时间戳和质量标记"
+    },
+    {
+      "name": "告警",
+      "kind": "object",
+      "appScene": "生产管理",
+      "tables": [
+        "fact_alarm"
+      ],
+      "field_count": 10,
+      "indicators": [],
+      "remark": "设备运行参数异常时触发的告警事件"
+    },
+    {
+      "name": "维护计划",
+      "kind": "object",
+      "appScene": "生产管理",
+      "tables": [
+        "fact_maintenance_plan"
+      ],
+      "field_count": 8,
+      "indicators": [],
+      "remark": "设备预防性维护计划，按周期设定维护任务"
+    },
+    {
+      "name": "维护工单",
+      "kind": "object",
+      "appScene": "生产管理",
+      "tables": [
+        "fact_maintenance_wo",
+        "dws_equipment_daily"
+      ],
+      "field_count": 23,
+      "indicators": [
+        "设备运行小时",
+        "设备停机小时",
+        "设备停机次数",
+        "设备告警次数",
+        "维护工单数",
+        "维护完成数",
+        "设备OEE-资产"
+      ],
+      "remark": "设备维护的具体工单，记录维护类型、优先级、时间和指派技师"
+    },
+    {
+      "name": "维护记录",
+      "kind": "object",
+      "appScene": "生产管理",
+      "tables": [
+        "fact_maintenance_record"
+      ],
+      "field_count": 9,
+      "indicators": [],
+      "remark": "维护工单的执行记录，记录工作内容、更换备件、工时和费用"
+    },
+    {
+      "name": "备件",
+      "kind": "object",
+      "appScene": "生产管理",
+      "tables": [
+        "dim_spare_part"
+      ],
+      "field_count": 9,
+      "indicators": [],
+      "remark": "设备备件库存管理，记录备件信息、安全库存和当前库存"
+    },
+    {
+      "name": "运行台时",
+      "kind": "object",
+      "appScene": "生产管理",
+      "tables": [
+        "fact_equipment_runtime",
+        "dws_equipment_daily"
+      ],
+      "field_count": 20,
+      "indicators": [
+        "设备运行小时",
+        "设备停机小时",
+        "设备停机次数",
+        "设备告警次数",
+        "维护工单数",
+        "维护完成数",
+        "设备OEE-资产"
+      ],
+      "remark": "设备每日运行时长记录，是OEE计算的基础"
+    },
+    {
+      "name": "停机记录",
+      "kind": "object",
+      "appScene": "生产管理",
+      "tables": [
+        "fact_downtime",
+        "dim_downtime_reason"
+      ],
+      "field_count": 12,
+      "indicators": [],
+      "remark": "记录设备停机事件的起止时间、持续时长和原因"
+    },
+    {
+      "name": "固定资产",
+      "kind": "object",
+      "appScene": "生产管理",
+      "tables": [
+        "dim_fixed_asset",
+        "fact_depreciation"
+      ],
+      "field_count": 18,
+      "indicators": [],
+      "remark": "设备关联的固定资产卡片，记录原值、折旧和账面净值"
+    },
+    {
+      "name": "能耗记录",
+      "kind": "object",
+      "appScene": "生产管理",
+      "tables": [
+        "fact_energy_consumption",
+        "dws_production_daily"
+      ],
+      "field_count": 32,
+      "indicators": [
+        "计划产量",
+        "实际产量",
+        "成材率",
+        "优等品率",
+        "工单数",
+        "投料量",
+        "损耗量",
+        "设备运行时长",
+        "设备OEE",
+        "用电量"
+      ],
+      "remark": "记录产线和车间的用电、用水、天然气等能源消耗"
+    },
+    {
+      "name": "创建维护工单",
+      "kind": "action",
+      "appScene": "生产管理",
+      "tables": [],
+      "field_count": 0,
+      "indicators": [],
+      "remark": "根据维护计划或告警触发，创建设备维护工单"
+    },
+    {
+      "name": "执行维修",
+      "kind": "action",
+      "appScene": "生产管理",
+      "tables": [],
+      "field_count": 0,
+      "indicators": [],
+      "remark": "按工单执行设备维修或保养，记录工作内容和费用"
+    },
+    {
+      "name": "处理告警",
+      "kind": "action",
+      "appScene": "生产管理",
+      "tables": [],
+      "field_count": 0,
+      "indicators": [],
+      "remark": "响应设备告警，判断是否需要紧急停机或创建维护工单"
+    },
+    {
+      "name": "传感器数据异常",
+      "kind": "event",
+      "appScene": "生产管理",
+      "tables": [],
+      "field_count": 0,
+      "indicators": [],
+      "remark": "传感器采集数据超出正常范围"
+    },
+    {
+      "name": "告警已触发",
+      "kind": "event",
+      "appScene": "生产管理",
+      "tables": [],
+      "field_count": 0,
+      "indicators": [],
+      "remark": "设备运行参数超出正常范围，触发告警通知"
+    },
+    {
+      "name": "维护工单已生成",
+      "kind": "event",
+      "appScene": "生产管理",
+      "tables": [],
+      "field_count": 0,
+      "indicators": [],
+      "remark": "维护工单已创建，等待执行"
+    },
+    {
+      "name": "维护已完成",
+      "kind": "event",
+      "appScene": "生产管理",
+      "tables": [],
+      "field_count": 0,
+      "indicators": [],
+      "remark": "设备维修/保养完成，设备恢复运行"
+    },
+    {
+      "name": "备件已更换",
+      "kind": "event",
+      "appScene": "生产管理",
+      "tables": [],
+      "field_count": 0,
+      "indicators": [],
+      "remark": "备件更换完成，备件库存扣减"
+    },
+    {
+      "name": "预测性维护建议",
+      "kind": "event",
+      "appScene": "生产管理",
+      "tables": [],
+      "field_count": 0,
+      "indicators": [],
+      "remark": "基于运行台时和MTBF推理，提前建议维护时机"
+    },
+    {
+      "name": "信用检查",
+      "kind": "action",
+      "appScene": "运营管理",
+      "tables": [],
+      "field_count": 0,
+      "indicators": [],
+      "remark": "在创建订单前对客户信用额度、信用状态进行检查，校验通过后方可确认订单"
+    },
+    {
+      "name": "退货处理",
+      "kind": "action",
+      "appScene": "运营管理",
+      "tables": [],
+      "field_count": 0,
+      "indicators": [],
+      "remark": "处理客户退货请求，执行退货验收、入库和退款/补货操作"
+    },
+    {
+      "name": "供应商",
+      "kind": "object",
+      "appScene": "供应链管理",
+      "tables": [
+        "dim_supplier",
+        "dim_supplier_category"
+      ],
+      "field_count": 14,
+      "indicators": [],
+      "remark": "管理供应商基本信息、信用等级、合作历史，是采购活动的核心对象"
+    },
+    {
+      "name": "采购合同",
+      "kind": "object",
+      "appScene": "供应链管理",
+      "tables": [
+        "fact_contract"
+      ],
+      "field_count": 8,
+      "indicators": [],
+      "remark": "与供应商签订的采购合同，约束采购订单的价格和条款"
+    },
+    {
+      "name": "采购订单",
+      "kind": "object",
+      "appScene": "供应链管理",
+      "tables": [
+        "fact_purchase_order",
+        "fact_po_line"
+      ],
+      "field_count": 17,
+      "indicators": [],
+      "remark": "向供应商下达的采购指令，记录物料、数量、价格和交付要求"
+    },
+    {
+      "name": "收货单",
+      "kind": "object",
+      "appScene": "供应链管理",
+      "tables": [
+        "fact_goods_receipt",
+        "dws_procurement_daily"
+      ],
+      "field_count": 18,
+      "indicators": [
+        "采购订单数",
+        "采购金额",
+        "收货次数",
+        "收货数量",
+        "来料检验合格率",
+        "应付账款余额",
+        "付款金额"
+      ],
+      "remark": "采购收货记录，关联采购订单，记录实际收货数量和检验结果"
+    },
+    {
+      "name": "DWS_KPI_DAILY",
+      "kind": "object",
+      "appScene": "生产作业",
+      "tables": [
+        "DWS_KPI_DAILY"
+      ],
+      "field_count": 11,
+      "indicators": [
+        "部门KPI达标数",
+        "人员KPI达标数",
+        "人员KPT达标数"
+      ],
+      "remark": "数据驱动补建(周琪未覆盖)"
+    },
+    {
+      "name": "dim_business_unit",
+      "kind": "object",
+      "appScene": "生产管理",
+      "tables": [
+        "dim_business_unit"
+      ],
+      "field_count": 4,
+      "indicators": [],
+      "remark": "数据驱动补建(周琪未覆盖)"
+    },
+    {
+      "name": "dim_carrier",
+      "kind": "object",
+      "appScene": "生产管理",
+      "tables": [
+        "dim_carrier"
+      ],
+      "field_count": 7,
+      "indicators": [],
+      "remark": "数据驱动补建(周琪未覆盖)"
+    },
+    {
+      "name": "dim_column_metadata",
+      "kind": "object",
+      "appScene": "运营管理",
+      "tables": [
+        "dim_column_metadata"
+      ],
+      "field_count": 6,
+      "indicators": [],
+      "remark": "数据驱动补建(周琪未覆盖)"
+    },
+    {
+      "name": "dim_composite_metric_config",
+      "kind": "object",
+      "appScene": "运营管理",
+      "tables": [
+        "dim_composite_metric_config"
+      ],
+      "field_count": 5,
+      "indicators": [],
+      "remark": "数据驱动补建(周琪未覆盖)"
+    },
+    {
+      "name": "dim_derived_metric_config",
+      "kind": "object",
+      "appScene": "运营管理",
+      "tables": [
+        "dim_derived_metric_config"
+      ],
+      "field_count": 8,
+      "indicators": [],
+      "remark": "数据驱动补建(周琪未覆盖)"
+    },
+    {
+      "name": "dim_enterprise",
+      "kind": "object",
+      "appScene": "生产管理",
+      "tables": [
+        "dim_enterprise"
+      ],
+      "field_count": 6,
+      "indicators": [],
+      "remark": "数据驱动补建(周琪未覆盖)"
+    },
+    {
+      "name": "dim_factory",
+      "kind": "object",
+      "appScene": "生产管理",
+      "tables": [
+        "dim_factory"
+      ],
+      "field_count": 6,
+      "indicators": [],
+      "remark": "数据驱动补建(周琪未覆盖)"
+    },
+    {
+      "name": "dim_material_category",
+      "kind": "object",
+      "appScene": "生产管理",
+      "tables": [
+        "dim_material_category"
+      ],
+      "field_count": 3,
+      "indicators": [],
+      "remark": "数据驱动补建(周琪未覆盖)"
+    },
+    {
+      "name": "dim_metric_catalog",
+      "kind": "object",
+      "appScene": "运营管理",
+      "tables": [
+        "dim_metric_catalog"
+      ],
+      "field_count": 12,
+      "indicators": [],
+      "remark": "数据驱动补建(周琪未覆盖)"
+    },
+    {
+      "name": "dim_pricing",
+      "kind": "object",
+      "appScene": "生产管理",
+      "tables": [
+        "dim_pricing"
+      ],
+      "field_count": 8,
+      "indicators": [],
+      "remark": "数据驱动补建(周琪未覆盖)"
+    },
+    {
+      "name": "dim_product_line",
+      "kind": "object",
+      "appScene": "生产管理",
+      "tables": [
+        "dim_product_line"
+      ],
+      "field_count": 2,
+      "indicators": [],
+      "remark": "数据驱动补建(周琪未覆盖)"
+    },
+    {
+      "name": "dim_storage_location",
+      "kind": "object",
+      "appScene": "生产管理",
+      "tables": [
+        "dim_storage_location"
+      ],
+      "field_count": 6,
+      "indicators": [],
+      "remark": "数据驱动补建(周琪未覆盖)"
+    },
+    {
+      "name": "dim_table_metadata",
+      "kind": "object",
+      "appScene": "运营管理",
+      "tables": [
+        "dim_table_metadata"
+      ],
+      "field_count": 6,
+      "indicators": [],
+      "remark": "数据驱动补建(周琪未覆盖)"
+    },
+    {
+      "name": "dim_tool",
+      "kind": "object",
+      "appScene": "生产管理",
+      "tables": [
+        "dim_tool"
+      ],
+      "field_count": 8,
+      "indicators": [],
+      "remark": "数据驱动补建(周琪未覆盖)"
+    },
+    {
+      "name": "dim_warehouse",
+      "kind": "object",
+      "appScene": "生产管理",
+      "tables": [
+        "dim_warehouse"
+      ],
+      "field_count": 7,
+      "indicators": [],
+      "remark": "数据驱动补建(周琪未覆盖)"
+    },
+    {
+      "name": "fact_inventory",
+      "kind": "object",
+      "appScene": "生产作业",
+      "tables": [
+        "fact_inventory"
+      ],
+      "field_count": 8,
+      "indicators": [],
+      "remark": "数据驱动补建(周琪未覆盖)"
+    },
+    {
+      "name": "fact_payment_target",
+      "kind": "object",
+      "appScene": "生产作业",
+      "tables": [
+        "fact_payment_target"
+      ],
+      "field_count": 4,
+      "indicators": [],
+      "remark": "数据驱动补建(周琪未覆盖)"
+    },
+    {
+      "name": "fact_purchase_requisition",
+      "kind": "object",
+      "appScene": "生产作业",
+      "tables": [
+        "fact_purchase_requisition"
+      ],
+      "field_count": 8,
+      "indicators": [],
+      "remark": "数据驱动补建(周琪未覆盖)"
+    },
+    {
+      "name": "fact_sales_plan",
+      "kind": "object",
+      "appScene": "生产作业",
+      "tables": [
+        "fact_sales_plan"
+      ],
+      "field_count": 5,
+      "indicators": [],
+      "remark": "数据驱动补建(周琪未覆盖)"
+    }
+  ],
+  "relations": [
+    {
+      "source_concept": "销售订单",
+      "target_concept": "员工",
+      "verb": "关联",
+      "status": "verified",
+      "overlap": null
+    },
+    {
+      "source_concept": "部门",
+      "target_concept": "区域",
+      "verb": "归属",
+      "status": "verified",
+      "overlap": null
+    },
+    {
+      "source_concept": "员工",
+      "target_concept": "部门",
+      "verb": "包含",
+      "status": "verified",
+      "overlap": null
+    },
+    {
+      "source_concept": "产品",
+      "target_concept": "dim_product_line",
+      "verb": "关联",
+      "status": "verified",
+      "overlap": null
+    },
+    {
+      "source_concept": "产线",
+      "target_concept": "车间",
+      "verb": "包含",
+      "status": "verified",
+      "overlap": null
+    },
+    {
+      "source_concept": "应收账款",
+      "target_concept": "发票",
+      "verb": "形成",
+      "status": "verified",
+      "overlap": null
+    },
+    {
+      "source_concept": "应收账款",
+      "target_concept": "员工",
+      "verb": "关联",
+      "status": "verified",
+      "overlap": null
+    },
+    {
+      "source_concept": "应收账款",
+      "target_concept": "客户",
+      "verb": "应收自",
+      "status": "verified",
+      "overlap": null
+    },
+    {
+      "source_concept": "预算",
+      "target_concept": "部门",
+      "verb": "关联",
+      "status": "verified",
+      "overlap": null
+    },
+    {
+      "source_concept": "发货单",
+      "target_concept": "销售订单",
+      "verb": "触发",
+      "status": "verified",
+      "overlap": null
+    },
+    {
+      "source_concept": "能耗记录",
+      "target_concept": "车间",
+      "verb": "归属",
+      "status": "verified",
+      "overlap": null
+    },
+    {
+      "source_concept": "能耗记录",
+      "target_concept": "产线",
+      "verb": "关联",
+      "status": "verified",
+      "overlap": null
+    },
+    {
+      "source_concept": "运行台时",
+      "target_concept": "产线",
+      "verb": "关联",
+      "status": "verified",
+      "overlap": null
+    },
+    {
+      "source_concept": "费用",
+      "target_concept": "部门",
+      "verb": "关联",
+      "status": "verified",
+      "overlap": null
+    },
+    {
+      "source_concept": "费用",
+      "target_concept": "员工",
+      "verb": "发生人",
+      "status": "verified",
+      "overlap": null
+    },
+    {
+      "source_concept": "fact_inventory",
+      "target_concept": "产品",
+      "verb": "关联",
+      "status": "verified",
+      "overlap": null
+    },
+    {
+      "source_concept": "发票",
+      "target_concept": "发货单",
+      "verb": "触发",
+      "status": "verified",
+      "overlap": null
+    },
+    {
+      "source_concept": "投料记录",
+      "target_concept": "产品",
+      "verb": "关联",
+      "status": "verified",
+      "overlap": null
+    },
+    {
+      "source_concept": "投料记录",
+      "target_concept": "生产工单",
+      "verb": "关联",
+      "status": "verified",
+      "overlap": null
+    },
+    {
+      "source_concept": "商机",
+      "target_concept": "员工",
+      "verb": "关联",
+      "status": "verified",
+      "overlap": null
+    },
+    {
+      "source_concept": "商机",
+      "target_concept": "客户",
+      "verb": "生成",
+      "status": "verified",
+      "overlap": null
+    },
+    {
+      "source_concept": "收款",
+      "target_concept": "应收账款",
+      "verb": "核销",
+      "status": "verified",
+      "overlap": null
+    },
+    {
+      "source_concept": "fact_payment_target",
+      "target_concept": "员工",
+      "verb": "关联",
+      "status": "verified",
+      "overlap": null
+    },
+    {
+      "source_concept": "生产工单",
+      "target_concept": "产品",
+      "verb": "关联",
+      "status": "verified",
+      "overlap": null
+    },
+    {
+      "source_concept": "生产工单",
+      "target_concept": "产线",
+      "verb": "承载",
+      "status": "verified",
+      "overlap": null
+    },
+    {
+      "source_concept": "产出记录",
+      "target_concept": "生产工单",
+      "verb": "关联",
+      "status": "verified",
+      "overlap": null
+    },
+    {
+      "source_concept": "生产计划",
+      "target_concept": "产线",
+      "verb": "关联",
+      "status": "verified",
+      "overlap": null
+    },
+    {
+      "source_concept": "质量检验",
+      "target_concept": "生产工单",
+      "verb": "关联",
+      "status": "verified",
+      "overlap": null
+    },
+    {
+      "source_concept": "退货单",
+      "target_concept": "销售订单",
+      "verb": "可能发生",
+      "status": "verified",
+      "overlap": null
+    },
+    {
+      "source_concept": "销售订单",
+      "target_concept": "产品",
+      "verb": "指定",
+      "status": "verified",
+      "overlap": null
+    },
+    {
+      "source_concept": "销售订单",
+      "target_concept": "客户",
+      "verb": "下达",
+      "status": "verified",
+      "overlap": null
+    },
+    {
+      "source_concept": "fact_sales_plan",
+      "target_concept": "员工",
+      "verb": "关联",
+      "status": "verified",
+      "overlap": null
+    },
+    {
+      "source_concept": "送样记录",
+      "target_concept": "员工",
+      "verb": "关联",
+      "status": "verified",
+      "overlap": null
+    },
+    {
+      "source_concept": "送样记录",
+      "target_concept": "客户",
+      "verb": "送样",
+      "status": "verified",
+      "overlap": null
+    },
+    {
+      "source_concept": "物料清单",
+      "target_concept": "原材料",
+      "verb": "指定用量",
+      "status": "verified",
+      "overlap": null
+    },
+    {
+      "source_concept": "dim_business_unit",
+      "target_concept": "dim_enterprise",
+      "verb": "关联",
+      "status": "verified",
+      "overlap": null
+    },
+    {
+      "source_concept": "固定资产",
+      "target_concept": "设备",
+      "verb": "关联",
+      "status": "verified",
+      "overlap": null
+    },
+    {
+      "source_concept": "原材料",
+      "target_concept": "供应商",
+      "verb": "关联",
+      "status": "verified",
+      "overlap": null
+    },
+    {
+      "source_concept": "传感器",
+      "target_concept": "设备",
+      "verb": "挂载",
+      "status": "verified",
+      "overlap": null
+    },
+    {
+      "source_concept": "dim_storage_location",
+      "target_concept": "dim_warehouse",
+      "verb": "关联",
+      "status": "verified",
+      "overlap": null
+    },
+    {
+      "source_concept": "dim_warehouse",
+      "target_concept": "dim_factory",
+      "verb": "关联",
+      "status": "verified",
+      "overlap": null
+    },
+    {
+      "source_concept": "告警",
+      "target_concept": "传感器",
+      "verb": "关联",
+      "status": "verified",
+      "overlap": null
+    },
+    {
+      "source_concept": "告警",
+      "target_concept": "设备",
+      "verb": "关联",
+      "status": "verified",
+      "overlap": null
+    },
+    {
+      "source_concept": "应付账款",
+      "target_concept": "供应商",
+      "verb": "应付给",
+      "status": "verified",
+      "overlap": null
+    },
+    {
+      "source_concept": "停机记录",
+      "target_concept": "设备",
+      "verb": "关联",
+      "status": "verified",
+      "overlap": null
+    },
+    {
+      "source_concept": "事故",
+      "target_concept": "车间",
+      "verb": "关联",
+      "status": "verified",
+      "overlap": null
+    },
+    {
+      "source_concept": "IoT数据",
+      "target_concept": "传感器",
+      "verb": "上传",
+      "status": "verified",
+      "overlap": null
+    },
+    {
+      "source_concept": "维护计划",
+      "target_concept": "设备",
+      "verb": "需要",
+      "status": "verified",
+      "overlap": null
+    },
+    {
+      "source_concept": "维护记录",
+      "target_concept": "设备",
+      "verb": "关联",
+      "status": "verified",
+      "overlap": null
+    },
+    {
+      "source_concept": "维护工单",
+      "target_concept": "设备",
+      "verb": "关联",
+      "status": "verified",
+      "overlap": null
+    },
+    {
+      "source_concept": "投料记录",
+      "target_concept": "原材料",
+      "verb": "对应",
+      "status": "verified",
+      "overlap": null
+    },
+    {
+      "source_concept": "采购订单",
+      "target_concept": "原材料",
+      "verb": "指定",
+      "status": "verified",
+      "overlap": null
+    },
+    {
+      "source_concept": "采购订单",
+      "target_concept": "供应商",
+      "verb": "发给",
+      "status": "verified",
+      "overlap": null
+    },
+    {
+      "source_concept": "风险评估",
+      "target_concept": "危险源",
+      "verb": "识别",
+      "status": "verified",
+      "overlap": null
+    },
+    {
+      "source_concept": "安全审计",
+      "target_concept": "车间",
+      "verb": "审计",
+      "status": "verified",
+      "overlap": null
+    },
+    {
+      "source_concept": "供应商评估",
+      "target_concept": "供应商",
+      "verb": "接受",
+      "status": "verified",
+      "overlap": null
+    },
+    {
+      "source_concept": "产线",
+      "target_concept": "工作中心",
+      "verb": "包含",
+      "status": "asserted",
+      "overlap": null
+    },
+    {
+      "source_concept": "生产计划",
+      "target_concept": "生产工单",
+      "verb": "分解为",
+      "status": "asserted",
+      "overlap": null
+    },
+    {
+      "source_concept": "生产工单",
+      "target_concept": "物料清单",
+      "verb": "依据",
+      "status": "asserted",
+      "overlap": null
+    },
+    {
+      "source_concept": "生产工单",
+      "target_concept": "工艺路线",
+      "verb": "遵循",
+      "status": "asserted",
+      "overlap": null
+    },
+    {
+      "source_concept": "工艺路线",
+      "target_concept": "工作中心",
+      "verb": "分配到",
+      "status": "asserted",
+      "overlap": null
+    },
+    {
+      "source_concept": "生产工单",
+      "target_concept": "生产批次",
+      "verb": "执行为",
+      "status": "asserted",
+      "overlap": null
+    },
+    {
+      "source_concept": "生产批次",
+      "target_concept": "投料记录",
+      "verb": "消耗",
+      "status": "asserted",
+      "overlap": null
+    },
+    {
+      "source_concept": "生产批次",
+      "target_concept": "产出记录",
+      "verb": "产出",
+      "status": "asserted",
+      "overlap": null
+    },
+    {
+      "source_concept": "产出记录",
+      "target_concept": "产品",
+      "verb": "产生",
+      "status": "asserted",
+      "overlap": null
+    },
+    {
+      "source_concept": "生产工单",
+      "target_concept": "班组",
+      "verb": "配备",
+      "status": "asserted",
+      "overlap": null
+    },
+    {
+      "source_concept": "生产批次",
+      "target_concept": "质量检验",
+      "verb": "质检",
+      "status": "asserted",
+      "overlap": null
+    },
+    {
+      "source_concept": "编制计划",
+      "target_concept": "生产计划",
+      "verb": "写入",
+      "status": "asserted",
+      "overlap": null
+    },
+    {
+      "source_concept": "下达工单",
+      "target_concept": "生产工单",
+      "verb": "写入",
+      "status": "asserted",
+      "overlap": null
+    },
+    {
+      "source_concept": "执行投料",
+      "target_concept": "投料记录",
+      "verb": "写入",
+      "status": "asserted",
+      "overlap": null
+    },
+    {
+      "source_concept": "产出入库",
+      "target_concept": "产出记录",
+      "verb": "写入",
+      "status": "asserted",
+      "overlap": null
+    },
+    {
+      "source_concept": "编制计划",
+      "target_concept": "生产计划已发布",
+      "verb": "产生",
+      "status": "asserted",
+      "overlap": null
+    },
+    {
+      "source_concept": "下达工单",
+      "target_concept": "工单已下达",
+      "verb": "产生",
+      "status": "asserted",
+      "overlap": null
+    },
+    {
+      "source_concept": "执行投料",
+      "target_concept": "批次已开工",
+      "verb": "产生",
+      "status": "asserted",
+      "overlap": null
+    },
+    {
+      "source_concept": "执行投料",
+      "target_concept": "投料已完成",
+      "verb": "产生",
+      "status": "asserted",
+      "overlap": null
+    },
+    {
+      "source_concept": "执行投料",
+      "target_concept": "批次已完工",
+      "verb": "产生",
+      "status": "asserted",
+      "overlap": null
+    },
+    {
+      "source_concept": "产出入库",
+      "target_concept": "产出已入库",
+      "verb": "产生",
+      "status": "asserted",
+      "overlap": null
+    },
+    {
+      "source_concept": "物料齐套确认",
+      "target_concept": "物料缺货告警",
+      "verb": "触发",
+      "status": "asserted",
+      "overlap": null
+    },
+    {
+      "source_concept": "商机",
+      "target_concept": "报价单",
+      "verb": "转化",
+      "status": "asserted",
+      "overlap": null
+    },
+    {
+      "source_concept": "退货单",
+      "target_concept": "客户",
+      "verb": "退回",
+      "status": "asserted",
+      "overlap": null
+    },
+    {
+      "source_concept": "创建订单",
+      "target_concept": "销售订单",
+      "verb": "写入",
+      "status": "asserted",
+      "overlap": null
+    },
+    {
+      "source_concept": "发货执行",
+      "target_concept": "发货单",
+      "verb": "执行",
+      "status": "asserted",
+      "overlap": null
+    },
+    {
+      "source_concept": "开票",
+      "target_concept": "发票",
+      "verb": "生成",
+      "status": "asserted",
+      "overlap": null
+    },
+    {
+      "source_concept": "收款核销",
+      "target_concept": "应收账款",
+      "verb": "核销",
+      "status": "asserted",
+      "overlap": null
+    },
+    {
+      "source_concept": "创建订单",
+      "target_concept": "订单已创建",
+      "verb": "产生",
+      "status": "asserted",
+      "overlap": null
+    },
+    {
+      "source_concept": "发货执行",
+      "target_concept": "发货已完成",
+      "verb": "产生",
+      "status": "asserted",
+      "overlap": null
+    },
+    {
+      "source_concept": "开票",
+      "target_concept": "发票已过账",
+      "verb": "产生",
+      "status": "asserted",
+      "overlap": null
+    },
+    {
+      "source_concept": "收款核销",
+      "target_concept": "收款已到账",
+      "verb": "产生",
+      "status": "asserted",
+      "overlap": null
+    },
+    {
+      "source_concept": "应收账款",
+      "target_concept": "客户风险标记",
+      "verb": "推理",
+      "status": "asserted",
+      "overlap": null
+    },
+    {
+      "source_concept": "客户",
+      "target_concept": "客户标记为休眠",
+      "verb": "推理",
+      "status": "asserted",
+      "overlap": null
+    },
+    {
+      "source_concept": "客户",
+      "target_concept": "客户升级为战略客户",
+      "verb": "推理",
+      "status": "asserted",
+      "overlap": null
+    },
+    {
+      "source_concept": "信用检查",
+      "target_concept": "客户",
+      "verb": "校验",
+      "status": "asserted",
+      "overlap": null
+    },
+    {
+      "source_concept": "信用检查",
+      "target_concept": "客户信用审批通过",
+      "verb": "产生",
+      "status": "asserted",
+      "overlap": null
+    },
+    {
+      "source_concept": "退货处理",
+      "target_concept": "退货单",
+      "verb": "处理",
+      "status": "asserted",
+      "overlap": null
+    },
+    {
+      "source_concept": "供应商",
+      "target_concept": "采购合同",
+      "verb": "签订",
+      "status": "asserted",
+      "overlap": null
+    },
+    {
+      "source_concept": "采购合同",
+      "target_concept": "采购订单",
+      "verb": "约束",
+      "status": "asserted",
+      "overlap": null
+    },
+    {
+      "source_concept": "采购订单",
+      "target_concept": "收货单",
+      "verb": "触发",
+      "status": "asserted",
+      "overlap": null
+    },
+    {
+      "source_concept": "收货单",
+      "target_concept": "应付账款",
+      "verb": "触发",
+      "status": "asserted",
+      "overlap": null
+    },
+    {
+      "source_concept": "应付账款",
+      "target_concept": "付款",
+      "verb": "支付",
+      "status": "asserted",
+      "overlap": null
+    },
+    {
+      "source_concept": "选择供应商下订单",
+      "target_concept": "采购订单",
+      "verb": "写入",
+      "status": "asserted",
+      "overlap": null
+    },
+    {
+      "source_concept": "收货检验",
+      "target_concept": "收货单",
+      "verb": "写入",
+      "status": "asserted",
+      "overlap": null
+    },
+    {
+      "source_concept": "三单匹配付款",
+      "target_concept": "应付账款",
+      "verb": "支付",
+      "status": "asserted",
+      "overlap": null
+    },
+    {
+      "source_concept": "选择供应商下订单",
+      "target_concept": "采购订单已下达",
+      "verb": "产生",
+      "status": "asserted",
+      "overlap": null
+    },
+    {
+      "source_concept": "收货检验",
+      "target_concept": "物料已收货",
+      "verb": "产生",
+      "status": "asserted",
+      "overlap": null
+    },
+    {
+      "source_concept": "收货检验",
+      "target_concept": "来料检验通过",
+      "verb": "产生",
+      "status": "asserted",
+      "overlap": null
+    },
+    {
+      "source_concept": "收货检验",
+      "target_concept": "来料检验不合格",
+      "verb": "产生",
+      "status": "asserted",
+      "overlap": null
+    },
+    {
+      "source_concept": "三单匹配付款",
+      "target_concept": "付款已完成",
+      "verb": "产生",
+      "status": "asserted",
+      "overlap": null
+    },
+    {
+      "source_concept": "供应商",
+      "target_concept": "供应商升级为战略",
+      "verb": "推理",
+      "status": "asserted",
+      "overlap": null
+    },
+    {
+      "source_concept": "库存低于安全库存",
+      "target_concept": "原材料",
+      "verb": "推理",
+      "status": "asserted",
+      "overlap": null
+    },
+    {
+      "source_concept": "原材料",
+      "target_concept": "物料替代建议",
+      "verb": "推理",
+      "status": "asserted",
+      "overlap": null
+    },
+    {
+      "source_concept": "IoT数据",
+      "target_concept": "告警",
+      "verb": "触发",
+      "status": "asserted",
+      "overlap": null
+    },
+    {
+      "source_concept": "维护计划",
+      "target_concept": "维护工单",
+      "verb": "生成",
+      "status": "asserted",
+      "overlap": null
+    },
+    {
+      "source_concept": "维护工单",
+      "target_concept": "维护记录",
+      "verb": "记录",
+      "status": "asserted",
+      "overlap": null
+    },
+    {
+      "source_concept": "维护记录",
+      "target_concept": "备件",
+      "verb": "消耗",
+      "status": "asserted",
+      "overlap": null
+    },
+    {
+      "source_concept": "设备",
+      "target_concept": "运行台时",
+      "verb": "记录",
+      "status": "asserted",
+      "overlap": null
+    },
+    {
+      "source_concept": "维护工单",
+      "target_concept": "停机记录",
+      "verb": "导致",
+      "status": "asserted",
+      "overlap": null
+    },
+    {
+      "source_concept": "设备",
+      "target_concept": "工作中心",
+      "verb": "位于",
+      "status": "asserted",
+      "overlap": null
+    },
+    {
+      "source_concept": "处理告警",
+      "target_concept": "告警",
+      "verb": "处理",
+      "status": "asserted",
+      "overlap": null
+    },
+    {
+      "source_concept": "创建维护工单",
+      "target_concept": "维护工单",
+      "verb": "创建",
+      "status": "asserted",
+      "overlap": null
+    },
+    {
+      "source_concept": "执行维修",
+      "target_concept": "维护记录",
+      "verb": "执行",
+      "status": "asserted",
+      "overlap": null
+    },
+    {
+      "source_concept": "执行维修",
+      "target_concept": "备件",
+      "verb": "消耗",
+      "status": "asserted",
+      "overlap": null
+    },
+    {
+      "source_concept": "传感器",
+      "target_concept": "传感器数据异常",
+      "verb": "产生",
+      "status": "asserted",
+      "overlap": null
+    },
+    {
+      "source_concept": "传感器数据异常",
+      "target_concept": "告警已触发",
+      "verb": "触发",
+      "status": "asserted",
+      "overlap": null
+    },
+    {
+      "source_concept": "告警已触发",
+      "target_concept": "处理告警",
+      "verb": "触发",
+      "status": "asserted",
+      "overlap": null
+    },
+    {
+      "source_concept": "创建维护工单",
+      "target_concept": "维护工单已生成",
+      "verb": "产生",
+      "status": "asserted",
+      "overlap": null
+    },
+    {
+      "source_concept": "执行维修",
+      "target_concept": "维护已完成",
+      "verb": "产生",
+      "status": "asserted",
+      "overlap": null
+    },
+    {
+      "source_concept": "执行维修",
+      "target_concept": "备件已更换",
+      "verb": "产生",
+      "status": "asserted",
+      "overlap": null
+    },
+    {
+      "source_concept": "运行台时",
+      "target_concept": "预测性维护建议",
+      "verb": "推理",
+      "status": "asserted",
+      "overlap": null
+    },
+    {
+      "source_concept": "成本中心",
+      "target_concept": "部门",
+      "verb": "归属",
+      "status": "asserted",
+      "overlap": null
+    },
+    {
+      "source_concept": "利润中心",
+      "target_concept": "部门",
+      "verb": "归属",
+      "status": "asserted",
+      "overlap": null
+    },
+    {
+      "source_concept": "发票",
+      "target_concept": "会计科目",
+      "verb": "记账到",
+      "status": "asserted",
+      "overlap": null
+    },
+    {
+      "source_concept": "发票",
+      "target_concept": "客户",
+      "verb": "开给",
+      "status": "asserted",
+      "overlap": null
+    },
+    {
+      "source_concept": "预算",
+      "target_concept": "成本中心",
+      "verb": "分配到",
+      "status": "asserted",
+      "overlap": null
+    },
+    {
+      "source_concept": "预算",
+      "target_concept": "费用",
+      "verb": "控制",
+      "status": "asserted",
+      "overlap": null
+    },
+    {
+      "source_concept": "费用",
+      "target_concept": "成本中心",
+      "verb": "归集到",
+      "status": "asserted",
+      "overlap": null
+    },
+    {
+      "source_concept": "产品",
+      "target_concept": "产品成本",
+      "verb": "归集",
+      "status": "asserted",
+      "overlap": null
+    },
+    {
+      "source_concept": "固定资产",
+      "target_concept": "折旧已计提",
+      "verb": "计提",
+      "status": "asserted",
+      "overlap": null
+    },
+    {
+      "source_concept": "员工",
+      "target_concept": "销售目标",
+      "verb": "考核",
+      "status": "asserted",
+      "overlap": null
+    },
+    {
+      "source_concept": "编制预算",
+      "target_concept": "预算",
+      "verb": "写入",
+      "status": "asserted",
+      "overlap": null
+    },
+    {
+      "source_concept": "费用报销",
+      "target_concept": "费用",
+      "verb": "写入",
+      "status": "asserted",
+      "overlap": null
+    },
+    {
+      "source_concept": "开具发票",
+      "target_concept": "发票",
+      "verb": "写入",
+      "status": "asserted",
+      "overlap": null
+    },
+    {
+      "source_concept": "成本核算",
+      "target_concept": "产品成本",
+      "verb": "写入",
+      "status": "asserted",
+      "overlap": null
+    },
+    {
+      "source_concept": "计提折旧",
+      "target_concept": "固定资产",
+      "verb": "写入",
+      "status": "asserted",
+      "overlap": null
+    },
+    {
+      "source_concept": "编制预算",
+      "target_concept": "预算已下达",
+      "verb": "产生",
+      "status": "asserted",
+      "overlap": null
+    },
+    {
+      "source_concept": "成本核算",
+      "target_concept": "成本已核算",
+      "verb": "产生",
+      "status": "asserted",
+      "overlap": null
+    },
+    {
+      "source_concept": "计提折旧",
+      "target_concept": "折旧已计提",
+      "verb": "产生",
+      "status": "asserted",
+      "overlap": null
+    },
+    {
+      "source_concept": "费用",
+      "target_concept": "预算超支预警",
+      "verb": "推理",
+      "status": "asserted",
+      "overlap": null
+    },
+    {
+      "source_concept": "应收账款",
+      "target_concept": "应收账款超期预警",
+      "verb": "推理",
+      "status": "asserted",
+      "overlap": null
+    },
+    {
+      "source_concept": "安全计划",
+      "target_concept": "危险源",
+      "verb": "管控",
+      "status": "asserted",
+      "overlap": null
+    },
+    {
+      "source_concept": "作业许可",
+      "target_concept": "危险源",
+      "verb": "批准",
+      "status": "asserted",
+      "overlap": null
+    },
+    {
+      "source_concept": "事故",
+      "target_concept": "事故调查",
+      "verb": "调查",
+      "status": "asserted",
+      "overlap": null
+    },
+    {
+      "source_concept": "事故调查",
+      "target_concept": "风险评估",
+      "verb": "触发",
+      "status": "asserted",
+      "overlap": null
+    },
+    {
+      "source_concept": "事故",
+      "target_concept": "员工",
+      "verb": "报告人",
+      "status": "asserted",
+      "overlap": null
+    },
+    {
+      "source_concept": "安全培训",
+      "target_concept": "员工",
+      "verb": "参加人",
+      "status": "asserted",
+      "overlap": null
+    },
+    {
+      "source_concept": "环境监测",
+      "target_concept": "车间",
+      "verb": "监测",
+      "status": "asserted",
+      "overlap": null
+    },
+    {
+      "source_concept": "风险评估动作",
+      "target_concept": "风险评估",
+      "verb": "写入",
+      "status": "asserted",
+      "overlap": null
+    },
+    {
+      "source_concept": "签发作业许可",
+      "target_concept": "作业许可",
+      "verb": "写入",
+      "status": "asserted",
+      "overlap": null
+    },
+    {
+      "source_concept": "事故报告",
+      "target_concept": "事故",
+      "verb": "写入",
+      "status": "asserted",
+      "overlap": null
+    },
+    {
+      "source_concept": "事故调查动作",
+      "target_concept": "事故调查",
+      "verb": "写入",
+      "status": "asserted",
+      "overlap": null
+    },
+    {
+      "source_concept": "安全审计动作",
+      "target_concept": "安全审计",
+      "verb": "写入",
+      "status": "asserted",
+      "overlap": null
+    },
+    {
+      "source_concept": "事故报告",
+      "target_concept": "事故已报告",
+      "verb": "产生",
+      "status": "asserted",
+      "overlap": null
+    },
+    {
+      "source_concept": "事故调查动作",
+      "target_concept": "事故调查已完成",
+      "verb": "产生",
+      "status": "asserted",
+      "overlap": null
+    },
+    {
+      "source_concept": "签发作业许可",
+      "target_concept": "作业许可已签发",
+      "verb": "产生",
+      "status": "asserted",
+      "overlap": null
+    },
+    {
+      "source_concept": "风险评估",
+      "target_concept": "风险不可容忍告警",
+      "verb": "推理",
+      "status": "asserted",
+      "overlap": null
+    },
+    {
+      "source_concept": "作业许可",
+      "target_concept": "许可即将到期",
+      "verb": "推理",
+      "status": "asserted",
+      "overlap": null
+    },
+    {
+      "source_concept": "环境监测",
+      "target_concept": "排放超标告警",
+      "verb": "推理",
+      "status": "asserted",
+      "overlap": null
+    }
+  ]
+}

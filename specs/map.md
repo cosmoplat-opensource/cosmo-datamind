@@ -1,0 +1,81 @@
+# Specs Map · Cosmo DataMind 数据智脑
+
+> 入口文件。AI 代理与协作者从这里查找相关 spec。
+> 规约驱动开发(SDD)。消费方式:`Consult @specs/map.md to find relevant context.`
+
+## 项目一句话
+Cosmo DataMind 是**自有品牌、原创前后端**的「数据治理 × 本体 × 深度问数」原型:
+以**本地 SQLite 只读执行**为底座,把 `../上游本体引擎`(engine/agent_runtime/skills)的能力
+产品化为可运行的前端系统——核心亮点是**多模态 LLM × 多智能体的本体自动构建(反造假取证)**,
+并对齐 `iip.iiot-platform.com/bigdata` 的品类与观感。单端口 8092,`./start.sh` 启动。
+
+> 与平台的关系:平台(`../上游本体引擎/`)是**引擎与方法论真相源**(其 `specs/` 有 DR-001…DR-011);
+> DataMind 是**下游产品化前端**,复用其 engine/技能,但采用**独立的本地执行、路由、安全与命名口径**——
+> 本 `specs/` 只记录 DataMind 自身的决定与迭代,与平台 specs 前缀独立、勿混用。
+
+## 关键契约
+- **执行底座**:深度问数/可视化/SQL 工作台/即时问数(SQL 类)在**本地 `../demo_metrics.db`(108 表/186,833 行)只读执行**;引擎级防写(`mode=ro` + `sql_is_readonly` + 单句执行)。SPARQL 在本地 rdflib RDF 图(IR→turtle)执行。见 [[DR-001-local-readonly-execution]]。
+- **建模算法**:多模态 LLM 提议对象/事件/关系 → **真实数据反造假裁决**(取值重叠≥60%∧父键唯一→verified,余 candidate);LLM 离线/超时回退纯数据驱动 quick_build,方法如实标注,见 [[DR-002-multimodal-llm-anti-fraud-build]]。
+- **引擎**:运行时经 `agent_runtime`(CLAW_DRIVER 选 hermes/claude-code/openclaw),多引擎顺序兜底;**对外统一中性名**(智能引擎/备选/经典),不暴露底层库名,见 [[DR-003-runtime-neutral-naming]]。
+- **深度问数**:SSE 流式执行记录 + 渐进出图,缓存键含上传指纹,离线走模板兜底,见 [[DR-004-deep-qa-sse]]。
+- **前端**:对齐 iiot-platform/design-system 设计 token(#4A5FF3/#409EFF、圆角 4px、PingFang);**工业级去 emoji**(accent bar + 单色 SVG + 状态点),见 [[DR-005-frontend-design-system]]。
+- **安全**:只读 SQL、全局 CSRF 守卫、图谱键路径穿越校验、命令白名单、SPARQL 禁 SERVICE/FROM 外链,见 [[DR-006-security-model]]。
+- **寻址**:28 个子页经 `#<page>` hash 直接寻址 + 深链,见 [[DR-007-url-hash-routing]]。
+
+## 索引
+
+### 决定 / Decisions
+- [DR-001 · 本地只读执行(避开平台 1142/方言/沙箱坑)](decisions/DR-001-local-readonly-execution.md)
+- [DR-002 · 多模态 LLM 本体自动构建 + 反造假取证(算法核心)](decisions/DR-002-multimodal-llm-anti-fraud-build.md)
+- [DR-003 · 多引擎运行时 + 对外中性命名 + 限流兜底](decisions/DR-003-runtime-neutral-naming.md)
+- [DR-004 · 深度问数 SSE 流式 + 缓存 + 兜底](decisions/DR-004-deep-qa-sse.md)
+- [DR-005 · 前端对齐 iiot-platform + 工业级视觉](decisions/DR-005-frontend-design-system.md)
+- [DR-006 · 安全模型(只读/CSRF/路径/白名单/SPARQL)](decisions/DR-006-security-model.md)
+- [DR-007 · URL hash 子页寻址](decisions/DR-007-url-hash-routing.md)
+- [DR-008 · 数据源与连接模型(内置/SQLite 校验/外部登记)](decisions/DR-008-datasource-connection-model.md)
+- [DR-009 · 对象 id 英文名、显示中文名(cn)](decisions/DR-009-object-cn-display.md)
+- [DR-010 · IOF/BFO 本体工程对齐(注释/接地/注释化 OWL 导出/SHACL 门禁/完备度)](decisions/DR-010-iof-bfo-alignment.md)
+- [DR-011 · 泛化裁决 v2(等值/前缀/复合键/PK 感知 + 三级控制环)](decisions/DR-011-generalized-adjudication.md)
+- [DR-012 · SPARQL 健壮性(线程安全/诚实报错/合法默认示例)](decisions/DR-012-sparql-robustness.md)
+- [DR-023 · 语义增强三件套:词汇表注入/增强注册表/一致性门控(对标 Trane 认知稳定性)](decisions/DR-023-epistemic-stability.md)
+
+### 迭代 / Iterations
+- [IR-001 · DataMind 基座(目录/图谱/指标/质量/SQL)](iterations/IR-001-foundation.md) · **delivered**
+- [IR-002 · 深度问数对齐平台 chat-bi](iterations/IR-002-deep-qa-chatbi.md) · **delivered**
+- [IR-003 · 本体构建问询台(多模态 LLM 自动建模)](iterations/IR-003-ontology-build-console.md) · **delivered**
+- [IR-004 · 数据连接 + 数据可视化模块](iterations/IR-004-connection-and-viz.md) · **delivered**
+- [IR-005 · 安全加固 + 工业化 + 复审收敛](iterations/IR-005-hardening-and-review.md) · **delivered(持续)**
+- [IR-006 · IOF/BFO 语义工程层(注释/接地/导出/完备度/一键升级)](iterations/IR-006-iof-bfo-semantic-layer.md) · **delivered**
+
+## 上游素材(真相来源)
+- `../上游本体引擎/` — 引擎(agent_runtime/export_owl/serve_claw)、技能(skills_seed)、方法论(其 `系统设计.md` 与 `specs/`)。DataMind 复用其 engine 与技能。
+- `../demo_metrics.db` — 108 表 186,833 行自产合成制造数据(DataMind 本地执行的唯一数据真相)。
+- `README.md` — 模块能力总览(28 模块 × 后端路由映射)。
+- `ARCHITECTURE.md` — 分层/数据流/统一约定/安全模型/已知边界(架构说明)
+- `AUDIT.md` — 逐轮自测/复审记录(IR 的原始日志,已归纳进 iterations/)。
+- `test_all.py` — 系统级回归(**249 断言**:119 基线 + P-T 49 + U 一致性 22 + V 问数 22 + W 动作 14 + X 技能管理 10 + Y 技能生态 13),对应 `specs/test/`。
+- `SPEC.md` — 对**平台** web/ 的逆向规格(平台契约,非 DataMind;前缀不同勿混用)。
+
+## 现状校准
+- 计数(2026-07-17):27 页面模块 / 82 后端路由 / test_all.py 109 断言 / 数据 108 表 186,833 行 / 107 指标 / 655 术语。
+- 计数(2026-07-27):28 页面模块 / 109 后端路由 / test_all.py 249 断言(数据与指标/术语计数不变)。
+  - 新增(DR-010/IR-006):`本体完备度` 页面模块 + 4 路由(`/api/ont/completeness`、`/api/ont/enrich`、`/api/ont/reground`、`/api/ont/maturity`);真实 示例 图谱经一键升级达 **IOF 完备度 100%**(108 对象定义/反例、60 关系接地)。
+- 新增(DR-013):`本体评审` 页面模块 + `/api/ont/review`;关系人审算子 confirm_relation/reject_relation 并入 apply 白名单;关系类算子两种 IR 形状(links/relations)通吃——构建产物(built_*)自此可人审可编辑。test_all.py 119 断言全过。
+- 新增(DR-014):问数「沿本体关系召回」步骤+⋈ JOIN 提示;`/api/chat/feedback(+/resolve)` 反馈回流→评审页「本体迭代候选队列」;「根因诊断」模式+`/api/diagnose/stream`(意图→关系召回→边界内约束生成)。
+- 新增(DR-015):「动作中心」页 + /api/actions·invoke·log·approve —— Palantir ActionType 式动作层(类型化参数/低风险直执行/高风险审批/决策捕获审计;不写只读源库);图谱对象卡挂可执行动作,诊断清单一键派工。
+- 新增(DR-016):`mcp_action_server.py` —— 动作层 MCP server(stdio,零依赖):list_actions / **invoke_action(唯一写)** / get_action_status;审批不暴露,治理单一实现留在 HTTP API,Agent 接入自动继承「只能提议、不能批准」。
+- 新增(DR-017):「引擎设置」页 + /api/engine/config·test —— 运行时/模型/API Key 实时切换(调用时读 env+清缓存,免重启);Key 只写不回显、0600、清除同步弹 env;先测后切(真实延迟/真实报错)。
+- 新增(DR-018):全部读方统一 `load_ir_edited`(单一当前真相)——修复 问数JOIN提示/总览/指标/表详情/graphs列表 读原始IR 的不一致;U 分区 18 断言锁定「写→图谱/总览/问数/SPARQL/评审/列表 即读→撤销复原」。套件 186 断言。
+- 新增(DR-019):深度问数十项升级 —— A1 术语词典进检索(term_expand 步)/ A2 SQL 口径拦截 `_validate_sql_ontology`(ontology_gate 步:表白名单+JOIN 键落本体关系)/ A3 指标口径卡(done.metric_cards)/ B4 按任务选模(task_models{plan/narrative/diagnose}+模型族保护)/ B5 多轮指代 `_carryover` / B6 叙述流式 narrative_delta / C7 外部库实连(pymysql;凭据 conn_secrets.json 0600 只写)/ C8 API 型数据源(api_fetch→up.api_* 物化)/ C9 问数评测(benchmark/qa_set.json 8 题金标×三臂,/api/eval/*,「问数评测」页)/ C10「业务助手」页(角色组装问数/诊断/动作/待办)。套件 212 断言。
+- 新增(DR-020):动作层产品化 —— 动作类型管理 CRUD(/api/action/type·update·delete,内置种子受保护、停用即刻拦截发起)/ 3 个行业动作种子(冻结批次·温区调参·供应商 SCAR,均绑真实库表)/ 问数答案卡「相关动作」直达发起(SQL 命中表 × object_table 匹配)/ 动作中心 KPI+类型编辑弹窗+审计筛选与 CSV 导出;MCP 读同一注册表零改动继承。套件 226 断言。
+- 新增(DR-021):构建技能管理 —— 浏览(内置只读+目录清单)/在线新建/编辑/两击删除(/api/build/skill/<name>·save·delete);**自定义技能正文注入构建方法论**(_skill_method_text,剥 front-matter,编辑后下次构建即生效)——修复「能上传但从未被消费」的摆设问题;内置技能名不可占用,可复制为副本再改。套件 236 断言(105 路由)。
+- 新增(DR-022):技能生态五项 —— ①技能对比实验(/api/build/skill_compare·status·results:同目标×两组技能各跑真实构建,对比 对象/关系/verified/动词/类型/定义覆盖;臂失败如实展示不充数)②构建流水线 skill_inject 注入痕迹步 ③产物沉淀为技能(/api/build/skill/from_graph:动词表/类型分布/定义样例,确定性提取)④评测败题通用修复(⋈⋈ 两跳路径召回 + 均值分母/单值聚合口径纪律进 prompt)⑤存而不用审计(specs/audit-input-consumers.md;第 3 起摆设 qa_skills 已接上:_match_qa_skill 命中复用+skill_reuse 步)。套件 249 断言(109 路由;终跑 C 臂 8/8)。
+- 引擎在线依赖:深度问数与本体构建的 LLM 步骤依赖 `agent_runtime` 引擎在线;引擎限流(429)/超时时自动兜底(深度问数走模板、构建走 quick_build),结果仍产出并如实标注。
+- 已知边界详见 `README.md` 末节(SPARQL 软超时、运行时切换 UI、G6/ECharts 本地内置等)。
+
+## 如何让 AI 代理消费本规约
+```
+Consult @specs/map.md to find relevant context.
+记录一个决定: 总结讨论, 按 @specs/meta.md 添加一个 DR。
+实现一个迭代: 按 @specs/meta.md 写 IR(Goal/Deliverables/Tasks/Acceptance), 每任务一次提交, 读码+跑 test_all.py 验收后打勾。
+```
