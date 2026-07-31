@@ -58,6 +58,8 @@ python3 server.py             # → http://127.0.0.1:8092
 | 对话式本体编辑(apply/undo) | ❌ 需要引擎 | ✅ |
 | 内置构建技能库 | ❌ 需要引擎 | ✅ |
 
+上游引擎(**ontology-engine**,同一作者、同为 Apache-2.0)已一并开源——含八步确定性
+构建流水线、多运行时抽象 `agent_runtime`、对话式编辑 `serve_claw` 与全部构建技能。
 接引擎只需一个环境变量:
 
 ```bash
