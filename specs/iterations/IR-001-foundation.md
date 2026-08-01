@@ -16,7 +16,7 @@
 - [x] 术语管理(655 条)、SPARQL 查询(rdflib)、本体库、成果库、API 目录、作业中心、系统管理、平台原版 iframe。
 
 ## 任务 / Tasks
-1. Flask `server.py` 骨架 + 本地只读 `q()` + IR 加载(imom/app/cq/forged/built)。
+1. Flask `server.py` 骨架 + 本地只读 `q()` + IR 加载(demo/app/cq/forged/built)。
 2. 单文件 SPA `ui/index.html` + 品类分组导航 + ECharts/G6 本地内置。
 3. 各页面端点与渲染;字段中文化(`translate_cn.py`,876/876 字段)。
 

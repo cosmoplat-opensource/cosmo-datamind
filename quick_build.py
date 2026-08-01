@@ -41,11 +41,18 @@ def distinct(t, c, cap=20000):
         return set(r[0] for r in con.execute(f'SELECT DISTINCT {qi(c)} FROM {qi(t)} LIMIT {cap}') if r[0] not in (None, ""))
     except Exception: return set()
 
+_UNIQ_CACHE_MAX = 4096          # 容量上限:超出即整体清空(退化为不缓存,只损性能不损正确性)
 _uniq_cache = {}
 def is_key_unique(t, c):
     """父连接键须为候选键(值唯一)才构成真 FK。
+
     声明 PK 短路不查库;COUNT 结果按 (表,列) 缓存——同一父键会被多个子表反复探测,
-    18 万行级大表上避免重复全表扫描。"""
+    18 万行级大表上避免重复全表扫描。
+
+    缓存无失效机制是安全的:本脚本为一次性 CLI(由 server 以子进程调用),
+    连接以 `mode=ro` 只读打开,全程无 INSERT/UPDATE/DDL —— 进程存续期内
+    表数据与结构不可能变化,不存在读到过期结果的路径。
+    容量按 (表,列) 天然受 schema 规模约束,再加硬上限兜底极端宽表库。"""
     if pk_of.get(t) == c: return True
     k = (t, c)
     if k in _uniq_cache: return _uniq_cache[k]
@@ -54,6 +61,7 @@ def is_key_unique(t, c):
         out = r[0] > 0 and r[0] == r[1]
     except Exception:
         out = False
+    if len(_uniq_cache) >= _UNIQ_CACHE_MAX: _uniq_cache.clear()
     _uniq_cache[k] = out
     return out
 

@@ -45,7 +45,7 @@ chk("graphs 分类字段(cat)", all(x.get("cat") in ("curated","scenario","built
 for k in ("demo","app","cq"):
     r=g("/api/graph/"+k); chk(f"graph {k}", r.status_code==200 and "nodes" in r.json())
 for fmt in ("ttl","jsonld","owl"):
-    r=g(f"/api/graph/demo/export.{fmt}"); chk(f"export imom.{fmt}", r.status_code==200)
+    r=g(f"/api/graph/demo/export.{fmt}"); chk(f"export demo.{fmt}", r.status_code==200)
     r=g(f"/api/graph/app/export.{fmt}"); chk(f"export app.{fmt}(非DR001)", r.status_code==200)
 r=g("/api/graph/demo/export.bad"); chk("export 非法格式→400", r.status_code==400)
 r=g("/api/ont/rules?graph=demo"); j=r.json(); chk("ont/rules 计数", r.status_code==200 and j["counts"]["objects"]>0)
@@ -170,9 +170,9 @@ r=g("/api/ont/completeness/demo"); cj=r.json()
 chk("完备度结构", r.status_code==200 and "score" in cj and "byBFO" in cj.get("objects",{}))
 r=g("/api/graph/demo/export.ttl"); chk("OWL 导出带 iof-av + BFO 归类", r.status_code==200 and "iof-av:" in r.text and "subClassOf" in r.text)
 # 写端点图谱必填:缺 graph 须响亮 400,不静默默认到 示例 主图误改生产(_open_writable 统一守卫)
-r=po("/api/ont/enrich",json={},headers=H); chk("enrich 缺graph→400(不默认imom)", r.status_code==400)
-r=po("/api/ont/reground",json={},headers=H); chk("reground 缺graph→400(不默认imom)", r.status_code==400)
-r=po("/api/ont/maturity",json={"object":"x","maturity":"Released"},headers=H); chk("maturity 缺graph→400(不默认imom)", r.status_code==400)
+r=po("/api/ont/enrich",json={},headers=H); chk("enrich 缺graph→400(不默认 demo)", r.status_code==400)
+r=po("/api/ont/reground",json={},headers=H); chk("reground 缺graph→400(不默认 demo)", r.status_code==400)
+r=po("/api/ont/maturity",json={"object":"x","maturity":"Released"},headers=H); chk("maturity 缺graph→400(不默认 demo)", r.status_code==400)
 r=po("/api/ont/enrich",json={"graph":"cq"},headers=H); chk("enrich 只读源→400", r.status_code==400)
 r=po("/api/ont/reground",json={"graph":"cq"},headers=H); chk("reground 只读源→400", r.status_code==400)
 r=po("/api/ont/maturity",json={"graph":"demo","object":n0["id"],"maturity":"BAD"},headers=H); chk("maturity 非法值→400", r.status_code==400)
@@ -182,7 +182,7 @@ r=po("/api/ont/maturity",json={"graph":"forged_../../etc","object":"x","maturity
 r=po("/api/ont/maturity",json={"graph":"demo","object":n0["id"],"maturity":"Released"},headers=H); chk("maturity promote 200", r.status_code==200 and r.json().get("maturity")=="Released")
 po("/api/ont/maturity",json={"graph":"demo","object":n0["id"],"maturity":"Provisional"},headers=H)  # 置回,net-zero
 r=po("/api/ont/forge",json={"graph":"demo","name":"__shacl自检__"},headers=H); fj=r.json()
-chk("forge SHACL 对已补全 imom→conforms", r.status_code==200 and fj.get("shacl")=="conforms")
+chk("forge SHACL 对已补全示例图谱→conforms", r.status_code==200 and fj.get("shacl")=="conforms")
 if fj.get("id"): po("/api/ont/forged/delete",json={"id":fj["id"]},headers=H)  # 清理(含 .ttl 伴生)
 
 
