@@ -7,7 +7,7 @@ import json, re, sys
 
 IR = sys.argv[1] if len(sys.argv) > 1 else "workdir/demo_ir.json"
 
-# 词元词典(英文/拼音 stem → 中文),制造( iMOM)+财务+销售域
+# 词元词典(英文/拼音 stem → 中文),制造(MOM 域)+财务+销售域
 TOKEN = {
     "id":"ID","code":"编码","no":"编号","name":"名称","type":"类型","status":"状态","state":"状态",
     "date":"日期","time":"时间","datetime":"时间","ts":"时间戳","count":"数量","cnt":"数量","qty":"数量","quantity":"数量",
@@ -45,7 +45,7 @@ TOKEN = {
     # 本数据集上下文已确证的缩写(唯一含义):
     "cc":"成本中心","bu":"事业部","gr":"收货","dep":"折旧","ap":"应付账款","ar":"应收账款","coa":"会计科目","opp":"商机",
     "kwh":"千瓦时","env":"环境","carrier":"承运商","transport":"运输","mode":"方式","contact":"联系","phone":"电话","person":"人员",
-    "leaf":"叶子","direction":"方向","ordinal":"序号","config":"配置","component":"组成","limit":"限额","used":"已用","days":"工业数据平台",
+    "leaf":"叶子","direction":"方向","ordinal":"序号","config":"配置","component":"组成","limit":"限额","used":"已用","days":"天数",
     "share":"份额","guide":"指导","deviation":"偏差","sample":"样品","cycle":"周期","estimated":"预估","est":"预估",
     "run":"运行","negative":"负","margin":"毛利","assessment":"评估","enterprise":"企业","accounting":"会计","effective":"生效",
     "bank":"银行","acceptance":"承兑","near":"接近","miss":"未遂","permit":"许可","risk":"风险","high":"高","low":"低",
@@ -96,11 +96,11 @@ PHRASE = {
     "ap_amount":"应付金额","ar_balance":"应收余额","ar_amount":"应收金额","overdue_ar_amt":"逾期应收金额","dep_amount":"折旧金额",
     "cc_name":"成本中心名称","cc_code":"成本中心编码","cc_id":"成本中心ID","cc_type":"成本中心类型","dim_cc_id":"成本中心ID",
     "near_miss_count":"未遂事件数","unit_energy_consumption":"单位能耗","electricity_kwh":"用电量","guide_price_deviation":"指导价偏差",
-    "accounts_receivable":"应收账款","negative_margin_qty":"负毛利数量","env_compliant_rate":"环境合规率","days_overdue_max":"最大逾期工业数据平台",
+    "accounts_receivable":"应收账款","negative_margin_qty":"负毛利数量","env_compliant_rate":"环境合规率","days_overdue_max":"最大逾期天数",
     "credit_limit":"信用额度","used_credit":"已用信用","transport_mode":"运输方式","contact_person":"联系人","contact_phone":"联系电话",
     "bu_id":"事业部ID","bu_name":"事业部名称","bu_type":"事业部类型","coa_id":"会计科目ID","coa_code":"会计科目编码","coa_name":"会计科目名称",
     "actual_run_hours":"实际运行工时","goods_in_transit_qty":"在途货物数量","goods_in_transit_amt":"在途货物金额","qty_per_ton":"单吨用量",
-    "bank_acceptance_ratio":"银行承兑比率","avg_invoice_days":"平均开票工业数据平台","opp_estimated_quantity":"商机预估数量","opp_cycle":"商机周期",
+    "bank_acceptance_ratio":"银行承兑比率","avg_invoice_days":"平均开票天数","opp_estimated_quantity":"商机预估数量","opp_cycle":"商机周期",
     "opp_quantity":"商机数量","sample_quantity":"样品数量","risk_assessment_count":"风险评估数量","high_risk_count":"高风险数量","permit_count":"许可证数量",
     "maint_completed_count":"维护完成数量","accounting_standard":"会计准则","component_metric_names":"组成指标名称","composite_metric_name":"复合指标名称",
     "ar_aging":"应收账龄","ap_aging":"应付账龄","cash_balance":"现金余额","gross_margin_rate":"毛利率","operating_margin_rate":"经营利润率",
@@ -129,7 +129,7 @@ COL_PHRASE = {
     "aging_1m":"1个月账龄","aging_2m":"2个月账龄","aging_3m":"3个月账龄","aging_4m":"4个月账龄","aging_5m":"5个月账龄","aging_6m":"6个月账龄",
     "aging_6_12m":"6-12个月账龄","aging_12m_plus":"12个月以上账龄","capacity_hr_day":"日产能(小时)","capacity_ton":"产能(吨)","capacity_tph":"产能(吨每小时)",
     "area_sqm":"面积(平方米)","design_life_years":"设计寿命(年)","useful_life_years":"可用寿命(年)","lead_time_days":"采购提前期(天)","setup_time_min":"准备时间(分钟)",
-    "power_kw":"功率(千瓦)","gas_m3":"燃气(立方米)","steam_tons":"蒸汽(吨)","water_tons":"水(吨)","runtime_hours":"运行小时","interval_hours":"间隔小时","interval_days":"间隔工业数据平台",
+    "power_kw":"功率(千瓦)","gas_m3":"燃气(立方米)","steam_tons":"蒸汽(吨)","water_tons":"水(吨)","runtime_hours":"运行小时","interval_hours":"间隔小时","interval_days":"间隔天数",
     "column_name_cn":"列中文名","table_name_cn":"表中文名","dws_table":"汇总表","group_by_columns":"分组列","filter_column":"筛选列","calc_method":"计算方法",
     "atomic_metric_names":"原子指标名称","derived_metric_name":"派生指标名称","safety_stock":"安全库存","is_compliant":"是否合规","is_handled":"是否处理",
     "ppe_required":"所需防护装备","action_required":"需采取措施","control_needed":"所需控制","cooperation_since":"合作起始","legal_rep":"法定代表人",
