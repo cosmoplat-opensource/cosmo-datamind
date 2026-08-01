@@ -42,7 +42,7 @@ def distinct(t, c, cap=20000):
         return set(r[0] for r in con.execute(f'SELECT DISTINCT {qi(c)} FROM {qi(t)} LIMIT {cap}') if r[0] not in (None, ""))
     except Exception: return set()
 
-_UNIQ_CACHE_MAX = 4096          # 容量上限:超出按插入顺序逐出最早项,保留热点
+_UNIQ_CACHE_MAX = 4096          # 容量上限:超出按 LRU 逐出最久未用项
 _uniq_cache = _OrderedDict()
 def is_key_unique(t, c):
     """父连接键须为候选键(值唯一)才构成真 FK。
@@ -54,17 +54,20 @@ def is_key_unique(t, c):
     连接以 `mode=ro` 只读打开,全程无 INSERT/UPDATE/DDL —— 进程存续期内
     表数据与结构不可能变化,不存在读到过期结果的路径。
     容量按 (表,列) 天然受 schema 规模约束;上限兜底极端宽表库,
-    满时按插入顺序逐出单个最早项(而非整体清空),使热点键不被反复重建。"""
+    满时按 LRU 逐出单个最久未用项(而非整体清空):同一父键会被多个子表连续探测,
+    命中即刷新为最近使用,热点键因此不会被逐出重建。"""
     if pk_of.get(t) == c: return True
     k = (t, c)
-    if k in _uniq_cache: return _uniq_cache[k]
+    if k in _uniq_cache:
+        _uniq_cache.move_to_end(k)           # 命中即刷新为最近使用 —— 这才是 LRU
+        return _uniq_cache[k]
     try:
         r = con.execute(f'SELECT COUNT(*) n, COUNT(DISTINCT {qi(c)}) d FROM {qi(t)}').fetchone()
         out = r[0] > 0 and r[0] == r[1]
     except Exception:
         out = False
     if len(_uniq_cache) >= _UNIQ_CACHE_MAX:
-        _uniq_cache.popitem(last=False)      # FIFO 逐出最早项,避免整体清空造成的反复重建
+        _uniq_cache.popitem(last=False)      # 逐出最久未用项,避免整体清空造成的反复重建
     _uniq_cache[k] = out
     return out
 
