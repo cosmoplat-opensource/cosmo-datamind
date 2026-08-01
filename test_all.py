@@ -494,6 +494,45 @@ _tir={"objects":[{"id":"a","cn":"甲对象"},{"id":"b","cn":"乙对象"},{"id":"
 chk("CQ11 借道候选边判 partial(不算可答)", _cqm.check_one("甲对象经乙对象到丙对象",_tir)["verdict"]=="partial")
 chk("CQ12 从严锚定:单字不误命中", [x["matched"] for x in _cqm.anchor_objects("查甲对象",_tir)]==["甲对象"])
 
+print("=== DF. 漂移检测与穿透链路(DR-025)===")
+r=g("/api/ont/drift/demo"); _df=r.json()
+chk("DF1 漂移检测 200 + 一致率", r.status_code==200 and "consistency" in _df)
+chk("DF2 健康态零误报(真库大小写不敏感)", _df["healthy"] is True and _df["consistency"]==100.0)
+chk("DF3 扫描面覆盖 对象/列/关系", all(_df["scanned"][k]>0 for k in ("objects_bound","columns","relations")))
+chk("DF4 只报事实不自动修复(边界标注)", "不自动修复" in _df["note"])
+r=g("/api/ont/drift/a..b"); chk("DF5 键含..→400(处理器拦截)", r.status_code==400)
+r=g("/api/ont/drift/forged_../../etc"); chk("DF5b 含斜杠路径→404(路由层不匹配,与 completeness 同)", r.status_code==404)
+r=g("/api/ont/drift/nope"); chk("DF6 图谱不存在→404", r.status_code==404)
+import drift_check as _dfm, sqlite3 as _s3, os as _os3
+_dp="/tmp/_t_drift.db"
+_os3.path.exists(_dp) and _os3.remove(_dp)
+_c=_s3.connect(_dp); _c.execute('CREATE TABLE t_wo(wo_id TEXT, line_id TEXT)'); _c.execute('CREATE TABLE t_line(line_id TEXT)'); _c.commit(); _c.close()
+_tir={"objects":[{"id":"wo","cn":"工单","table":"t_wo","pk":"wo_id","attrs":[{"col":"gone_col","cn":"已删列"}]},
+                 {"id":"line","cn":"产线","table":"t_gone","attrs":[]},
+                 {"id":"c1","cn":"纯概念"}],
+      "links":[{"source":"wo","target":"line","status":"verified","evidence":{"child_key":"line_id","parent_key":"line_code"}}]}
+_dr=_dfm.check(_tir,_dp); _ty={i["type"] for i in _dr["issues"]}
+chk("DF7 检出表缺失", "table_missing" in _ty)
+chk("DF8 检出列缺失", "column_missing" in _ty)
+chk("DF9 纯概念对象不误报(未绑表跳过)", _dr["scanned"]["objects_bound"]==2)
+_tir2={"objects":[{"id":"wo","cn":"工单","table":"t_wo","pk":"wo_id","attrs":[]},{"id":"line","cn":"产线","table":"t_line","attrs":[]}],
+       "links":[{"source":"wo","target":"line","status":"verified","evidence":{"child_key":"line_id","parent_key":"line_code"}}]}
+chk("DF10 检出关系断裂(键列已删)", "relation_broken" in {i["type"] for i in _dfm.check(_tir2,_dp)["issues"]})
+chk("DF11 漂移回流缺口", len(_dfm.gaps_from(_dr))>=2 and _dfm.gaps_from(_dr)[0]["type"].startswith("drift_"))
+_os3.remove(_dp)
+r=po("/api/ont/chain",json={"graph":"demo","chain":["月度聚合指标表(按人x月)","业务员维度表"]},headers=H); _ch=r.json()
+chk("CH1 链路核验 200 + 逐段", r.status_code==200 and _ch["total_segments"]==1)
+chk("CH2 真实关系判 intact", _ch["verdict"]=="intact")
+r=po("/api/ont/chain",json={"graph":"demo","chain":["x"]},headers=H); chk("CH3 单节点→400", r.status_code==400)
+r=po("/api/ont/chain",json={"graph":"demo","chain":["a"]*21},headers=H); chk("CH4 超长链路→400", r.status_code==400)
+import cq_check as _cqc
+_cir={"objects":[{"id":"a","cn":"甲"},{"id":"b","cn":"乙"},{"id":"c","cn":"丙"},{"id":"d","cn":"丁"}],
+      "links":[{"source":"a","target":"b","status":"verified"},{"source":"b","target":"c","status":"candidate"}]}
+chk("CH5 中段候选→weak(不冒充贯通)", _cqc.check_chain(["甲","乙","丙"],_cir)["verdict"]=="weak")
+chk("CH6 断开段→broken 且定位到段", _cqc.check_chain(["甲","丁"],_cir)["segments"][0]["status"]=="broken")
+chk("CH7 节点不存在→unanswerable", _cqc.check_chain(["甲","不存在"],_cir)["verdict"]=="unanswerable")
+chk("CH8 链路断点回流缺口", len(_cqc.chain_gaps(_cqc.check_chain(["甲","丁"],_cir)))>=1)
+
 print("=== W. 动作层产品化(DR-020)===")
 _d=g("/api/actions").json()
 chk("W1 动作类型 7 个(含 3 新种子)", len(_d["types"])==7 and {"freeze_batch","adjust_temp_zone","supplier_scar"}<= {t["id"] for t in _d["types"]})
@@ -640,7 +679,7 @@ _root=_os.path.dirname(_os.path.abspath(__file__))
 chk("Z20 requirements.txt 存在", _os.path.exists(_os.path.join(_root,"requirements.txt")))
 _req=open(_os.path.join(_root,"requirements.txt"),encoding="utf-8").read()
 import sys as _sys
-_std=set(_sys.stdlib_module_names); _local={"translate_cn","quick_build","agent_runtime","serve_claw","export_owl","server","cq_check"}
+_std=set(_sys.stdlib_module_names); _local={"translate_cn","quick_build","agent_runtime","serve_claw","export_owl","server","cq_check","drift_check"}
 _ext=set()
 for _f in ("server.py","test_all.py"):
     for _n in ast.walk(ast.parse(open(_os.path.join(_root,_f),encoding="utf-8").read())):
