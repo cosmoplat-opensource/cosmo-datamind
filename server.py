@@ -752,24 +752,6 @@ def vendor(f):
     if not rp.startswith(os.path.realpath(base) + os.sep) or not os.path.exists(rp): return "not found", 404
     return send_file(rp)
 
-@app.get("/platform/<path:fp>")
-def platform_web(fp):
-    """同域服务平台 web/ 静态资源(构建器/对话页/render.js/ontology-data.js…),风格与数据均为平台原件"""
-    base = os.path.join(PLATFORM, "web")
-    rp = os.path.realpath(os.path.join(base, fp))
-    if not rp.startswith(os.path.realpath(base) + os.sep): return "forbidden", 403
-    if not os.path.exists(rp): return "not found", 404
-    if rp.endswith(".html"):
-        html = open(rp, encoding="utf-8", errors="replace").read()
-        shim = ("<script>(function(){const f=window.fetch;window.fetch=function(u,o){"
-                "if(typeof u==='string'&&u.startsWith('/api/'))u='/api/claw'+u.slice(4);return f(u,o)};"
-                "const X=XMLHttpRequest.prototype.open;XMLHttpRequest.prototype.open=function(m,u,...a){"
-                "if(typeof u==='string'&&u.startsWith('/api/'))u='/api/claw'+u.slice(4);return X.call(this,m,u,...a)};})()</script>")
-        html = html.replace("<head>", "<head>" + shim, 1)
-        from flask import Response
-        return Response(html, mimetype="text/html")
-    return send_file(rp)
-
 @app.get("/api/overview")
 def overview():
     ir = load_ir_edited("demo") or {}
@@ -4100,30 +4082,6 @@ def skill_run():
                   env={"GOV_TOKEN": os.environ.get("GOV_TOKEN", "")})
     return jsonify({"job": jid})
 
-TOOLS = {  # 引擎工具箱:平台 CLI 白名单(name → [cmd, 说明]),cwd=PLATFORM
-    "全量自测 test.sh":            [["bash", "test.sh"], "14类回归测试"],
-    "审计 audit.sh":               [["bash", "audit.sh"], "本体审计"],
-    "覆盖率 run_coverage.sh":      [["bash", "run_coverage.sh"], "节点预算与覆盖率"],
-    "部署 deploy.sh":              [["bash", "deploy.sh"], "重建IR+起服务+健康检查"],
-    "SHACL校验 validate_shacl":    [[sys.executable, "engine/validate_shacl.py"], "形状约束校验"],
-    "推理检查 reason_check":       [[sys.executable, "engine/reason_check.py"], "HermiT一致性推理"],
-    "层次发现 discover_hierarchy": [[sys.executable, "engine/discover_hierarchy.py"], "证据化类层次"],
-    "标准对齐 standards_align":    [[sys.executable, "engine/standards_align.py"], "ISA-95/UFO映射"],
-    "元数据导出 export_metadata":  [[sys.executable, "engine/export_metadata.py"], "拼音↔中文字典"],
-    "关系发现 relation_discovery": [[sys.executable, "engine/relation_discovery.py"], "取值重叠算法(纯函数)"],
-    "综述转docx gen_docx":         [[sys.executable, "engine/gen_docx.py"], "md→docx"],
-    "agent探活 verify_agents":     [[sys.executable, "verify_agents.py"], "claude-code/openclaw/hermes 探活"],
-}
-@app.get("/api/tools")
-def tools(): return jsonify([{"name": k, "desc": v[1]} for k, v in TOOLS.items()])
-
-@app.post("/api/tool/run")
-def tool_run():
-    name = (request.json or {}).get("name", "")
-    if name not in TOOLS: return jsonify({"error": "非白名单工具"}), 400
-    return jsonify({"job": run_job(TOOLS[name][0], cwd=PLATFORM, tag=f"tool:{name}",
-                                   env={"GOV_TOKEN": os.environ.get("GOV_TOKEN", "")})})
-
 @app.get("/api/jobs")
 def jobs(): return jsonify(sorted(JOBS.values(), key=lambda j: -j["ts"])[:20])
 
@@ -4139,8 +4097,7 @@ def job(jid):
 @app.get("/api/outputs")
 def outputs():
     out = []
-    for base, label in ((OUTPUTS, "outputs"), (os.path.join(PLATFORM, "specs"), "specs"), (os.path.join(PLATFORM, "outputs"), "平台outputs"),
-                        (os.path.join(PLATFORM, "docs"), "平台docs"), (os.path.join(PLATFORM, "ppt_build"), "PPT素材")):
+    for base, label in ((OUTPUTS, "outputs"),):
         if not os.path.isdir(base): continue
         for p in sorted(glob.glob(os.path.join(base, "**", "*"), recursive=True)):
             if os.path.isfile(p) and os.path.getsize(p) < 20_000_000:
@@ -4150,50 +4107,12 @@ def outputs():
 @app.get("/api/outputs/file")
 def outputs_file():
     p = request.args.get("p", "")
-    allowed = [OUTPUTS, os.path.join(PLATFORM, "specs"), os.path.join(PLATFORM, "outputs"),
-               os.path.join(PLATFORM, "docs"), os.path.join(PLATFORM, "ppt_build")]
+    allowed = [OUTPUTS]
     rp = os.path.realpath(p)
     if not any(rp.startswith(os.path.realpath(a) + os.sep) for a in allowed): return "forbidden", 403
     return send_file(rp)
 
-@app.route("/api/claw/<path:sub>", methods=["GET", "POST"])
-def claw_proxy(sub):
-    """代理经典引擎(serve_claw:8091)API → 原生页用(本体对话/编辑/本体库/锻造)"""
-    url = f"http://127.0.0.1:8091/api/{sub}"
-    try:
-        if request.method == "GET":
-            r = _rq.get(url, params=request.args, timeout=180)
-        else:
-            r = _rq.post(url, json=request.get_json(silent=True) or {}, timeout=300)
-        return (r.content, r.status_code, {"Content-Type": r.headers.get("Content-Type", "application/json")})
-    except Exception as e:
-        return jsonify({"error": f"经典引擎未就绪: {e}"}), 502
-
-@app.post("/api/classic/start")
-def classic_start():
-    """按平台原版 deploy.sh 全链路部署(预检→构建IR→资产校验→播种技能→起 serve_claw:8091+健康检查)"""
-    force = (request.get_json(silent=True) or {}).get("rebuild")
-    cmd = ["bash", "deploy.sh", "--port", "8091"] + (["--rebuild"] if force else [])
-    jid = run_job(cmd, cwd=PLATFORM, tag="platform_deploy")
-    return jsonify({"job": jid, "url": "http://127.0.0.1:8091", "chain": "deploy.sh 全链路"})
-
-def _ensure_classic():
-    """系统启动即跑平台原版 deploy.sh 全链路,把完整部署纳入系统生命周期。"""
-    time.sleep(1)
-    try:
-        _rq.get("http://127.0.0.1:8091/api/health", timeout=3); return   # 已在运行则不重复部署
-    except Exception:
-        pass
-    log = open(os.path.join(WORK, "platform_deploy.log"), "w")
-    deploy = os.path.join(PLATFORM, "deploy.sh")
-    if os.path.exists(deploy):
-        subprocess.Popen(["bash", "deploy.sh", "--port", "8091"], cwd=PLATFORM, stdout=log, stderr=subprocess.STDOUT)
-    else:  # 回退:直接起 serve_claw
-        subprocess.Popen([sys.executable, os.path.join(PLATFORM, "engine", "serve_claw.py"), "--port", "8091"],
-                         cwd=PLATFORM, stdout=log, stderr=subprocess.STDOUT)
-
 if __name__ == "__main__":
-    threading.Thread(target=_ensure_classic, daemon=True).start()
     print("Cosmo DataMind → http://127.0.0.1:8092")
     app.run(host=os.environ.get("DATAMIND_HOST", "127.0.0.1"),
             port=int(os.environ.get("DATAMIND_PORT", "8092")), debug=False)

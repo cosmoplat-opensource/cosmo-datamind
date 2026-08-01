@@ -225,7 +225,6 @@ a{color:var(--acc)}
   <div class="nav" data-p="catalog">数据目录</div></div>
  <div class="nav-group"><div class="gh" onclick="dqGroup(this)">数据建模 <span class="ar">▾</span></div>
   <div class="nav" data-p="graph">本体图谱</div>
-  <div class="nav" data-p="studio">建模工作台</div>
   <div class="nav" data-p="build">本体构建</div>
   <div class="nav" data-p="review">本体评审</div>
   <div class="nav" data-p="ontquality">本体完备度</div>
@@ -244,22 +243,18 @@ a{color:var(--acc)}
   <div class="nav" data-p="glossary">术语管理</div>
   <div class="nav" data-p="qaeval">问数评测</div></div>
  <div class="nav-group"><div class="gh" onclick="dqGroup(this)">本体治理 <span class="ar">▾</span></div>
-  <div class="nav" data-p="claw">本体对话</div>
   <div class="nav" data-p="actioncenter">动作中心</div>
   <div class="nav" data-p="library">本体库</div>
   <div class="nav" data-p="sparql">SPARQL查询</div></div>
  <div class="nav-group"><div class="gh" onclick="dqGroup(this)">数据服务 <span class="ar">▾</span></div>
   <div class="nav" data-p="apis">API 服务目录</div></div>
  <div class="nav-group"><div class="gh" onclick="dqGroup(this)">技能与成果 <span class="ar">▾</span></div>
-  <div class="nav" data-p="skills">技能中心</div>
-  <div class="nav" data-p="outputs">成果库</div></div>
+  <div class="nav" data-p="skills">技能中心</div></div>
  <div class="nav-group"><div class="gh" onclick="dqGroup(this)">运维管理 <span class="ar">▾</span></div>
   <div class="nav" data-p="jobs">作业中心</div>
   <div class="nav" data-p="enginecfg">引擎设置</div>
   <div class="nav" data-p="sysadmin">系统管理</div></div>
- <div class="nav-group"><div class="gh" onclick="dqGroup(this)">平台原版 <span class="ar">▾</span></div>
-  <div class="nav" data-p="pbuilder">平台工作台</div>
-  <div class="nav" data-p="pchat">平台对话</div></div>
+ <div class="nav-group"><div class="gh" onclick="dqGroup(this)">平台原版 <span class="ar">▾</span></div></div>
  <div style="flex:1"></div><div class="muted" style="padding-left:8px">v1 · 本地原型<br>智能引擎 · 多智能体编排</div>
 </aside>
 <main>
@@ -329,19 +324,6 @@ a{color:var(--acc)}
   <div style="position:relative"><div class="card" style="padding:6px"><div id="g_canvas"></div></div>
    <div class="card" id="g_detail" style="position:absolute;top:12px;right:12px;width:340px;max-height:calc(100% - 24px);overflow:auto;display:none;z-index:6;box-shadow:0 8px 30px rgba(31,45,61,.16)"></div>
    <div class="muted" style="position:absolute;bottom:10px;left:14px;font-size:11px;pointer-events:none">点击节点/连线查看详情 · 滚轮缩放 · 拖拽平移</div></div></div>
-
- <div class="page" id="p_studio"><h2>建模工作台 <span class="muted">画布+白名单编辑(确认/改名/动词/增删)· 可撤销 · 存版本</span></h2>
-  <div class="row" style="margin-bottom:10px"><select id="st_sel" style="width:260px" onchange="stLoad()"></select>
-   <span class="muted">可视化</span><select id="st_layout" onchange="stLoad()" style="width:110px"><option value="dagre">分层(原版)</option><option value="force">力导向</option><option value="circular">环形</option><option value="radial">辐射</option></select>
-   <button class="ghost" onclick="stUndo()">撤销</button>
-   <input id="st_ver" placeholder="版本名" style="width:160px"><button onclick="stSave()">存为版本</button>
-   <button class="ghost" onclick="stForge()">锻造(OWL+SHACL)</button><button class="ghost" onclick="stRebuild()">重建(清草案)</button>
-   <span class="muted" id="st_info"></span></div>
-  <div class="row" style="align-items:flex-start">
-   <div class="card" style="width:210px"><input id="st_q" placeholder="搜索对象…" oninput="stFilter()" style="margin-bottom:6px">
-    <div class="scroll" id="st_objs" style="max-height:calc(100vh - 290px)"></div>
-    <button class="ghost" style="width:100%;margin-top:6px" onclick="stAddObj()">+ 新增对象</button></div>
-   <div class="card" style="flex:1"><div id="st_canvas" style="height:calc(100vh - 298px)"></div></div>
    <div class="card" style="width:300px">
     <h3 id="st_obj_t">点击节点/左侧列表编辑</h3><div id="st_form"></div>
     <h3 style="margin-top:12px">编辑日志</h3><div id="st_log" class="scroll" style="max-height:20vh"></div></div></div></div>
@@ -634,27 +616,7 @@ a{color:var(--acc)}
    </div>
   </div></div>
 
- <div class="page" id="p_skills"><h2>技能中心 <span class="muted">skills_seed 技能 + 引擎工具箱</span></h2>
-  <div class="card"><h3>引擎工具箱(平台 CLI/测试/校验)</h3><div id="tool_list" class="row" style="flex-wrap:wrap"></div>
-   <pre id="tool_log" style="margin-top:8px;max-height:240px;display:none"></pre></div>
-  <div id="sk_list"></div>
-  <div class="card"><h3>运行技能</h3><div class="row"><select id="sk_sel" style="width:280px"></select>
-   <input id="sk_args" placeholder="参数,如 --ir /tmp/demo_ir.json --out /tmp/x"><button onclick="skillRun()">运行</button></div>
-   <pre id="sk_log" style="margin-top:8px;max-height:300px;display:none"></pre></div></div>
-
- <div class="page" id="p_outputs"><h2>成果库 <span class="muted">outputs · specs · 平台产出</span></h2>
-  <div class="card scroll" id="out_list"></div></div>
-
- <div class="page" id="p_claw"><h2>本体对话 <span class="muted">对话式本体完善(问答+白名单编辑+可撤销)· 经典引擎原生接入</span></h2>
-  <div class="row" style="align-items:flex-start"><div class="card" style="width:200px">
-   <button class="ghost" style="width:100%;margin-bottom:6px" onclick="clawNew()">+ 新会话</button>
-   <div class="scroll" id="claw_sessions" style="max-height:calc(100vh - 320px)"></div></div>
-   <div style="flex:1"><div id="claw_log" style="max-height:calc(100vh - 320px);overflow:auto"></div></div></div>
-  <div class="row" style="margin-top:10px"><input id="claw_q" placeholder="例:本体里有哪些对象?/ 把 dim_customer 的中文名改成 客户档案" onkeydown="if(event.key==='Enter'&&!event.isComposing)clawAsk()">
-   <input type="file" id="claw_file" multiple style="width:180px">
-   <button onclick="clawAsk()" id="claw_btn">发送</button><button class="ghost" onclick="clawUndo()">撤销上次编辑</button><button class="ghost" onclick="clawDel()">清空会话</button></div>
-  <div class="muted" style="margin-top:6px" id="claw_edits"></div></div>
-
+ <div class="page" id="p_skills"><h2>技能中心 <span class="muted">skills_seed 构建技能</span></h2>
  <div class="page" id="p_library"><h2>本体库 <span class="muted">锻造/构建的本体版本(/api/ont/forged)</span></h2>
   <div class="card scroll" id="lib_list"></div></div></div>
 
@@ -688,11 +650,6 @@ FROM fact_sales_order GROUP BY 1 ORDER BY 1 DESC LIMIT 12</textarea>
 
  <div class="page" id="p_sysadmin"><h2>系统管理 <span class="muted">健康/引擎/库/缓存概况 · 对齐平台『系统管理』</span></h2>
   <div id="sys_body"></div></div>
-
- <div class="page" id="p_pbuilder"><h2>平台工作台(原版) <span class="muted">上游本体引擎原件 · G6画布/编辑/规则/选择器/工具/技能/库 全功能(同域接入,风格同族)</span></h2>
-  <iframe src="/platform/ontology-builder.html" style="width:100%;height:calc(100vh - 178px);border:1px solid var(--line);border-radius:8px;background:#fff"></iframe></div>
- <div class="page" id="p_pchat"><h2>平台对话(原版) <span class="muted">平台 chat.html 原件 · 多模态/流式/编辑指令</span></h2>
-  <iframe src="/platform/chat.html" style="width:100%;height:calc(100vh - 178px);border:1px solid var(--line);border-radius:8px;background:#fff"></iframe></div>
 
  <div class="page" id="p_sparql"><h2>SPARQL 查询 <span class="muted">对本体 OWL 图谱做语义查询(经典引擎 rdflib)</span></h2>
   <div class="card"><textarea id="sq_q" style="height:120px;font-family:monospace">SELECT ?cls ?label WHERE { ?cls a <http://www.w3.org/2002/07/owl#Class>. OPTIONAL{?cls <http://www.w3.org/2000/01/rdf-schema#label> ?label} } LIMIT 20</textarea>
@@ -736,7 +693,7 @@ document.querySelectorAll('.nav').forEach(n=>n.onclick=()=>{const p=n.dataset.p;
 const loaded={};
 async function load(p){if(loaded[p])return;loaded[p]=1;
  if(p==='home')home();if(p==='catalog')catalog();if(p==='graph')graphs();if(p==='chat')chatInit();
- if(p==='metrics')metrics();if(p==='skills')skills();if(p==='outputs')outputs();
+ if(p==='metrics')metrics();if(p==='skills')skills();
  if(p==='library')library();if(p==='claw'){clawEdits();clawSessions();}if(p==='studio')studio();if(p==='rules')rules();
  if(p==='build')bcInit();if(p==='conn')cnInit();if(p==='viz')vzInit();if(p==='review')reviewInit();if(p==='actioncenter')acCenter();if(p==='enginecfg')egLoad();
  if(p==='assistant')asLoad();if(p==='qaeval')qeLoad();if(p==='sqldev')sdInit();
@@ -2065,8 +2022,6 @@ async function vzSaveBoard(){if(!VZ_BOARD.length){toast('看板为空,先添加�
  const d=await J('/api/viz/save',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id,name,charts:VZ_BOARD})}).catch(e=>({error:''+e}));
  if(d.error){toast(d.error);return}toast('看板已保存');await vzBoardsLoad();$('#vz_board_sel').value=d.id;}
 async function skills(){const ss=await J('/api/skills');
- const tl=await J('/api/tools');
- $('#tool_list').innerHTML=tl.map(t=>`<button class="ghost" title="${esc(t.desc)}" onclick="toolRun(${jsAttr(t.name)})">${esc(t.name)}</button>`).join('');
  $('#sk_list').innerHTML=ss.map(s=>`<div class="card"><b style="cursor:pointer;color:#4A5FF3" onclick="skDetail(${jsAttr(s.name)})">${esc(s.name)}</b>
   <button class="ghost" style="float:right;padding:3px 10px;font-size:12px" onclick="skInstall(${jsAttr(s.name)})">装入agent工作区</button>${s.runnable?'<span class="tag ok">可运行</span>':''}<div class="muted" style="margin-top:4px">${esc(s.desc)}</div></div>`).join('');
  $('#sk_sel').innerHTML=ss.filter(s=>s.runnable).map(s=>`<option>${esc(s.name)}</option>`).join('');}
@@ -2077,8 +2032,6 @@ async function skInstall(n){const d=await J('/api/ont/skills/install',{method:'P
  toast(d.error||('已装入: '+d.installed));}
 async function skDetail(n){const d=await J('/api/ont/skill/'+n);
  const w=window.open('','_blank');w.document.write('<pre style="white-space:pre-wrap;font-family:monospace;padding:20px">'+d.content.replace(/</g,'&lt;')+'</pre>');}
-async function toolRun(n){const d=await J('/api/tool/run',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:n})});
- if(d.error){toast(d.error);return} watchJob(d.job,'#tool_log');}
 function watchJob(jid,sel,onDone){const el=$(sel);el.style.display='block';
  const t=setInterval(async()=>{const j=await J('/api/job/'+jid);el.textContent=`[${j.status}] ${j.tag}\n`+(j.tail||'');el.scrollTop=1e9;
   if(j.status!=='running'){clearInterval(t);if(j.status==='done'&&onDone)onDone();}},2500);}
@@ -2124,8 +2077,6 @@ async function library(){const d=await J('/api/ont/forged');
    <a href="#" style="color:#b91c1c;margin-left:8px" onclick="event.preventDefault();if(confirm('删除 '+${jsAttr(o.id)}+'?'))libDel(${jsAttr(o.id)})">删除</a></td></tr>`).join('')+'</table>';}
 async function libDel(id){const d=await J('/api/ont/forged/delete',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id})});
  if(d.error)toast(d.error);library();}
-async function outputs(){const os_=await J('/api/outputs');
- $('#out_list').innerHTML='<table><tr><th>分组</th><th>文件</th><th>大小KB</th></tr>'+os_.map(o=>`<tr><td>${esc(o.group)}</td><td><a href="/api/outputs/file?p=${encodeURIComponent(o.path)}" target="_blank">${esc(o.name)}</a></td><td>${o.kb}</td></tr>`).join('')+'</table>';}
 async function sparqlRun(){$('#sq_info').textContent='查询中…';
  const d=await J('/api/sparql',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({query:$('#sq_q').value})}).catch(e=>({error:''+e}));
  if(d.error){$('#sq_info').textContent=d.error+(d.hint?' — '+d.hint:'');$('#sq_out').innerHTML='';return}

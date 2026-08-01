@@ -99,8 +99,6 @@ r=g("/api/outputs/file?p=/etc/passwd"); chk("outputs 穿越→403", r.status_cod
 
 print("=== H. 技能/工具/作业 ===")
 r=g("/api/skills"); chk("skills 列表", r.status_code==200 and len(r.json())>=5)
-r=g("/api/tools"); chk("tools 列表", r.status_code==200 and len(r.json())>=10)
-r=po("/api/tool/run",json={"name":"非白名单工具"}); chk("tool 非白名单→400", r.status_code==400)
 r=po("/api/skill/run",json={"name":"nope"}); chk("skill 无run.sh→400", r.status_code==400)
 r=g("/api/jobs"); chk("jobs 列表", r.status_code==200 and isinstance(r.json(),list))
 r=g("/api/job/nosuchjid"); chk("job 不存在→404", r.status_code==404)
@@ -109,9 +107,6 @@ r=g("/api/ont/skill/gov-app-ontology-build"); chk("skill 详情", r.status_code=
 r=g("/api/ont/skill/bad@name"); chk("skill 非法名→400", r.status_code==400)
 
 print("=== I. 平台代理 ===")
-r=g("/api/claw/health"); chk("claw/health 代理", r.status_code in (200,502))
-r=g("/platform/ontology-builder.html"); chk("platform 原版页", r.status_code==200)
-r=g("/platform/../../etc/passwd"); chk("platform 穿越→404/403", r.status_code in (403,404))
 
 print("=== J. 平台级模块(新增)===")
 r=g("/api/glossary"); j=r.json(); chk("术语词典", r.status_code==200 and j.get("count",0)>0 and "terms" in j)
