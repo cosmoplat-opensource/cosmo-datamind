@@ -50,10 +50,10 @@ Cosmo DataMind 是**自有品牌、原创前后端**的「数据治理 × 本体
 ## 上游素材(真相来源)
 - `../上游本体引擎/` — 引擎(agent_runtime/export_owl/serve_claw)、技能(skills_seed)、方法论(其 `系统设计.md` 与 `specs/`)。DataMind 复用其 engine 与技能。
 - `../demo_metrics.db` — 108 表 186,833 行自产合成制造数据(DataMind 本地执行的唯一数据真相)。
-- `README.md` — 模块能力总览(28 模块 × 后端路由映射)。
+- `README.md` — 模块能力总览(26 页面模块;安装与部署实测命令)。
 - `ARCHITECTURE.md` — 分层/数据流/统一约定/安全模型/已知边界(架构说明)
 - `AUDIT.md` — 逐轮自测/复审记录(IR 的原始日志,已归纳进 iterations/)。
-- `test_all.py` — 系统级回归(**249 断言**:119 基线 + P-T 49 + U 一致性 22 + V 问数 22 + W 动作 14 + X 技能管理 10 + Y 技能生态 13),对应 `specs/test/`。
+- `test_all.py` — 系统级回归(运行时 **279 断言**,含循环展开),对应 `specs/test/`。
 - `SPEC.md` — 对**平台** web/ 的逆向规格(平台契约,非 DataMind;前缀不同勿混用)。
 
 ## 现状校准
@@ -79,3 +79,8 @@ Consult @specs/map.md to find relevant context.
 记录一个决定: 总结讨论, 按 @specs/meta.md 添加一个 DR。
 实现一个迭代: 按 @specs/meta.md 写 IR(Goal/Deliverables/Tasks/Acceptance), 每任务一次提交, 读码+跑 test_all.py 验收后打勾。
 ```
+
+## 开源收敛(2026-08-01)
+- 本仓开源范围仅 Cosmo DataMind 本体。移除旧系统内嵌:/platform 静态代理、/api/claw 代理、经典部署自拉起、引擎工具箱(TOOLS)、平台成果目录;UI 摘除 本体对话/建模工作台/成果库/平台工作台(原版)/平台对话(原版) 五页。
+- 计数(2026-08-01):**26 页面模块 / 106 后端路由 / 279 运行时断言**(数据 108 表 186,833 行 / 107 指标 / 655 术语不变)。
+- 上游引擎为可选组件(DATAMIND_ENGINE_DIR 接入,缺失自动降级),不随本仓发布。

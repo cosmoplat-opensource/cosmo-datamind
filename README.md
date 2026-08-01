@@ -135,7 +135,8 @@ export DATAMIND_ENGINE_DIR=/path/to/ontology-engine
 
 ```bash
 python3 server.py &            # 先起服务
-python3 test_all.py            # 系统级回归
+python3 test_all.py            # 系统级回归(279 断言)
+python3 test_ui.py             # 全 UI 走查(可选;需 pip install playwright && playwright install chromium)
 ```
 
 套件覆盖路由可达性、只读约束、CSRF、路径穿越、证据分层一致性、编辑回放等。

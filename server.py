@@ -2782,7 +2782,7 @@ def sysinfo():
 @app.get("/api/agents")
 def agents():
     """智能体列表:深度问数内置体 + 沉淀技能 + skills_seed(对齐平台『智能体列表』)"""
-    out = [{"name": "imom-deep-qa", "desc": "基于 示例 本体图谱的深度问数编排智能体", "type": "内置", "author": "系统", "ts": ""}]
+    out = [{"name": "demo-deep-qa", "desc": "基于 示例 本体图谱的深度问数编排智能体", "type": "内置", "author": "系统", "ts": ""}]
     try:
         qs = json.load(open(_QA_SKILLS_F)) if os.path.exists(_QA_SKILLS_F) else []
         for s in qs:

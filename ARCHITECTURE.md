@@ -7,10 +7,10 @@
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │  前端 (ui/index.html, 单页, 原生 JS)                          │
-│   25 模块 × hash 路由 · G6 图谱 · ECharts · 统一助手 $/esc/J  │
+│   26 模块 × hash 路由 · G6 图谱 · ECharts · 统一助手 $/esc/J  │
 ├─────────────────────────────────────────────────────────────┤
 │  HTTP 层 (server.py, Flask, 单端口 8092)                      │
-│   before_request CSRF 守卫 · 109 路由 · 统一错误/写守卫         │
+│   before_request CSRF 守卫 · 106 路由 · 统一错误/写守卫         │
 ├─────────────────────────────────────────────────────────────┤
 │  能力层                                                        │
 │   构建: _gather_evidence → _llm_extract → _adjudicate_ir      │
@@ -55,7 +55,7 @@
 
 ## 5. 测试与质量门
 
-`test_all.py`(300 集成断言,覆盖每路由 happy+边界+安全 + DR-011 O 节)· pyflakes 零告警 · `specs/test/` 回归 · 构建产物经 SHACL/HermiT 校验 · 完备度记分卡量化可审计程度。
+`test_all.py`(279 集成断言,覆盖每路由 happy+边界+安全 + DR-011 O 节)· pyflakes 零告警 · `specs/test/` 回归 · 构建产物经 SHACL/HermiT 校验 · 完备度记分卡量化可审计程度。
 
 ## 6. 已知边界(诚实)
 
