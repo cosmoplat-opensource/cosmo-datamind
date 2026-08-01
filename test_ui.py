@@ -14,7 +14,7 @@ BASE = os.environ.get("DATAMIND_URL", "http://127.0.0.1:8092")
 PAGES = ["home","graph","metrics","catalog","quality","glossary","sqldev","sparql",
          "chat","review","build","library","actioncenter","qaeval","assistant",
          "enginecfg","conn","viz","apis","jobs","sysadmin","rules","layers",
-         "ontquality","skills","agents"]
+         "ontquality","skills","agents","claw"]
 
 R = {"pass": [], "fail": []}
 ALL_ERRORS = []          # 全程累计的页面错误(只增不清),收尾统一汇总
@@ -214,6 +214,13 @@ async def main():
         await go("skills")
         t = await ev("document.getElementById('p_skills').innerText", '')
         (ok if "ontology" in t else bad)("skills 技能中心", t[:50])
+        # claw:本体对话 + 审计面板(DR-027)
+        await go("claw", 2500)
+        t = await ev("document.getElementById('p_claw').innerText", '')
+        (ok if ("本体对话" in t or "会话" in t) else bad)("claw 对话页渲染")
+        aud = await ev("document.getElementById('claw_audit').innerText", '')
+        (ok if "变更" in aud else bad)("claw 审计面板出数", aud[:40])
+        (ok if ("需复核" in aud or "来源" in aud) else bad)("claw 审计含来源/风险维度")
         await go("agents", 2000)
         n = await ev("document.querySelectorAll('#ag_list tr').length", 0)
         (ok if n>=2 else bad)(f"agents 列表({n-1}行)")

@@ -434,7 +434,8 @@ def build_context(question, focus_tables=None):
             lines = []
             for o in picked:
                 cols = ", ".join(f'{a["col"]}({a.get("cn","")})' for a in o.get("attrs", [])[:18])
-                lines.append(f'表 {o["table"]}({o.get("cn","")}): {cols}')
+                _al = "、".join(o.get("aliases") or [])
+                lines.append(f'表 {o["table"]}({o.get("cn","")}{",业务别称:" + _al if _al else ""}): {cols}')
             jh = _join_hints(ir, [o.get("table") for o in picked])
             if jh: lines.append("表间关系(本体已验证,JOIN 优先用这些键):\n" + "\n".join(jh))
             up = _uploads_schema()
@@ -445,7 +446,10 @@ def build_context(question, focus_tables=None):
             return "\n".join(lines)
     tabs = []
     for o in ir.get("objects", []):
-        blob = (o.get("cn") or "") + o.get("table", "") + " ".join(a.get("cn", "") + a.get("col", "") for a in o.get("attrs", []))
+        # DR-027:别名并入评分语料——业务用语("产量")与表名中文("生产日汇总")常常不同,
+        # 不认别名会让问数召回不到正确的表,进而生成查错表的 SQL
+        blob = ((o.get("cn") or "") + o.get("table", "") + "".join(o.get("aliases") or [])
+                + " ".join(a.get("cn", "") + a.get("col", "") for a in o.get("attrs", [])))
         tabs.append((score(blob), o))
     tabs.sort(key=lambda x: -x[0])
     picked = [o for s, o in tabs[:8] if s > 0] or [o for _, o in tabs[:5]]
@@ -956,6 +960,7 @@ def _edits_path(key):
 def _load_edits(key):
     return json.load(open(_edits_path(key))) if os.path.exists(_edits_path(key)) else {"version": 1, "ops": []}
 REVIEW_OPS = ("confirm_relation", "reject_relation")   # 人机协同人审:通过(→asserted)/否决(→剔除)
+LOCAL_OPS = ("set_alias",)     # DataMind 本地算子:业务别名(引擎白名单未含,不依赖引擎在线)
 
 def _rels(ir):
     """关系列表 + 端点键名:兼容两种 IR 形状(示例 links[source/target] / 构建产物 relations[source_concept/target_concept])"""
@@ -992,6 +997,25 @@ def apply_any(ir, op):
         if not o: raise ValueError(f"对象不存在: {t}")
         o["confirmed"] = True
         if "candidate" in o: o["candidate"] = False
+        _stamp_review(o, op)
+        return
+    if kind == "set_alias":                    # DR-027 业务别名:让业务用语可锚定到本体对象
+        o = _find_obj_any(ir, t.replace("obj:", "", 1))
+        if not o: raise ValueError(f"对象不存在: {t}")
+        raw = params.get("aliases")
+        if isinstance(raw, str): raw = [x for x in re.split(r"[,,、;;\s]+", raw) if x]
+        if not isinstance(raw, list): raise ValueError("params.aliases 需为列表或分隔字符串")
+        # 上限在去重前校验:否则「21 个相同别名」去重后剩 1 个而绕过限制,
+        # 大批量输入即可绕开防线(去重是清洗,不是防线)
+        if len(raw) > 20: raise ValueError("别名过多(上限 20)")
+        seen, out = set(), []
+        for a in raw:
+            a = str(a).strip()[:40]
+            # 与对象自身名称重复的别名无意义(锚定本就能命中),去重后丢弃
+            if not a or a in seen or a in (o.get("cn"), o.get("name"), o.get("id"), o.get("table")):
+                continue
+            seen.add(a); out.append(a)
+        o["aliases"] = out
         _stamp_review(o, op)
         return
     if kind == "remove_object":                # 删对象(两种形状),级联删其关系
@@ -1067,15 +1091,24 @@ def ont_apply():
     """白名单编辑(confirm/rename/verb/add_*/remove_*/set_*),按图谱记操作日志,可撤销"""
     body = request.json or {}
     key, op = body.get("graph", "demo"), body.get("op") or {}
+    _kind = op.get("op")
     try:
         import serve_claw as SC
+        _allowed = tuple(SC.ALLOWED_OPS) + REVIEW_OPS + LOCAL_OPS
     except Exception as e:
-        return jsonify({"error": f"编辑引擎未就绪: {str(e)[:120]}"}), 503
-    if op.get("op") not in (tuple(SC.ALLOWED_OPS) + REVIEW_OPS):
-        return jsonify({"error": f"非白名单操作: {op.get('op')}"}), 400
+        # 引擎缺失时仍放行本地算子:别名/人审是 DataMind 自有能力,不该被上游离线卡住
+        if _kind not in (REVIEW_OPS + LOCAL_OPS):
+            return jsonify({"error": f"编辑引擎未就绪: {str(e)[:120]}"}), 503
+        _allowed = REVIEW_OPS + LOCAL_OPS
+    if _kind not in _allowed:
+        return jsonify({"error": f"非白名单操作: {_kind}"}), 400
     reviewer = (body.get("reviewer") or op.get("reviewer") or "").strip()[:40]
     if reviewer: op["reviewer"] = reviewer
     op.setdefault("ts", time.strftime("%Y-%m-%d %H:%M"))
+    # DR-027 审计来源:chat=对话建议被人采纳 / review=评审台人工发起 / api=外部直调。
+    # 必须可区分——「AI 提的被采纳」与「人自己决定的」责任归属不同,审计要分得开。
+    src = (body.get("source") or op.get("source") or "api").strip()[:20]
+    op["source"] = src if src in ("chat", "review", "graph", "api") else "api"
     ir = load_ir_edited(key)
     if not ir: return jsonify({"error": "图谱不存在"}), 404
     try: apply_any(ir, op)
@@ -1200,11 +1233,27 @@ def ont_chat():
     if not msg: return jsonify({"error": "empty"}), 400
     d = _chats(); sess = d.setdefault(cid or "c_default", {"title": "", "messages": []})
     ir = load_ir_edited(key) or {}
-    objs = "; ".join(f'{o.get("cn") or o.get("name")}({o.get("id")})' for o in ir.get("objects", [])[:60])
+    def _od(o):
+        al = "、".join(o.get("aliases") or [])
+        return f'{o.get("cn") or o.get("name")}({o.get("id")}{"|别称:" + al if al else ""})'
+    objs = "; ".join(_od(o) for o in ir.get("objects", [])[:60])
     prompt = f"""你是本体治理助手。当前图谱[{key}]对象: {objs}
 历史: {json.dumps(sess["messages"][-4:], ensure_ascii=False)[:800]}
 用户: {msg}
-若用户要求修改本体,回答末尾附一行 EDIT_OP:{{"op":"rename|confirm|verb|...","target":"obj:<id>","params":{{...}}}} 供确认;否则直接中文回答(基于给出的对象,不编造)。"""
+
+可用编辑算子(仅这些,不得杜撰):
+  rename        改中文名          params: {{"cn": "新名"}}
+  set_alias     设业务别名(重要)   params: {{"aliases": "别名1,别名2"}}
+  confirm       确认候选对象       params: {{}}
+  verb          改关系动词         target: "rel:<源>-><目标>", params: {{"verb": "动词"}}
+  add_relation  新增关系          target: "rel:<源>-><目标>", params: {{"verb": "动词"}}
+  remove_object / remove_relation  删除(不可逆,需谨慎)
+
+纪律:人工确认只产生 asserted,**永不指定 verified**(verified 只能由数据裁决产生)。
+若业务用语与对象中文名不同(如业务说「产量」而对象叫「生产日汇总」),优先建议 set_alias。
+
+若用户要求修改本体,回答末尾附一行 EDIT_OP:{{"op":"...","target":"obj:<id>","params":{{...}},"reason":"改动依据"}} 供人确认后执行;
+否则直接中文回答(基于给出的对象,不编造)。"""
     reply = None
     try:
         from agent_runtime import available
@@ -1662,6 +1711,53 @@ def ont_usage(key):
         return jsonify(usage_stat.report(WORK, ir, key))
     except Exception as e:
         return jsonify({"error": f"使用度统计失败: {e}"}), 500
+
+@app.get("/api/ont/audit/<key>")
+def ont_audit(key):
+    """本体变更审计(DR-027):谁在何时改了什么,以及哪些改动值得复核。
+
+    与 /api/ont/edits 的区别:后者是原始日志(给回放用),这里是**审计视图**——
+    按人/类型/来源聚合,并主动标出风险项。报告阶段六要求「明确本体治理的责任主体」,
+    责任要能追溯到人,就必须能回答「这条改动是谁做的、依据什么、AI 建议还是人自己定的」。
+    """
+    if _bad_gkey(key): return jsonify({"error": "非法图谱键"}), 400
+    ed = _load_edits(key)
+    ops = ed.get("ops", [])
+    by_person, by_op, by_src = {}, {}, {}
+    no_reviewer, no_reason, risky = [], [], []
+    for i, o in enumerate(ops):
+        who = (o.get("reviewer") or "").strip() or "(未署名)"
+        kind = o.get("op", "?")
+        src = o.get("source", "api")
+        by_person[who] = by_person.get(who, 0) + 1
+        by_op[kind] = by_op.get(kind, 0) + 1
+        by_src[src] = by_src.get(src, 0) + 1
+        if not (o.get("reviewer") or "").strip():
+            no_reviewer.append(i)
+        if not (o.get("reason") or "").strip():
+            no_reason.append(i)
+        # 风险项:删除类不可逆影响面大;人审试图直接指定 verified 违反反造假纪律
+        if kind in ("remove_object", "remove_relation", "reject_relation"):
+            risky.append({"idx": i, "op": kind, "target": o.get("target"),
+                          "by": who, "ts": o.get("ts"), "level": "destructive",
+                          "why": "删除/否决类操作影响面大且需级联,建议复核"})
+        if str((o.get("params") or {}).get("status", "")).lower() == "verified":
+            risky.append({"idx": i, "op": kind, "target": o.get("target"),
+                          "by": who, "ts": o.get("ts"), "level": "discipline",
+                          "why": "人审试图直接指定 verified —— 违反反造假纪律"
+                                 "(verified 只能由数据裁决产生,人只产生 asserted)"})
+    return jsonify({
+        "graph": key, "total": len(ops),
+        "by_person": by_person, "by_op": by_op, "by_source": by_src,
+        "unsigned": len(no_reviewer), "no_reason": len(no_reason),
+        "risky": risky,
+        "recent": [{"idx": i, "op": o.get("op"), "target": o.get("target"),
+                    "by": o.get("reviewer") or "(未署名)", "ts": o.get("ts"),
+                    "source": o.get("source", "api"), "reason": o.get("reason", "")}
+                   for i, o in list(enumerate(ops))[-20:]][::-1],
+        "note": "审计视图基于编辑日志;日志是回放的单一真相,撤销会同步移除条目——"
+                "故本视图反映的是当前生效的变更集,不是历史全量操作流水",
+    })
 
 @app.get("/api/ont/completeness/<key>")
 def ont_completeness(key):
