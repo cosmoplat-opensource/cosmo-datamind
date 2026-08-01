@@ -17,6 +17,7 @@ PAGES = ["home","graph","metrics","catalog","quality","glossary","sqldev","sparq
          "ontquality","skills","agents"]
 
 R = {"pass": [], "fail": []}
+ALL_ERRORS = []          # 全程累计的页面错误(只增不清),收尾统一汇总
 def ok(name, _extra=""):  R["pass"].append(name); print(f"  ✓ {name}")
 def bad(name, why=""): R["fail"].append(f"{name} :: {why}"); print(f"  ✗ {name} :: {why}")
 
@@ -49,22 +50,30 @@ async def main():
         await pg.goto(BASE, wait_until="domcontentloaded")
         await pg.wait_for_timeout(2500)
 
+        def new_errs(base):
+            """只取基线之后新增的错误——errors 全程只追加不清空,
+            前置页面的真实报错得以保留在最终汇总里,不被后续步骤掩盖。"""
+            return [e for e in errors[base:] if "favicon" not in e]
+
         # ── 阶段一:26 页逐页走查 ──────────────────────────────
         print("== 阶段一:全页面渲染 ==")
         for p in PAGES:
-            errors.clear()
+            base = len(errors)
             await ev(f"location.hash='#{p}'")
             await pg.wait_for_timeout(1600)
             vis = await ev(f"(d=>d&&getComputedStyle(d).display!=='none')(document.getElementById('p_{p}'))")
             txt = await ev(f"(d=>d?d.innerText.trim().length:0)(document.getElementById('p_{p}'))")
-            errs = [e for e in errors if "favicon" not in e]
+            errs = new_errs(base)
             if vis and (txt or 0) > 30 and not errs: ok(f"页 {p}(文本 {txt} 字)")
             else: bad(f"页 {p}", f"vis={vis} text={txt} errs={errs[:2]}")
 
         # ── 阶段二:子 UI 与交互 ──────────────────────────────
         print("== 阶段二:子 UI 交互 ==")
         async def go(p, ms=1500):
-            errors.clear(); await ev(f"location.hash='#{p}'"); await pg.wait_for_timeout(ms)
+            """切页并返回本次切换前的 errors 基线,供调用方只检查新增错误"""
+            base = len(errors)
+            await ev(f"location.hash='#{p}'"); await pg.wait_for_timeout(ms)
+            return base
 
         # home:KPI 数字
         await go("home")
@@ -82,11 +91,11 @@ async def main():
         await go("metrics")
         rows = await ev("document.querySelectorAll('#p_metrics tr').length", 0)
         if rows>3:
-            errors.clear()
+            base = len(errors)
             clicked = await ev("(r=>{if(!r)return false;r.click();return true})"
                                "(document.querySelectorAll('#p_metrics tbody tr, #p_metrics tr')[1])", False)
             await pg.wait_for_timeout(900)
-            errs = [e for e in errors if "favicon" not in e]
+            errs = new_errs(base)
             if clicked and not errs: ok(f"metrics {rows}行+行点击")
             else: bad("metrics 行点击", f"clicked={clicked} errs={errs[:1]}")
         else: bad("metrics 行数", str(rows))
@@ -210,9 +219,13 @@ async def main():
         n2 = await ev("document.querySelectorAll('#ag_list tr').length", 0)
         (ok if n2<n else bad)(f"agents 过滤 {n-1}→{n2-1} 行")
 
+        ALL_ERRORS.extend(e for e in errors if "favicon" not in e)
         await b.close()
     print(f"\n===== UI 走查:{len(R['pass'])} 通过 / {len(R['fail'])} 失败 =====")
     for f in R["fail"]: print("  ✗", f)
+    if ALL_ERRORS:
+        print(f"  ── 全程累计页面错误 {len(ALL_ERRORS)} 条(含已归因项,供排查)──")
+        for e in ALL_ERRORS[:10]: print("    ·", e)
     sys.exit(1 if R["fail"] else 0)
 
 asyncio.run(main())

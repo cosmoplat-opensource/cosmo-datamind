@@ -4,6 +4,7 @@
 数据驱动快速建本体(沿用平台反造假规则):表→对象;关系=声明FK ∪ (命名配对+取值重叠≥60%→verified,否则candidate)。
 产物为 DataMind 图谱 IR,可直接在 UI 可视化;深加工可再走 ontology-build / gov-app-ontology-build 技能。"""
 import json, re, sqlite3, sys
+from collections import OrderedDict as _OrderedDict
 
 db, out, name = sys.argv[1], sys.argv[2], sys.argv[3]
 # 只读打开(mode=ro):建本体只取数、绝不改源库;缺库时响亮失败而非静默新建空库
@@ -41,8 +42,8 @@ def distinct(t, c, cap=20000):
         return set(r[0] for r in con.execute(f'SELECT DISTINCT {qi(c)} FROM {qi(t)} LIMIT {cap}') if r[0] not in (None, ""))
     except Exception: return set()
 
-_UNIQ_CACHE_MAX = 4096          # 容量上限:超出即整体清空(退化为不缓存,只损性能不损正确性)
-_uniq_cache = {}
+_UNIQ_CACHE_MAX = 4096          # 容量上限:超出按插入顺序逐出最早项,保留热点
+_uniq_cache = _OrderedDict()
 def is_key_unique(t, c):
     """父连接键须为候选键(值唯一)才构成真 FK。
 
@@ -52,7 +53,8 @@ def is_key_unique(t, c):
     缓存无失效机制是安全的:本脚本为一次性 CLI(由 server 以子进程调用),
     连接以 `mode=ro` 只读打开,全程无 INSERT/UPDATE/DDL —— 进程存续期内
     表数据与结构不可能变化,不存在读到过期结果的路径。
-    容量按 (表,列) 天然受 schema 规模约束,再加硬上限兜底极端宽表库。"""
+    容量按 (表,列) 天然受 schema 规模约束;上限兜底极端宽表库,
+    满时按插入顺序逐出单个最早项(而非整体清空),使热点键不被反复重建。"""
     if pk_of.get(t) == c: return True
     k = (t, c)
     if k in _uniq_cache: return _uniq_cache[k]
@@ -61,7 +63,8 @@ def is_key_unique(t, c):
         out = r[0] > 0 and r[0] == r[1]
     except Exception:
         out = False
-    if len(_uniq_cache) >= _UNIQ_CACHE_MAX: _uniq_cache.clear()
+    if len(_uniq_cache) >= _UNIQ_CACHE_MAX:
+        _uniq_cache.popitem(last=False)      # FIFO 逐出最早项,避免整体清空造成的反复重建
     _uniq_cache[k] = out
     return out
 
