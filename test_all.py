@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """DataMind 全路由覆盖测试:每个端点 happy path + 边界/错误 + 安全。"""
-import json, requests, sys, ast
+import json, requests, sys, ast, time
 B="http://localhost:8092"
 P=F=0; fails=[]
 def chk(name, cond, detail=""):
@@ -304,9 +304,20 @@ chk("审计三要素齐(操作人/审批人/效果)", any(x["id"]==_aid and x["o
 print("=== S. MCP server(DR-016)===")
 import subprocess as _sp2
 _mp=_sp2.Popen([sys.executable,"mcp_action_server.py"],stdin=_sp2.PIPE,stdout=_sp2.PIPE,stderr=_sp2.DEVNULL,text=True)
-def _rpc(i,m,p=None):
+time.sleep(0.3)
+if _mp.poll() is not None:                       # 启动即死 → 立刻失败,不进 RPC
+    chk("MCP server 启动", False); raise SystemExit("mcp_action_server 启动失败(退出码 %s)" % _mp.returncode)
+def _rpc(i,m,p=None,timeout=15):
+    """stdio JSON-RPC 一问一答;readline 经线程加超时,server 挂起时 fail 而非永久阻塞。"""
+    if _mp.poll() is not None: raise RuntimeError("mcp server 已退出(码 %s)" % _mp.returncode)
     _mp.stdin.write(json.dumps({"jsonrpc":"2.0","id":i,"method":m,"params":p or {}})+"\n"); _mp.stdin.flush()
-    return json.loads(_mp.stdout.readline())
+    import threading as _th
+    box={}
+    t=_th.Thread(target=lambda: box.update(line=_mp.stdout.readline()), daemon=True)
+    t.start(); t.join(timeout)
+    if "line" not in box or not box["line"]:
+        _mp.kill(); raise RuntimeError(f"mcp 响应超时(>{timeout}s)或流关闭")
+    return json.loads(box["line"])
 _ri=_rpc(1,"initialize",{"protocolVersion":"2024-11-05"})
 chk("MCP initialize", _ri["result"]["serverInfo"]["name"]=="datamind-actions")
 _rt=_rpc(2,"tools/list")

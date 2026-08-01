@@ -26,6 +26,14 @@ async def main():
         pg = await (await b.new_context(viewport={"width":1440,"height":950})).new_page()
         errors = []
         pg.on("pageerror", lambda e: errors.append(str(e)[:160]))
+
+        async def ev(js, dv=None):
+            """页面求值守卫:异常或返回 None 时给默认值——加载异常按 fail 走,不让脚本崩溃或静默漏报"""
+            try:
+                v = await pg.evaluate(js)
+                return dv if v is None else v
+            except Exception as e:
+                errors.append("evaluate:" + str(e)[:120]); return dv
         pg.on("console", lambda m: errors.append("console:"+m.text[:160]) if m.type=="error" else None)
 
         await pg.goto(BASE, wait_until="domcontentloaded")
@@ -35,64 +43,66 @@ async def main():
         print("== 阶段一:全页面渲染 ==")
         for p in PAGES:
             errors.clear()
-            await pg.evaluate(f"location.hash='#{p}'")
+            await ev(f"location.hash='#{p}'")
             await pg.wait_for_timeout(1600)
-            vis = await pg.evaluate(f"(d=>d&&getComputedStyle(d).display!=='none')(document.getElementById('p_{p}'))")
-            txt = await pg.evaluate(f"(d=>d?d.innerText.trim().length:0)(document.getElementById('p_{p}'))")
+            vis = await ev(f"(d=>d&&getComputedStyle(d).display!=='none')(document.getElementById('p_{p}'))")
+            txt = await ev(f"(d=>d?d.innerText.trim().length:0)(document.getElementById('p_{p}'))")
             errs = [e for e in errors if "favicon" not in e]
-            if vis and txt > 30 and not errs: ok(f"页 {p}(文本 {txt} 字)")
+            if vis and (txt or 0) > 30 and not errs: ok(f"页 {p}(文本 {txt} 字)")
             else: bad(f"页 {p}", f"vis={vis} text={txt} errs={errs[:2]}")
 
         # ── 阶段二:子 UI 与交互 ──────────────────────────────
         print("== 阶段二:子 UI 交互 ==")
         async def go(p, ms=1500):
-            errors.clear(); await pg.evaluate(f"location.hash='#{p}'"); await pg.wait_for_timeout(ms)
+            errors.clear(); await ev(f"location.hash='#{p}'"); await pg.wait_for_timeout(ms)
 
         # home:KPI 数字
         await go("home")
-        k = await pg.evaluate("document.querySelectorAll('#p_home .kpi .n,#p_home .kpi b').length")
-        (ok if k>=3 else bad)(f"home KPI 卡({k})") if isinstance(k,int) else None
+        k = await ev("document.querySelectorAll('#p_home .kpi .n,#p_home .kpi b').length", -1)
+        if not isinstance(k, int) or k < 0: bad("home KPI 卡", f"求值失败(k={k!r})")
+        elif k >= 3: ok(f"home KPI 卡({k})")
+        else: bad("home KPI 卡", f"仅 {k} 个")
 
         # graph:图谱画布 + 图谱切换下拉 + 节点详情(经 JS 触发)
         await go("graph", 2500)
-        canvas = await pg.evaluate("!!document.querySelector('#p_graph canvas')")
-        opts = await pg.evaluate("(s=>s?s.options.length:0)(document.querySelector('#p_graph select'))")
+        canvas = await ev("!!document.querySelector('#p_graph canvas')", False)
+        opts = await ev("(s=>s?s.options.length:0)(document.querySelector('#p_graph select'))", 0)
         (ok if canvas and opts>=2 else bad)(f"graph 画布+{opts}图谱源")
         # metrics:行点击出详情
         await go("metrics")
-        rows = await pg.evaluate("document.querySelectorAll('#p_metrics tr').length")
+        rows = await ev("document.querySelectorAll('#p_metrics tr').length", 0)
         if rows>3:
-            await pg.evaluate("document.querySelectorAll('#p_metrics tbody tr, #p_metrics tr')[1].click()")
+            await ev("document.querySelectorAll('#p_metrics tbody tr, #p_metrics tr')[1].click()")
             await pg.wait_for_timeout(900)
             ok(f"metrics {rows}行+行点击")
         else: bad("metrics 行数", str(rows))
         # catalog:表清单+预览
         await go("catalog")
-        rows = await pg.evaluate("document.querySelectorAll('#p_catalog tr').length")
+        rows = await ev("document.querySelectorAll('#p_catalog tr').length", 0)
         (ok if rows>50 else bad)(f"catalog 表清单({rows}行)")
         # quality:分层对账告警在列
         await go("quality", 2200)
-        t = await pg.evaluate("document.getElementById('p_quality').innerText")
+        t = await ev("document.getElementById('p_quality').innerText", '')
         (ok if "分层对账" in t else bad)("quality 含分层对账告警", t[:60])
         # glossary:搜索过滤
         await go("glossary")
-        n0 = await pg.evaluate("document.querySelectorAll('#p_glossary tr').length")
+        n0 = await ev("document.querySelectorAll('#p_glossary tr').length", 0)
         await pg.fill("#gl_q", "直通")
         await pg.wait_for_timeout(700)
-        n1 = await pg.evaluate("document.querySelectorAll('#p_glossary tr').length")
+        n1 = await ev("document.querySelectorAll('#p_glossary tr').length", 0)
         (ok if 0<n1<n0 else bad)(f"glossary 过滤 {n0}→{n1}")
         # sqldev:执行只读 SQL
         await go("sqldev")
         await pg.fill("#p_sqldev textarea", "SELECT COUNT(*) AS n FROM dim_customer")
         await pg.click("#p_sqldev button:has-text('运行')")
         await pg.wait_for_timeout(1800)
-        t = await pg.evaluate("document.getElementById('p_sqldev').innerText")
+        t = await ev("document.getElementById('p_sqldev').innerText", '')
         (ok if ("n" in t and any(c.isdigit() for c in t)) else bad)("sqldev 运行出结果")
         # sparql
         await go("sparql")
         await pg.click("#p_sparql button:has-text('执行')")
         await pg.wait_for_timeout(2500)
-        t = await pg.evaluate("document.getElementById('p_sparql').innerText")
+        t = await ev("document.getElementById('p_sparql').innerText", '')
         (ok if ("http" in t or "结果" in t) else bad)("sparql 执行", t[:60])
         # chat:命中沉淀技能(不出网,秒回)
         await go("chat")
@@ -105,82 +115,82 @@ async def main():
         except Exception: bad("chat 作答超时", "")
         # review:三态计数
         await go("review", 2000)
-        t = await pg.evaluate("document.getElementById('p_review').innerText")
+        t = await ev("document.getElementById('p_review').innerText", '')
         (ok if ("待审" in t or "已通过" in t) else bad)("review 评审台", t[:50])
         # build:构建页 + 技能对比弹窗开合 + 技能管理列表
         await go("build", 2000)
-        has = await pg.evaluate("!!document.getElementById('skc_modal')")
+        has = await ev("!!document.getElementById('skc_modal')")
         if has:
-            await pg.evaluate("skcOpen&&skcOpen()")
+            await ev("skcOpen&&skcOpen()")
             await pg.wait_for_timeout(1200)
-            vis = await pg.evaluate("document.getElementById('skc_modal').style.display!=='none'")
-            await pg.evaluate("document.getElementById('skc_modal').style.display='none'")
+            vis = await ev("document.getElementById('skc_modal').style.display!=='none'")
+            await ev("document.getElementById('skc_modal').style.display='none'")
             (ok if vis else bad)("build 技能对比弹窗开合")
-        skl = await pg.evaluate("document.querySelectorAll('#bc_skills div,#bc_skills label,#bc_skills input').length")
+        skl = await ev("document.querySelectorAll('#bc_skills div,#bc_skills label,#bc_skills input').length", 0)
         (ok if skl>0 else bad)(f"build 技能清单({skl})")
         # library:已构建本体
         await go("library")
-        t = await pg.evaluate("document.getElementById('p_library').innerText")
+        t = await ev("document.getElementById('p_library').innerText", '')
         (ok if ("built_" in t or "本体" in t) else bad)("library 本体库")
         # actioncenter:KPI+类型表+类型编辑弹窗
         await go("actioncenter", 2000)
-        t = await pg.evaluate("document.getElementById('p_actioncenter').innerText")
+        t = await ev("document.getElementById('p_actioncenter').innerText", '')
         (ok if ("待批" in t or "已执行" in t) else bad)("actioncenter KPI")
-        m = await pg.evaluate("!!document.getElementById('at_modal')")
+        m = await ev("!!document.getElementById('at_modal')")
         if m:
-            await pg.evaluate("atEdit&&atEdit('freeze_batch')")
+            await ev("atEdit&&atEdit('freeze_batch')")
             await pg.wait_for_timeout(900)
-            vis = await pg.evaluate("(d=>d&&d.style.display!=='none')(document.getElementById('at_modal'))")
-            await pg.evaluate("document.getElementById('at_modal').style.display='none'")
+            vis = await ev("(d=>d&&d.style.display!=='none')(document.getElementById('at_modal'))")
+            await ev("document.getElementById('at_modal').style.display='none'")
             (ok if vis else bad)("actioncenter 类型编辑弹窗")
         # qaeval:缓存 KPI 三组
         await go("qaeval", 2000)
-        t = await pg.evaluate("document.getElementById('p_qaeval').innerText")
+        t = await ev("document.getElementById('p_qaeval').innerText", '')
         (ok if ("8/8" in t or "尚未跑过" in t) else bad)("qaeval KPI 或空态引导", t[:60])
         # assistant:角色卡+待办
         await go("assistant", 2000)
-        t = await pg.evaluate("document.getElementById('p_assistant').innerText")
+        t = await ev("document.getElementById('p_assistant').innerText", '')
         (ok if ("生产主管" in t or "质量工程师" in t) else bad)("assistant 角色卡")
         # enginecfg:掩码 key
         await go("enginecfg", 2000)
-        t = await pg.evaluate("document.getElementById('p_enginecfg').innerText")
+        t = await ev("document.getElementById('p_enginecfg').innerText", '')
         (ok if ("运行时" in t or "runtime" in t.lower()) else bad)("enginecfg 渲染")
-        leak = await pg.evaluate("[...document.querySelectorAll('#p_enginecfg input')].filter(i=>/KEY/i.test(i.id||'')).some(i=>i.value.length>8&&!i.value.includes('*'))")
+        leak = await ev("[...document.querySelectorAll('#p_enginecfg input')].filter(i=>/KEY/i.test(i.id||'')).some(i=>i.value.length>8&&!i.value.includes('*'))")
         (ok if not leak else bad)("enginecfg 无明文 key(空或掩码)")
         # conn:连接列表
         await go("conn")
-        t = await pg.evaluate("document.getElementById('p_conn').innerText")
+        t = await ev("document.getElementById('p_conn').innerText", '')
         (ok if ("示例" in t or "sqlite" in t.lower()) else bad)("conn 连接列表")
         # viz:跑一个默认图
         await go("viz")
-        btn = await pg.evaluate("[...document.querySelectorAll('#p_viz button')].map(b=>b.innerText).slice(0,6)")
+        btn = await ev("[...document.querySelectorAll('#p_viz button')].map(b=>b.innerText).slice(0,6)", [])
         if any("生成" in x or "运行" in x or "出图" in x for x in btn):
             await pg.click("#p_viz button:has-text('生成'), #p_viz button:has-text('运行'), #p_viz button:has-text('出图')")
             await pg.wait_for_timeout(2500)
-            c = await pg.evaluate("!!document.querySelector('#p_viz canvas')")
+            c = await ev("!!document.querySelector('#p_viz canvas')", False)
             (ok if c else bad)("viz 出图(canvas)")
         else: bad("viz 无运行按钮", str(btn))
         # apis:接口目录
         await go("apis")
-        rows = await pg.evaluate("document.querySelectorAll('#p_apis tr').length")
+        rows = await ev("document.querySelectorAll('#p_apis tr').length", 0)
         (ok if rows>50 else bad)(f"apis 接口目录({rows}行)")
         # jobs / sysadmin / rules / layers / ontquality / skills / agents
-        await go("jobs"); ok("jobs 渲染") if (await pg.evaluate("document.getElementById('p_jobs').innerText.length"))>10 else bad("jobs","empty")
+        await go("jobs"); ok("jobs 渲染") if (await ev("document.getElementById('p_jobs').innerText.length", 0))>10 else bad("jobs","empty")
         await go("sysadmin", 2000)
-        t = await pg.evaluate("document.getElementById('p_sysadmin').innerText")
+        t = await ev("document.getElementById('p_sysadmin').innerText", '')
         (ok if ("health" in t.lower() or "ok" in t.lower() or "环境" in t) else bad)("sysadmin 健康")
         await go("ontquality", 2500)
-        t = await pg.evaluate("document.getElementById('p_ontquality').innerText")
+        t = await ev("document.getElementById('p_ontquality').innerText", '')
         (ok if ("100" in t or "完备" in t) else bad)("ontquality 记分卡", t[:50])
         await go("skills")
-        t = await pg.evaluate("document.getElementById('p_skills').innerText")
+        t = await ev("document.getElementById('p_skills').innerText", '')
         (ok if "ontology" in t else bad)("skills 技能中心", t[:50])
         await go("agents", 2000)
-        n = await pg.evaluate("document.querySelectorAll('#ag_list tr').length")
+        n = await ev("document.querySelectorAll('#ag_list tr').length", 0)
         (ok if n>=2 else bad)(f"agents 列表({n-1}行)")
         await pg.fill("#ag_q", "不存在的名字xx")
         await pg.wait_for_timeout(500)
-        n2 = await pg.evaluate("document.querySelectorAll('#ag_list tr').length")
+        n2 = await ev("document.querySelectorAll('#ag_list tr').length", 0)
         (ok if n2<n else bad)(f"agents 过滤 {n-1}→{n2-1} 行")
 
         await b.close()
