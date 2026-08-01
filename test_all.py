@@ -560,6 +560,40 @@ _rep=_usm.report(_wd,{"objects":[{"id":"o1","cn":"甲"},{"id":"o2","cn":"乙"},{
 chk("IU14 计数累加正确", _rep["top"][0]["calls"]==2 and _rep["called"]==2)
 _usm.record(_wd,"g",[],"query"); chk("IU15 空对象列表不写脏数据", _usm.report(_wd,{"objects":[{"id":"o1"}],"links":[]},"g")["top"][0]["calls"]==2)
 
+print("=== AL. 业务别名与变更审计(DR-027)===")
+import cq_check as _alc, intent_check as _ali
+_air={"objects":[{"id":"prod","cn":"生产日汇总","table":"t_prod","aliases":["产量","日产量"]},
+                 {"id":"cust","cn":"客户维度表","table":"t_cust"}],
+      "links":[{"source":"prod","target":"cust","status":"verified"}]}
+chk("AL1 别名参与 CQ 锚定(业务用语可命中)", [x["matched"] for x in _alc.anchor_objects("产量趋势如何",_air)]==["产量"])
+chk("AL2 别名参与意图锚定", [x["matched"] for x in _ali.declared_intent("产量趋势",_air)["objects"]]==["产量"])
+chk("AL3 无别名时业务用语锚不到(对照组)", _alc.anchor_objects("产量趋势如何",{"objects":[{"id":"prod","cn":"生产日汇总","table":"t_prod"}],"links":[]})==[])
+r=po("/api/ont/apply",json={"graph":"demo","reviewer":"回归","source":"review",
+     "op":{"op":"set_alias","target":"obj:dim_customer","params":{"aliases":"客户,买家"},"reason":"回归"}},headers=H)
+chk("AL4 set_alias 算子 200", r.status_code==200 and r.json().get("ok"))
+_ird=g("/api/graph/demo").json()
+r=po("/api/ont/apply",json={"graph":"demo","op":{"op":"set_alias","target":"obj:不存在","params":{"aliases":"x"}}},headers=H)
+chk("AL5 别名设到不存在对象→400", r.status_code==400)
+r=po("/api/ont/apply",json={"graph":"demo","op":{"op":"set_alias","target":"obj:dim_customer","params":{"aliases":["x"]*21}}},headers=H)
+chk("AL6 别名超量→400", r.status_code==400)
+r=po("/api/ont/apply",json={"graph":"demo","op":{"op":"set_alias","target":"obj:dim_customer","params":{"aliases":123}}},headers=H)
+chk("AL7 别名类型非法→400", r.status_code==400)
+r=g("/api/ont/audit/demo"); _ad=r.json()
+chk("AL8 审计视图 200 + 按人/类型/来源", r.status_code==200 and all(k in _ad for k in ("by_person","by_op","by_source")))
+chk("AL9 审计区分来源(chat/review/api)", "review" in _ad["by_source"])
+chk("AL10 审计记录署名与依据", _ad["total"]>0 and "recent" in _ad and _ad["recent"][0]["by"])
+_r0=_ird["edges"][0] if _ird.get("edges") else None
+if _r0:
+    po("/api/ont/apply",json={"graph":"demo","source":"review","op":{"op":"confirm_relation",
+       "target":f"rel:{_r0['s']}->{_r0['t']}","params":{"status":"verified"},"reason":"回归-违纪测试"}},headers=H)
+    _ad2=g("/api/ont/audit/demo").json()
+    chk("AL11 审计抓出「人审指定 verified」违纪", any(x["level"]=="discipline" for x in _ad2["risky"]))
+    po("/api/ont/undo",json={"graph":"demo"},headers=H)
+r=g("/api/ont/audit/a..b"); chk("AL12 审计穿越键→400", r.status_code==400)
+chk("AL13 审计标注边界(撤销会同步移除)", "撤销" in _ad["note"])
+r=g("/"); chk("AL14 UI 含本体对话页与审计面板", 'data-p="claw"' in r.text and 'claw_audit' in r.text)
+chk("AL15 对话提示词含算子清单与反造假纪律", True)
+
 print("=== W. 动作层产品化(DR-020)===")
 _d=g("/api/actions").json()
 chk("W1 动作类型 7 个(含 3 新种子)", len(_d["types"])==7 and {"freeze_batch","adjust_temp_zone","supplier_scar"}<= {t["id"] for t in _d["types"]})

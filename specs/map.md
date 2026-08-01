@@ -37,6 +37,7 @@ Cosmo DataMind 是**自有品牌、原创前后端**的「数据治理 × 本体
 - [DR-010 · IOF/BFO 本体工程对齐(注释/接地/注释化 OWL 导出/SHACL 门禁/完备度)](decisions/DR-010-iof-bfo-alignment.md)
 - [DR-011 · 泛化裁决 v2(等值/前缀/复合键/PK 感知 + 三级控制环)](decisions/DR-011-generalized-adjudication.md)
 - [DR-012 · SPARQL 健壮性(线程安全/诚实报错/合法默认示例)](decisions/DR-012-sparql-robustness.md)
+- [DR-027 · 对象业务别名与本体变更审计(别名贯通五处 + 审计区分 AI/人工来源)](decisions/DR-027-business-aliases-and-change-audit.md)
 - [DR-026 · 双盲意图检测与本体使用度回流(两通道互不透传 + 只观测不阻断)](decisions/DR-026-doubleblind-intent-and-usage.md)
 - [DR-025 · 概念漂移检测与穿透链路核验(确定性 schema 比对 + 逐段判定)](decisions/DR-025-drift-and-penetration-chain.md)
 - [DR-024 · 能力问题(CQ)驱动的构建与验收(结构可达性判定,不调 LLM)](decisions/DR-024-competency-questions-driven-build.md)
@@ -105,6 +106,10 @@ Consult @specs/map.md to find relevant context.
   与阶段六的「业务调用频次驱动迭代」。两通道互不透传(A 只看问句、B 只看 SQL),
   均不调 LLM;只观测不阻断。实测抓到真阳性:问「业务员维度表有多少人」而 SQL
   查销售订单去重——口径闸放行,双盲判 mismatch。套件 326 断言。
+- **DR-027 别名与审计**:`set_alias` 算子 + `GET /api/ont/audit/<key>`。别名贯通
+  CQ 锚定/意图锚定/问数上下文评分与文本;审计按人/类型/来源聚合并标出风险
+  (删除类、人审试图指定 verified)。本体对话页恢复(此前误删)并内置审计面板。
+  套件 354 断言 · UI 走查 57 项。
 
 四问互补:CQ 答「够不够用」· 链路答「通不通」· 漂移答「还对不对得上数据」·
 双盲答「答的是不是问的」。

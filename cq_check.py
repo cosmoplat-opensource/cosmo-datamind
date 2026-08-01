@@ -40,6 +40,9 @@ def _obj_names(o):
         v = o.get(k)
         if isinstance(v, str) and v.strip():
             out.append(v.strip())
+    for a in (o.get("aliases") or []):          # DR-027 业务别名:业务用语与表名中文往往不同
+        if isinstance(a, str) and a.strip():
+            out.append(a.strip())
     for t in (o.get("tables") or []):          # app 形状:一个概念可绑多张表
         if isinstance(t, str) and t.strip():
             out.append(t.strip())

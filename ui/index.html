@@ -226,6 +226,7 @@ a{color:var(--acc)}
  <div class="nav-group"><div class="gh" onclick="dqGroup(this)">数据建模 <span class="ar">▾</span></div>
   <div class="nav" data-p="graph">本体图谱</div>
   <div class="nav" data-p="build">本体构建</div>
+  <div class="nav" data-p="claw">本体对话</div>
   <div class="nav" data-p="review">本体评审</div>
   <div class="nav" data-p="ontquality">本体完备度</div>
   <div class="nav" data-p="layers">数仓分层</div></div>
@@ -619,6 +620,21 @@ a{color:var(--acc)}
    <input id="sk_args" placeholder="参数,如 --ir workdir/demo_ir.json --out /tmp/x"><button onclick="skillRun()">运行</button></div>
    <pre id="sk_log" style="margin-top:8px;max-height:300px;display:none"></pre></div></div>
 
+ <div class="page" id="p_claw"><h2>本体对话 <span class="muted">对话式本体完善(问答+白名单编辑+可撤销)· 可修改本体 + 变更审计</span></h2>
+  <div class="row" style="align-items:flex-start"><div class="card" style="width:200px">
+   <button class="ghost" style="width:100%;margin-bottom:6px" onclick="clawNew()">+ 新会话</button>
+   <div class="scroll" id="claw_sessions" style="max-height:calc(100vh - 320px)"></div></div>
+   <div style="flex:1"><div id="claw_log" style="max-height:calc(100vh - 320px);overflow:auto"></div></div></div>
+  <div class="row" style="margin-top:10px"><input id="claw_q" placeholder="例:本体里有哪些对象?/ 把 dim_customer 的中文名改成 客户档案" onkeydown="if(event.key==='Enter'&&!event.isComposing)clawAsk()">
+   <input type="file" id="claw_file" multiple style="width:180px">
+   <button onclick="clawAsk()" id="claw_btn">发送</button><button class="ghost" onclick="clawUndo()">撤销上次编辑</button><button class="ghost" onclick="clawDel()">清空会话</button></div>
+  <div class="muted" style="margin-top:6px" id="claw_edits"></div>
+  <div class="card" style="margin-top:10px"><div class="row" style="align-items:center;margin-bottom:8px">
+    <h3 style="margin:0;flex:1">变更审计</h3>
+    <input id="claw_who" placeholder="署名(必填,记入审计)" style="width:170px" onchange="clawSaveWho()">
+    <button class="ghost" onclick="clawAudit()">刷新审计</button></div>
+   <div id="claw_audit" class="muted">点「刷新审计」查看谁改了什么</div></div></div>
+
  <div class="page" id="p_library"><h2>本体库 <span class="muted">锻造/构建的本体版本(/api/ont/forged)</span></h2>
   <div class="card scroll" id="lib_list"></div></div>
 
@@ -700,6 +716,7 @@ const loaded={};
 async function load(p){if(loaded[p])return;loaded[p]=1;
  if(p==='home')home();if(p==='catalog')catalog();if(p==='graph')graphs();if(p==='chat')chatInit();
  if(p==='metrics')metrics();if(p==='skills')skills();
+ if(p==='claw'){clawSessions();clawEdits();clawAudit();try{$('#claw_who').value=localStorage.getItem('claw_who')||''}catch(_){}}
  if(p==='library')library();if(p==='rules')rules();
  if(p==='build')bcInit();if(p==='conn')cnInit();if(p==='viz')vzInit();if(p==='review')reviewInit();if(p==='actioncenter')acCenter();if(p==='enginecfg')egLoad();
  if(p==='assistant')asLoad();if(p==='qaeval')qeLoad();if(p==='sqldev')sdInit();
@@ -1986,6 +2003,54 @@ async function skDetail(n){const d=await J('/api/ont/skill/'+n);
 function watchJob(jid,sel,onDone){const el=$(sel);el.style.display='block';
  const t=setInterval(async()=>{const j=await J('/api/job/'+jid);el.textContent=`[${j.status}] ${j.tag}\n`+(j.tail||'');el.scrollTop=1e9;
   if(j.status!=='running'){clearInterval(t);if(j.status==='done'&&onDone)onDone();}},2500);}
+let CLAW_ID=null;
+async function clawSessions(){const ss=await J('/api/ont/chats');
+ $('#claw_sessions').innerHTML=ss.map(x=>`<div class="step" style="cursor:pointer" onclick="clawOpen(${jsAttr(x.id)})">${esc(x.title||'(空)')} <span class="muted">${esc(x.n)}</span></div>`).join('')||'<div class=muted>无会话</div>';}
+async function clawOpen(id){CLAW_ID=id;const d=await J('/api/ont/chats/'+id);
+ $('#claw_log').innerHTML=(d.messages||[]).map(m=>`<div class="${m.role==='user'?'msg-user':'msg-ai'}">${esc(m.text||'').replace(/EDIT_OP:\{[\s\S]*\}/,'').replace(/\n/g,'<br>')}</div>`).join('');}
+async function clawNew(){const c=await J('/api/ont/chats/new',{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'});CLAW_ID=c.id;$('#claw_log').innerHTML='';clawSessions();}
+async function clawAsk(){const q=$('#claw_q').value.trim();if(!q)return;$('#claw_q').value='';$('#claw_btn').disabled=true;
+ const log=$('#claw_log');log.insertAdjacentHTML('beforeend',`<div class="msg-user">${esc(q)}</div>`);
+ const hold=document.createElement('div');hold.className='msg-ai';hold.textContent='智能引擎处理中…';log.appendChild(hold);log.scrollTop=1e9;
+ try{if(!CLAW_ID){const c=await J('/api/ont/chats/new',{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'});CLAW_ID=c.id;}
+  const atts=[];for(const f of ($('#claw_file').files||[])){const b=await f.arrayBuffer();
+   atts.push({name:f.name,b64:btoa(String.fromCharCode(...new Uint8Array(b)))});}
+  $('#claw_file').value='';
+  const resp=await fetch('/api/ont/chat/stream',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:CLAW_ID,message:q,graph:'demo',attachments:atts})});
+  const rd=resp.body.getReader();const dec=new TextDecoder();let buf='',d=null;
+  while(true){const {done,value}=await rd.read();if(done)break;buf+=dec.decode(value,{stream:true});
+   let i;while((i=buf.indexOf('\n\n'))>=0){const line=buf.slice(0,i).replace(/^data: /,'');buf=buf.slice(i+2);
+    try{const ev=JSON.parse(line);
+     if(ev.type==='status'){hold.innerHTML='<span class="muted">'+esc(ev.text)+'</span>';log.scrollTop=1e9;}
+     if(ev.type==='done'){d=ev;}}catch(_){}}}
+  if(!d)throw '流中断';
+  let h=esc(d.reply||d.error||'').replace(/EDIT_OP:\{[\s\S]*\}/,'').replace(/\n/g,'<br>');
+  if(d.suggested_op)h+=`<div class="step" style="margin-top:8px"><b>建议编辑</b>: <code>${esc(JSON.stringify(d.suggested_op).slice(0,120))}</code>
+   <button class="ghost" onclick="clawApply(${jsAttr(JSON.stringify(d.suggested_op))})">确认执行</button></div>`;
+  hold.innerHTML=h;clawEdits();
+ }catch(e){hold.textContent='失败:'+e}
+ $('#claw_btn').disabled=false;log.scrollTop=1e9;}
+async function clawApply(opStr){const op=JSON.parse(opStr);
+ const d=await J('/api/ont/apply',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({graph:'demo',op,source:'chat',reviewer:($('#claw_who')&&$('#claw_who').value||'').trim()})});
+ toast(d.error||'已执行,可撤销');clawEdits();}
+async function clawDel(){if(!CLAW_ID)return;await J('/api/ont/chats/delete',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:CLAW_ID})});CLAW_ID=null;document.querySelector('#claw_log').innerHTML='';}
+async function clawUndo(){const d=await J('/api/ont/undo',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({graph:'demo'})});
+ toast(d.error||'已撤销');clawEdits();}
+async function clawEdits(){try{const e=await J('/api/ont/edits?graph=demo');$('#claw_edits').textContent=`编辑历史: ${(e.ops||[]).length} 条(最近: ${JSON.stringify((e.ops||[]).slice(-1)[0]||{}).slice(0,110)})`;}catch(_){}}
+function clawSaveWho(){try{localStorage.setItem('claw_who',$('#claw_who').value||'')}catch(_){}}
+async function clawAudit(){const d=await J('/api/ont/audit/demo');
+ if(d.error){$('#claw_audit').textContent=d.error;return}
+ const pers=Object.entries(d.by_person||{}).map(([k,v])=>`${esc(k)} ${v}`).join(' · ')||'无';
+ const srcs=Object.entries(d.by_source||{}).map(([k,v])=>`${esc(k)} ${v}`).join(' · ')||'无';
+ let h=`<div class="row" style="gap:14px;flex-wrap:wrap"><span>变更 <b>${d.total}</b></span>
+   <span>未署名 <b style="color:${d.unsigned?'#d97706':'inherit'}">${d.unsigned}</b></span>
+   <span>无理由 <b>${d.no_reason}</b></span><span>按人:${pers}</span><span>来源:${srcs}</span></div>`;
+ if((d.risky||[]).length){h+='<div style="margin-top:8px"><b style="color:#b91c1c">需复核 '+d.risky.length+' 项</b>'+
+   d.risky.map(r=>`<div class="step">[${esc(r.level)}] ${esc(r.op)} ${esc(r.target||'')} · ${esc(r.by)} —— ${esc(r.why)}</div>`).join('')+'</div>';}
+ if((d.recent||[]).length){h+='<table style="margin-top:8px"><tr><th>操作</th><th>目标</th><th>署名</th><th>来源</th><th>时间</th><th>依据</th></tr>'+
+   d.recent.map(r=>`<tr><td>${esc(r.op)}</td><td>${esc(r.target||'')}</td><td>${esc(r.by)}</td><td>${esc(r.source)}</td><td class="muted">${esc(r.ts||'')}</td><td class="muted">${esc(r.reason||'')}</td></tr>`).join('')+'</table>';}
+ h+=`<div class="muted" style="margin-top:6px;font-size:11px">${esc(d.note||'')}</div>`;
+ $('#claw_audit').innerHTML=h;}
 async function library(){const d=await J('/api/ont/forged');
  const rows=(d.ontologies||d.list||[]);
  $('#lib_list').innerHTML='<table><tr><th>ID</th><th>名称</th><th>对象数</th><th>关系数</th><th>操作</th></tr>'+
