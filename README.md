@@ -58,8 +58,7 @@ export DATAMIND_ENGINE_DIR=/path/to/ontology-engine   # 上游引擎(可选)
 ```bash
 python3 server.py                  # 前台运行 → http://127.0.0.1:8092
 # 或
-./start.sh                         # 后台运行,日志在 workdir/server.log;
-                                   # 若设了 DATAMIND_ENGINE_DIR 会顺带拉起经典工作台 :8091
+./start.sh                         # 后台运行,日志在 workdir/server.log
 ```
 
 停止:`kill $(lsof -ti :8092)`
@@ -95,9 +94,9 @@ gunicorn -w 1 -b 127.0.0.1:8092 server:app   # 已实测;-w 1:应用含进程内
 | 对话式本体编辑(apply/undo) | ❌ 需要引擎 | ✅ |
 | 内置构建技能库 | ❌ 需要引擎 | ✅ |
 
-上游引擎(**ontology-engine**,同一作者、同为 Apache-2.0)已一并开源——含八步确定性
-构建流水线、多运行时抽象 `agent_runtime`、对话式编辑 `serve_claw` 与全部构建技能。
-接引擎只需一个环境变量:
+上游本体引擎是**可选组件,不随本仓发布**——本仓开源范围仅 Cosmo DataMind 本体。
+若你拥有兼容的引擎目录(提供 `engine/agent_runtime.py` 多运行时抽象与 `web/skills_seed/` 构建技能),
+一个环境变量即可接入:
 
 ```bash
 export DATAMIND_ENGINE_DIR=/path/to/ontology-engine
