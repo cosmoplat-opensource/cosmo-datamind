@@ -324,9 +324,6 @@ a{color:var(--acc)}
   <div style="position:relative"><div class="card" style="padding:6px"><div id="g_canvas"></div></div>
    <div class="card" id="g_detail" style="position:absolute;top:12px;right:12px;width:340px;max-height:calc(100% - 24px);overflow:auto;display:none;z-index:6;box-shadow:0 8px 30px rgba(31,45,61,.16)"></div>
    <div class="muted" style="position:absolute;bottom:10px;left:14px;font-size:11px;pointer-events:none">点击节点/连线查看详情 · 滚轮缩放 · 拖拽平移</div></div></div>
-   <div class="card" style="width:300px">
-    <h3 id="st_obj_t">点击节点/左侧列表编辑</h3><div id="st_form"></div>
-    <h3 style="margin-top:12px">编辑日志</h3><div id="st_log" class="scroll" style="max-height:20vh"></div></div></div></div>
 
  <div class="page" id="p_review"><h2>本体评审 <span class="muted">人机协同人审:通过 / 否决 / 改动词 / 删除,每条记录评审人与意见 · 人只产生 asserted · 全程可撤销 · v0726a</span></h2>
   <div class="card"><div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">图谱 <select id="rv_sel" style="width:280px" onchange="rvLoad()"></select>
@@ -623,7 +620,7 @@ a{color:var(--acc)}
    <pre id="sk_log" style="margin-top:8px;max-height:300px;display:none"></pre></div></div>
 
  <div class="page" id="p_library"><h2>本体库 <span class="muted">锻造/构建的本体版本(/api/ont/forged)</span></h2>
-  <div class="card scroll" id="lib_list"></div></div></div>
+  <div class="card scroll" id="lib_list"></div></div>
 
  <div class="page" id="p_agents"><h2>智能体列表 <span class="muted">深度问数内置体 + 沉淀技能 + 构建技能包</span></h2>
   <div class="card"><div class="row" style="margin-bottom:10px"><input id="ag_q" placeholder="按名称筛选…" style="width:260px" oninput="agRender()"><span class="muted" id="ag_info"></span></div>
@@ -703,7 +700,7 @@ const loaded={};
 async function load(p){if(loaded[p])return;loaded[p]=1;
  if(p==='home')home();if(p==='catalog')catalog();if(p==='graph')graphs();if(p==='chat')chatInit();
  if(p==='metrics')metrics();if(p==='skills')skills();
- if(p==='library')library();if(p==='claw'){clawEdits();clawSessions();}if(p==='studio')studio();if(p==='rules')rules();
+ if(p==='library')library();if(p==='rules')rules();
  if(p==='build')bcInit();if(p==='conn')cnInit();if(p==='viz')vzInit();if(p==='review')reviewInit();if(p==='actioncenter')acCenter();if(p==='enginecfg')egLoad();
  if(p==='assistant')asLoad();if(p==='qaeval')qeLoad();if(p==='sqldev')sdInit();
  if(p==='agents')agentsLoad();if(p==='glossary')glossaryLoad();
@@ -1286,58 +1283,6 @@ function showNodeDetail(n){if(!n)return;const rel=GRAPH_CUR.edges.filter(x=>x.s=
   const mine=(ts||[]).filter(t=>(t.object_table&&tbl.includes(t.object_table.toLowerCase()))||t.object===n.name);
   if(mine.length)el.innerHTML='<h3 style="margin-top:10px" class="gd-h">可执行动作('+mine.length+')</h3>'
    +mine.map(t=>`<div class="step">${esc(t.cn)} <span class="tag ${t.risk==='high'?'warn':'ok'}" style="margin-left:4px">${t.risk==='high'?'须审批':'直执行'}</span> <a href="#" onclick="event.preventDefault();acOpen(${jsAttr(t.id)})">发起 ↗</a></div>`).join('');}).catch(()=>{});}
-let ST_KEY='demo',ST_SEL=null,stChart=null;
-async function studio(){const gs=await J('/api/graphs');
- $('#st_sel').innerHTML=graphOptions(gs,g=>`${g.name}(${g.nodes}/${g.edges})`);stLoad();}
-let ST_G=null;
-function stFilter(){const q=($('#st_q').value||'').toLowerCase();
- $('#st_objs').innerHTML=(ST_G?ST_G.nodes:[]).filter(n=>!q||n.name.toLowerCase().includes(q)||n.id.toLowerCase().includes(q))
-  .map(n=>`<div class="step" style="cursor:pointer" onclick="stPick(${jsAttr(n.id)},${jsAttr(n.name)})">${esc(n.name)} <span class="muted">${esc(n.kind)}</span></div>`).join('');}
-async function stLoad(){ST_KEY=$('#st_sel').value||'demo';const g=await J('/api/graph/'+ST_KEY);ST_G=g;stFilter();
- $('#st_info').textContent=`${g.nodes.length}节点·${g.edges.length}关系`;
- if(stChart){try{stChart.destroy();}catch(_){}stChart=null;}
- // 与本体图谱同款 G6 渲染 + 可视化方式选择;点节点进入编辑
- stChart=g6render('st_canvas',g,($('#st_layout')&&$('#st_layout').value)||'dagre',{onNode:n=>stPick(n.id,n.name)});
- stEdits();}
-function stPick(id,name){ST_SEL=id;$('#st_obj_t').textContent='编辑: '+name;
- const outRel=(ST_G?ST_G.edges:[]).filter(e=>e.s===id);
- $('#st_form').innerHTML=`
-  <div class="step">改中文名 <input id="st_cn" placeholder="新名" style="width:120px"><button class="ghost" onclick="stOp('rename',{cn:$('#st_cn').value})">应用</button></div>
-  <div class="step"><button class="ghost" onclick="stOp('confirm',{})">确认候选</button>改类型 <select id="st_kind" style="width:96px">${EDIT_KINDS.map(k=>`<option value="${k}">${KIND[k].n}</option>`).join('')}</select>
-   <button class="ghost" onclick="stOp('set_kind',{kind:$('#st_kind').value})">应用</button></div>
-  <div class="step">加属性列 <input id="st_col" placeholder="col" style="width:80px"><input id="st_colcn" placeholder="中文" style="width:70px">
-   <button class="ghost" onclick="stOp('add_attribute',{col:$('#st_col').value,cn:$('#st_colcn').value})">加</button></div>
-  <div class="step">加关系 →<input id="st_tgt" placeholder="目标对象id" style="width:110px"><input id="st_verb" placeholder="动词" style="width:70px">
-   <button class="ghost" onclick="stAddRel()">加</button></div>
-  <div class="step" style="color:#b91c1c"><button class="ghost" onclick="if(confirm('删除 '+${esc(JSON.stringify(id))}+'?'))stOp('remove_object',{})">删对象</button></div>
-  <div style="margin-top:8px"><b class="muted">出边关系(改动词/删):</b>`+
-  (outRel.map((e,i)=>`<div class="step">→${esc(e.t)} 「${esc(e.verb)}」
-   <input id="v_rel_${i}" placeholder="新动词" style="width:60px">
-   <button class="ghost" onclick="stRelVerb(${esc(JSON.stringify(e.t))},$('#v_rel_${i}').value)">改</button>
-   <button class="ghost" style="color:#b91c1c" onclick="stRelDel(${esc(JSON.stringify(e.t))})">删</button></div>`).join('')||'<div class=muted style="padding:4px">无出边</div>')+`</div>`;}
-async function stAddRel(){const t=$('#st_tgt').value.trim(),v=$('#st_verb').value.trim()||'关联';if(!t)return;
- await stRaw({op:'add_relation',target:'rel:'+ST_SEL+'->'+t,params:{verb:v}});}
-async function stRelVerb(t,v){if(!v)return;await stRaw({op:'verb',target:'rel:'+ST_SEL+'->'+t,params:{verb:v}});}
-async function stRelDel(t){await stRaw({op:'remove_relation',target:'rel:'+ST_SEL+'->'+t,params:{}});}
-async function stAddObj(){const cn=prompt('新对象中文名?');if(!cn)return;const k=prompt('类型(object/event/asset/role)','object')||'object';
- await stRaw({op:'add_object',target:'',params:{cn,kind:k}});}
-async function stRaw(op){const d=await J('/api/ont/apply',{method:'POST',headers:{'Content-Type':'application/json'},
-  body:JSON.stringify({graph:ST_KEY,op:{...op,reason:'工作台'}})});if(d.error){toast(d.error);return}stLoad();if(ST_SEL)stPick(ST_SEL,ST_SEL);}
-async function stOp(op,params){if(!ST_SEL)return;
- const d=await J('/api/ont/apply',{method:'POST',headers:{'Content-Type':'application/json'},
-  body:JSON.stringify({graph:ST_KEY,op:{op,target:'obj:'+ST_SEL,params,reason:'工作台编辑'}})});
- if(d.error){toast(d.error);return} stLoad();}
-async function stUndo(){const d=await J('/api/ont/undo',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({graph:ST_KEY})});
- if(d.error){toast(d.error);return} stLoad();}
-async function stSave(){const n=$('#st_ver').value.trim();if(!n){toast('填版本名');return}
- const d=await J('/api/ont/save',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({graph:ST_KEY,name:n})});
- if(d.error){toast(d.error);return} toast('已存入本体库: '+d.id);}
-async function stForge(){const n=$('#st_ver').value.trim()||('锻造_'+ST_KEY);
- const d=await J('/api/ont/forge',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({graph:ST_KEY,name:n})});
- toast(d.error||`锻造完成: ${d.id} · ${d.triples} 三元组 · SHACL ${d.shacl}`);}
-async function stRebuild(){if(!confirm('清空 '+ST_KEY+' 的草案编辑,回到基线?'))return;await J('/api/ont/rebuild',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({graph:ST_KEY})});stLoad();}
-async function stEdits(){const e=await J('/api/ont/edits?graph='+ST_KEY);
- $('#st_log').innerHTML=(e.ops||[]).slice(-15).reverse().map(o=>`<div class="step">${esc(o.op||'')} ${esc(o.target||'')} ${esc(JSON.stringify(o.params||{}).slice(0,40))}</div>`).join('')||'<div class=muted>暂无编辑</div>';}
 async function rules(){const d=await J('/api/ont/rules?graph=demo');const c=d.counts;
  const rt=await J('/api/ont/runtimes');
  $('#rt_sel').innerHTML=rt.runtimes.map(r=>`<option value="${esc(r)}" ${r===rt.current?'selected':''}>${esc(engName(r))}</option>`).join('');
@@ -1859,8 +1804,8 @@ async function bcInquire(){if(BC_BUSY)return;const q=$('#bc_q').value.trim();if(
  }catch(e){status='';draw();trace.insertAdjacentHTML('beforeend',`<div class="tag warn" style="margin-top:8px">连接中断:${esc(''+e)}</div>`);}
  BC_BUSY=false;$('#bc_send').disabled=false;}
 async function bcView(key){loaded.graph=1;document.querySelector('[data-p=graph]').click();await graphs(key);}
-function bcStudio(key){document.querySelector('[data-p=studio]').click();
- setTimeout(()=>{const el=$('#st_sel');if(el){el.value=key;stLoad();}},600);}
+function bcStudio(key){document.querySelector('[data-p=graph]').click();
+ setTimeout(()=>{const el=$('#g_sel');if(el){el.value=key;}drawGraph(key);},600);}
 // 构建结果卡渲染(live 与历史回放共用)
 function bcResultHTML(done){const s=done.stats||{};const e=done.evidence||{};
  const evtxt=[`库表 ${e.tables??0} 张`,e.docs?`文档/代码证据 ${e.docs} 份`:'',(e.refs&&e.refs.length)?`图像/资产 ${e.refs.length} 项`:''].filter(Boolean).join(' · ');
@@ -1880,7 +1825,7 @@ function bcResultHTML(done){const s=done.stats||{};const e=done.evidence||{};
     <div class="bc-vizdet" id="bcvizdet_${esc(done.graph_key)}"><span class="k">点击上方节点或连线查看详情</span></div></div>
    <div class="bc-acts"><button onclick="bcView(${jsAttr(done.graph_key)})">在本体图谱中查看 ↗</button>
     <button class="ghost" onclick="goReview(${jsAttr(done.graph_key)})">进入人审 ↗</button>
-    <button class="ghost" onclick="bcStudio(${jsAttr(done.graph_key)})">进建模工作台编辑 ↗</button></div></div>`;}
+    <button class="ghost" onclick="bcStudio(${jsAttr(done.graph_key)})">进本体图谱查看 ↗</button></div></div>`;}
 function bcRenderResult(log,done){log.insertAdjacentHTML('beforeend',bcResultHTML(done));bcRenderViz(done.graph_key);}
 // ── 构建对话历史(localStorage,类比深度问数)──
 let BC_CONV=null;
@@ -2044,45 +1989,11 @@ async function skDetail(n){const d=await J('/api/ont/skill/'+n);
 function watchJob(jid,sel,onDone){const el=$(sel);el.style.display='block';
  const t=setInterval(async()=>{const j=await J('/api/job/'+jid);el.textContent=`[${j.status}] ${j.tag}\n`+(j.tail||'');el.scrollTop=1e9;
   if(j.status!=='running'){clearInterval(t);if(j.status==='done'&&onDone)onDone();}},2500);}
-let CLAW_ID=null;
-async function clawSessions(){const ss=await J('/api/ont/chats');
- $('#claw_sessions').innerHTML=ss.map(x=>`<div class="step" style="cursor:pointer" onclick="clawOpen(${jsAttr(x.id)})">${esc(x.title||'(空)')} <span class="muted">${esc(x.n)}</span></div>`).join('')||'<div class=muted>无会话</div>';}
-async function clawOpen(id){CLAW_ID=id;const d=await J('/api/ont/chats/'+id);
- $('#claw_log').innerHTML=(d.messages||[]).map(m=>`<div class="${m.role==='user'?'msg-user':'msg-ai'}">${esc(m.text||'').replace(/EDIT_OP:\{[\s\S]*\}/,'').replace(/\n/g,'<br>')}</div>`).join('');}
-async function clawNew(){const c=await J('/api/ont/chats/new',{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'});CLAW_ID=c.id;$('#claw_log').innerHTML='';clawSessions();}
-async function clawAsk(){const q=$('#claw_q').value.trim();if(!q)return;$('#claw_q').value='';$('#claw_btn').disabled=true;
- const log=$('#claw_log');log.insertAdjacentHTML('beforeend',`<div class="msg-user">${esc(q)}</div>`);
- const hold=document.createElement('div');hold.className='msg-ai';hold.textContent='智能引擎处理中…';log.appendChild(hold);log.scrollTop=1e9;
- try{if(!CLAW_ID){const c=await J('/api/ont/chats/new',{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'});CLAW_ID=c.id;}
-  const atts=[];for(const f of ($('#claw_file').files||[])){const b=await f.arrayBuffer();
-   atts.push({name:f.name,b64:btoa(String.fromCharCode(...new Uint8Array(b)))});}
-  $('#claw_file').value='';
-  const resp=await fetch('/api/ont/chat/stream',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:CLAW_ID,message:q,graph:'demo',attachments:atts})});
-  const rd=resp.body.getReader();const dec=new TextDecoder();let buf='',d=null;
-  while(true){const {done,value}=await rd.read();if(done)break;buf+=dec.decode(value,{stream:true});
-   let i;while((i=buf.indexOf('\n\n'))>=0){const line=buf.slice(0,i).replace(/^data: /,'');buf=buf.slice(i+2);
-    try{const ev=JSON.parse(line);
-     if(ev.type==='status'){hold.innerHTML='<span class="muted">'+esc(ev.text)+'</span>';log.scrollTop=1e9;}
-     if(ev.type==='done'){d=ev;}}catch(_){}}}
-  if(!d)throw '流中断';
-  let h=esc(d.reply||d.error||'').replace(/EDIT_OP:\{[\s\S]*\}/,'').replace(/\n/g,'<br>');
-  if(d.suggested_op)h+=`<div class="step" style="margin-top:8px"><b>建议编辑</b>: <code>${esc(JSON.stringify(d.suggested_op).slice(0,120))}</code>
-   <button class="ghost" onclick="clawApply(${jsAttr(JSON.stringify(d.suggested_op))})">确认执行</button></div>`;
-  hold.innerHTML=h;clawEdits();
- }catch(e){hold.textContent='失败:'+e}
- $('#claw_btn').disabled=false;log.scrollTop=1e9;}
-async function clawApply(opStr){const op=JSON.parse(opStr);
- const d=await J('/api/ont/apply',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({graph:'demo',op})});
- toast(d.error||'已执行,可撤销');clawEdits();}
-async function clawDel(){if(!CLAW_ID)return;await J('/api/ont/chats/delete',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:CLAW_ID})});CLAW_ID=null;document.querySelector('#claw_log').innerHTML='';}
-async function clawUndo(){const d=await J('/api/ont/undo',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({graph:'demo'})});
- toast(d.error||'已撤销');clawEdits();}
-async function clawEdits(){try{const e=await J('/api/ont/edits?graph=demo');$('#claw_edits').textContent=`编辑历史: ${(e.ops||[]).length} 条(最近: ${JSON.stringify((e.ops||[]).slice(-1)[0]||{}).slice(0,110)})`;}catch(_){}}
 async function library(){const d=await J('/api/ont/forged');
  const rows=(d.ontologies||d.list||[]);
  $('#lib_list').innerHTML='<table><tr><th>ID</th><th>名称</th><th>对象数</th><th>关系数</th><th>操作</th></tr>'+
   rows.map(o=>`<tr><td>${esc(o.id)}</td><td>${esc(o.name||'')}</td><td>${o.objects??o.entities??'-'}</td><td>${o.links??'-'}</td>
-   <td><a href="#" onclick="event.preventDefault();document.querySelector('[data-p=studio]').click();setTimeout(()=>{$('#st_sel').value='forged_'+${jsAttr(o.id)};stLoad()},600)">编辑↗</a>
+   <td><a href="#" onclick="event.preventDefault();document.querySelector('[data-p=graph]').click();setTimeout(()=>{$('#g_sel').value='forged_'+${jsAttr(o.id)};drawGraph('forged_'+${jsAttr(o.id)})},600)">查看↗</a>
    <a href="#" style="color:#b91c1c;margin-left:8px" onclick="event.preventDefault();if(confirm('删除 '+${jsAttr(o.id)}+'?'))libDel(${jsAttr(o.id)})">删除</a></td></tr>`).join('')+'</table>';}
 async function libDel(id){const d=await J('/api/ont/forged/delete',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id})});
  if(d.error)toast(d.error);library();}
@@ -2097,7 +2008,7 @@ if(location.hash.slice(1))routeHash();else{home();loaded.home=1;}
 // hash 路由:每个子页可经 #<page> 寻址;另支持 #graph=<key> / #obj=<key>:<id> 深链
 function routeHash(){const h=location.hash.slice(1);
  const mg=h.match(/^graph=(.+)$/);if(mg){goPage('graph');setTimeout(()=>{const el=$('#g_sel');if(el){el.value=mg[1];drawGraph(mg[1]);}},600);return;}
- const mo=h.match(/^obj=([^:]+):(.+)$/);if(mo){goPage('studio');setTimeout(()=>{const el=$('#st_sel');if(el){el.value=mo[1];stLoad().then(()=>stPick(mo[2],mo[2]));}},700);return;}
+ const mo=h.match(/^obj=([^:]+):(.+)$/);if(mo){goPage('graph');setTimeout(()=>{const el=$('#g_sel');if(el){el.value=mo[1];}drawGraph(mo[1]);},600);return;}
  if(h){if(!goPage(h)){goPage('home');history.replaceState(null,'','#home');}}else goPage('home');}  // 未知 hash 回首页并纠正 URL,避免地址与页面不一致
 addEventListener('hashchange',routeHash);
 // 可访问性:让 onclick 的 div/span 可 Tab 聚焦 + Enter/Space 触发(键盘可操作)
