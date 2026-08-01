@@ -203,3 +203,94 @@ def gaps_from(report):
             "fix": it["fix"],
         })
     return out
+
+# ── 穿透链路核验(DR-025)────────────────────────────────────────────
+# 《本体智能研究报告》四个行业案例(电力/通信/航空/银行)方法同构:
+#   定义 5-6 类核心实体 → 建立一条纵向穿透链路 → 在链路节点上嵌规则与动作
+# 例:停电事件—设备—线路—用户;订单—网络资源—工单—用户;飞机—子系统—零部件—供应商。
+# 本体的价值不在对象多,而在能否从链路一端穿到另一端。故把「主链路」提升为
+# 可声明、可核验的一等公民:逐段核验而非只看首尾连通——首尾通但中段断的链路
+# 在业务上是断的(追溯会在断点处失去责任主体),必须逐段判定。
+
+def check_chain(chain, ir):
+    """核验一条穿透链路。chain 为对象名列表,按业务顺序排列。
+
+    与 check_one 的区别:CQ 是「这个问题答不答得了」,链路是「这条追溯路径通不通」——
+    后者逐段给出断点位置,便于直接定位到该补哪一段。
+    """
+    if not chain or len(chain) < 2:
+        return {"chain": chain, "verdict": "invalid", "reason": "链路至少需 2 个节点"}
+
+    resolved, missing = [], []
+    for name in chain:
+        hit = None
+        for i, o in enumerate(ir.get("objects", [])):
+            if any(n.lower() == str(name).strip().lower() for n in _obj_names(o)):
+                hit = {"name": name, "key": _key_of(o, i),
+                       "cn": o.get("cn") or o.get("name")}
+                break
+        if hit:
+            resolved.append(hit)
+        else:
+            missing.append(name)
+
+    if missing:
+        return {"chain": chain, "verdict": "unanswerable", "missing": missing,
+                "segments": [],
+                "reason": "链路节点未在本体中找到: " + "、".join(missing),
+                "fix": "补建模:这些概念尚未进入本体,链路无法成立"}
+
+    g_strong, g_all = _adj(ir, True), _adj(ir, False)
+    segments, weak, broken = [], 0, 0
+    for i in range(len(resolved) - 1):
+        a, b = resolved[i], resolved[i + 1]
+        p = _path(g_strong, a["key"], b["key"])
+        if p:
+            seg = {"from": a["name"], "to": b["name"], "status": "ok",
+                   "hops": len(p) - 1, "path": p}
+        else:
+            p2 = _path(g_all, a["key"], b["key"])
+            if p2:
+                weak += 1
+                seg = {"from": a["name"], "to": b["name"], "status": "weak",
+                       "hops": len(p2) - 1, "path": p2,
+                       "note": "路径须借道 candidate/gap 边,证据不足"}
+            else:
+                broken += 1
+                seg = {"from": a["name"], "to": b["name"], "status": "broken",
+                       "hops": None, "path": None,
+                       "note": "两节点间无任何路径,链路在此断开"}
+        segments.append(seg)
+
+    verdict = "broken" if broken else ("weak" if weak else "intact")
+    return {
+        "chain": chain, "verdict": verdict, "segments": segments,
+        "intact_segments": sum(1 for s in segments if s["status"] == "ok"),
+        "total_segments": len(segments),
+        "reason": {"intact": "全链贯通,各段路径均仅经 verified/asserted 边",
+                   "weak": f"{weak} 段须借道候选边(骨架成立、证据不足)",
+                   "broken": f"{broken} 段完全断开,追溯将在此失去下游"}[verdict],
+        "fix": {"intact": "",
+                "weak": "对断点段沿途候选关系做数据裁决或人审升级",
+                "broken": "补关系:断开段之间缺少任何路径,须在抽取或人审阶段补建"}[verdict],
+    }
+
+
+def chain_gaps(report):
+    """链路断点转缺口条目。"""
+    if report.get("verdict") in ("intact", "invalid"):
+        return []
+    out = []
+    for s in report.get("segments", []):
+        if s["status"] == "ok":
+            continue
+        out.append({
+            "type": "chain_broken" if s["status"] == "broken" else "chain_weak",
+            "desc": f"穿透链路断点:{s['from']} → {s['to']} —— {s.get('note', '')}",
+            "fix": "补关系" if s["status"] == "broken" else "补证据(候选关系待裁决)",
+        })
+    for m in report.get("missing", []):
+        out.append({"type": "chain_missing_node",
+                    "desc": f"穿透链路节点缺失:{m} 未在本体中",
+                    "fix": "补建模"})
+    return out

@@ -1590,6 +1590,62 @@ def ont_cq():
     except Exception as e:
         return jsonify({"error": f"CQ 核验失败: {e}"}), 500
 
+@app.post("/api/ont/chain")
+def ont_chain():
+    """穿透链路核验(DR-025):逐段判定一条业务追溯链路通不通。
+
+    《本体智能研究报告》四个行业案例方法同构——定义 5-6 类核心实体后,
+    关键在建立一条纵向穿透链路(停电事件—设备—线路—用户 / 订单—资源—工单—用户 /
+    飞机—子系统—零部件—供应商 / 客户—账户—交易—关联方)。本体的价值不在对象多,
+    而在能否从一端穿到另一端;首尾通但中段断的链路在业务上是断的,故逐段判定。
+
+    请求: {"graph": "<键>", "chain": ["停电事件", "配电设备", "线路", "用户"]}
+    """
+    body = request.get_json(silent=True) or {}
+    key = (body.get("graph") or "").strip()
+    if not key: return jsonify({"error": "缺 graph(不默认任何图谱)"}), 400
+    if _bad_gkey(key): return jsonify({"error": "非法图谱键"}), 400
+    chain = body.get("chain") or []
+    if not isinstance(chain, list) or len(chain) < 2:
+        return jsonify({"error": "缺 chain(至少 2 个节点的对象名列表)"}), 400
+    if len(chain) > 20: return jsonify({"error": "chain 过长(上限 20 节点)"}), 400
+    ir = load_ir_edited(key)
+    if not ir: return jsonify({"error": "图谱不存在"}), 404
+    try:
+        import cq_check
+        rep = cq_check.check_chain(chain, ir)
+        rep["graph"] = key
+        rep["gaps"] = cq_check.chain_gaps(rep)
+        return jsonify(rep)
+    except Exception as e:
+        return jsonify({"error": f"链路核验失败: {e}"}), 500
+
+
+@app.get("/api/ont/drift/<key>")
+def ont_drift(key):
+    """概念漂移与关系断裂检测(DR-025):本体还对不对得上数据源。
+
+    《本体智能研究报告》阶段六点名「引入自动化检测工具监控本体与数据源的一致性,
+    及时发现概念漂移与关系断裂」。本体建成之日与库一致,但库会继续演进——
+    表改名、列删除、主键换名,此时本体不报错,只在问数时静默产出错误 SQL。
+
+    确定性 schema 比对,不调 LLM;只报事实不自动修复(漂移的正解可能是改本体、
+    也可能是数据源回滚,须人判断)。
+    """
+    if _bad_gkey(key): return jsonify({"error": "非法图谱键"}), 400
+    ir = load_ir_edited(key)
+    if not ir: return jsonify({"error": "图谱不存在"}), 404
+    if not os.path.exists(DB):
+        return jsonify({"error": "数据源不可用,无法比对", "checked": False}), 503
+    try:
+        import drift_check
+        rep = drift_check.check(ir, DB)
+        rep["graph"] = key
+        rep["gaps"] = drift_check.gaps_from(rep)
+        return jsonify(rep)
+    except Exception as e:
+        return jsonify({"error": f"漂移检测失败: {e}"}), 500
+
 @app.get("/api/ont/completeness/<key>")
 def ont_completeness(key):
     """本体完备度 / IOF 一致性记分卡:定义·示例·反例覆盖率、BFO 归类率、成熟度分布、关系接地率。
