@@ -50,6 +50,11 @@ async def main():
         await pg.goto(BASE, wait_until="domcontentloaded")
         await pg.wait_for_timeout(2500)
 
+        def mark():
+            """取一次 errors 基线 —— 全局唯一入口,避免同时存在
+            『go() 返回基线』与『手写 len(errors)』两套写法。"""
+            return len(errors)
+
         def new_errs(base):
             """只取基线之后新增的错误——errors 全程只追加不清空,
             前置页面的真实报错得以保留在最终汇总里,不被后续步骤掩盖。"""
@@ -58,7 +63,7 @@ async def main():
         # ── 阶段一:26 页逐页走查 ──────────────────────────────
         print("== 阶段一:全页面渲染 ==")
         for p in PAGES:
-            base = len(errors)
+            base = mark()
             await ev(f"location.hash='#{p}'")
             await pg.wait_for_timeout(1600)
             vis = await ev(f"(d=>d&&getComputedStyle(d).display!=='none')(document.getElementById('p_{p}'))")
@@ -70,10 +75,8 @@ async def main():
         # ── 阶段二:子 UI 与交互 ──────────────────────────────
         print("== 阶段二:子 UI 交互 ==")
         async def go(p, ms=1500):
-            """切页并返回本次切换前的 errors 基线,供调用方只检查新增错误"""
-            base = len(errors)
+            """仅负责切页;需要检查错误的调用点自行 mark() 取基线"""
             await ev(f"location.hash='#{p}'"); await pg.wait_for_timeout(ms)
-            return base
 
         # home:KPI 数字
         await go("home")
@@ -91,7 +94,7 @@ async def main():
         await go("metrics")
         rows = await ev("document.querySelectorAll('#p_metrics tr').length", 0)
         if rows>3:
-            base = len(errors)
+            base = mark()
             clicked = await ev("(r=>{if(!r)return false;r.click();return true})"
                                "(document.querySelectorAll('#p_metrics tbody tr, #p_metrics tr')[1])", False)
             await pg.wait_for_timeout(900)
