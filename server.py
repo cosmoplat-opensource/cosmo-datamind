@@ -1560,6 +1560,36 @@ def graph_export_fmt(key, fmt):
         return Response(g.serialize(format="json-ld"), mimetype="application/ld+json", headers={"Content-Disposition": f"attachment;filename={key}.jsonld"})
     return Response(g.serialize(format="xml"), mimetype="application/rdf+xml", headers={"Content-Disposition": f"attachment;filename={key}.owl"})
 
+@app.post("/api/ont/cq")
+def ont_cq():
+    """能力问题(CQ)核验(DR-024):在已建成的本体上判定「这些业务问题答不答得了」。
+
+    与完备度记分卡正交——记分卡答「本体规不规范」,CQ 答「本体够不够用」:
+    一个定义 100%、接地 100% 的本体,完全可能缺了业务真正要问的那条关系。
+
+    判定为确定性图计算(对象锚定 + 路径可达 + 边状态),不调 LLM:
+    让模型自评「能不能答」会把「看起来能答」当成「能答」,与反造假纪律相悖。
+
+    请求: {"graph": "<键>", "cqs": ["问题…", {"q": "问题…", "expect": ["对象名"]}]}
+    """
+    body = request.get_json(silent=True) or {}
+    key = (body.get("graph") or "").strip()
+    if not key: return jsonify({"error": "缺 graph(不默认任何图谱)"}), 400
+    if _bad_gkey(key): return jsonify({"error": "非法图谱键"}), 400
+    cqs = body.get("cqs") or []
+    if not isinstance(cqs, list) or not cqs: return jsonify({"error": "缺 cqs(能力问题列表)"}), 400
+    if len(cqs) > 100: return jsonify({"error": "cqs 过多(上限 100)"}), 400
+    ir = load_ir_edited(key)
+    if not ir: return jsonify({"error": "图谱不存在"}), 404
+    try:
+        import cq_check
+        rep = cq_check.check_all(cqs, ir)
+        rep["graph"] = key
+        rep["gaps"] = cq_check.gaps_from(rep)      # 供人审队列/构建下一轮消费
+        return jsonify(rep)
+    except Exception as e:
+        return jsonify({"error": f"CQ 核验失败: {e}"}), 500
+
 @app.get("/api/ont/completeness/<key>")
 def ont_completeness(key):
     """本体完备度 / IOF 一致性记分卡:定义·示例·反例覆盖率、BFO 归类率、成熟度分布、关系接地率。

@@ -475,6 +475,25 @@ chk("V20 query 写语句仍拒", r.status_code==400)
 r=g("/"); chk("V21 UI 含 业务助手+问数评测 页", 'data-p="assistant"' in r.text and 'data-p="qaeval"' in r.text)
 chk("V22 UI 含 口径卡/流式渲染代码", "metric_cards" in r.text and "narrative_delta" in r.text)
 
+print("=== CQ. 能力问题核验(DR-024)===")
+_cqb={"graph":"demo","cqs":["月度聚合指标表(按人x月)和业务员维度表的关系","光刻机良率与封装产能的关联"]}
+r=po("/api/ont/cq",json=_cqb,headers=H); _cq=r.json()
+chk("CQ1 核验 200 + 三态计数齐全", r.status_code==200 and set(_cq["counts"])=={"answerable","partial","unanswerable"})
+chk("CQ2 真实关系判 answerable", _cq["items"][0]["verdict"]=="answerable")
+chk("CQ3 无关问题判 unanswerable(不臆造可答)", _cq["items"][1]["verdict"]=="unanswerable")
+chk("CQ4 覆盖率只计 answerable", _cq["coverage"]==round(_cq["counts"]["answerable"]*100.0/_cq["total"],1))
+chk("CQ5 不可答回流为缺口", len(_cq["gaps"])>=1 and _cq["gaps"][0]["type"].startswith("cq_"))
+chk("CQ6 结论如实标注边界(不冒充已验证可答)", "不代表数据中一定有值" in _cq["note"])
+r=po("/api/ont/cq",json={"cqs":["x"]},headers=H); chk("CQ7 缺 graph→400(不默认图谱)", r.status_code==400)
+r=po("/api/ont/cq",json={"graph":"demo"},headers=H); chk("CQ8 缺 cqs→400", r.status_code==400)
+r=po("/api/ont/cq",json={"graph":"forged_../../etc/passwd","cqs":["x"]},headers=H); chk("CQ9 穿越图谱键→400", r.status_code==400)
+r=po("/api/ont/cq",json={"graph":"demo","cqs":["x"]*101},headers=H); chk("CQ10 超量 cqs→400", r.status_code==400)
+import cq_check as _cqm
+_tir={"objects":[{"id":"a","cn":"甲对象"},{"id":"b","cn":"乙对象"},{"id":"c","cn":"丙对象"}],
+      "links":[{"source":"a","target":"b","status":"verified"},{"source":"b","target":"c","status":"candidate"}]}
+chk("CQ11 借道候选边判 partial(不算可答)", _cqm.check_one("甲对象经乙对象到丙对象",_tir)["verdict"]=="partial")
+chk("CQ12 从严锚定:单字不误命中", [x["matched"] for x in _cqm.anchor_objects("查甲对象",_tir)]==["甲对象"])
+
 print("=== W. 动作层产品化(DR-020)===")
 _d=g("/api/actions").json()
 chk("W1 动作类型 7 个(含 3 新种子)", len(_d["types"])==7 and {"freeze_batch","adjust_temp_zone","supplier_scar"}<= {t["id"] for t in _d["types"]})
@@ -621,7 +640,7 @@ _root=_os.path.dirname(_os.path.abspath(__file__))
 chk("Z20 requirements.txt 存在", _os.path.exists(_os.path.join(_root,"requirements.txt")))
 _req=open(_os.path.join(_root,"requirements.txt"),encoding="utf-8").read()
 import sys as _sys
-_std=set(_sys.stdlib_module_names); _local={"translate_cn","quick_build","agent_runtime","serve_claw","export_owl","server"}
+_std=set(_sys.stdlib_module_names); _local={"translate_cn","quick_build","agent_runtime","serve_claw","export_owl","server","cq_check"}
 _ext=set()
 for _f in ("server.py","test_all.py"):
     for _n in ast.walk(ast.parse(open(_os.path.join(_root,_f),encoding="utf-8").read())):

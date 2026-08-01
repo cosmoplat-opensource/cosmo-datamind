@@ -37,6 +37,7 @@ Cosmo DataMind 是**自有品牌、原创前后端**的「数据治理 × 本体
 - [DR-010 · IOF/BFO 本体工程对齐(注释/接地/注释化 OWL 导出/SHACL 门禁/完备度)](decisions/DR-010-iof-bfo-alignment.md)
 - [DR-011 · 泛化裁决 v2(等值/前缀/复合键/PK 感知 + 三级控制环)](decisions/DR-011-generalized-adjudication.md)
 - [DR-012 · SPARQL 健壮性(线程安全/诚实报错/合法默认示例)](decisions/DR-012-sparql-robustness.md)
+- [DR-024 · 能力问题(CQ)驱动的构建与验收(结构可达性判定,不调 LLM)](decisions/DR-024-competency-questions-driven-build.md)
 - [DR-023 · 语义增强三件套:词汇表注入/增强注册表/一致性门控(对标 Trane 认知稳定性)](decisions/DR-023-epistemic-stability.md)
 
 ### 迭代 / Iterations
@@ -84,3 +85,10 @@ Consult @specs/map.md to find relevant context.
 - 本仓开源范围仅 Cosmo DataMind 本体。移除旧系统内嵌:/platform 静态代理、/api/claw 代理、经典部署自拉起、引擎工具箱(TOOLS)、平台成果目录;UI 摘除 本体对话/建模工作台/成果库/平台工作台(原版)/平台对话(原版) 五页。
 - 计数(2026-08-01):**26 页面模块 / 106 后端路由 / 279 运行时断言**(数据 108 表 186,833 行 / 107 指标 / 655 术语不变)。
 - 上游引擎为可选组件(DATAMIND_ENGINE_DIR 接入,缺失自动降级),不随本仓发布。
+
+## dev 分支研发中(2026-08-02 起)
+- **DR-024 CQ 核验**:`cq_check.py` + `POST /api/ont/cq`。依据《本体智能研究报告(1.0)》
+  (AIIA × CCSA TC601)六阶段流程——报告把能力问题验证列为「验证本体是否真正可用的核心环节」,
+  而本系统此前只有完备度记分卡(规不规范)与问数评测(端到端正确率),缺「够不够用」这一环。
+  判定为确定性图计算(锚定→路径→边状态),三态 answerable/partial/unanswerable,
+  不可答自动回流 gaps。套件 291 断言。
