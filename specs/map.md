@@ -37,6 +37,7 @@ Cosmo DataMind 是**自有品牌、原创前后端**的「数据治理 × 本体
 - [DR-010 · IOF/BFO 本体工程对齐(注释/接地/注释化 OWL 导出/SHACL 门禁/完备度)](decisions/DR-010-iof-bfo-alignment.md)
 - [DR-011 · 泛化裁决 v2(等值/前缀/复合键/PK 感知 + 三级控制环)](decisions/DR-011-generalized-adjudication.md)
 - [DR-012 · SPARQL 健壮性(线程安全/诚实报错/合法默认示例)](decisions/DR-012-sparql-robustness.md)
+- [DR-026 · 双盲意图检测与本体使用度回流(两通道互不透传 + 只观测不阻断)](decisions/DR-026-doubleblind-intent-and-usage.md)
 - [DR-025 · 概念漂移检测与穿透链路核验(确定性 schema 比对 + 逐段判定)](decisions/DR-025-drift-and-penetration-chain.md)
 - [DR-024 · 能力问题(CQ)驱动的构建与验收(结构可达性判定,不调 LLM)](decisions/DR-024-competency-questions-driven-build.md)
 - [DR-023 · 语义增强三件套:词汇表注入/增强注册表/一致性门控(对标 Trane 认知稳定性)](decisions/DR-023-epistemic-stability.md)
@@ -99,3 +100,11 @@ Consult @specs/map.md to find relevant context.
   后者对齐四个行业案例同构的建模模式(5-6 类实体 + 一条纵向穿透链路),逐段判定给出断点。
   三者互补:CQ 答「够不够用」· 链路答「通不通」· 漂移答「还对不对得上数据」。
   套件 311 断言。
+- **DR-026 双盲与使用度**:`intent_check.py`(接入问数两分支,口径闸后执行前)、
+  `usage_stat.py` + `GET /api/ont/usage/<key>`。对齐报告电力案例的「双盲检测机制」
+  与阶段六的「业务调用频次驱动迭代」。两通道互不透传(A 只看问句、B 只看 SQL),
+  均不调 LLM;只观测不阻断。实测抓到真阳性:问「业务员维度表有多少人」而 SQL
+  查销售订单去重——口径闸放行,双盲判 mismatch。套件 326 断言。
+
+四问互补:CQ 答「够不够用」· 链路答「通不通」· 漂移答「还对不对得上数据」·
+双盲答「答的是不是问的」。

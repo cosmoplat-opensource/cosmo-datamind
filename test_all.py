@@ -533,6 +533,33 @@ chk("CH6 断开段→broken 且定位到段", _cqc.check_chain(["甲","丁"],_ci
 chk("CH7 节点不存在→unanswerable", _cqc.check_chain(["甲","不存在"],_cir)["verdict"]=="unanswerable")
 chk("CH8 链路断点回流缺口", len(_cqc.chain_gaps(_cqc.check_chain(["甲","丁"],_cir)))>=1)
 
+print("=== IU. 双盲意图检测与使用度(DR-026)===")
+import intent_check as _icm, json as _j2
+_iir=_j2.load(open("workdir/demo_ir.json"))
+_e=next(o for o in _iir["objects"] if o.get("cn")=="业务员维度表")
+_c=next(o for o in _iir["objects"] if o.get("cn")=="客户维度表")
+chk("IU1 意图一致→aligned", _icm.cross_check(f"{_e['cn']}的情况", f"SELECT * FROM {_e['table']}", _iir)["verdict"]=="aligned")
+chk("IU2 答非所问→mismatch(闸放行也拦得住)", _icm.cross_check(f"{_e['cn']}的情况", f"SELECT * FROM {_c['table']}", _iir)["verdict"]=="mismatch")
+chk("IU3 漏维度→partial", _icm.cross_check(f"{_e['cn']}和{_c['cn']}对比", f"SELECT * FROM {_e['table']}", _iir)["verdict"]=="partial")
+chk("IU4 无锚点→unknown(不冒充通过)", _icm.cross_check("随便看看", "SELECT 1", _iir)["verdict"]=="unknown")
+chk("IU5 CTE 不当作真实表", _icm.actual_intent(f"WITH tmp AS (SELECT * FROM {_e['table']}) SELECT * FROM tmp", _iir)["tables"]==[_e["table"].lower()])
+chk("IU6 mismatch 给出澄清建议而非直接给答案", "澄清" in _icm.cross_check(f"{_e['cn']}的情况", f"SELECT * FROM {_c['table']}", _iir)["advice"])
+chk("IU7 两通道互不透传(声明只看问句)", not _icm.declared_intent(f"{_e['cn']}", _iir)["objects"][0].get("sql"))
+_st=_icm.step_of(_icm.cross_check(f"{_e['cn']}的情况", f"SELECT * FROM {_c['table']}", _iir))
+chk("IU8 步骤条目结构一致(step/ok/info)", set(_st)=={"step","ok","info"} and _st["ok"] is False)
+r=g("/api/ont/usage/demo"); _us=r.json()
+chk("IU9 使用度 200 + 覆盖率", r.status_code==200 and "coverage" in _us and _us["objects"]>0)
+chk("IU10 交叉证据强度(强/弱关系计数)", all(k in _us["top"][0] for k in ("strong_rels","weak_rels","calls")))
+chk("IU11 零调用不武断裁剪(标注窗口前提)", "窗口" in _us["note"])
+r=g("/api/ont/usage/a..b"); chk("IU12 穿越键→400", r.status_code==400)
+r=g("/api/ont/usage/nope"); chk("IU13 图谱不存在→404", r.status_code==404)
+import usage_stat as _usm, tempfile as _tf
+_wd=_tf.mkdtemp()
+_usm.record(_wd,"g",["o1","o2"],"query"); _usm.record(_wd,"g",["o1"],"query")
+_rep=_usm.report(_wd,{"objects":[{"id":"o1","cn":"甲"},{"id":"o2","cn":"乙"},{"id":"o3","cn":"丙"}],"links":[]},"g")
+chk("IU14 计数累加正确", _rep["top"][0]["calls"]==2 and _rep["called"]==2)
+_usm.record(_wd,"g",[],"query"); chk("IU15 空对象列表不写脏数据", _usm.report(_wd,{"objects":[{"id":"o1"}],"links":[]},"g")["top"][0]["calls"]==2)
+
 print("=== W. 动作层产品化(DR-020)===")
 _d=g("/api/actions").json()
 chk("W1 动作类型 7 个(含 3 新种子)", len(_d["types"])==7 and {"freeze_batch","adjust_temp_zone","supplier_scar"}<= {t["id"] for t in _d["types"]})
@@ -679,7 +706,7 @@ _root=_os.path.dirname(_os.path.abspath(__file__))
 chk("Z20 requirements.txt 存在", _os.path.exists(_os.path.join(_root,"requirements.txt")))
 _req=open(_os.path.join(_root,"requirements.txt"),encoding="utf-8").read()
 import sys as _sys
-_std=set(_sys.stdlib_module_names); _local={"translate_cn","quick_build","agent_runtime","serve_claw","export_owl","server","cq_check","drift_check"}
+_std=set(_sys.stdlib_module_names); _local={"translate_cn","quick_build","agent_runtime","serve_claw","export_owl","server","cq_check","drift_check","intent_check","usage_stat"}
 _ext=set()
 for _f in ("server.py","test_all.py"):
     for _n in ast.walk(ast.parse(open(_os.path.join(_root,_f),encoding="utf-8").read())):

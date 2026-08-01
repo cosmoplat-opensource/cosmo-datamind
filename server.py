@@ -1646,6 +1646,23 @@ def ont_drift(key):
     except Exception as e:
         return jsonify({"error": f"漂移检测失败: {e}"}), 500
 
+@app.get("/api/ont/usage/<key>")
+def ont_usage(key):
+    """本体使用度与建模优先级(DR-026):以使用数据驱动建模迭代。
+
+    报告阶段六:「定期评估本体的业务调用频次与决策支撑效果,以使用数据驱动优化迭代」。
+    统计本身不是目的——把调用频次与证据状态交叉,直接产出优先级:
+    高频却仍有候选关系 → 优先补裁决;零调用 → 疑似建模过度(须先确认统计窗口够长)。
+    """
+    if _bad_gkey(key): return jsonify({"error": "非法图谱键"}), 400
+    ir = load_ir_edited(key)
+    if not ir: return jsonify({"error": "图谱不存在"}), 404
+    try:
+        import usage_stat
+        return jsonify(usage_stat.report(WORK, ir, key))
+    except Exception as e:
+        return jsonify({"error": f"使用度统计失败: {e}"}), 500
+
 @app.get("/api/ont/completeness/<key>")
 def ont_completeness(key):
     """本体完备度 / IOF 一致性记分卡:定义·示例·反例覆盖率、BFO 归类率、成熟度分布、关系接地率。
@@ -1964,6 +1981,17 @@ def chat():
         okv, why = _validate_sql_ontology(sql, ir_gate)          # A2 口径拦截
         if not okv:
             steps.append({"step": "ontology_gate", "ok": False, "info": "口径拦截:" + why}); continue
+        # DR-026 双盲意图检测:口径闸管「SQL 合不合规」,这里管「答的是不是问的那件事」。
+        # 只观测不阻断——确定性反解也会有漏判(如口径卡走视图名),
+        # 因误判挡住正确答案的代价远高于标注一句存疑。
+        try:
+            import intent_check, usage_stat
+            _ic = intent_check.cross_check(question, sql, ir_gate)
+            steps.append(intent_check.step_of(_ic))
+            # DR-026 使用度埋点:复用双盲已反解出的对象,零额外解析开销;失败静默(旁路)
+            usage_stat.record(WORK, "demo", [o["key"] for o in _ic["actual"]["objects"]], "query")
+        except Exception:
+            pass
         try:
             data = q(sql)
             steps.append({"step": "exec_sql", "ok": True, "info": f'{a.get("title","")} → {len(data["rows"])}行'})
@@ -2078,6 +2106,14 @@ def chat_stream():
             if not okv:
                 yield push("ontology_gate", False, f"[{idx}] 口径拦截:{why}"); continue
             yield push("ontology_gate", True, f"[{idx}] 本体校验通过 · 表与 JOIN 键均在本体边界内")
+            try:                                     # DR-026 双盲意图检测(只观测不阻断)+ 使用度埋点
+                import intent_check, usage_stat
+                _ic = intent_check.cross_check(question, sql, ir_gate)
+                yield push("intent_crosscheck", _ic["verdict"] in ("aligned", "unknown"),
+                           f"[{idx}] " + intent_check.step_of(_ic)["info"])
+                usage_stat.record(WORK, "demo", [o["key"] for o in _ic["actual"]["objects"]], "query")
+            except Exception:
+                pass
             try:
                 data = q(sql, attach_uploads=True)
                 nrow = len(data["rows"])
