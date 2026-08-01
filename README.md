@@ -29,21 +29,58 @@ Cosmo DataMind 的思路是**先把语义底座建对**:用大模型广撒网提
 | **标准导出** | OWL2 / RDF / SHACL / SKOS / JSON-LD,并提供 SPARQL 端点 |
 | **问数评测** | 金标题集 × 三组同题对照(无检索增强 / 图谱增强 / 本体增强),度量正确率、出处引用率与口径拦截数 |
 
-## 快速开始
+## 安装与部署
+
+以下命令序列均经全新克隆 + 干净 venv 实测。
+
+### 1. 安装
 
 ```bash
-git clone <repo-url> && cd cosmo-datamind
+git clone <repo-url>
+cd cosmo-datamind
+python3 -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
-
-cp .env.example .env          # 按需填写;留空也能启动
-export DATAMIND_DB=/path/to/your.db
-
-python3 server.py             # → http://127.0.0.1:8092
 ```
 
-**数据底座**:本仓库不含数据。`DATAMIND_DB` 指向任一 SQLite 库即可;
-`workdir/demo_ir.json` 是一份可直接浏览的示例本体(108 对象 / 60 关系),
-用于在没有自有数据时先看清产物长什么样。
+### 2. 配置(可选)
+
+```bash
+cp .env.example .env               # 按需填写;全部留空也能启动
+export DATAMIND_DB=/path/to/your.db          # 只读 SQLite 数据底座
+export DATAMIND_ENGINE_DIR=/path/to/ontology-engine   # 上游引擎(可选)
+```
+
+两者都不设也能起服务:图谱页直接浏览内置示例本体(108 对象 / 60 关系),
+需要数据库的端点会在响应里如实标注「数据库不可用」,不会静默失败。
+
+### 3. 启动
+
+```bash
+python3 server.py                  # 前台运行 → http://127.0.0.1:8092
+# 或
+./start.sh                         # 后台运行,日志在 workdir/server.log;
+                                   # 若设了 DATAMIND_ENGINE_DIR 会顺带拉起经典工作台 :8091
+```
+
+停止:`kill $(lsof -ti :8092)`
+
+### 4. 验证与测试
+
+```bash
+curl http://127.0.0.1:8092/api/overview      # KPI 概览(无库时含 warning 字段)
+python3 test_all.py                          # 系统级回归(需服务已启动)
+```
+
+### 5. 生产部署(可选)
+
+内置的 Flask 开发服务器仅供本地使用。对外提供服务时用 WSGI 服务器 + 反向代理:
+
+```bash
+pip install gunicorn
+gunicorn -w 1 -b 127.0.0.1:8092 server:app   # 已实测;-w 1:应用含进程内状态,勿多 worker
+```
+
+再由 Nginx 等反代承担 TLS 与鉴权——本服务自身不含用户体系,见 [SECURITY.md](SECURITY.md)。
 
 ## 运行形态:两档
 
