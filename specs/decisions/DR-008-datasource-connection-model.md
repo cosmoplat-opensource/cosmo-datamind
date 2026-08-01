@@ -11,7 +11,7 @@
 
 ## 决定 / Decision
 - **三类源**,统一经 `_resolve_src(id)` 解析为 (sqlite 路径, 名称):
-  - **内置**:`imom`(主库)、`uploads`(上传库),随系统就绪。
+  - **内置**:`demo`(主库)、`uploads`(上传库),随系统就绪。
   - **SQLite 文件**:登记时**实时校验可读表**(`_sqlite_tables`),就绪即可作构建/取数/浏览源。
   - **外部库**(mysql/doris/hive/postgresql):仅**登记连接串**(前端按 host/port/db 自动生成 DSN),标注「需内网/驱动」;离线不直接取数,`_resolve_src` 返回 `(None, 名称)`,调用方给出清晰离线提示。**不虚假宣称能取数**。
 - 连接持久化于 `workdir/build_connections.json`(`_atomic_json`);默认选中源为**就绪源**(空的上传库自动兜底到首个就绪源,避免「无可读表」报错)。

@@ -36,7 +36,7 @@
 | 关注点 | 统一点 | 位置 |
 |---|---|---|
 | 只读取数 | `ro_connect(path)` — mode=ro,缺库响亮失败 | server.py |
-| IR 写端点前奏 | `_open_writable(key)` 图谱必填(缺→400,不默认 imom)+ → (ir, wp, err) | server.py,enrich/reground/maturity 共用 |
+| IR 写端点前奏 | `_open_writable(key)` 图谱必填(缺→400,不默认 demo)+ → (ir, wp, err) | server.py,enrich/reground/maturity 共用 |
 | 原子写 | `_atomic_json` + `_WRITE_LOCK` 串行化 | 全部持久化 |
 | 路径守卫 | `_bad_gkey` / `_ir_write_path`(拒只读源与穿越) | 全部图谱键入口 |
 | 动词接地 | `_FOUNDED_RELATIONS` + `_ground_verb`(BFO + 时间指标) | 单一映射源 |

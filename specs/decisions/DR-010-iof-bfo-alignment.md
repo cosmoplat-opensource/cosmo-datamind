@@ -15,7 +15,7 @@
 3. **关系接地**:`_FOUNDED_RELATIONS`+`_ground_verb()` 把中文动词→BFO 有根据关系(归属→continuantPartOfAtAllTimes、产生→hasSpecifiedOutput、服务→hasParticipantAtSomeTime…)+ 时间指标 `temporal`(atAllTimes/atSomeTime);未知动词回退 `relatedToAtSomeTime`。`ir_to_graph` 对老 IR 现场接地。
 4. **注释化 OWL 导出**:`_ir_to_turtle` 重写为自包含 IOF 注释化 OWL2 生成器(BFO `subClassOf` + `iof-av:*` + 关系 `subPropertyOf` + 字段级 `DatatypeProperty`),ttl/jsonld/owl 三格式一致;`/api/sparql` 与 `/api/ont/forge`(SHACL)同底,注释可被 SPARQL 查询。**不改平台 `export_owl.py`**。
 5. **SHACL 质量门禁**:`_IOF_SHACL` 形状(类须有 `rdfs:label`;非原始类须有 `naturalLanguageDefinition`),`/api/ont/forge` 用 pyshacl 校验、返回 conforms/violations。
-6. **完备度记分卡 + 一键升级**:`/api/ont/completeness/<key>`(定义/反例/成熟度/BFO/接地加权分 + 缺口清单);`/api/ont/enrich`(LLM 补定义/反例回写)、`/api/ont/reground`(标注具体动词接地)、`/api/ont/maturity`(成熟度人审)——三写端点均经 `_ir_write_path` 只允许 imom/app/built/forged 的 JSON 回写,拒只读平台源(cq 的 .js)与路径穿越;引擎离线不臆造。
+6. **完备度记分卡 + 一键升级**:`/api/ont/completeness/<key>`(定义/反例/成熟度/BFO/接地加权分 + 缺口清单);`/api/ont/enrich`(LLM 补定义/反例回写)、`/api/ont/reground`(标注具体动词接地)、`/api/ont/maturity`(成熟度人审)——三写端点均经 `_ir_write_path` 只允许 demo/app/built/forged 的 JSON 回写,拒只读平台源(cq 的 .js)与路径穿越;引擎离线不臆造。
 
 ## 后果 / Consequences
 - (+) 图谱可与 IOF/BFO 生态互操作;导出 OWL 带机读定义/反例/成熟度/溯源,可进 Protégé/HermiT/SHACL。

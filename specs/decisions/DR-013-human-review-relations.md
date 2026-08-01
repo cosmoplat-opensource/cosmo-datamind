@@ -30,7 +30,7 @@
 
 ## 验证(实测)
 
-- built_f2050f(76 关系/8 待审):confirm→asserted+approved、reject→rejected 且图渲染剔除、verb 改动词、undo 逐条回退 ✓;imom(links 形状)同套往返 ✓;Playwright 无头验证评审页表格/按钮与图谱页边卡动作在 示例 与 built 图谱均渲染 ✓;test_all.py 119/119 ✓。
+- built_f2050f(76 关系/8 待审):confirm→asserted+approved、reject→rejected 且图渲染剔除、verb 改动词、undo 逐条回退 ✓;demo(links 形状)同套往返 ✓;Playwright 无头验证评审页表格/按钮与图谱页边卡动作在 示例 与 built 图谱均渲染 ✓;test_all.py 119/119 ✓。
 
 ## 增补(2026-07-25 下午):评审人 / 评审意见 / 删元素
 

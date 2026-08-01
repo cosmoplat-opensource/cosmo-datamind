@@ -1804,8 +1804,6 @@ async function bcInquire(){if(BC_BUSY)return;const q=$('#bc_q').value.trim();if(
  }catch(e){status='';draw();trace.insertAdjacentHTML('beforeend',`<div class="tag warn" style="margin-top:8px">连接中断:${esc(''+e)}</div>`);}
  BC_BUSY=false;$('#bc_send').disabled=false;}
 async function bcView(key){loaded.graph=1;document.querySelector('[data-p=graph]').click();await graphs(key);}
-function bcStudio(key){document.querySelector('[data-p=graph]').click();
- setTimeout(()=>{const el=$('#g_sel');if(el){el.value=key;}drawGraph(key);},600);}
 // 构建结果卡渲染(live 与历史回放共用)
 function bcResultHTML(done){const s=done.stats||{};const e=done.evidence||{};
  const evtxt=[`库表 ${e.tables??0} 张`,e.docs?`文档/代码证据 ${e.docs} 份`:'',(e.refs&&e.refs.length)?`图像/资产 ${e.refs.length} 项`:''].filter(Boolean).join(' · ');
@@ -1824,8 +1822,7 @@ function bcResultHTML(done){const s=done.stats||{};const e=done.evidence||{};
     <div class="bc-viz" id="bcviz_${esc(done.graph_key)}"></div>
     <div class="bc-vizdet" id="bcvizdet_${esc(done.graph_key)}"><span class="k">点击上方节点或连线查看详情</span></div></div>
    <div class="bc-acts"><button onclick="bcView(${jsAttr(done.graph_key)})">在本体图谱中查看 ↗</button>
-    <button class="ghost" onclick="goReview(${jsAttr(done.graph_key)})">进入人审 ↗</button>
-    <button class="ghost" onclick="bcStudio(${jsAttr(done.graph_key)})">进本体图谱查看 ↗</button></div></div>`;}
+    <button class="ghost" onclick="goReview(${jsAttr(done.graph_key)})">进入人审 ↗</button></div></div>`;}
 function bcRenderResult(log,done){log.insertAdjacentHTML('beforeend',bcResultHTML(done));bcRenderViz(done.graph_key);}
 // ── 构建对话历史(localStorage,类比深度问数)──
 let BC_CONV=null;
@@ -1908,7 +1905,7 @@ async function vzInit(){
  $('#vz_src').innerHTML=ready.map(s=>`<option value="${esc(s.id)}">${esc(s.name)}</option>`).join('')||'<option value="demo">示例主库</option>';
  await vzQuickOpts();vzBoardsLoad();}
 async function vzQuickOpts(){VZ_QUICK={};const src=$('#vz_src').value||'demo';let opts='<option value="">— 选表 / 指标自动生成 SQL —</option>';
- // 指标(仅 imom)
+ // 指标(仅示例图谱)
  if(src==='demo'){try{const m=await J('/api/metrics');const flat=[];Object.values(m||{}).forEach(a=>a.forEach(x=>{if(x.table&&x.value_col)flat.push(x)}));
   if(flat.length){opts+='<optgroup label="指标(月度聚合)">'+flat.slice(0,60).map((x,i)=>{const kk='m'+i;VZ_QUICK[kk]={type:'metric',m:x};return `<option value="${kk}">${esc(x.name)}</option>`}).join('')+'</optgroup>';}}catch(_){}}
  // 表(取前若干含数值列的表)
@@ -1993,7 +1990,7 @@ async function library(){const d=await J('/api/ont/forged');
  const rows=(d.ontologies||d.list||[]);
  $('#lib_list').innerHTML='<table><tr><th>ID</th><th>名称</th><th>对象数</th><th>关系数</th><th>操作</th></tr>'+
   rows.map(o=>`<tr><td>${esc(o.id)}</td><td>${esc(o.name||'')}</td><td>${o.objects??o.entities??'-'}</td><td>${o.links??'-'}</td>
-   <td><a href="#" onclick="event.preventDefault();document.querySelector('[data-p=graph]').click();setTimeout(()=>{$('#g_sel').value='forged_'+${jsAttr(o.id)};drawGraph('forged_'+${jsAttr(o.id)})},600)">查看↗</a>
+   <td><a href="#" onclick="event.preventDefault();bcView('forged_'+${jsAttr(o.id)})">查看↗</a>
    <a href="#" style="color:#b91c1c;margin-left:8px" onclick="event.preventDefault();if(confirm('删除 '+${jsAttr(o.id)}+'?'))libDel(${jsAttr(o.id)})">删除</a></td></tr>`).join('')+'</table>';}
 async function libDel(id){const d=await J('/api/ont/forged/delete',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id})});
  if(d.error)toast(d.error);library();}
@@ -2007,8 +2004,8 @@ async function sparqlRun(){$('#sq_info').textContent='查询中…';
 if(location.hash.slice(1))routeHash();else{home();loaded.home=1;}
 // hash 路由:每个子页可经 #<page> 寻址;另支持 #graph=<key> / #obj=<key>:<id> 深链
 function routeHash(){const h=location.hash.slice(1);
- const mg=h.match(/^graph=(.+)$/);if(mg){goPage('graph');setTimeout(()=>{const el=$('#g_sel');if(el){el.value=mg[1];drawGraph(mg[1]);}},600);return;}
- const mo=h.match(/^obj=([^:]+):(.+)$/);if(mo){goPage('graph');setTimeout(()=>{const el=$('#g_sel');if(el){el.value=mo[1];}drawGraph(mo[1]);},600);return;}
+ const mg=h.match(/^graph=(.+)$/);if(mg){loaded.graph=1;goPage('graph');graphs(mg[1]);return;}
+ const mo=h.match(/^obj=([^:]+):(.+)$/);if(mo){loaded.graph=1;goPage('graph');graphs(mo[1]);return;}   // 仅定位到图谱;对象级高亮随 studio 页一并移除
  if(h){if(!goPage(h)){goPage('home');history.replaceState(null,'','#home');}}else goPage('home');}  // 未知 hash 回首页并纠正 URL,避免地址与页面不一致
 addEventListener('hashchange',routeHash);
 // 可访问性:让 onclick 的 div/span 可 Tab 聚焦 + Enter/Space 触发(键盘可操作)

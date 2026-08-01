@@ -1478,7 +1478,7 @@ _TTL_XSD = {"int": "integer", "integer": "integer", "bigint": "integer", "smalli
 
 def _ir_to_turtle(key, ir):
     """IR → OWL2 Turtle,带 BFO 上层归类 + IOF-AV 机读注释 + 关系接地(借鉴 Industrial Ontology Foundry)。
-    自包含、确定性纯函数;所有图谱(imom/应用/quick_build/forged)统一走此路径,ttl/jsonld/owl 三格式一致且带注释。"""
+    自包含、确定性纯函数;所有图谱(示例/应用/quick_build/forged)统一走此路径,ttl/jsonld/owl 三格式一致且带注释。"""
     g = ir_to_graph(key, ir)
     raw = {}                                              # 原始对象索引:取 attrs 补字段级数据类型属性,不丢信息
     for o in (ir.get("objects") or []):
@@ -1602,7 +1602,7 @@ def _ir_write_path(key):
     src = IR_SOURCES.get(key)
     if src:
         for p in src["paths"]:
-            if p.endswith(".json"): return p              # imom→WORK/demo_ir.json、app→WORK/app_ontology_ir.json
+            if p.endswith(".json"): return p              # demo→WORK/demo_ir.json、app→WORK/app_ontology_ir.json
     return None
 
 def _open_writable(key, need_objects=False):
@@ -1612,7 +1612,7 @@ def _open_writable(key, need_objects=False):
         return None, None, (jsonify({"error": "需要指定图谱(graph)"}), 400)
     wp = _ir_write_path(key)
     if not wp:
-        return None, None, (jsonify({"error": "该图谱为只读平台源,不支持回写(请选 imom/应用/构建/锻造图谱)"}), 400)
+        return None, None, (jsonify({"error": "该图谱为只读平台源,不支持回写(请选 示例/应用/构建/锻造图谱)"}), 400)
     ir = load_ir(key)
     if not ir:
         return None, None, (jsonify({"error": "图谱不存在"}), 404)

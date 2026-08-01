@@ -27,6 +27,8 @@ async def main():
         errors = []
         pg.on("pageerror", lambda e: errors.append(str(e)[:160]))
 
+        FAILED = object()      # 求值失败哨兵:与「合法的假值」区分开
+
         async def ev(js, dv=None):
             """页面求值守卫:异常或返回 None 时给默认值——加载异常按 fail 走,不让脚本崩溃或静默漏报"""
             try:
@@ -34,6 +36,14 @@ async def main():
                 return dv if v is None else v
             except Exception as e:
                 errors.append("evaluate:" + str(e)[:120]); return dv
+
+        async def ev_strict(js):
+            """安全断言专用:求值失败返回 FAILED 哨兵,绝不退化成看似通过的假值"""
+            try:
+                v = await pg.evaluate(js)
+                return FAILED if v is None else v
+            except Exception as e:
+                errors.append("evaluate:" + str(e)[:120]); return FAILED
         pg.on("console", lambda m: errors.append("console:"+m.text[:160]) if m.type=="error" else None)
 
         await pg.goto(BASE, wait_until="domcontentloaded")
@@ -72,9 +82,13 @@ async def main():
         await go("metrics")
         rows = await ev("document.querySelectorAll('#p_metrics tr').length", 0)
         if rows>3:
-            await ev("document.querySelectorAll('#p_metrics tbody tr, #p_metrics tr')[1].click()")
+            errors.clear()
+            clicked = await ev("(r=>{if(!r)return false;r.click();return true})"
+                               "(document.querySelectorAll('#p_metrics tbody tr, #p_metrics tr')[1])", False)
             await pg.wait_for_timeout(900)
-            ok(f"metrics {rows}行+行点击")
+            errs = [e for e in errors if "favicon" not in e]
+            if clicked and not errs: ok(f"metrics {rows}行+行点击")
+            else: bad("metrics 行点击", f"clicked={clicked} errs={errs[:1]}")
         else: bad("metrics 行数", str(rows))
         # catalog:表清单+预览
         await go("catalog")
@@ -155,8 +169,11 @@ async def main():
         await go("enginecfg", 2000)
         t = await ev("document.getElementById('p_enginecfg').innerText", '')
         (ok if ("运行时" in t or "runtime" in t.lower()) else bad)("enginecfg 渲染")
-        leak = await ev("[...document.querySelectorAll('#p_enginecfg input')].filter(i=>/KEY/i.test(i.id||'')).some(i=>i.value.length>8&&!i.value.includes('*'))")
-        (ok if not leak else bad)("enginecfg 无明文 key(空或掩码)")
+        leak = await ev_strict("[...document.querySelectorAll('#p_enginecfg input')]"
+                               ".filter(i=>/KEY/i.test(i.id||'')).some(i=>i.value.length>8&&!i.value.includes('*'))")
+        if leak is FAILED: bad("enginecfg 无明文 key", "求值失败,安全断言不可退化为通过")
+        elif leak: bad("enginecfg 无明文 key", "检出未掩码的 key 输入框")
+        else: ok("enginecfg 无明文 key(空或掩码)")
         # conn:连接列表
         await go("conn")
         t = await ev("document.getElementById('p_conn').innerText", '')
