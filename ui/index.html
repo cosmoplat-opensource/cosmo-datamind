@@ -450,7 +450,7 @@ a{color:var(--acc)}
       <textarea id="chat_q" placeholder="请输入数据分析问题(支持上传 Excel、CSV、TXT 文件)" onkeydown="if(event.key==='Enter'&&!event.shiftKey&&!event.isComposing){event.preventDefault();ask()}"></textarea>
       <div class="dq-atts" id="dq_atts"></div>
       <div class="dq-tools">
-       <span class="dq-sel" id="dq_skill_chip" onclick="dqOpenSkill()"><span id="dq_skill_lbl">技能 imom-deep-qa</span></span>
+       <span class="dq-sel" id="dq_skill_chip" onclick="dqOpenSkill()"><span id="dq_skill_lbl">技能 demo-deep-qa</span></span>
        <span class="dq-sel" id="dq_src_chip" onclick="dqOpenDs()"><span id="dq_src_lbl">数据源: 全部</span></span>
        <label class="dq-icon" title="上传 Excel/CSV/TXT">附件<input type="file" id="dq_file" multiple accept=".csv,.tsv,.txt,.xlsx,.xls" style="display:none" onchange="dqUpload(this)"></label>
        <span style="flex:1"></span>
@@ -617,8 +617,17 @@ a{color:var(--acc)}
   </div></div>
 
  <div class="page" id="p_skills"><h2>技能中心 <span class="muted">skills_seed 构建技能</span></h2>
+  <div id="sk_list"></div>
+  <div class="card"><h3>运行技能</h3><div class="row"><select id="sk_sel" style="width:280px"></select>
+   <input id="sk_args" placeholder="参数,如 --ir workdir/demo_ir.json --out /tmp/x"><button onclick="skillRun()">运行</button></div>
+   <pre id="sk_log" style="margin-top:8px;max-height:300px;display:none"></pre></div></div>
+
  <div class="page" id="p_library"><h2>本体库 <span class="muted">锻造/构建的本体版本(/api/ont/forged)</span></h2>
   <div class="card scroll" id="lib_list"></div></div></div>
+
+ <div class="page" id="p_agents"><h2>智能体列表 <span class="muted">深度问数内置体 + 沉淀技能 + 构建技能包</span></h2>
+  <div class="card"><div class="row" style="margin-bottom:10px"><input id="ag_q" placeholder="按名称筛选…" style="width:260px" oninput="agRender()"><span class="muted" id="ag_info"></span></div>
+   <div class="scroll" id="ag_list"></div></div></div>
 
  <div class="page" id="p_glossary"><h2>术语管理 <span class="muted">英文↔中文业务词典(表名/列名/短语/词元),深度问数与中文化的语义基座</span></h2>
   <div class="card"><div class="row" style="margin-bottom:10px"><input id="gl_q" placeholder="搜索英文/中文术语…" style="width:280px" oninput="glRender()">
@@ -1395,7 +1404,7 @@ async function dqUpload(input){const fs=[...(input.files||[])];if(!fs.length)ret
  catch(e){toast&&toast('上传失败');}}
 function dqRenderAtts(){$('#dq_atts').innerHTML=DQ_ATTS.map((a,i)=>`<span class="dq-att"><b>${esc(a.name)}</b> <span class="muted">${esc(''+a.rows)}行</span> <span class="x" onclick="DQ_ATTS.splice(${i},1);dqRenderAtts()">✕</span></span>`).join('');}
 // ── 数据源 / 技能 弹窗(仿平台)──
-let DQ_DS={graphs:[],tables:[],allTables:true}, DQ_SKILL='imom-deep-qa', DQ_GRAPHS=null, DQ_TABLES=null;
+let DQ_DS={graphs:[],tables:[],allTables:true}, DQ_SKILL='demo-deep-qa', DQ_GRAPHS=null, DQ_TABLES=null;
 function dqCloseModal(id){$('#'+id).style.display='none';}
 // 弹窗:Esc 关闭 + 点遮罩关闭(可访问性)
 addEventListener('keydown',e=>{if(e.key==='Escape')document.querySelectorAll('.dq-modal').forEach(m=>{if(m.style.display!=='none')m.style.display='none';});});
@@ -1430,7 +1439,7 @@ function dqDsConfirm(){let lbl='全部';const ng=DQ_DS.graphs.length,nt=DQ_DS.ta
  $('#dq_src_lbl').textContent='数据源: '+lbl;dqCloseModal('dq_dsmodal');}
 async function dqOpenSkill(){$('#dq_skmodal').style.display='flex';const body=$('#dq_sk_body');body.innerHTML='<div class="muted">加载中…</div>';
  let sinked=[];try{sinked=await J('/api/chat/skills');}catch(e){}
- const cards=[{id:'imom-deep-qa',name:'imom-deep-qa',builtin:true,desc:'基于 示例 应用本体图谱的深度问数编排。就毛利/收入/产量/成本/费用/目标达成等业务指标提问时启用。'}]
+ const cards=[{id:'demo-deep-qa',name:'demo-deep-qa',builtin:true,desc:'基于 示例 应用本体图谱的深度问数编排。就毛利/收入/产量/成本/费用/目标达成等业务指标提问时启用。'}]
   .concat((sinked||[]).map(s=>({id:s.id,name:(s.question||s.id).slice(0,24),desc:'沉淀自问数 · '+(s.analyses?s.analyses.length:0)+' 条SQL',used:s.analyses?s.analyses.length:0})));
  body.innerHTML=cards.map(c=>`<div class="sk-card ${DQ_SKILL===c.id?'sel':''}" onclick="dqSkillPick(${esc(JSON.stringify(c.id))})"><div style="flex:1"><div class="nm">${esc(c.name)}${c.builtin?'<span class="badge">内置</span>':'<span class="badge">沉淀</span>'}</div><div class="ds">${esc(c.desc)}</div></div></div>`).join('')
   +`<div class="muted" style="text-align:center;margin-top:8px">单选:不选则自动匹配最优技能</div>`;}
@@ -1475,7 +1484,7 @@ function dqChart(el,r){if(!r||!r.data||!r.data.rows.length)return;const ch=r.cha
   xAxis:{type:'category',data:r.data.rows.map(row=>row[x]),...AX},yAxis:{type:'value',...AX},
   series:ys.map(yc=>({name:yc,type:r.chart.type||'line',data:r.data.rows.map(row=>row[yc])}))});}}
 function dqRenderCard(card,q,d){const uid=DQ_UID++;const okN=d.steps.filter(s=>s.ok).length;const nres=(d.results||[]).length;
- let html=`<div class="dq-tags"><span class="dq-t def">imom-deep-qa</span>
+ let html=`<div class="dq-tags"><span class="dq-t def">demo-deep-qa</span>
    <span class="dq-t idx">执行 ${d.steps.length} 步 · 成功 ${okN}</span>
    ${d.cached?'<span class="dq-t ok">缓存·秒回</span>':''}
    ${nres?`<span class="dq-t ok">出 ${nres} 图</span>`:'<span class="dq-t warn">无图表结果</span>'}</div>`;
@@ -1574,14 +1583,14 @@ async function ask(){if(DQ_MODE==='diag')return diagAsk();
  stream.insertAdjacentHTML('beforeend',`<div class="dq-usermsg">${esc(q)}</div>`);
  const card=document.createElement('div');card.className='dq-card';stream.appendChild(card);stream.scrollTop=1e9;
  const live=[];let status='正在连接引擎…';const pr=[];const scroll=()=>{if(!ac.signal.aborted)stream.scrollTop=1e9;};
- card.innerHTML=`<div class="dq-tags"><span class="dq-t idx">引擎运行中</span><span class="dq-t def">imom-deep-qa</span></div>`+
+ card.innerHTML=`<div class="dq-tags"><span class="dq-t idx">引擎运行中</span><span class="dq-t def">demo-deep-qa</span></div>`+
   `<details class="dq-exec" open><summary>执行记录</summary><div class="dq-log" id="_dqlog"></div></details><div id="_dqres"></div>`;
  const lg=card.querySelector('#_dqlog'), rs=card.querySelector('#_dqres');
  const renderLog=()=>{if(!card.isConnected)return;lg.innerHTML=live.map(s=>`<div class="dq-logstep"><span class="ck ${s.ok?'':'no'}">${s.ok?'✓':'✗'}</span><span>${s.ts?`<span class="muted">[${esc(s.ts)}]</span> `:''}<b>${esc(s.step)}</b>${s.info?' — '+esc(s.info):''}</span></div>`).join('')+
    (status?`<div class="dq-logstep"><span class="ck">⏳</span><span class="muted">${esc(status)}</span></div>`:'');scroll();};
  renderLog();
  try{
-  const skill=DQ_SKILL||'imom-deep-qa';
+  const skill=DQ_SKILL||'demo-deep-qa';
   const resp=await fetch('/api/chat/stream',{method:'POST',headers:{'Content-Type':'application/json'},signal:ac.signal,body:JSON.stringify({q,history:CHAT_HIST.slice(-2),skill,graphs:DQ_DS.graphs,tables:DQ_DS.tables,attachments:DQ_ATTS.map(a=>a.name)})});
   if(!resp.ok){card.innerHTML=`<span class="dq-t warn">请求失败: HTTP ${resp.status}</span>`;$('#chat_btn').disabled=false;return;}
   const rd=resp.body.getReader();const dec=new TextDecoder();let buf='',done=null;
