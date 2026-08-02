@@ -1759,6 +1759,86 @@ def ont_audit(key):
                 "故本视图反映的是当前生效的变更集,不是历史全量操作流水",
     })
 
+_RULES_F = os.path.join(WORK, "ont_rules.json")
+
+def _load_rules(key):
+    try:
+        d = json.load(open(_RULES_F, encoding="utf-8"))
+        return d.get(key, []) if isinstance(d, dict) else []
+    except Exception:
+        return []
+
+def _save_rules(key, rules):
+    with _WRITE_LOCK:
+        try:
+            d = json.load(open(_RULES_F, encoding="utf-8"))
+            if not isinstance(d, dict): d = {}
+        except Exception:
+            d = {}
+        d[key] = rules
+        _atomic_json(_RULES_F, d)
+
+@app.get("/api/ont/rulebook/<key>")
+def ont_rulebook(key):
+    """业务规则与约束清单(DR-028 · 报告语义层第四要素)+ 静态一致性校验。"""
+    if _bad_gkey(key): return jsonify({"error": "非法图谱键"}), 400
+    import rule_engine
+    rules = _load_rules(key)
+    return jsonify({"graph": key, "rules": rules,
+                    "consistency": rule_engine.consistency_check(rules)})
+
+@app.post("/api/ont/rulebook/<key>")
+def ont_rulebook_save(key):
+    """新增/更新一条业务规则。结构非法一律拒收——规则是逻辑边界,带病入库会污染全部下游判定。"""
+    if _bad_gkey(key): return jsonify({"error": "非法图谱键"}), 400
+    import rule_engine
+    r = (request.get_json(silent=True) or {}).get("rule") or {}
+    err = rule_engine.validate_rule(r)
+    if err: return jsonify({"error": f"规则非法: {err}"}), 400
+    ir = load_ir_edited(key)
+    if not ir: return jsonify({"error": "图谱不存在"}), 404
+    keys = {o.get("id") or o.get("name") for o in ir.get("objects", [])}
+    if r["on"] not in keys:
+        return jsonify({"error": f"作用对象 {r['on']} 不在本体中 —— 规则须锚定到已建模的对象"}), 400
+    r["ts"] = time.strftime("%Y-%m-%d %H:%M")
+    who = ((request.get_json(silent=True) or {}).get("author") or "").strip()[:40]
+    if who: r["author"] = who
+    rules = [x for x in _load_rules(key) if x.get("id") != r["id"]] + [r]
+    if len(rules) > 500: return jsonify({"error": "规则过多(上限 500)"}), 400
+    _save_rules(key, rules)
+    return jsonify({"ok": True, "total": len(rules),
+                    "consistency": rule_engine.consistency_check(rules)})
+
+@app.post("/api/ont/rulebook/<key>/delete")
+def ont_rulebook_del(key):
+    if _bad_gkey(key): return jsonify({"error": "非法图谱键"}), 400
+    rid = (request.get_json(silent=True) or {}).get("id", "")
+    rules = _load_rules(key)
+    left = [x for x in rules if x.get("id") != rid]
+    if len(left) == len(rules): return jsonify({"error": "规则不存在"}), 404
+    _save_rules(key, left)
+    return jsonify({"ok": True, "total": len(left)})
+
+@app.post("/api/ont/decide/<key>")
+def ont_decide(key):
+    """决策层求值(DR-028):由规则推导隐含结论,每条结论可回溯至具体规则依据。
+
+    报告决策层要求「逻辑推理基于语义层的概念关系与业务规则,推导出未显式记录的
+    隐含结论」「形成完整可追溯的决策路径——每一条结论均可回溯至具体规则依据」。
+    确定性求值,不调 LLM:规则是业务写死的逻辑边界,用模型推理会把概率当逻辑。
+    """
+    if _bad_gkey(key): return jsonify({"error": "非法图谱键"}), 400
+    body = request.get_json(silent=True) or {}
+    obj = (body.get("object") or "").strip()
+    facts = body.get("facts")
+    if not obj: return jsonify({"error": "缺 object(作用对象)"}), 400
+    if not isinstance(facts, dict) or not facts:
+        return jsonify({"error": "缺 facts(该实例的字段字典)"}), 400
+    import rule_engine
+    res = rule_engine.evaluate(_load_rules(key), obj, facts)
+    res["graph"] = key
+    return jsonify(res)
+
 @app.get("/api/ont/completeness/<key>")
 def ont_completeness(key):
     """本体完备度 / IOF 一致性记分卡:定义·示例·反例覆盖率、BFO 归类率、成熟度分布、关系接地率。
@@ -2036,7 +2116,14 @@ def _qa_key(question, history, focus=None):
     try:
         if os.path.exists(UPLOAD_DB): up_sig = str(int(os.path.getmtime(UPLOAD_DB)))
     except Exception: pass
-    sig = json.dumps([question, [h.get("q", "") for h in (history or [])[-2:]], sorted(focus or []), up_sig], ensure_ascii=False)
+    # 本体编辑指纹:本体是问数的语义锚点(召回/口径/双盲全靠它),改了本体却复用旧答案,
+    # 用户会持续拿到旧语义下的结果——别名新增后仍答不上就是这么来的(实测发现)
+    ont_sig = ""
+    try:
+        _ep = _edits_path("demo")
+        if os.path.exists(_ep): ont_sig = str(int(os.path.getmtime(_ep)))
+    except Exception: pass
+    sig = json.dumps([question, [h.get("q", "") for h in (history or [])[-2:]], sorted(focus or []), up_sig, ont_sig], ensure_ascii=False)
     return hashlib.md5(sig.encode("utf-8")).hexdigest()
 
 @app.post("/api/chat")
