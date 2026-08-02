@@ -113,6 +113,19 @@ export DATAMIND_ENGINE_DIR=/path/to/ontology-engine
 - `DATAMIND_ENGINE_DIR` — 上游本体引擎目录(可选)
 - `DATAMIND_HOST` / `DATAMIND_PORT` — 默认 `127.0.0.1:8092`
 - `OPENAI_API_KEY` 等模型密钥 — **环境变量优先于配置文件**,界面只回显掩码
+- **接任意 OpenAI 兼容 LLM**(GLM / DeepSeek / Qwen / vLLM 自建…),无需上游引擎:
+
+```bash
+export DATAMIND_LLM_BASE=https://open.bigmodel.cn/api/coding/paas/v4
+export DATAMIND_LLM_KEY=<your-key>
+export DATAMIND_LLM_MODEL=glm-4.5
+export CLAW_DRIVER=openai
+python3 server.py
+```
+
+未配置时该驱动不注册,系统按既有逻辑降级到模板兜底,不会误判为「LLM 可用」。
+注意推理型模型(如 glm-5)可能把 token 预算耗在思考上而返回空内容,本驱动会
+如实判为失败而非回传空串。
 
 ## 安全
 

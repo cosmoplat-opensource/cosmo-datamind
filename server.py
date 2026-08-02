@@ -35,6 +35,11 @@ sys.path.insert(0, os.path.join(PLATFORM, "engine"))
 try:
     import agent_runtime as _ar                      # noqa: F401
     ENGINE_AVAILABLE = True
+    try:                                             # DR-029:注册 OpenAI 兼容驱动
+        import openai_runtime                        # 未配置端点则不注册,不制造"看似可用"
+        openai_runtime.register(_ar)
+    except Exception:
+        pass
 except Exception:
     import types as _types
     ENGINE_AVAILABLE = False
@@ -215,7 +220,7 @@ def runtime_cached(drv):
         _RT_CACHE[drv] = get_runtime(drv)
     return _RT_CACHE[drv]
 
-def _drv_order(cands=("hermes", "claude-code")):
+def _drv_order(cands=("openai", "hermes", "claude-code")):
     # LLM 引擎尝试顺序遵循 CLAW_DRIVER:选中的排最前(其余按原序回退),
     # 使 /api/ont/runtime 的引擎切换对所有 LLM 流程真正生效(而非只改显示标签)。
     pref = os.environ.get("CLAW_DRIVER", "hermes")
