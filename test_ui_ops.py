@@ -14,6 +14,7 @@
 Claude Code 之间往返,验证后端 current 真变、UI 标记随之转移、且不同引擎的
 执行行为确有差异(而非只换了标签)。
 """
+# 等待上限按引擎实测时延取(GLM 单轮问数 ~70s,含推理开销),而非按理想值
 import asyncio, os, sys
 from playwright.async_api import async_playwright
 
@@ -118,11 +119,11 @@ async def main():
         await pg.click("#claw_btn")
         try:
             await pg.wait_for_function(
-                "document.getElementById('claw_log').innerText.length>40", timeout=90000)
+                "document.getElementById('claw_log').innerText.length>40", timeout=180000)
             log = await pg.inner_text("#claw_log")
             ok("对话发送并收到回复", log.replace("\n", " ")[:60])
         except Exception:
-            bad("对话回复超时", "90s 内无内容")
+            bad("对话回复超时", "180s 内无内容")
         await pg.click("#p_claw button:has-text('刷新审计')")
         await pg.wait_for_timeout(1800)
         aud = await pg.inner_text("#claw_audit")
@@ -133,12 +134,16 @@ async def main():
         print("\n【步骤7】深度问数(当前引擎 GLM):输入问句→执行→看步骤")
         await goto("chat", 2500)
         box = "#p_chat textarea, #p_chat input[type=text]"
+        n0 = await pg.evaluate("document.querySelectorAll('#p_chat .dq-card').length")
         await pg.fill(box, "客户维度表有多少条记录?")
         await pg.click("#p_chat button:has-text('发送'), #p_chat button:has-text('提问')")
         try:
             await pg.wait_for_function(
-                "(t=>t.includes('执行查询')||t.includes('查询均失败')||t.includes('请求失败'))"
-                "(document.getElementById('p_chat').innerText)", timeout=240000)
+                f"document.querySelectorAll('#p_chat .dq-card').length>{n0}"
+                "&&!document.getElementById('chat_btn').disabled", timeout=420000)
+            # 执行记录出结果后是折叠的,innerText 读不到——先展开再断言
+            await pg.evaluate("document.querySelectorAll('#p_chat details').forEach(d=>d.open=true)")
+            await pg.wait_for_timeout(300)
             t = await pg.inner_text("#p_chat")
             ok("问数出结果", t.replace("\n", " ")[-70:])
             (ok if ("意图" in t) else bad)("执行记录含双盲意图步骤")
@@ -152,7 +157,44 @@ async def main():
             ok("锚定图关系连线", f"{nline} 条")
             (ok if ("JOIN 依据" in t or nline == 0) else bad)("有关系时给出 JOIN 键清单")
         except Exception as _e:
-            bad("问数超时", f"240s {_e}")
+            bad("问数超时", f"420s {_e}")
+
+        # ══ 步骤 7b:选中本体图谱后再问 —— 验证锚定确实换了本体(DR-033)══
+        print("\n【步骤7b】数据源里点选自建本体 → 锚定本体应随之切换")
+        await pg.click("#dq_src_chip")
+        await pg.wait_for_timeout(900)
+        cards = await pg.query_selector_all("#dq_ds_body .ds-card")
+        picked = None
+        for c in cards:
+            gid = await c.get_attribute("data-g")
+            nm = await (await c.query_selector(".nm")).inner_text()
+            if gid and gid.startswith("built_"):
+                picked = (gid, nm); await c.click(); break
+        (ok if picked else bad)("数据源弹窗可点选本体图谱", str(picked))
+        await pg.click("#dq_dsmodal button:has-text('确定')")
+        await pg.wait_for_timeout(600)
+        sel = await pg.evaluate("DQ_DS.graphs")
+        (ok if sel == [picked[0]] else bad)("选中状态已回写", str(sel))
+        n1 = await pg.evaluate("document.querySelectorAll('#p_chat .dq-card').length")
+        await pg.fill(box, "各客户的销售订单金额排名")
+        await pg.click("#p_chat button:has-text('发送'), #p_chat button:has-text('提问')")
+        try:
+            await pg.wait_for_function(
+                f"document.querySelectorAll('#p_chat .dq-card').length>{n1}"
+                "&&!document.getElementById('chat_btn').disabled", timeout=420000)
+            await pg.evaluate("document.querySelectorAll('#p_chat details').forEach(d=>d.open=true)")
+            await pg.wait_for_timeout(400)
+            t2 = await pg.inner_text("#p_chat .dq-card:last-of-type")
+            # 锚定的必须是刚选中的那套本体,而不是永远的示例本体
+            (ok if picked[1][:8] in t2 else bad)("锚定本体名 = 选中的图谱", picked[1][:12])
+            (ok if "示例企业数据本体" not in t2 else bad)("未回落到示例本体")
+            (ok if "锚定本体" in t2 else bad)("执行记录含『锚定本体』步骤")
+            (ok if "入上下文" in t2 and "问句命中" in t2 else bad)("锚定链路可见(本体→命中→扩展→上下文)")
+            nrect = await pg.evaluate(
+                "document.querySelectorAll('#p_chat .dq-card:last-of-type svg rect').length")
+            (ok if nrect > 0 else bad)("选中本体后仍画出锚定子图", f"{nrect} 框")
+        except Exception as _e:
+            bad("选中本体后问数超时", f"420s {_e}")
 
         # ══ 步骤 8:规则页(决策层)—— 只读查看 ══
         print("\n【步骤8】其余关键页可用性")

@@ -1096,7 +1096,70 @@ chk("AN12 前端锚定渲染函数存在并被三处接线",
     and "dqAnchorHTML(ev.anchor)" in _ui and "anchor:done.anchor" in _ui)
 chk("AN13 超出上限时显式说明截断(不静默少画)",
     "图中只画了 ${CAP} 个对象" in _ui and "没有少喂给引擎" in _ui)
-chk("AN14 图谱选中但未匹配→UI 如实说回退全库", "已回退全库召回" in _ui)
+chk("AN14 UI 呈现锚定本体名与锚定链路", "本体锚定 · ${esc((ont.names||['示例本体'])[0])}" in _ui
+    and "入上下文" in _ui and "命中证据(凭什么选中它" in _ui)
+
+# ═══════════ AO. 选中图谱作锚定本体(DR-033)═══════════
+print("=== AO. 选中图谱作锚定本体(DR-033)===")
+_q33 = "各客户的销售订单金额排名"
+_t0 = {}; _srvmod.build_context(_q33, trace=_t0)
+_t1 = {}; _srvmod.build_context(_q33, trace=_t1, graph_keys=["built_9c3fd1"])
+_t2 = {}; _srvmod.build_context(_q33, trace=_t2, graph_keys=["cq"])
+chk("AO1 未选图谱→锚定示例本体", _t0["ontology"]["keys"] == ["demo"] and _t0["ontology"]["objects"] == 108)
+chk("AO2 选中自建本体→锚定它自己(不再永远锚 demo)",
+    _t1["ontology"]["keys"] == ["built_9c3fd1"] and _t1["ontology"]["objects"] == 19)
+chk("AO3 锚定不同本体→召回集不同",
+    {o["table"] for o in _t1["objects"]} != {o["table"] for o in _t0["objects"]})
+chk("AO4 召回对象数远小于本体规模(是锚定不是全量倾倒)",
+    0 < len(_t1["objects"]) < _t1["ontology"]["objects"])
+chk("AO5 上游引擎本体也能锚定并给出关系",
+    _t2["ontology"]["keys"] == ["cq"] and len(_t2["objects"]) > 0)
+chk("AO6 命中证据记录了是哪个词钓出该对象",
+    any(o.get("hits") for o in _t1["objects"]))
+chk("AO7 命中证据里的词确实出现在问句或其扩展词中",
+    all(all(isinstance(h, str) and h for h in (o.get("hits") or [])) for o in _t1["objects"]))
+_t3 = {}; _srvmod.build_context(_q33, trace=_t3, graph_keys=["app"])
+chk("AO8 无绑表本体→如实回退并说明(不静默换本体)",
+    bool(_t3.get("fallback")) and _t3["ontology"]["keys"] == ["app"])
+_t4 = {}; _srvmod.build_context(_q33, trace=_t4, graph_keys=["built_9c3fd1", "built_8c3354"])
+chk("AO9 多选图谱→合并为一套锚定本体", _t4["ontology"]["objects"] > _t1["ontology"]["objects"])
+# 形状无关:构建产物用 relations[source_concept] + objects[name],示例用 links[source] + id
+_bir = _srvmod.load_ir_edited("built_9c3fd1") or _srvmod.load_ir("built_9c3fd1")
+_bt = [o.get("table") for o in _bir.get("objects", []) if o.get("table")]
+_bp = []; _bh = _srvmod._join_hints(_bir, _bt, pairs=_bp)
+chk("AO10 构建产物形状也能出 JOIN 提示(此前恒为 0)", len(_bh) > 0)
+# 键名闸:稠密自增代理键值域重合会造假关系
+chk("AO11 键名闸放行同名/缩写键",
+    _srvmod._key_name_ok("order_id", "order_id") and _srvmod._key_name_ok("emp_id", "employee_id")
+    and _srvmod._key_name_ok("prod_id", "product_id"))
+chk("AO12 键名闸拦下异根键(prod_id↔order_id 这类值域巧合)",
+    not _srvmod._key_name_ok("prod_id", "order_id")
+    and not _srvmod._key_name_ok("line_id", "equipment_id"))
+chk("AO13 存疑键不作 JOIN 依据下发,降级为『键见列名』",
+    all((not p.get("dropped_key")) or ("键见列名" in p["key"] and p["has_key"] is False) for p in _bp))
+chk("AO14 降级关系仍保留(只降键不删关系)",
+    any(p.get("dropped_key") for p in _bp) and len(_bh) == len(_bp))
+chk("AO15 示例本体几乎不受键名闸影响(误伤可控)",
+    sum(1 for l in (_srvmod.load_ir_edited("demo") or {}).get("links", [])
+        if (l.get("evidence") or {}).get("child_key")
+        and not _srvmod._key_name_ok(l["evidence"]["child_key"], l["evidence"]["parent_key"])) <= 2)
+# 缓存键必须含图谱:换本体却复用旧答案 = 拿另一套本体的结论
+chk("AO16 问数缓存键随锚定本体变化",
+    _srvmod._qa_key("q", [], [], ["demo"]) != _srvmod._qa_key("q", [], [], ["built_9c3fd1"]))
+chk("AO17 构建器落结构化 JOIN 键(不再只写进 note 文本)",
+    '"evidence": ev_keys' in open("server.py", encoding="utf-8").read().replace("rel_new[\"evidence\"] = ev_keys", '"evidence": ev_keys')
+    or "rel_new[\"evidence\"] = ev_keys" in open("server.py", encoding="utf-8").read())
+chk("AO18 旧构建产物的键可从 note 回填并标来源",
+    _srvmod._rel_keys({"note": "order_id→fact_delivery.order_id 重叠90%·父键唯一"})[:3]
+    == ("order_id", "order_id", "note"))
+chk("AO19 UI 标出键降级与键来源", "键存疑·已降级" in _ui and "键·备注回填" in _ui)
+chk("AO20 问数流推送『锚定本体』步骤", "anchor_ontology" in open("server.py", encoding="utf-8").read())
+# 短缩写污染:词典把「销售订单」扩展出 so,子串匹配会命中 reason_code / sensor_id
+_t5 = {}; _srvmod.build_context("各客户的销售订单金额排名", trace=_t5, graph_keys=["built_9c3fd1"])
+chk("AO21 两字母英文缩写不再子串命中无关表",
+    all("fact_alarm" != o["table"] or o["reason"] != "关键词命中" for o in _t5["objects"]))
+chk("AO22 命中证据里不出现 so 这类子串误命中",
+    all("so" not in (o.get("hits") or []) for o in _t5["objects"]))
 # 截断策略探针:按原序截断会画出一片孤立方框(0 连线),让人误以为本体拿不出关系
 _fn=_ui[_ui.index("const DQ_ANC_C="):_ui.index("function dqRenderCard")]
 _big={"objects":[{"key":f"o{i}","cn":f"对象{i}","table":f"t{i}","reason":"数据源限定","ncol":3}

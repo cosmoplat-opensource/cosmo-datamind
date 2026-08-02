@@ -35,6 +35,7 @@ for t in tabs:
     for fk in con.execute(f'PRAGMA foreign_key_list({qi(t)})'):
         links.append({"source_concept": t, "target_concept": fk[2], "verb": "关联",
                       "status": "verified", "overlap": None, "note": f"声明FK {fk[3]}→{fk[4]}",
+                      "evidence": {"child_key": fk[3], "parent_key": fk[4], "source": "declared_fk"},
                       "founded_relation": "relatedToAtSomeTime", "temporal": "atSomeTime"})
 
 def distinct(t, c, cap=20000):
@@ -71,6 +72,22 @@ def is_key_unique(t, c):
     _uniq_cache[k] = out
     return out
 
+_KEY_SUF_RE = __import__("re").compile(r"_?(id|code|key|no|num)$", __import__("re").I)
+
+
+def key_stem(c):
+    return _KEY_SUF_RE.sub("", (c or "").lower()).strip("_")
+
+
+def key_name_ok(ck, pk):
+    """子键/父键词根相容性 —— 值域重叠之外的第二道闸(DR-033,与 server._key_name_ok 同规则)。
+    稠密自增代理键之间值域天然 100% 重合,仅凭重叠会造出假关系。"""
+    a, b = key_stem(ck), key_stem(pk)
+    if not a or not b or a == b: return True
+    # 缩写相容:prod↔product、emp↔employee。限长≥3 以免 po↔pr 这类噪声蒙混
+    return min(len(a), len(b)) >= 3 and (a.startswith(b) or b.startswith(a))
+
+
 def parent_key(pt, child_col, stem):
     """父表连接键:声明PK优先;无PK时(如上传CSV建表全无PK)退而用同名列/词干_id·_code/id 列。
     不再因缺 PK 直接跳过——否则上传数据的取值重叠关系发现会全部静默失效。"""
@@ -106,14 +123,25 @@ for t in tabs:
             if not child: continue
             ov = 100.0 * len(child & parent) / len(child)
             # 仅当父键为候选键(唯一)且重叠≥60% 才判 verified;否则即便重叠高也只作 candidate
-            if ov >= 60 and is_key_unique(pt, pk):
+            if ov >= 60 and is_key_unique(pt, pk) and not key_name_ok(c, pk):
+                links.append({"source_concept": t, "target_concept": pt, "verb": "关联",
+                              "status": "candidate", "overlap": round(ov, 1),
+                              "note": f"{c}→{pt}.{pk} 重叠{ov:.0f}% 但键名词根不一致"
+                                      f"({key_stem(c)}≠{key_stem(pk)}),疑为自增键值域巧合,送审",
+                              "evidence": {"child_key": c, "parent_key": pk, "overlap": round(ov, 1),
+                                           "source": "key_overlap", "name_mismatch": True},
+                              "founded_relation": "relatedToAtSomeTime", "temporal": "atSomeTime"})
+                seen.add((t, pt)); seen.add((pt, t))
+            elif ov >= 60 and is_key_unique(pt, pk):
                 links.append({"source_concept": t, "target_concept": pt, "verb": "关联",
                               "status": "verified", "overlap": round(ov, 1), "note": f"{c}→{pt}.{pk} 重叠{ov:.0f}%·父键唯一",
+                              "evidence": {"child_key": c, "parent_key": pk, "overlap": round(ov, 1), "source": "key_overlap"},
                               "founded_relation": "relatedToAtSomeTime", "temporal": "atSomeTime"})
                 seen.add((t, pt)); seen.add((pt, t))   # 反向也记,避免 A→B 与 B→A 双向冗余边
             elif ov >= 20:
                 links.append({"source_concept": t, "target_concept": pt, "verb": "关联",
                               "status": "candidate", "overlap": round(ov, 1), "note": "弱重叠,送审",
+                              "evidence": {"child_key": c, "parent_key": pk, "overlap": round(ov, 1), "source": "key_overlap"},
                               "founded_relation": "relatedToAtSomeTime", "temporal": "atSomeTime"})
                 seen.add((t, pt)); seen.add((pt, t))
 print(f"[quick_build] 关系 {len(links)} 条 (verified {sum(1 for l in links if l['status']=='verified')})", flush=True)
