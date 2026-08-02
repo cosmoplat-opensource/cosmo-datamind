@@ -223,6 +223,30 @@ async def main():
         except Exception as _e:
             bad("选中本体后问数超时", f"420s {_e}")
 
+        # ══ 步骤 7c:点示例必须真跑,不能秒回缓存 ══
+        print("\n【步骤7c】新对话点示例:应真跑一遍,而不是给缓存记录")
+        await goto("chat", 1500)                      # 7b 结尾跳去了本体图谱页,先回来
+        await pg.click("#p_chat .dq-tab .c")          # 新对话
+        await pg.wait_for_timeout(800)
+        eg = await pg.query_selector("#p_chat .dq-hero .eg")
+        if not eg:
+            bad("新对话未出现示例问题")
+        else:
+            egq = await eg.inner_text()
+            n2 = await pg.evaluate("document.querySelectorAll('#p_chat .dq-card').length")
+            await eg.click()
+            try:
+                await pg.wait_for_function(
+                    f"document.querySelectorAll('#p_chat .dq-card').length>{n2}"
+                    "&&!document.getElementById('chat_btn').disabled", timeout=420000)
+                await pg.wait_for_timeout(400)
+                t3 = await pg.inner_text("#p_chat .dq-card:last-of-type")
+                (ok if "缓存·秒回" not in t3 else bad)(
+                    f"点示例「{egq[:12]}」是真跑非缓存", t3.split("\n")[2] if len(t3.split("\n")) > 2 else "")
+                (ok if "本体锚定" in t3 else bad)("示例问数同样给出本体锚定")
+            except Exception as _e:
+                bad("示例问数超时", f"420s {_e}")
+
         # ══ 步骤 8:规则页(决策层)—— 只读查看 ══
         print("\n【步骤8】其余关键页可用性")
         for p, key in (("rules", "构成规则"), ("review", "评审"), ("actioncenter", "动作"),

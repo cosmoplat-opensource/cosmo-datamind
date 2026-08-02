@@ -1439,7 +1439,7 @@ async function dqSkillUpload(input){const f=(input.files||[])[0];if(!f)return;to
 function dqHero(){return `<div class="dq-hero"><h1>深度问数</h1>
  <p>输入自然语言问题,AI 自动探索数据、生成 SQL、图表与业务洞察。基于 示例 本体图谱 + 智能引擎,本地执行、每一步可追溯。</p>
  <div class="egs">${EG_Q.map(q=>`<span class="eg" onclick="dqAskEg(${esc(JSON.stringify(q))})">${esc(q)}</span>`).join('')}</div></div>`;}
-function dqAskEg(q){$('#chat_q').value=q;ask();}
+function dqAskEg(q){$('#chat_q').value=q;ask(true);}   // fresh:示例点击强制重跑,不吃缓存
 function dqToggleSide(){const s=$('#dq_side');if(s)s.classList.toggle('collapsed');}
 function dqGroup(gh){gh.parentElement.classList.toggle('collapsed');}
 let DQ_MODE='deep';
@@ -1700,7 +1700,7 @@ async function diagAsk(){const inp=$('#chat_q');const q=inp.value.trim();if(!q)r
     }}}
  }catch(e){res.innerHTML=`<div class="step" style="color:#b91c1c">诊断请求失败:${esc(''+e)}</div>`;}
  $('#chat_btn').disabled=false;stream.scrollTop=1e9;}
-async function ask(){if(DQ_MODE==='diag')return diagAsk();
+async function ask(fresh){if(DQ_MODE==='diag')return diagAsk();
  const inp=$('#chat_q');const q=inp.value.trim();if(!q)return;inp.value='';$('#chat_btn').disabled=true;
  if(DQ_ABORT){try{DQ_ABORT.abort()}catch(_){}}DQ_ABORT=new AbortController();const ac=DQ_ABORT;
  if(!DQ_CONV){DQ_CONV={id:'c'+Math.random().toString(36).slice(2,9),title:'',turns:[],ts:0};$('#dq_stream').innerHTML='';}
@@ -1718,7 +1718,7 @@ async function ask(){if(DQ_MODE==='diag')return diagAsk();
  renderLog();
  try{
   const skill=DQ_SKILL||'demo-deep-qa';
-  const resp=await fetch('/api/chat/stream',{method:'POST',headers:{'Content-Type':'application/json'},signal:ac.signal,body:JSON.stringify({q,history:CHAT_HIST.slice(-2),skill,graphs:DQ_DS.graphs,tables:DQ_DS.tables,attachments:DQ_ATTS.map(a=>a.name)})});
+  const resp=await fetch('/api/chat/stream',{method:'POST',headers:{'Content-Type':'application/json'},signal:ac.signal,body:JSON.stringify({q,history:CHAT_HIST.slice(-2),skill,graphs:DQ_DS.graphs,tables:DQ_DS.tables,attachments:DQ_ATTS.map(a=>a.name),nocache:fresh?1:0})});
   if(!resp.ok){card.innerHTML=`<span class="dq-t warn">请求失败: HTTP ${resp.status}</span>`;$('#chat_btn').disabled=false;return;}
   const rd=resp.body.getReader();const dec=new TextDecoder();let buf='',done=null;
   while(true){const {done:fin,value}=await rd.read();if(fin)break;if(ac.signal.aborted)return;buf+=dec.decode(value,{stream:true});
