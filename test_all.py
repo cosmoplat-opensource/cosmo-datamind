@@ -1057,6 +1057,46 @@ except Exception as _e:
 chk("Z19 home()/drawGraph() 源码含守卫",
     "if(d.error||!d.kpi)" in _ui and "if(g.error||!Array.isArray(g.nodes))" in _ui)
 
+# ═══════════ AN. 本体锚定可视化(DR-032)═══════════
+print("=== AN. 本体锚定可视化(DR-032)===")
+_tr={}
+_c=_srvmod.build_context("最近一个月各产线产量趋势", trace=_tr)
+chk("AN1 轨迹记录入选对象与理由", len(_tr.get("objects",[]))>0 and all(o.get("reason") for o in _tr["objects"]))
+chk("AN2 理由取值在已知集合内",
+    set(o["reason"] for o in _tr["objects"]) <= {"关键词命中","核心事实表","沿本体关系召回","数据源限定","无命中·默认候选"})
+chk("AN3 轨迹对象与上下文表名一一对应",
+    all(("表 "+o["table"]) in _c for o in _tr["objects"]))
+# 同源:结构化边数必须等于喂给引擎的 ⋈ 提示行数,否则可视化会与真实上下文悄悄漂移
+_hint=[l for l in _c.split("\n") if l.startswith("⋈")]
+chk("AN4 结构化关系与 JOIN 提示行同源(数量一致)", len(_tr.get("relations",[]))==len(_hint),
+    f"pairs={len(_tr.get('relations',[]))} hints={len(_hint)}")
+chk("AN5 关系带状态与键", all(r.get("status") and r.get("key") for r in _tr.get("relations",[])))
+chk("AN6 两跳关系标注 hop=2 且带中间表",
+    all(r.get("via") for r in _tr.get("relations",[]) if r.get("hop")==2))
+_tr2={}
+_srvmod.build_context("产量", focus_tables=["dws_production_daily"], trace=_tr2)
+chk("AN7 数据源限定生效时置 scoped 且理由为『数据源限定』",
+    _tr2.get("scoped") is True and {o["reason"] for o in _tr2["objects"]}=={"数据源限定"})
+_tr3={}
+_srvmod.build_context("产量", focus_tables=["__不存在的表__"], trace=_tr3)
+chk("AN8 限定表未匹配本体→不置 scoped(避免谎报范围已收窄)", not _tr3.get("scoped"))
+chk("AN9 未传 trace 时 build_context 行为不变",
+    _srvmod.build_context("最近一个月各产线产量趋势")==_c)
+# 端到端:SSE 必须推 anchor 事件(引擎规划前就该出,人不用等几十秒)
+_r=_rq2.post(B+"/api/chat/stream",json={"q":"各产线产量对比","nocache":True},stream=True,timeout=60)
+_anc=None
+for _ln in _r.iter_lines(decode_unicode=True):
+    if _ln and '"anchor"' in _ln:
+        _anc=json.loads(_ln[6:]).get("anchor"); break
+_r.close()
+chk("AN10 问数流推送 anchor 事件", isinstance(_anc,dict) and len(_anc.get("objects",[]))>0)
+chk("AN11 anchor 带范围与限定表数", _anc is not None and "scoped" in _anc and "focus_n" in _anc)
+chk("AN12 前端锚定渲染函数存在并被三处接线",
+    "function dqAnchorHTML" in _ui and "dqAnchorHTML(d.anchor)" in _ui
+    and "dqAnchorHTML(ev.anchor)" in _ui and "anchor:done.anchor" in _ui)
+chk("AN13 超出上限时显式说明截断(不静默少画)", "图中只画了前 ${CAP} 个" in _ui)
+chk("AN14 图谱选中但未匹配→UI 如实说回退全库", "已回退全库召回" in _ui)
+
 print(f"\n{'='*40}\n结果: {P} 通过 / {F} 失败")
 if fails:
     print("失败清单:")

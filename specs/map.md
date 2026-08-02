@@ -37,6 +37,7 @@ Cosmo DataMind 是**自有品牌、原创前后端**的「数据治理 × 本体
 - [DR-010 · IOF/BFO 本体工程对齐(注释/接地/注释化 OWL 导出/SHACL 门禁/完备度)](decisions/DR-010-iof-bfo-alignment.md)
 - [DR-011 · 泛化裁决 v2(等值/前缀/复合键/PK 感知 + 三级控制环)](decisions/DR-011-generalized-adjudication.md)
 - [DR-012 · SPARQL 健壮性(线程安全/诚实报错/合法默认示例)](decisions/DR-012-sparql-robustness.md)
+- [DR-032 · 深度问数的本体锚定可视化(对话内画出锚定子图与 SQL 实际命中)](decisions/DR-032-qa-anchor-visualization.md)
 - [DR-031 · 向后兼容性检查与本体模块化(下游影响 + 领域/层次拆分)](decisions/DR-031-compat-and-modularization.md)
 - [DR-030 · 本体健康度体检(七类图结构异常,硬错误/信号分级)](decisions/DR-030-ontology-health-check.md)
 - [DR-029 · OpenAI 兼容运行时与回归隔离(任意 LLM 可接 + 沙箱图谱)](decisions/DR-029-openai-compat-runtime-and-test-isolation.md)
@@ -131,6 +132,10 @@ Consult @specs/map.md to find relevant context.
   重点是命中哪些已注册的规则/动作/技能)、`module_split.py` + `GET /api/ont/modules/<key>`
   (by_domain 连通分量+词根 / by_layer 数仓分层)。至此报告第四遍找出的三处空白全部补齐。
   套件 424 断言 · UI 走查 57 · UI 实操 21。
+- **DR-032 锚定可视化**:`build_context(trace=)` + `_join_hints(pairs=)` 与上下文同源地
+  记录锚定轨迹,SSE `anchor` 事件 + `done.anchor` 双路送达,前端 `dqAnchorHTML()` 在
+  对话气泡内画静态 SVG 子图(入选理由配色 / 关系状态线型 / SQL 实际命中标记)。
+  套件 438 断言 · UI 走查 57 · UI 实操 25。
 
 五问互补:够不够用(CQ)· 通不通(链路)· 对不对得上数据(漂移)·
 答的是不是问的(双盲)· 结构健不健康(体检)。

@@ -137,13 +137,22 @@ async def main():
         await pg.click("#p_chat button:has-text('发送'), #p_chat button:has-text('提问')")
         try:
             await pg.wait_for_function(
-                "document.getElementById('p_chat').innerText.includes('执行查询')"
-                "||document.getElementById('p_chat').innerText.length>900", timeout=240000)
+                "(t=>t.includes('执行查询')||t.includes('查询均失败')||t.includes('请求失败'))"
+                "(document.getElementById('p_chat').innerText)", timeout=240000)
             t = await pg.inner_text("#p_chat")
             ok("问数出结果", t.replace("\n", " ")[-70:])
             (ok if ("意图" in t) else bad)("执行记录含双盲意图步骤")
-        except Exception:
-            bad("问数超时", "240s")
+            # DR-032 锚定可视化:必须在对话气泡里真的画出来(SVG 节点+图例),不能只有文字
+            (ok if ("本体锚定" in t) else bad)("对话框内出现『本体锚定』区块")
+            nsvg = await pg.evaluate(
+                "document.querySelectorAll('#p_chat .dq-card svg rect').length")
+            (ok if nsvg > 0 else bad)("锚定图渲染出对象节点", f"{nsvg} 个方框")
+            nline = await pg.evaluate(
+                "document.querySelectorAll('#p_chat .dq-card svg line').length")
+            ok("锚定图关系连线", f"{nline} 条")
+            (ok if ("JOIN 依据" in t or nline == 0) else bad)("有关系时给出 JOIN 键清单")
+        except Exception as _e:
+            bad("问数超时", f"240s {_e}")
 
         # ══ 步骤 8:规则页(决策层)—— 只读查看 ══
         print("\n【步骤8】其余关键页可用性")

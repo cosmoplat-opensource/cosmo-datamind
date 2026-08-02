@@ -283,9 +283,12 @@ def _bounded_ex(fn, secs, default=None):
     return box["v"], box["err"], False
 
 # ── 深度问数编排(hermes/claude-code → SQL 计划 → 本地执行 → 洞察)──
-def _join_hints(ir, tables):
+def _join_hints(ir, tables, pairs=None):
     """选中表之间的本体关系 → JOIN 提示行(⋈ 前缀;沿本体关系召回的实现)。
-    只给 verified/asserted(人审断言)关系;键取关系证据里的 child_key/parent_key。"""
+    只给 verified/asserted(人审断言)关系;键取关系证据里的 child_key/parent_key。
+
+    pairs 非 None 时同步收集结构化边(DR-032 锚定可视化)。刻意与提示行同源产出——
+    另起一段代码重新推导,可视化会与真正喂给引擎的内容悄悄漂移。"""
     tl = {str(t).lower() for t in tables if t}
     o2t = {o.get("id"): o.get("table") for o in ir.get("objects", [])}
     out = []
@@ -297,6 +300,9 @@ def _join_hints(ir, tables):
         ck, pk = ev.get("child_key"), ev.get("parent_key")
         key = f"{st}.{ck} = {tt}.{pk}" if (ck and pk) else f"{st} 关联 {tt}(键见列名)"
         out.append(f"⋈ {key}  [{l.get('verb','关联')} · {l.get('status')}]")
+        if pairs is not None:
+            pairs.append({"s": st, "t": tt, "verb": l.get("verb") or "关联",
+                          "status": l.get("status"), "key": key, "hop": 1})
         if len(out) >= 12: break
     # 两跳路径召回(DR-022):选中表间无直接关系、但经一张中间表可达 → 给出完整 JOIN 链。
     # 「累计产量最高的产线」这类跨两跳聚合,缺路径提示时引擎最易自造错误 JOIN。
@@ -327,6 +333,10 @@ def _join_hints(ir, tables):
                 if hit:
                     at, k1, mtab, k2, k3, bt, k4 = hit
                     out.append(f"⋈⋈ {at}.{k1} = {mtab}.{k2} ∧ {mtab}.{k3} = {bt}.{k4}(经中间表 {mtab},两跳链)")
+                    if pairs is not None:
+                        pairs.append({"s": at, "t": bt, "via": mtab, "verb": "两跳可达",
+                                      "status": "path", "hop": 2,
+                                      "key": f"{at}.{k1} = {mtab}.{k2} ∧ {mtab}.{k3} = {bt}.{k4}"})
                     added += 1
             if added >= 3: break
     return out
@@ -423,8 +433,25 @@ def _glossary_block(picked):
         pass
     return out
 
-def build_context(question, focus_tables=None):
-    """从 IR 挑相关表/列/指标,组紧凑 schema 上下文;focus_tables 非空时优先/限定这些表(对应『数据源』选择)"""
+def _trace_objs(trace, objs, reason):
+    """把一批入选对象按入选理由记进锚定轨迹(DR-032);同一对象只记首次理由。"""
+    if trace is None: return
+    seen = {o["table"] for o in trace.setdefault("objects", []) if o.get("table")}
+    for o in objs:
+        t = o.get("table")
+        if not t or t in seen: continue
+        seen.add(t)
+        trace["objects"].append({"key": o.get("id") or o.get("name"), "cn": o.get("cn") or "",
+                                 "table": t, "reason": reason,
+                                 "aliases": (o.get("aliases") or [])[:4],
+                                 "ncol": len(o.get("attrs") or [])})
+
+
+def build_context(question, focus_tables=None, trace=None):
+    """从 IR 挑相关表/列/指标,组紧凑 schema 上下文;focus_tables 非空时优先/限定这些表(对应『数据源』选择)。
+
+    trace 传入 dict 时,同步记录**这次召回锚定到了本体的哪些对象与关系**(DR-032):
+    上下文是喂给引擎的一坨文本,人看不出它凭什么选了这些表——轨迹让锚定过程可见。"""
     ir = load_ir_edited("demo") or {}
     mets = []
     for k, arr in (ir.get("metric_layers") or {}).items():
@@ -441,7 +468,11 @@ def build_context(question, focus_tables=None):
                 cols = ", ".join(f'{a["col"]}({a.get("cn","")})' for a in o.get("attrs", [])[:18])
                 _al = "、".join(o.get("aliases") or [])
                 lines.append(f'表 {o["table"]}({o.get("cn","")}{",业务别称:" + _al if _al else ""}): {cols}')
-            jh = _join_hints(ir, [o.get("table") for o in picked])
+            _trace_objs(trace, picked, "数据源限定")
+            if trace is not None: trace["scoped"] = True
+            _pairs = [] if trace is not None else None
+            jh = _join_hints(ir, [o.get("table") for o in picked], pairs=_pairs)
+            if trace is not None: trace["relations"] = _pairs
             if jh: lines.append("表间关系(本体已验证,JOIN 优先用这些键):\n" + "\n".join(jh))
             up = _uploads_schema()
             if up: lines.append("上传数据(作 up.<表> 查询): " + up)
@@ -457,12 +488,14 @@ def build_context(question, focus_tables=None):
                 + " ".join(a.get("cn", "") + a.get("col", "") for a in o.get("attrs", [])))
         tabs.append((score(blob), o))
     tabs.sort(key=lambda x: -x[0])
-    picked = [o for s, o in tabs[:8] if s > 0] or [o for _, o in tabs[:5]]
+    _hit = [o for s, o in tabs[:8] if s > 0]
+    picked = _hit or [o for _, o in tabs[:5]]
+    _trace_objs(trace, picked, "关键词命中" if _hit else "无命中·默认候选")
     core = {"fact_sales_order", "fact_production_output", "dws_production_daily"}   # 核心事实表始终入上下文
     have = {o["table"].lower() for o in picked}
     for o in ir.get("objects", []):
         if o.get("table", "").lower() in core and o["table"].lower() not in have:
-            picked.append(o)
+            picked.append(o); _trace_objs(trace, [o], "核心事实表")
     # 沿本体关系召回:命中表的一跳邻居(维表等)拉进上下文,JOIN 才有另一端
     have = {o["table"].lower() for o in picked if o.get("table")}
     o_by_id = {o.get("id"): o for o in ir.get("objects", [])}
@@ -477,13 +510,18 @@ def build_context(question, focus_tables=None):
         elif tt in have and st and st not in have and len(extras) < 4:
             extras.append(so); have.add(st)
     picked += extras
+    _trace_objs(trace, extras, "沿本体关系召回")
     lines = []
     for o in picked:
         cols = ", ".join(f'{a["col"]}({a.get("cn","")})' for a in o.get("attrs", [])[:18])
         lines.append(f'表 {o["table"]}({o.get("cn","")}): {cols}')
-    jh = _join_hints(ir, [o.get("table") for o in picked])
+    _pairs = [] if trace is not None else None
+    jh = _join_hints(ir, [o.get("table") for o in picked], pairs=_pairs)
+    if trace is not None: trace["relations"] = _pairs
     if jh: lines.append("表间关系(本体已验证,JOIN 优先用这些键):\n" + "\n".join(jh))
     hit_m = [m for m in mets if score(m["name"] or "")][:10]
+    if trace is not None:
+        trace["metrics"] = [{"name": m["name"], "table": m["table"], "col": m["col"]} for m in hit_m]
     if hit_m:
         lines.append("相关指标: " + "; ".join(f'{m["name"]}←{m["table"]}.{m["col"]}' for m in hit_m))
         bl = _metric_baselines(hit_m)                 # M4-b 指标统计基线(确定性 SQL)
@@ -2331,7 +2369,14 @@ def chat_stream():
         _exp = expand_terms(q_eff)                               # A1 术语扩展检索(术语管理词典)
         if _exp:
             yield push("term_expand", True, f"术语扩展 · 词典命中 {len(_exp)} 个同义/中英对照词:{'、'.join(_exp[:6])}{'…' if len(_exp) > 6 else ''}")
-        ctx = build_context(q_eff, focus_tables=focus_tables)
+        # scoped 取「实际限定到表」而非「选了图谱」:选中图谱若无绑表,召回其实是全库,
+        # 标成「数据源限定」会让人误以为范围已收窄
+        anchor = {"objects": [], "relations": [], "metrics": [],
+                  "scoped": False, "graphs": list(body.get("graphs") or []),
+                  "focus_n": len(focus_tables), "question": q_eff}
+        ctx = build_context(q_eff, focus_tables=focus_tables, trace=anchor)
+        # 锚定视图先推一次:引擎规划要几十秒,这期间人已经能看到「本体锚到了哪些对象」
+        yield sse({"type": "anchor", "anchor": anchor})
         if history:
             hist_txt = "\n".join(f"上轮问: {h.get('q','')}\n上轮结果摘要: {h.get('summary','')[:800]}" for h in history[-2:])
             ctx = f"[对话历史,供追问理解指代]\n{hist_txt}\n\n[库结构]\n{ctx}"
@@ -2393,6 +2438,10 @@ def chat_stream():
                 yield push("intent_crosscheck", _ic["verdict"] in ("aligned", "unknown"),
                            f"[{idx}] " + intent_check.step_of(_ic)["info"])
                 usage_stat.record(WORK, "demo", [o["key"] for o in _ic["actual"]["objects"]], "query")
+                # 闭环:SQL 真正落到的表回填锚定视图 —— 召回了却没被用上的对象一眼可见
+                for _o in _ic["actual"]["objects"]:
+                    if _o.get("table") and _o["table"] not in anchor.setdefault("used", []):
+                        anchor["used"].append(_o["table"])
             except Exception:
                 pass
             try:
@@ -2432,7 +2481,8 @@ def chat_stream():
             text = "查询均失败,请换个问法或检查指标是否绑表。"
         summary = "; ".join(f"{r['title']}[{r['sql'][:120]}]→{len(r['data']['rows'])}行,末行{json.dumps(r['data']['rows'][-1] if r['data']['rows'] else {}, ensure_ascii=False)[:150]}" for r in results)[:1200]
         resp = {"steps": steps, "results": results, "narrative": text, "note": plan.get("note", ""),
-                "summary": summary, "metric_cards": _metric_cards(question, ir_gate)}
+                "summary": summary, "metric_cards": _metric_cards(question, ir_gate),
+                "anchor": anchor}   # 随 done 落一份:命中缓存与历史回放时锚定视图不丢
         if results:
             if len(_QA_CACHE) > 200: _QA_CACHE.pop(next(iter(_QA_CACHE)))
             _QA_CACHE[_qa_key(question, history, focus_tables)] = resp
