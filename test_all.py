@@ -1181,6 +1181,11 @@ chk("AO31 切到根因诊断清空锚定条(共用视图容器,免得指向另�
 _t6 = {}; _srvmod.build_context("各客户的销售订单金额排名", trace=_t6, graph_keys=["app"])
 chk("AO32 无绑表本体回退后,锚定本体如实回写为实际使用的那套",
     _t6["ontology"]["keys"] == ["demo"] and _t6["ontology"]["requested"] and _t6.get("fallback"))
+chk("AO35 点示例强制重跑,不吃缓存(缓存记录属于『历史对话』的语义)",
+    "function dqAskEg(q){$('#chat_q').value=q;ask(true);}" in _ui
+    and "async function ask(fresh)" in _ui and "nocache:fresh?1:0" in _ui)
+chk("AO36 手动提问仍可命中缓存(只改示例路径,不废掉缓存)",
+    "nocache:fresh?1:0" in _ui and _ui.count("ask(true)") == 1)
 chk("AO34 流中断不抹掉已完成内容(锚定是用户已看到的证据)",
     "以上为中断前已完成的部分" in _ui and "if(live.length||pr.length)" in _ui)
 chk("AO33 回退提示显示在锚定条头部(默认可见,不藏在折叠区)",
