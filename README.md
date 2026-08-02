@@ -149,7 +149,8 @@ python3 server.py
 ```bash
 python3 server.py &            # 先起服务
 python3 test_all.py            # 系统级回归(279 断言)
-python3 test_ui.py             # 全 UI 走查(可选;需 pip install playwright && playwright install chromium)
+python3 test_ui.py             # 全 UI 走查:26 页渲染 + 子 UI 交互(可选;需 playwright)
+python3 test_ui_ops.py         # UI 逐步实操:切引擎/建本体/对话改本体/审计/问数 全动线
 ```
 
 套件覆盖路由可达性、只读约束、CSRF、路径穿越、证据分层一致性、编辑回放等。
