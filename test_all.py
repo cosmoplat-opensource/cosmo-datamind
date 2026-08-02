@@ -1064,8 +1064,8 @@ _c=_srvmod.build_context("最近一个月各产线产量趋势", trace=_tr)
 chk("AN1 轨迹记录入选对象与理由", len(_tr.get("objects",[]))>0 and all(o.get("reason") for o in _tr["objects"]))
 chk("AN2 理由取值在已知集合内",
     set(o["reason"] for o in _tr["objects"]) <= {"关键词命中","核心事实表","沿本体关系召回","数据源限定","无命中·默认候选"})
-chk("AN3 轨迹对象与上下文表名一一对应",
-    all(("表 "+o["table"]) in _c for o in _tr["objects"]))
+chk("AN3 轨迹对象与上下文表名一一对应(带括号定界,避免前缀误判)",
+    all(("表 "+o["table"]+"(") in _c for o in _tr["objects"]))
 # 同源:结构化边数必须等于喂给引擎的 ⋈ 提示行数,否则可视化会与真实上下文悄悄漂移
 _hint=[l for l in _c.split("\n") if l.startswith("⋈")]
 chk("AN4 结构化关系与 JOIN 提示行同源(数量一致)", len(_tr.get("relations",[]))==len(_hint),
@@ -1094,8 +1094,28 @@ chk("AN11 anchor 带范围与限定表数", _anc is not None and "scoped" in _an
 chk("AN12 前端锚定渲染函数存在并被三处接线",
     "function dqAnchorHTML" in _ui and "dqAnchorHTML(d.anchor)" in _ui
     and "dqAnchorHTML(ev.anchor)" in _ui and "anchor:done.anchor" in _ui)
-chk("AN13 超出上限时显式说明截断(不静默少画)", "图中只画了前 ${CAP} 个" in _ui)
+chk("AN13 超出上限时显式说明截断(不静默少画)",
+    "图中只画了 ${CAP} 个对象" in _ui and "没有少喂给引擎" in _ui)
 chk("AN14 图谱选中但未匹配→UI 如实说回退全库", "已回退全库召回" in _ui)
+# 截断策略探针:按原序截断会画出一片孤立方框(0 连线),让人误以为本体拿不出关系
+_fn=_ui[_ui.index("const DQ_ANC_C="):_ui.index("function dqRenderCard")]
+_big={"objects":[{"key":f"o{i}","cn":f"对象{i}","table":f"t{i}","reason":"数据源限定","ncol":3}
+                 for i in range(60)],
+      "relations":[{"s":f"t{40+i}","t":f"t{50+i}","verb":"关联","status":"verified",
+                    "key":f"t{40+i}.k = t{50+i}.k","hop":1} for i in range(8)],
+      "metrics":[],"scoped":True,"graphs":["demo"],"focus_n":60}
+_probe2=("const esc=x=>String(x==null?'':x).replace(/[&<>\"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;'}[c]));\n"
+   +_fn+"\nconst h=dqAnchorHTML("+json.dumps(_big,ensure_ascii=False)+");"
+   +"console.log(JSON.stringify({rect:(h.match(/<rect /g)||[]).length,line:(h.match(/<line /g)||[]).length,"
+   +"cut:/图中只画了/.test(h),sum:/108|60 个对象/.test(h)}));")
+try:
+    _o2=_sp.run(["node","-e",_probe2],capture_output=True,text=True,timeout=20)
+    _j2=json.loads(_o2.stdout.strip())
+    chk("AN15 截断只画上限内对象", _j2["rect"]==16, str(_j2))
+    chk("AN15b 截断时优先保留有关系的对象(连线不为 0)", _j2["line"]==8, str(_j2))
+    chk("AN15c 截断时给出说明", _j2["cut"])
+except Exception as _e:
+    chk("AN15 截断策略探针", False, f"node 探针失败: {_e} / {_o2.stdout[:120] if '_o2' in dir() else ''}")
 
 print(f"\n{'='*40}\n结果: {P} 通过 / {F} 失败")
 if fails:
