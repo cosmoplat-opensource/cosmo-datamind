@@ -731,6 +731,67 @@ chk("HL14 检出双向对偶(推理会绕圈)", "bidirectional" in {x["type"] fo
 r=g("/api/ont/health/a..b"); chk("HL15 穿越键→400", r.status_code==400)
 r=g("/api/ont/health/nope"); chk("HL16 图谱不存在→404", r.status_code==404)
 
+print("=== CP. 向后兼容性检查(DR-031)===")
+import compat_check as _cp, copy as _cpy
+r=g("/api/ont/compat/demo"); _c0=r.json()
+chk("CP1 兼容检查 200 + 判定/摘要", r.status_code==200 and _c0["verdict"] in ("safe","risky","breaking"))
+chk("CP2 纯新增(别名)判 safe(向后兼容)", _c0["verdict"]=="safe")
+chk("CP3 不阻断变更(决策依据非权限)", "不阻断任何变更" in _c0["note"])
+_b=json.load(open("workdir/demo_ir.json")); _n=_cpy.deepcopy(_b)
+_n["objects"]=[o for o in _n["objects"] if o.get("id")!="fact_sales_order"]
+_n["links"]=[l for l in _n["links"] if "fact_sales_order" not in (l.get("source"),l.get("target"))]
+_cu=next(o for o in _n["objects"] if o.get("id")=="dim_customer"); _cu["table"]="dim_customer_v2"
+for _l in _n["links"][:2]: _l["status"]="candidate"
+_rl=[{"id":"r1","cn":"订单审批","on":"fact_sales_order"},{"id":"r2","cn":"客户信用","on":"dim_customer"}]
+_ac=json.load(open("workdir/action_types.json"))
+_cr=_cp.check(_b,_n,_rl,_ac,json.load(open("workdir/qa_skills.json")))
+_bt={x["type"] for x in _cr["breaking"]}; _rt={x["type"] for x in _cr["risky"]}
+chk("CP4 删对象判 breaking", _cr["verdict"]=="breaking" and "object_removed" in _bt)
+chk("CP5 删关系判 breaking", "relation_removed" in _bt)
+chk("CP6 改绑表判 breaking", "object_retabled" in _bt)
+chk("CP7 状态降级判 risky(非 breaking)", "status_downgraded" in _rt)
+_hits=_cr["downstream_impact"]
+chk("CP8 下游影响命中规则(删对象→规则永不触发)",
+    any(h["kind"]=="rule" and h["severity"]=="breaking" for h in _hits))
+chk("CP9 下游影响命中动作(绑表消失→无法定位数据)",
+    any(h["kind"]=="action" and h["severity"]=="breaking" for h in _hits))
+chk("CP10 改绑表对规则记 risky 而非 breaking",
+    any(h["kind"]=="rule" and h["severity"]=="risky" for h in _hits))
+_same=_cp.check(_b,_cpy.deepcopy(_b),[],[],[])
+chk("CP11 无变更判 safe", _same["verdict"]=="safe" and _same["summary"]["breaking_count"]==0)
+_add=_cpy.deepcopy(_b); _add["objects"].append({"id":"_new_obj","cn":"新对象"})
+chk("CP12 纯新增对象判 safe", _cp.check(_b,_add,[],[],[])["verdict"]=="safe")
+_up=_cpy.deepcopy(_b)
+for _l in _up["links"][:1]: _l["status"]="verified"
+chk("CP13 状态升级不判 risky", _cp.check(_b,_up,[],[],[])["verdict"]=="safe")
+r=g("/api/ont/compat/demo?against=app"); chk("CP14 支持与另一图谱比较", r.status_code==200)
+r=g("/api/ont/compat/demo?against=a..b"); chk("CP15 对比键穿越→400", r.status_code==400)
+r=g("/api/ont/compat/a..b"); chk("CP16 穿越键→400", r.status_code==400)
+r=g("/api/ont/compat/nope"); chk("CP17 图谱不存在→404", r.status_code==404)
+
+print("=== MD. 本体模块化划分(DR-031)===")
+import module_split as _md
+r=g("/api/ont/modules/demo"); _m=r.json()
+chk("MD1 划分 200 + 模块列表", r.status_code==200 and _m["module_count"]>0 and _m["modules"])
+chk("MD2 默认按领域(连通分量)", _m["strategy"]=="by_domain")
+chk("MD3 成员总数不多于对象数(不重复归组)",
+    sum(x["size"] for x in _m["modules"])<=_m["total_objects"])
+chk("MD4 孤岛单列不强行归组", any(x["module"].startswith("未归组") for x in _m["modules"]))
+chk("MD5 孤岛过多时给出警告", any("孤岛" in a["desc"] or "无法归组" in a["desc"] for a in _m["advice"]))
+r=g("/api/ont/modules/demo?strategy=by_layer"); _ml=r.json()
+chk("MD6 按层次划分可用", r.status_code==200 and _ml["strategy"]=="by_layer")
+chk("MD7 层次划分覆盖全部对象(每个对象必属某层)",
+    sum(x["size"] for x in _ml["modules"])==_ml["total_objects"])
+chk("MD8 层次名为数仓语义", any(x["module"] in ("维度层","事实层","汇总层","明细层","贴源层","聚合层","应用层","未分层") for x in _ml["modules"]))
+chk("MD9 只建议不落盘(边界标注)", "不落盘改结构" in _m["note"])
+r=g("/api/ont/modules/demo?strategy=bogus"); chk("MD10 非法策略→400", r.status_code==400)
+r=g("/api/ont/modules/a..b"); chk("MD11 穿越键→400", r.status_code==400)
+r=g("/api/ont/modules/nope"); chk("MD12 图谱不存在→404", r.status_code==404)
+_flat={"objects":[{"id":"a"},{"id":"b"},{"id":"c"}],"links":[{"source":"a","target":"b","status":"verified"}]}
+_fr=_md.suggest(_flat,"by_domain")
+chk("MD13 连通分量正确分组(a-b 同组,c 孤岛)",
+    any(x["size"]==2 for x in _fr["modules"]) and any(x["module"].startswith("未归组") for x in _fr["modules"]))
+
 print("=== W. 动作层产品化(DR-020)===")
 _d=g("/api/actions").json()
 chk("W1 动作类型 7 个(含 3 新种子)", len(_d["types"])==7 and {"freeze_batch","adjust_temp_zone","supplier_scar"}<= {t["id"] for t in _d["types"]})
@@ -877,7 +938,7 @@ _root=_os.path.dirname(_os.path.abspath(__file__))
 chk("Z20 requirements.txt 存在", _os.path.exists(_os.path.join(_root,"requirements.txt")))
 _req=open(_os.path.join(_root,"requirements.txt"),encoding="utf-8").read()
 import sys as _sys
-_std=set(_sys.stdlib_module_names); _local={"translate_cn","quick_build","agent_runtime","serve_claw","export_owl","server","cq_check","drift_check","intent_check","usage_stat","rule_engine","openai_runtime","health_check"}
+_std=set(_sys.stdlib_module_names); _local={"translate_cn","quick_build","agent_runtime","serve_claw","export_owl","server","cq_check","drift_check","intent_check","usage_stat","rule_engine","openai_runtime","health_check","compat_check","module_split"}
 _ext=set()
 for _f in ("server.py","test_all.py"):
     for _n in ast.walk(ast.parse(open(_os.path.join(_root,_f),encoding="utf-8").read())):

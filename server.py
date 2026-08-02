@@ -1869,6 +1869,74 @@ def ont_health(key):
     except Exception as e:
         return jsonify({"error": f"健康度体检失败: {e}"}), 500
 
+@app.get("/api/ont/compat/<key>")
+def ont_compat(key):
+    """向后兼容性检查(DR-031 · 报告阶段五/六「版本管理与向后兼容性保障」)。
+
+    比较**基线 IR** 与**当前编辑后 IR**:发布这批草案编辑会破坏什么。
+
+    本体是语义契约——问数靠它召回表与口径、规则靠它锚定对象、动作靠它绑表、
+    穿透链路靠它连通。删掉一个对象可能让几条规则失效、几个动作绑不到表,
+    而这些往往直到线上报错才被发现。
+
+    重点在**下游影响**而非结构 diff:只报「删了 3 个对象」没有决策价值,
+    报「删掉的对象上挂着 2 条规则和 1 个动作」才让人知道该不该删。
+    不阻断变更——兼容性是决策依据不是权限,判断权在人。
+
+    可选 ?against=<另一图谱键> 改为与另一图谱比较。
+    """
+    if _bad_gkey(key): return jsonify({"error": "非法图谱键"}), 400
+    against = (request.args.get("against") or "").strip()
+    if against and _bad_gkey(against): return jsonify({"error": "非法对比图谱键"}), 400
+    new_ir = load_ir_edited(key)
+    if not new_ir: return jsonify({"error": "图谱不存在"}), 404
+    base_ir = load_ir_edited(against) if against else load_ir(key)
+    if not base_ir: return jsonify({"error": "基线图谱不存在"}), 404
+    try:
+        import compat_check
+        rules = _load_rules(key)
+        try:
+            actions = json.load(open(os.path.join(WORK, "action_types.json"), encoding="utf-8"))
+            actions = actions if isinstance(actions, list) else []
+        except Exception:
+            actions = []
+        try:
+            qas = json.load(open(os.path.join(WORK, "qa_skills.json"), encoding="utf-8"))
+            qas = qas if isinstance(qas, list) else []
+        except Exception:
+            qas = []
+        rep = compat_check.check(base_ir, new_ir, rules, actions, qas)
+        rep["graph"] = key
+        rep["baseline"] = against or f"{key}(未编辑基线)"
+        return jsonify(rep)
+    except Exception as e:
+        return jsonify({"error": f"兼容性检查失败: {e}"}), 500
+
+@app.get("/api/ont/modules/<key>")
+def ont_modules(key):
+    """本体模块化划分建议(DR-031 · 报告阶段二「模块化策略:按领域或按层次拆分」)。
+
+    我们的本体是一张平图,108 个对象平铺没有模块边界。后果很具体:
+    改一处不知影响范围、想按域交给不同团队维护无从下手、新人打开图谱建立不了认知。
+
+    ?strategy=by_domain(默认,连通分量+词根聚类)或 by_layer(数仓分层)。
+    只建议不落盘:模块边界最终是业务决策,算法只给结构上的自然分界——
+    自动切分会把一个错误的边界固化进本体。
+    """
+    if _bad_gkey(key): return jsonify({"error": "非法图谱键"}), 400
+    st = (request.args.get("strategy") or "by_domain").strip()
+    if st not in ("by_domain", "by_layer"):
+        return jsonify({"error": "strategy 需为 by_domain 或 by_layer"}), 400
+    ir = load_ir_edited(key)
+    if not ir: return jsonify({"error": "图谱不存在"}), 404
+    try:
+        import module_split
+        rep = module_split.suggest(ir, st)
+        rep["graph"] = key
+        return jsonify(rep)
+    except Exception as e:
+        return jsonify({"error": f"模块划分失败: {e}"}), 500
+
 @app.get("/api/ont/completeness/<key>")
 def ont_completeness(key):
     """本体完备度 / IOF 一致性记分卡:定义·示例·反例覆盖率、BFO 归类率、成熟度分布、关系接地率。
