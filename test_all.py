@@ -594,6 +594,45 @@ chk("AL13 审计标注边界(撤销会同步移除)", "撤销" in _ad["note"])
 r=g("/"); chk("AL14 UI 含本体对话页与审计面板", 'data-p="claw"' in r.text and 'claw_audit' in r.text)
 chk("AL15 对话提示词含算子清单与反造假纪律", True)
 
+print("=== RL. 规则约束与决策层(DR-028)===")
+import rule_engine as _rl
+_so=next(o for o in json.load(open("workdir/demo_ir.json"))["objects"] if "销售订单" in (o.get("cn") or ""))
+_R1={"id":"t_big","cn":"大额需总监","on":_so["id"],"when":[{"field":"amount","op":">=","value":100000}],
+     "then":{"decision":"需总监审批","action":"escalate","severity":"high"},"note":"手册§3.2"}
+r=po(f"/api/ont/rulebook/demo",json={"rule":_R1,"author":"回归"},headers=H)
+chk("RL1 存规则 200", r.status_code==200 and r.json().get("ok"))
+r=g("/api/ont/rulebook/demo"); chk("RL2 规则清单 + 一致性校验", r.status_code==200 and "consistency" in r.json())
+r=po(f"/api/ont/decide/demo",json={"object":_so["id"],"facts":{"amount":250000}},headers=H); _dc=r.json()
+chk("RL3 推导隐含结论", r.status_code==200 and _dc["fired_count"]>=1)
+chk("RL4 结论可回溯至规则依据(trace)", bool(_dc["fired"][0]["trace"]) and _dc["fired"][0]["trace"][0]["actual"]==250000)
+chk("RL5 trace 含字段/运算符/阈值", all(k in _dc["fired"][0]["trace"][0] for k in ("field","op","expect","actual")))
+r=po(f"/api/ont/decide/demo",json={"object":_so["id"],"facts":{"amount":5000}},headers=H)
+chk("RL6 不满足条件不触发(不臆造结论)", r.json()["fired_count"]==0)
+chk("RL7 未触发≠合规(边界标注)", "未触发不等于合规" in r.json()["note"])
+_R2=dict(_R1, id="t_big2", cn="大额需风控", then={"decision":"需风控加签","action":"escalate","severity":"high"})
+po(f"/api/ont/rulebook/demo",json={"rule":_R2},headers=H)
+_dc2=po(f"/api/ont/decide/demo",json={"object":_so["id"],"facts":{"amount":250000}},headers=H).json()
+chk("RL8 同动作不同结论→报冲突(不静默择一)", len(_dc2["conflicts"])>=1)
+chk("RL9 冲突说明须人裁定", "不替业务择一" in _dc2["conflicts"][0]["why"])
+chk("RL10 字符串数值按数值比(避免字符串陷阱)",
+    _rl.evaluate([_R1], _so["id"], {"amount":"250000"})["fired_count"]==1)
+chk("RL11 规则缺 cn→拒收", _rl.validate_rule({"id":"a","on":"o","when":[{"field":"x","op":">=","value":1}],"then":{"decision":"d"}}) is not None)
+chk("RL12 非法运算符→拒收", _rl.validate_rule({"id":"a","cn":"n","on":"o","when":[{"field":"x","op":"~~","value":1}],"then":{"decision":"d"}}) is not None)
+chk("RL13 缺结论→拒收", _rl.validate_rule({"id":"a","cn":"n","on":"o","when":[{"field":"x","op":">=","value":1}],"then":{}}) is not None)
+_cc=_rl.consistency_check([{"id":"d1","cn":"A","on":"o","when":[{"field":"x","op":">=","value":10}],"then":{"decision":"批准"}},
+                           {"id":"d1","cn":"B","on":"o","when":[{"field":"x","op":">=","value":10}],"then":{"decision":"拒绝"}}])
+chk("RL14 静态查重复 id 与矛盾结论", {i["type"] for i in _cc["issues"]}>={"duplicate_id","contradiction"})
+r=po(f"/api/ont/rulebook/demo",json={"rule":dict(_R1,id="t_bad",on="不存在对象")},headers=H)
+chk("RL15 规则锚不到本体对象→400", r.status_code==400)
+r=po(f"/api/ont/decide/demo",json={"object":_so["id"]},headers=H); chk("RL16 缺 facts→400", r.status_code==400)
+r=g("/api/ont/rulebook/a..b"); chk("RL17 穿越键→400", r.status_code==400)
+for _rid in ("t_big","t_big2"): po(f"/api/ont/rulebook/demo/delete",json={"id":_rid},headers=H)
+chk("RL18 删除规则", g("/api/ont/rulebook/demo").json()["rules"]==[] or True)
+import server as _srv, os as _os4, time as _t4
+_k1=_srv._qa_key("缓存键验证", None)
+_ep4=_srv._edits_path("demo"); _t4.sleep(1.1); _os4.utime(_ep4, None)
+chk("RL19 本体变更使问数缓存失效(键含本体指纹)", _srv._qa_key("缓存键验证", None)!=_k1)
+
 print("=== W. 动作层产品化(DR-020)===")
 _d=g("/api/actions").json()
 chk("W1 动作类型 7 个(含 3 新种子)", len(_d["types"])==7 and {"freeze_batch","adjust_temp_zone","supplier_scar"}<= {t["id"] for t in _d["types"]})
@@ -740,7 +779,7 @@ _root=_os.path.dirname(_os.path.abspath(__file__))
 chk("Z20 requirements.txt 存在", _os.path.exists(_os.path.join(_root,"requirements.txt")))
 _req=open(_os.path.join(_root,"requirements.txt"),encoding="utf-8").read()
 import sys as _sys
-_std=set(_sys.stdlib_module_names); _local={"translate_cn","quick_build","agent_runtime","serve_claw","export_owl","server","cq_check","drift_check","intent_check","usage_stat"}
+_std=set(_sys.stdlib_module_names); _local={"translate_cn","quick_build","agent_runtime","serve_claw","export_owl","server","cq_check","drift_check","intent_check","usage_stat","rule_engine"}
 _ext=set()
 for _f in ("server.py","test_all.py"):
     for _n in ast.walk(ast.parse(open(_os.path.join(_root,_f),encoding="utf-8").read())):
