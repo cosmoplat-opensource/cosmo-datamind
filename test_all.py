@@ -699,6 +699,38 @@ finally:
         else: _os5.environ[k]=v
 chk("OR6 驱动候选含 openai", "openai" in _sv._drv_order())
 
+print("=== HL. 本体健康度体检(DR-030)===")
+import health_check as _hc
+r=g("/api/ont/health/demo"); _h=r.json()
+chk("HL1 体检 200 + 分级结构", r.status_code==200 and all(k in _h for k in ("errors","signals","score","healthy")))
+chk("HL2 真本体无硬错误(IR 自洽)", _h["error_count"]==0 and _h["healthy"] is True)
+chk("HL3 检出孤岛信号(建了却连不上)", _h["isolated_count"]>0)
+chk("HL4 信号不扣健康分(枢纽不拉垮分数)", _h["score"]==100.0 and _h["signal_count"]>0)
+chk("HL5 只诊断不自动修(边界标注)", "只诊断不自动修" in _h["note"])
+_bad={"objects":[{"id":"a","cn":"甲"},{"id":"b","cn":"乙"},{"id":"lone","cn":"孤"}],
+      "links":[{"source":"a","target":"a","status":"verified"},
+               {"source":"a","target":"ghost","status":"verified"},
+               {"source":"a","target":"b","status":"verified"},
+               {"source":"a","target":"b","status":"verified","verb":"另一动词"},
+               {"source":"b","target":"a","status":"rejected"}]}
+_hr=_hc.check(_bad); _ty={e["type"] for e in _hr["errors"]}; _sy={x["type"] for x in _hr["signals"]}
+chk("HL6 检出自反关系", "self_loop" in _ty)
+chk("HL7 检出悬空端点(引用不存在对象)", "dangling" in _ty)
+chk("HL8 检出状态矛盾(既 verified 又 rejected)", "status_conflict" in _ty)
+chk("HL9 检出重复边(口径二义)", "duplicate" in _sy)
+chk("HL10 检出孤岛", "isolated" in _sy)
+chk("HL11 硬错误拉低健康分", _hr["score"]<100.0 and _hr["healthy"] is False)
+chk("HL12 仅硬错误回流缺口(信号不制造噪声)",
+    len(_hc.gaps_from(_hr))==_hr["error_count"] and all(x["type"].startswith("health_") for x in _hc.gaps_from(_hr)))
+_hub={"objects":[{"id":"h","cn":"枢纽"}]+[{"id":f"x{i}"} for i in range(9)],
+      "links":[{"source":"h","target":f"x{i}","status":"verified"} for i in range(9)]}
+chk("HL13 检出超级节点", "hub" in {x["type"] for x in _hc.check(_hub)["signals"]})
+_bi={"objects":[{"id":"a"},{"id":"b"}],"links":[{"source":"a","target":"b","status":"verified"},
+                                               {"source":"b","target":"a","status":"verified"}]}
+chk("HL14 检出双向对偶(推理会绕圈)", "bidirectional" in {x["type"] for x in _hc.check(_bi)["signals"]})
+r=g("/api/ont/health/a..b"); chk("HL15 穿越键→400", r.status_code==400)
+r=g("/api/ont/health/nope"); chk("HL16 图谱不存在→404", r.status_code==404)
+
 print("=== W. 动作层产品化(DR-020)===")
 _d=g("/api/actions").json()
 chk("W1 动作类型 7 个(含 3 新种子)", len(_d["types"])==7 and {"freeze_batch","adjust_temp_zone","supplier_scar"}<= {t["id"] for t in _d["types"]})
@@ -845,7 +877,7 @@ _root=_os.path.dirname(_os.path.abspath(__file__))
 chk("Z20 requirements.txt 存在", _os.path.exists(_os.path.join(_root,"requirements.txt")))
 _req=open(_os.path.join(_root,"requirements.txt"),encoding="utf-8").read()
 import sys as _sys
-_std=set(_sys.stdlib_module_names); _local={"translate_cn","quick_build","agent_runtime","serve_claw","export_owl","server","cq_check","drift_check","intent_check","usage_stat","rule_engine","openai_runtime"}
+_std=set(_sys.stdlib_module_names); _local={"translate_cn","quick_build","agent_runtime","serve_claw","export_owl","server","cq_check","drift_check","intent_check","usage_stat","rule_engine","openai_runtime","health_check"}
 _ext=set()
 for _f in ("server.py","test_all.py"):
     for _n in ast.walk(ast.parse(open(_os.path.join(_root,_f),encoding="utf-8").read())):
