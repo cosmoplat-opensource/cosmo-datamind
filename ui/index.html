@@ -1445,6 +1445,63 @@ function dqChart(el,r){if(!r||!r.data||!r.data.rows.length)return;const ch=r.cha
  else{mk(el,{grid:{top:28,left:56,right:20,bottom:30},legend:{textStyle:{color:'#64748b'}},tooltip:{trigger:'axis'},
   xAxis:{type:'category',data:r.data.rows.map(row=>row[x]),...AX},yAxis:{type:'value',...AX},
   series:ys.map(yc=>({name:yc,type:r.chart.type||'line',data:r.data.rows.map(row=>row[yc])}))});}}
+// ══════ 本体锚定可视化(DR-032):这次问数锚到了本体的哪些对象、沿哪些关系召回、SQL 最终用了谁 ══════
+const DQ_ANC_C={'关键词命中':['#4A5FF3','#EEF2FF'],'数据源限定':['#4A5FF3','#EEF2FF'],'核心事实表':['#7c3aed','#F3EEFF'],
+ '沿本体关系召回':['#0ea5e9','#E8F6FE'],'无命中·默认候选':['#94a3b8','#F1F5F9']};
+const DQ_ANC_E={verified:['#16a34a','','已验证'],asserted:['#d97706','','人审断言'],path:['#94a3b8','5 3','两跳可达']};
+function dqAnchorHTML(a){
+ const all=(a&&a.objects)||[];const CAP=16,objs=all.slice(0,CAP);if(!objs.length)return '';
+ const cut=all.length-objs.length;
+ const idx={};objs.forEach((o,i)=>{if(o.table)idx[String(o.table).toLowerCase()]=i;});
+ const rels=(a.relations||[]).filter(r=>r&&r.s&&r.t);
+ const used=new Set((a.used||[]).map(t=>String(t).toLowerCase()));
+ const hasUsed=!!(a.used&&a.used.length);
+ // 邻接 + BFS 排布:相连对象排在一起,连线短、交叉少(网格布局对长表名比环形更稳)
+ const adj={};rels.forEach(r=>{const s=idx[String(r.s).toLowerCase()],t=idx[String(r.t).toLowerCase()];
+  if(s==null||t==null||s===t)return;(adj[s]=adj[s]||[]).push(t);(adj[t]=adj[t]||[]).push(s);});
+ const order=[],seen=new Set();
+ objs.map((_,i)=>i).sort((x,y)=>(adj[y]||[]).length-(adj[x]||[]).length).forEach(st=>{
+  if(seen.has(st))return;const qu=[st];seen.add(st);
+  while(qu.length){const c=qu.shift();order.push(c);(adj[c]||[]).forEach(n=>{if(!seen.has(n)){seen.add(n);qu.push(n);}});}});
+ const COL=Math.min(4,order.length),CW=156,CH=80,PAD=16,NW=136,NH=44;
+ const pos={};order.forEach((n,k)=>{pos[n]={x:PAD+(k%COL)*CW+CW/2,y:PAD+Math.floor(k/COL)*CH+NH/2};});
+ const W=PAD*2+COL*CW,H=PAD*2+Math.ceil(order.length/COL)*CH;
+ let svg=`<svg viewBox="0 0 ${W} ${H}" style="width:100%;max-width:${W}px;height:auto;display:block">`;
+ rels.forEach(r=>{const s=idx[String(r.s).toLowerCase()],t=idx[String(r.t).toLowerCase()];
+  if(s==null||t==null||s===t||!pos[s]||!pos[t])return;
+  const st=DQ_ANC_E[r.status]||DQ_ANC_E.asserted;
+  svg+=`<line x1="${pos[s].x}" y1="${pos[s].y}" x2="${pos[t].x}" y2="${pos[t].y}" stroke="${st[0]}" stroke-width="1.6"${st[1]?` stroke-dasharray="${st[1]}"`:''}><title>${esc(r.key||'')}</title></line>`;});
+ order.forEach(n=>{const o=objs[n],p=pos[n],c=DQ_ANC_C[o.reason]||DQ_ANC_C['关键词命中'];
+  const on=used.has(String(o.table||'').toLowerCase());
+  const cn=(o.cn||o.table||'').slice(0,9),_t=String(o.table||''),tb=_t.length>24?_t.slice(0,23)+'…':_t;
+  svg+=`<g><title>${esc(o.table||'')} · ${esc(o.reason||'')}${o.ncol?' · '+o.ncol+' 列':''}${(o.aliases||[]).length?' · 别名 '+esc(o.aliases.join('、')):''}</title>`
+   +`<rect x="${p.x-NW/2}" y="${p.y-NH/2}" width="${NW}" height="${NH}" rx="6" fill="${c[1]}" stroke="${c[0]}" stroke-width="${on?2:1}"${hasUsed&&!on?' opacity="0.5"':''}/>`
+   +`<text x="${p.x}" y="${p.y-4}" text-anchor="middle" font-size="12" fill="#1f2937">${esc(cn)}${on?' ✓':''}</text>`
+   +`<text x="${p.x}" y="${p.y+11}" text-anchor="middle" font-size="9.5" fill="#6b7280">${esc(tb)}</text></g>`;});
+ svg+='</svg>';
+ const rsn={};objs.forEach(o=>{rsn[o.reason]=(rsn[o.reason]||0)+1;});
+ const leg=Object.keys(rsn).map(k=>{const c=DQ_ANC_C[k]||DQ_ANC_C['关键词命中'];
+  return `<span style="display:inline-flex;align-items:center;gap:4px"><i style="width:9px;height:9px;border-radius:2px;background:${c[1]};border:1px solid ${c[0]};display:inline-block"></i>${esc(k)} ${rsn[k]}</span>`;}).join('');
+ const est={};rels.forEach(r=>{est[r.status]=(est[r.status]||0)+1;});
+ const legE=Object.keys(est).map(k=>{const c=DQ_ANC_E[k]||DQ_ANC_E.asserted;
+  return `<span style="display:inline-flex;align-items:center;gap:4px"><i style="width:14px;height:0;border-top:2px ${k==='path'?'dashed':'solid'} ${c[0]};display:inline-block"></i>${esc(c[2])} ${est[k]}</span>`;}).join('');
+ const idle=hasUsed?objs.filter(o=>!used.has(String(o.table||'').toLowerCase())).length:0;
+ const ng=(a.graphs||[]).length;
+ const scope=a.scoped?`数据源限定 · ${ng?`选中 ${ng} 个图谱 → `:''}${a.focus_n||0} 张表`
+  :(ng?`选中 ${ng} 个图谱,但其绑定表未匹配到本体对象 · 已回退全库召回`:'全库检索');
+ return `<details class="dq-exec" open style="margin:8px 0"><summary>本体锚定 · ${all.length} 个对象 / ${rels.length} 条关系${hasUsed?` · SQL 实际用 ${a.used.length}`:''}</summary>
+  <div style="padding:6px 2px">
+   <div class="muted" style="font-size:11.5px;margin-bottom:6px">${esc(scope)} · 方框=本体对象(悬停看绑表与别名),连线=作 JOIN 依据的本体关系${hasUsed?',✓ 与实线框=最终 SQL 真正用到':''}</div>
+   ${svg}
+   ${cut?`<div class="muted" style="font-size:11.5px;margin-top:4px">图中只画了前 ${CAP} 个(共 ${all.length} 个)——其余对象同样在上下文里,未省略喂给引擎</div>`:''}
+   <div style="display:flex;flex-wrap:wrap;gap:10px;font-size:11px;color:#4b5563;margin-top:8px">${leg}${legE}</div>
+   ${rels.length?`<details style="margin-top:6px"><summary class="muted" style="font-size:11.5px">JOIN 依据(${rels.length})</summary>
+    <div style="font-size:11.5px;line-height:1.7;margin-top:4px">`+rels.slice(0,12).map(r=>{const c=DQ_ANC_E[r.status]||DQ_ANC_E.asserted;
+     return `<div><span style="color:${c[0]}">${r.hop===2?'⋈⋈':'⋈'}</span> <code>${esc(r.key||'')}</code> <span class="muted">[${esc(r.verb||'关联')} · ${esc(c[2])}]</span></div>`;}).join('')+`</div></details>`:''}
+   ${(a.metrics||[]).length?`<div class="muted" style="font-size:11.5px;margin-top:6px">命中指标:`+a.metrics.slice(0,8).map(m=>`${esc(m.name)}<code style="font-size:10.5px">${esc(m.table||'')}.${esc(m.col||'')}</code>`).join('、')+`</div>`:''}
+   ${idle?`<div class="muted" style="font-size:11.5px;margin-top:6px">${idle} 个召回对象未被 SQL 用到 —— 召回宽于所需属正常,若长期不被用可核查该对象是否该留在上下文</div>`:''}
+  </div></details>`;}
+
 function dqRenderCard(card,q,d){const uid=DQ_UID++;const okN=d.steps.filter(s=>s.ok).length;const nres=(d.results||[]).length;
  let html=`<div class="dq-tags"><span class="dq-t def">demo-deep-qa</span>
    <span class="dq-t idx">执行 ${d.steps.length} 步 · 成功 ${okN}</span>
@@ -1453,6 +1510,7 @@ function dqRenderCard(card,q,d){const uid=DQ_UID++;const okN=d.steps.filter(s=>s
  html+=`<details class="dq-exec"${nres?'':' open'}><summary>执行记录(${d.steps.length})</summary><div class="dq-log">`+
   d.steps.map(s=>`<div class="dq-logstep"><span class="ck ${s.ok?'':'no'}">${s.ok?'✓':'✗'}</span><span>${s.ts?`<span class="muted">[${esc(s.ts)}]</span> `:''}<b>${esc(s.step)}</b>${s.info?' — '+esc(s.info):''}</span></div>`).join('')+`</div></details>`;
  if(d.narrative)html+=`<div class="dq-insight">${dqMD(d.narrative)}</div>`;
+ if(d.anchor)html+=dqAnchorHTML(d.anchor);        // DR-032 本体锚定可视化(含 SQL 实际命中)
  if((d.metric_cards||[]).length)   // A3 口径卡:命中指标的口径与出处,随答案可见
   html+=`<div style="display:flex;flex-wrap:wrap;gap:8px;margin:8px 0">`+d.metric_cards.map(m=>
    `<div style="border:1px solid #E5E9F2;border-left:3px solid #4A5FF3;border-radius:6px;padding:8px 12px;font-size:12px;background:#FAFBFF;max-width:340px">
@@ -1546,7 +1604,7 @@ async function ask(){if(DQ_MODE==='diag')return diagAsk();
  const card=document.createElement('div');card.className='dq-card';stream.appendChild(card);stream.scrollTop=1e9;
  const live=[];let status='正在连接引擎…';const pr=[];const scroll=()=>{if(!ac.signal.aborted)stream.scrollTop=1e9;};
  card.innerHTML=`<div class="dq-tags"><span class="dq-t idx">引擎运行中</span><span class="dq-t def">demo-deep-qa</span></div>`+
-  `<details class="dq-exec" open><summary>执行记录</summary><div class="dq-log" id="_dqlog"></div></details><div id="_dqres"></div>`;
+  `<details class="dq-exec" open><summary>执行记录</summary><div class="dq-log" id="_dqlog"></div></details><div id="_dqanc"></div><div id="_dqres"></div>`;
  const lg=card.querySelector('#_dqlog'), rs=card.querySelector('#_dqres');
  const renderLog=()=>{if(!card.isConnected)return;lg.innerHTML=live.map(s=>`<div class="dq-logstep"><span class="ck ${s.ok?'':'no'}">${s.ok?'✓':'✗'}</span><span>${s.ts?`<span class="muted">[${esc(s.ts)}]</span> `:''}<b>${esc(s.step)}</b>${s.info?' — '+esc(s.info):''}</span></div>`).join('')+
    (status?`<div class="dq-logstep"><span class="ck">⏳</span><span class="muted">${esc(status)}</span></div>`:'');scroll();};
@@ -1568,10 +1626,11 @@ async function ask(){if(DQ_MODE==='diag')return diagAsk();
     else if(ev.type==='narrative_delta'){let nd=card.querySelector('#_dqnarr');    // B6 洞察逐段流出
      if(!nd){rs.insertAdjacentHTML('afterend','<div class="dq-insight" id="_dqnarr" style="white-space:pre-wrap"></div>');nd=card.querySelector('#_dqnarr');}
      nd.textContent+=ev.text;scroll();}
+    else if(ev.type==='anchor'){const ab=card.querySelector('#_dqanc');if(ab){ab.innerHTML=dqAnchorHTML(ev.anchor);scroll();}}
     else if(ev.type==='done'){done=ev;}
     else if(ev.type==='error'){card.innerHTML=`<span class="dq-t warn">${esc(ev.error)}</span>`;}}}
   if(done&&card.isConnected){CHAT_HIST.push({q,summary:done.summary||''});dqRenderCard(card,q,done);
-   const dT={narrative:done.narrative,summary:done.summary,cached:done.cached,elapsed:done.elapsed,session:done.session,steps:done.steps,results:(done.results||[]).map(r=>({title:r.title,sql:r.sql,chart:r.chart,data:{columns:r.data.columns,rows:(r.data.rows||[]).slice(0,200)}}))};
+   const dT={narrative:done.narrative,summary:done.summary,anchor:done.anchor,cached:done.cached,elapsed:done.elapsed,session:done.session,steps:done.steps,results:(done.results||[]).map(r=>({title:r.title,sql:r.sql,chart:r.chart,data:{columns:r.data.columns,rows:(r.data.rows||[]).slice(0,200)}}))};
    myConv.turns.push({q,d:dT});if(!myConv.title)myConv.title=q;dqSaveConv(myConv);}
  }catch(e){if(e&&e.name==='AbortError')return;if(card.isConnected)card.innerHTML=`<span class="dq-t warn">请求失败: ${esc(''+e)}</span>`;}
  finally{if(DQ_ABORT===ac)DQ_ABORT=null;$('#chat_btn').disabled=false;}
