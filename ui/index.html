@@ -1150,7 +1150,8 @@ async function egLoad(){EG=await J('/api/engine/config').catch(e=>({error:''+e})
  if(EG.error){$('#eg_runtimes').innerHTML=`<div class="muted">${esc(EG.error)}</div>`;return;}
  const LBL={'claude-code':['Claude Code','订阅版 claude CLI(Anthropic 订阅计费)'],
             'hermes':['Hermes','多 provider:openai-codex 订阅 / GLM · DeepSeek · Moonshot 等 API Key'],
-            'openclaw':['OpenClaw','订阅版 Codex/ChatGPT(OpenAI 订阅计费)']};
+            'openclaw':['OpenClaw','订阅版 Codex/ChatGPT(OpenAI 订阅计费)'],
+            'openai':['OpenAI 兼容端点','任意 /chat/completions 服务(GLM · DeepSeek · Qwen · vLLM 自建);经 DATAMIND_LLM_BASE/_KEY/_MODEL 配置']};
  $('#eg_runtimes').innerHTML=`<h3 style="margin:0 0 8px">Agent 运行时 <span class="muted" style="font-weight:400;font-size:12px">当前:${esc(EG.driver)} · 切换与模型修改即刻生效</span></h3>`
   +'<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:10px">'
   +EG.runtimes.map(r=>{const[nm,sub]=LBL[r]||[r,''];const cur=r===EG.driver;const m=EG.models[r]||'';const opts=(EG.model_options[r]||[]);
