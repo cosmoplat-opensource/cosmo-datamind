@@ -1844,6 +1844,31 @@ def ont_decide(key):
     res["graph"] = key
     return jsonify(res)
 
+@app.get("/api/ont/health/<key>")
+def ont_health(key):
+    """本体健康度体检(DR-030 · 报告阶段六「异常关系检测」与「定期评审健康度」)。
+
+    与既有三项检测互补——它们都不看图结构本身:
+      CQ 答「够不够用」· 漂移答「还对不对得上数据」· 完备度答「定义填没填全」
+    而一个三项全过的本体,结构上仍可能是病的:一半对象是孤岛、存在自反关系、
+    同一对语义重复连了多条边。这些不会让任何现有检查报错,却会让问数召回选错表。
+
+    分级:dangling/self_loop/status_conflict 是硬错误(IR 不自洽);
+    isolated/hub/duplicate/bidirectional 是待核查信号。健康分只由硬错误扣分——
+    否则一个业务枢纽对象就能把分数拉垮,分数失去意义。
+    """
+    if _bad_gkey(key): return jsonify({"error": "非法图谱键"}), 400
+    ir = load_ir_edited(key)
+    if not ir: return jsonify({"error": "图谱不存在"}), 404
+    try:
+        import health_check
+        rep = health_check.check(ir)
+        rep["graph"] = key
+        rep["gaps"] = health_check.gaps_from(rep)
+        return jsonify(rep)
+    except Exception as e:
+        return jsonify({"error": f"健康度体检失败: {e}"}), 500
+
 @app.get("/api/ont/completeness/<key>")
 def ont_completeness(key):
     """本体完备度 / IOF 一致性记分卡:定义·示例·反例覆盖率、BFO 归类率、成熟度分布、关系接地率。
