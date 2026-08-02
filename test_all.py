@@ -1120,7 +1120,7 @@ chk("AO7 命中证据里的词确实出现在问句或其扩展词中",
     all(all(isinstance(h, str) and h for h in (o.get("hits") or [])) for o in _t1["objects"]))
 _t3 = {}; _srvmod.build_context(_q33, trace=_t3, graph_keys=["app"])
 chk("AO8 无绑表本体→如实回退并说明(不静默换本体)",
-    bool(_t3.get("fallback")) and _t3["ontology"]["keys"] == ["app"])
+    bool(_t3.get("fallback")) and _t3["ontology"]["requested"] == ["示例应用本体(概念+流程)"])
 _t4 = {}; _srvmod.build_context(_q33, trace=_t4, graph_keys=["built_9c3fd1", "built_8c3354"])
 chk("AO9 多选图谱→合并为一套锚定本体", _t4["ontology"]["objects"] > _t1["ontology"]["objects"])
 # 形状无关:构建产物用 relations[source_concept] + objects[name],示例用 links[source] + id
@@ -1160,6 +1160,31 @@ chk("AO21 两字母英文缩写不再子串命中无关表",
     all("fact_alarm" != o["table"] or o["reason"] != "关键词命中" for o in _t5["objects"]))
 chk("AO22 命中证据里不出现 so 这类子串误命中",
     all("so" not in (o.get("hits") or []) for o in _t5["objects"]))
+# 可见性:锚定埋在对话气泡里会被自动滚动顶出视口,必须有常驻条
+chk("AO23 深度问数页有常驻锚定条容器", 'id="dq_ancbar"' in _ui and ".dq-ancbar{" in _ui)
+chk("AO24 锚定条在实时/终局/翻历史三处都刷新",
+    _ui.count("dqAncBar(") >= 5)
+chk("AO25 锚定条与气泡复用同一段渲染(bare 模式,不做第二份实现)",
+    "function dqAnchorHTML(a,bare)" in _ui and "dqAnchorHTML(a,true)" in _ui and "return bare ? inner :" in _ui)
+chk("AO26 可跳本体图谱高亮本次锚定的那一块",
+    "function dqAncHighlight" in _ui and "GRAPH_HL" in _ui and "问数锚定视图" in _ui)
+chk("AO27 图谱渲染按高亮集淡出非锚定节点与关系",
+    "function _g6build(g,hl)" in _ui and "hl.set.has(n.id)" in _ui
+    and "hl.set.has(e.s)&&hl.set.has(e.t)" in _ui)
+chk("AO28 高亮提示条独立于 g_info(后者会被完备度回调覆写)",
+    'id="g_hlbar"' in _ui and "$('#g_hlbar')" in _ui)
+chk("AO29 高亮可一键清除", "清除高亮,看完整图谱" in _ui)
+chk("AO30 新对话清空锚定条,不残留上一轮", "DQ_ANC_LAST=null;dqAncBar(null)" in _ui)
+chk("AO31 切到根因诊断清空锚定条(共用视图容器,免得指向另一条链路)",
+    _ui.count("DQ_ANC_LAST=null;dqAncBar(null)") >= 3)
+# 回退时 ontology 必须写「实际用了哪套」,否则界面显示选中的那套而对象来自另一套
+_t6 = {}; _srvmod.build_context("各客户的销售订单金额排名", trace=_t6, graph_keys=["app"])
+chk("AO32 无绑表本体回退后,锚定本体如实回写为实际使用的那套",
+    _t6["ontology"]["keys"] == ["demo"] and _t6["ontology"]["requested"] and _t6.get("fallback"))
+chk("AO34 流中断不抹掉已完成内容(锚定是用户已看到的证据)",
+    "以上为中断前已完成的部分" in _ui and "if(live.length||pr.length)" in _ui)
+chk("AO33 回退提示显示在锚定条头部(默认可见,不藏在折叠区)",
+    "${a.fallback?`<span style=\"color:#b45309" in _ui)
 # 截断策略探针:按原序截断会画出一片孤立方框(0 连线),让人误以为本体拿不出关系
 _fn=_ui[_ui.index("const DQ_ANC_C="):_ui.index("function dqRenderCard")]
 _big={"objects":[{"key":f"o{i}","cn":f"对象{i}","table":f"t{i}","reason":"数据源限定","ncol":3}

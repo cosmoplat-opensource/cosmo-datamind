@@ -160,6 +160,16 @@ a{color:var(--acc)}
 #dqv_deep.dqv-empty .dq-stream{flex:0 0 auto;overflow:visible}
 #dqv_deep.dqv-empty .dq-inputbar{max-width:820px;width:100%;margin:18px auto 0}
 #dqv_deep.dqv-empty .dq-hero{height:auto;padding:0 0 6px}
+/* 常驻本体锚定条(深度问数):锚定过程必须在视口内,不能随对话流滚走 */
+.dq-ancbar{flex:0 0 auto;border-bottom:1px solid #E9ECF4;background:#FAFBFF;padding:8px 14px;font-size:12px}
+.dq-ancbar .hd{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.dq-ancbar .ont{font-weight:600;color:#4A5FF3}
+.dq-ancbar .fun{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.dq-ancbar .fun b{font-size:13px;color:#1f2937}
+.dq-ancbar .fun i{color:#c7cbd6;font-style:normal}
+.dq-ancbar .act{margin-left:auto;display:flex;gap:8px}
+.dq-ancbar .act a{cursor:pointer;color:#4A5FF3;text-decoration:none}
+.dq-ancbar .body{margin-top:8px;border-top:1px dashed #E5E9F2;padding-top:8px;max-height:46vh;overflow:auto}
 /* 弹窗(数据源 / 技能,对齐平台 modal)*/
 .dq-modal{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:100;display:flex;align-items:center;justify-content:center}
 .dq-modal-box{background:#fff;border-radius:8px;width:920px;max-width:94vw;max-height:86vh;display:flex;flex-direction:column;box-shadow:0 8px 40px rgba(0,0,0,.2)}
@@ -321,6 +331,7 @@ a{color:var(--acc)}
   <div class="row" style="margin-bottom:10px"><select id="g_sel" style="width:340px"></select>
    <span class="muted" id="g_info"></span><span style="flex:1"></span>
    <span id="g_legend"></span>导出:<button class="ghost" onclick="expOnt('ttl')">TTL</button><button class="ghost" onclick="expOnt('jsonld')">JSON-LD</button><button class="ghost" onclick="expOnt('owl')">RDF/XML</button><button class="ghost" onclick="enrichOnt(this)" title="调智能引擎为缺定义的对象补『属+种差』定义+正例+反例,升级到 IOF 标准">补定义/反例</button>布局<select id="g_layout" onchange="drawGraph($('#g_sel').value)" style="width:120px"><option value="dagre">分层(原版)</option><option value="force">力导向</option><option value="circular">环形</option><option value="radial">辐射</option></select></div>
+  <div id="g_hlbar" style="display:none;margin:-4px 0 10px;padding:7px 12px;border:1px solid #C7D2FE;background:#EEF2FF;border-radius:6px;font-size:12.5px"></div>
   <div style="position:relative"><div class="card" style="padding:6px"><div id="g_canvas"></div></div>
    <div class="card" id="g_detail" style="position:absolute;top:12px;right:12px;width:340px;max-height:calc(100% - 24px);overflow:auto;display:none;z-index:6;box-shadow:0 8px 30px rgba(31,45,61,.16)"></div>
    <div class="muted" style="position:absolute;bottom:10px;left:14px;font-size:11px;pointer-events:none">点击节点/连线查看详情 · 滚轮缩放 · 拖拽平移</div></div></div>
@@ -442,6 +453,7 @@ a{color:var(--acc)}
    </div>
    <div class="dq-main">
     <div class="dq-view" id="dqv_deep" style="display:flex;flex-direction:column;flex:1;min-height:0">
+     <div class="dq-ancbar" id="dq_ancbar" style="display:none"></div>
      <div class="dq-stream" id="dq_stream"></div>
      <div class="dq-inputbar">
       <textarea id="chat_q" placeholder="请输入数据分析问题(支持上传 Excel、CSV、TXT 文件)" onkeydown="if(event.key==='Enter'&&!event.shiftKey&&!event.isComposing){event.preventDefault();ask()}"></textarea>
@@ -875,12 +887,19 @@ const GKIND={object:{fill:'#eef2ff',stroke:'#4a5ff3',text:'#4a5ff3'},event:{fill
 const GEST={verified:{c:'#94a3b8',w:1.5,d:null},asserted:{c:'#4a5ff3',w:1.3,d:[2,2]},inferred:{c:'#a855f7',w:1.3,d:[1,3]},candidate:{c:'#ff7d00',w:1.2,d:[4,3]},gap:{c:'#ff7d00',w:1.2,d:[4,3]}};
 let GRAPH_CUR={key:'demo',nodes:[],edges:[]};
 // 共享 G6 渲染(本体图谱 + 建模工作台复用,统一布局/配色/自适应)
-function _g6build(g){
- const nodes=g.nodes.map(n=>{const kk=GKIND[n.kind]||GKIND.object;return {id:n.id,label:(n.name||n.id).slice(0,12),kind:n.kind,_n:n,
-  style:{fill:kk.fill,stroke:kk.stroke,lineWidth:2,radius:8},labelCfg:{style:{fill:kk.text,fontSize:13,fontWeight:600}}};});
- const edges=g.edges.map(e=>{let st=GEST[e.status]||GEST.gap;if(e.semantic==='fail')st={c:'#dc2626',w:st.w,d:[2,4]};return {source:e.s,target:e.t,label:e.verb||'',_e:e,
+let GRAPH_HL=null;      // 从深度问数跳来的锚定高亮:{key, set:锚定对象, used:SQL 实际用到的表}
+function _g6build(g,hl){
+ const nodes=g.nodes.map(n=>{const kk=GKIND[n.kind]||GKIND.object;
+  const on=!hl||hl.set.has(n.id);
+  const hit=hl&&(n.tables||[]).some(t=>hl.used.has(String(t).toLowerCase()));
+  return {id:n.id,label:(n.name||n.id).slice(0,12),kind:n.kind,_n:n,
+  style:{fill:on?kk.fill:'#F6F7FA',stroke:on?kk.stroke:'#DDE1EA',lineWidth:hit?3:(on?2:1),radius:8},
+  labelCfg:{style:{fill:on?kk.text:'#A9B0BF',fontSize:13,fontWeight:600}}};});
+ const edges=g.edges.map(e=>{let st=GEST[e.status]||GEST.gap;if(e.semantic==='fail')st={c:'#dc2626',w:st.w,d:[2,4]};
+  if(hl&&!(hl.set.has(e.s)&&hl.set.has(e.t)))st={c:'#E3E6ED',w:1,d:st.d};
+  return {source:e.s,target:e.t,label:e.verb||'',_e:e,
   style:{stroke:st.c,lineWidth:st.w,lineDash:st.d,endArrow:{path:G6.Arrow.triangle(7,8,0),fill:st.c}},
-  labelCfg:{autoRotate:true,style:{fill:e.status==='verified'?'#64748b':'#d46b08',fontSize:12,background:{fill:'#fff',padding:[2,4,2,4],radius:3}}}};});
+  labelCfg:{autoRotate:true,style:{fill:(hl&&!(hl.set.has(e.s)&&hl.set.has(e.t)))?'#C7CBD6':(e.status==='verified'?'#64748b':'#d46b08'),fontSize:12,background:{fill:'#fff',padding:[2,4,2,4],radius:3}}}};});
  return {nodes,edges};
 }
 function _g6layout(lay,n){const big=n>40;
@@ -888,7 +907,7 @@ function _g6layout(lay,n){const big=n>40;
   :lay==='force'?{type:'force',preventOverlap:true,linkDistance:130,nodeStrength:-70,edgeStrength:.6}
   :lay==='circular'?{type:'circular'}:{type:'radial',unitRadius:130,preventOverlap:true,nodeSize:120};}
 function g6render(containerId,g,lay,opts){opts=opts||{};
- const c=$('#'+containerId);const {nodes,edges}=_g6build(g);
+ const c=$('#'+containerId);const {nodes,edges}=_g6build(g,opts.hl);
  const graph=new G6.Graph({container:containerId,width:c.offsetWidth,height:c.offsetHeight||480,layout:_g6layout(lay,nodes.length),
   defaultNode:{type:'rect',size:[132,42],style:{radius:8},anchorPoints:[[0,0.5],[1,0.5]]},
   defaultEdge:{type:lay==='dagre'?'polyline':'quadratic',style:{radius:12,offset:18}},
@@ -912,7 +931,17 @@ async function drawGraph(k){const g=await J('/api/graph/'+k);
  const kset=[...new Set(g.nodes.map(n=>n.kind))].filter(x=>x);
  $('#g_legend').innerHTML=kset.map(x=>`<span class="tag" style="background:${KCOL(x)}22;color:${KCOL(x)}">${KNM(x)}</span>`).join('');
  if(gChart){try{gChart.destroy();}catch(_){}gChart=null;}
- gChart=g6render('g_canvas',g,($('#g_layout')&&$('#g_layout').value)||'dagre',{onNode:showNodeDetail,onEdge:showEdgeDetail});}
+ const hl=(GRAPH_HL&&GRAPH_HL.key===k)?GRAPH_HL:null;
+ const hb=$('#g_hlbar');
+ if(hl&&hb){const inG=g.nodes.filter(x=>hl.set.has(x.id)).length;
+  hb.style.display='block';
+  hb.innerHTML=`<b style="color:#4A5FF3">问数锚定视图</b> · 本次问数锚定到该本体的 `
+   +`<b>${inG}/${g.nodes.length}</b> 个对象(着色),其余淡出`
+   +(hl.used.size?` · 其中 <b>${hl.used.size}</b> 个被最终 SQL 真正用到(粗边框)`:'')
+   +` <a href="#" onclick="GRAPH_HL=null;drawGraph('${esc(k)}');return false">清除高亮,看完整图谱</a>`;
+  if(inG===0)toast('本次锚定的对象不在该图谱中,未高亮',false);}
+ else if(hb)hb.style.display='none';
+ gChart=g6render('g_canvas',g,($('#g_layout')&&$('#g_layout').value)||'dagre',{onNode:showNodeDetail,onEdge:showEdgeDetail,hl:hl});}
 async function showEdgeDetail(e){const k=GRAPH_CUR.key;
  let rd=await J('/api/ont/relation/'+k+'?s='+encodeURIComponent(e.s)+'&t='+encodeURIComponent(e.t)).catch(_=>({error:1}));
  if(rd.error)rd={source:e.s,target:e.t,verb:e.verb,status:e.status,overlap_pct:e.overlap,semantic:e.semantic,founded_relation:e.founded_relation,temporal:e.temporal};const SB={verified:'已验证',asserted:'人工断言',candidate:'待验证',inferred:'推理'};const det=$('#g_detail');det.style.display='block';det.scrollTop=0;
@@ -1416,6 +1445,8 @@ function dqGroup(gh){gh.parentElement.classList.toggle('collapsed');}
 let DQ_MODE='deep';
 function dqMode(m){DQ_MODE=m;['deep','instant','report','diag'].forEach(x=>{const el=$('#mode_'+x);if(el)el.classList.toggle('on',x===m)});
  $('#dqv_deep').style.display=(m==='deep'||m==='diag')?'flex':'none';
+ // 根因诊断与深度问数共用同一视图容器:切过去要清掉深度问数的锚定条,免得指向另一条链路
+ if(m==='diag'&&typeof dqAncBar==='function'){DQ_ANC_LAST=null;dqAncBar(null);}
  $('#dqv_instant').style.display=m==='instant'?'block':'none';
  $('#dqv_report').style.display=m==='report'?'block':'none';
  const inp=$('#chat_q');if(inp)inp.placeholder=m==='diag'?'描述异常现象(如:3 号线本周直通率下降,可能是什么原因?)——诊断只在本体边界内作答':'请输入数据分析问题(支持上传 Excel、CSV、TXT 文件)';
@@ -1433,7 +1464,7 @@ function dqReport(){const el=$('#dq_report');const conv=DQ_CONV||dqAllConv()[0];
   <div style="margin-top:14px"><button class="ghost" onclick="window.print()">打印 / 导出 PDF</button></div></div>`;
  el.innerHTML=html;
  conv.turns.forEach((t,i)=>{((t.d&&t.d.results)||[]).forEach((r,j)=>{const c=el.querySelector('#rpc_'+i+'_'+j);if(c)dqChart(c,r);});});}
-function dqNew(){dqAbort();DQ_CONV=null;CHAT_HIST=[];$('#dq_stream').innerHTML=dqHero();dqRenderHist();$('#dqv_deep').classList.add('dqv-empty');dqMode('deep');if(typeof a11yScan==='function')a11yScan();}
+function dqNew(){dqAbort();DQ_CONV=null;CHAT_HIST=[];DQ_ANC_LAST=null;dqAncBar(null);$('#dq_stream').innerHTML=dqHero();dqRenderHist();$('#dqv_deep').classList.add('dqv-empty');dqMode('deep');if(typeof a11yScan==='function')a11yScan();}
 function dqMD(t){return esc(t||'').replace(/\*\*(.+?)\*\*/g,'<b>$1</b>').replace(/`([^`]+)`/g,'<code>$1</code>');}
 function dqTable(data){const cols=data.columns||[];const all=data.rows||[];
  // 长序列取首5+末5(时序时末尾为最新期,与图表/洞察口径一致),中间省略;短序列全展示
@@ -1449,7 +1480,7 @@ function dqChart(el,r){if(!r||!r.data||!r.data.rows.length)return;const ch=r.cha
 const DQ_ANC_C={'关键词命中':['#4A5FF3','#EEF2FF'],'数据源限定':['#4A5FF3','#EEF2FF'],'核心事实表':['#7c3aed','#F3EEFF'],
  '沿本体关系召回':['#0ea5e9','#E8F6FE'],'无命中·默认候选':['#94a3b8','#F1F5F9']};
 const DQ_ANC_E={verified:['#16a34a','','已验证'],asserted:['#d97706','','人审断言'],path:['#94a3b8','5 3','两跳可达']};
-function dqAnchorHTML(a){
+function dqAnchorHTML(a,bare){
  const all=(a&&a.objects)||[];if(!all.length)return '';
  const CAP=16;
  const ai={};all.forEach((o,i)=>{if(o.table)ai[String(o.table).toLowerCase()]=i;});
@@ -1512,12 +1543,11 @@ function dqAnchorHTML(a){
  const ev=all.filter(o=>(o.hits||[]).length).slice(0,12);
  const scope=a.scoped?`显式选表 ${a.focus_n||0} 张`
   :(ng?`选中 ${ng} 个图谱作锚定本体`:'未选图谱 · 用示例本体');
- return `<details class="dq-exec" open style="margin:8px 0"><summary>本体锚定 · ${esc((ont.names||['示例本体'])[0])} · 召回 ${all.length} 对象 / ${rels.length} 关系${hasUsed?` · SQL 实际用 ${a.used.length}`:''}</summary>
-  <div style="padding:6px 2px">
+ const inner=`<div style="padding:6px 2px">
    ${a.fallback?`<div style="font-size:11.5px;color:#b45309;background:#FFFBEB;border:1px solid #FDE68A;border-radius:5px;padding:5px 8px;margin-bottom:6px">${esc(a.fallback)}</div>`:''}
    ${a.focus_miss?`<div style="font-size:11.5px;color:#b45309;background:#FFFBEB;border:1px solid #FDE68A;border-radius:5px;padding:5px 8px;margin-bottom:6px">显式点选的 ${a.focus_miss} 张表在该本体里一张都没有,已转为按问句召回</div>`:''}
    <div class="muted" style="font-size:11.5px;margin-bottom:6px">${esc(scope)} · 方框=本体对象(悬停看绑表/别名/命中词),连线=作 JOIN 依据的本体关系${hasUsed?',✓ 与加粗边框=最终 SQL 真正用到':''}</div>
-   <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:stretch;background:#FAFBFC;border:1px solid #EEF0F5;border-radius:6px;padding:8px 10px;margin-bottom:8px">${chain.join('')}</div>
+   ${bare?'':`<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:stretch;background:#FAFBFC;border:1px solid #EEF0F5;border-radius:6px;padding:8px 10px;margin-bottom:8px">${chain.join('')}</div>`}
    ${svg}
    ${(cut||cutR)?`<div class="muted" style="font-size:11.5px;margin-top:4px">${cut?`图中只画了 ${CAP} 个对象(共 ${all.length} 个,优先画参与关系的)`:''}${(cut&&cutR)?',':''}${cutR?`${cut?'另有':'有'} ${cutR} 条关系因端点未入图而未画`:''} —— 未画的对象与关系同样在上下文里,没有少喂给引擎</div>`:''}
    <div style="display:flex;flex-wrap:wrap;gap:10px;font-size:11px;color:#4b5563;margin-top:8px">${leg}${legE}</div>
@@ -1537,7 +1567,46 @@ function dqAnchorHTML(a){
    ${(a.metrics||[]).length?`<div class="muted" style="font-size:11.5px;margin-top:6px">命中指标:`+a.metrics.slice(0,LIM).map(m=>`${esc(m.name)} <code style="font-size:10.5px">${esc(m.table||'')}.${esc(m.col||'')}</code>`).join('、')
      +(a.metrics.length>LIM?`…另有 ${a.metrics.length-LIM} 个`:'')+`</div>`:''}
    ${idle?`<div class="muted" style="font-size:11.5px;margin-top:6px">${idle} 个召回对象未被 SQL 用到 —— 召回宽于所需属正常,若长期不被用可核查该对象是否该留在上下文</div>`:''}
-  </div></details>`;}
+  </div>`;
+ // bare:锚定条里已有容器,不再套 details;两处共用同一段渲染,不做第二份实现
+ return bare ? inner : `<details class="dq-exec" open style="margin:8px 0"><summary>本体锚定 · ${esc((ont.names||['示例本体'])[0])} · 召回 ${all.length} 对象 / ${rels.length} 关系${hasUsed?` · SQL 实际用 ${a.used.length}`:''}</summary>${inner}</details>`;}
+
+let DQ_ANC_LAST=null, DQ_ANC_OPEN=false;
+function dqAncBar(a){
+ const bar=$('#dq_ancbar');if(!bar)return;
+ DQ_ANC_LAST=a;
+ if(!a||!(a.objects||[]).length){bar.style.display='none';return;}
+ const ont=a.ontology||{}, nm=(ont.names||['示例本体'])[0];
+ const rsn={};(a.objects||[]).forEach(o=>{rsn[o.reason]=(rsn[o.reason]||0)+1;});
+ const seg=[];const push=(n,t)=>seg.push(`<span><b>${n}</b> ${esc(t)}</span>`);
+ push(ont.objects||a.objects.length,'本体对象');
+ if(rsn['数据源限定'])push(rsn['数据源限定'],'显式选表');
+ if(rsn['关键词命中'])push(rsn['关键词命中'],'问句命中');
+ if(rsn['无命中·默认候选'])push(rsn['无命中·默认候选'],'默认候选');
+ if(rsn['核心事实表'])push(rsn['核心事实表'],'核心事实表');
+ if(rsn['沿本体关系召回'])push(rsn['沿本体关系召回'],'沿关系扩展');
+ push(a.objects.length,'入上下文');
+ if((a.used||[]).length)push(a.used.length,'SQL 实际用');
+ bar.style.display='block';
+ bar.innerHTML=`<div class="hd">
+   <span>本体锚定</span><span class="ont">${esc(nm)}</span>
+   <span class="fun">${seg.join('<i>→</i>')}</span>
+   ${a.fallback?`<span style="color:#b45309;background:#FFFBEB;border:1px solid #FDE68A;border-radius:4px;padding:1px 6px">${esc(a.fallback)}</span>`:''}
+   <span class="act">
+     <a onclick="dqAncToggle()">${DQ_ANC_OPEN?'收起子图 ▴':'展开子图与证据 ▾'}</a>
+     <a onclick="dqAncHighlight()" title="切到本体图谱页,高亮本次锚定到的对象,其余淡出">在图谱中高亮这一块 ↗</a>
+   </span></div>
+  ${DQ_ANC_OPEN?`<div class="body">${dqAnchorHTML(a,true)}</div>`:''}`;}
+function dqAncToggle(){DQ_ANC_OPEN=!DQ_ANC_OPEN;dqAncBar(DQ_ANC_LAST);}
+function dqAncHighlight(){
+ const a=DQ_ANC_LAST;if(!a)return;
+ const gk=((a.ontology||{}).keys||['demo'])[0];
+ GRAPH_HL={key:gk,set:new Set((a.objects||[]).map(o=>o.key)),used:new Set((a.used||[]).map(t=>String(t).toLowerCase()))};
+ document.querySelector('[data-p=graph]').click();
+ setTimeout(()=>{const sel=$('#g_sel');if(!sel)return;
+  if(![...sel.options].some(o=>o.value===gk)){toast('该图谱不在图谱列表中,无法高亮',false);return;}
+  if(sel.value===gk){drawGraph(gk);return;}      // 切页时已按当前选中图谱画过,同键只需带高亮重画一次
+  sel.value=gk;drawGraph(gk);},350);}
 
 function dqRenderCard(card,q,d){const uid=DQ_UID++;const okN=d.steps.filter(s=>s.ok).length;const nres=(d.results||[]).length;
  let html=`<div class="dq-tags"><span class="dq-t def">demo-deep-qa</span>
@@ -1600,6 +1669,7 @@ async function dqFb(el,q,verdict,mode){const on=!el.classList.contains('on');
  if(r.error){toast(r.error,false);return;}toast('已记录:有帮助',true);}
 // ── 根因诊断(P21 前三步实演):意图 → 沿关系召回 → 本体边界内约束生成 ──
 async function diagAsk(){const inp=$('#chat_q');const q=inp.value.trim();if(!q)return;inp.value='';$('#chat_btn').disabled=true;
+ DQ_ANC_LAST=null;dqAncBar(null);        // 根因诊断走的是另一条链路,不能挂着深度问数上一轮的锚定条
  $('#dqv_deep').classList.remove('dqv-empty');
  const stream=$('#dq_stream');const hero=stream.querySelector('.dq-hero');if(hero)hero.remove();
  stream.insertAdjacentHTML('beforeend',`<div class="dq-usermsg">${esc(q)}</div>`);
@@ -1663,13 +1733,18 @@ async function ask(){if(DQ_MODE==='diag')return diagAsk();
     else if(ev.type==='narrative_delta'){let nd=card.querySelector('#_dqnarr');    // B6 洞察逐段流出
      if(!nd){rs.insertAdjacentHTML('afterend','<div class="dq-insight" id="_dqnarr" style="white-space:pre-wrap"></div>');nd=card.querySelector('#_dqnarr');}
      nd.textContent+=ev.text;scroll();}
-    else if(ev.type==='anchor'){const ab=card.querySelector('#_dqanc');if(ab){ab.innerHTML=dqAnchorHTML(ev.anchor);scroll();}}
+    else if(ev.type==='anchor'){const ab=card.querySelector('#_dqanc');if(ab){ab.innerHTML=dqAnchorHTML(ev.anchor);scroll();}dqAncBar(ev.anchor);}
     else if(ev.type==='done'){done=ev;}
     else if(ev.type==='error'){card.innerHTML=`<span class="dq-t warn">${esc(ev.error)}</span>`;}}}
-  if(done&&card.isConnected){CHAT_HIST.push({q,summary:done.summary||''});dqRenderCard(card,q,done);
+  if(done&&card.isConnected){CHAT_HIST.push({q,summary:done.summary||''});dqRenderCard(card,q,done);dqAncBar(done.anchor);
    const dT={narrative:done.narrative,summary:done.summary,anchor:done.anchor,cached:done.cached,elapsed:done.elapsed,session:done.session,steps:done.steps,results:(done.results||[]).map(r=>({title:r.title,sql:r.sql,chart:r.chart,data:{columns:r.data.columns,rows:(r.data.rows||[]).slice(0,200)}}))};
    myConv.turns.push({q,d:dT});if(!myConv.title)myConv.title=q;dqSaveConv(myConv);}
- }catch(e){if(e&&e.name==='AbortError')return;if(card.isConnected)card.innerHTML=`<span class="dq-t warn">请求失败: ${esc(''+e)}</span>`;}
+ }catch(e){if(e&&e.name==='AbortError')return;
+  if(card.isConnected){
+   // 流中途断掉时不要整卡抹掉:锚定与已完成的步骤/图表是用户已经看到的证据,擦了等于白跑一趟
+   if(live.length||pr.length)rs.insertAdjacentHTML('beforeend',
+     `<div class="dq-t warn" style="display:block;margin-top:8px">流中断:${esc(''+e)} —— 以上为中断前已完成的部分</div>`);
+   else card.innerHTML=`<span class="dq-t warn">请求失败: ${esc(''+e)}</span>`;}}
  finally{if(DQ_ABORT===ac)DQ_ABORT=null;$('#chat_btn').disabled=false;}
  scroll();}
 function dqAllConv(){try{return JSON.parse(localStorage.getItem('dq_convs')||'[]')}catch(e){return[]}}
@@ -1680,6 +1755,7 @@ function dqDelConv(id){const all=dqAllConv().filter(c=>c.id!==id);try{localStora
 function dqOpen(id){const c=dqAllConv().find(x=>x.id===id);if(!c)return;dqAbort();DQ_CONV=c;CHAT_HIST=c.turns.map(t=>({q:t.q,summary:(t.d&&t.d.summary)||''}));
  $('#dqv_deep').classList.remove('dqv-empty');dqMode('deep');
  const s=$('#dq_stream');s.innerHTML='';c.turns.forEach(t=>{s.insertAdjacentHTML('beforeend',`<div class="dq-usermsg">${esc(t.q)}</div>`);const card=document.createElement('div');card.className='dq-card';s.appendChild(card);dqRenderCard(card,t.q,t.d);});
+ const _lt=c.turns[c.turns.length-1];dqAncBar(_lt&&_lt.d&&_lt.d.anchor);
  dqRenderHist();s.scrollTop=1e9;}
 // ══════ 本体构建·问询台 ══════
 const BC={src:'demo',srcName:'示例主库',skills:new Set(),welcomed:false,def:{},turns:0};
