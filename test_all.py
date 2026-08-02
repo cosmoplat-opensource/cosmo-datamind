@@ -1181,6 +1181,12 @@ chk("AO31 切到根因诊断清空锚定条(共用视图容器,免得指向另�
 _t6 = {}; _srvmod.build_context("各客户的销售订单金额排名", trace=_t6, graph_keys=["app"])
 chk("AO32 无绑表本体回退后,锚定本体如实回写为实际使用的那套",
     _t6["ontology"]["keys"] == ["demo"] and _t6["ontology"]["requested"] and _t6.get("fallback"))
+# 界面版本自检:标签页开着不刷新时改动不生效,现象是「说改了却没变」,排查成本极高
+_r = g("/api/uiver"); chk("AO37 /api/uiver 返回界面文件版本",
+    _r.status_code == 200 and isinstance(_r.json().get("v"), int) and _r.json()["v"] > 0)
+chk("AO38 版本横幅挂 body 而非页面容器(放进 .page 会随切页隐藏)",
+    "document.body.appendChild(b)" in _ui and "function uiVerBanner" in _ui)
+chk("AO39 首次加载只记录版本不打扰", "if(UI_VER===null){UI_VER=d.v;return;}" in _ui)
 chk("AO35 点示例强制重跑,不吃缓存(缓存记录属于『历史对话』的语义)",
     "function dqAskEg(q){$('#chat_q').value=q;ask(true);}" in _ui
     and "async function ask(fresh)" in _ui and "nocache:fresh?1:0" in _ui)

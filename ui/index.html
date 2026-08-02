@@ -1394,6 +1394,27 @@ async function dqUpload(input){const fs=[...(input.files||[])];if(!fs.length)ret
   dqRenderAtts();toast&&toast('已上传,可用 up.表 查询');}
  catch(e){toast&&toast('上传失败');}}
 function dqRenderAtts(){$('#dq_atts').innerHTML=DQ_ATTS.map((a,i)=>`<span class="dq-att"><b>${esc(a.name)}</b> <span class="muted">${esc(''+a.rows)}行</span> <span class="x" onclick="DQ_ATTS.splice(${i},1);dqRenderAtts()">✕</span></span>`).join('');}
+// ── 界面版本自检:标签页开着不刷新时,改动不会生效,现象是「说改了却没变」──
+let UI_VER=null;
+function uiVerBanner(){
+ let b=$('#uiver_bar');if(b)return b;
+ b=document.createElement('div');b.id='uiver_bar';
+ // 挂在 body 上而非某个页面容器里:放进 .page 内会随页面切换一起隐藏
+ b.style.cssText='display:none;position:fixed;top:10px;left:50%;transform:translateX(-50%);z-index:9999;'
+  +'background:#FFFBEB;border:1px solid #FDE68A;color:#92400E;border-radius:6px;padding:7px 14px;'
+  +'font-size:12.5px;box-shadow:0 2px 8px rgba(0,0,0,.08)';
+ b.innerHTML='界面已更新,当前页面还是旧版 —— <a href="#" style="color:#4A5FF3">刷新以生效</a>'
+  +'<span style="cursor:pointer;margin-left:8px;color:#B45309">✕</span>';
+ b.querySelector('a').onclick=e=>{e.preventDefault();location.reload();};
+ b.querySelector('span').onclick=()=>{b.style.display='none';};
+ document.body.appendChild(b);return b;}
+async function uiVerCheck(){
+ try{const d=await J('/api/uiver');if(!d||!d.v)return;
+  if(UI_VER===null){UI_VER=d.v;return;}
+  if(d.v!==UI_VER)uiVerBanner().style.display='block';
+ }catch(_){}}
+uiVerCheck();setInterval(uiVerCheck,60000);
+
 // ── 数据源 / 技能 弹窗(仿平台)──
 let DQ_DS={graphs:[],tables:[],allTables:true}, DQ_SKILL='demo-deep-qa', DQ_GRAPHS=null, DQ_TABLES=null;
 function dqCloseModal(id){$('#'+id).style.display='none';}

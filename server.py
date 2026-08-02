@@ -916,6 +916,16 @@ def narrative_llm(question, results, steps, emit=None):
 @app.get("/")
 def index(): return send_from_directory(os.path.join(HERE, "ui"), "index.html")
 
+
+@app.get("/api/uiver")
+def ui_version():
+    """界面文件版本(mtime)。开着的标签页据此发现自己是旧版——
+    我们改了界面而用户没刷新时,现象是「说改了却没生效」,排查成本很高。"""
+    try:
+        return jsonify({"v": int(os.path.getmtime(os.path.join(HERE, "ui", "index.html")))})
+    except Exception as e:
+        return jsonify({"v": 0, "error": str(e)})
+
 @app.get("/doc/<name>")
 def doc(name):
     """服务 ui/ 下的文档页(根因分析等),仅限 .html,防穿越"""
