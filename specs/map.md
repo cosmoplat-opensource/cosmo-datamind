@@ -37,6 +37,7 @@ Cosmo DataMind 是**自有品牌、原创前后端**的「数据治理 × 本体
 - [DR-010 · IOF/BFO 本体工程对齐(注释/接地/注释化 OWL 导出/SHACL 门禁/完备度)](decisions/DR-010-iof-bfo-alignment.md)
 - [DR-011 · 泛化裁决 v2(等值/前缀/复合键/PK 感知 + 三级控制环)](decisions/DR-011-generalized-adjudication.md)
 - [DR-012 · SPARQL 健壮性(线程安全/诚实报错/合法默认示例)](decisions/DR-012-sparql-robustness.md)
+- [DR-029 · OpenAI 兼容运行时与回归隔离(任意 LLM 可接 + 沙箱图谱)](decisions/DR-029-openai-compat-runtime-and-test-isolation.md)
 - [DR-028 · 业务规则约束与决策层(确定性推理 + 决策路径可回溯 + 冲突不静默)](decisions/DR-028-rules-and-decision-layer.md)
 - [DR-027 · 对象业务别名与本体变更审计(别名贯通五处 + 审计区分 AI/人工来源)](decisions/DR-027-business-aliases-and-change-audit.md)
 - [DR-026 · 双盲意图检测与本体使用度回流(两通道互不透传 + 只观测不阻断)](decisions/DR-026-doubleblind-intent-and-usage.md)
@@ -117,6 +118,9 @@ Consult @specs/map.md to find relevant context.
   每条结论带 trace 可回溯至规则/字段/阈值;同动作不同结论报冲突而不静默择一。
   实测顺带修复:问数缓存键漏本体指纹,导致改本体后仍复用旧答案。
   套件 373 断言 · UI 走查 57 项。
+- **DR-029 通用运行时与回归隔离**:`openai_runtime.py`(任意 OpenAI 兼容端点可接,
+  经 GLM coding plan 实测问数与构建全链路)+ 回归沙箱 `built_regress`
+  (真凶是 rebuild 清空草案层,非 undo)。套件 378 断言 · UI 57 项。
 
 四问互补:CQ 答「够不够用」· 链路答「通不通」· 漂移答「还对不对得上数据」·
 双盲答「答的是不是问的」。

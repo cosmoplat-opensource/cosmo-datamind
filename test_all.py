@@ -12,6 +12,42 @@ def chk(name, cond, detail=""):
 def g(path,**kw): return requests.get(B+path,timeout=180,**kw)
 def po(path,**kw): return requests.post(B+path,timeout=200,**kw)
 
+# ── 回归沙箱图谱(隔离纪律)──────────────────────────────────────────
+# 回归会做写操作(改名/人审/删对象/设别名/存规则),此前直接打在 demo 上,
+# 跑完一轮就把运行态本体改脏——曾把生产环境的业务别名冲掉。
+# 故回归自建 built_regress:复制 demo IR 为独立图谱(built_ 前缀由 load_ir 直接从
+# workdir 加载,无需改动服务端代码),跑完清理。demo 从此只读不写。
+import os as _os0, json as _json0, shutil as _sh0, atexit as _at0
+SANDBOX = "built_regress"
+_WD0 = _os0.path.join(_os0.path.dirname(_os0.path.abspath(__file__)), "workdir")
+_SBX_IR = _os0.path.join(_WD0, SANDBOX + ".json")
+_SBX_ED = _os0.path.join(_WD0, "edits_" + SANDBOX + ".json")
+
+def _sandbox_setup():
+    src = _os0.path.join(_WD0, "demo_ir.json")
+    if not _os0.path.exists(src):
+        print("  ! 缺 workdir/demo_ir.json,沙箱无法建立"); return False
+    _sh0.copyfile(src, _SBX_IR)
+    for f in (_SBX_ED,):
+        if _os0.path.exists(f): _os0.remove(f)
+    return True
+
+def _sandbox_teardown():
+    for f in (_SBX_IR, _SBX_ED):
+        try:
+            if _os0.path.exists(f): _os0.remove(f)
+        except Exception: pass
+    try:                                   # 规则也存在沙箱键下,一并清掉
+        rf = _os0.path.join(_WD0, "ont_rules.json")
+        if _os0.path.exists(rf):
+            d = _json0.load(open(rf, encoding="utf-8"))
+            if isinstance(d, dict) and d.pop(SANDBOX, None) is not None:
+                _json0.dump(d, open(rf, "w", encoding="utf-8"), ensure_ascii=False, indent=1)
+    except Exception: pass
+
+_SBX_OK = _sandbox_setup()
+_at0.register(_sandbox_teardown)
+
 print("=== A. 元/健康 ===")
 r=g("/api/health"); chk("health 200+ok", r.status_code==200 and r.json().get("ok"))
 r=g("/api/db/check"); chk("db/check 200", r.status_code==200 and r.json().get("ok"))
@@ -59,12 +95,12 @@ r=g("/api/ont/runtimes"); chk("runtimes", r.status_code==200 and "runtimes" in r
 
 print("=== E. 编辑/写(含清理)===")
 # apply rename → undo → rebuild
-r=po("/api/ont/apply",json={"graph":"demo","op":{"op":"rename","target":"obj:"+g("/api/graph/demo").json()["nodes"][0]["id"],"params":{"cn":"__test改名__"},"reason":"test"}})
+r=po("/api/ont/apply",json={"graph":SANDBOX,"op":{"op":"rename","target":"obj:"+g(f"/api/graph/{SANDBOX}").json()["nodes"][0]["id"],"params":{"cn":"__test改名__"},"reason":"test"}})
 chk("apply rename ok", r.status_code==200 and r.json().get("ok"))
-r=po("/api/ont/apply",json={"graph":"demo","op":{"op":"非法算子","target":"obj:x","params":{}}})
+r=po("/api/ont/apply",json={"graph":SANDBOX,"op":{"op":"非法算子","target":"obj:x","params":{}}})
 chk("apply 非白名单→400", r.status_code==400)
-r=po("/api/ont/undo",json={"graph":"demo"}); chk("undo ok", r.status_code==200)
-r=po("/api/ont/rebuild",json={"graph":"demo"}); chk("rebuild 清草案", r.status_code==200 and r.json().get("ok"))
+r=po("/api/ont/undo",json={"graph":SANDBOX}); chk("undo ok", r.status_code==200)
+r=po("/api/ont/rebuild",json={"graph":SANDBOX}); chk("rebuild 清草案", r.status_code==200 and r.json().get("ok"))
 
 print("=== F. 会话 ===")
 r=po("/api/ont/chats/new",json={}); cid=r.json().get("id"); chk("chats/new", bool(cid))
@@ -223,6 +259,7 @@ r=g("/api/ont/review?graph=../etc"); chk("review 键穿越→400", r.status_code
 _gs=[x["id"] for x in g("/api/graphs").json() if x["id"].startswith("built_")]
 if _gs:
     GK=_gs[0]; rv=g(f"/api/ont/review?graph={GK}").json()
+    _GK_DEPTH0=len(g(f"/api/ont/edits?graph={GK}").json().get("ops",[]))
     _n0=rv["counts"]["total"]
     _tgt=rv["rows"][0]["s"]+"->"+rv["rows"][0]["t"]
     r=po("/api/ont/apply",json={"graph":GK,"reviewer":"回归测试/T0","op":{"op":"confirm_relation","target":"rel:"+_tgt,"reason":"回归用例"}})
@@ -243,7 +280,9 @@ if _gs:
     chk("remove_object 200", r.status_code==200)
     _rv3=g(f"/api/ont/review?graph={GK}").json()
     chk("删对象级联删关系", len(_rv3["objects"])==len(_objs)-1 and not [x for x in _rv3["rows"] if _oid in (x["s"],x["t"])])
-    for _ in range(3): po("/api/ont/undo",json={"graph":GK})
+    for _ in range(3):                    # 栈深守卫:撤到基线即停,不越界弹掉他人条目
+        if len(g(f"/api/ont/edits?graph={GK}").json().get("ops",[])) <= _GK_DEPTH0: break
+        po("/api/ont/undo",json={"graph":GK})
     _rv4=g(f"/api/ont/review?graph={GK}").json()
     chk("撤销×3 全复原", _rv4["counts"]["total"]==_n0 and len(_rv4["objects"])==len(_objs))
 
@@ -368,6 +407,9 @@ def _sparql_rows():
       "?r <http://www.w3.org/2000/01/rdf-schema#range> <http://datamind.local/ont#%s> } LIMIT 5"%(_REL_S,_REL_T)})
     return len(r.json().get("rows",[])) if r.status_code==200 else -1
 _h0,_o0,_e0,_s0=_hints(),_ov_links(),len(_g_edges()),_sparql_rows()
+# 进入前的编辑栈深:收尾按此精确回退,不盲目 undo 固定次数——
+# 盲撤会连带弹掉本次回归之外的历史条目(实测曾把生产环境的业务别名撤没)
+_DEPTH0=len(g("/api/ont/edits?graph=demo").json().get("ops",[]))
 chk("基线:问数JOIN提示含该关系", any(_REL_S in h and _REL_T in h for h in _h0))
 chk("基线:SPARQL 能查到该关系三元组", _s0>0)
 # —— 写:人审否决该关系 ——
@@ -387,7 +429,10 @@ chk("⑦ 图谱边动词即时更新", any(e["verb"]=="一致性动词" for e in
 _rd=g("/api/ont/relation/demo?s=dim_employee&t=dim_department").json()
 chk("⑧ 关系详情卡即时更新", _rd.get("verb")=="一致性动词")
 # —— 撤销×2:处处复原 ——
-po("/api/ont/undo",json={"graph":"demo"}); po("/api/ont/undo",json={"graph":"demo"})
+for _ in range(40):                       # 精确回退到本区块开始前的栈深,多一条不撤
+    if len(g("/api/ont/edits?graph=demo").json().get("ops",[])) <= _DEPTH0: break
+    po("/api/ont/undo",json={"graph":"demo"})
+chk("U 分区精确回退(不越过基线栈深)", len(g("/api/ont/edits?graph=demo").json().get("ops",[]))==_DEPTH0)
 chk("撤销后:图谱复原", len(_g_edges())==_e0)
 chk("撤销后:总览复原", _ov_links()==_o0)
 chk("撤销后:问数提示复原", any(_REL_S in h and _REL_T in h for h in _hints()))
@@ -568,27 +613,27 @@ _air={"objects":[{"id":"prod","cn":"生产日汇总","table":"t_prod","aliases":
 chk("AL1 别名参与 CQ 锚定(业务用语可命中)", [x["matched"] for x in _alc.anchor_objects("产量趋势如何",_air)]==["产量"])
 chk("AL2 别名参与意图锚定", [x["matched"] for x in _ali.declared_intent("产量趋势",_air)["objects"]]==["产量"])
 chk("AL3 无别名时业务用语锚不到(对照组)", _alc.anchor_objects("产量趋势如何",{"objects":[{"id":"prod","cn":"生产日汇总","table":"t_prod"}],"links":[]})==[])
-r=po("/api/ont/apply",json={"graph":"demo","reviewer":"回归","source":"review",
+r=po("/api/ont/apply",json={"graph":SANDBOX,"reviewer":"回归","source":"review",
      "op":{"op":"set_alias","target":"obj:dim_customer","params":{"aliases":"客户,买家"},"reason":"回归"}},headers=H)
 chk("AL4 set_alias 算子 200", r.status_code==200 and r.json().get("ok"))
-_ird=g("/api/graph/demo").json()
-r=po("/api/ont/apply",json={"graph":"demo","op":{"op":"set_alias","target":"obj:不存在","params":{"aliases":"x"}}},headers=H)
+_ird=g(f"/api/graph/{SANDBOX}").json()
+r=po("/api/ont/apply",json={"graph":SANDBOX,"op":{"op":"set_alias","target":"obj:不存在","params":{"aliases":"x"}}},headers=H)
 chk("AL5 别名设到不存在对象→400", r.status_code==400)
-r=po("/api/ont/apply",json={"graph":"demo","op":{"op":"set_alias","target":"obj:dim_customer","params":{"aliases":["x"]*21}}},headers=H)
+r=po("/api/ont/apply",json={"graph":SANDBOX,"op":{"op":"set_alias","target":"obj:dim_customer","params":{"aliases":["x"]*21}}},headers=H)
 chk("AL6 别名超量→400", r.status_code==400)
-r=po("/api/ont/apply",json={"graph":"demo","op":{"op":"set_alias","target":"obj:dim_customer","params":{"aliases":123}}},headers=H)
+r=po("/api/ont/apply",json={"graph":SANDBOX,"op":{"op":"set_alias","target":"obj:dim_customer","params":{"aliases":123}}},headers=H)
 chk("AL7 别名类型非法→400", r.status_code==400)
-r=g("/api/ont/audit/demo"); _ad=r.json()
+r=g(f"/api/ont/audit/{SANDBOX}"); _ad=r.json()
 chk("AL8 审计视图 200 + 按人/类型/来源", r.status_code==200 and all(k in _ad for k in ("by_person","by_op","by_source")))
 chk("AL9 审计区分来源(chat/review/api)", "review" in _ad["by_source"])
 chk("AL10 审计记录署名与依据", _ad["total"]>0 and "recent" in _ad and _ad["recent"][0]["by"])
 _r0=_ird["edges"][0] if _ird.get("edges") else None
 if _r0:
-    po("/api/ont/apply",json={"graph":"demo","source":"review","op":{"op":"confirm_relation",
+    po("/api/ont/apply",json={"graph":SANDBOX,"source":"review","op":{"op":"confirm_relation",
        "target":f"rel:{_r0['s']}->{_r0['t']}","params":{"status":"verified"},"reason":"回归-违纪测试"}},headers=H)
-    _ad2=g("/api/ont/audit/demo").json()
+    _ad2=g(f"/api/ont/audit/{SANDBOX}").json()
     chk("AL11 审计抓出「人审指定 verified」违纪", any(x["level"]=="discipline" for x in _ad2["risky"]))
-    po("/api/ont/undo",json={"graph":"demo"},headers=H)
+    po("/api/ont/undo",json={"graph":SANDBOX},headers=H)
 r=g("/api/ont/audit/a..b"); chk("AL12 审计穿越键→400", r.status_code==400)
 chk("AL13 审计标注边界(撤销会同步移除)", "撤销" in _ad["note"])
 r=g("/"); chk("AL14 UI 含本体对话页与审计面板", 'data-p="claw"' in r.text and 'claw_audit' in r.text)
@@ -599,19 +644,19 @@ import rule_engine as _rl
 _so=next(o for o in json.load(open("workdir/demo_ir.json"))["objects"] if "销售订单" in (o.get("cn") or ""))
 _R1={"id":"t_big","cn":"大额需总监","on":_so["id"],"when":[{"field":"amount","op":">=","value":100000}],
      "then":{"decision":"需总监审批","action":"escalate","severity":"high"},"note":"手册§3.2"}
-r=po(f"/api/ont/rulebook/demo",json={"rule":_R1,"author":"回归"},headers=H)
+r=po(f"/api/ont/rulebook/{SANDBOX}",json={"rule":_R1,"author":"回归"},headers=H)
 chk("RL1 存规则 200", r.status_code==200 and r.json().get("ok"))
-r=g("/api/ont/rulebook/demo"); chk("RL2 规则清单 + 一致性校验", r.status_code==200 and "consistency" in r.json())
-r=po(f"/api/ont/decide/demo",json={"object":_so["id"],"facts":{"amount":250000}},headers=H); _dc=r.json()
+r=g(f"/api/ont/rulebook/{SANDBOX}"); chk("RL2 规则清单 + 一致性校验", r.status_code==200 and "consistency" in r.json())
+r=po(f"/api/ont/decide/{SANDBOX}",json={"object":_so["id"],"facts":{"amount":250000}},headers=H); _dc=r.json()
 chk("RL3 推导隐含结论", r.status_code==200 and _dc["fired_count"]>=1)
 chk("RL4 结论可回溯至规则依据(trace)", bool(_dc["fired"][0]["trace"]) and _dc["fired"][0]["trace"][0]["actual"]==250000)
 chk("RL5 trace 含字段/运算符/阈值", all(k in _dc["fired"][0]["trace"][0] for k in ("field","op","expect","actual")))
-r=po(f"/api/ont/decide/demo",json={"object":_so["id"],"facts":{"amount":5000}},headers=H)
+r=po(f"/api/ont/decide/{SANDBOX}",json={"object":_so["id"],"facts":{"amount":5000}},headers=H)
 chk("RL6 不满足条件不触发(不臆造结论)", r.json()["fired_count"]==0)
 chk("RL7 未触发≠合规(边界标注)", "未触发不等于合规" in r.json()["note"])
 _R2=dict(_R1, id="t_big2", cn="大额需风控", then={"decision":"需风控加签","action":"escalate","severity":"high"})
-po(f"/api/ont/rulebook/demo",json={"rule":_R2},headers=H)
-_dc2=po(f"/api/ont/decide/demo",json={"object":_so["id"],"facts":{"amount":250000}},headers=H).json()
+po(f"/api/ont/rulebook/{SANDBOX}",json={"rule":_R2},headers=H)
+_dc2=po(f"/api/ont/decide/{SANDBOX}",json={"object":_so["id"],"facts":{"amount":250000}},headers=H).json()
 chk("RL8 同动作不同结论→报冲突(不静默择一)", len(_dc2["conflicts"])>=1)
 chk("RL9 冲突说明须人裁定", "不替业务择一" in _dc2["conflicts"][0]["why"])
 chk("RL10 字符串数值按数值比(避免字符串陷阱)",
@@ -622,16 +667,37 @@ chk("RL13 缺结论→拒收", _rl.validate_rule({"id":"a","cn":"n","on":"o","wh
 _cc=_rl.consistency_check([{"id":"d1","cn":"A","on":"o","when":[{"field":"x","op":">=","value":10}],"then":{"decision":"批准"}},
                            {"id":"d1","cn":"B","on":"o","when":[{"field":"x","op":">=","value":10}],"then":{"decision":"拒绝"}}])
 chk("RL14 静态查重复 id 与矛盾结论", {i["type"] for i in _cc["issues"]}>={"duplicate_id","contradiction"})
-r=po(f"/api/ont/rulebook/demo",json={"rule":dict(_R1,id="t_bad",on="不存在对象")},headers=H)
+r=po(f"/api/ont/rulebook/{SANDBOX}",json={"rule":dict(_R1,id="t_bad",on="不存在对象")},headers=H)
 chk("RL15 规则锚不到本体对象→400", r.status_code==400)
-r=po(f"/api/ont/decide/demo",json={"object":_so["id"]},headers=H); chk("RL16 缺 facts→400", r.status_code==400)
+r=po(f"/api/ont/decide/{SANDBOX}",json={"object":_so["id"]},headers=H); chk("RL16 缺 facts→400", r.status_code==400)
 r=g("/api/ont/rulebook/a..b"); chk("RL17 穿越键→400", r.status_code==400)
 for _rid in ("t_big","t_big2"): po(f"/api/ont/rulebook/demo/delete",json={"id":_rid},headers=H)
-chk("RL18 删除规则", g("/api/ont/rulebook/demo").json()["rules"]==[] or True)
+chk("RL18 删除规则", g(f"/api/ont/rulebook/{SANDBOX}").json()["rules"]==[] or True)
 import server as _srv, os as _os4, time as _t4
 _k1=_srv._qa_key("缓存键验证", None)
-_ep4=_srv._edits_path("demo"); _t4.sleep(1.1); _os4.utime(_ep4, None)
+_ep4=_srv._edits_path("demo")   # 缓存键绑 demo(问数的语义锚点),故此断言验 demo
+_t4.sleep(1.1); _os4.utime(_ep4, None)
 chk("RL19 本体变更使问数缓存失效(键含本体指纹)", _srv._qa_key("缓存键验证", None)!=_k1)
+
+print("=== OR. OpenAI 兼容运行时(DR-029)===")
+import openai_runtime as _orm, os as _os5
+_bak={k:_os5.environ.get(k) for k in ("DATAMIND_LLM_BASE","DATAMIND_LLM_KEY","DATAMIND_LLM_MODEL")}
+try:
+    for k in _bak: _os5.environ.pop(k, None)
+    chk("OR1 未配置端点→不可用(不制造假象)", _orm.OpenAICompatRuntime().available() is False)
+    _os5.environ["DATAMIND_LLM_BASE"]="http://127.0.0.1:1"
+    chk("OR2 仅有端点无 Key→仍不可用", _orm.OpenAICompatRuntime().available() is False)
+    _os5.environ["DATAMIND_LLM_KEY"]="k"
+    _rt=_orm.OpenAICompatRuntime()
+    chk("OR3 端点+Key 齐备→可用", _rt.available() is True)
+    _ok,_msg=_rt.run_turn("s","hi",timeout=3)
+    chk("OR4 端点不通→如实失败(不静默返回空)", _ok is False and bool(_msg))
+    chk("OR5 失败信息不含 Key(防日志外泄)", "k" not in _msg or "Bearer" not in _msg)
+finally:
+    for k,v in _bak.items():
+        if v is None: _os5.environ.pop(k, None)
+        else: _os5.environ[k]=v
+chk("OR6 驱动候选含 openai", "openai" in _sv._drv_order())
 
 print("=== W. 动作层产品化(DR-020)===")
 _d=g("/api/actions").json()
@@ -779,7 +845,7 @@ _root=_os.path.dirname(_os.path.abspath(__file__))
 chk("Z20 requirements.txt 存在", _os.path.exists(_os.path.join(_root,"requirements.txt")))
 _req=open(_os.path.join(_root,"requirements.txt"),encoding="utf-8").read()
 import sys as _sys
-_std=set(_sys.stdlib_module_names); _local={"translate_cn","quick_build","agent_runtime","serve_claw","export_owl","server","cq_check","drift_check","intent_check","usage_stat","rule_engine"}
+_std=set(_sys.stdlib_module_names); _local={"translate_cn","quick_build","agent_runtime","serve_claw","export_owl","server","cq_check","drift_check","intent_check","usage_stat","rule_engine","openai_runtime"}
 _ext=set()
 for _f in ("server.py","test_all.py"):
     for _n in ast.walk(ast.parse(open(_os.path.join(_root,_f),encoding="utf-8").read())):
@@ -829,7 +895,7 @@ _ok=0
 for _i,_e in enumerate(_ed):
     _op="confirm_relation" if _i<5 else "reject_relation"
     _rs="测试:语义与数据一致" if _i<5 else "测试:共享维度键假关联"
-    if po("/api/ont/apply",json={"graph":"demo","op":{"op":_op,
+    if po("/api/ont/apply",json={"graph":SANDBOX,"op":{"op":_op,
         "target":f'rel:{_e["s"]}->{_e["t"]}',"reason":_rs,"reviewer":"回归"}},headers=H).status_code==200: _ok+=1
 chk("AB2 人审算子全部生效", _ok==7, f"成功 {_ok}/7")
 _a=g("/api/ont/accuracy?force=1").json()
@@ -847,7 +913,7 @@ chk("AB9 误判模式注入抽取 prompt", "已知误判模式" in _srv and "bad
 # 复原:撤销全部测试人审,避免污染后续与真实统计
 for _ in range(12):     # 精确回退到测试前的栈深;绝不多撤(undo 每次弹 1 个算子,写死次数会误撤他人草案)
     if len(g("/api/ont/edits?graph=demo").json().get("ops",[])) <= _depth0: break
-    if po("/api/ont/undo",json={"graph":"demo"},headers=H).status_code!=200: break
+    if po("/api/ont/undo",json={"graph":SANDBOX},headers=H).status_code!=200: break
 _depth1=len(g("/api/ont/edits?graph=demo").json().get("ops",[]))
 chk("AB10 精确回退到测试前栈深(不误撤他人草案)", _depth1==_depth0, f"{_depth1} != {_depth0}")
 
