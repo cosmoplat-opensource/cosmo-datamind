@@ -283,37 +283,94 @@ def _bounded_ex(fn, secs, default=None):
     return box["v"], box["err"], False
 
 # ── 深度问数编排(hermes/claude-code → SQL 计划 → 本地执行 → 洞察)──
+def _obj_key(o, i=0):
+    """对象主键:示例 IR 用 id,构建产物用 name"""
+    return o.get("id") or o.get("name") or f"_obj{i}"
+
+
+_KEY_SUF_RE = re.compile(r"_?(id|code|key|no|num)$", re.I)
+
+
+def _key_stem(c):
+    return _KEY_SUF_RE.sub("", (c or "").lower()).strip("_")
+
+
+def _key_name_ok(ck, pk):
+    """子键与父键的名称词根是否相容 —— 值域重叠之外的第二道闸(DR-033)。
+
+    稠密自增代理键之间值域天然重合:dim_product.prod_id 与 fact_production_order.order_id
+    都是 1,2,3…,重叠 100% 且父键唯一,于是被判成 verified 关系——纯属巧合。
+    实测 built_9c3fd1 的 12 条带键关系里 10 条是这么来的。键名词根是廉价而有力的证伪信号。
+    父/子任一用泛化主键名(id)时名称给不出信息,不据此否决。"""
+    cs, ps = [x.strip() for x in str(ck or "").split(",")], [x.strip() for x in str(pk or "").split(",")]
+    if len(cs) != len(ps): return False
+    for a, b in zip(cs, ps):
+        sa, sb = _key_stem(a), _key_stem(b)
+        if not sa or not sb or sa == sb: continue
+        # 缩写相容:prod↔product、emp↔employee。限长≥3 以免 po↔pr 这类噪声蒙混
+        if min(len(sa), len(sb)) >= 3 and (sa.startswith(sb) or sb.startswith(sa)): continue
+        return False
+    return True
+
+
+_KEY_NOTE_RE = re.compile(r"([A-Za-z_]\w*)→[A-Za-z_]\w*\.([A-Za-z_]\w*)")
+_KEY_FK_RE = re.compile(r"声明FK\s+([A-Za-z_]\w*)→([A-Za-z_]\w*)")
+
+
+def _rel_keys(r):
+    """关系的 JOIN 键 → (child_key, parent_key, 来源)。
+
+    优先结构化 evidence。早期构建产物把算出来的键只写进 note 自由文本(DR-033 前),
+    退而从 note 解析并把来源标成 note —— 键的可信度不同,不能混为一谈。"""
+    ev = r.get("evidence") or {}
+    ck, pk = ev.get("child_key"), ev.get("parent_key")
+    if ck and pk:
+        return ck, pk, ev.get("source") or "evidence"
+    note = r.get("note") or ""
+    m = _KEY_NOTE_RE.search(note) or _KEY_FK_RE.search(note)
+    if m:
+        return m.group(1), m.group(2), "note"
+    return None, None, ""
+
+
 def _join_hints(ir, tables, pairs=None):
     """选中表之间的本体关系 → JOIN 提示行(⋈ 前缀;沿本体关系召回的实现)。
     只给 verified/asserted(人审断言)关系;键取关系证据里的 child_key/parent_key。
 
+    形状无关(DR-033):示例 IR 的 links[source/target] 与构建产物的
+    relations[source_concept/target_concept] 都能读——否则选中自建本体时一条 JOIN 都给不出。
+
     pairs 非 None 时同步收集结构化边(DR-032 锚定可视化)。刻意与提示行同源产出——
     另起一段代码重新推导,可视化会与真正喂给引擎的内容悄悄漂移。"""
     tl = {str(t).lower() for t in tables if t}
-    o2t = {o.get("id"): o.get("table") for o in ir.get("objects", [])}
+    rels, sk, tk = _rels(ir)
+    o2t = {_obj_key(o, i): o.get("table") for i, o in enumerate(ir.get("objects", []))}
     out = []
-    for l in ir.get("links", []):
+    for l in rels:
         if l.get("status") not in ("verified", "asserted"): continue
-        st, tt = o2t.get(l.get("source")), o2t.get(l.get("target"))
+        st, tt = o2t.get(l.get(sk)), o2t.get(l.get(tk))
         if not st or not tt or st.lower() not in tl or tt.lower() not in tl: continue
-        ev = l.get("evidence") or {}
-        ck, pk = ev.get("child_key"), ev.get("parent_key")
-        key = f"{st}.{ck} = {tt}.{pk}" if (ck and pk) else f"{st} 关联 {tt}(键见列名)"
+        ck, pk, ksrc = _rel_keys(l)
+        bad = bool(ck and pk) and not _key_name_ok(ck, pk)
+        if bad: ksrc = "name_mismatch"                # 疑为自增键值域巧合:保留语义关系,不下发该键
+        key = (f"{st}.{ck} = {tt}.{pk}" if (ck and pk and not bad)
+               else f"{st} 关联 {tt}(键见列名)")
         out.append(f"⋈ {key}  [{l.get('verb','关联')} · {l.get('status')}]")
         if pairs is not None:
             pairs.append({"s": st, "t": tt, "verb": l.get("verb") or "关联",
-                          "status": l.get("status"), "key": key, "hop": 1})
+                          "status": l.get("status"), "key": key, "hop": 1,
+                          "key_src": ksrc, "has_key": bool(ck and pk and not bad),
+                          "dropped_key": (f"{ck}↔{pk}" if bad else "")})
         if len(out) >= 12: break
     # 两跳路径召回(DR-022):选中表间无直接关系、但经一张中间表可达 → 给出完整 JOIN 链。
     # 「累计产量最高的产线」这类跨两跳聚合,缺路径提示时引擎最易自造错误 JOIN。
     if len(out) < 12:
         adj = {}                                     # table → [(邻表, 本端键, 邻端键)]
-        for l in ir.get("links", []):
+        for l in rels:
             if l.get("status") not in ("verified", "asserted"): continue
-            ev = l.get("evidence") or {}
-            ck, pk = ev.get("child_key"), ev.get("parent_key")
-            st, tt2 = o2t.get(l.get("source")), o2t.get(l.get("target"))
-            if not (ck and pk and st and tt2): continue
+            ck, pk, _ = _rel_keys(l)
+            st, tt2 = o2t.get(l.get(sk)), o2t.get(l.get(tk))
+            if not (ck and pk and st and tt2) or not _key_name_ok(ck, pk): continue
             adj.setdefault(st.lower(), []).append((tt2.lower(), ck, pk, st, tt2))
             adj.setdefault(tt2.lower(), []).append((st.lower(), pk, ck, tt2, st))
         tl_list = sorted(tl)
@@ -335,7 +392,7 @@ def _join_hints(ir, tables, pairs=None):
                     out.append(f"⋈⋈ {at}.{k1} = {mtab}.{k2} ∧ {mtab}.{k3} = {bt}.{k4}(经中间表 {mtab},两跳链)")
                     if pairs is not None:
                         pairs.append({"s": at, "t": bt, "via": mtab, "verb": "两跳可达",
-                                      "status": "path", "hop": 2,
+                                      "status": "path", "hop": 2, "has_key": True, "key_src": "chain",
                                       "key": f"{at}.{k1} = {mtab}.{k2} ∧ {mtab}.{k3} = {bt}.{k4}"})
                     added += 1
             if added >= 3: break
@@ -433,34 +490,97 @@ def _glossary_block(picked):
         pass
     return out
 
-def _trace_objs(trace, objs, reason):
-    """把一批入选对象按入选理由记进锚定轨迹(DR-032);同一对象只记首次理由。"""
+def _graph_name(key):
+    """图谱显示名:内置源取注册表,构建产物取场景名"""
+    if key in IR_SOURCES: return IR_SOURCES[key]["name"]
+    ir = load_ir(key) or {}
+    return ((ir.get("scenario") or {}).get("name") or key)
+
+
+def _anchor_ir(graph_keys=None):
+    """锚定本体 = 用户选中的图谱(可多选合并);未选时用示例本体。
+
+    此前问数无论选哪个图谱都锚定 demo,选中的图谱只被当表名过滤器用——
+    「选了本体却没按这套本体作答」是 DR-033 要修的核心问题。"""
+    keys = [k for k in (graph_keys or []) if k] or ["demo"]
+    if len(keys) == 1:
+        return (load_ir_edited(keys[0]) or load_ir(keys[0]) or {}), keys
+    objs, links, seen, sl = [], [], set(), set()
+    for k in keys:                                   # 多选:归一到示例形状后合并,按主键/端点对去重
+        ir = load_ir_edited(k) or load_ir(k) or {}
+        rels, sk, tk = _rels(ir)
+        for idx, o in enumerate(ir.get("objects", [])):
+            kk = _obj_key(o, idx)
+            if kk in seen: continue
+            seen.add(kk); o = dict(o); o["id"] = kk; objs.append(o)
+        for r in rels:
+            pair = (r.get(sk), r.get(tk))
+            if not all(pair) or pair in sl: continue
+            sl.add(pair); r = dict(r); r["source"], r["target"] = pair; links.append(r)
+    return {"objects": objs, "links": links}, keys
+
+
+def _trace_objs(trace, objs, reason, hits=None):
+    """把一批入选对象按入选理由记进锚定轨迹(DR-032);同一对象只记首次理由。
+    hits: {表名: [命中的问句词]} —— 锚定「凭什么选中它」的证据(DR-033)。
+    按表名关联而非对象主键:主键在缺 id/name 时靠序号兜底,两处序号未必一致。"""
     if trace is None: return
     seen = {o["table"] for o in trace.setdefault("objects", []) if o.get("table")}
-    for o in objs:
+    for i, o in enumerate(objs):
         t = o.get("table")
         if not t or t in seen: continue
         seen.add(t)
-        trace["objects"].append({"key": o.get("id") or o.get("name"), "cn": o.get("cn") or "",
+        k = _obj_key(o, i)
+        trace["objects"].append({"key": k, "cn": o.get("cn") or o.get("name") or k,
                                  "table": t, "reason": reason,
+                                 "hits": (hits or {}).get(t) or [],
                                  "aliases": (o.get("aliases") or [])[:4],
                                  "ncol": len(o.get("attrs") or [])})
 
 
-def build_context(question, focus_tables=None, trace=None):
-    """从 IR 挑相关表/列/指标,组紧凑 schema 上下文;focus_tables 非空时优先/限定这些表(对应『数据源』选择)。
+def build_context(question, focus_tables=None, trace=None, graph_keys=None):
+    """从本体挑相关表/列/指标,组紧凑 schema 上下文。
 
-    trace 传入 dict 时,同步记录**这次召回锚定到了本体的哪些对象与关系**(DR-032):
-    上下文是喂给引擎的一坨文本,人看不出它凭什么选了这些表——轨迹让锚定过程可见。"""
-    ir = load_ir_edited("demo") or {}
+    graph_keys:用户选中的本体图谱 → 作为锚定本体源(DR-033)。
+    focus_tables:用户显式点选的表 → 直接限定(点了就用这几张,不再打分)。
+    trace 传入 dict 时,同步记录**这次召回锚定到了本体的哪些对象与关系、凭什么命中**(DR-032)。"""
+    ir, akeys = _anchor_ir(graph_keys)
+    if trace is not None:
+        _rl = _rels(ir)[0]
+        trace["ontology"] = {"keys": akeys,
+                             "names": [_graph_name(k) for k in akeys],
+                             "objects": len(ir.get("objects", [])), "relations": len(_rl)}
+    # 选中的本体没有一个对象绑表 → 生不出 SQL。如实回退并说明,不静默换本体
+    if akeys != ["demo"] and not any(o.get("table") for o in ir.get("objects", [])):
+        if trace is not None:
+            trace["fallback"] = "选中的本体无绑表对象,无法据此生成 SQL,已回退示例本体"
+        ir, akeys = (load_ir_edited("demo") or {}), ["demo"]
     mets = []
-    for k, arr in (ir.get("metric_layers") or {}).items():
-        for m in arr: mets.append({"name": m.get("name"), "table": m.get("table"), "col": m.get("value_col"), "layer": k, "unit": m.get("unit") or ""})
+    _ml = ir.get("metric_layers")
+    # 锚定源现在可能是任意图谱,其 metric_layers 未必是 {层: [指标]} —— 形状不符就跳过,不炸
+    for k, arr in (_ml if isinstance(_ml, dict) else {}).items():
+        if not isinstance(arr, list): continue
+        for m in arr:
+            if isinstance(m, dict):
+                mets.append({"name": m.get("name"), "table": m.get("table"), "col": m.get("value_col"), "layer": k, "unit": m.get("unit") or ""})
     kws = [w for w in re.split(r"[,，。？?\s]+", question) if w]
     kws += expand_terms(question)          # A1 术语扩展:词典同义/中英互补词并入匹配
-    def score(txt): return sum(1 for w in kws if w and w in txt)
+    def hits_of(txt):
+        """问句词/扩展词在该对象语料里的命中。
+
+        ≤2 字符的英文缩写只认整词:术语词典把「销售订单」扩展出 so,而 so 作子串会命中
+        reason_code、sensor_id,把停机、报警这类无关表拉进上下文(命中证据视图暴露的真实污染)。"""
+        out, toks = [], None
+        for w in kws:
+            if not w: continue
+            if w.isascii() and len(w) <= 2:
+                if toks is None: toks = set(re.split(r"[^0-9A-Za-z]+", txt.lower())) - {""}
+                if w.lower() in toks: out.append(w)
+            elif w in txt: out.append(w)
+        return out
+    def score(txt): return len(hits_of(txt))
     ft = set(t.lower() for t in (focus_tables or []))
-    if ft:   # 用户在『数据源』里选了具体表 → 只喂这些表(仿平台按选定数据源限定)
+    if ft:   # 用户在『数据源』里显式点了表 → 只喂这些表(点了就用这几张,不再打分)
         picked = [o for o in ir.get("objects", []) if o.get("table", "").lower() in ft]
         if picked:
             lines = []
@@ -480,29 +600,34 @@ def build_context(question, focus_tables=None, trace=None):
             if dw: lines.append(dw)
             lines += _glossary_block(picked)          # M5 词汇表注入
             return "\n".join(lines)
-    tabs = []
-    for o in ir.get("objects", []):
+        if trace is not None:
+            trace["focus_miss"] = len(ft)             # 点选的表在本体里一张都没有 → 转打分召回,不静默当作已限定
+    tabs, hmap = [], {}
+    for i, o in enumerate(ir.get("objects", [])):
         # DR-027:别名并入评分语料——业务用语("产量")与表名中文("生产日汇总")常常不同,
         # 不认别名会让问数召回不到正确的表,进而生成查错表的 SQL
         blob = ((o.get("cn") or "") + o.get("table", "") + "".join(o.get("aliases") or [])
                 + " ".join(a.get("cn", "") + a.get("col", "") for a in o.get("attrs", [])))
-        tabs.append((score(blob), o))
+        hs = hits_of(blob)
+        if hs and o.get("table"): hmap[o["table"]] = hs[:6]
+        tabs.append((len(hs), o))
     tabs.sort(key=lambda x: -x[0])
-    _hit = [o for s, o in tabs[:8] if s > 0]
+    _hit = [o for s0, o in tabs[:8] if s0 > 0]
     picked = _hit or [o for _, o in tabs[:5]]
-    _trace_objs(trace, picked, "关键词命中" if _hit else "无命中·默认候选")
+    _trace_objs(trace, picked, "关键词命中" if _hit else "无命中·默认候选", hmap)
     core = {"fact_sales_order", "fact_production_output", "dws_production_daily"}   # 核心事实表始终入上下文
     have = {o["table"].lower() for o in picked}
     for o in ir.get("objects", []):
         if o.get("table", "").lower() in core and o["table"].lower() not in have:
-            picked.append(o); _trace_objs(trace, [o], "核心事实表")
+            picked.append(o); _trace_objs(trace, [o], "核心事实表", hmap)
     # 沿本体关系召回:命中表的一跳邻居(维表等)拉进上下文,JOIN 才有另一端
     have = {o["table"].lower() for o in picked if o.get("table")}
-    o_by_id = {o.get("id"): o for o in ir.get("objects", [])}
+    rels, sk, tk = _rels(ir)
+    o_by_id = {_obj_key(o, i): o for i, o in enumerate(ir.get("objects", []))}
     extras = []
-    for l in ir.get("links", []):
+    for l in rels:
         if l.get("status") not in ("verified", "asserted"): continue
-        so, to = o_by_id.get(l.get("source")), o_by_id.get(l.get("target"))
+        so, to = o_by_id.get(l.get(sk)), o_by_id.get(l.get(tk))
         if not so or not to: continue
         st, tt = (so.get("table") or "").lower(), (to.get("table") or "").lower()
         if st in have and tt and tt not in have and len(extras) < 4:
@@ -510,11 +635,12 @@ def build_context(question, focus_tables=None, trace=None):
         elif tt in have and st and st not in have and len(extras) < 4:
             extras.append(so); have.add(st)
     picked += extras
-    _trace_objs(trace, extras, "沿本体关系召回")
+    _trace_objs(trace, extras, "沿本体关系召回", hmap)
     lines = []
     for o in picked:
         cols = ", ".join(f'{a["col"]}({a.get("cn","")})' for a in o.get("attrs", [])[:18])
-        lines.append(f'表 {o["table"]}({o.get("cn","")}): {cols}')
+        _al = "、".join(o.get("aliases") or [])
+        lines.append(f'表 {o["table"]}({o.get("cn","")}{",业务别称:" + _al if _al else ""}): {cols}')
     _pairs = [] if trace is not None else None
     jh = _join_hints(ir, [o.get("table") for o in picked], pairs=_pairs)
     if trace is not None: trace["relations"] = _pairs
@@ -532,6 +658,7 @@ def build_context(question, focus_tables=None, trace=None):
     if dw: lines.append(dw)
     lines += _glossary_block(picked)                  # M5 词汇表注入
     return "\n".join(lines)
+
 
 def _uploads_schema():
     """uploads.db 各表列结构(供深度问数带上传文件时喂进上下文,SQL 用 up.<表> 引用)"""
@@ -2246,7 +2373,7 @@ def query():
     except Exception as e: return jsonify({"error": str(e)}), 400
 
 _QA_CACHE = {}   # 深度问数结果缓存:相同问题+上下文秒回(引擎慢,缓存显著提速)
-def _qa_key(question, history, focus=None):
+def _qa_key(question, history, focus=None, graphs=None):
     import hashlib
     up_sig = ""                                          # 上传库指纹:上传数据变更后作废旧缓存,避免同名表复用陈旧结果
     try:
@@ -2255,11 +2382,13 @@ def _qa_key(question, history, focus=None):
     # 本体编辑指纹:本体是问数的语义锚点(召回/口径/双盲全靠它),改了本体却复用旧答案,
     # 用户会持续拿到旧语义下的结果——别名新增后仍答不上就是这么来的(实测发现)
     ont_sig = ""
-    try:
-        _ep = _edits_path("demo")
-        if os.path.exists(_ep): ont_sig = str(int(os.path.getmtime(_ep)))
-    except Exception: pass
-    sig = json.dumps([question, [h.get("q", "") for h in (history or [])[-2:]], sorted(focus or []), up_sig, ont_sig], ensure_ascii=False)
+    for _gk in (sorted(graphs) if graphs else ["demo"]):     # 锚定本体各自的编辑指纹都要进键
+        try:
+            _ep = _edits_path(_gk)
+            if os.path.exists(_ep): ont_sig += _gk + ":" + str(int(os.path.getmtime(_ep)))
+        except Exception: pass
+    sig = json.dumps([question, [h.get("q", "") for h in (history or [])[-2:]], sorted(focus or []),
+                      sorted(graphs or []), up_sig, ont_sig], ensure_ascii=False)
     return hashlib.md5(sig.encode("utf-8")).hexdigest()
 
 @app.post("/api/chat")
@@ -2343,15 +2472,10 @@ def chat_stream():
         t0 = _t.time(); session = uuid.uuid4().hex[:8]
         if not question:
             yield sse({"type": "error", "error": "empty"}); return
-        focus_tables = list(body.get("tables") or [])
-        # 选中的图谱→其绑定表并入范围(否则"按图谱选数据源"是静默空操作)
-        for gk in (body.get("graphs") or []):
-            gir = load_ir(gk) or {}
-            for o in gir.get("objects", []):
-                for t in (o.get("tables") or ([o.get("table")] if o.get("table") else [])):
-                    if t and t not in focus_tables: focus_tables.append(t)
+        focus_tables = list(body.get("tables") or [])      # 显式点选的表:点了就用这几张
+        graph_keys = [g for g in (body.get("graphs") or []) if g]   # 选中的本体图谱:作锚定本体源(DR-033)
         if not nocache:
-            hit = _QA_CACHE.get(_qa_key(question, history, focus_tables))
+            hit = _QA_CACHE.get(_qa_key(question, history, focus_tables, graph_keys))
             if hit:
                 yield sse({"type": "done", **hit, "cached": True, "elapsed": 0.0, "session": session}); return
         def stp(step, ok, info=""):
@@ -2362,7 +2486,7 @@ def chat_stream():
         if focus_tables:
             yield push("scope_source", True, f"数据源限定 · {len(focus_tables)} 张表")
         yield push("load_ontology", True, "加载 示例 本体上下文")
-        ir_gate = load_ir_edited("demo") or {}
+        ir_gate, _gate_keys = _anchor_ir([g for g in (body.get("graphs") or []) if g])
         q_eff, co = _carryover(question, history, ir_gate)      # B5 多轮指代:上文本体对象延续
         if co:
             yield push("coreference", True, f"多轮指代 · 延续上文对象:{co}")
@@ -2372,9 +2496,14 @@ def chat_stream():
         # scoped 取「实际限定到表」而非「选了图谱」:选中图谱若无绑表,召回其实是全库,
         # 标成「数据源限定」会让人误以为范围已收窄
         anchor = {"objects": [], "relations": [], "metrics": [],
-                  "scoped": False, "graphs": list(body.get("graphs") or []),
+                  "scoped": False, "graphs": graph_keys,
                   "focus_n": len(focus_tables), "question": q_eff}
-        ctx = build_context(q_eff, focus_tables=focus_tables, trace=anchor)
+        ctx = build_context(q_eff, focus_tables=focus_tables, trace=anchor, graph_keys=graph_keys)
+        _ont = anchor.get("ontology") or {}
+        yield push("anchor_ontology", True,
+                   f"锚定本体 · {'、'.join(_ont.get('names') or ['示例'])}"
+                   f"({_ont.get('objects',0)} 对象 / {_ont.get('relations',0)} 关系)"
+                   + (" · " + anchor["fallback"] if anchor.get("fallback") else ""))
         # 锚定视图先推一次:引擎规划要几十秒,这期间人已经能看到「本体锚到了哪些对象」
         yield sse({"type": "anchor", "anchor": anchor})
         if history:
@@ -2437,7 +2566,7 @@ def chat_stream():
                 _ic = intent_check.cross_check(question, sql, ir_gate)
                 yield push("intent_crosscheck", _ic["verdict"] in ("aligned", "unknown"),
                            f"[{idx}] " + intent_check.step_of(_ic)["info"])
-                usage_stat.record(WORK, "demo", [o["key"] for o in _ic["actual"]["objects"]], "query")
+                usage_stat.record(WORK, _gate_keys[0], [o["key"] for o in _ic["actual"]["objects"]], "query")
                 # 闭环:SQL 真正落到的表回填锚定视图 —— 召回了却没被用上的对象一眼可见
                 for _o in _ic["actual"]["objects"]:
                     if _o.get("table") and _o["table"] not in anchor.setdefault("used", []):
@@ -2485,7 +2614,7 @@ def chat_stream():
                 "anchor": anchor}   # 随 done 落一份:命中缓存与历史回放时锚定视图不丢
         if results:
             if len(_QA_CACHE) > 200: _QA_CACHE.pop(next(iter(_QA_CACHE)))
-            _QA_CACHE[_qa_key(question, history, focus_tables)] = resp
+            _QA_CACHE[_qa_key(question, history, focus_tables, graph_keys)] = resp
         yield sse({"type": "done", **resp, "cached": False, "elapsed": round(_t.time() - t0, 1), "session": session})
     from flask import Response, stream_with_context
     return Response(stream_with_context(gen()), mimetype="text/event-stream",
@@ -4098,6 +4227,7 @@ def _adjudicate_ir(db, name, extracted, ev):
         if not s or not t or s == t or s not in valid or t not in valid or (s, t) in seen: continue
         seen.add((s, t))
         status, overlap, note = "candidate", None, "LLM 提议·待取证"
+        ev_keys = None                                # 取证命中时落结构化 JOIN 键(DR-033)
         ts, tt = name2tab.get(s), name2tab.get(t)
         if con and ts and tt:
             cs = [c for c, _ in tc.get(ts, [])]; ct = [c for c, _ in tc.get(tt, [])]
@@ -4136,8 +4266,14 @@ def _adjudicate_ir(db, name, extracted, ev):
                 for pcol in pcols[:3]:
                     ov = 100.0 * len(child & distinct(tt, pcol)) / len(child)
                     if best_ov is None or ov > best_ov: best_ov, overlap = ov, round(ov, 1)
+                    if ov >= 60 and is_unique(tt, pcol) and not _key_name_ok(key, pcol):
+                        note = (f"{key}→{tt}.{pcol} 重叠{ov:.0f}% 但键名词根不一致"
+                                f"({_key_stem(key)}≠{_key_stem(pcol)}),疑为自增键值域巧合,送审")
+                        continue
                     if ov >= 60 and is_unique(tt, pcol):
-                        status, note = "verified", f"{key}→{tt}.{pcol} 重叠{ov:.0f}%·父键唯一"; break
+                        status, note = "verified", f"{key}→{tt}.{pcol} 重叠{ov:.0f}%·父键唯一"
+                        ev_keys = {"child_key": key, "parent_key": pcol, "overlap": round(ov, 1), "source": "key_overlap"}
+                        break
                 if status == "verified": break
             if status != "verified" and best_ov is not None:
                 note = f"弱重叠{best_ov:.0f}%,送审" if best_ov >= 20 else f"重叠仅{best_ov:.0f}%,存疑"
@@ -4157,16 +4293,20 @@ def _adjudicate_ir(db, name, extracted, ev):
                         chp = pair_distinct(ts, c1, c2)
                         if not chp: continue
                         ovp = 100.0 * len(chp & pair_distinct(tt, p1, p2)) / len(chp)
-                        if ovp >= 60 and pair_unique(tt, p1, p2):
+                        if ovp >= 60 and pair_unique(tt, p1, p2) and _key_name_ok(f"{c1},{c2}", f"{p1},{p2}"):
                             status, overlap = "verified", round(ovp, 1)
                             note = f"复合键({c1},{c2})→{tt} 元组重叠{ovp:.0f}%·父键成对唯一"
+                            ev_keys = {"child_key": f"{c1},{c2}", "parent_key": f"{p1},{p2}",
+                                       "overlap": round(ovp, 1), "source": "composite_key"}
                             break
                     if status == "verified": break
         verb = r.get("verb", "关联")
         fr, tq = _ground_verb(verb)                       # 接地到 BFO 有根据关系 + 时间指标(IOF 借鉴)
-        relations.append({"source_concept": s, "target_concept": t, "verb": verb,
-                          "status": status, "overlap": overlap, "note": note,
-                          "founded_relation": fr, "temporal": tq})
+        rel_new = {"source_concept": s, "target_concept": t, "verb": verb,
+                   "status": status, "overlap": overlap, "note": note,
+                   "founded_relation": fr, "temporal": tq}
+        if ev_keys: rel_new["evidence"] = ev_keys      # DR-033 结构化 JOIN 键:自建本体要能驱动问数
+        relations.append(rel_new)
     if con: con.close()
     # ── 三级控制环第二级:LLM 语义评审(样本判别实验:语义与数据滤除不相交 FP,组合最优)──
     # 不改变 verified(其语义=经数据见证),仅附 semantic 标注供人审;引擎离线记 skipped,不臆造

@@ -37,6 +37,7 @@ Cosmo DataMind 是**自有品牌、原创前后端**的「数据治理 × 本体
 - [DR-010 · IOF/BFO 本体工程对齐(注释/接地/注释化 OWL 导出/SHACL 门禁/完备度)](decisions/DR-010-iof-bfo-alignment.md)
 - [DR-011 · 泛化裁决 v2(等值/前缀/复合键/PK 感知 + 三级控制环)](decisions/DR-011-generalized-adjudication.md)
 - [DR-012 · SPARQL 健壮性(线程安全/诚实报错/合法默认示例)](decisions/DR-012-sparql-robustness.md)
+- [DR-033 · 选中的本体图谱成为问数的锚定源(含键名词根闸)](decisions/DR-033-selected-ontology-as-anchor.md)
 - [DR-032 · 深度问数的本体锚定可视化(对话内画出锚定子图与 SQL 实际命中)](decisions/DR-032-qa-anchor-visualization.md)
 - [DR-031 · 向后兼容性检查与本体模块化(下游影响 + 领域/层次拆分)](decisions/DR-031-compat-and-modularization.md)
 - [DR-030 · 本体健康度体检(七类图结构异常,硬错误/信号分级)](decisions/DR-030-ontology-health-check.md)
@@ -136,6 +137,11 @@ Consult @specs/map.md to find relevant context.
   记录锚定轨迹,SSE `anchor` 事件 + `done.anchor` 双路送达,前端 `dqAnchorHTML()` 在
   对话气泡内画静态 SVG 子图(入选理由配色 / 关系状态线型 / SQL 实际命中标记)。
   截断优先保留参与关系的对象(自查中修正)。套件 441 断言 · UI 走查 57 · UI 实操 25。
+- **DR-033 选中本体作锚定源**:`_anchor_ir()` 让选中的图谱真正成为锚定/口径/埋点的本体;
+  区分「选表=限定」与「选本体=在其中锚定」;`_join_hints` 形状无关(构建产物此前恒出 0 条);
+  构建器落结构化 JOIN 键;`_key_name_ok()` 键名词根闸拦截自增键值域巧合造出的假关系;
+  UI 增锚定链路(本体→命中→扩展→上下文→SQL 实际用)与命中证据。
+  套件 463 断言 · UI 走查 57 · UI 实操 28。
 
 五问互补:够不够用(CQ)· 通不通(链路)· 对不对得上数据(漂移)·
 答的是不是问的(双盲)· 结构健不健康(体检)。
