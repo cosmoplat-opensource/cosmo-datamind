@@ -228,6 +228,8 @@ async def main():
         await goto("chat", 1500)                      # 7b 结尾跳去了本体图谱页,先回来
         await pg.click("#p_chat .dq-tab .c")          # 新对话
         await pg.wait_for_timeout(800)
+        conv0 = await pg.evaluate("dqAllConv().length")
+        (ok if await pg.evaluate("DQ_CONV") is None else bad)("点新对话后会话已重置", "DQ_CONV=null")
         eg = await pg.query_selector("#p_chat .dq-hero .eg")
         if not eg:
             bad("新对话未出现示例问题")
@@ -244,6 +246,12 @@ async def main():
                 (ok if "缓存·秒回" not in t3 else bad)(
                     f"点示例「{egq[:12]}」是真跑非缓存", t3.split("\n")[2] if len(t3.split("\n")) > 2 else "")
                 (ok if "本体锚定" in t3 else bad)("示例问数同样给出本体锚定")
+                # 「新对话 + 点示例」应当自成一条流程,并落进历史对话
+                conv1 = await pg.evaluate("dqAllConv().length")
+                (ok if conv1 == conv0 + 1 else bad)("示例问数自建一条新会话", f"{conv0}→{conv1}")
+                titles = await pg.evaluate("dqAllConv().map(c=>c.title)")
+                (ok if titles and egq[:8] in titles[0] else bad)(
+                    "新会话标题取自示例问题", str(titles[:2]))
             except Exception as _e:
                 bad("示例问数超时", f"420s {_e}")
 
