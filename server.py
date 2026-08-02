@@ -552,9 +552,15 @@ def build_context(question, focus_tables=None, trace=None, graph_keys=None):
                              "objects": len(ir.get("objects", [])), "relations": len(_rl)}
     # 选中的本体没有一个对象绑表 → 生不出 SQL。如实回退并说明,不静默换本体
     if akeys != ["demo"] and not any(o.get("table") for o in ir.get("objects", [])):
-        if trace is not None:
-            trace["fallback"] = "选中的本体无绑表对象,无法据此生成 SQL,已回退示例本体"
+        _picked = [_graph_name(k) for k in akeys]
         ir, akeys = (load_ir_edited("demo") or {}), ["demo"]
+        if trace is not None:
+            # ontology 必须写「实际用了哪套」,否则界面会显示选中的那套而对象却来自另一套
+            trace["fallback"] = ("选中的「%s」没有绑表对象,生不出 SQL;本次实际锚定的是示例本体"
+                                 % "、".join(_picked))
+            trace["ontology"] = {"keys": akeys, "names": [_graph_name("demo")],
+                                 "objects": len(ir.get("objects", [])),
+                                 "relations": len(_rels(ir)[0]), "requested": _picked}
     mets = []
     _ml = ir.get("metric_layers")
     # 锚定源现在可能是任意图谱,其 metric_layers 未必是 {层: [指标]} —— 形状不符就跳过,不炸

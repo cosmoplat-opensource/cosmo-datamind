@@ -171,10 +171,13 @@ async def main():
             if gid and gid.startswith("built_"):
                 picked = (gid, nm); await c.click(); break
         (ok if picked else bad)("数据源弹窗可点选本体图谱", str(picked))
+        if not picked:          # 拿不到图谱就别往下崩,后续断言全部依赖它
+            bad("步骤7b 中止", "未取到可选的自建本体图谱")
+            picked = ("", "")
         await pg.click("#dq_dsmodal button:has-text('确定')")
         await pg.wait_for_timeout(600)
         sel = await pg.evaluate("DQ_DS.graphs")
-        (ok if sel == [picked[0]] else bad)("选中状态已回写", str(sel))
+        (ok if picked[0] and sel == [picked[0]] else bad)("选中状态已回写", str(sel))
         n1 = await pg.evaluate("document.querySelectorAll('#p_chat .dq-card').length")
         await pg.fill(box, "各客户的销售订单金额排名")
         await pg.click("#p_chat button:has-text('发送'), #p_chat button:has-text('提问')")
@@ -186,13 +189,37 @@ async def main():
             await pg.wait_for_timeout(400)
             t2 = await pg.inner_text("#p_chat .dq-card:last-of-type")
             # 锚定的必须是刚选中的那套本体,而不是永远的示例本体
-            (ok if picked[1][:8] in t2 else bad)("锚定本体名 = 选中的图谱", picked[1][:12])
+            (ok if picked[1][:8] in t2 else bad)(
+                "锚定本体名 = 选中的图谱", f"{picked[1][:12]} | 卡片: {t2[:120]}")
             (ok if "示例企业数据本体" not in t2 else bad)("未回落到示例本体")
             (ok if "锚定本体" in t2 else bad)("执行记录含『锚定本体』步骤")
             (ok if "入上下文" in t2 and "问句命中" in t2 else bad)("锚定链路可见(本体→命中→扩展→上下文)")
             nrect = await pg.evaluate(
                 "document.querySelectorAll('#p_chat .dq-card:last-of-type svg rect').length")
             (ok if nrect > 0 else bad)("选中本体后仍画出锚定子图", f"{nrect} 框")
+            # 可见性:锚定必须在视口内 —— 埋在气泡里会被自动滚动顶出屏幕(实测 top=-380)
+            vis = await pg.evaluate(
+                "(()=>{const b=document.getElementById('dq_ancbar');"
+                "if(!b||b.style.display==='none')return null;const r=b.getBoundingClientRect();"
+                "return JSON.stringify({t:Math.round(r.top),inview:r.top>=0&&r.top<window.innerHeight});})()")
+            (ok if vis and '"inview":true' in vis else bad)("常驻锚定条在视口内", str(vis))
+            bt = await pg.inner_text("#dq_ancbar")
+            (ok if picked[1][:8] in bt else bad)("锚定条显示锚定本体名", bt[:40])
+            (ok if "入上下文" in bt and "SQL 实际用" in bt else bad)("锚定条显示完整链路", bt[:80])
+            await pg.click("#dq_ancbar a:has-text('展开子图与证据')")
+            await pg.wait_for_timeout(600)
+            nb = await pg.evaluate("document.querySelectorAll('#dq_ancbar svg rect').length")
+            (ok if nb > 0 else bad)("锚定条内可展开子图", f"{nb} 框")
+            # 「选了本体的哪一块」:跳图谱页高亮锚定子集,其余淡出
+            await pg.click("#dq_ancbar a:has-text('在图谱中高亮')")
+            await pg.wait_for_timeout(4000)
+            hb = await pg.inner_text("#g_hlbar")
+            (ok if "问数锚定视图" in hb else bad)("图谱页出现锚定高亮提示", hb[:70])
+            import re as _re
+            m = _re.search(r"的\s*(\d+)/(\d+)\s*个对象", hb)
+            (ok if m and 0 < int(m.group(1)) < int(m.group(2)) else bad)(
+                "高亮的是本体的一部分而非全部", m.group(0) if m else hb[:50])
+            (ok if "清除高亮" in hb else bad)("高亮可清除")
         except Exception as _e:
             bad("选中本体后问数超时", f"420s {_e}")
 
