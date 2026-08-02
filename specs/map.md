@@ -135,7 +135,7 @@ Consult @specs/map.md to find relevant context.
 - **DR-032 锚定可视化**:`build_context(trace=)` + `_join_hints(pairs=)` 与上下文同源地
   记录锚定轨迹,SSE `anchor` 事件 + `done.anchor` 双路送达,前端 `dqAnchorHTML()` 在
   对话气泡内画静态 SVG 子图(入选理由配色 / 关系状态线型 / SQL 实际命中标记)。
-  套件 438 断言 · UI 走查 57 · UI 实操 25。
+  截断优先保留参与关系的对象(自查中修正)。套件 441 断言 · UI 走查 57 · UI 实操 25。
 
 五问互补:够不够用(CQ)· 通不通(链路)· 对不对得上数据(漂移)·
 答的是不是问的(双盲)· 结构健不健康(体检)。
