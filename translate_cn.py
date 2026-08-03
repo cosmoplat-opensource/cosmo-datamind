@@ -20,7 +20,7 @@ TOKEN = {
     "line":"产线","hours":"工时","hour":"小时","duration":"时长","group":"分组","region":"区域","area":"区域","zone":"区域",
     "dept":"部门","department":"部门","emp":"员工","employee":"员工","staff":"员工","customer":"客户","cust":"客户","client":"客户",
     "product":"产品","prod":"产品","item":"项目","order":"订单","warehouse":"仓库","wh":"仓库","inventory":"库存","stock":"库存",
-    "incident":"事件","event":"事件","quality":"质量","qc":"质检","yield":"良率","output":"产出","input":"投入","throughput":"产能",
+    "incident":"异常事件","event":"事件","quality":"质量","qc":"质检","yield":"良率","output":"产出","input":"投入","throughput":"产能",
     "gross":"毛","net":"净","month":"月","monthly":"月度","year":"年","yearly":"年度","annual":"年度","day":"日","daily":"日","week":"周","weekly":"周",
     "avg":"平均","average":"平均","mean":"平均","max":"最高","maximum":"最高","min":"最低","minimum":"最低","cum":"累计","cumulative":"累计",
     "delivered":"已交付","delivery":"交付","undelivered":"未交付","shipped":"已发货","return":"退货","returned":"退货","refund":"退款",
@@ -54,7 +54,7 @@ TOKEN = {
     # 制造/安全/资产/供应链域补充(本数据集出现,均无歧义):
     "work":"工作","center":"中心","fixed":"固定","asset":"资产","spare":"备件","part":"零件","storage":"存储","tool":"工具",
     "routing":"工艺路线","pricing":"定价","downtime":"停机","reason":"原因","metadata":"元数据","catalog":"目录","requisition":"申请",
-    "receipt":"收货","record":"记录","iot":"物联网","incident":"事故","inv":"调查","quotation":"报价","safety":"安全","objective":"目标",
+    "receipt":"收货","record":"记录","iot":"物联网","inv":"调查","quotation":"报价","safety":"安全","objective":"目标",
     "accumulated":"累计","accuracy":"精度","action":"措施","required":"所需","applicant":"申请人","sqm":"平方米",
     "assess":"评估","assessor":"评估人","assigned":"指派","tech":"技术","atomic":"原子","attendee":"参与","auditor":"审计员","calc":"计算",
     "consequence":"后果","contributory":"诱因","control":"控制","needed":"所需","cooperation":"合作","since":"起","deadline":"截止",
@@ -64,7 +64,7 @@ TOKEN = {
     "book":"账面","next":"下次","op":"工序","original":"原始","paid":"已付","party":"往来单位","ppe":"防护装备","priority":"优先级",
     "property":"财产","loss":"损失","purchase":"采购","received":"已收","reported":"上报","requester":"申请人","responsible":"责任",
     "root":"根本","cause":"原因","runtime":"运行","setup":"准备","severity":"严重度","steam":"蒸汽","topic":"主题","trainer":"培训师",
-    "useful":"可用","from":"起","until":"至","kw":"千瓦","ton":"吨","tph":"吨每小时","hr":"小时","min":"分钟","m3":"立方米","tons":"吨",
+    "useful":"可用","from":"起","until":"至","kw":"千瓦","ton":"吨","tph":"吨每小时","hr":"小时","mins":"分钟","m3":"立方米","tons":"吨",
     "pc":"利润中心","wc":"工作中心","business":"业务","unit":"单位","dep":"折旧","net":"净","original":"原始","obj":"对象","data":"数据",
     "composite":"复合","derived":"派生","atomic":"原子","column":"列","table":"表","reason":"原因","handled":"处理","assess":"评估",
 }

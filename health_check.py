@@ -100,7 +100,7 @@ def check(ir):
             a, b = tuple(pair)[0], tuple(pair)[-1]
             errors.append({"type": "status_conflict", "severity": "error",
                            "relation": f"{a}<->{b}",
-                           "desc": f"同一对象对间既有 verified 又有 rejected 关系",
+                           "desc": "同一对象对间既有 verified 又有 rejected 关系",
                            "fix": "证据自相矛盾:须人审裁定保留哪条"})
 
     isolated = [k for k in keys if deg[k] == 0]

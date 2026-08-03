@@ -8,7 +8,6 @@ Cosmo DataMind · 数据智脑 — 自有品牌的数据治理+本体+深度问�
 """
 import json, os, re, sqlite3, subprocess, threading, time, uuid, sys, glob, importlib
 import urllib.request
-import requests as _rq
 from flask import Flask, jsonify, request, send_from_directory, send_file
 
 HERE = os.path.dirname(os.path.abspath(__file__))

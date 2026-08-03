@@ -132,7 +132,7 @@ Consult @specs/map.md to find relevant context.
 - **DR-031 兼容与模块化**:`compat_check.py` + `GET /api/ont/compat/<key>`(三级判定,
   重点是命中哪些已注册的规则/动作/技能)、`module_split.py` + `GET /api/ont/modules/<key>`
   (by_domain 连通分量+词根 / by_layer 数仓分层)。至此报告第四遍找出的三处空白全部补齐。
-  套件 424 断言 · UI 走查 57 · UI 实操 21。
+  套件 496 断言 · UI 走查 57 · UI 实操 47。
 - **DR-032 锚定可视化**:`build_context(trace=)` + `_join_hints(pairs=)` 与上下文同源地
   记录锚定轨迹,SSE `anchor` 事件 + `done.anchor` 双路送达,前端 `dqAnchorHTML()` 在
   对话气泡内画静态 SVG 子图(入选理由配色 / 关系状态线型 / SQL 实际命中标记)。

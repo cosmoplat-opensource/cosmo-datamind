@@ -671,7 +671,7 @@ r=po(f"/api/ont/rulebook/{SANDBOX}",json={"rule":dict(_R1,id="t_bad",on="不存�
 chk("RL15 规则锚不到本体对象→400", r.status_code==400)
 r=po(f"/api/ont/decide/{SANDBOX}",json={"object":_so["id"]},headers=H); chk("RL16 缺 facts→400", r.status_code==400)
 r=g("/api/ont/rulebook/a..b"); chk("RL17 穿越键→400", r.status_code==400)
-for _rid in ("t_big","t_big2"): po(f"/api/ont/rulebook/demo/delete",json={"id":_rid},headers=H)
+for _rid in ("t_big","t_big2"): po("/api/ont/rulebook/demo/delete",json={"id":_rid},headers=H)
 chk("RL18 删除规则", g(f"/api/ont/rulebook/{SANDBOX}").json()["rules"]==[] or True)
 import server as _srv, os as _os4, time as _t4
 _k1=_srv._qa_key("缓存键验证", None)
@@ -1220,6 +1220,18 @@ for _n in _ast.walk(_tree):
        and getattr(_n.value.func, "id", "") == "_anchor_ir":
         _t = _n.targets[0]
         _unpack.append(len(_t.elts) if isinstance(_t, _ast.Tuple) else 1)
+# pyflakes 零告警是既有质量门(ARCHITECTURE §5),回归里把它钉住:
+# 重复字典键这类告警是真 bug —— translate_cn 曾因此把「min」译成分钟而非最低
+try:
+    import glob as _g2
+    _repo = _os.path.dirname(_os.path.abspath(__file__))
+    _pf = _sp.run([sys.executable, "-m", "pyflakes"] + sorted(_g2.glob(_os.path.join(_repo, "*.py"))),
+                  capture_output=True, text=True, timeout=90)
+    _pfout = [l for l in _pf.stdout.splitlines() if l.strip()]
+    chk("QS10 pyflakes 零告警", not _pfout, "; ".join(_pfout[:2]))
+except Exception as _e:
+    chk("QS10 pyflakes 探针", False, str(_e)[:80])
+
 chk("QS7 _anchor_ir 所有调用点解包数一致", _unpack and len(set(_unpack)) == 1, str(_unpack))
 _tr_bad = {}
 _srvmod.build_context("毛利率", trace=_tr_bad, graph_keys=["no_such_graph"])
