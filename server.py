@@ -587,7 +587,7 @@ def build_context(question, focus_tables=None, trace=None, graph_keys=None):
     def score(txt): return len(hits_of(txt))
     ft = set(t.lower() for t in (focus_tables or []))
     if ft:   # 用户在『数据源』里显式点了表 → 只喂这些表(点了就用这几张,不再打分)
-        picked = [o for o in ir.get("objects", []) if o.get("table", "").lower() in ft]
+        picked = [o for o in ir.get("objects", []) if (o.get("table") or "").lower() in ft]
         if picked:
             lines = []
             for o in picked:
@@ -609,11 +609,13 @@ def build_context(question, focus_tables=None, trace=None, graph_keys=None):
         if trace is not None:
             trace["focus_miss"] = len(ft)             # 点选的表在本体里一张都没有 → 转打分召回,不静默当作已限定
     tabs, hmap = [], {}
-    for i, o in enumerate(ir.get("objects", [])):
+    # 只有绑表对象能进 schema 上下文;混合本体(部分对象是纯概念)里若不滤,
+    # 召回名额会被无表对象挤占,上下文可能一张表都没有
+    for i, o in enumerate([x for x in ir.get("objects", []) if x.get("table")]):
         # DR-027:别名并入评分语料——业务用语("产量")与表名中文("生产日汇总")常常不同,
         # 不认别名会让问数召回不到正确的表,进而生成查错表的 SQL
-        blob = ((o.get("cn") or "") + o.get("table", "") + "".join(o.get("aliases") or [])
-                + " ".join(a.get("cn", "") + a.get("col", "") for a in o.get("attrs", [])))
+        blob = ((o.get("cn") or "") + (o.get("table") or "") + "".join(o.get("aliases") or [])
+                + " ".join((a.get("cn") or "") + (a.get("col") or "") for a in o.get("attrs", [])))
         hs = hits_of(blob)
         if hs and o.get("table"): hmap[o["table"]] = hs[:6]
         tabs.append((len(hs), o))
@@ -624,7 +626,8 @@ def build_context(question, focus_tables=None, trace=None, graph_keys=None):
     core = {"fact_sales_order", "fact_production_output", "dws_production_daily"}   # 核心事实表始终入上下文
     have = {o["table"].lower() for o in picked}
     for o in ir.get("objects", []):
-        if o.get("table", "").lower() in core and o["table"].lower() not in have:
+        _t = (o.get("table") or "").lower()
+        if _t and _t in core and _t not in have:
             picked.append(o); _trace_objs(trace, [o], "核心事实表", hmap)
     # 沿本体关系召回:命中表的一跳邻居(维表等)拉进上下文,JOIN 才有另一端
     have = {o["table"].lower() for o in picked if o.get("table")}
@@ -972,7 +975,7 @@ def table_detail(name):
     ir = load_ir_edited("demo") or {}
     cn_map = {}
     for o in ir.get("objects", []):
-        if o.get("table", "").lower() == name.lower():
+        if (o.get("table") or "").lower() == name.lower():
             cn_map = {a["col"]: a.get("cn", "") for a in o.get("attrs", [])}
     con = ro_connect(DB)
     cols = [{"col": r[1], "type": r[2], "pk": bool(r[5]), "cn": cn_map.get(r[1], "")} for r in con.execute(f'PRAGMA table_info("{name}")')]
@@ -1098,7 +1101,7 @@ def metric_quick():
     # 找该表日期列(IR attrs 中 DATE 类型优先,退而求 *date* 命名)
     dcol = None
     for o in ir.get("objects", []):
-        if o.get("table", "").lower() == tbl.lower():
+        if (o.get("table") or "").lower() == tbl.lower():
             dates = [a["col"] for a in o.get("attrs", []) if "DATE" in (a.get("type", "").upper())]
             named = [a["col"] for a in o.get("attrs", []) if "date" in a["col"].lower()]
             dcol = (dates or named or [None])[0]
@@ -2926,7 +2929,7 @@ def _ctx_graph(question):
     def score(txt): return sum(1 for w in kws if w and w in txt)
     tabs = []
     for o in ir.get("objects", []):
-        blob = (o.get("cn") or "") + o.get("table", "") + " ".join(a.get("cn", "") + a.get("col", "") for a in o.get("attrs", []))
+        blob = (o.get("cn") or "") + (o.get("table") or "") + " ".join((a.get("cn") or "") + (a.get("col") or "") for a in o.get("attrs", []))
         tabs.append((score(blob), o))
     tabs.sort(key=lambda x: -x[0])
     picked = [o for s, o in tabs[:8] if s > 0] or [o for _, o in tabs[:5]]

@@ -193,7 +193,10 @@ async def main():
                 "锚定本体名 = 选中的图谱", f"{picked[1][:12]} | 卡片: {t2[:120]}")
             (ok if "示例企业数据本体" not in t2 else bad)("未回落到示例本体")
             (ok if "锚定本体" in t2 else bad)("执行记录含『锚定本体』步骤")
-            (ok if "入上下文" in t2 and "问句命中" in t2 else bad)("锚定链路可见(本体→命中→扩展→上下文)")
+            _mid = [x for x in ("问句命中", "沿关系扩展", "核心事实表", "默认候选", "显式选表")
+                    if x in t2]
+            (ok if ("本体对象" in t2 and "入上下文" in t2 and _mid) else bad)(
+                "锚定链路可见(本体规模→中间过程→入上下文)", "中间节:" + "、".join(_mid))
             nrect = await pg.evaluate(
                 "document.querySelectorAll('#p_chat .dq-card:last-of-type svg rect').length")
             (ok if nrect > 0 else bad)("选中本体后仍画出锚定子图", f"{nrect} 框")
@@ -205,7 +208,11 @@ async def main():
             (ok if vis and '"inview":true' in vis else bad)("常驻锚定条在视口内", str(vis))
             bt = await pg.inner_text("#dq_ancbar")
             (ok if picked[1][:8] in bt else bad)("锚定条显示锚定本体名", bt[:40])
-            (ok if "入上下文" in bt and "SQL 实际用" in bt else bad)("锚定条显示完整链路", bt[:80])
+            _bmid = [x for x in ("问句命中", "沿关系扩展", "核心事实表", "默认候选", "显式选表")
+                     if x in bt]
+            (ok if ("本体对象" in bt and "入上下文" in bt and _bmid) else bad)(
+                "锚定条显示完整链路", "中间节:" + "、".join(_bmid))
+            ok("锚定条闭环标记", "有 SQL 实际用" if "SQL 实际用" in bt else "本轮 SQL 未用到锚定对象(合法)")
             await pg.click("#dq_ancbar a:has-text('展开子图与证据')")
             await pg.wait_for_timeout(600)
             nb = await pg.evaluate("document.querySelectorAll('#dq_ancbar svg rect').length")

@@ -1181,6 +1181,25 @@ chk("AO31 切到根因诊断清空锚定条(共用视图容器,免得指向另�
 _t6 = {}; _srvmod.build_context("各客户的销售订单金额排名", trace=_t6, graph_keys=["app"])
 chk("AO32 无绑表本体回退后,锚定本体如实回写为实际使用的那套",
     _t6["ontology"]["keys"] == ["demo"] and _t6["ontology"]["requested"] and _t6.get("fallback"))
+# 任意图谱都能当锚定源之后,「对象有 table 键但值为 null」的概念本体会把 build_context 打崩
+# (o.get("table","") 的默认值只在键缺失时生效)。实测 built_bd2fec 9/10 对象 table=null。
+import glob as _glob
+_all_graphs = ["demo", "app", "cq"] + [_os.path.basename(p)[:-5]
+                                       for p in _glob.glob(_os.path.join(_WD0, "built_*.json"))]
+_crash = []
+for _gk in sorted(set(_all_graphs)):
+    try:
+        _srvmod.build_context("毛利为什么下降?产量趋势如何?", graph_keys=[_gk])
+    except Exception as _e:
+        _crash.append(f"{_gk}: {_e}")
+chk("AO40 任一图谱作锚定源都不崩(含 table=null 的概念本体)", not _crash, str(_crash[:2]))
+_tn = {}
+_srvmod.build_context("毛利为什么下降?", trace=_tn, graph_keys=["built_bd2fec"])
+chk("AO41 无绑表对象不占召回名额(混合本体里上下文仍拿得到表)",
+    all(o.get("table") for o in _tn.get("objects", [])))
+chk("AO42 源码中不再有 get(\"table\", \"\") 这类会返回 None 的写法",
+    open("server.py", encoding="utf-8").read().count('get("table", "")') <= 1)
+
 # 界面版本自检:标签页开着不刷新时改动不生效,现象是「说改了却没变」,排查成本极高
 _r = g("/api/uiver"); chk("AO37 /api/uiver 返回界面文件版本",
     _r.status_code == 200 and isinstance(_r.json().get("v"), int) and _r.json()["v"] > 0)
