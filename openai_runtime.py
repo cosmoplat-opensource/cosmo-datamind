@@ -13,6 +13,8 @@ Moonshot、vLLM 自建……),就无从接入:这与"开箱可用"相悖,也把�
   DATAMIND_LLM_BASE   端点前缀,如 https://open.bigmodel.cn/api/coding/paas/v4
   DATAMIND_LLM_KEY    API Key
   DATAMIND_LLM_MODEL  模型名,如 glm-4.5
+  DATAMIND_LLM_MAX_TOKENS  单次回复上限,默认 16384。推理型模型务必留足:
+                      思考占用计入该额度,给小了会出现「返回几十字」的静默失败
   CLAW_DRIVER=openai  选用本驱动
 
 设计要点:
@@ -25,6 +27,11 @@ Moonshot、vLLM 自建……),就无从接入:这与"开箱可用"相悖,也把�
 import json
 import os
 import urllib.request
+
+
+def _int_env(name, default):
+    try: return max(1, int(os.environ.get(name) or default))
+    except (TypeError, ValueError): return default
 
 
 class OpenAICompatRuntime:
@@ -49,7 +56,9 @@ class OpenAICompatRuntime:
             "model": model or self.model,
             "messages": [{"role": "user", "content": message}],
             "temperature": 0,
-            "max_tokens": 4096,
+            # 推理型模型(glm-4.5/5、o 系列)会把预算先花在 reasoning 上,4096 常常
+            # 只够思考、正文只剩几十字 —— 表现为"规划失败"却查不出原因。故可配且默认放宽。
+            "max_tokens": _int_env("DATAMIND_LLM_MAX_TOKENS", 16384),
         }).encode("utf-8")
         req = urllib.request.Request(
             self.base + "/chat/completions", data=body,
