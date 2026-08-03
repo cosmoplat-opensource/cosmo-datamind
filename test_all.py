@@ -1196,7 +1196,11 @@ chk("AO32 无绑表本体回退后,锚定本体如实回写为实际使用的那
 chk("AO43 对象绑表兼容 table 与 tables[] 两种写法",
     _srvmod._obj_table({"table": "t1"}) == "t1"
     and _srvmod._obj_table({"tables": ["t2", "t3"]}) == "t2"
-    and _srvmod._obj_table({"cn": "无表"}) is None)
+    and _srvmod._obj_table({"cn": "无表"}) is None
+    and _srvmod._obj_table({"tables": ["", None, "t4"]}) == "t4"   # 跳过空值
+    and _srvmod._obj_table({"tables": ["", ""]}) is None)
+chk("AO45 属性中文名为 None 时不渲染字面量 None(会被喂给模型)",
+    "None" not in _srvmod._obj_cols_text({"table": "x", "attrs": [{"col": "c", "cn": None}]}))
 chk("AO44 本体缺 attrs 时列清单回落到库里现读(否则上下文只有表名,模型只能猜列)",
     "def _table_cols(" in open("server.py", encoding="utf-8").read()
     and _srvmod._obj_cols_text({"table": "dim_customer"}))
@@ -1206,6 +1210,12 @@ _shim_src = open("server.py", encoding="utf-8").read()
 chk("QS1 无引擎垫片可承载 driver 注册", "_stub.register = lambda name, factory" in _shim_src)
 chk("QS2 OpenAI 驱动注册不依赖上游引擎在场",
     _shim_src.index("import openai_runtime") > _shim_src.index('sys.modules["agent_runtime"] = _stub'))
+chk("QS4 openclaw 在驱动尝试顺序里(否则切了引擎没反应)",
+    "openclaw" in _srvmod._drv_order())
+chk("QS5 表名按标识符白名单校验后才拼进 PRAGMA",
+    _srvmod._table_cols('x") UNION SELECT 1--') == [] and _srvmod._table_cols("dim_customer"))
+chk("QS6 库不可用时不缓存空结果(否则库恢复后仍返回空)",
+    "只缓存成功结果" in open("server.py", encoding="utf-8").read())
 chk("QS3 垫片无可用 driver 时如实报错(不假装可用)",
     "无可用运行时:未配置上游引擎" in _shim_src)
 
