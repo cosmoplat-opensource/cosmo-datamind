@@ -1118,9 +1118,20 @@ chk("AO6 命中证据记录了是哪个词钓出该对象",
     any(o.get("hits") for o in _t1["objects"]))
 chk("AO7 命中证据里的词确实出现在问句或其扩展词中",
     all(all(isinstance(h, str) and h for h in (o.get("hits") or [])) for o in _t1["objects"]))
-_t3 = {}; _srvmod.build_context(_q33, trace=_t3, graph_keys=["app"])
+# 无绑表本体的回退:用合成图谱测,不依赖「仓里恰好有一套纯概念本体」——
+# tables[] 归一上线后,app(82/149 绑表)与 built_2d74f0(108/108)都已可正常锚定,
+# 那两套本体此前是因为只读 table 字段而被埋没,并非真的没有绑表
+_syn_key = "built_ztest_conceptonly"
+_syn_p = _os.path.join(_WD0, _syn_key + ".json")
+with open(_syn_p, "w", encoding="utf-8") as _f:
+    json.dump({"scenario": {"name": "纯概念本体(回归用)"},
+               "objects": [{"name": "Concept%d" % i, "cn": "概念%d" % i, "kind": "object"}
+                           for i in range(3)],
+               "relations": []}, _f, ensure_ascii=False)
+_at0.register(lambda: _os.path.exists(_syn_p) and _os.remove(_syn_p))
+_t3 = {}; _srvmod.build_context(_q33, trace=_t3, graph_keys=[_syn_key])
 chk("AO8 无绑表本体→如实回退并说明(不静默换本体)",
-    bool(_t3.get("fallback")) and _t3["ontology"]["requested"] == ["示例应用本体(概念+流程)"])
+    bool(_t3.get("fallback")) and _t3["ontology"]["requested"] == ["纯概念本体(回归用)"])
 _t4 = {}; _srvmod.build_context(_q33, trace=_t4, graph_keys=["built_9c3fd1", "built_8c3354"])
 chk("AO9 多选图谱→合并为一套锚定本体", _t4["ontology"]["objects"] > _t1["ontology"]["objects"])
 # 形状无关:构建产物用 relations[source_concept] + objects[name],示例用 links[source] + id
@@ -1178,9 +1189,26 @@ chk("AO30 新对话清空锚定条,不残留上一轮", "DQ_ANC_LAST=null;dqAncB
 chk("AO31 切到根因诊断清空锚定条(共用视图容器,免得指向另一条链路)",
     _ui.count("DQ_ANC_LAST=null;dqAncBar(null)") >= 3)
 # 回退时 ontology 必须写「实际用了哪套」,否则界面显示选中的那套而对象来自另一套
-_t6 = {}; _srvmod.build_context("各客户的销售订单金额排名", trace=_t6, graph_keys=["app"])
+_t6 = {}; _srvmod.build_context("各客户的销售订单金额排名", trace=_t6, graph_keys=[_syn_key])
 chk("AO32 无绑表本体回退后,锚定本体如实回写为实际使用的那套",
     _t6["ontology"]["keys"] == ["demo"] and _t6["ontology"]["requested"] and _t6.get("fallback"))
+# tables[] 归一:本体产出有两种写法,只认 table 会把 quick_build 的本体判成「无绑表」而静默回退
+chk("AO43 对象绑表兼容 table 与 tables[] 两种写法",
+    _srvmod._obj_table({"table": "t1"}) == "t1"
+    and _srvmod._obj_table({"tables": ["t2", "t3"]}) == "t2"
+    and _srvmod._obj_table({"cn": "无表"}) is None)
+chk("AO44 本体缺 attrs 时列清单回落到库里现读(否则上下文只有表名,模型只能猜列)",
+    "def _table_cols(" in open("server.py", encoding="utf-8").read()
+    and _srvmod._obj_cols_text({"table": "dim_customer"}))
+# 「只 clone 本仓 + 配 OpenAI 兼容端点」是 README 承诺的路径:垫片必须能承载 driver 注册,
+# 否则 available() 恒空、配了 key 也拿不到运行时(实测曾如此)。
+_shim_src = open("server.py", encoding="utf-8").read()
+chk("QS1 无引擎垫片可承载 driver 注册", "_stub.register = lambda name, factory" in _shim_src)
+chk("QS2 OpenAI 驱动注册不依赖上游引擎在场",
+    _shim_src.index("import openai_runtime") > _shim_src.index('sys.modules["agent_runtime"] = _stub'))
+chk("QS3 垫片无可用 driver 时如实报错(不假装可用)",
+    "无可用运行时:未配置上游引擎" in _shim_src)
+
 # 任意图谱都能当锚定源之后,「对象有 table 键但值为 null」的概念本体会把 build_context 打崩
 # (o.get("table","") 的默认值只在键缺失时生效)。实测 built_bd2fec 9/10 对象 table=null。
 import glob as _glob

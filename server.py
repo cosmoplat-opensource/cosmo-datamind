@@ -35,22 +35,37 @@ sys.path.insert(0, os.path.join(PLATFORM, "engine"))
 try:
     import agent_runtime as _ar                      # noqa: F401
     ENGINE_AVAILABLE = True
-    try:                                             # DR-029:注册 OpenAI 兼容驱动
-        import openai_runtime                        # 未配置端点则不注册,不制造"看似可用"
-        openai_runtime.register(_ar)
-    except Exception:
-        pass
 except Exception:
     import types as _types
     ENGINE_AVAILABLE = False
+    # 垫片也要能承载 driver 注册:否则「只 clone 本仓 + 配 OpenAI 兼容 LLM」这条
+    # README 承诺的路径拿不到任何运行时(实测 runtimes 为空,配了 key 也用不上)。
     _stub = _types.ModuleType("agent_runtime")
-    _stub.__doc__ = "fallback shim — 未配置 DATAMIND_ENGINE_DIR"
-    _stub.available = lambda: []
-    def _no_runtime(*_a, **_k):
-        raise RuntimeError("未配置上游本体引擎:请设置环境变量 DATAMIND_ENGINE_DIR "
-                           "指向引擎目录;或使用纯数据驱动的构建路径(quick_build)。")
-    _stub.get_runtime = _no_runtime
+    _stub.__doc__ = "fallback shim — 未配置 DATAMIND_ENGINE_DIR;仅承载本仓自带 driver"
+    _stub._REGISTRY = {}
+    _stub.register = lambda name, factory: _stub._REGISTRY.__setitem__(name, factory)
+    _stub.available = lambda: sorted(_stub._REGISTRY)
+    def _get_runtime(name=None):
+        name = name or os.environ.get("CLAW_DRIVER") or ""
+        f = _stub._REGISTRY.get(name) or (list(_stub._REGISTRY.values())[0]
+                                          if _stub._REGISTRY else None)
+        if f is None:
+            raise RuntimeError("无可用运行时:未配置上游引擎(DATAMIND_ENGINE_DIR),"
+                               "也未配置 OpenAI 兼容端点(DATAMIND_LLM_BASE/_KEY/_MODEL)。"
+                               "构建可改用纯数据驱动路径(quick_build)。")
+        return f()
+    _stub.get_runtime = _get_runtime
+    class _AR:                                       # driver 基类:垫片下也要能被继承
+        def supports(self, _cap): return False
+    _stub.AgentRuntime = _AR
     sys.modules["agent_runtime"] = _stub
+    _ar = _stub
+
+try:                                                 # DR-029:注册 OpenAI 兼容驱动
+    import openai_runtime                            # 未配置端点则不注册,不制造"看似可用"
+    openai_runtime.register(_ar)
+except Exception:
+    pass
 
 app = Flask(__name__, static_folder=None)
 
@@ -497,6 +512,56 @@ def _graph_name(key):
     return ((ir.get("scenario") or {}).get("name") or key)
 
 
+def _obj_table(o):
+    """对象绑定的表名。两种写法都要认:示例/构建端点用 `table`,quick_build 产出用 `tables[]`。
+    只认 `table` 会把 quick_build 的本体判成「无绑表对象」而静默回退 demo ——
+    「自己建的本体拿不来问数」这条主链路曾因此是断的。"""
+    t = o.get("table")
+    if t: return t
+    ts = o.get("tables") or []
+    return ts[0] if ts else None
+
+
+_COLS_CACHE = {}
+
+
+def _table_cols(table):
+    """从数据底座现读列名(带进程内缓存)。本体产出未必带 attrs —— quick_build 就不带,
+    那样喂给引擎的上下文是「表 X(): 」一个列都没有,模型只能猜列名,SQL 必然报
+    no such column。缺列宁可现查,也不能让模型盲写。"""
+    t = (table or "").lower()
+    if not t: return []
+    if t in _COLS_CACHE: return _COLS_CACHE[t]
+    cols = []
+    try:
+        con = ro_connect(DB)
+        try:
+            cols = [r[1] for r in con.execute('PRAGMA table_info("%s")' % t.replace('"', ""))]
+        finally:
+            con.close()
+    except Exception:
+        cols = []
+    _COLS_CACHE[t] = cols
+    return cols
+
+
+def _obj_cols_text(o, limit=18):
+    """对象的列清单文本:优先本体自带 attrs(含中文名),缺失则回落到库里现读的列名。"""
+    attrs = o.get("attrs") or []
+    if attrs:
+        return ", ".join(f'{a["col"]}({a.get("cn","")})' for a in attrs[:limit] if a.get("col"))
+    return ", ".join(_table_cols(o.get("table"))[:limit])
+
+
+def _normalize_tables(ir):
+    """把 tables[] 归一出 table 字段(不改原文件,只改内存副本),使下游一律读 table。"""
+    for o in ir.get("objects", []):
+        if not o.get("table"):
+            t = _obj_table(o)
+            if t: o["table"] = t
+    return ir
+
+
 def _anchor_ir(graph_keys=None):
     """锚定本体 = 用户选中的图谱(可多选合并);未选时用示例本体。
 
@@ -504,7 +569,9 @@ def _anchor_ir(graph_keys=None):
     「选了本体却没按这套本体作答」是 DR-033 要修的核心问题。"""
     keys = [k for k in (graph_keys or []) if k] or ["demo"]
     if len(keys) == 1:
-        return (load_ir_edited(keys[0]) or load_ir(keys[0]) or {}), keys
+        import copy as _cp
+        _ir = load_ir_edited(keys[0]) or load_ir(keys[0]) or {}
+        return _normalize_tables(_cp.deepcopy(_ir)), keys
     objs, links, seen, sl = [], [], set(), set()
     for k in keys:                                   # 多选:归一到示例形状后合并,按主键/端点对去重
         ir = load_ir_edited(k) or load_ir(k) or {}
@@ -512,7 +579,11 @@ def _anchor_ir(graph_keys=None):
         for idx, o in enumerate(ir.get("objects", [])):
             kk = _obj_key(o, idx)
             if kk in seen: continue
-            seen.add(kk); o = dict(o); o["id"] = kk; objs.append(o)
+            seen.add(kk); o = dict(o); o["id"] = kk
+            if not o.get("table"):
+                _t = _obj_table(o)
+                if _t: o["table"] = _t
+            objs.append(o)
         for r in rels:
             pair = (r.get(sk), r.get(tk))
             if not all(pair) or pair in sl: continue
@@ -591,7 +662,7 @@ def build_context(question, focus_tables=None, trace=None, graph_keys=None):
         if picked:
             lines = []
             for o in picked:
-                cols = ", ".join(f'{a["col"]}({a.get("cn","")})' for a in o.get("attrs", [])[:18])
+                cols = _obj_cols_text(o)
                 _al = "、".join(o.get("aliases") or [])
                 lines.append(f'表 {o["table"]}({o.get("cn","")}{",业务别称:" + _al if _al else ""}): {cols}')
             _trace_objs(trace, picked, "数据源限定")
@@ -647,7 +718,7 @@ def build_context(question, focus_tables=None, trace=None, graph_keys=None):
     _trace_objs(trace, extras, "沿本体关系召回", hmap)
     lines = []
     for o in picked:
-        cols = ", ".join(f'{a["col"]}({a.get("cn","")})' for a in o.get("attrs", [])[:18])
+        cols = _obj_cols_text(o)
         _al = "、".join(o.get("aliases") or [])
         lines.append(f'表 {o["table"]}({o.get("cn","")}{",业务别称:" + _al if _al else ""}): {cols}')
     _pairs = [] if trace is not None else None
@@ -682,6 +753,14 @@ def _uploads_schema():
         con.close(); return "; ".join(parts)
     except Exception:
         return ""
+
+def _llm_timeout(default=180):
+    """LLM 单轮超时(秒),可经 DATAMIND_LLM_TIMEOUT 覆盖。
+    原先规划调用写死 60s —— 推理型模型思考就要 60s+,每次刚好超时,
+    表现为「返回几十字符」的静默失败,极难定位。"""
+    try: return max(10, int(os.environ.get("DATAMIND_LLM_TIMEOUT") or default))
+    except (TypeError, ValueError): return default
+
 
 def _eng_label(drv):
     """对外中性引擎名:执行记录里不暴露底层多智能体库(hermes/claude-code/openclaw)"""
@@ -841,7 +920,7 @@ def agent_sql_plan(question, context, steps):
             if drv not in available(): continue
             t0 = time.time()
             rt = get_runtime(drv)
-            ok, reply = _llm_turn(rt, f"dm_{uuid.uuid4().hex[:6]}", prompt, 60, task="plan")
+            ok, reply = _llm_turn(rt, f"dm_{uuid.uuid4().hex[:6]}", prompt, _llm_timeout(), task="plan")
             steps.append({"step": f"llm_plan({_eng_label(drv)})", "ok": bool(ok), "info": f"{time.time()-t0:.1f}s {len(reply or '')}字符"})
             if ok and reply:
                 m = re.search(r"\{[\s\S]*\}", reply)
