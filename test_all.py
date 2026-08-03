@@ -1187,11 +1187,12 @@ _r = g("/api/uiver"); chk("AO37 /api/uiver 返回界面文件版本",
 chk("AO38 版本横幅挂 body 而非页面容器(放进 .page 会随切页隐藏)",
     "document.body.appendChild(b)" in _ui and "function uiVerBanner" in _ui)
 chk("AO39 首次加载只记录版本不打扰", "if(UI_VER===null){UI_VER=d.v;return;}" in _ui)
-chk("AO35 点示例强制重跑,不吃缓存(缓存记录属于『历史对话』的语义)",
-    "function dqAskEg(q){$('#chat_q').value=q;ask(true);}" in _ui
-    and "async function ask(fresh)" in _ui and "nocache:fresh?1:0" in _ui)
-chk("AO36 手动提问仍可命中缓存(只改示例路径,不废掉缓存)",
-    "nocache:fresh?1:0" in _ui and _ui.count("ask(true)") == 1)
+# 对话框里的每一次提问都真跑:秒回的旧答案与「历史对话」里的记录无法区分
+chk("AO35 深度问数对话框全程不吃缓存(点示例与手动输入一致)",
+    "attachments:DQ_ATTS.map(a=>a.name),nocache:1})" in _ui
+    and "nocache:fresh" not in _ui and "ask(true)" not in _ui)
+chk("AO36 缓存机制本身保留(供 /api/chat 等非交互消费者)",
+    "_QA_CACHE[_qa_key(question, history, focus_tables, graph_keys)] = resp" in open("server.py", encoding="utf-8").read())
 chk("AO34 流中断不抹掉已完成内容(锚定是用户已看到的证据)",
     "以上为中断前已完成的部分" in _ui and "if(live.length||pr.length)" in _ui)
 chk("AO33 回退提示显示在锚定条头部(默认可见,不藏在折叠区)",
