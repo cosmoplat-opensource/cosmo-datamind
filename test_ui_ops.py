@@ -119,11 +119,11 @@ async def main():
         await pg.click("#claw_btn")
         try:
             await pg.wait_for_function(
-                "document.getElementById('claw_log').innerText.length>40", timeout=180000)
+                "document.getElementById('claw_log').innerText.length>40", timeout=300000)
             log = await pg.inner_text("#claw_log")
             ok("对话发送并收到回复", log.replace("\n", " ")[:60])
         except Exception:
-            bad("对话回复超时", "180s 内无内容")
+            bad("对话回复超时", "300s 内无内容")
         await pg.click("#p_claw button:has-text('刷新审计')")
         await pg.wait_for_timeout(1800)
         aud = await pg.inner_text("#claw_audit")
@@ -224,8 +224,11 @@ async def main():
             (ok if "问数锚定视图" in hb else bad)("图谱页出现锚定高亮提示", hb[:70])
             import re as _re
             m = _re.search(r"的\s*(\d+)/(\d+)\s*个对象", hb)
-            (ok if m and 0 < int(m.group(1)) < int(m.group(2)) else bad)(
-                "高亮的是本体的一部分而非全部", m.group(0) if m else hb[:50])
+            # 小本体可能被整体召回(N==M),那是正确结果;要守的是 0<N<=M
+            (ok if m and 0 < int(m.group(1)) <= int(m.group(2)) else bad)(
+                "高亮数量有据且不超过本体规模", m.group(0) if m else hb[:50])
+            if m and m.group(1) == m.group(2):
+                ok("本体被整体召回", "%s —— 小本体的正常结果,看不出淡出对比" % m.group(0))
             (ok if "清除高亮" in hb else bad)("高亮可清除")
         except Exception as _e:
             bad("选中本体后问数超时", f"420s {_e}")

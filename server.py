@@ -46,14 +46,19 @@ except Exception:
     _stub.register = lambda name, factory: _stub._REGISTRY.__setitem__(name, factory)
     _stub.available = lambda: sorted(_stub._REGISTRY)
     def _get_runtime(name=None):
-        name = name or os.environ.get("CLAW_DRIVER") or ""
-        f = _stub._REGISTRY.get(name) or (list(_stub._REGISTRY.values())[0]
-                                          if _stub._REGISTRY else None)
-        if f is None:
+        asked = name or os.environ.get("CLAW_DRIVER") or ""
+        if asked:
+            f = _stub._REGISTRY.get(asked)
+            if f is None:                            # 点名了却没注册:如实报错,
+                raise RuntimeError(                  # 不能悄悄换成另一个驱动顶替
+                    "运行时 %r 未注册;当前可用:%s。未配置上游引擎时仅本仓自带驱动可用。"
+                    % (asked, _stub.available() or "(无)"))
+            return f()
+        if not _stub._REGISTRY:
             raise RuntimeError("无可用运行时:未配置上游引擎(DATAMIND_ENGINE_DIR),"
                                "也未配置 OpenAI 兼容端点(DATAMIND_LLM_BASE/_KEY/_MODEL)。"
                                "构建可改用纯数据驱动路径(quick_build)。")
-        return f()
+        return list(_stub._REGISTRY.values())[0]()
     _stub.get_runtime = _get_runtime
     class _AR:                                       # driver 基类:垫片下也要能被继承
         def supports(self, _cap): return False
@@ -64,8 +69,10 @@ except Exception:
 try:                                                 # DR-029:注册 OpenAI 兼容驱动
     import openai_runtime                            # 未配置端点则不注册,不制造"看似可用"
     openai_runtime.register(_ar)
-except Exception:
-    pass
+except ImportError:
+    pass                                             # 模块不在:正常形态,静默
+except Exception as _e:                              # 其余是真故障,吞掉会让人查不出
+    print("[warn] OpenAI 兼容驱动注册失败:%s: %s" % (type(_e).__name__, _e))
 
 app = Flask(__name__, static_folder=None)
 
@@ -235,13 +242,13 @@ def runtime_cached(drv):
         _RT_CACHE[drv] = get_runtime(drv)
     return _RT_CACHE[drv]
 
-def _drv_order(cands=("openai", "hermes", "claude-code")):
+def _drv_order(cands=("openai", "hermes", "claude-code", "openclaw")):
     # LLM 引擎尝试顺序遵循 CLAW_DRIVER:选中的排最前(其余按原序回退),
     # 使 /api/ont/runtime 的引擎切换对所有 LLM 流程真正生效(而非只改显示标签)。
     pref = os.environ.get("CLAW_DRIVER", "hermes")
     if pref in cands:
         return (pref,) + tuple(d for d in cands if d != pref)
-    return tuple(cands)
+    return tuple(cands)   # 未知取值:按原序尝试,不因拼错而全盘停摆
 
 def table_list(db=None):
     con = ro_connect(db or DB)
@@ -518,10 +525,13 @@ def _obj_table(o):
     「自己建的本体拿不来问数」这条主链路曾因此是断的。"""
     t = o.get("table")
     if t: return t
-    ts = o.get("tables") or []
-    return ts[0] if ts else None
+    # 跳过 tables 里的空值/None:取第一个真正有内容的,否则空串会被当成"有表"
+    for x in (o.get("tables") or []):
+        if x: return x
+    return None
 
 
+_SQL_IDENT = r"[A-Za-z_][A-Za-z0-9_]*"   # 标识符白名单(表名/列名),全站消毒共用
 _COLS_CACHE = {}
 
 
@@ -530,17 +540,18 @@ def _table_cols(table):
     那样喂给引擎的上下文是「表 X(): 」一个列都没有,模型只能猜列名,SQL 必然报
     no such column。缺列宁可现查,也不能让模型盲写。"""
     t = (table or "").lower()
-    if not t: return []
+    # 表名来自本体产物,按标识符白名单校验后才拼进 PRAGMA —— 与全站标识符消毒口径一致
+    if not t or not re.fullmatch(_SQL_IDENT, t): return []
     if t in _COLS_CACHE: return _COLS_CACHE[t]
-    cols = []
     try:
         con = ro_connect(DB)
         try:
-            cols = [r[1] for r in con.execute('PRAGMA table_info("%s")' % t.replace('"', ""))]
+            cols = [r[1] for r in con.execute('PRAGMA table_info("%s")' % t)]
         finally:
             con.close()
     except Exception:
-        cols = []
+        # 只缓存成功结果:库临时不可用时若把空列表缓存下来,库恢复后仍会一直返回空
+        return []
     _COLS_CACHE[t] = cols
     return cols
 
@@ -549,7 +560,8 @@ def _obj_cols_text(o, limit=18):
     """对象的列清单文本:优先本体自带 attrs(含中文名),缺失则回落到库里现读的列名。"""
     attrs = o.get("attrs") or []
     if attrs:
-        return ", ".join(f'{a["col"]}({a.get("cn","")})' for a in attrs[:limit] if a.get("col"))
+        # cn 可能是 None:用 or "" 兜住,否则会渲染出字面量 "None" 喂给模型
+        return ", ".join(f'{a["col"]}({a.get("cn") or ""})' for a in attrs[:limit] if a.get("col"))
     return ", ".join(_table_cols(o.get("table"))[:limit])
 
 
@@ -821,7 +833,6 @@ def expand_terms(question):
             seen.add(w); out.append(w)
     return out
 
-_SQL_IDENT = r"[A-Za-z_][A-Za-z0-9_]*"
 _SQL_KW = {"on", "where", "group", "order", "left", "right", "inner", "outer", "cross",
            "join", "select", "limit", "using", "as", "union", "having", "with"}
 def _validate_sql_ontology(sql, ir):
