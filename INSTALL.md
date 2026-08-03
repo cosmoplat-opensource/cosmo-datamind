@@ -36,13 +36,13 @@ pip install -r requirements.txt
 
 全部通过环境变量,无配置文件。完整清单见 [`.env.example`](.env.example)。
 
-### 必填(按需)
+### 必填（按需）
 
 | 变量 | 作用 | 缺省行为 |
 |---|---|---|
 | `DATAMIND_DB` | 只读 SQLite 数据底座路径 | 指向仓库同级的 `demo_metrics.db`;不存在则相关端点标注"数据库不可用" |
 
-### 接入大模型(可选,但深度问数与 LLM 建本体依赖它)
+### 接入大模型（可选,但深度问数与 LLM 建本体依赖它）
 
 | 变量 | 说明 |
 |---|---|
@@ -53,11 +53,11 @@ pip install -r requirements.txt
 | `DATAMIND_LLM_TIMEOUT` | 单轮超时秒数,默认 180 |
 | `DATAMIND_LLM_MAX_TOKENS` | 单次回复上限,默认 16384 |
 
-四项前缀为 `DATAMIND_LLM_` 的变量缺任意一项(除超时与上限外),驱动都不会注册——
+四项前缀为 `DATAMIND_LLM_` 的变量缺任意一项（除超时与上限外）,驱动都不会注册——
 系统据实返回"无可用运行时",而不是接受配置后在调用时才失败。
 
 > **推理型模型需放宽超时与额度。** 这类模型的思维链占用同一份 token 预算,
-> 也会显著拉长响应时间。默认值(180 秒 / 16384)按 GLM-4.5 实测留有余量;
+> 也会显著拉长响应时间。默认值（180 秒 / 16384）按 GLM-4.5 实测留有余量;
 > 若你的模型更慢,相应调大即可。配得过紧的表现是执行记录中 `llm_plan` 一栏
 > 显示"返回 42 字符"随后回退模板——那是被截断,不是模型不会作答。
 
@@ -85,12 +85,20 @@ curl -s http://127.0.0.1:8092/api/overview      # 数据底座与本体规模
 curl -s http://127.0.0.1:8092/api/ont/runtimes  # 已注册的模型运行时
 ```
 
-`runtimes` 为空数组说明未接入模型:本地能力照常,深度问数会退回内置模板。
+重点看 `current_ready`:
+
+```json
+{"current":"openai","current_ready":true,"runtimes":["openai"]}
+```
+
+`current_ready` 为 `false` 时,响应中的 `hint` 会写明缺什么。
+注意 `runtimes` 列出的是**已注册**的运行时——若本机装有 Claude Code 或 Hermes 的命令行,
+即便未接大模型端点,它们也会出现在列表里。判断模型是否接通,以 `current_ready` 为准。
 
 完整回归:
 
 ```bash
-python3 test_all.py        # 系统级,492 条断言,需服务已启动
+python3 test_all.py        # 系统级,495 条断言,需服务已启动
 python3 test_ui.py         # 全页面走查,57 条,需 playwright
 python3 test_ui_ops.py     # 浏览器逐步实操,46 条,含三轮真实问数,耗时约 12 分钟
 ```
@@ -106,13 +114,13 @@ pip install gunicorn
 gunicorn -w 1 -b 127.0.0.1:8092 server:app
 ```
 
-`-w 1` 是必须的:应用含进程内状态(问数缓存、运行时实例、写锁),多 worker 会导致状态不一致。
+`-w 1` 是必须的:应用含进程内状态（问数缓存、运行时实例、写锁）,多 worker 会导致状态不一致。
 若需横向扩展,应在反向代理层做会话保持,或将状态外置——后者尚未实现。
 
 TLS 与身份认证由反向代理承担。**本服务自身不含用户体系**,请勿在无鉴权的情况下暴露到公网,
 详见 [SECURITY.md](SECURITY.md)。
 
-## 上游本体引擎(可选)
+## 上游本体引擎（可选）
 
 一个独立的外部组件,提供多智能体运行时抽象(`engine/agent_runtime.py`)与
 会话式构建技能(`web/skills_seed/`)。**不随本仓发布。**
@@ -129,7 +137,7 @@ export DATAMIND_ENGINE_DIR=/path/to/ontology-engine
 ### 关于 OpenClaw
 
 系统调用的是**本机已安装的 `openclaw` 命令行**,会话文件落在 `~/.openclaw/` 下。
-OpenClaw 连接哪个网关(`wss://…` 与 Token)在 OpenClaw 客户端内配置,
+OpenClaw 连接哪个网关（`wss://…` 与 Token）在 OpenClaw 客户端内配置,
 本服务不直接建立网关连接。因此顺序是:先在 OpenClaw 侧确认网关可用,
 再设置 `DATAMIND_ENGINE_DIR` 与 `CLAW_DRIVER=openclaw`。
 
@@ -162,8 +170,9 @@ git pull && pip install -r requirements.txt
 **`/api/overview` 返回 `warning: 数据库不可用`** — `DATAMIND_DB` 路径不存在。
 这是如实标注而非故障,图谱浏览等不依赖数据库的功能照常可用。
 
-**`runtimes` 为空** — `DATAMIND_LLM_BASE` 与 `DATAMIND_LLM_KEY` 至少缺一项。
-注意端点前缀写到 `/v1` 或 `/v4` 为止。
+**`current_ready` 为 false** — `CLAW_DRIVER` 指定的运行时未注册。
+接 OpenAI 兼容端点时,`DATAMIND_LLM_BASE` 与 `DATAMIND_LLM_KEY` 缺一不可,
+端点前缀写到 `/v1` 或 `/v4` 为止。具体缺什么见响应里的 `hint`。
 
 **页面显示的与刚改的不一致** — 页面每 60 秒自检一次版本,发现服务端文件已更新会提示刷新。
 长时间开着的标签页请手动刷新。

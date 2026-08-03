@@ -11,7 +11,7 @@
 看文档时最容易卡住的三处,先说清楚:
 
 **① 上游本体引擎是什么?**
-一个**可选**的外部组件(由 `DATAMIND_ENGINE_DIR` 指向),提供多智能体运行时与会话式构建技能。
+一个**可选**的外部组件（由 `DATAMIND_ENGINE_DIR` 指向）,提供多智能体运行时与会话式构建技能。
 **它不随本仓发布**。没有它,下面全部步骤照样能跑完——本文就是不接引擎的路径。
 接了它才多出:会话式建本体、对话改本体(apply/undo)、内置构建技能库。
 
@@ -29,8 +29,8 @@ export CLAW_DRIVER=openai       # 关键:告诉系统优先用这个驱动
 
 **③ 有 LLM 广撒网提议吗?**
 有。本体构建走「**LLM 广撒网提议 → 真实数据裁决 → 人工定夺**」:模型可以大胆提议关系,
-但 `verified` 只能由数据裁定(取值重叠 ∧ 父键近唯一 ∧ 列名词根相容),无据一律降 `candidate`。
-不配 LLM 时,构建自动降级为纯数据驱动(只找得到数据能自证的关系,提议环节没有)。
+但 `verified` 只能由数据裁定（取值重叠 ∧ 父键近唯一 ∧ 列名词根相容）,无据一律降 `candidate`。
+不配 LLM 时,构建自动降级为纯数据驱动（只找得到数据能自证的关系,提议环节没有）。
 
 ---
 
@@ -48,7 +48,7 @@ pip install -r requirements.txt
 sqlite3 demo.db < examples/sample_db.sql
 ```
 
-得到 6 张表(3 张维表 + 2 张事实表 + 1 张汇总表)、约 2200 行,覆盖 2025-12 至 2026-05 半年数据。
+得到 6 张表（3 张维表 + 2 张事实表 + 1 张汇总表）、约 2200 行,覆盖 2025-12 至 2026-05 半年数据。
 
 这份示例数据是**刻意设计**的,埋了三个真实数仓里常见的坑:
 
@@ -61,7 +61,7 @@ sqlite3 demo.db < examples/sample_db.sql
 
 ## 3. 配模型并启动
 
-以智谱 GLM 为例(换 DeepSeek / Qwen / OpenAI / vLLM 自建只改前三个变量):
+以智谱 GLM 为例（换 DeepSeek / Qwen / OpenAI / vLLM 自建只改前三个变量）:
 
 ```bash
 export DATAMIND_DB=$PWD/demo.db
@@ -76,15 +76,15 @@ python3 server.py
 
 ```bash
 curl -s http://127.0.0.1:8092/api/ont/runtimes
-# 期望 {"current":"openai","runtimes":["openai"]}
-# 若 runtimes 为空 → BASE/KEY 有一个没配上,不会静默假装可用
+# 期望 "current_ready": true
+# 若为 false,同一份响应里的 hint 会写明缺什么 —— 不会静默假装可用
 ```
 
 > **推理型模型要放宽超时。** glm-4.5、o 系列这类模型在"思考"上就要 60 秒以上。
 > 默认单轮超时 180 秒;若你的模型更慢,`export DATAMIND_LLM_TIMEOUT=300`。
 > 给小了的现象是:执行记录里 `llm_plan` 一栏显示「返回 42 字符」然后回退模板——
 > 那是超时截断,不是模型不会答。
-> 同理 `DATAMIND_LLM_MAX_TOKENS`(默认 16384):思考占用计入该额度,给小了正文会被挤没。
+> 同理 `DATAMIND_LLM_MAX_TOKENS`（默认 16384）:思考占用计入该额度,给小了正文会被挤没。
 
 ## 4. 建一张属于你自己数据的本体
 
@@ -140,7 +140,7 @@ dim_product → fact_production_output   candidate
 
 > 最近几个月毛利率的变化趋势
 
-实测结果(GLM-4.5,约 1~2 分钟):
+实测结果（GLM-4.5,约 1~2 分钟）:
 
 | 月份 | 毛利率 % |
 |---|---|
@@ -155,7 +155,7 @@ dim_product → fact_production_output   candidate
 
 4 月起断崖下滑——正是第 2 步埋进数据里的那个现象。
 
-**执行记录里有时会出现这样一行**(取决于模型这次生成了什么 SQL,不是每次都有):
+**执行记录里有时会出现这样一行**（取决于模型这次生成了什么 SQL,不是每次都有）:
 
 ```
 ✗ ontology_gate  [3] 口径拦截:JOIN 键 dim_product.prod_line_id=dim_production_line.line_id 不在已验证关系上
@@ -169,7 +169,7 @@ dim_product → fact_production_output   candidate
 问数阶段就不许模型凭空用上。被降为 `candidate` 的关系同理——门禁只认 `verified` 与 `asserted`。
 
 这条拦截**能否出现取决于模型选了哪条 JOIN 路径**,同一个问题多问几次未必每次都触发:
-换用两端同名的键(如两表都叫 `prod_id`)时门禁会放行——列名本身即口径,不属臆造。
+换用两端同名的键（如两表都叫 `prod_id`）时门禁会放行——列名本身即口径,不属臆造。
 门禁拦的不是"得到答案",而是**没有本体依据的那条路**。
 
 ## 6. 看清楚「本体是怎么被用的」
@@ -186,7 +186,7 @@ dim_product → fact_production_output   candidate
 点 **「在图谱中高亮这一块」** → 跳到本体图谱页,本次用到的对象着色、其余淡出,
 顶部写明「本次问数锚定到该本体的 N/M 个对象」。这回答的是「**用到的是本体的哪一块**」。
 
-下图是在内置示例本体(108 个对象)上的效果,对比更明显——本次问数只用到其中 14 个:
+下图是在内置示例本体（108 个对象）上的效果,对比更明显——本次问数只用到其中 14 个:
 
 ![图谱高亮](docs/img/05-graph-highlight.png)
 
@@ -198,7 +198,7 @@ dim_product → fact_production_output   candidate
 
 | 现象 | 原因 | 处理 |
 |---|---|---|
-| `runtimes` 返回空 | `DATAMIND_LLM_BASE` 或 `_KEY` 没配上 | 检查两者;端点写到 `/v4`、`/v1` 为止 |
+| `current_ready` 为 false | `DATAMIND_LLM_BASE` 或 `_KEY` 没配上 | 看响应里的 `hint`;端点写到 `/v4`、`/v1` 为止 |
 | 配了 Key 但走模板兜底 | 漏了 `CLAW_DRIVER=openai` | 补上 |
 | `llm_plan` 显示「返回 42 字符」 | 推理型模型超时被截断 | 调大 `DATAMIND_LLM_TIMEOUT` |
 | SQL 报 `no such column` | 问数用的是内置示例本体,不是你的库 | 在「数据源 → 本体图谱」里选中自己的本体 |
@@ -212,14 +212,14 @@ dim_product → fact_production_output   candidate
 | 能力 | 不配 LLM | 配了 LLM |
 |---|---|---|
 | 浏览本体 / 指标 / 数据质量 / 术语 / 动作中心 | ✅ | ✅ |
-| SQL 工作台(只读)/ SPARQL / 标准导出 | ✅ | ✅ |
-| 建本体 | ✅ 纯数据驱动(无提议环节) | ✅ LLM 广撒网提议 + 数据裁决 |
-| 本体体检(CQ / 漂移 / 健康度 / 兼容 / 模块化) | ✅ 全部确定性计算 | ✅ 同左 |
-| 深度问数 | ⚠️ 仅内置示例库(模板是为它写的) | ✅ 任意库 |
+| SQL 工作台（只读）/ SPARQL / 标准导出 | ✅ | ✅ |
+| 建本体 | ✅ 纯数据驱动（无提议环节） | ✅ LLM 广撒网提议 + 数据裁决 |
+| 本体体检（CQ / 漂移 / 健康度 / 兼容 / 模块化） | ✅ 全部确定性计算 | ✅ 同左 |
+| 深度问数 | ⚠️ 仅内置示例库（模板是为它写的） | ✅ 任意库 |
 
-## 接上游引擎(可选)
+## 接上游引擎（可选）
 
-若你另有兼容的引擎目录(提供 `engine/agent_runtime.py` 与 `web/skills_seed/`):
+若你另有兼容的引擎目录（提供 `engine/agent_runtime.py` 与 `web/skills_seed/`）:
 
 ```bash
 export DATAMIND_ENGINE_DIR=/path/to/ontology-engine
@@ -229,10 +229,10 @@ export DATAMIND_ENGINE_DIR=/path/to/ontology-engine
 以及 `hermes` / `claude-code` / `openclaw` 等运行时。
 
 **关于 OpenClaw**:系统调用的是**本机已安装的 `openclaw` 命令行**
-(会话落在 `~/.openclaw/`)。OpenClaw 自己连哪个网关(`wss://...` + Token)
+（会话落在 `~/.openclaw/`）。OpenClaw 自己连哪个网关(`wss://...` + Token)
 是在 OpenClaw 客户端里配的,本系统不直接连网关——它只负责调起本机 CLI。
 所以顺序是:先在 OpenClaw 里把网关配通 → 再设 `DATAMIND_ENGINE_DIR` 与 `CLAW_DRIVER=openclaw`。
 
 ---
 
-下一步:`README.md` 有完整能力清单,`specs/` 下是逐条决策记录(为什么这样设计、代价是什么)。
+下一步:`README.md` 有完整能力清单,`specs/` 下是逐条决策记录（为什么这样设计、代价是什么）。
