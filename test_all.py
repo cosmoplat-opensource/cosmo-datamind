@@ -1210,6 +1210,24 @@ _shim_src = open("server.py", encoding="utf-8").read()
 chk("QS1 无引擎垫片可承载 driver 注册", "_stub.register = lambda name, factory" in _shim_src)
 chk("QS2 OpenAI 驱动注册不依赖上游引擎在场",
     _shim_src.index("import openai_runtime") > _shim_src.index('sys.modules["agent_runtime"] = _stub'))
+# 改签名漏改调用点:_anchor_ir 曾返回 2 元组,加了「缺失提示」后变 3 元组,
+# 口径门禁那处未同步,表现为问数流中途 500(套件当时未覆盖到那条路径)
+import ast as _ast
+_tree = _ast.parse(open("server.py", encoding="utf-8").read())
+_unpack = []
+for _n in _ast.walk(_tree):
+    if isinstance(_n, _ast.Assign) and isinstance(_n.value, _ast.Call) \
+       and getattr(_n.value.func, "id", "") == "_anchor_ir":
+        _t = _n.targets[0]
+        _unpack.append(len(_t.elts) if isinstance(_t, _ast.Tuple) else 1)
+chk("QS7 _anchor_ir 所有调用点解包数一致", _unpack and len(set(_unpack)) == 1, str(_unpack))
+_tr_bad = {}
+_srvmod.build_context("毛利率", trace=_tr_bad, graph_keys=["no_such_graph"])
+chk("QS8 图谱不存在时如实提示而非静默回落", "不存在" in (_tr_bad.get("fallback") or ""))
+_tr_dup = {}
+_srvmod.build_context("毛利率", trace=_tr_dup, graph_keys=["demo", "demo", "../etc/passwd"])
+chk("QS9 重复键去重且非法键被拦", _tr_dup["ontology"]["keys"] == ["demo"])
+
 chk("QS4 openclaw 在驱动尝试顺序里(否则切了引擎没反应)",
     "openclaw" in _srvmod._drv_order())
 chk("QS5 表名按标识符白名单校验后才拼进 PRAGMA",

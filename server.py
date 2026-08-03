@@ -579,11 +579,20 @@ def _anchor_ir(graph_keys=None):
 
     此前问数无论选哪个图谱都锚定 demo,选中的图谱只被当表名过滤器用——
     「选了本体却没按这套本体作答」是 DR-033 要修的核心问题。"""
-    keys = [k for k in (graph_keys or []) if k] or ["demo"]
+    # 去重并保序:重复键会让合并路径重复扫同一套本体,规模统计也会翻倍
+    seen_k, keys = set(), []
+    for k in (graph_keys or []):
+        if not k or k in seen_k: continue
+        if _bad_gkey(k):                     # 路径穿越/非法键:不进锚定,不静默当作有效
+            continue
+        seen_k.add(k); keys.append(k)
+    keys = keys or ["demo"]
     if len(keys) == 1:
         import copy as _cp
-        _ir = load_ir_edited(keys[0]) or load_ir(keys[0]) or {}
-        return _normalize_tables(_cp.deepcopy(_ir)), keys
+        _ir = load_ir_edited(keys[0]) or load_ir(keys[0])
+        if not _ir:                          # 图谱不存在:如实回落示例本体并标注,不静默顶替
+            return (load_ir_edited("demo") or {}), ["demo"], "图谱 %s 不存在或为空,已回落示例本体" % keys[0]
+        return _normalize_tables(_cp.deepcopy(_ir)), keys, ""
     objs, links, seen, sl = [], [], set(), set()
     for k in keys:                                   # 多选:归一到示例形状后合并,按主键/端点对去重
         ir = load_ir_edited(k) or load_ir(k) or {}
@@ -600,7 +609,7 @@ def _anchor_ir(graph_keys=None):
             pair = (r.get(sk), r.get(tk))
             if not all(pair) or pair in sl: continue
             sl.add(pair); r = dict(r); r["source"], r["target"] = pair; links.append(r)
-    return {"objects": objs, "links": links}, keys
+    return {"objects": objs, "links": links}, keys, ""
 
 
 def _trace_objs(trace, objs, reason, hits=None):
@@ -627,7 +636,9 @@ def build_context(question, focus_tables=None, trace=None, graph_keys=None):
     graph_keys:用户选中的本体图谱 → 作为锚定本体源(DR-033)。
     focus_tables:用户显式点选的表 → 直接限定(点了就用这几张,不再打分)。
     trace 传入 dict 时,同步记录**这次召回锚定到了本体的哪些对象与关系、凭什么命中**(DR-032)。"""
-    ir, akeys = _anchor_ir(graph_keys)
+    ir, akeys, _miss = _anchor_ir(graph_keys)
+    if trace is not None and _miss:
+        trace["fallback"] = _miss
     if trace is not None:
         _rl = _rels(ir)[0]
         trace["ontology"] = {"keys": akeys,
@@ -1462,7 +1473,15 @@ def ont_forged_delete():
 def ont_runtimes():
     try:
         from agent_runtime import available
-        return jsonify({"runtimes": available(), "current": os.environ.get("CLAW_DRIVER", "hermes")})
+        av = available()
+        cur = os.environ.get("CLAW_DRIVER", "hermes")
+        # current 只是回显 CLAW_DRIVER,不代表它真的注册了。配错时(如把 CLAW_DRIVER 设成
+        # openai 却漏配端点)界面会显示「当前:openai」而实际不工作 —— 必须如实标注。
+        return jsonify({"runtimes": av, "current": cur, "current_ready": cur in av,
+                        "hint": ("" if cur in av else
+                                 "CLAW_DRIVER=%s 未注册;当前可用:%s。"
+                                 "接 OpenAI 兼容端点需同时配 DATAMIND_LLM_BASE 与 DATAMIND_LLM_KEY。"
+                                 % (cur, "、".join(av) or "无"))})
     except Exception as e: return jsonify({"error": str(e)}), 500
 
 @app.get("/api/ont/skill/<name>")
@@ -2595,7 +2614,7 @@ def chat_stream():
         if focus_tables:
             yield push("scope_source", True, f"数据源限定 · {len(focus_tables)} 张表")
         yield push("load_ontology", True, "加载 示例 本体上下文")
-        ir_gate, _gate_keys = _anchor_ir([g for g in (body.get("graphs") or []) if g])
+        ir_gate, _gate_keys, _ = _anchor_ir([g for g in (body.get("graphs") or []) if g])
         q_eff, co = _carryover(question, history, ir_gate)      # B5 多轮指代:上文本体对象延续
         if co:
             yield push("coreference", True, f"多轮指代 · 延续上文对象:{co}")
