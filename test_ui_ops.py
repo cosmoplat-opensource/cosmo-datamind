@@ -245,6 +245,16 @@ async def main():
                 t3 = await pg.inner_text("#p_chat .dq-card:last-of-type")
                 (ok if "缓存·秒回" not in t3 else bad)(
                     f"点示例「{egq[:12]}」是真跑非缓存", t3.split("\n")[2] if len(t3.split("\n")) > 2 else "")
+                # 手动输入同一问题也必须真跑:秒回的旧答案与历史对话里的记录无法区分
+                n3 = await pg.evaluate("document.querySelectorAll('#p_chat .dq-card').length")
+                await pg.fill(box, egq)
+                await pg.click("#p_chat button:has-text('发送'), #p_chat button:has-text('提问')")
+                await pg.wait_for_function(
+                    f"document.querySelectorAll('#p_chat .dq-card').length>{n3}"
+                    "&&!document.getElementById('chat_btn').disabled", timeout=420000)
+                await pg.wait_for_timeout(300)
+                t4 = await pg.inner_text("#p_chat .dq-card:last-of-type")
+                (ok if "缓存·秒回" not in t4 else bad)("重复提问同样真跑,不给缓存答案")
                 (ok if "本体锚定" in t3 else bad)("示例问数同样给出本体锚定")
                 # 「新对话 + 点示例」应当自成一条流程,并落进历史对话
                 conv1 = await pg.evaluate("dqAllConv().length")
