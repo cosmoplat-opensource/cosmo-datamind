@@ -94,7 +94,10 @@ async def main():
             "#eg_keys input",
             "els=>els.filter(i=>/KEY/i.test(i.id||i.name||'')).some(i=>i.value.length>8&&!i.value.includes('*'))")
         (ok if not leaked else bad)("Key 输入框无明文(空或掩码)")
-        (ok if "1d420c06" not in ktxt else bad)("页面文本不含真实 Key 片段")
+        # 用当前配置的 Key 前缀比对,不把真实 Key 片段写进仓库:
+        # 断言本身若带着真 Key 的头几位,开源出去就是一次泄漏
+        _kpre = (os.environ.get("DATAMIND_LLM_KEY") or "")[:8]
+        (ok if not _kpre or _kpre not in ktxt else bad)("页面文本不含真实 Key 片段")
 
         # ══ 步骤 5:本体图谱页 —— 切图谱、看画布 ══
         print("\n【步骤5】本体图谱:切换图谱源并渲染")

@@ -119,9 +119,15 @@ def cross_check(question, sql, ir):
                 "reason": "问句提到的部分对象未出现在 SQL 中: "
                           + "、".join(o["cn"] for o in missed),
                 "advice": "可能遗漏了某个维度,答案需标注覆盖范围"}
+    # 写明比对基数与对象名:通道 A 只能锚到本体里有的词,问句里那些没进本体的说法
+    # (「停机时长」之于「停机记录」)本就不参与比对。只说「覆盖了全部业务对象」,
+    # 容易被读成「问句问的都答了」—— 点出比对了哪几个,读的人才知道这句话的边界。
     return {"verdict": "aligned", "declared": a, "actual": b,
             "overlap": cov, "missed": [],
-            "reason": "SQL 覆盖了问句提到的全部业务对象", "advice": ""}
+            "reason": "SQL 覆盖了问句锚定到的 %d 个业务对象(%s)"
+                      % (len(ka), "、".join(o["cn"] for o in a["objects"][:4])
+                         + ("…" if len(a["objects"]) > 4 else "")),
+            "advice": ""}
 
 
 def step_of(res):

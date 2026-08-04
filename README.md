@@ -74,7 +74,7 @@ python3 server.py                  # 前台运行 → http://127.0.0.1:8092
 
 ```bash
 curl http://127.0.0.1:8092/api/overview      # KPI 概览(无库时含 warning 字段)
-python3 test_all.py                          # 系统级回归(518 断言;需服务已启动)
+python3 test_all.py                          # 系统级回归(525 断言;需服务已启动)
 ```
 
 ### 5. 跑通 demo(五分钟看完主链路)
@@ -267,7 +267,7 @@ GLM-5.2 与 OpenAI 的完整配置、用自然语言建一张带中文名的本�
 
 ```bash
 python3 server.py &            # 先起服务
-python3 test_all.py            # 系统级回归(518 断言)
+python3 test_all.py            # 系统级回归(525 断言)
 python3 test_ui.py             # 全 UI 走查:26 页渲染 + 子 UI 交互(57 断言;需 playwright)
 python3 test_ui_ops.py         # UI 逐步实操(46 断言):切引擎/建本体/对话改本体/审计/问数/选本体锚定 全动线
 ```
