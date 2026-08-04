@@ -341,7 +341,7 @@ a{color:var(--acc)}
    <div class="muted" style="position:absolute;bottom:10px;left:14px;font-size:11px;pointer-events:none">点击节点/连线查看详情 · 滚轮缩放 · 拖拽平移</div></div></div>
 
  <div class="page" id="p_review"><h2>本体评审 <span class="muted">人机协同人审:通过 / 否决 / 改动词 / 删除,每条记录评审人与意见 · 人只产生 asserted · 全程可撤销 · v0726a</span></h2>
-  <div class="card"><div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">图谱 <select id="rv_sel" style="width:280px" onchange="rvLoad()"></select>
+  <div class="card"><div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">图谱 <select id="rv_sel" style="min-width:280px;max-width:440px" onchange="rvLoad()"></select>
    评审人 <input id="rv_who" placeholder="姓名或工号(必填)" style="width:150px" onchange="rvSaveWho()" title="记录到每条评审操作与元素上">
    <span id="rv_kpis"></span><span style="flex:1"></span>
    <button class="ghost" onclick="rvUndo()">撤销上一步</button><button class="ghost" onclick="rvLoad()">刷新</button></div></div>
@@ -1535,6 +1535,14 @@ let DQ_DS={graphs:[],tables:[],allTables:true}, DQ_SKILL='demo-deep-qa', DQ_GRAP
 function dqCloseModal(id){$('#'+id).style.display='none';}
 // 弹窗:Esc 关闭 + 点遮罩关闭(可访问性)
 addEventListener('keydown',e=>{if(e.key==='Escape')document.querySelectorAll('.dq-modal').forEach(m=>{if(m.style.display!=='none')m.style.display='none';});});
+// 表格单元格统一 max-width:260px + 省略号(见 th,td 规则),超长内容被吃掉且无从查看
+// —— 数据质量页的"分层对账"结论就这样被截在半句话上。悬停时按需补 title:
+// 只量当前这一格,不给每个格子预塞属性,动态渲染出来的表也一并覆盖。
+addEventListener('mouseover',e=>{
+  const c=e.target&&e.target.closest&&e.target.closest('td,th');
+  if(!c||c.title)return;
+  if(c.scrollWidth-c.clientWidth>1)c.title=(c.textContent||'').trim();
+},true);
 addEventListener('click',e=>{if(e.target.classList&&e.target.classList.contains('dq-modal'))e.target.style.display='none';});
 // 点击外部关闭构建历史弹窗
 addEventListener('click',e=>{const p=$('#bc_hist_pop');if(p&&p.style.display!=='none'&&!p.contains(e.target)&&!(e.target.textContent||'').includes('历史对话'))p.style.display='none';},true);
