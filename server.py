@@ -7,7 +7,7 @@ Cosmo DataMind · 数据智脑 — 自有品牌的数据治理+本体+深度问�
 启动:python3 server.py  → http://127.0.0.1:8092
 """
 import json, os, re, sqlite3, subprocess, threading, time, uuid, sys, glob, importlib
-import urllib.request
+import urllib.request, urllib.error
 from flask import Flask, jsonify, request, send_from_directory, send_file
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -2897,6 +2897,25 @@ def diagnose_stream():
 
 # ── 引擎设置(DR-017):运行时/模型/API Key 实时切换;Key 只写不回读(掩码),文件 0600 ──
 ENGINE_CFG_F = os.path.join(WORK, "engine_config.json")
+# OpenAI 兼容端点:本仓自带驱动的全部配置项。此前仅可经环境变量注入,界面上无处可填 ——
+# 而这恰是「不接上游引擎也能用」的唯一通路,配不了等于这条路只对读过源码的人开放。
+LLM_ENV = {"base": "DATAMIND_LLM_BASE", "key": "DATAMIND_LLM_KEY", "model": "DATAMIND_LLM_MODEL",
+           "timeout": "DATAMIND_LLM_TIMEOUT", "max_tokens": "DATAMIND_LLM_MAX_TOKENS"}
+# 启动时就存在的 LLM 环境变量:这些由部署方注入,界面一律不覆盖。
+# 必须在进程启动、尚未应用本地配置之前快照 —— 之后 _apply_engine_cfg 会把配置写进
+# os.environ,那时再判断就分不清「运维注入」与「界面保存」了。
+_ENV_LOCKED_AT_BOOT = {v for v in ("DATAMIND_LLM_BASE", "DATAMIND_LLM_KEY", "DATAMIND_LLM_MODEL",
+                                   "DATAMIND_LLM_TIMEOUT", "DATAMIND_LLM_MAX_TOKENS")
+                       if os.environ.get(v)}
+
+LLM_PRESETS = [   # 常见服务商的端点前缀,供界面一键填入;模型名随各家版本变动,故只给端点
+    {"id": "zhipu", "name": "智谱 GLM", "base": "https://open.bigmodel.cn/api/coding/paas/v4"},
+    {"id": "deepseek", "name": "DeepSeek", "base": "https://api.deepseek.com/v1"},
+    {"id": "moonshot", "name": "Moonshot Kimi", "base": "https://api.moonshot.cn/v1"},
+    {"id": "dashscope", "name": "阿里百炼", "base": "https://dashscope.aliyuncs.com/compatible-mode/v1"},
+    {"id": "openai", "name": "OpenAI", "base": "https://api.openai.com/v1"},
+    {"id": "local", "name": "本地自建(vLLM / Ollama)", "base": "http://127.0.0.1:8000/v1"},
+]
 ENGINE_KEY_VARS = ["OPENAI_API_KEY", "ANTHROPIC_API_KEY", "ZHIPU_API_KEY",
                    "DEEPSEEK_API_KEY", "MOONSHOT_API_KEY", "DASHSCOPE_API_KEY"]
 ENGINE_MODEL_OPTS = {
@@ -2927,6 +2946,19 @@ def _apply_engine_cfg(cfg):
         v = cfg.get(k)
         if v: os.environ[var] = v
         elif k != "driver" and v == "": os.environ.pop(var, None)
+    # OpenAI 兼容端点:同样遵循「环境变量优先」——运维注入的 env 不被本地配置覆盖
+    _llm = cfg.get("llm") or {}
+    for fld, var in LLM_ENV.items():
+        v = str(_llm.get(fld) or "").strip()
+        if os.environ.get(var) and fld != "key":   # key 允许配置文件补位(env 未注入时)
+            continue
+        if v: os.environ[var] = v
+        elif not os.environ.get(var): os.environ.pop(var, None)
+    try:                                            # 端点变了要重新注册,否则改完仍用旧实例
+        import agent_runtime as _arx, openai_runtime as _orx
+        _orx.register(_arx)
+    except Exception:
+        pass
     for var, val in (cfg.get("keys") or {}).items():
         if var not in ENGINE_KEY_VARS: continue
         # 环境变量优先:部署时由运维注入的 env 不被本地配置文件覆盖
@@ -2936,6 +2968,14 @@ def _apply_engine_cfg(cfg):
     _RT_CACHE.clear()
 
 _apply_engine_cfg(_load_engine_cfg())        # 启动即应用持久化配置(覆盖 start.sh 缺省)
+
+def _mask_in_text(text, secret):
+    """把可能出现在报错详情里的密钥替换掉 —— 上游错误体常把请求头原样回显。"""
+    t = str(text or "")
+    if secret and len(secret) >= 8:
+        t = t.replace(secret, _mask_key(secret))
+    return t
+
 
 def _mask_key(v):
     return "" if not v else ("*" * 6 + v[-4:] if len(v) > 8 else "*" * len(v))
@@ -2958,7 +2998,22 @@ def engine_config_get():
         "hermes_provider": os.environ.get("HERMES_PROVIDER", ""),
         "model_options": ENGINE_MODEL_OPTS, "hermes_providers": ENGINE_HERMES_PROVIDERS,
         "task_models": {t: (cfg.get("task_models") or {}).get(t, "") for t in ENGINE_TASKS},
-        "keys": {v: _mask_key(keys.get(v) or os.environ.get(v, "")) for v in ENGINE_KEY_VARS}})
+        "keys": {v: _mask_key(keys.get(v) or os.environ.get(v, "")) for v in ENGINE_KEY_VARS},
+        "llm": {
+            "base": os.environ.get(LLM_ENV["base"], ""),
+            "key": _mask_key(os.environ.get(LLM_ENV["key"], "")),
+            "key_set": bool(os.environ.get(LLM_ENV["key"])),
+            "model": os.environ.get(LLM_ENV["model"], ""),
+            "timeout": os.environ.get(LLM_ENV["timeout"], ""),
+            "max_tokens": os.environ.get(LLM_ENV["max_tokens"], ""),
+            "ready": "openai" in available(),
+            # env 注入的项不可经界面覆盖,前端据此置灰并说明原因。
+            # 判据只看「启动时该 env 是否存在」——与配置文件里存了什么无关:
+            # 原先拿两者比对,值恰好相同就漏判为未锁定。
+            "env_locked": [f for f, v in LLM_ENV.items()
+                           if f != "key" and v in _ENV_LOCKED_AT_BOOT],
+        },
+        "llm_presets": LLM_PRESETS})
 
 @app.post("/api/engine/config")
 def engine_config_set():
@@ -2979,6 +3034,26 @@ def engine_config_set():
             v = str(v or "").strip()[:80]
             if v: tm[t] = v
             else: tm.pop(t, None)
+    if isinstance(body.get("llm"), dict):                # OpenAI 兼容端点
+        lm = cfg.setdefault("llm", {})
+        for fld in LLM_ENV:
+            if fld not in body["llm"]: continue
+            v = str(body["llm"][fld] or "").strip()
+            if fld in ("timeout", "max_tokens") and v:
+                if not v.isdigit() or int(v) <= 0:
+                    return jsonify({"error": f"{fld} 需为正整数"}), 400
+            if fld == "base" and v and not v.startswith(("http://", "https://")):
+                return jsonify({"error": "端点地址须以 http:// 或 https:// 开头"}), 400
+            if v: lm[fld] = v[:400]
+            else:
+                lm.pop(fld, None); os.environ.pop(LLM_ENV[fld], None)
+    # 端点配好却仍指向未注册的运行时,是最常见的「配了没反应」:自动切过去,并告知已切
+    _switched = ""
+    if isinstance(body.get("llm"), dict) and "driver" not in body:
+        _cur = cfg.get("driver") or os.environ.get("CLAW_DRIVER", "")
+        _lm = cfg.get("llm") or {}
+        if _lm.get("base") and _lm.get("key") and _cur != "openai":
+            cfg["driver"] = "openai"; _switched = _cur or "(未设置)"
     if isinstance(body.get("keys"), dict):
         ks = cfg.setdefault("keys", {})
         for var, val in body["keys"].items():
@@ -2989,7 +3064,77 @@ def engine_config_set():
                 ks.pop(var, None); os.environ.pop(var, None)   # 清除须同步弹出进程 env
     _save_engine_cfg(cfg)
     _apply_engine_cfg(cfg)
-    return engine_config_get()
+    resp = engine_config_get()
+    if _switched:
+        d = resp.get_json(); d["switched_from"] = _switched
+        return jsonify(d)
+    return resp
+
+@app.post("/api/engine/llm/test")
+def engine_llm_test():
+    """用**给定的**(可未保存)端点配置跑一次最小请求,回真实延迟与真实报错。
+
+    参考通行做法:配置面板里「测试连接」应当测的是你正在填的那份配置,
+    而不是已保存的那份 —— 否则先存后测,存错了还得回滚。
+    Key 留空时沿用已保存的,便于只改模型名时复测。"""
+    b = request.json or {}
+    base = str(b.get("base") or os.environ.get(LLM_ENV["base"], "")).strip().rstrip("/")
+    key = str(b.get("key") or "").strip() or os.environ.get(LLM_ENV["key"], "")
+    model = str(b.get("model") or os.environ.get(LLM_ENV["model"], "")).strip()
+    if not base or not key:
+        return jsonify({"ok": False, "error": "端点地址与 API Key 缺一不可"}), 400
+    if not base.startswith(("http://", "https://")):
+        return jsonify({"ok": False, "error": "端点地址须以 http:// 或 https:// 开头"}), 400
+    if not model:
+        return jsonify({"ok": False, "error": "未指定模型名"}), 400
+    payload = json.dumps({"model": model, "temperature": 0, "max_tokens": 64,
+                          "messages": [{"role": "user", "content": "只回复两个字:在线"}]}).encode()
+    req = urllib.request.Request(base + "/chat/completions", data=payload,
+                                 headers={"Authorization": "Bearer " + key,
+                                          "Content-Type": "application/json"})
+    t0 = time.time()
+    try:
+        with urllib.request.urlopen(req, timeout=int(b.get("timeout") or 60)) as r:
+            d = json.loads(r.read())
+    except urllib.error.HTTPError as e:
+        body_txt = ""
+        try: body_txt = e.read().decode("utf-8", "ignore")[:200]
+        except Exception: pass
+        return jsonify({"ok": False, "ms": int((time.time() - t0) * 1000),
+                        "error": f"HTTP {e.code}", "detail": _mask_in_text(body_txt, key)})
+    except Exception as e:
+        return jsonify({"ok": False, "ms": int((time.time() - t0) * 1000),
+                        "error": f"{type(e).__name__}: {_mask_in_text(str(e)[:200], key)}"})
+    msg = ((d.get("choices") or [{}])[0].get("message") or {})
+    txt = (msg.get("content") or "").strip()
+    think = len(msg.get("reasoning_content") or "")
+    usage = d.get("usage") or {}
+    return jsonify({"ok": bool(txt), "ms": int((time.time() - t0) * 1000),
+                    "reply": txt[:80], "reasoning_chars": think,
+                    "usage": {k: usage.get(k) for k in ("prompt_tokens", "completion_tokens")},
+                    # 正文为空多半是推理占满了额度,直接把处置写出来,免得配置者从头猜
+                    "warn": ("正文为空而思维链 %d 字:该模型把额度用在了推理上,"
+                             "请调大 max_tokens" % think) if (not txt and think) else ""})
+
+
+@app.post("/api/engine/llm/models")
+def engine_llm_models():
+    """拉取端点的可用模型列表(GET {base}/models)。部分服务不提供该接口,失败即如实返回。"""
+    b = request.json or {}
+    base = str(b.get("base") or os.environ.get(LLM_ENV["base"], "")).strip().rstrip("/")
+    key = str(b.get("key") or "").strip() or os.environ.get(LLM_ENV["key"], "")
+    if not base or not key:
+        return jsonify({"models": [], "error": "端点地址与 API Key 缺一不可"}), 400
+    req = urllib.request.Request(base + "/models", headers={"Authorization": "Bearer " + key})
+    try:
+        with urllib.request.urlopen(req, timeout=20) as r:
+            d = json.loads(r.read())
+    except Exception as e:
+        return jsonify({"models": [], "error": "%s: %s" % (type(e).__name__,
+                                                           _mask_in_text(str(e)[:160], key))})
+    ids = sorted({str(m.get("id")) for m in (d.get("data") or []) if m.get("id")})
+    return jsonify({"models": ids[:200], "count": len(ids)})
+
 
 @app.post("/api/engine/test")
 def engine_test():
