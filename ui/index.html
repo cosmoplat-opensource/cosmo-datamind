@@ -345,7 +345,8 @@ a{color:var(--acc)}
   <div class="card scroll" id="rv_fb" style="margin-top:12px;display:none"></div>
   <div class="card scroll" id="rv_body" style="margin-top:12px"><div class="muted">加载中…</div></div></div>
  <div class="page" id="p_enginecfg"><h2>引擎设置 <span class="muted">实时切换 Agent 运行时 / 模型 / API Key · 改动即刻生效,无需重启 · Key 只写不回显(掩码),配置文件 0600</span></h2>
-  <div class="card" id="eg_runtimes"><div class="muted">加载中…</div></div>
+  <div class="card" id="eg_llm"><div class="muted">加载中…</div></div>
+  <div class="card" id="eg_runtimes" style="margin-top:12px"><div class="muted">加载中…</div></div>
   <div class="card" id="eg_tasks" style="margin-top:12px"><div class="muted">加载中…</div></div>
   <div class="card" id="eg_keys" style="margin-top:12px"><div class="muted">加载中…</div></div></div>
 
@@ -1177,11 +1178,20 @@ async function acmSubmit(){if(!ACM)return;
 let EG=null;
 async function egLoad(){EG=await J('/api/engine/config').catch(e=>({error:''+e}));
  if(EG.error){$('#eg_runtimes').innerHTML=`<div class="muted">${esc(EG.error)}</div>`;return;}
+ egRenderLLM();
  const LBL={'claude-code':['Claude Code','订阅版 claude CLI(Anthropic 订阅计费)'],
             'hermes':['Hermes','多 provider:openai-codex 订阅 / GLM · DeepSeek · Moonshot 等 API Key'],
             'openclaw':['OpenClaw','订阅版 Codex/ChatGPT(OpenAI 订阅计费)'],
             'openai':['OpenAI 兼容端点','任意 /chat/completions 服务(GLM · DeepSeek · Qwen · vLLM 自建);经 DATAMIND_LLM_BASE/_KEY/_MODEL 配置']};
- $('#eg_runtimes').innerHTML=`<h3 style="margin:0 0 8px">Agent 运行时 <span class="muted" style="font-weight:400;font-size:12px">当前:${esc(EG.driver)} · 切换与模型修改即刻生效</span></h3>`
+ const _others=EG.runtimes.filter(r=>r!=='openai');
+ const _curOk=EG.runtimes.includes(EG.driver);
+ $('#eg_runtimes').innerHTML=`<h3 style="margin:0 0 8px">Agent 运行时
+   <span class="muted" style="font-weight:400;font-size:12px">当前:${esc(EG.driver)}${_curOk?'':' — 未注册'} · 切换与模型修改即刻生效</span></h3>`
+  +(_curOk?'':`<div class="muted" style="font-size:12px;color:#b45309;margin-bottom:8px">
+     当前运行时 <code>${esc(EG.driver)}</code> 未注册,所有大模型环节会退回内置模板。
+     ${EG.llm&&EG.llm.ready?'上方端点已就绪,把当前运行时切到「OpenAI 兼容端点」即可。':'请先在上方配置 OpenAI 兼容端点,或设置 DATAMIND_ENGINE_DIR 接入上游本体引擎。'}</div>`)
+  +(_others.length?'':`<div class="muted" style="font-size:12px">未接入上游本体引擎,故仅 OpenAI 兼容端点一种运行时(见上方卡片)。
+     接入引擎后此处会出现 Claude Code / Hermes / OpenClaw 等可选项。</div>`)
   +'<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:10px">'
   +EG.runtimes.map(r=>{const[nm,sub]=LBL[r]||[r,''];const cur=r===EG.driver;const m=EG.models[r]||'';const opts=(EG.model_options[r]||[]);
    return `<div class="step" style="border:1px solid ${cur?'#4A5FF3':'#E5E9F2'};border-radius:8px;padding:10px 12px;${cur?'background:#F5F7FF':''}">
@@ -1219,6 +1229,86 @@ async function egPost(body){const d=await J('/api/engine/config',{method:'POST',
  if(d.error){toast(d.error,false);return null;}EG=d;return d;}
 async function egSwitch(r){if(await egPost({driver:r})){toast('已切换引擎:'+r+'(即刻生效)',true);egLoad();
  try{const rt=await J('/api/ont/runtimes');if(rt&&rt.current)$('#rt_pill').textContent='引擎 · '+engName(rt.current);}catch(e){}}}
+// ── OpenAI 兼容端点:本仓自带驱动的完整配置(端点/Key/模型/超时/额度)──
+function egRenderLLM(){
+ const L=EG.llm||{}, P=EG.llm_presets||[];
+ const lock=new Set(L.env_locked||[]);
+ const lk=f=>lock.has(f)?' disabled title="该项由环境变量注入,界面不可覆盖"':'';
+ $('#eg_llm').innerHTML=`<h3 style="margin:0 0 4px">OpenAI 兼容端点
+   <span class="tag ${L.ready?'ok':'warn'}">${L.ready?'已就绪':'未配置'}</span></h3>
+  <div class="muted" style="font-size:12px;margin-bottom:10px">
+   配好这一组即可使用深度问数与大模型建本体,<b>无需上游本体引擎</b>。
+   GLM、DeepSeek、Qwen、vLLM 自建等任何提供 <code>/chat/completions</code> 的服务都适用。</div>
+  <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:10px">
+   <span class="muted" style="font-size:12px">快速填入端点:</span>
+   ${P.map(p=>`<button class="ghost" style="font-size:12px" onclick="egPreset(${jsAttr(p.base)})">${esc(p.name)}</button>`).join('')}</div>
+  <table style="width:100%;max-width:780px">
+   <tr><td style="width:96px">端点地址</td><td><input id="eg_l_base" value="${esc(L.base||'')}"${lk('base')}
+     placeholder="https://…/v1  写到 /v1 或 /v4 为止,不含 /chat/completions" style="width:100%"></td></tr>
+   <tr><td>API Key</td><td><input id="eg_l_key" type="password"
+     placeholder="${L.key_set?'已保存 '+esc(L.key||'')+',留空则不改动':'粘贴 Key'}" style="width:100%"></td></tr>
+   <tr><td>模型</td><td><input list="eg_l_ml" id="eg_l_model" value="${esc(L.model||'')}"${lk('model')}
+     placeholder="如 glm-4.5" style="width:240px">
+     <datalist id="eg_l_ml"></datalist>
+     <button class="ghost" onclick="egFetchModels(this)">拉取可用模型</button>
+     <span class="muted" id="eg_l_ms" style="font-size:12px;margin-left:6px"></span></td></tr>
+   <tr><td>单轮超时</td><td><input id="eg_l_timeout" value="${esc(L.timeout||'')}"${lk('timeout')}
+     placeholder="180" style="width:80px"> 秒
+     <span class="muted" style="font-size:11.5px;margin-left:8px">推理型模型的思维链耗时计入其中,配紧了会被截断</span></td></tr>
+   <tr><td>回复上限</td><td><input id="eg_l_max" value="${esc(L.max_tokens||'')}"${lk('max_tokens')}
+     placeholder="16384" style="width:80px"> tokens
+     <span class="muted" style="font-size:11.5px;margin-left:8px">思维链占用同一份额度,配紧了正文会被挤没</span></td></tr>
+  </table>
+  <div style="display:flex;gap:8px;margin-top:10px">
+   <button class="ghost" onclick="egLLMTest(this)">测试连接</button>
+   <button onclick="egLLMSave(this)">保存并启用</button>
+   ${L.ready?'<button class="ghost" style="color:#b91c1c" onclick="egLLMClear(this)">清除配置</button>':''}</div>
+  <div id="eg_l_out" class="muted" style="font-size:12.5px;margin-top:8px"></div>
+  ${lock.size?`<div class="muted" style="font-size:11.5px;margin-top:6px">灰显项由环境变量注入(${esc([...lock].join('、'))}),以部署配置为准,界面不覆盖。</div>`:''}`;}
+function egPreset(base){const el=$('#eg_l_base'); if(el&&!el.disabled){el.value=base; el.focus();}}
+function egLLMBody(){return {base:($('#eg_l_base')||{}).value||'', key:($('#eg_l_key')||{}).value||'',
+  model:($('#eg_l_model')||{}).value||'', timeout:($('#eg_l_timeout')||{}).value||'',
+  max_tokens:($('#eg_l_max')||{}).value||''};}
+async function egFetchModels(btn){
+ const o=$('#eg_l_ms'); btn.disabled=true; o.textContent='拉取中…';
+ const b=egLLMBody();
+ const r=await J('/api/engine/llm/models',{method:'POST',headers:{'Content-Type':'application/json'},
+   body:JSON.stringify({base:b.base,key:b.key})}).catch(e=>({error:''+e}));
+ btn.disabled=false;
+ if(r.error||!r.models||!r.models.length){o.textContent='拉取失败:'+(r.error||'该端点未提供模型列表接口')+' —— 可直接手填模型名';return;}
+ $('#eg_l_ml').innerHTML=r.models.map(m=>`<option value="${esc(m)}">`).join('');
+ o.textContent=`已拉到 ${r.count} 个模型,点输入框可选`;}
+async function egLLMTest(btn){
+ const o=$('#eg_l_out'); btn.disabled=true; o.innerHTML='<span class="muted">测试中…(推理型模型可能需要数十秒)</span>';
+ const r=await J('/api/engine/llm/test',{method:'POST',headers:{'Content-Type':'application/json'},
+   body:JSON.stringify(egLLMBody())}).catch(e=>({ok:false,error:''+e}));
+ btn.disabled=false;
+ if(!r.ok){o.innerHTML=`<span style="color:#b91c1c">✗ 失败:${esc(r.error||'')}</span>`
+   +(r.detail?`<div class="muted" style="margin-top:3px">${esc(r.detail)}</div>`:'');return;}
+ const u=r.usage||{};
+ o.innerHTML=`<span style="color:#16a34a">✓ 连通</span> · 延迟 ${r.ms} ms · 模型回复「${esc(r.reply)}」`
+  +(r.reasoning_chars?` · 思维链 ${r.reasoning_chars} 字`:'')
+  +(u.completion_tokens?` · 本次用 ${u.completion_tokens} tokens`:'')
+  +(r.warn?`<div style="color:#b45309;margin-top:3px">${esc(r.warn)}</div>`:'')
+  +((EG.llm&&EG.llm.ready)?'':'<div style="color:#b45309;margin-top:3px">测试通过,但尚未保存 —— 点「保存并启用」后才会生效。</div>');}
+async function egLLMSave(btn){
+ btn.disabled=true;
+ const r=await J('/api/engine/config',{method:'POST',headers:{'Content-Type':'application/json'},
+   body:JSON.stringify({llm:egLLMBody()})}).catch(e=>({error:''+e}));
+ btn.disabled=false;
+ if(r.error){toast(r.error,false);return;}
+ EG=r; egLoad();
+ const okk=!!(r.llm&&r.llm.ready);
+ toast(okk?(r.switched_from?`已保存并启用 · 当前运行时已从 ${r.switched_from} 切到 OpenAI 兼容端点`:'已保存并启用')
+          :'已保存,但端点或 Key 不全,尚未启用', okk);}
+async function egLLMClear(btn){
+ btn.disabled=true;
+ const r=await J('/api/engine/config',{method:'POST',headers:{'Content-Type':'application/json'},
+   body:JSON.stringify({llm:{base:'',key:'',model:'',timeout:'',max_tokens:''}})}).catch(e=>({error:''+e}));
+ btn.disabled=false;
+ if(r.error){toast(r.error,false);return;}
+ EG=r; egLoad(); toast('已清除端点配置',true);}
+
 async function egSaveModel(r){const m=($('#eg_m_'+r)&&$('#eg_m_'+r).value.trim())||'';
  const body=r==='claude-code'?{claude_model:m}:r==='hermes'?{hermes_model:m,hermes_provider:($('#eg_hp')&&$('#eg_hp').value)||''}:{};
  if(await egPost(body)){toast('模型配置已保存(即刻生效)',true);egLoad();}}
@@ -1330,10 +1420,16 @@ function showNodeDetail(n){if(!n)return;const rel=GRAPH_CUR.edges.filter(x=>x.s=
   const mine=(ts||[]).filter(t=>(t.object_table&&tbl.includes(t.object_table.toLowerCase()))||t.object===n.name);
   if(mine.length)el.innerHTML='<h3 style="margin-top:10px" class="gd-h">可执行动作('+mine.length+')</h3>'
    +mine.map(t=>`<div class="step">${esc(t.cn)} <span class="tag ${t.risk==='high'?'warn':'ok'}" style="margin-left:4px">${t.risk==='high'?'须审批':'直执行'}</span> <a href="#" onclick="event.preventDefault();acOpen(${jsAttr(t.id)})">发起 ↗</a></div>`).join('');}).catch(()=>{});}
-async function rules(){const d=await J('/api/ont/rules?graph=demo');const c=d.counts;
+async function rules(){const d=await J('/api/ont/rules?graph=demo');
+ // 后端故障时 J() 返回 {error},缺 counts/methodology —— 与全站守卫一致,先判后用
+ if(d.error||!d.counts){$('#rules_body').innerHTML=`<div class="muted">${esc(d.error||'规则数据不可用')}</div>`;return;}
+ const c=d.counts;
  const rt=await J('/api/ont/runtimes');
- $('#rt_sel').innerHTML=rt.runtimes.map(r=>`<option value="${esc(r)}" ${r===rt.current?'selected':''}>${esc(engName(r))}</option>`).join('');
- $('#rt_info').textContent='当前: '+engName(rt.current);
+ const rts=(rt&&Array.isArray(rt.runtimes))?rt.runtimes:[];
+ $('#rt_sel').innerHTML=rts.length?rts.map(r=>`<option value="${esc(r)}" ${r===rt.current?'selected':''}>${esc(engName(r))}</option>`).join('')
+   :'<option value="">(无可用运行时)</option>';
+ $('#rt_info').textContent=rts.length?('当前: '+engName(rt.current)+((rt.current_ready===false)?' — 未注册':''))
+   :'未接入大模型:请在「引擎设置」配置 OpenAI 兼容端点';
  $('#rules_body').innerHTML=`<div class="kpis"><div class="kpi"><div class="n">${c.objects}</div><div class="l">对象</div></div>
   <div class="kpi"><div class="n">${c.links}</div><div class="l">关系(${c.verified}已核验)</div></div>
   <div class="kpi"><div class="n">${c.confirmed_objs}</div><div class="l">已确认对象</div></div>

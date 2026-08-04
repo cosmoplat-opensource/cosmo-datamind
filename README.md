@@ -74,7 +74,7 @@ python3 server.py                  # 前台运行 → http://127.0.0.1:8092
 
 ```bash
 curl http://127.0.0.1:8092/api/overview      # KPI 概览(无库时含 warning 字段)
-python3 test_all.py                          # 系统级回归(496 断言;需服务已启动)
+python3 test_all.py                          # 系统级回归(514 断言;需服务已启动)
 ```
 
 ### 5. 跑通 demo(五分钟看完主链路)
@@ -149,27 +149,95 @@ export DATAMIND_ENGINE_DIR=/path/to/ontology-engine
 **未配置时不会报错**——相关端点如实返回"无可用运行时",功能自动降级并在界面标注,
 不会静默失败,也不会用兜底数据冒充真实结果。
 
-## 配置
+## 引擎设置
 
-全部通过环境变量,见 [`.env.example`](.env.example)。要点:
+深度问数与大模型建本体都要接一个大模型。**接任意 OpenAI 兼容端点即可,无需上游本体引擎**——
+GLM、DeepSeek、Qwen、Moonshot、以及 vLLM / Ollama 自建服务都适用。
 
-- `DATAMIND_DB` — 只读数据底座路径
-- `DATAMIND_ENGINE_DIR` — 上游本体引擎目录(可选)
-- `DATAMIND_HOST` / `DATAMIND_PORT` — 默认 `127.0.0.1:8092`
-- `OPENAI_API_KEY` 等模型密钥 — **环境变量优先于配置文件**,界面只回显掩码
-- **接任意 OpenAI 兼容 LLM**(GLM / DeepSeek / Qwen / vLLM 自建…),无需上游引擎:
+两种配法:界面配（推荐,可先测后存）、环境变量配（适合容器与 CI）。
+
+### 在界面里配（推荐）
+
+打开「运维管理 → 引擎设置」,第一张卡片就是 **OpenAI 兼容端点**。以智谱 GLM 为例:
+
+![引擎设置初始态](docs/img/06-engine-empty.png)
+
+**第一步,填端点地址。** 点「智谱 GLM」按钮一键填入,或手工输入。
+
+> 端点地址写到 `/v1` 或 `/v4` 为止,**不要带 `/chat/completions`**——这是最常见的填错。
+> 系统会在保存时校验协议头,`ftp://` 之类会被直接拒绝。
+
+**第二步,粘贴 API Key。** 输入框为密码类型;保存后只回显掩码（如 `******BQsD`）,
+不提供明文回读。已保存过 Key 时,该框留空表示不改动,便于只改模型名。
+
+**第三步,选模型。** 点「拉取可用模型」会向端点的 `/models` 接口取一次真实列表,
+填进候选供选择。部分服务不提供该接口,直接手填模型名即可——界面会如实告诉你拉取失败。
+
+**第四步,先测后存。** 点「测试连接」用**你正在填的这份配置**发一次最小请求:
+
+![测试连接](docs/img/07-engine-test.png)
+
+返回真实延迟、模型的实际回复、思维链字数与本次消耗。这几个数字都有用途:
+
+| 返回项 | 怎么用 |
+|---|---|
+| 延迟 | 判断单轮超时该配多大。问数的规划提示词比测试长得多,实际耗时通常是它的十倍以上 |
+| 思维链字数 | 非零说明是推理型模型,回复上限要留足 |
+| 正文为空但思维链很长 | 额度被推理占满,界面会直接提示调大回复上限 |
+
+失败时回传上游的原始报错（如 `HTTP 401 令牌已过期或验证不正确`）,
+其中若含 Key 会被掩码后再显示。
+
+**第五步,保存并启用。**
+
+![已就绪](docs/img/08-engine-ready.png)
+
+保存后状态转为「已就绪」,并**自动把当前运行时切到该端点**——
+配好了端点却忘记切换,是「配了没反应」的头号原因,故由系统代劳并在提示中说明。
+
+### 两个进阶参数
+
+| 参数 | 默认 | 何时要改 |
+|---|---|---|
+| 单轮超时 | 180 秒 | 推理型模型的思维链耗时计入其中。配紧了的现象是执行记录中 `llm_plan` 显示「返回几十字符」随后回退模板——那是被截断,不是模型不会作答 |
+| 回复上限 | 16384 tokens | 思维链占用同一份额度。配紧了正文会被挤没,表现同上 |
+
+### 用环境变量配
+
+容器化部署或不希望密钥落盘时用这种方式:
 
 ```bash
 export DATAMIND_LLM_BASE=https://open.bigmodel.cn/api/coding/paas/v4
 export DATAMIND_LLM_KEY=<your-key>
 export DATAMIND_LLM_MODEL=glm-4.5
-export CLAW_DRIVER=openai
+export CLAW_DRIVER=openai            # 必须,否则不会优先使用该端点
+export DATAMIND_LLM_TIMEOUT=180      # 可选
+export DATAMIND_LLM_MAX_TOKENS=16384 # 可选
 python3 server.py
 ```
 
-未配置时该驱动不注册,系统按既有逻辑降级到模板兜底,不会误判为「LLM 可用」。
-注意推理型模型(如 glm-5)可能把 token 预算耗在思考上而返回空内容,本驱动会
-如实判为失败而非回传空串。
+**环境变量优先于界面配置**:由运维注入的项在界面上会置灰并注明原因,避免部署配置被误改。
+
+自检:
+
+```bash
+curl -s http://127.0.0.1:8092/api/ont/runtimes
+# 关注 "current_ready": true;为 false 时同一份响应里的 hint 会写明缺什么
+```
+
+端点或 Key 缺任一项,该驱动都不会注册——系统据实报「无可用运行时」并退回内置模板,
+不会接受配置却在调用时才失败。
+
+### 其他配置项
+
+| 变量 | 作用 |
+|---|---|
+| `DATAMIND_DB` | 只读数据底座路径 |
+| `DATAMIND_ENGINE_DIR` | 上游本体引擎目录（可选,见下节） |
+| `DATAMIND_HOST` / `DATAMIND_PORT` | 默认 `127.0.0.1:8092` |
+| `OPENAI_API_KEY` 等 | 各家密钥,供接入上游本体引擎后的 CLI 型运行时继承 |
+
+完整清单见 [`.env.example`](.env.example),部署细节见 [INSTALL.md](INSTALL.md)。
 
 ## 安全
 
@@ -192,7 +260,7 @@ python3 server.py
 
 ```bash
 python3 server.py &            # 先起服务
-python3 test_all.py            # 系统级回归(496 断言)
+python3 test_all.py            # 系统级回归(514 断言)
 python3 test_ui.py             # 全 UI 走查:26 页渲染 + 子 UI 交互(57 断言;需 playwright)
 python3 test_ui_ops.py         # UI 逐步实操(46 断言):切引擎/建本体/对话改本体/审计/问数/选本体锚定 全动线
 ```

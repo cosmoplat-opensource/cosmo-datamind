@@ -1220,6 +1220,53 @@ for _n in _ast.walk(_tree):
        and getattr(_n.value.func, "id", "") == "_anchor_ir":
         _t = _n.targets[0]
         _unpack.append(len(_t.elts) if isinstance(_t, _ast.Tuple) else 1)
+# ═══════════ EG. 引擎设置:OpenAI 兼容端点(界面可配)═══════════
+print("=== EG. 引擎设置 ===")
+_ec = g("/api/engine/config").json()
+chk("EG1 配置带出端点现状与预设", "llm" in _ec and len(_ec.get("llm_presets") or []) >= 5)
+chk("EG2 Key 只回显掩码", not _ec["llm"].get("key") or "*" in _ec["llm"]["key"])
+chk("EG3 预设均为合法 https 端点",
+    all(str(p.get("base", "")).startswith(("http://", "https://")) for p in _ec["llm_presets"]))
+_bad = po("/api/engine/config", json={"llm": {"base": "ftp://x"}})
+chk("EG4 非法端点协议被拒", _bad.status_code == 400)
+_bad2 = po("/api/engine/config", json={"llm": {"timeout": "-5"}})
+chk("EG5 非法超时被拒", _bad2.status_code == 400)
+_t1 = po("/api/engine/llm/test", json={"base": "", "key": "", "model": ""})
+_has_env = bool(_os.environ.get("DATAMIND_LLM_BASE") and _os.environ.get("DATAMIND_LLM_KEY"))
+chk("EG6 缺参时:有已保存配置则回落沿用,否则如实报错",
+    (_t1.status_code == 200 or _t1.json().get("ok") is not None) if _has_env
+    else (_t1.status_code == 400 and not _t1.json().get("ok")),
+    "env 已配" if _has_env else "env 未配")
+_t2 = po("/api/engine/llm/test", json={"base": "http://127.0.0.1:1/v1", "key": "k", "model": "m", "timeout": 3})
+chk("EG7 端点不可达时回真实错误而非静默成功", not _t2.json().get("ok") and _t2.json().get("error"))
+_m1 = po("/api/engine/llm/models", json={"base": "", "key": ""})
+chk("EG8 模型列表:缺参时回落已保存配置或如实报错",
+    _m1.status_code in (200, 400) and ("models" in _m1.json() or "error" in _m1.json()))
+chk("EG9 前端有端点配置卡与测试/保存/清除三个动作",
+    'id="eg_llm"' in _ui and "egLLMTest" in _ui and "egLLMSave" in _ui and "egLLMClear" in _ui)
+chk("EG10 前端能拉取模型列表并填进候选", "egFetchModels" in _ui and 'id="eg_l_ml"' in _ui)
+chk("EG11 env 注入项在界面置灰(以部署配置为准)", "env_locked" in _ui and "环境变量注入" in _ui)
+chk("EG12 端点配好后自动切换运行时(免去『配了没反应』)",
+    "switched_from" in open("server.py", encoding="utf-8").read() and "switched_from" in _ui)
+chk("EG13 报错详情里的 Key 被掩码", "_mask_in_text" in open("server.py", encoding="utf-8").read())
+# env_locked 只能按「启动时该环境变量是否存在」判定:原先拿配置文件与 env 比对,
+# 值恰好相同就漏判为未锁定,界面会让人误以为可改
+_srv_src = open("server.py", encoding="utf-8").read()
+# 构成规则页曾直接 rt.runtimes.map:后端故障返回 {error} 时缺该字段,整页崩
+chk("EG17 构成规则页对 runtimes 缺失有守卫",
+    "Array.isArray(rt.runtimes)" in _ui and "无可用运行时" in _ui)
+chk("EG18 构成规则页对 rules 数据缺失有守卫", "d.error||!d.counts" in _ui)
+
+chk("EG14 env_locked 按启动时快照判定,不与配置值比对",
+    "_ENV_LOCKED_AT_BOOT" in _srv_src and "v in _ENV_LOCKED_AT_BOOT" in _srv_src)
+chk("EG15 快照在应用本地配置之前建立(否则分不清运维注入与界面保存)",
+    _srv_src.index("_ENV_LOCKED_AT_BOOT = {") < _srv_src.index("_apply_engine_cfg(_load_engine_cfg())"))
+_env_now = [f for f, v in [("base", "DATAMIND_LLM_BASE"), ("model", "DATAMIND_LLM_MODEL")]
+            if _os.environ.get(v)]
+chk("EG16 env 注入项确实出现在 env_locked 中",
+    all(f in (_ec["llm"].get("env_locked") or []) for f in _env_now) if _env_now else True,
+    "本次注入: %s" % (_env_now or "无"))
+
 # pyflakes 零告警是既有质量门(ARCHITECTURE §5),回归里把它钉住:
 # 重复字典键这类告警是真 bug —— translate_cn 曾因此把「min」译成分钟而非最低
 try:
