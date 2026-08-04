@@ -74,7 +74,7 @@ python3 server.py                  # 前台运行 → http://127.0.0.1:8092
 
 ```bash
 curl http://127.0.0.1:8092/api/overview      # KPI 概览(无库时含 warning 字段)
-python3 test_all.py                          # 系统级回归(514 断言;需服务已启动)
+python3 test_all.py                          # 系统级回归(516 断言;需服务已启动)
 ```
 
 ### 5. 跑通 demo(五分钟看完主链路)
@@ -171,7 +171,8 @@ GLM、DeepSeek、Qwen、Moonshot、以及 vLLM / Ollama 自建服务都适用。
 不提供明文回读。已保存过 Key 时,该框留空表示不改动,便于只改模型名。
 
 **第三步,选模型。** 点「拉取可用模型」会向端点的 `/models` 接口取一次真实列表,
-填进候选供选择。部分服务不提供该接口,直接手填模型名即可——界面会如实告诉你拉取失败。
+拉到后左侧出现下拉框,选中即回填到右侧输入框。部分服务不提供该接口,
+直接在输入框手填模型名即可——界面会如实告诉你拉取失败。
 
 **第四步,先测后存。** 点「测试连接」用**你正在填的这份配置**发一次最小请求:
 
@@ -260,7 +261,7 @@ curl -s http://127.0.0.1:8092/api/ont/runtimes
 
 ```bash
 python3 server.py &            # 先起服务
-python3 test_all.py            # 系统级回归(514 断言)
+python3 test_all.py            # 系统级回归(516 断言)
 python3 test_ui.py             # 全 UI 走查:26 页渲染 + 子 UI 交互(57 断言;需 playwright)
 python3 test_ui_ops.py         # UI 逐步实操(46 断言):切引擎/建本体/对话改本体/审计/问数/选本体锚定 全动线
 ```

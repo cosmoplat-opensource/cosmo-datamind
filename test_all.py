@@ -1232,7 +1232,8 @@ chk("EG4 非法端点协议被拒", _bad.status_code == 400)
 _bad2 = po("/api/engine/config", json={"llm": {"timeout": "-5"}})
 chk("EG5 非法超时被拒", _bad2.status_code == 400)
 _t1 = po("/api/engine/llm/test", json={"base": "", "key": "", "model": ""})
-_has_env = bool(_os.environ.get("DATAMIND_LLM_BASE") and _os.environ.get("DATAMIND_LLM_KEY"))
+# 判据取服务端实际是否已有可用端点(测试进程的 env 与服务进程未必一致)
+_has_env = bool(_ec.get("llm", {}).get("base") and _ec.get("llm", {}).get("key_set"))
 chk("EG6 缺参时:有已保存配置则回落沿用,否则如实报错",
     (_t1.status_code == 200 or _t1.json().get("ok") is not None) if _has_env
     else (_t1.status_code == 400 and not _t1.json().get("ok")),
@@ -1244,7 +1245,7 @@ chk("EG8 模型列表:缺参时回落已保存配置或如实报错",
     _m1.status_code in (200, 400) and ("models" in _m1.json() or "error" in _m1.json()))
 chk("EG9 前端有端点配置卡与测试/保存/清除三个动作",
     'id="eg_llm"' in _ui and "egLLMTest" in _ui and "egLLMSave" in _ui and "egLLMClear" in _ui)
-chk("EG10 前端能拉取模型列表并填进候选", "egFetchModels" in _ui and 'id="eg_l_ml"' in _ui)
+chk("EG10 前端能拉取模型列表并填进可见下拉", "egFetchModels" in _ui and 'id="eg_l_pick"' in _ui)
 chk("EG11 env 注入项在界面置灰(以部署配置为准)", "env_locked" in _ui and "环境变量注入" in _ui)
 chk("EG12 端点配好后自动切换运行时(免去『配了没反应』)",
     "switched_from" in open("server.py", encoding="utf-8").read() and "switched_from" in _ui)
@@ -1252,6 +1253,12 @@ chk("EG13 报错详情里的 Key 被掩码", "_mask_in_text" in open("server.py"
 # env_locked 只能按「启动时该环境变量是否存在」判定:原先拿配置文件与 env 比对,
 # 值恰好相同就漏判为未锁定,界面会让人误以为可改
 _srv_src = open("server.py", encoding="utf-8").read()
+# datalist 是浏览器原生下拉:DOM 上不可见、无下拉箭头,输入框有值时还按值过滤 ——
+# 用户看到「已拉到 8 个模型」却找不到在哪选。全站一律改用可见的 <select>
+chk("EG19 全站不再使用 datalist(无可见入口,用户找不到候选)", "datalist" not in _ui)
+chk("EG20 模型下拉在拉取成功后才显示,并回填输入框",
+    'id="eg_l_pick"' in _ui and "egPickModel" in _ui and "sel.style.display=''" in _ui)
+
 # 构成规则页曾直接 rt.runtimes.map:后端故障返回 {error} 时缺该字段,整页崩
 chk("EG17 构成规则页对 runtimes 缺失有守卫",
     "Array.isArray(rt.runtimes)" in _ui and "无可用运行时" in _ui)
