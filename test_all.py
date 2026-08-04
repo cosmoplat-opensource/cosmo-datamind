@@ -12,6 +12,25 @@ def chk(name, cond, detail=""):
 def g(path,**kw): return requests.get(B+path,timeout=180,**kw)
 def po(path,**kw): return requests.post(B+path,timeout=200,**kw)
 
+# ── 前置:测试进程与被测服务必须指向同一个数据底座 ─────────────────
+# 部分断言在本进程内直接 import server 求值(build_context、_table_cols 等),
+# 读的是本进程环境变量里的 DATAMIND_DB。若只给服务端设了而没给测试进程设,
+# 这些断言会以「空 detail」的形式失败,现象与真实缺陷难以区分 —— 直接卡在这里报清楚。
+def _preflight():
+    import os as _o
+    try:
+        _srv_db = requests.get(B + "/api/db/check", timeout=10).json()
+    except Exception as e:
+        print("✗ 前置检查:服务未启动或不可达(%s)——先 python3 server.py" % str(e)[:80]); sys.exit(2)
+    if not _srv_db.get("ok"):
+        print("✗ 前置检查:服务端数据底座不可用 —— %s" % _srv_db.get("error", "")); sys.exit(2)
+    _mine = _o.path.basename(_o.environ.get("DATAMIND_DB") or "demo_metrics.db")
+    if _mine != _srv_db.get("db"):
+        print("✗ 前置检查:测试进程的 DATAMIND_DB(%s)与服务端(%s)不一致。\n"
+              "  用同一个库重跑,例如:DATAMIND_DB=$PWD/../%s python3 test_all.py"
+              % (_mine, _srv_db.get("db"), _srv_db.get("db"))); sys.exit(2)
+_preflight()
+
 # ── 回归沙箱图谱(隔离纪律)──────────────────────────────────────────
 # 回归会做写操作(改名/人审/删对象/设别名/存规则),此前直接打在 demo 上,
 # 跑完一轮就把运行态本体改脏——曾把生产环境的业务别名冲掉。
@@ -1294,6 +1313,86 @@ except Exception as _e:
     chk("QS10 pyflakes 探针", False, str(_e)[:80])
 
 chk("QS7 _anchor_ir 所有调用点解包数一致", _unpack and len(set(_unpack)) == 1, str(_unpack))
+
+# QS12:中文召回必须反向匹配(本体词 → 问句),不能依赖对问句分词。
+# 问句按标点/空格切,中文整句常常就是一个词元 —— 正向匹配(问句词 ∈ 对象语料)对中文
+# 几乎必然落空,给对象补的中文业务别名会完全不生效(实测「车间近期产能怎么样」切不出「产能」)。
+_tr_cn = {}
+_ctx_cn = _srvmod.build_context("各车间的停机时长排名", trace=_tr_cn, graph_keys=["demo"])
+_cn_hit = [h for o in _tr_cn["objects"] for h in (o.get("hits") or []) if not str(h).isascii()]
+chk("QS12 中文问句能命中本体中文词(无需分词器)", bool(_cn_hit), str(_cn_hit[:5]))
+# 指标名同为中文,同一条路径
+_tr_m = {}
+_srvmod.build_context("本月计划产量是多少", trace=_tr_m, graph_keys=["demo"])
+chk("QS12b 自然中文问句能召回同名指标(非整句等于指标名)",
+    any(m.get("name") == "计划产量" for m in (_tr_m.get("metrics") or [])),
+    str([m.get("name") for m in (_tr_m.get("metrics") or [])][:5]))
+# 单字不参与:满篇皆是,会把无关表拖进上下文
+_tr_1 = {}
+_srvmod.build_context("的", trace=_tr_1, graph_keys=["demo"])
+# QS15:对象定位的降级顺序必须是「主键 → 中文名 → 表名 → 别名」,且逐条件分轮。
+# 逐对象把三种条件一起试的写法,会让靠前对象的表名压过靠后对象的中文名,
+# 命中谁取决于对象在数组里的顺序 —— 同一句指代在不同本体上结果不同。
+_ir_amb = {"objects": [{"id": "A", "cn": "甲", "table": "乙"},
+                       {"id": "B", "cn": "乙", "table": "t2", "aliases": ["丙"]}]}
+chk("QS15 对象定位按主键→中文名→表名→别名分轮降级",
+    _srvmod._find_obj_any(_ir_amb, "A")["id"] == "A"
+    and _srvmod._find_obj_any(_ir_amb, "乙")["id"] == "B"      # 中文名压过表名
+    and _srvmod._find_obj_any(_ir_amb, "t2")["id"] == "B"
+    and _srvmod._find_obj_any(_ir_amb, "丙")["id"] == "B"
+    and _srvmod._find_obj_any(_ir_amb, "没有这个") is None)
+
+# QS13:执行记录里的本体名必须据实回显。曾把首步写死成「加载 示例 本体上下文」,
+# 选了自建本体也照喊示例,与下一步 anchor_ontology 自相矛盾。
+_srv_src = open(_os.path.join(_repo, "server.py"), encoding="utf-8").read()
+chk("QS13 首步不写死「示例」本体名", '"加载 示例 本体上下文"' not in _srv_src)
+
+# QS14:意图一致的结论要写明比对基数。通道 A 只锚得到本体里有的词,
+# 「覆盖了全部业务对象」若不点明覆盖了几个,会被读成「问句问的都答了」。
+import intent_check as _ic_m
+_ic_ir = {"objects": [{"id": "L", "cn": "生产线", "table": "dim_production_line"},
+                      {"id": "D", "cn": "停机记录", "table": ""}]}
+_ic_r = _ic_m.cross_check("各生产线的停机时长",
+                          "SELECT 1 FROM dim_production_line", _ic_ir)
+chk("QS14 意图一致的结论写明比对了几个对象",
+    _ic_r["verdict"] == "aligned" and "1 个业务对象" in _ic_r["reason"] and "生产线" in _ic_r["reason"],
+    _ic_r.get("reason", "")[:80])
+
+chk("QS12c 单字不作为中文命中词",
+    not [h for o in _tr_1["objects"] for h in (o.get("hits") or []) if h == "的"])
+
+# QS11:离线放行白名单必须与 apply_any 实际本地实现的分支一致。
+# 曾经白名单只列 set_alias,而 apply_any 本地实现了 9 个算子 —— 引擎离线时
+# 改动词/改基数/增删关系被 503 挡回「编辑引擎未就绪」,而它们根本不用引擎。
+# 用 AST 扫出 apply_any 里所有与 kind 比较的字面量,和白名单对账。
+try:
+    import ast as _ast
+    _tree = _ast.parse(open(_os.path.join(_repo, "server.py"), encoding="utf-8").read())
+    _fn = next(n for n in _ast.walk(_tree)
+               if isinstance(n, _ast.FunctionDef) and n.name == "apply_any")
+    _handled = set()
+    for _n in _ast.walk(_fn):
+        # kind == "x"
+        if isinstance(_n, _ast.Compare) and isinstance(_n.left, _ast.Name) and _n.left.id == "kind":
+            for _op, _c in zip(_n.ops, _n.comparators):
+                if isinstance(_op, _ast.Eq) and isinstance(_c, _ast.Constant):
+                    _handled.add(_c.value)
+                # kind in ("a","b",...)
+                elif isinstance(_op, _ast.In) and isinstance(_c, (_ast.Tuple, _ast.List)):
+                    _handled |= {e.value for e in _c.elts if isinstance(e, _ast.Constant)}
+    # 白名单同样从 AST 读,不 import server —— 导入会拉起应用级副作用
+    _white = set()
+    for _n in _tree.body:
+        if isinstance(_n, _ast.Assign) and any(
+                isinstance(_t, _ast.Name) and _t.id in ("REVIEW_OPS", "LOCAL_OPS")
+                for _t in _n.targets) and isinstance(_n.value, (_ast.Tuple, _ast.List)):
+            _white |= {e.value for e in _n.value.elts if isinstance(e, _ast.Constant)}
+    chk("QS11 离线白名单覆盖 apply_any 全部本地算子",
+        _handled and _handled == _white,
+        "实现=%s 白名单=%s 差集=%s" % (sorted(_handled), sorted(_white),
+                                       sorted(_handled ^ _white)))
+except Exception as _e:
+    chk("QS11 白名单/实现一致性探针", False, str(_e)[:120])
 _tr_bad = {}
 _srvmod.build_context("毛利率", trace=_tr_bad, graph_keys=["no_such_graph"])
 chk("QS8 图谱不存在时如实提示而非静默回落", "不存在" in (_tr_bad.get("fallback") or ""))

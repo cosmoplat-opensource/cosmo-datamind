@@ -678,6 +678,24 @@ def build_context(question, focus_tables=None, trace=None, graph_keys=None):
             elif w in txt: out.append(w)
         return out
     def score(txt): return len(hits_of(txt))
+    def cn_hits(*groups):
+        """反向匹配:拿本体自己的中文词去问句里找。
+
+        中文问句不做分词,按标点/空格切出来常常整句就是一个词元 ——「车间近期产能怎么样」
+        切不出「产能」,所以正向匹配(问句词 ∈ 对象语料)对中文几乎必然落空,中文召回一直
+        只能靠术语词典折成英文。反过来把本体自带的中文词当词典去问句里查,不需要分词器,
+        结果确定,且给对象补的业务别名从此真正生效。
+        ≤1 字的词不参与:单字满篇皆是,会把无关表拉进上下文。"""
+        out = []
+        for g in groups:
+            for t in (g or []):
+                t = str(t or "").strip()
+                if len(t) >= 2 and not t.isascii() and t in question and t not in out:
+                    out.append(t)
+        return out
+    def obj_cn_hits(o):
+        return cn_hits([o.get("cn")], o.get("aliases"),
+                       [a.get("cn") for a in (o.get("attrs") or [])])
     ft = set(t.lower() for t in (focus_tables or []))
     if ft:   # 用户在『数据源』里显式点了表 → 只喂这些表(点了就用这几张,不再打分)
         picked = [o for o in ir.get("objects", []) if (o.get("table") or "").lower() in ft]
@@ -710,6 +728,7 @@ def build_context(question, focus_tables=None, trace=None, graph_keys=None):
         blob = ((o.get("cn") or "") + (o.get("table") or "") + "".join(o.get("aliases") or [])
                 + " ".join((a.get("cn") or "") + (a.get("col") or "") for a in o.get("attrs", [])))
         hs = hits_of(blob)
+        hs += [h for h in obj_cn_hits(o) if h not in hs]     # 中文走反向匹配,见 cn_hits
         if hs and o.get("table"): hmap[o["table"]] = hs[:6]
         tabs.append((len(hs), o))
     tabs.sort(key=lambda x: -x[0])
@@ -747,7 +766,8 @@ def build_context(question, focus_tables=None, trace=None, graph_keys=None):
     jh = _join_hints(ir, [o.get("table") for o in picked], pairs=_pairs)
     if trace is not None: trace["relations"] = _pairs
     if jh: lines.append("表间关系(本体已验证,JOIN 优先用这些键):\n" + "\n".join(jh))
-    hit_m = [m for m in mets if score(m["name"] or "")][:10]
+    # 指标名同为中文,同样要反向匹配:否则「毛利率的变化趋势」召不回名为「毛利率」的指标
+    hit_m = [m for m in mets if score(m["name"] or "") or cn_hits([m["name"]])][:10]
     if trace is not None:
         trace["metrics"] = [{"name": m["name"], "table": m["table"], "col": m["col"]} for m in hit_m]
     if hit_m:
@@ -1249,24 +1269,49 @@ def _edits_path(key):
 def _load_edits(key):
     return json.load(open(_edits_path(key))) if os.path.exists(_edits_path(key)) else {"version": 1, "ops": []}
 REVIEW_OPS = ("confirm_relation", "reject_relation")   # 人机协同人审:通过(→asserted)/否决(→剔除)
-LOCAL_OPS = ("set_alias",)     # DataMind 本地算子:业务别名(引擎白名单未含,不依赖引擎在线)
+# DataMind 本地算子:apply_any 里自己实现、完全不依赖上游引擎的那些。
+# 引擎离线时这些必须照常放行 —— 曾经只列了 set_alias,导致本地已实现的改动词/改基数/
+# 增删关系被 503 挡回「编辑引擎未就绪」,而它们根本不需要引擎。test_all.py 的
+# QS11 用 AST 核对本表与 apply_any 的实际分支一致,防止再次漂移。
+LOCAL_OPS = ("set_alias", "confirm", "remove_object", "verb", "set_card",
+             "remove_relation", "add_relation")
 
 def _rels(ir):
     """关系列表 + 端点键名:兼容两种 IR 形状(示例 links[source/target] / 构建产物 relations[source_concept/target_concept])"""
     if "links" in ir: return ir["links"], "source", "target"
     return ir.setdefault("relations", []), "source_concept", "target_concept"
 
+def _okey(ir, s):
+    """把对象的任意指代(主键/中文名/表名/别名)规范化为主键;找不到就原样返回。"""
+    o = _find_obj_any(ir, s)
+    return str(o.get("id") or o.get("name")) if o else str(s)
+
 def _find_rel_any(ir, rid):
     m = re.match(r"^(.+?)->(.+)$", (rid or "").replace("rel:", "", 1))
     if not m: return None
     rels, ks, kt = _rels(ir)
+    # 端点先规范化:关系里存的是主键,而对话里给的常是中文名
+    src, dst = _okey(ir, m.group(1)), _okey(ir, m.group(2))
     for l in rels:
-        if str(l.get(ks)) == m.group(1) and str(l.get(kt)) == m.group(2): return l
+        if str(l.get(ks)) == src and str(l.get(kt)) == dst: return l
     return None
 
 def _find_obj_any(ir, oid):
-    for o in ir.get("objects", []):
-        if str(o.get("id") or o.get("name")) == str(oid): return o
+    """按主键定位对象;主键不中时再按中文名、表名、业务别名找。
+
+    对话式改本体时,人和模型都会用中文名指代(如 obj:销售订单),而主键是英文
+    (SalesOrder)—— 只认主键会让「照着助手的提议点确认」直接报「对象不存在」。
+    仅在主键无匹配时才降级匹配,避免中文名重名时抢掉精确命中。"""
+    key = str(oid); low = key.lower()
+    objs = ir.get("objects", [])
+    # 按条件分轮,而不是逐对象把三种条件一起试:后者会让靠前对象的表名
+    # 压过靠后对象的中文名,命中谁取决于对象顺序,不可预期
+    for probe in (lambda o: str(o.get("id") or o.get("name")) == key,
+                  lambda o: str(o.get("cn") or "") == key,
+                  lambda o: str(o.get("table") or "").lower() == low,
+                  lambda o: any(str(a) == key for a in (o.get("aliases") or []))):
+        for o in objs:
+            if probe(o): return o
     return None
 
 def _stamp_review(x, op):
@@ -1308,9 +1353,11 @@ def apply_any(ir, op):
         _stamp_review(o, op)
         return
     if kind == "remove_object":                # 删对象(两种形状),级联删其关系
-        oid = t.replace("obj:", "", 1)
-        o = _find_obj_any(ir, oid)
+        o = _find_obj_any(ir, t.replace("obj:", "", 1))
         if not o: raise ValueError(f"对象不存在: {t}")
+        # 用对象自身的主键做级联,不能用调用方传来的指代 —— 传中文名时二者不同,
+        # 拿中文名去筛关系会一条都匹配不上,删完对象留下悬空关系
+        oid = str(o.get("id") or o.get("name"))
         ir["objects"].remove(o)
         rels, ks, kt = _rels(ir)
         rels[:] = [l for l in rels if str(l.get(ks)) != str(oid) and str(l.get(kt)) != str(oid)]
@@ -1320,7 +1367,7 @@ def apply_any(ir, op):
         if kind == "add_relation":
             m = re.match(r"^(.+?)->(.+)$", t.replace("rel:", "", 1))
             if not m: raise ValueError("add_relation 目标格式: rel:<source>-><target>")
-            src, dst = m.group(1), m.group(2)
+            src, dst = _okey(ir, m.group(1)), _okey(ir, m.group(2))
             ids = {str(o.get("id") or o.get("name")) for o in ir.get("objects", [])}
             if src not in ids or dst not in ids: raise ValueError("源/目标对象不存在")
             if src == dst: raise ValueError("不允许自环关系")
@@ -1423,22 +1470,44 @@ def ont_undo():
 def ont_edits():
     return jsonify(_load_edits(request.args.get("graph", "demo")))
 
-FORGED_DIR = os.path.join(PLATFORM, "data", "forged")
+# 铸造产物落盘位置。历史上写在上游引擎目录下,独立运行(引擎目录不存在或只读)时
+# forge 会以 500 裸栈失败 —— 而独立运行正是本仓的默认形态。改为:装了引擎仍写引擎目录
+# (老产物原地可用),否则写自己的 workdir。读取始终并两处,升级不丢已铸本体。
+_FORGED_ENGINE = os.path.join(PLATFORM, "data", "forged")
+FORGED_DIR = _FORGED_ENGINE if os.path.isdir(PLATFORM) else os.path.join(WORK, "forged")
+
+def _forged_dirs():
+    """读取时要看的目录:当前写入目录 + 引擎目录(去重,只保留真实存在的)"""
+    out = []
+    for d in (FORGED_DIR, _FORGED_ENGINE):
+        if d not in out and os.path.isdir(d): out.append(d)
+    return out
+
+def _forged_path(fid):
+    """按 fid 找已存在的产物;都不存在时返回当前写入目录下的路径(供新建)"""
+    for d in _forged_dirs():
+        p = os.path.join(d, fid + ".json")
+        if os.path.exists(p): return p
+    return os.path.join(FORGED_DIR, fid + ".json")
 @app.get("/api/ont/forged")
 def ont_forged():
-    out = []
-    for p2 in sorted(glob.glob(os.path.join(FORGED_DIR, "*.json"))):
-        try:
-            d = json.load(open(p2)); sc = d.get("scenario") or {}
-            out.append({"id": os.path.basename(p2)[:-5], "name": sc.get("name") or d.get("name"),
-                        "objects": len(d.get("objects", [])), "links": len(d.get("links", []))})
-        except Exception: pass
+    out, seen = [], set()
+    for dirp in _forged_dirs():
+        for p2 in sorted(glob.glob(os.path.join(dirp, "*.json"))):
+            fid = os.path.basename(p2)[:-5]
+            if fid in seen: continue          # 同 id 以先扫到的(当前写入目录)为准
+            seen.add(fid)
+            try:
+                doc = json.load(open(p2)); sc = doc.get("scenario") or {}
+                out.append({"id": fid, "name": sc.get("name") or doc.get("name"),
+                            "objects": len(doc.get("objects", [])), "links": len(doc.get("links", []))})
+            except Exception: pass
     return jsonify({"ontologies": out})
 
 @app.get("/api/ont/forged/<fid>")
 def ont_forged_one(fid):
     if not re.match(r"^[\w\-\u4e00-\u9fff·]+$", fid): return jsonify({"error": "bad id"}), 400
-    p2 = os.path.join(FORGED_DIR, fid + ".json")
+    p2 = _forged_path(fid)
     if not os.path.exists(p2): return jsonify({"error": "不存在"}), 404
     return jsonify(json.load(open(p2)))
 
@@ -1461,10 +1530,12 @@ def ont_save():
 def ont_forged_delete():
     fid = (request.json or {}).get("id", "")
     if not re.match(r"^[\w\-]+$", fid): return jsonify({"error": "bad id"}), 400
-    p2 = os.path.join(FORGED_DIR, fid + ".json")
+    p2 = _forged_path(fid)
     if not os.path.exists(p2): return jsonify({"error": "不存在"}), 404
     os.remove(p2)
-    ttl = os.path.join(FORGED_DIR, fid + ".ttl")         # 同删 forge 写出的 .ttl 伴生文件,避免孤儿
+    # 同删 .ttl 伴生文件,避免孤儿。按 json 的实际所在目录取 —— 产物可能在引擎目录,
+    # 而写入目录是 workdir,拿写入目录去拼会漏删
+    ttl = p2[:-5] + ".ttl"
     if os.path.exists(ttl): os.remove(ttl)
     return jsonify({"ok": True})
 
@@ -1720,7 +1791,14 @@ def health(): return jsonify({"ok": True, "ts": int(time.time()), "graphs": len(
 @app.get("/api/db/check")
 def db_check():
     try:
-        n = sqlite3.connect(DB).execute("SELECT count(*) FROM sqlite_master WHERE type='table'").fetchone()[0]
+        # 必须走 ro_connect:直连 sqlite3.connect 会在库缺失时静默新建空库,
+        # 此后所有只读连接都能打开却查不到表 —— 把「库没了」伪装成「库是空的」,
+        # 恰是健康检查最该报出来的那类故障。连接显式关闭,避免每次探活泄漏一个句柄。
+        con = ro_connect(DB)
+        try:
+            n = con.execute("SELECT count(*) FROM sqlite_master WHERE type='table'").fetchone()[0]
+        finally:
+            con.close()
         return jsonify({"ok": True, "db": os.path.basename(DB), "tables": n})
     except Exception as e: return jsonify({"ok": False, "error": str(e)}), 500
 
@@ -2267,7 +2345,7 @@ def _ir_write_path(key):
     if _bad_gkey(key): return None
     if key.startswith("built_"): return os.path.join(WORK, key + ".json")
     if key.startswith("forged_"):
-        p = os.path.join(FORGED_DIR, key[7:] + ".json"); return p if os.path.exists(p) else None
+        p = _forged_path(key[7:]); return p if os.path.exists(p) else None
     src = IR_SOURCES.get(key)
     if src:
         for p in src["paths"]:
@@ -2612,8 +2690,11 @@ def chat_stream():
             s = stp(step, ok, info); steps.append(s); return sse({"type": "step", **s})
         if focus_tables:
             yield push("scope_source", True, f"数据源限定 · {len(focus_tables)} 张表")
-        yield push("load_ontology", True, "加载 示例 本体上下文")
         ir_gate, _gate_keys, _ = _anchor_ir([g for g in (body.get("graphs") or []) if g])
+        # 本体名要据实回显:此处曾写死「示例」,选了自建本体也照喊示例,
+        # 与下一步 anchor_ontology 打架,读日志的人会以为锚错了本体
+        yield push("load_ontology", True,
+                   "加载本体上下文 · %s" % "、".join(_graph_name(k) for k in _gate_keys))
         q_eff, co = _carryover(question, history, ir_gate)      # B5 多轮指代:上文本体对象延续
         if co:
             yield push("coreference", True, f"多轮指代 · 延续上文对象:{co}")

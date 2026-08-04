@@ -98,10 +98,21 @@ curl -s http://127.0.0.1:8092/api/ont/runtimes  # 已注册的模型运行时
 完整回归:
 
 ```bash
-python3 test_all.py        # 系统级,518 条断言,需服务已启动
+python3 test_all.py        # 系统级,525 条断言,需服务已启动
 python3 test_ui.py         # 全页面走查,57 条,需 playwright
-python3 test_ui_ops.py     # 浏览器逐步实操,46 条,含三轮真实问数,耗时约 12 分钟
+python3 test_ui_ops.py     # 浏览器逐步实操,46~47 条,含三轮真实问数,耗时约 12 分钟
 ```
+
+**测试进程要与服务指向同一个库。** 部分断言在测试进程内直接导入 `server` 求值,
+读的是自己环境里的 `DATAMIND_DB`;只给服务端设而漏了测试进程,这些断言会以难以辨识的
+方式失败。`test_all.py` 启动时会核对两边并在不一致时直接退出并给出正确命令:
+
+```bash
+DATAMIND_DB=$PWD/../demo_metrics.db python3 test_all.py
+```
+
+`test_ui_ops.py` 的条数会在 46~47 之间浮动:其中一条只在「本次问数召回了整张本体」时
+追加(小本体的正常结果),这是数据相关的补充观测,不是漏跑。
 
 安装 playwright:`pip install playwright && playwright install chromium`。
 

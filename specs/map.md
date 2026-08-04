@@ -37,6 +37,7 @@ Cosmo DataMind 是**自有品牌、原创前后端**的「数据治理 × 本体
 - [DR-010 · IOF/BFO 本体工程对齐(注释/接地/注释化 OWL 导出/SHACL 门禁/完备度)](decisions/DR-010-iof-bfo-alignment.md)
 - [DR-011 · 泛化裁决 v2(等值/前缀/复合键/PK 感知 + 三级控制环)](decisions/DR-011-generalized-adjudication.md)
 - [DR-012 · SPARQL 健壮性(线程安全/诚实报错/合法默认示例)](decisions/DR-012-sparql-robustness.md)
+- [DR-034 · 中文召回改反向匹配;算子按中文名定位](decisions/DR-034-chinese-recall-and-op-targeting.md)
 - [DR-033 · 选中的本体图谱成为问数的锚定源(含键名词根闸)](decisions/DR-033-selected-ontology-as-anchor.md)
 - [DR-032 · 深度问数的本体锚定可视化(对话内画出锚定子图与 SQL 实际命中)](decisions/DR-032-qa-anchor-visualization.md)
 - [DR-031 · 向后兼容性检查与本体模块化(下游影响 + 领域/层次拆分)](decisions/DR-031-compat-and-modularization.md)
@@ -148,6 +149,15 @@ Consult @specs/map.md to find relevant context.
   界面版本自检(`/api/uiver`,旧标签页自己提示刷新)。
   任一图谱作锚定源都不再崩(table=null 的概念本体曾打崩 build_context,AO40 穷举全部图谱)。
   套件 492 断言 · UI 走查 57 · UI 实操 47。
+- **DR-034 中文召回改反向匹配**:拿本体自己的中文词(中文名/别名/属性中文名/指标名)
+  去问句里查,不引入分词器 —— 此前问句按标点切词,中文长句整句一个词元,
+  **业务别名从来没在召回里生效过**,中文只能靠术语词典折成英文。
+  算子定位按主键→中文名→表名→别名降级(助手回的 `obj:销售订单` 此前必报「对象不存在」,
+  对话式改本体端到端走不通);离线白名单补齐 `apply_any` 的 9 个本地算子并用 AST 对账;
+  据实回显本体名、铸造产物落 workdir、`/api/db/check` 改走 `ro_connect`
+  (直连会静默新建空库,把「库没了」伪装成「库是空的」);
+  「意图一致」写明比对了几个对象,不被读成「问句问的都答了」。
+  套件 525 断言 · UI 走查 57 · UI 实操 46~47(末条随召回是否覆盖整张本体浮动)。
 - **快速入门可跑通**(QUICKSTART.md):示例库 SQL → quick_build → 选本体 → 问出数,
   全程无上游引擎。过程中修出四处断链:垫片不承载 driver 注册(配了 key 也拿不到运行时)、
   规划超时写死 60s(推理型模型必超)、`tables[]` 未归一(自建本体被判无绑表而回退)、
