@@ -1197,8 +1197,10 @@ async function egLoad(){EG=await J('/api/engine/config').catch(e=>({error:''+e})
    return `<div class="step" style="border:1px solid ${cur?'#4A5FF3':'#E5E9F2'};border-radius:8px;padding:10px 12px;${cur?'background:#F5F7FF':''}">
     <b>${esc(nm)}</b> ${cur?'<span class="tag ok">当前引擎</span>':''}
     <div class="muted" style="font-size:12px;margin:3px 0 8px">${esc(sub)}</div>
-    <div style="margin-bottom:6px">模型 <input list="eg_ml_${esc(r)}" id="eg_m_${esc(r)}" value="${esc(m)}" placeholder="缺省" style="width:210px">
-     <datalist id="eg_ml_${esc(r)}">${opts.map(o=>`<option value="${esc(o)}">`).join('')}</datalist></div>
+    <div style="margin-bottom:6px;display:flex;gap:6px;align-items:center;flex-wrap:wrap">模型
+     ${opts.length?`<select onchange="if(this.value){$('#eg_m_${esc(r)}').value=this.value;}" style="width:132px">
+       <option value="">— 选择 —</option>${opts.map(o=>`<option value="${esc(o)}">${esc(o)}</option>`).join('')}</select>`:''}
+     <input id="eg_m_${esc(r)}" value="${esc(m)}" placeholder="缺省" style="width:150px"></div>
     ${r==='hermes'?`<div style="margin-bottom:6px">Provider <select id="eg_hp" style="width:210px">${EG.hermes_providers.map(p=>`<option value="${esc(p)}" ${p===EG.hermes_provider?'selected':''}>${p||'(hermes 默认)'}</option>`).join('')}</select>
      <div class="muted" style="font-size:11px;margin-top:2px">oauth 类 provider(codex/qwen)需先在终端完成登录;API 类读下方 Key</div></div>`:''}
     <div style="display:flex;gap:6px;margin-top:4px">
@@ -1215,9 +1217,12 @@ async function egLoad(){EG=await J('/api/engine/config').catch(e=>({error:''+e})
   +Object.entries(TN).map(([t,[nm,tip]])=>`<div class="step" style="border:1px solid #E5E9F2;border-radius:8px;padding:10px 12px">
     <b>${esc(nm)}</b>${(EG.task_models||{})[t]?' <span class="tag ok">已覆盖</span>':''}
     <div class="muted" style="font-size:11.5px;margin:3px 0 8px">${esc(tip)}</div>
-    <input list="eg_tm_dl" id="eg_tm_${t}" value="${esc((EG.task_models||{})[t]||'')}" placeholder="(跟随引擎缺省)" style="width:230px">
-    <button class="ghost" onclick="egSaveTask(${jsAttr(t)})">保存</button></div>`).join('')
-  +`</div><datalist id="eg_tm_dl">${allOpts.map(o=>`<option value="${esc(o)}">`).join('')}</datalist>`;
+    <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">
+     ${allOpts.length?`<select onchange="if(this.value){$('#eg_tm_${t}').value=this.value;}" style="width:150px">
+       <option value="">— 选择 —</option>${allOpts.map(o=>`<option value="${esc(o)}">${esc(o)}</option>`).join('')}</select>`:''}
+     <input id="eg_tm_${t}" value="${esc((EG.task_models||{})[t]||'')}" placeholder="(跟随引擎缺省)" style="width:180px">
+     <button class="ghost" onclick="egSaveTask(${jsAttr(t)})">保存</button></div></div>`).join('')
+  +`</div>`;
  const KL={OPENAI_API_KEY:'OpenAI',ANTHROPIC_API_KEY:'Anthropic',ZHIPU_API_KEY:'智谱 GLM',DEEPSEEK_API_KEY:'DeepSeek',MOONSHOT_API_KEY:'Moonshot/Kimi',DASHSCOPE_API_KEY:'阿里 DashScope'};
  $('#eg_keys').innerHTML=`<h3 style="margin:0 0 8px">API Keys <span class="muted" style="font-weight:400;font-size:12px">保存即注入进程环境供各 CLI 继承 · 只写不回显 · 订阅版无需 Key</span></h3>`
   +'<table><tr><th>Provider</th><th>当前</th><th>新值</th><th>操作</th></tr>'
@@ -1247,11 +1252,13 @@ function egRenderLLM(){
      placeholder="https://…/v1  写到 /v1 或 /v4 为止,不含 /chat/completions" style="width:100%"></td></tr>
    <tr><td>API Key</td><td><input id="eg_l_key" type="password"
      placeholder="${L.key_set?'已保存 '+esc(L.key||'')+',留空则不改动':'粘贴 Key'}" style="width:100%"></td></tr>
-   <tr><td>模型</td><td><input list="eg_l_ml" id="eg_l_model" value="${esc(L.model||'')}"${lk('model')}
-     placeholder="如 glm-4.5" style="width:240px">
-     <datalist id="eg_l_ml"></datalist>
+   <tr><td>模型</td><td>
+     <select id="eg_l_pick" onchange="egPickModel()"${lk('model')} style="width:240px;display:none"></select>
+     <input id="eg_l_model" value="${esc(L.model||'')}"${lk('model')}
+       placeholder="如 glm-4.5" style="width:240px">
      <button class="ghost" onclick="egFetchModels(this)">拉取可用模型</button>
-     <span class="muted" id="eg_l_ms" style="font-size:12px;margin-left:6px"></span></td></tr>
+     <span class="muted" id="eg_l_ms" style="font-size:12px;margin-left:6px"></span>
+     <div class="muted" style="font-size:11.5px;margin-top:3px">端点不提供模型列表时直接手填模型名即可</div></td></tr>
    <tr><td>单轮超时</td><td><input id="eg_l_timeout" value="${esc(L.timeout||'')}"${lk('timeout')}
      placeholder="180" style="width:80px"> 秒
      <span class="muted" style="font-size:11.5px;margin-left:8px">推理型模型的思维链耗时计入其中,配紧了会被截断</span></td></tr>
@@ -1276,8 +1283,15 @@ async function egFetchModels(btn){
    body:JSON.stringify({base:b.base,key:b.key})}).catch(e=>({error:''+e}));
  btn.disabled=false;
  if(r.error||!r.models||!r.models.length){o.textContent='拉取失败:'+(r.error||'该端点未提供模型列表接口')+' —— 可直接手填模型名';return;}
- $('#eg_l_ml').innerHTML=r.models.map(m=>`<option value="${esc(m)}">`).join('');
- o.textContent=`已拉到 ${r.count} 个模型,点输入框可选`;}
+ const cur=($('#eg_l_model')||{}).value||'';
+ const sel=$('#eg_l_pick');
+ sel.innerHTML='<option value="">— 选择模型 —</option>'
+   +r.models.map(m=>`<option value="${esc(m)}" ${m===cur?'selected':''}>${esc(m)}</option>`).join('')
+   +(cur&&!r.models.includes(cur)?`<option value="${esc(cur)}" selected>${esc(cur)}(自定义)</option>`:'');
+ sel.style.display='';                                  // 拉到了才显示下拉,免得空框误导
+ o.textContent=`已拉到 ${r.count} 个模型,在左侧下拉里选,或继续手填`;}
+function egPickModel(){const sel=$('#eg_l_pick'), inp=$('#eg_l_model');
+ if(sel&&inp&&sel.value){inp.value=sel.value;}}
 async function egLLMTest(btn){
  const o=$('#eg_l_out'); btn.disabled=true; o.innerHTML='<span class="muted">测试中…(推理型模型可能需要数十秒)</span>';
  const r=await J('/api/engine/llm/test',{method:'POST',headers:{'Content-Type':'application/json'},
