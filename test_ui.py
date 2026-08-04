@@ -154,6 +154,20 @@ async def main():
             (ok if vis else bad)("build 技能对比弹窗开合")
         skl = await ev("document.querySelectorAll('#bc_skills div,#bc_skills label,#bc_skills input').length", 0)
         (ok if skl>0 else bad)(f"build 技能清单({skl})")
+        # 布局塌陷是"元素都在、就是没法看"的一类故障,计数断言抓不到:全局
+        # input{width:100%} 曾把勾选框撑到 224px,把同排文本挤成 0 宽,描述逐字竖排
+        # (单张技能卡高 557px)。用几何量守住:勾选框按内容定宽、文本有可读宽度。
+        geo = await ev("""(()=>{const l=document.querySelector('#bc_skills .bc-skcard');
+            if(!l)return null;const cb=l.querySelector('input[type=checkbox]');
+            const tx=l.querySelector('div');
+            return {cb:cb?cb.getBoundingClientRect().width:-1,
+                    tx:tx?tx.getBoundingClientRect().width:-1,
+                    h:l.getBoundingClientRect().height};})()""", None)
+        (ok if geo and geo["cb"]<=24 else bad)("build 技能勾选框未被全局 input 宽度撑开",
+                                               f"{geo}")
+        (ok if geo and geo["tx"]>=120 else bad)("build 技能描述有可读宽度(未被挤成竖排)",
+                                                f"{geo}")
+        (ok if geo and geo["h"]<=160 else bad)("build 单张技能卡高度正常", f"{geo}")
         # library:已构建本体
         await go("library")
         t = await ev("document.getElementById('p_library').innerText", '')
