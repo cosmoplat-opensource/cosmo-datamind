@@ -43,6 +43,10 @@ th,td{padding:6px 8px;text-align:left;border-bottom:1px solid #eef2ff;white-spac
 th{color:var(--sub);font-weight:600;position:sticky;top:0;background:var(--panel)}
 tr:hover td{background:#f8fbff} .scroll{overflow:auto;max-height:60vh}
 input,textarea,select{background:#fff;border:1px solid var(--line);color:var(--txt);border-radius:var(--rs);padding:9px 12px;font-size:14px;width:100%}
+/* 上面那条把 width:100%+padding 套给了所有 input,勾选框也不例外:在 flex 行里
+   它会撑到 200 多像素、把同排文本挤成 0 宽,文字于是逐字竖排(技能编排面板实测如此)。
+   勾选框/单选框按内容定宽,且不参与 flex 伸缩。 */
+input[type=checkbox],input[type=radio]{width:auto;padding:0;flex:none;margin:0}
 input:focus,textarea:focus,select:focus{outline:none;border-color:var(--acc)}
 button{background:var(--acc);color:#fff;border:0;border-radius:var(--rs);padding:9px 16px;font-size:14px;cursor:pointer}
 button:hover{filter:brightness(1.06)} button.ghost{background:#EEF2FF;color:#4A5FF3} button:disabled{opacity:.5}

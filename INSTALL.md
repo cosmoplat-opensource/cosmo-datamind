@@ -99,7 +99,7 @@ curl -s http://127.0.0.1:8092/api/ont/runtimes  # 已注册的模型运行时
 
 ```bash
 python3 test_all.py        # 系统级,531 条断言,需服务已启动
-python3 test_ui.py         # 全页面走查,57 条,需 playwright
+python3 test_ui.py         # 全页面走查,60 条,需 playwright
 python3 test_ui_ops.py     # 浏览器逐步实操,46~47 条,含三轮真实问数,耗时约 12 分钟
 ```
 
