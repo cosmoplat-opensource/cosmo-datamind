@@ -1255,6 +1255,13 @@ chk("EG13 报错详情里的 Key 被掩码", "_mask_in_text" in open("server.py"
 _srv_src = open("server.py", encoding="utf-8").read()
 # datalist 是浏览器原生下拉:DOM 上不可见、无下拉箭头,输入框有值时还按值过滤 ——
 # 用户看到「已拉到 8 个模型」却找不到在哪选。全站一律改用可见的 <select>
+# 测试请求曾写死 max_tokens=64:推理型模型会卡在 finish_reason=length、正文为空,
+# 看着像「模型不可用」——实际是测试请求自己给少了
+_srv2 = open("server.py", encoding="utf-8").read()
+chk("EG21 连通测试的额度可配,不写死小值", '"max_tokens": _mt' in _srv2 and '"max_tokens": 64' not in _srv2)
+chk("EG22 按 finish_reason 归因截断,不误判为模型无正文",
+    'finish_reason' in _srv2 and "回复被额度截断" in _srv2)
+
 chk("EG19 全站不再使用 datalist(无可见入口,用户找不到候选)", "datalist" not in _ui)
 chk("EG20 模型下拉在拉取成功后才显示,并回填输入框",
     'id="eg_l_pick"' in _ui and "egPickModel" in _ui and "sel.style.display=''" in _ui)

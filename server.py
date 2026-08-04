@@ -3087,7 +3087,12 @@ def engine_llm_test():
         return jsonify({"ok": False, "error": "端点地址须以 http:// 或 https:// 开头"}), 400
     if not model:
         return jsonify({"ok": False, "error": "未指定模型名"}), 400
-    payload = json.dumps({"model": model, "temperature": 0, "max_tokens": 64,
+    # 额度取用户填的值(缺省 1024):写死小额度会把推理型模型卡在 finish_reason=length,
+    # 正文为空,看着像「模型不可用」——实际只是测试请求自己给少了。
+    _mt = b.get("max_tokens") or os.environ.get(LLM_ENV["max_tokens"]) or 1024
+    try: _mt = max(64, int(_mt))
+    except (TypeError, ValueError): _mt = 1024
+    payload = json.dumps({"model": model, "temperature": 0, "max_tokens": _mt,
                           "messages": [{"role": "user", "content": "只回复两个字:在线"}]}).encode()
     req = urllib.request.Request(base + "/chat/completions", data=payload,
                                  headers={"Authorization": "Bearer " + key,
@@ -3105,16 +3110,22 @@ def engine_llm_test():
     except Exception as e:
         return jsonify({"ok": False, "ms": int((time.time() - t0) * 1000),
                         "error": f"{type(e).__name__}: {_mask_in_text(str(e)[:200], key)}"})
-    msg = ((d.get("choices") or [{}])[0].get("message") or {})
+    _ch = (d.get("choices") or [{}])[0]
+    msg = _ch.get("message") or {}
     txt = (msg.get("content") or "").strip()
+    _fin = _ch.get("finish_reason")
     think = len(msg.get("reasoning_content") or "")
     usage = d.get("usage") or {}
     return jsonify({"ok": bool(txt), "ms": int((time.time() - t0) * 1000),
                     "reply": txt[:80], "reasoning_chars": think,
                     "usage": {k: usage.get(k) for k in ("prompt_tokens", "completion_tokens")},
                     # 正文为空多半是推理占满了额度,直接把处置写出来,免得配置者从头猜
-                    "warn": ("正文为空而思维链 %d 字:该模型把额度用在了推理上,"
-                             "请调大 max_tokens" % think) if (not txt and think) else ""})
+                    "finish_reason": _fin,
+                    "warn": (("回复被额度截断(finish_reason=length,本次上限 %d):"
+                              "推理型模型的思维链占用同一份额度,请把「回复上限」调大" % _mt)
+                             if _fin == "length" else
+                             ("正文为空而思维链 %d 字:模型未产出正文,可尝试调大回复上限或换模型" % think)
+                             if (not txt and think) else "")})
 
 
 @app.post("/api/engine/llm/models")
