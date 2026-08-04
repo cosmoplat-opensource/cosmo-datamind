@@ -119,7 +119,11 @@ chk("apply rename ok", r.status_code==200 and r.json().get("ok"))
 r=po("/api/ont/apply",json={"graph":SANDBOX,"op":{"op":"非法算子","target":"obj:x","params":{}}})
 chk("apply 非白名单→400", r.status_code==400)
 r=po("/api/ont/undo",json={"graph":SANDBOX}); chk("undo ok", r.status_code==200)
-r=po("/api/ont/rebuild",json={"graph":SANDBOX}); chk("rebuild 清草案", r.status_code==200 and r.json().get("ok"))
+# 重建是破坏性动作(丢弃整个草案层,undo 退不回来),必须带 confirm —— 见 QS16c
+r=po("/api/ont/rebuild",json={"graph":SANDBOX,"confirm":True})
+chk("rebuild 清草案", r.status_code==200 and r.json().get("ok"))
+chk("rebuild 留底可恢复(不直接删)", bool(r.json().get("backup")) or r.json().get("discarded_ops")==0,
+    r.text[:80])
 
 print("=== F. 会话 ===")
 r=po("/api/ont/chats/new",json={}); cid=r.json().get("id"); chk("chats/new", bool(cid))
@@ -1341,6 +1345,28 @@ chk("QS15 对象定位按主键→中文名→表名→别名分轮降级",
     and _srvmod._find_obj_any(_ir_amb, "t2")["id"] == "B"
     and _srvmod._find_obj_any(_ir_amb, "丙")["id"] == "B"
     and _srvmod._find_obj_any(_ir_amb, "没有这个") is None)
+
+# QS16:技能与工具面的一致性(半自动重构这条链)。
+_srv_src16 = open(_os.path.join(_repo, "server.py"), encoding="utf-8").read()
+# 智能体列表曾硬编码同级「上游本体引擎」目录 —— 该目录早已更名,于是技能包永远列不出来,
+# 且不受 DATAMIND_ENGINE_DIR 控制;同一批技能在 /api/build/skills 却列得出,两处结论打架。
+chk("QS16 技能目录一律走 PLATFORM,不写死目录名",
+    '"上游本体引擎", "web", "skills_seed"' not in _srv_src16)
+_ag = g("/api/agents").json().get("agents", [])
+_bs = g("/api/build/skills").json()
+_bs = _bs if isinstance(_bs, list) else (_bs.get("skills") or [])
+_bn = {(x.get("slug") or x.get("name")) if isinstance(x, dict) else x for x in _bs}
+_an = {a["name"] for a in _ag if a.get("type") == "技能包"}
+chk("QS16b 智能体列表与构建页看到同一批技能", not _bn or _bn == _an,
+    "构建页=%s 智能体列表=%s" % (sorted(_bn), sorted(_an)))
+# rebuild 丢弃整个草案层且 undo 退不回来:必须显式 confirm,并留底可恢复
+_rb = po("/api/ont/rebuild", json={"graph": SANDBOX})
+chk("QS16c 重建不带 confirm 直接拒绝", _rb.status_code == 400 and "confirm" in _rb.text)
+_rb2 = po("/api/ont/rebuild", json={"graph": "../etc/passwd", "confirm": True})
+chk("QS16d 重建拒绝非法图谱键", _rb2.status_code == 400)
+# 技能写入不得在引擎缺失时凭空造引擎目录树(空壳会被后续当成"已装引擎")
+chk("QS16e 技能写入按引擎在否分流,不造假目录",
+    'if os.path.isdir(PLATFORM):' in _srv_src16 and 'scope = "custom"' in _srv_src16)
 
 # QS13:执行记录里的本体名必须据实回显。曾把首步写死成「加载 示例 本体上下文」,
 # 选了自建本体也照喊示例,与下一步 anchor_ontology 自相矛盾。

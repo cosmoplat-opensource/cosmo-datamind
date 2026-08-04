@@ -1663,10 +1663,22 @@ def ont_skill_write():
     body = request.json or {}
     name, content = body.get("name", ""), body.get("content", "")
     if not re.match(r"^[\w\-]+$", name) or not content.strip(): return jsonify({"error": "需要合法 name+content"}), 400
-    d = os.path.join(PLATFORM, "web", "skills_seed", name)
-    os.makedirs(d, exist_ok=True)
-    _atomic_text(os.path.join(d, "SKILL.md"), content)
-    return jsonify({"ok": True, "path": os.path.join(d, "SKILL.md")})
+    # 装了引擎就写引擎的技能库(编辑上游技能),否则写自己的 custom_skills。
+    # 此前无条件 makedirs 到引擎目录:父目录可写时会凭空造出一棵假引擎目录树
+    # (随后 /api/build/skills 就把这个空壳当成已装引擎),只读位置则 500 裸栈。
+    if os.path.isdir(PLATFORM):
+        d = os.path.join(PLATFORM, "web", "skills_seed", name)
+        scope = "engine"
+    else:
+        d = _BUILD_SKILL_D
+        scope = "custom"
+    try:
+        os.makedirs(d, exist_ok=True)
+        path = os.path.join(d, "SKILL.md" if scope == "engine" else name + ".md")
+        _atomic_text(path, content)
+    except OSError as e:
+        return jsonify({"error": "技能写入失败:%s" % str(e)[:120]}), 500
+    return jsonify({"ok": True, "path": path, "scope": scope})
 
 @app.post("/api/ont/chat/stream")
 def ont_chat_stream():
@@ -2522,12 +2534,31 @@ def ont_metadata():
 
 @app.post("/api/ont/rebuild")
 def ont_rebuild():
-    """重建:清空该图谱的草案编辑层,回到构建产物基线(对齐平台 /api/rebuild)"""
-    key = (request.json or {}).get("graph", "demo")
+    """重建:清空该图谱的草案编辑层,回到构建产物基线(对齐平台 /api/rebuild)。
+
+    两道保险,缺一不可:
+    ① 必须显式 confirm —— 这是丢弃全部人审与编辑成果的破坏性动作,而 undo 只退一步,
+       退不回来。上游引擎的同名端点一直要求 confirm,auto-ontology 技能也照此写明
+       「不带 confirm 服务端会拒绝」;此处若不要求,照技能行事的 agent 会在这里踩空。
+    ② 不直接删,改名留底 —— 误触后还能从 .discarded 找回。"""
+    body = request.json or {}
+    key = body.get("graph", "demo")
+    if _bad_gkey(key): return jsonify({"error": "非法图谱键"}), 400
     ep = _edits_path(key)
-    if os.path.exists(ep): os.remove(ep)
+    n_ops = len((_load_edits(key) or {}).get("ops") or []) if os.path.exists(ep) else 0
+    if body.get("confirm") is not True:
+        return jsonify({"error": "重建会丢弃该图谱草案层的全部编辑(当前 %d 条)且 undo 退不回来,"
+                                 "请先向用户确认,然后带 {\"confirm\": true} 重试" % n_ops,
+                        "pending_ops": n_ops}), 400
+    discarded = ""
+    if os.path.exists(ep):
+        with _WRITE_LOCK:
+            discarded = ep + ".discarded"
+            os.replace(ep, discarded)          # 留底而非删除:误触可恢复
     ir = load_ir(key)
-    return jsonify({"ok": True, "objects": len(ir.get("objects", [])) if ir else 0})
+    return jsonify({"ok": True, "objects": len(ir.get("objects", [])) if ir else 0,
+                    "discarded_ops": n_ops,
+                    "backup": os.path.basename(discarded) if discarded else ""})
 
 @app.post("/api/sparql")
 def sparql():
@@ -3736,7 +3767,10 @@ def agents():
                         "type": "沉淀", "author": "用户", "ts": s.get("ts", "")})
     except Exception: pass
     try:
-        for p in sorted(glob.glob(os.path.join(HERE, "..", "上游本体引擎", "web", "skills_seed", "*"))):
+        # 走 PLATFORM,不写死目录名:此处曾硬编码同级「上游本体引擎」,该目录早已更名,
+        # 于是智能体列表永远列不出技能包,也不受 DATAMIND_ENGINE_DIR 控制 ——
+        # 而同一批技能在构建页(/api/build/skills)却列得出来,两处结论互相打架
+        for p in sorted(glob.glob(os.path.join(PLATFORM, "web", "skills_seed", "*"))):
             if os.path.isdir(p):
                 out.append({"name": os.path.basename(p), "desc": "本体构建技能包", "type": "技能包", "author": "平台", "ts": ""})
     except Exception: pass
