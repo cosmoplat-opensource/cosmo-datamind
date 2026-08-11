@@ -15,11 +15,11 @@ deepqa 就得反向 import blueprint —— 循环导入。故先抽为共享层
 注意 `_ENV_LOCKED_AT_BOOT` 在**本模块 import 时**快照:必须早于任何 `_apply_engine_cfg`
 写 os.environ,否则分不清「运维注入」与「界面保存」(server 无模块级 env 写入,故安全)。
 """
-import json
 import os
 import re
 
-from srv_context import WORK, _atomic_json
+import store
+from srv_context import WORK
 
 # ── 引擎回复语义(跨簇共用:deepqa / 本体 / 构建 / engine 自测都要判「这条回复其实是错误」)──
 _ERR_REPLY = re.compile(r"API call failed|HTTP (?:4\d\d|5\d\d)|usage limit|rate ?limit|quota|Traceback|exceeded|无法.*(连接|执行)|Error:", re.I)
@@ -88,15 +88,17 @@ ENGINE_TASKS = ["plan", "narrative", "diagnose"]
 ENGINE_TASK_CN = {"plan": "SQL 计划生成", "narrative": "洞察叙述", "diagnose": "根因诊断"}
 
 
+# 该文件含 API Key:0600 在替换前打到临时文件上,不留「短暂可读」的窗口;
+# 读到坏档时退回 {} 但**留痕告警**(此前静默吞掉,配置损坏会伪装成「没配过」而悄悄重置驱动)。
+_ENGINE_STORE = store.JsonStore(ENGINE_CFG_F, default={}, mode=0o600)
+
+
 def _load_engine_cfg():
-    try: return json.load(open(ENGINE_CFG_F))
-    except Exception: return {}
+    return _ENGINE_STORE.load()
 
 
 def _save_engine_cfg(cfg):
-    _atomic_json(ENGINE_CFG_F, cfg)
-    try: os.chmod(ENGINE_CFG_F, 0o600)      # 含密钥,仅本用户可读
-    except Exception: pass
+    _ENGINE_STORE.save(cfg)
 
 
 def _apply_engine_cfg(cfg):

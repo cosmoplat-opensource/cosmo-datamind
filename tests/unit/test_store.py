@@ -66,6 +66,31 @@ def test_migrate_runs_on_load(tmp_path):
     assert s.load()["v"] == 2 and s.load()["migrated"] is True
 
 
+def test_mode_is_applied_before_publish(tmp_path):
+    """含密钥的文件必须**全程**不可被他人读取。
+
+    先 os.replace 落盘、再 chmod 的写法存在一个可被读到的窗口(期间是 0644);
+    故权限须在替换**之前**打到临时文件上,使目标文件从出现的第一刻就是 0600。
+    """
+    import os
+    import stat
+    p = tmp_path / "secret.json"
+    s = store.JsonStore(str(p), default={}, mode=0o600)
+    s.save({"key": "sk-xxx"})
+    assert stat.S_IMODE(os.stat(p).st_mode) == 0o600
+
+
+def test_mode_survives_rewrite(tmp_path):
+    import os
+    import stat
+    p = tmp_path / "secret.json"
+    s = store.JsonStore(str(p), default={}, mode=0o600)
+    s.save({"a": 1})
+    s.save({"a": 2})                      # 覆盖写后权限不得回退
+    assert stat.S_IMODE(os.stat(p).st_mode) == 0o600
+    assert s.load() == {"a": 2}
+
+
 def test_concurrent_update_is_atomic(tmp_path):
     s = store.JsonStore(str(tmp_path / "c.json"), default={"n": 0})
 

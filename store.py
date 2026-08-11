@@ -33,11 +33,15 @@ def _lock_for(path):
 
 
 class JsonStore:
-    def __init__(self, path, default=None, validate=None, migrate=None):
+    def __init__(self, path, default=None, validate=None, migrate=None, mode=None):
+        """mode:目标文件权限(如 0o600)。在 os.replace **之前**打到临时文件上,
+        使目标文件从出现的第一刻起就是该权限——先落盘再 chmod 会留下一个可被读到的窗口,
+        对存放密钥的文件不可接受。"""
         self.path = path
         self._default = default if default is not None else {}
         self._validate = validate
         self._migrate = migrate
+        self._mode = mode
         self._lock = _lock_for(path)
 
     def _fresh_default(self):
@@ -69,7 +73,9 @@ class JsonStore:
             tmp = self.path + ".tmp"
             with open(tmp, "w", encoding="utf-8") as fp:
                 json.dump(data, fp, ensure_ascii=False)
-            os.replace(tmp, self.path)   # 原子替换,读者绝不会看到半截文件
+            if self._mode is not None:
+                os.chmod(tmp, self._mode)    # 替换前定权限:目标文件不存在「短暂可读」的窗口
+            os.replace(tmp, self.path)       # 原子替换,读者绝不会看到半截文件
         return data
 
     def update(self, fn):
