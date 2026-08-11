@@ -8,8 +8,8 @@ Cosmo DataMind · 数据智脑 — 自有品牌的数据治理+本体+深度问�
 """
 import json, os, re, sqlite3, subprocess, threading, time, uuid, sys, glob
 import urllib.request, urllib.error
-import dao_core   # DR-035/044:命名闸/词根等裁决原语的单一事实源
-# DR-043 蓝图化前置:基础路径与原语(路径/只读连接/只读SQL判定/写锁/原子写)收口到共享上下文,与后续 blueprint 共用
+import dao_core   # DR-035/044:命名校验/词根等裁决原语的单一事实源
+# DR-043 蓝图化前置:基础路径与原语(路径/只读连接/只读SQL判定/写锁/原子写)收敛到共享上下文,与后续 blueprint 共用
 from srv_context import (HERE, ROOT, DB, UPLOAD_DB, WORK,
                          ro_connect, sql_is_readonly, _WRITE_LOCK, _atomic_json, _atomic_text)
 # 引擎运行时与配置层(跨簇共享,故先于路由抽出;见 srv_engine 模块头)
@@ -18,7 +18,7 @@ from srv_engine import (runtime_cached, _drv_order, _looks_like_error,
                         _load_engine_cfg, _apply_engine_cfg)
 from flask import Flask, jsonify, request, send_from_directory, send_file
 
-# ── 可配置路径(env 覆盖):HERE/ROOT/DB/UPLOAD_DB/WORK 已收口到 srv_context(见文件头 import)。
+# ── 可配置路径(env 覆盖):HERE/ROOT/DB/UPLOAD_DB/WORK 已收敛到 srv_context(见文件头 import)。
 #   PLATFORM/OUTPUTS 与引擎 sys.path 自举与装配耦合,留在此处。
 #   DATAMIND_ENGINE_DIR 上游本体引擎目录(可选;缺失则 LLM 构建降级为纯数据驱动)
 #   DATAMIND_OUTPUTS_DIR 成果库目录(可选);DATAMIND_HOST/PORT 监听地址与端口
@@ -215,7 +215,7 @@ def q(sql, db=None, limit=500, attach_uploads=False):
         rows = [dict(r) for r in cur.fetchmany(limit)]
         return {"columns": [c[0] for c in cur.description or []], "rows": rows}
     finally: con.close()
-# 运行时缓存 _RT_CACHE / runtime_cached / _drv_order 已收口到 srv_engine(见文件头 import)
+# 运行时缓存 _RT_CACHE / runtime_cached / _drv_order 已收敛到 srv_engine(见文件头 import)
 def table_list(db=None):
     con = ro_connect(db or DB)
     tabs = [r[0] for r in con.execute("SELECT name FROM sqlite_master WHERE type='table' ORDER BY name")]
@@ -228,7 +228,7 @@ def table_list(db=None):
 
 # ── 后台作业(技能运行/本体构建)──
 JOBS = {}
-# _WRITE_LOCK 已收口到 srv_context(server 与 blueprint 共用同一把锁)
+# _WRITE_LOCK 已收敛到 srv_context(server 与 blueprint 共用同一把锁)
 # rdflib 的 SPARQL 解析器基于 pyparsing,其 packrat 缓存/语法状态为进程级全局且非线程安全:
 # 多请求并发跑 SPARQL(或 SPARQL 与 pyshacl 内部 SPARQL 相撞)会污染语法,报出
 # 『Expected SelectQuery, found OPTIONAL』『postParse2() missing arg』等假语法错。故串行化所有 SPARQL 语法操作。
@@ -276,7 +276,7 @@ def _obj_key(o, i=0):
     return o.get("id") or o.get("name") or f"_obj{i}"
 
 
-# 命名闸/词根收口到 dao_core 单一事实源(DR-035;消 server 内此前的第三份副本,含复合键分支)。
+# 命名校验/词根收敛到 dao_core 单一事实源(DR-035;消 server 内此前的第三份副本,含复合键分支)。
 # 保留 _key_stem/_key_name_ok 名称,现有调用点不改。语义与旧实现逐值一致(测试对照在案)。
 _key_stem = dao_core.key_stem
 _key_name_ok = dao_core.key_name_ok
@@ -944,7 +944,7 @@ def _rule_summary(results):
             outs.append(f"「{r['title']}」{json.dumps(rows[0], ensure_ascii=False)}")
     return ("数据摘要:" + ";".join(outs)) if outs else "已取到数据,请展开各分析查看明细。"
 
-# _ERR_REPLY / _looks_like_error 已收口到 srv_engine(引擎回复语义,跨簇共用;见文件头 import)
+# _ERR_REPLY / _looks_like_error 已收敛到 srv_engine(引擎回复语义,跨簇共用;见文件头 import)
 
 def narrative_llm(question, results, steps, emit=None):
     """引擎生成业务洞察;成功返回文本,失败/离线/引擎报错返回 None(由调用方兜底为 _rule_summary)。
@@ -1267,7 +1267,7 @@ def _stamp_review(x, op):
 
 def apply_any(ir, op):
     """白名单编辑统一入口:关系类算子(人审通过/否决 + 动词/基数/增删)与对象确认/删除本地实现、
-    两种 IR 形状通吃;其余算子(属性类等)沿用平台 apply_op。人审纪律:人只产生 asserted,永不冒充 verified(反造假)。"""
+    两种 IR 形状通吃;其余算子(属性类等)沿用平台 apply_op。人审规范:人只产生 asserted,永不冒充 verified(反造假)。"""
     kind = op.get("op"); t = op.get("target", "")
     params = op.get("params") or {}; reason = (op.get("reason") or "").strip()
     if kind == "confirm":                      # 确认候选对象(两种形状)
@@ -1505,7 +1505,7 @@ def ont_skill_detail(name):
     if not os.path.exists(p2): return jsonify({"error": "不存在"}), 404
     return jsonify({"name": name, "content": open(p2).read()})
 
-# _atomic_json / _atomic_text 已收口到 srv_context(见文件头 import)
+# _atomic_json / _atomic_text 已收敛到 srv_context(见文件头 import)
 CHATS_F = os.path.join(WORK, "ont_chats.json")
 def _chats():
     if not os.path.exists(CHATS_F): return {}
@@ -1551,7 +1551,7 @@ def ont_chat():
   add_relation  新增关系          target: "rel:<源>-><目标>", params: {{"verb": "动词"}}
   remove_object / remove_relation  删除(不可逆,需谨慎)
 
-纪律:人工确认只产生 asserted,**永不指定 verified**(verified 只能由数据裁决产生)。
+规范:人工确认只产生 asserted,**永不指定 verified**(verified 只能由数据裁决产生)。
 若业务用语与对象中文名不同(如业务说「产量」而对象叫「生产日汇总」),优先建议 set_alias。
 
 若用户要求修改本体,回答末尾附一行 EDIT_OP:{{"op":"...","target":"obj:<id>","params":{{...}},"reason":"改动依据"}} 供人确认后执行;
@@ -1673,7 +1673,7 @@ def ont_forge():
     shacl = "未装 pyshacl(跳过)"
     try:
         import pyshacl, rdflib as _rl
-        sg = _rl.Graph(); sg.parse(data=_IOF_SHACL, format="turtle")   # IOF 形状约束门禁
+        sg = _rl.Graph(); sg.parse(data=_IOF_SHACL, format="turtle")   # IOF 形状约束校验
         with _RDF_LOCK:   # pyshacl 内部跑 SPARQL,同受 pyparsing 非线程安全影响,串行化
             conforms, _, txt = pyshacl.validate(g, shacl_graph=sg, inference="none")
         nviol = (txt or "").count("Constraint Violation")
@@ -1708,7 +1708,7 @@ def ont_rules():
             {"name": "斯坦福七步法", "map": "确定范围→复用→列举术语→定义类→类层次→定义属性→创建实例;对应 抽取列结构/枚举表→对象定义→hierarchy families→attrs→绑定实数据"},
             {"name": "Palantir 操作型本体四层", "map": "对象↔表 / 属性↔列 / 链接↔FK+取值重叠(≥60%∧列名有据=verified) / 指标↔DWS列(原子/派生/复合)"},
             {"name": "W3C OWL2+SHACL+HermiT", "map": "导出 owl:Class/DatatypeProperty/ObjectProperty+skos指标;锻造时 SHACL 校验;推理检查工具箱可跑"},
-            {"name": "反造假纪律", "map": "verified 仅由数据裁决;人工/LLM 断言记 asserted/candidate;弱证据送审;编辑走白名单op+可撤销"}],
+            {"name": "反造假规范", "map": "verified 仅由数据裁决;人工/LLM 断言记 asserted/candidate;弱证据送审;编辑走白名单op+可撤销"}],
         "pipeline": [
             {"stage": "领域与源界定", "io": "数据源探活 → 表清单/连接", "rule": "真实查询探活(非端口探测)"},
             {"stage": "复用领域知识包", "io": "指标Excel/术语 → glossary", "rule": "知识包驱动命名与指标分层"},
@@ -1825,7 +1825,7 @@ def ont_relation(key):
                     "founded_relation": fr, "temporal": tq or "atSomeTime",
                     "semantic": l.get("semantic", "")})   # IOF/BFO 接地 + 语义评审标注
 
-# IOF 风格 SHACL 形状:非原始类须有定义、每个类须有标签(本体质量门禁,借鉴 IOF『非原始类须有定义』)
+# IOF 风格 SHACL 形状:非原始类须有定义、每个类须有标签(本体质量校验,借鉴 IOF『非原始类须有定义』)
 _IOF_SHACL = """@prefix sh:     <http://www.w3.org/ns/shacl#> .
 @prefix owl:    <http://www.w3.org/2002/07/owl#> .
 @prefix rdfs:   <http://www.w3.org/2000/01/rdf-schema#> .
@@ -1938,7 +1938,7 @@ def ont_cq():
     一个定义 100%、接地 100% 的本体,完全可能缺了业务真正要问的那条关系。
 
     判定为确定性图计算(对象锚定 + 路径可达 + 边状态),不调 LLM:
-    让模型自评「能不能答」会把「看起来能答」当成「能答」,与反造假纪律相悖。
+    让模型自评「能不能答」会把「看起来能答」当成「能答」,与反造假规范相悖。
 
     请求: {"graph": "<键>", "cqs": ["问题…", {"q": "问题…", "expect": ["对象名"]}]}
     """
@@ -2057,7 +2057,7 @@ def ont_audit(key):
             no_reviewer.append(i)
         if not (o.get("reason") or "").strip():
             no_reason.append(i)
-        # 风险项:删除类不可逆影响面大;人审试图直接指定 verified 违反反造假纪律
+        # 风险项:删除类不可逆影响面大;人审试图直接指定 verified 违反反造假规范
         if kind in ("remove_object", "remove_relation", "reject_relation"):
             risky.append({"idx": i, "op": kind, "target": o.get("target"),
                           "by": who, "ts": o.get("ts"), "level": "destructive",
@@ -2065,7 +2065,7 @@ def ont_audit(key):
         if str((o.get("params") or {}).get("status", "")).lower() == "verified":
             risky.append({"idx": i, "op": kind, "target": o.get("target"),
                           "by": who, "ts": o.get("ts"), "level": "discipline",
-                          "why": "人审试图直接指定 verified —— 违反反造假纪律"
+                          "why": "人审试图直接指定 verified —— 违反反造假规范"
                                  "(verified 只能由数据裁决产生,人只产生 asserted)"})
     return jsonify({
         "graph": key, "total": len(ops),
@@ -2256,7 +2256,7 @@ def ont_modules(key):
 @app.get("/api/ont/completeness/<key>")
 def ont_completeness(key):
     """本体完备度 / IOF 一致性记分卡:定义·示例·反例覆盖率、BFO 归类率、成熟度分布、关系接地率。
-    借鉴 IOF『非原始类须有定义、每个术语须有成熟度』的工程纪律,量化图谱的可审计程度(供人审与专利佐证)。"""
+    借鉴 IOF『非原始类须有定义、每个术语须有成熟度』的工程规范,量化图谱的可审计程度(供人审与专利佐证)。"""
     from collections import Counter
     ir = load_ir_edited(key)
     if not ir: return jsonify({"error": "图谱不存在"}), 404
@@ -2599,7 +2599,7 @@ def chat():
         okv, why = _validate_sql_ontology(sql, ir_gate)          # A2 口径拦截
         if not okv:
             steps.append({"step": "ontology_gate", "ok": False, "info": "口径拦截:" + why}); continue
-        # DR-026 双盲意图检测:口径闸管「SQL 合不合规」,这里管「答的是不是问的那件事」。
+        # DR-026 双盲意图检测:口径校验管「SQL 合不合规」,这里管「答的是不是问的那件事」。
         # 只观测不阻断——确定性反解也会有漏判(如口径卡走视图名),
         # 因误判挡住正确答案的代价远高于标注一句存疑。
         try:
@@ -2899,7 +2899,7 @@ def diagnose_stream():
         except Exception: pass
         if not isinstance(ans, dict) or not ans.get("causes"):
             yield push("llm_causes", False, "引擎超时/离线 —— 根因诊断需引擎在线,不作无证据的臆造")
-            yield sse({"type": "error", "error": "引擎不可用,本次不产出根因(反造假纪律:宁可不答,不编结论)"}); return
+            yield sse({"type": "error", "error": "引擎不可用,本次不产出根因(反造假规范:宁可不答,不编结论)"}); return
         # ④ 边界校验:路径越界 → 降 candidate
         allow_set = set(allowed)
         causes = _dg_bounds(ans.get("causes"), allow_set)[:3]          # G1 边界校验(确定性)
@@ -2941,11 +2941,11 @@ def diagnose_stream():
     from flask import Response
     return Response(gen(), mimetype="text/event-stream")
 
-# ── 引擎设置(DR-017)── 常量与配置读写/应用/掩码已收口到 srv_engine(跨簇共享,见文件头 import)
+# ── 引擎设置(DR-017)── 常量与配置读写/应用/掩码已收敛到 srv_engine(跨簇共享,见文件头 import)
 _apply_engine_cfg(_load_engine_cfg())        # 启动即应用持久化配置(覆盖 start.sh 缺省)
 
 # ── 引擎设置路由已迁至 bp_engine blueprint(IR-011/DR-043);共享层在 srv_engine ──
-# ── C9 问数评测(P20 落地):金标题集 × 三臂对照(A朴素 / B图谱 / C本体全量),自动判分 ──
+# ── C9 问数评测(P20 落地):金标题集 × 三组对照(A朴素 / B图谱 / C本体全量),自动判分 ──
 _EVAL_SET_F = os.path.join(HERE, "benchmark", "qa_set.json")
 _EVAL_RES_F = os.path.join(WORK, "eval_results.json")
 EVAL_JOB = {"running": False, "progress": "", "done": 0, "total": 0, "started": ""}
@@ -2955,7 +2955,7 @@ def _eval_items():
     except Exception: return []
 
 def _ctx_naive():
-    """A 臂:朴素 Text2SQL 基线 —— 只有英文表名+列名(截断),无中文语义/无关系/无指标。"""
+    """A 组:朴素 Text2SQL 基线 —— 只有英文表名+列名(截断),无中文语义/无关系/无指标。"""
     lines = []
     try:
         con = ro_connect(DB)
@@ -2969,7 +2969,7 @@ def _ctx_naive():
     return out[:4000]
 
 def _ctx_graph(question):
-    """B 臂:GraphRAG 式 —— 相关表+中文列注+本体关系 JOIN 提示,无指标层/无术语扩展。"""
+    """B 组:GraphRAG 式 —— 相关表+中文列注+本体关系 JOIN 提示,无指标层/无术语扩展。"""
     ir = load_ir_edited("demo") or {}
     kws = [w for w in re.split(r"[,，。？?\s]+", question) if w]
     def score(txt): return sum(1 for w in kws if w and w in txt)
@@ -3040,7 +3040,7 @@ def _run_eval_thread(model=None, limit=None):
     ir = load_ir_edited("demo") or {}
     arms = [("A", "朴素 Text2SQL(仅英文表列)", lambda it: _ctx_naive(), False),
             ("B", "图谱增强(中文语义+关系)", lambda it: _ctx_graph(it["q"]), False),
-            ("C", "本体全量(语义+关系+指标+术语+口径门禁)", lambda it: build_context(it["q"]), True)]
+            ("C", "本体全量(语义+关系+指标+术语+口径校验)", lambda it: build_context(it["q"]), True)]
     EVAL_JOB.update(running=True, done=0, total=len(items) * len(arms),
                     started=time.strftime("%Y-%m-%d %H:%M:%S"), progress="启动")
     out = {"ts": time.strftime("%Y-%m-%d %H:%M:%S"), "model": model or (_task_model("plan") or "(引擎缺省)"),
@@ -3080,7 +3080,7 @@ def _run_eval_thread(model=None, limit=None):
 
 @app.post("/api/eval/run")
 def eval_run():
-    """启动一轮三臂评测(后台线程,每题落盘);可传 model 覆盖本轮出 SQL 的模型、limit 限题数。"""
+    """启动一轮三组评测(后台线程,每题落盘);可传 model 覆盖本轮出 SQL 的模型、limit 限题数。"""
     if EVAL_JOB["running"]: return jsonify({"error": "评测已在运行", "job": EVAL_JOB}), 409
     if not _eval_items(): return jsonify({"error": "题集缺失(benchmark/qa_set.json)"}), 500
     body = request.json or {}
@@ -3739,7 +3739,7 @@ def build_skill_from_graph():
     gname = (_sc.get("name") if isinstance(_sc, dict) else _sc) or gk
     gname = str(gname).strip()[:30]
     name = str(body.get("name") or "").strip() or ("from-" + re.sub(r"[^\w\-]+", "-", gk)[:24])
-    lines = [f"---\ndescription: 从构建产物「{gname}」沉淀的建模纪律(动词表/类型分布/定义风格)\n---\n",
+    lines = [f"---\ndescription: 从构建产物「{gname}」沉淀的建模规范(动词表/类型分布/定义风格)\n---\n",
              f"## 来源\n构建产物 `{gk}`(对象 {len(ir.get('objects', []))} · 已验证/断言关系 {sum(verbs.values())}),沉淀于 {time.strftime('%Y-%m-%d')}。\n",
              "## 关系动词表(建模时优先沿用)"]
     lines += [f"- {v}({n} 次)" for v, n in verbs.most_common(8)] or ["-(该图谱暂无已验证关系)"]
@@ -3748,7 +3748,7 @@ def build_skill_from_graph():
     if defs:
         lines.append("\n## 定义风格样例(属+种差,非循环)")
         lines += [f"- 「{cn}」:{d[:120]}" for cn, d in defs]
-    lines.append("\n## 纪律\n1. 关系动词优先复用上表,不新造同义动词;\n2. 单据/台账/目录类信息记录判 kind=ice,勿与物理实体混淆;\n3. 定义用「属+种差」句式,定义体不得复用被定义术语本身。")
+    lines.append("\n## 规范\n1. 关系动词优先复用上表,不新造同义动词;\n2. 单据/台账/目录类信息记录判 kind=ice,勿与物理实体混淆;\n3. 定义用「属+种差」句式,定义体不得复用被定义术语本身。")
     content = "\n".join(lines)
     if not _SKILL_NAME_RE.match(name): return jsonify({"error": "技能名非法"}), 400
     if name in _builtin_skill_names(): return jsonify({"error": "技能名与内置冲突,请换名"}), 400
@@ -3773,7 +3773,7 @@ def _build_stats(ir):
             "def_coverage": round(sum(1 for o in objs if (o.get("definition") or "").strip()) * 100.0 / max(1, len(objs)), 1)}
 
 def _run_skill_compare(query, arms):
-    """两臂顺序真实构建(LLM 抽取+反造假裁决,不走兜底造假);每臂落一个 built_* 产物。"""
+    """两组顺序真实构建(LLM 抽取+反造假裁决,不走兜底造假);每组落一个 built_* 产物。"""
     out = {"ts": time.strftime("%Y-%m-%d %H:%M:%S"), "query": query, "arms": []}
     for i, skills in enumerate(arms):
         label = chr(65 + i)
@@ -3783,13 +3783,13 @@ def _run_skill_compare(query, arms):
         arm = {"label": label, "skills": skills, "ok": False}
         if extracted and extracted.get("objects"):
             key = "built_" + uuid.uuid4().hex[:6]
-            ir = _adjudicate_ir(DB, f"技能对比-{label}臂", extracted, ev)
+            ir = _adjudicate_ir(DB, f"技能对比-{label}组", extracted, ev)
             _atomic_json(os.path.join(WORK, key + ".json"), ir)
             arm.update(ok=True, key=key, stats=_build_stats(ir))
         else:
             arm["error"] = "LLM 抽取失败/超时(该组如实记为失败,不用兜底数据冒充)"
         out["arms"].append(arm)
-        _atomic_json(_SKILL_CMP_F, out)               # 每臂落盘
+        _atomic_json(_SKILL_CMP_F, out)               # 每组落盘
     SKILL_CMP_JOB.update(running=False, progress="完成")
 
 @app.post("/api/build/skill_compare")
@@ -4075,7 +4075,7 @@ def _review_history(force=False):
     这才是工程师真正要问的那一问:"系统说 verified 时,人有多少次认同?"
     另按动词分组,暴露"哪类语义关系机器最容易判错"。
 
-    诚实纪律:样本 < _ACC_MIN_N 时返回 insufficient 且**不给百分比**——两三条记录算出的
+    诚实规范:样本 < _ACC_MIN_N 时返回 insufficient 且**不给百分比**——两三条记录算出的
     百分比是噪声而非证据,展示出来只会误导工程师建立错误的信任。缓存 5 分钟。
     """
     if not force and _ACC_CACHE["val"] is not None and time.time() - _ACC_CACHE["ts"] < 300:
@@ -4172,7 +4172,7 @@ def _llm_extract_ontology(q, ev, skills):
 只输出一个 JSON(无其它文字):
 {{"objects":[{{"name":"英文标识(能对齐表名就用表名)","cn":"有业务意义的中文名","kind":"object|event|asset|role|ice(信息记录:目录/单据/地址/台账等,非物理实体)","table":"绑定的真实表名或 null","evidence":"抽取依据(来自哪张表/哪份文档)","definition":"属+种差定义(如『销售订单是一种记录客户购买承诺的信息内容实体』);给不出严格定义就留空","example":"一个正例","counterExample":"一个易混淆的反例(如 报价单——尚无承诺)"}}],
   "relations":[{{"source":"对象name","target":"对象name","verb":"具体关系动词(归属/产生/包含/服务/触发…)","rationale":"依据"}}]}}
-要求:①对象尽量绑定真实表;②由文档/流程推断出的业务事件用 kind=event;库存记录/地址/目录/单据等信息性条目用 kind=ice(BFO 信息内容实体,勿与物理实体混淆);③关系两端必须是上面列出的对象 name;④不虚构库表和文档中都没有的实体或关系;⑤**cn 必须是有业务意义的中文名**(如 客户 / 销售订单 / 退货事件 / 生产工单),优先复用表注释、上传文档/知识包(如看板指标口径)里的中文术语,严禁用拼音或直接照搬英文表名/键名做 cn;⑥**借鉴 IOF 定义纪律**:definition 用「属+种差」句式;**非循环**——定义体不得复用被定义术语名本身及其中文名(如定义『销售订单』不得出现『销售订单』字样),须用上位类(属)+区别特征(种差)描述;counterExample 给一个会被误认成该对象、实则不是的反例(帮助后续取证辨伪);无法给出严格充要定义时 definition 留空即可(将被标为原始概念)。"""
+要求:①对象尽量绑定真实表;②由文档/流程推断出的业务事件用 kind=event;库存记录/地址/目录/单据等信息性条目用 kind=ice(BFO 信息内容实体,勿与物理实体混淆);③关系两端必须是上面列出的对象 name;④不虚构库表和文档中都没有的实体或关系;⑤**cn 必须是有业务意义的中文名**(如 客户 / 销售订单 / 退货事件 / 生产工单),优先复用表注释、上传文档/知识包(如看板指标口径)里的中文术语,严禁用拼音或直接照搬英文表名/键名做 cn;⑥**借鉴 IOF 定义规范**:definition 用「属+种差」句式;**非循环**——定义体不得复用被定义术语名本身及其中文名(如定义『销售订单』不得出现『销售订单』字样),须用上位类(属)+区别特征(种差)描述;counterExample 给一个会被误认成该对象、实则不是的反例(帮助后续取证辨伪);无法给出严格充要定义时 definition 留空即可(将被标为原始概念)。"""
     for drv in _drv_order():
         if drv not in available(): continue
         ok, reply = get_runtime(drv).run_turn(f"be_{uuid.uuid4().hex[:6]}", prompt, timeout=600)

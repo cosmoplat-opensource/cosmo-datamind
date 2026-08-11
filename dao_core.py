@@ -3,9 +3,9 @@
 """dao_core —— 数据裁决本体师(Data-Adjudicated Ontologist)的单一裁决核(DR-035)。
 
 背景:此前裁决逻辑有**两份漂移实现**——
-  - `quick_build.py`:θ=60 内联、父键精确 100% 唯一、无 MIN_DISTINCT、命名闸用 key_name_ok;
+  - `quick_build.py`:θ=60 内联、父键精确 100% 唯一、无 MIN_DISTINCT、命名校验用 key_name_ok;
   - `../ontology-engine/engine/relation_discovery.py`:MIN_OVERLAP=60.0、0.95 近似唯一、
-    MIN_DISTINCT=3、命名闸用 name_score、排除「子键自身即主键」。
+    MIN_DISTINCT=3、命名校验用 name_score、排除「子键自身即主键」。
 两份各自演化,门槛已经不一致(quick_build 少了 MIN_DISTINCT 与 PK-作子键排除,更易假阳)。
 
 本模块把裁决的**决策逻辑**抽为单一事实源:纯函数、**与数据访问方式无关**
@@ -24,7 +24,7 @@ import re
 
 # ── 单一事实源常量(两引擎此前各自定义,值已漂移)──
 MIN_OVERLAP = 60.0        # θ:判 verified 的取值重叠率(%)
-MIN_DISTINCT = 3          # 子键去重值下限(太少不可信);quick_build 历史无此闸
+MIN_DISTINCT = 3          # 子键去重值下限(太少不可信);quick_build 历史无此校验
 UNIQUE_PK_RATIO = 0.95    # 父键近似唯一阈值(distinct/非空行数)
 WEAK_FLOOR = 20.0         # 弱重叠 candidate 下限
 
@@ -74,7 +74,7 @@ def _core(col):
 
 
 def key_name_ok(child_key, parent_key):
-    """子键/父键**词根相容**(值域重叠之外的第二道闸,DR-033)。
+    """子键/父键**词根相容**(值域重叠之外的第二道校验,DR-033)。
     两键词根相等或一方为另一方前缀(限长≥3)。稠密自增代理键之间值域天然 100% 重合,
     仅凭重叠会造假关系。
 
@@ -116,8 +116,8 @@ def name_score(child_col, parent_table, parent_col, synonyms=None):
 
 # ── DR-036:自引用/角色键 ──
 # 角色键=语义上「指向某实体」的列名。目标含 "self" 者可指向本表(层级自引用);
-# 其余为属类词(genus),匹配父表名。仅这些已知模式获得放开待遇,不广泛松闸——
-# 自引用仍需过数据裁决(重叠≥θ∧父键唯一),名闸只是补上「值域重叠之外」那一环。
+# 其余为属类词(genus),匹配父表名。仅这些已知模式获得放开待遇,不广泛放宽——
+# 自引用仍需过数据裁决(重叠≥θ∧父键唯一),名校验只是补上「值域重叠之外」那一环。
 _ROLE_KEYS = {
     "reports_to": ("self", "employee", "staff", "person", "user", "emp"),
     "manager": ("self", "employee", "staff", "person", "user", "emp"),

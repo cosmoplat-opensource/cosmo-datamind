@@ -18,9 +18,9 @@
 
 ## 后果 / Consequences
 - (+) 系统级 Burr-Mondial:改造前 R 1.6%(PK 盲区暴露)→ 迭代三轮(PK 感知、前缀、多候选、PK 优先父列)→ **P 71.7/R 67.2/F1 69.4(双向严苛协议)**,追平论文实验挂具(70.4,有向宽松协议);企业侧回归零劣化(quick_build 示例 265/200 不变;test_all 109/109)。
-- (+) 论文"future work: multi-column joint adjudication"已在系统落地(修订答辩弹药)。
+- (+) 论文"future work: multi-column joint adjudication"已在系统落地(修订论据材料)。
 - (−) 语义评审增加构建时延(每 60 关系一次 LLM 调用);离线自动降级。
-- **事故与纪律**:本轮维护脚本曾以裸 `open("w")` 截断 server.py(条件表达式返 None → write 抛异常但文件已清空;空文件恒过 ast 检查掩盖事故)。经 `~/.claude/file-history` v21 完整恢复并重放。**新纪律:一切维护性写文件必须"内存改→ast/断言验证→tempfile+os.replace 原子落盘"**(本 DR 后所有脚本已遵循)。
+- **事故与规范**:本轮维护脚本曾以裸 `open("w")` 截断 server.py(条件表达式返 None → write 抛异常但文件已清空;空文件恒过 ast 检查掩盖事故)。经 `~/.claude/file-history` v21 完整恢复并重放。**新规范:一切维护性写文件必须"内存改→ast/断言验证→tempfile+os.replace 原子落盘"**(本 DR 后所有脚本已遵循)。
 
 ## v2.1 生产级补丁(2026-07-19 同日)
 - 语义评审预算随关系数动态(90+120×批数),修 >60 关系多批被外层 130s 截断;

@@ -6,6 +6,7 @@
 """
 import json
 import threading
+import pytest
 import store
 
 
@@ -38,11 +39,8 @@ def test_validate_rejects_bad_shape(tmp_path):
     def must_be_list(d):
         return isinstance(d, list)
     s = store.JsonStore(str(tmp_path / "x.json"), default=[], validate=must_be_list)
-    try:
+    with pytest.raises(ValueError):
         s.save({"not": "a list"})
-        assert False, "校验应拒绝非法形状"
-    except ValueError:
-        pass
     assert s.load() == []   # 拒绝后旧值不被破坏
 
 

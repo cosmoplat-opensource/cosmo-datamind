@@ -16,7 +16,7 @@
 │   构建: _gather_evidence → _llm_extract → _adjudicate_ir      │
 │         → _llm_semantic_review → 落盘(三级控制环, DR-011)     │
 │   问数: _anchor_ir(选中图谱=锚定源) → build_context(带轨迹)   │
-│         → agent_sql_plan → 口径门禁 → q() → 双盲意图 → 叙事    │
+│         → agent_sql_plan → 口径校验 → q() → 双盲意图 → 叙事    │
 │   体检: cq_check 能力核验 · drift_check 漂移 · health_check    │
 │         图结构 · compat_check 兼容 · module_split 模块化       │
 │   决策: rule_engine 规则+确定性推理 · 动作层(类型化+风险分级)│
@@ -41,7 +41,7 @@
 
 | 模块 | 职责 | DR |
 |---|---|---|
-| `quick_build.py` | 纯数据驱动建本体(取值重叠 ∧ 键名词根闸) | DR-011 |
+| `quick_build.py` | 纯数据驱动建本体(取值重叠 ∧ 键名词根校验) | DR-011 |
 | `cq_check.py` | 能力核验(CQ):本体够不够回答业务问题;穿透链路是否贯通 | DR-024/025 |
 | `drift_check.py` | 概念漂移:本体还对不对得上数据源(表/列/主键/关系四类) | DR-025 |
 | `intent_check.py` | 双盲意图检测:问句通道 vs SQL 通道各自锚定,比对是否答非所问 | DR-026 |
@@ -58,7 +58,7 @@
 
 | 关注点 | 统一点 | 位置 |
 |---|---|---|
-| 只读取数 | `ro_connect(path)` — mode=ro,缺库响亮失败 | server.py |
+| 只读取数 | `ro_connect(path)` — mode=ro,缺库显式报错 | server.py |
 | IR 写端点前奏 | `_open_writable(key)` 图谱必填(缺→400,不默认 demo)+ → (ir, wp, err) | server.py,enrich/reground/maturity 共用 |
 | 原子写 | `_atomic_json` + `_WRITE_LOCK` 串行化 | 全部持久化 |
 | 路径守卫 | `_bad_gkey` / `_ir_write_path`(拒只读源与穿越) | 全部图谱键入口 |

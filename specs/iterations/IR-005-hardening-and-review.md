@@ -7,7 +7,7 @@
 通过多轮「事实核对 + 独立评审 agent + 读码复核」收敛缺陷,达工业级:去 emoji、隐藏引擎库名、URL 寻址、补安全洞、修资源泄漏/竞态、补可达性。
 
 ## 交付 / Deliverables
-- [x] **安全**:修高危路径穿越 LFI/写穿越(`_bad_gkey`);SPARQL 禁 FROM 外链;Turtle 兜底转义补 C0;复核确认文件服务/命令/CSRF/上传攻击面收口(见 [[DR-006]])。
+- [x] **安全**:修高危路径穿越 LFI/写穿越(`_bad_gkey`);SPARQL 禁 FROM 外链;Turtle 兜底转义补 C0;复核确认文件服务/命令/CSRF/上传攻击面收敛(见 [[DR-006]])。
 - [x] **工业化视觉**:全站去彩色 emoji → accent bar + 单色 SVG + 状态点(见 [[DR-005]])。
 - [x] **对外中性引擎名**:UI 与执行记录不暴露 hermes/claude-code/openclaw(见 [[DR-003]])。
 - [x] **URL 寻址**:26 子页 `#<page>` + 深链(见 [[DR-007]])。

@@ -23,13 +23,13 @@
 - [x] **强门槛翻转 —— 经测量否决(DR-037)**:108 表 demo 逐条测量显示朴素强门槛(MIN_DISTINCT=3/排除唯一子键)会砍 34%、误杀真维度 FK 与 DR-036 自引用;quick_build 维持 compat(实证更稳)。集成安全网已验证(526/531,5 为环境态预存失败)。
 - [x] **DR-037 方向原语落地**:`fk_direction`/`should_reverse` 纯函数 + 4 单测;揭示 48 条「child==声明PK」是方向反,应反向而非丢弃。
 - [x] **DR-037 接线**:`should_reverse` 接进 quick_build(抑制方向反的边、不污染 seen,让正向自然发现);108 表 demo 266→263 恰抑制 3 条共享键巧合假边、0 真关系丢失、verified 105 不变;集成 526/531 零回归。
-- [ ] **DR-038 自适应门槛(需大表 fixture 才动)**:MIN_DISTINCT/唯一度阈值随表体量/基数自适应;当前 demo 全小维度表无从验证,按 DR-037 纪律不做无数据支撑的门槛移植。
+- [ ] **DR-038 自适应门槛(需大表 fixture 才动)**:MIN_DISTINCT/唯一度阈值随表体量/基数自适应;当前 demo 全小维度表无从验证,按 DR-037 规范不做无数据支撑的门槛移植。
 
 ## 任务 Tasks(每项一次提交)
 
 1. 建 `dao_core.py` + `test_dao_core.py`(先写一致性测试,含与引擎平价)。
 2. quick_build 接入 dao_core(compat),108 表 demo 逐值回归验证零漂移。
-3. (下一增量)DR-036 自引用键红-绿;强门槛翻转 + 集成套件护航。
+3. (下一增量)DR-036 自引用键红-绿;强门槛翻转 + 集成套件回归验证。
 
 ## 验收 Acceptance
 
@@ -41,8 +41,8 @@
 
 ## 备注
 
-- **为何先 compat**:强门槛(MIN_DISTINCT/PK 排除)会改 demo 产物(265→?),须由集成套件护航才敢翻;
-  本增量先做**零风险收口**(单一事实源已建立),把行为翻转与自引用键留给带集成护航的下一增量。
+- **为何先 compat**:强门槛(MIN_DISTINCT/PK 排除)会改 demo 产物(265→?),须由集成套件回归验证才敢翻;
+  本增量先做**零风险收敛**(单一事实源已建立),把行为翻转与自引用键留给带集成回归验证的下一增量。
 - **平价而非改引擎**:上游 `relation_discovery` 属独立仓(自有 specs/CLAUDE.md),本轮以平价测试锁同口径,不跨仓改动。
 - 下一步落 DR-036:`test_quick_build.test_build_self_referential_fk_currently_missed` 是现成的红点,
   放开 `pt==t` + 引入角色词典(reports_to↔employee)后,把该断言从「发现不了」反转为「能发现」。

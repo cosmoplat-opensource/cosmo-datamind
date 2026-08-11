@@ -7,7 +7,7 @@
 精确率 / 召回 / F1 + **幻觉泄漏率**(假边被判 verified 的比例,越低越强)。
 
 纯确定性、离线;裁决口径与 quick_build 完全一致(同走 dao_core 单一裁决核):
-  重叠率 + 父键唯一 + 命名闸(dao_core.name_ok)+ 方向测试(should_reverse 抑制)。
+  重叠率 + 父键唯一 + 命名校验(dao_core.name_ok)+ 方向测试(should_reverse 抑制)。
 故本台测的正是**生产构建实际用的那道防线**,不是另造一套。
 """
 import sqlite3
@@ -28,7 +28,7 @@ def _signals(con, table, col):
 
 def adjudicate(con, cand, theta=dao_core.MIN_OVERLAP, min_distinct=1, low_card_floor=0, adaptive=False):
     """对一条候选关系做裁决,返回 {verified, status, overlap, name_ok, ...}。
-    与 quick_build 同链:方向抑制 → 命名闸 → classify。
+    与 quick_build 同链:方向抑制 → 命名校验 → classify。
     theta/min_distinct/low_card_floor 可调,供 DR-038 自适应门槛对比实验;
     adaptive=True 时 θ 由 dao_core.adaptive_theta(子键 distinct) 逐候选计算。"""
     ct, cc = cand["child_table"], cand["child_col"]

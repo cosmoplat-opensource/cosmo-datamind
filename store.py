@@ -6,8 +6,8 @@ server.py 现有 15 个手搓 JSON store + 64 处散落 json.load/dump,无 schem
 加一个字段要改多处;`_atomic_json` 是安全叙事却无负向测试。本模块把「workdir 下单文件
 JSON 持久化」收敛为一个可测抽象,供 server 增量迁移:
 
-- **原子写**:tempfile + os.replace(与 server._atomic_json 同纪律),崩溃不留半截文件;
-- **坏文件优雅恢复**:读到非法 JSON 退回 default(响亮记录),不让一处坏档打崩整个端点;
+- **原子写**:tempfile + os.replace(与 server._atomic_json 同规范),崩溃不留半截文件;
+- **坏文件优雅恢复**:读到非法 JSON 退回 default(显式记录),不让一处坏档打崩整个端点;
 - **可选 schema 校验**:save 前校验形状,非法抛 ValueError 且不破坏旧值;
 - **可选迁移钩子**:load 时按版本迁移旧结构;
 - **并发安全**:每 path 一把可重入锁,update() 读-改-写全程持锁,无丢更新。
@@ -51,7 +51,7 @@ class JsonStore:
             except FileNotFoundError:
                 return self._fresh_default()
             except (json.JSONDecodeError, ValueError, OSError):
-                # 坏文件/半截写:响亮退回 default,不崩;调用方可据 default 重建
+                # 坏文件/半截写:显式退回 default,不崩;调用方可据 default 重建
                 return self._fresh_default()
             if self._migrate is not None:
                 data = self._migrate(data)

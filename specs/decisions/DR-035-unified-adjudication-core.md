@@ -16,19 +16,19 @@
 | 父键唯一 | 精确 100%(COUNT==COUNT DISTINCT) | 0.95 近似 |
 | 子键 distinct 下限 | **无** | `MIN_DISTINCT=3` |
 | 排除「子键即主键」 | **无** | 有 |
-| 命名闸 | `key_name_ok`(两键词根) | `name_score`(含父表名/异名同义) |
+| 命名校验 | `key_name_ok`(两键词根) | `name_score`(含父表名/异名同义) |
 | 非唯一父键 | 落弱 candidate(`elif ov>=20`) | 直接跳过 |
 | 自引用键 | 跳过(`pt==t`) | 跳过(`pt==ct`) |
 
 两份各自演化,`quick_build` 少了 MIN_DISTINCT 与 PK-作子键排除,**结构上比它声称对齐的引擎更易假阳**;
-审计并指出两处此前未察觉的漂移(非唯一父键处置、命名闸口径)。
+审计并指出两处此前未察觉的漂移(非唯一父键处置、命名校验口径)。
 
 ## 决定 / Decision
 
 1. **抽出单一裁决核 `dao_core.py`**:自包含、零外部依赖(与本仓「quick_build 零依赖」一致),
    **与数据访问方式无关**——只吃「已抽取信号」(子/父键 distinct 集合、父键是否唯一、列名),
    故 quick_build 的 SQL 路径(180k 行大表)与引擎的内存路径可喂各自信号、共用同一判定。
-2. **收口原语**:`overlap_pct`(保留原始精度,不四舍五入,边界比较与内联算法逐值一致)、
+2. **收敛原语**:`overlap_pct`(保留原始精度,不四舍五入,边界比较与内联算法逐值一致)、
    `key_stem`/`key_name_ok`(quick_build 口径)、`name_score`/`_core`(引擎口径,更富)、
    `is_pk_like`、常量 `MIN_OVERLAP/MIN_DISTINCT/UNIQUE_PK_RATIO/WEAK_FLOOR`,全部单一事实源。
 3. **统一裁决决策 `classify(...)`**:三态 verified/candidate/drop;规范默认=强门槛
@@ -36,7 +36,7 @@
    `exclude_pk_child=False`)复现 quick_build 历史行为。
 4. **quick_build 先以 compat 模式接入**:决策走 `classify`,命名/重叠走 dao_core 原语,
    **产物在 108 表 demo 上逐值不变**(265 关系/104 verified,note 与 evidence 全量一致)。
-   强门槛的翻转(启用 MIN_DISTINCT/PK 排除)与自引用键(DR-036)另作增量,需集成套件护航后再落。
+   强门槛的翻转(启用 MIN_DISTINCT/PK 排除)与自引用键(DR-036)另作增量,需集成套件回归验证后再落。
 
 ## 后果 / Consequences
 

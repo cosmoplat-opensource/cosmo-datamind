@@ -8,7 +8,7 @@
 
 系统已是**SDD 教科书级**(34 DR / 6 IR / map+meta 主轴 / 提交与规约同步),
 但**TDD 缺席**——535 条 `chk()` 是**实现之后补写的表征锁**,不是**实现之前写下的失败验收**;
-且**工程门禁为零**(无 CI / lint / coverage / 固定依赖),强测试与「大声失败」哲学都靠手动维持。
+且**工程校验缺失**(无 CI / lint / coverage / 固定依赖),强测试与「显式报错」设计原则都靠手动维持。
 算法侧,裁决核**存在两份漂移实现**(`quick_build.py` 的门槛弱于上游 `relation_discovery.py`),
 且论文早已点名的召回盲区(自引用键、多信号裁决、自适应 θ、反幻觉评测)尚未落地。
 本提议用 TDD 的红-绿把这些一次性收敛,并把算法从「单库、纯 schema」推进到「多信号、多源、多模态」。
@@ -26,17 +26,17 @@
 |---|---|---|
 | 单体路由 | `server.py` **5,109 行 / 121 路由 / 246 函数**;5 个巨函数:`_adjudicate_ir`(4557,168 行)、`diagnose_stream`(2878,167)、`chat_stream`(2698,166)、`build_context`(632,153)、`build_inquire`(4725,121) | 维护中枢风险;SSE/业务/DB/LLM 混在一个函数体 |
 | 持久化缺抽象 | **15 个手搓 JSON store** + **64 处**散落 load/save;**9 个无淘汰/TTL 的全局缓存**;`EVAL_JOB`/`SKILL_CMP_JOB` 单例(进程内只能跑一个) | 加一个字段要改多处;无 schema/迁移/校验;并发丢任务 |
-| 工程门禁 | **无** pyproject/flake8/pytest/coverage/pre-commit/CI;**0 条固定依赖**;**94 处**裸 `except`;文档计数已漂移(ARCH 称 119/531,实为 121/535) | pyflakes 零告警、535 断言、SHACL/HermiT 全靠手动;开源不可复现 |
+| 工程校验 | **无** pyproject/flake8/pytest/coverage/pre-commit/CI;**0 条固定依赖**;**94 处**裸 `except`;文档计数已漂移(ARCH 称 119/531,实为 121/535) | pyflakes 零告警、535 断言、SHACL/HermiT 全靠手动;开源不可复现 |
 
 ### 1.3 算法债务(半自动本体构建)
 | 项 | 事实 | 缺口 |
 |---|---|---|
 | 裁决核双实现 | `quick_build.py`:θ=60 内联、父键**精确 100%** 唯一、**无 MIN_DISTINCT**、FK 枚举靠**父表名子串**且跳过 `pt==t`;`relation_discovery.py`:`MIN_OVERLAP=60.0`、**0.95** 近似唯一、`MIN_DISTINCT=3`、`name_score`、排除 PK 作子列 | 两份漂移;`quick_build` 严格更易假阳;**两者都结构性找不到自引用键** |
 | 自引用/角色键 | `Employees.ReportsTo→EmployeeId`、`BOM.ParentPart`、`ManagerId` 因 `stem in parent_table` 且跳 `pt==t` 而不可见 | 整类层级/组织/BOM 边丢失(论文 M:relaxed key matching) |
-| 单信号裁决 | 仅 重叠∧唯一∧命名 | 缺 包含方向 / 基数分布 / 空值率 / 类型兼容;自增代理键假阳只能靠脆弱命名闸挡(代码自述 10/12 坏边) |
+| 单信号裁决 | 仅 重叠∧唯一∧命名 | 缺 包含方向 / 基数分布 / 空值率 / 类型兼容;自增代理键假阳只能靠脆弱命名校验拦截(代码自述 10/12 坏边) |
 | 固定 θ | 处处 60 | 高基数命中 60% 与 5 值枚举命中 60% 证据强度天差,却同阈 |
 | 采样截断 | `distinct()` `LIMIT 20000` 无 `ORDER BY` | 大表父域欠采→重叠虚低→真 FK 静默丢 |
-| 反幻觉未量化 | 无对抗/植入式评测集,`step_critic` 只按 LLM 说法降级 | 「反造假」是纪律主张而非**被测数字**(论文 M5) |
+| 反幻觉未量化 | 无对抗/植入式评测集,`step_critic` 只按 LLM 说法降级 | 「反造假」是规范主张而非**被测数字**(论文 M5) |
 | 定义未评分 | genus-differentia 定义/反例/成熟度**只存不评** | 无参考式指标(论文 RQ3 future work) |
 | 单库单源 | 一次一个 SQLite/一个 gov 源;`_MOD_MAP` 只给图像/PDF 打标签,仅 CSV/TSV 入表 | 无跨库联邦键发现;多模态视觉通道 = IR-009 TODO |
 
@@ -45,9 +45,9 @@
 **现状**:DR 的 `Acceptance` 段是散文;实现后补 `chk()` 锁行为。
 **改为**:每个 IR 先把 DR 的 `Acceptance` 翻成**失败的 `chk()`/pytest**,提交(红)→ 实现到绿。
 
-三条落地纪律:
+三条落地规范:
 1. **红先行**:验收断言与「预期红」输出随 IR 第一次提交入库;实现提交必须把它转绿,diff 可证「先红后绿」。
-2. **门禁强制**:新增 `pyproject.toml`(ruff+mypy)、`pytest` 收编现有 `chk()` 套件、`coverage` 基线、固定依赖、`pre-commit` 与最小 CI;pyflakes/SHACL/断言从「手动」变「合并即挡」。
+2. **校验前置**:新增 `pyproject.toml`(ruff+mypy)、`pytest` 收编现有 `chk()` 套件、`coverage` 基线、固定依赖、`pre-commit` 与最小 CI;pyflakes/SHACL/断言从「手动」变「合并即挡」。
 3. **两层测试**:11 个确定性模块补**真单测**(现仅经 HTTP 间接触达);`server.py` 的 535 集成断言**转为重构安全网**(它们最好的用途)。
 
 ## 3. 提议的 DR 系列
@@ -69,7 +69,7 @@
 |---|---|---|
 | **DR-043 蓝图化拆分** | `server.py` 按 6 簇拆 Flask blueprint(ontology/build/deepqa/actions/skills/engine) | 535 集成断言全程绿 = 重构安全网;新增路由计数自检断言 |
 | **DR-044 持久化仓储层** | 15 JSON store 收敛到 `Store` 接口(schema+校验+迁移)或 SQLite 应用态库 | Store 单测:半写恢复 / 并发写 / 迁移(补现无的负向持久化测试) |
-| **DR-045 工程门禁 / TDD 底座** | pyproject+ruff+mypy+pytest+coverage+固定依赖+pre-commit+最小 CI+文档计数自检 | 门禁本身即测试;pyflakes/断言/计数合并即挡 |
+| **DR-045 工程校验 / TDD 底座** | pyproject+ruff+mypy+pytest+coverage+固定依赖+pre-commit+最小 CI+文档计数自检 | 校验规则本身即测试;pyflakes/断言/计数合并即挡 |
 | **DR-046 确定性模块单测** | 11 个 `*_check` 模块补隔离单测(空图/环/复合键≥3列) | 每模块红-绿夹具(纯函数,天然 TDD) |
 | **DR-047 缓存与任务治理** | 9 全局缓存加 TTL/LRU;`EVAL_JOB`/`SKILL_CMP_JOB` 并入 keyed `JOBS` | 缓存淘汰 + 并发双任务测试先红 |
 
@@ -77,11 +77,11 @@
 
 | IR | 目标 | 含 DR | 为何这个次序 |
 |---|---|---|---|
-| **IR-007 工程门禁与 TDD 底座** | 建 CI/coverage/lint/pytest/固定依赖;确立**已知绿基线** | DR-045、DR-046 | 没有门禁做不了 TDD;先立基线 |
+| **IR-007 工程校验与 TDD 底座** | 建 CI/coverage/lint/pytest/固定依赖;确立**已知绿基线** | DR-045、DR-046 | 没有自动化校验做不了 TDD;先立基线 |
 | **IR-008 裁决核统一与算法强化** | 单核 + 自引用键 + 多信号 + 自适应 θ | DR-035/036/037/038 | 消漂移→补召回→提精度,每步红-绿 |
-| **IR-009 评测台与定义质量** | 反幻觉基准 + 参考式定义评分 | DR-039、DR-040 | 把纪律主张变可回归的数字 |
+| **IR-009 评测台与定义质量** | 反幻觉基准 + 参考式定义评分 | DR-039、DR-040 | 把规范主张变可回归的数字 |
 | **IR-010 多源与多模态** | 跨库联邦键 + 文档/图纸提议器 | DR-041、DR-042 | 能力扩张,承接论文多源多模态 |
-| **IR-011 架构收敛** | 单体拆蓝图 + 仓储层 + 缓存/任务治理 | DR-043/044/047 | 由已 CI 化的集成套件护航 |
+| **IR-011 架构收敛** | 单体拆蓝图 + 仓储层 + 缓存/任务治理 | DR-043/044/047 | 由已 CI 化的集成套件回归验证 |
 
 ## 5. TDD 红-绿样例
 

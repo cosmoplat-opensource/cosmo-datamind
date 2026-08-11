@@ -13,7 +13,7 @@
 ## 决定
 
 1. **新增关系人审算子**(server.py `REVIEW_OPS`,并入 apply 白名单):
-   - `confirm_relation`:人审通过。candidate/gap/rejected → `asserted`;**verified 只记通过、不动状态**(反造假纪律:verified 仅由数据裁决产生,人只产生 asserted)。记 `human_review="approved"` + `review_reason`。
+   - `confirm_relation`:人审通过。candidate/gap/rejected → `asserted`;**verified 只记通过、不动状态**(反造假规范:verified 仅由数据裁决产生,人只产生 asserted)。记 `human_review="approved"` + `review_reason`。
    - `reject_relation`:人审否决。`status="rejected"` + `human_review="rejected"`,**渲染剔除但记录留痕**(ir_to_graph 跳过 rejected;评审页仍可见、可"恢复为断言"),经编辑日志可撤销。
 2. **关系类算子本地统一实现、两种 IR 形状通吃**(`apply_any` + `_rels`/`_find_rel_any`):`confirm_relation / reject_relation / verb / set_card / add_relation / remove_relation` 对 links 形状与 relations 形状同语义;对象/属性类算子仍回落平台 `SC.apply_op`。`load_ir_edited` 回放同走 `apply_any`。
 3. **评审队列 API** `GET /api/ont/review?graph=<key>`:全部关系 + 状态/语义评审/取值重合/人审结论/理由;`pending = 未人审 ∧ (candidate ∨ 语义存疑)`;counts{total/pending/approved/rejected/disputed}。
@@ -24,7 +24,7 @@
 
 ## 不变量
 
-- 人审只产生 `asserted`,永不冒充 `verified`(与 DR-007/DR-011 反造假纪律一致)。
+- 人审只产生 `asserted`,永不冒充 `verified`(与 DR-007/DR-011 反造假规范一致)。
 - 全部经 `/api/ont/apply` 白名单 + 编辑日志,可撤销;不动构建产物基线(草案层)。
 - 非白名单操作仍 400;图谱键仍过 `_bad_gkey` 防穿越。
 

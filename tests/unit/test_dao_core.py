@@ -41,7 +41,7 @@ class TestClassifyCanonical:
         assert r["status"] == "candidate"
 
     def test_drop_when_below_min_distinct(self):
-        # 规范 MIN_DISTINCT=3:去重值太少 → drop(quick_build 历史无此闸)
+        # 规范 MIN_DISTINCT=3:去重值太少 → drop(quick_build 历史无此校验)
         r = dao_core.classify(overlap=100.0, parent_unique=True, name_ok=True, child_distinct=2)
         assert r["status"] == "drop"
 
