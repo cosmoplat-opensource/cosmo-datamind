@@ -1,0 +1,54 @@
+# Cosmo DataMind · 工程门禁与 TDD 底座(IR-007 / DR-045)
+# 单一事实源:lint / 类型 / 测试发现 / 覆盖率 都在此声明,合并即挡。
+[project]
+name = "cosmo-datamind"
+version = "0.1.0"
+description = "数据治理 × 工业本体 × 深度问数 一体化原型"
+requires-python = ">=3.10"
+
+[tool.pytest.ini_options]
+# pythonpath="." 让 tests/ 能 import 根目录的确定性模块(health_check 等)。
+# 默认只收 tests/ 下的单测/元测试;test_all.py/test_ui*.py 是需起服务的集成套件,
+# 由 CI 的独立 job 跑(见 .github/workflows/ci.yml),不进 pytest 默认发现。
+pythonpath = ["."]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+addopts = "-q --strict-markers"
+markers = [
+  "integration: 需要本地起服务(8092)的端到端测试,默认单测轮不跑",
+]
+
+[tool.coverage.run]
+branch = true
+# 只统计确定性模块的覆盖率;server.py 由集成套件覆盖,单独计会失真。
+source = [
+  "health_check", "cq_check", "drift_check", "rule_engine", "module_split",
+  "compat_check", "intent_check", "usage_stat", "quick_build", "openai_runtime",
+]
+omit = ["tests/*"]
+
+[tool.coverage.report]
+show_missing = true
+skip_covered = false
+# 底座建立阶段不设硬门槛;IR-007 收敛后在 CI 里逐步抬高 fail_under。
+precision = 1
+
+[tool.ruff]
+line-length = 120
+target-version = "py310"
+# 本代码库刻意采用紧凑单行风格(`if x: return y`),E7xx/E4xx 与之冲突且非缺陷——
+# 门禁只保留「抓真 bug」的规则:F(pyflakes,含重复字典键 F601)、B(bugbear,含闭包捕获 B023)。
+# 风格类留待人工酌情,不进 CI 硬门禁,避免上万行噪声 diff 淹没真问题。
+[tool.ruff.lint]
+select = ["F", "B"]
+ignore = [
+  "B008",   # 函数默认值中调用(Flask 惯用),非本库缺陷
+  "B905",   # zip strict=(py310 起可用,渐进采用)
+]
+
+[tool.mypy]
+python_version = "3.10"
+ignore_missing_imports = true
+# 原型渐进式类型化:先不强制注解,只抓明确的类型错误。
+check_untyped_defs = false
+warn_unused_ignores = true
