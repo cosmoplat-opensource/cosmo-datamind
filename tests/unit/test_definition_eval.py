@@ -50,6 +50,25 @@ class TestReference:
         assert close["dims"]["reference"] > far["dims"]["reference"]
 
 
+class TestJudgeLayer:
+    def test_judge_lowers_score_for_vacuous_but_structural(self):
+        # 结构成立但空洞的定义:结构分高,但 LLM-judge 语义分低 → 总分被拉下,并给 issue
+        vacuous = "与某些事物相关的一类通用的对象实体。"   # 属加种差形式成立,但空洞
+        without = de.score_definition("设备", vacuous, counter_example="非设备(反例)")
+        with_judge = de.score_definition("设备", vacuous, counter_example="非设备(反例)",
+                                         judge=lambda t, d: 0.2)
+        assert with_judge["score"] < without["score"]
+        assert with_judge["dims"]["semantic"] == 0.2
+        assert any("语义" in i for i in with_judge["issues"])
+
+    def test_judge_exception_falls_back_gracefully(self):
+        def bad_judge(t, d):
+            raise RuntimeError("engine offline")
+        r = de.score_definition("客户", "与企业进行交易的外部组织或个人。",
+                                counter_example="供应商(提供资源方)", judge=bad_judge)
+        assert "semantic" not in r["dims"]   # judge 异常 → 退回确定性分,不臆造
+
+
 class TestBatch:
     def test_score_ontology_aggregates(self):
         ir = {"objects": [
