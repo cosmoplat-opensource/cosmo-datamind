@@ -1,0 +1,17 @@
+# IR-007 预提交门禁:提交即挡 lint 真 bug + 快速单测。
+# 安装:pip install pre-commit && pre-commit install
+repos:
+  - repo: local
+    hooks:
+      - id: ruff
+        name: ruff(F+B 真 bug)
+        entry: ruff check .
+        language: system
+        pass_filenames: false
+        always_run: true
+      - id: pytest-unit
+        name: pytest 单测(确定性层,秒级)
+        entry: python3 -m pytest tests/ -q -p no:cacheprovider
+        language: system
+        pass_filenames: false
+        always_run: true
