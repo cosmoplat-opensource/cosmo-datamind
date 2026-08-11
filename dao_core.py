@@ -45,7 +45,13 @@ def unique_ratio(values):
 
 
 def is_pk_like(values, ratio=UNIQUE_PK_RATIO):
-    """父键候选/主键判定:非空值近似唯一。"""
+    """父键候选/主键判定:非空值**近似**唯一(默认 ≥0.95)。
+
+    注意本函数是**上游引擎口径的参照实现**,当前生产路径并不走它:
+    `quick_build`/`hallucination_eval` 判候选键用的是**精确唯一**
+    (SQL 的 `COUNT(*) == COUNT(DISTINCT col)`,含 NULL 即不唯一),比此处更严。
+    保留它是为与 `relation_discovery` 保持可对照的同名同义 API(见 DR-035 平价测试),
+    改用近似唯一属于门槛变更,须按 DR-037 规范先在目标数据上实测再定。"""
     return unique_ratio(values) >= ratio
 
 
