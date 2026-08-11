@@ -15,7 +15,7 @@
 - **数据源限定**:前端传 `tables`(直接作 focus)与 `graphs`(后端解析该图谱绑定表并入 focus_tables——否则「按图谱选源」是静默空操作)。
 - **缓存 `_QA_CACHE`**:键 `_qa_key(question, history, focus)` **并入 uploads.db mtime**(上传变更即作废,防同名表复用陈旧结果);仅缓存成功结果,上限 200。
 - **健壮性**:`sse()` 用 `json.dumps(..., default=str)` 防 BLOB 等不可序列化值让整条流静默中断(前端卡「运行中」);前端中止后 `finally` 复位发送按钮。
-- 洞察经 `narrative_llm`(多引擎兜底,见 [[DR-003]]);失败走 `_rule_summary` 规则化摘要(基于真实数据不编造)。
+- 洞察经 `narrative_llm`(多引擎兜底,见 [[DR-003-runtime-neutral-naming]]);失败走 `_rule_summary` 规则化摘要(基于真实数据不编造)。
 
 ## 后果 / Consequences
 - (+) 与平台 chat-bi 观感一致且更稳:22 步执行记录 + 渐进出图 + 数据源/技能弹窗 + 沉淀为 Skill + 历史对话。

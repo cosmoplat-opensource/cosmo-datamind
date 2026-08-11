@@ -74,5 +74,5 @@ stream 与非 stream 两链同语义。历史 3 起死代码(术语词典/技能
 
 ## 关联
 
-- [[DR-021]](技能管理:本项的直接上游)· [[DR-019]](评测体系:④的验证载体;术语词典=第 1 起死代码)·
-  [[DR-013]](两击确认规范沿用)· `specs/audit-input-consumers.md`(⑤清单)
+- [[DR-021-skill-management]](技能管理:本项的直接上游)· [[DR-019-deepqa-upgrade]](评测体系:④的验证载体;术语词典=第 1 起死代码)·
+  [[DR-013-human-review-relations]](两击确认规范沿用)· `specs/audit-input-consumers.md`(⑤清单)

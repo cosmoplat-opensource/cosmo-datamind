@@ -18,7 +18,7 @@ LLM 只做首尾意图/摘要——算法亮点被架空。且 LLM 单跑易产�
 
 **硬约束**:
 - 反幻觉门槛与平台一致(取值重叠≥60%∧父键唯一);LLM 离线/超时**回退纯数据驱动 `quick_build`**,方法徽章如实标注(多模态 LLM 抽取 / 数据驱动兜底)。
-- 抽取超时预算:`run_turn` 220s、外层 `_bounded` 250s;主引擎限流时兜底备选(见 [[DR-003]])。证据体量控制(schema≤12K + docs 取样)以免撑爆 prompt 致超时。
+- 抽取超时预算:`run_turn` 220s、外层 `_bounded` 250s;主引擎限流时兜底备选(见 [[DR-003-runtime-neutral-naming]])。证据体量控制(schema≤12K + docs 取样)以免撑爆 prompt 致超时。
 - 对象 `id` 用英文 name(稳边引用),**显示名用 cn**(有业务意义中文名),见 [[DR-009-object-cn-display]]。
 
 ## 后果 / Consequences

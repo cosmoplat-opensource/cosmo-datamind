@@ -2,7 +2,7 @@
 
 - **状态 / Status**: accepted
 - **日期 / Date**: 2026-08-04
-- **关联 / Refs**: [[DR-027-business-alias]](业务别名)、[[DR-033-selected-ontology-as-anchor]](锚定源)、[[DR-026-double-blind-intent]](双盲意图)
+- **关联 / Refs**: [[DR-027-business-aliases-and-change-audit]](业务别名)、[[DR-033-selected-ontology-as-anchor]](锚定源)、[[DR-026-doubleblind-intent-and-usage]](双盲意图)
 
 ## 背景 / Context
 
