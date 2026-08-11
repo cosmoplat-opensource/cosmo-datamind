@@ -961,7 +961,7 @@ _root=_os.path.dirname(_os.path.abspath(__file__))
 chk("Z20 requirements.txt 存在", _os.path.exists(_os.path.join(_root,"requirements.txt")))
 _req=open(_os.path.join(_root,"requirements.txt"),encoding="utf-8").read()
 import sys as _sys
-_std=set(_sys.stdlib_module_names); _local={"translate_cn","quick_build","agent_runtime","serve_claw","export_owl","server","cq_check","drift_check","intent_check","usage_stat","rule_engine","openai_runtime","health_check","compat_check","module_split","dao_core","hallucination_eval","definition_eval","store","srv_context"}
+_std=set(_sys.stdlib_module_names); _local={"translate_cn","quick_build","agent_runtime","serve_claw","export_owl","server","cq_check","drift_check","intent_check","usage_stat","rule_engine","openai_runtime","health_check","compat_check","module_split","dao_core","hallucination_eval","definition_eval","store","srv_context","srv_engine"}
 _ext=set()
 for _f in ("server.py","test_all.py"):
     for _n in ast.walk(ast.parse(open(_os.path.join(_root,_f),encoding="utf-8").read())):
@@ -1296,8 +1296,12 @@ chk("EG18 构成规则页对 rules 数据缺失有守卫", "d.error||!d.counts" 
 
 chk("EG14 env_locked 按启动时快照判定,不与配置值比对",
     "_ENV_LOCKED_AT_BOOT" in _srv_src and "v in _ENV_LOCKED_AT_BOOT" in _srv_src)
+# 快照已随引擎配置层收口到 srv_engine(IR-011):不变量形态变为「模块 import 时快照 → 之后才应用配置」,
+# 故跨两文件校验:srv_engine 内快照先于 _apply_engine_cfg 定义;server 内 import 先于启动调用。
+_eng_src = open("srv_engine.py", encoding="utf-8").read()
 chk("EG15 快照在应用本地配置之前建立(否则分不清运维注入与界面保存)",
-    _srv_src.index("_ENV_LOCKED_AT_BOOT = {") < _srv_src.index("_apply_engine_cfg(_load_engine_cfg())"))
+    _eng_src.index("_ENV_LOCKED_AT_BOOT = {") < _eng_src.index("def _apply_engine_cfg(")
+    and _srv_src.index("from srv_engine import") < _srv_src.index("_apply_engine_cfg(_load_engine_cfg())"))
 _env_now = [f for f, v in [("base", "DATAMIND_LLM_BASE"), ("model", "DATAMIND_LLM_MODEL")]
             if _os.environ.get(v)]
 chk("EG16 env 注入项确实出现在 env_locked 中",
