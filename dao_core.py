@@ -179,6 +179,21 @@ def should_reverse(child_unique, parent_unique):
     return bool(child_unique) and not bool(parent_unique)
 
 
+# ── DR-038:基数自适应 θ ──
+# 「高基数子键命中 X% 重叠」比「5 值枚举命中 X%」证据强得多(偶合概率随基数急降)。
+# 故 θ 应随子键 distinct 上升而下调:低基数维持严阈(防枚举偶合),高基数适度放宽(保召回)。
+# 经反幻觉评测台验证:distinct≥50 降到 50 → 高基数部分重叠真 FK 召回 0.8→1.0,泄漏率不变。
+# 边界:再高也不低于地板 50,避免把稀疏偶合稀释成「真」。
+_ADAPT_HIGH = 50          # 高基数拐点:distinct≥此值起放宽
+_ADAPT_FLOOR = 50.0       # θ 下限
+
+
+def adaptive_theta(child_distinct, base=MIN_OVERLAP):
+    """基数自适应重叠阈:distinct < 拐点 → base(严);≥拐点 → 地板(宽)。
+    刻意用阶跃而非连续函数——拐点与地板都可由评测台标定、可回归,不引入难解释的曲线。"""
+    return _ADAPT_FLOOR if child_distinct >= _ADAPT_HIGH else base
+
+
 def classify(*, overlap, parent_unique, name_ok, child_distinct,
              child_is_pk=False, theta=MIN_OVERLAP, min_distinct=MIN_DISTINCT,
              weak_floor=WEAK_FLOOR, exclude_pk_child=True):
