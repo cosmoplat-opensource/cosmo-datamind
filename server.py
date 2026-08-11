@@ -9,23 +9,17 @@ Cosmo DataMind · 数据智脑 — 自有品牌的数据治理+本体+深度问�
 import json, os, re, sqlite3, subprocess, threading, time, uuid, sys, glob, importlib
 import urllib.request, urllib.error
 import dao_core   # DR-035/044:命名闸/词根等裁决原语的单一事实源
-# DR-043 蓝图化前置:基础原语(只读连接/只读SQL判定/写锁/原子写)收口到共享上下文,与后续 blueprint 共用
-from srv_context import ro_connect, sql_is_readonly, _WRITE_LOCK, _atomic_json, _atomic_text
+# DR-043 蓝图化前置:基础路径与原语(路径/只读连接/只读SQL判定/写锁/原子写)收口到共享上下文,与后续 blueprint 共用
+from srv_context import (HERE, ROOT, DB, UPLOAD_DB, WORK,
+                         ro_connect, sql_is_readonly, _WRITE_LOCK, _atomic_json, _atomic_text)
 from flask import Flask, jsonify, request, send_from_directory, send_file
 
-HERE = os.path.dirname(os.path.abspath(__file__))
-ROOT = os.path.dirname(HERE)
-
-# ── 可配置路径:全部支持环境变量覆盖,便于部署时外置数据与引擎 ──
-#   DATAMIND_DB          只读 SQLite 数据底座(必需;缺失时相关端点如实报错)
-#   DATAMIND_ENGINE_DIR  上游本体引擎目录(可选;缺失则 LLM 构建降级为纯数据驱动)
-#   DATAMIND_OUTPUTS_DIR 成果库目录(可选)
-#   DATAMIND_HOST/PORT   监听地址与端口(默认仅本机 127.0.0.1:8092)
-DB       = os.environ.get("DATAMIND_DB",          os.path.join(ROOT, "demo_metrics.db"))
+# ── 可配置路径(env 覆盖):HERE/ROOT/DB/UPLOAD_DB/WORK 已收口到 srv_context(见文件头 import)。
+#   PLATFORM/OUTPUTS 与引擎 sys.path 自举与装配耦合,留在此处。
+#   DATAMIND_ENGINE_DIR 上游本体引擎目录(可选;缺失则 LLM 构建降级为纯数据驱动)
+#   DATAMIND_OUTPUTS_DIR 成果库目录(可选);DATAMIND_HOST/PORT 监听地址与端口
 PLATFORM = os.environ.get("DATAMIND_ENGINE_DIR",  os.path.join(ROOT, "ontology-engine"))
 OUTPUTS  = os.environ.get("DATAMIND_OUTPUTS_DIR", os.path.join(ROOT, "outputs"))
-UPLOAD_DB = os.path.join(HERE, "workdir", "uploads.db")
-WORK = os.path.join(HERE, "workdir"); os.makedirs(WORK, exist_ok=True)
 sys.path.insert(0, os.path.join(PLATFORM, "engine"))
 
 # ── 上游引擎缺失时的降级垫片 ──────────────────────────────────────────

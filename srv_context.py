@@ -15,6 +15,15 @@ import re
 import sqlite3
 import threading
 
+# ── 基础路径(env 可覆盖):数据底座 / 上传库 / 工作目录。与 server 同目录,值与旧定义逐字一致。
+#    PLATFORM/OUTPUTS 与 sys.path 引擎自举仍留 server(与装配耦合),此处只收无副作用的路径。
+HERE = os.path.dirname(os.path.abspath(__file__))
+ROOT = os.path.dirname(HERE)
+DB = os.environ.get("DATAMIND_DB", os.path.join(ROOT, "demo_metrics.db"))
+UPLOAD_DB = os.path.join(HERE, "workdir", "uploads.db")
+WORK = os.path.join(HERE, "workdir")
+os.makedirs(WORK, exist_ok=True)
+
 
 def ro_connect(path):
     """统一只读连接:mode=ro 打开;缺库时响亮失败(不静默新建空库,防丢库被掩盖)。
