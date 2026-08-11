@@ -9,6 +9,8 @@ Cosmo DataMind · 数据智脑 — 自有品牌的数据治理+本体+深度问�
 import json, os, re, sqlite3, subprocess, threading, time, uuid, sys, glob, importlib
 import urllib.request, urllib.error
 import dao_core   # DR-035/044:命名闸/词根等裁决原语的单一事实源
+# DR-043 蓝图化前置:基础原语(只读连接/只读SQL判定/写锁/原子写)收口到共享上下文,与后续 blueprint 共用
+from srv_context import ro_connect, sql_is_readonly, _WRITE_LOCK, _atomic_json, _atomic_text
 from flask import Flask, jsonify, request, send_from_directory, send_file
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -193,19 +195,6 @@ def ir_to_graph(key, ir):
     return {"nodes": nodes, "edges": edges}
 
 # ── SQLite 工具(只读查询)──
-def ro_connect(path):
-    """统一只读连接:mode=ro 打开;缺库时响亮失败(不静默新建空库,防丢库被掩盖)。
-    仅当 URI 不受支持时才退回普通连接,且仍先确认文件存在 + 强制 query_only。"""
-    if not os.path.exists(path):
-        raise FileNotFoundError(f"数据库不存在: {path}")
-    try:
-        return sqlite3.connect(f"file:{path}?mode=ro", uri=True)
-    except Exception:
-        con = sqlite3.connect(path)  # 极端情况(URI 不支持)退回普通连接,但库已确认存在,不会误建
-        try: con.execute("PRAGMA query_only=ON")
-        except Exception: pass
-        return con
-
 def q(sql, db=None, limit=500, attach_uploads=False):
     # 以只读模式打开(mode=ro):即便 SQL 含写操作,引擎层也会拒绝,杜绝改/删库
     path = db or DB
@@ -223,16 +212,6 @@ def q(sql, db=None, limit=500, attach_uploads=False):
         rows = [dict(r) for r in cur.fetchmany(limit)]
         return {"columns": [c[0] for c in cur.description or []], "rows": rows}
     finally: con.close()
-# 只放行纯查询:允许 select / with,但 with 之后若出现 DML/DDL 关键字则拒绝
-SAFE_SQL = re.compile(r"^\s*(select|with)\b", re.I)
-_SQL_WRITE = re.compile(r"\b(insert|update|delete|replace|drop|alter|create|attach|detach|pragma|vacuum|reindex|truncate)\b", re.I)
-def sql_is_readonly(sql):
-    s = sql or ""
-    if not SAFE_SQL.match(s): return False
-    # select 开头天然安全;with 开头需排除内嵌写语句(WITH cte AS(...) DELETE ...)
-    if re.match(r"^\s*with\b", s, re.I) and _SQL_WRITE.search(s): return False
-    return True
-
 # 复用 driver 实例:get_runtime 每次返回新实例,会重置 _started/_primed,使会话式对话(稳定 cid)
 # 的多轮续接失效。按 driver 缓存一份,让 hermes/claude-code 的多轮语境/续接生效。
 _RT_CACHE = {}
@@ -262,7 +241,7 @@ def table_list(db=None):
 
 # ── 后台作业(技能运行/本体构建)──
 JOBS = {}
-_WRITE_LOCK = threading.RLock()   # 保护 json 文件读-改-写(edits/chats),防并发丢更新/损坏
+# _WRITE_LOCK 已收口到 srv_context(server 与 blueprint 共用同一把锁)
 # rdflib 的 SPARQL 解析器基于 pyparsing,其 packrat 缓存/语法状态为进程级全局且非线程安全:
 # 多请求并发跑 SPARQL(或 SPARQL 与 pyshacl 内部 SPARQL 相撞)会污染语法,报出
 # 『Expected SelectQuery, found OPTIONAL』『postParse2() missing arg』等假语法错。故串行化所有 SPARQL 语法操作。
@@ -1543,17 +1522,7 @@ def ont_skill_detail(name):
     if not os.path.exists(p2): return jsonify({"error": "不存在"}), 404
     return jsonify({"name": name, "content": open(p2).read()})
 
-def _atomic_json(path, data):
-    """原子写:先写 .tmp 再 os.replace,避免中途崩溃截断已存文件(会话/编辑/技能状态不丢)"""
-    _atomic_text(path, json.dumps(data, ensure_ascii=False))
-
-def _atomic_text(path, text):
-    """文本文件的原子写(SKILL.md / OWL Turtle 等)。与 _atomic_json 同一纪律:
-    先写 .tmp 再 os.replace,避免写到一半失败留下截断文件。"""
-    tmp = path + ".tmp"
-    with open(tmp, "w") as fp: fp.write(text)
-    os.replace(tmp, path)
-
+# _atomic_json / _atomic_text 已收口到 srv_context(见文件头 import)
 CHATS_F = os.path.join(WORK, "ont_chats.json")
 def _chats():
     if not os.path.exists(CHATS_F): return {}

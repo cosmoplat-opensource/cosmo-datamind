@@ -69,6 +69,7 @@ Cosmo DataMind 是**自有品牌、原创前后端**的「数据治理 × 本体
 - [IR-006 · IOF/BFO 语义工程层(注释/接地/导出/完备度/一键升级)](iterations/IR-006-iof-bfo-semantic-layer.md) · **delivered**
 - [IR-007 · 工程门禁与 TDD 底座(pytest/coverage/ruff/CI + 确定性模块单测)](iterations/IR-007-tdd-foundation.md) · **in-progress**
 - [IR-008 · 裁决核收敛与算法强化(dao_core 单一事实源 + 引擎平价 + 零回归)](iterations/IR-008-adjudication-core-convergence.md) · **in-progress**
+- [IR-011 · 单体路由蓝图化(共享上下文基座 + 逐簇拆 blueprint)](iterations/IR-011-blueprint-modularization.md) · **in-progress**
 - [IR-009 · 反幻觉评测台与门槛量化(对抗基准 + 泄漏率 + DR-038 回归实测)](iterations/IR-009-eval-and-definition-quality.md) · **in-progress**
 
 ## 上游素材(真相来源)
