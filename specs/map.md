@@ -25,6 +25,8 @@ Cosmo DataMind 是**自有品牌、原创前后端**的「数据治理 × 本体
 ## 索引
 
 ### 决定 / Decisions
+- [DR-039 · 反幻觉评测台(带标签对抗基准 + 泄漏率;反造假变数字)](decisions/DR-039-hallucination-eval-harness.md)
+- [DR-038 · 基数自适应 θ(基准纯增益但真实数据回归 → 落地原语不接入)](decisions/DR-038-cardinality-adaptive-threshold.md)
 - [DR-037 · 方向感知裁决;数据实证否决朴素强门槛翻转(fk_direction/should_reverse)](decisions/DR-037-direction-aware-adjudication.md)
 - [DR-036 · 自引用与角色键发现(role_targets + 角色感知 name_ok + health 自反豁免)](decisions/DR-036-self-referential-and-role-keys.md)
 - [DR-035 · 单一裁决核 dao_core(消两份漂移实现 + classify 三态 + 引擎平价)](decisions/DR-035-unified-adjudication-core.md)
@@ -64,6 +66,7 @@ Cosmo DataMind 是**自有品牌、原创前后端**的「数据治理 × 本体
 - [IR-006 · IOF/BFO 语义工程层(注释/接地/导出/完备度/一键升级)](iterations/IR-006-iof-bfo-semantic-layer.md) · **delivered**
 - [IR-007 · 工程门禁与 TDD 底座(pytest/coverage/ruff/CI + 确定性模块单测)](iterations/IR-007-tdd-foundation.md) · **in-progress**
 - [IR-008 · 裁决核收敛与算法强化(dao_core 单一事实源 + 引擎平价 + 零回归)](iterations/IR-008-adjudication-core-convergence.md) · **in-progress**
+- [IR-009 · 反幻觉评测台与门槛量化(对抗基准 + 泄漏率 + DR-038 回归实测)](iterations/IR-009-eval-and-definition-quality.md) · **in-progress**
 
 ## 上游素材(真相来源)
 - `../上游本体引擎/` — 引擎(agent_runtime/export_owl/serve_claw)、技能(skills_seed)、方法论(其 `系统设计.md` 与 `specs/`)。DataMind 复用其 engine 与技能。
