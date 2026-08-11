@@ -163,6 +163,26 @@ class TestDirectionDR037:
         assert dao_core.should_reverse(child_unique=True, parent_unique=True) is False
 
 
+class TestAdaptiveThetaDR038:
+    """自适应 θ(DR-038):高基数子键降低 θ(证据更强),低基数维持严阈。"""
+
+    def test_low_cardinality_keeps_strict_theta(self):
+        assert dao_core.adaptive_theta(3) == dao_core.MIN_OVERLAP
+        assert dao_core.adaptive_theta(49) == dao_core.MIN_OVERLAP
+
+    def test_high_cardinality_relaxes_theta(self):
+        assert dao_core.adaptive_theta(50) < dao_core.MIN_OVERLAP
+        assert dao_core.adaptive_theta(1000) < dao_core.MIN_OVERLAP
+
+    def test_never_below_floor(self):
+        # 再高基数也不低于地板,避免把偶合稀释成真关系
+        assert dao_core.adaptive_theta(10 ** 6) >= 50.0
+
+    def test_monotonic_non_increasing(self):
+        vals = [dao_core.adaptive_theta(n) for n in (2, 10, 49, 50, 200, 5000)]
+        assert all(a >= b for a, b in zip(vals, vals[1:]))
+
+
 class TestParityWithEngine:
     """与上游 ../ontology-engine/engine/relation_discovery 的 name_score 平价 —— 证明同口径。"""
 
