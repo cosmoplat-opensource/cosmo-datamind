@@ -19,7 +19,7 @@
   - [x] 与上游 `relation_discovery.name_score` **平价测试**(参数化 4 例 + overlap 取整一致)
 - [x] `quick_build.py` 接入 dao_core(compat 模式):命名/重叠/决策全走单一核。
 - [x] **零回归验证**:108 表 demo(imom_metrics.db)重构前后逐值一致(265 关系/104 verified,note+evidence 全量相同)。
-- [ ] **DR-036 自引用键**:放开 `pt==t` + 角色词典,`test_quick_build` 自引用断言反转(下一增量)。
+- [x] **DR-036 自引用键**:放开 `pt==t` + 角色词典 + name_ok 角色路径;`test_quick_build` 自引用断言已反转为「能发现」;108 表 demo 新增 1 条真自引用边(0 既有改动);health_check 自反豁免。
 - [ ] **强门槛翻转**:quick_build 由 compat 切规范(MIN_DISTINCT=3/PK 排除),需集成套件(535 断言)护航。
 - [ ] **DR-037 多信号裁决**:包含方向/基数分布/空值率/类型兼容 → 标定置信度。
 

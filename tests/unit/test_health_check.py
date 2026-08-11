@@ -36,6 +36,16 @@ def test_self_loop_is_hard_error():
     assert any(e["type"] == "self_loop" for e in r["errors"])
 
 
+def test_marked_self_ref_is_not_self_loop_error():
+    # DR-036:有意的层级自引用(self_ref=True)不应被判为 self_loop 硬错误
+    ir = {"objects": [{"id": "emp", "cn": "员工"}],
+          "relations": [{"source_concept": "emp", "target_concept": "emp",
+                         "verb": "上级", "status": "verified", "self_ref": True}]}
+    r = health_check.check(ir)
+    assert not any(e["type"] == "self_loop" for e in r["errors"])
+    assert r["healthy"] is True
+
+
 def test_status_conflict_verified_vs_rejected():
     ir = {"objects": [{"id": "a"}, {"id": "b"}],
           "relations": [
