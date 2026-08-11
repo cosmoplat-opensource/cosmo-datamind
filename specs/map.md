@@ -25,6 +25,7 @@ Cosmo DataMind 是**自有品牌、原创前后端**的「数据治理 × 本体
 ## 索引
 
 ### 决定 / Decisions
+- [DR-035 · 单一裁决核 dao_core(消两份漂移实现 + classify 三态 + 引擎平价)](decisions/DR-035-unified-adjudication-core.md)
 - [DR-046 · 确定性模块的隔离单测(离线秒级 + quick_build 可测化)](decisions/DR-046-deterministic-module-unit-tests.md)
 - [DR-045 · 工程门禁与 TDD 底座(pytest/coverage/ruff/CI + 文档计数自检)](decisions/DR-045-engineering-harness-and-tdd.md)
 - [DR-001 · 本地只读执行(避开平台 1142/方言/沙箱坑)](decisions/DR-001-local-readonly-execution.md)
@@ -60,6 +61,7 @@ Cosmo DataMind 是**自有品牌、原创前后端**的「数据治理 × 本体
 - [IR-005 · 安全加固 + 工业化 + 复审收敛](iterations/IR-005-hardening-and-review.md) · **delivered(持续)**
 - [IR-006 · IOF/BFO 语义工程层(注释/接地/导出/完备度/一键升级)](iterations/IR-006-iof-bfo-semantic-layer.md) · **delivered**
 - [IR-007 · 工程门禁与 TDD 底座(pytest/coverage/ruff/CI + 确定性模块单测)](iterations/IR-007-tdd-foundation.md) · **in-progress**
+- [IR-008 · 裁决核收敛与算法强化(dao_core 单一事实源 + 引擎平价 + 零回归)](iterations/IR-008-adjudication-core-convergence.md) · **in-progress**
 
 ## 上游素材(真相来源)
 - `../上游本体引擎/` — 引擎(agent_runtime/export_owl/serve_claw)、技能(skills_seed)、方法论(其 `系统设计.md` 与 `specs/`)。DataMind 复用其 engine 与技能。

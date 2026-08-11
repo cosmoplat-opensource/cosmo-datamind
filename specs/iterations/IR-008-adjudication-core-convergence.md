@@ -1,0 +1,46 @@
+# IR-008 · 裁决核收敛与算法强化
+
+- **状态 / Status**: in-progress
+- **日期 / Date**: 2026-07-31
+- **关联 / Refs**: [[PROPOSAL-sdd-tdd-improvement]]、[[DR-035-unified-adjudication-core]];后续 DR-036(自引用键)/DR-037(多信号)/DR-038(自适应 θ)
+
+## 目标 Goal
+
+以 IR-007 的已知绿基线为起点,用红-绿把 `quick_build` 与上游 `relation_discovery`
+两份**漂移裁决核**收敛为单一事实源,并为后续算法强化(自引用键/多信号/自适应 θ)铺好可测底座。
+
+## 交付 Deliverables
+
+- [x] `dao_core.py`:自包含、数据无关的单一裁决核(原语 + `classify` 三态决策 + 常量单一事实源)。
+- [x] `tests/unit/test_dao_core.py`:20 条一致性测试,含
+  - [x] 重叠公式精度(原始不四舍五入)
+  - [x] 规范强门槛三态(verified/candidate/drop:含 MIN_DISTINCT、PK-作子键排除、非唯一父键)
+  - [x] compat 模式复现 quick_build
+  - [x] 与上游 `relation_discovery.name_score` **平价测试**(参数化 4 例 + overlap 取整一致)
+- [x] `quick_build.py` 接入 dao_core(compat 模式):命名/重叠/决策全走单一核。
+- [x] **零回归验证**:108 表 demo(imom_metrics.db)重构前后逐值一致(265 关系/104 verified,note+evidence 全量相同)。
+- [ ] **DR-036 自引用键**:放开 `pt==t` + 角色词典,`test_quick_build` 自引用断言反转(下一增量)。
+- [ ] **强门槛翻转**:quick_build 由 compat 切规范(MIN_DISTINCT=3/PK 排除),需集成套件(535 断言)护航。
+- [ ] **DR-037 多信号裁决**:包含方向/基数分布/空值率/类型兼容 → 标定置信度。
+
+## 任务 Tasks(每项一次提交)
+
+1. 建 `dao_core.py` + `test_dao_core.py`(先写一致性测试,含与引擎平价)。
+2. quick_build 接入 dao_core(compat),108 表 demo 逐值回归验证零漂移。
+3. (下一增量)DR-036 自引用键红-绿;强门槛翻转 + 集成套件护航。
+
+## 验收 Acceptance
+
+- [x] `pytest tests/` 全绿:**63 passed**(IR-007 的 43 + dao_core 20)。
+- [x] `dao_core` 覆盖率 83.3%,确定性层 TOTAL 72.9%。
+- [x] `ruff check dao_core.py quick_build.py`:F/B 零告警。
+- [x] 108 表 demo 逐值回归:关系指纹 + note/evidence 全量一致(compat 迁移零风险)。
+- [ ] 强门槛翻转后集成套件 535 断言仍绿(下一增量,需起服务)。
+
+## 备注
+
+- **为何先 compat**:强门槛(MIN_DISTINCT/PK 排除)会改 demo 产物(265→?),须由集成套件护航才敢翻;
+  本增量先做**零风险收口**(单一事实源已建立),把行为翻转与自引用键留给带集成护航的下一增量。
+- **平价而非改引擎**:上游 `relation_discovery` 属独立仓(自有 specs/CLAUDE.md),本轮以平价测试锁同口径,不跨仓改动。
+- 下一步落 DR-036:`test_quick_build.test_build_self_referential_fk_currently_missed` 是现成的红点,
+  放开 `pt==t` + 引入角色词典(reports_to↔employee)后,把该断言从「发现不了」反转为「能发现」。
