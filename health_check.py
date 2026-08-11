@@ -71,7 +71,8 @@ def check(ir):
                                "relation": f"{s}->{t}",
                                "desc": f"关系引用了不存在的对象: {side}",
                                "fix": "对象已被删除但关系残留,须级联清理"})
-        if s == t:
+        if s == t and not r.get("self_ref"):
+            # DR-036:标记为有意层级自引用(self_ref)的关系豁免——那是合法建模,不是抽取误判
             errors.append({"type": "self_loop", "severity": "error",
                            "relation": f"{s}->{t}", "verb": r.get("verb"),
                            "desc": f"自反关系:「{cn.get(s, s)}」指向自己",
