@@ -16,6 +16,7 @@ JSON 持久化」收敛为一个可测抽象,供 server 增量迁移:
 """
 import json
 import os
+import sys
 import threading
 
 _LOCKS = {}
@@ -49,9 +50,13 @@ class JsonStore:
                 with open(self.path, encoding="utf-8") as fp:
                     data = json.load(fp)
             except FileNotFoundError:
-                return self._fresh_default()
-            except (json.JSONDecodeError, ValueError, OSError):
-                # 坏文件/半截写:显式退回 default,不崩;调用方可据 default 重建
+                return self._fresh_default()          # 首次使用,非异常
+            except (json.JSONDecodeError, ValueError, OSError) as e:
+                # 坏文件/半截写:退回 default 保证不崩,但**必须留痕**——
+                # 静默退回会把「文件损坏」伪装成「本来就是空的」,数据丢失被掩盖。
+                print(f"[store] 无法解析 {self.path}({type(e).__name__}: {e});"
+                      f"本次读取退回默认值,原文件未被改动,请人工核查是否损坏",
+                      file=sys.stderr, flush=True)
                 return self._fresh_default()
             if self._migrate is not None:
                 data = self._migrate(data)

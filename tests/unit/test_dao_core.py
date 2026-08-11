@@ -189,6 +189,22 @@ class TestAdaptiveThetaDR038:
         vals = [dao_core.adaptive_theta(n) for n in (2, 10, 49, 50, 200, 5000)]
         assert all(a >= b for a, b in zip(vals, vals[1:]))
 
+    def test_never_raises_above_base(self):
+        # 自适应只能「放宽」不能「收紧」:base 低于地板时,高基数不得反被抬高阈值
+        for base in (40.0, 45.0, 55.0, 60.0, 80.0):
+            for n in (2, 49, 50, 1000):
+                assert dao_core.adaptive_theta(n, base=base) <= base
+
+
+class TestClassifyEdgeCases:
+    def test_empty_child_sentinel_is_not_reported_as_negative_overlap(self):
+        # overlap_pct 对空子键返回 -1.0 哨兵;classify 须判 drop 且理由说明「无数据」,
+        # 不能渲染成「重叠 -1%」误导为实测负重叠
+        r = dao_core.classify(overlap=dao_core.overlap_pct(set(), {1, 2}),
+                              parent_unique=True, name_ok=True, child_distinct=0)
+        assert r["status"] == "drop"
+        assert "-1" not in r["reason"]
+
 
 class TestParityWithEngine:
     """与上游 ../ontology-engine/engine/relation_discovery 的 name_score 平价 —— 证明同口径。"""

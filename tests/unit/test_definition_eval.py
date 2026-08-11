@@ -21,6 +21,13 @@ class TestStructural:
         assert r["score"] < 0.3
         assert any("缺失" in i for i in r["issues"])
 
+    def test_empty_definition_earns_no_structural_credit(self):
+        # 不存在的定义不得因「不循环」白拿分:无定义时结构维度一律 0,总分 0
+        r = de.score_definition("客户", "")
+        assert r["dims"]["non_circular"] == 0.0
+        assert r["dims"]["genus_differentia"] == 0.0
+        assert r["score"] == 0.0
+
     def test_circular_definition_flagged(self):
         r = de.score_definition("客户", "客户是客户。")
         assert r["dims"]["non_circular"] == 0.0
