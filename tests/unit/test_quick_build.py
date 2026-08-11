@@ -61,6 +61,22 @@ class TestBuildIntegration:
         assert self_rels[0]["status"] == "verified"
         assert self_rels[0].get("self_ref") is True   # 标记为有意自引用(供 health_check 豁免自反误判)
 
+    def test_direction_dim_pk_matched_by_fact_is_fact_to_dim(self, make_sqlite, tmp_path):
+        # DR-037 接线:dim 的 PK(bu_id 唯一)与 fact 的非唯一列(bu_id 有重复)重叠。
+        # 真方向是 fact→dim(多→一),不是 dim→fact。抑制反向边,让正向自然发现。
+        # fact_budget 无声明 PK(常见于事实表),使 parent_key 落到 bu_id 列,复现反向边。
+        db = make_sqlite({
+            "dim_bu": ("bu_id INTEGER PRIMARY KEY, name TEXT", [(1, "A"), (2, "B"), (3, "C")]),
+            "fact_budget": ("bu_id INTEGER, amt REAL",
+                            [(1, 5.0), (1, 6.0), (2, 7.0), (3, 8.0)]),
+        })
+        out = str(tmp_path / "ir.json")
+        quick_build.build(db, out, "fx")
+        ir = json.loads(open(out, encoding="utf-8").read())
+        pairs = {(r["source_concept"], r["target_concept"]) for r in ir["relations"]}
+        assert ("fact_budget", "dim_bu") in pairs, f"应得正向 fact→dim,实得: {pairs}"
+        assert ("dim_bu", "fact_budget") not in pairs, "反向 dim→fact 边应被抑制"
+
     def test_camelcase_role_key_discovered(self, make_sqlite, tmp_path):
         # 无下划线的驼峰角色键 ManagerId 也须识别(归一到 snake)
         db = make_sqlite({

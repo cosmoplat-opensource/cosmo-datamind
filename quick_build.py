@@ -138,6 +138,10 @@ def build(db, out, name):
                 # 决策统一走 dao_core.classify 的 compat 口径(min_distinct=1、不排除PK作子键)——
                 # 与 quick_build 历史行为逐值等价(非角色键),漂移就此收口到单一裁决核(DR-035)。
                 punique = is_key_unique(pt, pk) if ov >= 60 else False
+                # DR-037 接线:子键唯一而父键不唯一 → 方向反了(真方向 pt→t)。
+                # 抑制这条反向边、且不污染 seen——让正向在处理多侧表(pt)的该列时自然发现。
+                if ov >= 60 and not self_ref and dao_core.should_reverse(is_key_unique(t, c), punique):
+                    continue
                 verdict = dao_core.classify(overlap=ov, parent_unique=punique,
                                             name_ok=dao_core.name_ok(c, pt, pk, child_table=t),
                                             child_distinct=len(child),
