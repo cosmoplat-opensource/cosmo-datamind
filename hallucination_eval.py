@@ -54,6 +54,50 @@ def adjudicate(con, cand, theta=dao_core.MIN_OVERLAP, min_distinct=1, low_card_f
             "name_ok": name_ok, "child_distinct": cdist}
 
 
+def evaluate_proposals(db_path, proposed, gold_true_keys, **kw):
+    """端到端反造假度量:给一批**被提议**的关系(来自 LLM 或 mock proposer),
+    量化其中的幻觉(不在金标真关系里的提议),以及数据裁决把幻觉**拦成非 verified**
+    还是**泄漏为 verified** 的比例。
+
+    proposed: [{child_table,child_col,parent_table,parent_col}, ...](提议器输出,可含幻觉)
+    gold_true_keys: {(ct,cc,pt,pc)} 真关系键集合——用于判定某提议是否幻觉。
+
+    这补上 DR-039 的提议端:核心主张「LLM 提议、数据裁决,幻觉被数据拦住」
+    在此变成数字——`hallucination_containment`=被拦幻觉/总幻觉,越接近 1 防线越强。
+    proposer 是纯 callable,真 LLM 与确定性 mock 同接口,故离线可测、在线可换真引擎。
+    """
+    con = sqlite3.connect(f"file:{db_path}?mode=ro", uri=True)
+    total = len(proposed)
+    hallucinated = leaked = contained = 0
+    rows = []
+    for p in proposed:
+        key = (p["child_table"], p["child_col"], p["parent_table"], p["parent_col"])
+        is_hallucination = key not in gold_true_keys
+        res = adjudicate(con, p, **kw)
+        if is_hallucination:
+            hallucinated += 1
+            if res["verified"]:
+                leaked += 1
+            else:
+                contained += 1
+        rows.append({**p, "hallucination": is_hallucination, "verified": res["verified"],
+                     "status": res["status"]})
+    con.close()
+    return {"proposed": total, "hallucinated": hallucinated,
+            "hallucination_rate": round(hallucinated / total, 3) if total else 0.0,
+            "leaked": leaked, "contained": contained,
+            "hallucination_containment": round(contained / hallucinated, 3) if hallucinated else 1.0,
+            "leak_rate": round(leaked / hallucinated, 3) if hallucinated else 0.0,
+            "rows": rows}
+
+
+def mock_proposer(true_candidates, fabricated_candidates, fabricate_ratio=0.5):
+    """确定性 mock 提议器(替身,证明防线可离线量化):
+    返回全部真候选 + 按比例掺入的捏造候选(模拟 LLM 幻觉)。真引擎实现同签名即可替换。"""
+    n_fab = int(len(true_candidates) * fabricate_ratio)
+    return list(true_candidates) + list(fabricated_candidates[:n_fab])
+
+
 def evaluate(db_path, candidates, **kw):
     """在库上对全部带标签候选评测,返回混淆矩阵 + 精确率/召回/F1 + 幻觉泄漏率 + 逐条 rows。"""
     con = sqlite3.connect(f"file:{db_path}?mode=ro", uri=True)

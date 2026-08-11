@@ -56,6 +56,25 @@ def test_dr038_fixed_theta_failure_modes(tmp_path):
     assert lo["is_true_fk"] is False and lo["verified"] is True    # 假边被固定θ收(FP/泄漏)
 
 
+def test_proposer_hallucinations_are_contained(tmp_path):
+    # 端到端:mock 提议器掺入捏造边(幻觉),数据裁决应把它们**全部拦住**(不 verify)。
+    db = adversarial_fk.build(str(tmp_path / "adv.db"))
+    true_cands = [c for c in adversarial_fk.CANDIDATES if c["is_true_fk"] and not c["cat"].startswith("dr038")]
+    gold = {(c["child_table"], c["child_col"], c["parent_table"], c["parent_col"]) for c in true_cands}
+    # 捏造:代理键碰撞 + 方向反(都不在金标里)
+    fabricated = [
+        {"child_table": "customers", "child_col": "customer_id",
+         "parent_table": "widgets", "parent_col": "widget_id"},
+        {"child_table": "customers", "child_col": "customer_id",
+         "parent_table": "orders", "parent_col": "customer_id"},
+    ]
+    proposed = hallucination_eval.mock_proposer(true_cands, fabricated, fabricate_ratio=1.0)
+    m = hallucination_eval.evaluate_proposals(db, proposed, gold)
+    assert m["hallucinated"] == 2
+    assert m["hallucination_containment"] == 1.0   # 幻觉全被数据裁决拦住
+    assert m["leak_rate"] == 0.0                    # 无幻觉泄漏为 verified
+
+
 def test_dr038_adaptive_theta_recovers_highcard_recall(tmp_path):
     # 自适应 θ 在基准上是纯召回增益:高基数部分重叠真 FK 被找回,泄漏率不升。
     # (但在真实 demo 上会促成同名代理键偶合的假 verified——见 DR-038,故不接入 quick_build。)

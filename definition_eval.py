@@ -50,9 +50,13 @@ def _overlap(a, b):
     return round(len(A & B) / len(A | B), 3)
 
 
-def score_definition(term, definition, counter_example="", gold=None):
+def score_definition(term, definition, counter_example="", gold=None, judge=None):
     """给一条定义打分。返回 {score, dims, issues}。
-    结构维度各 0/1;有 gold 时加参考重叠(0-1),按 0.7 结构 + 0.3 参考 融合。"""
+    结构维度各 0/1;有 gold 时加参考重叠(0-1),按 0.7 结构 + 0.3 参考 融合。
+
+    judge: 可选 callable(term, definition)->float(0-1),语义充分性打分(LLM-judge/嵌入)。
+    传入时补 `dims['semantic']` 并以 0.6 结构参考 + 0.4 语义 再融合——
+    这是覆盖「结构成立但空洞」局限的增强层;纯 callable,离线可用 mock、在线接真引擎。"""
     d = (definition or "").strip()
     ce = (counter_example or "").strip()
     t = (term or "").strip()
@@ -84,6 +88,17 @@ def score_definition(term, definition, counter_example="", gold=None):
         ref = _overlap(d, gold)
         dims["reference"] = ref
         score = 0.7 * score + 0.3 * ref
+
+    if judge is not None and dims["present"]:
+        try:
+            sem = float(judge(term, d))
+            sem = max(0.0, min(1.0, sem))
+            dims["semantic"] = round(sem, 3)
+            score = 0.6 * score + 0.4 * sem
+            if sem < 0.5:
+                issues.append("语义充分性偏低(judge)")
+        except Exception:
+            pass   # judge 不可用/异常:如实退回确定性分,不臆造语义分
 
     return {"score": round(score, 3), "dims": dims, "issues": issues}
 
