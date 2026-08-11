@@ -201,8 +201,13 @@ _ADAPT_FLOOR = 50.0       # θ 下限
 
 def adaptive_theta(child_distinct, base=MIN_OVERLAP):
     """基数自适应重叠阈:distinct < 拐点 → base(严);≥拐点 → 地板(宽)。
-    刻意用阶跃而非连续函数——拐点与地板都可由评测台标定、可回归,不引入难解释的曲线。"""
-    return _ADAPT_FLOOR if child_distinct >= _ADAPT_HIGH else base
+    刻意用阶跃而非连续函数——拐点与地板都可由评测台标定、可回归,不引入难解释的曲线。
+
+    自适应只允许**放宽**:取 min(base, 地板),故调用方传入低于地板的 base 时
+    不会被反向抬高(否则「高基数」反而更难判定,与本函数意图相悖)。"""
+    if child_distinct >= _ADAPT_HIGH:
+        return min(base, _ADAPT_FLOOR)
+    return base
 
 
 def classify(*, overlap, parent_unique, name_ok, child_distinct,

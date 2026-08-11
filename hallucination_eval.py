@@ -17,13 +17,20 @@ _qi = lambda s: '"' + str(s).replace('"', '""') + '"'
 
 
 def _signals(con, table, col):
-    """从库里取一列的 distinct 集合与唯一性(与 quick_build 同口径:剔空)。"""
+    """取一列的 distinct 集合、非空计数与**候选键唯一性**。
+
+    唯一性判定与 `quick_build.is_key_unique` 逐值对齐:比较**总行数**与 distinct 非空值数
+    (即 SQL 的 `COUNT(*)` vs `COUNT(DISTINCT col)`)——含 NULL 的列因此判为**不唯一**,
+    这正是候选键的语义(可为空就不是键)。若先剔 NULL 再比,会把含空值的列误判为唯一,
+    评测台就会比生产宽松,结论无法迁移。
+    """
     try:
         vals = [r[0] for r in con.execute(f'SELECT {_qi(col)} FROM {_qi(table)}')]
     except Exception:
         return set(), 0, False
-    dset, n = dao_core.clean(vals)
-    return dset, n, (n > 0 and len(dset) == n)
+    dset, n = dao_core.clean(vals)          # dset/n:非空去重值与非空计数(供重叠率用)
+    total = len(vals)                        # 总行数,含 NULL —— 唯一性按此判
+    return dset, n, (total > 0 and len(dset) == total)
 
 
 def adjudicate(con, cand, theta=dao_core.MIN_OVERLAP, min_distinct=1, low_card_floor=0, adaptive=False):

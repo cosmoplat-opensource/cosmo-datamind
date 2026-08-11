@@ -16,6 +16,28 @@ def _clean(cands):
     return [c for c in cands if not c["cat"].startswith("dr038")]
 
 
+def test_uniqueness_semantics_match_quick_build(tmp_path):
+    """评测台的「父键唯一」必须与 quick_build 同口径:含 NULL 的列不是候选键。
+
+    quick_build 用 COUNT(*) vs COUNT(DISTINCT col) —— NULL 计入前者不计入后者,
+    故有 NULL 即判不唯一。评测台若先剔 NULL 再比,会把含 NULL 的列误判为唯一,
+    进而给出比生产更乐观的 verified 数,评测结论就不可迁移到生产。
+    """
+    import sqlite3
+    db = str(tmp_path / "nulls.db")
+    con = sqlite3.connect(db)
+    con.execute("CREATE TABLE p(k INTEGER)")          # 无 PK 约束,含 NULL
+    con.executemany("INSERT INTO p VALUES(?)", [(1,), (2,), (3,), (None,)])
+    con.commit(); con.close()
+
+    ro = sqlite3.connect(f"file:{db}?mode=ro", uri=True)
+    _, _, uniq = hallucination_eval._signals(ro, "p", "k")
+    ro.close()
+
+    # 与 quick_build.is_key_unique 的判定对齐:COUNT(*)=4 ≠ COUNT(DISTINCT)=3 → 不唯一
+    assert uniq is False
+
+
 def test_harness_reports_metrics(tmp_path):
     db = adversarial_fk.build(str(tmp_path / "adv.db"))
     m = hallucination_eval.evaluate(db, adversarial_fk.CANDIDATES)

@@ -74,7 +74,7 @@ python3 server.py                  # 前台运行 → http://127.0.0.1:8092
 
 ```bash
 curl http://127.0.0.1:8092/api/overview      # KPI 概览(无库时含 warning 字段)
-python3 test_all.py                          # 系统级回归(531 断言;需服务已启动)
+python3 test_all.py                          # 系统级回归(535 断言;需服务已启动)
 ```
 
 ### 5. 跑通 demo(五分钟看完主链路)
@@ -266,12 +266,19 @@ GLM-5.2 与 OpenAI 的完整配置、用自然语言建一张带中文名的本�
 ## 测试
 
 ```bash
+# 单元层:离线、秒级,不需起服务(确定性模块的隔离测试)
+pip3 install -r requirements-dev.txt
+python3 -m pytest tests/ -q      # 106 个单测 + 文档计数自检
+python3 -m coverage run -m pytest tests/ -q && python3 -m coverage report   # 确定性模块覆盖率
+
+# 集成层:需先起服务
 python3 server.py &            # 先起服务
-python3 test_all.py            # 系统级回归(531 断言)
+python3 test_all.py            # 系统级回归(535 断言)
 python3 test_ui.py             # 全 UI 走查:26 页渲染 + 子 UI 交互(57 断言;需 playwright)
 python3 test_ui_ops.py         # UI 逐步实操(46 断言):切引擎/建本体/对话改本体/审计/问数/选本体锚定 全动线
 ```
 
+两层分工:单元层测确定性模块的边界与纯函数(离线可跑),集成层测端到端契约与安全约束。
 套件覆盖路由可达性、只读约束、CSRF、路径穿越、证据分层一致性、编辑回放等。
 **未配置引擎时,依赖引擎的用例会失败**——这是如实反映能力边界,不是缺陷。
 

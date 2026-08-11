@@ -28,6 +28,16 @@ def test_corrupt_file_recovers_to_default(tmp_path):
     assert s.load() == {"safe": True}   # 坏文件不崩,退回 default
 
 
+def test_corrupt_file_is_reported_not_swallowed(tmp_path, capsys):
+    """坏档退回 default 但**不得静默**:必须留下可见告警,
+    否则状态文件损坏会伪装成「本来就是空的」,数据丢失被掩盖。"""
+    p = tmp_path / "x.json"
+    p.write_text("{ broken", encoding="utf-8")
+    store.JsonStore(str(p), default={}).load()
+    err = capsys.readouterr().err
+    assert "x.json" in err and ("损坏" in err or "无法解析" in err)
+
+
 def test_atomic_write_leaves_no_tmp(tmp_path):
     s = store.JsonStore(str(tmp_path / "x.json"), default={})
     s.save({"k": 1})

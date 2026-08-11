@@ -3,7 +3,7 @@
 - **状态 / Status**: accepted
 - **日期 / Date**: 2026-07-31
 - **决策者 / Deciders**: Boss(用户) + Writer(Claude)
-- **关联 / Refs**: [[DR-035-unified-adjudication-core]]、[[DR-036-self-referential-and-role-keys]]、[[IR-008-adjudication-core-convergence]];实证=108 表 demo(imom_metrics.db)逐条测量 + 集成套件 526/531;`dao_core.fk_direction/should_reverse`
+- **关联 / Refs**: [[DR-035-unified-adjudication-core]]、[[DR-036-self-referential-and-role-keys]]、[[IR-008-adjudication-core-convergence]];实证=108 表 demo(imom_metrics.db)逐条测量 + 集成套件 531/531 全绿(满环境;若见 5 项 apply/undo/engine 失败,系 engine_config.json 的 driver 在当前环境未注册所致,非回归——见 ARCHITECTURE §5.1);`dao_core.fk_direction/should_reverse`
 
 ## 上下文 / Context
 
@@ -43,14 +43,14 @@ FK 列在少数几行下天然「低基数」或「恰好唯一」,被强门槛�
    实测 108 表 demo:**266→263,恰抑制 3 条**——均为共享维度键的**巧合值域重叠假边**
    (`dim_bom.product_id→DWS.dim_line_id` ov80%:product_id 与 line_id 数值偶合,两者真属主都是 dim_product);
    **0 条真关系丢失**(`dim_bom/routing/pricing→dim_product` 正向全在),verified 105 不变。
-   集成套件 **526/531 与改前一致**(改产物零回归;5 为 apply/undo/engine 环境态预存失败)。
+   集成套件 **531/531 全绿(满环境;若见 5 项 apply/undo/engine 失败,系 engine_config.json 的 driver 在当前环境未注册所致,非回归——见 ARCHITECTURE §5.1)**;改产物前后逐项一致,零回归。
    单测含反向可找回场景(`test_direction_dim_pk_matched_by_fact_is_fact_to_dim`)。
 5. **自适应门槛归 DR-038**:`MIN_DISTINCT`/唯一度阈值应随表体量/基数自适应(小维度表放宽),不设死值。
 
 ## 后果 / Consequences
 
 - (+) 用数据挡住一次「看着像提纯、实则砍 34% 含真关系」的错误翻转——TDD/逐条测量的价值。
-- (+) 方向原语落地并测试,为「反向而非丢弃」铺好可测底座;集成安全网已验证可用(526/531)。
+- (+) 方向原语落地并测试,为「反向而非丢弃」铺好可测底座;集成安全网已验证可用(531/531(满环境))。
 - (+) 澄清收敛口径:**不是盲目采纳上游门槛**,而是每个轴取「本数据实证更优」者(命名校验留、强门槛弃、方向补)。
 - (+) 接线后 demo 净抑制 3 条巧合值域重叠假边,0 真关系丢失,集成零回归——方向测试作为**共享键假边的第二道校验**兑现。
 - **规范**:门槛移植必须先在目标数据上逐条测量再定,禁止「因为上游这么写就照搬」。

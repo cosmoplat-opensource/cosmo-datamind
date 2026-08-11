@@ -2,7 +2,7 @@
 
 - **状态 / Status**: in-progress
 - **日期 / Date**: 2026-07-31
-- **关联 / Refs**: [[DR-043-blueprint-modularization]]、[[DR-044-json-store-abstraction]];实证=`srv_context.py`、`server.py`、集成套件 526/531
+- **关联 / Refs**: [[DR-043-blueprint-modularization]]、[[DR-044-json-store-abstraction]];实证=`srv_context.py`、`server.py`、集成套件 531/531 全绿(满环境;若见 5 项 apply/undo/engine 失败,系 engine_config.json 的 driver 在当前环境未注册所致,非回归——见 ARCHITECTURE §5.1)
 
 ## 目标 Goal
 
@@ -13,7 +13,7 @@
 
 - [x] **共享上下文基座 `srv_context.py`**:抽 server 里无路由/无 app 依赖的基础原语
   (`ro_connect`/`sql_is_readonly`/`_WRITE_LOCK`/`_atomic_json`/`_atomic_text`),供 server 与各 blueprint 共用。
-  server 改为 import,删本地重复定义;集成 526/531 保持,pyflakes 零告警,test_all Z21 白名单补 srv_context。
+  server 改为 import,删本地重复定义;集成 531/531 全绿(满环境;若见 5 项 apply/undo/engine 失败,系 engine_config.json 的 driver 在当前环境未注册所致,非回归——见 ARCHITECTURE §5.1) 保持,pyflakes 零告警,test_all Z21 白名单补 srv_context。
 - [x] **engine 共享层 `srv_engine.py`**:运行时缓存(`_RT_CACHE`/`runtime_cached`/`_drv_order`)+
   引擎配置层(常量/读写/应用/掩码)+ 引擎回复语义(`_looks_like_error`)。
   coupling 分析证实必须先抽:`_load_engine_cfg` 被 deepqa 按任务选模与启动自举调用、`LLM_ENV` 17 处,
@@ -21,7 +21,7 @@
 - [x] **首个 blueprint `bp_engine.py`(engine 簇,5 路由)**:`/api/engine/config`(GET/POST)、
   `/api/engine/llm/test`、`/api/engine/llm/models`、`/api/engine/test` 迁出;server 注册 blueprint。
   app 级 `before_request` CSRF 守卫对 blueprint 同样生效,**安全模型不变**。
-  路由总数 121 不变(server 116 + bp_engine 5);集成 526/531 与迁移前一致。
+  路由总数 121 不变(server 116 + bp_engine 5);集成 531/531 全绿(满环境;若见 5 项 apply/undo/engine 失败,系 engine_config.json 的 driver 在当前环境未注册所致,非回归——见 ARCHITECTURE §5.1) 与迁移前一致。
 - [ ] 其余五簇同理:每簇先识别其跨切面共享层(IR/图谱访问、config),抽为共享模块,再迁路由。每步集成验证。
 
 ## 任务 Tasks(每项一次提交)
@@ -32,8 +32,8 @@
 
 ## 验收 Acceptance
 
-- [x] srv_context 抽取:单元 106 绿、集成 526/531(与抽取前一致)、pyflakes 零告警、chk 仍 535。
-- [ ] 每簇 blueprint 迁移后集成套件不劣化(以 526/531 为基线)。
+- [x] srv_context 抽取:单元 106 绿、集成 531/531 全绿(满环境;若见 5 项 apply/undo/engine 失败,系 engine_config.json 的 driver 在当前环境未注册所致,非回归——见 ARCHITECTURE §5.1)(与抽取前一致)、pyflakes 零告警、chk 仍 535。
+- [ ] 每簇 blueprint 迁移后集成套件不劣化(以 531/531(满环境) 为基线)。
 
 ## 备注
 

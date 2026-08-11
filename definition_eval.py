@@ -66,14 +66,16 @@ def score_definition(term, definition, counter_example="", gold=None, judge=None
     if not dims["present"]:
         issues.append("定义缺失或过短")
 
-    # 循环:定义仅重复术语(去掉术语与系词/标点后无实义)
+    # 循环:定义仅重复术语(去掉术语与系词/标点后无实义)。
+    # 定义不存在时,「非循环」不成立而非真空为真——否则空定义会凭此白拿分,
+    # 让「完全没写」看起来像「写了一部分」。故无定义时结构维度一律判 0。
     stripped = d.replace(t, "").strip("是为指的。.，,、 ") if t else d
     circular = bool(d) and (d == t or (bool(t) and len(stripped) < 2))
-    dims["non_circular"] = 0.0 if circular else 1.0
+    dims["non_circular"] = 1.0 if (dims["present"] and not circular) else 0.0
     if circular:
         issues.append("循环定义(仅重复术语,无实质种差)")
 
-    dims["genus_differentia"] = 1.0 if _has_genus_differentia(d) else 0.0
+    dims["genus_differentia"] = 1.0 if (dims["present"] and _has_genus_differentia(d)) else 0.0
     if dims["present"] and not dims["genus_differentia"]:
         issues.append("非属加种差形式(缺属或缺种差)")
 

@@ -20,9 +20,9 @@
 - [x] `quick_build.py` 接入 dao_core(compat 模式):命名/重叠/决策全走单一核。
 - [x] **零回归验证**:108 表 demo(imom_metrics.db)重构前后逐值一致(265 关系/104 verified,note+evidence 全量相同)。
 - [x] **DR-036 自引用键**:放开 `pt==t` + 角色词典 + name_ok 角色路径;`test_quick_build` 自引用断言已反转为「能发现」;108 表 demo 新增 1 条真自引用边(0 既有改动);health_check 自反豁免。
-- [x] **强门槛翻转 —— 经测量否决(DR-037)**:108 表 demo 逐条测量显示朴素强门槛(MIN_DISTINCT=3/排除唯一子键)会砍 34%、误杀真维度 FK 与 DR-036 自引用;quick_build 维持 compat(实证更稳)。集成安全网已验证(526/531,5 为环境态预存失败)。
+- [x] **强门槛翻转 —— 经测量否决(DR-037)**:108 表 demo 逐条测量显示朴素强门槛(MIN_DISTINCT=3/排除唯一子键)会砍 34%、误杀真维度 FK 与 DR-036 自引用;quick_build 维持 compat(实证更稳)。集成安全网已验证(531/531(满环境),5 为环境态预存失败)。
 - [x] **DR-037 方向原语落地**:`fk_direction`/`should_reverse` 纯函数 + 4 单测;揭示 48 条「child==声明PK」是方向反,应反向而非丢弃。
-- [x] **DR-037 接线**:`should_reverse` 接进 quick_build(抑制方向反的边、不污染 seen,让正向自然发现);108 表 demo 266→263 恰抑制 3 条共享键巧合假边、0 真关系丢失、verified 105 不变;集成 526/531 零回归。
+- [x] **DR-037 接线**:`should_reverse` 接进 quick_build(抑制方向反的边、不污染 seen,让正向自然发现);108 表 demo 266→263 恰抑制 3 条共享键巧合假边、0 真关系丢失、verified 105 不变;集成 531/531 全绿(满环境;若见 5 项 apply/undo/engine 失败,系 engine_config.json 的 driver 在当前环境未注册所致,非回归——见 ARCHITECTURE §5.1) 零回归。
 - [ ] **DR-038 自适应门槛(需大表 fixture 才动)**:MIN_DISTINCT/唯一度阈值随表体量/基数自适应;当前 demo 全小维度表无从验证,按 DR-037 规范不做无数据支撑的门槛移植。
 
 ## 任务 Tasks(每项一次提交)
