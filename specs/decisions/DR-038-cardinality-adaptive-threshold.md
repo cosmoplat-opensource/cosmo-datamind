@@ -21,7 +21,7 @@
    `fact_maintenance_plan.plan_id→fact_sales_plan.plan_id`、
    `fact_production_order.order_id→fact_sales_order.order_id` 等:**不同事实表的同名代理键
    (plan_id/order_id)值域偶合 55–58%**,名同、皆为 PK、父键唯一——
-   与基准里的真 FK(`order_events→customers`,孤儿维)**信号完全相同却真伪相反**。
+   与基准里的真 FK(`order_events→customers`,孤儿维)**在裁决所用信号上无法区分,真伪却相反**。
 
 ## 为什么这样做 / Rationale
 

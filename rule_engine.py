@@ -174,7 +174,7 @@ def consistency_check(rules):
             (c.get("field"), c.get("op"), str(c.get("value")))
             for c in r.get("when", []))))
         sig.setdefault(key, []).append(r)
-    for key, group in sig.items():
+    for _key, group in sig.items():
         if len(group) > 1:
             decs = {(g.get("then") or {}).get("decision") for g in group}
             if len(decs) > 1:

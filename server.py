@@ -352,7 +352,7 @@ def _join_hints(ir, tables, pairs=None):
                 hit = None
                 for (m, k1, k2, at, mt1) in adj.get(a, []):
                     if m == b: hit = None; break     # 有直连(未入 out 因非选中态),不补链
-                    for (b2, k3, k4, mt2, bt) in adj.get(m, []):
+                    for (b2, k3, k4, _mt2, bt) in adj.get(m, []):
                         if b2 == b and m not in tl:
                             hit = (at, k1, mt1, k2, k3, bt, k4); break
                     if hit: break
@@ -670,7 +670,7 @@ def build_context(question, focus_tables=None, trace=None, graph_keys=None):
     tabs, hmap = [], {}
     # 只有绑表对象能进 schema 上下文;混合本体(部分对象是纯概念)里若不滤,
     # 召回名额会被无表对象挤占,上下文可能一张表都没有
-    for i, o in enumerate([x for x in ir.get("objects", []) if x.get("table")]):
+    for _i, o in enumerate([x for x in ir.get("objects", []) if x.get("table")]):
         # DR-027:别名并入评分语料——业务用语("产量")与表名中文("生产日汇总")常常不同,
         # 不认别名会让问数召回不到正确的表,进而生成查错表的 SQL
         blob = ((o.get("cn") or "") + (o.get("table") or "") + "".join(o.get("aliases") or [])
@@ -2840,7 +2840,7 @@ def diagnose_stream():
         ents = sorted(((_score(o), o) for o in objs), key=lambda x: -x[0])
         ents = [o for sc, o in ents[:2] if sc > 0]
         mets = []
-        for k, arr in (ir.get("metric_layers") or {}).items():
+        for _k, arr in (ir.get("metric_layers") or {}).items():
             for m in arr:
                 if m.get("name") and m["name"] in q: mets.append(m)
         if not ents:
@@ -3779,7 +3779,9 @@ def _run_skill_compare(query, arms):
         label = chr(65 + i)
         SKILL_CMP_JOB["progress"] = f"{label} 组构建中(技能:{'、'.join(skills) or '无'})"
         ev = _gather_evidence(DB)
-        extracted = _bounded(lambda: _llm_extract_ontology(query, ev, skills), 640)
+        # 默认参数绑定当轮的 ev/skills:_bounded 超时后守护线程仍在跑,若下一轮重新赋值,
+        # 闭包按引用取值会读到下一轮的证据。绑定后每轮各用各的,与循环推进解耦。
+        extracted = _bounded(lambda ev=ev, skills=skills: _llm_extract_ontology(query, ev, skills), 640)
         arm = {"label": label, "skills": skills, "ok": False}
         if extracted and extracted.get("objects"):
             key = "built_" + uuid.uuid4().hex[:6]
@@ -4562,7 +4564,7 @@ def _ext_query(conn, sql, limit=500):
     pwd = sec.get("password") or u["password"] or ""
     if kind in ("mysql", "doris"):
         try: import pymysql
-        except ImportError: raise RuntimeError("未安装 MySQL 驱动:pip install pymysql 后重启服务")
+        except ImportError: raise RuntimeError("未安装 MySQL 驱动:pip install pymysql 后重启服务") from None
         con = pymysql.connect(host=u["host"], port=int(u["port"] or (9030 if kind == "doris" else 3306)),
                               user=user, password=pwd, database=u["db"] or None,
                               connect_timeout=6, read_timeout=20, charset="utf8mb4")
@@ -4575,7 +4577,7 @@ def _ext_query(conn, sql, limit=500):
             con.close()
     if kind == "postgres":
         try: import psycopg2
-        except ImportError: raise RuntimeError("未安装 PostgreSQL 驱动:pip install psycopg2-binary 后重启服务")
+        except ImportError: raise RuntimeError("未安装 PostgreSQL 驱动:pip install psycopg2-binary 后重启服务") from None
         con = psycopg2.connect(host=u["host"], port=int(u["port"] or 5432), user=user,
                                password=pwd, dbname=u["db"] or "postgres", connect_timeout=6)
         try:

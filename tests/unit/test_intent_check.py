@@ -11,11 +11,18 @@ def test_aligned_when_sql_covers_question(ir_healthy):
 
 
 def test_mismatch_when_sql_hits_unrelated_table(ir_healthy):
-    # 问句锚到 员工/部门,但 SQL 查了不相干的表 → 答非所问
+    # 问句锚到「员工」,SQL 查了不相干的表 → 答非所问
+    res = intent_check.cross_check("员工有多少", "SELECT count(*) FROM some_other", ir_healthy)
+    assert res["verdict"] == "mismatch"
+
+
+def test_near_miss_table_name_is_not_fuzzy_matched(ir_healthy):
+    """表名须精确匹配:`departments_xyz` 不得被当作 `departments`。
+    若这里放宽成子串/模糊匹配,通道 B 会把没查的对象算成查了,双盲比对随之失真。"""
     res = intent_check.cross_check("员工有多少", "SELECT count(*) FROM departments_xyz", ir_healthy)
-    # 问句只锚到「员工」,SQL 未覆盖 → mismatch
-    res2 = intent_check.cross_check("员工有多少", "SELECT count(*) FROM some_other", ir_healthy)
-    assert res2["verdict"] == "mismatch"
+    assert res["actual"]["tables"] == ["departments_xyz"]
+    assert res["actual"]["objects"] == []          # 未映射到任何本体对象
+    assert res["verdict"] == "mismatch"
 
 
 def test_partial_when_one_dimension_missing(ir_healthy):
