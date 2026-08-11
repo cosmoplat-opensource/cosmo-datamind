@@ -25,6 +25,7 @@ Cosmo DataMind 是**自有品牌、原创前后端**的「数据治理 × 本体
 ## 索引
 
 ### 决定 / Decisions
+- [DR-040 · 定义质量评分(属加种差/非循环/反例 + 参考重叠;LLM 1.0 vs 数据驱动 0.25)](decisions/DR-040-definition-quality-eval.md)
 - [DR-039 · 反幻觉评测台(带标签对抗基准 + 泄漏率;反造假变数字)](decisions/DR-039-hallucination-eval-harness.md)
 - [DR-038 · 基数自适应 θ(基准纯增益但真实数据回归 → 落地原语不接入)](decisions/DR-038-cardinality-adaptive-threshold.md)
 - [DR-037 · 方向感知裁决;数据实证否决朴素强门槛翻转(fk_direction/should_reverse)](decisions/DR-037-direction-aware-adjudication.md)
