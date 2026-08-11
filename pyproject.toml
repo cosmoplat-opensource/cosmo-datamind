@@ -20,11 +20,12 @@ markers = [
 
 [tool.coverage.run]
 branch = true
-# 只统计确定性模块的覆盖率;server.py 由集成套件覆盖,单独计会失真。
+# 只统计确定性模块的覆盖率。路由代码(server.py、bp_*.py)由集成套件覆盖,
+# 计入单测覆盖率会失真,故排除;srv_context 是纯原语(含只读 SQL 校验),纳入统计。
 source = [
   "health_check", "cq_check", "drift_check", "rule_engine", "module_split",
   "compat_check", "intent_check", "usage_stat", "quick_build", "openai_runtime",
-  "dao_core", "hallucination_eval", "definition_eval", "store",
+  "dao_core", "hallucination_eval", "definition_eval", "store", "srv_context",
 ]
 omit = ["tests/*"]
 
