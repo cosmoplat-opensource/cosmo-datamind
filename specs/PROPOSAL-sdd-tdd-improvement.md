@@ -19,7 +19,7 @@
 - SDD 规约真实:`specs/` 34 DR + 6 IR,`ARCHITECTURE.md` 每模块对齐 DR,提交与 map/DR 同步。
 - 领域层优秀:11 个确定性无 LLM 模块(`cq_check`/`drift_check`/`intent_check`/`rule_engine`/`health_check`/`compat_check`/`module_split`/`usage_stat`/`openai_runtime`/`quick_build`/`translate_cn`),各 95–299 行、可独立单测。
 - 本体不变量自检成熟:够不够用(CQ)/通不通(链路)/对不对得上数据(漂移)/答的是不是问的(双盲)/结构健不健康(体检)——多数团队从不构建。
-- 反造假认识论一致:`verified` 只由数据见证产生,LLM 不得自评,人审只到 `asserted`。
+- 反幻觉认识论一致:`verified` 只由数据见证产生,LLM 不得自评,人审只到 `asserted`。
 
 ### 1.2 债务(三处集中)
 | 区 | 事实(file:line) | 影响 |
@@ -36,7 +36,7 @@
 | 单信号裁决 | 仅 重叠∧唯一∧命名 | 缺 包含方向 / 基数分布 / 空值率 / 类型兼容;自增代理键假阳只能靠脆弱命名校验拦截(代码自述 10/12 坏边) |
 | 固定 θ | 处处 60 | 高基数命中 60% 与 5 值枚举命中 60% 证据强度天差,却同阈 |
 | 采样截断 | `distinct()` `LIMIT 20000` 无 `ORDER BY` | 大表父域欠采→重叠虚低→真 FK 静默丢 |
-| 反幻觉未量化 | 无对抗/植入式评测集,`step_critic` 只按 LLM 说法降级 | 「反造假」是规范主张而非**被测数字**(论文 M5) |
+| 反幻觉未量化 | 无对抗/植入式评测集,`step_critic` 只按 LLM 说法降级 | 「反幻觉」是规范主张而非**被测数字**(论文 M5) |
 | 定义未评分 | genus-differentia 定义/反例/成熟度**只存不评** | 无参考式指标(论文 RQ3 future work) |
 | 单库单源 | 一次一个 SQLite/一个 gov 源;`_MOD_MAP` 只给图像/PDF 打标签,仅 CSV/TSV 入表 | 无跨库联邦键发现;多模态视觉通道 = IR-009 TODO |
 

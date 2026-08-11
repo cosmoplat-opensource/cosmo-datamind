@@ -1267,7 +1267,7 @@ def _stamp_review(x, op):
 
 def apply_any(ir, op):
     """白名单编辑统一入口:关系类算子(人审通过/否决 + 动词/基数/增删)与对象确认/删除本地实现、
-    两种 IR 形状通吃;其余算子(属性类等)沿用平台 apply_op。人审规范:人只产生 asserted,永不冒充 verified(反造假)。"""
+    两种 IR 形状通吃;其余算子(属性类等)沿用平台 apply_op。人审规范:人只产生 asserted,永不冒充 verified(反幻觉)。"""
     kind = op.get("op"); t = op.get("target", "")
     params = op.get("params") or {}; reason = (op.get("reason") or "").strip()
     if kind == "confirm":                      # 确认候选对象(两种形状)
@@ -1708,7 +1708,7 @@ def ont_rules():
             {"name": "斯坦福七步法", "map": "确定范围→复用→列举术语→定义类→类层次→定义属性→创建实例;对应 抽取列结构/枚举表→对象定义→hierarchy families→attrs→绑定实数据"},
             {"name": "Palantir 操作型本体四层", "map": "对象↔表 / 属性↔列 / 链接↔FK+取值重叠(≥60%∧列名有据=verified) / 指标↔DWS列(原子/派生/复合)"},
             {"name": "W3C OWL2+SHACL+HermiT", "map": "导出 owl:Class/DatatypeProperty/ObjectProperty+skos指标;锻造时 SHACL 校验;推理检查工具箱可跑"},
-            {"name": "反造假规范", "map": "verified 仅由数据裁决;人工/LLM 断言记 asserted/candidate;弱证据送审;编辑走白名单op+可撤销"}],
+            {"name": "反幻觉规范", "map": "verified 仅由数据裁决;人工/LLM 断言记 asserted/candidate;弱证据送审;编辑走白名单op+可撤销"}],
         "pipeline": [
             {"stage": "领域与源界定", "io": "数据源探活 → 表清单/连接", "rule": "真实查询探活(非端口探测)"},
             {"stage": "复用领域知识包", "io": "指标Excel/术语 → glossary", "rule": "知识包驱动命名与指标分层"},
@@ -1938,7 +1938,7 @@ def ont_cq():
     一个定义 100%、接地 100% 的本体,完全可能缺了业务真正要问的那条关系。
 
     判定为确定性图计算(对象锚定 + 路径可达 + 边状态),不调 LLM:
-    让模型自评「能不能答」会把「看起来能答」当成「能答」,与反造假规范相悖。
+    让模型自评「能不能答」会把「看起来能答」当成「能答」,与反幻觉规范相悖。
 
     请求: {"graph": "<键>", "cqs": ["问题…", {"q": "问题…", "expect": ["对象名"]}]}
     """
@@ -2057,7 +2057,7 @@ def ont_audit(key):
             no_reviewer.append(i)
         if not (o.get("reason") or "").strip():
             no_reason.append(i)
-        # 风险项:删除类不可逆影响面大;人审试图直接指定 verified 违反反造假规范
+        # 风险项:删除类不可逆影响面大;人审试图直接指定 verified 违反反幻觉规范
         if kind in ("remove_object", "remove_relation", "reject_relation"):
             risky.append({"idx": i, "op": kind, "target": o.get("target"),
                           "by": who, "ts": o.get("ts"), "level": "destructive",
@@ -2065,7 +2065,7 @@ def ont_audit(key):
         if str((o.get("params") or {}).get("status", "")).lower() == "verified":
             risky.append({"idx": i, "op": kind, "target": o.get("target"),
                           "by": who, "ts": o.get("ts"), "level": "discipline",
-                          "why": "人审试图直接指定 verified —— 违反反造假规范"
+                          "why": "人审试图直接指定 verified —— 违反反幻觉规范"
                                  "(verified 只能由数据裁决产生,人只产生 asserted)"})
     return jsonify({
         "graph": key, "total": len(ops),
@@ -2899,7 +2899,7 @@ def diagnose_stream():
         except Exception: pass
         if not isinstance(ans, dict) or not ans.get("causes"):
             yield push("llm_causes", False, "引擎超时/离线 —— 根因诊断需引擎在线,不作无证据的臆造")
-            yield sse({"type": "error", "error": "引擎不可用,本次不产出根因(反造假规范:宁可不答,不编结论)"}); return
+            yield sse({"type": "error", "error": "引擎不可用,本次不产出根因(反幻觉规范:宁可不答,不编结论)"}); return
         # ④ 边界校验:路径越界 → 降 candidate
         allow_set = set(allowed)
         causes = _dg_bounds(ans.get("causes"), allow_set)[:3]          # G1 边界校验(确定性)
@@ -3773,7 +3773,7 @@ def _build_stats(ir):
             "def_coverage": round(sum(1 for o in objs if (o.get("definition") or "").strip()) * 100.0 / max(1, len(objs)), 1)}
 
 def _run_skill_compare(query, arms):
-    """两组顺序真实构建(LLM 抽取+反造假裁决,不走兜底造假);每组落一个 built_* 产物。"""
+    """两组顺序真实构建(LLM 抽取+反幻觉裁决,不走兜底编造);每组落一个 built_* 产物。"""
     out = {"ts": time.strftime("%Y-%m-%d %H:%M:%S"), "query": query, "arms": []}
     for i, skills in enumerate(arms):
         label = chr(65 + i)
@@ -3909,7 +3909,7 @@ def _build_rule_summary(name, ir):
             f"(其中 {ver} 条经取值重叠/父键唯一验证)。核心对象:{('、'.join(o.get('name') for o in objs[:8])) or '—'}。"
             f"可支撑对象画像、关系溯源与跨表指标分析。(引擎离线,此为规则化摘要)")
 
-# ── 多模态 LLM 本体自动构建(算法亮点):证据聚合 → LLM 抽取 → 真实数据反造假取证 ──
+# ── 多模态 LLM 本体自动构建(算法亮点):证据聚合 → LLM 抽取 → 真实数据反幻觉取证 ──
 _SKILL_METHOD = {
     "ontology-build": "从数据库+建表代码+业务代码(视图/ETL)+行业知识构建可审计企业本体,对象/事件/关系/指标齐备。",
     "gov-app-ontology-build": "构建应用本体:显式区分对象(object)、动作(action)、事件(event),绑定治理资产。",
@@ -4225,7 +4225,7 @@ def _llm_semantic_review(relations, ev):
     return out
 
 def _adjudicate_ir(db, name, extracted, ev):
-    """反造假取证:LLM 提议的关系用真实数据裁决(取值重叠≥60%∧父键可辨→verified;有据无量→candidate)。
+    """反幻觉取证:LLM 提议的关系用真实数据裁决(取值重叠≥60%∧父键可辨→verified;有据无量→candidate)。
     产出与 ir_to_graph 兼容的 IR(objects 带 kind/table/attrs;relations 带 status)。"""
     tc = ev["tab_cols"]; low2real = {t.lower(): t for t in tc}
     # 归一对象:绑定真实表则补 attrs/field_count;非表对象标 candidate
@@ -4385,7 +4385,7 @@ def _adjudicate_ir(db, name, extracted, ev):
         rel["semantic"] = "pass" if v is True else ("fail" if v is False else "skipped")
         if v is False and rel["status"] == "verified":
             rel["note"] += ";语义评审存疑(数据成立但语义可疑,建议人审)"
-    ir = {"scenario": {"name": name, "style": "multimodal-llm(多模态LLM抽取+反造假取证)",
+    ir = {"scenario": {"name": name, "style": "multimodal-llm(多模态LLM抽取+反幻觉取证)",
                        "object_count": len(objects), "relation_count": len(relations),
                        "evidence": {"tables": len(tc), "docs": ev["n_docs"], "refs": ev["refs"]}},
           "objects": objects, "relations": relations}
@@ -4393,7 +4393,7 @@ def _adjudicate_ir(db, name, extracted, ev):
 
 @app.post("/api/build/inquire")
 def build_inquire():
-    """Hermes 本体构建问询台:对话式驱动 → 意图解析 → 数据驱动构建(反造假规则) → agent 命名/摘要。SSE 流式 agentic 步骤。"""
+    """Hermes 本体构建问询台:对话式驱动 → 意图解析 → 数据驱动构建(反幻觉规则) → agent 命名/摘要。SSE 流式 agentic 步骤。"""
     body = request.json or {}
     q = (body.get("q") or "").strip()
     source = body.get("source") or "uploads"
@@ -4431,7 +4431,7 @@ def build_inquire():
         yield sse({"type": "status", "text": "多智能体引擎解析建模意图与范围…"})
         plan = _bounded(lambda: _build_intent(q, sname, skills), 30) or {}
         gname = name or plan.get("name") or (q[:14] + "本体")
-        yield push("intent", True, f"意图解析 · 目标本体「{gname}」· 策略:{plan.get('strategy', '多模态 LLM 抽取 + 反造假取证')}")
+        yield push("intent", True, f"意图解析 · 目标本体「{gname}」· 策略:{plan.get('strategy', '多模态 LLM 抽取 + 反幻觉取证')}")
         if skills:
             yield push("orchestrate", True, "编排技能方法论:" + "、".join(skills[:5]))
             _mt = _skill_method_text(skills)          # #2 技能注入痕迹:方法论进 prompt 在流水线里可见
@@ -4465,8 +4465,8 @@ def build_inquire():
                                f"(仅标注不否决——数据裁决才是硬证据)")
                 else:
                     yield push("stability", False, "第二次生成失败/超时,本次不产出一致性指标(不臆造)")
-            # ③ 反造假取证:LLM 提议的关系用真实数据裁决
-            yield sse({"type": "status", "text": "反造假取证:用真实数据校验每条提议关系(取值重叠 / 父键唯一)…"})
+            # ③ 反幻觉取证:LLM 提议的关系用真实数据裁决
+            yield sse({"type": "status", "text": "反幻觉取证:用真实数据校验每条提议关系(取值重叠 / 父键唯一)…"})
             ir = _adjudicate_ir(db, gname, extracted, ev)
             if _stab: ir["stability"] = _stab          # M1 一致性指标随图谱留档,供论文与人审引用
             _sc = {"pass": 0, "fail": 0, "skipped": 0}
@@ -4477,9 +4477,9 @@ def build_inquire():
                 yield push("semantic_review", True, "语义评审:引擎不可用,已跳过(不臆造)")
             _atomic_json(outp, ir)
         else:
-            # 兜底:LLM 离线/超时 → 纯数据驱动 quick_build(仍是反造假规则)
+            # 兜底:LLM 离线/超时 → 纯数据驱动 quick_build(仍是反幻觉规则)
             method = "数据驱动(LLM 离线兜底)"
-            yield push("llm_extract", False, "LLM 引擎超时/离线 → 回退纯数据驱动构建(反造假规则)")
+            yield push("llm_extract", False, "LLM 引擎超时/离线 → 回退纯数据驱动构建(反幻觉规则)")
             yield sse({"type": "status", "text": "数据驱动构建本体中(读表 / 主外键推断 / 取值重叠验证)…"})
             try:
                 proc = subprocess.Popen([sys.executable, os.path.join(HERE, "quick_build.py"), db, outp, gname],
@@ -4497,7 +4497,7 @@ def build_inquire():
         objs = ir.get("objects", []); rels = ir.get("relations", [])
         nev = sum(1 for o in objs if o.get("kind") == "event")
         ver = sum(1 for l in rels if l.get("status") == "verified"); cand = len(rels) - ver
-        yield push("verify", True, f"关系反造假裁决 · verified {ver} 条 · candidate {cand} 条 · 事件对象 {nev} 个")
+        yield push("verify", True, f"关系反幻觉裁决 · verified {ver} 条 · candidate {cand} 条 · 事件对象 {nev} 个")
         yield sse({"type": "status", "text": "智能引擎生成本体说明与建模摘要…"})
         summ = _bounded(lambda: _build_summary(q, gname, ir), 35) or _build_rule_summary(gname, ir)
         yield push("narrate", True, f"生成本体说明 · {len(summ)} 字")

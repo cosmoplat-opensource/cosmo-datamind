@@ -2,7 +2,7 @@
 
 - **状态 / Status**: accepted
 - **日期 / Date**: 2026-08-02
-- **关联 / Refs**: [[DR-026-doubleblind-intent-and-usage]](边界一节直接催生本决定)、[[DR-024-competency-questions-driven-build]]、[[DR-013-human-review-relations]](反造假规范)
+- **关联 / Refs**: [[DR-026-doubleblind-intent-and-usage]](边界一节直接催生本决定)、[[DR-024-competency-questions-driven-build]]、[[DR-013-human-review-relations]](反幻觉规范)
 
 ## 背景 / Context
 
@@ -25,7 +25,7 @@
    每条编辑记 `source`:`chat`(对话建议被采纳)/ `review`(评审台人工发起)/
    `graph` / `api`。
 
-3. **对话系统**补齐修改与审计能力:提示词写明可用算子清单、别名优先规则与反造假规范;
+3. **对话系统**补齐修改与审计能力:提示词写明可用算子清单、别名优先规则与反幻觉规范;
    对话页恢复并内置审计面板(署名输入 + 变更统计 + 风险复核清单)。
 
 ## 为什么这样做 / Rationale
@@ -35,7 +35,7 @@
 - **审计必须区分 AI 建议与人工决定**。两者责任归属不同:AI 提的被采纳,追责要看
   "谁批准的";人自己发起的,追责看"谁发起的"。合并统计等于放弃追责能力。
 - **审计要主动标风险,不能只列日志**。两类必标:删除/否决类(不可逆、需级联),
-  以及**人审试图直接指定 `verified`**——后者直接违反反造假规范
+  以及**人审试图直接指定 `verified`**——后者直接违反反幻觉规范
   (verified 只能由数据裁决产生,人只产生 asserted),日志里混着不标出来等于没审计。
 - **别名算子不依赖引擎**。`set_alias` 不在引擎的 `ALLOWED_OPS` 里,故在 DataMind 侧
   自足实现,并让引擎缺失时本地算子仍放行——别名与人审是本系统自有能力,

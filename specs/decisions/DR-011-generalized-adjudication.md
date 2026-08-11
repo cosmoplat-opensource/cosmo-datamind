@@ -3,7 +3,7 @@
 - **状态 / Status**: accepted
 - **日期 / Date**: 2026-07-19
 - **决策者 / Deciders**: Boss(用户) + Writer(Claude)
-- **关联 / Refs**: [[DR-002-multimodal-llm-anti-fraud-build]]、[[DR-010-iof-bfo-alignment]];实证来源=论文实验(Burr-micro 54 场景、Burr-Mondial、示例 判别、对抗库);`server.py _adjudicate_ir/_llm_semantic_review`、`quick_build.py`、`test_all.py O 节`。
+- **关联 / Refs**: [[DR-002-multimodal-llm-anti-hallucination-build]]、[[DR-010-iof-bfo-alignment]];实证来源=论文实验(Burr-micro 54 场景、Burr-Mondial、示例 判别、对抗库);`server.py _adjudicate_ir/_llm_semantic_review`、`quick_build.py`、`test_all.py O 节`。
 
 ## 上下文 / Context
 论文阶段的基准实验暴露了裁决器的四个泛化盲区:①无后缀键名(列名=表名,Burr-micro basic 族零候选);②复合外键(Mondial 20/69,单列重叠不可见证);③自然键 schema 的父键不叫 *_id 且父表可含与表同名的非键列(声明 PK 未被查询,同名列优先撞错);④共享域巧合(数据为真、语义为假)只有语义评审能拦(判别实验 9 vs 2,滤除集不相交)。

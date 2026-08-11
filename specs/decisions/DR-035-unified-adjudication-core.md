@@ -3,7 +3,7 @@
 - **状态 / Status**: accepted
 - **日期 / Date**: 2026-07-31
 - **决策者 / Deciders**: Boss(用户) + Writer(Claude)
-- **关联 / Refs**: [[DR-002-multimodal-llm-anti-fraud-build]]、[[DR-011-generalized-adjudication]]、[[IR-008-adjudication-core-convergence]];实证=`dao_core.py`、`quick_build.py`、`tests/unit/test_dao_core.py`、108 表 demo(imom_metrics.db)265/104 逐值回归
+- **关联 / Refs**: [[DR-002-multimodal-llm-anti-hallucination-build]]、[[DR-011-generalized-adjudication]]、[[IR-008-adjudication-core-convergence]];实证=`dao_core.py`、`quick_build.py`、`tests/unit/test_dao_core.py`、108 表 demo(imom_metrics.db)265/104 逐值回归
 
 ## 上下文 / Context
 

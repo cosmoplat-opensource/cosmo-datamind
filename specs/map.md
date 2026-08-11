@@ -6,7 +6,7 @@
 ## 项目一句话
 Cosmo DataMind 是**自有品牌、原创前后端**的「数据治理 × 本体 × 深度问数」原型:
 以**本地 SQLite 只读执行**为底座,把 `../上游本体引擎`(engine/agent_runtime/skills)的能力
-产品化为可运行的前端系统——核心亮点是**多模态 LLM × 多智能体的本体自动构建(反造假取证)**,
+产品化为可运行的前端系统——核心亮点是**多模态 LLM × 多智能体的本体自动构建(反幻觉取证)**,
 并对齐 `iip.iiot-platform.com/bigdata` 的品类与观感。单端口 8092,`./start.sh` 启动。
 
 > 与平台的关系:平台(`../上游本体引擎/`)是**引擎与方法论真相源**(其 `specs/` 有 DR-001…DR-011);
@@ -15,7 +15,7 @@ Cosmo DataMind 是**自有品牌、原创前后端**的「数据治理 × 本体
 
 ## 关键契约
 - **执行底座**:深度问数/可视化/SQL 工作台/即时问数(SQL 类)在**本地 `../demo_metrics.db`(108 表/186,833 行)只读执行**;引擎级防写(`mode=ro` + `sql_is_readonly` + 单句执行)。SPARQL 在本地 rdflib RDF 图(IR→turtle)执行。见 [[DR-001-local-readonly-execution]]。
-- **建模算法**:多模态 LLM 提议对象/事件/关系 → **真实数据反造假裁决**(取值重叠≥60%∧父键唯一→verified,余 candidate);LLM 离线/超时回退纯数据驱动 quick_build,方法如实标注,见 [[DR-002-multimodal-llm-anti-fraud-build]]。
+- **建模算法**:多模态 LLM 提议对象/事件/关系 → **真实数据反幻觉裁决**(取值重叠≥60%∧父键唯一→verified,余 candidate);LLM 离线/超时回退纯数据驱动 quick_build,方法如实标注,见 [[DR-002-multimodal-llm-anti-hallucination-build]]。
 - **引擎**:运行时经 `agent_runtime`(CLAW_DRIVER 选 hermes/claude-code/openclaw),多引擎顺序兜底;**对外统一中性名**(智能引擎/备选/经典),不暴露底层库名,见 [[DR-003-runtime-neutral-naming]]。
 - **深度问数**:SSE 流式执行记录 + 渐进出图,缓存键含上传指纹,离线走模板兜底,见 [[DR-004-deep-qa-sse]]。
 - **前端**:对齐 iiot-platform/design-system 设计 token(#4A5FF3/#409EFF、圆角 4px、PingFang);**工业级去 emoji**(accent bar + 单色 SVG + 状态点),见 [[DR-005-frontend-design-system]]。
@@ -28,7 +28,7 @@ Cosmo DataMind 是**自有品牌、原创前后端**的「数据治理 × 本体
 - [DR-043 · 单体路由蓝图化(计划+已起步:抽纯模块降耦合→逐簇拆blueprint)](decisions/DR-043-blueprint-modularization.md)
 - [DR-044 · JSON store 持久化抽象(原子/坏档恢复/校验/迁移/并发,填负向持久化测试空白)](decisions/DR-044-json-store-abstraction.md)
 - [DR-040 · 定义质量评分(属加种差/非循环/反例 + 参考重叠;LLM 1.0 vs 数据驱动 0.25)](decisions/DR-040-definition-quality-eval.md)
-- [DR-039 · 反幻觉评测台(带标签对抗基准 + 泄漏率;反造假变数字)](decisions/DR-039-hallucination-eval-harness.md)
+- [DR-039 · 反幻觉评测台(带标签对抗基准 + 泄漏率;反幻觉变数字)](decisions/DR-039-hallucination-eval-harness.md)
 - [DR-038 · 基数自适应 θ(基准纯增益但真实数据回归 → 落地原语不接入)](decisions/DR-038-cardinality-adaptive-threshold.md)
 - [DR-037 · 方向感知裁决;数据实证否决朴素强门槛翻转(fk_direction/should_reverse)](decisions/DR-037-direction-aware-adjudication.md)
 - [DR-036 · 自引用与角色键发现(role_targets + 角色感知 name_ok + health 自反豁免)](decisions/DR-036-self-referential-and-role-keys.md)
@@ -36,7 +36,7 @@ Cosmo DataMind 是**自有品牌、原创前后端**的「数据治理 × 本体
 - [DR-046 · 确定性模块的隔离单测(离线秒级 + quick_build 可测化)](decisions/DR-046-deterministic-module-unit-tests.md)
 - [DR-045 · 工程校验与 TDD 底座(pytest/coverage/ruff/CI + 文档计数自检)](decisions/DR-045-engineering-harness-and-tdd.md)
 - [DR-001 · 本地只读执行(避开平台 1142/方言/沙箱坑)](decisions/DR-001-local-readonly-execution.md)
-- [DR-002 · 多模态 LLM 本体自动构建 + 反造假取证(算法核心)](decisions/DR-002-multimodal-llm-anti-fraud-build.md)
+- [DR-002 · 多模态 LLM 本体自动构建 + 反幻觉取证(算法核心)](decisions/DR-002-multimodal-llm-anti-hallucination-build.md)
 - [DR-003 · 多引擎运行时 + 对外中性命名 + 限流兜底](decisions/DR-003-runtime-neutral-naming.md)
 - [DR-004 · 深度问数 SSE 流式 + 缓存 + 兜底](decisions/DR-004-deep-qa-sse.md)
 - [DR-005 · 前端对齐 iiot-platform + 工业级视觉](decisions/DR-005-frontend-design-system.md)

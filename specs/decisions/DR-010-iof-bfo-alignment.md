@@ -3,7 +3,7 @@
 - **状态 / Status**: accepted
 - **日期 / Date**: 2026-07-17
 - **决策者 / Deciders**: Boss(用户) + Writer(Claude)
-- **关联 / Refs**: 参照 github.com/iofoundry/ontology(Industrial Ontology Foundry,顶层 BFO 2020 + Core 中层 + `iof-av` 注释词表 + HermiT/SHACL 校验);`server.py`(`_KIND_BFO`/`_FOUNDED_RELATIONS`/`_ground_verb`/`_ir_to_turtle`/`_IOF_SHACL`/`ont_completeness`/`ont_enrich`/`ont_reground`/`ont_maturity`)、`quick_build.py`、`ui/index.html`;衔接 [[DR-002-multimodal-llm-anti-fraud-build]]、[[DR-009-object-cn-display]]。
+- **关联 / Refs**: 参照 github.com/iofoundry/ontology(Industrial Ontology Foundry,顶层 BFO 2020 + Core 中层 + `iof-av` 注释词表 + HermiT/SHACL 校验);`server.py`(`_KIND_BFO`/`_FOUNDED_RELATIONS`/`_ground_verb`/`_ir_to_turtle`/`_IOF_SHACL`/`ont_completeness`/`ont_enrich`/`ont_reground`/`ont_maturity`)、`quick_build.py`、`ui/index.html`;衔接 [[DR-002-multimodal-llm-anti-hallucination-build]]、[[DR-009-object-cn-display]]。
 
 ## 上下文 / Context
 自研本体 IR 只有 `kind∈{object,event,asset,role}`+自由中文动词,缺理论根基、无机读定义/溯源、导出 OWL 无注释,无法与工业本体生态(IOF/BFO、Protégé/HermiT)互操作,也难以量化「可审计程度」。IOF 提供了成熟范式:BFO 上层归类、`iof-av` 机读注释(定义/示例/反例/成熟度/来源)、有根据关系 + 时间指标、SHACL 质量校验。
@@ -19,7 +19,7 @@
 
 ## 后果 / Consequences
 - (+) 图谱可与 IOF/BFO 生态互操作;导出 OWL 带机读定义/反例/成熟度/溯源,可进 Protégé/HermiT/SHACL。
-- (+) 反造假(DR-002)升级为「数据裁决 + IOF 定义规范」:能证则证(verified)、能定义则定义、否则诚实标 candidate/原始概念。
+- (+) 反幻觉(DR-002)升级为「数据裁决 + IOF 定义规范」:能证则证(verified)、能定义则定义、否则诚实标 candidate/原始概念。
 - (+) 完备度可量化;真实 示例 图谱经一键升级达 100%(108 对象定义/反例全、60 关系接地全)——为专利/答辩提供「可审计本体」实证。
 - (+) 三写端点与 [[DR-001]] 只读执行正交:只写本系统 workdir/forged 下的 IR JSON,不碰数据库。
 - (−) 定义/接地依赖在线引擎(离线只降级不编造);数据驱动兜底(quick_build)对象标原始概念、关系接地为 relatedTo(诚实)。
