@@ -105,6 +105,7 @@ def build(db, out, name):
     seen = {(l["source_concept"], l["target_concept"]) for l in links}
     for t in tabs:
         for c, _ in cols_of[t]:
+            roles = dao_core.role_targets(c)                 # DR-036 自引用/角色键
             m = re.match(r"(.+?)_(id|code)$", c, re.I)
             if m:
                 stem = m.group(1).lower()
@@ -114,22 +115,32 @@ def build(db, out, name):
                      for t2 in tabs if t2 != t):
                 stem = next(t2.lower() for t2 in tabs if t2 != t and len(t2) >= 4
                             and c.lower().startswith(t2.lower()) and c.lower()[len(t2):].isdigit())   # 前缀键名 Country1→Country(DR-011)
+            elif roles:
+                stem = re.sub(r"(_?id|_?code)$", "", dao_core._snake(c)).strip("_")   # 角色键词根(reports_to 等无后缀)
             else:
                 continue
             for pt in tabs:
-                if pt == t or (t, pt) in seen: continue
-                if stem not in pt.lower(): continue
+                if (t, pt) in seen: continue
+                self_ref = (pt == t)
+                ptl = pt.lower()
+                if self_ref:
+                    if "self" not in roles: continue        # 自引用仅对含 self 的角色键开放(DR-036)
+                else:
+                    genus_hit = any(g != "self" and g in ptl for g in roles)   # 角色属类词命中父表名
+                    if not (stem in ptl or genus_hit): continue   # 非角色键沿用原表名子串闸,不广泛松闸
                 pk = parent_key(pt, c, stem)
                 if not pk: continue
+                if self_ref and pk == c: continue           # 自引用键不能指向自己这一列
                 child, parent = distinct(t, c), distinct(pt, pk)
                 if not child: continue
                 ov = dao_core.overlap_pct(child, parent)
                 # 父键唯一度仅在 ov≥60 时探测(保留短路,避免弱重叠也全表 COUNT);
                 # 决策统一走 dao_core.classify 的 compat 口径(min_distinct=1、不排除PK作子键)——
-                # 与 quick_build 历史行为逐值等价,漂移就此收口到单一裁决核(DR-035)。
+                # 与 quick_build 历史行为逐值等价(非角色键),漂移就此收口到单一裁决核(DR-035)。
                 punique = is_key_unique(pt, pk) if ov >= 60 else False
                 verdict = dao_core.classify(overlap=ov, parent_unique=punique,
-                                            name_ok=key_name_ok(c, pk), child_distinct=len(child),
+                                            name_ok=dao_core.name_ok(c, pt, pk, child_table=t),
+                                            child_distinct=len(child),
                                             min_distinct=1, exclude_pk_child=False)
                 st = verdict["status"]
                 if st == "drop": continue
@@ -144,9 +155,14 @@ def build(db, out, name):
                 else:   # 弱重叠 candidate
                     note = "弱重叠,送审"
                     ev = {"child_key": c, "parent_key": pk, "overlap": round(ov, 1), "source": "key_overlap"}
-                links.append({"source_concept": t, "target_concept": pt, "verb": "关联",
-                              "status": st, "overlap": round(ov, 1), "note": note, "evidence": ev,
-                              "founded_relation": "relatedToAtSomeTime", "temporal": "atSomeTime"})
+                link = {"source_concept": t, "target_concept": pt, "verb": "关联",
+                        "status": st, "overlap": round(ov, 1), "note": note, "evidence": ev,
+                        "founded_relation": "relatedToAtSomeTime", "temporal": "atSomeTime"}
+                if self_ref:                                # DR-036:有意的层级自引用,语义化并标记
+                    link["verb"] = "上级"
+                    link["self_ref"] = True
+                    ev["self_ref"] = True
+                links.append(link)
                 seen.add((t, pt)); seen.add((pt, t))
     print(f"[quick_build] 关系 {len(links)} 条 (verified {sum(1 for l in links if l['status']=='verified')})", flush=True)
 
