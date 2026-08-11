@@ -25,6 +25,7 @@ Cosmo DataMind 是**自有品牌、原创前后端**的「数据治理 × 本体
 ## 索引
 
 ### 决定 / Decisions
+- [DR-043 · 单体路由蓝图化(计划+已起步:抽纯模块降耦合→逐簇拆blueprint)](decisions/DR-043-blueprint-modularization.md)
 - [DR-044 · JSON store 持久化抽象(原子/坏档恢复/校验/迁移/并发,填负向持久化测试空白)](decisions/DR-044-json-store-abstraction.md)
 - [DR-040 · 定义质量评分(属加种差/非循环/反例 + 参考重叠;LLM 1.0 vs 数据驱动 0.25)](decisions/DR-040-definition-quality-eval.md)
 - [DR-039 · 反幻觉评测台(带标签对抗基准 + 泄漏率;反造假变数字)](decisions/DR-039-hallucination-eval-harness.md)
