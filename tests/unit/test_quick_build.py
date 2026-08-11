@@ -45,16 +45,31 @@ class TestBuildIntegration:
         assert verified, f"应发现 orders→customers 的 verified 关系,实得: {rels}"
         assert verified[0]["overlap"] == 100.0
 
-    def test_build_self_referential_fk_currently_missed(self, make_sqlite, tmp_path):
-        # 现状锁定:employees.reports_to → employees.employee_id 是自引用键,
-        # 当前枚举跳过 pt==t,必然发现不了。DR-036 落地后此测试应反转为「能发现」。
+    def test_build_self_referential_fk_discovered(self, make_sqlite, tmp_path):
+        # DR-036:employees.reports_to → employees.employee_id 自引用键须被发现。
+        # reports_to distinct {1,2} 全落 employee_id {1,2,3} → 100% 重叠·父键唯一·角色 self 命名有据。
         db = make_sqlite({
             "employees": ("employee_id INTEGER PRIMARY KEY, name TEXT, reports_to INTEGER",
-                          [(1, "CEO", None), (2, "VP", 1), (3, "IC", 2)]),
+                          [(1, "CEO", None), (2, "VP", 1), (3, "IC", 2), (4, "IC2", 2)]),
         })
         out = str(tmp_path / "ir.json")
         quick_build.build(db, out, "fx")
         ir = json.loads(open(out, encoding="utf-8").read())
         self_rels = [r for r in ir["relations"]
                      if r["source_concept"] == "employees" and r["target_concept"] == "employees"]
-        assert self_rels == [], "现状:自引用键发现不了(DR-036 将改进后反转此断言)"
+        assert self_rels, "DR-036:自引用键应被发现"
+        assert self_rels[0]["status"] == "verified"
+        assert self_rels[0].get("self_ref") is True   # 标记为有意自引用(供 health_check 豁免自反误判)
+
+    def test_camelcase_role_key_discovered(self, make_sqlite, tmp_path):
+        # 无下划线的驼峰角色键 ManagerId 也须识别(归一到 snake)
+        db = make_sqlite({
+            "staff": ("StaffId INTEGER PRIMARY KEY, name TEXT, ManagerId INTEGER",
+                      [(1, "A", None), (2, "B", 1), (3, "C", 1), (4, "D", 2)]),
+        })
+        out = str(tmp_path / "ir.json")
+        quick_build.build(db, out, "fx")
+        ir = json.loads(open(out, encoding="utf-8").read())
+        self_rels = [r for r in ir["relations"]
+                     if r["source_concept"] == "staff" and r["target_concept"] == "staff"]
+        assert self_rels, "DR-036:驼峰角色键 ManagerId 应被发现为自引用"
