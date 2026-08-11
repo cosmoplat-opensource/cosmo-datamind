@@ -14,8 +14,14 @@
 - [x] **共享上下文基座 `srv_context.py`**:抽 server 里无路由/无 app 依赖的基础原语
   (`ro_connect`/`sql_is_readonly`/`_WRITE_LOCK`/`_atomic_json`/`_atomic_text`),供 server 与各 blueprint 共用。
   server 改为 import,删本地重复定义;集成 526/531 保持,pyflakes 零告警,test_all Z21 白名单补 srv_context。
-- [ ] **首个 blueprint(engine 簇)**:`/api/engine/*` 迁到 `bp_engine.py`,engine 常量/helper 随之搬入,从 srv_context import 基座。
-- [ ] 其余五簇(ontology/build/deepqa/actions/skills)逐一迁移,每簇集成验证。
+- [ ] **首个 blueprint(engine 簇)—— 前置未满足,待解耦**:coupling 分析(2026-07-31)发现
+  `/api/engine/*` 的配置层**跨簇共享**,不能直接搬进 blueprint:
+  `_load_engine_cfg` 被 line 776(deepqa 按任务选模 `_task_model`)与 line 3033(启动即应用)调用;
+  `LLM_ENV` 17 处、`_mask_key`/`ENGINE_TASKS` 亦跨簇。直接搬会造成 blueprint↔server 循环导入。
+  **正解**:先把 engine 配置层(常量 + `_load/_save/_apply_engine_cfg` + `LLM_ENV` + `_mask_key`)
+  抽为**共享配置模块**,engine 路由与 line 776 调用方都从它 import,之后 engine 路由才可迁 blueprint。
+  该抽取的前置又是路径(`WORK`)入 srv_context(`ENGINE_CFG_F=WORK/engine_config.json`)。
+- [ ] 其余五簇同理:每簇先识别其跨切面共享层(IR/图谱访问、config),抽为共享模块,再迁路由。每步集成验证。
 
 ## 任务 Tasks(每项一次提交)
 
