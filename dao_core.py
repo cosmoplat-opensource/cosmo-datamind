@@ -103,6 +103,59 @@ def name_score(child_col, parent_table, parent_col, synonyms=None):
     return 0
 
 
+# ── DR-036:自引用/角色键 ──
+# 角色键=语义上「指向某实体」的列名。目标含 "self" 者可指向本表(层级自引用);
+# 其余为属类词(genus),匹配父表名。仅这些已知模式获得放开待遇,不广泛松闸——
+# 自引用仍需过数据裁决(重叠≥θ∧父键唯一),名闸只是补上「值域重叠之外」那一环。
+_ROLE_KEYS = {
+    "reports_to": ("self", "employee", "staff", "person", "user", "emp"),
+    "manager": ("self", "employee", "staff", "person", "user", "emp"),
+    "supervisor": ("self", "employee", "staff", "person", "user"),
+    "mgr": ("self", "employee", "staff", "person", "user"),
+    "boss": ("self", "employee", "staff", "person"),
+    "parent": ("self",),
+    "predecessor": ("self",),
+    "successor": ("self",),
+    "prior": ("self",),
+    "prev": ("self",),
+    "next": ("self",),
+}
+
+
+def _snake(col):
+    """驼峰归一:ReportsTo→reports_to、ManagerId→manager_id(角色键常无下划线)。"""
+    s = re.sub(r"(?<=[a-z0-9])(?=[A-Z])", "_", col or "")
+    return s.lower()
+
+
+def role_targets(col):
+    """列名的语义角色目标(DR-036)。返回目标提示元组(可含 'self');非角色键返回 ()。
+    先驼峰归一 + 剥尾部 id/code,再直接命中或按 <role>_ 前缀/_<role> 后缀命中。"""
+    base = re.sub(r"(_?id|_?code)$", "", _snake(col)).strip("_")
+    if base in _ROLE_KEYS:
+        return _ROLE_KEYS[base]
+    for role, targets in _ROLE_KEYS.items():
+        if base.startswith(role + "_") or base.endswith("_" + role):
+            return targets
+    return ()
+
+
+def name_ok(child_col, parent_table, parent_key, child_table=None):
+    """统一命名相容判定(DR-036 扩展):
+    1) 先走 key_name_ok(两键词根)—— 非角色键与此完全等价,既有行为不变;
+    2) 角色键补两条路径:self→父表即子表(层级自引用);genus→属类词是父表名子串。"""
+    if key_name_ok(child_col, parent_key):
+        return True
+    rt = role_targets(child_col)
+    if rt:
+        pt = (parent_table or "").lower()
+        if "self" in rt and child_table and pt == child_table.lower():
+            return True
+        if any(g != "self" and g in pt for g in rt):
+            return True
+    return False
+
+
 def classify(*, overlap, parent_unique, name_ok, child_distinct,
              child_is_pk=False, theta=MIN_OVERLAP, min_distinct=MIN_DISTINCT,
              weak_floor=WEAK_FLOOR, exclude_pk_child=True):

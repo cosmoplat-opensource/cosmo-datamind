@@ -96,6 +96,50 @@ class TestNaming:
         # (此处锁 name_score 的确定性,不主张一定≥1;DR-036 将引入角色词典把它提为佐证)
 
 
+class TestRoleKeysDR036:
+    """自引用/角色键(DR-036):role_targets + role-aware name_ok。"""
+
+    def test_reports_to_targets_self_and_person(self):
+        rt = dao_core.role_targets("reports_to")
+        assert "self" in rt and "employee" in rt
+
+    def test_camelcase_normalized(self):
+        # ReportsTo / ManagerId 无下划线,须先归一到 snake 再识别
+        assert "self" in dao_core.role_targets("ReportsTo")
+        assert "self" in dao_core.role_targets("ManagerId")
+
+    def test_parent_is_pure_self(self):
+        assert dao_core.role_targets("parent_id") == ("self",)
+        assert "self" in dao_core.role_targets("parent_part")   # 复合:parent_ 前缀
+
+    def test_non_role_key_returns_empty(self):
+        assert dao_core.role_targets("customer_id") == ()
+        assert dao_core.role_targets("amount") == ()
+
+    def test_name_ok_self_referential(self):
+        # key_name_ok 单看两键词根 → False;name_ok 借角色 self + 父表==子表 → True
+        assert dao_core.key_name_ok("reports_to", "employee_id") is False
+        assert dao_core.name_ok("reports_to", "employees", "employee_id",
+                                child_table="employees") is True
+
+    def test_name_ok_role_genus_match_cross_table(self):
+        # orders.manager_id → employees(genus employee ⊂ "employees"),非自引用也放行
+        assert dao_core.name_ok("manager_id", "employees", "employee_id",
+                                child_table="orders") is True
+
+    def test_name_ok_parent_only_self_not_cross(self):
+        # parent 仅 self:指向外部无 genus 表时回落到 key_name_ok
+        assert dao_core.name_ok("parent_id", "categories", "category_id",
+                                child_table="products") is False
+
+    def test_name_ok_non_role_equals_key_name_ok(self):
+        # 非角色键:name_ok 必须与 key_name_ok 逐值一致(保证既有行为不变)
+        for ck, pt, pk in [("customer_id", "customers", "customer_id"),
+                           ("order_id", "customers", "customer_id"),
+                           ("prod_id", "products", "product_id")]:
+            assert dao_core.name_ok(ck, pt, pk) == dao_core.key_name_ok(ck, pk)
+
+
 class TestParityWithEngine:
     """与上游 ../ontology-engine/engine/relation_discovery 的 name_score 平价 —— 证明同口径。"""
 
