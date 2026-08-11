@@ -115,7 +115,8 @@ dim_product → fact_production_output   candidate
 
 ![本体图谱](docs/img/01-ontology-graph.png)
 
-绿色实线是已验证关系,灰色虚线是候选关系。右上角的 IOF 完备度 25% 也是实情——
+**灰色实线**是已验证关系(`verified`),**橙色虚线**是候选关系(`candidate`)——
+上图 4 条实线正是判为 verified 的那 4 条,2 条橙虚线即被键名词根校验拦下的那 2 条。右上角的 IOF 完备度 25% 也是实情——
 `quick_build` 只从数据推断结构,不产出定义与反例,这部分要靠后续人工或大模型补齐。
 
 ## 5. 问一个数
