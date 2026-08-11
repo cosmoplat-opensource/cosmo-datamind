@@ -8,6 +8,7 @@ Cosmo DataMind · 数据智脑 — 自有品牌的数据治理+本体+深度问�
 """
 import json, os, re, sqlite3, subprocess, threading, time, uuid, sys, glob, importlib
 import urllib.request, urllib.error
+import dao_core   # DR-035/044:命名闸/词根等裁决原语的单一事实源
 from flask import Flask, jsonify, request, send_from_directory, send_file
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -309,29 +310,10 @@ def _obj_key(o, i=0):
     return o.get("id") or o.get("name") or f"_obj{i}"
 
 
-_KEY_SUF_RE = re.compile(r"_?(id|code|key|no|num)$", re.I)
-
-
-def _key_stem(c):
-    return _KEY_SUF_RE.sub("", (c or "").lower()).strip("_")
-
-
-def _key_name_ok(ck, pk):
-    """子键与父键的名称词根是否相容 —— 值域重叠之外的第二道闸(DR-033)。
-
-    稠密自增代理键之间值域天然重合:dim_product.prod_id 与 fact_production_order.order_id
-    都是 1,2,3…,重叠 100% 且父键唯一,于是被判成 verified 关系——纯属巧合。
-    实测 built_9c3fd1 的 12 条带键关系里 10 条是这么来的。键名词根是廉价而有力的证伪信号。
-    父/子任一用泛化主键名(id)时名称给不出信息,不据此否决。"""
-    cs, ps = [x.strip() for x in str(ck or "").split(",")], [x.strip() for x in str(pk or "").split(",")]
-    if len(cs) != len(ps): return False
-    for a, b in zip(cs, ps):
-        sa, sb = _key_stem(a), _key_stem(b)
-        if not sa or not sb or sa == sb: continue
-        # 缩写相容:prod↔product、emp↔employee。限长≥3 以免 po↔pr 这类噪声蒙混
-        if min(len(sa), len(sb)) >= 3 and (sa.startswith(sb) or sb.startswith(sa)): continue
-        return False
-    return True
+# 命名闸/词根收口到 dao_core 单一事实源(DR-035;消 server 内此前的第三份副本,含复合键分支)。
+# 保留 _key_stem/_key_name_ok 名称,现有调用点不改。语义与旧实现逐值一致(测试对照在案)。
+_key_stem = dao_core.key_stem
+_key_name_ok = dao_core.key_name_ok
 
 
 _KEY_NOTE_RE = re.compile(r"([A-Za-z_]\w*)→[A-Za-z_]\w*\.([A-Za-z_]\w*)")

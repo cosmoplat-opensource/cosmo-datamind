@@ -74,13 +74,24 @@ def _core(col):
 
 
 def key_name_ok(child_key, parent_key):
-    """子键/父键**词根相容**(quick_build 历史口径,与 server._key_name_ok 同规则)。
+    """子键/父键**词根相容**(值域重叠之外的第二道闸,DR-033)。
     两键词根相等或一方为另一方前缀(限长≥3)。稠密自增代理键之间值域天然 100% 重合,
-    仅凭重叠会造假关系——这是第二道闸。"""
-    a, b = key_stem(child_key), key_stem(parent_key)
-    if not a or not b or a == b:
-        return True
-    return min(len(a), len(b)) >= 3 and (a.startswith(b) or b.startswith(a))
+    仅凭重叠会造假关系。
+
+    **支持复合键**(逗号分隔,如 "c1,c2" ↔ "p1,p2"):逐列判定,列数不等即否,
+    全列通过才相容——收编 server._key_name_ok 的复合分支,单一事实源。"""
+    cs = [x.strip() for x in str(child_key or "").split(",")]
+    ps = [x.strip() for x in str(parent_key or "").split(",")]
+    if len(cs) != len(ps):
+        return False
+    for a, b in zip(cs, ps):
+        sa, sb = key_stem(a), key_stem(b)
+        if not sa or not sb or sa == sb:
+            continue
+        if min(len(sa), len(sb)) >= 3 and (sa.startswith(sb) or sb.startswith(sa)):
+            continue
+        return False
+    return True
 
 
 def name_score(child_col, parent_table, parent_col, synonyms=None):
