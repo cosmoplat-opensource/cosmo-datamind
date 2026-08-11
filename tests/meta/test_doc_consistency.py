@@ -16,8 +16,15 @@ EXPECT_ASSERTIONS = 535
 
 
 def _server_route_count():
+    """路由总数 = server.py 的 @app.* + 各 blueprint(bp_*.py)的 @bp_*.*。
+    IR-011 起路由按簇迁往 blueprint,总数不变、位置改变——故按全体来源计数。"""
+    total = 0
     src = (ROOT / "server.py").read_text(encoding="utf-8")
-    return len(re.findall(r"^@app\.(?:route|get|post)", src, re.M))
+    total += len(re.findall(r"^@app\.(?:route|get|post)", src, re.M))
+    for bp in sorted(ROOT.glob("bp_*.py")):
+        total += len(re.findall(r"^@bp_\w+\.(?:route|get|post)",
+                                bp.read_text(encoding="utf-8"), re.M))
+    return total
 
 
 def _assertion_count():

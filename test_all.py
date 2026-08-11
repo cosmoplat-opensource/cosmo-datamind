@@ -961,7 +961,7 @@ _root=_os.path.dirname(_os.path.abspath(__file__))
 chk("Z20 requirements.txt 存在", _os.path.exists(_os.path.join(_root,"requirements.txt")))
 _req=open(_os.path.join(_root,"requirements.txt"),encoding="utf-8").read()
 import sys as _sys
-_std=set(_sys.stdlib_module_names); _local={"translate_cn","quick_build","agent_runtime","serve_claw","export_owl","server","cq_check","drift_check","intent_check","usage_stat","rule_engine","openai_runtime","health_check","compat_check","module_split","dao_core","hallucination_eval","definition_eval","store","srv_context","srv_engine"}
+_std=set(_sys.stdlib_module_names); _local={"translate_cn","quick_build","agent_runtime","serve_claw","export_owl","server","cq_check","drift_check","intent_check","usage_stat","rule_engine","openai_runtime","health_check","compat_check","module_split","dao_core","hallucination_eval","definition_eval","store","srv_context","srv_engine","bp_engine"}
 _ext=set()
 for _f in ("server.py","test_all.py"):
     for _n in ast.walk(ast.parse(open(_os.path.join(_root,_f),encoding="utf-8").read())):
@@ -1270,9 +1270,14 @@ chk("EG9 前端有端点配置卡与测试/保存/清除三个动作",
     'id="eg_llm"' in _ui and "egLLMTest" in _ui and "egLLMSave" in _ui and "egLLMClear" in _ui)
 chk("EG10 前端能拉取模型列表并填进可见下拉", "egFetchModels" in _ui and 'id="eg_l_pick"' in _ui)
 chk("EG11 env 注入项在界面置灰(以部署配置为准)", "env_locked" in _ui and "环境变量注入" in _ui)
+# IR-011:引擎路由已迁至 bp_engine blueprint,配置层在 srv_engine。
+# 以下「引擎实现含某特征」类断言改查 server + bp_engine + srv_engine 的合并源,
+# 断言意图不变(特征仍须存在于引擎实现中),只是实现位置由单体拆成了模块。
+_eng_all = "\n".join(open(f, encoding="utf-8").read()
+                     for f in ("server.py", "bp_engine.py", "srv_engine.py"))
 chk("EG12 端点配好后自动切换运行时(免去『配了没反应』)",
-    "switched_from" in open("server.py", encoding="utf-8").read() and "switched_from" in _ui)
-chk("EG13 报错详情里的 Key 被掩码", "_mask_in_text" in open("server.py", encoding="utf-8").read())
+    "switched_from" in _eng_all and "switched_from" in _ui)
+chk("EG13 报错详情里的 Key 被掩码", "_mask_in_text" in _eng_all)
 # env_locked 只能按「启动时该环境变量是否存在」判定:原先拿配置文件与 env 比对,
 # 值恰好相同就漏判为未锁定,界面会让人误以为可改
 _srv_src = open("server.py", encoding="utf-8").read()
@@ -1280,7 +1285,7 @@ _srv_src = open("server.py", encoding="utf-8").read()
 # 用户看到「已拉到 8 个模型」却找不到在哪选。全站一律改用可见的 <select>
 # 测试请求曾写死 max_tokens=64:推理型模型会卡在 finish_reason=length、正文为空,
 # 看着像「模型不可用」——实际是测试请求自己给少了
-_srv2 = open("server.py", encoding="utf-8").read()
+_srv2 = _eng_all          # IR-011:引擎实现已拆模块,合并源见上
 chk("EG21 连通测试的额度可配,不写死小值", '"max_tokens": _mt' in _srv2 and '"max_tokens": 64' not in _srv2)
 chk("EG22 按 finish_reason 归因截断,不误判为模型无正文",
     'finish_reason' in _srv2 and "回复被额度截断" in _srv2)
@@ -1295,7 +1300,7 @@ chk("EG17 构成规则页对 runtimes 缺失有守卫",
 chk("EG18 构成规则页对 rules 数据缺失有守卫", "d.error||!d.counts" in _ui)
 
 chk("EG14 env_locked 按启动时快照判定,不与配置值比对",
-    "_ENV_LOCKED_AT_BOOT" in _srv_src and "v in _ENV_LOCKED_AT_BOOT" in _srv_src)
+    "_ENV_LOCKED_AT_BOOT" in _eng_all and "v in _ENV_LOCKED_AT_BOOT" in _eng_all)
 # 快照已随引擎配置层收口到 srv_engine(IR-011):不变量形态变为「模块 import 时快照 → 之后才应用配置」,
 # 故跨两文件校验:srv_engine 内快照先于 _apply_engine_cfg 定义;server 内 import 先于启动调用。
 _eng_src = open("srv_engine.py", encoding="utf-8").read()
