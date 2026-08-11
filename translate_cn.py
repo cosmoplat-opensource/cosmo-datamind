@@ -37,7 +37,7 @@ TOKEN = {
     "energy":"能耗","power":"电力","water":"水","gas":"燃气","labor":"人工","overhead":"制造费用","depreciation":"折旧","expense":"费用",
     "after":"售后","service":"服务","warranty":"保修","complaint":"投诉","satisfaction":"满意度","nps":"净推荐值","finance":"财务","fin":"财务",
     "row":"行","col":"列","period":"期间","fiscal":"财务","planning":"计划","forecast":"预测","forecasted":"预测","achieve":"达成","achievement":"达成",
-    "aging":"账龄","maint":"维护","maintenance":"维护","capacity":"产能","hazard":"隐患","sensor":"传感器","training":"培训",
+    "maint":"维护","maintenance":"维护","capacity":"产能","hazard":"隐患","sensor":"传感器","training":"培训",
     "column":"列","table":"表","cash":"现金","receivable":"应收","payable":"应付","inspection":"检验","inspect":"检验","repair":"维修",
     "alarm":"报警","threshold":"阈值","reading":"读数","temperature":"温度","temp":"温度","pressure":"压力","speed":"转速","vibration":"振动",
     "delay":"延误","delayed":"延误","overdue":"逾期","first":"首","last":"末","current":"当前","previous":"上期","ytd":"年初至今","mtd":"月初至今",
@@ -49,11 +49,10 @@ TOKEN = {
     "share":"份额","guide":"指导","deviation":"偏差","sample":"样品","cycle":"周期","estimated":"预估","est":"预估",
     "run":"运行","negative":"负","margin":"毛利","assessment":"评估","enterprise":"企业","accounting":"会计","effective":"生效",
     "bank":"银行","acceptance":"承兑","near":"接近","miss":"未遂","permit":"许可","risk":"风险","high":"高","low":"低",
-    "transit":"在途","goods":"货物","opportunity":"商机","enrollment":"参保","enroll":"参保","accounts":"账款","balance":"余额",
-    "guarantee":"担保","deposit":"保证金","collection":"回款","dso":"回款周期","dpo":"付款周期","dio":"库存周期","wip":"在制品",
+    "transit":"在途","goods":"货物","opportunity":"商机","enrollment":"参保","enroll":"参保","accounts":"账款","guarantee":"担保","deposit":"保证金","collection":"回款","dso":"回款周期","dpo":"付款周期","dio":"库存周期","wip":"在制品",
     # 制造/安全/资产/供应链域补充(本数据集出现,均无歧义):
     "work":"工作","center":"中心","fixed":"固定","asset":"资产","spare":"备件","part":"零件","storage":"存储","tool":"工具",
-    "routing":"工艺路线","pricing":"定价","downtime":"停机","reason":"原因","metadata":"元数据","catalog":"目录","requisition":"申请",
+    "routing":"工艺路线","pricing":"定价","reason":"原因","metadata":"元数据","catalog":"目录","requisition":"申请",
     "receipt":"收货","record":"记录","iot":"物联网","inv":"调查","quotation":"报价","safety":"安全","objective":"目标",
     "accumulated":"累计","accuracy":"精度","action":"措施","required":"所需","applicant":"申请人","sqm":"平方米",
     "assess":"评估","assessor":"评估人","assigned":"指派","tech":"技术","atomic":"原子","attendee":"参与","auditor":"审计员","calc":"计算",
@@ -65,9 +64,8 @@ TOKEN = {
     "property":"财产","loss":"损失","purchase":"采购","received":"已收","reported":"上报","requester":"申请人","responsible":"责任",
     "root":"根本","cause":"原因","runtime":"运行","setup":"准备","severity":"严重度","steam":"蒸汽","topic":"主题","trainer":"培训师",
     "useful":"可用","from":"起","until":"至","kw":"千瓦","ton":"吨","tph":"吨每小时","hr":"小时","mins":"分钟","m3":"立方米","tons":"吨",
-    "pc":"利润中心","wc":"工作中心","business":"业务","unit":"单位","dep":"折旧","net":"净","original":"原始","obj":"对象","data":"数据",
-    "composite":"复合","derived":"派生","atomic":"原子","column":"列","table":"表","reason":"原因","handled":"处理","assess":"评估",
-}
+    "pc":"利润中心","wc":"工作中心","business":"业务","obj":"对象","data":"数据",
+    "composite":"复合","derived":"派生"}
 # 全表名短语覆盖(tr_table 优先查)
 TABLE_PHRASE = {
     "dws_in_sales_daily":"内销日汇总","dws_market_daily":"市场日汇总","dws_pre_sales_daily":"售前日汇总","dws_procurement_daily":"采购日汇总",
@@ -77,7 +75,7 @@ TABLE_PHRASE = {
     "dim_spare_part":"备件","dim_storage_location":"存储位置","dim_table_metadata":"表元数据","dim_tool":"工具","dim_work_center":"工作中心",
     "fact_env_record":"环境记录","fact_goods_receipt":"收货记录","fact_incident_inv":"事故调查","fact_iot_data":"物联网数据","fact_maintenance_record":"维护记录",
     "fact_payment_out":"付款记录","fact_purchase_order":"采购订单","fact_purchase_requisition":"采购申请","fact_quotation":"报价单","fact_safety_audit":"安全审计",
-    "fact_safety_objective":"安全目标","fact_safety_plan":"安全计划","fact_safety_training":"安全培训","fact_work_permit":"作业许可",
+    "fact_safety_objective":"安全目标","fact_safety_plan":"安全计划","fact_safety_training":"安全培训","fact_work_permit":"作业许可"
 }
 # 短语级覆盖(整列名 → 更自然的中文,优先于逐词组合)
 PHRASE = {
@@ -103,7 +101,7 @@ PHRASE = {
     "bank_acceptance_ratio":"银行承兑比率","avg_invoice_days":"平均开票天数","opp_estimated_quantity":"商机预估数量","opp_cycle":"商机周期",
     "opp_quantity":"商机数量","sample_quantity":"样品数量","risk_assessment_count":"风险评估数量","high_risk_count":"高风险数量","permit_count":"许可证数量",
     "maint_completed_count":"维护完成数量","accounting_standard":"会计准则","component_metric_names":"组成指标名称","composite_metric_name":"复合指标名称",
-    "ar_aging":"应收账龄","ap_aging":"应付账龄","cash_balance":"现金余额","gross_margin_rate":"毛利率","operating_margin_rate":"经营利润率",
+    "ar_aging":"应收账龄","ap_aging":"应付账龄","cash_balance":"现金余额","gross_margin_rate":"毛利率","operating_margin_rate":"经营利润率"
 }
 
 def norm(cn, name):
@@ -138,7 +136,7 @@ COL_PHRASE = {
     "pc_id":"利润中心ID","pc_code":"利润中心编码","pc_name":"利润中心名称","wc_id":"工作中心ID","wc_code":"工作中心编码","wc_name":"工作中心名称","wc_type":"工作中心类型",
     "cost_center_id":"成本中心ID","fatality_count":"死亡人数","injury_count":"受伤人数","finding_count":"发现数","attendee_count":"参与人数","property_loss":"财产损失",
     "dim_equipment_id":"设备ID","dim_supplier_id":"供应商ID","formula":"公式","handled_by":"处理人","inspection_result":"检验结果","issued_by":"签发人",
-    "method":"方法","payment_method":"付款方式","payment_terms":"付款条款","pr_date":"采购申请日期","pr_id":"采购申请ID","pr_no":"采购申请单号","reported_by":"上报人","timestamp":"时间戳",
+    "method":"方法","payment_method":"付款方式","payment_terms":"付款条款","pr_date":"采购申请日期","pr_id":"采购申请ID","pr_no":"采购申请单号","reported_by":"上报人","timestamp":"时间戳"
 }
 
 def tr_table(name):

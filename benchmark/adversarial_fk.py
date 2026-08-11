@@ -60,8 +60,9 @@ CANDIDATES = [
     {"child_table": "customers", "child_col": "customer_id",
      "parent_table": "widgets", "parent_col": "widget_id", "is_true_fk": False, "cat": "surrogate_collision"},
     # 低基数真 FK:orders.status → ref_status.status_code(状态码引用状态维;名词根同 status;应 verified)。
-    # 与下方 dr038_lowcard_coincidence 同为低基数(distinct=3),但一真一假、信号完全相同——
-    # 这对「孪生案例」正是数据裁决的固有极限:确定性信号无法区分真码表与巧合同名。
+    # 与下方 dr038_lowcard_coincidence 构成「孪生案例」:同为 distinct=3、100% 含入、父键唯一、
+    # 命名校验放行,裁决所用信号逐项相同却一真一假(唯一有别的 name_score 还反向偏袒假边:
+    # 真 1 / 假 2,因假边两侧列名全等)。这是数据裁决的固有极限,非门槛可调。
     {"child_table": "orders", "child_col": "status",
      "parent_table": "ref_status", "parent_col": "status_code", "is_true_fk": True, "cat": "clean_true"},
     # 方向反:dim 的 PK(customers.customer_id 唯一)被 fact(orders)引用 → 反向应被抑制

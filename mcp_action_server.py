@@ -125,7 +125,7 @@ def main():
         mid, method = msg.get("id"), msg.get("method", "")
         params = msg.get("params") or {}
 
-        def reply(result=None, error=None):
+        def reply(result=None, error=None, mid=mid):   # mid 默认参数绑定当轮消息 id,不随循环推进漂移
             if mid is None:  # notification,不回
                 return
             out = {"jsonrpc": "2.0", "id": mid}

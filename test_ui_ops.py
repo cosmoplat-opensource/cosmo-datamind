@@ -280,7 +280,7 @@ async def main():
 
         # ══ 步骤 8:规则页(决策层)—— 只读查看 ══
         print("\n【步骤8】其余关键页可用性")
-        for p, key in (("rules", "构成规则"), ("review", "评审"), ("actioncenter", "动作"),
+        for p, _key in (("rules", "构成规则"), ("review", "评审"), ("actioncenter", "动作"),
                        ("ontquality", "完备"), ("qaeval", "评测")):
             b0 = len(errs)
             await goto(p, 1800)
