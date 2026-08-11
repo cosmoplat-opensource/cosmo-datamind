@@ -140,6 +140,29 @@ class TestRoleKeysDR036:
             assert dao_core.name_ok(ck, pt, pk) == dao_core.key_name_ok(ck, pk)
 
 
+class TestDirectionDR037:
+    """包含方向测试(DR-037):真 N:1 外键中,多侧(子)值域 ⊂ 一侧(父,唯一)值域。"""
+
+    def test_unique_side_is_parent(self):
+        # A 唯一、B 不唯一 → B 是子(多侧),A 是父 → 'b->a'
+        assert dao_core.fk_direction(a_unique=True, b_unique=False) == "b->a"
+        assert dao_core.fk_direction(a_unique=False, b_unique=True) == "a->b"
+
+    def test_both_unique_is_ambiguous_1to1(self):
+        assert dao_core.fk_direction(a_unique=True, b_unique=True) == "ambiguous"
+
+    def test_neither_unique_is_not_fk(self):
+        assert dao_core.fk_direction(a_unique=False, b_unique=False) == "none"
+
+    def test_should_reverse_when_child_unique_parent_not(self):
+        # 记录的边 child→parent,但 child 唯一而 parent 不唯一 → 方向反了(真方向 parent→child)
+        assert dao_core.should_reverse(child_unique=True, parent_unique=False) is True
+        # child 不唯一(正常多侧)→ 方向对,不反
+        assert dao_core.should_reverse(child_unique=False, parent_unique=True) is False
+        # 双唯一(1:1)→ 不强制反(方向不定,保留原样)
+        assert dao_core.should_reverse(child_unique=True, parent_unique=True) is False
+
+
 class TestParityWithEngine:
     """与上游 ../ontology-engine/engine/relation_discovery 的 name_score 平价 —— 证明同口径。"""
 

@@ -156,6 +156,29 @@ def name_ok(child_col, parent_table, parent_key, child_table=None):
     return False
 
 
+# ── DR-037:包含方向测试 ──
+# 真 N:1 外键中,「多侧」(子)的值域应 ⊂「一侧」(父,唯一)的值域。
+# 仅凭「子值域落在父值域」不足以定向——若子列自身也唯一(常是被误当子键的主键),
+# 方向可能是反的。用两侧唯一度定向:唯一的一侧才是父。
+def fk_direction(a_unique, b_unique):
+    """由两列唯一度推断外键方向:
+    'a->b' = A 是子(多侧)、B 是父(唯一);'b->a' 反之;
+    'ambiguous' = 皆唯一(1:1,方向不定);'none' = 皆不唯一(非 N:1,疑多对多)。"""
+    if a_unique and not b_unique:
+        return "b->a"
+    if b_unique and not a_unique:
+        return "a->b"
+    if a_unique and b_unique:
+        return "ambiguous"
+    return "none"
+
+
+def should_reverse(child_unique, parent_unique):
+    """记录的边为 child→parent;若 child 自身唯一而 parent 不唯一,则方向反了
+    (真方向 parent→child)。双唯一(1:1)不强制反,保留原样待人审。"""
+    return bool(child_unique) and not bool(parent_unique)
+
+
 def classify(*, overlap, parent_unique, name_ok, child_distinct,
              child_is_pk=False, theta=MIN_OVERLAP, min_distinct=MIN_DISTINCT,
              weak_floor=WEAK_FLOOR, exclude_pk_child=True):
