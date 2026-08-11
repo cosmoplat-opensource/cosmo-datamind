@@ -660,7 +660,7 @@ if _r0:
 r=g("/api/ont/audit/a..b"); chk("AL12 审计穿越键→400", r.status_code==400)
 chk("AL13 审计标注边界(撤销会同步移除)", "撤销" in _ad["note"])
 r=g("/"); chk("AL14 UI 含本体对话页与审计面板", 'data-p="claw"' in r.text and 'claw_audit' in r.text)
-chk("AL15 对话提示词含算子清单与反造假规范", True)
+chk("AL15 对话提示词含算子清单与反幻觉规范", True)
 
 print("=== RL. 规则约束与决策层(DR-028)===")
 import rule_engine as _rl

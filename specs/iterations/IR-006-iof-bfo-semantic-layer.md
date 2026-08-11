@@ -1,7 +1,7 @@
 # IR-006 · IOF/BFO 语义工程层(注释 / 接地 / 导出 / 完备度 / 一键升级)
 
 - **状态**: delivered
-- **关联**: [[DR-010-iof-bfo-alignment]];衔接 [[DR-002-multimodal-llm-anti-fraud-build]]、[[DR-009-object-cn-display]]、[[DR-001-local-readonly-execution]]
+- **关联**: [[DR-010-iof-bfo-alignment]];衔接 [[DR-002-multimodal-llm-anti-hallucination-build]]、[[DR-009-object-cn-display]]、[[DR-001-local-readonly-execution]]
 
 ## 目标 / Goal
 参照 Industrial Ontology Foundry(github.com/iofoundry/ontology),给 DataMind 本体全链路(抽取→裁决→呈现→导出→查询→质量→升级)加一层 BFO 上层归类 + `iof-av` 机读注释 + 有根据关系接地 + SHACL 校验,并把真实 示例 图谱升级到 IOF 标准。

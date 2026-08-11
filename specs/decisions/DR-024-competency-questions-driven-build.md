@@ -2,7 +2,7 @@
 
 - **状态 / Status**: accepted
 - **日期 / Date**: 2026-08-02
-- **关联 / Refs**: [[DR-002-multimodal-llm-anti-fraud-build]]、[[DR-011-generalized-adjudication]]、[[DR-019-deepqa-upgrade]](问数评测);外部依据见下
+- **关联 / Refs**: [[DR-002-multimodal-llm-anti-hallucination-build]]、[[DR-011-generalized-adjudication]]、[[DR-019-deepqa-upgrade]](问数评测);外部依据见下
 
 ## 背景 / Context
 
@@ -30,7 +30,7 @@
 引入 **CQ 作为构建的输入与验收的判据**,贯穿构建前后:
 
 1. **建前声明**:构建任务可附带 CQ 清单(自然语言问题 + 期望涉及的对象/关系)。
-   CQ 不参与 LLM 提议(避免"照着答案建",污染反造假裁决),仅作为验收基线留存。
+   CQ 不参与 LLM 提议(避免"照着答案建",污染反幻觉裁决),仅作为验收基线留存。
 2. **建后核验**:对每条 CQ,在**产出的本体上**做**结构可达性判定**——
    问题涉及的对象是否都在本体中、连接它们的关系路径是否存在且状态足够
    (`verified`/`asserted` 可用,`candidate`/`gap` 记为不可靠)。
@@ -45,7 +45,7 @@
   边的状态够不够——每个结论都可回放、可解释、可追责,与数据裁决同一套认识论。
 - **CQ 不进提议环节**是刻意的。若把 CQ 喂给抽取提示词,模型会倾向于"造出"能答 CQ 的关系,
   而这些关系未必有数据支撑——那会让 CQ 从验收判据退化为作弊题库,
-  同时污染 `verified` 的含义(见 [[DR-002-multimodal-llm-anti-fraud-build]] 的反造假规范)。
+  同时污染 `verified` 的含义(见 [[DR-002-multimodal-llm-anti-hallucination-build]] 的反幻觉规范)。
 - **区分 partial 与 unanswerable 有实际价值**:前者说明本体骨架对但证据不足(去补数据裁决),
   后者说明建模漏了概念(去补抽取)——两类缺口的修复动作完全不同,合并上报等于不上报。
 

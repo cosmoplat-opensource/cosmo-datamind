@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 """反幻觉评测台 —— IR-009 / DR-039。
 
-把「LLM 提议、数据裁决」的反造假主张变成**可回归的数字**:喂一批带真值标签的
+把「LLM 提议、数据裁决」的反幻觉主张变成**可回归的数字**:喂一批带真值标签的
 候选关系(真外键 + 植入的假边),量化裁决器 verify 真的、拒假的能力——
 精确率 / 召回 / F1 + **幻觉泄漏率**(假边被判 verified 的比例,越低越强)。
 
@@ -55,7 +55,7 @@ def adjudicate(con, cand, theta=dao_core.MIN_OVERLAP, min_distinct=1, low_card_f
 
 
 def evaluate_proposals(db_path, proposed, gold_true_keys, **kw):
-    """端到端反造假度量:给一批**被提议**的关系(来自 LLM 或 mock proposer),
+    """端到端反幻觉度量:给一批**被提议**的关系(来自 LLM 或 mock proposer),
     量化其中的幻觉(不在金标真关系里的提议),以及数据裁决把幻觉**拦成非 verified**
     还是**泄漏为 verified** 的比例。
 

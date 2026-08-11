@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """quick_build.py <sqlite.db> <out_ir.json> <图谱名>
-数据驱动快速建本体(沿用平台反造假规则):表→对象;关系=声明FK ∪ (命名配对+取值重叠≥60%→verified,否则candidate)。
+数据驱动快速建本体(沿用平台反幻觉规则):表→对象;关系=声明FK ∪ (命名配对+取值重叠≥60%→verified,否则candidate)。
 产物为 DataMind 图谱 IR,可直接在 UI 可视化;深加工可再走 ontology-build / gov-app-ontology-build 技能。
 
 结构(IR-007/DR-045):CLI/构建逻辑收进 build() + `if __name__=="__main__"` 守卫,

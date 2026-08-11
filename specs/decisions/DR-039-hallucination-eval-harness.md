@@ -1,9 +1,9 @@
-# DR-039 · 反幻觉评测台(把反造假主张变成数字)
+# DR-039 · 反幻觉评测台(把反幻觉主张变成数字)
 
 - **状态 / Status**: accepted
 - **日期 / Date**: 2026-07-31
 - **决策者 / Deciders**: Boss(用户) + Writer(Claude)
-- **关联 / Refs**: [[DR-002-multimodal-llm-anti-fraud-build]]、[[DR-035-unified-adjudication-core]]、[[IR-009-eval-and-definition-quality]];实证=`hallucination_eval.py`、`benchmark/adversarial_fk.py`、`tests/unit/test_hallucination_eval.py`
+- **关联 / Refs**: [[DR-002-multimodal-llm-anti-hallucination-build]]、[[DR-035-unified-adjudication-core]]、[[IR-009-eval-and-definition-quality]];实证=`hallucination_eval.py`、`benchmark/adversarial_fk.py`、`tests/unit/test_hallucination_eval.py`
 
 ## 上下文 / Context
 
@@ -26,7 +26,7 @@ DAO 的核心卖点是「LLM 提议、数据裁决」——即便 LLM 幻觉造�
 
 ## 后果 / Consequences
 
-- (+) 反造假从主张变数字:干净子集基线 **泄漏率 0 · 召回 1**(真 FK 全 verify、假边全拒)。
+- (+) 反幻觉从主张变数字:干净子集基线 **泄漏率 0 · 召回 1**(真 FK 全 verify、假边全拒)。
 - (+) 评测台即刻产出价值:**当场抓出我自己基准的标注错误**——把真的状态码 FK(`orders.status→ref_status`,
   名词根同 status)误标为假;裁决器正确 verify 之,台子据此揪出错标。这证明台子在独立判真伪。
 - (+) 揭示**数据裁决的固有极限**:`orders.status→ref_status`(真)与 `orders.level→storage_bins.level`(假)
