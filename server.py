@@ -6,19 +6,16 @@ Cosmo DataMind · 数据智脑 — 自有品牌的数据治理+本体+深度问�
 深度问数:hermes/claude-code(经 agent_runtime)生成 SQL 计划 → 本地 SQLite 执行 → 洞察;引擎不可用时走内置模板兜底。
 启动:python3 server.py  → http://127.0.0.1:8092
 """
-import json, os, re, sqlite3, subprocess, threading, time, uuid, sys, glob, importlib
+import json, os, re, sqlite3, subprocess, threading, time, uuid, sys, glob
 import urllib.request, urllib.error
 import dao_core   # DR-035/044:命名闸/词根等裁决原语的单一事实源
 # DR-043 蓝图化前置:基础路径与原语(路径/只读连接/只读SQL判定/写锁/原子写)收口到共享上下文,与后续 blueprint 共用
 from srv_context import (HERE, ROOT, DB, UPLOAD_DB, WORK,
                          ro_connect, sql_is_readonly, _WRITE_LOCK, _atomic_json, _atomic_text)
 # 引擎运行时与配置层(跨簇共享,故先于路由抽出;见 srv_engine 模块头)
-from srv_engine import (runtime_cached, _drv_order,
-                        LLM_ENV, _ENV_LOCKED_AT_BOOT, LLM_PRESETS,
-                        ENGINE_KEY_VARS, ENGINE_MODEL_OPTS, ENGINE_HERMES_PROVIDERS,
-                        ENGINE_TASKS,
-                        _load_engine_cfg, _save_engine_cfg, _apply_engine_cfg,
-                        _mask_key, _mask_in_text)
+# engine 路由迁出后,server 仅用这几项:运行时选择、引擎回复语义、启动自举与按任务选模
+from srv_engine import (runtime_cached, _drv_order, _looks_like_error,
+                        _load_engine_cfg, _apply_engine_cfg)
 from flask import Flask, jsonify, request, send_from_directory, send_file
 
 # ── 可配置路径(env 覆盖):HERE/ROOT/DB/UPLOAD_DB/WORK 已收口到 srv_context(见文件头 import)。
@@ -78,6 +75,11 @@ except Exception as _e:                              # 其余是真故障,吞掉
     print("[warn] OpenAI 兼容驱动注册失败:%s: %s" % (type(_e).__name__, _e))
 
 app = Flask(__name__, static_folder=None)
+# IR-011/DR-043 蓝图化:引擎设置路由已迁出为 blueprint。
+# 注意 app 级 before_request(下方 CSRF 守卫)对 blueprint 路由同样生效,安全模型不变。
+# 须在 app 之后导入并注册,避免顺序歧义
+from bp_engine import bp_engine as _bp_engine   # noqa: E402
+app.register_blueprint(_bp_engine)
 
 # ── CSRF 防护:阻止恶意网页跨站触发本机写/执行接口(deploy/build/skill/删除等)──
 # 浏览器跨源写请求必带 Origin;同源 UI 的 Origin 即本机,放行。非浏览器工具(无 Origin/Referer)不在威胁模型内。
@@ -942,11 +944,7 @@ def _rule_summary(results):
             outs.append(f"「{r['title']}」{json.dumps(rows[0], ensure_ascii=False)}")
     return ("数据摘要:" + ";".join(outs)) if outs else "已取到数据,请展开各分析查看明细。"
 
-_ERR_REPLY = re.compile(r"API call failed|HTTP (?:4\d\d|5\d\d)|usage limit|rate ?limit|quota|Traceback|exceeded|无法.*(连接|执行)|Error:", re.I)
-def _looks_like_error(reply):
-    """引擎有时把错误文案当正文返回(ok=True 但内容是 429/超限等);识别后视为失败,交由规则兜底。"""
-    r = (reply or "").strip()
-    return (not r) or (len(r) < 400 and bool(_ERR_REPLY.search(r)))
+# _ERR_REPLY / _looks_like_error 已收口到 srv_engine(引擎回复语义,跨簇共用;见文件头 import)
 
 def narrative_llm(question, results, steps, emit=None):
     """引擎生成业务洞察;成功返回文本,失败/离线/引擎报错返回 None(由调用方兜底为 _rule_summary)。
@@ -2946,189 +2944,7 @@ def diagnose_stream():
 # ── 引擎设置(DR-017)── 常量与配置读写/应用/掩码已收口到 srv_engine(跨簇共享,见文件头 import)
 _apply_engine_cfg(_load_engine_cfg())        # 启动即应用持久化配置(覆盖 start.sh 缺省)
 
-@app.get("/api/engine/config")
-def engine_config_get():
-    # 副作用导入:serve_claw 在 import 时把 openclaw 注册进运行时表。用 import_module 表达
-    # "只为副作用",既不留未使用绑定(静态检查干净),也让意图对读者显式。
-    try: importlib.import_module("serve_claw")
-    except Exception: pass
-    from agent_runtime import available
-    cfg = _load_engine_cfg()
-    keys = cfg.get("keys") or {}
-    return jsonify({
-        "driver": os.environ.get("CLAW_DRIVER", "hermes"),
-        "runtimes": available(),
-        "models": {"claude-code": os.environ.get("CLAUDE_MODEL", "claude-opus-4-8"),
-                   "hermes": os.environ.get("HERMES_MODEL", ""),
-                   "openclaw": os.environ.get("OPENCLAW_MODEL", "")},
-        "hermes_provider": os.environ.get("HERMES_PROVIDER", ""),
-        "model_options": ENGINE_MODEL_OPTS, "hermes_providers": ENGINE_HERMES_PROVIDERS,
-        "task_models": {t: (cfg.get("task_models") or {}).get(t, "") for t in ENGINE_TASKS},
-        "keys": {v: _mask_key(keys.get(v) or os.environ.get(v, "")) for v in ENGINE_KEY_VARS},
-        "llm": {
-            "base": os.environ.get(LLM_ENV["base"], ""),
-            "key": _mask_key(os.environ.get(LLM_ENV["key"], "")),
-            "key_set": bool(os.environ.get(LLM_ENV["key"])),
-            "model": os.environ.get(LLM_ENV["model"], ""),
-            "timeout": os.environ.get(LLM_ENV["timeout"], ""),
-            "max_tokens": os.environ.get(LLM_ENV["max_tokens"], ""),
-            "ready": "openai" in available(),
-            # env 注入的项不可经界面覆盖,前端据此置灰并说明原因。
-            # 判据只看「启动时该 env 是否存在」——与配置文件里存了什么无关:
-            # 原先拿两者比对,值恰好相同就漏判为未锁定。
-            "env_locked": [f for f, v in LLM_ENV.items()
-                           if f != "key" and v in _ENV_LOCKED_AT_BOOT],
-        },
-        "llm_presets": LLM_PRESETS})
-
-@app.post("/api/engine/config")
-def engine_config_set():
-    """部分更新:driver / 各运行时模型 / hermes provider / API keys(空串=清除)。持久化+即时生效。"""
-    from agent_runtime import available
-    body = request.json or {}
-    cfg = _load_engine_cfg()
-    if "driver" in body:
-        if body["driver"] not in available():
-            return jsonify({"error": f"无此运行时: {body['driver']}", "available": available()}), 400
-        cfg["driver"] = body["driver"]
-    for k in ("claude_model", "hermes_model", "hermes_provider"):
-        if k in body: cfg[k] = str(body[k]).strip()[:80]
-    if isinstance(body.get("task_models"), dict):        # B4 按任务选模(空串=清除该任务覆盖)
-        tm = cfg.setdefault("task_models", {})
-        for t, v in body["task_models"].items():
-            if t not in ENGINE_TASKS: return jsonify({"error": f"未知任务: {t}", "tasks": ENGINE_TASKS}), 400
-            v = str(v or "").strip()[:80]
-            if v: tm[t] = v
-            else: tm.pop(t, None)
-    if isinstance(body.get("llm"), dict):                # OpenAI 兼容端点
-        lm = cfg.setdefault("llm", {})
-        for fld in LLM_ENV:
-            if fld not in body["llm"]: continue
-            v = str(body["llm"][fld] or "").strip()
-            if fld in ("timeout", "max_tokens") and v:
-                if not v.isdigit() or int(v) <= 0:
-                    return jsonify({"error": f"{fld} 需为正整数"}), 400
-            if fld == "base" and v and not v.startswith(("http://", "https://")):
-                return jsonify({"error": "端点地址须以 http:// 或 https:// 开头"}), 400
-            if v: lm[fld] = v[:400]
-            else:
-                lm.pop(fld, None); os.environ.pop(LLM_ENV[fld], None)
-    # 端点配好却仍指向未注册的运行时,是最常见的「配了没反应」:自动切过去,并告知已切
-    _switched = ""
-    if isinstance(body.get("llm"), dict) and "driver" not in body:
-        _cur = cfg.get("driver") or os.environ.get("CLAW_DRIVER", "")
-        _lm = cfg.get("llm") or {}
-        if _lm.get("base") and _lm.get("key") and _cur != "openai":
-            cfg["driver"] = "openai"; _switched = _cur or "(未设置)"
-    if isinstance(body.get("keys"), dict):
-        ks = cfg.setdefault("keys", {})
-        for var, val in body["keys"].items():
-            if var not in ENGINE_KEY_VARS: return jsonify({"error": f"不支持的 Key 变量: {var}"}), 400
-            val = str(val or "").strip()
-            if val: ks[var] = val[:200]
-            else:
-                ks.pop(var, None); os.environ.pop(var, None)   # 清除须同步弹出进程 env
-    _save_engine_cfg(cfg)
-    _apply_engine_cfg(cfg)
-    resp = engine_config_get()
-    if _switched:
-        d = resp.get_json(); d["switched_from"] = _switched
-        return jsonify(d)
-    return resp
-
-@app.post("/api/engine/llm/test")
-def engine_llm_test():
-    """用**给定的**(可未保存)端点配置跑一次最小请求,回真实延迟与真实报错。
-
-    参考通行做法:配置面板里「测试连接」应当测的是你正在填的那份配置,
-    而不是已保存的那份 —— 否则先存后测,存错了还得回滚。
-    Key 留空时沿用已保存的,便于只改模型名时复测。"""
-    b = request.json or {}
-    base = str(b.get("base") or os.environ.get(LLM_ENV["base"], "")).strip().rstrip("/")
-    key = str(b.get("key") or "").strip() or os.environ.get(LLM_ENV["key"], "")
-    model = str(b.get("model") or os.environ.get(LLM_ENV["model"], "")).strip()
-    if not base or not key:
-        return jsonify({"ok": False, "error": "端点地址与 API Key 缺一不可"}), 400
-    if not base.startswith(("http://", "https://")):
-        return jsonify({"ok": False, "error": "端点地址须以 http:// 或 https:// 开头"}), 400
-    if not model:
-        return jsonify({"ok": False, "error": "未指定模型名"}), 400
-    # 额度取用户填的值(缺省 1024):写死小额度会把推理型模型卡在 finish_reason=length,
-    # 正文为空,看着像「模型不可用」——实际只是测试请求自己给少了。
-    _mt = b.get("max_tokens") or os.environ.get(LLM_ENV["max_tokens"]) or 1024
-    try: _mt = max(64, int(_mt))
-    except (TypeError, ValueError): _mt = 1024
-    payload = json.dumps({"model": model, "temperature": 0, "max_tokens": _mt,
-                          "messages": [{"role": "user", "content": "只回复两个字:在线"}]}).encode()
-    req = urllib.request.Request(base + "/chat/completions", data=payload,
-                                 headers={"Authorization": "Bearer " + key,
-                                          "Content-Type": "application/json"})
-    t0 = time.time()
-    try:
-        with urllib.request.urlopen(req, timeout=int(b.get("timeout") or 60)) as r:
-            d = json.loads(r.read())
-    except urllib.error.HTTPError as e:
-        body_txt = ""
-        try: body_txt = e.read().decode("utf-8", "ignore")[:200]
-        except Exception: pass
-        return jsonify({"ok": False, "ms": int((time.time() - t0) * 1000),
-                        "error": f"HTTP {e.code}", "detail": _mask_in_text(body_txt, key)})
-    except Exception as e:
-        return jsonify({"ok": False, "ms": int((time.time() - t0) * 1000),
-                        "error": f"{type(e).__name__}: {_mask_in_text(str(e)[:200], key)}"})
-    _ch = (d.get("choices") or [{}])[0]
-    msg = _ch.get("message") or {}
-    txt = (msg.get("content") or "").strip()
-    _fin = _ch.get("finish_reason")
-    think = len(msg.get("reasoning_content") or "")
-    usage = d.get("usage") or {}
-    return jsonify({"ok": bool(txt), "ms": int((time.time() - t0) * 1000),
-                    "reply": txt[:80], "reasoning_chars": think,
-                    "usage": {k: usage.get(k) for k in ("prompt_tokens", "completion_tokens")},
-                    # 正文为空多半是推理占满了额度,直接把处置写出来,免得配置者从头猜
-                    "finish_reason": _fin,
-                    "warn": (("回复被额度截断(finish_reason=length,本次上限 %d):"
-                              "推理型模型的思维链占用同一份额度,请把「回复上限」调大" % _mt)
-                             if _fin == "length" else
-                             ("正文为空而思维链 %d 字:模型未产出正文,可尝试调大回复上限或换模型" % think)
-                             if (not txt and think) else "")})
-
-
-@app.post("/api/engine/llm/models")
-def engine_llm_models():
-    """拉取端点的可用模型列表(GET {base}/models)。部分服务不提供该接口,失败即如实返回。"""
-    b = request.json or {}
-    base = str(b.get("base") or os.environ.get(LLM_ENV["base"], "")).strip().rstrip("/")
-    key = str(b.get("key") or "").strip() or os.environ.get(LLM_ENV["key"], "")
-    if not base or not key:
-        return jsonify({"models": [], "error": "端点地址与 API Key 缺一不可"}), 400
-    req = urllib.request.Request(base + "/models", headers={"Authorization": "Bearer " + key})
-    try:
-        with urllib.request.urlopen(req, timeout=20) as r:
-            d = json.loads(r.read())
-    except Exception as e:
-        return jsonify({"models": [], "error": "%s: %s" % (type(e).__name__,
-                                                           _mask_in_text(str(e)[:160], key))})
-    ids = sorted({str(m.get("id")) for m in (d.get("data") or []) if m.get("id")})
-    return jsonify({"models": ids[:200], "count": len(ids)})
-
-
-@app.post("/api/engine/test")
-def engine_test():
-    """连通性测试:对指定运行时跑一条最小指令,回真实延迟或真实报错(切换前先测,best practice)。"""
-    drv = (request.json or {}).get("driver", "")
-    from agent_runtime import get_runtime, available
-    if drv not in available(): return jsonify({"error": "无此运行时"}), 400
-    t0 = time.time()
-    try:
-        ok, reply = get_runtime(drv).run_turn(f"tst_{uuid.uuid4().hex[:6]}", "只回复两个字:在线", timeout=60)
-    except Exception as e:
-        ok, reply = False, str(e)
-    if ok and _looks_like_error(str(reply or "")):
-        ok = False
-    return jsonify({"ok": bool(ok), "seconds": round(time.time() - t0, 1),
-                    "reply": str(reply or "")[:200]})
-
+# ── 引擎设置路由已迁至 bp_engine blueprint(IR-011/DR-043);共享层在 srv_engine ──
 # ── C9 问数评测(P20 落地):金标题集 × 三臂对照(A朴素 / B图谱 / C本体全量),自动判分 ──
 _EVAL_SET_F = os.path.join(HERE, "benchmark", "qa_set.json")
 _EVAL_RES_F = os.path.join(WORK, "eval_results.json")

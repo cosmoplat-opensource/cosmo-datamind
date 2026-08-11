@@ -17,8 +17,18 @@ deepqa 就得反向 import blueprint —— 循环导入。故先抽为共享层
 """
 import json
 import os
+import re
 
 from srv_context import WORK, _atomic_json
+
+# ── 引擎回复语义(跨簇共用:deepqa / 本体 / 构建 / engine 自测都要判「这条回复其实是错误」)──
+_ERR_REPLY = re.compile(r"API call failed|HTTP (?:4\d\d|5\d\d)|usage limit|rate ?limit|quota|Traceback|exceeded|无法.*(连接|执行)|Error:", re.I)
+
+
+def _looks_like_error(reply):
+    """引擎有时把错误文案当正文返回(ok=True 但内容是 429/超限等);识别后视为失败,交由规则兜底。"""
+    r = (reply or "").strip()
+    return (not r) or (len(r) < 400 and bool(_ERR_REPLY.search(r)))
 
 # ── 运行时实例缓存 ──
 # 复用 driver 实例:get_runtime 每次返回新实例,会重置 _started/_primed,使会话式对话(稳定 cid)
