@@ -2,7 +2,7 @@
 
 - **状态 / Status**: accepted
 - **日期 / Date**: 2026-08-02
-- **关联 / Refs**: [[DR-032-qa-anchor-visualization]](锚定可视化)、[[DR-022-two-hop-join-path]](两跳链)、[[DR-026-double-blind-intent]](实际命中)
+- **关联 / Refs**: [[DR-032-qa-anchor-visualization]](锚定可视化)、[[DR-022-skill-ecosystem]](两跳链)、[[DR-026-doubleblind-intent-and-usage]](实际命中)
 
 ## 背景 / Context
 

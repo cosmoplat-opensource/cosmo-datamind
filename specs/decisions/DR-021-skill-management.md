@@ -41,4 +41,4 @@
 
 ## 关联
 
-- [[DR-002]](构建链:注入点所在)· [[DR-013]](无原生弹窗规范:两击删除)· [[DR-019]](同类教训:术语词典进检索)
+- [[DR-002-multimodal-llm-anti-hallucination-build]](构建链:注入点所在)· [[DR-013-human-review-relations]](无原生弹窗规范:两击删除)· [[DR-019-deepqa-upgrade]](同类教训:术语词典进检索)

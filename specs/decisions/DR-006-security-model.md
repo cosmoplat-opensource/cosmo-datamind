@@ -10,7 +10,7 @@
 一次针对性审计发现 `forged_` 图谱键可路径穿越读/写任意 `.json`(高危 LFI/写穿越)。
 
 ## 决定 / Decision
-- **SQL 只读**:见 [[DR-001]](`mode=ro` + `sql_is_readonly` + 单句执行,三重防写)。
+- **SQL 只读**:见 [[DR-001-local-readonly-execution]](`mode=ro` + `sql_is_readonly` + 单句执行,三重防写)。
 - **CSRF**:全局 `before_request` 守卫——非安全方法且带 Origin/Referer 且 host≠本机 → 403;无源(curl/非浏览器)非 CSRF 面放行。覆盖所有写端点。
 - **路径穿越**:图谱键经 `_bad_gkey()` 校验(仅 `[A-Za-z0-9_.-]` 且禁 `..`)——`load_ir` 非法键返 None、`_edits_path` 非法键落固定安全名,堵住 `forged_../..` 读/写任意文件。文件服务(`/doc`/`/vendor`/`/platform`/`/api/outputs/file`)一律 realpath 归属校验或严格正则;`conn_preview` 表名 `^[A-Za-z0-9_]+$`;`build_delete` key `^built_[\w]+$`。
 - **命令执行**:skill/tool/deploy 名走白名单、无 `shell=True`、args 拦 `;&|$\`` 元字符;子进程 `run_job` 定向 stdout、超时 1800s。

@@ -58,4 +58,4 @@
 
 ## 关联
 
-- [[DR-008]](问数编排)· [[DR-014]](证据回流:助手待办聚合复用)· [[DR-015]](动作层:助手动作入口)· [[DR-017]](引擎设置:task_models 落同一配置文件)· [[DR-018]](单一真相:口径校验/评测读 load_ir_edited)
+- [[DR-008-datasource-connection-model]](问数编排)· [[DR-014-ontology-in-the-loop]](证据回流:助手待办聚合复用)· [[DR-015-palantir-actions]](动作层:助手动作入口)· [[DR-017-engine-settings]](引擎设置:task_models 落同一配置文件)· [[DR-018-realtime-consistency]](单一真相:口径校验/评测读 load_ir_edited)

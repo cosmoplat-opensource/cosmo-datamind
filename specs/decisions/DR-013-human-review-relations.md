@@ -47,4 +47,4 @@
 
 ## 关联
 
-- [[DR-007]](反幻觉:verified 仅数据裁决)· [[DR-009]](对话编辑白名单op)· [[DR-011]](泛化裁决/semantic 字段,评审页展示其结论)
+- [[DR-007-url-hash-routing]](反幻觉:verified 仅数据裁决)· [[DR-009-object-cn-display]](对话编辑白名单op)· [[DR-011-generalized-adjudication]](泛化裁决/semantic 字段,评审页展示其结论)

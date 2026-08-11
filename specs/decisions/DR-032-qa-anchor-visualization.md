@@ -2,7 +2,7 @@
 
 - **状态 / Status**: accepted
 - **日期 / Date**: 2026-08-02
-- **关联 / Refs**: [[DR-026-double-blind-intent]](实际命中来源)、[[DR-027-business-aliases]](别名参与召回)、[[DR-022-two-hop-join-path]](两跳链)
+- **关联 / Refs**: [[DR-026-doubleblind-intent-and-usage]](实际命中来源)、[[DR-027-business-aliases-and-change-audit]](别名参与召回)、[[DR-022-skill-ecosystem]](两跳链)
 
 ## 背景 / Context
 
@@ -33,7 +33,7 @@ JOIN 用的是本体的哪条关系,全都看不到。
   提示行的同一趟里收集;对象由 `build_context(..., trace=)` 在挑表的同一趟里记录。
   另写一段代码重新推导一遍"应该锚定什么",**可视化会与真正喂给引擎的内容悄悄漂移**,
   那时它就从证据变成了装饰。断言 AN4 直接锁死"结构化边数 == ⋈ 提示行数"。
-- **"实际命中"复用双盲检测的通道 B**([[DR-026]]),不新埋点。
+- **"实际命中"复用双盲检测的通道 B**([[DR-026-doubleblind-intent-and-usage]]),不新埋点。
   它本就在解析 SQL 里的表,顺手回填即可。
 - **召回与使用要能对照**。只画召回会让人以为这些表都被用了;
   标出 SQL 真正落到哪几张,才看得出**召回是宽是准**。

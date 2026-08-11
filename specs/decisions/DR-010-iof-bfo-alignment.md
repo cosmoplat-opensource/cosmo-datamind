@@ -21,6 +21,6 @@
 - (+) 图谱可与 IOF/BFO 生态互操作;导出 OWL 带机读定义/反例/成熟度/溯源,可进 Protégé/HermiT/SHACL。
 - (+) 反幻觉(DR-002)升级为「数据裁决 + IOF 定义规范」:能证则证(verified)、能定义则定义、否则诚实标 candidate/原始概念。
 - (+) 完备度可量化;真实 示例 图谱经一键升级达 100%(108 对象定义/反例全、60 关系接地全)——为专利/答辩提供「可审计本体」实证。
-- (+) 三写端点与 [[DR-001]] 只读执行正交:只写本系统 workdir/forged 下的 IR JSON,不碰数据库。
+- (+) 三写端点与 [[DR-001-local-readonly-execution]] 只读执行正交:只写本系统 workdir/forged 下的 IR JSON,不碰数据库。
 - (−) 定义/接地依赖在线引擎(离线只降级不编造);数据驱动兜底(quick_build)对象标原始概念、关系接地为 relatedTo(诚实)。
 - (−) `iof-av`/BFO IRI 采用 IOF 官方命名空间但未 import 其 OWL 本体(仅注释对齐);如需严格 import 需另核许可与 catalog。
