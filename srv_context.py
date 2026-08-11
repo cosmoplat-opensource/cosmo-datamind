@@ -26,7 +26,7 @@ os.makedirs(WORK, exist_ok=True)
 
 
 def ro_connect(path):
-    """统一只读连接:mode=ro 打开;缺库时响亮失败(不静默新建空库,防丢库被掩盖)。
+    """统一只读连接:mode=ro 打开;缺库时显式报错(不静默新建空库,防丢库被掩盖)。
     仅当 URI 不受支持时才退回普通连接,且仍先确认文件存在 + 强制 query_only。"""
     if not os.path.exists(path):
         raise FileNotFoundError(f"数据库不存在: {path}")
@@ -66,7 +66,7 @@ def _atomic_json(path, data):
 
 
 def _atomic_text(path, text):
-    """文本文件的原子写(SKILL.md / OWL Turtle 等)。与 _atomic_json 同一纪律:
+    """文本文件的原子写(SKILL.md / OWL Turtle 等)。与 _atomic_json 同一规范:
     先写 .tmp 再 os.replace,避免写到一半失败留下截断文件。"""
     tmp = path + ".tmp"
     with open(tmp, "w") as fp:

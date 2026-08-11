@@ -52,7 +52,7 @@ def is_key_unique(t, c):
     _uniq_cache[k] = out
     return out
 
-# 命名闸/词根原语统一收口到 dao_core(DR-035),此处再导出保持既有引用不破。
+# 命名校验/词根原语统一收敛到 dao_core(DR-035),此处再导出保持既有引用不破。
 key_stem = dao_core.key_stem
 key_name_ok = dao_core.key_name_ok
 
@@ -73,7 +73,7 @@ def parent_key(pt, child_col, stem):
 def build(db, out, name):
     """数据驱动构建一张图谱 IR,写入 out 并返回 ir(供测试/编程调用)。"""
     global con, cols_of, pk_of
-    # 只读打开(mode=ro):建本体只取数、绝不改源库;缺库时响亮失败而非静默新建空库
+    # 只读打开(mode=ro):建本体只取数、绝不改源库;缺库时显式报错而非静默新建空库
     con = sqlite3.connect(f"file:{db}?mode=ro", uri=True); con.row_factory = sqlite3.Row
     tabs = [r[0] for r in con.execute("SELECT name FROM sqlite_master WHERE type='table' ORDER BY name")]
     print(f"[quick_build] {len(tabs)} 张表", flush=True)
@@ -127,7 +127,7 @@ def build(db, out, name):
                     if "self" not in roles: continue        # 自引用仅对含 self 的角色键开放(DR-036)
                 else:
                     genus_hit = any(g != "self" and g in ptl for g in roles)   # 角色属类词命中父表名
-                    if not (stem in ptl or genus_hit): continue   # 非角色键沿用原表名子串闸,不广泛松闸
+                    if not (stem in ptl or genus_hit): continue   # 非角色键沿用原表名子串校验,不广泛放宽
                 pk = parent_key(pt, c, stem)
                 if not pk: continue
                 if self_ref and pk == c: continue           # 自引用键不能指向自己这一列
@@ -136,7 +136,7 @@ def build(db, out, name):
                 ov = dao_core.overlap_pct(child, parent)
                 # 父键唯一度仅在 ov≥60 时探测(保留短路,避免弱重叠也全表 COUNT);
                 # 决策统一走 dao_core.classify 的 compat 口径(min_distinct=1、不排除PK作子键)——
-                # 与 quick_build 历史行为逐值等价(非角色键),漂移就此收口到单一裁决核(DR-035)。
+                # 与 quick_build 历史行为逐值等价(非角色键),漂移就此收敛到单一裁决核(DR-035)。
                 punique = is_key_unique(pt, pk) if ov >= 60 else False
                 # DR-037 接线:子键唯一而父键不唯一 → 方向反了(真方向 pt→t)。
                 # 抑制这条反向边、且不污染 seen——让正向在处理多侧表(pt)的该列时自然发现。

@@ -34,7 +34,7 @@ Cosmo DataMind 是**自有品牌、原创前后端**的「数据治理 × 本体
 - [DR-036 · 自引用与角色键发现(role_targets + 角色感知 name_ok + health 自反豁免)](decisions/DR-036-self-referential-and-role-keys.md)
 - [DR-035 · 单一裁决核 dao_core(消两份漂移实现 + classify 三态 + 引擎平价)](decisions/DR-035-unified-adjudication-core.md)
 - [DR-046 · 确定性模块的隔离单测(离线秒级 + quick_build 可测化)](decisions/DR-046-deterministic-module-unit-tests.md)
-- [DR-045 · 工程门禁与 TDD 底座(pytest/coverage/ruff/CI + 文档计数自检)](decisions/DR-045-engineering-harness-and-tdd.md)
+- [DR-045 · 工程校验与 TDD 底座(pytest/coverage/ruff/CI + 文档计数自检)](decisions/DR-045-engineering-harness-and-tdd.md)
 - [DR-001 · 本地只读执行(避开平台 1142/方言/沙箱坑)](decisions/DR-001-local-readonly-execution.md)
 - [DR-002 · 多模态 LLM 本体自动构建 + 反造假取证(算法核心)](decisions/DR-002-multimodal-llm-anti-fraud-build.md)
 - [DR-003 · 多引擎运行时 + 对外中性命名 + 限流兜底](decisions/DR-003-runtime-neutral-naming.md)
@@ -44,11 +44,11 @@ Cosmo DataMind 是**自有品牌、原创前后端**的「数据治理 × 本体
 - [DR-007 · URL hash 子页寻址](decisions/DR-007-url-hash-routing.md)
 - [DR-008 · 数据源与连接模型(内置/SQLite 校验/外部登记)](decisions/DR-008-datasource-connection-model.md)
 - [DR-009 · 对象 id 英文名、显示中文名(cn)](decisions/DR-009-object-cn-display.md)
-- [DR-010 · IOF/BFO 本体工程对齐(注释/接地/注释化 OWL 导出/SHACL 门禁/完备度)](decisions/DR-010-iof-bfo-alignment.md)
+- [DR-010 · IOF/BFO 本体工程对齐(注释/接地/注释化 OWL 导出/SHACL 校验/完备度)](decisions/DR-010-iof-bfo-alignment.md)
 - [DR-011 · 泛化裁决 v2(等值/前缀/复合键/PK 感知 + 三级控制环)](decisions/DR-011-generalized-adjudication.md)
 - [DR-012 · SPARQL 健壮性(线程安全/诚实报错/合法默认示例)](decisions/DR-012-sparql-robustness.md)
 - [DR-034 · 中文召回改反向匹配;算子按中文名定位](decisions/DR-034-chinese-recall-and-op-targeting.md)
-- [DR-033 · 选中的本体图谱成为问数的锚定源(含键名词根闸)](decisions/DR-033-selected-ontology-as-anchor.md)
+- [DR-033 · 选中的本体图谱成为问数的锚定源(含键名词根校验)](decisions/DR-033-selected-ontology-as-anchor.md)
 - [DR-032 · 深度问数的本体锚定可视化(对话内画出锚定子图与 SQL 实际命中)](decisions/DR-032-qa-anchor-visualization.md)
 - [DR-031 · 向后兼容性检查与本体模块化(下游影响 + 领域/层次拆分)](decisions/DR-031-compat-and-modularization.md)
 - [DR-030 · 本体健康度体检(七类图结构异常,硬错误/信号分级)](decisions/DR-030-ontology-health-check.md)
@@ -67,7 +67,7 @@ Cosmo DataMind 是**自有品牌、原创前后端**的「数据治理 × 本体
 - [IR-004 · 数据连接 + 数据可视化模块](iterations/IR-004-connection-and-viz.md) · **delivered**
 - [IR-005 · 安全加固 + 工业化 + 复审收敛](iterations/IR-005-hardening-and-review.md) · **delivered(持续)**
 - [IR-006 · IOF/BFO 语义工程层(注释/接地/导出/完备度/一键升级)](iterations/IR-006-iof-bfo-semantic-layer.md) · **delivered**
-- [IR-007 · 工程门禁与 TDD 底座(pytest/coverage/ruff/CI + 确定性模块单测)](iterations/IR-007-tdd-foundation.md) · **in-progress**
+- [IR-007 · 工程校验与 TDD 底座(pytest/coverage/ruff/CI + 确定性模块单测)](iterations/IR-007-tdd-foundation.md) · **in-progress**
 - [IR-008 · 裁决核收敛与算法强化(dao_core 单一事实源 + 引擎平价 + 零回归)](iterations/IR-008-adjudication-core-convergence.md) · **in-progress**
 - [IR-011 · 单体路由蓝图化(共享上下文基座 + 逐簇拆 blueprint)](iterations/IR-011-blueprint-modularization.md) · **in-progress**
 - [IR-009 · 反幻觉评测台与门槛量化(对抗基准 + 泄漏率 + DR-038 回归实测)](iterations/IR-009-eval-and-definition-quality.md) · **in-progress**
@@ -91,10 +91,10 @@ Cosmo DataMind 是**自有品牌、原创前后端**的「数据治理 × 本体
 - 新增(DR-016):`mcp_action_server.py` —— 动作层 MCP server(stdio,零依赖):list_actions / **invoke_action(唯一写)** / get_action_status;审批不暴露,治理单一实现留在 HTTP API,Agent 接入自动继承「只能提议、不能批准」。
 - 新增(DR-017):「引擎设置」页 + /api/engine/config·test —— 运行时/模型/API Key 实时切换(调用时读 env+清缓存,免重启);Key 只写不回显、0600、清除同步弹 env;先测后切(真实延迟/真实报错)。
 - 新增(DR-018):全部读方统一 `load_ir_edited`(单一当前真相)——修复 问数JOIN提示/总览/指标/表详情/graphs列表 读原始IR 的不一致;U 分区 18 断言锁定「写→图谱/总览/问数/SPARQL/评审/列表 即读→撤销复原」。套件 186 断言。
-- 新增(DR-019):深度问数十项升级 —— A1 术语词典进检索(term_expand 步)/ A2 SQL 口径拦截 `_validate_sql_ontology`(ontology_gate 步:表白名单+JOIN 键落本体关系)/ A3 指标口径卡(done.metric_cards)/ B4 按任务选模(task_models{plan/narrative/diagnose}+模型族保护)/ B5 多轮指代 `_carryover` / B6 叙述流式 narrative_delta / C7 外部库实连(pymysql;凭据 conn_secrets.json 0600 只写)/ C8 API 型数据源(api_fetch→up.api_* 物化)/ C9 问数评测(benchmark/qa_set.json 8 题金标×三臂,/api/eval/*,「问数评测」页)/ C10「业务助手」页(角色组装问数/诊断/动作/待办)。套件 212 断言。
+- 新增(DR-019):深度问数十项升级 —— A1 术语词典进检索(term_expand 步)/ A2 SQL 口径拦截 `_validate_sql_ontology`(ontology_gate 步:表白名单+JOIN 键落本体关系)/ A3 指标口径卡(done.metric_cards)/ B4 按任务选模(task_models{plan/narrative/diagnose}+模型族保护)/ B5 多轮指代 `_carryover` / B6 叙述流式 narrative_delta / C7 外部库实连(pymysql;凭据 conn_secrets.json 0600 只写)/ C8 API 型数据源(api_fetch→up.api_* 物化)/ C9 问数评测(benchmark/qa_set.json 8 题金标×三组,/api/eval/*,「问数评测」页)/ C10「业务助手」页(角色组装问数/诊断/动作/待办)。套件 212 断言。
 - 新增(DR-020):动作层产品化 —— 动作类型管理 CRUD(/api/action/type·update·delete,内置种子受保护、停用即刻拦截发起)/ 3 个行业动作种子(冻结批次·温区调参·供应商 SCAR,均绑真实库表)/ 问数答案卡「相关动作」直达发起(SQL 命中表 × object_table 匹配)/ 动作中心 KPI+类型编辑弹窗+审计筛选与 CSV 导出;MCP 读同一注册表零改动继承。套件 226 断言。
-- 新增(DR-021):构建技能管理 —— 浏览(内置只读+目录清单)/在线新建/编辑/两击删除(/api/build/skill/<name>·save·delete);**自定义技能正文注入构建方法论**(_skill_method_text,剥 front-matter,编辑后下次构建即生效)——修复「能上传但从未被消费」的摆设问题;内置技能名不可占用,可复制为副本再改。套件 236 断言(105 路由)。
-- 新增(DR-022):技能生态五项 —— ①技能对比实验(/api/build/skill_compare·status·results:同目标×两组技能各跑真实构建,对比 对象/关系/verified/动词/类型/定义覆盖;臂失败如实展示不充数)②构建流水线 skill_inject 注入痕迹步 ③产物沉淀为技能(/api/build/skill/from_graph:动词表/类型分布/定义样例,确定性提取)④评测败题通用修复(⋈⋈ 两跳路径召回 + 均值分母/单值聚合口径纪律进 prompt)⑤存而不用审计(specs/audit-input-consumers.md;第 3 起摆设 qa_skills 已接上:_match_qa_skill 命中复用+skill_reuse 步)。套件 249 断言(109 路由;终跑 C 臂 8/8)。
+- 新增(DR-021):构建技能管理 —— 浏览(内置只读+目录清单)/在线新建/编辑/两击删除(/api/build/skill/<name>·save·delete);**自定义技能正文注入构建方法论**(_skill_method_text,剥 front-matter,编辑后下次构建即生效)——修复「能上传但从未被消费」的死代码问题;内置技能名不可占用,可复制为副本再改。套件 236 断言(105 路由)。
+- 新增(DR-022):技能生态五项 —— ①技能对比实验(/api/build/skill_compare·status·results:同目标×两组技能各跑真实构建,对比 对象/关系/verified/动词/类型/定义覆盖;组失败如实展示不充数)②构建流水线 skill_inject 注入痕迹步 ③产物沉淀为技能(/api/build/skill/from_graph:动词表/类型分布/定义样例,确定性提取)④评测败题通用修复(⋈⋈ 两跳路径召回 + 均值分母/单值聚合口径规范进 prompt)⑤存而不用审计(specs/audit-input-consumers.md;第 3 起死代码 qa_skills 已接上:_match_qa_skill 命中复用+skill_reuse 步)。套件 249 断言(109 路由;终跑 C 组 8/8)。
 - 引擎在线依赖:深度问数与本体构建的 LLM 步骤依赖 `agent_runtime` 引擎在线;引擎限流(429)/超时时自动兜底(深度问数走模板、构建走 quick_build),结果仍产出并如实标注。
 - 已知边界详见 `README.md` 末节(SPARQL 软超时、运行时切换 UI、G6/ECharts 本地内置等)。
 
@@ -122,11 +122,11 @@ Consult @specs/map.md to find relevant context.
   后者对齐四个行业案例同构的建模模式(5-6 类实体 + 一条纵向穿透链路),逐段判定给出断点。
   三者互补:CQ 答「够不够用」· 链路答「通不通」· 漂移答「还对不对得上数据」。
   套件 311 断言。
-- **DR-026 双盲与使用度**:`intent_check.py`(接入问数两分支,口径闸后执行前)、
+- **DR-026 双盲与使用度**:`intent_check.py`(接入问数两分支,口径校验后执行前)、
   `usage_stat.py` + `GET /api/ont/usage/<key>`。对齐报告电力案例的「双盲检测机制」
   与阶段六的「业务调用频次驱动迭代」。两通道互不透传(A 只看问句、B 只看 SQL),
   均不调 LLM;只观测不阻断。实测抓到真阳性:问「业务员维度表有多少人」而 SQL
-  查销售订单去重——口径闸放行,双盲判 mismatch。套件 326 断言。
+  查销售订单去重——口径校验放行,双盲判 mismatch。套件 326 断言。
 - **DR-027 别名与审计**:`set_alias` 算子 + `GET /api/ont/audit/<key>`。别名贯通
   CQ 锚定/意图锚定/问数上下文评分与文本;审计按人/类型/来源聚合并标出风险
   (删除类、人审试图指定 verified)。本体对话页恢复(此前误删)并内置审计面板。
@@ -154,7 +154,7 @@ Consult @specs/map.md to find relevant context.
   截断优先保留参与关系的对象(自查中修正)。套件 441 断言 · UI 走查 57 · UI 实操 25。
 - **DR-033 选中本体作锚定源**:`_anchor_ir()` 让选中的图谱真正成为锚定/口径/埋点的本体;
   区分「选表=限定」与「选本体=在其中锚定」;`_join_hints` 形状无关(构建产物此前恒出 0 条);
-  构建器落结构化 JOIN 键;`_key_name_ok()` 键名词根闸拦截自增键值域巧合造出的假关系;
+  构建器落结构化 JOIN 键;`_key_name_ok()` 键名词根校验拦截自增键值域巧合造出的假关系;
   UI 增锚定链路(本体→命中→扩展→上下文→SQL 实际用)与命中证据。
   补做常驻锚定条(`#dq_ancbar`,不随对话流滚走)与「在图谱中高亮这一块」
   (跳本体图谱页,锚定对象着色、其余淡出)——此前锚定埋在气泡里,答案一出来就被
@@ -172,7 +172,7 @@ Consult @specs/map.md to find relevant context.
   (直连会静默新建空库,把「库没了」伪装成「库是空的」);
   「意图一致」写明比对了几个对象,不被读成「问句问的都答了」。
   技能/工具面三处:智能体列表硬编码旧目录名(技能包永远列不出,与构建页结论打架)、
-  `rebuild` 无确认闸却丢弃整个草案层(undo 退不回来)、`skills/write` 凭空造引擎目录树。
+  `rebuild` 无确认校验却丢弃整个草案层(undo 退不回来)、`skills/write` 凭空造引擎目录树。
   技能编排面板布局塌陷:全局 `input{width:100%}` 把勾选框撑到 224px、把同排文本挤成
   0 宽,描述逐字竖排(单卡高 557px)。元素齐全故计数类断言全绿 —— 改用几何量守住。
   顺势把几何判据推到全站(26 页 × 9 弹窗 × 两种视口扫一遍):另修表格单元格

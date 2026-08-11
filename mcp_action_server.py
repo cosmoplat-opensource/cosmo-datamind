@@ -9,7 +9,7 @@
 
 治理语义全部保留在 DataMind 服务端(单一实现):参数校验、风险分级、审批队列、
 决策捕获审计。审批(approve/deny)**故意不暴露**为工具 —— 批准是人的专属入口
-(动作中心页面),外部 Agent 接入即自动继承"只能提议改变,不能批准改变"的纪律。
+(动作中心页面),外部 Agent 接入即自动继承"只能提议改变,不能批准改变"的规范。
 
 传输:MCP stdio(逐行 JSON-RPC 2.0)。日志走 stderr,stdout 只出协议消息。
 配置示例(Claude Code): claude mcp add datamind-actions -- python3 <本文件绝对路径>

@@ -31,7 +31,7 @@ def _preflight():
               % (_mine, _srv_db.get("db"), _srv_db.get("db"))); sys.exit(2)
 _preflight()
 
-# ── 回归沙箱图谱(隔离纪律)──────────────────────────────────────────
+# ── 回归沙箱图谱(隔离规范)──────────────────────────────────────────
 # 回归会做写操作(改名/人审/删对象/设别名/存规则),此前直接打在 demo 上,
 # 跑完一轮就把运行态本体改脏——曾把生产环境的业务别名冲掉。
 # 故回归自建 built_regress:复制 demo IR 为独立图谱(built_ 前缀由 load_ir 直接从
@@ -228,7 +228,7 @@ chk("图谱边带 founded_relation", bool(gj["edges"]) and "founded_relation" in
 r=g("/api/ont/completeness/demo"); cj=r.json()
 chk("完备度结构", r.status_code==200 and "score" in cj and "byBFO" in cj.get("objects",{}))
 r=g("/api/graph/demo/export.ttl"); chk("OWL 导出带 iof-av + BFO 归类", r.status_code==200 and "iof-av:" in r.text and "subClassOf" in r.text)
-# 写端点图谱必填:缺 graph 须响亮 400,不静默默认到 示例 主图误改生产(_open_writable 统一守卫)
+# 写端点图谱必填:缺 graph 须显式 400,不静默默认到 示例 主图误改生产(_open_writable 统一守卫)
 r=po("/api/ont/enrich",json={},headers=H); chk("enrich 缺graph→400(不默认 demo)", r.status_code==400)
 r=po("/api/ont/reground",json={},headers=H); chk("reground 缺graph→400(不默认 demo)", r.status_code==400)
 r=po("/api/ont/maturity",json={"object":"x","maturity":"Released"},headers=H); chk("maturity 缺graph→400(不默认 demo)", r.status_code==400)
@@ -491,7 +491,7 @@ if _bs:
         chk("撤销后:节点回到候选", _nb["candidate"] is True)
 
 print("=== V. 问数增强+实连+评测(DR-019)===")
-# V1 A1 术语扩展 + A2 口径闸(经模块直测,不耗引擎)
+# V1 A1 术语扩展 + A2 口径校验(经模块直测,不耗引擎)
 import importlib.util as _ilu, sys as _sys, os as _os
 _sys.path.insert(0, _os.path.dirname(_os.path.abspath(__file__)))
 _spec=_ilu.spec_from_file_location("_sv2", _os.path.join(_os.path.dirname(_os.path.abspath(__file__)),"server.py"))
@@ -499,13 +499,13 @@ _sv2=_ilu.module_from_spec(_spec); _spec.loader.exec_module(_sv2)
 _ir=_sv2.load_ir_edited("demo") or {}
 chk("V1 术语扩展:『设备』出英文补词", len(_sv2.expand_terms("设备的运行情况"))>0)
 _ok,_=_sv2._validate_sql_ontology("SELECT * FROM fact_sales_order LIMIT 1", _ir)
-chk("V2 口径闸:合法表放行", _ok)
+chk("V2 口径校验:合法表放行", _ok)
 _ok,_w=_sv2._validate_sql_ontology("SELECT * FROM fake_tbl_x", _ir)
-chk("V3 口径闸:臆造表拦截", not _ok and "臆造" in _w)
+chk("V3 口径校验:臆造表拦截", not _ok and "臆造" in _w)
 _ok,_w=_sv2._validate_sql_ontology("SELECT 1 FROM fact_sales_order a JOIN dim_equipment b ON a.cust_id=b.power_kw", _ir)
-chk("V4 口径闸:自造 JOIN 拦截", not _ok and "JOIN" in _w)
+chk("V4 口径校验:自造 JOIN 拦截", not _ok and "JOIN" in _w)
 _ok,_=_sv2._validate_sql_ontology("SELECT 1 FROM fact_sales_order a JOIN fact_return b ON a.order_id=b.order_id", _ir)
-chk("V5 口径闸:同名键 JOIN 放行", _ok)
+chk("V5 口径校验:同名键 JOIN 放行", _ok)
 chk("V6 口径卡:命中计划产量", any(m["name"]=="计划产量" for m in _sv2._metric_cards("计划产量趋势", _ir)))
 _q2,_co=_sv2._carryover("它上个月呢?",[{"q":"销售订单的月度金额","summary":""}],_ir)
 chk("V7 指代延续:销售订单", "销售订单" in _co)
@@ -607,7 +607,7 @@ _iir=_j2.load(open("workdir/demo_ir.json"))
 _e=next(o for o in _iir["objects"] if o.get("cn")=="业务员维度表")
 _c=next(o for o in _iir["objects"] if o.get("cn")=="客户维度表")
 chk("IU1 意图一致→aligned", _icm.cross_check(f"{_e['cn']}的情况", f"SELECT * FROM {_e['table']}", _iir)["verdict"]=="aligned")
-chk("IU2 答非所问→mismatch(闸放行也拦得住)", _icm.cross_check(f"{_e['cn']}的情况", f"SELECT * FROM {_c['table']}", _iir)["verdict"]=="mismatch")
+chk("IU2 答非所问→mismatch(校验放行也拦得住)", _icm.cross_check(f"{_e['cn']}的情况", f"SELECT * FROM {_c['table']}", _iir)["verdict"]=="mismatch")
 chk("IU3 漏维度→partial", _icm.cross_check(f"{_e['cn']}和{_c['cn']}对比", f"SELECT * FROM {_e['table']}", _iir)["verdict"]=="partial")
 chk("IU4 无锚点→unknown(不冒充通过)", _icm.cross_check("随便看看", "SELECT 1", _iir)["verdict"]=="unknown")
 chk("IU5 CTE 不当作真实表", _icm.actual_intent(f"WITH tmp AS (SELECT * FROM {_e['table']}) SELECT * FROM tmp", _iir)["tables"]==[_e["table"].lower()])
@@ -660,7 +660,7 @@ if _r0:
 r=g("/api/ont/audit/a..b"); chk("AL12 审计穿越键→400", r.status_code==400)
 chk("AL13 审计标注边界(撤销会同步移除)", "撤销" in _ad["note"])
 r=g("/"); chk("AL14 UI 含本体对话页与审计面板", 'data-p="claw"' in r.text and 'claw_audit' in r.text)
-chk("AL15 对话提示词含算子清单与反造假纪律", True)
+chk("AL15 对话提示词含算子清单与反造假规范", True)
 
 print("=== RL. 规则约束与决策层(DR-028)===")
 import rule_engine as _rl
@@ -885,7 +885,7 @@ chk("Y6 问数复用沉淀技能(skill_reuse 步)", r.status_code==200 and any(s
 # ③ 沉淀为技能
 r=po("/api/build/skill/from_graph",json={"graph":"demo","name":"reg-distill"})
 chk("Y7 产物沉淀为技能", r.status_code==200 and r.json().get("ok"))
-chk("Y8 沉淀内容三件套", all(k in g("/api/build/skill/reg-distill").json()["content"] for k in ("关系动词表","对象类型分布","纪律")))
+chk("Y8 沉淀内容三件套", all(k in g("/api/build/skill/reg-distill").json()["content"] for k in ("关系动词表","对象类型分布","规范")))
 po("/api/build/skill/delete",json={"name":"reg-distill"})
 # ① 对比端点
 r=po("/api/build/skill_compare",json={"skills_a":["no-such-skill"],"skills_b":[]})
@@ -1019,7 +1019,7 @@ chk("AB3 人审后统计到 7 条", _a.get("reviewed")==7, str(_a.get("reviewed"
 chk("AB4 同意率算对(5/7=71.4%)", _a["overall"].get("agree_rate")==71.4, str(_a["overall"]))
 chk("AB5 按系统原判分组(verified)", "verified" in _a.get("by_prior_status",{}))
 chk("AB6 原判在评审当刻定格(review_prior_status)", "review_prior_status" in _srv)
-# 小样本纪律:n<5 的分组必须给 insufficient 而不是百分比
+# 小样本规范:n<5 的分组必须给 insufficient 而不是百分比
 _small=[v for v in _a.get("by_verb",{}).values() if v["n"]<5]
 chk("AB7 小样本不给百分比", all("insufficient" in v and "agree_rate" not in v for v in _small), f"小样本组 {len(_small)} 个")
 # ⑤ 否决模式回流
@@ -1162,18 +1162,18 @@ _bir = _srvmod.load_ir_edited("built_9c3fd1") or _srvmod.load_ir("built_9c3fd1")
 _bt = [o.get("table") for o in _bir.get("objects", []) if o.get("table")]
 _bp = []; _bh = _srvmod._join_hints(_bir, _bt, pairs=_bp)
 chk("AO10 构建产物形状也能出 JOIN 提示(此前恒为 0)", len(_bh) > 0)
-# 键名闸:稠密自增代理键值域重合会造假关系
-chk("AO11 键名闸放行同名/缩写键",
+# 键名校验:稠密自增代理键值域重合会造假关系
+chk("AO11 键名校验放行同名/缩写键",
     _srvmod._key_name_ok("order_id", "order_id") and _srvmod._key_name_ok("emp_id", "employee_id")
     and _srvmod._key_name_ok("prod_id", "product_id"))
-chk("AO12 键名闸拦下异根键(prod_id↔order_id 这类值域巧合)",
+chk("AO12 键名校验拦下异根键(prod_id↔order_id 这类值域巧合)",
     not _srvmod._key_name_ok("prod_id", "order_id")
     and not _srvmod._key_name_ok("line_id", "equipment_id"))
 chk("AO13 存疑键不作 JOIN 依据下发,降级为『键见列名』",
     all((not p.get("dropped_key")) or ("键见列名" in p["key"] and p["has_key"] is False) for p in _bp))
 chk("AO14 降级关系仍保留(只降键不删关系)",
     any(p.get("dropped_key") for p in _bp) and len(_bh) == len(_bp))
-chk("AO15 示例本体几乎不受键名闸影响(误伤可控)",
+chk("AO15 示例本体几乎不受键名校验影响(误伤可控)",
     sum(1 for l in (_srvmod.load_ir_edited("demo") or {}).get("links", [])
         if (l.get("evidence") or {}).get("child_key")
         and not _srvmod._key_name_ok(l["evidence"]["child_key"], l["evidence"]["parent_key"])) <= 2)
@@ -1234,7 +1234,7 @@ chk("QS1 无引擎垫片可承载 driver 注册", "_stub.register = lambda name,
 chk("QS2 OpenAI 驱动注册不依赖上游引擎在场",
     _shim_src.index("import openai_runtime") > _shim_src.index('sys.modules["agent_runtime"] = _stub'))
 # 改签名漏改调用点:_anchor_ir 曾返回 2 元组,加了「缺失提示」后变 3 元组,
-# 口径门禁那处未同步,表现为问数流中途 500(套件当时未覆盖到那条路径)
+# 口径校验那处未同步,表现为问数流中途 500(套件当时未覆盖到那条路径)
 import ast as _ast
 _tree = _ast.parse(open("server.py", encoding="utf-8").read())
 _unpack = []
@@ -1301,7 +1301,7 @@ chk("EG18 构成规则页对 rules 数据缺失有守卫", "d.error||!d.counts" 
 
 chk("EG14 env_locked 按启动时快照判定,不与配置值比对",
     "_ENV_LOCKED_AT_BOOT" in _eng_all and "v in _ENV_LOCKED_AT_BOOT" in _eng_all)
-# 快照已随引擎配置层收口到 srv_engine(IR-011):不变量形态变为「模块 import 时快照 → 之后才应用配置」,
+# 快照已随引擎配置层收敛到 srv_engine(IR-011):不变量形态变为「模块 import 时快照 → 之后才应用配置」,
 # 故跨两文件校验:srv_engine 内快照先于 _apply_engine_cfg 定义;server 内 import 先于启动调用。
 _eng_src = open("srv_engine.py", encoding="utf-8").read()
 chk("EG15 快照在应用本地配置之前建立(否则分不清运维注入与界面保存)",

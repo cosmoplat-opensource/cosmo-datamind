@@ -10,7 +10,7 @@ deepqa 就得反向 import blueprint —— 循环导入。故先抽为共享层
 
 含两块(均与 Flask/app 无关,故可独立测试):
   1. 运行时实例缓存与引擎优先序(`runtime_cached` / `_drv_order`);
-  2. 引擎配置(常量 + 读写/应用/掩码),含「env 优先」纪律。
+  2. 引擎配置(常量 + 读写/应用/掩码),含「env 优先」规范。
 
 注意 `_ENV_LOCKED_AT_BOOT` 在**本模块 import 时**快照:必须早于任何 `_apply_engine_cfg`
 写 os.environ,否则分不清「运维注入」与「界面保存」(server 无模块级 env 写入,故安全)。

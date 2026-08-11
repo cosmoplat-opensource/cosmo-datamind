@@ -14,7 +14,7 @@
 4. **Key 治理(best practice)**:只写不回显 —— GET 一律掩码(`******` + 尾 4 位);空串=清除且**同步弹出进程 env**;保存即注入 env 供各 CLI 子进程继承;白名单 6 变量(OPENAI/ANTHROPIC/ZHIPU/DEEPSEEK/MOONSHOT/DASHSCOPE);不写日志。订阅版(claude/codex/qwen-oauth)无需 Key,UI 注明 oauth 类需终端登录。
 5. **UI「引擎设置」页**(运维管理组):运行时卡(可用性/当前标记/模型 datalist 可选可自填/hermes provider 下拉/设为当前/保存模型/**测试连通**含真实延迟与报错)+ API Keys 表(掩码/保存/清除);agy 如实标注"地域受限未接入"。
 
-## 踩坑(已修)
+## 已知问题(已修)
 
 - hermes CLI 把 429/503 打 stdout 且 rc=0 → 测试假"连通";用 `_looks_like_error` 复判。
 - 清 Key 只删配置不弹 env → GET 掩码仍显示;显式 `os.environ.pop`。

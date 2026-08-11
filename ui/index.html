@@ -1366,7 +1366,7 @@ function asRole(k){AS_CUR=k;try{localStorage.setItem('as_role',k)}catch(_){}asLo
 function asAsk(q){goPage('chat');location.hash='chat';setTimeout(()=>{const b=$('#mode_deep');if(b)b.click();const i=$('#chat_q');if(i){i.value=q;i.focus();}},350);}
 function asDiag(q){goPage('chat');location.hash='chat';setTimeout(()=>{const b=$('#mode_diag');if(b)b.click();const i=$('#chat_q');if(i){i.value=q;i.focus();}},350);}
 function asAct(){goPage('actioncenter');location.hash='actioncenter';}
-// ══════ 问数评测(C9:三臂对照跑分)══════
+// ══════ 问数评测(C9:三组对照跑分)══════
 let QE_TIMER=null;
 async function qeLoad(){qeRender(await J('/api/eval/results').catch(()=>({empty:true})));qePoll();}
 async function qePoll(){if(QE_TIMER)clearTimeout(QE_TIMER);
@@ -1379,7 +1379,7 @@ async function qeRun(){const model=$('#qe_model').value.trim();
  if(d.error){toast(d.error,false);return}
  toast('评测已启动(后台运行,每题即时落盘)',true);qePoll();}
 function qeRender(d){
- if(!d||d.empty||!(d.items||[]).length){$('#qe_kpis').innerHTML='';$('#qe_body').innerHTML='<div class="muted" style="padding:10px">尚未跑过评测 —— 点上方「跑一轮评测」。三组同题对照:A 只给英文表列(朴素基线),B 加中文语义+本体关系,C 本体全量(再叠加指标/术语/口径门禁)。</div>';return;}
+ if(!d||d.empty||!(d.items||[]).length){$('#qe_kpis').innerHTML='';$('#qe_body').innerHTML='<div class="muted" style="padding:10px">尚未跑过评测 —— 点上方「跑一轮评测」。三组同题对照:A 只给英文表列(朴素基线),B 加中文语义+本体关系,C 本体全量(再叠加指标/术语/口径校验)。</div>';return;}
  const n=(d.items||[]).length;const A=d.arms||{};
  $('#qe_kpis').innerHTML=['A','B','C'].map(k=>{const a=A[k]||{};return `<div class="kpi"><div class="n" style="color:${k==='C'?'#16a34a':k==='B'?'#4A5FF3':'#6B7690'}">${a.correct||0}/${n}</div>
   <div class="l">${k} 组 · ${esc((a.name||'').split('(')[0])}<br><span style="font-size:10.5px">出处引用 ${a.cite||0}/${n}${k==='C'?` · 口径拦截 ${a.gate_block||0}`:''}</span></div></div>`;}).join('');
@@ -2024,7 +2024,7 @@ async function skView(name){const d=await J('/api/build/skill/'+encodeURICompone
  $('#sk_modal').style.display='flex';}
 function skNew(){SKM={mode:'create'};SKM_DEL_ARM=false;
  $('#skm_title').textContent='新建技能';
- $('#skm_sub').textContent='正文会注入构建方法论(建模目标之后、库表结构之前),写清楚建模纪律与关注点即可。';
+ $('#skm_sub').textContent='正文会注入构建方法论(建模目标之后、库表结构之前),写清楚建模规范与关注点即可。';
  $('#skm_name').value='';$('#skm_name').disabled=false;$('#skm_files').textContent='';
  $('#skm_content').readOnly=false;
  $('#skm_content').value='---\ndescription: 一句话描述这个技能做什么\n---\n\n## 建模方法论\n\n1. 优先识别……\n2. 关系动词使用……\n3. 严禁……\n';
