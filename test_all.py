@@ -1480,7 +1480,10 @@ chk("AO34 流中断不抹掉已完成内容(锚定是用户已看到的证据)",
 chk("AO33 回退提示显示在锚定条头部(默认可见,不藏在折叠区)",
     "${a.fallback?`<span style=\"color:#b45309" in _ui)
 # 截断策略探针:按原序截断会画出一片孤立方框(0 连线),让人误以为本体拿不出关系
-_fn=_ui[_ui.index("const DQ_ANC_C="):_ui.index("function dqRenderCard")]
+# 边样式表 EST 是图谱与锚定子图共用的单一事实源,定义在更靠前处;
+# 探针只截锚定段会漏掉它(ReferenceError),故一并带上。
+_est=_ui[_ui.index("const EST="):_ui.index("const GEST=EST;")]
+_fn=_est+"\n"+_ui[_ui.index("const DQ_ANC_C="):_ui.index("function dqRenderCard")]
 _big={"objects":[{"key":f"o{i}","cn":f"对象{i}","table":f"t{i}","reason":"数据源限定","ncol":3}
                  for i in range(60)],
       "relations":[{"s":f"t{40+i}","t":f"t{50+i}","verb":"关联","status":"verified",

@@ -78,6 +78,7 @@
 | 数据源连接 | `build_connect` 按 path/dsn 幂等登记,去重复堆叠 | server.py |
 | 图谱选择器 | `graphOptions(gs,label)` 分组 optgroup(精选/场景/构建) | ui,图谱/工作台/完备度三处共用 |
 | 前端 kind 规范 | `KIND{c,n}` 颜色+中文,全站图例/配色/标签引用 | ui,`KCOL/KNM` |
+| 关系状态边样式 | `EST{c,w,d,n}` 单一事实源(G6 图谱 + 锚定子图 SVG 共用),`estDash()` 转 SVG 虚线 | ui,消两套配色 |
 | 前端助手 | `$`/`esc`/`jsAttr`/`J` 显式挂 window | ui,防内联处理器作用域隐患 |
 | 嵌入页高度 | 全局 `iframe{height:70vh}` 默认 + 内联 `calc(100vh-178px)` 为准(去 `!important` 覆盖) | ui,3 处嵌入页 |
 | 数据格子显示 | `cell(v)` 去浮点表示噪声(6 处预览/结果共用) | ui,显示层不改原始/导出 |
