@@ -116,6 +116,11 @@ pyflakes 零告警 · 构建产物经 SHACL/HermiT 校验 · 完备度记分卡�
 **排除方法**:把 `driver` 切到 `/api/engine/config` 的 `runtimes` 中已列出的任一运行时后重跑;
 5 项应同时转绿。若切换后仍失败,才是真回归。
 
+`test_ui_ops.py` 有 **3 项**同源:`含 OpenAI 兼容端点卡(GLM)` / `切回 GLM 后端生效` /
+`GLM「测试连通」出结果`。未配置 OpenAI 兼容端点(`DATAMIND_LLM_BASE`+`DATAMIND_LLM_KEY`)时,
+`openai` 运行时按 [[DR-029-openai-compat-runtime-and-test-isolation]] **不注册**(不虚报「LLM 可用」),
+引擎设置页因此不显示该卡,断言随之不成立。配好端点后 3 项转绿;满环境实测 **47/47**。
+
 ## 6. 已知边界(诚实)
 
 - 复合键裁决为二列(≥3 列 schema 未覆盖);
