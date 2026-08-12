@@ -889,7 +889,14 @@ async function graphs(pref){const gs=await J('/api/graphs');
 // 与平台原版一致的 G6 渲染:dagre 分层 + 圆角矩形四色节点 + 折线边(按 status 分色虚实)
 const GKIND={object:{fill:'#eef2ff',stroke:'#4a5ff3',text:'#4a5ff3'},event:{fill:'#fff5eb',stroke:'#ff7d00',text:'#d46b08'},
  action:{fill:'#fff7e6',stroke:'#d97706',text:'#b45309'},asset:{fill:'#fef0ff',stroke:'#a855f7',text:'#7c3aed'},role:{fill:'#e0f7fa',stroke:'#00bcd4',text:'#00838f'},ice:{fill:'#f5f3ff',stroke:'#7c6ff0',text:'#5b4fc8'}};
-const GEST={verified:{c:'#94a3b8',w:1.5,d:null},asserted:{c:'#4a5ff3',w:1.3,d:[2,2]},inferred:{c:'#a855f7',w:1.3,d:[1,3]},candidate:{c:'#ff7d00',w:1.2,d:[4,3]},gap:{c:'#ff7d00',w:1.2,d:[4,3]}};
+// 关系状态 → 边样式:**单一事实源**,本体图谱(G6 画布)与深度问数锚定子图(内联 SVG)共用。
+// 此前两处各有一套配色(图谱 verified=灰实线,锚定 verified=绿),同一语义两种颜色,看图易误判。
+// path(两跳可达)是锚定特有的「推导所得」概念,故与 inferred 同族(紫点线),不占用 verified 的灰。
+const EST={verified:{c:'#94a3b8',w:1.5,d:null,n:'已验证'},asserted:{c:'#4a5ff3',w:1.3,d:[2,2],n:'人审断言'},
+           inferred:{c:'#a855f7',w:1.3,d:[1,3],n:'推理得出'},candidate:{c:'#ff7d00',w:1.2,d:[4,3],n:'待取证'},
+           gap:{c:'#ff7d00',w:1.2,d:[4,3],n:'证据不足'},path:{c:'#a855f7',w:1.2,d:[1,3],n:'两跳可达'}};
+const estDash=st=>(st&&st.d?st.d.join(' '):'');
+const GEST=EST;   // 兼容既有引用名
 let GRAPH_CUR={key:'demo',nodes:[],edges:[]};
 // 共享 G6 渲染(本体图谱 + 建模工作台复用,统一布局/配色/自适应)
 let GRAPH_HL=null;      // 从深度问数跳来的锚定高亮:{key, set:锚定对象, used:SQL 实际用到的表}
@@ -1623,7 +1630,6 @@ function dqChart(el,r){if(!r||!r.data||!r.data.rows.length)return;const ch=r.cha
 // ══════ 本体锚定可视化(DR-032):这次问数锚到了本体的哪些对象、沿哪些关系召回、SQL 最终用了谁 ══════
 const DQ_ANC_C={'关键词命中':['#4A5FF3','#EEF2FF'],'数据源限定':['#4A5FF3','#EEF2FF'],'核心事实表':['#7c3aed','#F3EEFF'],
  '沿本体关系召回':['#0ea5e9','#E8F6FE'],'无命中·默认候选':['#94a3b8','#F1F5F9']};
-const DQ_ANC_E={verified:['#16a34a','','已验证'],asserted:['#d97706','','人审断言'],path:['#94a3b8','5 3','两跳可达']};
 function dqAnchorHTML(a,bare){
  const all=(a&&a.objects)||[];if(!all.length)return '';
  const CAP=16;
@@ -1652,8 +1658,8 @@ function dqAnchorHTML(a,bare){
  const W=PAD*2+COL*CW,H=PAD*2+Math.ceil(order.length/COL)*CH;
  let svg=`<svg viewBox="0 0 ${W} ${H}" style="width:100%;max-width:${W}px;height:auto;display:block">`;
  drawn.forEach(r=>{const e=ends(r),s=e[0],t=e[1];
-  const st=DQ_ANC_E[r.status]||DQ_ANC_E.asserted;
-  svg+=`<line x1="${pos[s].x}" y1="${pos[s].y}" x2="${pos[t].x}" y2="${pos[t].y}" stroke="${st[0]}" stroke-width="1.6"${st[1]?` stroke-dasharray="${st[1]}"`:''}><title>${esc(r.key||'')}</title></line>`;});
+  const st=EST[r.status]||EST.gap;
+  svg+=`<line x1="${pos[s].x}" y1="${pos[s].y}" x2="${pos[t].x}" y2="${pos[t].y}" stroke="${st.c}" stroke-width="1.6"${estDash(st)?` stroke-dasharray="${estDash(st)}"`:''}><title>${esc(r.key||'')}</title></line>`;});
  order.forEach(n=>{const o=all[n],p=pos[n],c=DQ_ANC_C[o.reason]||DQ_ANC_C['关键词命中'];
   const on=used.has(String(o.table||'').toLowerCase());
   const _t=String(o.table||''),tb=_t.length>24?_t.slice(0,23)+'…':_t;
@@ -1672,8 +1678,8 @@ function dqAnchorHTML(a,bare){
  const leg=Object.keys(rsn).map(k=>{const c=DQ_ANC_C[k]||DQ_ANC_C['关键词命中'];
   return `<span style="display:inline-flex;align-items:center;gap:4px"><i style="width:9px;height:9px;border-radius:2px;background:${c[1]};border:1px solid ${c[0]};display:inline-block"></i>${esc(k)} ${rsn[k]}</span>`;}).join('');
  const est={};rels.forEach(r=>{est[r.status]=(est[r.status]||0)+1;});
- const legE=Object.keys(est).map(k=>{const c=DQ_ANC_E[k]||DQ_ANC_E.asserted;
-  return `<span style="display:inline-flex;align-items:center;gap:4px"><i style="width:14px;height:0;border-top:2px ${k==='path'?'dashed':'solid'} ${c[0]};display:inline-block"></i>${esc(c[2])} ${est[k]}</span>`;}).join('');
+ const legE=Object.keys(est).map(k=>{const c=EST[k]||EST.gap;
+  return `<span style="display:inline-flex;align-items:center;gap:4px"><i style="width:14px;height:0;border-top:2px ${estDash(c)?'dashed':'solid'} ${c.c};display:inline-block"></i>${esc(c.n)} ${est[k]}</span>`;}).join('');
  const idle=hasUsed?all.filter(o=>!used.has(String(o.table||'').toLowerCase())).length:0;
  const ng=(a.graphs||[]).length, ont=a.ontology||{};
  // ── 锚定链路:从整套本体到最终 SQL,每一级留下多少 —— 「如何锚定」的主叙述 ──
@@ -1706,12 +1712,12 @@ function dqAnchorHTML(a,bare){
      +o.hits.map(h=>`<span style="display:inline-block;background:#EEF2FF;color:#4A5FF3;border-radius:3px;padding:0 5px;margin-right:3px">${esc(h)}</span>`).join('')
      +`</div>`).join('')+`</div></details>`:''}
    ${rels.length?`<details style="margin-top:6px"><summary class="muted" style="font-size:11.5px">JOIN 依据(${rels.length})</summary>
-    <div style="font-size:11.5px;line-height:1.7;margin-top:4px">`+rels.slice(0,LIM).map(r=>{const c=DQ_ANC_E[r.status]||DQ_ANC_E.asserted;
+    <div style="font-size:11.5px;line-height:1.7;margin-top:4px">`+rels.slice(0,LIM).map(r=>{const c=EST[r.status]||EST.gap;
      const ks=r.key_src==='name_mismatch'
       ?`<span style="color:#b45309" title="子键与父键词根不一致(${esc(r.dropped_key||'')}),疑为自增键值域巧合;已不作 JOIN 依据下发">键存疑·已降级 ${esc(r.dropped_key||'')}</span>`
       :(r.key_src==='note'?'<span class="muted" title="早期构建产物未落结构化键,由构建备注回填">键·备注回填</span>'
       :(r.has_key===false?'<span style="color:#b45309" title="该关系未记录 JOIN 键,引擎需按列名自行推断">无键</span>':''));
-     return `<div><span style="color:${c[0]}">${r.hop===2?'⋈⋈':'⋈'}</span> <code>${esc(r.key||'')}</code> <span class="muted">[${esc(r.verb||'关联')} · ${esc(c[2])}]</span> ${ks}</div>`;}).join('')
+     return `<div><span style="color:${c.c}">${r.hop===2?'⋈⋈':'⋈'}</span> <code>${esc(r.key||'')}</code> <span class="muted">[${esc(r.verb||'关联')} · ${esc(c.n)}]</span> ${ks}</div>`;}).join('')
      +(rels.length>LIM?`<div class="muted">…另有 ${rels.length-LIM} 条,均已写入上下文</div>`:'')+`</div></details>`:''}
    ${(a.metrics||[]).length?`<div class="muted" style="font-size:11.5px;margin-top:6px">命中指标:`+a.metrics.slice(0,LIM).map(m=>`${esc(m.name)} <code style="font-size:10.5px">${esc(m.table||'')}.${esc(m.col||'')}</code>`).join('、')
      +(a.metrics.length>LIM?`…另有 ${a.metrics.length-LIM} 个`:'')+`</div>`:''}
