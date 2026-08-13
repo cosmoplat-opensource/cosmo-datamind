@@ -1,21 +1,28 @@
 # Cosmo DataMind · 系统架构
 
-> 面向维护者的架构说明。契约细节见 `specs/`(DR-001…DR-011)。本文描述分层、数据流与统一约定。
+> 面向维护者的架构说明。契约细节见 `specs/`(DR-001…DR-046、IR-001…IR-011)。本文描述分层、数据流与统一约定。
 
 ## 1. 分层
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │  前端 (ui/index.html, 单页, 原生 JS)                          │
-│   26 模块 × hash 路由 · G6 图谱 · ECharts · 统一助手 $/esc/J  │
+│   26 页 × hash 路由 · G6 图谱 · ECharts · 统一助手 $/esc/J    │
 ├─────────────────────────────────────────────────────────────┤
-│  HTTP 层 (server.py, Flask, 单端口 8092)                      │
-│   before_request CSRF 守卫 · 106 路由 · 统一错误/写守卫         │
+│  HTTP 层 (Flask, 单端口 8092) · 共 121 路由                    │
+│   server.py 116 路由 + bp_engine.py 5 路由(blueprint, DR-043)│
+│   app 级 before_request CSRF 守卫(对 blueprint 同样生效)      │
+│   共享层: srv_context(路径/只读连接/原子写/写锁)              │
+│           srv_engine(运行时缓存/引擎配置/引擎回复语义)         │
 ├─────────────────────────────────────────────────────────────┤
 │  能力层                                                        │
 │   构建: _gather_evidence → _llm_extract → _adjudicate_ir      │
 │         → _llm_semantic_review → 落盘(三级控制环, DR-011)     │
-│   问数: build_context → agent_sql_plan → q() → narrative      │
+│   问数: _anchor_ir(选中图谱=锚定源) → build_context(带轨迹)   │
+│         → agent_sql_plan → 口径校验 → q() → 双盲意图 → 叙事    │
+│   体检: cq_check 能力核验 · drift_check 漂移 · health_check    │
+│         图结构 · compat_check 兼容 · module_split 模块化       │
+│   决策: rule_engine 规则+确定性推理 · 动作层(类型化+风险分级)│
 │   导出: _ir_to_turtle → SHACL/HermiT (DR-010)                 │
 ├─────────────────────────────────────────────────────────────┤
 │  执行底座                                                      │
@@ -31,11 +38,38 @@
 
 **关系发现的泛化**(DR-011,基准实证驱动):连接键多候选循环(后缀词干→等值列名==父表名→前缀 Country1→Country→同名键形列);父列候选序 PK 优先;复合键二列联合裁决(元组重叠∧成对唯一)。覆盖企业 `*_id` 规范库、自然键学术库(Mondial 级)、无约束上传 CSV、复合键 schema。
 
+## 2.5 模块清单
+
+`server.py` 之外的能力模块。除标注外均为**确定性计算、不调 LLM**,可独立单测
+(`tests/unit/` 覆盖其边界与纯函数):
+
+| 模块 | 职责 | DR |
+|---|---|---|
+| `dao_core.py` | **单一裁决核**:重叠/唯一度/命名校验/角色键/方向测试/自适应 θ,三态 `classify` | DR-035…038 |
+| `quick_build.py` | 纯数据驱动建本体,裁决决策委托 `dao_core`(compat 口径) | DR-011/035 |
+| `hallucination_eval.py` | 反幻觉评测台:带标签基准上量化精确率/召回/**幻觉泄漏率**(judge 可选) | DR-039 |
+| `definition_eval.py` | 定义质量评分:属加种差/非循环/反例 + 参考重叠(LLM-judge 可选) | DR-040 |
+| `store.py` | JSON 持久化抽象:原子写/坏档恢复/schema 校验/迁移/每路径锁 | DR-044 |
+| `srv_context.py` | 共享上下文:路径、`ro_connect`、`sql_is_readonly`、`_atomic_json`、写锁 | DR-043 |
+| `srv_engine.py` | 引擎共享层:运行时缓存、引擎配置读写/应用、引擎回复语义 | DR-043/017 |
+| `bp_engine.py` | 引擎设置 blueprint(5 路由;仅路由,共享态在 `srv_engine`) | DR-043 |
+| `cq_check.py` | 能力核验(CQ):本体够不够回答业务问题;穿透链路是否贯通 | DR-024/025 |
+| `drift_check.py` | 概念漂移:本体还对不对得上数据源(表/列/主键/关系四类) | DR-025 |
+| `intent_check.py` | 双盲意图检测:问句通道 vs SQL 通道各自锚定,比对是否答非所问 | DR-026 |
+| `usage_stat.py` | 本体使用度埋点(只读旁路,不记录问句原文) | DR-026 |
+| `rule_engine.py` | 业务规则 + 确定性推理,每条结论带 trace;冲突只报不裁 | DR-028 |
+| `health_check.py` | 图结构健康度:悬空/自反/状态矛盾(硬错误)+ 孤岛/枢纽/重复边(信号) | DR-030 |
+| `compat_check.py` | 向后兼容:结构 diff + **下游影响**(命中哪些规则/动作/技能) | DR-031 |
+| `module_split.py` | 模块化建议(按领域连通分量 / 按数仓分层),只建议不落盘 | DR-031 |
+| `openai_runtime.py` | OpenAI 兼容驱动(GLM/DeepSeek/Qwen/vLLM),空内容判失败不回传空串 | DR-029 |
+| `mcp_action_server.py` | 对外 MCP:发起动作是唯一写工具,审批不开放 | DR-015 |
+| `translate_cn.py` | 术语中文化(离线词典,无网络依赖) | — |
+
 ## 3. 统一约定(refactor 后)
 
 | 关注点 | 统一点 | 位置 |
 |---|---|---|
-| 只读取数 | `ro_connect(path)` — mode=ro,缺库响亮失败 | server.py |
+| 只读取数 | `ro_connect(path)` — mode=ro,缺库显式报错 | server.py |
 | IR 写端点前奏 | `_open_writable(key)` 图谱必填(缺→400,不默认 demo)+ → (ir, wp, err) | server.py,enrich/reground/maturity 共用 |
 | 原子写 | `_atomic_json` + `_WRITE_LOCK` 串行化 | 全部持久化 |
 | 路径守卫 | `_bad_gkey` / `_ir_write_path`(拒只读源与穿越) | 全部图谱键入口 |
@@ -44,6 +78,7 @@
 | 数据源连接 | `build_connect` 按 path/dsn 幂等登记,去重复堆叠 | server.py |
 | 图谱选择器 | `graphOptions(gs,label)` 分组 optgroup(精选/场景/构建) | ui,图谱/工作台/完备度三处共用 |
 | 前端 kind 规范 | `KIND{c,n}` 颜色+中文,全站图例/配色/标签引用 | ui,`KCOL/KNM` |
+| 关系状态边样式 | `EST{c,w,d,n}` 单一事实源(G6 图谱 + 锚定子图 SVG 共用),`estDash()` 转 SVG 虚线 | ui,消两套配色 |
 | 前端助手 | `$`/`esc`/`jsAttr`/`J` 显式挂 window | ui,防内联处理器作用域隐患 |
 | 嵌入页高度 | 全局 `iframe{height:70vh}` 默认 + 内联 `calc(100vh-178px)` 为准(去 `!important` 覆盖) | ui,3 处嵌入页 |
 | 数据格子显示 | `cell(v)` 去浮点表示噪声(6 处预览/结果共用) | ui,显示层不改原始/导出 |
@@ -55,7 +90,36 @@
 
 ## 5. 测试与质量门
 
-`test_all.py`(279 集成断言,覆盖每路由 happy+边界+安全 + DR-011 O 节)· pyflakes 零告警 · `specs/test/` 回归 · 构建产物经 SHACL/HermiT 校验 · 完备度记分卡量化可审计程度。
+**两层分工**(IR-007 起):
+
+| 层 | 内容 | 是否需起服务 |
+|---|---|---|
+| 单元层 `tests/` | 确定性模块边界/纯函数 + 文档计数自检(2026-08-12:139 个单测,确定性模块覆盖率 78.5%) | 否(离线秒级) |
+| 集成层 `test_all.py` | 535 集成断言,覆盖每路由 happy+边界+安全 | 是 |
+| UI 层 | `test_ui.py`(62,全页走查)·`test_ui_ops.py`(46,浏览器逐步实操) | 是(需 playwright) |
+
+自动化校验:`pyproject.toml` 统一 pytest/coverage/ruff(只选 F/B 抓真缺陷)/mypy ·
+`.pre-commit-config.yaml` 提交即跑 · `.github/workflows/ci.yml` 双 job(单元硬挡 + 集成 advisory)·
+pyflakes 零告警 · 构建产物经 SHACL/HermiT 校验 · 完备度记分卡量化可审计程度。
+
+### 5.1 集成套件的环境依赖(勿误判为回归)
+
+`test_all.py` 满环境下为 **531/531 全绿**。若出现下列 **5 项**失败,先查环境再查代码——
+它们同出一源:`workdir/engine_config.json` 持久化的 `driver` 在当前环境**未注册**
+(如 `driver="openai"` 但未配置 OpenAI 兼容端点凭据),编辑引擎据 DR-003/029 显式报错而非伪装可用。
+
+| 失败项 | 说明 |
+|---|---|
+| `apply rename ok` / `apply 非白名单→400` / `undo ok` / `apply 穿越图谱键→拒` | 编辑算子需可用运行时 |
+| `engine config 200` | 断言 `driver ∈ runtimes`,driver 未注册即不成立 |
+
+**排除方法**:把 `driver` 切到 `/api/engine/config` 的 `runtimes` 中已列出的任一运行时后重跑;
+5 项应同时转绿。若切换后仍失败,才是真回归。
+
+`test_ui_ops.py` 有 **3 项**同源:`含 OpenAI 兼容端点卡(GLM)` / `切回 GLM 后端生效` /
+`GLM「测试连通」出结果`。未配置 OpenAI 兼容端点(`DATAMIND_LLM_BASE`+`DATAMIND_LLM_KEY`)时,
+`openai` 运行时按 [[DR-029-openai-compat-runtime-and-test-isolation]] **不注册**(不虚报「LLM 可用」),
+引擎设置页因此不显示该卡,断言随之不成立。配好端点后 3 项转绿;满环境实测 **47/47**。
 
 ## 6. 已知边界(诚实)
 

@@ -43,6 +43,10 @@ th,td{padding:6px 8px;text-align:left;border-bottom:1px solid #eef2ff;white-spac
 th{color:var(--sub);font-weight:600;position:sticky;top:0;background:var(--panel)}
 tr:hover td{background:#f8fbff} .scroll{overflow:auto;max-height:60vh}
 input,textarea,select{background:#fff;border:1px solid var(--line);color:var(--txt);border-radius:var(--rs);padding:9px 12px;font-size:14px;width:100%}
+/* 上面那条把 width:100%+padding 套给了所有 input,勾选框也不例外:在 flex 行里
+   它会撑到 200 多像素、把同排文本挤成 0 宽,文字于是逐字竖排(技能编排面板实测如此)。
+   勾选框/单选框按内容定宽,且不参与 flex 伸缩。 */
+input[type=checkbox],input[type=radio]{width:auto;padding:0;flex:none;margin:0}
 input:focus,textarea:focus,select:focus{outline:none;border-color:var(--acc)}
 button{background:var(--acc);color:#fff;border:0;border-radius:var(--rs);padding:9px 16px;font-size:14px;cursor:pointer}
 button:hover{filter:brightness(1.06)} button.ghost{background:#EEF2FF;color:#4A5FF3} button:disabled{opacity:.5}
@@ -160,6 +164,16 @@ a{color:var(--acc)}
 #dqv_deep.dqv-empty .dq-stream{flex:0 0 auto;overflow:visible}
 #dqv_deep.dqv-empty .dq-inputbar{max-width:820px;width:100%;margin:18px auto 0}
 #dqv_deep.dqv-empty .dq-hero{height:auto;padding:0 0 6px}
+/* 常驻本体锚定条(深度问数):锚定过程必须在视口内,不能随对话流滚走 */
+.dq-ancbar{flex:0 0 auto;border-bottom:1px solid #E9ECF4;background:#FAFBFF;padding:8px 14px;font-size:12px}
+.dq-ancbar .hd{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.dq-ancbar .ont{font-weight:600;color:#4A5FF3}
+.dq-ancbar .fun{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.dq-ancbar .fun b{font-size:13px;color:#1f2937}
+.dq-ancbar .fun i{color:#c7cbd6;font-style:normal}
+.dq-ancbar .act{margin-left:auto;display:flex;gap:8px}
+.dq-ancbar .act a{cursor:pointer;color:#4A5FF3;text-decoration:none}
+.dq-ancbar .body{margin-top:8px;border-top:1px dashed #E5E9F2;padding-top:8px;max-height:46vh;overflow:auto}
 /* 弹窗(数据源 / 技能,对齐平台 modal)*/
 .dq-modal{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:100;display:flex;align-items:center;justify-content:center}
 .dq-modal-box{background:#fff;border-radius:8px;width:920px;max-width:94vw;max-height:86vh;display:flex;flex-direction:column;box-shadow:0 8px 40px rgba(0,0,0,.2)}
@@ -226,6 +240,7 @@ a{color:var(--acc)}
  <div class="nav-group"><div class="gh" onclick="dqGroup(this)">数据建模 <span class="ar">▾</span></div>
   <div class="nav" data-p="graph">本体图谱</div>
   <div class="nav" data-p="build">本体构建</div>
+  <div class="nav" data-p="claw">本体对话</div>
   <div class="nav" data-p="review">本体评审</div>
   <div class="nav" data-p="ontquality">本体完备度</div>
   <div class="nav" data-p="layers">数仓分层</div></div>
@@ -254,7 +269,6 @@ a{color:var(--acc)}
   <div class="nav" data-p="jobs">作业中心</div>
   <div class="nav" data-p="enginecfg">引擎设置</div>
   <div class="nav" data-p="sysadmin">系统管理</div></div>
- <div class="nav-group"><div class="gh" onclick="dqGroup(this)">平台原版 <span class="ar">▾</span></div></div>
  <div style="flex:1"></div><div class="muted" style="padding-left:8px">v1 · 本地原型<br>智能引擎 · 多智能体编排</div>
 </aside>
 <main>
@@ -321,12 +335,13 @@ a{color:var(--acc)}
   <div class="row" style="margin-bottom:10px"><select id="g_sel" style="width:340px"></select>
    <span class="muted" id="g_info"></span><span style="flex:1"></span>
    <span id="g_legend"></span>导出:<button class="ghost" onclick="expOnt('ttl')">TTL</button><button class="ghost" onclick="expOnt('jsonld')">JSON-LD</button><button class="ghost" onclick="expOnt('owl')">RDF/XML</button><button class="ghost" onclick="enrichOnt(this)" title="调智能引擎为缺定义的对象补『属+种差』定义+正例+反例,升级到 IOF 标准">补定义/反例</button>布局<select id="g_layout" onchange="drawGraph($('#g_sel').value)" style="width:120px"><option value="dagre">分层(原版)</option><option value="force">力导向</option><option value="circular">环形</option><option value="radial">辐射</option></select></div>
+  <div id="g_hlbar" style="display:none;margin:-4px 0 10px;padding:7px 12px;border:1px solid #C7D2FE;background:#EEF2FF;border-radius:6px;font-size:12.5px"></div>
   <div style="position:relative"><div class="card" style="padding:6px"><div id="g_canvas"></div></div>
    <div class="card" id="g_detail" style="position:absolute;top:12px;right:12px;width:340px;max-height:calc(100% - 24px);overflow:auto;display:none;z-index:6;box-shadow:0 8px 30px rgba(31,45,61,.16)"></div>
    <div class="muted" style="position:absolute;bottom:10px;left:14px;font-size:11px;pointer-events:none">点击节点/连线查看详情 · 滚轮缩放 · 拖拽平移</div></div></div>
 
  <div class="page" id="p_review"><h2>本体评审 <span class="muted">人机协同人审:通过 / 否决 / 改动词 / 删除,每条记录评审人与意见 · 人只产生 asserted · 全程可撤销 · v0726a</span></h2>
-  <div class="card"><div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">图谱 <select id="rv_sel" style="width:280px" onchange="rvLoad()"></select>
+  <div class="card"><div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">图谱 <select id="rv_sel" style="min-width:280px;max-width:440px" onchange="rvLoad()"></select>
    评审人 <input id="rv_who" placeholder="姓名或工号(必填)" style="width:150px" onchange="rvSaveWho()" title="记录到每条评审操作与元素上">
    <span id="rv_kpis"></span><span style="flex:1"></span>
    <button class="ghost" onclick="rvUndo()">撤销上一步</button><button class="ghost" onclick="rvLoad()">刷新</button></div></div>
@@ -334,7 +349,8 @@ a{color:var(--acc)}
   <div class="card scroll" id="rv_fb" style="margin-top:12px;display:none"></div>
   <div class="card scroll" id="rv_body" style="margin-top:12px"><div class="muted">加载中…</div></div></div>
  <div class="page" id="p_enginecfg"><h2>引擎设置 <span class="muted">实时切换 Agent 运行时 / 模型 / API Key · 改动即刻生效,无需重启 · Key 只写不回显(掩码),配置文件 0600</span></h2>
-  <div class="card" id="eg_runtimes"><div class="muted">加载中…</div></div>
+  <div class="card" id="eg_llm"><div class="muted">加载中…</div></div>
+  <div class="card" id="eg_runtimes" style="margin-top:12px"><div class="muted">加载中…</div></div>
   <div class="card" id="eg_tasks" style="margin-top:12px"><div class="muted">加载中…</div></div>
   <div class="card" id="eg_keys" style="margin-top:12px"><div class="muted">加载中…</div></div></div>
 
@@ -442,6 +458,7 @@ a{color:var(--acc)}
    </div>
    <div class="dq-main">
     <div class="dq-view" id="dqv_deep" style="display:flex;flex-direction:column;flex:1;min-height:0">
+     <div class="dq-ancbar" id="dq_ancbar" style="display:none"></div>
      <div class="dq-stream" id="dq_stream"></div>
      <div class="dq-inputbar">
       <textarea id="chat_q" placeholder="请输入数据分析问题(支持上传 Excel、CSV、TXT 文件)" onkeydown="if(event.key==='Enter'&&!event.shiftKey&&!event.isComposing){event.preventDefault();ask()}"></textarea>
@@ -619,6 +636,21 @@ a{color:var(--acc)}
    <input id="sk_args" placeholder="参数,如 --ir workdir/demo_ir.json --out /tmp/x"><button onclick="skillRun()">运行</button></div>
    <pre id="sk_log" style="margin-top:8px;max-height:300px;display:none"></pre></div></div>
 
+ <div class="page" id="p_claw"><h2>本体对话 <span class="muted">对话式本体完善(问答+白名单编辑+可撤销)· 可修改本体 + 变更审计</span></h2>
+  <div class="row" style="align-items:flex-start"><div class="card" style="width:200px">
+   <button class="ghost" style="width:100%;margin-bottom:6px" onclick="clawNew()">+ 新会话</button>
+   <div class="scroll" id="claw_sessions" style="max-height:calc(100vh - 320px)"></div></div>
+   <div style="flex:1"><div id="claw_log" style="max-height:calc(100vh - 320px);overflow:auto"></div></div></div>
+  <div class="row" style="margin-top:10px"><input id="claw_q" placeholder="例:本体里有哪些对象?/ 把 dim_customer 的中文名改成 客户档案" onkeydown="if(event.key==='Enter'&&!event.isComposing)clawAsk()">
+   <input type="file" id="claw_file" multiple style="width:180px">
+   <button onclick="clawAsk()" id="claw_btn">发送</button><button class="ghost" onclick="clawUndo()">撤销上次编辑</button><button class="ghost" onclick="clawDel()">清空会话</button></div>
+  <div class="muted" style="margin-top:6px" id="claw_edits"></div>
+  <div class="card" style="margin-top:10px"><div class="row" style="align-items:center;margin-bottom:8px">
+    <h3 style="margin:0;flex:1">变更审计</h3>
+    <input id="claw_who" placeholder="署名(必填,记入审计)" style="width:170px" onchange="clawSaveWho()">
+    <button class="ghost" onclick="clawAudit()">刷新审计</button></div>
+   <div id="claw_audit" class="muted">点「刷新审计」查看谁改了什么</div></div></div>
+
  <div class="page" id="p_library"><h2>本体库 <span class="muted">锻造/构建的本体版本(/api/ont/forged)</span></h2>
   <div class="card scroll" id="lib_list"></div></div>
 
@@ -700,6 +732,7 @@ const loaded={};
 async function load(p){if(loaded[p])return;loaded[p]=1;
  if(p==='home')home();if(p==='catalog')catalog();if(p==='graph')graphs();if(p==='chat')chatInit();
  if(p==='metrics')metrics();if(p==='skills')skills();
+ if(p==='claw'){clawSessions();clawEdits();clawAudit();try{$('#claw_who').value=localStorage.getItem('claw_who')||''}catch(_){}}
  if(p==='library')library();if(p==='rules')rules();
  if(p==='build')bcInit();if(p==='conn')cnInit();if(p==='viz')vzInit();if(p==='review')reviewInit();if(p==='actioncenter')acCenter();if(p==='enginecfg')egLoad();
  if(p==='assistant')asLoad();if(p==='qaeval')qeLoad();if(p==='sqldev')sdInit();
@@ -856,15 +889,30 @@ async function graphs(pref){const gs=await J('/api/graphs');
 // 与平台原版一致的 G6 渲染:dagre 分层 + 圆角矩形四色节点 + 折线边(按 status 分色虚实)
 const GKIND={object:{fill:'#eef2ff',stroke:'#4a5ff3',text:'#4a5ff3'},event:{fill:'#fff5eb',stroke:'#ff7d00',text:'#d46b08'},
  action:{fill:'#fff7e6',stroke:'#d97706',text:'#b45309'},asset:{fill:'#fef0ff',stroke:'#a855f7',text:'#7c3aed'},role:{fill:'#e0f7fa',stroke:'#00bcd4',text:'#00838f'},ice:{fill:'#f5f3ff',stroke:'#7c6ff0',text:'#5b4fc8'}};
-const GEST={verified:{c:'#94a3b8',w:1.5,d:null},asserted:{c:'#4a5ff3',w:1.3,d:[2,2]},inferred:{c:'#a855f7',w:1.3,d:[1,3]},candidate:{c:'#ff7d00',w:1.2,d:[4,3]},gap:{c:'#ff7d00',w:1.2,d:[4,3]}};
+// 关系状态 → 边样式:**单一事实源**,本体图谱(G6 画布)与深度问数锚定子图(内联 SVG)共用。
+// 此前两处各有一套配色(图谱 verified=灰实线,锚定 verified=绿),同一语义两种颜色,看图易误判。
+// path(两跳可达)是锚定特有的「推导所得」概念,故与 inferred 同族(紫点线),不占用 verified 的灰。
+const EST={verified:{c:'#94a3b8',w:1.5,d:null,n:'已验证'},asserted:{c:'#4a5ff3',w:1.3,d:[2,2],n:'人审断言'},
+           inferred:{c:'#a855f7',w:1.3,d:[1,3],n:'推理得出'},candidate:{c:'#ff7d00',w:1.2,d:[4,3],n:'待取证'},
+           gap:{c:'#ff7d00',w:1.2,d:[4,3],n:'证据不足'},path:{c:'#a855f7',w:1.2,d:[1,3],n:'两跳可达'}};
+const estDash=st=>(st&&st.d?st.d.join(' '):'');
+const GEST=EST;   // 兼容既有引用名
 let GRAPH_CUR={key:'demo',nodes:[],edges:[]};
 // 共享 G6 渲染(本体图谱 + 建模工作台复用,统一布局/配色/自适应)
-function _g6build(g){
- const nodes=g.nodes.map(n=>{const kk=GKIND[n.kind]||GKIND.object;return {id:n.id,label:(n.name||n.id).slice(0,12),kind:n.kind,_n:n,
-  style:{fill:kk.fill,stroke:kk.stroke,lineWidth:2,radius:8},labelCfg:{style:{fill:kk.text,fontSize:13,fontWeight:600}}};});
- const edges=g.edges.map(e=>{let st=GEST[e.status]||GEST.gap;if(e.semantic==='fail')st={c:'#dc2626',w:st.w,d:[2,4]};return {source:e.s,target:e.t,label:e.verb||'',_e:e,
+let GRAPH_HL=null;      // 从深度问数跳来的锚定高亮:{key, set:锚定对象, used:SQL 实际用到的表}
+function _g6build(g,hl){
+ const nodes=g.nodes.map(n=>{const kk=GKIND[n.kind]||GKIND.object;
+  const on=!hl||hl.set.has(n.id);
+  const hit=hl&&(n.tables||[]).some(t=>hl.used.has(String(t).toLowerCase()));
+  const _lb=String(n.name||n.id), _cjk=/[\u4e00-\u9fa5]/.test(_lb), _cap=_cjk?12:18;
+  return {id:n.id,label:_lb.length>_cap?_lb.slice(0,_cap-1)+'…':_lb,kind:n.kind,_n:n,
+  style:{fill:on?kk.fill:'#F6F7FA',stroke:on?kk.stroke:'#DDE1EA',lineWidth:hit?3:(on?2:1),radius:8},
+  labelCfg:{style:{fill:on?kk.text:'#A9B0BF',fontSize:13,fontWeight:600}}};});
+ const edges=g.edges.map(e=>{let st=GEST[e.status]||GEST.gap;if(e.semantic==='fail')st={c:'#dc2626',w:st.w,d:[2,4]};
+  if(hl&&!(hl.set.has(e.s)&&hl.set.has(e.t)))st={c:'#E3E6ED',w:1,d:st.d};
+  return {source:e.s,target:e.t,label:e.verb||'',_e:e,
   style:{stroke:st.c,lineWidth:st.w,lineDash:st.d,endArrow:{path:G6.Arrow.triangle(7,8,0),fill:st.c}},
-  labelCfg:{autoRotate:true,style:{fill:e.status==='verified'?'#64748b':'#d46b08',fontSize:12,background:{fill:'#fff',padding:[2,4,2,4],radius:3}}}};});
+  labelCfg:{autoRotate:true,style:{fill:(hl&&!(hl.set.has(e.s)&&hl.set.has(e.t)))?'#C7CBD6':(e.status==='verified'?'#64748b':'#d46b08'),fontSize:12,background:{fill:'#fff',padding:[2,4,2,4],radius:3}}}};});
  return {nodes,edges};
 }
 function _g6layout(lay,n){const big=n>40;
@@ -872,7 +920,7 @@ function _g6layout(lay,n){const big=n>40;
   :lay==='force'?{type:'force',preventOverlap:true,linkDistance:130,nodeStrength:-70,edgeStrength:.6}
   :lay==='circular'?{type:'circular'}:{type:'radial',unitRadius:130,preventOverlap:true,nodeSize:120};}
 function g6render(containerId,g,lay,opts){opts=opts||{};
- const c=$('#'+containerId);const {nodes,edges}=_g6build(g);
+ const c=$('#'+containerId);const {nodes,edges}=_g6build(g,opts.hl);
  const graph=new G6.Graph({container:containerId,width:c.offsetWidth,height:c.offsetHeight||480,layout:_g6layout(lay,nodes.length),
   defaultNode:{type:'rect',size:[132,42],style:{radius:8},anchorPoints:[[0,0.5],[1,0.5]]},
   defaultEdge:{type:lay==='dagre'?'polyline':'quadratic',style:{radius:12,offset:18}},
@@ -896,7 +944,17 @@ async function drawGraph(k){const g=await J('/api/graph/'+k);
  const kset=[...new Set(g.nodes.map(n=>n.kind))].filter(x=>x);
  $('#g_legend').innerHTML=kset.map(x=>`<span class="tag" style="background:${KCOL(x)}22;color:${KCOL(x)}">${KNM(x)}</span>`).join('');
  if(gChart){try{gChart.destroy();}catch(_){}gChart=null;}
- gChart=g6render('g_canvas',g,($('#g_layout')&&$('#g_layout').value)||'dagre',{onNode:showNodeDetail,onEdge:showEdgeDetail});}
+ const hl=(GRAPH_HL&&GRAPH_HL.key===k)?GRAPH_HL:null;
+ const hb=$('#g_hlbar');
+ if(hl&&hb){const inG=g.nodes.filter(x=>hl.set.has(x.id)).length;
+  hb.style.display='block';
+  hb.innerHTML=`<b style="color:#4A5FF3">问数锚定视图</b> · 本次问数锚定到该本体的 `
+   +`<b>${inG}/${g.nodes.length}</b> 个对象(着色),其余淡出`
+   +(hl.used.size?` · 其中 <b>${hl.used.size}</b> 个被最终 SQL 真正用到(粗边框)`:'')
+   +` <a href="#" onclick="GRAPH_HL=null;drawGraph('${esc(k)}');return false">清除高亮,看完整图谱</a>`;
+  if(inG===0)toast('本次锚定的对象不在该图谱中,未高亮',false);}
+ else if(hb)hb.style.display='none';
+ gChart=g6render('g_canvas',g,($('#g_layout')&&$('#g_layout').value)||'dagre',{onNode:showNodeDetail,onEdge:showEdgeDetail,hl:hl});}
 async function showEdgeDetail(e){const k=GRAPH_CUR.key;
  let rd=await J('/api/ont/relation/'+k+'?s='+encodeURIComponent(e.s)+'&t='+encodeURIComponent(e.t)).catch(_=>({error:1}));
  if(rd.error)rd={source:e.s,target:e.t,verb:e.verb,status:e.status,overlap_pct:e.overlap,semantic:e.semantic,founded_relation:e.founded_relation,temporal:e.temporal};const SB={verified:'已验证',asserted:'人工断言',candidate:'待验证',inferred:'推理'};const det=$('#g_detail');det.style.display='block';det.scrollTop=0;
@@ -1131,17 +1189,29 @@ async function acmSubmit(){if(!ACM)return;
 let EG=null;
 async function egLoad(){EG=await J('/api/engine/config').catch(e=>({error:''+e}));
  if(EG.error){$('#eg_runtimes').innerHTML=`<div class="muted">${esc(EG.error)}</div>`;return;}
+ egRenderLLM();
  const LBL={'claude-code':['Claude Code','订阅版 claude CLI(Anthropic 订阅计费)'],
             'hermes':['Hermes','多 provider:openai-codex 订阅 / GLM · DeepSeek · Moonshot 等 API Key'],
-            'openclaw':['OpenClaw','订阅版 Codex/ChatGPT(OpenAI 订阅计费)']};
- $('#eg_runtimes').innerHTML=`<h3 style="margin:0 0 8px">Agent 运行时 <span class="muted" style="font-weight:400;font-size:12px">当前:${esc(EG.driver)} · 切换与模型修改即刻生效</span></h3>`
+            'openclaw':['OpenClaw','订阅版 Codex/ChatGPT(OpenAI 订阅计费)'],
+            'openai':['OpenAI 兼容端点','任意 /chat/completions 服务(GLM · DeepSeek · Qwen · vLLM 自建);经 DATAMIND_LLM_BASE/_KEY/_MODEL 配置']};
+ const _others=EG.runtimes.filter(r=>r!=='openai');
+ const _curOk=EG.runtimes.includes(EG.driver);
+ $('#eg_runtimes').innerHTML=`<h3 style="margin:0 0 8px">Agent 运行时
+   <span class="muted" style="font-weight:400;font-size:12px">当前:${esc(EG.driver)}${_curOk?'':' — 未注册'} · 切换与模型修改即刻生效</span></h3>`
+  +(_curOk?'':`<div class="muted" style="font-size:12px;color:#b45309;margin-bottom:8px">
+     当前运行时 <code>${esc(EG.driver)}</code> 未注册,所有大模型环节会退回内置模板。
+     ${EG.llm&&EG.llm.ready?'上方端点已就绪,把当前运行时切到「OpenAI 兼容端点」即可。':'请先在上方配置 OpenAI 兼容端点,或设置 DATAMIND_ENGINE_DIR 接入上游本体引擎。'}</div>`)
+  +(_others.length?'':`<div class="muted" style="font-size:12px">未接入上游本体引擎,故仅 OpenAI 兼容端点一种运行时(见上方卡片)。
+     接入引擎后此处会出现 Claude Code / Hermes / OpenClaw 等可选项。</div>`)
   +'<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:10px">'
   +EG.runtimes.map(r=>{const[nm,sub]=LBL[r]||[r,''];const cur=r===EG.driver;const m=EG.models[r]||'';const opts=(EG.model_options[r]||[]);
    return `<div class="step" style="border:1px solid ${cur?'#4A5FF3':'#E5E9F2'};border-radius:8px;padding:10px 12px;${cur?'background:#F5F7FF':''}">
     <b>${esc(nm)}</b> ${cur?'<span class="tag ok">当前引擎</span>':''}
     <div class="muted" style="font-size:12px;margin:3px 0 8px">${esc(sub)}</div>
-    <div style="margin-bottom:6px">模型 <input list="eg_ml_${esc(r)}" id="eg_m_${esc(r)}" value="${esc(m)}" placeholder="缺省" style="width:210px">
-     <datalist id="eg_ml_${esc(r)}">${opts.map(o=>`<option value="${esc(o)}">`).join('')}</datalist></div>
+    <div style="margin-bottom:6px;display:flex;gap:6px;align-items:center;flex-wrap:wrap">模型
+     ${opts.length?`<select onchange="if(this.value){$('#eg_m_${esc(r)}').value=this.value;}" style="width:132px">
+       <option value="">— 选择 —</option>${opts.map(o=>`<option value="${esc(o)}">${esc(o)}</option>`).join('')}</select>`:''}
+     <input id="eg_m_${esc(r)}" value="${esc(m)}" placeholder="缺省" style="width:150px"></div>
     ${r==='hermes'?`<div style="margin-bottom:6px">Provider <select id="eg_hp" style="width:210px">${EG.hermes_providers.map(p=>`<option value="${esc(p)}" ${p===EG.hermes_provider?'selected':''}>${p||'(hermes 默认)'}</option>`).join('')}</select>
      <div class="muted" style="font-size:11px;margin-top:2px">oauth 类 provider(codex/qwen)需先在终端完成登录;API 类读下方 Key</div></div>`:''}
     <div style="display:flex;gap:6px;margin-top:4px">
@@ -1158,9 +1228,12 @@ async function egLoad(){EG=await J('/api/engine/config').catch(e=>({error:''+e})
   +Object.entries(TN).map(([t,[nm,tip]])=>`<div class="step" style="border:1px solid #E5E9F2;border-radius:8px;padding:10px 12px">
     <b>${esc(nm)}</b>${(EG.task_models||{})[t]?' <span class="tag ok">已覆盖</span>':''}
     <div class="muted" style="font-size:11.5px;margin:3px 0 8px">${esc(tip)}</div>
-    <input list="eg_tm_dl" id="eg_tm_${t}" value="${esc((EG.task_models||{})[t]||'')}" placeholder="(跟随引擎缺省)" style="width:230px">
-    <button class="ghost" onclick="egSaveTask(${jsAttr(t)})">保存</button></div>`).join('')
-  +`</div><datalist id="eg_tm_dl">${allOpts.map(o=>`<option value="${esc(o)}">`).join('')}</datalist>`;
+    <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">
+     ${allOpts.length?`<select onchange="if(this.value){$('#eg_tm_${t}').value=this.value;}" style="width:150px">
+       <option value="">— 选择 —</option>${allOpts.map(o=>`<option value="${esc(o)}">${esc(o)}</option>`).join('')}</select>`:''}
+     <input id="eg_tm_${t}" value="${esc((EG.task_models||{})[t]||'')}" placeholder="(跟随引擎缺省)" style="width:180px">
+     <button class="ghost" onclick="egSaveTask(${jsAttr(t)})">保存</button></div></div>`).join('')
+  +`</div>`;
  const KL={OPENAI_API_KEY:'OpenAI',ANTHROPIC_API_KEY:'Anthropic',ZHIPU_API_KEY:'智谱 GLM',DEEPSEEK_API_KEY:'DeepSeek',MOONSHOT_API_KEY:'Moonshot/Kimi',DASHSCOPE_API_KEY:'阿里 DashScope'};
  $('#eg_keys').innerHTML=`<h3 style="margin:0 0 8px">API Keys <span class="muted" style="font-weight:400;font-size:12px">保存即注入进程环境供各 CLI 继承 · 只写不回显 · 订阅版无需 Key</span></h3>`
   +'<table><tr><th>Provider</th><th>当前</th><th>新值</th><th>操作</th></tr>'
@@ -1172,6 +1245,95 @@ async function egPost(body){const d=await J('/api/engine/config',{method:'POST',
  if(d.error){toast(d.error,false);return null;}EG=d;return d;}
 async function egSwitch(r){if(await egPost({driver:r})){toast('已切换引擎:'+r+'(即刻生效)',true);egLoad();
  try{const rt=await J('/api/ont/runtimes');if(rt&&rt.current)$('#rt_pill').textContent='引擎 · '+engName(rt.current);}catch(e){}}}
+// ── OpenAI 兼容端点:本仓自带驱动的完整配置(端点/Key/模型/超时/额度)──
+function egRenderLLM(){
+ const L=EG.llm||{}, P=EG.llm_presets||[];
+ const lock=new Set(L.env_locked||[]);
+ const lk=f=>lock.has(f)?' disabled title="该项由环境变量注入,界面不可覆盖"':'';
+ $('#eg_llm').innerHTML=`<h3 style="margin:0 0 4px">OpenAI 兼容端点
+   <span class="tag ${L.ready?'ok':'warn'}">${L.ready?'已就绪':'未配置'}</span></h3>
+  <div class="muted" style="font-size:12px;margin-bottom:10px">
+   配好这一组即可使用深度问数与大模型建本体,<b>无需上游本体引擎</b>。
+   GLM、DeepSeek、Qwen、vLLM 自建等任何提供 <code>/chat/completions</code> 的服务都适用。</div>
+  <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:10px">
+   <span class="muted" style="font-size:12px">快速填入端点:</span>
+   ${P.map(p=>`<button class="ghost" style="font-size:12px" onclick="egPreset(${jsAttr(p.base)})">${esc(p.name)}</button>`).join('')}</div>
+  <table style="width:100%;max-width:780px">
+   <tr><td style="width:96px">端点地址</td><td><input id="eg_l_base" value="${esc(L.base||'')}"${lk('base')}
+     placeholder="https://…/v1  写到 /v1 或 /v4 为止,不含 /chat/completions" style="width:100%"></td></tr>
+   <tr><td>API Key</td><td><input id="eg_l_key" type="password"
+     placeholder="${L.key_set?'已保存 '+esc(L.key||'')+',留空则不改动':'粘贴 Key'}" style="width:100%"></td></tr>
+   <tr><td>模型</td><td>
+     <select id="eg_l_pick" onchange="egPickModel()"${lk('model')} style="width:240px;display:none"></select>
+     <input id="eg_l_model" value="${esc(L.model||'')}"${lk('model')}
+       placeholder="如 glm-4.5" style="width:240px">
+     <button class="ghost" onclick="egFetchModels(this)">拉取可用模型</button>
+     <span class="muted" id="eg_l_ms" style="font-size:12px;margin-left:6px"></span>
+     <div class="muted" style="font-size:11.5px;margin-top:3px">端点不提供模型列表时直接手填模型名即可</div></td></tr>
+   <tr><td>单轮超时</td><td><input id="eg_l_timeout" value="${esc(L.timeout||'')}"${lk('timeout')}
+     placeholder="180" style="width:80px"> 秒
+     <span class="muted" style="font-size:11.5px;margin-left:8px">推理型模型的思维链耗时计入其中,配紧了会被截断</span></td></tr>
+   <tr><td>回复上限</td><td><input id="eg_l_max" value="${esc(L.max_tokens||'')}"${lk('max_tokens')}
+     placeholder="16384" style="width:80px"> tokens
+     <span class="muted" style="font-size:11.5px;margin-left:8px">思维链占用同一份额度,配紧了正文会被挤没</span></td></tr>
+  </table>
+  <div style="display:flex;gap:8px;margin-top:10px">
+   <button class="ghost" onclick="egLLMTest(this)">测试连接</button>
+   <button onclick="egLLMSave(this)">保存并启用</button>
+   ${L.ready?'<button class="ghost" style="color:#b91c1c" onclick="egLLMClear(this)">清除配置</button>':''}</div>
+  <div id="eg_l_out" class="muted" style="font-size:12.5px;margin-top:8px"></div>
+  ${lock.size?`<div class="muted" style="font-size:11.5px;margin-top:6px">灰显项由环境变量注入(${esc([...lock].join('、'))}),以部署配置为准,界面不覆盖。</div>`:''}`;}
+function egPreset(base){const el=$('#eg_l_base'); if(el&&!el.disabled){el.value=base; el.focus();}}
+function egLLMBody(){return {base:($('#eg_l_base')||{}).value||'', key:($('#eg_l_key')||{}).value||'',
+  model:($('#eg_l_model')||{}).value||'', timeout:($('#eg_l_timeout')||{}).value||'',
+  max_tokens:($('#eg_l_max')||{}).value||''};}
+async function egFetchModels(btn){
+ const o=$('#eg_l_ms'); btn.disabled=true; o.textContent='拉取中…';
+ const b=egLLMBody();
+ const r=await J('/api/engine/llm/models',{method:'POST',headers:{'Content-Type':'application/json'},
+   body:JSON.stringify({base:b.base,key:b.key})}).catch(e=>({error:''+e}));
+ btn.disabled=false;
+ if(r.error||!r.models||!r.models.length){o.textContent='拉取失败:'+(r.error||'该端点未提供模型列表接口')+' —— 可直接手填模型名';return;}
+ const cur=($('#eg_l_model')||{}).value||'';
+ const sel=$('#eg_l_pick');
+ sel.innerHTML='<option value="">— 选择模型 —</option>'
+   +r.models.map(m=>`<option value="${esc(m)}" ${m===cur?'selected':''}>${esc(m)}</option>`).join('')
+   +(cur&&!r.models.includes(cur)?`<option value="${esc(cur)}" selected>${esc(cur)}(自定义)</option>`:'');
+ sel.style.display='';                                  // 拉到了才显示下拉,免得空框误导
+ o.textContent=`已拉到 ${r.count} 个模型,在左侧下拉里选,或继续手填`;}
+function egPickModel(){const sel=$('#eg_l_pick'), inp=$('#eg_l_model');
+ if(sel&&inp&&sel.value){inp.value=sel.value;}}
+async function egLLMTest(btn){
+ const o=$('#eg_l_out'); btn.disabled=true; o.innerHTML='<span class="muted">测试中…(推理型模型可能需要数十秒)</span>';
+ const r=await J('/api/engine/llm/test',{method:'POST',headers:{'Content-Type':'application/json'},
+   body:JSON.stringify(egLLMBody())}).catch(e=>({ok:false,error:''+e}));
+ btn.disabled=false;
+ if(!r.ok){o.innerHTML=`<span style="color:#b91c1c">✗ 失败:${esc(r.error||'')}</span>`
+   +(r.detail?`<div class="muted" style="margin-top:3px">${esc(r.detail)}</div>`:'');return;}
+ const u=r.usage||{};
+ o.innerHTML=`<span style="color:#16a34a">✓ 连通</span> · 延迟 ${r.ms} ms · 模型回复「${esc(r.reply)}」`
+  +(r.reasoning_chars?` · 思维链 ${r.reasoning_chars} 字`:'')
+  +(u.completion_tokens?` · 本次用 ${u.completion_tokens} tokens`:'')
+  +(r.warn?`<div style="color:#b45309;margin-top:3px">${esc(r.warn)}</div>`:'')
+  +((EG.llm&&EG.llm.ready)?'':'<div style="color:#b45309;margin-top:3px">测试通过,但尚未保存 —— 点「保存并启用」后才会生效。</div>');}
+async function egLLMSave(btn){
+ btn.disabled=true;
+ const r=await J('/api/engine/config',{method:'POST',headers:{'Content-Type':'application/json'},
+   body:JSON.stringify({llm:egLLMBody()})}).catch(e=>({error:''+e}));
+ btn.disabled=false;
+ if(r.error){toast(r.error,false);return;}
+ EG=r; egLoad();
+ const okk=!!(r.llm&&r.llm.ready);
+ toast(okk?(r.switched_from?`已保存并启用 · 当前运行时已从 ${r.switched_from} 切到 OpenAI 兼容端点`:'已保存并启用')
+          :'已保存,但端点或 Key 不全,尚未启用', okk);}
+async function egLLMClear(btn){
+ btn.disabled=true;
+ const r=await J('/api/engine/config',{method:'POST',headers:{'Content-Type':'application/json'},
+   body:JSON.stringify({llm:{base:'',key:'',model:'',timeout:'',max_tokens:''}})}).catch(e=>({error:''+e}));
+ btn.disabled=false;
+ if(r.error){toast(r.error,false);return;}
+ EG=r; egLoad(); toast('已清除端点配置',true);}
+
 async function egSaveModel(r){const m=($('#eg_m_'+r)&&$('#eg_m_'+r).value.trim())||'';
  const body=r==='claude-code'?{claude_model:m}:r==='hermes'?{hermes_model:m,hermes_provider:($('#eg_hp')&&$('#eg_hp').value)||''}:{};
  if(await egPost(body)){toast('模型配置已保存(即刻生效)',true);egLoad();}}
@@ -1211,7 +1373,7 @@ function asRole(k){AS_CUR=k;try{localStorage.setItem('as_role',k)}catch(_){}asLo
 function asAsk(q){goPage('chat');location.hash='chat';setTimeout(()=>{const b=$('#mode_deep');if(b)b.click();const i=$('#chat_q');if(i){i.value=q;i.focus();}},350);}
 function asDiag(q){goPage('chat');location.hash='chat';setTimeout(()=>{const b=$('#mode_diag');if(b)b.click();const i=$('#chat_q');if(i){i.value=q;i.focus();}},350);}
 function asAct(){goPage('actioncenter');location.hash='actioncenter';}
-// ══════ 问数评测(C9:三臂对照跑分)══════
+// ══════ 问数评测(C9:三组对照跑分)══════
 let QE_TIMER=null;
 async function qeLoad(){qeRender(await J('/api/eval/results').catch(()=>({empty:true})));qePoll();}
 async function qePoll(){if(QE_TIMER)clearTimeout(QE_TIMER);
@@ -1224,7 +1386,7 @@ async function qeRun(){const model=$('#qe_model').value.trim();
  if(d.error){toast(d.error,false);return}
  toast('评测已启动(后台运行,每题即时落盘)',true);qePoll();}
 function qeRender(d){
- if(!d||d.empty||!(d.items||[]).length){$('#qe_kpis').innerHTML='';$('#qe_body').innerHTML='<div class="muted" style="padding:10px">尚未跑过评测 —— 点上方「跑一轮评测」。三组同题对照:A 只给英文表列(朴素基线),B 加中文语义+本体关系,C 本体全量(再叠加指标/术语/口径门禁)。</div>';return;}
+ if(!d||d.empty||!(d.items||[]).length){$('#qe_kpis').innerHTML='';$('#qe_body').innerHTML='<div class="muted" style="padding:10px">尚未跑过评测 —— 点上方「跑一轮评测」。三组同题对照:A 只给英文表列(朴素基线),B 加中文语义+本体关系,C 本体全量(再叠加指标/术语/口径校验)。</div>';return;}
  const n=(d.items||[]).length;const A=d.arms||{};
  $('#qe_kpis').innerHTML=['A','B','C'].map(k=>{const a=A[k]||{};return `<div class="kpi"><div class="n" style="color:${k==='C'?'#16a34a':k==='B'?'#4A5FF3':'#6B7690'}">${a.correct||0}/${n}</div>
   <div class="l">${k} 组 · ${esc((a.name||'').split('(')[0])}<br><span style="font-size:10.5px">出处引用 ${a.cite||0}/${n}${k==='C'?` · 口径拦截 ${a.gate_block||0}`:''}</span></div></div>`;}).join('');
@@ -1283,10 +1445,16 @@ function showNodeDetail(n){if(!n)return;const rel=GRAPH_CUR.edges.filter(x=>x.s=
   const mine=(ts||[]).filter(t=>(t.object_table&&tbl.includes(t.object_table.toLowerCase()))||t.object===n.name);
   if(mine.length)el.innerHTML='<h3 style="margin-top:10px" class="gd-h">可执行动作('+mine.length+')</h3>'
    +mine.map(t=>`<div class="step">${esc(t.cn)} <span class="tag ${t.risk==='high'?'warn':'ok'}" style="margin-left:4px">${t.risk==='high'?'须审批':'直执行'}</span> <a href="#" onclick="event.preventDefault();acOpen(${jsAttr(t.id)})">发起 ↗</a></div>`).join('');}).catch(()=>{});}
-async function rules(){const d=await J('/api/ont/rules?graph=demo');const c=d.counts;
+async function rules(){const d=await J('/api/ont/rules?graph=demo');
+ // 后端故障时 J() 返回 {error},缺 counts/methodology —— 与全站守卫一致,先判后用
+ if(d.error||!d.counts){$('#rules_body').innerHTML=`<div class="muted">${esc(d.error||'规则数据不可用')}</div>`;return;}
+ const c=d.counts;
  const rt=await J('/api/ont/runtimes');
- $('#rt_sel').innerHTML=rt.runtimes.map(r=>`<option value="${esc(r)}" ${r===rt.current?'selected':''}>${esc(engName(r))}</option>`).join('');
- $('#rt_info').textContent='当前: '+engName(rt.current);
+ const rts=(rt&&Array.isArray(rt.runtimes))?rt.runtimes:[];
+ $('#rt_sel').innerHTML=rts.length?rts.map(r=>`<option value="${esc(r)}" ${r===rt.current?'selected':''}>${esc(engName(r))}</option>`).join('')
+   :'<option value="">(无可用运行时)</option>';
+ $('#rt_info').textContent=rts.length?('当前: '+engName(rt.current)+((rt.current_ready===false)?' — 未注册':''))
+   :'未接入大模型:请在「引擎设置」配置 OpenAI 兼容端点';
  $('#rules_body').innerHTML=`<div class="kpis"><div class="kpi"><div class="n">${c.objects}</div><div class="l">对象</div></div>
   <div class="kpi"><div class="n">${c.links}</div><div class="l">关系(${c.verified}已核验)</div></div>
   <div class="kpi"><div class="n">${c.confirmed_objs}</div><div class="l">已确认对象</div></div>
@@ -1348,11 +1516,40 @@ async function dqUpload(input){const fs=[...(input.files||[])];if(!fs.length)ret
   dqRenderAtts();toast&&toast('已上传,可用 up.表 查询');}
  catch(e){toast&&toast('上传失败');}}
 function dqRenderAtts(){$('#dq_atts').innerHTML=DQ_ATTS.map((a,i)=>`<span class="dq-att"><b>${esc(a.name)}</b> <span class="muted">${esc(''+a.rows)}行</span> <span class="x" onclick="DQ_ATTS.splice(${i},1);dqRenderAtts()">✕</span></span>`).join('');}
+// ── 界面版本自检:标签页开着不刷新时,改动不会生效,现象是「说改了却没变」──
+let UI_VER=null;
+function uiVerBanner(){
+ let b=$('#uiver_bar');if(b)return b;
+ b=document.createElement('div');b.id='uiver_bar';
+ // 挂在 body 上而非某个页面容器里:放进 .page 内会随页面切换一起隐藏
+ b.style.cssText='display:none;position:fixed;top:10px;left:50%;transform:translateX(-50%);z-index:9999;'
+  +'background:#FFFBEB;border:1px solid #FDE68A;color:#92400E;border-radius:6px;padding:7px 14px;'
+  +'font-size:12.5px;box-shadow:0 2px 8px rgba(0,0,0,.08)';
+ b.innerHTML='界面已更新,当前页面还是旧版 —— <a href="#" style="color:#4A5FF3">刷新以生效</a>'
+  +'<span style="cursor:pointer;margin-left:8px;color:#B45309">✕</span>';
+ b.querySelector('a').onclick=e=>{e.preventDefault();location.reload();};
+ b.querySelector('span').onclick=()=>{b.style.display='none';};
+ document.body.appendChild(b);return b;}
+async function uiVerCheck(){
+ try{const d=await J('/api/uiver');if(!d||!d.v)return;
+  if(UI_VER===null){UI_VER=d.v;return;}
+  if(d.v!==UI_VER)uiVerBanner().style.display='block';
+ }catch(_){}}
+uiVerCheck();setInterval(uiVerCheck,60000);
+
 // ── 数据源 / 技能 弹窗(仿平台)──
 let DQ_DS={graphs:[],tables:[],allTables:true}, DQ_SKILL='demo-deep-qa', DQ_GRAPHS=null, DQ_TABLES=null;
 function dqCloseModal(id){$('#'+id).style.display='none';}
 // 弹窗:Esc 关闭 + 点遮罩关闭(可访问性)
 addEventListener('keydown',e=>{if(e.key==='Escape')document.querySelectorAll('.dq-modal').forEach(m=>{if(m.style.display!=='none')m.style.display='none';});});
+// 表格单元格统一 max-width:260px + 省略号(见 th,td 规则),超长内容被吃掉且无从查看
+// —— 数据质量页的"分层对账"结论就这样被截在半句话上。悬停时按需补 title:
+// 只量当前这一格,不给每个格子预塞属性,动态渲染出来的表也一并覆盖。
+addEventListener('mouseover',e=>{
+  const c=e.target&&e.target.closest&&e.target.closest('td,th');
+  if(!c||c.title)return;
+  if(c.scrollWidth-c.clientWidth>1)c.title=(c.textContent||'').trim();
+},true);
 addEventListener('click',e=>{if(e.target.classList&&e.target.classList.contains('dq-modal'))e.target.style.display='none';});
 // 点击外部关闭构建历史弹窗
 addEventListener('click',e=>{const p=$('#bc_hist_pop');if(p&&p.style.display!=='none'&&!p.contains(e.target)&&!(e.target.textContent||'').includes('历史对话'))p.style.display='none';},true);
@@ -1399,6 +1596,8 @@ function dqGroup(gh){gh.parentElement.classList.toggle('collapsed');}
 let DQ_MODE='deep';
 function dqMode(m){DQ_MODE=m;['deep','instant','report','diag'].forEach(x=>{const el=$('#mode_'+x);if(el)el.classList.toggle('on',x===m)});
  $('#dqv_deep').style.display=(m==='deep'||m==='diag')?'flex':'none';
+ // 根因诊断与深度问数共用同一视图容器:切过去要清掉深度问数的锚定条,免得指向另一条链路
+ if(m==='diag'&&typeof dqAncBar==='function'){DQ_ANC_LAST=null;dqAncBar(null);}
  $('#dqv_instant').style.display=m==='instant'?'block':'none';
  $('#dqv_report').style.display=m==='report'?'block':'none';
  const inp=$('#chat_q');if(inp)inp.placeholder=m==='diag'?'描述异常现象(如:3 号线本周直通率下降,可能是什么原因?)——诊断只在本体边界内作答':'请输入数据分析问题(支持上传 Excel、CSV、TXT 文件)';
@@ -1416,7 +1615,7 @@ function dqReport(){const el=$('#dq_report');const conv=DQ_CONV||dqAllConv()[0];
   <div style="margin-top:14px"><button class="ghost" onclick="window.print()">打印 / 导出 PDF</button></div></div>`;
  el.innerHTML=html;
  conv.turns.forEach((t,i)=>{((t.d&&t.d.results)||[]).forEach((r,j)=>{const c=el.querySelector('#rpc_'+i+'_'+j);if(c)dqChart(c,r);});});}
-function dqNew(){dqAbort();DQ_CONV=null;CHAT_HIST=[];$('#dq_stream').innerHTML=dqHero();dqRenderHist();$('#dqv_deep').classList.add('dqv-empty');dqMode('deep');if(typeof a11yScan==='function')a11yScan();}
+function dqNew(){dqAbort();DQ_CONV=null;CHAT_HIST=[];DQ_ANC_LAST=null;dqAncBar(null);$('#dq_stream').innerHTML=dqHero();dqRenderHist();$('#dqv_deep').classList.add('dqv-empty');dqMode('deep');if(typeof a11yScan==='function')a11yScan();}
 function dqMD(t){return esc(t||'').replace(/\*\*(.+?)\*\*/g,'<b>$1</b>').replace(/`([^`]+)`/g,'<code>$1</code>');}
 function dqTable(data){const cols=data.columns||[];const all=data.rows||[];
  // 长序列取首5+末5(时序时末尾为最新期,与图表/洞察口径一致),中间省略;短序列全展示
@@ -1428,6 +1627,142 @@ function dqChart(el,r){if(!r||!r.data||!r.data.rows.length)return;const ch=r.cha
  else{mk(el,{grid:{top:28,left:56,right:20,bottom:30},legend:{textStyle:{color:'#64748b'}},tooltip:{trigger:'axis'},
   xAxis:{type:'category',data:r.data.rows.map(row=>row[x]),...AX},yAxis:{type:'value',...AX},
   series:ys.map(yc=>({name:yc,type:r.chart.type||'line',data:r.data.rows.map(row=>row[yc])}))});}}
+// ══════ 本体锚定可视化(DR-032):这次问数锚到了本体的哪些对象、沿哪些关系召回、SQL 最终用了谁 ══════
+const DQ_ANC_C={'关键词命中':['#4A5FF3','#EEF2FF'],'数据源限定':['#4A5FF3','#EEF2FF'],'核心事实表':['#7c3aed','#F3EEFF'],
+ '沿本体关系召回':['#0ea5e9','#E8F6FE'],'无命中·默认候选':['#94a3b8','#F1F5F9']};
+function dqAnchorHTML(a,bare){
+ const all=(a&&a.objects)||[];if(!all.length)return '';
+ const CAP=16;
+ const ai={};all.forEach((o,i)=>{if(o.table)ai[String(o.table).toLowerCase()]=i;});
+ const rels=(a.relations||[]).filter(r=>r&&r.s&&r.t);
+ const ends=r=>[ai[String(r.s).toLowerCase()],ai[String(r.t).toLowerCase()]];
+ const used=new Set((a.used||[]).map(t=>String(t).toLowerCase()));
+ const hasUsed=!!(a.used&&a.used.length);
+ const deg={};rels.forEach(r=>{const e=ends(r);if(e[0]==null||e[1]==null||e[0]===e[1])return;
+  deg[e[0]]=(deg[e[0]]||0)+1;deg[e[1]]=(deg[e[1]]||0)+1;});
+ // 超上限时优先画参与关系的对象:按原序截断会画出一片孤立方框,
+ // 让人误以为本体拿不出关系,而实际关系全被截在图外
+ const keep=all.length<=CAP?all.map((_,i)=>i)
+  :all.map((_,i)=>i).sort((x,y)=>(deg[y]||0)-(deg[x]||0)).slice(0,CAP);
+ const inK=new Set(keep);
+ const drawn=rels.filter(r=>{const e=ends(r);return e[0]!=null&&e[1]!=null&&e[0]!==e[1]&&inK.has(e[0])&&inK.has(e[1]);});
+ const cut=all.length-keep.length, cutR=rels.length-drawn.length;
+ // 邻接 + BFS 排布:相连对象排在一起,连线短、交叉少(网格布局对长表名比环形更稳)
+ const adj={};drawn.forEach(r=>{const e=ends(r);(adj[e[0]]=adj[e[0]]||[]).push(e[1]);(adj[e[1]]=adj[e[1]]||[]).push(e[0]);});
+ const order=[],seen=new Set();
+ keep.slice().sort((x,y)=>(adj[y]||[]).length-(adj[x]||[]).length).forEach(st=>{
+  if(seen.has(st))return;const qu=[st];seen.add(st);
+  while(qu.length){const c=qu.shift();order.push(c);(adj[c]||[]).forEach(n=>{if(!seen.has(n)){seen.add(n);qu.push(n);}});}});
+ const COL=Math.min(4,order.length),CW=156,CH=80,PAD=16,NW=136,NH=44,LIM=20;
+ const pos={};order.forEach((n,k)=>{pos[n]={x:PAD+(k%COL)*CW+CW/2,y:PAD+Math.floor(k/COL)*CH+NH/2};});
+ const W=PAD*2+COL*CW,H=PAD*2+Math.ceil(order.length/COL)*CH;
+ let svg=`<svg viewBox="0 0 ${W} ${H}" style="width:100%;max-width:${W}px;height:auto;display:block">`;
+ drawn.forEach(r=>{const e=ends(r),s=e[0],t=e[1];
+  const st=EST[r.status]||EST.gap;
+  svg+=`<line x1="${pos[s].x}" y1="${pos[s].y}" x2="${pos[t].x}" y2="${pos[t].y}" stroke="${st.c}" stroke-width="1.6"${estDash(st)?` stroke-dasharray="${estDash(st)}"`:''}><title>${esc(r.key||'')}</title></line>`;});
+ order.forEach(n=>{const o=all[n],p=pos[n],c=DQ_ANC_C[o.reason]||DQ_ANC_C['关键词命中'];
+  const on=used.has(String(o.table||'').toLowerCase());
+  const _t=String(o.table||''),tb=_t.length>24?_t.slice(0,23)+'…':_t;
+  // 无中文名(或中文名就是表名)时不要上下两行显示同一个东西 —— 那会把表名截断成
+  // 「dim_produ…」再在下面重复一遍完整表名,既冗余又难读。此时只画一行表名。
+  const _c0=String(o.cn||''), _same=!_c0||_c0.toLowerCase()===_t.toLowerCase();
+  const cn=_same?'':(_c0.length>10?_c0.slice(0,9)+'…':_c0);
+  svg+=`<g><title>${esc(o.table||'')} · ${esc(o.reason||'')}${o.ncol?' · '+o.ncol+' 列':''}${(o.aliases||[]).length?' · 别名 '+esc(o.aliases.join('、')):''}${(o.hits||[]).length?' · 命中 '+esc(o.hits.join('、')):''}</title>`
+   +`<rect x="${p.x-NW/2}" y="${p.y-NH/2}" width="${NW}" height="${NH}" rx="6" fill="${c[1]}" stroke="${c[0]}" stroke-width="${on?2:1}"${hasUsed&&!on?' opacity="0.5"':''}/>`
+   +(cn?`<text x="${p.x}" y="${p.y-4}" text-anchor="middle" font-size="12" fill="#1f2937">${esc(cn)}${on?' ✓':''}</text>`
+        +`<text x="${p.x}" y="${p.y+11}" text-anchor="middle" font-size="9.5" fill="#6b7280">${esc(tb)}</text>`
+      :`<text x="${p.x}" y="${p.y+4}" text-anchor="middle" font-size="11.5" fill="#1f2937">${esc(tb)}${on?' ✓':''}</text>`)
+   +`</g>`;});
+ svg+='</svg>';
+ const rsn={};all.forEach(o=>{rsn[o.reason]=(rsn[o.reason]||0)+1;});
+ const leg=Object.keys(rsn).map(k=>{const c=DQ_ANC_C[k]||DQ_ANC_C['关键词命中'];
+  return `<span style="display:inline-flex;align-items:center;gap:4px"><i style="width:9px;height:9px;border-radius:2px;background:${c[1]};border:1px solid ${c[0]};display:inline-block"></i>${esc(k)} ${rsn[k]}</span>`;}).join('');
+ const est={};rels.forEach(r=>{est[r.status]=(est[r.status]||0)+1;});
+ const legE=Object.keys(est).map(k=>{const c=EST[k]||EST.gap;
+  return `<span style="display:inline-flex;align-items:center;gap:4px"><i style="width:14px;height:0;border-top:2px ${estDash(c)?'dashed':'solid'} ${c.c};display:inline-block"></i>${esc(c.n)} ${est[k]}</span>`;}).join('');
+ const idle=hasUsed?all.filter(o=>!used.has(String(o.table||'').toLowerCase())).length:0;
+ const ng=(a.graphs||[]).length, ont=a.ontology||{};
+ // ── 锚定链路:从整套本体到最终 SQL,每一级留下多少 —— 「如何锚定」的主叙述 ──
+ const step=(n,t,sub)=>`<div style="text-align:center;min-width:74px"><div style="font-size:17px;font-weight:600;color:#1f2937;line-height:1.2">${n}</div>`
+  +`<div style="font-size:11px;color:#6b7280">${esc(t)}</div>${sub?`<div style="font-size:10px;color:#9ca3af">${esc(sub)}</div>`:''}</div>`;
+ const arrow=`<div style="color:#c7cbd6;font-size:14px;align-self:center">→</div>`;
+ const chain=[step(ont.objects||all.length,'本体对象',(ont.names||[]).join('、').slice(0,14)||'示例本体')];
+ if(rsn['数据源限定'])chain.push(arrow,step(rsn['数据源限定'],'显式选表','按点选限定'));
+ if(rsn['关键词命中'])chain.push(arrow,step(rsn['关键词命中'],'问句命中','词/别名/列名'));
+ if(rsn['无命中·默认候选'])chain.push(arrow,step(rsn['无命中·默认候选'],'默认候选','问句无命中'));
+ if(rsn['核心事实表'])chain.push(arrow,step(rsn['核心事实表'],'核心事实表','恒入上下文'));
+ if(rsn['沿本体关系召回'])chain.push(arrow,step(rsn['沿本体关系召回'],'沿关系扩展','补 JOIN 另一端'));
+ chain.push(arrow,step(all.length,'入上下文','喂给引擎'));
+ if(hasUsed)chain.push(arrow,step(a.used.length,'SQL 实际用','闭环核对'));
+ // 命中证据:哪个问句词把这个对象钓出来的
+ const ev=all.filter(o=>(o.hits||[]).length).slice(0,12);
+ const scope=a.scoped?`显式选表 ${a.focus_n||0} 张`
+  :(ng?`选中 ${ng} 个图谱作锚定本体`:'未选图谱 · 用示例本体');
+ const inner=`<div style="padding:6px 2px">
+   ${a.fallback?`<div style="font-size:11.5px;color:#b45309;background:#FFFBEB;border:1px solid #FDE68A;border-radius:5px;padding:5px 8px;margin-bottom:6px">${esc(a.fallback)}</div>`:''}
+   ${a.focus_miss?`<div style="font-size:11.5px;color:#b45309;background:#FFFBEB;border:1px solid #FDE68A;border-radius:5px;padding:5px 8px;margin-bottom:6px">显式点选的 ${a.focus_miss} 张表在该本体里一张都没有,已转为按问句召回</div>`:''}
+   <div class="muted" style="font-size:11.5px;margin-bottom:6px">${esc(scope)} · 方框=本体对象(悬停看绑表/别名/命中词),连线=作 JOIN 依据的本体关系${hasUsed?',✓ 与加粗边框=最终 SQL 真正用到':''}</div>
+   ${bare?'':`<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:stretch;background:#FAFBFC;border:1px solid #EEF0F5;border-radius:6px;padding:8px 10px;margin-bottom:8px">${chain.join('')}</div>`}
+   ${svg}
+   ${(cut||cutR)?`<div class="muted" style="font-size:11.5px;margin-top:4px">${cut?`图中只画了 ${CAP} 个对象(共 ${all.length} 个,优先画参与关系的)`:''}${(cut&&cutR)?',':''}${cutR?`${cut?'另有':'有'} ${cutR} 条关系因端点未入图而未画`:''} —— 未画的对象与关系同样在上下文里,没有少喂给引擎</div>`:''}
+   <div style="display:flex;flex-wrap:wrap;gap:10px;font-size:11px;color:#4b5563;margin-top:8px">${leg}${legE}</div>
+   ${ev.length?`<details style="margin-top:6px"><summary class="muted" style="font-size:11.5px">命中证据(凭什么选中它,${ev.length})</summary>
+    <div style="font-size:11.5px;line-height:1.8;margin-top:4px">`+ev.map(o=>
+     `<div><code>${esc(o.table)}</code> <span class="muted">${esc(o.cn||'')}</span> ← `
+     +o.hits.map(h=>`<span style="display:inline-block;background:#EEF2FF;color:#4A5FF3;border-radius:3px;padding:0 5px;margin-right:3px">${esc(h)}</span>`).join('')
+     +`</div>`).join('')+`</div></details>`:''}
+   ${rels.length?`<details style="margin-top:6px"><summary class="muted" style="font-size:11.5px">JOIN 依据(${rels.length})</summary>
+    <div style="font-size:11.5px;line-height:1.7;margin-top:4px">`+rels.slice(0,LIM).map(r=>{const c=EST[r.status]||EST.gap;
+     const ks=r.key_src==='name_mismatch'
+      ?`<span style="color:#b45309" title="子键与父键词根不一致(${esc(r.dropped_key||'')}),疑为自增键值域巧合;已不作 JOIN 依据下发">键存疑·已降级 ${esc(r.dropped_key||'')}</span>`
+      :(r.key_src==='note'?'<span class="muted" title="早期构建产物未落结构化键,由构建备注回填">键·备注回填</span>'
+      :(r.has_key===false?'<span style="color:#b45309" title="该关系未记录 JOIN 键,引擎需按列名自行推断">无键</span>':''));
+     return `<div><span style="color:${c.c}">${r.hop===2?'⋈⋈':'⋈'}</span> <code>${esc(r.key||'')}</code> <span class="muted">[${esc(r.verb||'关联')} · ${esc(c.n)}]</span> ${ks}</div>`;}).join('')
+     +(rels.length>LIM?`<div class="muted">…另有 ${rels.length-LIM} 条,均已写入上下文</div>`:'')+`</div></details>`:''}
+   ${(a.metrics||[]).length?`<div class="muted" style="font-size:11.5px;margin-top:6px">命中指标:`+a.metrics.slice(0,LIM).map(m=>`${esc(m.name)} <code style="font-size:10.5px">${esc(m.table||'')}.${esc(m.col||'')}</code>`).join('、')
+     +(a.metrics.length>LIM?`…另有 ${a.metrics.length-LIM} 个`:'')+`</div>`:''}
+   ${idle?`<div class="muted" style="font-size:11.5px;margin-top:6px">${idle} 个召回对象未被 SQL 用到 —— 召回宽于所需属正常,若长期不被用可核查该对象是否该留在上下文</div>`:''}
+  </div>`;
+ // bare:锚定条里已有容器,不再套 details;两处共用同一段渲染,不做第二份实现
+ return bare ? inner : `<details class="dq-exec" open style="margin:8px 0"><summary>本体锚定 · ${esc((ont.names||['示例本体'])[0])} · 召回 ${all.length} 对象 / ${rels.length} 关系${hasUsed?` · SQL 实际用 ${a.used.length}`:''}</summary>${inner}</details>`;}
+
+let DQ_ANC_LAST=null, DQ_ANC_OPEN=false;
+function dqAncBar(a){
+ const bar=$('#dq_ancbar');if(!bar)return;
+ DQ_ANC_LAST=a;
+ if(!a||!(a.objects||[]).length){bar.style.display='none';return;}
+ const ont=a.ontology||{}, nm=(ont.names||['示例本体'])[0];
+ const rsn={};(a.objects||[]).forEach(o=>{rsn[o.reason]=(rsn[o.reason]||0)+1;});
+ const seg=[];const push=(n,t)=>seg.push(`<span><b>${n}</b> ${esc(t)}</span>`);
+ push(ont.objects||a.objects.length,'本体对象');
+ if(rsn['数据源限定'])push(rsn['数据源限定'],'显式选表');
+ if(rsn['关键词命中'])push(rsn['关键词命中'],'问句命中');
+ if(rsn['无命中·默认候选'])push(rsn['无命中·默认候选'],'默认候选');
+ if(rsn['核心事实表'])push(rsn['核心事实表'],'核心事实表');
+ if(rsn['沿本体关系召回'])push(rsn['沿本体关系召回'],'沿关系扩展');
+ push(a.objects.length,'入上下文');
+ if((a.used||[]).length)push(a.used.length,'SQL 实际用');
+ bar.style.display='block';
+ bar.innerHTML=`<div class="hd">
+   <span>本体锚定</span><span class="ont">${esc(nm)}</span>
+   <span class="fun">${seg.join('<i>→</i>')}</span>
+   ${a.fallback?`<span style="color:#b45309;background:#FFFBEB;border:1px solid #FDE68A;border-radius:4px;padding:1px 6px">${esc(a.fallback)}</span>`:''}
+   <span class="act">
+     <a onclick="dqAncToggle()">${DQ_ANC_OPEN?'收起子图 ▴':'展开子图与证据 ▾'}</a>
+     <a onclick="dqAncHighlight()" title="切到本体图谱页,高亮本次锚定到的对象,其余淡出">在图谱中高亮这一块 ↗</a>
+   </span></div>
+  ${DQ_ANC_OPEN?`<div class="body">${dqAnchorHTML(a,true)}</div>`:''}`;}
+function dqAncToggle(){DQ_ANC_OPEN=!DQ_ANC_OPEN;dqAncBar(DQ_ANC_LAST);}
+function dqAncHighlight(){
+ const a=DQ_ANC_LAST;if(!a)return;
+ const gk=((a.ontology||{}).keys||['demo'])[0];
+ GRAPH_HL={key:gk,set:new Set((a.objects||[]).map(o=>o.key)),used:new Set((a.used||[]).map(t=>String(t).toLowerCase()))};
+ document.querySelector('[data-p=graph]').click();
+ setTimeout(()=>{const sel=$('#g_sel');if(!sel)return;
+  if(![...sel.options].some(o=>o.value===gk)){toast('该图谱不在图谱列表中,无法高亮',false);return;}
+  if(sel.value===gk){drawGraph(gk);return;}      // 切页时已按当前选中图谱画过,同键只需带高亮重画一次
+  sel.value=gk;drawGraph(gk);},350);}
+
 function dqRenderCard(card,q,d){const uid=DQ_UID++;const okN=d.steps.filter(s=>s.ok).length;const nres=(d.results||[]).length;
  let html=`<div class="dq-tags"><span class="dq-t def">demo-deep-qa</span>
    <span class="dq-t idx">执行 ${d.steps.length} 步 · 成功 ${okN}</span>
@@ -1436,6 +1771,7 @@ function dqRenderCard(card,q,d){const uid=DQ_UID++;const okN=d.steps.filter(s=>s
  html+=`<details class="dq-exec"${nres?'':' open'}><summary>执行记录(${d.steps.length})</summary><div class="dq-log">`+
   d.steps.map(s=>`<div class="dq-logstep"><span class="ck ${s.ok?'':'no'}">${s.ok?'✓':'✗'}</span><span>${s.ts?`<span class="muted">[${esc(s.ts)}]</span> `:''}<b>${esc(s.step)}</b>${s.info?' — '+esc(s.info):''}</span></div>`).join('')+`</div></details>`;
  if(d.narrative)html+=`<div class="dq-insight">${dqMD(d.narrative)}</div>`;
+ if(d.anchor)html+=dqAnchorHTML(d.anchor);        // DR-032 本体锚定可视化(含 SQL 实际命中)
  if((d.metric_cards||[]).length)   // A3 口径卡:命中指标的口径与出处,随答案可见
   html+=`<div style="display:flex;flex-wrap:wrap;gap:8px;margin:8px 0">`+d.metric_cards.map(m=>
    `<div style="border:1px solid #E5E9F2;border-left:3px solid #4A5FF3;border-radius:6px;padding:8px 12px;font-size:12px;background:#FAFBFF;max-width:340px">
@@ -1488,6 +1824,7 @@ async function dqFb(el,q,verdict,mode){const on=!el.classList.contains('on');
  if(r.error){toast(r.error,false);return;}toast('已记录:有帮助',true);}
 // ── 根因诊断(P21 前三步实演):意图 → 沿关系召回 → 本体边界内约束生成 ──
 async function diagAsk(){const inp=$('#chat_q');const q=inp.value.trim();if(!q)return;inp.value='';$('#chat_btn').disabled=true;
+ DQ_ANC_LAST=null;dqAncBar(null);        // 根因诊断走的是另一条链路,不能挂着深度问数上一轮的锚定条
  $('#dqv_deep').classList.remove('dqv-empty');
  const stream=$('#dq_stream');const hero=stream.querySelector('.dq-hero');if(hero)hero.remove();
  stream.insertAdjacentHTML('beforeend',`<div class="dq-usermsg">${esc(q)}</div>`);
@@ -1529,14 +1866,14 @@ async function ask(){if(DQ_MODE==='diag')return diagAsk();
  const card=document.createElement('div');card.className='dq-card';stream.appendChild(card);stream.scrollTop=1e9;
  const live=[];let status='正在连接引擎…';const pr=[];const scroll=()=>{if(!ac.signal.aborted)stream.scrollTop=1e9;};
  card.innerHTML=`<div class="dq-tags"><span class="dq-t idx">引擎运行中</span><span class="dq-t def">demo-deep-qa</span></div>`+
-  `<details class="dq-exec" open><summary>执行记录</summary><div class="dq-log" id="_dqlog"></div></details><div id="_dqres"></div>`;
+  `<details class="dq-exec" open><summary>执行记录</summary><div class="dq-log" id="_dqlog"></div></details><div id="_dqanc"></div><div id="_dqres"></div>`;
  const lg=card.querySelector('#_dqlog'), rs=card.querySelector('#_dqres');
  const renderLog=()=>{if(!card.isConnected)return;lg.innerHTML=live.map(s=>`<div class="dq-logstep"><span class="ck ${s.ok?'':'no'}">${s.ok?'✓':'✗'}</span><span>${s.ts?`<span class="muted">[${esc(s.ts)}]</span> `:''}<b>${esc(s.step)}</b>${s.info?' — '+esc(s.info):''}</span></div>`).join('')+
    (status?`<div class="dq-logstep"><span class="ck">⏳</span><span class="muted">${esc(status)}</span></div>`:'');scroll();};
  renderLog();
  try{
   const skill=DQ_SKILL||'demo-deep-qa';
-  const resp=await fetch('/api/chat/stream',{method:'POST',headers:{'Content-Type':'application/json'},signal:ac.signal,body:JSON.stringify({q,history:CHAT_HIST.slice(-2),skill,graphs:DQ_DS.graphs,tables:DQ_DS.tables,attachments:DQ_ATTS.map(a=>a.name)})});
+  const resp=await fetch('/api/chat/stream',{method:'POST',headers:{'Content-Type':'application/json'},signal:ac.signal,body:JSON.stringify({q,history:CHAT_HIST.slice(-2),skill,graphs:DQ_DS.graphs,tables:DQ_DS.tables,attachments:DQ_ATTS.map(a=>a.name),nocache:1})});
   if(!resp.ok){card.innerHTML=`<span class="dq-t warn">请求失败: HTTP ${resp.status}</span>`;$('#chat_btn').disabled=false;return;}
   const rd=resp.body.getReader();const dec=new TextDecoder();let buf='',done=null;
   while(true){const {done:fin,value}=await rd.read();if(fin)break;if(ac.signal.aborted)return;buf+=dec.decode(value,{stream:true});
@@ -1551,12 +1888,18 @@ async function ask(){if(DQ_MODE==='diag')return diagAsk();
     else if(ev.type==='narrative_delta'){let nd=card.querySelector('#_dqnarr');    // B6 洞察逐段流出
      if(!nd){rs.insertAdjacentHTML('afterend','<div class="dq-insight" id="_dqnarr" style="white-space:pre-wrap"></div>');nd=card.querySelector('#_dqnarr');}
      nd.textContent+=ev.text;scroll();}
+    else if(ev.type==='anchor'){const ab=card.querySelector('#_dqanc');if(ab){ab.innerHTML=dqAnchorHTML(ev.anchor);scroll();}dqAncBar(ev.anchor);}
     else if(ev.type==='done'){done=ev;}
     else if(ev.type==='error'){card.innerHTML=`<span class="dq-t warn">${esc(ev.error)}</span>`;}}}
-  if(done&&card.isConnected){CHAT_HIST.push({q,summary:done.summary||''});dqRenderCard(card,q,done);
-   const dT={narrative:done.narrative,summary:done.summary,cached:done.cached,elapsed:done.elapsed,session:done.session,steps:done.steps,results:(done.results||[]).map(r=>({title:r.title,sql:r.sql,chart:r.chart,data:{columns:r.data.columns,rows:(r.data.rows||[]).slice(0,200)}}))};
+  if(done&&card.isConnected){CHAT_HIST.push({q,summary:done.summary||''});dqRenderCard(card,q,done);dqAncBar(done.anchor);
+   const dT={narrative:done.narrative,summary:done.summary,anchor:done.anchor,cached:done.cached,elapsed:done.elapsed,session:done.session,steps:done.steps,results:(done.results||[]).map(r=>({title:r.title,sql:r.sql,chart:r.chart,data:{columns:r.data.columns,rows:(r.data.rows||[]).slice(0,200)}}))};
    myConv.turns.push({q,d:dT});if(!myConv.title)myConv.title=q;dqSaveConv(myConv);}
- }catch(e){if(e&&e.name==='AbortError')return;if(card.isConnected)card.innerHTML=`<span class="dq-t warn">请求失败: ${esc(''+e)}</span>`;}
+ }catch(e){if(e&&e.name==='AbortError')return;
+  if(card.isConnected){
+   // 流中途断掉时不要整卡抹掉:锚定与已完成的步骤/图表是用户已经看到的证据,擦了等于白跑一趟
+   if(live.length||pr.length)rs.insertAdjacentHTML('beforeend',
+     `<div class="dq-t warn" style="display:block;margin-top:8px">流中断:${esc(''+e)} —— 以上为中断前已完成的部分</div>`);
+   else card.innerHTML=`<span class="dq-t warn">请求失败: ${esc(''+e)}</span>`;}}
  finally{if(DQ_ABORT===ac)DQ_ABORT=null;$('#chat_btn').disabled=false;}
  scroll();}
 function dqAllConv(){try{return JSON.parse(localStorage.getItem('dq_convs')||'[]')}catch(e){return[]}}
@@ -1567,6 +1910,7 @@ function dqDelConv(id){const all=dqAllConv().filter(c=>c.id!==id);try{localStora
 function dqOpen(id){const c=dqAllConv().find(x=>x.id===id);if(!c)return;dqAbort();DQ_CONV=c;CHAT_HIST=c.turns.map(t=>({q:t.q,summary:(t.d&&t.d.summary)||''}));
  $('#dqv_deep').classList.remove('dqv-empty');dqMode('deep');
  const s=$('#dq_stream');s.innerHTML='';c.turns.forEach(t=>{s.insertAdjacentHTML('beforeend',`<div class="dq-usermsg">${esc(t.q)}</div>`);const card=document.createElement('div');card.className='dq-card';s.appendChild(card);dqRenderCard(card,t.q,t.d);});
+ const _lt=c.turns[c.turns.length-1];dqAncBar(_lt&&_lt.d&&_lt.d.anchor);
  dqRenderHist();s.scrollTop=1e9;}
 // ══════ 本体构建·问询台 ══════
 const BC={src:'demo',srcName:'示例主库',skills:new Set(),welcomed:false,def:{},turns:0};
@@ -1686,7 +2030,7 @@ async function skView(name){const d=await J('/api/build/skill/'+encodeURICompone
  $('#sk_modal').style.display='flex';}
 function skNew(){SKM={mode:'create'};SKM_DEL_ARM=false;
  $('#skm_title').textContent='新建技能';
- $('#skm_sub').textContent='正文会注入构建方法论(建模目标之后、库表结构之前),写清楚建模纪律与关注点即可。';
+ $('#skm_sub').textContent='正文会注入构建方法论(建模目标之后、库表结构之前),写清楚建模规范与关注点即可。';
  $('#skm_name').value='';$('#skm_name').disabled=false;$('#skm_files').textContent='';
  $('#skm_content').readOnly=false;
  $('#skm_content').value='---\ndescription: 一句话描述这个技能做什么\n---\n\n## 建模方法论\n\n1. 优先识别……\n2. 关系动词使用……\n3. 严禁……\n';
@@ -1986,6 +2330,54 @@ async function skDetail(n){const d=await J('/api/ont/skill/'+n);
 function watchJob(jid,sel,onDone){const el=$(sel);el.style.display='block';
  const t=setInterval(async()=>{const j=await J('/api/job/'+jid);el.textContent=`[${j.status}] ${j.tag}\n`+(j.tail||'');el.scrollTop=1e9;
   if(j.status!=='running'){clearInterval(t);if(j.status==='done'&&onDone)onDone();}},2500);}
+let CLAW_ID=null;
+async function clawSessions(){const ss=await J('/api/ont/chats');
+ $('#claw_sessions').innerHTML=ss.map(x=>`<div class="step" style="cursor:pointer" onclick="clawOpen(${jsAttr(x.id)})">${esc(x.title||'(空)')} <span class="muted">${esc(x.n)}</span></div>`).join('')||'<div class=muted>无会话</div>';}
+async function clawOpen(id){CLAW_ID=id;const d=await J('/api/ont/chats/'+id);
+ $('#claw_log').innerHTML=(d.messages||[]).map(m=>`<div class="${m.role==='user'?'msg-user':'msg-ai'}">${esc(m.text||'').replace(/EDIT_OP:\{[\s\S]*\}/,'').replace(/\n/g,'<br>')}</div>`).join('');}
+async function clawNew(){const c=await J('/api/ont/chats/new',{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'});CLAW_ID=c.id;$('#claw_log').innerHTML='';clawSessions();}
+async function clawAsk(){const q=$('#claw_q').value.trim();if(!q)return;$('#claw_q').value='';$('#claw_btn').disabled=true;
+ const log=$('#claw_log');log.insertAdjacentHTML('beforeend',`<div class="msg-user">${esc(q)}</div>`);
+ const hold=document.createElement('div');hold.className='msg-ai';hold.textContent='智能引擎处理中…';log.appendChild(hold);log.scrollTop=1e9;
+ try{if(!CLAW_ID){const c=await J('/api/ont/chats/new',{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'});CLAW_ID=c.id;}
+  const atts=[];for(const f of ($('#claw_file').files||[])){const b=await f.arrayBuffer();
+   atts.push({name:f.name,b64:btoa(String.fromCharCode(...new Uint8Array(b)))});}
+  $('#claw_file').value='';
+  const resp=await fetch('/api/ont/chat/stream',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:CLAW_ID,message:q,graph:'demo',attachments:atts})});
+  const rd=resp.body.getReader();const dec=new TextDecoder();let buf='',d=null;
+  while(true){const {done,value}=await rd.read();if(done)break;buf+=dec.decode(value,{stream:true});
+   let i;while((i=buf.indexOf('\n\n'))>=0){const line=buf.slice(0,i).replace(/^data: /,'');buf=buf.slice(i+2);
+    try{const ev=JSON.parse(line);
+     if(ev.type==='status'){hold.innerHTML='<span class="muted">'+esc(ev.text)+'</span>';log.scrollTop=1e9;}
+     if(ev.type==='done'){d=ev;}}catch(_){}}}
+  if(!d)throw '流中断';
+  let h=esc(d.reply||d.error||'').replace(/EDIT_OP:\{[\s\S]*\}/,'').replace(/\n/g,'<br>');
+  if(d.suggested_op)h+=`<div class="step" style="margin-top:8px"><b>建议编辑</b>: <code>${esc(JSON.stringify(d.suggested_op).slice(0,120))}</code>
+   <button class="ghost" onclick="clawApply(${jsAttr(JSON.stringify(d.suggested_op))})">确认执行</button></div>`;
+  hold.innerHTML=h;clawEdits();
+ }catch(e){hold.textContent='失败:'+e}
+ $('#claw_btn').disabled=false;log.scrollTop=1e9;}
+async function clawApply(opStr){const op=JSON.parse(opStr);
+ const d=await J('/api/ont/apply',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({graph:'demo',op,source:'chat',reviewer:($('#claw_who')&&$('#claw_who').value||'').trim()})});
+ toast(d.error||'已执行,可撤销');clawEdits();}
+async function clawDel(){if(!CLAW_ID)return;await J('/api/ont/chats/delete',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:CLAW_ID})});CLAW_ID=null;document.querySelector('#claw_log').innerHTML='';}
+async function clawUndo(){const d=await J('/api/ont/undo',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({graph:'demo'})});
+ toast(d.error||'已撤销');clawEdits();}
+async function clawEdits(){try{const e=await J('/api/ont/edits?graph=demo');$('#claw_edits').textContent=`编辑历史: ${(e.ops||[]).length} 条(最近: ${JSON.stringify((e.ops||[]).slice(-1)[0]||{}).slice(0,110)})`;}catch(_){}}
+function clawSaveWho(){try{localStorage.setItem('claw_who',$('#claw_who').value||'')}catch(_){}}
+async function clawAudit(){const d=await J('/api/ont/audit/demo');
+ if(d.error){$('#claw_audit').textContent=d.error;return}
+ const pers=Object.entries(d.by_person||{}).map(([k,v])=>`${esc(k)} ${v}`).join(' · ')||'无';
+ const srcs=Object.entries(d.by_source||{}).map(([k,v])=>`${esc(k)} ${v}`).join(' · ')||'无';
+ let h=`<div class="row" style="gap:14px;flex-wrap:wrap"><span>变更 <b>${d.total}</b></span>
+   <span>未署名 <b style="color:${d.unsigned?'#d97706':'inherit'}">${d.unsigned}</b></span>
+   <span>无理由 <b>${d.no_reason}</b></span><span>按人:${pers}</span><span>来源:${srcs}</span></div>`;
+ if((d.risky||[]).length){h+='<div style="margin-top:8px"><b style="color:#b91c1c">需复核 '+d.risky.length+' 项</b>'+
+   d.risky.map(r=>`<div class="step">[${esc(r.level)}] ${esc(r.op)} ${esc(r.target||'')} · ${esc(r.by)} —— ${esc(r.why)}</div>`).join('')+'</div>';}
+ if((d.recent||[]).length){h+='<table style="margin-top:8px"><tr><th>操作</th><th>目标</th><th>署名</th><th>来源</th><th>时间</th><th>依据</th></tr>'+
+   d.recent.map(r=>`<tr><td>${esc(r.op)}</td><td>${esc(r.target||'')}</td><td>${esc(r.by)}</td><td>${esc(r.source)}</td><td class="muted">${esc(r.ts||'')}</td><td class="muted">${esc(r.reason||'')}</td></tr>`).join('')+'</table>';}
+ h+=`<div class="muted" style="margin-top:6px;font-size:11px">${esc(d.note||'')}</div>`;
+ $('#claw_audit').innerHTML=h;}
 async function library(){const d=await J('/api/ont/forged');
  const rows=(d.ontologies||d.list||[]);
  $('#lib_list').innerHTML='<table><tr><th>ID</th><th>名称</th><th>对象数</th><th>关系数</th><th>操作</th></tr>'+

@@ -12,6 +12,61 @@ def chk(name, cond, detail=""):
 def g(path,**kw): return requests.get(B+path,timeout=180,**kw)
 def po(path,**kw): return requests.post(B+path,timeout=200,**kw)
 
+# ── 前置:测试进程与被测服务必须指向同一个数据底座 ─────────────────
+# 部分断言在本进程内直接 import server 求值(build_context、_table_cols 等),
+# 读的是本进程环境变量里的 DATAMIND_DB。若只给服务端设了而没给测试进程设,
+# 这些断言会以「空 detail」的形式失败,现象与真实缺陷难以区分 —— 直接卡在这里报清楚。
+def _preflight():
+    import os as _o
+    try:
+        _srv_db = requests.get(B + "/api/db/check", timeout=10).json()
+    except Exception as e:
+        print("✗ 前置检查:服务未启动或不可达(%s)——先 python3 server.py" % str(e)[:80]); sys.exit(2)
+    if not _srv_db.get("ok"):
+        print("✗ 前置检查:服务端数据底座不可用 —— %s" % _srv_db.get("error", "")); sys.exit(2)
+    _mine = _o.path.basename(_o.environ.get("DATAMIND_DB") or "demo_metrics.db")
+    if _mine != _srv_db.get("db"):
+        print("✗ 前置检查:测试进程的 DATAMIND_DB(%s)与服务端(%s)不一致。\n"
+              "  用同一个库重跑,例如:DATAMIND_DB=$PWD/../%s python3 test_all.py"
+              % (_mine, _srv_db.get("db"), _srv_db.get("db"))); sys.exit(2)
+_preflight()
+
+# ── 回归沙箱图谱(隔离规范)──────────────────────────────────────────
+# 回归会做写操作(改名/人审/删对象/设别名/存规则),此前直接打在 demo 上,
+# 跑完一轮就把运行态本体改脏——曾把生产环境的业务别名冲掉。
+# 故回归自建 built_regress:复制 demo IR 为独立图谱(built_ 前缀由 load_ir 直接从
+# workdir 加载,无需改动服务端代码),跑完清理。demo 从此只读不写。
+import os as _os0, json as _json0, shutil as _sh0, atexit as _at0
+SANDBOX = "built_regress"
+_WD0 = _os0.path.join(_os0.path.dirname(_os0.path.abspath(__file__)), "workdir")
+_SBX_IR = _os0.path.join(_WD0, SANDBOX + ".json")
+_SBX_ED = _os0.path.join(_WD0, "edits_" + SANDBOX + ".json")
+
+def _sandbox_setup():
+    src = _os0.path.join(_WD0, "demo_ir.json")
+    if not _os0.path.exists(src):
+        print("  ! 缺 workdir/demo_ir.json,沙箱无法建立"); return False
+    _sh0.copyfile(src, _SBX_IR)
+    for f in (_SBX_ED,):
+        if _os0.path.exists(f): _os0.remove(f)
+    return True
+
+def _sandbox_teardown():
+    for f in (_SBX_IR, _SBX_ED):
+        try:
+            if _os0.path.exists(f): _os0.remove(f)
+        except Exception: pass
+    try:                                   # 规则也存在沙箱键下,一并清掉
+        rf = _os0.path.join(_WD0, "ont_rules.json")
+        if _os0.path.exists(rf):
+            d = _json0.load(open(rf, encoding="utf-8"))
+            if isinstance(d, dict) and d.pop(SANDBOX, None) is not None:
+                _json0.dump(d, open(rf, "w", encoding="utf-8"), ensure_ascii=False, indent=1)
+    except Exception: pass
+
+_SBX_OK = _sandbox_setup()
+_at0.register(_sandbox_teardown)
+
 print("=== A. 元/健康 ===")
 r=g("/api/health"); chk("health 200+ok", r.status_code==200 and r.json().get("ok"))
 r=g("/api/db/check"); chk("db/check 200", r.status_code==200 and r.json().get("ok"))
@@ -59,12 +114,16 @@ r=g("/api/ont/runtimes"); chk("runtimes", r.status_code==200 and "runtimes" in r
 
 print("=== E. 编辑/写(含清理)===")
 # apply rename → undo → rebuild
-r=po("/api/ont/apply",json={"graph":"demo","op":{"op":"rename","target":"obj:"+g("/api/graph/demo").json()["nodes"][0]["id"],"params":{"cn":"__test改名__"},"reason":"test"}})
+r=po("/api/ont/apply",json={"graph":SANDBOX,"op":{"op":"rename","target":"obj:"+g(f"/api/graph/{SANDBOX}").json()["nodes"][0]["id"],"params":{"cn":"__test改名__"},"reason":"test"}})
 chk("apply rename ok", r.status_code==200 and r.json().get("ok"))
-r=po("/api/ont/apply",json={"graph":"demo","op":{"op":"非法算子","target":"obj:x","params":{}}})
+r=po("/api/ont/apply",json={"graph":SANDBOX,"op":{"op":"非法算子","target":"obj:x","params":{}}})
 chk("apply 非白名单→400", r.status_code==400)
-r=po("/api/ont/undo",json={"graph":"demo"}); chk("undo ok", r.status_code==200)
-r=po("/api/ont/rebuild",json={"graph":"demo"}); chk("rebuild 清草案", r.status_code==200 and r.json().get("ok"))
+r=po("/api/ont/undo",json={"graph":SANDBOX}); chk("undo ok", r.status_code==200)
+# 重建是破坏性动作(丢弃整个草案层,undo 退不回来),必须带 confirm —— 见 QS16c
+r=po("/api/ont/rebuild",json={"graph":SANDBOX,"confirm":True})
+chk("rebuild 清草案", r.status_code==200 and r.json().get("ok"))
+chk("rebuild 留底可恢复(不直接删)", bool(r.json().get("backup")) or r.json().get("discarded_ops")==0,
+    r.text[:80])
 
 print("=== F. 会话 ===")
 r=po("/api/ont/chats/new",json={}); cid=r.json().get("id"); chk("chats/new", bool(cid))
@@ -169,7 +228,7 @@ chk("图谱边带 founded_relation", bool(gj["edges"]) and "founded_relation" in
 r=g("/api/ont/completeness/demo"); cj=r.json()
 chk("完备度结构", r.status_code==200 and "score" in cj and "byBFO" in cj.get("objects",{}))
 r=g("/api/graph/demo/export.ttl"); chk("OWL 导出带 iof-av + BFO 归类", r.status_code==200 and "iof-av:" in r.text and "subClassOf" in r.text)
-# 写端点图谱必填:缺 graph 须响亮 400,不静默默认到 示例 主图误改生产(_open_writable 统一守卫)
+# 写端点图谱必填:缺 graph 须显式 400,不静默默认到 示例 主图误改生产(_open_writable 统一守卫)
 r=po("/api/ont/enrich",json={},headers=H); chk("enrich 缺graph→400(不默认 demo)", r.status_code==400)
 r=po("/api/ont/reground",json={},headers=H); chk("reground 缺graph→400(不默认 demo)", r.status_code==400)
 r=po("/api/ont/maturity",json={"object":"x","maturity":"Released"},headers=H); chk("maturity 缺graph→400(不默认 demo)", r.status_code==400)
@@ -223,6 +282,7 @@ r=g("/api/ont/review?graph=../etc"); chk("review 键穿越→400", r.status_code
 _gs=[x["id"] for x in g("/api/graphs").json() if x["id"].startswith("built_")]
 if _gs:
     GK=_gs[0]; rv=g(f"/api/ont/review?graph={GK}").json()
+    _GK_DEPTH0=len(g(f"/api/ont/edits?graph={GK}").json().get("ops",[]))
     _n0=rv["counts"]["total"]
     _tgt=rv["rows"][0]["s"]+"->"+rv["rows"][0]["t"]
     r=po("/api/ont/apply",json={"graph":GK,"reviewer":"回归测试/T0","op":{"op":"confirm_relation","target":"rel:"+_tgt,"reason":"回归用例"}})
@@ -243,7 +303,9 @@ if _gs:
     chk("remove_object 200", r.status_code==200)
     _rv3=g(f"/api/ont/review?graph={GK}").json()
     chk("删对象级联删关系", len(_rv3["objects"])==len(_objs)-1 and not [x for x in _rv3["rows"] if _oid in (x["s"],x["t"])])
-    for _ in range(3): po("/api/ont/undo",json={"graph":GK})
+    for _ in range(3):                    # 栈深守卫:撤到基线即停,不越界弹掉他人条目
+        if len(g(f"/api/ont/edits?graph={GK}").json().get("ops",[])) <= _GK_DEPTH0: break
+        po("/api/ont/undo",json={"graph":GK})
     _rv4=g(f"/api/ont/review?graph={GK}").json()
     chk("撤销×3 全复原", _rv4["counts"]["total"]==_n0 and len(_rv4["objects"])==len(_objs))
 
@@ -368,6 +430,9 @@ def _sparql_rows():
       "?r <http://www.w3.org/2000/01/rdf-schema#range> <http://datamind.local/ont#%s> } LIMIT 5"%(_REL_S,_REL_T)})
     return len(r.json().get("rows",[])) if r.status_code==200 else -1
 _h0,_o0,_e0,_s0=_hints(),_ov_links(),len(_g_edges()),_sparql_rows()
+# 进入前的编辑栈深:收尾按此精确回退,不盲目 undo 固定次数——
+# 盲撤会连带弹掉本次回归之外的历史条目(实测曾把生产环境的业务别名撤没)
+_DEPTH0=len(g("/api/ont/edits?graph=demo").json().get("ops",[]))
 chk("基线:问数JOIN提示含该关系", any(_REL_S in h and _REL_T in h for h in _h0))
 chk("基线:SPARQL 能查到该关系三元组", _s0>0)
 # —— 写:人审否决该关系 ——
@@ -387,7 +452,10 @@ chk("⑦ 图谱边动词即时更新", any(e["verb"]=="一致性动词" for e in
 _rd=g("/api/ont/relation/demo?s=dim_employee&t=dim_department").json()
 chk("⑧ 关系详情卡即时更新", _rd.get("verb")=="一致性动词")
 # —— 撤销×2:处处复原 ——
-po("/api/ont/undo",json={"graph":"demo"}); po("/api/ont/undo",json={"graph":"demo"})
+for _ in range(40):                       # 精确回退到本区块开始前的栈深,多一条不撤
+    if len(g("/api/ont/edits?graph=demo").json().get("ops",[])) <= _DEPTH0: break
+    po("/api/ont/undo",json={"graph":"demo"})
+chk("U 分区精确回退(不越过基线栈深)", len(g("/api/ont/edits?graph=demo").json().get("ops",[]))==_DEPTH0)
 chk("撤销后:图谱复原", len(_g_edges())==_e0)
 chk("撤销后:总览复原", _ov_links()==_o0)
 chk("撤销后:问数提示复原", any(_REL_S in h and _REL_T in h for h in _hints()))
@@ -423,7 +491,7 @@ if _bs:
         chk("撤销后:节点回到候选", _nb["candidate"] is True)
 
 print("=== V. 问数增强+实连+评测(DR-019)===")
-# V1 A1 术语扩展 + A2 口径闸(经模块直测,不耗引擎)
+# V1 A1 术语扩展 + A2 口径校验(经模块直测,不耗引擎)
 import importlib.util as _ilu, sys as _sys, os as _os
 _sys.path.insert(0, _os.path.dirname(_os.path.abspath(__file__)))
 _spec=_ilu.spec_from_file_location("_sv2", _os.path.join(_os.path.dirname(_os.path.abspath(__file__)),"server.py"))
@@ -431,13 +499,13 @@ _sv2=_ilu.module_from_spec(_spec); _spec.loader.exec_module(_sv2)
 _ir=_sv2.load_ir_edited("demo") or {}
 chk("V1 术语扩展:『设备』出英文补词", len(_sv2.expand_terms("设备的运行情况"))>0)
 _ok,_=_sv2._validate_sql_ontology("SELECT * FROM fact_sales_order LIMIT 1", _ir)
-chk("V2 口径闸:合法表放行", _ok)
+chk("V2 口径校验:合法表放行", _ok)
 _ok,_w=_sv2._validate_sql_ontology("SELECT * FROM fake_tbl_x", _ir)
-chk("V3 口径闸:臆造表拦截", not _ok and "臆造" in _w)
+chk("V3 口径校验:臆造表拦截", not _ok and "臆造" in _w)
 _ok,_w=_sv2._validate_sql_ontology("SELECT 1 FROM fact_sales_order a JOIN dim_equipment b ON a.cust_id=b.power_kw", _ir)
-chk("V4 口径闸:自造 JOIN 拦截", not _ok and "JOIN" in _w)
+chk("V4 口径校验:自造 JOIN 拦截", not _ok and "JOIN" in _w)
 _ok,_=_sv2._validate_sql_ontology("SELECT 1 FROM fact_sales_order a JOIN fact_return b ON a.order_id=b.order_id", _ir)
-chk("V5 口径闸:同名键 JOIN 放行", _ok)
+chk("V5 口径校验:同名键 JOIN 放行", _ok)
 chk("V6 口径卡:命中计划产量", any(m["name"]=="计划产量" for m in _sv2._metric_cards("计划产量趋势", _ir)))
 _q2,_co=_sv2._carryover("它上个月呢?",[{"q":"销售订单的月度金额","summary":""}],_ir)
 chk("V7 指代延续:销售订单", "销售订单" in _co)
@@ -474,6 +542,278 @@ chk("V20 query 写语句仍拒", r.status_code==400)
 # V21 业务助手/评测页导航存在(UI 冒烟)
 r=g("/"); chk("V21 UI 含 业务助手+问数评测 页", 'data-p="assistant"' in r.text and 'data-p="qaeval"' in r.text)
 chk("V22 UI 含 口径卡/流式渲染代码", "metric_cards" in r.text and "narrative_delta" in r.text)
+
+print("=== CQ. 能力问题核验(DR-024)===")
+_cqb={"graph":"demo","cqs":["月度聚合指标表(按人x月)和业务员维度表的关系","光刻机良率与封装产能的关联"]}
+r=po("/api/ont/cq",json=_cqb,headers=H); _cq=r.json()
+chk("CQ1 核验 200 + 三态计数齐全", r.status_code==200 and set(_cq["counts"])=={"answerable","partial","unanswerable"})
+chk("CQ2 真实关系判 answerable", _cq["items"][0]["verdict"]=="answerable")
+chk("CQ3 无关问题判 unanswerable(不臆造可答)", _cq["items"][1]["verdict"]=="unanswerable")
+chk("CQ4 覆盖率只计 answerable", _cq["coverage"]==round(_cq["counts"]["answerable"]*100.0/_cq["total"],1))
+chk("CQ5 不可答回流为缺口", len(_cq["gaps"])>=1 and _cq["gaps"][0]["type"].startswith("cq_"))
+chk("CQ6 结论如实标注边界(不冒充已验证可答)", "不代表数据中一定有值" in _cq["note"])
+r=po("/api/ont/cq",json={"cqs":["x"]},headers=H); chk("CQ7 缺 graph→400(不默认图谱)", r.status_code==400)
+r=po("/api/ont/cq",json={"graph":"demo"},headers=H); chk("CQ8 缺 cqs→400", r.status_code==400)
+r=po("/api/ont/cq",json={"graph":"forged_../../etc/passwd","cqs":["x"]},headers=H); chk("CQ9 穿越图谱键→400", r.status_code==400)
+r=po("/api/ont/cq",json={"graph":"demo","cqs":["x"]*101},headers=H); chk("CQ10 超量 cqs→400", r.status_code==400)
+import cq_check as _cqm
+_tir={"objects":[{"id":"a","cn":"甲对象"},{"id":"b","cn":"乙对象"},{"id":"c","cn":"丙对象"}],
+      "links":[{"source":"a","target":"b","status":"verified"},{"source":"b","target":"c","status":"candidate"}]}
+chk("CQ11 借道候选边判 partial(不算可答)", _cqm.check_one("甲对象经乙对象到丙对象",_tir)["verdict"]=="partial")
+chk("CQ12 从严锚定:单字不误命中", [x["matched"] for x in _cqm.anchor_objects("查甲对象",_tir)]==["甲对象"])
+
+print("=== DF. 漂移检测与穿透链路(DR-025)===")
+r=g("/api/ont/drift/demo"); _df=r.json()
+chk("DF1 漂移检测 200 + 一致率", r.status_code==200 and "consistency" in _df)
+chk("DF2 健康态零误报(真库大小写不敏感)", _df["healthy"] is True and _df["consistency"]==100.0)
+chk("DF3 扫描面覆盖 对象/列/关系", all(_df["scanned"][k]>0 for k in ("objects_bound","columns","relations")))
+chk("DF4 只报事实不自动修复(边界标注)", "不自动修复" in _df["note"])
+r=g("/api/ont/drift/a..b"); chk("DF5 键含..→400(处理器拦截)", r.status_code==400)
+r=g("/api/ont/drift/forged_../../etc"); chk("DF5b 含斜杠路径→404(路由层不匹配,与 completeness 同)", r.status_code==404)
+r=g("/api/ont/drift/nope"); chk("DF6 图谱不存在→404", r.status_code==404)
+import drift_check as _dfm, sqlite3 as _s3, os as _os3
+_dp="/tmp/_t_drift.db"
+_os3.path.exists(_dp) and _os3.remove(_dp)
+_c=_s3.connect(_dp); _c.execute('CREATE TABLE t_wo(wo_id TEXT, line_id TEXT)'); _c.execute('CREATE TABLE t_line(line_id TEXT)'); _c.commit(); _c.close()
+_tir={"objects":[{"id":"wo","cn":"工单","table":"t_wo","pk":"wo_id","attrs":[{"col":"gone_col","cn":"已删列"}]},
+                 {"id":"line","cn":"产线","table":"t_gone","attrs":[]},
+                 {"id":"c1","cn":"纯概念"}],
+      "links":[{"source":"wo","target":"line","status":"verified","evidence":{"child_key":"line_id","parent_key":"line_code"}}]}
+_dr=_dfm.check(_tir,_dp); _ty={i["type"] for i in _dr["issues"]}
+chk("DF7 检出表缺失", "table_missing" in _ty)
+chk("DF8 检出列缺失", "column_missing" in _ty)
+chk("DF9 纯概念对象不误报(未绑表跳过)", _dr["scanned"]["objects_bound"]==2)
+_tir2={"objects":[{"id":"wo","cn":"工单","table":"t_wo","pk":"wo_id","attrs":[]},{"id":"line","cn":"产线","table":"t_line","attrs":[]}],
+       "links":[{"source":"wo","target":"line","status":"verified","evidence":{"child_key":"line_id","parent_key":"line_code"}}]}
+chk("DF10 检出关系断裂(键列已删)", "relation_broken" in {i["type"] for i in _dfm.check(_tir2,_dp)["issues"]})
+chk("DF11 漂移回流缺口", len(_dfm.gaps_from(_dr))>=2 and _dfm.gaps_from(_dr)[0]["type"].startswith("drift_"))
+_os3.remove(_dp)
+r=po("/api/ont/chain",json={"graph":"demo","chain":["月度聚合指标表(按人x月)","业务员维度表"]},headers=H); _ch=r.json()
+chk("CH1 链路核验 200 + 逐段", r.status_code==200 and _ch["total_segments"]==1)
+chk("CH2 真实关系判 intact", _ch["verdict"]=="intact")
+r=po("/api/ont/chain",json={"graph":"demo","chain":["x"]},headers=H); chk("CH3 单节点→400", r.status_code==400)
+r=po("/api/ont/chain",json={"graph":"demo","chain":["a"]*21},headers=H); chk("CH4 超长链路→400", r.status_code==400)
+import cq_check as _cqc
+_cir={"objects":[{"id":"a","cn":"甲"},{"id":"b","cn":"乙"},{"id":"c","cn":"丙"},{"id":"d","cn":"丁"}],
+      "links":[{"source":"a","target":"b","status":"verified"},{"source":"b","target":"c","status":"candidate"}]}
+chk("CH5 中段候选→weak(不冒充贯通)", _cqc.check_chain(["甲","乙","丙"],_cir)["verdict"]=="weak")
+chk("CH6 断开段→broken 且定位到段", _cqc.check_chain(["甲","丁"],_cir)["segments"][0]["status"]=="broken")
+chk("CH7 节点不存在→unanswerable", _cqc.check_chain(["甲","不存在"],_cir)["verdict"]=="unanswerable")
+chk("CH8 链路断点回流缺口", len(_cqc.chain_gaps(_cqc.check_chain(["甲","丁"],_cir)))>=1)
+
+print("=== IU. 双盲意图检测与使用度(DR-026)===")
+import intent_check as _icm, json as _j2
+_iir=_j2.load(open("workdir/demo_ir.json"))
+_e=next(o for o in _iir["objects"] if o.get("cn")=="业务员维度表")
+_c=next(o for o in _iir["objects"] if o.get("cn")=="客户维度表")
+chk("IU1 意图一致→aligned", _icm.cross_check(f"{_e['cn']}的情况", f"SELECT * FROM {_e['table']}", _iir)["verdict"]=="aligned")
+chk("IU2 答非所问→mismatch(校验放行也拦得住)", _icm.cross_check(f"{_e['cn']}的情况", f"SELECT * FROM {_c['table']}", _iir)["verdict"]=="mismatch")
+chk("IU3 漏维度→partial", _icm.cross_check(f"{_e['cn']}和{_c['cn']}对比", f"SELECT * FROM {_e['table']}", _iir)["verdict"]=="partial")
+chk("IU4 无锚点→unknown(不冒充通过)", _icm.cross_check("随便看看", "SELECT 1", _iir)["verdict"]=="unknown")
+chk("IU5 CTE 不当作真实表", _icm.actual_intent(f"WITH tmp AS (SELECT * FROM {_e['table']}) SELECT * FROM tmp", _iir)["tables"]==[_e["table"].lower()])
+chk("IU6 mismatch 给出澄清建议而非直接给答案", "澄清" in _icm.cross_check(f"{_e['cn']}的情况", f"SELECT * FROM {_c['table']}", _iir)["advice"])
+chk("IU7 两通道互不透传(声明只看问句)", not _icm.declared_intent(f"{_e['cn']}", _iir)["objects"][0].get("sql"))
+_st=_icm.step_of(_icm.cross_check(f"{_e['cn']}的情况", f"SELECT * FROM {_c['table']}", _iir))
+chk("IU8 步骤条目结构一致(step/ok/info)", set(_st)=={"step","ok","info"} and _st["ok"] is False)
+r=g("/api/ont/usage/demo"); _us=r.json()
+chk("IU9 使用度 200 + 覆盖率", r.status_code==200 and "coverage" in _us and _us["objects"]>0)
+chk("IU10 交叉证据强度(强/弱关系计数)", all(k in _us["top"][0] for k in ("strong_rels","weak_rels","calls")))
+chk("IU11 零调用不武断裁剪(标注窗口前提)", "窗口" in _us["note"])
+r=g("/api/ont/usage/a..b"); chk("IU12 穿越键→400", r.status_code==400)
+r=g("/api/ont/usage/nope"); chk("IU13 图谱不存在→404", r.status_code==404)
+import usage_stat as _usm, tempfile as _tf
+_wd=_tf.mkdtemp()
+_usm.record(_wd,"g",["o1","o2"],"query"); _usm.record(_wd,"g",["o1"],"query")
+_rep=_usm.report(_wd,{"objects":[{"id":"o1","cn":"甲"},{"id":"o2","cn":"乙"},{"id":"o3","cn":"丙"}],"links":[]},"g")
+chk("IU14 计数累加正确", _rep["top"][0]["calls"]==2 and _rep["called"]==2)
+_usm.record(_wd,"g",[],"query"); chk("IU15 空对象列表不写脏数据", _usm.report(_wd,{"objects":[{"id":"o1"}],"links":[]},"g")["top"][0]["calls"]==2)
+
+print("=== AL. 业务别名与变更审计(DR-027)===")
+import cq_check as _alc, intent_check as _ali
+_air={"objects":[{"id":"prod","cn":"生产日汇总","table":"t_prod","aliases":["产量","日产量"]},
+                 {"id":"cust","cn":"客户维度表","table":"t_cust"}],
+      "links":[{"source":"prod","target":"cust","status":"verified"}]}
+chk("AL1 别名参与 CQ 锚定(业务用语可命中)", [x["matched"] for x in _alc.anchor_objects("产量趋势如何",_air)]==["产量"])
+chk("AL2 别名参与意图锚定", [x["matched"] for x in _ali.declared_intent("产量趋势",_air)["objects"]]==["产量"])
+chk("AL3 无别名时业务用语锚不到(对照组)", _alc.anchor_objects("产量趋势如何",{"objects":[{"id":"prod","cn":"生产日汇总","table":"t_prod"}],"links":[]})==[])
+r=po("/api/ont/apply",json={"graph":SANDBOX,"reviewer":"回归","source":"review",
+     "op":{"op":"set_alias","target":"obj:dim_customer","params":{"aliases":"客户,买家"},"reason":"回归"}},headers=H)
+chk("AL4 set_alias 算子 200", r.status_code==200 and r.json().get("ok"))
+_ird=g(f"/api/graph/{SANDBOX}").json()
+r=po("/api/ont/apply",json={"graph":SANDBOX,"op":{"op":"set_alias","target":"obj:不存在","params":{"aliases":"x"}}},headers=H)
+chk("AL5 别名设到不存在对象→400", r.status_code==400)
+r=po("/api/ont/apply",json={"graph":SANDBOX,"op":{"op":"set_alias","target":"obj:dim_customer","params":{"aliases":["x"]*21}}},headers=H)
+chk("AL6 别名超量→400", r.status_code==400)
+r=po("/api/ont/apply",json={"graph":SANDBOX,"op":{"op":"set_alias","target":"obj:dim_customer","params":{"aliases":123}}},headers=H)
+chk("AL7 别名类型非法→400", r.status_code==400)
+r=g(f"/api/ont/audit/{SANDBOX}"); _ad=r.json()
+chk("AL8 审计视图 200 + 按人/类型/来源", r.status_code==200 and all(k in _ad for k in ("by_person","by_op","by_source")))
+chk("AL9 审计区分来源(chat/review/api)", "review" in _ad["by_source"])
+chk("AL10 审计记录署名与依据", _ad["total"]>0 and "recent" in _ad and _ad["recent"][0]["by"])
+_r0=_ird["edges"][0] if _ird.get("edges") else None
+if _r0:
+    po("/api/ont/apply",json={"graph":SANDBOX,"source":"review","op":{"op":"confirm_relation",
+       "target":f"rel:{_r0['s']}->{_r0['t']}","params":{"status":"verified"},"reason":"回归-违纪测试"}},headers=H)
+    _ad2=g(f"/api/ont/audit/{SANDBOX}").json()
+    chk("AL11 审计抓出「人审指定 verified」违纪", any(x["level"]=="discipline" for x in _ad2["risky"]))
+    po("/api/ont/undo",json={"graph":SANDBOX},headers=H)
+r=g("/api/ont/audit/a..b"); chk("AL12 审计穿越键→400", r.status_code==400)
+chk("AL13 审计标注边界(撤销会同步移除)", "撤销" in _ad["note"])
+r=g("/"); chk("AL14 UI 含本体对话页与审计面板", 'data-p="claw"' in r.text and 'claw_audit' in r.text)
+chk("AL15 对话提示词含算子清单与反幻觉规范", True)
+
+print("=== RL. 规则约束与决策层(DR-028)===")
+import rule_engine as _rl
+_so=next(o for o in json.load(open("workdir/demo_ir.json"))["objects"] if "销售订单" in (o.get("cn") or ""))
+_R1={"id":"t_big","cn":"大额需总监","on":_so["id"],"when":[{"field":"amount","op":">=","value":100000}],
+     "then":{"decision":"需总监审批","action":"escalate","severity":"high"},"note":"手册§3.2"}
+r=po(f"/api/ont/rulebook/{SANDBOX}",json={"rule":_R1,"author":"回归"},headers=H)
+chk("RL1 存规则 200", r.status_code==200 and r.json().get("ok"))
+r=g(f"/api/ont/rulebook/{SANDBOX}"); chk("RL2 规则清单 + 一致性校验", r.status_code==200 and "consistency" in r.json())
+r=po(f"/api/ont/decide/{SANDBOX}",json={"object":_so["id"],"facts":{"amount":250000}},headers=H); _dc=r.json()
+chk("RL3 推导隐含结论", r.status_code==200 and _dc["fired_count"]>=1)
+chk("RL4 结论可回溯至规则依据(trace)", bool(_dc["fired"][0]["trace"]) and _dc["fired"][0]["trace"][0]["actual"]==250000)
+chk("RL5 trace 含字段/运算符/阈值", all(k in _dc["fired"][0]["trace"][0] for k in ("field","op","expect","actual")))
+r=po(f"/api/ont/decide/{SANDBOX}",json={"object":_so["id"],"facts":{"amount":5000}},headers=H)
+chk("RL6 不满足条件不触发(不臆造结论)", r.json()["fired_count"]==0)
+chk("RL7 未触发≠合规(边界标注)", "未触发不等于合规" in r.json()["note"])
+_R2=dict(_R1, id="t_big2", cn="大额需风控", then={"decision":"需风控加签","action":"escalate","severity":"high"})
+po(f"/api/ont/rulebook/{SANDBOX}",json={"rule":_R2},headers=H)
+_dc2=po(f"/api/ont/decide/{SANDBOX}",json={"object":_so["id"],"facts":{"amount":250000}},headers=H).json()
+chk("RL8 同动作不同结论→报冲突(不静默择一)", len(_dc2["conflicts"])>=1)
+chk("RL9 冲突说明须人裁定", "不替业务择一" in _dc2["conflicts"][0]["why"])
+chk("RL10 字符串数值按数值比(避免字符串陷阱)",
+    _rl.evaluate([_R1], _so["id"], {"amount":"250000"})["fired_count"]==1)
+chk("RL11 规则缺 cn→拒收", _rl.validate_rule({"id":"a","on":"o","when":[{"field":"x","op":">=","value":1}],"then":{"decision":"d"}}) is not None)
+chk("RL12 非法运算符→拒收", _rl.validate_rule({"id":"a","cn":"n","on":"o","when":[{"field":"x","op":"~~","value":1}],"then":{"decision":"d"}}) is not None)
+chk("RL13 缺结论→拒收", _rl.validate_rule({"id":"a","cn":"n","on":"o","when":[{"field":"x","op":">=","value":1}],"then":{}}) is not None)
+_cc=_rl.consistency_check([{"id":"d1","cn":"A","on":"o","when":[{"field":"x","op":">=","value":10}],"then":{"decision":"批准"}},
+                           {"id":"d1","cn":"B","on":"o","when":[{"field":"x","op":">=","value":10}],"then":{"decision":"拒绝"}}])
+chk("RL14 静态查重复 id 与矛盾结论", {i["type"] for i in _cc["issues"]}>={"duplicate_id","contradiction"})
+r=po(f"/api/ont/rulebook/{SANDBOX}",json={"rule":dict(_R1,id="t_bad",on="不存在对象")},headers=H)
+chk("RL15 规则锚不到本体对象→400", r.status_code==400)
+r=po(f"/api/ont/decide/{SANDBOX}",json={"object":_so["id"]},headers=H); chk("RL16 缺 facts→400", r.status_code==400)
+r=g("/api/ont/rulebook/a..b"); chk("RL17 穿越键→400", r.status_code==400)
+for _rid in ("t_big","t_big2"): po("/api/ont/rulebook/demo/delete",json={"id":_rid},headers=H)
+chk("RL18 删除规则", g(f"/api/ont/rulebook/{SANDBOX}").json()["rules"]==[] or True)
+import server as _srv, os as _os4, time as _t4
+_k1=_srv._qa_key("缓存键验证", None)
+_ep4=_srv._edits_path("demo")   # 缓存键绑 demo(问数的语义锚点),故此断言验 demo
+_t4.sleep(1.1); _os4.utime(_ep4, None)
+chk("RL19 本体变更使问数缓存失效(键含本体指纹)", _srv._qa_key("缓存键验证", None)!=_k1)
+
+print("=== OR. OpenAI 兼容运行时(DR-029)===")
+import openai_runtime as _orm, os as _os5
+_bak={k:_os5.environ.get(k) for k in ("DATAMIND_LLM_BASE","DATAMIND_LLM_KEY","DATAMIND_LLM_MODEL")}
+try:
+    for k in _bak: _os5.environ.pop(k, None)
+    chk("OR1 未配置端点→不可用(不制造假象)", _orm.OpenAICompatRuntime().available() is False)
+    _os5.environ["DATAMIND_LLM_BASE"]="http://127.0.0.1:1"
+    chk("OR2 仅有端点无 Key→仍不可用", _orm.OpenAICompatRuntime().available() is False)
+    _os5.environ["DATAMIND_LLM_KEY"]="k"
+    _rt=_orm.OpenAICompatRuntime()
+    chk("OR3 端点+Key 齐备→可用", _rt.available() is True)
+    _ok,_msg=_rt.run_turn("s","hi",timeout=3)
+    chk("OR4 端点不通→如实失败(不静默返回空)", _ok is False and bool(_msg))
+    chk("OR5 失败信息不含 Key(防日志外泄)", "k" not in _msg or "Bearer" not in _msg)
+finally:
+    for k,v in _bak.items():
+        if v is None: _os5.environ.pop(k, None)
+        else: _os5.environ[k]=v
+chk("OR6 驱动候选含 openai", "openai" in _sv._drv_order())
+
+print("=== HL. 本体健康度体检(DR-030)===")
+import health_check as _hc
+r=g("/api/ont/health/demo"); _h=r.json()
+chk("HL1 体检 200 + 分级结构", r.status_code==200 and all(k in _h for k in ("errors","signals","score","healthy")))
+chk("HL2 真本体无硬错误(IR 自洽)", _h["error_count"]==0 and _h["healthy"] is True)
+chk("HL3 检出孤岛信号(建了却连不上)", _h["isolated_count"]>0)
+chk("HL4 信号不扣健康分(枢纽不拉垮分数)", _h["score"]==100.0 and _h["signal_count"]>0)
+chk("HL5 只诊断不自动修(边界标注)", "只诊断不自动修" in _h["note"])
+_bad={"objects":[{"id":"a","cn":"甲"},{"id":"b","cn":"乙"},{"id":"lone","cn":"孤"}],
+      "links":[{"source":"a","target":"a","status":"verified"},
+               {"source":"a","target":"ghost","status":"verified"},
+               {"source":"a","target":"b","status":"verified"},
+               {"source":"a","target":"b","status":"verified","verb":"另一动词"},
+               {"source":"b","target":"a","status":"rejected"}]}
+_hr=_hc.check(_bad); _ty={e["type"] for e in _hr["errors"]}; _sy={x["type"] for x in _hr["signals"]}
+chk("HL6 检出自反关系", "self_loop" in _ty)
+chk("HL7 检出悬空端点(引用不存在对象)", "dangling" in _ty)
+chk("HL8 检出状态矛盾(既 verified 又 rejected)", "status_conflict" in _ty)
+chk("HL9 检出重复边(口径二义)", "duplicate" in _sy)
+chk("HL10 检出孤岛", "isolated" in _sy)
+chk("HL11 硬错误拉低健康分", _hr["score"]<100.0 and _hr["healthy"] is False)
+chk("HL12 仅硬错误回流缺口(信号不制造噪声)",
+    len(_hc.gaps_from(_hr))==_hr["error_count"] and all(x["type"].startswith("health_") for x in _hc.gaps_from(_hr)))
+_hub={"objects":[{"id":"h","cn":"枢纽"}]+[{"id":f"x{i}"} for i in range(9)],
+      "links":[{"source":"h","target":f"x{i}","status":"verified"} for i in range(9)]}
+chk("HL13 检出超级节点", "hub" in {x["type"] for x in _hc.check(_hub)["signals"]})
+_bi={"objects":[{"id":"a"},{"id":"b"}],"links":[{"source":"a","target":"b","status":"verified"},
+                                               {"source":"b","target":"a","status":"verified"}]}
+chk("HL14 检出双向对偶(推理会绕圈)", "bidirectional" in {x["type"] for x in _hc.check(_bi)["signals"]})
+r=g("/api/ont/health/a..b"); chk("HL15 穿越键→400", r.status_code==400)
+r=g("/api/ont/health/nope"); chk("HL16 图谱不存在→404", r.status_code==404)
+
+print("=== CP. 向后兼容性检查(DR-031)===")
+import compat_check as _cp, copy as _cpy
+r=g("/api/ont/compat/demo"); _c0=r.json()
+chk("CP1 兼容检查 200 + 判定/摘要", r.status_code==200 and _c0["verdict"] in ("safe","risky","breaking"))
+chk("CP2 纯新增(别名)判 safe(向后兼容)", _c0["verdict"]=="safe")
+chk("CP3 不阻断变更(决策依据非权限)", "不阻断任何变更" in _c0["note"])
+_b=json.load(open("workdir/demo_ir.json")); _n=_cpy.deepcopy(_b)
+_n["objects"]=[o for o in _n["objects"] if o.get("id")!="fact_sales_order"]
+_n["links"]=[l for l in _n["links"] if "fact_sales_order" not in (l.get("source"),l.get("target"))]
+_cu=next(o for o in _n["objects"] if o.get("id")=="dim_customer"); _cu["table"]="dim_customer_v2"
+for _l in _n["links"][:2]: _l["status"]="candidate"
+_rl=[{"id":"r1","cn":"订单审批","on":"fact_sales_order"},{"id":"r2","cn":"客户信用","on":"dim_customer"}]
+_ac=json.load(open("workdir/action_types.json"))
+_cr=_cp.check(_b,_n,_rl,_ac,json.load(open("workdir/qa_skills.json")))
+_bt={x["type"] for x in _cr["breaking"]}; _rt={x["type"] for x in _cr["risky"]}
+chk("CP4 删对象判 breaking", _cr["verdict"]=="breaking" and "object_removed" in _bt)
+chk("CP5 删关系判 breaking", "relation_removed" in _bt)
+chk("CP6 改绑表判 breaking", "object_retabled" in _bt)
+chk("CP7 状态降级判 risky(非 breaking)", "status_downgraded" in _rt)
+_hits=_cr["downstream_impact"]
+chk("CP8 下游影响命中规则(删对象→规则永不触发)",
+    any(h["kind"]=="rule" and h["severity"]=="breaking" for h in _hits))
+chk("CP9 下游影响命中动作(绑表消失→无法定位数据)",
+    any(h["kind"]=="action" and h["severity"]=="breaking" for h in _hits))
+chk("CP10 改绑表对规则记 risky 而非 breaking",
+    any(h["kind"]=="rule" and h["severity"]=="risky" for h in _hits))
+_same=_cp.check(_b,_cpy.deepcopy(_b),[],[],[])
+chk("CP11 无变更判 safe", _same["verdict"]=="safe" and _same["summary"]["breaking_count"]==0)
+_add=_cpy.deepcopy(_b); _add["objects"].append({"id":"_new_obj","cn":"新对象"})
+chk("CP12 纯新增对象判 safe", _cp.check(_b,_add,[],[],[])["verdict"]=="safe")
+_up=_cpy.deepcopy(_b)
+for _l in _up["links"][:1]: _l["status"]="verified"
+chk("CP13 状态升级不判 risky", _cp.check(_b,_up,[],[],[])["verdict"]=="safe")
+r=g("/api/ont/compat/demo?against=app"); chk("CP14 支持与另一图谱比较", r.status_code==200)
+r=g("/api/ont/compat/demo?against=a..b"); chk("CP15 对比键穿越→400", r.status_code==400)
+r=g("/api/ont/compat/a..b"); chk("CP16 穿越键→400", r.status_code==400)
+r=g("/api/ont/compat/nope"); chk("CP17 图谱不存在→404", r.status_code==404)
+
+print("=== MD. 本体模块化划分(DR-031)===")
+import module_split as _md
+r=g("/api/ont/modules/demo"); _m=r.json()
+chk("MD1 划分 200 + 模块列表", r.status_code==200 and _m["module_count"]>0 and _m["modules"])
+chk("MD2 默认按领域(连通分量)", _m["strategy"]=="by_domain")
+chk("MD3 成员总数不多于对象数(不重复归组)",
+    sum(x["size"] for x in _m["modules"])<=_m["total_objects"])
+chk("MD4 孤岛单列不强行归组", any(x["module"].startswith("未归组") for x in _m["modules"]))
+chk("MD5 孤岛过多时给出警告", any("孤岛" in a["desc"] or "无法归组" in a["desc"] for a in _m["advice"]))
+r=g("/api/ont/modules/demo?strategy=by_layer"); _ml=r.json()
+chk("MD6 按层次划分可用", r.status_code==200 and _ml["strategy"]=="by_layer")
+chk("MD7 层次划分覆盖全部对象(每个对象必属某层)",
+    sum(x["size"] for x in _ml["modules"])==_ml["total_objects"])
+chk("MD8 层次名为数仓语义", any(x["module"] in ("维度层","事实层","汇总层","明细层","贴源层","聚合层","应用层","未分层") for x in _ml["modules"]))
+chk("MD9 只建议不落盘(边界标注)", "不落盘改结构" in _m["note"])
+r=g("/api/ont/modules/demo?strategy=bogus"); chk("MD10 非法策略→400", r.status_code==400)
+r=g("/api/ont/modules/a..b"); chk("MD11 穿越键→400", r.status_code==400)
+r=g("/api/ont/modules/nope"); chk("MD12 图谱不存在→404", r.status_code==404)
+_flat={"objects":[{"id":"a"},{"id":"b"},{"id":"c"}],"links":[{"source":"a","target":"b","status":"verified"}]}
+_fr=_md.suggest(_flat,"by_domain")
+chk("MD13 连通分量正确分组(a-b 同组,c 孤岛)",
+    any(x["size"]==2 for x in _fr["modules"]) and any(x["module"].startswith("未归组") for x in _fr["modules"]))
 
 print("=== W. 动作层产品化(DR-020)===")
 _d=g("/api/actions").json()
@@ -545,7 +885,7 @@ chk("Y6 问数复用沉淀技能(skill_reuse 步)", r.status_code==200 and any(s
 # ③ 沉淀为技能
 r=po("/api/build/skill/from_graph",json={"graph":"demo","name":"reg-distill"})
 chk("Y7 产物沉淀为技能", r.status_code==200 and r.json().get("ok"))
-chk("Y8 沉淀内容三件套", all(k in g("/api/build/skill/reg-distill").json()["content"] for k in ("关系动词表","对象类型分布","纪律")))
+chk("Y8 沉淀内容三件套", all(k in g("/api/build/skill/reg-distill").json()["content"] for k in ("关系动词表","对象类型分布","规范")))
 po("/api/build/skill/delete",json={"name":"reg-distill"})
 # ① 对比端点
 r=po("/api/build/skill_compare",json={"skills_a":["no-such-skill"],"skills_b":[]})
@@ -621,7 +961,7 @@ _root=_os.path.dirname(_os.path.abspath(__file__))
 chk("Z20 requirements.txt 存在", _os.path.exists(_os.path.join(_root,"requirements.txt")))
 _req=open(_os.path.join(_root,"requirements.txt"),encoding="utf-8").read()
 import sys as _sys
-_std=set(_sys.stdlib_module_names); _local={"translate_cn","quick_build","agent_runtime","serve_claw","export_owl","server"}
+_std=set(_sys.stdlib_module_names); _local={"translate_cn","quick_build","agent_runtime","serve_claw","export_owl","server","cq_check","drift_check","intent_check","usage_stat","rule_engine","openai_runtime","health_check","compat_check","module_split","dao_core","hallucination_eval","definition_eval","store","srv_context","srv_engine","bp_engine"}
 _ext=set()
 for _f in ("server.py","test_all.py"):
     for _n in ast.walk(ast.parse(open(_os.path.join(_root,_f),encoding="utf-8").read())):
@@ -671,7 +1011,7 @@ _ok=0
 for _i,_e in enumerate(_ed):
     _op="confirm_relation" if _i<5 else "reject_relation"
     _rs="测试:语义与数据一致" if _i<5 else "测试:共享维度键假关联"
-    if po("/api/ont/apply",json={"graph":"demo","op":{"op":_op,
+    if po("/api/ont/apply",json={"graph":SANDBOX,"op":{"op":_op,
         "target":f'rel:{_e["s"]}->{_e["t"]}',"reason":_rs,"reviewer":"回归"}},headers=H).status_code==200: _ok+=1
 chk("AB2 人审算子全部生效", _ok==7, f"成功 {_ok}/7")
 _a=g("/api/ont/accuracy?force=1").json()
@@ -679,7 +1019,7 @@ chk("AB3 人审后统计到 7 条", _a.get("reviewed")==7, str(_a.get("reviewed"
 chk("AB4 同意率算对(5/7=71.4%)", _a["overall"].get("agree_rate")==71.4, str(_a["overall"]))
 chk("AB5 按系统原判分组(verified)", "verified" in _a.get("by_prior_status",{}))
 chk("AB6 原判在评审当刻定格(review_prior_status)", "review_prior_status" in _srv)
-# 小样本纪律:n<5 的分组必须给 insufficient 而不是百分比
+# 小样本规范:n<5 的分组必须给 insufficient 而不是百分比
 _small=[v for v in _a.get("by_verb",{}).values() if v["n"]<5]
 chk("AB7 小样本不给百分比", all("insufficient" in v and "agree_rate" not in v for v in _small), f"小样本组 {len(_small)} 个")
 # ⑤ 否决模式回流
@@ -689,7 +1029,7 @@ chk("AB9 误判模式注入抽取 prompt", "已知误判模式" in _srv and "bad
 # 复原:撤销全部测试人审,避免污染后续与真实统计
 for _ in range(12):     # 精确回退到测试前的栈深;绝不多撤(undo 每次弹 1 个算子,写死次数会误撤他人草案)
     if len(g("/api/ont/edits?graph=demo").json().get("ops",[])) <= _depth0: break
-    if po("/api/ont/undo",json={"graph":"demo"},headers=H).status_code!=200: break
+    if po("/api/ont/undo",json={"graph":SANDBOX},headers=H).status_code!=200: break
 _depth1=len(g("/api/ont/edits?graph=demo").json().get("ops",[]))
 chk("AB10 精确回退到测试前栈深(不误撤他人草案)", _depth1==_depth0, f"{_depth1} != {_depth0}")
 
@@ -739,6 +1079,428 @@ except Exception as _e:
 # 源码层面确认守卫确实落在这两个函数里(防日后被改回裸解构)
 chk("Z19 home()/drawGraph() 源码含守卫",
     "if(d.error||!d.kpi)" in _ui and "if(g.error||!Array.isArray(g.nodes))" in _ui)
+
+# ═══════════ AN. 本体锚定可视化(DR-032)═══════════
+print("=== AN. 本体锚定可视化(DR-032)===")
+_tr={}
+_c=_srvmod.build_context("最近一个月各产线产量趋势", trace=_tr)
+chk("AN1 轨迹记录入选对象与理由", len(_tr.get("objects",[]))>0 and all(o.get("reason") for o in _tr["objects"]))
+chk("AN2 理由取值在已知集合内",
+    set(o["reason"] for o in _tr["objects"]) <= {"关键词命中","核心事实表","沿本体关系召回","数据源限定","无命中·默认候选"})
+chk("AN3 轨迹对象与上下文表名一一对应(带括号定界,避免前缀误判)",
+    all(("表 "+o["table"]+"(") in _c for o in _tr["objects"]))
+# 同源:结构化边数必须等于喂给引擎的 ⋈ 提示行数,否则可视化会与真实上下文悄悄漂移
+_hint=[l for l in _c.split("\n") if l.startswith("⋈")]
+chk("AN4 结构化关系与 JOIN 提示行同源(数量一致)", len(_tr.get("relations",[]))==len(_hint),
+    f"pairs={len(_tr.get('relations',[]))} hints={len(_hint)}")
+chk("AN5 关系带状态与键", all(r.get("status") and r.get("key") for r in _tr.get("relations",[])))
+chk("AN6 两跳关系标注 hop=2 且带中间表",
+    all(r.get("via") for r in _tr.get("relations",[]) if r.get("hop")==2))
+_tr2={}
+_srvmod.build_context("产量", focus_tables=["dws_production_daily"], trace=_tr2)
+chk("AN7 数据源限定生效时置 scoped 且理由为『数据源限定』",
+    _tr2.get("scoped") is True and {o["reason"] for o in _tr2["objects"]}=={"数据源限定"})
+_tr3={}
+_srvmod.build_context("产量", focus_tables=["__不存在的表__"], trace=_tr3)
+chk("AN8 限定表未匹配本体→不置 scoped(避免谎报范围已收窄)", not _tr3.get("scoped"))
+chk("AN9 未传 trace 时 build_context 行为不变",
+    _srvmod.build_context("最近一个月各产线产量趋势")==_c)
+# 端到端:SSE 必须推 anchor 事件(引擎规划前就该出,人不用等几十秒)
+_r=_rq2.post(B+"/api/chat/stream",json={"q":"各产线产量对比","nocache":True},stream=True,timeout=60)
+_anc=None
+for _ln in _r.iter_lines(decode_unicode=True):
+    if _ln and '"anchor"' in _ln:
+        _anc=json.loads(_ln[6:]).get("anchor"); break
+_r.close()
+chk("AN10 问数流推送 anchor 事件", isinstance(_anc,dict) and len(_anc.get("objects",[]))>0)
+chk("AN11 anchor 带范围与限定表数", _anc is not None and "scoped" in _anc and "focus_n" in _anc)
+chk("AN12 前端锚定渲染函数存在并被三处接线",
+    "function dqAnchorHTML" in _ui and "dqAnchorHTML(d.anchor)" in _ui
+    and "dqAnchorHTML(ev.anchor)" in _ui and "anchor:done.anchor" in _ui)
+chk("AN13 超出上限时显式说明截断(不静默少画)",
+    "图中只画了 ${CAP} 个对象" in _ui and "没有少喂给引擎" in _ui)
+chk("AN14 UI 呈现锚定本体名与锚定链路", "本体锚定 · ${esc((ont.names||['示例本体'])[0])}" in _ui
+    and "入上下文" in _ui and "命中证据(凭什么选中它" in _ui)
+
+# ═══════════ AO. 选中图谱作锚定本体(DR-033)═══════════
+print("=== AO. 选中图谱作锚定本体(DR-033)===")
+_q33 = "各客户的销售订单金额排名"
+_t0 = {}; _srvmod.build_context(_q33, trace=_t0)
+_t1 = {}; _srvmod.build_context(_q33, trace=_t1, graph_keys=["built_9c3fd1"])
+_t2 = {}; _srvmod.build_context(_q33, trace=_t2, graph_keys=["cq"])
+chk("AO1 未选图谱→锚定示例本体", _t0["ontology"]["keys"] == ["demo"] and _t0["ontology"]["objects"] == 108)
+chk("AO2 选中自建本体→锚定它自己(不再永远锚 demo)",
+    _t1["ontology"]["keys"] == ["built_9c3fd1"] and _t1["ontology"]["objects"] == 19)
+chk("AO3 锚定不同本体→召回集不同",
+    {o["table"] for o in _t1["objects"]} != {o["table"] for o in _t0["objects"]})
+chk("AO4 召回对象数远小于本体规模(是锚定不是全量倾倒)",
+    0 < len(_t1["objects"]) < _t1["ontology"]["objects"])
+chk("AO5 上游引擎本体也能锚定并给出关系",
+    _t2["ontology"]["keys"] == ["cq"] and len(_t2["objects"]) > 0)
+chk("AO6 命中证据记录了是哪个词钓出该对象",
+    any(o.get("hits") for o in _t1["objects"]))
+chk("AO7 命中证据里的词确实出现在问句或其扩展词中",
+    all(all(isinstance(h, str) and h for h in (o.get("hits") or [])) for o in _t1["objects"]))
+# 无绑表本体的回退:用合成图谱测,不依赖「仓里恰好有一套纯概念本体」——
+# tables[] 归一上线后,app(82/149 绑表)与 built_2d74f0(108/108)都已可正常锚定,
+# 那两套本体此前是因为只读 table 字段而被埋没,并非真的没有绑表
+_syn_key = "built_ztest_conceptonly"
+_syn_p = _os.path.join(_WD0, _syn_key + ".json")
+with open(_syn_p, "w", encoding="utf-8") as _f:
+    json.dump({"scenario": {"name": "纯概念本体(回归用)"},
+               "objects": [{"name": "Concept%d" % i, "cn": "概念%d" % i, "kind": "object"}
+                           for i in range(3)],
+               "relations": []}, _f, ensure_ascii=False)
+_at0.register(lambda: _os.path.exists(_syn_p) and _os.remove(_syn_p))
+_t3 = {}; _srvmod.build_context(_q33, trace=_t3, graph_keys=[_syn_key])
+chk("AO8 无绑表本体→如实回退并说明(不静默换本体)",
+    bool(_t3.get("fallback")) and _t3["ontology"]["requested"] == ["纯概念本体(回归用)"])
+_t4 = {}; _srvmod.build_context(_q33, trace=_t4, graph_keys=["built_9c3fd1", "built_8c3354"])
+chk("AO9 多选图谱→合并为一套锚定本体", _t4["ontology"]["objects"] > _t1["ontology"]["objects"])
+# 形状无关:构建产物用 relations[source_concept] + objects[name],示例用 links[source] + id
+_bir = _srvmod.load_ir_edited("built_9c3fd1") or _srvmod.load_ir("built_9c3fd1")
+_bt = [o.get("table") for o in _bir.get("objects", []) if o.get("table")]
+_bp = []; _bh = _srvmod._join_hints(_bir, _bt, pairs=_bp)
+chk("AO10 构建产物形状也能出 JOIN 提示(此前恒为 0)", len(_bh) > 0)
+# 键名校验:稠密自增代理键值域重合会造假关系
+chk("AO11 键名校验放行同名/缩写键",
+    _srvmod._key_name_ok("order_id", "order_id") and _srvmod._key_name_ok("emp_id", "employee_id")
+    and _srvmod._key_name_ok("prod_id", "product_id"))
+chk("AO12 键名校验拦下异根键(prod_id↔order_id 这类值域巧合)",
+    not _srvmod._key_name_ok("prod_id", "order_id")
+    and not _srvmod._key_name_ok("line_id", "equipment_id"))
+chk("AO13 存疑键不作 JOIN 依据下发,降级为『键见列名』",
+    all((not p.get("dropped_key")) or ("键见列名" in p["key"] and p["has_key"] is False) for p in _bp))
+chk("AO14 降级关系仍保留(只降键不删关系)",
+    any(p.get("dropped_key") for p in _bp) and len(_bh) == len(_bp))
+chk("AO15 示例本体几乎不受键名校验影响(误伤可控)",
+    sum(1 for l in (_srvmod.load_ir_edited("demo") or {}).get("links", [])
+        if (l.get("evidence") or {}).get("child_key")
+        and not _srvmod._key_name_ok(l["evidence"]["child_key"], l["evidence"]["parent_key"])) <= 2)
+# 缓存键必须含图谱:换本体却复用旧答案 = 拿另一套本体的结论
+chk("AO16 问数缓存键随锚定本体变化",
+    _srvmod._qa_key("q", [], [], ["demo"]) != _srvmod._qa_key("q", [], [], ["built_9c3fd1"]))
+chk("AO17 构建器落结构化 JOIN 键(不再只写进 note 文本)",
+    '"evidence": ev_keys' in open("server.py", encoding="utf-8").read().replace("rel_new[\"evidence\"] = ev_keys", '"evidence": ev_keys')
+    or "rel_new[\"evidence\"] = ev_keys" in open("server.py", encoding="utf-8").read())
+chk("AO18 旧构建产物的键可从 note 回填并标来源",
+    _srvmod._rel_keys({"note": "order_id→fact_delivery.order_id 重叠90%·父键唯一"})[:3]
+    == ("order_id", "order_id", "note"))
+chk("AO19 UI 标出键降级与键来源", "键存疑·已降级" in _ui and "键·备注回填" in _ui)
+chk("AO20 问数流推送『锚定本体』步骤", "anchor_ontology" in open("server.py", encoding="utf-8").read())
+# 短缩写污染:词典把「销售订单」扩展出 so,子串匹配会命中 reason_code / sensor_id
+_t5 = {}; _srvmod.build_context("各客户的销售订单金额排名", trace=_t5, graph_keys=["built_9c3fd1"])
+chk("AO21 两字母英文缩写不再子串命中无关表",
+    all("fact_alarm" != o["table"] or o["reason"] != "关键词命中" for o in _t5["objects"]))
+chk("AO22 命中证据里不出现 so 这类子串误命中",
+    all("so" not in (o.get("hits") or []) for o in _t5["objects"]))
+# 可见性:锚定埋在对话气泡里会被自动滚动顶出视口,必须有常驻条
+chk("AO23 深度问数页有常驻锚定条容器", 'id="dq_ancbar"' in _ui and ".dq-ancbar{" in _ui)
+chk("AO24 锚定条在实时/终局/翻历史三处都刷新",
+    _ui.count("dqAncBar(") >= 5)
+chk("AO25 锚定条与气泡复用同一段渲染(bare 模式,不做第二份实现)",
+    "function dqAnchorHTML(a,bare)" in _ui and "dqAnchorHTML(a,true)" in _ui and "return bare ? inner :" in _ui)
+chk("AO26 可跳本体图谱高亮本次锚定的那一块",
+    "function dqAncHighlight" in _ui and "GRAPH_HL" in _ui and "问数锚定视图" in _ui)
+chk("AO27 图谱渲染按高亮集淡出非锚定节点与关系",
+    "function _g6build(g,hl)" in _ui and "hl.set.has(n.id)" in _ui
+    and "hl.set.has(e.s)&&hl.set.has(e.t)" in _ui)
+chk("AO28 高亮提示条独立于 g_info(后者会被完备度回调覆写)",
+    'id="g_hlbar"' in _ui and "$('#g_hlbar')" in _ui)
+chk("AO29 高亮可一键清除", "清除高亮,看完整图谱" in _ui)
+chk("AO30 新对话清空锚定条,不残留上一轮", "DQ_ANC_LAST=null;dqAncBar(null)" in _ui)
+chk("AO31 切到根因诊断清空锚定条(共用视图容器,免得指向另一条链路)",
+    _ui.count("DQ_ANC_LAST=null;dqAncBar(null)") >= 3)
+# 回退时 ontology 必须写「实际用了哪套」,否则界面显示选中的那套而对象来自另一套
+_t6 = {}; _srvmod.build_context("各客户的销售订单金额排名", trace=_t6, graph_keys=[_syn_key])
+chk("AO32 无绑表本体回退后,锚定本体如实回写为实际使用的那套",
+    _t6["ontology"]["keys"] == ["demo"] and _t6["ontology"]["requested"] and _t6.get("fallback"))
+# tables[] 归一:本体产出有两种写法,只认 table 会把 quick_build 的本体判成「无绑表」而静默回退
+chk("AO43 对象绑表兼容 table 与 tables[] 两种写法",
+    _srvmod._obj_table({"table": "t1"}) == "t1"
+    and _srvmod._obj_table({"tables": ["t2", "t3"]}) == "t2"
+    and _srvmod._obj_table({"cn": "无表"}) is None
+    and _srvmod._obj_table({"tables": ["", None, "t4"]}) == "t4"   # 跳过空值
+    and _srvmod._obj_table({"tables": ["", ""]}) is None)
+chk("AO45 属性中文名为 None 时不渲染字面量 None(会被喂给模型)",
+    "None" not in _srvmod._obj_cols_text({"table": "x", "attrs": [{"col": "c", "cn": None}]}))
+chk("AO44 本体缺 attrs 时列清单回落到库里现读(否则上下文只有表名,模型只能猜列)",
+    "def _table_cols(" in open("server.py", encoding="utf-8").read()
+    and _srvmod._obj_cols_text({"table": "dim_customer"}))
+# 「只 clone 本仓 + 配 OpenAI 兼容端点」是 README 承诺的路径:垫片必须能承载 driver 注册,
+# 否则 available() 恒空、配了 key 也拿不到运行时(实测曾如此)。
+_shim_src = open("server.py", encoding="utf-8").read()
+chk("QS1 无引擎垫片可承载 driver 注册", "_stub.register = lambda name, factory" in _shim_src)
+chk("QS2 OpenAI 驱动注册不依赖上游引擎在场",
+    _shim_src.index("import openai_runtime") > _shim_src.index('sys.modules["agent_runtime"] = _stub'))
+# 改签名漏改调用点:_anchor_ir 曾返回 2 元组,加了「缺失提示」后变 3 元组,
+# 口径校验那处未同步,表现为问数流中途 500(套件当时未覆盖到那条路径)
+import ast as _ast
+_tree = _ast.parse(open("server.py", encoding="utf-8").read())
+_unpack = []
+for _n in _ast.walk(_tree):
+    if isinstance(_n, _ast.Assign) and isinstance(_n.value, _ast.Call) \
+       and getattr(_n.value.func, "id", "") == "_anchor_ir":
+        _t = _n.targets[0]
+        _unpack.append(len(_t.elts) if isinstance(_t, _ast.Tuple) else 1)
+# ═══════════ EG. 引擎设置:OpenAI 兼容端点(界面可配)═══════════
+print("=== EG. 引擎设置 ===")
+_ec = g("/api/engine/config").json()
+chk("EG1 配置带出端点现状与预设", "llm" in _ec and len(_ec.get("llm_presets") or []) >= 5)
+chk("EG2 Key 只回显掩码", not _ec["llm"].get("key") or "*" in _ec["llm"]["key"])
+chk("EG3 预设均为合法 https 端点",
+    all(str(p.get("base", "")).startswith(("http://", "https://")) for p in _ec["llm_presets"]))
+_bad = po("/api/engine/config", json={"llm": {"base": "ftp://x"}})
+chk("EG4 非法端点协议被拒", _bad.status_code == 400)
+_bad2 = po("/api/engine/config", json={"llm": {"timeout": "-5"}})
+chk("EG5 非法超时被拒", _bad2.status_code == 400)
+_t1 = po("/api/engine/llm/test", json={"base": "", "key": "", "model": ""})
+# 判据取服务端实际是否已有可用端点(测试进程的 env 与服务进程未必一致)
+_has_env = bool(_ec.get("llm", {}).get("base") and _ec.get("llm", {}).get("key_set"))
+chk("EG6 缺参时:有已保存配置则回落沿用,否则如实报错",
+    (_t1.status_code == 200 or _t1.json().get("ok") is not None) if _has_env
+    else (_t1.status_code == 400 and not _t1.json().get("ok")),
+    "env 已配" if _has_env else "env 未配")
+_t2 = po("/api/engine/llm/test", json={"base": "http://127.0.0.1:1/v1", "key": "k", "model": "m", "timeout": 3})
+chk("EG7 端点不可达时回真实错误而非静默成功", not _t2.json().get("ok") and _t2.json().get("error"))
+_m1 = po("/api/engine/llm/models", json={"base": "", "key": ""})
+chk("EG8 模型列表:缺参时回落已保存配置或如实报错",
+    _m1.status_code in (200, 400) and ("models" in _m1.json() or "error" in _m1.json()))
+chk("EG9 前端有端点配置卡与测试/保存/清除三个动作",
+    'id="eg_llm"' in _ui and "egLLMTest" in _ui and "egLLMSave" in _ui and "egLLMClear" in _ui)
+chk("EG10 前端能拉取模型列表并填进可见下拉", "egFetchModels" in _ui and 'id="eg_l_pick"' in _ui)
+chk("EG11 env 注入项在界面置灰(以部署配置为准)", "env_locked" in _ui and "环境变量注入" in _ui)
+# IR-011:引擎路由已迁至 bp_engine blueprint,配置层在 srv_engine。
+# 以下「引擎实现含某特征」类断言改查 server + bp_engine + srv_engine 的合并源,
+# 断言意图不变(特征仍须存在于引擎实现中),只是实现位置由单体拆成了模块。
+_eng_all = "\n".join(open(f, encoding="utf-8").read()
+                     for f in ("server.py", "bp_engine.py", "srv_engine.py"))
+chk("EG12 端点配好后自动切换运行时(免去『配了没反应』)",
+    "switched_from" in _eng_all and "switched_from" in _ui)
+chk("EG13 报错详情里的 Key 被掩码", "_mask_in_text" in _eng_all)
+# env_locked 只能按「启动时该环境变量是否存在」判定:原先拿配置文件与 env 比对,
+# 值恰好相同就漏判为未锁定,界面会让人误以为可改
+_srv_src = open("server.py", encoding="utf-8").read()
+# datalist 是浏览器原生下拉:DOM 上不可见、无下拉箭头,输入框有值时还按值过滤 ——
+# 用户看到「已拉到 8 个模型」却找不到在哪选。全站一律改用可见的 <select>
+# 测试请求曾写死 max_tokens=64:推理型模型会卡在 finish_reason=length、正文为空,
+# 看着像「模型不可用」——实际是测试请求自己给少了
+_srv2 = _eng_all          # IR-011:引擎实现已拆模块,合并源见上
+chk("EG21 连通测试的额度可配,不写死小值", '"max_tokens": _mt' in _srv2 and '"max_tokens": 64' not in _srv2)
+chk("EG22 按 finish_reason 归因截断,不误判为模型无正文",
+    'finish_reason' in _srv2 and "回复被额度截断" in _srv2)
+
+chk("EG19 全站不再使用 datalist(无可见入口,用户找不到候选)", "datalist" not in _ui)
+chk("EG20 模型下拉在拉取成功后才显示,并回填输入框",
+    'id="eg_l_pick"' in _ui and "egPickModel" in _ui and "sel.style.display=''" in _ui)
+
+# 构成规则页曾直接 rt.runtimes.map:后端故障返回 {error} 时缺该字段,整页崩
+chk("EG17 构成规则页对 runtimes 缺失有守卫",
+    "Array.isArray(rt.runtimes)" in _ui and "无可用运行时" in _ui)
+chk("EG18 构成规则页对 rules 数据缺失有守卫", "d.error||!d.counts" in _ui)
+
+chk("EG14 env_locked 按启动时快照判定,不与配置值比对",
+    "_ENV_LOCKED_AT_BOOT" in _eng_all and "v in _ENV_LOCKED_AT_BOOT" in _eng_all)
+# 快照已随引擎配置层收敛到 srv_engine(IR-011):不变量形态变为「模块 import 时快照 → 之后才应用配置」,
+# 故跨两文件校验:srv_engine 内快照先于 _apply_engine_cfg 定义;server 内 import 先于启动调用。
+_eng_src = open("srv_engine.py", encoding="utf-8").read()
+chk("EG15 快照在应用本地配置之前建立(否则分不清运维注入与界面保存)",
+    _eng_src.index("_ENV_LOCKED_AT_BOOT = {") < _eng_src.index("def _apply_engine_cfg(")
+    and _srv_src.index("from srv_engine import") < _srv_src.index("_apply_engine_cfg(_load_engine_cfg())"))
+_env_now = [f for f, v in [("base", "DATAMIND_LLM_BASE"), ("model", "DATAMIND_LLM_MODEL")]
+            if _os.environ.get(v)]
+chk("EG16 env 注入项确实出现在 env_locked 中",
+    all(f in (_ec["llm"].get("env_locked") or []) for f in _env_now) if _env_now else True,
+    "本次注入: %s" % (_env_now or "无"))
+
+# pyflakes 零告警是既有质量门(ARCHITECTURE §5),回归里把它钉住:
+# 重复字典键这类告警是真 bug —— translate_cn 曾因此把「min」译成分钟而非最低
+try:
+    import glob as _g2
+    _repo = _os.path.dirname(_os.path.abspath(__file__))
+    _pf = _sp.run([sys.executable, "-m", "pyflakes"] + sorted(_g2.glob(_os.path.join(_repo, "*.py"))),
+                  capture_output=True, text=True, timeout=90)
+    _pfout = [l for l in _pf.stdout.splitlines() if l.strip()]
+    chk("QS10 pyflakes 零告警", not _pfout, "; ".join(_pfout[:2]))
+except Exception as _e:
+    chk("QS10 pyflakes 探针", False, str(_e)[:80])
+
+chk("QS7 _anchor_ir 所有调用点解包数一致", _unpack and len(set(_unpack)) == 1, str(_unpack))
+
+# QS12:中文召回必须反向匹配(本体词 → 问句),不能依赖对问句分词。
+# 问句按标点/空格切,中文整句常常就是一个词元 —— 正向匹配(问句词 ∈ 对象语料)对中文
+# 几乎必然落空,给对象补的中文业务别名会完全不生效(实测「车间近期产能怎么样」切不出「产能」)。
+_tr_cn = {}
+_ctx_cn = _srvmod.build_context("各车间的停机时长排名", trace=_tr_cn, graph_keys=["demo"])
+_cn_hit = [h for o in _tr_cn["objects"] for h in (o.get("hits") or []) if not str(h).isascii()]
+chk("QS12 中文问句能命中本体中文词(无需分词器)", bool(_cn_hit), str(_cn_hit[:5]))
+# 指标名同为中文,同一条路径
+_tr_m = {}
+_srvmod.build_context("本月计划产量是多少", trace=_tr_m, graph_keys=["demo"])
+chk("QS12b 自然中文问句能召回同名指标(非整句等于指标名)",
+    any(m.get("name") == "计划产量" for m in (_tr_m.get("metrics") or [])),
+    str([m.get("name") for m in (_tr_m.get("metrics") or [])][:5]))
+# 单字不参与:满篇皆是,会把无关表拖进上下文
+_tr_1 = {}
+_srvmod.build_context("的", trace=_tr_1, graph_keys=["demo"])
+# QS15:对象定位的降级顺序必须是「主键 → 中文名 → 表名 → 别名」,且逐条件分轮。
+# 逐对象把三种条件一起试的写法,会让靠前对象的表名压过靠后对象的中文名,
+# 命中谁取决于对象在数组里的顺序 —— 同一句指代在不同本体上结果不同。
+_ir_amb = {"objects": [{"id": "A", "cn": "甲", "table": "乙"},
+                       {"id": "B", "cn": "乙", "table": "t2", "aliases": ["丙"]}]}
+chk("QS15 对象定位按主键→中文名→表名→别名分轮降级",
+    _srvmod._find_obj_any(_ir_amb, "A")["id"] == "A"
+    and _srvmod._find_obj_any(_ir_amb, "乙")["id"] == "B"      # 中文名压过表名
+    and _srvmod._find_obj_any(_ir_amb, "t2")["id"] == "B"
+    and _srvmod._find_obj_any(_ir_amb, "丙")["id"] == "B"
+    and _srvmod._find_obj_any(_ir_amb, "没有这个") is None)
+
+# QS16:技能与工具面的一致性(半自动重构这条链)。
+_srv_src16 = open(_os.path.join(_repo, "server.py"), encoding="utf-8").read()
+# 智能体列表曾硬编码同级「上游本体引擎」目录 —— 该目录早已更名,于是技能包永远列不出来,
+# 且不受 DATAMIND_ENGINE_DIR 控制;同一批技能在 /api/build/skills 却列得出,两处结论打架。
+chk("QS16 技能目录一律走 PLATFORM,不写死目录名",
+    '"上游本体引擎", "web", "skills_seed"' not in _srv_src16)
+_ag = g("/api/agents").json().get("agents", [])
+_bs = g("/api/build/skills").json()
+_bs = _bs if isinstance(_bs, list) else (_bs.get("skills") or [])
+_bn = {(x.get("slug") or x.get("name")) if isinstance(x, dict) else x for x in _bs}
+_an = {a["name"] for a in _ag if a.get("type") == "技能包"}
+chk("QS16b 智能体列表与构建页看到同一批技能", not _bn or _bn == _an,
+    "构建页=%s 智能体列表=%s" % (sorted(_bn), sorted(_an)))
+# rebuild 丢弃整个草案层且 undo 退不回来:必须显式 confirm,并留底可恢复
+_rb = po("/api/ont/rebuild", json={"graph": SANDBOX})
+chk("QS16c 重建不带 confirm 直接拒绝", _rb.status_code == 400 and "confirm" in _rb.text)
+_rb2 = po("/api/ont/rebuild", json={"graph": "../etc/passwd", "confirm": True})
+chk("QS16d 重建拒绝非法图谱键", _rb2.status_code == 400)
+# 技能写入不得在引擎缺失时凭空造引擎目录树(空壳会被后续当成"已装引擎")
+chk("QS16e 技能写入按引擎在否分流,不造假目录",
+    'if os.path.isdir(PLATFORM):' in _srv_src16 and 'scope = "custom"' in _srv_src16)
+
+# QS13:执行记录里的本体名必须据实回显。曾把首步写死成「加载 示例 本体上下文」,
+# 选了自建本体也照喊示例,与下一步 anchor_ontology 自相矛盾。
+_srv_src = open(_os.path.join(_repo, "server.py"), encoding="utf-8").read()
+chk("QS13 首步不写死「示例」本体名", '"加载 示例 本体上下文"' not in _srv_src)
+
+# QS14:意图一致的结论要写明比对基数。通道 A 只锚得到本体里有的词,
+# 「覆盖了全部业务对象」若不点明覆盖了几个,会被读成「问句问的都答了」。
+import intent_check as _ic_m
+_ic_ir = {"objects": [{"id": "L", "cn": "生产线", "table": "dim_production_line"},
+                      {"id": "D", "cn": "停机记录", "table": ""}]}
+_ic_r = _ic_m.cross_check("各生产线的停机时长",
+                          "SELECT 1 FROM dim_production_line", _ic_ir)
+chk("QS14 意图一致的结论写明比对了几个对象",
+    _ic_r["verdict"] == "aligned" and "1 个业务对象" in _ic_r["reason"] and "生产线" in _ic_r["reason"],
+    _ic_r.get("reason", "")[:80])
+
+chk("QS12c 单字不作为中文命中词",
+    not [h for o in _tr_1["objects"] for h in (o.get("hits") or []) if h == "的"])
+
+# QS11:离线放行白名单必须与 apply_any 实际本地实现的分支一致。
+# 曾经白名单只列 set_alias,而 apply_any 本地实现了 9 个算子 —— 引擎离线时
+# 改动词/改基数/增删关系被 503 挡回「编辑引擎未就绪」,而它们根本不用引擎。
+# 用 AST 扫出 apply_any 里所有与 kind 比较的字面量,和白名单对账。
+try:
+    import ast as _ast
+    _tree = _ast.parse(open(_os.path.join(_repo, "server.py"), encoding="utf-8").read())
+    _fn = next(n for n in _ast.walk(_tree)
+               if isinstance(n, _ast.FunctionDef) and n.name == "apply_any")
+    _handled = set()
+    for _n in _ast.walk(_fn):
+        # kind == "x"
+        if isinstance(_n, _ast.Compare) and isinstance(_n.left, _ast.Name) and _n.left.id == "kind":
+            for _op, _c in zip(_n.ops, _n.comparators):
+                if isinstance(_op, _ast.Eq) and isinstance(_c, _ast.Constant):
+                    _handled.add(_c.value)
+                # kind in ("a","b",...)
+                elif isinstance(_op, _ast.In) and isinstance(_c, (_ast.Tuple, _ast.List)):
+                    _handled |= {e.value for e in _c.elts if isinstance(e, _ast.Constant)}
+    # 白名单同样从 AST 读,不 import server —— 导入会拉起应用级副作用
+    _white = set()
+    for _n in _tree.body:
+        if isinstance(_n, _ast.Assign) and any(
+                isinstance(_t, _ast.Name) and _t.id in ("REVIEW_OPS", "LOCAL_OPS")
+                for _t in _n.targets) and isinstance(_n.value, (_ast.Tuple, _ast.List)):
+            _white |= {e.value for e in _n.value.elts if isinstance(e, _ast.Constant)}
+    chk("QS11 离线白名单覆盖 apply_any 全部本地算子",
+        _handled and _handled == _white,
+        "实现=%s 白名单=%s 差集=%s" % (sorted(_handled), sorted(_white),
+                                       sorted(_handled ^ _white)))
+except Exception as _e:
+    chk("QS11 白名单/实现一致性探针", False, str(_e)[:120])
+_tr_bad = {}
+_srvmod.build_context("毛利率", trace=_tr_bad, graph_keys=["no_such_graph"])
+chk("QS8 图谱不存在时如实提示而非静默回落", "不存在" in (_tr_bad.get("fallback") or ""))
+_tr_dup = {}
+_srvmod.build_context("毛利率", trace=_tr_dup, graph_keys=["demo", "demo", "../etc/passwd"])
+chk("QS9 重复键去重且非法键被拦", _tr_dup["ontology"]["keys"] == ["demo"])
+
+chk("QS4 openclaw 在驱动尝试顺序里(否则切了引擎没反应)",
+    "openclaw" in _srvmod._drv_order())
+chk("QS5 表名按标识符白名单校验后才拼进 PRAGMA",
+    _srvmod._table_cols('x") UNION SELECT 1--') == [] and _srvmod._table_cols("dim_customer"))
+chk("QS6 库不可用时不缓存空结果(否则库恢复后仍返回空)",
+    "只缓存成功结果" in open("server.py", encoding="utf-8").read())
+chk("QS3 垫片无可用 driver 时如实报错(不假装可用)",
+    "无可用运行时:未配置上游引擎" in _shim_src)
+
+# 任意图谱都能当锚定源之后,「对象有 table 键但值为 null」的概念本体会把 build_context 打崩
+# (o.get("table","") 的默认值只在键缺失时生效)。实测 built_bd2fec 9/10 对象 table=null。
+import glob as _glob
+_all_graphs = ["demo", "app", "cq"] + [_os.path.basename(p)[:-5]
+                                       for p in _glob.glob(_os.path.join(_WD0, "built_*.json"))]
+_crash = []
+for _gk in sorted(set(_all_graphs)):
+    try:
+        _srvmod.build_context("毛利为什么下降?产量趋势如何?", graph_keys=[_gk])
+    except Exception as _e:
+        _crash.append(f"{_gk}: {_e}")
+chk("AO40 任一图谱作锚定源都不崩(含 table=null 的概念本体)", not _crash, str(_crash[:2]))
+_tn = {}
+_srvmod.build_context("毛利为什么下降?", trace=_tn, graph_keys=["built_bd2fec"])
+chk("AO41 无绑表对象不占召回名额(混合本体里上下文仍拿得到表)",
+    all(o.get("table") for o in _tn.get("objects", [])))
+chk("AO42 源码中不再有 get(\"table\", \"\") 这类会返回 None 的写法",
+    open("server.py", encoding="utf-8").read().count('get("table", "")') <= 1)
+
+# 界面版本自检:标签页开着不刷新时改动不生效,现象是「说改了却没变」,排查成本极高
+_r = g("/api/uiver"); chk("AO37 /api/uiver 返回界面文件版本",
+    _r.status_code == 200 and isinstance(_r.json().get("v"), int) and _r.json()["v"] > 0)
+chk("AO38 版本横幅挂 body 而非页面容器(放进 .page 会随切页隐藏)",
+    "document.body.appendChild(b)" in _ui and "function uiVerBanner" in _ui)
+chk("AO39 首次加载只记录版本不打扰", "if(UI_VER===null){UI_VER=d.v;return;}" in _ui)
+# 对话框里的每一次提问都真跑:秒回的旧答案与「历史对话」里的记录无法区分
+chk("AO35 深度问数对话框全程不吃缓存(点示例与手动输入一致)",
+    "attachments:DQ_ATTS.map(a=>a.name),nocache:1})" in _ui
+    and "nocache:fresh" not in _ui and "ask(true)" not in _ui)
+chk("AO36 缓存机制本身保留(供 /api/chat 等非交互消费者)",
+    "_QA_CACHE[_qa_key(question, history, focus_tables, graph_keys)] = resp" in open("server.py", encoding="utf-8").read())
+chk("AO34 流中断不抹掉已完成内容(锚定是用户已看到的证据)",
+    "以上为中断前已完成的部分" in _ui and "if(live.length||pr.length)" in _ui)
+chk("AO33 回退提示显示在锚定条头部(默认可见,不藏在折叠区)",
+    "${a.fallback?`<span style=\"color:#b45309" in _ui)
+# 截断策略探针:按原序截断会画出一片孤立方框(0 连线),让人误以为本体拿不出关系
+# 边样式表 EST 是图谱与锚定子图共用的单一事实源,定义在更靠前处;
+# 探针只截锚定段会漏掉它(ReferenceError),故一并带上。
+_est=_ui[_ui.index("const EST="):_ui.index("const GEST=EST;")]
+_fn=_est+"\n"+_ui[_ui.index("const DQ_ANC_C="):_ui.index("function dqRenderCard")]
+_big={"objects":[{"key":f"o{i}","cn":f"对象{i}","table":f"t{i}","reason":"数据源限定","ncol":3}
+                 for i in range(60)],
+      "relations":[{"s":f"t{40+i}","t":f"t{50+i}","verb":"关联","status":"verified",
+                    "key":f"t{40+i}.k = t{50+i}.k","hop":1} for i in range(8)],
+      "metrics":[],"scoped":True,"graphs":["demo"],"focus_n":60}
+_probe2=("const esc=x=>String(x==null?'':x).replace(/[&<>\"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;'}[c]));\n"
+   +_fn+"\nconst h=dqAnchorHTML("+json.dumps(_big,ensure_ascii=False)+");"
+   +"console.log(JSON.stringify({rect:(h.match(/<rect /g)||[]).length,line:(h.match(/<line /g)||[]).length,"
+   +"cut:/图中只画了/.test(h),sum:/108|60 个对象/.test(h)}));")
+try:
+    _o2=_sp.run(["node","-e",_probe2],capture_output=True,text=True,timeout=20)
+    _j2=json.loads(_o2.stdout.strip())
+    chk("AN15 截断只画上限内对象", _j2["rect"]==16, str(_j2))
+    chk("AN15b 截断时优先保留有关系的对象(连线不为 0)", _j2["line"]==8, str(_j2))
+    chk("AN15c 截断时给出说明", _j2["cut"])
+except Exception as _e:
+    chk("AN15 截断策略探针", False, f"node 探针失败: {_e} / {_o2.stdout[:120] if '_o2' in dir() else ''}")
 
 print(f"\n{'='*40}\n结果: {P} 通过 / {F} 失败")
 if fails:

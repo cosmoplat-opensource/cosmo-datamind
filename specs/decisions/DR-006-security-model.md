@@ -6,11 +6,11 @@
 - **关联 / Refs**: `server.py` `_csrf_guard`/`_bad_gkey`/`load_ir`/`_edits_path`/`sparql`/`q`/`sql_is_readonly`/文件服务端点
 
 ## 上下文 / Context
-系统跨域代理平台引擎、执行 SQL/SPARQL、读写文件、跑技能子进程,且面向工业级——须系统性收口攻击面。
+系统跨域代理平台引擎、执行 SQL/SPARQL、读写文件、跑技能子进程,且面向工业级——须系统性收敛攻击面。
 一次针对性审计发现 `forged_` 图谱键可路径穿越读/写任意 `.json`(高危 LFI/写穿越)。
 
 ## 决定 / Decision
-- **SQL 只读**:见 [[DR-001]](`mode=ro` + `sql_is_readonly` + 单句执行,三重防写)。
+- **SQL 只读**:见 [[DR-001-local-readonly-execution]](`mode=ro` + `sql_is_readonly` + 单句执行,三重防写)。
 - **CSRF**:全局 `before_request` 守卫——非安全方法且带 Origin/Referer 且 host≠本机 → 403;无源(curl/非浏览器)非 CSRF 面放行。覆盖所有写端点。
 - **路径穿越**:图谱键经 `_bad_gkey()` 校验(仅 `[A-Za-z0-9_.-]` 且禁 `..`)——`load_ir` 非法键返 None、`_edits_path` 非法键落固定安全名,堵住 `forged_../..` 读/写任意文件。文件服务(`/doc`/`/vendor`/`/platform`/`/api/outputs/file`)一律 realpath 归属校验或严格正则;`conn_preview` 表名 `^[A-Za-z0-9_]+$`;`build_delete` key `^built_[\w]+$`。
 - **命令执行**:skill/tool/deploy 名走白名单、无 `shell=True`、args 拦 `;&|$\`` 元字符;子进程 `run_job` 定向 stdout、超时 1800s。
@@ -20,7 +20,7 @@
 - **前端显示防 XSS**:一切用户/LLM 可控文本(连接名/本体名/对象名/会话标题/编辑算子 target 等)插入 `innerHTML` 前一律经 `esc()` 转义;属性值经 `jsAttr()`。防存储型 XSS——尤其 LLM 抽取的对象名未在后端做 HTML 校验,显示层转义是主要防线(如工作台编辑日志 `stEdits`)。
 
 ## 后果 / Consequences
-- (+) 攻击面收口:路径穿越、注入、CSRF、写绕过、SSRF 均有对应防护,回归含穿越读/写与 SPARQL FROM 断言锁定。
+- (+) 攻击面收敛:路径穿越、注入、CSRF、写绕过、SSRF 均有对应防护,回归含穿越读/写与 SPARQL FROM 断言锁定。
 - (−) SPARQL 软超时不可硬取消运行线程(Python 限制);本地单用户原型可接受,已在 README「已知边界」标注。硬修需子进程沙箱(planned,若上公网)。
 
 ## 第9轮安全审计(2026-07-20 · 对抗输入实测)
@@ -40,7 +40,7 @@
    全局写锁将永久不释放,导致此后**所有**写端点阻塞。
    改为 `with _WRITE_LOCK:` 上下文管理器,异常路径亦保证释放。
    全仓 28 处写锁使用中,此为唯一手工 acquire 的例外。
-2. **原子写纪律被破坏**:`/api/ont/skills/write` 写 SKILL.md、`ont_forge` 写 `.ttl`
+2. **原子写规范被破坏**:`/api/ont/skills/write` 写 SKILL.md、`ont_forge` 写 `.ttl`
    均为裸 `open(...,"w").write(...)`——无 `with`(泄漏句柄)、无原子性(写坏即截断)。
    尤其 `.ttl` 与紧邻的 `.json` 同处一个 `with _WRITE_LOCK` 块,后者已用 `_atomic_json`,
    前者却裸写,同一份锻造产物可能出现「json 完好、ttl 截断」。

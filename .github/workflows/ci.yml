@@ -1,0 +1,49 @@
+name: CI
+
+# IR-007 工程校验:每次 push/PR 跑「单测+覆盖率+lint」。
+# 集成套件(test_all.py)需起服务与数据底座,单列一个 job,失败不挡单测校验(allow-fail)。
+on:
+  push:
+  pull_request:
+
+jobs:
+  unit:
+    name: 单测 + 覆盖率 + lint(确定性层)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: 安装依赖
+        run: pip install -r requirements-dev.txt
+      - name: Lint(只抓真 bug:F+B)
+        run: ruff check . --output-format=github
+      - name: 单测 + 覆盖率基线
+        run: |
+          coverage run -m pytest tests/ -q
+          coverage report
+      - name: 文档-代码计数自检
+        run: pytest tests/meta -q
+
+  integration:
+    name: 集成套件(需起服务,advisory)
+    runs-on: ubuntu-latest
+    continue-on-error: true   # 需 LLM 引擎/数据底座,离线降级下部分断言不适用,暂不硬挡
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: 安装运行时依赖
+        run: pip install -r requirements-dev.txt
+      - name: 起服务并跑 test_all.py
+        run: |
+          export DATAMIND_DB="$PWD/workdir/demo_metrics.db"
+          if [ -f "$DATAMIND_DB" ]; then
+            python3 server.py &
+            sleep 5
+            python3 test_all.py || true
+          else
+            echo "无数据底座,跳过集成套件"
+          fi
