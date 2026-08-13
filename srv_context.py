@@ -67,7 +67,13 @@ def _atomic_json(path, data):
 
 def _atomic_text(path, text):
     """文本文件的原子写(SKILL.md / OWL Turtle 等)。与 _atomic_json 同一规范:
-    先写 .tmp 再 os.replace,避免写到一半失败留下截断文件。"""
+    先写 .tmp 再 os.replace,避免写到一半失败留下截断文件。
+
+    路径由调用方裁决(server 侧统一走 _confined),但此处仍拒绝含 '..' 的路径:
+    本函数是全仓所有文本落盘的公共 sink,任何一处调用点漏了校验都会在这里被兜住。
+    """
+    if not path or ".." in os.path.normpath(str(path)).split(os.sep):
+        raise ValueError("拒绝写入含上级目录引用的路径")
     tmp = path + ".tmp"
     with open(tmp, "w") as fp:
         fp.write(text)
