@@ -4051,11 +4051,16 @@ def build_skill_upload():
     """上传自定义技能说明(仅收 .md/.txt 的 SKILL 说明,不收可执行文件,防任意代码)"""
     os.makedirs(_BUILD_SKILL_D, exist_ok=True); saved = []
     for f in request.files.getlist("files"):
-        fn = os.path.basename(f.filename or "skill.md")
+        # 与另外两个上传入口(build_upload / 聊天附件)统一走 _safe_fname + _confined。
+        # 这里原有的 basename + 白名单正则 + 强制后缀本身已挡住穿越,但各写各的意味着
+        # 一旦有人放宽那条正则,防线就随之失守;裁决收在一处才不会各自漂移。
+        fn = _safe_fname(f.filename or "skill.md")
         if not re.match(r"^[\w\-. ]+$", fn): continue
         if not fn.lower().endswith((".md", ".txt")): fn = re.sub(r"\.\w+$", "", fn) + ".md"
-        try: open(os.path.join(_BUILD_SKILL_D, fn), "wb").write(f.read()); saved.append(fn)
-        except Exception: pass
+        try:
+            open(_confined(_BUILD_SKILL_D, fn), "wb").write(f.read()); saved.append(fn)
+        except (OSError, ValueError):        # ValueError = _confined 判定越界
+            pass
     return jsonify({"saved": saved})
 
 @app.get("/api/build/defaults")
