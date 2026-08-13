@@ -3,7 +3,7 @@
 - **状态 / Status**: accepted
 - **日期 / Date**: 2026-07-19
 - **决策者 / Deciders**: Boss(用户) + Writer(Claude)
-- **关联 / Refs**: [[DR-002-multimodal-llm-anti-fraud-build]]、[[DR-010-iof-bfo-alignment]];实证来源=论文实验(Burr-micro 54 场景、Burr-Mondial、示例 判别、对抗库);`server.py _adjudicate_ir/_llm_semantic_review`、`quick_build.py`、`test_all.py O 节`。
+- **关联 / Refs**: [[DR-002-multimodal-llm-anti-hallucination-build]]、[[DR-010-iof-bfo-alignment]];实证来源=论文实验(Burr-micro 54 场景、Burr-Mondial、示例 判别、对抗库);`server.py _adjudicate_ir/_llm_semantic_review`、`quick_build.py`、`test_all.py O 节`。
 
 ## 上下文 / Context
 论文阶段的基准实验暴露了裁决器的四个泛化盲区:①无后缀键名(列名=表名,Burr-micro basic 族零候选);②复合外键(Mondial 20/69,单列重叠不可见证);③自然键 schema 的父键不叫 *_id 且父表可含与表同名的非键列(声明 PK 未被查询,同名列优先撞错);④共享域巧合(数据为真、语义为假)只有语义评审能拦(判别实验 9 vs 2,滤除集不相交)。
@@ -18,9 +18,9 @@
 
 ## 后果 / Consequences
 - (+) 系统级 Burr-Mondial:改造前 R 1.6%(PK 盲区暴露)→ 迭代三轮(PK 感知、前缀、多候选、PK 优先父列)→ **P 71.7/R 67.2/F1 69.4(双向严苛协议)**,追平论文实验挂具(70.4,有向宽松协议);企业侧回归零劣化(quick_build 示例 265/200 不变;test_all 109/109)。
-- (+) 论文"future work: multi-column joint adjudication"已在系统落地(修订答辩弹药)。
+- (+) 论文"future work: multi-column joint adjudication"已在系统落地(修订论据材料)。
 - (−) 语义评审增加构建时延(每 60 关系一次 LLM 调用);离线自动降级。
-- **事故与纪律**:本轮维护脚本曾以裸 `open("w")` 截断 server.py(条件表达式返 None → write 抛异常但文件已清空;空文件恒过 ast 检查掩盖事故)。经 `~/.claude/file-history` v21 完整恢复并重放。**新纪律:一切维护性写文件必须"内存改→ast/断言验证→tempfile+os.replace 原子落盘"**(本 DR 后所有脚本已遵循)。
+- **事故与规范**:本轮维护脚本曾以裸 `open("w")` 截断 server.py(条件表达式返 None → write 抛异常但文件已清空;空文件恒过 ast 检查掩盖事故)。经 `~/.claude/file-history` v21 完整恢复并重放。**新规范:一切维护性写文件必须"内存改→ast/断言验证→tempfile+os.replace 原子落盘"**(本 DR 后所有脚本已遵循)。
 
 ## v2.1 生产级补丁(2026-07-19 同日)
 - 语义评审预算随关系数动态(90+120×批数),修 >60 关系多批被外层 130s 截断;

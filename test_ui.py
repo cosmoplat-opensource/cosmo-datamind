@@ -14,7 +14,7 @@ BASE = os.environ.get("DATAMIND_URL", "http://127.0.0.1:8092")
 PAGES = ["home","graph","metrics","catalog","quality","glossary","sqldev","sparql",
          "chat","review","build","library","actioncenter","qaeval","assistant",
          "enginecfg","conn","viz","apis","jobs","sysadmin","rules","layers",
-         "ontquality","skills","agents"]
+         "ontquality","skills","agents","claw"]
 
 R = {"pass": [], "fail": []}
 ALL_ERRORS = []          # 全程累计的页面错误(只增不清),收尾统一汇总
@@ -50,6 +50,11 @@ async def main():
         await pg.goto(BASE, wait_until="domcontentloaded")
         await pg.wait_for_timeout(2500)
 
+        def mark():
+            """取一次 errors 基线 —— 全局唯一入口,避免同时存在
+            『go() 返回基线』与『手写 len(errors)』两套写法。"""
+            return len(errors)
+
         def new_errs(base):
             """只取基线之后新增的错误——errors 全程只追加不清空,
             前置页面的真实报错得以保留在最终汇总里,不被后续步骤掩盖。"""
@@ -58,7 +63,7 @@ async def main():
         # ── 阶段一:26 页逐页走查 ──────────────────────────────
         print("== 阶段一:全页面渲染 ==")
         for p in PAGES:
-            base = len(errors)
+            base = mark()
             await ev(f"location.hash='#{p}'")
             await pg.wait_for_timeout(1600)
             vis = await ev(f"(d=>d&&getComputedStyle(d).display!=='none')(document.getElementById('p_{p}'))")
@@ -70,10 +75,8 @@ async def main():
         # ── 阶段二:子 UI 与交互 ──────────────────────────────
         print("== 阶段二:子 UI 交互 ==")
         async def go(p, ms=1500):
-            """切页并返回本次切换前的 errors 基线,供调用方只检查新增错误"""
-            base = len(errors)
+            """仅负责切页;需要检查错误的调用点自行 mark() 取基线"""
             await ev(f"location.hash='#{p}'"); await pg.wait_for_timeout(ms)
-            return base
 
         # home:KPI 数字
         await go("home")
@@ -91,7 +94,7 @@ async def main():
         await go("metrics")
         rows = await ev("document.querySelectorAll('#p_metrics tr').length", 0)
         if rows>3:
-            base = len(errors)
+            base = mark()
             clicked = await ev("(r=>{if(!r)return false;r.click();return true})"
                                "(document.querySelectorAll('#p_metrics tbody tr, #p_metrics tr')[1])", False)
             await pg.wait_for_timeout(900)
@@ -151,6 +154,20 @@ async def main():
             (ok if vis else bad)("build 技能对比弹窗开合")
         skl = await ev("document.querySelectorAll('#bc_skills div,#bc_skills label,#bc_skills input').length", 0)
         (ok if skl>0 else bad)(f"build 技能清单({skl})")
+        # 布局塌陷是"元素都在、就是没法看"的一类故障,计数断言抓不到:全局
+        # input{width:100%} 曾把勾选框撑到 224px,把同排文本挤成 0 宽,描述逐字竖排
+        # (单张技能卡高 557px)。用几何量守住:勾选框按内容定宽、文本有可读宽度。
+        geo = await ev("""(()=>{const l=document.querySelector('#bc_skills .bc-skcard');
+            if(!l)return null;const cb=l.querySelector('input[type=checkbox]');
+            const tx=l.querySelector('div');
+            return {cb:cb?cb.getBoundingClientRect().width:-1,
+                    tx:tx?tx.getBoundingClientRect().width:-1,
+                    h:l.getBoundingClientRect().height};})()""", None)
+        (ok if geo and geo["cb"]<=24 else bad)("build 技能勾选框未被全局 input 宽度撑开",
+                                               f"{geo}")
+        (ok if geo and geo["tx"]>=120 else bad)("build 技能描述有可读宽度(未被挤成竖排)",
+                                                f"{geo}")
+        (ok if geo and geo["h"]<=160 else bad)("build 单张技能卡高度正常", f"{geo}")
         # library:已构建本体
         await go("library")
         t = await ev("document.getElementById('p_library').innerText", '')
@@ -211,6 +228,13 @@ async def main():
         await go("skills")
         t = await ev("document.getElementById('p_skills').innerText", '')
         (ok if "ontology" in t else bad)("skills 技能中心", t[:50])
+        # claw:本体对话 + 审计面板(DR-027)
+        await go("claw", 2500)
+        t = await ev("document.getElementById('p_claw').innerText", '')
+        (ok if ("本体对话" in t or "会话" in t) else bad)("claw 对话页渲染")
+        aud = await ev("document.getElementById('claw_audit').innerText", '')
+        (ok if "变更" in aud else bad)("claw 审计面板出数", aud[:40])
+        (ok if ("需复核" in aud or "来源" in aud) else bad)("claw 审计含来源/风险维度")
         await go("agents", 2000)
         n = await ev("document.querySelectorAll('#ag_list tr').length", 0)
         (ok if n>=2 else bad)(f"agents 列表({n-1}行)")
@@ -218,6 +242,50 @@ async def main():
         await pg.wait_for_timeout(500)
         n2 = await ev("document.querySelectorAll('#ag_list tr').length", 0)
         (ok if n2<n else bad)(f"agents 过滤 {n-1}→{n2-1} 行")
+
+        # ══ 全站布局体检:把"元素都在、就是没法看"这类故障变成可判定的几何量 ══
+        # 起因是技能编排面板 —— 全局 input{width:100%} 把勾选框撑到 224px,同排文本
+        # 被挤成 0 宽、逐字竖排;而当时的计数断言 25 个元素全绿。
+        SQUEEZE = """(()=>{const bad=[];
+          document.querySelectorAll('.page').forEach(pg=>{
+            if(getComputedStyle(pg).display==='none')return;
+            pg.querySelectorAll('*').forEach(e=>{
+              const r=e.getBoundingClientRect();
+              // 只按高度判可见:宽度恰为 0 正是要抓的塌陷形态,
+              // 若把 width<=0 也当作"不可见"跳过,最严重的那种反而漏检(实测漏过)
+              if(r.height<=0)return;
+              const cs=getComputedStyle(e);
+              if(cs.visibility==='hidden'||cs.display==='none')return;
+              const own=[...e.childNodes].filter(n=>n.nodeType===3)
+                        .map(n=>n.textContent.trim()).join('');
+              const lh=parseFloat(cs.lineHeight)||parseFloat(cs.fontSize)*1.4||18;
+              if(own.length>=4&&r.width<Math.max(parseFloat(cs.fontSize)*2.2,8)&&r.height>lh*3)
+                bad.push(e.tagName+'.'+(e.className||'').toString().slice(0,20)+
+                         ' w='+r.width.toFixed(0)+' h='+r.height.toFixed(0)+
+                         ' 「'+own.slice(0,12)+'」');});});
+          return bad;})()"""
+        sq_all = []
+        for _pn in ("home","build","chat","graph","review","quality","metrics",
+                    "catalog","skills","enginecfg","actioncenter","library"):
+            await go(_pn, 1500)
+            sq_all += await ev(SQUEEZE, [])
+        (ok if not sq_all else bad)("全站无文本被挤成竖排", "; ".join(sq_all[:3]))
+
+        # 单元格统一 260px 截断,超长内容靠悬停补 title 才看得到全文;
+        # 若哪天 title 不再补上,结论就会被截在半句话上而无从查看。
+        await go("quality", 2200)
+        cut = await ev("""(()=>{const c=[...document.querySelectorAll('#p_quality td')]
+            .filter(e=>e.scrollWidth-e.clientWidth>2);return c.length?1:0;})()""", 0)
+        if cut:
+            await pg.hover("#p_quality td:below(:text('详情'))" if False else
+                           "#p_quality table td")
+            got = await ev("""(()=>{const c=[...document.querySelectorAll('#p_quality td')]
+                .filter(e=>e.scrollWidth-e.clientWidth>2);
+                return c.every(e=>{e.dispatchEvent(new MouseEvent('mouseover',{bubbles:true}));
+                                   return (e.title||'').length>0;});})()""", False)
+            (ok if got else bad)("被截断的单元格悬停后可见全文(补 title)")
+        else:
+            ok("质量页当前无被截断单元格(无需补 title)")
 
         ALL_ERRORS.extend(e for e in errors if "favicon" not in e)
         await b.close()

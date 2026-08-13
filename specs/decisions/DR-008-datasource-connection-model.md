@@ -6,7 +6,7 @@
 - **关联 / Refs**: `server.py` `build_sources`/`build_connect`/`_resolve_src`/`_sqlite_tables`;对齐平台『配置数据源』
 
 ## 上下文 / Context
-本体构建、数据连接、数据可视化都需选数据源;要支持「连接多个数据库」,但 DataMind 本地执行(见 [[DR-001]]),
+本体构建、数据连接、数据可视化都需选数据源;要支持「连接多个数据库」,但 DataMind 本地执行(见 [[DR-001-local-readonly-execution]]),
 无法在离线环境直连远端 MySQL/Doris/Hive。需在「可用」与「诚实」间取舍。
 
 ## 决定 / Decision
@@ -17,7 +17,7 @@
 - 连接持久化于 `workdir/build_connections.json`(`_atomic_json`);默认选中源为**就绪源**(空的上传库自动兜底到首个就绪源,避免「无可读表」报错)。
 
 ## 后果 / Consequences
-- (+) 「连接多个数据库」可用:SQLite 真实可接、外部库可登记展示;取数只在本地可读源发生(安全,见 [[DR-001]])。
+- (+) 「连接多个数据库」可用:SQLite 真实可接、外部库可登记展示;取数只在本地可读源发生(安全,见 [[DR-001-local-readonly-execution]])。
 - (+) 诚实:外部库如实标注需驱动,不假装联通。
 - (−) 生产远端库实际取数需另接驱动(planned);当前外部库仅登记元数据。
 
