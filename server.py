@@ -17,6 +17,33 @@ import dao_core   # DR-035/044:命名校验/词根等裁决原语的单一事实
 # 面向 HTTP 调用方的错误另行裁剪(见各端点的 str(e)[:N])。
 logging.basicConfig(level=os.environ.get("DATAMIND_LOG_LEVEL", "INFO").upper(),
                     format="%(asctime)s %(levelname)s [datamind] %(message)s")
+
+class _LogSanitizer(logging.Filter):
+    """日志净化(CWE-117 防日志伪造):抹掉最终消息里的换行与其它控制字符。
+
+    日志里一旦混进换行,一条记录就能被拆成两条 —— 攻击者可以拼出一行以假乱真的
+    「INFO … 操作成功」把审计线索搅浑;ESC 序列还能在终端里改色、清屏、挪光标。
+    本服务会把环境变量(DATAMIND_HOST)、文件路径、异常类型名等写进日志,这些都可能
+    带换行,故统一净化。
+
+    装在 **handler** 上而不是逐个调用点净化:调用点会不断新增,过滤器不会漏;
+    子 logger(datamind.store 等)的记录传播到 root handler 时同样被覆盖。
+    只处理消息体,不动 exc_info —— 回溯本就是多行的,那是它该有的样子。
+    """
+    _CTRL = re.compile(r"\r\n|[\r\n\x00-\x08\x0b\x0c\x0e-\x1f\x7f]")
+
+    def filter(self, record):
+        try:
+            msg = record.getMessage()
+        except Exception:                      # 参数与格式串不匹配:交给 handler 原样报错
+            return True
+        clean = self._CTRL.sub("␊", msg)       # 用可见符号替代,既断开伪造又不悄悄吞字
+        if clean != msg:
+            record.msg, record.args = clean, ()
+        return True
+
+for _h in logging.getLogger().handlers:        # basicConfig 建的 root handler
+    _h.addFilter(_LogSanitizer())
 _LOG = logging.getLogger("datamind")
 # DR-043 蓝图化前置:基础路径与原语(路径/只读连接/只读SQL判定/写锁/原子写)收敛到共享上下文,与后续 blueprint 共用
 from srv_context import (HERE, ROOT, DB, UPLOAD_DB, WORK,

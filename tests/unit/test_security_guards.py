@@ -145,6 +145,31 @@ def test_fetch_url_strict_mode_blocks_loopback(monkeypatch):
     assert server._check_fetch_url("http://127.0.0.1:8092/api/overview") is not None
 
 
+# ── 日志伪造(CWE-117)────────────────────────────────────────────
+@pytest.mark.parametrize("payload", [
+    "127.0.0.1\n2026-01-01 00:00:00 INFO [datamind] 伪造的成功记录",
+    "a\r\nFAKE: 已授权",
+    "x\x1b[2J",                                   # ESC 序列:可清屏/改色,操纵运维终端
+])
+def test_log_sanitizer_collapses_injected_lines(payload):
+    """写进日志的换行必须被抹掉:否则一条记录能被拆成两条,
+    攻击者可以拼出一行以假乱真的日志把审计线索搅浑。"""
+    import logging
+    rec = logging.LogRecord("datamind", logging.INFO, __file__, 1, "host=%s", (payload,), None)
+    assert server._LogSanitizer().filter(rec) is True
+    out = rec.getMessage()
+    assert "\n" not in out and "\r" not in out and "\x1b" not in out
+    assert "␊" in out                              # 留下可见痕迹,不是悄悄吞字
+
+
+def test_log_sanitizer_keeps_normal_message_intact():
+    """正常消息不得被改动 —— 净化只针对控制字符,不能顺手改写正常日志。"""
+    import logging
+    rec = logging.LogRecord("datamind", logging.INFO, __file__, 1, "端口 %d 就绪", (8092,), None)
+    server._LogSanitizer().filter(rec)
+    assert rec.getMessage() == "端口 8092 就绪"
+
+
 # ── 凭据 ───────────────────────────────────────────────────────────
 def test_dsn_credentials_are_split_out():
     """DSN 会随连接清单回给前端,内嵌口令必须在登记时就摘掉。"""

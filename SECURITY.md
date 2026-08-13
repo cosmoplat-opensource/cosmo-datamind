@@ -21,6 +21,7 @@ Cosmo DataMind 的设计定位是**单机、单用户的本地分析工作台**,
 | SPARQL | 禁用 `SERVICE` 与 `FROM <外部 URI>`,阻断联邦查询外呼 |
 | 凭据 | 模型密钥落盘 `0600`;外部库口令**静态加密**(Fernet,主密钥 `workdir/.conn_key` 单独 `0600` 存放),DSN 内嵌的 `user:pass` 在登记时即摘出,回显一律掩码;均已 gitignore |
 | 信息泄露 | 诊断走 `logging` 而非 `print`,默认不带内部路径与异常消息(需要时 `DATAMIND_LOG_LEVEL=DEBUG`);`/vendor/*.map` 一律 404,不提供 source map |
+| 日志伪造 | `_LogSanitizer` 装在 root handler 上,抹掉消息体里的换行与控制字符——一条记录不会被拆成两条,ESC 序列也无法操纵运维终端;MCP server 的 stderr 走同规则的 `_log()` |
 
 ## 已知边界(非缺陷,是有意的取舍)
 
