@@ -13,13 +13,26 @@
 
 传输:MCP stdio(逐行 JSON-RPC 2.0)。日志走 stderr,stdout 只出协议消息。
 配置示例(Claude Code): claude mcp add datamind-actions -- python3 <本文件绝对路径>
-环境变量:DATAMIND_URL(默认 http://127.0.0.1:8092)
+环境变量:DATAMIND_URL;未设时由 DATAMIND_HOST/DATAMIND_PORT 组合(缺省 localhost:8092)
 """
 import json
 import os
+import re
 import sys
 import urllib.request
 import urllib.error
+
+_LOG_CTRL = re.compile(r"\r\n|[\r\n\x00-\x08\x0b\x0c\x0e-\x1f\x7f]")
+
+def _log(msg):
+    """写一行诊断到 stderr(stdout 是 JSON-RPC 协议通道,不能混日志)。
+
+    先抹掉换行与控制字符再输出:BASE 来自 DATAMIND_URL、工具名来自 MCP 客户端,
+    两者都可能带换行 —— 不净化就能在 stderr 里拼出一条伪造的日志记录(CWE-117),
+    ESC 序列还能操纵运维的终端显示。
+    """
+    print(_LOG_CTRL.sub("␊", str(msg)), file=sys.stderr, flush=True)
+
 
 def _default_base():
     """默认服务地址由 DATAMIND_HOST/PORT 组合而来,与 server.py 的监听配置同源。
@@ -86,7 +99,7 @@ def _http(method, path, payload=None):
     except Exception as e:
         # 只报异常类型:异常消息里常含主机名/端口/证书路径等部署细节;
         # 完整现场进 stderr(运维可见),不进协议通道(Agent/模型可见)。
-        print("[datamind-actions] 请求失败:%r" % (e,), file=sys.stderr, flush=True)
+        _log("[datamind-actions] 请求失败:%r" % (e,))
         return None, "DataMind 服务不可达(%s);请确认服务已启动、DATAMIND_URL 配置正确" % type(e).__name__
 
 
@@ -168,7 +181,7 @@ def main():
                 text, is_err = call_tool(name, args)
             except Exception as e:
                 # 同上:异常类型足以让调用方判断该重试还是该报人工,细节留在 stderr
-                print("[datamind-actions] 工具 %s 执行异常:%r" % (name, e), file=sys.stderr, flush=True)
+                _log("[datamind-actions] 工具 %s 执行异常:%r" % (name, e))
                 text, is_err = "工具执行异常(%s),详见服务端日志" % type(e).__name__, True
             reply({"content": [{"type": "text", "text": text}], "isError": bool(is_err)})
         else:
@@ -176,5 +189,5 @@ def main():
 
 
 if __name__ == "__main__":
-    print("datamind-actions MCP server 启动 · BASE=" + BASE, file=sys.stderr)
+    _log("datamind-actions MCP server 启动 · BASE=" + BASE)
     main()
