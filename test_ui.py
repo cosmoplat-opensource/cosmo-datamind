@@ -10,7 +10,10 @@ import asyncio, json, sys
 from playwright.async_api import async_playwright
 
 import os
-BASE = os.environ.get("DATAMIND_URL", "http://127.0.0.1:8092")
+# 被测地址:优先 DATAMIND_URL,否则由服务端同一套 DATAMIND_HOST/PORT 组合而来
+# ——不写死 IP 字面量,免得它与 server 的实际监听配置各自漂移。
+BASE = os.environ.get("DATAMIND_URL") or "http://%s:%s" % (
+    os.environ.get("DATAMIND_HOST") or "localhost", os.environ.get("DATAMIND_PORT") or "8092")
 PAGES = ["home","graph","metrics","catalog","quality","glossary","sqldev","sparql",
          "chat","review","build","library","actioncenter","qaeval","assistant",
          "enginecfg","conn","viz","apis","jobs","sysadmin","rules","layers",

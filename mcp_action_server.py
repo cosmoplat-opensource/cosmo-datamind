@@ -21,7 +21,16 @@ import sys
 import urllib.request
 import urllib.error
 
-BASE = os.environ.get("DATAMIND_URL", "http://127.0.0.1:8092").rstrip("/")
+def _default_base():
+    """默认服务地址由 DATAMIND_HOST/PORT 组合而来,与 server.py 的监听配置同源。
+    不再写死 127.0.0.1:8092 —— 那份字面量与 server 的实际监听值会各自漂移。
+    仍以回环为缺省(本服务无鉴权,默认不跨机)。"""
+    host = os.environ.get("DATAMIND_HOST") or "localhost"
+    if host in ("0.0.0.0", "::"):        # 服务端绑全网卡时,客户端仍走回环访问本机
+        host = "localhost"
+    return "http://%s:%s" % (host, os.environ.get("DATAMIND_PORT") or "8092")
+
+BASE = (os.environ.get("DATAMIND_URL") or _default_base()).rstrip("/")
 PROTO = "2024-11-05"
 
 TOOLS = [
@@ -67,12 +76,18 @@ def _http(method, path, payload=None):
         with urllib.request.urlopen(req, timeout=15) as r:
             return json.loads(r.read().decode()), None
     except urllib.error.HTTPError as e:
+        # 只透出 DataMind 自己给的业务错误(它已按端点约定裁剪过);
+        # 解析不出就只给状态码 —— 上游返回体可能含栈/路径,不该原样转给 Agent。
         try:
-            return None, (json.loads(e.read().decode()).get("error") or f"HTTP {e.code}")
+            msg = json.loads(e.read().decode()).get("error")
+            return None, (str(msg)[:200] if msg else f"HTTP {e.code}")
         except Exception:
             return None, f"HTTP {e.code}"
     except Exception as e:
-        return None, f"DataMind 不可达({BASE}):{e}"
+        # 只报异常类型:异常消息里常含主机名/端口/证书路径等部署细节;
+        # 完整现场进 stderr(运维可见),不进协议通道(Agent/模型可见)。
+        print("[datamind-actions] 请求失败:%r" % (e,), file=sys.stderr, flush=True)
+        return None, "DataMind 服务不可达(%s);请确认服务已启动、DATAMIND_URL 配置正确" % type(e).__name__
 
 
 def call_tool(name, args):
@@ -152,7 +167,9 @@ def main():
             try:
                 text, is_err = call_tool(name, args)
             except Exception as e:
-                text, is_err = f"工具执行异常:{e}", True
+                # 同上:异常类型足以让调用方判断该重试还是该报人工,细节留在 stderr
+                print("[datamind-actions] 工具 %s 执行异常:%r" % (name, e), file=sys.stderr, flush=True)
+                text, is_err = "工具执行异常(%s),详见服务端日志" % type(e).__name__, True
             reply({"content": [{"type": "text", "text": text}], "isError": bool(is_err)})
         else:
             reply(error={"code": -32601, "message": f"method not found: {method}"})
