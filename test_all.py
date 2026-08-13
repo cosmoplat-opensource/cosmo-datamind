@@ -1,16 +1,47 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """DataMind 全路由覆盖测试:每个端点 happy path + 边界/错误 + 安全。"""
-import json, requests, sys, ast, time
-B="http://localhost:8092"
+import json, os, re, requests, sys, ast, time
+from urllib.parse import urlsplit
+
+# 被测服务地址(可用 DATAMIND_URL 覆盖:CI/远端联调时不必改代码)。
+# 只在这里出现一次,下面的 g()/po() 都以它为唯一基址。
+B = (os.environ.get("DATAMIND_URL") or "http://localhost:8092").rstrip("/")
+_B_HOST = urlsplit(B).netloc
+
+_CTRL = re.compile(r"[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]")   # 含 ANSI 转义引导符 \x1b
+def _sane(s, cap=300):
+    """把响应文本裁成可安全打印的形态:去掉控制字符与 ANSI 转义序列并限长。
+
+    断言失败时我们会把服务端返回的正文打进终端。正文里若含 ESC 序列,终端会**执行**它
+    (改色、清屏、挪光标,某些终端还能改标题/回填输入),报告因此可被服务端返回内容操纵。
+    这与 Web 上的反射型 XSS 是同一回事,只是渲染器换成了终端。
+    """
+    return _CTRL.sub("?", str(s))[:cap]
+
 P=F=0; fails=[]
 def chk(name, cond, detail=""):
     global P,F
     if cond: P+=1
-    else: F+=1; fails.append(f"{name}: {detail}")
-    print(f"  {'✓' if cond else '✗ FAIL'} {name}" + (f"  [{detail}]" if not cond else ""))
-def g(path,**kw): return requests.get(B+path,timeout=180,**kw)
-def po(path,**kw): return requests.post(B+path,timeout=200,**kw)
+    else: F+=1; fails.append(f"{name}: {_sane(detail)}")
+    print(f"  {'✓' if cond else '✗ FAIL'} {name}" + (f"  [{_sane(detail)}]" if not cond else ""))
+
+def _url(path):
+    """只允许拼相对路径,且拼出来的地址必须仍在被测主机上。
+
+    本文件多处用服务端返回的 id/key 拼下一个请求路径(如 /api/graph/{GK})。
+    若返回值里带了 '//evil.host/x' 或绝对 URL,requests 会转而去请求那台主机 ——
+    测试进程就成了服务端可驱使的请求代理(SSRF)。此处一次判死。
+    """
+    if not path.startswith("/") or path.startswith("//"):
+        raise ValueError(f"仅接受本机相对路径,拒绝:{_sane(path, 120)}")
+    u = urlsplit(B + path)
+    if u.netloc != _B_HOST:
+        raise ValueError(f"目标主机越界({u.netloc}),拒绝请求")
+    return B + path
+
+def g(path,**kw): return requests.get(_url(path),timeout=180,**kw)
+def po(path,**kw): return requests.post(_url(path),timeout=200,**kw)
 
 # ── 前置:测试进程与被测服务必须指向同一个数据底座 ─────────────────
 # 部分断言在本进程内直接 import server 求值(build_context、_table_cols 等),
@@ -175,7 +206,7 @@ r=g("/api/quality"); j=r.json(); chk("数据质量", r.status_code==200 and "che
 r=g("/api/sysinfo"); j=r.json(); chk("系统信息", r.status_code==200 and j.get("tables",0)>0 and "runtimes" in j)
 r=g("/api/chat/skills"); chk("沉淀技能列表", r.status_code==200 and isinstance(r.json(),list))
 # 沉淀→查→端点闭环(带 Origin 过 CSRF,清理)
-H={"Origin":"http://localhost:8092"}
+H={"Origin":B}   # 同源 Origin,用于通过 CSRF 守卫(基址唯一事实源 B)
 r=po("/api/chat/save_skill",json={"question":"__t沉淀__","results":[{"title":"t","sql":"SELECT 1","chart":{}}]},headers=H)
 sid=r.json().get("id"); chk("沉淀为Skill", r.status_code==200 and sid)
 r=po("/api/chat/save_skill",json={"question":"","results":[]},headers=H); chk("沉淀空→400", r.status_code==400)
@@ -189,7 +220,7 @@ try:
 except: pass
 
 print("=== K. 数据连接 + 数据可视化(新增)===")
-H={"Origin":"http://localhost:8092"}
+H={"Origin":B}   # 同源 Origin,用于通过 CSRF 守卫(基址唯一事实源 B)
 r=g("/api/build/sources"); j=r.json(); chk("构建数据源清单", r.status_code==200 and "sources" in j and "assets" in j)
 r=g("/api/conn/tables?src=demo"); j=r.json(); chk("连接表清单", r.status_code==200 and len(j.get("tables",[]))>100)
 r=g("/api/conn/preview?src=demo&table=dim_customer"); j=r.json(); chk("连接表预览", r.status_code==200 and len(j.get("rows",[]))>0)
