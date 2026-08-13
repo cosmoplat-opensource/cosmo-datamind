@@ -332,9 +332,15 @@ a{color:var(--acc)}
    </div></div></div>
 
  <div class="page" id="p_graph"><h2>本体图谱</h2>
-  <div class="row" style="margin-bottom:10px"><select id="g_sel" style="width:340px"></select>
+  <!-- 工具条按「组」排布:组内 white-space:nowrap,组间由 flex-wrap 整体换行。
+       约束的是「标签被从中间拆开」这一形态——JSON-LD / RDF/XML / 补定义/反例 都含
+       连字符或斜杠,是浏览器的合法断行点,一旦容器压缩就会拆成「JSON-」「LD」两行。
+       当前视口(1180~1600px)下未观察到该现象,此处是预防性约束,不改变正常布局。 -->
+  <div class="row" style="margin-bottom:10px;flex-wrap:wrap"><select id="g_sel" style="width:340px"></select>
    <span class="muted" id="g_info"></span><span style="flex:1"></span>
-   <span id="g_legend"></span>导出:<button class="ghost" onclick="expOnt('ttl')">TTL</button><button class="ghost" onclick="expOnt('jsonld')">JSON-LD</button><button class="ghost" onclick="expOnt('owl')">RDF/XML</button><button class="ghost" onclick="enrichOnt(this)" title="调智能引擎为缺定义的对象补『属+种差』定义+正例+反例,升级到 IOF 标准">补定义/反例</button>布局<select id="g_layout" onchange="drawGraph($('#g_sel').value)" style="width:120px"><option value="dagre">分层(原版)</option><option value="force">力导向</option><option value="circular">环形</option><option value="radial">辐射</option></select></div>
+   <span id="g_legend"></span>
+   <span style="display:inline-flex;align-items:center;gap:8px;white-space:nowrap">导出:<button class="ghost" onclick="expOnt('ttl')">TTL</button><button class="ghost" onclick="expOnt('jsonld')">JSON-LD</button><button class="ghost" onclick="expOnt('owl')">RDF/XML</button><button class="ghost" onclick="enrichOnt(this)" title="调智能引擎为缺定义的对象补『属+种差』定义+正例+反例,升级到 IOF 标准">补定义/反例</button></span>
+   <span style="display:inline-flex;align-items:center;gap:8px;white-space:nowrap">布局<select id="g_layout" onchange="drawGraph($('#g_sel').value)" style="width:120px"><option value="dagre">分层(原版)</option><option value="force">力导向</option><option value="circular">环形</option><option value="radial">辐射</option></select></span></div>
   <div id="g_hlbar" style="display:none;margin:-4px 0 10px;padding:7px 12px;border:1px solid #C7D2FE;background:#EEF2FF;border-radius:6px;font-size:12.5px"></div>
   <div style="position:relative"><div class="card" style="padding:6px"><div id="g_canvas"></div></div>
    <div class="card" id="g_detail" style="position:absolute;top:12px;right:12px;width:340px;max-height:calc(100% - 24px);overflow:auto;display:none;z-index:6;box-shadow:0 8px 30px rgba(31,45,61,.16)"></div>
@@ -1268,8 +1274,10 @@ function egRenderLLM(){
      <input id="eg_l_model" value="${esc(L.model||'')}"${lk('model')}
        placeholder="如 glm-4.5" style="width:240px">
      <button class="ghost" onclick="egFetchModels(this)">拉取可用模型</button>
-     <span class="muted" id="eg_l_ms" style="font-size:12px;margin-left:6px"></span>
-     <div class="muted" style="font-size:11.5px;margin-top:3px">端点不提供模型列表时直接手填模型名即可</div></td></tr>
+     <div class="muted" style="font-size:11.5px;margin-top:3px">端点不提供模型列表时直接手填模型名即可</div>
+     <!-- 拉取结果另起一行:该文案有二十余字,若与下拉框/输入框/按钮挤在同一行,
+          会溢出单元格约 180px 而被截成「已拉到 …」(旧截图 docs/img/07 即此形态)。 -->
+     <div class="muted" id="eg_l_ms" style="font-size:12px;margin-top:3px"></div></td></tr>
    <tr><td>单轮超时</td><td><input id="eg_l_timeout" value="${esc(L.timeout||'')}"${lk('timeout')}
      placeholder="180" style="width:80px"> 秒
      <span class="muted" style="font-size:11.5px;margin-left:8px">推理型模型的思维链耗时计入其中,配紧了会被截断</span></td></tr>

@@ -28,14 +28,29 @@ def test_corrupt_file_recovers_to_default(tmp_path):
     assert s.load() == {"safe": True}   # 坏文件不崩,退回 default
 
 
-def test_corrupt_file_is_reported_not_swallowed(tmp_path, capsys):
+def test_corrupt_file_is_reported_not_swallowed(tmp_path, caplog):
     """坏档退回 default 但**不得静默**:必须留下可见告警,
-    否则状态文件损坏会伪装成「本来就是空的」,数据丢失被掩盖。"""
+    否则状态文件损坏会伪装成「本来就是空的」,数据丢失被掩盖。
+
+    告警走 logging(不再是 print 到 stderr):断言改为读日志记录 —— 验的仍是
+    「有留痕、指明是哪个文件」,只是渠道换成了可分级、可重定向的那条。
+    """
     p = tmp_path / "x.json"
     p.write_text("{ broken", encoding="utf-8")
-    store.JsonStore(str(p), default={}).load()
-    err = capsys.readouterr().err
-    assert "x.json" in err and ("损坏" in err or "无法解析" in err)
+    with caplog.at_level("WARNING", logger="datamind.store"):
+        store.JsonStore(str(p), default={}).load()
+    msg = "\n".join(r.getMessage() for r in caplog.records)
+    assert "x.json" in msg and ("损坏" in msg or "无法解析" in msg)
+
+
+def test_relative_path_rejected():
+    """构造期就拒绝相对路径:本类是配置/凭据文件的统一落盘口,
+    相对路径随进程 cwd 漂移(同一个 store 在不同启动目录写不同文件),
+    也让 '../ 拼出去' 这类形态更难被看出来。"""
+    with pytest.raises(ValueError):
+        store.JsonStore("../escape.json")
+    with pytest.raises(ValueError):
+        store.JsonStore("workdir/x.json")
 
 
 def test_atomic_write_leaves_no_tmp(tmp_path):

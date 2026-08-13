@@ -7,8 +7,17 @@ Cosmo DataMind · 数据智脑 — 自有品牌的数据治理+本体+深度问�
 启动:python3 server.py  → http://127.0.0.1:8092
 """
 import json, os, re, sqlite3, subprocess, threading, time, uuid, sys, glob
+import logging
 import urllib.request, urllib.error
 import dao_core   # DR-035/044:命名校验/词根等裁决原语的单一事实源
+
+# ── 运维日志(结构化、可分级、可重定向)──────────────────────────────
+# 诊断信息一律走 logging 而非 print:print 混在 stdout 里既无级别也无时间戳,
+# 且容易把内部路径/异常细节直接摊到用户可见的输出上。此处只对运维可见,
+# 面向 HTTP 调用方的错误另行裁剪(见各端点的 str(e)[:N])。
+logging.basicConfig(level=os.environ.get("DATAMIND_LOG_LEVEL", "INFO").upper(),
+                    format="%(asctime)s %(levelname)s [datamind] %(message)s")
+_LOG = logging.getLogger("datamind")
 # DR-043 蓝图化前置:基础路径与原语(路径/只读连接/只读SQL判定/写锁/原子写)收敛到共享上下文,与后续 blueprint 共用
 from srv_context import (HERE, ROOT, DB, UPLOAD_DB, WORK,
                          ro_connect, sql_is_readonly, _WRITE_LOCK, _atomic_json, _atomic_text)
@@ -22,9 +31,35 @@ from flask import Flask, jsonify, request, send_from_directory, send_file
 #   PLATFORM/OUTPUTS 与引擎 sys.path 自举与装配耦合,留在此处。
 #   DATAMIND_ENGINE_DIR 上游本体引擎目录(可选;缺失则 LLM 构建降级为纯数据驱动)
 #   DATAMIND_OUTPUTS_DIR 成果库目录(可选);DATAMIND_HOST/PORT 监听地址与端口
-PLATFORM = os.environ.get("DATAMIND_ENGINE_DIR",  os.path.join(ROOT, "ontology-engine"))
-OUTPUTS  = os.environ.get("DATAMIND_OUTPUTS_DIR", os.path.join(ROOT, "outputs"))
-sys.path.insert(0, os.path.join(PLATFORM, "engine"))
+def _env_dir(var, default):
+    """取目录型环境变量,归一化成一个**确定的**绝对路径。
+
+    这两个变量决定「从哪读引擎/成果」,并会被拼进 sys.path 与各处文件路径,属于配置面。
+    相对值(.env.example 里就是 `../ontology-engine`)一律按**程序所在目录**解析,
+    而不是按进程 cwd —— 否则同一份配置在不同启动目录指向不同地方,既是运维陷阱,
+    也让"用 cwd 把它挪到一个受控目录"成为一种可利用的手法。
+    """
+    v = (os.environ.get(var) or "").strip()
+    if not v:
+        return default
+    return os.path.normpath(v if os.path.isabs(v) else os.path.join(HERE, v))
+
+PLATFORM = _env_dir("DATAMIND_ENGINE_DIR",  os.path.join(ROOT, "ontology-engine"))
+OUTPUTS  = _env_dir("DATAMIND_OUTPUTS_DIR", os.path.join(ROOT, "outputs"))
+# 引擎目录只在**确实存在**时入 sys.path,且用 append 而非 insert(0):
+# 置顶会让该目录里的同名模块(json.py/re.py…)盖过标准库,把一个「配错的目录」
+# 升级成「可劫持解释器导入」的面;追加到末尾则只补充、不遮蔽。
+_ENGINE_PKG = os.path.join(PLATFORM, "engine")
+if os.path.isdir(_ENGINE_PKG) and _ENGINE_PKG not in sys.path:
+    sys.path.append(_ENGINE_PKG)
+
+# 监听地址与端口的单一事实源:默认只绑回环(本地原型的安全默认——本服务无鉴权,
+# 绑 0.0.0.0 等于把建库/删文件/跑技能的接口开给整个网段)。需要对外时由部署方显式设置。
+LISTEN_HOST = os.environ.get("DATAMIND_HOST", "127.0.0.1")
+try:
+    LISTEN_PORT = int(os.environ.get("DATAMIND_PORT", "8092"))
+except ValueError:
+    LISTEN_PORT = 8092
 
 # ── 上游引擎缺失时的降级垫片 ──────────────────────────────────────────
 # 本仓库不含上游本体引擎(agent_runtime 由 DATAMIND_ENGINE_DIR 提供)。
@@ -72,7 +107,10 @@ try:                                                 # DR-029:注册 OpenAI 兼�
 except ImportError:
     pass                                             # 模块不在:正常形态,静默
 except Exception as _e:                              # 其余是真故障,吞掉会让人查不出
-    print("[warn] OpenAI 兼容驱动注册失败:%s: %s" % (type(_e).__name__, _e))
+    # 只报异常类型,不带消息:该消息里常含端点 URL/路径等部署细节,进日志即可能外泄。
+    # 需要细节时把 DATAMIND_LOG_LEVEL=DEBUG 打开,由运维显式取用。
+    _LOG.warning("OpenAI 兼容驱动注册失败:%s(细节见 DEBUG 级日志)", type(_e).__name__)
+    _LOG.debug("驱动注册失败详情", exc_info=True)
 
 app = Flask(__name__, static_folder=None)
 # IR-011/DR-043 蓝图化:引擎设置路由已迁出为 blueprint。
@@ -115,12 +153,108 @@ _GKEY = re.compile(r"^[A-Za-z0-9_.\-]+$")
 def _bad_gkey(key):
     """图谱键合法性:仅字母数字下划线点连字符,且不含 '..' —— 防 forged_../.. 之类路径穿越读/写任意文件"""
     return (not isinstance(key, str)) or (not _GKEY.match(key)) or (".." in key)
+
+# ── 安全原语(防路径穿越 / SQL 标识符注入 / SSRF)──────────────────────
+# 集中放这几条裁决,供所有「用户可影响 → 落盘/拼 SQL / 外联」的调用点复用;
+# 即便上游已校验,在 sink 处再裁一次是纵深防御,也让静态分析能看见约束。
+import ipaddress
+# SQL 标识符白名单:字母/下划线/中文开头,后随字母数字下划线中文。
+# 表名/列名经此过滤后才可安全地拼进 "..." 引用——含双引号或路径符的值会越出标识符边界(SQL 注入)。
+_IDENT = re.compile(r"^[A-Za-z_一-鿿][A-Za-z0-9_一-鿿]*$")
+def _safe_ident(name):
+    """SQL 标识符(表/列)合法性:非法返 None。IR/上传等可被编辑的来源里的表名列名,
+    拼进 SQL 前必须过此关,否则一个含 " 的列名即可越出 "..." 注入任意 SQL 片段。"""
+    if isinstance(name, str) and _IDENT.match(name): return name
+    return None
+
+def _quote_ident(name):
+    """把任意串包成合法的 SQL 双引号标识符/别名:内嵌 " 按 SQL 规范成对转义(" → "")。
+    用于**必须允许任意字符**的位置(如中文指标名做结果列别名),此处白名单太严会误杀;
+    转义后该值再也无法闭合引号越出标识符边界,注入面即被封死。"""
+    return '"' + str(name or "").replace('"', '""') + '"'
+
+def _safe_argv(val, cap=60, default="untitled"):
+    """把用户/LLM 给的自由文本裁成可安全传给子进程的单个 argv:
+    去掉控制字符与引号反引号等 shell 元字符、限长、禁止以 '-' 开头(避免被当成选项)。
+    调用点均为 list 形式的 subprocess(无 shell),此处是第二道闸:即便将来有人改成
+    shell=True 或子进程内部再把参数丢进 shell,这个值也拼不出命令。"""
+    s = re.sub(r"[\x00-\x1f\x7f]", "", str(val or ""))        # 控制字符/换行
+    s = re.sub(r"[`$;&|<>\\\"'\n\r]", "", s).strip()          # shell 元字符
+    s = s[:cap].strip().lstrip("-").strip()
+    return s or default
+
+def _confined(base, *parts):
+    """把 parts 拼到 base 下,并校验归一化后仍在 base 目录内;逃逸抛 ValueError。
+    纵深防御:即便键已过 _bad_gkey,在真正 open()/remove() 前再裁一次,
+    保证任何遗漏校验的入口也无法读写 base 之外的文件。"""
+    p = os.path.normpath(os.path.join(base, *(str(x) for x in parts)))
+    b = os.path.normpath(base)
+    if p != b and not p.startswith(b + os.sep):
+        raise ValueError("路径越界,拒绝访问:%s" % p)
+    return p
+
+def _resolved_ips(host):
+    """主机名 → 解析到的 IP 对象列表;解析不出返回 None(调用方按"不可达"处理)。"""
+    import socket
+    if not host: return None
+    try:
+        infos = socket.getaddrinfo(host.strip(), None)
+    except Exception:
+        return None
+    out = []
+    for _fam, _stp, _cn, _sa, sockaddr in infos:
+        try:
+            out.append(ipaddress.ip_address(sockaddr[0]))
+        except ValueError:
+            continue
+    return out or None
+
+# 严格模式:连私网/回环也一并禁止外联。默认**不开**,原因见 _check_fetch_url 的说明。
+_STRICT_FETCH = (os.environ.get("DATAMIND_BLOCK_INTERNAL_FETCH", "") or "").lower() in ("1", "true", "yes")
+
+def _check_fetch_url(url):
+    """服务端外联(API 数据源)前的 SSRF 裁决:→ 错误串(拒绝)或 None(放行)。
+
+    分两档,因为「内网」对本系统而言不是攻击面而是**工作面**:
+    这是一套装在企业内网、专门去连内网库与内网 API 的数据治理工具,把私网一律封死
+    等于把 API 数据源这个功能废掉,使用者只会把开关打开 —— 那种默认值是安全表演。
+
+    **默认拦死的**(任何正当用法都不需要,拦了零成本):
+      · 非 http/https:file:// gopher:// dict:// 等协议走私,可读本地文件或打内网服务;
+      · 链路本地 169.254.0.0/16 与 fe80::/10:云元数据端点(169.254.169.254)在此,
+        一次请求就能取走实例的临时云凭据 —— SSRF 里危害最大的一类目标;
+      · 未指定/保留地址(0.0.0.0、::、保留段)。
+    **严格模式再加**(DATAMIND_BLOCK_INTERNAL_FETCH=1,给可暴露到不可信网络的部署):
+      · 回环与私网(127/8、10/8、172.16/12、192.168/16 等)。
+    """
+    from urllib.parse import urlparse
+    try:
+        u = urlparse((url or "").strip())
+    except Exception:
+        return "非法 URL"
+    if u.scheme not in ("http", "https"): return "仅允许 http/https(其它协议可被用于读本地文件或探内网)"
+    if not u.hostname: return "URL 缺少主机名"
+    ips = _resolved_ips(u.hostname)
+    if ips is None: return "主机名无法解析,拒绝请求"
+    # 回环单独放行再判其余:ipaddress 把 IPv6 回环 ::1 归入 is_reserved,
+    # 若不先排除,凡用 localhost(解析出 ::1)登记的数据源都会被误拦 —— 而
+    # 「自指向本机 API」恰是本功能最常见的正当用法(自带回归用例就是这么用的)。
+    # 回环该不该拦由严格模式决定,不该由 IPv6 的地址分类顺带决定。
+    def _blocked(ip):
+        if ip.is_loopback: return False
+        return ip.is_link_local or ip.is_unspecified or ip.is_reserved or ip.is_multicast
+    if any(_blocked(ip) for ip in ips):
+        return "目标为链路本地/保留/多播等特殊地址(含云元数据端点),已按 SSRF 防护拒绝"
+    if _STRICT_FETCH and any(ip.is_private or ip.is_loopback for ip in ips):
+        return "严格模式(DATAMIND_BLOCK_INTERNAL_FETCH=1)下禁止访问内网/回环地址"
+    return None
+
 def load_ir(key):
     if _bad_gkey(key): return None
     if key.startswith("built_"):
-        return _load_json(os.path.join(WORK, key + ".json"))
+        return _load_json(_confined(WORK, key + ".json"))
     if key.startswith("forged_"):
-        return _load_json(os.path.join(PLATFORM, "data", "forged", key[7:] + ".json"))
+        return _load_json(_confined(os.path.join(PLATFORM, "data", "forged"), key[7:] + ".json"))
     return _load_json(IR_SOURCES.get(key, {}).get("paths", []))
 
 # ── IOF/BFO 2020 接地(借鉴 Industrial Ontology Foundry:上层范畴 + 有根据关系 + 时间指标)──
@@ -403,7 +537,10 @@ def _metric_baselines(mets):
     """
     out = []
     for m in mets[:6]:
-        tbl, col, nm = m.get("table"), m.get("col"), m.get("name")
+        # 表名/列名来自 IR,而 IR 可经 /api/ont/apply 编辑 —— 即用户可影响。
+        # 它们要拼进 SQL 的标识符位,必须过白名单:一个含 " 的列名足以越出 "..." 注入任意片段。
+        tbl, col = _safe_ident(m.get("table")), _safe_ident(m.get("col"))
+        nm = m.get("name")
         if not (tbl and col and nm): continue
         ck = f"{tbl}.{col}"
         if ck in _REG_CACHE["base"] and time.time() - _REG_CACHE["base_ts"] < 600:
@@ -997,13 +1134,17 @@ def ui_version():
 def doc(name):
     """服务 ui/ 下的文档页(根因分析等),仅限 .html,防穿越"""
     if not re.match(r"^[A-Za-z0-9_-]+$", name): return "bad", 400
-    p = os.path.join(HERE, "ui", name + ".html")
+    p = _confined(os.path.join(HERE, "ui"), name + ".html")
     if not os.path.exists(p): return "not found", 404
     return send_file(p)
 
 @app.get("/vendor/<path:f>")
 def vendor(f):
     """本地静态库(echarts 等),不依赖外网 CDN"""
+    # source map 一律不提供:压缩包里带着 //# sourceMappingURL 注释,浏览器会顺手来取。
+    # 本仓不含 .map,但只要有人把构建产物整目录拷进来,前端库(乃至将来自研前端)的
+    # 完整源码就会经这条路径泄露 —— 与其依赖"文件恰好不在",不如把这条路堵死。
+    if f.lower().endswith(".map"): return "not found", 404
     base = os.path.join(HERE, "ui", "vendor")
     rp = os.path.realpath(os.path.join(base, f))
     if not rp.startswith(os.path.realpath(base) + os.sep) or not os.path.exists(rp): return "not found", 404
@@ -1161,14 +1302,17 @@ def metric_quick():
             if m.get("name") == name: hit = {**m, "layer": k}; break
         if hit: break
     if not hit or not hit.get("table"): return jsonify({"error": "指标不存在或未绑表"}), 404
-    tbl, vcol = hit["table"], hit.get("value_col")
+    # 表名/取值列取自 IR。IR 可经 /api/ont/apply 编辑,故对本端点而言是**用户可控**的,
+    # 而它们直接落在 SQL 的标识符位上 —— 必须过 _safe_ident 白名单,不能只靠"来自 IR"这层假设。
+    tbl, vcol = _safe_ident(hit["table"]), _safe_ident(hit.get("value_col"))
+    if not tbl: return jsonify({"error": "指标绑定的表名非法"}), 400
     # 找该表日期列(IR attrs 中 DATE 类型优先,退而求 *date* 命名)
     dcol = None
     for o in ir.get("objects", []):
         if (o.get("table") or "").lower() == tbl.lower():
             dates = [a["col"] for a in o.get("attrs", []) if "DATE" in (a.get("type", "").upper())]
             named = [a["col"] for a in o.get("attrs", []) if "date" in a["col"].lower()]
-            dcol = (dates or named or [None])[0]
+            dcol = _safe_ident((dates or named or [None])[0])
     if not (vcol and dcol):
         return jsonify({"error": f"缺日期列或取值列(date={dcol}, value={vcol})"}), 400
     # 聚合口径:比率/百分比 → 平均(不可求和);存量/快照(余额/库存/在册/期末/人数)→ 月均(按日求和会 ~30x 高估);流量 → 求和
@@ -1178,7 +1322,10 @@ def metric_quick():
     if is_ratio: agg, agg_note = "avg", "比率→月均(该列为逐行率值,取月度均值近似)"
     elif is_stock: agg, agg_note = "avg", "存量/快照→月均(按日求和会高估,故取均值)"
     else: agg, agg_note = "sum", "流量→月度求和"
-    sql = f'SELECT substr("{dcol}",1,7) 月, round({agg}("{vcol}"),2) "{name}" FROM "{tbl}" GROUP BY 1 ORDER BY 1'
+    # 结果列别名直接来自 query string,可含任意字符(中文指标名合法,故不能套 _safe_ident);
+    # 用 _quote_ident 把内嵌的 " 成对转义,别名便无法越出引号边界闭合出新的 SQL 片段。
+    sql = (f'SELECT substr("{dcol}",1,7) 月, round({agg}("{vcol}"),2) {_quote_ident(name)} '
+           f'FROM "{tbl}" GROUP BY 1 ORDER BY 1')
     try:
         data = q(sql)
         return jsonify({"metric": name, "unit": unit, "layer": hit["layer"],
@@ -1209,7 +1356,7 @@ def table_info(name):
 # ══ M1: serve_claw 能力原生吸收(不依赖 8091) ══
 def _edits_path(key):
     if _bad_gkey(key): key = "__invalid__"      # 非法键落到固定安全名,绝不逃逸 WORK 目录(防写穿越)
-    return os.path.join(WORK, f"edits_{key}.json")
+    return _confined(WORK, f"edits_{key}.json")  # sink 处再裁一次,纵深防御
 def _load_edits(key):
     return json.load(open(_edits_path(key))) if os.path.exists(_edits_path(key)) else {"version": 1, "ops": []}
 REVIEW_OPS = ("confirm_relation", "reject_relation")   # 人机协同人审:通过(→asserted)/否决(→剔除)
@@ -1427,12 +1574,22 @@ def _forged_dirs():
         if d not in out and os.path.isdir(d): out.append(d)
     return out
 
+def _safe_fname(name):
+    """把任意输入裁成单一安全文件名组件:丢掉目录部分与路径穿越符,非法则落回占位名。
+    供 _forged_path / _custom_skill_path 在 sink 处再裁一次,调用方已校验时也多一道关。"""
+    n = os.path.basename(str(name or ""))
+    if not n or n in (".", "..") or "/" in n or "\\" in n or ".." in n or n.startswith("."):
+        return "__invalid__"
+    return n
+
 def _forged_path(fid):
-    """按 fid 找已存在的产物;都不存在时返回当前写入目录下的路径(供新建)"""
+    """按 fid 找已存在的产物;都不存在时返回当前写入目录下的路径(供新建)。
+    fid 经 _safe_fname 裁为单组件并过 _confined,杜绝穿越(纵深防御)。"""
+    fid = _safe_fname(fid)
     for d in _forged_dirs():
-        p = os.path.join(d, fid + ".json")
+        p = _confined(d, fid + ".json")
         if os.path.exists(p): return p
-    return os.path.join(FORGED_DIR, fid + ".json")
+    return _confined(FORGED_DIR, fid + ".json")
 @app.get("/api/ont/forged")
 def ont_forged():
     out, seen = [], set()
@@ -1501,7 +1658,7 @@ def ont_runtimes():
 @app.get("/api/ont/skill/<name>")
 def ont_skill_detail(name):
     if not re.match(r"^[\w\-]+$", name): return jsonify({"error": "bad"}), 400
-    p2 = os.path.join(PLATFORM, "web", "skills_seed", name, "SKILL.md")
+    p2 = _confined(os.path.join(PLATFORM, "web", "skills_seed"), name, "SKILL.md")
     if not os.path.exists(p2): return jsonify({"error": "不存在"}), 404
     return jsonify({"name": name, "content": open(p2).read()})
 
@@ -1581,10 +1738,13 @@ def ont_chat():
 def ont_skill_install():
     """装技能到 agent 工作区(openclaw workspace),对齐平台 skills/install"""
     slug = (request.json or {}).get("slug", "")
+    # \w 含中文与下划线但不含 / \ .,故 slug 天然是单一目录名;下方 _confined 在
+    # rmtree/copytree 这两个**破坏性** sink 前再裁一次——此处一旦逃逸就是任意目录删除。
     if not re.match(r"^[\w\-]+$", slug): return jsonify({"error": "bad slug"}), 400
-    src = os.path.join(PLATFORM, "web", "skills_seed", slug)
+    src = _confined(os.path.join(PLATFORM, "web", "skills_seed"), slug)
     if not os.path.isdir(src): return jsonify({"error": "技能不存在"}), 404
-    dst = os.path.expanduser(os.path.join("~/.openclaw/workspace/skills", slug))
+    skill_root = os.path.expanduser("~/.openclaw/workspace/skills")
+    dst = _confined(skill_root, slug)
     import shutil
     os.makedirs(os.path.dirname(dst), exist_ok=True)
     if os.path.exists(dst): shutil.rmtree(dst)
@@ -1601,14 +1761,15 @@ def ont_skill_write():
     # 此前无条件 makedirs 到引擎目录:父目录可写时会凭空造出一棵假引擎目录树
     # (随后 /api/build/skills 就把这个空壳当成已装引擎),只读位置则 500 裸栈。
     if os.path.isdir(PLATFORM):
-        d = os.path.join(PLATFORM, "web", "skills_seed", name)
+        d = _confined(os.path.join(PLATFORM, "web", "skills_seed"), name)
         scope = "engine"
     else:
         d = _BUILD_SKILL_D
         scope = "custom"
     try:
         os.makedirs(d, exist_ok=True)
-        path = os.path.join(d, "SKILL.md" if scope == "engine" else name + ".md")
+        # 目录与文件名两级都过 _confined:name 已过 ^[\w\-]+$,这里是 sink 处的纵深防御
+        path = _confined(d, "SKILL.md" if scope == "engine" else name + ".md")
         _atomic_text(path, content)
     except OSError as e:
         return jsonify({"error": "技能写入失败:%s" % str(e)[:120]}), 500
@@ -1629,9 +1790,11 @@ def ont_chat_stream():
         for a in atts[:5]:
             try:
                 import base64
-                fn = re.sub(r"[^\w.\-一-鿿]", "_", a.get("name", "f"))[:60]
+                # 先按字符白名单洗一遍(去掉分隔符),再 _safe_fname 挡住 ".."/隐藏文件这类
+                # 白名单洗不掉的形态,最后 _confined 保证落点仍在 chat_uploads 内。
+                fn = _safe_fname(re.sub(r"[^\w.\-一-鿿]", "_", a.get("name", "f"))[:60])
                 raw = base64.b64decode(a.get("b64", ""))
-                open(os.path.join(updir, fn), "wb").write(raw)
+                open(_confined(updir, fn), "wb").write(raw)
                 txt = ""
                 if fn.lower().endswith((".txt", ".md", ".csv", ".json", ".sql")):
                     txt = raw.decode("utf-8", "replace")[:2000]
@@ -2289,7 +2452,7 @@ def ont_completeness(key):
 def _ir_write_path(key):
     """图谱键 → 可回写的 IR JSON 路径;只读平台源(cq 的 .js)或非法键返 None,绝不逃逸。"""
     if _bad_gkey(key): return None
-    if key.startswith("built_"): return os.path.join(WORK, key + ".json")
+    if key.startswith("built_"): return _confined(WORK, key + ".json")
     if key.startswith("forged_"):
         p = _forged_path(key[7:]); return p if os.path.exists(p) else None
     src = IR_SOURCES.get(key)
@@ -2532,6 +2695,9 @@ def query():
     sql = body.get("sql", "")
     src = body.get("src") or "demo"
     if not sql_is_readonly(sql): return jsonify({"error": "仅允许只读 SELECT/WITH 查询"}), 400
+    # SQL 工作台的 SQL 本就由使用者书写;能力边界由「只读 + 单语句 + 只读连接」界定。
+    # 单语句这一条对外部库尤其关键:pymysql/psycopg2 可能执行堆叠语句,而 sql_is_readonly 只看开头。
+    if not _single_statement(sql): return jsonify({"error": "仅允许单条查询语句"}), 400
     try:
         if src in ("demo", ""): return jsonify(q(sql, attach_uploads=True))
         db, nm = _resolve_src(src)
@@ -3412,7 +3578,10 @@ def data_quality():
 def sysinfo():
     """系统管理(对齐平台『系统管理』):健康/引擎/库/作业概况"""
     import platform as _pf
-    info = {"health": "ok", "port": 8092, "python": _pf.python_version(), "platform": _pf.platform()[:60]}
+    # 端口取真实监听值(此前写死 8092,改了 DATAMIND_PORT 后这里会报出错误的端口)。
+    # 不回 platform() 全串:操作系统版本/内核版本属于对攻击者有用、对使用者无用的系统信息。
+    info = {"health": "ok", "port": LISTEN_PORT, "python": _pf.python_version(),
+            "platform": _pf.system()}
     try: info["db_ok"] = os.path.exists(DB)
     except Exception: info["db_ok"] = False
     try:
@@ -3457,8 +3626,8 @@ def build_upload():
         con = sqlite3.connect(UPLOAD_DB)                  # 置于 with 内:connect 抛错也由上下文管理器释放锁
         try:
             for f in request.files.getlist("files"):
-                fn = os.path.basename(f.filename or "file"); raw = f.read()
-                path = os.path.join(WORK, "uploads_" + fn)
+                fn = _safe_fname(f.filename or "file"); raw = f.read()
+                path = _confined(WORK, "uploads_" + fn)   # 落盘前再裁一次:上传文件名永远不可信
                 with open(path, "wb") as fp: fp.write(raw)
                 saved.append(fn)
                 if fn.lower().endswith((".csv", ".tsv")):
@@ -3483,11 +3652,13 @@ def build_upload():
 def build_run():
     """构建本体:source=demo(主库)|uploads(上传库);快速数据驱动构建(表→对象,命名启发+FK/重叠),产物注册为新图谱"""
     body = request.json or {}
-    src = body.get("source", "uploads"); name = body.get("name") or f"构建图谱{time.strftime('%m%d%H%M')}"
+    src = body.get("source", "uploads")
+    # 图谱名会作为 argv 传给子进程,先裁成安全 argv(同 /api/build/inquire 的处置)
+    name = _safe_argv(body.get("name") or f"构建图谱{time.strftime('%m%d%H%M')}", cap=60, default="构建图谱")
     db = DB if src == "demo" else UPLOAD_DB
     if not os.path.exists(db): return jsonify({"error": "数据库不存在,请先上传"}), 400
     key = "built_" + uuid.uuid4().hex[:6]
-    jid = run_job([sys.executable, os.path.join(HERE, "quick_build.py"), db, os.path.join(WORK, key + ".json"), name],
+    jid = run_job([sys.executable, _confined(HERE, "quick_build.py"), db, _confined(WORK, key + ".json"), name],
                   cwd=HERE, tag=f"build:{name}")
     return jsonify({"job": jid, "graph_key": key})
 
@@ -3508,6 +3679,26 @@ _BUILD_SKILL_DESC = {
 def _load_conns():
     v = _load_json(_BUILD_CONN_F)
     return v if isinstance(v, list) else []
+
+_DSN_USERINFO = re.compile(r"(?<=//)[^/@]*@")
+
+def _split_dsn_creds(dsn):
+    """DSN → (去凭据的 DSN, user, password)。
+
+    连接串常写成 mysql://user:pass@host/db。原样存进 build_connections.json 意味着
+    密码落在一个 0644 的文件里,并且 /api/build/sources 会把它整条回给前端 ——
+    「凭据只写不回显」的承诺在这条路径上是不成立的。故登记时就把 userinfo 摘出来,
+    密码走 0600 的加密凭据库,DSN 只留 scheme://host:port/db。
+    """
+    s = (dsn or "").strip()
+    if not s: return "", "", ""
+    u = _parse_dsn(s)
+    return _DSN_USERINFO.sub("", s), u.get("user") or "", u.get("password") or ""
+
+def _mask_conn(c):
+    """对外回显用:抹掉 DSN 里可能残留的凭据(旧版本存下的记录仍带 userinfo)。"""
+    if not isinstance(c, dict) or not c.get("dsn"): return c
+    return {**c, "dsn": _DSN_USERINFO.sub("***@", c["dsn"])}
 
 def _sqlite_tables(path):
     try:
@@ -3531,7 +3722,7 @@ def build_sources():
             t = _sqlite_tables(c["path"]); ready, tabs = bool(t), len(t)
         elif c.get("kind") == "api":             # API 源:已物化(up.api_*)即就绪
             ready = _api_conn_table(c) in utabs; tabs = 1 if ready else 0
-        srcs.append({**c, "tables": tabs, "ready": ready})
+        srcs.append({**_mask_conn(c), "tables": tabs, "ready": ready})   # DSN 里的残留凭据不回显
     assets = []
     for p in sorted(glob.glob(os.path.join(WORK, "uploads_*"))):
         fn = os.path.basename(p)[8:]
@@ -3554,15 +3745,22 @@ def build_connect():
     elif kind == "api":                          # C8 API 型数据源:REST 端点 → 取数物化进上传库(up.api_*)
         url = (body.get("url") or "").strip()
         if not re.match(r"^https?://", url): return jsonify({"error": "API 地址须以 http(s):// 开头"}), 400
+        bad = _check_fetch_url(url)                   # SSRF:登记时就挡,别等取数才发现
+        if bad: return jsonify({"error": bad}), 400
         conn["url"] = url[:500]
         conn["json_path"] = (body.get("json_path") or "").strip()[:120]
         conn["note"] = "API 源已登记;「取数」将结果物化为 up.api_* 表,问数/SQL 即可用"
     else:
-        conn["dsn"] = (body.get("dsn") or "").strip()
+        # DSN 里内嵌的 user:pass 一并摘出:连接清单会把 dsn 回给前端,凭据留在里面
+        # 就等于回显了密码(与"只写不回显"自相矛盾)。显式传入的 user/password 优先。
+        clean_dsn, dsn_user, dsn_pwd = _split_dsn_creds(body.get("dsn"))
+        conn["dsn"] = clean_dsn
         conn["note"] = "外部库已登记(取数需网络连通与驱动;凭据只写不回显)"
         if not conn["dsn"]: return jsonify({"error": "需要连接串 DSN"}), 400
-        if body.get("user") or body.get("password"):     # C7 凭据:0600 独立文件,永不回显/入列表
-            _save_conn_secret(conn["id"], body.get("user"), body.get("password"))
+        user = body.get("user") or dsn_user
+        password = body.get("password") or dsn_pwd
+        if user or password:                             # C7 凭据:0600 加密独立文件,永不回显/入列表
+            _save_conn_secret(conn["id"], user, password)
     # 幂等:同一物理源(sqlite 按 path、api 按 url、外部库按 dsn)已登记则复用,避免重复连接堆叠成脏列表
     def _same_source(c):
         if c.get("kind") != kind: return False
@@ -3573,9 +3771,9 @@ def build_connect():
         conns = _load_conns()
         dup = next((c for c in conns if _same_source(c)), None)
         if dup:
-            return jsonify({"ok": True, "conn": dup, "deduped": True})
+            return jsonify({"ok": True, "conn": _mask_conn(dup), "deduped": True})
         conns.insert(0, conn); _atomic_json(_BUILD_CONN_F, conns[:30])
-    return jsonify({"ok": True, "conn": conn})
+    return jsonify({"ok": True, "conn": _mask_conn(conn)})
 
 @app.post("/api/build/connect/delete")
 def build_connect_del():
@@ -3599,6 +3797,9 @@ def conn_api_fetch():
     if not conn or conn.get("kind") != "api": return jsonify({"error": "API 连接不存在"}), 404
     url = conn.get("url") or ""
     if not re.match(r"^https?://", url): return jsonify({"error": "非法 API 地址"}), 400
+    # 取数时重判一次:登记后 DNS 可能改指内网(DNS rebinding),旧记录也可能是加固前存下的
+    bad = _check_fetch_url(url)
+    if bad: return jsonify({"error": bad}), 400
     try:
         req = urllib.request.Request(url, headers={"Accept": "application/json", "User-Agent": "DataMind/1.0"})
         with urllib.request.urlopen(req, timeout=12) as r:
@@ -3667,8 +3868,9 @@ def _builtin_skill_names():
     return {os.path.basename(d) for d in glob.glob(os.path.join(PLATFORM, "web", "skills_seed", "*")) if os.path.isdir(d)}
 
 def _custom_skill_path(name):
+    name = _safe_fname(name)
     for ext in (".md", ".txt"):
-        p = os.path.join(_BUILD_SKILL_D, name + ext)
+        p = _confined(_BUILD_SKILL_D, name + ext)
         if os.path.exists(p): return p
     return None
 
@@ -3686,8 +3888,8 @@ def build_skill_get(name):
         try: content = open(p, encoding="utf-8", errors="replace").read()
         except Exception as e: return jsonify({"error": str(e)[:100]}), 500
         return jsonify({"name": name, "builtin": False, "editable": True, "content": content})
-    d = os.path.join(PLATFORM, "web", "skills_seed", name)
-    sk = os.path.join(d, "SKILL.md")
+    d = _confined(os.path.join(PLATFORM, "web", "skills_seed"), name)
+    sk = _confined(d, "SKILL.md")
     if os.path.isdir(d):
         content = open(sk, encoding="utf-8", errors="replace").read() if os.path.exists(sk) else "(该内置技能无 SKILL.md 说明)"
         files = sorted(os.path.basename(x) for x in glob.glob(os.path.join(d, "*")))[:20]
@@ -3705,7 +3907,7 @@ def build_skill_save():
     if not content.strip(): return jsonify({"error": "技能内容不能为空"}), 400
     if len(content) > 200_000: return jsonify({"error": "技能内容过大(上限 200KB)"}), 400
     os.makedirs(_BUILD_SKILL_D, exist_ok=True)
-    p = _custom_skill_path(name) or os.path.join(_BUILD_SKILL_D, name + ".md")
+    p = _custom_skill_path(name) or _confined(_BUILD_SKILL_D, name + ".md")
     with _WRITE_LOCK:
         open(p, "w", encoding="utf-8").write(content)
     return jsonify({"ok": True, "name": name})
@@ -3754,7 +3956,7 @@ def build_skill_from_graph():
     if name in _builtin_skill_names(): return jsonify({"error": "技能名与内置冲突,请换名"}), 400
     os.makedirs(_BUILD_SKILL_D, exist_ok=True)
     with _WRITE_LOCK:
-        open(os.path.join(_BUILD_SKILL_D, name + ".md"), "w", encoding="utf-8").write(content)
+        open(_confined(_BUILD_SKILL_D, name + ".md"), "w", encoding="utf-8").write(content)
     return jsonify({"ok": True, "name": name, "verbs": dict(verbs.most_common(8)), "chars": len(content)})
 
 # ── #1 技能对比实验(DR-022):同一构建目标 × 两组技能,各跑一次真实构建,对比产物 ──
@@ -3863,7 +4065,7 @@ def build_delete():
     """删除一个已构建本体产物"""
     k = (request.json or {}).get("key", "")
     if not re.match(r"^built_[\w]+$", k): return jsonify({"error": "非法 key"}), 400
-    p = os.path.join(WORK, k + ".json")
+    p = _confined(WORK, k + ".json")
     try:
         if os.path.exists(p): os.remove(p)
     except Exception as e: return jsonify({"error": str(e)[:80]}), 500
@@ -3922,7 +4124,9 @@ _TEXT_EXT = ("sql", "ddl", "py", "md", "txt", "json", "xml", "yaml", "yml", "csv
 
 def _read_asset_text(fname, cap=3500):
     """读取上传的可文本化多模态资产(建表代码/业务文档/知识片段/Excel 知识包);二进制/图像返回空(标注为引用证据)"""
-    p = os.path.join(WORK, "uploads_" + fname)
+    # fname 沿证据链一路传下来(上传文件名 → IR → 此处),不能假定它仍是单一文件名:
+    # 先裁成安全组件再 _confined,读取范围锁死在 WORK 内。
+    p = _confined(WORK, "uploads_" + _safe_fname(fname))
     ext = fname.rsplit(".", 1)[-1].lower() if "." in fname else ""
     if not os.path.exists(p): return ""
     if ext in ("xlsx", "xls"):
@@ -4262,10 +4466,25 @@ def _adjudicate_ir(db, name, extracted, ev):
     con = None
     try: con = ro_connect(db)
     except Exception: con = None
+    # ↓ 以下取数助手的 t/c 全部来自 **LLM 抽取产物**(_llm_extract_ontology 的返回),
+    #   即模型可写、外部可影响的字符串,却要落在 SQL 的标识符位上。
+    #   统一先过 _safe_ident:非法名直接返回空结果(等价于"取证不成立"),而不是拼进 SQL。
+    #   这条裁决决定了整个反幻觉取证链路不会被一个构造出来的列名反噬。
+    def _ids(*names):
+        """全部合法则返回元组,任一非法返回 None(调用方据此放弃本次取证)。"""
+        out = [_safe_ident(n) for n in names]
+        return None if any(x is None for x in out) else out
+
     def distinct(t, c, cap=8000):
-        try: return set(r[0] for r in con.execute(f'SELECT DISTINCT "{c}" FROM "{t}" LIMIT {cap}') if r[0] not in (None, ""))
+        ok = _ids(t, c)
+        if not ok: return set()
+        t, c = ok
+        try: return set(r[0] for r in con.execute(f'SELECT DISTINCT "{c}" FROM "{t}" LIMIT {int(cap)}') if r[0] not in (None, ""))
         except Exception: return set()
     def is_unique(t, c):
+        ok = _ids(t, c)
+        if not ok: return False
+        t, c = ok
         try:
             tot, dis = con.execute(f'SELECT COUNT("{c}"), COUNT(DISTINCT "{c}") FROM "{t}"').fetchone()
             return tot and tot == dis
@@ -4273,11 +4492,17 @@ def _adjudicate_ir(db, name, extracted, ev):
 
     def pair_distinct(t, c1, c2, cap=8000):
         """二列元组取值集(复合键联合裁决用;跳过含空的行)。"""
+        ok = _ids(t, c1, c2)
+        if not ok: return set()
+        t, c1, c2 = ok
         try:
             return set((r[0], r[1]) for r in con.execute(
-                f'SELECT DISTINCT "{c1}", "{c2}" FROM "{t}" WHERE "{c1}" IS NOT NULL AND "{c2}" IS NOT NULL LIMIT {cap}'))
+                f'SELECT DISTINCT "{c1}", "{c2}" FROM "{t}" WHERE "{c1}" IS NOT NULL AND "{c2}" IS NOT NULL LIMIT {int(cap)}'))
         except Exception: return set()
     def pair_unique(t, c1, c2):
+        ok = _ids(t, c1, c2)
+        if not ok: return False
+        t, c1, c2 = ok
         try:
             tot, dis = con.execute(
                 f'SELECT COUNT(*), COUNT(DISTINCT "{c1}" || CHAR(31) || "{c2}") FROM "{t}" '
@@ -4288,7 +4513,9 @@ def _adjudicate_ir(db, name, extracted, ev):
     pkmap = {}
     if con:
         for tt2 in {o.get("table") for o in objects if o.get("table")}:
-            try: pkmap[tt2] = [r2[1] for r2 in con.execute(f'PRAGMA table_info("{tt2}")') if r2[5]]
+            safe_t = _safe_ident(tt2)
+            if not safe_t: pkmap[tt2] = []; continue     # 非法表名不进 PRAGMA,视作无声明主键
+            try: pkmap[tt2] = [r2[1] for r2 in con.execute(f'PRAGMA table_info("{safe_t}")') if r2[5]]
             except Exception: pkmap[tt2] = []
 
     relations, seen = [], set()
@@ -4432,7 +4659,9 @@ def build_inquire():
         yield push("intake", True, f"接收构建诉求 · 数据源「{sname}」· 编排技能 {len(skills)} 个")
         yield sse({"type": "status", "text": "多智能体引擎解析建模意图与范围…"})
         plan = _bounded(lambda: _build_intent(q, sname, skills), 30) or {}
-        gname = name or plan.get("name") or (q[:14] + "本体")
+        # gname 同时来自用户输入与 LLM 生成,且会作为 argv 传给 quick_build 子进程:
+        # 先裁成安全 argv(去控制字符/shell 元字符、限长、不以 - 开头)再往下走。
+        gname = _safe_argv(name or plan.get("name") or (q[:14] + "本体"), cap=60, default="未命名本体")
         yield push("intent", True, f"意图解析 · 目标本体「{gname}」· 策略:{plan.get('strategy', '多模态 LLM 抽取 + 反幻觉取证')}")
         if skills:
             yield push("orchestrate", True, "编排技能方法论:" + "、".join(skills[:5]))
@@ -4440,7 +4669,7 @@ def build_inquire():
             _nseg = sum(1 for s in skills if s in _SKILL_METHOD or _custom_skill_path(s))
             yield push("skill_inject", bool(_mt), f"技能注入 · {_nseg} 段方法论并入抽取 prompt(共 {len(_mt)} 字)" if _mt
                        else "技能注入 · 选中技能无可注入正文(内容为空?)")
-        key = "built_" + uuid.uuid4().hex[:6]; outp = os.path.join(WORK, key + ".json")
+        key = "built_" + uuid.uuid4().hex[:6]; outp = _confined(WORK, key + ".json")
         # ① 多模态证据聚合(库结构 + 上传文档/代码 + 图像引用)
         yield sse({"type": "status", "text": "聚合多模态证据(库表结构 / 建表代码 / 业务文档 / 图像引用)…"})
         ev = _gather_evidence(db)
@@ -4484,7 +4713,12 @@ def build_inquire():
             yield push("llm_extract", False, "LLM 引擎超时/离线 → 回退纯数据驱动构建(反幻觉规则)")
             yield sse({"type": "status", "text": "数据驱动构建本体中(读表 / 主外键推断 / 取值重叠验证)…"})
             try:
-                proc = subprocess.Popen([sys.executable, os.path.join(HERE, "quick_build.py"), db, outp, gname],
+                # 三个 argv 的来源与约束(避免"看起来像命令注入"的疑虑,也真的封死它):
+                #   db   —— 只能是 DB / UPLOAD_DB / 已登记连接里的 sqlite 路径,且上文已 os.path.exists 校验;
+                #   outp —— _confined(WORK, built_<uuid>.json),不含用户输入;
+                #   gname—— 已过 _safe_argv。
+                # 且以 list 形式调用(不经 shell),元字符不会被解释。
+                proc = subprocess.Popen([sys.executable, _confined(HERE, "quick_build.py"), db, outp, gname],
                                         cwd=HERE, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
                 for line in iter(proc.stdout.readline, ""):
                     line = line.strip()
@@ -4514,21 +4748,115 @@ def build_inquire():
 # ── 数据连接浏览 + 数据可视化(对齐平台『配置数据源·连接原始数据库』与『数据看板/大屏』)──
 # ── C7 外部库实连:连接器层(mysql/doris=pymysql, postgres=psycopg2;只读约束;凭据 0600 只写不回显)──
 _CONN_SECRETS_F = os.path.join(WORK, "conn_secrets.json")
+_CONN_KEY_F = os.path.join(WORK, ".conn_key")     # 本机主密钥(0600);与密文分文件存放
+
+def _conn_key():
+    """取/建本机主密钥。与密文分开存放的意义:conn_secrets.json 被顺手带走(打包、
+    备份、误提交)时不等于密码泄露 —— 还需要同机的 .conn_key。两者都在 workdir,
+    这挡不住已拿到本机文件系统读权限的攻击者,但确实挡住了"随手复制一个 json"这条最常见的泄露路径。"""
+    import base64
+    with _WRITE_LOCK:
+        if os.path.exists(_CONN_KEY_F):
+            try:
+                raw = open(_CONN_KEY_F, "rb").read().strip()
+                if raw: return raw
+            except OSError:
+                pass
+        raw = base64.urlsafe_b64encode(os.urandom(32))
+        fd = os.open(_CONN_KEY_F, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)  # 创建即 0600,无可读窗口
+        with os.fdopen(fd, "wb") as fp: fp.write(raw)
+        return raw
+
+def _fernet():
+    """加密后端:装了 cryptography 就用 Fernet(AES-CBC + HMAC),没装返回 None。
+    不自造加密算法 —— 缺依赖时如实降级并告警,好过用一个看着像加密的异或。"""
+    try:
+        from cryptography.fernet import Fernet
+    except ImportError:
+        return None
+    try:
+        return Fernet(_conn_key())
+    except Exception:
+        _LOG.warning("连接凭据主密钥不可用,本次不加密存储")
+        return None
+
+def _enc_secret(plain):
+    """明文 → 存储形态。装了 cryptography 存 'enc:v1:<密文>',否则存 'plain:<明文>' 并告警。
+    带前缀是为了让读侧无歧义,也让运维一眼看出哪些记录还没加密。"""
+    if not plain: return ""
+    f = _fernet()
+    if f is None:
+        _LOG.warning("未安装 cryptography,外部库密码将以明文落盘(文件权限 0600)。"
+                     "建议 pip install cryptography 后在界面重存一次凭据以启用静态加密。")
+        return "plain:" + plain
+    return "enc:v1:" + f.encrypt(plain.encode()).decode()
+
+def _dec_secret(stored):
+    """存储形态 → 明文。兼容三种:enc:v1: 密文、plain: 明文、以及历史遗留的裸明文。"""
+    s = str(stored or "")
+    if s.startswith("enc:v1:"):
+        f = _fernet()
+        if f is None:
+            _LOG.error("凭据为密文但 cryptography 不可用,无法解密;请安装后重试")
+            return ""
+        try:
+            return f.decrypt(s[7:].encode()).decode()
+        except Exception:
+            _LOG.error("凭据解密失败(主密钥变更或文件损坏),请在界面重新填写")
+            return ""
+    if s.startswith("plain:"): return s[6:]
+    return s                                       # 旧版本写下的裸明文,读得到但下次保存即升级为密文
 
 def _conn_secret(cid):
-    try: return (_load_json(_CONN_SECRETS_F) or {}).get(cid) or {}
-    except Exception: return {}
+    """→ {user, password}(password 已解密)。仅供发起连接时内部使用,永不回显给前端。"""
+    try:
+        rec = (_load_json(_CONN_SECRETS_F) or {}).get(cid) or {}
+    except Exception:
+        return {}
+    if not rec: return {}
+    return {"user": rec.get("user") or "", "password": _dec_secret(rec.get("password"))}
 
 def _save_conn_secret(cid, user, password):
     with _WRITE_LOCK:
         d = _load_json(_CONN_SECRETS_F) or {}
         if user or password:
-            d[cid] = {"user": (user or "")[:60], "password": (password or "")[:120]}
+            d[cid] = {"user": (user or "")[:60], "password": _enc_secret((password or "")[:120])}
         else:
             d.pop(cid, None)
         _atomic_json(_CONN_SECRETS_F, d)
         try: os.chmod(_CONN_SECRETS_F, 0o600)
         except Exception: pass
+
+def _migrate_conn_secrets():
+    """把加固前存下的明文口令就地升级为密文(启动时跑一次)。
+
+    只在读侧兼容明文是不够的:那意味着老部署的密码会一直明文躺在盘上,而本次整改
+    要消除的正是这一条。故启动即改写 —— 内容与语义不变,只换存储形态,失败不影响启动。
+    """
+    if _fernet() is None: return                     # 没有加密后端,维持现状(已有告警)
+    try:
+        d = _load_json(_CONN_SECRETS_F)
+    except Exception:
+        return
+    if not isinstance(d, dict) or not d: return
+    changed = False
+    for cid, rec in list(d.items()):
+        if not isinstance(rec, dict): continue
+        pw = rec.get("password") or ""
+        if pw and not str(pw).startswith("enc:v1:"):
+            d[cid] = {**rec, "password": _enc_secret(_dec_secret(pw))}
+            changed = True
+    if not changed: return
+    try:
+        with _WRITE_LOCK:
+            _atomic_json(_CONN_SECRETS_F, d)
+            try: os.chmod(_CONN_SECRETS_F, 0o600)
+            except OSError: pass
+        _LOG.info("已将 %s 中的明文连接口令升级为静态加密存储", os.path.basename(_CONN_SECRETS_F))
+    except Exception:
+        _LOG.warning("连接凭据加密升级失败,原文件未改动;下次保存凭据时会再试")
+
+_migrate_conn_secrets()
 
 def _parse_dsn(dsn):
     """jdbc:mysql://host:port/db 或 mysql://user:pass@host/db → 部件字典"""
@@ -4554,9 +4882,33 @@ def _ext_kind(conn):
         k = _parse_dsn(conn.get("dsn"))["scheme"] or "external"
     return {"postgresql": "postgres", "pg": "postgres"}.get(k, k)
 
+def _single_statement(sql):
+    """拒绝堆叠语句:只允许一条 SQL(末尾分号可有)。
+
+    sqlite3 的 execute 本就只跑一条,但 pymysql/psycopg2 在部分配置下会执行多语句 ——
+    "SELECT 1; DROP TABLE t" 这种堆叠能整个绕过 sql_is_readonly(它只看开头)。
+    这里按引号感知地扫一遍:字符串字面量内的分号不算分隔符,语句间的分号则拦下。
+    """
+    s, i, n = str(sql or ""), 0, len(str(sql or ""))
+    quote = None
+    while i < n:
+        ch = s[i]
+        if quote:
+            if ch == quote:
+                if i + 1 < n and s[i + 1] == quote: i += 1      # 成对转义的引号,仍在字面量内
+                else: quote = None
+        elif ch in ("'", '"', "`"):
+            quote = ch
+        elif ch == ";":
+            if s[i + 1:].strip():                                # 分号后还有内容 → 堆叠
+                return False
+        i += 1
+    return True
+
 def _ext_query(conn, sql, limit=500):
     """外部库真查询:只读放行 SELECT/WITH;驱动未装/不可达给明确报错(不静默)。→ {columns, rows}"""
     if not sql_is_readonly(sql): raise ValueError("仅允许只读 SELECT/WITH 查询")
+    if not _single_statement(sql): raise ValueError("仅允许单条查询语句(检测到堆叠 SQL)")
     kind = _ext_kind(conn)
     u = _parse_dsn(conn.get("dsn"))
     sec = _conn_secret(conn.get("id"))
@@ -4653,13 +5005,18 @@ def conn_tables():
 def conn_preview():
     """预览某数据源某表前 100 行"""
     src = request.args.get("src", "demo"); table = request.args.get("table", "")
-    if not re.match(r"^[A-Za-z0-9_]+$", table): return jsonify({"error": "非法表名"}), 400
+    # 表名进的是标识符位,只能白名单;长度也限住,避免超长串灌进外部库
+    if not re.match(r"^[A-Za-z0-9_]{1,64}$", table): return jsonify({"error": "非法表名"}), 400
     db, nm = _resolve_src(src)
     if not db:
         conn = _find_conn(src)
         if conn and conn.get("kind") not in ("sqlite", "api"):    # C7 外部库:真连预览
             try:
-                return jsonify({"live": True, **_ext_query(conn, f"SELECT * FROM {table} LIMIT 100", limit=100)})
+                # 按方言加标识符引号(MySQL/Doris 用反引号——默认配置下双引号是字符串字面量,
+                # 一律用 " 会让预览直接语法错)。表名已过 ^[A-Za-z0-9_]{1,64}$,引号内不可能出现
+                # 引号字符,故这里是纯粹的边界加固,不引入新的转义问题。
+                qt = "`" if _ext_kind(conn) in ("mysql", "doris") else '"'
+                return jsonify({"live": True, **_ext_query(conn, f"SELECT * FROM {qt}{table}{qt} LIMIT 100", limit=100)})
             except Exception as e:
                 return jsonify({"error": f"外部库预览失败:{str(e)[:140]}"})
         return jsonify({"error": f"「{nm}」不可预览(外部库离线)"})
@@ -4675,6 +5032,9 @@ def viz_run():
     src = body.get("src", "demo"); sql = (body.get("sql") or "").strip()
     if not sql: return jsonify({"error": "请输入查询 SQL"}), 400
     if not sql_is_readonly(sql): return jsonify({"error": "仅允许只读 SELECT/WITH 查询"}), 400
+    # 本端点的 SQL 由使用者直接给出(SQL 工作台/看板取数是产品能力,不是注入),
+    # 因此防线不在"过滤参数"而在"限制能力":只读 + 单语句 + 只读连接三重约束。
+    if not _single_statement(sql): return jsonify({"error": "仅允许单条查询语句"}), 400
     db, nm = _resolve_src(src)
     if not db:
         conn = _find_conn(src)
@@ -4738,10 +5098,14 @@ def skill_run():
     body = request.json or {}
     name = body.get("name", ""); args = body.get("args", "")
     if not re.match(r"^[\w\-]+$", name): return jsonify({"error": "非法技能名"}), 400   # 防穿越:与同族端点一致
-    d = os.path.join(PLATFORM, "web", "skills_seed", name)
-    if not os.path.exists(os.path.join(d, "run.sh")): return jsonify({"error": "该技能无 run.sh"}), 400
-    if re.search(r"[;&|`$]", args): return jsonify({"error": "参数含非法字符"}), 400
-    jid = run_job(["bash", os.path.join(d, "run.sh")] + args.split(), cwd=PLATFORM, tag=f"skill:{name}",
+    d = _confined(os.path.join(PLATFORM, "web", "skills_seed"), name)
+    if not os.path.exists(_confined(d, "run.sh")): return jsonify({"error": "该技能无 run.sh"}), 400
+    # 参数改用**白名单**:此前的黑名单(;&|`$)漏掉了换行、\、引号、> < 等,而 run.sh 内部
+    # 若把参数二次求值(eval/未加引号展开),这些字符同样能拼出命令。参数本就只用于传
+    # 标识/路径片段,限成字母数字与 _-./=:, 足够,且把注入面收敛到可枚举的集合。
+    if args and not re.match(r"^[\w\-./=:,\s]*$", args):
+        return jsonify({"error": "参数含非法字符(仅允许字母数字与 _-./=:, 及空格)"}), 400
+    jid = run_job(["bash", _confined(d, "run.sh")] + args.split(), cwd=PLATFORM, tag=f"skill:{name}",
                   env={"GOV_TOKEN": os.environ.get("GOV_TOKEN", "")})
     return jsonify({"job": jid})
 
@@ -4764,18 +5128,23 @@ def outputs():
         if not os.path.isdir(base): continue
         for p in sorted(glob.glob(os.path.join(base, "**", "*"), recursive=True)):
             if os.path.isfile(p) and os.path.getsize(p) < 20_000_000:
-                out.append({"group": label, "name": os.path.relpath(p, base), "path": p, "kb": round(os.path.getsize(p) / 1024, 1)})
+                # 只回相对名:绝对路径会把部署目录结构泄露给前端,而下载只需要 name
+                # (/api/outputs/file 已改为按 name 在成果库内解析)。
+                out.append({"group": label, "name": os.path.relpath(p, base), "kb": round(os.path.getsize(p) / 1024, 1)})
     return jsonify(out[:400])
 
 @app.get("/api/outputs/file")
 def outputs_file():
+    """下载成果库文件。入参是**成果库内的相对路径**,不是任意绝对路径。"""
     p = request.args.get("p", "")
     allowed = [OUTPUTS]
-    rp = os.path.realpath(p)
+    # 相对路径按成果库根解析;绝对路径仍接受(兼容旧前端),但一律要落在白名单目录内。
+    rp = os.path.realpath(p if os.path.isabs(p) else os.path.join(OUTPUTS, p))
     if not any(rp.startswith(os.path.realpath(a) + os.sep) for a in allowed): return "forbidden", 403
     return send_file(rp)
 
 if __name__ == "__main__":
-    print("Cosmo DataMind → http://127.0.0.1:8092")
-    app.run(host=os.environ.get("DATAMIND_HOST", "127.0.0.1"),
-            port=int(os.environ.get("DATAMIND_PORT", "8092")), debug=False)
+    # 监听地址/端口只有一个事实源(LISTEN_HOST/LISTEN_PORT),启动横幅照它打印,
+    # 不再另写一份字面量 —— 此前改了 DATAMIND_HOST 却仍提示 127.0.0.1:8092,是误导。
+    _LOG.info("Cosmo DataMind → http://%s:%d", LISTEN_HOST, LISTEN_PORT)
+    app.run(host=LISTEN_HOST, port=LISTEN_PORT, debug=False)

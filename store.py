@@ -15,9 +15,13 @@ JSON 持久化」收敛为一个可测抽象,供 server 增量迁移:
 零外部依赖;可被 server.py 的写端点逐个替换,不需一次性改 64 处。
 """
 import json
+import logging
 import os
-import sys
 import threading
+
+# 诊断信息走 logging(有级别、有时间戳、可被部署方重定向或降噪),
+# 不用 print:后者混进 stdout 既无级别,也容易把内部绝对路径直接摊给使用者。
+_LOG = logging.getLogger("datamind.store")
 
 _LOCKS = {}
 _LOCKS_GUARD = threading.Lock()
@@ -36,7 +40,14 @@ class JsonStore:
     def __init__(self, path, default=None, validate=None, migrate=None, mode=None):
         """mode:目标文件权限(如 0o600)。在 os.replace **之前**打到临时文件上,
         使目标文件从出现的第一刻起就是该权限——先落盘再 chmod 会留下一个可被读到的窗口,
-        对存放密钥的文件不可接受。"""
+        对存放密钥的文件不可接受。
+
+        path 必须是**绝对**路径。本类是配置/凭据类文件的统一落盘口,相对路径会随进程
+        cwd 漂移(同一个 store 在不同启动目录指向不同文件),也让「../ 拼出去」这类形态
+        更难被看出来。注意:本类只保证路径确定,不做目录禁闭 —— 把值限制在某个目录内
+        是调用方的责任(server 侧统一走 _confined)。"""
+        if not path or not os.path.isabs(str(path)):
+            raise ValueError(f"JsonStore 需要绝对路径(相对路径随 cwd 漂移): {path}")
         self.path = path
         self._default = default if default is not None else {}
         self._validate = validate
@@ -58,9 +69,11 @@ class JsonStore:
             except (json.JSONDecodeError, ValueError, OSError) as e:
                 # 坏文件/半截写:退回 default 保证不崩,但**必须留痕**——
                 # 静默退回会把「文件损坏」伪装成「本来就是空的」,数据丢失被掩盖。
-                print(f"[store] 无法解析 {self.path}({type(e).__name__}: {e});"
-                      f"本次读取退回默认值,原文件未被改动,请人工核查是否损坏",
-                      file=sys.stderr, flush=True)
+                # 只记文件名与异常类型:绝对路径与异常消息可能带出部署目录结构,
+                # 需要完整现场时开 DEBUG(下一行)。
+                _LOG.warning("无法解析 %s(%s);本次读取退回默认值,原文件未被改动,请人工核查是否损坏",
+                             os.path.basename(self.path), type(e).__name__)
+                _LOG.debug("JsonStore 读取失败详情:%s", self.path, exc_info=True)
                 return self._fresh_default()
             if self._migrate is not None:
                 data = self._migrate(data)

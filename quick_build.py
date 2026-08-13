@@ -6,7 +6,7 @@
 
 结构(IR-007/DR-045):CLI/构建逻辑收进 build() + `if __name__=="__main__"` 守卫,
 纯函数(key_stem/key_name_ok)与 build() 均可被测试/编程调用;server 子进程调用行为不变。"""
-import json, re, sqlite3, sys
+import json, os, re, sqlite3, sys
 from collections import OrderedDict as _OrderedDict
 import dao_core   # DR-035:裁决决策与命名/重叠原语的单一事实源
 
@@ -70,9 +70,28 @@ def parent_key(pt, child_col, stem):
     return None
 
 
+def _checked_paths(db, out):
+    """入参路径体检:源库须为已存在的普通文件,产物路径不得含上级目录引用且父目录须存在。
+
+    本脚本既由人在命令行调用,也由 server 以子进程调用(argv 里带着用户可影响的路径)。
+    在此处一次判死,好过在两个调用侧各判一遍——也让「路径从哪来」不再影响结论。
+    """
+    db_p = os.path.realpath(db)
+    if not os.path.isfile(db_p):
+        raise ValueError(f"源库不存在或不是文件: {db}")
+    out_p = os.path.normpath(out)
+    if ".." in out_p.split(os.sep):
+        raise ValueError(f"产物路径不得含上级目录引用: {out}")
+    parent = os.path.dirname(os.path.realpath(out_p)) or "."
+    if not os.path.isdir(parent):
+        raise ValueError(f"产物目录不存在: {parent}")
+    return db_p, out_p
+
+
 def build(db, out, name):
     """数据驱动构建一张图谱 IR,写入 out 并返回 ir(供测试/编程调用)。"""
     global con, cols_of, pk_of
+    db, out = _checked_paths(db, out)
     # 只读打开(mode=ro):建本体只取数、绝不改源库;缺库时显式报错而非静默新建空库
     con = sqlite3.connect(f"file:{db}?mode=ro", uri=True); con.row_factory = sqlite3.Row
     tabs = [r[0] for r in con.execute("SELECT name FROM sqlite_master WHERE type='table' ORDER BY name")]
@@ -178,4 +197,9 @@ def build(db, out, name):
 
 
 if __name__ == "__main__":
-    build(sys.argv[1], sys.argv[2], sys.argv[3])
+    if len(sys.argv) < 4:
+        print(__doc__.splitlines()[0], file=sys.stderr); sys.exit(2)
+    try:
+        build(sys.argv[1], sys.argv[2], sys.argv[3])
+    except ValueError as e:            # 路径体检不过:给一行清楚的原因,不抛裸栈
+        print(f"[quick_build] 参数错误:{e}", file=sys.stderr); sys.exit(2)

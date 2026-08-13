@@ -65,13 +65,17 @@ _ENV_LOCKED_AT_BOOT = {v for v in ("DATAMIND_LLM_BASE", "DATAMIND_LLM_KEY", "DAT
                                    "DATAMIND_LLM_TIMEOUT", "DATAMIND_LLM_MAX_TOKENS")
                        if os.environ.get(v)}
 
+# 本地自建端点的默认前缀:不写死 IP —— 各家 vLLM/Ollama 的监听地址与端口并不一致,
+# 部署方用 DATAMIND_LOCAL_LLM_BASE 覆盖即可,界面上的「一键填入」随之跟着变。
+LOCAL_LLM_BASE = os.environ.get("DATAMIND_LOCAL_LLM_BASE", "http://localhost:8000/v1")
+
 LLM_PRESETS = [   # 常见服务商的端点前缀,供界面一键填入;模型名随各家版本变动,故只给端点
     {"id": "zhipu", "name": "智谱 GLM", "base": "https://open.bigmodel.cn/api/coding/paas/v4"},
     {"id": "deepseek", "name": "DeepSeek", "base": "https://api.deepseek.com/v1"},
     {"id": "moonshot", "name": "Moonshot Kimi", "base": "https://api.moonshot.cn/v1"},
     {"id": "dashscope", "name": "阿里百炼", "base": "https://dashscope.aliyuncs.com/compatible-mode/v1"},
     {"id": "openai", "name": "OpenAI", "base": "https://api.openai.com/v1"},
-    {"id": "local", "name": "本地自建(vLLM / Ollama)", "base": "http://127.0.0.1:8000/v1"},
+    {"id": "local", "name": "本地自建(vLLM / Ollama)", "base": LOCAL_LLM_BASE},
 ]
 ENGINE_KEY_VARS = ["OPENAI_API_KEY", "ANTHROPIC_API_KEY", "ZHIPU_API_KEY",
                    "DEEPSEEK_API_KEY", "MOONSHOT_API_KEY", "DASHSCOPE_API_KEY"]
