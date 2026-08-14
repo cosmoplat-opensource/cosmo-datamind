@@ -26,11 +26,11 @@ aside{width:210px;background:#fff;border-right:1px solid var(--line);padding:12p
 .nav{padding:9px 12px;border-radius:var(--rs);cursor:pointer;color:var(--txt);font-size:14px}
 .nav:hover{background:#F2F4FF;color:var(--acc)} .nav.on{background:#EEF2FF;color:var(--acc);font-weight:600;box-shadow:inset 3px 0 0 var(--acc)}
 /* 分组导航(对齐平台多级折叠栏)*/
-.nav-group{margin-top:2px}
-.nav-group .gh{font-size:11px;color:#9aa4b2;padding:9px 12px 4px;font-weight:600;letter-spacing:.4px;display:flex;align-items:center;justify-content:space-between;cursor:pointer;user-select:none}
-.nav-group .gh:hover{color:var(--acc)} .nav-group .gh .ar{font-size:9px;transition:transform .2s}
+.nav-group{margin-top:10px}
+.nav-group .gh{font-size:12px;color:#64748b;padding:8px 12px 5px;font-weight:600;letter-spacing:.3px;display:flex;align-items:center;justify-content:space-between;cursor:pointer;user-select:none;border-top:1px solid #eef1f6}
+.nav-group .gh:hover{color:var(--acc)} .nav-group .gh .ar{font-size:11px;color:inherit;opacity:.75;transition:transform .2s}
 .nav-group.collapsed .gh .ar{transform:rotate(-90deg)} .nav-group.collapsed .nav{display:none}
-.nav-group .nav{margin-left:2px}
+.nav-group .nav{margin-left:6px}
 main{flex:1;overflow:auto;padding:22px 26px}
 h2{font-size:18px;margin-bottom:14px} h3{font-size:14px;color:#475569;margin-bottom:8px}
 .kpis{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:16px}
@@ -38,8 +38,9 @@ h2{font-size:18px;margin-bottom:14px} h3{font-size:14px;color:#475569;margin-bot
 .kpi .n{font-size:24px;font-weight:700;color:#4A5FF3} .kpi .l{font-size:12px;color:var(--sub);margin-top:2px}
 .card{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:14px;margin-bottom:14px}
 .grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
-table{width:100%;border-collapse:collapse;font-size:12.5px}
-th,td{padding:6px 8px;text-align:left;border-bottom:1px solid #eef2ff;white-space:nowrap;max-width:260px;overflow:hidden;text-overflow:ellipsis}
+table{width:100%;border-collapse:collapse;font-size:13.5px}
+th,td{padding:8px 8px;text-align:left;border-bottom:1px solid #eef2ff;white-space:nowrap;max-width:260px;overflow:hidden;text-overflow:ellipsis}
+ th{font-weight:600;color:#475569;background:#fafbfe;border-bottom:1px solid #e4e7ed}
 th{color:var(--sub);font-weight:600;position:sticky;top:0;background:var(--panel)}
 tr:hover td{background:#f8fbff} .scroll{overflow:auto;max-height:60vh}
 input,textarea,select{background:#fff;border:1px solid var(--line);color:var(--txt);border-radius:var(--rs);padding:9px 12px;font-size:14px;width:100%}
@@ -209,7 +210,7 @@ a{color:var(--acc)}
  .kpis{grid-template-columns:repeat(2,1fr)}
  .grid2{grid-template-columns:1fr !important}
  .msg-user{margin-left:6%} .msg-ai{margin-right:6%}
- #g_canvas{height:64vh} table{font-size:12px}
+ #g_canvas{height:64vh} table{font-size:13px}
  iframe{height:70vh}   /* 默认高度;带内联 calc(100vh-178px) 的嵌入页以内联为准(此前 !important 覆盖内联致嵌入区下方留白) */
  /* 深度问数三段式:窄屏纵向堆叠 */
  .dq{flex-direction:column;height:auto} .dq-side{width:100%;flex:0 0 auto;box-shadow:none;max-height:none}
@@ -233,43 +234,42 @@ a{color:var(--acc)}
 <aside>
  <div class="ucard"><div class="av">◈</div><div class="nm">Cosmo 工作区</div><div class="rl">数据智脑 · 治理×本体×问数</div><div class="bar"></div></div>
  <div class="nav on" data-p="home">总览驾驶舱</div>
- <div class="nav" data-p="viz">数据可视化</div>
- <div class="nav-group"><div class="gh" onclick="dqGroup(this)">数据资产 <span class="ar">▾</span></div>
+<div class="nav" data-p="viz">数据可视化</div>
+<div class="nav-group"><div class="gh" onclick="dqGroup(this)">数据资产 <span class="ar">▾</span></div>
   <div class="nav" data-p="conn">数据连接</div>
-  <div class="nav" data-p="catalog">数据目录</div></div>
- <div class="nav-group"><div class="gh" onclick="dqGroup(this)">数据建模 <span class="ar">▾</span></div>
+  <div class="nav" data-p="catalog">数据目录</div>
+  <div class="nav" data-p="layers">数仓分层</div></div>
+<div class="nav-group"><div class="gh" onclick="dqGroup(this)">本体工程 <span class="ar">▾</span></div>
   <div class="nav" data-p="graph">本体图谱</div>
   <div class="nav" data-p="build">本体构建</div>
   <div class="nav" data-p="claw">本体对话</div>
   <div class="nav" data-p="review">本体评审</div>
   <div class="nav" data-p="ontquality">本体完备度</div>
-  <div class="nav" data-p="layers">数仓分层</div></div>
- <div class="nav-group"><div class="gh" onclick="dqGroup(this)">数据开发 <span class="ar">▾</span></div>
-  <div class="nav" data-p="sqldev">SQL 工作台</div></div>
- <div class="nav-group"><div class="gh" onclick="dqGroup(this)">指标平台 <span class="ar">▾</span></div>
+  <div class="nav" data-p="library">本体库</div>
+  <div class="nav" data-p="sparql">SPARQL 查询</div></div>
+<div class="nav-group"><div class="gh" onclick="dqGroup(this)">指标平台 <span class="ar">▾</span></div>
   <div class="nav" data-p="metrics">指标中心</div>
   <div class="nav" data-p="rules">构成规则</div></div>
- <div class="nav-group"><div class="gh" onclick="dqGroup(this)">数据治理 <span class="ar">▾</span></div>
-  <div class="nav" data-p="quality">数据质量</div></div>
- <div class="nav-group"><div class="gh" onclick="dqGroup(this)">智能问数 <span class="ar">▾</span></div>
+<div class="nav-group"><div class="gh" onclick="dqGroup(this)">数据治理 <span class="ar">▾</span></div>
+  <div class="nav" data-p="quality">数据质量</div>
+  <div class="nav" data-p="glossary">术语管理</div></div>
+<div class="nav-group"><div class="gh" onclick="dqGroup(this)">智能问数 <span class="ar">▾</span></div>
   <div class="nav" data-p="chat">深度问数</div>
   <div class="nav" data-p="assistant">业务助手</div>
-  <div class="nav" data-p="agents">智能体列表</div>
-  <div class="nav" data-p="glossary">术语管理</div>
   <div class="nav" data-p="qaeval">问数评测</div></div>
- <div class="nav-group"><div class="gh" onclick="dqGroup(this)">本体治理 <span class="ar">▾</span></div>
-  <div class="nav" data-p="actioncenter">动作中心</div>
-  <div class="nav" data-p="library">本体库</div>
-  <div class="nav" data-p="sparql">SPARQL查询</div></div>
- <div class="nav-group"><div class="gh" onclick="dqGroup(this)">数据服务 <span class="ar">▾</span></div>
-  <div class="nav" data-p="apis">API 服务目录</div></div>
- <div class="nav-group"><div class="gh" onclick="dqGroup(this)">技能与成果 <span class="ar">▾</span></div>
+<div class="nav-group"><div class="gh" onclick="dqGroup(this)">智能体与技能 <span class="ar">▾</span></div>
+  <div class="nav" data-p="agents">智能体列表</div>
   <div class="nav" data-p="skills">技能中心</div></div>
- <div class="nav-group"><div class="gh" onclick="dqGroup(this)">运维管理 <span class="ar">▾</span></div>
+<div class="nav-group"><div class="gh" onclick="dqGroup(this)">动作执行 <span class="ar">▾</span></div>
+  <div class="nav" data-p="actioncenter">动作中心</div></div>
+<div class="nav-group"><div class="gh" onclick="dqGroup(this)">开发与服务 <span class="ar">▾</span></div>
+  <div class="nav" data-p="sqldev">SQL 工作台</div>
+  <div class="nav" data-p="apis">API 服务目录</div></div>
+<div class="nav-group"><div class="gh" onclick="dqGroup(this)">运维管理 <span class="ar">▾</span></div>
   <div class="nav" data-p="jobs">作业中心</div>
   <div class="nav" data-p="enginecfg">引擎设置</div>
   <div class="nav" data-p="sysadmin">系统管理</div></div>
- <div style="flex:1"></div><div class="muted" style="padding-left:8px">v1 · 本地原型<br>智能引擎 · 多智能体编排</div>
+<div style="flex:1"></div><div class="muted" style="padding-left:8px">v1 · 本地原型<br>智能引擎 · 多智能体编排</div>
 </aside>
 <main>
  <div class="page on" id="p_home"><h2>总览驾驶舱</h2><div class="kpis" id="kpis"></div>
@@ -279,7 +279,7 @@ a{color:var(--acc)}
  <div class="page" id="p_catalog"><h2>数据目录</h2>
   <div class="row" style="margin-bottom:10px"><input id="cat_q" placeholder="搜索表名 / 中文注释…" style="width:300px" oninput="catRender()">
    <span id="cat_tags"></span></div>
-  <div class="grid2" style="grid-template-columns:320px 1fr">
+  <div class="grid2" style="grid-template-columns:360px 1fr">
    <div class="card scroll" id="tbl_list"></div>
    <div><div class="card" id="tbl_cols"><h3>选择左侧表查看字段与预览</h3></div>
       <div class="card scroll" id="tbl_prev"></div></div></div></div>

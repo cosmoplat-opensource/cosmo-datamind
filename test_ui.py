@@ -109,6 +109,13 @@ async def main():
         await go("catalog")
         rows = await ev("document.querySelectorAll('#p_catalog tr').length", 0)
         (ok if rows>50 else bad)(f"catalog 表清单({rows}行)")
+        # 末列须在可视区内:抬字号会撑宽首列(长表名 nowrap),把「列」挤出容器需横向滚动才看得到
+        _lastcol = await ev("""(()=>{const t=document.querySelector('#p_catalog table');
+            if(!t)return null;const box=t.closest('div');const last=[...t.querySelectorAll('th')].pop();
+            if(!last)return null;
+            return JSON.stringify({c:last.innerText.trim(),
+              vis:last.getBoundingClientRect().right<=box.getBoundingClientRect().right+1});})()""", '')
+        (ok if _lastcol and '"vis":true' in _lastcol else bad)("catalog 表格末列未被挤出可视区", str(_lastcol))
         # quality:分层对账告警在列
         await go("quality", 2200)
         t = await ev("document.getElementById('p_quality').innerText", '')
