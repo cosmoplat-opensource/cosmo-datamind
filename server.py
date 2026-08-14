@@ -5179,4 +5179,9 @@ if __name__ == "__main__":
     # 监听地址/端口只有一个事实源(LISTEN_HOST/LISTEN_PORT),启动横幅照它打印,
     # 不再另写一份字面量 —— 此前改了 DATAMIND_HOST 却仍提示 127.0.0.1:8092,是误导。
     _LOG.info("Cosmo DataMind → http://%s:%d", LISTEN_HOST, LISTEN_PORT)
-    app.run(host=LISTEN_HOST, port=LISTEN_PORT, debug=False)
+    # DR-048:内置服务器默认不设 socket 超时、线程无上限,只发半截请求头即可长期占用连接
+    # (2026-08-14 扫描实测 186s,CVE-2007-6750)。启动时装上超时与并发上限后再监听。
+    import srv_hardening
+    _LOG.info("%s", srv_hardening.describe())
+    app.run(host=LISTEN_HOST, port=LISTEN_PORT, debug=False,
+            request_handler=srv_hardening.build_handler())
