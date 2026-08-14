@@ -22,9 +22,12 @@ from playwright.async_api import async_playwright
 # ——不写死 IP 字面量,免得它与 server 的实际监听配置各自漂移。
 B = os.environ.get("DATAMIND_URL") or "http://%s:%s" % (
     os.environ.get("DATAMIND_HOST") or "localhost", os.environ.get("DATAMIND_PORT") or "8092")
-R = {"p": [], "f": []}
+R = {"p": [], "f": [], "s": []}
 def ok(n, extra=""):  R["p"].append(n); print(f"  ✓ {n}" + (f"  {extra}" if extra else ""))
 def bad(n, why=""):   R["f"].append(f"{n} :: {why}"); print(f"  ✗ {n} :: {why}")
+# 跳过:该断言依赖**本机未配置**的外部能力(如 OpenAI 兼容端点需 DATAMIND_LLM_BASE/_KEY)。
+# 记为 skip 而非 fail —— 未配端点是部署选择,不是代码缺陷;但必须显式列出,不许静默消失。
+def skip(n, why=""):  R["s"].append(f"{n} :: {why}"); print(f"  ⊘ {n} :: {why}(环境未配,跳过)")
 
 async def main():
     async with async_playwright() as pw:
@@ -49,7 +52,10 @@ async def main():
                                               "els=>els.map(e=>e.innerText.split('\\n')[0])")
         print(f"      运行时卡: {cards}")
         (ok if len(cards) >= 3 else bad)(f"引擎设置页列出 {len(cards)} 个运行时卡")
-        (ok if any("OpenAI" in c for c in cards) else bad)("含 OpenAI 兼容端点卡(GLM)")
+        _rt = await (await pg.request.get(B + '/api/ont/runtimes')).json()
+        HAS_OPENAI = "openai" in (_rt.get("runtimes") or [])
+        (ok if any("OpenAI" in c for c in cards) else (bad if HAS_OPENAI else
+         (lambda n: skip(n, "未配 DATAMIND_LLM_BASE/_KEY")))) ("含 OpenAI 兼容端点卡(GLM)")
         (ok if await pg.eval_on_selector("#eg_runtimes", "e=>e.innerText.includes('当前引擎')")
          else bad)("标出当前引擎")
 
@@ -79,16 +85,20 @@ async def main():
 
         # ══ 步骤 3:Claude Code → GLM,并点测试连通 ══
         print("\n【步骤3】UI 点「设为当前」: Claude Code → GLM(openai)")
-        st = await switch_to("OpenAI"); await pg.wait_for_timeout(2600)
-        c = await cur_rt()
-        (ok if c == "openai" else bad)("切回 GLM 后端生效", f"{st} → current={c}")
-        await pg.evaluate("""() => {
-            const c=[...document.querySelectorAll('#eg_runtimes .step')].find(x=>x.innerText.includes('OpenAI'));
-            const b=c && [...c.querySelectorAll('button')].find(b=>b.innerText.includes('测试连通'));
-            if(b) b.click(); }""")
-        await pg.wait_for_timeout(25000)
-        ti = await pg.evaluate("(document.getElementById('eg_t_openai')||{}).innerText||''")
-        (ok if ti.strip() else bad)("GLM「测试连通」出结果", ti[:70])
+        if not HAS_OPENAI:
+            skip("切回 GLM 后端生效", "未配 OpenAI 兼容端点")
+            skip("GLM「测试连通」出结果", "未配 OpenAI 兼容端点")
+        else:
+            st = await switch_to("OpenAI"); await pg.wait_for_timeout(2600)
+            c = await cur_rt()
+            (ok if c == "openai" else bad)("切回 GLM 后端生效", f"{st} → current={c}")
+            await pg.evaluate("""() => {
+                const c=[...document.querySelectorAll('#eg_runtimes .step')].find(x=>x.innerText.includes('OpenAI'));
+                const b=c && [...c.querySelectorAll('button')].find(b=>b.innerText.includes('测试连通'));
+                if(b) b.click(); }""")
+            await pg.wait_for_timeout(25000)
+            ti = await pg.evaluate("(document.getElementById('eg_t_openai')||{}).innerText||''")
+            (ok if ti.strip() else bad)("GLM「测试连通」出结果", ti[:70])
 
         # ══ 步骤 4:Key 掩码不泄漏 ══
         print("\n【步骤4】检查 Key 区不泄漏明文")
@@ -292,8 +302,10 @@ async def main():
             (ok if len(t) > 30 and not e else bad)(f"{p} 页可用", f"{len(t)}字 err={e[:1]}")
 
         await br.close()
-    print(f"\n===== UI 实操:{len(R['p'])} 通过 / {len(R['f'])} 失败 =====")
+    print(f"\n===== UI 实操:{len(R['p'])} 通过 / {len(R['f'])} 失败"
+          + (f" / {len(R['s'])} 跳过" if R["s"] else "") + " =====")
     for f in R["f"]: print("  ✗", f)
+    for s_ in R["s"]: print("  ⊘", s_)   # 跳过项照列,避免「环境未配」把覆盖面悄悄缩水
     sys.exit(1 if R["f"] else 0)
 
 asyncio.run(main())
