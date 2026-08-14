@@ -68,6 +68,128 @@ class TestHeaderDeadline:
         assert H.DEFAULT_BODY_BUDGET > H.DEFAULT_HDR_BUDGET * 5
 
 
+class TestBodyMinRate:
+    """慢速攻击的第二种变体(R-U-Dead-Yet):声明大 Content-Length 后每秒只滴 1 字节正文。
+
+    只给正文一个「宽预算」挡不住它——300s 的预算意味着连接可被占 300s,
+    比扫描器观测到的 186s 还长。报告建议里的「以及**频率**」正是指这个:
+    要按**最低传输速率**判定,而不是只看总时长(等价 Apache mod_reqtimeout 的 MinRate)。
+    """
+
+    def test_min_rate_configured(self):
+        r = H.DEFAULT_BODY_MIN_RATE
+        assert r and 100 <= r <= 100000, f"最低速率 {r} B/s 不合理"
+
+    def test_trickle_dies_near_initial_budget(self):
+        """每次只滴 1 字节:换来的时间微乎其微,应在初始预算附近被判失败。"""
+        import io, time
+        data = io.BytesIO(b"x" * 10000)
+        r = H._DeadlineReader(data)
+        r.start(0.2, min_rate=500)          # 初始 0.2s,每 500 字节换 1s
+        t0 = time.monotonic()
+        try:
+            for _ in range(10000):
+                r.read(1)                    # 1 字节仅换来 1/500 s
+                time.sleep(0.005)
+            raise AssertionError("滴入式正文未被判失败")
+        except TimeoutError:
+            assert time.monotonic() - t0 < 1.0, "拖得过久才失败,速率闸没起作用"
+
+    def test_bulk_upload_keeps_earning_time(self):
+        """正常上传:一次读到大块数据,换来的时间足以覆盖后续传输,不能误杀。"""
+        import io
+        r = H._DeadlineReader(io.BytesIO(b"x" * 1_000_000))
+        r.start(0.2, min_rate=500)
+        for _ in range(20):
+            r.read(65536)                    # 每次 64KB → 换来 131s
+        assert True                          # 未抛超时即通过
+
+    def test_timeout_forces_socket_shutdown(self):
+        """光抛异常不够:Python 3.10+ 里 socket.timeout 就是 TimeoutError,
+        会被 Werkzeug 的 handle() 捕获后仅记一行日志,连接并不会立刻断
+        (实测正文攻击在 20s 触发了超时,客户端却直到 70s 仍在发)。
+        所以判超时的同时必须**主动关闭连接**。"""
+        import io
+
+        closed = []
+
+        class _Sock:
+            def shutdown(self, how): closed.append(("shutdown", how))
+            def close(self): closed.append(("close", None))
+
+        r = H._DeadlineReader(io.BytesIO(b"x" * 100), on_timeout=_Sock())
+        r.start(0.05, min_rate=500)
+        import time as _t
+        _t.sleep(0.1)
+        try:
+            r.read(1)
+        except TimeoutError:
+            pass
+        assert closed, "超时后未关闭连接 —— 客户端会以为还连着,攻击照样占用资源"
+
+    def test_enforced_during_a_blocking_read(self):
+        """判定不能只夹在读的前后。
+
+        实测:客户端声明 Content-Length=100000 后每秒滴 1 字节,服务端一次
+        `read(100000)` 会长时间阻塞——前后夹检查的写法永远等不到那次检查,
+        连接因此存活 70s+。故**读阻塞期间**必须有看门狗按时把连接掐掉。
+        """
+        import time as _t
+
+        killed = []
+
+        class _Sock:
+            def shutdown(self, how): killed.append(how)
+            def close(self): killed.append("close")
+
+        class _SlowStream:
+            def read(self, n=-1):
+                _t.sleep(0.6)          # 模拟「数据在滴、读迟迟不返回」
+                return b"x"
+
+        r = H._DeadlineReader(_SlowStream(), on_timeout=_Sock())
+        r.start(0.15, min_rate=500)
+        try:
+            r.read(100000)
+        except TimeoutError:
+            pass
+        assert killed, "阻塞读期间未被掐断"
+
+    def test_watchdog_idle_when_not_reading(self):
+        """**不在读**的时候不得开火。
+
+        响应阶段(尤其 SSE 长流)服务端不再读请求,若看门狗仍挂着,
+        20s 后就会把正在推流的连接杀掉——实测这会让 SSE 直接
+        `Response ended prematurely`。看门狗只在读期间有效。
+        """
+        import io
+        import time as _t
+
+        killed = []
+
+        class _Sock:
+            def shutdown(self, how): killed.append(how)
+            def close(self): killed.append("close")
+
+        r = H._DeadlineReader(io.BytesIO(b"x" * 10), on_timeout=_Sock())
+        r.start(0.15, min_rate=500)
+        _t.sleep(0.5)                  # 期间一次读都不发生(等价于正在发响应)
+        assert not killed, "空闲期误杀:会打断 SSE 长流"
+
+    def test_extension_capped(self):
+        """速率信用不能无限累积,否则「快而不停」的连接可长期占用。"""
+        import io, time
+        r = H._DeadlineReader(io.BytesIO(b"x" * 1_000_000))
+        r.start(0.2, min_rate=500, ceiling=0.5)
+        r.read(500000)                       # 本可换来 1000s
+        time.sleep(0.6)
+        try:
+            r.read(1)
+            raise AssertionError("超过绝对上限仍放行")
+        except TimeoutError:
+            pass
+
+
 class TestConnectionCap:
     def test_default_cap_is_bounded(self):
         c = H.DEFAULT_MAX_CONN
