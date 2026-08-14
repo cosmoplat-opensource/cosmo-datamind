@@ -33,7 +33,7 @@ Cosmo DataMind 是**自有品牌、原创前后端**的「数据治理 × 本体
 - [DR-037 · 方向感知裁决;数据实证否决朴素强门槛翻转(fk_direction/should_reverse)](decisions/DR-037-direction-aware-adjudication.md)
 - [DR-036 · 自引用与角色键发现(role_targets + 角色感知 name_ok + health 自反豁免)](decisions/DR-036-self-referential-and-role-keys.md)
 - [DR-035 · 单一裁决核 dao_core(消两份漂移实现 + classify 三态 + 引擎平价)](decisions/DR-035-unified-adjudication-core.md)
-- [DR-048 · HTTP 慢速攻击缓解(请求头总时限 + 并发上限;扫描中危闭环)](decisions/DR-048-slow-http-dos-mitigation.md)
+- [DR-048 · HTTP 慢速攻击缓解(请求头总时限 + 正文速率闸 + 并发上限;扫描中危闭环)](decisions/DR-048-slow-http-dos-mitigation.md)
 - [DR-047 · 侧边栏信息架构与字号层级(本体页归一 + 动作中心独立 + 内容字号不倒挂)](decisions/DR-047-sidebar-ia-and-type-scale.md)
 - [DR-046 · 确定性模块的隔离单测(离线秒级 + quick_build 可测化)](decisions/DR-046-deterministic-module-unit-tests.md)
 - [DR-045 · 工程校验与 TDD 底座(pytest/coverage/ruff/CI + 文档计数自检)](decisions/DR-045-engineering-harness-and-tdd.md)
