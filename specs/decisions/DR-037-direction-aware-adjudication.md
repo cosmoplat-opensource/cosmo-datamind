@@ -3,7 +3,7 @@
 - **状态 / Status**: accepted
 - **日期 / Date**: 2026-07-31
 - **决策者 / Deciders**: Boss(用户) + Writer(Claude)
-- **关联 / Refs**: [[DR-035-unified-adjudication-core]]、[[DR-036-self-referential-and-role-keys]]、[[IR-008-adjudication-core-convergence]];实证=108 表 demo(imom_metrics.db)逐条测量 + 集成套件 531/531 全绿(满环境;若见 5 项 apply/undo/engine 失败,系 engine_config.json 的 driver 在当前环境未注册所致,非回归——见 ARCHITECTURE §5.1);`dao_core.fk_direction/should_reverse`
+- **关联 / Refs**: [[DR-035-unified-adjudication-core]]、[[DR-036-self-referential-and-role-keys]]、[[IR-008-adjudication-core-convergence]];实证=108 表 demo(demo_metrics.db)逐条测量 + 集成套件 531/531 全绿(满环境;若见 5 项 apply/undo/engine 失败,系 engine_config.json 的 driver 在当前环境未注册所致,非回归——见 ARCHITECTURE §5.1);`dao_core.fk_direction/should_reverse`
 
 ## 上下文 / Context
 
