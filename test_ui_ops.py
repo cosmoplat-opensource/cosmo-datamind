@@ -130,7 +130,7 @@ async def main():
         # ══ 步骤 6:本体对话页 —— 真实输入并发送 ══
         print("\n【步骤6】本体对话:署名 → 提问 → 审计刷新")
         await goto("claw", 2500)
-        await pg.fill("#claw_who", "Jinze Yu")
+        await pg.fill("#claw_who", "测试评审员")
         await pg.fill("#claw_q", "本体里有哪些对象?")
         await pg.click("#claw_btn")
         try:
