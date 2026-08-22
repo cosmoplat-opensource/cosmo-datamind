@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 """
 Cosmo DataMind · 数据智脑 — 自有品牌的数据治理+本体+深度问数原型(原创前后端)
-整合:demo_metrics.db(真实数据) + 上游本体引擎(引擎/技能/IR) + outputs(成果库)
+整合:demo_metrics.db(合成示例数据底座) + 上游本体引擎(引擎/技能/IR) + outputs(成果库)
 深度问数:hermes/claude-code(经 agent_runtime)生成 SQL 计划 → 本地 SQLite 执行 → 洞察;引擎不可用时走内置模板兜底。
 启动:python3 server.py  → http://127.0.0.1:8092
 """
