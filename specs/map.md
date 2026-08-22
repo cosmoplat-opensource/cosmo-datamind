@@ -84,8 +84,8 @@ Cosmo DataMind 是**自有品牌、原创前后端**的「数据治理 × 本体
 - `SPEC.md` — 对**平台** web/ 的逆向规格(平台契约,非 DataMind;前缀不同勿混用)。
 
 ## 现状校准
-- 计数(2026-08-12):**121 路由**(server.py 116 + bp_engine 5)/ **535 集成断言**(满环境 531/531 全绿)/
-  **139 单测**(确定性模块覆盖率 78.5%)/ DR-001…DR-046 · IR-001…IR-011。
+- 计数(2026-08-21):**121 路由**(server.py 116 + bp_engine 5)/ **535 集成断言**(满环境 531/531 全绿)/
+  **222 条单元用例**(168 个测试函数;确定性模块覆盖率 76.8%)/ DR-001…DR-048 · IR-001…IR-011。
   新增共享层 `srv_context`/`srv_engine`、单一裁决核 `dao_core`、评测台 `hallucination_eval`/`definition_eval`、
   持久化抽象 `store`、首个 blueprint `bp_engine`。
 

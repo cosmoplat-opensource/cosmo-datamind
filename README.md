@@ -269,7 +269,7 @@ GLM-5.2 与 OpenAI 的完整配置、用自然语言建一张带中文名的本�
 ```bash
 # 单元层:离线、秒级,不需起服务(确定性模块的隔离测试)
 pip3 install -r requirements-dev.txt
-python3 -m pytest tests/ -q      # 单测 + 文档计数自检(2026-08-12:139 个)
+python3 -m pytest tests/ -q      # 单测 + 文档计数自检(2026-08-21:222 条用例)
 python3 -m coverage run -m pytest tests/ -q && python3 -m coverage report   # 确定性模块覆盖率
 
 # 集成层:需先起服务
