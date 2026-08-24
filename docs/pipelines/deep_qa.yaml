@@ -1,0 +1,141 @@
+# 深度问数链路 · 显式编排说明(DR-049)
+#
+# 用途:本文件不参与运行,是 `server.py:/api/chat`(与 SSE 流式链 `/api/chat/stream`)
+# **实际执行顺序的显式化描述**,供答辩、审计与外部评审对照代码核查。
+# 每个节点标注 `code:` 源码锚点;改动代码时同步改此文件(计数与锚点由文档一致性自检覆盖)。
+#
+# 为什么显式化:原链路是代码内编排,紧凑但外部看不见——评审要回答
+# 「一个问题从进来到出答案,中间被哪些确定性关卡拦过」时,只能读源码。
+# 这里把关卡与失败去向摊开写清楚。
+#
+# 三条设计原则(与本仓一贯规范一致,阅读时可据此对照):
+#   ① 能确定则不用概率:口径校验、只读校验、术语扩展全是确定性代码,不问模型;
+#   ② 拦截优于纠正:SQL 在**执行前**过关卡,不靠事后解释;
+#   ③ 降级必留痕:引擎离线/超时一律如实标注走了兜底,不静默换路径。
+
+name: deep_qa
+description: 自然语言问题 → 本体锚定 → SQL 计划 → 只读执行 → 带出处作答
+entrypoint: server.py:chat  # POST /api/chat;流式版 /api/chat/stream 同语义
+version: "1.0"
+
+nodes:
+  - id: cache_lookup
+    type: deterministic
+    code: "server.py:_qa_key / _QA_CACHE"
+    desc: 命中缓存直接返回(`nocache` 可绕过;交互式提问默认每次真跑)
+    on_hit: return
+
+  - id: load_ontology
+    type: deterministic
+    code: "server.py:load_ir_edited('demo')"
+    desc: 载入本体 IR(含人审编辑),后续锚定与口径校验均以此为准
+    output: ir_gate
+
+  - id: coreference
+    type: deterministic
+    code: "server.py:_carryover  (B5)"
+    desc: 多轮指代延续——从上文补全「它/该产线」等省略对象;无历史则跳过
+    output: q_eff
+
+  - id: term_expand
+    type: deterministic
+    code: "server.py:expand_terms  (A1)"
+    desc: 术语词典中英互补扩展,提升表/列匹配召回(≤2 字符英文缩写只认整词)
+    note: 词典来自 translate_cn 四张词表,5 分钟缓存
+
+  - id: build_context
+    type: deterministic
+    code: "server.py:build_context"
+    desc: 按问句从本体挑相关对象/关系/指标,拼 schema 上下文;附数据时间窗(M4-a)
+    output: ctx
+
+  - id: load_history
+    type: deterministic
+    code: "server.py:chat (history[-2:])"
+    desc: 带入最近两轮问答摘要,供追问理解指代
+    optional: true
+
+  - id: skill_reuse
+    type: deterministic
+    code: "server.py:_match_qa_skill  (#5)"
+    desc: 命中已沉淀技能则直接复用其已验证 SQL,跳过大模型规划
+    on_hit: goto exec_guard
+
+  - id: llm_plan
+    type: llm
+    code: "server.py:agent_sql_plan / _bounded(..., 90)"
+    desc: 大模型产出分析计划(标题 + SQL),硬性 90 秒预算
+    engine: agent_runtime 多运行时(claude-code / hermes / OpenAI 兼容)
+    on_timeout: fallback_plan
+
+  - id: fallback_plan
+    type: deterministic
+    code: "server.py:fallback_plan"
+    desc: 引擎超时/离线时的内置模板计划;**如实标注为兜底**,不冒充模型输出
+
+  # ── 以下为「执行前关卡」,逐条 SQL 依次通过才允许落库执行 ──
+  - id: exec_guard.readonly
+    type: gate
+    code: "srv_context.sql_is_readonly + _single_statement"
+    desc: 只读校验 + 拒绝堆叠语句(仅允许单条 SELECT/WITH)
+    on_fail: skip_this_sql
+
+  - id: exec_guard.ontology
+    type: gate
+    code: "server.py:_validate_sql_ontology  (A2 口径拦截)"
+    desc: >
+      ① 表白名单:FROM/JOIN 的表必须在本体/数据目录/上传库/CTE 内 —— 拦臆造表名;
+      ② JOIN 键校验:异名等值 JOIN 的键对必须落在本体 verified/asserted 关系的
+         子键/父键上 —— 拦自造 JOIN。同名键等值放行(列名本身即口径)。
+    on_fail: skip_this_sql
+    rationale: 这是本体真正「起作用」的地方——不是给模型看的提示,是执行前的硬约束
+
+  - id: intent_check
+    type: observe_only
+    code: "intent_check.cross_check  (DR-026 双盲意图检测)"
+    desc: 反解 SQL 语义与原问题比对,答非所问则标注存疑
+    note: 只观测不阻断——确定性反解也会漏判,因误判挡住正确答案的代价更高
+
+  - id: exec_sql
+    type: deterministic
+    code: "server.py:chat → 只读 SQLite 连接"
+    desc: 只读连接执行(最多 4 条分析),逐条记录行数与耗时
+
+  - id: llm_insight
+    type: llm
+    code: "server.py (llm_insight)"
+    desc: 依据**已执行出的真实数据**生成结论;引擎报错则跳过,不臆造洞察
+    optional: true
+
+  - id: answer_with_provenance
+    type: output
+    desc: 返回结论 + 每条 SQL + 命中的本体对象/关系(锚定条),出处可回溯
+
+edges:
+  - [cache_lookup, load_ontology]
+  - [load_ontology, coreference]
+  - [coreference, term_expand]
+  - [term_expand, build_context]
+  - [build_context, load_history]
+  - [load_history, skill_reuse]
+  - [skill_reuse, llm_plan]          # 未命中技能才走大模型
+  - [llm_plan, fallback_plan]        # 超时/离线降级
+  - [llm_plan, "exec_guard.readonly"]
+  - [fallback_plan, "exec_guard.readonly"]
+  - ["exec_guard.readonly", "exec_guard.ontology"]
+  - ["exec_guard.ontology", intent_check]
+  - [intent_check, exec_sql]
+  - [exec_sql, llm_insight]
+  - [llm_insight, answer_with_provenance]
+
+# 关卡小结(评审最常问的一句「本体到底拦住了什么」)
+gates:
+  - name: 只读与单语句
+    kind: deterministic
+    blocks: 写操作、堆叠语句绕过
+  - name: 口径拦截
+    kind: deterministic
+    blocks: 臆造表名、本体中不存在的 JOIN 路径
+  - name: 双盲意图检测
+    kind: observe_only
+    blocks: 不阻断,标注答非所问
