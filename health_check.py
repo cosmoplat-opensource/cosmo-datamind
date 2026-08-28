@@ -1,16 +1,16 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""本体健康度体检 —— DR-030。
+"""本体图结构检查 —— DR-030。
 
 《本体智能研究报告(1.0)》阶段六(持续维护与演化)要求:
 
 > 知识质量的长效监控(如**异常关系检测**、三元组冲突检测)。
-> 建议组建专门团队……定期评审本体的**健康度**与适应度。
+> 建议组建专门团队……定期评审本体的**结构一致性**与适应度。
 
 已有的三项检测各管一面,但都不看**图结构本身**:
   CQ 核验    —— 本体够不够用(能不能答业务问题)
   漂移检测   —— 本体还对不对得上数据源
-  完备度卡   —— 定义/反例/接地填没填全
+  元数据覆盖卡   —— 定义/反例/接地填没填全
 
 本模块补上「图结构层面的异常」:一个定义 100%、与数据源完全一致、
 CQ 全过的本体,结构上仍可能是病的——比如一半对象是孤岛(建了但连不上),
@@ -29,9 +29,9 @@ CQ 全过的本体,结构上仍可能是病的——比如一半对象是孤岛(
 设计取舍:
 - **只诊断,不自动修**。孤岛可能是刚建还没连,超级节点可能就是事实上的枢纽
   (如"订单"天然连接一切)。自动删会毁掉建模成果;判断权在人。
-- **分级而非一刀切**。dangling/status_conflict 是硬错误(IR 不自洽),
+- **分级而非一刀切**。dangling/status_conflict 是阻断问题(IR 不自洽),
   isolated/hub 是待核查信号——混为一谈会让人淹没在噪声里而忽略真问题。
-- **健康分只由硬错误扣分**。信号类不扣分,只列出;否则一个枢纽对象就能
+- **结构一致性分只由阻断问题扣分**。信号类不扣分,只列出;否则一个枢纽对象就能
   把分数拉垮,分数失去意义。
 """
 from collections import Counter
@@ -55,7 +55,7 @@ def check(ir):
 
     errors, signals = [], []
     deg = Counter()
-    pair_dir, pair_undir = Counter(), {}
+    pair_dir, pair_dir_items, pair_undir = Counter(), {}, {}
 
     for r in rels:
         s, t = r.get(sk), r.get(tk)
@@ -80,10 +80,24 @@ def check(ir):
         deg[s] += 1
         deg[t] += 1
         pair_dir[(s, t)] += 1
+        pair_dir_items.setdefault((s, t), []).append(r)
         pair_undir.setdefault(frozenset((s, t)), []).append((s, t, st, r.get("verb")))
 
     for (s, t), c in pair_dir.items():
         if c > 1 and s != t:
+            role_keys = {
+                (
+                    item.get("verb"),
+                    (item.get("evidence") or {}).get("child_key"),
+                    (item.get("evidence") or {}).get("parent_key"),
+                )
+                for item in pair_dir_items[(s, t)]
+            }
+            # Multiple role-specific FKs (for example source_warehouse_id and
+            # target_warehouse_id) are distinct business relations, not duplicate
+            # extraction results.  Warn only when their evidence signatures collide.
+            if len(role_keys) == c and all(child_key for _, child_key, _ in role_keys):
+                continue
             signals.append({"type": "duplicate", "severity": "warn",
                             "relation": f"{s}->{t}", "count": c,
                             "desc": f"「{cn.get(s, s)}」→「{cn.get(t, t)}」有 {c} 条同向关系",
@@ -128,12 +142,12 @@ def check(ir):
         "healthy": not errors,
         "score": score,
         "note": "确定性图结构体检,不调 LLM;只诊断不自动修——孤岛可能是刚建未连,"
-                "超级节点可能本就是业务枢纽,判断权在人。健康分只由硬错误扣分,"
+                "超级节点可能本就是业务枢纽,判断权在人。结构一致性分只由阻断问题扣分,"
                 "信号类只列出不扣分(否则一个枢纽对象就能把分数拉垮)",
     }
 
 
 def gaps_from(report):
-    """硬错误转缺口条目回流;信号类不进缺口(避免噪声淹没真问题)。"""
+    """阻断问题转缺口条目回流;信号类不进缺口(避免噪声淹没真问题)。"""
     return [{"type": "health_" + e["type"], "desc": e["desc"], "fix": e["fix"]}
             for e in report.get("errors", [])]

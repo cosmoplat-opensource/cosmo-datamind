@@ -15,7 +15,7 @@ import re
 import sqlite3
 import threading
 
-# ── 基础路径(env 可覆盖):数据底座 / 上传库 / 工作目录。与 server 同目录,值与旧定义逐字一致。
+# ── 基础路径(env 可覆盖):只读数据源 / 上传库 / 工作目录。与 server 同目录,值与旧定义逐字一致。
 #    PLATFORM/OUTPUTS 与 sys.path 引擎自举仍留 server(与装配耦合),此处只收无副作用的路径。
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)

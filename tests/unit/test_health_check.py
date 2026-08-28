@@ -15,7 +15,7 @@ def test_healthy_graph_scores_full(ir_healthy):
 
 def test_isolated_node_is_signal_not_error(ir_with_isolated):
     r = health_check.check(ir_with_isolated)
-    # 孤岛是信号(info),不扣分、不进硬错误
+    # 孤岛是信号(info),不扣分、不进阻断问题
     assert r["isolated_count"] == 1
     assert r["healthy"] is True
     assert any(s["type"] == "isolated" and s["object"] == "audit_log" for s in r["signals"])
@@ -37,7 +37,7 @@ def test_self_loop_is_hard_error():
 
 
 def test_marked_self_ref_is_not_self_loop_error():
-    # DR-036:有意的层级自引用(self_ref=True)不应被判为 self_loop 硬错误
+    # DR-036:有意的层级自引用(self_ref=True)不应被判为 self_loop 阻断问题
     ir = {"objects": [{"id": "emp", "cn": "员工"}],
           "relations": [{"source_concept": "emp", "target_concept": "emp",
                          "verb": "上级", "status": "verified", "self_ref": True}]}

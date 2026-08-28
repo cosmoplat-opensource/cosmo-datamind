@@ -2,8 +2,8 @@
 # -*- coding: utf-8 -*-
 """定义质量评分 —— DR-040。
 
-完备度记分卡(DR-010)测「有没有定义/反例/接地」——形式覆盖率;
-本模块测「定义**好不好**」——属加种差形式是否成立、是否循环、有无反例、与金标是否契合。
+元数据覆盖统计(DR-010)测「有没有定义/反例/接地」——形式覆盖率;
+本模块测「定义**好不好**」——属加种差形式是否成立、是否循环、有无反例、与参考集是否契合。
 两者正交:前者答「填没填」,后者答「填得对不对」。
 
 全确定性、离线:结构维度靠规则,参考式靠字符二元组重叠(不需嵌入模型/LLM)。
@@ -107,7 +107,7 @@ def score_definition(term, definition, counter_example="", gold=None, judge=None
 
 def score_ontology(ir, gold_glossary=None, weak_threshold=0.6):
     """批量给本体所有对象的定义打分 + 聚合。
-    gold_glossary: 可选 {术语中文名: 金标定义};按对象 cn/name 匹配。"""
+    gold_glossary: 可选 {术语中文名: 参考集定义};按对象 cn/name 匹配。"""
     gold_glossary = gold_glossary or {}
     objs = ir.get("objects", [])
     rows, scores = [], []
@@ -124,4 +124,4 @@ def score_ontology(ir, gold_glossary=None, weak_threshold=0.6):
             "weak": weak, "weak_threshold": weak_threshold,
             "rows": sorted(rows, key=lambda x: x["score"]),
             "note": "确定性定义质量评分:结构(属加种差/非循环/反例)+ 参考式重叠;"
-                    "与完备度记分卡正交(前者测填没填,本表测填得对不对)"}
+                    "与元数据覆盖统计正交(前者测填没填,本表测填得对不对)"}

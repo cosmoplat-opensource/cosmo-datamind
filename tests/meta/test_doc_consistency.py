@@ -2,7 +2,7 @@
 """文档-代码一致性自检(DR-045)。
 
 审计发现:他们为「本体」造了 drift_check/compat_check,自己的 ARCHITECTURE 路由/断言
-计数却已漂移(文档称 119/531,实为 121/535)。本测试把真实计数与规范值对齐——
+计数却曾漂移(文档称 119/531,实为 122/535)。本测试把真实计数与规范值对齐——
 代码一变即红,逼你同步更新文档与此常量。这是「文档漂移」的确定性校验。
 """
 import re
@@ -11,7 +11,7 @@ import pathlib
 ROOT = pathlib.Path(__file__).resolve().parents[2]
 
 # 规范值(单一事实源)。改动路由/断言数时,必须同步改这里 + ARCHITECTURE.md/specs/map.md。
-EXPECT_ROUTES = 121
+EXPECT_ROUTES = 122
 EXPECT_ASSERTIONS = 535
 
 

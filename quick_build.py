@@ -9,13 +9,22 @@
 import json, os, re, sqlite3, sys
 from collections import OrderedDict as _OrderedDict
 import dao_core   # DR-035:裁决决策与命名/重叠原语的单一事实源
+import build_quality
+import ontology_grounding
 
 qi = lambda s: '"' + str(s).replace('"', '""') + '"'   # 安全转义 SQL 标识符(列名/表名含引号也不破格)
-_KIND_BFO = {"object": "MaterialEntity", "event": "Process"}   # kind→BFO 上层范畴(IOF 借鉴)
+_KIND_BFO = ontology_grounding.KIND_DEFAULTS
+
+
+def _local_relation_reason(source):
+    if source == "declared_fk":
+        return "数据库外键证明可连接性，但不能单独确定 BFO/IOF 关系语义"
+    return "字段命名和取值重叠支持候选连接，但不能单独确定 BFO/IOF 关系语义"
 
 # 模块级可变状态:由 build() 填充,供 DB 相关 helper(distinct/is_key_unique/parent_key)闭包引用。
-con = None
-cols_of, pk_of = {}, {}
+con: sqlite3.Connection | None = None
+cols_of: dict[str, list[tuple[str, str]]] = {}
+pk_of: dict[str, str | None] = {}
 
 
 def distinct(t, c, cap=20000):
@@ -24,7 +33,7 @@ def distinct(t, c, cap=20000):
     except Exception: return set()
 
 _UNIQ_CACHE_MAX = 4096          # 容量上限:超出按 LRU 逐出最久未用项
-_uniq_cache = _OrderedDict()
+_uniq_cache: _OrderedDict[tuple[str, str], bool] = _OrderedDict()
 def is_key_unique(t, c):
     """父连接键须为候选键(值唯一)才构成真 FK。
 
@@ -92,9 +101,19 @@ def build(db, out, name):
     """数据驱动构建一张图谱 IR,写入 out 并返回 ir(供测试/编程调用)。"""
     global con, cols_of, pk_of
     db, out = _checked_paths(db, out)
+    _uniq_cache.clear()  # 模块可被重复调用；不同数据库之间不得复用唯一性结论。
     # 只读打开(mode=ro):建本体只取数、绝不改源库;缺库时显式报错而非静默新建空库
     con = sqlite3.connect(f"file:{db}?mode=ro", uri=True); con.row_factory = sqlite3.Row
-    tabs = [r[0] for r in con.execute("SELECT name FROM sqlite_master WHERE type='table' ORDER BY name")]
+    # SQLite may create sqlite_stat1/sqlite_sequence and similar internal tables.
+    # They are storage-engine metadata, not business entities, and must not enter
+    # the ontology object count or relationship discovery space.
+    tabs = [
+        r[0]
+        for r in con.execute(
+            "SELECT name FROM sqlite_master "
+            "WHERE type='table' AND name NOT LIKE 'sqlite_%' ORDER BY name"
+        )
+    ]
     print(f"[quick_build] {len(tabs)} 张表", flush=True)
 
     objects, links = [], []
@@ -110,18 +129,28 @@ def build(db, out, name):
         kind = "event" if re.match(r"(dws_|fact_.*(log|record|output|iot))", t, re.I) else "object"
         objects.append({"name": t, "kind": kind, "tables": [t], "field_count": len(info),
                         "indicators": [], "remark": f"quick_build 自 {t}",
-                        # ── IOF-AV 机读注释(数据驱动路径无 LLM 定义,标为原始概念,保持与多模态路径同构)──
+                        # ── IOF-AV 机读注释（数据驱动路径无模型定义，标为原始概念）──
                         "bfo": _KIND_BFO.get(kind, "MaterialEntity"), "definition": "", "isPrimitive": True,
                         "example": "", "counterExample": "", "maturity": "Provisional",
                         "provenance": {"directSource": t, "adaptedFrom": [], "excerptedFrom": None}})
-        # 声明 FK(部分-引用关系,接地到 relatedToAtSomeTime)
+        # 声明 FK 证明关系可连接，但不据此虚构 BFO/IOF 对应关系。
         for fk in con.execute(f'PRAGMA foreign_key_list({qi(t)})'):
             links.append({"source_concept": t, "target_concept": fk[2], "verb": "关联",
                           "status": "verified", "overlap": None, "note": f"声明FK {fk[3]}→{fk[4]}",
-                          "evidence": {"child_key": fk[3], "parent_key": fk[4], "source": "declared_fk"},
-                          "founded_relation": "relatedToAtSomeTime", "temporal": "atSomeTime"})
+                          "evidence": {"child_key": fk[3], "parent_key": fk[4], "source": "declared_fk",
+                                       "declared": True, "direction": "child_to_parent",
+                                       "decision": "schema_declared_foreign_key"},
+                          "founded_relation": "", "grounding_iri": "", "grounding_status": "unmapped",
+                          "grounding_reason": _local_relation_reason("declared_fk"), "temporal": ""})
 
-    seen = {(l["source_concept"], l["target_concept"]) for l in links}
+    # A declared FK fixes the child→parent direction.  Block overlap inference
+    # in both directions for that pair; otherwise unique child values can create
+    # a second, contradictory parent→child edge from the same data.
+    seen = set()
+    for link in links:
+        pair = (link["source_concept"], link["target_concept"])
+        seen.add(pair)
+        seen.add((pair[1], pair[0]))
     for t in tabs:
         for c, _ in cols_of[t]:
             roles = dao_core.role_targets(c)                 # DR-036 自引用/角色键
@@ -157,12 +186,14 @@ def build(db, out, name):
                 # 决策统一走 dao_core.classify 的 compat 口径(min_distinct=1、不排除PK作子键)——
                 # 与 quick_build 历史行为逐值等价(非角色键),漂移就此收敛到单一裁决核(DR-035)。
                 punique = is_key_unique(pt, pk) if ov >= 60 else False
+                cunique = is_key_unique(t, c) if ov >= 60 else None
                 # DR-037 接线:子键唯一而父键不唯一 → 方向反了(真方向 pt→t)。
                 # 抑制这条反向边、且不污染 seen——让正向在处理多侧表(pt)的该列时自然发现。
-                if ov >= 60 and not self_ref and dao_core.should_reverse(is_key_unique(t, c), punique):
+                if ov >= 60 and not self_ref and dao_core.should_reverse(cunique, punique):
                     continue
+                name_supported = dao_core.name_ok(c, pt, pk, child_table=t)
                 verdict = dao_core.classify(overlap=ov, parent_unique=punique,
-                                            name_ok=dao_core.name_ok(c, pt, pk, child_table=t),
+                                            name_ok=name_supported,
                                             child_distinct=len(child),
                                             min_distinct=1, exclude_pk_child=False)
                 st = verdict["status"]
@@ -178,9 +209,15 @@ def build(db, out, name):
                 else:   # 弱重叠 candidate
                     note = "弱重叠,送审"
                     ev = {"child_key": c, "parent_key": pk, "overlap": round(ov, 1), "source": "key_overlap"}
+                ev.update({"parent_unique": bool(punique), "child_unique": cunique,
+                           "name_ok": bool(name_supported), "theta": dao_core.MIN_OVERLAP,
+                           "direction": ("self" if self_ref else
+                                         ("ambiguous" if cunique and punique else "child_to_parent")),
+                           "decision": verdict["reason"]})
                 link = {"source_concept": t, "target_concept": pt, "verb": "关联",
                         "status": st, "overlap": round(ov, 1), "note": note, "evidence": ev,
-                        "founded_relation": "relatedToAtSomeTime", "temporal": "atSomeTime"}
+                        "founded_relation": "", "grounding_iri": "", "grounding_status": "unmapped",
+                        "grounding_reason": _local_relation_reason("key_overlap"), "temporal": ""}
                 if self_ref:                                # DR-036:有意的层级自引用,语义化并标记
                     link["verb"] = "上级"
                     link["self_ref"] = True
@@ -188,10 +225,16 @@ def build(db, out, name):
                 links.append(link)
                 seen.add((t, pt)); seen.add((pt, t))
     print(f"[quick_build] 关系 {len(links)} 条 (verified {sum(1 for l in links if l['status']=='verified')})", flush=True)
+    con.close()
+    con = None
 
     ir = {"scenario": {"name": name, "style": "quick_build(数据驱动)", "object_count": len(objects), "relation_count": len(links)},
           "objects": objects, "relations": links}
-    with open(out, "w") as _fp: json.dump(ir, _fp, ensure_ascii=False, indent=1)
+    ir["build_quality"] = build_quality.evaluate(ir)
+    ir["gaps"] = ir["build_quality"]["gaps"]
+    tmp = out + ".tmp"
+    with open(tmp, "w", encoding="utf-8") as _fp: json.dump(ir, _fp, ensure_ascii=False, indent=1)
+    os.replace(tmp, out)
     print(f"[quick_build] 完成 → {out}", flush=True)
     return ir
 

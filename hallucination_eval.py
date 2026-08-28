@@ -61,13 +61,13 @@ def adjudicate(con, cand, theta=dao_core.MIN_OVERLAP, min_distinct=1, low_card_f
             "name_ok": name_ok, "child_distinct": cdist}
 
 
-def evaluate_proposals(db_path, proposed, gold_true_keys, **kw):
+def evaluate_proposals(db_path, proposed, reference_true_keys, **kw):
     """端到端反幻觉度量:给一批**被提议**的关系(来自 LLM 或 mock proposer),
-    量化其中的幻觉(不在金标真关系里的提议),以及数据裁决把幻觉**拦成非 verified**
+    量化其中的幻觉(不在参考集真关系里的提议),以及数据裁决把幻觉**拦成非 verified**
     还是**泄漏为 verified** 的比例。
 
     proposed: [{child_table,child_col,parent_table,parent_col}, ...](提议器输出,可含幻觉)
-    gold_true_keys: {(ct,cc,pt,pc)} 真关系键集合——用于判定某提议是否幻觉。
+    reference_true_keys: {(ct,cc,pt,pc)} 参考关系键集合——用于判定某提议是否错误关系。
 
     这补上 DR-039 的提议端:核心主张「LLM 提议、数据裁决,幻觉被数据拦住」
     在此变成数字——`hallucination_containment`=被拦幻觉/总幻觉,越接近 1 防线越强。
@@ -79,7 +79,7 @@ def evaluate_proposals(db_path, proposed, gold_true_keys, **kw):
     rows = []
     for p in proposed:
         key = (p["child_table"], p["child_col"], p["parent_table"], p["parent_col"])
-        is_hallucination = key not in gold_true_keys
+        is_hallucination = key not in reference_true_keys
         res = adjudicate(con, p, **kw)
         if is_hallucination:
             hallucinated += 1

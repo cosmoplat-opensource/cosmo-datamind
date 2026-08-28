@@ -132,7 +132,7 @@ def check(ir, db_path):
         "counts": cnt,
         "issues": issues,
         "scanned": {"objects_bound": n_obj_bound, "columns": n_col_checked, "relations": len(rels)},
-        # 一致率:未出问题的检查点占比,给出量化健康度而非只报有无
+        # 一致率:未出问题的检查点占比,给出量化结构一致性而非只报有无
         "consistency": round((total - len(issues)) * 100.0 / total, 1) if total else 100.0,
         "note": "确定性 schema 比对,不调 LLM;只报事实不自动修复——"
                 "漂移的正解可能是改本体也可能是数据源回滚,须人判断",

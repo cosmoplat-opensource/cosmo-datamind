@@ -26,7 +26,7 @@ source = [
   "health_check", "cq_check", "drift_check", "rule_engine", "module_split",
   "compat_check", "intent_check", "usage_stat", "quick_build", "openai_runtime",
   "dao_core", "hallucination_eval", "definition_eval", "store", "srv_context", "srv_hardening",
-  "ir_relational",
+  "ir_relational", "skill_registry", "build_quality", "ontology_grounding",
 ]
 omit = ["tests/*"]
 
@@ -52,6 +52,9 @@ ignore = [
 [tool.mypy]
 python_version = "3.10"
 ignore_missing_imports = true
+# 这三份文件是顺序执行、共享大量临时变量的端到端探针，不是可导入模块；
+# 由 ruff 与实际运行校验。mypy 聚焦生产模块及 tests/ 中的模块化测试。
+exclude = ["^test_all\\.py$", "^test_ui\\.py$", "^test_ui_ops\\.py$"]
 # 原型渐进式类型化:先不强制注解,只抓明确的类型错误。
 check_untyped_defs = false
 warn_unused_ignores = true
