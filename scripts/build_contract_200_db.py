@@ -23,7 +23,7 @@ from pathlib import Path
 from typing import Any, Iterable
 
 
-GENERATOR_VERSION = "1.0.0"
+GENERATOR_VERSION = "1.1.0"
 DEFAULT_SEED = 20260828
 TARGET_TABLES = 200
 TARGET_COLUMNS = 5000
@@ -648,6 +648,67 @@ def deidentify_base_plaintext(con: sqlite3.Connection) -> dict[str, Any]:
         "name_token_counts": family_sizes,
         "direct_identifier_counts": direct_counts,
         "updated_cells": con.total_changes - changes_before,
+    }
+
+
+def repair_base_aggregate_grains(con: sqlite3.Connection) -> dict[str, int]:
+    """Repair two known duplicate-grain defects in copied DWS daily tables.
+
+    ``DWS_EQUIPMENT_DAILY`` contains repeated rows at its documented daily
+    equipment/line grain.  Keeping the first deterministic row avoids treating
+    repeated snapshots as separate daily facts.  ``DWS_SAFETY_DAILY`` contains
+    500 rows at one identical date/workshop grain; its existing synthetic
+    observations are redistributed over 100 dates and the five valid workshops
+    so every row has an unambiguous daily grain.  The source database remains
+    read-only and unchanged.
+    """
+    before = con.execute("SELECT COUNT(*) FROM DWS_EQUIPMENT_DAILY").fetchone()[0]
+    con.execute(
+        "DELETE FROM DWS_EQUIPMENT_DAILY WHERE rowid NOT IN ("
+        "SELECT MIN(rowid) FROM DWS_EQUIPMENT_DAILY "
+        "GROUP BY date,dim_equipment_id,dim_line_id)"
+    )
+    after = con.execute("SELECT COUNT(*) FROM DWS_EQUIPMENT_DAILY").fetchone()[0]
+
+    workshops = list(
+        con.execute(
+            "SELECT workshop_id,workshop_name FROM dim_workshop ORDER BY workshop_id"
+        )
+    )
+    if not workshops:
+        raise RuntimeError("dim_workshop has no rows; cannot repair safety daily grain")
+    safety_rows = list(
+        con.execute("SELECT rowid FROM DWS_SAFETY_DAILY ORDER BY rowid")
+    )
+    start_date = date(2025, 5, 24)
+    for ordinal, (rowid,) in enumerate(safety_rows):
+        workshop_id, workshop_name = workshops[ordinal % len(workshops)]
+        business_date = start_date + timedelta(days=ordinal // len(workshops))
+        con.execute(
+            "UPDATE DWS_SAFETY_DAILY "
+            "SET date=?,dim_workshop_id=?,workshop_name=? WHERE rowid=?",
+            (business_date.isoformat(), workshop_id, workshop_name, rowid),
+        )
+
+    indexes_created = 0
+    for (table,) in con.execute(
+        "SELECT name FROM sqlite_master "
+        "WHERE type='table' AND name LIKE 'DWS_%_DAILY' ORDER BY name"
+    ):
+        columns = [row[1] for row in table_columns(con, table)]
+        grain = [column for column in columns if column == "date" or column.startswith("dim_")]
+        if not grain:
+            continue
+        index_name = f"ux_{table.lower()}_grain"
+        con.execute(
+            f"CREATE UNIQUE INDEX IF NOT EXISTS {qident(index_name)} "
+            f"ON {qident(table)}({','.join(qident(column) for column in grain)})"
+        )
+        indexes_created += 1
+    return {
+        "equipment_duplicate_rows_removed": before - after,
+        "safety_rows_regrained": len(safety_rows),
+        "dws_unique_grain_indexes": indexes_created,
     }
 
 
@@ -1317,6 +1378,21 @@ def logical_checks(
         "SELECT COUNT(*) FROM fact_product_cost c "
         "LEFT JOIN dim_product p ON c.product_id=p.prod_id WHERE p.prod_id IS NULL"
     ).fetchone()[0]
+    checks["dws_daily_duplicate_grains"] = 0
+    for (table,) in con.execute(
+        "SELECT name FROM sqlite_master "
+        "WHERE type='table' AND name LIKE 'DWS_%_DAILY' ORDER BY name"
+    ):
+        columns = [row[1] for row in table_columns(con, table)]
+        grain = [column for column in columns if column == "date" or column.startswith("dim_")]
+        if not grain:
+            continue
+        grouped = ",".join(qident(column) for column in grain)
+        checks["dws_daily_duplicate_grains"] += con.execute(
+            f"SELECT COALESCE(SUM(row_count-1),0) FROM ("
+            f"SELECT COUNT(*) row_count FROM {qident(table)} GROUP BY {grouped} "
+            "HAVING row_count>1)"
+        ).fetchone()[0]
     temporal_sql = {
         "delivery_before_order": "SELECT COUNT(*) FROM fact_delivery d JOIN fact_sales_order o ON d.order_id=o.order_id WHERE date(d.delivery_date)<date(o.order_date)",
         "return_before_order": "SELECT COUNT(*) FROM fact_return r JOIN fact_sales_order o ON r.order_id=o.order_id WHERE date(r.return_date)<date(o.order_date)",
@@ -1331,9 +1407,13 @@ def logical_checks(
 def scan_delivery_plaintext(con: sqlite3.Connection) -> dict[str, int]:
     """Scan text values for direct identifiers and named-party residues."""
     patterns = {
-        "mainland_mobile": re.compile(r"1[3-9][0-9]{9}"),
-        "cn_identity_number": re.compile(r"[0-9]{17}[0-9Xx]"),
-        "long_numeric_account": re.compile(r"[0-9]{16,19}"),
+        "mainland_mobile": re.compile(r"(?<![A-Za-z0-9])1[3-9][0-9]{9}(?![A-Za-z0-9])"),
+        "cn_identity_number": re.compile(
+            r"(?<![A-Za-z0-9])[0-9]{17}[0-9Xx](?![A-Za-z0-9])"
+        ),
+        "long_numeric_account": re.compile(
+            r"(?<![A-Za-z0-9])[0-9]{16,19}(?![A-Za-z0-9])"
+        ),
         "email_address": re.compile(r"[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}"),
         "private_ipv4": re.compile(
             r"(?:10(?:\.[0-9]{1,3}){3}|192\.168(?:\.[0-9]{1,3}){2}|"
@@ -1369,7 +1449,7 @@ def scan_delivery_plaintext(con: sqlite3.Connection) -> dict[str, int]:
             ):
                 value = str(raw_value).strip()
                 for name, pattern in patterns.items():
-                    if pattern.fullmatch(value):
+                    if pattern.search(value):
                         counts[name] += 1
                 if any(token in value for token in banned_tokens):
                     counts["named_party_residue"] += 1
@@ -1380,6 +1460,7 @@ def validate_database(
     con: sqlite3.Connection,
     specs: list[TableSpec],
     deidentification: dict[str, Any],
+    aggregate_grain_repairs: dict[str, int],
     fk_repairs: dict[str, int],
     temporal_repairs: dict[str, int],
     seeded_base_tables: dict[str, int],
@@ -1438,6 +1519,7 @@ def validate_database(
         "base_fk_repairs": fk_repairs,
         "base_temporal_repairs": temporal_repairs,
         "deidentification": deidentification,
+        "aggregate_grain_repairs": aggregate_grain_repairs,
         "seeded_base_empty_tables": seeded_base_tables,
         "logical_checks": logic,
         "business_plaintext_scan": plaintext_scan,
@@ -1494,6 +1576,7 @@ def build(base: Path, output: Path, report: Path, dictionary: Path, force: bool,
         dest.execute("PRAGMA journal_mode=DELETE")
         dest.execute("PRAGMA synchronous=FULL")
         deidentification = deidentify_base_plaintext(dest)
+        aggregate_grain_repairs = repair_base_aggregate_grains(dest)
         fk_repairs = repair_base_foreign_keys(dest)
         temporal_repairs = repair_base_temporal_rules(dest)
         seeded_base_tables = seed_empty_base_tables(dest)
@@ -1516,6 +1599,7 @@ def build(base: Path, output: Path, report: Path, dictionary: Path, force: bool,
             dest,
             specs,
             deidentification,
+            aggregate_grain_repairs,
             fk_repairs,
             temporal_repairs,
             seeded_base_tables,

@@ -244,7 +244,7 @@ a{color:var(--acc)}
   <div class="nav" data-p="build">本体构建</div>
   <div class="nav" data-p="claw">本体对话</div>
   <div class="nav" data-p="review">本体评审</div>
-  <div class="nav" data-p="ontquality">本体完备度</div>
+  <div class="nav" data-p="ontquality">元数据覆盖</div>
   <div class="nav" data-p="library">本体库</div>
   <div class="nav" data-p="sparql">SPARQL 查询</div></div>
 <div class="nav-group"><div class="gh" onclick="dqGroup(this)">指标平台 <span class="ar">▾</span></div>
@@ -339,7 +339,7 @@ a{color:var(--acc)}
   <div class="row" style="margin-bottom:10px;flex-wrap:wrap"><select id="g_sel" style="width:340px"></select>
    <span class="muted" id="g_info"></span><span style="flex:1"></span>
    <span id="g_legend"></span>
-   <span style="display:inline-flex;align-items:center;gap:8px;white-space:nowrap">导出:<button class="ghost" onclick="expOnt('ttl')">TTL</button><button class="ghost" onclick="expOnt('jsonld')">JSON-LD</button><button class="ghost" onclick="expOnt('owl')">RDF/XML</button><button class="ghost" onclick="enrichOnt(this)" title="调智能引擎为缺定义的对象补『属+种差』定义+正例+反例,升级到 IOF 标准">补定义/反例</button></span>
+   <span style="display:inline-flex;align-items:center;gap:8px;white-space:nowrap">导出:<button class="ghost" onclick="expOnt('ttl')">TTL</button><button class="ghost" onclick="expOnt('jsonld')">JSON-LD</button><button class="ghost" onclick="expOnt('owl')">RDF/XML</button><button class="ghost" onclick="enrichOnt(this)" title="调用智能引擎为缺定义的对象提出属加种差定义、正例和反例；结果仍需人工复核">补定义/反例</button></span>
    <span style="display:inline-flex;align-items:center;gap:8px;white-space:nowrap">布局<select id="g_layout" onchange="drawGraph($('#g_sel').value)" style="width:120px"><option value="dagre">分层(原版)</option><option value="force">力导向</option><option value="circular">环形</option><option value="radial">辐射</option></select></span></div>
   <div id="g_hlbar" style="display:none;margin:-4px 0 10px;padding:7px 12px;border:1px solid #C7D2FE;background:#EEF2FF;border-radius:6px;font-size:12.5px"></div>
   <div style="position:relative"><div class="card" style="padding:6px"><div id="g_canvas"></div></div>
@@ -368,12 +368,12 @@ a{color:var(--acc)}
    <div><div class="card"><h3 style="margin-top:0">异常诊断 <span class="muted" style="font-size:12px">点击直达根因诊断</span></h3><div id="as_diag"></div></div>
     <div class="card" style="margin-top:12px"><h3 style="margin-top:0">我的动作 <span class="muted" style="font-size:12px">直达动作中心发起</span></h3><div id="as_acts"></div></div></div></div></div>
 
- <div class="page" id="p_qaeval"><h2>问数评测 <span class="muted">金标题集 × 三组对照(A 朴素 Text2SQL / B 图谱增强 / C 本体全量)· 自动判分:答案正确率 / 出处引用率 / 口径拦截</span></h2>
+ <div class="page" id="p_qaeval"><h2>问数评测 <span class="muted">参考问题集 × 三组对照(A 朴素 Text2SQL / B 图谱增强 / C 本体全量)· 自动判分:答案正确率 / 出处引用率 / 口径拦截</span></h2>
   <div class="card"><div class="row" style="align-items:center;gap:10px">
     <button id="qe_run" onclick="qeRun()">跑一轮评测</button>
     <span class="muted" style="font-size:12px">模型覆盖(可空=跟随引擎)</span><input id="qe_model" placeholder="如 claude-haiku-4-5-20251001" style="width:220px">
     <span class="muted" id="qe_status"></span></div>
-   <div class="muted" style="font-size:11.5px;margin-top:6px">评测在后台运行(约 8-20 分钟,取决于模型);每题即时落盘,可中途查看部分结果。金标值全部经主库实测校准。</div></div>
+   <div class="muted" style="font-size:11.5px;margin-top:6px">评测在后台运行(约 8-20 分钟,取决于模型);每题即时落盘,可中途查看部分结果。参考答案值全部经主库实测校准。</div></div>
   <div class="kpis" id="qe_kpis" style="grid-template-columns:repeat(3,1fr);margin-top:12px"></div>
   <div class="card scroll" id="qe_body" style="margin-top:12px"><div class="muted">加载中…</div></div></div>
  <div class="page" id="p_actioncenter"><h2>动作中心 <span class="muted">本体动作(借鉴 Palantir ActionType):类型化参数 · 低风险直执行 / 高风险人审批 · 决策捕获全审计 · 不写只读源库</span></h2>
@@ -402,7 +402,7 @@ a{color:var(--acc)}
  </div></div>
  <div id="skc_modal" class="dq-modal" style="display:none"><div class="dq-modal-box" style="max-width:640px;padding:18px 20px">
   <h3 style="margin:0 0 4px">技能对比实验</h3>
-  <div class="muted" style="font-size:12px;margin-bottom:10px">同一建模目标 × 两组技能各跑一次<b>真实构建</b>(LLM 抽取+防臆造裁决,约 8-15 分钟),对比产物差异——技能是否有用,以产物为证。两组产物都会保留在「已构建本体」,可进图谱细看。</div>
+  <div class="muted" style="font-size:12px;margin-bottom:10px">同一建模目标 × 两组技能各跑一次<b>真实构建</b>(LLM 抽取+数据验证,约 8-15 分钟),对比产物差异——技能是否有用,以产物为证。两组产物都会保留在「已构建本体」,可进图谱细看。</div>
   <textarea id="skc_q" rows="2" style="width:100%;margin-bottom:8px;resize:vertical"></textarea>
   <div class="row" style="gap:8px;margin-bottom:8px"><span style="font-size:13px;white-space:nowrap">A 组技能</span><input id="skc_a" placeholder="逗号分隔,可空=不带技能" style="flex:1"></div>
   <div class="row" style="gap:8px;margin-bottom:12px"><span style="font-size:13px;white-space:nowrap">B 组技能</span><input id="skc_b" placeholder="逗号分隔" style="flex:1"></div>
@@ -434,17 +434,17 @@ a{color:var(--acc)}
   <div style="display:flex;gap:8px;justify-content:flex-end"><button class="ghost" onclick="rvmClose()">取消</button><button id="rvm_ok" onclick="rvmSubmit()">提交评审</button></div>
  </div></div>
  <div class="page" id="p_metrics"><h2>指标中心</h2><div id="m_body"></div></div>
- <div class="page" id="p_ontquality"><h2>本体完备度 <span class="muted">IOF 一致性记分卡:定义/反例/成熟度/BFO 归类/关系接地覆盖(借鉴 Industrial Ontology Foundry)</span></h2>
+ <div class="page" id="p_ontquality"><h2>元数据覆盖 <span class="muted">统计定义、反例、开发状态、BFO/IOF 上层类别和标准关系映射；不代表本体完备性或业务正确性</span></h2>
   <div class="row" style="margin-bottom:10px"><select id="oq_sel" style="width:340px"></select>
    <button class="ghost" onclick="ontQualityRender()">刷新</button>
-   <button class="ghost" onclick="oqUpgrade(this)" title="一键补定义/反例 + 关系接地,升级到 IOF 标准">一键升级到 IOF 标准</button></div>
+   <button class="ghost" onclick="oqUpgrade(this)" title="提出缺失定义并按官方 IRI、定义域和值域复核关系映射；不会自动宣称符合 IOF 标准">补定义并复核映射</button></div>
   <div class="kpis" id="oq_kpis" style="grid-template-columns:repeat(5,1fr)"></div>
   <div class="row" style="gap:16px;align-items:flex-start;margin-top:12px">
-   <div class="card" style="flex:1"><h3>BFO 上层分布</h3><div id="oq_bfo"></div></div>
+   <div class="card" style="flex:1"><h3>BFO/IOF 上层类别分布</h3><div id="oq_bfo"></div></div>
    <div class="card" style="flex:1"><h3>成熟度分布</h3><div id="oq_mat"></div></div>
    <div class="card" style="flex:1"><h3>待补定义(前20)</h3><div id="oq_gaps"></div></div>
   </div></div>
- <div class="page" id="p_rules"><h2>构成规则 <span class="muted">自动构建流水线 × 三套方法论(计数从当前IR派生,不臆造)</span></h2>
+ <div class="page" id="p_rules"><h2>构成规则 <span class="muted">自动构建流水线 × 三套建模规则(计数从当前IR派生,不臆造)</span></h2>
   <div class="row" style="margin-bottom:10px">运行时引擎: <select id="rt_sel" onchange="rtSet()" style="width:160px"></select><span class="muted" id="rt_info"></span></div>
   <div id="rules_body"></div></div>
 
@@ -582,8 +582,8 @@ a{color:var(--acc)}
     <svg class="bc-hero-mark" width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.5" style="opacity:.95;margin-top:2px"><circle cx="6" cy="17.5" r="2.3"/><circle cx="18" cy="17.5" r="2.3"/><circle cx="12" cy="5.5" r="2.3"/><line x1="11" y1="7.5" x2="7" y2="15.4"/><line x1="13" y1="7.5" x2="17" y2="15.4"/><line x1="8.3" y1="17.5" x2="15.7" y2="17.5"/></svg>
     <div>
      <h2 style="margin:0;color:#fff;font-size:20px">本体构建问询台</h2>
-     <div style="opacity:.92;margin-top:5px;font-size:13px;max-width:640px">多模态 LLM × 多智能体自动建模 —— 上传任意模态数据、连接多个数据库、编排内置或自有技能,以对话驱动构建可审计企业本体(防臆造裁决)</div>
-     <div class="bc-pipe"><span>规划</span><i>→</i><span>取证</span><i>→</i><span>提议</span><i>→</i><span>工具裁决</span><i>→</i><span>critic 对抗</span><i>→</i><span>迭代收敛</span></div>
+     <div style="opacity:.92;margin-top:5px;font-size:13px;max-width:640px">基于数据库结构、取值样本与可解析文档提出本体候选项，并通过确定性规则验证关系、记录依据和待复核项</div>
+     <div class="bc-pipe"><span>范围界定</span><i>→</i><span>来源整理</span><i>→</i><span>候选提议</span><i>→</i><span>数据验证</span><i>→</i><span>验收检查</span><i>→</i><span>人工复核</span></div>
     </div>
    </div>
    <div class="bc-engine">编排引擎<br><b id="bc_engine">智能引擎</b></div>
@@ -593,17 +593,17 @@ a{color:var(--acc)}
     <div class="card bc-sec"><h3>数据源 <span class="muted" id="bc_src_n"></span></h3>
      <div id="bc_sources"><div class="muted">加载中…</div></div>
      <button class="ghost bc-add" onclick="bcConnectDlg()">+ 连接数据库</button></div>
-    <div class="card bc-sec"><h3>多模态数据 <span class="muted" id="bc_asset_n"></span></h3>
+    <div class="card bc-sec"><h3>辅助资料 <span class="muted" id="bc_asset_n"></span></h3>
      <div id="bc_assets" class="bc-assets"><span class="muted">尚无上传</span></div>
      <input type="file" id="bc_files" multiple hidden onchange="bcUpload()">
-     <button class="ghost bc-add" onclick="$('#bc_files').click()">+ 上传数据(表格/文档/图像/代码…)</button></div>
+     <button class="ghost bc-add" onclick="$('#bc_files').click()">+ 上传资料(表格/文档/代码；未解析文件仅登记来源)</button></div>
     <div class="card bc-sec"><h3>技能编排 <span class="muted" id="bc_sk_n"></span></h3>
      <div id="bc_skills"><div class="muted">加载中…</div></div>
      <input type="file" id="bc_skfile" accept=".md,.txt" hidden onchange="bcSkillUpload()">
      <div class="row" style="gap:6px"><button class="ghost bc-add" onclick="$('#bc_skfile').click()">+ 上传技能(SKILL.md)</button>
       <button class="ghost bc-add" onclick="skNew()">+ 新建技能</button>
       <button class="ghost bc-add" onclick="skcOpen()">技能对比实验</button></div>
-     <div class="muted" style="font-size:11px;margin-top:4px">自定义技能的正文会注入构建方法论(编辑即改变抽取行为);内置技能只读,可复制为副本再改。</div></div>
+     <div class="muted" style="font-size:11px;margin-top:4px">自定义技能的正文会注入构建建模规则(编辑即改变抽取行为);内置技能只读,可复制为副本再改。</div></div>
     <div class="card bc-sec"><h3>已构建本体 <span class="muted" id="bc_built_n"></span></h3>
      <div id="bc_built"><div class="muted">暂无,构建后在此列出</div></div></div>
    </div>
@@ -616,6 +616,7 @@ a{color:var(--acc)}
     <div id="bc_log" class="bc-log"></div>
     <div class="bc-compose">
      <input id="bc_name" class="bc-name" placeholder="本体命名(留空由智能引擎自动命名)">
+     <textarea id="bc_cq" style="min-height:46px;margin-bottom:6px" placeholder="能力问题 CQ(可选,每行一个),例:哪些工单关联了发生退货的订单?"></textarea>
      <div class="bc-inrow">
       <textarea id="bc_q" placeholder="描述你要构建的本体,例:从售后与生产数据构建一张贯通「订单-产品-工单-客户」的制造运营本体" onkeydown="if(event.key==='Enter'&&!event.shiftKey&&!event.isComposing){event.preventDefault();bcInquire()}"></textarea>
       <button id="bc_send" onclick="bcInquire()">构建 ▸</button></div>
@@ -752,7 +753,7 @@ async function ontQualityLoad(){const gs=await J('/api/graphs');
 async function ontQualityRender(){const k=$('#oq_sel').value;if(!k)return;
  const d=await J('/api/ont/completeness/'+k);if(!d||d.error){$('#oq_kpis').innerHTML='<div class="muted">加载失败</div>';return;}
  const o=d.objects,r=d.relations,sc=d.score,scol=sc>=70?'#16a34a':sc>=40?'#d97706':'#b91c1c';
- $('#oq_kpis').innerHTML=[['IOF 完备度',sc+'%',scol],['对象定义',o.withDefinition+'/'+o.total,'#4A5FF3'],['反例',o.withCounterExample+'/'+o.total,'#4A5FF3'],['成熟度已定',o.withMaturity+'/'+o.total,'#4A5FF3'],['关系接地',r.grounded+'/'+r.total,'#4A5FF3']].map(([l,n,c])=>`<div class="kpi"><div class="n" style="color:${c}">${esc(''+n)}</div><div class="l">${esc(l)}</div></div>`).join('');
+ $('#oq_kpis').innerHTML=[['元数据覆盖',sc+'%',scol],['对象定义',o.withDefinition+'/'+o.total,'#4A5FF3'],['反例',o.withCounterExample+'/'+o.total,'#4A5FF3'],['开发状态',o.withMaturity+'/'+o.total,'#4A5FF3'],['标准关系映射',r.grounded+'/'+r.total,'#4A5FF3']].map(([l,n,c])=>`<div class="kpi"><div class="n" style="color:${c}">${esc(''+n)}</div><div class="l">${esc(l)}</div></div>`).join('');
  const bar=(obj)=>{const ent=Object.entries(obj||{});const tot=ent.reduce((a,b)=>a+b[1],0)||1;return ent.sort((a,b)=>b[1]-a[1]).map(([kk,v])=>`<div class="step"><b>${esc(kk)}</b> ${v} <span class="muted">(${Math.round(100*v/tot)}%)</span><div style="height:6px;background:#eef2ff;border-radius:3px;margin-top:3px"><div style="height:6px;width:${Math.round(100*v/tot)}%;background:#4A5FF3;border-radius:3px"></div></div></div>`).join('')||'<div class="muted">—</div>';};
  $('#oq_bfo').innerHTML=bar(o.byBFO);$('#oq_mat').innerHTML=bar(o.byMaturity);
  const _sr=d.relations||{};if(_sr.semanticReviewed>0){const el=document.createElement('div');el.className='muted';el.style.cssText='margin-top:6px;font-size:12px';el.textContent=`语义评审:${_sr.semanticReviewed} 条已审 · ${_sr.semanticDisputed||0} 条存疑`;$('#oq_kpis').after(el);}
@@ -760,7 +761,7 @@ async function ontQualityRender(){const k=$('#oq_sel').value;if(!k)return;
 async function oqUpgrade(btn){const k=$('#oq_sel').value;if(!k)return;const t0=btn.textContent;btn.disabled=true;btn.textContent='补定义中…';
  const P=(p)=>fetch(p,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({graph:k})}).then(x=>x.json());
  try{const a=await P('/api/ont/enrich');btn.textContent='接地关系…';const b=await P('/api/ont/reground');
-  (window.toast||alert)('升级完成:'+[a.note,b.note].filter(Boolean).join(' · '));ontQualityRender();
+  (window.toast||alert)('处理完成:'+[a.note,b.note].filter(Boolean).join(' · '));ontQualityRender();
  }catch(e){(window.toast||alert)('升级失败:'+e);}finally{btn.disabled=false;btn.textContent=t0;}}
 // 数仓分层
 const LAYER_DEF=[['ODS','ods_','贴源层'],['STG','stg_','暂存层'],['DIM','dim_','维度层'],['DWD','dwd_','明细层'],['DWS','dws_','汇总层'],['FACT','fact_','事实表'],['AGG','agg_','聚合层']];
@@ -856,11 +857,11 @@ async function tbl(n){const en=encodeURIComponent(n);const d=await J('/api/table
   p.rows.map(r=>`<tr>${p.columns.map(c=>`<td>${cell(r[c])}</td>`).join('')}</tr>`).join('')+'</table>';}
 async function objDetail(k,oid){const d=await J('/api/ont/object/'+encodeURIComponent(k)+'/'+encodeURIComponent(oid));
  const w=window.open('','_blank');w.document.write(`<style>body{font-family:sans-serif;padding:20px;background:#f5f7fb}table{border-collapse:collapse}td,th{border:1px solid #dbe4fb;padding:4px 8px}</style>
- <h2>${esc(d.cn||d.name)} <small>${esc(d.kind)} · ${esc(d.table||'')}</small></h2>`+((d.bfo||d.definition)?`<div style="background:#eef2fb;padding:9px 12px;border-radius:6px;margin:8px 0;line-height:1.7"><b>BFO 范畴</b>: ${esc(d.bfo||'-')} &nbsp;·&nbsp; <b>成熟度</b>: ${esc(d.maturity||'-')}${d.isPrimitive?' &nbsp;·&nbsp; <b>原始概念</b>':''}${d.definition?`<br><b>定义</b>(属+种差): ${esc(d.definition)}`:''}${d.example?`<br><b>正例</b>: ${esc(d.example)}`:''}${d.counterExample?`<br><b>反例</b>: ${esc(d.counterExample)}`:''}${(d.provenance&&d.provenance.directSource)?`<br><b>来源</b>(directSource): ${esc(d.provenance.directSource)}`:''}</div>`:'')+`<h3>属性(${(d.attrs||[]).length})</h3>
+ <h2>${esc(d.cn||d.name)} <small>${esc(d.kind)} · ${esc(d.table||'')}</small></h2>`+((d.bfo||d.definition)?`<div style="background:#eef2fb;padding:9px 12px;border-radius:6px;margin:8px 0;line-height:1.7"><b>BFO 范畴</b>: ${esc(d.bfo||'-')} &nbsp;·&nbsp; <b>成熟度</b>: ${esc(d.maturity||'-')}${d.isPrimitive?' &nbsp;·&nbsp; <b>原始概念</b>':''}${d.definition?`<br><b>定义</b>(属加种差): ${esc(d.definition)}`:''}${d.example?`<br><b>正例</b>: ${esc(d.example)}`:''}${d.counterExample?`<br><b>反例</b>: ${esc(d.counterExample)}`:''}${(d.provenance&&d.provenance.directSource)?`<br><b>来源</b>(directSource): ${esc(d.provenance.directSource)}`:''}</div>`:'')+`<h3>属性(${(d.attrs||[]).length})</h3>
  <table><tr><th>列</th><th>中文</th><th>类型</th><th>来源</th></tr>`+(d.attrs||[]).map(a=>`<tr><td>${esc(a.col)}</td><td>${esc(a.cn||'')}</td><td>${esc(a.type||'')}</td><td>${esc((a.sources||[]).join('/'))}</td></tr>`).join('')+`</table>`+(d.reused_from?`<h3>ISA-95 对齐(候选,待人审)</h3><div>${esc(JSON.stringify(d.reused_from))}</div>`:'')+(d.foundational_kind?`<h3>UFO 基础类型(候选)</h3><div>${esc(JSON.stringify(d.foundational_kind))}</div>`:'')+`<h3>证据来源</h3><pre>${esc(JSON.stringify(d.evidence,null,1))}</pre>`);}
 let gChart;
 function expOnt(fmt){location='/api/graph/'+document.querySelector('#g_sel').value+'/export.'+fmt;}
-// 一键补定义/反例:调智能引擎为缺定义的对象生成 IOF『属+种差』定义+正例+反例,回写后重绘(完备度随之上升)
+// 为缺定义对象提出属加种差定义、正例和反例；生成内容仍需人工复核。
 async function enrichOnt(btn){const k=$('#g_sel').value;if(!k)return;
  const t0=btn?btn.textContent:'';if(btn){btn.disabled=true;btn.textContent='补定义中…';}
  const P=(p)=>fetch(p,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({graph:k})}).then(x=>x.json());
@@ -944,9 +945,9 @@ async function drawGraph(k){const g=await J('/api/graph/'+k);
  if(g.error||!Array.isArray(g.nodes)){$('#g_info').textContent=g.error||'图谱加载失败';return;}
  GRAPH_CUR={key:k,nodes:g.nodes,edges:g.edges};
  $('#g_info').textContent=`${g.nodes.length} 节点 · ${g.edges.length} 关系`;
- // IOF 完备度记分卡(定义/反例/成熟度/BFO归类/关系接地 加权)——异步附加,不阻塞渲染
+ // 元数据覆盖率仅用于定位待补项，不代表本体完备性。
  J('/api/ont/completeness/'+k).then(cp=>{if(cp&&cp.score!=null&&GRAPH_CUR.key===k){const c=cp.score>=70?'#16a34a':cp.score>=40?'#d97706':'#b91c1c';
-  $('#g_info').innerHTML=`${g.nodes.length} 节点 · ${g.edges.length} 关系 · <span title="IOF 完备度:定义${cp.objects.withDefinition}/${cp.objects.total}、反例${cp.objects.withCounterExample}、关系接地${cp.relations.grounded}/${cp.relations.total}" style="color:${c};font-weight:600">IOF完备度 ${cp.score}%</span>`;}}).catch(()=>{});
+  $('#g_info').innerHTML=`${g.nodes.length} 节点 · ${g.edges.length} 关系 · <span title="元数据覆盖:定义${cp.objects.withDefinition}/${cp.objects.total}、反例${cp.objects.withCounterExample}、标准关系映射${cp.relations.grounded}/${cp.relations.total}；不代表本体完备性" style="color:${c};font-weight:600">元数据覆盖 ${cp.score}%</span>`;}}).catch(()=>{});
  const kset=[...new Set(g.nodes.map(n=>n.kind))].filter(x=>x);
  $('#g_legend').innerHTML=kset.map(x=>`<span class="tag" style="background:${KCOL(x)}22;color:${KCOL(x)}">${KNM(x)}</span>`).join('');
  if(gChart){try{gChart.destroy();}catch(_){}gChart=null;}
@@ -963,7 +964,7 @@ async function drawGraph(k){const g=await J('/api/graph/'+k);
  gChart=g6render('g_canvas',g,($('#g_layout')&&$('#g_layout').value)||'dagre',{onNode:showNodeDetail,onEdge:showEdgeDetail,hl:hl});}
 async function showEdgeDetail(e){const k=GRAPH_CUR.key;
  let rd=await J('/api/ont/relation/'+k+'?s='+encodeURIComponent(e.s)+'&t='+encodeURIComponent(e.t)).catch(_=>({error:1}));
- if(rd.error)rd={source:e.s,target:e.t,verb:e.verb,status:e.status,overlap_pct:e.overlap,semantic:e.semantic,founded_relation:e.founded_relation,temporal:e.temporal};const SB={verified:'已验证',asserted:'人工断言',candidate:'待验证',inferred:'推理'};const det=$('#g_detail');det.style.display='block';det.scrollTop=0;
+ if(rd.error)rd={source:e.s,target:e.t,verb:e.verb,status:e.status,overlap_pct:e.overlap,semantic:e.semantic,founded_relation:e.founded_relation,grounding_iri:e.grounding_iri,grounding_status:e.grounding_status,grounding_reason:e.grounding_reason,temporal:e.temporal};const SB={verified:'数据已验证',asserted:'人工确认',candidate:'待验证',inferred:'推理'};const det=$('#g_detail');det.style.display='block';det.scrollTop=0;
  const ov=rd.overlap_pct;const ovc=ov>=90?'#16a34a':ov>=60?'#d97706':'#b91c1c';
  det.innerHTML=`<span onclick="$('#g_detail').style.display='none'" style="position:absolute;top:8px;right:10px;cursor:pointer;color:#909399;font-size:15px" title="关闭">✕</span>
   <h3 style="padding-right:18px">${esc(rd.source)} —[${esc(rd.verb)}]→ ${esc(rd.target)}</h3>
@@ -971,9 +972,9 @@ async function showEdgeDetail(e){const k=GRAPH_CUR.key;
   <h3 style="margin-top:8px">关系证据</h3>
   <div class="step">子键: ${esc(rd.child_key)||'-'} → 父键: ${esc(rd.parent_key)||'-'}</div>
   <div class="step">取值重叠率: ${ov!=null?`<b style="color:${ovc}">${ov}%</b>`:'<span class=muted>无数据(声明FK/断言)</span>'}</div>
-  <div class="step">证据来源: ${(rd.sources||[]).join('、')||'-'}</div>${rd.note?`<div class="step">说明: ${esc(rd.note)}</div>`:''}${rd.founded_relation?`<div class="step" title="借鉴 IOF/BFO 有根据关系与时间指标">BFO 接地: <code>${esc(rd.founded_relation)}</code> <span class="muted">(${esc(rd.temporal||'atSomeTime')})</span></div>`:''}${rd.semantic&&rd.semantic!=='skipped'?`<div class="step">语义评审: <span class="tag ${rd.semantic==='pass'?'ok':'warn'}">${rd.semantic==='pass'?'通过':'存疑(建议人审)'}</span></div>`:''}
-  <div class="step" style="margin-top:8px;border-top:1px solid #EEF1F6;padding-top:8px">人审:
-   <button class="ghost" onclick="gEdgeOp('confirm_relation',${jsAttr(e.s)},${jsAttr(e.t)})">通过(转断言)</button>
+  <div class="step">证据来源: ${(rd.sources||[]).join('、')||'-'}</div>${rd.note?`<div class="step">说明: ${esc(rd.note)}</div>`:''}${rd.grounding_status==='mapped'?`<div class="step" title="已通过官方关系 IRI 与定义域/值域检查">BFO/IOF 映射: <code>${esc(rd.founded_relation)}</code> <span class="muted">${esc(rd.grounding_iri||'')}${rd.temporal?' · '+esc(rd.temporal):''}</span></div>`:`<div class="step">BFO/IOF 映射: <span class="tag warn">未映射</span> <span class="muted">${esc(rd.grounding_reason||'现有信息不足以确定标准关系')}</span></div>`}${rd.semantic&&rd.semantic!=='skipped'?`<div class="step">语义复核: <span class="tag ${rd.semantic==='pass'?'ok':'warn'}">${rd.semantic==='pass'?'通过':'存疑(建议人工复核)'}</span></div>`:''}
+  <div class="step" style="margin-top:8px;border-top:1px solid #EEF1F6;padding-top:8px">人工复核:
+   <button class="ghost" onclick="gEdgeOp('confirm_relation',${jsAttr(e.s)},${jsAttr(e.t)})">确认(转人工断言)</button>
    <button class="ghost" onclick="gEdgeOp('reject_relation',${jsAttr(e.s)},${jsAttr(e.t)})">否决</button>
    <button class="ghost" onclick="gEdgeVerb(${jsAttr(e.s)},${jsAttr(e.t)},${jsAttr(rd.verb||'')})">改动词</button>
    <a href="#" style="margin-left:6px" onclick="event.preventDefault();goReview(GRAPH_CUR.key)">评审队列 ↗</a></div>`;}
@@ -1398,8 +1399,8 @@ function qeRender(d){
  const n=(d.items||[]).length;const A=d.arms||{};
  $('#qe_kpis').innerHTML=['A','B','C'].map(k=>{const a=A[k]||{};return `<div class="kpi"><div class="n" style="color:${k==='C'?'#16a34a':k==='B'?'#4A5FF3':'#6B7690'}">${a.correct||0}/${n}</div>
   <div class="l">${k} 组 · ${esc((a.name||'').split('(')[0])}<br><span style="font-size:10.5px">出处引用 ${a.cite||0}/${n}${k==='C'?` · 口径拦截 ${a.gate_block||0}`:''}</span></div></div>`;}).join('');
- $('#qe_body').innerHTML=`<div class="muted" style="font-size:11.5px;margin-bottom:8px">模型:${esc(d.model||'')} · ${esc(d.ts||'')} · 判分=数值容差/字符串等值;出处=SQL 必须引用金标表</div>`
-  +'<table><tr><th>题目</th><th>金标</th><th>A 朴素</th><th>B 图谱</th><th>C 本体全量</th></tr>'
+ $('#qe_body').innerHTML=`<div class="muted" style="font-size:11.5px;margin-bottom:8px">模型:${esc(d.model||'')} · ${esc(d.ts||'')} · 判分=数值容差/字符串等值;出处=SQL 必须引用参考答案所需表</div>`
+  +'<table><tr><th>题目</th><th>参考集</th><th>A 朴素</th><th>B 图谱</th><th>C 本体全量</th></tr>'
   +(d.items||[]).map(it=>'<tr><td style="max-width:260px">'+esc(it.q)+'</td><td><code>'+esc(String(it.gold))+'</code></td>'
    +['A','B','C'].map(k=>{const r=(it.arms||{})[k]||{};const mk=r.correct?'<span style="color:#16a34a">✓</span>':r.gate_block?'<span style="color:#d97706">拦</span>':'<span style="color:#dc2626">✗</span>';
     return `<td title="${esc(r.sql||r.err||'')}">${mk} <span class="muted" style="font-size:11px">${r.value!=null?esc(String(r.value)).slice(0,16):esc((r.err||'').slice(0,14))}</span>${r.cite?'':' <span class="muted" style="font-size:10px">出处✗</span>'}</td>`;}).join('')+'</tr>').join('')+'</table>';}
@@ -1436,7 +1437,7 @@ function showNodeDetail(n){if(!n)return;const rel=GRAPH_CUR.edges.filter(x=>x.s=
    const mat=d.maturity||'';if(mat)bits.push(`<span class="tag" style="background:${mat==='Released'?'#e7f7ec':'#fff4e5'};color:${mat==='Released'?'#16a34a':'#d97706'}" title="成熟度">${esc(mat)}</span>`);
    if(d.isPrimitive)bits.push(`<span class="tag" style="background:#f3f4f6;color:#6b7280" title="无充要定义,标为原始概念(IOF isPrimitive)">原始概念</span>`);
    let h=bits.length?`<div style="margin:6px 0;display:flex;gap:6px;flex-wrap:wrap">${bits.join('')}</div>`:'';
-   if(d.definition)h+=`<div class="step"><b>定义</b>(属+种差):${esc(d.definition)}</div>`;
+   if(d.definition)h+=`<div class="step"><b>定义</b>(属加种差):${esc(d.definition)}</div>`;
    if(d.example)h+=`<div class="step"><b>正例</b>:${esc(d.example)}</div>`;
    if(d.counterExample)h+=`<div class="step" style="border-left:2px solid #f0a;padding-left:8px"><b>反例</b>:${esc(d.counterExample)}</div>`;
    const ds=(d.provenance&&d.provenance.directSource)||'';if(ds)h+=`<div class="step muted" style="font-size:11px">来源(directSource):${esc(ds)}</div>`;
@@ -1701,7 +1702,7 @@ function dqAnchorHTML(a,bare){
  if(rsn['核心事实表'])chain.push(arrow,step(rsn['核心事实表'],'核心事实表','恒入上下文'));
  if(rsn['沿本体关系召回'])chain.push(arrow,step(rsn['沿本体关系召回'],'沿关系扩展','补 JOIN 另一端'));
  chain.push(arrow,step(all.length,'入上下文','喂给引擎'));
- if(hasUsed)chain.push(arrow,step(a.used.length,'SQL 实际用','闭环核对'));
+ if(hasUsed)chain.push(arrow,step(a.used.length,'SQL 实际用','使用情况核对'));
  // 命中证据:哪个问句词把这个对象钓出来的
  const ev=all.filter(o=>(o.hits||[]).length).slice(0,12);
  const scope=a.scoped?`显式选表 ${a.focus_n||0} 张`
@@ -1803,7 +1804,7 @@ function dqRenderCard(card,q,d){const uid=DQ_UID++;const okN=d.steps.filter(s=>s
    <span class="dq-react"><span title="复制洞察" onclick="const t=this.closest('.dq-card').querySelector('.dq-insight');if(t){navigator.clipboard.writeText(t.innerText);toast&&toast('已复制洞察')}">复制</span><span title="有帮助" onclick="dqFb(this,${jsAttr(q)},'useful','chat')">有用</span><span title="待改进" onclick="dqFb(this,${jsAttr(q)},'needs_work','chat')">待改进</span></span></div>`;
  card.innerHTML=html;card._d=d;
  (d.results||[]).forEach((r,i)=>{const el=card.querySelector('#dqc_'+uid+'_'+i);if(el)dqChart(el,r);});
- // DR-020 问数→动作:答案里用到的表若挂有动作类型,给出直达发起入口(问数→行动闭环)
+ // DR-020 问数→动作：若答案使用的表关联动作类型，则提供发起入口。
  (async()=>{try{await acTypes();const tset=new Set();
   (d.results||[]).forEach(r=>{(String(r.sql||'').match(/(?:from|join)\s+([A-Za-z_][A-Za-z0-9_]*)/gi)||[])
    .forEach(m=>tset.add(m.split(/\s+/).pop().toLowerCase()));});
@@ -1921,7 +1922,7 @@ function dqOpen(id){const c=dqAllConv().find(x=>x.id===id);if(!c)return;dqAbort(
  const _lt=c.turns[c.turns.length-1];dqAncBar(_lt&&_lt.d&&_lt.d.anchor);
  dqRenderHist();s.scrollTop=1e9;}
 // ══════ 本体构建·问询台 ══════
-const BC={src:'demo',srcName:'示例主库',skills:new Set(),welcomed:false,def:{},turns:0};
+const BC={src:'demo',srcName:'示例主库',skills:new Set(['ontology-semi-auto']),welcomed:false,def:{},turns:0};
 function bcNew(){if(BC_BUSY){toast('构建进行中,请稍候再新建');return;}
  bcSaveConv();                                             // 先把当前对话存入历史
  (BC._viz||[]).forEach(gr=>{try{gr.destroy();}catch(_){}});BC._viz=[];   // 销毁本轮对话内 G6 预览实例,防泄漏
@@ -1964,10 +1965,10 @@ async function bcBuilt(){const bs=await J('/api/build/built').catch(()=>[]);
  $('#bc_built_n').textContent='('+bs.length+')';
  $('#bc_built').innerHTML=bs.length?bs.map(b=>`<div class="bc-srow" style="cursor:default"><div style="flex:1;min-width:0">
    <div class="nm" style="cursor:pointer;color:var(--acc)" onclick="bcView(${jsAttr(b.key)})" title="在图谱中查看">${esc(b.name)}</div>
-   <div class="mt">${b.objects} 对象 · ${b.events} 事件 · ${b.links} 关系 · verified ${b.verified} · ${esc(b.ts)}</div></div>
+   <div class="mt">${b.objects} 对象 · ${b.events} 事件 · ${b.links} 关系 · 数据已验证 ${b.verified} · 验收结果 ${esc(b.quality_result||b.quality_gate||'legacy')} · ${esc(b.ts)}</div></div>
    <a href="#" style="font-size:11px;white-space:nowrap;align-self:center;margin-right:6px" title="把动词表/类型分布/定义风格沉淀为自定义技能" onclick="event.preventDefault();bcDistill(${jsAttr(b.key)},this)">沉淀为技能</a>
    <span class="x" title="删除(再点确认)" onclick="bcDelBuilt(${jsAttr(b.key)},this)">✕</span></div>`).join(''):'<div class="muted">暂无,构建后在此列出</div>';bcSyncHeight();}
-async function bcDistill(key,el){el.textContent='沉淀中…';   // #3 构建→复盘→技能 闭环
+async function bcDistill(key,el){el.textContent='沉淀中…';   // 从已构建图谱归纳可复用技能。
  const d=await J('/api/build/skill/from_graph',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({graph:key})}).catch(e=>({error:''+e}));
  el.textContent='沉淀为技能';
  if(d.error){toast(d.error,false);return;}
@@ -1984,8 +1985,8 @@ function bcWelcome(){if(BC.welcomed)return;BC.welcomed=true;
   ['分析上传的表格与文档,抽取实体并推断主外键关系,给出候选语义待确认','uploads']];
  $('#bc_log').innerHTML=`<div class="bc-welcome">
   <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="var(--acc)" stroke-width="1.4" style="margin:0 auto;display:block"><circle cx="6" cy="17.5" r="2.3"/><circle cx="18" cy="17.5" r="2.3"/><circle cx="12" cy="5.5" r="2.3"/><line x1="11" y1="7.5" x2="7" y2="15.4"/><line x1="13" y1="7.5" x2="17" y2="15.4"/><line x1="8.3" y1="17.5" x2="15.7" y2="17.5"/></svg>
-  <div style="font-size:15px;color:var(--txt);font-weight:600;margin-top:6px">多模态 LLM 驱动的本体自动构建</div>
-  <div style="margin-top:6px;font-size:12.5px">左侧选数据源 / 传多模态数据(表格·文档·建表代码·图像)/ 勾选技能方法论,右侧用自然语言描述诉求。<br>多智能体引擎将<b>综合库表结构与文档证据抽取对象与关系</b>,再用<b>真实数据防臆造取证</b>(取值重叠/父键唯一),提议关系逐条判 verified / candidate。</div>
+  <div style="font-size:15px;color:var(--txt);font-weight:600;margin-top:6px">数据库与文档辅助的本体半自动构建</div>
+  <div style="margin-top:6px;font-size:12.5px">左侧选择数据源、上传表格/文档/代码并选择技能，右侧描述建模范围。<br>系统依据可解析内容提出对象与关系，再用声明约束、取值重叠、父键唯一性和方向规则验证连接关系；未解析文件只登记来源，不作为已读取证据。</div>
   <div class="bc-egs">`+egs.map(e=>`<div class="bc-eg" onclick="bcPick(${jsAttr(e[0])},${jsAttr(e[1])})"><b>示例 ›</b> ${esc(e[0])}</div>`).join('')+`</div></div>`;a11yScan();}
 function bcPick(q,src){if(src){const s=(BC._sources||[]).find(x=>x.id===src);
   if(s&&s.ready)bcSelectSrc(src);                       // 仅切到就绪源;空的上传库不切,提示先上传
@@ -2002,7 +2003,7 @@ async function bcSources(){const d=await J('/api/build/sources').catch(()=>({sou
   const meta=s.kind==='sqlite'?`${s.tables} 张表 · ${s.ready?'就绪':(s.builtin?'空':'不可读')}`:`外部库 · ${s.ready?'就绪':'需内网/驱动'}`;
   return `<div class="bc-srow${on}" onclick="bcSelectSrc(${jsAttr(s.id)})"><span class="dot ${dot}"></span>
    <div style="flex:1;min-width:0"><div class="nm">${esc(s.name)}</div><div class="mt">${esc(meta)}</div></div>${del}</div>`;}).join('');
- // 多模态资产
+ // 辅助资料；未解析格式只登记来源。
  const as=d.assets||[];$('#bc_asset_n').textContent='('+as.length+')';
  $('#bc_assets').innerHTML=as.length?as.map(a=>`<span class="bc-chip bc-mod-${esc(a.modality)}"><b>${esc(a.modality)}</b>${esc(a.name)} <span class="muted">${a.kb}KB</span></span>`).join(''):'<span class="muted">尚无上传</span>';
  const cur=(d.sources||[]).find(s=>s.id===BC.src);if(cur){BC.srcName=cur.name;$('#bc_cur_src').textContent=cur.name;}a11yScan();bcSyncHeight();}
@@ -2019,13 +2020,13 @@ async function bcSkills(){const ss=await J('/api/build/skills').catch(()=>[]);
    <a href="#" style="font-size:11px;white-space:nowrap;align-self:center" onclick="event.preventDefault();event.stopPropagation();skView(${jsAttr(s.name)})">查看${s.builtin?'':'/编辑'}</a></label>`;}).join('')||'<div class="muted">无技能</div>';bcSyncHeight();}
 function bcToggleSk(n,on){on?BC.skills.add(n):BC.skills.delete(n);$('#bc_cur_sk').textContent=BC.skills.size;
  document.querySelectorAll('#bc_skills .bc-skcard').forEach(c=>{const cb=c.querySelector('input');c.classList.toggle('on',cb.checked);});}
-// ── 技能管理(DR-021):查看/新建/编辑/复制副本/删除;自定义正文注入构建方法论 ──
+// ── 技能管理(DR-021):查看/新建/编辑/复制副本/删除;自定义正文注入构建建模规则 ──
 let SKM=null,SKM_DEL_ARM=false;
 async function skView(name){const d=await J('/api/build/skill/'+encodeURIComponent(name)).catch(e=>({error:''+e}));
  if(d.error){toast(d.error,false);return;}
  SKM={mode:d.builtin?'view':'edit',orig:name};SKM_DEL_ARM=false;
  $('#skm_title').textContent=(d.builtin?'内置技能(只读):':'编辑自定义技能:')+name;
- $('#skm_sub').textContent=d.builtin?'内置技能是方法论种子,只读;可「复制为自定义副本」后修改,自定义正文会注入构建方法论。'
+ $('#skm_sub').textContent=d.builtin?'内置技能是建模规则种子,只读;可「复制为自定义副本」后修改,自定义正文会注入构建建模规则。'
   :'保存后立即生效:下一次本体构建即按新内容编排(无需重启)。';
  $('#skm_name').value=name;$('#skm_name').disabled=!d.builtin;   // 内置:改名=副本名;自定义:名字固定
  $('#skm_files').textContent=(d.files||[]).length?('目录:'+d.files.join(' / ')):'';
@@ -2038,16 +2039,16 @@ async function skView(name){const d=await J('/api/build/skill/'+encodeURICompone
  $('#sk_modal').style.display='flex';}
 function skNew(){SKM={mode:'create'};SKM_DEL_ARM=false;
  $('#skm_title').textContent='新建技能';
- $('#skm_sub').textContent='正文会注入构建方法论(建模目标之后、库表结构之前),写清楚建模规范与关注点即可。';
+ $('#skm_sub').textContent='正文会注入构建建模规则(建模目标之后、库表结构之前),写清楚建模规范与关注点即可。';
  $('#skm_name').value='';$('#skm_name').disabled=false;$('#skm_files').textContent='';
  $('#skm_content').readOnly=false;
- $('#skm_content').value='---\ndescription: 一句话描述这个技能做什么\n---\n\n## 建模方法论\n\n1. 优先识别……\n2. 关系动词使用……\n3. 严禁……\n';
+ $('#skm_content').value='---\ndescription: 一句话描述这个技能做什么\n---\n\n## 建模建模规则\n\n1. 优先识别……\n2. 关系动词使用……\n3. 严禁……\n';
  $('#skm_msg').textContent='';
  $('#skm_del').style.display='none';$('#skm_copy').style.display='none';$('#skm_save').style.display='inline-block';
  $('#sk_modal').style.display='flex';}
 function skCopy(){SKM={mode:'create'};
  $('#skm_title').textContent='复制为自定义副本';
- $('#skm_sub').textContent='改个名字保存,即可在副本上自由修改;副本正文会注入构建方法论。';
+ $('#skm_sub').textContent='改个名字保存,即可在副本上自由修改;副本正文会注入构建建模规则。';
  $('#skm_name').value=$('#skm_name').value+'-custom';$('#skm_name').disabled=false;
  $('#skm_content').readOnly=false;
  $('#skm_copy').style.display='none';$('#skm_save').style.display='inline-block';}
@@ -2067,7 +2068,7 @@ async function skDel(){const name=SKM&&SKM.orig;if(!name)return;
 let SKC_TIMER=null;
 async function skcOpen(){$('#skc_q').value=(BC.def&&BC.def.build_query)||'从 示例主库自动识别核心对象、事件与关系,构建一张可审计的制造企业本体';
  const sel=[...BC.skills];
- $('#skc_a').value='ontology-agentic';
+ $('#skc_a').value='ontology-semi-auto';
  $('#skc_b').value=sel.length?sel.join(','):'ontology-agentic';
  $('#skc_msg').textContent='';
  skcRender(await J('/api/build/skill_compare/results').catch(()=>({empty:true})));
@@ -2125,6 +2126,7 @@ async function bcDelConn(id){if(!confirm('移除该连接?'))return;
 const BC_IC={true:'<span class="ic" style="color:#22c55e">✓</span>',false:'<span class="ic" style="color:#e0563f">✕</span>'};
 let BC_BUSY=false;
 async function bcInquire(){if(BC_BUSY)return;const q=$('#bc_q').value.trim();if(!q){toast('请描述要构建的本体');return}
+ const cqs=$('#bc_cq').value.split(/\n+/).map(x=>x.trim()).filter(Boolean);
  BC_BUSY=true;$('#bc_send').disabled=true;$('#bc_q').value='';
  if(!BC.welcomed||$('#bc_log').querySelector('.bc-welcome'))$('#bc_log').innerHTML='';
  const log=$('#bc_log');
@@ -2136,7 +2138,7 @@ async function bcInquire(){if(BC_BUSY)return;const q=$('#bc_q').value.trim();if(
  const draw=()=>{trace.innerHTML=steps.map(s=>`<div class="st">${BC_IC[!!s.ok]}<span class="tx">${esc(s.info||s.step)}</span><span class="tm">${esc(s.ts||'')}</span></div>`).join('')+(status?`<div class="bc-status"><span class="bc-spin"></span> ${esc(status)}</div>`:'');log.scrollTop=1e9;};
  try{
   const resp=await fetch('/api/build/inquire',{method:'POST',headers:{'Content-Type':'application/json'},
-   body:JSON.stringify({q,source:BC.src,name:$('#bc_name').value,skills:[...BC.skills]})});
+   body:JSON.stringify({q,source:BC.src,name:$('#bc_name').value,skills:[...BC.skills],cqs})});
   const rd=resp.body.getReader();const dec=new TextDecoder();let buf='',done=null;
   while(true){const {done:fin,value}=await rd.read();if(fin)break;buf+=dec.decode(value,{stream:true});
    let i;while((i=buf.indexOf('\n\n'))>=0){const line=buf.slice(0,i).replace(/^data: /,'');buf=buf.slice(i+2);
@@ -2158,13 +2160,15 @@ async function bcInquire(){if(BC_BUSY)return;const q=$('#bc_q').value.trim();if(
 async function bcView(key){loaded.graph=1;document.querySelector('[data-p=graph]').click();await graphs(key);}
 // 构建结果卡渲染(live 与历史回放共用)
 function bcResultHTML(done){const s=done.stats||{};const e=done.evidence||{};
- const evtxt=[`库表 ${e.tables??0} 张`,e.docs?`文档/代码证据 ${e.docs} 份`:'',(e.refs&&e.refs.length)?`图像/资产 ${e.refs.length} 项`:''].filter(Boolean).join(' · ');
+ const evtxt=[`库表 ${e.tables??0} 张`,e.docs?`已解析文档/代码 ${e.docs} 份`:'',(e.refs&&e.refs.length)?`未解析资产 ${e.refs.length} 项`:''].filter(Boolean).join(' · ');
  const isllm=(done.method||'').indexOf('LLM 离线')<0;
+ const result=(done.quality&&(done.quality.result||done.quality.gate))||s.quality_result||s.quality_gate||'review';
  return `<div class="bc-result">
    <div class="hd"><span><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#22a058;margin-right:7px;vertical-align:middle"></span>本体「${esc(done.name)}」构建完成</span><span class="muted" style="font-size:11px">${done.elapsed}s</span></div>
    <div style="padding:8px 14px 0;display:flex;gap:6px;flex-wrap:wrap">
-    <span class="tag ${isllm?'':'warn'}" style="${isllm?'background:#F0EBFB;color:#7c50e6':''}">${esc(done.method||'多模态 LLM 抽取')}</span>
-    ${evtxt?`<span class="tag" style="background:#F4F6FB;color:#606a7b">证据 ${esc(evtxt)}</span>`:''}</div>
+    <span class="tag ${isllm?'':'warn'}" style="${isllm?'background:#F0EBFB;color:#7c50e6':''}">${esc(done.method||'LLM 辅助提议')}</span>
+    ${evtxt?`<span class="tag" style="background:#F4F6FB;color:#606a7b">证据 ${esc(evtxt)}</span>`:''}
+    <span class="tag ${result==='pass'?'ok':'warn'}">验收检查 ${esc(result)}</span></div>
    <div class="bc-stats" style="margin-top:8px">
     <div><b>${s.objects??0}</b><span>对象</span></div><div><b>${s.events??0}</b><span>事件</span></div>
     <div><b>${s.links??0}</b><span>关系</span></div><div><b>${s.verified??0}</b><span>数据已验证</span></div>

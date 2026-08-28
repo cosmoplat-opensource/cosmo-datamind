@@ -59,13 +59,13 @@
 ### 算法(最高研究×产品杠杆)
 | DR | 决定 | 先行的红(TDD) | 对应论文/缺口 |
 |---|---|---|---|
-| **DR-035 裁决核统一** | 抽 `relation_discovery.py`(+`standards_align`/`export_owl`)为可安装 `dao_core`;`quick_build` 改**导入**不再重写门槛 | 一致性金标套件(chinook/sakila/northwind/Mondial 的已知 FK):**两引擎须逐条同判**;`quick_build` 先红(弱门槛) | M1/M3 收敛;消漂移 |
+| **DR-035 裁决核统一** | 抽 `relation_discovery.py`(+`standards_align`/`export_owl`)为可安装 `dao_core`;`quick_build` 改**导入**不再重写门槛 | 一致性参考基准套件(chinook/sakila/northwind/Mondial 的已知 FK):**两引擎须逐条同判**;`quick_build` 先红(弱门槛) | M1/M3 收敛;消漂移 |
 | **DR-036 自引用与角色键** | 放开 `pt==t`;stem 对**父列/PK 名 + 角色词典**(reports_to↔employee、parent↔self)匹配,不再只对父表名 | 植入自 FK 夹具(`ReportsTo`/`ParentPart`)当前必漏 → 先红 | 论文 relaxed key matching |
 | **DR-037 多信号裁决** | 加 包含方向 / 基数分布 / 空值率 / 类型兼容 → **标定置信度**替代 AND 链二值 | 对抗夹具(代理键碰撞、枚举重叠)带真/假标签 → P/R/AUC 门槛先红 | 杀主假阳模式;M4 下界 |
 | **DR-038 自适应 θ** | θ = f(child_distinct, 随机零假设显著性) | 低基数枚举假阳 + 高基数真 FK 假阴两夹具先红 | 论文 θ 自适应 |
 | **DR-039 反幻觉评测台** | 植入真/假 FK 基准 + LLM 提议器**幻觉率**指标;`recheck_window` 纳入 | 评测台即测试:幻觉率>阈即红 | 论文 M5「防线未被激活」变数字 |
-| **DR-040 定义参考式评测** | genus-differentia 定义对金标术语表(`indicator_glossary.json`)打分(嵌入/LLM-judge)+ 完备度门 | 空定义/劣定义样本得分低于阈 → 红 | 论文 RQ3 future work |
-| **DR-041 多源联邦构建** | 同算法跨两个已入库 schema 求重叠,边带 source-provenance | 跨库同实体(MES↔ERP)金标对先红 | 用户论文强调的「多源」 |
+| **DR-040 定义参考式评测** | genus-differentia 定义对参考基准术语表(`indicator_glossary.json`)打分(嵌入/LLM-judge)+ 完备度门 | 空定义/劣定义样本得分低于阈 → 红 | 论文 RQ3 future work |
+| **DR-041 多源联邦构建** | 同算法跨两个已入库 schema 求重叠,边带 source-provenance | 跨库同实体(MES↔ERP)参考基准对先红 | 用户论文强调的「多源」 |
 | **DR-042 多模态证据通道(IR-009)** | 图纸/数据字典/ER 图作**提议器**,主张仍过数据裁决 | 文档独有关系:纯 schema 找不到、加通道后可提议且被裁决 → 红 | 用户论文强调的「多模态」 |
 
 ### 系统/架构
@@ -92,7 +92,7 @@
 ### 5.1 算法样例(DR-035 裁决核一致性,先红)
 ```python
 # tests/test_dao_conformance.py — 先提交,预期 quick_build 红
-GOLD = load_json("fixtures/fk_gold/northwind.json")  # 已知外键金标
+GOLD = load_json("fixtures/fk_gold/northwind.json")  # 已知外键参考基准
 @pytest.mark.parametrize("engine", [quick_build_adjudicate, dao_core.discover_relations])
 def test_engines_agree_on_gold(engine):
     got = {(r.child, r.parent) for r in engine(NORTHWIND) if r.verified}
