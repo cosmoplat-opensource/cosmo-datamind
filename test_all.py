@@ -880,7 +880,7 @@ chk("W13 UI 含类型管理弹窗+日志导出", 'id="act_modal"' in r.text and 
 chk("W14 UI 问数→动作联动代码", "相关动作(基于命中业务表)" in r.text)
 
 print("=== X. 技能管理(DR-021)===")
-r=g("/api/build/skill/ontology-agentic")
+r=g("/api/build/skill/ontology-semi-auto")
 chk("X1 内置技能可浏览(只读)", r.status_code==200 and r.json()["builtin"] and not r.json()["editable"])
 _md="---\ndescription: 回归技能\n---\n\n回归方法论:动词统一用「校验」\n"
 r=po("/api/build/skill/save",json={"name":"reg-skill","content":_md})
@@ -889,11 +889,11 @@ chk("X3 列表实时含新技能+描述", any(s["name"]=="reg-skill" and s["desc
 r=po("/api/build/skill/save",json={"name":"reg-skill","content":_md.replace("校验","复核")})
 chk("X4 编辑保存实时", r.status_code==200 and "复核" in g("/api/build/skill/reg-skill").json()["content"])
 chk("X5 ★自定义正文注入构建方法论", "复核" in _sv2._skill_method_text(["reg-skill"]))
-r=po("/api/build/skill/save",json={"name":"ontology-agentic","content":"x"})
+r=po("/api/build/skill/save",json={"name":"ontology-semi-auto","content":"x"})
 chk("X6 占用内置名→400", r.status_code==400)
 r=po("/api/build/skill/save",json={"name":"../evil","content":"x"})
 chk("X7 路径穿越名→400", r.status_code==400)
-r=po("/api/build/skill/delete",json={"name":"ontology-agentic"})
+r=po("/api/build/skill/delete",json={"name":"ontology-semi-auto"})
 chk("X8 删内置→400", r.status_code==400)
 r=po("/api/build/skill/delete",json={"name":"reg-skill"})
 chk("X9 删自定义+列表移除", r.status_code==200 and "reg-skill" not in {s["name"] for s in g("/api/build/skills").json()})
