@@ -4,8 +4,9 @@ __pycache__/
 .venv/
 venv/
 
-# ── 数据底座(体积大,由使用者自行提供或用 quick_build 生成)──
-demo_metrics.db
+# ── 数据底座 ─────────────────────────────────────────────
+# 仓库根的运行期数据库不入库;示例库在 examples/demo_metrics.db(已脱敏,随仓分发)
+/demo_metrics.db
 *.db-journal
 *.db-wal
 
@@ -22,21 +23,12 @@ workdir/build_connections.json
 workdir/*.log
 
 # ── 运行时产物:会话与可变状态 ──────────────────────────
-# 由应用在运行中读-改-写,入库只会制造无意义 diff
-workdir/ont_chats.json
-workdir/action_log.json
-workdir/qa_feedback.json
-workdir/eval_results.json
-workdir/skill_compare.json
+# 由应用在运行中读-改-写。demo 分支下这批作为「开箱可演示」的种子数据入库
+# (见 examples/README-demo.md);日常开发若不希望产生 diff,可用 skip-worktree。
 workdir/edits_*.json
 # 编辑栈留底(server.py rebuild 时改名而非删除),属运行期产物
 workdir/*.discarded
 workdir/viz_boards.json
-workdir/ont_usage.json
-workdir/ont_rules.json
-
-# ── 运行时产物:构建出的本体版本 ─────────────────────────
-workdir/built_*.json
 
 # ── 用户上传与派生库 ────────────────────────────────────
 workdir/uploads.db
