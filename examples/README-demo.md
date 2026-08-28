@@ -67,7 +67,19 @@ DATAMIND_DB=$PWD/examples/demo_metrics.db ./start.sh
 - `workdir/edits_*.json`、`workdir/*.discarded` —— 编辑栈与改名留底
 - `workdir/viz_boards.json` —— 本机看板布局
 
-## 六、关于 diff
+## 六、克隆后跑测试会看到什么
+
+```bash
+python3 -m pytest tests/                       # 单元层,应全绿
+DATAMIND_DB=$PWD/examples/demo_metrics.db ./start.sh
+DATAMIND_URL=http://localhost:8092 python3 test_all.py   # 集成层
+```
+
+集成层在**没有上游本体引擎**的环境下是 **523 通过 / 8 失败**,这 8 项是预期结果而非回归
+(编辑算子与引擎技能需要上游引擎,见 `ARCHITECTURE.md` §5.1 的对照表)。
+本仓内置的本体构建技能不依赖上游引擎,相关检查点应当通过。
+
+## 七、关于 diff
 
 `ont_chats.json`、`action_log.json`、`qa_feedback.json`、`ont_usage.json` 会被程序在运行中
 读-改-写。跑过演示后 `git status` 会显示这些文件有改动,属正常现象。若不希望它们出现在
