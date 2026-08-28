@@ -1,0 +1,48 @@
+{
+  "demo": [
+    {
+      "id": "r_big",
+      "cn": "大额订单需总监审批",
+      "on": "fact_sales_order",
+      "when": [
+        {
+          "field": "amount",
+          "op": ">=",
+          "value": 100000
+        }
+      ],
+      "then": {
+        "decision": "需总监审批",
+        "action": "escalate_approval",
+        "severity": "high"
+      },
+      "note": "审批权限手册 §3.2",
+      "ts": "2026-08-02 09:14",
+      "author": "示例评审员"
+    },
+    {
+      "id": "r_risk",
+      "cn": "高风险客户加签风控",
+      "on": "fact_sales_order",
+      "when": [
+        {
+          "field": "amount",
+          "op": ">=",
+          "value": 100000
+        },
+        {
+          "field": "risk_level",
+          "op": "==",
+          "value": "high"
+        }
+      ],
+      "then": {
+        "decision": "需风控加签",
+        "action": "escalate_approval",
+        "severity": "high"
+      },
+      "ts": "2026-08-02 09:14",
+      "author": "示例评审员"
+    }
+  ]
+}
