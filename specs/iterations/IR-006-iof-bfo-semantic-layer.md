@@ -11,7 +11,7 @@
 - [x] **关系接地**:`_FOUNDED_RELATIONS`+`_ground_verb`;`ir_to_graph` 对新旧 IR 统一透传/回溯接地。
 - [x] **注释化导出**:`_ir_to_turtle` 自包含 IOF OWL2(BFO subClassOf + iof-av + subPropertyOf + 字段 DatatypeProperty);`/api/sparql`、`/api/ont/forge` 同底 → 注释可 SPARQL 查询、可 SHACL 校验。**未改平台 export_owl.py**。
 - [x] **SHACL 校验**:`_IOF_SHACL`(非原始类须有定义、类须有 label);forge 用 pyshacl 校验返 conforms/violations。
-- [x] **完备度记分卡**:`/api/ont/completeness/<key>`;UI 图谱信息栏「IOF完备度 N%」+ 独立「本体完备度」导航页(KPI + BFO/成熟度分布条 + 缺口清单 + 一键升级)。
+- [x] **完备度记分卡**:`/api/ont/completeness/<key>`;UI 图谱信息栏「IOF完备度 N%」+ 独立「元数据覆盖」导航页(KPI + BFO/成熟度分布条 + 缺口清单 + 一键升级)。
 - [x] **一键升级**:`/api/ont/enrich`(补定义/反例)、`/api/ont/reground`(标注具体动词接地)、`/api/ont/maturity`(成熟度人审);`_ir_write_path` 守卫(只读源/穿越拒);图谱工具栏「补定义/反例」按钮 = enrich+reground。
 - [x] **示例 升级实证**:15%→80%(108 对象补全定义/反例)→100%(60 关系接地);动词分布 归属25/描述13/服务7/产生4…,接地到 continuantPartOfAtAllTimes/describes/hasParticipantAtSomeTime 等。
 

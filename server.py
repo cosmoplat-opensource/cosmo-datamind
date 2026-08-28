@@ -1979,7 +1979,7 @@ def ont_object(key, oid):
     defn = (o.get("definition") or "").strip()
     cex = (o.get("counterExample") or "").strip()
     desc = f'{KMAP.get(o.get("kind"),"对象")}「{o.get("cn") or o.get("name")}」(BFO:{bfo})' + (f',绑定表 {tb}' if tb else '') + f';字段 {len(o.get("attrs",[]))} 个;证据来源 {src}。'
-    if defn: desc += f' 定义:{defn}'                      # IOF 属+种差定义
+    if defn: desc += f' 定义:{defn}'                      # IOF 属加种差定义
     if cex: desc += f'(反例:{cex})'                       # IOF counterExample,辅助辨伪
     # 业务指标:按表匹配指标目录,带编码/描述/类型(对齐平台『业务指标管理』)
     LNAME = {"atomic": "原子指标", "derived": "派生指标", "composite": "复合指标"}
@@ -2548,11 +2548,11 @@ def _llm_define(objs):
         cols = ", ".join(a.get("col", "") for a in (o.get("attrs") or [])[:12])
         tb = o.get("table") or (o.get("tables") or [""])[0]
         items.append(f'- name={o.get("name") or o.get("id")}; cn={o.get("cn") or ""}; kind={o.get("kind")}; table={tb}; 列[{cols}]')
-    prompt = ("你是企业本体定义专家。为下列对象各写一条 IOF 风格『属+种差』定义、一个正例、一个易混淆反例。\n"
+    prompt = ("你是企业本体定义专家。为下列对象各写一条 IOF 风格『属加种差』定义、一个正例、一个易混淆反例。\n"
               "对象清单:\n" + "\n".join(items) +
-              '\n\n只输出一个 JSON(无其它文字):{"<name>":{"definition":"X 是一种 Y,且…(属+种差,简洁准确,基于给定语义,不编造)",'
+              '\n\n只输出一个 JSON(无其它文字):{"<name>":{"definition":"X 是一种 Y,且…(属加种差,简洁准确,基于给定语义,不编造)",'
               '"example":"一个正例","counterExample":"一个会被误认成它、实则不是的反例(如 销售订单↔报价单)"}, ...}\n'
-              "要求:①定义用中文属+种差句式;②不虚构表/列中没有的语义;③反例要有辨析价值;④JSON 的 key 必须是上面给出的 name;"
+              "要求:①定义用中文属加种差句式;②不虚构表/列中没有的语义;③反例要有辨析价值;④JSON 的 key 必须是上面给出的 name;"
               "⑤**非循环**:定义体中不得复用被定义术语名本身及其中文名(如定义『销售订单』不得出现『销售订单』字样),用上位类(属)+区别特征(种差)描述,避免自指。")
     for drv in _drv_order():
         if drv not in available(): continue
@@ -4043,9 +4043,9 @@ def build_skill_from_graph():
     lines.append("\n## 对象类型分布(kind 判定参照)")
     lines += [f"- {k}:{n} 个" for k, n in kinds.most_common()]
     if defs:
-        lines.append("\n## 定义风格样例(属+种差,非循环)")
+        lines.append("\n## 定义风格样例(属加种差,非循环)")
         lines += [f"- 「{cn}」:{d[:120]}" for cn, d in defs]
-    lines.append("\n## 规范\n1. 关系动词优先复用上表,不新造同义动词;\n2. 单据/台账/目录类信息记录判 kind=ice,勿与物理实体混淆;\n3. 定义用「属+种差」句式,定义体不得复用被定义术语本身。")
+    lines.append("\n## 规范\n1. 关系动词优先复用上表,不新造同义动词;\n2. 单据/台账/目录类信息记录判 kind=ice,勿与物理实体混淆;\n3. 定义用「属加种差」句式,定义体不得复用被定义术语本身。")
     content = "\n".join(lines)
     if not _SKILL_NAME_RE.match(name): return jsonify({"error": "技能名非法"}), 400
     if name in _builtin_skill_names(): return jsonify({"error": "技能名与内置冲突,请换名"}), 400
@@ -4485,9 +4485,9 @@ def _llm_extract_ontology(q, ev, skills, cqs=None):
 {ev['schema'][:12000]}{docs_block[:9000]}{refs_block}{bad_block}{cq_block}
 
 只输出一个 JSON(无其它文字):
-{{"objects":[{{"name":"英文标识(能对齐表名就用表名)","cn":"有业务意义的中文名","kind":"object|event|asset|role|ice(信息记录:目录/单据/地址/台账等,非物理实体)","table":"绑定的真实表名或 null","evidence":"抽取依据(来自哪张表/哪份文档)","definition":"属+种差定义(如『销售订单是一种记录客户购买承诺的信息内容实体』);给不出严格定义就留空","example":"一个正例","counterExample":"一个易混淆的反例(如 报价单——尚无承诺)"}}],
+{{"objects":[{{"name":"英文标识(能对齐表名就用表名)","cn":"有业务意义的中文名","kind":"object|event|asset|role|ice(信息记录:目录/单据/地址/台账等,非物理实体)","table":"绑定的真实表名或 null","evidence":"抽取依据(来自哪张表/哪份文档)","definition":"属加种差定义(如『销售订单是一种记录客户购买承诺的信息内容实体』);给不出严格定义就留空","example":"一个正例","counterExample":"一个易混淆的反例(如 报价单——尚无承诺)"}}],
   "relations":[{{"source":"对象name","target":"对象name","verb":"具体关系动词(归属/产生/包含/服务/触发…)","rationale":"依据","child_key":"可选:源表候选外键(复合键用逗号)","parent_key":"可选:目标表候选键(复合键用逗号)"}}]}}
-要求:①对象尽量绑定真实表;②由文档/流程推断出的业务事件用 kind=event;库存记录/地址/目录/单据等信息性条目用 kind=ice(IOF 信息内容实体,勿与物理实体混淆);③关系两端必须是上面列出的对象 name;④不虚构库表和文档中都没有的实体或关系;⑤child_key/parent_key 只是待验证提示,只能填写上面 schema 真实存在的列,不得声称 verified;⑥**cn 必须是有业务意义的中文名**(如 客户 / 销售订单 / 退货事件 / 生产工单),优先复用表注释、上传文档/知识包(如看板指标口径)里的中文术语,严禁用拼音或直接照搬英文表名/键名做 cn;⑦**借鉴 IOF 定义规范**:definition 用「属+种差」句式;**非循环**——定义体不得复用被定义术语名本身及其中文名(如定义『销售订单』不得出现『销售订单』字样),须用上位类(属)+区别特征(种差)描述;counterExample 给一个会被误认成该对象、实则不是的反例(帮助后续取证辨伪);无法给出严格充要定义时 definition 留空即可(将被标为原始概念)。"""
+要求:①对象尽量绑定真实表;②由文档/流程推断出的业务事件用 kind=event;库存记录/地址/目录/单据等信息性条目用 kind=ice(IOF 信息内容实体,勿与物理实体混淆);③关系两端必须是上面列出的对象 name;④不虚构库表和文档中都没有的实体或关系;⑤child_key/parent_key 只是待验证提示,只能填写上面 schema 真实存在的列,不得声称 verified;⑥**cn 必须是有业务意义的中文名**(如 客户 / 销售订单 / 退货事件 / 生产工单),优先复用表注释、上传文档/知识包(如看板指标口径)里的中文术语,严禁用拼音或直接照搬英文表名/键名做 cn;⑦**借鉴 IOF 定义规范**:definition 用「属加种差」句式;**非循环**——定义体不得复用被定义术语名本身及其中文名(如定义『销售订单』不得出现『销售订单』字样),须用上位类(属)+区别特征(种差)描述;counterExample 给一个会被误认成该对象、实则不是的反例(帮助后续取证辨伪);无法给出严格充要定义时 definition 留空即可(将被标为原始概念)。"""
     for drv in _drv_order():
         if drv not in available(): continue
         ok, reply = get_runtime(drv).run_turn(f"be_{uuid.uuid4().hex[:6]}", prompt, timeout=600)

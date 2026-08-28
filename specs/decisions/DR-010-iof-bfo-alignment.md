@@ -11,7 +11,7 @@
 ## 决定 / Decision
 在**不改平台代码**的前提下,给 DataMind 加一层 IOF 语义工程能力,六件事:
 1. **BFO 上层归类**:`kind → _KIND_BFO`(object→MaterialEntity、event→Process、asset→MaterialArtifact、role→Role、ice→InformationContentEntity);节点/导出带 `bfo`,老 IR 由 kind 回溯。
-2. **`iof-av` 机读注释**:对象带 `definition`(属+种差)、`isPrimitive`(无充要定义→标原始概念,诚实不编造)、`example`、`counterExample`(辨伪反例)、`maturity`(Provisional/Released/Deprecated)、`provenance{directSource,adaptedFrom,excerptedFrom}`。抽取 prompt(`_llm_extract_ontology`)加第⑥条定义规范。
+2. **`iof-av` 机读注释**:对象带 `definition`(属加种差)、`isPrimitive`(无充要定义→标原始概念,诚实不编造)、`example`、`counterExample`(辨伪反例)、`maturity`(Provisional/Released/Deprecated)、`provenance{directSource,adaptedFrom,excerptedFrom}`。抽取 prompt(`_llm_extract_ontology`)加第⑥条定义规范。
 3. **关系接地**:`_FOUNDED_RELATIONS`+`_ground_verb()` 把中文动词→BFO 有根据关系(归属→continuantPartOfAtAllTimes、产生→hasSpecifiedOutput、服务→hasParticipantAtSomeTime…)+ 时间指标 `temporal`(atAllTimes/atSomeTime);未知动词回退 `relatedToAtSomeTime`。`ir_to_graph` 对老 IR 现场接地。
 4. **注释化 OWL 导出**:`_ir_to_turtle` 重写为自包含 IOF 注释化 OWL2 生成器(BFO `subClassOf` + `iof-av:*` + 关系 `subPropertyOf` + 字段级 `DatatypeProperty`),ttl/jsonld/owl 三格式一致;`/api/sparql` 与 `/api/ont/forge`(SHACL)同底,注释可被 SPARQL 查询。**不改平台 `export_owl.py`**。
 5. **SHACL 质量校验**:`_IOF_SHACL` 形状(类须有 `rdfs:label`;非原始类须有 `naturalLanguageDefinition`),`/api/ont/forge` 用 pyshacl 校验、返回 conforms/violations。

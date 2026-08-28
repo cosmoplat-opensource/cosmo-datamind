@@ -36,7 +36,7 @@ CREATE TABLE ont_object (
   bfo           TEXT,               -- BFO 上层范畴
   bound_table   TEXT,               -- 绑定的物理表
   pk            TEXT,
-  definition    TEXT,               -- 属+种差定义
+  definition    TEXT,               -- 属加种差定义
   is_primitive  INTEGER NOT NULL DEFAULT 0,
   example       TEXT,
   counter_example TEXT,
