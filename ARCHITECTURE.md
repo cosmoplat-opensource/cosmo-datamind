@@ -120,6 +120,20 @@ pyflakes 零告警 · 构建产物经 RDF 解析与 SHACL 校验 · 元数据覆
 **排除方法**:把 `driver` 切到 `/api/engine/config` 的 `runtimes` 中已列出的任一运行时后重跑;
 5 项应同时转绿。若切换后仍失败,才是真回归。
 
+**另一种情形:全新克隆、完全没有上游引擎。** 此时 `workdir/engine_config.json` 根本不存在
+(该文件是本机配置,不随仓分发),除上述 5 项外还会多 3 项失败,合计 **8 项**:
+
+| 追加失败项 | 说明 |
+|---|---|
+| `skills 列表` | 断言 `/api/skills` 至少 5 个,该端点列的是**上游引擎**技能 |
+| `skill 详情` | 取上游引擎技能 `gov-app-ontology-build` |
+| `AO5 上游引擎本体也能锚定并给出关系` | 需上游引擎产出的本体 |
+
+这 8 项是**无引擎环境的预期结果,不是回归**。本仓内置的本体构建技能不受影响——
+它由 `skill_registry` 从 `skills_seed/` 读取(DR-050),`/api/build/skills` 在无引擎时
+照常返回内置技能,对应的 X1/X6/X8 等检查点应当通过。实测:随仓演示数据集的干净克隆上
+**523 通过 / 8 失败**,失败项与上表逐一吻合。
+
 `test_ui_ops.py` 有 **3 项**同源:`含 OpenAI 兼容端点卡(GLM)` / `切回 GLM 后端生效` /
 `GLM「测试连通」出结果`。未配置 OpenAI 兼容端点(`DATAMIND_LLM_BASE`+`DATAMIND_LLM_KEY`)时,
 `openai` 运行时按 [[DR-029-openai-compat-runtime-and-test-isolation]] **不注册**(不虚报「LLM 可用」),
