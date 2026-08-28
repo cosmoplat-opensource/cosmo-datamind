@@ -7,6 +7,7 @@
       纯函数(key_stem/key_name_ok)可测,build() 也可编程调用(server 子进程行为不变)。
 """
 import json
+import sqlite3
 import quick_build  # 先红:此行在守卫加入前即抛 IndexError
 
 
@@ -28,6 +29,30 @@ class TestPureHelpers:
 
 
 class TestBuildIntegration:
+    def test_build_ignores_sqlite_internal_tables(self, make_sqlite, tmp_path):
+        db = make_sqlite({"business_table": ("id INTEGER PRIMARY KEY", [(1,)])})
+        with sqlite3.connect(db) as con:
+            con.execute("ANALYZE")
+        out = str(tmp_path / "ir.json")
+        ir = quick_build.build(db, out, "fx")
+        assert [obj["name"] for obj in ir["objects"]] == ["business_table"]
+        assert ir["scenario"]["object_count"] == 1
+
+    def test_declared_fk_suppresses_inferred_reverse_edge(self, make_sqlite, tmp_path):
+        db = make_sqlite({
+            "parents": ("parent_id INTEGER PRIMARY KEY", [(1,), (2,), (3,)]),
+            "children": (
+                "child_id INTEGER PRIMARY KEY, parent_id INTEGER, "
+                "FOREIGN KEY(parent_id) REFERENCES parents(parent_id)",
+                [(10, 1), (11, 2), (12, 3)],
+            ),
+        })
+        out = str(tmp_path / "ir.json")
+        ir = quick_build.build(db, out, "fx")
+        pairs = {(r["source_concept"], r["target_concept"]) for r in ir["relations"]}
+        assert ("children", "parents") in pairs
+        assert ("parents", "children") not in pairs
+
     def test_build_emits_verified_overlap_relation(self, make_sqlite, tmp_path):
         # orders.customer_id 100% 落在 customers.customer_id,且父键唯一、命名相容 → verified
         db = make_sqlite({
@@ -89,3 +114,24 @@ class TestBuildIntegration:
         self_rels = [r for r in ir["relations"]
                      if r["source_concept"] == "staff" and r["target_concept"] == "staff"]
         assert self_rels, "DR-036:驼峰角色键 ManagerId 应被发现为自引用"
+
+    def test_repeated_builds_do_not_reuse_uniqueness_cache(self, make_sqlite, tmp_path):
+        first = make_sqlite({
+            "customers": ("customer_id INTEGER", [(1,), (2,)]),
+            "orders": ("customer_id INTEGER", [(1,), (2,)]),
+        }, fname="first.db")
+        second = make_sqlite({
+            "customers": ("customer_id INTEGER", [(1,), (1,)]),
+            "orders": ("customer_id INTEGER", [(1,), (1,)]),
+        }, fname="second.db")
+        first_out = str(tmp_path / "first.json")
+        second_out = str(tmp_path / "second.json")
+        quick_build.build(first, first_out, "first")
+        quick_build.build(second, second_out, "second")
+        second_ir = json.loads(open(second_out, encoding="utf-8").read())
+        assert not any(
+            relation["status"] == "verified"
+            and relation["source_concept"] == "orders"
+            and relation["target_concept"] == "customers"
+            for relation in second_ir["relations"]
+        )

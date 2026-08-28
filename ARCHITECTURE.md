@@ -1,6 +1,6 @@
 # Cosmo DataMind · 系统架构
 
-> 面向维护者的架构说明。契约细节见 `specs/`(DR-001…DR-049、IR-001…IR-011)。本文描述分层、数据流与统一约定。
+> 面向维护者的架构说明。契约细节见 `specs/`(DR-001…DR-050、IR-001…IR-011)。本文描述分层、数据流与统一约定。
 
 ## 1. 分层
 
@@ -9,23 +9,23 @@
 │  前端 (ui/index.html, 单页, 原生 JS)                          │
 │   26 页 × hash 路由 · G6 图谱 · ECharts · 统一助手 $/esc/J    │
 ├─────────────────────────────────────────────────────────────┤
-│  HTTP 层 (Flask, 单端口 8092) · 共 121 路由                    │
-│   server.py 116 路由 + bp_engine.py 5 路由(blueprint, DR-043)│
+│  HTTP 层 (Flask, 单端口 8092) · 共 122 路由                    │
+│   server.py 117 路由 + bp_engine.py 5 路由(blueprint, DR-043)│
 │   app 级 before_request CSRF 守卫(对 blueprint 同样生效)      │
 │   共享层: srv_context(路径/只读连接/原子写/写锁)              │
 │           srv_engine(运行时缓存/引擎配置/引擎回复语义)         │
 ├─────────────────────────────────────────────────────────────┤
 │  能力层                                                        │
-│   构建: _gather_evidence → _llm_extract → _adjudicate_ir      │
-│         → _llm_semantic_review → 落盘(三级控制环, DR-011)     │
+│   构建: CQ/技能→来源整理→LLM提议→语义复核→dao_core数据验证   │
+│         → 上层关系映射检查→build_quality验收检查→人工复核     │
 │   问数: _anchor_ir(选中图谱=锚定源) → build_context(带轨迹)   │
 │         → agent_sql_plan → 口径校验 → q() → 双盲意图 → 叙事    │
 │   体检: cq_check 能力核验 · drift_check 漂移 · health_check    │
 │         图结构 · compat_check 兼容 · module_split 模块化       │
 │   决策: rule_engine 规则+确定性推理 · 动作层(类型化+风险分级)│
-│   导出: _ir_to_turtle → SHACL/HermiT (DR-010)                 │
+│   导出: _ir_to_turtle → RDF 解析 + SHACL 校验 (DR-010)        │
 ├─────────────────────────────────────────────────────────────┤
-│  执行底座                                                      │
+│  执行层                                                      │
 │   本地 SQLite 只读 (ro_connect, mode=ro 三重防写, DR-001)     │
 │   IR 存储 (workdir/*.json, _atomic_json + _WRITE_LOCK)        │
 │   引擎 (agent_runtime → hermes/claude-code, 离线降级)         │
@@ -34,9 +34,9 @@
 
 ## 2. 核心数据流
 
-**本体构建(三级控制环, DR-011)**:LLM 提议关系 → **语义评审**(`_llm_semantic_review`,仅凭 schema 判语义,拦共享域巧合)→ **数据裁决**(`_adjudicate_ir`,取值重叠∧父键唯一,拦标识符错位幻觉)→ 每条关系带 `status`(verified/candidate)+ `semantic`(pass/fail/skipped)+ `founded_relation` + `temporal`。两级过滤移除不相交的假正例族,互补而非替代。引擎离线全程降级、绝不臆造。
+**本体构建(DR-011/050)**：CQ 与技能正文进入提议上下文 → LLM 只提议关系和候选键 → `_llm_semantic_review` 标记语义存疑项 → `_adjudicate_ir` 调用 `dao_core`，按固定阈值、父键唯一性、命名依据和方向检查验证连接关系 → `ontology_grounding` 按官方 IRI、定义域和值域检查 BFO/IOF 映射 → `build_quality` 检查图结构、verified 证据、定义、映射和 CQ → IR 与 gaps 原子写入。每条关系分别记录数据验证状态 `status` 和上层映射状态 `grounding_status`；离线路径 `quick_build` 使用同一数据验证规则和验收检查。执行顺序见 `docs/pipelines/ontology_build.yaml`。
 
-**关系发现的泛化**(DR-011,基准实证驱动):连接键多候选循环(后缀词干→等值列名==父表名→前缀 Country1→Country→同名键形列);父列候选序 PK 优先;复合键二列联合裁决(元组重叠∧成对唯一)。覆盖企业 `*_id` 规范库、自然键学术库(Mondial 级)、无约束上传 CSV、复合键 schema。
+**关系发现的泛化**(DR-011,基准实证驱动):连接键多候选循环(后缀词干→等值列名==父表名→前缀 Country1→Country→同名键形列);父列候选序 PK 优先;复合键按元组联合计算重叠率和唯一性，模型给出的多列提示不限于二列，自动组合搜索控制在 2--4 列。覆盖企业 `*_id` 规范库、自然键学术库(Mondial 级)、无约束上传 CSV、复合键 schema。
 
 ## 2.5 模块清单
 
@@ -47,8 +47,11 @@
 |---|---|---|
 | `dao_core.py` | **单一裁决核**:重叠/唯一度/命名校验/角色键/方向测试/自适应 θ,三态 `classify` | DR-035…038 |
 | `quick_build.py` | 纯数据驱动建本体,裁决决策委托 `dao_core`(compat 口径) | DR-011/035 |
-| `hallucination_eval.py` | 反幻觉评测台:带标签基准上量化精确率/召回/**幻觉泄漏率**(judge 可选) | DR-039 |
+| `hallucination_eval.py` | 错误关系控制评测台:带标签基准上量化精确率/召回/**幻觉泄漏率**(judge 可选) | DR-039 |
 | `definition_eval.py` | 定义质量评分:属加种差/非循环/反例 + 参考重叠(LLM-judge 可选) | DR-040 |
+| `build_quality.py` | 确定性验收检查：图结构 + verified 证据契约 + 定义 + 上层关系映射 + CQ，输出 pass/review/fail | DR-050 |
+| `ontology_grounding.py` | BFO/IOF 官方关系 IRI、定义域和值域检查；无法确认时保留本地对象属性 | DR-010/050 |
+| `skill_registry.py` | 本仓/上游技能合并发现,列表/查看/执行/prompt 正文消费的单一注册表 | DR-050 |
 | `store.py` | JSON 持久化抽象:原子写/坏档恢复/schema 校验/迁移/每路径锁 | DR-044 |
 | `ir_relational.py` | IR→关系型语义层投影(只读派生物;OWL 之外的消费出口,证据随行、状态不提升) | DR-049 |
 | `srv_context.py` | 共享上下文:路径、`ro_connect`、`sql_is_readonly`、`_atomic_json`、写锁 | DR-043 |
@@ -59,7 +62,7 @@
 | `intent_check.py` | 双盲意图检测:问句通道 vs SQL 通道各自锚定,比对是否答非所问 | DR-026 |
 | `usage_stat.py` | 本体使用度埋点(只读旁路,不记录问句原文) | DR-026 |
 | `rule_engine.py` | 业务规则 + 确定性推理,每条结论带 trace;冲突只报不裁 | DR-028 |
-| `health_check.py` | 图结构健康度:悬空/自反/状态矛盾(硬错误)+ 孤岛/枢纽/重复边(信号) | DR-030 |
+| `health_check.py` | 图结构检查：悬空/自反/状态矛盾(阻断问题)+ 孤岛/枢纽/重复边(待复核信号) | DR-030 |
 | `compat_check.py` | 向后兼容:结构 diff + **下游影响**(命中哪些规则/动作/技能) | DR-031 |
 | `module_split.py` | 模块化建议(按领域连通分量 / 按数仓分层),只建议不落盘 | DR-031 |
 | `openai_runtime.py` | OpenAI 兼容驱动(GLM/DeepSeek/Qwen/vLLM),空内容判失败不回传空串 | DR-029 |
@@ -74,10 +77,10 @@
 | IR 写端点前奏 | `_open_writable(key)` 图谱必填(缺→400,不默认 demo)+ → (ir, wp, err) | server.py,enrich/reground/maturity 共用 |
 | 原子写 | `_atomic_json` + `_WRITE_LOCK` 串行化 | 全部持久化 |
 | 路径守卫 | `_bad_gkey` / `_ir_write_path`(拒只读源与穿越) | 全部图谱键入口 |
-| 动词接地 | `_FOUNDED_RELATIONS` + `_ground_verb`(BFO + 时间指标) | 单一映射源 |
-| kind→BFO | `_KIND_BFO`(含 ice=InformationContentEntity) | 单一映射源 |
+| 上层关系映射 | `ontology_grounding.normalize`(官方 IRI + 定义域/值域检查) | `ontology_grounding.py` |
+| kind→上层类别 | `KIND_DEFAULTS`(含 ice=InformationContentEntity) | `ontology_grounding.py` |
 | 数据源连接 | `build_connect` 按 path/dsn 幂等登记,去重复堆叠 | server.py |
-| 图谱选择器 | `graphOptions(gs,label)` 分组 optgroup(精选/场景/构建) | ui,图谱/工作台/完备度三处共用 |
+| 图谱选择器 | `graphOptions(gs,label)` 分组 optgroup(精选/场景/构建) | ui,图谱/工作台/元数据覆盖三处共用 |
 | 前端 kind 规范 | `KIND{c,n}` 颜色+中文,全站图例/配色/标签引用 | ui,`KCOL/KNM` |
 | 关系状态边样式 | `EST{c,w,d,n}` 单一事实源(G6 图谱 + 锚定子图 SVG 共用),`estDash()` 转 SVG 虚线 | ui,消两套配色 |
 | 前端助手 | `$`/`esc`/`jsAttr`/`J` 显式挂 window | ui,防内联处理器作用域隐患 |
@@ -87,25 +90,25 @@
 
 ## 4. 安全模型(DR-006)
 
-慢速攻击缓解(请求头总时限 + 正文最低速率闸 + 阻塞读看门狗 + 并发上限,DR-048)· 只读 SQL 三重防写(mode=ro + `sql_is_readonly` + 单句 execute)· 全局 CSRF 守卫(非安全方法带跨源 Origin→403)· 图谱键防穿越 · 命令白名单(无 shell=True)· SPARQL 禁 SERVICE/外部 FROM · 三写端点经 `_open_writable` 仅回写受控 IR · `_atomic_json` 原子性。
+慢速攻击缓解(请求头总时限 + 正文最低速率限制 + 阻塞读看门狗 + 并发上限,DR-048)· 只读 SQL 三重防写(mode=ro + `sql_is_readonly` + 单句 execute)· 全局 CSRF 守卫(非安全方法带跨源 Origin→403)· 图谱键防穿越 · 命令白名单(无 shell=True)· SPARQL 禁 SERVICE/外部 FROM · 三写端点经 `_open_writable` 仅回写受控 IR · `_atomic_json` 原子性。
 
-## 5. 测试与质量门
+## 5. 测试与验收检查
 
 **两层分工**(IR-007 起):
 
 | 层 | 内容 | 是否需起服务 |
 |---|---|---|
-| 单元层 `tests/` | 确定性模块边界/纯函数 + 文档计数自检(2026-08-24:232 条用例 / 178 个测试函数,确定性模块覆盖率 76.8%) | 否(离线秒级) |
-| 集成层 `test_all.py` | 535 集成断言,覆盖每路由 happy+边界+安全 | 是 |
-| UI 层 | `test_ui.py`(62,全页走查)·`test_ui_ops.py`(46,浏览器逐步实操) | 是(需 playwright) |
+| 单元层 `tests/` | 确定性模块边界/纯函数 + 文档计数自检(2026-08-28:257 项测试) | 否(离线秒级) |
+| 集成层 `test_all.py` | 源码定义 535 个检查点,覆盖路由正常路径、边界与安全约束 | 是 |
+| UI 层 | `test_ui.py`(全页走查)·`test_ui_ops.py`(浏览器逐步实操) | 是(需 playwright) |
 
 自动化校验:`pyproject.toml` 统一 pytest/coverage/ruff(只选 F/B 抓真缺陷)/mypy ·
 `.pre-commit-config.yaml` 提交即跑 · `.github/workflows/ci.yml` 双 job(单元硬挡 + 集成 advisory)·
-pyflakes 零告警 · 构建产物经 SHACL/HermiT 校验 · 完备度记分卡量化可审计程度。
+pyflakes 零告警 · 构建产物经 RDF 解析与 SHACL 校验 · 元数据覆盖率用于定位定义、反例和标准关系映射缺口（不表示本体完备性）。当前仓库不内置 OWL DL 推理器，因此不把 HermiT 一致性检查列为已执行能力。
 
 ### 5.1 集成套件的环境依赖(勿误判为回归)
 
-`test_all.py` 满环境下为 **531/531 全绿**。若出现下列 **5 项**失败,先查环境再查代码——
+`test_all.py` 源码定义 **535 个检查点**。若出现下列 **5 项**失败,先查环境再查代码——
 它们同出一源:`workdir/engine_config.json` 持久化的 `driver` 在当前环境**未注册**
 (如 `driver="openai"` 但未配置 OpenAI 兼容端点凭据),编辑引擎据 DR-003/029 显式报错而非伪装可用。
 
@@ -120,11 +123,12 @@ pyflakes 零告警 · 构建产物经 SHACL/HermiT 校验 · 完备度记分卡�
 `test_ui_ops.py` 有 **3 项**同源:`含 OpenAI 兼容端点卡(GLM)` / `切回 GLM 后端生效` /
 `GLM「测试连通」出结果`。未配置 OpenAI 兼容端点(`DATAMIND_LLM_BASE`+`DATAMIND_LLM_KEY`)时,
 `openai` 运行时按 [[DR-029-openai-compat-runtime-and-test-isolation]] **不注册**(不虚报「LLM 可用」),
-引擎设置页因此不显示该卡,断言随之不成立。配好端点后 3 项转绿;满环境实测 **47/47**。
+引擎设置页因此不显示该卡,相关检查应标记为跳过而不是失败。本轮未配置该外部端点，
+实测为 **43 项通过、0 项失败、3 项跳过**，不据此推测配齐端点后的结果。
 
 ## 6. 已知边界(诚实)
 
-- 复合键裁决为二列(≥3 列 schema 未覆盖);
+- 复合键自动组合搜索限制为 2--4 列；更宽的组合需由调用方给出候选键，系统不做无界穷举;
 - 语义评审依赖在线引擎(离线记 skipped);
-- 外部库仅登记连接、离线不取数(DR-008);
-- 单专家式扩标金标(方法学局限,见论文)。
+- MySQL/Doris 直连依赖相应驱动和可达服务；本轮没有可用外部实例，未做真实远端数据库联调;
+- 单专家式扩标参考集(方法学局限,见论文)。

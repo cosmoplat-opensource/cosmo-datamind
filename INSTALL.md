@@ -6,7 +6,7 @@
 
 | 项 | 要求 | 说明 |
 |---|---|---|
-| Python | 3.8 及以上 | 实测 3.13;代码未使用 3.9+ 专有语法 |
+| Python | 3.10 及以上 | 与 `pyproject.toml` 一致;本轮在 3.13 上通过测试 |
 | 操作系统 | macOS / Linux | 未在 Windows 上验证 |
 | 磁盘 | 约 200 MB | 含依赖与运行期产物 |
 | 可选 | playwright | 仅运行 UI 自动化测试时需要 |
@@ -40,7 +40,7 @@ pip install -r requirements.txt
 
 | 变量 | 作用 | 缺省行为 |
 |---|---|---|
-| `DATAMIND_DB` | 只读 SQLite 数据底座路径 | 指向仓库同级的 `demo_metrics.db`;不存在则相关端点标注"数据库不可用" |
+| `DATAMIND_DB` | 只读 SQLite 数据源路径 | 指向仓库同级的 `demo_metrics.db`;不存在则相关端点标注"数据库不可用" |
 
 ### 接入大模型（可选,但深度问数与 LLM 建本体依赖它）
 
@@ -81,7 +81,7 @@ python3 server.py          # 前台运行
 ## 部署后自检
 
 ```bash
-curl -s http://127.0.0.1:8092/api/overview      # 数据底座与本体规模
+curl -s http://127.0.0.1:8092/api/overview      # 数据源状态与本体规模
 curl -s http://127.0.0.1:8092/api/ont/runtimes  # 已注册的模型运行时
 ```
 
@@ -98,9 +98,9 @@ curl -s http://127.0.0.1:8092/api/ont/runtimes  # 已注册的模型运行时
 完整回归:
 
 ```bash
-python3 test_all.py        # 系统级,531 条断言,需服务已启动
-python3 test_ui.py         # 全页面走查,62 条,需 playwright
-python3 test_ui_ops.py     # 浏览器逐步实操,46~47 条,含三轮真实问数,耗时约 12 分钟
+python3 test_all.py        # 系统级,源码定义 535 个检查点,需服务已启动
+python3 test_ui.py         # 全页面走查,需 playwright
+python3 test_ui_ops.py     # 浏览器逐步实操,含真实问数;外部端点未配置时显式跳过相关项
 ```
 
 **测试进程要与服务指向同一个库。** 部分断言在测试进程内直接导入 `server` 求值,
@@ -111,8 +111,8 @@ python3 test_ui_ops.py     # 浏览器逐步实操,46~47 条,含三轮真实问�
 DATAMIND_DB=$PWD/../demo_metrics.db python3 test_all.py
 ```
 
-`test_ui_ops.py` 的条数会在 46~47 之间浮动:其中一条只在「本次问数召回了整张本体」时
-追加(小本体的正常结果),这是数据相关的补充观测,不是漏跑。
+`test_ui_ops.py` 的执行数受数据与外部运行时配置影响。小本体可能被整图召回，
+未配置 OpenAI 兼容端点时相关检查会标记为跳过；两种情况都会在测试输出中明确说明。
 
 安装 playwright:`pip install playwright && playwright install chromium`。
 
@@ -122,10 +122,12 @@ DATAMIND_DB=$PWD/../demo_metrics.db python3 test_all.py
 
 ```bash
 pip install gunicorn
-gunicorn -w 1 -b 127.0.0.1:8092 server:app
+gunicorn -w 1 -k gthread --threads 4 -b 127.0.0.1:8092 server:app
 ```
 
 `-w 1` 是必须的:应用含进程内状态（问数缓存、运行时实例、写锁）,多 worker 会导致状态不一致。
+`gthread` 使单一进程能够同时处理多个请求；API 数据源若指向本服务自身，单线程同步 worker
+会等待自己而超时。当前共享状态的写入路径已有锁保护，本轮按 4 线程完成了并发与系统回归。
 若需横向扩展,应在反向代理层做会话保持,或将状态外置——后者尚未实现。
 
 TLS 与身份认证由反向代理承担。**本服务自身不含用户体系**,请勿在无鉴权的情况下暴露到公网,
@@ -161,7 +163,7 @@ OpenClaw 连接哪个网关（`wss://…` 与 Token）在 OpenClaw 客户端内�
 | `workdir/server.log` | `start.sh` 的运行日志 | 可删 |
 | `workdir/qa_skills.json` | 沉淀的问数技能 | 可删,失去已沉淀的 SQL 复用 |
 
-数据底座(`DATAMIND_DB`)以只读方式打开,系统不会写入其中。
+数据源(`DATAMIND_DB`)以只读方式打开,系统不会写入其中。
 
 标准格式导出(TTL / JSON-LD / RDF-XML)为流式响应,不在服务端落盘,由浏览器直接下载。
 

@@ -83,7 +83,7 @@ def test_proposer_hallucinations_are_contained(tmp_path):
     db = adversarial_fk.build(str(tmp_path / "adv.db"))
     true_cands = [c for c in adversarial_fk.CANDIDATES if c["is_true_fk"] and not c["cat"].startswith("dr038")]
     gold = {(c["child_table"], c["child_col"], c["parent_table"], c["parent_col"]) for c in true_cands}
-    # 捏造:代理键碰撞 + 方向反(都不在金标里)
+    # 捏造:代理键碰撞 + 方向反(都不在参考集里)
     fabricated = [
         {"child_table": "customers", "child_col": "customer_id",
          "parent_table": "widgets", "parent_col": "widget_id"},

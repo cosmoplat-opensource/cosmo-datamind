@@ -56,7 +56,7 @@ sqlite3 demo.db < examples/sample_db.sql
 |---|---|
 | 表间**没有声明外键** | 关系只能靠取值重叠自证——这正是半自动构建要解决的问题 |
 | 同一实体列名不一致(`line_id` vs `prod_line_id`) | 考验关系判定 |
-| `prod_id` 与 `output_id` 都是从 1 开始的自增键 | **值域天然 100% 重合**,考验反幻觉校验能否识破巧合 |
+| `prod_id` 与 `output_id` 都是从 1 开始的自增键 | **值域天然 100% 重合**,考验关系验证能否识破巧合 |
 | 2026-04 起成本抬升 | 埋一个能被问出来的业务现象 |
 
 ## 3. 配模型并启动
@@ -101,7 +101,7 @@ python3 quick_build.py demo.db workdir/built_myfirst.json 我的第一张本体
 [quick_build] 关系 6 条 (verified 4)
 ```
 
-**6 条关系里只有 4 条被判 verified**,这不是缺陷,是反幻觉在工作。看被降级的那两条:
+**6 条关系里只有 4 条被判 verified**,这不是缺陷,是证据分级生效。看被降级的那两条:
 
 ```
 dim_product → fact_production_output   candidate
@@ -116,7 +116,7 @@ dim_product → fact_production_output   candidate
 ![本体图谱](docs/img/01-ontology-graph.png)
 
 **灰色实线**是已验证关系(`verified`),**橙色虚线**是候选关系(`candidate`)——
-上图 4 条实线正是判为 verified 的那 4 条,2 条橙虚线即被键名词根校验拦下的那 2 条。右上角的 IOF 完备度 25% 也是实情——
+上图 4 条实线正是判为 verified 的那 4 条,2 条橙虚线即被键名词根校验拦下的那 2 条。右上角的 元数据覆盖率 25% 也是实情——
 `quick_build` 只从数据推断结构,不产出定义与反例,这部分要靠后续人工或大模型补齐。
 
 ## 5. 问一个数
@@ -167,7 +167,7 @@ dim_product → fact_production_output   candidate
 示例库中产品表的 `prod_line_id` 与产线表的 `line_id` 列名不同,`quick_build` 未能据此确立关系,
 而校验只放行落在已验证关系上的 JOIN 键。
 
-**这是反幻觉从建本体贯通到问数的一条链**:建模阶段没被数据证实的关联,
+**这是错误关系控制从建本体贯通到问数的一条链**:建模阶段没被数据证实的关联,
 问数阶段就不许模型凭空用上。被降为 `candidate` 的关系同理——校验只认 `verified` 与 `asserted`。
 
 这条拦截**能否出现取决于模型选了哪条 JOIN 路径**,同一个问题多问几次未必每次都触发:
@@ -205,7 +205,7 @@ dim_product → fact_production_output   candidate
 | `llm_plan` 显示「返回 42 字符」 | 推理型模型超时被截断 | 调大 `DATAMIND_LLM_TIMEOUT` |
 | SQL 报 `no such column` | 问数用的是内置示例本体,不是你的库 | 在「数据源 → 本体图谱」里选中自己的本体 |
 | 问数出 0 图且无 LLM | 未配模型时模板只对内置示例库有效 | 配模型,或改用内置示例库体验 |
-| 关系大量是 `candidate` | 反幻觉在工作,不是故障 | 到「本体评审」逐条人审,通过后成 `asserted` |
+| 关系大量是 `candidate` | 证据分级生效,不是故障 | 到「本体评审」逐条人审,通过后成 `asserted` |
 
 ## 不配 LLM 能做什么
 
@@ -216,7 +216,7 @@ dim_product → fact_production_output   candidate
 | 浏览本体 / 指标 / 数据质量 / 术语 / 动作中心 | ✅ | ✅ |
 | SQL 工作台（只读）/ SPARQL / 标准导出 | ✅ | ✅ |
 | 建本体 | ✅ 纯数据驱动（无提议环节） | ✅ LLM 广撒网提议 + 数据裁决 |
-| 本体体检（CQ / 漂移 / 健康度 / 兼容 / 模块化） | ✅ 全部确定性计算 | ✅ 同左 |
+| 本体体检（CQ / 漂移 / 结构一致性 / 兼容 / 模块化） | ✅ 全部确定性计算 | ✅ 同左 |
 | 深度问数 | ⚠️ 仅内置示例库（模板是为它写的） | ✅ 任意库 |
 
 ## 接上游引擎（可选）

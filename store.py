@@ -18,12 +18,13 @@ import json
 import logging
 import os
 import threading
+from typing import Any
 
 # 诊断信息走 logging(有级别、有时间戳、可被部署方重定向或降噪),
 # 不用 print:后者混进 stdout 既无级别,也容易把内部绝对路径直接摊给使用者。
 _LOG = logging.getLogger("datamind.store")
 
-_LOCKS = {}
+_LOCKS: dict[str, Any] = {}
 _LOCKS_GUARD = threading.Lock()
 
 

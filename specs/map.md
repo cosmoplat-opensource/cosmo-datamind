@@ -3,10 +3,16 @@
 > 入口文件。AI 代理与协作者从这里查找相关 spec。
 > 规约驱动开发(SDD)。消费方式:`Consult @specs/map.md to find relevant context.`
 
+> **阅读说明（2026-08-28）：** `decisions/`、`iterations/` 与下文带日期的条目是历史决策记录，
+> 会保留当时的页面名、接口名和测试数字，不代表当前能力。当前可执行口径以 `README.md`、
+> `ARCHITECTURE.md`、`docs/pipelines/ontology_build.yaml` 和测试结果为准。尤其不得把旧记录中的
+> “完备度 100%”“全部关系接地”“多模态解析”或 HermiT 文字当作已验证能力。
+
 ## 项目一句话
-Cosmo DataMind 是**自有品牌、原创前后端**的「数据治理 × 本体 × 深度问数」原型:
-以**本地 SQLite 只读执行**为底座,把 `../上游本体引擎`(engine/agent_runtime/skills)的能力
-产品化为可运行的前端系统——核心亮点是**多模态 LLM × 多智能体的本体自动构建(反幻觉取证)**,
+Cosmo DataMind 是「数据治理 × 本体 × 深度问数」原型：
+以**配置的 SQLite 数据源只读执行**，可选接入 `DATAMIND_ENGINE_DIR` 指定的上游本体引擎。
+核心能力是基于数据库元数据、结构化输入和人工提供文本的本体候选提议、数据检验与人工复核；
+二进制附件在没有外部解析器时只登记来源，不宣称已理解其中的图像或正文。
 并对齐 `iip.iiot-platform.com/bigdata` 的品类与观感。单端口 8092,`./start.sh` 启动。
 
 > 与平台的关系:平台(`../上游本体引擎/`)是**引擎与方法论真相源**(其 `specs/` 有 DR-001…DR-011);
@@ -14,8 +20,8 @@ Cosmo DataMind 是**自有品牌、原创前后端**的「数据治理 × 本体
 > 本 `specs/` 只记录 DataMind 自身的决定与迭代,与平台 specs 前缀独立、勿混用。
 
 ## 关键契约
-- **执行底座**:深度问数/可视化/SQL 工作台/即时问数(SQL 类)在**本地 `../demo_metrics.db`(108 表/186,833 行)只读执行**;引擎级防写(`mode=ro` + `sql_is_readonly` + 单句执行)。SPARQL 在本地 rdflib RDF 图(IR→turtle)执行。见 [[DR-001-local-readonly-execution]]。
-- **建模算法**:多模态 LLM 提议对象/事件/关系 → **真实数据反幻觉裁决**(取值重叠≥60%∧父键唯一→verified,余 candidate);LLM 离线/超时回退纯数据驱动 quick_build,方法如实标注,见 [[DR-002-multimodal-llm-anti-hallucination-build]]。
+- **数据执行**:深度问数/可视化/SQL 工作台/即时问数(SQL 类)在 `DATAMIND_DB` 指定的 SQLite 数据源上只读执行；示例数据库需按 README 创建或显式指定。防写由 `mode=ro`、`sql_is_readonly` 与单句执行共同实现。SPARQL 在本地 rdflib RDF 图(IR→Turtle)执行。见 [[DR-001-local-readonly-execution]]。
+- **建模算法**:CQ/技能正文 → LLM 提议对象、事件、关系和候选键 → 数据验证(取值重叠≥60%∧父键唯一∧命名有据∧方向正确→verified,其余保留 candidate)→ BFO/IOF 官方关系与类别约束检查 → 图结构/证据/定义/CQ 验收检查；LLM 离线时由 quick_build 使用同一数据验证规则。见 [[DR-002-multimodal-llm-anti-hallucination-build]] 与 [[DR-050-executable-ontology-build-gate]]。
 - **引擎**:运行时经 `agent_runtime`(CLAW_DRIVER 选 hermes/claude-code/openclaw),多引擎顺序兜底;**对外统一中性名**(智能引擎/备选/经典),不暴露底层库名,见 [[DR-003-runtime-neutral-naming]]。
 - **深度问数**:SSE 流式执行记录 + 渐进出图,缓存键含上传指纹,离线走模板兜底,见 [[DR-004-deep-qa-sse]]。
 - **前端**:对齐 iiot-platform/design-system 设计 token(#4A5FF3/#409EFF、圆角 4px、PingFang);**工业级去 emoji**(accent bar + 单色 SVG + 状态点),见 [[DR-005-frontend-design-system]]。
@@ -25,6 +31,7 @@ Cosmo DataMind 是**自有品牌、原创前后端**的「数据治理 × 本体
 ## 索引
 
 ### 决定 / Decisions
+- [DR-050 · 半自动构建的统一证据契约、技能输入与确定性验收检查](decisions/DR-050-executable-ontology-build-gate.md)
 - [DR-043 · 单体路由蓝图化(计划+已起步:抽纯模块降耦合→逐簇拆blueprint)](decisions/DR-043-blueprint-modularization.md)
 - [DR-044 · JSON store 持久化抽象(原子/坏档恢复/校验/迁移/并发,填负向持久化测试空白)](decisions/DR-044-json-store-abstraction.md)
 - [DR-040 · 定义质量评分(属加种差/非循环/反例 + 参考重叠;LLM 1.0 vs 数据驱动 0.0)](decisions/DR-040-definition-quality-eval.md)
@@ -34,7 +41,7 @@ Cosmo DataMind 是**自有品牌、原创前后端**的「数据治理 × 本体
 - [DR-036 · 自引用与角色键发现(role_targets + 角色感知 name_ok + health 自反豁免)](decisions/DR-036-self-referential-and-role-keys.md)
 - [DR-035 · 单一裁决核 dao_core(消两份漂移实现 + classify 三态 + 引擎平价)](decisions/DR-035-unified-adjudication-core.md)
 - [DR-049 · 语义层关系型投影(OWL 标准出口 + 关系表消费出口)+ 深度问数链路显式编排](decisions/DR-049-relational-projection-and-explicit-pipeline.md)
-- [DR-048 · HTTP 慢速攻击缓解(请求头总时限 + 正文速率闸 + 并发上限;扫描中危闭环)](decisions/DR-048-slow-http-dos-mitigation.md)
+- [DR-048 · HTTP 慢速攻击缓解(请求头总时限 + 正文最低速率 + 并发上限)](decisions/DR-048-slow-http-dos-mitigation.md)
 - [DR-047 · 侧边栏信息架构与字号层级(本体页归一 + 动作中心独立 + 内容字号不倒挂)](decisions/DR-047-sidebar-ia-and-type-scale.md)
 - [DR-046 · 确定性模块的隔离单测(离线秒级 + quick_build 可测化)](decisions/DR-046-deterministic-module-unit-tests.md)
 - [DR-045 · 工程校验与 TDD 底座(pytest/coverage/ruff/CI + 文档计数自检)](decisions/DR-045-engineering-harness-and-tdd.md)
@@ -47,14 +54,14 @@ Cosmo DataMind 是**自有品牌、原创前后端**的「数据治理 × 本体
 - [DR-007 · URL hash 子页寻址](decisions/DR-007-url-hash-routing.md)
 - [DR-008 · 数据源与连接模型(内置/SQLite 校验/外部登记)](decisions/DR-008-datasource-connection-model.md)
 - [DR-009 · 对象 id 英文名、显示中文名(cn)](decisions/DR-009-object-cn-display.md)
-- [DR-010 · IOF/BFO 本体工程对齐(注释/接地/注释化 OWL 导出/SHACL 校验/完备度)](decisions/DR-010-iof-bfo-alignment.md)
+- [DR-010 · IOF/BFO 本体工程对齐(注释/映射/OWL 导出/SHACL 校验/元数据覆盖)](decisions/DR-010-iof-bfo-alignment.md)
 - [DR-011 · 泛化裁决 v2(等值/前缀/复合键/PK 感知 + 三级控制环)](decisions/DR-011-generalized-adjudication.md)
 - [DR-012 · SPARQL 健壮性(线程安全/诚实报错/合法默认示例)](decisions/DR-012-sparql-robustness.md)
 - [DR-034 · 中文召回改反向匹配;算子按中文名定位](decisions/DR-034-chinese-recall-and-op-targeting.md)
 - [DR-033 · 选中的本体图谱成为问数的锚定源(含键名词根校验)](decisions/DR-033-selected-ontology-as-anchor.md)
 - [DR-032 · 深度问数的本体锚定可视化(对话内画出锚定子图与 SQL 实际命中)](decisions/DR-032-qa-anchor-visualization.md)
 - [DR-031 · 向后兼容性检查与本体模块化(下游影响 + 领域/层次拆分)](decisions/DR-031-compat-and-modularization.md)
-- [DR-030 · 本体健康度体检(七类图结构异常,硬错误/信号分级)](decisions/DR-030-ontology-health-check.md)
+- [DR-030 · 本体结构检查(七类图结构异常,阻断问题/提示分级)](decisions/DR-030-ontology-health-check.md)
 - [DR-029 · OpenAI 兼容运行时与回归隔离(任意 LLM 可接 + 沙箱图谱)](decisions/DR-029-openai-compat-runtime-and-test-isolation.md)
 - [DR-028 · 业务规则约束与决策层(确定性推理 + 决策路径可回溯 + 冲突不静默)](decisions/DR-028-rules-and-decision-layer.md)
 - [DR-027 · 对象业务别名与本体变更审计(别名贯通五处 + 审计区分 AI/人工来源)](decisions/DR-027-business-aliases-and-change-audit.md)
@@ -66,10 +73,10 @@ Cosmo DataMind 是**自有品牌、原创前后端**的「数据治理 × 本体
 ### 迭代 / Iterations
 - [IR-001 · DataMind 基座(目录/图谱/指标/质量/SQL)](iterations/IR-001-foundation.md) · **delivered**
 - [IR-002 · 深度问数对齐平台 chat-bi](iterations/IR-002-deep-qa-chatbi.md) · **delivered**
-- [IR-003 · 本体构建问询台(多模态 LLM 自动建模)](iterations/IR-003-ontology-build-console.md) · **delivered**
+- [IR-003 · 本体构建问询台(LLM 辅助建模；二进制附件不在本仓解析)](iterations/IR-003-ontology-build-console.md) · **delivered**
 - [IR-004 · 数据连接 + 数据可视化模块](iterations/IR-004-connection-and-viz.md) · **delivered**
 - [IR-005 · 安全加固 + 工业化 + 复审收敛](iterations/IR-005-hardening-and-review.md) · **delivered(持续)**
-- [IR-006 · IOF/BFO 语义工程层(注释/接地/导出/完备度/一键升级)](iterations/IR-006-iof-bfo-semantic-layer.md) · **delivered**
+- [IR-006 · IOF/BFO 语义工程层(注释/映射/导出/元数据覆盖)](iterations/IR-006-iof-bfo-semantic-layer.md) · **delivered**
 - [IR-007 · 工程校验与 TDD 底座(pytest/coverage/ruff/CI + 确定性模块单测)](iterations/IR-007-tdd-foundation.md) · **in-progress**
 - [IR-008 · 裁决核收敛与算法强化(dao_core 单一事实源 + 引擎平价 + 零回归)](iterations/IR-008-adjudication-core-convergence.md) · **in-progress**
 - [IR-011 · 单体路由蓝图化(共享上下文基座 + 逐簇拆 blueprint)](iterations/IR-011-blueprint-modularization.md) · **in-progress**
@@ -77,29 +84,29 @@ Cosmo DataMind 是**自有品牌、原创前后端**的「数据治理 × 本体
 
 ## 上游素材(真相来源)
 - `../上游本体引擎/` — 引擎(agent_runtime/export_owl/serve_claw)、技能(skills_seed)、方法论(其 `系统设计.md` 与 `specs/`)。DataMind 复用其 engine 与技能。
-- `../demo_metrics.db` — 108 表 186,833 行自产合成制造数据(DataMind 本地执行的唯一数据真相)。
-- `README.md` — 模块能力总览(26 页面模块;安装与部署实测命令)。
+- `DATAMIND_DB` — 实际只读数据源；仓库不默认附带 `demo_metrics.db`，可用 `examples/sample_db.sql` 创建最小示例库。
+- `README.md` — 模块能力总览与实测部署命令。
 - `ARCHITECTURE.md` — 分层/数据流/统一约定/安全模型/已知边界(架构说明)
 - `AUDIT.md` — 逐轮自测/复审记录(IR 的原始日志,已归纳进 iterations/)。
-- `test_all.py` — 系统级回归(运行时 **279 断言**,含循环展开),对应 `specs/test/`。
+- `test_all.py` — 系统级回归，源码定义 535 个检查点。
 - `SPEC.md` — 对**平台** web/ 的逆向规格(平台契约,非 DataMind;前缀不同勿混用)。
 
 ## 现状校准
-- 计数(2026-08-24):**121 路由**(server.py 116 + bp_engine 5)/ **535 集成断言**(满环境 531/531 全绿)/
-  **232 条单元用例**(178 个测试函数;确定性模块覆盖率 76.8%)/ DR-001…DR-049 · IR-001…IR-011。
+- 计数(2026-08-28):**122 路由**(server.py 117 + bp_engine 5)/ **535 集成断言** /
+  **257 项单元测试** / DR-001…DR-050 · IR-001…IR-011。
   新增共享层 `srv_context`/`srv_engine`、单一裁决核 `dao_core`、评测台 `hallucination_eval`/`definition_eval`、
   持久化抽象 `store`、首个 blueprint `bp_engine`。
 
 - 计数(2026-07-17):27 页面模块 / 82 后端路由 / test_all.py 109 断言 / 数据 108 表 186,833 行 / 107 指标 / 655 术语。
 - 计数(2026-07-27):28 页面模块 / 109 后端路由 / test_all.py 249 断言(数据与指标/术语计数不变)。
-  - 新增(DR-010/IR-006):`本体完备度` 页面模块 + 4 路由(`/api/ont/completeness`、`/api/ont/enrich`、`/api/ont/reground`、`/api/ont/maturity`);真实 示例 图谱经一键升级达 **IOF 完备度 100%**(108 对象定义/反例、60 关系接地)。
+  - 新增(DR-010/IR-006，历史页面名):`本体完备度` 页面模块 + 4 路由。该旧指标只统计元数据字段覆盖，不能证明本体完整或 IOF 合规；当前复核为 60 条关系中 21 条可映射至类型兼容的官方 BFO/IOF 属性，其余 39 条保留在本地命名空间。
 - 新增(DR-013):`本体评审` 页面模块 + `/api/ont/review`;关系人审算子 confirm_relation/reject_relation 并入 apply 白名单;关系类算子两种 IR 形状(links/relations)通吃——构建产物(built_*)自此可人审可编辑。test_all.py 119 断言全过。
 - 新增(DR-014):问数「沿本体关系召回」步骤+⋈ JOIN 提示;`/api/chat/feedback(+/resolve)` 反馈回流→评审页「本体迭代候选队列」;「根因诊断」模式+`/api/diagnose/stream`(意图→关系召回→边界内约束生成)。
 - 新增(DR-015):「动作中心」页 + /api/actions·invoke·log·approve —— Palantir ActionType 式动作层(类型化参数/低风险直执行/高风险审批/决策捕获审计;不写只读源库);图谱对象卡挂可执行动作,诊断清单一键派工。
 - 新增(DR-016):`mcp_action_server.py` —— 动作层 MCP server(stdio,零依赖):list_actions / **invoke_action(唯一写)** / get_action_status;审批不暴露,治理单一实现留在 HTTP API,Agent 接入自动继承「只能提议、不能批准」。
 - 新增(DR-017):「引擎设置」页 + /api/engine/config·test —— 运行时/模型/API Key 实时切换(调用时读 env+清缓存,免重启);Key 只写不回显、0600、清除同步弹 env;先测后切(真实延迟/真实报错)。
 - 新增(DR-018):全部读方统一 `load_ir_edited`(单一当前真相)——修复 问数JOIN提示/总览/指标/表详情/graphs列表 读原始IR 的不一致;U 分区 18 断言锁定「写→图谱/总览/问数/SPARQL/评审/列表 即读→撤销复原」。套件 186 断言。
-- 新增(DR-019):深度问数十项升级 —— A1 术语词典进检索(term_expand 步)/ A2 SQL 口径拦截 `_validate_sql_ontology`(ontology_gate 步:表白名单+JOIN 键落本体关系)/ A3 指标口径卡(done.metric_cards)/ B4 按任务选模(task_models{plan/narrative/diagnose}+模型族保护)/ B5 多轮指代 `_carryover` / B6 叙述流式 narrative_delta / C7 外部库实连(pymysql;凭据 conn_secrets.json 0600 只写)/ C8 API 型数据源(api_fetch→up.api_* 物化)/ C9 问数评测(benchmark/qa_set.json 8 题金标×三组,/api/eval/*,「问数评测」页)/ C10「业务助手」页(角色组装问数/诊断/动作/待办)。套件 212 断言。
+- 新增(DR-019):深度问数十项升级 —— A1 术语词典进检索(term_expand 步)/ A2 SQL 口径拦截 `_validate_sql_ontology`(ontology_gate 步:表白名单+JOIN 键落本体关系)/ A3 指标口径卡(done.metric_cards)/ B4 按任务选模(task_models{plan/narrative/diagnose}+模型族保护)/ B5 多轮指代 `_carryover` / B6 叙述流式 narrative_delta / C7 外部库实连(pymysql;凭据 conn_secrets.json 0600 只写)/ C8 API 型数据源(api_fetch→up.api_* 物化)/ C9 问数评测(benchmark/qa_set.json 8 题参考集×三组,/api/eval/*,「问数评测」页)/ C10「业务助手」页(角色组装问数/诊断/动作/待办)。套件 212 断言。
 - 新增(DR-020):动作层产品化 —— 动作类型管理 CRUD(/api/action/type·update·delete,内置种子受保护、停用即刻拦截发起)/ 3 个行业动作种子(冻结批次·温区调参·供应商 SCAR,均绑真实库表)/ 问数答案卡「相关动作」直达发起(SQL 命中表 × object_table 匹配)/ 动作中心 KPI+类型编辑弹窗+审计筛选与 CSV 导出;MCP 读同一注册表零改动继承。套件 226 断言。
 - 新增(DR-021):构建技能管理 —— 浏览(内置只读+目录清单)/在线新建/编辑/两击删除(/api/build/skill/<name>·save·delete);**自定义技能正文注入构建方法论**(_skill_method_text,剥 front-matter,编辑后下次构建即生效)——修复「能上传但从未被消费」的死代码问题;内置技能名不可占用,可复制为副本再改。套件 236 断言(105 路由)。
 - 新增(DR-022):技能生态五项 —— ①技能对比实验(/api/build/skill_compare·status·results:同目标×两组技能各跑真实构建,对比 对象/关系/verified/动词/类型/定义覆盖;组失败如实展示不充数)②构建流水线 skill_inject 注入痕迹步 ③产物沉淀为技能(/api/build/skill/from_graph:动词表/类型分布/定义样例,确定性提取)④评测败题通用修复(⋈⋈ 两跳路径召回 + 均值分母/单值聚合口径规范进 prompt)⑤存而不用审计(specs/audit-input-consumers.md;第 3 起死代码 qa_skills 已接上:_match_qa_skill 命中复用+skill_reuse 步)。套件 249 断言(109 路由;终跑 C 组 8/8)。
@@ -121,7 +128,7 @@ Consult @specs/map.md to find relevant context.
 ## dev 分支研发中(2026-08-02 起)
 - **DR-024 CQ 核验**:`cq_check.py` + `POST /api/ont/cq`。依据《本体智能研究报告(1.0)》
   (AIIA × CCSA TC601)六阶段流程——报告把能力问题验证列为「验证本体是否真正可用的核心环节」,
-  而本系统此前只有完备度记分卡(规不规范)与问数评测(端到端正确率),缺「够不够用」这一环。
+  而本系统此前只有元数据覆盖检查与问数评测(端到端正确率),缺「够不够用」这一环。
   判定为确定性图计算(锚定→路径→边状态),三态 answerable/partial/unanswerable,
   不可答自动回流 gaps。
 - **DR-025 漂移与链路**:`drift_check.py` + `GET /api/ont/drift/<key>`、
@@ -148,9 +155,9 @@ Consult @specs/map.md to find relevant context.
 - **DR-029 通用运行时与回归隔离**:`openai_runtime.py`(任意 OpenAI 兼容端点可接,
   经 GLM coding plan 实测问数与构建全链路)+ 回归沙箱 `built_regress`
   (真凶是 rebuild 清空草案层,非 undo)。套件 378 断言 · UI 57 项。
-- **DR-030 健康度体检**:`health_check.py` + `GET /api/ont/health/<key>`。第四遍对照
+- **DR-030 本体结构检查**:`health_check.py` + `GET /api/ont/health/<key>`。第四遍对照
   报告改按**五大价值**核对,发现阶段六「异常关系检测」空白。七类图结构异常分两级
-  (硬错误扣分/信号只列出);实测 demo 硬错误 0 但 108 对象中 50 个孤岛——
+  (阻断问题影响评分/提示只列出);历史示例中阻断问题为 0，但 108 个对象中有 50 个孤岛——
   此前任何检查都发现不了。套件 394 断言 · UI 走查 57 · UI 实操 21。
 - **DR-031 兼容与模块化**:`compat_check.py` + `GET /api/ont/compat/<key>`(三级判定,
   重点是命中哪些已注册的规则/动作/技能)、`module_split.py` + `GET /api/ont/modules/<key>`

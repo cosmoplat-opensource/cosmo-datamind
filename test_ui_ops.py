@@ -228,7 +228,7 @@ async def main():
                      if x in bt]
             (ok if ("本体对象" in bt and "入上下文" in bt and _bmid) else bad)(
                 "锚定条显示完整链路", "中间节:" + "、".join(_bmid))
-            ok("锚定条闭环标记", "有 SQL 实际用" if "SQL 实际用" in bt else "本轮 SQL 未用到锚定对象(合法)")
+            ok("锚定条反馈流程标记", "有 SQL 实际用" if "SQL 实际用" in bt else "本轮 SQL 未用到锚定对象(合法)")
             await pg.click("#dq_ancbar a:has-text('展开子图与证据')")
             await pg.wait_for_timeout(600)
             nb = await pg.evaluate("document.querySelectorAll('#dq_ancbar svg rect').length")
