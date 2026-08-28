@@ -80,6 +80,13 @@ class TestNaming:
         assert dao_core.key_name_ok("prod_id", "product_id") is True
         assert dao_core.key_name_ok("order_id", "customer_id") is False
 
+    def test_generic_parent_key_needs_table_evidence(self):
+        # 单看 id 没有语义:不能让任意 *_id 都通过。name_ok 再借父表名补证。
+        assert dao_core.key_name_ok("order_id", "id") is False
+        assert dao_core.name_ok("customer_id", "customers", "id") is True
+        assert dao_core.name_ok("order_id", "customers", "id") is False
+        assert dao_core.key_name_ok("id", "ID") is True
+
     def test_key_name_ok_composite(self):
         # 复合键(收编 server._key_name_ok):逐列判、列数不等即否、全列过才相容
         assert dao_core.key_name_ok("order_id,line_no", "order_id,line_no") is True
@@ -139,12 +146,10 @@ class TestRoleKeysDR036:
         assert dao_core.name_ok("parent_id", "categories", "category_id",
                                 child_table="products") is False
 
-    def test_name_ok_non_role_equals_key_name_ok(self):
-        # 非角色键:name_ok 必须与 key_name_ok 逐值一致(保证既有行为不变)
-        for ck, pt, pk in [("customer_id", "customers", "customer_id"),
-                           ("order_id", "customers", "customer_id"),
-                           ("prod_id", "products", "product_id")]:
-            assert dao_core.name_ok(ck, pt, pk) == dao_core.key_name_ok(ck, pk)
+    def test_name_ok_non_role_uses_key_or_parent_table_evidence(self):
+        assert dao_core.name_ok("customer_id", "customers", "customer_id") is True
+        assert dao_core.name_ok("prod_id", "products", "product_id") is True
+        assert dao_core.name_ok("order_id", "customers", "customer_id") is False
 
 
 class TestDirectionDR037:
@@ -187,7 +192,8 @@ class TestAdaptiveThetaDR038:
 
     def test_monotonic_non_increasing(self):
         vals = [dao_core.adaptive_theta(n) for n in (2, 10, 49, 50, 200, 5000)]
-        assert all(a >= b for a, b in zip(vals, vals[1:]))
+        # 相邻配对,末项无后继 —— 长度必然差 1,strict 须为 False
+        assert all(a >= b for a, b in zip(vals, vals[1:], strict=False))
 
     def test_never_raises_above_base(self):
         # 自适应只能「放宽」不能「收紧」:base 低于地板时,高基数不得反被抬高阈值

@@ -205,7 +205,7 @@ r=g("/api/routes"); j=r.json(); chk("API目录", r.status_code==200 and j.get("c
 r=g("/api/quality"); j=r.json(); chk("数据质量", r.status_code==200 and "checks" in j and "levels" in j)
 r=g("/api/sysinfo"); j=r.json(); chk("系统信息", r.status_code==200 and j.get("tables",0)>0 and "runtimes" in j)
 r=g("/api/chat/skills"); chk("沉淀技能列表", r.status_code==200 and isinstance(r.json(),list))
-# 沉淀→查→端点闭环(带 Origin 过 CSRF,清理)
+# 沉淀→查→端点反馈流程(带 Origin 过 CSRF,清理)
 H={"Origin":B}   # 同源 Origin,用于通过 CSRF 守卫(基址唯一事实源 B)
 r=po("/api/chat/save_skill",json={"question":"__t沉淀__","results":[{"title":"t","sql":"SELECT 1","chart":{}}]},headers=H)
 sid=r.json().get("id"); chk("沉淀为Skill", r.status_code==200 and sid)
@@ -257,7 +257,7 @@ r=g("/api/graph/demo"); gj=r.json(); n0=gj["nodes"][0]
 chk("图谱节点带 bfo", "bfo" in n0 and bool(n0["bfo"]))
 chk("图谱边带 founded_relation", bool(gj["edges"]) and "founded_relation" in gj["edges"][0])
 r=g("/api/ont/completeness/demo"); cj=r.json()
-chk("完备度结构", r.status_code==200 and "score" in cj and "byBFO" in cj.get("objects",{}))
+chk("元数据覆盖结构", r.status_code==200 and "score" in cj and "byBFO" in cj.get("objects",{}))
 r=g("/api/graph/demo/export.ttl"); chk("OWL 导出带 iof-av + BFO 归类", r.status_code==200 and "iof-av:" in r.text and "subClassOf" in r.text)
 # 写端点图谱必填:缺 graph 须显式 400,不静默默认到 示例 主图误改生产(_open_writable 统一守卫)
 r=po("/api/ont/enrich",json={},headers=H); chk("enrich 缺graph→400(不默认 demo)", r.status_code==400)
@@ -691,7 +691,7 @@ if _r0:
 r=g("/api/ont/audit/a..b"); chk("AL12 审计穿越键→400", r.status_code==400)
 chk("AL13 审计标注边界(撤销会同步移除)", "撤销" in _ad["note"])
 r=g("/"); chk("AL14 UI 含本体对话页与审计面板", 'data-p="claw"' in r.text and 'claw_audit' in r.text)
-chk("AL15 对话提示词含算子清单与反幻觉规范", True)
+chk("AL15 对话提示词含算子清单与证据状态规范", True)
 
 print("=== RL. 规则约束与决策层(DR-028)===")
 import rule_engine as _rl
@@ -753,13 +753,13 @@ finally:
         else: _os5.environ[k]=v
 chk("OR6 驱动候选含 openai", "openai" in _sv._drv_order())
 
-print("=== HL. 本体健康度体检(DR-030)===")
+print("=== HL. 本体图结构检查(DR-030)===")
 import health_check as _hc
 r=g("/api/ont/health/demo"); _h=r.json()
 chk("HL1 体检 200 + 分级结构", r.status_code==200 and all(k in _h for k in ("errors","signals","score","healthy")))
-chk("HL2 真本体无硬错误(IR 自洽)", _h["error_count"]==0 and _h["healthy"] is True)
+chk("HL2 真本体无阻断问题(IR 自洽)", _h["error_count"]==0 and _h["healthy"] is True)
 chk("HL3 检出孤岛信号(建了却连不上)", _h["isolated_count"]>0)
-chk("HL4 信号不扣健康分(枢纽不拉垮分数)", _h["score"]==100.0 and _h["signal_count"]>0)
+chk("HL4 信号不扣结构一致性分", _h["score"]==100.0 and _h["signal_count"]>0)
 chk("HL5 只诊断不自动修(边界标注)", "只诊断不自动修" in _h["note"])
 _bad={"objects":[{"id":"a","cn":"甲"},{"id":"b","cn":"乙"},{"id":"lone","cn":"孤"}],
       "links":[{"source":"a","target":"a","status":"verified"},
@@ -773,8 +773,8 @@ chk("HL7 检出悬空端点(引用不存在对象)", "dangling" in _ty)
 chk("HL8 检出状态矛盾(既 verified 又 rejected)", "status_conflict" in _ty)
 chk("HL9 检出重复边(口径二义)", "duplicate" in _sy)
 chk("HL10 检出孤岛", "isolated" in _sy)
-chk("HL11 硬错误拉低健康分", _hr["score"]<100.0 and _hr["healthy"] is False)
-chk("HL12 仅硬错误回流缺口(信号不制造噪声)",
+chk("HL11 阻断问题拉低结构一致性分", _hr["score"]<100.0 and _hr["healthy"] is False)
+chk("HL12 仅阻断问题回流缺口(信号不制造噪声)",
     len(_hc.gaps_from(_hr))==_hr["error_count"] and all(x["type"].startswith("health_") for x in _hc.gaps_from(_hr)))
 _hub={"objects":[{"id":"h","cn":"枢纽"}]+[{"id":f"x{i}"} for i in range(9)],
       "links":[{"source":"h","target":f"x{i}","status":"verified"} for i in range(9)]}
@@ -992,7 +992,7 @@ _root=_os.path.dirname(_os.path.abspath(__file__))
 chk("Z20 requirements.txt 存在", _os.path.exists(_os.path.join(_root,"requirements.txt")))
 _req=open(_os.path.join(_root,"requirements.txt"),encoding="utf-8").read()
 import sys as _sys
-_std=set(_sys.stdlib_module_names); _local={"translate_cn","quick_build","agent_runtime","serve_claw","export_owl","server","cq_check","drift_check","intent_check","usage_stat","rule_engine","openai_runtime","health_check","compat_check","module_split","dao_core","hallucination_eval","definition_eval","store","srv_context","srv_engine","bp_engine","srv_hardening"}
+_std=set(_sys.stdlib_module_names); _local={"translate_cn","quick_build","agent_runtime","serve_claw","export_owl","server","cq_check","drift_check","intent_check","usage_stat","rule_engine","openai_runtime","health_check","compat_check","module_split","dao_core","hallucination_eval","definition_eval","store","srv_context","srv_engine","bp_engine","srv_hardening","build_quality","ontology_grounding","skill_registry"}
 _ext=set()
 for _f in ("server.py","test_all.py"):
     for _n in ast.walk(ast.parse(open(_os.path.join(_root,_f),encoding="utf-8").read())):
@@ -1027,11 +1027,11 @@ chk("AA6 M1 Jaccard 计算正确(1/3)", _st["jaccard"]==round(1/3,4) and _bo==1)
 chk("AA7 M1 大小写空白归一", _st["both"]==1)
 chk("AA8 M1 逐条 stable 标注", [r["stable"] for r in _r1["relations"]]==[True,False])
 chk("AA9 M1 空输入不崩", _srvmod._stability_annotate({},{})[0]["jaccard"]==0.0)
-# 设计约束:一致性是软信号,不得覆盖 status(数据裁决才是硬证据)
+# 设计约束:一致性是软信号,不得覆盖 status(数据裁决才是可复核的数据证据)
 _sd=_srvmod._stability_annotate.__doc__ or ""
 chk("AA10 M1 明确不作否决权(设计留痕)", "不作否决权" in _sd or "不应因" in _sd)
 
-print("=== AB. 反馈闭环与历史准确率(⑤⑥)===")
+print("=== AB. 反馈反馈流程与历史准确率(⑤⑥)===")
 # 无数据时须如实降级,不给误导性百分比
 _a0=g("/api/ont/accuracy?force=1").json()
 chk("AB1 accuracy 端点可用", "overall" in _a0 and "min_n" in _a0)
@@ -1236,7 +1236,7 @@ chk("AO26 可跳本体图谱高亮本次锚定的那一块",
 chk("AO27 图谱渲染按高亮集淡出非锚定节点与关系",
     "function _g6build(g,hl)" in _ui and "hl.set.has(n.id)" in _ui
     and "hl.set.has(e.s)&&hl.set.has(e.t)" in _ui)
-chk("AO28 高亮提示条独立于 g_info(后者会被完备度回调覆写)",
+chk("AO28 高亮提示条独立于 g_info(后者会被元数据覆盖回调覆写)",
     'id="g_hlbar"' in _ui and "$('#g_hlbar')" in _ui)
 chk("AO29 高亮可一键清除", "清除高亮,看完整图谱" in _ui)
 chk("AO30 新对话清空锚定条,不残留上一轮", "DQ_ANC_LAST=null;dqAncBar(null)" in _ui)
@@ -1344,7 +1344,7 @@ chk("EG16 env 注入项确实出现在 env_locked 中",
     all(f in (_ec["llm"].get("env_locked") or []) for f in _env_now) if _env_now else True,
     "本次注入: %s" % (_env_now or "无"))
 
-# pyflakes 零告警是既有质量门(ARCHITECTURE §5),回归里把它钉住:
+# pyflakes 零告警是既有验收检查(ARCHITECTURE §5),回归里把它钉住:
 # 重复字典键这类告警是真 bug —— translate_cn 曾因此把「min」译成分钟而非最低
 try:
     import glob as _g2
@@ -1440,7 +1440,7 @@ try:
     for _n in _ast.walk(_fn):
         # kind == "x"
         if isinstance(_n, _ast.Compare) and isinstance(_n.left, _ast.Name) and _n.left.id == "kind":
-            for _op, _c in zip(_n.ops, _n.comparators):
+            for _op, _c in zip(_n.ops, _n.comparators, strict=True):  # AST 文法保证等长
                 if isinstance(_op, _ast.Eq) and isinstance(_c, _ast.Constant):
                     _handled.add(_c.value)
                 # kind in ("a","b",...)

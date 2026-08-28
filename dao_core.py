@@ -90,9 +90,16 @@ def key_name_ok(child_key, parent_key):
     ps = [x.strip() for x in str(parent_key or "").split(",")]
     if len(cs) != len(ps):
         return False
-    for a, b in zip(cs, ps):
+    for a, b in zip(cs, ps, strict=True):   # 上面已校验等长
         sa, sb = key_stem(a), key_stem(b)
-        if not sa or not sb or sa == sb:
+        # `id`/`code` 这类泛化父键没有词根,不能把任意 `order_id → id` 都视作
+        # 「键名相容」——这正是稠密自增值域产生假 verified 的入口。两边都无词根时
+        # 仅接受原始列名相同;只有一边无词根时交给 name_ok 借父表名作第二证据。
+        if not sa or not sb:
+            if not sa and not sb and _snake(a) == _snake(b):
+                continue
+            return False
+        if sa == sb:
             continue
         if min(len(sa), len(sb)) >= 3 and (sa.startswith(sb) or sb.startswith(sa)):
             continue
@@ -159,9 +166,13 @@ def role_targets(col):
 
 def name_ok(child_col, parent_table, parent_key, child_table=None):
     """统一命名相容判定(DR-036 扩展):
-    1) 先走 key_name_ok(两键词根)—— 非角色键与此完全等价,既有行为不变;
-    2) 角色键补两条路径:self→父表即子表(层级自引用);genus→属类词是父表名子串。"""
+    1) 先走 key_name_ok(两键词根);
+    2) 泛化父键(`id`/`code`)必须由子键与父表名的相关性补证,例如
+       `customer_id → customers.id` 可过、`order_id → customers.id` 不可过;
+    3) 角色键补两条路径:self→父表即子表(层级自引用);genus→属类词是父表名子串。"""
     if key_name_ok(child_col, parent_key):
+        return True
+    if name_score(child_col, parent_table or "", parent_key) > 0:
         return True
     rt = role_targets(child_col)
     if rt:
