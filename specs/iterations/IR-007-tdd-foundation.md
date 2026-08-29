@@ -25,9 +25,9 @@
   - [x] `tests/unit/test_compat_module_usage.py`(兼容 diff/破坏性;模块化;使用度覆盖率)
 - [x] `tests/meta/test_doc_consistency.py`:路由数(121)/断言数(535)对齐规范值,抓文档漂移。
 - [x] `requirements-dev.txt`:固定版本的测试工具链 + 运行时可复现下界。
-- [x] `.github/workflows/ci.yml`:unit job(单测+覆盖率+lint 硬挡)+ integration job(集成套件 advisory)。
-- [x] `.pre-commit-config.yaml`:提交即跑 ruff + 单测。
-- [ ] `fail_under` 覆盖率门槛:基线 72.0% 记录在案,后续 IR 逐步抬高(暂不设硬门槛)。
+- [x] `.github/workflows/ci.yml`:unit job(单测+覆盖率+lint+mypy 硬挡)+ integration job(108表验证库，确定性失败硬挡)。
+- [x] `.pre-commit-config.yaml`:提交即跑 ruff + 单测 + mypy。
+- [x] `fail_under` 覆盖率门槛:81.0%；2026-08-29 实测 81.6%。
 
 ## 任务 Tasks(每项一次提交)
 
@@ -45,7 +45,7 @@
 - [x] `ruff check .`:F/B 规则 **25 条**真 bug 类 findings(F601 重复键 13 条经核验值相同无害;B023 闭包捕获 4 条列为 IR-008 前置排查项)。
 - [x] `test_quick_build.py` 的 git diff 可证「先红(IndexError)后绿(5 passed)」。
 - [x] 重构后 `quick_build.py` 子进程 CLI 产物与改造前逐值一致(orders→customers verified,overlap 100)。
-- [ ] CI 在远端跑通(本仓当前未配远端,YAML 就绪待推送)。
+- [ ] CI 在远端跑通(本仓当前未配远端；本地按相同命令验证，待推送后确认运行记录)。
 
 ## 备注
 

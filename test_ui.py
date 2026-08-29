@@ -24,9 +24,18 @@ ALL_ERRORS = []          # 全程累计的页面错误(只增不清),收尾统�
 def ok(name, _extra=""):  R["pass"].append(name); print(f"  ✓ {name}")
 def bad(name, why=""): R["fail"].append(f"{name} :: {why}"); print(f"  ✗ {name} :: {why}")
 
+
+async def launch_browser(pw):
+    """优先复用本机浏览器；未找到时回落 Playwright 自带 Chromium。"""
+    candidates = [os.environ.get("DATAMIND_BROWSER_EXECUTABLE"),
+                  "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
+                  "/usr/bin/google-chrome", "/usr/bin/chromium", "/usr/bin/chromium-browser"]
+    executable = next((path for path in candidates if path and os.path.isfile(path)), None)
+    return await pw.chromium.launch(executable_path=executable) if executable else await pw.chromium.launch()
+
 async def main():
     async with async_playwright() as pw:
-        b = await pw.chromium.launch()
+        b = await launch_browser(pw)
         pg = await (await b.new_context(viewport={"width":1440,"height":950})).new_page()
         errors = []
         pg.on("pageerror", lambda e: errors.append(str(e)[:160]))
@@ -185,7 +194,7 @@ async def main():
         # actioncenter:KPI+类型表+类型编辑弹窗
         await go("actioncenter", 2000)
         t = await ev("document.getElementById('p_actioncenter').innerText", '')
-        (ok if ("待批" in t or "已执行" in t) else bad)("actioncenter KPI")
+        (ok if ("待批" in t or "已形成记录" in t) else bad)("actioncenter KPI")
         m = await ev("!!document.getElementById('at_modal')")
         if m:
             await ev("atEdit&&atEdit('freeze_batch')")
@@ -242,6 +251,8 @@ async def main():
         await go("claw", 2500)
         t = await ev("document.getElementById('p_claw').innerText", '')
         (ok if ("本体对话" in t or "会话" in t) else bad)("claw 对话页渲染")
+        ngraph = await ev("document.getElementById('claw_graph').options.length", 0)
+        (ok if ngraph >= 2 else bad)(f"claw 图谱选择器({ngraph}项)")
         aud = await ev("document.getElementById('claw_audit').innerText", '')
         (ok if "变更" in aud else bad)("claw 审计面板出数", aud[:40])
         (ok if ("需复核" in aud or "来源" in aud) else bad)("claw 审计含来源/风险维度")

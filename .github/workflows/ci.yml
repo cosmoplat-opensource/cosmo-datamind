@@ -1,7 +1,7 @@
 name: CI
 
 # IR-007 工程校验:每次 push/PR 跑「单测+覆盖率+lint」。
-# 集成套件(test_all.py)需起服务与数据底座,单列一个 job,失败不挡单测校验(allow-fail)。
+# 集成套件使用仓库内 108 表验证库起服务；确定性失败必须阻止合并。
 on:
   push:
   pull_request:
@@ -19,6 +19,8 @@ jobs:
         run: pip install -r requirements-dev.txt
       - name: Lint(只抓真 bug:F+B)
         run: ruff check . --output-format=github
+      - name: 类型检查
+        run: mypy . --no-error-summary
       - name: 单测 + 覆盖率基线
         run: |
           coverage run -m pytest tests/ -q
@@ -27,9 +29,8 @@ jobs:
         run: pytest tests/meta -q
 
   integration:
-    name: 集成套件(需起服务,advisory)
+    name: 集成套件(108 表验证库,强制)
     runs-on: ubuntu-latest
-    continue-on-error: true   # 需 LLM 引擎/数据底座,离线降级下部分断言不适用,暂不硬挡
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -38,12 +39,17 @@ jobs:
       - name: 安装运行时依赖
         run: pip install -r requirements-dev.txt
       - name: 起服务并跑 test_all.py
+        env:
+          DATAMIND_DB: ${{ github.workspace }}/examples/demo_metrics.db
+          DATAMIND_WORKDIR: ${{ github.workspace }}/workdir
         run: |
-          export DATAMIND_DB="$PWD/workdir/demo_metrics.db"
-          if [ -f "$DATAMIND_DB" ]; then
-            python3 server.py &
-            sleep 5
-            python3 test_all.py || true
-          else
-            echo "无数据底座,跳过集成套件"
-          fi
+          test -f "$DATAMIND_DB"
+          python3 server.py > /tmp/datamind-ci.log 2>&1 &
+          server_pid=$!
+          trap 'kill "$server_pid" 2>/dev/null || true; wait "$server_pid" 2>/dev/null || true' EXIT
+          for _ in $(seq 1 30); do
+            if curl --fail --silent http://127.0.0.1:8092/api/db/check >/dev/null; then break; fi
+            sleep 1
+          done
+          curl --fail --silent http://127.0.0.1:8092/api/db/check >/dev/null || { cat /tmp/datamind-ci.log; exit 1; }
+          python3 test_all.py

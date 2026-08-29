@@ -14,6 +14,7 @@ from dataclasses import dataclass
 KIND_DEFAULTS = {
     "object": "MaterialEntity",
     "event": "Process",
+    "action": "PlannedProcess",
     "asset": "MaterialArtifact",
     "role": "Role",
     "ice": "InformationContentEntity",

@@ -26,7 +26,7 @@ Cosmo DataMind 先用模型批量提出候选项，再用数据库约束和取�
 | **本体锚定可视化** | 选中哪套本体、凭哪个词命中哪张表、沿哪条关系扩展、最终 SQL 真正用了谁 —— 对话区常驻锚定条画出完整链路,可一键跳到图谱高亮「用到的是本体的哪一块」 |
 | **口径校验** | SQL 执行前校验:表须在本体白名单内,JOIN 键须落在已验证关系上,越界即拦 |
 | **根因诊断** | 沿本体关系两跳召回,输出受本体边界约束的根因与检查清单;实体未命中即**如实拒答**,不作无锚定生成 |
-| **动作层** | 类型化参数 + 风险分级:低风险直执行、高风险人审批,决策全程留痕。经 MCP 对外时,**发起动作是唯一写工具,审批不开放** |
+| **动作层** | 类型化参数 + 风险分级:低风险直接形成动作记录、高风险人审批,决策全程留痕。当前为 `decision_capture`，不写回业务系统；经 MCP 对外时,**发起动作是唯一写工具,审批不开放** |
 | **标准导出** | OWL2 / RDF / SHACL / SKOS / JSON-LD,并提供 SPARQL 端点 |
 | **问数评测** | 参考问题集 × 三组同题对照(无检索增强 / 图谱增强 / 本体增强),度量正确率、出处引用率与口径拦截数 |
 | **本体体检** | 能力核验(CQ)、数据源漂移、图结构检查(孤岛/自反/重复边/超级节点)、向后兼容影响面、模块化建议 —— 全部确定性计算,不调 LLM |
@@ -54,6 +54,7 @@ pip install -r requirements.txt
 ```bash
 cp .env.example .env               # 按需填写;全部留空也能启动
 export DATAMIND_DB=/path/to/your.db          # 只读 SQLite 数据源
+export DATAMIND_WORKDIR=/path/to/datamind-workdir     # 运行态本体/上传/审计目录（可选）
 export DATAMIND_ENGINE_DIR=/path/to/ontology-engine   # 上游引擎(可选)
 ```
 
@@ -236,8 +237,10 @@ curl -s http://127.0.0.1:8092/api/ont/runtimes
 | 变量 | 作用 |
 |---|---|
 | `DATAMIND_DB` | 只读数据源路径 |
+| `DATAMIND_WORKDIR` | 运行态本体、上传库、审计与自定义技能目录（默认 `./workdir`） |
 | `DATAMIND_ENGINE_DIR` | 上游本体引擎目录（可选,见下节） |
 | `DATAMIND_HOST` / `DATAMIND_PORT` | 默认 `127.0.0.1:8092` |
+| `DATAMIND_MAX_REQUEST_BYTES` | HTTP 请求体上限，覆盖文件上传与聊天附件；默认 25 MiB |
 | `OPENAI_API_KEY` 等 | 各家密钥,供接入上游本体引擎后的 CLI 型运行时继承 |
 
 完整清单见 [`.env.example`](.env.example),部署细节见 [INSTALL.md](INSTALL.md)。
@@ -258,8 +261,8 @@ GLM-5.2 与 OpenAI 的完整配置、用自然语言建一张带中文名的本�
 
 `specs/` 下是完整的**规约驱动开发(SDD)**记录——不是事后补的说明,而是开发时的决策依据:
 
-- `specs/decisions/` — 48 篇决策记录(DR),每篇写清背景、选项、取舍与代价
-- `specs/iterations/` — 10 篇迭代记录(IR),含验收标准与实测结果
+- `specs/decisions/` — DR-001…DR-050 决策记录,每篇写清背景、选项、取舍与代价
+- `specs/iterations/` — IR-001…IR-011 迭代记录,含验收标准与实测结果
 - `specs/map.md` — 入口索引
 
 半自动构建方法的核心取舍（为何数据验证优先于模型判断、为何人工确认产生 `asserted`、
@@ -270,15 +273,15 @@ GLM-5.2 与 OpenAI 的完整配置、用自然语言建一张带中文名的本�
 
 ```bash
 # 单元层:离线、秒级,不需起服务(确定性模块的隔离测试)
-pip3 install -r requirements-dev.txt
-python3 -m pytest tests/ -q      # 单测 + 文档计数自检(2026-08-28:257 项测试)
-python3 -m coverage run -m pytest tests/ -q && python3 -m coverage report   # 确定性模块覆盖率
+python3 -m venv .venv && .venv/bin/pip install -r requirements-dev.txt
+.venv/bin/python -m pytest tests/ -q      # 单测 + 文档计数自检(2026-08-29:284 项测试)
+.venv/bin/coverage run -m pytest tests/ -q && .venv/bin/coverage report   # 覆盖率低于81.0%时失败
 
 # 集成层:需先起服务
-python3 server.py &            # 先起服务
-python3 test_all.py            # 系统级回归(源码定义 535 个检查点)
-python3 test_ui.py             # 全 UI 走查:页面渲染 + 子 UI 交互(需 playwright)
-python3 test_ui_ops.py         # UI 逐步实操:切引擎/建本体/对话改本体/审计/问数/选本体锚定
+.venv/bin/python server.py &            # 先起服务
+.venv/bin/python test_all.py            # 系统级回归(源码定义 535 个检查点)
+.venv/bin/python test_ui.py             # 全 UI 走查:页面渲染 + 子 UI 交互(需 playwright)
+.venv/bin/python test_ui_ops.py         # UI 逐步实操:切引擎/建本体/对话改本体/审计/问数/选本体锚定
 ```
 
 两层分工:单元层测确定性模块的边界与纯函数(离线可跑),集成层测端到端契约与安全约束。

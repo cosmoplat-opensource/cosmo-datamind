@@ -27,8 +27,8 @@ nodes:
 
   - id: load_ontology
     type: deterministic
-    code: "server.py:load_ir_edited('demo')"
-    desc: 载入本体 IR(含人审编辑),后续锚定与口径校验均以此为准
+    code: "server.py:_anchor_ir(graph_keys)"
+    desc: 载入用户选中的本体 IR(含人审编辑；未选才用 demo),后续锚定与口径校验均以此为准
     output: ir_gate
 
   - id: coreference
@@ -45,7 +45,7 @@ nodes:
 
   - id: build_context
     type: deterministic
-    code: "server.py:build_context"
+    code: "server.py:build_context(question, focus_tables, trace, graph_keys)"
     desc: 按问句从本体挑相关对象/关系/指标,拼 schema 上下文;附数据时间窗(M4-a)
     output: ctx
 

@@ -1,6 +1,7 @@
 <!DOCTYPE html><html lang="zh"><head><meta charset="utf-8">
 <title>Cosmo DataMind · 数据智脑</title>
 <meta name="viewport" content="width=device-width,initial-scale=1">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%234A5FF3'/%3E%3Ctext x='16' y='22' text-anchor='middle' font-family='Arial' font-size='18' font-weight='700' fill='white'%3ED%3C/text%3E%3C/svg%3E">
 <script src="/vendor/echarts.min.js"></script>
 <script src="/vendor/g6.min.js"></script>
 <style>*{box-sizing:border-box;margin:0;padding:0}
@@ -58,6 +59,10 @@ button:hover{filter:brightness(1.06)} button.ghost{background:#EEF2FF;color:#4A5
 .msg-ai{background:var(--panel);border:1px solid var(--line);border-radius:12px 12px 12px 2px;padding:12px 14px;margin:10px 20% 10px 0}
 pre{background:#f6f8fe;border:1px solid #eef2ff;border-radius:8px;padding:10px;font-size:12px;overflow:auto;color:#1e40af}
 .row{display:flex;gap:10px;align-items:center} .muted{color:var(--sub);font-size:12px}
+.claw-compose{align-items:stretch;flex-wrap:wrap}
+.claw-compose #claw_q{flex:1 1 360px;width:auto;min-width:260px}
+.claw-compose button{flex:0 0 auto;white-space:nowrap;min-height:38px}
+#claw_log code{white-space:pre-wrap;overflow-wrap:anywhere;word-break:break-word}
 .page{display:none} .page.on{display:block}
 .chart{height:280px} #g_canvas{height:calc(100vh - 218px)}
 .vz-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}
@@ -340,11 +345,12 @@ a{color:var(--acc)}
    <span class="muted" id="g_info"></span><span style="flex:1"></span>
    <span id="g_legend"></span>
    <span style="display:inline-flex;align-items:center;gap:8px;white-space:nowrap">导出:<button class="ghost" onclick="expOnt('ttl')">TTL</button><button class="ghost" onclick="expOnt('jsonld')">JSON-LD</button><button class="ghost" onclick="expOnt('owl')">RDF/XML</button><button class="ghost" onclick="enrichOnt(this)" title="调用智能引擎为缺定义的对象提出属加种差定义、正例和反例；结果仍需人工复核">补定义/反例</button></span>
+   <span style="display:inline-flex;align-items:center;gap:6px;white-space:nowrap">视图<button class="ghost" onclick="gReadable()">可读</button><button class="ghost" onclick="gFitAll()">全图</button><button class="ghost" onclick="gZoom(1.25)" aria-label="放大图谱">＋</button><button class="ghost" onclick="gZoom(.8)" aria-label="缩小图谱">－</button></span>
    <span style="display:inline-flex;align-items:center;gap:8px;white-space:nowrap">布局<select id="g_layout" onchange="drawGraph($('#g_sel').value)" style="width:120px"><option value="dagre">分层(原版)</option><option value="force">力导向</option><option value="circular">环形</option><option value="radial">辐射</option></select></span></div>
   <div id="g_hlbar" style="display:none;margin:-4px 0 10px;padding:7px 12px;border:1px solid #C7D2FE;background:#EEF2FF;border-radius:6px;font-size:12.5px"></div>
   <div style="position:relative"><div class="card" style="padding:6px"><div id="g_canvas"></div></div>
    <div class="card" id="g_detail" style="position:absolute;top:12px;right:12px;width:340px;max-height:calc(100% - 24px);overflow:auto;display:none;z-index:6;box-shadow:0 8px 30px rgba(31,45,61,.16)"></div>
-   <div class="muted" style="position:absolute;bottom:10px;left:14px;font-size:11px;pointer-events:none">点击节点/连线查看详情 · 滚轮缩放 · 拖拽平移</div></div></div>
+   <div class="muted" style="position:absolute;bottom:10px;left:14px;font-size:11px;pointer-events:none">默认保持可读字号 · 点击节点/连线查看详情 · 滚轮缩放 · 拖拽平移</div></div></div>
 
  <div class="page" id="p_review"><h2>本体评审 <span class="muted">人机协同人审:通过 / 否决 / 改动词 / 删除,每条记录评审人与意见 · 人只产生 asserted · 全程可撤销 · v0726a</span></h2>
   <div class="card"><div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">图谱 <select id="rv_sel" style="min-width:280px;max-width:440px" onchange="rvLoad()"></select>
@@ -376,7 +382,7 @@ a{color:var(--acc)}
    <div class="muted" style="font-size:11.5px;margin-top:6px">评测在后台运行(约 8-20 分钟,取决于模型);每题即时落盘,可中途查看部分结果。参考答案值全部经主库实测校准。</div></div>
   <div class="kpis" id="qe_kpis" style="grid-template-columns:repeat(3,1fr);margin-top:12px"></div>
   <div class="card scroll" id="qe_body" style="margin-top:12px"><div class="muted">加载中…</div></div></div>
- <div class="page" id="p_actioncenter"><h2>动作中心 <span class="muted">本体动作(借鉴 Palantir ActionType):类型化参数 · 低风险直执行 / 高风险人审批 · 决策捕获全审计 · 不写只读源库</span></h2>
+ <div class="page" id="p_actioncenter"><h2>动作中心 <span class="muted">类型化参数 · 低风险直接登记 / 高风险人审批 · 决策记录全审计 · 当前不写回业务系统</span></h2>
   <div class="card" id="ac_types"><div class="muted">加载中…</div></div>
   <div class="card scroll" id="ac_pending" style="margin-top:12px;display:none"></div>
   <div class="card scroll" id="ac_log" style="margin-top:12px"><div class="muted">加载中…</div></div></div>
@@ -416,7 +422,7 @@ a{color:var(--acc)}
   <h3 style="margin:0 0 4px" id="actm_title">新建动作类型</h3>
   <div class="muted" style="font-size:12px;margin-bottom:12px">类型化参数 + 风险分级;高风险动作发起后须人审批。自建类型可编辑/删除,历史审计始终保留。</div>
   <div class="row" style="gap:8px;margin-bottom:10px"><input id="actm_cn" placeholder="动作名称(如:冻结生产批次)" style="flex:1">
-   <select id="actm_risk" style="width:150px"><option value="high">高风险·须审批</option><option value="low">低风险·直执行</option></select></div>
+   <select id="actm_risk" style="width:150px"><option value="high">高风险·须审批</option><option value="low">低风险·直接登记</option></select></div>
   <div class="row" style="gap:8px;margin-bottom:10px"><input id="actm_obj" placeholder="绑定业务表(可空,如 fact_production_order)" style="flex:1">
    <input id="actm_creator" placeholder="创建人(必填)" style="width:150px"></div>
   <textarea id="actm_desc" rows="2" placeholder="动作说明(何时用/作用是什么)" style="width:100%;margin-bottom:10px;resize:vertical"></textarea>
@@ -549,7 +555,7 @@ a{color:var(--acc)}
   @keyframes bcspin{to{transform:rotate(360deg)}}
   .bc-result{border:1px solid #d7defb;border-radius:12px;overflow:hidden;margin-bottom:12px;box-shadow:0 4px 16px rgba(74,95,243,.1)}
   .bc-result .hd{background:linear-gradient(120deg,#eef2ff,#f3efff);padding:11px 14px;font-weight:600;display:flex;align-items:center;justify-content:space-between}
-  .bc-stats{display:grid;grid-template-columns:repeat(5,1fr);gap:1px;background:var(--line)}
+  .bc-stats{display:grid;grid-template-columns:repeat(6,1fr);gap:1px;background:var(--line)}
   .bc-stats div{background:#fff;text-align:center;padding:10px 4px}.bc-stats b{display:block;font-size:20px;color:var(--acc);font-variant-numeric:tabular-nums}
   .bc-stats span{font-size:11px;color:var(--muted)}
   .bc-summary{padding:12px 14px;font-size:13px;line-height:1.7}
@@ -644,12 +650,16 @@ a{color:var(--acc)}
    <pre id="sk_log" style="margin-top:8px;max-height:300px;display:none"></pre></div></div>
 
  <div class="page" id="p_claw"><h2>本体对话 <span class="muted">对话式本体完善(问答+白名单编辑+可撤销)· 可修改本体 + 变更审计</span></h2>
+  <div class="row" style="margin-bottom:10px;align-items:center"><label for="claw_graph" style="white-space:nowrap">当前图谱</label>
+   <select id="claw_graph" style="width:360px" aria-label="本体对话当前图谱"></select>
+   <span class="muted">问答、编辑、撤销和审计仅作用于所选图谱</span></div>
   <div class="row" style="align-items:flex-start"><div class="card" style="width:200px">
    <button class="ghost" style="width:100%;margin-bottom:6px" onclick="clawNew()">+ 新会话</button>
    <div class="scroll" id="claw_sessions" style="max-height:calc(100vh - 320px)"></div></div>
    <div style="flex:1"><div id="claw_log" style="max-height:calc(100vh - 320px);overflow:auto"></div></div></div>
-  <div class="row" style="margin-top:10px"><input id="claw_q" placeholder="例:本体里有哪些对象?/ 把 dim_customer 的中文名改成 客户档案" onkeydown="if(event.key==='Enter'&&!event.isComposing)clawAsk()">
-   <input type="file" id="claw_file" multiple style="width:180px">
+  <div class="row claw-compose" style="margin-top:10px"><input id="claw_q" placeholder="例:本体里有哪些对象?/ 把 dim_customer 的中文名改成 客户档案" onkeydown="if(event.key==='Enter'&&!event.isComposing)clawAsk()">
+   <input type="file" id="claw_file" multiple hidden onchange="clawFileLabel()">
+   <button type="button" class="ghost" id="claw_file_btn" onclick="$('#claw_file').click()">选择附件</button>
    <button onclick="clawAsk()" id="claw_btn">发送</button><button class="ghost" onclick="clawUndo()">撤销上次编辑</button><button class="ghost" onclick="clawDel()">清空会话</button></div>
   <div class="muted" style="margin-top:6px" id="claw_edits"></div>
   <div class="card" style="margin-top:10px"><div class="row" style="align-items:center;margin-bottom:8px">
@@ -739,7 +749,7 @@ const loaded={};
 async function load(p){if(loaded[p])return;loaded[p]=1;
  if(p==='home')home();if(p==='catalog')catalog();if(p==='graph')graphs();if(p==='chat')chatInit();
  if(p==='metrics')metrics();if(p==='skills')skills();
- if(p==='claw'){clawSessions();clawEdits();clawAudit();try{$('#claw_who').value=localStorage.getItem('claw_who')||''}catch(_){}}
+ if(p==='claw'){await clawGraphs();clawSessions();clawEdits();clawAudit();try{$('#claw_who').value=localStorage.getItem('claw_who')||''}catch(_){}}
  if(p==='library')library();if(p==='rules')rules();
  if(p==='build')bcInit();if(p==='conn')cnInit();if(p==='viz')vzInit();if(p==='review')reviewInit();if(p==='actioncenter')acCenter();if(p==='enginecfg')egLoad();
  if(p==='assistant')asLoad();if(p==='qaeval')qeLoad();if(p==='sqldev')sdInit();
@@ -861,6 +871,10 @@ async function objDetail(k,oid){const d=await J('/api/ont/object/'+encodeURIComp
  <table><tr><th>列</th><th>中文</th><th>类型</th><th>来源</th></tr>`+(d.attrs||[]).map(a=>`<tr><td>${esc(a.col)}</td><td>${esc(a.cn||'')}</td><td>${esc(a.type||'')}</td><td>${esc((a.sources||[]).join('/'))}</td></tr>`).join('')+`</table>`+(d.reused_from?`<h3>ISA-95 对齐(候选,待人审)</h3><div>${esc(JSON.stringify(d.reused_from))}</div>`:'')+(d.foundational_kind?`<h3>UFO 基础类型(候选)</h3><div>${esc(JSON.stringify(d.foundational_kind))}</div>`:'')+`<h3>证据来源</h3><pre>${esc(JSON.stringify(d.evidence,null,1))}</pre>`);}
 let gChart;
 function expOnt(fmt){location='/api/graph/'+document.querySelector('#g_sel').value+'/export.'+fmt;}
+function gReadable(){if(!gChart)return;try{gChart.zoomTo(Math.max(.85,gChart.getZoom()));
+ const item=gChart.__focusId&&gChart.findById(gChart.__focusId);if(item)gChart.focusItem(item);else gChart.fitCenter();}catch(_){}}
+function gFitAll(){if(!gChart)return;try{gChart.fitView([24,48,24,48]);}catch(_){}}
+function gZoom(scale){if(!gChart)return;try{gChart.zoomTo(Math.max(.2,Math.min(2.5,gChart.getZoom()*scale)));}catch(_){}}
 // 为缺定义对象提出属加种差定义、正例和反例；生成内容仍需人工复核。
 async function enrichOnt(btn){const k=$('#g_sel').value;if(!k)return;
  const t0=btn?btn.textContent:'';if(btn){btn.disabled=true;btn.textContent='补定义中…';}
@@ -930,10 +944,16 @@ function g6render(containerId,g,lay,opts){opts=opts||{};
  const c=$('#'+containerId);const {nodes,edges}=_g6build(g,opts.hl);
  const graph=new G6.Graph({container:containerId,width:c.offsetWidth,height:c.offsetHeight||480,layout:_g6layout(lay,nodes.length),
   defaultNode:{type:'rect',size:[132,42],style:{radius:8},anchorPoints:[[0,0.5],[1,0.5]]},
-  defaultEdge:{type:lay==='dagre'?'polyline':'quadratic',style:{radius:12,offset:18}},
+ defaultEdge:{type:lay==='dagre'?'polyline':'quadratic',style:{radius:12,offset:18}},
   modes:{default:['drag-canvas','zoom-canvas','drag-node']},fitView:false,animate:true});
+ const degrees={};for(const e of edges){degrees[e.source]=(degrees[e.source]||0)+1;degrees[e.target]=(degrees[e.target]||0)+1;}
+ graph.__focusId=nodes.reduce((best,n)=>(degrees[n.id]||0)>(degrees[best]||0)?n.id:best,nodes[0]&&nodes[0].id);
  // 关键:在布局完成后再自适应,并夹住过放大(此前 fitView 在异步布局前跑→内容坍缩成小框→放大到 ~7x)
- const fit=()=>{try{graph.fitView([24,48,24,48]);const z=graph.getZoom();if(z>1){graph.zoomTo(1);graph.fitCenter();}}catch(_){}};
+ const fit=()=>{try{graph.fitView([24,48,24,48]);const z=graph.getZoom();
+  if(z>1){graph.zoomTo(1);graph.fitCenter();}
+  else if(nodes.length>40&&z<.85){graph.zoomTo(.85);const item=graph.findById(graph.__focusId);
+   if(item)graph.focusItem(item);else graph.fitCenter();}
+ }catch(_){}};
  graph.on('afterlayout',fit);
  graph.data({nodes,edges});graph.render();
  fit();setTimeout(fit,320);
@@ -1072,12 +1092,12 @@ async function acCenter(){const d=await J('/api/actions').catch(()=>({types:[],p
   +`<div class="kpis" style="grid-template-columns:repeat(4,1fr);margin-bottom:10px">
     <div class="kpi"><div class="n" style="color:#4A5FF3">${en}/${AC_TYPES.length}</div><div class="l">启用类型</div></div>
     <div class="kpi"><div class="n" style="color:#d97706">${d.pending||0}</div><div class="l">待审批</div></div>
-    <div class="kpi"><div class="n" style="color:#16a34a">${d.executed||0}</div><div class="l">已执行</div></div>
+    <div class="kpi"><div class="n" style="color:#16a34a">${d.executed||0}</div><div class="l">已形成记录</div></div>
     <div class="kpi"><div class="n" style="color:#dc2626">${d.denied||0}</div><div class="l">已驳回</div></div></div>`
   +'<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:10px">'
   +AC_TYPES.map(t=>{const off=t.enabled===false;
    return `<div class="step" style="border:1px solid #E5E9F2;border-radius:8px;padding:10px 12px;${off?'opacity:.55;background:#FAFAFA':''}">
-    <b>${esc(t.cn)}</b> <span class="tag ${t.risk==='high'?'warn':'ok'}">${t.risk==='high'?'高风险·须审批':'低风险·直执行'}</span>
+    <b>${esc(t.cn)}</b> <span class="tag ${t.risk==='high'?'warn':'ok'}">${t.risk==='high'?'高风险·须审批':'低风险·直接登记'}</span>
     ${off?'<span class="tag" style="background:#F4F4F5">已停用</span>':''}${t.builtin===false?'<span class="tag" style="background:#EEF2FF;color:#4A5FF3">自建</span>':''}
     <div class="muted" style="font-size:12px;margin:4px 0">${esc(t.desc)} · 作用对象:${esc(t.object)}</div>
     <div class="muted" style="font-size:11px">${esc(t.source||'')}</div>
@@ -1134,19 +1154,19 @@ async function acLogLoad(){const d=await J('/api/action/log').catch(()=>({items:
    +pend.map(x=>`<tr style="background:#FFFBEB"><td class="muted" style="font-size:11px;white-space:nowrap">${esc(x.ts)}</td><td><b>${esc(x.action_cn)}</b></td>
     <td class="muted" style="font-size:11px">${esc(Object.entries(x.params).map(([k,v])=>k+':'+v).join(' · ')).slice(0,300)}</td>
     <td>${esc(x.operator)}</td>
-    <td><button class="ghost" onclick="acApprove(${jsAttr(x.id)},'approve')">批准执行</button> <button class="ghost" style="color:#b91c1c" onclick="acApprove(${jsAttr(x.id)},'deny')">驳回</button></td></tr>`).join('')+'</table>';}
+     <td><button class="ghost" onclick="acApprove(${jsAttr(x.id)},'approve')">批准登记</button> <button class="ghost" style="color:#b91c1c" onclick="acApprove(${jsAttr(x.id)},'deny')">驳回</button></td></tr>`).join('')+'</table>';}
  else pd.style.display='none';
  acLogRender();}
 function acLogRender(){const items=AC_LOG;
- const SB={pending:['warn','待审批'],executed:['ok','已执行'],denied:['evt','已驳回']};
+ const SB={pending:['warn','待审批'],executed:['ok','已形成记录'],denied:['evt','已驳回']};
  const st=($('#acf_status')&&$('#acf_status').value)||'';
  const kw=(($('#acf_kw')&&$('#acf_kw').value)||'').trim();
  const rows=items.filter(x=>(!st||x.status===st)&&(!kw||JSON.stringify([x.action_cn,x.operator,x.approver,x.params]).includes(kw)));
  $('#ac_log').innerHTML=`<div class="row" style="justify-content:space-between;align-items:center;margin-bottom:8px">
-   <h3 style="margin:0">执行日志(决策捕获 · 全审计)<span class="muted" style="font-weight:400;font-size:12px"> ${rows.length}/${items.length} 条</span></h3>
+   <h3 style="margin:0">动作记录(决策记录 · 全审计)<span class="muted" style="font-weight:400;font-size:12px"> ${rows.length}/${items.length} 条</span></h3>
    <div class="row" style="gap:6px"><select id="acf_status" onchange="acLogRender()" style="width:110px">
      <option value="" ${st===''?'selected':''}>全部状态</option><option value="pending" ${st==='pending'?'selected':''}>待审批</option>
-     <option value="executed" ${st==='executed'?'selected':''}>已执行</option><option value="denied" ${st==='denied'?'selected':''}>已驳回</option></select>
+     <option value="executed" ${st==='executed'?'selected':''}>已形成记录</option><option value="denied" ${st==='denied'?'selected':''}>已驳回</option></select>
     <input id="acf_kw" placeholder="搜动作/操作人/参数…" value="${esc(kw)}" style="width:180px" oninput="acLogRender()">
     <button class="ghost" onclick="acLogCsv()">导出 CSV</button></div></div>`
   +(rows.length?'<table><tr><th>时间</th><th>动作</th><th>状态</th><th>操作人</th><th>审批人/意见</th><th>效果</th></tr>'
@@ -1167,7 +1187,7 @@ async function acOpen(tid,prefill){if($('#acm_ok'))$('#acm_ok').textContent='提
  await acTypes();const t=AC_TYPES.find(x=>x.id===tid);if(!t){toast('动作类型不存在',false);return;}
  ACM={t,mode:'invoke'};
  $('#acm_title').textContent='发起动作:'+t.cn;
- $('#acm_sub').textContent=t.desc+(t.risk==='high'?' —— 高风险:提交后进入审批队列':' —— 低风险:提交后直接执行并记录');
+ $('#acm_sub').textContent=t.desc+(t.risk==='high'?' —— 高风险:提交后进入审批队列':' —— 低风险:提交后直接形成动作记录，不写回业务系统');
  $('#acm_fields').innerHTML=t.params.map(p=>{
   const v=esc((prefill&&prefill[p.name])||'');
   if(p.type==='select')return `<div style="margin-bottom:10px">${esc(p.cn)}${p.required?'(必填)':''}<br><select id="acm_p_${esc(p.name)}" style="width:100%;margin-top:4px"><option value="">请选择</option>${(p.options||[]).map(o=>`<option>${esc(o)}</option>`).join('')}</select></div>`;
@@ -1182,7 +1202,7 @@ async function acmSubmit(){if(!ACM)return;
   const d=await J('/api/action/approve',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:ACM.id,decision:ACM.decision,approver,comment})}).catch(e=>({error:''+e}));
   if(d.error){toast(d.error,false);return;}
   try{localStorage.setItem('rv_reviewer',approver);}catch(e){}
-  acmClose();toast(d.status==='executed'?'已批准并执行':'已驳回',true);acLogLoad();return;}
+  acmClose();toast(d.status==='executed'?'已批准并形成动作记录':'已驳回',true);acLogLoad();return;}
  const t=ACM.t;const params={};
  for(const p of t.params){const el=$('#acm_p_'+p.name);const v=(el&&el.value.trim())||'';
   if(p.required&&!v){toast('「'+p.cn+'」必填',false);el&&el.focus();return;}params[p.name]=v;}
@@ -1190,7 +1210,7 @@ async function acmSubmit(){if(!ACM)return;
  try{localStorage.setItem('rv_reviewer',operator);}catch(e){}
  const d=await J('/api/action/invoke',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action_id:t.id,params,operator})}).catch(e=>({error:''+e}));
  if(d.error){toast(d.error,false);return;}
- acmClose();toast(d.status==='executed'?'已执行并记录(动作中心可查)':'已提交审批 · 动作中心「待审批」可见',true);
+ acmClose();toast(d.status==='executed'?'已形成动作记录(未写回业务系统)':'已提交审批 · 动作中心「待审批」可见',true);
  if($('#p_actioncenter').classList.contains('on'))acLogLoad();}
 // ── 引擎设置(DR-017):运行时/模型/Key 实时切换;先测后切 ──
 let EG=null;
@@ -1369,7 +1389,7 @@ async function asLoad(){
  $('#as_diag').innerHTML=R.diag.map(q=>`<div class="cn-row" style="cursor:pointer" onclick="asDiag(${jsAttr(q)})"><span style="flex:1">${esc(q)}</span><span class="muted" style="font-size:11px">诊断 →</span></div>`).join('');
  let acts=[];try{acts=((await J('/api/actions')).types||[]);}catch(_){}
  $('#as_acts').innerHTML=acts.filter(a=>R.acts.includes(a.id)).map(a=>
-  `<div class="cn-row" style="cursor:pointer" onclick="asAct()"><span style="flex:1">${esc(a.cn)} <span class="tag ${a.risk==='high'?'warn':'ok'}" style="font-size:10px">${a.risk==='high'?'高风险·须审批':'低风险·直执行'}</span></span><span class="muted" style="font-size:11px">发起 →</span></div>`).join('')||'<div class="muted">该角色暂无关联动作</div>';
+  `<div class="cn-row" style="cursor:pointer" onclick="asAct()"><span style="flex:1">${esc(a.cn)} <span class="tag ${a.risk==='high'?'warn':'ok'}" style="font-size:10px">${a.risk==='high'?'高风险·须审批':'低风险·直接登记'}</span></span><span class="muted" style="font-size:11px">发起 →</span></div>`).join('')||'<div class="muted">该角色暂无关联动作</div>';
  // 待办聚合:四个入口的实时计数(全部来自现有 API,无新状态)
  let rv=0,ac=0,fb=0,ev='—';
  try{rv=((await J('/api/ont/review?graph=demo')).counts||{}).pending||0;}catch(_){}
@@ -1411,8 +1431,8 @@ async function egTest(r,btn){const out=$('#eg_t_'+r);out.textContent='测试中(
   :`<span style="color:#b91c1c">✗ 不可用 · ${d.seconds||''}s · ${esc((d.reply||d.error||'').slice(0,120))}</span>`;}
 function acApprove(id,decision){ACM={mode:'approve',id,decision};
  $('#acm_ok').textContent=decision==='approve'?'提交审批(批准)':'提交审批(驳回)';
- $('#acm_title').textContent=decision==='approve'?'批准执行该动作':'驳回该动作';
- $('#acm_sub').textContent=decision==='approve'?'批准后效果生效并写入审计日志':'驳回必须填写意见';
+ $('#acm_title').textContent=decision==='approve'?'批准登记该动作':'驳回该动作';
+ $('#acm_sub').textContent=decision==='approve'?'批准后形成动作记录；当前不会写回业务系统':'驳回必须填写意见';
  $('#acm_fields').innerHTML=`<div style="margin-bottom:10px">审批意见${decision==='deny'?'(必填)':'(可选)'}<br><textarea id="acm_p_comment" rows="3" style="width:100%;margin-top:4px"></textarea></div>`;
  $('#acm_op').value=localStorage.getItem('rv_reviewer')||'';
  $('#ac_modal').style.display='flex';}
@@ -1441,6 +1461,7 @@ function showNodeDetail(n){if(!n)return;const rel=GRAPH_CUR.edges.filter(x=>x.s=
    if(d.example)h+=`<div class="step"><b>正例</b>:${esc(d.example)}</div>`;
    if(d.counterExample)h+=`<div class="step" style="border-left:2px solid #f0a;padding-left:8px"><b>反例</b>:${esc(d.counterExample)}</div>`;
    const ds=(d.provenance&&d.provenance.directSource)||'';if(ds)h+=`<div class="step muted" style="font-size:11px">来源(directSource):${esc(ds)}</div>`;
+   if(d.kind==='action'&&d.action_spec){const a=d.action_spec;h+=`<div class="step"><b>动作绑定</b>: ${esc(a.binding_status||'未绑定')} · ${a.invocable?'可从页面发起':'仅为候选'} · 执行方式:${esc(a.execution_mode||'未配置')}</div><div class="step muted">当前真实写回:${a.real_writeback?'已配置':'未配置（仅形成决策记录）'}</div>`;}
    const mv=d.maturity||'Provisional';                  // 成熟度人审 promote(IOF 治理)
    h+=`<div class="step" style="font-size:12px">成熟度人审:${['Provisional','Released','Deprecated'].map(m=>m===mv?`<b style="color:#4a5ff3">${m}</b>`:`<a href="#" onclick="event.preventDefault();promoteMaturity(${jsAttr(GRAPH_CUR.key)},${jsAttr(n.id)},'${m}')">${m}</a>`).join(' · ')}</div>`;
    iof.innerHTML=h;}
@@ -1451,9 +1472,9 @@ function showNodeDetail(n){if(!n)return;const rel=GRAPH_CUR.edges.filter(x=>x.s=
  }).catch(()=>{['#gd_desc','#gd_mets','#gd_attrs'].forEach(s=>{const el=$(s);if(el)el.innerHTML='<span class="muted">详情不可用</span>';});});
  acTypes().then(ts=>{const el=$('#gd_acts');if(!el)return;
   const tbl=(n.tables||[]).filter(Boolean).map(x=>String(x).toLowerCase());
-  const mine=(ts||[]).filter(t=>(t.object_table&&tbl.includes(t.object_table.toLowerCase()))||t.object===n.name);
-  if(mine.length)el.innerHTML='<h3 style="margin-top:10px" class="gd-h">可执行动作('+mine.length+')</h3>'
-   +mine.map(t=>`<div class="step">${esc(t.cn)} <span class="tag ${t.risk==='high'?'warn':'ok'}" style="margin-left:4px">${t.risk==='high'?'须审批':'直执行'}</span> <a href="#" onclick="event.preventDefault();acOpen(${jsAttr(t.id)})">发起 ↗</a></div>`).join('');}).catch(()=>{});}
+  const mine=(ts||[]).filter(t=>t.id===n.action_id||(t.object_table&&tbl.includes(t.object_table.toLowerCase()))||t.object===n.name);
+  if(mine.length)el.innerHTML='<h3 style="margin-top:10px" class="gd-h">已配置动作('+mine.length+')</h3>'
+   +mine.map(t=>`<div class="step">${esc(t.cn)} <span class="tag ${t.risk==='high'?'warn':'ok'}" style="margin-left:4px">${t.risk==='high'?'须审批':'直接登记'}</span> <a href="#" onclick="event.preventDefault();acOpen(${jsAttr(t.id)})">发起 ↗</a></div>`).join('');}).catch(()=>{});}
 async function rules(){const d=await J('/api/ont/rules?graph=demo');
  // 后端故障时 J() 返回 {error},缺 counts/methodology —— 与全站守卫一致,先判后用
  if(d.error||!d.counts){$('#rules_body').innerHTML=`<div class="muted">${esc(d.error||'规则数据不可用')}</div>`;return;}
@@ -2163,14 +2184,17 @@ function bcResultHTML(done){const s=done.stats||{};const e=done.evidence||{};
  const evtxt=[`库表 ${e.tables??0} 张`,e.docs?`已解析文档/代码 ${e.docs} 份`:'',(e.refs&&e.refs.length)?`未解析资产 ${e.refs.length} 项`:''].filter(Boolean).join(' · ');
  const isllm=(done.method||'').indexOf('LLM 离线')<0;
  const result=(done.quality&&(done.quality.result||done.quality.gate))||s.quality_result||s.quality_gate||'review';
+ const cq=done.quality&&done.quality.cq, cc=(cq&&cq.counts)||{};
+ const cqtxt=(cq&&cq.provided)?`CQ 可回答 ${cc.answerable||0}/${cq.total||0} · 部分 ${cc.partial||0} · 不可回答 ${cc.unanswerable||0}`:'';
  return `<div class="bc-result">
    <div class="hd"><span><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#22a058;margin-right:7px;vertical-align:middle"></span>本体「${esc(done.name)}」构建完成</span><span class="muted" style="font-size:11px">${done.elapsed}s</span></div>
    <div style="padding:8px 14px 0;display:flex;gap:6px;flex-wrap:wrap">
     <span class="tag ${isllm?'':'warn'}" style="${isllm?'background:#F0EBFB;color:#7c50e6':''}">${esc(done.method||'LLM 辅助提议')}</span>
     ${evtxt?`<span class="tag" style="background:#F4F6FB;color:#606a7b">证据 ${esc(evtxt)}</span>`:''}
-    <span class="tag ${result==='pass'?'ok':'warn'}">验收检查 ${esc(result)}</span></div>
+    <span class="tag ${result==='pass'?'ok':'warn'}">验收检查 ${esc(result)}</span>
+    ${cqtxt?`<span class="tag ${(cc.partial||cc.unanswerable)?'warn':'ok'}">${esc(cqtxt)}</span>`:''}</div>
    <div class="bc-stats" style="margin-top:8px">
-    <div><b>${s.objects??0}</b><span>对象</span></div><div><b>${s.events??0}</b><span>事件</span></div>
+    <div><b>${s.objects??0}</b><span>节点总数</span></div><div><b>${s.events??0}</b><span>事件</span></div><div><b>${s.actions??0}</b><span>动作</span></div>
     <div><b>${s.links??0}</b><span>关系</span></div><div><b>${s.verified??0}</b><span>数据已验证</span></div>
     <div><b>${s.candidate??0}</b><span>候选待取证</span></div></div>
    <div class="bc-summary">${esc(done.summary||'').replace(/\n/g,'<br>')}${done.note?`<div class="muted" style="margin-top:6px;font-size:12px">说明:${esc(done.note)}</div>`:''}</div>
@@ -2343,19 +2367,31 @@ function watchJob(jid,sel,onDone){const el=$(sel);el.style.display='block';
  const t=setInterval(async()=>{const j=await J('/api/job/'+jid);el.textContent=`[${j.status}] ${j.tag}\n`+(j.tail||'');el.scrollTop=1e9;
   if(j.status!=='running'){clearInterval(t);if(j.status==='done'&&onDone)onDone();}},2500);}
 let CLAW_ID=null;
-async function clawSessions(){const ss=await J('/api/ont/chats');
+function clawGraph(){return ($('#claw_graph')&&$('#claw_graph').value)||'demo';}
+async function clawGraphs(pref){const gs=await J('/api/graphs');const sel=$('#claw_graph');
+ sel.innerHTML=graphOptions(gs,g=>`${g.name} (${g.nodes}节点/${g.edges}关系)`);
+ let saved='';try{saved=localStorage.getItem('claw_graph')||''}catch(_){}
+ const want=[pref,saved,'demo',gs[0]&&gs[0].id].find(k=>k&&gs.some(g=>g.id===k));
+ if(want)sel.value=want;
+ sel.onchange=clawSwitchGraph;}
+async function clawSwitchGraph(){const key=clawGraph();try{localStorage.setItem('claw_graph',key)}catch(_){}
+ CLAW_ID=null;$('#claw_log').innerHTML='<div class="muted" style="padding:8px">已切换图谱，请新建或选择该图谱下的会话。</div>';
+ await clawSessions();await clawEdits();await clawAudit();}
+async function clawSessions(){const ss=await J('/api/ont/chats?graph='+encodeURIComponent(clawGraph()));
  $('#claw_sessions').innerHTML=ss.map(x=>`<div class="step" style="cursor:pointer" onclick="clawOpen(${jsAttr(x.id)})">${esc(x.title||'(空)')} <span class="muted">${esc(x.n)}</span></div>`).join('')||'<div class=muted>无会话</div>';}
 async function clawOpen(id){CLAW_ID=id;const d=await J('/api/ont/chats/'+id);
+ if((d.graph||'demo')!==clawGraph()){CLAW_ID=null;toast('该会话属于另一图谱，请重新选择');return;}
  $('#claw_log').innerHTML=(d.messages||[]).map(m=>`<div class="${m.role==='user'?'msg-user':'msg-ai'}">${esc(m.text||'').replace(/EDIT_OP:\{[\s\S]*\}/,'').replace(/\n/g,'<br>')}</div>`).join('');}
-async function clawNew(){const c=await J('/api/ont/chats/new',{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'});CLAW_ID=c.id;$('#claw_log').innerHTML='';clawSessions();}
+async function clawNew(){const c=await J('/api/ont/chats/new',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({graph:clawGraph()})});CLAW_ID=c.id;$('#claw_log').innerHTML='';clawSessions();}
+function clawFileLabel(){const n=($('#claw_file').files||[]).length;$('#claw_file_btn').textContent=n?`已选 ${n} 个附件`:'选择附件';}
 async function clawAsk(){const q=$('#claw_q').value.trim();if(!q)return;$('#claw_q').value='';$('#claw_btn').disabled=true;
  const log=$('#claw_log');log.insertAdjacentHTML('beforeend',`<div class="msg-user">${esc(q)}</div>`);
  const hold=document.createElement('div');hold.className='msg-ai';hold.textContent='智能引擎处理中…';log.appendChild(hold);log.scrollTop=1e9;
- try{if(!CLAW_ID){const c=await J('/api/ont/chats/new',{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'});CLAW_ID=c.id;}
+ try{if(!CLAW_ID){const c=await J('/api/ont/chats/new',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({graph:clawGraph()})});CLAW_ID=c.id;}
   const atts=[];for(const f of ($('#claw_file').files||[])){const b=await f.arrayBuffer();
    atts.push({name:f.name,b64:btoa(String.fromCharCode(...new Uint8Array(b)))});}
-  $('#claw_file').value='';
-  const resp=await fetch('/api/ont/chat/stream',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:CLAW_ID,message:q,graph:'demo',attachments:atts})});
+  $('#claw_file').value='';clawFileLabel();
+  const resp=await fetch('/api/ont/chat/stream',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:CLAW_ID,message:q,graph:clawGraph(),attachments:atts})});
   const rd=resp.body.getReader();const dec=new TextDecoder();let buf='',d=null;
   while(true){const {done,value}=await rd.read();if(done)break;buf+=dec.decode(value,{stream:true});
    let i;while((i=buf.indexOf('\n\n'))>=0){const line=buf.slice(0,i).replace(/^data: /,'');buf=buf.slice(i+2);
@@ -2366,18 +2402,18 @@ async function clawAsk(){const q=$('#claw_q').value.trim();if(!q)return;$('#claw
   let h=esc(d.reply||d.error||'').replace(/EDIT_OP:\{[\s\S]*\}/,'').replace(/\n/g,'<br>');
   if(d.suggested_op)h+=`<div class="step" style="margin-top:8px"><b>建议编辑</b>: <code>${esc(JSON.stringify(d.suggested_op).slice(0,120))}</code>
    <button class="ghost" onclick="clawApply(${jsAttr(JSON.stringify(d.suggested_op))})">确认执行</button></div>`;
-  hold.innerHTML=h;clawEdits();
+  hold.innerHTML=h;clawEdits();clawSessions();
  }catch(e){hold.textContent='失败:'+e}
  $('#claw_btn').disabled=false;log.scrollTop=1e9;}
 async function clawApply(opStr){const op=JSON.parse(opStr);
- const d=await J('/api/ont/apply',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({graph:'demo',op,source:'chat',reviewer:($('#claw_who')&&$('#claw_who').value||'').trim()})});
- toast(d.error||'已执行,可撤销');clawEdits();}
+ const d=await J('/api/ont/apply',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({graph:clawGraph(),op,source:'chat',reviewer:($('#claw_who')&&$('#claw_who').value||'').trim()})});
+ toast(d.error||'已执行,可撤销');clawEdits();clawAudit();}
 async function clawDel(){if(!CLAW_ID)return;await J('/api/ont/chats/delete',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:CLAW_ID})});CLAW_ID=null;document.querySelector('#claw_log').innerHTML='';}
-async function clawUndo(){const d=await J('/api/ont/undo',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({graph:'demo'})});
- toast(d.error||'已撤销');clawEdits();}
-async function clawEdits(){try{const e=await J('/api/ont/edits?graph=demo');$('#claw_edits').textContent=`编辑历史: ${(e.ops||[]).length} 条(最近: ${JSON.stringify((e.ops||[]).slice(-1)[0]||{}).slice(0,110)})`;}catch(_){}}
+async function clawUndo(){const d=await J('/api/ont/undo',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({graph:clawGraph()})});
+ toast(d.error||'已撤销');clawEdits();clawAudit();}
+async function clawEdits(){try{const e=await J('/api/ont/edits?graph='+encodeURIComponent(clawGraph()));$('#claw_edits').textContent=`编辑历史: ${(e.ops||[]).length} 条(最近: ${JSON.stringify((e.ops||[]).slice(-1)[0]||{}).slice(0,110)})`;}catch(_){}}
 function clawSaveWho(){try{localStorage.setItem('claw_who',$('#claw_who').value||'')}catch(_){}}
-async function clawAudit(){const d=await J('/api/ont/audit/demo');
+async function clawAudit(){const d=await J('/api/ont/audit/'+encodeURIComponent(clawGraph()));
  if(d.error){$('#claw_audit').textContent=d.error;return}
  const pers=Object.entries(d.by_person||{}).map(([k,v])=>`${esc(k)} ${v}`).join(' · ')||'无';
  const srcs=Object.entries(d.by_source||{}).map(([k,v])=>`${esc(k)} ${v}`).join(' · ')||'无';

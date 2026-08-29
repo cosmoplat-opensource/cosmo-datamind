@@ -20,8 +20,10 @@ import threading
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
 DB = os.environ.get("DATAMIND_DB", os.path.join(ROOT, "demo_metrics.db"))
-UPLOAD_DB = os.path.join(HERE, "workdir", "uploads.db")
-WORK = os.path.join(HERE, "workdir")
+WORK = os.path.abspath(
+    os.environ.get("DATAMIND_WORKDIR") or os.path.join(HERE, "workdir")
+)
+UPLOAD_DB = os.path.join(WORK, "uploads.db")
 os.makedirs(WORK, exist_ok=True)
 
 

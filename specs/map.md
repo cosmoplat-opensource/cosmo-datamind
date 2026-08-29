@@ -93,7 +93,7 @@ Cosmo DataMind 是「数据治理 × 本体 × 深度问数」原型：
 
 ## 现状校准
 - 计数(2026-08-28):**122 路由**(server.py 117 + bp_engine 5)/ **535 集成断言** /
-  **257 项单元测试** / DR-001…DR-050 · IR-001…IR-011。
+  **284 项单元测试** / DR-001…DR-050 · IR-001…IR-011。
   新增共享层 `srv_context`/`srv_engine`、单一裁决核 `dao_core`、评测台 `hallucination_eval`/`definition_eval`、
   持久化抽象 `store`、首个 blueprint `bp_engine`。
 
@@ -102,7 +102,7 @@ Cosmo DataMind 是「数据治理 × 本体 × 深度问数」原型：
   - 新增(DR-010/IR-006，历史页面名):`元数据覆盖` 页面模块 + 4 路由。该旧指标只统计元数据字段覆盖，不能证明本体完整或 IOF 合规；当前复核为 60 条关系中 21 条可映射至类型兼容的官方 BFO/IOF 属性，其余 39 条保留在本地命名空间。
 - 新增(DR-013):`本体评审` 页面模块 + `/api/ont/review`;关系人审算子 confirm_relation/reject_relation 并入 apply 白名单;关系类算子两种 IR 形状(links/relations)通吃——构建产物(built_*)自此可人审可编辑。test_all.py 119 断言全过。
 - 新增(DR-014):问数「沿本体关系召回」步骤+⋈ JOIN 提示;`/api/chat/feedback(+/resolve)` 反馈回流→评审页「本体迭代候选队列」;「根因诊断」模式+`/api/diagnose/stream`(意图→关系召回→边界内约束生成)。
-- 新增(DR-015):「动作中心」页 + /api/actions·invoke·log·approve —— Palantir ActionType 式动作层(类型化参数/低风险直执行/高风险审批/决策捕获审计;不写只读源库);图谱对象卡挂可执行动作,诊断清单一键派工。
+- 新增(DR-015):「动作中心」页 + /api/actions·invoke·log·approve —— 类型化参数/低风险直接形成动作记录/高风险审批/决策记录审计；当前 `decision_capture` 不写回业务系统。已登记动作会投影为本体 action 节点，图谱对象卡显示配置绑定，诊断清单可发起派工记录。
 - 新增(DR-016):`mcp_action_server.py` —— 动作层 MCP server(stdio,零依赖):list_actions / **invoke_action(唯一写)** / get_action_status;审批不暴露,治理单一实现留在 HTTP API,Agent 接入自动继承「只能提议、不能批准」。
 - 新增(DR-017):「引擎设置」页 + /api/engine/config·test —— 运行时/模型/API Key 实时切换(调用时读 env+清缓存,免重启);Key 只写不回显、0600、清除同步弹 env;先测后切(真实延迟/真实报错)。
 - 新增(DR-018):全部读方统一 `load_ir_edited`(单一当前真相)——修复 问数JOIN提示/总览/指标/表详情/graphs列表 读原始IR 的不一致;U 分区 18 断言锁定「写→图谱/总览/问数/SPARQL/评审/列表 即读→撤销复原」。套件 186 断言。
@@ -192,7 +192,8 @@ Consult @specs/map.md to find relevant context.
   0 宽,描述逐字竖排(单卡高 557px)。元素齐全故计数类断言全绿 —— 改用几何量守住。
   顺势把几何判据推到全站(26 页 × 9 弹窗 × 两种视口扫一遍):另修表格单元格
   260px 截断后无从看全文(悬停按需补 title)、评审图谱下拉被固定宽度切掉计数。
-  套件 531 断言 · UI 走查 62 · UI 实操 46~47(末条随召回是否覆盖整张本体浮动)。
+  套件 535 条静态断言(本轮环境实际执行 531/531) · UI 走查 64/64 · UI 实操 45/45，
+  另有 3 项因未配置 OpenAI 兼容端点而按条件跳过。
 - **快速入门可跑通**(QUICKSTART.md):示例库 SQL → quick_build → 选本体 → 问出数,
   全程无上游引擎。过程中修出四处断链:垫片不承载 driver 注册(配了 key 也拿不到运行时)、
   规划超时写死 60s(推理型模型必超)、`tables[]` 未归一(自建本体被判无绑表而回退)、

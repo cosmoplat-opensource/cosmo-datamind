@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """DataMind 全路由覆盖测试:每个端点 happy path + 边界/错误 + 安全。"""
-import json, os, re, requests, sys, ast, time
+import json, os, re, requests, sys, ast, time, sqlite3
 from urllib.parse import urlsplit
 
 # 被测服务地址(可用 DATAMIND_URL 覆盖:CI/远端联调时不必改代码)。
@@ -55,11 +55,33 @@ def _preflight():
         print("✗ 前置检查:服务未启动或不可达(%s)——先 python3 server.py" % str(e)[:80]); sys.exit(2)
     if not _srv_db.get("ok"):
         print("✗ 前置检查:服务端数据底座不可用 —— %s" % _srv_db.get("error", "")); sys.exit(2)
-    _mine = _o.path.basename(_o.environ.get("DATAMIND_DB") or "demo_metrics.db")
-    if _mine != _srv_db.get("db"):
-        print("✗ 前置检查:测试进程的 DATAMIND_DB(%s)与服务端(%s)不一致。\n"
-              "  用同一个库重跑,例如:DATAMIND_DB=$PWD/../%s python3 test_all.py"
-              % (_mine, _srv_db.get("db"), _srv_db.get("db"))); sys.exit(2)
+    # 只比较 basename 会把两个不同目录下的 demo_metrics.db 误判为同一个库。
+    # 本测试后半段会直接 import server 做确定性断言，所以要比对「表名+行数+列数」指纹，
+    # 不能等出现一批空 detail 失败后才猜是环境漂移。
+    _local_db = _o.environ.get("DATAMIND_DB") or _o.path.normpath(
+        _o.path.join(_o.path.dirname(_o.path.abspath(__file__)), "..", "demo_metrics.db"))
+    if not _o.path.isfile(_local_db):
+        print("✗ 前置检查:测试进程的数据库不存在(%s)。\n"
+              "  显式指定与服务端相同的库:DATAMIND_DB=/absolute/path/demo_metrics.db python3 test_all.py"
+              % _local_db); sys.exit(2)
+    try:
+        _remote = requests.get(B + "/api/tables", timeout=30).json()
+        _con = sqlite3.connect("file:%s?mode=ro" % _local_db, uri=True)
+        try:
+            _names = [r[0] for r in _con.execute(
+                "SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'")]
+            _local = sorted((n, _con.execute('SELECT COUNT(*) FROM "%s"' % n.replace('"', '""')).fetchone()[0],
+                             len(_con.execute('PRAGMA table_info("%s")' % n.replace('"', '""')).fetchall()))
+                            for n in _names)
+        finally:
+            _con.close()
+        _remote_fp = sorted((x.get("name"), x.get("rows"), x.get("cols")) for x in _remote)
+    except Exception as e:
+        print("✗ 前置检查:无法比对数据库指纹(%s)" % str(e)[:120]); sys.exit(2)
+    if _local != _remote_fp:
+        print("✗ 前置检查:测试进程与服务端数据库指纹不一致。\n"
+              "  本地:%s；服务端:%s。请为两个进程设置同一 DATAMIND_DB。"
+              % (_local[:2], _remote_fp[:2])); sys.exit(2)
 _preflight()
 
 # ── 回归沙箱图谱(隔离规范)──────────────────────────────────────────
@@ -69,7 +91,10 @@ _preflight()
 # workdir 加载,无需改动服务端代码),跑完清理。demo 从此只读不写。
 import os as _os0, json as _json0, shutil as _sh0, atexit as _at0
 SANDBOX = "built_regress"
-_WD0 = _os0.path.join(_os0.path.dirname(_os0.path.abspath(__file__)), "workdir")
+_WD0 = _os0.path.abspath(
+    _os0.environ.get("DATAMIND_WORKDIR")
+    or _os0.path.join(_os0.path.dirname(_os0.path.abspath(__file__)), "workdir")
+)
 _SBX_IR = _os0.path.join(_WD0, SANDBOX + ".json")
 _SBX_ED = _os0.path.join(_WD0, "edits_" + SANDBOX + ".json")
 
@@ -80,6 +105,18 @@ def _sandbox_setup():
     _sh0.copyfile(src, _SBX_IR)
     for f in (_SBX_ED,):
         if _os0.path.exists(f): _os0.remove(f)
+    try:
+        # 文件写成功不代表被测服务使用的是同一个 workdir。隔离部署时必须先确认
+        # 服务已经读到带节点的沙箱，不能等写接口取 nodes[0] 才以 IndexError 崩溃。
+        probe = requests.get(B + "/api/graph/" + SANDBOX, timeout=10)
+        if probe.status_code != 200 or not probe.json().get("nodes"):
+            print("  ! 回归沙箱未被服务加载；请把 DATAMIND_WORKDIR 指向服务 workdir")
+            _os0.remove(_SBX_IR)
+            return False
+    except Exception as e:
+        print("  ! 无法验证回归沙箱: %s" % str(e)[:120])
+        if _os0.path.exists(_SBX_IR): _os0.remove(_SBX_IR)
+        return False
     return True
 
 def _sandbox_teardown():
@@ -97,6 +134,8 @@ def _sandbox_teardown():
 
 _SBX_OK = _sandbox_setup()
 _at0.register(_sandbox_teardown)
+if not _SBX_OK:
+    sys.exit(2)
 
 print("=== A. 元/健康 ===")
 r=g("/api/health"); chk("health 200+ok", r.status_code==200 and r.json().get("ok"))
@@ -381,7 +420,8 @@ chk("缺必填参数→400", r.status_code==400)
 r=po("/api/action/invoke",json={"action_id":"report_repair","operator":"回归/T0","params":{"equipment":"E","symptom":"s","urgency":"超高"}})
 chk("枚举违规→400", r.status_code==400)
 r=po("/api/action/invoke",json={"action_id":"report_repair","operator":"回归/T0","params":{"equipment":"回归设备","symptom":"回归用例","urgency":"低"}})
-chk("低风险直执行", r.status_code==200 and r.json()["status"]=="executed")
+chk("低风险直接形成动作记录", r.status_code==200 and r.json()["status"]=="executed"
+    and r.json().get("execution_mode")=="decision_capture" and r.json().get("real_writeback") is False)
 r=po("/api/action/invoke",json={"action_id":"adjust_delivery","operator":"回归/T0","params":{"order_no":"WO-T","new_date":"2026-08-01","reason":"回归"}})
 chk("高风险→pending", r.status_code==200 and r.json()["status"]=="pending"); _aid=r.json()["id"]
 r=po("/api/action/approve",json={"id":_aid,"decision":"deny"}); chk("审批缺审批人→400", r.status_code==400)
@@ -865,7 +905,8 @@ chk("W6 非法参数 schema→400", r.status_code==400)
 r=po("/api/action/type",json={"cn":"坏","creator":"t","object_table":"no_such_tbl"})
 chk("W7 绑定表不存在→400", r.status_code==400)
 r=po("/api/action/invoke",json={"action_id":_tid,"operator":"回归/01","params":{"note":"x"}})
-chk("W8 自建低风险直执行", r.json().get("status")=="executed")
+chk("W8 自建低风险直接形成记录", r.json().get("status")=="executed"
+    and r.json().get("real_writeback") is False)
 po("/api/action/type/update",json={"id":_tid,"enabled":False})
 r=po("/api/action/invoke",json={"action_id":_tid,"operator":"回归/01","params":{"note":"x"}})
 chk("W9 停用后发起→400", r.status_code==400)
@@ -954,7 +995,7 @@ _csvdata="a,b\n1,2\n3,4\n"
 r=po("/api/build/upload",files={"files":("__zz_test.csv",_csvdata,"text/csv")},headers=H)
 chk("Z9 build/upload CSV 建表", r.status_code==200 and any(t.get("rows")==2 for t in r.json().get("tables",[])))
 r=po("/api/build/upload",files={"files":("../../evil.csv",_csvdata,"text/csv")},headers=H)
-_wd=_os.path.join(_os.path.dirname(_os.path.abspath(__file__)),"workdir")
+_wd=_WD0
 chk("Z10 build/upload 文件名穿越被消解",
     r.status_code==200 and _os.path.exists(_os.path.join(_wd,"uploads_evil.csv"))
     and not _os.path.exists("/evil.csv") and not _os.path.exists(_os.path.join(_wd,"..","evil.csv")))
@@ -969,7 +1010,7 @@ chk("Z12 锁未泄漏(持写锁端点仍可用)", _r12.status_code==200 and _r12
 po("/api/ont/chats/delete",json={"id":_r12.json().get("id","")},headers=H)   # 清理测试产生的会话
 # Z 节自清理:上传测试会在 workdir 落文件、在 uploads.db 建表,不清理则每跑一次堆积一批
 import sqlite3 as _sq, glob as _gl
-_wd2=_os.path.join(_os.path.dirname(_os.path.abspath(__file__)),"workdir")
+_wd2=_WD0
 for _f in _gl.glob(_os.path.join(_wd2,"uploads___zz*"))+_gl.glob(_os.path.join(_wd2,"uploads_evil.csv")):
     try: _os.remove(_f)
     except OSError: pass
@@ -992,7 +1033,7 @@ _root=_os.path.dirname(_os.path.abspath(__file__))
 chk("Z20 requirements.txt 存在", _os.path.exists(_os.path.join(_root,"requirements.txt")))
 _req=open(_os.path.join(_root,"requirements.txt"),encoding="utf-8").read()
 import sys as _sys
-_std=set(_sys.stdlib_module_names); _local={"translate_cn","quick_build","agent_runtime","serve_claw","export_owl","server","cq_check","drift_check","intent_check","usage_stat","rule_engine","openai_runtime","health_check","compat_check","module_split","dao_core","hallucination_eval","definition_eval","store","srv_context","srv_engine","bp_engine","srv_hardening","build_quality","ontology_grounding","skill_registry"}
+_std=set(_sys.stdlib_module_names); _local={"translate_cn","quick_build","agent_runtime","serve_claw","export_owl","server","cq_check","drift_check","intent_check","usage_stat","rule_engine","openai_runtime","health_check","compat_check","module_split","dao_core","hallucination_eval","definition_eval","store","srv_context","srv_engine","bp_engine","srv_hardening","build_quality","ontology_grounding","skill_registry","action_ontology"}
 _ext=set()
 for _f in ("server.py","test_all.py"):
     for _n in ast.walk(ast.parse(open(_os.path.join(_root,_f),encoding="utf-8").read())):

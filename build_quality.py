@@ -96,6 +96,19 @@ def audit_grounding(ir):
             "issue_count": len(issues), "valid": not issues, "issues": issues}
 
 
+def cq_status_text(cq):
+    """把 CQ 验收报告转成不夸大结论的短文案。"""
+    if not isinstance(cq, dict) or not cq.get("provided"):
+        return "CQ 未提供"
+    total = int(cq.get("total") or 0)
+    counts = cq.get("counts") or {}
+    answerable = int(counts.get("answerable") or 0)
+    partial = int(counts.get("partial") or 0)
+    unanswerable = int(counts.get("unanswerable") or 0)
+    return (f"CQ 可回答 {answerable}/{total} · 部分支持 {partial} · "
+            f"不可回答 {unanswerable}")
+
+
 def evaluate(ir, cqs=None, definition_threshold=0.6):
     """执行验收检查，返回 ``result ∈ {pass, review, fail}`` 的结构化报告。"""
     ir = ir if isinstance(ir, dict) else {}
@@ -126,11 +139,18 @@ def evaluate(ir, cqs=None, definition_threshold=0.6):
         review_queue.append({"type": "candidate_relations", "count": len(candidates),
                              "desc": f"{len(candidates)} 条候选/缺口关系尚无可复核证据",
                              "fix": "补数据窗口、文档依据或人审;不要直接升级为 verified"})
-    semantic_disputes = [r for r in relations if r.get("semantic") == "fail"]
+    semantic_disputes = [r for r in relations
+                         if (r.get("semantic_status") or r.get("semantic"))
+                         in ("fail", "rejected", "disputed")]
     if semantic_disputes:
         review_queue.append({"type": "semantic_disputes", "count": len(semantic_disputes),
                              "desc": f"{len(semantic_disputes)} 条关系的数据证据与语义复审存在争议",
-                             "fix": "进入人审；模型语义判断不得自动推翻可复核的数据验证结果"})
+                             "fix": "进入人审；争议关系不计入 CQ 强路径，人工确认后再置为 asserted"})
+    query_errors = list((ir.get("scenario") or {}).get("query_errors") or [])
+    if query_errors:
+        review_queue.append({"type": "adjudication_query_errors", "count": len(query_errors),
+                             "desc": f"构建取证过程中有 {len(query_errors)} 项查询失败，不能解释为没有证据",
+                             "fix": "修复数据库/表结构/查询问题后重新取证；失败项不得升级为 verified"})
     for item in grounding["issues"]:
         review_queue.append(item)
         gaps.append(item)
@@ -164,6 +184,8 @@ def evaluate(ir, cqs=None, definition_threshold=0.6):
         "health": health,
         "evidence": evidence,
         "grounding": grounding,
+        "semantic": {"disputed": len(semantic_disputes),
+                     "strong_for_cq": sum(1 for r in relations if cq_check.relation_is_strong(r))},
         "definitions": definitions,
         "cq": cq,
         "blocking_issues": blocking_issues,
