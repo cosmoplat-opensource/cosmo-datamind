@@ -21,7 +21,9 @@ import ontology_grounding
 # 诊断信息一律走 logging 而非 print:print 混在 stdout 里既无级别也无时间戳,
 # 且容易把内部路径/异常细节直接摊到用户可见的输出上。此处只对运维可见,
 # 面向 HTTP 调用方的错误另行裁剪(见各端点的 str(e)[:N])。
-logging.basicConfig(level=os.environ.get("DATAMIND_LOG_LEVEL", "INFO").upper(),
+# .env 里留空的变量 source 后是空串而非未设置,get(name, default) 会返回 ""——
+# 空串传给 basicConfig 会抛 ValueError,服务直接起不来。故一律用 or 兜默认值。
+logging.basicConfig(level=(os.environ.get("DATAMIND_LOG_LEVEL") or "INFO").upper(),
                     format="%(asctime)s %(levelname)s [datamind] %(message)s")
 
 class _LogSanitizer(logging.Filter):
@@ -90,9 +92,9 @@ if os.path.isdir(_ENGINE_PKG) and _ENGINE_PKG not in sys.path:
 
 # 监听地址与端口的单一事实源:默认只绑回环(本地原型的安全默认——本服务无鉴权,
 # 绑 0.0.0.0 等于把建库/删文件/跑技能的接口开给整个网段)。需要对外时由部署方显式设置。
-LISTEN_HOST = os.environ.get("DATAMIND_HOST", "127.0.0.1")
+LISTEN_HOST = os.environ.get("DATAMIND_HOST") or "127.0.0.1"   # 空串会被 Flask 当成 0.0.0.0
 try:
-    LISTEN_PORT = int(os.environ.get("DATAMIND_PORT", "8092"))
+    LISTEN_PORT = int(os.environ.get("DATAMIND_PORT") or "8092")
 except ValueError:
     LISTEN_PORT = 8092
 
@@ -1705,7 +1707,7 @@ def ont_runtimes():
     try:
         from agent_runtime import available
         av = available()
-        cur = os.environ.get("CLAW_DRIVER", "hermes")
+        cur = os.environ.get("CLAW_DRIVER") or "hermes"
         # current 只是回显 CLAW_DRIVER,不代表它真的注册了。配错时(如把 CLAW_DRIVER 设成
         # openai 却漏配端点)界面会显示「当前:openai」而实际不工作 —— 必须如实标注。
         return jsonify({"runtimes": av, "current": cur, "current_ready": cur in av,
@@ -3756,7 +3758,7 @@ def sysinfo():
     try:
         from agent_runtime import available
         info["runtimes"] = available()
-        info["current_driver"] = os.environ.get("CLAW_DRIVER", "hermes")
+        info["current_driver"] = os.environ.get("CLAW_DRIVER") or "hermes"
     except Exception: info["runtimes"] = []
     info["jobs"] = len(JOBS)
     info["qa_cache"] = len(_QA_CACHE)

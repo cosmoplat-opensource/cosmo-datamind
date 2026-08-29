@@ -46,7 +46,7 @@ def runtime_cached(drv):
 def _drv_order(cands=("openai", "hermes", "claude-code", "openclaw")):
     # LLM 引擎尝试顺序遵循 CLAW_DRIVER:选中的排最前(其余按原序回退),
     # 使 /api/ont/runtime 的引擎切换对所有 LLM 流程真正生效(而非只改显示标签)。
-    pref = os.environ.get("CLAW_DRIVER", "hermes")
+    pref = os.environ.get("CLAW_DRIVER") or "hermes"
     if pref in cands:
         return (pref,) + tuple(d for d in cands if d != pref)
     return tuple(cands)   # 未知取值:按原序尝试,不因拼错而全盘停摆
@@ -67,7 +67,7 @@ _ENV_LOCKED_AT_BOOT = {v for v in ("DATAMIND_LLM_BASE", "DATAMIND_LLM_KEY", "DAT
 
 # 本地自建端点的默认前缀:不写死 IP —— 各家 vLLM/Ollama 的监听地址与端口并不一致,
 # 部署方用 DATAMIND_LOCAL_LLM_BASE 覆盖即可,界面上的「一键填入」随之跟着变。
-LOCAL_LLM_BASE = os.environ.get("DATAMIND_LOCAL_LLM_BASE", "http://localhost:8000/v1")
+LOCAL_LLM_BASE = os.environ.get("DATAMIND_LOCAL_LLM_BASE") or "http://localhost:8000/v1"
 
 LLM_PRESETS = [   # 常见服务商的端点前缀,供界面一键填入;模型名随各家版本变动,故只给端点
     {"id": "zhipu", "name": "智谱 GLM", "base": "https://open.bigmodel.cn/api/coding/paas/v4"},

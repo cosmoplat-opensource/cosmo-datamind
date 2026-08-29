@@ -35,9 +35,9 @@ def engine_config_get():
     cfg = _load_engine_cfg()
     keys = cfg.get("keys") or {}
     return jsonify({
-        "driver": os.environ.get("CLAW_DRIVER", "hermes"),
+        "driver": os.environ.get("CLAW_DRIVER") or "hermes",
         "runtimes": available(),
-        "models": {"claude-code": os.environ.get("CLAUDE_MODEL", "claude-opus-4-8"),
+        "models": {"claude-code": os.environ.get("CLAUDE_MODEL") or "claude-opus-4-8",
                    "hermes": os.environ.get("HERMES_MODEL", ""),
                    "openclaw": os.environ.get("OPENCLAW_MODEL", "")},
         "hermes_provider": os.environ.get("HERMES_PROVIDER", ""),
