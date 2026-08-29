@@ -25,6 +25,22 @@ from collections import deque
 STRONG = {"verified", "asserted"}
 
 
+def relation_is_strong(relation):
+    """CQ 可采用的强关系。
+
+    ``verified`` 只证明数据连接证据成立；若语义复核已经明确失败，就不能继续把它
+    用作业务可回答性的证明。旧 IR 没有语义字段时保持兼容，待复核关系仍由质量报告
+    提醒；人工 ``asserted`` 表示已经完成业务裁定，优先于模型软标注。
+    """
+    status = relation.get("status") or relation.get("evidence_status") or ""
+    if status == "asserted":
+        return True
+    if status != "verified":
+        return False
+    semantic = relation.get("semantic_status") or relation.get("semantic") or ""
+    return semantic not in {"fail", "rejected", "disputed"}
+
+
 def _rels(ir):
     """兼容两种 IR 形状:demo 的 links[source/target] 与构建产物的 relations[source_concept/target_concept]"""
     if "links" in ir:
@@ -62,19 +78,45 @@ def anchor_objects(question, ir):
     宁可漏匹配(结果偏保守,报出缺口),不可错匹配(结果偏乐观,掩盖缺口)。
     """
     q = (question or "").lower()
-    hits, seen = [], set()
+    candidates = []
     for i, o in enumerate(ir.get("objects", [])):
         key = _key_of(o, i)
-        if key in seen:
-            continue
         for nm in _obj_names(o):
             n = nm.lower()
             # 中文名 ≥2 字、英文标识 ≥3 字符才参与匹配,避免单字/短码误命中
-            if (len(n) >= 2 if re.search(r"[一-鿿]", n) else len(n) >= 3) and n in q:
-                hits.append({"key": key, "matched": nm,
-                             "cn": o.get("cn") or o.get("name") or key})
-                seen.add(key)
-                break
+            if not (len(n) >= 2 if re.search(r"[一-鿿]", n) else len(n) >= 3):
+                continue
+            start = q.find(n)
+            while start >= 0:
+                candidates.append({
+                    "key": key,
+                    "matched": nm,
+                    "cn": o.get("cn") or o.get("name") or key,
+                    "start": start,
+                    "end": start + len(n),
+                })
+                start = q.find(n, start + 1)
+
+    # 同一文本区间优先最长名称。例如“供应商分类”不能再额外命中“供应商”；
+    # 但“供应商与供应商分类”中首个独立出现的“供应商”仍会保留。
+    survivors = []
+    for candidate in candidates:
+        nested = any(
+            other["key"] != candidate["key"]
+            and other["start"] <= candidate["start"]
+            and other["end"] >= candidate["end"]
+            and (other["end"] - other["start"]) > (candidate["end"] - candidate["start"])
+            for other in candidates
+        )
+        if not nested:
+            survivors.append(candidate)
+
+    hits, seen = [], set()
+    for candidate in sorted(survivors, key=lambda x: (x["start"], -(x["end"] - x["start"]))):
+        if candidate["key"] in seen:
+            continue
+        hits.append({k: candidate[k] for k in ("key", "matched", "cn")})
+        seen.add(candidate["key"])
     return hits
 
 
@@ -83,7 +125,7 @@ def _adj(ir, strong_only):
     rels, sk, tk = _rels(ir)
     g = {}
     for r in rels:
-        if strong_only and (r.get("status") or "") not in STRONG:
+        if strong_only and not relation_is_strong(r):
             continue
         s, t = r.get(sk), r.get(tk)
         if not s or not t:
@@ -118,28 +160,63 @@ def _path(g, a, b):
 def check_one(question, ir, expect=None):
     """核验单条 CQ。expect 为可选的期望对象名列表(业务方显式声明该问题应涉及哪些对象)。"""
     anchors = anchor_objects(question, ir)
-    keys = [a["key"] for a in anchors]
+    seen_keys = {a["key"] for a in anchors}
 
-    missing_expected = []
+    missing_expected, ambiguous_expected = [], []
     if expect:
-        known = {n.lower() for o in ir.get("objects", []) for n in _obj_names(o)}
-        missing_expected = [e for e in expect if e.lower() not in known]
+        # ``expect`` 是业务方声明的结构化对象范围，不只是存在性断言。按完整名称
+        # 精确解析后，将其作为声明锚点参与路径核验；否则自然语言中未出现表名时，
+        # 即使业务方已经消歧，系统仍会错误地只留下一个锚点。
+        for expected in expect:
+            needle = str(expected).strip().lower()
+            matches = []
+            for i, obj in enumerate(ir.get("objects", [])):
+                if any(name.lower() == needle for name in _obj_names(obj)):
+                    matches.append((_key_of(obj, i), obj))
+            unique = {key: obj for key, obj in matches}
+            if not unique:
+                missing_expected.append(str(expected))
+                continue
+            if len(unique) > 1:
+                ambiguous_expected.append(str(expected))
+                continue
+            key, obj = next(iter(unique.items()))
+            if key not in seen_keys:
+                anchors.append({
+                    "key": key,
+                    "matched": str(expected),
+                    "cn": obj.get("cn") or obj.get("name") or key,
+                    "declared": True,
+                })
+                seen_keys.add(key)
 
     if missing_expected:
         return {"question": question, "verdict": "unanswerable",
                 "anchors": anchors, "path": None,
                 "reason": "本体中不存在声明的对象: " + "、".join(missing_expected),
                 "fix": "补建模:先让抽取环节产出这些对象,再重新核验"}
+    if ambiguous_expected:
+        return {"question": question, "verdict": "unanswerable",
+                "anchors": anchors, "path": None,
+                "reason": "声明的对象名称指代不唯一: " + "、".join(ambiguous_expected),
+                "fix": "改用唯一的对象 id/name/table 声明 expect，避免共享别名产生歧义"}
+
+    keys = [a["key"] for a in anchors]
     if not anchors:
         return {"question": question, "verdict": "unanswerable",
                 "anchors": [], "path": None,
                 "reason": "问句未能锚定到任何本体对象(名称未在本体中出现)",
                 "fix": "补建模,或为对象补中文别名使业务用语可被锚定"}
     if len(keys) == 1:
-        return {"question": question, "verdict": "answerable",
+        if expect and len(expect) == 1:
+            return {"question": question, "verdict": "answerable",
+                    "anchors": anchors, "path": [keys[0]],
+                    "reason": "业务方显式声明为单对象问题,无需跨对象路径",
+                    "fix": ""}
+        return {"question": question, "verdict": "partial",
                 "anchors": anchors, "path": [keys[0]],
-                "reason": "单对象问题,无需跨对象路径",
-                "fix": ""}
+                "reason": "仅锚定到一个对象，无法证明问句中的其他业务概念均已覆盖",
+                "fix": "补充该 CQ 的期望对象清单(expect)，或为遗漏对象补中文名/业务别名"}
 
     g_strong, g_all = _adj(ir, True), _adj(ir, False)
     weak_pairs, broken_pairs, paths = [], [], []
@@ -164,8 +241,9 @@ def check_one(question, ir, expect=None):
     if weak_pairs:
         return {"question": question, "verdict": "partial",
                 "anchors": anchors, "path": paths,
-                "reason": "连通路径须借道 candidate/gap 边: " + "、".join(f"{a}↔{b}" for a, b in weak_pairs),
-                "fix": "补证据:对沿途候选关系做数据裁决或人审,升级为 verified/asserted"}
+                "reason": "连通路径包含候选、证据不足或语义存疑的关系: " +
+                          "、".join(f"{a}↔{b}" for a, b in weak_pairs),
+                "fix": "补证据或完成语义人审:只有数据证据成立且语义无争议的 verified/asserted 关系才计入强路径"}
     return {"question": question, "verdict": "answerable",
             "anchors": anchors, "path": paths,
             "reason": "全部对象已锚定,且路径仅经 verified/asserted 边",

@@ -23,12 +23,16 @@
 3. **两层测试分工**:集成套件(`test_all.py`,535 断言,需起服务)是主力回归;
    `tests/` 单测层(离线秒级,不起服务)是其补集,专测确定性模块边界与纯函数。
 4. **文档-代码计数自检**:`test_doc_consistency.py` 把真实路由/断言数与规范常量对齐,代码一变即红,逼同步文档。
-5. **CI 双 job**:unit(单测+覆盖率+lint,硬挡)+ integration(集成套件,advisory,因需 LLM 引擎/数据底座)。
+5. **CI 双 job**:unit(单测+覆盖率+lint+mypy,硬挡)+ integration(使用仓库内108表验证库起服务，确定性失败硬挡)。
+   外部模型可用性另列条件测试，不得用 `continue-on-error` 或 `|| true` 吞掉确定性失败。
 6. **依赖可复现**:`requirements-dev.txt` 固定测试工具链版本;运行时 `requirements.txt` 保留不固定惯例,CI 用 dev 份锁定复现。
+7. **UI 测试浏览器可替换**:`test_ui.py`/`test_ui_ops.py` 优先使用
+   `DATAMIND_BROWSER_EXECUTABLE`，其次探测本机 Chrome，最后才使用 Playwright 自带 Chromium。
+   这样离线或 CDN 不可达环境仍能执行 UI 回归，同时 CI 仍可使用标准 Playwright 浏览器。
 
 ## 后果 / Consequences
 
 - (+) 每个既有校验(lint/断言/覆盖率)从「手动」变「合并即挡」;文档漂移被确定性抓住(本轮即订正 119/531→121/535)。
 - (+) 确立**已知绿基线**(43 单测绿 / 覆盖率 72.0%),供 IR-008 起算法迭代做红-绿。
-- (−) 覆盖率暂不设 `fail_under` 硬门槛(基线记录在案,逐步抬高),避免一次性阻断。
+- 覆盖率设置 `fail_under=81.0`；当前实测 81.6%，下降到基线以下即阻止合并。
 - **规范**:新增 DR/IR 的 `Acceptance` 应尽量先翻成失败断言提交(红)再实现(绿),`test_quick_build` 为首个红-绿范例。

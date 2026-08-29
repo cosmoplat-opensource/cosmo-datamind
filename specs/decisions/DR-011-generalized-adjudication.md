@@ -40,7 +40,7 @@
 
 ## v2.3 部署验收 + 架构统一 refactor(2026-07-19)
 **部署与全功能点检**:干净部署(:8092),51 只读路由+边界全过;浏览器实测 27 页全渲染、586 按钮处理器全解析、零应用 JS 错误(仅 Chrome 扩展噪音);内联 onclick 的 `$` 调用实测不抛。
-**架构 refactor(统一,test-gated)**:①`_open_writable(key,need_objects)` 统一 enrich/reground/maturity 三写端点前奏(守卫+载图+存在性),消 3 处重复;②前端 `$`/`esc`/`jsAttr`/`J` 显式 `Object.assign(window,...)`,杜绝内联处理器 const 作用域跨浏览器隐患;③新增 `ARCHITECTURE.md`(分层/数据流/统一约定/安全/边界)。回归:pyflakes 零告警、三写守卫抽验全过、**test_all 109/109**。
+**架构重构(统一实现并受测试约束)**:①`_open_writable(key,need_objects)` 统一 enrich/reground/maturity 三写端点前奏(守卫+载图+存在性),消 3 处重复;②前端 `$`/`esc`/`jsAttr`/`J` 显式 `Object.assign(window,...)`,杜绝内联处理器 const 作用域跨浏览器隐患;③新增 `ARCHITECTURE.md`(分层/数据流/统一约定/安全/边界)。回归:pyflakes 零告警、三写守卫抽验全过、**test_all 109/109**。
 
 ### v2.4 图谱选择器统一分组(实操点检发现)
 **实操发现**:本体图谱页选择器把「精选本体/场景样例/构建历史」22 项平铺堆叠,12 个 built_* 构建产物与 3 个精选本体混排、无从区分——不符「更完善」。

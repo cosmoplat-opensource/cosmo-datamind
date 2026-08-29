@@ -10,6 +10,7 @@ import json, os, re, sqlite3, sys
 from collections import OrderedDict as _OrderedDict
 import dao_core   # DR-035:裁决决策与命名/重叠原语的单一事实源
 import build_quality
+import action_ontology
 import ontology_grounding
 
 qi = lambda s: '"' + str(s).replace('"', '""') + '"'   # 安全转义 SQL 标识符(列名/表名含引号也不破格)
@@ -25,12 +26,22 @@ def _local_relation_reason(source):
 con: sqlite3.Connection | None = None
 cols_of: dict[str, list[tuple[str, str]]] = {}
 pk_of: dict[str, str | None] = {}
+query_errors: list[dict[str, str]] = []
+
+
+def _record_query_error(operation, table, column, exc):
+    """记录取证失败但不写入 SQL/路径/异常正文，避免把故障误当成零证据。"""
+    if len(query_errors) < 100:
+        query_errors.append({"operation": operation, "table": str(table)[:120],
+                             "column": str(column or "")[:120], "error_type": type(exc).__name__})
 
 
 def distinct(t, c, cap=20000):
     try:
         return set(r[0] for r in con.execute(f'SELECT DISTINCT {qi(c)} FROM {qi(t)} LIMIT {cap}') if r[0] not in (None, ""))
-    except Exception: return set()
+    except Exception as exc:
+        _record_query_error("distinct", t, c, exc)
+        return set()
 
 _UNIQ_CACHE_MAX = 4096          # 容量上限:超出按 LRU 逐出最久未用项
 _uniq_cache: _OrderedDict[tuple[str, str], bool] = _OrderedDict()
@@ -54,7 +65,8 @@ def is_key_unique(t, c):
     try:
         r = con.execute(f'SELECT COUNT(*) n, COUNT(DISTINCT {qi(c)}) d FROM {qi(t)}').fetchone()
         out = r[0] > 0 and r[0] == r[1]
-    except Exception:
+    except Exception as exc:
+        _record_query_error("unique", t, c, exc)
         out = False
     if len(_uniq_cache) >= _UNIQ_CACHE_MAX:
         _uniq_cache.popitem(last=False)      # 逐出最久未用项,避免整体清空造成的反复重建
@@ -97,11 +109,12 @@ def _checked_paths(db, out):
     return db_p, out_p
 
 
-def build(db, out, name):
+def build(db, out, name, action_types=None):
     """数据驱动构建一张图谱 IR,写入 out 并返回 ir(供测试/编程调用)。"""
     global con, cols_of, pk_of
     db, out = _checked_paths(db, out)
     _uniq_cache.clear()  # 模块可被重复调用；不同数据库之间不得复用唯一性结论。
+    query_errors.clear()
     # 只读打开(mode=ro):建本体只取数、绝不改源库;缺库时显式报错而非静默新建空库
     con = sqlite3.connect(f"file:{db}?mode=ro", uri=True); con.row_factory = sqlite3.Row
     # SQLite may create sqlite_stat1/sqlite_sequence and similar internal tables.
@@ -121,7 +134,8 @@ def build(db, out, name):
     for t in tabs:
         try:
             info = con.execute(f'PRAGMA table_info({qi(t)})').fetchall()
-        except Exception:
+        except Exception as exc:
+            _record_query_error("table_info", t, "", exc)
             continue                                        # 表名异常不再让整轮构建崩溃
         cols_of[t] = [(r[1], r[2] or "TEXT") for r in info]
         pks = [r[1] for r in info if r[5]]
@@ -136,7 +150,9 @@ def build(db, out, name):
         # 声明 FK 证明关系可连接，但不据此虚构 BFO/IOF 对应关系。
         for fk in con.execute(f'PRAGMA foreign_key_list({qi(t)})'):
             links.append({"source_concept": t, "target_concept": fk[2], "verb": "关联",
-                          "status": "verified", "overlap": None, "note": f"声明FK {fk[3]}→{fk[4]}",
+                          "status": "verified", "evidence_status": "verified",
+                          "semantic": "not_reviewed", "semantic_status": "not_reviewed",
+                          "overlap": None, "note": f"声明FK {fk[3]}→{fk[4]}",
                           "evidence": {"child_key": fk[3], "parent_key": fk[4], "source": "declared_fk",
                                        "declared": True, "direction": "child_to_parent",
                                        "decision": "schema_declared_foreign_key"},
@@ -215,7 +231,9 @@ def build(db, out, name):
                                          ("ambiguous" if cunique and punique else "child_to_parent")),
                            "decision": verdict["reason"]})
                 link = {"source_concept": t, "target_concept": pt, "verb": "关联",
-                        "status": st, "overlap": round(ov, 1), "note": note, "evidence": ev,
+                        "status": st, "evidence_status": st,
+                        "semantic": "not_reviewed", "semantic_status": "not_reviewed",
+                        "overlap": round(ov, 1), "note": note, "evidence": ev,
                         "founded_relation": "", "grounding_iri": "", "grounding_status": "unmapped",
                         "grounding_reason": _local_relation_reason("key_overlap"), "temporal": ""}
                 if self_ref:                                # DR-036:有意的层级自引用,语义化并标记
@@ -224,12 +242,22 @@ def build(db, out, name):
                     ev["self_ref"] = True
                 links.append(link)
                 seen.add((t, pt)); seen.add((pt, t))
-    print(f"[quick_build] 关系 {len(links)} 条 (verified {sum(1 for l in links if l['status']=='verified')})", flush=True)
+    print(f"[quick_build] 基础关系 {len(links)} 条 "
+          f"(verified {sum(1 for l in links if l['status']=='verified')})", flush=True)
     con.close()
     con = None
 
-    ir = {"scenario": {"name": name, "style": "quick_build(数据驱动)", "object_count": len(objects), "relation_count": len(links)},
+    ir = {"scenario": {"name": name, "style": "quick_build(数据驱动)",
+                       "object_count": len(objects), "relation_count": len(links),
+                       "query_errors": list(query_errors)},
           "objects": objects, "relations": links}
+    if action_types:
+        if isinstance(action_types, (str, os.PathLike)):
+            with open(action_types, encoding="utf-8") as fp:
+                action_types = json.load(fp)
+        action_ontology.project_registered_actions(ir, action_types)
+    print(f"[quick_build] 最终对象 {len(ir['objects'])} 个 · 关系 {len(ir['relations'])} 条 · "
+          f"动作 {ir['scenario'].get('action_count', 0)} 个", flush=True)
     ir["build_quality"] = build_quality.evaluate(ir)
     ir["gaps"] = ir["build_quality"]["gaps"]
     tmp = out + ".tmp"
@@ -243,6 +271,6 @@ if __name__ == "__main__":
     if len(sys.argv) < 4:
         print(__doc__.splitlines()[0], file=sys.stderr); sys.exit(2)
     try:
-        build(sys.argv[1], sys.argv[2], sys.argv[3])
+        build(sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4] if len(sys.argv) > 4 else None)
     except ValueError as e:            # 路径体检不过:给一行清楚的原因,不抛裸栈
         print(f"[quick_build] 参数错误:{e}", file=sys.stderr); sys.exit(2)

@@ -10,9 +10,8 @@
     python3 server.py &
     python3 test_ui_ops.py            # DATAMIND_URL 可覆盖地址
 
-重点覆盖引擎互换:在引擎设置页点「设为当前」在 OpenAI 兼容端点(GLM)与
-Claude Code 之间往返,验证后端 current 真变、UI 标记随之转移、且不同引擎的
-执行行为确有差异(而非只换了标签)。
+重点覆盖引擎互换:在引擎设置页点「设为当前」，在已配置的运行时之间
+往返，验证后端 current 真正变更、UI 标记随之转移，并在结束时恢复测试前的运行时。
 """
 # 等待上限按引擎实测时延取(GLM 单轮问数 ~70s,含推理开销),而非按理想值
 import asyncio, os, sys
@@ -29,9 +28,18 @@ def bad(n, why=""):   R["f"].append(f"{n} :: {why}"); print(f"  ✗ {n} :: {why}
 # 记为 skip 而非 fail —— 未配端点是部署选择,不是代码缺陷;但必须显式列出,不许静默消失。
 def skip(n, why=""):  R["s"].append(f"{n} :: {why}"); print(f"  ⊘ {n} :: {why}(环境未配,跳过)")
 
+
+async def launch_browser(pw):
+    """优先复用本机浏览器；未找到时回落 Playwright 自带 Chromium。"""
+    candidates = [os.environ.get("DATAMIND_BROWSER_EXECUTABLE"),
+                  "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
+                  "/usr/bin/google-chrome", "/usr/bin/chromium", "/usr/bin/chromium-browser"]
+    executable = next((path for path in candidates if path and os.path.isfile(path)), None)
+    return await pw.chromium.launch(executable_path=executable) if executable else await pw.chromium.launch()
+
 async def main():
     async with async_playwright() as pw:
-        br = await pw.chromium.launch()
+        br = await launch_browser(pw)
         pg = await (await br.new_context(viewport={"width": 1500, "height": 1000})).new_page()
         errs = []
         pg.on("pageerror", lambda e: errs.append(str(e)[:120]))
@@ -53,6 +61,7 @@ async def main():
         print(f"      运行时卡: {cards}")
         (ok if len(cards) >= 3 else bad)(f"引擎设置页列出 {len(cards)} 个运行时卡")
         _rt = await (await pg.request.get(B + '/api/ont/runtimes')).json()
+        initial_rt = _rt.get("current")
         HAS_OPENAI = "openai" in (_rt.get("runtimes") or [])
         (ok if any("OpenAI" in c for c in cards) else (bad if HAS_OPENAI else
          (lambda n: skip(n, "未配 DATAMIND_LLM_BASE/_KEY")))) ("含 OpenAI 兼容端点卡(GLM)")
@@ -130,12 +139,19 @@ async def main():
         # ══ 步骤 6:本体对话页 —— 真实输入并发送 ══
         print("\n【步骤6】本体对话:署名 → 提问 → 审计刷新")
         await goto("claw", 2500)
+        if built:
+            await pg.select_option("#claw_graph", built)
+            selected = await pg.input_value("#claw_graph")
+            (ok if selected == built else bad)(f"本体对话绑定构建产物 {built}", selected)
         await pg.fill("#claw_who", "测试评审员")
         await pg.fill("#claw_q", "本体里有哪些对象?")
         await pg.click("#claw_btn")
         try:
             await pg.wait_for_function(
-                "document.getElementById('claw_log').innerText.length>40", timeout=300000)
+                "(()=>{const b=document.getElementById('claw_btn'),"
+                "l=document.getElementById('claw_log');return b&&!b.disabled&&l&&"
+                "l.querySelectorAll('.msg-ai').length>0&&"
+                "!l.innerText.includes('智能引擎处理中…')})()", timeout=300000)
             log = await pg.inner_text("#claw_log")
             ok("对话发送并收到回复", log.replace("\n", " ")[:60])
         except Exception:
@@ -147,7 +163,7 @@ async def main():
         (ok if "来源" in aud else bad)("审计含来源维度")
 
         # ══ 步骤 7:深度问数 —— 真实输入并等结果 ══
-        print("\n【步骤7】深度问数(当前引擎 GLM):输入问句→执行→看步骤")
+        print(f"\n【步骤7】深度问数(当前引擎 {await cur_rt()}):输入问句→执行→看步骤")
         await goto("chat", 2500)
         box = "#p_chat textarea, #p_chat input[type=text]"
         n0 = await pg.evaluate("document.querySelectorAll('#p_chat .dq-card').length")
@@ -301,6 +317,9 @@ async def main():
             e = [x for x in errs[b0:] if "favicon" not in x]
             (ok if len(t) > 30 and not e else bad)(f"{p} 页可用", f"{len(t)}字 err={e[:1]}")
 
+        if initial_rt:
+            restored = await pg.request.post(B + '/api/ont/runtime', data={"name": initial_rt})
+            (ok if restored.ok else bad)("恢复测试前运行时", initial_rt)
         await br.close()
     print(f"\n===== UI 实操:{len(R['p'])} 通过 / {len(R['f'])} 失败"
           + (f" / {len(R['s'])} 跳过" if R["s"] else "") + " =====")

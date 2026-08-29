@@ -98,12 +98,12 @@
 
 | 层 | 内容 | 是否需起服务 |
 |---|---|---|
-| 单元层 `tests/` | 确定性模块边界/纯函数 + 文档计数自检(2026-08-28:257 项测试) | 否(离线秒级) |
+| 单元层 `tests/` | 确定性模块边界/纯函数 + 文档计数自检(2026-08-29:284 项测试) | 否(离线秒级) |
 | 集成层 `test_all.py` | 源码定义 535 个检查点,覆盖路由正常路径、边界与安全约束 | 是 |
 | UI 层 | `test_ui.py`(全页走查)·`test_ui_ops.py`(浏览器逐步实操) | 是(需 playwright) |
 
 自动化校验:`pyproject.toml` 统一 pytest/coverage/ruff(只选 F/B 抓真缺陷)/mypy ·
-`.pre-commit-config.yaml` 提交即跑 · `.github/workflows/ci.yml` 双 job(单元硬挡 + 集成 advisory)·
+`.pre-commit-config.yaml` 提交即跑 · `.github/workflows/ci.yml` 双 job(单元与确定性集成都硬挡)·
 pyflakes 零告警 · 构建产物经 RDF 解析与 SHACL 校验 · 元数据覆盖率用于定位定义、反例和标准关系映射缺口（不表示本体完备性）。当前仓库不内置 OWL DL 推理器，因此不把 HermiT 一致性检查列为已执行能力。
 
 ### 5.1 集成套件的环境依赖(勿误判为回归)

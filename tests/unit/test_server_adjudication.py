@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 """会话式 LLM 构建分支必须与 quick_build 共用同一数据裁决口径。"""
 import server
+import cq_check
 
 
 def _evidence(columns):
@@ -33,6 +34,41 @@ def test_llm_branch_verifies_with_replayable_core_signals(make_sqlite, monkeypat
     assert relation["evidence"]["name_ok"] is True
     assert relation["evidence"]["direction"] == "child_to_parent"
     assert relation["proposal"]["child_key_hint"] == "customer_id"
+    assert relation["evidence_status"] == "verified"
+    assert relation["semantic_status"] == "not_reviewed"
+
+
+def test_semantic_rejection_is_separate_from_data_verification_and_blocks_cq(make_sqlite, monkeypatch):
+    db = make_sqlite({
+        "customers": ("id INTEGER PRIMARY KEY", [(1,), (2,), (3,)]),
+        "orders": ("order_id INTEGER PRIMARY KEY, customer_id INTEGER", [(10, 1), (11, 2)]),
+    })
+    monkeypatch.setattr(server, "_llm_semantic_review",
+                        lambda relations, ev: {("orders", "customers"): False})
+    ir = server._adjudicate_ir(db, "test", _proposal("customer_id", "id"),
+                               _evidence({"customers": ["id"], "orders": ["order_id", "customer_id"]}))
+    relation = ir["relations"][0]
+    assert relation["status"] == "verified"
+    assert relation["evidence_status"] == "verified"
+    assert relation["semantic"] == "fail"
+    assert relation["semantic_status"] == "disputed"
+    assert cq_check.check_one("订单属于哪个客户", ir, ["orders", "customers"])["verdict"] == "partial"
+
+
+def test_llm_action_kind_is_preserved_but_not_made_invocable_without_registry_binding(make_sqlite, monkeypatch):
+    db = make_sqlite({"equipment": ("id INTEGER PRIMARY KEY", [(1,)])})
+    monkeypatch.setattr(server, "_llm_semantic_review", lambda relations, ev: None)
+    extracted = {"objects": [
+        {"name": "equipment", "cn": "设备", "kind": "object", "table": "equipment"},
+        {"name": "request_repair", "cn": "申请维修", "kind": "action", "action_id": "fabricated",
+         "evidence": "维修规程第3条"},
+    ], "relations": [{"source": "request_repair", "target": "equipment", "verb": "作用于"}]}
+    ir = server._adjudicate_ir(db, "test", extracted, _evidence({"equipment": ["id"]}))
+    action = next(obj for obj in ir["objects"] if obj["kind"] == "action")
+    assert action["bfo"] == "PlannedProcess"
+    assert action["action_id"] == ""
+    assert action["action_spec"]["invocable"] is False
+    assert action["candidate"] is True
 
 
 def test_llm_branch_suppresses_reverse_direction(make_sqlite, monkeypatch):

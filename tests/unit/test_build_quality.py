@@ -51,6 +51,17 @@ def test_semantic_dispute_is_review_signal():
     report = build_quality.evaluate(ir, ["员工属于哪个部门"])
     assert report["gate"] == "review"
     assert any(item["type"] == "semantic_disputes" for item in report["review_queue"])
+    assert report["semantic"]["disputed"] == 1
+    assert report["semantic"]["strong_for_cq"] == 0
+    assert report["cq"]["counts"]["answerable"] == 0
+
+
+def test_query_failure_is_reported_as_review_not_silent_no_evidence():
+    ir = _valid_ir()
+    ir["scenario"] = {"query_errors": [{"operation": "distinct", "table": "employees"}]}
+    report = build_quality.evaluate(ir, ["员工属于哪个部门"])
+    assert report["result"] == "review"
+    assert any(item["type"] == "adjudication_query_errors" for item in report["review_queue"])
 
 
 def test_legacy_schema_fk_is_accepted_as_declared_evidence():
@@ -70,3 +81,18 @@ def test_empty_legacy_links_does_not_hide_current_relations():
     report = build_quality.evaluate(ir, ["员工属于哪个部门"])
     assert report["result"] == "fail"
     assert report["evidence"]["checked"] == 1
+
+
+def test_cq_status_text_reports_real_outcome_instead_of_claiming_accepted():
+    report = build_quality.evaluate(_valid_ir(), ["不存在的业务概念如何关联"])
+    text = build_quality.cq_status_text(report["cq"])
+    assert "不可回答 1" in text
+    assert "可回答 0" in text
+    assert "已验收" not in text and "通过" not in text
+
+
+def test_cq_status_text_distinguishes_not_provided_and_all_answerable():
+    missing = build_quality.evaluate(_valid_ir())["cq"]
+    accepted = build_quality.evaluate(_valid_ir(), ["员工属于哪个部门"])["cq"]
+    assert build_quality.cq_status_text(missing) == "CQ 未提供"
+    assert "可回答 1/1" in build_quality.cq_status_text(accepted)
