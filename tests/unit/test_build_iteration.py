@@ -102,3 +102,62 @@ class TestMergeAddsAndEnriches:
         out, stat = server._merge_ir(_base(), new)
         assert stat["objects_added"] == 0 and stat["relations_added"] == 0
         assert len(out["objects"]) == 2 and len(out["relations"]) == 1
+
+
+class TestBuildHistory:
+    """构建历史:每轮一条、只增不改,继续构建时可回溯这张图是怎么建起来的。"""
+
+    def test_merge_appends_new_round_and_keeps_base_rounds(self):
+        base = _base()
+        base["build_history"] = [{"round": 1, "at": "2026-01-01T00:00:00", "request": "第一轮诉求"}]
+        base["build_manifest"] = {"created_at": "2026-01-01T00:00:00", "request": "第一轮诉求"}
+        new = {"objects": [{"name": "工单"}], "relations": [],
+               "build_manifest": {"created_at": "2026-01-02T00:00:00", "request": "补上工单",
+                                  "source": {"id": "demo"}, "skills": [], "cqs": [],
+                                  "method": "LLM 辅助提议", "evidence": {}}}
+        out, _ = server._merge_ir(base, new)
+        hist = out["build_history"]
+        assert [h["round"] for h in hist] == [1, 2]
+        assert hist[0]["request"] == "第一轮诉求"        # 底本轮次原样保留
+        assert hist[1]["request"] == "补上工单"
+        assert out["build_manifest"]["request"] == "补上工单"   # 最近一轮指向本轮
+
+    def test_merge_records_what_was_merged(self):
+        new = {"objects": [{"name": "工单"}], "relations": [_rel("工单", "订单", "candidate")],
+               "build_manifest": {"created_at": "t", "request": "补工单"}}
+        out, _ = server._merge_ir(_base(), new)
+        mg = out["build_history"][-1]["merge"]
+        assert mg["objects_added"] == 1 and mg["relations_added"] == 1
+
+    def test_merge_without_manifest_leaves_history_untouched(self):
+        base = _base(); base["build_history"] = [{"round": 1, "request": "原有"}]
+        out, _ = server._merge_ir(base, {"objects": [], "relations": []})
+        assert out["build_history"] == [{"round": 1, "request": "原有"}]
+
+
+class TestBaseContextBlock:
+    """继续构建时交给模型的已有本体上下文。"""
+
+    def test_empty_when_no_base(self):
+        assert server._base_context_block(None) == ""
+        assert server._base_context_block({"objects": []}) == ""
+
+    def test_lists_objects_relations_and_past_requests(self):
+        base = _base()
+        base["build_history"] = [{"round": 1, "request": "建订单与客户"}]
+        blk = server._base_context_block(base)
+        assert "订单" in blk and "客户" in blk
+        assert "[表:fact_order]" in blk                  # 绑表信息要带上,便于模型复用
+        assert "订单 关联 客户" in blk and "verified" in blk
+        assert "第1轮:建订单与客户" in blk
+        assert "不要重复提议" in blk and "沿用其原 name" in blk
+
+    def test_unbound_objects_marked(self):
+        blk = server._base_context_block({"objects": [{"name": "工厂"}], "relations": []})
+        assert "[未绑表]" in blk
+
+    def test_truncates_large_ontology(self):
+        big = {"objects": [{"name": f"o{i}"} for i in range(200)],
+               "relations": [_rel(f"o{i}", f"o{i+1}", "candidate") for i in range(150)]}
+        blk = server._base_context_block(big, max_objs=10, max_rels=5)
+        assert "另有 190 个对象未列出" in blk and "另有 145 条关系未列出" in blk

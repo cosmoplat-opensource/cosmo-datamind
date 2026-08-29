@@ -4314,11 +4314,47 @@ def build_built():
         sc = ir.get("scenario") or {}
         result = ((ir.get("build_quality") or {}).get("result") or
                   (ir.get("build_quality") or {}).get("gate") or "legacy")
+        hist = ir.get("build_history") if isinstance(ir.get("build_history"), list) else []
         out.append({"key": k, "name": sc.get("name") or k, "style": sc.get("style", ""),
                     "objects": len(g["nodes"]), "events": ev, "links": len(g["edges"]), "verified": ver,
                     "quality_result": result, "quality_gate": result,
+                    "rounds": len(hist),          # 构建轮次:让「继续构建」前就看得出这张图迭代过几轮
                     "ts": time.strftime("%m-%d %H:%M", time.localtime(os.path.getmtime(p)))})
     return jsonify(out)
+
+@app.get("/api/build/history/<key>")
+def build_history(key):
+    """一张本体的构建历程:每轮的诉求、数据源、技能与并入结果。
+
+    继续构建前先看得见「这张图是怎么建起来的」,才谈得上接着建;
+    历史存在产物里而非浏览器,换设备、换浏览器都还在。
+    """
+    k = re.sub(r"[^A-Za-z0-9_]", "", str(key or ""))[:40]
+    if not k.startswith("built_"):
+        return jsonify({"error": "仅支持自建本体(built_*)"}), 400
+    ir = _load_json(_confined(WORK, k + ".json"))
+    if not isinstance(ir, dict) or not ir.get("objects"):
+        return jsonify({"error": "本体不存在"}), 404
+    sc = ir.get("scenario") or {}
+    hist = ir.get("build_history") if isinstance(ir.get("build_history"), list) else []
+    rounds = []
+    for h in hist:
+        if not isinstance(h, dict): continue
+        mg = h.get("merge") or {}
+        rounds.append({"round": h.get("round"), "at": h.get("at"),
+                       "request": str(h.get("request") or "")[:2000],
+                       "source": (h.get("source") or {}).get("name") or "",
+                       "skills": h.get("skills") or [], "method": h.get("method") or "",
+                       "cq_count": len(h.get("cqs") or []),
+                       "tables": (h.get("evidence") or {}).get("tables"),
+                       "documents": (h.get("evidence") or {}).get("documents"),
+                       "merged": {kk: mg.get(kk) for kk in
+                                  ("objects_added", "relations_added", "relations_upgraded")} if mg else None})
+    return jsonify({"key": k, "name": sc.get("name") or k,
+                    "iterations": sc.get("iterations") or (len(rounds) or 1),
+                    "objects": len(ir.get("objects") or []),
+                    "relations": len(ir.get("relations") or []),
+                    "rounds": rounds})
 
 @app.post("/api/build/delete")
 def build_delete():
@@ -4627,7 +4663,41 @@ def _stability_annotate(first, second):
         r["stable"] = (s, t, str(r.get("verb") or "").strip()) in inter
     return {"jaccard": jac, "run1": len(a), "run2": len(b), "both": len(inter), "union": len(union)}, len(inter)
 
-def _llm_extract_ontology(q, ev, skills, cqs=None, log=None):
+def _base_context_block(base_ir, max_objs=120, max_rels=80):
+    """继续构建时给模型的已有本体上下文。
+
+    不给这段,模型每轮都从零提议:已有对象会被重复提出(靠名称去重才没进图),
+    已建立的关系会被再提一遍,而用户真正要补的部分反而淹没在重复里。给了之后
+    模型知道「这些已经有了」,才能把注意力放在缺口上。
+
+    历次建模诉求一并给出——「补上质量域」这类增量指令,脱离前几轮的语境无法理解。
+    体量做上限截断:已有本体可能上百对象,整份塞进提示词会挤掉表结构证据。
+    """
+    if not isinstance(base_ir, dict): return ""
+    objs = [o for o in (base_ir.get("objects") or []) if isinstance(o, dict) and o.get("name")]
+    rels = [r for r in (base_ir.get("relations") or []) if isinstance(r, dict)]
+    if not objs: return ""
+    lines = []
+    for o in objs[:max_objs]:
+        tb = o.get("table") or ""
+        lines.append(f"- {o['name']}({o.get('cn') or ''}){'[表:' + tb + ']' if tb else '[未绑表]'}")
+    more_o = f"\n  …另有 {len(objs) - max_objs} 个对象未列出" if len(objs) > max_objs else ""
+    rl = []
+    for r in rels[:max_rels]:
+        rl.append(f"- {r.get('source_concept')} {r.get('verb') or '关联'} {r.get('target_concept')}"
+                  f"({r.get('status') or 'candidate'})")
+    more_r = f"\n  …另有 {len(rels) - max_rels} 条关系未列出" if len(rels) > max_rels else ""
+    hist = [h for h in (base_ir.get("build_history") or []) if isinstance(h, dict)]
+    hl = "".join(f"\n  第{h.get('round')}轮:{str(h.get('request') or '')[:120]}" for h in hist[-6:])
+    return ("\n\n[本次是在已有本体上继续构建 —— 下列内容已经存在,不要重复提议]"
+            + (f"\n已建成对象({len(objs)} 个):\n" + "\n".join(lines) + more_o)
+            + (f"\n已建立关系({len(rels)} 条):\n" + "\n".join(rl) + more_r if rl else "")
+            + (f"\n历次建模诉求:{hl}" if hl else "")
+            + "\n要求:只提议上面**没有**的新对象与新关系,用于补齐本轮诉求指向的缺口;"
+              "已存在的对象若要被新关系引用,直接沿用其原 name(不要改名、不要另起同义对象)。")
+
+
+def _llm_extract_ontology(q, ev, skills, cqs=None, log=None, base_ir=None):
     """综合库结构与已解析文档/代码，提议 objects/relations(JSON)。
 
     ``cqs`` 为兼容既有调用保留，但验收 CQ 刻意不进入提议提示词：否则模型会按题目
@@ -4642,11 +4712,12 @@ def _llm_extract_ontology(q, ev, skills, cqs=None, log=None):
     refs_block = ("\n[引用但未解析的资产:" + "、".join(ev["refs"]) + "]") if ev["refs"] else ""
     _rp = _rejected_patterns()                       # 将人工否决模式作为后续提议的负例。
     bad_block = ("\n[已知误判模式(历史上被人审否决,勿再提议同类关系)]\n" + "\n".join("- " + x for x in _rp)) if _rp else ""
+    base_block = _base_context_block(base_ir)        # 迭代时把已建成的部分与历次诉求交给模型
     prompt = f"""你是企业本体自动抽取智能体,综合结构化库表与多源文档证据构建本体。
 建模目标:{q}
 {('建模建模规则:' + method) if method else ''}
 [数据库表结构（结构依据；对象优先绑定到这些实际存在的表）]
-    {ev['schema'][:12000]}{docs_block[:9000]}{refs_block}{bad_block}
+    {ev['schema'][:12000]}{docs_block[:9000]}{refs_block}{bad_block}{base_block}
 
 只输出一个 JSON(无其它文字):
     {{"objects":[{{"name":"英文标识(能对齐表名就用表名)","cn":"有业务意义的中文名","kind":"object|event|action|asset|role|ice(信息记录:目录/单据/地址/台账等,非物理实体)","table":"绑定的真实表名或 null;动作通常为 null","action_id":"仅当证据中明确出现系统已有动作标识时填写,否则 null","evidence":"抽取依据(来自哪张表/哪份文档及段落)","definition":"属加种差定义(如『销售订单是一种记录客户购买承诺的信息内容实体』);给不出严格定义就留空","example":"一个正例","counterExample":"一个易混淆的反例(如 报价单——尚无承诺)"}}],
@@ -4655,7 +4726,9 @@ def _llm_extract_ontology(q, ev, skills, cqs=None, log=None):
     _log(f"证据装配 · 库表 {len(ev.get('tab_cols') or {})} 张（结构文本 {len(ev['schema'][:12000])} 字）"
          f" · 文档/代码 {ev.get('n_docs', 0)} 份（{len(docs_block[:9000])} 字）"
          f" · 引用资产 {len(ev.get('refs') or [])} 项 · 技能规则 {len(method)} 字"
-         f" · 历史否决负例 {len(_rp)} 条 · 提示词合计 {len(prompt)} 字")
+         f" · 历史否决负例 {len(_rp)} 条"
+         + (f" · 已有本体上下文 {len(base_block)} 字" if base_block else "")
+         + f" · 提示词合计 {len(prompt)} 字")
     tried = 0
     for drv in _drv_order():
         if drv not in available(): continue
@@ -5134,6 +5207,21 @@ def _merge_ir(base, new):
         else:
             stat["relations_kept"] += 1                        # 否则保留原结论,不降级
 
+    # 构建历史:out 从底本深拷贝而来,带的是底本的历史;本轮的 manifest 挂在 new 上。
+    # 若不显式接上,新一轮问了什么就彻底丢失——继续构建将失去可追溯的过程记录。
+    new_mf = new.get("build_manifest")
+    if isinstance(new_mf, dict):
+        hist = out.get("build_history")
+        if not isinstance(hist, list): hist = []
+        rec = {"round": len(hist) + 1, "at": new_mf.get("created_at"),
+               "request": new_mf.get("request"), "source": new_mf.get("source"),
+               "skills": new_mf.get("skills"), "cqs": new_mf.get("cqs"),
+               "method": new_mf.get("method"), "evidence": new_mf.get("evidence"),
+               "merge": dict(stat)}                       # 本轮实际并入了什么,一并留痕
+        hist.append(rec)
+        out["build_history"] = hist[-50:]
+        out["build_manifest"] = new_mf                    # 最近一轮仍指向本轮
+
     sc = out.setdefault("scenario", {})
     sc["object_count"] = len(objs); sc["relation_count"] = len(rels)
     sc["adjudication_diagnostics"] = (new.get("scenario") or {}).get("adjudication_diagnostics") \
@@ -5190,6 +5278,16 @@ def _attach_build_manifest(ir, *, q, source_id, source_name, skills, cqs,
         "evidence": manifest_ev,
     }
     ir["build_manifest"] = manifest
+    # 追加式构建历史:每轮一条,只增不改。build_manifest 保留为「最近一轮」以兼容既有读取方,
+    # 但迭代场景下只看最近一轮就无从知道这张图是怎么一步步建起来的——继续构建时要把
+    # 历次诉求交给模型,也要在界面上让人看见,所以历史必须留在产物里而不是只存浏览器。
+    hist = ir.get("build_history")
+    if not isinstance(hist, list): hist = []
+    hist.append({"round": len(hist) + 1, "at": manifest["created_at"],
+                 "request": manifest["request"], "source": manifest["source"],
+                 "skills": manifest["skills"], "cqs": manifest["cqs"],
+                 "method": manifest["method"], "evidence": manifest["evidence"]})
+    ir["build_history"] = hist[-50:]           # 只留最近 50 轮,避免产物无限膨胀
     sc = ir.setdefault("scenario", {})
     sc["evidence"] = {"tables": manifest_ev["tables"], "docs": manifest_ev["documents"],
                       "refs": manifest_ev["references"], "files": manifest_ev["files"]}
@@ -5281,7 +5379,7 @@ def build_inquire():
         def _stream_extract():
             """把 LLM 抽取过程流出去：log → 过程输出面板；tick → 已用时长。返回抽取结果。"""
             got = None
-            for item in _bounded_stream(lambda lg: _llm_extract_ontology(q, ev, skills, cqs, log=lg), 640):
+            for item in _bounded_stream(lambda lg: _llm_extract_ontology(q, ev, skills, cqs, log=lg, base_ir=base_ir), 640):
                 if item[0] == "log":
                     yield sse({"type": "log", "text": item[1], "ts": _t.strftime("%H:%M:%S")})
                 elif item[0] == "tick":

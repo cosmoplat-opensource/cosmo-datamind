@@ -624,9 +624,12 @@ a{color:var(--acc)}
      <div id="bc_built"><div class="muted">暂无,构建后在此列出</div></div></div>
    </div>
    <div class="bc-main card">
-    <div id="bc_iter_bar" style="display:none;margin:0 0 8px;padding:7px 10px;border:1px solid #cfe0ff;background:#f2f7ff;border-radius:6px;font-size:12px;color:#24406e;align-items:center;gap:8px">
-     <span style="flex:1;min-width:0">在本体「<b id="bc_iter_nm"></b>」上继续构建 · 本轮只增补与升级,不删除既有结论</span>
-     <a href="#" style="font-size:11px;white-space:nowrap" onclick="event.preventDefault();bcIterClear()">改为新建本体</a></div>
+    <div id="bc_iter_bar" style="display:none;margin:0 0 8px;padding:7px 10px;border:1px solid #cfe0ff;background:#f2f7ff;border-radius:6px;font-size:12px;color:#24406e">
+     <div style="display:flex;align-items:center;gap:8px">
+      <span style="flex:1;min-width:0">在本体「<b id="bc_iter_nm"></b>」上继续构建 · 本轮只增补与升级,不删除既有结论</span>
+      <a href="#" style="font-size:11px;white-space:nowrap" onclick="event.preventDefault();bcIterHist()">构建历程 <span id="bc_iter_ar">▾</span></a>
+      <a href="#" style="font-size:11px;white-space:nowrap" onclick="event.preventDefault();bcIterClear()">改为新建本体</a></div>
+     <div id="bc_iter_hist" style="display:none;margin-top:7px;padding-top:7px;border-top:1px dashed #cfe0ff;font-size:11.5px;line-height:1.6"></div></div>
     <div class="bc-mhd"><span>构建对话 <span class="muted" id="bc_conv_n" style="font-weight:400"></span></span>
      <div style="display:flex;gap:6px;position:relative">
       <button class="ghost" onclick="bcHistToggle()">历史对话 ▾</button>
@@ -2001,7 +2004,7 @@ async function bcBuilt(){const bs=await J('/api/build/built').catch(()=>[]);
  $('#bc_built_n').textContent='('+bs.length+')';
  $('#bc_built').innerHTML=bs.length?bs.map(b=>`<div class="bc-srow" style="cursor:default"><div style="flex:1;min-width:0">
    <div class="nm" style="cursor:pointer;color:var(--acc)" onclick="bcView(${jsAttr(b.key)})" title="在图谱中查看">${esc(b.name)}</div>
-   <div class="mt">${b.objects} 对象 · ${b.events} 事件 · ${b.links} 关系 · 数据已验证 ${b.verified} · 验收结果 ${esc(b.quality_result||b.quality_gate||'legacy')} · ${esc(b.ts)}</div></div>
+   <div class="mt">${b.objects} 对象 · ${b.events} 事件 · ${b.links} 关系 · 数据已验证 ${b.verified} · 验收结果 ${esc(b.quality_result||b.quality_gate||'legacy')}${b.rounds>1?' · 已构建 '+b.rounds+' 轮':''} · ${esc(b.ts)}</div></div>
    <a href="#" style="font-size:11px;white-space:nowrap;align-self:center;margin-right:8px" title="在这张本体上继续构建:本轮结果并入该图,已确立的结论不被覆盖,也不删除既有内容" onclick="event.preventDefault();bcIterate(${jsAttr(b.key)},${jsAttr(b.name)})">继续构建</a>
    <a href="#" style="font-size:11px;white-space:nowrap;align-self:center;margin-right:6px" title="把动词表/类型分布/定义风格沉淀为自定义技能" onclick="event.preventDefault();bcDistill(${jsAttr(b.key)},this)">沉淀为技能</a>
    <span class="x" title="删除(再点确认)" onclick="bcDelBuilt(${jsAttr(b.key)},this)">✕</span></div>`).join(''):'<div class="muted">暂无,构建后在此列出</div>';bcSyncHeight();}
@@ -2010,7 +2013,26 @@ function bcIterate(key,name){   // 在已构建本体上继续构建:设定底�
  const box=$('#bc_q');if(box){box.focus();
   if(!box.value.trim())box.placeholder='描述要补充的范围,例如「补上质量检测记录与产品、产线的关系」';}
  toast('已选定底本「'+(name||key)+'」,下一次构建将并入该本体',true);}
+async function bcIterHist(){   // 展开/收起该本体的构建历程(存在产物里,换浏览器也还在)
+ const box=$('#bc_iter_hist'),ar=$('#bc_iter_ar');
+ if(box.style.display!=='none'){box.style.display='none';ar.textContent='▾';return;}
+ box.style.display='block';ar.textContent='▴';box.innerHTML='<span class="muted">读取中…</span>';
+ const d=await J('/api/build/history/'+encodeURIComponent(BC.base)).catch(e=>({error:''+e}));
+ if(d.error){box.innerHTML='<span class="muted">读取失败:'+esc(d.error)+'</span>';return;}
+ const rs=d.rounds||[];
+ box.innerHTML=(rs.length?rs.map(r=>{
+   const mg=r.merged?` · 并入 +${r.merged.objects_added||0} 对象 / +${r.merged.relations_added||0} 关系`
+                      +(r.merged.relations_upgraded?` / 升级 ${r.merged.relations_upgraded} 条`:''):'';
+   return `<div style="margin-bottom:5px"><b>第 ${r.round} 轮</b> <span class="muted">${esc((r.at||'').slice(0,16).replace('T',' '))}</span>`
+    +`<div style="margin-left:2px">${esc(r.request||'(无记录)')}</div>`
+    +`<div class="muted" style="font-size:11px">数据源 ${esc(r.source||'—')} · 库表 ${r.tables??'—'} 张`
+    +(r.documents?` · 文档 ${r.documents} 份`:'')+(r.skills&&r.skills.length?` · 技能 ${esc(r.skills.join('、'))}`:'')
+    +(r.cq_count?` · CQ ${r.cq_count} 条`:'')+esc(mg)+`</div></div>`;}).join('')
+  :'<span class="muted">这张本体建于加入构建历程记录之前,没有留下逐轮记录。本轮起会开始记录。</span>')
+  +`<div class="muted" style="font-size:11px;margin-top:4px">当前 ${d.objects} 对象 / ${d.relations} 关系</div>`;}
 function bcIterClear(){BC.base='';BC.baseName='';bcIterSync();
+ const hb=$('#bc_iter_hist');if(hb){hb.style.display='none';hb.innerHTML='';}
+ const ar=$('#bc_iter_ar');if(ar)ar.textContent='▾';
  const box=$('#bc_q');if(box)box.placeholder='描述你的建模诉求…';}
 function bcIterSync(){const bar=$('#bc_iter_bar');if(!bar)return;
  // 迭代目标只对「本体名称」输入框有约束:迭代时名称由底本决定,填了也不会生效,故禁用避免误解

@@ -92,7 +92,7 @@ Cosmo DataMind 是「数据治理 × 本体 × 深度问数」原型：
 - `SPEC.md` — 对**平台** web/ 的逆向规格(平台契约,非 DataMind;前缀不同勿混用)。
 
 ## 现状校准
-- 计数(2026-08-28):**123 路由**(server.py 118 + bp_engine 5)/ **541 集成断言** /
+- 计数(2026-08-28):**124 路由**(server.py 119 + bp_engine 5)/ **541 集成断言** /
   **284 项单元测试** / DR-001…DR-050 · IR-001…IR-011。
   新增共享层 `srv_context`/`srv_engine`、单一裁决核 `dao_core`、评测台 `hallucination_eval`/`definition_eval`、
   持久化抽象 `store`、首个 blueprint `bp_engine`。

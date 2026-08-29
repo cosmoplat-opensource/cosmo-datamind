@@ -9,7 +9,7 @@
 │  前端 (ui/index.html, 单页, 原生 JS)                          │
 │   26 页 × hash 路由 · G6 图谱 · ECharts · 统一助手 $/esc/J    │
 ├─────────────────────────────────────────────────────────────┤
-│  HTTP 层 (Flask, 单端口 8092) · 共 123 路由                    │
+│  HTTP 层 (Flask, 单端口 8092) · 共 124 路由                    │
 │   server.py 117 路由 + bp_engine.py 5 路由(blueprint, DR-043)│
 │   app 级 before_request CSRF 守卫(对 blueprint 同样生效)      │
 │   共享层: srv_context(路径/只读连接/原子写/写锁)              │
