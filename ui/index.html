@@ -624,6 +624,9 @@ a{color:var(--acc)}
      <div id="bc_built"><div class="muted">暂无,构建后在此列出</div></div></div>
    </div>
    <div class="bc-main card">
+    <div id="bc_iter_bar" style="display:none;margin:0 0 8px;padding:7px 10px;border:1px solid #cfe0ff;background:#f2f7ff;border-radius:6px;font-size:12px;color:#24406e;align-items:center;gap:8px">
+     <span style="flex:1;min-width:0">在本体「<b id="bc_iter_nm"></b>」上继续构建 · 本轮只增补与升级,不删除既有结论</span>
+     <a href="#" style="font-size:11px;white-space:nowrap" onclick="event.preventDefault();bcIterClear()">改为新建本体</a></div>
     <div class="bc-mhd"><span>构建对话 <span class="muted" id="bc_conv_n" style="font-weight:400"></span></span>
      <div style="display:flex;gap:6px;position:relative">
       <button class="ghost" onclick="bcHistToggle()">历史对话 ▾</button>
@@ -1953,11 +1956,13 @@ function dqOpen(id){const c=dqAllConv().find(x=>x.id===id);if(!c)return;dqAbort(
  const _lt=c.turns[c.turns.length-1];dqAncBar(_lt&&_lt.d&&_lt.d.anchor);
  dqRenderHist();s.scrollTop=1e9;}
 // ══════ 本体构建·问询台 ══════
-const BC={src:'demo',srcName:'示例主库',skills:new Set(['ontology-semi-auto']),welcomed:false,def:{},turns:0};
+const BC={src:'demo',srcName:'示例主库',skills:new Set(['ontology-semi-auto']),welcomed:false,def:{},turns:0,base:'',baseName:''};
 function bcNew(){if(BC_BUSY){toast('构建进行中,请稍候再新建');return;}
  bcSaveConv();                                             // 先把当前对话存入历史
  (BC._viz||[]).forEach(gr=>{try{gr.destroy();}catch(_){}});BC._viz=[];   // 销毁本轮对话内 G6 预览实例,防泄漏
- BC_CONV=null;BC.welcomed=false;BC.turns=0;$('#bc_conv_n').textContent='';$('#bc_log').innerHTML='';bcWelcome();
+ BC_CONV=null;BC.welcomed=false;BC.turns=0;$('#bc_conv_n').textContent='';$('#bc_log').innerHTML='';
+ bcIterClear();                                            // 新对话即新任务,不沿用上一轮的迭代底本
+ bcWelcome();
  if(BC.def&&BC.def.build_name&&!$('#bc_name').value)$('#bc_name').value=BC.def.build_name;
  if(BC.def&&BC.def.build_query&&!$('#bc_q').value)$('#bc_q').value=BC.def.build_query;
  $('#bc_q').focus();}
@@ -1997,8 +2002,23 @@ async function bcBuilt(){const bs=await J('/api/build/built').catch(()=>[]);
  $('#bc_built').innerHTML=bs.length?bs.map(b=>`<div class="bc-srow" style="cursor:default"><div style="flex:1;min-width:0">
    <div class="nm" style="cursor:pointer;color:var(--acc)" onclick="bcView(${jsAttr(b.key)})" title="在图谱中查看">${esc(b.name)}</div>
    <div class="mt">${b.objects} 对象 · ${b.events} 事件 · ${b.links} 关系 · 数据已验证 ${b.verified} · 验收结果 ${esc(b.quality_result||b.quality_gate||'legacy')} · ${esc(b.ts)}</div></div>
+   <a href="#" style="font-size:11px;white-space:nowrap;align-self:center;margin-right:8px" title="在这张本体上继续构建:本轮结果并入该图,已确立的结论不被覆盖,也不删除既有内容" onclick="event.preventDefault();bcIterate(${jsAttr(b.key)},${jsAttr(b.name)})">继续构建</a>
    <a href="#" style="font-size:11px;white-space:nowrap;align-self:center;margin-right:6px" title="把动词表/类型分布/定义风格沉淀为自定义技能" onclick="event.preventDefault();bcDistill(${jsAttr(b.key)},this)">沉淀为技能</a>
    <span class="x" title="删除(再点确认)" onclick="bcDelBuilt(${jsAttr(b.key)},this)">✕</span></div>`).join(''):'<div class="muted">暂无,构建后在此列出</div>';bcSyncHeight();}
+function bcIterate(key,name){   // 在已构建本体上继续构建:设定底本并把焦点交回输入框
+ BC.base=key;BC.baseName=name||key;bcIterSync();
+ const box=$('#bc_q');if(box){box.focus();
+  if(!box.value.trim())box.placeholder='描述要补充的范围,例如「补上质量检测记录与产品、产线的关系」';}
+ toast('已选定底本「'+(name||key)+'」,下一次构建将并入该本体',true);}
+function bcIterClear(){BC.base='';BC.baseName='';bcIterSync();
+ const box=$('#bc_q');if(box)box.placeholder='描述你的建模诉求…';}
+function bcIterSync(){const bar=$('#bc_iter_bar');if(!bar)return;
+ // 迭代目标只对「本体名称」输入框有约束:迭代时名称由底本决定,填了也不会生效,故禁用避免误解
+ const nm=$('#bc_name');
+ if(BC.base){bar.style.display='flex';$('#bc_iter_nm').textContent=BC.baseName;
+  if(nm){nm.disabled=true;nm.dataset.ph=nm.dataset.ph||nm.placeholder;nm.placeholder='迭代时沿用底本名称';}}
+ else{bar.style.display='none';
+  if(nm){nm.disabled=false;if(nm.dataset.ph)nm.placeholder=nm.dataset.ph;}}}
 async function bcDistill(key,el){el.textContent='沉淀中…';   // 从已构建图谱归纳可复用技能。
  const d=await J('/api/build/skill/from_graph',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({graph:key})}).catch(e=>({error:''+e}));
  el.textContent='沉淀为技能';
@@ -2009,6 +2029,7 @@ async function bcDelBuilt(key,el){if(!BC_DEL_ARM[key]){BC_DEL_ARM[key]=1;toast('
   setTimeout(()=>{delete BC_DEL_ARM[key];},4000);return;}
  delete BC_DEL_ARM[key];
  await J('/api/build/delete',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key})});
+ if(BC.base===key)bcIterClear();          // 底本被删就解除选定,不留一个指向已不存在图谱的目标
  loaded.graph=0;bcBuilt();}
 function bcWelcome(){if(BC.welcomed)return;BC.welcomed=true;
  const egs=[['从售后与生产数据构建一张贯通「订单-产品-工单-客户」的制造运营本体','uploads'],
@@ -2185,7 +2206,8 @@ async function bcInquire(){if(BC_BUSY)return;const q=$('#bc_q').value.trim();if(
   if(procEl.open)procLog.scrollTop=1e9;};
  try{
   const resp=await fetch('/api/build/inquire',{method:'POST',headers:{'Content-Type':'application/json'},
-   body:JSON.stringify({q,source:BC.src,name:$('#bc_name').value,skills:[...BC.skills],cqs})});
+   body:JSON.stringify({q,source:BC.src,name:$('#bc_name').value,skills:[...BC.skills],cqs,
+    base_graph:BC.base||''})});
   const rd=resp.body.getReader();const dec=new TextDecoder();let buf='',done=null;
   while(true){const {done:fin,value}=await rd.read();if(fin)break;buf+=dec.decode(value,{stream:true});
    let i;while((i=buf.indexOf('\n\n'))>=0){const line=buf.slice(0,i).replace(/^data: /,'');buf=buf.slice(i+2);
