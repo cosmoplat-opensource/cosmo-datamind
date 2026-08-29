@@ -460,6 +460,43 @@ def _bounded_ex(fn, secs, default=None):
         return default, None, True
     return box["v"], box["err"], False
 
+def _bounded_stream(fn, secs, tick=2.0):
+    """有界执行的流式版本：fn(log) 在守护线程里跑，期间通过 log(text) 回报过程；
+    本生成器按到达顺序产出 ("log", text) 与 ("tick", 已用秒数)，结束时产出
+    ("done", 返回值, 异常或 None, 是否超时)。
+
+    动机：本体构建里的 LLM 抽取一跑就是两三分钟，此前只有一条静态状态文案，
+    用户看不到引擎在做什么、有没有卡死。这里把过程变成可流出的事件，前端折叠
+    展示；超时语义与 _bounded_ex 一致（超时不杀线程，只放弃等待）。"""
+    import queue as _q
+    qq = _q.Queue()
+    box = {"v": None, "err": None}
+    def log(text):
+        try: qq.put(("log", str(text)[:800]))
+        except Exception: pass
+    def run():
+        try: box["v"] = fn(log)
+        except Exception as e: box["err"] = e
+        finally: qq.put(("__end__", None))
+    t0 = time.time()
+    threading.Thread(target=run, daemon=True).start()
+    last_tick = t0
+    while True:
+        try:
+            kind, payload = qq.get(timeout=tick)
+        except _q.Empty:
+            kind, payload = None, None
+        if kind == "log":
+            yield ("log", payload)
+        elif kind == "__end__":
+            yield ("done", box["v"], box["err"], False); return
+        now = time.time()
+        if now - last_tick >= tick:
+            last_tick = now
+            yield ("tick", round(now - t0, 1))
+        if now - t0 > secs:
+            yield ("done", None, None, True); return
+
 # ── 深度问数编排(hermes/claude-code → SQL 计划 → 本地执行 → 洞察)──
 def _obj_key(o, i=0):
     """对象主键:示例 IR 用 id,构建产物用 name"""
@@ -4590,13 +4627,16 @@ def _stability_annotate(first, second):
         r["stable"] = (s, t, str(r.get("verb") or "").strip()) in inter
     return {"jaccard": jac, "run1": len(a), "run2": len(b), "both": len(inter), "union": len(union)}, len(inter)
 
-def _llm_extract_ontology(q, ev, skills, cqs=None):
+def _llm_extract_ontology(q, ev, skills, cqs=None, log=None):
     """综合库结构与已解析文档/代码，提议 objects/relations(JSON)。
 
     ``cqs`` 为兼容既有调用保留，但验收 CQ 刻意不进入提议提示词：否则模型会按题目
     造出可达路径，导致验收集泄漏。CQ 只在构建完成后由确定性检查消费。
+    ``log`` 为可选的过程回报回调（见 _bounded_stream）：证据装配规模、引擎与模型、
+    模型原始输出（引擎支持流式时按行回报）、解析结果，逐条回报给前端折叠面板。
     """
     from agent_runtime import get_runtime, available
+    _log = log or (lambda *_a, **_k: None)
     method = _skill_method_text(skills)
     docs_block = ("\n[上传的多源证据:建表代码/业务文档/知识片段]\n" + ev["docs"]) if ev["docs"] else ""
     refs_block = ("\n[引用但未解析的资产:" + "、".join(ev["refs"]) + "]") if ev["refs"] else ""
@@ -4612,18 +4652,61 @@ def _llm_extract_ontology(q, ev, skills, cqs=None):
     {{"objects":[{{"name":"英文标识(能对齐表名就用表名)","cn":"有业务意义的中文名","kind":"object|event|action|asset|role|ice(信息记录:目录/单据/地址/台账等,非物理实体)","table":"绑定的真实表名或 null;动作通常为 null","action_id":"仅当证据中明确出现系统已有动作标识时填写,否则 null","evidence":"抽取依据(来自哪张表/哪份文档及段落)","definition":"属加种差定义(如『销售订单是一种记录客户购买承诺的信息内容实体』);给不出严格定义就留空","example":"一个正例","counterExample":"一个易混淆的反例(如 报价单——尚无承诺)"}}],
   "relations":[{{"source":"对象name","target":"对象name","verb":"具体关系动词(归属/产生/包含/服务/触发…)","rationale":"依据","child_key":"可选:源表候选外键(复合键用逗号)","parent_key":"可选:目标表候选键(复合键用逗号)"}}]}}
     要求:①对象尽量绑定真实表;②由文档/流程明确描述的业务事件用 kind=event；明确描述的操作、审批、下发、创建任务等用 kind=action，并用关系连接其作用对象；不得仅凭表名批量编造动作;库存记录/地址/目录/单据等信息性条目用 kind=ice(IOF 信息内容实体,勿与物理实体混淆);③关系两端必须是上面列出的对象 name;④不虚构库表和文档中都没有的实体、动作或关系;⑤child_key/parent_key 只是待验证提示,只能填写上面 schema 真实存在的列,不得声称 verified;⑥**cn 必须是有业务意义的中文名**(如 客户 / 销售订单 / 退货事件 / 生产工单),优先复用表注释、上传文档/知识包(如看板指标口径)里的中文术语,严禁用拼音或直接照搬英文表名/键名做 cn;⑦**借鉴 IOF 定义规范**:definition 用「属加种差」句式;**非循环**——定义体不得复用被定义术语名本身及其中文名(如定义『销售订单』不得出现『销售订单』字样),须用上位类(属)+区别特征(种差)描述;counterExample 给一个会被误认成该对象、实则不是的反例(帮助后续取证辨伪);无法给出严格充要定义时 definition 留空即可(将被标为原始概念)。"""
+    _log(f"证据装配 · 库表 {len(ev.get('tab_cols') or {})} 张（结构文本 {len(ev['schema'][:12000])} 字）"
+         f" · 文档/代码 {ev.get('n_docs', 0)} 份（{len(docs_block[:9000])} 字）"
+         f" · 引用资产 {len(ev.get('refs') or [])} 项 · 技能规则 {len(method)} 字"
+         f" · 历史否决负例 {len(_rp)} 条 · 提示词合计 {len(prompt)} 字")
+    tried = 0
     for drv in _drv_order():
         if drv not in available(): continue
-        ok, reply = get_runtime(drv).run_turn(f"be_{uuid.uuid4().hex[:6]}", prompt, timeout=600)
+        tried += 1
+        rt = get_runtime(drv)
+        model = getattr(rt, "model", "") or ""
+        _log(f"调用引擎 {drv}{(' · 模型 ' + model) if model else ''}（单次上限 600s）…")
+        t0 = time.time()
+        sid = f"be_{uuid.uuid4().hex[:6]}"
+        if log is not None and hasattr(rt, "run_turn_stream"):
+            buf = {"s": "", "n": 0}
+            def _on(delta, _b=buf):
+                _b["s"] += delta
+                if "\n" in _b["s"] or len(_b["s"]) >= 240:
+                    _b["n"] += 1
+                    _log("│ " + _b["s"].rstrip("\n").replace("\n", "\n│ ")); _b["s"] = ""
+            # 思考增量按句/按块回报（前缀 ╎），让推理型模型的长时思考也可见；不入正文
+            # 节流：推理型模型的思考流每秒数句，逐句回报会把面板与 SSE 刷爆；
+            # 攒到 ≥700 字或距上次回报 ≥4s 才发一条（实测逐句回报达 452 条/2min，须压到每分钟几十条）
+            rbuf = {"s": "", "n": 0, "t": time.time()}
+            def _onr(delta, _b=rbuf):
+                _b["s"] += delta
+                now = time.time()
+                if len(_b["s"]) >= 700 or (now - _b["t"] >= 4.0 and len(_b["s"]) >= 60):
+                    _b["n"] += 1; _b["t"] = now
+                    _log("╎ 思考 · " + _b["s"].strip().replace("\n", " ")[:700]); _b["s"] = ""
+            ok, reply = rt.run_turn_stream(sid, prompt, timeout=600, on_delta=_on, on_reasoning=_onr)
+            if rbuf["s"].strip(): _log("╎ 思考 · " + rbuf["s"].strip().replace("\n", " ")[:400])
+            if rbuf["n"] or rbuf["s"].strip():
+                _log(f"思考阶段结束 · 共回报 {rbuf['n'] + (1 if rbuf['s'].strip() else 0)} 段")
+            if buf["s"]: _log("│ " + buf["s"])
+        else:
+            ok, reply = rt.run_turn(sid, prompt, timeout=600)
+        _log(f"引擎返回 · {'成功' if ok else '失败'} · {len(reply or '')} 字 · 用时 {time.time() - t0:.0f}s")
         if ok and reply and not _looks_like_error(reply):
             m = re.search(r"\{[\s\S]*\}", reply)
             if m:
                 try:
                     d = json.loads(m.group(0))
                     if isinstance(d.get("objects"), list) and d["objects"]:
+                        _log(f"解析 JSON 成功 · 提议对象 {len(d['objects'])} 个 · 关系 {len(d.get('relations') or [])} 条")
                         return d
-                except Exception:
-                    pass
+                    _log("解析结果不含对象，尝试下一引擎")
+                except Exception as e:
+                    _log(f"JSON 解析失败：{type(e).__name__}: {str(e)[:120]}")
+            else:
+                _log("回复中未找到 JSON 块")
+        else:
+            _log(f"引擎回复不可用：{(reply or '')[:160]}")
+    _log("未获得有效提议（尝试引擎 %d 个）→ 回退纯数据驱动构建" % tried if tried
+         else "无可用引擎 → 回退纯数据驱动构建")
     return None
 
 def _llm_semantic_review(relations, ev):
@@ -4727,6 +4810,7 @@ def _adjudicate_ir(db, name, extracted, ev):
 
     con = None
     query_errors = []
+    ungrounded = {"both": 0, "one": 0}      # 关系两端未绑真实表的计数,用于解释无法裁决的原因
     def record_query_error(operation, table="", column="", exc=None):
         if len(query_errors) < 100:
             query_errors.append({"operation": operation, "table": str(table)[:120],
@@ -4823,6 +4907,10 @@ def _adjudicate_ir(db, name, extracted, ev):
         status, overlap, note = "candidate", None, "LLM 提议·待取证"
         ev_keys = None                                # 最佳尝试也留结构化证据,不只给 verified 留痕
         ts, tt = name2tab.get(s), name2tab.get(t)
+        # 数据裁决的前提是两端都落到真实表上。统计未落地的情形,好让「verified 0 条」
+        # 可解释——用户否则无从区分「数据源太薄」与「裁决器坏了」。
+        if not ts and not tt: ungrounded["both"] += 1
+        elif not ts or not tt: ungrounded["one"] += 1
         child_hint = str(r.get("child_key") or "").strip()
         parent_hint = str(r.get("parent_key") or "").strip()
         if con and ts and tt:
@@ -4968,12 +5056,91 @@ def _adjudicate_ir(db, name, extracted, ev):
         rel["semantic_status"] = "model_supported" if v is True else ("disputed" if v is False else "not_reviewed")
         if v is False and rel["status"] == "verified":
             rel["note"] += ";语义评审存疑(数据证据成立但不得用于 CQ 强路径,须人审)"
+    # 无法进入数据裁决的原因诊断:关系两端必须都绑定到真实表才谈得上取值重叠与父键唯一。
+    # 数据源只有一两张表时,LLM 从文档抽出的对象大多没有对应表,关系必然全部停在 candidate。
+    # 这不是裁决器失效,但必须说清楚,否则用户只看到「verified 0 条」无从判断。
+    bound_objs = sum(1 for o in objects if o.get("table"))
+    diag = {"tables": len(tc), "objects": len(objects), "objects_bound": bound_objs,
+            "relations": len(relations),
+            "verified": sum(1 for r in relations if r["status"] == "verified"),
+            "unadjudicable_both_unbound": ungrounded["both"],
+            "unadjudicable_one_unbound": ungrounded["one"]}
+    blocked = ungrounded["both"] + ungrounded["one"]
+    if diag["verified"] == 0 and relations:
+        if len(tc) <= 1:
+            diag["reason"] = (f"数据源仅 {len(tc)} 张表,关系两端无法同时绑定到真实表,"
+                              "数据裁决不具备前提;关系只能停在 candidate。"
+                              "接入含多表且有外键/共享取值的数据源后可获得 verified。")
+        elif blocked >= max(1, len(relations) // 2):
+            diag["reason"] = (f"{blocked}/{len(relations)} 条关系至少有一端未绑定真实表"
+                              f"(共 {len(objects)} 个对象,仅 {bound_objs} 个绑到表)。"
+                              "这些对象来自文档抽取而非库表,无表可查即无从取证。")
+        else:
+            diag["reason"] = ("关系两端已绑表但均未通过判据:取值重叠未达阈值、"
+                              "父键不唯一或键名不相容。逐条依据见各关系的 note 与 evidence。")
     ir = {"scenario": {"name": name, "style": "multimodal-llm(多源LLM抽取+关系数据验证)",
                        "object_count": len(objects), "relation_count": len(relations),
                        "query_errors": query_errors,
+                       "adjudication_diagnostics": diag,
                        "evidence": {"tables": len(tc), "docs": ev["n_docs"], "refs": ev["refs"]}},
           "objects": objects, "relations": relations}
     return ir
+
+def _merge_ir(base, new):
+    """把新一轮构建结果并入既有本体,返回 (合并后 IR, 变更统计)。
+
+    构建对话原本每轮都新建一张图,已有本体无从迭代——用户提一句「补上客户与工单的
+    关系」就会得到一张互不相干的新图。此处按名称归并,并遵守两条不可退让的规则:
+
+    1. **已确立的结论不被新一轮覆盖。** 关系状态按 asserted > verified > inferred >
+       candidate 取高者:人审断言与已有数据证据都不因为模型这次没提到而降级或消失。
+    2. **新增只做补充,不做删除。** 模型本轮没提到的对象/关系一律保留;要删除得走
+       人审编辑(可撤销、有审计),不能由一次自由文本对话静默抹掉。
+
+    这样迭代才是「在原图上继续做」,而不是「重来一遍并丢掉上一轮的人工成果」。
+    """
+    rank = {"asserted": 3, "verified": 2, "inferred": 1, "candidate": 0}
+    out = json.loads(json.dumps(base))
+    objs = out.setdefault("objects", [])
+    rels = out.setdefault("relations", [])
+    by_obj = {o.get("name"): o for o in objs if o.get("name")}
+    by_rel = {(r.get("source_concept"), r.get("target_concept")): r for r in rels}
+    stat = {"objects_added": 0, "objects_enriched": 0,
+            "relations_added": 0, "relations_upgraded": 0, "relations_kept": 0}
+
+    for o in new.get("objects", []) or []:
+        nm = o.get("name")
+        if not nm: continue
+        cur = by_obj.get(nm)
+        if cur is None:
+            objs.append(o); by_obj[nm] = o; stat["objects_added"] += 1
+            continue
+        # 只补空字段:已有定义/反例/绑表等人工或前轮成果不被本轮覆盖
+        for k in ("definition", "example", "counterExample", "cn", "table", "remark"):
+            if not cur.get(k) and o.get(k):
+                cur[k] = o[k]; stat["objects_enriched"] += 1
+        if not cur.get("attrs") and o.get("attrs"):
+            cur["attrs"] = o["attrs"]; cur["field_count"] = len(o["attrs"])
+
+    for r in new.get("relations", []) or []:
+        pair = (r.get("source_concept"), r.get("target_concept"))
+        if not all(pair): continue
+        cur = by_rel.get(pair)
+        if cur is None:
+            rels.append(r); by_rel[pair] = r; stat["relations_added"] += 1
+            continue
+        if rank.get(r.get("status"), 0) > rank.get(cur.get("status"), 0):
+            cur.update(r); stat["relations_upgraded"] += 1     # 新一轮拿到更强证据才覆盖
+        else:
+            stat["relations_kept"] += 1                        # 否则保留原结论,不降级
+
+    sc = out.setdefault("scenario", {})
+    sc["object_count"] = len(objs); sc["relation_count"] = len(rels)
+    sc["adjudication_diagnostics"] = (new.get("scenario") or {}).get("adjudication_diagnostics") \
+        or sc.get("adjudication_diagnostics")
+    sc["iterations"] = int(sc.get("iterations") or 1) + 1
+    return out, stat
+
 
 def _normalize_build_cqs(value, limit=30):
     """API/UI 的 CQ 输入归一成 cq_check 可消费的 str/dict 列表。"""
@@ -5038,6 +5205,11 @@ def build_inquire():
     skills = body.get("skills") or []
     cqs = _normalize_build_cqs(body.get("cqs"))
     stability = bool(body.get("stability"))    # M1 opt-in:二次独立生成量化一致性(构建耗时翻倍)
+    # 在已有本体上迭代:给定则不新建图谱,而是把本轮结果并入该图(见 _merge_ir 的两条规则)。
+    # 只接受本仓构建产物 built_*,示例图与应用本体不允许被对话直接改写。
+    base_graph = re.sub(r"[^A-Za-z0-9_]", "", str(body.get("base_graph") or ""))[:40]
+    if base_graph and not base_graph.startswith("built_"):
+        return jsonify({"error": "只能在自建本体(built_*)上迭代"}), 400
     def sse(o): return "data: " + json.dumps(o, ensure_ascii=False, default=str) + "\n\n"
     def gen():
         import time as _t
@@ -5080,7 +5252,20 @@ def build_inquire():
             _nseg = sum(1 for s in skills if s in _builtin_skill_names() or s in _SKILL_METHOD or _custom_skill_path(s))
             yield push("skill_inject", bool(_mt), f"技能注入 · {_nseg} 段建模规则并入抽取 prompt(共 {len(_mt)} 字)" if _mt
                        else "技能注入 · 选中技能无可注入正文(内容为空?)")
-        key = "built_" + uuid.uuid4().hex[:6]; outp = _confined(WORK, key + ".json")
+        base_ir = None
+        if base_graph:
+            base_ir = load_ir(base_graph)
+            if not base_ir:
+                yield push("scope_base", False, f"本体「{base_graph}」不存在,无法迭代")
+                yield sse({"type": "error", "error": "待迭代的本体不存在"}); return
+            key = base_graph
+            _bo = len(base_ir.get("objects") or []); _br = len(base_ir.get("relations") or [])
+            yield push("scope_base", True,
+                       f"在已有本体「{(base_ir.get('scenario') or {}).get('name') or base_graph}」上迭代 · "
+                       f"现有对象 {_bo} 个 · 关系 {_br} 条(本轮只增补与升级,不删除既有结论)")
+        else:
+            key = "built_" + uuid.uuid4().hex[:6]
+        outp = _confined(WORK, key + ".json")
         # ① 多源证据聚合(库结构 + 上传文档/代码 + 图像引用)
         yield sse({"type": "status", "text": "聚合多源证据(库表结构 / 建表代码 / 业务文档 / 图像引用)…"})
         ev = _gather_evidence(db)
@@ -5093,13 +5278,30 @@ def build_inquire():
         ir = None
         # ② LLM 综合数据库结构和已解析文档提出候选本体。
         yield sse({"type": "status", "text": "智能引擎正在根据表结构与已解析文档提出对象和关系(约 2-4 分钟)…"})
-        extracted = _bounded(lambda: _llm_extract_ontology(q, ev, skills, cqs), 640)
+        def _stream_extract():
+            """把 LLM 抽取过程流出去：log → 过程输出面板；tick → 已用时长。返回抽取结果。"""
+            got = None
+            for item in _bounded_stream(lambda lg: _llm_extract_ontology(q, ev, skills, cqs, log=lg), 640):
+                if item[0] == "log":
+                    yield sse({"type": "log", "text": item[1], "ts": _t.strftime("%H:%M:%S")})
+                elif item[0] == "tick":
+                    yield sse({"type": "tick", "elapsed": item[1]})
+                else:
+                    _, got, _err, _to = item
+                    if _err:
+                        yield sse({"type": "log", "text": f"抽取异常：{type(_err).__name__}: {str(_err)[:160]}",
+                                   "ts": _t.strftime("%H:%M:%S")})
+                    if _to:
+                        yield sse({"type": "log", "text": "抽取超时（640s），放弃等待并回退数据驱动构建",
+                                   "ts": _t.strftime("%H:%M:%S")})
+            return got
+        extracted = yield from _stream_extract()
         if extracted and extracted.get("objects"):
             yield push("llm_extract", True, f"LLM 抽取 · 对象 {len(extracted.get('objects', []))} 个 · 提议关系 {len(extracted.get('relations', []))} 条")
             _stab = None
             if stability:      # M1:再独立生成一次,用 Jaccard 量化提议一致性(不作否决,仅记录+提示人审)
                 yield sse({"type": "status", "text": "一致性门控:第二次独立生成中(用于量化引擎方差,约 2-4 分钟)…"})
-                second = _bounded(lambda: _llm_extract_ontology(q, ev, skills, cqs), 640)
+                second = yield from _stream_extract()
                 if second and second.get("relations") is not None:
                     _stab, _both = _stability_annotate(extracted, second)
                     yield push("stability", True,
@@ -5128,7 +5330,11 @@ def build_inquire():
                 #   outp —— _confined(WORK, built_<uuid>.json),不含用户输入;
                 #   gname—— 已过 _safe_argv。
                 # 且以 list 形式调用(不经 shell),元字符不会被解释。
-                proc = subprocess.Popen([sys.executable, _confined(HERE, "quick_build.py"), db, outp, gname,
+                # 迭代模式下写到临时文件:quick_build 会整体覆盖目标文件,若直接写 outp,
+                # 一旦构建在写盘后、合并前失败(异常/无产物),用户的底本就被一份未合并的
+                # 新产物顶掉且无从恢复。底本必须等合并成功后再由 _atomic_json 一次性替换。
+                _bp = _confined(WORK, key + ".building.json") if base_ir is not None else outp
+                proc = subprocess.Popen([sys.executable, _confined(HERE, "quick_build.py"), db, _bp, gname,
                                          ACTION_TYPES_F],
                                         cwd=HERE, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
                 for line in iter(proc.stdout.readline, ""):
@@ -5137,7 +5343,10 @@ def build_inquire():
                 proc.wait(timeout=10)
             except Exception as e:
                 yield push("construct", False, f"构建异常:{str(e)[:90]}")
-            ir = _load_json(outp)
+            ir = _load_json(_bp)
+            if _bp != outp:
+                try: os.remove(_bp)                 # 中间产物不留在图谱目录里冒充一张图
+                except OSError: pass
         if not isinstance(ir, dict) or not ir.get("objects"):
             yield sse({"type": "error", "error": "构建失败(无产物)"}); return
         action_projection = action_ontology.project_registered_actions(ir, _load_ats())
@@ -5150,6 +5359,14 @@ def build_inquire():
             stability=stability, method=method,
             evidence={"tables": ntab, "docs": ev["n_docs"], "refs": ev["refs"], "files": ev["files"]},
             created_at=_t.strftime("%Y-%m-%dT%H:%M:%S%z"))
+        # ④′ 迭代模式:并入既有本体。放在验收检查之前,好让质量评估针对合并后的完整本体,
+        # 而不是只评估本轮增量——否则「本轮没提到的部分」会被算成缺失。
+        if base_ir is not None:
+            ir, _mg = _merge_ir(base_ir, ir)
+            yield push("merge", True,
+                       f"并入已有本体 · 新增对象 {_mg['objects_added']} 个 · 补全字段 {_mg['objects_enriched']} 处 · "
+                       f"新增关系 {_mg['relations_added']} 条 · 证据升级 {_mg['relations_upgraded']} 条 · "
+                       f"保留原结论 {_mg['relations_kept']} 条(已确立的 verified/asserted 不被覆盖)")
         # ⑤ 验收检查：图结构 + verified 证据契约 + 定义质量 + CQ 可达性，结果可重复。
         # quick_build 已先检查一次(无 CQ)；此处加入本轮 CQ 后重新计算。
         quality = build_quality.evaluate(ir, cqs)
@@ -5167,6 +5384,11 @@ def build_inquire():
         ver = sum(1 for l in rels if l.get("status") == "verified"); cand = len(rels) - ver
         yield push("verify", True, f"关系数据验证 · verified {ver} 条 · candidate/其它 {cand} 条 · "
                                   f"事件对象 {nev} 个 · 动作节点 {nact} 个")
+        # verified 为 0 时把成因一并说清。多数情况不是裁决失效,而是数据源里没有可对证的表;
+        # 只报一个 0 会让用户以为系统坏了,并且不知道下一步该做什么。
+        _diag = (ir.get("scenario") or {}).get("adjudication_diagnostics") or {}
+        if _diag.get("reason"):
+            yield push("verify_diagnosis", True, "未产生 verified 关系的原因:" + _diag["reason"])
         yield sse({"type": "status", "text": "智能引擎生成本体说明与建模摘要…"})
         summ = _bounded(lambda: _build_summary(q, gname, ir), 35) or _build_rule_summary(gname, ir)
         yield push("narrate", True, f"生成本体说明 · {len(summ)} 字")

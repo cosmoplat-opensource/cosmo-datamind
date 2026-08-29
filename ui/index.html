@@ -554,6 +554,14 @@ a{color:var(--acc)}
   .bc-trace .st .tm{color:#aab1bd;font-size:10.5px;flex:0 0 auto} .bc-trace .st .tx{flex:1}
   .bc-status{color:var(--acc);font-size:12px;padding:4px 0;display:flex;align-items:center;gap:6px}
   .bc-spin{width:11px;height:11px;border:2px solid #d5dcfb;border-top-color:var(--acc);border-radius:50%;animation:bcspin .7s linear infinite;display:inline-block}
+  .bc-status .el{color:var(--sub);font-size:11px;margin-left:2px}
+  .bc-proc{margin-top:6px;border-top:1px dashed #eef0f4;padding-top:4px}
+  .bc-proc summary{cursor:pointer;font-size:12px;color:var(--sub);user-select:none;list-style:none;display:flex;align-items:center;gap:6px}
+  .bc-proc summary::-webkit-details-marker{display:none}
+  .bc-proc summary .ar{display:inline-block;transition:transform .15s;font-size:10px}
+  .bc-proc[open] summary{color:var(--acc)} .bc-proc[open] summary .ar{transform:rotate(90deg)}
+  .bc-proclog{max-height:280px;overflow:auto;background:#FAFBFE;border:1px solid var(--line);border-radius:6px;padding:8px 10px;font-size:11.5px;line-height:1.55;white-space:pre-wrap;word-break:break-all;color:#334155;margin:6px 0 0;font-family:ui-monospace,Menlo,Consolas,monospace}
+  .bc-proclog .lt{color:#aab1bd;margin-right:6px} .bc-proclog .raw{color:#5b6b8a}
   @keyframes bcspin{to{transform:rotate(360deg)}}
   .bc-result{border:1px solid #d7defb;border-radius:12px;overflow:hidden;margin-bottom:12px;box-shadow:0 4px 16px rgba(74,95,243,.1)}
   .bc-result .hd{background:linear-gradient(120deg,#eef2ff,#f3efff);padding:11px 14px;font-weight:600;display:flex;align-items:center;justify-content:space-between}
@@ -2160,10 +2168,21 @@ async function bcInquire(){if(BC_BUSY)return;const q=$('#bc_q').value.trim();if(
  const log=$('#bc_log');
  log.insertAdjacentHTML('beforeend',`<div class="bc-user">${esc(q)}</div>`);
  const trace=document.createElement('div');trace.className='bc-trace';
- trace.innerHTML='<div class="bc-status"><span class="bc-spin"></span> 多智能体引擎接入…</div>';
+ trace.innerHTML='<div class="bc-steps"></div><div class="bc-status"><span class="bc-spin"></span> 多智能体引擎接入…</div>'
+  +'<details class="bc-proc" style="display:none"><summary><span class="ar">▶</span>过程输出 <span class="muted pn">0 行</span></summary><div class="bc-proclog"></div></details>';
  log.appendChild(trace);log.scrollTop=1e9;
- const steps=[];let status='';
- const draw=()=>{trace.innerHTML=steps.map(s=>`<div class="st">${BC_IC[!!s.ok]}<span class="tx">${esc(s.info||s.step)}</span><span class="tm">${esc(s.ts||'')}</span></div>`).join('')+(status?`<div class="bc-status"><span class="bc-spin"></span> ${esc(status)}</div>`:'');log.scrollTop=1e9;};
+ const stepsEl=trace.querySelector('.bc-steps'),statusEl=trace.querySelector('.bc-status'),
+       procEl=trace.querySelector('.bc-proc'),procLog=trace.querySelector('.bc-proclog'),procN=trace.querySelector('.pn');
+ const steps=[];let status='',elapsed=0,nlog=0;
+ const draw=()=>{stepsEl.innerHTML=steps.map(s=>`<div class="st">${BC_IC[!!s.ok]}<span class="tx">${esc(s.info||s.step)}</span><span class="tm">${esc(s.ts||'')}</span></div>`).join('');
+  statusEl.style.display=status?'flex':'none';
+  statusEl.innerHTML=status?`<span class="bc-spin"></span> ${esc(status)}${elapsed?`<span class="el">已用 ${Math.round(elapsed)}s</span>`:''}`:'';
+  log.scrollTop=1e9;};
+ // 过程输出：引擎在几分钟的抽取里做了什么（证据规模、引擎/模型、模型原始输出、解析结果），默认折叠
+ const pushLog=(ev)=>{nlog++;procEl.style.display='block';procN.textContent=nlog+' 行';
+  const raw=(ev.text||'').startsWith('│');
+  procLog.insertAdjacentHTML('beforeend',`<div class="${raw?'raw':''}"><span class="lt">${esc(ev.ts||'')}</span>${esc(ev.text||'')}</div>`);
+  if(procEl.open)procLog.scrollTop=1e9;};
  try{
   const resp=await fetch('/api/build/inquire',{method:'POST',headers:{'Content-Type':'application/json'},
    body:JSON.stringify({q,source:BC.src,name:$('#bc_name').value,skills:[...BC.skills],cqs})});
@@ -2171,11 +2190,14 @@ async function bcInquire(){if(BC_BUSY)return;const q=$('#bc_q').value.trim();if(
   while(true){const {done:fin,value}=await rd.read();if(fin)break;buf+=dec.decode(value,{stream:true});
    let i;while((i=buf.indexOf('\n\n'))>=0){const line=buf.slice(0,i).replace(/^data: /,'');buf=buf.slice(i+2);
     if(!line)continue;let ev;try{ev=JSON.parse(line);}catch(_){continue;}
-    if(ev.type==='step'){steps.push(ev);status='';draw();}
-    else if(ev.type==='status'){status=ev.text;draw();}
+    if(ev.type==='step'){steps.push(ev);status='';elapsed=0;draw();}
+    else if(ev.type==='status'){status=ev.text;elapsed=0;draw();}
+    else if(ev.type==='log'){pushLog(ev);}
+    else if(ev.type==='tick'){elapsed=ev.elapsed||0;draw();}
     else if(ev.type==='error'){status='';draw();trace.insertAdjacentHTML('beforeend',`<div class="tag warn" style="margin-top:8px">构建失败:${esc(ev.error||'')}</div>`);}
     else if(ev.type==='done'){done=ev;}}}
   status='';draw();
+  if(nlog)procN.textContent=nlog+' 行 · 可展开回看';
   if(done){$('#bc_name').value='';
    bcRenderResult(log,done);
    // 存入当前构建对话并持久化(供历史对话)
