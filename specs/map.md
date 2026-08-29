@@ -88,11 +88,11 @@ Cosmo DataMind 是「数据治理 × 本体 × 深度问数」原型：
 - `README.md` — 模块能力总览与实测部署命令。
 - `ARCHITECTURE.md` — 分层/数据流/统一约定/安全模型/已知边界(架构说明)
 - `AUDIT.md` — 逐轮自测/复审记录(IR 的原始日志,已归纳进 iterations/)。
-- `test_all.py` — 系统级回归，源码定义 535 个检查点。
+- `test_all.py` — 系统级回归，源码定义 541 个检查点。
 - `SPEC.md` — 对**平台** web/ 的逆向规格(平台契约,非 DataMind;前缀不同勿混用)。
 
 ## 现状校准
-- 计数(2026-08-28):**122 路由**(server.py 117 + bp_engine 5)/ **535 集成断言** /
+- 计数(2026-08-28):**123 路由**(server.py 118 + bp_engine 5)/ **541 集成断言** /
   **284 项单元测试** / DR-001…DR-050 · IR-001…IR-011。
   新增共享层 `srv_context`/`srv_engine`、单一裁决核 `dao_core`、评测台 `hallucination_eval`/`definition_eval`、
   持久化抽象 `store`、首个 blueprint `bp_engine`。
@@ -192,7 +192,7 @@ Consult @specs/map.md to find relevant context.
   0 宽,描述逐字竖排(单卡高 557px)。元素齐全故计数类断言全绿 —— 改用几何量守住。
   顺势把几何判据推到全站(26 页 × 9 弹窗 × 两种视口扫一遍):另修表格单元格
   260px 截断后无从看全文(悬停按需补 title)、评审图谱下拉被固定宽度切掉计数。
-  套件 535 条静态断言(本轮环境实际执行 531/531) · UI 走查 64/64 · UI 实操 45/45，
+  套件 541 条静态断言(有引擎环境实际执行 535/535,无引擎 527 通过/8 条件跳过) · UI 走查 64/64 · UI 实操 45/45，
   另有 3 项因未配置 OpenAI 兼容端点而按条件跳过。
 - **快速入门可跑通**(QUICKSTART.md):示例库 SQL → quick_build → 选本体 → 问出数,
   全程无上游引擎。过程中修出四处断链:垫片不承载 driver 注册(配了 key 也拿不到运行时)、

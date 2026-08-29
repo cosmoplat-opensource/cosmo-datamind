@@ -19,12 +19,32 @@ def _sane(s, cap=300):
     """
     return _CTRL.sub("?", str(s))[:cap]
 
-P=F=0; fails=[]
+P=F=0; fails=[]; skips=[]
 def chk(name, cond, detail=""):
     global P,F
     if cond: P+=1
     else: F+=1; fails.append(f"{name}: {_sane(detail)}")
     print(f"  {'✓' if cond else '✗ FAIL'} {name}" + (f"  [{_sane(detail)}]" if not cond else ""))
+
+def skip(name, why):
+    """条件跳过:环境未提供可选依赖,不是代码缺陷。
+
+    与 fail 分开计数,但必须逐条列出——「环境未配」不得让覆盖面悄悄缩水。
+    与 test_ui_ops.py 的 ⊘ 范式一致。
+    """
+    skips.append(f"{name} :: {why}")
+    print(f"  ⊘ {name} :: {why}(环境未提供,跳过)")
+
+def chk_engine(name, cond, detail=""):
+    """需要上游本体引擎的检查:引擎不可用时记跳过,可用时照常判定。
+
+    背景:编辑算子(apply/undo)与引擎技能由上游 ontology-engine 提供,
+    它是可选组件、不随本仓发布。开源用户克隆后没有它,这些检查必然不通过——
+    那是预期结果而非回归。CI 已把集成套件设为强制阻断,若不区分二者,
+    CI 会因为「缺少可选依赖」而恒红,强制阻断也就失去意义。
+    """
+    if _ENGINE_READY: chk(name, cond, detail)
+    else: skip(name, "上游本体引擎不可用")
 
 def _url(path):
     """只允许拼相对路径,且拼出来的地址必须仍在被测主机上。
@@ -137,6 +157,16 @@ _at0.register(_sandbox_teardown)
 if not _SBX_OK:
     sys.exit(2)
 
+# 上游本体引擎可用性探测。引擎是可选组件、不随本仓发布(见 ARCHITECTURE §5.1),
+# 缺失时编辑算子与引擎技能必然不可用。此处一次探明,后续用 chk_engine 区分
+# 「缺可选依赖」与「真回归」——否则 CI 的强制阻断会因环境而恒红。
+try:
+    _ec0 = requests.get(B + "/api/engine/config", timeout=20).json()
+    _ENGINE_READY = bool(_ec0.get("driver") and _ec0["driver"] in (_ec0.get("runtimes") or []))
+except Exception:
+    _ENGINE_READY = False
+print(f"上游本体引擎: {'可用' if _ENGINE_READY else '不可用(相关检查将条件跳过)'}")
+
 print("=== A. 元/健康 ===")
 r=g("/api/health"); chk("health 200+ok", r.status_code==200 and r.json().get("ok"))
 r=g("/api/db/check"); chk("db/check 200", r.status_code==200 and r.json().get("ok"))
@@ -185,10 +215,10 @@ r=g("/api/ont/runtimes"); chk("runtimes", r.status_code==200 and "runtimes" in r
 print("=== E. 编辑/写(含清理)===")
 # apply rename → undo → rebuild
 r=po("/api/ont/apply",json={"graph":SANDBOX,"op":{"op":"rename","target":"obj:"+g(f"/api/graph/{SANDBOX}").json()["nodes"][0]["id"],"params":{"cn":"__test改名__"},"reason":"test"}})
-chk("apply rename ok", r.status_code==200 and r.json().get("ok"))
+chk_engine("apply rename ok", r.status_code==200 and r.json().get("ok"))
 r=po("/api/ont/apply",json={"graph":SANDBOX,"op":{"op":"非法算子","target":"obj:x","params":{}}})
-chk("apply 非白名单→400", r.status_code==400)
-r=po("/api/ont/undo",json={"graph":SANDBOX}); chk("undo ok", r.status_code==200)
+chk_engine("apply 非白名单→400", r.status_code==400)
+r=po("/api/ont/undo",json={"graph":SANDBOX}); chk_engine("undo ok", r.status_code==200)
 # 重建是破坏性动作(丢弃整个草案层,undo 退不回来),必须带 confirm —— 见 QS16c
 r=po("/api/ont/rebuild",json={"graph":SANDBOX,"confirm":True})
 chk("rebuild 清草案", r.status_code==200 and r.json().get("ok"))
@@ -227,12 +257,12 @@ chk("sparql 12并发全200(线程安全)", all(c==200 for c in _codes))
 r=g("/api/outputs/file?p=/etc/passwd"); chk("outputs 穿越→403", r.status_code==403)
 
 print("=== H. 技能/工具/作业 ===")
-r=g("/api/skills"); chk("skills 列表", r.status_code==200 and len(r.json())>=5)
+r=g("/api/skills"); chk_engine("skills 列表", r.status_code==200 and len(r.json())>=5)
 r=po("/api/skill/run",json={"name":"nope"}); chk("skill 无run.sh→400", r.status_code==400)
 r=g("/api/jobs"); chk("jobs 列表", r.status_code==200 and isinstance(r.json(),list))
 r=g("/api/job/nosuchjid"); chk("job 不存在→404", r.status_code==404)
 r=g("/api/outputs"); chk("outputs 列表", r.status_code==200)
-r=g("/api/ont/skill/gov-app-ontology-build"); chk("skill 详情", r.status_code==200)
+r=g("/api/ont/skill/gov-app-ontology-build"); chk_engine("skill 详情", r.status_code==200)
 r=g("/api/ont/skill/bad@name"); chk("skill 非法名→400", r.status_code==400)
 
 print("=== I. 平台代理 ===")
@@ -287,7 +317,7 @@ r=po("/api/build/delete",json={"key":"../etc/passwd"},headers=H); chk("删除本
 r=po("/api/sparql",json={"graph":"forged_../../../cosmo-datamind/workdir/demo_ir","query":"SELECT ?s WHERE{?s ?p ?o}"},headers=H)
 chk("SPARQL forged_ 路径穿越→404", r.status_code==404)
 r=po("/api/ont/apply",json={"graph":"../../../tmp/evil","op":{"op":"rename","target":"obj:x","params":{"cn":"y"}}},headers=H)
-chk("apply 穿越图谱键→拒", r.status_code in (400,404) and not __import__('os').path.exists('/tmp/edits_../../../tmp/evil.json'))
+chk_engine("apply 穿越图谱键→拒", r.status_code in (400,404) and not __import__('os').path.exists('/tmp/edits_../../../tmp/evil.json'))
 r=po("/api/sparql",json={"graph":"demo","query":"SELECT ?s FROM <file:///etc/hosts> WHERE{?s ?p ?o}"},headers=H)
 chk("SPARQL FROM file:// →拒", r.status_code==400)
 
@@ -466,7 +496,7 @@ _mp.stdin.close(); _mp.terminate()
 # ═══════════ T. 引擎设置(DR-017)═══════════
 print("=== T. 引擎设置(DR-017)===")
 r=g("/api/engine/config"); _ec=r.json()
-chk("engine config 200", r.status_code==200 and _ec["driver"] in _ec["runtimes"])
+chk_engine("engine config 200", r.status_code==200 and _ec["driver"] in _ec["runtimes"])
 chk("模型选项含 claude-opus-5", "claude-opus-5" in _ec["model_options"]["claude-code"])
 chk("keys 全掩码(不回显明文)", all(("*" in v or v=="") for v in _ec["keys"].values()))
 r=po("/api/engine/config",json={"driver":"nope"}); chk("非法运行时→400", r.status_code==400)
@@ -1008,6 +1038,24 @@ chk("Z11 上传并发不死锁", all(c==200 for c in _codes))
 _r12=po("/api/ont/chats/new",json={},headers=H)
 chk("Z12 锁未泄漏(持写锁端点仍可用)", _r12.status_code==200 and _r12.json().get("id"))
 po("/api/ont/chats/delete",json={"id":_r12.json().get("id","")},headers=H)   # 清理测试产生的会话
+# /api/build/asset/delete:删文件 + 同步 DROP 由 CSV 生成的上传表;穿越名与不存在名安全返回
+r=po("/api/build/upload",files={"files":("__zz_del.csv",_csvdata,"text/csv")},headers=H)
+chk("Z11a asset/delete 前置上传成功", r.status_code==200)
+import sqlite3 as _sq0
+_wdD=_WD0
+r=po("/api/build/asset/delete",json={"name":"__zz_del.csv"},headers=H)
+_cD=_sq0.connect(_os.path.join(_wdD,"uploads.db"))
+_tabsD=[x[0] for x in _cD.execute("SELECT name FROM sqlite_master WHERE type='table'")];_cD.close()
+chk("Z11b asset/delete 文件与表同步删除",
+    r.status_code==200 and r.json().get("ok")
+    and r.json().get("dropped_table")=="__zz_del"
+    and not _os.path.exists(_os.path.join(_wdD,"uploads___zz_del.csv"))
+    and "__zz_del" not in _tabsD)
+r=po("/api/build/asset/delete",json={"name":"__zz_del.csv"},headers=H)
+chk("Z11c asset/delete 不存在→404", r.status_code==404)
+r=po("/api/build/asset/delete",json={"name":"../../etc/passwd"},headers=H)
+chk("Z11d asset/delete 穿越名被消解(404 而非越界删除)",
+    r.status_code==404 and _os.path.exists("/etc/passwd"))
 # Z 节自清理:上传测试会在 workdir 落文件、在 uploads.db 建表,不清理则每跑一次堆积一批
 import sqlite3 as _sq, glob as _gl
 _wd2=_WD0
@@ -1207,7 +1255,7 @@ chk("AO3 锚定不同本体→召回集不同",
     {o["table"] for o in _t1["objects"]} != {o["table"] for o in _t0["objects"]})
 chk("AO4 召回对象数远小于本体规模(是锚定不是全量倾倒)",
     0 < len(_t1["objects"]) < _t1["ontology"]["objects"])
-chk("AO5 上游引擎本体也能锚定并给出关系",
+chk_engine("AO5 上游引擎本体也能锚定并给出关系",
     _t2["ontology"]["keys"] == ["cq"] and len(_t2["objects"]) > 0)
 chk("AO6 命中证据记录了是哪个词钓出该对象",
     any(o.get("hits") for o in _t1["objects"]))
@@ -1574,8 +1622,12 @@ try:
 except Exception as _e:
     chk("AN15 截断策略探针", False, f"node 探针失败: {_e} / {_o2.stdout[:120] if '_o2' in dir() else ''}")
 
-print(f"\n{'='*40}\n结果: {P} 通过 / {F} 失败")
+print(f"\n{'='*40}\n结果: {P} 通过 / {F} 失败 / {len(skips)} 条件跳过")
 if fails:
     print("失败清单:")
     for x in fails: print("  ✗",x)
+if skips:
+    # 逐条列出,不让「环境未提供」把覆盖面悄悄缩水
+    print("条件跳过清单(环境未提供可选依赖,非代码缺陷):")
+    for x in skips: print("  ⊘",x)
 sys.exit(1 if F else 0)

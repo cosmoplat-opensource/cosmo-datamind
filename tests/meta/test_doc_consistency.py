@@ -11,8 +11,8 @@ import pathlib
 ROOT = pathlib.Path(__file__).resolve().parents[2]
 
 # 规范值(单一事实源)。改动路由/断言数时,必须同步改这里 + ARCHITECTURE.md/specs/map.md。
-EXPECT_ROUTES = 122
-EXPECT_ASSERTIONS = 535
+EXPECT_ROUTES = 123
+EXPECT_ASSERTIONS = 541
 
 
 def _server_route_count():
@@ -28,8 +28,13 @@ def _server_route_count():
 
 
 def _assertion_count():
+    """断言调用点 = chk( 与 chk_engine( 之和。
+
+    chk_engine 是「需上游引擎、缺失时条件跳过」的断言,同样是覆盖面的一部分;
+    只数 chk( 会让这类断言在计数上凭空消失,把「改成条件跳过」误报成「删了断言」。
+    """
     src = (ROOT / "test_all.py").read_text(encoding="utf-8")
-    return src.count("chk(")
+    return src.count("chk(") + src.count("chk_engine(")
 
 
 def test_route_count_matches_canonical():

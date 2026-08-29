@@ -533,6 +533,8 @@ a{color:var(--acc)}
   .bc-assets{display:flex;flex-wrap:wrap;gap:5px;max-height:120px;overflow:auto}
   .bc-chip{display:inline-flex;align-items:center;gap:4px;background:#F4F6FB;border:1px solid var(--line);border-radius:9999px;padding:2px 9px;font-size:11px}
   .bc-chip b{font-weight:600;background:#EEF2FF;color:#4A5FF3;border-radius:9999px;padding:0 6px;font-size:10px}
+  .bc-chip .use{font-size:10px;color:#94a3b8}
+  .bc-chip .x{cursor:pointer;color:#c0c6d0;font-size:12px;padding:0 1px}.bc-chip .x:hover{color:#b91c1c}
   .bc-mod-文档 b{background:#FCF1DE;color:#F4B13D}.bc-mod-图像 b{background:#E8F7EE;color:#22a058}.bc-mod-代码 b{background:#F0EBFB;color:#7c50e6}.bc-mod-音频 b{background:#FDEBEF;color:#e05377}
   .bc-skcard{display:flex;gap:8px;align-items:flex-start;padding:7px 8px;border:1px solid var(--line);border-radius:8px;margin-bottom:6px;cursor:pointer;transition:.15s}
   .bc-skcard:hover{border-color:var(--acc)} .bc-skcard.on{border-color:var(--acc);background:#EEF2FF}
@@ -2026,7 +2028,7 @@ async function bcSources(){const d=await J('/api/build/sources').catch(()=>({sou
    <div style="flex:1;min-width:0"><div class="nm">${esc(s.name)}</div><div class="mt">${esc(meta)}</div></div>${del}</div>`;}).join('');
  // 辅助资料；未解析格式只登记来源。
  const as=d.assets||[];$('#bc_asset_n').textContent='('+as.length+')';
- $('#bc_assets').innerHTML=as.length?as.map(a=>`<span class="bc-chip bc-mod-${esc(a.modality)}"><b>${esc(a.modality)}</b>${esc(a.name)} <span class="muted">${a.kb}KB</span></span>`).join(''):'<span class="muted">尚无上传</span>';
+ $('#bc_assets').innerHTML=as.length?as.map(a=>`<span class="bc-chip bc-mod-${esc(a.modality)}" title="${a.usable?'构建时将读入为证据文本（前 3500 字符）':'未解析格式：仅登记来源，不作为已读取证据'}"><b>${esc(a.modality)}</b>${esc(a.name)} <span class="muted">${a.kb}KB</span><span class="use">${a.usable?'· 证据':'· 仅登记'}</span><span class="x" title="删除该资料" onclick="bcDelAsset(${jsAttr(a.name)})">✕</span></span>`).join(''):'<span class="muted">尚无上传</span>';
  const cur=(d.sources||[]).find(s=>s.id===BC.src);if(cur){BC.srcName=cur.name;$('#bc_cur_src').textContent=cur.name;}a11yScan();bcSyncHeight();}
 function bcSelectSrc(id){BC.src=id;const s=(BC._sources||[]).find(x=>x.id===id);BC.srcName=s?s.name:id;
  $('#bc_cur_src').textContent=BC.srcName;
@@ -2144,6 +2146,11 @@ async function bcConnect(){const kind=$('#bcc_kind').value;
 async function bcDelConn(id){if(!confirm('移除该连接?'))return;
  await J('/api/build/connect/delete',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id})});
  if(BC.src===id){BC.src='uploads';}bcSources();}
+async function bcDelAsset(name){
+ if(!confirm('删除资料「'+name+'」？由 CSV/TSV 生成的上传表将一并移除。'))return;
+ const d=await J('/api/build/asset/delete',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name})}).catch(e=>({error:''+e}));
+ if(d.error){toast(d.error,false);return}
+ toast('已删除：'+name+(d.dropped_table?('（含上传表 '+d.dropped_table+'）'):''),true);bcSources();}
 const BC_IC={true:'<span class="ic" style="color:#22c55e">✓</span>',false:'<span class="ic" style="color:#e0563f">✕</span>'};
 let BC_BUSY=false;
 async function bcInquire(){if(BC_BUSY)return;const q=$('#bc_q').value.trim();if(!q){toast('请描述要构建的本体');return}
