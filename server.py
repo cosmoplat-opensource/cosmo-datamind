@@ -3818,6 +3818,38 @@ def build_upload():
             con.close()
     return jsonify({"saved": saved, "tables": tables})
 
+@app.post("/api/build/asset/delete")
+def build_asset_delete():
+    """删除已上传的辅助资料。
+
+    上传是双落点的：文件存 WORK/uploads_<名>，CSV/TSV 另按同名规则物化为
+    uploads.db 里的表。删除必须两处同步，否则「资料已删、表还在」会让
+    构建继续引用一份界面上已不存在的证据。文件名沿用上传时的裁剪规则
+    （_safe_fname + _confined），穿越形态在此路径上同样不可达。"""
+    body = request.json or {}
+    fn = _safe_fname(str(body.get("name") or "").strip())
+    if not fn:
+        return jsonify({"error": "缺少文件名"}), 400
+    path = _confined(WORK, "uploads_" + fn)
+    if not os.path.exists(path):
+        return jsonify({"error": "文件不存在或已删除"}), 404
+    dropped = ""
+    with _WRITE_LOCK:
+        os.remove(path)
+        if fn.lower().endswith((".csv", ".tsv")) and os.path.exists(UPLOAD_DB):
+            t = re.sub(r"[^A-Za-z0-9_]", "_", fn.rsplit(".", 1)[0])[:40]
+            try:
+                con = sqlite3.connect(UPLOAD_DB)
+                try:
+                    con.execute(f'DROP TABLE IF EXISTS "{t}"')
+                    con.commit()
+                    dropped = t
+                finally:
+                    con.close()
+            except Exception:
+                pass                     # 表清理失败不阻断文件删除，前端以返回值区分
+    return jsonify({"ok": True, "removed": fn, "dropped_table": dropped})
+
 @app.post("/api/build/run")
 def build_run():
     """构建本体:source=demo(主库)|uploads(上传库);快速数据驱动构建(表→对象,命名启发+FK/重叠),产物注册为新图谱"""
@@ -3901,7 +3933,11 @@ def build_sources():
     for p in sorted(glob.glob(os.path.join(WORK, "uploads_*"))):
         fn = os.path.basename(p)[8:]
         ext = fn.rsplit(".", 1)[-1].lower() if "." in fn else ""
-        assets.append({"name": fn, "modality": _MOD_MAP.get(ext, "其它"), "kb": round(os.path.getsize(p) / 1024, 1)})
+        # usable 与 _gather_evidence 的读取范围保持同一判据：
+        # 可文本化(_TEXT_EXT)与 Excel 会作为证据文本注入构建，其余仅登记来源
+        assets.append({"name": fn, "modality": _MOD_MAP.get(ext, "其它"),
+                       "kb": round(os.path.getsize(p) / 1024, 1),
+                       "usable": ext in _TEXT_EXT or ext in ("xlsx", "xls")})
     return jsonify({"sources": srcs, "assets": assets})
 
 @app.post("/api/build/connect")

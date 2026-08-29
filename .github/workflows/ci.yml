@@ -53,3 +53,21 @@ jobs:
           done
           curl --fail --silent http://127.0.0.1:8092/api/db/check >/dev/null || { cat /tmp/datamind-ci.log; exit 1; }
           python3 test_all.py
+      - name: 10 轮变序回归(复用已构建本体,不重复发起 LLM 构建)
+        env:
+          DATAMIND_DB: ${{ github.workspace }}/examples/demo_metrics.db
+          DATAMIND_WORKDIR: ${{ github.workspace }}/workdir
+        run: |
+          python3 server.py > /tmp/datamind-s10.log 2>&1 &
+          server_pid=$!
+          trap 'kill "$server_pid" 2>/dev/null || true; wait "$server_pid" 2>/dev/null || true' EXIT
+          for _ in $(seq 1 30); do
+            if curl --fail --silent http://127.0.0.1:8092/api/db/check >/dev/null; then break; fi
+            sleep 1
+          done
+          curl --fail --silent http://127.0.0.1:8092/api/db/check >/dev/null || { cat /tmp/datamind-s10.log; exit 1; }
+          python3 scripts/test_ontology_strict_10_rounds.py \
+            --url http://127.0.0.1:8092 \
+            --workdir "$DATAMIND_WORKDIR" \
+            --graph built_2d74f0 \
+            --report /tmp/strict10.json
