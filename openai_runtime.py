@@ -34,6 +34,24 @@ def _int_env(name, default):
     except (TypeError, ValueError): return default
 
 
+def _extra_body():
+    """DATAMIND_LLM_EXTRA_BODY：合并进 chat/completions 请求体的 JSON 片段。
+
+    用途是不改代码就能传服务商特有参数——典型是推理型模型的思考开关：
+    DeepSeek/GLM 系列 `{"thinking":{"type":"disabled"}}`、Qwen `{"enable_thinking":false}`。
+    背景：本体抽取的长提示词会让推理型模型把 max_tokens 全花在思考上，正文为空
+    （实测 deepseek-v4-flash 思考 246s 后返回空 content），关掉思考即可稳定产出 JSON。
+    解析失败时忽略并回空，不让一处配置笔误拖垮所有调用。"""
+    raw = (os.environ.get("DATAMIND_LLM_EXTRA_BODY") or "").strip()
+    if not raw:
+        return {}
+    try:
+        v = json.loads(raw)
+        return v if isinstance(v, dict) else {}
+    except Exception:
+        return {}
+
+
 class OpenAICompatRuntime:
     """OpenAI 兼容 Chat Completions 驱动(无状态:每轮独立请求,不维护服务端会话)。"""
 
@@ -59,6 +77,7 @@ class OpenAICompatRuntime:
             # 推理型模型(glm-4.5/5、o 系列)会把预算先花在 reasoning 上,4096 常常
             # 只够思考、正文只剩几十字 —— 表现为"规划失败"却查不出原因。故可配且默认放宽。
             "max_tokens": _int_env("DATAMIND_LLM_MAX_TOKENS", 16384),
+            **_extra_body(),
         }).encode("utf-8")
         req = urllib.request.Request(
             self.base + "/chat/completions", data=body,
@@ -79,6 +98,71 @@ class OpenAICompatRuntime:
             # 推理型模型可能把 token 预算耗在 reasoning_content 上而 content 为空。
             # 必须当失败:回传空串会让上游拿空计划继续跑,变成难排查的静默故障。
             rc = (msg.get("reasoning_content") or "")[:80]
+            return False, f"模型返回空 content(推理占满预算?){' · 思考片段: ' + rc if rc else ''}"
+        return True, txt
+
+    def run_turn_stream(self, session_id, message, timeout=300, model=None, on_delta=None,
+                        on_reasoning=None):
+        """流式版 run_turn：返回同样的 (ok, text)，但正文增量经 on_delta(str) 逐块回报；
+        推理型模型的思考增量（reasoning_content）经 on_reasoning(str) 回报——
+        这类模型正文之前常先思考一两分钟，只回报正文会让面板在最需要它的时候空着。
+
+        用途是让几分钟的长生成在界面上可见（本体构建的过程输出面板）。
+        端点不支持流式（返回普通 JSON）时自动按整包解析，行为退化为 run_turn。"""
+        if not self.available():
+            return False, "未配置 DATAMIND_LLM_BASE / DATAMIND_LLM_KEY"
+        body = json.dumps({
+            "model": model or self.model,
+            "messages": [{"role": "user", "content": message}],
+            "temperature": 0,
+            "max_tokens": _int_env("DATAMIND_LLM_MAX_TOKENS", 16384),
+            **_extra_body(),
+            "stream": True,
+        }).encode("utf-8")
+        req = urllib.request.Request(
+            self.base + "/chat/completions", data=body,
+            headers={"Authorization": "Bearer " + self.key,
+                     "Content-Type": "application/json", "Accept": "text/event-stream"})
+        parts, reasoning = [], []
+        try:
+            with urllib.request.urlopen(req, timeout=timeout) as r:
+                ctype = (r.headers.get("Content-Type") or "").lower()
+                if "text/event-stream" not in ctype:
+                    # 端点不认 stream：整包回来，按非流式解析
+                    d = json.loads(r.read())
+                    msg = (d.get("choices") or [{}])[0].get("message") or {}
+                    txt = (msg.get("content") or "").strip()
+                    if txt and on_delta:
+                        on_delta(txt)
+                    return (True, txt) if txt else (False, "模型返回空 content")
+                for raw in r:
+                    line = raw.decode("utf-8", "replace").strip()
+                    if not line.startswith("data:"):
+                        continue
+                    data = line[5:].strip()
+                    if data == "[DONE]":
+                        break
+                    try:
+                        chunk = json.loads(data)
+                    except Exception:
+                        continue
+                    delta = ((chunk.get("choices") or [{}])[0].get("delta") or {})
+                    piece = delta.get("content") or ""
+                    if piece:
+                        parts.append(piece)
+                        if on_delta:
+                            try: on_delta(piece)
+                            except Exception: pass
+                    elif delta.get("reasoning_content"):
+                        reasoning.append(delta["reasoning_content"])
+                        if on_reasoning:
+                            try: on_reasoning(delta["reasoning_content"])
+                            except Exception: pass
+        except Exception as e:
+            return False, f"{type(e).__name__}: {str(e)[:160]}"
+        txt = "".join(parts).strip()
+        if not txt:
+            rc = "".join(reasoning)[:80]
             return False, f"模型返回空 content(推理占满预算?){' · 思考片段: ' + rc if rc else ''}"
         return True, txt
 
