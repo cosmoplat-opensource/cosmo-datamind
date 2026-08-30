@@ -2245,9 +2245,12 @@ def graph_export_fmt(key, fmt):
 
 @app.post("/api/ont/cq")
 def ont_cq():
-    """能力问题(CQ)核验(DR-024):在已建成的本体上判定「这些业务问题答不答得了」。
+    """验收问题核验(DR-024):在已建成的本体上判定「这些业务问题答不答得了」。
 
-    与元数据覆盖率互补：覆盖率只反映定义等字段是否存在，CQ 检查业务问题所需对象和关系是否可达。
+    验收问题即学界所称「能力问题 / Competency Questions」。对外文案一律用
+    「验收问题」——CQ 是行话,业务方看不懂;字段名 cq/cqs 保持不变。
+
+    与元数据覆盖率互补：覆盖率只反映定义等字段是否存在，验收问题检查业务问题所需对象和关系是否可达。
     定义和标准关系映射覆盖率为 100% 的本体，仍可能缺少业务问题所需关系。
 
     判定为确定性图计算(对象锚定 + 路径可达 + 边状态),不调 LLM:
@@ -2271,7 +2274,7 @@ def ont_cq():
         rep["gaps"] = cq_check.gaps_from(rep)      # 供人审队列/构建下一轮消费
         return jsonify(rep)
     except Exception as e:
-        return jsonify({"error": f"CQ 核验失败: {e}"}), 500
+        return jsonify({"error": f"验收问题核验失败: {e}"}), 500
 
 @app.post("/api/ont/chain")
 def ont_chain():
@@ -2478,7 +2481,7 @@ def ont_health(key):
     """本体图结构检查(DR-030 · 报告阶段六「异常关系检测」与「定期评审结构一致性」)。
 
     与既有三项检测互补——它们都不看图结构本身:
-      CQ 答「够不够用」· 漂移答「还对不对得上数据」· 元数据覆盖答「定义填没填全」
+      验收问题答「够不够用」· 漂移答「还对不对得上数据」· 元数据覆盖答「定义填没填全」
     而一个三项全过的本体,结构上仍可能是病的:一半对象是孤岛、存在自反关系、
     同一对语义重复连了多条边。这些不会让任何现有检查报错,却会让问数召回选错表。
 
@@ -4778,8 +4781,8 @@ def _base_context_block(base_ir, max_objs=120, max_rels=80):
 def _llm_extract_ontology(q, ev, skills, cqs=None, log=None, base_ir=None):
     """综合库结构与已解析文档/代码，提议 objects/relations(JSON)。
 
-    ``cqs`` 为兼容既有调用保留，但验收 CQ 刻意不进入提议提示词：否则模型会按题目
-    造出可达路径，导致验收集泄漏。CQ 只在构建完成后由确定性检查消费。
+    ``cqs`` 为兼容既有调用保留，但验收问题刻意不进入提议提示词：否则模型会按题目
+    造出可达路径，导致验收集泄漏。验收问题只在构建完成后由确定性检查消费。
     ``log`` 为可选的过程回报回调（见 _bounded_stream）：证据装配规模、引擎与模型、
     模型原始输出（引擎支持流式时按行回报）、解析结果，逐条回报给前端折叠面板。
     """
@@ -5216,7 +5219,7 @@ def _adjudicate_ir(db, name, extracted, ev):
         rel["semantic"] = "pass" if v is True else ("fail" if v is False else "skipped")
         rel["semantic_status"] = "model_supported" if v is True else ("disputed" if v is False else "not_reviewed")
         if v is False and rel["status"] == "verified":
-            rel["note"] += ";语义评审存疑(数据证据成立但不得用于 CQ 强路径,须人审)"
+            rel["note"] += ";语义评审存疑(数据证据成立但不得用于验收问题的强路径,须人审)"
     # 无法进入数据裁决的原因诊断:关系两端必须都绑定到真实表才谈得上取值重叠与父键唯一。
     # 数据源只有一两张表时,LLM 从文档抽出的对象大多没有对应表,关系必然全部停在 candidate。
     # 这不是裁决器失效,但必须说清楚,否则用户只看到「verified 0 条」无从判断。
@@ -5319,7 +5322,7 @@ def _merge_ir(base, new):
 
 
 def _normalize_build_cqs(value, limit=30):
-    """API/UI 的 CQ 输入归一成 cq_check 可消费的 str/dict 列表。"""
+    """API/UI 的验收问题输入归一成 cq_check 可消费的 str/dict 列表。"""
     if isinstance(value, str):
         value = value.splitlines()
     if not isinstance(value, list):
@@ -5425,7 +5428,7 @@ def build_inquire():
             yield sse({"type": "error", "error": "数据源为空"}); return
         yield push("intake", True, f"接收构建诉求 · 数据源「{sname}」· 编排技能 {len(skills)} 个")
         if cqs:
-            yield push("cq_holdout", True, f"验收 CQ {len(cqs)} 条已留出；不进入模型提议，仅在构建后盲测")
+            yield push("cq_holdout", True, f"验收问题 {len(cqs)} 条已留出；不进入模型提议，仅在构建后盲测")
         yield sse({"type": "status", "text": "多智能体引擎解析建模意图与范围…"})
         plan = _bounded(lambda: _build_intent(q, sname, skills), 30) or {}
         # gname 同时来自用户输入与 LLM 生成,且会作为 argv 传给 quick_build 子进程:

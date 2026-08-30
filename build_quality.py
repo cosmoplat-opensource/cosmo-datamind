@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 """本体构建产物的确定性验收检查。
 
-本模块组合图结构、关系证据契约、定义质量、上层关系映射与能力问题(CQ)，给出
+本模块组合图结构、关系证据契约、定义质量、上层关系映射与验收问题，给出
 pass/review/fail 三态结果。它只读 IR、
 不调模型、不自动修图,因此可在 quick_build、LLM 构建、API 和测试中复用。
 """
@@ -97,15 +97,18 @@ def audit_grounding(ir):
 
 
 def cq_status_text(cq):
-    """把 CQ 验收报告转成不夸大结论的短文案。"""
+    """把验收问题报告转成不夸大结论的短文案。
+
+    对外一律称「验收问题」:CQ / Competency Questions 是学界行话,业务方看不懂。
+    字段名 cq/cqs 保持不变,只改展示文案,避免破坏既有接口与产物。"""
     if not isinstance(cq, dict) or not cq.get("provided"):
-        return "CQ 未提供"
+        return "验收问题 未提供"
     total = int(cq.get("total") or 0)
     counts = cq.get("counts") or {}
     answerable = int(counts.get("answerable") or 0)
     partial = int(counts.get("partial") or 0)
     unanswerable = int(counts.get("unanswerable") or 0)
-    return (f"CQ 可回答 {answerable}/{total} · 部分支持 {partial} · "
+    return (f"验收问题 可回答 {answerable}/{total} · 部分支持 {partial} · "
             f"不可回答 {unanswerable}")
 
 
@@ -145,7 +148,7 @@ def evaluate(ir, cqs=None, definition_threshold=0.6):
     if semantic_disputes:
         review_queue.append({"type": "semantic_disputes", "count": len(semantic_disputes),
                              "desc": f"{len(semantic_disputes)} 条关系的数据证据与语义复审存在争议",
-                             "fix": "进入人审；争议关系不计入 CQ 强路径，人工确认后再置为 asserted"})
+                             "fix": "进入人审；争议关系不计入验收问题的强路径，人工确认后再置为 asserted"})
     query_errors = list((ir.get("scenario") or {}).get("query_errors") or [])
     if query_errors:
         review_queue.append({"type": "adjudication_query_errors", "count": len(query_errors),
@@ -168,9 +171,10 @@ def evaluate(ir, cqs=None, definition_threshold=0.6):
         review_queue.extend(cq_gaps)
     else:
         cq = {"provided": False, "total": 0, "counts": {}, "coverage": None, "items": [],
-              "note": "未提供能力问题,不生成虚假的 CQ 覆盖率"}
-        review_queue.append({"type": "cq_not_provided", "desc": "本轮未提供能力问题(CQ),尚未做业务适用性验收",
-                             "fix": "补充 3~10 个关键业务问题后重新执行验收检查"})
+              "note": "未提供验收问题,不生成虚假的覆盖率"}
+        review_queue.append({"type": "cq_not_provided",
+                             "desc": "本轮未提供验收问题,尚未做业务适用性验收",
+                             "fix": "补充 3~10 个本体应当能回答的关键业务问题后重新执行验收检查"})
 
     result = "fail" if blocking_issues else ("review" if review_queue else "pass")
     return {
