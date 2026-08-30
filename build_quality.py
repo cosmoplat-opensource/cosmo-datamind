@@ -96,6 +96,18 @@ def audit_grounding(ir):
             "issue_count": len(issues), "valid": not issues, "issues": issues}
 
 
+RESULT_TEXT = {"pass": "通过", "review": "待复核", "fail": "不通过"}
+
+
+def result_text(result):
+    """验收结果的中文名。
+
+    pass/review/fail 是字段值,面向用户的文案不该直接摆英文。字段值本身不动:
+    它进产物、进接口、进既有断言,改了会波及一片;此处只提供展示层译名。
+    """
+    return RESULT_TEXT.get(result, result or "—")
+
+
 def cq_status_text(cq):
     """把验收问题报告转成不夸大结论的短文案。
 
