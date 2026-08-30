@@ -4564,15 +4564,21 @@ def _skill_method_text(skills):
     旧实现对内置技能只注入一行硬编码摘要,技能正文即使更新也不影响构建。现在列表、查看和
     prompt 消费共用 skill_registry;_SKILL_METHOD 仅保留给历史名称的兼容兜底。"""
     def custom(name):
+        """只回传用户的覆盖件。
+
+        不得在这里回退到 _SKILL_METHOD 的一行摘要:DR-051 把解析顺序改成「覆盖优先」后,
+        非空的摘要会顶掉真正的 SKILL.md —— 4552 字的技能正文被压缩成 70 字进提示词,
+        技能等于没生效。兼容兜底改由 fallback_loader 在注册表也找不到时才用。"""
         p = _custom_skill_path(name)
         if p:
             try: return open(p, encoding="utf-8", errors="replace").read()
             except OSError: return ""
-        return _SKILL_METHOD.get(name, "")
+        return ""
     # 已删除的技能不再注入:界面上看不见却还在影响构建,是最难查的一类不一致。
     tombs = _skill_tombs()
     picked = [n for n in (skills or []) if n not in tombs]
-    text, _used = skill_registry.method_text(picked, _BUILTIN_SKILL_ROOTS, custom_loader=custom)
+    text, _used = skill_registry.method_text(picked, _BUILTIN_SKILL_ROOTS, custom_loader=custom,
+                                             fallback_loader=lambda n: _SKILL_METHOD.get(n, ""))
     return text
 
 def _dg_bounds(causes, allow_set):
@@ -4785,6 +4791,10 @@ def _llm_extract_ontology(q, ev, skills, cqs=None, log=None, base_ir=None):
     _rp = _rejected_patterns()                       # 将人工否决模式作为后续提议的负例。
     bad_block = ("\n[已知误判模式(历史上被人审否决,勿再提议同类关系)]\n" + "\n".join("- " + x for x in _rp)) if _rp else ""
     base_block = _base_context_block(base_ir)        # 迭代时把已建成的部分与历次诉求交给模型
+    # BFO/IOF 官方关系名清单从 ontology_grounding 取,不在提示词里另抄一份——
+    # 抄一份就会漂移,模型填了表里没有的名字,normalize() 一律判 unmapped,
+    # 表现为「接地率恒为 0」而看不出原因。
+    _REL_CHOICES = " / ".join(ontology_grounding.RELATION_SPECS)
     prompt = f"""你是企业本体自动抽取智能体,综合结构化库表与多源文档证据构建本体。
 建模目标:{q}
 {('建模建模规则:' + method) if method else ''}
@@ -4793,8 +4803,8 @@ def _llm_extract_ontology(q, ev, skills, cqs=None, log=None, base_ir=None):
 
 只输出一个 JSON(无其它文字):
     {{"objects":[{{"name":"英文标识(能对齐表名就用表名)","cn":"有业务意义的中文名","kind":"object|event|action|asset|role|ice(信息记录:目录/单据/地址/台账等,非物理实体)","table":"绑定的真实表名或 null;动作通常为 null","action_id":"仅当证据中明确出现系统已有动作标识时填写,否则 null","evidence":"抽取依据(来自哪张表/哪份文档及段落)","definition":"属加种差定义(如『销售订单是一种记录客户购买承诺的信息内容实体』);给不出严格定义就留空","example":"一个正例","counterExample":"一个易混淆的反例(如 报价单——尚无承诺)"}}],
-  "relations":[{{"source":"对象name","target":"对象name","verb":"具体关系动词(归属/产生/包含/服务/触发…)","rationale":"依据","child_key":"可选:源表候选外键(复合键用逗号)","parent_key":"可选:目标表候选键(复合键用逗号)"}}]}}
-    要求:①对象尽量绑定真实表;②由文档/流程明确描述的业务事件用 kind=event；明确描述的操作、审批、下发、创建任务等用 kind=action，并用关系连接其作用对象；不得仅凭表名批量编造动作;库存记录/地址/目录/单据等信息性条目用 kind=ice(IOF 信息内容实体,勿与物理实体混淆);③关系两端必须是上面列出的对象 name;④不虚构库表和文档中都没有的实体、动作或关系;⑤child_key/parent_key 只是待验证提示,只能填写上面 schema 真实存在的列,不得声称 verified;⑥**cn 必须是有业务意义的中文名**(如 客户 / 销售订单 / 退货事件 / 生产工单),优先复用表注释、上传文档/知识包(如看板指标口径)里的中文术语,严禁用拼音或直接照搬英文表名/键名做 cn;⑦**借鉴 IOF 定义规范**:definition 用「属加种差」句式;**非循环**——定义体不得复用被定义术语名本身及其中文名(如定义『销售订单』不得出现『销售订单』字样),须用上位类(属)+区别特征(种差)描述;counterExample 给一个会被误认成该对象、实则不是的反例(帮助后续取证辨伪);无法给出严格充要定义时 definition 留空即可(将被标为原始概念)。"""
+  "relations":[{{"source":"对象name","target":"对象name","verb":"具体关系动词(归属/产生/包含/服务/触发…)","rationale":"依据","founded_relation":"可选:该业务动词若确实对应下列 BFO/IOF 官方关系之一则填写,否则留空——{_REL_CHOICES}","child_key":"可选:源表候选外键(复合键用逗号)","parent_key":"可选:目标表候选键(复合键用逗号)"}}]}}
+    要求:①对象尽量绑定真实表;②由文档/流程明确描述的业务事件用 kind=event；明确描述的操作、审批、下发、创建任务等用 kind=action，并用关系连接其作用对象；不得仅凭表名批量编造动作;库存记录/地址/目录/单据等信息性条目用 kind=ice(IOF 信息内容实体,勿与物理实体混淆);③关系两端必须是上面列出的对象 name;④不虚构库表和文档中都没有的实体、动作或关系;⑤child_key/parent_key 只是待验证提示,只能填写上面 schema 真实存在的列,不得声称 verified;⑤′founded_relation 只能取所列官方关系名,且须满足其定义域/值域(如 hasInput/hasOutput 的源必须是 event 或 action 类对象;describes 的源必须是 ice);拿不准就留空——留空只是「未接地」,填错则是伪造标准映射,后者严重得多;⑥**cn 必须是有业务意义的中文名**(如 客户 / 销售订单 / 退货事件 / 生产工单),优先复用表注释、上传文档/知识包(如看板指标口径)里的中文术语,严禁用拼音或直接照搬英文表名/键名做 cn;⑦**借鉴 IOF 定义规范**:definition 用「属加种差」句式;**非循环**——定义体不得复用被定义术语名本身及其中文名(如定义『销售订单』不得出现『销售订单』字样),须用上位类(属)+区别特征(种差)描述;counterExample 给一个会被误认成该对象、实则不是的反例(帮助后续取证辨伪);无法给出严格充要定义时 definition 留空即可(将被标为原始概念)。"""
     _log(f"证据装配 · 库表 {len(ev.get('tab_cols') or {})} 张（结构文本 {len(ev['schema'][:12000])} 字）"
          f" · 文档/代码 {ev.get('n_docs', 0)} 份（{len(docs_block[:9000])} 字）"
          f" · 引用资产 {len(ev.get('refs') or [])} 项 · 技能规则 {len(method)} 字"
@@ -5178,7 +5188,13 @@ def _adjudicate_ir(db, name, extracted, ev):
                 best_ov, _best_status, best_reason, best_evidence = best
                 status, overlap, note, ev_keys = "candidate", round(best_ov, 1), best_reason, best_evidence
         verb = r.get("verb", "关联")
-        grounding = ontology_grounding.from_verb(verb, categories.get(s), categories.get(t))
+        # 模型给出的 founded_relation 必须参与判定,否则接地恒为 0:from_verb 只查
+        # VERB_RELATIONS 这张 10 词表,而模型提的是自由业务动词(面向/订购物项/归入…),
+        # 一律落到 unmapped。normalize 会核对官方关系名与定义域/值域,填错照样拒绝,
+        # 所以采信模型的提名不等于放松校验——只是给它一个能被校验的入口。
+        grounding = ontology_grounding.normalize(
+            r.get("founded_relation"), r.get("temporal"), verb,
+            categories.get(s), categories.get(t))
         rel_new = {"source_concept": s, "target_concept": t, "verb": verb,
                    "status": status, "evidence_status": status,
                    "overlap": overlap, "note": note,

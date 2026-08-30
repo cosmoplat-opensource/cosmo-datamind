@@ -78,3 +78,40 @@ def test_invalid_claimed_mapping_is_reported_for_review():
     assert report["result"] == "review"
     assert report["grounding"]["valid"] is False
     assert any(item["type"] == "invalid_upper_relation_mapping" for item in report["review_queue"])
+
+
+class TestModelProposedGrounding:
+    """模型提名的 founded_relation 必须参与判定,但不放松校验。
+
+    回归背景:_adjudicate_ir 曾只调 from_verb(verb),丢掉模型给的 founded_relation。
+    from_verb 只查 10 词的 VERB_RELATIONS,而模型提的是自由业务动词(面向/订购物项/
+    归入…),结果接地率恒为 0——看上去像「BFO/IOF 映射没做」,实为提名被丢弃。
+    """
+
+    def test_model_proposal_is_honored(self):
+        r = grounding.normalize("hasOutput", None, "产出",
+                                         "PlannedProcess", "MaterialArtifact")
+        assert r["status"] == "mapped" and r["relation"] == "hasOutput"
+        assert r["iri"].startswith("iof:")
+
+    def test_verb_alone_cannot_ground_business_verbs(self):
+        """自由业务动词不在 10 词表里:仅凭 verb 无法接地——这正是需要模型提名的原因。"""
+        assert grounding.from_verb("订购物项", "Process", "Object")["status"] == "unmapped"
+
+    def test_domain_range_still_enforced_on_proposal(self):
+        """采信提名不等于免检:源类别不满足定义域仍judged unmapped。"""
+        r = grounding.normalize("hasOutput", None, "产出",
+                                         "MaterialEntity", "Object")   # 源不是过程
+        assert r["status"] == "unmapped" and "类别约束不满足" in r["reason"]
+
+    def test_fabricated_relation_name_rejected(self):
+        """模型编造的关系名不得被采信,否则等于伪造标准映射。"""
+        for fake in ("iof:fakeRelation", "hasMagicLink", "relatedToAtSomeTime"):
+            r = grounding.normalize(fake, None, "关联", "Process", "Object")
+            assert r["status"] == "unmapped" and not r["relation"] and not r["iri"]
+
+    def test_empty_proposal_falls_back_to_verb_table(self):
+        """留空时退回动词表:留空只是未接地,不该让已知动词也失效。"""
+        r = grounding.normalize("", None, "产生", "Process", "Object")
+        assert r["status"] == "mapped" and r["relation"] == "hasOutput"
+        assert grounding.normalize(None, None, "产生", "Process", "Object")["status"] == "mapped"
