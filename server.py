@@ -5564,7 +5564,7 @@ def build_inquire():
         _atomic_json(outp, ir)
         qsum = quality["summary"]
         yield push("critic", quality["result"] != "fail",  # SSE 类型名为兼容旧客户端保留
-                   f"验收检查:{quality['result']} · 阻断问题 {qsum['blocking_issues']} · "
+                   f"验收检查:{build_quality.result_text(quality['result'])} · 阻断问题 {qsum['blocking_issues']} · "
                    f"待审 {qsum['review_items']} · {build_quality.cq_status_text(quality['cq'])}")
         g = ir_to_graph(key, ir)
         objs = ir.get("objects", []); rels = ir.get("relations", [])
