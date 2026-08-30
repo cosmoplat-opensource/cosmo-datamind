@@ -307,6 +307,41 @@ async def main():
             except Exception as _e:
                 bad("示例问数超时", f"420s {_e}")
 
+        # ══ 步骤 7d:继续构建 —— 点了之后界面必须看得出「这轮会并入哪张图」══
+        # 背景:此前点「继续构建」只在顶部加一条细线,对话区仍是「新建本体」的欢迎页与
+        # 示例,名称框还留着上一个新建名——用户无从判断自己是否真的在继续构建。
+        print("\n【步骤7d】继续构建的模式可见性")
+        await goto("build", 2200)
+        clicked = await pg.evaluate("""()=>{const rs=[...document.querySelectorAll('#bc_built .bc-srow')];
+          const a=rs[0]&&[...rs[0].querySelectorAll('a')].find(x=>x.textContent.trim()==='继续构建');
+          if(!a)return null; a.click();
+          return rs[0].querySelector('.nm')?.textContent.trim()||'';}""")
+        if not clicked:
+            skip("继续构建入口", "无已构建本体可迭代")
+        else:
+            await pg.wait_for_timeout(2200)
+            base = await pg.evaluate("BC.base")
+            btn = (await pg.inner_text("#bc_send")).strip()
+            dest = await pg.inner_text("#bc_cur_dest")
+            body = await pg.inner_text("#bc_log")
+            nm_dis = await pg.eval_on_selector("#bc_name", "e=>e.disabled")
+            ph = await pg.eval_on_selector("#bc_q", "e=>e.placeholder")
+            (ok if base else bad)("继续构建设定底本", base or "BC.base 为空")
+            (ok if "继续构建" in btn else bad)("构建按钮改为「继续构建」", btn)
+            (ok if "并入" in dest else bad)("底部标明产出去向", dest)
+            # 最关键的一条:对话区本身要换成迭代语境,而不是继续显示「新建本体」的欢迎页
+            (ok if "继续构建" in body and clicked in body else
+             bad)("对话区换为底本上下文", body[:60].replace("\n", " "))
+            (ok if "并入" in body and "不被覆盖" in body and "删除既有" in body else
+             bad)("说明合并语义(并入/不覆盖/不删除既有)", "缺合并语义说明")
+            (ok if nm_dis else bad)("迭代时名称框禁用", f"disabled={nm_dis}")
+            (ok if "本轮" in ph else bad)("诉求框提示改为增量口径", ph[:40])
+            await pg.evaluate("bcIterClear()")
+            await pg.wait_for_timeout(500)
+            after = (await pg.inner_text("#bc_send")).strip()
+            (ok if "继续构建" not in after and not await pg.evaluate("BC.base") else
+             bad)("退出迭代模式可复原", after)
+
         # ══ 步骤 8:规则页(决策层)—— 只读查看 ══
         print("\n【步骤8】其余关键页可用性")
         for p, _key in (("rules", "构成规则"), ("review", "评审"), ("actioncenter", "动作"),
