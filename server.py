@@ -5583,6 +5583,11 @@ def build_inquire():
                  "candidate": cand, "quality_result": quality["result"],
                  "quality_gate": quality["result"]}
         yield sse({"type": "done", "graph_key": key, "name": gname, "stats": stats, "summary": summ,
+                   # 迭代信息随 done 一起回传:完成卡要能说清「并入了哪张图、并入了多少」,
+                   # 否则用户只看到「构建完成」,分不出这轮是新建了一张还是并进了原图。
+                   "iterated": base_ir is not None,
+                   "base_graph": base_graph or "", "merge": _mg if base_ir is not None else None,
+                   "iterations": (ir.get("scenario") or {}).get("iterations"),
                    "method": method, "evidence": {"tables": ntab, "docs": ev["n_docs"], "refs": ev["refs"]},
                    "quality": {"result": quality["result"], "gate": quality["result"],
                                "summary": quality["summary"], "cq": quality["cq"]},
