@@ -403,6 +403,7 @@ a{color:var(--acc)}
    <span class="muted" id="skm_msg" style="font-size:12px;flex:1"></span>
    <button class="ghost" onclick="$('#sk_modal').style.display='none'">关闭</button>
    <button class="ghost" id="skm_del" style="color:#b91c1c;display:none" onclick="skDel()">删除</button>
+   <button class="ghost" id="skm_restore" style="display:none" onclick="skRestore()">恢复默认</button>
    <button class="ghost" id="skm_copy" style="display:none" onclick="skCopy()">复制为自定义副本</button>
    <button id="skm_save" style="display:none" onclick="skSave()">保存</button></div>
  </div></div>
@@ -619,7 +620,7 @@ a{color:var(--acc)}
      <div class="row" style="gap:6px"><button class="ghost bc-add" onclick="$('#bc_skfile').click()">+ 上传技能(SKILL.md)</button>
       <button class="ghost bc-add" onclick="skNew()">+ 新建技能</button>
       <button class="ghost bc-add" onclick="skcOpen()">技能对比实验</button></div>
-     <div class="muted" style="font-size:11px;margin-top:4px">自定义技能的正文会注入构建建模规则(编辑即改变抽取行为);内置技能只读,可复制为副本再改。</div></div>
+     <div class="muted" style="font-size:11px;margin-top:4px">技能正文会注入构建建模规则(编辑即改变抽取行为)。内置技能同样可改可删:改动写成你的版本、删除记为隐藏,出厂正文均保留,可随时恢复默认。</div></div>
     <div class="card bc-sec"><h3>已构建本体 <span class="muted" id="bc_built_n"></span></h3>
      <div id="bc_built"><div class="muted">暂无,构建后在此列出</div></div></div>
    </div>
@@ -2086,31 +2087,50 @@ function bcSelectSrc(id){BC.src=id;const s=(BC._sources||[]).find(x=>x.id===id);
  document.querySelectorAll('#bc_sources .bc-srow').forEach(r=>r.classList.remove('on'));
  bcSources();}
 async function bcSkills(){const ss=await J('/api/build/skills').catch(()=>[]);
- $('#bc_sk_n').textContent='('+ss.length+')';
- $('#bc_skills').innerHTML=ss.map(s=>{const on=BC.skills.has(s.name)?' on':'';
-  const tg=s.builtin?'<span class="tag ok tg">内置</span>':'<span class="tag tg" style="background:#F0EBFB;color:#7c50e6">自有</span>';
+ const vis=ss.filter(x=>!x.hidden), hid=ss.filter(x=>x.hidden);
+ $('#bc_sk_n').textContent='('+vis.length+')';
+ $('#bc_skills').innerHTML=vis.map(s=>{const on=BC.skills.has(s.name)?' on':'';
+  const tg=(s.builtin?'<span class="tag ok tg">内置</span>':'<span class="tag tg" style="background:#F0EBFB;color:#7c50e6">自有</span>')
+   +(s.overridden?'<span class="tag tg" style="background:#FFF4E5;color:#a5680a" title="已按你的改写生效,可在编辑页恢复默认">已改写</span>':'');
   return `<label class="bc-skcard${on}"><input type="checkbox" ${BC.skills.has(s.name)?'checked':''} onchange="bcToggleSk(${jsAttr(s.name)},this.checked)">
    <div style="flex:1;min-width:0"><div class="nm">${esc(s.name)} ${tg}</div><div class="ds">${esc(s.desc||'')}</div></div>
-   <a href="#" style="font-size:11px;white-space:nowrap;align-self:center" onclick="event.preventDefault();event.stopPropagation();skView(${jsAttr(s.name)})">查看${s.builtin?'':'/编辑'}</a></label>`;}).join('')||'<div class="muted">无技能</div>';bcSyncHeight();}
+   <a href="#" style="font-size:11px;white-space:nowrap;align-self:center" onclick="event.preventDefault();event.stopPropagation();skView(${jsAttr(s.name)})">查看/编辑</a></label>`;}).join('')||'<div class="muted">无技能</div>';
+ // 已隐藏的内置技能收在末尾一行:不占卡片位,但「恢复默认」始终点得到
+ $('#bc_skills').innerHTML+=hid.length?('<div class="muted" style="font-size:11px;margin-top:6px">已隐藏 '+hid.length+' 个内置技能:'
+  +hid.map(s=>`<a href="#" style="font-size:11px;margin-left:6px" onclick="event.preventDefault();skRestoreByName(${jsAttr(s.name)})">${esc(s.name)} 恢复</a>`).join('、')+'</div>'):'';
+ bcSyncHeight();}
+async function skRestoreByName(name){const d=await J('/api/build/skill/restore',{method:'POST',headers:{'Content-Type':'application/json'},
+  body:JSON.stringify({name})}).catch(e=>({error:''+e}));
+ if(d.error){toast(d.error,false);return;}
+ toast('已恢复内置技能「'+name+'」',true);bcSkills();}
 function bcToggleSk(n,on){on?BC.skills.add(n):BC.skills.delete(n);$('#bc_cur_sk').textContent=BC.skills.size;
  document.querySelectorAll('#bc_skills .bc-skcard').forEach(c=>{const cb=c.querySelector('input');c.classList.toggle('on',cb.checked);});}
 // ── 技能管理(DR-021):查看/新建/编辑/复制副本/删除;自定义正文注入构建建模规则 ──
 let SKM=null,SKM_DEL_ARM=false;
 async function skView(name){const d=await J('/api/build/skill/'+encodeURIComponent(name)).catch(e=>({error:''+e}));
  if(d.error){toast(d.error,false);return;}
- SKM={mode:d.builtin?'view':'edit',orig:name};SKM_DEL_ARM=false;
- $('#skm_title').textContent=(d.builtin?'内置技能(只读):':'编辑自定义技能:')+name;
- $('#skm_sub').textContent=d.builtin?'内置技能是建模规则种子,只读;可「复制为自定义副本」后修改,自定义正文会注入构建建模规则。'
+ SKM={mode:'edit',orig:name,builtin:!!d.builtin};SKM_DEL_ARM=false;
+ $('#skm_title').textContent=(d.builtin?'编辑内置技能:':'编辑自定义技能:')+name;
+ $('#skm_sub').textContent=d.builtin
+  ?(d.overridden?'当前生效的是你的改写版。改动保存在工作目录,出厂正文原样保留,可随时「恢复默认」。'
+                :'内置技能同样可改:保存后写成你的改写版,出厂正文不动,可随时「恢复默认」。删除记为隐藏,亦可恢复。')
   :'保存后立即生效:下一次本体构建即按新内容编排(无需重启)。';
- $('#skm_name').value=name;$('#skm_name').disabled=!d.builtin;   // 内置:改名=副本名;自定义:名字固定
+ $('#skm_name').value=name;$('#skm_name').disabled=true;   // 改名即另建技能,请用「复制为自定义副本」
  $('#skm_files').textContent=(d.files||[]).length?('目录:'+d.files.join(' / ')):'';
- $('#skm_content').value=d.content||'';$('#skm_content').readOnly=!!d.builtin;
+ $('#skm_content').value=d.content||'';$('#skm_content').readOnly=false;
  $('#skm_msg').textContent='';
- $('#skm_del').style.display=d.builtin?'none':'inline-block';
- $('#skm_del').textContent='删除';
- $('#skm_copy').style.display=d.builtin?'inline-block':'none';
- $('#skm_save').style.display=d.builtin?'none':'inline-block';
+ $('#skm_del').style.display='inline-block';
+ $('#skm_del').textContent=d.builtin?'删除(可恢复)':'删除';
+ $('#skm_copy').style.display='inline-block';
+ $('#skm_save').style.display='inline-block';
+ const rs=$('#skm_restore');
+ if(rs)rs.style.display=(d.builtin&&d.overridden)?'inline-block':'none';   // 只有改写过才谈得上恢复
  $('#sk_modal').style.display='flex';}
+async function skRestore(){if(!SKM||!SKM.builtin)return;
+ const d=await J('/api/build/skill/restore',{method:'POST',headers:{'Content-Type':'application/json'},
+  body:JSON.stringify({name:SKM.orig})}).catch(e=>({error:''+e}));
+ if(d.error){toast(d.error,false);return;}
+ toast('已恢复「'+SKM.orig+'」的出厂正文',true);$('#sk_modal').style.display='none';bcSkills();}
 function skNew(){SKM={mode:'create'};SKM_DEL_ARM=false;
  $('#skm_title').textContent='新建技能';
  $('#skm_sub').textContent='正文会注入构建建模规则(建模目标之后、库表结构之前),写清楚建模规范与关注点即可。';
@@ -2133,11 +2153,14 @@ async function skSave(){const name=$('#skm_name').value.trim(),content=$('#skm_c
  $('#sk_modal').style.display='none';toast('技能已保存:'+name+'(下次构建即生效)',true);bcSkills();}
 async function skDel(){const name=SKM&&SKM.orig;if(!name)return;
  if(!SKM_DEL_ARM){SKM_DEL_ARM=true;$('#skm_del').textContent='确认删除?';
-  setTimeout(()=>{SKM_DEL_ARM=false;const b=$('#skm_del');if(b)b.textContent='删除';},4000);return;}
+  setTimeout(()=>{SKM_DEL_ARM=false;const b=$('#skm_del');if(b)b.textContent=(SKM&&SKM.builtin)?'删除(可恢复)':'删除';},4000);return;}
  const d=await J('/api/build/skill/delete',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name})}).catch(e=>({error:''+e}));
  if(d.error){toast(d.error,false);return;}
  BC.skills.delete(name);$('#bc_cur_sk').textContent=BC.skills.size;
- $('#sk_modal').style.display='none';toast('已删除技能:'+name,true);bcSkills();}
+ $('#sk_modal').style.display='none';
+ toast(d.restorable?('已隐藏内置技能「'+name+'」;出厂正文仍在,可在技能区末尾一键恢复')
+                   :('已删除技能:'+name),true);
+ bcSkills();}
 // ── 技能对比实验(DR-022 #1):两组技能 × 同一目标,真实构建对比 ──
 let SKC_TIMER=null;
 async function skcOpen(){$('#skc_q').value=(BC.def&&BC.def.build_query)||'从 示例主库自动识别核心对象、事件与关系,构建一张可审计的制造企业本体';

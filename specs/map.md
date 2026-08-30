@@ -32,6 +32,7 @@ Cosmo DataMind 是「数据治理 × 本体 × 深度问数」原型：
 
 ### 决定 / Decisions
 - [DR-050 · 半自动构建的统一证据契约、技能输入与确定性验收检查](decisions/DR-050-executable-ontology-build-gate.md)
+- [DR-051 · 内置技能可改写与可删除(覆盖层 + 删除墓碑)](decisions/DR-051-editable-builtin-skills.md)
 - [DR-043 · 单体路由蓝图化(计划+已起步:抽纯模块降耦合→逐簇拆blueprint)](decisions/DR-043-blueprint-modularization.md)
 - [DR-044 · JSON store 持久化抽象(原子/坏档恢复/校验/迁移/并发,填负向持久化测试空白)](decisions/DR-044-json-store-abstraction.md)
 - [DR-040 · 定义质量评分(属加种差/非循环/反例 + 参考重叠;LLM 1.0 vs 数据驱动 0.0)](decisions/DR-040-definition-quality-eval.md)
@@ -88,12 +89,12 @@ Cosmo DataMind 是「数据治理 × 本体 × 深度问数」原型：
 - `README.md` — 模块能力总览与实测部署命令。
 - `ARCHITECTURE.md` — 分层/数据流/统一约定/安全模型/已知边界(架构说明)
 - `AUDIT.md` — 逐轮自测/复审记录(IR 的原始日志,已归纳进 iterations/)。
-- `test_all.py` — 系统级回归，源码定义 541 个检查点。
+- `test_all.py` — 系统级回归，源码定义 552 个检查点。
 - `SPEC.md` — 对**平台** web/ 的逆向规格(平台契约,非 DataMind;前缀不同勿混用)。
 
 ## 现状校准
-- 计数(2026-08-28):**124 路由**(server.py 119 + bp_engine 5)/ **541 集成断言** /
-  **284 项单元测试** / DR-001…DR-050 · IR-001…IR-011。
+- 计数(2026-08-28):**125 路由**(server.py 120 + bp_engine 5)/ **552 集成断言** /
+  **317 项单元测试** / DR-001…DR-051 · IR-001…IR-011。
   新增共享层 `srv_context`/`srv_engine`、单一裁决核 `dao_core`、评测台 `hallucination_eval`/`definition_eval`、
   持久化抽象 `store`、首个 blueprint `bp_engine`。
 
@@ -108,7 +109,7 @@ Cosmo DataMind 是「数据治理 × 本体 × 深度问数」原型：
 - 新增(DR-018):全部读方统一 `load_ir_edited`(单一当前真相)——修复 问数JOIN提示/总览/指标/表详情/graphs列表 读原始IR 的不一致;U 分区 18 断言锁定「写→图谱/总览/问数/SPARQL/评审/列表 即读→撤销复原」。套件 186 断言。
 - 新增(DR-019):深度问数十项升级 —— A1 术语词典进检索(term_expand 步)/ A2 SQL 口径拦截 `_validate_sql_ontology`(ontology_gate 步:表白名单+JOIN 键落本体关系)/ A3 指标口径卡(done.metric_cards)/ B4 按任务选模(task_models{plan/narrative/diagnose}+模型族保护)/ B5 多轮指代 `_carryover` / B6 叙述流式 narrative_delta / C7 外部库实连(pymysql;凭据 conn_secrets.json 0600 只写)/ C8 API 型数据源(api_fetch→up.api_* 物化)/ C9 问数评测(benchmark/qa_set.json 8 题参考集×三组,/api/eval/*,「问数评测」页)/ C10「业务助手」页(角色组装问数/诊断/动作/待办)。套件 212 断言。
 - 新增(DR-020):动作层产品化 —— 动作类型管理 CRUD(/api/action/type·update·delete,内置种子受保护、停用即刻拦截发起)/ 3 个行业动作种子(冻结批次·温区调参·供应商 SCAR,均绑真实库表)/ 问数答案卡「相关动作」直达发起(SQL 命中表 × object_table 匹配)/ 动作中心 KPI+类型编辑弹窗+审计筛选与 CSV 导出;MCP 读同一注册表零改动继承。套件 226 断言。
-- 新增(DR-021):构建技能管理 —— 浏览(内置只读+目录清单)/在线新建/编辑/两击删除(/api/build/skill/<name>·save·delete);**自定义技能正文注入构建方法论**(_skill_method_text,剥 front-matter,编辑后下次构建即生效)——修复「能上传但从未被消费」的死代码问题;内置技能名不可占用,可复制为副本再改。套件 236 断言(105 路由)。
+- 新增(DR-021):构建技能管理 —— 浏览(内置附目录清单)/在线新建/编辑/两击删除(/api/build/skill/<name>·save·delete);**自定义技能正文注入构建方法论**(_skill_method_text,剥 front-matter,编辑后下次构建即生效)——修复「能上传但从未被消费」的死代码问题;内置技能可改写与隐藏(DR-051:workdir 覆盖层+删除墓碑,出厂正文保留,可恢复默认)。套件 236 断言(105 路由)。
 - 新增(DR-022):技能生态五项 —— ①技能对比实验(/api/build/skill_compare·status·results:同目标×两组技能各跑真实构建,对比 对象/关系/verified/动词/类型/定义覆盖;组失败如实展示不充数)②构建流水线 skill_inject 注入痕迹步 ③产物沉淀为技能(/api/build/skill/from_graph:动词表/类型分布/定义样例,确定性提取)④评测败题通用修复(⋈⋈ 两跳路径召回 + 均值分母/单值聚合口径规范进 prompt)⑤存而不用审计(specs/audit-input-consumers.md;第 3 起死代码 qa_skills 已接上:_match_qa_skill 命中复用+skill_reuse 步)。套件 249 断言(109 路由;终跑 C 组 8/8)。
 - 引擎在线依赖:深度问数与本体构建的 LLM 步骤依赖 `agent_runtime` 引擎在线;引擎限流(429)/超时时自动兜底(深度问数走模板、构建走 quick_build),结果仍产出并如实标注。
 - 已知边界详见 `README.md` 末节(SPARQL 软超时、运行时切换 UI、G6/ECharts 本地内置等)。
@@ -192,7 +193,7 @@ Consult @specs/map.md to find relevant context.
   0 宽,描述逐字竖排(单卡高 557px)。元素齐全故计数类断言全绿 —— 改用几何量守住。
   顺势把几何判据推到全站(26 页 × 9 弹窗 × 两种视口扫一遍):另修表格单元格
   260px 截断后无从看全文(悬停按需补 title)、评审图谱下拉被固定宽度切掉计数。
-  套件 541 条静态断言(有引擎环境实际执行 535/535,无引擎 527 通过/8 条件跳过) · UI 走查 64/64 · UI 实操 45/45，
+  套件 552 条静态断言(有引擎环境实际执行 546/546,无引擎 538 通过/8 条件跳过) · UI 走查 64/64 · UI 实操 45/45，
   另有 3 项因未配置 OpenAI 兼容端点而按条件跳过。
 - **快速入门可跑通**(QUICKSTART.md):示例库 SQL → quick_build → 选本体 → 问出数,
   全程无上游引擎。过程中修出四处断链:垫片不承载 driver 注册(配了 key 也拿不到运行时)、

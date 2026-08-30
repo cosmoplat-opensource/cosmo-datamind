@@ -952,7 +952,7 @@ chk("W14 UI 问数→动作联动代码", "相关动作(基于命中业务表)" 
 
 print("=== X. 技能管理(DR-021)===")
 r=g("/api/build/skill/ontology-semi-auto")
-chk("X1 内置技能可浏览(只读)", r.status_code==200 and r.json()["builtin"] and not r.json()["editable"])
+chk("X1 内置技能可浏览且可编辑", r.status_code==200 and r.json()["builtin"] and r.json()["editable"])
 _md="---\ndescription: 回归技能\n---\n\n回归方法论:动词统一用「校验」\n"
 r=po("/api/build/skill/save",json={"name":"reg-skill","content":_md})
 chk("X2 新建自定义技能", r.status_code==200)
@@ -960,12 +960,30 @@ chk("X3 列表实时含新技能+描述", any(s["name"]=="reg-skill" and s["desc
 r=po("/api/build/skill/save",json={"name":"reg-skill","content":_md.replace("校验","复核")})
 chk("X4 编辑保存实时", r.status_code==200 and "复核" in g("/api/build/skill/reg-skill").json()["content"])
 chk("X5 ★自定义正文注入构建方法论", "复核" in _sv2._skill_method_text(["reg-skill"]))
-r=po("/api/build/skill/save",json={"name":"ontology-semi-auto","content":"x"})
-chk("X6 占用内置名→400", r.status_code==400)
+# 内置技能可改写:落成 workdir 覆盖件,出厂正文不动,故可恢复。改完必须在构建注入里生效——
+# 界面显示已改、构建仍用出厂正文,是比「不给改」更糟的不一致。
+_ovr="---\ndescription: 覆盖版描述\n---\n\n覆盖版正文:动词统一用「覆盖校验」\n"
+r=po("/api/build/skill/save",json={"name":"ontology-semi-auto","content":_ovr})
+chk("X6a 内置技能可改写", r.status_code==200 and r.json().get("overridden") is True)
+chk("X6b 改写后查看即为新正文", "覆盖校验" in g("/api/build/skill/ontology-semi-auto").json()["content"])
+chk("X6c ★改写正文注入构建方法论", "覆盖校验" in _sv2._skill_method_text(["ontology-semi-auto"]))
+chk("X6d 列表标记已改写", any(x["name"]=="ontology-semi-auto" and x.get("overridden") for x in g("/api/build/skills").json()))
+r=po("/api/build/skill/restore",json={"name":"ontology-semi-auto"})
+chk("X6e 恢复默认", r.status_code==200 and "覆盖校验" not in g("/api/build/skill/ontology-semi-auto").json()["content"])
 r=po("/api/build/skill/save",json={"name":"../evil","content":"x"})
 chk("X7 路径穿越名→400", r.status_code==400)
+# 内置技能可删除:记墓碑而非删出厂文件——列表消失、构建不再注入,但可恢复。
 r=po("/api/build/skill/delete",json={"name":"ontology-semi-auto"})
-chk("X8 删内置→400", r.status_code==400)
+chk("X8a 内置可删除且标记可恢复", r.status_code==200 and r.json().get("restorable") is True)
+# 隐藏项仍随列表回传(带 hidden 标记),供「恢复默认」入口使用;此处按可见项判定。
+chk("X8b 删后从可见列表移除", "ontology-semi-auto" not in {x["name"] for x in g("/api/build/skills").json() if not x.get("hidden")})
+chk("X8b2 隐藏项带 hidden 标记可供恢复", any(x["name"]=="ontology-semi-auto" and x.get("hidden") for x in g("/api/build/skills").json()))
+chk("X8c 删后不再注入构建", "ontology-semi-auto" not in _sv2._skill_method_text(["ontology-semi-auto"]))
+chk("X8d 重复删→404", po("/api/build/skill/delete",json={"name":"ontology-semi-auto"}).status_code==404)
+r=po("/api/build/skill/restore",json={"name":"ontology-semi-auto"})
+chk("X8e 恢复后回到列表", r.status_code==200 and "ontology-semi-auto" in {x["name"] for x in g("/api/build/skills").json()})
+chk("X8f 恢复后重新注入", _sv2._skill_method_text(["ontology-semi-auto"]).strip() != "")
+chk("X8g 自定义技能无出厂版→400", po("/api/build/skill/restore",json={"name":"reg-skill"}).status_code==400)
 r=po("/api/build/skill/delete",json={"name":"reg-skill"})
 chk("X9 删自定义+列表移除", r.status_code==200 and "reg-skill" not in {s["name"] for s in g("/api/build/skills").json()})
 r=g("/")
