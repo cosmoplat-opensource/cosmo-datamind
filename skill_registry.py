@@ -71,14 +71,18 @@ def method_text(names, roots, custom_loader=None, per_skill_cap=3500, total_cap=
         if name in used:
             continue
         text = ""
-        entry = entries.get(name)
-        if entry:
-            try:
-                text = open(entry["skill_md"], encoding="utf-8", errors="replace").read()
-            except OSError:
-                text = ""
-        elif custom_loader:
+        # 用户改写优先于随仓内置:同名时以 workdir 里的覆盖件为准。
+        # 原先内置优先,导致「编辑内置技能」在查看页显示为已改、构建时却仍用出厂正文——
+        # 改一处不生效比不给改更容易误导人。
+        if custom_loader:
             text = custom_loader(name) or ""
+        if not text:
+            entry = entries.get(name)
+            if entry:
+                try:
+                    text = open(entry["skill_md"], encoding="utf-8", errors="replace").read()
+                except OSError:
+                    text = ""
         body = skill_body(text)[:per_skill_cap]
         if not body:
             continue

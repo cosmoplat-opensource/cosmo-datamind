@@ -4093,21 +4093,38 @@ def conn_api_fetch():
 @app.get("/api/build/skills")
 def build_skills():
     """内置本体构建技能 + 用户上传的自定义技能说明"""
-    out = []
+    out, tombs, builtin_names = [], _skill_tombs(), set()
     for item in _builtin_skill_entries():
-        n = item["name"]
-        out.append({"name": n, "desc": _BUILD_SKILL_DESC.get(n) or item["description"], "builtin": True,
-                    "runnable": item["runnable"]})
+        n = item["name"]; builtin_names.add(n)
+        if n in tombs: continue                       # 用户已删除:列表里不再出现
+        ov = _custom_skill_path(n)                    # 被改写则以覆盖件的描述为准
+        desc = _BUILD_SKILL_DESC.get(n) or item["description"]
+        if ov:
+            try: txt = open(ov, encoding="utf-8", errors="replace").read()
+            except OSError: txt = ""
+            m = re.search(r"description:\s*(.+)", txt)
+            if m: desc = m.group(1).strip()[:140]
+        out.append({"name": n, "desc": desc, "builtin": True, "runnable": item["runnable"],
+                    "editable": True, "overridden": bool(ov)})
     if os.path.isdir(_BUILD_SKILL_D):
         for f in sorted(glob.glob(os.path.join(_BUILD_SKILL_D, "*.md"))):
+            nm = os.path.basename(f)[:-3]
+            if nm in builtin_names: continue          # 内置的覆盖件已随内置项列出,不重复
+            if nm in tombs: continue
             try: txt = open(f, errors="replace").read()
             except Exception: txt = ""
             m = re.search(r"description:\s*(.+)", txt)
-            out.append({"name": os.path.basename(f)[:-3], "desc": (m.group(1) if m else txt[:120]).strip()[:140],
-                        "builtin": False, "runnable": False})
+            out.append({"name": nm, "desc": (m.group(1) if m else txt[:120]).strip()[:140],
+                        "builtin": False, "runnable": False, "editable": True, "overridden": False})
+    # 已隐藏的内置技能也回传(带 hidden 标记),否则删完就再也点不到「恢复默认」,
+    # 「可恢复」就成了空话。界面把它们收在列表末尾一行,不占正常卡片位。
+    for n in sorted(tombs & builtin_names):
+        out.append({"name": n, "desc": _BUILD_SKILL_DESC.get(n) or "", "builtin": True,
+                    "runnable": False, "editable": True, "overridden": False, "hidden": True})
     return jsonify(out)
 
-# ── 技能管理(DR-021):浏览/新建/编辑/删除;内置只读可复制;自定义内容真正注入构建建模规则 ──
+# ── 技能管理(DR-021 · DR-051):浏览/新建/编辑/删除;内置可改写与隐藏(覆盖层+墓碑,可恢复默认);
+#    技能正文真正注入构建建模规则,改写优先于出厂正文 ──
 _SKILL_NAME_RE = re.compile(r"^[\w\-]{1,40}$")           # \w 含中文;禁路径字符
 
 def _builtin_skill_entries():
@@ -4127,53 +4144,105 @@ def _custom_skill_path(name):
         if os.path.exists(p): return p
     return None
 
+_SKILL_TOMB_F = os.path.join(WORK, "skill_deleted.json")
+
+def _skill_tombs():
+    """被用户删除的技能名集合。
+
+    内置技能的正文随仓分发(skills_seed/)或来自上游引擎目录,直接删文件有两个问题:
+    一是仓库文件被改动,下次 git checkout 又回来,用户以为没删掉;二是上游目录不归
+    本服务管辖,根本删不得。故删除记为墓碑——列表里消失、构建不再注入,而出厂正文
+    原样保留,随时可「恢复默认」。自定义技能仍是真删文件。
+    """
+    v = _load_json(_SKILL_TOMB_F)
+    return {str(x) for x in v} if isinstance(v, list) else set()
+
+def _skill_tombs_save(names):
+    _atomic_json(_SKILL_TOMB_F, sorted(names))
+
+def _skill_overridden(name):
+    """内置技能是否已被用户改写(workdir 里存在同名覆盖件)。"""
+    return bool(_custom_skill_path(name)) and name in _builtin_skill_names()
+
 def _skill_body(text):
     """去掉 front-matter 的技能正文(供注入构建 prompt)"""
     return skill_registry.skill_body(text)
 
 @app.get("/api/build/skill/<name>")
 def build_skill_get(name):
-    """浏览技能内容:自定义=可编辑全文;内置=只读 SKILL.md(附目录清单)。"""
+    """浏览技能内容。自定义与内置一律可编辑;内置额外回传目录清单与是否已被改写。"""
     if not _SKILL_NAME_RE.match(name): return jsonify({"error": "非法技能名"}), 400
     p = _custom_skill_path(name)
     if p:
         try: content = open(p, encoding="utf-8", errors="replace").read()
         except Exception as e: return jsonify({"error": str(e)[:100]}), 500
-        return jsonify({"name": name, "builtin": False, "editable": True, "content": content})
+        builtin = name in _builtin_skill_names()
+        return jsonify({"name": name, "builtin": builtin, "editable": True, "content": content,
+                        "overridden": builtin})          # 内置且存在覆盖件 = 已被改写,可恢复默认
     d = _builtin_skill_dir(name)
     if d:
         sk = os.path.join(d, "SKILL.md")
         content = open(sk, encoding="utf-8", errors="replace").read() if os.path.exists(sk) else "(该内置技能无 SKILL.md 说明)"
         files = sorted(os.path.basename(x) for x in glob.glob(os.path.join(d, "*")))[:20]
-        return jsonify({"name": name, "builtin": True, "editable": False, "content": content, "files": files})
+        return jsonify({"name": name, "builtin": True, "editable": True, "content": content,
+                        "overridden": False, "files": files})
     return jsonify({"error": "技能不存在"}), 404
 
 @app.post("/api/build/skill/save")
 def build_skill_save():
-    """新建/编辑自定义技能(在线编辑器)。内置技能名不可占用(内置只读,可另存副本)。"""
+    """新建/编辑技能(在线编辑器)。内置技能同样可改:改动写成 workdir 覆盖件,出厂正文保留。"""
     body = request.json or {}
     name = str(body.get("name") or "").strip()
     content = str(body.get("content") or "")
     if not _SKILL_NAME_RE.match(name): return jsonify({"error": "技能名须为 1~40 字中英文/数字/下划线/连字符"}), 400
-    if name in _builtin_skill_names(): return jsonify({"error": f"「{name}」是内置技能(只读),请换名保存为自定义副本"}), 400
     if not content.strip(): return jsonify({"error": "技能内容不能为空"}), 400
     if len(content) > 200_000: return jsonify({"error": "技能内容过大(上限 200KB)"}), 400
+    # 内置技能同样可编辑:改动写成 workdir 里的覆盖件,出厂正文不动,故随时可恢复默认。
+    # 直接改 skills_seed/ 会弄脏仓库且下次 checkout 即失效,上游引擎目录更不归本服务管辖。
+    builtin = name in _builtin_skill_names()
     os.makedirs(_BUILD_SKILL_D, exist_ok=True)
     p = _custom_skill_path(name) or _confined(_BUILD_SKILL_D, name + ".md")
     with _WRITE_LOCK:
         open(p, "w", encoding="utf-8").write(content)
-    return jsonify({"ok": True, "name": name})
+        tombs = _skill_tombs()
+        if name in tombs:                    # 保存即恢复:被删过的名字重新出现在列表里
+            tombs.discard(name); _skill_tombs_save(tombs)
+    return jsonify({"ok": True, "name": name, "builtin": builtin, "overridden": builtin})
 
 @app.post("/api/build/skill/delete")
 def build_skill_delete():
     name = str((request.json or {}).get("name") or "").strip()
     if not _SKILL_NAME_RE.match(name): return jsonify({"error": "非法技能名"}), 400
-    if name in _builtin_skill_names(): return jsonify({"error": "内置技能不可删除"}), 400
+    builtin = name in _builtin_skill_names()
     p = _custom_skill_path(name)
-    if not p: return jsonify({"error": "技能不存在"}), 404
+    tombs = _skill_tombs()
+    if not builtin and not p:
+        return jsonify({"error": "技能不存在"}), 404
+    if builtin and name in tombs:
+        return jsonify({"error": "技能不存在"}), 404
     with _WRITE_LOCK:
-        os.remove(p)
-    return jsonify({"ok": True})
+        if p:
+            os.remove(p)                     # 覆盖件是本服务写的,真删
+        if builtin:
+            # 出厂正文随仓分发或来自上游目录,不动文件,记墓碑即可:列表消失、构建不注入,
+            # 但「恢复默认」还能把它找回来。真删文件会弄脏仓库,且对上游目录无权限。
+            tombs.add(name); _skill_tombs_save(tombs)
+    return jsonify({"ok": True, "restorable": builtin})
+
+@app.post("/api/build/skill/restore")
+def build_skill_restore():
+    """恢复内置技能的出厂正文:撤销改写与删除。自定义技能无出厂版本,不适用。"""
+    name = str((request.json or {}).get("name") or "").strip()
+    if not _SKILL_NAME_RE.match(name): return jsonify({"error": "非法技能名"}), 400
+    if name not in _builtin_skill_names():
+        return jsonify({"error": "该技能没有出厂版本可恢复(自定义技能删除后不可恢复)"}), 400
+    with _WRITE_LOCK:
+        p = _custom_skill_path(name)
+        if p: os.remove(p)
+        tombs = _skill_tombs()
+        if name in tombs:
+            tombs.discard(name); _skill_tombs_save(tombs)
+    return jsonify({"ok": True, "name": name})
 
 @app.post("/api/build/skill/from_graph")
 def build_skill_from_graph():
@@ -4500,7 +4569,10 @@ def _skill_method_text(skills):
             try: return open(p, encoding="utf-8", errors="replace").read()
             except OSError: return ""
         return _SKILL_METHOD.get(name, "")
-    text, _used = skill_registry.method_text(skills, _BUILTIN_SKILL_ROOTS, custom_loader=custom)
+    # 已删除的技能不再注入:界面上看不见却还在影响构建,是最难查的一类不一致。
+    tombs = _skill_tombs()
+    picked = [n for n in (skills or []) if n not in tombs]
+    text, _used = skill_registry.method_text(picked, _BUILTIN_SKILL_ROOTS, custom_loader=custom)
     return text
 
 def _dg_bounds(causes, allow_set):
