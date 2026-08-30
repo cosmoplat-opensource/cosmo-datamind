@@ -2,6 +2,9 @@
 # -*- coding: utf-8 -*-
 """能力问题(Competency Questions)核验 —— DR-024。
 
+本模块对外称「验收问题」;CQ / Competency Questions 是同一概念的学界叫法,
+文件名与字段名沿用 cq 以免破坏既有接口,展示文案一律不出现 CQ。
+
 在**已建成的本体 IR** 上做确定性的结构可达性判定,回答一个记分卡回答不了的问题:
 「这个本体到底能不能支撑当初要解决的业务问题」。
 
@@ -26,7 +29,7 @@ STRONG = {"verified", "asserted"}
 
 
 def relation_is_strong(relation):
-    """CQ 可采用的强关系。
+    """验收问题可采用的强关系。
 
     ``verified`` 只证明数据连接证据成立；若语义复核已经明确失败，就不能继续把它
     用作业务可回答性的证明。旧 IR 没有语义字段时保持兼容，待复核关系仍由质量报告
@@ -49,7 +52,7 @@ def _rels(ir):
 
 
 def _obj_names(o):
-    """一个对象的全部可指代名称——用于把 CQ 里的自然语言词锚定到对象。
+    """一个对象的全部可指代名称——用于把验收问题里的自然语言词锚定到对象。
     app 形状的对象没有 id,只有 name;demo 形状则 id/name/cn/table 都可能被业务人员用来指代。"""
     out = []
     for k in ("id", "name", "cn", "table"):
@@ -71,7 +74,7 @@ def _key_of(o, idx):
 
 
 def anchor_objects(question, ir):
-    """把 CQ 文本锚定到本体对象。
+    """把验收问题文本锚定到本体对象。
 
     从严匹配:只认**完整出现**在问句里的名称,不做模糊/子串近似——
     近似匹配会把"单"匹配到"工单",制造虚假的 answerable。
@@ -158,7 +161,7 @@ def _path(g, a, b):
 
 
 def check_one(question, ir, expect=None):
-    """核验单条 CQ。expect 为可选的期望对象名列表(业务方显式声明该问题应涉及哪些对象)。"""
+    """核验单条验收问题。expect 为可选的期望对象名列表(业务方显式声明该问题应涉及哪些对象)。"""
     anchors = anchor_objects(question, ir)
     seen_keys = {a["key"] for a in anchors}
 
@@ -216,7 +219,7 @@ def check_one(question, ir, expect=None):
         return {"question": question, "verdict": "partial",
                 "anchors": anchors, "path": [keys[0]],
                 "reason": "仅锚定到一个对象，无法证明问句中的其他业务概念均已覆盖",
-                "fix": "补充该 CQ 的期望对象清单(expect)，或为遗漏对象补中文名/业务别名"}
+                "fix": "补充该验收问题的期望对象清单(expect)，或为遗漏对象补中文名/业务别名"}
 
     g_strong, g_all = _adj(ir, True), _adj(ir, False)
     weak_pairs, broken_pairs, paths = [], [], []
@@ -273,7 +276,7 @@ def check_all(cqs, ir):
 
 
 def gaps_from(report):
-    """把不可答/部分可答的 CQ 转成缺口条目,回流进 IR 的 gaps 清单。"""
+    """把不可答/部分可答的验收问题转成缺口条目,回流进 IR 的 gaps 清单。"""
     out = []
     for it in report.get("items", []):
         if it["verdict"] == "answerable":
@@ -296,7 +299,7 @@ def gaps_from(report):
 def check_chain(chain, ir):
     """核验一条穿透链路。chain 为对象名列表,按业务顺序排列。
 
-    与 check_one 的区别:CQ 是「这个问题答不答得了」,链路是「这条追溯路径通不通」——
+    与 check_one 的区别:验收问题是「这个问题答不答得了」,链路是「这条追溯路径通不通」——
     后者逐段给出断点位置,便于直接定位到该补哪一段。
     """
     if not chain or len(chain) < 2:

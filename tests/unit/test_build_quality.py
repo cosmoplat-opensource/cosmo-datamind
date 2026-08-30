@@ -94,5 +94,7 @@ def test_cq_status_text_reports_real_outcome_instead_of_claiming_accepted():
 def test_cq_status_text_distinguishes_not_provided_and_all_answerable():
     missing = build_quality.evaluate(_valid_ir())["cq"]
     accepted = build_quality.evaluate(_valid_ir(), ["员工属于哪个部门"])["cq"]
-    assert build_quality.cq_status_text(missing) == "CQ 未提供"
+    # 对外文案用「验收问题」而非行话 CQ;此处按展示文案断言,改回 CQ 即失败
+    assert build_quality.cq_status_text(missing) == "验收问题 未提供"
+    assert "CQ" not in build_quality.cq_status_text(accepted)
     assert "可回答 1/1" in build_quality.cq_status_text(accepted)

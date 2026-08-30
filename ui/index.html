@@ -639,7 +639,7 @@ a{color:var(--acc)}
     <div id="bc_log" class="bc-log"></div>
     <div class="bc-compose">
      <input id="bc_name" class="bc-name" placeholder="本体命名(留空由智能引擎自动命名)">
-     <textarea id="bc_cq" style="min-height:46px;margin-bottom:6px" placeholder="能力问题 CQ(可选,每行一个),例:哪些工单关联了发生退货的订单?"></textarea>
+     <textarea id="bc_cq" style="min-height:46px;margin-bottom:6px" placeholder="验收问题(可选,每行一个)——本体建成后应当能回答的业务问题,用于验收;例:哪些工单关联了发生退货的订单?"></textarea>
      <div class="bc-inrow">
       <textarea id="bc_q" placeholder="描述你要构建的本体,例:从售后与生产数据构建一张贯通「订单-产品-工单-客户」的制造运营本体" onkeydown="if(event.key==='Enter'&&!event.shiftKey&&!event.isComposing){event.preventDefault();bcInquire()}"></textarea>
       <button id="bc_send" onclick="bcInquire()">构建 ▸</button></div>
@@ -2057,7 +2057,7 @@ async function bcIterHist(){   // 展开/收起该本体的构建历程(存在�
     +`<div style="margin-left:2px">${esc(r.request||'(无记录)')}</div>`
     +`<div class="muted" style="font-size:11px">数据源 ${esc(r.source||'—')} · 库表 ${r.tables??'—'} 张`
     +(r.documents?` · 文档 ${r.documents} 份`:'')+(r.skills&&r.skills.length?` · 技能 ${esc(r.skills.join('、'))}`:'')
-    +(r.cq_count?` · CQ ${r.cq_count} 条`:'')+esc(mg)+`</div></div>`;}).join('')
+    +(r.cq_count?` · 验收问题 ${r.cq_count} 条`:'')+esc(mg)+`</div></div>`;}).join('')
   :'<span class="muted">这张本体建于加入构建历程记录之前,没有留下逐轮记录。本轮起会开始记录。</span>')
   +`<div class="muted" style="font-size:11px;margin-top:4px">当前 ${d.objects} 对象 / ${d.relations} 关系</div>`;}
 function bcIterClear(){BC.base='';BC.baseName='';bcIterSync();
@@ -2323,7 +2323,7 @@ function bcResultHTML(done){const s=done.stats||{};const e=done.evidence||{};
  const isllm=(done.method||'').indexOf('LLM 离线')<0;
  const result=(done.quality&&(done.quality.result||done.quality.gate))||s.quality_result||s.quality_gate||'review';
  const cq=done.quality&&done.quality.cq, cc=(cq&&cq.counts)||{};
- const cqtxt=(cq&&cq.provided)?`CQ 可回答 ${cc.answerable||0}/${cq.total||0} · 部分 ${cc.partial||0} · 不可回答 ${cc.unanswerable||0}`:'';
+ const cqtxt=(cq&&cq.provided)?`验收问题 可回答 ${cc.answerable||0}/${cq.total||0} · 部分支持 ${cc.partial||0} · 不可回答 ${cc.unanswerable||0}`:'';
  return `<div class="bc-result">
    <div class="hd"><span><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#22a058;margin-right:7px;vertical-align:middle"></span>${done.iterated?`已并入本体「${esc(done.name)}」${done.iterations?` · 第 ${done.iterations} 轮`:''}`:`本体「${esc(done.name)}」构建完成`}</span><span class="muted" style="font-size:11px">${done.elapsed}s</span></div>
    ${done.iterated&&done.merge?`<div style="margin:8px 14px 0;padding:7px 10px;border:1px solid #cfe0ff;background:#f2f7ff;border-radius:6px;font-size:11.5px;color:#24406e">
