@@ -60,7 +60,8 @@ def find(name, roots):
     return next((item for item in discover(roots) if item["name"] == name), None)
 
 
-def method_text(names, roots, custom_loader=None, per_skill_cap=3500, total_cap=12000):
+def method_text(names, roots, custom_loader=None, per_skill_cap=3500, total_cap=12000,
+                fallback_loader=None):
     """把真实 SKILL.md 正文与自定义技能正文编入构建 prompt。
 
     返回 ``(文本, 已注入技能名)``。总长有硬上限,防止技能内容挤掉数据库与业务证据。
@@ -83,6 +84,10 @@ def method_text(names, roots, custom_loader=None, per_skill_cap=3500, total_cap=
                     text = open(entry["skill_md"], encoding="utf-8", errors="replace").read()
                 except OSError:
                     text = ""
+        if not text and fallback_loader:
+            # 注册表与覆盖件都没有时才用兼容兜底(历史技能名的一行摘要)。
+            # 放在最后:它一旦参与前面的优先级,就会顶掉真正的 SKILL.md 正文。
+            text = fallback_loader(name) or ""
         body = skill_body(text)[:per_skill_cap]
         if not body:
             continue

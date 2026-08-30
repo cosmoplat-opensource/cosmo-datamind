@@ -982,7 +982,16 @@ chk("X8c 删后不再注入构建", "ontology-semi-auto" not in _sv2._skill_meth
 chk("X8d 重复删→404", po("/api/build/skill/delete",json={"name":"ontology-semi-auto"}).status_code==404)
 r=po("/api/build/skill/restore",json={"name":"ontology-semi-auto"})
 chk("X8e 恢复后回到列表", r.status_code==200 and "ontology-semi-auto" in {x["name"] for x in g("/api/build/skills").json()})
-chk("X8f 恢复后重新注入", _sv2._skill_method_text(["ontology-semi-auto"]).strip() != "")
+# 「非空」不足以说明注入正确:一行硬编码摘要也非空。曾因兜底摘要顶掉 SKILL.md,
+# 注入量从 1876 字掉到 70 字而全套测试仍全绿——故按「与出厂正文实际内容一致」判定。
+_sk_md = open("skills_seed/ontology-semi-auto/SKILL.md", encoding="utf-8").read()
+_sk_probe = [ln.strip() for ln in _sk_md.split("\n")
+             if len(ln.strip()) > 12 and not ln.strip().startswith(("#", "-", "`", "name:", "description:"))][:1]
+_sk_inj = _sv2._skill_method_text(["ontology-semi-auto"])
+chk("X8f 恢复后重新注入", _sk_inj.strip() != "")
+chk("X8f2 ★内置技能注入的是真正的 SKILL.md 正文(非一行摘要)",
+    bool(_sk_probe) and _sk_probe[0][:24] in _sk_inj and len(_sk_inj) > 400,
+    f"注入 {len(_sk_inj)} 字")
 chk("X8g 自定义技能无出厂版→400", po("/api/build/skill/restore",json={"name":"reg-skill"}).status_code==400)
 r=po("/api/build/skill/delete",json={"name":"reg-skill"})
 chk("X9 删自定义+列表移除", r.status_code==200 and "reg-skill" not in {s["name"] for s in g("/api/build/skills").json()})
