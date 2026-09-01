@@ -34,8 +34,16 @@ DATAMIND_DB=$PWD/examples/demo_metrics.db ./start.sh
 | `built_bd2fec.json` | 10 对象 / 9 关系 | 小规模 |
 | `built_qsdemo.json` | 6 对象 / 6 关系 | 问数演示专用 |
 | `built_04f7b1.json`、`built_564f1f.json` | 1 对象 | 空构建的边界样例 |
+| `built_198e50.json` | 115 对象 / 267 关系 | 示例主库的离线兜底构建结果，可用于展示无外部大模型时的完整图谱 |
+| `built_a3d790.json` | 108 对象 / 119 关系 | 示例主库的 LLM 辅助构建结果，保留候选关系与证据判定 |
+| `built_be59bc.json` | 109 对象 / 124 关系 | 示例主库的 LLM 辅助构建结果，适合展示语义复核和待确认项 |
+| `built_motrix.json` | 142 对象 / 284 关系 | 工业世界模型仿真的工厂本体，用于大图可视化与交互演示 |
 
 `workdir/demo_ir.json` 是演示场景的本体中间表示(IR),`workdir/app_ontology_ir.json` 是应用本体。
+这些构建结果本身可直接加载；构建时曾读取的本机上传文件不属于演示包，也不是回放现有结果的必要条件。
+
+`workdir/edits_demo.json` 与 `workdir/edits_built_1f2ee6.json` 是随包提供的两份人工别名示例，
+分别演示“产量/日产量/客户”和“产能/产量”等业务称谓如何参与本体检索。其他编辑栈仍作为运行期文件处理。
 
 ## 三、运行状态与历史
 
@@ -64,7 +72,7 @@ DATAMIND_DB=$PWD/examples/demo_metrics.db ./start.sh
 - `workdir/engine_config.json`、`workdir/build_connections.json` —— 本机引擎与数据源配置
 - `workdir/uploads.db`、`workdir/uploads_*`、`workdir/chat_uploads/` —— 用户上传文件与派生库
 - `workdir/*.log` —— 运行日志
-- `workdir/edits_*.json`、`workdir/*.discarded` —— 编辑栈与改名留底
+- 除上述两份演示别名外的 `workdir/edits_*.json`、`workdir/*.discarded` —— 编辑栈与改名留底
 - `workdir/viz_boards.json` —— 本机看板布局
 
 ## 六、克隆后跑测试会看到什么
@@ -75,10 +83,10 @@ DATAMIND_DB=$PWD/examples/demo_metrics.db ./start.sh
 DATAMIND_URL=http://localhost:8092 python3 test_all.py   # 集成层
 ```
 
-集成层在**没有上游本体引擎**的环境下是 **527 通过 / 0 失败 / 8 条件跳过**,退出码为 0。
-那 8 项(编辑算子与引擎技能)需要上游引擎,套件会探测其可用性并以 `⊘` 逐条列出,
-不计为失败——见 `ARCHITECTURE.md` §5.1 的对照表。本仓内置的本体构建技能不依赖上游引擎,
-相关检查点应当通过。配齐引擎的环境为 535 通过 / 0 失败 / 0 跳过。
+当前版本最近一次完整验证为：单元测试 **394 通过**；配齐上游本体引擎的集成测试
+**559 通过 / 0 失败 / 0 跳过**。没有上游引擎时，套件会先探测依赖状态，并将仅由该引擎
+提供的检查项逐条标为条件跳过；本仓内置的本体构建技能和演示数据库不依赖上游引擎。
+具体检查点及依赖关系见 `ARCHITECTURE.md` §5.1。
 
 ## 七、关于 diff
 
