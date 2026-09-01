@@ -65,5 +65,5 @@ def test_empty_graph_does_not_crash_and_scores_full():
 def test_gaps_from_only_promotes_hard_errors(ir_with_isolated):
     r = health_check.check(ir_with_isolated)
     gaps = health_check.gaps_from(r)
-    # 孤岛是信号,不应进缺口(避免噪声淹没真问题)
+    # 未连接对象是提示信号，不应进入待补清单，以免掩盖阻断问题。
     assert gaps == []

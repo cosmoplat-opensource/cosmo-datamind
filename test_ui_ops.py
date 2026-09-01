@@ -332,8 +332,10 @@ async def main():
             # 最关键的一条:对话区本身要换成迭代语境,而不是继续显示「新建本体」的欢迎页
             (ok if "继续构建" in body and clicked in body else
              bad)("对话区换为底本上下文", body[:60].replace("\n", " "))
-            (ok if "并入" in body and "不被覆盖" in body and "删除既有" in body else
-             bad)("说明合并语义(并入/不覆盖/不删除既有)", "缺合并语义说明")
+            _merge_copy_ok = "并入" in body and "不被覆盖" in body and "删除既有" in body
+            (ok if _merge_copy_ok else bad)(
+                "说明合并语义(并入/不覆盖/不删除既有)",
+                "" if _merge_copy_ok else "缺合并语义说明")
             (ok if nm_dis else bad)("迭代时名称框禁用", f"disabled={nm_dis}")
             (ok if "本轮" in ph else bad)("诉求框提示改为增量口径", ph[:40])
             await pg.evaluate("bcIterClear()")

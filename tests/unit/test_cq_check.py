@@ -112,3 +112,95 @@ def test_ambiguous_expected_alias_is_rejected():
     res = cq_check.check_one("供方有哪些？", ir, ["供方"])
     assert res["verdict"] == "unanswerable"
     assert "指代不唯一" in res["reason"]
+
+
+def test_aliases_tables_repeated_names_and_short_names_are_handled():
+    ir = {
+        "objects": [{
+            "cn": "甲方", "aliases": ["供方", "", 7],
+            "tables": ["supplier_table", "", 8], "id": "a",
+        }, {"id": "x", "cn": "甲"}],
+        "relations": [],
+    }
+    hits = cq_check.anchor_objects("供方 supplier_table 供方 甲", ir)
+    assert [hit["key"] for hit in hits] == ["a"]
+
+
+def test_graph_helpers_cover_trivial_missing_malformed_and_cycle_paths():
+    ir = {
+        "objects": [],
+        "links": [
+            {"source": "a", "target": "b", "status": "verified"},
+            {"source": "b", "target": "c", "status": "asserted"},
+            {"source": "c", "target": "a", "status": "candidate"},
+            {"source": "", "target": "z", "status": "verified"},
+        ],
+    }
+    strong = cq_check._adj(ir, True)
+    assert cq_check._path(strong, "a", "a") == ["a"]
+    assert cq_check._path(strong, "missing", "a") is None
+    assert cq_check._path(strong, "a", "c") == ["a", "b", "c"]
+    assert cq_check._path({"a": {"b"}, "b": {"a"}, "z": set()}, "a", "z") is None
+    assert cq_check.relation_is_strong({"evidence_status": "candidate"}) is False
+
+
+def test_no_anchor_and_disconnected_objects_are_unanswerable():
+    ir = {
+        "objects": [{"id": "a", "cn": "甲方"}, {"id": "b", "cn": "乙方"}],
+        "relations": [],
+    }
+    assert cq_check.check_one("完全未知的问题", ir)["verdict"] == "unanswerable"
+    broken = cq_check.check_one("甲方和乙方", ir, ["a", "b"])
+    assert broken["verdict"] == "unanswerable"
+    assert "不连通" in broken["reason"]
+
+
+def test_check_all_accepts_all_supported_shapes_and_gaps():
+    ir = {"objects": [{"id": "a", "cn": "甲方"}], "relations": []}
+    report = cq_check.check_all([
+        "甲方有哪些",
+        {"q": "甲方有哪些", "expect": ["a"]},
+        {"question": "未知概念"},
+        {"ignored": True},
+        3,
+    ], ir)
+    assert report["total"] == 3
+    assert report["counts"] == {"answerable": 1, "partial": 1, "unanswerable": 1}
+    assert report["coverage"] == 33.3
+    gaps = cq_check.gaps_from(report)
+    assert {gap["type"] for gap in gaps} == {"cq_partial", "cq_unanswerable"}
+    assert cq_check.check_all([], ir)["coverage"] == 0.0
+
+
+def test_chain_verdicts_and_gap_conversion():
+    ir = {
+        "objects": [
+            {"id": "a", "cn": "甲方"},
+            {"id": "b", "cn": "乙方"},
+            {"id": "c", "cn": "丙方"},
+            {"id": "d", "cn": "丁方"},
+        ],
+        "relations": [
+            {"source_concept": "a", "target_concept": "b", "status": "verified"},
+            {"source_concept": "b", "target_concept": "c", "status": "candidate"},
+        ],
+    }
+    invalid = cq_check.check_chain(["甲方"], ir)
+    assert invalid["verdict"] == "invalid"
+    assert cq_check.chain_gaps(invalid) == []
+
+    intact = cq_check.check_chain(["甲方", "乙方"], ir)
+    assert intact["verdict"] == "intact"
+    assert cq_check.chain_gaps(intact) == []
+
+    weak = cq_check.check_chain(["甲方", "丙方"], ir)
+    assert weak["verdict"] == "weak"
+    assert cq_check.chain_gaps(weak)[0]["type"] == "chain_weak"
+
+    broken = cq_check.check_chain(["甲方", "丁方"], ir)
+    assert broken["verdict"] == "broken"
+    assert cq_check.chain_gaps(broken)[0]["type"] == "chain_broken"
+
+    missing = cq_check.check_chain(["甲方", "戊方"], ir)
+    assert missing["verdict"] == "unanswerable"
+    assert cq_check.chain_gaps(missing)[0]["type"] == "chain_missing_node"

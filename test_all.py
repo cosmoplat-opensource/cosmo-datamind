@@ -241,6 +241,8 @@ r=po("/api/sparql",json={"query":"BADSPARQL","graph":"demo"}); chk("sparql 语�
 # DR-012: 页面内置的默认 SPARQL 示例必须可跑(防再混入 `>?var` 缺空格等非法 SPARQL 回归)
 import re as _re, os as _os
 _ui=open(_os.path.join(_os.path.dirname(__file__),"ui","index.html"),encoding="utf-8").read()
+_qa_anchor=open(_os.path.join(_os.path.dirname(__file__),"ui","modules","qa-anchor.js"),encoding="utf-8").read()
+_qa_anchor_css=open(_os.path.join(_os.path.dirname(__file__),"ui","styles","qa-anchor.css"),encoding="utf-8").read()
 _m=_re.search(r'id="sq_q"[^>]*>(.*?)</textarea>', _ui, _re.S)
 _defq=_m.group(1).strip() if _m else ""
 r=po("/api/sparql",json={"query":_defq,"graph":"demo"}); chk("sparql 页面默认示例可跑", r.status_code==200 and len(r.json().get("rows",[]))>0)
@@ -271,6 +273,13 @@ print("=== J. 平台级模块(新增)===")
 r=g("/api/glossary"); j=r.json(); chk("术语词典", r.status_code==200 and j.get("count",0)>0 and "terms" in j)
 r=g("/api/agents"); j=r.json(); chk("智能体列表", r.status_code==200 and j.get("count",0)>0)
 r=g("/api/routes"); j=r.json(); chk("API目录", r.status_code==200 and j.get("count",0)>10)
+r=g("/assets/modules/catalog.js"); chk("前端目录模块可加载", r.status_code==200 and "function catalog" in r.text)
+r=g("/assets/modules/build-references.js"); chk("构建参照模块含离线兜底", r.status_code==200 and "fallbackCatalog" in r.text and "重新加载目录" in r.text)
+r=g("/assets/styles/responsive.css"); chk("前端响应式样式可加载", r.status_code==200 and "@media" in r.text)
+r=g("/assets/modules/qa-anchor.js"); chk("本体约束前端模块可加载", r.status_code==200 and "function dqAnchorHTML" in r.text)
+r=g("/assets/styles/qa-anchor.css"); chk("本体约束样式可加载", r.status_code==200 and ".qa-proof" in r.text)
+r=g("/assets/index.html"); chk("前端资源白名单不暴露 index", r.status_code==404)
+r=g("/assets/modules/%2e%2e/index.html"); chk("前端资源路径穿越→404", r.status_code==404)
 r=g("/api/quality"); j=r.json(); chk("数据质量", r.status_code==200 and "checks" in j and "levels" in j)
 r=g("/api/sysinfo"); j=r.json(); chk("系统信息", r.status_code==200 and j.get("tables",0)>0 and "runtimes" in j)
 r=g("/api/chat/skills"); chk("沉淀技能列表", r.status_code==200 and isinstance(r.json(),list))
@@ -311,6 +320,15 @@ r=po("/api/build/connect/delete",json={"id":cid},headers=H); chk("删除连接",
 # 构建页默认参数 + 已构建本体清单
 r=g("/api/build/defaults"); j=r.json(); chk("构建默认参数", r.status_code==200 and j.get("sqlite_path") and "conn_name" in j)
 import os as _os2; chk("默认SQLite路径真实存在", _os2.path.exists(j.get("sqlite_path","/nope")))
+r=g("/api/build/references"); _br=r.json(); chk("构建行业与标准目录", r.status_code==200 and
+    {"none","manufacturing","chemical","pcba"} <= {x.get("id") for x in _br.get("industries",[])} and
+    {"none","bfo_iof","isa95","ufo"} <= {x.get("id") for x in _br.get("ontology_standards",[])})
+_ba={x.get("id"):x.get("asset",{}) for x in _br.get("ontology_standards",[]) if x.get("id")!="none"}
+chk("三组本地标准资产均已解析", all(_ba.get(k,{}).get("ready") for k in ("bfo_iof","isa95","ufo")))
+chk("标准资产规模与指纹可追溯", _ba.get("bfo_iof",{}).get("triples",0)>=5000 and
+    _ba.get("isa95",{}).get("file_count")==33 and len(_ba.get("ufo",{}).get("fingerprint",''))==64)
+r=po("/api/build/inquire",json={"q":"测试","references":{"industry":"not-real"}},headers=H)
+chk("构建拒绝未知行业参照", r.status_code==400 and r.json().get("field")=="references")
 r=g("/api/build/built"); chk("已构建本体清单", r.status_code==200 and isinstance(r.json(),list))
 r=po("/api/build/delete",json={"key":"../etc/passwd"},headers=H); chk("删除本体非法key→400", r.status_code==400)
 # 安全:图谱键路径穿越(LFI/写穿越)必须被挡
@@ -437,7 +455,7 @@ for _ln in r.iter_lines(decode_unicode=True):
     if _ln and "build_context" in _ln: break
 r.close()
 chk("问数流含「沿本体关系召回」步骤", len(_steps)==1)
-chk("召回给出已验证关系作JOIN依据", "已验证关系作 JOIN 依据" in _steps[0])
+chk("召回明确关系只是候选JOIN依据", "候选 JOIN 依据" in _steps[0] and "最终 SQL" in _steps[0])
 
 # ═══════════ R. 动作层(DR-015)═══════════
 print("=== R. 动作层(DR-015)===")
@@ -651,7 +669,7 @@ chk("CQ1 核验 200 + 三态计数齐全", r.status_code==200 and set(_cq["count
 chk("CQ2 真实关系判 answerable", _cq["items"][0]["verdict"]=="answerable")
 chk("CQ3 无关问题判 unanswerable(不臆造可答)", _cq["items"][1]["verdict"]=="unanswerable")
 chk("CQ4 覆盖率只计 answerable", _cq["coverage"]==round(_cq["counts"]["answerable"]*100.0/_cq["total"],1))
-chk("CQ5 不可答回流为缺口", len(_cq["gaps"])>=1 and _cq["gaps"][0]["type"].startswith("cq_"))
+chk("CQ5 不可答项进入待补清单", len(_cq["gaps"])>=1 and _cq["gaps"][0]["type"].startswith("cq_"))
 chk("CQ6 结论如实标注边界(不冒充已验证可答)", "不代表数据中一定有值" in _cq["note"])
 r=po("/api/ont/cq",json={"cqs":["x"]},headers=H); chk("CQ7 缺 graph→400(不默认图谱)", r.status_code==400)
 r=po("/api/ont/cq",json={"graph":"demo"},headers=H); chk("CQ8 缺 cqs→400", r.status_code==400)
@@ -687,7 +705,7 @@ chk("DF9 纯概念对象不误报(未绑表跳过)", _dr["scanned"]["objects_bou
 _tir2={"objects":[{"id":"wo","cn":"工单","table":"t_wo","pk":"wo_id","attrs":[]},{"id":"line","cn":"产线","table":"t_line","attrs":[]}],
        "links":[{"source":"wo","target":"line","status":"verified","evidence":{"child_key":"line_id","parent_key":"line_code"}}]}
 chk("DF10 检出关系断裂(键列已删)", "relation_broken" in {i["type"] for i in _dfm.check(_tir2,_dp)["issues"]})
-chk("DF11 漂移回流缺口", len(_dfm.gaps_from(_dr))>=2 and _dfm.gaps_from(_dr)[0]["type"].startswith("drift_"))
+chk("DF11 漂移项进入待补清单", len(_dfm.gaps_from(_dr))>=2 and _dfm.gaps_from(_dr)[0]["type"].startswith("drift_"))
 _os3.remove(_dp)
 r=po("/api/ont/chain",json={"graph":"demo","chain":["月度聚合指标表(按人x月)","业务员维度表"]},headers=H); _ch=r.json()
 chk("CH1 链路核验 200 + 逐段", r.status_code==200 and _ch["total_segments"]==1)
@@ -700,7 +718,7 @@ _cir={"objects":[{"id":"a","cn":"甲"},{"id":"b","cn":"乙"},{"id":"c","cn":"丙
 chk("CH5 中段候选→weak(不冒充贯通)", _cqc.check_chain(["甲","乙","丙"],_cir)["verdict"]=="weak")
 chk("CH6 断开段→broken 且定位到段", _cqc.check_chain(["甲","丁"],_cir)["segments"][0]["status"]=="broken")
 chk("CH7 节点不存在→unanswerable", _cqc.check_chain(["甲","不存在"],_cir)["verdict"]=="unanswerable")
-chk("CH8 链路断点回流缺口", len(_cqc.chain_gaps(_cqc.check_chain(["甲","丁"],_cir)))>=1)
+chk("CH8 链路断点进入待补清单", len(_cqc.chain_gaps(_cqc.check_chain(["甲","丁"],_cir)))>=1)
 
 print("=== IU. 双盲意图检测与使用度(DR-026)===")
 import intent_check as _icm, json as _j2
@@ -754,9 +772,9 @@ chk("AL10 审计记录署名与依据", _ad["total"]>0 and "recent" in _ad and _
 _r0=_ird["edges"][0] if _ird.get("edges") else None
 if _r0:
     po("/api/ont/apply",json={"graph":SANDBOX,"source":"review","op":{"op":"confirm_relation",
-       "target":f"rel:{_r0['s']}->{_r0['t']}","params":{"status":"verified"},"reason":"回归-违纪测试"}},headers=H)
+       "target":f"rel:{_r0['s']}->{_r0['t']}","params":{"status":"verified"},"reason":"回归-未经验证升级测试"}},headers=H)
     _ad2=g(f"/api/ont/audit/{SANDBOX}").json()
-    chk("AL11 审计抓出「人审指定 verified」违纪", any(x["level"]=="discipline" for x in _ad2["risky"]))
+    chk("AL11 审计检出未经数据验证即指定 verified", any(x["level"]=="discipline" for x in _ad2["risky"]))
     po("/api/ont/undo",json={"graph":SANDBOX},headers=H)
 r=g("/api/ont/audit/a..b"); chk("AL12 审计穿越键→400", r.status_code==400)
 chk("AL13 审计标注边界(撤销会同步移除)", "撤销" in _ad["note"])
@@ -828,7 +846,7 @@ import health_check as _hc
 r=g("/api/ont/health/demo"); _h=r.json()
 chk("HL1 体检 200 + 分级结构", r.status_code==200 and all(k in _h for k in ("errors","signals","score","healthy")))
 chk("HL2 真本体无阻断问题(IR 自洽)", _h["error_count"]==0 and _h["healthy"] is True)
-chk("HL3 检出孤岛信号(建了却连不上)", _h["isolated_count"]>0)
+chk("HL3 检出未连接对象信号", _h["isolated_count"]>0)
 chk("HL4 信号不扣结构一致性分", _h["score"]==100.0 and _h["signal_count"]>0)
 chk("HL5 只诊断不自动修(边界标注)", "只诊断不自动修" in _h["note"])
 _bad={"objects":[{"id":"a","cn":"甲"},{"id":"b","cn":"乙"},{"id":"lone","cn":"孤"}],
@@ -844,7 +862,7 @@ chk("HL8 检出状态矛盾(既 verified 又 rejected)", "status_conflict" in _t
 chk("HL9 检出重复边(口径二义)", "duplicate" in _sy)
 chk("HL10 检出孤岛", "isolated" in _sy)
 chk("HL11 阻断问题拉低结构一致性分", _hr["score"]<100.0 and _hr["healthy"] is False)
-chk("HL12 仅阻断问题回流缺口(信号不制造噪声)",
+chk("HL12 仅阻断问题进入待补清单(信号不制造噪声)",
     len(_hc.gaps_from(_hr))==_hr["error_count"] and all(x["type"].startswith("health_") for x in _hc.gaps_from(_hr)))
 _hub={"objects":[{"id":"h","cn":"枢纽"}]+[{"id":f"x{i}"} for i in range(9)],
       "links":[{"source":"h","target":f"x{i}","status":"verified"} for i in range(9)]}
@@ -1108,7 +1126,14 @@ _root=_os.path.dirname(_os.path.abspath(__file__))
 chk("Z20 requirements.txt 存在", _os.path.exists(_os.path.join(_root,"requirements.txt")))
 _req=open(_os.path.join(_root,"requirements.txt"),encoding="utf-8").read()
 import sys as _sys
-_std=set(_sys.stdlib_module_names); _local={"translate_cn","quick_build","agent_runtime","serve_claw","export_owl","server","cq_check","drift_check","intent_check","usage_stat","rule_engine","openai_runtime","health_check","compat_check","module_split","dao_core","hallucination_eval","definition_eval","store","srv_context","srv_engine","bp_engine","srv_hardening","build_quality","ontology_grounding","skill_registry","action_ontology"}
+_std=set(_sys.stdlib_module_names)
+# 以同目录源码为本地模块事实源，避免每增加一个生产模块就把它误报成未声明的
+# 第三方依赖；requirements 校验仍会覆盖所有不在标准库和本项目中的 import。
+_local={_os.path.splitext(_os.path.basename(_p))[0]
+        for _p in _gl.glob(_os.path.join(_root,"*.py"))}
+# 这两个模块由可选的上游本体引擎注入，服务端没有它们时会注册受限垫片；
+# 它们不是 PyPI 依赖，不能写进 requirements.txt。
+_local.update({"agent_runtime","serve_claw"})
 _ext=set()
 for _f in ("server.py","test_all.py"):
     for _n in ast.walk(ast.parse(open(_os.path.join(_root,_f),encoding="utf-8").read())):
@@ -1262,12 +1287,12 @@ _r.close()
 chk("AN10 问数流推送 anchor 事件", isinstance(_anc,dict) and len(_anc.get("objects",[]))>0)
 chk("AN11 anchor 带范围与限定表数", _anc is not None and "scoped" in _anc and "focus_n" in _anc)
 chk("AN12 前端锚定渲染函数存在并被三处接线",
-    "function dqAnchorHTML" in _ui and "dqAnchorHTML(d.anchor)" in _ui
+    "function dqAnchorHTML" in _qa_anchor and "dqAnchorHTML(d.anchor)" in _ui
     and "dqAnchorHTML(ev.anchor)" in _ui and "anchor:done.anchor" in _ui)
 chk("AN13 超出上限时显式说明截断(不静默少画)",
-    "图中只画了 ${CAP} 个对象" in _ui and "没有少喂给引擎" in _ui)
-chk("AN14 UI 呈现锚定本体名与锚定链路", "本体锚定 · ${esc((ont.names||['示例本体'])[0])}" in _ui
-    and "入上下文" in _ui and "命中证据(凭什么选中它" in _ui)
+    "图中只画了 ${CAP} 个对象" in _qa_anchor and "没有少喂给引擎" in _qa_anchor)
+chk("AN14 UI 先解释本体约束再提供技术证据", "本体如何约束本次分析" in _qa_anchor
+    and "为什么选入规划上下文" in _qa_anchor and "查看关系图（技术证据）" in _qa_anchor)
 
 # ═══════════ AO. 选中图谱作锚定本体(DR-033)═══════════
 print("=== AO. 选中图谱作锚定本体(DR-033)===")
@@ -1282,13 +1307,14 @@ chk("AO3 锚定不同本体→召回集不同",
     {o["table"] for o in _t1["objects"]} != {o["table"] for o in _t0["objects"]})
 chk("AO4 召回对象数远小于本体规模(是锚定不是全量倾倒)",
     0 < len(_t1["objects"]) < _t1["ontology"]["objects"])
-chk_engine("AO5 上游引擎本体也能锚定并给出关系",
-    _t2["ontology"]["keys"] == ["cq"] and len(_t2["objects"]) > 0)
+chk_engine("AO5 上游本体未接入当前查询表时不伪装成可问数",
+    _t2["ontology"]["keys"] == ["cq"] and _t2["ontology"]["queryable"] is False
+    and len(_t2["objects"]) == 0)
 chk("AO6 命中证据记录了是哪个词钓出该对象",
     any(o.get("hits") for o in _t1["objects"]))
 chk("AO7 命中证据里的词确实出现在问句或其扩展词中",
     all(all(isinstance(h, str) and h for h in (o.get("hits") or [])) for o in _t1["objects"]))
-# 无绑表本体的回退:用合成图谱测,不依赖「仓里恰好有一套纯概念本体」——
+# 无绑表本体的拒绝:用合成图谱测,不依赖「仓里恰好有一套纯概念本体」——
 # tables[] 归一上线后,app(82/149 绑表)与 built_2d74f0(108/108)都已可正常锚定,
 # 那两套本体此前是因为只读 table 字段而被埋没,并非真的没有绑表
 _syn_key = "built_ztest_conceptonly"
@@ -1300,8 +1326,9 @@ with open(_syn_p, "w", encoding="utf-8") as _f:
                "relations": []}, _f, ensure_ascii=False)
 _at0.register(lambda: _os.path.exists(_syn_p) and _os.remove(_syn_p))
 _t3 = {}; _srvmod.build_context(_q33, trace=_t3, graph_keys=[_syn_key])
-chk("AO8 无绑表本体→如实回退并说明(不静默换本体)",
-    bool(_t3.get("fallback")) and _t3["ontology"]["requested"] == ["纯概念本体(回归用)"])
+chk("AO8 无绑表本体→保留原本体并标为不可问数(不静默换本体)",
+    not _t3.get("fallback") and _t3["ontology"]["keys"] == [_syn_key]
+    and _t3["ontology"]["queryable"] is False and not _t3["objects"])
 _t4 = {}; _srvmod.build_context(_q33, trace=_t4, graph_keys=["built_9c3fd1", "built_8c3354"])
 chk("AO9 多选图谱→合并为一套锚定本体", _t4["ontology"]["objects"] > _t1["ontology"]["objects"])
 # 形状无关:构建产物用 relations[source_concept] + objects[name],示例用 links[source] + id
@@ -1333,7 +1360,7 @@ chk("AO17 构建器落结构化 JOIN 键(不再只写进 note 文本)",
 chk("AO18 旧构建产物的键可从 note 回填并标来源",
     _srvmod._rel_keys({"note": "order_id→fact_delivery.order_id 重叠90%·父键唯一"})[:3]
     == ("order_id", "order_id", "note"))
-chk("AO19 UI 标出键降级与键来源", "键存疑·已降级" in _ui and "键·备注回填" in _ui)
+chk("AO19 UI 标出键降级与键来源", "键存疑·已降级" in _qa_anchor and "键·备注回填" in _qa_anchor)
 chk("AO20 问数流推送『锚定本体』步骤", "anchor_ontology" in open("server.py", encoding="utf-8").read())
 # 短缩写污染:词典把「销售订单」扩展出 so,子串匹配会命中 reason_code / sensor_id
 _t5 = {}; _srvmod.build_context("各客户的销售订单金额排名", trace=_t5, graph_keys=["built_9c3fd1"])
@@ -1342,13 +1369,13 @@ chk("AO21 两字母英文缩写不再子串命中无关表",
 chk("AO22 命中证据里不出现 so 这类子串误命中",
     all("so" not in (o.get("hits") or []) for o in _t5["objects"]))
 # 可见性:锚定埋在对话气泡里会被自动滚动顶出视口,必须有常驻条
-chk("AO23 深度问数页有常驻锚定条容器", 'id="dq_ancbar"' in _ui and ".dq-ancbar{" in _ui)
+chk("AO23 深度问数页有常驻锚定条容器", 'id="dq_ancbar"' in _ui and ".dq-ancbar{" in _qa_anchor_css)
 chk("AO24 锚定条在实时/终局/翻历史三处都刷新",
-    _ui.count("dqAncBar(") >= 5)
+    (_ui+_qa_anchor).count("dqAncBar(") >= 5)
 chk("AO25 锚定条与气泡复用同一段渲染(bare 模式,不做第二份实现)",
-    "function dqAnchorHTML(a,bare)" in _ui and "dqAnchorHTML(a,true)" in _ui and "return bare ? inner :" in _ui)
+    "function dqAnchorHTML(a,bare)" in _qa_anchor and "dqAnchorHTML(a,true)" in _qa_anchor and "return bare?inner:" in _qa_anchor)
 chk("AO26 可跳本体图谱高亮本次锚定的那一块",
-    "function dqAncHighlight" in _ui and "GRAPH_HL" in _ui and "问数锚定视图" in _ui)
+    "function dqAncHighlight" in _qa_anchor and "GRAPH_HL" in _qa_anchor and "问数锚定视图" in _ui)
 chk("AO27 图谱渲染按高亮集淡出非锚定节点与关系",
     "function _g6build(g,hl)" in _ui and "hl.set.has(n.id)" in _ui
     and "hl.set.has(e.s)&&hl.set.has(e.t)" in _ui)
@@ -1358,10 +1385,12 @@ chk("AO29 高亮可一键清除", "清除高亮,看完整图谱" in _ui)
 chk("AO30 新对话清空锚定条,不残留上一轮", "DQ_ANC_LAST=null;dqAncBar(null)" in _ui)
 chk("AO31 切到根因诊断清空锚定条(共用视图容器,免得指向另一条链路)",
     _ui.count("DQ_ANC_LAST=null;dqAncBar(null)") >= 3)
-# 回退时 ontology 必须写「实际用了哪套」,否则界面显示选中的那套而对象来自另一套
+# 不可问数时 ontology 必须仍是所选本体,并在 API 前置检查明确拒绝；不得换成 demo
 _t6 = {}; _srvmod.build_context("各客户的销售订单金额排名", trace=_t6, graph_keys=[_syn_key])
-chk("AO32 无绑表本体回退后,锚定本体如实回写为实际使用的那套",
-    _t6["ontology"]["keys"] == ["demo"] and _t6["ontology"]["requested"] and _t6.get("fallback"))
+_ir6, _keys6, _fb6, _prof6 = _srvmod._qa_anchor_ir([_syn_key])
+chk("AO32 无绑表本体不替换为示例本体,并给出可操作错误",
+    _t6["ontology"]["keys"] == [_syn_key] and not _t6.get("fallback")
+    and bool(_srvmod._qa_scope_error([_syn_key], _keys6, _fb6, _prof6)))
 # tables[] 归一:本体产出有两种写法,只认 table 会把 quick_build 的本体判成「无绑表」而静默回退
 chk("AO43 对象绑表兼容 table 与 tables[] 两种写法",
     _srvmod._obj_table({"table": "t1"}) == "t1"
@@ -1618,19 +1647,26 @@ chk("AO38 版本横幅挂 body 而非页面容器(放进 .page 会随切页隐�
 chk("AO39 首次加载只记录版本不打扰", "if(UI_VER===null){UI_VER=d.v;return;}" in _ui)
 # 对话框里的每一次提问都真跑:秒回的旧答案与「历史对话」里的记录无法区分
 chk("AO35 深度问数对话框全程不吃缓存(点示例与手动输入一致)",
-    "attachments:DQ_ATTS.map(a=>a.name),nocache:1})" in _ui
+    "cache_policy:'bypass',nocache:1,request_id:requestId" in _ui
+    and "cache:'no-store'" in _ui
     and "nocache:fresh" not in _ui and "ask(true)" not in _ui)
 chk("AO36 缓存机制本身保留(供 /api/chat 等非交互消费者)",
-    "_QA_CACHE[_qa_key(question, history, focus_tables, graph_keys)] = resp" in open("server.py", encoding="utf-8").read())
+    "_qa_cache_store(cache_key, resp)" in open("server.py", encoding="utf-8").read())
+_qa_hist = open("ui/modules/qa-history.js", encoding="utf-8").read()
+chk("AO46 本次实时分析不混入历史栏且历史续问自动分支",
+    "DQ_VIEW_MODE === 'live'" in _qa_hist
+    and "DQ_VIEW_MODE === 'history'" in _qa_hist
+    and "dqRenderCard(card, t.q, t.d, 'history')" in _qa_hist
+    and "dqBeginQuestion()" in _ui)
 chk("AO34 流中断不抹掉已完成内容(锚定是用户已看到的证据)",
     "以上为中断前已完成的部分" in _ui and "if(live.length||pr.length)" in _ui)
 chk("AO33 回退提示显示在锚定条头部(默认可见,不藏在折叠区)",
-    "${a.fallback?`<span style=\"color:#b45309" in _ui)
+    "${a.fallback?`<span class=\"qa-proof-alert\"" in _qa_anchor)
 # 截断策略探针:按原序截断会画出一片孤立方框(0 连线),让人误以为本体拿不出关系
 # 边样式表 EST 是图谱与锚定子图共用的单一事实源,定义在更靠前处;
 # 探针只截锚定段会漏掉它(ReferenceError),故一并带上。
 _est=_ui[_ui.index("const EST="):_ui.index("const GEST=EST;")]
-_fn=_est+"\n"+_ui[_ui.index("const DQ_ANC_C="):_ui.index("function dqRenderCard")]
+_fn=_est+"\n"+_qa_anchor
 _big={"objects":[{"key":f"o{i}","cn":f"对象{i}","table":f"t{i}","reason":"数据源限定","ncol":3}
                  for i in range(60)],
       "relations":[{"s":f"t{40+i}","t":f"t{50+i}","verb":"关联","status":"verified",

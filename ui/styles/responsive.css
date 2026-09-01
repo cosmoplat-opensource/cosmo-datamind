@@ -1,0 +1,28 @@
+/* DR-043：跨页面窄屏布局集中维护，避免每个页面在 index.html 里各自打补丁。 */
+@media (max-width:820px){
+ body{height:auto;min-height:100vh;overflow-y:auto}
+ .topbar .wm small{display:none}
+ .shell{flex-direction:column;overflow:visible}
+ aside{width:100%;flex-direction:column;gap:2px;border-right:0;border-bottom:1px solid var(--line);padding:8px 12px;max-height:44vh;overflow-y:auto}
+ aside .ucard{display:none}
+ aside .nav{padding:7px 12px;font-size:13px}
+ aside>div[style*="flex:1"]{display:none} aside>.muted{display:none}
+ main{padding:14px 12px;overflow:visible}
+ .kpis{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+ .kpi{min-width:0}
+ .grid2{grid-template-columns:minmax(0,1fr) !important}
+ .grid2>*{min-width:0}
+ .row{flex-wrap:wrap}
+ .msg-user{margin-left:6%} .msg-ai{margin-right:6%}
+ #g_canvas{height:64vh} table{font-size:13px}
+ iframe{height:70vh}
+ .dq{flex-direction:column;height:auto} .dq-side{width:100%;flex:0 0 auto;box-shadow:none;max-height:none}
+ .dq-side.collapsed{display:none} .dq-main{min-height:58vh} .dq-stream{min-height:42vh}
+ .dq-usermsg{max-width:88%} .dq-card{max-width:100%}
+ #dqv_deep.dqv-empty .dq-inputbar{max-width:100%}
+ .dq-modal-box,.dq-modal-box.sm{width:96vw} .ds-grid{grid-template-columns:1fr}
+ .dq-report{padding:20px 16px}
+ #eg_keys,#claw_audit{overflow-x:auto}
+ #claw_edits{overflow-wrap:anywhere}
+ .g-toolbar-group{max-width:100%;white-space:normal!important;flex-wrap:wrap}
+}

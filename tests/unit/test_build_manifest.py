@@ -14,6 +14,8 @@ def test_build_manifest_persists_reproducible_inputs_without_paths():
         cqs=["客户维度表支撑哪些指标？"],
         stability=False,
         method="数据驱动(LLM 离线兜底)",
+        references={"industry": {"id": "manufacturing", "mode": "reference"},
+                    "ontology_standard": {"id": "isa95", "mode": "constraint"}},
         evidence={
             "tables": 108,
             "docs": 1,
@@ -26,6 +28,13 @@ def test_build_manifest_persists_reproducible_inputs_without_paths():
     assert manifest["source"] == {"id": "demo", "name": "示例主库"}
     assert manifest["skills"] == ["ontology-semi-auto"]
     assert manifest["cqs"] == ["客户维度表支撑哪些指标？"]
+    assert manifest["references"]["industry"]["id"] == "manufacturing"
+    assert manifest["references"]["ontology_standard"]["mode"] == "constraint"
+    assert manifest["reference_assets"]["id"] == "isa95"
+    assert manifest["reference_assets"]["ready"] is True
+    assert len(manifest["reference_assets"]["fingerprint"]) == 64
+    assert ir["build_history"][0]["references"] == manifest["references"]
+    assert ir["build_history"][0]["reference_assets"] == manifest["reference_assets"]
     assert manifest["evidence"]["tables"] == 108
     assert manifest["evidence"]["files"][0]["consumed_as_text"] is True
     assert "/Users/" not in str(manifest)

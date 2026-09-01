@@ -1,4 +1,4 @@
-# PROPOSAL · 以 SDD+TDD 极大改进 Cosmo DataMind 与半自动本体构建算法
+# PROPOSAL · 以 SDD+TDD 极大改进 COSMO DataMind 与半自动本体构建算法
 
 > 状态:提议(未立项)。日期:2026-07-31。
 > 消费方式:`Consult @specs/map.md`;本文件提议一批 DR(DR-035…DR-046)与 IR(IR-007…IR-011)。

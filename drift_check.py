@@ -140,6 +140,6 @@ def check(ir, db_path):
 
 
 def gaps_from(report):
-    """漂移项转缺口条目,与 CQ 缺口同格式,统一回流人审队列。"""
+    """把漂移项转成待补条目，与 CQ 条目使用同一结构并进入人工复核队列。"""
     return [{"type": "drift_" + it["type"], "desc": it["desc"], "fix": it["fix"]}
             for it in report.get("issues", [])]

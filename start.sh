@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Cosmo DataMind 启动器
+# COSMO DataMind 启动器
 cd "$(dirname "$0")"
 mkdir -p workdir
 
@@ -20,4 +20,4 @@ else
 fi
 nohup python3 server.py > workdir/server.log 2>&1 &
 
-echo "Cosmo DataMind → http://127.0.0.1:$DATAMIND_PORT (引擎: $CLAW_DRIVER)"
+echo "COSMO DataMind → http://127.0.0.1:$DATAMIND_PORT (引擎: $CLAW_DRIVER)"

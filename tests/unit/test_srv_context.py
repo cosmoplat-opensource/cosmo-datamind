@@ -86,3 +86,32 @@ class TestAtomicWrite:
         sc._atomic_text(p, "第二版内容更长")
         assert open(p, encoding="utf-8").read() == "第二版内容更长"
         assert [f.name for f in tmp_path.iterdir()] == ["a.txt"]
+
+    def test_atomic_bytes_roundtrip_permissions_and_no_tmp(self, tmp_path):
+        import os
+        import stat
+        p = str(tmp_path / "upload.bin")
+        sc._atomic_bytes(p, b"\x00\xffpayload", mode=0o600)
+        assert open(p, "rb").read() == b"\x00\xffpayload"
+        assert stat.S_IMODE(os.stat(p).st_mode) == 0o600
+        assert [f.name for f in tmp_path.iterdir()] == ["upload.bin"]
+
+    @pytest.mark.parametrize("writer,payload", [
+        (sc._atomic_text, "x"),
+        (sc._atomic_bytes, b"x"),
+    ])
+    def test_atomic_writers_reject_parent_reference(self, tmp_path, writer, payload):
+        with pytest.raises(ValueError):
+            writer(str(tmp_path / ".." / "escape"), payload)
+
+    def test_concurrent_atomic_text_writers_publish_one_complete_value(self, tmp_path):
+        import threading
+        p = str(tmp_path / "shared.txt")
+        values = [(str(i) + "-数据-") * 4000 for i in range(8)]
+        threads = [threading.Thread(target=sc._atomic_text, args=(p, value)) for value in values]
+        for thread in threads:
+            thread.start()
+        for thread in threads:
+            thread.join()
+        assert open(p, encoding="utf-8").read() in values
+        assert [f.name for f in tmp_path.iterdir()] == ["shared.txt"]

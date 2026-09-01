@@ -44,7 +44,7 @@ jobs:
           DATAMIND_WORKDIR: ${{ github.workspace }}/workdir
         run: |
           test -f "$DATAMIND_DB"
-          python3 server.py > /tmp/datamind-ci.log 2>&1 &
+          gunicorn -c gunicorn.conf.py wsgi:application > /tmp/datamind-ci.log 2>&1 &
           server_pid=$!
           trap 'kill "$server_pid" 2>/dev/null || true; wait "$server_pid" 2>/dev/null || true' EXIT
           for _ in $(seq 1 30); do
@@ -58,7 +58,7 @@ jobs:
           DATAMIND_DB: ${{ github.workspace }}/examples/demo_metrics.db
           DATAMIND_WORKDIR: ${{ github.workspace }}/workdir
         run: |
-          python3 server.py > /tmp/datamind-s10.log 2>&1 &
+          gunicorn -c gunicorn.conf.py wsgi:application > /tmp/datamind-s10.log 2>&1 &
           server_pid=$!
           trap 'kill "$server_pid" 2>/dev/null || true; wait "$server_pid" 2>/dev/null || true' EXIT
           for _ in $(seq 1 30); do

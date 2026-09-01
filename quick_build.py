@@ -12,6 +12,7 @@ import dao_core   # DR-035:裁决决策与命名/重叠原语的单一事实源
 import build_quality
 import action_ontology
 import ontology_grounding
+import content_quality
 
 qi = lambda s: '"' + str(s).replace('"', '""') + '"'   # 安全转义 SQL 标识符(列名/表名含引号也不破格)
 _KIND_BFO = ontology_grounding.KIND_DEFAULTS
@@ -140,7 +141,10 @@ def build(db, out, name, action_types=None):
         cols_of[t] = [(r[1], r[2] or "TEXT") for r in info]
         pks = [r[1] for r in info if r[5]]
         pk_of[t] = pks[0] if pks else None
-        kind = "event" if re.match(r"(dws_|fact_.*(log|record|output|iot))", t, re.I) else "object"
+        # 表名明确表示单据/记录时属于信息对象；只有显式事件/过程词才判为事件。
+        # 旧规则把 fact_*_record/log 反向判为 Process，导致工单和记录同其描述的
+        # 业务活动混为一谈。统一交由 content_quality 的可测试规则处理。
+        kind, _kind_reason = content_quality.normalize_kind("object", name=t, table=t)
         objects.append({"name": t, "kind": kind, "tables": [t], "field_count": len(info),
                         "indicators": [], "remark": f"quick_build 自 {t}",
                         # ── IOF-AV 机读注释（数据驱动路径无模型定义，标为原始概念）──

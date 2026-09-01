@@ -29,6 +29,16 @@ class TestPureHelpers:
 
 
 class TestBuildIntegration:
+    def test_record_table_is_information_object_and_explicit_event_is_event(self, make_sqlite, tmp_path):
+        db = make_sqlite({
+            "fact_maintenance_record": ("id INTEGER PRIMARY KEY", [(1,)]),
+            "equipment_failure_event": ("id INTEGER PRIMARY KEY", [(1,)]),
+        })
+        ir = quick_build.build(db, str(tmp_path / "ir.json"), "fx")
+        kinds = {obj["name"]: obj["kind"] for obj in ir["objects"]}
+        assert kinds["fact_maintenance_record"] == "ice"
+        assert kinds["equipment_failure_event"] == "event"
+
     def test_build_ignores_sqlite_internal_tables(self, make_sqlite, tmp_path):
         db = make_sqlite({"business_table": ("id INTEGER PRIMARY KEY", [(1,)])})
         with sqlite3.connect(db) as con:

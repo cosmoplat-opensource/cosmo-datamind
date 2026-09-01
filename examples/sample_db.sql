@@ -1,4 +1,4 @@
--- Cosmo DataMind 示例数据库
+-- COSMO DataMind 示例数据库
 -- 用法: sqlite3 demo.db < examples/sample_db.sql
 --
 -- 造一个最小但完整的制造业数仓切片:3 张维表 + 2 张事实表 + 1 张汇总表。

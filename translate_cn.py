@@ -4,6 +4,7 @@
 零编造原则:① 优先复用 IR 内已有的人工/LLM 确认翻译(精确列名映射);② 其余按制造/财务域词元词典逐词翻译,
 **仅当整列所有词元都命中词典时才填**,任一词元未知则留空(宁缺勿错)。可重复运行,幂等。"""
 import json, os, re, sys
+from srv_context import _atomic_json
 
 IR = sys.argv[1] if len(sys.argv) > 1 else "workdir/demo_ir.json"
 
@@ -11,9 +12,10 @@ IR = sys.argv[1] if len(sys.argv) > 1 else "workdir/demo_ir.json"
 def _checked_ir(path):
     """待翻译 IR 的路径体检:须为已存在的普通文件,且不含上级目录引用。
     本脚本对该文件是**原地读写**,路径判错就不只是读错文件、而是覆盖错文件。"""
-    p = os.path.normpath(str(path or ""))
-    if ".." in p.split(os.sep):
+    raw = str(path or "")
+    if ".." in raw.split(os.sep):
         raise ValueError(f"路径不得含上级目录引用: {path}")
+    p = os.path.normpath(raw)
     if not os.path.isfile(p):
         raise ValueError(f"IR 文件不存在: {path}")
     return p
@@ -187,7 +189,7 @@ def main():
             lc = a["col"].lower()
             cn = exact.get(lc) or tr_col(a["col"])
             if cn: a["cn"] = cn; attr_fixed += 1
-    json.dump(ir, open(ir_path, "w", encoding="utf-8"), ensure_ascii=False, indent=1)
+    _atomic_json(ir_path, ir)
     print(f"补中文名:对象 +{obj_fixed},字段 +{attr_fixed}")
 
 if __name__ == "__main__":

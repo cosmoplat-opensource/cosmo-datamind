@@ -1,4 +1,4 @@
-# Cosmo DataMind · 开发/测试工具链(IR-007 TDD 底座)
+# COSMO DataMind · 开发/测试工具链(IR-007 TDD 底座)
 #   pip3 install -r requirements-dev.txt
 # 与 requirements.txt(运行时)分离;此处固定版本以保证 CI 可复现。
 pytest==8.4.2
@@ -11,10 +11,12 @@ mypy==1.17.1
 # 运行时 requirements.txt 保持不固定(本地原型惯例);CI 用下面这份锁定版本复现。
 flask==3.1.2
 requests==2.32.5
+gunicorn==23.0.0
 rdflib==7.6.0
 pyshacl==0.31.0
 openpyxl==3.1.5
 pymysql==1.2.0
+psycopg2-binary==2.9.10
 # 凭据静态加密。CI 必须装:未装时 test_secret_roundtrip_and_not_plaintext_on_disk
 # 的「落盘形态不得含明文」断言会被静默跳过,等于不验证该项安全整改。
 cryptography==46.0.3
