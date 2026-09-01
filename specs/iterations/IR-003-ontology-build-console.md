@@ -1,7 +1,7 @@
 # IR-003 · 本体构建问询台(多模态 LLM 自动建模)
 
 - **状态**: delivered
-- **关联**: [[DR-002-multimodal-llm-anti-hallucination-build]]、[[DR-003-runtime-neutral-naming]]、[[DR-008-datasource-connection-model]]、[[DR-009-object-cn-display]]
+- **关联**: [[DR-002-multimodal-llm-anti-hallucination-build]]、[[DR-003-runtime-neutral-naming]]、[[DR-008-datasource-connection-model]]、[[DR-009-object-cn-display]]、[[DR-052-build-industry-and-standard-references]]
 
 ## 目标 / Goal
 把「本体构建」重做为对话式**多模态 LLM × 多智能体自动建模**问询台(算法亮点):上传多模态数据 / 连接多库 / 编排技能,
@@ -13,6 +13,7 @@
 - [x] 对话台:新建对话、**历史对话**(localStorage `bc_convs` 持久化,「历史对话 ▾」弹窗可回看/切换/删除,回放含结果卡与内联预览)、欢迎示例、流式执行记录、结果卡(五格统计 + 摘要)、**对话内内联 G6 本体预览**(点节点看绑定表/字段/指标)、动态面板高度(随对话增长,封顶于左栏)。
 - [x] 表单预填可用默认参数(SQLite 绝对路径/命名/默认技能 ontology-semi-auto);默认多模态数据为业务指标看板知识包(内部资料,不随仓库分发)。
 - [x] 对象/事件显示有意义中文名(cn),抽取 prompt 强化中文命名。
+- [x] 行业参照与本体标准选择在 IR-012 正式恢复:none/reference/constraint 进入提示、确定性注释、验收、manifest/history 与迭代继承，而非仅增加界面控件。
 
 ## 任务 / Tasks
 1. `_gather_evidence`/`_llm_extract_ontology`/`_adjudicate_ir` + `build_inquire` SSE(超时 220/250s,证据瘦身)。

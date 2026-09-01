@@ -1,12 +1,12 @@
-# 本体半自动构建链路 · 显式编排说明(DR-050)
+# 本体半自动构建链路 · 显式编排说明(DR-050/052)
 #
 # 本文件不参与运行，用于说明 /api/build/inquire 的实际执行顺序、阻断条件和降级路径。
 # code 锚点由 tests/meta/test_ontology_pipeline_doc.py 回打源码,防止说明与实现悄悄漂移。
 
 name: ontology_semi_automatic_build
-description: 范围/CQ → 来源整理 → 技能方法 → LLM 提议 → 语义复核 → 数据验证 → 上层关系映射 → 验收检查 → 人工复核
+description: 范围/CQ → 行业/标准参照 → 来源整理 → 技能方法 → LLM 提议 → 语义复核 → 数据验证 → 参照注释与验收 → 人工复核
 entrypoint: server.py:build_inquire
-version: "2.0"
+version: "2.2"
 
 principles:
   - 验收结果采用 pass/review/fail 三态
@@ -15,6 +15,8 @@ principles:
   - 语义复核结果只触发人工复核，不覆盖可重复的数据验证结果
   - candidate/gap 保留失败证据,不静默删除
   - CQ 是构建输入与构建后验收;未提供时覆盖率为空而不是零或伪造值
+  - 行业/标准可不选;参照缺口待审、强约束缺口阻断,均不得为通过模板而编造证据
+  - 标准机器可读资产固定版本本地加载;不跟随 RDF/XSD import 联网,缺失时不得伪装就绪
 
 nodes:
   - id: intake_scope_and_cq
@@ -26,6 +28,16 @@ nodes:
     type: deterministic
     code: "skill_registry.py:discover / method_text"
     desc: 合并本仓内置技能与可选上游技能;列表、查看、prompt 注入共用同一注册表
+
+  - id: reference_profile
+    type: deterministic
+    code: "build_references.py:normalize / prompt_block"
+    desc: 归一行业/本体标准及参照/强约束模式;旧调用兼容 BFO/IOF,显式 none 不施加标准
+
+  - id: reference_asset_load
+    type: deterministic
+    code: "standard_assets.py:status / prompt_context / trace"
+    desc: 离线解析本地 RDF/XSD,核验文件、许可来源和内容指纹;资产缺失进入参照质量门
 
   - id: evidence_manifest
     type: deterministic
@@ -68,6 +80,11 @@ nodes:
     code: "ontology_grounding.py:normalize / from_verb"
     desc: 仅映射官方 BFO/IOF 关系，并检查源、目标上层类别；无法确认时保留本地对象属性
 
+  - id: reference_annotation
+    type: deterministic_check
+    code: "build_references.py:apply_profile / evaluate"
+    desc: 对整图应用行业/标准候选注释;行业核心项与标准对齐缺口按模式进入待审或阻断
+
   - id: quality_health
     type: deterministic_check
     code: "health_check.py:check"
@@ -96,7 +113,7 @@ nodes:
   - id: persist_audit
     type: output
     code: "srv_context.py:_atomic_json"
-    desc: IR、逐关系证据、quality 报告和 gaps 一起原子落盘
+    desc: IR、逐关系证据、references、标准资产指纹、quality 报告、gaps 与逐轮历史一起原子落盘
 
   - id: human_review_feedback
     type: human
@@ -104,7 +121,9 @@ nodes:
     desc: 人工确认只产生 asserted；否决模式用于下一轮候选抑制
 
 edges:
-  - [intake_scope_and_cq, skill_discovery]
+  - [intake_scope_and_cq, reference_profile]
+  - [reference_profile, reference_asset_load]
+  - [reference_asset_load, skill_discovery]
   - [skill_discovery, evidence_manifest]
   - [evidence_manifest, proposal]
   - [proposal, semantic_review]
@@ -114,7 +133,8 @@ edges:
   - [proposal, quick_build_fallback]
   - [adjudication_core, upper_relation_grounding]
   - [quick_build_fallback, upper_relation_grounding]
-  - [upper_relation_grounding, quality_health]
+  - [upper_relation_grounding, reference_annotation]
+  - [reference_annotation, quality_health]
   - [quality_health, quality_evidence]
   - [quality_evidence, quality_definition]
   - [quality_definition, quality_cq]
@@ -124,5 +144,5 @@ edges:
 
 result_semantics:
   pass: 无阻断问题、无待审项且 CQ 已通过
-  review: 候选关系、语义争议、定义不足、CQ 未提供或未完全支撑
-  fail: 图结构不自洽或 verified 证据契约被破坏
+  review: 候选关系、语义争议、定义不足、CQ 未提供/未完全支撑或软参照存在缺口
+  fail: 图结构不自洽、verified 证据契约被破坏或强约束存在缺口

@@ -32,6 +32,21 @@ class TestTimeout:
         monkeypatch.setenv("DATAMIND_REQ_TIMEOUT", "abc")
         assert H.req_timeout() == H.DEFAULT_REQ_TIMEOUT
 
+    def test_all_env_accessors_and_description(self, monkeypatch):
+        values = {
+            "DATAMIND_MAX_CONN": ("32", H.conn_cap, 32),
+            "DATAMIND_HDR_BUDGET": ("7", H.hdr_budget, 7),
+            "DATAMIND_BODY_BUDGET": ("600", H.body_budget, 600),
+            "DATAMIND_BODY_INIT": ("25", H.body_init, 25),
+            "DATAMIND_BODY_MIN_RATE": ("900", H.body_min_rate, 900),
+        }
+        for name, (value, getter, expected) in values.items():
+            monkeypatch.setenv(name, value)
+            assert getter() == expected
+        assert "并发上限 32" in H.describe()
+        monkeypatch.setenv("DATAMIND_MAX_CONN", "999999")
+        assert H.conn_cap() == H.DEFAULT_MAX_CONN
+
 
 class TestHeaderDeadline:
     """关键:socket 超时是**每次读**的上限,慢速客户端只要持续滴入数据就永不触发
@@ -189,6 +204,33 @@ class TestBodyMinRate:
         except TimeoutError:
             pass
 
+    def test_readinto_attribute_forwarding_and_watchdog_branches(self, monkeypatch):
+        import io
+
+        raw = io.BytesIO(b"abc")
+        reader = H._DeadlineReader(raw)
+        assert reader.readinto(bytearray(2)) == 2
+        assert reader.seekable() is True
+        reader._fire()  # 未启动时为空操作
+
+        reader.start(10)
+        rearmed = []
+        monkeypatch.setattr(H.time, "monotonic", lambda: reader._deadline - 1)
+        monkeypatch.setattr(reader, "_arm", lambda: rearmed.append(True))
+        reader._fire()
+        assert rearmed == [True]
+
+    def test_kill_tolerates_broken_socket_methods(self):
+        class BrokenSocket:
+            def shutdown(self, _how):
+                raise RuntimeError("broken")
+
+            def close(self):
+                raise RuntimeError("broken")
+
+        H._DeadlineReader(b"", on_timeout=None)._kill()
+        H._DeadlineReader(b"", on_timeout=BrokenSocket())._kill()
+
 
 class TestConnectionCap:
     def test_default_cap_is_bounded(self):
@@ -203,6 +245,84 @@ class TestConnectionCap:
         assert not sem.acquire(blocking=False), "上限失效:第 3 个连接仍被放行"
         sem.release()
         assert sem.acquire(blocking=False), "名额未归还"
+
+    def test_handler_reject_accept_setup_parse_and_timeout_paths(self, monkeypatch):
+        from werkzeug.serving import WSGIRequestHandler
+
+        calls = []
+        monkeypatch.setattr(WSGIRequestHandler, "handle", lambda self: calls.append("handle"))
+        cls = H.build_handler(timeout=9, max_conn=2)
+
+        class Conn:
+            def __init__(self, fail=False):
+                self.closed = 0
+                self.fail = fail
+
+            def close(self):
+                self.closed += 1
+                if self.fail:
+                    raise OSError("closed")
+
+        class Sem:
+            def __init__(self, acquire=True, bad_release=False):
+                self.acquire_result = acquire
+                self.bad_release = bad_release
+                self.released = 0
+
+            def acquire(self, blocking=False):
+                assert blocking is False
+                return self.acquire_result
+
+            def release(self):
+                self.released += 1
+                if self.bad_release:
+                    raise ValueError("over release")
+
+        rejected = object.__new__(cls)
+        rejected.connection = Conn(fail=True)
+        cls._sem = Sem(acquire=False)
+        rejected.handle()
+        assert rejected.connection.closed == 1
+
+        accepted = object.__new__(cls)
+        accepted.connection = Conn()
+        cls._sem = Sem(acquire=True, bad_release=True)
+        accepted.handle()
+        assert calls == ["handle"]
+        assert cls._sem.released == 1
+
+        import io
+        monkeypatch.setattr(
+            WSGIRequestHandler,
+            "setup",
+            lambda self: (setattr(self, "rfile", io.BytesIO(b"")), setattr(self, "connection", Conn())),
+        )
+        setup_obj = object.__new__(cls)
+        setup_obj.setup()
+        assert isinstance(setup_obj.rfile, H._DeadlineReader)
+
+        starts = []
+
+        class Reader:
+            def start(self, *args, **kwargs):
+                starts.append((args, kwargs))
+
+        monkeypatch.setattr(WSGIRequestHandler, "parse_request", lambda self: "parsed")
+        parse_obj = object.__new__(cls)
+        parse_obj.rfile = Reader()
+        assert parse_obj.parse_request() == "parsed"
+        assert starts == [((cls._hdr_budget,), {}),
+                          ((cls._body_init,), {"min_rate": cls._body_rate,
+                                               "ceiling": cls._body_budget})]
+
+        def timeout(_self):
+            raise TimeoutError
+
+        monkeypatch.setattr(WSGIRequestHandler, "handle_one_request", timeout)
+        timeout_obj = object.__new__(cls)
+        timeout_obj.connection = Conn(fail=True)
+        timeout_obj.handle_one_request()
+        assert timeout_obj.close_connection is True
 
 
 class TestSSECompatibility:

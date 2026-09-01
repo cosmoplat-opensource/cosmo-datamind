@@ -26,9 +26,9 @@ pip install -r requirements.txt
 
 | 档位 | 组件 | 缺失后果 |
 |---|---|---|
-| 核心 | flask、requests | 服务起不来 |
+| 核心 | flask、requests、gunicorn | 服务或生产 WSGI 起不来 |
 | 语义层 | rdflib、pyshacl | 服务正常;SPARQL、标准导出、SHACL 校验返回 503 并提示安装 |
-| 按需 | openpyxl、pymysql | 仅在上传 xlsx、实连 MySQL/Doris 时需要 |
+| 按需 | openpyxl、pymysql、psycopg2-binary | 仅在上传 xlsx、实连 MySQL/Doris/PostgreSQL 时需要 |
 
 未固定版本号:依赖面窄且均为稳定 API。需要可复现构建请自行 `pip freeze`。
 
@@ -72,8 +72,8 @@ pip install -r requirements.txt
 ## 启动
 
 ```bash
-python3 server.py          # 前台运行
-./start.sh                 # 后台运行,日志写入 workdir/server.log
+python3 server.py          # 仅本地开发：前台运行
+./start.sh                 # 仅本地开发：后台运行,日志写入 workdir/server.log
 ```
 
 停止:`kill $(lsof -ti :8092)`
@@ -98,7 +98,7 @@ curl -s http://127.0.0.1:8092/api/ont/runtimes  # 已注册的模型运行时
 完整回归:
 
 ```bash
-python3 test_all.py        # 系统级,源码定义 535 个检查点,需服务已启动
+python3 test_all.py        # 系统级,源码定义 557 个检查点,需服务已启动
 python3 test_ui.py         # 全页面走查,需 playwright
 python3 test_ui_ops.py     # 浏览器逐步实操,含真实问数;外部端点未配置时显式跳过相关项
 ```
@@ -118,20 +118,22 @@ DATAMIND_DB=$PWD/../demo_metrics.db python3 test_all.py
 
 ## 生产部署
 
-内置 Flask 开发服务器仅供本地使用。对外提供服务请改用 WSGI 服务器并置于反向代理之后:
+内置 Flask 开发服务器仅供本地使用。生产环境使用仓库内的专用 WSGI 入口和受测配置：
 
 ```bash
-pip install gunicorn
-gunicorn -w 1 -k gthread --threads 4 -b 127.0.0.1:8092 server:app
+gunicorn -c gunicorn.conf.py wsgi:application
 ```
 
-`-w 1` 是必须的:应用含进程内状态（问数缓存、运行时实例、写锁）,多 worker 会导致状态不一致。
-`gthread` 使单一进程能够同时处理多个请求；API 数据源若指向本服务自身，单线程同步 worker
-会等待自己而超时。当前共享状态的写入路径已有锁保护，本轮按 4 线程完成了并发与系统回归。
+`gunicorn.conf.py` 固定 `workers=1`：应用含进程内状态（问数缓存、运行时实例、作业表、写锁），
+多 worker 会导致状态不一致。`gthread` 以默认 8 个有界线程提供并发；API 数据源若指向本服务
+自身，单线程同步 worker 会等待自己而超时。长构建与 SSE 的 worker 超时默认为 1800 秒，可通过
+`DATAMIND_GUNICORN_THREADS` 与 `DATAMIND_GUNICORN_TIMEOUT` 在受限范围内调整。
 若需横向扩展,应在反向代理层做会话保持,或将状态外置——后者尚未实现。
 
-TLS 与身份认证由反向代理承担。**本服务自身不含用户体系**,请勿在无鉴权的情况下暴露到公网,
-详见 [SECURITY.md](SECURITY.md)。
+Nginx 示例见 [`deploy/nginx/cosmo-datamind.conf`](deploy/nginx/cosmo-datamind.conf)：它把 Gunicorn
+留在 `127.0.0.1:8092`，保留原始 Host/转发头，关闭代理缓冲以支持 SSE，并把上传上限对齐为
+25 MiB。模板故意不猜测证书与认证方案；上线前必须补齐 TLS 与身份认证。**本服务自身不含用户
+体系**,请勿在无鉴权的情况下暴露到公网,详见 [SECURITY.md](SECURITY.md)。
 
 ## 上游本体引擎（可选）
 

@@ -9,6 +9,7 @@ pass/review/fail 三态结果。它只读 IR、
 from __future__ import annotations
 
 import cq_check
+import build_references
 import dao_core
 import definition_eval
 import health_check
@@ -70,6 +71,16 @@ def audit_verified_evidence(ir):
 
 def audit_grounding(ir):
     """复核已声明的 BFO/IOF 映射是否存在，并满足定义域和值域约束。"""
+    manifest_refs = (ir.get("build_manifest") or {}).get("references")
+    if isinstance(manifest_refs, dict):
+        try:
+            selected = build_references.normalize(manifest_refs)["ontology_standard"]
+        except ValueError:
+            selected = {"id": "none"}
+        if selected["id"] != "bfo_iof":
+            return {"mapped": 0, "unmapped": 0, "issue_count": 0, "valid": True,
+                    "issues": [], "enabled": False,
+                    "note": "本轮未选择 BFO/IOF，不执行 BFO/IOF 关系映射审计"}
     relations, source_key, target_key = _relations(ir)
     categories = {}
     for obj in ir.get("objects", []):
@@ -93,7 +104,8 @@ def audit_grounding(ir):
                            "desc": item["reason"],
                            "fix": "修正实体上层类别或关系方向；无法确认时保留为本地对象属性"})
     return {"mapped": mapped, "unmapped": len(relations) - mapped,
-            "issue_count": len(issues), "valid": not issues, "issues": issues}
+            "issue_count": len(issues), "valid": not issues, "issues": issues,
+            "enabled": True}
 
 
 RESULT_TEXT = {"pass": "通过", "review": "待复核", "fail": "不通过"}
@@ -130,6 +142,14 @@ def evaluate(ir, cqs=None, definition_threshold=0.6):
     health = health_check.check(ir)
     evidence = audit_verified_evidence(ir)
     grounding = audit_grounding(ir)
+    raw_references = (ir.get("build_manifest") or {}).get("references")
+    if not isinstance(raw_references, dict):
+        raw_references = (ir.get("scenario") or {}).get("build_references")
+    try:
+        reference_profile = build_references.normalize(raw_references, legacy_default=False)
+    except ValueError:
+        reference_profile = build_references.normalize(None, legacy_default=False)
+    reference_quality = build_references.evaluate(ir, reference_profile, grounding)
     definitions_full = definition_eval.score_ontology(ir, weak_threshold=definition_threshold)
     definitions = {key: definitions_full[key] for key in ("scored", "mean_score", "weak", "weak_threshold")}
     definitions["weakest"] = definitions_full.get("rows", [])[:20]
@@ -144,15 +164,18 @@ def evaluate(ir, cqs=None, definition_threshold=0.6):
     for item in evidence["issues"]:
         gap = {"type": "evidence_" + item["type"], "desc": item["desc"], "fix": item["fix"]}
         blocking_issues.append(item); gaps.append(gap)
+    blocking_issues.extend(reference_quality["blocking_issues"])
+    gaps.extend(reference_quality["gaps"])
 
     review_queue = []
+    review_queue.extend(reference_quality["review_queue"])
     for signal in health.get("signals", []):
         review_queue.append({"type": "health_" + signal["type"], "desc": signal["desc"], "fix": signal["fix"]})
     relations, _sk, _tk = _relations(ir)
     candidates = [r for r in relations if r.get("status") in ("candidate", "gap")]
     if candidates:
         review_queue.append({"type": "candidate_relations", "count": len(candidates),
-                             "desc": f"{len(candidates)} 条候选/缺口关系尚无可复核证据",
+                             "desc": f"{len(candidates)} 条候选或待补关系尚无可复核证据",
                              "fix": "补数据窗口、文档依据或人审;不要直接升级为 verified"})
     semantic_disputes = [r for r in relations
                          if (r.get("semantic_status") or r.get("semantic"))
@@ -200,6 +223,7 @@ def evaluate(ir, cqs=None, definition_threshold=0.6):
         "health": health,
         "evidence": evidence,
         "grounding": grounding,
+        "references": reference_quality,
         "semantic": {"disputed": len(semantic_disputes),
                      "strong_for_cq": sum(1 for r in relations if cq_check.relation_is_strong(r))},
         "definitions": definitions,

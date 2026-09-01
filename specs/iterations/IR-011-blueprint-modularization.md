@@ -22,17 +22,27 @@
   `/api/engine/llm/test`、`/api/engine/llm/models`、`/api/engine/test` 迁出;server 注册 blueprint。
   app 级 `before_request` CSRF 守卫对 blueprint 同样生效,**安全模型不变**。
   路由总数 121 不变(server 116 + bp_engine 5);集成 531/531 全绿(满环境;若见 5 项 apply/undo/engine 失败,系 engine_config.json 的 driver 在当前环境未注册所致,非回归——见 ARCHITECTURE §5.1) 与迁移前一致。
-- [ ] 其余五簇同理:每簇先识别其跨切面共享层(IR/图谱访问、config),抽为共享模块,再迁路由。每步集成验证。
+- [x] **第二个 blueprint `bp_actions.py`(动作簇,7 路由)**:共享注册表/日志/schema 抽到
+  `srv_actions.py`；主应用以函数注入提供表目录，不发生 blueprint→server 循环导入。`server.py`
+  降到 6000 行以内。新增受限 `/assets` 端点后总计 126 路由(server 114 + engine 5 + actions 7)。
+- [x] **前端渐进模块化**:数据目录逻辑迁到 `ui/modules/catalog.js`，跨页面窄屏规则迁到
+  `ui/styles/responsive.css`；`ui/index.html` 降到 2600 行以内，资源路由仅开放 JS/CSS 白名单。
+- [ ] 其余四簇同理:每簇先识别其跨切面共享层(IR/图谱访问、config),抽为共享模块,再迁路由。每步集成验证。
 
 ## 任务 Tasks(每项一次提交)
 
 1. 建 srv_context 基座,server import 之(基础原语零风险抽取);集成验证。
 2. 抽 engine 簇为 bp_engine + 注册;集成验证。
-3. …逐簇推进。
+3. 抽 actions 簇为 srv_actions + bp_actions + 注册；集成验证。
+4. 前端先抽目录与响应式横切模块；浏览器桌面/窄屏回归。
+5. …逐簇推进。
 
 ## 验收 Acceptance
 
 - [x] srv_context 抽取:单元 106 绿、集成 531/531 全绿(满环境;若见 5 项 apply/undo/engine 失败,系 engine_config.json 的 driver 在当前环境未注册所致,非回归——见 ARCHITECTURE §5.1)(与抽取前一致)、pyflakes 零告警、chk 仍 535。
+- [x] actions/前端模块切片:366 项单元/元测试全绿，总分支覆盖率 89.7%；Gunicorn 下系统回归
+  543 通过/0 失败/8 条件跳过（均为未提供上游引擎）；27 页桌面与 390px 移动视口逐页可见、
+  无应用控制台错误。目录中文检索/类型筛选/表详情实操通过，并修复宽表与审计表横向撑页。
 - [ ] 每簇 blueprint 迁移后集成套件不劣化(以 531/531(满环境) 为基线)。
 
 ## 备注

@@ -1,4 +1,4 @@
-# Specs Map · Cosmo DataMind 数据智脑
+# Specs Map · COSMO DataMind 数据智脑
 
 > 入口文件。AI 代理与协作者从这里查找相关 spec。
 > 规约驱动开发(SDD)。消费方式:`Consult @specs/map.md to find relevant context.`
@@ -9,7 +9,7 @@
 > “完备度 100%”“全部关系接地”“多模态解析”或 HermiT 文字当作已验证能力。
 
 ## 项目一句话
-Cosmo DataMind 是「数据治理 × 本体 × 深度问数」原型：
+COSMO DataMind 是「数据治理 × 本体 × 深度问数」原型：
 以**配置的 SQLite 数据源只读执行**，可选接入 `DATAMIND_ENGINE_DIR` 指定的上游本体引擎。
 核心能力是基于数据库元数据、结构化输入和人工提供文本的本体候选提议、数据检验与人工复核；
 二进制附件在没有外部解析器时只登记来源，不宣称已理解其中的图像或正文。
@@ -21,7 +21,7 @@ Cosmo DataMind 是「数据治理 × 本体 × 深度问数」原型：
 
 ## 关键契约
 - **数据执行**:深度问数/可视化/SQL 工作台/即时问数(SQL 类)在 `DATAMIND_DB` 指定的 SQLite 数据源上只读执行；示例数据库需按 README 创建或显式指定。防写由 `mode=ro`、`sql_is_readonly` 与单句执行共同实现。SPARQL 在本地 rdflib RDF 图(IR→Turtle)执行。见 [[DR-001-local-readonly-execution]]。
-- **建模算法**:CQ/技能正文 → LLM 提议对象、事件、关系和候选键 → 数据验证(取值重叠≥60%∧父键唯一∧命名有据∧方向正确→verified,其余保留 candidate)→ BFO/IOF 官方关系与类别约束检查 → 图结构/证据/定义/CQ 验收检查；LLM 离线时由 quick_build 使用同一数据验证规则。见 [[DR-002-multimodal-llm-anti-hallucination-build]] 与 [[DR-050-executable-ontology-build-gate]]。
+- **建模算法**:行业/本体标准（均可不选，参照或强约束）+ CQ/技能正文 → LLM 提议对象、事件、关系和候选键 → 数据验证(取值重叠≥60%∧父键唯一∧命名有据∧方向正确→verified,其余保留 candidate)→ 所选参照的候选注释/缺口检查 → 图结构/证据/定义/CQ 验收；LLM 离线时由 quick_build 使用同一后处理和验收规则。见 [[DR-002-multimodal-llm-anti-hallucination-build]]、[[DR-050-executable-ontology-build-gate]] 与 [[DR-052-build-industry-and-standard-references]]。
 - **引擎**:运行时经 `agent_runtime`(CLAW_DRIVER 选 hermes/claude-code/openclaw),多引擎顺序兜底;**对外统一中性名**(智能引擎/备选/经典),不暴露底层库名,见 [[DR-003-runtime-neutral-naming]]。
 - **深度问数**:SSE 流式执行记录 + 渐进出图,缓存键含上传指纹,离线走模板兜底,见 [[DR-004-deep-qa-sse]]。
 - **前端**:对齐 iiot-platform/design-system 设计 token(#4A5FF3/#409EFF、圆角 4px、PingFang);**工业级去 emoji**(accent bar + 单色 SVG + 状态点),见 [[DR-005-frontend-design-system]]。
@@ -33,6 +33,7 @@ Cosmo DataMind 是「数据治理 × 本体 × 深度问数」原型：
 ### 决定 / Decisions
 - [DR-050 · 半自动构建的统一证据契约、技能输入与确定性验收检查](decisions/DR-050-executable-ontology-build-gate.md)
 - [DR-051 · 内置技能可改写与可删除(覆盖层 + 删除墓碑)](decisions/DR-051-editable-builtin-skills.md)
+- [DR-052 · 半自动构建的行业参照与本体标准配置(none/参照/强约束 + 迭代继承)](decisions/DR-052-build-industry-and-standard-references.md)
 - [DR-043 · 单体路由蓝图化(计划+已起步:抽纯模块降耦合→逐簇拆blueprint)](decisions/DR-043-blueprint-modularization.md)
 - [DR-044 · JSON store 持久化抽象(原子/坏档恢复/校验/迁移/并发,填负向持久化测试空白)](decisions/DR-044-json-store-abstraction.md)
 - [DR-040 · 定义质量评分(属加种差/非循环/反例 + 参考重叠;LLM 1.0 vs 数据驱动 0.0)](decisions/DR-040-definition-quality-eval.md)
@@ -81,6 +82,8 @@ Cosmo DataMind 是「数据治理 × 本体 × 深度问数」原型：
 - [IR-007 · 工程校验与 TDD 底座(pytest/coverage/ruff/CI + 确定性模块单测)](iterations/IR-007-tdd-foundation.md) · **in-progress**
 - [IR-008 · 裁决核收敛与算法强化(dao_core 单一事实源 + 引擎平价 + 零回归)](iterations/IR-008-adjudication-core-convergence.md) · **in-progress**
 - [IR-011 · 单体路由蓝图化(共享上下文基座 + 逐簇拆 blueprint)](iterations/IR-011-blueprint-modularization.md) · **in-progress**
+- [IR-012 · 恢复行业参照与本体标准构建配置](iterations/IR-012-build-reference-profiles.md) · **delivered**
+- [IR-013 · 标准资产本地化与目录加载恢复](iterations/IR-013-reference-assets-and-loader-recovery.md) · **delivered**
 - [IR-009 · 反幻觉评测台与门槛量化(对抗基准 + 泄漏率 + DR-038 回归实测)](iterations/IR-009-eval-and-definition-quality.md) · **in-progress**
 
 ## 上游素材(真相来源)
@@ -89,14 +92,14 @@ Cosmo DataMind 是「数据治理 × 本体 × 深度问数」原型：
 - `README.md` — 模块能力总览与实测部署命令。
 - `ARCHITECTURE.md` — 分层/数据流/统一约定/安全模型/已知边界(架构说明)
 - `AUDIT.md` — 逐轮自测/复审记录(IR 的原始日志,已归纳进 iterations/)。
-- `test_all.py` — 系统级回归，源码定义 553 个检查点。
+- `test_all.py` — 系统级回归，源码定义 562 个检查点。
 - `SPEC.md` — 对**平台** web/ 的逆向规格(平台契约,非 DataMind;前缀不同勿混用)。
 
 ## 现状校准
-- 计数(2026-08-28):**125 路由**(server.py 120 + bp_engine 5)/ **553 集成断言** /
-  **317 项单元测试** / DR-001…DR-051 · IR-001…IR-011。
+- 计数(2026-09-01):**127 路由**(server.py 115 + bp_engine 5 + bp_actions 7)/ **562 集成断言** /
+  **389 项 pytest 测试** / DR-001…DR-052 · IR-001…IR-013。
   新增共享层 `srv_context`/`srv_engine`、单一裁决核 `dao_core`、评测台 `hallucination_eval`/`definition_eval`、
-  持久化抽象 `store`、首个 blueprint `bp_engine`。
+  持久化抽象 `store`、构建参照 `build_references`、本地标准资产 `standard_assets`、blueprint `bp_engine` / `bp_actions`，以及前端目录/响应式/构建参照模块。
 
 - 计数(2026-07-17):27 页面模块 / 82 后端路由 / test_all.py 109 断言 / 数据 108 表 186,833 行 / 107 指标 / 655 术语。
 - 计数(2026-07-27):28 页面模块 / 109 后端路由 / test_all.py 249 断言(数据与指标/术语计数不变)。
@@ -122,7 +125,7 @@ Consult @specs/map.md to find relevant context.
 ```
 
 ## 开源收敛(2026-08-01)
-- 本仓开源范围仅 Cosmo DataMind 本体。移除旧系统内嵌:/platform 静态代理、/api/claw 代理、经典部署自拉起、引擎工具箱(TOOLS)、平台成果目录;UI 摘除 本体对话/建模工作台/成果库/平台工作台(原版)/平台对话(原版) 五页。
+- 本仓开源范围仅 COSMO DataMind 本体。移除旧系统内嵌:/platform 静态代理、/api/claw 代理、经典部署自拉起、引擎工具箱(TOOLS)、平台成果目录;UI 摘除 本体对话/建模工作台/成果库/平台工作台(原版)/平台对话(原版) 五页。
 - 计数(2026-08-01):**26 页面模块 / 106 后端路由 / 279 运行时断言**(数据 108 表 186,833 行 / 107 指标 / 655 术语不变)。
 - 上游引擎为可选组件(DATAMIND_ENGINE_DIR 接入,缺失自动降级),不随本仓发布。
 

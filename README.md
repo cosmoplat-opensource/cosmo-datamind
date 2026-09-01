@@ -1,4 +1,4 @@
-# Cosmo DataMind
+# COSMO DataMind
 
 **数据治理 × 工业本体 × 深度问数** 的一体化原型:把杂乱的业务库,建成一张**带类型、带口径、带证据**的工业本体图谱,并让人和 Agent 都能可信地问数、诊断、执行动作。
 
@@ -14,13 +14,13 @@ Apache-2.0 · Python + Flask + 原生 JS(无前端构建步骤)· 单端口本�
 - "直通率"和"良率"被混用,答案给了数却给不出口径;
 - 跨表 JOIN 全靠猜,错了也没人发现。
 
-Cosmo DataMind 先用模型批量提出候选项，再用数据库约束和取值样本验证连接关系，由人工确认业务语义。系统记录每条关系的验证依据和状态，并在适用时按 BFO/IOF 官方术语与类别约束映射上层关系；无法确认的关系保留为本地属性。
+COSMO DataMind 先用模型批量提出候选项，再用数据库约束和取值样本验证连接关系，由人工确认业务语义。构建时可选择或不选择制造/化工/PCBA 行业参照与 BFO+IOF、ISA-95、UFO 本体标准；系统记录每条关系的验证依据和状态，无法确认的标准映射保留为本地属性。
 
 ## 核心特性
 
 | 能力 | 说明 |
 |---|---|
-| **半自动本体构建** | CQ/技能方法 → 候选提议 → 语义复核 → 数据验证 → 确定性验收检查 → 人工确认。`verified` 至少要求声明外键，或取值重叠(≥60%)、父键唯一、命名依据与方向检查同时成立；依据不足时保留为 `candidate` |
+| **半自动本体构建** | 行业/本体标准（可不选，参照或强约束）+ CQ/技能方法 → 候选提议 → 语义复核 → 数据验证 → 确定性验收 → 人工确认。`verified` 至少要求声明外键，或取值重叠(≥60%)、父键唯一、命名依据与方向检查同时成立；依据不足时保留为 `candidate` |
 | **证据分层** | 每条关系带状态 `verified` / `asserted` / `candidate` / `gap`;图上线型即语义,一眼看出哪条敢用 |
 | **深度问数** | 自然语言 → 本体定位对象与口径 → 生成 SQL → **只读执行** → 带出处作答;同屏给出指标口径卡(计算口径/数据出处/血缘) |
 | **本体锚定可视化** | 选中哪套本体、凭哪个词命中哪张表、沿哪条关系扩展、最终 SQL 真正用了谁 —— 对话区常驻锚定条画出完整链路,可一键跳到图谱高亮「用到的是本体的哪一块」 |
@@ -64,9 +64,9 @@ export DATAMIND_ENGINE_DIR=/path/to/ontology-engine   # 上游引擎(可选)
 ### 3. 启动
 
 ```bash
-python3 server.py                  # 前台运行 → http://127.0.0.1:8092
+python3 server.py                  # 仅本地开发，前台运行 → http://127.0.0.1:8092
 # 或
-./start.sh                         # 后台运行,日志在 workdir/server.log
+./start.sh                         # 仅本地开发，后台运行,日志在 workdir/server.log
 ```
 
 停止:`kill $(lsof -ti :8092)`
@@ -75,7 +75,7 @@ python3 server.py                  # 前台运行 → http://127.0.0.1:8092
 
 ```bash
 curl http://127.0.0.1:8092/api/overview      # KPI 概览(无库时含 warning 字段)
-python3 test_all.py                          # 系统级回归(源码定义 553 个检查点;需服务已启动)
+python3 test_all.py                          # 系统级回归(源码定义 562 个检查点;需服务已启动)
 ```
 
 ### 5. 跑通 demo(五分钟看完主链路)
@@ -115,18 +115,29 @@ python3 test_all.py                          # 系统级回归(源码定义 553 
 **④ 建一套本体** → 「本体构建」选数据源直接构建(纯数据驱动,无需 LLM);
 或接引擎后用会话式构建。产物出现在图谱列表里,可立刻拿去问数(见 ③)。
 
+左侧“行业与本体标准”可分别选择：不选择、软参照或强约束。软参照中未满足的核心项进入
+人工复核，强约束中未满足的核心项使验收结果为“不通过”；两种模式都坚持证据优先，不会为凑行业
+模板编造对象。继续构建默认继承底本最近一轮选择，也可以在本轮覆盖。ISA-95/UFO
+标注是候选对齐，不代表标准认证或完整合规。BFO 2020、IOF Core、gUFO 与 MESA
+B2MML（ISA-95 的公开 XML 实现）已固定版本放在 `ontology/standards/`，构建只读本地
+资产并记录内容指纹；不包含 ISA/IEC 付费标准正文。目录接口失败时前端仍立即提供完整
+离线选项，并显示失败原因和重试入口，不会停在“加载中”。
+
 想验证「本体到底有没有用」:进「问数评测」跑三组同题对照(无检索增强 / 图谱增强 / 本体增强)。
 
 ### 6. 生产部署(可选)
 
-内置的 Flask 开发服务器仅供本地使用。对外提供服务时用 WSGI 服务器 + 反向代理:
+`requirements.txt` 已包含 Gunicorn。生产环境从专用 WSGI 入口启动，且只监听回环地址：
 
 ```bash
-pip install gunicorn
-gunicorn -w 1 -k gthread --threads 4 -b 127.0.0.1:8092 server:app
+gunicorn -c gunicorn.conf.py wsgi:application
 ```
 
-再由 Nginx 等反代承担 TLS 与鉴权——本服务自身不含用户体系,见 [SECURITY.md](SECURITY.md)。
+配置固定为单 worker + 有界线程，因为会话、作业和锁仍是进程内状态；超时默认 1800 秒，
+可容纳长构建/SSE，但仍有硬上限。Nginx 模板在
+[`deploy/nginx/cosmo-datamind.conf`](deploy/nginx/cosmo-datamind.conf)，已保留 Host、关闭 SSE
+缓冲并设置上传/请求超时。部署时必须补 TLS 与身份认证——本服务自身不含用户体系，见
+[SECURITY.md](SECURITY.md)。
 
 ## 运行形态:两档
 
@@ -141,7 +152,7 @@ gunicorn -w 1 -k gthread --threads 4 -b 127.0.0.1:8092 server:app
 | 对话式本体编辑(apply/undo) | ❌ 需要引擎 | ✅ |
 | 内置构建技能库 | ✅ 本仓 `ontology-semi-auto` | ✅ 本仓 + 上游技能 |
 
-上游本体引擎是**可选组件,不随本仓发布**——本仓开源范围仅 Cosmo DataMind 本体。
+上游本体引擎是**可选组件,不随本仓发布**——本仓开源范围仅 COSMO DataMind 本体。
 若你拥有兼容的引擎目录(提供 `engine/agent_runtime.py` 多运行时抽象与 `web/skills_seed/` 构建技能),
 一个环境变量即可接入:
 
@@ -261,12 +272,13 @@ GLM-5.2 与 OpenAI 的完整配置、用自然语言建一张带中文名的本�
 
 `specs/` 下是完整的**规约驱动开发(SDD)**记录——不是事后补的说明,而是开发时的决策依据:
 
-- `specs/decisions/` — DR-001…DR-050 决策记录,每篇写清背景、选项、取舍与代价
-- `specs/iterations/` — IR-001…IR-011 迭代记录,含验收标准与实测结果
+- `specs/decisions/` — DR-001…DR-052 决策记录,每篇写清背景、选项、取舍与代价
+- `specs/iterations/` — IR-001…IR-013 迭代记录,含验收标准与实测结果
 - `specs/map.md` — 入口索引
 
 半自动构建方法的核心取舍（为何数据验证优先于模型判断、为何人工确认产生 `asserted`、
-如何执行确定性验收检查）记在 `DR-002`、`DR-011` 与 `DR-050`;执行顺序见
+如何执行确定性验收检查、如何选择或不选择行业/标准）记在 `DR-002`、`DR-011`、
+`DR-050` 与 `DR-052`;执行顺序见
 `docs/pipelines/ontology_build.yaml`。
 
 ## 测试
@@ -274,19 +286,19 @@ GLM-5.2 与 OpenAI 的完整配置、用自然语言建一张带中文名的本�
 ```bash
 # 单元层:离线、秒级,不需起服务(确定性模块的隔离测试)
 python3 -m venv .venv && .venv/bin/pip install -r requirements-dev.txt
-.venv/bin/python -m pytest tests/ -q      # 单测 + 文档计数自检(2026-08-29:284 项测试)
+.venv/bin/python -m pytest tests/ -q      # 单测 + 文档计数自检(2026-09-01:389 项测试)
 .venv/bin/coverage run -m pytest tests/ -q && .venv/bin/coverage report   # 覆盖率低于81.0%时失败
 
-# 集成层:需先起服务
-.venv/bin/python server.py &            # 先起服务
-.venv/bin/python test_all.py            # 系统级回归(源码定义 553 个检查点)
+# 集成层:需先起服务（用生产 WSGI 路径验证）
+.venv/bin/gunicorn -c gunicorn.conf.py wsgi:application &
+.venv/bin/python test_all.py            # 系统级回归(源码定义 562 个检查点)
 .venv/bin/python test_ui.py             # 全 UI 走查:页面渲染 + 子 UI 交互(需 playwright)
 .venv/bin/python test_ui_ops.py         # UI 逐步实操:切引擎/建本体/对话改本体/审计/问数/选本体锚定
 ```
 
 两层分工:单元层测确定性模块的边界与纯函数(离线可跑),集成层测端到端契约与安全约束。
 套件覆盖路由可达性、只读约束、CSRF、路径穿越、证据分层一致性、编辑回放等。
-**未配置引擎时,依赖引擎的用例会失败**——这是如实反映能力边界,不是缺陷。
+未配置上游引擎时，依赖它的用例会明确记为条件跳过；其余检查仍须零失败。
 
 ## 贡献
 

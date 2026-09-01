@@ -78,7 +78,7 @@ def anchor_objects(question, ir):
 
     从严匹配:只认**完整出现**在问句里的名称,不做模糊/子串近似——
     近似匹配会把"单"匹配到"工单",制造虚假的 answerable。
-    宁可漏匹配(结果偏保守,报出缺口),不可错匹配(结果偏乐观,掩盖缺口)。
+    宁可漏匹配并报告未覆盖项，也不可错配后高估本体的可回答范围。
     """
     q = (question or "").lower()
     candidates = []
@@ -276,7 +276,7 @@ def check_all(cqs, ir):
 
 
 def gaps_from(report):
-    """把不可答/部分可答的验收问题转成缺口条目,回流进 IR 的 gaps 清单。"""
+    """把不可答/部分可答的验收问题转成待补条目，回流进 IR 的 gaps 清单。"""
     out = []
     for it in report.get("items", []):
         if it["verdict"] == "answerable":
@@ -361,7 +361,7 @@ def check_chain(chain, ir):
 
 
 def chain_gaps(report):
-    """链路断点转缺口条目。"""
+    """把链路断点转成待补条目。"""
     if report.get("verdict") in ("intact", "invalid"):
         return []
     out = []

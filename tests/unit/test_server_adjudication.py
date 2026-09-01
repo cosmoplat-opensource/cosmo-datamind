@@ -71,6 +71,38 @@ def test_llm_action_kind_is_preserved_but_not_made_invocable_without_registry_bi
     assert action["candidate"] is True
 
 
+def test_llm_branch_normalizes_record_kind_and_rejects_synthetic_example(make_sqlite, monkeypatch):
+    db = make_sqlite({"maintenance_record": ("id INTEGER PRIMARY KEY", [(1,)])})
+    monkeypatch.setattr(server, "_llm_semantic_review", lambda relations, ev: None)
+    extracted = {"objects": [{
+        "name": "maintenance_record", "cn": "维修记录", "kind": "event",
+        "table": "maintenance_record", "definition": "设备修复过程中发生的活动",
+        "example": "2026-01-03 完成设备 A-100 维修", "counterExample": "维修计划",
+    }], "relations": []}
+    ir = server._adjudicate_ir(
+        db, "test", extracted,
+        _evidence({"maintenance_record": ["id"]}),
+    )
+    obj = ir["objects"][0]
+    assert obj["kind"] == "ice"
+    assert obj["definition"] == ""
+    assert obj["example"] == ""
+    assert obj["example_provenance"]["status"] == "withheld_no_source"
+
+
+def test_llm_branch_keeps_only_example_found_in_uploaded_evidence(make_sqlite, monkeypatch):
+    db = make_sqlite({"orders": ("id INTEGER PRIMARY KEY", [(1,)])})
+    monkeypatch.setattr(server, "_llm_semantic_review", lambda relations, ev: None)
+    evidence = _evidence({"orders": ["id"]})
+    evidence["docs"] = "业务记录：订单 SO-17 已下达。"
+    extracted = {"objects": [{"name": "orders", "cn": "销售订单", "kind": "ice",
+                               "table": "orders", "example": "订单 SO-17"}], "relations": []}
+    obj = server._adjudicate_ir(db, "test", extracted, evidence)["objects"][0]
+    assert obj["example"] == "订单 SO-17"
+    assert obj["example_provenance"]["status"] == "observed"
+    assert obj["example_provenance"]["source"] == "uploaded_documents"
+
+
 def test_llm_branch_suppresses_reverse_direction(make_sqlite, monkeypatch):
     db = make_sqlite({
         "customers": ("id INTEGER", [(1,), (1,), (2,)]),

@@ -22,7 +22,7 @@ CQ 全过的本体,结构上仍可能是病的——比如一半对象是孤岛(
   self_loop       自反关系:源=目标 —— 多为抽取误判
   duplicate       重复边:同一对象对之间多条同向关系 —— 口径二义
   bidirectional   双向对偶:A→B 与 B→A 同时存在 —— 方向未定,推理会绕圈
-  hub             超级节点:度数远超均值 —— 常是"万能表"未拆分
+  hub             超级节点:度数远超均值 —— 常见原因是职责过多的宽表尚未拆分
   dangling        悬空端点:关系引用了不存在的对象 —— IR 自身不一致
   status_conflict 状态矛盾:同一对关系既 verified 又 rejected
 
@@ -32,7 +32,7 @@ CQ 全过的本体,结构上仍可能是病的——比如一半对象是孤岛(
 - **分级而非一刀切**。dangling/status_conflict 是阻断问题(IR 不自洽),
   isolated/hub 是待核查信号——混为一谈会让人淹没在噪声里而忽略真问题。
 - **结构一致性分只由阻断问题扣分**。信号类不扣分,只列出;否则一个枢纽对象就能
-  把分数拉垮,分数失去意义。
+  使分数失真，失去比较意义。
 """
 from collections import Counter
 
@@ -122,7 +122,7 @@ def check(ir):
     for k in isolated:
         signals.append({"type": "isolated", "severity": "info", "object": k,
                         "desc": f"孤岛对象:「{cn.get(k, k)}」不参与任何关系",
-                        "fix": "建了却连不上——补关系,或确认它本就是独立参考数据"})
+                        "fix": "补充有证据的关系，或确认该对象本来就是独立参考数据"})
 
     if deg:
         avg = sum(deg.values()) / len(deg)
@@ -130,7 +130,7 @@ def check(ir):
             if avg > 0 and d >= max(6, avg * 4):
                 signals.append({"type": "hub", "severity": "info", "object": k, "degree": d,
                                 "desc": f"超级节点:「{cn.get(k, k)}」度数 {d}(均值 {avg:.1f})",
-                                "fix": "常见于未拆分的『万能表』;若确为业务枢纽则属正常"})
+                                "fix": "常见于职责过多且尚未拆分的宽表；若确为业务枢纽则属正常"})
 
     n_checked = len(objs) + len(rels)
     score = round(max(0.0, (n_checked - len(errors) * 2) * 100.0 / n_checked), 1) if n_checked else 100.0
@@ -143,11 +143,11 @@ def check(ir):
         "score": score,
         "note": "确定性图结构体检,不调 LLM;只诊断不自动修——孤岛可能是刚建未连,"
                 "超级节点可能本就是业务枢纽,判断权在人。结构一致性分只由阻断问题扣分,"
-                "信号类只列出不扣分(否则一个枢纽对象就能把分数拉垮)",
+                "信号类只列出不扣分，避免业务枢纽使结构分数失真",
     }
 
 
 def gaps_from(report):
-    """阻断问题转缺口条目回流;信号类不进缺口(避免噪声淹没真问题)。"""
+    """阻断问题转待处理条目回流；信号类不进入阻断项，避免噪声掩盖问题。"""
     return [{"type": "health_" + e["type"], "desc": e["desc"], "fix": e["fix"]}
             for e in report.get("errors", [])]

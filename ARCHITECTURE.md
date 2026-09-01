@@ -1,23 +1,25 @@
-# Cosmo DataMind · 系统架构
+# COSMO DataMind · 系统架构
 
-> 面向维护者的架构说明。契约细节见 `specs/`(DR-001…DR-051、IR-001…IR-011)。本文描述分层、数据流与统一约定。
+> 面向维护者的架构说明。契约细节见 `specs/`(DR-001…DR-052、IR-001…IR-013)。本文描述分层、数据流与统一约定。
 
 ## 1. 分层
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│  前端 (ui/index.html, 单页, 原生 JS)                          │
-│   26 页 × hash 路由 · G6 图谱 · ECharts · 统一助手 $/esc/J    │
+│  前端 (ui/index.html + ui/modules/styles, 原生 JS/CSS)        │
+│   27 页 × hash 路由 · G6 图谱 · ECharts · 统一助手 $/esc/J    │
 ├─────────────────────────────────────────────────────────────┤
-│  HTTP 层 (Flask, 单端口 8092) · 共 125 路由                    │
-│   server.py 117 路由 + bp_engine.py 5 路由(blueprint, DR-043)│
+│  HTTP 层 (Flask, 单端口 8092) · 共 127 路由                    │
+│   server.py 115 + bp_engine 5 + bp_actions 7 (DR-043)         │
+│   生产入口:wsgi.py → Gunicorn(gthread) → Nginx 反向代理       │
 │   app 级 before_request CSRF 守卫(对 blueprint 同样生效)      │
 │   共享层: srv_context(路径/只读连接/原子写/写锁)              │
 │           srv_engine(运行时缓存/引擎配置/引擎回复语义)         │
+│           srv_actions(动作存储/参数 schema)                    │
 ├─────────────────────────────────────────────────────────────┤
 │  能力层                                                        │
-│   构建: CQ/技能→来源整理→LLM提议→语义复核→dao_core数据验证   │
-│         → 上层关系映射检查→build_quality验收检查→人工复核     │
+│   构建: CQ/行业与标准/技能→来源整理→LLM提议→语义复核         │
+│         → dao_core数据验证→参照注释→build_quality验收→人审    │
 │   问数: _anchor_ir(选中图谱=锚定源) → build_context(带轨迹)   │
 │         → agent_sql_plan → 口径校验 → q() → 双盲意图 → 叙事    │
 │   体检: cq_check 能力核验 · drift_check 漂移 · health_check    │
@@ -34,7 +36,7 @@
 
 ## 2. 核心数据流
 
-**本体构建(DR-011/050)**：CQ 与技能正文进入提议上下文 → LLM 只提议关系和候选键 → `_llm_semantic_review` 标记语义存疑项 → `_adjudicate_ir` 调用 `dao_core`，按固定阈值、父键唯一性、命名依据和方向检查验证连接关系 → `ontology_grounding` 按官方 IRI、定义域和值域检查 BFO/IOF 映射 → `build_quality` 检查图结构、verified 证据、定义、映射和 CQ → IR 与 gaps 原子写入。每条关系分别记录数据验证状态 `status` 和上层映射状态 `grounding_status`；离线路径 `quick_build` 使用同一数据验证规则和验收检查。执行顺序见 `docs/pipelines/ontology_build.yaml`。
+**本体构建(DR-011/050/052)**：CQ、行业/本体标准配置与技能正文进入构建上下文 → `standard_assets` 从固定版本本地 RDF/XSD 加载所选标准并留下内容指纹 → LLM 只提议关系和候选键 → `_llm_semantic_review` 标记语义存疑项 → `_adjudicate_ir` 调用 `dao_core`，按固定阈值、父键唯一性、命名依据和方向检查验证连接关系 → `build_references.apply_profile` 对整图施加行业/标准候选注释（选择 BFO/IOF 时再由 `ontology_grounding` 按官方 IRI、定义域和值域检查映射）→ `build_quality` 检查图结构、verified 证据、定义、参照缺口和 CQ → IR、manifest/history 与 gaps 原子写入。软参照缺口进入 review，强约束缺口进入 fail；没有证据不得为满足模板而编造。离线路径 `quick_build` 使用同一后处理和验收检查。执行顺序见 `docs/pipelines/ontology_build.yaml`。
 
 **关系发现的泛化**(DR-011,基准实证驱动):连接键多候选循环(后缀词干→等值列名==父表名→前缀 Country1→Country→同名键形列);父列候选序 PK 优先;复合键按元组联合计算重叠率和唯一性，模型给出的多列提示不限于二列，自动组合搜索控制在 2--4 列。覆盖企业 `*_id` 规范库、自然键学术库(Mondial 级)、无约束上传 CSV、复合键 schema。
 
@@ -50,6 +52,8 @@
 | `hallucination_eval.py` | 错误关系控制评测台:带标签基准上量化精确率/召回/**幻觉泄漏率**(judge 可选) | DR-039 |
 | `definition_eval.py` | 定义质量评分:属加种差/非循环/反例 + 参考重叠(LLM-judge 可选) | DR-040 |
 | `build_quality.py` | 确定性验收检查：图结构 + verified 证据契约 + 定义 + 上层关系映射 + CQ，输出 pass/review/fail | DR-050 |
+| `build_references.py` | 行业/本体标准目录、配置归一、提示片段、整图候选注释与参照/强约束质量报告 | DR-052 |
+| `standard_assets.py` | 固定版本本地标准 RDF/XSD 的清单、离线解析、内容指纹与提示上下文；资产在 `ontology/standards/` | DR-052 |
 | `ontology_grounding.py` | BFO/IOF 官方关系 IRI、定义域和值域检查；无法确认时保留本地对象属性 | DR-010/050 |
 | `skill_registry.py` | 本仓/上游技能合并发现,列表/查看/执行/prompt 正文消费的单一注册表 | DR-050 |
 | `store.py` | JSON 持久化抽象:原子写/坏档恢复/schema 校验/迁移/每路径锁 | DR-044 |
@@ -57,6 +61,8 @@
 | `srv_context.py` | 共享上下文:路径、`ro_connect`、`sql_is_readonly`、`_atomic_json`、写锁 | DR-043 |
 | `srv_engine.py` | 引擎共享层:运行时缓存、引擎配置读写/应用、引擎回复语义 | DR-043/017 |
 | `bp_engine.py` | 引擎设置 blueprint(5 路由;仅路由,共享态在 `srv_engine`) | DR-043 |
+| `srv_actions.py` | 动作共享层:注册表/日志读取、参数 schema 校验 | DR-043/020 |
+| `bp_actions.py` | 动作类型/发起/审批 blueprint(7 路由;目录函数由主应用注入) | DR-043/020 |
 | `cq_check.py` | 能力核验(CQ):本体够不够回答业务问题;穿透链路是否贯通 | DR-024/025 |
 | `drift_check.py` | 概念漂移:本体还对不对得上数据源(表/列/主键/关系四类) | DR-025 |
 | `intent_check.py` | 双盲意图检测:问句通道 vs SQL 通道各自锚定,比对是否答非所问 | DR-026 |
@@ -78,6 +84,8 @@
 | 原子写 | `_atomic_json` + `_WRITE_LOCK` 串行化 | 全部持久化 |
 | 路径守卫 | `_bad_gkey` / `_ir_write_path`(拒只读源与穿越) | 全部图谱键入口 |
 | 上层关系映射 | `ontology_grounding.normalize`(官方 IRI + 定义域/值域检查) | `ontology_grounding.py` |
+| 构建参照配置 | `build_references.normalize/apply_profile/evaluate`；显式 none 不回填 BFO/IOF | `build_references.py` |
+| 本地标准资产 | `standard_assets.status/prompt_context/trace`；只读清单文件，不跟随 import 联网 | `standard_assets.py`, `ontology/standards/` |
 | kind→上层类别 | `KIND_DEFAULTS`(含 ice=InformationContentEntity) | `ontology_grounding.py` |
 | 数据源连接 | `build_connect` 按 path/dsn 幂等登记,去重复堆叠 | server.py |
 | 图谱选择器 | `graphOptions(gs,label)` 分组 optgroup(精选/场景/构建) | ui,图谱/工作台/元数据覆盖三处共用 |
@@ -90,7 +98,7 @@
 
 ## 4. 安全模型(DR-006)
 
-慢速攻击缓解(请求头总时限 + 正文最低速率限制 + 阻塞读看门狗 + 并发上限,DR-048)· 只读 SQL 三重防写(mode=ro + `sql_is_readonly` + 单句 execute)· 全局 CSRF 守卫(非安全方法带跨源 Origin→403)· 图谱键防穿越 · 命令白名单(无 shell=True)· SPARQL 禁 SERVICE/外部 FROM · 三写端点经 `_open_writable` 仅回写受控 IR · `_atomic_json` 原子性。
+开发服务器慢速攻击缓解(请求头总时限 + 正文最低速率限制 + 阻塞读看门狗 + 并发上限,DR-048)；生产由 Gunicorn 有界线程/超时与 Nginx header/body/keepalive 超时共同承担连接边界。只读 SQL 三重防写(mode=ro + `sql_is_readonly` + 单句 execute)· 全局 CSRF 守卫(非安全方法带跨源 Origin→403)· 图谱键防穿越 · 静态资源 JS/CSS 白名单 · 命令白名单(无 shell=True)· SPARQL 禁 SERVICE/外部 FROM · 三写端点经 `_open_writable` 仅回写受控 IR · `_atomic_json` 原子性。
 
 ## 5. 测试与验收检查
 
@@ -98,8 +106,8 @@
 
 | 层 | 内容 | 是否需起服务 |
 |---|---|---|
-| 单元层 `tests/` | 确定性模块边界/纯函数 + 文档计数自检(2026-08-29:284 项测试) | 否(离线秒级) |
-| 集成层 `test_all.py` | 源码定义 553 个检查点,覆盖路由正常路径、边界与安全约束 | 是 |
+| 单元层 `tests/` | 确定性模块边界/纯函数 + 文档计数自检 | 否(离线秒级) |
+| 集成层 `test_all.py` | 源码定义 562 个检查点,覆盖路由正常路径、边界与安全约束 | 是 |
 | UI 层 | `test_ui.py`(全页走查)·`test_ui_ops.py`(浏览器逐步实操) | 是(需 playwright) |
 
 自动化校验:`pyproject.toml` 统一 pytest/coverage/ruff(只选 F/B 抓真缺陷)/mypy ·
@@ -108,7 +116,7 @@ pyflakes 零告警 · 构建产物经 RDF 解析与 SHACL 校验 · 元数据覆
 
 ### 5.1 集成套件的环境依赖(勿误判为回归)
 
-`test_all.py` 源码定义 **553 个检查点**。若出现下列 **5 项**失败,先查环境再查代码——
+`test_all.py` 源码定义 **562 个检查点**。若出现下列 **5 项**失败,先查环境再查代码——
 它们同出一源:`workdir/engine_config.json` 持久化的 `driver` 在当前环境**未注册**
 (如 `driver="openai"` 但未配置 OpenAI 兼容端点凭据),编辑引擎据 DR-003/029 显式报错而非伪装可用。
 

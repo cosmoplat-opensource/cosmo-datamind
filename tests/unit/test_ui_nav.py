@@ -11,7 +11,10 @@
 import re
 import pathlib
 
-UI = (pathlib.Path(__file__).resolve().parents[2] / "ui" / "index.html").read_text(encoding="utf-8")
+UI_DIR = pathlib.Path(__file__).resolve().parents[2] / "ui"
+UI = (UI_DIR / "index.html").read_text(encoding="utf-8")
+CATALOG = (UI_DIR / "modules" / "catalog.js").read_text(encoding="utf-8")
+RESPONSIVE = (UI_DIR / "styles" / "responsive.css").read_text(encoding="utf-8")
 
 
 def _css_px(selector_re, prop="font-size"):
@@ -73,6 +76,41 @@ class TestTableDensity:
         v, h = float(pad.group(1)), float(pad.group(2))
         assert v >= 8, f"垂直内边距 {v}px 偏小,行高不够舒展"
         assert h <= 8, f"水平内边距 {h}px 过大,窄容器里会把末列挤出可视区"
+
+
+class TestCatalogAndResponsiveBehavior:
+    def test_catalog_search_includes_chinese_annotation(self):
+        """输入框承诺可搜中文注释，过滤表达式必须真的使用接口的 cn 字段。"""
+        fn = re.search(r"function catRender\(\).*?\nasync function tbl", CATALOG, re.S)
+        assert fn and "t.cn" in fn.group(0), "目录只按物理表名搜索，中文注释占位文案与行为不一致"
+
+    def test_mobile_grid_children_can_shrink(self):
+        """宽表位于 grid 时，轨道和子项都要允许收缩，否则整页会被内容撑宽。"""
+        media = re.search(r"@media \(max-width:820px\)\{(.*?)\n\}", RESPONSIVE, re.S)
+        assert media, "缺移动端样式"
+        css = media.group(1)
+        assert "minmax(0,1fr)" in css and ".grid2>*{min-width:0}" in css
+        assert ".kpis{grid-template-columns:repeat(2,minmax(0,1fr))!important}" in css
+
+    def test_desktop_catalog_wide_table_cannot_expand_grid_track(self):
+        assert ".grid2>*{min-width:0}" in UI
+        catalog = UI[UI.index('id="p_catalog"'):UI.index('id="p_conn"')]
+        assert "grid-template-columns:360px minmax(0,1fr)" in catalog
+
+    def test_mobile_wide_tables_and_graph_toolbar_are_contained(self):
+        media = re.search(r"@media \(max-width:820px\)\{(.*?)\n\}", RESPONSIVE, re.S)
+        css = media.group(1) if media else ""
+        assert "#eg_keys,#claw_audit{overflow-x:auto}" in css
+        assert "#claw_edits{overflow-wrap:anywhere}" in css
+        assert ".g-toolbar-group" in css and "flex-wrap:wrap" in css
+        assert "<div class=\"scroll\"><table" in UI[UI.index("async function clawAudit"):]
+
+    def test_frontend_domains_are_external_modules(self):
+        assert len(UI.splitlines()) < 2600
+        assert '/assets/modules/catalog.js' in UI
+        assert '/assets/styles/responsive.css' in UI
+        assert "function catRender" not in UI
+        assert "@media (max-width:820px)" not in UI
 
 
 class TestNavGrouping:

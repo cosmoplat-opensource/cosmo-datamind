@@ -21,6 +21,69 @@ class TestCompat:
         assert "verdict" in res
         assert res["verdict"] in ("breaking", "risky", "safe")
 
+    def test_full_diff_and_downstream_impact(self):
+        base = {
+            "objects": [
+                {"id": "gone", "table": "old_orders"},
+                {"id": "kept", "table": "old_table", "aliases": ["旧称", "保留"],
+                 "attrs": [{"col": "removed_col"}, {"col": "keep_col"}]},
+                {"name": "named", "table": "named_table"},
+                {"table": "anonymous_table"},
+            ],
+            "links": [
+                {"source": "gone", "target": "kept", "status": "verified"},
+                {"source": "kept", "target": "named", "status": "asserted"},
+                {"source": "", "target": "named", "status": "verified"},
+            ],
+        }
+        new = {
+            "objects": [
+                {"id": "kept", "table": "new_table", "aliases": ["保留"],
+                 "attrs": [{"col": "keep_col"}]},
+                {"name": "named", "table": "named_table"},
+                {"id": "added", "table": "new_object"},
+            ],
+            "links": [
+                {"source": "kept", "target": "named", "status": "candidate"},
+                {"source": "kept", "target": "added", "status": "verified"},
+            ],
+        }
+        report = compat_check.check(
+            base,
+            new,
+            rules=[
+                {"id": "gone_rule", "on": "gone"},
+                {"id": "moved_rule", "on": "kept"},
+            ],
+            actions=[{"id": "action", "object_table": "OLD_ORDERS"}],
+            qa_skills=[{"question": "旧订单", "analyses": [{"sql": "select * from old_orders"}]}],
+        )
+        changes = report["changes"]
+        assert changes["removed_objects"] == ["gone", "_obj3"]
+        assert changes["added_objects"] == ["added"]
+        assert changes["retabled"][0]["object"] == "kept"
+        assert changes["removed_aliases"][0]["removed"] == ["旧称"]
+        assert changes["removed_attrs"][0]["removed"] == ["removed_col"]
+        assert changes["downgraded_relations"][0]["relation"] == "kept->named"
+        assert set(changes["removed_relations"]) == {"gone->kept"}
+        assert changes["added_relations"] == ["kept->added"]
+        assert {item["kind"] for item in report["downstream_impact"]} == {
+            "rule", "action", "qa_skill",
+        }
+        assert report["verdict"] == "breaking"
+        assert report["summary"]["breaking_count"] == 5
+        assert report["summary"]["risky_count"] == 2
+
+    def test_risky_and_safe_verdicts(self):
+        base = {"objects": [{"id": "a", "aliases": ["旧别名"]}], "relations": []}
+        risky = compat_check.check(base, {"objects": [{"id": "a"}], "relations": []})
+        assert risky["verdict"] == "risky"
+        safe = compat_check.check(
+            {"objects": [{"id": "a"}], "relations": []},
+            {"objects": [{"id": "a"}, {"id": "b"}], "relations": []},
+        )
+        assert safe["verdict"] == "safe"
+
 
 class TestModuleSplit:
     def test_by_domain_returns_modules(self, ir_healthy):

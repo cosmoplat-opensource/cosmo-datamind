@@ -33,7 +33,7 @@ ALLOWED = {
     "BFO", "IOF", "IRI", "OWL", "RDF", "SHACL", "SPARQL", "JSON-LD", "TTL",
     "SQL", "SQLite", "MySQL", "Doris", "PostgreSQL", "PG", "DSN", "API", "HTTP",
     "CSV", "TSV", "PDF", "TXT", "Excel", "JSON", "XML", "MCP", "SSE", "ID",
-    "Cosmo", "DataMind", "GLM", "DeepSeek", "Qwen", "OpenAI", "vLLM", "Hermes",
+    "COSMO", "DataMind", "GLM", "DeepSeek", "Qwen", "OpenAI", "vLLM", "Hermes",
     "Jaccard", "ROC", "Enter", "Shift", "zip", "Key",
 }
 
@@ -79,6 +79,13 @@ def test_allowlist_terms_are_actually_used_somewhere():
     unused = sorted(w for w in ALLOWED if w not in src)
     assert len(unused) <= len(ALLOWED) // 2, (
         "白名单中过半词条在界面里根本不出现,应清理:" + "、".join(unused))
+
+
+def test_brand_name_uses_uppercase_cosmo():
+    """品牌统一写作 COSMO，防止标题、顶栏或报告模板退回首字母大写。"""
+    src = UI.read_text(encoding="utf-8")
+    assert "COSMO DataMind" in src
+    assert "Cosmo" not in src
 
 
 def test_quality_result_has_chinese_names():

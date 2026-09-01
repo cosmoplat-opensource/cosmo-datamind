@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""Cosmo DataMind 全 UI 走查(可选,需 playwright):
+"""COSMO DataMind 全 UI 走查(可选,需 playwright):
      pip install playwright && playwright install chromium
      python3 server.py &   # 先起服务(DATAMIND_URL 可覆盖地址)
      python3 test_ui.py

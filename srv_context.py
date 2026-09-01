@@ -13,6 +13,7 @@ import json
 import os
 import re
 import sqlite3
+import tempfile
 import threading
 
 # ── 基础路径(env 可覆盖):只读数据源 / 上传库 / 工作目录。与 server 同目录,值与旧定义逐字一致。
@@ -67,6 +68,13 @@ def _atomic_json(path, data):
     _atomic_text(path, json.dumps(data, ensure_ascii=False))
 
 
+def _checked_write_path(path):
+    """公共落盘 sink 的最小路径守卫。"""
+    if not path or ".." in str(path).split(os.sep):
+        raise ValueError("拒绝写入含上级目录引用的路径")
+    return str(path)
+
+
 def _atomic_text(path, text):
     """文本文件的原子写(SKILL.md / OWL Turtle 等)。与 _atomic_json 同一规范:
     先写 .tmp 再 os.replace,避免写到一半失败留下截断文件。
@@ -74,9 +82,29 @@ def _atomic_text(path, text):
     路径由调用方裁决(server 侧统一走 _confined),但此处仍拒绝含 '..' 的路径:
     本函数是全仓所有文本落盘的公共 sink,任何一处调用点漏了校验都会在这里被兜住。
     """
-    if not path or ".." in os.path.normpath(str(path)).split(os.sep):
-        raise ValueError("拒绝写入含上级目录引用的路径")
-    tmp = path + ".tmp"
-    with open(tmp, "w") as fp:
-        fp.write(text)
-    os.replace(tmp, path)
+    path = _checked_write_path(path)
+    fd, tmp = tempfile.mkstemp(prefix=os.path.basename(path) + ".", suffix=".tmp",
+                               dir=os.path.dirname(os.path.abspath(path)))
+    try:
+        with os.fdopen(fd, "w", encoding="utf-8") as fp:
+            fp.write(text)
+        os.replace(tmp, path)
+    finally:
+        if os.path.exists(tmp):
+            os.unlink(tmp)
+
+
+def _atomic_bytes(path, data, mode=None):
+    """二进制原子写；上传附件与密钥不得直接截断目标文件。"""
+    path = _checked_write_path(path)
+    fd, tmp = tempfile.mkstemp(prefix=os.path.basename(path) + ".", suffix=".tmp",
+                               dir=os.path.dirname(os.path.abspath(path)))
+    try:
+        with os.fdopen(fd, "wb") as fp:
+            fp.write(data)
+        if mode is not None:
+            os.chmod(tmp, mode)             # 权限在发布前生效，不留下短暂的 0644 窗口
+        os.replace(tmp, path)
+    finally:
+        if os.path.exists(tmp):
+            os.unlink(tmp)

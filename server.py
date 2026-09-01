@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Cosmo DataMind · 数据智脑 — 数据治理、本体与深度问数原型
+COSMO DataMind · 数据智脑 — 数据治理、本体与深度问数原型
 整合:DATAMIND_DB 指定的只读数据源 + 可选上游本体引擎(引擎/技能/IR) + outputs(成果库)
 深度问数:hermes/claude-code(经 agent_runtime)生成 SQL 计划 → 本地 SQLite 执行 → 洞察;引擎不可用时走内置模板兜底。
 启动:python3 server.py  → http://127.0.0.1:8092
@@ -13,9 +13,11 @@ import urllib.request, urllib.error
 from typing import Any
 import dao_core   # DR-035/044:命名校验/词根等裁决原语的单一事实源
 import build_quality
+import build_references
 import action_ontology
 import skill_registry
 import ontology_grounding
+import content_quality
 
 # ── 运维日志(结构化、可分级、可重定向)──────────────────────────────
 # 诊断信息一律走 logging 而非 print:print 混在 stdout 里既无级别也无时间戳,
@@ -55,11 +57,13 @@ for _h in logging.getLogger().handlers:        # basicConfig 建的 root handler
 _LOG = logging.getLogger("datamind")
 # DR-043 蓝图化前置:基础路径与原语(路径/只读连接/只读SQL判定/写锁/原子写)收敛到共享上下文,与后续 blueprint 共用
 from srv_context import (HERE, ROOT, DB, UPLOAD_DB, WORK,
-                         ro_connect, sql_is_readonly, _WRITE_LOCK, _atomic_json, _atomic_text)
+                         ro_connect, sql_is_readonly, _WRITE_LOCK, _atomic_json, _atomic_text,
+                         _atomic_bytes)
 # 引擎运行时与配置层(跨簇共享,故先于路由抽出;见 srv_engine 模块头)
 # engine 路由迁出后,server 仅用这几项:运行时选择、引擎回复语义、启动自举与按任务选模
 from srv_engine import (runtime_cached, _drv_order, _looks_like_error,
                         _load_engine_cfg, _apply_engine_cfg)
+from srv_actions import ACTION_TYPES_F, load_action_types as _load_ats
 from flask import Flask, jsonify, request, send_from_directory, send_file
 
 # ── 可配置路径(env 覆盖):HERE/ROOT/DB/UPLOAD_DB/WORK 已收敛到 srv_context(见文件头 import)。
@@ -308,7 +312,10 @@ def _check_fetch_url(url):
 def load_ir(key):
     if _bad_gkey(key): return None
     if key.startswith("built_"):
-        return _load_json(_confined(WORK, key + ".json"))
+        raw = _load_json(_confined(WORK, key + ".json"))
+        # 历史构建文件保留原样供审计；API/UI 使用深拷贝后的净化视图，不展示无来源
+        # 正例，并纠正“工单/记录=过程”这类可机械判定的类型混淆。
+        return content_quality.sanitize_ir(raw) if raw else raw
     if key.startswith("forged_"):
         return _load_json(_confined(os.path.join(PLATFORM, "data", "forged"), key[7:] + ".json"))
     return _load_json(IR_SOURCES.get(key, {}).get("paths", []))
@@ -316,22 +323,43 @@ def load_ir(key):
 # ── BFO 2020 / IOF Core 对齐(官方 IRI + 定义域/值域检查)──
 _KIND_BFO = ontology_grounding.KIND_DEFAULTS
 
+def _bfo_enabled_for_ir(ir):
+    """旧 IR 保持历史 BFO/IOF 行为；带新构建配置的 IR 只在确实选择时启用。"""
+    raw = (ir.get("build_manifest") or {}).get("references") if isinstance(ir, dict) else None
+    if not isinstance(raw, dict) and isinstance(ir, dict):
+        raw = (ir.get("scenario") or {}).get("build_references")
+    if not isinstance(raw, dict):
+        return True
+    try:
+        return build_references.uses_bfo_iof(raw)
+    except ValueError:
+        return False
+
 
 def _ground_verb(verb, source_bfo=None, target_bfo=None):
     """返回可安全映射的标准关系名与时间说明；无法确认时返回 ``(None, None)``。"""
     item = ontology_grounding.from_verb(verb, source_bfo, target_bfo)
     return ((item["relation"] or None), (item["temporal"] or None))
 
-def _iof_node_ann(o):
+def _iof_node_ann(o, bfo_enabled=True):
     """透传 IOF-AV 注释字段到图节点(缺失则从 kind 推 BFO 范畴);老 IR 无这些字段时优雅降级。"""
     kind = o.get("kind", "object")
-    return {"bfo": o.get("bfo") or _KIND_BFO.get(kind, "Continuant"),
+    return {"bfo": (o.get("bfo") or _KIND_BFO.get(kind, "Continuant")) if bfo_enabled else None,
             "definition": o.get("definition", ""), "isPrimitive": o.get("isPrimitive"),
             "example": o.get("example", ""), "counterExample": o.get("counterExample", ""),
             "provenance": o.get("provenance"), "maturity": o.get("maturity", ""),
+            "industry_reference": o.get("industry_reference"),
+            "standard_alignment": o.get("standard_alignment"),
+            "reused_from": o.get("reused_from"), "foundational_kind": o.get("foundational_kind"),
             "action_id": o.get("action_id"), "action_spec": o.get("action_spec")}
-def _iof_edge_ann(r, verb, source_bfo=None, target_bfo=None):
+def _iof_edge_ann(r, verb, source_bfo=None, target_bfo=None, bfo_enabled=True):
     """规范化关系接地；旧 IR 的非官方名称和类别不相容映射不会进入导出。"""
+    if not bfo_enabled:
+        return {"founded_relation": "", "grounding_iri": "", "grounding_status": "not_selected",
+                "grounding_reason": "本轮未选择 BFO/IOF", "temporal": "",
+                "semantic": r.get("semantic", ""),
+                "semantic_status": r.get("semantic_status") or r.get("semantic", ""),
+                "evidence_status": r.get("evidence_status") or r.get("status", "")}
     item = ontology_grounding.normalize(
         r.get("founded_relation"), r.get("temporal"), verb, source_bfo, target_bfo,
     )
@@ -350,13 +378,14 @@ def ir_to_graph(key, ir):
     """统一成 {nodes:[{id,name,kind,...IOF-AV}], edges:[{s,t,verb,status,founded_relation,temporal}]}"""
     nodes, edges = [], []
     if not isinstance(ir, dict): return {"nodes": nodes, "edges": edges}
+    bfo_enabled = _bfo_enabled_for_ir(ir)
     if "relations" in ir and "objects" in ir and ir["objects"] and "kind" in ir["objects"][0]:
         # 应用本体 IR:节点显示名优先用中文名(cn),id 仍用 name 以保证边引用稳定
         for o in ir["objects"]:
             nodes.append({"id": o["name"], "name": o.get("cn") or o["name"], "kind": o.get("kind", "object"),
                           "candidate": bool(o.get("candidate", False)),
                           "tables": o.get("tables", []), "indicators": o.get("indicators", []), "fields": o.get("field_count", 0),
-                          **_iof_node_ann(o)})
+                          **_iof_node_ann(o, bfo_enabled)})
         categories = {n["id"]: n.get("bfo") for n in nodes}
         for r in ir["relations"]:
             if r.get("source_concept") is None or r.get("target_concept") is None: continue
@@ -365,14 +394,14 @@ def ir_to_graph(key, ir):
             edges.append({"s": r["source_concept"], "t": r["target_concept"], "verb": verb, "status": r.get("status", ""),
                           "overlap": r.get("overlap"), "human_review": r.get("human_review", ""),
                           **_iof_edge_ann(r, verb, categories.get(r["source_concept"]),
-                                         categories.get(r["target_concept"]))})
+                                         categories.get(r["target_concept"]), bfo_enabled)})
     else:
         # 示例 数据 IR(DR-001)
         for o in ir.get("objects", []):
             nodes.append({"id": o["id"], "name": o.get("cn") or o.get("name"), "kind": o.get("kind", "object"),
                           "candidate": bool(o.get("candidate", False)),
                           "tables": [o.get("table")], "indicators": o.get("supported_metrics", []), "fields": o.get("attr_count", len(o.get("attrs", []))),
-                          **_iof_node_ann(o)})
+                          **_iof_node_ann(o, bfo_enabled)})
         categories = {n["id"]: n.get("bfo") for n in nodes}
         for l in ir.get("links", []):
             if l.get("source") is None or l.get("target") is None: continue
@@ -381,7 +410,7 @@ def ir_to_graph(key, ir):
             edges.append({"s": l["source"], "t": l["target"], "verb": verb, "status": l.get("status", ""),
                           "overlap": l.get("overlap_pct", l.get("overlap")), "human_review": l.get("human_review", ""),
                           **_iof_edge_ann(l, verb, categories.get(l["source"]),
-                                         categories.get(l["target"]))})
+                                         categories.get(l["target"]), bfo_enabled)})
     return {"nodes": nodes, "edges": edges}
 
 # ── SQLite 工具(只读查询)──
@@ -405,16 +434,36 @@ def q(sql, db=None, limit=500, attach_uploads=False):
 # 运行时缓存 _RT_CACHE / runtime_cached / _drv_order 已收敛到 srv_engine(见文件头 import)
 def table_list(db=None):
     con = ro_connect(db or DB)
-    tabs = [r[0] for r in con.execute(
-        "SELECT name FROM sqlite_master "
-        "WHERE type='table' AND name NOT LIKE 'sqlite_%' ORDER BY name"
-    )]
-    out = []
-    for t in tabs:
-        n = con.execute(f'SELECT count(*) FROM "{t}"').fetchone()[0]
-        cols = con.execute(f'PRAGMA table_info("{t}")').fetchall()
-        out.append({"name": t, "rows": n, "cols": len(cols)})
-    con.close(); return out
+    try:
+        tabs = [r[0] for r in con.execute(
+            "SELECT name FROM sqlite_master "
+            "WHERE type='table' AND name NOT LIKE 'sqlite_%' ORDER BY name"
+        )]
+        cn_by_table = {}
+        try:
+            for obj in (load_ir_edited("demo") or {}).get("objects", []):
+                table = str(obj.get("table") or "").strip().lower()
+                cn = str(obj.get("cn") or "").strip()
+                if table and cn and cn not in cn_by_table.setdefault(table, []):
+                    cn_by_table[table].append(cn)
+        except Exception:
+            pass                            # IR 不可用时目录仍可展示物理表
+        out = []
+        for t in tabs:
+            quoted = t.replace('"', '""')
+            n = con.execute(f'SELECT count(*) FROM "{quoted}"').fetchone()[0]
+            cols = con.execute(f'PRAGMA table_info("{quoted}")').fetchall()
+            out.append({"name": t, "cn": "、".join(cn_by_table.get(t.lower(), [])),
+                        "rows": n, "cols": len(cols)})
+        return out
+    finally:
+        con.close()
+
+# IR-011/DR-043 第二个路由簇：动作 API 依赖主应用的数据目录函数，以显式注入代替
+# blueprint 反向导入 server，避免循环依赖；动作文件存储与 schema 原语在 srv_actions。
+from bp_actions import bp_actions as _bp_actions, configure_actions as _configure_actions  # noqa: E402
+_configure_actions(table_list)
+app.register_blueprint(_bp_actions)
 
 # ── 后台作业(技能运行/本体构建)──
 JOBS: dict[str, dict[str, Any]] = {}
@@ -716,12 +765,17 @@ def _table_cols(table):
     """从数据源现读列名(带进程内缓存)。本体产出未必带 attrs —— quick_build 就不带,
     那样喂给引擎的上下文是「表 X(): 」一个列都没有,模型只能猜列名,SQL 必然报
     no such column。缺列宁可现查,也不能让模型盲写。"""
-    t = (table or "").lower()
+    raw = (table or "").lower()
+    db_path = DB
+    t = raw
+    if raw.startswith("up."):
+        db_path, t = UPLOAD_DB, raw[3:]
     # 表名来自本体产物,按标识符白名单校验后才拼进 PRAGMA —— 与全站标识符消毒口径一致
     if not t or not re.fullmatch(_SQL_IDENT, t): return []
-    if t in _COLS_CACHE: return _COLS_CACHE[t]
+    cache_key = raw
+    if cache_key in _COLS_CACHE: return _COLS_CACHE[cache_key]
     try:
-        con = ro_connect(DB)
+        con = ro_connect(db_path)
         try:
             cols = [r[1] for r in con.execute('PRAGMA table_info("%s")' % t)]
         finally:
@@ -729,7 +783,7 @@ def _table_cols(table):
     except Exception:
         # 只缓存成功结果:库临时不可用时若把空列表缓存下来,库恢复后仍会一直返回空
         return []
-    _COLS_CACHE[t] = cols
+    _COLS_CACHE[cache_key] = cols
     return cols
 
 
@@ -789,6 +843,97 @@ def _anchor_ir(graph_keys=None):
     return {"objects": objs, "links": links}, keys, ""
 
 
+def _qa_table_inventory():
+    """返回深度问数当前进程真正能执行的主库表与上传库表。"""
+    def names(path):
+        if not os.path.exists(path): return set()
+        try:
+            con = ro_connect(path)
+            try:
+                return {str(r[0]).lower() for r in con.execute(
+                    "SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'")}
+            finally:
+                con.close()
+        except Exception:
+            return set()
+    return names(DB), names(UPLOAD_DB)
+
+
+def _qa_graph_profile(ir, inventory=None):
+    """计算一套本体在当前问数连接中的可执行范围。"""
+    main, uploads = inventory or _qa_table_inventory()
+    bound, seen = [], set()
+    for obj in (ir or {}).get("objects", []):
+        table = str(_obj_table(obj) or "").strip()
+        low = table.lower()
+        if table and re.fullmatch(_SQL_IDENT, table) and low not in seen:
+            seen.add(low); bound.append(table)
+    available, upload_available, unavailable = [], [], []
+    for table in bound:
+        low = table.lower()
+        if low in main:
+            available.append(table)
+        elif low in uploads:
+            upload_available.append("up." + table)
+        else:
+            unavailable.append(table)
+    usable = available + upload_available
+    if usable:
+        reason = (f"当前查询连接可用 {len(usable)}/{len(bound)} 张绑定表"
+                  + (f"；另有 {len(unavailable)} 张未接入" if unavailable else ""))
+    elif bound:
+        reason = f"绑定的 {len(bound)} 张表均未接入当前查询连接"
+    else:
+        reason = "本体尚未绑定数据表"
+    return {"queryable": bool(usable), "bound_tables": bound,
+            "available_tables": usable, "unavailable_tables": unavailable,
+            "reason": reason}
+
+
+def _qa_graph_summary(ir, inventory=None):
+    """图谱列表只回传计数，避免把多套百表清单重复塞进首屏响应。"""
+    profile = _qa_graph_profile(ir, inventory)
+    return {"queryable": profile["queryable"], "reason": profile["reason"],
+            "bound_table_count": len(profile["bound_tables"]),
+            "available_table_count": len(profile["available_tables"]),
+            "unavailable_table_count": len(profile["unavailable_tables"])}
+
+
+def _qa_anchor_ir(graph_keys=None):
+    """取得问数实际使用的本体，并剔除当前查询连接不可执行的表绑定。"""
+    ir, keys, fallback = _anchor_ir(graph_keys)
+    profile = _qa_graph_profile(ir)
+    main = {x.lower() for x in profile["available_tables"] if not x.lower().startswith("up.")}
+    uploads = {x[3:].lower() for x in profile["available_tables"] if x.lower().startswith("up.")}
+    for obj in ir.get("objects", []):
+        table = str(_obj_table(obj) or "").strip()
+        if not table: continue
+        low = table.lower()
+        if low in main:
+            obj["table"] = table
+        elif low in uploads:
+            obj["table"] = "up." + table
+        else:
+            obj["qa_unavailable_table"] = table
+            obj.pop("table", None)
+            obj["tables"] = []
+    return ir, keys, fallback, profile
+
+
+def _qa_scope_error(requested_keys, actual_keys, fallback, profile):
+    """显式选中的本体不可执行时给出可操作错误；缺省示例/图谱缺失回落不拦。"""
+    if not requested_keys or fallback or actual_keys == ["demo"] or profile.get("queryable"):
+        return ""
+    names = "、".join(_graph_name(key) for key in actual_keys)
+    missing = profile.get("unavailable_tables") or []
+    detail = "、".join(missing[:5]) + ("…" if len(missing) > 5 else "")
+    if missing:
+        return (f"本体「{names}」绑定的数据表尚未接入当前问数连接：{detail}。"
+                "请先在数据连接中接入并物化这些表，或选择带有可查询表的本体。")
+    return (f"本体「{names}」尚未绑定可查询的数据表，当前只能浏览和治理，不能直接问数。"
+            "请先在本体构建或评审中完成对象与数据表绑定。")
+
+
 def _trace_objs(trace, objs, reason, hits=None):
     """把一批入选对象按入选理由记进锚定轨迹(DR-032);同一对象只记首次理由。
     hits: {表名: [命中的问句词]} —— 锚定「凭什么选中它」的证据(DR-033)。
@@ -813,25 +958,20 @@ def build_context(question, focus_tables=None, trace=None, graph_keys=None):
     graph_keys:用户选中的本体图谱 → 作为锚定本体源(DR-033)。
     focus_tables:用户显式点选的表 → 直接限定(点了就用这几张,不再打分)。
     trace 传入 dict 时,同步记录**这次召回锚定到了本体的哪些对象与关系、凭什么命中**(DR-032)。"""
-    ir, akeys, _miss = _anchor_ir(graph_keys)
+    ir, akeys, _miss, _profile = _qa_anchor_ir(graph_keys)
     if trace is not None and _miss:
         trace["fallback"] = _miss
     if trace is not None:
         _rl = _rels(ir)[0]
         trace["ontology"] = {"keys": akeys,
                              "names": [_graph_name(k) for k in akeys],
-                             "objects": len(ir.get("objects", [])), "relations": len(_rl)}
-    # 选中的本体没有一个对象绑表 → 生不出 SQL。如实回退并说明,不静默换本体
-    if akeys != ["demo"] and not any(o.get("table") for o in ir.get("objects", [])):
-        _picked = [_graph_name(k) for k in akeys]
-        ir, akeys = (load_ir_edited("demo") or {}), ["demo"]
-        if trace is not None:
-            # ontology 必须写「实际用了哪套」,否则界面会显示选中的那套而对象却来自另一套
-            trace["fallback"] = ("选中的「%s」没有绑表对象,生不出 SQL;本次实际锚定的是示例本体"
-                                 % "、".join(_picked))
-            trace["ontology"] = {"keys": akeys, "names": [_graph_name("demo")],
-                                 "objects": len(ir.get("objects", [])),
-                                 "relations": len(_rels(ir)[0]), "requested": _picked}
+                             "objects": len(ir.get("objects", [])), "relations": len(_rl),
+                             "queryable": _profile["queryable"],
+                             "bound_tables": len(_profile["bound_tables"]),
+                             "available_tables": len(_profile["available_tables"])}
+        if _profile["unavailable_tables"]:
+            trace["scope_warning"] = (f"{len(_profile['unavailable_tables'])} 张绑定表未接入当前查询连接，"
+                                      "本次只使用可执行表")
     mets = []
     _ml = ir.get("metric_layers")
     # 锚定源现在可能是任意图谱,其 metric_layers 未必是 {层: [指标]} —— 形状不符就跳过,不炸
@@ -1045,7 +1185,7 @@ def expand_terms(question):
 
 _SQL_KW = {"on", "where", "group", "order", "left", "right", "inner", "outer", "cross",
            "join", "select", "limit", "using", "as", "union", "having", "with"}
-def _validate_sql_ontology(sql, ir):
+def _validate_sql_ontology(sql, ir, strict=False):
     """A2 口径拦截(P8『口径错了直接拦截』落地):SQL 执行前对照本体校验。
     ① 表白名单:FROM/JOIN 的表必须在本体/数据目录/上传库(up.)/CTE 内 —— 拦臆造表名;
     ② JOIN 键校验:ON a.x=b.y 两侧列名不同时,该键对必须落在本体 verified/asserted 关系
@@ -1054,8 +1194,9 @@ def _validate_sql_ontology(sql, ir):
     s = sql or ""
     ctes = {m.group(1).lower() for m in re.finditer(r"(?:\bwith|,)\s*(%s)\s+as\s*\(" % _SQL_IDENT, s, re.I)}
     known = {(o.get("table") or "").lower() for o in ir.get("objects", []) if o.get("table")}
-    try: known |= {t["name"].lower() for t in table_list()}
-    except Exception: pass
+    if not strict:
+        try: known |= {t["name"].lower() for t in table_list()}
+        except Exception: pass
     up = set()
     try: up = {x.split("(")[0][3:].lower() for x in _uploads_schema().split("; ") if x.startswith("up.")}
     except Exception: pass
@@ -1070,6 +1211,8 @@ def _validate_sql_ontology(sql, ir):
         base = full[3:] if full.startswith("up.") else full
         if full.startswith("up."):
             if base not in up: return False, f"上传表 {full} 不存在"
+            if strict and full not in known and base not in known:
+                return False, f"上传表 {full} 不在所选本体边界内"
         elif base not in known and base not in ctes:
             return False, f"表 {base} 不在本体/数据目录中(疑似臆造表名)"
     o2t = {o.get("id"): (o.get("table") or "").lower() for o in ir.get("objects", [])}
@@ -1089,6 +1232,18 @@ def _validate_sql_ontology(sql, ir):
         if (ta, ca, tb, cb) not in relkeys:
             return False, f"JOIN 键 {ta}.{ca}={tb}.{cb} 不在本体已验证关系上(口径未证实,已拦截)"
     return True, ""
+
+
+def _qa_validate_sql(sql, ir, strict=False):
+    """问数口径校验调用层；兼容仍实现旧两参数签名的测试替换与扩展。"""
+    if not strict:
+        return _validate_sql_ontology(sql, ir)
+    try:
+        return _validate_sql_ontology(sql, ir, strict=True)
+    except TypeError as exc:
+        if "strict" not in str(exc):
+            raise
+        return _validate_sql_ontology(sql, ir)
 
 _METRIC_LAYER_CN = {"atomic": "原子指标", "derived": "派生指标", "composite": "复合指标"}
 def _metric_cards(question, ir):
@@ -1155,6 +1310,13 @@ def agent_sql_plan(question, context, steps):
 def fallback_plan(question):
     """无引擎时的内置模板,保证可用"""
     p = []
+    # 高频的「客户 × 销售订单」不能被宽泛的“销售”词误降成月度收入趋势。
+    # 引擎超时时，兜底也必须回答原问题，而不是仅仅返回一条能执行的 SQL。
+    if re.search(r"客户|customer|cust", question, re.I) and re.search(r"排名|排行|金额|销售订单", question):
+        p.append({"title": "客户销售订单金额排名",
+                  "sql": "SELECT c.cust_name 客户, round(sum(s.amount),2) 订单金额 FROM fact_sales_order s JOIN dim_customer c ON s.cust_id=c.cust_id GROUP BY c.cust_id,c.cust_name ORDER BY 订单金额 DESC LIMIT 50",
+                  "chart": {"type": "bar", "x": "客户", "y": ["订单金额"]}})
+        return {"analyses": p, "note": "内置模板(问数引擎离线兜底)"}
     if re.search(r"毛利|利润|margin", question):
         p.append({"title": "月度毛利与毛利率", "sql": "SELECT substr(order_date,1,7) 月, round(sum(gross_profit_actual)/10000,1) 毛利_万, round(sum(gross_profit_actual)*100.0/sum(amount),1) 毛利率_pct FROM fact_sales_order GROUP BY 1 ORDER BY 1", "chart": {"type": "line", "x": "月", "y": ["毛利_万", "毛利率_pct"]}})
     if re.search(r"收入|销售|营收", question):
@@ -1171,7 +1333,7 @@ def _rule_summary(results):
     for r in results:
         rows = r["data"]["rows"]
         if rows and len(rows) >= 2:
-            outs.append(f"「{r['title']}」共 {len(rows)} 期,末期 {json.dumps(rows[-1], ensure_ascii=False)}")
+            outs.append(f"「{r['title']}」共 {len(rows)} 条结果,末行 {json.dumps(rows[-1], ensure_ascii=False)}")
         elif rows:
             outs.append(f"「{r['title']}」{json.dumps(rows[0], ensure_ascii=False)}")
     return ("数据摘要:" + ";".join(outs)) if outs else "已取到数据,请展开各分析查看明细。"
@@ -1213,7 +1375,15 @@ def narrative_llm(question, results, steps, emit=None):
 
 # ══════════ 路由 ══════════
 @app.get("/")
-def index(): return send_from_directory(os.path.join(HERE, "ui"), "index.html")
+def index():
+    response = send_from_directory(os.path.join(HERE, "ui"), "index.html")
+    # 单页应用与后端必须作为同一版本加载。曾出现旧进程仍在、index.html 已更新，
+    # 浏览器拿到新版 HTML 后却请求了旧进程尚未注册的模块路由，最终只剩一个不能
+    # 正常新建问数的半渲染页面。入口和自研模块都禁止中间缓存，重启后立即收敛。
+    response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
+    response.headers["Pragma"] = "no-cache"
+    response.headers["Expires"] = "0"
+    return response
 
 
 @app.get("/api/uiver")
@@ -1221,7 +1391,12 @@ def ui_version():
     """界面文件版本(mtime)。开着的标签页据此发现自己是旧版——
     我们改了界面而用户没刷新时,现象是「说改了却没生效」,排查成本很高。"""
     try:
-        return jsonify({"v": int(os.path.getmtime(os.path.join(HERE, "ui", "index.html")))})
+        ui_files = [os.path.join(HERE, "ui", "index.html")]
+        ui_files += glob.glob(os.path.join(HERE, "ui", "modules", "*.js"))
+        ui_files += glob.glob(os.path.join(HERE, "ui", "styles", "*.css"))
+        response = jsonify({"v": int(max(os.path.getmtime(path) for path in ui_files))})
+        response.headers["Cache-Control"] = "no-store"
+        return response
     except Exception as e:
         return jsonify({"v": 0, "error": str(e)})
 
@@ -1244,6 +1419,22 @@ def vendor(f):
     rp = os.path.realpath(os.path.join(base, f))
     if not rp.startswith(os.path.realpath(base) + os.sep) or not os.path.exists(rp): return "not found", 404
     return send_file(rp)
+
+
+@app.get("/assets/<path:f>")
+def ui_asset(f):
+    """自研前端模块；仅开放 modules/*.js 与 styles/*.css，不暴露 ui 下其它文件。"""
+    if ".." in f or not re.match(r"^(modules|styles)/[A-Za-z0-9_./-]+\.(js|css)$", f):
+        return "not found", 404
+    base = os.path.realpath(os.path.join(HERE, "ui"))
+    path = os.path.realpath(os.path.join(base, f))
+    if not path.startswith(base + os.sep) or not os.path.isfile(path):
+        return "not found", 404
+    response = send_file(path)
+    response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
+    response.headers["Pragma"] = "no-cache"
+    response.headers["Expires"] = "0"
+    return response
 
 @app.get("/api/overview")
 def overview():
@@ -1287,21 +1478,22 @@ def table_detail(name):
 @app.get("/api/graphs")
 def graphs():
     out = []
+    inventory = _qa_table_inventory()
     for k, v in IR_SOURCES.items():
         ir = load_ir_edited(k)
         if ir:
             g = ir_to_graph(k, ir)
-            out.append({"id": k, "name": v["name"], "nodes": len(g["nodes"]), "edges": len(g["edges"]), "cat": "curated"})
+            out.append({"id": k, "name": v["name"], "nodes": len(g["nodes"]), "edges": len(g["edges"]), "cat": "curated", **_qa_graph_summary(ir, inventory)})
     for p2 in sorted(glob.glob(os.path.join(PLATFORM, "data", "forged", "*.json"))):
         k = "forged_" + os.path.basename(p2)[:-5]
         ir = load_ir_edited(k)
         if not isinstance(ir, dict): continue
         g = ir_to_graph(k, ir)
-        out.append({"id": k, "name": ((ir.get("scenario") or {}).get("name") or k), "nodes": len(g["nodes"]), "edges": len(g["edges"]), "cat": "scenario"})
+        out.append({"id": k, "name": ((ir.get("scenario") or {}).get("name") or k), "nodes": len(g["nodes"]), "edges": len(g["edges"]), "cat": "scenario", **_qa_graph_summary(ir, inventory)})
     for p in sorted(glob.glob(os.path.join(WORK, "built_*.json")), key=os.path.getmtime, reverse=True):
         k = os.path.basename(p)[:-5]
         ir = load_ir_edited(k); g = ir_to_graph(k, ir)
-        out.append({"id": k, "name": (ir.get("scenario") or {}).get("name") or k, "nodes": len(g["nodes"]), "edges": len(g["edges"]), "cat": "built"})
+        out.append({"id": k, "name": (ir.get("scenario") or {}).get("name") or k, "nodes": len(g["nodes"]), "edges": len(g["edges"]), "cat": "built", **_qa_graph_summary(ir, inventory)})
     return jsonify(out)
 
 @app.get("/api/graph/<key>")
@@ -1907,7 +2099,7 @@ def ont_chat_stream():
                 # 白名单洗不掉的形态,最后 _confined 保证落点仍在 chat_uploads 内。
                 fn = _safe_fname(re.sub(r"[^\w.\-一-鿿]", "_", a.get("name", "f"))[:60])
                 raw = base64.b64decode(a.get("b64", ""))
-                open(_confined(updir, fn), "wb").write(raw)
+                _atomic_bytes(_confined(updir, fn), raw)
                 txt = ""
                 if fn.lower().endswith((".txt", ".md", ".csv", ".json", ".sql")):
                     txt = raw.decode("utf-8", "replace")[:2000]
@@ -2064,10 +2256,11 @@ def ont_object(key, oid):
     tb = o.get("table") or ""
     ev = o.get("evidence", {}) or {}
     src = "、".join(ev.get("sources", []) or []) or "IR"
-    bfo = o.get("bfo") or _KIND_BFO.get(o.get("kind"), "MaterialEntity")
+    bfo_enabled = _bfo_enabled_for_ir(ir)
+    bfo = (o.get("bfo") or _KIND_BFO.get(o.get("kind"), "MaterialEntity")) if bfo_enabled else ""
     defn = (o.get("definition") or "").strip()
     cex = (o.get("counterExample") or "").strip()
-    desc = f'{KMAP.get(o.get("kind"),"对象")}「{o.get("cn") or o.get("name")}」(BFO:{bfo})' + (f',绑定表 {tb}' if tb else '') + f';字段 {len(o.get("attrs",[]))} 个;证据来源 {src}。'
+    desc = f'{KMAP.get(o.get("kind"),"对象")}「{o.get("cn") or o.get("name")}」' + (f'(BFO:{bfo})' if bfo else '') + (f',绑定表 {tb}' if tb else '') + f';字段 {len(o.get("attrs",[]))} 个;证据来源 {src}。'
     if defn: desc += f' 定义:{defn}'                      # IOF 属加种差定义
     if cex: desc += f'(反例:{cex})'                       # IOF counterExample,辅助辨伪
     # 业务指标:按表匹配指标目录,带编码/描述/类型(对齐平台『业务指标管理』)
@@ -2085,6 +2278,9 @@ def ont_object(key, oid):
                     "metrics": metrics, "evidence": ev, "relations": rels,
                     # ── IOF-AV 机读注释(供审计/导出/前端展示)──
                     "bfo": bfo, "definition": defn, "isPrimitive": o.get("isPrimitive"),
+                    "industry_reference": o.get("industry_reference"),
+                    "standard_alignment": o.get("standard_alignment"),
+                    "reused_from": o.get("reused_from"), "foundational_kind": o.get("foundational_kind"),
                     "example": o.get("example", ""), "counterExample": cex,
                     "maturity": o.get("maturity", ""), "provenance": o.get("provenance"),
                     "action_id": o.get("action_id"), "action_spec": o.get("action_spec")})
@@ -2111,7 +2307,8 @@ def ont_relation(key):
         oid = obj.get("id") or obj.get("name")
         if oid:
             categories[oid] = obj.get("bfo") or ontology_grounding.default_category(obj.get("kind"))
-    grounding = _iof_edge_ann(l, l.get("verb"), categories.get(src), categories.get(tgt))
+    grounding = _iof_edge_ann(l, l.get("verb"), categories.get(src), categories.get(tgt),
+                              _bfo_enabled_for_ir(ir))
     return jsonify({"source": src, "target": tgt, "verb": l.get("verb"), "status": l.get("status"),
                     "evidence_status": l.get("evidence_status") or l.get("status"),
                     "semantic_status": l.get("semantic_status") or l.get("semantic", ""),
@@ -2148,6 +2345,7 @@ def _ir_to_turtle(key, ir):
     """IR → OWL2 Turtle，带 BFO/IOF 上层类别、IOF-AV 注释和关系映射状态。
     自包含、确定性纯函数;所有图谱(示例/应用/quick_build/forged)统一走此路径,ttl/jsonld/owl 三格式一致且带注释。"""
     g = ir_to_graph(key, ir)
+    bfo_enabled = _bfo_enabled_for_ir(ir)
     raw = {}                                              # 原始对象索引:取 attrs 补字段级数据类型属性,不丢信息
     for o in (ir.get("objects") or []):
         for kk in (o.get("id"), o.get("name")):
@@ -2163,16 +2361,26 @@ def _ir_to_turtle(key, ir):
     L = ["@prefix :       <http://datamind.local/ont#> .",
          "@prefix owl:    <http://www.w3.org/2002/07/owl#> .",
          "@prefix rdfs:   <http://www.w3.org/2000/01/rdf-schema#> .",
-         "@prefix xsd:    <http://www.w3.org/2001/XMLSchema#> .",
-         "@prefix obo:    <http://purl.obolibrary.org/obo/> .",
-         "@prefix iof:    <https://spec.industrialontologies.org/ontology/construct/> .",
-         "@prefix iof-av: <https://spec.industrialontologies.org/ontology/annotation/> .",
-         "@prefix iof-ind:<https://spec.industrialontologies.org/ontology/individual/> .",
-         "", ":temporal a owl:AnnotationProperty ; rdfs:label \"关系的时间限定\"@zh .",
-         ":groundingStatus a owl:AnnotationProperty ; rdfs:label \"上层关系映射状态\"@zh .",
-         ":groundingNote a owl:AnnotationProperty ; rdfs:label \"上层关系映射说明\"@zh .",
-         ":lifecycleStatus a owl:AnnotationProperty ; rdfs:label \"本地生命周期状态\"@zh .",
-         f':  a owl:Ontology ; rdfs:label "{esc(scen)}"@zh ; iof-av:maturity iof-ind:Provisional .', ""]
+         "@prefix xsd:    <http://www.w3.org/2001/XMLSchema#> ."]
+    if bfo_enabled:
+        L.extend(["@prefix obo:    <http://purl.obolibrary.org/obo/> .",
+                  "@prefix iof:    <https://spec.industrialontologies.org/ontology/construct/> .",
+                  "@prefix iof-av: <https://spec.industrialontologies.org/ontology/annotation/> .",
+                  "@prefix iof-ind:<https://spec.industrialontologies.org/ontology/individual/> ."])
+    L.extend(["", ":temporal a owl:AnnotationProperty ; rdfs:label \"关系的时间限定\"@zh .",
+              ":groundingStatus a owl:AnnotationProperty ; rdfs:label \"上层关系映射状态\"@zh .",
+              ":groundingNote a owl:AnnotationProperty ; rdfs:label \"上层关系映射说明\"@zh .",
+              ":lifecycleStatus a owl:AnnotationProperty ; rdfs:label \"本地生命周期状态\"@zh .",
+              ":naturalLanguageDefinition a owl:AnnotationProperty ; rdfs:label \"自然语言定义\"@zh .",
+              ":isPrimitive a owl:AnnotationProperty ; rdfs:label \"是否原始概念\"@zh .",
+              ":example a owl:AnnotationProperty ; rdfs:label \"正例\"@zh .",
+              ":counterExample a owl:AnnotationProperty ; rdfs:label \"反例\"@zh .",
+              ":usageNote a owl:AnnotationProperty ; rdfs:label \"使用说明\"@zh .",
+              ":industryConcept a owl:AnnotationProperty ; rdfs:label \"行业参照概念\"@zh .",
+              ":standardCandidate a owl:AnnotationProperty ; rdfs:label \"本体标准候选对齐\"@zh ."])
+    L.append((f':  a owl:Ontology ; rdfs:label "{esc(scen)}"@zh ; iof-av:maturity iof-ind:Provisional .'
+              if bfo_enabled else f':  a owl:Ontology ; rdfs:label "{esc(scen)}"@zh .'))
+    L.append("")
     used_iris = set()
     for n in g["nodes"]:
         cid = loc(n["id"]); up = _BFO_UP.get(n.get("bfo") or "", "")
@@ -2180,20 +2388,28 @@ def _ir_to_turtle(key, ir):
         if up: parts.append(f'rdfs:subClassOf {up}')     # BFO/IOF 上层归类
         parts.append(f'rdfs:label "{esc(n["name"])}"@zh')
         defn = (n.get("definition") or "").strip()
-        if defn: parts.append(f'iof-av:naturalLanguageDefinition "{esc(defn)}"@zh')
+        ann = "iof-av:" if bfo_enabled else ":"
+        if defn: parts.append(f'{ann}naturalLanguageDefinition "{esc(defn)}"@zh')
         if n.get("isPrimitive") is not None:
-            parts.append(f'iof-av:isPrimitive "{str(bool(n["isPrimitive"])).lower()}"^^xsd:boolean')
-        if (n.get("example") or "").strip(): parts.append(f'iof-av:example "{esc(n["example"])}"@zh')
-        if (n.get("counterExample") or "").strip(): parts.append(f'iof-av:counterExample "{esc(n["counterExample"])}"@zh')
+            parts.append(f'{ann}isPrimitive "{str(bool(n["isPrimitive"])).lower()}"^^xsd:boolean')
+        if (n.get("example") or "").strip(): parts.append(f'{ann}example "{esc(n["example"])}"@zh')
+        if (n.get("counterExample") or "").strip(): parts.append(f'{ann}counterExample "{esc(n["counterExample"])}"@zh')
         mat = (n.get("maturity") or "").strip() or "Provisional"
-        if mat in ("Provisional", "Released"):
+        if bfo_enabled and mat in ("Provisional", "Released"):
             parts.append(f'iof-av:maturity iof-ind:{mat}')
         elif mat:
             parts.append(f':lifecycleStatus "{esc(mat)}"')
         prov = n.get("provenance") or {}
-        if prov.get("directSource"): parts.append(f'iof-av:directSource "{esc(prov["directSource"])}"')
-        for ad in (prov.get("adaptedFrom") or []):
-            if ad: parts.append(f'iof-av:adaptedFrom "{esc(ad)}"')
+        if bfo_enabled:
+            if prov.get("directSource"): parts.append(f'iof-av:directSource "{esc(prov["directSource"])}"')
+            for ad in (prov.get("adaptedFrom") or []):
+                if ad: parts.append(f'iof-av:adaptedFrom "{esc(ad)}"')
+        industry_ref = n.get("industry_reference") or {}
+        if industry_ref.get("concept"):
+            parts.append(f':industryConcept "{esc(industry_ref.get("industry"))}::{esc(industry_ref.get("concept"))}"')
+        standard_ref = n.get("standard_alignment") or {}
+        if standard_ref.get("candidate"):
+            parts.append(f':standardCandidate "{esc(standard_ref.get("standard"))}::{esc(standard_ref.get("candidate"))}"')
         L.append(" ;\n    ".join(parts) + " .")
         for a in ((raw.get(str(n["id"])) or {}).get("attrs") or [])[:60]:   # 字段级数据类型属性
             col = a.get("col")
@@ -2207,15 +2423,16 @@ def _ir_to_turtle(key, ir):
                f'rdfs:range :{loc(e2["t"])}', f'rdfs:label "{esc(e2.get("verb",""))}"@zh']
         grounding_iri = e2.get("grounding_iri") or ""
         grounding_status = e2.get("grounding_status") or "unmapped"
-        if grounding_status == "mapped" and grounding_iri:
-            seg.append(f'rdfs:subPropertyOf {grounding_iri}')
-            used_iris.add(grounding_iri)
-        seg.append(f':groundingStatus "{esc(grounding_status)}"')
-        if e2.get("grounding_reason"):
-            seg.append(f':groundingNote "{esc(e2["grounding_reason"])}"@zh')
-        if e2.get("temporal"):
-            seg.append(f':temporal "{esc(e2["temporal"])}"')
-        if e2.get("status"): seg.append(f'iof-av:usageNote "{esc("status=" + str(e2["status"]))}"')
+        if bfo_enabled:
+            if grounding_status == "mapped" and grounding_iri:
+                seg.append(f'rdfs:subPropertyOf {grounding_iri}')
+                used_iris.add(grounding_iri)
+            seg.append(f':groundingStatus "{esc(grounding_status)}"')
+            if e2.get("grounding_reason"):
+                seg.append(f':groundingNote "{esc(e2["grounding_reason"])}"@zh')
+            if e2.get("temporal"):
+                seg.append(f':temporal "{esc(e2["temporal"])}"')
+        if e2.get("status"): seg.append(f'{"iof-av:" if bfo_enabled else ":"}usageNote "{esc("status=" + str(e2["status"]))}"')
         L.append(" ;\n    ".join(seg) + " .")
     for iri in sorted(used_iris):                         # 声明实际引用的官方关系,保证离线解析
         L.append(f'{iri} a owl:ObjectProperty .')
@@ -2487,7 +2704,7 @@ def ont_health(key):
 
     分级:dangling/self_loop/status_conflict 是阻断问题(IR 不自洽);
     isolated/hub/duplicate/bidirectional 是待核查信号。结构一致性分只由阻断问题扣分——
-    否则一个业务枢纽对象就能把分数拉垮,分数失去意义。
+    否则业务枢纽对象会被不恰当地扣分，导致评分失去区分度。
     """
     if _bad_gkey(key): return jsonify({"error": "非法图谱键"}), 400
     ir = load_ir_edited(key)
@@ -2634,9 +2851,10 @@ def _open_writable(key, need_objects=False):
     return ir, wp, None
 
 def _llm_define(objs):
-    """批量提出属加种差定义、正例和反例；返回按对象名索引的建议。
+    """批量提出属加种差定义和概念反例；返回按对象名索引的建议。
 
-    这些文本是待复核的自然语言注释，不构成 OWL 充要定义。引擎离线或超时时返回空。
+    本端点只有结构元数据，没有实例行，因而不得生成正例。返回文本均为待复核的
+    自然语言注释，不构成 OWL 充要定义。引擎离线或超时时返回空。
     """
     from agent_runtime import get_runtime, available
     items = []
@@ -2644,12 +2862,13 @@ def _llm_define(objs):
         cols = ", ".join(a.get("col", "") for a in (o.get("attrs") or [])[:12])
         tb = o.get("table") or (o.get("tables") or [""])[0]
         items.append(f'- name={o.get("name") or o.get("id")}; cn={o.get("cn") or ""}; kind={o.get("kind")}; table={tb}; 列[{cols}]')
-    prompt = ("你是企业本体定义专家。为下列对象各写一条 IOF 风格『属加种差』定义、一个正例、一个易混淆反例。\n"
+    prompt = ("你是企业本体定义专家。为下列对象各写一条 IOF 风格『属加种差』定义和一个易混淆的概念反例。\n"
               "对象清单:\n" + "\n".join(items) +
               '\n\n只输出一个 JSON(无其它文字):{"<name>":{"definition":"X 是一种 Y,且…(属加种差,简洁准确,基于给定语义,不编造)",'
-              '"example":"一个正例","counterExample":"一个会被误认成它、实则不是的反例(如 销售订单↔报价单)"}, ...}\n'
+              '"example":"","counterExample":"类别层面的易混淆概念及辨析(如 报价单仅表达价格意向，不是销售订单)"}, ...}\n'
               "要求:①定义用中文属加种差句式;②不虚构表/列中没有的语义;③反例要有辨析价值;④JSON 的 key 必须是上面给出的 name;"
-              "⑤**非循环**:定义体中不得复用被定义术语名本身及其中文名(如定义『销售订单』不得出现『销售订单』字样),用上位类(属)+区别特征(种差)描述,避免自指。")
+              "⑤**非循环**:定义体中不得复用被定义术语名本身及其中文名(如定义『销售订单』不得出现『销售订单』字样),用上位类(属)+区别特征(种差)描述,避免自指;"
+              "⑥没有实例数据，example 必须为空；反例不得包含虚构的企业名、编号、日期、数量或金额。")
     for drv in _drv_order():
         if drv not in available(): continue
         ok, reply = get_runtime(drv).run_turn(f"def_{uuid.uuid4().hex[:6]}", prompt, timeout=110)
@@ -2692,15 +2911,22 @@ def ont_enrich():
             if not d: continue
             # 自然语言定义不等于 OWL 等价类公理，仍按原始类（primitive class）处理。
             o["definition"] = d; o["isPrimitive"] = True
-            if (ann.get("example") or "").strip(): o["example"] = ann["example"].strip()
+            # 该端点没有读取实例行；模型即使违反提示返回正例，也不得落入产物。
+            if not ((o.get("example_provenance") or {}).get("status") == "observed"):
+                o["example"] = ""
+                o["example_provenance"] = {"status": "withheld_no_source",
+                                             "note": "定义补全没有实例证据输入"}
             if (ann.get("counterExample") or "").strip(): o["counterExample"] = ann["counterExample"].strip()
+            o["definition_status"] = "model_proposed_pending_review"
+            if (o.get("counterExample") or "").strip():
+                o["counterexample_status"] = "illustrative_pending_review"
             o.setdefault("maturity", "Provisional")
             o["bfo"] = o.get("bfo") or _KIND_BFO.get(o.get("kind"), "MaterialEntity")
             enriched += 1
     if enriched:
         with _WRITE_LOCK: _atomic_json(wp, ir)            # 原子回写(只增注释字段,非破坏)
     return jsonify({"ok": True, "enriched": enriched, "targets": len(targets),
-                    "note": f"已为 {enriched}/{len(targets)} 个对象生成待复核的定义/反例建议" + ("" if enriched else ",引擎未产出有效建议")})
+                    "note": f"已为 {enriched}/{len(targets)} 个对象生成待复核的定义和概念反例；因未读取实例行，不生成正例" + ("" if enriched else ",引擎未产出有效建议")})
 
 _VERB_VOCAB = ["归属", "包含", "组成", "产生", "输出", "触发", "输入", "服务", "参与", "承载", "实现", "描述"]
 def _rel_ends(r):
@@ -2889,7 +3115,42 @@ def query():
         return jsonify({"error": f"数据源「{nm}」不可查询"}), 400
     except Exception as e: return jsonify({"error": str(e)}), 400
 
-_QA_CACHE: dict[str, Any] = {}   # 深度问数结果缓存:相同问题+上下文秒回(引擎慢,缓存显著提速)
+_QA_CACHE: dict[str, Any] = {}   # 深度问数结果缓存:仅供明确允许复用的非交互调用
+_QA_CACHE_LOCK = threading.Lock()
+
+
+def _qa_bypass_cache(body):
+    """交互式问数的强制刷新策略；兼容历史 ``nocache`` 字段。
+
+    bypass 不只是“不读”：还会清除同键旧值，且本次结果不再写入缓存。否则用户
+    点过一次示例后，下一次虽真实执行，完成结果仍会重新污染缓存，造成行为反复。
+    """
+    policy = str(body.get("cache_policy") or "").strip().lower()
+    if policy in {"bypass", "no-store", "reload"}:
+        return True
+    value = body.get("nocache")
+    if isinstance(value, str):
+        return value.strip().lower() not in {"", "0", "false", "no", "off"}
+    return bool(value)
+
+
+def _qa_cache_begin(question, history, focus_tables, graph_keys, bypass=False):
+    """为一次问数固定缓存键，并以线程安全方式读取或清除旧值。"""
+    key = _qa_key(question, history, focus_tables, graph_keys)
+    with _QA_CACHE_LOCK:
+        if bypass:
+            _QA_CACHE.pop(key, None)
+            return key, None
+        return key, _QA_CACHE.get(key)
+
+
+def _qa_cache_store(key, response):
+    with _QA_CACHE_LOCK:
+        if len(_QA_CACHE) >= 200:
+            _QA_CACHE.pop(next(iter(_QA_CACHE)))
+        _QA_CACHE[key] = response
+
+
 def _qa_scope(body):
     """归一问数请求的表/图谱作用域；同步与流式端点共用。"""
     raw_tables = body.get("tables") or []
@@ -2907,6 +3168,69 @@ def _qa_scope(body):
         if key and not _bad_gkey(key) and key not in graph_keys:
             graph_keys.append(key)
     return focus_tables[:200], graph_keys[:30]
+
+
+def _qa_anchor_explanation(anchor, results=None):
+    """把本体规划候选与最终 SQL 事实分开，供解释型界面直接呈现。
+
+    ``anchor.objects/relations`` 是交给规划器的候选范围，不等同于 SQL 实际使用。
+    最终表清单只从成功返回的结果 SQL 的 FROM/JOIN 反解；JOIN 数量只统计 SQL
+    中真实出现的 JOIN 关键字，避免把“7 条候选关系”误说成“执行了 7 次 JOIN”。
+    """
+    objects = [o for o in (anchor or {}).get("objects", []) if isinstance(o, dict)]
+    relations = [r for r in (anchor or {}).get("relations", []) if isinstance(r, dict)]
+    ontology = (anchor or {}).get("ontology") or {}
+    by_reason = {}
+    for obj in objects:
+        reason = str(obj.get("reason") or "其他依据")
+        by_reason.setdefault(reason, []).append(str(obj.get("table") or ""))
+
+    if results is None:
+        return {
+            "phase": "planning",
+            "ontology_object_count": ontology.get("objects") or len(objects),
+            "context_object_count": len(objects),
+            "relation_candidate_count": len(relations),
+            "used_tables": [],
+            "context_only_tables": [str(o.get("table") or "") for o in objects if o.get("table")],
+            "sql_join_count": None,
+            "result_sql_count": 0,
+            "selection": [{"reason": k, "count": len(v), "tables": v}
+                          for k, v in by_reason.items()],
+        }
+
+    used_tables, join_count, sql_count = [], 0, 0
+    ident = r'[A-Za-z_][A-Za-z0-9_."`\[\]]*'
+    for result in results or []:
+        sql = str((result or {}).get("sql") or "")
+        if not sql:
+            continue
+        sql_count += 1
+        join_count += len(re.findall(r"\bjoin\b", sql, re.I))
+        ctes = {m.group(1).lower() for m in
+                re.finditer(r"(?:\bwith\b|,)\s*(%s)\s+as\s*\(" % ident, sql, re.I)}
+        for match in re.finditer(r"\b(?:from|join)\s+(%s)" % ident, sql, re.I):
+            table = match.group(1).strip().strip('"`[]').lower()
+            if table.startswith("up."):
+                table = table.split(".")[-1]
+            if table and table not in ctes and table not in used_tables:
+                used_tables.append(table)
+
+    used_set = set(used_tables)
+    context_only = [str(o.get("table") or "") for o in objects
+                    if o.get("table") and str(o.get("table")).lower() not in used_set]
+    return {
+        "phase": "complete",
+        "ontology_object_count": ontology.get("objects") or len(objects),
+        "context_object_count": len(objects),
+        "relation_candidate_count": len(relations),
+        "used_tables": used_tables,
+        "context_only_tables": context_only,
+        "sql_join_count": join_count,
+        "result_sql_count": sql_count,
+        "selection": [{"reason": k, "count": len(v), "tables": v}
+                      for k, v in by_reason.items()],
+    }
 
 
 def _qa_key(question, history, focus=None, graphs=None):
@@ -2934,10 +3258,16 @@ def chat():
     history = body.get("history") or []          # [{q, summary}] 最近几轮
     focus_tables, graph_keys = _qa_scope(body)
     if not question: return jsonify({"error": "empty"}), 400
-    if not body.get("nocache"):
-        hit = _QA_CACHE.get(_qa_key(question, history, focus_tables, graph_keys))
-        if hit: return jsonify({**hit, "cached": True})
-    ir_gate, gate_keys, fallback = _anchor_ir(graph_keys)
+    bypass_cache = _qa_bypass_cache(body)
+    cache_key, hit = _qa_cache_begin(
+        question, history, focus_tables, graph_keys, bypass=bypass_cache)
+    if hit:
+        return jsonify({**hit, "cached": True})
+    ir_gate, gate_keys, fallback, qa_profile = _qa_anchor_ir(graph_keys)
+    scope_error = _qa_scope_error(graph_keys, gate_keys, fallback, qa_profile)
+    if scope_error:
+        return jsonify({"error": scope_error, "code": "ontology_not_queryable",
+                        "ontology": {"keys": gate_keys, **qa_profile}}), 422
     load_info = "加载本体上下文 · " + "、".join(_graph_name(key) for key in gate_keys)
     if fallback: load_info += " · " + fallback
     steps = [{"step": "load_ontology", "ok": True, "info": load_info}]
@@ -2967,7 +3297,8 @@ def chat():
         sql = a.get("sql", "")
         if not sql_is_readonly(sql):
             steps.append({"step": "exec_sql", "ok": False, "info": "非只读SQL被拒: " + sql[:60]}); continue
-        okv, why = _validate_sql_ontology(sql, ir_gate)          # A2 口径拦截
+        okv, why = _qa_validate_sql(
+            sql, ir_gate, strict=bool(graph_keys and gate_keys != ["demo"] and not fallback))
         if not okv:
             steps.append({"step": "ontology_gate", "ok": False, "info": "口径拦截:" + why}); continue
         # DR-026 双盲意图检测:口径校验管「SQL 合不合规」,这里管「答的是不是问的那件事」。
@@ -2979,6 +3310,9 @@ def chat():
             steps.append(intent_check.step_of(_ic))
             # DR-026 使用度埋点:复用双盲已反解出的对象,零额外解析开销;失败静默(旁路)
             usage_stat.record(WORK, gate_keys[0], [o["key"] for o in _ic["actual"]["objects"]], "query")
+            for _o in _ic["actual"]["objects"]:
+                if _o.get("table") and _o["table"] not in anchor.setdefault("used", []):
+                    anchor["used"].append(_o["table"])
         except Exception:
             pass
         try:
@@ -2992,11 +3326,12 @@ def chat():
     else:
         text = "查询均失败,请换个问法或检查指标是否绑表。"
     summary = "; ".join(f"{r['title']}[{r['sql'][:120]}]→{len(r['data']['rows'])}行,末行{json.dumps(r['data']['rows'][-1] if r['data']['rows'] else {}, ensure_ascii=False)[:150]}" for r in results)[:1200]
+    anchor["explanation"] = _qa_anchor_explanation(anchor, results)
+    anchor["used"] = anchor["explanation"]["used_tables"]
     resp = {"steps": steps, "results": results, "narrative": text, "note": plan.get("note", ""),
             "summary": summary, "metric_cards": _metric_cards(question, ir_gate), "anchor": anchor}
-    if results:                                   # 仅缓存成功结果;上限 200 条,超出清最早
-        if len(_QA_CACHE) > 200: _QA_CACHE.pop(next(iter(_QA_CACHE)))
-        _QA_CACHE[_qa_key(question, history, focus_tables, graph_keys)] = resp
+    if results and not bypass_cache:              # 强制刷新请求既不读缓存，也不回写缓存
+        _qa_cache_store(cache_key, resp)
     return jsonify(resp)
 
 @app.post("/api/chat/stream")
@@ -3005,7 +3340,7 @@ def chat_stream():
     body = request.json or {}
     question = (body.get("q") or "").strip()
     history = body.get("history") or []
-    nocache = body.get("nocache")
+    bypass_cache = _qa_bypass_cache(body)
     # default=str:即便某列是 BLOB/bytes 等不可 JSON 序列化的值,也不会让整条 SSE 流因异常静默中断(前端卡在"运行中")
     def sse(obj): return "data: " + json.dumps(obj, ensure_ascii=False, default=str) + "\n\n"
     def gen():
@@ -3014,10 +3349,10 @@ def chat_stream():
         if not question:
             yield sse({"type": "error", "error": "empty"}); return
         focus_tables, graph_keys = _qa_scope(body)          # 与同步 /api/chat 共用作用域归一
-        if not nocache:
-            hit = _QA_CACHE.get(_qa_key(question, history, focus_tables, graph_keys))
-            if hit:
-                yield sse({"type": "done", **hit, "cached": True, "elapsed": 0.0, "session": session}); return
+        cache_key, hit = _qa_cache_begin(
+            question, history, focus_tables, graph_keys, bypass=bypass_cache)
+        if hit:
+            yield sse({"type": "done", **hit, "cached": True, "elapsed": 0.0, "session": session}); return
         def stp(step, ok, info=""):
             return {"step": step, "ok": ok, "info": info, "ts": _t.strftime("%H:%M:%S")}
         steps = []
@@ -3025,11 +3360,17 @@ def chat_stream():
             s = stp(step, ok, info); steps.append(s); return sse({"type": "step", **s})
         if focus_tables:
             yield push("scope_source", True, f"数据源限定 · {len(focus_tables)} 张表")
-        ir_gate, _gate_keys, _ = _anchor_ir(graph_keys)
+        ir_gate, _gate_keys, _gate_fallback, qa_profile = _qa_anchor_ir(graph_keys)
         # 本体名要据实回显:此处曾写死「示例」,选了自建本体也照喊示例,
         # 与下一步 anchor_ontology 打架,读日志的人会以为锚错了本体
         yield push("load_ontology", True,
                    "加载本体上下文 · %s" % "、".join(_graph_name(k) for k in _gate_keys))
+        scope_error = _qa_scope_error(graph_keys, _gate_keys, _gate_fallback, qa_profile)
+        if scope_error:
+            yield push("scope_ontology", False, qa_profile.get("reason") or "所选本体不可问数")
+            yield sse({"type": "error", "code": "ontology_not_queryable", "error": scope_error,
+                       "ontology": {"keys": _gate_keys, **qa_profile}})
+            return
         q_eff, co = _carryover(question, history, ir_gate)      # B5 多轮指代:上文本体对象延续
         if co:
             yield push("coreference", True, f"多轮指代 · 延续上文对象:{co}")
@@ -3042,6 +3383,7 @@ def chat_stream():
                   "scoped": False, "graphs": graph_keys,
                   "focus_n": len(focus_tables), "question": q_eff}
         ctx = build_context(q_eff, focus_tables=focus_tables, trace=anchor, graph_keys=graph_keys)
+        anchor["explanation"] = _qa_anchor_explanation(anchor)
         _ont = anchor.get("ontology") or {}
         yield push("anchor_ontology", True,
                    f"锚定本体 · {'、'.join(_ont.get('names') or ['示例'])}"
@@ -3057,7 +3399,7 @@ def chat_stream():
         yield push("match_schema", True, f"匹配相关表/指标 · 命中 {ntab} 张表")
         _nrel = ctx.count("⋈")
         yield push("ontology_relations", True,
-                   f"沿本体关系召回 · {_nrel} 条已验证关系作 JOIN 依据" if _nrel else "选中表间暂无已验证关系,JOIN 由引擎按列名推断")
+                   f"沿本体关系召回 · 提供 {_nrel} 条候选 JOIN 依据(是否采用以最终 SQL 为准)" if _nrel else "选中表间暂无已验证关系,JOIN 由引擎按列名推断")
         yield push("build_context", True, f"组装库结构上下文 · {len(ctx)} 字符")
         plan = None
         _sk = _match_qa_skill(question)               # #5 沉淀技能复用:命中即免引擎规划(秒级)
@@ -3100,7 +3442,9 @@ def chat_stream():
             yield push("gen_sql", True, f"[{idx}/{len(analyses)}] 生成 SQL 规范:{title}")
             if not sql_is_readonly(sql):
                 yield push("exec_sql", False, f"[{idx}] 非只读SQL被拒: " + sql[:50]); continue
-            okv, why = _validate_sql_ontology(sql, ir_gate)      # A2 口径拦截:表白名单 + JOIN 键须落本体关系
+            okv, why = _qa_validate_sql(
+                sql, ir_gate,
+                strict=bool(graph_keys and _gate_keys != ["demo"] and not _gate_fallback))
             if not okv:
                 yield push("ontology_gate", False, f"[{idx}] 口径拦截:{why}"); continue
             yield push("ontology_gate", True, f"[{idx}] 本体校验通过 · 表与 JOIN 键均在本体边界内")
@@ -3152,16 +3496,18 @@ def chat_stream():
             yield push("review", False, "无有效数据,无法生成报告")
             text = "查询均失败,请换个问法或检查指标是否绑表。"
         summary = "; ".join(f"{r['title']}[{r['sql'][:120]}]→{len(r['data']['rows'])}行,末行{json.dumps(r['data']['rows'][-1] if r['data']['rows'] else {}, ensure_ascii=False)[:150]}" for r in results)[:1200]
+        anchor["explanation"] = _qa_anchor_explanation(anchor, results)
+        anchor["used"] = anchor["explanation"]["used_tables"]
         resp = {"steps": steps, "results": results, "narrative": text, "note": plan.get("note", ""),
                 "summary": summary, "metric_cards": _metric_cards(question, ir_gate),
                 "anchor": anchor}   # 随 done 落一份:命中缓存与历史回放时锚定视图不丢
-        if results:
-            if len(_QA_CACHE) > 200: _QA_CACHE.pop(next(iter(_QA_CACHE)))
-            _QA_CACHE[_qa_key(question, history, focus_tables, graph_keys)] = resp
+        if results and not bypass_cache:
+            _qa_cache_store(cache_key, resp)
         yield sse({"type": "done", **resp, "cached": False, "elapsed": round(_t.time() - t0, 1), "session": session})
     from flask import Response, stream_with_context
     return Response(stream_with_context(gen()), mimetype="text/event-stream",
-                    headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"})
+                    headers={"Cache-Control": "no-store, no-cache, must-revalidate, max-age=0",
+                             "Pragma": "no-cache", "Expires": "0", "X-Accel-Buffering": "no"})
 
 _QA_SKILLS_F = os.path.join(WORK, "qa_skills.json")
 
@@ -3473,184 +3819,6 @@ def eval_results():
 @app.get("/api/eval/set")
 def eval_set(): return jsonify({"items": _eval_items(), "n": len(_eval_items())})
 
-# ── 动作层(借鉴 Palantir ActionType):类型化·带参数·风险分级·全审计;PoC=决策捕获,不写只读源库 ──
-ACTION_TYPES_F = os.path.join(WORK, "action_types.json")
-ACTION_LOG_F = os.path.join(WORK, "action_log.json")
-
-def _load_ats():
-    try: return json.load(open(ACTION_TYPES_F))
-    except Exception: return []
-
-def _load_alog():
-    try: return json.load(open(ACTION_LOG_F))
-    except Exception: return []
-
-@app.get("/api/actions")
-def actions_list():
-    log = _load_alog()
-    return jsonify({"types": _load_ats(),
-                    "pending": sum(1 for x in log if x["status"] == "pending"),
-                    "executed": sum(1 for x in log if x["status"] == "executed"),
-                    "denied": sum(1 for x in log if x["status"] == "denied"),
-                    "execution": {"mode": "decision_capture", "real_writeback": False,
-                                  "connector_status": "not_connected"}})
-
-# ── 动作类型管理(DR-020):自建/编辑/停用/删除;内置种子受保护(只可停用与改说明)──
-_AT_PARAM_TYPES = ("text", "textarea", "select")
-
-def _valid_at_params(params):
-    """参数 schema 校验 → 规整后的列表;非法返回 None。上限 12 个,name 须 snake_case。"""
-    if not isinstance(params, list) or len(params) > 12: return None
-    out, seen = [], set()
-    for p in params:
-        name = str(p.get("name") or "").strip()[:30]
-        if not re.match(r"^[a-z][a-z0-9_]*$", name) or name in seen: return None
-        seen.add(name)
-        typ = p.get("type") if p.get("type") in _AT_PARAM_TYPES else "text"
-        row = {"name": name, "cn": (str(p.get("cn") or "").strip()[:30] or name),
-               "type": typ, "required": bool(p.get("required"))}
-        if typ == "select":
-            opts = [str(o).strip()[:40] for o in (p.get("options") or []) if str(o).strip()][:12]
-            if not opts: return None
-            row["options"] = opts
-        out.append(row)
-    return out
-
-@app.post("/api/action/type")
-def action_type_create():
-    body = request.json or {}
-    cn = str(body.get("cn") or "").strip()[:40]
-    creator = str(body.get("creator") or "").strip()[:40]
-    if not cn: return jsonify({"error": "动作名称必填"}), 400
-    if not creator: return jsonify({"error": "创建人必填(姓名或工号,入登记)"}), 400
-    risk = body.get("risk") if body.get("risk") in ("low", "high") else "high"   # 缺省从严
-    params = _valid_at_params(body.get("params") or [])
-    if params is None: return jsonify({"error": "参数 schema 非法(name 须小写下划线,select 须给 options)"}), 400
-    ot = str(body.get("object_table") or "").strip()[:60]
-    if ot:
-        try:
-            if ot.lower() not in {t["name"].lower() for t in table_list()}:
-                return jsonify({"error": f"绑定表 {ot} 不在数据目录中"}), 400
-        except Exception: pass
-    tid = "act_" + uuid.uuid4().hex[:6]
-    at = {"id": tid, "cn": cn, "object": str(body.get("object") or "").strip()[:40] or (ot or "—"),
-          "object_table": ot, "desc": str(body.get("desc") or "").strip()[:300],
-          "risk": risk, "source": "自建动作 · " + creator, "params": params,
-          "effects": [{"type": "append_event",
-                       "event": (str(body.get("effects_note") or "").strip()[:120] or "动作已登记")}],
-          "builtin": False, "enabled": True,
-          "created_by": creator, "created_ts": time.strftime("%Y-%m-%d %H:%M")}
-    with _WRITE_LOCK:
-        ats = _load_ats()
-        ats.append(at)
-        _atomic_json(ACTION_TYPES_F, ats)
-    return jsonify({"ok": True, "type": at})
-
-@app.post("/api/action/type/update")
-def action_type_update():
-    body = request.json or {}
-    tid = body.get("id")
-    with _WRITE_LOCK:
-        ats = _load_ats()
-        at = next((x for x in ats if x["id"] == tid), None)
-        if not at: return jsonify({"error": "动作类型不存在"}), 404
-        if "enabled" in body: at["enabled"] = bool(body["enabled"])
-        if "desc" in body: at["desc"] = str(body["desc"]).strip()[:300]
-        if not at.get("builtin"):                    # 内置种子语义受保护;自建可全改
-            if "cn" in body and str(body["cn"]).strip(): at["cn"] = str(body["cn"]).strip()[:40]
-            if "risk" in body and body["risk"] in ("low", "high"): at["risk"] = body["risk"]
-            if "object" in body: at["object"] = str(body["object"]).strip()[:40]
-            if "object_table" in body: at["object_table"] = str(body["object_table"]).strip()[:60]
-            if "params" in body:
-                params = _valid_at_params(body["params"])
-                if params is None: return jsonify({"error": "参数 schema 非法"}), 400
-                at["params"] = params
-            if "effects_note" in body:
-                at["effects"] = [{"type": "append_event",
-                                  "event": str(body["effects_note"]).strip()[:120] or "动作已登记"}]
-        elif set(body) - {"id", "enabled", "desc"}:
-            return jsonify({"error": "内置动作只允许 停用/启用 与修改说明"}), 400
-        at["updated_ts"] = time.strftime("%Y-%m-%d %H:%M")
-        _atomic_json(ACTION_TYPES_F, ats)
-    return jsonify({"ok": True, "type": at})
-
-@app.post("/api/action/type/delete")
-def action_type_delete():
-    tid = (request.json or {}).get("id")
-    with _WRITE_LOCK:
-        ats = _load_ats()
-        at = next((x for x in ats if x["id"] == tid), None)
-        if not at: return jsonify({"error": "动作类型不存在"}), 404
-        if at.get("builtin"): return jsonify({"error": "内置动作不可删除(可停用)"}), 400
-        _atomic_json(ACTION_TYPES_F, [x for x in ats if x["id"] != tid])
-    return jsonify({"ok": True})
-
-@app.post("/api/action/invoke")
-def action_invoke():
-    """发起动作:参数按类型 schema 校验;低风险直接登记,高风险进审批队列。
-    ``executed`` 为兼容既有 API 的状态码，当前含义是已形成决策记录，不代表业务系统写回。"""
-    body = request.json or {}
-    at = next((x for x in _load_ats() if x["id"] == body.get("action_id")), None)
-    if not at: return jsonify({"error": "动作类型不存在"}), 404
-    if at.get("enabled") is False: return jsonify({"error": "该动作类型已停用,不可发起"}), 400
-    operator = str(body.get("operator") or "").strip()[:40]
-    if not operator: return jsonify({"error": "操作人必填(姓名或工号)"}), 400
-    params = body.get("params") or {}
-    clean = {}
-    for p in at["params"]:
-        v = str(params.get(p["name"]) or "").strip()
-        if p.get("required") and not v: return jsonify({"error": f"参数「{p['cn']}」必填"}), 400
-        if p.get("type") == "select" and v and v not in (p.get("options") or []):
-            return jsonify({"error": f"参数「{p['cn']}」须为 {'/'.join(p.get('options') or [])}"}), 400
-        if p.get("type") == "number" and v:
-            try: float(v)
-            except Exception: return jsonify({"error": f"参数「{p['cn']}」须为数字"}), 400
-        clean[p["name"]] = v[:500]
-    item = {"id": uuid.uuid4().hex[:8], "ts": time.strftime("%Y-%m-%d %H:%M"),
-            "action_id": at["id"], "action_cn": at["cn"], "object": at.get("object", ""),
-            "risk": at.get("risk", "low"), "operator": operator, "params": clean,
-            "status": "pending" if at.get("risk") == "high" else "executed",
-            "execution_mode": "decision_capture", "real_writeback": False,
-            "effects": [], "approver": "", "approve_comment": ""}
-    if item["status"] == "executed":
-        item["effects"] = [(((e.get("event") or "") + "(已记录)") if e.get("type") == "append_event" else (e.get("target") or e.get("type") or ""))
-                           for e in (at.get("effects") or [])]
-    with _WRITE_LOCK:
-        log = _load_alog(); log.insert(0, item); _atomic_json(ACTION_LOG_F, log[:1000])
-    return jsonify({"ok": True, "id": item["id"], "status": item["status"],
-                    "execution_mode": "decision_capture", "real_writeback": False})
-
-@app.get("/api/action/log")
-def action_log():
-    return jsonify({"items": _load_alog()[:200]})
-
-@app.post("/api/action/approve")
-def action_approve():
-    """高风险动作审批:approve 形成动作记录;deny 必须给意见。当前不写回业务系统。"""
-    body = request.json or {}
-    fid, decision = body.get("id", ""), body.get("decision", "")
-    approver = str(body.get("approver") or "").strip()[:40]
-    comment = str(body.get("comment") or "").strip()[:300]
-    if decision not in ("approve", "deny"): return jsonify({"error": "decision 须为 approve/deny"}), 400
-    if not approver: return jsonify({"error": "审批人必填"}), 400
-    if decision == "deny" and not comment: return jsonify({"error": "驳回必须填写意见"}), 400
-    with _WRITE_LOCK:
-        log = _load_alog()
-        it = next((x for x in log if x["id"] == fid), None)
-        if not it: return jsonify({"error": "记录不存在"}), 404
-        if it["status"] != "pending": return jsonify({"error": "该动作不在待审批状态"}), 400
-        at = next((x for x in _load_ats() if x["id"] == it["action_id"]), {}) or {}
-        it["approver"] = approver; it["approve_comment"] = comment
-        it["approve_ts"] = time.strftime("%Y-%m-%d %H:%M")
-        if decision == "approve":
-            it["status"] = "executed"
-            it["effects"] = [(((e.get("event") or "") + "(已记录)") if e.get("type") == "append_event" else (e.get("target") or e.get("type") or ""))
-                             for e in (at.get("effects") or [])]
-        else:
-            it["status"] = "denied"
-        _atomic_json(ACTION_LOG_F, log)
-    return jsonify({"ok": True, "status": it["status"]})
-
 QA_FB = os.path.join(WORK, "qa_feedback.json")
 
 def _load_fb():
@@ -3838,7 +4006,7 @@ def build_upload():
             for f in request.files.getlist("files"):
                 fn = _safe_fname(f.filename or "file"); raw = f.read()
                 path = _confined(WORK, "uploads_" + fn)   # 落盘前再裁一次:上传文件名永远不可信
-                with open(path, "wb") as fp: fp.write(raw)
+                _atomic_bytes(path, raw)
                 saved.append(fn)
                 if fn.lower().endswith((".csv", ".tsv")):
                     try:
@@ -4206,7 +4374,7 @@ def build_skill_save():
     os.makedirs(_BUILD_SKILL_D, exist_ok=True)
     p = _custom_skill_path(name) or _confined(_BUILD_SKILL_D, name + ".md")
     with _WRITE_LOCK:
-        open(p, "w", encoding="utf-8").write(content)
+        _atomic_text(p, content)
         tombs = _skill_tombs()
         if name in tombs:                    # 保存即恢复:被删过的名字重新出现在列表里
             tombs.discard(name); _skill_tombs_save(tombs)
@@ -4280,7 +4448,7 @@ def build_skill_from_graph():
     if name in _builtin_skill_names(): return jsonify({"error": "技能名与内置冲突,请换名"}), 400
     os.makedirs(_BUILD_SKILL_D, exist_ok=True)
     with _WRITE_LOCK:
-        open(_confined(_BUILD_SKILL_D, name + ".md"), "w", encoding="utf-8").write(content)
+        _atomic_text(_confined(_BUILD_SKILL_D, name + ".md"), content)
     return jsonify({"ok": True, "name": name, "verbs": dict(verbs.most_common(8)), "chars": len(content)})
 
 # ── #1 技能对比实验(DR-022):同一构建目标 × 两组技能,各跑一次真实构建,对比产物 ──
@@ -4355,7 +4523,7 @@ def build_skill_upload():
         if not re.match(r"^[\w\-. ]+$", fn): continue
         if not fn.lower().endswith((".md", ".txt")): fn = re.sub(r"\.\w+$", "", fn) + ".md"
         try:
-            open(_confined(_BUILD_SKILL_D, fn), "wb").write(f.read()); saved.append(fn)
+            _atomic_bytes(_confined(_BUILD_SKILL_D, fn), f.read()); saved.append(fn)
         except (OSError, ValueError):        # ValueError = _confined 判定越界
             pass
     return jsonify({"saved": saved})
@@ -4371,6 +4539,13 @@ def build_defaults():
         "default_skill": "ontology-semi-auto",                      # 本仓自带,无上游引擎也真实可用
         "ext": {"kind": "hive", "host": "<hive-host>", "port": "10000", "db": "default"},
     })
+
+@app.get("/api/build/references")
+def build_reference_catalog():
+    """半自动构建可选的行业参照与本体标准目录。"""
+    response = jsonify(build_references.catalog())
+    response.headers["Cache-Control"] = "no-store"
+    return response
 
 @app.get("/api/build/built")
 def build_built():
@@ -4417,6 +4592,7 @@ def build_history(key):
                        "request": str(h.get("request") or "")[:2000],
                        "source": (h.get("source") or {}).get("name") or "",
                        "skills": h.get("skills") or [], "method": h.get("method") or "",
+                       "references": h.get("references"),
                        "cq_count": len(h.get("cqs") or []),
                        "tables": (h.get("evidence") or {}).get("tables"),
                        "documents": (h.get("evidence") or {}).get("documents"),
@@ -4426,6 +4602,7 @@ def build_history(key):
                     "iterations": sc.get("iterations") or (len(rounds) or 1),
                     "objects": len(ir.get("objects") or []),
                     "relations": len(ir.get("relations") or []),
+                    "references": (ir.get("build_manifest") or {}).get("references"),
                     "rounds": rounds})
 
 @app.post("/api/build/delete")
@@ -4625,8 +4802,8 @@ def _dg_rank(causes):
 def _dg_checklist_gate(items, allow_set, tables):
     """诊断检查 G2(确定性):检查清单只能引用白名单对象或真实表名。
 
-    对标该文的"审核 Agent",但用规则而非 LLM——合规性检查本质是集合匹配,让模型自审
-    等于把裁判权交还给被审对象。越界项不静默丢弃,而是标记出来供人看见(可审计)。
+    对标该文的"审核 Agent",但用规则而非 LLM——合规性检查本质是集合匹配；模型不能
+    同时承担生成与独立核验职责。越界项不静默丢弃，而是显式标记以供审计。
     """
     kept, flagged = [], []
     tl = {t.lower() for t in tables if t}
@@ -4749,7 +4926,7 @@ def _base_context_block(base_ir, max_objs=120, max_rels=80):
 
     不给这段,模型每轮都从零提议:已有对象会被重复提出(靠名称去重才没进图),
     已建立的关系会被再提一遍,而用户真正要补的部分反而淹没在重复里。给了之后
-    模型知道「这些已经有了」,才能把注意力放在缺口上。
+    模型知道「这些已经有了」，才能集中处理尚未覆盖的建模要求。
 
     历次建模诉求一并给出——「补上质量域」这类增量指令,脱离前几轮的语境无法理解。
     体量做上限截断:已有本体可能上百对象,整份塞进提示词会挤掉表结构证据。
@@ -4774,11 +4951,12 @@ def _base_context_block(base_ir, max_objs=120, max_rels=80):
             + (f"\n已建成对象({len(objs)} 个):\n" + "\n".join(lines) + more_o)
             + (f"\n已建立关系({len(rels)} 条):\n" + "\n".join(rl) + more_r if rl else "")
             + (f"\n历次建模诉求:{hl}" if hl else "")
-            + "\n要求:只提议上面**没有**的新对象与新关系,用于补齐本轮诉求指向的缺口;"
+            + "\n要求:只提议上面**没有**的新对象与新关系,用于覆盖本轮尚未满足的建模要求;"
               "已存在的对象若要被新关系引用,直接沿用其原 name(不要改名、不要另起同义对象)。")
 
 
-def _llm_extract_ontology(q, ev, skills, cqs=None, log=None, base_ir=None):
+def _llm_extract_ontology(q, ev, skills, cqs=None, log=None, base_ir=None,
+                          references=None):
     """综合库结构与已解析文档/代码，提议 objects/relations(JSON)。
 
     ``cqs`` 为兼容既有调用保留，但验收问题刻意不进入提议提示词：否则模型会按题目
@@ -4794,25 +4972,35 @@ def _llm_extract_ontology(q, ev, skills, cqs=None, log=None, base_ir=None):
     _rp = _rejected_patterns()                       # 将人工否决模式作为后续提议的负例。
     bad_block = ("\n[已知误判模式(历史上被人审否决,勿再提议同类关系)]\n" + "\n".join("- " + x for x in _rp)) if _rp else ""
     base_block = _base_context_block(base_ir)        # 迭代时把已建成的部分与历次诉求交给模型
+    reference_profile = build_references.normalize(references, legacy_default=True)
+    reference_block = build_references.prompt_block(reference_profile)
     # BFO/IOF 官方关系名清单从 ontology_grounding 取,不在提示词里另抄一份——
     # 抄一份就会漂移,模型填了表里没有的名字,normalize() 一律判 unmapped,
     # 表现为「接地率恒为 0」而看不出原因。
     _REL_CHOICES = " / ".join(ontology_grounding.RELATION_SPECS)
+    _use_bfo = build_references.uses_bfo_iof(reference_profile)
+    _standard_field = (f',"founded_relation":"可选:确实对应 BFO/IOF 官方关系才填写,否则留空——{_REL_CHOICES}"'
+                       if _use_bfo else "")
+    _standard_rule = (
+        "⑤′founded_relation 只能取所列官方关系名,且须满足定义域/值域(如 hasInput/hasOutput 的源必须是 event 或 action 类对象;describes 的源必须是 ice);拿不准就留空——留空只是未接地,填错是伪造标准映射;"
+        if _use_bfo else "")
+    _definition_rule = ("借鉴 IOF 定义规范:" if _use_bfo else "定义质量规则:")
     prompt = f"""你是企业本体自动抽取智能体,综合结构化库表与多源文档证据构建本体。
 建模目标:{q}
-{('建模建模规则:' + method) if method else ''}
+{('建模规则:' + method) if method else ''}
 [数据库表结构（结构依据；对象优先绑定到这些实际存在的表）]
-    {ev['schema'][:12000]}{docs_block[:9000]}{refs_block}{bad_block}{base_block}
+    {ev['schema'][:12000]}{docs_block[:9000]}{refs_block}{bad_block}{base_block}{reference_block}
 
 只输出一个 JSON(无其它文字):
-    {{"objects":[{{"name":"英文标识(能对齐表名就用表名)","cn":"有业务意义的中文名","kind":"object|event|action|asset|role|ice(信息记录:目录/单据/地址/台账等,非物理实体)","table":"绑定的真实表名或 null;动作通常为 null","action_id":"仅当证据中明确出现系统已有动作标识时填写,否则 null","evidence":"抽取依据(来自哪张表/哪份文档及段落)","definition":"属加种差定义(如『销售订单是一种记录客户购买承诺的信息内容实体』);给不出严格定义就留空","example":"一个正例","counterExample":"一个易混淆的反例(如 报价单——尚无承诺)"}}],
-  "relations":[{{"source":"对象name","target":"对象name","verb":"具体关系动词(归属/产生/包含/服务/触发…)","rationale":"依据","founded_relation":"可选:该业务动词若确实对应下列 BFO/IOF 官方关系之一则填写,否则留空——{_REL_CHOICES}","child_key":"可选:源表候选外键(复合键用逗号)","parent_key":"可选:目标表候选键(复合键用逗号)"}}]}}
-    要求:①对象尽量绑定真实表;②由文档/流程明确描述的业务事件用 kind=event；明确描述的操作、审批、下发、创建任务等用 kind=action，并用关系连接其作用对象；不得仅凭表名批量编造动作;库存记录/地址/目录/单据等信息性条目用 kind=ice(IOF 信息内容实体,勿与物理实体混淆);③关系两端必须是上面列出的对象 name;④不虚构库表和文档中都没有的实体、动作或关系;⑤child_key/parent_key 只是待验证提示,只能填写上面 schema 真实存在的列,不得声称 verified;⑤′founded_relation 只能取所列官方关系名,且须满足其定义域/值域(如 hasInput/hasOutput 的源必须是 event 或 action 类对象;describes 的源必须是 ice);拿不准就留空——留空只是「未接地」,填错则是伪造标准映射,后者严重得多;⑥**cn 必须是有业务意义的中文名**(如 客户 / 销售订单 / 退货事件 / 生产工单),优先复用表注释、上传文档/知识包(如看板指标口径)里的中文术语,严禁用拼音或直接照搬英文表名/键名做 cn;⑦**借鉴 IOF 定义规范**:definition 用「属加种差」句式;**非循环**——定义体不得复用被定义术语名本身及其中文名(如定义『销售订单』不得出现『销售订单』字样),须用上位类(属)+区别特征(种差)描述;counterExample 给一个会被误认成该对象、实则不是的反例(帮助后续取证辨伪);无法给出严格充要定义时 definition 留空即可(将被标为原始概念)。"""
+    {{"objects":[{{"name":"英文标识(能对齐表名就用表名)","cn":"有业务意义的中文名","kind":"object|event|action|asset|role|ice(信息记录:目录/单据/地址/台账等,非物理实体)","table":"绑定的真实表名或 null;动作通常为 null","action_id":"仅当证据中明确出现系统已有动作标识时填写,否则 null","evidence":"抽取依据(来自哪张表/哪份文档及段落)","definition":"属加种差定义;给不出严格定义就留空","example":"可选；只能逐字摘录输入证据中的真实实例，没有则留空","example_source":"example 的证据位置；没有 example 则留空","counterExample":"类别层面的易混淆概念及辨析，待专家复核"}}],
+  "relations":[{{"source":"对象name","target":"对象name","verb":"具体关系动词(归属/产生/包含/服务/触发…)","rationale":"依据"{_standard_field},"child_key":"可选:源表候选外键(复合键用逗号)","parent_key":"可选:目标表候选键(复合键用逗号)"}}]}}
+    要求:①对象尽量绑定真实表;②由文档/流程明确描述的业务事件用 kind=event；明确描述的操作、审批、下发、创建任务等用 kind=action，并用关系连接其作用对象；不得仅凭表名批量编造动作;库存记录/地址/目录/单据等信息性条目用 kind=ice,勿与物理实体混淆;③关系两端必须是上面列出的对象 name;④不虚构库表和文档中都没有的实体、动作或关系;⑤child_key/parent_key 只是待验证提示,只能填写上面 schema 真实存在的列,不得声称 verified;{_standard_rule}⑥**cn 必须是有业务意义的中文名**(如 客户 / 销售订单 / 退货事件 / 生产工单),优先复用表注释、上传文档/知识包里的中文术语,严禁用拼音或直接照搬英文表名/键名做 cn;⑦**{_definition_rule}**definition 用「属加种差」句式;**非循环**——定义体不得复用被定义术语名本身及其中文名,须用上位类(属)+区别特征(种差)描述;counterExample 只写类别层面的易混淆概念和辨析,不得虚构企业名、编号、日期、数量或金额;无法给出严格定义时 definition 留空;⑧example 只有在输入证据中存在可逐字定位的实例时才填写,并填写 example_source；没有实例证据时必须留空，不得生成“看起来合理”的示例。"""
     _log(f"证据装配 · 库表 {len(ev.get('tab_cols') or {})} 张（结构文本 {len(ev['schema'][:12000])} 字）"
          f" · 文档/代码 {ev.get('n_docs', 0)} 份（{len(docs_block[:9000])} 字）"
          f" · 引用资产 {len(ev.get('refs') or [])} 项 · 技能规则 {len(method)} 字"
          f" · 历史否决负例 {len(_rp)} 条"
          + (f" · 已有本体上下文 {len(base_block)} 字" if base_block else "")
+         + f" · 构建参照 {build_references.selected_summary(reference_profile)}"
          + f" · 提示词合计 {len(prompt)} 字")
     tried = 0
     for drv in _drv_order():
@@ -4918,8 +5106,18 @@ def _adjudicate_ir(db, name, extracted, ev):
         tb = o.get("table")
         real = low2real.get((tb or "").lower()) or (low2real.get(nm.lower()))
         attrs = [{"col": c, "cn": "", "type": ty} for c, ty in tc.get(real, [])] if real else []
-        kind = o.get("kind") if o.get("kind") in ("object", "event", "action", "asset", "role", "ice") else "object"
+        raw_kind = o.get("kind") if o.get("kind") in content_quality.VALID_KINDS else "object"
+        kind, kind_reason = content_quality.normalize_kind(
+            raw_kind, name=nm, cn=o.get("cn"), table=real or tb,
+            definition=o.get("definition"))
         defn = (o.get("definition") or "").strip()
+        if content_quality.definition_conflicts(defn, kind):
+            defn = ""
+        example = (o.get("example") or "").strip()
+        # 表结构只描述字段，不能证明某个业务实例真实存在。实例仅可从用户上传的
+        # 文档原文逐字定位，避免把表注释或模型补写内容误标为“已观察事实”。
+        example_source = content_quality.locate_example(
+            example, (("uploaded_documents", ev.get("docs") or ""),)) if example else None
         # 证据来源(IOF-AV provenance):绑定的真实表为 directSource;文档抽取依据入 adaptedFrom
         ev_src = (o.get("evidence") or "").strip()
         doc_src = [ev_src] if (ev_src and not real) else []
@@ -4932,10 +5130,22 @@ def _adjudicate_ir(db, name, extracted, ev):
                "bfo": _KIND_BFO.get(kind, "MaterialEntity"),
                # 当前构建器不生成必要且充分条件，因此不论是否有自然语言定义均属原始类。
                "definition": defn, "isPrimitive": True,
-               "example": (o.get("example") or "").strip(),
+               "example": example if example_source else "",
                "counterExample": (o.get("counterExample") or "").strip(),
                "maturity": "Provisional",                              # 新建产物默认临时,经审可升 Released
                "provenance": {"directSource": real, "adaptedFrom": doc_src, "excerptedFrom": None}}
+        obj["definition_status"] = ("model_proposed_pending_review" if defn else
+                                    "withheld_kind_conflict" if (o.get("definition") or "").strip() else "missing")
+        obj["example_provenance"] = ({"status": "observed", "source": example_source,
+                                      "reported_source": (o.get("example_source") or "").strip()}
+                                     if example_source else
+                                     {"status": "withheld_no_source",
+                                      "note": "未能在输入证据中逐字定位"})
+        if obj["counterExample"]:
+            obj["counterexample_status"] = "illustrative_pending_review"
+        if kind_reason:
+            obj["kind_review"] = {"original": raw_kind, "normalized": kind,
+                                  "rule": kind_reason, "status": "deterministic_normalization"}
         if kind == "action":
             proposed_id = str(o.get("action_id") or "").strip()
             registered = registered_actions.get(proposed_id)
@@ -5307,6 +5517,7 @@ def _merge_ir(base, new):
         rec = {"round": len(hist) + 1, "at": new_mf.get("created_at"),
                "request": new_mf.get("request"), "source": new_mf.get("source"),
                "skills": new_mf.get("skills"), "cqs": new_mf.get("cqs"),
+               "references": new_mf.get("references"),
                "method": new_mf.get("method"), "evidence": new_mf.get("evidence"),
                "merge": dict(stat)}                       # 本轮实际并入了什么,一并留痕
         hist.append(rec)
@@ -5341,7 +5552,7 @@ def _normalize_build_cqs(value, limit=30):
 
 
 def _attach_build_manifest(ir, *, q, source_id, source_name, skills, cqs,
-                           stability, method, evidence, created_at=None):
+                           stability, method, evidence, created_at=None, references=None):
     """把本轮构建输入与证据摘要固化进产物，便于复现、人审和验收。
 
     只保存数据源 id/显示名与证据文件的 basename，不写数据库绝对路径、密钥或文档全文。
@@ -5364,6 +5575,8 @@ def _attach_build_manifest(ir, *, q, source_id, source_name, skills, cqs,
         "source": {"id": str(source_id or "")[:100], "name": str(source_name or "")[:120]},
         "skills": [str(x)[:100] for x in (skills or [])[:20] if isinstance(x, str) and x.strip()],
         "cqs": _normalize_build_cqs(cqs),
+        "references": build_references.normalize(references, legacy_default=True),
+        "reference_assets": build_references.asset_trace(references),
         "stability_requested": bool(stability),
         "method": str(method or "")[:120],
         "evidence": manifest_ev,
@@ -5377,6 +5590,8 @@ def _attach_build_manifest(ir, *, q, source_id, source_name, skills, cqs,
     hist.append({"round": len(hist) + 1, "at": manifest["created_at"],
                  "request": manifest["request"], "source": manifest["source"],
                  "skills": manifest["skills"], "cqs": manifest["cqs"],
+                 "references": manifest["references"],
+                 "reference_assets": manifest["reference_assets"],
                  "method": manifest["method"], "evidence": manifest["evidence"]})
     ir["build_history"] = hist[-50:]           # 只留最近 50 轮,避免产物无限膨胀
     sc = ir.setdefault("scenario", {})
@@ -5394,6 +5609,12 @@ def build_inquire():
     skills = body.get("skills") or []
     cqs = _normalize_build_cqs(body.get("cqs"))
     stability = bool(body.get("stability"))    # M1 opt-in:二次独立生成量化一致性(构建耗时翻倍)
+    references_explicit = "references" in body
+    try:
+        requested_references = build_references.normalize(
+            body.get("references"), legacy_default=not references_explicit)
+    except ValueError as exc:
+        return jsonify({"error": str(exc), "field": "references"}), 400
     # 在已有本体上迭代:给定则不新建图谱,而是把本轮结果并入该图(见 _merge_ir 的两条规则)。
     # 只接受本仓构建产物 built_*,示例图与应用本体不允许被对话直接改写。
     base_graph = re.sub(r"[^A-Za-z0-9_]", "", str(body.get("base_graph") or ""))[:40]
@@ -5403,6 +5624,7 @@ def build_inquire():
     def gen():
         import time as _t
         t0 = _t.time()
+        references = requested_references
         def push(step, ok, info=""):
             return sse({"type": "step", "step": step, "ok": ok, "info": info, "ts": _t.strftime("%H:%M:%S")})
         if not q:
@@ -5448,12 +5670,23 @@ def build_inquire():
                 yield push("scope_base", False, f"本体「{base_graph}」不存在,无法迭代")
                 yield sse({"type": "error", "error": "待迭代的本体不存在"}); return
             key = base_graph
+            # 旧/程序化客户端不传 references 时，迭代默认继承底本最近一轮配置；
+            # 显式传 none 或新配置则以本轮选择为准。
+            if not references_explicit:
+                inherited = (base_ir.get("build_manifest") or {}).get("references")
+                if isinstance(inherited, dict):
+                    try:
+                        references = build_references.normalize(inherited)
+                    except ValueError:
+                        references = requested_references
             _bo = len(base_ir.get("objects") or []); _br = len(base_ir.get("relations") or [])
             yield push("scope_base", True,
                        f"在已有本体「{(base_ir.get('scenario') or {}).get('name') or base_graph}」上迭代 · "
                        f"现有对象 {_bo} 个 · 关系 {_br} 条(本轮只增补与升级,不删除既有结论)")
         else:
             key = "built_" + uuid.uuid4().hex[:6]
+        yield push("reference_profile", True,
+                   "构建参照 · " + build_references.selected_summary(references))
         outp = _confined(WORK, key + ".json")
         # ① 多源证据聚合(库结构 + 上传文档/代码 + 图像引用)
         yield sse({"type": "status", "text": "聚合多源证据(库表结构 / 建表代码 / 业务文档 / 图像引用)…"})
@@ -5470,7 +5703,9 @@ def build_inquire():
         def _stream_extract():
             """把 LLM 抽取过程流出去：log → 过程输出面板；tick → 已用时长。返回抽取结果。"""
             got = None
-            for item in _bounded_stream(lambda lg: _llm_extract_ontology(q, ev, skills, cqs, log=lg, base_ir=base_ir), 640):
+            for item in _bounded_stream(
+                    lambda lg: _llm_extract_ontology(q, ev, skills, cqs, log=lg,
+                                                     base_ir=base_ir, references=references), 640):
                 if item[0] == "log":
                     yield sse({"type": "log", "text": item[1], "ts": _t.strftime("%H:%M:%S")})
                 elif item[0] == "tick":
@@ -5543,15 +5778,18 @@ def build_inquire():
             yield push("action_projection", True,
                        f"动作注册表投影 · 动作节点 {ir['scenario']['action_count']} 个 · "
                        f"对象绑定 {action_projection['added_relations']} 条；执行方式为决策记录，不声称真实写回")
+        build_references.apply_profile(ir, references)
         _attach_build_manifest(
             ir, q=q, source_id=source, source_name=sname, skills=skills, cqs=cqs,
             stability=stability, method=method,
             evidence={"tables": ntab, "docs": ev["n_docs"], "refs": ev["refs"], "files": ev["files"]},
-            created_at=_t.strftime("%Y-%m-%dT%H:%M:%S%z"))
+            created_at=_t.strftime("%Y-%m-%dT%H:%M:%S%z"), references=references)
         # ④′ 迭代模式:并入既有本体。放在验收检查之前,好让质量评估针对合并后的完整本体,
         # 而不是只评估本轮增量——否则「本轮没提到的部分」会被算成缺失。
         if base_ir is not None:
             ir, _mg = _merge_ir(base_ir, ir)
+            # 本轮选择作用于合并后的整张图，避免底本残留上一次标准的专用字段。
+            build_references.apply_profile(ir, references)
             yield push("merge", True,
                        f"并入已有本体 · 新增对象 {_mg['objects_added']} 个 · 补全字段 {_mg['objects_enriched']} 处 · "
                        f"新增关系 {_mg['relations_added']} 条 · 证据升级 {_mg['relations_upgraded']} 条 · "
@@ -5592,8 +5830,10 @@ def build_inquire():
                    "base_graph": base_graph or "", "merge": _mg if base_ir is not None else None,
                    "iterations": (ir.get("scenario") or {}).get("iterations"),
                    "method": method, "evidence": {"tables": ntab, "docs": ev["n_docs"], "refs": ev["refs"]},
+                   "references": references,
                    "quality": {"result": quality["result"], "gate": quality["result"],
-                               "summary": quality["summary"], "cq": quality["cq"]},
+                               "summary": quality["summary"], "cq": quality["cq"],
+                               "references": quality["references"]},
                    "note": plan.get("note", ""), "elapsed": round(_t.time() - t0, 1)})
     from flask import Response, stream_with_context
     return Response(stream_with_context(gen()), mimetype="text/event-stream",
@@ -6009,7 +6249,7 @@ def outputs_file():
 if __name__ == "__main__":
     # 监听地址/端口只有一个事实源(LISTEN_HOST/LISTEN_PORT),启动横幅照它打印,
     # 不再另写一份字面量 —— 此前改了 DATAMIND_HOST 却仍提示 127.0.0.1:8092,是误导。
-    _LOG.info("Cosmo DataMind → http://%s:%d", LISTEN_HOST, LISTEN_PORT)
+    _LOG.info("COSMO DataMind → http://%s:%d", LISTEN_HOST, LISTEN_PORT)
     # DR-048:内置服务器默认不设 socket 超时、线程无上限,只发半截请求头即可长期占用连接
     # (2026-08-14 扫描实测 186s,CVE-2007-6750)。启动时装上超时与并发上限后再监听。
     import srv_hardening

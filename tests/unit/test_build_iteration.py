@@ -114,12 +114,15 @@ class TestBuildHistory:
         new = {"objects": [{"name": "工单"}], "relations": [],
                "build_manifest": {"created_at": "2026-01-02T00:00:00", "request": "补上工单",
                                   "source": {"id": "demo"}, "skills": [], "cqs": [],
+                                  "references": {"industry": {"id": "manufacturing"},
+                                                 "ontology_standard": {"id": "isa95"}},
                                   "method": "LLM 辅助提议", "evidence": {}}}
         out, _ = server._merge_ir(base, new)
         hist = out["build_history"]
         assert [h["round"] for h in hist] == [1, 2]
         assert hist[0]["request"] == "第一轮诉求"        # 底本轮次原样保留
         assert hist[1]["request"] == "补上工单"
+        assert hist[1]["references"]["ontology_standard"]["id"] == "isa95"
         assert out["build_manifest"]["request"] == "补上工单"   # 最近一轮指向本轮
 
     def test_merge_records_what_was_merged(self):
