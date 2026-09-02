@@ -11,6 +11,8 @@ import glob
 import hashlib
 import json
 import os
+
+import srv_context
 import xml.etree.ElementTree as ET
 
 
@@ -36,11 +38,7 @@ def _manifest():
 def _confined(pattern):
     if not isinstance(pattern, str) or not pattern or ".." in pattern:
         raise ValueError("标准资产路径无效")
-    path = os.path.realpath(os.path.join(STANDARD_ROOT, pattern))
-    root = os.path.realpath(STANDARD_ROOT)
-    if not path.startswith(root + os.sep):
-        raise ValueError("标准资产路径越界")
-    return path
+    return srv_context.confine(STANDARD_ROOT, pattern)   # 路径限定单一实现
 
 
 def _files(spec):

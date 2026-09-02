@@ -75,7 +75,7 @@ python3 server.py                  # 仅本地开发，前台运行 → http://1
 
 ```bash
 curl http://127.0.0.1:8092/api/overview      # KPI 概览(无库时含 warning 字段)
-python3 test_all.py                          # 系统级回归(源码定义 562 个检查点;需服务已启动)
+python3 test_all.py                          # 系统级回归(源码定义 565 个检查点;需服务已启动)
 ```
 
 ### 5. 跑通 demo(五分钟看完主链路)
@@ -291,7 +291,7 @@ python3 -m venv .venv && .venv/bin/pip install -r requirements-dev.txt
 
 # 集成层:需先起服务（用生产 WSGI 路径验证）
 .venv/bin/gunicorn -c gunicorn.conf.py wsgi:application &
-.venv/bin/python test_all.py            # 系统级回归(源码定义 562 个检查点)
+.venv/bin/python test_all.py            # 系统级回归(源码定义 565 个检查点)
 .venv/bin/python test_ui.py             # 全 UI 走查:页面渲染 + 子 UI 交互(需 playwright)
 .venv/bin/python test_ui_ops.py         # UI 逐步实操:切引擎/建本体/对话改本体/审计/问数/选本体锚定
 ```

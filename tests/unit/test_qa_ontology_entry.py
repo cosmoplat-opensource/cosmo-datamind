@@ -88,6 +88,9 @@ def test_fallback_answers_customer_ranking_instead_of_monthly_sales():
 
 
 def test_selected_built_ontology_executes_correct_fallback_end_to_end(monkeypatch):
+    # 单元测试须自带数据环境:不设 DATAMIND_DB 时 server.DB 指向仓库根的
+    # demo_metrics.db(默认不存在),可执行性画像会判全部绑定表不可用而 422。
+    monkeypatch.setattr(server, "DB", str(ROOT / "examples" / "demo_metrics.db"))
     monkeypatch.setattr(server, "agent_sql_plan", lambda *_a, **_kw: None)
     monkeypatch.setattr(server, "_match_qa_skill", lambda _q: None)
     monkeypatch.setattr(server, "narrative_llm", lambda *_a, **_kw: None)

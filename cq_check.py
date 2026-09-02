@@ -44,28 +44,10 @@ def relation_is_strong(relation):
     return semantic not in {"fail", "rejected", "disputed"}
 
 
-def _rels(ir):
-    """兼容两种 IR 形状:demo 的 links[source/target] 与构建产物的 relations[source_concept/target_concept]"""
-    if "links" in ir:
-        return ir["links"], "source", "target"
-    return ir.get("relations", []), "source_concept", "target_concept"
+from ir_shape import rels as _rels                     # IR 形状单一事实源
 
 
-def _obj_names(o):
-    """一个对象的全部可指代名称——用于把验收问题里的自然语言词锚定到对象。
-    app 形状的对象没有 id,只有 name;demo 形状则 id/name/cn/table 都可能被业务人员用来指代。"""
-    out = []
-    for k in ("id", "name", "cn", "table"):
-        v = o.get(k)
-        if isinstance(v, str) and v.strip():
-            out.append(v.strip())
-    for a in (o.get("aliases") or []):          # DR-027 业务别名:业务用语与表名中文往往不同
-        if isinstance(a, str) and a.strip():
-            out.append(a.strip())
-    for t in (o.get("tables") or []):          # app 形状:一个概念可绑多张表
-        if isinstance(t, str) and t.strip():
-            out.append(t.strip())
-    return out
+from ir_shape import obj_names as _obj_names           # 取名规则单一事实源(超集)
 
 
 def _key_of(o, idx):
