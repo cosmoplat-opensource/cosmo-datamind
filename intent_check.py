@@ -30,16 +30,7 @@ import re
 _IDENT = r"[A-Za-z_][A-Za-z0-9_.\"`\[\]]*"
 
 
-def _obj_names(o):
-    out = []
-    for k in ("id", "name", "cn", "table"):
-        v = o.get(k)
-        if isinstance(v, str) and v.strip():
-            out.append(v.strip())
-    for a in (o.get("aliases") or []):          # DR-027 业务别名:业务用语与表名中文往往不同
-        if isinstance(a, str) and a.strip():
-            out.append(a.strip())
-    return out
+from ir_shape import obj_names as _obj_names           # 取名规则单一事实源(超集)
 
 
 def declared_intent(question, ir):

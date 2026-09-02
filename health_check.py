@@ -37,10 +37,7 @@ CQ 全过的本体,结构上仍可能是病的——比如一半对象是孤岛(
 from collections import Counter
 
 
-def _rels(ir):
-    if "links" in ir:
-        return ir["links"], "source", "target"
-    return ir.get("relations", []), "source_concept", "target_concept"
+from ir_shape import rels as _rels                     # IR 形状单一事实源
 
 
 def _key(o, i):

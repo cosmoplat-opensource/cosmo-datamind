@@ -15,6 +15,7 @@ import dao_core   # DR-035/044:命名校验/词根等裁决原语的单一事实
 import build_quality
 import build_references
 import action_ontology
+import ir_shape
 import skill_registry
 import ontology_grounding
 import content_quality
@@ -56,7 +57,7 @@ for _h in logging.getLogger().handlers:        # basicConfig 建的 root handler
     _h.addFilter(_LogSanitizer())
 _LOG = logging.getLogger("datamind")
 # DR-043 蓝图化前置:基础路径与原语(路径/只读连接/只读SQL判定/写锁/原子写)收敛到共享上下文,与后续 blueprint 共用
-from srv_context import (HERE, ROOT, DB, UPLOAD_DB, WORK,
+from srv_context import (HERE, ROOT, DB, UPLOAD_DB, WORK, confine,
                          ro_connect, sql_is_readonly, _WRITE_LOCK, _atomic_json, _atomic_text,
                          _atomic_bytes)
 # 引擎运行时与配置层(跨簇共享,故先于路由抽出;见 srv_engine 模块头)
@@ -243,15 +244,9 @@ def _safe_argv(val, cap=60, default="untitled"):
     s = s[:cap].strip().lstrip("-").strip()
     return s or default
 
-def _confined(base, *parts):
-    """把 parts 拼到 base 下,并校验归一化后仍在 base 目录内;逃逸抛 ValueError。
-    纵深防御:即便键已过 _bad_gkey,在真正 open()/remove() 前再裁一次,
-    保证任何遗漏校验的入口也无法读写 base 之外的文件。"""
-    p = os.path.normpath(os.path.join(base, *(str(x) for x in parts)))
-    b = os.path.normpath(base)
-    if p != b and not p.startswith(b + os.sep):
-        raise ValueError("路径越界,拒绝访问:%s" % p)
-    return p
+# 路径限定单一实现收于 srv_context.confine(realpath 版,连符号链接逃逸也拦)。
+# 纵深防御语义不变:即便键已过 _bad_gkey,真正 open()/remove() 前仍再裁一次。
+_confined = confine
 
 def _resolved_ips(host):
     """主机名 → 解析到的 IP 对象列表;解析不出返回 None(调用方按"不可达"处理)。"""
@@ -1659,9 +1654,8 @@ LOCAL_OPS = ("set_alias", "confirm", "remove_object", "verb", "set_card",
              "remove_relation", "add_relation")
 
 def _rels(ir):
-    """关系列表 + 端点键名:兼容两种 IR 形状(示例 links[source/target] / 构建产物 relations[source_concept/target_concept])"""
-    if "links" in ir: return ir["links"], "source", "target"
-    return ir.setdefault("relations", []), "source_concept", "target_concept"
+    """关系列表 + 端点键名(IR 形状兼容规则收于 ir_shape,此处保留 create 语义)。"""
+    return ir_shape.rels(ir, create=True)
 
 def _okey(ir, s):
     """把对象的任意指代(主键/中文名/表名/别名)规范化为主键;找不到就原样返回。"""

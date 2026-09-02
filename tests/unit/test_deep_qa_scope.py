@@ -18,6 +18,9 @@ def test_nonstream_chat_uses_selected_graph_and_tables(monkeypatch):
         return "表 dim_supplier(supplier_id, supplier_name)"
 
     monkeypatch.setattr(server, "_anchor_ir", fake_anchor)
+    # 新增的可执行性守卫(_qa_graph_profile)会核对绑定表是否在当前连接里;
+    # 单元环境没有真库,声明 dim_supplier 可用以进入被测路径,守卫本身另有专测。
+    monkeypatch.setattr(server, "_qa_table_inventory", lambda: ({"dim_supplier"}, set()))
     monkeypatch.setattr(server, "build_context", fake_context)
     monkeypatch.setattr(server, "_graph_name", lambda key: "严格作用域图谱" if key == "built_scoped" else key)
     monkeypatch.setattr(server, "_carryover", lambda q, _h, _ir: (q, ""))

@@ -16,6 +16,21 @@ import sqlite3
 import tempfile
 import threading
 
+
+def confine(base, *parts):
+    """把 parts 拼到 base 下,校验解析后仍在 base 内;逃逸抛 ValueError。
+
+    路径限定的单一实现:此前 server(normpath 版)与 standard_assets(realpath 版)
+    各有一份——安全关键代码存在两个略异的副本,修一处漏一处。统一用 realpath:
+    除 ../ 外连符号链接逃逸也拦得住,严格强于原 normpath 版。
+    """
+    import os as _os
+    p = _os.path.realpath(_os.path.join(base, *(str(x) for x in parts)))
+    b = _os.path.realpath(base)
+    if p != b and not p.startswith(b + _os.sep):
+        raise ValueError("路径越界,拒绝访问:%s" % p)
+    return p
+
 # ── 基础路径(env 可覆盖):只读数据源 / 上传库 / 工作目录。与 server 同目录,值与旧定义逐字一致。
 #    PLATFORM/OUTPUTS 与 sys.path 引擎自举仍留 server(与装配耦合),此处只收无副作用的路径。
 HERE = os.path.dirname(os.path.abspath(__file__))
