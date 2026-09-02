@@ -179,15 +179,15 @@ async def main():
             t = await pg.inner_text("#p_chat")
             ok("问数出结果", t.replace("\n", " ")[-70:])
             (ok if ("意图" in t) else bad)("执行记录含双盲意图步骤")
-            # DR-032 锚定可视化:必须在对话气泡里真的画出来(SVG 节点+图例),不能只有文字
-            (ok if ("本体锚定" in t) else bad)("对话框内出现『本体锚定』区块")
+            # DR-032 锚定可视化改版后叫「本体如何约束本次分析」:四步链路 + 可展开的技术证据
+            (ok if ("本体如何约束本次分析" in t) else bad)("对话框内出现本体约束区块")
             nsvg = await pg.evaluate(
                 "document.querySelectorAll('#p_chat .dq-card svg rect').length")
             (ok if nsvg > 0 else bad)("锚定图渲染出对象节点", f"{nsvg} 个方框")
             nline = await pg.evaluate(
                 "document.querySelectorAll('#p_chat .dq-card svg line').length")
             ok("锚定图关系连线", f"{nline} 条")
-            (ok if ("JOIN 依据" in t or nline == 0) else bad)("有关系时给出 JOIN 键清单")
+            (ok if ("候选连接依据" in t or nline == 0) else bad)("有关系时给出候选连接依据")
         except Exception as _e:
             bad("问数超时", f"420s {_e}")
 
@@ -225,10 +225,10 @@ async def main():
                 "锚定本体名 = 选中的图谱", f"{picked[1][:12]} | 卡片: {t2[:120]}")
             (ok if "示例企业数据本体" not in t2 else bad)("未回落到示例本体")
             (ok if "锚定本体" in t2 else bad)("执行记录含『锚定本体』步骤")
-            _mid = [x for x in ("问句命中", "沿关系扩展", "核心事实表", "默认候选", "显式选表")
-                    if x in t2]
-            (ok if ("本体对象" in t2 and "入上下文" in t2 and _mid) else bad)(
-                "锚定链路可见(本体规模→中间过程→入上下文)", "中间节:" + "、".join(_mid))
+            # 改版后的链路是固定四步:分析问题→本体范围→进入规划→SQL 实际执行
+            _steps = [x for x in ("分析问题", "本体范围", "进入规划", "SQL 实际执行") if x in t2]
+            (ok if len(_steps) == 4 else bad)(
+                "约束链路四步可见(分析→范围→规划→实际执行)", "命中:" + "、".join(_steps))
             nrect = await pg.evaluate(
                 "document.querySelectorAll('#p_chat .dq-card:last-of-type svg rect').length")
             (ok if nrect > 0 else bad)("选中本体后仍画出锚定子图", f"{nrect} 框")
@@ -240,17 +240,16 @@ async def main():
             (ok if vis and '"inview":true' in vis else bad)("常驻锚定条在视口内", str(vis))
             bt = await pg.inner_text("#dq_ancbar")
             (ok if picked[1][:8] in bt else bad)("锚定条显示锚定本体名", bt[:40])
-            _bmid = [x for x in ("问句命中", "沿关系扩展", "核心事实表", "默认候选", "显式选表")
-                     if x in bt]
-            (ok if ("本体对象" in bt and "入上下文" in bt and _bmid) else bad)(
-                "锚定条显示完整链路", "中间节:" + "、".join(_bmid))
-            ok("锚定条反馈流程标记", "有 SQL 实际用" if "SQL 实际用" in bt else "本轮 SQL 未用到锚定对象(合法)")
-            await pg.click("#dq_ancbar a:has-text('展开子图与证据')")
+            # 改版后的常驻条:规划候选 / SQL 实际使用 / JOIN 三枚数字牌
+            (ok if ("规划候选" in bt and "SQL 实际使用" in bt) else bad)(
+                "锚定条显示规划候选与实际使用", bt[:60])
+            ok("锚定条反馈流程标记", "有 JOIN 计数" if "JOIN" in bt else "无 JOIN(合法)")
+            await pg.click("#dq_ancbar button:has-text('查看约束说明')")
             await pg.wait_for_timeout(600)
             nb = await pg.evaluate("document.querySelectorAll('#dq_ancbar svg rect').length")
-            (ok if nb > 0 else bad)("锚定条内可展开子图", f"{nb} 框")
-            # 「选了本体的哪一块」:跳图谱页高亮锚定子集,其余淡出
-            await pg.click("#dq_ancbar a:has-text('在图谱中高亮')")
+            (ok if nb > 0 else bad)("约束说明内含关系图(技术证据)", f"{nb} 框")
+            # 「选了本体的哪一块」:跳图谱页定位锚定子集,其余淡出
+            await pg.click("#dq_ancbar button:has-text('在图谱中定位')")
             await pg.wait_for_timeout(4000)
             hb = await pg.inner_text("#g_hlbar")
             (ok if "问数锚定视图" in hb else bad)("图谱页出现锚定高亮提示", hb[:70])
@@ -263,7 +262,7 @@ async def main():
                 ok("本体被整体召回", "%s —— 小本体的正常结果,看不出淡出对比" % m.group(0))
             (ok if "清除高亮" in hb else bad)("高亮可清除")
         except Exception as _e:
-            bad("选中本体后问数超时", f"420s {_e}")
+            bad("选中本体后问数或断言失败", f"{_e}")
 
         # ══ 步骤 7c:点示例必须真跑,不能秒回缓存 ══
         print("\n【步骤7c】新对话点示例:应真跑一遍,而不是给缓存记录")
@@ -274,7 +273,11 @@ async def main():
         (ok if await pg.evaluate("DQ_CONV") is None else bad)("点新对话后会话已重置", "DQ_CONV=null")
         eg = await pg.query_selector("#p_chat .dq-hero .eg")
         if not eg:
-            bad("新对话未出现示例问题")
+            # 改版后:会话范围锚定了具体本体时,欢迎页刻意不出通用示例(与该本体多半不匹配)。
+            scoped = await pg.evaluate("(typeof DQ_DS!=='undefined')&&!!(DQ_DS&&(DQ_DS.graphs||[]).length)")
+            (ok if scoped else bad)(
+                "新对话示例的出现与会话范围一致",
+                "已锚定本体,按设计不出通用示例" if scoped else "无范围却也无示例")
         else:
             egq = await eg.inner_text()
             n2 = await pg.evaluate("document.querySelectorAll('#p_chat .dq-card').length")
@@ -297,7 +300,7 @@ async def main():
                 await pg.wait_for_timeout(300)
                 t4 = await pg.inner_text("#p_chat .dq-card:last-of-type")
                 (ok if "缓存·秒回" not in t4 else bad)("重复提问同样真跑,不给缓存答案")
-                (ok if "本体锚定" in t3 else bad)("示例问数同样给出本体锚定")
+                (ok if "本体如何约束本次分析" in t3 else bad)("示例问数同样给出本体约束区块")
                 # 「新对话 + 点示例」应当自成一条流程,并落进历史对话
                 conv1 = await pg.evaluate("dqAllConv().length")
                 (ok if conv1 == conv0 + 1 else bad)("示例问数自建一条新会话", f"{conv0}→{conv1}")
