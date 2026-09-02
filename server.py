@@ -4372,7 +4372,13 @@ def build_skill_save():
         tombs = _skill_tombs()
         if name in tombs:                    # 保存即恢复:被删过的名字重新出现在列表里
             tombs.discard(name); _skill_tombs_save(tombs)
-    return jsonify({"ok": True, "name": name, "builtin": builtin, "overridden": builtin})
+    # 软校验:技能规范要求 YAML front-matter 携带 description(列表与技能摘要都读它)。
+    # 缺失不拒绝——正文照常注入构建;但给出提示,否则列表只能截正文前 120 字凑数。
+    hint = ""
+    if not re.search(r"^---\s*\n.*?^description:\s*\S", content, re.S | re.M):
+        hint = "建议在文件头加 YAML front-matter(name/description):技能列表与摘要都读 description"
+    return jsonify({"ok": True, "name": name, "builtin": builtin, "overridden": builtin,
+                    **({"hint": hint} if hint else {})})
 
 @app.post("/api/build/skill/delete")
 def build_skill_delete():

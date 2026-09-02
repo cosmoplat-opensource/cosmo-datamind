@@ -49,11 +49,13 @@ PROTO = "2024-11-05"
 TOOLS = [
     {
         "name": "list_actions",
+        "title": "列出动作类型",
         "description": "列出本体动作类型目录:每个动作的 id、名称、作用对象、风险级(low=直执行/high=须人审批)、参数 schema 与效果说明。发起动作前先调用它拿到准确的参数名。",
         "inputSchema": {"type": "object", "properties": {}, "additionalProperties": False},
     },
     {
         "name": "invoke_action",
+        "title": "发起动作",
         "description": ("发起一个本体动作 —— 这是本服务器唯一的写路径。低风险动作立即执行并写入审计日志;"
                         "高风险动作只会进入人工审批队列(pending),必须由人在 DataMind 动作中心批准后才生效,"
                         "Agent 无法绕过。operator 必填(发起人姓名或工号,写入审计)。"),
@@ -70,6 +72,7 @@ TOOLS = [
     },
     {
         "name": "get_action_status",
+        "title": "查询动作状态",
         "description": "查询某次动作的当前状态:pending(待人批)/ executed(已执行,含效果)/ denied(被驳回,含审批意见)。发起高风险动作后可用它跟踪人审结果。",
         "inputSchema": {
             "type": "object",
@@ -149,7 +152,9 @@ def main():
         try:
             msg = json.loads(line)
         except Exception:
-            continue
+            continue                       # 解析失败取不到 id,JSON-RPC 规定无从应答
+        if not isinstance(msg, dict):
+            continue                       # 数组/标量不是请求对象;一行畸形输入不该终止整个服务
         mid, method = msg.get("id"), msg.get("method", "")
         params = msg.get("params") or {}
 
@@ -165,7 +170,9 @@ def main():
             sys.stdout.flush()
 
         if method == "initialize":
-            reply({"protocolVersion": params.get("protocolVersion") or PROTO,
+            # MCP 规范:initialize 应答**服务器支持的**协议版本,而非回显客户端版本。
+            # 回显 = 声称支持任意版本;客户端若按更新语义调用,行为未定义。
+            reply({"protocolVersion": PROTO,
                    "capabilities": {"tools": {}},
                    "serverInfo": {"name": "datamind-actions", "version": "0.1.0"}})
         elif method in ("notifications/initialized", "initialized"):
