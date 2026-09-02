@@ -97,7 +97,7 @@ COSMO DataMind 是「数据治理 × 本体 × 深度问数」原型：
 
 ## 现状校准
 - 计数(2026-09-01):**127 路由**(server.py 115 + bp_engine 5 + bp_actions 7)/ **565 集成断言** /
-  **389 项 pytest 测试** / DR-001…DR-052 · IR-001…IR-013。
+  **425 项 pytest 测试** / DR-001…DR-052 · IR-001…IR-013。
   新增共享层 `srv_context`/`srv_engine`、单一裁决核 `dao_core`、评测台 `hallucination_eval`/`definition_eval`、
   持久化抽象 `store`、构建参照 `build_references`、本地标准资产 `standard_assets`、blueprint `bp_engine` / `bp_actions`，以及前端目录/响应式/构建参照模块。
 

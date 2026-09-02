@@ -58,7 +58,9 @@
 | `skill_registry.py` | 本仓/上游技能合并发现,列表/查看/执行/prompt 正文消费的单一注册表 | DR-050 |
 | `store.py` | JSON 持久化抽象:原子写/坏档恢复/schema 校验/迁移/每路径锁 | DR-044 |
 | `ir_relational.py` | IR→关系型语义层投影(只读派生物;OWL 之外的消费出口,证据随行、状态不提升) | DR-049 |
-| `srv_context.py` | 共享上下文:路径、`ro_connect`、`sql_is_readonly`、`_atomic_json`、写锁 | DR-043 |
+| `srv_context.py` | 共享上下文:路径、`ro_connect`、`sql_is_readonly`、`_atomic_json`、写锁、`confine` 路径限定 | DR-043 |
+| `ir_shape.py` | IR 形状兼容规则单一事实源:`rels`(links/relations 双形状)与 `obj_names`(对象可指代名超集) | DR-035 |
+| `content_quality.py` | 生成内容的确定性净化:信息载体误判纠正(ice 优先)与正例证据可定位性检查,只读不改写历史 | DR-052 |
 | `srv_engine.py` | 引擎共享层:运行时缓存、引擎配置读写/应用、引擎回复语义 | DR-043/017 |
 | `bp_engine.py` | 引擎设置 blueprint(5 路由;仅路由,共享态在 `srv_engine`) | DR-043 |
 | `srv_actions.py` | 动作共享层:注册表/日志读取、参数 schema 校验 | DR-043/020 |
