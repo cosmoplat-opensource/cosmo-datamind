@@ -1,6 +1,6 @@
 # COSMO DataMind · 系统架构
 
-> 面向维护者的架构说明。契约细节见 `specs/`(DR-001…DR-052、IR-001…IR-013)。本文描述分层、数据流与统一约定。
+> 面向维护者的架构说明。契约细节见 `specs/`(DR-001…DR-053、IR-001…IR-013)。本文描述分层、数据流与统一约定。
 
 ## 1. 分层
 
@@ -55,7 +55,7 @@
 | `build_references.py` | 行业/本体标准目录、配置归一、提示片段、整图候选注释与参照/强约束质量报告 | DR-052 |
 | `standard_assets.py` | 固定版本本地标准 RDF/XSD 的清单、离线解析、内容指纹与提示上下文；资产在 `ontology/standards/` | DR-052 |
 | `ontology_grounding.py` | BFO/IOF 官方关系 IRI、定义域和值域检查；无法确认时保留本地对象属性 | DR-010/050 |
-| `skill_registry.py` | 本仓/上游技能合并发现,列表/查看/执行/prompt 正文消费的单一注册表 | DR-050 |
+| `skill_registry.py` | 本仓/上游技能合并发现,列表/查看/执行/prompt 正文消费的单一注册表;`front_matter` 是技能元数据的唯一解析器(摘要只从 `---` 围栏内取) | DR-050/053 |
 | `store.py` | JSON 持久化抽象:原子写/坏档恢复/schema 校验/迁移/每路径锁 | DR-044 |
 | `ir_relational.py` | IR→关系型语义层投影(只读派生物;OWL 之外的消费出口,证据随行、状态不提升) | DR-049 |
 | `srv_context.py` | 共享上下文:路径、`ro_connect`、`sql_is_readonly`、`_atomic_json`、写锁、`confine` 路径限定 | DR-043 |
@@ -74,7 +74,7 @@
 | `compat_check.py` | 向后兼容:结构 diff + **下游影响**(命中哪些规则/动作/技能) | DR-031 |
 | `module_split.py` | 模块化建议(按领域连通分量 / 按数仓分层),只建议不落盘 | DR-031 |
 | `openai_runtime.py` | OpenAI 兼容驱动(GLM/DeepSeek/Qwen/vLLM),空内容判失败不回传空串 | DR-029 |
-| `mcp_action_server.py` | 对外 MCP:发起动作是唯一写工具,审批不开放 | DR-015 |
+| `mcp_action_server.py` | 对外 MCP:发起动作是唯一写工具,审批不开放;协议版本按规范协商,工具带 `annotations` 行为提示 | DR-015/053 |
 | `translate_cn.py` | 术语中文化(离线词典,无网络依赖) | — |
 
 ## 3. 统一约定(refactor 后)
@@ -96,6 +96,8 @@
 | 前端助手 | `$`/`esc`/`jsAttr`/`J` 显式挂 window | ui,防内联处理器作用域隐患 |
 | 嵌入页高度 | 全局 `iframe{height:70vh}` 默认 + 内联 `calc(100vh-178px)` 为准(去 `!important` 覆盖) | ui,3 处嵌入页 |
 | 数据格子显示 | `cell(v)` 去浮点表示噪声(6 处预览/结果共用) | ui,显示层不改原始/导出 |
+| 技能元数据 | `skill_registry.front_matter` 只认 `---` 围栏内标量键;列表/覆盖件/保存软校验共用一份判定 | `skill_registry.py`,消三份不一致正则 |
+| 读缓存失效 | `_stat_sig(*paths)` 文件指纹(mtime_ns+size,缺文件记 `(p,0,-1)`);不用 TTL,改完即刻生效 | server.py,`/api/graphs` 与表清单 |
 | 前端 XSS | 一切用户/LLM 文本经 `esc()` 入 innerHTML(DR-006) | 全站 |
 
 ## 4. 安全模型(DR-006)
@@ -108,7 +110,7 @@
 
 | 层 | 内容 | 是否需起服务 |
 |---|---|---|
-| 单元层 `tests/` | 确定性模块边界/纯函数 + 文档计数自检 | 否(离线秒级) |
+| 单元层 `tests/` | 473 项:确定性模块边界/纯函数 + MCP 协议合规 + 缓存失效面 + 文档计数自检 | 否(离线秒级) |
 | 集成层 `test_all.py` | 源码定义 565 个检查点,覆盖路由正常路径、边界与安全约束 | 是 |
 | UI 层 | `test_ui.py`(全页走查)·`test_ui_ops.py`(浏览器逐步实操) | 是(需 playwright) |
 

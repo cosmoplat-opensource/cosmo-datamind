@@ -13,8 +13,29 @@ import os
 import re
 
 _SAFE_NAME = re.compile(r"^[\w\-]{1,80}$")
-_FRONT_MATTER = re.compile(r"^---\r?\n[\s\S]*?\r?\n---\r?\n")
-_DESCRIPTION = re.compile(r"^description:\s*(.+?)\s*$", re.M)
+_FRONT_MATTER = re.compile(r"^---\r?\n([\s\S]*?)\r?\n---\r?\n")
+_SCALAR = re.compile(r"^([A-Za-z][\w\-]*):\s*(.*?)\s*$", re.M)
+
+# Agent Skills 约定的元数据键。name/description 是必备(列表与摘要都读 description),
+# 其余为可选:license 标注技能正文的许可,version 便于追踪改版,allowed-tools 声明
+# 该技能预期使用的工具。未知键一律忽略而非报错——技能文件由使用者手写,多写一个键
+# 不该让技能整个不可用。
+_META_KEYS = ("name", "description", "license", "version", "allowed-tools")
+
+
+def front_matter(text):
+    """解析 SKILL.md 的 YAML front matter,返回标量键值(无 front matter 则空字典)。
+
+    只认顶层标量键——技能元数据本就是扁平的,自己扫一遍即可,不引入 YAML 依赖
+    (本模块的其余部分只用 stdlib,注册表要在没装任何第三方包的环境里也能工作)。
+    """
+    m = _FRONT_MATTER.match(text or "")
+    if not m:
+        return {}
+    out = {}
+    for key, value in _SCALAR.findall(m.group(1)):
+        out[key] = value.strip().strip('"\'')
+    return out
 
 
 def skill_body(text):
@@ -41,14 +62,17 @@ def discover(roots):
                 text = open(skill_md, encoding="utf-8", errors="replace").read()
             except OSError:
                 continue
-            match = _DESCRIPTION.search(text)
+            # 摘要只从 front matter 取,不在全文里搜:技能正文里以 `description:` 开头的
+            # 行(字段清单、YAML 示例)很常见,全文搜会把示例值当成这个技能的摘要显示。
+            meta = front_matter(text)
             found[name] = {
                 "name": name,
-                "description": (match.group(1).strip().strip('"\'') if match else "")[:240],
+                "description": (meta.get("description") or "")[:240],
                 "directory": directory,
                 "skill_md": skill_md,
                 "runnable": os.path.isfile(os.path.join(directory, "run.sh")),
                 "root": root,
+                "meta": {k: meta[k] for k in _META_KEYS if k in meta},
             }
     return [found[name] for name in sorted(found)]
 

@@ -44,14 +44,21 @@ def _default_base():
     return "http://%s:%s" % (host, os.environ.get("DATAMIND_PORT") or "8092")
 
 BASE = (os.environ.get("DATAMIND_URL") or _default_base()).rstrip("/")
-PROTO = "2024-11-05"
+# 支持的 MCP 协议版本,新在前。本服务只用 tools 能力,三个版本间该子集语义一致:
+# 2025-03-26 增加的 annotations 与 2025-06-18 增加的工具级 title 都是纯增量字段,
+# 旧客户端按规范忽略未知字段即可。协商规则见 initialize 分支。
+SUPPORTED_PROTOS = ("2025-06-18", "2025-03-26", "2024-11-05")
 
+# annotations(MCP 2025-03-26 起):向客户端声明行为提示,便于其做审批分流与
+# 并发调度。按规范这些只是 hint、不构成安全边界——真正的治理(风险分级/人审
+# 队列)仍在 DataMind 服务端强制执行。
 TOOLS = [
     {
         "name": "list_actions",
         "title": "列出动作类型",
         "description": "列出本体动作类型目录:每个动作的 id、名称、作用对象、风险级(low=直执行/high=须人审批)、参数 schema 与效果说明。发起动作前先调用它拿到准确的参数名。",
         "inputSchema": {"type": "object", "properties": {}, "additionalProperties": False},
+        "annotations": {"readOnlyHint": True, "openWorldHint": False},
     },
     {
         "name": "invoke_action",
@@ -69,6 +76,9 @@ TOOLS = [
             "required": ["action_id", "params", "operator"],
             "additionalProperties": False,
         },
+        # 只新增记录/入队,不改写不删除,故非破坏性;重复发起会产生两条动作记录,故非幂等
+        "annotations": {"readOnlyHint": False, "destructiveHint": False,
+                        "idempotentHint": False, "openWorldHint": False},
     },
     {
         "name": "get_action_status",
@@ -80,6 +90,7 @@ TOOLS = [
             "required": ["id"],
             "additionalProperties": False,
         },
+        "annotations": {"readOnlyHint": True, "openWorldHint": False},
     },
 ]
 
@@ -170,11 +181,14 @@ def main():
             sys.stdout.flush()
 
         if method == "initialize":
-            # MCP 规范:initialize 应答**服务器支持的**协议版本,而非回显客户端版本。
-            # 回显 = 声称支持任意版本;客户端若按更新语义调用,行为未定义。
-            reply({"protocolVersion": PROTO,
-                   "capabilities": {"tools": {}},
-                   "serverInfo": {"name": "datamind-actions", "version": "0.1.0"}})
+            # MCP 版本协商:客户端请求的版本若在支持列表内则沿用它,否则回自己
+            # 最新支持的版本,由客户端决定是否接受(规范§Lifecycle)。绝不回显未知
+            # 版本——那等于声称支持任意版本,客户端按更新语义调用即行为未定义。
+            want = params.get("protocolVersion")
+            reply({"protocolVersion": want if want in SUPPORTED_PROTOS else SUPPORTED_PROTOS[0],
+                   "capabilities": {"tools": {"listChanged": False}},
+                   "serverInfo": {"name": "datamind-actions", "title": "DataMind 动作层",
+                                  "version": "0.1.0"}})
         elif method in ("notifications/initialized", "initialized"):
             pass
         elif method == "ping":

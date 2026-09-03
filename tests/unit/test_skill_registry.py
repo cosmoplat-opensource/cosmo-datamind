@@ -74,3 +74,59 @@ def test_custom_override_wins_over_builtin(tmp_path):
         custom_loader=lambda n: "---\nname: s1\n---\n\n我的改写版",
         fallback_loader=lambda n: "摘要")
     assert "我的改写版" in text and "出厂正文" not in text
+
+
+class TestFrontMatter:
+    """技能元数据只从 front matter 取。
+
+    回归背景:摘要原先在**全文**里搜 `description:`,server.py 里另有两份更弱的抄写
+    (无 ^ 锚定、无 re.M,正文任意位置命中即算)。技能正文里以 `description:` 开头的
+    行——字段清单、YAML 示例——很常见,于是技能列表会把示例值当成这个技能的摘要显示。
+    """
+
+    def test_body_description_line_is_not_taken_as_summary(self, tmp_path):
+        d = tmp_path / "probe"; d.mkdir()
+        (d / "SKILL.md").write_text("# 技能\n\n## 输出字段\n\ndescription: 对象定义字段\n",
+                                    encoding="utf-8")
+        assert skill_registry.discover([str(tmp_path)])[0]["description"] == ""
+
+    def test_front_matter_wins_over_body_line(self, tmp_path):
+        d = tmp_path / "probe"; d.mkdir()
+        (d / "SKILL.md").write_text(
+            "---\nname: probe\ndescription: 真正的摘要\n---\n\ndescription: 干扰项\n",
+            encoding="utf-8")
+        assert skill_registry.discover([str(tmp_path)])[0]["description"] == "真正的摘要"
+
+    def test_optional_metadata_is_exposed(self, tmp_path):
+        """Agent Skills 约定的可选键(license/version/allowed-tools)原样透出。"""
+        d = tmp_path / "probe"; d.mkdir()
+        (d / "SKILL.md").write_text(
+            "---\nname: probe\ndescription: d\nlicense: Apache-2.0\nversion: 1.2\n"
+            "allowed-tools: Read, Bash\n---\n\n正文\n", encoding="utf-8")
+        meta = skill_registry.discover([str(tmp_path)])[0]["meta"]
+        assert meta["license"] == "Apache-2.0" and meta["version"] == "1.2"
+        assert meta["allowed-tools"] == "Read, Bash"
+
+    def test_unknown_keys_do_not_break_parsing(self, tmp_path):
+        """技能文件由使用者手写;多写一个键不该让技能整个不可用。"""
+        d = tmp_path / "probe"; d.mkdir()
+        (d / "SKILL.md").write_text(
+            "---\nname: probe\ndescription: d\n随手写的键: 值\nfoo: bar\n---\n\n正文\n",
+            encoding="utf-8")
+        it = skill_registry.discover([str(tmp_path)])[0]
+        assert it["description"] == "d" and "foo" not in it["meta"]
+
+    def test_crlf_and_quotes(self):
+        assert skill_registry.front_matter(
+            "---\r\nname: a\r\ndescription: CRLF\r\n---\r\n正文")["description"] == "CRLF"
+        assert skill_registry.front_matter(
+            '---\nname: a\ndescription: "引号"\n---\n正文')["description"] == "引号"
+
+    def test_no_front_matter_returns_empty(self):
+        assert skill_registry.front_matter("# 只有正文\n") == {}
+        assert skill_registry.front_matter("") == {}
+
+    def test_body_is_unaffected_by_metadata_parsing(self):
+        """解析元数据不得吃掉正文——正文是真正注入构建 prompt 的东西。"""
+        text = "---\nname: a\ndescription: d\n---\n\n## 步骤\n\n正文内容\n"
+        assert skill_registry.skill_body(text).startswith("## 步骤")
