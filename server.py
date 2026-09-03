@@ -838,8 +838,31 @@ def _anchor_ir(graph_keys=None):
     return {"objects": objs, "links": links}, keys, ""
 
 
+def _stat_sig(*paths):
+    """一组文件的变更指纹(路径, mtime_ns, size)。文件不存在记 (path, 0, -1),
+    使「从无到有」与「从有到无」都会改变指纹——进程内缓存以此判断失效。"""
+    sig = []
+    for p in paths:
+        try:
+            st = os.stat(p)
+            sig.append((p, st.st_mtime_ns, st.st_size))
+        except OSError:
+            sig.append((p, 0, -1))
+    return tuple(sig)
+
+
+_INV_CACHE = {"sig": None, "val": None}
+
 def _qa_table_inventory():
-    """返回深度问数当前进程真正能执行的主库表与上传库表。"""
+    """返回深度问数当前进程真正能执行的主库表与上传库表。
+
+    按两个库文件的 mtime 指纹缓存:问数/图谱列表每个请求都要问一次「有哪些表」,
+    而底座库只在换库或上传时才变。返回副本,调用方改动不会污染缓存。
+    """
+    sig = _stat_sig(DB, UPLOAD_DB)
+    if _INV_CACHE["sig"] == sig:
+        main, uploads = _INV_CACHE["val"]
+        return set(main), set(uploads)
     def names(path):
         if not os.path.exists(path): return set()
         try:
@@ -851,7 +874,9 @@ def _qa_table_inventory():
                 con.close()
         except Exception:
             return set()
-    return names(DB), names(UPLOAD_DB)
+    main, uploads = names(DB), names(UPLOAD_DB)
+    _INV_CACHE["sig"], _INV_CACHE["val"] = sig, (main, uploads)
+    return set(main), set(uploads)
 
 
 def _qa_graph_profile(ir, inventory=None):
@@ -1470,25 +1495,43 @@ def table_detail(name):
     prev = q(f'SELECT * FROM "{name}" LIMIT 20')
     return jsonify({"columns": cols, "preview": prev})
 
+# /api/graphs 行级缓存:该端点被前端六处调用(首屏/图谱页/复核页/问数范围/编辑器),
+# 每次都对全部图谱源做 解析→净化→编辑回放→转图→执行画像 的完整流水线,耗时随
+# built_* 文件数线性增长。每行的输入完全由三样东西决定:IR 文件本身、该图的编辑栈、
+# 两个库文件(决定可执行画像),全部以 mtime 指纹作失效键——不引入 TTL,不会读到旧值。
+_GRAPH_ROW_CACHE: dict = {}
+
+def _graph_row(k, cat, src_paths, inventory, inv_sig, name=None):
+    sig = (_stat_sig(*src_paths), _stat_sig(_edits_path(k)), inv_sig)
+    hit = _GRAPH_ROW_CACHE.get(k)
+    if hit and hit[0] == sig:
+        return hit[1]
+    ir = load_ir_edited(k)
+    if not isinstance(ir, dict): return None
+    g = ir_to_graph(k, ir)
+    row = {"id": k, "name": name or (ir.get("scenario") or {}).get("name") or k,
+           "nodes": len(g["nodes"]), "edges": len(g["edges"]), "cat": cat,
+           **_qa_graph_summary(ir, inventory)}
+    _GRAPH_ROW_CACHE[k] = (sig, row)
+    return row
+
 @app.get("/api/graphs")
 def graphs():
     out = []
     inventory = _qa_table_inventory()
+    inv_sig = _stat_sig(DB, UPLOAD_DB)
+    seen = set()
+    def add(k, cat, paths, name=None):
+        row = _graph_row(k, cat, paths, inventory, inv_sig, name=name)
+        if row: seen.add(k); out.append(row)
     for k, v in IR_SOURCES.items():
-        ir = load_ir_edited(k)
-        if ir:
-            g = ir_to_graph(k, ir)
-            out.append({"id": k, "name": v["name"], "nodes": len(g["nodes"]), "edges": len(g["edges"]), "cat": "curated", **_qa_graph_summary(ir, inventory)})
+        add(k, "curated", v.get("paths", []), name=v["name"])
     for p2 in sorted(glob.glob(os.path.join(PLATFORM, "data", "forged", "*.json"))):
-        k = "forged_" + os.path.basename(p2)[:-5]
-        ir = load_ir_edited(k)
-        if not isinstance(ir, dict): continue
-        g = ir_to_graph(k, ir)
-        out.append({"id": k, "name": ((ir.get("scenario") or {}).get("name") or k), "nodes": len(g["nodes"]), "edges": len(g["edges"]), "cat": "scenario", **_qa_graph_summary(ir, inventory)})
+        add("forged_" + os.path.basename(p2)[:-5], "scenario", [p2])
     for p in sorted(glob.glob(os.path.join(WORK, "built_*.json")), key=os.path.getmtime, reverse=True):
-        k = os.path.basename(p)[:-5]
-        ir = load_ir_edited(k); g = ir_to_graph(k, ir)
-        out.append({"id": k, "name": (ir.get("scenario") or {}).get("name") or k, "nodes": len(g["nodes"]), "edges": len(g["edges"]), "cat": "built", **_qa_graph_summary(ir, inventory)})
+        add(os.path.basename(p)[:-5], "built", [p])
+    for stale in set(_GRAPH_ROW_CACHE) - seen:   # 文件删除后条目随之出清,缓存不无界增长
+        _GRAPH_ROW_CACHE.pop(stale, None)
     return jsonify(out)
 
 @app.get("/api/graph/<key>")
@@ -4267,8 +4310,8 @@ def build_skills():
         if ov:
             try: txt = open(ov, encoding="utf-8", errors="replace").read()
             except OSError: txt = ""
-            m = re.search(r"description:\s*(.+)", txt)
-            if m: desc = m.group(1).strip()[:140]
+            fm = skill_registry.front_matter(txt).get("description")
+            if fm: desc = fm[:140]
         out.append({"name": n, "desc": desc, "builtin": True, "runnable": item["runnable"],
                     "editable": True, "overridden": bool(ov)})
     if os.path.isdir(_BUILD_SKILL_D):
@@ -4278,8 +4321,10 @@ def build_skills():
             if nm in tombs: continue
             try: txt = open(f, errors="replace").read()
             except Exception: txt = ""
-            m = re.search(r"description:\s*(.+)", txt)
-            out.append({"name": nm, "desc": (m.group(1) if m else txt[:120]).strip()[:140],
+            # 摘要一律走注册表的 front matter 解析(单一实现);没写 front matter 的
+            # 自定义技能退回正文首段,不去正文里搜 description: —— 那会把字段示例当摘要。
+            fm = skill_registry.front_matter(txt).get("description")
+            out.append({"name": nm, "desc": (fm or skill_registry.skill_body(txt)[:120]).strip()[:140],
                         "builtin": False, "runnable": False, "editable": True, "overridden": False})
     # 已隐藏的内置技能也回传(带 hidden 标记),否则删完就再也点不到「恢复默认」,
     # 「可恢复」就成了空话。界面把它们收在列表末尾一行,不占正常卡片位。
@@ -4374,8 +4419,10 @@ def build_skill_save():
             tombs.discard(name); _skill_tombs_save(tombs)
     # 软校验:技能规范要求 YAML front-matter 携带 description(列表与技能摘要都读它)。
     # 缺失不拒绝——正文照常注入构建;但给出提示,否则列表只能截正文前 120 字凑数。
+    # 判定走与列表同一个解析器:两处若各写一套正则,就会出现「保存时说缺、列表里却
+    # 显示得好好的」这类自相矛盾的反馈。
     hint = ""
-    if not re.search(r"^---\s*\n.*?^description:\s*\S", content, re.S | re.M):
+    if not skill_registry.front_matter(content).get("description"):
         hint = "建议在文件头加 YAML front-matter(name/description):技能列表与摘要都读 description"
     return jsonify({"ok": True, "name": name, "builtin": builtin, "overridden": builtin,
                     **({"hint": hint} if hint else {})})
