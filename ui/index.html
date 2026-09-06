@@ -408,7 +408,10 @@ a{color:var(--acc)}
   <div style="margin-bottom:14px"><span id="rvm_clabel">评审意见</span><br><textarea id="rvm_comment" rows="3" style="width:100%;margin-top:4px;resize:vertical" placeholder="填写评审意见 / 原因"></textarea></div>
   <div style="display:flex;gap:8px;justify-content:flex-end"><button class="ghost" onclick="rvmClose()">取消</button><button id="rvm_ok" onclick="rvmSubmit()">提交评审</button></div>
  </div></div>
- <div class="page" id="p_metrics"><h2>指标中心</h2><div id="m_body"></div></div>
+ <div class="page" id="p_metrics"><h2>指标中心 <span class="muted">指标契约:口径可编译、可执行、与参照比对 · 已核验只来自证据 · 业务确认只能由人授予</span></h2>
+ <div class="row" style="gap:8px;align-items:center;margin-bottom:8px;flex-wrap:wrap">图谱 <select id="m_sel" style="width:300px" onchange="metrics()"></select>
+  <button class="ghost" onclick="metricReadjudicate()" title="按契约重新编译、只读执行并与已存参照比对;不新增候选">重跑核验</button><span id="m_kpi"></span></div>
+ <div id="m_body"></div></div>
  <div class="page" id="p_ontquality"><h2>元数据覆盖 <span class="muted">统计定义、反例、开发状态、BFO/IOF 上层类别和标准关系映射；不代表本体完备性或业务正确性</span></h2>
   <div class="row" style="margin-bottom:10px"><select id="oq_sel" style="width:340px"></select>
    <button class="ghost" onclick="ontQualityRender()">刷新</button>
@@ -1483,26 +1486,69 @@ async function rules(){const d=await J('/api/ont/rules?graph=demo');
   d.pipeline.map((st,i)=>`<div class="step"><b>${i+1}. ${esc(st.stage)}</b>— ${esc(st.io)}<br><span class="muted">判定: ${esc(st.rule)}</span></div>`).join('')+`</div>`;}
 async function rtSet(){const d=await J('/api/ont/runtime',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:$('#rt_sel').value})});
  $('#rt_info').textContent=d.error||('当前: '+d.current);}
-async function metrics(){const m=await J('/api/metrics');const names={atomic:'原子指标',derived:'派生指标',composite:'复合指标'};
+// 指标状态(DR-054):certified 业务已确认 > verified 已核验 > candidate 待核验;旧形状指标只有启发式口径
+const MST={certified:['ok','业务已确认'],verified:['ok','已核验'],candidate:['warn','待核验'],deprecated:['evt','已停用'],heuristic:['warn','旧口径(启发式)']};
+function mStatus(x){return x.status||(x.measure&&x.measure.agg?'candidate':'heuristic');}
+function mstTag(st){const t=MST[st]||['evt',st||'-'];return `<span class="tag ${t[0]}">${esc(t[1])}</span>`;}
+function mCaliber(x){if(!(x.measure&&x.measure.agg))return '';const a=x.measure.agg.toUpperCase().replace('COUNT_DISTINCT','COUNT DISTINCT'),c=x.measure.col||'*';
+ const f=(x.filters||[]).map(f=>`${f.col} ${f.op}${f.value!==undefined&&f.value!==null?' '+JSON.stringify(f.value):''}`).join(' AND ');
+ return `${a}(${c})${f?' WHERE '+f:''}${x.time&&x.time.col?' 按 '+x.time.col+'/'+((x.time.grain||['month'])[0]):''}`;}
+function mGraph(){return ($('#m_sel')&&$('#m_sel').value)||'demo';}
+let M_GRAPHS=null;
+async function metrics(){
+ if(!M_GRAPHS){M_GRAPHS=await J('/api/graphs');const sel=$('#m_sel');sel.innerHTML=graphOptions(M_GRAPHS,g=>g.name);if(M_GRAPHS.some(g=>g.id==='demo'))sel.value='demo';}
+ const g=mGraph();const m=await J('/api/metrics?graph='+encodeURIComponent(g));const names={atomic:'原子指标',derived:'派生指标',composite:'复合指标'};
+ if(m.error){$('#m_body').innerHTML=`<div class="muted">${esc(m.error)}</div>`;return;}
+ const cnt={};Object.values(m).forEach(a=>(a||[]).forEach(x=>{const st=mStatus(x);cnt[st]=(cnt[st]||0)+1;}));
+ $('#m_kpi').innerHTML=['certified','verified','candidate','deprecated','heuristic'].filter(k=>cnt[k]).map(k=>`${mstTag(k)}<span class="muted" style="margin-right:8px">${cnt[k]}</span>`).join('');
  $('#m_body').innerHTML=`<div class="card" id="m_lineage" style="display:none"></div>`+
-  Object.entries(m).map(([k,arr])=>`<div class="card"><h3>${names[k]||k}(${arr.length})<span class="muted">· 点行看血缘</span></h3>
-  <div class="scroll" style="max-height:26vh"><table><tr><th>名称</th><th>来源表</th><th>取值列</th><th>单位</th><th>说明</th></tr>`+
-  arr.map(x=>`<tr style="cursor:pointer" onclick="lineage(${jsAttr(x.name)})"><td>${esc(x.name)}</td><td>${esc(x.table)}</td><td>${esc(x.value_col)}</td><td>${esc(x.unit)}</td><td>${esc(x.desc||x.formula)}</td></tr>`).join('')+'</table></div></div>').join('');}
+  Object.entries(m).map(([k,arr])=>`<div class="card"><h3>${names[k]||k}(${arr.length})<span class="muted">· 点行看契约与血缘</span></h3>
+  <div class="scroll" style="max-height:26vh"><table><tr><th>名称</th><th>状态</th><th>口径</th><th>来源表</th><th>取值列</th><th>单位</th><th>说明</th></tr>`+
+  arr.map(x=>`<tr style="cursor:pointer" onclick="lineage(${jsAttr(x.name)})"><td><b>${esc(x.name)}</b></td><td>${mstTag(mStatus(x))}</td><td><code style="font-size:11px">${esc(mCaliber(x))||'<span class=muted>未声明</span>'}</code></td><td>${esc(x.table)}</td><td>${esc(x.value_col)}</td><td>${esc(x.unit)}</td><td>${esc(x.desc||x.formula)}</td></tr>`).join('')+'</table></div></div>').join('');}
+async function metricReadjudicate(){const g=mGraph();toast('重跑核验中…');
+ const d=await J('/api/metric/adjudicate',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({graph:g})}).catch(e=>({error:''+e}));
+ if(d.error){toast(d.error,false);return;}toast(`核验完成 · 契约 ${d.contracts} 条 · 已核验 ${d.verified} 条`,true);metrics();}
+async function metricStatus(name,status){const g=mGraph();const who=($('#ml_who')&&$('#ml_who').value.trim())||'';const reason=($('#ml_reason')&&$('#ml_reason').value.trim())||'';
+ if(status==='certified'&&!who){toast('确认口径须填写确认人(姓名或工号)',false);$('#ml_who').focus();return;}
+ try{localStorage.setItem('rv_reviewer',who);}catch(e){}
+ const d=await J('/api/metric/status',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({graph:g,metric:name,status,reviewer:who,reason})}).catch(e=>({error:''+e}));
+ if(d.error){toast(d.error,false);return;}toast(`已置为 ${MST[status]?MST[status][1]:status}`,true);await metrics();lineage(name);}
 const LAYER_CN={atomic:'原子指标',derived:'派生指标',composite:'复合指标'};
-async function lineage(name){const d=await J('/api/metric/lineage?name='+encodeURIComponent(name));
+async function lineage(name){const g=mGraph();
+ const [d,c]=await Promise.all([J('/api/metric/lineage?graph='+encodeURIComponent(g)+'&name='+encodeURIComponent(name)),
+                                J('/api/metric/contract?graph='+encodeURIComponent(g)+'&name='+encodeURIComponent(name)).catch(e=>({error:''+e}))]);
  const el=$('#m_lineage');el.style.display='block';
  if(d.error){el.innerHTML=`<h3>${esc(name)}</h3><div class="muted">${esc(d.error)}</div>`;return}
- const m=d.metric||{},ly=m.layer;
- // 数据来源:绑表则显示表.列;派生/复合无直接绑表→按层给出口径说明,不再显示无意义的 "- . -"
+ const m=d.metric||{},ly=m.layer,st=mStatus(m),ev=m.evidence||{},ref=ev.reference||{};
  const srcLine=d.source_table
    ? `<b>数据来源</b>: ${esc(d.source_table)} . ${esc(d.source_col||'-')} <a href="#" onclick="event.preventDefault();document.querySelector('[data-p=catalog]').click();setTimeout(()=>tbl(${jsAttr((d.source_table||'').toLowerCase())}),400)">查表↗</a>`
    : `<b>数据来源</b>: <span class="muted">${ly==='derived'?'派生指标 · 由原子指标按业务口径汇总/计算(未直接绑表)':ly==='composite'?'复合指标 · 由多指标按公式组合计算(未直接绑表)':'未绑定数据表'}</span>`;
- el.innerHTML=`<h3>血缘 · ${esc(name)} <span class="tag ok">${esc(LAYER_CN[ly]||ly)}</span>${m.unit?`<span class="tag" style="background:#F4F4F5;color:#606266">${esc(m.unit)}</span>`:''}</h3>
+ const isC=!!(c&&c.is_contract);
+ const evLine=isC?`<div class="step"><b>核验证据</b>: ${ev.executed?'<span class="tag ok">已执行</span>':'<span class="tag warn">未执行</span>'}`+
+   (ev.match===true?'<span class="tag ok">与参照一致</span>':ev.match===false?'<span class="tag warn">与参照不一致</span>':'<span class="tag evt">无参照</span>')+
+   (ref.source?`<span class="muted"> 参照:${esc(ref.source)}${ref.note?' · '+esc(ref.note):''}</span>`:'')+(ev.error?`<div class="muted" style="color:var(--warn)">${esc(ev.error)}</div>`:'')+
+   (ev.value!==undefined?`<div class="muted">标量值:${esc(String(ev.value))}${m.unit?' '+esc(m.unit):''}${ev.checked_at?' · 核验于 '+esc(ev.checked_at):''}</div>`:'')+`</div>`:'';
+ const dims=(c&&c.allowed_dimensions)||null;
+ const dimLine=dims?`<div class="step"><b>可下钻维度</b>: ${(dims.columns||[]).map(x=>`<code>${esc(x)}</code>`).join(' ')||'<span class=muted>无</span>'}${(dims.objects||[]).length?' · 关联对象: '+dims.objects.map(o=>`${esc(o.object)}<span class="muted">(${esc(o.table)}${o.fan_out_risk?' · 父侧,有扇出风险':''})</span>`).join('、'):''}</div>`:'';
+ const prov=(m.provenance||[]).map(p=>`${esc(p.kind||'-')}:${esc(p.source||'')}`).join('; ');
+ const who=localStorage.getItem('rv_reviewer')||'';
+ const actions=isC?`<div class="step" style="border-top:1px dashed #E5E9F2;padding-top:8px">
+   <div class="row" style="gap:8px;flex-wrap:wrap;align-items:center">
+    确认人 <input id="ml_who" placeholder="姓名或工号" value="${esc(who)}" style="width:140px"> 意见 <input id="ml_reason" placeholder="口径依据(可选)" style="width:260px">
+    ${st!=='certified'?`<button onclick="metricStatus(${jsAttr(name)},'certified')" title="业务确认口径;等价于关系的人工断言">确认口径</button>`:''}
+    ${st!=='deprecated'?`<button class="ghost" onclick="metricStatus(${jsAttr(name)},'deprecated')">停用</button>`:''}
+    ${(st==='certified'||st==='deprecated')?`<button class="ghost" onclick="metricStatus(${jsAttr(name)},'candidate')">撤回为待核验</button>`:''}
+   </div><div class="muted" style="margin-top:4px">「已核验」只能由核验产生,人工只能授予「业务已确认」或「停用」。</div></div>`
+  :`<div class="step muted">该指标是旧形状(未声明聚合口径),不能确认为业务口径;先在构建时反解或补契约。</div>`;
+ el.innerHTML=`<h3>${esc(name)} ${mstTag(st)}<span class="tag ok">${esc(LAYER_CN[ly]||ly)}</span>${m.unit?`<span class="tag" style="background:#F4F4F5;color:#606266">${esc(m.unit)}</span>`:''}${m.certified_by?`<span class="muted" style="font-size:11px">确认人 ${esc(m.certified_by)}${m.certified_at?' · '+esc(m.certified_at):''}</span>`:''}</h3>
+  ${isC?`<div class="step"><b>契约口径</b>: <code>${esc(c.caliber||'')}</code></div><div class="step"><b>编译 SQL</b>: <code style="font-size:11px;white-space:pre-wrap">${esc(c.compiled_sql||c.compile_error||'')}</code></div>`:''}
   ${m.desc?`<div class="step"><b>业务口径</b>: ${esc(m.desc)}</div>`:''}
   <div class="step">${srcLine}</div>${d.formula?`<div class="step"><b>计算公式</b>: ${esc(d.formula)}</div>`:''}
+  ${evLine}${dimLine}
+  ${prov?`<div class="step"><b>来源</b>: <span class="muted">${prov}</span></div>`:''}
   ${(d.inputs||[]).length?`<div class="step"><b>输入指标</b>: ${d.inputs.map(i=>`<a href="#" onclick="event.preventDefault();lineage(${esc(JSON.stringify(i))})">${esc(i)}</a>`).join('、')}</div>`:''}
-  <div class="step"><b>被本体对象引用(${d.referenced_by.length})</b>: ${d.referenced_by.map(r=>`${esc(r.object)}<span class="muted">(${esc(r.kind)})</span>`).join('、')||'<span class=muted>无(该指标未挂载到本体对象)</span>'}</div>
-  <div class="step"><b>编码</b>: <code>${esc(m.id||'-')}</code></div>`;
+  <div class="step"><b>被本体对象引用(${(d.referenced_by||[]).length})</b>: ${(d.referenced_by||[]).map(r=>`${esc(r.object)}<span class="muted">(${esc(r.kind)})</span>`).join('、')||'<span class=muted>无(该指标未挂载到本体对象)</span>'}</div>
+  <div class="step"><b>编码</b>: <code>${esc(m.id||'-')}</code>${m.review_reason?` · <span class="muted">${esc(m.review_reason)}</span>`:''}</div>${actions}`;
  el.scrollIntoView({behavior:'smooth'});}
 let CHAT_HIST=[];
 async function chatInit(){const m=await J('/api/metrics');
@@ -1512,7 +1558,7 @@ async function chatInit(){const m=await J('/api/metrics');
 async function instantQ(){const n=$('#iq_sel').value;if(!n)return;
  const d=await J('/api/metric/quick?name='+encodeURIComponent(n));
  if(d.error){$('#iq_info').textContent=d.error;return}
- $('#iq_info').textContent=`${d.source} · ${d.agg}${d.unit?' · '+d.unit:''}${d.agg_note?' · '+d.agg_note:''}`;  // 一并展示聚合口径说明(如比率取月均为近似),透明不误导
+ $('#iq_info').textContent=`${d.source} · ${d.agg}${d.unit?' · '+d.unit:''}${d.agg_note?' · '+d.agg_note:''}${d.status?' · '+((MST[d.status]||[0,d.status])[1]):''}`;  // 一并展示聚合口径说明(如比率取月均为近似),透明不误导
  const el=$('#iq_chart');el.style.display='block';
  mk(el,{grid:{top:28,left:60,right:20,bottom:30},tooltip:{trigger:'axis'},
   xAxis:{type:'category',data:d.data.rows.map(r=>r['月']),...AX},yAxis:{type:'value',...AX},
@@ -1659,8 +1705,10 @@ function dqRenderCard(card,q,d,origin='live'){const uid=DQ_UID++;const okN=d.ste
  if((d.metric_cards||[]).length)   // A3 口径卡:命中指标的口径与出处,随答案可见
   html+=`<div style="display:flex;flex-wrap:wrap;gap:8px;margin:8px 0">`+d.metric_cards.map(m=>
    `<div style="border:1px solid #E5E9F2;border-left:3px solid #4A5FF3;border-radius:6px;padding:8px 12px;font-size:12px;background:#FAFBFF;max-width:340px">
-    <b>${esc(m.name)}</b> <span class="tag" style="font-size:10px;background:#EEF2FF;color:#4A5FF3">${esc(m.layer)}</span>
+    <b>${esc(m.name)}</b> <span class="tag" style="font-size:10px;background:#EEF2FF;color:#4A5FF3">${esc(m.layer)}</span>${m.status?mstTag(m.status):''}
+    ${m.caliber?`<div style="margin-top:3px">计算口径:<code style="font-size:11px">${esc(m.caliber)}</code></div>`:''}
     ${m.desc?`<div class="muted" style="margin-top:3px">口径:${esc(m.desc)}</div>`:''}
+    ${m.status==='candidate'?`<div class="muted" style="margin-top:3px;color:var(--warn)">该口径尚未核验,数值仅供参考</div>`:''}
     <div class="muted" style="margin-top:3px">出处:${m.table?`<code>${esc(m.table)}.${esc(m.col||'-')}</code>`:'派生/复合(见指标中心血缘)'}${m.unit?` · 单位 ${esc(m.unit)}`:''}
      <a href="#" onclick="event.preventDefault();document.querySelector('[data-p=metrics]').click()" style="font-size:11px">血缘↗</a></div></div>`).join('')+`</div>`;
  (d.results||[]).forEach((r,i)=>{const cols=r.data.columns||[];

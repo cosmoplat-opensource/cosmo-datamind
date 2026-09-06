@@ -137,6 +137,24 @@ def cq_status_text(cq):
             f"不可回答 {unanswerable}")
 
 
+def _diverse(items, per_type=20, total=100):
+    """按类型限流后再截断:一种信号刷屏(如上百个孤岛对象)会把其它待审项挤出上限,
+    结果是「指标待核验」这类关键项在报告里凭空消失。保持首见顺序,只做限流不做排序。"""
+    seen, out, dropped = {}, [], {}
+    for item in items:
+        key = item.get("type") or "_"
+        seen[key] = seen.get(key, 0) + 1
+        if seen[key] <= per_type:
+            out.append(item)
+        else:
+            dropped[key] = dropped.get(key, 0) + 1
+    for key, n in sorted(dropped.items()):
+        out.append({"type": "review_truncated", "count": n,
+                    "desc": f"「{key}」另有 {n} 项未在此列出(同类限流 {per_type} 项)",
+                    "fix": "先处理已列出的同类问题,或按类型单独查询完整清单"})
+    return out[:total]
+
+
 def evaluate(ir, cqs=None, definition_threshold=0.6):
     """执行验收检查，返回 ``result ∈ {pass, review, fail}`` 的结构化报告。"""
     ir = ir if isinstance(ir, dict) else {}
@@ -242,7 +260,7 @@ def evaluate(ir, cqs=None, definition_threshold=0.6):
         "cq": cq,
         "blocking_issues": blocking_issues,
         "hard_errors": blocking_issues,  # 兼容旧客户端。
-        "review_queue": review_queue[:100],
+        "review_queue": _diverse(review_queue, per_type=20, total=100),
         "gaps": gaps[:200],
         "note": "确定性验收检查：fail 表示结构或 verified 证据契约不满足；review 表示仍需人工复核",
     }

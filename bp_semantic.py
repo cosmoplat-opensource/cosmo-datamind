@@ -37,6 +37,8 @@ def export_osi():
     ir = _deps["load_graph"](key)
     if ir is None: return jsonify({"error": "非法图谱键"}), 400
     if not ir: return jsonify({"error": "图谱不存在"}), 404
-    text = osi_export.to_yaml(ir, model_name=key)
+    kind = (request.args.get("kind") or "semantic_model").strip()
+    if kind not in ("semantic_model", "ontology"): return jsonify({"error": "kind 只能是 semantic_model 或 ontology"}), 400
+    text = osi_export.to_yaml(ir, model_name=key, kind=kind)
     return Response(text, mimetype="text/yaml; charset=utf-8",
-                    headers={"Content-Disposition": f'attachment; filename="{key}.osi.yaml"'})
+                    headers={"Content-Disposition": f'attachment; filename="{key}.{kind}.ossie.yaml"'})

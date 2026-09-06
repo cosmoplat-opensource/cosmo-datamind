@@ -99,10 +99,12 @@ def metric_adjudicate():
     """对图谱里的契约重跑执行核验(不新增候选);证据里保存的参照复用。"""
     body = request.json or {}
     key = str(body.get("graph") or "").strip()
-    db = _deps["db_for_source"](body.get("source") or "demo")
-    if not db: return jsonify({"error": "数据源不可用(外部库或不存在)"}), 400
     ir, wp, err = _deps["open_writable"](key)
     if err: return err
+    # 数据源缺省取构建清单记录的来源,再退到示例主库;外部库或不存在则如实拒绝
+    source = body.get("source") or ((ir.get("build_manifest") or {}).get("source") or {}).get("id") or "demo"
+    db = _deps["db_for_source"](source)
+    if not db: return jsonify({"error": f"数据源「{source}」不可用(外部库或不存在)"}), 400
     out = metric_pipeline.readjudicate(db, ir)
     ir["metric_layers"] = out["metric_layers"]
     with _deps["write_lock"]:

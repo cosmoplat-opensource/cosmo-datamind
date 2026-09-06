@@ -75,3 +75,16 @@ class TestConfine:
 
     def test_base_itself_allowed(self, tmp_path):
         assert srv_context.confine(str(tmp_path)) == os.path.realpath(str(tmp_path))
+
+
+def test_strip_cn_suffix_and_name_variants():
+    """中文表名后缀剥离是锚定/召回的共用约定;剥到 <2 字则不剥,避免「单表」→「单」乱命中。"""
+    import ir_shape
+    assert ir_shape.strip_cn_suffix("销售订单事实表") == "销售订单"
+    assert ir_shape.strip_cn_suffix("客户维度表") == "客户"
+    assert ir_shape.strip_cn_suffix("单表") == "单表"
+    assert ir_shape.strip_cn_suffix("") == ""
+    variants = ir_shape.name_variants({"id": "so", "cn": "销售订单事实表", "table": "fact_sales_order",
+                                       "aliases": ["订单"]})
+    assert "销售订单" in variants and "销售订单事实表" in variants and "订单" in variants
+    assert len(variants) == len(set(variants))
