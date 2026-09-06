@@ -108,7 +108,11 @@ class TestGovernanceBoundary:
     def test_approval_is_never_exposed_as_a_tool(self):
         names = {t["name"] for t in mcp.TOOLS}
         assert not (names & {"approve_action", "deny_action", "approve", "deny"})
-        assert names == {"list_actions", "invoke_action", "get_action_status"}
+        assert names == {"list_actions", "invoke_action", "get_action_status",
+                         "search_concept", "describe_metric", "query_metric"}
+        # DR-055:新增的三个语义工具全部只读;写路径仍然只有 invoke_action
+        writers = {t["name"] for t in mcp.TOOLS if not t["annotations"].get("readOnlyHint")}
+        assert writers == {"invoke_action"}
 
     def test_unknown_tool_is_rejected(self):
         text, is_err = mcp.call_tool("approve_action", {"id": "x"})
@@ -245,3 +249,27 @@ class TestBaseResolution:
         monkeypatch.setenv("DATAMIND_HOST", "example.internal")
         monkeypatch.setenv("DATAMIND_PORT", "8100")
         assert mcp._default_base() == "http://example.internal:8100"
+
+
+class TestSemanticReadTools:
+    """DR-055:只读语义工具;query_metric 只放行 certified 口径。"""
+
+    def test_query_metric_refuses_uncertified(self, monkeypatch):
+        monkeypatch.setattr(mcp, "_http", lambda method, path, payload=None: (
+            {"metric": {"name": "销售金额", "status": "verified"}, "layer": "atomic"}, None))
+        text, err = mcp.call_tool("query_metric", {"name": "销售金额"})
+        assert err and "certified" in text
+
+    def test_describe_metric_flags_uncertified_and_shows_caliber(self, monkeypatch):
+        monkeypatch.setattr(mcp, "_http", lambda method, path, payload=None: (
+            {"metric": {"name": "销售金额", "status": "verified", "table": "t"}, "layer": "atomic",
+             "caliber": "SUM(amount)", "compiled_sql": "SELECT SUM(amount) FROM t",
+             "allowed_dimensions": {"columns": ["status"], "objects": [{"object": "customer"}]}}, None))
+        text, err = mcp.call_tool("describe_metric", {"name": "销售金额"})
+        assert not err and "口径:SUM(amount)" in text and "尚未经业务确认" in text and "customer" in text
+
+    def test_search_concept_renders_hits(self, monkeypatch):
+        monkeypatch.setattr(mcp, "_http", lambda method, path, payload=None: (
+            {"hits": [{"key": "order"}], "rendered": ["对象 销售订单(fact_sales_order)"]}, None))
+        text, err = mcp.call_tool("search_concept", {"q": "订单"})
+        assert not err and text.startswith("对象 销售订单")

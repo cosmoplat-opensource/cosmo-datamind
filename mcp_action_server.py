@@ -92,6 +92,35 @@ TOOLS = [
         },
         "annotations": {"readOnlyHint": True, "openWorldHint": False},
     },
+    # ── 只读语义工具(DR-055):检索概念画像、查看指标口径、按 certified 口径取数;不新增任何写路径 ──
+    {
+        "name": "search_concept",
+        "title": "检索业务概念",
+        "description": "按业务词检索本体概念画像:返回命中的对象(中文名/表/定义/属性/沿已验证关系可达的邻居/绑定指标)。先用它锚定问题涉及的对象,再决定查哪个指标。",
+        "inputSchema": {"type": "object",
+                        "properties": {"q": {"type": "string", "description": "业务词或问题片段"},
+                                       "graph": {"type": "string", "description": "图谱键,缺省为示例本体"}},
+                        "required": ["q"], "additionalProperties": False},
+        "annotations": {"readOnlyHint": True, "openWorldHint": False},
+    },
+    {
+        "name": "describe_metric",
+        "title": "查看指标口径",
+        "description": "返回指标的契约口径(聚合/过滤/时间列/可用维度/状态/编译 SQL)。状态含义:certified=业务已确认;verified=执行核验与参照一致;candidate=未核验,不得据此作答。",
+        "inputSchema": {"type": "object",
+                        "properties": {"name": {"type": "string"}, "graph": {"type": "string"}},
+                        "required": ["name"], "additionalProperties": False},
+        "annotations": {"readOnlyHint": True, "openWorldHint": False},
+    },
+    {
+        "name": "query_metric",
+        "title": "按口径取数",
+        "description": "按指标契约确定性编译 SQL 并只读执行(按时间粒度分桶)。只接受 certified 指标;verified/candidate 会被拒绝并说明原因——对外取数只走业务确认过的口径。",
+        "inputSchema": {"type": "object",
+                        "properties": {"name": {"type": "string"}, "graph": {"type": "string"}},
+                        "required": ["name"], "additionalProperties": False},
+        "annotations": {"readOnlyHint": True, "openWorldHint": False},
+    },
 ]
 
 
@@ -152,6 +181,35 @@ def call_tool(name, args):
         if it["status"] == "pending":
             lines.append("仍在等待人工审批(Agent 无法批准,请等待或提醒审批人)。")
         return "\n".join(lines), False
+    if name == "search_concept":
+        from urllib.parse import quote
+        g = quote(str(args.get("graph") or "demo"))
+        d, err = _http("GET", f"/api/ont/profile?graph={g}&q={quote(str(args.get('q') or ''))}")
+        if err: return err, True
+        if not d.get("hits"): return "未命中任何概念;换一个业务词或先列出图谱对象。", False
+        return "\n\n".join(d.get("rendered") or []), False
+    if name in ("describe_metric", "query_metric"):
+        from urllib.parse import quote
+        g, n = quote(str(args.get("graph") or "demo")), quote(str(args.get("name") or ""))
+        d, err = _http("GET", f"/api/metric/contract?graph={g}&name={n}")
+        if err: return err, True
+        m = d.get("metric") or {}
+        st = m.get("status") or "candidate"
+        if name == "describe_metric":
+            lines = [f"指标「{m.get('name')}」 状态:{st} 分层:{d.get('layer')} 绑定表:{m.get('table') or '-'}"]
+            if d.get("caliber"): lines.append("口径:" + d["caliber"])
+            if d.get("compiled_sql"): lines.append("SQL:" + d["compiled_sql"])
+            ad = d.get("allowed_dimensions") or {}
+            if ad: lines.append("可下钻:" + "、".join(ad.get("columns") or []) + " | 关联对象:" + "、".join(o["object"] for o in ad.get("objects") or []))
+            if st != "certified": lines.append("提示:该口径尚未经业务确认(certified),对外作答请注明。")
+            return "\n".join(lines), False
+        if st != "certified":
+            return f"拒绝取数:指标「{m.get('name')}」状态为 {st},只有 certified 口径可对外取数;请先在 DataMind 由业务确认口径。", True
+        d2, err = _http("GET", f"/api/metric/quick?graph={g}&name={n}")
+        if err: return err, True
+        rows = d2.get("data", {}).get("rows") or []
+        head = [f"指标「{d2.get('metric')}」 单位:{d2.get('unit') or '-'} 口径:{d2.get('agg_note')} SQL:{d2.get('sql')}"]
+        return "\n".join(head + [json.dumps(r, ensure_ascii=False) for r in rows[:60]]), False
     return f"未知工具:{name}", True
 
 

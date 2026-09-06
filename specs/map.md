@@ -31,6 +31,8 @@ COSMO DataMind 是「数据治理 × 本体 × 深度问数」原型：
 ## 索引
 
 ### 决定 / Decisions
+- [DR-055 · 扇出关卡、概念画像与 OSI 风格导出(父侧列聚合即拦 + 确定性画像检索 + 未经 validator 的 YAML 出口)](decisions/DR-055-fanout-gate-concept-profile-osi-export.md)
+- [DR-054 · 指标契约、指标反解与指标生命周期(可编译/可执行/与参照比对;verified 只来自证据,certified 只能人授)](decisions/DR-054-metric-contract-and-lifecycle.md)
 - [DR-050 · 半自动构建的统一证据契约、技能输入与确定性验收检查](decisions/DR-050-executable-ontology-build-gate.md)
 - [DR-051 · 内置技能可改写与可删除(覆盖层 + 删除墓碑)](decisions/DR-051-editable-builtin-skills.md)
 - [DR-052 · 半自动构建的行业参照与本体标准配置(none/参照/强约束 + 迭代继承)](decisions/DR-052-build-industry-and-standard-references.md)
@@ -97,7 +99,7 @@ COSMO DataMind 是「数据治理 × 本体 × 深度问数」原型：
 - `SPEC.md` — 对**平台** web/ 的逆向规格(平台契约,非 DataMind;前缀不同勿混用)。
 
 ## 现状校准
-- 计数(2026-09-03):**127 路由**(server.py 115 + bp_engine 5 + bp_actions 7)/ **565 集成断言** /
+- 计数(2026-09-03):**133 路由**(server.py 115 + bp_engine 5 + bp_actions 7 + bp_metrics 4 + bp_semantic 2)/ **565 集成断言** /
   **473 项 pytest 测试** / DR-001…DR-053 · IR-001…IR-013。
   新增共享层 `srv_context`/`srv_engine`、单一裁决核 `dao_core`、评测台 `hallucination_eval`/`definition_eval`、
   持久化抽象 `store`、构建参照 `build_references`、本地标准资产 `standard_assets`、blueprint `bp_engine` / `bp_actions`，以及前端目录/响应式/构建参照模块。

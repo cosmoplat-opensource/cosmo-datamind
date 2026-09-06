@@ -15,7 +15,8 @@
   ont_object      ← owl:Class(含 BFO 上层归类、IOF-AV 注释:定义/正例/反例/成熟度)
   ont_attribute   ← owl:DatatypeProperty(字段级)
   ont_relation    ← owl:ObjectProperty(含 founded_relation 接地与时间指标)
-  ont_metric      ← skos:Concept 指标(分层:atomic/derived/composite)
+  ont_metric      ← skos:Concept 指标(分层:atomic/derived/composite;DR-054 起带契约列与状态,
+                    v_consumable_metric 只出 verified/certified 且可编译的指标)
   ont_evidence    ← 关系的证据明细(裁决口径:子键/父键/重叠率/来源)——OWL 侧以注释承载,
                     关系型侧单列一表,便于按证据强度过滤
 
@@ -79,8 +80,20 @@ CREATE TABLE ont_metric (
   bound_table TEXT,
   value_col  TEXT,
   unit       TEXT,
-  is_candidate INTEGER NOT NULL DEFAULT 0
+  is_candidate INTEGER NOT NULL DEFAULT 0,
+  status     TEXT NOT NULL DEFAULT 'candidate',  -- candidate/verified/certified/deprecated(DR-054)
+  entity     TEXT,                  -- 绑定的本体对象
+  agg        TEXT,                  -- sum/count/count_distinct/avg/min/max;旧形状为空
+  filters    TEXT,                  -- JSON 数组
+  time_col   TEXT,
+  grains     TEXT,                  -- 逗号分隔
+  dimensions TEXT,                  -- 逗号分隔(绑定表自身列)
+  compiled_sql TEXT,                -- 契约编译出的标量 SQL(只读派生,不回写)
+  certified_by TEXT
 );
+CREATE VIEW v_consumable_metric AS
+  SELECT metric_id, layer, name, bound_table, agg, compiled_sql, status
+  FROM ont_metric WHERE status IN ('verified','certified') AND compiled_sql IS NOT NULL;
 CREATE VIEW v_verified_join AS
   SELECT r.source_obj, so.bound_table AS source_table, e.child_key,
          r.target_obj, tv.bound_table AS target_table, e.parent_key,
@@ -143,10 +156,22 @@ def project(ir, con):
     n_metric = 0
     for layer, rows in (ir.get("metric_layers") or {}).items():
         for m in (rows or []):
-            con.execute("INSERT OR REPLACE INTO ont_metric VALUES (?,?,?,?,?,?,?,?,?)",
+            ms, tm = (m.get("measure") or {}), (m.get("time") or {})
+            compiled = ""
+            if ms.get("agg") and m.get("table"):
+                try:
+                    import metric_contract
+                    compiled = metric_contract.compile_sql(m)
+                except (ValueError, ImportError):
+                    compiled = ""
+            con.execute("INSERT OR REPLACE INTO ont_metric VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
                         (_s(m.get("id")), _s(layer), _s(m.get("name")), _s(m.get("type")),
                          _s(m.get("desc")), _s(m.get("table")), _s(m.get("value_col")),
-                         _s(m.get("unit")), 1 if m.get("candidate") else 0))
+                         _s(m.get("unit")), 1 if m.get("candidate") else 0,
+                         _s(m.get("status")) or "candidate", _s(m.get("entity")), _s(ms.get("agg")),
+                         _s(m.get("filters")) if m.get("filters") else None, _s(tm.get("col")),
+                         _s(tm.get("grain")), _s(m.get("dimensions")), compiled or None,
+                         _s(m.get("certified_by"))))
             n_metric += 1
     con.commit()
     return {"ont_object": len(objs), "ont_attribute": n_attr,
