@@ -1337,8 +1337,8 @@ def _carryover(question, history, ir):
     for o in ir.get("objects", []):
         cn = (o.get("cn") or "").strip()
         cands = {cn, o.get("table") or ""}
-        for suf in ("事实表", "维度表", "汇总表", "明细表", "表"):   # 「销售订单事实表」也按「销售订单」匹配
-            if cn.endswith(suf) and len(cn) > len(suf) + 1: cands.add(cn[:-len(suf)])
+        _st = ir_shape.strip_cn_suffix(cn)          # 「销售订单事实表」也按「销售订单」匹配(约定收于 ir_shape)
+        if _st != cn: cands.add(_st)
         for c in cands:
             if c and len(c) >= 2 and c in prev:
                 nm = cn or o.get("table")
@@ -3658,8 +3658,8 @@ def diagnose_stream():
             cn = (o.get("cn") or "").strip()
             if cn:
                 cands.add(cn)
-                for suf in ("事实表", "维度表", "汇总表", "明细表", "表"):   # 「退货事实表」也按「退货」匹配(与指代延续同套剥离)
-                    if cn.endswith(suf) and len(cn) > len(suf) + 1: cands.add(cn[:-len(suf)])
+                _st = ir_shape.strip_cn_suffix(cn)  # 「退货事实表」也按「退货」匹配(与指代延续同套剥离)
+                if _st != cn: cands.add(_st)
             for v in (o.get("table") or "", o.get("name") or ""):
                 if v: cands.add(str(v))
             best = 0

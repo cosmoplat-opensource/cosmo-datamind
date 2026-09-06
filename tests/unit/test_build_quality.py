@@ -98,3 +98,18 @@ def test_cq_status_text_distinguishes_not_provided_and_all_answerable():
     assert build_quality.cq_status_text(missing) == "验收问题 未提供"
     assert "CQ" not in build_quality.cq_status_text(accepted)
     assert "可回答 1/1" in build_quality.cq_status_text(accepted)
+
+
+def test_review_queue_rate_limits_per_type_so_one_signal_cannot_crowd_out_others():
+    """一种信号刷屏时,其它待审项必须仍然可见(此前 100 个孤岛对象会挤掉「指标待核验」)。"""
+    ir = _valid_ir()
+    ir["objects"] += [{"name": f"iso_{i}", "cn": f"孤岛{i}", "definition": "独立存在的业务信息记录",
+                       "counterExample": "关联记录"} for i in range(120)]
+    ir["metric_layers"] = {"atomic": [{"name": "销售金额", "status": "candidate",
+                                       "measure": {"col": "amount", "agg": "sum"}, "table": "t"}]}
+    report = build_quality.evaluate(ir, ["员工属于哪个部门"])
+    types = [item["type"] for item in report["review_queue"]]
+    assert "candidate_metrics" in types
+    assert types.count("health_isolated") <= 20
+    assert "review_truncated" in types
+    assert len(report["review_queue"]) <= 100

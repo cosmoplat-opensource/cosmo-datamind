@@ -59,7 +59,7 @@
 | `store.py` | JSON 持久化抽象:原子写/坏档恢复/schema 校验/迁移/每路径锁 | DR-044 |
 | `ir_relational.py` | IR→关系型语义层投影(只读派生物;OWL 之外的消费出口,证据随行、状态不提升) | DR-049 |
 | `srv_context.py` | 共享上下文:路径、`ro_connect`、`sql_is_readonly`、`_atomic_json`、写锁、`confine` 路径限定 | DR-043 |
-| `ir_shape.py` | IR 形状兼容规则单一事实源:`rels`(links/relations 双形状)与 `obj_names`(对象可指代名超集) | DR-035 |
+| `ir_shape.py` | IR 形状兼容规则单一事实源:`rels`(links/relations 双形状)、`obj_names`(对象可指代名超集)与 `strip_cn_suffix/name_variants`(中文表名后缀剥离,指代延续/根因诊断/画像检索共用) | DR-035/055 |
 | `content_quality.py` | 生成内容的确定性净化:信息载体误判纠正(ice 优先)与正例证据可定位性检查,只读不改写历史 | DR-052 |
 | `srv_engine.py` | 引擎共享层:运行时缓存、引擎配置读写/应用、引擎回复语义 | DR-043/017 |
 | `bp_engine.py` | 引擎设置 blueprint(5 路由;仅路由,共享态在 `srv_engine`) | DR-043 |
@@ -79,8 +79,8 @@
 | `metric_mining.py` | 指标反解:历史 SQL / 口径表 / 沉淀 SQL / 参考基准 → 带来源的候选与参照;含 JOIN 不猜口径 | DR-054 |
 | `metric_pipeline.py` | 反解→归一→核验→并入 IR 的编排;`readjudicate` 复用已存参照重跑 | DR-054 |
 | `bp_metrics.py` | 指标契约 blueprint(4 路由:契约/维度/人工确认口径/重跑核验);不提供直接置 verified 的途径 | DR-054 |
-| `concept_profile.py` | 概念画像:对象的名称/定义/属性/强关系邻居/指标确定性聚合 + 可回放关键词检索 | DR-055 |
-| `osi_export.py` | OSI 风格语义模型 YAML 出口(自带确定性发射器,未经官方 validator) | DR-055 |
+| `concept_profile.py` | 概念画像:对象的名称/定义/属性/强关系邻居/指标确定性聚合 + 可回放关键词检索(名称按 `ir_shape` 的中文表名后缀变体匹配) | DR-055 |
+| `osi_export.py` | Apache Ossie(原 OSI)语义模型与本体 YAML 出口:形状按 `ontology/standards/ossie/` 快照的官方 schema,状态与证据走 `custom_extensions`;自带确定性发射器,`validate()` 用官方 schema 校验 | DR-055 |
 | `bp_semantic.py` | 画像检索与 OSI 导出 blueprint(2 路由) | DR-055 |
 | `translate_cn.py` | 术语中文化(离线词典,无网络依赖) | — |
 
@@ -98,6 +98,7 @@
 | kind→上层类别 | `KIND_DEFAULTS`(含 ice=InformationContentEntity) | `ontology_grounding.py` |
 | 数据源连接 | `build_connect` 按 path/dsn 幂等登记,去重复堆叠 | server.py |
 | 图谱选择器 | `graphOptions(gs,label)` 分组 optgroup(精选/场景/构建) | ui,图谱/工作台/元数据覆盖三处共用 |
+| 指标状态呈现 | `MST{状态→[tag 类,中文]}` + `mstTag()`,指标中心/口径卡/即时问数共用;人工操作只有确认口径/停用/撤回 | ui,DR-054 |
 | 前端 kind 规范 | `KIND{c,n}` 颜色+中文,全站图例/配色/标签引用 | ui,`KCOL/KNM` |
 | 关系状态边样式 | `EST{c,w,d,n}` 单一事实源(G6 图谱 + 锚定子图 SVG 共用),`estDash()` 转 SVG 虚线 | ui,消两套配色 |
 | 前端助手 | `$`/`esc`/`jsAttr`/`J` 显式挂 window | ui,防内联处理器作用域隐患 |

@@ -12,3 +12,9 @@
 来源版本、许可和文件模式以 `manifest.json` 为准。`standard_assets.py` 会在目录 API
 和构建时解析这些文件、计算内容指纹并报告术语/类型数量；文件缺失或不可解析时不得
 伪装成“已加载”。
+
+## Apache Ossie(原 Open Semantic Interchange)
+
+`ossie/` 存放两份官方 machine-readable schema 的固定 revision 快照,供 `osi_export.py` 对齐导出形状、
+供 `scripts/validate_ossie_export.py` 做离线校验。来源、revision 与许可见 `ossie/SOURCE.md`。
+与其它标准资产一致:不跟随远程 `$ref` 联网,缺失时明确报未校验而不是假装通过。

@@ -12,7 +12,7 @@ from __future__ import annotations
 import re
 
 import metric_contract as MC
-from ir_shape import obj_names, rels as _rels
+from ir_shape import name_variants, rels as _rels
 
 _STRONG = ("verified", "asserted")
 _SPLIT = re.compile(r"[\s,，。？?！!、;；:：()（）\[\]【】\"'“”]+")
@@ -62,7 +62,8 @@ def build(ir):
             "relations": sorted(neigh.get(k, []), key=lambda x: (x["object"], x["direction"]))[:30],
             "metrics": metrics_by_table.get(str(_table(o)).lower(), [])[:20],
         }
-        words = obj_names(o) + [c["cn"] for c in cols if c["cn"]] + [c["col"] for c in cols]
+        prof["names"] = name_variants(o)
+        words = prof["names"] + [c["cn"] for c in cols if c["cn"]] + [c["col"] for c in cols]
         words += [f"{n['verb']}{n['cn']}" for n in prof["relations"]] + [m["name"] for m in prof["metrics"] if m["name"]]
         prof["text"] = " ".join(x for x in words if x) + " " + prof["definition"]
         out.append(prof)
@@ -80,8 +81,10 @@ def search(profiles, query, limit=5):
     scored = []
     for p in profiles:
         score, hits = 0, []
-        for n in [p["name"], p["cn"], p["table"]] + p["aliases"]:
-            if n and len(n) >= 2 and n.lower() in ql:
+        # 名称按「原名 + 剥离中文表名后缀」两种形式匹配:业务问句里说的是「销售订单」,
+        # 本体里可能叫「销售订单事实表」——只认原名会让最常见的命名方式召回为零。
+        for n in p.get("names") or ([p["name"], p["cn"], p["table"]] + p["aliases"]):
+            if n and len(n) >= 2 and n.lower() in ql and n not in hits:
                 score += 5; hits.append(n)
         for c in p["columns"]:
             for n in (c["cn"], c["col"]):

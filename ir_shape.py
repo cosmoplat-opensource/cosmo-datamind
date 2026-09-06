@@ -27,6 +27,31 @@ def rels(ir, create=False):
     return ir.get("relations", []), "source_concept", "target_concept"
 
 
+# 中文表名后缀:业务人员说「销售订单」,本体里叫「销售订单事实表」。锚定/召回时都要
+# 按剥离后的名字匹配,否则最常见的中文命名方式一条都召不回。此前 server 的指代延续与
+# 根因诊断各抄一份,现收敛到此处(cq_check 的验收判定刻意保持严格,不用这组变体)。
+CN_TABLE_SUFFIXES = ("事实表", "维度表", "汇总表", "明细表", "表")
+
+
+def strip_cn_suffix(name):
+    """剥离一个已知中文表名后缀;剥完少于两字则不剥(「单表」剥成「单」会乱命中)。"""
+    n = (name or "").strip()
+    for suf in CN_TABLE_SUFFIXES:
+        if n.endswith(suf) and len(n) - len(suf) >= 2:
+            return n[: -len(suf)]
+    return n
+
+
+def name_variants(o):
+    """对象的可指代名称及其剥离后缀后的形式(去重保序)。"""
+    out = []
+    for n in obj_names(o):
+        for v in (n, strip_cn_suffix(n)):
+            if v and v not in out:
+                out.append(v)
+    return out
+
+
 def obj_names(o):
     """一个对象的全部可指代名称——把自然语言词锚定到对象时用。
 
