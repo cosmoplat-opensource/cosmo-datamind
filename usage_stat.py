@@ -112,8 +112,30 @@ def report(workdir, ir, graph):
             "reason": f"{len(zero)}/{len(rows)} 个对象自统计以来零调用",
             "action": "疑似建模过度,下一轮可评估裁剪;但需先确认统计窗口足够长",
         })
+    # 指标使用度(DR-054):键以 metric: 开头;高频 × candidate 的指标优先补核验/人工确认口径
+    mstat = {}
+    for arr in ((ir.get("metric_layers") or {}).values() if isinstance(ir.get("metric_layers"), dict) else []):
+        for m in (arr or []):
+            if isinstance(m, dict) and m.get("name"):
+                mstat[m["name"]] = m.get("status") or ("candidate" if m.get("candidate", True) else "")
+    mrows = []
+    for k, u in usage.items():
+        if not k.startswith("metric:"):
+            continue
+        name = k[7:]
+        mrows.append({"name": name, "calls": sum(u.get(x, 0) for x in ("query", "diagnose", "action")),
+                      "status": mstat.get(name, "unknown"), "last": u.get("last", "")})
+    mrows.sort(key=lambda x: -x["calls"])
+    for r in mrows[:max(1, len(mrows) // 3)] if mrows else []:
+        if r["status"] in ("candidate", "unknown") and r["calls"] > 0:
+            advice.append({
+                "priority": "high", "object": None, "cn": r["name"], "metric": r["name"],
+                "reason": f"指标「{r['name']}」被问到 {r['calls']} 次,口径仍为 {r['status']}",
+                "action": "补参照 SQL/参考基准重跑核验,或由业务确认口径后置 certified——口径未核验却高频使用,风险最高",
+            })
     return {
         "graph": graph, "objects": len(rows),
+        "metrics": mrows[:20],
         "called": len(called), "uncalled": len(rows) - len(called),
         "coverage": round(len(called) * 100.0 / len(rows), 1) if rows else 0.0,
         "top": rows[:20], "advice": advice,

@@ -87,6 +87,8 @@ nodes:
       ① 表白名单:FROM/JOIN 的表必须在本体/数据目录/上传库/CTE 内 —— 拦臆造表名;
       ② JOIN 键校验:异名等值 JOIN 的键对必须落在本体 verified/asserted 关系的
          子键/父键上 —— 拦自造 JOIN。同名键等值放行(列名本身即口径)。
+      ③ 扇出关卡(DR-055):1:N JOIN 后对父侧表限定列做 SUM/AVG/COUNT(列)即拦,
+         结果会按子表行数放大;COUNT(DISTINCT)/MIN/MAX/子侧列不拦。父侧由关系证据的父键唯一性判定。
     on_fail: skip_this_sql
     rationale: 这是本体真正「起作用」的地方——不是给模型看的提示,是执行前的硬约束
 
@@ -135,7 +137,7 @@ gates:
     blocks: 写操作、堆叠语句绕过
   - name: 口径拦截
     kind: deterministic
-    blocks: 臆造表名、本体中不存在的 JOIN 路径
+    blocks: 臆造表名、本体中不存在的 JOIN 路径、1:N JOIN 父侧列的扇出聚合
   - name: 双盲意图检测
     kind: observe_only
     blocks: 不阻断,标注答非所问

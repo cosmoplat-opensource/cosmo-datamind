@@ -14,6 +14,8 @@ from typing import Any
 import dao_core   # DR-035/044:命名校验/词根等裁决原语的单一事实源
 import build_quality
 import build_references
+import metric_contract
+import metric_pipeline
 import action_ontology
 import ir_shape
 import skill_registry
@@ -999,7 +1001,9 @@ def build_context(question, focus_tables=None, trace=None, graph_keys=None):
         if not isinstance(arr, list): continue
         for m in arr:
             if isinstance(m, dict):
-                mets.append({"name": m.get("name"), "table": m.get("table"), "col": m.get("value_col"), "layer": k, "unit": m.get("unit") or ""})
+                mets.append({"name": m.get("name"), "table": m.get("table"), "col": m.get("value_col"), "layer": k,
+                             "unit": m.get("unit") or "", "status": m.get("status") or "",
+                             "caliber": metric_contract.describe(m) if metric_contract.is_contract(m) else ""})
     kws = [w for w in re.split(r"[,，。？?\s]+", question) if w]
     kws += expand_terms(question)          # A1 术语扩展:词典同义/中英互补词并入匹配
     def hits_of(txt):
@@ -1109,7 +1113,11 @@ def build_context(question, focus_tables=None, trace=None, graph_keys=None):
     if trace is not None:
         trace["metrics"] = [{"name": m["name"], "table": m["table"], "col": m["col"]} for m in hit_m]
     if hit_m:
-        lines.append("相关指标: " + "; ".join(f'{m["name"]}←{m["table"]}.{m["col"]}' for m in hit_m))
+        lines.append("相关指标: " + "; ".join(
+            f'{m["name"]}←{m["table"]}.{m["col"]}' + (f'[口径 {m["caliber"]} · {m["status"]}]' if m.get("caliber") else "")
+            for m in hit_m))
+        if any(m.get("caliber") for m in hit_m):
+            lines.append("指标口径为契约声明(聚合/过滤/时间列),按口径计算,不要改用别的聚合方式")
         bl = _metric_baselines(hit_m)                 # M4-b 指标统计基线(确定性 SQL)
         if bl: lines.append("指标基线(真实数据算出,勿自行假设量级):\n" + "\n".join("  " + b for b in bl))
     up = _uploads_schema()
@@ -1236,7 +1244,7 @@ def _validate_sql_ontology(sql, ir, strict=False):
         elif base not in known and base not in ctes:
             return False, f"表 {base} 不在本体/数据目录中(疑似臆造表名)"
     o2t = {o.get("id"): (o.get("table") or "").lower() for o in ir.get("objects", [])}
-    relkeys = set()
+    relkeys, parents = set(), {}                 # parents: (子表,子键,父表,父键) → 父表(父键唯一侧)
     for l in ir.get("links", []):
         if l.get("status") not in ("verified", "asserted"): continue
         ev = l.get("evidence") or {}
@@ -1244,13 +1252,30 @@ def _validate_sql_ontology(sql, ir, strict=False):
         st, tt = o2t.get(l.get("source")), o2t.get(l.get("target"))
         if ck and pk and st and tt:
             relkeys.add((st, ck, tt, pk)); relkeys.add((tt, pk, st, ck))
+            parents[(st, ck, tt, pk)] = tt
+    joined_parents = {}                          # 本条 SQL 里作为 1:N 父侧出现的表 → 其别名集合
     for m in re.finditer(r"\bon\s+(%s)\.(%s)\s*=\s*(%s)\.(%s)" % ((_SQL_IDENT,) * 4), s, re.I):
         a, ca, b, cb = (m.group(i).lower() for i in (1, 2, 3, 4))
         ta, tb = alias.get(a, a), alias.get(b, b)
-        if ca == cb: continue
         if ta in ctes or tb in ctes or ta.startswith("up.") or tb.startswith("up."): continue
+        # 父侧识别先于同名键放行:同名等值 JOIN 免验键,但扇出与键名无关
+        parent = parents.get((ta, ca, tb, cb)) or parents.get((tb, cb, ta, ca))
+        if parent:
+            for al, full in alias.items():
+                if full == parent: joined_parents.setdefault(parent, set()).add(al)
+        if ca == cb: continue
         if (ta, ca, tb, cb) not in relkeys:
             return False, f"JOIN 键 {ta}.{ca}={tb}.{cb} 不在本体已验证关系上(口径未证实,已拦截)"
+    # ③ 扇出关卡(DR-055):1:N JOIN 后对父侧列做 SUM/AVG/COUNT(列),结果会随子表行数放大。
+    #    本体证据记录了父键唯一性,所以方向是已知的——这是关系证据除了「能不能 JOIN」之外的第二个用途。
+    #    COUNT(DISTINCT …) 与 MIN/MAX 不受扇出影响,不拦;未限定表名的列无法归属,不猜。
+    for m in re.finditer(r"\b(sum|avg|count)\s*\(\s*(%s)\.(%s)\s*\)" % (_SQL_IDENT, _SQL_IDENT), s, re.I):
+        fn, qual, col = m.group(1).lower(), m.group(2).lower(), m.group(3).lower()
+        for parent, aliases in joined_parents.items():
+            if qual in aliases or qual == parent:
+                return False, (f"扇出风险:{fn.upper()}({qual}.{col}) 聚合的是 1:N JOIN 父侧表 {parent} 的列,"
+                               f"结果会按子表行数放大(已拦截);请先在子表按 {parent} 的键聚合再 JOIN,"
+                               f"或改用 COUNT(DISTINCT {qual}.{col})")
     return True, ""
 
 
@@ -1267,16 +1292,39 @@ def _qa_validate_sql(sql, ir, strict=False):
 
 _METRIC_LAYER_CN = {"atomic": "原子指标", "derived": "派生指标", "composite": "复合指标"}
 def _metric_cards(question, ir):
-    """A3 口径卡:问句命中的指标 → 名称/分层/口径说明/数据出处(表.列)/单位,随答案展示。"""
+    """A3 口径卡:问句命中的指标 → 名称/分层/口径说明/数据出处(表.列)/单位,随答案展示。
+
+    DR-054:契约指标同时给出「怎么算」(聚合/过滤/时间)与状态,按 certified > verified > candidate
+    排序;candidate 明确标注未核验,而不是与已核验口径并列。"""
     cards = []
-    for k, arr in (ir.get("metric_layers") or {}).items():
-        for m in arr:
+    _ml = ir.get("metric_layers")
+    for k, arr in (_ml if isinstance(_ml, dict) else {}).items():
+        for m in (arr if isinstance(arr, list) else []):
+            if not isinstance(m, dict): continue
             n = (m.get("name") or "").strip()
-            if len(n) >= 2 and n in question:
-                cards.append({"name": n, "layer": _METRIC_LAYER_CN.get(k, k),
-                              "table": m.get("table") or "", "col": m.get("value_col") or "",
-                              "unit": m.get("unit") or "", "desc": m.get("desc") or ""})
+            names = [n] + [x for x in (m.get("synonyms") or []) if isinstance(x, str)]
+            if not any(len(x) >= 2 and x in question for x in names): continue
+            card = {"name": n, "layer": _METRIC_LAYER_CN.get(k, k),
+                    "table": m.get("table") or "", "col": m.get("value_col") or "",
+                    "unit": m.get("unit") or "", "desc": m.get("desc") or "",
+                    "status": m.get("status") or ("candidate" if m.get("candidate", True) else "")}
+            if metric_contract.is_contract(m):
+                card["caliber"] = metric_contract.describe(m)
+                card["agg"] = m["measure"]["agg"]
+                card["filters"] = m.get("filters") or []
+                card["time"] = m.get("time") or {}
+            cards.append(card)
+    cards.sort(key=lambda c: -metric_contract.status_rank(c.get("status")))
     return cards[:4]
+
+def _record_metric_usage(cards, graph):
+    """指标使用度埋点(DR-054):口径卡命中即计一次;只读旁路,失败静默。返回 cards 原样。"""
+    try:
+        import usage_stat
+        usage_stat.record(WORK, graph, ["metric:" + c["name"] for c in cards if c.get("name")], "query")
+    except Exception:
+        pass
+    return cards
 
 _PRONOUN = re.compile(r"它|这个|该|上述|同样|这些|其中|再看|还有|呢[??]?$")
 def _carryover(question, history, ir):
@@ -1590,15 +1638,23 @@ def ont_review():
               "objects": len(objs), "obj_candidate": sum(1 for x in objs if x["candidate"])}
     return jsonify({"graph": key, "counts": counts, "rows": rows, "objects": objs})
 
+def _metric_graph_ir():
+    """指标类端点的图谱选择:``graph`` 参数缺省为示例;非法键返回 None(调用方回 400)。"""
+    key = (request.args.get("graph") or "demo").strip()
+    if _bad_gkey(key): return None
+    return load_ir_edited(key) or load_ir(key) or {}
+
 @app.get("/api/metrics")
 def metrics():
-    ir = load_ir_edited("demo") or {}
+    ir = _metric_graph_ir()
+    if ir is None: return jsonify({"error": "非法图谱键"}), 400
     return jsonify(ir.get("metric_layers") or {})
 
 @app.get("/api/metric/lineage")
 def metric_lineage():
     name = request.args.get("name", "").strip()
-    ir = load_ir_edited("demo") or {}
+    ir = _metric_graph_ir()
+    if ir is None: return jsonify({"error": "非法图谱键"}), 400
     hit = None
     for k, arr in (ir.get("metric_layers") or {}).items():
         for m in arr:
@@ -1618,15 +1674,33 @@ def metric_lineage():
 
 @app.get("/api/metric/quick")
 def metric_quick():
-    """即时问数:指标 → 自动生成月度聚合 SQL → 秒出数据(不走 LLM)"""
+    """即时问数:指标 → 自动生成月度聚合 SQL → 秒出数据(不走 LLM)
+
+    DR-054:契约指标按契约确定性编译(不猜聚合、不猜日期列);只有旧形状指标才走下面的
+    名称启发式,并在响应里标明 status=heuristic。"""
     name = request.args.get("name", "").strip()
-    ir = load_ir_edited("demo") or {}
+    ir = _metric_graph_ir()
+    if ir is None: return jsonify({"error": "非法图谱键"}), 400
     hit = None
     for k, arr in (ir.get("metric_layers") or {}).items():
         for m in arr:
             if m.get("name") == name: hit = {**m, "layer": k}; break
         if hit: break
     if not hit or not hit.get("table"): return jsonify({"error": "指标不存在或未绑表"}), 404
+    if metric_contract.is_contract(hit):
+        try:
+            _grain = (hit.get("time") or {}).get("grain") or ["month"]
+            sql = metric_contract.compile_sql(hit, grain=_grain[0] if (hit.get("time") or {}).get("col") else None)
+        except ValueError as e:
+            return jsonify({"error": f"契约无法编译:{e}"}), 400
+        try:
+            data = q(sql)
+            return jsonify({"metric": name, "unit": hit.get("unit") or "", "layer": hit["layer"], "sql": sql,
+                            "agg": hit["measure"]["agg"], "agg_note": "契约口径(确定性编译)",
+                            "status": hit.get("status") or "candidate",
+                            "source": f"{hit['table']}.{hit['measure']['col'] or '*'}", "data": data})
+        except Exception as e:
+            return jsonify({"error": str(e), "sql": sql}), 400
     # 表名/取值列取自 IR。IR 可经 /api/ont/apply 编辑,故对本端点而言是**用户可控**的,
     # 而它们直接落在 SQL 的标识符位上 —— 必须过 _safe_ident 白名单,不能只靠"来自 IR"这层假设。
     tbl, vcol = _safe_ident(hit["table"]), _safe_ident(hit.get("value_col"))
@@ -1653,8 +1727,9 @@ def metric_quick():
            f'FROM "{tbl}" GROUP BY 1 ORDER BY 1')
     try:
         data = q(sql)
-        return jsonify({"metric": name, "unit": unit, "layer": hit["layer"],
-                        "sql": sql, "agg": agg, "agg_note": agg_note, "source": f"{tbl}.{vcol}", "data": data})
+        return jsonify({"metric": name, "unit": unit, "layer": hit["layer"], "status": "heuristic",
+                        "sql": sql, "agg": agg, "agg_note": "启发式口径(未核验):" + agg_note,
+                        "source": f"{tbl}.{vcol}", "data": data})
     except Exception as e:
         return jsonify({"error": str(e), "sql": sql}), 400
 
@@ -3366,7 +3441,8 @@ def chat():
     anchor["explanation"] = _qa_anchor_explanation(anchor, results)
     anchor["used"] = anchor["explanation"]["used_tables"]
     resp = {"steps": steps, "results": results, "narrative": text, "note": plan.get("note", ""),
-            "summary": summary, "metric_cards": _metric_cards(question, ir_gate), "anchor": anchor}
+            "summary": summary, "metric_cards": _record_metric_usage(_metric_cards(question, ir_gate), gate_keys[0]),
+            "anchor": anchor}
     if results and not bypass_cache:              # 强制刷新请求既不读缓存，也不回写缓存
         _qa_cache_store(cache_key, resp)
     return jsonify(resp)
@@ -3536,7 +3612,7 @@ def chat_stream():
         anchor["explanation"] = _qa_anchor_explanation(anchor, results)
         anchor["used"] = anchor["explanation"]["used_tables"]
         resp = {"steps": steps, "results": results, "narrative": text, "note": plan.get("note", ""),
-                "summary": summary, "metric_cards": _metric_cards(question, ir_gate),
+                "summary": summary, "metric_cards": _record_metric_usage(_metric_cards(question, ir_gate), _gate_keys[0]),
                 "anchor": anchor}   # 随 done 落一份:命中缓存与历史回放时锚定视图不丢
         if results and not bypass_cache:
             _qa_cache_store(cache_key, resp)
@@ -4744,6 +4820,63 @@ def _read_asset_text(fname, cap=3500):
         except Exception: return ""
     return ""
 
+_GLOSSARY_HEADERS = {"name": ("指标名称", "指标"), "desc": ("指标说明", "说明"), "formula": ("计算逻辑", "口径"),
+                     "dimension": ("业务维度", "分类"), "source": ("来源",)}
+
+def _glossary_rows(path, cap=400):
+    """Excel 口径表 → 行字典(指标名称/说明/计算逻辑/维度/来源);表头按包含匹配,容忍不同企业的列名差异。
+    openpyxl 缺失或文件损坏时返回空:反解拿不到看板证据只是少一个入口,不能让构建失败。"""
+    try:
+        import openpyxl
+        wb = openpyxl.load_workbook(path, read_only=True, data_only=True)
+    except Exception:
+        return []
+    out = []
+    try:
+        for ws in wb.worksheets[:8]:
+            rows = ws.iter_rows(values_only=True)
+            hdr = next(rows, None)
+            if not hdr: continue
+            hdr = [str(c).strip() if c else "" for c in hdr]
+            idx = {}
+            for key, cands in _GLOSSARY_HEADERS.items():
+                for i, h in enumerate(hdr):
+                    if any(k in h for k in cands): idx[key] = i; break
+            if "name" not in idx: continue
+            for r in rows:
+                if not r or not any(r): continue
+                row = {k: (str(r[i]).strip() if i < len(r) and r[i] not in (None, "") else "") for k, i in idx.items()}
+                if row.get("name"): out.append(row)
+                if len(out) >= cap: break
+    finally:
+        try: wb.close()
+        except Exception: pass
+    return out
+
+def _metric_inputs():
+    """指标反解的输入(DR-054):上传的 .sql/.ddl 文本、Excel 口径表、沉淀技能 SQL、参考基准。
+    → (sql_texts, glossary_rows, qa_skills, gold_items)"""
+    sql_texts, rows = {}, []
+    for p in sorted(glob.glob(os.path.join(WORK, "uploads_*"))):
+        fn = os.path.basename(p)[8:]
+        ext = fn.rsplit(".", 1)[-1].lower() if "." in fn else ""
+        if ext in ("sql", "ddl"):
+            try: sql_texts[fn] = open(p, encoding="utf-8", errors="replace").read()[:200000]
+            except OSError: pass
+        elif ext in ("xlsx", "xls"):
+            rows += _glossary_rows(p)
+    try: skills = json.load(open(_QA_SKILLS_F)) if os.path.exists(_QA_SKILLS_F) else []
+    except Exception: skills = []
+    return sql_texts, rows, skills if isinstance(skills, list) else [], _eval_items()
+
+def _db_for_source(source):
+    """数据源标识 → 本地 SQLite 路径;外部库/不存在返回 None(与构建入口的解析口径一致)。"""
+    if not source or source == "demo": return DB
+    if source == "uploads": return UPLOAD_DB
+    for c in _load_conns():
+        if c.get("id") == source and c.get("path") and os.path.exists(c["path"]): return c["path"]
+    return None
+
 def _gather_evidence(db, cap_tabs=400, cap_docs=6):
     """聚合多源证据:① 库表结构(表→列)② 上传的文档/代码文本 ③ 图像/二进制的引用清单"""
     schema, tab_cols = [], {}
@@ -5841,6 +5974,20 @@ def build_inquire():
                        f"并入已有本体 · 新增对象 {_mg['objects_added']} 个 · 补全字段 {_mg['objects_enriched']} 处 · "
                        f"新增关系 {_mg['relations_added']} 条 · 证据升级 {_mg['relations_upgraded']} 条 · "
                        f"保留原结论 {_mg['relations_kept']} 条(已确立的 verified/asserted 不被覆盖)")
+        # ④″ 指标反解与核验(DR-054):历史 SQL / 口径表 / 沉淀 SQL / 参考基准 → 契约 → 只读执行 → 与参照比对。
+        # 指标自此与关系同等:verified 只来自可回放证据;失败不影响关系产物,但如实留痕。
+        try:
+            _mx = metric_pipeline.run(db, ir, ev.get("tab_cols"), *_metric_inputs())
+            ir["metric_layers"] = _mx["metric_layers"]; ir["metric_report"] = _mx["report"]
+            _mr = _mx["report"]; _ms = _mr["sources"]
+            yield push("metric_mining", True,
+                       f"指标反解 · 候选 {_mr['candidates']} 条(历史 SQL {_ms['sql']} · 口径表 {_ms['dashboard']} · "
+                       f"沉淀 SQL {_ms['qa_skill']} · 参考基准 {_ms['gold']}) · 含 JOIN 待人工拆解 {len(_mr['skipped'])} 条")
+            yield push("metric_adjudication", True,
+                       f"指标核验 · verified {_mr['verified']} 条 · 可执行未核验 {_mr['executable_unverified']} 条 · "
+                       f"未绑定口径 {_mr['unbound']} 条")
+        except Exception as _e:
+            yield push("metric_mining", False, f"指标反解失败:{str(_e)[:90]}(关系产物不受影响)")
         # ⑤ 验收检查：图结构 + verified 证据契约 + 定义质量 + CQ 可达性，结果可重复。
         # quick_build 已先检查一次(无 CQ)；此处加入本轮 CQ 后重新计算。
         quality = build_quality.evaluate(ir, cqs)
@@ -6292,6 +6439,16 @@ def outputs_file():
     rp = os.path.realpath(p if os.path.isabs(p) else os.path.join(OUTPUTS, p))
     if not any(rp.startswith(os.path.realpath(a) + os.sep) for a in allowed): return "forbidden", 403
     return send_file(rp)
+
+# ── 指标契约 blueprint(DR-054):契约查看 / 人工确认口径 / 重跑核验 / 维度可达性 ──
+from bp_metrics import bp_metrics as _bp_metrics, configure_metrics as _configure_metrics  # noqa: E402
+_configure_metrics(load_graph=lambda k: (None if _bad_gkey(k) else (load_ir_edited(k) or load_ir(k))),
+                   open_writable=lambda k: _open_writable(k), db_for_source=lambda s: _db_for_source(s),
+                   write_json=_atomic_json, write_lock=_WRITE_LOCK)
+app.register_blueprint(_bp_metrics)
+from bp_semantic import bp_semantic as _bp_semantic, configure_semantic as _configure_semantic  # noqa: E402
+_configure_semantic(load_graph=lambda k: (None if _bad_gkey(k) else (load_ir_edited(k) or load_ir(k))))
+app.register_blueprint(_bp_semantic)
 
 if __name__ == "__main__":
     # 监听地址/端口只有一个事实源(LISTEN_HOST/LISTEN_PORT),启动横幅照它打印,

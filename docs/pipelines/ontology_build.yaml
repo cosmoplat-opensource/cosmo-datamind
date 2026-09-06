@@ -4,9 +4,9 @@
 # code 锚点由 tests/meta/test_ontology_pipeline_doc.py 回打源码,防止说明与实现悄悄漂移。
 
 name: ontology_semi_automatic_build
-description: 范围/CQ → 行业/标准参照 → 来源整理 → 技能方法 → LLM 提议 → 语义复核 → 数据验证 → 参照注释与验收 → 人工复核
+description: 范围/CQ → 行业/标准参照 → 来源整理 → 技能方法 → LLM 提议 → 语义复核 → 数据验证 → 参照注释 → 指标反解与核验 → 验收 → 人工复核
 entrypoint: server.py:build_inquire
-version: "2.2"
+version: "2.3"
 
 principles:
   - 验收结果采用 pass/review/fail 三态
@@ -17,6 +17,7 @@ principles:
   - CQ 是构建输入与构建后验收;未提供时覆盖率为空而不是零或伪造值
   - 行业/标准可不选;参照缺口待审、强约束缺口阻断,均不得为通过模板而编造证据
   - 标准机器可读资产固定版本本地加载;不跟随 RDF/XSD import 联网,缺失时不得伪装就绪
+  - 指标与关系同等:verified 只来自「可编译 ∧ 只读执行成功 ∧ 与参照一致」,certified 只能由人授予
 
 nodes:
   - id: intake_scope_and_cq
@@ -85,6 +86,16 @@ nodes:
     code: "build_references.py:apply_profile / evaluate"
     desc: 对整图应用行业/标准候选注释;行业核心项与标准对齐缺口按模式进入待审或阻断
 
+  - id: metric_mining
+    type: deterministic
+    code: "metric_pipeline.py:run / metric_mining.py:collect"
+    desc: 指标反解:上传 SQL / 口径表 / 沉淀 SQL / 参考基准 → 带来源的候选;含 JOIN 不猜口径
+
+  - id: metric_adjudication
+    type: deterministic_check
+    code: "metric_contract.py:schema_missing / compile_sql / adjudicate"
+    desc: 目录核对 → 确定性编译 → 只读执行 → 与参照比对;verified 只来自可执行且一致,人工状态不覆盖
+
   - id: quality_health
     type: deterministic_check
     code: "health_check.py:check"
@@ -94,6 +105,11 @@ nodes:
     type: deterministic_check
     code: "build_quality.py:audit_verified_evidence"
     desc: verified 必须携带连接键、阈值、父键唯一、命名证据与正确方向
+
+  - id: quality_metric
+    type: deterministic_check
+    code: "metric_contract.py:audit / counts"
+    desc: verified 指标须带编译 SQL、执行成功、参照一致;certified 须有确认人;candidate 指标进待审
 
   - id: quality_definition
     type: deterministic_check
@@ -134,9 +150,12 @@ edges:
   - [adjudication_core, upper_relation_grounding]
   - [quick_build_fallback, upper_relation_grounding]
   - [upper_relation_grounding, reference_annotation]
-  - [reference_annotation, quality_health]
+  - [reference_annotation, metric_mining]
+  - [metric_mining, metric_adjudication]
+  - [metric_adjudication, quality_health]
   - [quality_health, quality_evidence]
-  - [quality_evidence, quality_definition]
+  - [quality_evidence, quality_metric]
+  - [quality_metric, quality_definition]
   - [quality_definition, quality_cq]
   - [quality_cq, quality_aggregate]
   - [quality_aggregate, persist_audit]

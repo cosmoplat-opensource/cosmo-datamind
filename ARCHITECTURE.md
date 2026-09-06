@@ -1,6 +1,6 @@
 # COSMO DataMind · 系统架构
 
-> 面向维护者的架构说明。契约细节见 `specs/`(DR-001…DR-053、IR-001…IR-013)。本文描述分层、数据流与统一约定。
+> 面向维护者的架构说明。契约细节见 `specs/`(DR-001…DR-055、IR-001…IR-013)。本文描述分层、数据流与统一约定。
 
 ## 1. 分层
 
@@ -9,8 +9,8 @@
 │  前端 (ui/index.html + ui/modules/styles, 原生 JS/CSS)        │
 │   27 页 × hash 路由 · G6 图谱 · ECharts · 统一助手 $/esc/J    │
 ├─────────────────────────────────────────────────────────────┤
-│  HTTP 层 (Flask, 单端口 8092) · 共 127 路由                    │
-│   server.py 115 + bp_engine 5 + bp_actions 7 (DR-043)         │
+│  HTTP 层 (Flask, 单端口 8092) · 共 133 路由                    │
+│   server.py 115 + bp_engine 5 + bp_actions 7 + bp_metrics 4 + bp_semantic 2 │
 │   生产入口:wsgi.py → Gunicorn(gthread) → Nginx 反向代理       │
 │   app 级 before_request CSRF 守卫(对 blueprint 同样生效)      │
 │   共享层: srv_context(路径/只读连接/原子写/写锁)              │
@@ -19,9 +19,9 @@
 ├─────────────────────────────────────────────────────────────┤
 │  能力层                                                        │
 │   构建: CQ/行业与标准/技能→来源整理→LLM提议→语义复核         │
-│         → dao_core数据验证→参照注释→build_quality验收→人审    │
+│         → dao_core数据验证→参照注释→指标反解/核验→build_quality验收→人审 │
 │   问数: _anchor_ir(选中图谱=锚定源) → build_context(带轨迹)   │
-│         → agent_sql_plan → 口径校验 → q() → 双盲意图 → 叙事    │
+│         → agent_sql_plan → 口径校验(表/JOIN 键/扇出) → q() → 双盲意图 → 叙事 │
 │   体检: cq_check 能力核验 · drift_check 漂移 · health_check    │
 │         图结构 · compat_check 兼容 · module_split 模块化       │
 │   决策: rule_engine 规则+确定性推理 · 动作层(类型化+风险分级)│
@@ -74,7 +74,14 @@
 | `compat_check.py` | 向后兼容:结构 diff + **下游影响**(命中哪些规则/动作/技能) | DR-031 |
 | `module_split.py` | 模块化建议(按领域连通分量 / 按数仓分层),只建议不落盘 | DR-031 |
 | `openai_runtime.py` | OpenAI 兼容驱动(GLM/DeepSeek/Qwen/vLLM),空内容判失败不回传空串 | DR-029 |
-| `mcp_action_server.py` | 对外 MCP:发起动作是唯一写工具,审批不开放;协议版本按规范协商,工具带 `annotations` 行为提示 | DR-015/053 |
+| `mcp_action_server.py` | 对外 MCP:发起动作是唯一写工具,审批不开放;另有只读语义工具(概念检索/指标口径/按 certified 口径取数);协议版本按规范协商,工具带 `annotations` 行为提示 | DR-015/053/055 |
+| `metric_contract.py` | **指标契约**:确定性编译 SQL、目录核对、只读执行、与参照比对;`verified` 只来自「可执行∧与参照一致」,`certified` 只能人授 | DR-054 |
+| `metric_mining.py` | 指标反解:历史 SQL / 口径表 / 沉淀 SQL / 参考基准 → 带来源的候选与参照;含 JOIN 不猜口径 | DR-054 |
+| `metric_pipeline.py` | 反解→归一→核验→并入 IR 的编排;`readjudicate` 复用已存参照重跑 | DR-054 |
+| `bp_metrics.py` | 指标契约 blueprint(4 路由:契约/维度/人工确认口径/重跑核验);不提供直接置 verified 的途径 | DR-054 |
+| `concept_profile.py` | 概念画像:对象的名称/定义/属性/强关系邻居/指标确定性聚合 + 可回放关键词检索 | DR-055 |
+| `osi_export.py` | OSI 风格语义模型 YAML 出口(自带确定性发射器,未经官方 validator) | DR-055 |
+| `bp_semantic.py` | 画像检索与 OSI 导出 blueprint(2 路由) | DR-055 |
 | `translate_cn.py` | 术语中文化(离线词典,无网络依赖) | — |
 
 ## 3. 统一约定(refactor 后)

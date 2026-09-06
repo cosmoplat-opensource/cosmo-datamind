@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import cq_check
 import build_references
+import metric_contract
 import dao_core
 import definition_eval
 import health_check
@@ -166,6 +167,12 @@ def evaluate(ir, cqs=None, definition_threshold=0.6):
         blocking_issues.append(item); gaps.append(gap)
     blocking_issues.extend(reference_quality["blocking_issues"])
     gaps.extend(reference_quality["gaps"])
+    # 指标证据契约(DR-054):verified 指标须携带「编译 SQL + 执行成功 + 与参照一致」;certified 须有确认人。
+    metric_issues = metric_contract.audit(ir)
+    for item in metric_issues:
+        blocking_issues.append(item)
+        gaps.append({"type": "metric_" + item["type"], "desc": item["desc"], "fix": item["fix"]})
+    metric_counts = metric_contract.counts(ir)
 
     review_queue = []
     review_queue.extend(reference_quality["review_queue"])
@@ -184,6 +191,10 @@ def evaluate(ir, cqs=None, definition_threshold=0.6):
         review_queue.append({"type": "semantic_disputes", "count": len(semantic_disputes),
                              "desc": f"{len(semantic_disputes)} 条关系的数据证据与语义复审存在争议",
                              "fix": "进入人审；争议关系不计入验收问题的强路径，人工确认后再置为 asserted"})
+    if metric_counts["candidate"]:
+        review_queue.append({"type": "candidate_metrics", "count": metric_counts["candidate"],
+                             "desc": f"{metric_counts['candidate']} 个指标尚未通过执行核验或未绑定口径",
+                             "fix": "补参照 SQL/参考基准后重跑指标核验;口径经业务确认后人工置 certified"})
     query_errors = list((ir.get("scenario") or {}).get("query_errors") or [])
     if query_errors:
         review_queue.append({"type": "adjudication_query_errors", "count": len(query_errors),
@@ -227,6 +238,7 @@ def evaluate(ir, cqs=None, definition_threshold=0.6):
         "semantic": {"disputed": len(semantic_disputes),
                      "strong_for_cq": sum(1 for r in relations if cq_check.relation_is_strong(r))},
         "definitions": definitions,
+        "metrics": {"counts": metric_counts, "issues": metric_issues},
         "cq": cq,
         "blocking_issues": blocking_issues,
         "hard_errors": blocking_issues,  # 兼容旧客户端。

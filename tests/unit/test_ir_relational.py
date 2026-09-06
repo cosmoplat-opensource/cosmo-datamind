@@ -85,3 +85,20 @@ def test_non_scalar_fields_serialized():
     s = con.execute("SELECT sources FROM ont_attribute WHERE col='order_id'").fetchone()[0]
     assert s == "db,comment"
     con.close()
+
+
+def test_contract_columns_and_consumable_view():
+    """DR-054:契约指标带状态/聚合/编译 SQL 入表;只有 verified/certified 且可编译者进入消费视图。"""
+    ir = {"objects": [], "links": [], "metric_layers": {"atomic": [
+        {"id": "m1", "name": "销售金额", "table": "fact_sales_order", "value_col": "amount",
+         "measure": {"col": "amount", "agg": "sum"}, "filters": [{"col": "status", "op": "!=", "value": "x"}],
+         "time": {"col": "order_date", "grain": ["month"]}, "status": "verified"},
+        {"id": "m2", "name": "计划产量", "table": "T", "value_col": "p", "candidate": True},
+    ]}}
+    con, stat = _mem(ir)
+    assert stat["ont_metric"] == 2
+    row = con.execute("SELECT status, agg, time_col, compiled_sql FROM ont_metric WHERE metric_id='m1'").fetchone()
+    assert row[0] == "verified" and row[1] == "sum" and row[2] == "order_date" and row[3].startswith("SELECT SUM")
+    assert con.execute("SELECT status, agg FROM ont_metric WHERE metric_id='m2'").fetchone() == ("candidate", None)
+    assert [r[0] for r in con.execute("SELECT name FROM v_consumable_metric")] == ["销售金额"]
+    con.close()
