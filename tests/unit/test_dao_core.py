@@ -216,7 +216,8 @@ class TestParityWithEngine:
     """与上游 ../ontology-engine/engine/relation_discovery 的 name_score 平价 —— 证明同口径。"""
 
     @pytest.fixture(scope="class")
-    def engine(self):
+    @classmethod
+    def engine(cls):
         p = (pathlib.Path(__file__).resolve().parents[2].parent
              / "ontology-engine" / "engine" / "relation_discovery.py")
         if not p.exists():

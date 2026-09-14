@@ -7,12 +7,17 @@
 结构(IR-007/DR-045):CLI/构建逻辑收进 build() + `if __name__=="__main__"` 守卫,
 纯函数(key_stem/key_name_ok)与 build() 均可被测试/编程调用;server 子进程调用行为不变。"""
 import json, os, re, sqlite3, sys
+from pathlib import Path
+import tempfile
+import threading
+import time
 from collections import OrderedDict as _OrderedDict
 import dao_core   # DR-035:裁决决策与命名/重叠原语的单一事实源
 import build_quality
 import action_ontology
 import ontology_grounding
 import content_quality
+from sqlite_evidence import relation_signals
 
 qi = lambda s: '"' + str(s).replace('"', '""') + '"'   # 安全转义 SQL 标识符(列名/表名含引号也不破格)
 _KIND_BFO = ontology_grounding.KIND_DEFAULTS
@@ -28,6 +33,13 @@ con: sqlite3.Connection | None = None
 cols_of: dict[str, list[tuple[str, str]]] = {}
 pk_of: dict[str, str | None] = {}
 query_errors: list[dict[str, str]] = []
+_BUILD_LOCK = threading.RLock()
+_BUILD_TIMEOUT_SECONDS = 60.0
+
+
+def _check_budget(deadline):
+    if time.monotonic() >= deadline:
+        raise TimeoutError("本体构建取证超时，请缩小数据范围或检查数据库性能")
 
 
 def _record_query_error(operation, table, column, exc):
@@ -49,16 +61,14 @@ _uniq_cache: _OrderedDict[tuple[str, str], bool] = _OrderedDict()
 def is_key_unique(t, c):
     """父连接键须为候选键(值唯一)才构成真 FK。
 
-    声明 PK 短路不查库;COUNT 结果按 (表,列) 缓存——同一父键会被多个子表反复探测,
+    COUNT 结果按 (表,列) 缓存——同一父键会被多个子表反复探测,
     18 万行级大表上避免重复全表扫描。
 
-    缓存无失效机制是安全的:本脚本为一次性 CLI(由 server 以子进程调用),
-    连接以 `mode=ro` 只读打开,全程无 INSERT/UPDATE/DDL —— 进程存续期内
-    表数据与结构不可能变化,不存在读到过期结果的路径。
+    每轮 build 清空缓存并开启只读事务,保证全部证据来自同一个快照。
+    只读连接本身不能阻止其他连接写库;因此不能省略该事务。
     容量按 (表,列) 天然受 schema 规模约束;上限兜底极端宽表库,
     满时按 LRU 逐出单个最久未用项(而非整体清空):同一父键会被多个子表连续探测,
     命中即刷新为最近使用,热点键因此不会被逐出重建。"""
-    if pk_of.get(t) == c: return True
     k = (t, c)
     if k in _uniq_cache:
         _uniq_cache.move_to_end(k)           # 命中即刷新为最近使用 —— 这才是 LRU
@@ -101,9 +111,12 @@ def _checked_paths(db, out):
     db_p = os.path.realpath(db)
     if not os.path.isfile(db_p):
         raise ValueError(f"源库不存在或不是文件: {db}")
-    out_p = os.path.normpath(out)
-    if ".." in out_p.split(os.sep):
+    if ".." in os.fspath(out).split(os.sep):
         raise ValueError(f"产物路径不得含上级目录引用: {out}")
+    out_p = os.path.normpath(out)
+    if (os.path.realpath(out_p) == db_p or
+            (os.path.exists(out_p) and os.path.samefile(db_p, out_p))):
+        raise ValueError("产物不得覆盖源数据库或其链接")
     parent = os.path.dirname(os.path.realpath(out_p)) or "."
     if not os.path.isdir(parent):
         raise ValueError(f"产物目录不存在: {parent}")
@@ -111,13 +124,29 @@ def _checked_paths(db, out):
 
 
 def build(db, out, name, action_types=None):
+    """Serialize in-process builds and close the read snapshot on every exit path."""
+    global con
+    with _BUILD_LOCK:
+        try:
+            return _build(db, out, name, action_types)
+        finally:
+            if con is not None:
+                con.close()
+                con = None
+
+
+def _build(db, out, name, action_types=None):
     """数据驱动构建一张图谱 IR,写入 out 并返回 ir(供测试/编程调用)。"""
     global con, cols_of, pk_of
     db, out = _checked_paths(db, out)
     _uniq_cache.clear()  # 模块可被重复调用；不同数据库之间不得复用唯一性结论。
     query_errors.clear()
     # 只读打开(mode=ro):建本体只取数、绝不改源库;缺库时显式报错而非静默新建空库
-    con = sqlite3.connect(f"file:{db}?mode=ro", uri=True); con.row_factory = sqlite3.Row
+    con = sqlite3.connect(Path(db).as_uri() + "?mode=ro", uri=True, timeout=2.0)
+    con.row_factory = sqlite3.Row
+    deadline = time.monotonic() + _BUILD_TIMEOUT_SECONDS
+    con.set_progress_handler(lambda: int(time.monotonic() >= deadline), 1000)
+    con.execute("BEGIN")
     # SQLite may create sqlite_stat1/sqlite_sequence and similar internal tables.
     # They are storage-engine metadata, not business entities, and must not enter
     # the ontology object count or relationship discovery space.
@@ -132,15 +161,19 @@ def build(db, out, name, action_types=None):
 
     objects, links = [], []
     cols_of, pk_of = {}, {}
+    primary_keys = {}
     for t in tabs:
+        _check_budget(deadline)
         try:
             info = con.execute(f'PRAGMA table_info({qi(t)})').fetchall()
         except Exception as exc:
             _record_query_error("table_info", t, "", exc)
             continue                                        # 表名异常不再让整轮构建崩溃
         cols_of[t] = [(r[1], r[2] or "TEXT") for r in info]
-        pks = [r[1] for r in info if r[5]]
-        pk_of[t] = pks[0] if pks else None
+        pks = [r[1] for r in sorted(info, key=lambda row: row[5]) if r[5]]
+        primary_keys[t] = pks
+        # A component of a composite PK is not itself a key.
+        pk_of[t] = pks[0] if len(pks) == 1 else None
         # 表名明确表示单据/记录时属于信息对象；只有显式事件/过程词才判为事件。
         # 旧规则把 fact_*_record/log 反向判为 Process，导致工单和记录同其描述的
         # 业务活动混为一谈。统一交由 content_quality 的可测试规则处理。
@@ -151,17 +184,11 @@ def build(db, out, name, action_types=None):
                         "bfo": _KIND_BFO.get(kind, "MaterialEntity"), "definition": "", "isPrimitive": True,
                         "example": "", "counterExample": "", "maturity": "Provisional",
                         "provenance": {"directSource": t, "adaptedFrom": [], "excerptedFrom": None}})
-        # 声明 FK 证明关系可连接，但不据此虚构 BFO/IOF 对应关系。
-        for fk in con.execute(f'PRAGMA foreign_key_list({qi(t)})'):
-            links.append({"source_concept": t, "target_concept": fk[2], "verb": "关联",
-                          "status": "verified", "evidence_status": "verified",
-                          "semantic": "not_reviewed", "semantic_status": "not_reviewed",
-                          "overlap": None, "note": f"声明FK {fk[3]}→{fk[4]}",
-                          "evidence": {"child_key": fk[3], "parent_key": fk[4], "source": "declared_fk",
-                                       "declared": True, "direction": "child_to_parent",
-                                       "decision": "schema_declared_foreign_key"},
-                          "founded_relation": "", "grounding_iri": "", "grounding_status": "unmapped",
-                          "grounding_reason": _local_relation_reason("declared_fk"), "temporal": ""})
+    # Resolve implicit REFERENCES only after every table's ordered PK is known.
+    tabs = [t for t in tabs if t in cols_of]
+    for t in tabs:
+        _check_budget(deadline)
+        links.extend(_declared_links(t, primary_keys))
 
     # A declared FK fixes the child→parent direction.  Block overlap inference
     # in both directions for that pair; otherwise unique child values can create
@@ -172,6 +199,7 @@ def build(db, out, name, action_types=None):
         seen.add(pair)
         seen.add((pair[1], pair[0]))
     for t in tabs:
+        _check_budget(deadline)
         for c, _ in cols_of[t]:
             roles = dao_core.role_targets(c)                 # DR-036 自引用/角色键
             m = re.match(r"(.+?)_(id|code)$", c, re.I)
@@ -188,6 +216,7 @@ def build(db, out, name, action_types=None):
             else:
                 continue
             for pt in tabs:
+                _check_budget(deadline)
                 if (t, pt) in seen: continue
                 self_ref = (pt == t)
                 ptl = pt.lower()
@@ -199,14 +228,17 @@ def build(db, out, name, action_types=None):
                 pk = parent_key(pt, c, stem)
                 if not pk: continue
                 if self_ref and pk == c: continue           # 自引用键不能指向自己这一列
-                child, parent = distinct(t, c), distinct(pt, pk)
-                if not child: continue
-                ov = dao_core.overlap_pct(child, parent)
-                # 父键唯一度仅在 ov≥60 时探测(保留短路,避免弱重叠也全表 COUNT);
-                # 决策统一走 dao_core.classify 的 compat 口径(min_distinct=1、不排除PK作子键)——
-                # 与 quick_build 历史行为逐值等价(非角色键),漂移就此收敛到单一裁决核(DR-035)。
-                punique = is_key_unique(pt, pk) if ov >= 60 else False
-                cunique = is_key_unique(t, c) if ov >= 60 else None
+                try:
+                    signals = relation_signals(con, t, (c,), pt, (pk,))
+                except Exception as exc:
+                    _record_query_error("relation_signals", t, c, exc)
+                    continue
+                if not signals["child_distinct"]: continue
+                ov = signals["overlap"]
+                # 全量去重交集与双侧唯一性来自同一 SQL 取证；固定阈值和 compat
+                # 口径(min_distinct=1、不排除PK作子键)继续由共享裁决核决定。
+                punique = signals["parent_unique"]
+                cunique = signals["child_unique"]
                 # DR-037 接线:子键唯一而父键不唯一 → 方向反了(真方向 pt→t)。
                 # 抑制这条反向边、且不污染 seen——让正向在处理多侧表(pt)的该列时自然发现。
                 if ov >= 60 and not self_ref and dao_core.should_reverse(cunique, punique):
@@ -214,7 +246,7 @@ def build(db, out, name, action_types=None):
                 name_supported = dao_core.name_ok(c, pt, pk, child_table=t)
                 verdict = dao_core.classify(overlap=ov, parent_unique=punique,
                                             name_ok=name_supported,
-                                            child_distinct=len(child),
+                                            child_distinct=signals["child_distinct"],
                                             min_distinct=1, exclude_pk_child=False)
                 st = verdict["status"]
                 if st == "drop": continue
@@ -229,6 +261,7 @@ def build(db, out, name, action_types=None):
                 else:   # 弱重叠 candidate
                     note = "弱重叠,送审"
                     ev = {"child_key": c, "parent_key": pk, "overlap": round(ov, 1), "source": "key_overlap"}
+                ev.update(signals)
                 ev.update({"parent_unique": bool(punique), "child_unique": cunique,
                            "name_ok": bool(name_supported), "theta": dao_core.MIN_OVERLAP,
                            "direction": ("self" if self_ref else
@@ -257,18 +290,84 @@ def build(db, out, name, action_types=None):
           "objects": objects, "relations": links}
     if action_types:
         if isinstance(action_types, (str, os.PathLike)):
-            with open(action_types, encoding="utf-8") as fp:
-                action_types = json.load(fp)
+            try:
+                with open(action_types, encoding="utf-8") as fp:
+                    action_types = json.load(fp)
+            except (OSError, ValueError, TypeError):
+                # 与服务端 load_action_types 同口径:缺档/坏档=无已登记动作。
+                # 全新 workdir 没有该文件——此前直接 FileNotFoundError 让整轮
+                # 构建崩掉,/api/build/run 与 LLM 超时回退路径全部无产物。
+                action_types = []
         action_ontology.project_registered_actions(ir, action_types)
     print(f"[quick_build] 最终对象 {len(ir['objects'])} 个 · 关系 {len(ir['relations'])} 条 · "
           f"动作 {ir['scenario'].get('action_count', 0)} 个", flush=True)
     ir["build_quality"] = build_quality.evaluate(ir)
     ir["gaps"] = ir["build_quality"]["gaps"]
-    tmp = out + ".tmp"
-    with open(tmp, "w", encoding="utf-8") as _fp: json.dump(ir, _fp, ensure_ascii=False, indent=1)
-    os.replace(tmp, out)
+    tmp = None
+    try:
+        with tempfile.NamedTemporaryFile(mode="w", encoding="utf-8", dir=os.path.dirname(os.path.abspath(out)),
+                                         prefix=".quick_build-", suffix=".json", delete=False) as _fp:
+            tmp = _fp.name
+            json.dump(ir, _fp, ensure_ascii=False, indent=1, allow_nan=False)
+        os.replace(tmp, out)
+    finally:
+        if tmp and os.path.exists(tmp):
+            os.unlink(tmp)
     print(f"[quick_build] 完成 → {out}", flush=True)
     return ir
+
+
+def _declared_links(table, primary_keys):
+    """Group PRAGMA rows by FK id and check actual constraints/rows, including NULL semantics."""
+    groups = {}
+    try:
+        for row in con.execute(f"PRAGMA foreign_key_list({qi(table)})"):
+            groups.setdefault(row[0], []).append(row)
+    except Exception as exc:
+        _record_query_error("foreign_key_list", table, "", exc)
+        return []
+    if not groups:
+        return []
+    orphans, schema_validated = {}, True
+    try:
+        # Streaming counts avoid retaining arbitrarily many violation rows.
+        for row in con.execute(f"PRAGMA foreign_key_check({qi(table)})"):
+            orphans[row[3]] = orphans.get(row[3], 0) + 1
+    except Exception as exc:
+        _record_query_error("foreign_key_check", table, "", exc)
+        schema_validated = False
+    links = []
+    table_names = {name.casefold(): name for name in cols_of}
+    for fk_id, rows in groups.items():
+        rows.sort(key=lambda row: row[1])
+        parent = table_names.get(rows[0][2].casefold(), rows[0][2])
+        child_columns = [row[3] for row in rows]
+        parent_columns = [row[4] for row in rows]
+        if all(c is None for c in parent_columns):
+            parent_columns = primary_keys.get(parent, [])
+        ck, pk = ",".join(child_columns), ",".join(c or "" for c in parent_columns)
+        valid_keys = (dao_core.key_columns(ck) and dao_core.key_columns(pk)
+                      and len(child_columns) == len(parent_columns)
+                      and parent in cols_of)
+        count = orphans.get(fk_id, 0)
+        verified = bool(schema_validated and valid_keys and not count)
+        status = "verified" if verified else "candidate"
+        evidence = {"child_key": ck, "parent_key": pk, "source": "declared_fk", "declared": True,
+                    "schema_validated": schema_validated, "orphan_count": count if schema_validated else None,
+                    "direction": "self" if table == parent else "child_to_parent",
+                    "decision": "schema_declared_foreign_key" if verified else "declared_fk_requires_review"}
+        link = {"source_concept": table, "target_concept": parent, "verb": "关联",
+                "status": status, "evidence_status": status,
+                "semantic": "not_reviewed", "semantic_status": "not_reviewed",
+                "overlap": None, "note": f"声明FK ({ck})→{parent}.({pk})" +
+                ("" if verified else "；约束或引用数据未通过核验，送审"), "evidence": evidence,
+                "founded_relation": "", "grounding_iri": "", "grounding_status": "unmapped",
+                "grounding_reason": _local_relation_reason("declared_fk"), "temporal": ""}
+        if table == parent:
+            link["self_ref"] = True
+            evidence["self_ref"] = True
+        links.append(link)
+    return links
 
 
 if __name__ == "__main__":

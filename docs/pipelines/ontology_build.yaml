@@ -6,12 +6,12 @@
 name: ontology_semi_automatic_build
 description: 范围/CQ → 行业/标准参照 → 来源整理 → 技能方法 → LLM 提议 → 语义复核 → 数据验证 → 参照注释 → 指标反解与核验 → 验收 → 人工复核
 entrypoint: server.py:build_inquire
-version: "2.3"
+version: "2.4"
 
 principles:
   - 验收结果采用 pass/review/fail 三态
   - LLM 只提议对象、关系和候选键,不得自评 verified
-  - verified 只来自声明外键或可回放的数据裁决证据
+  - verified 只来自通过引用完整性检查的声明外键或可回放的完整值域裁决证据
   - 语义复核结果只触发人工复核，不覆盖可重复的数据验证结果
   - candidate/gap 保留失败证据,不静默删除
   - CQ 是构建输入与构建后验收;未提供时覆盖率为空而不是零或伪造值
@@ -64,7 +64,12 @@ nodes:
   - id: data_adjudication
     type: deterministic_check
     code: "server.py:_adjudicate_ir"
-    desc: 验证候选列存在,抽 distinct 集合和唯一性,并保存最佳尝试证据
+    desc: 验证真实候选列,在只读快照中计算完整 distinct 统计与唯一性,保存最佳尝试证据;60秒预算
+
+  - id: complete_sql_evidence
+    type: deterministic_check
+    code: "sqlite_evidence.py:relation_signals"
+    desc: 单列和复合元组完整集合的交集/去重/总行数在SQL内聚合,不以截断前缀证明verified
 
   - id: adjudication_core
     type: deterministic_check
@@ -94,7 +99,7 @@ nodes:
   - id: metric_adjudication
     type: deterministic_check
     code: "metric_contract.py:schema_missing / compile_sql / adjudicate"
-    desc: 目录核对 → 确定性编译 → 只读执行 → 与参照比对;verified 只来自可执行且一致,人工状态不覆盖
+    desc: 同一只读快照内目录核对 → 确定性编译 → 执行主SQL与参照SQL并比对;verified 只来自可执行且一致,人工状态不覆盖
 
   - id: quality_health
     type: deterministic_check
@@ -146,6 +151,9 @@ edges:
   - [proposal, stability_probe]
   - [proposal, data_adjudication]
   - [data_adjudication, adjudication_core]
+  - [data_adjudication, complete_sql_evidence]
+  - [quick_build_fallback, complete_sql_evidence]
+  - [complete_sql_evidence, adjudication_core]
   - [proposal, quick_build_fallback]
   - [adjudication_core, upper_relation_grounding]
   - [quick_build_fallback, upper_relation_grounding]

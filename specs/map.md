@@ -31,6 +31,9 @@ COSMO DataMind 是「数据治理 × 本体 × 深度问数」原型：
 ## 索引
 
 ### 决定 / Decisions
+- [DR-058 · 构建能力对外 MCP 化与 LLM 回复解析单一事实源(Agent 只能发起构建与阅读结论,不能改写结论状态)](decisions/DR-058-build-mcp-and-llm-json.md)
+- [DR-057 · 常驻部署与真实链路验收](decisions/DR-057-persistent-deployment-and-live-validation.md)
+- [DR-056 · 完整取证、指标状态新鲜度、后端安全与隔离验收](decisions/DR-056-evidence-integrity-and-isolated-validation.md)
 - [DR-055 · 扇出关卡、概念画像与 OSI 风格导出(父侧列聚合即拦 + 确定性画像检索 + 未经 validator 的 YAML 出口)](decisions/DR-055-fanout-gate-concept-profile-osi-export.md)
 - [DR-054 · 指标契约、指标反解与指标生命周期(可编译/可执行/与参照比对;verified 只来自证据,certified 只能人授)](decisions/DR-054-metric-contract-and-lifecycle.md)
 - [DR-050 · 半自动构建的统一证据契约、技能输入与确定性验收检查](decisions/DR-050-executable-ontology-build-gate.md)
@@ -76,6 +79,8 @@ COSMO DataMind 是「数据治理 × 本体 × 深度问数」原型：
 - [DR-023 · 语义增强三件套:词汇表注入/增强注册表/一致性门控(对标 Trane 认知稳定性)](decisions/DR-023-epistemic-stability.md)
 
 ### 迭代 / Iterations
+- [IR-015 · 实际部署与前后端验收](iterations/IR-015-live-deployment-acceptance.md) · **delivered**
+- [IR-014 · 算法、安全、UI 与 SDD/TDD 综合验收](iterations/IR-014-evidence-security-ui-validation.md) · **delivered**
 - [IR-001 · DataMind 基座(目录/图谱/指标/质量/SQL)](iterations/IR-001-foundation.md) · **delivered**
 - [IR-002 · 深度问数对齐平台 chat-bi](iterations/IR-002-deep-qa-chatbi.md) · **delivered**
 - [IR-003 · 本体构建问询台(LLM 辅助建模；二进制附件不在本仓解析)](iterations/IR-003-ontology-build-console.md) · **delivered**
@@ -121,6 +126,9 @@ COSMO DataMind 是「数据治理 × 本体 × 深度问数」原型：
 - 已知边界详见 `README.md` 末节(SPARQL 软超时、运行时切换 UI、G6/ECharts 本地内置等)。
 
 ## 如何让 AI 代理消费本规约
+
+当前验收映射为 [`acceptance.json`](acceptance.json)，连接业务要求与可执行行为测试。
+统一入口为 `python scripts/check.py --suite all`；结果和环境边界须随迭代记录，不能只记录测试数量。
 ```
 Consult @specs/map.md to find relevant context.
 记录一个决定: 总结讨论, 按 @specs/meta.md 添加一个 DR。

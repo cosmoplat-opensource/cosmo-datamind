@@ -2,11 +2,12 @@
 #   pip3 install -r requirements.txt
 #
 # 分三档:核心(不装起不来)/ 语义层(不装则相关功能返回 503 提示)/ 按需(外部库与 Excel)。
-# 未固定版本:本项目为本地原型,依赖面窄且均为稳定 API;如需可复现构建请自行 pip freeze。
+# 运行时保留安全版本下界；开发/CI 使用 requirements-dev.txt 的直接依赖固定版本。
+# cryptography 49+ 不再提供 Intel macOS 预编译轮子；该平台需要 Rust/OpenSSL 源码构建。
 
 # ── 核心:缺失则服务无法启动 ───────────────────────────────
-flask                 # HTTP 层
-requests              # 平台代理、健康探测、test_all.py
+flask>=3.1.3          # HTTP 层
+requests>=2.33.0      # 平台代理、健康探测、test_all.py
 gunicorn               # 生产 WSGI（本地开发仍可直接 python3 server.py）
 
 # ── 语义层:缺失不影响启动,相关端点返回 503 并提示安装 ──────
@@ -17,4 +18,4 @@ pyshacl               # 锻造时的 SHACL 形状校验(缺失则跳过校验并
 openpyxl              # 上传 .xlsx 知识包(CSV/TSV 无此依赖)
 pymysql               # 外部 MySQL / Doris 实连
 psycopg2-binary       # 外部 PostgreSQL 实连
-cryptography          # 外部库凭据的静态加密(未装则密码以明文落盘 0600 并告警)
+cryptography>=50.0.1  # 外部库凭据的静态加密(未装则密码以明文落盘 0600 并告警)

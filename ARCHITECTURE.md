@@ -47,6 +47,7 @@
 
 | 模块 | 职责 | DR |
 |---|---|---|
+| `sqlite_evidence.py` | 完整单列/元组集合的 SQL 聚合取证，记录匹配数、去重数与全表唯一性；调用者负责快照和超时 | DR-056 |
 | `dao_core.py` | **单一裁决核**:重叠/唯一度/命名校验/角色键/方向测试/自适应 θ,三态 `classify` | DR-035…038 |
 | `quick_build.py` | 纯数据驱动建本体,裁决决策委托 `dao_core`(compat 口径) | DR-011/035 |
 | `hallucination_eval.py` | 错误关系控制评测台:带标签基准上量化精确率/召回/**幻觉泄漏率**(judge 可选) | DR-039 |
@@ -75,6 +76,8 @@
 | `module_split.py` | 模块化建议(按领域连通分量 / 按数仓分层),只建议不落盘 | DR-031 |
 | `openai_runtime.py` | OpenAI 兼容驱动(GLM/DeepSeek/Qwen/vLLM),空内容判失败不回传空串 | DR-029 |
 | `mcp_action_server.py` | 对外 MCP:发起动作是唯一写工具,审批不开放;另有只读语义工具(概念检索/指标口径/按 certified 口径取数);协议版本按规范协商,工具带 `annotations` 行为提示 | DR-015/053/055 |
+| `mcp_build_server.py` | 对外 MCP(构建):发起构建是唯一写工具,verified/asserted/certified 与删除不开放;start_build 立即返回作业 id,SSE 必须有 done 才算完成(DR-056 同规);验收复跑与人审队列只读 | DR-058/016 |
+| `llm_json.py` | LLM 回复 JSON 抽取的单一事实源:字符串感知配平扫描+最小修复(尾逗号/非有限值),本体提议形状契约与剔除计数 | DR-058 |
 | `metric_contract.py` | **指标契约**:确定性编译 SQL、目录核对、只读执行、与参照比对;`verified` 只来自「可执行∧与参照一致」,`certified` 只能人授 | DR-054 |
 | `metric_mining.py` | 指标反解:历史 SQL / 口径表 / 沉淀 SQL / 参考基准 → 带来源的候选与参照;含 JOIN 不猜口径 | DR-054 |
 | `metric_pipeline.py` | 反解→归一→核验→并入 IR 的编排;`readjudicate` 复用已存参照重跑 | DR-054 |
@@ -114,16 +117,16 @@
 
 ## 5. 测试与验收检查
 
-**两层分工**(IR-007 起):
+**分层验收**(IR-007/014):
 
 | 层 | 内容 | 是否需起服务 |
 |---|---|---|
-| 单元层 `tests/` | 473 项:确定性模块边界/纯函数 + MCP 协议合规 + 缓存失效面 + 文档计数自检 | 否(离线秒级) |
+| 单元层 `tests/` | 确定性模块边界/纯函数 + MCP 协议合规 + 缓存失效面 + 文档计数自检 | 否(离线秒级) |
 | 集成层 `test_all.py` | 源码定义 565 个检查点,覆盖路由正常路径、边界与安全约束 | 是 |
 | UI 层 | `test_ui.py`(全页走查)·`test_ui_ops.py`(浏览器逐步实操) | 是(需 playwright) |
 
 自动化校验:`pyproject.toml` 统一 pytest/coverage/ruff(只选 F/B 抓真缺陷)/mypy ·
-`.pre-commit-config.yaml` 提交即跑 · `.github/workflows/ci.yml` 双 job(单元与确定性集成都硬挡)·
+`.pre-commit-config.yaml` 提交即跑 · `.github/workflows/ci.yml` 三类 job(单元、确定性集成、浏览器均硬挡)·
 pyflakes 零告警 · 构建产物经 RDF 解析与 SHACL 校验 · 元数据覆盖率用于定位定义、反例和标准关系映射缺口（不表示本体完备性）。当前仓库不内置 OWL DL 推理器，因此不把 HermiT 一致性检查列为已执行能力。
 
 ### 5.1 集成套件的环境依赖(勿误判为回归)
@@ -170,3 +173,13 @@ pyflakes 零告警 · 构建产物经 RDF 解析与 SHACL 校验 · 元数据覆
 - 语义评审依赖在线引擎(离线记 skipped);
 - MySQL/Doris 直连依赖相应驱动和可达服务；本轮没有可用外部实例，未做真实远端数据库联调;
 - 单专家式扩标参考集(方法学局限,见论文)。
+
+## 7. 完整取证与可复现验收（DR-056）
+
+LLM 与 quick_build 共用 `sqlite_evidence.relation_signals`，避免 LIMIT 前缀制造验证结论。
+联合外键保持约束顺序；声明 FK 的孤儿数据进入 candidate。
+指标最新机器证据可降级旧 verified，人工决定受保护；主 SQL 与参照共享读快照，参照可重放、分组维度精确匹配。
+图谱范围与显式选表在 SQL 执行前用 SQLite authorizer 检查；离线模板不支持的问题如实报告未覆盖。
+构建 SSE 必须有 done 才算完成，前端异步选择按当前请求判定，失败可重试。
+`python scripts/check.py --suite all` 在临时数据目录运行完整检查，清理服务，保存日志与退出码。
+本轮具体结果与后续风险见 [审计报告](docs/audits/2026-09-07.md)。

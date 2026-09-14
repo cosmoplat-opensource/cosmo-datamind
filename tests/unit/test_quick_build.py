@@ -48,6 +48,17 @@ class TestBuildIntegration:
         assert [obj["name"] for obj in ir["objects"]] == ["business_table"]
         assert ir["scenario"]["object_count"] == 1
 
+    def test_missing_action_types_file_is_tolerated(self, make_sqlite, tmp_path):
+        """全新 workdir 没有 action_types.json:按无已登记动作处理,不崩构建。
+
+        与服务端 load_action_types 的缺档口径一致;此前 FileNotFoundError 使
+        /api/build/run 与 build_inquire 的 LLM 超时回退在干净环境全部无产物
+        (DR-058 端到端实测发现)。"""
+        db = make_sqlite({"dim_customer": ("id INTEGER PRIMARY KEY", [(1,)])})
+        out = str(tmp_path / "ir.json")
+        ir = quick_build.build(db, out, "fx", str(tmp_path / "no_such_action_types.json"))
+        assert [obj["name"] for obj in ir["objects"]] == ["dim_customer"]
+
     def test_declared_fk_suppresses_inferred_reverse_edge(self, make_sqlite, tmp_path):
         db = make_sqlite({
             "parents": ("parent_id INTEGER PRIMARY KEY", [(1,), (2,), (3,)]),

@@ -25,9 +25,13 @@
 """
 from __future__ import annotations
 
+import math
 import re
 import sqlite3
 import time
+from decimal import Decimal, DecimalException
+
+from srv_context import ro_connect, sql_is_readonly
 
 AGGS = ("sum", "count", "count_distinct", "avg", "min", "max")
 FILTER_OPS = ("=", "!=", ">", ">=", "<", "<=", "in", "not_in", "is_null", "not_null")
@@ -92,7 +96,10 @@ def normalize(m, ir=None):
         "candidate": bool(m.get("candidate", True)),
     }
     measure = m.get("measure") if isinstance(m.get("measure"), dict) else {}
-    col = _ident(measure.get("col") or m.get("value_col"))
+    raw_col = measure.get("col") or m.get("value_col")
+    col = _ident(raw_col)
+    if raw_col and not col:
+        raise ValueError("度量列名不合法")
     agg = str(measure.get("agg") or "").strip().lower()
     if agg and agg not in AGGS:
         raise ValueError(f"聚合方式不合法:{agg}(允许 {'/'.join(AGGS)})")
@@ -141,6 +148,8 @@ def normalize(m, ir=None):
 def _scalar(v):
     if isinstance(v, bool):
         return int(v)
+    if isinstance(v, float) and not math.isfinite(v):
+        raise ValueError("过滤取值必须是有限数值")
     if isinstance(v, (int, float)):
         return v
     if v is None:
@@ -273,7 +282,7 @@ def compile_sql(contract, grain=None, dimensions=None, order=True):
     - grain:按时间列分桶;dimensions:只接受绑定表自身列(跨表维度由问数链路经已验证
       关系 JOIN,不在此处自造 JOIN)。
     """
-    c = contract
+    c = normalize(contract)
     table, col, agg = _ident(c.get("table")), _ident((c.get("measure") or {}).get("col")), \
         (c.get("measure") or {}).get("agg")
     if not table:
@@ -313,7 +322,7 @@ def compile_sql(contract, grain=None, dimensions=None, order=True):
     return sql
 
 
-def schema_missing(db_path, contract):
+def schema_missing(db_path, contract, *, connection=None):
     """契约引用的表/列是否真实存在。
 
     必须先于执行做:SQLite 在兼容模式下会把未知的双引号标识符当字符串字面量,
@@ -324,8 +333,8 @@ def schema_missing(db_path, contract):
     if not table:
         return ["未绑定表"]
     try:
-        con = sqlite3.connect(f"file:{db_path}?mode=ro", uri=True)
-    except sqlite3.Error as exc:
+        con = connection if connection is not None else ro_connect(db_path)
+    except (OSError, sqlite3.Error) as exc:
         return [f"打开数据库失败:{type(exc).__name__}"]
     try:
         names = {r[0].lower() for r in con.execute(
@@ -336,7 +345,8 @@ def schema_missing(db_path, contract):
     except sqlite3.Error as exc:
         return [f"读取表结构失败:{type(exc).__name__}"]
     finally:
-        con.close()
+        if connection is None:
+            con.close()
     wanted = []
     mc = (c.get("measure") or {}).get("col")
     if mc:
@@ -366,72 +376,103 @@ def describe(contract):
     return " ".join(parts)
 
 
-def execute(db_path, sql, limit=2000):
+def execute(db_path, sql, limit=2000, *, connection=None):
     """只读执行;失败返回 {"error": ...} 而不是抛异常——裁决要把失败如实记进证据。"""
+    if not isinstance(sql, str) or not sql_is_readonly(sql):
+        return {"error": "只允许单条 SELECT/WITH 查询"}
+    if not isinstance(limit, int) or isinstance(limit, bool) or not 1 <= limit <= 10000:
+        return {"error": "结果行数上限必须在 1–10000 之间"}
     try:
-        con = sqlite3.connect(f"file:{db_path}?mode=ro", uri=True)
-    except sqlite3.Error as exc:
+        con = connection if connection is not None else ro_connect(db_path)
+    except (OSError, sqlite3.Error) as exc:
         return {"error": f"打开数据库失败:{type(exc).__name__}"}
-    deadline = time.time() + QUERY_TIMEOUT_S
-    con.set_progress_handler(lambda: 1 if time.time() > deadline else 0, 10000)
+    if connection is None:
+        deadline = time.monotonic() + QUERY_TIMEOUT_S
+        con.set_progress_handler(lambda: 1 if time.monotonic() > deadline else 0, 10000)
     try:
         cur = con.execute(sql)
         cols = [d[0] for d in (cur.description or [])]
-        rows = [list(r) for r in cur.fetchmany(limit)]
-        return {"columns": cols, "rows": rows}
+        rows = [list(r) for r in cur.fetchmany(limit + 1)]
+        return {"columns": cols, "rows": rows[:limit], "truncated": len(rows) > limit}
     except sqlite3.Error as exc:
         return {"error": f"{type(exc).__name__}: {str(exc)[:160]}"}
     finally:
-        con.close()
+        if connection is None:
+            con.close()
 
 
 def _num(v):
     if isinstance(v, bool):
         return None
-    if isinstance(v, (int, float)):
-        return float(v)
     try:
-        return float(str(v).strip())
-    except (TypeError, ValueError):
+        n = Decimal(str(v).strip())
+        return n if n.is_finite() and abs(n.adjusted()) <= 10000 else None
+    except (TypeError, ValueError, DecimalException):
         return None
 
 
 def _close(a, b, tol):
     if a is None or b is None:
         return False
+    if tol == 0:
+        return a == b
     if b == 0:
         return abs(a) <= tol
     return abs(a - b) <= tol * max(abs(a), abs(b))
 
 
-def compare_results(mine, ref, tol=DEFAULT_TOLERANCE):
-    """比较两份结果:标量对标量;或按整行(维度值 + 数值)集合比较。
+def compare_results(mine, ref, tol=DEFAULT_TOLERANCE, allow_text=False):
+    """比较完整结果:最后一列为度量,此前维度逐值逐类型精确匹配。
 
     返回 (是否一致, 说明)。形状不同(行数/列数)即不一致——不做「取第一列求和」之类的
     宽松折算,那会把口径不同的两个指标判成相同。
     """
+    tolerance = _num(tol)
+    if tolerance is None or not 0 <= tolerance < 1:
+        return False, "容差须为 [0,1) 内有限数值"
+    if mine.get("error") or ref.get("error") or mine.get("truncated") or ref.get("truncated"):
+        return False, "查询失败或结果截断,不能证明一致"
     if not mine.get("rows") or not ref.get("rows"):
         return False, "一方无结果"
     mr, rr = mine["rows"], ref["rows"]
+    if not all(isinstance(r, (list, tuple)) and r for r in mr + rr):
+        return False, "结果行形状不合法"
     if len(mr) != len(rr) or len(mr[0]) != len(rr[0]):
         return False, f"形状不同:{len(mr)}×{len(mr[0])} vs {len(rr)}×{len(rr[0])}"
-    def canon(row):
-        out = []
-        for v in row:
-            n = _num(v)
-            out.append(("n", round(n, 6)) if n is not None else ("s", str(v)))
-        return tuple(out)
-    a = sorted(canon(r) for r in mr)
-    b = sorted(canon(r) for r in rr)
-    for x, y in zip(a, b):
-        for (kx, vx), (ky, vy) in zip(x, y):
-            if kx != ky:
+    width = len(mr[0])
+    if any(len(r) != width for r in mr + rr):
+        return False, "结果行宽不一致"
+
+    def grouped(rows):
+        out = {}
+        for row in rows:
+            # Numeric-looking IDs are dimensions, never approximate measures.
+            key = tuple((type(v).__name__, repr(v)) for v in row[:-1])
+            if allow_text and isinstance(row[-1], str):
+                value = ("text", row[-1])
+            else:
+                numeric = _num(row[-1])
+                if numeric is None:
+                    return None
+                value = ("number", numeric)
+            out.setdefault(key, []).append(value)
+        return {key: sorted(values) for key, values in out.items()}
+
+    a, b = grouped(mr), grouped(rr)
+    if a is None or b is None:
+        return False, "度量须为非空有限数值"
+    if a.keys() != b.keys():
+        return False, "维度值不一致"
+    for key, values in a.items():
+        if len(values) != len(b[key]):
+            return False, "维度重复行数不一致"
+        for x, y in zip(values, b[key]):
+            if x[0] != y[0]:
                 return False, "取值类型不同"
-            if kx == "n":
-                if not _close(vx, vy, tol):
-                    return False, f"数值不一致:{vx} vs {vy}"
-            elif vx != vy:
-                return False, f"维度值不一致:{vx} vs {vy}"
+            if x[0] == "text" and x[1] != y[1]:
+                return False, "文本度量不一致"
+            if x[0] == "number" and not _close(x[1], y[1], tolerance):
+                return False, f"数值不一致:{x} vs {y}"
     return True, "一致"
 
 
@@ -444,8 +485,30 @@ def adjudicate(db_path, contract, ir=None, references=None, tol=DEFAULT_TOLERANC
     c = dict(contract)
     ev = {"compiled_sql": "", "executed": False, "rows": 0, "reference": None, "match": None,
           "error": "", "checked_at": time.strftime("%Y-%m-%dT%H:%M:%S")}
+    con = None
+    try:
+        con = ro_connect(db_path)
+        con.execute("BEGIN")
+        deadline = time.monotonic() + QUERY_TIMEOUT_S
+        con.set_progress_handler(lambda: int(time.monotonic() > deadline), 10000)
+        ev["snapshot"] = "sqlite-read-transaction"
+        return _adjudicate_snapshot(db_path, c, ev, con, references, tol)
+    except (OSError, sqlite3.Error) as exc:
+        ev["error"] = f"核验快照失败:{type(exc).__name__}: {str(exc)[:160]}"
+        c["evidence"] = ev
+        if c.get("status") not in ("certified", "deprecated"):
+            c["status"] = "candidate"
+            c["candidate"] = True
+        return c
+    finally:
+        if con is not None:
+            con.close()
+
+
+def _adjudicate_snapshot(db_path, c, ev, con, references, tol):
+    """Schema, main SQL, references and regrouped queries share one read snapshot."""
     human = c.get("status") in ("certified", "deprecated")
-    missing = schema_missing(db_path, c)
+    missing = schema_missing(db_path, c, connection=con)
     try:
         if missing:
             raise ValueError(";".join(missing))
@@ -455,14 +518,16 @@ def adjudicate(db_path, contract, ir=None, references=None, tol=DEFAULT_TOLERANC
         c["evidence"] = ev
         if not human:
             c["status"] = "candidate"
+            c["candidate"] = True
         return c
     ev["compiled_sql"] = sql
-    res = execute(db_path, sql)
+    res = execute(db_path, sql, connection=con)
     if res.get("error"):
         ev["error"] = res["error"]
         c["evidence"] = ev
         if not human:
             c["status"] = "candidate"
+            c["candidate"] = True
         return c
     ev["executed"] = True
     ev["rows"] = len(res.get("rows") or [])
@@ -476,7 +541,7 @@ def adjudicate(db_path, contract, ir=None, references=None, tol=DEFAULT_TOLERANC
             rres = {"columns": ["value"], "rows": [[ref.get("value")]]}
             mine = res if ev["rows"] == 1 else None
         elif ref.get("kind") == "sql" and ref.get("sql"):
-            rres = execute(db_path, ref["sql"])
+            rres = execute(db_path, ref["sql"], connection=con)
             if rres.get("error"):
                 best = best or {"source": ref.get("source", ""), "kind": "sql",
                                 "note": "参照 SQL 无法执行:" + rres["error"], "match": None}
@@ -487,7 +552,10 @@ def adjudicate(db_path, contract, ir=None, references=None, tol=DEFAULT_TOLERANC
                 dims = ref.get("dimensions") or c.get("dimensions") or []
                 grain = ref.get("grain")
                 try:
-                    mine = execute(db_path, compile_sql(c, grain=grain, dimensions=dims))
+                    missing_dims = schema_missing(db_path, {**c, "dimensions": dims}, connection=con)
+                    if missing_dims:
+                        raise ValueError(";".join(missing_dims))
+                    mine = execute(db_path, compile_sql(c, grain=grain, dimensions=dims), connection=con)
                 except ValueError as exc:
                     best = best or {"source": ref.get("source", ""), "kind": "sql",
                                     "note": f"无法按参照形状编译:{exc}", "match": None}
@@ -502,9 +570,11 @@ def adjudicate(db_path, contract, ir=None, references=None, tol=DEFAULT_TOLERANC
             best = best or {"source": ref.get("source", ""), "kind": ref.get("kind"),
                             "note": "参照是标量而指标结果不是", "match": False}
             continue
-        ok, why = compare_results(mine, rres, ref.get("tol", tol))
-        rec = {"source": str(ref.get("source") or "")[:160], "kind": ref.get("kind"),
-               "match": ok, "note": why}
+        ok, why = compare_results(mine, rres, ref.get("tol", tol),
+                                  allow_text=(c.get("measure") or {}).get("agg") in ("min", "max"))
+        rec = {k: ref[k] for k in ("sql", "value", "dimensions", "grain", "tol") if k in ref}
+        rec.update({"source": str(ref.get("source") or "")[:160], "kind": ref.get("kind"),
+                    "tol": ref.get("tol", tol), "match": ok, "note": why})
         if ok:
             best = rec
             break
@@ -557,7 +627,7 @@ def counts(ir):
 
 
 def upsert_layers(ir, contracts):
-    """把契约并入 ir["metric_layers"]:同 id/同名者按状态取高(不降级人工结论),
+    """把契约并入 ir["metric_layers"]:人工决定保留,机器状态服从最新核验,
     旧形状指标原样保留。返回 (metric_layers, 统计)。"""
     layers = ir.get("metric_layers") if isinstance(ir.get("metric_layers"), dict) else {}
     layers = {k: list(v) for k, v in layers.items() if isinstance(v, list)}
@@ -581,9 +651,11 @@ def upsert_layers(ir, contracts):
             continue
         k, i = hit
         old = layers[k][i]
-        if status_rank(old.get("status")) > status_rank(c.get("status")):
+        if old.get("status") in ("certified", "deprecated"):
             merged = dict(old)
-            merged["evidence"] = c.get("evidence") or old.get("evidence")
+            # Evidence for a different formula must not certify the retained contract.
+            if _same_caliber(old, c):
+                merged["evidence"] = c.get("evidence") or old.get("evidence")
             merged["provenance"] = _merge_prov(old.get("provenance"), c.get("provenance"))
             layers[k][i] = merged
             stat["kept"] += 1
@@ -596,6 +668,15 @@ def upsert_layers(ir, contracts):
             layers[k][i] = merged
             stat["updated"] += 1
     return layers, stat
+
+
+def _same_caliber(a, b):
+    fields = ("table", "entity", "measure", "filters", "time", "dimensions", "inputs", "formula")
+    try:
+        ca, cb = normalize(a), normalize(b)
+    except ValueError:
+        return False
+    return all(ca[k] == cb[k] for k in fields)
 
 
 def _merge_prov(a, b):

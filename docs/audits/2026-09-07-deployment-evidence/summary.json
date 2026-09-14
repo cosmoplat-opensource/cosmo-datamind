@@ -1,0 +1,142 @@
+{
+  "date": "2026-09-07",
+  "outcome": "deployed and running; final checks passed",
+  "service": {
+    "url": "http://127.0.0.1:8092",
+    "server": "gunicorn",
+    "workers": 1,
+    "workdir": "/Users/jinzeyu/apps/haier_database/cosmo-datamind/workdir",
+    "database": "/Users/jinzeyu/apps/haier_database/cosmo-datamind/examples/demo_metrics.db",
+    "started_at": "2026-09-07T01:52:58+0900",
+    "source_sha256": "e530c22ea44e106b36753ff49286af8df135e189db0f647e665fdd8cb0f0e15f",
+    "env_file_loaded": true,
+    "running": true,
+    "pid": 21678,
+    "source_changed": false,
+    "database_ready": true
+  },
+  "runtime": "configured OpenAI-compatible DeepSeek endpoint, actual calls",
+  "artifact": {
+    "graph": "built_7e80b6",
+    "name": "验收_部署_20260907",
+    "objects": 108,
+    "relationships": 122,
+    "verified_relationships": 97,
+    "quality": "review",
+    "retained": true
+  },
+  "live_acceptance": {
+    "http_checks": 56,
+    "ui_walkthrough": 64,
+    "ui_errors": 0,
+    "workflow_checks": 54,
+    "upload_api_checks": 6,
+    "upload_ui_checks": 9,
+    "ontology_check_groups": 8,
+    "verified_relationships_independently_replayed": 97,
+    "qa_sql": "SELECT COUNT(*) AS cnt FROM dim_customer",
+    "qa_value": 25,
+    "concurrency": 8,
+    "bounded_requests": 32,
+    "p95_ms": 23.197
+  },
+  "isolated_regression": {
+    "unit_passed": 720,
+    "coverage_configured_modules_percent": 87.5,
+    "integration_passed": 551,
+    "integration_conditional_skips": 8,
+    "strict_rounds": 10,
+    "unit_commands": [
+      {
+        "name": "lint",
+        "exit_code": 0,
+        "seconds": 0.075,
+        "log": "lint.log"
+      },
+      {
+        "name": "types",
+        "exit_code": 0,
+        "seconds": 1.057,
+        "log": "types.log"
+      },
+      {
+        "name": "unit",
+        "exit_code": 0,
+        "seconds": 8.055,
+        "log": "unit.log"
+      },
+      {
+        "name": "coverage",
+        "exit_code": 0,
+        "seconds": 0.345,
+        "log": "coverage.log"
+      }
+    ],
+    "integration_commands": [
+      {
+        "name": "integration",
+        "exit_code": 0,
+        "seconds": 7.556,
+        "log": "integration.log"
+      },
+      {
+        "name": "strict10",
+        "exit_code": 0,
+        "seconds": 0.284,
+        "log": "strict10.log"
+      }
+    ]
+  },
+  "resolved_findings": [
+    "Failed CSV refresh lost the old table; fixed, redeployed, API/browser checks passed.",
+    "Upload UI reported success despite a per-file error; fixed including overlapping notices.",
+    "Chrome discarded long SSE response text after successful build; retained actual artifact and resumed with native response-clone capture.",
+    "UI runner printed cumulative console errors without nonzero exit; now fails on all accumulated errors; stable rerun passed."
+  ],
+  "limits": [
+    "Local persistent service; no boot autostart or public TLS deployment.",
+    "Short bounded concurrency is not a capacity benchmark.",
+    "Ontology remains review-required; ambiguous CQ is partial; 146 legacy metric candidates have no executable contracts.",
+    "Other model runtimes and unconfigured external databases were not exercised."
+  ],
+  "preservation": {
+    "env_unchanged": true,
+    "preexisting_missing": [],
+    "preexisting_changed": [
+      "workdir/uploads.db",
+      "workdir/ont_usage.json"
+    ],
+    "preexisting_graphs_unchanged": true,
+    "original_uploaded_tables_and_rows_unchanged": true,
+    "demo_database_matches_git": true,
+    "notes": "uploads.db physical bytes may change after disposable table DDL; ont_usage.json records this acceptance activity."
+  },
+  "evidence_sha256": {
+    "coverage.log": "1104154ed9d60b37cf4b4b6c7eda53b1088f8e6f8c5953261a7f89a7b3c02c33",
+    "cq.json": "d5581b6bf7ed964278ece4aa3f13df37898ac7a6d3d1bd058056643e157adb75",
+    "strict10.json": "fdc1fa9799fd1b13d94a5f91c0764719093358361d16f5408b44a766f9ad92c6",
+    "upload-error-preserved.png": "5de11ad578dcb6ef48cdcc71203e1f3831e69246872558d9bf74f187d33f275d",
+    "metric-readjudication.json": "16db28f46404c45ab91b665fd8a258ca8c2a8d2b93ac70e2791542d722641303",
+    "service-status.json": "dc270c5dab7bb4089ca1c5cc39c506f9fd89830f4fcf24a9b3bc34184721261e",
+    "upload-regression-after.json": "6c18a0f00ff00bf927afed188af13806868ce10517a143e9ace6cdea1044398d",
+    "graph-desktop.png": "df2d9923fb9b343001ade8f64a844016195e0b31d6edbda7759109d8d1950726",
+    "quality.json": "5515f80dd656f798ccc3ed84c064b04d3815deca3322fd03337ee537f3d37f54",
+    "preservation.json": "0e5510341cf258e3a01914fc09e8423a95dd9fd4f50f300ff904a4bd5218450c",
+    "http.json": "ac58356ef89af3c32c6253fb10c7b715b8c0cd872892d74f402df65d08901f47",
+    "exports.json": "133b9684358e7e70b9eeff7ae1de4d5b9382e32797865e5b9f1e281800848385",
+    "integration.log": "d2226c48de6c2ab66e01e73cb537b57457604e008672a406caa145d024037b6e",
+    "ontology-checks.json": "e5d4ab87b7a377ac00aa226c99f60e013e873fa4e5dd99028ccf9ca2f43827dd",
+    "relationship-evidence.json": "22f078adfff632db91e0a8e993b88e248d7bd7e6b74d74676fd946e5c3df5606",
+    "unit.log": "c1725f6eb9dc00759cbab055fbe7816d9ab9b6b3aaab56f0d7048e87e5bcdae3",
+    "real-build-completed.png": "3218d073323a1cebe3829c9d0c939dbf5026c252bf6aa693028aa3cd565bfb32",
+    "initial-build-capture-report.json": "a05bb3b8e54bedbad8f002f8974b2ef84cb99e5b593a066928a84f20834a7f37",
+    "ui-walkthrough.log": "5119c3132b01142db928bfff559025c95293fa3b1152c10abd1b3d90e0f5a516",
+    "live-workflow.json": "b66649c04a486f9a721fa9785c1cea903b928571f350e690c55b8b1c19c7877a",
+    "upload-ui.json": "982214a92f2775d3dedfbc1a4dca055e03842d7a3fb4aa6ba4bb68226f534acf",
+    "built_7e80b6.json": "7eac423201cefaab8fcb98784725c639be2bb46f1b72162ad728ce731846946f",
+    "real-qa-events.json": "e9a3ec8e79a67b47188509ab053640c1cba479ca94272458aee7b599869f8578",
+    "graph-mobile.png": "f4ee2b5e832437992c84d724de0fbfe6d898840122adf4220dd617d7b42ae25c",
+    "real-qa-result.json": "4e2b1c4f1dc4e551489f6e288d15584b888a152a13cdae29c8643d790e1d1b67",
+    "upload-regression-before.json": "7e7ae0154df68145f0c19938b49029c2c9e5668601e23f30407089d92e42e50f"
+  }
+}

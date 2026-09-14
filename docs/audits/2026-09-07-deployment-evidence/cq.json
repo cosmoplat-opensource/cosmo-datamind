@@ -1,0 +1,75 @@
+{
+  "counts": {
+    "answerable": 1,
+    "partial": 1,
+    "unanswerable": 1
+  },
+  "coverage": 33.3,
+  "gaps": [
+    {
+      "desc": "能力问题未被支撑:订单与客户之间有哪些可验证的关联？ —— 仅锚定到一个对象，无法证明问句中的其他业务概念均已覆盖",
+      "fix": "补充该验收问题的期望对象清单(expect)，或为遗漏对象补中文名/业务别名",
+      "type": "cq_partial"
+    },
+    {
+      "desc": "能力问题未被支撑:验收：不存在的对象是否会被错误认定为可答？ —— 本体中不存在声明的对象: __acceptance_missing_object__",
+      "fix": "补建模:先让抽取环节产出这些对象,再重新核验",
+      "type": "cq_unanswerable"
+    }
+  ],
+  "graph": "built_7e80b6",
+  "items": [
+    {
+      "anchors": [
+        {
+          "cn": "客户",
+          "key": "dim_customer",
+          "matched": "客户"
+        }
+      ],
+      "fix": "补充该验收问题的期望对象清单(expect)，或为遗漏对象补中文名/业务别名",
+      "path": [
+        "dim_customer"
+      ],
+      "question": "订单与客户之间有哪些可验证的关联？",
+      "reason": "仅锚定到一个对象，无法证明问句中的其他业务概念均已覆盖",
+      "verdict": "partial"
+    },
+    {
+      "anchors": [
+        {
+          "cn": "销售订单",
+          "declared": true,
+          "key": "fact_sales_order",
+          "matched": "fact_sales_order"
+        },
+        {
+          "cn": "客户",
+          "declared": true,
+          "key": "dim_customer",
+          "matched": "dim_customer"
+        }
+      ],
+      "fix": "",
+      "path": [
+        [
+          "fact_sales_order",
+          "dim_customer"
+        ]
+      ],
+      "question": "验收：这两个已验证对象之间是否存在可信关系路径？",
+      "reason": "全部对象已锚定,且路径仅经 verified/asserted 边",
+      "verdict": "answerable"
+    },
+    {
+      "anchors": [],
+      "fix": "补建模:先让抽取环节产出这些对象,再重新核验",
+      "path": null,
+      "question": "验收：不存在的对象是否会被错误认定为可答？",
+      "reason": "本体中不存在声明的对象: __acceptance_missing_object__",
+      "verdict": "unanswerable"
+    }
+  ],
+  "note": "结构可达性判定,不执行查询;answerable 表示本体结构支持该问题,不代表数据中一定有值——数据侧验证见问数评测",
+  "total": 3
+}

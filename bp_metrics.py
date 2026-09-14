@@ -7,6 +7,7 @@ GET /api/metric/dimensions。人工只能授予 certified / deprecated;verified 
 本 blueprint 不提供把指标直接置为 verified 的途径。
 """
 import time
+from copy import deepcopy
 
 from flask import Blueprint, jsonify, request
 
@@ -76,20 +77,25 @@ def metric_status():
         return jsonify({"error": "status 只能是 certified / deprecated / candidate;verified 只能由核验产生"}), 400
     if status == "certified" and not reviewer:
         return jsonify({"error": "certified 须记录确认人(reviewer)"}), 400
-    ir, wp, err = _deps["open_writable"](key)
-    if err: return err
-    layer, idx, m = _find(ir, name)
-    if not m: return jsonify({"error": "指标不存在"}), 404
-    if status == "certified" and not metric_contract.is_contract(m):
-        return jsonify({"error": "旧形状指标没有可编译口径,不能确认为 certified;先补契约"}), 400
-    m["status"] = status
-    m["candidate"] = status == "candidate"
-    if status == "certified":
-        m["certified_by"], m["certified_at"] = reviewer, time.strftime("%Y-%m-%dT%H:%M:%S")
-    else:
-        m.pop("certified_by", None); m.pop("certified_at", None)
-    if reason: m["review_reason"] = reason
     with _deps["write_lock"]:
+        ir, wp, err = _deps["open_writable"](key)
+        if err: return err
+        layer, idx, m = _find(ir, name)
+        if not m: return jsonify({"error": "指标不存在"}), 404
+        if status == "certified":
+            if not metric_contract.is_contract(m):
+                return jsonify({"error": "旧形状指标没有可编译口径,不能确认为 certified;先补契约"}), 400
+            try:
+                metric_contract.compile_sql(m)
+            except ValueError as exc:
+                return jsonify({"error": f"口径无法编译:{exc}"}), 400
+        m["status"] = status
+        m["candidate"] = status == "candidate"
+        if status == "certified":
+            m["certified_by"], m["certified_at"] = reviewer, time.strftime("%Y-%m-%dT%H:%M:%S")
+        else:
+            m.pop("certified_by", None); m.pop("certified_at", None)
+        if reason: m["review_reason"] = reason
         _deps["write_json"](wp, ir)
     return jsonify({"graph": key, "metric": name, "layer": layer, "status": status})
 
@@ -99,14 +105,21 @@ def metric_adjudicate():
     """对图谱里的契约重跑执行核验(不新增候选);证据里保存的参照复用。"""
     body = request.json or {}
     key = str(body.get("graph") or "").strip()
-    ir, wp, err = _deps["open_writable"](key)
-    if err: return err
+    with _deps["write_lock"]:
+        ir, wp, err = _deps["open_writable"](key)
+        if err: return err
+        ir = deepcopy(ir)
+    previous_metrics = deepcopy(ir.get("metric_layers"))
     # 数据源缺省取构建清单记录的来源,再退到示例主库;外部库或不存在则如实拒绝
     source = body.get("source") or ((ir.get("build_manifest") or {}).get("source") or {}).get("id") or "demo"
     db = _deps["db_for_source"](source)
     if not db: return jsonify({"error": f"数据源「{source}」不可用(外部库或不存在)"}), 400
     out = metric_pipeline.readjudicate(db, ir)
-    ir["metric_layers"] = out["metric_layers"]
     with _deps["write_lock"]:
-        _deps["write_json"](wp, ir)
-    return jsonify({"graph": key, **out["report"], "counts": metric_contract.counts(ir)})
+        latest, wp, err = _deps["open_writable"](key)
+        if err: return err
+        if latest.get("metric_layers") != previous_metrics:
+            return jsonify({"error": "核验期间指标已修改，请重新核验"}), 409
+        latest["metric_layers"] = out["metric_layers"]
+        _deps["write_json"](wp, latest)
+    return jsonify({"graph": key, **out["report"], "counts": metric_contract.counts(latest)})

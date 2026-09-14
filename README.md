@@ -14,13 +14,13 @@ Apache-2.0 · Python + Flask + 原生 JS(无前端构建步骤)· 单端口本�
 - "直通率"和"良率"被混用,答案给了数却给不出口径;
 - 跨表 JOIN 全靠猜,错了也没人发现。
 
-COSMO DataMind 先用模型批量提出候选项，再用数据库约束和取值样本验证连接关系，由人工确认业务语义。构建时可选择或不选择制造/化工/PCBA 行业参照与 BFO+IOF、ISA-95、UFO 本体标准；系统记录每条关系的验证依据和状态，无法确认的标准映射保留为本地属性。
+COSMO DataMind 先用模型批量提出候选项，再用数据库约束和完整取值集合的 SQL 聚合验证连接关系，由人工确认业务语义。构建时可选择或不选择制造/化工/PCBA 行业参照与 BFO+IOF、ISA-95、UFO 本体标准；系统记录每条关系的验证依据和状态，无法确认的标准映射保留为本地属性。
 
 ## 核心特性
 
 | 能力 | 说明 |
 |---|---|
-| **半自动本体构建** | 行业/本体标准（可不选，参照或强约束）+ CQ/技能方法 → 候选提议 → 语义复核 → 数据验证 → 确定性验收 → 人工确认。`verified` 至少要求声明外键，或取值重叠(≥60%)、父键唯一、命名依据与方向检查同时成立；依据不足时保留为 `candidate` |
+| **半自动本体构建** | 行业/本体标准（可不选，参照或强约束）+ CQ/技能方法 → 候选提议 → 语义复核 → 数据验证 → 确定性验收 → 人工确认。`verified` 至少要求通过引用完整性检查的声明外键，或完整取值重叠(≥60%)、父键唯一、命名依据与方向检查同时成立；依据不足时保留为 `candidate` |
 | **证据分层** | 每条关系带状态 `verified` / `asserted` / `candidate` / `gap`;图上线型即语义,一眼看出哪条敢用 |
 | **深度问数** | 自然语言 → 本体定位对象与口径 → 生成 SQL → **只读执行** → 带出处作答;同屏给出指标口径卡(计算口径/数据出处/血缘) |
 | **本体锚定可视化** | 选中哪套本体、凭哪个词命中哪张表、沿哪条关系扩展、最终 SQL 真正用了谁 —— 对话区常驻锚定条画出完整链路,可一键跳到图谱高亮「用到的是本体的哪一块」 |
@@ -28,6 +28,7 @@ COSMO DataMind 先用模型批量提出候选项，再用数据库约束和取�
 | **口径校验** | SQL 执行前校验:表须在本体白名单内,JOIN 键须落在已验证关系上,1:N JOIN 父侧列的求和/求均/计数按扇出风险拦截,越界即拦 |
 | **根因诊断** | 沿本体关系两跳召回,输出受本体边界约束的根因与检查清单;实体未命中即**如实拒答**,不作无锚定生成 |
 | **动作层** | 类型化参数 + 风险分级:低风险直接形成动作记录、高风险人审批,决策全程留痕。当前为 `decision_capture`，不写回业务系统；经 MCP 对外时,**发起动作是唯一写工具,审批不开放** |
+| **构建 Agent 接口** | 半自动构建经 MCP 对外(`mcp_build_server.py`):外部 Agent 可发起构建、跟踪作业、读验收结果与人审队列;**发起构建是唯一写工具**——verified/asserted/certified 只能由数据裁决与人工产生,Agent 无状态改写工具 |
 | **标准导出** | OWL2 / RDF / SHACL / SKOS / JSON-LD,并提供 SPARQL 端点;另可导出 **Apache Ossie**(原 OSI)语义模型与本体 YAML(按官方 schema 0.2.0.dev0 快照生成,示例本体已通过其官方 validator)与关系型语义层投影 |
 | **问数评测** | 参考问题集 × 三组同题对照(无检索增强 / 图谱增强 / 本体增强),度量正确率、出处引用率与口径拦截数 |
 | **本体体检** | 能力核验(CQ)、数据源漂移、图结构检查(孤岛/自反/重复边/超级节点)、向后兼容影响面、模块化建议 —— 全部确定性计算,不调 LLM |
@@ -39,7 +40,7 @@ COSMO DataMind 先用模型批量提出候选项，再用数据库约束和取�
 
 ## 安装与部署
 
-以下命令序列均经全新克隆 + 干净 venv 实测。
+以下为安装命令；本轮验证环境及范围见审计报告。
 
 ### 1. 安装
 
@@ -47,6 +48,7 @@ COSMO DataMind 先用模型批量提出候选项，再用数据库约束和取�
 git clone <repo-url>
 cd cosmo-datamind
 python3 -m venv .venv && source .venv/bin/activate
+python -m pip install --upgrade pip==26.2
 pip install -r requirements.txt
 ```
 
@@ -67,10 +69,11 @@ export DATAMIND_ENGINE_DIR=/path/to/ontology-engine   # 上游引擎(可选)
 ```bash
 python3 server.py                  # 仅本地开发，前台运行 → http://127.0.0.1:8092
 # 或
-./start.sh                         # 仅本地开发，后台运行,日志在 workdir/server.log
+./start.sh                         # 读取 .env，以 Gunicorn 常驻运行；日志在 .deploy/
 ```
 
-停止:`kill $(lsof -ti :8092)`
+状态：`./status.sh`；停止：`./stop.sh`；更新后重启：`.venv/bin/python scripts/service.py restart`。
+管理器只控制自己 PID 文件对应的 Gunicorn，不会按端口终止其他程序。
 
 ### 4. 验证与测试
 
@@ -78,6 +81,20 @@ python3 server.py                  # 仅本地开发，前台运行 → http://1
 curl http://127.0.0.1:8092/api/overview      # KPI 概览(无库时含 warning 字段)
 python3 test_all.py                          # 系统级回归(源码定义 565 个检查点;需服务已启动)
 ```
+
+开发与 CI 推荐使用隔离入口，自动复制已提交的验证种子到临时目录并禁用本机模型配置：
+
+```bash
+python -m pip install --upgrade pip==26.2
+pip install -r requirements-dev.txt -r requirements-ui.txt
+python -m playwright install chromium
+python scripts/check.py --suite all
+```
+
+可分别选择 `--suite unit`、`integration`、`ui`；日志、逐层退出码和浏览器截图在 `.check-results/`。
+`pytest` 默认也使用临时运行目录；Node.js 用于执行真实前端函数的行为测试。
+本轮问题、改进效果和未覆盖范围见 [2026-09-07 审计报告](docs/audits/2026-09-07.md)，
+需求到测试映射见 [specs/acceptance.json](specs/acceptance.json)。
 
 ### 5. 跑通 demo(五分钟看完主链路)
 
@@ -134,10 +151,16 @@ B2MML（ISA-95 的公开 XML 实现）已固定版本放在 `ontology/standards/
 gunicorn -c gunicorn.conf.py wsgi:application
 ```
 
+本机实际部署推荐 `./start.sh`，它从 `.env` 读取配置、归一数据路径并启动独立后台 Gunicorn。
+`./status.sh` 显示数据库健康和运行版本是否落后于当前源码；源码或配置更新后执行
+`.venv/bin/python scripts/service.py restart`。端口可用 `./start.sh --port 18092` 显式覆盖。
+进程退出终端后继续运行；此入口不安装系统开机自启。部署记录见
+[2026-09-07 实际部署验收](docs/audits/2026-09-07-deployment.md)。
+
 配置固定为单 worker + 有界线程，因为会话、作业和锁仍是进程内状态；超时默认 1800 秒，
 可容纳长构建/SSE，但仍有硬上限。Nginx 模板在
 [`deploy/nginx/cosmo-datamind.conf`](deploy/nginx/cosmo-datamind.conf)，已保留 Host、关闭 SSE
-缓冲并设置上传/请求超时。部署时必须补 TLS 与身份认证——本服务自身不含用户体系，见
+缓冲并设置上传/请求超时。TLS 在代理终止时设置 `DATAMIND_PUBLIC_ORIGIN=https://你的域名`；额外主机用 `DATAMIND_TRUSTED_HOSTS` 明确声明。部署时必须补 TLS 与身份认证——本服务自身不含用户体系，见
 [SECURITY.md](SECURITY.md)。
 
 ## 运行形态:两档
@@ -273,8 +296,8 @@ GLM-5.2 与 OpenAI 的完整配置、用自然语言建一张带中文名的本�
 
 `specs/` 下是完整的**规约驱动开发(SDD)**记录——不是事后补的说明,而是开发时的决策依据:
 
-- `specs/decisions/` — DR-001…DR-052 决策记录,每篇写清背景、选项、取舍与代价
-- `specs/iterations/` — IR-001…IR-013 迭代记录,含验收标准与实测结果
+- `specs/decisions/` — DR-001…DR-057 决策记录,每篇写清背景、选项、取舍与代价
+- `specs/iterations/` — IR-001…IR-015 迭代记录,含验收标准与实测结果
 - `specs/map.md` — 入口索引
 
 半自动构建方法的核心取舍（为何数据验证优先于模型判断、为何人工确认产生 `asserted`、
@@ -286,8 +309,10 @@ GLM-5.2 与 OpenAI 的完整配置、用自然语言建一张带中文名的本�
 
 ```bash
 # 单元层:离线、秒级,不需起服务(确定性模块的隔离测试)
-python3 -m venv .venv && .venv/bin/pip install -r requirements-dev.txt
-.venv/bin/python -m pytest tests/ -q      # 单测 + 文档计数自检(2026-09-01:389 项测试)
+python3 -m venv .venv
+.venv/bin/python -m pip install --upgrade pip==26.2
+.venv/bin/pip install -r requirements-dev.txt
+.venv/bin/python -m pytest tests/ -q      # 单测 + 文档与规格映射自检
 .venv/bin/coverage run -m pytest tests/ -q && .venv/bin/coverage report   # 覆盖率低于81.0%时失败
 
 # 集成层:需先起服务（用生产 WSGI 路径验证）

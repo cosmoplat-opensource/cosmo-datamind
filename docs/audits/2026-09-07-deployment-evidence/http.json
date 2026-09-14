@@ -1,0 +1,899 @@
+{
+  "started_at_utc": "2026-09-06T16:55:04Z",
+  "url": "http://127.0.0.1:8092",
+  "duration_seconds": 0.135,
+  "passed": 56,
+  "failed": 0,
+  "total": 56,
+  "safety": {
+    "mutating_endpoints_called": false,
+    "llm_called": false,
+    "external_sources_queried": false,
+    "response_bodies_recorded": false,
+    "max_concurrency": 8,
+    "load_requests": 32,
+    "max_response_bytes": 2000000
+  },
+  "scope_limit": "有限 HTTP 回归与轻量并发；未测绝对容量、长期泄漏、CPU/RSS 或公网渗透。",
+  "load": {
+    "name": "bounded_concurrency",
+    "ok": true,
+    "concurrency": 8,
+    "requests": 32,
+    "successful_requests": 32,
+    "duration_ms": 42.486,
+    "requests_per_second": 753.18,
+    "p50_ms": 5.447,
+    "p95_ms": 23.197,
+    "max_ms": 24.495,
+    "latency_budget_ms": 5000
+  },
+  "checks": [
+    {
+      "name": "health_before",
+      "method": "GET",
+      "path": "/api/health",
+      "expected_status": [
+        200
+      ],
+      "ok": true,
+      "status": 200,
+      "elapsed_ms": 3.076,
+      "bytes": 39
+    },
+    {
+      "name": "database_ready",
+      "method": "GET",
+      "path": "/api/db/check",
+      "expected_status": [
+        200
+      ],
+      "ok": true,
+      "status": 200,
+      "elapsed_ms": 1.831,
+      "bytes": 48
+    },
+    {
+      "name": "html_entry_no_store",
+      "method": "GET",
+      "path": "/",
+      "expected_status": [
+        200
+      ],
+      "ok": true,
+      "status": 200,
+      "elapsed_ms": 1.55,
+      "bytes": 264439
+    },
+    {
+      "name": "html_head_no_store",
+      "method": "HEAD",
+      "path": "/",
+      "expected_status": [
+        200
+      ],
+      "ok": true,
+      "status": 200,
+      "elapsed_ms": 1.117,
+      "bytes": 0
+    },
+    {
+      "name": "ui_version_no_store",
+      "method": "GET",
+      "path": "/api/uiver",
+      "expected_status": [
+        200
+      ],
+      "ok": true,
+      "status": 200,
+      "elapsed_ms": 0.904,
+      "bytes": 17
+    },
+    {
+      "name": "build_references_no_store",
+      "method": "GET",
+      "path": "/api/build/references",
+      "expected_status": [
+        200
+      ],
+      "ok": true,
+      "status": 200,
+      "elapsed_ms": 1.728,
+      "bytes": 5961
+    },
+    {
+      "name": "vendor_local_echarts",
+      "method": "GET",
+      "path": "/vendor/echarts.min.js",
+      "expected_status": [
+        200
+      ],
+      "ok": true,
+      "status": 200,
+      "elapsed_ms": 3.344,
+      "bytes": 1029203
+    },
+    {
+      "name": "asset_build-references.js",
+      "method": "GET",
+      "path": "/assets/modules/build-references.js",
+      "expected_status": [
+        200
+      ],
+      "ok": true,
+      "status": 200,
+      "elapsed_ms": 3.15,
+      "bytes": 9113
+    },
+    {
+      "name": "asset_build-stream.js",
+      "method": "GET",
+      "path": "/assets/modules/build-stream.js",
+      "expected_status": [
+        200
+      ],
+      "ok": true,
+      "status": 200,
+      "elapsed_ms": 1.719,
+      "bytes": 7574
+    },
+    {
+      "name": "asset_catalog.js",
+      "method": "GET",
+      "path": "/assets/modules/catalog.js",
+      "expected_status": [
+        200
+      ],
+      "ok": true,
+      "status": 200,
+      "elapsed_ms": 1.501,
+      "bytes": 2682
+    },
+    {
+      "name": "asset_qa-anchor.js",
+      "method": "GET",
+      "path": "/assets/modules/qa-anchor.js",
+      "expected_status": [
+        200
+      ],
+      "ok": true,
+      "status": 200,
+      "elapsed_ms": 1.685,
+      "bytes": 15489
+    },
+    {
+      "name": "asset_qa-history.js",
+      "method": "GET",
+      "path": "/assets/modules/qa-history.js",
+      "expected_status": [
+        200
+      ],
+      "ok": true,
+      "status": 200,
+      "elapsed_ms": 1.469,
+      "bytes": 3640
+    },
+    {
+      "name": "asset_qa-ontology.js",
+      "method": "GET",
+      "path": "/assets/modules/qa-ontology.js",
+      "expected_status": [
+        200
+      ],
+      "ok": true,
+      "status": 200,
+      "elapsed_ms": 1.281,
+      "bytes": 6608
+    },
+    {
+      "name": "asset_qa-anchor.css",
+      "method": "GET",
+      "path": "/assets/styles/qa-anchor.css",
+      "expected_status": [
+        200
+      ],
+      "ok": true,
+      "status": 200,
+      "elapsed_ms": 1.698,
+      "bytes": 5809
+    },
+    {
+      "name": "asset_responsive.css",
+      "method": "GET",
+      "path": "/assets/styles/responsive.css",
+      "expected_status": [
+        200
+      ],
+      "ok": true,
+      "status": 200,
+      "elapsed_ms": 1.394,
+      "bytes": 2276
+    },
+    {
+      "name": "entry_references_modular_assets",
+      "method": "LOCAL",
+      "path": "/",
+      "ok": true,
+      "elapsed_ms": 0,
+      "asset_count": 8
+    },
+    {
+      "name": "builtin_source_matches_database_health",
+      "method": "GET",
+      "path": "/api/build/sources",
+      "expected_status": [
+        200
+      ],
+      "ok": true,
+      "status": 200,
+      "elapsed_ms": 7.271,
+      "bytes": 926
+    },
+    {
+      "name": "sql_readonly_literal",
+      "method": "POST",
+      "path": "/api/query",
+      "expected_status": [
+        200
+      ],
+      "ok": true,
+      "status": 200,
+      "elapsed_ms": 2.348,
+      "bytes": 43
+    },
+    {
+      "name": "sql_cte",
+      "method": "POST",
+      "path": "/api/query",
+      "expected_status": [
+        200
+      ],
+      "ok": true,
+      "status": 200,
+      "elapsed_ms": 2.555,
+      "bytes": 43
+    },
+    {
+      "name": "sql_trailing_comment",
+      "method": "POST",
+      "path": "/api/query",
+      "expected_status": [
+        200
+      ],
+      "ok": true,
+      "status": 200,
+      "elapsed_ms": 2.168,
+      "bytes": 43
+    },
+    {
+      "name": "sql_delete_denied",
+      "method": "POST",
+      "path": "/api/query",
+      "expected_status": [
+        400
+      ],
+      "ok": true,
+      "status": 400,
+      "elapsed_ms": 0.916,
+      "bytes": 68
+    },
+    {
+      "name": "sql_attach_denied",
+      "method": "POST",
+      "path": "/api/query",
+      "expected_status": [
+        400
+      ],
+      "ok": true,
+      "status": 400,
+      "elapsed_ms": 1.19,
+      "bytes": 68
+    },
+    {
+      "name": "sql_select_into_denied",
+      "method": "POST",
+      "path": "/api/query",
+      "expected_status": [
+        400
+      ],
+      "ok": true,
+      "status": 400,
+      "elapsed_ms": 1.474,
+      "bytes": 68
+    },
+    {
+      "name": "sql_stacking_denied",
+      "method": "POST",
+      "path": "/api/query",
+      "expected_status": [
+        400
+      ],
+      "ok": true,
+      "status": 400,
+      "elapsed_ms": 2.03,
+      "bytes": 67
+    },
+    {
+      "name": "sql_comment_quote_stacking_denied",
+      "method": "POST",
+      "path": "/api/query",
+      "expected_status": [
+        400
+      ],
+      "ok": true,
+      "status": 400,
+      "elapsed_ms": 1.437,
+      "bytes": 67
+    },
+    {
+      "name": "sql_executable_comment_denied",
+      "method": "POST",
+      "path": "/api/query",
+      "expected_status": [
+        400
+      ],
+      "ok": true,
+      "status": 400,
+      "elapsed_ms": 2.107,
+      "bytes": 68
+    },
+    {
+      "name": "sql_type_denied",
+      "method": "POST",
+      "path": "/api/query",
+      "expected_status": [
+        400
+      ],
+      "ok": true,
+      "status": 400,
+      "elapsed_ms": 1.844,
+      "bytes": 68
+    },
+    {
+      "name": "json_null_denied",
+      "method": "POST",
+      "path": "/api/query",
+      "expected_status": [
+        400
+      ],
+      "ok": true,
+      "status": 400,
+      "elapsed_ms": 1.588,
+      "bytes": 85
+    },
+    {
+      "name": "json_array_denied",
+      "method": "POST",
+      "path": "/api/query",
+      "expected_status": [
+        400
+      ],
+      "ok": true,
+      "status": 400,
+      "elapsed_ms": 2.47,
+      "bytes": 85
+    },
+    {
+      "name": "json_nonempty_array_denied",
+      "method": "POST",
+      "path": "/api/query",
+      "expected_status": [
+        400
+      ],
+      "ok": true,
+      "status": 400,
+      "elapsed_ms": 1.165,
+      "bytes": 85
+    },
+    {
+      "name": "json_string_denied",
+      "method": "POST",
+      "path": "/api/query",
+      "expected_status": [
+        400
+      ],
+      "ok": true,
+      "status": 400,
+      "elapsed_ms": 1.329,
+      "bytes": 85
+    },
+    {
+      "name": "json_number_denied",
+      "method": "POST",
+      "path": "/api/query",
+      "expected_status": [
+        400
+      ],
+      "ok": true,
+      "status": 400,
+      "elapsed_ms": 6.757,
+      "bytes": 85
+    },
+    {
+      "name": "json_boolean_denied",
+      "method": "POST",
+      "path": "/api/query",
+      "expected_status": [
+        400
+      ],
+      "ok": true,
+      "status": 400,
+      "elapsed_ms": 1.054,
+      "bytes": 85
+    },
+    {
+      "name": "malformed_json_denied",
+      "method": "POST",
+      "path": "/api/query",
+      "expected_status": [
+        400
+      ],
+      "ok": true,
+      "status": 400,
+      "elapsed_ms": 1.233,
+      "bytes": 85
+    },
+    {
+      "name": "same_origin_allowed",
+      "method": "POST",
+      "path": "/api/query",
+      "expected_status": [
+        200
+      ],
+      "ok": true,
+      "status": 200,
+      "elapsed_ms": 2.468,
+      "bytes": 43
+    },
+    {
+      "name": "same_origin_referer_allowed",
+      "method": "POST",
+      "path": "/api/query",
+      "expected_status": [
+        200
+      ],
+      "ok": true,
+      "status": 200,
+      "elapsed_ms": 2.238,
+      "bytes": 43
+    },
+    {
+      "name": "origin_opaque_denied",
+      "method": "POST",
+      "path": "/api/query",
+      "expected_status": [
+        403
+      ],
+      "ok": true,
+      "status": 403,
+      "elapsed_ms": 1.281,
+      "bytes": 74
+    },
+    {
+      "name": "origin_foreign_denied",
+      "method": "POST",
+      "path": "/api/query",
+      "expected_status": [
+        403
+      ],
+      "ok": true,
+      "status": 403,
+      "elapsed_ms": 0.822,
+      "bytes": 74
+    },
+    {
+      "name": "origin_malformed_denied",
+      "method": "POST",
+      "path": "/api/query",
+      "expected_status": [
+        403
+      ],
+      "ok": true,
+      "status": 403,
+      "elapsed_ms": 1.29,
+      "bytes": 74
+    },
+    {
+      "name": "origin_empty_denied",
+      "method": "POST",
+      "path": "/api/query",
+      "expected_status": [
+        403
+      ],
+      "ok": true,
+      "status": 403,
+      "elapsed_ms": 0.962,
+      "bytes": 74
+    },
+    {
+      "name": "cross_origin_referer_denied",
+      "method": "POST",
+      "path": "/api/query",
+      "expected_status": [
+        403
+      ],
+      "ok": true,
+      "status": 403,
+      "elapsed_ms": 0.967,
+      "bytes": 74
+    },
+    {
+      "name": "host_denied_rebind.audit.invalid",
+      "method": "GET",
+      "path": "/api/health",
+      "expected_status": [
+        400
+      ],
+      "ok": true,
+      "status": 400,
+      "elapsed_ms": 0.904,
+      "bytes": 55
+    },
+    {
+      "name": "host_denied_localhost.attacker.invalid",
+      "method": "GET",
+      "path": "/api/health",
+      "expected_status": [
+        400
+      ],
+      "ok": true,
+      "status": 400,
+      "elapsed_ms": 0.822,
+      "bytes": 55
+    },
+    {
+      "name": "host_denied_127.0.0.1.attacker.invalid",
+      "method": "GET",
+      "path": "/api/health",
+      "expected_status": [
+        400
+      ],
+      "ok": true,
+      "status": 400,
+      "elapsed_ms": 0.667,
+      "bytes": 55
+    },
+    {
+      "name": "vendor_sourcemap_denied",
+      "method": "GET",
+      "path": "/vendor/echarts.min.js.map",
+      "expected_status": [
+        404
+      ],
+      "ok": true,
+      "status": 404,
+      "elapsed_ms": 0.665,
+      "bytes": 9
+    },
+    {
+      "name": "vendor_traversal_denied",
+      "method": "GET",
+      "path": "/vendor/%2e%2e/%2e%2e/server.py",
+      "expected_status": [
+        400,
+        404
+      ],
+      "ok": true,
+      "status": 404,
+      "elapsed_ms": 0.789,
+      "bytes": 9
+    },
+    {
+      "name": "asset_traversal_denied",
+      "method": "GET",
+      "path": "/assets/modules/%2e%2e/%2e%2e/server.py",
+      "expected_status": [
+        400,
+        404
+      ],
+      "ok": true,
+      "status": 404,
+      "elapsed_ms": 0.642,
+      "bytes": 9
+    },
+    {
+      "name": "asset_source_denied",
+      "method": "GET",
+      "path": "/assets/server.py",
+      "expected_status": [
+        404
+      ],
+      "ok": true,
+      "status": 404,
+      "elapsed_ms": 0.634,
+      "bytes": 9
+    },
+    {
+      "name": "doc_traversal_denied",
+      "method": "GET",
+      "path": "/doc/%2e%2e",
+      "expected_status": [
+        400,
+        404
+      ],
+      "ok": true,
+      "status": 400,
+      "elapsed_ms": 0.717,
+      "bytes": 3
+    },
+    {
+      "name": "output_absolute_path_denied",
+      "method": "GET",
+      "path": "/api/outputs/file?p=/__codex_http_probe_missing",
+      "expected_status": [
+        403
+      ],
+      "ok": true,
+      "status": 403,
+      "elapsed_ms": 0.715,
+      "bytes": 9
+    },
+    {
+      "name": "graph_key_traversal_denied",
+      "method": "GET",
+      "path": "/api/ont/review?graph=..%2F__codex_http_probe_missing",
+      "expected_status": [
+        400
+      ],
+      "ok": true,
+      "status": 400,
+      "elapsed_ms": 0.674,
+      "bytes": 20
+    },
+    {
+      "name": "preview_identifier_denied",
+      "method": "GET",
+      "path": "/api/conn/preview?src=demo&table=bad%22name",
+      "expected_status": [
+        400
+      ],
+      "ok": true,
+      "status": 400,
+      "elapsed_ms": 0.734,
+      "bytes": 37
+    },
+    {
+      "name": "sparql_service_denied",
+      "method": "POST",
+      "path": "/api/sparql",
+      "expected_status": [
+        400
+      ],
+      "ok": true,
+      "status": 400,
+      "elapsed_ms": 0.782,
+      "bytes": 95
+    },
+    {
+      "name": "bounded_concurrency",
+      "ok": true,
+      "concurrency": 8,
+      "requests": 32,
+      "successful_requests": 32,
+      "duration_ms": 42.486,
+      "requests_per_second": 753.18,
+      "p50_ms": 5.447,
+      "p95_ms": 23.197,
+      "max_ms": 24.495,
+      "latency_budget_ms": 5000,
+      "samples": [
+        {
+          "ok": true,
+          "status": 200,
+          "elapsed_ms": 1.817,
+          "bytes": 39
+        },
+        {
+          "ok": true,
+          "status": 200,
+          "elapsed_ms": 5.799,
+          "bytes": 43
+        },
+        {
+          "ok": true,
+          "status": 200,
+          "elapsed_ms": 1.0,
+          "bytes": 39
+        },
+        {
+          "ok": true,
+          "status": 200,
+          "elapsed_ms": 8.81,
+          "bytes": 43
+        },
+        {
+          "ok": true,
+          "status": 200,
+          "elapsed_ms": 2.7,
+          "bytes": 39
+        },
+        {
+          "ok": true,
+          "status": 200,
+          "elapsed_ms": 23.197,
+          "bytes": 43
+        },
+        {
+          "ok": true,
+          "status": 200,
+          "elapsed_ms": 3.74,
+          "bytes": 39
+        },
+        {
+          "ok": true,
+          "status": 200,
+          "elapsed_ms": 18.815,
+          "bytes": 43
+        },
+        {
+          "ok": true,
+          "status": 200,
+          "elapsed_ms": 4.657,
+          "bytes": 39
+        },
+        {
+          "ok": true,
+          "status": 200,
+          "elapsed_ms": 20.658,
+          "bytes": 43
+        },
+        {
+          "ok": true,
+          "status": 200,
+          "elapsed_ms": 5.096,
+          "bytes": 39
+        },
+        {
+          "ok": true,
+          "status": 200,
+          "elapsed_ms": 21.536,
+          "bytes": 43
+        },
+        {
+          "ok": true,
+          "status": 200,
+          "elapsed_ms": 3.897,
+          "bytes": 39
+        },
+        {
+          "ok": true,
+          "status": 200,
+          "elapsed_ms": 24.495,
+          "bytes": 43
+        },
+        {
+          "ok": true,
+          "status": 200,
+          "elapsed_ms": 2.762,
+          "bytes": 39
+        },
+        {
+          "ok": true,
+          "status": 200,
+          "elapsed_ms": 22.227,
+          "bytes": 43
+        },
+        {
+          "ok": true,
+          "status": 200,
+          "elapsed_ms": 2.606,
+          "bytes": 39
+        },
+        {
+          "ok": true,
+          "status": 200,
+          "elapsed_ms": 21.315,
+          "bytes": 43
+        },
+        {
+          "ok": true,
+          "status": 200,
+          "elapsed_ms": 0.818,
+          "bytes": 39
+        },
+        {
+          "ok": true,
+          "status": 200,
+          "elapsed_ms": 18.138,
+          "bytes": 43
+        },
+        {
+          "ok": true,
+          "status": 200,
+          "elapsed_ms": 1.028,
+          "bytes": 39
+        },
+        {
+          "ok": true,
+          "status": 200,
+          "elapsed_ms": 16.436,
+          "bytes": 43
+        },
+        {
+          "ok": true,
+          "status": 200,
+          "elapsed_ms": 2.642,
+          "bytes": 39
+        },
+        {
+          "ok": true,
+          "status": 200,
+          "elapsed_ms": 14.7,
+          "bytes": 43
+        },
+        {
+          "ok": true,
+          "status": 200,
+          "elapsed_ms": 2.16,
+          "bytes": 39
+        },
+        {
+          "ok": true,
+          "status": 200,
+          "elapsed_ms": 14.324,
+          "bytes": 43
+        },
+        {
+          "ok": true,
+          "status": 200,
+          "elapsed_ms": 1.245,
+          "bytes": 39
+        },
+        {
+          "ok": true,
+          "status": 200,
+          "elapsed_ms": 12.076,
+          "bytes": 43
+        },
+        {
+          "ok": true,
+          "status": 200,
+          "elapsed_ms": 1.104,
+          "bytes": 39
+        },
+        {
+          "ok": true,
+          "status": 200,
+          "elapsed_ms": 10.621,
+          "bytes": 43
+        },
+        {
+          "ok": true,
+          "status": 200,
+          "elapsed_ms": 2.096,
+          "bytes": 39
+        },
+        {
+          "ok": true,
+          "status": 200,
+          "elapsed_ms": 10.355,
+          "bytes": 43
+        }
+      ]
+    },
+    {
+      "name": "health_after_load",
+      "method": "GET",
+      "path": "/api/health",
+      "expected_status": [
+        200
+      ],
+      "ok": true,
+      "status": 200,
+      "elapsed_ms": 0.684,
+      "bytes": 39
+    },
+    {
+      "name": "database_table_count_unchanged",
+      "method": "GET",
+      "path": "/api/db/check",
+      "expected_status": [
+        200
+      ],
+      "ok": true,
+      "status": 200,
+      "elapsed_ms": 1.486,
+      "bytes": 48
+    }
+  ]
+}

@@ -2,6 +2,7 @@
 """会话式 LLM 构建分支必须与 quick_build 共用同一数据裁决口径。"""
 import server
 import cq_check
+import pytest
 
 
 def _evidence(columns):
@@ -182,3 +183,69 @@ def test_composite_uniqueness_does_not_use_delimiter_concatenation(make_sqlite, 
         }),
     )
     assert ir["relations"][0]["status"] == "verified"
+
+
+def test_overlap_uses_entire_domain_not_first_8000_values(make_sqlite, monkeypatch):
+    db = make_sqlite({
+        "customers": ("id INTEGER PRIMARY KEY", [(i,) for i in range(8000)]),
+        "orders": ("order_id INTEGER PRIMARY KEY, customer_id INTEGER",
+                   [(i, i) for i in range(20000)]),
+    })
+    monkeypatch.setattr(server, "_llm_semantic_review", lambda relations, ev: None)
+    ir = server._adjudicate_ir(db, "test", _proposal("customer_id", "id"),
+                               _evidence({"customers": ["id"], "orders": ["order_id", "customer_id"]}))
+    relation = ir["relations"][0]
+    assert relation["status"] == "candidate"
+    assert relation["evidence"]["overlap"] == 40.0
+    assert relation["evidence"]["child_distinct"] == 20000
+    assert relation["evidence"]["evidence_complete"] is True
+
+
+def test_overlap_is_independent_of_parent_row_order(make_sqlite, monkeypatch):
+    db = make_sqlite({
+        "customers": ("id INTEGER PRIMARY KEY", [(i,) for i in range(12000)]),
+        "orders": ("order_id INTEGER PRIMARY KEY, customer_id INTEGER",
+                   [(i, i + 9000) for i in range(1000)]),
+    })
+    monkeypatch.setattr(server, "_llm_semantic_review", lambda relations, ev: None)
+    ir = server._adjudicate_ir(db, "test", _proposal("customer_id", "id"),
+                               _evidence({"customers": ["id"], "orders": ["order_id", "customer_id"]}))
+    assert ir["relations"][0]["status"] == "verified"
+    assert ir["relations"][0]["evidence"]["matched_distinct"] == 1000
+
+
+def test_failed_grounding_releases_read_snapshot(make_sqlite, monkeypatch):
+    import sqlite3
+    db = make_sqlite({"customers": ("id INTEGER PRIMARY KEY", [(1,)]),
+                      "orders": ("customer_id INTEGER", [(1,)])})
+    con = server.ro_connect(db)
+    monkeypatch.setattr(server, "ro_connect", lambda _db: con)
+    monkeypatch.setattr(server, "_llm_semantic_review", lambda *_: None)
+
+    def broken(*_args):
+        raise ValueError("invalid model annotation")
+
+    monkeypatch.setattr(server.ontology_grounding, "normalize", broken)
+    with pytest.raises(ValueError, match="annotation"):
+        server._adjudicate_ir(db, "test", _proposal("customer_id", "id"),
+                             _evidence({"customers": ["id"], "orders": ["customer_id"]}))
+    with pytest.raises(sqlite3.ProgrammingError, match="closed"):
+        con.execute("SELECT 1")
+
+
+def test_wide_explicit_pk_does_not_expand_automatic_combination_search(make_sqlite, monkeypatch):
+    columns = [f"c{i}" for i in range(8)]
+    ddl = ",".join(f"{c} INTEGER" for c in columns)
+    db = make_sqlite({"customers": (ddl + ", PRIMARY KEY(" + ",".join(columns) + ")", [tuple([1] * 8)]),
+                      "orders": (ddl, [tuple([2] * 8)])})
+    original = server.combinations
+
+    def bounded(values, width):
+        assert len(values) <= 4
+        return original(values, width)
+
+    monkeypatch.setattr(server, "combinations", bounded)
+    monkeypatch.setattr(server, "_llm_semantic_review", lambda *_: None)
+    result = server._adjudicate_ir(db, "wide", _proposal("", ""),
+                                   _evidence({"customers": columns, "orders": columns}))
+    assert result["relations"][0]["status"] == "candidate"
