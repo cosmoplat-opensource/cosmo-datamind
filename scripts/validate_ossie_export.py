@@ -6,6 +6,7 @@
 需要 jsonschema(可选 pyyaml 做 YAML 读回自检);缺失时明确报错,不假装通过。
 """
 import argparse
+import importlib
 import json
 import os
 import sys
@@ -29,7 +30,7 @@ def main():
     if errors is None:
         print("未校验:缺少 jsonschema(pip install jsonschema)"); return 2
     try:
-        import yaml
+        yaml = importlib.import_module("yaml")
         back = yaml.safe_load(text)
         if back != doc:
             print("YAML 读回与文档不一致(发射器缺陷)"); return 1

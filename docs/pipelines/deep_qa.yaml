@@ -16,7 +16,7 @@
 name: deep_qa
 description: 自然语言问题 → 本体锚定 → SQL 计划 → 只读执行 → 带出处作答
 entrypoint: server.py:chat  # POST /api/chat;流式版 /api/chat/stream 同语义
-version: "1.0"
+version: "1.1"
 
 nodes:
   - id: cache_lookup
@@ -71,7 +71,7 @@ nodes:
   - id: fallback_plan
     type: deterministic
     code: "server.py:fallback_plan"
-    desc: 引擎超时/离线时的内置模板计划;**如实标注为兜底**,不冒充模型输出
+    desc: 引擎超时/离线时使用选中本体与表生成受支持模板（含单表记录计数）;未知意图明确未覆盖,不默认返回销售概览
 
   # ── 以下为「执行前关卡」,逐条 SQL 依次通过才允许落库执行 ──
   - id: exec_guard.readonly
@@ -82,13 +82,14 @@ nodes:
 
   - id: exec_guard.ontology
     type: gate
-    code: "server.py:_validate_sql_ontology  (A2 口径拦截)"
+    code: "server.py:_qa_validate_sql / _validate_sql_ontology  (A2 口径拦截)"
     desc: >
       ① 表白名单:FROM/JOIN 的表必须在本体/数据目录/上传库/CTE 内 —— 拦臆造表名;
       ② JOIN 键校验:异名等值 JOIN 的键对必须落在本体 verified/asserted 关系的
          子键/父键上 —— 拦自造 JOIN。同名键等值放行(列名本身即口径)。
       ③ 扇出关卡(DR-055):1:N JOIN 后对父侧表限定列做 SUM/AVG/COUNT(列)即拦,
          结果会按子表行数放大;COUNT(DISTINCT)/MIN/MAX/子侧列不拦。父侧由关系证据的父键唯一性判定。
+      ④ 显式选表:SQLite EXPLAIN+authorizer检查真实读取表,同步/SSE和复用技能均不得越界。
     on_fail: skip_this_sql
     rationale: 这是本体真正「起作用」的地方——不是给模型看的提示,是执行前的硬约束
 

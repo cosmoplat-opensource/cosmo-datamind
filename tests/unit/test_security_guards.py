@@ -16,7 +16,7 @@ import server
 # ── 路径禁闭 ────────────────────────────────────────────────────────
 def test_confined_allows_inside():
     p = server._confined(server.WORK, "edits_demo.json")
-    assert p.startswith(os.path.normpath(server.WORK) + os.sep)
+    assert p.startswith(os.path.realpath(server.WORK) + os.sep)
 
 
 @pytest.mark.parametrize("evil", [

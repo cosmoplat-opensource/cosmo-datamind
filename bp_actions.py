@@ -5,6 +5,7 @@
 路由（7）：GET /api/actions、POST /api/action/type、type/update、type/delete、
 invoke、GET log、POST approve。动作仍是可审计的决策记录，不声称写回业务系统。
 """
+import math
 import time
 import uuid
 
@@ -149,7 +150,12 @@ def action_type_delete():
 @bp_actions.post("/api/action/invoke")
 def action_invoke():
     """发起动作；低风险直接登记，高风险进入审批队列。"""
-    body = request.json or {}
+    body = request.get_json()
+    if not isinstance(body, dict):
+        return jsonify({"error": "请求体必须为 JSON 对象"}), 400
+    params = body.get("params", {})
+    if not isinstance(params, dict):
+        return jsonify({"error": "params 必须为 JSON 对象"}), 400
     action_type = next(
         (item for item in load_action_types() if item["id"] == body.get("action_id")),
         None,
@@ -161,19 +167,21 @@ def action_invoke():
     operator = str(body.get("operator") or "").strip()[:40]
     if not operator:
         return jsonify({"error": "操作人必填(姓名或工号)"}), 400
-    params = body.get("params") or {}
     clean = {}
     for param in action_type["params"]:
-        value = str(params.get(param["name"]) or "").strip()
+        raw_value = params.get(param["name"])
+        value = "" if raw_value is None else str(raw_value).strip()
         if param.get("required") and not value:
             return jsonify({"error": f"参数「{param['cn']}」必填"}), 400
         if param.get("type") == "select" and value and value not in (param.get("options") or []):
             return jsonify({"error": f"参数「{param['cn']}」须为 {'/'.join(param.get('options') or [])}"}), 400
         if param.get("type") == "number" and value:
             try:
-                float(value)
+                number = float(value)
             except (TypeError, ValueError):
                 return jsonify({"error": f"参数「{param['cn']}」须为数字"}), 400
+            if not math.isfinite(number):
+                return jsonify({"error": f"参数「{param['cn']}」须为有限数字"}), 400
         clean[param["name"]] = value[:500]
     item = {
         "id": uuid.uuid4().hex[:8],

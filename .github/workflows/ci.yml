@@ -1,73 +1,71 @@
 name: CI
 
-# IR-007 工程校验:每次 push/PR 跑「单测+覆盖率+lint」。
-# 集成套件使用仓库内 108 表验证库起服务；确定性失败必须阻止合并。
 on:
   push:
   pull_request:
 
+permissions:
+  contents: read
+
+concurrency:
+  group: datamind-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   unit:
-    name: 单测 + 覆盖率 + lint(确定性层)
+    name: 单元 + 前端行为 + 覆盖率 + lint + 类型
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
-      - name: 安装依赖
-        run: pip install -r requirements-dev.txt
-      - name: Lint(只抓真 bug:F+B)
-        run: ruff check . --output-format=github
-      - name: 类型检查
-        run: mypy . --no-error-summary
-      - name: 单测 + 覆盖率基线
-        run: |
-          coverage run -m pytest tests/ -q
-          coverage report
-      - name: 文档-代码计数自检
-        run: pytest tests/meta -q
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - run: python -m pip install --upgrade pip==26.2
+      - run: pip install -r requirements-dev.txt
+      - run: python scripts/check.py --suite unit
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: unit-results
+          path: .check-results/
 
   integration:
-    name: 集成套件(108 表验证库,强制)
+    name: 隔离 HTTP 与十轮变序回归
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
-      - name: 安装运行时依赖
-        run: pip install -r requirements-dev.txt
-      - name: 起服务并跑 test_all.py
-        env:
-          DATAMIND_DB: ${{ github.workspace }}/examples/demo_metrics.db
-          DATAMIND_WORKDIR: ${{ github.workspace }}/workdir
-        run: |
-          test -f "$DATAMIND_DB"
-          gunicorn -c gunicorn.conf.py wsgi:application > /tmp/datamind-ci.log 2>&1 &
-          server_pid=$!
-          trap 'kill "$server_pid" 2>/dev/null || true; wait "$server_pid" 2>/dev/null || true' EXIT
-          for _ in $(seq 1 30); do
-            if curl --fail --silent http://127.0.0.1:8092/api/db/check >/dev/null; then break; fi
-            sleep 1
-          done
-          curl --fail --silent http://127.0.0.1:8092/api/db/check >/dev/null || { cat /tmp/datamind-ci.log; exit 1; }
-          python3 test_all.py
-      - name: 10 轮变序回归(复用已构建本体,不重复发起 LLM 构建)
-        env:
-          DATAMIND_DB: ${{ github.workspace }}/examples/demo_metrics.db
-          DATAMIND_WORKDIR: ${{ github.workspace }}/workdir
-        run: |
-          gunicorn -c gunicorn.conf.py wsgi:application > /tmp/datamind-s10.log 2>&1 &
-          server_pid=$!
-          trap 'kill "$server_pid" 2>/dev/null || true; wait "$server_pid" 2>/dev/null || true' EXIT
-          for _ in $(seq 1 30); do
-            if curl --fail --silent http://127.0.0.1:8092/api/db/check >/dev/null; then break; fi
-            sleep 1
-          done
-          curl --fail --silent http://127.0.0.1:8092/api/db/check >/dev/null || { cat /tmp/datamind-s10.log; exit 1; }
-          python3 scripts/test_ontology_strict_10_rounds.py \
-            --url http://127.0.0.1:8092 \
-            --workdir "$DATAMIND_WORKDIR" \
-            --graph built_2d74f0 \
-            --report /tmp/strict10.json
+      - run: python -m pip install --upgrade pip==26.2
+      - run: pip install -r requirements-dev.txt
+      - run: python scripts/check.py --suite integration
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: integration-results
+          path: .check-results/
+
+  browser:
+    name: 桌面与窄屏浏览器验收
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: python -m pip install --upgrade pip==26.2
+      - run: pip install -r requirements-dev.txt -r requirements-ui.txt
+      - run: python -m playwright install --with-deps chromium
+      - run: python scripts/check.py --suite ui
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: browser-results
+          path: .check-results/

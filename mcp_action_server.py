@@ -4,8 +4,11 @@
 
 把动作中心暴露给任意 MCP 客户端(Claude Code / hermes / 其它 Agent):
   - list_actions       读:动作类型目录(参数 schema / 风险级)
-  - invoke_action      写(唯一):发起动作 —— 低风险直执行,高风险进人审批队列
-  - get_action_status  读:跟踪某次动作(是否已被人批准/驳回、效果)
+  - invoke_action      写(唯一):保存决策记录 —— 低风险直接登记,高风险进入人工审批队列
+  - get_action_status  读:跟踪动作记录及人工审批结果
+
+当前接口采用 decision_capture 模式,不写回业务系统。executed 是兼容历史的
+记录状态值,表示决策已登记,不表示设备动作或业务修改已执行。
 
 治理语义全部保留在 DataMind 服务端(单一实现):参数校验、风险分级、审批队列、
 决策捕获审计。审批(approve/deny)**故意不暴露**为工具 —— 批准是人的专属入口
@@ -48,6 +51,7 @@ BASE = (os.environ.get("DATAMIND_URL") or _default_base()).rstrip("/")
 # 2025-03-26 增加的 annotations 与 2025-06-18 增加的工具级 title 都是纯增量字段,
 # 旧客户端按规范忽略未知字段即可。协商规则见 initialize 分支。
 SUPPORTED_PROTOS = ("2025-06-18", "2025-03-26", "2024-11-05")
+_DECISION_CAPTURE_NOTE = "当前接口仅保存决策记录，未写回业务系统（decision_capture，real_writeback=False）。"
 
 # annotations(MCP 2025-03-26 起):向客户端声明行为提示,便于其做审批分流与
 # 并发调度。按规范这些只是 hint、不构成安全边界——真正的治理(风险分级/人审
@@ -56,16 +60,17 @@ TOOLS = [
     {
         "name": "list_actions",
         "title": "列出动作类型",
-        "description": "列出本体动作类型目录:每个动作的 id、名称、作用对象、风险级(low=直执行/high=须人审批)、参数 schema 与效果说明。发起动作前先调用它拿到准确的参数名。",
+        "description": "列出本体动作类型目录:每个动作的 id、名称、作用对象、风险级(low=直接登记/high=须人审批)、参数 schema 与记录内容说明。当前只保存决策记录,不写回业务系统;executed 表示已登记。发起动作前先查询准确的参数名。",
         "inputSchema": {"type": "object", "properties": {}, "additionalProperties": False},
         "annotations": {"readOnlyHint": True, "openWorldHint": False},
     },
     {
         "name": "invoke_action",
         "title": "发起动作",
-        "description": ("发起一个本体动作 —— 这是本服务器唯一的写路径。低风险动作立即执行并写入审计日志;"
-                        "高风险动作只会进入人工审批队列(pending),必须由人在 DataMind 动作中心批准后才生效,"
-                        "Agent 无法绕过。operator 必填(发起人姓名或工号,写入审计)。"),
+        "description": ("发起动作并保存决策记录,这是本服务器唯一的写路径。低风险直接登记;"
+                        "高风险进入人工审批队列(pending),由人在 DataMind 动作中心批准或驳回,"
+                        "Agent 无法审批。当前不写回业务系统,批准仅形成决策记录。"
+                        "operator 必填(发起人姓名或工号,写入审计)。"),
         "inputSchema": {
             "type": "object",
             "properties": {
@@ -83,7 +88,7 @@ TOOLS = [
     {
         "name": "get_action_status",
         "title": "查询动作状态",
-        "description": "查询某次动作的当前状态:pending(待人批)/ executed(已执行,含效果)/ denied(被驳回,含审批意见)。发起高风险动作后可用它跟踪人审结果。",
+        "description": "查询动作决策记录:pending(待人批)/ executed(已登记)/ denied(被驳回),并返回审批意见及记录内容。当前不写回业务系统;executed 不表示业务修改或设备动作已经执行。",
         "inputSchema": {
             "type": "object",
             "properties": {"id": {"type": "string", "description": "invoke_action 返回的动作记录 id"}},
@@ -148,36 +153,45 @@ def _http(method, path, payload=None):
 
 def call_tool(name, args):
     """→ (text, is_error)"""
+    if not isinstance(args, dict):
+        return "工具参数必须为 JSON 对象", True
     if name == "list_actions":
         d, err = _http("GET", "/api/actions")
         if err: return err, True
-        out = [f"动作类型 {len(d.get('types', []))} 个 · 待人批 {d.get('pending', 0)} · 已执行 {d.get('executed', 0)}", ""]
+        out = [f"动作类型 {len(d.get('types', []))} 个 · 待人批 {d.get('pending', 0)} · 已登记 {d.get('executed', 0)}",
+               _DECISION_CAPTURE_NOTE, ""]
         for t in d.get("types", []):
             ps = "; ".join(f"{p['name']}({p['cn']}{',必填' if p.get('required') else ''}"
                            + (f",可选值:{'/'.join(p['options'])}" if p.get("options") else "") + ")"
                            for p in t.get("params", []))
             out.append(f"- id={t['id']} 「{t['cn']}」 对象:{t.get('object','-')} 风险:{t.get('risk')}"
-                       f"({'高风险,须人审批' if t.get('risk')=='high' else '低风险,直执行'})\n  参数:{ps}\n  说明:{t.get('desc','')}")
+                       f"({'高风险,须人审批' if t.get('risk')=='high' else '低风险,直接登记'})\n  参数:{ps}\n  说明:{t.get('desc','')}")
         return "\n".join(out), False
     if name == "invoke_action":
-        payload = {"action_id": args.get("action_id"), "params": args.get("params") or {},
+        params = args.get("params", {})
+        if not isinstance(params, dict):
+            return "动作 params 必须为 JSON 对象", True
+        payload = {"action_id": args.get("action_id"), "params": params,
                    "operator": args.get("operator")}
         d, err = _http("POST", "/api/action/invoke", payload)
         if err: return f"发起失败:{err}", True
         if d.get("status") == "pending":
             return (f"已提交,记录 id={d['id']},状态=pending:该动作为高风险,已进入人工审批队列,"
-                    f"必须由人在 DataMind 动作中心批准后才会执行。可用 get_action_status 跟踪。"), False
-        return f"已执行并写入审计日志,记录 id={d['id']},状态=executed。", False
+                    f"须由人在 DataMind 动作中心批准或驳回。可用 get_action_status 跟踪。"
+                    + _DECISION_CAPTURE_NOTE), False
+        return (f"已保存动作决策记录并写入审计日志,记录 id={d['id']},状态={d.get('status', 'unknown')}。"
+                + _DECISION_CAPTURE_NOTE), False
     if name == "get_action_status":
         d, err = _http("GET", "/api/action/log")
         if err: return err, True
         it = next((x for x in d.get("items", []) if x.get("id") == args.get("id")), None)
         if not it: return f"未找到动作记录 {args.get('id')}", True
-        lines = [f"动作「{it['action_cn']}」 状态:{it['status']} 发起人:{it['operator']} 时间:{it['ts']}"]
+        lines = [f"动作「{it['action_cn']}」 状态:{it['status']} 发起人:{it['operator']} 时间:{it['ts']}",
+                 _DECISION_CAPTURE_NOTE]
         if it.get("approver"):
             lines.append(f"审批人:{it['approver']}" + (f" 意见:{it['approve_comment']}" if it.get("approve_comment") else ""))
         if it.get("effects"):
-            lines.append("效果:" + " / ".join(it["effects"]))
+            lines.append("记录内容:" + " / ".join(it["effects"]))
         if it["status"] == "pending":
             lines.append("仍在等待人工审批(Agent 无法批准,请等待或提醒审批人)。")
         return "\n".join(lines), False
@@ -225,7 +239,7 @@ def main():
         if not isinstance(msg, dict):
             continue                       # 数组/标量不是请求对象;一行畸形输入不该终止整个服务
         mid, method = msg.get("id"), msg.get("method", "")
-        params = msg.get("params") or {}
+        params = msg.get("params", {})
 
         def reply(result=None, error=None, mid=mid):   # mid 默认参数绑定当轮消息 id,不随循环推进漂移
             if mid is None:  # notification,不回
@@ -237,6 +251,10 @@ def main():
                 out["result"] = result
             sys.stdout.write(json.dumps(out, ensure_ascii=False) + "\n")
             sys.stdout.flush()
+
+        if not isinstance(params, dict):
+            reply(error={"code": -32602, "message": "params must be an object"})
+            continue
 
         if method == "initialize":
             # MCP 版本协商:客户端请求的版本若在支持列表内则沿用它,否则回自己
@@ -255,7 +273,10 @@ def main():
             reply({"tools": TOOLS})
         elif method == "tools/call":
             name = params.get("name", "")
-            args = params.get("arguments") or {}
+            args = params.get("arguments", {})
+            if not isinstance(args, dict):
+                reply(error={"code": -32602, "message": "arguments must be an object"})
+                continue
             try:
                 text, is_err = call_tool(name, args)
             except Exception as e:

@@ -1,0 +1,154 @@
+{
+  "title": "本体半自动构建与深度问数严格 10 轮变序回归",
+  "service": "http://127.0.0.1:57888",
+  "source_graph": "built_2d74f0",
+  "method_note": "复用一次完整 108 表构建，在临时副本上变更操作顺序；如有 Excel/动作投影则按产物事实校验；含一次真实同步问数与一次 SSE 锚定。",
+  "passed": 10,
+  "failed": 0,
+  "cleanup": {
+    "temporary_graph_removed": true,
+    "temporary_edits_removed": true,
+    "test_chats_requested_for_deletion": 1
+  },
+  "rounds": [
+    {
+      "round": 1,
+      "name": "构建输入与 Excel/技能/CQ 追溯",
+      "status": "passed",
+      "elapsed_s": 0.001,
+      "detail": {
+        "tables": 108,
+        "manifest_present": false,
+        "excel_files": [],
+        "skills": [],
+        "cqs": 0,
+        "query_errors": 0
+      }
+    },
+    {
+      "round": 2,
+      "name": "对象、关系、动作与证据分层",
+      "status": "passed",
+      "elapsed_s": 0.012,
+      "detail": {
+        "objects": 108,
+        "table_objects": 108,
+        "actions": 0,
+        "relations": 265,
+        "statuses": {
+          "verified": 104,
+          "candidate": 161
+        },
+        "unmapped_grounding": 265
+      }
+    },
+    {
+      "round": 3,
+      "name": "零编辑 CQ 基线",
+      "status": "passed",
+      "elapsed_s": 0.009,
+      "detail": {
+        "counts": {
+          "answerable": 0,
+          "partial": 0,
+          "unanswerable": 3
+        },
+        "coverage": 0.0
+      }
+    },
+    {
+      "round": 4,
+      "name": "会话图谱隔离与跨图拒绝",
+      "status": "passed",
+      "elapsed_s": 0.009,
+      "detail": {
+        "chat_id": "c20acbaaaf8",
+        "cross_graph_http": 409
+      }
+    },
+    {
+      "round": 5,
+      "name": "人审别名与变更审计",
+      "status": "passed",
+      "elapsed_s": 0.007,
+      "detail": {
+        "ops": 1,
+        "reviewer": "10轮严格回归",
+        "source": "chat"
+      }
+    },
+    {
+      "round": 6,
+      "name": "别名后多概念 CQ 从严判定",
+      "status": "passed",
+      "elapsed_s": 0.008,
+      "detail": {
+        "counts": {
+          "answerable": 0,
+          "partial": 1,
+          "unanswerable": 0
+        },
+        "verdict": "partial"
+      }
+    },
+    {
+      "round": 7,
+      "name": "显式期望对象与 verified 路径",
+      "status": "passed",
+      "elapsed_s": 0.008,
+      "detail": {
+        "verdict": "answerable",
+        "path": [
+          [
+            "dim_supplier",
+            "fact_purchase_order"
+          ]
+        ]
+      }
+    },
+    {
+      "round": 8,
+      "name": "candidate 路径与不存在概念边界",
+      "status": "passed",
+      "elapsed_s": 0.008,
+      "detail": {
+        "verdicts": [
+          "partial",
+          "unanswerable"
+        ],
+        "coverage": 0.0
+      }
+    },
+    {
+      "round": 9,
+      "name": "同步深度问数按所选本体/表执行",
+      "status": "passed",
+      "elapsed_s": 0.027,
+      "detail": {
+        "graph": "built_strict10_6d4aec55",
+        "rows": [
+          {
+            "记录数": 25
+          }
+        ],
+        "sql": "SELECT COUNT(*) AS \"记录数\" FROM \"dim_customer\""
+      }
+    },
+    {
+      "round": 10,
+      "name": "SSE 锚定、撤销与 CQ 回归",
+      "status": "passed",
+      "elapsed_s": 0.034,
+      "detail": {
+        "sse_anchor_graph": "built_strict10_6d4aec55",
+        "undo_ops": 0,
+        "cq_after_undo": {
+          "answerable": 0,
+          "partial": 0,
+          "unanswerable": 1
+        },
+        "audit_total": 0
+      }
+    }
+  ]
+}

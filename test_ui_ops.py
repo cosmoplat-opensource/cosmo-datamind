@@ -15,7 +15,7 @@
 """
 # 等待上限按引擎实测时延取(GLM 单轮问数 ~70s,含推理开销),而非按理想值
 import asyncio, os, sys
-from playwright.async_api import async_playwright
+from tests.browser_runtime import close_browser, managed_playwright
 
 # 被测地址:优先 DATAMIND_URL,否则由服务端同一套 DATAMIND_HOST/PORT 组合而来
 # ——不写死 IP 字面量,免得它与 server 的实际监听配置各自漂移。
@@ -38,7 +38,7 @@ async def launch_browser(pw):
     return await pw.chromium.launch(executable_path=executable) if executable else await pw.chromium.launch()
 
 async def main():
-    async with async_playwright() as pw:
+    async with managed_playwright() as pw:
         br = await launch_browser(pw)
         pg = await (await br.new_context(viewport={"width": 1500, "height": 1000})).new_page()
         errs = []
@@ -56,17 +56,30 @@ async def main():
         # ══ 步骤 1:进引擎设置页,读运行时卡 ══
         print("\n【步骤1】打开引擎设置页")
         await goto("enginecfg", 2800)
+        await pg.locator("#eg_runtimes h3").wait_for(timeout=10000)
         cards = await pg.eval_on_selector_all("#eg_runtimes .step",
                                               "els=>els.map(e=>e.innerText.split('\\n')[0])")
         print(f"      运行时卡: {cards}")
-        (ok if len(cards) >= 3 else bad)(f"引擎设置页列出 {len(cards)} 个运行时卡")
         _rt = await (await pg.request.get(B + '/api/ont/runtimes')).json()
+        available_runtimes = _rt.get("runtimes")
+        if not isinstance(available_runtimes, list):
+            raise AssertionError(f"运行时接口格式错误: {_rt}")
+        card_ids = await pg.locator("#eg_runtimes [data-runtime]").evaluate_all("els=>els.map(e=>e.dataset.runtime)")
+        (ok if sorted(card_ids) == sorted(available_runtimes) else bad)(
+            f"引擎卡与已注册运行时一致({len(cards)}个)", f"UI={card_ids}, API={available_runtimes}")
         initial_rt = _rt.get("current")
+        initial_ready = initial_rt in available_runtimes
         HAS_OPENAI = "openai" in (_rt.get("runtimes") or [])
         (ok if any("OpenAI" in c for c in cards) else (bad if HAS_OPENAI else
          (lambda n: skip(n, "未配 DATAMIND_LLM_BASE/_KEY")))) ("含 OpenAI 兼容端点卡(GLM)")
-        (ok if await pg.eval_on_selector("#eg_runtimes", "e=>e.innerText.includes('当前引擎')")
-         else bad)("标出当前引擎")
+        current_cards = await pg.locator("#eg_runtimes [data-runtime]").evaluate_all(
+            "els=>els.filter(e=>e.innerText.includes('当前引擎')).map(e=>e.dataset.runtime)")
+        if initial_ready:
+            (ok if current_cards == [initial_rt] else bad)("标出已注册的当前引擎", str(current_cards))
+        else:
+            empty_text = await pg.inner_text("#eg_runtimes")
+            (ok if not current_cards and "未注册" in empty_text and "退回内置模板" in empty_text else bad)(
+                "未注册当前引擎明确显示模板回退", empty_text[:140])
 
         async def switch_to(label):
             """点击某运行时卡上的「设为当前」按钮(真实交互)"""
@@ -82,15 +95,28 @@ async def main():
             r = await pg.request.get(B + '/api/ont/runtimes')
             return (await r.json()).get('current')
 
-        # ══ 步骤 2:GLM → Claude Code ══
-        print("\n【步骤2】UI 点「设为当前」: GLM(openai) → Claude Code")
-        st = await switch_to("Claude Code"); await pg.wait_for_timeout(2600)
-        c = await cur_rt()
-        (ok if c == "claude-code" else bad)("切到 Claude Code 后端生效", f"{st} → current={c}")
-        mark = await pg.evaluate("""() => {
-            const c=[...document.querySelectorAll('#eg_runtimes .step')].find(x=>x.innerText.includes('Claude Code'));
-            return c ? c.innerText.includes('当前引擎') : false; }""")
-        (ok if mark else bad)("UI「当前引擎」标记随之转移")
+        print("\n【步骤2】运行时切换及未注册状态保护")
+        # Missing engines are a supported deployment mode, verified by rejection/state checks.
+        # Mutation is only attempted when the original runtime can be restored afterwards.
+        target = next((name for name in ["claude-code", *available_runtimes]
+                       if initial_ready and name in available_runtimes and name != initial_rt), None)
+        if target:
+            async with pg.expect_response(lambda response: response.url.endswith('/api/engine/config') and response.request.method == 'POST'):
+                await pg.locator(f'#eg_runtimes [data-runtime="{target}"]').get_by_role("button", name="设为当前", exact=True).click()
+            await pg.wait_for_function("target=>EG&&EG.driver===target", arg=target)
+            c = await cur_rt()
+            (ok if c == target else bad)("切换已注册引擎后端生效", f"target={target}, current={c}")
+            marked = await pg.locator(f'#eg_runtimes [data-runtime="{target}"]').inner_text()
+            (ok if "当前引擎" in marked else bad)("UI「当前引擎」标记随之转移")
+        else:
+            invalid = "__ui_unregistered_runtime__"
+            async with pg.expect_response(lambda response: response.url.endswith('/api/engine/config') and response.request.method == 'POST') as rejected_info:
+                await pg.evaluate("name=>egSwitch(name)", invalid)
+            rejected = await rejected_info.value
+            payload = await rejected.json()
+            (ok if rejected.status == 400 and payload.get("error") else bad)(
+                "未注册运行时切换被明确拒绝", f"HTTP {rejected.status}")
+            (ok if await cur_rt() == initial_rt else bad)("拒绝后当前引擎保持不变")
 
         # ══ 步骤 3:Claude Code → GLM,并点测试连通 ══
         print("\n【步骤3】UI 点「设为当前」: Claude Code → GLM(openai)")
@@ -98,9 +124,12 @@ async def main():
             skip("切回 GLM 后端生效", "未配 OpenAI 兼容端点")
             skip("GLM「测试连通」出结果", "未配 OpenAI 兼容端点")
         else:
-            st = await switch_to("OpenAI"); await pg.wait_for_timeout(2600)
-            c = await cur_rt()
-            (ok if c == "openai" else bad)("切回 GLM 后端生效", f"{st} → current={c}")
+            if initial_ready:
+                st = await switch_to("OpenAI"); await pg.wait_for_timeout(2600)
+                c = await cur_rt()
+                (ok if c == "openai" else bad)("切回 GLM 后端生效", f"{st} → current={c}")
+            else:
+                (ok if await cur_rt() == initial_rt else bad)("连通测试保留未注册的初始运行时配置")
             await pg.evaluate("""() => {
                 const c=[...document.querySelectorAll('#eg_runtimes .step')].find(x=>x.innerText.includes('OpenAI'));
                 const b=c && [...c.querySelectorAll('button')].find(b=>b.innerText.includes('测试连通'));
@@ -357,10 +386,12 @@ async def main():
             e = [x for x in errs[b0:] if "favicon" not in x]
             (ok if len(t) > 30 and not e else bad)(f"{p} 页可用", f"{len(t)}字 err={e[:1]}")
 
-        if initial_rt:
-            restored = await pg.request.post(B + '/api/ont/runtime', data={"name": initial_rt})
-            (ok if restored.ok else bad)("恢复测试前运行时", initial_rt)
-        await br.close()
+        if await cur_rt() != initial_rt:
+            restored = await pg.request.post(B + '/api/engine/config', data={"driver": initial_rt})
+            (ok if restored.ok and await cur_rt() == initial_rt else bad)("恢复测试前运行时", initial_rt)
+        else:
+            ok("测试前运行时保持不变", initial_rt)
+        await close_browser(br)
     print(f"\n===== UI 实操:{len(R['p'])} 通过 / {len(R['f'])} 失败"
           + (f" / {len(R['s'])} 跳过" if R["s"] else "") + " =====")
     for f in R["f"]: print("  ✗", f)

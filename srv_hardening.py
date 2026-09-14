@@ -235,7 +235,7 @@ def build_handler(timeout=None, max_conn=None):
 
         def parse_request(self):
             # 「请求头必须在 N 秒内发完」—— 滴入数据也不能续命,这条才真正克制 Slowloris。
-            self.rfile.start(self._hdr_budget)
+            # Deadline already includes the request line; never reset it here.
             try:
                 return super().parse_request()
             finally:
@@ -244,6 +244,7 @@ def build_handler(timeout=None, max_conn=None):
                                  ceiling=self._body_budget)
 
         def handle_one_request(self):
+            self.rfile.start(self._hdr_budget)
             try:
                 super().handle_one_request()
             except TimeoutError:

@@ -1,0 +1,694 @@
+{
+  "blocking_issues": [],
+  "blocking_pass": true,
+  "cq": {
+    "counts": {
+      "answerable": 1,
+      "partial": 1,
+      "unanswerable": 1
+    },
+    "coverage": 33.3,
+    "items": [
+      {
+        "anchors": [
+          {
+            "cn": "客户",
+            "key": "dim_customer",
+            "matched": "客户"
+          }
+        ],
+        "fix": "补充该验收问题的期望对象清单(expect)，或为遗漏对象补中文名/业务别名",
+        "path": [
+          "dim_customer"
+        ],
+        "question": "订单与客户之间有哪些可验证的关联？",
+        "reason": "仅锚定到一个对象，无法证明问句中的其他业务概念均已覆盖",
+        "verdict": "partial"
+      },
+      {
+        "anchors": [
+          {
+            "cn": "销售订单",
+            "declared": true,
+            "key": "fact_sales_order",
+            "matched": "fact_sales_order"
+          },
+          {
+            "cn": "客户",
+            "declared": true,
+            "key": "dim_customer",
+            "matched": "dim_customer"
+          }
+        ],
+        "fix": "",
+        "path": [
+          [
+            "fact_sales_order",
+            "dim_customer"
+          ]
+        ],
+        "question": "验收：这两个已验证对象之间是否存在可信关系路径？",
+        "reason": "全部对象已锚定,且路径仅经 verified/asserted 边",
+        "verdict": "answerable"
+      },
+      {
+        "anchors": [],
+        "fix": "补建模:先让抽取环节产出这些对象,再重新核验",
+        "path": null,
+        "question": "验收：不存在的对象是否会被错误认定为可答？",
+        "reason": "本体中不存在声明的对象: __acceptance_missing_object__",
+        "verdict": "unanswerable"
+      }
+    ],
+    "note": "结构可达性判定,不执行查询;answerable 表示本体结构支持该问题,不代表数据中一定有值——数据侧验证见问数评测",
+    "provided": true,
+    "total": 3
+  },
+  "definitions": {
+    "mean_score": 0.977,
+    "scored": 108,
+    "weak": 3,
+    "weak_threshold": 0.6,
+    "weakest": [
+      {
+        "dims": {
+          "counter_example": 0.0,
+          "genus_differentia": 0.0,
+          "non_circular": 1.0,
+          "present": 1.0
+        },
+        "issues": [
+          "非属加种差形式(缺属或缺种差)",
+          "缺反例"
+        ],
+        "score": 0.5,
+        "term": "调整销售订单交期"
+      },
+      {
+        "dims": {
+          "counter_example": 0.0,
+          "genus_differentia": 0.0,
+          "non_circular": 1.0,
+          "present": 1.0
+        },
+        "issues": [
+          "非属加种差形式(缺属或缺种差)",
+          "缺反例"
+        ],
+        "score": 0.5,
+        "term": "冻结生产批次(质量隔离)"
+      },
+      {
+        "dims": {
+          "counter_example": 0.0,
+          "genus_differentia": 0.0,
+          "non_circular": 1.0,
+          "present": 1.0
+        },
+        "issues": [
+          "非属加种差形式(缺属或缺种差)",
+          "缺反例"
+        ],
+        "score": 0.5,
+        "term": "产线温区参数调整"
+      },
+      {
+        "dims": {
+          "counter_example": 0.0,
+          "genus_differentia": 1.0,
+          "non_circular": 1.0,
+          "present": 1.0
+        },
+        "issues": [
+          "缺反例"
+        ],
+        "score": 0.75,
+        "term": "发起质检检查工单(派工)"
+      },
+      {
+        "dims": {
+          "counter_example": 0.0,
+          "genus_differentia": 1.0,
+          "non_circular": 1.0,
+          "present": 1.0
+        },
+        "issues": [
+          "缺反例"
+        ],
+        "score": 0.75,
+        "term": "设备报修"
+      },
+      {
+        "dims": {
+          "counter_example": 0.0,
+          "genus_differentia": 1.0,
+          "non_circular": 1.0,
+          "present": 1.0
+        },
+        "issues": [
+          "缺反例"
+        ],
+        "score": 0.75,
+        "term": "编制预算"
+      },
+      {
+        "dims": {
+          "counter_example": 0.0,
+          "genus_differentia": 1.0,
+          "non_circular": 1.0,
+          "present": 1.0
+        },
+        "issues": [
+          "缺反例"
+        ],
+        "score": 0.75,
+        "term": "发起供应商纠正措施(SCAR)"
+      },
+      {
+        "dims": {
+          "counter_example": 1.0,
+          "genus_differentia": 1.0,
+          "non_circular": 1.0,
+          "present": 1.0
+        },
+        "issues": [],
+        "score": 1.0,
+        "term": "客户"
+      },
+      {
+        "dims": {
+          "counter_example": 1.0,
+          "genus_differentia": 1.0,
+          "non_circular": 1.0,
+          "present": 1.0
+        },
+        "issues": [],
+        "score": 1.0,
+        "term": "供应商"
+      },
+      {
+        "dims": {
+          "counter_example": 1.0,
+          "genus_differentia": 1.0,
+          "non_circular": 1.0,
+          "present": 1.0
+        },
+        "issues": [],
+        "score": 1.0,
+        "term": "员工"
+      },
+      {
+        "dims": {
+          "counter_example": 1.0,
+          "genus_differentia": 1.0,
+          "non_circular": 1.0,
+          "present": 1.0
+        },
+        "issues": [],
+        "score": 1.0,
+        "term": "部门"
+      },
+      {
+        "dims": {
+          "counter_example": 1.0,
+          "genus_differentia": 1.0,
+          "non_circular": 1.0,
+          "present": 1.0
+        },
+        "issues": [],
+        "score": 1.0,
+        "term": "产品"
+      },
+      {
+        "dims": {
+          "counter_example": 1.0,
+          "genus_differentia": 1.0,
+          "non_circular": 1.0,
+          "present": 1.0
+        },
+        "issues": [],
+        "score": 1.0,
+        "term": "原材料"
+      },
+      {
+        "dims": {
+          "counter_example": 1.0,
+          "genus_differentia": 1.0,
+          "non_circular": 1.0,
+          "present": 1.0
+        },
+        "issues": [],
+        "score": 1.0,
+        "term": "销售订单"
+      },
+      {
+        "dims": {
+          "counter_example": 1.0,
+          "genus_differentia": 1.0,
+          "non_circular": 1.0,
+          "present": 1.0
+        },
+        "issues": [],
+        "score": 1.0,
+        "term": "采购订单"
+      },
+      {
+        "dims": {
+          "counter_example": 1.0,
+          "genus_differentia": 1.0,
+          "non_circular": 1.0,
+          "present": 1.0
+        },
+        "issues": [],
+        "score": 1.0,
+        "term": "生产工单"
+      },
+      {
+        "dims": {
+          "counter_example": 1.0,
+          "genus_differentia": 1.0,
+          "non_circular": 1.0,
+          "present": 1.0
+        },
+        "issues": [],
+        "score": 1.0,
+        "term": "销售发票"
+      },
+      {
+        "dims": {
+          "counter_example": 1.0,
+          "genus_differentia": 1.0,
+          "non_circular": 1.0,
+          "present": 1.0
+        },
+        "issues": [],
+        "score": 1.0,
+        "term": "收款记录"
+      },
+      {
+        "dims": {
+          "counter_example": 1.0,
+          "genus_differentia": 1.0,
+          "non_circular": 1.0,
+          "present": 1.0
+        },
+        "issues": [],
+        "score": 1.0,
+        "term": "付款记录"
+      },
+      {
+        "dims": {
+          "counter_example": 1.0,
+          "genus_differentia": 1.0,
+          "non_circular": 1.0,
+          "present": 1.0
+        },
+        "issues": [],
+        "score": 1.0,
+        "term": "应收账款账龄"
+      }
+    ]
+  },
+  "evidence": {
+    "checked": 97,
+    "issue_count": 0,
+    "issues": [],
+    "valid": true
+  },
+  "gaps": [
+    {
+      "count": 3,
+      "desc": "3 个对象的定义质量低于 0.6",
+      "fix": "补非循环的属加种差定义与反例",
+      "type": "weak_definitions"
+    },
+    {
+      "desc": "能力问题未被支撑:订单与客户之间有哪些可验证的关联？ —— 仅锚定到一个对象，无法证明问句中的其他业务概念均已覆盖",
+      "fix": "补充该验收问题的期望对象清单(expect)，或为遗漏对象补中文名/业务别名",
+      "type": "cq_partial"
+    },
+    {
+      "desc": "能力问题未被支撑:验收：不存在的对象是否会被错误认定为可答？ —— 本体中不存在声明的对象: __acceptance_missing_object__",
+      "fix": "补建模:先让抽取环节产出这些对象,再重新核验",
+      "type": "cq_unanswerable"
+    }
+  ],
+  "gate": "review",
+  "graph": "built_7e80b6",
+  "grounding": {
+    "enabled": true,
+    "issue_count": 0,
+    "issues": [],
+    "mapped": 0,
+    "unmapped": 122,
+    "valid": true
+  },
+  "hard_errors": [],
+  "hard_pass": true,
+  "health": {
+    "error_count": 0,
+    "errors": [],
+    "healthy": true,
+    "isolated_count": 14,
+    "note": "确定性图结构体检,不调 LLM;只诊断不自动修——孤岛可能是刚建未连,超级节点可能本就是业务枢纽,判断权在人。结构一致性分只由阻断问题扣分,信号类只列出不扣分，避免业务枢纽使结构分数失真",
+    "objects": 108,
+    "relations": 122,
+    "score": 100.0,
+    "signal_count": 18,
+    "signals": [
+      {
+        "desc": "孤岛对象:「合同」不参与任何关系",
+        "fix": "补充有证据的关系，或确认该对象本来就是独立参考数据",
+        "object": "fact_contract",
+        "severity": "info",
+        "type": "isolated"
+      },
+      {
+        "desc": "孤岛对象:「复合指标配置」不参与任何关系",
+        "fix": "补充有证据的关系，或确认该对象本来就是独立参考数据",
+        "object": "dim_composite_metric_config",
+        "severity": "info",
+        "type": "isolated"
+      },
+      {
+        "desc": "孤岛对象:「会计科目表」不参与任何关系",
+        "fix": "补充有证据的关系，或确认该对象本来就是独立参考数据",
+        "object": "dim_coa",
+        "severity": "info",
+        "type": "isolated"
+      },
+      {
+        "desc": "孤岛对象:「指标目录」不参与任何关系",
+        "fix": "补充有证据的关系，或确认该对象本来就是独立参考数据",
+        "object": "dim_metric_catalog",
+        "severity": "info",
+        "type": "isolated"
+      },
+      {
+        "desc": "孤岛对象:「环境排放记录」不参与任何关系",
+        "fix": "补充有证据的关系，或确认该对象本来就是独立参考数据",
+        "object": "fact_env_record",
+        "severity": "info",
+        "type": "isolated"
+      },
+      {
+        "desc": "孤岛对象:「承运商」不参与任何关系",
+        "fix": "补充有证据的关系，或确认该对象本来就是独立参考数据",
+        "object": "dim_carrier",
+        "severity": "info",
+        "type": "isolated"
+      },
+      {
+        "desc": "孤岛对象:「会计科目」不参与任何关系",
+        "fix": "补充有证据的关系，或确认该对象本来就是独立参考数据",
+        "object": "dim_account",
+        "severity": "info",
+        "type": "isolated"
+      },
+      {
+        "desc": "孤岛对象:「停机原因」不参与任何关系",
+        "fix": "补充有证据的关系，或确认该对象本来就是独立参考数据",
+        "object": "dim_downtime_reason",
+        "severity": "info",
+        "type": "isolated"
+      },
+      {
+        "desc": "孤岛对象:「编制预算」不参与任何关系",
+        "fix": "补充有证据的关系，或确认该对象本来就是独立参考数据",
+        "object": "action__draft_budget",
+        "severity": "info",
+        "type": "isolated"
+      },
+      {
+        "desc": "孤岛对象:「风险等级」不参与任何关系",
+        "fix": "补充有证据的关系，或确认该对象本来就是独立参考数据",
+        "object": "dim_risk_level",
+        "severity": "info",
+        "type": "isolated"
+      },
+      {
+        "desc": "孤岛对象:「库位」不参与任何关系",
+        "fix": "补充有证据的关系，或确认该对象本来就是独立参考数据",
+        "object": "dim_storage_location",
+        "severity": "info",
+        "type": "isolated"
+      },
+      {
+        "desc": "孤岛对象:「派生指标配置」不参与任何关系",
+        "fix": "补充有证据的关系，或确认该对象本来就是独立参考数据",
+        "object": "dim_derived_metric_config",
+        "severity": "info",
+        "type": "isolated"
+      },
+      {
+        "desc": "孤岛对象:「风险等级」不参与任何关系",
+        "fix": "补充有证据的关系，或确认该对象本来就是独立参考数据",
+        "object": "fact_risk_level",
+        "severity": "info",
+        "type": "isolated"
+      },
+      {
+        "desc": "孤岛对象:「列元数据」不参与任何关系",
+        "fix": "补充有证据的关系，或确认该对象本来就是独立参考数据",
+        "object": "dim_column_metadata",
+        "severity": "info",
+        "type": "isolated"
+      },
+      {
+        "degree": 25,
+        "desc": "超级节点:「员工」度数 25(均值 2.6)",
+        "fix": "常见于职责过多且尚未拆分的宽表；若确为业务枢纽则属正常",
+        "object": "dim_employee",
+        "severity": "info",
+        "type": "hub"
+      },
+      {
+        "degree": 11,
+        "desc": "超级节点:「产品」度数 11(均值 2.6)",
+        "fix": "常见于职责过多且尚未拆分的宽表；若确为业务枢纽则属正常",
+        "object": "dim_product",
+        "severity": "info",
+        "type": "hub"
+      },
+      {
+        "degree": 11,
+        "desc": "超级节点:「产线」度数 11(均值 2.6)",
+        "fix": "常见于职责过多且尚未拆分的宽表；若确为业务枢纽则属正常",
+        "object": "dim_production_line",
+        "severity": "info",
+        "type": "hub"
+      },
+      {
+        "degree": 11,
+        "desc": "超级节点:「设备」度数 11(均值 2.6)",
+        "fix": "常见于职责过多且尚未拆分的宽表；若确为业务枢纽则属正常",
+        "object": "dim_equipment",
+        "severity": "info",
+        "type": "hub"
+      }
+    ]
+  },
+  "metrics": {
+    "counts": {
+      "candidate": 146,
+      "certified": 0,
+      "deprecated": 0,
+      "legacy": 146,
+      "verified": 0
+    },
+    "issues": []
+  },
+  "note": "确定性验收检查：fail 表示结构或 verified 证据契约不满足；review 表示仍需人工复核",
+  "references": {
+    "blocking_issues": [],
+    "gaps": [],
+    "industry": {
+      "coverage": null,
+      "id": "none",
+      "matched_concepts": [],
+      "missing_required": [],
+      "mode": "reference",
+      "name": "不选择行业参照",
+      "selected": false
+    },
+    "ontology_standard": {
+      "asset": {
+        "class_count": 379,
+        "file_count": 3,
+        "fingerprint": "c38c8397df8b23e315ef658cc89a57586b896434646de6c840987beeb34756fa",
+        "id": "bfo_iof",
+        "license": "BFO: CC BY 4.0; IOF: MIT",
+        "name": "BFO 2020 + IOF Core",
+        "property_count": 166,
+        "ready": true,
+        "source_revision": "BFO 0900316ea9d330f599bd110f7f6504ed33a87fc8; IOF ab98be6174234798a589f825994dd2aeb6fc8027",
+        "term_count": 292,
+        "version": "BFO 2020 / IOF 202602"
+      },
+      "id": "bfo_iof",
+      "issues": [],
+      "mode": "reference",
+      "name": "BFO 2020 + IOF Core",
+      "objects_aligned": 108,
+      "objects_total": 108,
+      "relation_mapped": 0,
+      "selected": true
+    },
+    "profile": {
+      "industry": {
+        "id": "none",
+        "mode": "reference",
+        "name": "不选择行业参照",
+        "selected": false,
+        "version": ""
+      },
+      "ontology_standard": {
+        "id": "bfo_iof",
+        "mode": "reference",
+        "name": "BFO 2020 + IOF Core",
+        "selected": true,
+        "version": "BFO 2020 / IOF 202602"
+      },
+      "version": 1
+    },
+    "review_queue": []
+  },
+  "result": "review",
+  "review_queue": [
+    {
+      "desc": "孤岛对象:「合同」不参与任何关系",
+      "fix": "补充有证据的关系，或确认该对象本来就是独立参考数据",
+      "type": "health_isolated"
+    },
+    {
+      "desc": "孤岛对象:「复合指标配置」不参与任何关系",
+      "fix": "补充有证据的关系，或确认该对象本来就是独立参考数据",
+      "type": "health_isolated"
+    },
+    {
+      "desc": "孤岛对象:「会计科目表」不参与任何关系",
+      "fix": "补充有证据的关系，或确认该对象本来就是独立参考数据",
+      "type": "health_isolated"
+    },
+    {
+      "desc": "孤岛对象:「指标目录」不参与任何关系",
+      "fix": "补充有证据的关系，或确认该对象本来就是独立参考数据",
+      "type": "health_isolated"
+    },
+    {
+      "desc": "孤岛对象:「环境排放记录」不参与任何关系",
+      "fix": "补充有证据的关系，或确认该对象本来就是独立参考数据",
+      "type": "health_isolated"
+    },
+    {
+      "desc": "孤岛对象:「承运商」不参与任何关系",
+      "fix": "补充有证据的关系，或确认该对象本来就是独立参考数据",
+      "type": "health_isolated"
+    },
+    {
+      "desc": "孤岛对象:「会计科目」不参与任何关系",
+      "fix": "补充有证据的关系，或确认该对象本来就是独立参考数据",
+      "type": "health_isolated"
+    },
+    {
+      "desc": "孤岛对象:「停机原因」不参与任何关系",
+      "fix": "补充有证据的关系，或确认该对象本来就是独立参考数据",
+      "type": "health_isolated"
+    },
+    {
+      "desc": "孤岛对象:「编制预算」不参与任何关系",
+      "fix": "补充有证据的关系，或确认该对象本来就是独立参考数据",
+      "type": "health_isolated"
+    },
+    {
+      "desc": "孤岛对象:「风险等级」不参与任何关系",
+      "fix": "补充有证据的关系，或确认该对象本来就是独立参考数据",
+      "type": "health_isolated"
+    },
+    {
+      "desc": "孤岛对象:「库位」不参与任何关系",
+      "fix": "补充有证据的关系，或确认该对象本来就是独立参考数据",
+      "type": "health_isolated"
+    },
+    {
+      "desc": "孤岛对象:「派生指标配置」不参与任何关系",
+      "fix": "补充有证据的关系，或确认该对象本来就是独立参考数据",
+      "type": "health_isolated"
+    },
+    {
+      "desc": "孤岛对象:「风险等级」不参与任何关系",
+      "fix": "补充有证据的关系，或确认该对象本来就是独立参考数据",
+      "type": "health_isolated"
+    },
+    {
+      "desc": "孤岛对象:「列元数据」不参与任何关系",
+      "fix": "补充有证据的关系，或确认该对象本来就是独立参考数据",
+      "type": "health_isolated"
+    },
+    {
+      "desc": "超级节点:「员工」度数 25(均值 2.6)",
+      "fix": "常见于职责过多且尚未拆分的宽表；若确为业务枢纽则属正常",
+      "type": "health_hub"
+    },
+    {
+      "desc": "超级节点:「产品」度数 11(均值 2.6)",
+      "fix": "常见于职责过多且尚未拆分的宽表；若确为业务枢纽则属正常",
+      "type": "health_hub"
+    },
+    {
+      "desc": "超级节点:「产线」度数 11(均值 2.6)",
+      "fix": "常见于职责过多且尚未拆分的宽表；若确为业务枢纽则属正常",
+      "type": "health_hub"
+    },
+    {
+      "desc": "超级节点:「设备」度数 11(均值 2.6)",
+      "fix": "常见于职责过多且尚未拆分的宽表；若确为业务枢纽则属正常",
+      "type": "health_hub"
+    },
+    {
+      "count": 25,
+      "desc": "25 条候选或待补关系尚无可复核证据",
+      "fix": "补数据窗口、文档依据或人审;不要直接升级为 verified",
+      "type": "candidate_relations"
+    },
+    {
+      "count": 1,
+      "desc": "1 条关系的数据证据与语义复审存在争议",
+      "fix": "进入人审；争议关系不计入验收问题的强路径，人工确认后再置为 asserted",
+      "type": "semantic_disputes"
+    },
+    {
+      "count": 146,
+      "desc": "146 个指标尚未通过执行核验或未绑定口径",
+      "fix": "补参照 SQL/参考基准后重跑指标核验;口径经业务确认后人工置 certified",
+      "type": "candidate_metrics"
+    },
+    {
+      "count": 3,
+      "desc": "3 个对象的定义质量低于 0.6",
+      "fix": "补非循环的属加种差定义与反例",
+      "type": "weak_definitions"
+    },
+    {
+      "desc": "能力问题未被支撑:订单与客户之间有哪些可验证的关联？ —— 仅锚定到一个对象，无法证明问句中的其他业务概念均已覆盖",
+      "fix": "补充该验收问题的期望对象清单(expect)，或为遗漏对象补中文名/业务别名",
+      "type": "cq_partial"
+    },
+    {
+      "desc": "能力问题未被支撑:验收：不存在的对象是否会被错误认定为可答？ —— 本体中不存在声明的对象: __acceptance_missing_object__",
+      "fix": "补建模:先让抽取环节产出这些对象,再重新核验",
+      "type": "cq_unanswerable"
+    }
+  ],
+  "semantic": {
+    "disputed": 1,
+    "strong_for_cq": 96
+  },
+  "summary": {
+    "blocking_issues": 0,
+    "candidate_relations": 25,
+    "hard_errors": 0,
+    "review_items": 24,
+    "verified_checked": 97
+  }
+}

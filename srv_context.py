@@ -15,6 +15,7 @@ import re
 import sqlite3
 import tempfile
 import threading
+from pathlib import Path
 
 
 def confine(base, *parts):
@@ -44,19 +45,14 @@ os.makedirs(WORK, exist_ok=True)
 
 
 def ro_connect(path):
-    """统一只读连接:mode=ro 打开;缺库时显式报错(不静默新建空库,防丢库被掩盖)。
-    仅当 URI 不受支持时才退回普通连接,且仍先确认文件存在 + 强制 query_only。"""
+    """Open the exact filename read-only, without a writable fallback.
+
+    as_uri quotes ?, # and % in filenames; interpolating a raw filename into a
+    SQLite URI can select a different database or inject mode=rw parameters.
+    """
     if not os.path.exists(path):
         raise FileNotFoundError(f"数据库不存在: {path}")
-    try:
-        return sqlite3.connect(f"file:{path}?mode=ro", uri=True)
-    except Exception:
-        con = sqlite3.connect(path)  # 极端情况(URI 不支持)退回普通连接,但库已确认存在,不会误建
-        try:
-            con.execute("PRAGMA query_only=ON")
-        except Exception:
-            pass
-        return con
+    return sqlite3.connect(Path(path).absolute().as_uri() + "?mode=ro", uri=True)
 
 
 # 只放行纯查询:允许 select / with,但 with 之后若出现 DML/DDL 关键字则拒绝
@@ -64,11 +60,57 @@ SAFE_SQL = re.compile(r"^\s*(select|with)\b", re.I)
 _SQL_WRITE = re.compile(r"\b(insert|update|delete|replace|drop|alter|create|attach|detach|pragma|vacuum|reindex|truncate)\b", re.I)
 
 
+def sql_code(sql):
+    """Mask SQL literals/identifiers/comments for shared read-only/single-statement guards.
+
+    This deliberately rejects dialect-ambiguous escapes, nested comments and
+    MySQL executable comments instead of guessing which SQL mode a driver uses.
+    It is a lexical guard; source accounts must still lack write/file privileges.
+    """
+    if not isinstance(sql, str):
+        return None
+    out, i, n = [], 0, len(sql)
+    while i < n:
+        if sql.startswith("/*", i):
+            end = sql.find("*/", i + 2)
+            if end < 0 or sql.startswith(("/*!", "/*M!"), i) or "/*" in sql[i + 2:end]:
+                return None
+            out.append(" "); i = end + 2
+        elif sql.startswith("--", i):
+            if i + 2 < n and not sql[i + 2].isspace():
+                return None  # MySQL requires whitespace, SQLite/Postgres do not
+            end = sql.find("\n", i + 2)
+            out.append(" "); i = n if end < 0 else end + 1
+        elif sql[i] == "#":
+            return None  # MySQL comment versus PostgreSQL operator
+        elif sql[i] in ("'", '"', "`", "["):
+            quote = "]" if sql[i] == "[" else sql[i]
+            i += 1
+            while i < n:
+                if sql[i] == "\\":
+                    return None  # backslash escaping differs with MySQL/PG SQL modes
+                if sql[i] == quote:
+                    if i + 1 < n and sql[i + 1] == quote:
+                        i += 2; continue
+                    i += 1; break
+                i += 1
+            else:
+                return None
+            out.append(" ? ")
+        elif sql[i] == "$" and re.match(r"\$(?:[A-Za-z_][A-Za-z0-9_]*)?\$", sql[i:]):
+            return None  # PostgreSQL string syntax, but MySQL identifier syntax
+        else:
+            out.append(sql[i]); i += 1
+    return "".join(out)
+
+
 def sql_is_readonly(sql):
-    s = sql or ""
-    if not SAFE_SQL.match(s):
+    if not isinstance(sql, str) or not SAFE_SQL.match(sql):
         return False
-    # select 开头天然安全;with 开头需排除内嵌写语句(WITH cte AS(...) DELETE ...)
+    s = sql_code(sql)
+    if s is None or re.search(r"\binto\b", s, re.I):
+        return False  # SELECT INTO / INTO OUTFILE / INTO DUMPFILE are writes too
+    # WITH 开头需排除内嵌写语句(WITH cte AS(...) DELETE ...)
     if re.match(r"^\s*with\b", s, re.I) and _SQL_WRITE.search(s):
         return False
     return True

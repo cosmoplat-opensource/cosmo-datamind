@@ -57,16 +57,25 @@ def readjudicate(db_path, ir):
                 continue
             try:
                 c = MC.normalize(m, ir)
-            except ValueError:
+            except ValueError as exc:
+                c = dict(m)
+                c["evidence"] = {"compiled_sql": "", "executed": False, "match": None, "error": str(exc)}
+                if c.get("status") not in ("certified", "deprecated"):
+                    c["status"], c["candidate"] = "candidate", True
+                contracts.append(c)
                 continue
-            refs = []
             ref = ((m.get("evidence") or {}).get("reference") or {})
-            for p in (m.get("provenance") or []):
-                if p.get("kind") == "sql" and p.get("snippet"):
-                    refs.append({"kind": "sql", "sql": p["snippet"], "source": p.get("source", ""),
-                                 "dimensions": c.get("dimensions"), "grain": (c.get("time") or {}).get("grain", [None])[0]})
-            if ref.get("kind") == "value" and "value" in ref:
-                refs.append(ref)
+            refs = []
+            if isinstance(ref, dict) and ((ref.get("kind") == "value" and "value" in ref)
+                                         or (ref.get("kind") == "sql" and ref.get("sql"))):
+                refs = [ref]
+            else:
+                # Legacy artifacts did not retain replay inputs; use provenance only then.
+                for p in (m.get("provenance") or []):
+                    if isinstance(p, dict) and p.get("kind") == "sql" and p.get("snippet"):
+                        refs.append({"kind": "sql", "sql": p["snippet"], "source": p.get("source", ""),
+                                     "dimensions": c.get("dimensions"),
+                                     "grain": ((c.get("time") or {}).get("grain") or [None])[0]})
             contracts.append(MC.adjudicate(db_path, c, ir, refs))
     layers, stat = MC.upsert_layers(ir, contracts)
     return {"metric_layers": layers,

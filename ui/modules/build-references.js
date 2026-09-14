@@ -175,19 +175,18 @@
   }
 
   async function init(force) {
-    if (state.initPromise && !force) return state.initPromise;
-    const selected = state.profile || read();
+    if (state.initPromise) return state.initPromise;
     state.loadWarning = '';
     renderDetail(['正在核验本地行业与标准资产目录…']);
     state.initPromise = (async () => {
       try {
         const catalog = await fetchCatalog();
         state.loadWarning = '';
-        installCatalog(catalog, selected);
+        installCatalog(catalog, state.profile || read());
         return catalog;
       } catch (error) {
         state.loadWarning = `服务端目录不可用，当前使用完整离线选项（${error && error.name === 'AbortError' ? '请求超时' : (error && error.message || '网络错误')}）；重启/更新服务后再构建。`;
-        installCatalog(fallbackCatalog, selected);
+        installCatalog(fallbackCatalog, state.profile || read());
         return fallbackCatalog;
       } finally {
         state.initPromise = null;

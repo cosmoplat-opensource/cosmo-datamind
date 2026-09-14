@@ -21,6 +21,7 @@ def _ir():
 
 
 def _wire(monkeypatch, tmp_path, ir):
+    monkeypatch.setattr(bp_metrics, "_deps", {})
     wp = tmp_path / "g.json"
     writes = []
     bp_metrics.configure_metrics(
@@ -30,6 +31,46 @@ def _wire(monkeypatch, tmp_path, ir):
         write_json=lambda path, data: writes.append((path, json.loads(json.dumps(data)))),
         write_lock=server._WRITE_LOCK)
     return writes
+
+
+def test_status_locks_read_modify_write_as_one_operation(monkeypatch, tmp_path):
+    _wire(monkeypatch, tmp_path, _ir())
+    state = {"locked": False}
+
+    class Lock:
+        def __enter__(self):
+            state["locked"] = True
+
+        def __exit__(self, *_):
+            state["locked"] = False
+
+    original = bp_metrics._deps["open_writable"]
+
+    def checked_read(key):
+        assert state["locked"], "reading outside the lock can overwrite concurrent edits"
+        return original(key)
+
+    bp_metrics._deps.update(write_lock=Lock(), open_writable=checked_read)
+    r = server.app.test_client().post("/api/metric/status", json={
+        "graph": "g", "metric": "销售金额", "status": "deprecated"})
+    assert r.status_code == 200
+
+
+def test_readjudication_detects_concurrent_metric_edit(monkeypatch, tmp_path):
+    from copy import deepcopy
+    ir = _ir()
+    writes = _wire(monkeypatch, tmp_path, ir)
+    bp_metrics._deps.update(db_for_source=lambda _s: "fixture.db",
+                            open_writable=lambda _k: (deepcopy(ir), str(tmp_path / "g.json"), None))
+
+    def concurrent_edit(_db, snapshot):
+        ir["metric_layers"]["atomic"][0]["status"] = "deprecated"
+        return {"metric_layers": snapshot["metric_layers"], "report": {}}
+
+    monkeypatch.setattr(bp_metrics.metric_pipeline, "readjudicate", concurrent_edit)
+    r = server.app.test_client().post("/api/metric/adjudicate", json={"graph": "g"})
+    assert r.status_code == 409
+    assert not writes
 
 
 def test_contract_view_compiles_and_lists_dimensions(monkeypatch, tmp_path):
