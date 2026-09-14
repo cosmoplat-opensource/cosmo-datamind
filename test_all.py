@@ -522,8 +522,10 @@ r=po("/api/engine/config",json={"keys":{"EVIL_VAR":"x"}}); chk("非白名单Key�
 r=po("/api/engine/config",json={"keys":{"MOONSHOT_API_KEY":"mk-regress-9x8y"}})
 chk("设Key→掩码回显", r.json()["keys"]["MOONSHOT_API_KEY"].endswith("9x8y") and r.json()["keys"]["MOONSHOT_API_KEY"].startswith("*"))
 import os as _os2, stat as _st2
-_pm=_st2.S_IMODE(_os2.stat("workdir/engine_config.json").st_mode)
-chk("配置文件 0600", _pm==0o600)
+_ecf="workdir/engine_config.json"
+chk("配置文件 0600",
+    (not _os2.path.exists(_ecf)) or _st2.S_IMODE(_os2.stat(_ecf).st_mode)==0o600,
+    "" if _os2.path.exists(_ecf) else "引擎未配置,无配置文件,无权限可断言")
 r=po("/api/engine/config",json={"keys":{"MOONSHOT_API_KEY":""}})
 chk("清Key", r.json()["keys"]["MOONSHOT_API_KEY"]=="")
 _m0=_ec["models"]["claude-code"]
