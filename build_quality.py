@@ -38,8 +38,7 @@ def audit_verified_evidence(ir):
         source = evidence.get("source") or ""
         legacy_sources = evidence.get("sources") or []
         declared_fk = (source == "declared_fk" or evidence.get("declared") is True or
-                       "schema-fk" in legacy_sources or
-                       str(relation.get("note") or "").startswith(("声明外键", "声明FK")))
+                       (isinstance(legacy_sources, list) and "schema-fk" in legacy_sources))
         label = f"{relation.get(source_key) or '?'}→{relation.get(target_key) or '?'}"
         missing_keys = [key for key in ("child_key", "parent_key") if not evidence.get(key)]
         if missing_keys:
@@ -47,11 +46,26 @@ def audit_verified_evidence(ir):
                            "desc": f"verified 关系缺少结构化连接键:{'、'.join(missing_keys)}",
                            "fix": "重新执行数据裁决并保存 child_key/parent_key;无证据则降为 candidate"})
             continue
+        child_columns = dao_core.key_columns(evidence.get("child_key"))
+        parent_columns = dao_core.key_columns(evidence.get("parent_key"))
+        if not child_columns or not parent_columns or len(child_columns) != len(parent_columns):
+            issues.append({"type": "verified_invalid_join_key", "relation": label, "index": index,
+                           "desc": "verified 连接键含空列、重复列或两侧列数不一致",
+                           "fix": "按真实列顺序重新保存完整的联合键，不能把复合键拆开验证"})
+        if evidence.get("evidence_complete") is False:
+            issues.append({"type": "verified_incomplete_evidence", "relation": label, "index": index,
+                           "desc": "verified 关系的取证被截断或未完成",
+                           "fix": "用完整值域重新取证；样本重叠不得冒充全量验证"})
         if declared_fk:
+            if (evidence.get("schema_validated") is False or
+                    (isinstance(evidence.get("orphan_count"), (int, float)) and evidence["orphan_count"] > 0)):
+                issues.append({"type": "verified_invalid_declared_fk", "relation": label, "index": index,
+                               "desc": "声明外键的约束校验失败或存在孤儿引用",
+                               "fix": "修复外键或引用数据后重新核验；当前关系应为 candidate"})
             continue
 
         overlap = evidence.get("overlap", relation.get("overlap"))
-        if not isinstance(overlap, (int, float)) or overlap < dao_core.MIN_OVERLAP:
+        if not dao_core.valid_percentage(overlap) or overlap < dao_core.MIN_OVERLAP:
             issues.append({"type": "verified_overlap_below_threshold", "relation": label, "index": index,
                            "desc": f"verified 关系重叠率 {overlap!r} 未达到固定阈值 {dao_core.MIN_OVERLAP:g}%",
                            "fix": "降为 candidate,或用可回放数据重新取证"})

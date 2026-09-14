@@ -492,7 +492,8 @@ a{color:var(--acc)}
   .bc-pipe i{opacity:.7;font-style:normal;font-size:11px}
   .bc-engine{text-align:center;font-size:12px;opacity:.92;background:rgba(255,255,255,.14);border-radius:10px;padding:8px 14px;border:1px solid rgba(255,255,255,.3);white-space:nowrap}
   .bc-engine b{font-size:15px;letter-spacing:.3px}
-  .bc-grid{display:grid;grid-template-columns:310px 1fr;gap:14px;margin-top:14px;align-items:start}
+  .bc-grid{display:grid;grid-template-columns:310px minmax(0,1fr);gap:14px;margin-top:14px;align-items:start}
+  .bc-grid>*{min-width:0}.bc-user,.bc-result,.bc-trace,.bc-srow{overflow-wrap:anywhere}
   .bc-sec{padding:12px 14px} .bc-sec h3{margin:0 0 8px;font-size:13.5px}
   .bc-ref-row{display:grid;grid-template-columns:minmax(0,1fr) 74px;gap:6px;margin-top:6px}
   .bc-ref-row select{width:100%;min-width:0;font-size:11.5px;padding:6px 7px}
@@ -500,6 +501,7 @@ a{color:var(--acc)}
   .bc-add{width:100%;margin-top:8px;font-size:12.5px;border-style:dashed}
   .bc-srow{display:flex;align-items:center;gap:8px;padding:8px 9px;border:1px solid var(--line);border-radius:8px;margin-bottom:6px;cursor:pointer;transition:.15s;background:#fff}
   .bc-srow:hover{border-color:var(--acc);background:#FafBff}
+  .bc-built-row{flex-wrap:wrap}.bc-built-row>.bc-built-info{flex-basis:100%!important}
   .bc-srow.on{border-color:var(--acc);background:#EEF2FF;box-shadow:inset 2px 0 0 var(--acc)}
   .bc-srow .dot{width:9px;height:9px;border-radius:50%;flex:0 0 auto;background:#c9ced9}
   .bc-srow.on .dot,.bc-srow .dot.ok{background:#22c55e} .bc-srow .dot.off{background:#e0a63a}
@@ -548,7 +550,7 @@ a{color:var(--acc)}
   .bc-compose{border-top:1px solid var(--line);padding:11px 14px;background:#fff}
   .bc-name{width:100%;margin-bottom:8px;font-size:12.5px}
   .bc-inrow{display:flex;gap:8px;align-items:flex-end}
-  .bc-inrow textarea{flex:1;height:46px;max-height:120px;resize:vertical;font-family:inherit;font-size:13.5px;padding:9px 11px}
+  .bc-inrow textarea{flex:1;min-width:0;height:46px;max-height:120px;resize:vertical;font-family:inherit;font-size:13.5px;padding:9px 11px}
   .bc-inrow button{height:46px;padding:0 20px;font-size:14px;white-space:nowrap}
   .bc-hint{font-size:11px;margin-top:6px}
   .bc-sec h3,.gd-h{display:flex;align-items:center;gap:8px}
@@ -566,7 +568,8 @@ a{color:var(--acc)}
   .bc-viz{height:280px;border:1px solid var(--line);border-radius:8px;background:#FbFcff}
   .bc-vizdet{font-size:12px;margin-top:6px;padding:8px 10px;border:1px solid var(--line);border-radius:6px;background:#fff;min-height:20px}
   .bc-vizdet .k{color:var(--muted)}.bc-vizdet code{background:#F4F6FB;padding:0 4px;border-radius:3px}
-  @media(max-width:820px){.bc-grid{grid-template-columns:1fr}.bc-main{height:auto;min-height:520px}}
+  .bc-failure{margin-top:8px;padding:10px 12px;border:1px solid #f1c993;border-radius:7px;background:#fff8ed;color:#8f440d;font-size:12px;white-space:normal}
+  .bc-failure>div{margin-top:5px}
   </style>
   <div class="bc-hero">
    <div style="display:flex;align-items:flex-start;gap:14px">
@@ -603,7 +606,7 @@ a{color:var(--acc)}
       <button class="ghost bc-add" onclick="skcOpen()">技能对比实验</button></div>
      <div class="muted" style="font-size:11px;margin-top:4px">技能正文会注入构建建模规则(编辑即改变抽取行为)。内置技能同样可改可删:改动写成你的版本、删除记为隐藏,出厂正文均保留,可随时恢复默认。</div></div>
     <div class="card bc-sec"><h3>已构建本体 <span class="muted" id="bc_built_n"></span></h3>
-     <div id="bc_built"><div class="muted">暂无,构建后在此列出</div></div></div>
+     <div id="bc_built" role="region" aria-label="已构建本体列表" tabindex="0"><div class="muted">暂无,构建后在此列出</div></div></div>
    </div>
    <div class="bc-main card">
     <div id="bc_iter_bar" style="display:none;margin:0 0 8px;padding:7px 10px;border:1px solid #cfe0ff;background:#f2f7ff;border-radius:6px;font-size:12px;color:#24406e">
@@ -617,12 +620,12 @@ a{color:var(--acc)}
       <button class="ghost" onclick="bcHistToggle()">历史对话 ▾</button>
       <button class="ghost" onclick="bcNew()">+ 新建对话</button>
       <div id="bc_hist_pop" class="bc-hist-pop" style="display:none"></div></div></div>
-    <div id="bc_log" class="bc-log"></div>
+    <div id="bc_log" class="bc-log" role="region" aria-label="本体构建过程与结果" aria-busy="false"></div>
     <div class="bc-compose">
-     <input id="bc_name" class="bc-name" placeholder="本体命名(留空由智能引擎自动命名)">
-     <textarea id="bc_cq" style="min-height:46px;margin-bottom:6px" placeholder="验收问题(可选,每行一个)——本体建成后应当能回答的业务问题,用于验收;例:哪些工单关联了发生退货的订单?"></textarea>
+     <input id="bc_name" class="bc-name" aria-label="本体名称，可选" placeholder="本体命名(留空由智能引擎自动命名)">
+     <textarea id="bc_cq" aria-label="验收问题，每行一个，可选" style="min-height:46px;margin-bottom:6px" placeholder="验收问题(可选,每行一个)——本体建成后应当能回答的业务问题,用于验收;例:哪些工单关联了发生退货的订单?"></textarea>
      <div class="bc-inrow">
-      <textarea id="bc_q" placeholder="描述你要构建的本体,例:从售后与生产数据构建一张贯通「订单-产品-工单-客户」的制造运营本体" onkeydown="if(event.key==='Enter'&&!event.shiftKey&&!event.isComposing){event.preventDefault();bcInquire()}"></textarea>
+      <textarea id="bc_q" aria-label="本轮建模诉求" placeholder="描述你要构建的本体,例:从售后与生产数据构建一张贯通「订单-产品-工单-客户」的制造运营本体" onkeydown="if(event.key==='Enter'&&!event.shiftKey&&!event.isComposing){event.preventDefault();bcInquire()}"></textarea>
       <button id="bc_send" onclick="bcInquire()">构建 ▸</button></div>
      <div class="muted bc-hint">Enter 发送 · Shift+Enter 换行 · 当前数据源 <b id="bc_cur_src">示例主库</b> · 技能 <b id="bc_cur_sk">0</b> 个 · 参照 <b id="bc_cur_ref">BFO 2020 + IOF Core（参照）</b> · <span id="bc_cur_dest">产出:新建本体</span></div>
     </div>
@@ -711,7 +714,8 @@ FROM fact_sales_order GROUP BY 1 ORDER BY 1 DESC LIMIT 12</textarea>
 </main>
 </div>
 <script src="/assets/modules/catalog.js"></script>
-<script src="/assets/modules/build-references.js?v=2"></script>
+<script src="/assets/modules/build-references.js?v=3"></script>
+<script src="/assets/modules/build-stream.js?v=1"></script>
 <!-- 问数作用域模块先于主脚本执行，避免 #chat 首屏初始化竞态；版本号打破旧标签缓存。 -->
 <script src="/assets/modules/qa-ontology.js?v=4"></script>
 <script src="/assets/modules/qa-history.js?v=1"></script>
@@ -725,7 +729,7 @@ const jsAttr=x=>esc(JSON.stringify(x));
 const cell=v=>(typeof v==='number'&&Number.isFinite(v)&&!Number.isInteger(v))?esc(parseFloat(v.toPrecision(12))):esc(v);
 // 核心助手显式挂 window:内联 onclick 处理器在全局作用域执行,const 顶层绑定跨浏览器可见性不保证,显式暴露杜绝隐患
 Object.assign(window,{$,J,esc,jsAttr,cell});
-function toast(msg,ok){const t=document.createElement('div');t.textContent=msg;t.style.cssText='position:fixed;top:18px;left:50%;transform:translateX(-50%);z-index:9999;background:'+(ok?'#16a34a':'#1f2740')+';color:#fff;padding:10px 18px;border-radius:10px;font-size:13px;max-width:70vw;box-shadow:0 6px 20px rgba(31,39,64,.22);opacity:0;transition:opacity .2s';document.body.appendChild(t);requestAnimationFrame(()=>t.style.opacity='1');setTimeout(()=>{t.style.opacity='0';setTimeout(()=>t.remove(),250);},2800);}
+function toast(msg,ok){document.getElementById('app_toast')?.remove();const t=document.createElement('div');t.id='app_toast';t.setAttribute('role',ok?'status':'alert');t.textContent=msg;t.style.cssText='position:fixed;top:18px;left:50%;transform:translateX(-50%);z-index:9999;background:'+(ok?'#16a34a':'#1f2740')+';color:#fff;padding:10px 18px;border-radius:10px;font-size:13px;max-width:70vw;box-shadow:0 6px 20px rgba(31,39,64,.22);opacity:0;transition:opacity .2s';document.body.appendChild(t);requestAnimationFrame(()=>t.style.opacity='1');setTimeout(()=>{t.style.opacity='0';setTimeout(()=>t.remove(),250);},2800);}
 // 唯一的 kind 规范(五类:颜色 c / 中文 n),全站图例·配色·标签·编辑下拉统一引用
 const KIND={object:{c:'#16a34a',n:'对象'},event:{c:'#7c3aed',n:'事件'},action:{c:'#d97706',n:'动作'},asset:{c:'#0ea5e9',n:'资产'},role:{c:'#db2777',n:'角色'}};
 const KCOL=k=>(KIND[k]||{c:'#5b9dff'}).c, KNM=k=>(KIND[k]||{n:k}).n;
@@ -948,6 +952,11 @@ function g6render(containerId,g,lay,opts){opts=opts||{};
  fit();setTimeout(fit,320);
  if(opts.onNode)graph.on('node:click',e=>opts.onNode(e.item.getModel()._n));
  if(opts.onEdge)graph.on('edge:click',e=>opts.onEdge(e.item.getModel()._e));
+ if(typeof ResizeObserver==='function'){let width=c.clientWidth,height=c.clientHeight;
+  const observer=new ResizeObserver(()=>{if(graph.get('destroyed')||!c.isConnected){observer.disconnect();return;}
+   if(c.clientWidth>0&&c.clientHeight>0&&(c.clientWidth!==width||c.clientHeight!==height)){
+    width=c.clientWidth;height=c.clientHeight;graph.changeSize(width,height);fit();}});
+  observer.observe(c);graph.on('beforedestroy',()=>observer.disconnect());}
  return graph;
 }
 async function drawGraph(k){const g=await J('/api/graph/'+k);
@@ -1217,11 +1226,11 @@ async function egLoad(){EG=await J('/api/engine/config').catch(e=>({error:''+e})
   +(_curOk?'':`<div class="muted" style="font-size:12px;color:#b45309;margin-bottom:8px">
      当前运行时 <code>${esc(EG.driver)}</code> 未注册,所有大模型环节会退回内置模板。
      ${EG.llm&&EG.llm.ready?'上方端点已就绪,把当前运行时切到「OpenAI 兼容端点」即可。':'请先在上方配置 OpenAI 兼容端点,或设置 DATAMIND_ENGINE_DIR 接入上游本体引擎。'}</div>`)
-  +(_others.length?'':`<div class="muted" style="font-size:12px">未接入上游本体引擎,故仅 OpenAI 兼容端点一种运行时(见上方卡片)。
+  +(_others.length?'':`<div class="muted" style="font-size:12px">${EG.runtimes.length?'当前仅注册了 OpenAI 兼容端点运行时。':'当前没有已注册的运行时；请配置端点或接入上游本体引擎。'}
      接入引擎后此处会出现 Claude Code / Hermes / OpenClaw 等可选项。</div>`)
   +'<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:10px">'
   +EG.runtimes.map(r=>{const[nm,sub]=LBL[r]||[r,''];const cur=r===EG.driver;const m=EG.models[r]||'';const opts=(EG.model_options[r]||[]);
-   return `<div class="step" style="border:1px solid ${cur?'#4A5FF3':'#E5E9F2'};border-radius:8px;padding:10px 12px;${cur?'background:#F5F7FF':''}">
+   return `<div class="step" data-runtime="${esc(r)}" style="border:1px solid ${cur?'#4A5FF3':'#E5E9F2'};border-radius:8px;padding:10px 12px;${cur?'background:#F5F7FF':''}">
     <b>${esc(nm)}</b> ${cur?'<span class="tag ok">当前引擎</span>':''}
     <div class="muted" style="font-size:12px;margin:3px 0 8px">${esc(sub)}</div>
     <div style="margin-bottom:6px;display:flex;gap:6px;align-items:center;flex-wrap:wrap">模型
@@ -1847,21 +1856,22 @@ function bcNew(){if(BC_BUSY){toast('构建进行中,请稍候再新建');return;
  if(BC.def&&BC.def.build_name&&!$('#bc_name').value)$('#bc_name').value=BC.def.build_name;
  if(BC.def&&BC.def.build_query&&!$('#bc_q').value)$('#bc_q').value=BC.def.build_query;
  $('#bc_q').focus();}
-async function bcRenderViz(key){const g=await J('/api/graph/'+key).catch(()=>null);
- const cont='bcviz_'+key;if(!g||!$('#'+cont))return;
- try{const gr=g6render(cont,g,'dagre',{onNode:n=>bcVizNode(key,n),onEdge:e=>bcVizEdge(key,e)});(BC._viz=BC._viz||[]).push(gr);}catch(_){}}
-async function bcVizNode(key,n){const det=$('#bcvizdet_'+key);if(!det)return;det.innerHTML='<span class="k">加载中…</span>';
+async function bcRenderViz(key,viewId){const g=await J('/api/graph/'+encodeURIComponent(key)).catch(()=>null);
+ const cont=viewId;if(!g||!cont||!$('#'+cont))return;
+ try{const gr=g6render(cont,g,'dagre',{onNode:n=>bcVizNode(key,n,viewId),onEdge:e=>bcVizEdge(key,e,viewId)});(BC._viz=BC._viz||[]).push(gr);}catch(_){}}
+async function bcVizNode(key,n,viewId){const det=$('#'+viewId+'_detail');if(!det)return;const epoch=det._request=(det._request||0)+1;det.innerHTML='<span class="k">加载中…</span>';
  const d=await J('/api/ont/object/'+encodeURIComponent(key)+'/'+encodeURIComponent(n.id)).catch(()=>null);
- if(!d){det.innerHTML='<span class="k">详情不可用</span>';return;}
+ if(epoch!==det._request||!det.isConnected)return;
+ if(!d||d.error){det.innerHTML='<span class="k">详情不可用</span>';return;}
  const tb=d.table?`绑定表 <code>${esc(d.table)}</code>`:'<span class="k">无绑定表(概念/事件)</span>';
  const attrs=(d.attrs||[]).slice(0,8).map(a=>esc(a.col)).join('、');
  const mets=(d.metrics||[]).slice(0,5).map(m=>esc(m.name)).join('、');
- det.innerHTML=`<b>${esc(d.cn||d.name)}</b> <span class="k">${KNM(d.kind)}</span> · ${tb}`
+ det.innerHTML=`<b>${esc(d.cn||d.name)}</b> <span class="k">${esc(KNM(d.kind))}</span> · ${tb}`
   +(attrs?`<div style="margin-top:3px"><span class="k">字段(${(d.attrs||[]).length}):</span>${attrs}${(d.attrs||[]).length>8?'…':''}</div>`:'')
   +(mets?`<div style="margin-top:3px"><span class="k">指标:</span>${mets}</div>`:'')
   +(d.description?`<div style="margin-top:3px" class="k">${esc(d.description)}</div>`:'')
   +` <a href="#" onclick="event.preventDefault();bcView(${jsAttr(key)})" style="font-size:11px">在图谱中展开↗</a>`;}
-function bcVizEdge(key,e){const det=$('#bcvizdet_'+key);if(!det||!e)return;
+function bcVizEdge(key,e,viewId){const det=$('#'+viewId+'_detail');if(!det||!e)return;det._request=(det._request||0)+1;
  det.innerHTML=`<b>${esc(e.s)}</b> —<span class="k"> ${esc(e.verb||'关联')} </span>→ <b>${esc(e.t)}</b> `
   +`<span class="tag ${e.status==='verified'?'ok':'warn'}" style="font-size:10px">${esc(e.status==='verified'?'已验证':'待取证')}</span>`;}
 async function bcInit(){
@@ -1877,36 +1887,43 @@ async function bcInit(){
  if(!bcInit._resize){bcInit._resize=1;addEventListener('resize',bcSyncHeight);}}
 // 对话面板动态上限 = 左栏总高:面板随对话增长(height:auto+min-height),但最多长到左栏高度,超出则内部滚动
 function bcSyncHeight(){const grid=document.querySelector('.bc-grid'),main=document.querySelector('.bc-main');
+ if(window.matchMedia&&window.matchMedia('(max-width:820px)').matches){if(main)main.style.maxHeight='none';return;}
  if(!grid||!main)return;const leftH=grid.children[0]&&grid.children[0].getBoundingClientRect().height;
  if(leftH>0)main.style.maxHeight=Math.round(leftH)+'px';}
 async function bcBuilt(){const bs=await J('/api/build/built').catch(()=>[]);
+ if(!Array.isArray(bs)){$('#bc_built_n').textContent='';$('#bc_built').innerHTML='<div class="muted" role="alert">'+esc(bs&&bs.error||'本体列表加载失败')+'</div><button class="ghost" onclick="bcBuilt()">重新加载</button>';return;}
  $('#bc_built_n').textContent='('+bs.length+')';
- $('#bc_built').innerHTML=bs.length?bs.map(b=>`<div class="bc-srow" style="cursor:default"><div style="flex:1;min-width:0">
+ $('#bc_built').innerHTML=bs.length?bs.map(b=>`<div class="bc-srow bc-built-row" style="cursor:default"><div class="bc-built-info" style="flex:1;min-width:0">
    <div class="nm" style="cursor:pointer;color:var(--acc)" onclick="bcView(${jsAttr(b.key)})" title="在图谱中查看">${esc(b.name)}</div>
-   <div class="mt">${b.objects} 对象 · ${b.events} 事件 · ${b.links} 关系 · 数据已验证 ${b.verified} · 验收结果 ${esc(qrText(b.quality_result||b.quality_gate||'legacy'))}${b.rounds>1?' · 已构建 '+b.rounds+' 轮':''} · ${esc(b.ts)}</div></div>
+   <div class="mt">${esc(b.objects)} 对象 · ${esc(b.events)} 事件 · ${esc(b.links)} 关系 · 数据已验证 ${esc(b.verified)} · 验收结果 ${esc(qrText(b.quality_result||b.quality_gate||'legacy'))}${b.rounds>1?' · 已构建 '+esc(b.rounds)+' 轮':''} · ${esc(b.ts)}</div></div>
    <a href="#" style="font-size:11px;white-space:nowrap;align-self:center;margin-right:8px" title="以这张本体为边界新建深度问数" onclick="event.preventDefault();dqStartFromOntology(${jsAttr(b.key)})">问数</a>
    <a href="#" style="font-size:11px;white-space:nowrap;align-self:center;margin-right:8px" title="在这张本体上继续构建:本轮结果并入该图,已确立的结论不被覆盖,也不删除既有内容" onclick="event.preventDefault();bcIterate(${jsAttr(b.key)},${jsAttr(b.name)})">继续构建</a>
    <a href="#" style="font-size:11px;white-space:nowrap;align-self:center;margin-right:6px" title="把动词表/类型分布/定义风格沉淀为自定义技能" onclick="event.preventDefault();bcDistill(${jsAttr(b.key)},this)">沉淀为技能</a>
    <span class="x" title="删除(再点确认)" onclick="bcDelBuilt(${jsAttr(b.key)},this)">✕</span></div>`).join(''):'<div class="muted">暂无,构建后在此列出</div>';bcSyncHeight();}
 async function bcIterate(key,name){   // 在已构建本体上继续构建:换上下文、示例与提示,不只是加一条细线
  if(BC_BUSY){toast('构建进行中,请稍候再切换底本');return;}
+ const epoch=BC.contextEpoch=(BC.contextEpoch||0)+1;BC.contextLoading=true;BC.contextError=false;$('#bc_send').disabled=true;
  BC.base=key;BC.baseName=name||key;bcIterSync();
  // 未开始对话时,把「新建本体」的欢迎页整体换成底本上下文卡——
  // 只在顶部加一条细线,用户在满屏「新建」文案里根本注意不到自己已切换到迭代模式。
- if(!BC.turns){BC.welcomed=true;await bcIterWelcome(key,name);}
+ try{if(!BC.turns){BC.welcomed=true;await bcIterWelcome(key,name,epoch);}
  else{const d=await J('/api/build/history/'+encodeURIComponent(key)).catch(()=>null);
-  if(d&&d.references&&window.bcRefsApply)bcRefsApply(d.references);}
+  if(epoch===BC.contextEpoch){if(!d||d.error){BC.contextError=true;toast('读取底本上下文失败，请重新选择本体');}
+   else if(d.references&&window.bcRefsApply)bcRefsApply(d.references);}}
+ if(epoch!==BC.contextEpoch)return;
  const box=$('#bc_q');
  if(box){
   // 预填的是新建本体的诉求,迭代时会被原样发出去,等于用「重建一张图」的指令做增量。
   if(box.value.trim() && box.value.trim()===(BC.def&&BC.def.build_query||'').trim())box.value='';
   box.placeholder='描述本轮要补充的范围,例如「补上质量检测记录与产品、产线的关系」';
   box.focus();}
- bcHintSync();}
-async function bcIterWelcome(key,name){   // 底本上下文卡:规模、历次诉求、可点的增量示例
+ bcHintSync();}finally{if(epoch===BC.contextEpoch){BC.contextLoading=false;$('#bc_send').disabled=BC_BUSY||BC.contextError;}}}
+async function bcIterWelcome(key,name,epoch=BC.contextEpoch){   // 底本上下文卡:规模、历次诉求、可点的增量示例
  const log=$('#bc_log');
  log.innerHTML='<div class="bc-welcome"><div class="muted">读取本体上下文…</div></div>';
  const d=await J('/api/build/history/'+encodeURIComponent(key)).catch(e=>({error:''+e}));
+ if(epoch!==BC.contextEpoch||BC.base!==key)return;
+ if(!d||d.error){BC.contextError=true;log.innerHTML='<div class="bc-welcome" role="alert">读取底本上下文失败：'+esc(d&&d.error||'响应为空')+'。请重新选择本体以加载构建参照。</div>';return;}
  if(d&&d.references&&window.bcRefsApply)bcRefsApply(d.references);  // 迭代继承底本最近一轮配置，之后仍可覆盖
  const rounds=(d&&d.rounds)||[];
  const hist=rounds.length
@@ -1930,7 +1947,8 @@ async function bcIterHist(){   // 展开/收起该本体的构建历程(存在�
  const box=$('#bc_iter_hist'),ar=$('#bc_iter_ar');
  if(box.style.display!=='none'){box.style.display='none';ar.textContent='▾';return;}
  box.style.display='block';ar.textContent='▴';box.innerHTML='<span class="muted">读取中…</span>';
- const d=await J('/api/build/history/'+encodeURIComponent(BC.base)).catch(e=>({error:''+e}));
+ const epoch=BC.contextEpoch;const d=await J('/api/build/history/'+encodeURIComponent(BC.base)).catch(e=>({error:''+e}));
+ if(epoch!==BC.contextEpoch||box.style.display==='none')return;
  if(d.error){box.innerHTML='<span class="muted">读取失败:'+esc(d.error)+'</span>';return;}
  const rs=d.rounds||[];
  box.innerHTML=(rs.length?rs.map(r=>{
@@ -1944,10 +1962,13 @@ async function bcIterHist(){   // 展开/收起该本体的构建历程(存在�
     +(r.cq_count?` · 验收问题 ${r.cq_count} 条`:'')+esc(mg)+`</div></div>`;}).join('')
   :'<span class="muted">这张本体建于加入构建历程记录之前,没有留下逐轮记录。本轮起会开始记录。</span>')
   +`<div class="muted" style="font-size:11px;margin-top:4px">当前 ${d.objects} 对象 / ${d.relations} 关系</div>`;}
-function bcIterClear(){BC.base='';BC.baseName='';bcIterSync();
+function bcIterClear(){if(BC_BUSY){toast('构建进行中,请稍候再切换底本');return;}
+ BC.contextEpoch=(BC.contextEpoch||0)+1;BC.contextLoading=false;BC.contextError=false;$('#bc_send').disabled=false;
+ BC.base='';BC.baseName='';bcIterSync();
  const hb=$('#bc_iter_hist');if(hb){hb.style.display='none';hb.innerHTML='';}
  const ar=$('#bc_iter_ar');if(ar)ar.textContent='▾';
- const box=$('#bc_q');if(box)box.placeholder='描述你的建模诉求…';}
+ const box=$('#bc_q');if(box)box.placeholder='描述你的建模诉求…';
+ if(!BC.turns){BC.welcomed=false;bcWelcome();}}
 function bcHintSync(){   // 底部「产出去向」与构建按钮文案随模式同步
  const dest=$('#bc_cur_dest'), btn=$('#bc_send');
  if(dest)dest.innerHTML=BC.base
@@ -1972,10 +1993,13 @@ async function bcDistill(key,el){el.textContent='沉淀中…';   // 从已构�
  if(d.error){toast(d.error,false);return;}
  toast('已沉淀技能「'+d.name+'」(动词表 '+Object.keys(d.verbs||{}).length+' 项),技能区可编辑/编排',true);bcSkills();}
 let BC_DEL_ARM={};
-async function bcDelBuilt(key,el){if(!BC_DEL_ARM[key]){BC_DEL_ARM[key]=1;toast('再点一次 ✕ 确认删除该构建产物',false);
-  setTimeout(()=>{delete BC_DEL_ARM[key];},4000);return;}
- delete BC_DEL_ARM[key];
- await J('/api/build/delete',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key})});
+async function bcDelBuilt(key,el){if(BC_BUSY&&BC.base===key){toast('该本体正在构建，请完成后再删除');return;}
+ if(BC_DEL_ARM[key]==='pending')return;
+ if(!BC_DEL_ARM[key]){BC_DEL_ARM[key]=1;toast('再点一次 ✕ 确认删除该构建产物',false);
+  setTimeout(()=>{if(BC_DEL_ARM[key]!=='pending')delete BC_DEL_ARM[key];},4000);return;}
+ BC_DEL_ARM[key]='pending';
+ const d=await J('/api/build/delete',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key})});delete BC_DEL_ARM[key];
+ if(!d||d.error){toast(d&&d.error||'删除失败',false);return;}
  if(BC.base===key)bcIterClear();          // 底本被删就解除选定,不留一个指向已不存在图谱的目标
  loaded.graph=0;bcBuilt();}
 function bcWelcome(){if(BC.welcomed)return;BC.welcomed=true;
@@ -1992,6 +2016,7 @@ function bcPick(q,src){if(src){const s=(BC._sources||[]).find(x=>x.id===src);
   else if(src==='uploads')toast('上传数据库暂无数据,示例保留当前数据源;如需按上传数据构建请先在左侧上传');}
  $('#bc_q').value=q;$('#bc_q').focus();}
 async function bcSources(){const d=await J('/api/build/sources').catch(()=>({sources:[],assets:[]}));
+ if(!d||d.error||!Array.isArray(d.sources)){$('#bc_sources').innerHTML='<div class="muted" role="alert">'+esc(d&&d.error||'数据源加载失败')+'</div><button class="ghost" onclick="bcSources()">重新加载</button>';return;}
  BC._sources=d.sources||[];
  // 若当前选中源不可用(如空的上传库),自动切到首个就绪源,避免构建时报"无可读表"
  if(!(d.sources||[]).some(s=>s.id===BC.src&&s.ready)){const rdy=(d.sources||[]).find(s=>s.ready);if(rdy){BC.src=rdy.id;BC.srcName=rdy.name;}}
@@ -2011,6 +2036,7 @@ function bcSelectSrc(id){BC.src=id;const s=(BC._sources||[]).find(x=>x.id===id);
  document.querySelectorAll('#bc_sources .bc-srow').forEach(r=>r.classList.remove('on'));
  bcSources();}
 async function bcSkills(){const ss=await J('/api/build/skills').catch(()=>[]);
+ if(!Array.isArray(ss)){$('#bc_sk_n').textContent='';$('#bc_skills').innerHTML='<div class="muted" role="alert">'+esc(ss&&ss.error||'技能列表加载失败')+'</div><button class="ghost" onclick="bcSkills()">重新加载</button>';return;}
  const vis=ss.filter(x=>!x.hidden), hid=ss.filter(x=>x.hidden);
  $('#bc_sk_n').textContent='('+vis.length+')';
  $('#bc_skills').innerHTML=vis.map(s=>{const on=BC.skills.has(s.name)?' on':'';
@@ -2122,7 +2148,9 @@ async function bcUpload(){const fs=$('#bc_files').files;if(!fs.length)return;
  const fd=new FormData();for(const f of fs)fd.append('files',f);
  toast('上传中…');const d=await J('/api/build/upload',{method:'POST',body:fd}).catch(e=>({error:''+e}));
  $('#bc_files').value='';if(d.error){toast(d.error);return}
- toast('已上传 '+(d.saved||[]).length+' 个文件'+((d.tables||[]).length?(' · 建表 '+d.tables.map(t=>t.table).join('/')):''));bcSources();}
+ const failed=(d.tables||[]).filter(t=>t.error),made=(d.tables||[]).filter(t=>!t.error);
+ if(failed.length){toast('上传失败：'+failed.map(t=>t.table+' · '+t.error).join('；')+((d.saved||[]).length?'；其余 '+d.saved.length+' 个文件已保存':''),false);bcSources();return;}
+ toast('已上传 '+(d.saved||[]).length+' 个文件'+(made.length?(' · 建表 '+made.map(t=>t.table).join('/')):''));bcSources();}
 async function bcSkillUpload(){const fs=$('#bc_skfile').files;if(!fs.length)return;
  const fd=new FormData();for(const f of fs)fd.append('files',f);
  const d=await J('/api/build/skill/upload',{method:'POST',body:fd}).catch(e=>({error:''+e}));
@@ -2149,64 +2177,12 @@ async function bcDelAsset(name){
  const d=await J('/api/build/asset/delete',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name})}).catch(e=>({error:''+e}));
  if(d.error){toast(d.error,false);return}
  toast('已删除：'+name+(d.dropped_table?('（含上传表 '+d.dropped_table+'）'):''),true);bcSources();}
-const BC_IC={true:'<span class="ic" style="color:#22c55e">✓</span>',false:'<span class="ic" style="color:#e0563f">✕</span>'};
-let BC_BUSY=false;
-async function bcInquire(){if(BC_BUSY)return;const q=$('#bc_q').value.trim();if(!q){toast('请描述要构建的本体');return}
- const cqs=$('#bc_cq').value.split(/\n+/).map(x=>x.trim()).filter(Boolean);
- const references=window.bcRefsPayload?bcRefsPayload():{version:1,industry:{id:$('#bc_ref_industry').value,mode:$('#bc_ref_industry_mode').value},ontology_standard:{id:$('#bc_ref_standard').value,mode:$('#bc_ref_standard_mode').value}};
- BC_BUSY=true;$('#bc_send').disabled=true;$('#bc_q').value='';
- if(!BC.welcomed||$('#bc_log').querySelector('.bc-welcome'))$('#bc_log').innerHTML='';
- const log=$('#bc_log');
- log.insertAdjacentHTML('beforeend',`<div class="bc-user">${esc(q)}</div>`);
- const trace=document.createElement('div');trace.className='bc-trace';
- // 迭代时在本轮记录顶部标明去向:构建要跑几分钟,过程中必须能看出这轮是并入还是新建
- trace.innerHTML=(BC.base?`<div style="margin:0 0 7px;padding:5px 9px;border-left:3px solid var(--acc);background:#f2f7ff;border-radius:0 5px 5px 0;font-size:11.5px;color:#24406e">继续构建 · 本轮结果将并入「<b>${esc(BC.baseName)}</b>」</div>`:'')
-  +`<div style="margin:0 0 7px;font-size:11.5px;color:var(--sub)">构建参照 · ${esc(window.bcRefsText?bcRefsText(references):'—')}</div>`
-  +'<div class="bc-steps"></div><div class="bc-status"><span class="bc-spin"></span> 多智能体引擎接入…</div>'
-  +'<details class="bc-proc" style="display:none"><summary><span class="ar">▶</span>过程输出 <span class="muted pn">0 行</span></summary><div class="bc-proclog"></div></details>';
- log.appendChild(trace);log.scrollTop=1e9;
- const stepsEl=trace.querySelector('.bc-steps'),statusEl=trace.querySelector('.bc-status'),
-       procEl=trace.querySelector('.bc-proc'),procLog=trace.querySelector('.bc-proclog'),procN=trace.querySelector('.pn');
- const steps=[];let status='',elapsed=0,nlog=0;
- const draw=()=>{stepsEl.innerHTML=steps.map(s=>`<div class="st">${BC_IC[!!s.ok]}<span class="tx">${esc(s.info||s.step)}</span><span class="tm">${esc(s.ts||'')}</span></div>`).join('');
-  statusEl.style.display=status?'flex':'none';
-  statusEl.innerHTML=status?`<span class="bc-spin"></span> ${esc(status)}${elapsed?`<span class="el">已用 ${Math.round(elapsed)}s</span>`:''}`:'';
-  log.scrollTop=1e9;};
- // 过程输出：引擎在几分钟的抽取里做了什么（证据规模、引擎/模型、模型原始输出、解析结果），默认折叠
- const pushLog=(ev)=>{nlog++;procEl.style.display='block';procN.textContent=nlog+' 行';
-  const raw=(ev.text||'').startsWith('│');
-  procLog.insertAdjacentHTML('beforeend',`<div class="${raw?'raw':''}"><span class="lt">${esc(ev.ts||'')}</span>${esc(ev.text||'')}</div>`);
-  if(procEl.open)procLog.scrollTop=1e9;};
- try{
-  const resp=await fetch('/api/build/inquire',{method:'POST',headers:{'Content-Type':'application/json'},
-   body:JSON.stringify({q,source:BC.src,name:$('#bc_name').value,skills:[...BC.skills],cqs,
-    references,base_graph:BC.base||''})});
-  const rd=resp.body.getReader();const dec=new TextDecoder();let buf='',done=null;
-  while(true){const {done:fin,value}=await rd.read();if(fin)break;buf+=dec.decode(value,{stream:true});
-   let i;while((i=buf.indexOf('\n\n'))>=0){const line=buf.slice(0,i).replace(/^data: /,'');buf=buf.slice(i+2);
-    if(!line)continue;let ev;try{ev=JSON.parse(line);}catch(_){continue;}
-    if(ev.type==='step'){steps.push(ev);status='';elapsed=0;draw();}
-    else if(ev.type==='status'){status=ev.text;elapsed=0;draw();}
-    else if(ev.type==='log'){pushLog(ev);}
-    else if(ev.type==='tick'){elapsed=ev.elapsed||0;draw();}
-    else if(ev.type==='error'){status='';draw();trace.insertAdjacentHTML('beforeend',`<div class="tag warn" style="margin-top:8px">构建失败:${esc(ev.error||'')}</div>`);}
-    else if(ev.type==='done'){done=ev;}}}
-  status='';draw();
-  if(nlog)procN.textContent=nlog+' 行 · 可展开回看';
-  if(done){$('#bc_name').value='';
-   bcRenderResult(log,done);
-   // 存入当前构建对话并持久化(供历史对话)
-   if(!BC_CONV)BC_CONV={id:'b'+Math.random().toString(36).slice(2,9),title:'',turns:[],ts:0};
-   BC_CONV.turns.push({q,done});if(!BC_CONV.title)BC_CONV.title=q.slice(0,40);BC_CONV.ts=Date.now();bcSaveConv();
-   BC.turns=BC_CONV.turns.length;$('#bc_conv_n').textContent='· 第 '+BC.turns+' 次构建';
-   loaded.graph=0;bcBuilt();log.scrollTop=1e9;}
- }catch(e){status='';draw();trace.insertAdjacentHTML('beforeend',`<div class="tag warn" style="margin-top:8px">连接中断:${esc(''+e)}</div>`);}
- BC_BUSY=false;$('#bc_send').disabled=false;}
 async function bcView(key){loaded.graph=1;document.querySelector('[data-p=graph]').click();await graphs(key);}
 // 构建结果卡渲染(live 与历史回放共用)
 const QR={pass:'通过',review:'待复核',fail:'不通过',legacy:'旧版无记录'};   // 验收结果的中文名,单一来源
 function qrText(v){return QR[v]||v||'—';}
-function bcResultHTML(done){const s=done.stats||{};const e=done.evidence||{};
+let BC_VIZ_SEQ=0;
+function bcResultHTML(done,viewId='bcpreview_'+(++BC_VIZ_SEQ)){const s=done.stats||{};const e=done.evidence||{};
  const evtxt=[`库表 ${e.tables??0} 张`,e.docs?`已解析文档/代码 ${e.docs} 份`:'',(e.refs&&e.refs.length)?`未解析资产 ${e.refs.length} 项`:''].filter(Boolean).join(' · ');
  const isllm=(done.method||'').indexOf('LLM 离线')<0;
  const result=(done.quality&&(done.quality.result||done.quality.gate))||s.quality_result||s.quality_gate||'review';
@@ -2214,10 +2190,10 @@ function bcResultHTML(done){const s=done.stats||{};const e=done.evidence||{};
  const cqtxt=(cq&&cq.provided)?`验收问题 可回答 ${cc.answerable||0}/${cq.total||0} · 部分支持 ${cc.partial||0} · 不可回答 ${cc.unanswerable||0}`:'';
  const reftxt=window.bcRefsText?bcRefsText(done.references):'';
  return `<div class="bc-result">
-   <div class="hd"><span><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#22a058;margin-right:7px;vertical-align:middle"></span>${done.iterated?`已并入本体「${esc(done.name)}」${done.iterations?` · 第 ${done.iterations} 轮`:''}`:`本体「${esc(done.name)}」构建完成`}</span><span class="muted" style="font-size:11px">${done.elapsed}s</span></div>
+   <div class="hd"><span><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#22a058;margin-right:7px;vertical-align:middle"></span>${done.iterated?`已并入本体「${esc(done.name)}」${done.iterations?` · 第 ${esc(done.iterations)} 轮`:''}`:`本体「${esc(done.name)}」构建完成`}</span><span class="muted" style="font-size:11px">${esc(done.elapsed)}s</span></div>
    ${done.iterated&&done.merge?`<div style="margin:8px 14px 0;padding:7px 10px;border:1px solid #cfe0ff;background:#f2f7ff;border-radius:6px;font-size:11.5px;color:#24406e">
-    本轮并入:新增 <b>${done.merge.objects_added||0}</b> 个对象 · 新增 <b>${done.merge.relations_added||0}</b> 条关系 · 证据升级 <b>${done.merge.relations_upgraded||0}</b> 条 · 补全字段 <b>${done.merge.objects_enriched||0}</b> 处<br>
-    <span class="muted">保留原结论 ${done.merge.relations_kept||0} 条;已确立的「已验证」「人工断言」与人审结论未被覆盖,既有内容未删除。下方统计为合并后的整张本体。</span></div>`:''}
+    本轮并入:新增 <b>${esc(done.merge.objects_added||0)}</b> 个对象 · 新增 <b>${esc(done.merge.relations_added||0)}</b> 条关系 · 证据升级 <b>${esc(done.merge.relations_upgraded||0)}</b> 条 · 补全字段 <b>${esc(done.merge.objects_enriched||0)}</b> 处<br>
+    <span class="muted">保留原结论 ${esc(done.merge.relations_kept||0)} 条;已确立的「已验证」「人工断言」与人审结论未被覆盖,既有内容未删除。下方统计为合并后的整张本体。</span></div>`:''}
    <div style="padding:8px 14px 0;display:flex;gap:6px;flex-wrap:wrap">
     <span class="tag ${isllm?'':'warn'}" style="${isllm?'background:#F0EBFB;color:#7c50e6':''}">${esc(done.method||'大语言模型辅助提议')}</span>
     ${evtxt?`<span class="tag" style="background:#F4F6FB;color:#606a7b">证据 ${esc(evtxt)}</span>`:''}
@@ -2225,33 +2201,34 @@ function bcResultHTML(done){const s=done.stats||{};const e=done.evidence||{};
     <span class="tag ${result==='pass'?'ok':'warn'}">验收检查 ${esc(qrText(result))}</span>
     ${cqtxt?`<span class="tag ${(cc.partial||cc.unanswerable)?'warn':'ok'}">${esc(cqtxt)}</span>`:''}</div>
    <div class="bc-stats" style="margin-top:8px">
-    <div><b>${s.objects??0}</b><span>节点总数</span></div><div><b>${s.events??0}</b><span>事件</span></div><div><b>${s.actions??0}</b><span>动作</span></div>
-    <div><b>${s.links??0}</b><span>关系</span></div><div><b>${s.verified??0}</b><span>数据已验证</span></div>
-    <div><b>${s.candidate??0}</b><span>候选待取证</span></div></div>
+    <div><b>${esc(s.objects??0)}</b><span>节点总数</span></div><div><b>${esc(s.events??0)}</b><span>事件</span></div><div><b>${esc(s.actions??0)}</b><span>动作</span></div>
+    <div><b>${esc(s.links??0)}</b><span>关系</span></div><div><b>${esc(s.verified??0)}</b><span>数据已验证</span></div>
+    <div><b>${esc(s.candidate??0)}</b><span>候选待取证</span></div></div>
    <div class="bc-summary">${esc(done.summary||'').replace(/\n/g,'<br>')}${done.note?`<div class="muted" style="margin-top:6px;font-size:12px">说明:${esc(done.note)}</div>`:''}</div>
    <div class="bc-viz-wrap"><div class="bc-viz-hd">本体预览 <span class="muted" style="font-weight:400">· 拖拽平移 · 滚轮缩放 · 点节点看绑定表/字段/指标</span></div>
-    <div class="bc-viz" id="bcviz_${esc(done.graph_key)}"></div>
-    <div class="bc-vizdet" id="bcvizdet_${esc(done.graph_key)}"><span class="k">点击上方节点或连线查看详情</span></div></div>
+    <div class="bc-viz" id="${esc(viewId)}"></div>
+    <div class="bc-vizdet" id="${esc(viewId)}_detail"><span class="k">点击上方节点或连线查看详情</span></div></div>
    <div class="bc-acts"><button onclick="bcView(${jsAttr(done.graph_key)})">在本体图谱中查看 ↗</button>
     <button class="ghost" onclick="goReview(${jsAttr(done.graph_key)})">进入人审 ↗</button></div></div>`;}
-function bcRenderResult(log,done){log.insertAdjacentHTML('beforeend',bcResultHTML(done));bcRenderViz(done.graph_key);}
+function bcRenderResult(log,done){const viewId='bcpreview_'+(++BC_VIZ_SEQ);log.insertAdjacentHTML('beforeend',bcResultHTML(done,viewId));bcRenderViz(done.graph_key,viewId);}
 // ── 构建对话历史(localStorage,类比深度问数)──
 let BC_CONV=null;
-function bcAllConv(){try{return JSON.parse(localStorage.getItem('bc_convs')||'[]')}catch(e){return[]}}
+function bcAllConv(){try{const all=JSON.parse(localStorage.getItem('bc_convs')||'[]');return Array.isArray(all)?all.filter(c=>c&&typeof c.id==='string'&&Array.isArray(c.turns)&&c.turns.every(t=>t&&t.done&&typeof t.done.graph_key==='string')):[]}catch(e){return[]}}
 function bcSaveConv(){if(!BC_CONV||!BC_CONV.turns.length)return;let all=bcAllConv().filter(c=>c.id!==BC_CONV.id);all.unshift(BC_CONV);all=all.slice(0,20);
  try{localStorage.setItem('bc_convs',JSON.stringify(all))}catch(e){}}
 function bcHistToggle(){const p=$('#bc_hist_pop');const show=p.style.display==='none';p.style.display=show?'block':'none';if(show)bcRenderHist();}
 function bcRenderHist(){const all=bcAllConv();
  $('#bc_hist_pop').innerHTML=all.length?all.map(c=>`<div class="it ${BC_CONV&&c.id===BC_CONV.id?'on':''}" onclick="bcOpen(${esc(JSON.stringify(c.id))})"><span class="t">${esc(c.title||'(空)')}</span><span class="muted" style="font-size:10px">${(c.turns||[]).length}次</span><span class="del" title="删除" onclick="event.stopPropagation();bcDelConv(${esc(JSON.stringify(c.id))})">✕</span></div>`).join(''):'<div class="muted" style="padding:8px 6px">暂无历史对话</div>';}
-function bcDelConv(id){let all=bcAllConv().filter(c=>c.id!==id);try{localStorage.setItem('bc_convs',JSON.stringify(all))}catch(e){}
+function bcDelConv(id){if(BC_BUSY){toast('构建进行中，请稍候再删除历史');return;}let all=bcAllConv().filter(c=>c.id!==id);try{localStorage.setItem('bc_convs',JSON.stringify(all))}catch(e){}
  if(BC_CONV&&BC_CONV.id===id){BC_CONV=null;bcNew();}bcRenderHist();}
 function bcOpen(id){if(BC_BUSY){toast('构建进行中,请稍候');return;}const c=bcAllConv().find(x=>x.id===id);if(!c)return;
  bcSaveConv();                                               // 先存当前
+ bcIterClear();                                              // 历史回放不沿用另一对话的合并目标
  (BC._viz||[]).forEach(gr=>{try{gr.destroy();}catch(_){}});BC._viz=[];
  BC_CONV=c;BC.welcomed=true;$('#bc_hist_pop').style.display='none';
  const last=(c.turns||[]).slice(-1)[0];if(last&&last.done&&last.done.references&&window.bcRefsApply)bcRefsApply(last.done.references);
  const log=$('#bc_log');log.innerHTML='';
- (c.turns||[]).forEach(t=>{log.insertAdjacentHTML('beforeend',`<div class="bc-user">${esc(t.q)}</div>`);log.insertAdjacentHTML('beforeend',bcResultHTML(t.done));bcRenderViz(t.done.graph_key);});
+ (c.turns||[]).forEach(t=>{log.insertAdjacentHTML('beforeend',`<div class="bc-user">${esc(t.q)}</div>`);bcRenderResult(log,t.done);});
  BC.turns=(c.turns||[]).length;$('#bc_conv_n').textContent='· 第 '+BC.turns+' 次构建';log.scrollTop=0;}
 // ══════ 数据连接 ══════
 let CN_SRC=null;
@@ -2482,13 +2459,13 @@ function routeHash(){const h=location.hash.slice(1);
  if(h){if(!goPage(h)){goPage('home');history.replaceState(null,'','#home');}}else goPage('home');}  // 未知 hash 回首页并纠正 URL,避免地址与页面不一致
 addEventListener('hashchange',routeHash);
 // 可访问性:让 onclick 的 div/span 可 Tab 聚焦 + Enter/Space 触发(键盘可操作)
-const A11Y_SEL='.nav,.dq-mode,.eg,.pill,.dq-sel,.nav-group .gh,.dq-collapse,.dq-hist .it,.ds-card,.sk-card,.dq-react span,.dq-tab .c,.bc-eg,.bc-srow,.cn-row';
-function a11yScan(){document.querySelectorAll(A11Y_SEL).forEach(el=>{if(!el.hasAttribute('tabindex')){el.tabIndex=0;if(!el.hasAttribute('role'))el.setAttribute('role','button');}});}
+const A11Y_SEL='.nav,.dq-mode,.eg,.pill,.dq-sel,.nav-group .gh,.dq-collapse,.dq-hist .it,.ds-card,.sk-card,.dq-react span,.dq-tab .c,.bc-eg[onclick],.bc-srow[onclick],.bc-hist-pop .it,.bc-hist-pop .del,.bc-srow .x,.bc-srow .nm[onclick],.bc-chip .x,.cn-row';
+function a11yScan(){document.querySelectorAll(A11Y_SEL).forEach(el=>{if(!el.hasAttribute('tabindex')){el.tabIndex=0;if(!el.hasAttribute('role'))el.setAttribute('role','button');}if(el.getAttribute('title')&&!el.hasAttribute('aria-label'))el.setAttribute('aria-label',el.getAttribute('title'));});}
 a11yScan();
 addEventListener('keydown',e=>{if((e.key==='Enter'||e.key===' ')&&e.target.matches&&e.target.matches(A11Y_SEL)){e.preventDefault();e.target.click();}});
 // 动态内容渲染后补扫(轻量:仅在导航/历史/弹窗容器变动时,避开高频的对话流)
 new MutationObserver(()=>a11yScan()).observe(document.querySelector('aside'),{childList:true,subtree:true});
-['#dq_hist','#dq_ds_body','#dq_sk_body'].forEach(s=>{const el=document.querySelector(s);if(el)new MutationObserver(a11yScan).observe(el,{childList:true,subtree:true});});
+['#dq_hist','#dq_ds_body','#dq_sk_body','#bc_hist_pop','#bc_built'].forEach(s=>{const el=document.querySelector(s);if(el)new MutationObserver(a11yScan).observe(el,{childList:true,subtree:true});});
 // 顶栏运行时药丸:显示当前引擎驱动(对齐平台"通用工作台"状态药丸)
 (async()=>{try{const rt=await J('/api/ont/runtimes');if(rt&&rt.current)$('#rt_pill').textContent='引擎 · '+engName(rt.current);}catch(e){}})();
 </script></body></html>

@@ -311,8 +311,7 @@ class TestConnectionCap:
         parse_obj = object.__new__(cls)
         parse_obj.rfile = Reader()
         assert parse_obj.parse_request() == "parsed"
-        assert starts == [((cls._hdr_budget,), {}),
-                          ((cls._body_init,), {"min_rate": cls._body_rate,
+        assert starts == [((cls._body_init,), {"min_rate": cls._body_rate,
                                                "ceiling": cls._body_budget})]
 
         def timeout(_self):
@@ -321,6 +320,7 @@ class TestConnectionCap:
         monkeypatch.setattr(WSGIRequestHandler, "handle_one_request", timeout)
         timeout_obj = object.__new__(cls)
         timeout_obj.connection = Conn(fail=True)
+        timeout_obj.rfile = Reader()
         timeout_obj.handle_one_request()
         assert timeout_obj.close_connection is True
 

@@ -5,8 +5,31 @@
 pythonpath 由 pyproject 的 [tool.pytest.ini_options] 注入。
 夹具刻意最小:一个两对象一关系的健康 IR、一个规则集、一个可复用的临时 SQLite 建库器。
 """
+import os
+from pathlib import Path
+import shutil
 import sqlite3
+import tempfile
 import pytest
+
+
+# Must precede test-module imports: server/srv_engine bind paths and credentials at import.
+# Unit tests never inherit the developer's workdir, optional engine or paid LLM endpoints.
+_ROOT = Path(__file__).resolve().parents[1]
+_SANDBOX = tempfile.TemporaryDirectory(prefix="datamind-pytest-")
+_WORK = Path(_SANDBOX.name) / "workdir"
+_WORK.mkdir()
+for _seed in ("demo_ir.json", "app_ontology_ir.json", "action_types.json", "built_qsdemo.json"):
+    shutil.copy2(_ROOT / "workdir" / _seed, _WORK / _seed)
+for _key in tuple(os.environ):
+    if _key.startswith("DATAMIND_LLM_") or _key in {
+        "CLAW_DRIVER", "OPENAI_API_KEY", "ANTHROPIC_API_KEY", "ZHIPU_API_KEY",
+        "DEEPSEEK_API_KEY", "MOONSHOT_API_KEY", "DASHSCOPE_API_KEY",
+    }:
+        os.environ.pop(_key, None)
+os.environ.update(DATAMIND_WORKDIR=str(_WORK), DATAMIND_DB=str(_ROOT / "examples/demo_metrics.db"),
+                  DATAMIND_ENGINE_DIR=str(Path(_SANDBOX.name) / "no-engine"),
+                  DATAMIND_OUTPUTS_DIR=str(Path(_SANDBOX.name) / "no-outputs"))
 
 
 @pytest.fixture

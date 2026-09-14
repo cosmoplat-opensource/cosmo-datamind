@@ -1,0 +1,199 @@
+{
+  "type": "done",
+  "steps": [
+    {
+      "step": "scope_source",
+      "ok": true,
+      "info": "数据源限定 · 1 张表",
+      "ts": "01:40:43"
+    },
+    {
+      "step": "load_ontology",
+      "ok": true,
+      "info": "加载本体上下文 · 验收_部署_20260907",
+      "ts": "01:40:43"
+    },
+    {
+      "step": "term_expand",
+      "ok": true,
+      "info": "术语扩展 · 词典命中 2 个同义/中英对照词:客户、record",
+      "ts": "01:40:43"
+    },
+    {
+      "step": "anchor_ontology",
+      "ok": true,
+      "info": "锚定本体 · 验收_部署_20260907(108 对象 / 122 关系)",
+      "ts": "01:40:43"
+    },
+    {
+      "step": "match_schema",
+      "ok": true,
+      "info": "匹配相关表/指标 · 命中 1 张表",
+      "ts": "01:40:43"
+    },
+    {
+      "step": "ontology_relations",
+      "ok": true,
+      "info": "选中表间暂无已验证关系,JOIN 由引擎按列名推断",
+      "ts": "01:40:43"
+    },
+    {
+      "step": "build_context",
+      "ok": true,
+      "info": "组装库结构上下文 · 383 字符",
+      "ts": "01:40:43"
+    },
+    {
+      "step": "llm_plan(智能引擎)",
+      "ok": true,
+      "info": "1.7s 156字符"
+    },
+    {
+      "step": "plan_ready",
+      "ok": true,
+      "info": "分析计划就绪 · 拆解为 1 个子分析",
+      "ts": "01:40:45"
+    },
+    {
+      "step": "gen_sql",
+      "ok": true,
+      "info": "[1/1] 生成 SQL 规范:dim_customer记录数",
+      "ts": "01:40:45"
+    },
+    {
+      "step": "ontology_gate",
+      "ok": true,
+      "info": "[1] 本体校验通过 · 表与 JOIN 键均在本体边界内",
+      "ts": "01:40:45"
+    },
+    {
+      "step": "intent_crosscheck",
+      "ok": true,
+      "info": "[1] 意图一致 · SQL 覆盖了问句锚定到的 1 个业务对象(客户)",
+      "ts": "01:40:45"
+    },
+    {
+      "step": "exec_sql",
+      "ok": true,
+      "info": "[1] 执行查询 → 1 行 × 1 列",
+      "ts": "01:40:45"
+    },
+    {
+      "step": "data_check",
+      "ok": true,
+      "info": "[1] 数据质量校验:数据偏少 (confidence=30%)",
+      "ts": "01:40:45"
+    },
+    {
+      "step": "gen_chart",
+      "ok": true,
+      "info": "[1] 生成图表规范:bar 图",
+      "ts": "01:40:45"
+    },
+    {
+      "step": "review",
+      "ok": true,
+      "info": "审视分析结果 · 检查数据完整性与口径 · 1/1 项有效",
+      "ts": "01:40:45"
+    },
+    {
+      "step": "llm_insight(智能引擎)",
+      "ok": true,
+      "info": "258字符"
+    },
+    {
+      "step": "narrative",
+      "ok": true,
+      "info": "生成分析报告 · 258 字",
+      "ts": "01:40:47"
+    }
+  ],
+  "results": [
+    {
+      "title": "dim_customer记录数",
+      "sql": "SELECT COUNT(*) AS cnt FROM dim_customer",
+      "chart": {
+        "type": "bar",
+        "x": "cnt",
+        "y": [
+          "cnt"
+        ]
+      },
+      "data": {
+        "columns": [
+          "cnt"
+        ],
+        "rows": [
+          {
+            "cnt": 25
+          }
+        ]
+      }
+    }
+  ],
+  "narrative": "根据分析结果，`dim_customer` 表当前共有 **25 条客户记录**，样本数据仅包含一个汇总值，未展示具体客户明细或时间维度。由于样本中仅有一行“总行数”统计，无法从该结果中直接判断客户数量的历史变化趋势或最新期（末尾）的增减异常。若该表为静态维度表，25 条记录可能代表当前有效的客户主数据规模，需结合业务实际确认是否存在客户合并、淘汰或新增逻辑。建议后续补充按时间分区的客户快照或变更日志，以便识别最新期是否有客户批量新增或流失的异常波动。当前数据仅能确认客户主数据总量为 25，未发现明显异常信号。",
+  "note": "直接统计维度表总行数",
+  "summary": "dim_customer记录数[SELECT COUNT(*) AS cnt FROM dim_customer]→1行,末行{\"cnt\": 25}",
+  "metric_cards": [],
+  "anchor": {
+    "objects": [
+      {
+        "key": "dim_customer",
+        "cn": "客户",
+        "table": "dim_customer",
+        "reason": "数据源限定",
+        "hits": [],
+        "aliases": [],
+        "ncol": 12
+      }
+    ],
+    "relations": [],
+    "metrics": [],
+    "scoped": true,
+    "graphs": [
+      "built_7e80b6"
+    ],
+    "focus_n": 1,
+    "question": "dim_customer有多少条记录？",
+    "ontology": {
+      "keys": [
+        "built_7e80b6"
+      ],
+      "names": [
+        "验收_部署_20260907"
+      ],
+      "objects": 108,
+      "relations": 122,
+      "queryable": true,
+      "bound_tables": 98,
+      "available_tables": 98
+    },
+    "explanation": {
+      "phase": "complete",
+      "ontology_object_count": 108,
+      "context_object_count": 1,
+      "relation_candidate_count": 0,
+      "used_tables": [
+        "dim_customer"
+      ],
+      "context_only_tables": [],
+      "sql_join_count": 0,
+      "result_sql_count": 1,
+      "selection": [
+        {
+          "reason": "数据源限定",
+          "count": 1,
+          "tables": [
+            "dim_customer"
+          ]
+        }
+      ]
+    },
+    "used": [
+      "dim_customer"
+    ]
+  },
+  "cached": false,
+  "elapsed": 4.6,
+  "session": "ac371df3"
+}

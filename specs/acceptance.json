@@ -1,0 +1,129 @@
+{
+  "iteration": "IR-014 / IR-015",
+  "requirements": [
+    {
+      "id": "ALG-01",
+      "criterion": "完整值域决定重叠率，前缀截断不能制造或遗漏 verified",
+      "tests": [
+        "tests/unit/test_algorithm_evidence_regressions.py::test_distinct_prefix_cannot_hide_majority_orphans",
+        "tests/unit/test_server_adjudication.py::test_overlap_uses_entire_domain_not_first_8000_values",
+        "tests/unit/test_server_adjudication.py::test_overlap_is_independent_of_parent_row_order"
+      ]
+    },
+    {
+      "id": "ALG-02",
+      "criterion": "复合键联合核验，声明外键含孤儿时不得 verified",
+      "tests": [
+        "tests/unit/test_algorithm_evidence_regressions.py::test_declared_composite_fk_is_one_ordered_joint_relationship",
+        "tests/unit/test_algorithm_evidence_regressions.py::test_declared_fk_with_orphans_does_not_claim_verified"
+      ]
+    },
+    {
+      "id": "ALG-03",
+      "criterion": "异常释放快照，构建不能覆盖源库，自动组合有界",
+      "tests": [
+        "tests/unit/test_algorithm_evidence_regressions.py::test_output_hardlink_to_source_is_rejected",
+        "tests/unit/test_server_adjudication.py::test_failed_grounding_releases_read_snapshot",
+        "tests/unit/test_server_adjudication.py::test_wide_explicit_pk_does_not_expand_automatic_combination_search"
+      ]
+    },
+    {
+      "id": "MET-01",
+      "criterion": "新失败撤销旧机器状态，自动合并保留人工决定与原口径证据",
+      "tests": [
+        "tests/unit/test_metric_integrity.py::test_new_failed_adjudication_revokes_stale_verified_status",
+        "tests/unit/test_metric_integrity.py::test_mining_cannot_overwrite_human_decision_or_attach_other_formula_evidence"
+      ]
+    },
+    {
+      "id": "MET-02",
+      "criterion": "参照可重放，同一数据快照、完整结果、真实维度与有限数值才允许一致",
+      "tests": [
+        "tests/unit/test_metric_integrity.py::test_saved_reference_can_replay_without_provenance",
+        "tests/unit/test_metric_integrity.py::test_result_limit_is_not_complete_evidence",
+        "tests/unit/test_metric_integrity.py::test_comparison_cannot_manufacture_agreement",
+        "tests/unit/test_metric_integrity.py::test_reference_dimension_must_exist_before_sqlite_execution",
+        "tests/unit/test_metric_integrity.py::test_adjudication_cannot_compare_values_from_different_snapshots"
+      ]
+    },
+    {
+      "id": "MET-03",
+      "criterion": "人工修改读改写加锁，重核验不能覆盖期间的并发指标修改",
+      "tests": [
+        "tests/unit/test_bp_metrics.py::test_status_locks_read_modify_write_as_one_operation",
+        "tests/unit/test_bp_metrics.py::test_readjudication_detects_concurrent_metric_edit"
+      ]
+    },
+    {
+      "id": "SEC-01",
+      "criterion": "不可信 Host 和非法源被拒绝，反代源必须显式配置",
+      "tests": [
+        "tests/unit/test_security_regressions.py::test_host_guard_blocks_dns_rebinding_even_with_matching_origin",
+        "tests/unit/test_security_regressions.py::test_proxy_public_origin_is_explicit_and_does_not_trust_forwarded_headers"
+      ]
+    },
+    {
+      "id": "SEC-02",
+      "criterion": "重定向及连接时地址验证不能绕过 SSRF，TLS 主机校验保留",
+      "tests": [
+        "tests/unit/test_security_regressions.py::test_redirect_cannot_bypass_metadata_protection",
+        "tests/unit/test_security_regressions.py::test_fetch_socket_connects_to_validated_numeric_ip_without_second_dns_lookup",
+        "tests/unit/test_security_regressions.py::test_https_pinning_preserves_hostname_for_tls_verification"
+      ]
+    },
+    {
+      "id": "SEC-03",
+      "criterion": "写 SQL、注释绕过、错误数据库 URI 被拒绝，请求行受总时限约束",
+      "tests": [
+        "tests/unit/test_security_regressions.py::test_select_prefix_is_not_sufficient_for_readonly",
+        "tests/unit/test_security_regressions.py::test_single_statement_cannot_hide_second_statement_in_comment_quote",
+        "tests/unit/test_security_regressions.py::test_readonly_uri_preserves_literal_filename_and_never_opens_other_db",
+        "tests/unit/test_security_regressions.py::test_request_line_is_already_subject_to_absolute_header_deadline"
+      ]
+    },
+    {
+      "id": "SYS-01",
+      "criterion": "API/CSV 列名清洗不丢值，刷新失败保留旧表和上传文件",
+      "tests": [
+        "tests/unit/test_security_regressions.py::test_api_column_normalization_preserves_values_and_resolves_collisions",
+        "tests/unit/test_security_regressions.py::test_api_rolls_back_schema_replacement_when_insert_fails",
+        "tests/unit/test_upload_transaction.py::test_invalid_refresh_preserves_original_file_and_table",
+        "tests/unit/test_upload_transaction.py::test_file_write_failure_rolls_back_csv_replacement",
+        "tests/unit/test_upload_transaction.py::test_distinct_filenames_cannot_overwrite_same_normalized_table"
+      ]
+    },
+    {
+      "id": "UI-01",
+      "criterion": "构建断流可恢复、重复提交受控、底本切换无串线、结果安全呈现",
+      "tests": [
+        "tests/unit/test_build_ui.py::test_build_ui_behavior"
+      ]
+    },
+    {
+      "id": "QA-01",
+      "criterion": "离线计数遵守选中本体与表，未知意图不得落入无关模板",
+      "tests": [
+        "tests/unit/test_qa_fallback_scope.py::test_offline_row_count_uses_selected_ontology_table_in_both_flows",
+        "tests/unit/test_qa_fallback_scope.py::test_unknown_offline_intent_does_not_return_unrelated_sales",
+        "tests/unit/test_qa_fallback_scope.py::test_explicit_table_scope_also_constrains_reused_skill_sql",
+        "tests/unit/test_qa_fallback_scope.py::test_graph_scope_rejects_quoted_unmodeled_tables_without_explicit_focus",
+        "tests/unit/test_qa_fallback_scope.py::test_explicit_focus_cannot_add_tables_outside_selected_graph"
+      ]
+    },
+    {
+      "id": "DEP-01",
+      "criterion": "部署配置不执行shell表达式，PID复用不得触发终止无关程序",
+      "tests": [
+        "tests/unit/test_service_manager.py::test_environment_is_literal_and_error_does_not_disclose_value",
+        "tests/unit/test_service_manager.py::test_stale_pid_never_authorizes_signalling_unrelated_process"
+      ]
+    },
+    {
+      "id": "ENG-01",
+      "criterion": "综合验收仅复制已提交种子并禁用本机模型配置",
+      "tests": [
+        "tests/unit/test_check_isolation.py::test_check_environment_uses_only_committed_fixtures_and_disables_llm"
+      ]
+    }
+  ]
+}

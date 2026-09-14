@@ -7,7 +7,7 @@
    覆盖:26 页逐页渲染(激活可见/内容非空/零 pageerror)+ 子 UI 交互
    (弹窗开合/表单执行/详情点击/筛选过滤/图表渲染/技能复用问数)。"""
 import asyncio, json, sys
-from playwright.async_api import async_playwright
+from tests.browser_runtime import close_browser, managed_playwright
 
 import os
 # 被测地址:优先 DATAMIND_URL,否则由服务端同一套 DATAMIND_HOST/PORT 组合而来
@@ -34,7 +34,7 @@ async def launch_browser(pw):
     return await pw.chromium.launch(executable_path=executable) if executable else await pw.chromium.launch()
 
 async def main():
-    async with async_playwright() as pw:
+    async with managed_playwright() as pw:
         b = await launch_browser(pw)
         pg = await (await b.new_context(viewport={"width":1440,"height":950})).new_page()
         errors = []
@@ -309,12 +309,12 @@ async def main():
             ok("质量页当前无被截断单元格(无需补 title)")
 
         ALL_ERRORS.extend(e for e in errors if "favicon" not in e)
-        await b.close()
+        await close_browser(b)
     print(f"\n===== UI 走查:{len(R['pass'])} 通过 / {len(R['fail'])} 失败 =====")
     for f in R["fail"]: print("  ✗", f)
     if ALL_ERRORS:
         print(f"  ── 全程累计页面错误 {len(ALL_ERRORS)} 条(含已归因项,供排查)──")
         for e in ALL_ERRORS[:10]: print("    ·", e)
-    sys.exit(1 if R["fail"] else 0)
+    sys.exit(1 if R["fail"] or ALL_ERRORS else 0)
 
 asyncio.run(main())

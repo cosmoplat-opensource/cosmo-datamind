@@ -21,6 +21,7 @@
 LLM 不得自评 verified;verified 只由数据见证产生。
 """
 import re
+import math
 
 # ── 单一事实源常量(两引擎此前各自定义,值已漂移)──
 MIN_OVERLAP = 60.0        # θ:判 verified 的取值重叠率(%)
@@ -86,9 +87,8 @@ def key_name_ok(child_key, parent_key):
 
     **支持复合键**(逗号分隔,如 "c1,c2" ↔ "p1,p2"):逐列判定,列数不等即否,
     全列通过才相容——收编 server._key_name_ok 的复合分支,单一事实源。"""
-    cs = [x.strip() for x in str(child_key or "").split(",")]
-    ps = [x.strip() for x in str(parent_key or "").split(",")]
-    if len(cs) != len(ps):
+    cs, ps = key_columns(child_key), key_columns(parent_key)
+    if not cs or not ps or len(cs) != len(ps):
         return False
     for a, b in zip(cs, ps, strict=True):   # 上面已校验等长
         sa, sb = key_stem(a), key_stem(b)
@@ -107,15 +107,27 @@ def key_name_ok(child_key, parent_key):
     return True
 
 
+def key_columns(key):
+    """Parse the IR's comma-separated join key; blanks/duplicate components are invalid."""
+    if not isinstance(key, str):
+        return ()
+    columns = tuple(c.strip() for c in key.split(","))
+    if not all(columns) or len({c.casefold() for c in columns}) != len(columns):
+        return ()
+    return columns
+
+
 def name_score(child_col, parent_table, parent_col, synonyms=None):
     """列名一致性打分(relation_discovery 口径,比 key_name_ok 更富:
     2=子父键同名 / 子列名含父表名;1=去后缀相关 / 前缀缩写核心词一致 / 同义词;0=无关。
     比 key_name_ok 多考虑「父表名」与「异名同义」两个信号。"""
-    cc, pt, pc = child_col.lower(), parent_table.lower(), parent_col.lower()
-    if cc == pc or pt in cc:
+    cc, pt, pc = (child_col or "").lower(), (parent_table or "").lower(), (parent_col or "").lower()
+    if not cc or not pc:
+        return 0
+    if cc == pc or (pt and pt in cc):
         return 2
     stem = re.sub(r"(_?id|_?code)$", "", cc).strip("_")
-    if stem and (stem in pt or pt in stem or stem in pc):
+    if stem and ((pt and (stem in pt or pt in stem)) or stem in pc):
         return 1
     if _core(cc) and _core(cc) == _core(pc):
         return 1
@@ -170,6 +182,11 @@ def name_ok(child_col, parent_table, parent_key, child_table=None):
     2) 泛化父键(`id`/`code`)必须由子键与父表名的相关性补证,例如
        `customer_id → customers.id` 可过、`order_id → customers.id` 不可过;
     3) 角色键补两条路径:self→父表即子表(层级自引用);genus→属类词是父表名子串。"""
+    cs, ps = key_columns(child_col), key_columns(parent_key)
+    if not cs or not ps or len(cs) != len(ps):
+        return False
+    if len(cs) > 1:
+        return all(name_ok(c, parent_table, p, child_table) for c, p in zip(cs, ps, strict=True))
     if key_name_ok(child_col, parent_key):
         return True
     if name_score(child_col, parent_table or "", parent_key) > 0:
@@ -242,15 +259,26 @@ def classify(*, overlap, parent_unique, name_ok, child_distinct,
 
     兼容模式(复现 quick_build 历史行为):min_distinct=1, exclude_pk_child=False。
     """
+    if (not isinstance(child_distinct, int) or isinstance(child_distinct, bool)
+            or child_distinct < 0):
+        return {"status": "drop", "reason": "子键去重计数无效,须重新取证"}
     if child_is_pk and exclude_pk_child:
         return {"status": "drop", "reason": "子键自身唯一(疑为主键),不作为一对多关系的多侧"}
     if child_distinct < min_distinct:
         return {"status": "drop", "reason": f"子键去重值 {child_distinct} < 下限 {min_distinct},不可信"}
-    if overlap >= theta and parent_unique:
-        if name_ok:
+    if not valid_percentage(overlap):
+        return {"status": "drop", "reason": "重叠率无效,须重新取证"}
+    if overlap >= theta and parent_unique is True:
+        if name_ok is True:
             return {"status": "verified", "reason": f"重叠 {overlap:.0f}%·父键唯一·列名有据"}
         return {"status": "candidate", "name_mismatch": True,
                 "reason": f"重叠 {overlap:.0f}% 但列名词根不一致,疑为自增键值域巧合,送审"}
     if overlap >= weak_floor:
         return {"status": "candidate", "reason": f"弱重叠 {overlap:.0f}%,送审"}
     return {"status": "drop", "reason": f"重叠 {overlap:.0f}% 不足"}
+
+
+def valid_percentage(value):
+    """Reject boolean/coerced/non-finite evidence before threshold comparisons."""
+    return (isinstance(value, (int, float)) and not isinstance(value, bool)
+            and 0 <= value <= 100 and math.isfinite(value))

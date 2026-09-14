@@ -165,8 +165,9 @@ class TestCallToolRendering:
         assert not err
         assert "id=dispatch" in text and "line(产线,必填)" in text
         assert "可选值:A/B" in text                      # 枚举值要给出,否则只能猜
-        assert "高风险,须人审批" in text and "低风险,直执行" in text
-        assert "待人批 2" in text and "已执行 40" in text
+        assert "高风险,须人审批" in text and "低风险,直接登记" in text
+        assert "待人批 2" in text and "已登记 40" in text
+        assert "未写回业务系统" in text
 
     def test_invoke_pending_says_agent_cannot_bypass(self, monkeypatch):
         """高风险回文必须写明「须由人批准」——模型据此决定是等待还是改走人工。"""

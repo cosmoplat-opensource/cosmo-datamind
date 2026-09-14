@@ -210,11 +210,13 @@ def test_ui_has_controls_payload_history_and_external_module():
     ui = (server.HERE + "/ui/index.html")
     text = open(ui, encoding="utf-8").read()
     module = open(server.HERE + "/ui/modules/build-references.js", encoding="utf-8").read()
+    stream = open(server.HERE + "/ui/modules/build-stream.js", encoding="utf-8").read()
     assert all(token in text for token in (
         "bc_ref_industry", "bc_ref_standard", "bc_ref_industry_mode",
-        "bc_ref_standard_mode", "references,base_graph", "bcRefsApply(d.references)",
-        "/assets/modules/build-references.js",
+        "bc_ref_standard_mode", "bcRefsApply(d.references)",
+        "/assets/modules/build-references.js", "/assets/modules/build-stream.js",
     ))
+    assert "references,base_graph" in stream
     for select_id in ("bc_ref_industry", "bc_ref_standard"):
         start = text.index(f'id="{select_id}"')
         assert "加载中" not in text[start:text.index("</select>", start)]

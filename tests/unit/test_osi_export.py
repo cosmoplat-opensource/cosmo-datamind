@@ -8,7 +8,7 @@ import pytest
 import osi_export as OE
 from tests.unit.test_concept_profile import IR as _BASE
 
-IR = copy.deepcopy(_BASE)
+IR: dict = copy.deepcopy(_BASE)
 IR["links"][0]["evidence"] = {"child_key": "cust_id", "parent_key": "cust_id", "overlap": 100.0, "parent_unique": True}
 IR["objects"][0]["bfo"] = "Process"
 IR["objects"][0]["pk"] = "order_id"

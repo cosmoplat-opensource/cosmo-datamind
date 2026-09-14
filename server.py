@@ -9,6 +9,7 @@ COSMO DataMind · 数据智脑 — 数据治理、本体与深度问数原型
 import json, os, re, sqlite3, subprocess, threading, time, uuid, sys, glob
 from itertools import combinations
 import logging
+import ipaddress
 import urllib.request, urllib.error
 from typing import Any
 import dao_core   # DR-035/044:命名校验/词根等裁决原语的单一事实源
@@ -21,6 +22,7 @@ import ir_shape
 import skill_registry
 import ontology_grounding
 import content_quality
+import llm_json      # DR-058:LLM 回复 JSON 抽取与提议形状校验的单一事实源
 
 # ── 运维日志(结构化、可分级、可重定向)──────────────────────────────
 # 诊断信息一律走 logging 而非 print:print 混在 stdout 里既无级别也无时间戳,
@@ -59,7 +61,7 @@ for _h in logging.getLogger().handlers:        # basicConfig 建的 root handler
     _h.addFilter(_LogSanitizer())
 _LOG = logging.getLogger("datamind")
 # DR-043 蓝图化前置:基础路径与原语(路径/只读连接/只读SQL判定/写锁/原子写)收敛到共享上下文,与后续 blueprint 共用
-from srv_context import (HERE, ROOT, DB, UPLOAD_DB, WORK, confine,
+from srv_context import (HERE, ROOT, DB, UPLOAD_DB, WORK, confine, sql_code,
                          ro_connect, sql_is_readonly, _WRITE_LOCK, _atomic_json, _atomic_text,
                          _atomic_bytes)
 # 引擎运行时与配置层(跨簇共享,故先于路由抽出;见 srv_engine 模块头)
@@ -185,14 +187,87 @@ app.register_blueprint(_bp_engine)
 # ── CSRF 防护:阻止恶意网页跨站触发本机写/执行接口(deploy/build/skill/删除等)──
 # 浏览器跨源写请求必带 Origin;同源 UI 的 Origin 即本机,放行。非浏览器工具(无 Origin/Referer)不在威胁模型内。
 from urllib.parse import urlparse as _urlparse
+def _origin_tuple(value, *, referer=False):
+    """Parse a browser origin without accepting opaque/null or malformed origins."""
+    try:
+        if not isinstance(value, str) or re.search(r"[\s\x00-\x1f\x7f]", value):
+            return None
+        parsed = _urlparse(value)
+        if parsed.scheme not in ("http", "https") or not parsed.hostname:
+            return None
+        if parsed.username is not None or parsed.password is not None:
+            return None
+        if parsed.port == 0:
+            return None
+        if not referer and (parsed.path or parsed.params or parsed.query or parsed.fragment):
+            return None
+        return parsed.scheme, parsed.hostname.lower(), parsed.port or (443 if parsed.scheme == "https" else 80)
+    except ValueError:
+        return None
+
+
+def _origin_policy(public_value, trusted_value, listen_host):
+    public = _origin_tuple(public_value.strip().rstrip("/")) if public_value.strip() else None
+    if public_value.strip() and public is None:
+        raise ValueError("DATAMIND_PUBLIC_ORIGIN 必须为 http(s) 源，不含路径或凭据")
+    hosts = {"localhost", "127.0.0.1", "::1"}
+    candidates = [part.strip() for part in trusted_value.split(",") if part.strip()]
+    if listen_host.strip("[]").lower() not in ("0.0.0.0", "::", ""):
+        candidates.append(listen_host)
+    for value in candidates:
+        host = value.strip().strip("[]").lower()
+        try:
+            host = str(ipaddress.ip_address(host))
+        except ValueError:
+            if not re.fullmatch(r"[a-z0-9](?:[a-z0-9.-]*[a-z0-9])?", host):
+                raise ValueError("DATAMIND_TRUSTED_HOSTS 只接受确切主机名或 IP，不含端口、路径或通配符") from None
+        if host in ("0.0.0.0", "::"):
+            raise ValueError("通配监听地址不可用作受信 Host")
+        hosts.add(host)
+    if public:
+        hosts.add(public[1])
+    return public, hosts
+
+
+_PUBLIC_ORIGIN, _TRUSTED_HOSTS = _origin_policy(
+    os.environ.get("DATAMIND_PUBLIC_ORIGIN") or "",
+    os.environ.get("DATAMIND_TRUSTED_HOSTS") or "", LISTEN_HOST,
+)
+
+
+@app.before_request
+def _host_guard():
+    # DNS rebinding can make Origin and Host agree on an attacker's hostname.
+    # Check the configured host set even for read-only routes and originless clients.
+    incoming = _origin_tuple(request.host_url, referer=True)
+    if incoming is None or incoming[1] not in _TRUSTED_HOSTS:
+        return jsonify({"error": "请求 Host 未获允许"}), 400
+
+
 @app.before_request
 def _csrf_guard():
     if request.method in ("GET", "HEAD", "OPTIONS"): return
-    origin = request.headers.get("Origin") or request.headers.get("Referer")
-    if not origin: return                       # curl/requests 等无源,非 CSRF 面
-    host = _urlparse(origin).netloc
-    if host and host != request.host:
+    # An explicit Origin:null must not fall through to Referer or script-client access.
+    is_referer = "Origin" not in request.headers
+    origin = request.headers.get("Referer" if is_referer else "Origin")
+    if origin is None: return                  # curl/requests 等无源,非 CSRF 面
+    supplied = _origin_tuple(origin, referer=is_referer)
+    expected = _origin_tuple(request.host_url, referer=True)
+    # TLS termination is explicit configuration, never inferred from client-supplied
+    # X-Forwarded-* headers. Local loopback access retains its own origin.
+    if _PUBLIC_ORIGIN and expected and expected[1] == _PUBLIC_ORIGIN[1]:
+        expected = _PUBLIC_ORIGIN
+    if supplied is None or supplied != expected:
         return jsonify({"error": "跨站请求被拒绝(CSRF 防护)"}), 403
+
+
+@app.before_request
+def _json_object_guard():
+    # All JSON write APIs use named fields. Reject malformed/scalar/array payloads
+    # before route code calls .get(), while retaining multipart upload support.
+    if request.method not in ("GET", "HEAD", "OPTIONS") and request.is_json:
+        if not isinstance(request.get_json(silent=True), dict):
+            return jsonify({"error": "请求体必须为有效的 JSON 对象"}), 400
 
 # ── IR 加载(本体图谱源:示例 数据本体 / 应用本体 / 构建产物)──
 IR_SOURCES = {
@@ -220,7 +295,6 @@ def _bad_gkey(key):
 # ── 安全原语(防路径穿越 / SQL 标识符注入 / SSRF)──────────────────────
 # 集中放这几条裁决,供所有「用户可影响 → 落盘/拼 SQL / 外联」的调用点复用;
 # 即便上游已校验,在 sink 处再裁一次是纵深防御,也让静态分析能看见约束。
-import ipaddress
 # SQL 标识符白名单:字母/下划线/中文开头,后随字母数字下划线中文。
 # 表名/列名经此过滤后才可安全地拼进 "..." 引用——含双引号或路径符的值会越出标识符边界(SQL 注入)。
 _IDENT = re.compile(r"^[A-Za-z_一-鿿][A-Za-z0-9_一-鿿]*$")
@@ -286,25 +360,98 @@ def _check_fetch_url(url):
     """
     from urllib.parse import urlparse
     try:
-        u = urlparse((url or "").strip())
-    except Exception:
+        if not isinstance(url, str) or re.search(r"[\x00-\x20\x7f]", url):
+            return "非法 URL"
+        u = urlparse(url)
+        if u.username is not None or u.password is not None or (u.port is not None and u.port == 0):
+            return "URL 不允许内嵌凭据或无效端口"
+    except ValueError:
         return "非法 URL"
     if u.scheme not in ("http", "https"): return "仅允许 http/https(其它协议可被用于读本地文件或探内网)"
     if not u.hostname: return "URL 缺少主机名"
-    ips = _resolved_ips(u.hostname)
+    return _fetch_ip_error(_resolved_ips(u.hostname))
+
+
+def _fetch_ip_error(ips):
     if ips is None: return "主机名无法解析,拒绝请求"
     # 回环单独放行再判其余:ipaddress 把 IPv6 回环 ::1 归入 is_reserved,
     # 若不先排除,凡用 localhost(解析出 ::1)登记的数据源都会被误拦 —— 而
     # 「自指向本机 API」恰是本功能最常见的正当用法(自带回归用例就是这么用的)。
     # 回环该不该拦由严格模式决定,不该由 IPv6 的地址分类顺带决定。
+    ips = [getattr(ip, "ipv4_mapped", None) or ip for ip in ips]
     def _blocked(ip):
         if ip.is_loopback: return False
         return ip.is_link_local or ip.is_unspecified or ip.is_reserved or ip.is_multicast
     if any(_blocked(ip) for ip in ips):
         return "目标为链路本地/保留/多播等特殊地址(含云元数据端点),已按 SSRF 防护拒绝"
-    if _STRICT_FETCH and any(ip.is_private or ip.is_loopback for ip in ips):
+    if _STRICT_FETCH and any(not ip.is_global for ip in ips):
         return "严格模式(DATAMIND_BLOCK_INTERNAL_FETCH=1)下禁止访问内网/回环地址"
     return None
+
+
+def _fetch_socket(address, timeout=12, source_address=None):
+    """Validate once at connect time, then connect to that numeric address only."""
+    import socket
+    host, port = address
+    ips = _resolved_ips(host)
+    error = _fetch_ip_error(ips)
+    if error:
+        raise ValueError("SSRF: " + error)
+    last_error = None
+    for ip in ips:
+        try:
+            return socket.create_connection((str(ip), port), timeout, source_address)
+        except OSError as exc:
+            last_error = exc
+    raise last_error or OSError("目标主机无可连接地址")
+
+
+class _SafeFetchRedirect(urllib.request.HTTPRedirectHandler):
+    def redirect_request(self, req, fp, code, msg, headers, newurl):
+        error = _check_fetch_url(newurl)
+        if error:
+            raise ValueError("SSRF: " + error)
+        return super().redirect_request(req, fp, code, msg, headers, newurl)
+
+
+# Keep the original HTTP Host and HTTPS SNI/certificate verification. Only the
+# socket destination is pinned; no unchecked second hostname resolution occurs.
+import http.client as _http_client
+
+
+class _PinnedFetchConnection:
+    def connect(self):
+        self._create_connection = _fetch_socket
+        super().connect()
+
+
+class _FetchHTTPConnection(_PinnedFetchConnection, _http_client.HTTPConnection):
+    pass
+
+
+class _FetchHTTPSConnection(_PinnedFetchConnection, _http_client.HTTPSConnection):
+    pass
+
+
+class _FetchHTTPHandler(urllib.request.HTTPHandler):
+    def http_open(self, req):
+        return self.do_open(_FetchHTTPConnection, req)
+
+
+class _FetchHTTPSHandler(urllib.request.HTTPSHandler):
+    def https_open(self, req):
+        return self.do_open(_FetchHTTPSConnection, req, context=self._context)
+
+
+def _open_api_url(url, timeout=12):
+    error = _check_fetch_url(url)
+    if error:
+        raise ValueError("SSRF: " + error)
+    # Environment proxies would resolve/connect outside this process's IP guard.
+    opener = urllib.request.build_opener(urllib.request.ProxyHandler({}), _SafeFetchRedirect(),
+                                        _FetchHTTPHandler(), _FetchHTTPSHandler())
+    req = urllib.request.Request(url, headers={"Accept": "application/json", "User-Agent": "DataMind/1.0"})
+    return opener.open(req, timeout=timeout)
 
 def load_ir(key):
     if _bad_gkey(key): return None
@@ -1279,8 +1426,44 @@ def _validate_sql_ontology(sql, ir, strict=False):
     return True, ""
 
 
-def _qa_validate_sql(sql, ir, strict=False):
+def _qa_validate_sql(sql, ir, strict=False, focus_tables=None):
     """问数口径校验调用层；兼容仍实现旧两参数签名的测试替换与扩展。"""
+    if strict or focus_tables:
+        allowed = {(o.get("table") or "").lower() for o in ir.get("objects", []) if o.get("table")}
+        if focus_tables:
+            focused = {str(table).lower() for table in focus_tables}
+            # Explicit selections narrow a selected ontology; they cannot extend it.
+            allowed = allowed & focused if strict else focused
+        denied = []
+        con = None
+        try:
+            con = ro_connect(DB)
+            if os.path.exists(UPLOAD_DB):
+                from pathlib import Path
+                con.execute("ATTACH DATABASE ? AS up", (Path(UPLOAD_DB).absolute().as_uri() + "?mode=ro",))
+
+            def authorize(action, table, column, database, source):
+                if action == sqlite3.SQLITE_READ:
+                    full = ("up." if database == "up" else "") + str(table).lower()
+                    if full not in allowed:
+                        denied.append(full)
+                        return sqlite3.SQLITE_DENY
+                return sqlite3.SQLITE_OK
+
+            # Prepare only: SQLite resolves quoted identifiers, nested queries and
+            # CTEs itself. No business rows are read by EXPLAIN.
+            con.set_authorizer(authorize)
+            con.execute("EXPLAIN " + sql).fetchone()
+        except sqlite3.Error as exc:
+            if denied:
+                scope = "所选本体与数据表" if strict else "显式选择的数据表"
+                return False, "表 " + denied[0] + " 不在" + scope + "范围内"
+            return False, "所选表范围内无法准备查询:" + str(exc)[:120]
+        except OSError:
+            return False, "无法打开所选表的数据源"
+        finally:
+            if con is not None:
+                con.close()
     if not strict:
         return _validate_sql_ontology(sql, ir)
     try:
@@ -1375,25 +1558,68 @@ def agent_sql_plan(question, context, steps):
             steps.append({"step": f"llm_plan({_eng_label(drv)})", "ok": False, "info": str(e)[:120]})
     return None
 
-def fallback_plan(question):
-    """无引擎时的内置模板,保证可用"""
+def fallback_plan(question, ir=None, focus_tables=None):
+    """Offline plans use actual ontology bindings; uncovered questions stay unanswered."""
     p = []
+    note = "内置模板(问数引擎离线兜底)"
+    objects = [o for o in (ir or {}).get("objects", []) if o.get("table")]
+    focused = {t.lower() for t in (focus_tables or [])}
+    available = [o for o in objects if not focused or o["table"].lower() in focused]
+    count_question = re.search(
+        r"(?:多少|几)\s*(?:条|行)?\s*(?:记录|数据)|(?:记录|数据|行)(?:总数|数|数量)|"
+        r"\b(?:row|record)\s*count\b|\bhow many (?:rows|records)\b", question, re.I)
+    # A total count must not silently discard filters, grouping or a time window.
+    qualified_count = re.search(
+        r"最近|过去|本月|上月|今年|去年|今天|昨天|其中|满足|大于|小于|超过|等于|不等于|"
+        r"(?:按|每|各|分别)|[><=]|\d{4}|\b(?:where|group|last|since|after|before|per)\b", question, re.I)
+    if count_question and not qualified_count:
+        matched = [o for o in available if any(
+            len(n) >= 2 and n.lower() in question.lower() for n in ir_shape.name_variants(o))]
+        targets = matched or (available if focused else [])
+        by_table = {o["table"]: o for o in targets}
+        if len(by_table) == 1:
+            table, obj = next(iter(by_table.items()))
+            names = ir_shape.name_variants(obj)
+            # Quick-built IR may retain only English names. Use the existing
+            # deterministic table dictionary, never infer a business filter.
+            import translate_cn
+            translated = translate_cn.tr_table(table.split(".")[-1])
+            if translated:
+                names += [translated + suffix for suffix in ("", *ir_shape.CN_TABLE_SUFFIXES)]
+            remaining = question.strip(" ?？。.!！")
+            for name in sorted(set(names), key=len, reverse=True):
+                if len(name) >= 2 and name.lower() in remaining.lower():
+                    remaining = re.sub(re.escape(name), "", remaining, count=1, flags=re.I)
+                    break
+            remaining = re.sub(r"^(?:请问|请统计|统计)?\s*(?:这张表|该表|当前表|所选数据表|所选表|选中的表)?", "", remaining)
+            simple_count = re.fullmatch(
+                r"(?:的)?(?:(?:一共|总共|共有|共|有)?(?:多少|几)(?:条|行)?(?:记录|数据)|"
+                r"(?:记录|数据|行)(?:总数|数|数量)(?:是|有)?(?:多少|几)?(?:条|行)?)(?:吗)?|"
+                r"how many (?:rows|records)(?: (?:are (?:there )?)?in)?\s*|"
+                r"(?:row|record) count(?: (?:of|for))?\s*", remaining, re.I)
+            if simple_count and re.fullmatch(r"(?:up\.)?" + _SQL_IDENT, table, re.I):
+                quoted = ".".join('"' + part + '"' for part in table.split("."))
+                return {"analyses": [{"title": (obj.get("cn") or obj.get("name") or table) + "记录数",
+                                      "sql": f'SELECT COUNT(*) AS "记录数" FROM {quoted}', "chart": {}}],
+                        "note": note}
+    if count_question:
+        return {"analyses": [], "note": note,
+                "unavailable": "当前内置查询未覆盖该计数条件，或无法唯一确定目标表；请明确表和统计条件后重试。"}
     # 高频的「客户 × 销售订单」不能被宽泛的“销售”词误降成月度收入趋势。
     # 引擎超时时，兜底也必须回答原问题，而不是仅仅返回一条能执行的 SQL。
     if re.search(r"客户|customer|cust", question, re.I) and re.search(r"排名|排行|金额|销售订单", question):
         p.append({"title": "客户销售订单金额排名",
                   "sql": "SELECT c.cust_name 客户, round(sum(s.amount),2) 订单金额 FROM fact_sales_order s JOIN dim_customer c ON s.cust_id=c.cust_id GROUP BY c.cust_id,c.cust_name ORDER BY 订单金额 DESC LIMIT 50",
                   "chart": {"type": "bar", "x": "客户", "y": ["订单金额"]}})
-        return {"analyses": p, "note": "内置模板(问数引擎离线兜底)"}
+        return {"analyses": p, "note": note}
     if re.search(r"毛利|利润|margin", question):
         p.append({"title": "月度毛利与毛利率", "sql": "SELECT substr(order_date,1,7) 月, round(sum(gross_profit_actual)/10000,1) 毛利_万, round(sum(gross_profit_actual)*100.0/sum(amount),1) 毛利率_pct FROM fact_sales_order GROUP BY 1 ORDER BY 1", "chart": {"type": "line", "x": "月", "y": ["毛利_万", "毛利率_pct"]}})
     if re.search(r"收入|销售|营收", question):
         p.append({"title": "月度收入", "sql": "SELECT substr(order_date,1,7) 月, round(sum(amount)/10000,1) 收入_万 FROM fact_sales_order GROUP BY 1 ORDER BY 1", "chart": {"type": "bar", "x": "月", "y": ["收入_万"]}})
     if re.search(r"产量|生产", question):
         p.append({"title": "月度产量", "sql": "SELECT substr(output_date,1,7) 月, round(sum(quantity),0) 产量 FROM fact_production_output GROUP BY 1 ORDER BY 1", "chart": {"type": "line", "x": "月", "y": ["产量"]}})
-    if not p:
-        p.append({"title": "销售概览", "sql": "SELECT substr(order_date,1,7) 月, round(sum(amount)/10000,1) 收入_万, round(sum(gross_profit_actual)/10000,1) 毛利_万 FROM fact_sales_order GROUP BY 1 ORDER BY 1", "chart": {"type": "line", "x": "月", "y": ["收入_万", "毛利_万"]}})
-    return {"analyses": p, "note": "内置模板(问数引擎离线兜底)"}
+    return {"analyses": p, "note": note,
+            "unavailable": "当前内置查询未覆盖这个问题；请明确要查询的表和统计方式，或连接问数引擎后重试。" if not p else ""}
 
 def _rule_summary(results):
     """规则化数据摘要(引擎离线/超时的兜底,始终基于真实数据,不编造)"""
@@ -3403,14 +3629,15 @@ def chat():
         plan = _bounded(lambda: agent_sql_plan(q_eff, ctx, steps), 90)
     if not plan:
         steps.append({"step": "plan_timeout", "ok": False, "info": "引擎超时/离线 → 内置模板兜底"})
-        plan = fallback_plan(question)
+        plan = fallback_plan(q_eff, ir=ir_gate, focus_tables=focus_tables)
     results = []
     for a in (plan.get("analyses") or [])[:4]:
         sql = a.get("sql", "")
         if not sql_is_readonly(sql):
             steps.append({"step": "exec_sql", "ok": False, "info": "非只读SQL被拒: " + sql[:60]}); continue
         okv, why = _qa_validate_sql(
-            sql, ir_gate, strict=bool(graph_keys and gate_keys != ["demo"] and not fallback))
+            sql, ir_gate, strict=bool(graph_keys and gate_keys != ["demo"] and not fallback),
+            focus_tables=focus_tables)
         if not okv:
             steps.append({"step": "ontology_gate", "ok": False, "info": "口径拦截:" + why}); continue
         # DR-026 双盲意图检测:口径校验管「SQL 合不合规」,这里管「答的是不是问的那件事」。
@@ -3436,7 +3663,7 @@ def chat():
     if results:
         text = _bounded(lambda: narrative_llm(question, results, steps), 50) or _rule_summary(results)
     else:
-        text = "查询均失败,请换个问法或检查指标是否绑表。"
+        text = plan.get("unavailable") or "查询均失败,请换个问法或检查指标是否绑表。"
     summary = "; ".join(f"{r['title']}[{r['sql'][:120]}]→{len(r['data']['rows'])}行,末行{json.dumps(r['data']['rows'][-1] if r['data']['rows'] else {}, ensure_ascii=False)[:150]}" for r in results)[:1200]
     anchor["explanation"] = _qa_anchor_explanation(anchor, results)
     anchor["used"] = anchor["explanation"]["used_tables"]
@@ -3545,7 +3772,7 @@ def chat_stream():
         plan = plan or box["v"]
         if not plan:
             yield push("plan_timeout", False, "引擎超时/离线 → 内置模板兜底")
-            plan = fallback_plan(question)
+            plan = fallback_plan(q_eff, ir=ir_gate, focus_tables=focus_tables)
         analyses = (plan.get("analyses") or [])[:4]
         yield push("plan_ready", True, f"分析计划就绪 · 拆解为 {len(analyses)} 个子分析")
         results = []
@@ -3557,7 +3784,8 @@ def chat_stream():
                 yield push("exec_sql", False, f"[{idx}] 非只读SQL被拒: " + sql[:50]); continue
             okv, why = _qa_validate_sql(
                 sql, ir_gate,
-                strict=bool(graph_keys and _gate_keys != ["demo"] and not _gate_fallback))
+                strict=bool(graph_keys and _gate_keys != ["demo"] and not _gate_fallback),
+                focus_tables=focus_tables)
             if not okv:
                 yield push("ontology_gate", False, f"[{idx}] 口径拦截:{why}"); continue
             yield push("ontology_gate", True, f"[{idx}] 本体校验通过 · 表与 JOIN 键均在本体边界内")
@@ -3607,7 +3835,7 @@ def chat_stream():
             yield push("narrative", True, f"生成分析报告 · {len(text)} 字")
         else:
             yield push("review", False, "无有效数据,无法生成报告")
-            text = "查询均失败,请换个问法或检查指标是否绑表。"
+            text = plan.get("unavailable") or "查询均失败,请换个问法或检查指标是否绑表。"
         summary = "; ".join(f"{r['title']}[{r['sql'][:120]}]→{len(r['data']['rows'])}行,末行{json.dumps(r['data']['rows'][-1] if r['data']['rows'] else {}, ensure_ascii=False)[:150]}" for r in results)[:1200]
         anchor["explanation"] = _qa_anchor_explanation(anchor, results)
         anchor["used"] = anchor["explanation"]["used_tables"]
@@ -4107,6 +4335,10 @@ def agents():
     return jsonify({"agents": out, "count": len(out)})
 
 # ── 本体构建(上传多源数据 / 指向数据库 → 调技能)──
+def _upload_table_name(filename):
+    return re.sub(r"[^A-Za-z0-9_]", "_", filename.rsplit(".", 1)[0])[:40]
+
+
 @app.post("/api/build/upload")
 def build_upload():
     """上传 CSV/TSV → 入 uploads.db 成表(多源里结构化部分;其余文件存档供技能读取)"""
@@ -4119,22 +4351,52 @@ def build_upload():
             for f in request.files.getlist("files"):
                 fn = _safe_fname(f.filename or "file"); raw = f.read()
                 path = _confined(WORK, "uploads_" + fn)   # 落盘前再裁一次:上传文件名永远不可信
-                _atomic_bytes(path, raw)
-                saved.append(fn)
                 if fn.lower().endswith((".csv", ".tsv")):
+                    previous = None
+                    wrote_file = False
                     try:
-                        txt = raw.decode("utf-8-sig", "replace")
+                        txt = raw.decode("utf-8-sig")
                         rows = list(_csv.reader(io.StringIO(txt), delimiter="\t" if fn.lower().endswith(".tsv") else ","))
-                        if len(rows) >= 2:
-                            t = re.sub(r"[^A-Za-z0-9_]", "_", fn.rsplit(".", 1)[0])[:40]
-                            hdr = [re.sub(r"[^A-Za-z0-9_一-鿿]", "_", h) or f"c{i}" for i, h in enumerate(rows[0])]
-                            con.execute(f'DROP TABLE IF EXISTS "{t}"')
-                            con.execute(f'CREATE TABLE "{t}" ({", ".join(chr(34)+h+chr(34)+" TEXT" for h in hdr)})')
-                            con.executemany(f'INSERT INTO "{t}" VALUES ({",".join("?"*len(hdr))})',
-                                            [r[:len(hdr)] + [""] * (len(hdr) - len(r)) for r in rows[1:]])
-                            con.commit(); tables.append({"table": t, "rows": len(rows) - 1})
+                        if len(rows) < 2 or not rows[0]:
+                            raise ValueError("CSV/TSV 需要表头和至少一行数据")
+                        t = _upload_table_name(fn)
+                        hdr = [re.sub(r"[^A-Za-z0-9_一-鿿]", "_", h) or f"c{i}" for i, h in enumerate(rows[0])]
+                        if len({h.casefold() for h in hdr}) != len(hdr):
+                            raise ValueError("CSV 列名重复或清洗后冲突，请修改表头")
+                        if any(len(row) != len(hdr) for row in rows[1:]):
+                            raise ValueError("CSV 数据行列数与表头不一致，请检查文件")
+                        for other in glob.glob(os.path.join(WORK, "uploads_*")):
+                            other_name = os.path.basename(other)[8:]
+                            if (os.path.abspath(other) != path and other_name.lower().endswith((".csv", ".tsv"))
+                                    and _upload_table_name(other_name).casefold() == t.casefold()):
+                                raise ValueError("文件名与另一资料的表名冲突，请更换文件名")
+                        exists = con.execute("SELECT 1 FROM sqlite_master WHERE lower(name)=lower(?)", (t,)).fetchone()
+                        if exists and not os.path.isfile(path):
+                            raise ValueError("目标表已存在且不属于同名上传资料，请更换文件名")
+                        if os.path.exists(path):
+                            with open(path, "rb") as old:
+                                previous = old.read()
+                        # Explicit BEGIN keeps DROP/CREATE transactional too.
+                        con.execute("BEGIN")
+                        con.execute(f'DROP TABLE IF EXISTS "{t}"')
+                        con.execute(f'CREATE TABLE "{t}" ({", ".join(chr(34)+h+chr(34)+" TEXT" for h in hdr)})')
+                        con.executemany(f'INSERT INTO "{t}" VALUES ({",".join("?"*len(hdr))})', rows[1:])
+                        _atomic_bytes(path, raw)
+                        wrote_file = True
+                        con.commit()
+                        saved.append(fn)
+                        tables.append({"table": t, "rows": len(rows) - 1})
                     except Exception as e:
+                        con.rollback()
+                        if wrote_file:
+                            if previous is None:
+                                os.remove(path)
+                            else:
+                                _atomic_bytes(path, previous)
                         tables.append({"table": fn, "error": str(e)[:80]})
+                else:
+                    _atomic_bytes(path, raw)
+                    saved.append(fn)
         finally:
             con.close()
     return jsonify({"saved": saved, "tables": tables})
@@ -4158,7 +4420,7 @@ def build_asset_delete():
     with _WRITE_LOCK:
         os.remove(path)
         if fn.lower().endswith((".csv", ".tsv")) and os.path.exists(UPLOAD_DB):
-            t = re.sub(r"[^A-Za-z0-9_]", "_", fn.rsplit(".", 1)[0])[:40]
+            t = _upload_table_name(fn)
             try:
                 con = sqlite3.connect(UPLOAD_DB)
                 try:
@@ -4332,9 +4594,10 @@ def conn_api_fetch():
     bad = _check_fetch_url(url)
     if bad: return jsonify({"error": bad}), 400
     try:
-        req = urllib.request.Request(url, headers={"Accept": "application/json", "User-Agent": "DataMind/1.0"})
-        with urllib.request.urlopen(req, timeout=12) as r:
-            raw = r.read(2_000_000)
+        with _open_api_url(url, timeout=12) as r:
+            raw = r.read(2_000_001)
+        if len(raw) > 2_000_000:
+            return jsonify({"error": "API 返回内容超过 2 MB 上限"}), 502
         data = json.loads(raw)
     except Exception as e:
         return jsonify({"error": f"API 拉取失败:{str(e)[:140]}"}), 502
@@ -4346,25 +4609,44 @@ def conn_api_fetch():
         return jsonify({"error": f"json_path「{conn.get('json_path')}」在返回结构中不存在"}), 400
     if isinstance(data, dict):                   # 单对象 → 单行
         data = [data]
-    if not (isinstance(data, list) and data and all(isinstance(x, dict) for x in data[:20])):
+    if not (isinstance(data, list) and data and all(isinstance(x, dict) for x in data[:5000])):
         return jsonify({"error": "json_path 需指向对象数组(list of objects)"}), 400
     data = data[:5000]
-    cols, seen = [], set()
-    for row in data[:50]:
+    cols, source_cols, seen, used_names = [], [], set(), set()
+    for row in data:
         for k in row.keys():
             if k not in seen and len(cols) < 40:
                 # 列名消毒后才可进 DDL:去除引号等可越出标识符边界的字符(与 CSV 上传同规则)
                 safe = re.sub(r"[^A-Za-z0-9_\u4e00-\u9fff]", "_", str(k))[:64] or f"c{len(cols)}"
-                seen.add(k); cols.append(safe)
+                if safe[0].isdigit():
+                    safe = "c_" + safe[:62]
+                base, suffix = safe, 2
+                while safe.casefold() in used_names:
+                    tail = f"_{suffix}"
+                    safe = base[:64 - len(tail)] + tail
+                    suffix += 1
+                seen.add(k); used_names.add(safe.casefold())
+                source_cols.append(k); cols.append(safe)
+    if not cols:
+        return jsonify({"error": "API 对象至少需要一个可用字段"}), 400
+    # Read values using original JSON keys, never their normalized SQL names.
+    rows = [tuple("" if row.get(k) is None else str(row[k]) for k in source_cols) for row in data]
     table = _api_conn_table(conn)
     with _WRITE_LOCK:
         con = sqlite3.connect(UPLOAD_DB)
         try:
+            # sqlite3 does not implicitly BEGIN for DDL: without this explicit
+            # transaction a later CREATE/INSERT failure permanently loses the old table.
+            con.execute("BEGIN IMMEDIATE")
             con.execute(f'DROP TABLE IF EXISTS "{table}"')
             con.execute(f'CREATE TABLE "{table}" ({", ".join(chr(34)+c+chr(34)+" TEXT" for c in cols)})')
             con.executemany(f'INSERT INTO "{table}" VALUES ({", ".join("?" for _ in cols)})',
-                            [tuple("" if row.get(c) is None else str(row.get(c)) for c in cols) for row in data])
+                            rows)
             con.commit()
+        except sqlite3.Error as exc:
+            con.rollback()
+            _LOG.warning("API 数据物化失败:%s", type(exc).__name__)
+            return jsonify({"error": "API 数据写入失败，原数据已保留"}), 502
         finally:
             con.close()
         conns = _load_conns()
@@ -4749,10 +5031,8 @@ def _build_intent(q, sname, skills):
         if drv not in available(): continue
         ok, reply = get_runtime(drv).run_turn(f"bi_{uuid.uuid4().hex[:6]}", prompt, timeout=28)
         if ok and reply and not _looks_like_error(reply):
-            m = re.search(r"\{[\s\S]*\}", reply)
-            if m:
-                try: return json.loads(m.group(0))
-                except Exception: pass
+            d = llm_json.extract(reply)
+            if d is not None: return d
     return None
 
 def _build_summary(q, name, ir):
@@ -5217,18 +5497,18 @@ def _llm_extract_ontology(q, ev, skills, cqs=None, log=None, base_ir=None,
             ok, reply = rt.run_turn(sid, prompt, timeout=600)
         _log(f"引擎返回 · {'成功' if ok else '失败'} · {len(reply or '')} 字 · 用时 {time.time() - t0:.0f}s")
         if ok and reply and not _looks_like_error(reply):
-            m = re.search(r"\{[\s\S]*\}", reply)
-            if m:
-                try:
-                    d = json.loads(m.group(0))
-                    if isinstance(d.get("objects"), list) and d["objects"]:
-                        _log(f"解析 JSON 成功 · 提议对象 {len(d['objects'])} 个 · 关系 {len(d.get('relations') or [])} 条")
-                        return d
-                    _log("解析结果不含对象，尝试下一引擎")
-                except Exception as e:
-                    _log(f"JSON 解析失败：{type(e).__name__}: {str(e)[:120]}")
+            # 抽取/修复/形状校验收敛到 llm_json:配平扫描取块、尾逗号最小修复、
+            # 坏元素剔除计数。解析失败如实回报后换下一引擎,语义与旧路径一致。
+            d, dropped = llm_json.extract_proposal(reply)
+            if d is not None:
+                _log(f"解析 JSON 成功 · 提议对象 {len(d['objects'])} 个 · 关系 {len(d.get('relations') or [])} 条"
+                     + (f" · 剔除无效元素:对象 {dropped['objects']} · 关系 {dropped['relations']}"
+                        if dropped["objects"] or dropped["relations"] else ""))
+                return d
+            if dropped["objects"] or dropped["relations"]:
+                _log(f"提议有效对象为空(剔除:对象 {dropped['objects']} · 关系 {dropped['relations']}),尝试下一引擎")
             else:
-                _log("回复中未找到 JSON 块")
+                _log("回复中未找到可解析的 JSON 块,尝试下一引擎")
         else:
             _log(f"引擎回复不可用：{(reply or '')[:160]}")
     _log("未获得有效提议（尝试引擎 %d 个）→ 回退纯数据驱动构建" % tried if tried
@@ -5259,9 +5539,8 @@ def _llm_semantic_review(relations, ev):
                 if drv not in available(): continue
                 ok, rep = get_runtime(drv).run_turn(f"sr_{uuid.uuid4().hex[:6]}", prompt, timeout=110)
                 if ok and rep:
-                    m = re.search(r"\{[\s\S]*\}", rep)
-                    if m:
-                        d = json.loads(m.group(0))
+                    d = llm_json.extract(rep)
+                    if d is not None:
                         got = {int(k): v for k, v in d.items() if str(k).isdigit()}
                         break
             except Exception:
@@ -5366,242 +5645,197 @@ def _adjudicate_ir(db, name, extracted, ev):
                                  "error_type": type(exc).__name__ if exc else "invalid_identifier"})
     try:
         con = ro_connect(db)
+        con.execute("BEGIN")
+        evidence_deadline = time.monotonic() + 60
+        con.set_progress_handler(lambda: int(time.monotonic() > evidence_deadline), 10000)
     except Exception as exc:
         record_query_error("connect", exc=exc)
-    # ↓ 以下取数助手的 t/c 全部来自 **LLM 抽取产物**(_llm_extract_ontology 的返回),
-    #   即模型可写、外部可影响的字符串,却要落在 SQL 的标识符位上。
-    #   统一先过 _safe_ident:非法名直接返回空结果(等价于"取证不成立"),而不是拼进 SQL。
-    #   这条裁决决定了整个关系数据验证链路不会被一个构造出来的列名反噬。
-    def _ids(*names):
-        """全部合法则返回元组,任一非法返回 None(调用方据此放弃本次取证)。"""
-        out = [_safe_ident(n) for n in names]
-        return None if any(x is None for x in out) else out
+        if con:
+            con.close()
+            con = None
+    # Shared extraction validates actual columns, quotes identifiers and returns exact counts.
+    from sqlite_evidence import relation_signals
+    signal_cache = {}
 
-    def distinct(t, c, cap=8000):
-        ok = _ids(t, c)
-        if not ok:
-            record_query_error("distinct", t, c)
-            return set()
-        t, c = ok
-        try: return set(r[0] for r in con.execute(f'SELECT DISTINCT "{c}" FROM "{t}" LIMIT {int(cap)}') if r[0] not in (None, ""))
-        except Exception as exc:
-            record_query_error("distinct", t, c, exc)
-            return set()
-    def is_unique(t, c):
-        ok = _ids(t, c)
-        if not ok:
-            record_query_error("unique", t, c)
-            return False
-        t, c = ok
-        try:
-            tot, dis = con.execute(f'SELECT COUNT("{c}"), COUNT(DISTINCT "{c}") FROM "{t}"').fetchone()
-            return tot and tot == dis
-        except Exception as exc:
-            record_query_error("unique", t, c, exc)
-            return False
-
-    def tuple_distinct(t, columns, cap=8000):
-        """多列元组取值集（复合键联合裁决用；跳过任一列为空的行）。"""
-        ok = _ids(t, *columns)
-        if not ok:
-            record_query_error("tuple_distinct", t, ",".join(columns))
-            return set()
-        t, *columns = ok
-        select = ", ".join(f'"{column}"' for column in columns)
-        non_null = " AND ".join(f'"{column}" IS NOT NULL' for column in columns)
-        try:
-            return set(tuple(row) for row in con.execute(
-                f'SELECT DISTINCT {select} FROM "{t}" WHERE {non_null} LIMIT {int(cap)}'))
-        except Exception as exc:
-            record_query_error("tuple_distinct", t, ",".join(columns), exc)
-            return set()
-    def tuple_unique(t, columns):
-        """检查非空多列元组是否唯一，不用字符串拼接，避免分隔符碰撞。"""
-        ok = _ids(t, *columns)
-        if not ok:
-            record_query_error("tuple_unique", t, ",".join(columns))
-            return False
-        t, *columns = ok
-        select = ", ".join(f'"{column}"' for column in columns)
-        non_null = " AND ".join(f'"{column}" IS NOT NULL' for column in columns)
-        try:
-            total = con.execute(f'SELECT COUNT(*) FROM "{t}" WHERE {non_null}').fetchone()[0]
-            distinct_count = con.execute(
-                f'SELECT COUNT(*) FROM (SELECT {select} FROM "{t}" WHERE {non_null} GROUP BY {select})'
-            ).fetchone()[0]
-            return bool(total and total == distinct_count)
-        except Exception as exc:
-            record_query_error("tuple_unique", t, ",".join(columns), exc)
-            return False
-    # 声明主键感知(Burr-Mondial 发现:自然键 schema 的父键不叫 *_id,须查 PK;企业 *_id 命名此前掩盖了该盲区)
-    pkmap = {}
-    if con:
-        for tt2 in {o.get("table") for o in objects if o.get("table")}:
-            safe_t = _safe_ident(tt2)
-            if not safe_t:
-                record_query_error("table_info", tt2)
-                pkmap[tt2] = []
-                continue
-            try: pkmap[tt2] = [r2[1] for r2 in con.execute(f'PRAGMA table_info("{safe_t}")') if r2[5]]
+    def signals(child_table, child_columns, parent_table, parent_columns):
+        cache_key = (child_table, tuple(child_columns), parent_table, tuple(parent_columns))
+        if con is None or time.monotonic() > evidence_deadline or len(signal_cache) >= 4096:
+            record_query_error("evidence_budget", child_table, ",".join(child_columns), TimeoutError())
+            return None
+        if cache_key not in signal_cache:
+            try:
+                signal_cache[cache_key] = relation_signals(con, *cache_key)
             except Exception as exc:
-                record_query_error("table_info", tt2, exc=exc)
-                pkmap[tt2] = []
+                record_query_error("relation_signals", child_table, ",".join(child_columns), exc)
+                signal_cache[cache_key] = None
+        return signal_cache[cache_key]
+    # 声明主键感知(Burr-Mondial 发现:自然键 schema 的父键不叫 *_id,须查 PK;企业 *_id 命名此前掩盖了该盲区)
+    try:
+        pkmap = {}
+        if con:
+            for tt2 in {o.get("table") for o in objects if o.get("table")}:
+                safe_t = _safe_ident(tt2)
+                if not safe_t:
+                    record_query_error("table_info", tt2)
+                    pkmap[tt2] = []
+                    continue
+                try: pkmap[tt2] = [r2[1] for r2 in con.execute(f'PRAGMA table_info("{safe_t}")') if r2[5]]
+                except Exception as exc:
+                    record_query_error("table_info", tt2, exc=exc)
+                    pkmap[tt2] = []
 
-    relations, seen = [], set()
-    for r in extracted.get("relations", []):
-        s, t = (r.get("source") or "").strip(), (r.get("target") or "").strip()
-        if not s or not t or s == t or s not in valid or t not in valid or (s, t) in seen: continue
-        seen.add((s, t))
-        status, overlap, note = "candidate", None, "LLM 提议·待取证"
-        ev_keys = None                                # 最佳尝试也留结构化证据,不只给 verified 留痕
-        ts, tt = name2tab.get(s), name2tab.get(t)
-        # 数据裁决的前提是两端都落到真实表上。统计未落地的情形,好让「verified 0 条」
-        # 可解释——用户否则无从区分「数据源太薄」与「裁决器坏了」。
-        if not ts and not tt: ungrounded["both"] += 1
-        elif not ts or not tt: ungrounded["one"] += 1
-        child_hint = str(r.get("child_key") or "").strip()
-        parent_hint = str(r.get("parent_key") or "").strip()
-        if con and ts and tt:
-            cs = [c for c, _ in tc.get(ts, [])]; ct = [c for c, _ in tc.get(tt, [])]
-            ctl = [x.lower() for x in ct]
-            stem = re.sub(r"^(dim_|fact_|dws_|dwd_|ods_|agg_)", "", tt, flags=re.I).lower()
-            pk_t = pkmap.get(tt) or []
-            # 连接键候选(多候选逐一尝试直到验证——Burr 系列实证:首个候选失败不代表无引用):
-            # ⓪LLM 候选提示(仅排序,先验证列真实存在) ①后缀词干 ②等值 ③前缀 ④与父列同名
-            cand_keys = []
-            if child_hint and "," not in child_hint:
-                hinted = next((c for c in cs if c.lower() == child_hint.lower()), None)
-                if hinted: cand_keys.append(hinted)
-            for c in cs:
-                cl = c.lower()
-                if re.search(r"_(id|code)$", c, re.I) and (re.sub(r"_(id|code)$", "", c, flags=re.I).lower() in stem or cl in ctl):
-                    if c not in cand_keys: cand_keys.append(c)
-            for c in cs:
-                cl = c.lower()
-                if c not in cand_keys and (cl == stem or cl == tt.lower()): cand_keys.append(c)
-            for c in cs:
-                cl = c.lower()
-                if c not in cand_keys and len(stem) >= 4 and cl.startswith(stem) and re.fullmatch(r"[a-z]*\d?", cl[len(stem):]):
-                    cand_keys.append(c)
-            for c in cs:
-                if c not in cand_keys and c.lower() in ctl and re.search(r"(id|code|key|no)$", c, re.I): cand_keys.append(c)
-            best = None
-            for key in cand_keys[:6]:
-                # 父列候选序:声明PK优先(Mondial 发现:父表可有与表同名的非键列,同名优先会撞错列)
-                pcols = []
-                if parent_hint and "," not in parent_hint:
-                    hinted = next((x for x in ct if x.lower() == parent_hint.lower()), None)
-                    if hinted: pcols.append(hinted)
-                if len(pk_t) == 1 and pk_t[0] not in pcols: pcols.append(pk_t[0])
-                for x in ct:
-                    if x.lower() == key.lower() and x not in pcols: pcols.append(x)
-                for x in ct:
-                    if x.lower() == "id" and x not in pcols: pcols.append(x)
-                for x in ct:
-                    if re.search(r"_(id|code)$", x, re.I) and x not in pcols: pcols.append(x)
-                child = distinct(ts, key)
-                if not child: continue
-                cunique = is_unique(ts, key)
-                for pcol in pcols[:3]:
-                    ov = dao_core.overlap_pct(child, distinct(tt, pcol))
-                    punique = is_unique(tt, pcol) if ov >= dao_core.MIN_OVERLAP else False
-                    name_supported = dao_core.name_ok(key, tt, pcol, child_table=ts)
-                    reverse = ov >= dao_core.MIN_OVERLAP and dao_core.should_reverse(cunique, punique)
-                    verdict = dao_core.classify(overlap=ov, parent_unique=punique, name_ok=name_supported,
-                                                child_distinct=len(child), min_distinct=1, exclude_pk_child=False)
-                    trial_status, reason = verdict["status"], verdict["reason"]
-                    if reverse:
-                        trial_status = "candidate"
-                        reason = (f"{key}→{tt}.{pcol} 方向反证:子列唯一而目标列不唯一,"
-                                  "不能把唯一侧指向多侧升级为 verified")
-                    trial = {"child_key": key, "parent_key": pcol, "overlap": round(ov, 1),
-                             "source": "key_overlap", "parent_unique": bool(punique),
-                             "child_unique": bool(cunique), "name_ok": bool(name_supported),
-                             "name_score": dao_core.name_score(key, tt, pcol),
-                             "theta": dao_core.MIN_OVERLAP,
-                             "direction": ("reverse" if reverse else
-                                           ("ambiguous" if cunique and punique else "child_to_parent")),
-                             "decision": reason, "adjudication_status": trial_status}
-                    if best is None or ov > best[0]: best = (ov, trial_status, reason, trial)
-                    if trial_status == "verified":
-                        status, overlap, note, ev_keys = "verified", round(ov, 1), reason, trial
-                        break
-                if status == "verified": break
-            # 复合键联合裁决：单列未通过时，优先验证模型提示和声明复合主键，
-            # 再尝试最多四列的同名列组合。元组整体计算重叠率和父键唯一性。
-            if status != "verified":
-                shared = [c for c in cs if c.lower() in ctl][:4]
-                if len(pk_t) >= 2 and all(p.lower() in [c.lower() for c in cs] for p in pk_t):
-                    pri = [next(c for c in cs if c.lower() == p.lower()) for p in pk_t]
-                    shared = pri + [c for c in shared if c not in pri]
-                pairs = []
-                hc, hp = [x.strip() for x in child_hint.split(",")], [x.strip() for x in parent_hint.split(",")]
-                if len(hc) == len(hp) and len(hc) >= 2:
-                    rc = [next((c for c in cs if c.lower() == x.lower()), None) for x in hc]
-                    rp = [next((c for c in ct if c.lower() == x.lower()), None) for x in hp]
-                    if all(rc + rp): pairs.append((tuple(rc), tuple(rp)))
-                if len(pk_t) >= 2 and all(p.lower() in [c.lower() for c in cs] for p in pk_t):
-                    child_columns = tuple(next(c for c in cs if c.lower() == p.lower()) for p in pk_t)
-                    parent_columns = tuple(pk_t)
-                    if (child_columns, parent_columns) not in pairs:
-                        pairs.append((child_columns, parent_columns))
-                for width in range(2, min(4, len(shared)) + 1):
-                    for child_columns in combinations(shared, width):
-                        parent_columns = tuple(next(x for x in ct if x.lower() == c.lower()) for c in child_columns)
+        relations, seen = [], set()
+        for r in extracted.get("relations", []):
+            s, t = (r.get("source") or "").strip(), (r.get("target") or "").strip()
+            if not s or not t or s == t or s not in valid or t not in valid or (s, t) in seen: continue
+            seen.add((s, t))
+            status, overlap, note = "candidate", None, "LLM 提议·待取证"
+            ev_keys = None                                # 最佳尝试也留结构化证据,不只给 verified 留痕
+            ts, tt = name2tab.get(s), name2tab.get(t)
+            # 数据裁决的前提是两端都落到真实表上。统计未落地的情形,好让「verified 0 条」
+            # 可解释——用户否则无从区分「数据源太薄」与「裁决器坏了」。
+            if not ts and not tt: ungrounded["both"] += 1
+            elif not ts or not tt: ungrounded["one"] += 1
+            child_hint = str(r.get("child_key") or "").strip()
+            parent_hint = str(r.get("parent_key") or "").strip()
+            if con and ts and tt:
+                cs = [c for c, _ in tc.get(ts, [])]; ct = [c for c, _ in tc.get(tt, [])]
+                ctl = [x.lower() for x in ct]
+                stem = re.sub(r"^(dim_|fact_|dws_|dwd_|ods_|agg_)", "", tt, flags=re.I).lower()
+                pk_t = pkmap.get(tt) or []
+                # 连接键候选(多候选逐一尝试直到验证——Burr 系列实证:首个候选失败不代表无引用):
+                # ⓪LLM 候选提示(仅排序,先验证列真实存在) ①后缀词干 ②等值 ③前缀 ④与父列同名
+                cand_keys = []
+                if child_hint and "," not in child_hint:
+                    hinted = next((c for c in cs if c.lower() == child_hint.lower()), None)
+                    if hinted: cand_keys.append(hinted)
+                for c in cs:
+                    cl = c.lower()
+                    if re.search(r"_(id|code)$", c, re.I) and (re.sub(r"_(id|code)$", "", c, flags=re.I).lower() in stem or cl in ctl):
+                        if c not in cand_keys: cand_keys.append(c)
+                for c in cs:
+                    cl = c.lower()
+                    if c not in cand_keys and (cl == stem or cl == tt.lower()): cand_keys.append(c)
+                for c in cs:
+                    cl = c.lower()
+                    if c not in cand_keys and len(stem) >= 4 and cl.startswith(stem) and re.fullmatch(r"[a-z]*\d?", cl[len(stem):]):
+                        cand_keys.append(c)
+                for c in cs:
+                    if c not in cand_keys and c.lower() in ctl and re.search(r"(id|code|key|no)$", c, re.I): cand_keys.append(c)
+                best = None
+                for key in cand_keys[:6]:
+                    # 父列候选序:声明PK优先(Mondial 发现:父表可有与表同名的非键列,同名优先会撞错列)
+                    pcols = []
+                    if parent_hint and "," not in parent_hint:
+                        hinted = next((x for x in ct if x.lower() == parent_hint.lower()), None)
+                        if hinted: pcols.append(hinted)
+                    if len(pk_t) == 1 and pk_t[0] not in pcols: pcols.append(pk_t[0])
+                    for x in ct:
+                        if x.lower() == key.lower() and x not in pcols: pcols.append(x)
+                    for x in ct:
+                        if x.lower() == "id" and x not in pcols: pcols.append(x)
+                    for x in ct:
+                        if re.search(r"_(id|code)$", x, re.I) and x not in pcols: pcols.append(x)
+                    for pcol in pcols[:3]:
+                        sig = signals(ts, (key,), tt, (pcol,))
+                        if not sig or not sig["child_distinct"]: continue
+                        ov, punique, cunique = sig["overlap"], sig["parent_unique"], sig["child_unique"]
+                        name_supported = dao_core.name_ok(key, tt, pcol, child_table=ts)
+                        reverse = ov >= dao_core.MIN_OVERLAP and dao_core.should_reverse(cunique, punique)
+                        verdict = dao_core.classify(overlap=ov, parent_unique=punique, name_ok=name_supported,
+                                                    child_distinct=sig["child_distinct"], min_distinct=1, exclude_pk_child=False)
+                        trial_status, reason = verdict["status"], verdict["reason"]
+                        if reverse:
+                            trial_status = "candidate"
+                            reason = (f"{key}→{tt}.{pcol} 方向反证:子列唯一而目标列不唯一,"
+                                      "不能把唯一侧指向多侧升级为 verified")
+                        trial = {**sig, "child_key": key, "parent_key": pcol, "overlap": round(ov, 1),
+                                 "source": "key_overlap", "parent_unique": bool(punique),
+                                 "child_unique": bool(cunique), "name_ok": bool(name_supported),
+                                 "name_score": dao_core.name_score(key, tt, pcol),
+                                 "theta": dao_core.MIN_OVERLAP,
+                                 "direction": ("reverse" if reverse else
+                                               ("ambiguous" if cunique and punique else "child_to_parent")),
+                                 "decision": reason, "adjudication_status": trial_status}
+                        if best is None or ov > best[0]: best = (ov, trial_status, reason, trial)
+                        if trial_status == "verified":
+                            status, overlap, note, ev_keys = "verified", round(ov, 1), reason, trial
+                            break
+                    if status == "verified": break
+                # 复合键联合裁决：单列未通过时，优先验证模型提示和声明复合主键，
+                # 再尝试最多四列的同名列组合。元组整体计算重叠率和父键唯一性。
+                if status != "verified":
+                    shared = [c for c in cs if c.lower() in ctl][:4]
+                    if len(pk_t) >= 2 and all(p.lower() in [c.lower() for c in cs] for p in pk_t):
+                        pri = [next(c for c in cs if c.lower() == p.lower()) for p in pk_t]
+                        shared = (pri + [c for c in shared if c not in pri])[:4]
+                    pairs = []
+                    hc, hp = [x.strip() for x in child_hint.split(",")], [x.strip() for x in parent_hint.split(",")]
+                    if len(hc) == len(hp) and len(hc) >= 2:
+                        rc = [next((c for c in cs if c.lower() == x.lower()), None) for x in hc]
+                        rp = [next((c for c in ct if c.lower() == x.lower()), None) for x in hp]
+                        if all(rc + rp): pairs.append((tuple(rc), tuple(rp)))
+                    if len(pk_t) >= 2 and all(p.lower() in [c.lower() for c in cs] for p in pk_t):
+                        child_columns = tuple(next(c for c in cs if c.lower() == p.lower()) for p in pk_t)
+                        parent_columns = tuple(pk_t)
                         if (child_columns, parent_columns) not in pairs:
                             pairs.append((child_columns, parent_columns))
-                for child_columns, parent_columns in pairs[:16]:
-                    chp = tuple_distinct(ts, child_columns)
-                    if not chp: continue
-                    ovp = dao_core.overlap_pct(chp, tuple_distinct(tt, parent_columns))
-                    punique = tuple_unique(tt, parent_columns) if ovp >= dao_core.MIN_OVERLAP else False
-                    cunique = tuple_unique(ts, child_columns)
-                    child_key = ",".join(child_columns)
-                    parent_key = ",".join(parent_columns)
-                    name_supported = dao_core.key_name_ok(child_key, parent_key)
-                    verdict = dao_core.classify(overlap=ovp, parent_unique=punique, name_ok=name_supported,
-                                                child_distinct=len(chp), min_distinct=1, exclude_pk_child=False)
-                    reverse = ovp >= dao_core.MIN_OVERLAP and dao_core.should_reverse(cunique, punique)
-                    trial_status = "candidate" if reverse else verdict["status"]
-                    reason = ("复合键方向反证:子侧成对唯一而目标侧不唯一,送审" if reverse else verdict["reason"])
-                    trial = {"child_key": child_key, "parent_key": parent_key,
-                             "overlap": round(ovp, 1), "source": "composite_key",
-                             "parent_unique": bool(punique), "child_unique": bool(cunique),
-                             "name_ok": bool(name_supported), "theta": dao_core.MIN_OVERLAP,
-                             "direction": ("reverse" if reverse else
-                                           ("ambiguous" if cunique and punique else "child_to_parent")),
-                             "decision": reason, "adjudication_status": trial_status}
-                    if best is None or ovp > best[0]: best = (ovp, trial_status, reason, trial)
-                    if trial_status == "verified":
-                        status, overlap = "verified", round(ovp, 1)
-                        note = f"复合键({child_key})→{tt} · {reason}"
-                        ev_keys = trial
-                        break
-            if status != "verified" and best is not None:
-                best_ov, _best_status, best_reason, best_evidence = best
-                status, overlap, note, ev_keys = "candidate", round(best_ov, 1), best_reason, best_evidence
-        verb = r.get("verb", "关联")
-        # 模型给出的 founded_relation 必须参与判定,否则接地恒为 0:from_verb 只查
-        # VERB_RELATIONS 这张 10 词表,而模型提的是自由业务动词(面向/订购物项/归入…),
-        # 一律落到 unmapped。normalize 会核对官方关系名与定义域/值域,填错照样拒绝,
-        # 所以采信模型的提名不等于放松校验——只是给它一个能被校验的入口。
-        grounding = ontology_grounding.normalize(
-            r.get("founded_relation"), r.get("temporal"), verb,
-            categories.get(s), categories.get(t))
-        rel_new = {"source_concept": s, "target_concept": t, "verb": verb,
-                   "status": status, "evidence_status": status,
-                   "overlap": overlap, "note": note,
-                   "founded_relation": grounding["relation"],
-                   "grounding_iri": grounding["iri"],
-                   "grounding_status": grounding["status"],
-                   "grounding_reason": grounding["reason"],
-                   "temporal": grounding["temporal"],
-                   "proposal": {"rationale": str(r.get("rationale") or "")[:500],
-                                "child_key_hint": child_hint,
-                                "parent_key_hint": parent_hint}}
-        if ev_keys: rel_new["evidence"] = ev_keys      # DR-033 结构化 JOIN 键:自建本体要能驱动问数
-        relations.append(rel_new)
-    if con: con.close()
+                    for width in range(2, min(4, len(shared)) + 1):
+                        for child_columns in combinations(shared, width):
+                            parent_columns = tuple(next(x for x in ct if x.lower() == c.lower()) for c in child_columns)
+                            if (child_columns, parent_columns) not in pairs:
+                                pairs.append((child_columns, parent_columns))
+                    for child_columns, parent_columns in pairs[:16]:
+                        sig = signals(ts, child_columns, tt, parent_columns)
+                        if not sig or not sig["child_distinct"]: continue
+                        ovp, punique, cunique = sig["overlap"], sig["parent_unique"], sig["child_unique"]
+                        child_key = ",".join(child_columns)
+                        parent_key = ",".join(parent_columns)
+                        name_supported = dao_core.key_name_ok(child_key, parent_key)
+                        verdict = dao_core.classify(overlap=ovp, parent_unique=punique, name_ok=name_supported,
+                                                    child_distinct=sig["child_distinct"], min_distinct=1, exclude_pk_child=False)
+                        reverse = ovp >= dao_core.MIN_OVERLAP and dao_core.should_reverse(cunique, punique)
+                        trial_status = "candidate" if reverse else verdict["status"]
+                        reason = ("复合键方向反证:子侧成对唯一而目标侧不唯一,送审" if reverse else verdict["reason"])
+                        trial = {**sig, "child_key": child_key, "parent_key": parent_key,
+                                 "overlap": round(ovp, 1), "source": "composite_key",
+                                 "parent_unique": bool(punique), "child_unique": bool(cunique),
+                                 "name_ok": bool(name_supported), "theta": dao_core.MIN_OVERLAP,
+                                 "direction": ("reverse" if reverse else
+                                               ("ambiguous" if cunique and punique else "child_to_parent")),
+                                 "decision": reason, "adjudication_status": trial_status}
+                        if best is None or ovp > best[0]: best = (ovp, trial_status, reason, trial)
+                        if trial_status == "verified":
+                            status, overlap = "verified", round(ovp, 1)
+                            note = f"复合键({child_key})→{tt} · {reason}"
+                            ev_keys = trial
+                            break
+                if status != "verified" and best is not None:
+                    best_ov, _best_status, best_reason, best_evidence = best
+                    status, overlap, note, ev_keys = "candidate", round(best_ov, 1), best_reason, best_evidence
+            verb = r.get("verb", "关联")
+            # 模型给出的 founded_relation 必须参与判定,否则接地恒为 0:from_verb 只查
+            # VERB_RELATIONS 这张 10 词表,而模型提的是自由业务动词(面向/订购物项/归入…),
+            # 一律落到 unmapped。normalize 会核对官方关系名与定义域/值域,填错照样拒绝,
+            # 所以采信模型的提名不等于放松校验——只是给它一个能被校验的入口。
+            grounding = ontology_grounding.normalize(
+                r.get("founded_relation"), r.get("temporal"), verb,
+                categories.get(s), categories.get(t))
+            rel_new = {"source_concept": s, "target_concept": t, "verb": verb,
+                       "status": status, "evidence_status": status,
+                       "overlap": overlap, "note": note,
+                       "founded_relation": grounding["relation"],
+                       "grounding_iri": grounding["iri"],
+                       "grounding_status": grounding["status"],
+                       "grounding_reason": grounding["reason"],
+                       "temporal": grounding["temporal"],
+                       "proposal": {"rationale": str(r.get("rationale") or "")[:500],
+                                    "child_key_hint": child_hint,
+                                    "parent_key_hint": parent_hint}}
+            if ev_keys: rel_new["evidence"] = ev_keys      # DR-033 结构化 JOIN 键:自建本体要能驱动问数
+            relations.append(rel_new)
+    finally:
+        if con: con.close()
     # 数据证据与语义裁定分轴保存。语义 fail 不抹掉可回放的数据证据，但 CQ/发布检查
     # 不再把这类 disputed 边当成强业务路径；离线记 not_reviewed，不臆造通过。
     for rel in relations:
@@ -6187,21 +6421,11 @@ def _single_statement(sql):
     "SELECT 1; DROP TABLE t" 这种堆叠能整个绕过 sql_is_readonly(它只看开头)。
     这里按引号感知地扫一遍:字符串字面量内的分号不算分隔符,语句间的分号则拦下。
     """
-    s, i, n = str(sql or ""), 0, len(str(sql or ""))
-    quote = None
-    while i < n:
-        ch = s[i]
-        if quote:
-            if ch == quote:
-                if i + 1 < n and s[i + 1] == quote: i += 1      # 成对转义的引号,仍在字面量内
-                else: quote = None
-        elif ch in ("'", '"', "`"):
-            quote = ch
-        elif ch == ";":
-            if s[i + 1:].strip():                                # 分号后还有内容 → 堆叠
-                return False
-        i += 1
-    return True
+    code = sql_code(sql)
+    if code is None:
+        return False
+    parts = code.split(";")
+    return bool(parts[0].strip()) and (len(parts) == 1 or (len(parts) == 2 and not parts[1].strip()))
 
 def _ext_query(conn, sql, limit=500):
     """外部库真查询:只读放行 SELECT/WITH;驱动未装/不可达给明确报错(不静默)。→ {columns, rows}"""
@@ -6213,7 +6437,8 @@ def _ext_query(conn, sql, limit=500):
     user = sec.get("user") or u["user"] or "root"
     pwd = sec.get("password") or u["password"] or ""
     if kind in ("mysql", "doris"):
-        try: import pymysql  # type: ignore[import-untyped]
+        from importlib import import_module
+        try: pymysql = import_module("pymysql")
         except ImportError: raise RuntimeError("未安装 MySQL 驱动:pip install pymysql 后重启服务") from None
         con = pymysql.connect(host=u["host"], port=int(u["port"] or (9030 if kind == "doris" else 3306)),
                               user=user, password=pwd, database=u["db"] or None,
