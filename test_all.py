@@ -522,10 +522,17 @@ r=po("/api/engine/config",json={"keys":{"EVIL_VAR":"x"}}); chk("非白名单Key�
 r=po("/api/engine/config",json={"keys":{"MOONSHOT_API_KEY":"mk-regress-9x8y"}})
 chk("设Key→掩码回显", r.json()["keys"]["MOONSHOT_API_KEY"].endswith("9x8y") and r.json()["keys"]["MOONSHOT_API_KEY"].startswith("*"))
 import os as _os2, stat as _st2
-_ecf="workdir/engine_config.json"
-chk("配置文件 0600",
-    (not _os2.path.exists(_ecf)) or _st2.S_IMODE(_os2.stat(_ecf).st_mode)==0o600,
-    "" if _os2.path.exists(_ecf) else "引擎未配置,无配置文件,无权限可断言")
+# 刚设过 Key,服务必然已把配置落盘:文件必须存在且为 0600。
+# 路径取服务的 workdir(_WD0,经沙箱探针确认与服务同一目录),不能按测试进程的当前目录拼——
+# 那样在隔离环境里永远找不到文件,「不存在就放行」会让这条断言空转。
+# 只有测试进程看不到服务 workdir(远程部署)时才条件跳过。
+_ecf=_os2.path.join(_WD0,"engine_config.json")
+if _SBX_OK:
+    chk("配置文件 0600",
+        _os2.path.exists(_ecf) and _st2.S_IMODE(_os2.stat(_ecf).st_mode)==0o600,
+        (oct(_st2.S_IMODE(_os2.stat(_ecf).st_mode)) if _os2.path.exists(_ecf) else "设 Key 后配置文件未落盘: "+_ecf))
+else:
+    skip("配置文件 0600", "测试进程看不到服务 workdir,无法检查文件权限")
 r=po("/api/engine/config",json={"keys":{"MOONSHOT_API_KEY":""}})
 chk("清Key", r.json()["keys"]["MOONSHOT_API_KEY"]=="")
 _m0=_ec["models"]["claude-code"]
