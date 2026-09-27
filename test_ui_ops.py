@@ -196,12 +196,24 @@ async def main():
         await pg.click("#dq_src_chip")
         await pg.wait_for_timeout(900)
         cards = await pg.query_selector_all("#dq_ds_body .ds-card")
-        picked = None
+        # 只挑当前连接下可执行的自建本体。/api/graphs 按文件 mtime 排序,取「第一张」
+        # 会随夹具铺设顺序漂移:排在前面的若是表未接入的本体,界面按设计拒绝选中,
+        # 测试就会误报。不可执行的那张顺手用来断言「拒绝选中」这一正确行为。
+        queryable = set(await pg.evaluate("(DQ_GRAPHS||[]).filter(g=>g.queryable).map(g=>g.id)"))
+        picked, refused = None, None
         for c in cards:
             gid = await c.get_attribute("data-g")
+            if not (gid and gid.startswith("built_")):
+                continue
+            if gid not in queryable:
+                if refused is None:
+                    await c.click(); await pg.wait_for_timeout(300)
+                    refused = gid not in (await pg.evaluate("DQ_DS.graphs"))
+                continue
             nm = await (await c.query_selector(".nm")).inner_text()
-            if gid and gid.startswith("built_"):
-                picked = (gid, nm); await c.click(); break
+            picked = (gid, nm); await c.click(); break
+        if refused is not None:
+            (ok if refused else bad)("不可执行的本体点选被拒绝(表未接入当前连接)")
         (ok if picked else bad)("数据源弹窗可点选本体图谱", str(picked))
         if not picked:          # 拿不到图谱就别往下崩,后续断言全部依赖它
             bad("步骤7b 中止", "未取到可选的自建本体图谱")
