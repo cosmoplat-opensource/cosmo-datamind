@@ -23,8 +23,23 @@
 2. **概念画像**(`concept_profile.py`):每个对象确定性聚合名称/别名/定义/属性中文名/
    沿 verified/asserted 关系可达的邻居及动词/绑定指标;关键词检索按名称 5 分、列 2 分、
    指标与关系 1 分,同分按键名排序。`GET /api/ont/profile` 暴露检索与全量画像。
-   本决定**不**切换问数默认锚定路径:先用 `benchmark/qa_set.json` 加一组画像检索对照,
-   有数再决定。
+   **锚定对照结果(2026-09-27,`scripts/eval_anchoring.py`,记录于 `benchmark/anchoring_eval.json`)**:
+   端到端三组对照需要 LLM 引擎,当前环境不可用;画像只改变「问句→表」这一步,故按参考基准的
+   `gold_tables` 离线度量锚定阶段(k=5,示例本体,8 题):
+
+   | 锚定方式 | 平均召回 | 平均精度 | 全部 gold 表命中 | 平均带入表数 |
+   |---|---|---|---|---|
+   | 现行关键词锚定(`build_context`) | 0.958 | 0.087 | 7/8 | 13.2 |
+   | 概念画像检索 | 0.792 | 0.467 | 6/8 | 2.5 |
+
+   画像把上下文收窄到约五分之一,但召回下降。漏召的根因是设计取舍而非缺陷:画像只认完整名称
+   出现在问句中(防「单」误中「工单」),业务名「产出记录」接不住问句里的「生产产出」;
+   关键词锚定按分词反向匹配并做术语扩展,能接住。锚定阶段漏掉一张必需表会让问题直接不可答,
+   多带几张表只增加上下文噪声,召回比精度更要紧。
+   **决定:不切换问数默认锚定路径。** 画像保留用于 `/api/ont/profile` 与 MCP `search_concept`
+   (面向人与外部 Agent 的概念查找,精度更重要)。
+   不在同一份 8 题集上调整画像匹配规则后再宣称改进——那是对评测集过拟合。若要推进
+   「关键词召回 + 画像重排」的混合方案,须先准备独立的、规模更大的留出问题集。
 3. **Apache Ossie 导出**(`osi_export.py`,`GET /api/export/osi?kind=semantic_model|ontology`):
    OSI 已进入 Apache 孵化器并更名 Apache Ossie。两份官方 machine-readable schema
    (`core-spec/ossie-schema.json`、`ontology/ontology.json`,version const `0.2.0.dev0`)按固定
