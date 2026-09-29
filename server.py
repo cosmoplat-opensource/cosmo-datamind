@@ -5551,9 +5551,13 @@ def _llm_semantic_review(relations, ev):
                 out[(r["source_concept"], r["target_concept"])] = got[j]
     return out
 
-def _adjudicate_ir(db, name, extracted, ev):
+def _adjudicate_ir(db, name, extracted, ev, base_ir=None):
     """关系数据验证:LLM 提议的关系用真实数据裁决(取值重叠≥60%∧父键可辨→verified;有据无量→candidate)。
-    产出与 ir_to_graph 兼容的 IR(objects 带 kind/table/attrs;relations 带 status)。"""
+    产出与 ir_to_graph 兼容的 IR(objects 带 kind/table/attrs;relations 带 status)。
+
+    base_ir:继续构建时的底本。提示词要求模型沿用底本对象的原 name,因此底本对象
+    也是合法的关系端点——它们不在本轮 objects 里重复产出(合并时底本自会保留),
+    表若也在本轮数据源中则照常数据裁决,否则留 candidate 并注明跨源待取证。"""
     tc = ev["tab_cols"]; low2real = {t.lower(): t for t in tc}
     # 归一对象:绑定真实表则补 attrs/field_count;非表对象标 candidate
     objects, name2tab, seen_obj = [], {}, set()
@@ -5622,6 +5626,18 @@ def _adjudicate_ir(db, name, extracted, ev):
         if real: name2tab[nm] = real
     valid = {o["name"] for o in objects}
     categories = {o["name"]: o["bfo"] for o in objects}
+    base_only = {}                                   # 底本对象名 → 其绑定表(可能不在本轮数据源)
+    for bo in (base_ir or {}).get("objects", []) or []:
+        bn = (bo.get("name") or "").strip()
+        if bn and bn not in valid:
+            base_only[bn] = bo.get("table") or ""
+            categories[bn] = bo.get("bfo") or _KIND_BFO.get(bo.get("kind"), "MaterialEntity")
+            real = low2real.get(base_only[bn].lower()) if base_only[bn] else None
+            if real: name2tab[bn] = real
+    valid |= set(base_only)
+    dropped = [f"{(r.get('source') or '').strip()}→{(r.get('target') or '').strip()}"
+               for r in extracted.get("relations", [])
+               if (r.get("source") or "").strip() not in valid or (r.get("target") or "").strip() not in valid]
 
     # 三级控制环第二级先做 schema 语义复审。它只生成软标注,不裁剪提议,因此后续数据裁决
     # 仍会完整执行并可揭示「语义存疑但数据确实见证」的争议样本。
@@ -5638,6 +5654,8 @@ def _adjudicate_ir(db, name, extracted, ev):
     con = None
     query_errors = []
     ungrounded = {"both": 0, "one": 0}      # 关系两端未绑真实表的计数,用于解释无法裁决的原因
+    cross_source = 0                          # 端点来自底本、其表不在本轮数据源
+    no_data = 0                               # 两端有表但键列无任何非空取值(只有表结构的来源)
     def record_query_error(operation, table="", column="", exc=None):
         if len(query_errors) < 100:
             query_errors.append({"operation": operation, "table": str(table)[:120],
@@ -5692,6 +5710,12 @@ def _adjudicate_ir(db, name, extracted, ev):
             status, overlap, note = "candidate", None, "LLM 提议·待取证"
             ev_keys = None                                # 最佳尝试也留结构化证据,不只给 verified 留痕
             ts, tt = name2tab.get(s), name2tab.get(t)
+            outside = [x for x in (s, t) if x in base_only and not name2tab.get(x)]
+            if outside:
+                cross_source += 1
+                note = (f"端点「{'、'.join(outside)}」来自已有本体,其表不在本轮数据源,"
+                        "无法在本轮取证;跨源待取证")
+            saw_rows = False
             # 数据裁决的前提是两端都落到真实表上。统计未落地的情形,好让「verified 0 条」
             # 可解释——用户否则无从区分「数据源太薄」与「裁决器坏了」。
             if not ts and not tt: ungrounded["both"] += 1
@@ -5738,6 +5762,7 @@ def _adjudicate_ir(db, name, extracted, ev):
                         if re.search(r"_(id|code)$", x, re.I) and x not in pcols: pcols.append(x)
                     for pcol in pcols[:3]:
                         sig = signals(ts, (key,), tt, (pcol,))
+                        if sig and sig["child_distinct"]: saw_rows = True
                         if not sig or not sig["child_distinct"]: continue
                         ov, punique, cunique = sig["overlap"], sig["parent_unique"], sig["child_unique"]
                         name_supported = dao_core.name_ok(key, tt, pcol, child_table=ts)
@@ -5787,6 +5812,7 @@ def _adjudicate_ir(db, name, extracted, ev):
                                 pairs.append((child_columns, parent_columns))
                     for child_columns, parent_columns in pairs[:16]:
                         sig = signals(ts, child_columns, tt, parent_columns)
+                        if sig and sig["child_distinct"]: saw_rows = True
                         if not sig or not sig["child_distinct"]: continue
                         ovp, punique, cunique = sig["overlap"], sig["parent_unique"], sig["child_unique"]
                         child_key = ",".join(child_columns)
@@ -5813,6 +5839,9 @@ def _adjudicate_ir(db, name, extracted, ev):
                 if status != "verified" and best is not None:
                     best_ov, _best_status, best_reason, best_evidence = best
                     status, overlap, note, ev_keys = "candidate", round(best_ov, 1), best_reason, best_evidence
+                if status != "verified" and best is None and not saw_rows:
+                    no_data += 1
+                    note = "两端表的候选键列均无非空取值(表中无数据),无从取证;接入数据后可复核"
             verb = r.get("verb", "关联")
             # 模型给出的 founded_relation 必须参与判定,否则接地恒为 0:from_verb 只查
             # VERB_RELATIONS 这张 10 词表,而模型提的是自由业务动词(面向/订购物项/归入…),
@@ -5852,13 +5881,20 @@ def _adjudicate_ir(db, name, extracted, ev):
             "relations": len(relations),
             "verified": sum(1 for r in relations if r["status"] == "verified"),
             "unadjudicable_both_unbound": ungrounded["both"],
-            "unadjudicable_one_unbound": ungrounded["one"]}
+            "unadjudicable_one_unbound": ungrounded["one"],
+            "cross_source_endpoints": cross_source,
+            "no_data_relations": no_data,
+            "dropped_unknown_endpoint": len(dropped),
+            "dropped_samples": dropped[:10]}
     blocked = ungrounded["both"] + ungrounded["one"]
     if diag["verified"] == 0 and relations:
         if len(tc) <= 1:
             diag["reason"] = (f"数据源仅 {len(tc)} 张表,关系两端无法同时绑定到真实表,"
                               "数据裁决不具备前提;关系只能停在 candidate。"
                               "接入含多表且有外键/共享取值的数据源后可获得 verified。")
+        elif no_data >= max(1, len(relations) // 2):
+            diag["reason"] = (f"{no_data}/{len(relations)} 条关系两端的表中无数据(候选键列没有任何非空取值),"
+                              "只有表结构的来源无法做取值重叠验证;关系保持 candidate,接入数据后可复核。")
         elif blocked >= max(1, len(relations) // 2):
             diag["reason"] = (f"{blocked}/{len(relations)} 条关系至少有一端未绑定真实表"
                               f"(共 {len(objects)} 个对象,仅 {bound_objs} 个绑到表)。"
@@ -6149,7 +6185,15 @@ def build_inquire():
                     yield push("stability", False, "第二次生成失败/超时,本次不产出一致性指标(不臆造)")
             # ③ 关系数据验证:LLM 提议的关系用真实数据裁决
             yield sse({"type": "status", "text": "关系数据验证:用真实数据校验每条提议关系(取值重叠 / 父键唯一)…"})
-            ir = _adjudicate_ir(db, gname, extracted, ev)
+            ir = _adjudicate_ir(db, gname, extracted, ev, base_ir=base_ir)
+            _dg = (ir.get("scenario") or {}).get("adjudication_diagnostics") or {}
+            if _dg.get("dropped_unknown_endpoint") or _dg.get("cross_source_endpoints") or _dg.get("no_data_relations"):
+                # 这三类都会让「提议了多少条」与「图里多了多少条」对不上,必须在流水线上说清
+                yield push("relation_intake", not _dg.get("dropped_unknown_endpoint"),
+                           f"关系入图:端点不存在而舍弃 {_dg.get('dropped_unknown_endpoint', 0)} 条"
+                           + (f"(如 {'、'.join(_dg.get('dropped_samples', [])[:3])})" if _dg.get("dropped_samples") else "")
+                           + f" · 指向已有本体且跨源待取证 {_dg.get('cross_source_endpoints', 0)} 条"
+                           + f" · 表中无数据待复核 {_dg.get('no_data_relations', 0)} 条")
             if _stab: ir["stability"] = _stab          # M1 一致性指标随图谱留档,供论文与人审引用
             _sc = {"pass": 0, "fail": 0, "skipped": 0}
             for _r in ir.get("relations", []): _sc[_r.get("semantic", "skipped")] = _sc.get(_r.get("semantic", "skipped"), 0) + 1

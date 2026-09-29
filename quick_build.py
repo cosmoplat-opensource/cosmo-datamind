@@ -350,17 +350,31 @@ def _declared_links(table, primary_keys):
                       and len(child_columns) == len(parent_columns)
                       and parent in cols_of)
         count = orphans.get(fk_id, 0)
-        verified = bool(schema_validated and valid_keys and not count)
+        # 零孤儿行只有在确有引用值时才算见证:空表或外键列全为 NULL 时,
+        # foreign_key_check 必然返回空——那是空真,不能据此判 verified。
+        referencing = None
+        if valid_keys:
+            try:
+                cond = " AND ".join(f"{qi(c)} IS NOT NULL" for c in child_columns)
+                referencing = con.execute(f"SELECT COUNT(*) FROM {qi(table)} WHERE {cond}").fetchone()[0]
+            except Exception as exc:
+                _record_query_error("referencing_rows", table, ck, exc)
+        verified = bool(schema_validated and valid_keys and not count and referencing)
         status = "verified" if verified else "candidate"
+        decision = ("schema_declared_foreign_key" if verified else
+                    "declared_fk_no_referencing_rows" if referencing == 0 else "declared_fk_requires_review")
         evidence = {"child_key": ck, "parent_key": pk, "source": "declared_fk", "declared": True,
                     "schema_validated": schema_validated, "orphan_count": count if schema_validated else None,
+                    "referencing_rows": referencing,
                     "direction": "self" if table == parent else "child_to_parent",
-                    "decision": "schema_declared_foreign_key" if verified else "declared_fk_requires_review"}
+                    "decision": decision}
         link = {"source_concept": table, "target_concept": parent, "verb": "关联",
                 "status": status, "evidence_status": status,
                 "semantic": "not_reviewed", "semantic_status": "not_reviewed",
                 "overlap": None, "note": f"声明FK ({ck})→{parent}.({pk})" +
-                ("" if verified else "；约束或引用数据未通过核验，送审"), "evidence": evidence,
+                ("" if verified else
+                 "；子表无非空引用值,外键未被任何数据见证,送审" if referencing == 0 else
+                 "；约束或引用数据未通过核验，送审"), "evidence": evidence,
                 "founded_relation": "", "grounding_iri": "", "grounding_status": "unmapped",
                 "grounding_reason": _local_relation_reason("declared_fk"), "temporal": ""}
         if table == parent:

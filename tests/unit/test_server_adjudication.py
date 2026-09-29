@@ -249,3 +249,79 @@ def test_wide_explicit_pk_does_not_expand_automatic_combination_search(make_sqli
     result = server._adjudicate_ir(db, "wide", _proposal("", ""),
                                    _evidence({"customers": columns, "orders": columns}))
     assert result["relations"][0]["status"] == "candidate"
+
+
+class TestIterativeEndpoints:
+    """继续构建时,关系可以指向底本中已有的对象。
+
+    回归背景:提示词把已有本体交给模型并要求「沿用其原 name」,模型照做后,
+    _adjudicate_ir 却只承认本轮新抽出的对象作为端点——指向底本对象的关系在合并前
+    被静默丢弃。能碳 8 轮分域构建里,跨库关系 269 条中只剩 1 条。
+    """
+
+    def _base(self):
+        return {"objects": [{"name": "customers", "cn": "客户", "table": "customers",
+                             "kind": "object", "bfo": "MaterialEntity"}],
+                "relations": []}
+
+    def _new_round(self):
+        return {"objects": [{"name": "orders", "cn": "订单", "table": "orders", "kind": "ice"}],
+                "relations": [{"source": "orders", "target": "customers", "verb": "属于",
+                               "child_key": "customer_id", "parent_key": "id"},
+                              {"source": "orders", "target": "nowhere", "verb": "关联"}]}
+
+    def test_relation_to_base_object_is_kept_and_verified_when_table_present(self, make_sqlite, monkeypatch):
+        db = make_sqlite({
+            "customers": ("id INTEGER PRIMARY KEY", [(1,), (2,), (3,)]),
+            "orders": ("order_id INTEGER PRIMARY KEY, customer_id INTEGER", [(10, 1), (11, 2)]),
+        })
+        monkeypatch.setattr(server, "_llm_semantic_review", lambda relations, ev: None)
+        ir = server._adjudicate_ir(db, "t", self._new_round(),
+                                   _evidence({"customers": ["id"], "orders": ["order_id", "customer_id"]}),
+                                   base_ir=self._base())
+        rels = {(r["source_concept"], r["target_concept"]): r for r in ir["relations"]}
+        assert rels[("orders", "customers")]["status"] == "verified"
+        # 底本对象不重复产出——它已在底本里,合并时保留
+        assert [o["name"] for o in ir["objects"]] == ["orders"]
+
+    def test_relation_to_base_object_outside_this_source_stays_candidate_with_reason(self, make_sqlite, monkeypatch):
+        db = make_sqlite({"orders": ("order_id INTEGER PRIMARY KEY, customer_id INTEGER", [(10, 1)])})
+        monkeypatch.setattr(server, "_llm_semantic_review", lambda relations, ev: None)
+        ir = server._adjudicate_ir(db, "t", self._new_round(),
+                                   _evidence({"orders": ["order_id", "customer_id"]}), base_ir=self._base())
+        rel = next(r for r in ir["relations"] if r["target_concept"] == "customers")
+        assert rel["status"] == "candidate"
+        assert "已有本体" in rel["note"] and "本轮数据源" in rel["note"]
+        assert ir["scenario"]["adjudication_diagnostics"]["cross_source_endpoints"] == 1
+
+    def test_unknown_endpoints_are_counted_not_silently_dropped(self, make_sqlite, monkeypatch):
+        db = make_sqlite({"orders": ("order_id INTEGER PRIMARY KEY, customer_id INTEGER", [(10, 1)])})
+        monkeypatch.setattr(server, "_llm_semantic_review", lambda relations, ev: None)
+        ir = server._adjudicate_ir(db, "t", self._new_round(),
+                                   _evidence({"orders": ["order_id", "customer_id"]}), base_ir=self._base())
+        diag = ir["scenario"]["adjudication_diagnostics"]
+        assert diag["dropped_unknown_endpoint"] == 1
+        assert diag["dropped_samples"] == ["orders→nowhere"]
+
+    def test_without_base_behaviour_is_unchanged(self, make_sqlite, monkeypatch):
+        db = make_sqlite({"orders": ("order_id INTEGER PRIMARY KEY, customer_id INTEGER", [(10, 1)])})
+        monkeypatch.setattr(server, "_llm_semantic_review", lambda relations, ev: None)
+        ir = server._adjudicate_ir(db, "t", self._new_round(), _evidence({"orders": ["order_id", "customer_id"]}))
+        assert ir["relations"] == []
+        assert ir["scenario"]["adjudication_diagnostics"]["dropped_unknown_endpoint"] == 2
+
+
+def test_empty_tables_are_diagnosed_as_no_data_not_as_failed_criteria(make_sqlite, monkeypatch):
+    """只有表结构、没有数据行时,诊断必须说「无数据可取证」,而不是「重叠未达阈值」。"""
+    db = make_sqlite({
+        "customers": ("id INTEGER PRIMARY KEY", []),
+        "orders": ("order_id INTEGER PRIMARY KEY, customer_id INTEGER", []),
+    })
+    monkeypatch.setattr(server, "_llm_semantic_review", lambda relations, ev: None)
+    ir = server._adjudicate_ir(db, "t", _proposal("customer_id", "id"),
+                               _evidence({"customers": ["id"], "orders": ["order_id", "customer_id"]}))
+    diag = ir["scenario"]["adjudication_diagnostics"]
+    assert ir["relations"][0]["status"] == "candidate"
+    assert diag["no_data_relations"] == 1
+    assert "无数据" in diag["reason"]
+    assert "无数据" in ir["relations"][0]["note"]
