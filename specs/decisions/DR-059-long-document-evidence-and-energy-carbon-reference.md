@@ -1,11 +1,11 @@
-# DR-059 · 长文证据分块检索、跨轮关系入图、无数据取证与能碳行业参照
+# DR-059 · 长文证据分块检索、跨轮关系入图、无数据取证与能源/碳排放行业参照
 
 - **状态 / Status**: accepted
 - **日期 / Date**: 2026-09-30
 - **关联 / Refs**: [[DR-002-multimodal-llm-anti-hallucination-build]]、[[DR-035-unified-adjudication-core]]、
   [[DR-050-executable-ontology-build-gate]]、[[DR-052-build-industry-and-standard-references]]；
   实证=`doc_chunks.py`、`server.py:_gather_evidence|_adjudicate_ir|build_inquire`、
-  `quick_build.py:_declared_links`、`build_references.py:INDUSTRIES["energy_carbon"]`、
+  `quick_build.py:_declared_links`、`build_references.py:INDUSTRIES["energy_management"|"carbon_accounting"]`、
   `tests/unit/test_doc_chunks.py`、`tests/unit/test_server_adjudication.py`、
   `tests/unit/test_algorithm_evidence_regressions.py`、`tests/unit/test_build_references.py`
 
@@ -55,19 +55,23 @@
 `decision=declared_fk_no_referencing_rows`。两端都绑了表、但表里没有数据时,
 诊断写明「表中无数据,接入数据后可复核」,而不是「取值重叠未达阈值」。
 
-### 4. 能碳管理行业参照(`energy_carbon`)
+### 4. 能源管理与碳排放核算:两个独立的行业参照
 
-共 14 个概念、10 条参照关系,每个概念标注术语来源(`basis`),整体列出 9 项来源。
-- **必备(能源侧)**:用能单元、能源计量器具、测点、能源消耗量。
-- **可选**:能源绩效参数、能源基准、能源目标与计划、能源价格、储能、可再生能源发电;
-  排放源、活动数据、排放因子、温室气体排放量。
+最初做成一个「能碳管理」参照,把碳侧概念作为可选项。接入实库后改为分开:
+一套能源管理系统往往只覆盖能源侧,而碳核算有自己的核算边界、排放因子与排放范围口径;
+把它作为能源参照的附属可选项,碳侧缺口永远不会触发复核。
 
-碳排放侧设为可选,是因为不少能源管理系统只覆盖能源侧;若设为必备,这类数据会一律
-判为待复核。同时评估报告新增 `missing_optional`,把未覆盖的可选概念列出来,
-碳侧缺口一目了然。
+- **能源管理(`energy_management`)**:11 个概念、8 条参照关系。
+  必备:用能单元、能源计量器具、测点、能源消耗量。
+  可选:折标煤量、能源绩效参数、能源基准、能源目标与计划、能源价格、储能、可再生能源发电。
+- **碳排放核算(`carbon_accounting`)**:9 个概念、6 条参照关系。
+  必备:核算边界、排放源、活动数据、排放因子、温室气体排放量。
+  可选:排放范围、排放强度、减排量、核算过程记录。
+
+每个概念标注术语来源(`basis`);评估报告新增 `missing_optional`,列出未覆盖的可选概念。
 
 术语来源(只借用术语做对齐提示,不复制标准正文,不声称符合性):
-GB/T 23331-2020 与 ISO 50001:2018(能源管理体系)、GB/T 2589-2020(综合能耗)、
+GB/T 23331-2020 与 ISO 50001:2018(能源管理体系)、GB/T 2589-2020(综合能耗、折标)、
 GB 17167(计量器具)、GB/T 32150-2025(工业企业温室气体排放核算,2026-07-01 实施,代替 2015 版)、
 ISO 14064-1 与 GHG Protocol、ETSI SAREF4ENER V2.1.1、Brick v1.4 与 Project Haystack 4、
 Open Energy Ontology v2.13.0(基于 BFO,CC0/MIT)、TEC Toolkit ECFO/PECO 1.0.0(CC BY 4.0)。
@@ -79,8 +83,9 @@ Open Energy Ontology v2.13.0(基于 BFO,CC0/MIT)、TEC Toolkit ECFO/PECO 1.0.0(C
   35/35 张表锚定,产出的 35 个对象全部回指到文档的具体章节。
 - 修复后 10 轮分域重建:389 张表全部绑定对象,关系 496 条;各轮「端点不存在而舍弃」均为 0,
   160 条跨轮关系保留下来(修复前会被静默丢弃)。跨库关系从修复前的 1 条增加到 133 条,其中 ems→user 61 条、ems→inst 28 条、ems→meta 20 条。全部为 candidate——源数据没有数据行,这是如实结果。
-- 能碳参照用于该本体时:必备 4 项全部满足,碳排放侧 4 个概念全部缺席,如实反映了
-  这套「能碳」平台库只有能源侧、没有碳核算表。
+- 两个参照用于该本体(已用实库数据裁决)时:能源管理必备 4 项全部满足;碳排放核算
+  必备 5 项全部缺失。这如实反映了平台库只有能源侧的表结构——碳排放在该平台中以
+  派生指标(`EelecCE`、`TCE` 等)的形式存在于指标目录的行里,而不是表(见能碳建模经验文档)。
 - 新增 21 项单测(862 总数)。
 
 ## 备选与不做 / Alternatives
