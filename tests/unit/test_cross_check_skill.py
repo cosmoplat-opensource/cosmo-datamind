@@ -30,7 +30,7 @@ cc = _load("cross_check")
 
 def _fixture(make_sqlite):
     ent = [(i, f"E{i}", f"企业{i}", "2024-01-01 00:00:00") for i in range(1, 31)]
-    devices = [(f"D{i}", "METE") for i in range(40)] + [(f"F{i}", "FMT") for i in range(12)]
+    devices = [(f"D{i}", "EMTR") for i in range(40)] + [(f"F{i}", "FMT") for i in range(12)]
     measure = ([(i, 0, f"D{i}", 3 if i < 3 else 2) for i in range(40)]
                + [(100 + i, 0, f"F{i}", 1) for i in range(12)]
                + [(200 + i, 0, f"GONE{i}", 2) for i in range(160)]
@@ -46,8 +46,8 @@ def _fixture(make_sqlite):
         "cfg": ("id INTEGER PRIMARY KEY, title TEXT", [(i, "c") for i in range(1, 31)]),
         "log_x": ("id INTEGER PRIMARY KEY, msg TEXT", [(i, "m") for i in range(1, 31)]),
         "sys_dict_item": ("dict_code TEXT, value TEXT, label TEXT",
-                          [("energyType", "1", "水"), ("energyType", "2", "电"), ("energyType", "3", "风"),
-                           ("energyType", "4", "蒸汽")]),
+                          [("energy_type", "1", "水"), ("energy_type", "2", "电"), ("energy_type", "3", "风"),
+                           ("energy_type", "4", "蒸汽")]),
         "device": ("dev_no TEXT PRIMARY KEY, dev_type_code TEXT", devices),
         "measure": ("id INTEGER PRIMARY KEY, rel_obj_type INTEGER, rel_obj_no TEXT, energy_type TEXT", measure),
         "price": ("id INTEGER PRIMARY KEY, energy_type TEXT", [(i, str(1 + i % 4)) for i in range(40)]),
@@ -154,15 +154,15 @@ class TestCleaning:
     def test_mislabelled_codes_are_found_through_the_parent_category(self, make_sqlite):
         rules = self._clean(make_sqlite)["rules"]
         out = next(r for r in rules if r["kind"] == "outlier_code" and r["column"] == "energy_type")
-        mete = next(g for g in out["groups"] if g["category"] == "METE")
+        mete = next(g for g in out["groups"] if g["category"] == "EMTR")
         assert mete["expected"] == "2" and mete["outliers"] == {"3": 3}
         assert "CASE" in out["sql"] and "device" in out["determined_by"]
 
     def test_codebook_from_data_beats_a_wrong_comment(self, make_sqlite):
         res = self._clean(make_sqlite)
-        assert res["assigned"]["price.energy_type"]["book"] == "sys_dict_item:energyType"
+        assert res["assigned"]["price.energy_type"]["book"] == "sys_dict_item:energy_type"
         mis = next(r for r in res["rules"] if r["kind"] == "comment_code_mismatch" and r["table"] == "price")
-        assert mis["explained_by"] == "sys_dict_item:energyType"
+        assert mis["explained_by"] == "sys_dict_item:energy_type"
 
     def test_empty_shell_bound_object_is_flagged(self, make_sqlite):
         shell = next(r for r in self._clean(make_sqlite)["rules"] if r["kind"] == "empty_shell")

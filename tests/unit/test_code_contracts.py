@@ -16,19 +16,19 @@ import code_contracts as cc
 
 MAPPER = """<mapper namespace="x">
 <select id="trace" resultType="Vo">
-  SELECT t.wd_sn, t4.ca_name FROM t_wip_detail t
+  SELECT t.wd_sn, t4.zone_name FROM t_pass_record t
   LEFT JOIN public.sy_dept f on f.id = t.data_auth
   <include refid="BaseMapper.tenementSql3"><property name="join_table" value="f"/></include>
-  LEFT JOIN t_co_area t4 ON t4.CA_ID = t.wd_area_sn and t4.tenement_id = t.tenement_id
-  LEFT JOIN sy_dict_val a ON a.code = t.WD_ERROR_FLAG AND a.dict_code = 'ERROR_FLAG'
-  LEFT JOIN sy_dict_val b ON b.code = t.wd_track AND b.dict_code = 'TRACK_TYPE'
+  LEFT JOIN t_line_zone t4 ON t4.ZONE_ID = t.wd_zone_sn and t4.tenement_id = t.tenement_id
+  LEFT JOIN sys_dict_item a ON a.code = t.WD_DEFECT_FLAG AND a.dict_code = 'DEFECT_FLAG'
+  LEFT JOIN sys_dict_item b ON b.code = t.wd_lane AND b.dict_code = 'LANE_TYPE'
   <where> t.wd_sn = #{sn} </where>
 </select></mapper>"""
 
 VUE = """export function energyDict(sysNo) {
-  return service({ url: `${emsUrl}/kx/system/${sysNo}/energyType`, method: "get" });
+  return service({ url: `${emsUrl}/api/system/${sysNo}/energyKind`, method: "get" });
 }
-const q = { dictCode: "energyType" };
+const q = { dictCode: "energyKind" };
 // url: `https://10.1.2.3:8080/ems2/dashboard/energy/analysis`
 """
 
@@ -77,27 +77,27 @@ class TestExtract:
     def test_mybatis_joins_codebooks_and_envelope(self):
         res = cc.extract([("代码.zip", "### 文件 X.xml\n" + MAPPER)])
         pairs = {(j["a"][0], j["a"][1], j["b"][0], j["b"][1]): j for j in res["joins"]}
-        assert ("t_co_area", "CA_ID", "t_wip_detail", "wd_area_sn") in pairs
+        assert ("t_line_zone", "ZONE_ID", "t_pass_record", "wd_zone_sn") in pairs
         env = [j for j in res["joins"] if j["envelope"]]
         assert env and env[0]["a"][1] == "tenement_id"
         books = {(b["column"], b["group"]) for b in res["codebooks"]}
-        assert books == {("WD_ERROR_FLAG", "ERROR_FLAG"), ("wd_track", "TRACK_TYPE")}   # 按子句配对,不交叉
+        assert books == {("WD_DEFECT_FLAG", "DEFECT_FLAG"), ("wd_lane", "LANE_TYPE")}   # 按子句配对,不交叉
 
     def test_frontend_apis_and_dicts(self):
         res = cc.extract([("看板.zip", "### 文件 src/a.vue\n" + VUE)])
-        assert "/kx/system/${sysNo}/energyType" in [a["path"] for a in res["apis"]]
-        assert res["dicts"] == [{"group": "energyType", "file": "看板.zip:src/a.vue"}]
+        assert "/api/system/${sysNo}/energyKind" in [a["path"] for a in res["apis"]]
+        assert res["dicts"] == [{"group": "energyKind", "file": "看板.zip:src/a.vue"}]
 
     def test_resolve_to_lakehouse_names_and_prefixed_columns(self):
         res = cc.extract([("代码.zip", "### 文件 X.xml\n" + MAPPER)])
-        tab_cols = {"dim_co_area": ["ca_id", "ca_name"], "dwd_f1_wip_detail": ["wd_sn", "area_sn", "track"],
-                    "dim_sy_dict_val": ["dict_code", "code", "name"]}
+        tab_cols = {"dim_line_zone": ["zone_id", "zone_name"], "dwd_f1_pass_record": ["wd_sn", "zone_sn", "track"],
+                    "dim_sys_dict_item": ["dict_code", "code", "name"]}
         got = {(r["a"][0], r["a"][1], r["b"][0], r["b"][1]) for r in cc.resolve(res, tab_cols)}
-        assert ("dim_co_area", "ca_id", "dwd_f1_wip_detail", "area_sn") in got
-        assert cc.hit(cc.resolve(res, tab_cols), "dwd_f1_wip_detail", "area_sn", "dim_co_area", "ca_id")
+        assert ("dim_line_zone", "zone_id", "dwd_f1_pass_record", "zone_sn") in got
+        assert cc.hit(cc.resolve(res, tab_cols), "dwd_f1_pass_record", "zone_sn", "dim_line_zone", "zone_id")
         assert not any("tenement" in str(x) for x in got)                                  # 信封连接不算
         text = cc.text_for_prompt(res, cc.resolve(res, tab_cols))
-        assert "dim_co_area.ca_id" in text and "ERROR_FLAG" in text
+        assert "dim_line_zone.zone_id" in text and "DEFECT_FLAG" in text
 
 
 server = pytest.importorskip("server")
@@ -105,17 +105,17 @@ server = pytest.importorskip("server")
 
 def _lake_db(make_sqlite):
     return make_sqlite({
-        "dim_co_area": ("ca_id TEXT, ca_name TEXT", [(f"A{i}", f"工位{i}") for i in range(20)]),
-        "dwd_f1_wip_detail": ("wd_sn TEXT, area_sn TEXT", [(f"S{i}", f"A{i % 20}") for i in range(200)]),
+        "dim_line_zone": ("zone_id TEXT, zone_name TEXT", [(f"A{i}", f"工位{i}") for i in range(20)]),
+        "dwd_f1_pass_record": ("wd_sn TEXT, zone_sn TEXT", [(f"S{i}", f"A{i % 20}") for i in range(200)]),
     })
 
 
 def test_contract_lets_a_differently_named_key_pass_the_name_gate(make_sqlite, tmp_path, monkeypatch):
-    """area_sn → ca_id:数据完全对得上,只因键名不同被命名门挡住;代码里就这么连,契约顶替命名证据。"""
+    """zone_sn → zone_id:数据完全对得上,只因键名不同被命名门挡住;代码里就这么连,契约顶替命名证据。"""
     monkeypatch.setattr(server, "WORK", str(tmp_path))
     db = _lake_db(make_sqlite)
-    extracted = {"objects": [{"name": "过站", "table": "dwd_f1_wip_detail", "kind": "event"},
-                             {"name": "区域", "table": "dim_co_area", "kind": "object"}],
+    extracted = {"objects": [{"name": "过站", "table": "dwd_f1_pass_record", "kind": "event"},
+                             {"name": "区域", "table": "dim_line_zone", "kind": "object"}],
                  "relations": [{"source": "过站", "target": "区域", "verb": "发生于"}]}
     ev = server._gather_evidence(db)
     plain = server._adjudicate_ir(db, "无契约", json.loads(json.dumps(extracted)), ev)
@@ -125,7 +125,7 @@ def test_contract_lets_a_differently_named_key_pass_the_name_gate(make_sqlite, t
     withc = server._adjudicate_ir(db, "有契约", json.loads(json.dumps(extracted)), ev)
     rel = withc["relations"][0]
     assert rel["status"] == "verified" and "代码契约" in rel["note"]
-    assert rel["evidence"]["contract"]["code"].startswith("t_co_area.CA_ID")
+    assert rel["evidence"]["contract"]["code"].startswith("t_line_zone.ZONE_ID")
 
 
 def test_uploaded_zip_and_docx_become_evidence(make_sqlite, tmp_path, monkeypatch):
@@ -144,16 +144,16 @@ def test_qa_runs_on_the_ontologys_source_database(make_sqlite, tmp_path, monkeyp
     monkeypatch.setattr(server, "_BUILD_CONN_F", str(tmp_path / "build_connections.json"))
     (tmp_path / "build_connections.json").write_text(json.dumps([{"id": "conn_l", "name": "湖仓抽样", "kind": "sqlite",
                                                                   "path": db}]), encoding="utf-8")
-    ir = {"objects": [{"name": "过站", "table": "dwd_f1_wip_detail"}, {"name": "区域", "table": "dim_co_area"}],
+    ir = {"objects": [{"name": "过站", "table": "dwd_f1_pass_record"}, {"name": "区域", "table": "dim_line_zone"}],
           "relations": [{"source_concept": "过站", "target_concept": "区域", "verb": "发生于", "status": "verified",
-                         "evidence": {"child_key": "area_sn", "parent_key": "ca_id"}}],
+                         "evidence": {"child_key": "zone_sn", "parent_key": "zone_id"}}],
           "build_manifest": {"source": {"id": "conn_l", "name": "湖仓抽样"}}}
     (tmp_path / "built_lake01.json").write_text(json.dumps(ir, ensure_ascii=False), encoding="utf-8")
     server._GRAPH_ROW_CACHE.clear()
     client = server.app.test_client()
     row = next(g for g in client.get("/api/graphs").get_json() if g["id"] == "built_lake01")
     assert row["queryable"] is True
-    sql = "SELECT a.ca_name AS 区域, COUNT(*) AS n FROM dwd_f1_wip_detail w JOIN dim_co_area a ON a.ca_id = w.area_sn GROUP BY 1 ORDER BY 2 DESC, 1 LIMIT 1"
+    sql = "SELECT a.zone_name AS 区域, COUNT(*) AS n FROM dwd_f1_pass_record w JOIN dim_line_zone a ON a.zone_id = w.zone_sn GROUP BY 1 ORDER BY 2 DESC, 1 LIMIT 1"
     monkeypatch.setattr(server, "agent_sql_plan", lambda *a, **k: {"analyses": [{"title": "过站排行", "sql": sql}]})
     monkeypatch.setattr(server, "_match_qa_skill", lambda _q: None)
     monkeypatch.setattr(server, "narrative_llm", lambda *a, **k: "ok")
@@ -198,12 +198,12 @@ class TestValidRowsAcrossScenarios:
     def test_tenant_scoped_keys(self, make_sqlite):
         xc = _cc_module()
         db = make_sqlite({
-            "area": ("ca_id TEXT, ca_name TEXT, factory_code TEXT",
+            "area": ("zone_id TEXT, zone_name TEXT, factory_code TEXT",
                      [(f"A{i}", f"{f}工位{i}", f) for f in ("F1", "F2") for i in range(10)]),
-            "wip": ("sn TEXT, area_sn TEXT, factory_code TEXT", [(f"S{i}", f"A{i % 10}", "F1") for i in range(50)]),
+            "wip": ("sn TEXT, zone_sn TEXT, factory_code TEXT", [(f"S{i}", f"A{i % 10}", "F1") for i in range(50)]),
         })
         ir = {"objects": [{"name": "wip", "table": "wip"}, {"name": "area", "table": "area"}],
-              "relations": [_cand("wip", "area", "area_sn", "ca_id")]}
+              "relations": [_cand("wip", "area", "zone_sn", "zone_id")]}
         rows, _ = xc.check(ir, xc.Db(db))
         vr = rows[0]["channels"]["valid_rows"]
         assert rows[0]["verdict"] == "valid_rows_candidate" and vr["rule"] == "tenant_scoped"
@@ -278,7 +278,7 @@ def test_acceptance_accepts_parent_uniqueness_on_valid_rows_only_with_a_named_ru
 
 
 def test_chinese_recall_matches_part_of_an_object_name(make_sqlite, monkeypatch):
-    db = make_sqlite({"inst_device": ("dev_no TEXT, dev_type TEXT", [("D1", "METE")]),
+    db = make_sqlite({"inst_device": ("dev_no TEXT, dev_type TEXT", [("D1", "EMTR")]),
                       "user_ent": ("ent_no TEXT", [("E1",)])})
     monkeypatch.setattr(server, "DB", db)
     ir = {"objects": [{"name": "device", "cn": "能源计量器具", "table": "inst_device"},
@@ -294,7 +294,7 @@ def test_child_key_as_qualifier_plus_parent_key_is_name_compatible():
     import dao_core
     assert dao_core.key_name_ok("mete_dev_type_code", "dev_type_code")
     assert dao_core.key_name_ok("meta_sys_type_code", "sys_type_code")
-    assert dao_core.key_name_ok("pm_area_sn", "area_sn")
+    assert dao_core.key_name_ok("pm_zone_sn", "zone_sn")
     assert not dao_core.key_name_ok("alarm_type", "type_code")
     assert not dao_core.key_name_ok("x_status", "status")          # 泛词不算
     assert not dao_core.key_name_ok("order_id", "id")
@@ -304,40 +304,40 @@ def test_tenant_scoped_keys_must_be_joined_with_the_tenant_in_qa():
     """区域编号按工厂复用:只按编号关联会把不同工厂的同号区域串在一起(实测计数虚高)。"""
     ir = {"objects": [{"name": "wip", "table": "wip"}, {"name": "area", "table": "area"}],
           "relations": [{"source_concept": "wip", "target_concept": "area", "status": "verified",
-                         "evidence": {"child_key": "area_sn", "parent_key": "ca_id",
-                                      "contract": {"code": "t_co_area.CA_ID = t_wip_detail.wd_area_sn", "file": "X.xml"},
+                         "evidence": {"child_key": "zone_sn", "parent_key": "zone_id",
+                                      "contract": {"code": "t_line_zone.ZONE_ID = t_pass_record.wd_zone_sn", "file": "X.xml"},
                                       "valid_rows": {"state": "support", "rule": "tenant_scoped",
                                                      "tenant_column": "factory_code"}}}]}
     hints = server._join_hints(ir, ["wip", "area"])
-    assert hints and "wip.area_sn = area.ca_id AND wip.factory_code = area.factory_code" in hints[0]
+    assert hints and "wip.zone_sn = area.zone_id AND wip.factory_code = area.factory_code" in hints[0]
     ok, why = server._validate_sql_ontology(
-        "SELECT a.ca_name, COUNT(*) FROM wip w JOIN area a ON a.ca_id = w.area_sn GROUP BY 1", ir, strict=True)
+        "SELECT a.zone_name, COUNT(*) FROM wip w JOIN area a ON a.zone_id = w.zone_sn GROUP BY 1", ir, strict=True)
     assert not ok and "factory_code" in why
     ok, _ = server._validate_sql_ontology(
-        "SELECT a.ca_name, COUNT(*) FROM wip w JOIN area a ON a.ca_id = w.area_sn AND a.factory_code = w.factory_code "
+        "SELECT a.zone_name, COUNT(*) FROM wip w JOIN area a ON a.zone_id = w.zone_sn AND a.factory_code = w.factory_code "
         "GROUP BY 1", ir, strict=True)
     assert ok
 
 
 def test_term_contracts_from_sql_comments_and_javadoc():
     xml = """<select id="x">SELECT
-        A.wd_area_sn,                           <!-- 线别ID -->
-        A.wd_track,   -- 上面的那个 left_join 为什么引入这段sql
-        B.ca_name AS wd_area_name               <!-- 线别名称 -->
-        FROM t_wip_detail A LEFT JOIN t_co_area B ON B.ca_id = A.wd_area_sn</select>"""
+        A.wd_zone_sn,                           <!-- 线别ID -->
+        A.wd_lane,   -- 上面的那个 left_join 为什么引入这段sql
+        B.zone_name AS wd_area_name               <!-- 线别名称 -->
+        FROM t_pass_record A LEFT JOIN t_line_zone B ON B.zone_id = A.wd_zone_sn</select>"""
     java = """public class Vo {
     /**
      * 线别代码
      */
-    private String weAreaSn;
+    private String weZoneSn;
 }"""
     res = cc.extract([("代码.zip", "### 文件 X.xml\n" + xml + "\n### 文件 Vo.java\n" + java)])
     labels = {(x["column"], x["label"]) for x in res["labels"]}
-    assert ("wd_area_sn", "线别ID") in labels and ("we_area_sn", "线别代码") in labels
+    assert ("wd_zone_sn", "线别ID") in labels and ("we_zone_sn", "线别代码") in labels
     assert not any("为什么" in lab for _, lab in labels)                 # 开发者评注不收
-    got = cc.resolve_labels(res, {"dwd_f1_wip_detail": ["id", "area_sn", "track"], "dim_co_area": ["ca_id", "ca_name"]})
-    assert got[("dwd_f1_wip_detail", "area_sn")] == "线别ID"
-    assert ("dwd_f1_wip_detail", "id") not in got
+    got = cc.resolve_labels(res, {"dwd_f1_pass_record": ["id", "zone_sn", "track"], "dim_line_zone": ["zone_id", "zone_name"]})
+    assert got[("dwd_f1_pass_record", "zone_sn")] == "线别ID"
+    assert ("dwd_f1_pass_record", "id") not in got
 
 
 def test_soft_deleted_catalogs_must_be_filtered_in_qa():
@@ -362,11 +362,11 @@ def test_build_with_uploaded_code_fills_labels_and_records_contracts(make_sqlite
     db = _lake_db(make_sqlite)
     (w / "build_connections.json").write_text(json.dumps([{"id": "conn_l", "name": "湖仓", "kind": "sqlite", "path": db}]),
                                               encoding="utf-8")
-    code = MAPPER.replace("t.wd_sn, t4.ca_name", "t.wd_sn, t.wd_area_sn,   <!-- 线别ID -->\n t4.ca_name")
+    code = MAPPER.replace("t.wd_sn, t4.zone_name", "t.wd_sn, t.wd_zone_sn,   <!-- 线别ID -->\n t4.zone_name")
     (w / "uploads_code.zip").write_bytes(_zip({"X.xml": code}))
     monkeypatch.setattr(server, "_llm_extract_ontology", lambda *a, **k: {
-        "objects": [{"name": "过站", "table": "dwd_f1_wip_detail", "kind": "event"},
-                    {"name": "区域", "table": "dim_co_area", "kind": "object"}],
+        "objects": [{"name": "过站", "table": "dwd_f1_pass_record", "kind": "event"},
+                    {"name": "区域", "table": "dim_line_zone", "kind": "object"}],
         "relations": [{"source": "过站", "target": "区域", "verb": "发生于"}]})
     monkeypatch.setattr(server, "_build_intent", lambda *a, **k: {})
     monkeypatch.setattr(server, "_build_summary", lambda *a, **k: "摘要")

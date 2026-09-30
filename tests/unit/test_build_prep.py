@@ -11,7 +11,7 @@ import build_prep as bp
 def _db(make_sqlite, extra=None):
     tables = {
         "meta__meta_device_type": ("id INTEGER PRIMARY KEY, dev_type_code TEXT, is_del INTEGER",
-                                   [(1, "METE", 0), (2, "METE", 1), (3, "FMT", 1)]),
+                                   [(1, "EMTR", 0), (2, "EMTR", 1), (3, "FMT", 1)]),
         "user__enterprise": ("id INTEGER PRIMARY KEY, ent_no TEXT, create_by TEXT", [(1, "E1", "u1")]),
         "inst__inst_metric": ("id INTEGER PRIMARY KEY, obj_type INTEGER, obj_no TEXT, ent_no TEXT, update_by TEXT",
                               [(1, 0, "DEV_1", "E1", "u"), (2, 1, "SYS_1", "E1", "u")]),

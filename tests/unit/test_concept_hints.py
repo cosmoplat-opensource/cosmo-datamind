@@ -18,8 +18,8 @@ import skill_registry
 
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-ENTITIES = ["pm_mo_base", "co_item", "co_area", "co_group", "wip_detail", "pack_sn_info", "wip_repair",
-            "product_connect_log", "double_code_log", "co_route", "pm_project", "co_bom"]
+ENTITIES = ["work_order", "item_master", "line_zone", "proc_group", "pass_record", "pack_label", "repair_record",
+            "handover_log", "dual_code_log", "proc_route", "prod_project", "bom_list"]
 
 
 def _lakehouse_cols():
@@ -29,9 +29,9 @@ def _lakehouse_cols():
             cols[f"ods_{f}_{conv}_{e}"] = ["id", "insert_time", "dt", f"{e}_key", f"{e}_name"]
         for sub in ("fct", "aoi", "ict"):
             cols[f"dwd_{f}_{sub}_factor_detail"] = ["id", "dt", "project_id", f"{sub}_value"]
-    cols["dwd_pm_mo_base"] = ["id", "insert_time", "dt", "pm_mo_base_key", "pm_mo_base_name"]
-    cols["dwd_f1_pm_mo_base_offline"] = ["id", "insert_time", "dt", "pm_mo_base_key"]
-    cols["ods_f1_t_co_item_bak20241216"] = ["id", "insert_time", "dt", "co_item_key"]
+    cols["dwd_work_order"] = ["id", "insert_time", "dt", "work_order_key", "work_order_name"]
+    cols["dwd_f1_work_order_offline"] = ["id", "insert_time", "dt", "work_order_key"]
+    cols["ods_f1_t_item_master_bak20241216"] = ["id", "insert_time", "dt", "item_master_key"]
     return cols
 
 
@@ -41,9 +41,9 @@ class TestTableFamilies:
         assert {"f1", "f2", "f3", "t", "tb"} <= set(res["prefixes"])
         fams = {f["core"]: f for f in res["families"]}
         # 两种命名约定(t_/tb_)、贴源与明细层、离线副本与备份都归到同一个概念
-        assert set(fams["pm_mo_base"]["members"]) >= {"ods_f1_t_pm_mo_base", "ods_f3_tb_pm_mo_base",
-                                                       "dwd_pm_mo_base", "dwd_f1_pm_mo_base_offline"}
-        assert "ods_f1_t_co_item_bak20241216" in fams["co_item"]["members"]
+        assert set(fams["work_order"]["members"]) >= {"ods_f1_t_work_order", "ods_f3_tb_work_order",
+                                                       "dwd_work_order", "dwd_f1_work_order_offline"}
+        assert "ods_f1_t_item_master_bak20241216" in fams["item_master"]["members"]
 
     def test_subtype_prefixes_keep_different_tests_apart(self):
         fams = {f["core"] for f in ch.table_families(_lakehouse_cols())["families"]}
@@ -52,7 +52,7 @@ class TestTableFamilies:
 
     def test_representative_prefers_the_clean_detail_layer_table(self):
         fams = {f["core"]: f for f in ch.table_families(_lakehouse_cols())["families"]}
-        assert fams["pm_mo_base"]["representative"] == "dwd_pm_mo_base"
+        assert fams["work_order"]["representative"] == "dwd_work_order"
 
     def test_business_tail_words_are_not_stripped(self):
         cols = {"ems__label": ["id", "name"], "ems__label_obj": ["id", "label_id", "obj_no"],
@@ -67,17 +67,17 @@ class TestTableFamilies:
 
 
 def _meta_db(make_sqlite):
-    devices = [(i, f"D{i}", "METE" if i < 40 else "IV") for i in range(50)]
+    devices = [(i, f"D{i}", "EMTR" if i < 40 else "IV") for i in range(50)]
     return make_sqlite({
         "meta_device_type": ("id INTEGER, dev_type_code TEXT, dev_type_name TEXT, is_del INTEGER",
-                             [(1, "METE", "电能表", 0), (2, "IV", "光伏逆变器", 0), (3, "METE", "电能表", 1)]),
+                             [(1, "EMTR", "电能表", 0), (2, "IV", "光伏逆变器", 0), (3, "EMTR", "电能表", 1)]),
         "inst_device": ("id INTEGER, dev_no TEXT, mete_dev_type_code TEXT", devices),
         "inst_device_copy": ("id INTEGER, dev_no TEXT, mete_dev_type_code TEXT", devices[:5]),
         "strategy_time": ("id INTEGER, strategy_type TEXT, strategy_name TEXT", [(1, "1", "策略"), (2, "0", "策略")]),
         "iot_box": ("id INTEGER, strategy_type TEXT", [(i, str(i % 2)) for i in range(10)]),
-        "pm_mo_base": ("id INTEGER, pm_mo_number TEXT, create_time TEXT",
+        "work_order": ("id INTEGER, work_order_no TEXT, create_time TEXT",
                        [(i, f"MO{i % 98}", f"2024-12-{1 + i % 28:02d}") for i in range(100)]),
-        "mo_item_rel": ("id INTEGER, pm_mo_number TEXT, create_time TEXT",
+        "mo_item_rel": ("id INTEGER, work_order_no TEXT, create_time TEXT",
                         [(i, f"MO{i % 97}", "2024-12-01") for i in range(100)]),
     })
 
@@ -93,7 +93,7 @@ class TestCategorySplitsAndVersions:
         splits = ch.category_splits(con, cols, rows)
         dev = next(s for s in splits if s["table"] == "inst_device")
         assert dev["catalog"] == "meta_device_type"
-        assert [(c["code"], c["name"], c["rows"]) for c in dev["categories"]] == [("METE", "电能表", 40), ("IV", "光伏逆变器", 10)]
+        assert [(c["code"], c["name"], c["rows"]) for c in dev["categories"]] == [("EMTR", "电能表", 40), ("IV", "光伏逆变器", 10)]
         # 名称全一样的「目录」、实例表自己的副本都不算类别目录
         assert not any(s["table"] == "iot_box" for s in splits)
         assert not any(s["catalog"] == "inst_device_copy" for s in splits)
@@ -102,27 +102,27 @@ class TestCategorySplitsAndVersions:
         import sqlite3
         db = _meta_db(make_sqlite)
         con = sqlite3.connect(db)
-        cols = {t: [r[1] for r in con.execute(f'PRAGMA table_info("{t}")')] for t in ("pm_mo_base", "mo_item_rel")}
-        vd = ch.version_duplicates(con, cols, {"pm_mo_base": 100, "mo_item_rel": 100})
-        assert [(v["table"], v["key"], v["duplicate_rows"]) for v in vd] == [("pm_mo_base", "pm_mo_number", 2)]
+        cols = {t: [r[1] for r in con.execute(f'PRAGMA table_info("{t}")')] for t in ("work_order", "mo_item_rel")}
+        vd = ch.version_duplicates(con, cols, {"work_order": 100, "mo_item_rel": 100})
+        assert [(v["table"], v["key"], v["duplicate_rows"]) for v in vd] == [("work_order", "work_order_no", 2)]
 
     def test_collect_prompt_text_and_scope(self, make_sqlite):
         hints = ch.collect(_meta_db(make_sqlite))
-        text = ch.text_for_prompt(hints, scope=["inst_device", "pm_mo_base"])
-        assert "inst_device.mete_dev_type_code" in text and "METE=电能表(40)" in text
-        assert "pm_mo_base.pm_mo_number" in text
+        text = ch.text_for_prompt(hints, scope=["inst_device", "work_order"])
+        assert "inst_device.mete_dev_type_code" in text and "EMTR=电能表(40)" in text
+        assert "work_order.work_order_no" in text
         assert ch.text_for_prompt(hints, scope=["unrelated"]) == ""
         assert "类别拆分" in ch.summary_text(hints) or "按类别拆分" in ch.summary_text(hints)
 
 
 def test_attach_families_binds_members_and_flags_duplicates():
     hints = ch.table_families(_lakehouse_cols())
-    ir = {"objects": [{"name": "工单", "table": "dwd_pm_mo_base"},
-                      {"name": "工单副本", "table": "ods_f2_t_pm_mo_base"},
+    ir = {"objects": [{"name": "工单", "table": "dwd_work_order"},
+                      {"name": "工单副本", "table": "ods_f2_t_work_order"},
                       {"name": "其他", "table": "nothing"}]}
     st = ch.attach_families(ir, hints)
     assert st == {"objects": 1, "duplicates": 1}
-    assert ir["objects"][0]["tables"][0] == "dwd_pm_mo_base" and "ods_f3_tb_pm_mo_base" in ir["objects"][0]["tables"]
+    assert ir["objects"][0]["tables"][0] == "dwd_work_order" and "ods_f3_tb_work_order" in ir["objects"][0]["tables"]
     assert ir["objects"][1]["evidence"]["family_duplicate_of"] == "工单"
 
 
@@ -134,7 +134,7 @@ class TestPreflight:
         assert rep["concept"]["families"] >= len(ENTITIES)
         planned = [t for r in rep["plan"] for t in r["tables"]]
         riders = [m for r in rep["plan"] for ms in (r.get("family_members") or {}).values() for m in ms]
-        assert "dwd_pm_mo_base" in planned and "ods_f1_t_pm_mo_base" in riders
+        assert "dwd_work_order" in planned and "ods_f1_t_work_order" in riders
         assert sorted(planned + riders + rep["excluded"]) == sorted(cols)
         assert any(f["id"] == "table_families" for f in rep["findings"])
         assert rep["scenario"][0]["id"] == "lakehouse"
@@ -164,9 +164,9 @@ def test_cross_check_accepts_relations_after_valid_rows(make_sqlite):
     cc = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(cc)
     db = _meta_db(make_sqlite)
-    ir = {"objects": [{"name": "rel", "table": "mo_item_rel"}, {"name": "mo", "table": "pm_mo_base"}],
+    ir = {"objects": [{"name": "rel", "table": "mo_item_rel"}, {"name": "mo", "table": "work_order"}],
           "relations": [{"source_concept": "rel", "target_concept": "mo", "status": "candidate",
-                         "evidence": {"child_key": "pm_mo_number", "parent_key": "pm_mo_number",
+                         "evidence": {"child_key": "work_order_no", "parent_key": "work_order_no",
                                       "overlap": 100.0, "parent_unique": False}}]}
     row = cc.check(ir, cc.Db(db))[0][0]
     assert row["verdict"] == "valid_rows_candidate"

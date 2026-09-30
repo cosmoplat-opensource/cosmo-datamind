@@ -11,8 +11,8 @@
 - 读取:zip 包在内存里逐个读取成员(只读代码/文本类扩展名,单成员与总量都有上限,不解压到磁盘);
   docx 读 word/document.xml 的正文段落。
 - 抽取:SQL 的 FROM / JOIN 别名与 ON / WHERE 里的等值条件;字面量过滤识别码表;前端的接口与字典编码。
-- 对齐到库表:代码里的生产表名(t_co_area)与湖仓表名(dim_co_area、ods_x_t_co_area)不同,
-  按业务词根(concept_hints.name_cores 学到的前缀)对齐;列名先精确匹配,再去掉短前缀(wd_area_sn → area_sn)。
+- 对齐到库表:代码里的生产表名(t_line_zone)与湖仓表名(dim_line_zone、ods_x_t_line_zone)不同,
+  按业务词根(concept_hints.name_cores 学到的前缀)对齐;列名先精确匹配,再去掉短前缀(wd_zone_sn → zone_sn)。
 
 契约只作为「命名证据」参与裁决:连接是否成立仍要数据证明(重叠率、父键唯一)。
 """
@@ -47,7 +47,7 @@ _MYBATIS_NOISE = re.compile(r"<include\b[^>]*/>|<include\b.*?</include>|<!--.*?-
 _API = re.compile(r"""["'`](?:\$\{[\w.]+\})?(/(?:(?:[\w\-]+|\$\{[\w.]+\})/)+(?:[\w\-]+|\$\{[\w.]+\})?/?)["'`]""")
 _DICT = re.compile(r"""\b(?:dictCode|dict_code|dictType|dict_type|typeCode)\s*[:=]\s*["']([A-Za-z_][\w\-]{1,48})["']""")
 _FILE_HDR = re.compile(r"^### 文件 (.+)$", re.M)
-# 术语契约:SQL 列后的注释(<!-- 线别ID --> 或 -- 线别ID),以及 Java 字段前的文档注释(/** 线别代码 */ private String weAreaSn;)
+# 术语契约:SQL 列后的注释(<!-- 线别ID --> 或 -- 线别ID),以及 Java 字段前的文档注释(/** 线别代码 */ private String weZoneSn;)
 _SQL_COL_LABEL = re.compile(r"\b([A-Za-z_]\w*)\.([A-Za-z_]\w*)(?:\s+AS\s+[A-Za-z_]\w*)?\s*,?\s*"
                             r"(?:<!--\s*([^<>\n]{1,30}?)\s*-->|--\s*([^\n]{1,30}))", re.I)
 _JAVA_FIELD = re.compile(r"/\*\*\s*\n?\s*\*?\s*([^\n*@]{1,30}?)\s*\n(?:\s*\*[^\n]*\n)*\s*\*/\s*\n"
@@ -241,7 +241,7 @@ def extract(texts):
 
 
 def _column(cols, name):
-    """列名对齐:精确(不分大小写);否则去掉一个 ≤3 字母的前缀再试(wd_area_sn → area_sn)。"""
+    """列名对齐:精确(不分大小写);否则去掉一个 ≤3 字母的前缀再试(wd_zone_sn → zone_sn)。"""
     low = {}
     for c in cols:                      # 服务端的 tab_cols 每列是 (列名, 类型)
         c = c if isinstance(c, str) else c[0]
@@ -257,7 +257,7 @@ def _column(cols, name):
 
 def _table_matcher(tab_cols):
     """代码表名 → 库表名。库表名的每个「词根后缀」(至少两个词,或一个 ≥5 字母的词)建索引,
-    代码表名按最长后缀匹配;小样本库学不出前缀时,t_co_area 仍能对上 dim_co_area。"""
+    代码表名按最长后缀匹配;小样本库学不出前缀时,t_line_zone 仍能对上 dim_line_zone。"""
     tables = list(tab_cols)
     exact = {t.lower(): t for t in tables}
     by_suffix = defaultdict(set)

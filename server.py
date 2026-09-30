@@ -6216,7 +6216,7 @@ def _adjudicate_ir(db, name, extracted, ev, base_ir=None):
                         if not sig or not sig["child_distinct"]: continue
                         ov, punique, cunique = sig["overlap"], sig["parent_unique"], sig["child_unique"]
                         _contract = code_contracts.hit((ev or {}).get("contracts_resolved"), ts, key, tt, pcol)
-                        # 键名不同但代码里就这么连(如 area_sn → ca_id):代码契约顶替命名证据,数据门槛不变
+                        # 键名不同但代码里就这么连(如 zone_sn → zone_id):代码契约顶替命名证据,数据门槛不变
                         name_supported = dao_core.name_ok(key, tt, pcol, child_table=ts) or bool(_contract)
                         reverse = ov >= dao_core.MIN_OVERLAP and dao_core.should_reverse(cunique, punique)
                         verdict = dao_core.classify(overlap=ov, parent_unique=punique, name_ok=name_supported,
@@ -6741,7 +6741,7 @@ def build_inquire():
                 "joins": ev.get("contracts_resolved") or [], "codebooks": ev.get("contracts_codebooks") or []}
         _labels = ev.get("contracts_labels") or {}
         if _labels:
-            # 术语契约:湖仓表常没有字段注释,代码里的注释给出字段含义(area_sn = 线别ID);只补空缺,不覆盖
+            # 术语契约:湖仓表常没有字段注释,代码里的注释给出字段含义(zone_sn = 线别ID);只补空缺,不覆盖
             _filled = 0
             for _o in ir.get("objects") or []:
                 for _tbl in (_o.get("tables") or [_o.get("table")]):     # 不用 _t:那是本生成器里的 time 别名

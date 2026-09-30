@@ -22,8 +22,8 @@ import ontology_domain
 from tests.bdd.gherkin import step
 
 ROOT = Path(__file__).resolve().parents[2]
-ENTITIES = ["pm_mo_base", "co_item", "co_area", "co_group", "wip_detail", "pack_sn_info", "wip_repair",
-            "product_connect_log", "double_code_log", "co_route", "pm_project", "co_bom"]
+ENTITIES = ["work_order", "item_master", "line_zone", "proc_group", "pass_record", "pack_label", "repair_record",
+            "handover_log", "dual_code_log", "proc_route", "prod_project", "bom_list"]
 
 
 def _server():
@@ -65,8 +65,8 @@ def lakehouse(world, n, m):
     for f, conv in world["factories"]:
         for e in ENTITIES[: int(m)]:
             _tables(world)[f"ods_{f}_{conv}_{e}"] = (f"id TEXT, insert_time TEXT, dt TEXT, {e}_key TEXT, {e}_name TEXT", [])
-    _tables(world)["dwd_pm_mo_base"] = ("id TEXT, insert_time TEXT, dt TEXT, pm_mo_base_key TEXT, pm_mo_base_name TEXT", [])
-    _tables(world)["dwd_f1_pm_mo_base_offline"] = ("id TEXT, insert_time TEXT, dt TEXT, pm_mo_base_key TEXT", [])
+    _tables(world)["dwd_work_order"] = ("id TEXT, insert_time TEXT, dt TEXT, work_order_key TEXT, work_order_name TEXT", [])
+    _tables(world)["dwd_f1_work_order_offline"] = ("id TEXT, insert_time TEXT, dt TEXT, work_order_key TEXT", [])
 
 
 @step(r"另有 (?P<types>.+) 三种检测类型的明细表")
@@ -128,10 +128,10 @@ def category_split(world, na, a, nb, b):
 
 # ── 代码契约与裁决 ───────────────────────────────────────────────────
 
-@step(r"湖仓里过站明细的 area_sn 全都能在区域表的 ca_id 中找到")
+@step(r"湖仓里过站明细的 zone_sn 全都能在区域表的 zone_id 中找到")
 def lake_wip(world):
-    _tables(world)["dim_co_area"] = ("ca_id TEXT, ca_name TEXT", [(f"A{i}", f"工位{i}") for i in range(20)])
-    _tables(world)["dwd_f1_wip_detail"] = ("wd_sn TEXT, area_sn TEXT", [(f"S{i}", f"A{i % 20}") for i in range(200)])
+    _tables(world)["dim_line_zone"] = ("zone_id TEXT, zone_name TEXT", [(f"A{i}", f"工位{i}") for i in range(20)])
+    _tables(world)["dwd_f1_pass_record"] = ("wd_sn TEXT, zone_sn TEXT", [(f"S{i}", f"A{i % 20}") for i in range(200)])
 
 
 @step(r"上传的后端代码包里有:")
@@ -148,8 +148,8 @@ def adjudicate(world):
     if world.get("code"):
         (work / "uploads_code.zip").write_bytes(_zip(world["code"]))
     db = _db(world)
-    extracted = {"objects": [{"name": "过站", "table": "dwd_f1_wip_detail", "kind": "event"},
-                             {"name": "区域", "table": "dim_co_area", "kind": "object"}],
+    extracted = {"objects": [{"name": "过站", "table": "dwd_f1_pass_record", "kind": "event"},
+                             {"name": "区域", "table": "dim_line_zone", "kind": "object"}],
                  "relations": [{"source": "过站", "target": "区域", "verb": "发生于"}]}
     ev = server._gather_evidence(db)
     world["rel"] = server._adjudicate_ir(db, "场景", extracted, ev)["relations"][0]
@@ -191,13 +191,13 @@ def no_dev_comments(world):
 
 @step(r'区域表里工厂 "(?P<f1>\w+)" 与 "(?P<f2>\w+)" 各有编号 A0 到 A9 的区域')
 def tenant_areas(world, f1, f2):
-    _tables(world)["area"] = ("ca_id TEXT, ca_name TEXT, factory_code TEXT",
+    _tables(world)["area"] = ("zone_id TEXT, zone_name TEXT, factory_code TEXT",
                               [(f"A{i}", f"{f}工位{i}", f) for f in (f1, f2) for i in range(10)])
 
 
 @step(r'过站明细全部属于工厂 "(?P<f>\w+)"')
 def tenant_wip(world, f):
-    _tables(world)["wip"] = ("sn TEXT, area_sn TEXT, factory_code TEXT", [(f"S{i}", f"A{i % 10}", f) for i in range(50)])
+    _tables(world)["wip"] = ("sn TEXT, zone_sn TEXT, factory_code TEXT", [(f"S{i}", f"A{i % 10}", f) for i in range(50)])
 
 
 @step(r"交叉复核候选关系「过站 → 区域」")
@@ -205,7 +205,7 @@ def cross_check_candidate(world):
     xc = _cross_check()
     ir = {"objects": [{"name": "wip", "table": "wip"}, {"name": "area", "table": "area"}],
           "relations": [{"source_concept": "wip", "target_concept": "area", "status": "candidate",
-                         "evidence": {"child_key": "area_sn", "parent_key": "ca_id", "overlap": 100.0,
+                         "evidence": {"child_key": "zone_sn", "parent_key": "zone_id", "overlap": 100.0,
                                       "parent_unique": False, "name_ok": True}}]}
     rows, _ = xc.check(ir, xc.Db(_db(world)))
     world.update(xc=xc, cc_ir=ir, cc_rows=rows)
@@ -225,7 +225,7 @@ def cross_check_apply(world, a, b):
 
 
 def _scoped_ir(rule, **extra):
-    names = {"tenant_scoped": ("wip", "area", "area_sn", "ca_id"), "soft_delete": ("device", "device_type", "type_code", "type_code")}
+    names = {"tenant_scoped": ("wip", "area", "zone_sn", "zone_id"), "soft_delete": ("device", "device_type", "type_code", "type_code")}
     c, p, ck, pk = names[rule]
     return {"objects": [{"name": c, "table": c}, {"name": p, "table": p}],
             "relations": [{"source_concept": c, "target_concept": p, "status": "verified",
@@ -274,14 +274,14 @@ def _register_source(world, name, relation_evidence, tenant=False):
     mp = world["monkeypatch"]
     mp.setattr(server, "WORK", str(work))
     mp.setattr(server, "_BUILD_CONN_F", str(work / "build_connections.json"))
-    cols = "ca_id TEXT, ca_name TEXT" + (", factory_code TEXT" if tenant else "")
-    _tables(world)["dim_co_area"] = (cols, [(f"A{i}", f"工位{i}") + (("F1",) if tenant else ()) for i in range(20)])
-    wcols = "wd_sn TEXT, area_sn TEXT" + (", factory_code TEXT" if tenant else "")
-    _tables(world)["dwd_f1_wip_detail"] = (wcols, [(f"S{i}", f"A{i % 20}") + (("F1",) if tenant else ()) for i in range(200)])
+    cols = "zone_id TEXT, zone_name TEXT" + (", factory_code TEXT" if tenant else "")
+    _tables(world)["dim_line_zone"] = (cols, [(f"A{i}", f"工位{i}") + (("F1",) if tenant else ()) for i in range(20)])
+    wcols = "wd_sn TEXT, zone_sn TEXT" + (", factory_code TEXT" if tenant else "")
+    _tables(world)["dwd_f1_pass_record"] = (wcols, [(f"S{i}", f"A{i % 20}") + (("F1",) if tenant else ()) for i in range(200)])
     db = _db(world)
     (work / "build_connections.json").write_text(json.dumps([{"id": "conn_bdd", "name": name, "kind": "sqlite",
                                                               "path": db}], ensure_ascii=False), encoding="utf-8")
-    ir = {"objects": [{"name": "过站", "table": "dwd_f1_wip_detail"}, {"name": "区域", "table": "dim_co_area"}],
+    ir = {"objects": [{"name": "过站", "table": "dwd_f1_pass_record"}, {"name": "区域", "table": "dim_line_zone"}],
           "relations": [{"source_concept": "过站", "target_concept": "区域", "verb": "发生于", "status": "verified",
                          "evidence": relation_evidence}],
           "build_manifest": {"source": {"id": "conn_bdd", "name": name}}}
@@ -293,12 +293,12 @@ def _register_source(world, name, relation_evidence, tenant=False):
 
 @step(r'登记了抽样库 "(?P<name>[^"]+)",并用它建了本体「过站 → 区域」')
 def source_ontology(world, name):
-    _register_source(world, name, {"child_key": "area_sn", "parent_key": "ca_id"})
+    _register_source(world, name, {"child_key": "zone_sn", "parent_key": "zone_id"})
 
 
 @step(r'本体里「过站 → 区域」按 "(?P<tc>\w+)" 分租户成立,且已登记为抽样库本体')
 def tenant_source_ontology(world, tc):
-    _register_source(world, "湖仓抽样", {"child_key": "area_sn", "parent_key": "ca_id",
+    _register_source(world, "湖仓抽样", {"child_key": "zone_sn", "parent_key": "zone_id",
                                          "valid_rows": {"state": "support", "rule": "tenant_scoped", "tenant_column": tc}},
                      tenant=True)
 
@@ -316,8 +316,8 @@ def _ask(world, q, sql):
 
 @step(r'问 "(?P<q>[^"]+)",模型给出按区域关联的 SQL')
 def ask_join(world, q):
-    _ask(world, q, "SELECT a.ca_name AS 区域, COUNT(*) AS n FROM dwd_f1_wip_detail w "
-                   "JOIN dim_co_area a ON a.ca_id = w.area_sn GROUP BY 1 ORDER BY 2 DESC, 1 LIMIT 1")
+    _ask(world, q, "SELECT a.zone_name AS 区域, COUNT(*) AS n FROM dwd_f1_pass_record w "
+                   "JOIN dim_line_zone a ON a.zone_id = w.zone_sn GROUP BY 1 ORDER BY 2 DESC, 1 LIMIT 1")
 
 
 @step(r'问 "(?P<q>[^"]+)",模型给出不带工厂条件的 SQL')
@@ -360,7 +360,7 @@ def qa_trace(world):
 
 @step(r'登记了抽样库 "(?P<name>[^"]+)",模型不可用')
 def source_without_llm(world, name):
-    _register_source(world, name, {"child_key": "area_sn", "parent_key": "ca_id"})
+    _register_source(world, name, {"child_key": "zone_sn", "parent_key": "zone_id"})
     server = _server()
     mp = world["monkeypatch"]
     mp.setattr(server, "_llm_extract_ontology", lambda *a, **k: None)

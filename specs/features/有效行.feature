@@ -14,9 +14,9 @@
   @REQ-VR-02
   场景: 按租户作用域成立的关系,问数不带工厂会被拦下
     假如 本体里「过站 → 区域」按 "factory_code" 分租户成立
-    当 问数生成的 SQL 为 "SELECT a.ca_name, COUNT(*) FROM wip w JOIN area a ON a.ca_id = w.area_sn GROUP BY 1"
+    当 问数生成的 SQL 为 "SELECT a.zone_name, COUNT(*) FROM wip w JOIN area a ON a.zone_id = w.zone_sn GROUP BY 1"
     那么 口径校验拦截,原因提到 "factory_code"
-    当 问数生成的 SQL 为 "SELECT a.ca_name, COUNT(*) FROM wip w JOIN area a ON a.ca_id = w.area_sn AND a.factory_code = w.factory_code GROUP BY 1"
+    当 问数生成的 SQL 为 "SELECT a.zone_name, COUNT(*) FROM wip w JOIN area a ON a.zone_id = w.zone_sn AND a.factory_code = w.factory_code GROUP BY 1"
     那么 口径校验放行
 
   @REQ-VR-03
