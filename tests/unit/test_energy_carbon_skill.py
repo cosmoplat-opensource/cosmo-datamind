@@ -21,7 +21,7 @@ def _skill():
 def test_discoverable_with_metadata():
     it = _skill()
     assert it["description"].startswith("能源管理与碳排放领域")
-    assert it["meta"]["license"] == "Apache-2.0" and it["meta"]["version"] == "1.0"
+    assert it["meta"]["license"] == "Apache-2.0" and it["meta"]["version"] == "1.1"
 
 
 def test_body_keeps_the_rules_learned_from_real_data():

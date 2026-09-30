@@ -1,6 +1,6 @@
 # DR-061 · 能源与碳排放领域技能,以及「一表一对象」建模方式的复核
 
-- **状态 / Status**: accepted(技能);proposed(流水线结构调整)
+- **状态 / Status**: accepted(技能);流水线结构调整改以技能落地,见 [[DR-062-cross-check-and-cleaning-as-skills]]
 - **日期 / Date**: 2026-09-30
 - **关联 / Refs**: [[DR-050-executable-ontology-build-gate]]、[[DR-059-long-document-evidence-and-energy-carbon-reference]]、
   [[DR-060-build-preflight-sampling-and-rounds]];
