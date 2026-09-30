@@ -296,7 +296,7 @@ GLM-5.2 与 OpenAI 的完整配置、用自然语言建一张带中文名的本�
 
 `specs/` 下是完整的**规约驱动开发(SDD)**记录——不是事后补的说明,而是开发时的决策依据:
 
-- `specs/decisions/` — DR-001…DR-066 决策记录,每篇写清背景、选项、取舍与代价
+- `specs/decisions/` — DR-001…DR-067 决策记录,每篇写清背景、选项、取舍与代价
 - `specs/iterations/` — IR-001…IR-015 迭代记录,含验收标准与实测结果
 - `specs/map.md` — 入口索引
 
@@ -328,7 +328,7 @@ python3 -m venv .venv
 
 ### 开发约定(DR-066)
 
-见 [AGENTS.md](AGENTS.md)。除常规单测外,有三类自动检查:流水线说明与构建代码的步骤一致
+见 [AGENTS.md](AGENTS.md)。最有效的一项是**场景回归基准**(DR-067):两种数据形态的合成库端到端跑体检、构建、复核、问数,与标准答案比对,`python3 scripts/scenario_bench.py` 打印记分卡。此外有三类自动检查:流水线说明与构建代码的步骤一致
 (`tests/meta/test_models.py`)、领域模块不依赖 Web 层(`tests/meta/test_architecture.py`)、
 表族识别与观测脱敏的性质测试(`tests/unit/test_properties.py`)。构建与问数的追踪和指标见
 `/api/obs/metrics`、`/api/obs/runs`。

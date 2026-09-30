@@ -4,7 +4,7 @@
 - **日期 / Date**: 2026-10-01
 - **关联 / Refs**: [[DR-045-engineering-harness-and-tdd]]、[[DR-046-deterministic-module-unit-tests]]、
   [[DR-065-end-to-end-parity-code-contracts-and-scoped-keys]];
-  实证=`ontology_domain.py`、`specs/models/relation_lifecycle.json`、`observability.py`、`docs/pipelines/ontology_build.yaml`、
+  实证=`ontology_domain.py`、`specs/models/valid_rows_rules.json`、`observability.py`、`docs/pipelines/ontology_build.yaml`、
   `tests/meta/test_models.py`、`tests/meta/test_architecture.py`、`tests/unit/test_properties.py`、`tests/unit/test_observability.py`、`AGENTS.md`
 
 ## 上下文 / Context
@@ -20,10 +20,10 @@
 
 | 做法 | 为什么有用 | 证据 |
 |---|---|---|
-| 性质测试(表族识别、观测脱敏) | 输入空间大、个例测不全 | 随机湖仓测出:某厂独用命名约定时各厂副本归不到一起;已修正并在两套真实数据上回归 |
+| 性质测试(表族识别、观测脱敏) | 输入空间大、个例测不全 | 随机湖仓测出:某厂独用命名约定时各厂副本归不到一起。注意这是合成数据上的发现,真实数据里尚未见到;修正在电子制造全量元数据上新增 25 处合并、不拆旧族,多数正确,1 处可疑(贴片后 AOI 与插件后 AOI 并为一族) |
 | 构建步骤与流水线说明一致性检查 | 约 20 行,防说明漂移 | 查出说明漏登记 12 个构建步骤 |
-| 观测:构建与问数的追踪和指标 | 把「凭感觉」变成数字 | 真实构建 196 秒中模型抽取占 78%,数据步骤合计不到 1 秒;口径拦截按原因计数 |
-| 有效行规则的领域模型 | 规则名原先在验收、问数两处各写一份 | 现两处都从 `relation_lifecycle.json` 经 `ontology_domain.py` 读取;复核脚本须独立发布,另由测试核对一致;复核的升降级经测试确认都是模型允许的迁移 |
+| 观测:带脱敏的追踪日志与计数 | 跨次保留、按原因计数(构建流里本就有每步时间戳,单次耗时分析不依赖它) | 真实构建 196 秒中模型抽取占 78%;口径拦截按原因计数。目前没有界面或告警读取,接入后才能发挥作用 |
+| 有效行规则的单一来源 | 规则名原先在验收、问数两处各写一份 | 现两处都从 `valid_rows_rules.json` 经 `ontology_domain.py` 读取;复核脚本须独立发布,另由测试核对一致 |
 | 两条架构约束 | 成本极低 | 领域模块不依赖 Web 层(变异验证有效)、技能脚本只用标准库 |
 | 需求 → 测试映射(原有 `acceptance.json`) | 已有机制,只补登记 | 本迭代补登记 13 条需求 |
 
@@ -36,6 +36,7 @@
   只保留「领域模块不依赖 Web 层」这一条可执行的约束。
 - **由模型生成流程图(MDD 的投影)**:没有读者,却让每次改模型都多一步生成、否则 CI 失败。
 - **七步开发流程**:对单人加 AI 的项目过重,实际不会被遵守;`AGENTS.md` 改为五条实用约定。
+- **关系状态机模型**(第二次复查删去):运行时没有代码使用,唯一的测试是「代码符合照着代码写的模型」,循环论证。
 
 ### 实现要点
 
@@ -51,6 +52,12 @@
   列相似度把关;业务库不做尾部对齐(能碳实测中「系统设备关系 / 企业设备关系」尾部相同、列相近,但是不同概念)。
 - 与此前专用归并脚本的一致率不再作为精确度标准:分歧多数是专用脚本漏剥小来源前缀。
 - 新增 2 条路由(137 总数):`/api/obs/metrics`、`/api/obs/runs`。
+
+## 第二次复查的结论
+
+保留下来的几项作用都不大。这几轮真正抓到的缺陷没有一个来自上述范式,全部来自「真实数据端到端跑、与直接查库比对」。
+因此把这个动作做成随提交运行的场景回归基准,见 [[DR-067-scenario-regression-benchmark]]——它首次运行就抓到一个真实缺陷,
+并能抓到此前修过的 6 个缺陷。
 
 ## 备选与不做 / Alternatives
 

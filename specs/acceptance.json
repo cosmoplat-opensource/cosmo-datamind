@@ -163,9 +163,9 @@
     },
     {
       "id": "VR-01",
-      "criterion": "父键不唯一时按有效行四规则复核;成立且键名有据的候选升为 verified,每次迁移都是关系生命周期模型允许的",
+      "criterion": "父键不唯一时按有效行四规则复核;成立且键名有据的候选升为 verified",
       "tests": [
-        "tests/meta/test_models.py::test_cross_check_apply_only_makes_model_transitions"
+        "tests/unit/test_code_contracts.py::test_tenant_scoped_keys"
       ]
     },
     {
@@ -205,11 +205,10 @@
     },
     {
       "id": "MDD-01",
-      "criterion": "有效行规则只来自关系生命周期模型(验收与问数共用),复核的升降级是模型允许的迁移;构建推送的步骤与流水线说明完全一致",
+      "criterion": "有效行规则只来自一个模型文件(验收与问数共用,复核脚本与之一致);构建推送的步骤与流水线说明完全一致",
       "tests": [
         "tests/meta/test_models.py::test_emitted_steps_equal_model_steps",
-        "tests/meta/test_models.py::test_cross_check_script_speaks_the_model_language",
-        "tests/meta/test_models.py::test_cross_check_apply_only_makes_model_transitions"
+        "tests/meta/test_models.py::test_cross_check_script_speaks_the_model_language"
       ]
     },
     {
@@ -218,6 +217,13 @@
       "tests": [
         "tests/meta/test_architecture.py::test_domain_modules_do_not_depend_on_the_web_layer",
         "tests/meta/test_architecture.py::test_skill_scripts_are_self_contained"
+      ]
+    },
+    {
+      "id": "BENCH-01",
+      "criterion": "两种数据形态的合成库端到端跑体检、构建、复核、问数,关系状态、有效行规则与问数答案与标准答案一致;此前修过的缺陷放回去会变红",
+      "tests": [
+        "tests/scenarios/test_scenarios.py::test_scenario_matches_golden_answers"
       ]
     }
   ]

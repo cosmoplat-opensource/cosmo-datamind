@@ -1,0 +1,42 @@
+{
+  "$comment": "有效行规则:父键在「有效行」上唯一时认可的四种情况,以及问数关联时必须带上的条件。ontology_domain.py 导入时读取本文件;build_quality(验收)与 server(问数关联条件)从这里取,不再各写一份。qa_conditions:tenant 按租户列关联、group 限定字典分组、live 排除已删除行、latest 先取最新版本(只提示,不强制)。复核技能脚本须独立发布、自带规则名,由 tests/meta/test_models.py 核对一致。",
+  "version": "1.1",
+  "valid_rows_rules": {
+    "soft_delete": {
+      "meaning": "排除已删除行后父键唯一",
+      "qa_requirement": "父表须排除已删除行(删除标记 = 0)",
+      "qa_conditions": [
+        "live"
+      ]
+    },
+    "keep_latest": {
+      "meaning": "同一业务键多次入仓,同键名称一致或重复 ≤ 5%,按时间取最新后唯一",
+      "qa_requirement": "父表同键有多个版本,先取最新一条再关联",
+      "qa_conditions": [
+        "latest"
+      ]
+    },
+    "tenant_scoped": {
+      "meaning": "编号按租户(企业、工厂)复用,父表「租户 + 编号」唯一",
+      "qa_requirement": "须同时按租户列关联",
+      "qa_conditions": [
+        "tenant"
+      ]
+    },
+    "scoped": {
+      "meaning": "字典编码按分组复用,按代码码表契约限定分组后唯一",
+      "qa_requirement": "父表须限定分组",
+      "qa_conditions": [
+        "group"
+      ]
+    },
+    "scoped_tenant": {
+      "meaning": "码表分组内按租户复用",
+      "qa_requirement": "须限定分组并同时按租户列关联",
+      "qa_conditions": [
+        "group",
+        "tenant"
+      ]
+    }
+  }
+}

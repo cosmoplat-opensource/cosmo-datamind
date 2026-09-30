@@ -8,10 +8,12 @@
    `specs/decisions/DR-xxx`。`tests/meta/test_acceptance_traceability.py` 会检查引用的测试存在。
 3. **守住两条约束**(`tests/meta` 自动检查):
    - 增删构建步骤时同步 `docs/pipelines/ontology_build.yaml` 的 `sse_steps`;
-   - 有效行规则、关系状态只改 `specs/models/relation_lifecycle.json`(验收与问数经 `ontology_domain.py` 读取);
+   - 有效行规则只改 `specs/models/valid_rows_rules.json`(验收与问数经 `ontology_domain.py` 读取);
    - 领域模块不依赖 Web 层;技能脚本只用标准库。
 4. **新流程接入观测**:`observability.Run` / `count`;问句、SQL 等敏感内容只记指纹。
-5. 提交前运行 `python3 scripts/check.py --suite unit`(lint、类型、单测、覆盖率)。
+5. **动了构建或问数链路**:在 `tests/scenarios/fixtures.py` 的合成库里补上对应的坑和标准答案,
+   运行 `python3 scripts/scenario_bench.py` 看记分卡(不连模型,约 1 秒)。
+6. 提交前运行 `python3 scripts/check.py --suite unit`(lint、类型、单测、场景基准、覆盖率)。
 
 不变的原则:`verified` 只来自可回放的数据证据,人工结论只能由人授予;源库只读;
 凭据、内网地址、客户名与客户系统的具体名称不进入代码、技能、测试与文档。

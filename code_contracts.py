@@ -273,11 +273,21 @@ def _table_matcher(tab_cols):
         if n in exact:
             return [exact[n]]
         tk = concept_hints.clean_name(n).split("_")
+        found = None
         for i in range(len(tk)):
             key = "_".join(tk[i:])
-            if (len(tk) - i >= 2 or len(tk[i]) >= 5) and by_suffix.get(key):
-                return sorted(by_suffix[key])
-        return []
+            if not (len(tk) - i >= 2 or len(tk[i]) >= 5) or not by_suffix.get(key):
+                continue
+            hit = by_suffix[key]
+            if found is None:
+                found = hit
+            elif hit >= found:
+                # 更短的后缀覆盖了更多表(同一实体的整族):取整族。否则 t_line_zone 只会对上
+                # 保留了 t_ 约定的贴源副本 ods_x_t_line_zone,漏掉维度表 dim_line_zone
+                found = hit
+            else:
+                break
+        return sorted(found or [])
     return tables_for
 
 
