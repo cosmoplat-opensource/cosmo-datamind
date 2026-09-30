@@ -3783,7 +3783,7 @@ def chat():
         resp = _chat_impl()
         data = resp.get_json(silent=True) if hasattr(resp, "get_json") else None
         for st in (data or {}).get("steps", []) if isinstance(data, dict) else []:
-            run.step(st.get("step"), st.get("ok", True))
+            run.step(st.get("step"), st.get("ok", True), timed=False)   # 同步接口事后补记:不记耗时
             if st.get("step") == "ontology_gate" and st.get("ok") is False:
                 observability.count("qa.gate_block", reason=_gate_category(st.get("info")))
             if st.get("step") == "data_clean" and "清洗规则生效" in str(st.get("info")):

@@ -105,15 +105,17 @@ class Run:
         count(f"{kind}.runs")
         _write({"ts": time.time(), "run": self.id, "kind": kind, "event": "start", **self.attrs})
 
-    def step(self, name, ok=True, **attrs):
+    def step(self, name, ok=True, timed=True, **attrs):
+        """timed=False:事后补记的步骤(如同步接口在响应生成后才读到步骤),只记成败、不记耗时,免得误导。"""
         now = time.monotonic()
-        dt = round((now - self.last) * 1000, 1)
+        dt = round((now - self.last) * 1000, 1) if timed else None
         self.last = now
         self.steps += 1
         if not ok:
             self.failed_steps += 1
             count(f"{self.kind}.step_failed", step=name)
-        observe(f"{self.kind}.step_ms", dt, step=name)
+        if timed:
+            observe(f"{self.kind}.step_ms", dt, step=name)
         _write({"ts": time.time(), "run": self.id, "kind": self.kind, "event": "step", "step": name,
                 "ok": bool(ok), "ms": dt, **_clean(attrs)})
 

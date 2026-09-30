@@ -87,3 +87,12 @@ def test_gate_block_reasons_are_categorised():
     assert server._gate_category("device_type 有已删除行(按 is_del 软删除)") == "soft_delete"
     assert server._gate_category("JOIN 键 a.x=b.y 不在本体已验证关系上(口径未证实,已拦截)") == "join_not_verified"
     assert server._gate_category("表 foo 不在本体/数据目录中(疑似臆造表名)") == "unknown_table"
+
+
+def test_untimed_steps_do_not_pollute_duration_metrics():
+    r = obs.Run("qa", mode="sync")
+    r.step("exec_sql", True, timed=False)
+    r.finish("ok")
+    assert not any(h["name"] == "qa.step_ms" for h in obs.snapshot()["histograms"])
+    step = next(e for e in _events() if e["event"] == "step")
+    assert step["ms"] is None and step["step"] == "exec_sql"
