@@ -24,6 +24,7 @@ import ontology_grounding
 import content_quality
 import doc_chunks
 import build_prep
+import code_contracts   # DR-065:代码契约(代码包 / docx 读取,连接与码表契约)
 import concept_hints    # DR-064:概念层线索(表族 / 类别拆分 / 版本重复)
 import build_cleaning   # DR-063:构建后自动复核、问数时套用清洗规则
 import ext_sample
@@ -565,7 +566,7 @@ def ir_to_graph(key, ir):
 # ── SQLite 工具(只读查询)──
 def q(sql, db=None, limit=500, attach_uploads=False, clean=None):
     # 以只读模式打开(mode=ro):即便 SQL 含写操作,引擎层也会拒绝,杜绝改/删库
-    path = db or DB
+    path = db or _qa_db()
     con = ro_connect(path)
     con.row_factory = sqlite3.Row
     # 深度问数带上传数据时:只读挂载 uploads.db,上传表可作 up.<表> 查询
@@ -738,6 +739,38 @@ def _rel_keys(r):
     return None, None, ""
 
 
+def _scope_requirements(evidence):
+    """有效行复核得出的键作用域(DR-065),问数时关联必须带上:
+    租户作用域 → 同时按租户列关联;分组编码 → 父表限定分组;软删除 → 父表排除已删除行;
+    版本重复 → 父表先按键取最新一条(只提示,不强制)。"""
+    vr = (evidence or {}).get("valid_rows") or {}
+    out = {"tenant": None, "group": None, "live": None, "latest": None}
+    if vr.get("state") != "support":
+        return out
+    rule = vr.get("rule")
+    if rule in ("tenant_scoped", "scoped_tenant"):
+        out["tenant"] = vr.get("tenant_column")
+    if rule in ("scoped", "scoped_tenant") and vr.get("column") and vr.get("group") is not None:
+        out["group"] = (vr.get("column"), vr.get("group"))
+    if rule == "soft_delete" and vr.get("column"):
+        out["live"] = vr.get("column")
+    if rule == "keep_latest" and vr.get("column"):
+        out["latest"] = vr.get("column")
+    return out
+
+
+def _scope_join_text(evidence, st, tt):
+    req = _scope_requirements(evidence)
+    out = f" AND {st}.{req['tenant']} = {tt}.{req['tenant']}" if req["tenant"] else ""
+    if req["group"]:
+        out += f" AND {tt}.{req['group'][0]} = '{str(req['group'][1]).replace(chr(39), '')}'"
+    if req["live"]:
+        out += f" AND {tt}.{req['live']} = 0"
+    if req["latest"]:
+        out += f"(父表同键有多个版本,先按 {req['latest']} 取最新一条再关联)"
+    return out
+
+
 def _join_hints(ir, tables, pairs=None):
     """选中表之间的本体关系 → JOIN 提示行(⋈ 前缀;沿本体关系召回的实现)。
     只给 verified/asserted(人审断言)关系;键取关系证据里的 child_key/parent_key。
@@ -756,9 +789,11 @@ def _join_hints(ir, tables, pairs=None):
         st, tt = o2t.get(l.get(sk)), o2t.get(l.get(tk))
         if not st or not tt or st.lower() not in tl or tt.lower() not in tl: continue
         ck, pk, ksrc = _rel_keys(l)
-        bad = bool(ck and pk) and not dao_core.name_ok(ck, tt, pk, child_table=st)
+        _ev = l.get("evidence") or {}
+        # 代码契约里就这么连(键名不同):不当作自增键巧合
+        bad = bool(ck and pk) and not dao_core.name_ok(ck, tt, pk, child_table=st) and not _ev.get("contract")
         if bad: ksrc = "name_mismatch"                # 疑为自增键值域巧合:保留语义关系,不下发该键
-        key = (f"{st}.{ck} = {tt}.{pk}" if (ck and pk and not bad)
+        key = (f"{st}.{ck} = {tt}.{pk}{_scope_join_text(_ev, st, tt)}" if (ck and pk and not bad)
                else f"{st} 关联 {tt}(键见列名)")
         out.append(f"⋈ {key}  [{l.get('verb','关联')} · {l.get('status')}]")
         if pairs is not None:
@@ -1016,17 +1051,60 @@ def _stat_sig(*paths):
     return tuple(sig)
 
 
-_INV_CACHE = {"sig": None, "val": None}
+_INV_CACHE: dict = {}
+# DR-065 问数执行库:选中的本体都来自同一个已登记的 SQLite 数据源(抽样库、上传的业务库)时,
+# 本次问数在该库上执行;否则仍是主库。按请求设置,请求结束即复位。
+import contextvars
+_QA_DB = contextvars.ContextVar("qa_db", default=None)
 
-def _qa_table_inventory():
+
+def _qa_db():
+    return _QA_DB.get() or DB
+
+
+def _graph_source_db(ir):
+    """本体构建时的数据源:登记为 SQLite 且文件仍在时返回路径;示例主库、上传库与外部库返回 None。"""
+    src = ((ir or {}).get("build_manifest") or {}).get("source") or {}
+    sid = str(src.get("id") or "")
+    if sid in ("", "demo", "uploads"):
+        return None
+    for c in _load_conns():
+        if c.get("id") == sid and c.get("kind") == "sqlite" and c.get("path") and os.path.exists(c["path"]):
+            return c["path"]
+    return None
+
+
+def _qa_source_for(graph_keys):
+    """选中的本体都来自同一个 SQLite 数据源时返回其路径;来源不一或含主库本体时返回 None。"""
+    paths = set()
+    for k in dict.fromkeys(graph_keys or []):
+        if not k or _bad_gkey(k):
+            continue
+        paths.add(_graph_source_db(load_ir_edited(k) or load_ir(k) or {}))
+    return paths.pop() if len(paths) == 1 and None not in paths else None
+
+
+def _qa_source_note():
+    """加载本体步骤里注明执行库,读日志的人才知道答案来自哪个库。"""
+    path = _QA_DB.get()
+    if not path:
+        return ""
+    name = next((c.get("name") for c in _load_conns() if c.get("path") == path), "") or os.path.basename(path)
+    return f" · 在本体来源数据源「{name}」上执行"
+
+
+def _qa_table_inventory(path=None):
     """返回深度问数当前进程真正能执行的主库表与上传库表。
 
     按两个库文件的 mtime 指纹缓存:问数/图谱列表每个请求都要问一次「有哪些表」,
     而底座库只在换库或上传时才变。返回副本,调用方改动不会污染缓存。
+    path 缺省为本次问数的执行库(主库,或所选本体的来源库)。
     """
-    sig = _stat_sig(DB, UPLOAD_DB)
-    if _INV_CACHE["sig"] == sig:
-        main, uploads = _INV_CACHE["val"]
+    path = path or _qa_db()
+    sig = _stat_sig(path, UPLOAD_DB)
+    hit = _INV_CACHE.get(path)
+    if hit and hit[0] == sig:
+        main, uploads = hit[1]
         return set(main), set(uploads)
     def names(path):
         if not os.path.exists(path): return set()
@@ -1039,8 +1117,10 @@ def _qa_table_inventory():
                 con.close()
         except Exception:
             return set()
-    main, uploads = names(DB), names(UPLOAD_DB)
-    _INV_CACHE["sig"], _INV_CACHE["val"] = sig, (main, uploads)
+    main, uploads = names(path), names(UPLOAD_DB)
+    if len(_INV_CACHE) > 32:
+        _INV_CACHE.clear()
+    _INV_CACHE[path] = (sig, (main, uploads))
     return set(main), set(uploads)
 
 
@@ -1197,6 +1277,13 @@ def build_context(question, focus_tables=None, trace=None, graph_keys=None):
                 t = str(t or "").strip()
                 if len(t) >= 2 and not t.isascii() and t in question and t not in out:
                     out.append(t)
+                elif len(t) >= 4 and not t.isascii():
+                    # 问句常只说出名称的一部分(「计量器具」之于「能源计量器具」):
+                    # 名称里有连续三个汉字出现在问句中也算命中,记录命中的那一段
+                    frag = next((t[i:i + 3] for i in range(len(t) - 2)
+                                 if not t[i:i + 3].isascii() and t[i:i + 3] in question), None)
+                    if frag and frag not in out:
+                        out.append(frag)
         return out
     def obj_cn_hits(o):
         return cn_hits([o.get("cn")], o.get("aliases"),
@@ -1406,13 +1493,22 @@ def _validate_sql_ontology(sql, ir, strict=False):
                 return False, f"上传表 {full} 不在所选本体边界内"
         elif base not in known and base not in ctes:
             return False, f"表 {base} 不在本体/数据目录中(疑似臆造表名)"
-    o2t = {o.get("id"): (o.get("table") or "").lower() for o in ir.get("objects", [])}
-    relkeys, parents = set(), {}                 # parents: (子表,子键,父表,父键) → 父表(父键唯一侧)
-    for l in ir.get("links", []):
+    # 端点可能是主键、对象名或序号键:示例本体用 links/source/target,构建产物用 relations/source_concept。
+    # 此前只认 links,自建本体上所有异名键 JOIN(即便关系已验证)都被当成「口径未证实」拦掉。
+    o2t = {}
+    for i, o in enumerate(ir.get("objects", [])):
+        for k in (o.get("id"), o.get("name"), _obj_key(o, i)):
+            if k: o2t[str(k)] = (o.get("table") or "").lower()
+    _rl, _ks, _kt = ir_shape.rels(json.loads(json.dumps(ir, default=str)), create=True)
+    relkeys, parents, scopes = set(), {}, {}     # parents: (子表,子键,父表,父键) → 父表(父键唯一侧)
+    for l in _rl:
         if l.get("status") not in ("verified", "asserted"): continue
         ev = l.get("evidence") or {}
         ck, pk = (ev.get("child_key") or "").lower(), (ev.get("parent_key") or "").lower()
-        st, tt = o2t.get(l.get("source")), o2t.get(l.get("target"))
+        st, tt = o2t.get(str(l.get(_ks))), o2t.get(str(l.get(_kt)))
+        _req = _scope_requirements(ev)
+        if st and tt and ck and pk and (_req["tenant"] or _req["group"] or _req["live"]):
+            scopes[(st, ck, tt, pk)] = scopes[(tt, pk, st, ck)] = (st, tt, _req["tenant"], _req["group"], _req["live"])
         if ck and pk and st and tt:
             relkeys.add((st, ck, tt, pk)); relkeys.add((tt, pk, st, ck))
             parents[(st, ck, tt, pk)] = tt
@@ -1426,6 +1522,23 @@ def _validate_sql_ontology(sql, ir, strict=False):
         if parent:
             for al, full in alias.items():
                 if full == parent: joined_parents.setdefault(parent, set()).add(al)
+        _sc = scopes.get((ta, ca, tb, cb))
+        if _sc:
+            # 键按租户 / 字典分组复用:只按编号关联会把不同租户(工厂、企业)的同号记录串在一起
+            _st, _tt, _tn, _gp, _lv = _sc
+            al_of = {ta: a, tb: b}
+            if _lv and not re.search(r"\b%s\.%s\s*(=\s*'?0'?|in\s*\(\s*'?0)" % (re.escape(al_of.get(_tt, "")), re.escape(_lv)),
+                                     s, re.I):
+                return False, (f"{_tt} 有已删除行(按 {_lv} 软删除),关联时须加 {_tt}.{_lv} = 0,"
+                               "否则同一编码的已删除行会让结果重复计数")
+            if _tn and not re.search(r"\b%s\.%s\s*=\s*%s\.%s\b|\b%s\.%s\s*=\s*%s\.%s\b" % (
+                    re.escape(a), re.escape(_tn), re.escape(b), re.escape(_tn),
+                    re.escape(b), re.escape(_tn), re.escape(a), re.escape(_tn)), s, re.I):
+                return False, (f"{ta}.{ca}={tb}.{cb} 的编号按 {_tn} 分租户复用,须同时按 {_tn} 关联"
+                               "(否则不同租户的同号记录会被串在一起)")
+            if _gp and not re.search(r"\b%s\.%s\s*=\s*'%s'" % (re.escape(al_of.get(_tt, "")), re.escape(_gp[0]),
+                                                               re.escape(str(_gp[1]))), s, re.I):
+                return False, f"{_tt}.{cb if _tt == tb else ca} 的编码按分组复用,须限定 {_tt}.{_gp[0]} = '{_gp[1]}'"
         if ca == cb: continue
         if (ta, ca, tb, cb) not in relkeys:
             return False, f"JOIN 键 {ta}.{ca}={tb}.{cb} 不在本体已验证关系上(口径未证实,已拦截)"
@@ -1453,7 +1566,7 @@ def _qa_validate_sql(sql, ir, strict=False, focus_tables=None):
         denied = []
         con = None
         try:
-            con = ro_connect(DB)
+            con = ro_connect(_qa_db())
             if os.path.exists(UPLOAD_DB):
                 from pathlib import Path
                 con.execute("ATTACH DATABASE ? AS up", (Path(UPLOAD_DB).absolute().as_uri() + "?mode=ro",))
@@ -1792,12 +1905,15 @@ def table_detail(name):
 _GRAPH_ROW_CACHE: dict = {}
 
 def _graph_row(k, cat, src_paths, inventory, inv_sig, name=None):
-    sig = (_stat_sig(*src_paths), _stat_sig(_edits_path(k)), inv_sig)
+    sig = (_stat_sig(*src_paths), _stat_sig(_edits_path(k)), inv_sig, _stat_sig(_BUILD_CONN_F))
     hit = _GRAPH_ROW_CACHE.get(k)
     if hit and hit[0] == sig:
         return hit[1]
     ir = load_ir_edited(k)
     if not isinstance(ir, dict): return None
+    _src = _graph_source_db(ir)          # 用登记的 SQLite 数据源建的本体,按来源库判断能否问数
+    if _src:
+        inventory = _qa_table_inventory(_src)
     g = ir_to_graph(k, ir)
     row = {"id": k, "name": name or (ir.get("scenario") or {}).get("name") or k,
            "nodes": len(g["nodes"]), "edges": len(g["edges"]), "cat": cat,
@@ -3615,8 +3731,28 @@ def _clean_steps(data):
         out.append({"step": "data_clean_note", "ok": True, "info": "数据提示 · " + n})
     return out
 
+def _with_qa_source(graph_keys):
+    """设定本次问数的执行库(所选本体的来源库或主库),返回复位用的令牌。"""
+    return _QA_DB.set(_qa_source_for(graph_keys))
+
+
+def _reset_qa_source(token):
+    try:
+        _QA_DB.reset(token)
+    except ValueError:                  # 流式生成器跨上下文时无法按令牌复位,直接清空
+        _QA_DB.set(None)
+
+
 @app.post("/api/chat")
 def chat():
+    token = _with_qa_source(_qa_scope(request.json or {})[1])
+    try:
+        return _chat_impl()
+    finally:
+        _reset_qa_source(token)
+
+
+def _chat_impl():
     body = request.json or {}
     question = body.get("q", "").strip()
     history = body.get("history") or []          # [{q, summary}] 最近几轮
@@ -3632,7 +3768,7 @@ def chat():
     if scope_error:
         return jsonify({"error": scope_error, "code": "ontology_not_queryable",
                         "ontology": {"keys": gate_keys, **qa_profile}}), 422
-    load_info = "加载本体上下文 · " + "、".join(_graph_name(key) for key in gate_keys)
+    load_info = "加载本体上下文 · " + "、".join(_graph_name(key) for key in gate_keys) + _qa_source_note()
     if fallback: load_info += " · " + fallback
     steps = [{"step": "load_ontology", "ok": True, "info": load_info}]
     q_eff, co = _carryover(question, history, ir_gate)          # B5 指代延续
@@ -3737,7 +3873,7 @@ def chat_stream():
         # 本体名要据实回显:此处曾写死「示例」,选了自建本体也照喊示例,
         # 与下一步 anchor_ontology 打架,读日志的人会以为锚错了本体
         yield push("load_ontology", True,
-                   "加载本体上下文 · %s" % "、".join(_graph_name(k) for k in _gate_keys))
+                   "加载本体上下文 · %s" % "、".join(_graph_name(k) for k in _gate_keys) + _qa_source_note())
         scope_error = _qa_scope_error(graph_keys, _gate_keys, _gate_fallback, qa_profile)
         if scope_error:
             yield push("scope_ontology", False, qa_profile.get("reason") or "所选本体不可问数")
@@ -3886,7 +4022,13 @@ def chat_stream():
             _qa_cache_store(cache_key, resp)
         yield sse({"type": "done", **resp, "cached": False, "elapsed": round(_t.time() - t0, 1), "session": session})
     from flask import Response, stream_with_context
-    return Response(stream_with_context(gen()), mimetype="text/event-stream",
+    def gen_on_source():
+        token = _with_qa_source(_qa_scope(body)[1])
+        try:
+            yield from gen()
+        finally:
+            _reset_qa_source(token)
+    return Response(stream_with_context(gen_on_source()), mimetype="text/event-stream",
                     headers={"Cache-Control": "no-store, no-cache, must-revalidate, max-age=0",
                              "Pragma": "no-cache", "Expires": "0", "X-Accel-Buffering": "no"})
 
@@ -4494,7 +4636,8 @@ _BUILD_SKILL_D = os.path.join(WORK, "custom_skills")
 _MOD_MAP = {"csv": "表格", "tsv": "表格", "xlsx": "表格", "xls": "表格", "json": "结构", "xml": "结构",
             "pdf": "文档", "docx": "文档", "doc": "文档", "txt": "文本", "md": "文本",
             "png": "图像", "jpg": "图像", "jpeg": "图像", "gif": "图像", "svg": "图像",
-            "sql": "代码", "py": "代码", "ddl": "代码", "wav": "音频", "mp3": "音频"}
+            "sql": "代码", "py": "代码", "ddl": "代码", "wav": "音频", "mp3": "音频",
+            "zip": "代码包", "java": "代码", "js": "代码", "ts": "代码", "vue": "代码"}
 _BUILD_SKILL_DESC = {
     "ontology-semi-auto": "机器提议→语义复核→数据验证→确定性验收检查→人工复核，关系证据可追溯",
     "ontology-build": "上游兼容技能：从数据库、代码和可解析文档提出本体候选；新任务建议使用 ontology-semi-auto",
@@ -5243,7 +5386,8 @@ _SKILL_METHOD = {
     "ontology-forge": "遵循 OWL2 本体公理、Palantir 操作型本体四层(对象/属性/链接/动作)、SHACL 约束与斯坦福七步法。",
     "ontology-agentic": "按范围界定、取证、提议、数据验证、复核和修订执行，只保留有数据或文档依据的结论。",
     "auto-ontology": "以对象为中心补全属性、指标与关系,标注候选语义待确认。"}
-_TEXT_EXT = ("sql", "ddl", "py", "md", "txt", "json", "xml", "yaml", "yml", "csv", "tsv", "js", "java", "sh")
+_TEXT_EXT = ("sql", "ddl", "py", "md", "txt", "json", "xml", "yaml", "yml", "csv", "tsv", "js", "java", "sh",
+             "ts", "vue", "jsx", "tsx", "kt", "go", "cs")
 
 # 长文取证:单份文档读入上限与进提示词的文档总预算(字符)。预算可按模型上下文调整。
 LONG_DOC_CAP = 2_000_000
@@ -5273,6 +5417,14 @@ def _read_asset_text(fname, cap=3500):
             return ("\n".join(out))[:cap]
         except Exception:
             return ""
+    if ext in ("zip", "docx"):
+        # DR-065 代码包与 Word 文档:两种场景最有力的证据(后端 SQL、前端代码、接口文档)都以这两种形式交付。
+        # 内存中读取、只取代码与文本类成员、单成员与总量设上限,不解压到磁盘。
+        try:
+            raw = open(p, "rb").read()
+        except OSError:
+            return ""
+        return (code_contracts.read_zip(raw) if ext == "zip" else code_contracts.read_docx(raw))[:cap]
     if ext in _TEXT_EXT:
         try: return open(p, encoding="utf-8", errors="replace").read()[:cap]
         except Exception: return ""
@@ -5377,6 +5529,7 @@ def _gather_evidence(db, cap_tabs=400, cap_docs=40, query="", focus=None):
     for t in sorted(scope, key=lambda x: (_pri(x), x)):
         schema.append(f"{t}({', '.join(cn for cn, _ in tab_cols[t][:22])})")
     refs, files, chunks, texts = [], [], [], 0
+    raw_texts = []
     if dm_tables or dm_cols:
         # 只读抽样保留的库表注释 → 合成数据字典,和上传资料一起分块检索(每张表一节,标题带表名以便锚定)
         lines = ["# 库表注释(只读抽样自源库)"]
@@ -5394,6 +5547,8 @@ def _gather_evidence(db, cap_tabs=400, cap_docs=40, query="", focus=None):
         fn = os.path.basename(p)[8:]
         ext = fn.rsplit(".", 1)[-1].lower() if "." in fn else ""
         txt = _read_asset_text(fn, cap=LONG_DOC_CAP)
+        if txt.strip():
+            raw_texts.append((fn, txt))
         own = doc_chunks.chunk_text(txt, fn) if txt.strip() else []
         chunks += own
         texts += len(txt)
@@ -5408,9 +5563,13 @@ def _gather_evidence(db, cap_tabs=400, cap_docs=40, query="", focus=None):
         f["chunks_used"] = used_by.get(f["name"], 0)
         f["consumed_as_text"] = bool(f["chunks_used"])
     stats.update(files=len([f for f in files if f["chunks"]]), chars_total=texts)
+    contracts = code_contracts.extract(raw_texts) if raw_texts else {"joins": [], "codebooks": [], "apis": [], "dicts": []}
     return {"schema": "\n".join(schema), "tab_cols": tab_cols,
             "docs": doc_chunks.render(picked), "n_docs": len(used_by), "refs": refs, "files": files,
-            "doc_stats": stats, "scope": scope if focus else None}
+            "doc_stats": stats, "scope": scope if focus else None,
+            "contracts": contracts, "contracts_resolved": code_contracts.resolve(contracts, tab_cols),
+            "contracts_codebooks": code_contracts.resolve_codebooks(contracts, tab_cols),
+            "contracts_labels": code_contracts.resolve_labels(contracts, tab_cols)}
 
 def _skill_method_text(skills):
     """选中技能 → 真实 SKILL.md / 自定义正文,有界注入构建 prompt。
@@ -5960,10 +6119,19 @@ def _adjudicate_ir(db, name, extracted, ev, base_ir=None):
                         cand_keys.append(c)
                 for c in cs:
                     if c not in cand_keys and c.lower() in ctl and re.search(r"(id|code|key|no)$", c, re.I): cand_keys.append(c)
+                # DR-065 代码契约:代码里这两张表按哪两列连接,就先试这两列(仍要数据证明)
+                _pairs = []
+                for _r in (ev or {}).get("contracts_resolved") or []:
+                    for _c, _p in ((_r["a"], _r["b"]), (_r["b"], _r["a"])):
+                        if _c[0].lower() == ts.lower() and _p[0].lower() == tt.lower():
+                            _pairs.append((_c[1], _p[1]))
+                for _ck, _ in reversed(_pairs):
+                    if _ck in cand_keys: cand_keys.remove(_ck)
+                    cand_keys.insert(0, _ck)
                 best = None
                 for key in cand_keys[:6]:
                     # 父列候选序:声明PK优先(Mondial 发现:父表可有与表同名的非键列,同名优先会撞错列)
-                    pcols = []
+                    pcols = [_pc for _ck, _pc in _pairs if _ck.lower() == key.lower()]
                     if parent_hint and "," not in parent_hint:
                         hinted = next((x for x in ct if x.lower() == parent_hint.lower()), None)
                         if hinted: pcols.append(hinted)
@@ -5979,11 +6147,15 @@ def _adjudicate_ir(db, name, extracted, ev, base_ir=None):
                         if sig and sig["child_distinct"]: saw_rows = True
                         if not sig or not sig["child_distinct"]: continue
                         ov, punique, cunique = sig["overlap"], sig["parent_unique"], sig["child_unique"]
-                        name_supported = dao_core.name_ok(key, tt, pcol, child_table=ts)
+                        _contract = code_contracts.hit((ev or {}).get("contracts_resolved"), ts, key, tt, pcol)
+                        # 键名不同但代码里就这么连(如 area_sn → ca_id):代码契约顶替命名证据,数据门槛不变
+                        name_supported = dao_core.name_ok(key, tt, pcol, child_table=ts) or bool(_contract)
                         reverse = ov >= dao_core.MIN_OVERLAP and dao_core.should_reverse(cunique, punique)
                         verdict = dao_core.classify(overlap=ov, parent_unique=punique, name_ok=name_supported,
                                                     child_distinct=sig["child_distinct"], min_distinct=1, exclude_pk_child=False)
                         trial_status, reason = verdict["status"], verdict["reason"]
+                        if _contract:
+                            reason += f"·代码契约({_contract['file'].split(':')[-1].split('/')[-1]})"
                         if reverse:
                             trial_status = "candidate"
                             reason = (f"{key}→{tt}.{pcol} 方向反证:子列唯一而目标列不唯一,"
@@ -5995,7 +6167,8 @@ def _adjudicate_ir(db, name, extracted, ev, base_ir=None):
                                  "theta": dao_core.MIN_OVERLAP,
                                  "direction": ("reverse" if reverse else
                                                ("ambiguous" if cunique and punique else "child_to_parent")),
-                                 "decision": reason, "adjudication_status": trial_status}
+                                 "decision": reason, "adjudication_status": trial_status,
+                                 **({"contract": {"code": _contract["code"], "file": _contract["file"]}} if _contract else {})}
                         if best is None or ov > best[0]: best = (ov, trial_status, reason, trial)
                         if trial_status == "verified":
                             status, overlap, note, ev_keys = "verified", round(ov, 1), reason, trial
@@ -6373,6 +6546,14 @@ def build_inquire():
         yield push("gather_evidence", True, "取证:" + emeta)
         # 概念层线索(DR-064):表与概念不是一一对应——表族合并、类别拆分、版本重复。
         # 只读、确定性;附在结构文本前给提议模型,构建后再把同族成员表挂到同一个对象上。
+        _cons = ev.get("contracts") or {}
+        if any(_cons.get(k) for k in ("joins", "codebooks", "apis", "dicts")):
+            _ctxt = code_contracts.text_for_prompt(_cons, ev.get("contracts_resolved") or [],
+                                                   scope=ev.get("scope") or list(ev["tab_cols"])[:400])
+            if _ctxt:
+                ev["schema"] = _ctxt + "\n\n" + (ev.get("schema") or "")
+            yield push("code_contracts", True, code_contracts.summary_text(_cons, ev.get("contracts_resolved") or [])
+                       + " · 连接契约在裁决中顶替命名证据(数据门槛不变)")
         _hints = _bounded(lambda: concept_hints.collect(db), 60) or {}
         _htext = concept_hints.text_for_prompt(_hints, scope=ev.get("scope") or list(ev["tab_cols"])[:400])
         if _htext:
@@ -6457,7 +6638,7 @@ def build_inquire():
                 # 新产物顶掉且无从恢复。底本必须等合并成功后再由 _atomic_json 一次性替换。
                 _bp = _confined(WORK, key + ".building.json") if base_ir is not None else outp
                 proc = subprocess.Popen([sys.executable, _confined(HERE, "quick_build.py"), db, _bp, gname,
-                                         ACTION_TYPES_F],
+                                         ACTION_TYPES_F] + ([json.dumps(scope_tables)] if scope_tables else []),
                                         cwd=HERE, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
                 for line in iter(proc.stdout.readline, ""):
                     line = line.strip()
@@ -6471,6 +6652,23 @@ def build_inquire():
                 except OSError: pass
         if not isinstance(ir, dict) or not ir.get("objects"):
             yield sse({"type": "error", "error": "构建失败(无产物)"}); return
+        if ev.get("contracts_resolved") or ev.get("contracts_codebooks"):
+            # 代码契约随产物保存:交叉复核据码表契约判断分组编码,复核与审阅也能看到出处
+            ir.setdefault("scenario", {})["code_contracts"] = {
+                "joins": ev.get("contracts_resolved") or [], "codebooks": ev.get("contracts_codebooks") or []}
+        _labels = ev.get("contracts_labels") or {}
+        if _labels:
+            # 术语契约:湖仓表常没有字段注释,代码里的注释给出字段含义(area_sn = 线别ID);只补空缺,不覆盖
+            _filled = 0
+            for _o in ir.get("objects") or []:
+                for _tbl in (_o.get("tables") or [_o.get("table")]):     # 不用 _t:那是本生成器里的 time 别名
+                    for _a in _o.get("attrs") or []:
+                        _lab = _labels.get((_tbl, _a.get("col")))
+                        if _lab and not _a.get("cn"):
+                            _a["cn"], _a["cn_source"] = _lab, "代码注释"
+                            _filled += 1
+            if _filled:
+                yield push("code_labels", True, f"字段含义 · 按代码注释补全 {_filled} 个字段的中文名(只补空缺)")
         if _hints.get("families"):
             _fa = concept_hints.attach_families(ir, _hints)
             if _fa["objects"] or _fa["duplicates"]:

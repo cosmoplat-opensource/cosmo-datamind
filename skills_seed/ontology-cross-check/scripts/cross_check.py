@@ -173,11 +173,32 @@ def conditional_channel(db, ct, ck, pt, pk):
     return {"state": "support" if best["overlap"] >= THETA else "weak", "discriminator": disc, **best}
 
 
-def valid_rows_channel(db, ct, ck, pt, pk, ev):
-    """重叠达标却因父键不唯一被拒的候选:只看有效行后父键是否唯一。
+NAME_HINT = re.compile(r"(_name|^name|_label|_desc)$", re.I)
+SCOPE_COL = re.compile(r"(tenant|tenement|^ent_no$|^ent_id$|company|factory|plant|^org|site_code)", re.I)
 
-    两种场景各有一种「无效行」:业务库的软删除(已删除行还在表里),
-    湖仓的版本重复(同一业务键多次入仓)。先定有效行,再判唯一。
+
+def _tenant_scoped(db, ct, ck, pt, pk, where="", args=()):
+    """编号按租户(企业、工厂、组织)复用:父表上「租户 + 编号」唯一、子表按「租户 + 编号」能对上。"""
+    shared = [c for c in db.cols(pt) if SCOPE_COL.search(c) and db.col(ct, c)]
+    for tc in shared:
+        u = db.one(f"SELECT COUNT(*), COUNT(DISTINCT {q(tc)} || '\x1f' || {q(pk)}) FROM {q(pt)} "
+                   f"WHERE {q(pk)} IS NOT NULL{where}", args)
+        if not u or not u[0] or u[0] != u[1]:
+            continue
+        o = db.one(f"""SELECT COUNT(*), SUM(CASE WHEN EXISTS(SELECT 1 FROM {q(pt)} p WHERE p.{q(pk)} = c.k
+                         AND p.{q(tc)} = c.t{where.replace(q(pk), 'p.' + q(pk)) if where else ''}) THEN 1 ELSE 0 END)
+                       FROM (SELECT DISTINCT {q(tc)} t, {q(ck)} k FROM {q(ct)} WHERE {q(ck)} IS NOT NULL) c""", args)
+        if o and o[0] and 100.0 * (o[1] or 0) / o[0] >= THETA:
+            return {"column": tc, "overlap": round(100.0 * (o[1] or 0) / o[0], 1)}
+    return None
+
+
+def valid_rows_channel(db, ct, ck, pt, pk, ev, scopes=()):
+    """重叠达标却因父键不唯一被拒的候选:只看有效行后父键是否唯一。三种「无效行 / 非全局键」:
+
+    - 软删除:已删除行还在表里(业务库常见);
+    - 版本重复:同一业务键多次入仓(湖仓常见)。重复的键若名称一致,就是同一实体的多个版本;
+    - 分组编码:字典编码按分组复用,代码里写明了分组条件(dict_code = 'X'),只在组内唯一。
     """
     ov = ev.get("overlap")
     if not isinstance(ov, (int, float)) or ov < THETA or ev.get("parent_unique") is not False:
@@ -185,17 +206,45 @@ def valid_rows_channel(db, ct, ck, pt, pk, ev):
     r = db.one(f"SELECT COUNT(*), COUNT(DISTINCT {q(pk)}) FROM {q(pt)} WHERE {q(pk)} IS NOT NULL")
     if not r or not r[0]:
         return {"state": "na"}
+    for sc in scopes or ():
+        if sc.get("table") == ct and str(sc.get("column", "")).lower() == ck.lower() and sc.get("dictionary") == pt:
+            gcol = db.col(pt, sc.get("group_column") or "")
+            if gcol:
+                g = db.one(f"SELECT COUNT(*), COUNT(DISTINCT {q(pk)}) FROM {q(pt)} WHERE {q(gcol)} = ?", (sc["group"],))
+                if g and g[0] and g[0] == g[1]:
+                    return {"state": "support", "rule": "scoped", "column": gcol, "group": sc["group"],
+                            "note": f"{pt}.{pk} 在 {gcol}='{sc['group']}' 组内唯一(代码码表契约)"}
+                ts = _tenant_scoped(db, ct, ck, pt, pk, f" AND {q(gcol)} = ?", (sc["group"],))
+                if ts:
+                    return {"state": "support", "rule": "scoped_tenant", "column": gcol, "group": sc["group"],
+                            "tenant_column": ts["column"], "overlap": ts["overlap"],
+                            "note": f"{pt}.{pk} 在 {gcol}='{sc['group']}' 组内、按 {ts['column']} 分租户唯一"
+                                    f"(代码码表契约;按租户对上 {ts['overlap']}%)"}
     col, flt = _live(db, pt, "p")
     if col:
         live = db.one(f"SELECT COUNT(*), COUNT(DISTINCT p.{q(pk)}) FROM {q(pt)} p WHERE p.{q(pk)} IS NOT NULL{flt}")
         if live and live[0] and live[0] == live[1]:
             return {"state": "support", "rule": "soft_delete", "column": col,
                     "note": f"排除已删除行后 {pt}.{pk} 唯一"}
+    ts = _tenant_scoped(db, ct, ck, pt, pk)
+    if ts:
+        return {"state": "support", "rule": "tenant_scoped", "tenant_column": ts["column"], "overlap": ts["overlap"],
+                "note": f"{pt}.{pk} 按 {ts['column']} 分租户唯一,子表按租户对上 {ts['overlap']}%"}
     tcol = next((db.col(pt, c) for c in TIME_COLS + ("insert_time", "update_time", "edit_time") if db.col(pt, c)), None)
     dup = r[0] - r[1]
-    if tcol and dup and dup <= 0.05 * r[0]:
-        return {"state": "support", "rule": "keep_latest", "column": tcol, "duplicate_rows": dup,
-                "note": f"{pt}.{pk} 有 {dup} 行版本重复,按 {tcol} 取最新后唯一"}
+    if tcol and dup:
+        stable = None
+        name = next((c for c in db.cols(pt) if NAME_HINT.search(c) and c.lower() != pk.lower()), None)
+        if name:
+            s = db.one(f"""SELECT COUNT(*), SUM(CASE WHEN n = 1 THEN 1 ELSE 0 END) FROM (
+                             SELECT {q(pk)} k, COUNT(DISTINCT {q(name)}) n FROM {q(pt)} WHERE {q(pk)} IN (
+                               SELECT {q(pk)} FROM {q(pt)} GROUP BY 1 HAVING COUNT(*) > 1 LIMIT 500) GROUP BY 1)""")
+            stable = (s[1] or 0) / s[0] if s and s[0] else None
+        if dup <= 0.05 * r[0] or (stable is not None and stable >= 0.8):
+            return {"state": "support", "rule": "keep_latest", "column": tcol, "duplicate_rows": dup,
+                    "stable_name_share": None if stable is None else round(stable, 3),
+                    "note": f"{pt}.{pk} 有 {dup} 行版本重复" + (f"(同键名称一致 {stable:.0%})" if stable else "")
+                            + f",按 {tcol} 取最新后唯一"}
     return {"state": "na"}
 
 
@@ -210,6 +259,7 @@ def hub_keys(db):
 
 
 def check(ir, db):
+    scopes = ((ir.get("scenario") or {}).get("code_contracts") or {}).get("codebooks") or []
     objs = {o.get("name"): o for o in ir.get("objects") or []}
     table = lambda n: (objs.get(n) or {}).get("table") or n
     rels = ir.get("relations") or []
@@ -243,6 +293,8 @@ def check(ir, db):
             ch["temporal"] = temporal_channel(db, ct, ck, pt, pk)
             if ck.lower() in hubs:
                 row["tags"].append("tenant_or_hub_key")
+            if ev.get("contract"):                     # 代码里就这么连:独立于数据的一条证据
+                ch["contract"] = {"state": "support", "code": ev["contract"].get("code"), "file": ev["contract"].get("file")}
             # 强冲突直接说明「这不是一条连接关系」;弱冲突可能有业务原因(补建的分组、引用已删除的父行、
             # 一对一扩展表),只送人工复核,不改裁决。
             # 名称不一致:父键是自增 id 时说明两边编号体系对不上(强);父键是业务编码时
@@ -256,13 +308,13 @@ def check(ir, db):
             weak = [k for k in ("bidirectional", "soft_delete", "temporal") if ch.get(k, {}).get("state") == "conflict"]
             if name_bad and pk.lower() != "id":
                 weak.insert(0, "name")
-            support = [k for k in ("name", "temporal") if ch.get(k, {}).get("state") == "support"]
+            support = [k for k in ("name", "temporal", "contract") if ch.get(k, {}).get("state") == "support"]
             row["conflicts"], row["weak_conflicts"], row["supports"] = strong, weak, support
             row["verdict"] = ("refuted" if strong else "review" if weak else
                               "corroborated" if support else "single_channel")
         else:
             ch["conditional"] = conditional_channel(db, ct, ck, pt, pk)
-            ch["valid_rows"] = valid_rows_channel(db, ct, ck, pt, pk, ev)
+            ch["valid_rows"] = valid_rows_channel(db, ct, ck, pt, pk, ev, scopes)
             row["verdict"] = ("conditional_candidate" if ch["conditional"]["state"] == "support" else
                               "valid_rows_candidate" if ch["valid_rows"]["state"] == "support" else "unchanged")
     return out, hubs
@@ -289,6 +341,14 @@ def apply(ir, rows):
             ev["cross_check"]["prev_status"] = r.get("status")
             r["status"] = "candidate"
             r["note"] = "交叉复核冲突(" + "、".join(row["conflicts"]) + "),待人工复核;原裁决:" + str(r.get("note") or "")
+        elif row.get("verdict") == "valid_rows_candidate" and ev.get("name_ok") is True:
+            # 有效行上父键唯一、重叠达标、键名有据(含代码契约):与数据裁决同一口径,只是先定了有效行
+            vr = row["channels"]["valid_rows"]
+            ev["cross_check"]["prev_status"] = r.get("status")
+            ev["valid_rows"] = {k: vr.get(k) for k in ("state", "rule", "note", "column", "group", "tenant_column")
+                                if vr.get(k) is not None}      # 原始 parent_unique 保持 false,不改写
+            r["status"] = "verified"
+            r["note"] = f"有效行复核通过({vr.get('note')});原裁决:" + str(r.get("note") or "")
     return ir
 
 

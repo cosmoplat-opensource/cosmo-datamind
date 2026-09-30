@@ -80,6 +80,9 @@ def _core(col):
     return c if len(c) >= 3 and c not in _GENERIC_KEY else ""
 
 
+_GENERIC_TAILS = {"status", "number", "amount", "remark", "detail", "record", "values", "result", "source", "target"}
+
+
 def key_name_ok(child_key, parent_key):
     """子键/父键**词根相容**(值域重叠之外的第二道校验,DR-033)。
     两键词根相等或一方为另一方前缀(限长≥3)。稠密自增代理键之间值域天然 100% 重合,
@@ -102,6 +105,11 @@ def key_name_ok(child_key, parent_key):
         if sa == sb:
             continue
         if min(len(sa), len(sb)) >= 3 and (sa.startswith(sb) or sb.startswith(sa)):
+            continue
+        # 子键 = 修饰词 + 父键全名(mete_dev_type_code → dev_type_code、meta_sys_type_code → sys_type_code):
+        # 较短一方须足够具体(至少两个词,或 ≥6 个字母),避免 type、code 这类泛词误配
+        short, long_ = (sa, sb) if len(sa) <= len(sb) else (sb, sa)
+        if ("_" in short or (len(short) >= 6 and short not in _GENERIC_TAILS)) and long_.endswith("_" + short):
             continue
         return False
     return True

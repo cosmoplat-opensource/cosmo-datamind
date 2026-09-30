@@ -123,19 +123,19 @@ def _checked_paths(db, out):
     return db_p, out_p
 
 
-def build(db, out, name, action_types=None):
+def build(db, out, name, action_types=None, tables=None):
     """Serialize in-process builds and close the read snapshot on every exit path."""
     global con
     with _BUILD_LOCK:
         try:
-            return _build(db, out, name, action_types)
+            return _build(db, out, name, action_types, tables)
         finally:
             if con is not None:
                 con.close()
                 con = None
 
 
-def _build(db, out, name, action_types=None):
+def _build(db, out, name, action_types=None, tables=None):
     """数据驱动构建一张图谱 IR,写入 out 并返回 ir(供测试/编程调用)。"""
     global con, cols_of, pk_of
     db, out = _checked_paths(db, out)
@@ -157,6 +157,12 @@ def _build(db, out, name, action_types=None):
             "WHERE type='table' AND name NOT LIKE 'sqlite_%' ORDER BY name"
         )
     ]
+    # 只读抽样写入的库表 / 字段注释是元数据,不是业务实体
+    tabs = [t for t in tabs if t not in ("_dm_tables", "_dm_columns")]
+    if tables:
+        # 分轮构建的本轮范围:兜底构建也只建这几张表,不因模型超时把全库都建一遍
+        scope = {str(t).lower() for t in tables}
+        tabs = [t for t in tabs if t.lower() in scope]
     print(f"[quick_build] {len(tabs)} 张表", flush=True)
 
     objects, links = [], []
@@ -388,6 +394,7 @@ if __name__ == "__main__":
     if len(sys.argv) < 4:
         print(__doc__.splitlines()[0], file=sys.stderr); sys.exit(2)
     try:
-        build(sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4] if len(sys.argv) > 4 else None)
+        _tables = json.loads(sys.argv[5]) if len(sys.argv) > 5 and sys.argv[5] else None
+        build(sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4] if len(sys.argv) > 4 else None, _tables)
     except ValueError as e:            # 路径体检不过:给一行清楚的原因,不抛裸栈
         print(f"[quick_build] 参数错误:{e}", file=sys.stderr); sys.exit(2)
