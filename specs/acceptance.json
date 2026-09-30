@@ -1,5 +1,5 @@
 {
-  "iteration": "IR-014 / IR-015",
+  "iteration": "IR-014 / IR-015 / IR-016",
   "requirements": [
     {
       "id": "ALG-01",
@@ -124,6 +124,239 @@
       "tests": [
         "tests/unit/test_check_isolation.py::test_check_environment_uses_only_committed_fixtures_and_disables_llm"
       ]
+    },
+    {
+      "id": "PRE-01",
+      "context": "preflight",
+      "decisions": [
+        "DR-064"
+      ],
+      "criterion": "湖仓里同一业务词根、不同层级/厂区/站点/副本的表归为一个表族;前缀从表名学习,检测类型等子类型不被误剥;分轮计划只放代表表",
+      "scenarios": [
+        "specs/features/构建体检.feature::湖仓里同一实体的多份表归为一个表族"
+      ],
+      "tests": [
+        "tests/bdd/test_features.py::test_scenario",
+        "tests/unit/test_concept_hints.py::test_plan_puts_only_representatives_in_rounds"
+      ],
+      "iteration": "IR-016"
+    },
+    {
+      "id": "PRE-02",
+      "context": "preflight",
+      "decisions": [
+        "DR-064"
+      ],
+      "criterion": "实例表按类别目录拆出多个概念,名称取自目录,目录的已删除行不影响判断",
+      "scenarios": [
+        "specs/features/构建体检.feature::业务库的实例表按类别拆成多个概念"
+      ],
+      "tests": [
+        "tests/bdd/test_features.py::test_scenario",
+        "tests/unit/test_concept_hints.py::test_metadata_driven_scenario"
+      ],
+      "iteration": "IR-016"
+    },
+    {
+      "id": "EVI-01",
+      "context": "evidence",
+      "decisions": [
+        "DR-065"
+      ],
+      "criterion": "上传代码中的连接契约在裁决中只顶替命名证据,重叠率与父键唯一的门槛不变;没有契约时键名不同的关系停在候选",
+      "scenarios": [
+        "specs/features/代码契约.feature::键名不同但代码里就这么连,关系通过裁决",
+        "specs/features/代码契约.feature::没有代码契约时,键名不同的关系停在候选"
+      ],
+      "tests": [
+        "tests/bdd/test_features.py::test_scenario",
+        "tests/unit/test_code_contracts.py::test_contract_lets_a_differently_named_key_pass_the_name_gate"
+      ],
+      "iteration": "IR-016"
+    },
+    {
+      "id": "EVI-02",
+      "context": "evidence",
+      "decisions": [
+        "DR-065"
+      ],
+      "criterion": "读入的代码包与 Word 文档去除 IP 与 URL 主机,不进入提示词与证据",
+      "scenarios": [
+        "specs/features/代码契约.feature::代码包里的内网地址与测试环境主机不进入证据"
+      ],
+      "tests": [
+        "tests/bdd/test_features.py::test_scenario",
+        "tests/unit/test_code_contracts.py::test_docx_tables_rows_and_field_codes"
+      ],
+      "iteration": "IR-016"
+    },
+    {
+      "id": "EVI-03",
+      "context": "evidence",
+      "decisions": [
+        "DR-065"
+      ],
+      "criterion": "代码注释给出字段中文含义,开发者评注与通用 id 列不作为字段含义;构建后只补空缺",
+      "scenarios": [
+        "specs/features/代码契约.feature::代码注释给出字段中文含义"
+      ],
+      "tests": [
+        "tests/bdd/test_features.py::test_scenario",
+        "tests/unit/test_code_contracts.py::test_term_contracts_from_sql_comments_and_javadoc",
+        "tests/unit/test_code_contracts.py::test_build_with_uploaded_code_fills_labels_and_records_contracts"
+      ],
+      "iteration": "IR-016"
+    },
+    {
+      "id": "VR-01",
+      "context": "cross_check",
+      "decisions": [
+        "DR-065"
+      ],
+      "criterion": "父键不唯一时按有效行四规则复核;成立且键名有据的候选升为 verified,每次迁移都是关系生命周期模型允许的",
+      "scenarios": [
+        "specs/features/有效行.feature::区域编号按工厂复用,复核后按租户作用域成立"
+      ],
+      "tests": [
+        "tests/bdd/test_features.py::test_scenario",
+        "tests/meta/test_models.py::test_cross_check_apply_only_makes_model_transitions"
+      ],
+      "models": [
+        "specs/models/relation_lifecycle.json"
+      ],
+      "iteration": "IR-016"
+    },
+    {
+      "id": "VR-02",
+      "context": "governance",
+      "decisions": [
+        "DR-065"
+      ],
+      "criterion": "按租户作用域成立的关系,问数 SQL 须同时按租户列关联,否则口径校验拦截",
+      "scenarios": [
+        "specs/features/有效行.feature::按租户作用域成立的关系,问数不带工厂会被拦下"
+      ],
+      "tests": [
+        "tests/bdd/test_features.py::test_scenario",
+        "tests/unit/test_code_contracts.py::test_tenant_scoped_keys_must_be_joined_with_the_tenant_in_qa"
+      ],
+      "metrics": [
+        "qa.gate_block"
+      ],
+      "iteration": "IR-016"
+    },
+    {
+      "id": "VR-03",
+      "context": "governance",
+      "decisions": [
+        "DR-065"
+      ],
+      "criterion": "按软删除成立的关系,问数 SQL 须排除父表已删除行,JOIN 提示写出该条件",
+      "scenarios": [
+        "specs/features/有效行.feature::类型目录有已删除行,问数须排除已删除行"
+      ],
+      "tests": [
+        "tests/bdd/test_features.py::test_scenario",
+        "tests/unit/test_code_contracts.py::test_soft_deleted_catalogs_must_be_filtered_in_qa"
+      ],
+      "metrics": [
+        "qa.gate_block"
+      ],
+      "iteration": "IR-016"
+    },
+    {
+      "id": "QRY-01",
+      "context": "governance",
+      "decisions": [
+        "DR-065"
+      ],
+      "criterion": "用登记的 SQLite 数据源建的本体在该来源库上问数,并在步骤中注明",
+      "scenarios": [
+        "specs/features/问数.feature::用抽样库建的本体在来源库上问数"
+      ],
+      "tests": [
+        "tests/bdd/test_features.py::test_scenario",
+        "tests/unit/test_code_contracts.py::test_qa_runs_on_the_ontologys_source_database"
+      ],
+      "iteration": "IR-016"
+    },
+    {
+      "id": "OBS-01",
+      "context": "infrastructure",
+      "decisions": [
+        "DR-066"
+      ],
+      "criterion": "问数按运行记录追踪,口径拦截按原因计入指标,追踪中只留问句指纹不留原文",
+      "scenarios": [
+        "specs/features/问数.feature::口径拦截按原因计入指标,追踪里不留问句原文"
+      ],
+      "tests": [
+        "tests/bdd/test_features.py::test_scenario",
+        "tests/unit/test_observability.py::test_sensitive_attributes_are_fingerprinted"
+      ],
+      "metrics": [
+        "qa.gate_block",
+        "qa.runs"
+      ],
+      "iteration": "IR-016"
+    },
+    {
+      "id": "OBS-02",
+      "context": "infrastructure",
+      "decisions": [
+        "DR-066"
+      ],
+      "criterion": "构建全程可追踪(开始、步骤、结束),模型不可用时的兜底被计数",
+      "scenarios": [
+        "specs/features/问数.feature::构建全程可被追踪,模型不可用时的兜底被计数"
+      ],
+      "tests": [
+        "tests/bdd/test_features.py::test_scenario",
+        "tests/unit/test_observability.py::test_obs_endpoints_contract"
+      ],
+      "metrics": [
+        "build.fallback",
+        "build.runs",
+        "build.step_ms"
+      ],
+      "iteration": "IR-016"
+    },
+    {
+      "id": "MDD-01",
+      "context": "shared_kernel",
+      "decisions": [
+        "DR-066"
+      ],
+      "criterion": "关系状态与有效行规则只来自关系生命周期模型;构建推送的步骤与流水线模型完全一致;模型投影文档同步",
+      "scenarios": [],
+      "tests": [
+        "tests/meta/test_models.py::test_emitted_steps_equal_model_steps",
+        "tests/meta/test_models.py::test_generated_projection_is_in_sync",
+        "tests/meta/test_models.py::test_cross_check_script_speaks_the_model_language"
+      ],
+      "models": [
+        "specs/models/relation_lifecycle.json",
+        "docs/pipelines/ontology_build.yaml"
+      ],
+      "iteration": "IR-016"
+    },
+    {
+      "id": "DDD-01",
+      "context": "shared_kernel",
+      "decisions": [
+        "DR-066"
+      ],
+      "criterion": "每个模块登记在唯一的限界上下文;依赖只指向地图允许的上游;领域上下文不依赖 Web 框架;技能脚本自包含",
+      "scenarios": [],
+      "tests": [
+        "tests/meta/test_context_map.py::test_imports_respect_context_dependencies",
+        "tests/meta/test_context_map.py::test_every_module_belongs_to_exactly_one_context",
+        "tests/meta/test_context_map.py::test_skill_scripts_are_self_contained"
+      ],
+      "models": [
+        "specs/models/context_map.json"
+      ],
+      "iteration": "IR-016"
     }
   ]
 }

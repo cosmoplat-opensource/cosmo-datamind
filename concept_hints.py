@@ -76,12 +76,14 @@ def _substitutable(cur, side, min_rem, ratio=0.5):
 def name_cores(tables, rounds=5):
     """表名 → 业务词根。返回 (词根映射, 学到的前缀, 学到的后缀)。
 
-    前缀要后面接足够多种表(≥10 且 ≥1% 表数):厂码、来源后面接上百种表,
+    前缀要后面接足够多种表(至少 4 种,且不少于表数的 1%):厂码、来源后面接上百种表,
     「fct_/aoi_」这类子类型只接几种,不能剥,否则不同的测试会并成一族。
     后缀只学短的变体标记(数字或 ≤3 个字母),业务词(area、type)不剥。
     """
     cur = {t: clean_name(t).split("_") for t in tables}
-    min_rem = max(10, len(tables) // 100)
+    # 门槛随规模:小库里厂码后面也只接十几种表(至少 4 种);大库按表数 1% 计——2,206 张表的湖仓里
+    # 厂码后面接 140~226 种,子类型 fct_/aoi_ 只接十几种,1% 的门槛(22)正好分开
+    min_rem = max(4, len(tables) // 100)
     pre, suf = set(), set()
     for _ in range(rounds):
         pre |= _substitutable(cur, 0, min_rem)
@@ -101,6 +103,45 @@ def name_cores(tables, rounds=5):
         if not changed:
             break
     return {t: "_".join(tk) for t, tk in cur.items()}, sorted(pre), sorted(suf)
+
+
+def _align_tails(cores, min_rem, biz):
+    """按尾部对齐:两个词根只在开头几个词上不同,且这些词都「后面接的表种类足够多」(厂码、约定前缀),
+    就归到共同的尾部。解决前缀学习的先有鸡还是先有蛋:某个厂独用一种命名约定时,
+    它的厂码后面接的剩余部分与别的厂都不同,单靠可替换性学不出来。
+    检测类型(fct_/aoi_)后面只接几种表,够不上门槛,不会被对齐掉。"""
+    breadth = defaultdict(set)
+    for core in set(cores.values()):
+        tk = core.split("_")
+        for i in range(min(3, len(tk) - 1)):
+            breadth[tk[i]].add("_".join(tk[i + 1:]))
+    prefixlike = {x for x, rs in breadth.items() if len(rs) >= min_rem or x.isdigit()}
+    tails = defaultdict(set)
+    for core in set(cores.values()):
+        tk = core.split("_")
+        for i in range(0, min(4, len(tk) - 1) + 1):
+            rest = tk[i:]
+            if all(x in prefixlike for x in tk[:i]) and _ok_rest(rest) and len(rest) >= 2:
+                tails["_".join(rest)].add(core)
+    by_core = defaultdict(set)
+    for t, c in cores.items():
+        by_core[c] |= biz.get(t, set())
+
+    def similar(a, b):
+        # 只凭名字分不清「shift_material_meter」与「material_meter」是同一实体还是两个实体;
+        # 各厂副本的业务列基本相同,不同实体的列不同
+        x, y = by_core[a], by_core[b]
+        return bool(x or y) and len(x & y) / max(1, len(x | y)) >= 0.3
+    mapping = {}
+    for core in set(cores.values()):
+        tk = core.split("_")
+        for i in range(0, min(4, len(tk) - 1) + 1):         # 取最长的、被两个以上词根共享且列相近的尾部
+            tail = "_".join(tk[i:])
+            peers = [c for c in tails.get(tail, ()) if c != core and similar(core, c)]
+            if peers:
+                mapping[core] = tail
+                break
+    return {t: mapping.get(c, c) for t, c in cores.items()}
 
 
 def envelope(cols, share=0.2):
@@ -125,6 +166,11 @@ def table_families(cols, rows=None):
     cores, pre, suf = name_cores(list(cols))
     env = envelope(cols)
     biz = {t: {c.lower() for c in cs} - env for t, cs in cols.items()}
+    # 尾部对齐只在湖仓形态下做(≥30% 的表带数仓层级前缀):多厂副本是湖仓现象;业务库里尾部相同、
+    # 列也相近的表(系统设备关系 / 企业设备关系、指标周期的实例与定义)是不同概念
+    layered = sum(1 for t in cols if LAYER.match(_bare(t).lower())) / max(1, len(cols))
+    if layered >= 0.3:
+        cores = _align_tails(cores, max(4, len(cols) // 100), biz)
     groups = defaultdict(list)
     for t, core in cores.items():
         groups[core].append(t)

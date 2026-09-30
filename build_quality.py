@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import cq_check
 import build_references
+import ontology_domain
 import metric_contract
 import dao_core
 import definition_eval
@@ -69,10 +70,8 @@ def audit_verified_evidence(ir):
             issues.append({"type": "verified_overlap_below_threshold", "relation": label, "index": index,
                            "desc": f"verified 关系重叠率 {overlap!r} 未达到固定阈值 {dao_core.MIN_OVERLAP:g}%",
                            "fix": "降为 candidate,或用可回放数据重新取证"})
-        valid_rows = evidence.get("valid_rows") if isinstance(evidence.get("valid_rows"), dict) else {}
-        # DR-065:父键在「有效行」上唯一也算——软删除、版本重复、租户作用域、分组编码,规则须写明
-        valid_rows_ok = (valid_rows.get("state") == "support" and
-                         valid_rows.get("rule") in ("soft_delete", "keep_latest", "tenant_scoped", "scoped", "scoped_tenant"))
+        # DR-065:父键在「有效行」上唯一也算;认可哪些规则以关系生命周期模型为准(ontology_domain)
+        valid_rows_ok = ontology_domain.is_valid_rows(evidence)
         if evidence.get("parent_unique") is not True and not valid_rows_ok:
             issues.append({"type": "verified_parent_not_unique", "relation": label, "index": index,
                            "desc": "verified 关系未记录父键唯一=true",

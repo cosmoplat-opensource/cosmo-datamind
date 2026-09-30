@@ -94,6 +94,9 @@ def main():
                 ("lint", [py, "-m", "ruff", "check", "."]),
                 ("types", [py, "-m", "mypy", ".", "--no-error-summary"]),
                 ("unit", [py, "-m", "coverage", "run", "-m", "pytest", "tests/", "-ra"]),
+                # DR-066:规格追溯(需求 ↔ 场景 ↔ 测试)与模型投影同步,作为具名关卡
+                ("stdd", [py, "scripts/stdd.py", "status", "--strict"]),
+                ("models", [py, "scripts/gen_models.py", "--check"]),
                 ("coverage", [py, "-m", "coverage", "report"]),
             ):
                 run_check(name, command, env, reports, results)

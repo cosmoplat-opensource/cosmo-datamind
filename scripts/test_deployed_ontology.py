@@ -22,7 +22,7 @@ import sys
 import time
 from urllib.parse import urlsplit
 
-import requests  # type: ignore[import-untyped]
+import requests  # type: ignore[import-untyped, unused-ignore]
 
 ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
@@ -319,7 +319,7 @@ def main():
     def export_roundtrip():
         from rdflib import Graph
         from rdflib.compare import isomorphic
-        import yaml  # type: ignore[import-untyped]
+        import yaml  # type: ignore[import-untyped, unused-ignore]
         graphs, details = [], {}
         for extension, rdf_format in (("ttl", "turtle"), ("jsonld", "json-ld"), ("owl", "xml")):
             response = session.get(args.url.rstrip("/") + f"/api/graph/{args.graph}/export.{extension}", timeout=(5, 30))

@@ -296,7 +296,7 @@ GLM-5.2 与 OpenAI 的完整配置、用自然语言建一张带中文名的本�
 
 `specs/` 下是完整的**规约驱动开发(SDD)**记录——不是事后补的说明,而是开发时的决策依据:
 
-- `specs/decisions/` — DR-001…DR-065 决策记录,每篇写清背景、选项、取舍与代价
+- `specs/decisions/` — DR-001…DR-066 决策记录,每篇写清背景、选项、取舍与代价
 - `specs/iterations/` — IR-001…IR-015 迭代记录,含验收标准与实测结果
 - `specs/map.md` — 入口索引
 
@@ -326,9 +326,23 @@ python3 -m venv .venv
 套件覆盖路由可达性、只读约束、CSRF、路径穿越、证据分层一致性、编辑回放等。
 未配置上游引擎时，依赖它的用例会明确记为条件跳过；其余检查仍须零失败。
 
+### 开发范式(DR-066)
+
+需求、行为、模型、边界与观测都有可执行的真相来源,改动按 [AGENTS.md](AGENTS.md) 的顺序走:
+
+| 范式 | 真相来源 | 检查 |
+|---|---|---|
+| SDD / STDD | `specs/acceptance.json`(需求 ↔ 场景 ↔ 测试 ↔ 模型 ↔ 指标) | `python3 scripts/stdd.py status --strict` |
+| BDD | `specs/features/*.feature`(中文 Given-When-Then) | `pytest tests/bdd` |
+| TDD | `tests/unit`,确定性模块另有性质测试 `test_properties.py` | `pytest tests/unit` |
+| DDD | `specs/models/context_map.json`(限界上下文与通用语言) | `pytest tests/meta/test_context_map.py` |
+| MDD | `specs/models/relation_lifecycle.json`、`docs/pipelines/ontology_build.yaml` | `python3 scripts/gen_models.py --check` |
+| ODD | `observability.py`;`/api/obs/metrics`、`/api/obs/runs` | `pytest tests/unit/test_observability.py` |
+
 ## 贡献
 
-欢迎 issue 与 PR。改动请附上对应的 DR/IR 说明,并保证 `test_all.py` 不出现新的失败项。
+欢迎 issue 与 PR。改动请按 [AGENTS.md](AGENTS.md) 先登记需求与场景,附上对应的 DR 说明,并保证
+`scripts/check.py --suite unit` 全部通过、`test_all.py` 不出现新的失败项。
 安全问题请勿公开提交,见 [SECURITY.md](SECURITY.md)。
 
 ## 许可证

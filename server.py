@@ -24,6 +24,7 @@ import ontology_grounding
 import content_quality
 import doc_chunks
 import build_prep
+import observability    # DR-066:构建与问数的结构化追踪与指标(ODD)
 import code_contracts   # DR-065:代码契约(代码包 / docx 读取,连接与码表契约)
 import concept_hints    # DR-064:概念层线索(表族 / 类别拆分 / 版本重复)
 import build_cleaning   # DR-063:构建后自动复核、问数时套用清洗规则
@@ -3721,6 +3722,36 @@ def _qa_key(question, history, focus=None, graphs=None):
                       sorted(graphs or []), up_sig, ont_sig], ensure_ascii=False)
     return hashlib.md5(sig.encode("utf-8")).hexdigest()
 
+def _gate_category(why):
+    """口径拦截原因归类,供指标统计(不含具体表名)。"""
+    w = str(why or "")
+    for key, cat in (("租户", "tenant_scope"), ("分组", "group_scope"), ("软删除", "soft_delete"), ("已删除", "soft_delete"),
+                     ("不在本体已验证关系", "join_not_verified"), ("臆造表名", "unknown_table"), ("不在所选本体", "out_of_scope"),
+                     ("扇出", "fanout"), ("放大", "fanout")):
+        if key in w:
+            return cat
+    return "other"
+
+
+@app.get("/api/obs/metrics")
+def obs_metrics():
+    """DR-066 观测:进程内计数器与耗时分布(构建 / 问数各步骤、兜底、口径拦截按原因)。"""
+    return jsonify(observability.snapshot())
+
+
+@app.get("/api/obs/runs")
+def obs_runs():
+    """DR-066 观测:最近的追踪事件(当天),可按 kind=build|qa 过滤。只含计数与指纹,不含问句与 SQL 原文。"""
+    kind = request.args.get("kind") or None
+    if kind and kind not in ("build", "qa"):
+        return jsonify({"error": "kind 只能是 build 或 qa"}), 400
+    try:
+        limit = max(1, min(1000, int(request.args.get("limit") or 200)))
+    except ValueError:
+        return jsonify({"error": "limit 须为整数"}), 400
+    return jsonify(observability.recent(limit=limit, kind=kind))
+
+
 def _clean_steps(data):
     """查询结果上的清洗痕迹:哪些列按规则更正了、哪些表有悬空或空壳提示。"""
     out = []
@@ -3746,8 +3777,23 @@ def _reset_qa_source(token):
 @app.post("/api/chat")
 def chat():
     token = _with_qa_source(_qa_scope(request.json or {})[1])
+    run = observability.Run("qa", mode="sync", on_source_db=_QA_DB.get() is not None,
+                            q=(request.json or {}).get("q", ""))
     try:
-        return _chat_impl()
+        resp = _chat_impl()
+        data = resp.get_json(silent=True) if hasattr(resp, "get_json") else None
+        for st in (data or {}).get("steps", []) if isinstance(data, dict) else []:
+            run.step(st.get("step"), st.get("ok", True))
+            if st.get("step") == "ontology_gate" and st.get("ok") is False:
+                observability.count("qa.gate_block", reason=_gate_category(st.get("info")))
+            if st.get("step") == "data_clean" and "清洗规则生效" in str(st.get("info")):
+                observability.count("qa.cleaning_applied")
+        results = (data or {}).get("results") if isinstance(data, dict) else None
+        run.finish("ok" if results else "empty", results=len(results or []), cached=bool((data or {}).get("cached")))
+        return resp
+    except Exception as exc:
+        run.finish("error", error=type(exc).__name__)
+        raise
     finally:
         _reset_qa_source(token)
 
@@ -4024,8 +4070,30 @@ def chat_stream():
     from flask import Response, stream_with_context
     def gen_on_source():
         token = _with_qa_source(_qa_scope(body)[1])
+        run = observability.Run("qa", mode="stream", on_source_db=_QA_DB.get() is not None, q=question)
+        results = 0
         try:
-            yield from gen()
+            for chunk in gen():
+                if chunk.startswith("data: "):
+                    try:
+                        ev = json.loads(chunk[6:])
+                    except ValueError:
+                        ev = {}
+                    if ev.get("type") == "step":
+                        run.step(ev.get("step"), ev.get("ok", True))
+                        if ev.get("step") == "ontology_gate" and ev.get("ok") is False:
+                            observability.count("qa.gate_block", reason=_gate_category(ev.get("info")))
+                        if ev.get("step") == "data_clean" and "清洗规则生效" in str(ev.get("info")):
+                            observability.count("qa.cleaning_applied")
+                    elif ev.get("type") in ("result", "chart"):
+                        results += 1
+                    elif ev.get("type") == "done":
+                        results = max(results, len(ev.get("results") or []))
+                yield chunk
+            run.finish("ok" if results else "empty", results=results)
+        except GeneratorExit:
+            run.finish("aborted")
+            raise
         finally:
             _reset_qa_source(token)
     return Response(stream_with_context(gen_on_source()), mimetype="text/event-stream",
@@ -6462,12 +6530,27 @@ def build_inquire():
     base_graph = re.sub(r"[^A-Za-z0-9_]", "", str(body.get("base_graph") or ""))[:40]
     if base_graph and not base_graph.startswith("built_"):
         return jsonify({"error": "只能在自建本体(built_*)上迭代"}), 400
-    def sse(o): return "data: " + json.dumps(o, ensure_ascii=False, default=str) + "\n\n"
+    _obs = {}                                   # DR-066:本次构建的追踪(在生成器里创建)
+    def sse(o):
+        _r = _obs.get("run")
+        if _r is not None and o.get("type") in ("done", "error") and not _obs.get("finished"):
+            _obs["finished"] = True
+            st = o.get("stats") or {}
+            _r.finish("ok" if o.get("type") == "done" else "error", error=o.get("error"),
+                      objects=st.get("objects"), relations=st.get("links"), verified=st.get("verified"),
+                      quality=st.get("quality_result"), method=o.get("method"))
+        return "data: " + json.dumps(o, ensure_ascii=False, default=str) + "\n\n"
     def gen():
         import time as _t
         t0 = _t.time()
         references = requested_references
+        _obs["run"] = observability.Run("build", skills=len(skills), scoped=bool(scope_tables),
+                                        rounds_scope=len(scope_tables), iterate=bool(base_graph),
+                                        source_kind=("demo" if source == "demo" else "uploads" if source == "uploads" else "conn"))
         def push(step, ok, info=""):
+            _obs["run"].step(step, ok)
+            if step == "llm_extract" and not ok:
+                observability.count("build.fallback")      # 模型超时 / 离线,回退纯数据驱动
             return sse({"type": "step", "step": step, "ok": ok, "info": info, "ts": _t.strftime("%H:%M:%S")})
         if not q:
             yield sse({"type": "error", "error": "请输入构建诉求"}); return

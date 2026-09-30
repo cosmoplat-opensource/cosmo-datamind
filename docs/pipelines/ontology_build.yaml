@@ -2,11 +2,13 @@
 #
 # 本文件不参与运行，用于说明 /api/build/inquire 的实际执行顺序、阻断条件和降级路径。
 # code 锚点由 tests/meta/test_ontology_pipeline_doc.py 回打源码,防止说明与实现悄悄漂移。
+# MDD(DR-066):每个节点的 sse_steps 列出它对外推送的步骤名;tests/meta/test_models.py 核对
+# 构建代码推送的步骤与这里登记的完全一致(多一个少一个都红),并由 scripts/gen_models.py 生成流程图。
 
 name: ontology_semi_automatic_build
 description: 范围/CQ → 行业/标准参照 → 来源整理 → 技能方法 → LLM 提议 → 语义复核 → 数据验证 → 参照注释 → 指标反解与核验 → 验收 → 人工复核
 entrypoint: server.py:build_inquire
-version: "2.4"
+version: "3.0"
 
 principles:
   - 验收结果采用 pass/review/fail 三态
@@ -24,16 +26,19 @@ nodes:
     type: deterministic
     code: "server.py:_normalize_build_cqs / build_inquire"
     desc: 归一构建目标、数据源、技能与能力问题;限制 CQ 数量和长度
+    sse_steps: [scope_source, intake, cq_holdout, intent, round_scope, scope_base]
 
   - id: skill_discovery
     type: deterministic
     code: "skill_registry.py:discover / method_text"
     desc: 合并本仓内置技能与可选上游技能;列表、查看、prompt 注入共用同一注册表
+    sse_steps: [orchestrate, skill_inject]
 
   - id: reference_profile
     type: deterministic
     code: "build_references.py:normalize / prompt_block"
     desc: 归一行业/本体标准及参照/强约束模式;旧调用兼容 BFO/IOF,显式 none 不施加标准
+    sse_steps: [reference_profile]
 
   - id: reference_asset_load
     type: deterministic
@@ -44,27 +49,44 @@ nodes:
     type: deterministic
     code: "server.py:_gather_evidence"
     desc: 聚合真实表列、代码/文档摘录和未解析资产引用;所有引用留来源
+    sse_steps: [gather_evidence, long_doc]
+
+  - id: code_contracts
+    type: deterministic
+    code: "code_contracts.py:extract / resolve / resolve_codebooks / resolve_labels"
+    desc: 读取上传的代码包与 Word 文档(去除内网地址),抽取连接、码表、字段含义、接口与字典契约并对齐库表(DR-065)
+    sse_steps: [code_contracts]
+
+  - id: concept_hints
+    type: deterministic
+    code: "concept_hints.py:collect / text_for_prompt"
+    desc: 表族(多表一概念)、类别拆分(一表多概念)、版本重复;线索放在结构文本前交给提议模型(DR-064)
+    sse_steps: [concept_hints]
 
   - id: proposal
     type: llm
     code: "server.py:_llm_extract_ontology"
     desc: 生成对象/事件/关系/定义与可选候选键;候选键只调整验证顺序
+    sse_steps: [llm_extract, relation_intake]
     on_fail: quick_build_fallback
 
   - id: stability_probe
     type: optional_observer
     code: "server.py:_stability_annotate"
     desc: 二次独立提议计算 Jaccard;仅暴露模型方差,不作 verified 否决权
+    sse_steps: [stability]
 
   - id: semantic_review
     type: llm_observer
     code: "server.py:_llm_semantic_review"
     desc: 从 schema 复审共享值域/同名巧合;pass/fail/skipped 都如实留痕
+    sse_steps: [semantic_review]
 
   - id: data_adjudication
     type: deterministic_check
     code: "server.py:_adjudicate_ir"
     desc: 验证真实候选列,在只读快照中计算完整 distinct 统计与唯一性,保存最佳尝试证据;60秒预算
+    sse_steps: [verify, verify_diagnosis]
 
   - id: complete_sql_evidence
     type: deterministic_check
@@ -80,6 +102,25 @@ nodes:
     type: deterministic_fallback
     code: "quick_build.py:build"
     desc: LLM 离线时从 schema/数据发现关系;与 LLM 分支共用 dao_core 和验收检查
+    sse_steps: [construct]
+
+  - id: mapping_enrichment
+    type: deterministic
+    code: "concept_hints.py:attach_families / code_contracts.py:resolve_labels"
+    desc: 同族成员表挂到同一对象;按代码注释补全字段中文名(只补空缺)
+    sse_steps: [concept_families, code_labels]
+
+  - id: action_projection
+    type: deterministic
+    code: "action_ontology.py:project_registered_actions"
+    desc: 动作注册表投影为动作节点;执行方式为决策记录,不声称真实写回
+    sse_steps: [action_projection]
+
+  - id: iteration_merge
+    type: deterministic
+    code: "server.py:_merge_ir"
+    desc: 在已有本体上继续构建时并入底本;已确立的 verified/asserted 不被覆盖
+    sse_steps: [merge]
 
   - id: upper_relation_grounding
     type: deterministic_check
@@ -95,11 +136,19 @@ nodes:
     type: deterministic
     code: "metric_pipeline.py:run / metric_mining.py:collect"
     desc: 指标反解:上传 SQL / 口径表 / 沉淀 SQL / 参考基准 → 带来源的候选;含 JOIN 不猜口径
+    sse_steps: [metric_mining]
 
   - id: metric_adjudication
     type: deterministic_check
     code: "metric_contract.py:schema_missing / compile_sql / adjudicate"
     desc: 同一只读快照内目录核对 → 确定性编译 → 执行主SQL与参照SQL并比对;verified 只来自可执行且一致,人工状态不覆盖
+    sse_steps: [metric_adjudication]
+
+  - id: cross_check_and_cleaning
+    type: deterministic_check
+    code: "build_cleaning.py:run_after_build"
+    desc: 选中复核技能时运行:多通道复核(强冲突降级、有效行四规则升级)与数据清洗规则(DR-062/063/065)
+    sse_steps: [cross_check, data_clean]
 
   - id: quality_health
     type: deterministic_check
@@ -130,11 +179,13 @@ nodes:
     type: deterministic_check
     code: "build_quality.py:evaluate"
     desc: 聚合 pass/review/fail;只诊断不自动修图
+    sse_steps: [critic]
 
   - id: persist_audit
     type: output
     code: "srv_context.py:_atomic_json"
     desc: IR、逐关系证据、references、标准资产指纹、quality 报告、gaps 与逐轮历史一起原子落盘
+    sse_steps: [narrate]
 
   - id: human_review_feedback
     type: human
@@ -146,7 +197,9 @@ edges:
   - [reference_profile, reference_asset_load]
   - [reference_asset_load, skill_discovery]
   - [skill_discovery, evidence_manifest]
-  - [evidence_manifest, proposal]
+  - [evidence_manifest, code_contracts]
+  - [code_contracts, concept_hints]
+  - [concept_hints, proposal]
   - [proposal, semantic_review]
   - [proposal, stability_probe]
   - [proposal, data_adjudication]
@@ -155,12 +208,16 @@ edges:
   - [quick_build_fallback, complete_sql_evidence]
   - [complete_sql_evidence, adjudication_core]
   - [proposal, quick_build_fallback]
-  - [adjudication_core, upper_relation_grounding]
-  - [quick_build_fallback, upper_relation_grounding]
+  - [adjudication_core, mapping_enrichment]
+  - [quick_build_fallback, mapping_enrichment]
+  - [mapping_enrichment, action_projection]
+  - [action_projection, iteration_merge]
+  - [iteration_merge, upper_relation_grounding]
   - [upper_relation_grounding, reference_annotation]
   - [reference_annotation, metric_mining]
   - [metric_mining, metric_adjudication]
-  - [metric_adjudication, quality_health]
+  - [metric_adjudication, cross_check_and_cleaning]
+  - [cross_check_and_cleaning, quality_health]
   - [quality_health, quality_evidence]
   - [quality_evidence, quality_metric]
   - [quality_metric, quality_definition]

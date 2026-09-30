@@ -1,6 +1,6 @@
 # COSMO DataMind · 系统架构
 
-> 面向维护者的架构说明。契约细节见 `specs/`(DR-001…DR-065、IR-001…IR-013)。本文描述分层、数据流与统一约定。
+> 面向维护者的架构说明。契约细节见 `specs/`(DR-001…DR-066、IR-001…IR-013)。本文描述分层、数据流与统一约定。
 
 ## 1. 分层
 
@@ -9,7 +9,7 @@
 │  前端 (ui/index.html + ui/modules/styles, 原生 JS/CSS)        │
 │   27 页 × hash 路由 · G6 图谱 · ECharts · 统一助手 $/esc/J    │
 ├─────────────────────────────────────────────────────────────┤
-│  HTTP 层 (Flask, 单端口 8092) · 共 135 路由                    │
+│  HTTP 层 (Flask, 单端口 8092) · 共 137 路由                    │
 │   server.py 115 + bp_engine 5 + bp_actions 7 + bp_metrics 4 + bp_semantic 2 │
 │   生产入口:wsgi.py → Gunicorn(gthread) → Nginx 反向代理       │
 │   app 级 before_request CSRF 守卫(对 blueprint 同样生效)      │
