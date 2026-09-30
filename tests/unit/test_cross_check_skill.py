@@ -93,12 +93,14 @@ class TestSkillPackage:
                      "离群编码", "悬空但语义成立", "源库一律不改"):
             assert rule in body, rule
 
-    def test_energy_skill_maps_the_pipeline_onto_skills(self):
+    def test_method_skill_maps_the_pipeline_onto_skills(self):
+        """构建流程写在通用方法技能里,领域技能只引用它。"""
         items = {i["name"]: i for i in skill_registry.discover([os.path.join(ROOT, "skills_seed")])}
-        body = skill_registry.skill_body(open(items["energy-carbon-ontology"]["skill_md"], encoding="utf-8").read())
-        for step in ("体检", "分流", "概念层", "映射", "裁决", "交叉复核与清洗", "桥接与验收"):
+        body = skill_registry.skill_body(open(items["ontology-build-method"]["skill_md"], encoding="utf-8").read())
+        for step in ("体检", "画像与参照", "概念层", "分轮映射", "裁决", "交叉复核与清洗", "验收"):
             assert step in body, step
-        assert "ontology-cross-check" in body
+        energy = skill_registry.skill_body(open(items["energy-carbon-ontology"]["skill_md"], encoding="utf-8").read())
+        assert "ontology-build-method" in energy and "ontology-cross-check" in energy
 
 
 class TestChannels:

@@ -24,6 +24,7 @@ import ontology_grounding
 import content_quality
 import doc_chunks
 import build_prep
+import concept_hints    # DR-064:概念层线索(表族 / 类别拆分 / 版本重复)
 import build_cleaning   # DR-063:构建后自动复核、问数时套用清洗规则
 import ext_sample
 import llm_json      # DR-058:LLM 回复 JSON 抽取与提议形状校验的单一事实源
@@ -6370,6 +6371,13 @@ def build_inquire():
         if ev["n_docs"]: emeta += f" · 文档/代码证据 {ev['n_docs']} 份"
         if ev["refs"]: emeta += f" · 引用资产 {len(ev['refs'])} 项"
         yield push("gather_evidence", True, "取证:" + emeta)
+        # 概念层线索(DR-064):表与概念不是一一对应——表族合并、类别拆分、版本重复。
+        # 只读、确定性;附在结构文本前给提议模型,构建后再把同族成员表挂到同一个对象上。
+        _hints = _bounded(lambda: concept_hints.collect(db), 60) or {}
+        _htext = concept_hints.text_for_prompt(_hints, scope=ev.get("scope") or list(ev["tab_cols"])[:400])
+        if _htext:
+            ev["schema"] = _htext + "\n\n" + (ev.get("schema") or "")   # 放在前面:结构文本超长时会被截尾
+            yield push("concept_hints", True, concept_hints.summary_text(_hints) + " · 已附给提议模型")
         _ds = ev.get("doc_stats") or {}
         if _ds.get("chunks"):
             yield push("long_doc", True,
@@ -6463,6 +6471,12 @@ def build_inquire():
                 except OSError: pass
         if not isinstance(ir, dict) or not ir.get("objects"):
             yield sse({"type": "error", "error": "构建失败(无产物)"}); return
+        if _hints.get("families"):
+            _fa = concept_hints.attach_families(ir, _hints)
+            if _fa["objects"] or _fa["duplicates"]:
+                yield push("concept_families", True,
+                           f"表族归并 · {_fa['objects']} 个对象挂上同族成员表"
+                           + (f" · {_fa['duplicates']} 个对象与已有对象同族,已标注待合并" if _fa["duplicates"] else ""))
         action_projection = action_ontology.project_registered_actions(ir, _load_ats())
         if action_projection["added_nodes"] or action_projection["enriched_nodes"]:
             yield push("action_projection", True,

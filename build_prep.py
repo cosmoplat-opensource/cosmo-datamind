@@ -20,6 +20,7 @@ import re
 import sqlite3
 from collections import Counter, defaultdict
 
+import concept_hints
 import doc_chunks
 
 META_TABLES = ("_dm_tables", "_dm_columns")          # ext_sample 写入的库表/字段注释
@@ -33,6 +34,10 @@ KEYLIKE = re.compile(r"(_id|_no|_code)$", re.I)
 SHARD = re.compile(r"(_(19|20)\d{2}(\d{2})?|_(bak|backup|copy\d*|old|\d{8}))$", re.I)   # 「历史」表是正常业务表,不算分表
 SCRATCH = re.compile(r"^(tmp|temp|test|demo)_|_(tmp|temp|test|demo)$|^my_table$", re.I)
 ENERGY = re.compile(r"能耗|用能|电表|电能|水表|计量|能源|折标|标煤|电价|光伏|储能|meter|energy|(?:^|_)(?:pv|es)_", re.I)
+# 制造信号只看去掉层级/厂区前缀后的业务词:工单、过站、测试、物料、工艺路线……
+MANUF = re.compile(r"工单|工序|工艺|物料|过站|直通率|良率|返修|贴片|(^|_)(pm_mo|mo_base|wip|bom|route|operation|"
+                   r"repair|pallet|fpy|work_order|mo)(_|$)", re.I)
+PCBA = re.compile(r"贴片|(^|_)(smt|aoi|spi|ict|fct|pcb|pcba|dipaoi|smtaoi)(_|$)", re.I)
 CARBON = re.compile(r"碳|排放|co2|carbon|emission|ghg|温室", re.I)
 
 
@@ -107,6 +112,10 @@ def profile(db, deleted_share_cap=40):
             cs = [(t, c) for (t, c), cm in c_comment.items() if t in cols and (pattern.search(c) or pattern.search(cm))]
             cs += [(t, c) for t in tables for c in cols[t] if pattern.search(c) and (t, c) not in c_comment]
             return ts, sorted(set(cs))
+        # 概念层线索(DR-064):表族(多表一概念)、类别拆分(一表多概念)、版本重复(有效行)
+        concept = concept_hints.table_families(cols, rows)
+        concept["category_splits"] = concept_hints.category_splits(con, cols, rows)
+        concept["version_duplicates"] = concept_hints.version_duplicates(con, cols, rows)
         e_tabs, e_cols = hits(ENERGY)
         c_tabs, c_cols = hits(CARBON)
         commented = sum(1 for (t, c), cm in c_comment.items() if cm and t in cols)
@@ -120,6 +129,7 @@ def profile(db, deleted_share_cap=40):
             "hub_keys": hubs, "shard_tables": shards, "scratch_tables": scratch,
             "energy": {"tables": e_tabs, "columns": len(e_cols)},
             "carbon": {"tables": c_tabs, "columns": c_cols[:20], "column_count": len(c_cols)},
+            "concept": concept,
             "_cols": cols, "_pks": pks, "_rows": rows, "_comments": t_comment,
         }
     finally:
@@ -151,6 +161,27 @@ def findings(prof):
                     "title": f"疑似演示/临时表 {len(prof['scratch_tables'])} 张 · 历史分表或备份 {len(prof['shard_tables'])} 张",
                     "detail": "默认不纳入构建计划;如确属业务表,可在计划里手动加回。",
                     "examples": (prof["scratch_tables"] + prof["shard_tables"])[:4]})
+    concept = prof.get("concept") or {}
+    if concept.get("families"):
+        fams = concept["families"]
+        out.append({"id": "table_families", "level": "warn",
+                    "title": f"{len(fams)} 个表族(收编 {concept['tables_in_families']} 张表)",
+                    "detail": "同一实体按厂区、数仓层级、站点或备份复制成多张表,应建成一个概念;"
+                              "分轮计划只放每族的代表表,其余成员构建后挂到同一个对象上。",
+                    "examples": [f"{f['core']}:{len(f['members'])} 张,代表 {f['representative']}" for f in fams[:3]]})
+    if concept.get("category_splits"):
+        sp = concept["category_splits"]
+        out.append({"id": "category_splits", "level": "warn", "title": f"{len(sp)} 处按类别装着多种概念",
+                    "detail": "实例表按类别编码区分不同的领域概念,类别名称在目录表里;"
+                              "按类别建子概念(或在对象说明中写明类别),不要只建一个笼统对象。",
+                    "examples": [f"{x['table']}.{x['column']} → {x['catalog']}:"
+                                 + "、".join(c["name"] or c["code"] for c in x["categories"][:4]) for x in sp[:3]]})
+    if concept.get("version_duplicates"):
+        vd = concept["version_duplicates"]
+        out.append({"id": "version_duplicates", "level": "warn", "title": f"{len(vd)} 张表的业务键有版本重复",
+                    "detail": "同一业务键多次入仓,会让父键看起来不唯一、关系被拒;与软删除一样,先定有效行"
+                              "(按键保留最新一条)再判唯一与重叠。",
+                    "examples": [f"{v['table']}.{v['key']}(重复 {v['duplicate_rows']} 行)" for v in vd[:3]]})
     if prof["empty_tables"]:
         out.append({"id": "empty", "level": "info", "title": f"{len(prof['empty_tables'])} 张空表",
                     "detail": "空表上的关系无法用数据验证,只能保留为待取证。", "examples": prof["empty_tables"][:4]})
@@ -161,18 +192,49 @@ def findings(prof):
     return out
 
 
+def scenario(prof):
+    """场景画像:多厂多层湖仓(多表一概念)与元数据驱动业务库(一表多概念),两者可并存。"""
+    c = prof.get("concept") or {}
+    n = max(1, prof["tables"])
+    shares = round(100 * (c.get("tables_in_families") or 0) / n)
+    kinds = []
+    if shares >= 30:
+        kinds.append({"id": "lakehouse", "name": "多厂多层湖仓",
+                      "reason": f"{shares}% 的表属于表族(同一实体按厂区、层级、站点或副本复制)",
+                      "strategy": "多表一概念:表族只建代表表,其余成员挂到同一个对象上"})
+    if c.get("category_splits"):
+        kinds.append({"id": "metadata_driven", "name": "元数据驱动业务库",
+                      "reason": f"{len(c['category_splits'])} 处实例表按类别目录装着多种概念",
+                      "strategy": "一表多概念:按类别编码建子概念,目录行提升为概念"})
+    return kinds
+
+
 def suggest_references(prof):
-    """能源与碳排放分开建议:有能源信号建议能源管理参照;碳排放单独判断。"""
+    """行业参照与领域技能一起建议。能源与碳排放分开;制造按信号区分 PCBA/SMT 与通用离散制造。"""
     e, c = prof["energy"], prof["carbon"]
+    cores = concept_hints.name_cores(list(prof["_cols"]))[0]
+    words = {t: cores.get(t, t) for t in prof["_cols"]}
+    m_tabs = [t for t, w in words.items() if MANUF.search(w) or MANUF.search(prof["_comments"].get(t, ""))]
+    p_tabs = [t for t, w in words.items() if PCBA.search(w) or PCBA.search(prof["_comments"].get(t, ""))]
+    # 领域信号按占比判断:大库里零星几张相关表(制造库里的计量表、能碳库里的运维工单)不算该领域
+    n = max(1, prof["tables"])
     out = []
-    if len(e["tables"]) >= 3:
-        out.append({"industry": "energy_management", "name": "能源管理",
+    if len(p_tabs) >= max(3, 0.03 * n):
+        out.append({"industry": "pcba", "name": "PCBA / SMT", "skill": "electronics-manufacturing-ontology",
+                    "reason": f"{len(p_tabs)} 张表与贴片、检测(AOI/ICT/FCT)、板件相关;另有 {len(m_tabs)} 张工单、过站、物料相关"})
+    elif len(m_tabs) >= max(5, 0.05 * n):
+        out.append({"industry": "manufacturing", "name": "离散制造", "skill": "electronics-manufacturing-ontology",
+                    "reason": f"{len(m_tabs)} 张表与工单、工序、物料、过站相关"})
+    energy = len(e["tables"]) >= max(3, 0.03 * n)
+    if energy:
+        out.append({"industry": "energy_management", "name": "能源管理", "skill": "energy-carbon-ontology",
                     "reason": f"{len(e['tables'])} 张表与能源计量、能耗、电价等相关"})
     if c["tables"]:
-        out.append({"industry": "carbon_accounting", "name": "碳排放核算",
+        out.append({"industry": "carbon_accounting", "name": "碳排放核算", "skill": "energy-carbon-ontology",
                     "reason": f"{len(c['tables'])} 张表与碳排放相关"})
-    elif c["column_count"] and len(e["tables"]) >= 3:
+    elif c["column_count"] and energy:
         out.append({"industry": "carbon_accounting", "name": "碳排放核算", "separate": True,
+                    "skill": "energy-carbon-ontology",
                     "reason": f"没有碳排放表,只有 {c['column_count']} 个相关字段——碳排放多以派生指标存在;"
                               "建议能源与碳排放分开建,碳排放本体依据核算标准另建"})
     return out
@@ -202,26 +264,38 @@ def doc_coverage(tables, texts):
             "missing": st["anchors_missing"][:20], "doc_only": doc_only[:20], "doc_only_count": len(doc_only)}
 
 
-def _group_key(table):
+def _group_key(table, core=None):
     db, _, rest = table.rpartition("__")
-    toks = [x for x in rest.split("_") if x]
+    # 湖仓表名带层级/厂码/来源前缀,按业务词根的头一个词分组(co、pm、wip…)才有业务含义
+    toks = [x for x in (core or rest).split("_") if x]
     head = toks[0] if toks else rest
     if len(head) <= 2 and len(toks) > 1:              # 过短的前缀(如 es_、pv_)与下一词合并才有区分度
         head = "_".join(toks[:2])
     return (db + "__" if db else "") + head
 
 
-def plan(prof, max_tables=45, exclude=()):
+def plan(prof, max_tables=45, exclude=(), families=None):
     """枢纽优先、每轮不超过 max_tables 张表的分轮计划。
 
     排序依据:类型/字典层最先(被最多表引用);其余按「被引用度」——库里有多少张表带着
     指向该组的编号列(如 user 组 ← user_no)。这是启发式,使用者可以勾选、跳过轮次。
     """
     cols, excl = prof["_cols"], set(exclude)
-    tables = [t for t in cols if t not in excl]
+    # 表族只让代表表进计划,其余成员随代表表走(构建后挂到同一个对象上)
+    riders = {}
+    for f in families or []:
+        rep_t = f["representative"]
+        if rep_t in excl:
+            continue
+        for m in f["members"]:
+            if m != rep_t and m not in excl:
+                riders.setdefault(rep_t, []).append(m)
+    ride = {m for ms in riders.values() for m in ms}
+    tables = [t for t in cols if t not in excl and t not in ride]
+    cores = concept_hints.name_cores(list(cols))[0]
     groups = defaultdict(list)
     for t in tables:
-        groups[_group_key(t)].append(t)
+        groups[_group_key(t, cores.get(t))].append(t)
     colsets = {t: {c.lower() for c in cols[t]} for t in cols}
 
     def indegree(members):
@@ -232,9 +306,13 @@ def plan(prof, max_tables=45, exclude=()):
         keys = {f"{s}_{k}" for s in stems if len(s) >= 3 for k in ("id", "no", "code")}
         return sum(1 for t, cs in colsets.items() if t not in members and cs & keys)
 
-    def tier(name):
-        n = name.split("__", 1)[-1]
-        if re.match(r"(meta|dict|dictionary|type|category|code)", n):
+    def tier(g):
+        # 层次按成员的原表名判断(元数据/字典表常以 meta_、dict_ 开头,词根里反而没有)
+        names = [t.split("__", 1)[-1].lower() for t in groups.get(g, [])] or [g.split("__", 1)[-1]]
+        if any(t.startswith("dim_") for t in names):      # 数仓维度层就是被引用最多的主数据
+            return 0
+        n = re.sub(r"^(ods|stg|dwd|dws|dim|ads)_", "", names[0])
+        if re.match(r"(meta|dict|dictionary|type|category|code)", n) or re.search(r"(^|_)(sy_)?dict(_|$)", n):
             return 0
         if re.match(r"(user|enterprise|ent|org|dept|company|tenant|role)", n):
             return 1
@@ -257,11 +335,15 @@ def plan(prof, max_tables=45, exclude=()):
     out = []
     comments = prof.get("_comments") or {}
     for i, ts in enumerate(rounds, 1):
-        heads = Counter(_group_key(t).split("__", 1)[-1] for t in ts)
+        heads = Counter(_group_key(t, cores.get(t)).split("__", 1)[-1] for t in ts)
         label = "、".join(h for h, _ in heads.most_common(4)) + (" 等" if len(heads) > 4 else "")
         cn = [comments.get(t) for t in ts if comments.get(t)][:3]
-        out.append({"round": i, "label": label, "tables": ts, "count": len(ts),
-                    "hint": "、".join(c[:12] for c in cn)})
+        item = {"round": i, "label": label, "tables": ts, "count": len(ts),
+                "hint": "、".join(c[:12] for c in cn)}
+        fm = {t: riders[t] for t in ts if t in riders}
+        if fm:
+            item["family_members"] = fm
+        out.append(item)
     return out
 
 
@@ -277,9 +359,15 @@ def check(db, texts=(), max_tables=45):
         "findings": findings(prof),
         "hub_keys": prof["hub_keys"],
         "references": suggest_references(prof),
+        "scenario": scenario(prof),
         "docs": doc_coverage(tables, list(texts)),
         "excluded": excluded,
-        "plan": plan(prof, max_tables=max_tables, exclude=excluded),
+        "plan": plan(prof, max_tables=max_tables, exclude=excluded,
+                     families=(prof.get("concept") or {}).get("families")),
+        "concept": {"families": len((prof.get("concept") or {}).get("families") or []),
+                    "tables_in_families": (prof.get("concept") or {}).get("tables_in_families", 0),
+                    "category_splits": len((prof.get("concept") or {}).get("category_splits") or []),
+                    "version_duplicates": len((prof.get("concept") or {}).get("version_duplicates") or [])},
         "max_tables": max_tables,
     }
     return report

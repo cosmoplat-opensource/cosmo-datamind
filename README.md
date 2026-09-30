@@ -174,7 +174,7 @@ gunicorn -c gunicorn.conf.py wsgi:application
 | 深度问数 | ✅ 模板兜底,出真实数据 | ✅ LLM 生成 SQL 计划 |
 | 本体构建 | ✅ 纯数据驱动(`quick_build`) | ✅ LLM 基于数据库和可解析文档提议 + 确定性验证 |
 | 对话式本体编辑(apply/undo) | ❌ 需要引擎 | ✅ |
-| 内置构建技能库 | ✅ 本仓 `ontology-semi-auto`、`energy-carbon-ontology`、`ontology-cross-check` | ✅ 本仓 + 上游技能 |
+| 内置构建技能库 | ✅ 本仓通用技能 `ontology-semi-auto`、`ontology-build-method`、`ontology-cross-check`;领域技能 `energy-carbon-ontology`、`electronics-manufacturing-ontology` | ✅ 本仓 + 上游技能 |
 
 上游本体引擎是**可选组件,不随本仓发布**——本仓开源范围仅 COSMO DataMind 本体。
 若你拥有兼容的引擎目录(提供 `engine/agent_runtime.py` 多运行时抽象与 `web/skills_seed/` 构建技能),
@@ -296,7 +296,7 @@ GLM-5.2 与 OpenAI 的完整配置、用自然语言建一张带中文名的本�
 
 `specs/` 下是完整的**规约驱动开发(SDD)**记录——不是事后补的说明,而是开发时的决策依据:
 
-- `specs/decisions/` — DR-001…DR-063 决策记录,每篇写清背景、选项、取舍与代价
+- `specs/decisions/` — DR-001…DR-064 决策记录,每篇写清背景、选项、取舍与代价
 - `specs/iterations/` — IR-001…IR-015 迭代记录,含验收标准与实测结果
 - `specs/map.md` — 入口索引
 

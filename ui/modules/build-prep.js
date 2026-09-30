@@ -33,12 +33,14 @@
     const s = d.summary;
     const doc = d.docs || {};
     const refs = (d.references || []).map(r => `<div class="bp-ref"><b>${esc(r.name)}</b> · ${esc(r.reason)}`
-      + (r.separate ? '' : ` <a href="#" onclick="event.preventDefault();bcPrepUseRef(${jsAttr(r.industry)})">采用</a>`) + '</div>').join('');
+      + (r.skill ? ` <span class="muted">· 领域技能 ${esc(r.skill)}</span>` : '')
+      + (r.separate ? '' : ` <a href="#" onclick="event.preventDefault();bcPrepUseRef(${jsAttr(r.industry)},${jsAttr(r.skill || '')})">采用</a>`) + '</div>').join('');
+    const scen = (d.scenario || []).map(k => `<div class="bp-ref"><b>${esc(k.name)}</b> · ${esc(k.reason)} <span class="muted">→ ${esc(k.strategy)}</span></div>`).join('');
     const fnd = (d.findings || []).map(f => `<details class="bp-f"><summary>${LV[f.level] || ''}${esc(f.title)}</summary>`
       + `<div class="bp-fd">${esc(f.detail)}${f.examples && f.examples.length ? '<div class="muted">例:' + f.examples.map(esc).join(';') + '</div>' : ''}</div></details>`).join('');
     const hubs = (d.hub_keys || []).slice(0, 8).map(h => `<span class="bp-chip">${esc(h.key)} · ${h.tables} 表</span>`).join('');
     const rounds = (d.plan || []).map(p => `<div class="bp-round" data-r="${p.round}">
-      <label><input type="checkbox" checked data-round="${p.round}"> <b>第 ${p.round} 轮</b> · ${esc(p.label)} <span class="muted">${p.count} 张表${p.hint ? ' · ' + esc(p.hint) : ''}</span></label>
+      <label><input type="checkbox" checked data-round="${p.round}"> <b>第 ${p.round} 轮</b> · ${esc(p.label)} <span class="muted">${p.count} 张表${p.family_members ? ' · 另有同族成员 ' + Object.values(p.family_members).reduce((a, m) => a + m.length, 0) + ' 张随代表表归并' : ''}${p.hint ? ' · ' + esc(p.hint) : ''}</span></label>
       <span class="bp-st" aria-live="polite"></span>
       <details><summary class="muted">表清单</summary><div class="bp-tabs">${p.tables.map(esc).join('、')}</div></details></div>`).join('');
     const docLine = doc.files
@@ -54,8 +56,9 @@
         <span>${s.has_comments ? `注释 表 ${s.table_comment_pct}% · 字段 ${s.column_comment_pct}%` : '无库表注释'}</span></div>
       <div class="bp-sec">发现</div>${fnd || '<div class="muted">未发现需要特别处理的建模规律</div>'}
       ${hubs ? `<div class="bp-sec">枢纽键(被最多表共用的编号)</div><div>${hubs}</div>` : ''}
+      ${scen ? `<div class="bp-sec">场景画像(表与概念怎样对应)</div>${scen}` : ''}
       <div class="bp-sec">资料覆盖</div><div class="bp-line">${docLine}</div>
-      ${refs ? `<div class="bp-sec">参照建议(能源与碳排放分开处理)</div>${refs}` : ''}
+      ${refs ? `<div class="bp-sec">参照与领域技能建议(不同领域分开处理)</div>${refs}` : ''}
       <div class="bp-sec">分轮计划 <span class="muted">枢纽优先 · 每轮不超过 ${d.max_tables} 张表 · 每轮在上一轮的本体上继续构建;数据验证始终使用全库</span></div>
       ${d.excluded && d.excluded.length ? `<details class="bp-f"><summary><span class="bp-lv info">已排除</span>${d.excluded.length} 张疑似演示/临时/历史分表(不进入计划)</summary><div class="bp-tabs">${d.excluded.map(esc).join('、')}</div></details>` : ''}
       <div class="bp-rounds">${rounds}</div>
@@ -67,13 +70,19 @@
     if (window.a11yScan) a11yScan();
   }
 
-  function useRef(industry) {
+  function useRef(industry, skill) {
     if (window.bcRefsApply) {
       const cur = window.bcRefsPayload ? bcRefsPayload() : {};
       bcRefsApply({version: 1, industry: {id: industry, mode: 'reference'},
         ontology_standard: cur.ontology_standard || {id: 'bfo_iof', mode: 'reference'}});
-      toast('已采用行业参照');
     }
+    // 领域技能随参照一起采用:勾选后构建时注入提示词
+    if (skill && !BC.skills.has(skill)) {
+      BC.skills.add(skill);
+      const n = document.getElementById('bc_cur_sk'); if (n) n.textContent = BC.skills.size;
+      if (window.bcSkills) bcSkills();
+    }
+    toast(skill ? '已采用行业参照与领域技能' : '已采用行业参照');
   }
 
   async function run(btn) {

@@ -738,7 +738,7 @@ FROM fact_sales_order GROUP BY 1 ORDER BY 1 DESC LIMIT 12</textarea>
 <script src="/assets/modules/catalog.js"></script>
 <script src="/assets/modules/build-references.js?v=3"></script>
 <script src="/assets/modules/build-stream.js?v=2"></script>
-<script src="/assets/modules/build-prep.js?v=1"></script>
+<script src="/assets/modules/build-prep.js?v=2"></script>
 <!-- 问数作用域模块先于主脚本执行，避免 #chat 首屏初始化竞态；版本号打破旧标签缓存。 -->
 <script src="/assets/modules/qa-ontology.js?v=4"></script>
 <script src="/assets/modules/qa-history.js?v=1"></script>
@@ -1868,7 +1868,7 @@ async function ask(){if(DQ_MODE==='diag')return diagAsk();
  finally{if(DQ_ABORT===ac)DQ_ABORT=null;$('#chat_btn').disabled=false;}
  scroll();}
 // ══════ 本体构建·问询台 ══════
-const BC={src:'demo',srcName:'示例主库',skills:new Set(['ontology-semi-auto','ontology-cross-check']),welcomed:false,def:{},turns:0,base:'',baseName:''};
+const BC={src:'demo',srcName:'示例主库',skills:new Set(['ontology-semi-auto','ontology-build-method','ontology-cross-check']),welcomed:false,def:{},turns:0,base:'',baseName:''};
 function bcNew(){if(BC_BUSY){toast('构建进行中,请稍候再新建');return;}
  bcSaveConv();                                             // 先把当前对话存入历史
  (BC._viz||[]).forEach(gr=>{try{gr.destroy();}catch(_){}});BC._viz=[];   // 销毁本轮对话内 G6 预览实例,防泄漏

@@ -173,6 +173,32 @@ def conditional_channel(db, ct, ck, pt, pk):
     return {"state": "support" if best["overlap"] >= THETA else "weak", "discriminator": disc, **best}
 
 
+def valid_rows_channel(db, ct, ck, pt, pk, ev):
+    """重叠达标却因父键不唯一被拒的候选:只看有效行后父键是否唯一。
+
+    两种场景各有一种「无效行」:业务库的软删除(已删除行还在表里),
+    湖仓的版本重复(同一业务键多次入仓)。先定有效行,再判唯一。
+    """
+    ov = ev.get("overlap")
+    if not isinstance(ov, (int, float)) or ov < THETA or ev.get("parent_unique") is not False:
+        return {"state": "na"}
+    r = db.one(f"SELECT COUNT(*), COUNT(DISTINCT {q(pk)}) FROM {q(pt)} WHERE {q(pk)} IS NOT NULL")
+    if not r or not r[0]:
+        return {"state": "na"}
+    col, flt = _live(db, pt, "p")
+    if col:
+        live = db.one(f"SELECT COUNT(*), COUNT(DISTINCT p.{q(pk)}) FROM {q(pt)} p WHERE p.{q(pk)} IS NOT NULL{flt}")
+        if live and live[0] and live[0] == live[1]:
+            return {"state": "support", "rule": "soft_delete", "column": col,
+                    "note": f"排除已删除行后 {pt}.{pk} 唯一"}
+    tcol = next((db.col(pt, c) for c in TIME_COLS + ("insert_time", "update_time", "edit_time") if db.col(pt, c)), None)
+    dup = r[0] - r[1]
+    if tcol and dup and dup <= 0.05 * r[0]:
+        return {"state": "support", "rule": "keep_latest", "column": tcol, "duplicate_rows": dup,
+                "note": f"{pt}.{pk} 有 {dup} 行版本重复,按 {tcol} 取最新后唯一"}
+    return {"state": "na"}
+
+
 def hub_keys(db):
     cnt = Counter()
     for t in db.tables:
@@ -236,7 +262,9 @@ def check(ir, db):
                               "corroborated" if support else "single_channel")
         else:
             ch["conditional"] = conditional_channel(db, ct, ck, pt, pk)
-            row["verdict"] = "conditional_candidate" if ch["conditional"]["state"] == "support" else "unchanged"
+            ch["valid_rows"] = valid_rows_channel(db, ct, ck, pt, pk, ev)
+            row["verdict"] = ("conditional_candidate" if ch["conditional"]["state"] == "support" else
+                              "valid_rows_candidate" if ch["valid_rows"]["state"] == "support" else "unchanged")
     return out, hubs
 
 

@@ -158,4 +158,4 @@ def test_build_runs_cross_check_only_when_the_skill_is_selected(make_sqlite, wor
 
 def test_ui_selects_cross_check_by_default():
     html = open(os.path.join(server.HERE, "ui", "index.html"), encoding="utf-8").read()
-    assert "skills:new Set(['ontology-semi-auto','ontology-cross-check'])" in html
+    assert "skills:new Set(['ontology-semi-auto','ontology-build-method','ontology-cross-check'])" in html
