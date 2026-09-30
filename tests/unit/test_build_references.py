@@ -226,3 +226,40 @@ def test_ui_has_controls_payload_history_and_external_module():
         "fallbackCatalog", "manufacturing", "chemical", "pcba", "isa95", "ufo",
         "cache: 'no-store'", "重新加载目录", "installCatalog(fallbackCatalog",
     ))
+
+
+class TestEnergyCarbonProfile:
+    """能碳管理参照:能源侧为必备,碳排放侧为可选,且每项都标注术语来源。"""
+
+    def _profile(self, mode="reference"):
+        return refs.normalize({"version": 1, "industry": {"id": "energy_carbon", "mode": mode},
+                               "ontology_standard": {"id": "none"}})
+
+    def test_catalog_lists_energy_carbon_with_sources(self):
+        item = next(x for x in refs.catalog()["industries"] if x["id"] == "energy_carbon")
+        assert item["required_concepts"] == ["用能单元", "能源计量器具", "测点", "能源消耗量"]
+        assert any("GB/T 32150-2025" in s for s in item["sources"])
+        assert any("ISO 50001" in s for s in item["sources"])
+
+    def test_every_concept_declares_its_basis(self):
+        concepts = refs.INDUSTRIES["energy_carbon"]["concepts"]
+        assert concepts and all(c.get("basis") for c in concepts)
+
+    def test_energy_only_data_meets_required_and_reports_carbon_gap(self):
+        """只有能源侧数据时:必备满足,碳侧概念作为可选缺口列出,而不是被静默忽略。"""
+        ir = {"objects": [
+            {"name": "unit", "cn": "用能单元", "kind": "object", "table": "ems2_energy_unit"},
+            {"name": "meter", "cn": "电表", "kind": "asset", "table": "msb_meter"},
+            {"name": "metric", "cn": "测点", "kind": "ice", "table": "meter_metric"},
+            {"name": "bill", "cn": "能耗", "kind": "ice", "table": "energy_bill"},
+        ], "relations": []}
+        prof = self._profile()
+        rep = refs.evaluate(refs.apply_profile(ir, prof), prof)
+        ind = rep["industry"]
+        assert ind["missing_required"] == [] and ind["coverage"] == 1.0
+        assert {"排放源", "活动数据", "排放因子", "温室气体排放量"} <= set(ind["missing_optional"])
+
+    def test_ui_fallback_catalog_includes_energy_carbon(self):
+        module = open(server.HERE + "/ui/modules/build-references.js", encoding="utf-8").read()
+        html = open(server.HERE + "/ui/index.html", encoding="utf-8").read()
+        assert "energy_carbon" in module and 'value="energy_carbon"' in html

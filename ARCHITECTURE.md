@@ -1,6 +1,6 @@
 # COSMO DataMind · 系统架构
 
-> 面向维护者的架构说明。契约细节见 `specs/`(DR-001…DR-055、IR-001…IR-013)。本文描述分层、数据流与统一约定。
+> 面向维护者的架构说明。契约细节见 `specs/`(DR-001…DR-059、IR-001…IR-013)。本文描述分层、数据流与统一约定。
 
 ## 1. 分层
 
@@ -61,6 +61,7 @@
 | `ir_relational.py` | IR→关系型语义层投影(只读派生物;OWL 之外的消费出口,证据随行、状态不提升) | DR-049 |
 | `srv_context.py` | 共享上下文:路径、`ro_connect`、`sql_is_readonly`、`_atomic_json`、写锁、`confine` 路径限定 | DR-043 |
 | `ir_shape.py` | IR 形状兼容规则单一事实源:`rels`(links/relations 双形状)、`obj_names`(对象可指代名超集)与 `strip_cn_suffix/name_variants`(中文表名后缀剥离,指代延续/根因诊断/画像检索共用) | DR-035/055 |
+| `doc_chunks.py` | 长文证据分块与检索:按标题结构分块(带出处),先按本轮表名锚定、再按诉求 BM25 检索,受文档预算约束 | DR-059 |
 | `content_quality.py` | 生成内容的确定性净化:信息载体误判纠正(ice 优先)与正例证据可定位性检查,只读不改写历史 | DR-052 |
 | `srv_engine.py` | 引擎共享层:运行时缓存、引擎配置读写/应用、引擎回复语义 | DR-043/017 |
 | `bp_engine.py` | 引擎设置 blueprint(5 路由;仅路由,共享态在 `srv_engine`) | DR-043 |

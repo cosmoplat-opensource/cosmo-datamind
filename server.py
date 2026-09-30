@@ -22,6 +22,7 @@ import ir_shape
 import skill_registry
 import ontology_grounding
 import content_quality
+import doc_chunks
 import llm_json      # DR-058:LLM 回复 JSON 抽取与提议形状校验的单一事实源
 
 # ── 运维日志(结构化、可分级、可重定向)──────────────────────────────
@@ -5071,6 +5072,10 @@ _SKILL_METHOD = {
     "auto-ontology": "以对象为中心补全属性、指标与关系,标注候选语义待确认。"}
 _TEXT_EXT = ("sql", "ddl", "py", "md", "txt", "json", "xml", "yaml", "yml", "csv", "tsv", "js", "java", "sh")
 
+# 长文取证:单份文档读入上限与进提示词的文档总预算(字符)。预算可按模型上下文调整。
+LONG_DOC_CAP = 2_000_000
+DOC_BUDGET = int(os.environ.get("DATAMIND_DOC_BUDGET", "16000") or 16000)
+
 def _read_asset_text(fname, cap=3500):
     """读取上传的可文本化多源资产(建表代码/业务文档/知识片段/Excel 知识包);二进制/图像返回空(标注为引用证据)"""
     # fname 沿证据链一路传下来(上传文件名 → IR → 此处),不能假定它仍是单一文件名:
@@ -5157,8 +5162,12 @@ def _db_for_source(source):
         if c.get("id") == source and c.get("path") and os.path.exists(c["path"]): return c["path"]
     return None
 
-def _gather_evidence(db, cap_tabs=400, cap_docs=6):
-    """聚合多源证据:① 库表结构(表→列)② 上传的文档/代码文本 ③ 图像/二进制的引用清单"""
+def _gather_evidence(db, cap_tabs=400, cap_docs=40, query=""):
+    """聚合多源证据:① 库表结构(表→列)② 上传的文档/代码文本 ③ 图像/二进制的引用清单
+
+    文档不再按「每份前 3500 字」截断:整份读入、结构化分块,再按两段式选取进提示词——
+    先为本轮数据源的每张表锚定描述它的那一段,再按 query(构建诉求+验收问题)检索补齐,
+    总量受 DOC_BUDGET 约束。见 doc_chunks 模块说明。"""
     schema, tab_cols = [], {}
     try:
         c = sqlite3.connect(f"file:{db}?mode=ro", uri=True)
@@ -5182,21 +5191,28 @@ def _gather_evidence(db, cap_tabs=400, cap_docs=6):
         return 9
     for t in sorted(tab_cols, key=lambda x: (_pri(x), x)):
         schema.append(f"{t}({', '.join(cn for cn, _ in tab_cols[t][:22])})")
-    docs, refs, files, used = [], [], [], 0
-    for p in sorted(glob.glob(os.path.join(WORK, "uploads_*"))):
+    refs, files, chunks, texts = [], [], [], 0
+    for p in sorted(glob.glob(os.path.join(WORK, "uploads_*")))[:cap_docs]:
         fn = os.path.basename(p)[8:]
         ext = fn.rsplit(".", 1)[-1].lower() if "." in fn else ""
-        txt = _read_asset_text(fn)
-        consumed = bool(txt.strip() and len(docs) < cap_docs and used < 16000)
-        files.append({"name": fn[:180], "type": _MOD_MAP.get(ext, "其它"),
-                      "consumed_as_text": consumed})
-        if consumed:
-            docs.append(f"### 证据文件「{fn}」({_MOD_MAP.get(ext,'其它')})\n{txt}")
-            used += len(txt)
-        elif ext in ("png", "jpg", "jpeg", "gif", "svg", "wav", "mp3"):
+        txt = _read_asset_text(fn, cap=LONG_DOC_CAP)
+        own = doc_chunks.chunk_text(txt, fn) if txt.strip() else []
+        chunks += own
+        texts += len(txt)
+        files.append({"name": fn[:180], "type": _MOD_MAP.get(ext, "其它"), "chars": len(txt), "chunks": len(own)})
+        if not own and ext in ("png", "jpg", "jpeg", "gif", "svg", "wav", "mp3"):
             refs.append(f"{fn}({_MOD_MAP.get(ext,'其它')})")
+    picked, stats = doc_chunks.select(chunks, query=query, anchors=list(tab_cols), budget=DOC_BUDGET)
+    used_by = {}
+    for c in picked:
+        used_by[c["source"]] = used_by.get(c["source"], 0) + 1
+    for f in files:
+        f["chunks_used"] = used_by.get(f["name"], 0)
+        f["consumed_as_text"] = bool(f["chunks_used"])
+    stats.update(files=len([f for f in files if f["chunks"]]), chars_total=texts)
     return {"schema": "\n".join(schema), "tab_cols": tab_cols,
-            "docs": "\n\n".join(docs), "n_docs": len(docs), "refs": refs, "files": files}
+            "docs": doc_chunks.render(picked), "n_docs": len(used_by), "refs": refs, "files": files,
+            "doc_stats": stats}
 
 def _skill_method_text(skills):
     """选中技能 → 真实 SKILL.md / 自定义正文,有界注入构建 prompt。
@@ -5449,14 +5465,14 @@ def _llm_extract_ontology(q, ev, skills, cqs=None, log=None, base_ir=None,
 建模目标:{q}
 {('建模规则:' + method) if method else ''}
 [数据库表结构（结构依据；对象优先绑定到这些实际存在的表）]
-    {ev['schema'][:12000]}{docs_block[:9000]}{refs_block}{bad_block}{base_block}{reference_block}
+    {ev['schema'][:12000]}{docs_block[:DOC_BUDGET + 4000]}{refs_block}{bad_block}{base_block}{reference_block}
 
 只输出一个 JSON(无其它文字):
     {{"objects":[{{"name":"英文标识(能对齐表名就用表名)","cn":"有业务意义的中文名","kind":"object|event|action|asset|role|ice(信息记录:目录/单据/地址/台账等,非物理实体)","table":"绑定的真实表名或 null;动作通常为 null","action_id":"仅当证据中明确出现系统已有动作标识时填写,否则 null","evidence":"抽取依据(来自哪张表/哪份文档及段落)","definition":"属加种差定义;给不出严格定义就留空","example":"可选；只能逐字摘录输入证据中的真实实例，没有则留空","example_source":"example 的证据位置；没有 example 则留空","counterExample":"类别层面的易混淆概念及辨析，待专家复核"}}],
   "relations":[{{"source":"对象name","target":"对象name","verb":"具体关系动词(归属/产生/包含/服务/触发…)","rationale":"依据"{_standard_field},"child_key":"可选:源表候选外键(复合键用逗号)","parent_key":"可选:目标表候选键(复合键用逗号)"}}]}}
     要求:①对象尽量绑定真实表;②由文档/流程明确描述的业务事件用 kind=event；明确描述的操作、审批、下发、创建任务等用 kind=action，并用关系连接其作用对象；不得仅凭表名批量编造动作;库存记录/地址/目录/单据等信息性条目用 kind=ice,勿与物理实体混淆;③关系两端必须是上面列出的对象 name;④不虚构库表和文档中都没有的实体、动作或关系;⑤child_key/parent_key 只是待验证提示,只能填写上面 schema 真实存在的列,不得声称 verified;{_standard_rule}⑥**cn 必须是有业务意义的中文名**(如 客户 / 销售订单 / 退货事件 / 生产工单),优先复用表注释、上传文档/知识包里的中文术语,严禁用拼音或直接照搬英文表名/键名做 cn;⑦**{_definition_rule}**definition 用「属加种差」句式;**非循环**——定义体不得复用被定义术语名本身及其中文名,须用上位类(属)+区别特征(种差)描述;counterExample 只写类别层面的易混淆概念和辨析,不得虚构企业名、编号、日期、数量或金额;无法给出严格定义时 definition 留空;⑧example 只有在输入证据中存在可逐字定位的实例时才填写,并填写 example_source；没有实例证据时必须留空，不得生成“看起来合理”的示例。"""
     _log(f"证据装配 · 库表 {len(ev.get('tab_cols') or {})} 张（结构文本 {len(ev['schema'][:12000])} 字）"
-         f" · 文档/代码 {ev.get('n_docs', 0)} 份（{len(docs_block[:9000])} 字）"
+         f" · 文档/代码 {ev.get('n_docs', 0)} 份（{len(docs_block[:DOC_BUDGET + 4000])} 字）"
          f" · 引用资产 {len(ev.get('refs') or [])} 项 · 技能规则 {len(method)} 字"
          f" · 历史否决负例 {len(_rp)} 条"
          + (f" · 已有本体上下文 {len(base_block)} 字" if base_block else "")
@@ -6140,12 +6156,21 @@ def build_inquire():
         outp = _confined(WORK, key + ".json")
         # ① 多源证据聚合(库结构 + 上传文档/代码 + 图像引用)
         yield sse({"type": "status", "text": "聚合多源证据(库表结构 / 建表代码 / 业务文档 / 图像引用)…"})
-        ev = _gather_evidence(db)
+        _cq_text = " ".join((c.get("q") or c.get("question") or "") if isinstance(c, dict) else str(c) for c in cqs)
+        ev = _gather_evidence(db, query=f"{q} {_cq_text}")
         ntab = len(ev["tab_cols"])
         emeta = f"库表 {ntab} 张"
         if ev["n_docs"]: emeta += f" · 文档/代码证据 {ev['n_docs']} 份"
         if ev["refs"]: emeta += f" · 引用资产 {len(ev['refs'])} 项"
         yield push("gather_evidence", True, "取证:" + emeta)
+        _ds = ev.get("doc_stats") or {}
+        if _ds.get("chunks"):
+            yield push("long_doc", True,
+                       f"长文取证 · {_ds['files']} 份文档共 {_ds['chars_total']:,} 字 → {_ds['chunks']} 块,"
+                       f"选入 {_ds['selected']} 块({_ds['chars']:,} 字)· 按表锚定覆盖 {_ds['anchors_covered']}/{_ds['anchors']} 张表"
+                       + (f" · 预算不足未锚定 {_ds['anchors_unbudgeted']} 张(可调大 DATAMIND_DOC_BUDGET 或拆小本轮范围)"
+                          if _ds.get("anchors_unbudgeted") else "")
+                       + (f" · 文档里未找到:{'、'.join(_ds['anchors_missing'][:5])}" if _ds.get("anchors_missing") else ""))
         method = "LLM 辅助提议"
         ir = None
         # ② LLM 综合数据库结构和已解析文档提出候选本体。

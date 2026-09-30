@@ -108,6 +108,61 @@ INDUSTRIES = {
             "回流炉处理PCBA板", "AOI检测检验PCBA板", "SMT工单消耗锡膏",
         ],
     },
+    "energy_carbon": {
+        "name": "能碳管理",
+        "version": "内置参照 1.0",
+        "description": "企业能源管理与碳排放核算常见的用能单元、计量器具、测点、能耗、能源绩效参数、"
+                       "基准、电价、储能光伏,以及排放源、活动数据、排放因子与温室气体排放量概念。",
+        # 概念与关系取自下列标准与公开本体的术语;这里只借用术语做对齐提示,不复制标准正文,
+        # 也不声称任何一项的完整符合性。
+        "sources": [
+            "GB/T 23331-2020 / ISO 50001:2018 能源管理体系(能源使用、能源绩效参数、能源基准)",
+            "GB/T 2589-2020 综合能耗计算通则(综合能耗、折标)",
+            "GB 17167 用能单位能源计量器具配备和管理通则(计量器具)",
+            "GB/T 32150-2025 工业企业温室气体排放核算和报告通则(排放源、活动数据、排放因子;2026-07-01 实施)",
+            "ISO 14064-1 / GHG Protocol(范围一/二/三)",
+            "ETSI SAREF4ENER V2.1.1(功率曲线、灵活性、储能)",
+            "Brick Schema v1.4 / Project Haystack 4(表计、测点)",
+            "Open Energy Ontology v2.13.0(基于 BFO 的能源系统本体)",
+            "TEC Toolkit ECFO/PECO 1.0.0(排放因子与排放计算溯源)",
+        ],
+        "concepts": [
+            {"id": "energy_use", "name": "用能单元", "required": True, "basis": "ISO 50001 能源使用 / GB/T 23331",
+             "aliases": ["用能单元", "用能对象", "用能系统", "用能设备", "能源使用", "energy_unit", "energy use"]},
+            {"id": "energy_meter", "name": "能源计量器具", "required": True, "basis": "GB 17167 / Brick Meter",
+             "aliases": ["计量器具", "计量表", "表计", "电表", "水表", "气表", "热量表", "仪表", "meter"]},
+            {"id": "measurement_point", "name": "测点", "required": True, "basis": "Brick Point / Haystack point / SAREF Measurement",
+             "aliases": ["测点", "量测", "点位", "采集点", "measurement", "metric", "point"]},
+            {"id": "energy_consumption", "name": "能源消耗量", "required": True, "basis": "GB/T 2589 综合能耗",
+             "aliases": ["能源消耗", "能耗", "用能量", "用电量", "综合能耗", "energy_consumption", "consumption"]},
+            {"id": "enpi", "name": "能源绩效参数", "basis": "ISO 50001 EnPI",
+             "aliases": ["能源绩效参数", "能效指标", "能耗指标", "单位产品能耗", "单耗", "enpi"]},
+            {"id": "energy_baseline", "name": "能源基准", "basis": "ISO 50001 EnB",
+             "aliases": ["能源基准", "能耗基准", "基准", "baseline", "benchmark", "bench_mark"]},
+            {"id": "energy_target", "name": "能源目标与计划", "basis": "ISO 50001 能源目标/指标与行动计划",
+             "aliases": ["能耗计划", "用能计划", "能源目标", "能源计划", "energy_plan", "target"]},
+            {"id": "energy_tariff", "name": "能源价格", "basis": "SAREF4ENER 激励表 / 分时电价",
+             "aliases": ["能源价格", "电价", "分时电价", "峰谷", "价格", "tariff", "price"]},
+            {"id": "energy_storage", "name": "储能", "basis": "SAREF4ENER Storage",
+             "aliases": ["储能", "储能系统", "电池", "storage", "bess"]},
+            {"id": "renewable_generation", "name": "可再生能源发电", "basis": "OEO 发电 / 光伏",
+             "aliases": ["光伏", "风电", "发电", "新能源", "pv", "photovoltaic"]},
+            {"id": "emission_source", "name": "排放源", "basis": "GB/T 32150-2025 / ISO 14064-1",
+             "aliases": ["排放源", "排放设施", "emission_source"]},
+            {"id": "activity_data", "name": "活动数据", "basis": "GB/T 32150-2025 / GHG Protocol",
+             "aliases": ["活动数据", "活动水平", "activity_data"]},
+            {"id": "emission_factor", "name": "排放因子", "basis": "GB/T 32150-2025 / ECFO",
+             "aliases": ["排放因子", "碳排放因子", "emission_factor", "conversion_factor"]},
+            {"id": "ghg_emission", "name": "温室气体排放量", "basis": "GB/T 32150-2025 / ISO 14064-1",
+             "aliases": ["温室气体排放", "碳排放", "排放量", "co2", "carbon_emission", "ghg"]},
+        ],
+        "relations": [
+            "能源计量器具计量用能单元", "测点属于能源计量器具", "能源消耗量归属用能单元",
+            "能源绩效参数评价用能单元", "能源绩效参数对照能源基准", "能源目标与计划约束用能单元",
+            "能源价格计价能源消耗量", "排放源产生温室气体排放量", "活动数据与排放因子得出温室气体排放量",
+            "能源消耗量作为活动数据",
+        ],
+    },
 }
 
 
@@ -425,7 +480,7 @@ def evaluate(ir, profile, grounding=None):
     industry_cfg = profile["industry"]
     industry_report = {"selected": industry_cfg["selected"], "id": industry_cfg["id"],
                        "name": industry_cfg["name"], "mode": industry_cfg["mode"],
-                       "matched_concepts": [], "missing_required": [], "coverage": None}
+                       "matched_concepts": [], "missing_required": [], "missing_optional": [], "coverage": None}
     if industry_cfg["selected"]:
         spec = INDUSTRIES[industry_cfg["id"]]
         matched = sorted({(obj.get("industry_reference") or {}).get("concept") for obj in objects
@@ -436,6 +491,9 @@ def evaluate(ir, profile, grounding=None):
         industry_report.update(
             matched_concepts=[name_by_id[x] for x in matched if x in name_by_id],
             missing_required=[name_by_id[x] for x in missing],
+            # 可选概念不参与判定,但要列出——例如能碳参照下数据只覆盖能源侧时,
+            # 排放源/排放因子等碳侧概念全部缺席,这正是使用者最需要看到的覆盖缺口。
+            missing_optional=[name_by_id[x] for x in name_by_id if x not in matched and x not in required],
             coverage=round(len(set(required) & set(matched)) / len(required), 4) if required else 1.0,
         )
         if missing:

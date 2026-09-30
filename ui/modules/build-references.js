@@ -12,7 +12,8 @@
       {id: 'none', name: '不选择行业参照', description: '仅依据当前数据与资料构建，不套用行业概念模板。'},
       {id: 'manufacturing', name: '制造业', version: '内置参照 1.0', description: '离散制造常见对象与关系参照。'},
       {id: 'chemical', name: '化工行业', version: '内置参照 1.0', description: '流程化工常见对象与关系参照。'},
-      {id: 'pcba', name: 'PCBA / SMT', version: '内置参照 1.0', description: 'PCBA 与 SMT 生产对象和关系参照。'}
+      {id: 'pcba', name: 'PCBA / SMT', version: '内置参照 1.0', description: 'PCBA 与 SMT 生产对象和关系参照。'},
+      {id: 'energy_carbon', name: '能碳管理', version: '内置参照 1.0', description: '能源管理与碳排放核算对象和关系参照。'}
     ],
     ontology_standards: [
       {id: 'none', name: '不选择本体标准', description: '保留本地业务概念和关系。'},
