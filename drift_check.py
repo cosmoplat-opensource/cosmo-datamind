@@ -25,11 +25,12 @@
   跳过而非报错——报告里的语义层本就允许存在不落库的抽象概念。
 """
 import sqlite3
+from pathlib import Path
 
 
 def _schema(db_path):
     """读数据源 schema → {表名小写: {列名小写}};附带原名映射用于报告可读性。"""
-    con = sqlite3.connect(f"file:{db_path}?mode=ro", uri=True)
+    con = sqlite3.connect(Path(db_path).absolute().as_uri() + "?mode=ro", uri=True)
     try:
         tabs = [r[0] for r in con.execute(
             "SELECT name FROM sqlite_master WHERE type IN ('table','view')")]
@@ -45,7 +46,7 @@ def _schema(db_path):
         con.close()
 
 
-from ir_shape import rels as _rels                     # IR 形状单一事实源
+from ir_shape import rels as _rels                     # IR 形状集中定义
 
 
 def check(ir, db_path):

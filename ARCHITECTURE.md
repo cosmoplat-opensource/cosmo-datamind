@@ -60,7 +60,7 @@
 | `store.py` | JSON 持久化抽象:原子写/坏档恢复/schema 校验/迁移/每路径锁 | DR-044 |
 | `ir_relational.py` | IR→关系型语义层投影(只读派生物;OWL 之外的消费出口,证据随行、状态不提升) | DR-049 |
 | `srv_context.py` | 共享上下文:路径、`ro_connect`、`sql_is_readonly`、`_atomic_json`、写锁、`confine` 路径限定 | DR-043 |
-| `ir_shape.py` | IR 形状兼容规则单一事实源:`rels`(links/relations 双形状)、`obj_names`(对象可指代名超集)与 `strip_cn_suffix/name_variants`(中文表名后缀剥离,指代延续/根因诊断/画像检索共用) | DR-035/055 |
+| `ir_shape.py` | IR 形状兼容规则集中定义:`rels`(links/relations 双形状)、`obj_names`(对象可指代名超集)与 `strip_cn_suffix/name_variants`(中文表名后缀剥离,指代延续/根因诊断/画像检索共用) | DR-035/055 |
 | `build_prep.py` | 构建体检:数据源概况、建模规律识别(无外键/软删除/多态引用/审计列/分表)、资料覆盖与漂移、能源/碳排放参照建议、枢纽优先的分轮计划;只读不调模型 | DR-060 |
 | `ext_sample.py` | 外部 MySQL/Doris 只读抽样到本地 SQLite:语句白名单 + 只读会话 + 超时;保留表/字段注释(`_dm_*`),多库合并加前缀 | DR-060 |
 | `doc_chunks.py` | 长文证据分块与检索:按标题结构分块(带出处),先按本轮表名锚定、再按诉求 BM25 检索,受文档预算约束 | DR-059 |
@@ -80,7 +80,7 @@
 | `openai_runtime.py` | OpenAI 兼容驱动(GLM/DeepSeek/Qwen/vLLM),空内容判失败不回传空串 | DR-029 |
 | `mcp_action_server.py` | 对外 MCP:发起动作是唯一写工具,审批不开放;另有只读语义工具(概念检索/指标口径/按 certified 口径取数);协议版本按规范协商,工具带 `annotations` 行为提示 | DR-015/053/055 |
 | `mcp_build_server.py` | 对外 MCP(构建):发起构建是唯一写工具,verified/asserted/certified 与删除不开放;start_build 立即返回作业 id,SSE 必须有 done 才算完成(DR-056 同规);验收复跑与人审队列只读 | DR-058/016 |
-| `llm_json.py` | LLM 回复 JSON 抽取的单一事实源:字符串感知配平扫描+最小修复(尾逗号/非有限值),本体提议形状契约与剔除计数 | DR-058 |
+| `llm_json.py` | LLM 回复 JSON 抽取的集中定义:字符串感知配平扫描+最小修复(尾逗号/非有限值),本体提议形状契约与剔除计数 | DR-058 |
 | `metric_contract.py` | **指标契约**:确定性编译 SQL、目录核对、只读执行、与参照比对;`verified` 只来自「可执行∧与参照一致」,`certified` 只能人授 | DR-054 |
 | `metric_mining.py` | 指标反解:历史 SQL / 口径表 / 沉淀 SQL / 参考基准 → 带来源的候选与参照;含 JOIN 不猜口径 | DR-054 |
 | `metric_pipeline.py` | 反解→归一→核验→并入 IR 的编排;`readjudicate` 复用已存参照重跑 | DR-054 |
@@ -106,7 +106,7 @@
 | 图谱选择器 | `graphOptions(gs,label)` 分组 optgroup(精选/场景/构建) | ui,图谱/工作台/元数据覆盖三处共用 |
 | 指标状态呈现 | `MST{状态→[tag 类,中文]}` + `mstTag()`,指标中心/口径卡/即时问数共用;人工操作只有确认口径/停用/撤回 | ui,DR-054 |
 | 前端 kind 规范 | `KIND{c,n}` 颜色+中文,全站图例/配色/标签引用 | ui,`KCOL/KNM` |
-| 关系状态边样式 | `EST{c,w,d,n}` 单一事实源(G6 图谱 + 锚定子图 SVG 共用),`estDash()` 转 SVG 虚线 | ui,消两套配色 |
+| 关系状态边样式 | `EST{c,w,d,n}` 集中定义(G6 图谱 + 锚定子图 SVG 共用),`estDash()` 转 SVG 虚线 | ui,消两套配色 |
 | 前端助手 | `$`/`esc`/`jsAttr`/`J` 显式挂 window | ui,防内联处理器作用域隐患 |
 | 嵌入页高度 | 全局 `iframe{height:70vh}` 默认 + 内联 `calc(100vh-178px)` 为准(去 `!important` 覆盖) | ui,3 处嵌入页 |
 | 数据格子显示 | `cell(v)` 去浮点表示噪声(6 处预览/结果共用) | ui,显示层不改原始/导出 |

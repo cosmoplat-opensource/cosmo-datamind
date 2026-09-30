@@ -23,9 +23,12 @@ from pathlib import Path
 
 import concept_hints
 import doc_chunks
+import ontology_domain
 
 META_TABLES = ("_dm_tables", "_dm_columns")          # ext_sample 写入的库表/字段注释
-SOFT_DELETE = re.compile(r"^(is_?del(eted)?|del_?flag|delete_?flag|deleted(_flag)?|is_?delete)$", re.I)
+SOFT_DELETE = re.compile(ontology_domain.SOFT_DELETE_COLUMN_PATTERN, re.I)     # 逻辑删除列,规则见 valid_rows_rules.json
+_LIVE_SQL = ",".join(str(v) if isinstance(v, int) else "'" + str(v).replace("'", "''") + "'"
+                     for v in ontology_domain.LIVE_MARKERS if v is not None)
 AUDIT = re.compile(r"^((create|update|modify|modified|last_?edit|last_?update|del|delete)_?"
                    r"(by|user|user_?no|user_?id|uer|name|person|operator)|creator|operator|modifier|updater|"
                    r"(create|update|operate)_?(user|by)_?(no|id|name)?)$", re.I)
@@ -89,7 +92,7 @@ def profile(db, deleted_share_cap=40):
                     share = None
                     if rows[t] and len(soft) < deleted_share_cap:
                         deleted = con.execute(f"SELECT COUNT(*) FROM {_qi(t)} WHERE COALESCE({_qi(c)},0) "
-                                              "NOT IN (0,'0','N','n','false','')").fetchone()[0]
+                                              f"NOT IN ({_LIVE_SQL})").fetchone()[0]
                         share = round(100 * deleted / rows[t], 1)
                     soft.append({"table": t, "column": c, "deleted_pct": share})
                     break
@@ -147,7 +150,7 @@ def findings(prof):
                     "examples": []})
     if prof["soft_delete"]:
         worst = sorted((s for s in prof["soft_delete"] if s["deleted_pct"]), key=lambda s: -s["deleted_pct"])[:3]
-        out.append({"id": "soft_delete", "level": "warn", "title": f"{len(prof['soft_delete'])} 张表使用软删除",
+        out.append({"id": "soft_delete", "level": "warn", "title": f"{len(prof['soft_delete'])} 张表使用逻辑删除(软删除)",
                     "detail": "已删除的行仍在表里,会让编码看起来不唯一、重叠率偏低;复核「父键不唯一」时先排除已删除行。",
                     "examples": [f"{s['table']}.{s['column']}(已删除 {s['deleted_pct']}%)" for s in worst]})
     if prof["polymorphic"]:
@@ -167,7 +170,7 @@ def findings(prof):
     if concept.get("families"):
         fams = concept["families"]
         out.append({"id": "table_families", "level": "warn",
-                    "title": f"{len(fams)} 个表族(收编 {concept['tables_in_families']} 张表)",
+                    "title": f"{len(fams)} 个表族(归并 {concept['tables_in_families']} 张表)",
                     "detail": "同一实体按厂区、数仓层级、站点或备份复制成多张表,应建成一个概念;"
                               "分轮计划只放每族的代表表,其余成员构建后挂到同一个对象上。",
                     "examples": [f"{f['core']}:{len(f['members'])} 张,代表 {f['representative']}" for f in fams[:3]]})

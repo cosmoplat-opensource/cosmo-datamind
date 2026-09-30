@@ -188,6 +188,17 @@ def run_business(tmp):
         r2 = _ask(server, graph, live)
         got = {r["类型"]: r["n"] for r in (_rows(r2) or [])}
         checks.append(Check(name, "问数:排除已删除行后的答案与标准答案一致", got == fx["truth_devices_by_type"], str(got)))
+        # 删除标记写成 'N'/'Y':条件按复核观察到的取值生成,固定写 = 0 的 SQL 会被拦下
+        naive_e = ("SELECT e.energy_name AS 能源, COUNT(*) AS n FROM measure_relation m "
+                   "JOIN meta_energy_type e ON e.energy_type = m.energy_type GROUP BY 1")
+        zero_e = naive_e.replace("GROUP BY 1", "AND e.del_flag = 0 GROUP BY 1")
+        live_e = naive_e.replace("GROUP BY 1", "AND e.del_flag = 'N' GROUP BY 1")
+        r3 = _ask(server, graph, zero_e)
+        checks.append(Check(name, "问数:删除标记为 'N'/'Y' 时,按 = 0 过滤的关联被口径校验拦下", _gate_blocked(r3, "del_flag = 'N'"),
+                            str([s["info"][:80] for s in r3.get("steps", [])][-2:])))
+        r4 = _ask(server, graph, live_e)
+        got = {r["能源"]: r["n"] for r in (_rows(r4) or [])}
+        checks.append(Check(name, "问数:按 'N' 排除已删除行后的答案与标准答案一致", got == fx["truth_measures_by_energy"], str(got)))
         steps, done, ir, error = _build(server, conn, None, tables=["inst_device", "meta_device_type"])
         tabs = {t for o in (ir or {}).get("objects", []) for t in (o.get("tables") or [o.get("table")]) if t}
         checks.append(Check(name, "模型不可用时的降级构建只建本轮范围", bool(tabs) and tabs <= {"inst_device", "meta_device_type"},

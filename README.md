@@ -171,7 +171,7 @@ gunicorn -c gunicorn.conf.py wsgi:application
 |---|---|---|
 | 图谱浏览 / 指标 / 数据质量 / 术语 / 动作中心 | ✅ | ✅ |
 | SQL 工作台(只读) / SPARQL / 标准导出 | ✅ | ✅ |
-| 深度问数 | ✅ 模板兜底,出真实数据 | ✅ LLM 生成 SQL 计划 |
+| 深度问数 | ✅ 降级为模板,出真实数据 | ✅ LLM 生成 SQL 计划 |
 | 本体构建 | ✅ 纯数据驱动(`quick_build`) | ✅ LLM 基于数据库和可解析文档提议 + 确定性验证 |
 | 对话式本体编辑(apply/undo) | ❌ 需要引擎 | ✅ |
 | 内置构建技能库 | ✅ 本仓通用技能 `ontology-semi-auto`、`ontology-build-method`、`ontology-cross-check`;领域技能 `energy-carbon-ontology`、`electronics-manufacturing-ontology` | ✅ 本仓 + 上游技能 |
@@ -185,7 +185,7 @@ export DATAMIND_ENGINE_DIR=/path/to/ontology-engine
 ```
 
 **未配置时不会报错**——相关端点如实返回"无可用运行时",功能自动降级并在界面标注,
-不会静默失败,也不会用兜底数据冒充真实结果。
+不会静默失败,也不会用降级数据冒充真实结果。
 
 ## 引擎设置
 

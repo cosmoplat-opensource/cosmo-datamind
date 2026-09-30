@@ -25,8 +25,8 @@ COSMO DataMind 是「数据治理 × 本体 × 深度问数」原型：
 ## 关键契约
 - **数据执行**:深度问数/可视化/SQL 工作台/即时问数(SQL 类)在 `DATAMIND_DB` 指定的 SQLite 数据源上只读执行；示例数据库需按 README 创建或显式指定。防写由 `mode=ro`、`sql_is_readonly` 与单句执行共同实现。SPARQL 在本地 rdflib RDF 图(IR→Turtle)执行。见 [[DR-001-local-readonly-execution]]。
 - **建模算法**:行业/本体标准（均可不选，参照或强约束）+ CQ/技能正文 → LLM 提议对象、事件、关系和候选键 → 数据验证(取值重叠≥60%∧父键唯一∧命名有据∧方向正确→verified,其余保留 candidate)→ 所选参照的候选注释/缺口检查 → 图结构/证据/定义/CQ 验收；LLM 离线时由 quick_build 使用同一后处理和验收规则。见 [[DR-002-multimodal-llm-anti-hallucination-build]]、[[DR-050-executable-ontology-build-gate]] 与 [[DR-052-build-industry-and-standard-references]]。
-- **引擎**:运行时经 `agent_runtime`(CLAW_DRIVER 选 hermes/claude-code/openclaw),多引擎顺序兜底;**对外统一中性名**(智能引擎/备选/经典),不暴露底层库名,见 [[DR-003-runtime-neutral-naming]]。
-- **深度问数**:SSE 流式执行记录 + 渐进出图,缓存键含上传指纹,离线走模板兜底,见 [[DR-004-deep-qa-sse]]。
+- **引擎**:运行时经 `agent_runtime`(CLAW_DRIVER 选 hermes/claude-code/openclaw),多引擎依次降级;**对外统一中性名**(智能引擎/备选/经典),不暴露底层库名,见 [[DR-003-runtime-neutral-naming]]。
+- **深度问数**:SSE 流式执行记录 + 渐进出图,缓存键含上传指纹,离线时降级为模板,见 [[DR-004-deep-qa-sse]]。
 - **前端**:对齐 iiot-platform/design-system 设计 token(#4A5FF3/#409EFF、圆角 4px、PingFang);**工业级去 emoji**(accent bar + 单色 SVG + 状态点),见 [[DR-005-frontend-design-system]]。
 - **安全**:只读 SQL、全局 CSRF 守卫、图谱键路径穿越校验、命令白名单、SPARQL 禁 SERVICE/FROM 外链,见 [[DR-006-security-model]]。
 - **寻址**:28 个子页经 `#<page>` hash 直接寻址 + 深链,见 [[DR-007-url-hash-routing]]。
@@ -34,6 +34,7 @@ COSMO DataMind 是「数据治理 × 本体 × 深度问数」原型：
 ## 索引
 
 ### 决定 / Decisions
+- [DR-068 · 逻辑删除的「未删除」取值按实际数据记录](decisions/DR-068-observed-live-markers.md)
 - [DR-067 · 场景回归基准:两种数据形态端到端比对标准答案](decisions/DR-067-scenario-regression-benchmark.md)
 - [DR-066 · 开发范式取舍:哪些对本项目有用、哪些不用](decisions/DR-066-ai-era-development-paradigms.md)
 - [DR-065 · 两种场景逐环节走通:代码契约、有效行四规则、按来源库问数](decisions/DR-065-end-to-end-parity-code-contracts-and-scoped-keys.md)
@@ -117,7 +118,7 @@ COSMO DataMind 是「数据治理 × 本体 × 深度问数」原型：
 
 ## 现状校准
 - 计数(2026-10-01):**137 路由**(server.py 119 + bp_engine 5 + bp_actions 7 + bp_metrics 4 + bp_semantic 2)/ **565 集成断言** /
-  **1054 项 pytest 测试** / DR-001…DR-067 · IR-001…IR-013。
+  **1054 项 pytest 测试** / DR-001…DR-068 · IR-001…IR-013。
   DR-060 新增构建前预处理:外部库只读抽样 `ext_sample`、构建体检与分轮计划 `build_prep`。
   DR-059 新增长文分块检索 `doc_chunks`,以及能源管理 `energy_management`、碳排放核算 `carbon_accounting` 两个独立行业参照。
   新增共享层 `srv_context`/`srv_engine`、单一裁决核 `dao_core`、评测台 `hallucination_eval`/`definition_eval`、
@@ -136,7 +137,7 @@ COSMO DataMind 是「数据治理 × 本体 × 深度问数」原型：
 - 新增(DR-020):动作层产品化 —— 动作类型管理 CRUD(/api/action/type·update·delete,内置种子受保护、停用即刻拦截发起)/ 3 个行业动作种子(冻结批次·温区调参·供应商 SCAR,均绑真实库表)/ 问数答案卡「相关动作」直达发起(SQL 命中表 × object_table 匹配)/ 动作中心 KPI+类型编辑弹窗+审计筛选与 CSV 导出;MCP 读同一注册表零改动继承。套件 226 断言。
 - 新增(DR-021):构建技能管理 —— 浏览(内置附目录清单)/在线新建/编辑/两击删除(/api/build/skill/<name>·save·delete);**自定义技能正文注入构建方法论**(_skill_method_text,剥 front-matter,编辑后下次构建即生效)——修复「能上传但从未被消费」的死代码问题;内置技能可改写与隐藏(DR-051:workdir 覆盖层+删除墓碑,出厂正文保留,可恢复默认)。套件 236 断言(105 路由)。
 - 新增(DR-022):技能生态五项 —— ①技能对比实验(/api/build/skill_compare·status·results:同目标×两组技能各跑真实构建,对比 对象/关系/verified/动词/类型/定义覆盖;组失败如实展示不充数)②构建流水线 skill_inject 注入痕迹步 ③产物沉淀为技能(/api/build/skill/from_graph:动词表/类型分布/定义样例,确定性提取)④评测败题通用修复(⋈⋈ 两跳路径召回 + 均值分母/单值聚合口径规范进 prompt)⑤存而不用审计(specs/audit-input-consumers.md;第 3 起死代码 qa_skills 已接上:_match_qa_skill 命中复用+skill_reuse 步)。套件 249 断言(109 路由;终跑 C 组 8/8)。
-- 引擎在线依赖:深度问数与本体构建的 LLM 步骤依赖 `agent_runtime` 引擎在线;引擎限流(429)/超时时自动兜底(深度问数走模板、构建走 quick_build),结果仍产出并如实标注。
+- 引擎在线依赖:深度问数与本体构建的 LLM 步骤依赖 `agent_runtime` 引擎在线;引擎限流(429)/超时时自动降级(深度问数走模板、构建走 quick_build),结果仍产出并如实标注。
 - 已知边界详见 `README.md` 末节(SPARQL 软超时、运行时切换 UI、G6/ECharts 本地内置等)。
 
 ## 如何让 AI 代理消费本规约
@@ -169,7 +170,7 @@ Consult @specs/map.md to find relevant context.
 - **DR-026 双盲与使用度**:`intent_check.py`(接入问数两分支,口径校验后执行前)、
   `usage_stat.py` + `GET /api/ont/usage/<key>`。对齐报告电力案例的「双盲检测机制」
   与阶段六的「业务调用频次驱动迭代」。两通道互不透传(A 只看问句、B 只看 SQL),
-  均不调 LLM;只观测不阻断。实测抓到真阳性:问「业务员维度表有多少人」而 SQL
+  均不调 LLM;只观测不阻断。实测检出真阳性:问「业务员维度表有多少人」而 SQL
   查销售订单去重——口径校验放行,双盲判 mismatch。套件 326 断言。
 - **DR-027 别名与审计**:`set_alias` 算子 + `GET /api/ont/audit/<key>`。别名贯通
   CQ 锚定/意图锚定/问数上下文评分与文本;审计按人/类型/来源聚合并标出风险

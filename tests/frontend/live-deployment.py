@@ -45,11 +45,11 @@ def parse_sse(text):
 def runtime_evidence(events):
     steps = [event for event in events if event.get("type") == "step"]
     fallback = [step for step in steps if any(word in str(step.get("info", ""))
-                for word in ("离线", "兜底", "回退", "规则模板", "未配置", "不可用"))]
+                for word in ("离线", "兜底", "降级", "回退", "规则模板", "未配置", "不可用"))]
     done = next((event for event in reversed(events) if event.get("type") == "done"), {})
     method = done.get("method")
     if method:
-        mode = "offline_fallback" if any(word in method for word in ("离线", "兜底", "规则")) else "reported_online"
+        mode = "offline_fallback" if any(word in method for word in ("离线", "兜底", "降级", "规则")) else "reported_online"
     elif fallback:
         mode = "fallback_steps_present"
     elif any(step.get("step") == "skill_reuse" for step in steps):

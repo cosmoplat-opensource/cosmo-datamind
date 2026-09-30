@@ -26,7 +26,7 @@ _ERR_REPLY = re.compile(r"API call failed|HTTP (?:4\d\d|5\d\d)|usage limit|rate 
 
 
 def _looks_like_error(reply):
-    """引擎有时把错误文案当正文返回(ok=True 但内容是 429/超限等);识别后视为失败,交由规则兜底。"""
+    """引擎有时把错误文案当正文返回(ok=True 但内容是 429/超限等);识别后视为失败,交由规则降级处理。"""
     r = (reply or "").strip()
     return (not r) or (len(r) < 400 and bool(_ERR_REPLY.search(r)))
 

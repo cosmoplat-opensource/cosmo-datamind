@@ -50,9 +50,9 @@ sqlite3 demo.db < examples/sample_db.sql
 
 得到 6 张表（3 张维表 + 2 张事实表 + 1 张汇总表）、约 2200 行,覆盖 2025-12 至 2026-05 半年数据。
 
-这份示例数据是**刻意设计**的,埋了三个真实数仓里常见的坑:
+这份示例数据是**刻意设计**的,预置了三个真实数仓中常见的问题:
 
-| 埋的坑 | 为什么埋 |
+| 预置的问题 | 设置原因 |
 |---|---|
 | 表间**没有声明外键** | 关系只能靠取值重叠自证——这正是半自动构建要解决的问题 |
 | 同一实体列名不一致(`line_id` vs `prod_line_id`) | 考验关系判定 |
@@ -201,7 +201,7 @@ dim_product → fact_production_output   candidate
 | 现象 | 原因 | 处理 |
 |---|---|---|
 | `current_ready` 为 false | `DATAMIND_LLM_BASE` 或 `_KEY` 没配上 | 看响应里的 `hint`;端点写到 `/v4`、`/v1` 为止 |
-| 配了 Key 但走模板兜底 | 漏了 `CLAW_DRIVER=openai` | 补上 |
+| 配了 Key 但降级为模板 | 漏了 `CLAW_DRIVER=openai` | 补上 |
 | `llm_plan` 显示「返回 42 字符」 | 推理型模型超时被截断 | 调大 `DATAMIND_LLM_TIMEOUT` |
 | SQL 报 `no such column` | 问数用的是内置示例本体,不是你的库 | 在「数据源 → 本体图谱」里选中自己的本体 |
 | 问数出 0 图且无 LLM | 未配模型时模板只对内置示例库有效 | 配模型,或改用内置示例库体验 |

@@ -243,7 +243,7 @@ async def main():
         (ok if ("health" in t.lower() or "ok" in t.lower() or "环境" in t) else bad)("sysadmin 健康")
         await go("ontquality", 2500)
         t = await ev("document.getElementById('p_ontquality').innerText", '')
-        (ok if ("100" in t or "完备" in t) else bad)("ontquality 记分卡", t[:50])
+        (ok if ("100" in t or "完备" in t) else bad)("ontquality 完备度评分", t[:50])
         await go("skills")
         t = await ev("document.getElementById('p_skills').innerText", '')
         (ok if "ontology" in t else bad)("skills 技能中心", t[:50])

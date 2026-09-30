@@ -36,7 +36,7 @@ _LAYER = [
 ]
 
 
-from ir_shape import rels as _rels                     # IR 形状单一事实源
+from ir_shape import rels as _rels                     # IR 形状集中定义
 
 
 def _key(o, i):

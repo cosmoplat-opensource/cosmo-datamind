@@ -38,7 +38,7 @@ def test_find_rejects_path_traversal(tmp_path):
 
 
 def test_fallback_never_shadows_real_skill_md(tmp_path):
-    """兼容兜底不得顶掉真正的 SKILL.md。
+    """兼容回退不得覆盖真正的 SKILL.md。
 
     回归背景:DR-051 把解析顺序改成「覆盖优先」后,若把一行硬编码摘要放进
     custom_loader,它非空即胜出——4552 字的技能正文被压成 70 字进提示词,
@@ -57,7 +57,7 @@ def test_fallback_never_shadows_real_skill_md(tmp_path):
 
 
 def test_fallback_used_only_when_nothing_else_found(tmp_path):
-    """注册表与覆盖件都没有时,兜底才生效(历史技能名的兼容路径)。"""
+    """注册表与覆盖件都没有时,兼容回退才生效(历史技能名的兼容路径)。"""
     text, used = skill_registry.method_text(
         ["legacy-name"], (str(tmp_path),),
         custom_loader=lambda n: "", fallback_loader=lambda n: "历史技能摘要")

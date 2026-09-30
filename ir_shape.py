@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""IR 形状兼容规则的单一事实源。
+"""IR 形状兼容规则的集中定义。
 
 系统里并存两种 IR 形状:示例图谱用 ``links``(端点键 source/target),构建产物用
 ``relations``(端点键 source_concept/target_concept)。这条兼容规则此前在

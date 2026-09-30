@@ -11,6 +11,7 @@
 故本台测的正是**生产构建实际用的那道防线**,不是另造一套。
 """
 import sqlite3
+from pathlib import Path
 import dao_core
 
 _qi = lambda s: '"' + str(s).replace('"', '""') + '"'
@@ -73,7 +74,7 @@ def evaluate_proposals(db_path, proposed, reference_true_keys, **kw):
     在此变成数字——`hallucination_containment`=被拦幻觉/总幻觉,越接近 1 防线越强。
     proposer 是纯 callable,真 LLM 与确定性 mock 同接口,故离线可测、在线可换真引擎。
     """
-    con = sqlite3.connect(f"file:{db_path}?mode=ro", uri=True)
+    con = sqlite3.connect(Path(db_path).absolute().as_uri() + "?mode=ro", uri=True)
     total = len(proposed)
     hallucinated = leaked = contained = 0
     rows = []
@@ -107,7 +108,7 @@ def mock_proposer(true_candidates, fabricated_candidates, fabricate_ratio=0.5):
 
 def evaluate(db_path, candidates, **kw):
     """在库上对全部带标签候选评测,返回混淆矩阵 + 精确率/召回/F1 + 幻觉泄漏率 + 逐条 rows。"""
-    con = sqlite3.connect(f"file:{db_path}?mode=ro", uri=True)
+    con = sqlite3.connect(Path(db_path).absolute().as_uri() + "?mode=ro", uri=True)
     tp = fp = fn = tn = 0
     rows = []
     for c in candidates:

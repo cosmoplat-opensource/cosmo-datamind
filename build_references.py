@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 """半自动本体构建的行业参照与本体标准配置。
 
-本模块是构建配置的单一事实源：目录、请求归一、提示词片段、产物注释与确定性
+本模块是构建配置的集中定义：目录、请求归一、提示词片段、产物注释与确定性
 验收都从这里读取同一份定义。它不调用模型、不读外部系统，也不声称 ISA-95/UFO
 候选对齐等同于标准符合性认证。
 """
@@ -116,15 +116,15 @@ INDUSTRIES = {
         "sources": [
             "GB/T 23331-2020 / ISO 50001:2018 能源管理体系(能源使用、能源绩效参数、能源基准)",
             "GB/T 2589-2020 综合能耗计算通则(综合能耗、折标系数)",
-            "GB 17167 用能单位能源计量器具配备和管理通则(计量器具)",
-            "ETSI SAREF4ENER V2.1.1(功率曲线、灵活性、储能)",
+            "GB 17167-2025 用能单位能源计量器具配备和管理通则(计量器具;2026-02-01 实施,代替 2006 版)",
+            "ETSI SAREF4ENER V2.1.1(ETSI TS 103 410-1;功率曲线、灵活性、储能)",
             "Brick Schema v1.4 / Project Haystack 4(表计、测点)",
             "Open Energy Ontology v2.13.0(基于 BFO 的能源系统本体)",
         ],
         "concepts": [
             {"id": "energy_use", "name": "用能单元", "required": True, "basis": "ISO 50001 能源使用 / GB/T 23331",
              "aliases": ["用能单元", "用能对象", "用能系统", "用能设备", "能源使用", "energy_unit", "energy use"]},
-            {"id": "energy_meter", "name": "能源计量器具", "required": True, "basis": "GB 17167 / Brick Meter",
+            {"id": "energy_meter", "name": "能源计量器具", "required": True, "basis": "GB 17167-2025 / Brick Meter",
              "aliases": ["计量器具", "计量表", "表计", "电表", "电能表", "水表", "气表", "流量计", "热量表", "仪表", "meter"]},
             {"id": "measurement_point", "name": "测点", "required": True, "basis": "Brick Point / Haystack point / SAREF Measurement",
              "aliases": ["测点", "量测", "点位", "采集点", "measurement", "metric", "point"]},

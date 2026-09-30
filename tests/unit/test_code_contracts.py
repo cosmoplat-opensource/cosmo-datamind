@@ -3,7 +3,7 @@
 
 - 代码契约:两种场景最强的证据都以 zip / docx 交付(后端数据访问层 SQL、前端代码、接口文档),
   平台原先不读这两种格式。现在内存中读取、去掉内网地址,抽出连接、码表、接口与字典契约,
-  按业务词根对齐到库表;连接契约在裁决中顶替命名证据(数据门槛不变)。
+  按业务词根对齐到库表;连接契约在裁决中替代命名证据(数据判定条件不变)。
 - 问数执行库:用登记的 SQLite 数据源(抽样库)建的本体,问数就在该库上执行。
 """
 import io
@@ -111,7 +111,7 @@ def _lake_db(make_sqlite):
 
 
 def test_contract_lets_a_differently_named_key_pass_the_name_gate(make_sqlite, tmp_path, monkeypatch):
-    """zone_sn → zone_id:数据完全对得上,只因键名不同被命名门挡住;代码里就这么连,契约顶替命名证据。"""
+    """zone_sn → zone_id:数据完全对得上,只因键名不同未通过命名条件;代码里就这么连,契约替代命名证据。"""
     monkeypatch.setattr(server, "WORK", str(tmp_path))
     db = _lake_db(make_sqlite)
     extracted = {"objects": [{"name": "过站", "table": "dwd_f1_pass_record", "kind": "event"},

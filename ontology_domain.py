@@ -20,6 +20,18 @@ VALID_ROWS_RULES: tuple = tuple(MODEL["valid_rows_rules"])
 QA_CONDITIONS: dict = {k: tuple(v.get("qa_conditions", ())) for k, v in MODEL["valid_rows_rules"].items()}
 # 问数时强制检查的规则(latest 只提示,不强制)
 QA_ENFORCED_RULES: frozenset = frozenset(k for k, c in QA_CONDITIONS.items() if set(c) & {"tenant", "group", "live"})
+# 逻辑删除列名规则与表示「未删除」的取值(None 即 NULL):体检、复核脚本与问数共用
+_DETECT = MODEL["valid_rows_rules"]["soft_delete"]["detect"]
+SOFT_DELETE_COLUMN_PATTERN: str = _DETECT["column_pattern"]
+LIVE_MARKERS: tuple = tuple(_DETECT["live_markers"])
+
+
+def is_live_marker(value) -> bool:
+    """取值是否表示「未删除」。数值与字符串等价比较(0 与 '0' 相同)。"""
+    if value is None:
+        return True
+    return any(m is not None and str(m) == str(value) for m in LIVE_MARKERS) or (
+        isinstance(value, float) and value == 0)
 
 
 def is_valid_rows(evidence: dict | None) -> bool:

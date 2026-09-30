@@ -88,7 +88,7 @@ class TestNaming:
         assert dao_core.key_name_ok("id", "ID") is True
 
     def test_key_name_ok_composite(self):
-        # 复合键(收编 server._key_name_ok):逐列判、列数不等即否、全列过才相容
+        # 复合键(并入 server._key_name_ok):逐列判、列数不等即否、全列过才相容
         assert dao_core.key_name_ok("order_id,line_no", "order_id,line_no") is True
         assert dao_core.key_name_ok("prod_id,ver", "product_id,ver") is True
         assert dao_core.key_name_ok("order_id,qty", "order_id,customer_id") is False

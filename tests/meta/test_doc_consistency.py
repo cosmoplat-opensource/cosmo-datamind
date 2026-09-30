@@ -10,7 +10,7 @@ import pathlib
 
 ROOT = pathlib.Path(__file__).resolve().parents[2]
 
-# 规范值(单一事实源)。改动路由/断言数时,必须同步改这里 + ARCHITECTURE.md/specs/map.md。
+# 规范值(集中定义)。改动路由/断言数时,必须同步改这里 + ARCHITECTURE.md/specs/map.md。
 EXPECT_ROUTES = 137
 EXPECT_ASSERTIONS = 565
 

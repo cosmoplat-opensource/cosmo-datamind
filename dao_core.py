@@ -8,7 +8,7 @@
     MIN_DISTINCT=3、命名校验用 name_score、排除「子键自身即主键」。
 两份各自演化,门槛已经不一致(quick_build 少了 MIN_DISTINCT 与 PK-作子键排除,更易假阳)。
 
-本模块把裁决的**决策逻辑**抽为单一事实源:纯函数、**与数据访问方式无关**
+本模块把裁决的**决策逻辑**抽为集中定义:纯函数、**与数据访问方式无关**
 (只吃「已抽取的信号」——子键 distinct 集合、父键 distinct 集合、父键是否唯一、列名),
 因此 quick_build 的 SQL 路径(180k 行大表,SQL DISTINCT)与引擎的内存路径(dict of lists)
 可以喂各自抽取的信号、共用同一套判定。
@@ -23,7 +23,7 @@ LLM 不得自评 verified;verified 只由数据见证产生。
 import re
 import math
 
-# ── 单一事实源常量(两引擎此前各自定义,值已漂移)──
+# ── 集中定义常量(两引擎此前各自定义,值已漂移)──
 MIN_OVERLAP = 60.0        # θ:判 verified 的取值重叠率(%)
 MIN_DISTINCT = 3          # 子键去重值下限(太少不可信);quick_build 历史无此校验
 UNIQUE_PK_RATIO = 0.95    # 父键近似唯一阈值(distinct/非空行数)
@@ -89,7 +89,7 @@ def key_name_ok(child_key, parent_key):
     仅凭重叠会造假关系。
 
     **支持复合键**(逗号分隔,如 "c1,c2" ↔ "p1,p2"):逐列判定,列数不等即否,
-    全列通过才相容——收编 server._key_name_ok 的复合分支,单一事实源。"""
+    全列通过才相容——并入 server._key_name_ok 的复合分支,集中定义。"""
     cs, ps = key_columns(child_key), key_columns(parent_key)
     if not cs or not ps or len(cs) != len(ps):
         return False

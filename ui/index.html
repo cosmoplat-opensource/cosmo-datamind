@@ -926,7 +926,7 @@ async function graphs(pref){const gs=await J('/api/graphs');
 // 与平台原版一致的 G6 渲染:dagre 分层 + 圆角矩形四色节点 + 折线边(按 status 分色虚实)
 const GKIND={object:{fill:'#eef2ff',stroke:'#4a5ff3',text:'#4a5ff3'},event:{fill:'#fff5eb',stroke:'#ff7d00',text:'#d46b08'},
  action:{fill:'#fff7e6',stroke:'#d97706',text:'#b45309'},asset:{fill:'#fef0ff',stroke:'#a855f7',text:'#7c3aed'},role:{fill:'#e0f7fa',stroke:'#00bcd4',text:'#00838f'},ice:{fill:'#f5f3ff',stroke:'#7c6ff0',text:'#5b4fc8'}};
-// 关系状态 → 边样式:**单一事实源**,本体图谱(G6 画布)与深度问数锚定子图(内联 SVG)共用。
+// 关系状态 → 边样式:**集中定义**,本体图谱(G6 画布)与深度问数锚定子图(内联 SVG)共用。
 // 此前两处各有一套配色(图谱 verified=灰实线,锚定 verified=绿),同一语义两种颜色,看图易误判。
 // path(两跳可达)是锚定特有的「推导所得」概念,故与 inferred 同族(紫点线),不占用 verified 的灰。
 const EST={verified:{c:'#94a3b8',w:1.5,d:null,n:'已验证'},asserted:{c:'#4a5ff3',w:1.3,d:[2,2],n:'人审断言'},
@@ -2207,7 +2207,7 @@ async function bcDelAsset(name){
  toast('已删除：'+name+(d.dropped_table?('（含上传表 '+d.dropped_table+'）'):''),true);bcSources();}
 async function bcView(key){loaded.graph=1;document.querySelector('[data-p=graph]').click();await graphs(key);}
 // 构建结果卡渲染(live 与历史回放共用)
-const QR={pass:'通过',review:'待复核',fail:'不通过',legacy:'旧版无记录'};   // 验收结果的中文名,单一来源
+const QR={pass:'通过',review:'待复核',fail:'不通过',legacy:'旧版无记录'};   // 验收结果的中文名,集中定义
 function qrText(v){return QR[v]||v||'—';}
 let BC_VIZ_SEQ=0;
 function bcResultHTML(done,viewId='bcpreview_'+(++BC_VIZ_SEQ)){const s=done.stats||{};const e=done.evidence||{};

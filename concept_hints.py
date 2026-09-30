@@ -369,7 +369,7 @@ def summary_text(hints):
     fams = hints.get("families") or []
     parts = []
     if fams:
-        parts.append(f"表族 {len(fams)} 个(收编 {hints.get('tables_in_families', 0)} 张表)")
+        parts.append(f"表族 {len(fams)} 个(归并 {hints.get('tables_in_families', 0)} 张表)")
     if hints.get("category_splits"):
         parts.append(f"按类别拆分 {len(hints['category_splits'])} 处")
     if hints.get("version_duplicates"):

@@ -3,7 +3,7 @@
 """
 COSMO DataMind · 数据智脑 — 数据治理、本体与深度问数原型
 整合:DATAMIND_DB 指定的只读数据源 + 可选上游本体引擎(引擎/技能/IR) + outputs(成果库)
-深度问数:hermes/claude-code(经 agent_runtime)生成 SQL 计划 → 本地 SQLite 执行 → 洞察;引擎不可用时走内置模板兜底。
+深度问数:hermes/claude-code(经 agent_runtime)生成 SQL 计划 → 本地 SQLite 执行 → 洞察;引擎不可用时降级为内置模板。
 启动:python3 server.py  → http://127.0.0.1:8092
 """
 import json, os, re, sqlite3, subprocess, threading, time, uuid, sys, glob, hashlib
@@ -13,7 +13,7 @@ import logging
 import ipaddress
 import urllib.request, urllib.error
 from typing import Any
-import dao_core   # DR-035/044:命名校验/词根等裁决原语的单一事实源
+import dao_core   # DR-035/044:命名校验/词根等裁决原语的集中定义
 import build_quality
 import build_references
 import metric_contract
@@ -31,7 +31,7 @@ import code_contracts   # DR-065:代码契约(代码包 / docx 读取,连接与�
 import concept_hints    # DR-064:概念层线索(表族 / 类别拆分 / 版本重复)
 import build_cleaning   # DR-063:构建后自动复核、问数时套用清洗规则
 import ext_sample
-import llm_json      # DR-058:LLM 回复 JSON 抽取与提议形状校验的单一事实源
+import llm_json      # DR-058:LLM 回复 JSON 抽取与提议形状校验的集中定义
 
 # ── 运维日志(结构化、可分级、可重定向)──────────────────────────────
 # 诊断信息一律走 logging 而非 print:print 混在 stdout 里既无级别也无时间戳,
@@ -108,7 +108,7 @@ _ENGINE_PKG = os.path.join(PLATFORM, "engine")
 if os.path.isdir(_ENGINE_PKG) and _ENGINE_PKG not in sys.path:
     sys.path.append(_ENGINE_PKG)
 
-# 监听地址与端口的单一事实源:默认只绑回环(本地原型的安全默认——本服务无鉴权,
+# 监听地址与端口的集中定义:默认只绑回环(本地原型的安全默认——本服务无鉴权,
 # 绑 0.0.0.0 等于把建库/删文件/跑技能的接口开给整个网段)。需要对外时由部署方显式设置。
 LISTEN_HOST = os.environ.get("DATAMIND_HOST") or "127.0.0.1"   # 空串会被 Flask 当成 0.0.0.0
 try:
@@ -121,7 +121,7 @@ except ValueError:
 # 未配置时注册一个同名空实现,使所有 `from agent_runtime import ...` 的调用点
 # 都能导入成功并如实得到「无可用运行时」——而不是抛 ModuleNotFoundError 让端点 500。
 # available() 返回空列表后,各处 `if drv not in available(): continue` 会自然跳过,
-# 深度问数/构建随之走内置模板与纯数据驱动的兜底路径,行为与引擎离线时一致。
+# 深度问数/构建随之走内置模板与纯数据驱动的降级路径,行为与引擎离线时一致。
 try:
     import agent_runtime as _ar                      # noqa: F401
     ENGINE_AVAILABLE = True
@@ -140,7 +140,7 @@ except Exception:
         if asked:
             f = _stub._REGISTRY.get(asked)
             if f is None:                            # 点名了却没注册:如实报错,
-                raise RuntimeError(                  # 不能悄悄换成另一个驱动顶替
+                raise RuntimeError(                  # 不能悄悄换成另一个驱动替代
                     "运行时 %r 未注册;当前可用:%s。未配置上游引擎时仅本仓自带驱动可用。"
                     % (asked, _stub.available() or "(无)"))
             return f()
@@ -574,7 +574,7 @@ def q(sql, db=None, limit=500, attach_uploads=False, clean=None):
     con.row_factory = sqlite3.Row
     # 深度问数带上传数据时:只读挂载 uploads.db,上传表可作 up.<表> 查询
     if attach_uploads and os.path.exists(UPLOAD_DB):
-        try: con.execute(f"ATTACH DATABASE 'file:{UPLOAD_DB}?mode=ro' AS up")
+        try: con.execute("ATTACH DATABASE ? AS up", (Path(UPLOAD_DB).absolute().as_uri() + "?mode=ro",))
         except Exception: pass
     # DR-063 清洗规则:在这条只读连接上建同名临时视图,查询看到更正后的编码;连接关闭即消失
     applied, notes = [], []
@@ -716,7 +716,7 @@ def _obj_key(o, i=0):
     return o.get("id") or o.get("name") or f"_obj{i}"
 
 
-# 命名校验/词根收敛到 dao_core 单一事实源(DR-035;消 server 内此前的第三份副本,含复合键分支)。
+# 命名校验/词根收敛到 dao_core 集中定义(DR-035;消 server 内此前的第三份副本,含复合键分支)。
 # 保留 _key_stem/_key_name_ok 名称,现有调用点不改。语义与旧实现逐值一致(测试对照在案)。
 _key_stem = dao_core.key_stem
 _key_name_ok = dao_core.key_name_ok
@@ -756,7 +756,11 @@ def _scope_requirements(evidence):
     if "group" in conds and vr.get("column") and vr.get("group") is not None:
         out["group"] = (vr.get("column"), vr.get("group"))
     if "live" in conds and vr.get("column"):
-        out["live"] = vr.get("column")
+        live, dead = vr.get("live_values"), vr.get("deleted_values")
+        out["live"] = {"column": vr.get("column"),
+                       # 复核记录了实际的「未删除」取值(0、'N'、NULL 等);早期证据没有记录,按 = 0
+                       "live": live if isinstance(live, list) and live else [0],
+                       "deleted": dead if isinstance(dead, list) else []}
     if "latest" in conds and vr.get("column"):
         out["latest"] = vr.get("column")
     return out
@@ -768,10 +772,59 @@ def _scope_join_text(evidence, st, tt):
     if req["group"]:
         out += f" AND {tt}.{req['group'][0]} = '{str(req['group'][1]).replace(chr(39), '')}'"
     if req["live"]:
-        out += f" AND {tt}.{req['live']} = 0"
+        out += " AND " + _live_condition(tt, req["live"])
     if req["latest"]:
         out += f"(父表同键有多个版本,先按 {req['latest']} 取最新一条再关联)"
     return out
+
+
+def _sql_literal(v):
+    if isinstance(v, bool):
+        return str(int(v))
+    if isinstance(v, (int, float)):
+        return str(v)
+    return "'" + str(v).replace("'", "''") + "'"
+
+
+def _live_condition(alias, spec):
+    """父表「未删除」条件:按复核观察到的取值生成,NULL 表示未删除时一并保留。"""
+    col = f"{alias}.{spec['column']}"
+    vals = [v for v in spec["live"] if v is not None]
+    parts = [f"{col} IS NULL"] if None in spec["live"] else []
+    if vals:
+        parts.append(f"{col} = {_sql_literal(vals[0])}" if len(vals) == 1
+                     else f"{col} IN ({', '.join(_sql_literal(v) for v in vals)})")
+    return parts[0] if len(parts) == 1 else "(" + " OR ".join(parts) + ")"
+
+
+def _literal_re(values):
+    """取值 → SQL 字面量正则;数值与带引号的数字等价(0 与 '0')。"""
+    alts = []
+    for v in values:
+        if v is None:
+            continue
+        sv = str(int(v)) if isinstance(v, float) and v.is_integer() else str(v)
+        alts.append(r"'?%s'?(?![\w.])" % re.escape(sv) if re.fullmatch(r"-?\d+", sv) else r"'%s'" % re.escape(sv.replace("'", "''")))
+    return "(?:" + "|".join(alts) + ")" if alts else None
+
+
+def _live_filter_ok(sql, alias, spec):
+    """SQL 是否对父表别名排除了已删除行,且没有丢掉用 NULL 表示的未删除行。
+
+    认可的写法:= 未删除值、IN (未删除值…)、<> / != / NOT IN 已删除值、COALESCE/IFNULL/NVL(列, 未删除值) 比较;
+    未删除取值含 NULL 时,须同时写 IS NULL 或用 COALESCE 类函数兜住 NULL。"""
+    col = r"\b%s\.%s\b" % (re.escape(alias), re.escape(spec["column"]))
+    wrapped = r"\b(?:coalesce|ifnull|nvl)\s*\(\s*%s\s*,\s*%s\s*\)" % (col, _literal_re(spec["live"]) or "x^")
+    target = "(?:%s|%s)" % (wrapped, col)
+    live_re, dead_re = _literal_re(spec["live"]), _literal_re(spec["deleted"])
+    pos = bool(live_re) and re.search(r"%s\s*(?:=\s*%s|in\s*\([^)]*?%s)" % (target, live_re, live_re), sql, re.I)
+    neg = bool(dead_re) and re.search(r"%s\s*(?:<>|!=)\s*%s|%s\s+not\s+in\s*\([^)]*?%s" % (target, dead_re, target, dead_re),
+                                      sql, re.I)
+    if not (pos or neg):
+        return False
+    if None in spec["live"]:
+        return bool(re.search(wrapped, sql, re.I) or re.search(r"%s\s+is\s+null\b" % col, sql, re.I))
+    return True
 
 
 def _join_hints(ir, tables, pairs=None):
@@ -1019,7 +1072,7 @@ def _anchor_ir(graph_keys=None):
     if len(keys) == 1:
         import copy as _cp
         _ir = load_ir_edited(keys[0]) or load_ir(keys[0])
-        if not _ir:                          # 图谱不存在:如实回落示例本体并标注,不静默顶替
+        if not _ir:                          # 图谱不存在:如实回落示例本体并标注,不静默替换
             return (load_ir_edited("demo") or {}), ["demo"], "图谱 %s 不存在或为空,已回落示例本体" % keys[0]
         return _normalize_tables(_cp.deepcopy(_ir)), keys, ""
     objs, links, seen, sl = [], [], set(), set()
@@ -1205,7 +1258,7 @@ def _qa_scope_error(requested_keys, actual_keys, fallback, profile):
 def _trace_objs(trace, objs, reason, hits=None):
     """把一批入选对象按入选理由记进锚定轨迹(DR-032);同一对象只记首次理由。
     hits: {表名: [命中的问句词]} —— 锚定「凭什么选中它」的证据(DR-033)。
-    按表名关联而非对象主键:主键在缺 id/name 时靠序号兜底,两处序号未必一致。"""
+    按表名关联而非对象主键:主键在缺 id/name 时以序号代替,两处序号未必一致。"""
     if trace is None: return
     seen = {o["table"] for o in trace.setdefault("objects", []) if o.get("table")}
     for i, o in enumerate(objs):
@@ -1386,7 +1439,7 @@ def _uploads_schema():
     """uploads.db 各表列结构(供深度问数带上传文件时喂进上下文,SQL 用 up.<表> 引用)"""
     if not os.path.exists(UPLOAD_DB): return ""
     try:
-        con = sqlite3.connect(f"file:{UPLOAD_DB}?mode=ro", uri=True)
+        con = ro_connect(UPLOAD_DB)
         tabs = [r[0] for r in con.execute(
             "SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'"
         )]
@@ -1531,10 +1584,9 @@ def _validate_sql_ontology(sql, ir, strict=False):
             # 键按租户 / 字典分组复用:只按编号关联会把不同租户(工厂、企业)的同号记录串在一起
             _st, _tt, _tn, _gp, _lv = _sc
             al_of = {ta: a, tb: b}
-            if _lv and not re.search(r"\b%s\.%s\s*(=\s*'?0'?|in\s*\(\s*'?0)" % (re.escape(al_of.get(_tt, "")), re.escape(_lv)),
-                                     s, re.I):
-                return False, (f"{_tt} 有已删除行(按 {_lv} 软删除),关联时须加 {_tt}.{_lv} = 0,"
-                               "否则同一编码的已删除行会让结果重复计数")
+            if _lv and not _live_filter_ok(s, al_of.get(_tt, ""), _lv):
+                return False, (f"{_tt} 有已删除行(按 {_lv['column']} 逻辑删除),关联时须加 "
+                               f"{_live_condition(_tt, _lv)},否则同一编码的已删除行会让结果重复计数")
             if _tn and not re.search(r"\b%s\.%s\s*=\s*%s\.%s\b|\b%s\.%s\s*=\s*%s\.%s\b" % (
                     re.escape(a), re.escape(_tn), re.escape(b), re.escape(_tn),
                     re.escape(b), re.escape(_tn), re.escape(a), re.escape(_tn)), s, re.I):
@@ -1694,7 +1746,7 @@ def agent_sql_plan(question, context, steps):
 def fallback_plan(question, ir=None, focus_tables=None):
     """Offline plans use actual ontology bindings; uncovered questions stay unanswered."""
     p = []
-    note = "内置模板(问数引擎离线兜底)"
+    note = "内置模板(问数引擎离线降级)"
     objects = [o for o in (ir or {}).get("objects", []) if o.get("table")]
     focused = {t.lower() for t in (focus_tables or [])}
     available = [o for o in objects if not focused or o["table"].lower() in focused]
@@ -1739,7 +1791,7 @@ def fallback_plan(question, ir=None, focus_tables=None):
         return {"analyses": [], "note": note,
                 "unavailable": "当前内置查询未覆盖该计数条件，或无法唯一确定目标表；请明确表和统计条件后重试。"}
     # 高频的「客户 × 销售订单」不能被宽泛的“销售”词误降成月度收入趋势。
-    # 引擎超时时，兜底也必须回答原问题，而不是仅仅返回一条能执行的 SQL。
+    # 引擎超时时，降级处理也必须回答原问题，而不是仅仅返回一条能执行的 SQL。
     if re.search(r"客户|customer|cust", question, re.I) and re.search(r"排名|排行|金额|销售订单", question):
         p.append({"title": "客户销售订单金额排名",
                   "sql": "SELECT c.cust_name 客户, round(sum(s.amount),2) 订单金额 FROM fact_sales_order s JOIN dim_customer c ON s.cust_id=c.cust_id GROUP BY c.cust_id,c.cust_name ORDER BY 订单金额 DESC LIMIT 50",
@@ -1755,7 +1807,7 @@ def fallback_plan(question, ir=None, focus_tables=None):
             "unavailable": "当前内置查询未覆盖这个问题；请明确要查询的表和统计方式，或连接问数引擎后重试。" if not p else ""}
 
 def _rule_summary(results):
-    """规则化数据摘要(引擎离线/超时的兜底,始终基于真实数据,不编造)"""
+    """规则化数据摘要(引擎离线/超时的降级处理,始终基于真实数据,不编造)"""
     outs = []
     for r in results:
         rows = r["data"]["rows"]
@@ -1768,7 +1820,7 @@ def _rule_summary(results):
 # _ERR_REPLY / _looks_like_error 已收敛到 srv_engine(引擎回复语义,跨簇共用;见文件头 import)
 
 def narrative_llm(question, results, steps, emit=None):
-    """引擎生成业务洞察;成功返回文本,失败/离线/引擎报错返回 None(由调用方兜底为 _rule_summary)。
+    """引擎生成业务洞察;成功返回文本,失败/离线/引擎报错返回 None(由调用方降级为 _rule_summary)。
     emit(片段) 非空且引擎支持流式(claude-code stream-json)时逐段回调 —— B6 叙述流式;
     其它引擎自动回落一次性(emit 收到整段)。"""
     from agent_runtime import get_runtime, available
@@ -3540,7 +3592,7 @@ def ont_rebuild():
 
 @app.post("/api/sparql")
 def sparql():
-    """原生 SPARQL:优先代理经典引擎(rdflib);未就绪时对当前 IR 做轻量三元组匹配兜底"""
+    """原生 SPARQL:优先代理经典引擎(rdflib);未就绪时对当前 IR 做轻量三元组匹配(降级)"""
     body = request.json or {}
     query = body.get("query", ""); key = body.get("graph", "demo")
     # 拒绝 SERVICE 联邦子句:rdflib 会向任意 URL 发外连,构成 SSRF
@@ -3844,7 +3896,7 @@ def _chat_impl():
     if plan is None:
         plan = _bounded(lambda: agent_sql_plan(q_eff, ctx, steps), 90)
     if not plan:
-        steps.append({"step": "plan_timeout", "ok": False, "info": "引擎超时/离线 → 内置模板兜底"})
+        steps.append({"step": "plan_timeout", "ok": False, "info": "引擎超时/离线 → 降级为内置模板"})
         plan = fallback_plan(q_eff, ir=ir_gate, focus_tables=focus_tables)
     results = []
     for a in (plan.get("analyses") or [])[:4]:
@@ -3994,7 +4046,7 @@ def chat_stream():
             yield sse({"type": "step", **s})
         plan = plan or box["v"]
         if not plan:
-            yield push("plan_timeout", False, "引擎超时/离线 → 内置模板兜底")
+            yield push("plan_timeout", False, "引擎超时/离线 → 降级为内置模板")
             plan = fallback_plan(q_eff, ir=ir_gate, focus_tables=focus_tables)
         analyses = (plan.get("analyses") or [])[:4]
         yield push("plan_ready", True, f"分析计划就绪 · 拆解为 {len(analyses)} 个子分析")
@@ -5279,7 +5331,7 @@ def _build_stats(ir):
             "def_coverage": round(sum(1 for o in objs if (o.get("definition") or "").strip()) * 100.0 / max(1, len(objs)), 1)}
 
 def _run_skill_compare(query, arms):
-    """两组顺序真实构建(LLM 抽取+关系数据验证,不走兜底编造);每组落一个 built_* 产物。"""
+    """两组顺序真实构建(LLM 抽取+关系数据验证,不走降级路径);每组落一个 built_* 产物。"""
     out = {"ts": time.strftime("%Y-%m-%d %H:%M:%S"), "query": query, "arms": []}
     for i, skills in enumerate(arms):
         label = chr(65 + i)
@@ -5295,7 +5347,7 @@ def _run_skill_compare(query, arms):
             _atomic_json(os.path.join(WORK, key + ".json"), ir)
             arm.update(ok=True, key=key, stats=_build_stats(ir))
         else:
-            arm["error"] = "LLM 抽取失败/超时(该组如实记为失败,不用兜底数据冒充)"
+            arm["error"] = "LLM 抽取失败/超时(该组如实记为失败,不用降级数据冒充)"
         out["arms"].append(arm)
         _atomic_json(_SKILL_CMP_F, out)               # 每组落盘
     SKILL_CMP_JOB.update(running=False, progress="完成")
@@ -5666,13 +5718,13 @@ def _skill_method_text(skills):
     """选中技能 → 真实 SKILL.md / 自定义正文,有界注入构建 prompt。
 
     旧实现对内置技能只注入一行硬编码摘要,技能正文即使更新也不影响构建。现在列表、查看和
-    prompt 消费共用 skill_registry;_SKILL_METHOD 仅保留给历史名称的兼容兜底。"""
+    prompt 消费共用 skill_registry;_SKILL_METHOD 仅保留给历史名称的兼容回退。"""
     def custom(name):
         """只回传用户的覆盖件。
 
         不得在这里回退到 _SKILL_METHOD 的一行摘要:DR-051 把解析顺序改成「覆盖优先」后,
-        非空的摘要会顶掉真正的 SKILL.md —— 4552 字的技能正文被压缩成 70 字进提示词,
-        技能等于没生效。兼容兜底改由 fallback_loader 在注册表也找不到时才用。"""
+        非空的摘要会覆盖真正的 SKILL.md:4552 字的技能正文被压缩成 70 字进提示词,
+        技能等于没生效。兼容回退改由 fallback_loader 在注册表也找不到时才用。"""
         p = _custom_skill_path(name)
         if p:
             try: return open(p, encoding="utf-8", errors="replace").read()
@@ -5798,7 +5850,7 @@ def _rejected_patterns(limit=8):
     """读取人工否决过的关系模式，作为后续构建的已知误判模式。
 
     对标 Trane M4 增强注册表里的"已知故障模式"——让 AI 看到的不只是当前输入,还有
-    这类判断历史上踩过的坑。人审已经把结论写在 IR 上了,此前只是没接回提议环节。
+    这类判断以往出过错。人审已经把结论写在 IR 上了,此前只是没接回提议环节。
     只回流**否决**(负样本):它是稀缺且高信息量的;通过的关系本就在图谱里当正样本。
     """
     pats, seen = [], set()
@@ -6732,8 +6784,8 @@ def build_inquire():
             else:
                 yield push("semantic_review", True, "语义评审:引擎不可用,已跳过(不臆造)")
         else:
-            # 兜底:LLM 离线/超时 → 纯数据驱动 quick_build(仍是数据验证规则)
-            method = "数据驱动(LLM 离线兜底)"
+            # 降级:LLM 离线/超时 → 纯数据驱动 quick_build(仍是数据验证规则)
+            method = "数据驱动(LLM 离线降级)"
             yield push("llm_extract", False, "LLM 引擎超时/离线 → 回退纯数据驱动构建(数据验证规则)")
             yield sse({"type": "status", "text": "数据驱动构建本体中(读表 / 主外键推断 / 取值重叠验证)…"})
             try:
@@ -6744,7 +6796,7 @@ def build_inquire():
                 # 且以 list 形式调用(不经 shell),元字符不会被解释。
                 # 迭代模式下写到临时文件:quick_build 会整体覆盖目标文件,若直接写 outp,
                 # 一旦构建在写盘后、合并前失败(异常/无产物),用户的底本就被一份未合并的
-                # 新产物顶掉且无从恢复。底本必须等合并成功后再由 _atomic_json 一次性替换。
+                # 新产物覆盖且无从恢复。底本必须等合并成功后再由 _atomic_json 一次性替换。
                 _bp = _confined(WORK, key + ".building.json") if base_ir is not None else outp
                 proc = subprocess.Popen([sys.executable, _confined(HERE, "quick_build.py"), db, _bp, gname,
                                          ACTION_TYPES_F] + ([json.dumps(scope_tables)] if scope_tables else []),
@@ -7027,7 +7079,7 @@ def _parse_dsn(dsn):
             "db": (u.path or "/").lstrip("/"), "user": u.username or "", "password": u.password or ""}
 
 def _jsonable_rows(cols, rows):
-    """外部驱动返回 Decimal/datetime/bytes → JSON 可序列化(str 兜底)"""
+    """外部驱动返回 Decimal/datetime/bytes → JSON 可序列化(其余转为 str)"""
     import decimal, datetime as _dt
     def cv(v):
         if isinstance(v, decimal.Decimal): return float(v)
@@ -7140,7 +7192,7 @@ def conn_tables():
         return jsonify({"source": nm, "error": f"「{nm}」不可浏览(外部库离线,需内网与驱动)", "tables": []})
     out = []
     try:
-        c = sqlite3.connect(f"file:{db}?mode=ro", uri=True)
+        c = ro_connect(db)
         for (t,) in c.execute(
             "SELECT name FROM sqlite_master "
             "WHERE type='table' AND name NOT LIKE 'sqlite_%' ORDER BY name"

@@ -109,8 +109,8 @@ def method_text(names, roots, custom_loader=None, per_skill_cap=3500, total_cap=
                 except OSError:
                     text = ""
         if not text and fallback_loader:
-            # 注册表与覆盖件都没有时才用兼容兜底(历史技能名的一行摘要)。
-            # 放在最后:它一旦参与前面的优先级,就会顶掉真正的 SKILL.md 正文。
+            # 注册表与覆盖件都没有时才用兼容回退(历史技能名的一行摘要)。
+            # 放在最后:它一旦参与前面的优先级,就会覆盖真正的 SKILL.md 正文。
             text = fallback_loader(name) or ""
         body = skill_body(text)[:per_skill_cap]
         if not body:

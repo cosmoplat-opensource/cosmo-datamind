@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 """DataMind 全路由覆盖测试:每个端点 happy path + 边界/错误 + 安全。"""
 import json, os, re, requests, sys, ast, time, sqlite3
+from pathlib import Path
 from urllib.parse import urlsplit
 
 # 被测服务地址(可用 DATAMIND_URL 覆盖:CI/远端联调时不必改代码)。
@@ -86,7 +87,7 @@ def _preflight():
               % _local_db); sys.exit(2)
     try:
         _remote = requests.get(B + "/api/tables", timeout=30).json()
-        _con = sqlite3.connect("file:%s?mode=ro" % _local_db, uri=True)
+        _con = sqlite3.connect(Path(_local_db).absolute().as_uri() + "?mode=ro", uri=True)
         try:
             _names = [r[0] for r in _con.execute(
                 "SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'")]
@@ -274,7 +275,7 @@ r=g("/api/glossary"); j=r.json(); chk("术语词典", r.status_code==200 and j.g
 r=g("/api/agents"); j=r.json(); chk("智能体列表", r.status_code==200 and j.get("count",0)>0)
 r=g("/api/routes"); j=r.json(); chk("API目录", r.status_code==200 and j.get("count",0)>10)
 r=g("/assets/modules/catalog.js"); chk("前端目录模块可加载", r.status_code==200 and "function catalog" in r.text)
-r=g("/assets/modules/build-references.js"); chk("构建参照模块含离线兜底", r.status_code==200 and "fallbackCatalog" in r.text and "重新加载目录" in r.text)
+r=g("/assets/modules/build-references.js"); chk("构建参照模块含离线降级", r.status_code==200 and "fallbackCatalog" in r.text and "重新加载目录" in r.text)
 r=g("/assets/styles/responsive.css"); chk("前端响应式样式可加载", r.status_code==200 and "@media" in r.text)
 r=g("/assets/modules/qa-anchor.js"); chk("本体约束前端模块可加载", r.status_code==200 and "function dqAnchorHTML" in r.text)
 r=g("/assets/styles/qa-anchor.css"); chk("本体约束样式可加载", r.status_code==200 and ".qa-proof" in r.text)
@@ -1009,7 +1010,7 @@ chk("X8c 删后不再注入构建", "ontology-semi-auto" not in _sv2._skill_meth
 chk("X8d 重复删→404", po("/api/build/skill/delete",json={"name":"ontology-semi-auto"}).status_code==404)
 r=po("/api/build/skill/restore",json={"name":"ontology-semi-auto"})
 chk("X8e 恢复后回到列表", r.status_code==200 and "ontology-semi-auto" in {x["name"] for x in g("/api/build/skills").json()})
-# 「非空」不足以说明注入正确:一行硬编码摘要也非空。曾因兜底摘要顶掉 SKILL.md,
+# 「非空」不足以说明注入正确:一行硬编码摘要也非空。曾因回退摘要覆盖 SKILL.md,
 # 注入量从 1876 字掉到 70 字而全套测试仍全绿——故按「与出厂正文实际内容一致」判定。
 _sk_md = open("skills_seed/ontology-semi-auto/SKILL.md", encoding="utf-8").read()
 _sk_probe = [ln.strip() for ln in _sk_md.split("\n")
@@ -1672,7 +1673,7 @@ chk("AO34 流中断不抹掉已完成内容(锚定是用户已看到的证据)",
 chk("AO33 回退提示显示在锚定条头部(默认可见,不藏在折叠区)",
     "${a.fallback?`<span class=\"qa-proof-alert\"" in _qa_anchor)
 # 截断策略探针:按原序截断会画出一片孤立方框(0 连线),让人误以为本体拿不出关系
-# 边样式表 EST 是图谱与锚定子图共用的单一事实源,定义在更靠前处;
+# 边样式表 EST 是图谱与锚定子图共用的集中定义,定义在更靠前处;
 # 探针只截锚定段会漏掉它(ReferenceError),故一并带上。
 _est=_ui[_ui.index("const EST="):_ui.index("const GEST=EST;")]
 _fn=_est+"\n"+_qa_anchor

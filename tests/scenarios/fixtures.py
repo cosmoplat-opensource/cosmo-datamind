@@ -130,6 +130,9 @@ def business(path):
         "inst_device": ("dev_no TEXT, mete_dev_type_code TEXT, ent_no TEXT", devices),
         "enterprise": ("ent_no TEXT, ent_name TEXT", [("E1", "甲厂"), ("E2", "乙厂")]),
         "measure_relation": ("id INTEGER, rel_obj_type INTEGER, rel_obj_no TEXT, energy_type TEXT", measure),
+        # 删除标记用字符:'N' 未删除、'Y' 已删除;「电」有一条已删除的旧行
+        "meta_energy_type": ("energy_type TEXT, energy_name TEXT, del_flag TEXT",
+                             [("1", "水", "N"), ("2", "电", "N"), ("2", "电", "Y"), ("4", "蒸汽", "N")]),
     }
     _create(path, tables)
     return {
@@ -138,13 +141,17 @@ def business(path):
             "objects": [{"name": "计量器具", "table": "inst_device", "kind": "object"},
                         {"name": "器具类型", "table": "meta_device_type", "kind": "ice"},
                         {"name": "企业", "table": "enterprise", "kind": "object"},
-                        {"name": "计量关系", "table": "measure_relation", "kind": "ice"}],
+                        {"name": "计量关系", "table": "measure_relation", "kind": "ice"},
+                        {"name": "能源类型", "table": "meta_energy_type", "kind": "ice"}],
             "relations": [{"source": "计量器具", "target": "器具类型", "verb": "属于类型",
                            "child_key": "mete_dev_type_code", "parent_key": "dev_type_code"},
                           {"source": "计量器具", "target": "企业", "verb": "归属", "child_key": "ent_no", "parent_key": "ent_no"},
                           {"source": "计量关系", "target": "计量器具", "verb": "引用", "child_key": "rel_obj_no",
-                           "parent_key": "dev_no"}]},
+                           "parent_key": "dev_no"},
+                          {"source": "计量关系", "target": "能源类型", "verb": "计量能源", "child_key": "energy_type",
+                           "parent_key": "energy_type"}]},
         "truth_devices_by_type": {"电能表": 40, "液体流量计": 12, "光伏逆变器": 8},
+        "truth_measures_by_energy": {"电": len(measure)},
         "expect": {("计量器具", "器具类型"): ("verified", "soft_delete"), ("计量器具", "企业"): ("verified", None),
-                   ("计量关系", "计量器具"): ("candidate", None)},
+                   ("计量关系", "计量器具"): ("candidate", None), ("计量关系", "能源类型"): ("verified", "soft_delete")},
     }

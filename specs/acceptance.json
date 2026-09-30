@@ -141,7 +141,7 @@
     },
     {
       "id": "EVI-01",
-      "criterion": "上传代码中的连接契约在裁决中只顶替命名证据,重叠率与父键唯一的门槛不变;没有契约时键名不同的关系停在候选",
+      "criterion": "上传代码中的连接契约在裁决中只替代命名证据,重叠率与父键唯一的判定条件不变;没有契约时键名不同的关系停在候选",
       "tests": [
         "tests/unit/test_code_contracts.py::test_contract_lets_a_differently_named_key_pass_the_name_gate"
       ]
@@ -198,7 +198,7 @@
     },
     {
       "id": "OBS-02",
-      "criterion": "构建全程可追踪(开始、步骤、结束),模型不可用时的兜底被计数",
+      "criterion": "构建全程可追踪(开始、步骤、结束),模型不可用时的降级被计数",
       "tests": [
         "tests/unit/test_observability.py::test_obs_endpoints_contract"
       ]
@@ -221,9 +221,18 @@
     },
     {
       "id": "BENCH-01",
-      "criterion": "两种数据形态的合成库端到端跑体检、构建、复核、问数,关系状态、有效行规则与问数答案与标准答案一致;此前修过的缺陷放回去会变红",
+      "criterion": "两种数据形态的合成库端到端跑体检、构建、复核、问数,关系状态、有效行规则与问数答案与标准答案一致;此前修过的缺陷恢复后能被检出",
       "tests": [
         "tests/scenarios/test_scenarios.py::test_scenario_matches_golden_answers"
+      ]
+    },
+    {
+      "id": "LIVE-01",
+      "criterion": "逻辑删除的「未删除」取值按复核观察结果记录;问数关联提示按实际取值生成条件,口径校验认可等价写法,含 NULL 时不丢行;早期证据按 = 0",
+      "tests": [
+        "tests/unit/test_live_rows.py::test_gate_accepts_equivalent_forms_for_char_flag",
+        "tests/unit/test_live_rows.py::test_null_live_requires_keeping_nulls",
+        "tests/unit/test_live_rows.py::test_char_flags"
       ]
     }
   ]

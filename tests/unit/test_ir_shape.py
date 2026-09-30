@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""IR 形状兼容规则与路径限定的单一事实源。
+"""IR 形状兼容规则与路径限定的集中定义。
 
 背景:_rels 曾在六个模块各抄一份、_obj_names 两份且不一致(intent_check 少收
 app 形状的 tables)、_confined 两份略异的安全关键实现。归一后由本测试锁住行为。

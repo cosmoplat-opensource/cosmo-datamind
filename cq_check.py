@@ -5,7 +5,7 @@
 本模块对外称「验收问题」;CQ / Competency Questions 是同一概念的学界叫法,
 文件名与字段名沿用 cq 以免破坏既有接口,展示文案一律不出现 CQ。
 
-在**已建成的本体 IR** 上做确定性的结构可达性判定,回答一个记分卡回答不了的问题:
+在**已建成的本体 IR** 上做确定性的结构可达性判定,回答完备度评分回答不了的问题:
 「这个本体到底能不能支撑当初要解决的业务问题」。
 
 判定完全不调 LLM:对象在不在、路径通不通、边的状态够不够,都是图上算出来的,
@@ -44,10 +44,10 @@ def relation_is_strong(relation):
     return semantic not in {"fail", "rejected", "disputed"}
 
 
-from ir_shape import rels as _rels                     # IR 形状单一事实源
+from ir_shape import rels as _rels                     # IR 形状集中定义
 
 
-from ir_shape import obj_names as _obj_names           # 取名规则单一事实源(超集)
+from ir_shape import obj_names as _obj_names           # 取名规则集中定义(超集)
 
 
 def _key_of(o, idx):

@@ -30,7 +30,7 @@ import re
 _IDENT = r"[A-Za-z_][A-Za-z0-9_.\"`\[\]]*"
 
 
-from ir_shape import obj_names as _obj_names           # 取名规则单一事实源(超集)
+from ir_shape import obj_names as _obj_names           # 取名规则集中定义(超集)
 
 
 def declared_intent(question, ir):

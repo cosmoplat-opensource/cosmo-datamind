@@ -38,7 +38,12 @@ HUB_SHARE, HUB_MIN = 0.2, 10
 MIN_PARTITION = 5
 MIN_PROBE_MATCH = 30
 TIME_COLS = ("create_at", "create_time", "create_date", "created_at", "gmt_create", "ctime")
-DEL_COLS = ("is_del", "del_flag", "is_deleted", "deleted")
+# 逻辑删除列名规则与表示「未删除」的取值(None 即 NULL);须与 specs/models/valid_rows_rules.json 的
+# soft_delete.detect 一致(脚本独立发布、不导入仓库模块,由 tests/unit/test_live_rows.py 核对)
+DEL_COL_PATTERN = r"^(is_?del(eted)?|del_?flag|delete_?flag|deleted(_flag)?|is_?delete)$"
+LIVE_MARKERS = (None, 0, "0", "N", "n", "false", "")
+_DEL_COL = re.compile(DEL_COL_PATTERN, re.I)
+_LIVE_SQL = ",".join(str(v) if isinstance(v, int) else "'" + v + "'" for v in LIVE_MARKERS if v is not None)
 _SUFFIX = re.compile(r"_(no|id|code|key|num)$", re.I)
 
 
@@ -80,9 +85,26 @@ def _stem(key):
     return _SUFFIX.sub("", key or "").lower()
 
 
+def _is_live(value):
+    return value is None or any(m is not None and str(m) == str(value) for m in LIVE_MARKERS) or (
+        isinstance(value, float) and value == 0)
+
+
 def _live(db, table, alias):
-    col = next((db.col(table, c) for c in DEL_COLS if db.col(table, c)), None)
-    return col, (f" AND ({alias}.{q(col)} IS NULL OR {alias}.{q(col)} IN (0,'0','N','n','false'))" if col else "")
+    col = next((c for c in db.cols(table) if _DEL_COL.match(c)), None)
+    return col, (f" AND ({alias}.{q(col)} IS NULL OR {alias}.{q(col)} IN ({_LIVE_SQL}))" if col else "")
+
+
+def _markers(db, table, col):
+    """删除标记列实际出现的取值,分成「未删除」与「已删除」两组(问数据此生成关联条件)。"""
+    try:
+        vals = [r[0] for r in db.con.execute(f"SELECT DISTINCT {q(col)} FROM {q(table)} LIMIT 50")]
+    except sqlite3.Error:
+        return [], []
+    vals = [v if v is None or isinstance(v, (int, str)) else (int(v) if isinstance(v, float) and v.is_integer() else str(v))
+            for v in vals]
+    key = lambda v: (v is not None, str(v))                                 # noqa: E731
+    return sorted((v for v in vals if _is_live(v)), key=key), sorted((v for v in vals if not _is_live(v)), key=key)
 
 
 def overlap(db, ct, ck, pt, pk, parent_filter=""):
@@ -230,8 +252,11 @@ def valid_rows_channel(db, ct, ck, pt, pk, ev, scopes=()):
     if col:
         live = db.one(f"SELECT COUNT(*), COUNT(DISTINCT p.{q(pk)}) FROM {q(pt)} p WHERE p.{q(pk)} IS NOT NULL{flt}")
         if live and live[0] and live[0] == live[1]:
+            live_vals, dead_vals = _markers(db, pt, col)
             return {"state": "support", "rule": "soft_delete", "column": col,
-                    "note": f"排除已删除行后 {pt}.{pk} 唯一"}
+                    "live_values": live_vals or [0], "deleted_values": dead_vals,
+                    "note": f"排除已删除行后 {pt}.{pk} 唯一(未删除取值:"
+                            f"{'、'.join('NULL' if v is None else repr(v) for v in live_vals) or '0'})"}
     ts = _tenant_scoped(db, ct, ck, pt, pk)
     if ts:
         return {"state": "support", "rule": "tenant_scoped", "tenant_column": ts["column"], "overlap": ts["overlap"],
@@ -351,7 +376,8 @@ def apply(ir, rows):
             # 有效行上父键唯一、重叠达标、键名有据(含代码契约):与数据裁决同一口径,只是先定了有效行
             vr = row["channels"]["valid_rows"]
             ev["cross_check"]["prev_status"] = r.get("status")
-            ev["valid_rows"] = {k: vr.get(k) for k in ("state", "rule", "note", "column", "group", "tenant_column")
+            ev["valid_rows"] = {k: vr.get(k) for k in ("state", "rule", "note", "column", "group", "tenant_column",
+                                                   "live_values", "deleted_values")
                                 if vr.get(k) is not None}      # 原始 parent_unique 保持 false,不改写
             r["status"] = "verified"
             r["note"] = f"有效行复核通过({vr.get('note')});原裁决:" + str(r.get("note") or "")
