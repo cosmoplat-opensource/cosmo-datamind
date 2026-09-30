@@ -2,11 +2,11 @@
 # -*- coding: utf-8 -*-
 """共享内核:关系证据的领域值对象(DDD),由模型文件生成(MDD)。
 
-关系状态、状态迁移、有效行规则原先以字符串散落在裁决、复核、验收、问数各处,改一处漏一处。
-现在唯一来源是 ``specs/models/relation_lifecycle.json``:本模块导入时读取它,其余模块从这里取值。
-改规则先改模型;tests/meta/test_models.py 校验模型自洽,行为测试校验代码符合模型。
+有效行规则原先在验收(build_quality)与问数(server)两处各写一份规则名。现在两处都从
+``specs/models/relation_lifecycle.json`` 取:本模块导入时读取它。复核技能脚本须能独立发布、不能导入本模块,
+只能自带常量,由 tests/meta/test_models.py 核对它与模型一致。
 
-只用标准库,不依赖 Web 层(见 specs/models/context_map.json 的 shared_kernel)。
+只用标准库,不依赖 Web 层。
 """
 from __future__ import annotations
 
@@ -22,7 +22,9 @@ with open(MODEL_PATH, encoding="utf-8") as _fh:
 STATES: tuple = tuple(MODEL["states"])
 INITIAL: str = MODEL["initial"]
 VALID_ROWS_RULES: tuple = tuple(MODEL["valid_rows_rules"])
-QA_ENFORCED_RULES: frozenset = frozenset(k for k, v in MODEL["valid_rows_rules"].items() if v.get("enforced_in_qa"))
+QA_CONDITIONS: dict = {k: tuple(v.get("qa_conditions", ())) for k, v in MODEL["valid_rows_rules"].items()}
+# 问数时强制检查的规则(latest 只提示,不强制)
+QA_ENFORCED_RULES: frozenset = frozenset(k for k, c in QA_CONDITIONS.items() if set(c) & {"tenant", "group", "live"})
 CROSS_CHECK_VERDICTS: tuple = tuple(MODEL["cross_check_verdicts"])
 
 

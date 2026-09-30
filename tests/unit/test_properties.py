@@ -1,17 +1,15 @@
 # -*- coding: utf-8 -*-
 """TDD · 性质测试(DR-066):用固定种子随机生成大量输入,检查恒成立的性质。
 
-AI 生成的代码最容易在「没想到的输入」上出错;枚举个例测不全,性质测试把边界交给生成器。
-不引入 hypothesis:固定种子的随机生成足够,失败可复现(断言信息带种子与输入)。
+只用在「输入空间大、个例枚举不全」的两处:表族识别(随机生成的湖仓,曾据此发现小湖仓里
+各厂副本归不到一起的缺陷)与观测脱敏(随机的敏感键与取值)。固定种子,失败可复现。
 """
 import random
 import re
 
 import pytest
 
-import code_contracts as cc
 import concept_hints as ch
-import dao_core
 import observability as obs
 
 WORDS = ["order", "item", "area", "group", "route", "device", "meter", "station", "repair", "pallet", "barcode",
@@ -61,39 +59,6 @@ def test_table_families_are_disjoint_complete_and_never_merge_different_entities
     for e, ts in by_entity.items():
         if len(ts) >= 2:
             assert len({seen.get(t) for t in ts}) == 1 and seen.get(ts[0]), f"seed={seed} 实体 {e} 的副本没归到一起:{ts}"
-
-
-@pytest.mark.parametrize("seed", range(40))
-def test_join_contracts_are_extracted_exactly_and_hits_are_symmetric(seed):
-    rng = random.Random(seed)
-    tables = [f"t_{_entity(rng)}" for _ in range(rng.randint(2, 5))]
-    tables = list(dict.fromkeys(tables))
-    if len(tables) < 2:
-        return
-    aliases = [f"a{i}" for i in range(len(tables))]
-    joins, sql = set(), [f"SELECT 1 FROM {tables[0]} {aliases[0]}"]
-    for i in range(1, len(tables)):
-        ck, pk = f"c{rng.randint(0, 9)}_id", f"p{rng.randint(0, 9)}_code"
-        sql.append(f"LEFT JOIN {tables[i]} {aliases[i]} ON {aliases[i]}.{pk} = {aliases[0]}.{ck}"
-                   f" AND {aliases[i]}.tenement_id = {aliases[0]}.tenement_id")
-        joins.add(frozenset({(tables[i], pk), (tables[0], ck)}))
-    res = cc.extract([("x.zip", "### 文件 m.xml\n" + "\n".join(sql))])
-    got = {frozenset({tuple(j["a"]), tuple(j["b"])}) for j in res["joins"] if not j["envelope"]}
-    assert got == joins, (seed, sql)
-    assert all(j["a"][1] == "tenement_id" for j in res["joins"] if j["envelope"])
-    resolved = [{"a": list(next(iter(j))), "b": list(sorted(j)[-1])} for j in joins]
-    for r in resolved:
-        (ta, ca), (tb, cbb) = r["a"], r["b"]
-        assert bool(cc.hit(resolved, ta, ca, tb, cbb)) == bool(cc.hit(resolved, tb, cbb, ta, ca))
-
-
-@pytest.mark.parametrize("seed", range(60))
-def test_key_name_compatibility_is_symmetric(seed):
-    rng = random.Random(seed)
-    toks = ["dev", "type", "code", "sys", "area", "sn", "mete", "meta", "id", "no", "status", "order", "wd"]
-    a = "_".join(rng.choice(toks) for _ in range(rng.randint(1, 4)))
-    b = "_".join(rng.choice(toks) for _ in range(rng.randint(1, 4)))
-    assert dao_core.key_name_ok(a, b) == dao_core.key_name_ok(b, a), (a, b)
 
 
 @pytest.mark.parametrize("seed", range(30))

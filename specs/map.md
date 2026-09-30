@@ -19,8 +19,8 @@ COSMO DataMind 是「数据治理 × 本体 × 深度问数」原型：
 > DataMind 是**下游产品化前端**,复用其 engine/技能,但采用**独立的本地执行、路由、安全与命名口径**——
 > 本 `specs/` 只记录 DataMind 自身的决定与迭代,与平台 specs 前缀独立、勿混用。
 
-## 开发范式(DR-066)
-- 需求唯一真相来源 `specs/acceptance.json`;行为场景 `specs/features/*.feature`;模型 `specs/models/*.json` 与 `docs/pipelines/*.yaml`;模型投影 `docs/models/MODELS.md`;开发顺序见根目录 `AGENTS.md`。
+## 开发约定(DR-066)
+- 需求 → 测试映射 `specs/acceptance.json`;有效行规则与关系状态 `specs/models/relation_lifecycle.json`;构建步骤说明 `docs/pipelines/ontology_build.yaml`;开发顺序见根目录 `AGENTS.md`。
 
 ## 关键契约
 - **数据执行**:深度问数/可视化/SQL 工作台/即时问数(SQL 类)在 `DATAMIND_DB` 指定的 SQLite 数据源上只读执行；示例数据库需按 README 创建或显式指定。防写由 `mode=ro`、`sql_is_readonly` 与单句执行共同实现。SPARQL 在本地 rdflib RDF 图(IR→Turtle)执行。见 [[DR-001-local-readonly-execution]]。
@@ -39,7 +39,7 @@ COSMO DataMind 是「数据治理 × 本体 × 深度问数」原型：
 - [DR-063 · 构建后自动复核,问数时套用清洗规则](decisions/DR-063-auto-cross-check-and-qa-cleaning.md)
 - [DR-064 · 统一两种场景的半自动构建方法:概念层线索、场景画像与技能分层](decisions/DR-064-unified-method-across-scenarios.md)
 - [DR-065 · 两种场景逐环节走通:代码契约、有效行四规则、按来源库问数](decisions/DR-065-end-to-end-parity-code-contracts-and-scoped-keys.md)
-- [DR-066 · AI 时代的开发范式:SDD / STDD / BDD / TDD / DDD / MDD / ODD 组成闭环](decisions/DR-066-ai-era-development-paradigms.md)
+- [DR-066 · 开发范式取舍:哪些对本项目有用、哪些不用](decisions/DR-066-ai-era-development-paradigms.md)
 - [DR-060 · 构建前预处理:外部库只读抽样、构建体检与分轮构建](decisions/DR-060-build-preflight-sampling-and-rounds.md)
 - [DR-059 · 长文证据分块检索、跨轮关系入图、无数据取证与能源/碳排放行业参照](decisions/DR-059-long-document-evidence-and-energy-carbon-reference.md)
 - [DR-058 · 构建能力对外 MCP 化与 LLM 回复解析单一事实源(Agent 只能发起构建与阅读结论,不能改写结论状态)](decisions/DR-058-build-mcp-and-llm-json.md)
@@ -116,7 +116,7 @@ COSMO DataMind 是「数据治理 × 本体 × 深度问数」原型：
 
 ## 现状校准
 - 计数(2026-09-30):**137 路由**(server.py 119 + bp_engine 5 + bp_actions 7 + bp_metrics 4 + bp_semantic 2)/ **565 集成断言** /
-  **1179 项 pytest 测试** / DR-001…DR-066 · IR-001…IR-013。
+  **1055 项 pytest 测试** / DR-001…DR-066 · IR-001…IR-013。
   DR-060 新增构建前预处理:外部库只读抽样 `ext_sample`、构建体检与分轮计划 `build_prep`。
   DR-059 新增长文分块检索 `doc_chunks`,以及能源管理 `energy_management`、碳排放核算 `carbon_accounting` 两个独立行业参照。
   新增共享层 `srv_context`/`srv_engine`、单一裁决核 `dao_core`、评测台 `hallucination_eval`/`definition_eval`、

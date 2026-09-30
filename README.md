@@ -326,22 +326,16 @@ python3 -m venv .venv
 套件覆盖路由可达性、只读约束、CSRF、路径穿越、证据分层一致性、编辑回放等。
 未配置上游引擎时，依赖它的用例会明确记为条件跳过；其余检查仍须零失败。
 
-### 开发范式(DR-066)
+### 开发约定(DR-066)
 
-需求、行为、模型、边界与观测都有可执行的真相来源,改动按 [AGENTS.md](AGENTS.md) 的顺序走:
-
-| 范式 | 真相来源 | 检查 |
-|---|---|---|
-| SDD / STDD | `specs/acceptance.json`(需求 ↔ 场景 ↔ 测试 ↔ 模型 ↔ 指标) | `python3 scripts/stdd.py status --strict` |
-| BDD | `specs/features/*.feature`(中文 Given-When-Then) | `pytest tests/bdd` |
-| TDD | `tests/unit`,确定性模块另有性质测试 `test_properties.py` | `pytest tests/unit` |
-| DDD | `specs/models/context_map.json`(限界上下文与通用语言) | `pytest tests/meta/test_context_map.py` |
-| MDD | `specs/models/relation_lifecycle.json`、`docs/pipelines/ontology_build.yaml` | `python3 scripts/gen_models.py --check` |
-| ODD | `observability.py`;`/api/obs/metrics`、`/api/obs/runs` | `pytest tests/unit/test_observability.py` |
+见 [AGENTS.md](AGENTS.md)。除常规单测外,有三类自动检查:流水线说明与构建代码的步骤一致
+(`tests/meta/test_models.py`)、领域模块不依赖 Web 层(`tests/meta/test_architecture.py`)、
+表族识别与观测脱敏的性质测试(`tests/unit/test_properties.py`)。构建与问数的追踪和指标见
+`/api/obs/metrics`、`/api/obs/runs`。
 
 ## 贡献
 
-欢迎 issue 与 PR。改动请按 [AGENTS.md](AGENTS.md) 先登记需求与场景,附上对应的 DR 说明,并保证
+欢迎 issue 与 PR。改动请按 [AGENTS.md](AGENTS.md) 先写测试并登记需求,附上对应的 DR 说明,并保证
 `scripts/check.py --suite unit` 全部通过、`test_all.py` 不出现新的失败项。
 安全问题请勿公开提交,见 [SECURITY.md](SECURITY.md)。
 

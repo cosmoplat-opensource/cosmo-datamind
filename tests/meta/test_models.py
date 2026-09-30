@@ -1,15 +1,15 @@
 # -*- coding: utf-8 -*-
-"""MDD:模型是一等工件,代码与文档从模型来、并被模型约束(DR-066)。
+"""模型与代码一致性(DR-066)。
 
-- 关系生命周期模型自洽,且代码各处使用的状态、有效行规则、复核结论都在模型里;
-- 构建代码推送的 SSE 步骤与流水线模型登记的完全一致(多一个少一个都红);
-- docs/models/MODELS.md 是模型的投影,与模型同步。
+- 关系生命周期模型自洽;验收与问数从模型取有效行规则,复核技能脚本自带的规则名与模型一致;
+  复核的每次升降级都是模型允许的迁移;
+- 构建代码推送的 SSE 步骤与流水线说明(docs/pipelines/ontology_build.yaml)登记的完全一致,
+  防止说明在改代码后悄悄漂移。
 """
 import ast
 import importlib.util
 import json
 import re
-import subprocess
 import sys
 from pathlib import Path
 
@@ -59,6 +59,7 @@ class TestRelationLifecycleModel:
                   "scoped": {"column": "dict_code", "group": "TRACK"},
                   "scoped_tenant": {"column": "dict_code", "group": "TRACK", "tenant_column": "factory_code"}}
         assert set(sample) == set(od.QA_ENFORCED_RULES)
+        assert od.QA_CONDITIONS["keep_latest"] == ("latest",)          # 版本重复只提示、不强制
         for rule, extra in sample.items():
             ev = {"valid_rows": {"state": "support", "rule": rule, **extra}}
             assert server._scope_join_text(ev, "c", "p").startswith(" AND "), rule
@@ -92,23 +93,26 @@ def _emitted_build_steps():
     return set(re.findall(r'push\("([a-z_]+)"', src[i:j]))
 
 
-class TestPipelineModel:
-    def test_emitted_steps_equal_model_steps(self):
-        sys.path.insert(0, str(ROOT / "scripts"))
-        import gen_models
-        nodes, edges = gen_models.pipeline_model()
-        declared = [s for n in nodes for s in n["sse_steps"]]
-        assert len(declared) == len(set(declared)), "同一步骤名登记在多个节点"
-        emitted = _emitted_build_steps()
-        assert set(declared) - emitted == set(), f"模型里有、代码不再推送:{set(declared) - emitted}"
-        assert emitted - set(declared) == set(), f"代码推送了、模型没登记:{emitted - set(declared)}"
-        ids = {n["id"] for n in nodes}
-        assert all(x in ids and y in ids for x, y in edges)
+def _pipeline_model():
+    text = (ROOT / "docs" / "pipelines" / "ontology_build.yaml").read_text(encoding="utf-8")
+    nodes = {}
+    for block in re.split(r"\n(?=  - id: )", text.split("\nnodes:", 1)[1].split("\nedges:", 1)[0]):
+        m = re.search(r"- id: (\w+)", block)
+        steps = re.search(r"sse_steps: \[([^\]]*)\]", block)
+        if m:
+            nodes[m.group(1)] = [x.strip() for x in steps.group(1).split(",") if x.strip()] if steps else []
+    edges = re.findall(r"^  - \[(\w+), (\w+)\]", text.split("\nedges:", 1)[1], re.M)
+    return nodes, edges
 
-    def test_generated_projection_is_in_sync(self):
-        r = subprocess.run([sys.executable, str(ROOT / "scripts" / "gen_models.py"), "--check"],
-                           capture_output=True, text=True)
-        assert r.returncode == 0, r.stderr
+
+def test_emitted_steps_equal_model_steps():
+    nodes, edges = _pipeline_model()
+    declared = [s for steps in nodes.values() for s in steps]
+    assert len(declared) == len(set(declared)), "同一步骤名登记在多个节点"
+    emitted = _emitted_build_steps()
+    assert set(declared) - emitted == set(), f"说明里有、代码不再推送:{set(declared) - emitted}"
+    assert emitted - set(declared) == set(), f"代码推送了、说明没登记:{emitted - set(declared)}"
+    assert all(x in nodes and y in nodes for x, y in edges)
 
 
 def test_domain_kernel_has_no_web_or_repo_dependencies():

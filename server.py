@@ -24,6 +24,7 @@ import ontology_grounding
 import content_quality
 import doc_chunks
 import build_prep
+import ontology_domain  # DR-066:有效行规则与关系状态的领域模型(验收与问数共用)
 import observability    # DR-066:构建与问数的结构化追踪与指标(ODD)
 import code_contracts   # DR-065:代码契约(代码包 / docx 读取,连接与码表契约)
 import concept_hints    # DR-064:概念层线索(表族 / 类别拆分 / 版本重复)
@@ -744,18 +745,18 @@ def _scope_requirements(evidence):
     """有效行复核得出的键作用域(DR-065),问数时关联必须带上:
     租户作用域 → 同时按租户列关联;分组编码 → 父表限定分组;软删除 → 父表排除已删除行;
     版本重复 → 父表先按键取最新一条(只提示,不强制)。"""
-    vr = (evidence or {}).get("valid_rows") or {}
     out = {"tenant": None, "group": None, "live": None, "latest": None}
-    if vr.get("state") != "support":
+    if not ontology_domain.is_valid_rows(evidence):
         return out
-    rule = vr.get("rule")
-    if rule in ("tenant_scoped", "scoped_tenant"):
+    vr = evidence["valid_rows"]
+    conds = ontology_domain.QA_CONDITIONS.get(vr["rule"], ())     # 规则 → 条件,以关系生命周期模型为准
+    if "tenant" in conds:
         out["tenant"] = vr.get("tenant_column")
-    if rule in ("scoped", "scoped_tenant") and vr.get("column") and vr.get("group") is not None:
+    if "group" in conds and vr.get("column") and vr.get("group") is not None:
         out["group"] = (vr.get("column"), vr.get("group"))
-    if rule == "soft_delete" and vr.get("column"):
+    if "live" in conds and vr.get("column"):
         out["live"] = vr.get("column")
-    if rule == "keep_latest" and vr.get("column"):
+    if "latest" in conds and vr.get("column"):
         out["latest"] = vr.get("column")
     return out
 
