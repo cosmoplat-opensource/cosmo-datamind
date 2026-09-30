@@ -25,6 +25,7 @@ _BOLD_TITLE = re.compile(r"^\*\*([^*]{1,80})\*\*\s*$")
 _TABLE_SEP = re.compile(r"^\|?\s*:?-{3,}")
 _IDENT = re.compile(r"[a-z0-9][a-z0-9_]*")
 _CJK = re.compile(r"[一-鿿]+")
+_IDENT_TOKEN = re.compile(r"[a-z0-9_]+")
 
 
 def tokenize(text):
@@ -143,6 +144,14 @@ def select(chunks, query="", anchors=(), budget=16000, anchor_share=0.7, max_chu
     anchor_budget = int(budget * anchor_share)
     per_anchor = max(min_anchor_chars, min(max_chunk, anchor_budget // max(1, len(anchors)))) if anchors else 0
     covered, unbudgeted = [], []
+    # 预切每个片段的标识符集合:锚点命中改为集合查找,不再对每个(锚点, 片段)跑正则。
+    # 与「标识符整词出现」等价——边界同样以 [a-z0-9_] 之外的字符为准。
+    path_ids = [set(_IDENT_TOKEN.findall(c["path"].lower())) for c in chunks]
+    text_ids = [set(_IDENT_TOKEN.findall(c["text"].lower())) for c in chunks]
+    where = {}
+    for i in range(len(chunks)):
+        for w in path_ids[i] | text_ids[i]:
+            where.setdefault(w, []).append(i)
     for a in anchors:
         if used >= anchor_budget:
             unbudgeted.append(a)                       # 文档里可能有,只是锚定预算已用完
@@ -150,11 +159,8 @@ def select(chunks, query="", anchors=(), budget=16000, anchor_share=0.7, max_chu
         al = a.lower()
         variants = {al, al.split("__", 1)[-1]}        # 允许「库前缀__表名」对上文档里的裸表名
         best, best_key = None, None
-        for i, c in enumerate(chunks):
-            in_path = any(re.search(r"(?<![a-z0-9_])" + re.escape(v) + r"(?![a-z0-9_])", c["path"].lower()) for v in variants)
-            in_text = in_path or any(re.search(r"(?<![a-z0-9_])" + re.escape(v) + r"(?![a-z0-9_])", c["text"].lower()) for v in variants)
-            if not in_text:
-                continue
+        for i in sorted({i for v in variants for i in where.get(v, ())}):
+            in_path = bool(variants & path_ids[i])
             key = (in_path, bm.score(i, tokenize(" ".join(variants))), -i)
             if best_key is None or key > best_key:
                 best, best_key = i, key

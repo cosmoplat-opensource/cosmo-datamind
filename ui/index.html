@@ -495,6 +495,16 @@ a{color:var(--acc)}
   .bc-grid{display:grid;grid-template-columns:310px minmax(0,1fr);gap:14px;margin-top:14px;align-items:start}
   .bc-grid>*{min-width:0}.bc-user,.bc-result,.bc-trace,.bc-srow{overflow-wrap:anywhere}
   .bc-sec{padding:12px 14px} .bc-sec h3{margin:0 0 8px;font-size:13.5px}
+  .bc-prep{margin:8px 0 12px;padding:12px 14px;border:1px solid #d6e2f5;border-radius:8px;background:#fbfcff;font-size:12.5px;line-height:1.6}
+  .bc-prep .bp-h{font-size:13.5px;margin-bottom:6px} .bc-prep .bp-sec{margin:10px 0 4px;font-weight:600;color:var(--txt)}
+  .bc-prep .bp-sum{display:flex;flex-wrap:wrap;gap:6px 14px;color:var(--sub)} .bc-prep .bp-sum b{color:var(--txt)}
+  .bc-prep .bp-f{margin:3px 0} .bc-prep .bp-f summary{cursor:pointer} .bc-prep .bp-fd{margin:3px 0 4px 18px;color:var(--sub)}
+  .bc-prep .bp-lv{display:inline-block;font-size:11px;padding:0 6px;border-radius:3px;margin-right:6px}
+  .bc-prep .bp-lv.warn{background:#fff3e0;color:#b45309} .bc-prep .bp-lv.info{background:#eef2fb;color:#35507f}
+  .bc-prep .bp-chip{display:inline-block;margin:2px 6px 2px 0;padding:0 7px;border-radius:10px;background:#f1f3f7;font-size:11.5px}
+  .bc-prep .bp-round{padding:5px 0;border-bottom:1px dashed #e3e8f0} .bc-prep .bp-round .bp-st{float:right;font-size:11.5px;color:var(--sub)}
+  .bc-prep .bp-tabs{font-size:11.5px;color:var(--sub);word-break:break-all} .bc-prep .bp-err{color:#c2410c;margin:4px 0 8px}
+  .bc-prep .bp-goal{width:100%;min-height:44px;margin:8px 0 6px} .bc-prep .bp-ref{margin:2px 0}
   .bc-ref-row{display:grid;grid-template-columns:minmax(0,1fr) 74px;gap:6px;margin-top:6px}
   .bc-ref-row select{width:100%;min-width:0;font-size:11.5px;padding:6px 7px}
   .bc-ref-row select:disabled{opacity:.55;cursor:not-allowed}
@@ -617,6 +627,7 @@ a{color:var(--acc)}
      <div id="bc_iter_hist" style="display:none;margin-top:7px;padding-top:7px;border-top:1px dashed #cfe0ff;font-size:11.5px;line-height:1.6"></div></div>
     <div class="bc-mhd"><span>构建对话 <span class="muted" id="bc_conv_n" style="font-weight:400"></span></span>
      <div style="display:flex;gap:6px;position:relative">
+      <button class="ghost" onclick="bcPrep()" title="只读体检当前数据源:建模规律、资料覆盖、参照建议与分轮计划">构建体检</button>
       <button class="ghost" onclick="bcHistToggle()">历史对话 ▾</button>
       <button class="ghost" onclick="bcNew()">+ 新建对话</button>
       <div id="bc_hist_pop" class="bc-hist-pop" style="display:none"></div></div></div>
@@ -631,6 +642,15 @@ a{color:var(--acc)}
     </div>
    </div>
   </div>
+  <div id="bc_sample_modal" class="dq-modal" style="display:none">
+   <div class="dq-modal-box" style="max-width:460px">
+    <h3 style="margin-top:0">外部库只读抽样</h3>
+    <div class="muted" style="font-size:11.5px;margin-bottom:8px">以只读会话读取表结构、注释与数据样本(5 万行以内全量,更大的表取最新 2 万行),导入本地后作为构建数据源。多选时合并为一个抽样库,表名加「库名__」前缀,跨库关系也能用数据验证。</div>
+    <div class="bs-list" style="max-height:200px;overflow:auto;margin-bottom:8px"></div>
+    <input class="bs-name" placeholder="抽样库名称(可选)" style="width:100%;margin-bottom:8px">
+    <div class="row"><button class="bs-go" onclick="bcSampleGo()">开始抽样</button><button class="ghost" onclick="$('#bc_sample_modal').style.display='none'">关闭</button><span class="muted bs-msg" role="status" aria-live="polite"></span></div>
+   </div>
+  </div>
   <div id="bc_conn_modal" class="dq-modal" style="display:none">
    <div class="dq-modal-box" style="max-width:440px">
     <h3 style="margin-top:0">连接数据库</h3>
@@ -638,7 +658,9 @@ a{color:var(--acc)}
      <option value="sqlite">SQLite 文件</option><option value="external">外部库(登记)</option></select>
      <input id="bcc_name" placeholder="连接名,如 售后库" style="flex:1"></div>
     <input id="bcc_path" placeholder="SQLite 绝对路径,如 /data/sales.db" style="width:100%;margin-bottom:8px">
-    <input id="bcc_dsn" placeholder="连接串,如 jdbc:hive2://<host>:10000" style="width:100%;margin-bottom:8px;display:none">
+    <input id="bcc_dsn" placeholder="连接串,如 jdbc:mysql://<host>:3306/<库名>" style="width:100%;margin-bottom:8px;display:none">
+    <div class="row" id="bcc_cred" style="gap:6px;margin-bottom:8px;display:none"><input id="bcc_user" placeholder="用户名" autocomplete="off" style="flex:1">
+     <input id="bcc_pwd" type="password" placeholder="密码(加密保存,不回显)" autocomplete="new-password" style="flex:1"></div>
     <div class="muted" id="bcc_hint" style="font-size:11.5px;margin-bottom:10px">SQLite 文件将实时校验可读表并作为构建数据源。</div>
     <div class="row"><button onclick="bcConnect()">连接</button><button class="ghost" onclick="$('#bc_conn_modal').style.display='none'">取消</button><span class="muted" id="bcc_msg"></span></div>
    </div>
@@ -715,7 +737,8 @@ FROM fact_sales_order GROUP BY 1 ORDER BY 1 DESC LIMIT 12</textarea>
 </div>
 <script src="/assets/modules/catalog.js"></script>
 <script src="/assets/modules/build-references.js?v=3"></script>
-<script src="/assets/modules/build-stream.js?v=1"></script>
+<script src="/assets/modules/build-stream.js?v=2"></script>
+<script src="/assets/modules/build-prep.js?v=1"></script>
 <!-- 问数作用域模块先于主脚本执行，避免 #chat 首屏初始化竞态；版本号打破旧标签缓存。 -->
 <script src="/assets/modules/qa-ontology.js?v=4"></script>
 <script src="/assets/modules/qa-history.js?v=1"></script>
@@ -2024,12 +2047,12 @@ async function bcSources(){const d=await J('/api/build/sources').catch(()=>({sou
  $('#bc_sources').innerHTML=(d.sources||[]).map(s=>{
   const on=s.id===BC.src?' on':'';const dot=s.ready?'ok':(s.builtin?'':'off');
   const del=s.builtin?'':`<span class="x" title="移除" onclick="event.stopPropagation();bcDelConn(${jsAttr(s.id)})">✕</span>`;
-  const meta=s.kind==='sqlite'?`${s.tables} 张表 · ${s.ready?'就绪':(s.builtin?'空':'不可读')}`:`外部库 · ${s.ready?'就绪':'需内网/驱动'}`;
+  const meta=s.kind==='sqlite'?`${s.tables} 张表 · ${s.ready?'就绪':(s.builtin?'空':'不可读')}${s.sampled_at?' · 只读抽样 '+s.sampled_at:''}`:`外部库 · 登记连接 · <a href="#" onclick="event.stopPropagation();event.preventDefault();bcSampleDlg(${jsAttr(s.id)})">只读抽样</a> 后可构建`;
   return `<div class="bc-srow${on}" onclick="bcSelectSrc(${jsAttr(s.id)})"><span class="dot ${dot}"></span>
-   <div style="flex:1;min-width:0"><div class="nm">${esc(s.name)}</div><div class="mt">${esc(meta)}</div></div>${del}</div>`;}).join('');
+   <div style="flex:1;min-width:0"><div class="nm">${esc(s.name)}</div><div class="mt">${s.kind==='sqlite'?esc(meta):meta}</div></div>${del}</div>`;}).join('');
  // 辅助资料；未解析格式只登记来源。
  const as=d.assets||[];$('#bc_asset_n').textContent='('+as.length+')';
- $('#bc_assets').innerHTML=as.length?as.map(a=>`<span class="bc-chip bc-mod-${esc(a.modality)}" title="${a.usable?'构建时将读入为证据文本（前 3500 字符）':'未解析格式：仅登记来源，不作为已读取证据'}"><b>${esc(a.modality)}</b>${esc(a.name)} <span class="muted">${a.kb}KB</span><span class="use">${a.usable?'· 证据':'· 仅登记'}</span><span class="x" title="删除该资料" onclick="bcDelAsset(${jsAttr(a.name)})">✕</span></span>`).join(''):'<span class="muted">尚无上传</span>';
+ $('#bc_assets').innerHTML=as.length?as.map(a=>`<span class="bc-chip bc-mod-${esc(a.modality)}" title="${a.usable?'构建时整份读入、分块检索,按本轮的表与诉求选取片段':'未解析格式：仅登记来源，不作为已读取证据'}"><b>${esc(a.modality)}</b>${esc(a.name)} <span class="muted">${a.kb}KB</span><span class="use">${a.usable?'· 证据':'· 仅登记'}</span><span class="x" title="删除该资料" onclick="bcDelAsset(${jsAttr(a.name)})">✕</span></span>`).join(''):'<span class="muted">尚无上传</span>';
  const cur=(d.sources||[]).find(s=>s.id===BC.src);if(cur){BC.srcName=cur.name;$('#bc_cur_src').textContent=cur.name;}a11yScan();bcSyncHeight();}
 function bcSelectSrc(id){BC.src=id;const s=(BC._sources||[]).find(x=>x.id===id);BC.srcName=s?s.name:id;
  $('#bc_cur_src').textContent=BC.srcName;
@@ -2160,14 +2183,15 @@ function bcConnectDlg(){$('#bcc_msg').textContent='';const d=BC.def||{};
  if(!$('#bcc_path').value)$('#bcc_path').value=d.sqlite_path||'';   // 预填真实可用的 SQLite 路径(可改)
  $('#bc_conn_modal').style.display='flex';}
 function bccKind(){const k=$('#bcc_kind').value;$('#bcc_path').style.display=k==='sqlite'?'block':'none';
- $('#bcc_dsn').style.display=k==='sqlite'?'none':'block';
- $('#bcc_hint').textContent=k==='sqlite'?'SQLite 文件将实时校验可读表并作为构建数据源。':'外部库(MySQL/Doris/Hive 等)仅登记连接串,取数需内网与驱动,当前离线不可直接构建。';}
+ $('#bcc_dsn').style.display=k==='sqlite'?'none':'block';$('#bcc_cred').style.display=k==='sqlite'?'none':'flex';
+ $('#bcc_hint').textContent=k==='sqlite'?'SQLite 文件将实时校验可读表并作为构建数据源。':'外部库登记后,MySQL/Doris 可「只读抽样」到本地再构建(只读会话,不写源库);凭据加密保存、不回显。';}
 async function bcConnect(){const kind=$('#bcc_kind').value;
  const body={kind,name:$('#bcc_name').value,path:$('#bcc_path').value,dsn:$('#bcc_dsn').value};
+ if(kind!=='sqlite'){body.user=$('#bcc_user').value;body.password=$('#bcc_pwd').value;}
  $('#bcc_msg').textContent='连接中…';
  const d=await J('/api/build/connect',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)}).catch(e=>({error:''+e}));
  if(d.error){$('#bcc_msg').textContent=d.error;return}
- $('#bc_conn_modal').style.display='none';$('#bcc_name').value='';$('#bcc_path').value='';$('#bcc_dsn').value='';
+ $('#bc_conn_modal').style.display='none';$('#bcc_name').value='';$('#bcc_path').value='';$('#bcc_dsn').value='';$('#bcc_user').value='';$('#bcc_pwd').value='';
  toast('已连接:'+d.conn.name);bcSources();}
 async function bcDelConn(id){if(!confirm('移除该连接?'))return;
  await J('/api/build/connect/delete',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id})});

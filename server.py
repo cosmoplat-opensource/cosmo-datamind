@@ -6,7 +6,7 @@ COSMO DataMind · 数据智脑 — 数据治理、本体与深度问数原型
 深度问数:hermes/claude-code(经 agent_runtime)生成 SQL 计划 → 本地 SQLite 执行 → 洞察;引擎不可用时走内置模板兜底。
 启动:python3 server.py  → http://127.0.0.1:8092
 """
-import json, os, re, sqlite3, subprocess, threading, time, uuid, sys, glob
+import json, os, re, sqlite3, subprocess, threading, time, uuid, sys, glob, hashlib
 from itertools import combinations
 import logging
 import ipaddress
@@ -23,6 +23,8 @@ import skill_registry
 import ontology_grounding
 import content_quality
 import doc_chunks
+import build_prep
+import ext_sample
 import llm_json      # DR-058:LLM 回复 JSON 抽取与提议形状校验的单一事实源
 
 # ── 运维日志(结构化、可分级、可重定向)──────────────────────────────
@@ -4493,7 +4495,7 @@ def _sqlite_tables(path):
         c = sqlite3.connect(f"file:{path}?mode=ro", uri=True)
         n = [r[0] for r in c.execute(
             "SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'"
-        )]
+        ) if r[0] not in build_prep.META_TABLES]
         c.close(); return n
     except Exception:
         return []
@@ -4568,6 +4570,140 @@ def build_connect():
             return jsonify({"ok": True, "conn": _mask_conn(dup), "deduped": True})
         conns.insert(0, conn); _atomic_json(_BUILD_CONN_F, conns[:30])
     return jsonify({"ok": True, "conn": _mask_conn(conn)})
+
+# ── 构建前预处理(DR-060):外部库只读抽样 + 构建体检 / 分轮计划 ──
+_SAMPLE_BUSY = set()
+_SAMPLE_LOCK = threading.Lock()
+
+def _prep_texts():
+    """上传资料全文(文本类),供体检计算资料覆盖与漂移。"""
+    out = []
+    for p in sorted(glob.glob(os.path.join(WORK, "uploads_*")))[:40]:
+        fn = os.path.basename(p)[8:]
+        txt = _read_asset_text(fn, cap=LONG_DOC_CAP)
+        if txt.strip():
+            out.append((fn, txt))
+    return out
+
+@app.post("/api/build/prep")
+def build_prep_check():
+    """构建体检:数据源概况、建模规律识别、资料覆盖、能源/碳排放参照建议、分轮计划。只读、不调模型。"""
+    body = request.json or {}
+    src = str(body.get("source") or "demo")
+    try:
+        max_tables = min(80, max(10, int(body.get("max_tables") or 45)))
+    except (TypeError, ValueError):
+        return jsonify({"error": "max_tables 须为整数"}), 400
+    db, name = _resolve_src(src)
+    if not db:
+        conn = _find_conn(src)
+        hint = ("该数据源是外部库,请先点「只读抽样」导入本地后再体检"
+                if conn and conn.get("kind") not in ("sqlite", "api") else "数据源不可用")
+        return jsonify({"error": hint, "external": bool(conn and conn.get("kind") not in ("sqlite", "api"))}), 400
+    if not _sqlite_tables(db):
+        return jsonify({"error": f"「{name}」没有可读的表"}), 400
+    rep = build_prep.check(db, _prep_texts(), max_tables=max_tables)
+    rep["source"] = {"id": src, "name": name}
+    return jsonify(rep)
+
+@app.post("/api/build/connect/sample")
+def build_connect_sample():
+    """外部 MySQL/Doris 只读抽样到本地 SQLite,登记为可构建的数据源。SSE 流式报告进度。
+
+    多个外部库可合并进同一个抽样库(表名加「库名__」前缀),跨库关系因此也能被数据验证。
+    只读由 ext_sample 三层保证;凭据取自加密的连接凭据存储,不回显、不落进抽样库。"""
+    body = request.json or {}
+    ids = body.get("ids") or ([body["id"]] if body.get("id") else [])
+    if not isinstance(ids, list) or not 1 <= len(ids) <= 10 or not all(isinstance(x, str) for x in ids):
+        return jsonify({"error": "ids 须为 1~10 个外部连接 id"}), 400
+    conns = []
+    for cid in ids:
+        c = _find_conn(cid)
+        if not c or c.get("kind") in ("sqlite", "api"):
+            return jsonify({"error": f"「{cid}」不是外部库连接"}), 400
+        if _ext_kind(c) not in ("mysql", "doris"):
+            return jsonify({"error": f"「{c.get('name')}」类型为 {_ext_kind(c)},只读抽样目前支持 MySQL/Doris"}), 400
+        conns.append(c)
+    name = _safe_argv(body.get("name") or (conns[0]["name"] + (" 等" if len(conns) > 1 else "")) + " · 只读抽样",
+                      cap=60, default="只读抽样")
+    key = "smp_" + hashlib.md5("|".join(sorted(ids)).encode()).hexdigest()[:10]
+    with _SAMPLE_LOCK:
+        if key in _SAMPLE_BUSY:
+            return jsonify({"error": "这组外部库正在抽样中,请稍候"}), 409
+        _SAMPLE_BUSY.add(key)
+    sdir = os.path.join(WORK, "samples"); os.makedirs(sdir, exist_ok=True)
+    out = _confined(sdir, key + ".db")
+    from flask import Response, stream_with_context
+    import queue as _q
+
+    def sse(o): return "data: " + json.dumps(o, ensure_ascii=False, default=str) + "\n\n"
+
+    def work(qq):
+        try:
+            pymysql = __import__("pymysql")
+        except ImportError:
+            qq.put(("error", "未安装 MySQL 驱动:pip install pymysql 后重启服务")); return
+        total = {"tables": 0, "rows": 0, "failed": [], "sampled": []}
+        dst = ext_sample.open_target(out)
+        try:
+            for c in conns:
+                u = _parse_dsn(c.get("dsn")); sec = _conn_secret(c.get("id"))
+                prefix = (re.sub(r"[^A-Za-z0-9_]", "_", u["db"] or c["name"]) + "__") if len(conns) > 1 else ""
+                qq.put(("status", f"连接「{c['name']}」(只读会话)…"))
+                con = pymysql.connect(host=u["host"], port=int(u["port"] or (9030 if _ext_kind(c) == "doris" else 3306)),
+                                      user=sec.get("user") or u["user"], password=sec.get("password") or u["password"],
+                                      database=u["db"] or None, charset="utf8mb4", connect_timeout=8, read_timeout=120)
+                try:
+                    ro = ext_sample.open_readonly(con)
+                    st = ext_sample.sample_into(ro, dst, prefix=prefix,
+                                                progress=lambda i, n, t, nm=c["name"]: qq.put(("progress", nm, i, n, t)))
+                finally:
+                    con.close()
+                for k in ("tables", "rows"): total[k] += st[k]
+                total["failed"] += st["failed"]; total["sampled"] += st["sampled"]
+            ext_sample.finish_target(dst, out)
+            qq.put(("done", total))
+        except Exception as exc:
+            try: dst.close()
+            except Exception: pass
+            _log_line = f"只读抽样失败:{type(exc).__name__}: {str(exc)[:160]}"
+            qq.put(("error", _log_line))
+        finally:
+            with _SAMPLE_LOCK:
+                _SAMPLE_BUSY.discard(key)
+
+    def gen():
+        qq = _q.Queue()
+        threading.Thread(target=work, args=(qq,), daemon=True).start()
+        while True:
+            try:
+                item = qq.get(timeout=15)
+            except _q.Empty:
+                yield ": keep-alive\n\n"; continue
+            kind = item[0]
+            if kind == "status":
+                yield sse({"type": "status", "text": item[1]})
+            elif kind == "progress":
+                _, nm, i, n, t = item
+                if i == n or i % 10 == 0 or i == 1:
+                    yield sse({"type": "progress", "source": nm, "done": i, "total": n, "table": t})
+            elif kind == "error":
+                yield sse({"type": "error", "error": item[1]}); return
+            elif kind == "done":
+                total = item[1]
+                with _WRITE_LOCK:
+                    cl = _load_conns()
+                    cur = next((c for c in cl if c.get("kind") == "sqlite" and c.get("path") == out), None)
+                    if not cur:
+                        cur = {"id": "conn_" + uuid.uuid4().hex[:6], "kind": "sqlite", "builtin": False, "path": out}
+                        cl.insert(0, cur)
+                    cur.update(name=name, sampled_from=ids, sampled_at=time.strftime("%Y-%m-%d %H:%M"),
+                               sample_stats={k: total[k] for k in ("tables", "rows")})
+                    _atomic_json(_BUILD_CONN_F, cl[:30])
+                yield sse({"type": "done", "conn": _mask_conn(cur), "tables": total["tables"], "rows": total["rows"],
+                           "sampled_tables": len(total["sampled"]), "failed": total["failed"][:20]})
+                return
+    return Response(stream_with_context(gen()), mimetype="text/event-stream")
 
 @app.post("/api/build/connect/delete")
 def build_connect_del():
@@ -5162,19 +5298,30 @@ def _db_for_source(source):
         if c.get("id") == source and c.get("path") and os.path.exists(c["path"]): return c["path"]
     return None
 
-def _gather_evidence(db, cap_tabs=400, cap_docs=40, query=""):
+def _gather_evidence(db, cap_tabs=400, cap_docs=40, query="", focus=None):
     """聚合多源证据:① 库表结构(表→列)② 上传的文档/代码文本 ③ 图像/二进制的引用清单
 
     文档不再按「每份前 3500 字」截断:整份读入、结构化分块,再按两段式选取进提示词——
     先为本轮数据源的每张表锚定描述它的那一段,再按 query(构建诉求+验收问题)检索补齐,
-    总量受 DOC_BUDGET 约束。见 doc_chunks 模块说明。"""
+    总量受 DOC_BUDGET 约束。见 doc_chunks 模块说明。
+
+    focus:本轮构建范围(分轮构建时的表清单)。给模型看的结构文本与文档锚定只针对这些表;
+    tab_cols 仍保留全库,数据裁决因此能验证指向前几轮对象的跨轮关系。
+    库里若有只读抽样留下的 _dm_tables/_dm_columns,会合成一份「库表注释」数据字典参与检索。"""
     schema, tab_cols = [], {}
+    dm_tables, dm_cols = {}, {}
     try:
         c = sqlite3.connect(f"file:{db}?mode=ro", uri=True)
         tabs = [r[0] for r in c.execute(
             "SELECT name FROM sqlite_master "
             "WHERE type='table' AND name NOT LIKE 'sqlite_%' ORDER BY name"
-        )][:cap_tabs]
+        )][:5000]
+        if "_dm_tables" in tabs:
+            dm_tables = {t: cm for t, cm in c.execute("SELECT table_name, comment FROM _dm_tables")}
+        if "_dm_columns" in tabs:
+            for t, col, ty, cm in c.execute("SELECT table_name, column_name, type, comment FROM _dm_columns"):
+                dm_cols.setdefault(t, []).append((col, ty, cm))
+        tabs = [t for t in tabs if t not in build_prep.META_TABLES]
         for t in tabs:
             try:
                 cols = [(r[1], r[2] or "TEXT") for r in c.execute(f'PRAGMA table_info("{t}")')]
@@ -5189,9 +5336,23 @@ def _gather_evidence(db, cap_tabs=400, cap_docs=40, query=""):
         for i, p in enumerate(("fact_", "dws_", "dwd_", "agg_", "dim_", "ods_", "stg_")):
             if tl.startswith(p): return i
         return 9
-    for t in sorted(tab_cols, key=lambda x: (_pri(x), x)):
+    scope = [t for t in (focus or []) if t in tab_cols] or list(tab_cols)[:cap_tabs]
+    for t in sorted(scope, key=lambda x: (_pri(x), x)):
         schema.append(f"{t}({', '.join(cn for cn, _ in tab_cols[t][:22])})")
     refs, files, chunks, texts = [], [], [], 0
+    if dm_tables or dm_cols:
+        # 只读抽样保留的库表注释 → 合成数据字典,和上传资料一起分块检索(每张表一节,标题带表名以便锚定)
+        lines = ["# 库表注释(只读抽样自源库)"]
+        for t in scope:
+            if not (dm_tables.get(t) or any(cm for _, _, cm in dm_cols.get(t, []))):
+                continue
+            lines.append(f"### {t} —— {dm_tables.get(t) or ''}")
+            lines += [f"- {col}({ty}):{cm}" for col, ty, cm in dm_cols.get(t, []) if cm]
+        dd = "\n".join(lines)
+        own = doc_chunks.chunk_text(dd, "库表注释")
+        chunks += own
+        texts += len(dd)
+        files.append({"name": "库表注释", "type": "数据字典", "chars": len(dd), "chunks": len(own)})
     for p in sorted(glob.glob(os.path.join(WORK, "uploads_*")))[:cap_docs]:
         fn = os.path.basename(p)[8:]
         ext = fn.rsplit(".", 1)[-1].lower() if "." in fn else ""
@@ -5202,7 +5363,7 @@ def _gather_evidence(db, cap_tabs=400, cap_docs=40, query=""):
         files.append({"name": fn[:180], "type": _MOD_MAP.get(ext, "其它"), "chars": len(txt), "chunks": len(own)})
         if not own and ext in ("png", "jpg", "jpeg", "gif", "svg", "wav", "mp3"):
             refs.append(f"{fn}({_MOD_MAP.get(ext,'其它')})")
-    picked, stats = doc_chunks.select(chunks, query=query, anchors=list(tab_cols), budget=DOC_BUDGET)
+    picked, stats = doc_chunks.select(chunks, query=query, anchors=scope, budget=DOC_BUDGET)
     used_by = {}
     for c in picked:
         used_by[c["source"]] = used_by.get(c["source"], 0) + 1
@@ -5212,7 +5373,7 @@ def _gather_evidence(db, cap_tabs=400, cap_docs=40, query=""):
     stats.update(files=len([f for f in files if f["chunks"]]), chars_total=texts)
     return {"schema": "\n".join(schema), "tab_cols": tab_cols,
             "docs": doc_chunks.render(picked), "n_docs": len(used_by), "refs": refs, "files": files,
-            "doc_stats": stats}
+            "doc_stats": stats, "scope": scope if focus else None}
 
 def _skill_method_text(skills):
     """选中技能 → 真实 SKILL.md / 自定义正文,有界注入构建 prompt。
@@ -6075,6 +6236,11 @@ def build_inquire():
     skills = body.get("skills") or []
     cqs = _normalize_build_cqs(body.get("cqs"))
     stability = bool(body.get("stability"))    # M1 opt-in:二次独立生成量化一致性(构建耗时翻倍)
+    # 分轮构建的本轮范围(构建体检给出的计划):只影响给模型看的结构与文档锚定,数据裁决仍用全库
+    scope_tables = body.get("tables") or []
+    if not isinstance(scope_tables, list) or len(scope_tables) > 300 or \
+            not all(isinstance(x, str) and 0 < len(x) <= 128 for x in scope_tables):
+        return jsonify({"error": "tables 须为不超过 300 个表名的列表", "field": "tables"}), 400
     references_explicit = "references" in body
     try:
         requested_references = build_references.normalize(
@@ -6157,8 +6323,13 @@ def build_inquire():
         # ① 多源证据聚合(库结构 + 上传文档/代码 + 图像引用)
         yield sse({"type": "status", "text": "聚合多源证据(库表结构 / 建表代码 / 业务文档 / 图像引用)…"})
         _cq_text = " ".join((c.get("q") or c.get("question") or "") if isinstance(c, dict) else str(c) for c in cqs)
-        ev = _gather_evidence(db, query=f"{q} {_cq_text}")
+        ev = _gather_evidence(db, query=f"{q} {_cq_text}", focus=scope_tables or None)
         ntab = len(ev["tab_cols"])
+        if scope_tables:
+            _unknown = [t for t in scope_tables if t not in ev["tab_cols"]]
+            yield push("round_scope", not _unknown,
+                       f"本轮范围 · {len(ev['scope'] or [])} 张表(全库 {ntab} 张参与数据验证)"
+                       + (f" · 数据源中不存在:{'、'.join(_unknown[:5])}" if _unknown else ""))
         emeta = f"库表 {ntab} 张"
         if ev["n_docs"]: emeta += f" · 文档/代码证据 {ev['n_docs']} 份"
         if ev["refs"]: emeta += f" · 引用资产 {len(ev['refs'])} 项"

@@ -51,15 +51,20 @@ async function bcReadBuildStream(response, onEvent, idleMs = 120000) {
 }
 const BC_IC={true:'<span class="ic" style="color:#22c55e">✓</span>',false:'<span class="ic" style="color:#e0563f">✕</span>'};
 let BC_BUSY=false;
-async function bcInquire(){
- if(BC_BUSY)return;
- if(BC.contextLoading){toast('正在读取底本上下文，请稍候');return;}
- if(BC.contextError){toast('底本上下文未加载，请重新选择本体或改为新建');return;}
- const q=$('#bc_q').value.trim();if(!q){toast('请描述要构建的本体');return;}
+/* opts(可选,供分轮构建调用):{q, tables, name}。给了 q 就不读、不清空输入框;
+   成功返回 done 事件,失败或未执行返回 null——调用方据此决定是否继续下一轮。 */
+async function bcInquire(opts){
+ opts=opts&&typeof opts==='object'&&!(opts instanceof Event)?opts:{};
+ if(BC_BUSY)return null;
+ if(BC.contextLoading){toast('正在读取底本上下文，请稍候');return null;}
+ if(BC.contextError){toast('底本上下文未加载，请重新选择本体或改为新建');return null;}
+ const auto=!!opts.q;
+ const q=(opts.q||$('#bc_q').value).trim();if(!q){toast('请描述要构建的本体');return null;}
  const cqs=$('#bc_cq').value.split(/\n+/).map(x=>x.trim()).filter(Boolean);
  const references=window.bcRefsPayload?bcRefsPayload():{version:1,industry:{id:$('#bc_ref_industry').value,mode:$('#bc_ref_industry_mode').value},ontology_standard:{id:$('#bc_ref_standard').value,mode:$('#bc_ref_standard_mode').value}};
- const request={q,source:BC.src,name:$('#bc_name').value,skills:[...BC.skills],cqs,references,base_graph:BC.base||''};
- BC_BUSY=true;$('#bc_send').disabled=true;$('#bc_send').textContent='构建中…';$('#bc_q').value='';
+ const request={q,source:BC.src,name:auto?(opts.name||''):$('#bc_name').value,skills:[...BC.skills],cqs,references,base_graph:BC.base||''};
+ if(Array.isArray(opts.tables)&&opts.tables.length)request.tables=opts.tables;
+ BC_BUSY=true;$('#bc_send').disabled=true;$('#bc_send').textContent='构建中…';if(!auto)$('#bc_q').value='';
  if(!BC.welcomed||$('#bc_log').querySelector('.bc-welcome'))$('#bc_log').innerHTML='';
  const log=$('#bc_log');log.setAttribute('aria-busy','true');
  log.insertAdjacentHTML('beforeend',`<div class="bc-user">${esc(q)}</div>`);
@@ -99,11 +104,13 @@ async function bcInquire(){
   BC_CONV.turns.push({q,done});if(!BC_CONV.title)BC_CONV.title=q.slice(0,40);BC_CONV.ts=Date.now();bcSaveConv();
   BC.turns=BC_CONV.turns.length;$('#bc_conv_n').textContent='· 第 '+BC.turns+' 次构建';
   loaded.graph=0;bcBuilt();log.scrollTop=1e9;
+  return done;
  }catch(e){
   status='';draw();const error=e&&e.name==='AbortError'?'连接长时间无响应，未确认完成':String(e&&e.message||e);
   trace.insertAdjacentHTML('beforeend',`<div class="bc-failure" role="alert">${esc(error)}<div>本轮诉求已保留；请先检查已构建本体，再决定是否重试。</div></div>`);
-  if(!$('#bc_q').value.trim())$('#bc_q').value=q;
+  if(!auto&&!$('#bc_q').value.trim())$('#bc_q').value=q;
   bcBuilt();
+  return null;
  }finally{
   clearTimeout(headerTimer);BC_BUSY=false;$('#bc_send').disabled=false;log.setAttribute('aria-busy','false');bcHintSync();
  }

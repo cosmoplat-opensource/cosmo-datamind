@@ -30,7 +30,7 @@ source = [
   "ir_shape", "content_quality", "mcp_action_server", "mcp_build_server",
   "build_references", "standard_assets",
   "metric_contract", "metric_mining", "metric_pipeline", "concept_profile", "osi_export",
-  "sqlite_evidence", "llm_json", "doc_chunks",
+  "sqlite_evidence", "llm_json", "doc_chunks", "build_prep", "ext_sample",
 ]
 omit = ["tests/*"]
 
@@ -59,7 +59,7 @@ python_version = "3.10"
 ignore_missing_imports = true
 # 这三份文件是顺序执行、共享大量临时变量的端到端探针，不是可导入模块；
 # 由 ruff 与实际运行校验。mypy 聚焦生产模块及 tests/ 中的模块化测试。
-exclude = ["^test_all\\.py$", "^test_ui\\.py$", "^test_ui_ops\\.py$"]
+exclude = ["^test_all\\.py$", "^test_ui\\.py$", "^test_ui_ops\\.py$", "^data/"]  # data/ 为本机分析物料(已被本机忽略),不属于仓库
 # 原型渐进式类型化:先不强制注解,只抓明确的类型错误。
 check_untyped_defs = false
 warn_unused_ignores = true
