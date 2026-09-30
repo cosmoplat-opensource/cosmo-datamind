@@ -105,8 +105,8 @@ def code_columns(db, comments):
 
 
 def assign_books(db, comments, books):
-    """每个编码字段用哪套码表:取值覆盖率 ≥ 90% 的码表里,字段名与码表名最像的那套;
-    字段自己的注释码表同样参与,但注释可能写错,覆盖率不够就不采信。"""
+    """每个编码字段用哪套码表:取值覆盖率 ≥ 90%,且码表名与字段名相符或码表就是字段自己的注释。
+    0/1 这类取值任何码表都能覆盖,只凭覆盖率会误配;注释可能写错,覆盖率不够就不采信。"""
     out = {}
     for t, c in code_columns(db, comments):
         vals = _values(db, t, c)
@@ -122,7 +122,10 @@ def assign_books(db, comments, books):
             if cover < BOOK_COVER:
                 continue
             sim = 1.0 if _norm(c) in _norm(name.split(":")[-1]) or _norm(name.split(":")[-1]) in _norm(c) else 0.0
-            own = 0.5 if name.startswith("注释:") and name.endswith(f".{c}") and _bare(t) in name else 0.0
+            own = 0.5 if name == f"注释:{_bare(t)}.{c}" else 0.0
+            # 只凭覆盖率不够:0/1 这类取值任何码表都能覆盖。必须有字段名或字段自己的注释支持
+            if not (sim or own):
+                continue
             score = (sim + own + cover, -len(book))
             fits.append(name)
             if best is None or score > best[0]:
@@ -158,6 +161,8 @@ def encoding_conflicts(assigned, books, comments):
         by_col[c.lower()].append((t, c, a["book"]))
     rules = []
     for col, items in by_col.items():
+        if _VOLATILE.search(col):          # 状态、删除标记这类列各表自定含义,同名不同义属正常
+            continue
         names = sorted({b for _, _, b in items})
         if len(names) < 2:
             continue
@@ -216,7 +221,7 @@ def outlier_codes(db, assigned, relations, coherent):
         if _VOLATILE.search(c) or a["book"].startswith("注释:") and not re.search(r"_type$", c) \
                 or len(a["values"]) < MIN_DEP_VALUES:
             continue
-        tries = [(f"{t}.{d}", f"SELECT {_q(d)}, {_q(c)}, COUNT(*) FROM {_q(t)} GROUP BY 1, 2", None)
+        tries = [(f"{t}.{d}", f"SELECT {_q(d)}, {_q(c)}, COUNT(*) FROM {_q(t)} GROUP BY 1, 2", (None, None, None, d, None))
                  for d in _categories(db, t, {c})]
         for rel in relations:
             if rel["child"] != t:
@@ -225,20 +230,21 @@ def outlier_codes(db, assigned, relations, coherent):
             for d in _categories(db, pt, {pk}):
                 tries.append((f"{pt}.{d}(经 {ck}→{pk})",
                               f"SELECT p.{_q(d)}, c.{_q(c)}, COUNT(*) FROM {_q(t)} c JOIN {_q(pt)} p "
-                              f"ON p.{_q(pk)}=c.{_q(ck)} {('WHERE c.' + cond) if cond else ''} GROUP BY 1, 2", (pt, ck, pk, d)))
+                              f"ON p.{_q(pk)}=c.{_q(ck)} {('WHERE c.' + cond) if cond else ''} GROUP BY 1, 2",
+                              (pt, ck, pk, d, rel.get("cond"))))
         for label, sql, via in tries:
             strength, outs = _fd(_rows(db, sql))
             if strength < FD_STRENGTH:
                 continue
             if not outs:
-                if via and rel_by_via.get((t,) + via[:3], {}).get("probe"):
+                if via[0] and rel_by_via.get((t,) + via[:3], {}).get("probe"):
                     coherent.append({"kind": "coherent_dangling_relation", "table": t, "column": via[1],
                                      "parent": f"{via[0]}.{via[2]}", "condition": rel_by_via[(t,) + via[:3]].get("where", ""),
                                      "evidence": f"{label} 决定 {c},一致率 {round(strength, 3)}",
                                      "action": "关系按条件成立,悬空部分单独报告;建议升为待复核而非丢弃"})
                 continue
             n_out = sum(sum(o["outliers"].values()) for o in outs)
-            if via and rel_by_via.get((t,) + via[:3], {}).get("probe"):
+            if via[0] and rel_by_via.get((t,) + via[:3], {}).get("probe"):
                 # 重叠率不达标的关系,若父表类别仍强烈决定子表编码,说明关联在语义上成立,
                 # 低重叠来自悬空引用而不是连错了表
                 coherent.append({"kind": "coherent_dangling_relation", "table": t, "column": via[1],
@@ -248,17 +254,49 @@ def outlier_codes(db, assigned, relations, coherent):
             rule = {"kind": "outlier_code", "table": t, "column": c, "determined_by": label,
                     "fd_strength": round(strength, 3), "outlier_rows": n_out, "groups": outs[:10],
                     "action": "按类别的多数编码更正(清洗视图中生效,源库不改);更正前先看离群行是否另有业务原因"}
-            if via:
-                pt, ck, pk, d = via
-                cases = " ".join(f"WHEN (SELECT {_q(d)} FROM {_q(pt)} p WHERE p.{_q(pk)}={_q(t)}.{_q(ck)} LIMIT 1)="
-                                 f"'{str(o['category']).replace(chr(39), '')}' THEN '{o['expected']}'" for o in outs[:20])
-            else:
-                d = label.split(".", 1)[1]
-                cases = " ".join(f"WHEN {_q(d)}='{str(o['category']).replace(chr(39), '')}' THEN '{o['expected']}'" for o in outs[:20])
-            rule["sql"] = f"CASE {cases} ELSE {_q(c)} END AS {_q(c)}"
+            pt, ck, pk, d, cond = via
+            # 结构化字段供取数侧(清洗视图)重建 SQL 并逐一校验标识符;sql 只供人读
+            rule["category"] = {"table": pt or t, "column": d,
+                                "via": {"child_key": ck, "parent_key": pk} if pt else None,
+                                "condition": {"column": cond[0], "value": cond[1]} if cond else None}
+            rule["sql"] = recode_expression(rule)
             rules.append(rule)
             break
     return rules
+
+
+def _lit(v):
+    return "NULL" if v is None else "'" + str(v).replace("'", "''") + "'"
+
+
+def recode_expression(rule, quote=_q):
+    """离群编码规则 → 清洗视图中的列表达式。只用结构化字段,取值一律按字面量转义。"""
+    t, c, cat = rule["table"], rule["column"], rule["category"]
+    if cat.get("via"):
+        probe = (f"(SELECT p.{quote(cat['column'])} FROM {quote(cat['table'])} p "
+                 f"WHERE p.{quote(cat['via']['parent_key'])}={quote(t)}.{quote(cat['via']['child_key'])} LIMIT 1)")
+    else:
+        probe = f"{quote(t)}.{quote(cat['column'])}"
+    guard = ""
+    if cat.get("condition"):
+        guard = f"{quote(t)}.{quote(cat['condition']['column'])}={_lit(cat['condition']['value'])} AND "
+    cases = " ".join(f"WHEN {guard}{probe}={_lit(g['category'])} THEN {_lit(g['expected'])}" for g in rule["groups"][:20])
+    return f"CASE {cases} ELSE {quote(t)}.{quote(c)} END"
+
+
+def codebooks(assigned, books, comments, bound_tables):
+    """本体绑定表上的编码字段各用哪套码表:问数时把码表给模型,避免把「2」当成水。"""
+    allb = dict(books)
+    for (t, c), bk in comments.items():
+        allb[f"注释:{_bare(t)}.{c}"] = bk
+    out = []
+    for (t, c), a in assigned.items():
+        book = allb.get(a["book"]) or {}
+        if t in bound_tables and 2 <= len(book) <= 40:
+            used = {k: book[k] for k in a["values"] if k in book}
+            out.append({"kind": "codebook", "table": t, "column": c, "book": a["book"], "coverage": a["coverage"],
+                        "labels": used or dict(list(book.items())[:20]), "ambiguous_with": a.get("ambiguous_with", [])})
+    return out
 
 
 def orphans(db, relations):
@@ -330,7 +368,7 @@ def clean(db, comments_con, relations, bound_tables):
             dedup.append(r)
     ok = {(r["table"], r["column"], r["parent"]) for r in dedup}
     trusted = [r for r in relations if not r.get("probe") or (r["child"], r["child_key"], f"{r['parent']}.{r['parent_key']}") in ok]
-    rules = (encoding_conflicts(assigned, books, comments) + outs + dedup
+    rules = (codebooks(assigned, books, comments, bound_tables) + encoding_conflicts(assigned, books, comments) + outs + dedup
              + orphans(db, trusted) + empty_shells(db, bound_tables) + unknown_codes(db, comments, assigned))
     return {"books": len(books), "comment_books": len(comments),
             "assigned": {f"{t}.{c}": a for (t, c), a in assigned.items()}, "rules": rules}

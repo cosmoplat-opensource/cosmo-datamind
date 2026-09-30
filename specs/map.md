@@ -33,6 +33,7 @@ COSMO DataMind 是「数据治理 × 本体 × 深度问数」原型：
 ### 决定 / Decisions
 - [DR-061 · 能源与碳排放领域技能,以及「一表一对象」建模方式的复核](decisions/DR-061-energy-carbon-skill-and-modeling-review.md)
 - [DR-062 · 把流水线流程沉淀为技能:多通道交叉复核与数据清洗](decisions/DR-062-cross-check-and-cleaning-as-skills.md)
+- [DR-063 · 构建后自动复核,问数时套用清洗规则](decisions/DR-063-auto-cross-check-and-qa-cleaning.md)
 - [DR-060 · 构建前预处理:外部库只读抽样、构建体检与分轮构建](decisions/DR-060-build-preflight-sampling-and-rounds.md)
 - [DR-059 · 长文证据分块检索、跨轮关系入图、无数据取证与能源/碳排放行业参照](decisions/DR-059-long-document-evidence-and-energy-carbon-reference.md)
 - [DR-058 · 构建能力对外 MCP 化与 LLM 回复解析单一事实源(Agent 只能发起构建与阅读结论,不能改写结论状态)](decisions/DR-058-build-mcp-and-llm-json.md)
@@ -109,7 +110,7 @@ COSMO DataMind 是「数据治理 × 本体 × 深度问数」原型：
 
 ## 现状校准
 - 计数(2026-09-30):**135 路由**(server.py 117 + bp_engine 5 + bp_actions 7 + bp_metrics 4 + bp_semantic 2)/ **565 集成断言** /
-  **916 项 pytest 测试** / DR-001…DR-062 · IR-001…IR-013。
+  **926 项 pytest 测试** / DR-001…DR-063 · IR-001…IR-013。
   DR-060 新增构建前预处理:外部库只读抽样 `ext_sample`、构建体检与分轮计划 `build_prep`。
   DR-059 新增长文分块检索 `doc_chunks`,以及能源管理 `energy_management`、碳排放核算 `carbon_accounting` 两个独立行业参照。
   新增共享层 `srv_context`/`srv_engine`、单一裁决核 `dao_core`、评测台 `hallucination_eval`/`definition_eval`、

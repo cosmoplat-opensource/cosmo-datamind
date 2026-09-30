@@ -24,6 +24,7 @@ import ontology_grounding
 import content_quality
 import doc_chunks
 import build_prep
+import build_cleaning   # DR-063:构建后自动复核、问数时套用清洗规则
 import ext_sample
 import llm_json      # DR-058:LLM 回复 JSON 抽取与提议形状校验的单一事实源
 
@@ -561,7 +562,7 @@ def ir_to_graph(key, ir):
     return {"nodes": nodes, "edges": edges}
 
 # ── SQLite 工具(只读查询)──
-def q(sql, db=None, limit=500, attach_uploads=False):
+def q(sql, db=None, limit=500, attach_uploads=False, clean=None):
     # 以只读模式打开(mode=ro):即便 SQL 含写操作,引擎层也会拒绝,杜绝改/删库
     path = db or DB
     con = ro_connect(path)
@@ -570,13 +571,24 @@ def q(sql, db=None, limit=500, attach_uploads=False):
     if attach_uploads and os.path.exists(UPLOAD_DB):
         try: con.execute(f"ATTACH DATABASE 'file:{UPLOAD_DB}?mode=ro' AS up")
         except Exception: pass
+    # DR-063 清洗规则:在这条只读连接上建同名临时视图,查询看到更正后的编码;连接关闭即消失
+    applied, notes = [], []
+    if clean:
+        try:
+            sql, applied = build_cleaning.apply_views(con, clean, sql)
+            notes = build_cleaning.notes_for_sql(clean, sql)
+        except Exception:
+            applied, notes = [], []
     # 语句级超时:防笛卡尔积/慢查询拖垮进程(约 8s 后中断)
     deadline = [time.time() + 8.0]
     con.set_progress_handler(lambda: 1 if time.time() > deadline[0] else 0, 10000)
     try:
         cur = con.execute(sql)
         rows = [dict(r) for r in cur.fetchmany(limit)]
-        return {"columns": [c[0] for c in cur.description or []], "rows": rows}
+        out = {"columns": [c[0] for c in cur.description or []], "rows": rows}
+        if applied: out["cleaning"] = applied
+        if notes: out["cleaning_notes"] = notes
+        return out
     finally: con.close()
 # 运行时缓存 _RT_CACHE / runtime_cached / _drv_order 已收敛到 srv_engine(见文件头 import)
 def table_list(db=None):
@@ -3592,6 +3604,16 @@ def _qa_key(question, history, focus=None, graphs=None):
                       sorted(graphs or []), up_sig, ont_sig], ensure_ascii=False)
     return hashlib.md5(sig.encode("utf-8")).hexdigest()
 
+def _clean_steps(data):
+    """查询结果上的清洗痕迹:哪些列按规则更正了、哪些表有悬空或空壳提示。"""
+    out = []
+    for a in data.get("cleaning") or []:
+        out.append({"step": "data_clean", "ok": True,
+                    "info": f"清洗规则生效 · {a['table']}.{a['column']} 按「{a.get('by')}」更正约 {a.get('rows')} 行(临时视图,源库不改)"})
+    for n in data.get("cleaning_notes") or []:
+        out.append({"step": "data_clean_note", "ok": True, "info": "数据提示 · " + n})
+    return out
+
 @app.post("/api/chat")
 def chat():
     body = request.json or {}
@@ -3617,6 +3639,11 @@ def chat():
     anchor = {"objects": [], "relations": [], "metrics": [], "scoped": False,
               "graphs": graph_keys, "focus_n": len(focus_tables), "question": q_eff}
     ctx = build_context(q_eff, focus_tables=focus_tables, trace=anchor, graph_keys=graph_keys)
+    clean_rules = build_cleaning.rules_by_table(ir_gate) if body.get("clean", True) is not False else {}
+    _ctext = build_cleaning.context_text(clean_rules, [o.get("table") for o in anchor.get("objects") or []])
+    if _ctext:
+        ctx += "\n\n" + _ctext
+        steps.append({"step": "data_clean", "ok": True, "info": "带入清洗规则 · " + str(_ctext.count("\n- ")) + " 条(码表 / 自动更正 / 悬空提示)"})
     if history:
         hist_txt = "\n".join(f"上轮问: {h.get('q','')}\n上轮结果摘要: {h.get('summary','')[:800]}" for h in history[-2:])
         ctx = f"[对话历史,供追问理解指代]\n{hist_txt}\n\n[库结构]\n{ctx}"
@@ -3658,8 +3685,10 @@ def chat():
         except Exception:
             pass
         try:
-            data = q(sql, attach_uploads=True)
+            data = q(sql, attach_uploads=True, clean=clean_rules)
             steps.append({"step": "exec_sql", "ok": True, "info": f'{a.get("title","")} → {len(data["rows"])}行'})
+            for _st in _clean_steps(data):
+                steps.append(_st)
             results.append({"title": a.get("title", "分析"), "sql": sql, "chart": a.get("chart") or {}, "data": data})
         except Exception as e:
             steps.append({"step": "exec_sql", "ok": False, "info": f'{a.get("title","")}: {str(e)[:100]}'})
@@ -3726,6 +3755,11 @@ def chat_stream():
                   "scoped": False, "graphs": graph_keys,
                   "focus_n": len(focus_tables), "question": q_eff}
         ctx = build_context(q_eff, focus_tables=focus_tables, trace=anchor, graph_keys=graph_keys)
+        clean_rules = build_cleaning.rules_by_table(ir_gate) if body.get("clean", True) is not False else {}
+        _ctext = build_cleaning.context_text(clean_rules, [o.get("table") for o in anchor.get("objects") or []])
+        if _ctext:
+            ctx += "\n\n" + _ctext
+            yield push("data_clean", True, "带入清洗规则 · " + str(_ctext.count("\n- ")) + " 条(码表 / 自动更正 / 悬空提示)")
         anchor["explanation"] = _qa_anchor_explanation(anchor)
         _ont = anchor.get("ontology") or {}
         yield push("anchor_ontology", True,
@@ -3805,9 +3839,11 @@ def chat_stream():
             except Exception:
                 pass
             try:
-                data = q(sql, attach_uploads=True)
+                data = q(sql, attach_uploads=True, clean=clean_rules)
                 nrow = len(data["rows"])
                 yield push("exec_sql", True, f"[{idx}] 执行查询 → {nrow} 行 × {len(data['columns'])} 列")
+                for _st in _clean_steps(data):
+                    yield push(_st["step"], _st["ok"], f"[{idx}] " + _st["info"])
                 conf = 95 if nrow >= 6 else (70 if nrow >= 2 else 30)
                 yield push("data_check", nrow > 0, f"[{idx}] 数据质量校验:{'通过' if nrow>=2 else '数据偏少'} (confidence={conf}%)")
                 ct = (a.get("chart") or {}).get("type", "line")
@@ -6462,6 +6498,23 @@ def build_inquire():
                        f"未绑定口径 {_mr['unbound']} 条")
         except Exception as _e:
             yield push("metric_mining", False, f"指标反解失败:{str(_e)[:90]}(关系产物不受影响)")
+        # ④‴ 构建后自动复核(DR-063):选中 ontology-cross-check 技能时,用它的脚本在裁决之后复核关系、
+        # 生成清洗规则。放在验收检查之前,验收针对复核后的状态。在副本上运行,超时或失败都不影响产物。
+        if build_cleaning.SKILL in skills:
+            _sd = _builtin_skill_dir(build_cleaning.SKILL)
+            if build_cleaning.available(_sd):
+                import copy as _copy
+                _work = _copy.deepcopy(ir)
+                _cc, _cerr, _cto = _bounded_ex(lambda: build_cleaning.run_after_build(_work, db, _sd), 240)
+                if _cc is not None:
+                    ir = _work
+                    yield push("cross_check", True, build_cleaning.build_step_text(_cc))
+                    yield push("data_clean", True, build_cleaning.clean_step_text(_cc))
+                else:
+                    yield push("cross_check", False, "交叉复核" + ("超时" if _cto else f"失败:{str(_cerr)[:80]}")
+                               + ",本轮产物保持数据裁决结果")
+            else:
+                yield push("cross_check", False, "交叉复核技能缺少脚本,已跳过")
         # ⑤ 验收检查：图结构 + verified 证据契约 + 定义质量 + CQ 可达性，结果可重复。
         # quick_build 已先检查一次(无 CQ)；此处加入本轮 CQ 后重新计算。
         quality = build_quality.evaluate(ir, cqs)

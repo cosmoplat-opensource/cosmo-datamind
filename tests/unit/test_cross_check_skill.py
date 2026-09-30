@@ -39,8 +39,10 @@ def _fixture(make_sqlite):
         "ent": ("id INTEGER PRIMARY KEY, ent_no TEXT, ent_name TEXT, create_at TEXT", ent),
         "order_a": ("id INTEGER PRIMARY KEY, ent_no TEXT, ent_name TEXT, create_at TEXT",
                     [(i, f"E{i}", f"企业{i}", "2024-02-01 00:00:00") for i in range(1, 31)]),
-        "bad_name": ("id INTEGER PRIMARY KEY, ent_no TEXT, ent_name TEXT",
-                     [(i, f"E{i}", f"别家{i}", ) for i in range(1, 31)]),
+        "bad_name": ("id INTEGER PRIMARY KEY, ent_id INTEGER, ent_name TEXT",
+                     [(i, i, f"别家{i}") for i in range(1, 31)]),
+        "stale_name": ("id INTEGER PRIMARY KEY, ent_no TEXT, ent_name TEXT",
+                       [(i, f"E{i}", f"旧名{i}") for i in range(1, 31)]),
         "cfg": ("id INTEGER PRIMARY KEY, title TEXT", [(i, "c") for i in range(1, 31)]),
         "log_x": ("id INTEGER PRIMARY KEY, msg TEXT", [(i, "m") for i in range(1, 31)]),
         "sys_dict_item": ("dict_code TEXT, value TEXT, label TEXT",
@@ -65,10 +67,11 @@ def _rel(src, dst, ck, pk, status="verified", overlap=100.0, matched=30):
 
 
 def _ir():
-    names = ["ent", "order_a", "bad_name", "cfg", "log_x", "device", "measure", "a__shell"]
+    names = ["ent", "order_a", "bad_name", "stale_name", "cfg", "log_x", "device", "measure", "a__shell"]
     return {"objects": [{"name": n, "table": n} for n in names], "relations": [
         _rel("order_a", "ent", "ent_no", "ent_no"),
-        _rel("bad_name", "ent", "ent_no", "ent_no"),
+        _rel("bad_name", "ent", "ent_id", "id"),
+        _rel("stale_name", "ent", "ent_no", "ent_no"),
         _rel("log_x", "cfg", "id", "id"),
         _rel("cfg", "log_x", "id", "id"),
         _rel("measure", "device", "rel_obj_no", "dev_no", status="candidate", overlap=23.4, matched=52),
@@ -105,9 +108,16 @@ class TestChannels:
         assert "ent_no" in hubs and "tenant_or_hub_key" in r["tags"]
         assert r["channels"]["name"]["state"] == "support" and r["verdict"] == "corroborated"
 
-    def test_name_mismatch_refutes(self, make_sqlite):
+    def test_name_mismatch_on_surrogate_id_refutes(self, make_sqlite):
+        """父键是自增 id、名称又对不上:两边编号体系不同,关系不成立。"""
         r = _by(cc.check(_ir(), cc.Db(_fixture(make_sqlite)))[0])[("bad_name", "ent")]
         assert r["verdict"] == "refuted" and r["conflicts"] == ["name"]
+
+    def test_name_mismatch_on_business_key_is_only_stale(self, make_sqlite):
+        """父键是业务编码:更可能是子表冗余存的名称过期,关系保留、送复核。"""
+        r = _by(cc.check(_ir(), cc.Db(_fixture(make_sqlite)))[0])[("stale_name", "ent")]
+        assert r["verdict"] == "review" and r["weak_conflicts"] == ["name"]
+        assert r["channels"]["name"]["stale"] is True
 
     def test_id_collision_is_strong_and_bidirectional_is_weak(self, make_sqlite):
         r = _by(cc.check(_ir(), cc.Db(_fixture(make_sqlite)))[0])[("log_x", "cfg")]

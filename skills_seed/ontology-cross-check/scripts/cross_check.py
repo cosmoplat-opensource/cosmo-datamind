@@ -6,6 +6,7 @@
 几乎每张表都带的企业编号,都能让重叠率达标。本脚本对每条关系再看几条独立通道:
 
 - 冗余名称:子表与父表都存了名称(如 ent_no/ent_name),按键关联后名称应当一致;
+  父键是自增 id 时不一致为强冲突,父键是业务编码时多为冗余名称过期,为弱冲突;
 - 自增 id 碰撞:父键是 id、子键名与父表名无关、名称通道也不支持;
 - 双向:同一对表在两个方向上都被判成已验证;
 - 软删除:只保留父表未删除行后,重叠率是否仍达标;
@@ -13,7 +14,7 @@
 - 租户键:被大量表共用的编号列,「归属」在数据上成立,但不是业务关系;
 - 按类型分条件:未通过的关系若子表带判别列,按判别值分开看重叠率。
 
-只读 SQLite,只用标准库。名称不一致与 id 碰撞是强冲突,其余是弱冲突(只送复核)。
+只读 SQLite,只用标准库。名称不一致(父键为自增 id)与 id 碰撞是强冲突,其余是弱冲突(只送复核)。
 默认只出报告;--apply 时把强冲突的已验证关系降为候选并写明原因,
 另存为新文件,不改原文件。
 """
@@ -218,8 +219,17 @@ def check(ir, db):
                 row["tags"].append("tenant_or_hub_key")
             # 强冲突直接说明「这不是一条连接关系」;弱冲突可能有业务原因(补建的分组、引用已删除的父行、
             # 一对一扩展表),只送人工复核,不改裁决。
-            strong = [k for k in ("name", "id_collision") if ch.get(k, {}).get("state") == "conflict"]
+            # 名称不一致:父键是自增 id 时说明两边编号体系对不上(强);父键是业务编码时
+            # 更可能是子表冗余存的名称过期了,关系本身仍成立(弱)
+            name_bad = ch["name"].get("state") == "conflict"
+            if name_bad and pk.lower() != "id":
+                ch["name"]["stale"] = True
+            strong = [k for k in ("id_collision",) if ch.get(k, {}).get("state") == "conflict"]
+            if name_bad and pk.lower() == "id":
+                strong.insert(0, "name")
             weak = [k for k in ("bidirectional", "soft_delete", "temporal") if ch.get(k, {}).get("state") == "conflict"]
+            if name_bad and pk.lower() != "id":
+                weak.insert(0, "name")
             support = [k for k in ("name", "temporal") if ch.get(k, {}).get("state") == "support"]
             row["conflicts"], row["weak_conflicts"], row["supports"] = strong, weak, support
             row["verdict"] = ("refuted" if strong else "review" if weak else
@@ -274,11 +284,13 @@ def usable_relations(ir, rows, db):
         ck, pk = db.col(ct, row["child_key"]), db.col(pt, row["parent_key"])
         if not ck or not pk:
             continue
-        where = ""
+        where, pair = "", None
         if cond.get("discriminator") and verdict in ("conditional_candidate", "unchanged"):
             val = str(cond["value"]).replace("'", "''")
             where = f"{q(cond['discriminator'])}='{val}'"
-        out.append({"child": ct, "parent": pt, "child_key": ck, "parent_key": pk, "where": where, "probe": probe})
+            pair = [cond["discriminator"], cond["value"]]
+        out.append({"child": ct, "parent": pt, "child_key": ck, "parent_key": pk, "where": where, "cond": pair,
+                    "probe": probe})
     return out
 
 
