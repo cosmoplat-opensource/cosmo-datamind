@@ -82,6 +82,7 @@ def test_readonly_session_is_set_before_any_query():
 @pytest.mark.parametrize("sql", [
     "UPDATE t SET a=1", "DELETE FROM t", "INSERT INTO t VALUES (1)", "DROP TABLE t",
     "SELECT 1; DROP TABLE t", "SET GLOBAL read_only=0", "CALL p()", "select * from t for update; delete from t",
+    "SELECT * FROM t INTO OUTFILE '/tmp/x'", "SELECT a INTO DUMPFILE '/tmp/y' FROM t",
 ])
 def test_write_statements_are_rejected(sql):
     ro = ext_sample.open_readonly(FakeCon())
@@ -119,7 +120,7 @@ def test_table_failure_is_recorded_not_fatal(tmp_path):
 
 
 def test_partial_output_never_replaces_target(tmp_path):
-    """中途异常时,已有的抽样库保持原样,半截产物不会顶替它。"""
+    """中途异常时,已有的抽样库保持原样,半截产物不会替换它。"""
     out = tmp_path / "s.db"
     out.write_bytes(b"previous")
 
@@ -147,3 +148,25 @@ def test_multi_source_merge_uses_prefixes(tmp_path):
     ext_sample.finish_target(dst, out)
     names = {r[0] for r in sqlite3.connect(out).execute("SELECT table_name FROM _dm_tables")}
     assert {"a__small", "b__small", "a__big", "b__big"} <= names
+
+
+def test_stale_row_estimate_is_capped_and_reported(tmp_path):
+    """information_schema 的行数是估计值:估计 ≤ full 但实际更多时,全量导出也不超过 full 行,并记入 truncated。"""
+    con = FakeCon()
+    con.tables = [("small", 1, "小表")]
+    st = ext_sample.sample(ext_sample.open_readonly(con), str(tmp_path / "s.db"), full=2, sample_rows=1)
+    assert st["truncated"] == ["small"] and st["sampled"] == [] and st["rows"] == 2
+
+
+def test_bit_bytes_are_stored_as_integers():
+    assert ext_sample._conv(b"\x01") == 1 and ext_sample._conv(b"\x00\x02") == 2
+    assert ext_sample._conv(b"\x01" * 9) == "01" * 9
+
+
+def test_duplicate_prefix_is_recorded_not_fatal(tmp_path):
+    out = str(tmp_path / "d.db")
+    dst = ext_sample.open_target(out)
+    ext_sample.sample_into(ext_sample.open_readonly(FakeCon()), dst, prefix="a__")
+    st = ext_sample.sample_into(ext_sample.open_readonly(FakeCon()), dst, prefix="a__")
+    ext_sample.finish_target(dst, out)
+    assert st["tables"] == 0 and {f["error"] for f in st["failed"]} == {"duplicate_name"}

@@ -2,16 +2,16 @@
 # -*- coding: utf-8 -*-
 """观测驱动(ODD):构建与问数的结构化追踪和指标。
 
-本轮排查里几个问题都是靠人工翻日志才发现的:模型抽取超时后回退构建全库、口径校验把已验证的
-关系拦掉、问数因关联缺租户条件而计数虚高。这些都应当在运行时就能被看见。本模块提供:
+模型抽取超时后降级构建全库、口径校验误拦已验证的关系、问数因关联缺租户条件而计数虚高,
+这类问题若只能靠人工翻日志发现,定位成本高。本模块在运行时记录:
 
 - **追踪**:每次构建 / 问数是一个 run(run_id),按步骤记录事件(步骤名、成败、距上一步耗时、
   少量计数属性),追加写入 ``WORK/obs/events-YYYYMMDD.jsonl``。
-- **指标**:进程内计数器与耗时分布(构建次数、各步骤耗时、兜底次数、口径拦截按原因分类等),
+- **指标**:进程内计数器与耗时分布(构建次数、各步骤耗时、降级构建次数、口径拦截按原因分类等),
   由 ``/api/obs/metrics`` 读出。
 
 隐私:属性只收标量;问句、SQL、口令等敏感键不落盘(只记长度与指纹),字符串截断并去除 IP 与主机。
-只用标准库;写盘失败不影响业务(观测永远不能让主流程失败)。
+只用标准库;写盘失败不影响业务流程。
 """
 from __future__ import annotations
 
@@ -22,7 +22,7 @@ import re
 import threading
 import time
 import uuid
-from collections import defaultdict
+from collections import defaultdict, deque
 from contextlib import contextmanager
 
 import srv_context
@@ -46,6 +46,10 @@ def fingerprint(text):
     return {"sha": hashlib.sha256(raw.encode("utf-8")).hexdigest()[:12], "len": len(raw)}
 
 
+def _scrub(text):
+    return _IP.sub("[地址]", _URL.sub(lambda m: m.group(1) + "://[地址]", text))
+
+
 def _clean(attrs):
     out = {}
     for k, v in (attrs or {}).items():
@@ -57,9 +61,9 @@ def _clean(attrs):
         if isinstance(v, bool) or isinstance(v, (int, float)):
             out[k] = v
         elif isinstance(v, str):
-            out[k] = _IP.sub("[地址]", _URL.sub(lambda m: m.group(1) + "://[地址]", v))[:160]
+            out[k] = _scrub(v)[:160]
         elif isinstance(v, (list, tuple)) and all(isinstance(x, (str, int, float)) for x in v):
-            out[k] = [(_IP.sub("[地址]", x)[:60] if isinstance(x, str) else x) for x in list(v)[:20]]
+            out[k] = [(_scrub(x)[:60] if isinstance(x, str) else x) for x in list(v)[:20]]
     return out
 
 
@@ -90,7 +94,7 @@ def _write(event):
             with open(path, "a", encoding="utf-8") as fh:
                 fh.write(line + "\n")
     except Exception:
-        pass                                   # 观测不能让主流程失败
+        pass                                   # 观测写盘失败不影响主流程
 
 
 class Run:
@@ -142,6 +146,9 @@ def run(kind, **attrs):
     except Exception as exc:
         r.finish("error", error=type(exc).__name__)
         raise
+    except BaseException:                      # 生成器被关闭(GeneratorExit)、中断等:记为中止
+        r.finish("aborted")
+        raise
     else:
         if not getattr(r, "_finished", False):
             r.finish("ok")
@@ -170,7 +177,7 @@ def recent(limit=200, kind=None):
         return []
     try:
         with open(path, encoding="utf-8") as fh:
-            lines = fh.readlines()[-5000:]
+            lines = deque(fh, maxlen=5000)          # 只保留末尾若干行,不把整个文件读进内存
     except OSError:
         return []
     out = []

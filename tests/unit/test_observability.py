@@ -96,3 +96,21 @@ def test_untimed_steps_do_not_pollute_duration_metrics():
     assert not any(h["name"] == "qa.step_ms" for h in obs.snapshot()["histograms"])
     step = next(e for e in _events() if e["event"] == "step")
     assert step["ms"] is None and step["step"] == "exec_sql"
+
+
+def test_list_items_are_scrubbed_like_strings():
+    r = obs.Run("build", hosts=["https://db.example.internal:8443/api", "10.9.8.7"])
+    r.finish("ok")
+    start = next(e for e in _events() if e["event"] == "start")
+    assert "example.internal" not in json.dumps(start) and "10.9.8.7" not in json.dumps(start)
+
+
+def test_closed_generator_inside_run_is_recorded_as_aborted():
+    def gen():
+        with obs.run("qa"):
+            yield 1
+            yield 2
+    g = gen()
+    next(g)
+    g.close()
+    assert any(e["event"] == "finish" and e["status"] == "aborted" for e in _events())

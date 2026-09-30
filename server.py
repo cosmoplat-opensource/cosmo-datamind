@@ -8,6 +8,7 @@ COSMO DataMind · 数据智脑 — 数据治理、本体与深度问数原型
 """
 import json, os, re, sqlite3, subprocess, threading, time, uuid, sys, glob, hashlib
 from itertools import combinations
+from pathlib import Path
 import logging
 import ipaddress
 import urllib.request, urllib.error
@@ -24,7 +25,7 @@ import ontology_grounding
 import content_quality
 import doc_chunks
 import build_prep
-import ontology_domain  # DR-066:有效行规则与关系状态的领域模型(验收与问数共用)
+import ontology_domain  # DR-066:有效行规则(验收与问数共用)
 import observability    # DR-066:构建与问数的结构化追踪与指标(ODD)
 import code_contracts   # DR-065:代码契约(代码包 / docx 读取,连接与码表契约)
 import concept_hints    # DR-064:概念层线索(表族 / 类别拆分 / 版本重复)
@@ -749,7 +750,7 @@ def _scope_requirements(evidence):
     if not ontology_domain.is_valid_rows(evidence):
         return out
     vr = evidence["valid_rows"]
-    conds = ontology_domain.QA_CONDITIONS.get(vr["rule"], ())     # 规则 → 条件,以关系生命周期模型为准
+    conds = ontology_domain.QA_CONDITIONS.get(vr["rule"], ())     # 规则 → 条件,见 specs/models/valid_rows_rules.json
     if "tenant" in conds:
         out["tenant"] = vr.get("tenant_column")
     if "group" in conds and vr.get("column") and vr.get("group") is not None:
@@ -1283,7 +1284,8 @@ def build_context(question, focus_tables=None, trace=None, graph_keys=None):
                     # 问句常只说出名称的一部分(「计量器具」之于「能源计量器具」):
                     # 名称里有连续三个汉字出现在问句中也算命中,记录命中的那一段
                     frag = next((t[i:i + 3] for i in range(len(t) - 2)
-                                 if not t[i:i + 3].isascii() and t[i:i + 3] in question), None)
+                                 if all("\u4e00" <= ch <= "\u9fff" for ch in t[i:i + 3]) and t[i:i + 3] in question),
+                                None)
                     if frag and frag not in out:
                         out.append(frag)
         return out
@@ -1496,7 +1498,7 @@ def _validate_sql_ontology(sql, ir, strict=False):
         elif base not in known and base not in ctes:
             return False, f"表 {base} 不在本体/数据目录中(疑似臆造表名)"
     # 端点可能是主键、对象名或序号键:示例本体用 links/source/target,构建产物用 relations/source_concept。
-    # 此前只认 links,自建本体上所有异名键 JOIN(即便关系已验证)都被当成「口径未证实」拦掉。
+    # 两种形状都要识别,否则自建本体上已验证的异名键 JOIN 会被误判为「口径未证实」。
     o2t = {}
     for i, o in enumerate(ir.get("objects", [])):
         for k in (o.get("id"), o.get("name"), _obj_key(o, i)):
@@ -3736,7 +3738,7 @@ def _gate_category(why):
 
 @app.get("/api/obs/metrics")
 def obs_metrics():
-    """DR-066 观测:进程内计数器与耗时分布(构建 / 问数各步骤、兜底、口径拦截按原因)。"""
+    """DR-066 观测:进程内计数器与耗时分布(构建 / 问数各步骤、降级构建、口径拦截按原因)。"""
     return jsonify(observability.snapshot())
 
 
@@ -3754,7 +3756,7 @@ def obs_runs():
 
 
 def _clean_steps(data):
-    """查询结果上的清洗痕迹:哪些列按规则更正了、哪些表有悬空或空壳提示。"""
+    """查询结果上的清洗痕迹:哪些列按规则更正了、哪些表有孤儿记录或空表提示。"""
     out = []
     for a in data.get("cleaning") or []:
         out.append({"step": "data_clean", "ok": True,
@@ -3827,7 +3829,7 @@ def _chat_impl():
     _ctext = build_cleaning.context_text(clean_rules, [o.get("table") for o in anchor.get("objects") or []])
     if _ctext:
         ctx += "\n\n" + _ctext
-        steps.append({"step": "data_clean", "ok": True, "info": "带入清洗规则 · " + str(_ctext.count("\n- ")) + " 条(码表 / 自动更正 / 悬空提示)"})
+        steps.append({"step": "data_clean", "ok": True, "info": "带入清洗规则 · " + str(_ctext.count("\n- ")) + " 条(码表 / 自动更正 / 孤儿记录提示)"})
     if history:
         hist_txt = "\n".join(f"上轮问: {h.get('q','')}\n上轮结果摘要: {h.get('summary','')[:800]}" for h in history[-2:])
         ctx = f"[对话历史,供追问理解指代]\n{hist_txt}\n\n[库结构]\n{ctx}"
@@ -3943,7 +3945,7 @@ def chat_stream():
         _ctext = build_cleaning.context_text(clean_rules, [o.get("table") for o in anchor.get("objects") or []])
         if _ctext:
             ctx += "\n\n" + _ctext
-            yield push("data_clean", True, "带入清洗规则 · " + str(_ctext.count("\n- ")) + " 条(码表 / 自动更正 / 悬空提示)")
+            yield push("data_clean", True, "带入清洗规则 · " + str(_ctext.count("\n- ")) + " 条(码表 / 自动更正 / 孤儿记录提示)")
         anchor["explanation"] = _qa_anchor_explanation(anchor)
         _ont = anchor.get("ontology") or {}
         yield push("anchor_ontology", True,
@@ -4094,6 +4096,9 @@ def chat_stream():
             run.finish("ok" if results else "empty", results=results)
         except GeneratorExit:
             run.finish("aborted")
+            raise
+        except Exception as exc:
+            run.finish("error", error=type(exc).__name__)
             raise
         finally:
             _reset_qa_source(token)
@@ -4741,7 +4746,7 @@ def _mask_conn(c):
 
 def _sqlite_tables(path):
     try:
-        c = sqlite3.connect(f"file:{path}?mode=ro", uri=True)
+        c = sqlite3.connect(Path(path).absolute().as_uri() + "?mode=ro", uri=True)
         n = [r[0] for r in c.execute(
             "SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'"
         ) if r[0] not in build_prep.META_TABLES]
@@ -4876,25 +4881,40 @@ def build_connect_sample():
     name = _safe_argv(body.get("name") or (conns[0]["name"] + (" 等" if len(conns) > 1 else "")) + " · 只读抽样",
                       cap=60, default="只读抽样")
     key = "smp_" + hashlib.md5("|".join(sorted(ids)).encode()).hexdigest()[:10]
+    sdir = os.path.join(WORK, "samples"); os.makedirs(sdir, exist_ok=True)
+    out = _confined(sdir, key + ".db")
     with _SAMPLE_LOCK:
         if key in _SAMPLE_BUSY:
             return jsonify({"error": "这组外部库正在抽样中,请稍候"}), 409
         _SAMPLE_BUSY.add(key)
-    sdir = os.path.join(WORK, "samples"); os.makedirs(sdir, exist_ok=True)
-    out = _confined(sdir, key + ".db")
     from flask import Response, stream_with_context
     import queue as _q
 
     def sse(o): return "data: " + json.dumps(o, ensure_ascii=False, default=str) + "\n\n"
 
+    def register(total):
+        """抽样库登记为可构建的数据源(同一路径复用原登记)。"""
+        with _WRITE_LOCK:
+            cl = _load_conns()
+            cur = next((c for c in cl if c.get("kind") == "sqlite" and c.get("path") == out), None)
+            if not cur:
+                cur = {"id": "conn_" + uuid.uuid4().hex[:6], "kind": "sqlite", "builtin": False, "path": out}
+                cl.insert(0, cur)
+            cur.update(name=name, sampled_from=ids, sampled_at=time.strftime("%Y-%m-%d %H:%M"),
+                       sample_stats={k: total[k] for k in ("tables", "rows")})
+            _atomic_json(_BUILD_CONN_F, cl[:30])
+        return cur
+
     def work(qq):
+        # 抽样与登记都在工作线程里完成:客户端中途断开不影响结果;任何出口都释放占用标记并向队列报告
+        dst = None
         try:
-            pymysql = __import__("pymysql")
-        except ImportError:
-            qq.put(("error", "未安装 MySQL 驱动:pip install pymysql 后重启服务")); return
-        total = {"tables": 0, "rows": 0, "failed": [], "sampled": []}
-        dst = ext_sample.open_target(out)
-        try:
+            try:
+                pymysql = __import__("pymysql")
+            except ImportError:
+                qq.put(("error", "未安装 MySQL 驱动:pip install pymysql 后重启服务")); return
+            total = {"tables": 0, "rows": 0, "failed": [], "sampled": [], "truncated": []}
+            dst = ext_sample.open_target(out)
             for c in conns:
                 u = _parse_dsn(c.get("dsn")); sec = _conn_secret(c.get("id"))
                 prefix = (re.sub(r"[^A-Za-z0-9_]", "_", u["db"] or c["name"]) + "__") if len(conns) > 1 else ""
@@ -4910,20 +4930,29 @@ def build_connect_sample():
                     con.close()
                 for k in ("tables", "rows"): total[k] += st[k]
                 total["failed"] += st["failed"]; total["sampled"] += st["sampled"]
+                total["truncated"] += st.get("truncated", [])
             ext_sample.finish_target(dst, out)
-            qq.put(("done", total))
+            dst = None
+            qq.put(("done", total, register(total)))
         except Exception as exc:
-            try: dst.close()
-            except Exception: pass
-            _log_line = f"只读抽样失败:{type(exc).__name__}: {str(exc)[:160]}"
-            qq.put(("error", _log_line))
+            if dst is not None:
+                try: dst.close()
+                except Exception: pass
+            # 驱动的报错可能带主机地址,回显前去掉
+            qq.put(("error", code_contracts.scrub(f"只读抽样失败:{type(exc).__name__}: {str(exc)[:160]}")))
         finally:
             with _SAMPLE_LOCK:
                 _SAMPLE_BUSY.discard(key)
 
-    def gen():
-        qq = _q.Queue()
+    qq = _q.Queue()
+    try:
         threading.Thread(target=work, args=(qq,), daemon=True).start()
+    except Exception:
+        with _SAMPLE_LOCK:
+            _SAMPLE_BUSY.discard(key)
+        raise
+
+    def gen():
         while True:
             try:
                 item = qq.get(timeout=15)
@@ -4939,18 +4968,10 @@ def build_connect_sample():
             elif kind == "error":
                 yield sse({"type": "error", "error": item[1]}); return
             elif kind == "done":
-                total = item[1]
-                with _WRITE_LOCK:
-                    cl = _load_conns()
-                    cur = next((c for c in cl if c.get("kind") == "sqlite" and c.get("path") == out), None)
-                    if not cur:
-                        cur = {"id": "conn_" + uuid.uuid4().hex[:6], "kind": "sqlite", "builtin": False, "path": out}
-                        cl.insert(0, cur)
-                    cur.update(name=name, sampled_from=ids, sampled_at=time.strftime("%Y-%m-%d %H:%M"),
-                               sample_stats={k: total[k] for k in ("tables", "rows")})
-                    _atomic_json(_BUILD_CONN_F, cl[:30])
+                _, total, cur = item
                 yield sse({"type": "done", "conn": _mask_conn(cur), "tables": total["tables"], "rows": total["rows"],
-                           "sampled_tables": len(total["sampled"]), "failed": total["failed"][:20]})
+                           "sampled_tables": len(total["sampled"]), "truncated": total["truncated"][:20],
+                           "failed": total["failed"][:20]})
                 return
     return Response(stream_with_context(gen()), mimetype="text/event-stream")
 
@@ -5490,7 +5511,8 @@ def _read_asset_text(fname, cap=3500):
         # DR-065 代码包与 Word 文档:两种场景最有力的证据(后端 SQL、前端代码、接口文档)都以这两种形式交付。
         # 内存中读取、只取代码与文本类成员、单成员与总量设上限,不解压到磁盘。
         try:
-            raw = open(p, "rb").read()
+            with open(p, "rb") as fh:
+                raw = fh.read()
         except OSError:
             return ""
         return (code_contracts.read_zip(raw) if ext == "zip" else code_contracts.read_docx(raw))[:cap]
@@ -5569,7 +5591,7 @@ def _gather_evidence(db, cap_tabs=400, cap_docs=40, query="", focus=None):
     schema, tab_cols = [], {}
     dm_tables, dm_cols = {}, {}
     try:
-        c = sqlite3.connect(f"file:{db}?mode=ro", uri=True)
+        c = sqlite3.connect(Path(db).absolute().as_uri() + "?mode=ro", uri=True)
         tabs = [r[0] for r in c.execute(
             "SELECT name FROM sqlite_master "
             "WHERE type='table' AND name NOT LIKE 'sqlite_%' ORDER BY name"
@@ -6157,7 +6179,7 @@ def _adjudicate_ir(db, name, extracted, ev, base_ir=None):
                 cross_source += 1
                 note = (f"端点「{'、'.join(outside)}」来自已有本体,其表不在本轮数据源,"
                         "无法在本轮取证;跨源待取证")
-            saw_rows = False
+            probed = saw_rows = False              # probed:至少有一对候选键取到了统计信号
             # 数据裁决的前提是两端都落到真实表上。统计未落地的情形,好让「verified 0 条」
             # 可解释——用户否则无从区分「数据源太薄」与「裁决器坏了」。
             if not ts and not tt: ungrounded["both"] += 1
@@ -6213,11 +6235,12 @@ def _adjudicate_ir(db, name, extracted, ev, base_ir=None):
                         if re.search(r"_(id|code)$", x, re.I) and x not in pcols: pcols.append(x)
                     for pcol in pcols[:3]:
                         sig = signals(ts, (key,), tt, (pcol,))
-                        if sig and sig["child_distinct"]: saw_rows = True
+                        if sig is not None:
+                            probed, saw_rows = True, saw_rows or bool(sig["child_distinct"])
                         if not sig or not sig["child_distinct"]: continue
                         ov, punique, cunique = sig["overlap"], sig["parent_unique"], sig["child_unique"]
                         _contract = code_contracts.hit((ev or {}).get("contracts_resolved"), ts, key, tt, pcol)
-                        # 键名不同但代码里就这么连(如 zone_sn → zone_id):代码契约顶替命名证据,数据门槛不变
+                        # 键名不同但代码中按这两列连接(如 zone_sn → zone_id):代码契约可替代键名相容性证据,数据门槛不变
                         name_supported = dao_core.name_ok(key, tt, pcol, child_table=ts) or bool(_contract)
                         reverse = ov >= dao_core.MIN_OVERLAP and dao_core.should_reverse(cunique, punique)
                         verdict = dao_core.classify(overlap=ov, parent_unique=punique, name_ok=name_supported,
@@ -6268,7 +6291,8 @@ def _adjudicate_ir(db, name, extracted, ev, base_ir=None):
                                 pairs.append((child_columns, parent_columns))
                     for child_columns, parent_columns in pairs[:16]:
                         sig = signals(ts, child_columns, tt, parent_columns)
-                        if sig and sig["child_distinct"]: saw_rows = True
+                        if sig is not None:
+                            probed, saw_rows = True, saw_rows or bool(sig["child_distinct"])
                         if not sig or not sig["child_distinct"]: continue
                         ovp, punique, cunique = sig["overlap"], sig["parent_unique"], sig["child_unique"]
                         child_key = ",".join(child_columns)
@@ -6295,7 +6319,7 @@ def _adjudicate_ir(db, name, extracted, ev, base_ir=None):
                 if status != "verified" and best is not None:
                     best_ov, _best_status, best_reason, best_evidence = best
                     status, overlap, note, ev_keys = "candidate", round(best_ov, 1), best_reason, best_evidence
-                if status != "verified" and best is None and not saw_rows:
+                if status != "verified" and best is None and probed and not saw_rows:
                     no_data += 1
                     note = "两端表的候选键列均无非空取值(表中无数据),无从取证;接入数据后可复核"
             verb = r.get("verb", "关联")
@@ -6628,8 +6652,7 @@ def build_inquire():
         if ev["n_docs"]: emeta += f" · 文档/代码证据 {ev['n_docs']} 份"
         if ev["refs"]: emeta += f" · 引用资产 {len(ev['refs'])} 项"
         yield push("gather_evidence", True, "取证:" + emeta)
-        # 概念层线索(DR-064):表与概念不是一一对应——表族合并、类别拆分、版本重复。
-        # 只读、确定性;附在结构文本前给提议模型,构建后再把同族成员表挂到同一个对象上。
+        # 代码契约(DR-065):从上传代码中抽取的连接、码表与字段含义,附在结构文本前给提议模型
         _cons = ev.get("contracts") or {}
         if any(_cons.get(k) for k in ("joins", "codebooks", "apis", "dicts")):
             _ctxt = code_contracts.text_for_prompt(_cons, ev.get("contracts_resolved") or [],
@@ -6637,7 +6660,9 @@ def build_inquire():
             if _ctxt:
                 ev["schema"] = _ctxt + "\n\n" + (ev.get("schema") or "")
             yield push("code_contracts", True, code_contracts.summary_text(_cons, ev.get("contracts_resolved") or [])
-                       + " · 连接契约在裁决中顶替命名证据(数据门槛不变)")
+                       + " · 连接契约在裁决中可替代键名相容性证据(数据门槛不变)")
+        # 概念层线索(DR-064):表与概念不是一一对应——表族合并、类别拆分、版本重复。
+        # 只读、确定性;附在结构文本前给提议模型,构建后再把同族成员表挂到同一个对象上。
         _hints = _bounded(lambda: concept_hints.collect(db), 60) or {}
         _htext = concept_hints.text_for_prompt(_hints, scope=ev.get("scope") or list(ev["tab_cols"])[:400])
         if _htext:
@@ -6693,7 +6718,7 @@ def build_inquire():
             ir = _adjudicate_ir(db, gname, extracted, ev, base_ir=base_ir)
             _dg = (ir.get("scenario") or {}).get("adjudication_diagnostics") or {}
             if _dg.get("dropped_unknown_endpoint") or _dg.get("cross_source_endpoints") or _dg.get("no_data_relations"):
-                # 这三类都会让「提议了多少条」与「图里多了多少条」对不上,必须在流水线上说清
+                # 这三类会使提议条数与入图条数不一致,在构建步骤中列出各自数量
                 yield push("relation_intake", not _dg.get("dropped_unknown_endpoint"),
                            f"关系入图:端点不存在而舍弃 {_dg.get('dropped_unknown_endpoint', 0)} 条"
                            + (f"(如 {'、'.join(_dg.get('dropped_samples', [])[:3])})" if _dg.get("dropped_samples") else "")
@@ -6852,8 +6877,22 @@ def build_inquire():
                                "summary": quality["summary"], "cq": quality["cq"],
                                "references": quality["references"]},
                    "note": plan.get("note", ""), "elapsed": round(_t.time() - t0, 1)})
+    def gen_observed():
+        # 构建流未走到 done/error 就结束(客户端断开或异常)时,追踪也要记一次结束
+        try:
+            yield from gen()
+        except GeneratorExit:
+            if _obs.get("run") is not None and not _obs.get("finished"):
+                _obs["finished"] = True
+                _obs["run"].finish("aborted")
+            raise
+        except Exception as exc:
+            if _obs.get("run") is not None and not _obs.get("finished"):
+                _obs["finished"] = True
+                _obs["run"].finish("error", error=type(exc).__name__)
+            raise
     from flask import Response, stream_with_context
-    return Response(stream_with_context(gen()), mimetype="text/event-stream",
+    return Response(stream_with_context(gen_observed()), mimetype="text/event-stream",
                     headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"})
 
 @app.post("/api/build/quality")

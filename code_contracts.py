@@ -74,11 +74,16 @@ def _bare_ident(x):
 
 def read_zip(raw):
     """zip 包 → 带「### 文件 路径」小节标题的文本;只读代码与文本类成员,不落盘。"""
-    out, total = [], 0
     try:
         zf = zipfile.ZipFile(io.BytesIO(raw))
-    except zipfile.BadZipFile:
+    except (zipfile.BadZipFile, OSError, ValueError, EOFError):     # 非 zip 或目录区损坏
         return ""
+    with zf:
+        return _read_members(zf)
+
+
+def _read_members(zf):
+    out, total = [], 0
     for info in zf.infolist()[:MAX_MEMBERS]:
         name = info.filename
         if not info.flag_bits & 0x800:          # 未声明 UTF-8 的包多为 Windows 中文环境打包(GBK)
@@ -106,8 +111,8 @@ def read_zip(raw):
 def read_docx(raw):
     """docx → 段落文本(读 word/document.xml,段落换行、表格单元格用「|」分隔)。"""
     try:
-        zf = zipfile.ZipFile(io.BytesIO(raw))
-        xml = zf.read("word/document.xml").decode("utf-8", errors="replace")
+        with zipfile.ZipFile(io.BytesIO(raw)) as zf:
+            xml = zf.read("word/document.xml").decode("utf-8", errors="replace")
     except Exception:
         return ""
     xml = re.sub(r"<w:instrText[^>]*>.*?</w:instrText>", "", xml, flags=re.S)   # 域代码(HYPERLINK 等)
@@ -292,7 +297,8 @@ def _table_matcher(tab_cols):
 
 
 def resolve(contracts, tab_cols):
-    """连接契约:代码里的表与列 → 库里的表与列(可能对应一个表族的多张表);信封连接不算。"""
+    """连接契约:代码里的表与列 → 库里的表与列(可能对应一个表族的多张表);
+    租户、组织、删除标记等范围条件列上的等值连接(envelope)不计入。"""
     tables_for = _table_matcher(tab_cols)
     out = []
     for j in contracts.get("joins", []):

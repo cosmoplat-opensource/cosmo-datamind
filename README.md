@@ -328,7 +328,7 @@ python3 -m venv .venv
 
 ### 开发约定(DR-066)
 
-见 [AGENTS.md](AGENTS.md)。最有效的一项是**场景回归基准**(DR-067):两种数据形态的合成库端到端跑体检、构建、复核、问数,与标准答案比对,`python3 scripts/scenario_bench.py` 打印记分卡。此外有三类自动检查:流水线说明与构建代码的步骤一致
+见 [AGENTS.md](AGENTS.md)。主要手段是**场景回归基准**(DR-067):用两种数据形态的合成库端到端运行体检、构建、复核与问数,与标准答案比对;`python3 scripts/scenario_bench.py` 逐项打印检查结果。此外有三类自动检查:流水线说明与构建代码的步骤一致
 (`tests/meta/test_models.py`)、领域模块不依赖 Web 层(`tests/meta/test_architecture.py`)、
 表族识别与观测脱敏的性质测试(`tests/unit/test_properties.py`)。构建与问数的追踪和指标见
 `/api/obs/metrics`、`/api/obs/runs`。

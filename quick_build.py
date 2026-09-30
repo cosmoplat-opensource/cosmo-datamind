@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""quick_build.py <sqlite.db> <out_ir.json> <图谱名>
+"""quick_build.py <sqlite.db> <out_ir.json> <图谱名> [动作类型文件] [本轮表名 JSON 列表]
 数据驱动快速建本体(沿用平台反幻觉规则):表→对象;关系=声明FK ∪ (命名配对+取值重叠≥60%→verified,否则candidate)。
 产物为 DataMind 图谱 IR,可直接在 UI 可视化;深加工可再走 ontology-build / gov-app-ontology-build 技能。
 
@@ -12,7 +12,7 @@ import tempfile
 import threading
 import time
 from collections import OrderedDict as _OrderedDict
-import dao_core   # DR-035:裁决决策与命名/重叠原语的单一事实源
+import dao_core   # DR-035:裁决决策与命名/重叠原语的集中实现
 import build_quality
 import action_ontology
 import ontology_grounding
@@ -66,7 +66,7 @@ def is_key_unique(t, c):
 
     每轮 build 清空缓存并开启只读事务,保证全部证据来自同一个快照。
     只读连接本身不能阻止其他连接写库;因此不能省略该事务。
-    容量按 (表,列) 天然受 schema 规模约束;上限兜底极端宽表库,
+    容量按 (表,列) 天然受 schema 规模约束;另设上限,防止极端宽表库占用过多内存,
     满时按 LRU 逐出单个最久未用项(而非整体清空):同一父键会被多个子表连续探测,
     命中即刷新为最近使用,热点键因此不会被逐出重建。"""
     k = (t, c)
@@ -97,7 +97,7 @@ def parent_key(pt, child_col, stem):
     lower = {c.lower(): c for c in pcols}
     for cand in (child_col.lower(), f"{stem}_id", f"{stem}_code", "id", f"{pt.lower()}_id"):
         if cand in lower: return lower[cand]
-    for c in pcols:                         # 兜底:父表任一 *_id/*_code 列
+    for c in pcols:                         # 以上都没有时:退回父表任一 *_id/*_code 列
         if re.search(r"_(id|code)$", c, re.I): return c
     return None
 
@@ -160,7 +160,7 @@ def _build(db, out, name, action_types=None, tables=None):
     # 只读抽样写入的库表 / 字段注释是元数据,不是业务实体
     tabs = [t for t in tabs if t not in ("_dm_tables", "_dm_columns")]
     if tables:
-        # 分轮构建的本轮范围:兜底构建也只建这几张表,不因模型超时把全库都建一遍
+        # 分轮构建的本轮范围:降级构建(模型不可用时的纯数据驱动构建)也只建这几张表,不把全库都建一遍
         scope = {str(t).lower() for t in tables}
         tabs = [t for t in tabs if t.lower() in scope]
     print(f"[quick_build] {len(tabs)} 张表", flush=True)
@@ -356,8 +356,8 @@ def _declared_links(table, primary_keys):
                       and len(child_columns) == len(parent_columns)
                       and parent in cols_of)
         count = orphans.get(fk_id, 0)
-        # 零孤儿行只有在确有引用值时才算见证:空表或外键列全为 NULL 时,
-        # foreign_key_check 必然返回空——那是空真,不能据此判 verified。
+        # 零孤儿行只有在确有引用值时才构成证据:空表或外键列全为 NULL 时,
+        # foreign_key_check 必然返回空,此时的「零孤儿」不能作为 verified 的依据。
         referencing = None
         if valid_keys:
             try:
@@ -395,6 +395,8 @@ if __name__ == "__main__":
         print(__doc__.splitlines()[0], file=sys.stderr); sys.exit(2)
     try:
         _tables = json.loads(sys.argv[5]) if len(sys.argv) > 5 and sys.argv[5] else None
+        if _tables is not None and not (isinstance(_tables, list) and all(isinstance(t, str) for t in _tables)):
+            raise ValueError("本轮表清单须为表名字符串组成的 JSON 列表")
         build(sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4] if len(sys.argv) > 4 else None, _tables)
     except ValueError as e:            # 路径体检不过:给一行清楚的原因,不抛裸栈
         print(f"[quick_build] 参数错误:{e}", file=sys.stderr); sys.exit(2)

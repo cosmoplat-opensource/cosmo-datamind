@@ -107,8 +107,8 @@ def name_cores(tables, rounds=5):
 
 def _align_tails(cores, min_rem, biz):
     """按尾部对齐:两个词根只在开头几个词上不同,且这些词都「后面接的表种类足够多」(厂码、约定前缀),
-    就归到共同的尾部。解决前缀学习的先有鸡还是先有蛋:某个厂独用一种命名约定时,
-    它的厂码后面接的剩余部分与别的厂都不同,单靠可替换性学不出来。
+    就归到共同的尾部。用于补足可替换性前缀学习的盲区:某个厂独用一种命名约定时,
+    它的厂码后面接的剩余部分与别的厂都不同,单靠可替换性学不出这个前缀。
     检测类型(fct_/aoi_)后面只接几种表,够不上门槛,不会被对齐掉。"""
     breadth = defaultdict(set)
     for core in set(cores.values()):
@@ -145,7 +145,7 @@ def _align_tails(cores, min_rem, biz):
 
 
 def envelope(cols, share=0.2):
-    """被 ≥20% 的表共用的列:时间、审计、租户、分区等信封列,不具备实体区分度。"""
+    """被 ≥20% 的表共用的列:时间、审计、租户、分区等通用列,不具备实体区分度。"""
     n = max(1, len(cols))
     cnt = Counter(c.lower() for cs in cols.values() for c in set(cs))
     return {c for c, k in cnt.items() if k >= max(3, share * n)}

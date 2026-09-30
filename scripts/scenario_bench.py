@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""场景回归基准记分卡(DR-067):python3 scripts/scenario_bench.py
+"""场景回归基准:逐项打印检查结果(DR-067):python3 scripts/scenario_bench.py
 
 在临时目录里构造两个合成库,端到端跑体检、构建、复核、问数,逐项与标准答案比对。
 不连模型、不碰真实数据;任何一项失败返回非零。

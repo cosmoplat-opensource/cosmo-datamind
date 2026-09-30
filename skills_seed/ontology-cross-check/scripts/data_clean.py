@@ -1,16 +1,16 @@
 # -*- coding: utf-8 -*-
-"""数据清洗:把编码冲突、悬空引用、迁移空壳、注释与取值不符变成带证据的清洗规则。
+"""数据清洗:把编码冲突、孤儿记录、迁移遗留空表、注释与取值不符变成带证据的清洗规则。
 
-这些问题在业务库里反复出现,不能每次都靠人去反馈。本模块只读源库,产出声明式规则:
+这些问题在业务库里反复出现,需要自动识别。本模块只读源库,产出声明式规则:
 每条规则写明问题、证据、建议动作和一段可直接套用的 SQL 片段(清洗视图用),
 由构建、问数和人工复核共同消费;源库一律不改。
 
 - 码表:从字典类表与字段注释中收集码表,按取值覆盖率与字段名相似度判断每个编码字段用的是哪套;
   同名字段用了不同码表时,按标签给出码表之间的对照。
-- 离群编码:同一类别下编码应当一致(函数依赖)。类别可来自本表,也可沿已成立的关系取父表类别,
+- 异常编码值:同一类别下编码应当一致(函数依赖)。类别可来自本表,也可沿已成立的关系取父表类别,
   例如「计量器具类别 → 能源类型」;少数不一致的行给出按多数值更正的建议。
-- 悬空引用:关系成立,但部分子记录找不到父记录;给出比例与排除条件。
-- 迁移空壳:同名表在多个库中,一份为空、一份有数据;建议绑定有数据的那份。
+- 孤儿记录(参照完整性缺失):关系成立,但部分子记录在父表中找不到对应行;给出比例与排除条件。
+- 迁移遗留空表:同名表在多个库中,一份为空、一份有数据;建议绑定有数据的那份。
 - 注释编码:字段注释列出了编码,但数据里出现了注释没写的值。
 """
 from __future__ import annotations
@@ -23,7 +23,7 @@ _GROUP = ("dict_code", "dict_type_code", "dict_type", "dict_id", "type_code")
 _VALUE = ("value", "item_value", "dict_value", "dict_entry_code", "dict_key", "code")
 _LABEL = ("label", "item_text", "dict_label", "dict_entry_name", "name")
 # 决定方:实体类别编码(设备类别、系统类别、表计类型……);被决定方:业务编码(能源类型、介质……)。
-# 状态、开关、删除标记、等级这类列在同一类别下本来就会变化,不参与离群判断。
+# 状态、开关、删除标记、等级这类列在同一类别下本来就会变化,不参与异常编码值判断。
 _CATEGORY = re.compile(r"(type_code|category|class_code|kind)$", re.I)
 _VOLATILE = re.compile(r"(status|state|flag|^is_|del|show|enable|level|mode|required|reset|recovery|sort|input)", re.I)
 MIN_GROUP, MODE_SHARE, FD_STRENGTH = 10, 0.8, 0.9
@@ -146,7 +146,7 @@ def crosswalk(a, b):
     for ca, la in a.items():
         for cb, lb in b.items():
             na, nb = _norm(la), _norm(lb)
-            if na and nb and (na == nb or (min(len(na), len(nb)) >= 1 and (na in nb or nb in na))):
+            if na and nb and (na == nb or na in nb or nb in na):
                 pairs.setdefault(ca, cb)
     return pairs
 
@@ -183,7 +183,7 @@ def encoding_conflicts(assigned, books, comments):
 
 
 def _fd(pairs):
-    """pairs: [(类别值, 编码值, 行数)] → 各类别的多数编码与离群行。"""
+    """pairs: [(类别值, 编码值, 行数)] → 各类别的多数编码与异常行。"""
     groups = defaultdict(Counter)
     for d, v, n in pairs:
         if d is not None and v is not None:
@@ -241,19 +241,19 @@ def outlier_codes(db, assigned, relations, coherent):
                     coherent.append({"kind": "coherent_dangling_relation", "table": t, "column": via[1],
                                      "parent": f"{via[0]}.{via[2]}", "condition": rel_by_via[(t,) + via[:3]].get("where", ""),
                                      "evidence": f"{label} 决定 {c},一致率 {round(strength, 3)}",
-                                     "action": "关系按条件成立,悬空部分单独报告;建议升为待复核而非丢弃"})
+                                     "action": "关系按条件成立,孤儿记录单独报告;建议升为待复核而非丢弃"})
                 continue
             n_out = sum(sum(o["outliers"].values()) for o in outs)
             if via[0] and rel_by_via.get((t,) + via[:3], {}).get("probe"):
                 # 重叠率不达标的关系,若父表类别仍强烈决定子表编码,说明关联在语义上成立,
-                # 低重叠来自悬空引用而不是连错了表
+                # 低重叠来自孤儿记录而不是连错了表
                 coherent.append({"kind": "coherent_dangling_relation", "table": t, "column": via[1],
                                  "parent": f"{via[0]}.{via[2]}", "condition": rel_by_via[(t,) + via[:3]].get("where", ""),
                                  "evidence": f"{label} 决定 {c},一致率 {round(strength, 3)}",
-                                 "action": "关系按条件成立,悬空部分单独报告;建议升为待复核而非丢弃"})
+                                 "action": "关系按条件成立,孤儿记录单独报告;建议升为待复核而非丢弃"})
             rule = {"kind": "outlier_code", "table": t, "column": c, "determined_by": label,
                     "fd_strength": round(strength, 3), "outlier_rows": n_out, "groups": outs[:10],
-                    "action": "按类别的多数编码更正(清洗视图中生效,源库不改);更正前先看离群行是否另有业务原因"}
+                    "action": "按类别的多数编码更正(清洗视图中生效,源库不改);更正前先确认异常行是否另有业务原因"}
             pt, ck, pk, d, cond = via
             # 结构化字段供取数侧(清洗视图)重建 SQL 并逐一校验标识符;sql 只供人读
             rule["category"] = {"table": pt or t, "column": d,
@@ -270,7 +270,7 @@ def _lit(v):
 
 
 def recode_expression(rule, quote=_q):
-    """离群编码规则 → 清洗视图中的列表达式。只用结构化字段,取值一律按字面量转义。"""
+    """异常编码值规则 → 清洗视图中的列表达式。只用结构化字段,取值一律按字面量转义。"""
     t, c, cat = rule["table"], rule["column"], rule["category"]
     if cat.get("via"):
         probe = (f"(SELECT p.{quote(cat['column'])} FROM {quote(cat['table'])} p "
@@ -312,7 +312,7 @@ def orphans(db, relations):
         rules.append({"kind": "orphan_reference", "table": ct, "column": ck, "parent": f"{pt}.{pk}",
                       "condition": cond, "rows": r[0], "orphan_rows": r[1], "orphan_rate": rate,
                       "severity": "high" if rate > 0.3 else "low",
-                      "action": "沿此关系取数时排除悬空行并报告比例;比例高时关系仍按条件成立,但不能用于完整性汇总",
+                      "action": "沿此关系取数时排除孤儿记录并报告比例;比例高时关系仍按条件成立,但不能用于完整性汇总",
                       "sql": f"EXISTS (SELECT 1 FROM {_q(pt)} p WHERE p.{_q(pk)}={_q(ct)}.{_q(ck)})"})
     return rules
 

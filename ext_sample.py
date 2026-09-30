@@ -3,19 +3,20 @@
 """外部 MySQL/Doris 只读抽样到本地 SQLite:让外部库也能进入半自动构建的数据验证。
 
 背景:构建取证与关系裁决只读 SQLite。外部库登记后只能浏览,不能构建;而关系能否从
-「待取证」升到「已验证」,取决于有没有真实数据。能碳平台 5 库实测:只凭设计文档建出的
-496 条关系全部待取证;抽样到本地后 240 条被证实。
+「待取证」升到「已验证」,取决于有没有真实数据——只凭设计文档提出的关系无法做取值重叠验证,
+抽样到本地后才能逐条裁决。
 
 只读由三层保证(账号本身可能有写权限):
-  1. 语句白名单,只放行 SELECT / SHOW;
+  1. 语句白名单,只放行 SELECT / SHOW(并拒绝 INTO OUTFILE / DUMPFILE 等写文件子句);
   2. 会话级只读事务(SET SESSION TRANSACTION READ ONLY),即便白名单被绕过,服务端也拒写;
   3. 单条查询超时(MySQL 5.7+ max_execution_time),不给源库加压。
 
 抽样规则:≤FULL 行的表全量导出(作为被引用方时取值完整);更大的表按主键倒序取最新
-SAMPLE 行。大文本/二进制列不导出。表与字段注释写入 _dm_tables / _dm_columns,构建时作为
+SAMPLE 行。行数来自 information_schema 的估计值,可能偏小,因此全量导出也设 FULL 行上限,
+触顶的表记入 truncated。大文本/二进制列不导出。表与字段注释写入 _dm_tables / _dm_columns,构建时作为
 数据字典证据检索——实库注释往往是最完整的中文语义。
 
-连接由调用方传入(connect 工厂),本模块不读取、不保存凭据。
+连接由调用方建立后传入,本模块不读取、不保存凭据。
 """
 from __future__ import annotations
 
@@ -26,7 +27,8 @@ import time
 
 FULL, SAMPLE = 50_000, 20_000
 _ALLOW = re.compile(r"^\s*(select|show)\b", re.I)
-_DENY = re.compile(r"\b(insert|update|delete|replace|alter|drop|create|truncate|grant|rename|lock|call|load|handler|set)\b", re.I)
+_DENY = re.compile(r"\b(insert|update|delete|replace|alter|drop|create|truncate|grant|rename|lock|call|load|handler|set|"
+                   r"outfile|dumpfile)\b", re.I)
 _SKIP_TYPE = re.compile(r"(blob|binary|longtext|mediumtext|json|geometry)", re.I)
 
 
@@ -81,7 +83,12 @@ def _bq(name):
 
 
 def _conv(v):
-    return v if v is None or isinstance(v, (int, float, str)) else str(v)
+    """驱动返回值 → SQLite 可存的标量。BIT 列以 bytes 返回:≤8 字节按大端整数存,更长的存十六进制。"""
+    if v is None or isinstance(v, (int, float, str)):
+        return v
+    if isinstance(v, (bytes, bytearray)):
+        return int.from_bytes(v, "big") if len(v) <= 8 else bytes(v).hex()
+    return str(v)
 
 
 def open_target(out_path):
@@ -125,9 +132,14 @@ def sample_into(ro, dst, prefix="", full=FULL, sample_rows=SAMPLE, progress=None
         by.setdefault(c["t"], []).append(c)
     if table_filter:
         tabs = [t for t in tabs if table_filter(t["t"])]
-    stats = {"tables": 0, "rows": 0, "failed": [], "sampled": [], "started": time.time()}
+    stats = {"tables": 0, "rows": 0, "failed": [], "sampled": [], "truncated": [], "started": time.time()}
+    existing = {r[0].lower() for r in dst.execute("SELECT name FROM sqlite_master WHERE type='table'")}
     for i, t in enumerate(tabs, 1):
         name = prefix + t["t"]
+        if name.lower() in existing:                   # 多库合并时前缀相同导致重名:跳过并记录,不中断整批
+            stats["failed"].append({"table": name, "error": "duplicate_name"})
+            continue
+        existing.add(name.lower())
         cs = by.get(t["t"], [])
         keep = [c for c in cs if not _SKIP_TYPE.search(c["ty"] or "")]
         pk = [c["c"] for c in cs if c["k"] == "PRI"]
@@ -141,11 +153,15 @@ def sample_into(ro, dst, prefix="", full=FULL, sample_rows=SAMPLE, progress=None
                         [(name, c["c"], c["ty"], c["cm"] or "") for c in cs])
         if keep:
             sql = f"SELECT {', '.join(_bq(c['c']) for c in keep)} FROM {_bq(t['t'])}"
+            order = (" ORDER BY " + ", ".join(f"{_bq(p)} DESC" for p in pk)) if pk else ""
+            cap = int(sample_rows) if est > full else int(full)
+            sql += f"{order} LIMIT {cap}"
             if est > full:
-                sql += (" ORDER BY " + ", ".join(f"{_bq(p)} DESC" for p in pk) if pk else "") + f" LIMIT {int(sample_rows)}"
                 stats["sampled"].append(name)
             try:
                 rows = ro.q(sql)
+                if est <= full and len(rows) >= cap:     # 估计行数偏小,全量导出触顶
+                    stats["truncated"].append(name)
                 if rows:
                     names = [c["c"] for c in keep]
                     dst.executemany(

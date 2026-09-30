@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""场景回归基准(DR-067):两种数据形态端到端比对标准答案。记分卡:python3 scripts/scenario_bench.py"""
+"""场景回归基准(DR-067):两种数据形态端到端比对标准答案。逐项结果:python3 scripts/scenario_bench.py"""
 import pytest
 
 from tests.scenarios import bench

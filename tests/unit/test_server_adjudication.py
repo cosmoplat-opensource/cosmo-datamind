@@ -325,3 +325,16 @@ def test_empty_tables_are_diagnosed_as_no_data_not_as_failed_criteria(make_sqlit
     assert diag["no_data_relations"] == 1
     assert "无数据" in diag["reason"]
     assert "无数据" in ir["relations"][0]["note"]
+
+
+def test_no_candidate_keys_is_not_reported_as_empty_tables(make_sqlite, monkeypatch):
+    """两端有数据但找不到任何候选键列时,不能诊断为「表中无数据」。"""
+    db = make_sqlite({
+        "customers": ("title TEXT", [("A",)]),
+        "orders": ("amount REAL", [(1.0,)]),
+    })
+    monkeypatch.setattr(server, "_llm_semantic_review", lambda relations, ev: None)
+    ir = server._adjudicate_ir(db, "t", _proposal("", ""),
+                               _evidence({"customers": ["title"], "orders": ["amount"]}))
+    assert ir["scenario"]["adjudication_diagnostics"]["no_data_relations"] == 0
+    assert "无数据" not in ir["relations"][0]["note"]

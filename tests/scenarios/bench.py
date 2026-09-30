@@ -3,10 +3,10 @@
 
 构建体检 → 上传代码 → 构建(含交叉复核)→ 问数,全部经 HTTP 接口走生产代码;只把调用模型的四处
 (意图解析、抽取、语义评审、生成说明)换成固定输出——抽取返回一份「录制」的提议,
-其余返回不可用或固定文本。问数的 SQL 也由固定输出给出:一条会踩坑的,一条正确的。
+其余返回不可用或固定文本。问数的 SQL 也由固定输出给出:一条会导致计数错误的,一条正确的。
 
-这几轮真正抓到的缺陷(计数翻倍、口径误拦已验证关系、兜底构建全库、上传代码未读、构建流中断)
-都会让这里的某一项变红。用法:pytest tests/scenarios,或 python3 scripts/scenario_bench.py 看记分卡。
+此前修复过的缺陷(计数翻倍、口径误拦已验证关系、降级构建全库、上传代码未读、构建流中断)若再次出现,
+对应检查项会失败。用法:pytest tests/scenarios,或 python3 scripts/scenario_bench.py 查看逐项结果。
 """
 from __future__ import annotations
 
@@ -130,7 +130,7 @@ def run_lakehouse(tmp):
             return checks
         cc = steps.get("code_contracts", {}).get("info", "")
         checks.append(Check(name, "上传的代码包被读取并对上库表", "对上库表" in cc and "对上库表 0" not in cc, cc[:100]))
-        wip = next(o for o in ir["objects"] if o["name"] == "过站")
+        wip = next((o for o in ir["objects"] if o["name"] == "过站"), {})    # 对象缺失记为检查失败,不中断基准
         labels = {a["col"]: a.get("cn") for a in wip.get("attrs", [])}
         checks.append(Check(name, "代码注释补全字段中文名", labels.get("zone_sn") == "线别ID", str(labels)[:120]))
         checks += _relation_checks(name, ir, fx["expect"])
@@ -139,7 +139,7 @@ def run_lakehouse(tmp):
                  "JOIN dim_line_zone z ON z.zone_id = p.zone_sn GROUP BY 1 ORDER BY 1")
         scoped = naive.replace("ON z.zone_id = p.zone_sn", "ON z.zone_id = p.zone_sn AND z.factory_code = p.factory_code")
         direct = sum(r["n"] for r in server.q(naive, db=fx["db"])["rows"])
-        checks.append(Check(name, "坑确实存在:不带工厂关联计数翻倍", direct == 2 * sum(fx["truth_pass_by_line"].values()),
+        checks.append(Check(name, "问题场景成立:不带工厂关联时计数翻倍", direct == 2 * sum(fx["truth_pass_by_line"].values()),
                             f"直接执行得 {direct}"))
         r1 = _ask(server, graph, naive)
         checks.append(Check(name, "问数:不带工厂的关联被口径校验拦下", _gate_blocked(r1, "factory_code"),
@@ -180,7 +180,7 @@ def run_business(tmp):
                  "JOIN meta_device_type t ON t.dev_type_code = d.mete_dev_type_code GROUP BY 1")
         live = naive.replace("GROUP BY 1", "AND t.is_del = 0 GROUP BY 1")
         direct = {r["类型"]: r["n"] for r in server.q(naive, db=fx["db"])["rows"]}
-        checks.append(Check(name, "坑确实存在:不排除已删除行时计数翻倍",
+        checks.append(Check(name, "问题场景成立:不排除已删除行时计数翻倍",
                             direct.get("电能表") == 2 * fx["truth_devices_by_type"]["电能表"], str(direct)))
         r1 = _ask(server, graph, naive)
         checks.append(Check(name, "问数:未排除已删除行的关联被口径校验拦下", _gate_blocked(r1, "is_del"),
@@ -190,7 +190,7 @@ def run_business(tmp):
         checks.append(Check(name, "问数:排除已删除行后的答案与标准答案一致", got == fx["truth_devices_by_type"], str(got)))
         steps, done, ir, error = _build(server, conn, None, tables=["inst_device", "meta_device_type"])
         tabs = {t for o in (ir or {}).get("objects", []) for t in (o.get("tables") or [o.get("table")]) if t}
-        checks.append(Check(name, "模型不可用时的兜底构建只建本轮范围", bool(tabs) and tabs <= {"inst_device", "meta_device_type"},
+        checks.append(Check(name, "模型不可用时的降级构建只建本轮范围", bool(tabs) and tabs <= {"inst_device", "meta_device_type"},
                             str(sorted(tabs))))
     return checks
 

@@ -34,13 +34,13 @@ COSMO DataMind 是「数据治理 × 本体 × 深度问数」原型：
 ## 索引
 
 ### 决定 / Decisions
-- [DR-061 · 能源与碳排放领域技能,以及「一表一对象」建模方式的复核](decisions/DR-061-energy-carbon-skill-and-modeling-review.md)
-- [DR-062 · 把流水线流程沉淀为技能:多通道交叉复核与数据清洗](decisions/DR-062-cross-check-and-cleaning-as-skills.md)
-- [DR-063 · 构建后自动复核,问数时套用清洗规则](decisions/DR-063-auto-cross-check-and-qa-cleaning.md)
-- [DR-064 · 统一两种场景的半自动构建方法:概念层线索、场景画像与技能分层](decisions/DR-064-unified-method-across-scenarios.md)
-- [DR-065 · 两种场景逐环节走通:代码契约、有效行四规则、按来源库问数](decisions/DR-065-end-to-end-parity-code-contracts-and-scoped-keys.md)
-- [DR-066 · 开发范式取舍:哪些对本项目有用、哪些不用](decisions/DR-066-ai-era-development-paradigms.md)
 - [DR-067 · 场景回归基准:两种数据形态端到端比对标准答案](decisions/DR-067-scenario-regression-benchmark.md)
+- [DR-066 · 开发范式取舍:哪些对本项目有用、哪些不用](decisions/DR-066-ai-era-development-paradigms.md)
+- [DR-065 · 两种场景逐环节走通:代码契约、有效行四规则、按来源库问数](decisions/DR-065-end-to-end-parity-code-contracts-and-scoped-keys.md)
+- [DR-064 · 统一两种场景的半自动构建方法:概念层线索、场景画像与技能分层](decisions/DR-064-unified-method-across-scenarios.md)
+- [DR-063 · 构建后自动复核,问数时套用清洗规则](decisions/DR-063-auto-cross-check-and-qa-cleaning.md)
+- [DR-062 · 把流水线流程沉淀为技能:多通道交叉复核与数据清洗](decisions/DR-062-cross-check-and-cleaning-as-skills.md)
+- [DR-061 · 能源与碳排放领域技能,以及「一表一对象」建模方式的复核](decisions/DR-061-energy-carbon-skill-and-modeling-review.md)
 - [DR-060 · 构建前预处理:外部库只读抽样、构建体检与分轮构建](decisions/DR-060-build-preflight-sampling-and-rounds.md)
 - [DR-059 · 长文证据分块检索、跨轮关系入图、无数据取证与能源/碳排放行业参照](decisions/DR-059-long-document-evidence-and-energy-carbon-reference.md)
 - [DR-058 · 构建能力对外 MCP 化与 LLM 回复解析单一事实源(Agent 只能发起构建与阅读结论,不能改写结论状态)](decisions/DR-058-build-mcp-and-llm-json.md)
@@ -116,7 +116,7 @@ COSMO DataMind 是「数据治理 × 本体 × 深度问数」原型：
 - `SPEC.md` — 对**平台** web/ 的逆向规格(平台契约,非 DataMind;前缀不同勿混用)。
 
 ## 现状校准
-- 计数(2026-09-30):**137 路由**(server.py 119 + bp_engine 5 + bp_actions 7 + bp_metrics 4 + bp_semantic 2)/ **565 集成断言** /
+- 计数(2026-10-01):**137 路由**(server.py 119 + bp_engine 5 + bp_actions 7 + bp_metrics 4 + bp_semantic 2)/ **565 集成断言** /
   **1054 项 pytest 测试** / DR-001…DR-067 · IR-001…IR-013。
   DR-060 新增构建前预处理:外部库只读抽样 `ext_sample`、构建体检与分轮计划 `build_prep`。
   DR-059 新增长文分块检索 `doc_chunks`,以及能源管理 `energy_management`、碳排放核算 `carbon_accounting` 两个独立行业参照。

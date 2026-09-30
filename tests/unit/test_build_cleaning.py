@@ -2,7 +2,7 @@
 """DR-063 接线:构建后自动复核,问数时套用清洗规则。
 
 复核与清洗的方法在技能里(DR-062);这里锁住两个接入点的行为:
-构建选中技能时自动运行并改写产物,问数时用只读连接上的临时视图套用离群编码更正,
+构建选中技能时自动运行并改写产物,问数时用只读连接上的临时视图套用异常编码值更正,
 源库不变,清洗 SQL 只由结构化字段重建、标识符逐一核对、取值按字面量转义。
 """
 import json
@@ -35,7 +35,7 @@ def test_run_after_build_rewrites_ir_and_records_summary(make_sqlite):
     kinds = {r["kind"] for r in measure["evidence"]["cleaning"]}
     assert {"codebook", "outlier_code", "orphan_reference"} <= kinds
     assert "交叉复核" in build_cleaning.build_step_text(summary)
-    assert "离群编码" in build_cleaning.clean_step_text(summary)
+    assert "异常编码值" in build_cleaning.clean_step_text(summary)
 
 
 def test_rerun_does_not_accumulate_stale_rules(make_sqlite):
@@ -54,7 +54,7 @@ def test_query_sees_corrected_codes_through_temp_view_and_source_is_untouched(ma
     assert {r["energy_type"]: r["n"] for r in raw["rows"]} == {"2": 37, "3": 3}
     assert {r["energy_type"]: r["n"] for r in cleaned["rows"]} == {"2": 40}
     assert cleaned["cleaning"][0]["table"] == "measure" and cleaned["cleaning"][0]["column"] == "energy_type"
-    assert any("悬空" in n for n in cleaned["cleaning_notes"])
+    assert any("孤儿记录" in n for n in cleaned["cleaning_notes"])
     with sqlite3.connect(db) as con:     # 源库不变
         assert con.execute("SELECT COUNT(*) FROM measure WHERE energy_type='3'").fetchone()[0] == 3
     # 条件外的行(指向系统的一侧)不被更正
@@ -74,6 +74,17 @@ def test_views_are_rebuilt_from_structured_fields_only(make_sqlite):
     assert "cleaning" not in server.q("SELECT COUNT(*) AS n FROM measure", db=db, clean=bogus)
 
 
+def test_malformed_rule_structure_is_skipped_not_raised(make_sqlite):
+    """规则来自可编辑的 IR:via / condition 不是对象时放弃这条规则,问数照常执行。"""
+    db, ir, _ = _built(make_sqlite)
+    rules = build_cleaning.rules_by_table(ir)
+    rule = next(r for r in rules["measure"] if r["kind"] == "outlier_code")
+    for bad in ({"via": "x"}, {"condition": "x"}):
+        broken = {"measure": [{**rule, "category": {**rule["category"], **bad}}]}
+        out = server.q("SELECT COUNT(*) AS n FROM measure", db=db, clean=broken)
+        assert out["rows"][0]["n"] > 0 and "cleaning" not in out
+
+
 def test_upload_tables_are_redirected_to_the_cleaning_view(make_sqlite, tmp_path):
     db, ir, _ = _built(make_sqlite)
     main = tmp_path / "main.db"
@@ -90,7 +101,7 @@ def test_context_text_gives_the_model_codebooks_and_corrections(make_sqlite):
     _db, ir, _ = _built(make_sqlite)
     text = build_cleaning.context_text(build_cleaning.rules_by_table(ir), ["measure", "up.price"])
     assert "measure.energy_type 取值含义" in text and "2=电" in text
-    assert "自动更正" in text and "悬空" in text
+    assert "自动更正" in text and "孤儿记录" in text
     assert build_cleaning.context_text(build_cleaning.rules_by_table(ir), ["unrelated"]) == ""
 
 

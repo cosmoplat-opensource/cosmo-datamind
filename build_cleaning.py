@@ -8,7 +8,7 @@
   强冲突的已验证关系降为候选,清洗规则挂到对象的 ``evidence.cleaning``。
 - **问数时**:把本体里的清洗规则变成只读连接上的临时视图(``CREATE TEMP VIEW``,
   与源表同名,SQLite 解析未限定表名时先找 temp),查询自动看到更正后的编码;
-  码表、悬空比例等作为说明交给模型。源库一律不改,连接关闭视图即消失。
+  码表、孤儿记录比例等作为说明交给模型。源库一律不改,连接关闭视图即消失。
 
 临时视图的 SQL 只由规则的结构化字段重建,每个表名、列名都先在当前连接里核对存在,
 取值一律按字面量转义;IR 里存的 ``sql`` 字段只供人读,从不执行。
@@ -90,9 +90,9 @@ def build_step_text(summary):
 
 def clean_step_text(summary):
     c = summary.get("cleaning") or {}
-    names = {"codebook": "码表", "encoding_conflict": "编码冲突", "outlier_code": "离群编码",
-             "coherent_dangling_relation": "悬空但语义成立", "orphan_reference": "悬空引用",
-             "empty_shell": "迁移空壳", "comment_code_mismatch": "注释编码不符"}
+    names = {"codebook": "码表", "encoding_conflict": "编码冲突", "outlier_code": "异常编码值",
+             "coherent_dangling_relation": "有孤儿记录但语义成立", "orphan_reference": "孤儿记录",
+             "empty_shell": "迁移遗留空表", "comment_code_mismatch": "注释编码不符"}
     parts = [f"{names.get(k, k)} {n}" for k, n in c.items()]
     return "数据清洗规则 · " + (" · ".join(parts) if parts else "未发现需要处理的问题") + " · 已挂到对应对象,问数时生效"
 
@@ -129,18 +129,21 @@ def _find(cols, name):
 
 
 def _recode(con, schema, table, cols, rule):
-    """校验后重建一条离群编码规则的列表达式;任何标识符对不上就放弃这条规则。"""
+    """校验后重建一条异常编码值规则的列表达式;结构不合法或任何标识符对不上就放弃这条规则。"""
     col = _find(cols, rule.get("column"))
     cat = rule.get("category") or {}
     groups = [g for g in (rule.get("groups") or []) if isinstance(g, dict) and "category" in g and "expected" in g]
     if not col or not groups or not isinstance(cat, dict):
         return None, None
-    if cat.get("via"):
+    via, cond = cat.get("via"), cat.get("condition")
+    if (via and not isinstance(via, dict)) or (cond and not isinstance(cond, dict)):
+        return None, None
+    if via:
         ptab = str(cat.get("table") or "")
         pschema = schema if _cols(con, schema, ptab) else "main"
         pcols = _cols(con, pschema, ptab)
-        pcat, pkey = _find(pcols, cat.get("column")), _find(pcols, (cat["via"] or {}).get("parent_key"))
-        ckey = _find(cols, (cat["via"] or {}).get("child_key"))
+        pcat, pkey = _find(pcols, cat.get("column")), _find(pcols, via.get("parent_key"))
+        ckey = _find(cols, via.get("child_key"))
         if not (pcat and pkey and ckey):
             return None, None
         probe = (f"(SELECT p.{_q(pcat)} FROM {pschema}.{_q(ptab)} p "
@@ -151,7 +154,6 @@ def _recode(con, schema, table, cols, rule):
             return None, None
         probe = f"src.{_q(ccat)}"
     guard = ""
-    cond = cat.get("condition")
     if cond:
         ccol = _find(cols, cond.get("column"))
         if not ccol:
@@ -162,7 +164,7 @@ def _recode(con, schema, table, cols, rule):
 
 
 def apply_views(con, rules, sql):
-    """在只读连接上为有离群编码规则的表建同名临时视图。返回 (改写后的 sql, 已生效说明)。
+    """在只读连接上为有异常编码值规则的表建同名临时视图。返回 (改写后的 sql, 已生效说明)。
 
     主库表:临时视图与表同名,未限定的表名自动解析到视图。
     上传库表(以 up.表 访问):视图另起名,并把 SQL 里的 up.表 改指向视图。
@@ -201,7 +203,7 @@ def apply_views(con, rules, sql):
 
 
 def notes_for_sql(rules, sql):
-    """查询用到的表上若有高比例悬空引用或空壳,给出提示(不改结果)。"""
+    """查询用到的表上若有高比例孤儿记录或迁移遗留空表,给出提示(不改结果)。"""
     low = (sql or "").lower()
     notes = []
     for table, rs in (rules or {}).items():
@@ -209,7 +211,8 @@ def notes_for_sql(rules, sql):
             continue
         for r in rs:
             if r.get("kind") == "orphan_reference" and r.get("severity") == "high":
-                notes.append(f"{r['table']}.{r['column']} 指向 {r['parent']} 的引用有 {round(100 * r['orphan_rate'])}% 悬空,"
+                notes.append(f"{r['table']}.{r['column']} 指向 {r['parent']} 的引用有 "
+                             f"{round(100 * (r.get('orphan_rate') or 0))}% 为孤儿记录(父表中无对应行),"
                              "按关联取数时这部分不会出现,汇总可能偏小")
             elif r.get("kind") == "empty_shell" and table in [t.lower() for t in r.get("empty", [])]:
                 notes.append(f"{table} 是迁移留下的空表,有数据的是 {'、'.join(r.get('populated', []))}")
@@ -217,7 +220,7 @@ def notes_for_sql(rules, sql):
 
 
 def context_text(rules, tables, cap=1800):
-    """给模型的清洗说明:锚定表上的码表、已自动更正的编码、悬空与空壳提示。"""
+    """给模型的清洗说明:锚定表上的码表、已自动更正的编码、孤儿记录与空表提示。"""
     want = {str(t).lower().split(".", 1)[-1] for t in tables or []}
     lines = []
     for table in sorted(want):
@@ -230,8 +233,8 @@ def context_text(rules, tables, cap=1800):
                 lines.append(f"- {r['table']}.{r['column']} 有 {r.get('outlier_rows')} 行按「{r.get('determined_by')}」"
                              "自动更正(查询时已生效,直接用该列即可)")
             elif k == "orphan_reference" and r.get("severity") == "high":
-                lines.append(f"- {r['table']}.{r['column']} → {r['parent']} 有 {round(100 * r['orphan_rate'])}% 悬空,"
-                             "关联后行数会减少")
+                lines.append(f"- {r['table']}.{r['column']} → {r['parent']} 有 "
+                             f"{round(100 * (r.get('orphan_rate') or 0))}% 为孤儿记录,关联后行数会减少")
             elif k == "empty_shell":
                 lines.append(f"- {r['table']} 同名表中有数据的是 {'、'.join(r.get('populated', []))},不要用空表")
     if not lines:

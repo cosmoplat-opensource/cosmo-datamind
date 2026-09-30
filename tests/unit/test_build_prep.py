@@ -5,6 +5,10 @@
 多态引用只能部分重叠、审计列被当成关系、演示/历史分表混入、单轮表太多只覆盖一半、
 枢纽层后建导致跨轮关系无处挂。
 """
+import sqlite3
+
+import pytest
+
 import build_prep as bp
 
 
@@ -105,6 +109,11 @@ class TestPlan:
         rounds = bp.plan(prof, max_tables=50, exclude=["ems__alarm_log_2025"])
         assert "ems__alarm_log_2025" not in [t for r in rounds for t in r["tables"]]
 
+    def test_non_positive_round_size_still_terminates(self, make_sqlite):
+        prof = bp.profile(_db(make_sqlite))
+        rounds = bp.plan(prof, max_tables=0)
+        assert rounds and all(r["count"] == 1 for r in rounds)
+
     def test_every_table_appears_exactly_once(self, make_sqlite):
         prof = bp.profile(_db(make_sqlite))
         all_t = [t for r in bp.plan(prof, max_tables=2) for t in r["tables"]]
@@ -129,3 +138,15 @@ def test_database_prefix_is_not_an_energy_signal(make_sqlite):
         "ems__es_report": ("id INTEGER PRIMARY KEY", []),
     }))
     assert prof["energy"]["tables"] == ["ems__es_report"]
+
+
+def test_readonly_connect_handles_uri_characters_in_filename(make_sqlite):
+    """文件名含 ? 或 # 时仍按只读打开同一个文件,不会把后半截当成 URI 参数。"""
+    db = make_sqlite({"t": ("id INTEGER", [(1,)])}, fname="a?b#c.db")
+    con = bp._connect(db)
+    try:
+        assert con.execute("SELECT COUNT(*) FROM t").fetchone()[0] == 1
+        with pytest.raises(sqlite3.OperationalError):
+            con.execute("INSERT INTO t VALUES (2)")
+    finally:
+        con.close()

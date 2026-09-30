@@ -513,8 +513,8 @@ def evaluate(ir, profile, grounding=None):
         industry_report.update(
             matched_concepts=[name_by_id[x] for x in matched if x in name_by_id],
             missing_required=[name_by_id[x] for x in missing],
-            # 可选概念不参与判定,但要列出——例如能碳参照下数据只覆盖能源侧时,
-            # 排放源/排放因子等碳侧概念全部缺席,这正是使用者最需要看到的覆盖缺口。
+            # 可选概念不参与判定,但要列出:例如能碳参照下数据只覆盖能源侧时,
+            # 排放源、排放因子等碳侧概念全部缺席,列出后使用者能看到覆盖缺口。
             missing_optional=[name_by_id[x] for x in name_by_id if x not in matched and x not in required],
             coverage=round(len(set(required) & set(matched)) / len(required), 4) if required else 1.0,
         )

@@ -2,9 +2,9 @@
 # -*- coding: utf-8 -*-
 """构建体检:在半自动构建之前,先把数据源「看一遍」,给出问题清单与分轮计划。
 
-来自能碳平台 5 库(594 表)的实测经验:直接把整个库交给构建,会同时撞上几类问题——
-没有声明外键、软删除行让键看起来不唯一、多态引用只能部分重叠、审计列被当成关系、
-演示/历史分表混在业务表里、单轮表太多模型只覆盖一半、枢纽层后建导致跨轮关系无处挂。
+多库业务数据上的实践表明,直接把整个库交给构建,常同时遇到几类问题:
+没有声明外键、逻辑删除(软删除)的行让键看起来不唯一、多态引用只能部分重叠、审计列被误判为关系、
+演示表与历史分表混在业务表里、单轮表过多导致模型只覆盖一部分、枢纽表后建使跨轮关系缺少可挂接的对象。
 这些都能在构建前用确定性规则识别出来,本模块只读、不调模型:
 
   profile(db)         数据源概况 + 建模规律识别 + 能源/碳排放信号
@@ -19,6 +19,7 @@ from __future__ import annotations
 import re
 import sqlite3
 from collections import Counter, defaultdict
+from pathlib import Path
 
 import concept_hints
 import doc_chunks
@@ -46,7 +47,8 @@ def _qi(name):
 
 
 def _connect(db):
-    return sqlite3.connect(f"file:{db}?mode=ro", uri=True)
+    # 路径先转成 file: URI:文件名里的 ? 或 # 不会被当成 URI 参数(否则 mode=ro 可能失效)
+    return sqlite3.connect(Path(db).absolute().as_uri() + "?mode=ro", uri=True)
 
 
 def _comments(con):
@@ -280,6 +282,7 @@ def plan(prof, max_tables=45, exclude=(), families=None):
     排序依据:类型/字典层最先(被最多表引用);其余按「被引用度」——库里有多少张表带着
     指向该组的编号列(如 user 组 ← user_no)。这是启发式,使用者可以勾选、跳过轮次。
     """
+    max_tables = max(1, int(max_tables))             # 每轮至少一张表,否则分轮循环无法推进
     cols, excl = prof["_cols"], set(exclude)
     # 表族只让代表表进计划,其余成员随代表表走(构建后挂到同一个对象上)
     riders = {}

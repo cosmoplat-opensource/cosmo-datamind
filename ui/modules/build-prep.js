@@ -1,7 +1,8 @@
 /* 构建前预处理(DR-060):外部库只读抽样、构建体检、分轮计划与逐轮构建。
    体检只读、不调模型;逐轮构建复用 bcInquire,每轮在上一轮的本体上继续构建。 */
 (function () {
-  const PREP = {report: null, running: false, abort: false};
+  // 体检报告存在各自的卡片元素上(el._report):页面上可能有多张体检卡片,按钮必须用自己那张的计划
+  const PREP = {running: false, abort: false};
   const LV = {warn: '<span class="bp-lv warn">注意</span>', info: '<span class="bp-lv info">提示</span>'};
 
   function card(html) {
@@ -25,7 +26,7 @@
         + (d && d.external ? `<button class="ghost" onclick="bcSampleDlg(${jsAttr(BC.src)})">只读抽样到本地</button>` : '');
       return;
     }
-    PREP.report = d;
+    el._report = d;
     render(el, d);
   }
 
@@ -35,12 +36,12 @@
     const refs = (d.references || []).map(r => `<div class="bp-ref"><b>${esc(r.name)}</b> · ${esc(r.reason)}`
       + (r.skill ? ` <span class="muted">· 领域技能 ${esc(r.skill)}</span>` : '')
       + (r.separate ? '' : ` <a href="#" onclick="event.preventDefault();bcPrepUseRef(${jsAttr(r.industry)},${jsAttr(r.skill || '')})">采用</a>`) + '</div>').join('');
-    const scen = (d.scenario || []).map(k => `<div class="bp-ref"><b>${esc(k.name)}</b> · ${esc(k.reason)} <span class="muted">→ ${esc(k.strategy)}</span></div>`).join('');
+    const scen = (d.scenario || []).map(k => `<div class="bp-ref"><b>${esc(k.name)}</b> · ${esc(k.reason)} <span class="muted">· 处理方式:${esc(k.strategy)}</span></div>`).join('');
     const fnd = (d.findings || []).map(f => `<details class="bp-f"><summary>${LV[f.level] || ''}${esc(f.title)}</summary>`
       + `<div class="bp-fd">${esc(f.detail)}${f.examples && f.examples.length ? '<div class="muted">例:' + f.examples.map(esc).join(';') + '</div>' : ''}</div></details>`).join('');
-    const hubs = (d.hub_keys || []).slice(0, 8).map(h => `<span class="bp-chip">${esc(h.key)} · ${h.tables} 表</span>`).join('');
-    const rounds = (d.plan || []).map(p => `<div class="bp-round" data-r="${p.round}">
-      <label><input type="checkbox" checked data-round="${p.round}"> <b>第 ${p.round} 轮</b> · ${esc(p.label)} <span class="muted">${p.count} 张表${p.family_members ? ' · 另有同族成员 ' + Object.values(p.family_members).reduce((a, m) => a + m.length, 0) + ' 张随代表表归并' : ''}${p.hint ? ' · ' + esc(p.hint) : ''}</span></label>
+    const hubs = (d.hub_keys || []).slice(0, 8).map(h => `<span class="bp-chip">${esc(h.key)} · ${Number(h.tables)} 张表</span>`).join('');
+    const rounds = (d.plan || []).map(p => `<div class="bp-round" data-r="${Number(p.round)}">
+      <label><input type="checkbox" checked data-round="${Number(p.round)}"> <b>第 ${Number(p.round)} 轮</b> · ${esc(p.label)} <span class="muted">${Number(p.count)} 张表${p.family_members ? ' · 另有同族成员 ' + Object.values(p.family_members).reduce((a, m) => a + m.length, 0) + ' 张随代表表归并' : ''}${p.hint ? ' · ' + esc(p.hint) : ''}</span></label>
       <span class="bp-st" aria-live="polite"></span>
       <details><summary class="muted">表清单</summary><div class="bp-tabs">${p.tables.map(esc).join('、')}</div></details></div>`).join('');
     const docLine = doc.files
@@ -56,14 +57,14 @@
         <span>${s.has_comments ? `注释 表 ${s.table_comment_pct}% · 字段 ${s.column_comment_pct}%` : '无库表注释'}</span></div>
       <div class="bp-sec">发现</div>${fnd || '<div class="muted">未发现需要特别处理的建模规律</div>'}
       ${hubs ? `<div class="bp-sec">枢纽键(被最多表共用的编号)</div><div>${hubs}</div>` : ''}
-      ${scen ? `<div class="bp-sec">场景画像(表与概念怎样对应)</div>${scen}` : ''}
+      ${scen ? `<div class="bp-sec">场景画像(表与概念的对应方式)</div>${scen}` : ''}
       <div class="bp-sec">资料覆盖</div><div class="bp-line">${docLine}</div>
-      ${refs ? `<div class="bp-sec">参照与领域技能建议(不同领域分开处理)</div>${refs}` : ''}
-      <div class="bp-sec">分轮计划 <span class="muted">枢纽优先 · 每轮不超过 ${d.max_tables} 张表 · 每轮在上一轮的本体上继续构建;数据验证始终使用全库</span></div>
+      ${refs ? `<div class="bp-sec">行业参照与领域技能建议(不同领域分别构建)</div>${refs}` : ''}
+      <div class="bp-sec">分轮计划 <span class="muted">枢纽表优先 · 每轮不超过 ${Number(d.max_tables)} 张表 · 每轮在上一轮的本体上继续构建;数据验证始终使用全库</span></div>
       ${d.excluded && d.excluded.length ? `<details class="bp-f"><summary><span class="bp-lv info">已排除</span>${d.excluded.length} 张疑似演示/临时/历史分表(不进入计划)</summary><div class="bp-tabs">${d.excluded.map(esc).join('、')}</div></details>` : ''}
       <div class="bp-rounds">${rounds}</div>
       <div class="bp-run">
-        <textarea class="bp-goal" aria-label="整体建模目标" placeholder="整体建模目标(每轮都会带上),例:构建能源管理本体,贯通企业—设备—计量—能耗—告警工单">${esc(goal)}</textarea>
+        <textarea class="bp-goal" aria-label="整体建模目标" placeholder="整体建模目标(各轮均附带),例:构建能源管理本体,覆盖企业、设备、计量、能耗与告警工单">${esc(goal)}</textarea>
         <div class="row" style="gap:6px"><button class="bp-go" onclick="bcPlanRun(this)">按计划逐轮构建</button>
         <button class="ghost bp-stop" style="display:none" onclick="bcPlanStop()">本轮结束后停止</button>
         <span class="muted bp-note"></span></div></div>`;
@@ -86,8 +87,10 @@
   }
 
   async function run(btn) {
-    const box = btn.closest('.bc-prep'), d = PREP.report;
+    const box = btn.closest('.bc-prep'), d = box && box._report;
     if (!d || PREP.running || BC_BUSY) return;
+    // 体检之后切换了数据源:表清单属于原数据源,不能拿去另一个数据源上构建
+    if (d.source && d.source.id !== BC.src) { toast(`当前数据源已不是「${d.source.name}」,请重新体检后再逐轮构建`); return; }
     const picked = [...box.querySelectorAll('input[data-round]')].filter(x => x.checked).map(x => +x.dataset.round);
     const rounds = (d.plan || []).filter(p => picked.includes(p.round));
     if (!rounds.length) { toast('请至少勾选一轮'); return; }
@@ -122,9 +125,18 @@
   }
 
   /* ── 外部库只读抽样 ── */
+  // 与后端 /api/build/connect/sample 一致:只读抽样目前只支持 MySQL/Doris
+  function sampleable(s) {
+    if (!s || s.kind === 'sqlite' || s.kind === 'api') return false;
+    const k = String(s.kind || '').toLowerCase();
+    if (k === 'mysql' || k === 'doris') return true;
+    const m = /^(?:jdbc:)?([a-z0-9+.-]+):\/\//i.exec(String(s.dsn || '').trim());
+    return k === 'external' && !!m && ['mysql', 'doris'].includes(m[1].toLowerCase());
+  }
+
   function sampleDlg(id) {
-    const ext = (BC._sources || []).filter(s => s.kind !== 'sqlite' && s.kind !== 'api');
-    if (!ext.length) { toast('没有已登记的外部库'); return; }
+    const ext = (BC._sources || []).filter(sampleable);
+    if (!ext.length) { toast('没有可抽样的外部库(只读抽样目前支持 MySQL/Doris)'); return; }
     const m = $('#bc_sample_modal');
     m.querySelector('.bs-list').innerHTML = ext.map(s => `<label class="bs-row"><input type="checkbox" value="${esc(s.id)}" ${s.id === id ? 'checked' : ''}> ${esc(s.name)}</label>`).join('');
     m.querySelector('.bs-name').value = '';
@@ -138,12 +150,14 @@
     const ids = [...m.querySelectorAll('.bs-list input:checked')].map(x => x.value);
     if (!ids.length) { msg.textContent = '请至少选择一个外部库'; return; }
     go.disabled = true; msg.textContent = '连接中…';
+    let reader = null;
     try {
       const resp = await fetch('/api/build/connect/sample', {method: 'POST',
         headers: {'Content-Type': 'application/json', 'Accept': 'text/event-stream'},
         body: JSON.stringify({ids, name: m.querySelector('.bs-name').value.trim()})});
       if (!resp.ok) { const e = await resp.json().catch(() => ({})); throw new Error(e.error || ('HTTP ' + resp.status)); }
-      const reader = resp.body.getReader(), dec = new TextDecoder(); let buf = '', done = null;
+      reader = resp.body.getReader();
+      const dec = new TextDecoder(); let buf = '', done = null;
       while (!done) {
         const part = await reader.read(); if (part.done) break;
         buf += dec.decode(part.value, {stream: true});
@@ -165,13 +179,16 @@
       setTimeout(() => { m.style.display = 'none'; }, 1200);
     } catch (e) {
       msg.textContent = '抽样失败:' + (e && e.message || e);
+      if (reader) reader.cancel().catch(() => {});      // 出错后不再读取剩余的流
     } finally { go.disabled = false; }
   }
 
   window.bcPrep = bcPrep;
   window.bcPrepUseRef = useRef;
   window.bcPlanRun = run;
-  window.bcPlanStop = () => { PREP.abort = true; toast('将在本轮结束后停止'); };
+  window.bcPlanStop = () => { if (!PREP.running) return; PREP.abort = true; toast('将在本轮结束后停止'); };
+  window.bcPlanRunning = () => PREP.running;
+  window.bcSampleable = sampleable;
   window.bcSampleDlg = sampleDlg;
   window.bcSampleGo = sampleGo;
 })();

@@ -27,6 +27,7 @@ import sqlite3
 import os
 import sys
 from collections import Counter
+from pathlib import Path
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
@@ -45,9 +46,14 @@ def q(name):
     return '"' + str(name).replace('"', '""') + '"'
 
 
+def ro_connect(path):
+    """只读打开 SQLite。路径先转成 file: URI,文件名里的 ? 或 # 不会被当成 URI 参数。"""
+    return sqlite3.connect(Path(path).absolute().as_uri() + "?mode=ro", uri=True)
+
+
 class Db:
     def __init__(self, path):
-        self.con = sqlite3.connect(f"file:{path}?mode=ro", uri=True)
+        self.con = ro_connect(path)
         self._cols = {}
         self.tables = [r[0] for r in self.con.execute(
             "SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' AND name NOT LIKE '\\_dm\\_%' ESCAPE '\\'")]
@@ -364,7 +370,7 @@ def usable_relations(ir, rows, db):
         matched = ((rels[row["i"]].get("evidence") or {}).get("matched_distinct") or 0)
         if cond.get("overlap") is not None:
             matched = max(matched, int(cond["overlap"] * cond.get("distinct", 0) / 100))
-        # 重叠率不达标但匹配量足够的候选作为「探针」:可能是悬空引用拉低了重叠率,交给清洗环节看语义是否一致
+        # 重叠率不达标但匹配量足够的候选作为「探针」:可能是孤儿记录拉低了重叠率,交给清洗环节看语义是否一致
         probe = verdict == "unchanged" and matched >= MIN_PROBE_MATCH
         if verdict not in ("corroborated", "single_channel", "review", "conditional_candidate") and not probe:
             continue
@@ -402,28 +408,37 @@ def main(argv=None):
     ap.add_argument("--db", required=True, help="用于裁决的 SQLite 库(可为只读抽样库)")
     ap.add_argument("--report", help="报告输出路径(JSON);缺省打印摘要")
     ap.add_argument("--apply", help="把复核结论写入该路径的新 IR 文件")
-    ap.add_argument("--clean", action="store_true", help="同时生成数据清洗规则(编码冲突、离群编码、悬空引用、空壳表、注释编码)")
+    ap.add_argument("--clean", action="store_true", help="同时生成数据清洗规则(编码冲突、异常编码值、孤儿记录、迁移遗留空表、注释编码)")
     ap.add_argument("--comments", help="含 _dm_columns 字段注释的 SQLite(缺省用 --db 本身)")
     a = ap.parse_args(argv)
-    ir = json.load(open(a.ir, encoding="utf-8"))
+    with open(a.ir, encoding="utf-8") as fh:
+        ir = json.load(fh)
     db = Db(a.db)
-    rows, hubs = check(ir, db)
-    summary = summarize(rows, hubs)
-    report = {"summary": summary, "relations": rows}
-    if a.clean:
-        import data_clean
-        bound = {t for o in ir.get("objects") or [] for t in (o.get("tables") or [o.get("table")]) if t}
-        ccon = sqlite3.connect(f"file:{a.comments}?mode=ro", uri=True) if a.comments else db.con
-        cleaning = data_clean.clean(db, ccon, usable_relations(ir, rows, db), bound)
-        report["cleaning"] = cleaning
-        summary["cleaning"] = dict(Counter(r["kind"] for r in cleaning["rules"]))
+    ccon = None
+    try:
+        rows, hubs = check(ir, db)
+        summary = summarize(rows, hubs)
+        report = {"summary": summary, "relations": rows}
+        if a.clean:
+            import data_clean
+            bound = {t for o in ir.get("objects") or [] for t in (o.get("tables") or [o.get("table")]) if t}
+            ccon = ro_connect(a.comments) if a.comments else None
+            cleaning = data_clean.clean(db, ccon or db.con, usable_relations(ir, rows, db), bound)
+            report["cleaning"] = cleaning
+            summary["cleaning"] = dict(Counter(r["kind"] for r in cleaning["rules"]))
+    finally:
+        if ccon is not None:
+            ccon.close()
+        db.con.close()
     if a.report:
-        json.dump(report, open(a.report, "w", encoding="utf-8"), ensure_ascii=False, indent=1, default=str)
+        with open(a.report, "w", encoding="utf-8") as fh:
+            json.dump(report, fh, ensure_ascii=False, indent=1, default=str)
     if a.apply:
         out = apply(ir, rows)
         if a.clean:
             out = apply_cleaning(out, report["cleaning"])
-        json.dump(out, open(a.apply, "w", encoding="utf-8"), ensure_ascii=False, indent=1, default=str)
+        with open(a.apply, "w", encoding="utf-8") as fh:
+            json.dump(out, fh, ensure_ascii=False, indent=1, default=str)
     print(json.dumps(summary, ensure_ascii=False, indent=1, default=str))
     return 0
 

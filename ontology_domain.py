@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""有效行规则的单一来源(DR-066)。
+"""有效行规则的集中定义(DR-066)。
 
-验收(build_quality)与问数(server)原先各写一份规则名。现在两处都从
-``specs/models/valid_rows_rules.json`` 取:本模块导入时读取它。复核技能脚本须能独立发布、
-不能导入本模块,只能自带规则名,由 tests/meta/test_models.py 核对与这里一致。只用标准库。
+验收(build_quality)与问数(server)都从 ``specs/models/valid_rows_rules.json`` 读取规则名与
+问数条件,本模块在导入时加载该文件。复核技能脚本须能独立发布、不能导入本模块,因此自带规则名,
+由 tests/meta/test_models.py 核对两处一致。只用标准库。
 """
 from __future__ import annotations
 

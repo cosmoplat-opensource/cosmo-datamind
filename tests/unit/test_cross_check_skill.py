@@ -12,6 +12,8 @@ import os
 import sqlite3
 import subprocess
 
+import pytest
+
 import skill_registry
 
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -184,3 +186,14 @@ def test_run_sh_end_to_end_is_read_only(make_sqlite, tmp_path):
     assert os.path.getmtime(db) == before
     with sqlite3.connect(db) as con:
         assert con.execute("SELECT COUNT(*) FROM measure WHERE energy_type='3'").fetchone()[0] == 3
+
+
+def test_db_opens_readonly_even_with_uri_characters_in_filename(make_sqlite):
+    db = make_sqlite({"t": ("id INTEGER", [(1,)])}, fname="x#y?z.db")
+    h = cc.Db(db)
+    try:
+        assert h.tables == ["t"]
+        with pytest.raises(sqlite3.OperationalError):
+            h.con.execute("INSERT INTO t VALUES (2)")
+    finally:
+        h.con.close()

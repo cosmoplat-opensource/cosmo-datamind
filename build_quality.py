@@ -70,11 +70,11 @@ def audit_verified_evidence(ir):
             issues.append({"type": "verified_overlap_below_threshold", "relation": label, "index": index,
                            "desc": f"verified 关系重叠率 {overlap!r} 未达到固定阈值 {dao_core.MIN_OVERLAP:g}%",
                            "fix": "降为 candidate,或用可回放数据重新取证"})
-        # DR-065:父键在「有效行」上唯一也算;认可哪些规则以关系生命周期模型为准(ontology_domain)
+        # DR-065:父键在「有效行」上唯一也算;认可的规则见 specs/models/valid_rows_rules.json(经 ontology_domain 读取)
         valid_rows_ok = ontology_domain.is_valid_rows(evidence)
         if evidence.get("parent_unique") is not True and not valid_rows_ok:
             issues.append({"type": "verified_parent_not_unique", "relation": label, "index": index,
-                           "desc": "verified 关系未记录父键唯一=true",
+                           "desc": "verified 关系未记录父键唯一=true,也没有有效行上父键唯一的证据",
                            "fix": "重算父键唯一性;不唯一或无法证明时降为 candidate"})
         if evidence.get("name_ok") is not True:
             issues.append({"type": "verified_name_unsupported", "relation": label, "index": index,

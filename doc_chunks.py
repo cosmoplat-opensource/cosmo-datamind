@@ -2,9 +2,8 @@
 # -*- coding: utf-8 -*-
 """长文证据的分块与检索:把整份上传文档切成可追溯的片段,按本轮构建需要挑进提示词。
 
-背景:构建取证原先对每份上传文档只读前 3500 字、文档总块再截到 9000 字。一份
-十几万字的数据库设计文档,模型只能看到开头约 2%——排在后面的表的中文含义、枚举
-与关系说明全部丢失,而这些恰恰是提议对象与关系最需要的证据。
+背景:若对每份上传文档只截取开头一段,十几万字的数据库设计文档里,排在后面的表的
+中文含义、枚举与关系说明都进不了提示词,而这些是提议对象与关系的主要证据。
 
 两种读法合在一起:
   1. 锚定(分段读):本轮数据源里的每张表,都去文档里找到描述它的那一段——
@@ -96,13 +95,15 @@ def _split_block(body, max_chars, overlap):
     lines = body.splitlines()
     head = lines[0] if lines and not lines[0].startswith("|") else ""
     table_hdr = next((ln for ln in lines if ln.startswith("|")), "")
+    # 单行超过 max_chars(如 docx 里不换行的长段落)先按长度切开,不截断丢字
+    lines = [ln[i:i + max_chars] for ln in lines for i in range(0, max(1, len(ln)), max_chars)]
     pieces, buf = [], []
     for ln in lines:
         if buf and len("\n".join(buf)) + len(ln) + 1 > max_chars:
             pieces.append("\n".join(buf))
             tail = "\n".join(buf)[-overlap:] if overlap and not ln.startswith("|") else ""
             buf = [x for x in (head, table_hdr if ln.startswith("|") and ln != table_hdr else "", tail) if x]
-        buf.append(ln[:max_chars])
+        buf.append(ln)
     if buf:
         pieces.append("\n".join(buf))
     return pieces

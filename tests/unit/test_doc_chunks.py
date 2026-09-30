@@ -126,3 +126,11 @@ def test_budget_exhaustion_is_reported_separately_from_not_found():
     assert st["anchors_unbudgeted"] > 0
     assert "tbl_079" not in st["anchors_missing"]
     assert st["anchors_covered"] + st["anchors_unbudgeted"] + len(st["anchors_missing"]) == 81
+
+
+def test_long_single_line_is_split_not_truncated():
+    """docx 段落常不换行:超过块长的单行要切开保留,不能截断丢字。"""
+    text = "# 标题\n" + "".join(f"第{i:04d}句。" for i in range(400))
+    chunks = dc.chunk_text(text, "d.docx", max_chars=900, overlap=0)
+    assert sum(c["text"].count("句") for c in chunks) == 400           # 不重叠时每个字恰好出现一次
+    assert all(len(c["text"]) <= 900 + len("# 标题") + 1 for c in chunks)
