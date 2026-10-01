@@ -6,7 +6,7 @@ COSMO DataMind · 数据智脑 — 数据治理、本体与深度问数原型
 深度问数:hermes/claude-code(经 agent_runtime)生成 SQL 计划 → 本地 SQLite 执行 → 洞察;引擎不可用时降级为内置模板。
 启动:python3 server.py  → http://127.0.0.1:8092
 """
-import json, os, re, sqlite3, subprocess, threading, time, uuid, sys, glob, hashlib
+import json, math, os, re, sqlite3, subprocess, threading, time, uuid, sys, glob, hashlib
 from itertools import combinations
 from pathlib import Path
 import logging
@@ -1378,6 +1378,11 @@ def build_context(question, focus_tables=None, trace=None, graph_keys=None):
         if trace is not None:
             trace["focus_miss"] = len(ft)             # 点选的表在本体里一张都没有 → 转打分召回,不静默当作已限定
     tabs, hmap = [], {}
+    _deg = {}
+    for _r in _rels(ir)[0]:
+        if _r.get("status") == "verified":
+            for _k in (_r.get("source_concept") or _r.get("source"), _r.get("target_concept") or _r.get("target")):
+                _deg[_k] = _deg.get(_k, 0) + 1
     # 只有绑表对象能进 schema 上下文;混合本体(部分对象是纯概念)里若不滤,
     # 召回名额会被无表对象挤占,上下文可能一张表都没有
     for _i, o in enumerate([x for x in ir.get("objects", []) if x.get("table")]):
@@ -1388,17 +1393,23 @@ def build_context(question, focus_tables=None, trace=None, graph_keys=None):
         hs = hits_of(blob)
         cn_hs = [h for h in obj_cn_hits(o) if h not in hs]   # 中文走反向匹配,见 cn_hits
         # DR-071 两字中心词:「设备告警」的中心词「告警」出现在问句里即命中(泛化中心词除外),权重高于片段命中
-        _cn = re.sub(r"[\s()()]", "", str(o.get("cn") or ""))
-        head = _cn[-2:] if len(_cn) >= 3 and all("\u4e00" <= ch <= "\u9fff" for ch in _cn[-2:]) else ""
-        head_hit = bool(head) and head not in _GENERIC_HEADS and head in question and head not in cn_hs
-        if head_hit:
-            hs.append(head)
+        head_hit = False
+        for _nm in [o.get("cn")] + list(o.get("aliases") or []):
+            head = _head_noun(_nm)
+            if head and head in question and head not in cn_hs and head not in hs:
+                head_hit = True
+                hs.append(head)
+                break
         hs += cn_hs
         if hs and o.get("table"): hmap[o["table"]] = hs[:6]
         # DR-070 计分:中文名称命中按长度计(问句里原样出现的业务名最可信),术语词典折出的英文词每个记 1 分。
         # 只数命中个数时,「配置 → config」一类泛词让一串配置表与「计量关系」同分,后者按顺序被挤出上下文
-        tabs.append((sum(2 * len(h) for h in cn_hs) + (8 if head_hit else 0)
-                     + (len(hs) - len(cn_hs) - (1 if head_hit else 0)), o))
+        # 问句里原样出现对象的完整中文名或别名(「设备」之于设备主表)最可信:按 3×长度+6 计,高于中心词与片段
+        _full = {str(x) for x in [o.get("cn")] + list(o.get("aliases") or []) if x}
+        _rs = (sum((3 * len(h) + 6) if h in _full else 2 * len(h) for h in cn_hs) + (8 if head_hit else 0)
+               + (len(hs) - len(cn_hs) - (1 if head_hit else 0)))
+        # DR-072 同分时偏向主数据表:已验证关系多的对象(设备主表、用能单元)排在外围同名表前面
+        tabs.append((_rs + (min(3.0, math.log2(1 + _deg.get(o.get("name"), 0))) if _rs > 0 else 0), o))
     tabs.sort(key=lambda x: -x[0])
     _hit = [o for s0, o in tabs[:8] if s0 > 0]
     picked = _hit or [o for _, o in tabs[:5]]
@@ -1429,7 +1440,9 @@ def build_context(question, focus_tables=None, trace=None, graph_keys=None):
     for o in picked:
         cols = _obj_cols_text(o)
         _al = "、".join(o.get("aliases") or [])
-        lines.append(f'表 {o["table"]}({o.get("cn","")}{",业务别称:" + _al if _al else ""}): {cols}')
+        _dg = _deg.get(o.get("name"), 0)
+        _mk = f",主数据·被 {_dg} 条已验证关系引用" if _dg >= 5 else ""      # DR-072 同类表里标出主表,模型才不会挑外围表
+        lines.append(f'表 {o["table"]}({o.get("cn","")}{",业务别称:" + _al if _al else ""}{_mk}): {cols}')
     _pairs = [] if trace is not None else None
     jh = _join_hints(ir, [o.get("table") for o in picked], pairs=_pairs)
     if trace is not None: trace["relations"] = _pairs
@@ -6150,6 +6163,122 @@ def _used_child_keys(extracted):
     return out
 
 
+_CODE_VALUE = re.compile(r"^(?=.*[A-Za-z])(?=.*\d)[A-Za-z0-9_\-]{5,40}$")
+
+
+def _dedupe_parents(ir):
+    """同一子表的同一子键被验证指向多张父表时(设备编码同时连到设备主表与网关下挂设备),
+    只保留父表核心名与键词根最吻合的一条,其余降为候选(DR-072)。多态引用(带判别条件)不在此列。返回降级条数。"""
+    o2t = {o.get("name"): o.get("table") for o in ir.get("objects") or [] if isinstance(o, dict)}
+    groups = {}
+    for r in _rels(ir)[0]:
+        ev = r.get("evidence") or {}
+        if r.get("status") != "verified" or ev.get("condition") or not ev.get("child_key") or "," in str(ev["child_key"]):
+            continue
+        groups.setdefault((o2t.get(r.get("source_concept")), str(ev["child_key"]).lower()), []).append(r)
+    n = 0
+    for (_ct, ck), rs in groups.items():
+        if len(rs) < 2:
+            continue
+        stem = dao_core.expand(dao_core.key_stem(ck))
+        def fit(r, stem=stem):
+            core = key_links.table_core(o2t.get(r.get("target_concept")) or "")
+            return (2 if core == stem else 1 if core.endswith("_" + stem) or stem.endswith("_" + core) else 0,
+                    (r.get("evidence") or {}).get("overlap") or 0)
+        rs.sort(key=fit, reverse=True)
+        if fit(rs[0])[0] == fit(rs[1])[0]:
+            continue                                     # 分不出谁更贴切,留给人工
+        for r in rs[1:]:
+            r["status"] = r["evidence_status"] = "candidate"
+            r["note"] = (f"同一子键 {ck} 已验证指向更贴切的 {o2t.get(rs[0].get('target_concept'))},此条改为候选;原裁决:"
+                         + str(r.get("note") or ""))
+            n += 1
+    return n
+
+
+def _fill_uncovered_tables(extracted, scope_tables, base_ir, comments):
+    """本轮范围内既没被本轮对象、也没被已有本体对象覆盖的表,补建基础对象;返回补建个数(DR-072)。"""
+    if not scope_tables:
+        return 0
+    covered = set()
+    for o in list(extracted.get("objects") or []) + list((base_ir or {}).get("objects") or []):
+        if isinstance(o, dict):
+            covered |= {t for t in [o.get("table")] + list(o.get("tables") or []) if t}
+    names = {o.get("name") for o in extracted.get("objects") or [] if isinstance(o, dict)}
+    names |= {o.get("name") for o in (base_ir or {}).get("objects") or [] if isinstance(o, dict)}
+    added = 0
+    for t in scope_tables:
+        if t in covered or t.split("__")[-1].startswith("_dm_"):
+            continue
+        nm = t if t not in names else f"{t}_obj"
+        cn = _comment_core((comments or {}).get(t, "")) or t.split("__")[-1]
+        extracted.setdefault("objects", []).append(
+            {"name": nm, "cn": cn, "table": t, "kind": "object", "coverage_fill": True,
+             "definition": "", "evidence": f"本轮范围内的表,模型未建对象,按库表注释补建:{(comments or {}).get(t, '')}"[:200]})
+        names.add(nm)
+        added += 1
+    return added
+
+
+def _value_link_proposals(db, ev, objects, round_tables, used, cap=60):
+    """按取值补提(DR-072):负责人、审批人一类列名与父键对不上,但取值是 USER_10411 这类带字母的编码,
+    九成以上落在某张表的标识列里。只提候选,裁决仍要数据证明(取值形态证据)。"""
+    tc = (ev or {}).get("tab_cols") or {}
+    t2o = {}
+    for o in objects or []:
+        if isinstance(o, dict) and o.get("table") in tc and o.get("name"):
+            t2o.setdefault(o["table"], o["name"])
+    rnd = set(round_tables or ())
+    try:
+        con = ro_connect(db)
+    except (sqlite3.Error, OSError):
+        return []
+    try:
+        index = {}                                       # 编码 → {(父表, 标识列)}
+        for t in t2o:
+            core = key_links.table_core(t)
+            for c, _ in tc.get(t, []):
+                if not key_links._owner_key(core, c) or not _safe_ident(c):
+                    continue
+                vals = [str(v).strip() for (v,) in con.execute(
+                    f'SELECT DISTINCT "{c}" FROM "{_safe_ident(t)}" WHERE "{c}" IS NOT NULL LIMIT 20000')]
+                coded = [v for v in vals if _CODE_VALUE.match(v)]
+                if len(vals) >= 3 and len(coded) >= 0.8 * len(vals):
+                    for v in coded:
+                        index.setdefault(v, set()).add((t, c))
+        out = []
+        for ct in t2o:
+            for cc, _ in tc.get(ct, []):
+                if (ct, cc) in used or not _safe_ident(cc) or key_links._owner_key(key_links.table_core(ct), cc):
+                    continue
+                vals = [str(v).strip() for (v,) in con.execute(
+                    f'SELECT DISTINCT "{cc}" FROM "{_safe_ident(ct)}" WHERE "{cc}" IS NOT NULL LIMIT 100')]
+                vals = [v for v in vals if v]
+                if len(vals) < 3 or sum(1 for v in vals if _CODE_VALUE.match(v)) < 0.8 * len(vals):
+                    continue
+                hits = {}
+                for v in vals:
+                    for p in index.get(v, ()):
+                        if p[0] != ct:
+                            hits[p] = hits.get(p, 0) + 1
+                good = [p for p, h in hits.items() if h >= 0.8 * len(vals)]   # 实库常有一两个孤儿或非编码值
+                if len(good) != 1:
+                    continue
+                pt, pc = good[0]
+                if ct not in rnd and pt not in rnd:
+                    continue
+                out.append({"source": t2o[ct], "target": t2o[pt], "child_table": ct, "parent_table": pt,
+                            "child_key": cc, "parent_key": pc, "verb": "引用", "origin": "key_match",
+                            "rationale": f"取值:{ct}.{cc} 的编码九成以上是 {pt} 的标识 {pc}"})
+                if len(out) >= cap:
+                    return out
+        return out
+    except sqlite3.Error:
+        return []
+    finally:
+        con.close()
+
+
 def _overlap_probe(db, sample=5000):
     """键名补提用的轻量探测:子列去重值(抽前 sample 个)落在父列里的比例(%)。"""
     def probe(child_table, child_col, parent_table, parent_col):
@@ -6203,6 +6332,33 @@ def _distinct_values(con, cache, table, col, where="", args=()):
     return cache[key]
 
 
+def _comment_core(text):
+    """库表注释取第一句、去掉「xx表」「-」前缀等装饰:「仪表台账-仪表类型表」→「仪表类型」。"""
+    t = re.split(r"[;;。,,\n(()\s]", str(text or "").strip())[0].strip()
+    t = t.split("-")[-1].strip() if "-" in t else t
+    t = re.sub(r"(表|信息表|数据表)$", "", t)
+    return t[:20] if re.search(r"[一-鿿]", t) else ""
+
+
+def _column_comments(db, cap=40):
+    """只读抽样留下的字段注释 {(表, 列): 注释};注释取第一句并截断,没有则空字典。"""
+    try:
+        con = ro_connect(db)
+        try:
+            if not con.execute("SELECT 1 FROM sqlite_master WHERE type='table' AND name='_dm_columns'").fetchone():
+                return {}
+            out = {}
+            for t, c, cm in con.execute("SELECT table_name, column_name, comment FROM _dm_columns"):
+                cm = re.split(r"[;;。\n]", str(cm or "").strip())[0].strip()
+                if cm:
+                    out[(t, c)] = cm[:cap]
+            return out
+        finally:
+            con.close()
+    except (sqlite3.Error, OSError):
+        return {}
+
+
 def _table_comments(db):
     """只读抽样留下的库表注释(_dm_tables);没有则返回空字典。"""
     try:
@@ -6217,7 +6373,7 @@ def _table_comments(db):
         return {}
 
 
-def _bind_fallback_objects(ir, ev, comments=None):
+def _bind_fallback_objects(ir, ev, comments=None, column_comments=None):
     """降级构建(quick_build)的对象只有 tables 列表:补上 table、字段与中文名,与模型构建的产物同形(DR-070)。
     不补时后续轮次的裁决、键名补提与问数召回都认不出这些对象。"""
     tc = (ev or {}).get("tab_cols") or {}
@@ -6229,11 +6385,24 @@ def _bind_fallback_objects(ir, ev, comments=None):
             continue
         o["table"] = t
         if not o.get("attrs"):
-            o["attrs"] = [{"col": c, "cn": "", "type": ty} for c, ty in tc.get(t, [])]
+            ccm = column_comments or {}
+            o["attrs"] = [{"col": c, "cn": ccm.get((t, c), ""), "type": ty} for c, ty in tc.get(t, [])]
             o["field_count"] = len(o["attrs"])
         if not o.get("cn"):
             o["cn"] = str((comments or {}).get(t) or o.get("name") or t)[:40]
     return ir
+
+
+def _head_noun(name):
+    """中文名的两字中心词,先去掉「信息」「配置」这类泛化后缀:「设备信息」→「设备」、「设备告警」→「告警」。"""
+    t = re.sub(r"[\s()()A-Za-z0-9_]", "", str(name or ""))
+    for _ in range(3):
+        t2 = re.sub(r"(信息|数据|管理|列表|明细|详情|记录|关系|关联|配置|对应|映射|表)$", "", t)
+        if t2 == t or len(t2) < 2:
+            break
+        t = t2
+    head = t[-2:] if len(t) >= 2 else ""
+    return head if head and all("\u4e00" <= ch <= "\u9fff" for ch in head) and head not in _GENERIC_HEADS else ""
 
 
 _GENERIC_HEADS = {"关联", "配置", "明细", "记录", "信息", "数据", "日志", "管理", "列表", "模板", "参数", "类型", "关系",
@@ -6324,10 +6493,11 @@ def _codebook_relations(ir, db, min_coverage=0.9):
     return added
 
 
-def _code_like(con, cache, table, col, min_distinct=10):
+def _code_like(con, cache, table, col, min_distinct=10, overlap=None):
     """子列取值像业务编码:去重值不少于 10 个、八成以上含字母、平均长度不少于 4(DR-070)。"""
     vals = _distinct_values(con, cache, table, col)
-    if len(vals) < min_distinct:
+    if len(vals) < (5 if overlap is not None and overlap >= 99.9 and
+                    all(_CODE_VALUE.match(v) for v in vals) else min_distinct):
         return None
     alpha = sum(1 for v in vals if re.search(r"[A-Za-z]", v)) / len(vals)
     avg = sum(len(v) for v in vals) / len(vals)
@@ -6335,7 +6505,10 @@ def _code_like(con, cache, table, col, min_distinct=10):
 
 
 _SCOPE_GENERIC = {"type", "code", "no", "id", "key", "meta", "inst", "is", "flag", "num", ""}
-_SCOPE_SKIP = re.compile(r"(^id$|_id$|name$|_time$|_at$|_date$|^remark|desc|formula|^is_|_by$|create|update|sort|order_num)", re.I)
+_SCOPE_SKIP = re.compile(r"(^id$|_id$|name$|_time$|_at$|_date$|^remark|desc|formula|^is_|_by$|create|update|sort|order_num|unit)", re.I)
+
+
+_TENANT_COL = re.compile(r"(factory|tenant|tenement|ent_?no|ent_?id|enterprise|org_?(code|id|no)|company|data_source)", re.I)
 
 
 def _scoped_key(con, cache, child_table, child_key, parent_table, parent_key, child_cols, parent_cols):
@@ -6344,6 +6517,9 @@ def _scoped_key(con, cache, child_table, child_key, parent_table, parent_key, ch
     父表有逻辑删除列时只看未删除行;同一(类别, 编码)的重复行若名称一致(版本重复),按有效行规则认可。"""
     pt, pk = _safe_ident(parent_table), _safe_ident(parent_key)
     if not (pt and pk):
+        return None
+    # 编码须是父表自己的标识(指标编码之于指标定义);租户键(企业编号)指向任意带该列的表,不能据此建复合键
+    if not (key_links._owner_key(key_links.table_core(parent_table), parent_key) or key_links._is_catalog(parent_table)):
         return None
     del_col = next((c for c in parent_cols if re.match(ontology_domain.SOFT_DELETE_COLUMN_PATTERN, c, re.I)), None)
     live = ""
@@ -6373,10 +6549,19 @@ def _scoped_key(con, cache, child_table, child_key, parent_table, parent_key, ch
                     f'WHERE "{pk}" IS NOT NULL AND "{p2}" IS NOT NULL{live} GROUP BY "{p2}", "{pk}" HAVING COUNT(*) > 1)').fetchone()
                 if not groups or (same or 0) / groups < 0.8:
                     continue
+                # 重复行能被另一个标识列区分(同一指标按对象各一行):实例表,不是版本重复(DR-072)
+                if any(re.search(r"_(no|id|code|sn)$", x, re.I) and x.lower() not in (parent_key.lower(), p2.lower(), "id")
+                       and _safe_ident(x) and con.execute(
+                           f'SELECT COUNT(DISTINCT "{p2}" || char(31) || "{pk}" || char(31) || "{x}") >= 0.95 * COUNT(*) '
+                           f'AND COUNT(DISTINCT "{x}") >= 20 '
+                           f'FROM "{pt}" WHERE "{pk}" IS NOT NULL AND "{p2}" IS NOT NULL AND "{x}" IS NOT NULL{live}'
+                       ).fetchone()[0] for x in parent_cols):
+                    continue
                 versioned = True
             for c2 in child_cols:
-                if c2 == child_key or _SCOPE_SKIP.search(c2) or not _safe_ident(c2) or c2.lower() == p2.lower():
-                    continue          # 同名分区列(工厂、企业编号)是租户作用域,由交叉复核的租户规则处理
+                if c2 == child_key or _SCOPE_SKIP.search(c2) or not _safe_ident(c2) or (
+                        c2.lower() == p2.lower() and _TENANT_COL.search(c2)):
+                    continue          # 同名的租户列(工厂、企业编号)交由交叉复核的租户作用域规则处理
                 cvals = _distinct_values(con, cache, child_table, c2)
                 if not cvals or len(cvals & pvals) / len(cvals) < 0.9:
                     continue
@@ -6519,6 +6704,26 @@ def _adjudicate_ir(db, name, extracted, ev, base_ir=None):
             }
         objects.append(obj)
         if real: name2tab[nm] = real
+    # DR-072 字段中文名:只读抽样留下的字段注释(_dm_columns)补到对象属性上,问数召回与生成 SQL 才看得到字段含义
+    _ccm = _column_comments(db)
+    if _ccm:
+        for o in objects:
+            for a in o.get("attrs") or []:
+                c = _ccm.get((o.get("table"), a.get("col")))
+                if c and not a.get("cn"):
+                    a["cn"], a["cn_source"] = c, "库表注释"
+    # DR-072 库表注释作对象别名;模型起的中文名与注释毫无共同字时标记待确认(不改名,模型的措辞常比注释规范)
+    _tcm = _table_comments(db)
+    for o in objects:
+        cm = _comment_core(_tcm.get(o.get("table") or "", ""))
+        if not cm:
+            continue
+        have = [str(a) for a in o.get("aliases") or []]
+        if cm != o.get("cn") and cm not in have:
+            o["aliases"] = have + [cm]
+        if o.get("cn") and not (set(_comment_core(o["cn"])) & set(cm)):
+            o["cn_review"] = {"original": o["cn"], "table_comment": _tcm.get(o["table"]), "status": "pending_review",
+                              "reason": "中文名与库表注释没有共同字,请确认"}
     # DR-070 重复绑定改绑:本轮表不全时,模型会把「企业」与「企业调研记录」都绑到调研表;
     # 两个对象绑同一张表、其中一个的名称恰是库里另一张未绑定表的核心名,就改绑过去(数据裁决用全库,不受本轮范围限制)
     _bound = {}
@@ -6533,7 +6738,7 @@ def _adjudicate_ir(db, name, extracted, ev, base_ir=None):
         if len(exact) == 1:
             nt = exact[0]
             o.update({"rebound_from": t0, "table": nt, "tables": [nt],
-                      "attrs": [{"col": c, "cn": "", "type": ty} for c, ty in tc.get(nt, [])]})
+                      "attrs": [{"col": c, "cn": _ccm.get((nt, c), ""), "type": ty} for c, ty in tc.get(nt, [])]})
             o["field_count"] = len(o["attrs"])
             o["provenance"] = {**(o.get("provenance") or {}), "directSource": nt}
             name2tab[o["name"]] = nt
@@ -6714,16 +6919,16 @@ def _adjudicate_ir(db, name, extracted, ev, base_ir=None):
                                           f"·父键唯一(判别列代替键名证据)")
                         _vp = _orph = None
                         if trial_status != "verified" and not reverse and not _cond:
-                            if not name_supported and ov >= 95:
+                            if not name_supported and ov >= 90:
                                 # DR-070 取值形态:字母数字编码 95% 以上精确落在父列,稠密自增 id 碰巧重叠的风险不适用
-                                _vp = _code_like(con, _vcache, ts, key)
+                                _vp = _code_like(con, _vcache, ts, key, overlap=ov)
                                 if _vp:
                                     name_supported = True
                                     verdict = dao_core.classify(overlap=ov, parent_unique=punique, name_ok=True,
                                                                 child_distinct=sig["child_distinct"], min_distinct=1,
                                                                 exclude_pk_child=False)
                                     trial_status = verdict["status"]
-                                    reason = verdict["reason"] + (f"·取值形态({_vp['distinct']} 个字母数字编码)代替键名证据")
+                                    reason = verdict["reason"] + (f"·取值形态({_vp['distinct']} 个字母数字编码,重叠 {ov:.0f}%)代替键名证据")
                             if (trial_status != "verified" and punique and ov >= dao_core.WEAK_FLOOR
                                     and (sig.get("matched_distinct") or 0) >= dao_core.MIN_DISTINCT
                                     and key_links.identifier_reference(key, tt, pcol)):
@@ -7241,6 +7446,10 @@ def build_inquire():
                                f"(仅作标注；是否通过仍由数据验证规则决定)")
                 else:
                     yield push("stability", False, "第二次生成失败/超时,本次不产出一致性指标(不臆造)")
+            # DR-072 本轮范围内模型没覆盖到的表补一个基础对象(名称取库表注释),否则这些表上的关系无从建立
+            _nfill = _fill_uncovered_tables(extracted, scope_tables, base_ir, _table_comments(db))
+            if _nfill:
+                yield push("coverage_fill", True, f"覆盖补齐 · 本轮 {_nfill} 张表模型未建对象,按库表注释补建基础对象(待审)")
             # DR-069 按键名补提关系候选:后续轮次的模型看不到前几轮表的列,跨轮关系、关联表与多态引用由此补上
             try:
                 _bobjs = [{"name": o.get("name"), "table": o.get("table")} for o in (base_ir or {}).get("objects") or []]
@@ -7252,6 +7461,14 @@ def build_inquire():
                               for r in extracted.get("relations") or [] if isinstance(r, dict)},
                     probe=_overlap_probe(db),
                     used_keys=_used_child_keys(extracted))
+                _used = _used_child_keys(extracted) | {(p["child_table"], p["child_key"]) for p in _kl}
+                _have = {(p["source"], p["target"]) for p in _kl} | {
+                    (str(r.get("source") or "").strip(), str(r.get("target") or "").strip())
+                    for r in extracted.get("relations") or [] if isinstance(r, dict)}
+                _kl += [p for p in _value_link_proposals(
+                    db, ev, [o for o in extracted.get("objects") or [] if isinstance(o, dict)] + _bobjs,
+                    scope_tables or [o.get("table") for o in extracted.get("objects") or [] if isinstance(o, dict)], _used)
+                    if (p["source"], p["target"]) not in _have]
                 _by_pair = {(str(r.get("source") or "").strip(), str(r.get("target") or "").strip()): r
                             for r in extracted.get("relations") or [] if isinstance(r, dict)}
                 for _p in [p for p in _kl if p.get("alternative")]:
@@ -7327,7 +7544,7 @@ def build_inquire():
                 try: os.remove(_bp)                 # 中间产物不留在图谱目录里冒充一张图
                 except OSError: pass
             if isinstance(ir, dict):
-                _bind_fallback_objects(ir, ev, _table_comments(db))
+                _bind_fallback_objects(ir, ev, _table_comments(db), _column_comments(db))
         if not isinstance(ir, dict) or not ir.get("objects"):
             yield sse({"type": "error", "error": "构建失败(无产物)"}); return
         if ev.get("contracts_resolved") or ev.get("contracts_codebooks"):
@@ -7412,6 +7629,9 @@ def build_inquire():
                                + ",本轮产物保持数据裁决结果")
             else:
                 yield push("cross_check", False, "交叉复核技能缺少脚本,已跳过")
+        _ndp = _dedupe_parents(ir)
+        if _ndp:
+            yield push("codebook_links", True, f"同一子键指向多个父表 · {_ndp} 条改为候选(保留名称最吻合的父表)")
         # ⑤ 验收检查：图结构 + verified 证据契约 + 定义质量 + CQ 可达性，结果可重复。
         # quick_build 已先检查一次(无 CQ)；此处加入本轮 CQ 后重新计算。
         quality = build_quality.evaluate(ir, cqs)

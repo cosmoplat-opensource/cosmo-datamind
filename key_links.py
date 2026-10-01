@@ -73,12 +73,25 @@ def _is_catalog(table):
 _LAYER = {"ods", "dwd", "dws", "dim", "ads", "dm", "fact", "meta", "inst", "t", "tb"}
 
 
+def _singular(name):
+    """末尾词元去复数:price_groups → price_group、indexes → index、categories → category(DR-072)。"""
+    toks = name.split("_")
+    w = toks[-1]
+    if len(w) > 4 and w.endswith("ies"):
+        w = w[:-3] + "y"
+    elif len(w) > 4 and w.endswith(("xes", "ses", "ches", "shes")):
+        w = w[:-2]
+    elif len(w) > 3 and w.endswith("s") and not w.endswith("ss"):
+        w = w[:-1]
+    return "_".join(toks[:-1] + [w])
+
+
 def table_core(table):
     """表的核心名(去掉「库名__」与分层前缀,展开缩写):user__enterprise → enterprise。"""
     toks = _norm(str(table or "").split("__")[-1]).split("_")
     while len(toks) > 1 and toks[0] in _LAYER:
         toks = toks[1:]
-    return dao_core.expand("_".join(toks))
+    return _singular(dao_core.expand("_".join(toks)))
 
 
 def binding_score(name, table):
@@ -122,7 +135,7 @@ def propose(tab_cols, objects, round_tables, existing=(), probe=None, max_propos
     if not t2o:
         return []
     cores = concept_hints.name_cores(list(tab_cols))[0]
-    core = {t: dao_core.expand(_norm(cores.get(t, t.split("__")[-1]))) for t in t2o}
+    core = {t: _singular(dao_core.expand(_norm(cores.get(t, t.split("__")[-1])))) for t in t2o}
     cols = {t: [c for c, _ in tab_cols.get(t, [])] for t in t2o}
     owned = {t: [c for c in cols[t] if _owner_key(core[t], c)] for t in t2o}
     # 父表标识键还包括 id(由子键词根指向父表名来补证)

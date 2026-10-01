@@ -274,12 +274,33 @@ def valid_rows_channel(db, ct, ck, pt, pk, ev, scopes=()):
                              SELECT {q(pk)} k, COUNT(DISTINCT {q(name)}) n FROM {q(pt)} WHERE {q(pk)} IN (
                                SELECT {q(pk)} FROM {q(pt)} GROUP BY 1 HAVING COUNT(*) > 1 LIMIT 500) GROUP BY 1)""")
             stable = (s[1] or 0) / s[0] if s and s[0] else None
+        # 同键的多行若靠另一个标识列区分(量测实例:同一量测编码按设备编号各存一行),这是实例表,不是版本重复
+        # (DR-072 实测把量测实例表认成了量测编码的父表)
+        if _instance_split(db, pt, pk):
+            return {"state": "na"}
         if dup <= 0.05 * r[0] or (stable is not None and stable >= 0.8):
             return {"state": "support", "rule": "keep_latest", "column": tcol, "duplicate_rows": dup,
                     "stable_name_share": None if stable is None else round(stable, 3),
                     "note": f"{pt}.{pk} 有 {dup} 行版本重复" + (f"(同键名称一致 {stable:.0%})" if stable else "")
                             + f",按 {tcol} 取最新后唯一"}
     return {"state": "na"}
+
+
+_ID_COL = re.compile(r"_(no|id|code|sn)$", re.I)
+
+
+def _instance_split(db, table, key):
+    """同一键的重复行能被另一个标识列(编号、id、编码,不含主键 id)区分开:说明是实例表。"""
+    for c in db.cols(table):
+        if c.lower() in (key.lower(), "id") or not _ID_COL.search(c):
+            continue
+        r = db.one(f"SELECT COUNT(*), COUNT(DISTINCT {q(key)} || char(31) || {q(c)}), COUNT(DISTINCT {q(c)}) "
+                   f"FROM {q(table)} WHERE {q(key)} IS NOT NULL AND {q(c)} IS NOT NULL")
+        # 区分列须有足够多的取值(设备编号成百上千);模型、版本这类只有几个取值的列区分的是版本,不是实例。
+        # 抽样数据里实例表偶有重复行,(键, 区分列)九成五以上唯一即可
+        if r and r[0] and r[1] >= 0.95 * r[0] and (r[2] or 0) >= 20:
+            return True
+    return False
 
 
 def hub_keys(db):

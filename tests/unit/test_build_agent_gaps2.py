@@ -362,3 +362,134 @@ def test_valid_rows_not_applied_to_reverse_direction(make_sqlite):
     r = cross_check.valid_rows_channel(db, "cfg", "metric_code", "inst_metric", "metric_code",
                                        {"overlap": 100.0, "parent_unique": False, "direction": "reverse"})
     assert r["state"] == "na"
+
+
+def test_overlap_ignores_text_vs_integer_storage(make_sqlite):
+    """子表把编号存成文本、父表存成整数:重叠率按取值算,不按存储类型(DR-072)。"""
+    import sqlite3
+    import sqlite_evidence
+    db = make_sqlite({"grp": ("id INTEGER, name TEXT", [(i, "g") for i in range(1, 11)]),
+                      "std": ("id INTEGER, group_id TEXT", [(i, str(1 + i % 10)) for i in range(30)])})
+    con = sqlite3.connect(db)
+    sig = sqlite_evidence.relation_signals(con, "std", ("group_id",), "grp", ("id",))
+    assert sig["overlap"] == 100.0 and sig["parent_unique"]
+
+
+def test_column_comments_attached_and_plural_tables_matched(make_sqlite, monkeypatch):
+    import key_links
+    assert key_links._refers("group_id", key_links.table_core("inst__inst_price_groups"), "id")
+    import sqlite3
+    db = make_sqlite({"alarm": ("id INTEGER, park_name TEXT", [(i, "园区A") for i in range(5)])})
+    con = sqlite3.connect(db)
+    con.execute("CREATE TABLE _dm_columns (table_name TEXT, column_name TEXT, type TEXT, comment TEXT)")
+    con.execute("INSERT INTO _dm_columns VALUES ('alarm', 'park_name', 'varchar', '园区名称;冗余字段')")
+    con.commit(); con.close()
+    ir = _adjudicate(db, [{"name": "alarm", "table": "alarm", "kind": "event"}], [], {"alarm": ["id", "park_name"]}, monkeypatch)
+    attrs = {a["col"]: a["cn"] for a in ir["objects"][0]["attrs"]}
+    assert attrs["park_name"] == "园区名称"
+
+
+def test_comment_alias_flag_and_master_preferred(make_sqlite, monkeypatch):
+    import sqlite3
+    db = make_sqlite({"inst__inst_device": ("dev_no TEXT, name TEXT", [(f"D{i}", "d") for i in range(5)]),
+                      "biz__asset_equipment": ("code TEXT, name TEXT", [(f"A{i}", "a") for i in range(5)])})
+    con = sqlite3.connect(db)
+    con.execute("CREATE TABLE _dm_tables (table_name TEXT PRIMARY KEY, source_table TEXT, comment TEXT, rows_est INTEGER)")
+    con.executemany("INSERT INTO _dm_tables VALUES (?,?,?,?)", [("inst__inst_device", "inst_device", "设备信息表", 5),
+                                                               ("biz__asset_equipment", "asset_equipment", "资产-设备", 5)])
+    con.commit(); con.close()
+    ir = _adjudicate(db, [{"name": "dev", "cn": "能源计量器具", "table": "inst__inst_device", "kind": "asset"},
+                          {"name": "asset", "cn": "资产设备", "table": "biz__asset_equipment", "kind": "asset"}], [],
+                     {"inst__inst_device": ["dev_no", "name"], "biz__asset_equipment": ["code", "name"]}, monkeypatch)
+    dev = next(o for o in ir["objects"] if o["name"] == "dev")
+    assert "设备" in dev["aliases"] and dev["cn_review"]["status"] == "pending_review"
+    assert server._head_noun("设备信息") == "设备" and server._head_noun("设备告警") == "告警"
+
+
+def test_exact_alias_beats_head_noun(monkeypatch):
+    objs = [{"name": f"gw{i}", "cn": f"网关下挂设备{i}", "table": f"inst__gw_device{i}", "attrs": []} for i in range(9)]
+    objs.append({"name": "dev", "cn": "能源计量器具", "aliases": ["设备"], "table": "inst__inst_device", "attrs": []})
+    ir = {"objects": objs, "relations": []}
+    t = [o["table"] for o in objs]
+    monkeypatch.setattr(server, "_qa_anchor_ir", lambda keys: (ir, ["g"], [], {"queryable": True, "bound_tables": t,
+                                                                              "available_tables": t, "unavailable_tables": []}))
+    trace = {}
+    server.build_context("各设备类型的设备数量是多少", trace=trace, graph_keys=["g"])
+    assert [o.get("table") for o in trace.get("objects", [])][0] == "inst__inst_device"
+
+
+def test_value_based_role_reference(make_sqlite, monkeypatch):
+    """负责人列与用户编号列名不相容,但取值是用户编码:按取值补提,经取值形态证据成立(DR-072)。"""
+    db = make_sqlite({"user__user": ("user_no TEXT, user_name TEXT", [(f"USER_{10000 + i}", "u") for i in range(20)]),
+                      "biz__work_order": ("id INTEGER, director TEXT", [(i, f"USER_{10000 + i % 6}") for i in range(30)])})
+    ev = {"tab_cols": {"user__user": [("user_no", "TEXT"), ("user_name", "TEXT")],
+                       "biz__work_order": [("id", "INTEGER"), ("director", "TEXT")]}}
+    objs = [{"name": "user", "table": "user__user"}, {"name": "wo", "table": "biz__work_order"}]
+    props = server._value_link_proposals(db, ev, objs, ["biz__work_order"], set())
+    assert [(p["child_key"], p["parent_table"], p["parent_key"]) for p in props] == [("director", "user__user", "user_no")]
+    ir = _adjudicate(db, [{"name": "user", "table": "user__user", "kind": "role"}, {"name": "wo", "table": "biz__work_order", "kind": "ice"}],
+                     [{"source": "wo", "target": "user", "verb": "负责人", "child_key": "director", "parent_key": "user_no"}],
+                     {"user__user": ["user_no", "user_name"], "biz__work_order": ["id", "director"]}, monkeypatch)
+    assert ir["relations"][0]["status"] == "verified" and ir["relations"][0]["evidence"]["value_pattern"]
+
+
+def test_uncovered_scope_tables_get_objects():
+    ext = {"objects": [{"name": "a", "table": "t_a"}], "relations": []}
+    base = {"objects": [{"name": "b", "table": "t_b", "tables": ["t_b", "t_b_copy"]}]}
+    n = server._fill_uncovered_tables(ext, ["t_a", "t_b_copy", "inst__inst_event"], base, {"inst__inst_event": "事件 根据obj_type判断"})
+    assert n == 1
+    o = ext["objects"][-1]
+    assert o["table"] == "inst__inst_event" and o["cn"] == "事件" and o["coverage_fill"]
+
+
+def test_instance_table_not_treated_as_versions(make_sqlite):
+    """同一编码按设备各存一行(名称一致)的实例表,不是「版本重复」,不能当编码的父表(DR-072)。"""
+    import sys
+    sys.path.insert(0, os.path.join(ROOT, "skills_seed", "ontology-cross-check", "scripts"))
+    import cross_check
+    db = cross_check.Db(make_sqlite({
+        "cfg": ("id INTEGER, metric_code TEXT", [(i, f"M{i % 5}") for i in range(20)]),
+        "inst_metric": ("id INTEGER, obj_no TEXT, metric_code TEXT, metric_name TEXT, create_at TEXT",
+                        [(i, f"D{i // 5}", f"M{i % 5}", f"量{i % 5}", f"2024-01-{1 + i % 28:02d}") for i in range(200)])}))
+    r = cross_check.valid_rows_channel(db, "cfg", "metric_code", "inst_metric", "metric_code",
+                                       {"overlap": 100.0, "parent_unique": False})
+    assert r.get("rule") != "keep_latest"
+
+
+def test_same_child_key_keeps_best_parent():
+    ir = {"objects": [{"name": "cfg", "table": "inst__es_strategy_config"}, {"name": "dev", "table": "inst__inst_device"},
+                      {"name": "gw", "table": "inst__iot_gateway_device"}],
+          "relations": [{"source_concept": "cfg", "target_concept": "gw", "status": "verified",
+                         "evidence": {"child_key": "dev_no", "parent_key": "device_no", "overlap": 100.0}},
+                        {"source_concept": "cfg", "target_concept": "dev", "status": "verified",
+                         "evidence": {"child_key": "dev_no", "parent_key": "dev_no", "overlap": 100.0}}]}
+    assert server._dedupe_parents(ir) == 1
+    st = {r["target_concept"]: r["status"] for r in ir["relations"]}
+    assert st == {"dev": "verified", "gw": "candidate"}
+
+
+def test_instance_table_with_few_devices_and_dup_rows(make_sqlite):
+    """指标实例:设备编号只占行数的 2.5%、抽样里还有个别重复行,仍应识别为实例表(DR-072)。"""
+    import sys
+    sys.path.insert(0, os.path.join(ROOT, "skills_seed", "ontology-cross-check", "scripts"))
+    import cross_check
+    rows = [(i, f"D{i // 40}", f"K{i % 40}", f"指标{i % 40}", "2024-01-01") for i in range(1600)]
+    rows += rows[:10]                                                          # 个别重复行
+    db = cross_check.Db(make_sqlite({
+        "cfg": ("id INTEGER, index_code TEXT", [(i, f"K{i % 40}") for i in range(80)]),
+        "inst_index": ("id INTEGER, obj_no TEXT, index_code TEXT, index_name TEXT, create_at TEXT", rows)}))
+    assert cross_check._instance_split(db, "inst_index", "index_code")
+
+
+def test_scope_with_same_named_category_and_no_tenant_base(make_sqlite, monkeypatch):
+    """同名类别列(obj_code)可作类别作用域;以租户键(ent_no)为基础的复合键不建(DR-072)。"""
+    defs = [(f"{c}-{k}", c, k, f"{k}名") for c in ("METE", "SYS", "PV") for k in ("Ept", "Eq", "P")]
+    db = make_sqlite({"meta_metric": ("id TEXT, obj_code TEXT, metric_code TEXT, metric_name TEXT", defs),
+                      "inst_metric": ("id INTEGER, obj_code TEXT, meta_metric_code TEXT",
+                                      [(i, ("METE", "SYS", "PV")[i % 3], ("Ept", "Eq", "P")[i % 3]) for i in range(30)])})
+    ir = _adjudicate(db, [{"name": "inst", "table": "inst_metric", "kind": "object"}, {"name": "defn", "table": "meta_metric", "kind": "ice"}],
+                     [{"source": "inst", "target": "defn", "verb": "实例化", "child_key": "meta_metric_code", "parent_key": "metric_code"}],
+                     {"meta_metric": ["id", "obj_code", "metric_code", "metric_name"], "inst_metric": ["id", "obj_code", "meta_metric_code"]},
+                     monkeypatch)
+    assert ir["relations"][0]["status"] == "verified" and ir["relations"][0]["evidence"]["parent_key"] == "obj_code,metric_code"
+    assert server._scoped_key(None, {}, "rec", "ent_no", "biz__patrol_point", "ent_no", ["ent_no"], ["ent_no"]) is None
