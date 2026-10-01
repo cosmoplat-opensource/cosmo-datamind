@@ -90,6 +90,13 @@ def binding_score(name, table):
     return 1 if (n in c or c in n) else 0
 
 
+def identifier_reference(child_key, parent_table, parent_key):
+    """子键指向父表的标识键:键名相容,且父键就是父表的标识键(core 与词根一致)。孤儿记录容忍规则用(DR-070)。"""
+    if "," in str(child_key or "") or "," in str(parent_key or ""):
+        return False
+    return dao_core.key_name_ok(child_key, parent_key) and _owner_key(table_core(parent_table), parent_key)
+
+
 def _shared_prefix(a, b):
     n = 0
     for x, y in zip(a.split("_"), b.split("_")):

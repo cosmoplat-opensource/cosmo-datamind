@@ -52,12 +52,43 @@ def normalize_kind(kind, *, name="", cn="", table="", definition=""):
     raw = kind if kind in VALID_KINDS else "object"
     if raw in {"action", "asset", "role"}:
         return raw, None
-    value = _text(name, cn, table, definition)
+    # DR-070:中文名的中心词(末尾的名词)最能说明对象是什么——「产线区域」是区域,「过站明细」是过站事件。
+    # 定义只作说明,不参与判定:定义里随口提到「生产」「检验」,不能据此把位置、设备判成事件
+    head = _head_kind(cn)
+    if head:
+        return head, None if raw == head else {"ice": "information_artifact_term", "event": "event_or_process_term",
+                                               "object": "located_or_material_term"}[head]
+    value = _text(name, cn, table)
     if _INFORMATION_TERMS.search(value):
         return "ice", None if raw == "ice" else "information_artifact_term"
     if _EVENT_TERMS.search(value):
         return "event", None if raw == "event" else "event_or_process_term"
     return raw, None
+
+
+# 中心词 → 种类。按名称末尾匹配;「明细」「数据」「信息」这类泛词去掉后再看前面的词
+_HEAD_INFO = ("记录", "日志", "台账", "目录", "字典", "字典项", "定义", "配置", "模板", "汇总", "统计", "日报", "月报",
+              "报表", "报告", "清单", "参数", "规则", "类型", "分类", "标准", "公式", "版本", "周期", "模型", "订单", "工单",
+              "单据", "合同", "方案", "计划", "账单", "价格", "电价", "档案")
+_HEAD_EVENT = ("事件", "告警", "报警", "故障", "过站", "进站", "出站", "停机", "报工", "上料", "下料", "巡检", "维修",
+               "检验", "测试", "交付", "发货", "收货", "退货", "流转")
+_HEAD_OBJECT = ("区域", "产线", "线别", "线体", "工位", "车间", "工厂", "厂区", "园区", "站点", "设备", "器具", "仪表",
+                "表计", "单元", "企业", "组织", "部门", "人员", "员工", "用户", "客户", "供应商", "物料", "产品", "零件",
+                "仓库", "库位", "位置", "系统", "电站", "工序", "测点")
+_HEAD_FILLER = ("明细", "数据", "信息", "详情", "主表", "表")
+
+
+def _head_kind(cn):
+    s = re.sub(r"[\s()()·_-]", "", str(cn or ""))
+    for _ in range(2):
+        for words, k in ((_HEAD_INFO, "ice"), (_HEAD_EVENT, "event"), (_HEAD_OBJECT, "object")):
+            if any(s.endswith(w) for w in words):
+                return k
+        filler = next((w for w in _HEAD_FILLER if s.endswith(w) and len(s) > len(w) + 1), None)
+        if not filler:
+            return None
+        s = s[: -len(filler)]
+    return None
 
 
 def definition_conflicts(definition, kind):

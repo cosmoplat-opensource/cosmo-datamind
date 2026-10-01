@@ -43,7 +43,7 @@ INDUSTRIES = {
             {"id": "quality_inspection", "name": "质量检验", "required": True,
              "aliases": ["质量检验", "质检", "检验记录", "quality_inspection", "inspection"]},
             {"id": "production_line", "name": "生产线",
-             "aliases": ["生产线", "产线", "production_line", "line"]},
+             "aliases": ["生产线", "产线", "线别", "线体", "production_line", "line"]},
             {"id": "process_route", "name": "工艺路线",
              "aliases": ["工艺路线", "工艺流程", "routing", "process_route"]},
             {"id": "production_batch", "name": "生产批次",
@@ -89,7 +89,7 @@ INDUSTRIES = {
             {"id": "smt_work_order", "name": "SMT工单", "required": True,
              "aliases": ["smt工单", "贴片工单", "smt_work_order", "smt order"]},
             {"id": "smt_line", "name": "SMT产线", "required": True,
-             "aliases": ["smt产线", "贴片产线", "smt_line"]},
+             "aliases": ["smt产线", "贴片产线", "产线", "线别", "线体", "生产线", "smt_line"]},
             {"id": "pcba_board", "name": "PCBA板", "required": True,
              "aliases": ["pcba板", "电路板", "pcba_board", "pcb board"]},
             {"id": "placement_machine", "name": "贴片机", "required": True,
@@ -407,6 +407,16 @@ def _industry_match(obj, industry_id):
     return concept, hits
 
 
+def _alias_score(obj, hits):
+    """对象名与参照术语的贴切程度:名称等于术语 3、以术语结尾 2、含术语 1;同分取较长术语。"""
+    cn = str(obj.get("cn") or "").lower()
+    best = 0
+    for h in hits:
+        hl = h.lower()
+        best = max(best, 3 if cn == hl else 2 if cn.endswith(hl) else 1)
+    return (best, max((len(h) for h in hits), default=0))
+
+
 def _isa95_match(obj):
     text = _object_text(obj).lower()
     matches = []
@@ -430,10 +440,18 @@ def apply_profile(ir, profile):
     objects = [x for x in (ir.get("objects") or []) if isinstance(x, dict)]
     relations = ir.get("links") if ir.get("links") else (ir.get("relations") or [])
 
+    alias_pick = {}
     for obj in objects:
         for key in ("industry_reference", "standard_alignment", "reused_from",
                     "foundational_kind", "bfo"):
             obj.pop(key, None)
+        # 上一次按参照加的别名先撤掉,按本次匹配重新分配(DR-070)
+        old = set(obj.pop("reference_aliases", None) or [])
+        if old:
+            obj["aliases"] = [a for a in obj.get("aliases") or [] if a not in old]
+            if not obj["aliases"]:
+                obj.pop("aliases")
+            obj.pop("aliases_source", None)
         if industry["selected"]:
             match = _industry_match(obj, industry["id"])
             if match:
@@ -444,6 +462,7 @@ def apply_profile(ir, profile):
                     "concept_name": concept["name"], "status": "candidate",
                     "matched_by": hits[:5],
                 }
+                alias_pick.setdefault(concept["id"], []).append((_alias_score(obj, hits), obj, concept))
         if standard["id"] == "bfo_iof":
             category = ontology_grounding.default_category(obj.get("kind"))
             obj["bfo"] = category
@@ -469,6 +488,21 @@ def apply_profile(ir, profile):
                     "standard": "ufo", "candidate": candidate,
                     "status": "candidate", "version": standard["version"],
                 }
+
+    # DR-070 行业术语进入对象别名:每个参照概念只给最贴切的一个对象(名称等于术语 > 以术语结尾 > 含术语),
+    # 「企业用能系统关联」这类只是提到术语的对象不加,免得问数时抢走召回
+    for picks in alias_pick.values():
+        picks.sort(key=lambda x: x[0], reverse=True)
+        if len(picks) > 1 and picks[0][0] == picks[1][0]:
+            continue                                         # 并列不判
+        _score, obj, concept = picks[0]
+        terms = [concept["name"]] + [a for a in concept["aliases"] if re.search(r"[一-鿿]", a)]
+        have = [str(a) for a in (obj.get("aliases") or [])]
+        new = [t for t in dict.fromkeys(terms) if t not in have and t != obj.get("cn")]
+        if new:
+            obj["aliases"] = have + new
+            obj["reference_aliases"] = new
+            obj["aliases_source"] = "industry_reference"
 
     categories = {(obj.get("id") or obj.get("name")): obj.get("bfo") for obj in objects}
     for relation in relations:

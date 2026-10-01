@@ -70,6 +70,11 @@ def audit_verified_evidence(ir):
         cond_ok = (isinstance(evidence.get("condition"), dict) and dao_core.valid_percentage(cond_ov)
                    and cond_ov >= dao_core.MIN_OVERLAP)
         overlap = cond_ov if cond_ok else evidence.get("overlap", relation.get("overlap"))
+        # DR-070 孤儿记录容忍:子键是父表标识键、父键唯一,重叠不低于 20% 即认可(孤儿比例写在证据里)
+        orph = evidence.get("orphan_tolerant")
+        if (isinstance(orph, dict) and dao_core.valid_percentage(overlap) and overlap >= dao_core.WEAK_FLOOR
+                and evidence.get("parent_unique") is True):
+            overlap = dao_core.MIN_OVERLAP
         if not dao_core.valid_percentage(overlap) or overlap < dao_core.MIN_OVERLAP:
             issues.append({"type": "verified_overlap_below_threshold", "relation": label, "index": index,
                            "desc": f"verified 关系重叠率 {overlap!r} 未达到固定阈值 {dao_core.MIN_OVERLAP:g}%",

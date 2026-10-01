@@ -163,7 +163,8 @@ def dimension_check(question, sql, ir):
         obj = by_table.get(table or "")
         if not obj:
             continue
-        labels = [obj.get("cn") or ""] + [str(a.get("cn") or "") for a in obj.get("attrs") or []
+        labels = [obj.get("cn") or ""] + [str(x) for x in obj.get("aliases") or []] + \
+                 [str(a.get("cn") or "") for a in obj.get("attrs") or []
                                           if str(a.get("col") or "").lower() == col.lower()]
         if any(len(lb) >= 2 and (term in lb or lb in term) for lb in labels):
             continue

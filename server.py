@@ -855,7 +855,8 @@ def _join_hints(ir, tables, pairs=None):
         _ev = l.get("evidence") or {}
         # 代码契约里就这么连(键名不同):不当作自增键巧合
         bad = (bool(ck and pk) and not dao_core.name_ok(ck, tt, pk, child_table=st) and not _ev.get("contract")
-               and not _ev.get("condition"))           # 多态引用由判别条件补证(DR-069)
+               and not _ev.get("condition") and not _ev.get("value_pattern") and not _ev.get("scope")
+               and _ev.get("name_basis") != "codebook")
         if bad: ksrc = "name_mismatch"                # 疑为自增键值域巧合:保留语义关系,不下发该键
         key = (f"{st}.{ck} = {tt}.{pk}{_scope_join_text(_ev, st, tt)}" if (ck and pk and not bad)
                else f"{st} 关联 {tt}(键见列名)")
@@ -1385,9 +1386,12 @@ def build_context(question, focus_tables=None, trace=None, graph_keys=None):
         blob = ((o.get("cn") or "") + (o.get("table") or "") + "".join(o.get("aliases") or [])
                 + " ".join((a.get("cn") or "") + (a.get("col") or "") for a in o.get("attrs", [])))
         hs = hits_of(blob)
-        hs += [h for h in obj_cn_hits(o) if h not in hs]     # 中文走反向匹配,见 cn_hits
+        cn_hs = [h for h in obj_cn_hits(o) if h not in hs]   # 中文走反向匹配,见 cn_hits
+        hs += cn_hs
         if hs and o.get("table"): hmap[o["table"]] = hs[:6]
-        tabs.append((len(hs), o))
+        # DR-070 计分:中文名称命中按长度计(问句里原样出现的业务名最可信),术语词典折出的英文词每个记 1 分。
+        # 只数命中个数时,「配置 → config」一类泛词让一串配置表与「计量关系」同分,后者按顺序被挤出上下文
+        tabs.append((sum(2 * len(h) for h in cn_hs) + (len(hs) - len(cn_hs)), o))
     tabs.sort(key=lambda x: -x[0])
     _hit = [o for s0, o in tabs[:8] if s0 > 0]
     picked = _hit or [o for _, o in tabs[:5]]
@@ -1565,7 +1569,7 @@ def _validate_sql_ontology(sql, ir, strict=False):
         for k in (o.get("id"), o.get("name"), _obj_key(o, i)):
             if k: o2t[str(k)] = (o.get("table") or "").lower()
     _rl, _ks, _kt = ir_shape.rels(json.loads(json.dumps(ir, default=str)), create=True)
-    relkeys, parents, scopes = set(), {}, {}     # parents: (子表,子键,父表,父键) → 父表(父键唯一侧)
+    relkeys, parents, scopes, companions = set(), {}, {}, {}   # parents: (子表,子键,父表,父键) → 父表(父键唯一侧)
     for l in _rl:
         if l.get("status") not in ("verified", "asserted"): continue
         ev = l.get("evidence") or {}
@@ -1578,6 +1582,12 @@ def _validate_sql_ontology(sql, ir, strict=False):
         if ck and pk and st and tt:
             relkeys.add((st, ck, tt, pk)); relkeys.add((tt, pk, st, ck))
             parents[(st, ck, tt, pk)] = tt
+            cks, pks = ck.split(","), pk.split(",")
+            if len(cks) == len(pks) > 1:                 # 复合键:逐列登记,并要求各列同时出现(DR-070)
+                comps = list(zip(cks, pks))
+                for c1, p1 in comps:
+                    relkeys.add((st, c1, tt, p1)); relkeys.add((tt, p1, st, c1))
+                    companions[(st, c1, tt, p1)] = companions[(tt, p1, st, c1)] = (st, tt, comps)
     joined_parents = {}                          # 本条 SQL 里作为 1:N 父侧出现的表 → 其别名集合
     for m in re.finditer(r"\bon\s+(%s)\.(%s)\s*=\s*(%s)\.(%s)" % ((_SQL_IDENT,) * 4), s, re.I):
         a, ca, b, cb = (m.group(i).lower() for i in (1, 2, 3, 4))
@@ -1608,6 +1618,16 @@ def _validate_sql_ontology(sql, ir, strict=False):
             if _gp and not re.search(r"\b%s\.%s\s*=\s*'%s'" % (re.escape(al_of.get(_tt, "")), re.escape(_gp[0]),
                                                                re.escape(str(_gp[1]))), s, re.I):
                 return False, f"{_tt}.{cb if _tt == tb else ca} 的编码按分组复用,须限定 {_tt}.{_gp[0]} = '{_gp[1]}'"
+        _cp = companions.get((ta, ca, tb, cb))
+        if _cp:
+            _cst, _ctt, comps = _cp
+            al2 = {ta: a, tb: b}
+            for c1, p1 in comps:
+                x, y = re.escape(al2.get(_cst, "")), re.escape(al2.get(_ctt, ""))
+                if not re.search(r"\b%s\.%s\s*=\s*%s\.%s\b|\b%s\.%s\s*=\s*%s\.%s\b" % (
+                        x, re.escape(c1), y, re.escape(p1), y, re.escape(p1), x, re.escape(c1)), s, re.I):
+                    return False, (f"{_cst}→{_ctt} 是复合键关联,须同时写出 "
+                                   + " AND ".join(f"{_cst}.{c} = {_ctt}.{p}" for c, p in comps) + "(编码只在类别内唯一)")
         if ca == cb: continue
         if (ta, ca, tb, cb) not in relkeys:
             return False, f"JOIN 键 {ta}.{ca}={tb}.{cb} 不在本体已验证关系上(口径未证实,已拦截)"
@@ -6133,7 +6153,7 @@ def _overlap_probe(db, sample=5000):
             con = ro_connect(db)
             try:
                 n, hit = con.execute(
-                    f'SELECT COUNT(*), SUM(EXISTS(SELECT 1 FROM "{pt}" p WHERE p."{pc}" = c.v)) FROM '
+                    f'SELECT COUNT(*), SUM(c.v IN (SELECT "{pc}" FROM "{pt}")) FROM '
                     f'(SELECT DISTINCT "{cc}" AS v FROM "{ct}" WHERE "{cc}" IS NOT NULL LIMIT {int(sample)}) c').fetchone()
             finally:
                 con.close()
@@ -6160,26 +6180,229 @@ def _dimension_caveat(warns):
                                   for w in warns) + "。以上结果可能不是所问的维度,请核对字段含义后再使用。"
 
 
-def _poly_condition(con, child_table, key, parent_table, parent_key, disc, min_rows=5):
-    """多态引用按判别值分条件比对:返回重叠最高且达标的 {column, value, overlap},否则 None。"""
-    ct, k, pt, pk, dc = (_safe_ident(x) for x in (child_table, key, parent_table, parent_key, disc))
-    if not all((ct, k, pt, pk, dc)):
+def _distinct_values(con, cache, table, col, where="", args=()):
+    """某列的去重非空取值(转成字符串比较,与 dao_core.clean 同口径),按 (表, 列, 条件) 缓存。"""
+    key = (table, col, where, args)
+    if key not in cache:
+        t, c = _safe_ident(table), _safe_ident(col)
+        if not (t and c):
+            cache[key] = set()
+        else:
+            try:
+                cache[key] = {str(r[0]).strip() for r in con.execute(
+                    f'SELECT DISTINCT "{c}" FROM "{t}" WHERE "{c}" IS NOT NULL{where}', args) if str(r[0]).strip()}
+            except sqlite3.Error:
+                cache[key] = set()
+    return cache[key]
+
+
+def _table_comments(db):
+    """只读抽样留下的库表注释(_dm_tables);没有则返回空字典。"""
+    try:
+        con = ro_connect(db)
+        try:
+            if not con.execute("SELECT 1 FROM sqlite_master WHERE type='table' AND name='_dm_tables'").fetchone():
+                return {}
+            return {t: cm for t, cm in con.execute("SELECT table_name, comment FROM _dm_tables") if cm}
+        finally:
+            con.close()
+    except (sqlite3.Error, OSError):
+        return {}
+
+
+def _bind_fallback_objects(ir, ev, comments=None):
+    """降级构建(quick_build)的对象只有 tables 列表:补上 table、字段与中文名,与模型构建的产物同形(DR-070)。
+    不补时后续轮次的裁决、键名补提与问数召回都认不出这些对象。"""
+    tc = (ev or {}).get("tab_cols") or {}
+    for o in ir.get("objects") or []:
+        if not isinstance(o, dict) or o.get("table"):
+            continue
+        t = next((x for x in o.get("tables") or [] if x in tc), None)
+        if not t:
+            continue
+        o["table"] = t
+        if not o.get("attrs"):
+            o["attrs"] = [{"col": c, "cn": "", "type": ty} for c, ty in tc.get(t, [])]
+            o["field_count"] = len(o["attrs"])
+        if not o.get("cn"):
+            o["cn"] = str((comments or {}).get(t) or o.get("name") or t)[:40]
+    return ir
+
+
+def _codebook_relations(ir, db, min_coverage=0.9):
+    """清洗规则里的码表判定(字段按字典的哪个分组解释)转成本体关系,返回新增条数(DR-070)。
+
+    条件:规则写明了字典表的分组列与取值列、覆盖率不低于 90%、没有并列可选的码表,且字典分组内取值唯一。
+    关系按「码表分组」有效行规则记录,问数关联字典时必须限定该分组。"""
+    t2o = {}
+    for o in ir.get("objects") or []:
+        if o.get("table") and o.get("name"):
+            t2o.setdefault(o["table"], o["name"])
+    existing = {(r.get("source_concept"), r.get("target_concept")): r for r in ir.get("relations") or []}
+    added = 0
+    con = ro_connect(db)
+    try:
+        for o in ir.get("objects") or []:
+            for rule in ((o.get("evidence") or {}).get("cleaning") or []):
+                if rule.get("kind") != "codebook" or rule.get("ambiguous_with") or \
+                        (rule.get("coverage") or 0) < min_coverage or rule.get("table") != o.get("table"):
+                    continue
+                dt, gc, vc, grp, col = (rule.get(k) for k in ("dict_table", "group_column", "value_column", "group", "column"))
+                child, parent = t2o.get(rule.get("table")), t2o.get(dt)
+                if not (child and parent and child != parent and all(_safe_ident(x) for x in (dt, gc, vc, col))):
+                    continue
+                cur = existing.get((child, parent))
+                if cur is not None and cur.get("status") == "verified":
+                    continue
+                n, d = con.execute(f'SELECT COUNT(*), COUNT(DISTINCT "{vc}") FROM "{dt}" WHERE "{gc}" = ?', (grp,)).fetchone()
+                if not n or n != d:
+                    continue
+                book = {str(v).strip() for (v,) in con.execute(f'SELECT "{vc}" FROM "{dt}" WHERE "{gc}" = ?', (grp,))}
+                vals = {str(v).strip() for (v,) in con.execute(
+                    f'SELECT DISTINCT "{col}" FROM "{_safe_ident(rule["table"])}" WHERE "{col}" IS NOT NULL')} - {""}
+                if not vals:
+                    continue
+                ov = round(100.0 * len(vals & book) / len(vals), 1)
+                if ov < dao_core.MIN_OVERLAP:
+                    continue
+                note = f"码表:{rule['table']}.{col} 的取值按 {dt}.{gc} = '{grp}' 解释(覆盖 {ov:.0f}%),分组内取值唯一"
+                rel = {"source_concept": child, "target_concept": parent, "verb": "取值于", "status": "verified",
+                       "evidence_status": "verified", "overlap": ov, "note": note,
+                       "semantic": "skipped", "semantic_status": "not_reviewed", "proposal": {"origin": "codebook"},
+                       "evidence": {"child_key": col, "parent_key": vc, "overlap": ov, "parent_unique": False,
+                                    "child_unique": False, "name_ok": True, "name_basis": "codebook",
+                                    "source": "codebook", "direction": "child_to_parent", "evidence_complete": True,
+                                    "theta": dao_core.MIN_OVERLAP, "matched_distinct": len(vals & book),
+                                    "valid_rows": {"state": "support", "rule": "scoped", "column": gc, "group": grp,
+                                                   "note": f"{dt}.{vc} 在 {gc} = '{grp}' 组内唯一(数据判定的码表)"}}}
+                if cur is not None:
+                    cur.update(rel)
+                else:
+                    ir.setdefault("relations", []).append(rel)
+                    existing[(child, parent)] = rel
+                added += 1
+    finally:
+        con.close()
+    return added
+
+
+def _code_like(con, cache, table, col, min_distinct=10):
+    """子列取值像业务编码:去重值不少于 10 个、八成以上含字母、平均长度不少于 4(DR-070)。"""
+    vals = _distinct_values(con, cache, table, col)
+    if len(vals) < min_distinct:
+        return None
+    alpha = sum(1 for v in vals if re.search(r"[A-Za-z]", v)) / len(vals)
+    avg = sum(len(v) for v in vals) / len(vals)
+    return {"distinct": len(vals), "alpha_share": round(alpha, 2)} if alpha >= 0.8 and avg >= 4 else None
+
+
+_SCOPE_GENERIC = {"type", "code", "no", "id", "key", "meta", "inst", "is", "flag", "num", ""}
+_SCOPE_SKIP = re.compile(r"(^id$|_id$|name$|_time$|_at$|_date$|^remark|desc|formula|^is_|_by$|create|update|sort|order_num)", re.I)
+
+
+def _scoped_key(con, cache, child_table, child_key, parent_table, parent_key, child_cols, parent_cols):
+    """类别作用域编码(DR-070):父表编码按某个类别列分组才唯一;子表里取值落在该类别列值域的列就是对应的类别列。
+
+    父表有逻辑删除列时只看未删除行;同一(类别, 编码)的重复行若名称一致(版本重复),按有效行规则认可。"""
+    pt, pk = _safe_ident(parent_table), _safe_ident(parent_key)
+    if not (pt and pk):
+        return None
+    del_col = next((c for c in parent_cols if re.match(ontology_domain.SOFT_DELETE_COLUMN_PATTERN, c, re.I)), None)
+    live = ""
+    if del_col and _safe_ident(del_col):
+        lits = ",".join(str(v) if isinstance(v, int) else "'" + str(v).replace("'", "''") + "'"
+                        for v in ontology_domain.LIVE_MARKERS if v is not None)
+        live = f' AND ("{del_col}" IS NULL OR "{del_col}" IN ({lits}))'
+    name_col = next((c for c in parent_cols if re.search(r"name$", c, re.I)), None)
+    best = None
+    try:
+        for p2 in parent_cols:
+            if p2 in (parent_key, del_col) or _SCOPE_SKIP.search(p2) or not _safe_ident(p2):
+                continue
+            pvals = _distinct_values(con, cache, parent_table, p2, live)
+            if not 2 <= len(pvals) <= 500:
+                continue
+            n, d = con.execute(f'SELECT COUNT(*), COUNT(DISTINCT "{p2}" || char(31) || "{pk}") FROM "{pt}" '
+                               f'WHERE "{pk}" IS NOT NULL AND "{p2}" IS NOT NULL{live}').fetchone()
+            if not n:
+                continue
+            versioned = False
+            if d < n:
+                if not name_col or not _safe_ident(name_col):
+                    continue
+                groups, same = con.execute(
+                    f'SELECT COUNT(*), SUM(k = 1) FROM (SELECT COUNT(DISTINCT "{name_col}") AS k FROM "{pt}" '
+                    f'WHERE "{pk}" IS NOT NULL AND "{p2}" IS NOT NULL{live} GROUP BY "{p2}", "{pk}" HAVING COUNT(*) > 1)').fetchone()
+                if not groups or (same or 0) / groups < 0.8:
+                    continue
+                versioned = True
+            for c2 in child_cols:
+                if c2 == child_key or _SCOPE_SKIP.search(c2) or not _safe_ident(c2) or c2.lower() == p2.lower():
+                    continue          # 同名分区列(工厂、企业编号)是租户作用域,由交叉复核的租户规则处理
+                cvals = _distinct_values(con, cache, child_table, c2)
+                if not cvals or len(cvals & pvals) / len(cvals) < 0.9:
+                    continue
+                # 类别列要有依据:两列名称有共同词(meta_obj_type ↔ obj_code),或取值是带字母的类别编码;
+                # 0/1 这类小整数取值任何两列都对得上,不能据此认定(实测 required ↔ obj_type 误配)
+                shared = (set(dao_core._snake(c2).split("_")) & set(dao_core._snake(p2).split("_"))) - _SCOPE_GENERIC
+                coded = len(cvals) >= 3 and all(re.search(r"[A-Za-z]", v) for v in cvals)
+                if not (shared or coded):
+                    continue
+                ppairs = cache.setdefault(("pairs", parent_table, p2, parent_key, live), {
+                    (str(a).strip(), str(b).strip()) for a, b in con.execute(
+                        f'SELECT DISTINCT "{p2}", "{pk}" FROM "{pt}" WHERE "{pk}" IS NOT NULL{live}')})
+                cpairs = {(str(a).strip(), str(b).strip()) for a, b in con.execute(
+                    f'SELECT DISTINCT "{_safe_ident(c2)}", "{_safe_ident(child_key)}" FROM "{_safe_ident(child_table)}" '
+                    f'WHERE "{_safe_ident(child_key)}" IS NOT NULL')}
+                if len(cpairs) < dao_core.MIN_DISTINCT:
+                    continue
+                ov = 100.0 * len(cpairs & ppairs) / len(cpairs)
+                if ov >= dao_core.MIN_OVERLAP and (best is None or ov > best[0]):
+                    best = (ov, c2, p2, versioned, n, d)
+    except sqlite3.Error:
+        return None
+    if not best:
+        return None
+    ov, c2, p2, versioned, n, d = best
+    evidence = {"child_key": f"{c2},{child_key}", "parent_key": f"{p2},{parent_key}", "overlap": round(ov, 1),
+                "source": "scoped_key", "parent_unique": not versioned, "name_ok": True,
+                "scope": {"child_column": c2, "parent_column": p2, "rows": n, "distinct": d},
+                "adjudication_status": "verified"}
+    if versioned:
+        evidence["valid_rows"] = {"state": "support", "rule": "keep_latest", "column": None,
+                                  "note": f"{parent_table} 的({p2}, {parent_key})有 {n - d} 行版本重复,同键名称一致"}
+    note = (f"类别作用域编码:{parent_key} 只在 {p2} 内唯一,按({c2}, {child_key})→({p2}, {parent_key})复合键关联,"
+            f"重叠 {ov:.0f}%" + ("(同键版本重复按有效行认可)" if versioned else "·父键唯一"))
+    return {"overlap": round(ov, 1), "evidence": evidence, "note": note}
+
+
+def _poly_condition(con, child_table, key, parent_table, parent_key, disc, min_rows=5, cache=None):
+    """多态引用按判别值分条件比对:返回重叠最高且达标的 {column, value, overlap},否则 None。
+    父列取值与按判别值分组的子列取值各查一次、在内存里求交集(DR-070:相关子查询在无索引大表上逐行扫描)。"""
+    cache = {} if cache is None else cache
+    ct, k, dc = (_safe_ident(x) for x in (child_table, key, disc))
+    if not all((ct, k, dc)):
         return None
     try:
-        vals = con.execute(f'SELECT "{dc}", COUNT(*) FROM "{ct}" WHERE "{k}" IS NOT NULL AND "{dc}" IS NOT NULL '
-                           f'GROUP BY 1 ORDER BY 2 DESC LIMIT 8').fetchall()
+        gkey = ("poly", child_table, key, disc)
+        if gkey not in cache:
+            groups, counts = {}, {}
+            for v, x, n in con.execute(f'SELECT "{dc}", "{k}", COUNT(*) FROM "{ct}" WHERE "{k}" IS NOT NULL '
+                                       f'AND "{dc}" IS NOT NULL GROUP BY 1, 2'):
+                if isinstance(v, (int, float, str)) and str(x).strip():
+                    groups.setdefault(v, set()).add(str(x).strip())
+                    counts[v] = counts.get(v, 0) + n
+            cache[gkey] = (groups, counts)
+        groups, counts = cache[gkey]
+        parent = _distinct_values(con, cache, parent_table, parent_key)
         best = None
-        for v, n in vals:
-            if n < min_rows or not isinstance(v, (int, float, str)):
+        for v in sorted(groups, key=lambda x: -counts[x])[:8]:
+            vals = groups[v]
+            if counts[v] < min_rows or len(vals) < dao_core.MIN_DISTINCT:
                 continue
-            tot, hit = con.execute(
-                f'SELECT COUNT(DISTINCT c."{k}"), COUNT(DISTINCT CASE WHEN EXISTS(SELECT 1 FROM "{pt}" p '
-                f'WHERE p."{pk}" = c."{k}") THEN c."{k}" END) FROM "{ct}" c WHERE c."{dc}" = ? AND c."{k}" IS NOT NULL',
-                (v,)).fetchone()
-            if tot and tot >= dao_core.MIN_DISTINCT:
-                ov = 100.0 * hit / tot
-                if ov >= dao_core.MIN_OVERLAP and (best is None or ov > best["overlap"]):
-                    best = {"column": disc, "value": v, "overlap": round(ov, 1)}
+            ov = 100.0 * len(vals & parent) / len(vals)
+            if ov >= dao_core.MIN_OVERLAP and (best is None or ov > best["overlap"]):
+                best = {"column": disc, "value": v, "overlap": round(ov, 1)}
         return best
     except sqlite3.Error:
         return None
@@ -6258,6 +6481,26 @@ def _adjudicate_ir(db, name, extracted, ev, base_ir=None):
             }
         objects.append(obj)
         if real: name2tab[nm] = real
+    # DR-070 重复绑定改绑:本轮表不全时,模型会把「企业」与「企业调研记录」都绑到调研表;
+    # 两个对象绑同一张表、其中一个的名称恰是库里另一张未绑定表的核心名,就改绑过去(数据裁决用全库,不受本轮范围限制)
+    _bound = {}
+    for o in objects:
+        if o.get("table"):
+            _bound[o["table"]] = _bound.get(o["table"], 0) + 1
+    for o in objects:
+        t0 = o.get("table")
+        if not t0 or _bound.get(t0, 0) < 2 or key_links.binding_score(o["name"], t0) >= 2:
+            continue
+        exact = [x for x in tc if x not in _bound and key_links.binding_score(o["name"], x) == 2]
+        if len(exact) == 1:
+            nt = exact[0]
+            o.update({"rebound_from": t0, "table": nt, "tables": [nt],
+                      "attrs": [{"col": c, "cn": "", "type": ty} for c, ty in tc.get(nt, [])]})
+            o["field_count"] = len(o["attrs"])
+            o["provenance"] = {**(o.get("provenance") or {}), "directSource": nt}
+            name2tab[o["name"]] = nt
+            _bound[t0] -= 1
+            _bound[nt] = 1
     valid = {o["name"] for o in objects}
     categories = {o["name"]: o["bfo"] for o in objects}
     base_only = {}                                   # 底本对象名 → 其绑定表(可能不在本轮数据源)
@@ -6337,6 +6580,7 @@ def _adjudicate_ir(db, name, extracted, ev, base_ir=None):
                     pkmap[tt2] = []
 
         relations, seen = [], set()
+        _vcache = {}                                   # 本次裁决内的取值缓存(多态、取值形态、作用域编码共用)
         for r in extracted.get("relations", []):
             s, t = (r.get("source") or "").strip(), (r.get("target") or "").strip()
             if not s or not t or s == t or s not in valid or t not in valid or (s, t) in seen: continue
@@ -6392,7 +6636,7 @@ def _adjudicate_ir(db, name, extracted, ev, base_ir=None):
                 for _ck, _ in reversed(_pairs):
                     if _ck in cand_keys: cand_keys.remove(_ck)
                     cand_keys.insert(0, _ck)
-                best = None
+                best = best_single = None
                 _disc_col = next((c for c in cs if key_links.DISCRIMINATOR.match(dao_core._snake(c))), None)
                 for key in cand_keys[:6]:
                     _poly_disc = _disc_col if (_disc_col and key_links.POLY_KEY.match(dao_core._snake(key))) else None
@@ -6425,11 +6669,31 @@ def _adjudicate_ir(db, name, extracted, ev, base_ir=None):
                         if trial_status != "verified" and not reverse and punique and _poly_disc:
                             # 多态引用(DR-069):obj_no 按 obj_type 指向不同的表,键名本就不同;
                             # 按判别值分条件比对,某个取值下重叠达标且父键唯一才成立,问数须带上该条件
-                            _cond = _poly_condition(con, ts, key, tt, pcol, _poly_disc)
+                            _cond = _poly_condition(con, ts, key, tt, pcol, _poly_disc, cache=_vcache)
                             if _cond:
                                 trial_status = "verified"
                                 reason = (f"多态引用:{_cond['column']} = {_cond['value']} 时重叠 {_cond['overlap']}%"
                                           f"·父键唯一(判别列代替键名证据)")
+                        _vp = _orph = None
+                        if trial_status != "verified" and not reverse and not _cond:
+                            if not name_supported and ov >= 95:
+                                # DR-070 取值形态:字母数字编码 95% 以上精确落在父列,稠密自增 id 碰巧重叠的风险不适用
+                                _vp = _code_like(con, _vcache, ts, key)
+                                if _vp:
+                                    name_supported = True
+                                    verdict = dao_core.classify(overlap=ov, parent_unique=punique, name_ok=True,
+                                                                child_distinct=sig["child_distinct"], min_distinct=1,
+                                                                exclude_pk_child=False)
+                                    trial_status = verdict["status"]
+                                    reason = verdict["reason"] + (f"·取值形态({_vp['distinct']} 个字母数字编码)代替键名证据")
+                            if (trial_status != "verified" and punique and ov >= dao_core.WEAK_FLOOR
+                                    and (sig.get("matched_distinct") or 0) >= dao_core.MIN_DISTINCT
+                                    and key_links.identifier_reference(key, tt, pcol)):
+                                # DR-070 孤儿记录容忍:子键就是父表标识键、父键唯一,重叠不足是因为子表引用了父表里没有的记录
+                                _orph = {"overlap": round(ov, 1), "orphan_rate": round(1 - ov / 100.0, 3)}
+                                trial_status = "verified"
+                                reason = (f"父表标识键·父键唯一·重叠 {ov:.0f}%,其余 {100 - ov:.0f}% 为孤儿记录(父表中找不到),"
+                                          "关联取数时这部分不会出现")
                         if _contract:
                             reason += f"·代码契约({_contract['file'].split(':')[-1].split('/')[-1]})"
                         if reverse:
@@ -6446,8 +6710,11 @@ def _adjudicate_ir(db, name, extracted, ev, base_ir=None):
                                  "decision": reason, "adjudication_status": trial_status,
                                  **({"contract": {"code": _contract["code"], "file": _contract["file"]}} if _contract else {}),
                                  **({"condition": {"column": _cond["column"], "value": _cond["value"]},
-                                     "condition_overlap": _cond["overlap"]} if _cond else {})}
+                                     "condition_overlap": _cond["overlap"]} if _cond else {}),
+                                 **({"value_pattern": _vp} if _vp else {}),
+                                 **({"orphan_tolerant": _orph} if _orph else {})}
                         if best is None or ov > best[0]: best = (ov, trial_status, reason, trial)
+                        if best_single is None or ov > best_single[0]: best_single = (ov, trial_status, reason, trial)
                         if trial_status == "verified":
                             status, overlap, note, ev_keys = "verified", round(ov, 1), reason, trial
                             break
@@ -6502,6 +6769,14 @@ def _adjudicate_ir(db, name, extracted, ev, base_ir=None):
                             note = f"复合键({child_key})→{tt} · {reason}"
                             ev_keys = trial
                             break
+                if (status != "verified" and best_single is not None and best_single[0] >= dao_core.MIN_OVERLAP
+                        and best_single[3].get("name_ok") and best_single[3].get("parent_unique") is False):
+                    # DR-070 类别作用域编码:编码只在类别内唯一,按(类别列, 编码)复合键再试。
+                    # 用单键的最佳尝试判断,模型给了复合键提示(重叠更高)时也要试
+                    _sk = _scoped_key(con, _vcache, ts, best_single[3]["child_key"], tt, best_single[3]["parent_key"], cs, ct)
+                    if _sk:
+                        status, overlap, ev_keys = "verified", _sk["overlap"], {**best_single[3], **_sk["evidence"]}
+                        note = _sk["note"]
                 if status != "verified" and best is not None:
                     best_ov, _best_status, best_reason, best_evidence = best
                     status, overlap, note, ev_keys = "candidate", round(best_ov, 1), best_reason, best_evidence
@@ -6890,12 +7165,12 @@ def build_inquire():
         ir = None
         # ② LLM 综合数据库结构和已解析文档提出候选本体。
         yield sse({"type": "status", "text": "智能引擎正在根据表结构与已解析文档提出对象和关系(约 2-4 分钟)…"})
-        def _stream_extract():
+        def _stream_extract(budget=300):
             """把 LLM 抽取过程流出去：log → 过程输出面板；tick → 已用时长。返回抽取结果。"""
             got = None
             for item in _bounded_stream(
                     lambda lg: _llm_extract_ontology(q, ev, skills, cqs, log=lg,
-                                                     base_ir=base_ir, references=references), 640):
+                                                     base_ir=base_ir, references=references), budget):
                 if item[0] == "log":
                     yield sse({"type": "log", "text": item[1], "ts": _t.strftime("%H:%M:%S")})
                 elif item[0] == "tick":
@@ -6906,10 +7181,15 @@ def build_inquire():
                         yield sse({"type": "log", "text": f"抽取异常：{type(_err).__name__}: {str(_err)[:160]}",
                                    "ts": _t.strftime("%H:%M:%S")})
                     if _to:
-                        yield sse({"type": "log", "text": "抽取超时（640s），放弃等待并回退数据驱动构建",
+                        yield sse({"type": "log", "text": f"抽取超时({budget}s),放弃本次等待",
                                    "ts": _t.strftime("%H:%M:%S")})
             return got
         extracted = yield from _stream_extract()
+        if not (extracted and extracted.get("objects")):
+            # DR-070 正常抽取 25~35 秒;一次超时多为连接卡住。先重试一次,仍失败才降级为数据驱动构建——
+            # 降级产物只有表级对象,后续轮次在它上面继续构建,核心关系会大量缺失(实测 14 条只剩 4 条)
+            yield sse({"type": "log", "text": "模型抽取未返回,重试一次", "ts": _t.strftime("%H:%M:%S")})
+            extracted = yield from _stream_extract()
         if extracted and extracted.get("objects"):
             yield push("llm_extract", True, f"LLM 抽取 · 对象 {len(extracted.get('objects', []))} 个 · 提议关系 {len(extracted.get('relations', []))} 条")
             _stab = None
@@ -7008,6 +7288,8 @@ def build_inquire():
             if _bp != outp:
                 try: os.remove(_bp)                 # 中间产物不留在图谱目录里冒充一张图
                 except OSError: pass
+            if isinstance(ir, dict):
+                _bind_fallback_objects(ir, ev, _table_comments(db))
         if not isinstance(ir, dict) or not ir.get("objects"):
             yield sse({"type": "error", "error": "构建失败(无产物)"}); return
         if ev.get("contracts_resolved") or ev.get("contracts_codebooks"):
@@ -7081,6 +7363,11 @@ def build_inquire():
                     ir = _work
                     yield push("cross_check", True, build_cleaning.build_step_text(_cc))
                     yield push("data_clean", True, build_cleaning.clean_step_text(_cc))
+                    try:                                   # DR-070 码表判定转成本体关系(按字典分组关联)
+                        _ncb = _codebook_relations(ir, db)
+                        yield push("codebook_links", True, f"码表关系 · 新增 {_ncb} 条(编码字段 → 字典,按分组关联)")
+                    except Exception as _cbe:
+                        yield push("codebook_links", False, f"码表关系生成失败:{type(_cbe).__name__}")
                 else:
                     yield push("cross_check", False, "交叉复核" + ("超时" if _cto else f"失败:{str(_cerr)[:80]}")
                                + ",本轮产物保持数据裁决结果")

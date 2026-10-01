@@ -67,8 +67,9 @@ def comment_books(con):
     return out
 
 
-def dict_books(db):
-    """字典类表:有分组列、取值列、标签列三件套的表,每个分组是一套码表。"""
+def dict_books(db, meta=None):
+    """字典类表:有分组列、取值列、标签列三件套的表,每个分组是一套码表。
+    meta(可选 dict)记录每套码表来自哪张表、哪几列,码表规则据此写明关联方式(DR-070)。"""
     books = {}
     for t in db.tables:
         if "dict" not in t.lower():
@@ -82,6 +83,9 @@ def dict_books(db):
             if grp is None or val is None:
                 continue
             books.setdefault(f"{_bare(t)}:{grp}", {}).setdefault(str(val), str(label))
+            if meta is not None:
+                meta.setdefault(f"{_bare(t)}:{grp}", {"dict_table": t, "group_column": g, "value_column": v,
+                                                     "label_column": lab, "group": grp})
     return {k: b for k, b in books.items() if len(b) >= 2}
 
 
@@ -284,7 +288,7 @@ def recode_expression(rule, quote=_q):
     return f"CASE {cases} ELSE {quote(t)}.{quote(c)} END"
 
 
-def codebooks(assigned, books, comments, bound_tables):
+def codebooks(assigned, books, comments, bound_tables, meta=None):
     """本体绑定表上的编码字段各用哪套码表:问数时把码表给模型,避免把「2」当成水。"""
     allb = dict(books)
     for (t, c), bk in comments.items():
@@ -295,7 +299,8 @@ def codebooks(assigned, books, comments, bound_tables):
         if t in bound_tables and 2 <= len(book) <= 40:
             used = {k: book[k] for k in a["values"] if k in book}
             out.append({"kind": "codebook", "table": t, "column": c, "book": a["book"], "coverage": a["coverage"],
-                        "labels": used or dict(list(book.items())[:20]), "ambiguous_with": a.get("ambiguous_with", [])})
+                        "labels": used or dict(list(book.items())[:20]), "ambiguous_with": a.get("ambiguous_with", []),
+                        **((meta or {}).get(a["book"]) or {})})
     return out
 
 
@@ -304,7 +309,8 @@ def orphans(db, relations):
     for rel in relations:
         ct, pt, ck, pk, cond = rel["child"], rel["parent"], rel["child_key"], rel["parent_key"], rel.get("where", "")
         where = f" AND {cond}" if cond else ""
-        r = db.one(f"""SELECT COUNT(*), SUM(CASE WHEN EXISTS(SELECT 1 FROM {_q(pt)} p WHERE p.{_q(pk)}=c.{_q(ck)}) THEN 0 ELSE 1 END)
+        # 非相关子查询:SQLite 为 IN 列表建临时索引,不再对父表逐行扫描(相关 EXISTS 在无索引大表上要几十秒)
+        r = db.one(f"""SELECT COUNT(*), SUM(CASE WHEN c.{_q(ck)} IN (SELECT {_q(pk)} FROM {_q(pt)}) THEN 0 ELSE 1 END)
                        FROM {_q(ct)} c WHERE c.{_q(ck)} IS NOT NULL AND TRIM(c.{_q(ck)})<>''{where}""")
         if not r or not r[0] or not r[1]:
             continue
@@ -356,7 +362,8 @@ def clean(db, comments_con, relations, bound_tables):
     """relations: [{child, parent, child_key, parent_key, where, probe}] —— 已验证或按条件成立的关系;
     probe=True 的是重叠率不达标、但匹配量足够的候选,只有语义一致(类别决定编码)时才沿用。"""
     comments = comment_books(comments_con)
-    books = dict_books(db)
+    meta = {}
+    books = dict_books(db, meta)
     assigned = assign_books(db, comments, books)
     coherent = []
     outs = outlier_codes(db, assigned, relations, coherent)
@@ -368,7 +375,7 @@ def clean(db, comments_con, relations, bound_tables):
             dedup.append(r)
     ok = {(r["table"], r["column"], r["parent"]) for r in dedup}
     trusted = [r for r in relations if not r.get("probe") or (r["child"], r["child_key"], f"{r['parent']}.{r['parent_key']}") in ok]
-    rules = (codebooks(assigned, books, comments, bound_tables) + encoding_conflicts(assigned, books, comments) + outs + dedup
+    rules = (codebooks(assigned, books, comments, bound_tables, meta) + encoding_conflicts(assigned, books, comments) + outs + dedup
              + orphans(db, trusted) + empty_shells(db, bound_tables) + unknown_codes(db, comments, assigned))
     return {"books": len(books), "comment_books": len(comments),
             "assigned": {f"{t}.{c}": a for (t, c), a in assigned.items()}, "rules": rules}
