@@ -228,7 +228,8 @@ def context_text(rules, tables, cap=1800):
             k = r.get("kind")
             if k == "codebook":
                 labels = "、".join(f"{c}={lab}" for c, lab in list((r.get("labels") or {}).items())[:14])
-                lines.append(f"- {r['table']}.{r['column']} 取值含义:{labels}")
+                lines.append(f"- {r['table']}.{r['column']} 取值含义:{labels}(按该列分组或展示时,"
+                             "用 CASE 把编码转成名称输出,不要只给编码)")
             elif k == "outlier_code":
                 lines.append(f"- {r['table']}.{r['column']} 有 {r.get('outlier_rows')} 行按「{r.get('determined_by')}」"
                              "自动更正(查询时已生效,直接用该列即可)")

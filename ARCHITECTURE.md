@@ -61,6 +61,7 @@
 | `ir_relational.py` | IR→关系型语义层投影(只读派生物;OWL 之外的消费出口,证据随行、状态不提升) | DR-049 |
 | `srv_context.py` | 共享上下文:路径、`ro_connect`、`sql_is_readonly`、`_atomic_json`、写锁、`confine` 路径限定 | DR-043 |
 | `ir_shape.py` | IR 形状兼容规则集中定义:`rels`(links/relations 双形状)、`obj_names`(对象可指代名超集)与 `strip_cn_suffix/name_variants`(中文表名后缀剥离,指代延续/根因诊断/画像检索共用) | DR-035/055 |
+| `key_links.py` | 按键名补提关系候选:跨轮连接已有对象、关联表、多态引用;只提候选,由数据裁决决定 | DR-069 |
 | `build_prep.py` | 构建体检:数据源概况、建模规律识别(无外键/软删除/多态引用/审计列/分表)、资料覆盖与漂移、能源/碳排放参照建议、枢纽优先的分轮计划;只读不调模型 | DR-060 |
 | `ext_sample.py` | 外部 MySQL/Doris 只读抽样到本地 SQLite:语句白名单 + 只读会话 + 超时;保留表/字段注释(`_dm_*`),多库合并加前缀 | DR-060 |
 | `doc_chunks.py` | 长文证据分块与检索:按标题结构分块(带出处),先按本轮表名锚定、再按诉求 BM25 检索,受文档预算约束 | DR-059 |

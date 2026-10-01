@@ -29,6 +29,7 @@ import ontology_domain  # DR-066:有效行规则(验收与问数共用)
 import observability    # DR-066:构建与问数的结构化追踪与指标(ODD)
 import code_contracts   # DR-065:代码契约(代码包 / docx 读取,连接与码表契约)
 import concept_hints    # DR-064:概念层线索(表族 / 类别拆分 / 版本重复)
+import key_links        # DR-069:按键名补提关系候选(跨轮、关联表、多态引用)
 import build_cleaning   # DR-063:构建后自动复核、问数时套用清洗规则
 import ext_sample
 import llm_json      # DR-058:LLM 回复 JSON 抽取与提议形状校验的集中定义
@@ -746,7 +747,11 @@ def _scope_requirements(evidence):
     """有效行复核得出的键作用域(DR-065),问数时关联必须带上:
     租户作用域 → 同时按租户列关联;分组编码 → 父表限定分组;软删除 → 父表排除已删除行;
     版本重复 → 父表先按键取最新一条(只提示,不强制)。"""
-    out = {"tenant": None, "group": None, "live": None, "latest": None}
+    out = {"tenant": None, "group": None, "live": None, "latest": None, "condition": None}
+    cond = (evidence or {}).get("condition")
+    if isinstance(cond, dict) and isinstance(cond.get("column"), str) and re.fullmatch(r"\w+", cond["column"]) \
+            and isinstance(cond.get("value"), (int, float, str)):
+        out["condition"] = (cond["column"], cond["value"])       # 多态引用:子表须按判别列取值(DR-069)
     if not ontology_domain.is_valid_rows(evidence):
         return out
     vr = evidence["valid_rows"]
@@ -773,6 +778,8 @@ def _scope_join_text(evidence, st, tt):
         out += f" AND {tt}.{req['group'][0]} = '{str(req['group'][1]).replace(chr(39), '')}'"
     if req["live"]:
         out += " AND " + _live_condition(tt, req["live"])
+    if req["condition"]:
+        out += f" AND {st}.{req['condition'][0]} = {_sql_literal(req['condition'][1])}"
     if req["latest"]:
         out += f"(父表同键有多个版本,先按 {req['latest']} 取最新一条再关联)"
     return out
@@ -847,7 +854,8 @@ def _join_hints(ir, tables, pairs=None):
         ck, pk, ksrc = _rel_keys(l)
         _ev = l.get("evidence") or {}
         # 代码契约里就这么连(键名不同):不当作自增键巧合
-        bad = bool(ck and pk) and not dao_core.name_ok(ck, tt, pk, child_table=st) and not _ev.get("contract")
+        bad = (bool(ck and pk) and not dao_core.name_ok(ck, tt, pk, child_table=st) and not _ev.get("contract")
+               and not _ev.get("condition"))           # 多态引用由判别条件补证(DR-069)
         if bad: ksrc = "name_mismatch"                # 疑为自增键值域巧合:保留语义关系,不下发该键
         key = (f"{st}.{ck} = {tt}.{pk}{_scope_join_text(_ev, st, tt)}" if (ck and pk and not bad)
                else f"{st} 关联 {tt}(键见列名)")
@@ -1564,8 +1572,9 @@ def _validate_sql_ontology(sql, ir, strict=False):
         ck, pk = (ev.get("child_key") or "").lower(), (ev.get("parent_key") or "").lower()
         st, tt = o2t.get(str(l.get(_ks))), o2t.get(str(l.get(_kt)))
         _req = _scope_requirements(ev)
-        if st and tt and ck and pk and (_req["tenant"] or _req["group"] or _req["live"]):
-            scopes[(st, ck, tt, pk)] = scopes[(tt, pk, st, ck)] = (st, tt, _req["tenant"], _req["group"], _req["live"])
+        if st and tt and ck and pk and (_req["tenant"] or _req["group"] or _req["live"] or _req["condition"]):
+            scopes[(st, ck, tt, pk)] = scopes[(tt, pk, st, ck)] = (st, tt, _req["tenant"], _req["group"], _req["live"],
+                                                                   _req["condition"])
         if ck and pk and st and tt:
             relkeys.add((st, ck, tt, pk)); relkeys.add((tt, pk, st, ck))
             parents[(st, ck, tt, pk)] = tt
@@ -1582,8 +1591,12 @@ def _validate_sql_ontology(sql, ir, strict=False):
         _sc = scopes.get((ta, ca, tb, cb))
         if _sc:
             # 键按租户 / 字典分组复用:只按编号关联会把不同租户(工厂、企业)的同号记录串在一起
-            _st, _tt, _tn, _gp, _lv = _sc
+            _st, _tt, _tn, _gp, _lv, _cd = _sc
             al_of = {ta: a, tb: b}
+            if _cd and not re.search(r"\b%s\.%s\s*(?:=\s*%s|in\s*\([^)]*?%s)" % (
+                    re.escape(al_of.get(_st, "")), re.escape(_cd[0]), _literal_re([_cd[1]]), _literal_re([_cd[1]])), s, re.I):
+                return False, (f"{_st}.{ca if _st == ta else cb} 是多态引用,按 {_cd[0]} = {_sql_literal(_cd[1])} 时才指向 {_tt},"
+                               f"关联时须加 {_st}.{_cd[0]} = {_sql_literal(_cd[1])}")
             if _lv and not _live_filter_ok(s, al_of.get(_tt, ""), _lv):
                 return False, (f"{_tt} 有已删除行(按 {_lv['column']} 逻辑删除),关联时须加 "
                                f"{_live_condition(_tt, _lv)},否则同一编码的已删除行会让结果重复计数")
@@ -3895,10 +3908,11 @@ def _chat_impl():
     # 硬性时间预算:引擎 90s 内不出计划就走内置模板,保证请求永不卡死
     if plan is None:
         plan = _bounded(lambda: agent_sql_plan(q_eff, ctx, steps), 90)
+    engine_plan = bool(plan) and not _sk
     if not plan:
         steps.append({"step": "plan_timeout", "ok": False, "info": "引擎超时/离线 → 降级为内置模板"})
         plan = fallback_plan(q_eff, ir=ir_gate, focus_tables=focus_tables)
-    results = []
+    results, dim_warns = [], []
     for a in (plan.get("analyses") or [])[:4]:
         sql = a.get("sql", "")
         if not sql_is_readonly(sql):
@@ -3906,6 +3920,15 @@ def _chat_impl():
         okv, why = _qa_validate_sql(
             sql, ir_gate, strict=bool(graph_keys and gate_keys != ["demo"] and not fallback),
             focus_tables=focus_tables)
+        if not okv and engine_plan:
+            # DR-069 口径校验给出了明确原因(缺有效行、租户、判别条件等):让引擎按原因改一次,改后照样过校验
+            steps.append({"step": "ontology_gate", "ok": False, "info": "口径拦截:" + why + "(按原因修正一次)"})
+            fixed = _repair_sql(q_eff, ctx, sql, why)
+            if fixed:
+                sql = fixed
+                okv, why = _qa_validate_sql(
+                    sql, ir_gate, strict=bool(graph_keys and gate_keys != ["demo"] and not fallback),
+                    focus_tables=focus_tables)
         if not okv:
             steps.append({"step": "ontology_gate", "ok": False, "info": "口径拦截:" + why}); continue
         # DR-026 双盲意图检测:口径校验管「SQL 合不合规」,这里管「答的是不是问的那件事」。
@@ -3915,6 +3938,9 @@ def _chat_impl():
             import intent_check, usage_stat
             _ic = intent_check.cross_check(question, sql, ir_gate)
             steps.append(intent_check.step_of(_ic))
+            for _w in intent_check.dimension_check(question, sql, ir_gate):      # DR-069 维度词核对(只提示)
+                steps.append({"step": "dimension_check", "ok": False, "info": "维度存疑 · " + _w["reason"]})
+                dim_warns.append(_w)
             # DR-026 使用度埋点:复用双盲已反解出的对象,零额外解析开销;失败静默(旁路)
             usage_stat.record(WORK, gate_keys[0], [o["key"] for o in _ic["actual"]["objects"]], "query")
             for _o in _ic["actual"]["objects"]:
@@ -3932,6 +3958,7 @@ def _chat_impl():
             steps.append({"step": "exec_sql", "ok": False, "info": f'{a.get("title","")}: {str(e)[:100]}'})
     if results:
         text = _bounded(lambda: narrative_llm(question, results, steps), 50) or _rule_summary(results)
+        text += _dimension_caveat(dim_warns)
     else:
         text = plan.get("unavailable") or "查询均失败,请换个问法或检查指标是否绑表。"
     summary = "; ".join(f"{r['title']}[{r['sql'][:120]}]→{len(r['data']['rows'])}行,末行{json.dumps(r['data']['rows'][-1] if r['data']['rows'] else {}, ensure_ascii=False)[:150]}" for r in results)[:1200]
@@ -4044,11 +4071,13 @@ def chat_stream():
         while emitted < len(plan_steps):
             s = plan_steps[emitted]; emitted += 1; steps.append(s)
             yield sse({"type": "step", **s})
+        engine_plan = bool(box["v"]) and not plan
         plan = plan or box["v"]
         if not plan:
             yield push("plan_timeout", False, "引擎超时/离线 → 降级为内置模板")
             plan = fallback_plan(q_eff, ir=ir_gate, focus_tables=focus_tables)
         analyses = (plan.get("analyses") or [])[:4]
+        dim_warns = []
         yield push("plan_ready", True, f"分析计划就绪 · 拆解为 {len(analyses)} 个子分析")
         results = []
         for idx, a in enumerate(analyses, 1):
@@ -4061,6 +4090,15 @@ def chat_stream():
                 sql, ir_gate,
                 strict=bool(graph_keys and _gate_keys != ["demo"] and not _gate_fallback),
                 focus_tables=focus_tables)
+            if not okv and engine_plan:              # DR-069 按拦截原因修正一次,改后照样过校验
+                yield push("ontology_gate", False, f"[{idx}] 口径拦截:{why}(按原因修正一次)")
+                fixed = _repair_sql(q_eff, ctx, sql, why)
+                if fixed:
+                    sql = fixed
+                    okv, why = _qa_validate_sql(
+                        sql, ir_gate,
+                        strict=bool(graph_keys and _gate_keys != ["demo"] and not _gate_fallback),
+                        focus_tables=focus_tables)
             if not okv:
                 yield push("ontology_gate", False, f"[{idx}] 口径拦截:{why}"); continue
             yield push("ontology_gate", True, f"[{idx}] 本体校验通过 · 表与 JOIN 键均在本体边界内")
@@ -4069,6 +4107,9 @@ def chat_stream():
                 _ic = intent_check.cross_check(question, sql, ir_gate)
                 yield push("intent_crosscheck", _ic["verdict"] in ("aligned", "unknown"),
                            f"[{idx}] " + intent_check.step_of(_ic)["info"])
+                for _w in intent_check.dimension_check(question, sql, ir_gate):  # DR-069 维度词核对(只提示)
+                    yield push("dimension_check", False, f"[{idx}] 维度存疑 · " + _w["reason"])
+                    dim_warns.append(_w)
                 usage_stat.record(WORK, _gate_keys[0], [o["key"] for o in _ic["actual"]["objects"]], "query")
                 # 将 SQL 实际使用的表回填锚定视图，区分召回对象与实际使用对象。
                 for _o in _ic["actual"]["objects"]:
@@ -4109,6 +4150,10 @@ def chat_stream():
             while n_emit < len(chunks):
                 yield sse({"type": "narrative_delta", "text": chunks[n_emit]}); n_emit += 1
             text = nbox["v"] or _rule_summary(results)
+            _cv = _dimension_caveat(dim_warns)
+            if _cv:
+                text += _cv
+                yield sse({"type": "narrative_delta", "text": _cv})
             yield push("narrative", True, f"生成分析报告 · {len(text)} 字")
         else:
             yield push("review", False, "无有效数据,无法生成报告")
@@ -6067,6 +6112,79 @@ def _llm_semantic_review(relations, ev):
                 out[(r["source_concept"], r["target_concept"])] = got[j]
     return out
 
+def _used_child_keys(extracted):
+    """模型提议里已明确用作子键的 (表, 列)。"""
+    n2t = {o.get("name"): o.get("table") for o in extracted.get("objects") or [] if isinstance(o, dict)}
+    out = set()
+    for r in extracted.get("relations") or []:
+        if isinstance(r, dict) and n2t.get(r.get("source")) and r.get("child_key"):
+            for c in str(r["child_key"]).split(","):
+                out.add((n2t[r["source"]], c.strip()))
+    return out
+
+
+def _overlap_probe(db, sample=5000):
+    """键名补提用的轻量探测:子列去重值(抽前 sample 个)落在父列里的比例(%)。"""
+    def probe(child_table, child_col, parent_table, parent_col):
+        ct, cc, pt, pc = (_safe_ident(x) for x in (child_table, child_col, parent_table, parent_col))
+        if not all((ct, cc, pt, pc)):
+            return None
+        try:
+            con = ro_connect(db)
+            try:
+                n, hit = con.execute(
+                    f'SELECT COUNT(*), SUM(EXISTS(SELECT 1 FROM "{pt}" p WHERE p."{pc}" = c.v)) FROM '
+                    f'(SELECT DISTINCT "{cc}" AS v FROM "{ct}" WHERE "{cc}" IS NOT NULL LIMIT {int(sample)}) c').fetchone()
+            finally:
+                con.close()
+            return 100.0 * (hit or 0) / n if n else None
+        except (sqlite3.Error, OSError):
+            return None
+    return probe
+
+
+def _repair_sql(question, ctx, sql, why, budget=60):
+    """口径校验拦下的 SQL 按拦截原因让引擎改一次;返回只读的新 SQL 或 None(DR-069)。"""
+    ask = (f"{question}\n[修正要求] 下面这条 SQL 被本体口径校验拦下,原因:{why}。"
+           f"请只按该原因修正这一条 SQL,输出一个分析即可:\n{sql}")
+    plan = _bounded(lambda: agent_sql_plan(ask, ctx, []), budget)
+    new = ((plan or {}).get("analyses") or [{}])[0].get("sql") if isinstance(plan, dict) else None
+    return new if new and new != sql and sql_is_readonly(new) else None
+
+
+def _dimension_caveat(warns):
+    """问数报告末尾的维度存疑说明(DR-069)。"""
+    if not warns:
+        return ""
+    return "\n\n注意:" + ";".join(f"「{w['term']}」取自 {w['table']}.{w['column']},本体中没有该列表示「{w['term']}」的依据"
+                                  for w in warns) + "。以上结果可能不是所问的维度,请核对字段含义后再使用。"
+
+
+def _poly_condition(con, child_table, key, parent_table, parent_key, disc, min_rows=5):
+    """多态引用按判别值分条件比对:返回重叠最高且达标的 {column, value, overlap},否则 None。"""
+    ct, k, pt, pk, dc = (_safe_ident(x) for x in (child_table, key, parent_table, parent_key, disc))
+    if not all((ct, k, pt, pk, dc)):
+        return None
+    try:
+        vals = con.execute(f'SELECT "{dc}", COUNT(*) FROM "{ct}" WHERE "{k}" IS NOT NULL AND "{dc}" IS NOT NULL '
+                           f'GROUP BY 1 ORDER BY 2 DESC LIMIT 8').fetchall()
+        best = None
+        for v, n in vals:
+            if n < min_rows or not isinstance(v, (int, float, str)):
+                continue
+            tot, hit = con.execute(
+                f'SELECT COUNT(DISTINCT c."{k}"), COUNT(DISTINCT CASE WHEN EXISTS(SELECT 1 FROM "{pt}" p '
+                f'WHERE p."{pk}" = c."{k}") THEN c."{k}" END) FROM "{ct}" c WHERE c."{dc}" = ? AND c."{k}" IS NOT NULL',
+                (v,)).fetchone()
+            if tot and tot >= dao_core.MIN_DISTINCT:
+                ov = 100.0 * hit / tot
+                if ov >= dao_core.MIN_OVERLAP and (best is None or ov > best["overlap"]):
+                    best = {"column": disc, "value": v, "overlap": round(ov, 1)}
+        return best
+    except sqlite3.Error:
+        return None
+
+
 def _adjudicate_ir(db, name, extracted, ev, base_ir=None):
     """关系数据验证:LLM 提议的关系用真实数据裁决(取值重叠≥60%∧父键可辨→verified;有据无量→candidate)。
     产出与 ir_to_graph 兼容的 IR(objects 带 kind/table/attrs;relations 带 status)。
@@ -6264,6 +6382,9 @@ def _adjudicate_ir(db, name, extracted, ev, base_ir=None):
                     if c not in cand_keys and c.lower() in ctl and re.search(r"(id|code|key|no)$", c, re.I): cand_keys.append(c)
                 # DR-065 代码契约:代码里这两张表按哪两列连接,就先试这两列(仍要数据证明)
                 _pairs = []
+                for _alt in r.get("alt_keys") or []:            # DR-069 键名补提给出的备选键,同样要数据证明
+                    if isinstance(_alt, (list, tuple)) and len(_alt) == 2 and _alt[0] in cs and _alt[1] in ct:
+                        _pairs.append((_alt[0], _alt[1]))
                 for _r in (ev or {}).get("contracts_resolved") or []:
                     for _c, _p in ((_r["a"], _r["b"]), (_r["b"], _r["a"])):
                         if _c[0].lower() == ts.lower() and _p[0].lower() == tt.lower():
@@ -6272,7 +6393,9 @@ def _adjudicate_ir(db, name, extracted, ev, base_ir=None):
                     if _ck in cand_keys: cand_keys.remove(_ck)
                     cand_keys.insert(0, _ck)
                 best = None
+                _disc_col = next((c for c in cs if key_links.DISCRIMINATOR.match(dao_core._snake(c))), None)
                 for key in cand_keys[:6]:
+                    _poly_disc = _disc_col if (_disc_col and key_links.POLY_KEY.match(dao_core._snake(key))) else None
                     # 父列候选序:声明PK优先(Mondial 发现:父表可有与表同名的非键列,同名优先会撞错列)
                     pcols = [_pc for _ck, _pc in _pairs if _ck.lower() == key.lower()]
                     if parent_hint and "," not in parent_hint:
@@ -6298,6 +6421,15 @@ def _adjudicate_ir(db, name, extracted, ev, base_ir=None):
                         verdict = dao_core.classify(overlap=ov, parent_unique=punique, name_ok=name_supported,
                                                     child_distinct=sig["child_distinct"], min_distinct=1, exclude_pk_child=False)
                         trial_status, reason = verdict["status"], verdict["reason"]
+                        _cond = None
+                        if trial_status != "verified" and not reverse and punique and _poly_disc:
+                            # 多态引用(DR-069):obj_no 按 obj_type 指向不同的表,键名本就不同;
+                            # 按判别值分条件比对,某个取值下重叠达标且父键唯一才成立,问数须带上该条件
+                            _cond = _poly_condition(con, ts, key, tt, pcol, _poly_disc)
+                            if _cond:
+                                trial_status = "verified"
+                                reason = (f"多态引用:{_cond['column']} = {_cond['value']} 时重叠 {_cond['overlap']}%"
+                                          f"·父键唯一(判别列代替键名证据)")
                         if _contract:
                             reason += f"·代码契约({_contract['file'].split(':')[-1].split('/')[-1]})"
                         if reverse:
@@ -6312,7 +6444,9 @@ def _adjudicate_ir(db, name, extracted, ev, base_ir=None):
                                  "direction": ("reverse" if reverse else
                                                ("ambiguous" if cunique and punique else "child_to_parent")),
                                  "decision": reason, "adjudication_status": trial_status,
-                                 **({"contract": {"code": _contract["code"], "file": _contract["file"]}} if _contract else {})}
+                                 **({"contract": {"code": _contract["code"], "file": _contract["file"]}} if _contract else {}),
+                                 **({"condition": {"column": _cond["column"], "value": _cond["value"]},
+                                     "condition_overlap": _cond["overlap"]} if _cond else {})}
                         if best is None or ov > best[0]: best = (ov, trial_status, reason, trial)
                         if trial_status == "verified":
                             status, overlap, note, ev_keys = "verified", round(ov, 1), reason, trial
@@ -6392,7 +6526,8 @@ def _adjudicate_ir(db, name, extracted, ev, base_ir=None):
                        "temporal": grounding["temporal"],
                        "proposal": {"rationale": str(r.get("rationale") or "")[:500],
                                     "child_key_hint": child_hint,
-                                    "parent_key_hint": parent_hint}}
+                                    "parent_key_hint": parent_hint,
+                                    **({"origin": r["origin"]} if r.get("origin") else {})}}
             if ev_keys: rel_new["evidence"] = ev_keys      # DR-033 结构化 JOIN 键:自建本体要能驱动问数
             relations.append(rel_new)
     finally:
@@ -6461,8 +6596,11 @@ def _merge_ir(base, new):
     rels = out.setdefault("relations", [])
     by_obj = {o.get("name"): o for o in objs if o.get("name")}
     by_rel = {(r.get("source_concept"), r.get("target_concept")): r for r in rels}
-    stat = {"objects_added": 0, "objects_enriched": 0,
+    stat = {"objects_added": 0, "objects_enriched": 0, "objects_rebound": 0,
             "relations_added": 0, "relations_upgraded": 0, "relations_kept": 0}
+    # DR-069 同名对象两轮绑了不同的表:保留与对象名吻合的那张;按另一张表取的关系证据不能沿用
+    stale = set()                                    # 证据所依据的绑定已失效的对象名(底本侧或本轮侧)
+    stale_new = set()
 
     for o in new.get("objects", []) or []:
         nm = o.get("name")
@@ -6471,6 +6609,14 @@ def _merge_ir(base, new):
         if cur is None:
             objs.append(o); by_obj[nm] = o; stat["objects_added"] += 1
             continue
+        ot, nt = cur.get("table"), o.get("table")
+        if ot and nt and ot != nt:
+            if key_links.binding_score(nm, nt) > key_links.binding_score(nm, ot):
+                cur["rebound_from"], cur["table"] = ot, nt
+                if o.get("tables"): cur["tables"] = o["tables"]
+                stale.add(nm); stat["objects_rebound"] += 1
+            else:
+                stale_new.add(nm)
         # 只补空字段:已有定义/反例/绑表等人工或前轮成果不被本轮覆盖
         for k in ("definition", "example", "counterExample", "cn", "table", "remark"):
             if not cur.get(k) and o.get(k):
@@ -6478,9 +6624,19 @@ def _merge_ir(base, new):
         if not cur.get("attrs") and o.get("attrs"):
             cur["attrs"] = o["attrs"]; cur["field_count"] = len(o["attrs"])
 
+    def _demote(r, why):
+        if r.get("status") == "verified":
+            r["status"] = r["evidence_status"] = "candidate"
+            r["note"] = f"{why};原裁决:" + str(r.get("note") or "")
+    for r in rels:                                   # 底本里按旧表取证的关系
+        if {r.get("source_concept"), r.get("target_concept")} & stale:
+            _demote(r, "端点对象已改绑到与名称吻合的表,按原表取的证据作废,须重新取证")
     for r in new.get("relations", []) or []:
         pair = (r.get("source_concept"), r.get("target_concept"))
         if not all(pair): continue
+        if set(pair) & stale_new:
+            r = json.loads(json.dumps(r))
+            _demote(r, "本轮按另一张表取证,与已有对象的绑定不一致,须重新取证")
         cur = by_rel.get(pair)
         if cur is None:
             rels.append(r); by_rel[pair] = r; stat["relations_added"] += 1
@@ -6672,6 +6828,8 @@ def build_inquire():
                 yield push("scope_base", False, f"本体「{base_graph}」不存在,无法迭代")
                 yield sse({"type": "error", "error": "待迭代的本体不存在"}); return
             key = base_graph
+            if not name:                                 # 继续构建沿用底本名称,不由模型重新命名(DR-069)
+                gname = _safe_argv(str((base_ir.get("scenario") or {}).get("name") or gname), cap=60, default=gname)
             # 旧/程序化客户端不传 references 时，迭代默认继承底本最近一轮配置；
             # 显式传 none 或新配置则以本轮选择为准。
             if not references_explicit:
@@ -6765,9 +6923,48 @@ def build_inquire():
                                f"(仅作标注；是否通过仍由数据验证规则决定)")
                 else:
                     yield push("stability", False, "第二次生成失败/超时,本次不产出一致性指标(不臆造)")
+            # DR-069 按键名补提关系候选:后续轮次的模型看不到前几轮表的列,跨轮关系、关联表与多态引用由此补上
+            try:
+                _bobjs = [{"name": o.get("name"), "table": o.get("table")} for o in (base_ir or {}).get("objects") or []]
+                _bnames = {o["name"] for o in _bobjs if o.get("name")}
+                _kl = key_links.propose(
+                    ev["tab_cols"], [o for o in extracted.get("objects") or [] if isinstance(o, dict)] + _bobjs,
+                    scope_tables or [o.get("table") for o in extracted.get("objects") or [] if isinstance(o, dict)],
+                    existing={(str(r.get("source") or "").strip(), str(r.get("target") or "").strip())
+                              for r in extracted.get("relations") or [] if isinstance(r, dict)},
+                    probe=_overlap_probe(db),
+                    used_keys=_used_child_keys(extracted))
+                _by_pair = {(str(r.get("source") or "").strip(), str(r.get("target") or "").strip()): r
+                            for r in extracted.get("relations") or [] if isinstance(r, dict)}
+                for _p in [p for p in _kl if p.get("alternative")]:
+                    _by_pair[(_p["source"], _p["target"])].setdefault("alt_keys", []).append(
+                        [_p["child_key"], _p["parent_key"]])
+                _kl = [p for p in _kl if not p.get("alternative")]
+                extracted.setdefault("relations", []).extend(_kl)
+                yield push("key_links", True,
+                           f"键名补提 · 关系候选 {len(_kl)} 条(连接已有对象 "
+                           f"{sum(1 for p in _kl if p['source'] in _bnames or p['target'] in _bnames)} 条 · "
+                           f"多态引用 {sum(1 for p in _kl if p['rationale'].startswith('多态'))} 条)· 交数据裁决")
+            except Exception as exc:                     # 补提失败不影响模型提议的裁决
+                yield push("key_links", False, f"键名补提失败:{type(exc).__name__}")
             # ③ 关系数据验证:LLM 提议的关系用真实数据裁决
             yield sse({"type": "status", "text": "关系数据验证:用真实数据校验每条提议关系(取值重叠 / 父键唯一)…"})
             ir = _adjudicate_ir(db, gname, extracted, ev, base_ir=base_ir)
+            # DR-069 键名补提的候选:有键名依据的保留弱重叠(≥20%,多为样本里的孤儿记录,送人工复核);
+            # 多态候选没有键名依据,重叠须达标才保留。其余是机器猜测,不进图
+            _klr = [r for r in ir.get("relations", []) if (r.get("proposal") or {}).get("origin") == "key_match"]
+
+            def _kl_keep(r):
+                ov = r.get("overlap") if isinstance(r.get("overlap"), (int, float)) else -1
+                poly = str((r.get("proposal") or {}).get("rationale") or "").startswith("多态")
+                return ov >= (dao_core.MIN_OVERLAP if poly else dao_core.WEAK_FLOOR)
+            _kl_weak = [r for r in _klr if r.get("status") != "verified" and not _kl_keep(r)]
+            if _klr:
+                ir["relations"] = [r for r in ir["relations"] if not any(r is w for w in _kl_weak)]
+                yield push("key_links", True,
+                           f"键名补提裁决 · 成立 {sum(1 for r in _klr if r.get('status') == 'verified')} 条 · "
+                           f"待人工复核 {len(_klr) - len(_kl_weak) - sum(1 for r in _klr if r.get('status') == 'verified')} 条 · "
+                           f"重叠不足未入图 {len(_kl_weak)} 条")
             _dg = (ir.get("scenario") or {}).get("adjudication_diagnostics") or {}
             if _dg.get("dropped_unknown_endpoint") or _dg.get("cross_source_endpoints") or _dg.get("no_data_relations"):
                 # 这三类会使提议条数与入图条数不一致,在构建步骤中列出各自数量
@@ -6855,6 +7052,7 @@ def build_inquire():
             build_references.apply_profile(ir, references)
             yield push("merge", True,
                        f"并入已有本体 · 新增对象 {_mg['objects_added']} 个 · 补全字段 {_mg['objects_enriched']} 处 · "
+                       f"改绑对象 {_mg.get('objects_rebound', 0)} 个 · "
                        f"新增关系 {_mg['relations_added']} 条 · 证据升级 {_mg['relations_upgraded']} 条 · "
                        f"保留原结论 {_mg['relations_kept']} 条(已确立的 verified/asserted 不被覆盖)")
         # ④″ 指标反解与核验(DR-054):历史 SQL / 口径表 / 沉淀 SQL / 参考基准 → 契约 → 只读执行 → 与参照比对。

@@ -68,8 +68,24 @@ def overlap_pct(child_distinct, parent_distinct):
 
 
 def key_stem(c):
-    """剥尾部 id/code/key/no/num 后缀取词根(quick_build.key_stem 口径)。"""
-    return _KEY_SUF_RE.sub("", (c or "").lower()).strip("_")
+    """剥尾部 id/code/key/no/num 后缀取词根(quick_build.key_stem 口径)。驼峰先拆成下划线(belongEntNo → belong_ent_no)。"""
+    return _KEY_SUF_RE.sub("", _snake(c or "")).strip("_")
+
+
+# 业务库列名常用缩写(DR-069):dev_type_code ↔ device_type、sys_no ↔ system、ent_no ↔ enterprise。
+# 只按完整词元展开,不做模糊匹配
+ABBREVIATIONS = {
+    "dev": "device", "sys": "system", "ent": "enterprise", "org": "organization", "loc": "location",
+    "cfg": "config", "conf": "config", "attr": "attribute", "dept": "department", "emp": "employee",
+    "cust": "customer", "prod": "product", "mat": "material", "wh": "warehouse", "equip": "equipment",
+    "eqp": "equipment", "addr": "address", "msg": "message", "pkg": "package", "cat": "category",
+    "grp": "group", "usr": "user", "acct": "account", "proj": "project", "std": "standard",
+}
+
+
+def expand(name):
+    """按词元展开常用缩写:dev_group → device_group。"""
+    return "_".join(ABBREVIATIONS.get(t, t) for t in (name or "").lower().split("_"))
 
 
 def _core(col):
@@ -94,7 +110,7 @@ def key_name_ok(child_key, parent_key):
     if not cs or not ps or len(cs) != len(ps):
         return False
     for a, b in zip(cs, ps, strict=True):   # 上面已校验等长
-        sa, sb = key_stem(a), key_stem(b)
+        sa, sb = expand(key_stem(a)), expand(key_stem(b))
         # `id`/`code` 这类泛化父键没有词根,不能把任意 `order_id → id` 都视作
         # 「键名相容」——这正是稠密自增值域产生假 verified 的入口。两边都无词根时
         # 仅接受原始列名相同;只有一边无词根时交给 name_ok 借父表名作第二证据。
@@ -199,6 +215,12 @@ def name_ok(child_col, parent_table, parent_key, child_table=None):
         return True
     if name_score(child_col, parent_table or "", parent_key) > 0:
         return True
+    # 泛化父键(id/code)时,子键词根按缩写展开后出现在父表名里:dev_group_id → meta_device_group.id(DR-069)。
+    # name_score 与上游引擎保持同口径,缩写放在这里补
+    if not key_stem(parent_key):
+        st = expand(key_stem(child_col))
+        if len(st) >= 3 and st in expand(_snake(parent_table or "")):
+            return True
     rt = role_targets(child_col)
     if rt:
         pt = (parent_table or "").lower()

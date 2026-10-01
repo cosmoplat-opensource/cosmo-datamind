@@ -65,7 +65,11 @@ def audit_verified_evidence(ir):
                                "fix": "修复外键或引用数据后重新核验；当前关系应为 candidate"})
             continue
 
-        overlap = evidence.get("overlap", relation.get("overlap"))
+        # DR-069 多态引用:按判别列取值的重叠率达标,判别列代替键名证据
+        cond_ov = evidence.get("condition_overlap")
+        cond_ok = (isinstance(evidence.get("condition"), dict) and dao_core.valid_percentage(cond_ov)
+                   and cond_ov >= dao_core.MIN_OVERLAP)
+        overlap = cond_ov if cond_ok else evidence.get("overlap", relation.get("overlap"))
         if not dao_core.valid_percentage(overlap) or overlap < dao_core.MIN_OVERLAP:
             issues.append({"type": "verified_overlap_below_threshold", "relation": label, "index": index,
                            "desc": f"verified 关系重叠率 {overlap!r} 未达到固定阈值 {dao_core.MIN_OVERLAP:g}%",
@@ -76,7 +80,7 @@ def audit_verified_evidence(ir):
             issues.append({"type": "verified_parent_not_unique", "relation": label, "index": index,
                            "desc": "verified 关系未记录父键唯一=true,也没有有效行上父键唯一的证据",
                            "fix": "重算父键唯一性;不唯一或无法证明时降为 candidate"})
-        if evidence.get("name_ok") is not True:
+        if evidence.get("name_ok") is not True and not cond_ok:
             issues.append({"type": "verified_name_unsupported", "relation": label, "index": index,
                            "desc": "verified 关系未记录键名/父表名语义证据",
                            "fix": "用统一 name_ok 复核;无命名证据时降为 candidate"})

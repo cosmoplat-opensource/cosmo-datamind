@@ -34,6 +34,7 @@ COSMO DataMind 是「数据治理 × 本体 × 深度问数」原型：
 ## 索引
 
 ### 决定 / Decisions
+- [DR-069 · 真实模型评估暴露的构建缺口:跨轮键匹配、多态引用与问数维度核对](decisions/DR-069-build-agent-real-model-gaps.md)
 - [DR-068 · 逻辑删除的「未删除」取值按实际数据记录](decisions/DR-068-observed-live-markers.md)
 - [DR-067 · 场景回归基准:两种数据形态端到端比对标准答案](decisions/DR-067-scenario-regression-benchmark.md)
 - [DR-066 · 开发范式取舍:哪些对本项目有用、哪些不用](decisions/DR-066-ai-era-development-paradigms.md)
@@ -118,7 +119,7 @@ COSMO DataMind 是「数据治理 × 本体 × 深度问数」原型：
 
 ## 现状校准
 - 计数(2026-10-01):**137 路由**(server.py 119 + bp_engine 5 + bp_actions 7 + bp_metrics 4 + bp_semantic 2)/ **565 集成断言** /
-  **1054 项 pytest 测试** / DR-001…DR-068 · IR-001…IR-013。
+  **1054 项 pytest 测试** / DR-001…DR-069 · IR-001…IR-013。
   DR-060 新增构建前预处理:外部库只读抽样 `ext_sample`、构建体检与分轮计划 `build_prep`。
   DR-059 新增长文分块检索 `doc_chunks`,以及能源管理 `energy_management`、碳排放核算 `carbon_accounting` 两个独立行业参照。
   新增共享层 `srv_context`/`srv_engine`、单一裁决核 `dao_core`、评测台 `hallucination_eval`/`definition_eval`、

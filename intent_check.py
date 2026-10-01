@@ -130,3 +130,45 @@ def step_of(res):
     if res.get("advice"):
         info += " · " + res["advice"]
     return {"step": "intent_crosscheck", "ok": ok, "info": info[:300]}
+
+
+_SQL_WORDS = {"on", "where", "join", "left", "right", "inner", "outer", "full", "cross", "group", "order",
+              "limit", "union", "having", "as", "using", "natural"}
+
+
+def dimension_check(question, sql, ir):
+    """维度词核对(DR-069):问句里的维度词(「线别」)在 SQL 中取自哪一列,该列在本体中有没有这层含义。
+
+    依据只认本体:列所在对象的中文名、列的中文名(库表注释或代码中的字段说明)。都对不上时,
+    这一列是模型自己挑的——实测把轨道列(track)当成了线别,答案完全错误却没有任何提示。
+    只提示、不阻断:提示写进执行记录与报告,由使用者核对。
+    """
+    q, s = question or "", sql or ""
+    alias, tables = {}, []
+    for m in re.finditer(r"\b(?:from|join)\s+(%s)(?:\s+(?:as\s+)?([A-Za-z_]\w*))?" % _IDENT, s, re.I):
+        t = m.group(1).strip('"`[]').lower()
+        t = t.split(".")[-1] if t.startswith("up.") else t
+        tables.append(t)
+        al = (m.group(2) or "").lower()
+        alias[t] = t
+        if al and al not in _SQL_WORDS:
+            alias[al] = t
+    by_table = {(o.get("table") or "").lower(): o for o in ir.get("objects", []) if o.get("table")}
+    warns, seen = [], set()
+    for m in re.finditer(r"(?:\b([A-Za-z_]\w*)\.)?\b([A-Za-z_]\w*)\s+as\s+[\"'`]?([一-鿿]{2,})", s, re.I):
+        qual, col, term = (m.group(1) or "").lower(), m.group(2), m.group(3)
+        if term not in q or term in seen or col.lower() in _SQL_WORDS:
+            continue
+        table = alias.get(qual) if qual else (tables[0] if len(set(tables)) == 1 else None)
+        obj = by_table.get(table or "")
+        if not obj:
+            continue
+        labels = [obj.get("cn") or ""] + [str(a.get("cn") or "") for a in obj.get("attrs") or []
+                                          if str(a.get("col") or "").lower() == col.lower()]
+        if any(len(lb) >= 2 and (term in lb or lb in term) for lb in labels):
+            continue
+        seen.add(term)
+        warns.append({"term": term, "column": col, "table": table,
+                      "reason": f"问句中的「{term}」在本体中没有对应:取自 {table}.{col},该列没有这层含义的说明,"
+                                "是模型自行选用的,结果可能不是所问的维度,请核对"})
+    return warns

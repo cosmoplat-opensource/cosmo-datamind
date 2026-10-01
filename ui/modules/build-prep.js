@@ -61,7 +61,7 @@
       <div class="bp-sec">资料覆盖</div><div class="bp-line">${docLine}</div>
       ${refs ? `<div class="bp-sec">行业参照与领域技能建议(不同领域分别构建)</div>${refs}` : ''}
       <div class="bp-sec">分轮计划 <span class="muted">枢纽表优先 · 每轮不超过 ${Number(d.max_tables)} 张表 · 每轮在上一轮的本体上继续构建;数据验证始终使用全库</span></div>
-      ${d.excluded && d.excluded.length ? `<details class="bp-f"><summary><span class="bp-lv info">已排除</span>${d.excluded.length} 张疑似演示/临时/历史分表(不进入计划)</summary><div class="bp-tabs">${d.excluded.map(esc).join('、')}</div></details>` : ''}
+      ${d.excluded && d.excluded.length ? `<details class="bp-f"><summary><span class="bp-lv info">已排除</span>${d.excluded.length} 张演示/临时表、历史分表或第三方工具表(不进入计划)</summary><div class="bp-tabs">${d.excluded.map(esc).join('、')}</div></details>` : ''}
       <div class="bp-rounds">${rounds}</div>
       <div class="bp-run">
         <textarea class="bp-goal" aria-label="整体建模目标" placeholder="整体建模目标(各轮均附带),例:构建能源管理本体,覆盖企业、设备、计量、能耗与告警工单">${esc(goal)}</textarea>

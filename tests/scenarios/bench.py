@@ -80,6 +80,16 @@ def _ask(server, graph, sql):
                                                                 "nocache": True}).get_json()
 
 
+def _ask_with_repair(server, graph, first, fixed):
+    """计划先给出会被拦下的 SQL;收到「修正要求」时给出修正后的 SQL(DR-069)。"""
+    def plan(question, *a, **k):
+        return {"analyses": [{"title": "基准", "sql": fixed if "[修正要求]" in question else first}]}
+    with _patched(server, agent_sql_plan=plan):
+        server._QA_CACHE.clear()
+        return server.app.test_client().post("/api/chat", json={"q": "场景回归问数", "graphs": [graph],
+                                                                "nocache": True}).get_json()
+
+
 def _relation(ir, s, t):
     return next((r for r in ir["relations"] if r.get("source_concept") == s and r.get("target_concept") == t), None)
 
@@ -188,6 +198,11 @@ def run_business(tmp):
         r2 = _ask(server, graph, live)
         got = {r["类型"]: r["n"] for r in (_rows(r2) or [])}
         checks.append(Check(name, "问数:排除已删除行后的答案与标准答案一致", got == fx["truth_devices_by_type"], str(got)))
+        r2b = _ask_with_repair(server, graph, naive, live)
+        got = {r["类型"]: r["n"] for r in (_rows(r2b) or [])}
+        checks.append(Check(name, "问数:被拦下的 SQL 按拦截原因修正一次后答案正确",
+                            got == fx["truth_devices_by_type"] and any("修正一次" in s["info"] for s in r2b.get("steps", [])),
+                            str(got)))
         # 删除标记写成 'N'/'Y':条件按复核观察到的取值生成,固定写 = 0 的 SQL 会被拦下
         naive_e = ("SELECT e.energy_name AS 能源, COUNT(*) AS n FROM measure_relation m "
                    "JOIN meta_energy_type e ON e.energy_type = m.energy_type GROUP BY 1")

@@ -36,6 +36,9 @@ DISCRIMINATOR = re.compile(r"^(obj|object|target|biz|ref|owner|source|entity)_?t
 POLY_KEY = re.compile(r"^(obj|object|target|biz|ref|owner|source|entity)_?(no|id|code)$", re.I)
 KEYLIKE = re.compile(r"(_id|_no|_code)$", re.I)
 SHARD = re.compile(r"(_(19|20)\d{2}(\d{2})?|_(bak|backup|copy\d*|old|\d{8}))$", re.I)   # 「历史」表是正常业务表,不算分表
+# 第三方工具自带的表(积木报表、Quartz 定时任务、工作流引擎、XXL-Job 等):属于工具自身,不是业务概念(DR-069)
+TOOL_TABLE = re.compile(r"^(jimu_|qrtz_|act_(re|ru|hi|ge|id|evt|procdef)_|flw_|xxl_job_|undo_log$|flyway_|databasechangelog)",
+                        re.I)
 SCRATCH = re.compile(r"^(tmp|temp|test|demo)_|_(tmp|temp|test|demo)$|^my_table$", re.I)
 ENERGY = re.compile(r"能耗|用能|电表|电能|水表|计量|能源|折标|标煤|电价|光伏|储能|meter|energy|(?:^|_)(?:pv|es)_", re.I)
 # 制造信号只看去掉层级/厂区前缀后的业务词:工单、过站、测试、物料、工艺路线……
@@ -108,6 +111,7 @@ def profile(db, deleted_share_cap=40):
         hub = Counter(c.lower() for t in tables for c in cols[t] if KEYLIKE.search(c) and c.lower() != "id")
         hubs = [{"key": k, "tables": n} for k, n in hub.most_common() if n >= 5][:12]
         shards = [t for t in tables if SHARD.search(t.split("__", 1)[-1])]
+        tool = [t for t in tables if TOOL_TABLE.search(t.split("__", 1)[-1])]
         scratch = [t for t in tables if SCRATCH.search(t.split("__", 1)[-1]) or re.search(r"演示|临时|测试", t_comment.get(t, ""))]
         empty = [t for t in tables if rows[t] == 0]
 
@@ -131,7 +135,7 @@ def profile(db, deleted_share_cap=40):
             "table_comment_pct": round(100 * sum(1 for t in tables if t_comment.get(t)) / max(1, len(tables))),
             "column_comment_pct": round(100 * commented / max(1, ncols)) if c_comment else 0,
             "soft_delete": soft, "polymorphic": poly, "audit_columns": [{"table": t, "column": c} for t, c in audit],
-            "hub_keys": hubs, "shard_tables": shards, "scratch_tables": scratch,
+            "hub_keys": hubs, "shard_tables": shards, "scratch_tables": scratch, "tool_tables": tool,
             "energy": {"tables": e_tabs, "columns": len(e_cols)},
             "carbon": {"tables": c_tabs, "columns": c_cols[:20], "column_count": len(c_cols)},
             "concept": concept,
@@ -161,6 +165,11 @@ def findings(prof):
         out.append({"id": "audit", "level": "info", "title": f"{len(prof['audit_columns'])} 个审计列",
                     "detail": "创建人、修改人一类的列表达的是「操作人」角色,不是业务关系;不必逐条建关系。",
                     "examples": [f"{a['table']}.{a['column']}" for a in prof["audit_columns"][:3]]})
+    if prof.get("tool_tables"):
+        out.append({"id": "tool_tables", "level": "info",
+                    "title": f"第三方工具自带表 {len(prof['tool_tables'])} 张(报表、定时任务、工作流等)",
+                    "detail": "这些表属于工具自身,不是业务概念,默认不纳入构建计划;如需要可在计划里手动加回。",
+                    "examples": prof["tool_tables"][:4]})
     if prof["scratch_tables"] or prof["shard_tables"]:
         out.append({"id": "noise_tables", "level": "warn",
                     "title": f"疑似演示/临时表 {len(prof['scratch_tables'])} 张 · 历史分表或备份 {len(prof['shard_tables'])} 张",
@@ -356,7 +365,7 @@ def plan(prof, max_tables=45, exclude=(), families=None):
 def check(db, texts=(), max_tables=45):
     """体检报告:概况、问题清单、资料覆盖、参照建议、分轮计划。"""
     prof = profile(db)
-    excluded = sorted(set(prof["scratch_tables"]) | set(prof["shard_tables"]))
+    excluded = sorted(set(prof["scratch_tables"]) | set(prof["shard_tables"]) | set(prof.get("tool_tables") or ()))
     tables = list(prof["_cols"])
     report = {
         "summary": {k: prof[k] for k in ("tables", "columns", "rows", "declared_fks", "has_comments",

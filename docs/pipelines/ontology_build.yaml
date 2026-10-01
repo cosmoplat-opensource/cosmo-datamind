@@ -76,6 +76,12 @@ nodes:
     desc: 二次独立提议计算 Jaccard;仅暴露模型方差,不作 verified 否决权
     sse_steps: [stability]
 
+  - id: key_links
+    type: deterministic_proposal
+    code: "key_links.py:propose"
+    desc: 按键名补提关系候选(跨轮连接已有对象、关联表、多态引用);只提候选,是否成立由数据裁决决定(DR-069)
+    sse_steps: [key_links]
+
   - id: semantic_review
     type: llm_observer
     code: "server.py:_llm_semantic_review"
@@ -202,6 +208,8 @@ edges:
   - [concept_hints, proposal]
   - [proposal, semantic_review]
   - [proposal, stability_probe]
+  - [proposal, key_links]
+  - [key_links, data_adjudication]
   - [proposal, data_adjudication]
   - [data_adjudication, adjudication_core]
   - [data_adjudication, complete_sql_evidence]
