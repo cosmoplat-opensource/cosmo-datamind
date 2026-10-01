@@ -26,14 +26,15 @@ import dao_core
 _KEY = re.compile(r"_(id|code|no|sn|num|key)$")
 _AUDIT = re.compile(r"^((create|update|modify|modified|last_?edit|last_?update|del|delete)_?"
                     r"(by|user|user_?no|user_?id|uer|name|person|operator)|creator|operator|modifier|updater)$")
-DISCRIMINATOR = re.compile(r"^(obj|object|target|biz|ref|owner|source|entity|rel_obj)_?type$")
+DISCRIMINATOR = re.compile(r"^(obj|object|target|biz|ref|owner|source|entity|rel_obj)_?type(_?code)?$")
 POLY_KEY = re.compile(r"^(obj|object|target|biz|ref|owner|source|entity|rel_obj)_?(no|id|code)$")
 _ASSOC = re.compile(r"(^|_)(rel|relation|link|links|map|mapping)$")
 _TENANT = {"enterprise", "tenant", "organization", "company", "factory", "corp"}
 _GENERIC = {"type", "status", "state", "name", "value", "flag", "level", "kind", "sort", "order", "parent", "id", "code"}
 _CATALOG = re.compile(r"(^|_)(meta|dim|def|dict|dictionary|md|master|mst|type|types|catalog)(_|$)")
-_POLY_FLOOR = 30.0          # 多态候选的探测重叠下限(%)
-MAX_PROPOSALS = 80
+_POLY_FLOOR = 30.0
+_WEAK_FLOOR = 20.0          # 普通键名候选的探测重叠下限(%),与裁决后保留候选的下限一致          # 多态候选的探测重叠下限(%)
+MAX_PROPOSALS = 150         # 全量分轮时一轮可有上百条有据候选;裁决已改为缓存取值,150 条约 2 秒
 
 
 def _norm(col):
@@ -130,7 +131,7 @@ def propose(tab_cols, objects, round_tables, existing=(), probe=None, max_propos
     used = {(str(t).lower(), str(c).lower()) for t, c in used_keys or ()}
     out, done = [], set()
 
-    def add(ct, cc, pt, pc, why):
+    def add(ct, cc, pt, pc, why, rank=(0, 0.0)):
         pair = (t2o[ct], t2o[pt])
         if ct == pt or (ct, cc, pt) in done:
             return
@@ -138,7 +139,7 @@ def propose(tab_cols, objects, round_tables, existing=(), probe=None, max_propos
         # 模型已提过这对表时不另起一条,只把这组键作为备选交给裁决(模型给的键常是审计列或复合列)
         out.append({"source": t2o[ct], "target": t2o[pt], "child_table": ct, "parent_table": pt,
                     "child_key": cc, "parent_key": pc, "verb": "引用", "origin": "key_match",
-                    "rationale": why, **({"alternative": True} if pair in seen else {})})
+                    "rationale": why, "_rank": rank, **({"alternative": True} if pair in seen else {})})
 
     for ct in t2o:
         tcols = cols[ct]
@@ -162,7 +163,8 @@ def propose(tab_cols, objects, round_tables, existing=(), probe=None, max_propos
                         if _norm(pc).rsplit("_", 1)[-1] == suf and core[pt] not in _TENANT:
                             ov = probe(ct, cc, pt, pc)
                             if ov is not None and ov >= _POLY_FLOOR:
-                                add(ct, cc, pt, pc, f"多态引用:{cc}(判别列 {disc})与 {pt}.{pc} 探测重叠 {ov:.0f}%")
+                                add(ct, cc, pt, pc, f"多态引用:{cc}(判别列 {disc})与 {pt}.{pc} 探测重叠 {ov:.0f}%",
+                                    (2 if ov >= 90 else 1, ov))
                     continue
                 if own and not (_is_catalog(pt) and not _is_catalog(ct)):
                     continue
@@ -173,7 +175,10 @@ def propose(tab_cols, objects, round_tables, existing=(), probe=None, max_propos
                     continue
                 if core[pt] in _TENANT and not _ASSOC.search(core[ct]):
                     continue                                           # 租户键只在关联表上提
-                exact = 100 if core[pt] == _stem(cc) or core[pt] == _stem(cands[0]) else 0
+                # 「名称完全吻合」用去掉分层前缀的核心名比(inst_system → system);只用学到的前缀时
+                # 分层前缀可能没剥掉,实例表会输给共有前缀更长的配置表(bill_data.sys_no 曾错配到 bill_config_system)
+                pc0 = table_core(pt)
+                exact = 100 if pc0 in (_stem(cc), _stem(cands[0])) or core[pt] in (_stem(cc), _stem(cands[0])) else 0
                 matches.append((exact + _shared_prefix(core[ct], core[pt]), pt, cands[0]))
             # 多张表都能对上时(config_id 对上所有 *_config 表),取与子表名共有前缀最长的一张;并列则不提,留给模型与人工
             if matches:
@@ -181,6 +186,13 @@ def propose(tab_cols, objects, round_tables, existing=(), probe=None, max_propos
                 top = [m for m in matches if m[0] == best]
                 if len(top) == 1:
                     _, pt, pc = top[0]
-                    add(ct, cc, pt, pc, f"键名:{ct}.{cc} 指向 {pt} 的标识键 {pc}")
-    out.sort(key=lambda p: (p["child_table"] not in rnd, p["origin"]))
+                    # DR-071 按证据排序:有探测时先算抽样重叠,低于 20% 的不提(裁决后也进不了图),
+                    # 名额按「名称完全吻合、重叠高」优先,而不是按是否本轮——否则跨轮的旧表引用全被挤出名额
+                    ov = probe(ct, cc, pt, pc) if probe is not None else None
+                    if ov is not None and ov < _WEAK_FLOOR:
+                        continue
+                    add(ct, cc, pt, pc, f"键名:{ct}.{cc} 指向 {pt} 的标识键 {pc}", (2 if best >= 100 else 1, ov or 0.0))
+    out.sort(key=lambda p: (-p["_rank"][0], -p["_rank"][1]))
+    for p in out:
+        p.pop("_rank", None)
     return out[:max_proposals]

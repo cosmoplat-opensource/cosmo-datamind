@@ -294,3 +294,71 @@ def test_extraction_retried_once_before_fallback(tmp_path, monkeypatch):
     events = [json.loads(x[6:]) for x in raw.splitlines() if x.startswith("data: ")]
     done = next(e for e in events if e.get("type") == "done")
     assert len(calls) == 2 and done.get("method") == "LLM 辅助提议"
+
+
+def test_key_links_rank_by_evidence_not_round():
+    """全量分轮时候选很多:名额按证据排序,旧轮表对本轮实例表的引用不能被挤出(DR-071)。"""
+    import key_links
+    tc = {"inst__inst_system": [("sys_no", "TEXT")], "biz__bill_data": [("id", "TEXT"), ("sys_no", "TEXT")]}
+    objs = [{"name": "sys", "table": "inst__inst_system"}, {"name": "bill", "table": "biz__bill_data"}]
+    for k in range(30):                                   # 本轮里一批取值对不上的噪声候选
+        tc[f"inst__cfg{k}"] = [("id", "TEXT"), ("cfg_no", "TEXT")]
+        tc[f"inst__cfg_item{k}"] = [("id", "TEXT"), ("cfg_no", "TEXT")]
+        objs += [{"name": f"cfg{k}", "table": f"inst__cfg{k}"}, {"name": f"item{k}", "table": f"inst__cfg_item{k}"}]
+    tc = {k: list(v) for k, v in tc.items()}
+    probe = lambda ct, cc, pt, pc: 90.0 if ct == "biz__bill_data" else 5.0      # noqa: E731
+    rnd = ["inst__inst_system"] + [f"inst__cfg{k}" for k in range(30)] + [f"inst__cfg_item{k}" for k in range(30)]
+    props = key_links.propose(tc, objs, rnd, probe=probe, max_proposals=5)
+    assert ("biz__bill_data", "sys_no", "inst__inst_system") in {(p["child_table"], p["child_key"], p["parent_table"]) for p in props}
+    assert key_links.DISCRIMINATOR.match("obj_type_code")
+
+
+def test_exact_core_beats_longer_shared_prefix():
+    import key_links
+    tc = {"inst__inst_system": [("sys_no", "TEXT")], "biz__energy_bill_config_system": [("id", "TEXT"), ("sys_no", "TEXT")],
+          "biz__energy_bill_data": [("id", "TEXT"), ("sys_no", "TEXT")]}
+    objs = [{"name": t.split("__")[1], "table": t} for t in tc]
+    got = {(p["child_table"], p["parent_table"]) for p in key_links.propose(tc, objs, list(tc), probe=lambda *a: 90.0)}
+    assert ("biz__energy_bill_data", "inst__inst_system") in got
+    assert ("biz__energy_bill_data", "biz__energy_bill_config_system") not in got
+
+
+# ── 全量本体:同名概念与两字中心词召回(DR-071) ─────────────────────
+
+def test_duplicate_cn_disambiguated_by_degree():
+    ir = {"objects": [{"name": "eso", "cn": "用能单元", "table": "biz__energy_structure_object"},
+                      {"name": "sys", "cn": "用能单元", "table": "inst__inst_system"},
+                      {"name": "dev", "cn": "设备", "table": "inst__inst_device"}],
+          "relations": [{"source_concept": "dev", "target_concept": "sys", "status": "verified"},
+                        {"source_concept": "eso", "target_concept": "sys", "status": "candidate"}]}
+    n = server._disambiguate_cn(ir)
+    by = {o["name"]: o for o in ir["objects"]}
+    assert n == 1 and by["sys"]["cn"] == "用能单元"
+    assert by["eso"]["cn"] != "用能单元" and by["eso"]["cn_review"]["original"] == "用能单元"
+    assert server._disambiguate_cn(ir) == 0                                     # 再跑不重复改名
+
+
+def test_two_char_head_noun_recalled(monkeypatch):
+    objs = [{"name": f"cfg{i}", "cn": f"平台设备{i}号表", "table": f"biz__plat_device_{i}", "attrs": []} for i in range(10)]
+    objs.append({"name": "alarm", "cn": "设备告警", "table": "inst__device_alarm", "attrs": []})
+    ir = {"objects": objs, "relations": []}
+    t = [o["table"] for o in objs]
+    monkeypatch.setattr(server, "_qa_anchor_ir", lambda keys: (ir, ["g"], [], {"queryable": True, "bound_tables": t,
+                                                                              "available_tables": t, "unavailable_tables": []}))
+    trace = {}
+    server.build_context("告警次数最多的前5台设备是哪些", trace=trace, graph_keys=["g"])
+    assert "inst__device_alarm" in [o.get("table") for o in trace.get("objects", [])]
+
+
+def test_valid_rows_not_applied_to_reverse_direction(make_sqlite):
+    """子列唯一、目标列大量重复:目标表是多的一侧,不能按「版本重复」升为已验证(DR-071)。"""
+    import sys
+    sys.path.insert(0, os.path.join(ROOT, "skills_seed", "ontology-cross-check", "scripts"))
+    import cross_check
+    db = cross_check.Db(make_sqlite({
+        "cfg": ("id INTEGER, metric_code TEXT", [(i, f"M{i}") for i in range(5)]),
+        "inst_metric": ("id INTEGER, metric_code TEXT, metric_name TEXT, create_at TEXT",
+                        [(i, f"M{i % 5}", f"量{i % 5}", f"2024-01-{1 + i % 28:02d}") for i in range(200)])}))
+    r = cross_check.valid_rows_channel(db, "cfg", "metric_code", "inst_metric", "metric_code",
+                                       {"overlap": 100.0, "parent_unique": False, "direction": "reverse"})
+    assert r["state"] == "na"

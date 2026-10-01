@@ -229,6 +229,9 @@ def valid_rows_channel(db, ct, ck, pt, pk, ev, scopes=()):
     - 分组编码:字典编码按分组复用,代码里写明了分组条件(dict_code = 'X'),只在组内唯一。
     """
     ov = ev.get("overlap")
+    # 原裁决是方向反证(子列唯一、目标列不唯一):目标表才是「多」的一侧,有效行规则不适用(DR-071)
+    if ev.get("direction") == "reverse":
+        return {"state": "na"}
     if not isinstance(ov, (int, float)) or ov < THETA or ev.get("parent_unique") is not False:
         return {"state": "na"}
     r = db.one(f"SELECT COUNT(*), COUNT(DISTINCT {q(pk)}) FROM {q(pt)} WHERE {q(pk)} IS NOT NULL")

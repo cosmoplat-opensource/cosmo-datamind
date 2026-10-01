@@ -89,7 +89,8 @@ def test_key_links_older_round_can_point_to_new_round():
 
 def test_key_links_skips_pairs_already_proposed_and_weak_polymorphic():
     props = key_links.propose(_tab_cols(), _objects(), ["inst__inst_index"],
-                              existing={("inst_index", "meta_index")}, probe=lambda *a: 5.0)
+                              existing={("inst_index", "meta_index")},
+                              probe=lambda ct, cc, pt, pc: 5.0 if cc == "obj_no" else 100.0)
     got = _pairs([p for p in props if not p.get("alternative")])
     assert not any(ct == "inst__inst_index" and pt == "meta__meta_index" for ct, _, pt, _ in got)
     alt = [p for p in props if p.get("alternative")]
@@ -209,7 +210,7 @@ def test_key_links_ambiguous_and_generic_parents():
     assert ("biz__work_order_notice_detail", "config_id", "biz__work_order_notice_config", "id") in got
     assert not any(pt == "biz__work_menu_config" for _, _, pt, _ in got)
     assert not any(c == "type_code" for _, c, _, _ in got)
-    assert not any(ct == "inst__inst_survey_info" for ct, _, _, _ in got)
+    assert ("inst__inst_survey_info", "dict_key", "meta__meta_tab_dict", "dict_key") not in got     # 核心名不吻合的不提
     got2 = _pairs(key_links.propose(tc, objs, list(tc), used_keys={("biz__work_order_notice_detail", "config_id")}))
     assert not any(ct == "biz__work_order_notice_detail" for ct, _, _, _ in got2)
 

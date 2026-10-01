@@ -1387,11 +1387,18 @@ def build_context(question, focus_tables=None, trace=None, graph_keys=None):
                 + " ".join((a.get("cn") or "") + (a.get("col") or "") for a in o.get("attrs", [])))
         hs = hits_of(blob)
         cn_hs = [h for h in obj_cn_hits(o) if h not in hs]   # 中文走反向匹配,见 cn_hits
+        # DR-071 两字中心词:「设备告警」的中心词「告警」出现在问句里即命中(泛化中心词除外),权重高于片段命中
+        _cn = re.sub(r"[\s()()]", "", str(o.get("cn") or ""))
+        head = _cn[-2:] if len(_cn) >= 3 and all("\u4e00" <= ch <= "\u9fff" for ch in _cn[-2:]) else ""
+        head_hit = bool(head) and head not in _GENERIC_HEADS and head in question and head not in cn_hs
+        if head_hit:
+            hs.append(head)
         hs += cn_hs
         if hs and o.get("table"): hmap[o["table"]] = hs[:6]
         # DR-070 计分:中文名称命中按长度计(问句里原样出现的业务名最可信),术语词典折出的英文词每个记 1 分。
         # 只数命中个数时,「配置 → config」一类泛词让一串配置表与「计量关系」同分,后者按顺序被挤出上下文
-        tabs.append((sum(2 * len(h) for h in cn_hs) + (len(hs) - len(cn_hs)), o))
+        tabs.append((sum(2 * len(h) for h in cn_hs) + (8 if head_hit else 0)
+                     + (len(hs) - len(cn_hs) - (1 if head_hit else 0)), o))
     tabs.sort(key=lambda x: -x[0])
     _hit = [o for s0, o in tabs[:8] if s0 > 0]
     picked = _hit or [o for _, o in tabs[:5]]
@@ -6229,6 +6236,37 @@ def _bind_fallback_objects(ir, ev, comments=None):
     return ir
 
 
+_GENERIC_HEADS = {"关联", "配置", "明细", "记录", "信息", "数据", "日志", "管理", "列表", "模板", "参数", "类型", "关系",
+                  "设置", "结果", "详情", "汇总", "统计", "定义", "目录", "字典", "版本", "副本", "规则", "对象", "名称"}
+
+
+def _disambiguate_cn(ir):
+    """同名概念消歧(DR-071):分轮构建时各轮各自命名,全量本体里常有两三个对象都叫「用能单元」「能耗账单」,
+    问数无从区分。已验证关系最多的保留原名,其余在中文名后注明表名并标记待人工确认。返回改名个数。"""
+    deg = {}
+    for r in _rels(ir)[0]:
+        if r.get("status") == "verified":
+            for k in (r.get("source_concept"), r.get("target_concept")):
+                deg[k] = deg.get(k, 0) + 1
+    groups = {}
+    for o in ir.get("objects") or []:
+        if isinstance(o, dict) and o.get("cn") and o.get("table"):
+            groups.setdefault(o["cn"], []).append(o)
+    renamed = 0
+    for cn, objs in groups.items():
+        if len(objs) < 2:
+            continue
+        objs.sort(key=lambda o: (-deg.get(o.get("name"), 0), str(o.get("table"))))
+        keep = objs[0]
+        for o in objs[1:]:
+            core = key_links.table_core(o["table"])
+            o["cn_review"] = {"original": cn, "duplicate_of": keep.get("table"), "status": "pending_review",
+                              "reason": "多个对象同名,保留已验证关系最多的一个,其余注明表名"}
+            o["cn"] = f"{cn}({core})"
+            renamed += 1
+    return renamed
+
+
 def _codebook_relations(ir, db, min_coverage=0.9):
     """清洗规则里的码表判定(字段按字典的哪个分组解释)转成本体关系,返回新增条数(DR-070)。
 
@@ -7330,11 +7368,12 @@ def build_inquire():
         # 而不是只评估本轮增量——否则「本轮没提到的部分」会被算成缺失。
         if base_ir is not None:
             ir, _mg = _merge_ir(base_ir, ir)
+            _mg["cn_disambiguated"] = _disambiguate_cn(ir)
             # 本轮选择作用于合并后的整张图，避免底本残留上一次标准的专用字段。
             build_references.apply_profile(ir, references)
             yield push("merge", True,
                        f"并入已有本体 · 新增对象 {_mg['objects_added']} 个 · 补全字段 {_mg['objects_enriched']} 处 · "
-                       f"改绑对象 {_mg.get('objects_rebound', 0)} 个 · "
+                       f"改绑对象 {_mg.get('objects_rebound', 0)} 个 · 同名概念注明表名 {_mg.get('cn_disambiguated', 0)} 个 · "
                        f"新增关系 {_mg['relations_added']} 条 · 证据升级 {_mg['relations_upgraded']} 条 · "
                        f"保留原结论 {_mg['relations_kept']} 条(已确立的 verified/asserted 不被覆盖)")
         # ④″ 指标反解与核验(DR-054):历史 SQL / 口径表 / 沉淀 SQL / 参考基准 → 契约 → 只读执行 → 与参照比对。
