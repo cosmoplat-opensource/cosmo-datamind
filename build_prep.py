@@ -40,6 +40,8 @@ SHARD = re.compile(r"(_(19|20)\d{2}(\d{2})?|_(bak|backup|copy\d*|old|\d{8}))$", 
 TOOL_TABLE = re.compile(r"^(jimu_|qrtz_|act_(re|ru|hi|ge|id|evt|procdef)_|flw_|xxl_job_|undo_log$|flyway_|databasechangelog)",
                         re.I)
 SCRATCH = re.compile(r"^(tmp|temp|test|demo)_|_(tmp|temp|test|demo)$|^my_table$", re.I)
+# 注释只认「临时表 / 测试数据 / 演示用」这类说表本身用途的词组;「临时用电」「测试结果」是业务词,不算(DR-074)
+SCRATCH_COMMENT = re.compile(r"(演示|临时|测试)(表|数据|用(?!电|水|气|工)|环境)|^(演示|临时|测试)$")
 ENERGY = re.compile(r"能耗|用能|电表|电能|水表|计量|能源|折标|标煤|电价|光伏|储能|meter|energy|(?:^|_)(?:pv|es)_", re.I)
 # 制造信号只看去掉层级/厂区前缀后的业务词:工单、过站、测试、物料、工艺路线……
 MANUF = re.compile(r"工单|工序|工艺|物料|过站|直通率|良率|返修|贴片|(^|_)(pm_mo|mo_base|wip|bom|route|operation|"
@@ -112,7 +114,7 @@ def profile(db, deleted_share_cap=40):
         hubs = [{"key": k, "tables": n} for k, n in hub.most_common() if n >= 5][:12]
         shards = [t for t in tables if SHARD.search(t.split("__", 1)[-1])]
         tool = [t for t in tables if TOOL_TABLE.search(t.split("__", 1)[-1])]
-        scratch = [t for t in tables if SCRATCH.search(t.split("__", 1)[-1]) or re.search(r"演示|临时|测试", t_comment.get(t, ""))]
+        scratch = [t for t in tables if SCRATCH.search(t.split("__", 1)[-1]) or SCRATCH_COMMENT.search(t_comment.get(t, ""))]
         empty = [t for t in tables if rows[t] == 0]
 
         def hits(pattern):

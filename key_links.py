@@ -31,11 +31,13 @@ POLY_KEY = re.compile(r"^(obj|object|target|biz|ref|owner|source|entity|rel_obj)
 _ASSOC = re.compile(r"(^|_)(rel|relation|link|links|map|mapping)$")
 _TENANT = {"enterprise", "tenant", "organization", "company", "factory", "corp"}
 _GENERIC = {"type", "status", "state", "name", "value", "flag", "level", "kind", "sort", "order", "parent", "id", "code"}
+_CALENDAR = {"calendar", "date", "day", "date_dim", "calendar_day", "time_day"}
+_DATE_COL = re.compile(r"(^|_)date$")
 _SELF_REF = re.compile(r"^(parent|pid|superior|upper|pre|up|reports)_?(id|no|code|to|dev_no|sys_no)?$|^parent_\w*(id|no|code)$")
 _CATALOG = re.compile(r"(^|_)(meta|dim|def|dict|dictionary|md|master|mst|type|types|catalog)(_|$)")
 _POLY_FLOOR = 30.0
 _WEAK_FLOOR = 20.0          # 普通键名候选的探测重叠下限(%),与裁决后保留候选的下限一致          # 多态候选的探测重叠下限(%)
-MAX_PROPOSALS = 150         # 全量分轮时一轮可有上百条有据候选;裁决已改为缓存取值,150 条约 2 秒
+MAX_PROPOSALS = 400         # 全量分轮时一轮可有上百条有据候选;裁决已改为缓存取值,150 条约 2 秒
 
 
 def _norm(col):
@@ -49,8 +51,10 @@ def _stem(col):
 def _owner_key(core, col):
     """col 是否为核心名为 core 的表的标识键。"""
     st = _stem(col)
-    if not st or st in _GENERIC or not _KEY.search(_norm(col)):
+    if not st or not _KEY.search(_norm(col)):
         return False
+    if st in _GENERIC:                  # 泛词词根只在它是父表核心名末词时算标识:sales_order.order_id、equipment_type.type_id
+        return st not in ("id", "code", "name", "value", "parent") and core.endswith("_" + st)
     return st == core or core.endswith("_" + st) or st.endswith("_" + core)
 
 
@@ -62,7 +66,11 @@ def _refers(child_col, core, parent_col):
     if dao_core.key_stem(parent_col) == "":                        # 父键是 id/code 这类泛化键
         if sc in _GENERIC:                                         # type_code → dict_type.id 这类泛词不提
             return False
-        return sc == core or sc.endswith("_" + core) or (len(sc) >= 4 and core.endswith("_" + sc))
+        if sc == core or sc.endswith("_" + core) or (len(sc) >= 4 and core.endswith("_" + sc)):
+            return True
+        # 码值维度(DR-074):reason_code → dim_reason_code.code、unit_code → dim_unit_of_measure.code;只认父键 code
+        return _norm(parent_col) == "code" and not _ASSOC.search(core) and (
+            core == sc + "_code" or (len(sc) >= 4 and core.startswith(sc + "_")))
     sp = _stem(parent_col)
     return sc == sp or sc.endswith("_" + sp)
 
@@ -125,12 +133,30 @@ def _shared_prefix(a, b):
     return n
 
 
-def propose(tab_cols, objects, round_tables, existing=(), probe=None, max_proposals=MAX_PROPOSALS, used_keys=()):
+def _cn_head(comment):
+    """库表注释的中文名:取「-」「,」「(」之前的部分(「产线-生产线主数据…」→「产线」)。"""
+    return re.split(r"[-—,，;；(（:：\s]", str(comment or "").strip(), maxsplit=1)[0].strip()
+
+
+_WH_LAYER = {"ods", "dwd", "dws", "dim", "ads", "dm", "fact"}     # 数仓分层前缀;meta_/inst_ 区分目录与实例,不剥
+
+
+def _strip_layer(name):
+    toks = name.split("_")
+    while len(toks) > 1 and toks[0] in _WH_LAYER:
+        toks = toks[1:]
+    return "_".join(toks)
+
+
+def propose(tab_cols, objects, round_tables, existing=(), probe=None, max_proposals=MAX_PROPOSALS, used_keys=(),
+            labels=None, col_labels=None, explicit=()):
     """返回补提的关系候选。
 
     tab_cols: {表: [(列, 类型), …]}(全库);objects: [{name, table}](本轮与已有本体的对象);
     round_tables: 本轮范围;existing: 已提出的 (源对象, 目标对象) 对;used_keys: 模型已用作子键的 (表, 列),不再另配父表;
     probe(child_table, child_col, parent_table, parent_col) → 重叠率 %,用于筛多态候选,不给则不提多态候选。
+    labels / col_labels:库表注释 {表: 注释}、字段注释 {(表, 列): 注释};多张父表都能对上时,
+    字段注释里出现哪张父表的中文名就取哪张(「产线ID」→ 产线表,而不是采购订单行表)(DR-074)。
     """
     t2o = {}
     for o in objects or []:
@@ -140,7 +166,16 @@ def propose(tab_cols, objects, round_tables, existing=(), probe=None, max_propos
     if not t2o:
         return []
     cores = concept_hints.name_cores(list(tab_cols))[0]
-    core = {t: _singular(dao_core.expand(_norm(cores.get(t, t.split("__")[-1])))) for t in t2o}
+    # 学到的前缀没剥掉 fact_/dim_ 这类分层前缀时再剥一次,否则 fact_sales_order 的核心名还是 fact_sales_order(DR-074)
+    core = {t: _singular(dao_core.expand(_strip_layer(_norm(cores.get(t, t.split("__")[-1]))))) for t in t2o}
+    cn = {t: _cn_head((labels or {}).get(t)) for t in t2o}
+    cl = {(str(t), str(c)): str(v or "") for (t, c), v in (col_labels or {}).items()}
+    # 租户键只在它铺满全库时(四分之一以上的表都有)才按「只在关联表上提」处理;偶尔出现的工厂编号是普通引用
+    _ntab = max(1, len(tab_cols))
+    _colfreq = {}
+    for _t, _cs in tab_cols.items():
+        for _c, _ in _cs:
+            _colfreq[_norm(_c)] = _colfreq.get(_norm(_c), 0) + 1
     cols = {t: [c for c, _ in tab_cols.get(t, [])] for t in t2o}
     owned = {t: [c for c in cols[t] if _owner_key(core[t], c)] for t in t2o}
     # 父表标识键还包括 id(由子键词根指向父表名来补证)
@@ -168,6 +203,7 @@ def propose(tab_cols, objects, round_tables, existing=(), probe=None, max_propos
                 continue
             if (ct.lower(), cc.lower()) in used and not (disc and POLY_KEY.match(n)):
                 continue                                               # 多态键本来就指向多张表,不因模型用过而跳过
+            tenant_skip = False
             own = cc in owned[ct]           # 本表的标识键:只在实例表引用同名的目录表时再提(inst_index.index_code → meta_index)
             matches = []
             for pt in t2o:
@@ -178,38 +214,99 @@ def propose(tab_cols, objects, round_tables, existing=(), probe=None, max_propos
                         continue
                     suf = n.rsplit("_", 1)[-1]
                     for pc in owned[pt]:
+                        if _stem(pc) in _GENERIC:                      # 泛词标识(type_code)不作多态目标
+                            continue
                         if _norm(pc).rsplit("_", 1)[-1] == suf and core[pt] not in _TENANT:
                             ov = probe(ct, cc, pt, pc)
                             if ov is not None and ov >= _POLY_FLOOR:
                                 add(ct, cc, pt, pc, f"多态引用:{cc}(判别列 {disc})与 {pt}.{pc} 探测重叠 {ov:.0f}%",
                                     (2 if ov >= 90 else 1, ov))
                     continue
-                if own and not (_is_catalog(pt) and not _is_catalog(ct)):
-                    continue
+                if own and not (_is_catalog(pt) and not _is_catalog(ct) and tcols and tcols[0] != cc):
+                    continue                    # 子表自己的主键(首列)不指向目录表(fact_po_line.line_id 不是产线)
                 cands = [pc for pc in owned[pt] if _refers(cc, core[pt], pc)]
-                if not cands and "id" in [c.lower() for c in cols[pt]] and _refers(cc, core[pt], "id"):
-                    cands = [next(c for c in cols[pt] if c.lower() == "id")]
+                for _g in ("id", "code"):        # 父表标识是泛化列 id / code(dim_currency.code)
+                    if _g in [c.lower() for c in cols[pt]] and _refers(cc, core[pt], _g):
+                        cands.append(next(c for c in cols[pt] if c.lower() == _g))
                 if not cands:
                     continue
-                if core[pt] in _TENANT and not _ASSOC.search(core[ct]):
-                    continue                                           # 租户键只在关联表上提
+                if core[pt] in _TENANT and not _ASSOC.search(core[ct]) and _colfreq.get(n, 0) >= 0.25 * _ntab:
+                    tenant_skip = True                                 # 铺满全库的租户键只在关联表上提,
+                    continue                                           # 也不退而求其次连到「企业-位置」这类关联表
                 # 「名称完全吻合」用去掉分层前缀的核心名比(inst_system → system);只用学到的前缀时
                 # 分层前缀可能没剥掉,实例表会输给共有前缀更长的配置表(bill_data.sys_no 曾错配到 bill_config_system)
                 pc0 = table_core(pt)
                 exact = 100 if pc0 in (_stem(cc), _stem(cands[0])) or core[pt] in (_stem(cc), _stem(cands[0])) else 0
-                matches.append((exact + _shared_prefix(core[ct], core[pt]), pt, cands[0]))
+                named = 50 if len(cn[pt]) >= 2 and cn[pt] in cl.get((ct, cc), "") else 0
+                matches.append((exact + named + _shared_prefix(core[ct], core[pt]), pt, cands))
             # 多张表都能对上时(config_id 对上所有 *_config 表),取与子表名共有前缀最长的一张;并列则不提,留给模型与人工
+            if tenant_skip:
+                matches = []
             if matches:
                 best = max(m[0] for m in matches)
                 top = [m for m in matches if m[0] == best]
+                if len(top) > 1 and probe is not None:
+                    # 名称并列时看取值:只有一张父表的标识能装下子列的取值,就是它(reason_code 的 D001 只在停机原因表)
+                    _fit = [m for m in top if any((probe(ct, cc, m[1], x) or 0) >= dao_core.MIN_OVERLAP for x in m[2])]
+                    if len(_fit) == 1:
+                        top = _fit
                 if len(top) == 1:
-                    _, pt, pc = top[0]
+                    _, pt, pcs = top[0]
                     # DR-071 按证据排序:有探测时先算抽样重叠,低于 20% 的不提(裁决后也进不了图),
                     # 名额按「名称完全吻合、重叠高」优先,而不是按是否本轮——否则跨轮的旧表引用全被挤出名额
-                    ov = probe(ct, cc, pt, pc) if probe is not None else None
+                    # 父表有几列都像标识(currency_id 与 code)时,取重叠最高的一列(DR-074)
+                    pc, ov = pcs[0], None
+                    if probe is not None:
+                        _scored = [(probe(ct, cc, pt, x), -i, x) for i, x in enumerate(dict.fromkeys(pcs))]
+                        _scored = [z for z in _scored if z[0] is not None]
+                        if _scored:                       # 重叠相同时按名称吻合的先后取
+                            ov, _, pc = max(_scored)
                     if ov is not None and ov < _WEAK_FLOOR:
                         continue
                     add(ct, cc, pt, pc, f"键名:{ct}.{cc} 指向 {pt} 的标识键 {pc}", (2 if best >= 100 else 1, ov or 0.0))
+    # 注释点名的引用(DR-074):字段注释写明「关联 dim_x」(explicit),或注释的中文名就是某张父表的中文名
+    # (「所属业务单元ID」→ 业务单元表),键名缩写对不上时由注释补证;是否成立仍看数据
+    def _best_col(ct, cc, pt):
+        idc = [c for c in cols[pt] if _norm(c) == _norm(cc) or _norm(c) == "id" or c == cols[pt][0]]
+        sc = [(probe(ct, cc, pt, x), x) for x in dict.fromkeys(idc)] if probe is not None else [(None, idc[0])] if idc else []
+        sc = [(v, x) for v, x in sc if v is not None or probe is None]
+        return max(sc, key=lambda z: (z[0] or 0, -idc.index(z[1]))) if sc else (None, None)
+    for ct, cc, pt in explicit or ():
+        if ct in t2o and pt in t2o and ct != pt and (ct in rnd or pt in rnd):
+            ov, pc = _best_col(ct, cc, pt)
+            if pc and (ov is None or ov >= _WEAK_FLOOR):
+                add(ct, cc, pt, pc, f"字段注释点名:{ct}.{cc} 关联 {pt}", (2, ov or 0.0))
+    _cn_owner = {}
+    for t in t2o:
+        if len(cn[t]) >= 2 and not _ASSOC.search(core[t]):
+            _cn_owner.setdefault(cn[t], []).append(t)
+    for ct in t2o:
+        for cc in cols[ct]:
+            n = _norm(cc)
+            if not _KEY.search(n) or _AUDIT.match(n) or (ct.lower(), cc.lower()) in used \
+                    or _colfreq.get(n, 0) >= 0.25 * _ntab:              # 铺满全库的租户键不按注释补
+                continue
+            head = re.sub(r"^(所属|关联|上级|对应)", "", re.split(r"(ID|Id|id|编号|编码|标识|代码)", cl.get((ct, cc), ""))[0]).strip()
+            pts = [t for t in _cn_owner.get(head, []) if t != ct and (ct in rnd or t in rnd)]
+            if len(pts) == 1 and probe is not None:
+                ov, pc = _best_col(ct, cc, pts[0])
+                if pc and ov is not None and ov >= dao_core.MIN_OVERLAP:
+                    add(ct, cc, pts[0], pc, f"字段注释「{head}」即 {pts[0]} 的中文名,取值落在其标识中({ov:.0f}%)", (1, ov))
+    # 日期维度:业务日期列指向日历表的日期键(fact_lead.business_date → dim_calendar.calendar_date),
+    # 取值须几乎全部落在日历里(DR-074)
+    cal = [(t, next((c for c in cols[t] if _DATE_COL.search(_norm(c))), None)) for t in t2o if core[t] in _CALENDAR]
+    cal = [(t, c) for t, c in cal if c]
+    if cal and probe is not None:
+        for ct in t2o:
+            for cc in cols[ct]:
+                if not _DATE_COL.search(_norm(cc)) or (ct.lower(), cc.lower()) in used:
+                    continue
+                for pt, pc in cal:
+                    if pt == ct or (ct not in rnd and pt not in rnd):
+                        continue
+                    ov = probe(ct, cc, pt, pc)
+                    if ov is not None and ov >= dao_core.MIN_OVERLAP:
+                        add(ct, cc, pt, pc, f"日期维度:{ct}.{cc} 的取值落在日历 {pt}.{pc} 中({ov:.0f}%)", (1, ov))
     # 自引用:上级、父节点一类列指回本表的标识(ReportsTo → EmployeeId、parent_no → dev_no)
     for ct in t2o:
         if ct not in rnd:

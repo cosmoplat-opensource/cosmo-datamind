@@ -68,7 +68,10 @@ def check(ir):
                                "relation": f"{s}->{t}",
                                "desc": f"关系引用了不存在的对象: {side}",
                                "fix": "对象已被删除但关系残留,须级联清理"})
-        if s == t and not r.get("self_ref"):
+        _ev = r.get("evidence") or {}
+        _hier = str(_ev.get("child_key") or "").strip().lower() not in ("", str(_ev.get("parent_key") or "").strip().lower())
+        if s == t and not r.get("self_ref") and not _hier:
+            # DR-073/074:子键与父键是本表不同的两列(parent_id → category_id)即层级自引用,经数据验证成立,不算误判
             # DR-036:标记为有意层级自引用(self_ref)的关系豁免——那是合法建模,不是抽取误判
             errors.append({"type": "self_loop", "severity": "error",
                            "relation": f"{s}->{t}", "verb": r.get("verb"),

@@ -6,7 +6,7 @@ COSMO DataMind · 数据智脑 — 数据治理、本体与深度问数原型
 深度问数:hermes/claude-code(经 agent_runtime)生成 SQL 计划 → 本地 SQLite 执行 → 洞察;引擎不可用时降级为内置模板。
 启动:python3 server.py  → http://127.0.0.1:8092
 """
-import json, math, os, re, sqlite3, subprocess, threading, time, uuid, sys, glob, hashlib
+import collections, json, math, os, re, sqlite3, subprocess, threading, time, uuid, sys, glob, hashlib
 from itertools import combinations
 from pathlib import Path
 import logging
@@ -5833,7 +5833,9 @@ def _gather_evidence(db, cap_tabs=400, cap_docs=40, query="", focus=None):
     return {"schema": "\n".join(schema), "tab_cols": tab_cols,
             "docs": doc_chunks.render(picked), "n_docs": len(used_by), "refs": refs, "files": files,
             "doc_stats": stats, "scope": scope if focus else None,
-            "contracts": contracts, "contracts_resolved": code_contracts.resolve(contracts, tab_cols),
+            "contracts": contracts,
+            "contracts_resolved": code_contracts.resolve(contracts, tab_cols) + code_contracts.comment_contracts(
+                {(t, c): cm for t, cs in dm_cols.items() for c, _ty, cm in cs if cm}, tab_cols),
             "contracts_codebooks": code_contracts.resolve_codebooks(contracts, tab_cols),
             "contracts_labels": code_contracts.resolve_labels(contracts, tab_cols)}
 
@@ -6621,7 +6623,9 @@ def _code_like(con, cache, table, col, min_distinct=10, overlap=None):
 
 
 _SCOPE_GENERIC = {"type", "code", "no", "id", "key", "meta", "inst", "is", "flag", "num", ""}
-_SCOPE_SKIP = re.compile(r"(^id$|_id$|name$|_time$|_at$|_date$|^remark|desc|formula|^is_|_by$|create|update|sort|order_num|unit)", re.I)
+_SCOPE_SKIP = re.compile(r"(^id$|_id$|name$|_time$|_at$|_date$|^remark|desc|formula|^is_|_by$|create|update|sort|order_num|unit"
+                         # 度量列(时长、数量、金额、比率)不是类别列,不能当作用域(DR-074:duration_minutes 曾被当成行号的作用域)
+                         r"|minutes|hours|seconds|days|qty|quantity|amount|price|cost|rate|ratio|percent|score|weight|_kwh|_tons)", re.I)
 
 
 _TENANT_COL = re.compile(r"(factory|tenant|tenement|ent_?no|ent_?id|enterprise|org_?(code|id|no)|company|data_source)", re.I)
@@ -6755,6 +6759,20 @@ def _adjudicate_ir(db, name, extracted, ev, base_ir=None):
     也是合法的关系端点——它们不在本轮 objects 里重复产出(合并时底本自会保留),
     表若也在本轮数据源中则照常数据裁决,否则留 candidate 并注明跨源待取证。"""
     tc = ev["tab_cols"]; low2real = {t.lower(): t for t in tc}
+    # 列名在多少张表里出现:同名而父表并不拥有的共享列(模板列 legacy_code、明细表里的 order_id)不算键名依据(DR-074)
+    _colfreq = collections.Counter(c.lower() for cols in tc.values() for c, _ in cols)
+
+    def _shared_cols(key, pcol, tt):
+        """同名且父表并不拥有的共享列(单列或复合):模板列 legacy_code、同粒度汇总表的 (date, dim_emp_id)。"""
+        parts = [x.strip().lower() for x in str(key).split(",")]
+        if str(key).lower() != str(pcol).lower() or not all(_colfreq[x] >= 3 for x in parts):
+            return False
+        if all(_colfreq[x] >= 0.1 * len(tc) for x in parts):
+            # 一成以上的表都有:模板列;只有父表核心名与键词根完全一致(enterprise 之于 ent_no)才算它的标识,
+            # 泛词末尾的「拥有」(contract_type 之于 type_code)不算
+            core = key_links.table_core(tt)
+            return not any(key_links._stem(x) == core for x in parts)
+        return not key_links._is_catalog(tt) and not any(key_links._owner_key(key_links.table_core(tt), x) for x in parts)
     # 归一对象:绑定真实表则补 attrs/field_count;非表对象标 candidate
     objects, name2tab, seen_obj = [], {}, set()
     registered_actions = {str(item.get("id")): item for item in _load_ats() if item.get("id")}
@@ -7014,6 +7032,8 @@ def _adjudicate_ir(db, name, extracted, ev, base_ir=None):
                     for x in ct:
                         if re.search(r"_(id|code)$", x, re.I) and x not in pcols: pcols.append(x)
                     for pcol in pcols[:3]:
+                        if ts == tt and pcol.lower() == key.lower():
+                            continue                    # 自引用须是本表的两列;同一列对自己不是关系
                         sig = signals(ts, (key,), tt, (pcol,))
                         if sig is not None:
                             probed, saw_rows = True, saw_rows or bool(sig["child_distinct"])
@@ -7022,6 +7042,9 @@ def _adjudicate_ir(db, name, extracted, ev, base_ir=None):
                         _contract = code_contracts.hit((ev or {}).get("contracts_resolved"), ts, key, tt, pcol)
                         # 键名不同但代码中按这两列连接(如 zone_sn → zone_id):代码契约可替代键名相容性证据,数据门槛不变
                         name_supported = dao_core.name_ok(key, tt, pcol, child_table=ts) or bool(_contract)
+                        _shared = not _contract and _shared_cols(key, pcol, tt)
+                        if name_supported and _shared:
+                            name_supported = False      # 同名共享列(模板列、同粒度汇总表的维度键)不是引用依据
                         reverse = ov >= dao_core.MIN_OVERLAP and dao_core.should_reverse(cunique, punique)
                         verdict = dao_core.classify(overlap=ov, parent_unique=punique, name_ok=name_supported,
                                                     child_distinct=sig["child_distinct"], min_distinct=1, exclude_pk_child=False)
@@ -7037,7 +7060,7 @@ def _adjudicate_ir(db, name, extracted, ev, base_ir=None):
                                           f"·父键唯一(判别列代替键名证据)")
                         _vp = _orph = None
                         if trial_status != "verified" and not reverse and not _cond:
-                            if not name_supported and ov >= 90:
+                            if not name_supported and ov >= 90 and not _shared:   # 共享模板列的编码各表自编,形态相同不算证据
                                 # DR-070 取值形态:字母数字编码 95% 以上精确落在父列,稠密自增 id 碰巧重叠的风险不适用
                                 _vp = _code_like(con, _vcache, ts, key, overlap=ov)
                                 if _vp:
@@ -7047,9 +7070,14 @@ def _adjudicate_ir(db, name, extracted, ev, base_ir=None):
                                                                 exclude_pk_child=False)
                                     trial_status = verdict["status"]
                                     reason = verdict["reason"] + (f"·取值形态({_vp['distinct']} 个字母数字编码,重叠 {ov:.0f}%)代替键名证据")
+                            _own_pk = bool(cunique) and bool(tc.get(ts)) and tc[ts][0][0].lower() == key.lower()
                             if (trial_status != "verified" and punique and ov >= dao_core.WEAK_FLOOR
                                     and (sig.get("matched_distinct") or 0) >= dao_core.MIN_DISTINCT
-                                    and key_links.identifier_reference(key, tt, pcol)):
+                                    and key_links.identifier_reference(key, tt, pcol)
+                                    # DR-074 子表自己的主键(首列且唯一)对上另一张表的主键是值域碰巧重合,不按孤儿容忍
+                                    and dao_core.name_ok(key, tt, pcol, child_table=ts) and not _own_pk
+                                    # 编码列对上 id 列(account_code → account_id)不按孤儿容忍:后缀不同说明取值体系不同
+                                    and (pcol.lower() == "id" or key.lower().rsplit("_", 1)[-1] == pcol.lower().rsplit("_", 1)[-1])):
                                 # DR-070 孤儿记录容忍:子键就是父表标识键、父键唯一,重叠不足是因为子表引用了父表里没有的记录
                                 _orph = {"overlap": round(ov, 1), "orphan_rate": round(1 - ov / 100.0, 3)}
                                 trial_status = "verified"
@@ -7104,6 +7132,8 @@ def _adjudicate_ir(db, name, extracted, ev, base_ir=None):
                             if (child_columns, parent_columns) not in pairs:
                                 pairs.append((child_columns, parent_columns))
                     for child_columns, parent_columns in pairs[:16]:
+                        if ts == tt and [c.lower() for c in child_columns] == [c.lower() for c in parent_columns]:
+                            continue                    # 本表同一组列对自己不是关系
                         sig = signals(ts, child_columns, tt, parent_columns)
                         if sig is not None:
                             probed, saw_rows = True, saw_rows or bool(sig["child_distinct"])
@@ -7111,7 +7141,7 @@ def _adjudicate_ir(db, name, extracted, ev, base_ir=None):
                         ovp, punique, cunique = sig["overlap"], sig["parent_unique"], sig["child_unique"]
                         child_key = ",".join(child_columns)
                         parent_key = ",".join(parent_columns)
-                        name_supported = dao_core.key_name_ok(child_key, parent_key)
+                        name_supported = dao_core.key_name_ok(child_key, parent_key) and not _shared_cols(child_key, parent_key, tt)
                         verdict = dao_core.classify(overlap=ovp, parent_unique=punique, name_ok=name_supported,
                                                     child_distinct=sig["child_distinct"], min_distinct=1, exclude_pk_child=False)
                         reverse = ovp >= dao_core.MIN_OVERLAP and dao_core.should_reverse(cunique, punique)
@@ -7578,7 +7608,10 @@ def build_inquire():
                     existing={(str(r.get("source") or "").strip(), str(r.get("target") or "").strip())
                               for r in extracted.get("relations") or [] if isinstance(r, dict)},
                     probe=_overlap_probe(db),
-                    used_keys=_used_child_keys(extracted))
+                    used_keys=_used_child_keys(extracted),
+                    labels=_table_comments(db), col_labels=_column_comments(db, cap=80),
+                    explicit=[(r["a"][0], r["a"][1], r["b"][0]) for r in ev.get("contracts_resolved") or []
+                              if r.get("file") == "库表注释"])
                 _used = _used_child_keys(extracted) | {(p["child_table"], p["child_key"]) for p in _kl}
                 _have = {(p["source"], p["target"]) for p in _kl} | {
                     (str(r.get("source") or "").strip(), str(r.get("target") or "").strip())

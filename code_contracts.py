@@ -353,6 +353,11 @@ def hit(resolved, child_table, child_col, parent_table, parent_col):
     """一条候选关系是否有代码契约(不分方向)。返回契约或 None。"""
     want = {(child_table.lower(), child_col.lower()), (parent_table.lower(), parent_col.lower())}
     for r in resolved or []:
+        if r.get("any_parent_col"):
+            if (r["a"][0].lower(), r["a"][1].lower()) == (child_table.lower(), child_col.lower()) \
+                    and r["b"][0].lower() == parent_table.lower():
+                return r
+            continue
         if {(r["a"][0].lower(), r["a"][1].lower()), (r["b"][0].lower(), r["b"][1].lower())} == want:
             return r
     return None
@@ -383,3 +388,33 @@ def summary_text(contracts, resolved):
             f"码表 {len(contracts.get('codebooks', []))} 条 · 字段含义 {len(contracts.get('labels', []))} 条 · "
             f"前端字典 {len(contracts.get('dicts', []))} 个 · "
             f"接口 {len(contracts.get('apis', []))} 个")
+
+
+_COMMENT_REF = re.compile(r"(?:外键|关联|引用|参照|对应|references?|refers? to|fk)\s*[,，:：]?\s*(?:到|至|表)?\s*`?([A-Za-z_][\w.]*)`?", re.I)
+
+
+def comment_contracts(column_comments, tab_cols):
+    """库表字段注释里写明的引用(「外键,关联 dim_product_line」):注释点名的表存在于库中时,
+    当作连接契约——与代码契约同等,可替代键名相容性证据,数据门槛不变(DR-074)。
+    父列取同名列,否则取父表唯一的主键式列(id / 表名_id)。"""
+    lower = {t.lower(): t for t in tab_cols}
+    out, seen = [], set()
+    for (t, c), cm in (column_comments or {}).items():
+        if t not in tab_cols:
+            continue
+        for m in _COMMENT_REF.finditer(str(cm or "")):
+            name = m.group(1).split(".")[-1]
+            pt = lower.get(name.lower())
+            if not pt or pt == t:
+                continue
+            pcols = [x for x, _ in tab_cols[pt]]
+            pc = next((x for x in pcols if x.lower() == c.lower()), None)
+            if not pc:
+                ids = [x for x in pcols if x.lower() == "id" or x.lower().endswith("_id")]
+                pc = ids[0] if ids and (ids[0].lower() == "id" or pcols and pcols[0] == ids[0]) else None
+            if not pc or (t, c, pt) in seen:
+                continue
+            seen.add((t, c, pt))
+            out.append({"a": [t, c], "b": [pt, pc], "file": "库表注释", "code": f"{t}.{c} → {pt}(字段注释)",
+                        "any_parent_col": True})          # 注释只点名了表,父列由数据裁决选
+    return out

@@ -211,9 +211,28 @@ def name_ok(child_col, parent_table, parent_key, child_table=None):
         return False
     if len(cs) > 1:
         return all(name_ok(c, parent_table, p, child_table) for c, p in zip(cs, ps, strict=True))
+    # 子键就是子表自己的标识(cycle_count 表的 cycle_count_id)而父键是另一张表名字不同的标识:
+    # 两个主键碰巧值域重合,不是引用(DR-074)。同名主键(一对一扩展表)不在此列。
+    if child_table and _snake(child_col) != _snake(parent_key) and key_stem(parent_key):
+        _ct = [t for t in _snake(child_table).split("__")[-1].split("_") if t]
+        while len(_ct) > 1 and _ct[0] in ("fact", "dim", "dws", "dwd", "ods", "ads", "dm"):
+            _ct = _ct[1:]
+        if expand(key_stem(child_col)) == expand("_".join(_ct)) and _snake(parent_table or "") != _snake(child_table):
+            return False
+    # 序号与标识不是一回事:line_no(单据行号)不指向 line_id(产线)(DR-074)
+    # 编码与自增 id 也是两套取值(account_code → account_id),有代码或注释契约时由契约补证
+    _sfx = lambda c: (re.search(r"_(id|no|code)$", _snake(c)) or [None, None])[1]
+    if _snake(child_col) != _snake(parent_key) and {_sfx(child_col), _sfx(parent_key)} in ({"id", "no"}, {"id", "code"}):
+        return False
     if key_name_ok(child_col, parent_key):
         return True
-    if name_score(child_col, parent_table or "", parent_key) > 0:
+    # 父键是更具体的概念(line_id 之于 cycle_count_line_id):父键 = 修饰词 + 子键,方向反了,不算依据(DR-074)
+    _cs, _ps = expand(key_stem(child_col)), expand(key_stem(parent_key))
+    if _cs and _ps and _ps != _cs and _ps.endswith("_" + _cs):
+        return False
+    # 父键有自己的具体词根(eval_id)而与子键词根(supplier)无关时,不能只凭「子键词根出现在父表名里」认定
+    _unrelated = bool(_cs and _ps and _ps != _cs and not _cs.endswith("_" + _ps) and _ps not in ("id", "code", "no"))
+    if not _unrelated and name_score(child_col, parent_table or "", parent_key) > 0:
         return True
     # 泛化父键(id/code)时,子键词根按缩写展开后出现在父表名里:dev_group_id → meta_device_group.id(DR-069)。
     # name_score 与上游引擎保持同口径,缩写放在这里补
@@ -228,6 +247,10 @@ def name_ok(child_col, parent_table, parent_key, child_table=None):
             for i in range(len(ptoks) - len(toks) + 1):
                 if all(ptoks[i + j].startswith(toks[j]) for j in range(len(toks))):
                     return True
+    # 日期维度(DR-074):业务日期列 → 日历表的日期键
+    if re.search(r"(^|_)date$", _snake(child_col)) and re.search(r"(^|_)date$", _snake(parent_key)) \
+            and re.search(r"(^|_)(calendar|date_dim|dim_date)(_|$)", _snake(parent_table or "")):
+        return True
     rt = role_targets(child_col)
     if rt:
         pt = (parent_table or "").lower()

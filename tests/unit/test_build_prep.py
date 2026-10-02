@@ -150,3 +150,12 @@ def test_readonly_connect_handles_uri_characters_in_filename(make_sqlite):
             con.execute("INSERT INTO t VALUES (2)")
     finally:
         con.close()
+
+
+def test_scratch_comment_ignores_business_terms():
+    """注释里的「临时用电」「测试结果」是业务词,不能把表当成临时/测试表排除(DR-074)。"""
+    import build_prep
+    for text in ("作业许可-记录许可类型(动火/高处/临时用电)", "质量检验-测试结果", "临时工考勤"):
+        assert not build_prep.SCRATCH_COMMENT.search(text), text
+    for text in ("临时表,勿用", "测试数据", "演示用", "测试"):
+        assert build_prep.SCRATCH_COMMENT.search(text), text

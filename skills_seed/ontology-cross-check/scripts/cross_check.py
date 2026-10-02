@@ -141,6 +141,11 @@ def temporal_channel(db, ct, ck, pt, pk):
     tp = next((db.col(pt, c) for c in TIME_COLS if db.col(pt, c)), None)
     if not tc or not tp or ct == pt:
         return {"state": "na"}
+    # 整列只有一两个时间值的是数据装载/生成时间,不是业务时间,不能据此判先后(DR-074)
+    for t_, c_ in ((ct, tc), (pt, tp)):
+        d = db.one(f"SELECT COUNT(DISTINCT {q(c_)}) FROM {q(t_)}")
+        if not d or (d[0] or 0) <= 2:
+            return {"state": "na", "reason": f"{t_}.{c_} 取值几乎恒定,是装载时间"}
     r = db.one(f"""SELECT COUNT(*), SUM(CASE WHEN julianday(p.{q(tp)}) - julianday(c.{q(tc)}) > 1 THEN 1 ELSE 0 END)
                    FROM {q(ct)} c JOIN {q(pt)} p ON p.{q(pk)}=c.{q(ck)}
                    WHERE julianday(c.{q(tc)}) IS NOT NULL AND julianday(p.{q(tp)}) IS NOT NULL""")

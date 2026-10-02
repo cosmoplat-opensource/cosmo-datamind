@@ -583,3 +583,64 @@ def test_self_reference_proposed_and_verified(make_sqlite, monkeypatch):
                      [{"source": "emp", "target": "emp", "verb": "上级", "child_key": "ReportsTo", "parent_key": "EmployeeId"}],
                      {"employee": ["EmployeeId", "ReportsTo", "Name"]}, monkeypatch)
     assert ir["relations"] and ir["relations"][0]["status"] == "verified"
+
+
+def test_star_schema_keys_proposed_and_traps_rejected():
+    """DR-074 星型模型:码值维度(reason_code → dim_reason_code.code)、日历(business_date → dim_calendar.calendar_date)、
+    事实表前缀不剥导致的核心名错误、字段注释打破并列;序号列、反向修饰、子表自己的主键不算引用。"""
+    import dao_core
+    import key_links
+    tc = {"dim_reason_code": [("reason_id", "INTEGER"), ("code", "TEXT")],
+          "dim_calendar": [("calendar_id", "INTEGER"), ("calendar_date", "DATE")],
+          "dim_production_line": [("line_id", "INTEGER"), ("line_name", "TEXT")],
+          "fact_po_line": [("line_id", "INTEGER"), ("po_id", "INTEGER")],
+          "dim_factory": [("factory_id", "INTEGER"), ("factory_name", "TEXT")],
+          "fact_lead": [("lead_id", "INTEGER"), ("reason_code", "TEXT"), ("business_date", "DATE"),
+                        ("line_id", "INTEGER"), ("factory_id", "INTEGER")]}
+    tc.update({f"fact_other{i}": [(f"other{i}_id", "INTEGER")] for i in range(4)})
+    vals = {("fact_lead", "reason_code"): {"R1", "R2"}, ("dim_reason_code", "code"): {"R1", "R2", "R3"},
+            ("dim_reason_code", "reason_id"): {"1", "2"},
+            ("fact_lead", "business_date"): {"2025-01-01"}, ("dim_calendar", "calendar_date"): {"2025-01-01", "2025-01-02"}}
+
+    def probe(ct, cc, pt, pc):
+        a, b = vals.get((ct, cc), {"1", "2"}), vals.get((pt, pc), {"1", "2", "3"})
+        return 100.0 * len(a & b) / len(a)
+    labels = {"dim_production_line": "产线-生产线主数据", "fact_po_line": "采购订单行-明细", "dim_factory": "工厂-基地"}
+    col_labels = {("fact_lead", "line_id"): "产线ID"}
+    props = key_links.propose(tc, [{"name": t, "table": t} for t in tc], list(tc), probe=probe,
+                              labels=labels, col_labels=col_labels)
+    got = {(p["child_table"], p["child_key"], p["parent_table"], p["parent_key"]) for p in props}
+    assert ("fact_lead", "reason_code", "dim_reason_code", "code") in got
+    assert ("fact_lead", "business_date", "dim_calendar", "calendar_date") in got
+    assert ("fact_lead", "line_id", "dim_production_line", "line_id") in got      # 注释「产线ID」打破并列
+    assert ("fact_lead", "factory_id", "dim_factory", "factory_id") in got        # 工厂键不铺满全库,照常提
+    assert not any(c == "fact_po_line" and k == "line_id" for c, k, _, _ in got)   # 子表自己的主键
+    assert dao_core.name_ok("business_date", "dim_calendar", "calendar_date", child_table="fact_lead")
+    assert not dao_core.name_ok("line_no", "dim_production_line", "line_id", child_table="fact_x")
+    assert not dao_core.name_ok("line_id", "fact_cycle_count_line", "cycle_count_line_id", child_table="dim_equipment")
+    assert not dao_core.name_ok("cycle_count_id", "fact_cycle_count_line", "cycle_count_line_id",
+                                child_table="fact_cycle_count")
+    assert not dao_core.name_ok("supplier_id", "fact_supplier_eval", "eval_id", child_table="fact_x")
+
+
+def test_comment_contracts_name_the_parent_table():
+    import code_contracts
+    tc = {"fact_downtime": [("downtime_id", "INTEGER"), ("reason_code", "INTEGER")],
+          "dim_downtime_reason": [("reason_id", "INTEGER"), ("reason_code", "TEXT")]}
+    cm = {("fact_downtime", "reason_code"): "停机原因,外键，关联dim_downtime_reason"}
+    out = code_contracts.comment_contracts(cm, tc)
+    assert len(out) == 1 and out[0]["b"][0] == "dim_downtime_reason"
+    # 注释只点名了表,父列由数据裁决选:reason_code 实际存的是 reason_id
+    assert code_contracts.hit(out, "fact_downtime", "reason_code", "dim_downtime_reason", "reason_id")
+
+
+def test_identical_columns_never_form_a_self_relation(make_sqlite, monkeypatch):
+    """同一张表同一组列对自己(单列或复合)不是关系;层级自引用要求子键与父键是不同的列(DR-074)。"""
+    db = make_sqlite({"cat": ("category_id INTEGER, category_name TEXT, parent_id INTEGER",
+                              [(i, f"c{i}", None if i < 3 else i % 3 + 1) for i in range(1, 13)])})
+    ir = _adjudicate(db, [{"name": "cat", "table": "cat", "kind": "object"}],
+                     [{"source": "cat", "target": "cat", "verb": "自身", "child_key": "category_id,category_name",
+                       "parent_key": "category_id,category_name"}],
+                     {"cat": ["category_id", "category_name", "parent_id"]}, monkeypatch)
+    assert not any(r["status"] == "verified" and str(r["evidence"].get("child_key")).lower()
+                   == str(r["evidence"].get("parent_key")).lower() for r in ir["relations"])
