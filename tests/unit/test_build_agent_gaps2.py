@@ -493,3 +493,93 @@ def test_scope_with_same_named_category_and_no_tenant_base(make_sqlite, monkeypa
                      monkeypatch)
     assert ir["relations"][0]["status"] == "verified" and ir["relations"][0]["evidence"]["parent_key"] == "obj_code,metric_code"
     assert server._scoped_key(None, {}, "rec", "ent_no", "biz__patrol_point", "ent_no", ["ent_no"], ["ent_no"]) is None
+
+
+# ── 候选分流(DR-073) ────────────────────────────────────────────
+
+def test_triage_rejects_defers_and_ranks():
+    import relation_triage
+    objs = [{"name": n, "table": t, "attrs": [{"col": "id", "type": "INTEGER"}, {"col": "ref_id", "type": "INTEGER"}]}
+            for n, t in [("a", "biz__a"), ("ent", "user__enterprise"), ("loc_ent", "inst__location_enterprise"),
+                         ("m", "inst__inst_metric"), ("mm", "meta__meta_metric"), ("s", "biz__s")]]
+
+    def rel(t, ck, pk, ov, name_ok=True, pu=True, note="", **ev):
+        return {"source_concept": "a", "target_concept": t, "status": "candidate", "overlap": ov, "note": note,
+                "evidence": {"child_key": ck, "parent_key": pk, "overlap": ov, "name_ok": name_ok, "parent_unique": pu, **ev}}
+    ir = {"objects": objs, "relations": [
+        rel("ent", "owner_code", "ent_no", 5, name_ok=False),                    # 数据不支持
+        rel("loc_ent", "ent_no", "ent_no", 100, pu=False),                       # 关联表不是企业编号的标识
+        rel("m", "metric_code", "metric_code", 100, pu=False),                   # 实例表,目录表 meta_metric 才是定义
+        rel("s", "ref_id", "id", 100, name_ok=False),                            # 键名无据的整数键
+        rel("s", "create_by", "user_no", 100, name_ok=False),                    # 审计列
+        rel("mm", "metric_code", "metric_code", 100, pu=False),                  # 目录表同码多版本:待审
+        rel("s", "s_id", "id", 34),                                              # 孤儿多:待审
+        {"source_concept": "a", "target_concept": "s", "status": "candidate", "note": "两端表的候选键列均无非空取值(表中无数据)",
+         "evidence": {}}]}
+    st = relation_triage.triage(ir)
+    assert st == {"rejected": 5, "deferred": 1, "review": 2}
+    q = relation_triage.review_queue(ir)
+    assert q[0]["target_concept"] == "mm" and q[0]["review"]["priority"] > q[1]["review"]["priority"]
+    assert all(r["triage"]["reason"] for r in ir["rejected_relations"])
+
+
+def test_triage_keeps_judge_confirmed_patterns_out_of_reject():
+    """独立评审判真的被误驳回模式(DR-073 第二轮):键名直指父表但抽样无匹配 → 暂缓;编码列落在目录表编码 → 待审;
+    主从表同名键 → 待审;已验证且键名有据、仅复核有疑点 → 待审。共享企业编号、复合审计列仍驳回。"""
+    import relation_triage
+    tabs = [("a", "ems__pv_report_detail"), ("flow", "ems__energy_flow"), ("dt", "meta__meta_device_type"),
+            ("rep", "ems__pv_report"), ("ao", "inst__analysis_object"), ("mt", "ems__msb_meter_type"),
+            ("dat", "meta__meta_attribute")]
+    objs = [{"name": n, "table": t, "attrs": [{"col": "metrics_type", "type": "VARCHAR(32)"}]} for n, t in tabs]
+
+    def rel(t, ck, pk, ov, name_ok=True, pu=True, **ev):
+        return {"source_concept": "a", "target_concept": t, "status": "candidate", "overlap": ov, "note": "",
+                "evidence": {"child_key": ck, "parent_key": pk, "overlap": ov, "name_ok": name_ok, "parent_unique": pu, **ev}}
+    refuted = {"verdict": "refuted", "conflicts": ["name"], "prev_status": "verified"}
+    ir = {"objects": objs, "relations": [
+        rel("flow", "flow_id", "id", 12),                                        # 暂缓:全量核对
+        rel("dt", "metrics_type", "dev_type_code", 100, name_ok=False, pu=False),  # 待审:目录表编码
+        rel("rep", "report_uid", "report_uid", 100, pu=False),                   # 待审:主从表
+        rel("ao", "anal_obj_id", "id", 100, cross_check=refuted),                # 待审:复核疑点
+        rel("mt", "ent_no", "ent_no", 100, pu=False),                            # 驳回:共享列
+        rel("dat", "is_del,create_by", "is_del,create_by", 100, pu=False),       # 驳回:审计列
+        rel("ao", "id", "id", 100, cross_check=refuted)]}                        # 驳回:主键对主键
+    st = relation_triage.triage(ir)
+    assert st == {"rejected": 3, "deferred": 1, "review": 3}
+    assert "全量数据核对" in ir["deferred_relations"][0]["triage"]["reason"]
+
+
+def test_id_reference_named_after_parent_is_orphan_tolerant():
+    import key_links
+    assert key_links.identifier_reference("statement_info_id", "ems__statement_info", "id")
+    assert not key_links.identifier_reference("config_id", "biz__work_menu_config", "id")
+    assert key_links.identifier_reference("dev_no", "inst__inst_device", "dev_no")
+
+
+def test_sample_limited_relations_marked(make_sqlite):
+    import sqlite3
+    db = make_sqlite({"big": ("id INTEGER, k TEXT", [(i, f"K{i}") for i in range(10)]),
+                      "small": ("id INTEGER, k TEXT", [(i, f"K{i}") for i in range(5)])})
+    con = sqlite3.connect(db)
+    con.execute("CREATE TABLE _dm_tables (table_name TEXT PRIMARY KEY, source_table TEXT, comment TEXT, rows_est INTEGER)")
+    con.executemany("INSERT INTO _dm_tables VALUES (?,?,?,?)", [("big", "big", "", 100000), ("small", "small", "", 5)])
+    con.commit(); con.close()
+    ir = {"objects": [{"name": "s", "table": "small"}, {"name": "b", "table": "big"}],
+          "relations": [{"source_concept": "s", "target_concept": "b", "status": "candidate", "note": "弱重叠",
+                         "evidence": {"child_key": "k", "parent_key": "k", "overlap": 15.0}}]}
+    assert server._mark_sample_limited(ir, db) == 1
+    rel = ir["relations"][0]
+    assert "parent" in rel["evidence"]["sample_limited"] and "抽样截断" in rel["note"]
+
+
+def test_self_reference_proposed_and_verified(make_sqlite, monkeypatch):
+    import key_links
+    tc = {"employee": [("EmployeeId", "INTEGER"), ("ReportsTo", "INTEGER"), ("Name", "TEXT")]}
+    props = key_links.propose(tc, [{"name": "emp", "table": "employee"}], ["employee"], probe=lambda *a: 100.0)
+    assert [(p["child_key"], p["parent_key"]) for p in props] == [("ReportsTo", "EmployeeId")]
+    db = make_sqlite({"employee": ("EmployeeId INTEGER, ReportsTo INTEGER, Name TEXT",
+                                   [(1, None, "a"), (2, 1, "b"), (3, 1, "c"), (4, 2, "d"), (5, 2, "e"), (6, 3, "f")])})
+    ir = _adjudicate(db, [{"name": "emp", "table": "employee", "kind": "role"}],
+                     [{"source": "emp", "target": "emp", "verb": "上级", "child_key": "ReportsTo", "parent_key": "EmployeeId"}],
+                     {"employee": ["EmployeeId", "ReportsTo", "Name"]}, monkeypatch)
+    assert ir["relations"] and ir["relations"][0]["status"] == "verified"

@@ -35,6 +35,7 @@ COSMO DataMind 是「数据治理 × 本体 × 深度问数」原型：
 
 ### 决定 / Decisions
 - [DR-072 · 全库评估与修正:注释接入、类型无关的取值比对、按取值补提与实例表识别](decisions/DR-072-whole-dataset-evaluation.md)
+- [DR-073 · 候选关系分流、问数选表修正与澄清、抽样截断标记与独立评审](decisions/DR-073-candidate-triage-and-independent-judging.md)
 - [DR-071 · 全量分轮与留出评估:键匹配排序、同名概念消歧与方向反证](decisions/DR-071-full-scale-holdout-evaluation.md)
 - [DR-070 · 孤儿记录、类别作用域编码、码表关系、取值形态与对象类型](decisions/DR-070-orphans-scoped-codes-codebooks-kinds.md)
 - [DR-069 · 真实模型评估暴露的构建缺口:跨轮键匹配、多态引用与问数维度核对](decisions/DR-069-build-agent-real-model-gaps.md)
@@ -122,7 +123,7 @@ COSMO DataMind 是「数据治理 × 本体 × 深度问数」原型：
 
 ## 现状校准
 - 计数(2026-10-01):**137 路由**(server.py 119 + bp_engine 5 + bp_actions 7 + bp_metrics 4 + bp_semantic 2)/ **565 集成断言** /
-  **1054 项 pytest 测试** / DR-001…DR-072 · IR-001…IR-013。
+  **1128 项 pytest 测试** / DR-001…DR-073 · IR-001…IR-013。
   DR-060 新增构建前预处理:外部库只读抽样 `ext_sample`、构建体检与分轮计划 `build_prep`。
   DR-059 新增长文分块检索 `doc_chunks`,以及能源管理 `energy_management`、碳排放核算 `carbon_accounting` 两个独立行业参照。
   新增共享层 `srv_context`/`srv_engine`、单一裁决核 `dao_core`、评测台 `hallucination_eval`/`definition_eval`、

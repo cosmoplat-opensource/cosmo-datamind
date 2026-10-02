@@ -221,6 +221,13 @@ def name_ok(child_col, parent_table, parent_key, child_table=None):
         st = expand(key_stem(child_col))
         if len(st) >= 3 and st in expand(_snake(parent_table or "")):
             return True
+        # 词元前缀缩写:anal_obj_id → analysis_object.id(每个词元是父表名中对应词元的前缀,至少 3 个字母)
+        toks = [t for t in st.split("_") if t]
+        ptoks = [t for t in expand(_snake(parent_table or "")).replace("__", "_").split("_") if t]
+        if len(toks) >= 2 and all(len(t) >= 3 for t in toks):
+            for i in range(len(ptoks) - len(toks) + 1):
+                if all(ptoks[i + j].startswith(toks[j]) for j in range(len(toks))):
+                    return True
     rt = role_targets(child_col)
     if rt:
         pt = (parent_table or "").lower()

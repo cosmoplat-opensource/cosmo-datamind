@@ -195,7 +195,9 @@ def test_overlap_uses_entire_domain_not_first_8000_values(make_sqlite, monkeypat
     ir = server._adjudicate_ir(db, "test", _proposal("customer_id", "id"),
                                _evidence({"customers": ["id"], "orders": ["order_id", "customer_id"]}))
     relation = ir["relations"][0]
-    assert relation["status"] == "candidate"
+    # 全域重叠 40%(不是前 8000 个值的 100%);子键名直指父表,按孤儿记录容忍判定,孤儿比例 60% 写入证据(DR-073)
+    assert relation["status"] == "verified"
+    assert relation["evidence"]["orphan_tolerant"]["orphan_rate"] == 0.6
     assert relation["evidence"]["overlap"] == 40.0
     assert relation["evidence"]["child_distinct"] == 20000
     assert relation["evidence"]["evidence_complete"] is True

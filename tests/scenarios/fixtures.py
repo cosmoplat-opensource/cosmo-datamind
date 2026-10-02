@@ -113,7 +113,7 @@ def lakehouse(path):
                           {"source": "作业日志", "target": "班次", "verb": "记录于", "child_key": "id", "parent_key": "id"}]},
         "truth_pass_by_line": dict(truth),
         "expect": {("过站", "线别"): ("verified", "tenant_scoped"), ("过站", "工单"): ("verified", "keep_latest"),
-                   ("过站", "字典"): ("verified", "scoped"), ("作业日志", "班次"): ("candidate", None)},
+                   ("过站", "字典"): ("verified", "scoped"), ("作业日志", "班次"): ("rejected", None)},
     }
 
 

@@ -77,7 +77,8 @@ def test_key_links_cross_round_and_rel_tables():
     assert not any(c == "create_by" for _, c, _, _ in got)                      # 审计列不提
     assert not any(ct.startswith("biz__cfg") for ct, _, _, _ in got)           # 租户键不逐表提
     assert ("biz__bill", "ent_no", "user__enterprise", "ent_no") not in got
-    assert not any(ct == pt for ct, _, pt, _ in got)
+    assert not any(ct == pt and c != "parent_no" for ct, c, pt, _ in got)                   # 只有上级列可自引用(DR-073)
+    assert ("inst__inst_device", "parent_no", "inst__inst_device", "id") in got
 
 
 def test_key_links_older_round_can_point_to_new_round():

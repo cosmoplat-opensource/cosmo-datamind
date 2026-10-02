@@ -80,18 +80,23 @@ def _ask(server, graph, sql):
                                                                 "nocache": True}).get_json()
 
 
-def _ask_with_repair(server, graph, first, fixed):
-    """计划先给出会被拦下的 SQL;收到「修正要求」时给出修正后的 SQL(DR-069)。"""
+def _ask_with_repair(server, graph, first, fixed, q="场景回归问数"):
+    """计划先给出有问题的 SQL;收到「修正要求」时给出修正后的 SQL(DR-069 口径、DR-073 答非所问)。"""
     def plan(question, *a, **k):
         return {"analyses": [{"title": "基准", "sql": fixed if "[修正要求]" in question else first}]}
     with _patched(server, agent_sql_plan=plan):
         server._QA_CACHE.clear()
-        return server.app.test_client().post("/api/chat", json={"q": "场景回归问数", "graphs": [graph],
+        return server.app.test_client().post("/api/chat", json={"q": q, "graphs": [graph],
                                                                 "nocache": True}).get_json()
 
 
 def _relation(ir, s, t):
-    return next((r for r in ir["relations"] if r.get("source_concept") == s and r.get("target_concept") == t), None)
+    """关系列表里找;被候选分流驳回的在 rejected_relations 里,状态记为 rejected(DR-073)。"""
+    r = next((r for r in ir["relations"] if r.get("source_concept") == s and r.get("target_concept") == t), None)
+    if r is None:
+        r = next((dict(x, status="rejected") for x in ir.get("rejected_relations") or []
+                  if x.get("source_concept") == s and x.get("target_concept") == t), None)
+    return r
 
 
 def _relation_checks(scenario, ir, expect):
@@ -198,6 +203,17 @@ def run_business(tmp):
         r2 = _ask(server, graph, live)
         got = {r["类型"]: r["n"] for r in (_rows(r2) or [])}
         checks.append(Check(name, "问数:排除已删除行后的答案与标准答案一致", got == fx["truth_devices_by_type"], str(got)))
+        # DR-073 答非所问:先查了企业表,按问句提到的「计量器具」重写后答对;重写后仍不对则不给答案、请使用者指明
+        wrong = "SELECT ent_name AS 类型, COUNT(*) AS n FROM enterprise GROUP BY 1"
+        r_ok = _ask_with_repair(server, graph, wrong, live, q="各类型的计量器具有多少台")
+        got = {r["类型"]: r["n"] for r in (_rows(r_ok) or [])}
+        checks.append(Check(name, "问数:答非所问时按问句提到的对象重写,答案正确",
+                            got == fx["truth_devices_by_type"] and any(s["step"] == "intent_repair" and s["ok"]
+                                                                      for s in r_ok.get("steps", [])), str(got)))
+        r_cl = _ask_with_repair(server, graph, wrong, wrong.replace("ent_name", "ent_no"), q="各类型的计量器具有多少台")
+        checks.append(Check(name, "问数:重写后仍答非所问则不给答案,列出候选表请使用者指明",
+                            not r_cl.get("results") and "inst_device" in (r_cl.get("narrative") or ""),
+                            (r_cl.get("narrative") or "")[:80]))
         r2b = _ask_with_repair(server, graph, naive, live)
         got = {r["类型"]: r["n"] for r in (_rows(r2b) or [])}
         checks.append(Check(name, "问数:被拦下的 SQL 按拦截原因修正一次后答案正确",

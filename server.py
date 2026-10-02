@@ -30,6 +30,8 @@ import observability    # DR-066:构建与问数的结构化追踪与指标(ODD)
 import code_contracts   # DR-065:代码契约(代码包 / docx 读取,连接与码表契约)
 import concept_hints    # DR-064:概念层线索(表族 / 类别拆分 / 版本重复)
 import key_links        # DR-069:按键名补提关系候选(跨轮、关联表、多态引用)
+import relation_triage  # DR-073:候选分流(自动驳回 / 暂缓 / 待审排序)
+import intent_check     # DR-026/073:双盲意图核对、答非所问时重写与澄清
 import build_cleaning   # DR-063:构建后自动复核、问数时套用清洗规则
 import ext_sample
 import llm_json      # DR-058:LLM 回复 JSON 抽取与提议形状校验的集中定义
@@ -3952,7 +3954,7 @@ def _chat_impl():
     if not plan:
         steps.append({"step": "plan_timeout", "ok": False, "info": "引擎超时/离线 → 降级为内置模板"})
         plan = fallback_plan(q_eff, ir=ir_gate, focus_tables=focus_tables)
-    results, dim_warns = [], []
+    results, dim_warns, unresolved, blocked = [], [], [], []
     for a in (plan.get("analyses") or [])[:4]:
         sql = a.get("sql", "")
         if not sql_is_readonly(sql):
@@ -3970,6 +3972,7 @@ def _chat_impl():
                     sql, ir_gate, strict=bool(graph_keys and gate_keys != ["demo"] and not fallback),
                     focus_tables=focus_tables)
         if not okv:
+            blocked.append(why)
             steps.append({"step": "ontology_gate", "ok": False, "info": "口径拦截:" + why}); continue
         # DR-026 双盲意图检测:口径校验管「SQL 合不合规」,这里管「答的是不是问的那件事」。
         # 只观测不阻断——确定性反解也会有漏判(如口径卡走视图名),
@@ -3977,6 +3980,20 @@ def _chat_impl():
         try:
             import intent_check, usage_stat
             _ic = intent_check.cross_check(question, sql, ir_gate)
+            if _ic["verdict"] == "mismatch" and engine_plan:
+                # DR-073 答非所问:改用问句提到的对象的表重写一次,改后照样过口径校验
+                steps.append(intent_check.step_of(_ic))
+                _fx = _intent_repair(q_eff, ctx, sql, _ic)
+                if _fx and _qa_validate_sql(_fx, ir_gate, strict=bool(graph_keys and gate_keys != ["demo"] and not fallback),
+                                            focus_tables=focus_tables)[0]:
+                    _ic2 = intent_check.cross_check(question, _fx, ir_gate)
+                    if _ic2["verdict"] != "mismatch":
+                        sql, _ic = _fx, _ic2
+                        steps.append({"step": "intent_repair", "ok": True, "info": "按问句提到的业务对象重写查询"})
+            if _ic["verdict"] == "mismatch" and engine_plan:      # 沉淀技能复用的 SQL 只观测不阻断(DR-026)
+                unresolved.append(_ic)
+                steps.append({"step": "intent_repair", "ok": False, "info": "查询与问句对象仍对不上,不作为答案给出"})
+                continue
             steps.append(intent_check.step_of(_ic))
             for _w in intent_check.dimension_check(question, sql, ir_gate):      # DR-069 维度词核对(只提示)
                 steps.append({"step": "dimension_check", "ok": False, "info": "维度存疑 · " + _w["reason"]})
@@ -3999,6 +4016,9 @@ def _chat_impl():
     if results:
         text = _bounded(lambda: narrative_llm(question, results, steps), 50) or _rule_summary(results)
         text += _dimension_caveat(dim_warns)
+    elif unresolved or blocked:
+        text = _clarify_text(question, ir_gate, unresolved, blocked)          # DR-073 不给不可靠的答案,请使用者指明
+        steps.append({"step": "clarify", "ok": False, "info": "需要使用者指明要统计的表"})
     else:
         text = plan.get("unavailable") or "查询均失败,请换个问法或检查指标是否绑表。"
     summary = "; ".join(f"{r['title']}[{r['sql'][:120]}]→{len(r['data']['rows'])}行,末行{json.dumps(r['data']['rows'][-1] if r['data']['rows'] else {}, ensure_ascii=False)[:150]}" for r in results)[:1200]
@@ -4117,7 +4137,7 @@ def chat_stream():
             yield push("plan_timeout", False, "引擎超时/离线 → 降级为内置模板")
             plan = fallback_plan(q_eff, ir=ir_gate, focus_tables=focus_tables)
         analyses = (plan.get("analyses") or [])[:4]
-        dim_warns = []
+        dim_warns, unresolved, blocked = [], [], []
         yield push("plan_ready", True, f"分析计划就绪 · 拆解为 {len(analyses)} 个子分析")
         results = []
         for idx, a in enumerate(analyses, 1):
@@ -4140,11 +4160,26 @@ def chat_stream():
                         strict=bool(graph_keys and _gate_keys != ["demo"] and not _gate_fallback),
                         focus_tables=focus_tables)
             if not okv:
+                blocked.append(why)
                 yield push("ontology_gate", False, f"[{idx}] 口径拦截:{why}"); continue
             yield push("ontology_gate", True, f"[{idx}] 本体校验通过 · 表与 JOIN 键均在本体边界内")
             try:                                     # DR-026 双盲意图检测(只观测不阻断)+ 使用度埋点
                 import intent_check, usage_stat
                 _ic = intent_check.cross_check(question, sql, ir_gate)
+                if _ic["verdict"] == "mismatch" and engine_plan:
+                    # DR-073 答非所问:改用问句提到的对象的表重写一次,改后照样过口径校验
+                    yield push("intent_crosscheck", False, f"[{idx}] " + intent_check.step_of(_ic)["info"])
+                    _fx = _intent_repair(q_eff, ctx, sql, _ic)
+                    if _fx and _qa_validate_sql(_fx, ir_gate, strict=bool(graph_keys and _gate_keys != ["demo"] and not _gate_fallback),
+                                                focus_tables=focus_tables)[0]:
+                        _ic2 = intent_check.cross_check(question, _fx, ir_gate)
+                        if _ic2["verdict"] != "mismatch":
+                            sql, _ic = _fx, _ic2
+                            yield push("intent_repair", True, f"[{idx}] 按问句提到的业务对象重写查询")
+                if _ic["verdict"] == "mismatch" and engine_plan:  # 沉淀技能复用的 SQL 只观测不阻断(DR-026)
+                    unresolved.append(_ic)
+                    yield push("intent_repair", False, f"[{idx}] 查询与问句对象仍对不上,不作为答案给出")
+                    continue
                 yield push("intent_crosscheck", _ic["verdict"] in ("aligned", "unknown"),
                            f"[{idx}] " + intent_check.step_of(_ic)["info"])
                 for _w in intent_check.dimension_check(question, sql, ir_gate):  # DR-069 维度词核对(只提示)
@@ -4195,6 +4230,9 @@ def chat_stream():
                 text += _cv
                 yield sse({"type": "narrative_delta", "text": _cv})
             yield push("narrative", True, f"生成分析报告 · {len(text)} 字")
+        elif unresolved or blocked:
+            text = _clarify_text(question, ir_gate, unresolved, blocked)      # DR-073 不给不可靠的答案,请使用者指明
+            yield push("clarify", False, "需要使用者指明要统计的表")
         else:
             yield push("review", False, "无有效数据,无法生成报告")
             text = plan.get("unavailable") or "查询均失败,请换个问法或检查指标是否绑表。"
@@ -6166,6 +6204,46 @@ def _used_child_keys(extracted):
 _CODE_VALUE = re.compile(r"^(?=.*[A-Za-z])(?=.*\d)[A-Za-z0-9_\-]{5,40}$")
 
 
+def _mark_sample_limited(ir, db):
+    """只读抽样时大表只取最新部分行(_dm_tables 的估计行数大于抽样行数):涉及这类表的关系,重叠率与孤儿比例
+    可能是抽样造成的,写进证据并在说明里注明(DR-073)。返回标注条数。"""
+    try:
+        con = ro_connect(db)
+    except (sqlite3.Error, OSError):
+        return 0
+    try:
+        if not con.execute("SELECT 1 FROM sqlite_master WHERE type='table' AND name='_dm_tables'").fetchone():
+            return 0
+        est = {t: n for t, n in con.execute("SELECT table_name, rows_est FROM _dm_tables") if isinstance(n, (int, float))}
+        trunc = {}
+        for t, n in est.items():
+            st = _safe_ident(t)
+            if not st or n <= 0:
+                continue
+            try:
+                have = con.execute(f'SELECT COUNT(*) FROM "{st}"').fetchone()[0]
+            except sqlite3.Error:
+                continue
+            if have and n > have * 1.05:
+                trunc[t] = (have, int(n))
+    finally:
+        con.close()
+    if not trunc:
+        return 0
+    o2t = {o.get("name"): o.get("table") for o in ir.get("objects") or [] if isinstance(o, dict)}
+    n = 0
+    for r in _rels(ir)[0]:
+        ct, pt = o2t.get(r.get("source_concept")), o2t.get(r.get("target_concept"))
+        sides = {k: f"抽样 {trunc[t][0]} / 约 {trunc[t][1]} 行" for k, t in (("child", ct), ("parent", pt)) if t in trunc}
+        if not sides:
+            continue
+        r.setdefault("evidence", {})["sample_limited"] = sides
+        if "parent" in sides and (r["evidence"].get("orphan_tolerant") or r.get("status") != "verified"):
+            r["note"] = str(r.get("note") or "") + f"(父表为抽样截断:{sides['parent']},孤儿比例可能偏高,全量数据上可能成立)"
+        n += 1
+    return n
+
+
 def _dedupe_parents(ir):
     """同一子表的同一子键被验证指向多张父表时(设备编码同时连到设备主表与网关下挂设备),
     只保留父表核心名与键词根最吻合的一条,其余降为候选(DR-072)。多态引用(带判别条件)不在此列。返回降级条数。"""
@@ -6297,6 +6375,44 @@ def _overlap_probe(db, sample=5000):
         except (sqlite3.Error, OSError):
             return None
     return probe
+
+
+def _intent_repair(question, ctx, sql, ic, budget=60):
+    """SQL 查询的表与问句提到的业务对象完全不相交时,让引擎改用这些对象的表重写一次(DR-073)。"""
+    declared = (ic.get("declared") or {}).get("objects") or []
+    if not declared:
+        return None
+    want = "、".join(f"{o.get('cn')}(表 {o.get('table')})" for o in declared[:5] if o.get("table"))
+    used = "、".join((ic.get("actual") or {}).get("tables") or []) or "无"
+    ask = (f"{question}\n[修正要求] 上一条 SQL 查询的表({used})与问句提到的业务对象不一致。问句提到的是:{want}。"
+           f"请改用这些对象对应的表重新生成这一条 SQL,只输出一个分析:\n{sql}")
+    plan = _bounded(lambda: agent_sql_plan(ask, ctx, []), budget)
+    new = ((plan or {}).get("analyses") or [{}])[0].get("sql") if isinstance(plan, dict) else None
+    return new if new and new != sql and sql_is_readonly(new) else None
+
+
+def _clarify_text(question, ir, ics=(), blocked=()):
+    """答不准时不给答案,而是列出问句可能指的表,请使用者指明(DR-073)。"""
+    deg = {}
+    for r in _rels(ir)[0]:
+        if r.get("status") == "verified":
+            for k in (r.get("source_concept"), r.get("target_concept")):
+                deg[k] = deg.get(k, 0) + 1
+    seen, cands = set(), []
+    for ic in ics:
+        for o in (ic.get("declared") or {}).get("objects") or []:
+            if o.get("table") and o["table"] not in seen:
+                seen.add(o["table"]); cands.append(o)
+    if not cands:
+        decl = intent_check.declared_intent(question, ir).get("objects") or []
+        cands = [o for o in decl if o.get("table")]
+    cands.sort(key=lambda o: -deg.get(o.get("key"), 0))
+    lines = [f"- {o.get('cn')}:表 {o.get('table')}(被 {deg.get(o.get('key'), 0)} 条已验证关系引用)" for o in cands[:6]]
+    why = "生成的查询与问句提到的业务对象对不上" if ics else "查询所需的关联没有经过数据验证,已拦下"
+    if blocked:
+        why += ";" + "；".join(str(b)[:80] for b in list(blocked)[:2])
+    return ("这个问题暂时不能给出可靠的答案:" + why + "。\n问句可能涉及以下表,请指明要统计的是哪一张"
+            "(或在数据源中点选表后再问):\n" + ("\n".join(lines) if lines else "- (本体中没有找到对应对象)"))
 
 
 def _repair_sql(question, ctx, sql, why, budget=60):
@@ -6496,7 +6612,7 @@ def _codebook_relations(ir, db, min_coverage=0.9):
 def _code_like(con, cache, table, col, min_distinct=10, overlap=None):
     """子列取值像业务编码:去重值不少于 10 个、八成以上含字母、平均长度不少于 4(DR-070)。"""
     vals = _distinct_values(con, cache, table, col)
-    if len(vals) < (5 if overlap is not None and overlap >= 99.9 and
+    if len(vals) < (3 if overlap is not None and overlap >= 99.9 and
                     all(_CODE_VALUE.match(v) for v in vals) else min_distinct):
         return None
     alpha = sum(1 for v in vals if re.search(r"[A-Za-z]", v)) / len(vals)
@@ -6826,7 +6942,9 @@ def _adjudicate_ir(db, name, extracted, ev, base_ir=None):
         _vcache = {}                                   # 本次裁决内的取值缓存(多态、取值形态、作用域编码共用)
         for r in extracted.get("relations", []):
             s, t = (r.get("source") or "").strip(), (r.get("target") or "").strip()
-            if not s or not t or s == t or s not in valid or t not in valid or (s, t) in seen: continue
+            # 自引用(员工.上级 → 员工、设备.上级设备 → 设备)也要取证:只要子键与父键不是同一列(DR-073)
+            _self_ok = s == t and str(r.get("child_key") or "").strip().lower() not in ("", str(r.get("parent_key") or "").strip().lower())
+            if not s or not t or (s == t and not _self_ok) or s not in valid or t not in valid or (s, t) in seen: continue
             seen.add((s, t))
             status, overlap, note = "candidate", None, "LLM 提议·待取证"
             ev_keys = None                                # 最佳尝试也留结构化证据,不只给 verified 留痕
@@ -7632,6 +7750,14 @@ def build_inquire():
         _ndp = _dedupe_parents(ir)
         if _ndp:
             yield push("codebook_links", True, f"同一子键指向多个父表 · {_ndp} 条改为候选(保留名称最吻合的父表)")
+        _nsl = _mark_sample_limited(ir, db)
+        if _nsl:
+            yield push("relation_triage", True, f"抽样截断 · {_nsl} 条关系的一端是只取了最新部分行的大表,重叠率与孤儿比例已注明可能受抽样影响")
+        # DR-073 候选分流:凭已记录的证据自动驳回明显不成立的、暂缓无数据的,其余按证据强弱排出审阅顺序
+        _tri = relation_triage.triage(ir)
+        yield push("relation_triage", True,
+                   f"候选分流 · 自动驳回 {_tri['rejected']} 条 · 无数据暂缓 {_tri['deferred']} 条 · "
+                   f"待人工审阅 {_tri['review']} 条(已按证据强弱排序)")
         # ⑤ 验收检查：图结构 + verified 证据契约 + 定义质量 + CQ 可达性，结果可重复。
         # quick_build 已先检查一次(无 CQ)；此处加入本轮 CQ 后重新计算。
         quality = build_quality.evaluate(ir, cqs)

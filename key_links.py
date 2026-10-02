@@ -31,6 +31,7 @@ POLY_KEY = re.compile(r"^(obj|object|target|biz|ref|owner|source|entity|rel_obj)
 _ASSOC = re.compile(r"(^|_)(rel|relation|link|links|map|mapping)$")
 _TENANT = {"enterprise", "tenant", "organization", "company", "factory", "corp"}
 _GENERIC = {"type", "status", "state", "name", "value", "flag", "level", "kind", "sort", "order", "parent", "id", "code"}
+_SELF_REF = re.compile(r"^(parent|pid|superior|upper|pre|up|reports)_?(id|no|code|to|dev_no|sys_no)?$|^parent_\w*(id|no|code)$")
 _CATALOG = re.compile(r"(^|_)(meta|dim|def|dict|dictionary|md|master|mst|type|types|catalog)(_|$)")
 _POLY_FLOOR = 30.0
 _WEAK_FLOOR = 20.0          # 普通键名候选的探测重叠下限(%),与裁决后保留候选的下限一致          # 多态候选的探测重叠下限(%)
@@ -108,6 +109,10 @@ def identifier_reference(child_key, parent_table, parent_key):
     """子键指向父表的标识键:键名相容,且父键就是父表的标识键(core 与词根一致)。孤儿记录容忍规则用(DR-070)。"""
     if "," in str(child_key or "") or "," in str(parent_key or ""):
         return False
+    if str(parent_key or "").lower() == "id":
+        # 子键名直指父表:statement_info_id → statement_info.id;只取完全吻合或至少两个词元的结尾吻合
+        st, core = _stem(child_key), table_core(parent_table)
+        return bool(st) and (st == core or ("_" in st and core.endswith("_" + st)))
     return dao_core.key_name_ok(child_key, parent_key) and _owner_key(table_core(parent_table), parent_key)
 
 
@@ -205,6 +210,23 @@ def propose(tab_cols, objects, round_tables, existing=(), probe=None, max_propos
                     if ov is not None and ov < _WEAK_FLOOR:
                         continue
                     add(ct, cc, pt, pc, f"键名:{ct}.{cc} 指向 {pt} 的标识键 {pc}", (2 if best >= 100 else 1, ov or 0.0))
+    # 自引用:上级、父节点一类列指回本表的标识(ReportsTo → EmployeeId、parent_no → dev_no)
+    for ct in t2o:
+        if ct not in rnd:
+            continue
+        ident = next((c for c in cols[ct] if _norm(c) == "id"), None) or next(iter(owned[ct]), None)
+        for cc in cols[ct]:
+            n = _norm(cc)
+            if not ident or cc == ident or (ct.lower(), cc.lower()) in used:
+                continue
+            if "self" in dao_core.role_targets(cc) or _SELF_REF.match(n):
+                if probe is not None:
+                    ov = probe(ct, cc, ct, ident)
+                    if ov is None or ov < _WEAK_FLOOR:
+                        continue
+                out.append({"source": t2o[ct], "target": t2o[ct], "child_table": ct, "parent_table": ct,
+                            "child_key": cc, "parent_key": ident, "verb": "上级", "origin": "key_match",
+                            "rationale": f"自引用:{ct}.{cc} 指回本表标识 {ident}", "_rank": (2, 100.0)})
     out.sort(key=lambda p: (-p["_rank"][0], -p["_rank"][1]))
     for p in out:
         p.pop("_rank", None)

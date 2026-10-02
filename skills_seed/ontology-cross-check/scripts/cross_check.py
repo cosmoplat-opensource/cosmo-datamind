@@ -160,11 +160,22 @@ def soft_delete_channel(db, ct, ck, pt, pk, base):
     return {"state": "conflict" if base >= THETA > ov else "support", "column": col, "overlap_live": ov}
 
 
+def _prefix_abbrev(ck, pt):
+    """词元前缀缩写:anal_obj_id → analysis_object.id(每个词元至少 3 个字母,依次是父表名相邻词元的前缀)。"""
+    toks = [t for t in re.split(r"[_\W]+", re.sub(r"_(id|no|code)$", "", ck.lower())) if t]
+    ptoks = [t for t in re.split(r"[_\W]+", pt.split("__")[-1].lower()) if t]
+    if len(toks) < 2 or any(len(t) < 3 for t in toks):
+        return False
+    return any(all(ptoks[i + j].startswith(toks[j]) for j in range(len(toks)))
+               for i in range(len(ptoks) - len(toks) + 1))
+
+
 def id_collision(db, ct, ck, pt, pk, name_state):
     if pk.lower() != "id":
         return {"state": "na"}
     tokens = [t for t in re.split(r"[_\W]+", pt.split("__")[-1].lower()) if len(t) >= 3]
-    related = any(t in ck.lower() for t in tokens) or (_stem(ck) and _stem(ck) in pt.lower())
+    related = any(t in ck.lower() for t in tokens) or (_stem(ck) and _stem(ck) in pt.lower()) \
+        or _prefix_abbrev(ck, pt)
     if name_state != "support" and (ck.lower() == "id" or not related):
         return {"state": "conflict", "reason": f"{ck} → {pt}.id:子键名与父表无关,且没有名称证据"}
     return {"state": "na"}
