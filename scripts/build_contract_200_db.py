@@ -1,9 +1,15 @@
 #!/usr/bin/env python3
-"""Build and validate the contract-aligned 200-table synthetic validation database.
+"""Build and validate the contract-aligned 200-table synthetic validation database (generator v2).
 
 The source database is opened read-only and never modified.  The destination is
 built in a temporary file, validated, and atomically moved into place only when
 all hard checks pass.
+
+v2 (after an independent audit of v1): references are derived along business
+chains, header totals come from their lines, every column has a meaningful
+value, measures and units follow each table's meaning, known defects of the
+108-table base are kept and registered as validation cases instead of being
+masked, and ``contract_200_checks`` runs the audit as post-generation checks.
 """
 
 from __future__ import annotations
@@ -16,14 +22,20 @@ import os
 import random
 import re
 import sqlite3
+import sys
 import tempfile
 from dataclasses import dataclass, field
-from datetime import date, datetime, timedelta
+from datetime import date, timedelta
 from pathlib import Path
 from typing import Any, Iterable
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import contract_200_checks as CHK  # noqa: E402
+import contract_200_metadata as META  # noqa: E402
+import contract_200_semantics as SEM  # noqa: E402
+import contract_200_values as VAL  # noqa: E402
 
-GENERATOR_VERSION = "1.1.0"
+GENERATOR_VERSION = "2.0.0"
 DEFAULT_SEED = 20260828
 TARGET_TABLES = 200
 TARGET_COLUMNS = 5000
@@ -62,241 +74,6 @@ class TableSpec:
         return f"{stem}_id"
 
 
-DIM_COMMON: list[tuple[str, str]] = [
-    ("code", "TEXT NOT NULL UNIQUE"),
-    ("name", "TEXT NOT NULL"),
-    ("name_en", "TEXT"),
-    ("short_name", "TEXT"),
-    ("description", "TEXT NOT NULL"),
-    ("status", "TEXT NOT NULL CHECK(status IN ('ACTIVE','INACTIVE','DRAFT','CLOSED'))"),
-    ("parent_code", "TEXT"),
-    ("category_code", "TEXT"),
-    ("type_code", "TEXT"),
-    ("hierarchy_level", "INTEGER NOT NULL CHECK(hierarchy_level >= 0)"),
-    ("sort_order", "INTEGER NOT NULL CHECK(sort_order >= 0)"),
-    ("effective_from", "DATE NOT NULL"),
-    ("effective_to", "DATE NOT NULL"),
-    ("external_code", "TEXT"),
-    ("legacy_code", "TEXT"),
-    ("source_system", "TEXT NOT NULL"),
-    ("source_record_id", "TEXT NOT NULL"),
-    ("tenant_code", "TEXT NOT NULL"),
-    ("approval_status", "TEXT NOT NULL"),
-    ("approved_at", "DATETIME"),
-    ("created_at", "DATETIME NOT NULL"),
-    ("updated_at", "DATETIME NOT NULL"),
-    ("created_by", "TEXT NOT NULL"),
-    ("updated_by", "TEXT NOT NULL"),
-    ("version_no", "INTEGER NOT NULL CHECK(version_no >= 1)"),
-    ("data_quality_score", "REAL NOT NULL CHECK(data_quality_score BETWEEN 0 AND 1)"),
-    ("is_deleted", "INTEGER NOT NULL CHECK(is_deleted IN (0,1))"),
-    ("remarks", "TEXT"),
-]
-
-
-FACT_COMMON: list[tuple[str, str]] = [
-    ("document_no", "TEXT NOT NULL UNIQUE"),
-    ("line_no", "INTEGER NOT NULL CHECK(line_no >= 1)"),
-    ("business_date", "DATE NOT NULL"),
-    ("event_time", "DATETIME NOT NULL"),
-    ("posting_date", "DATE NOT NULL"),
-    ("status", "TEXT NOT NULL CHECK(status IN ('OPEN','IN_PROGRESS','APPROVED','CLOSED','CANCELLED'))"),
-    ("priority", "INTEGER NOT NULL CHECK(priority BETWEEN 1 AND 5)"),
-    ("currency_code", "TEXT NOT NULL"),
-    ("unit_code", "TEXT NOT NULL"),
-    ("quantity", "REAL NOT NULL CHECK(quantity >= 0)"),
-    ("base_quantity", "REAL NOT NULL CHECK(base_quantity >= 0)"),
-    ("planned_quantity", "REAL NOT NULL CHECK(planned_quantity >= 0)"),
-    ("actual_quantity", "REAL NOT NULL CHECK(actual_quantity >= 0)"),
-    ("qualified_quantity", "REAL NOT NULL CHECK(qualified_quantity >= 0)"),
-    ("rejected_quantity", "REAL NOT NULL CHECK(rejected_quantity >= 0)"),
-    ("unit_price", "REAL NOT NULL CHECK(unit_price >= 0)"),
-    ("amount", "REAL NOT NULL CHECK(amount >= 0)"),
-    ("tax_amount", "REAL NOT NULL CHECK(tax_amount >= 0)"),
-    ("cost_amount", "REAL NOT NULL CHECK(cost_amount >= 0)"),
-    ("budget_amount", "REAL NOT NULL CHECK(budget_amount >= 0)"),
-    ("duration_minutes", "REAL NOT NULL CHECK(duration_minutes >= 0)"),
-    ("rate_value", "REAL NOT NULL CHECK(rate_value BETWEEN 0 AND 1)"),
-    ("score_value", "REAL NOT NULL CHECK(score_value BETWEEN 0 AND 100)"),
-    ("reason_code", "TEXT NOT NULL"),
-    ("source_system", "TEXT NOT NULL"),
-    ("source_record_id", "TEXT NOT NULL"),
-    ("etl_batch_id", "TEXT NOT NULL"),
-    ("trace_id", "TEXT NOT NULL"),
-    ("tenant_code", "TEXT NOT NULL"),
-    ("created_at", "DATETIME NOT NULL"),
-    ("updated_at", "DATETIME NOT NULL"),
-    ("created_by", "TEXT NOT NULL"),
-    ("updated_by", "TEXT NOT NULL"),
-    ("row_version", "INTEGER NOT NULL CHECK(row_version >= 1)"),
-    ("data_quality_score", "REAL NOT NULL CHECK(data_quality_score BETWEEN 0 AND 1)"),
-    ("is_deleted", "INTEGER NOT NULL CHECK(is_deleted IN (0,1))"),
-    ("remarks", "TEXT"),
-]
-
-
-DIM_PROFILES: dict[str, list[tuple[str, str]]] = {
-    "time": [
-        ("calendar_date", "DATE"), ("calendar_year", "INTEGER"), ("calendar_quarter", "INTEGER"),
-        ("calendar_month", "INTEGER"), ("calendar_week", "INTEGER"), ("day_of_month", "INTEGER"),
-        ("day_of_week", "INTEGER"), ("is_workday", "INTEGER"), ("is_holiday", "INTEGER"),
-        ("shift_start", "TEXT"), ("shift_end", "TEXT"), ("break_minutes", "INTEGER"),
-        ("timezone_name", "TEXT"), ("fiscal_period", "TEXT"),
-    ],
-    "finance": [
-        ("symbol", "TEXT"), ("numeric_code", "TEXT"), ("decimal_places", "INTEGER"),
-        ("tax_rate", "REAL"), ("settlement_days", "INTEGER"), ("credit_days", "INTEGER"),
-        ("discount_rate", "REAL"), ("exchange_rate_basis", "TEXT"), ("country_code", "TEXT"),
-        ("invoice_type", "TEXT"), ("payment_method", "TEXT"), ("settlement_method", "TEXT"),
-        ("accounting_scope", "TEXT"), ("legal_basis", "TEXT"),
-    ],
-    "code": [
-        ("canonical_value", "TEXT"), ("display_value", "TEXT"), ("abbreviation", "TEXT"),
-        ("synonym_1", "TEXT"), ("synonym_2", "TEXT"), ("conversion_factor", "REAL"),
-        ("base_unit_code", "TEXT"), ("validation_pattern", "TEXT"), ("value_domain", "TEXT"),
-        ("allow_manual_entry", "INTEGER"), ("severity_level", "INTEGER"), ("usage_scope", "TEXT"),
-        ("reference_standard", "TEXT"), ("semantic_version", "TEXT"),
-    ],
-    "quality": [
-        ("characteristic_type", "TEXT"), ("measurement_method", "TEXT"), ("nominal_value", "REAL"),
-        ("lower_spec_limit", "REAL"), ("upper_spec_limit", "REAL"), ("precision_scale", "INTEGER"),
-        ("sample_frequency", "INTEGER"), ("sample_unit", "TEXT"), ("inspection_level", "TEXT"),
-        ("acceptance_rule", "TEXT"), ("instrument_type", "TEXT"), ("calibration_required", "INTEGER"),
-        ("control_plan_code", "TEXT"), ("criticality", "TEXT"),
-    ],
-    "market": [
-        ("segment_level", "INTEGER"), ("channel_type", "TEXT"), ("market_scope", "TEXT"),
-        ("customer_size", "TEXT"), ("industry_code", "TEXT"), ("sales_region", "TEXT"),
-        ("price_tier", "TEXT"), ("service_level", "TEXT"), ("credit_policy", "TEXT"),
-        ("target_margin", "REAL"), ("annual_potential", "REAL"), ("growth_target", "REAL"),
-        ("account_strategy", "TEXT"), ("responsible_role", "TEXT"),
-    ],
-    "supplier": [
-        ("site_code", "TEXT"), ("country_code", "TEXT"), ("province", "TEXT"), ("city", "TEXT"),
-        ("address_line", "TEXT"), ("postal_code", "TEXT"), ("contact_name", "TEXT"),
-        ("contact_phone", "TEXT"), ("lead_time_days", "INTEGER"), ("minimum_order_qty", "REAL"),
-        ("delivery_rating", "REAL"), ("quality_rating", "REAL"), ("capacity_rating", "REAL"),
-        ("approved_scope", "TEXT"),
-    ],
-    "asset": [
-        ("project_type", "TEXT"), ("asset_category", "TEXT"), ("investment_class", "TEXT"),
-        ("planned_start_date", "DATE"), ("planned_end_date", "DATE"), ("budget_ceiling", "REAL"),
-        ("depreciation_method", "TEXT"), ("useful_life_years", "INTEGER"), ("capitalization_rule", "TEXT"),
-        ("responsible_department", "TEXT"), ("project_stage", "TEXT"), ("funding_source", "TEXT"),
-        ("approval_level", "TEXT"), ("cost_object_code", "TEXT"),
-    ],
-    "sustainability": [
-        ("medium_type", "TEXT"), ("measurement_unit", "TEXT"), ("conversion_factor", "REAL"),
-        ("emission_factor", "REAL"), ("lower_threshold", "REAL"), ("upper_threshold", "REAL"),
-        ("regulatory_limit", "REAL"), ("monitoring_frequency", "INTEGER"), ("scope_category", "TEXT"),
-        ("reporting_standard", "TEXT"), ("calculation_method", "TEXT"), ("meter_type", "TEXT"),
-        ("responsible_role", "TEXT"), ("evidence_requirement", "TEXT"),
-    ],
-    "hr": [
-        ("skill_family", "TEXT"), ("proficiency_level", "INTEGER"), ("certificate_type", "TEXT"),
-        ("issuing_authority", "TEXT"), ("validity_months", "INTEGER"), ("renewal_required", "INTEGER"),
-        ("job_family", "TEXT"), ("job_grade", "TEXT"), ("minimum_experience_years", "INTEGER"),
-        ("education_requirement", "TEXT"), ("training_hours", "REAL"), ("assessment_method", "TEXT"),
-        ("critical_position", "INTEGER"), ("replacement_lead_days", "INTEGER"),
-    ],
-    "manufacturing": [
-        ("parameter_group", "TEXT"), ("parameter_unit", "TEXT"), ("nominal_value", "REAL"),
-        ("lower_control_limit", "REAL"), ("upper_control_limit", "REAL"), ("lower_spec_limit", "REAL"),
-        ("upper_spec_limit", "REAL"), ("sampling_interval_seconds", "INTEGER"), ("collection_method", "TEXT"),
-        ("control_method", "TEXT"), ("reaction_plan", "TEXT"), ("equipment_scope", "TEXT"),
-        ("product_scope", "TEXT"), ("process_stage", "TEXT"),
-    ],
-    "governance": [
-        ("release_name", "TEXT"), ("generator_version", "TEXT"), ("random_seed", "INTEGER"),
-        ("base_sha256", "TEXT"), ("case_type", "TEXT"), ("target_table", "TEXT"),
-        ("target_column", "TEXT"), ("expected_behavior", "TEXT"), ("is_intentional", "INTEGER"),
-        ("detection_rule", "TEXT"), ("expected_count", "INTEGER"), ("tolerance_value", "REAL"),
-        ("owner_team", "TEXT"), ("remediation_hint", "TEXT"),
-    ],
-}
-
-
-FACT_PROFILES: dict[str, list[tuple[str, str]]] = {
-    "sales": [
-        ("lead_source", "TEXT"), ("opportunity_stage", "TEXT"), ("probability", "REAL"),
-        ("expected_close_date", "DATE"), ("customer_po_no", "TEXT"), ("contract_no", "TEXT"),
-        ("requested_delivery_date", "DATE"), ("promised_delivery_date", "DATE"),
-        ("sales_region", "TEXT"), ("campaign_code", "TEXT"), ("forecast_bucket", "TEXT"),
-        ("delivery_terms", "TEXT"), ("price_list_code", "TEXT"), ("margin_rate", "REAL"),
-    ],
-    "procurement": [
-        ("requisition_no", "TEXT"), ("quotation_no", "TEXT"), ("buyer_code", "TEXT"),
-        ("supplier_quote_no", "TEXT"), ("requested_date", "DATE"), ("promised_date", "DATE"),
-        ("received_date", "DATE"), ("payment_term_code", "TEXT"), ("incoterm_code", "TEXT"),
-        ("sourcing_method", "TEXT"), ("lead_time_days", "INTEGER"), ("quality_agreement_no", "TEXT"),
-        ("claim_type", "TEXT"), ("claim_resolution", "TEXT"),
-    ],
-    "inventory": [
-        ("lot_no", "TEXT"), ("batch_no", "TEXT"), ("serial_no", "TEXT"),
-        ("movement_type", "TEXT"), ("bin_code", "TEXT"), ("stock_status", "TEXT"),
-        ("reservation_no", "TEXT"), ("pallet_no", "TEXT"), ("container_no", "TEXT"),
-        ("expiry_date", "DATE"), ("manufacture_date", "DATE"), ("available_quantity", "REAL"),
-        ("reserved_quantity", "REAL"), ("valuation_type", "TEXT"),
-    ],
-    "production": [
-        ("order_no", "TEXT"), ("operation_seq", "INTEGER"), ("process_stage", "TEXT"),
-        ("shift_code", "TEXT"), ("start_time", "DATETIME"), ("end_time", "DATETIME"),
-        ("work_center_code", "TEXT"), ("batch_no", "TEXT"), ("routing_version", "TEXT"),
-        ("setup_minutes", "REAL"), ("run_minutes", "REAL"), ("cycle_time_seconds", "REAL"),
-        ("yield_rate", "REAL"), ("scrap_quantity", "REAL"),
-    ],
-    "quality": [
-        ("inspection_no", "TEXT"), ("sample_size", "INTEGER"), ("characteristic_code", "TEXT"),
-        ("measured_value", "REAL"), ("nominal_value", "REAL"), ("lower_limit", "REAL"),
-        ("upper_limit", "REAL"), ("result_code", "TEXT"), ("defect_code", "TEXT"),
-        ("severity", "INTEGER"), ("disposition", "TEXT"), ("root_cause_code", "TEXT"),
-        ("containment_action", "TEXT"), ("verification_result", "TEXT"),
-    ],
-    "equipment": [
-        ("event_code", "TEXT"), ("alarm_code", "TEXT"), ("sensor_code", "TEXT"),
-        ("reading_value", "REAL"), ("reading_unit", "TEXT"), ("lower_threshold", "REAL"),
-        ("upper_threshold", "REAL"), ("maintenance_type", "TEXT"), ("failure_mode", "TEXT"),
-        ("downtime_minutes", "REAL"), ("meter_start", "REAL"), ("meter_end", "REAL"),
-        ("health_index", "REAL"), ("remaining_life_hours", "REAL"),
-    ],
-    "finance": [
-        ("voucher_no", "TEXT"), ("fiscal_year", "INTEGER"), ("fiscal_period", "INTEGER"),
-        ("debit_amount", "REAL"), ("credit_amount", "REAL"), ("account_code", "TEXT"),
-        ("cost_center_code", "TEXT"), ("profit_center_code", "TEXT"), ("exchange_rate", "REAL"),
-        ("local_amount", "REAL"), ("tax_rate", "REAL"), ("due_date", "DATE"),
-        ("clearing_document", "TEXT"), ("reference_document", "TEXT"),
-    ],
-    "safety": [
-        ("observation_no", "TEXT"), ("hazard_type", "TEXT"), ("severity", "INTEGER"),
-        ("likelihood", "INTEGER"), ("risk_score", "REAL"), ("control_measure", "TEXT"),
-        ("permit_no", "TEXT"), ("location_code", "TEXT"), ("action_due_date", "DATE"),
-        ("closed_date", "DATE"), ("emission_value", "REAL"), ("limit_value", "REAL"),
-        ("regulatory_clause", "TEXT"), ("evidence_reference", "TEXT"),
-    ],
-    "hr": [
-        ("employee_no", "TEXT"), ("work_date", "DATE"), ("shift_code", "TEXT"),
-        ("clock_in", "TEXT"), ("clock_out", "TEXT"), ("regular_hours", "REAL"),
-        ("overtime_hours", "REAL"), ("absence_type", "TEXT"), ("position_code", "TEXT"),
-        ("skill_level", "INTEGER"), ("assessment_score", "REAL"), ("expiry_date", "DATE"),
-        ("supervisor_code", "TEXT"), ("attendance_result", "TEXT"),
-    ],
-    "planning": [
-        ("plan_version", "TEXT"), ("planning_period", "TEXT"), ("scenario_code", "TEXT"),
-        ("demand_quantity", "REAL"), ("supply_quantity", "REAL"), ("capacity_hours", "REAL"),
-        ("utilization_rate", "REAL"), ("backlog_quantity", "REAL"), ("safety_stock_quantity", "REAL"),
-        ("forecast_accuracy", "REAL"), ("exception_code", "TEXT"), ("review_status", "TEXT"),
-        ("planner_code", "TEXT"), ("freeze_horizon_days", "INTEGER"),
-    ],
-    "governance": [
-        ("rule_code", "TEXT"), ("check_name", "TEXT"), ("severity", "INTEGER"),
-        ("detected_at", "DATETIME"), ("resolved_at", "DATETIME"), ("expected_value", "TEXT"),
-        ("actual_value", "TEXT"), ("exception_count", "INTEGER"), ("owner_team", "TEXT"),
-        ("resolution_status", "TEXT"), ("generator_version", "TEXT"), ("random_seed", "INTEGER"),
-        ("evidence_path", "TEXT"), ("validation_query", "TEXT"),
-    ],
-}
-
-
 def R(column: str, table: str, parent_column: str, nullable: bool = False, declared: bool = True) -> Ref:
     return Ref(column, table, parent_column, nullable, declared)
 
@@ -318,9 +95,9 @@ def table_specs() -> list[TableSpec]:
     """Return 92 new tables in referentially safe creation/seed order."""
     dims = [
         S("dim_calendar", "日历", "主数据", "dim", "time", 547),
-        S("dim_shift", "生产班次", "主数据", "dim", "time", 3, [R("factory_id", "dim_factory", "factory_id")]),
+        S("dim_shift", "生产班次", "主数据", "dim", "time", 15, [R("workshop_id", "dim_workshop", "workshop_id")]),
         S("dim_currency", "币种", "财务", "dim", "finance", 4),
-        S("dim_unit_of_measure", "计量单位", "主数据", "dim", "code", 8),
+        S("dim_unit_of_measure", "计量单位", "主数据", "dim", "code", 10),
         S("dim_tax_code", "税码", "财务", "dim", "finance", 6),
         S("dim_payment_term", "付款条件", "财务", "dim", "finance", 8),
         S("dim_incoterm", "贸易术语", "采购", "dim", "finance", 8),
@@ -461,104 +238,9 @@ def parent_values(con: sqlite3.Connection, table: str, column: str) -> list[Any]
     return [row[0] for row in con.execute(f"SELECT {qident(column)} FROM {qident(table)} WHERE {qident(column)} IS NOT NULL ORDER BY {qident(column)}")]
 
 
-PARENT_DATE_CANDIDATES = (
-    "business_date",
-    "order_date",
-    "po_date",
-    "delivery_date",
-    "invoice_date",
-    "wo_date",
-    "training_date",
-    "start_date",
-    "posting_date",
-)
-
-
-def parent_date_column(con: sqlite3.Connection, table: str) -> str | None:
-    columns = {row[1] for row in table_columns(con, table)}
-    return next((name for name in PARENT_DATE_CANDIDATES if name in columns), None)
-
-
-def parent_dates(
-    con: sqlite3.Connection,
-    table: str,
-    key_column: str,
-) -> dict[Any, date]:
-    date_column = parent_date_column(con, table)
-    if date_column is None:
-        return {}
-    values: dict[Any, date] = {}
-    for key, raw_date in con.execute(
-        f"SELECT {qident(key_column)}, {qident(date_column)} FROM {qident(table)} "
-        f"WHERE {qident(date_column)} IS NOT NULL"
-    ):
-        try:
-            values[key] = date.fromisoformat(str(raw_date)[:10])
-        except ValueError:
-            continue
-    return values
-
-
-def _choose_parent_by_date(
-    con: sqlite3.Connection,
-    parent_table: str,
-    parent_key: str,
-    parent_date: str,
-    child_date_value: str,
-    ordinal: int,
-) -> Any:
-    rows = list(
-        con.execute(
-            f"SELECT {qident(parent_key)}, {qident(parent_date)} FROM {qident(parent_table)} "
-            f"WHERE date({qident(parent_date)}) <= date(?) ORDER BY date({qident(parent_date)}), {qident(parent_key)}",
-            (child_date_value,),
-        )
-    )
-    if not rows:
-        rows = list(con.execute(f"SELECT {qident(parent_key)}, {qident(parent_date)} FROM {qident(parent_table)} ORDER BY {qident(parent_key)}"))
-    return rows[ordinal % len(rows)][0]
-
-
-def repair_base_foreign_keys(con: sqlite3.Connection) -> dict[str, int]:
-    """Repair four known invalid FK chains in the copied synthetic base."""
-    repairs: dict[str, int] = {}
-    date_rules = [
-        ("fact_return", "order_id", "return_date", "fact_sales_order", "order_id", "order_date"),
-        ("fact_invoice", "delivery_id", "invoice_date", "fact_delivery", "delivery_id", "delivery_date"),
-        ("fact_ar_aging", "invoice_id", "due_date", "fact_invoice", "invoice_id", "invoice_date"),
-    ]
-    for child, child_fk, child_date, parent, parent_pk, parent_date in date_rules:
-        bad = list(
-            con.execute(
-                f"SELECT rowid, {qident(child_date)} FROM {qident(child)} WHERE {qident(child_fk)} IS NOT NULL "
-                f"AND {qident(child_fk)} NOT IN (SELECT {qident(parent_pk)} FROM {qident(parent)}) ORDER BY rowid"
-            )
-        )
-        for ordinal, (rowid, when) in enumerate(bad):
-            new_key = _choose_parent_by_date(con, parent, parent_pk, parent_date, when, ordinal)
-            con.execute(f"UPDATE {qident(child)} SET {qident(child_fk)}=? WHERE rowid=?", (new_key, rowid))
-        repairs[f"{child}.{child_fk}->{parent}.{parent_pk}"] = len(bad)
-
-    child, child_fk, parent, parent_pk = "fact_material_consumption", "order_id", "fact_production_order", "order_id"
-    keys = parent_values(con, parent, parent_pk)
-    bad = list(
-        con.execute(
-            f"SELECT rowid FROM {qident(child)} WHERE {qident(child_fk)} IS NOT NULL "
-            f"AND {qident(child_fk)} NOT IN (SELECT {qident(parent_pk)} FROM {qident(parent)}) ORDER BY rowid"
-        )
-    )
-    for ordinal, (rowid,) in enumerate(bad):
-        con.execute(f"UPDATE {qident(child)} SET {qident(child_fk)}=? WHERE rowid=?", (keys[ordinal % len(keys)], rowid))
-    repairs[f"{child}.{child_fk}->{parent}.{parent_pk}"] = len(bad)
-    return repairs
-
 
 def _tables_with_column(con: sqlite3.Connection, column: str) -> list[str]:
-    return [
-        table
-        for table in user_tables(con)
-        if column in {row[1] for row in table_columns(con, table)}
-    ]
+    return [table for table in user_tables(con) if column in {row[1] for row in table_columns(con, table)}]
 
 
 def deidentify_base_plaintext(con: sqlite3.Connection) -> dict[str, Any]:
@@ -651,123 +333,6 @@ def deidentify_base_plaintext(con: sqlite3.Connection) -> dict[str, Any]:
     }
 
 
-def repair_base_aggregate_grains(con: sqlite3.Connection) -> dict[str, int]:
-    """Repair two known duplicate-grain defects in copied DWS daily tables.
-
-    ``DWS_EQUIPMENT_DAILY`` contains repeated rows at its documented daily
-    equipment/line grain.  Keeping the first deterministic row avoids treating
-    repeated snapshots as separate daily facts.  ``DWS_SAFETY_DAILY`` contains
-    500 rows at one identical date/workshop grain; its existing synthetic
-    observations are redistributed over 100 dates and the five valid workshops
-    so every row has an unambiguous daily grain.  The source database remains
-    read-only and unchanged.
-    """
-    before = con.execute("SELECT COUNT(*) FROM DWS_EQUIPMENT_DAILY").fetchone()[0]
-    con.execute(
-        "DELETE FROM DWS_EQUIPMENT_DAILY WHERE rowid NOT IN ("
-        "SELECT MIN(rowid) FROM DWS_EQUIPMENT_DAILY "
-        "GROUP BY date,dim_equipment_id,dim_line_id)"
-    )
-    after = con.execute("SELECT COUNT(*) FROM DWS_EQUIPMENT_DAILY").fetchone()[0]
-
-    workshops = list(
-        con.execute(
-            "SELECT workshop_id,workshop_name FROM dim_workshop ORDER BY workshop_id"
-        )
-    )
-    if not workshops:
-        raise RuntimeError("dim_workshop has no rows; cannot repair safety daily grain")
-    safety_rows = list(
-        con.execute("SELECT rowid FROM DWS_SAFETY_DAILY ORDER BY rowid")
-    )
-    start_date = date(2025, 5, 24)
-    for ordinal, (rowid,) in enumerate(safety_rows):
-        workshop_id, workshop_name = workshops[ordinal % len(workshops)]
-        business_date = start_date + timedelta(days=ordinal // len(workshops))
-        con.execute(
-            "UPDATE DWS_SAFETY_DAILY "
-            "SET date=?,dim_workshop_id=?,workshop_name=? WHERE rowid=?",
-            (business_date.isoformat(), workshop_id, workshop_name, rowid),
-        )
-
-    indexes_created = 0
-    for (table,) in con.execute(
-        "SELECT name FROM sqlite_master "
-        "WHERE type='table' AND name LIKE 'DWS_%_DAILY' ORDER BY name"
-    ):
-        columns = [row[1] for row in table_columns(con, table)]
-        grain = [column for column in columns if column == "date" or column.startswith("dim_")]
-        if not grain:
-            continue
-        index_name = f"ux_{table.lower()}_grain"
-        con.execute(
-            f"CREATE UNIQUE INDEX IF NOT EXISTS {qident(index_name)} "
-            f"ON {qident(table)}({','.join(qident(column) for column in grain)})"
-        )
-        indexes_created += 1
-    return {
-        "equipment_duplicate_rows_removed": before - after,
-        "safety_rows_regrained": len(safety_rows),
-        "dws_unique_grain_indexes": indexes_created,
-    }
-
-
-def repair_base_temporal_rules(con: sqlite3.Connection) -> dict[str, int]:
-    """Repair event-order violations after the copied base foreign keys are resolved."""
-    rules = [
-        (
-            "fact_delivery",
-            "delivery_date",
-            "fact_sales_order",
-            "order_id",
-            "order_id",
-            "order_date",
-        ),
-        (
-            "fact_return",
-            "return_date",
-            "fact_sales_order",
-            "order_id",
-            "order_id",
-            "order_date",
-        ),
-        (
-            "fact_invoice",
-            "invoice_date",
-            "fact_delivery",
-            "delivery_id",
-            "delivery_id",
-            "delivery_date",
-        ),
-        (
-            "fact_ar_aging",
-            "due_date",
-            "fact_invoice",
-            "invoice_id",
-            "invoice_id",
-            "invoice_date",
-        ),
-    ]
-    repairs: dict[str, int] = {}
-    for child, child_date, parent, child_fk, parent_pk, parent_date in rules:
-        predicate = (
-            f"EXISTS (SELECT 1 FROM {qident(parent)} parent "
-            f"WHERE parent.{qident(parent_pk)}={qident(child)}.{qident(child_fk)} "
-            f"AND date({qident(child)}.{qident(child_date)})<date(parent.{qident(parent_date)}))"
-        )
-        count = con.execute(
-            f"SELECT COUNT(*) FROM {qident(child)} WHERE {predicate}"
-        ).fetchone()[0]
-        con.execute(
-            f"UPDATE {qident(child)} SET {qident(child_date)}=("
-            f"SELECT parent.{qident(parent_date)} FROM {qident(parent)} parent "
-            f"WHERE parent.{qident(parent_pk)}={qident(child)}.{qident(child_fk)}) "
-            f"WHERE {predicate}"
-        )
-        repairs[f"{child}.{child_date}>={parent}.{parent_date}"] = count
-    return repairs
-
-
 def seed_empty_base_tables(con: sqlite3.Connection) -> dict[str, int]:
     """Fill the one empty base fact table with explicitly marked synthetic records."""
     seeded: dict[str, int] = {}
@@ -809,53 +374,85 @@ def seed_empty_base_tables(con: sqlite3.Connection) -> dict[str, int]:
     return seeded
 
 
+# ───────────────────────── 原 108 表:只登记已知问题,不改数据 ─────────────────────────
+# v1 把孤儿引用轮流挂到现有记录、把子单据日期改成父单据日期、删除汇总层重复粒度,数据看起来干净,
+# 问题却被掩盖。v2 原样保留,逐项登记为验证案例(数量在生成时按底库实测,校验时复算比对)。
+BASE_ISSUES: list[tuple[str, str, str, str, str]] = [
+    ("BASE_ORPHAN_RETURN_ORDER", "fact_return", "order_id", "退货引用的销售订单不存在(声明外键,原库即有)",
+     "SELECT COUNT(*) FROM fact_return WHERE order_id IS NOT NULL AND order_id NOT IN (SELECT order_id FROM fact_sales_order)"),
+    ("BASE_ORPHAN_INVOICE_DELIVERY", "fact_invoice", "delivery_id", "发票引用的交付单不存在",
+     "SELECT COUNT(*) FROM fact_invoice WHERE delivery_id IS NOT NULL AND delivery_id NOT IN (SELECT delivery_id FROM fact_delivery)"),
+    ("BASE_ORPHAN_AR_INVOICE", "fact_ar_aging", "invoice_id", "应收账龄引用的发票不存在",
+     "SELECT COUNT(*) FROM fact_ar_aging WHERE invoice_id IS NOT NULL AND invoice_id NOT IN (SELECT invoice_id FROM fact_invoice)"),
+    ("BASE_ORPHAN_CONSUMPTION_ORDER", "fact_material_consumption", "order_id", "物料消耗引用的生产工单不存在(约八成)",
+     "SELECT COUNT(*) FROM fact_material_consumption WHERE order_id IS NOT NULL AND order_id NOT IN (SELECT order_id FROM fact_production_order)"),
+    ("BASE_RETURN_OVER_ORDER_QTY", "fact_return", "quantity", "退货数量超过订单数量",
+     "SELECT COUNT(*) FROM fact_return r JOIN fact_sales_order o ON r.order_id=o.order_id WHERE r.quantity>o.quantity"),
+    ("BASE_RUNTIME_EXCEEDS_SPAN", "fact_production_order", "runtime_hours", "工单运行时长超过开始到结束的时间跨度",
+     "SELECT COUNT(*) FROM fact_production_order WHERE runtime_hours > (julianday(end_time)-julianday(start_time))*24 + 0.1"),
+    ("BASE_CONSUMPTION_NOT_IN_BOM", "fact_material_consumption", "material_id", "消耗物料不在工单产品 BOM 中",
+     "SELECT COUNT(*) FROM fact_material_consumption c JOIN fact_production_order p ON c.order_id=p.order_id WHERE NOT EXISTS (SELECT 1 FROM dim_bom b JOIN dim_bom_line bl ON b.bom_id=bl.bom_id WHERE b.product_id=p.prod_id AND bl.material_id=c.material_id)"),
+    ("BASE_DWS_EMP_NAME_MISMATCH", "DWS_IN_SALES_DAILY", "emp_name", "汇总层员工姓名与员工主数据不一致",
+     "SELECT COUNT(*) FROM DWS_IN_SALES_DAILY a JOIN dim_employee e ON a.dim_emp_id=e.emp_id WHERE a.emp_name<>e.emp_name"),
+    ("BASE_AGG_EMP_NAME_MISMATCH", "agg_metric_monthly", "emp_name", "月度指标汇总的员工姓名与主数据不一致",
+     "SELECT COUNT(*) FROM agg_metric_monthly a JOIN dim_employee e ON a.emp_id=e.emp_id WHERE a.emp_name<>e.emp_name"),
+    ("BASE_DWS_EQUIPMENT_DUP_GRAIN", "DWS_EQUIPMENT_DAILY", "date,dim_equipment_id,dim_line_id", "设备日汇总同一粒度重复行",
+     "SELECT COALESCE(SUM(n-1),0) FROM (SELECT COUNT(*) n FROM DWS_EQUIPMENT_DAILY GROUP BY date, dim_equipment_id, dim_line_id HAVING n>1)"),
+    ("BASE_DWS_SAFETY_DUP_GRAIN", "DWS_SAFETY_DAILY", "date,dim_workshop_id", "安全日汇总同一粒度重复行",
+     "SELECT COALESCE(SUM(n-1),0) FROM (SELECT COUNT(*) n FROM DWS_SAFETY_DAILY GROUP BY date, dim_workshop_id HAVING n>1)"),
+    ("BASE_DOWNTIME_REASON_STORES_ID", "fact_downtime", "reason_code", "停机原因码列存的是原因 id,不是原因编码",
+     "SELECT COUNT(*) FROM fact_downtime WHERE reason_code NOT IN (SELECT reason_code FROM dim_downtime_reason) AND reason_code IN (SELECT reason_id FROM dim_downtime_reason)"),
+    ("BASE_MATERIAL_ID_COMMENT_PRODUCT", "fact_material_consumption", "material_id", "列名为物料 id,注释却说关联产品表",
+     "SELECT COUNT(*) FROM dim_column_metadata WHERE table_name='fact_material_consumption' AND column_name='material_id' AND column_desc LIKE '%dim_product%'"),
+    ("BASE_ALARM_LAYER_GAP", "DWS_EQUIPMENT_DAILY", "alarm_count", "设备日汇总报警数合计与报警明细条数之差",
+     "SELECT (SELECT SUM(alarm_count) FROM DWS_EQUIPMENT_DAILY) - (SELECT COUNT(*) FROM fact_alarm)"),
+    ("BASE_PRODUCTION_LAYER_GAP", "DWS_PRODUCTION_DAILY", "actual_quantity", "生产日汇总产量与工单实际产量之差(取整)",
+     "SELECT CAST(ROUND((SELECT SUM(actual_quantity) FROM fact_production_order) - (SELECT SUM(actual_quantity) FROM DWS_PRODUCTION_DAILY)) AS INTEGER)"),
+]
+
+# 新表里刻意构造并登记的挑战与脏数据
+SOFT_DELETE_TABLES = ("fact_lead", "fact_customer_contact", "fact_inventory_movement", "fact_attendance", "fact_condition_monitoring")
+LEGACY_UNRESOLVED_RATE = 0.05
+
+
 def _column_defs(spec: TableSpec) -> list[tuple[str, str]]:
     columns: list[tuple[str, str]] = [(spec.pk, "INTEGER PRIMARY KEY")]
     for ref in spec.refs:
-        null_sql = "" if ref.nullable else " NOT NULL"
-        columns.append((ref.column, "INTEGER" + null_sql))
-    common = DIM_COMMON if spec.kind == "dim" else FACT_COMMON
-    profiles = DIM_PROFILES if spec.kind == "dim" else FACT_PROFILES
-    columns.extend(common)
-    columns.extend(profiles[spec.profile])
+        columns.append((ref.column, "INTEGER" + ("" if ref.nullable else " NOT NULL")))
+    if spec.kind == "dim":
+        columns += SEM.DIM_COMMON + SEM.DIM_ATTRS[spec.name]
+    else:
+        columns += SEM.fact_columns(spec.name)
     for extra in spec.extras:
         columns.append((extra.name, extra.sql_type + ("" if extra.nullable else " NOT NULL")))
-    seen: set[str] = set()
-    duplicates: set[str] = set()
-    for name, _ in columns:
-        if name in seen:
-            duplicates.add(name)
-        seen.add(name)
-    if duplicates:
-        raise AssertionError(f"{spec.name}: duplicate columns {sorted(duplicates)}")
+    names = [n for n, _ in columns]
+    dup = {n for n in names if names.count(n) > 1}
+    if dup:
+        raise AssertionError(f"{spec.name}: duplicate columns {sorted(dup)}")
     return columns
 
 
 def create_table(con: sqlite3.Connection, spec: TableSpec) -> None:
     defs = [f"{qident(name)} {sql_type}" for name, sql_type in _column_defs(spec)]
+    names = {n for n, _ in _column_defs(spec)}
     if spec.kind == "dim":
         defs.append("CHECK(date(effective_to) >= date(effective_from))")
     else:
-        defs.extend(
-            [
-                "CHECK(date(posting_date) >= date(business_date))",
-                "CHECK(datetime(updated_at) >= datetime(created_at))",
-                "CHECK(qualified_quantity + rejected_quantity <= actual_quantity + 0.000001)",
-            ]
-        )
-        defs.append("FOREIGN KEY(currency_code) REFERENCES dim_currency(code)")
-        defs.append("FOREIGN KEY(unit_code) REFERENCES dim_unit_of_measure(code)")
+        defs += ["CHECK(date(posting_date) >= date(business_date))", "CHECK(datetime(updated_at) >= datetime(created_at))"]
+        if "qualified_quantity" in names:
+            defs.append("CHECK(qualified_quantity + rejected_quantity <= actual_quantity + 0.000001)")
+            defs.append("FOREIGN KEY(unit_code) REFERENCES dim_unit_of_measure(code)")
+        if "currency_code" in names:
+            defs.append("FOREIGN KEY(currency_code) REFERENCES dim_currency(code)")
         defs.append("FOREIGN KEY(reason_code) REFERENCES dim_reason_code(code)")
         defs.append("FOREIGN KEY(business_date) REFERENCES dim_calendar(calendar_date)")
-        if spec.profile == "procurement":
+        if "payment_term_code" in names:
             defs.append("FOREIGN KEY(payment_term_code) REFERENCES dim_payment_term(code)")
             defs.append("FOREIGN KEY(incoterm_code) REFERENCES dim_incoterm(code)")
     for ref in spec.refs:
         if ref.declared:
-            defs.append(
-                f"FOREIGN KEY({qident(ref.column)}) REFERENCES {qident(ref.parent_table)}({qident(ref.parent_column)}) "
-                "ON UPDATE RESTRICT ON DELETE RESTRICT"
-            )
+            defs.append(f"FOREIGN KEY({qident(ref.column)}) REFERENCES {qident(ref.parent_table)}({qident(ref.parent_column)}) "
+                        "ON UPDATE RESTRICT ON DELETE RESTRICT")
     con.execute(f"CREATE TABLE {qident(spec.name)} (\n  " + ",\n  ".join(defs) + "\n)")
     if spec.name == "dim_calendar":
         con.execute("CREATE UNIQUE INDEX idx_dim_calendar_calendar_date ON dim_calendar(calendar_date)")
@@ -866,542 +463,357 @@ def create_table(con: sqlite3.Connection, spec: TableSpec) -> None:
         con.execute(f"CREATE INDEX {qident('idx_' + spec.name + '_status')} ON {qident(spec.name)}(status)")
 
 
-def _iso_day(rng: random.Random, offset_max: int = 545) -> str:
-    return (date(2025, 1, 1) + timedelta(days=rng.randrange(offset_max + 1))).isoformat()
-
-
-def _generic_value(name: str, sql_type: str, row_no: int, spec: TableSpec, rng: random.Random) -> Any:
-    lower = name.lower()
-    if lower.endswith("_date") or lower in {"calendar_date", "due_date", "expiry_date", "manufacture_date", "work_date", "closed_date"}:
-        return _iso_day(rng)
-    if lower.endswith("_at") or lower.endswith("_time") or lower in {"detected_at", "resolved_at"}:
-        return f"{_iso_day(rng)} {8 + row_no % 10:02d}:{row_no % 60:02d}:00"
-    if lower.startswith("is_") or lower.endswith("_required") or lower in {"allow_manual_entry", "critical_position", "calibration_required", "renewal_required"}:
-        return row_no % 2
-    if any(token in lower for token in ("rate", "score", "probability", "factor", "accuracy", "margin", "utilization", "health_index")):
-        return round(0.5 + (row_no % 45) / 100, 4)
-    if any(token in lower for token in ("amount", "cost", "price", "value", "limit", "ceiling", "potential")):
-        return round(100 + row_no * 3.17, 4)
-    if any(token in lower for token in ("quantity", "hours", "minutes", "life_", "threshold")):
-        return round(1 + (row_no % 80) * 0.75, 4)
-    if "INTEGER" in sql_type.upper() or any(token in lower for token in ("count", "level", "year", "period", "days", "order", "seed", "size", "scale", "frequency")):
-        return int(1 + row_no % 30)
-    if "REAL" in sql_type.upper() or "DECIMAL" in sql_type.upper():
-        return round(1 + row_no * 0.37, 4)
-    return f"{spec.name}:{name}:{row_no:04d}"
-
-
-def _special_dimension_codes(spec: TableSpec) -> list[str] | None:
-    values = {
-        "dim_shift": ["DAY", "SWING", "NIGHT"],
-        "dim_currency": ["CNY", "USD", "EUR", "JPY"],
-        "dim_unit_of_measure": ["EA", "KG", "TON", "HOUR", "KWH", "CNY", "PCT", "METER"],
-        "dim_reason_code": ["QUALITY", "DELIVERY", "COST", "EQUIPMENT", "SAFETY", "ENVIRONMENT", "CUSTOMER", "SUPPLIER", "PROCESS", "MATERIAL", "SYSTEM", "OTHER"],
-    }
-    return values.get(spec.name)
-
-
-def seed_dimension(
-    con: sqlite3.Connection,
-    spec: TableSpec,
-    rng: random.Random,
-    base_hash: str,
-    seed: int,
-) -> None:
-    columns = [name for name, _ in _column_defs(spec)]
-    parent_cache = {ref.column: parent_values(con, ref.parent_table, ref.parent_column) for ref in spec.refs}
-    codes = _special_dimension_codes(spec)
-    rows: list[list[Any]] = []
-    start = date(2025, 1, 1)
-    for idx in range(1, spec.rows + 1):
-        record: dict[str, Any] = {spec.pk: idx}
-        for ref in spec.refs:
-            values = parent_cache[ref.column]
-            record[ref.column] = values[(idx - 1) % len(values)] if values else None
-        code = codes[idx - 1] if codes else f"{spec.name.removeprefix('dim_').upper()}-{idx:04d}"
-        if spec.name == "dim_calendar":
-            day = start + timedelta(days=idx - 1)
-            code = day.strftime("%Y%m%d")
-        record.update(
-            {
-                "code": code,
-                "name": f"合成{spec.cn_name}{idx}",
-                "name_en": f"Synthetic {spec.name} {idx}",
-                "short_name": f"{spec.cn_name}{idx}",
-                "description": f"合同评测用合成{spec.cn_name}主数据，第{idx}条。",
-                "status": "ACTIVE",
-                "parent_code": None,
-                "category_code": spec.domain.upper(),
-                "type_code": spec.profile.upper(),
-                "hierarchy_level": 1,
-                "sort_order": idx,
-                "effective_from": "2025-01-01",
-                "effective_to": "2099-12-31",
-                "external_code": f"EXT-{code}",
-                "legacy_code": f"LEG-{idx:04d}",
-                "source_system": "SYNTHETIC_VALIDATION",
-                "source_record_id": f"{spec.name}:{idx}",
-                "tenant_code": "DEMO_TENANT",
-                "approval_status": "APPROVED",
-                "approved_at": "2026-08-28 09:00:00",
-                "created_at": "2026-08-28 08:00:00",
-                "updated_at": "2026-08-28 09:00:00",
-                "created_by": "contract_data_generator",
-                "updated_by": "contract_data_generator",
-                "version_no": 1,
-                "data_quality_score": 1.0,
-                "is_deleted": 0,
-                "remarks": "明确标记为合成数据，不对应真实个人或企业交易。",
-            }
-        )
-        for name, sql_type in DIM_PROFILES[spec.profile]:
-            record[name] = _generic_value(name, sql_type, idx, spec, rng)
-        if spec.name == "dim_calendar":
-            day = start + timedelta(days=idx - 1)
-            record.update(
-                {
-                    "calendar_date": day.isoformat(),
-                    "calendar_year": day.year,
-                    "calendar_quarter": (day.month - 1) // 3 + 1,
-                    "calendar_month": day.month,
-                    "calendar_week": int(day.strftime("%V")),
-                    "day_of_month": day.day,
-                    "day_of_week": day.isoweekday(),
-                    "is_workday": int(day.isoweekday() <= 5),
-                    "is_holiday": int(day.isoweekday() > 5),
-                    "fiscal_period": f"{day.year}-{day.month:02d}",
-                }
-            )
-        elif spec.name == "dim_dataset_release":
-            record.update(
-                {
-                    "release_name": "contract-validation-200-v1",
-                    "generator_version": GENERATOR_VERSION,
-                    "random_seed": seed,
-                    "base_sha256": base_hash,
-                    "case_type": "DATASET_RELEASE",
-                    "target_table": "*",
-                    "target_column": "*",
-                    "expected_behavior": "200 tables, at least 5000 columns, deterministic synthetic data",
-                    "is_intentional": 1,
-                    "detection_rule": "validate_database",
-                    "expected_count": TARGET_TABLES,
-                    "tolerance_value": 0.0,
-                    "owner_team": "data-governance",
-                    "remediation_hint": "Regenerate from the same base hash and seed.",
-                }
-            )
-        elif spec.name == "dim_validation_case":
-            case_rows = [
-                ("MISSING_DECLARED_FK", "fact_legacy_material_issue", "mat_ref", "Values resolve to dim_material.material_code while the schema intentionally omits the FK."),
-                ("IRREGULAR_KEY_NAME", "fact_legacy_material_issue", "mat_ref", "Relationship discovery should detect an irregular material reference name."),
-                ("LAYER_RECONCILIATION", "DWS_PRODUCTION_DAILY", "actual_quantity", "Layer totals are a documented challenge case and must not be silently treated as identical."),
-                ("COMPOSITE_KEY", "fact_shipment_line", "shipment_id,line_no", "Line identity is represented by header plus line number."),
-                ("DUAL_WAREHOUSE_ROLE", "fact_transfer_order", "source_warehouse_id,target_warehouse_id", "Both role-specific references must remain directionally distinct."),
-                ("LOW_CARDINALITY_CODE", "dim_reason_code", "code", "Low-cardinality codes require semantic confirmation."),
-                ("TEMPORAL_ORDER", "fact_shipment", "business_date,posting_date", "Posting date must not precede business date."),
-                ("AMOUNT_RECONCILIATION", "fact_sales_order_line", "quantity,unit_price,amount", "Amount must equal quantity multiplied by unit price within rounding tolerance."),
-                ("QUALITY_DECOMPOSITION", "fact_inspection_result", "actual_quantity,qualified_quantity,rejected_quantity", "Qualified and rejected quantities must not exceed actual quantity."),
-                ("TRACEABILITY", "fact_lot_trace", "trace_id", "Every record must have a stable trace identifier."),
-                ("METADATA_COMPLETENESS", "dim_column_metadata", "column_desc", "All physical columns must have metadata records."),
-                ("REFERENCE_INTEGRITY", "*", "*", "All declared foreign keys must pass PRAGMA foreign_key_check."),
-            ]
-            case_type, target_table, target_column, behavior = case_rows[idx - 1]
-            record.update(
-                {
-                    "release_name": "contract-validation-200-v1",
-                    "generator_version": GENERATOR_VERSION,
-                    "random_seed": seed,
-                    "base_sha256": base_hash,
-                    "case_type": case_type,
-                    "target_table": target_table,
-                    "target_column": target_column,
-                    "expected_behavior": behavior,
-                    "is_intentional": 1,
-                    "detection_rule": case_type.lower(),
-                    "expected_count": 0,
-                    "tolerance_value": 0.0001,
-                    "owner_team": "ontology-evaluation",
-                    "remediation_hint": "Review the validation case manifest before changing the data.",
-                }
-            )
-        rows.append([record.get(column) for column in columns])
-    placeholders = ",".join("?" for _ in columns)
+def _insert(con: sqlite3.Connection, spec: TableSpec, records: list[dict[str, Any]]) -> None:
+    columns = [n for n, _ in _column_defs(spec)]
     con.executemany(
-        f"INSERT INTO {qident(spec.name)} ({','.join(qident(c) for c in columns)}) VALUES ({placeholders})",
-        rows,
-    )
+        f"INSERT INTO {qident(spec.name)} ({','.join(qident(c) for c in columns)}) VALUES ({','.join('?' for _ in columns)})",
+        [[r.get(c) for c in columns] for r in records])
 
 
-def seed_fact(con: sqlite3.Connection, spec: TableSpec, rng: random.Random, seed: int) -> None:
-    defs = _column_defs(spec)
-    columns = [name for name, _ in defs]
-    parent_cache = {ref.column: parent_values(con, ref.parent_table, ref.parent_column) for ref in spec.refs}
-    parent_date_cache = {
-        ref.column: parent_dates(con, ref.parent_table, ref.parent_column)
-        for ref in spec.refs
-        if ref.parent_table.startswith("fact_")
-    }
-    currencies = parent_values(con, "dim_currency", "code")
-    units = parent_values(con, "dim_unit_of_measure", "code")
-    reasons = parent_values(con, "dim_reason_code", "code")
-    payment_terms = parent_values(con, "dim_payment_term", "code") if spec.profile == "procurement" else []
-    incoterms = parent_values(con, "dim_incoterm", "code") if spec.profile == "procurement" else []
-    material_codes = parent_values(con, "dim_material", "material_code") if spec.name == "fact_legacy_material_issue" else []
-    rows: list[list[Any]] = []
+def _dim_refs(spec: TableSpec, idx: int, ctx: SEM.Context, rng: random.Random) -> dict[str, Any]:
+    out: dict[str, Any] = {}
+    for ref in spec.refs:
+        ids = ctx.ids(ref.parent_table, ref.parent_column)
+        if spec.name == "dim_shift":
+            out[ref.column] = ids[(idx - 1) // 3]                 # 每个车间三个班次
+        elif spec.name in ("dim_quality_characteristic", "dim_job_position", "dim_process_parameter", "dim_supplier_site"):
+            out[ref.column] = ids[(idx - 1) % len(ids)]            # 覆盖每个产品/部门/设备类型/供应商
+        else:
+            out[ref.column] = VAL._zipf_pick(rng, ids)
+    return out
+
+
+def seed_dimension(con: sqlite3.Connection, spec: TableSpec, ctx: SEM.Context, rng: random.Random,
+                   extras: list[dict[str, Any]] | None = None) -> None:
+    records = []
     for idx in range(1, spec.rows + 1):
-        record: dict[str, Any] = {spec.pk: idx}
-        for ref in spec.refs:
-            values = parent_cache[ref.column]
-            record[ref.column] = values[(idx * 7 + len(ref.column)) % len(values)] if values else None
-        if spec.name == "fact_gl_entry_line":
-            values = parent_cache["gl_entry_id"]
-            record["gl_entry_id"] = values[((idx - 1) // 2) % len(values)]
-        for source_column, target_column in (
-            ("source_warehouse_id", "target_warehouse_id"),
-            ("source_factory_id", "target_factory_id"),
-        ):
-            if source_column not in record or target_column not in record:
-                continue
-            if record[source_column] == record[target_column]:
-                values = parent_cache[target_column]
-                current = values.index(record[target_column])
-                record[target_column] = values[(current + 1) % len(values)]
-        if spec.name == "fact_cash_flow":
-            if idx % 2:
-                record["supplier_id"] = None
-            else:
-                record["cust_id"] = None
-
-        measure_idx = (idx + 1) // 2 if spec.name == "fact_gl_entry_line" else idx
-        business_day = date(2025, 1, 1) + timedelta(days=(measure_idx * 11 + len(spec.name)) % 546)
-        referenced_dates = [
-            dates[record[column]]
-            for column, dates in parent_date_cache.items()
-            if record.get(column) in dates
-        ]
-        if referenced_dates:
-            business_day = max(business_day, max(referenced_dates))
-        posting_day = business_day + timedelta(days=idx % 4)
-        event_time = datetime.combine(business_day, datetime.min.time()) + timedelta(hours=8 + idx % 10, minutes=idx % 60)
-        quantity = round(1.0 + (measure_idx % 40) * 0.75, 4)
-        planned = round(quantity * (1.02 + (measure_idx % 4) * 0.01), 4)
-        actual = round(quantity * (0.96 + (measure_idx % 5) * 0.01), 4)
-        rejected = round(actual * ((measure_idx % 4) / 100), 4)
-        qualified = round(actual - rejected, 4)
-        unit_price = round(50 + (measure_idx % 120) * 3.25, 4)
-        amount = round(quantity * unit_price, 2)
-        record.update(
-            {
-                "document_no": f"{spec.name.upper()}-{idx:06d}",
-                "line_no": ((idx - 1) % 2 + 1) if spec.name == "fact_gl_entry_line" else idx % 10 + 1,
-                "business_date": business_day.isoformat(),
-                "event_time": event_time.strftime("%Y-%m-%d %H:%M:%S"),
-                "posting_date": posting_day.isoformat(),
-                "status": ("OPEN", "IN_PROGRESS", "APPROVED", "CLOSED")[idx % 4],
-                "priority": idx % 5 + 1,
-                "currency_code": currencies[idx % len(currencies)],
-                "unit_code": units[idx % len(units)],
-                "quantity": quantity,
-                "base_quantity": quantity,
-                "planned_quantity": planned,
-                "actual_quantity": actual,
-                "qualified_quantity": qualified,
-                "rejected_quantity": rejected,
-                "unit_price": unit_price,
-                "amount": amount,
-                "tax_amount": round(amount * 0.13, 2),
-                "cost_amount": round(amount * (0.62 + (idx % 8) / 100), 2),
-                "budget_amount": round(amount * 1.08, 2),
-                "duration_minutes": round(15 + idx % 360, 2),
-                "rate_value": round(0.70 + (idx % 25) / 100, 4),
-                "score_value": round(70 + idx % 30, 2),
-                "reason_code": reasons[idx % len(reasons)],
-                "source_system": "SYNTHETIC_VALIDATION",
-                "source_record_id": f"{spec.name}:{idx}",
-                "etl_batch_id": f"BATCH-{business_day.strftime('%Y%m')}",
-                "trace_id": hashlib.sha256(f"{spec.name}:{idx}:{seed}".encode()).hexdigest()[:32],
-                "tenant_code": "DEMO_TENANT",
-                "created_at": event_time.strftime("%Y-%m-%d %H:%M:%S"),
-                "updated_at": (event_time + timedelta(minutes=5)).strftime("%Y-%m-%d %H:%M:%S"),
-                "created_by": "contract_data_generator",
-                "updated_by": "contract_data_generator",
-                "row_version": 1,
-                "data_quality_score": 1.0,
-                "is_deleted": 0,
-                "remarks": "合成业务记录，仅用于合同技术验证。",
-            }
-        )
-        for name, sql_type in FACT_PROFILES[spec.profile]:
-            record[name] = _generic_value(name, sql_type, idx, spec, rng)
-        # Keep profile-level temporal and measure fields internally consistent.
-        if spec.profile == "sales":
-            record["probability"] = round(0.35 + (idx % 60) / 100, 4)
-            record["margin_rate"] = round((amount - record["cost_amount"]) / amount, 4)
-            record["requested_delivery_date"] = (business_day + timedelta(days=7)).isoformat()
-            record["promised_delivery_date"] = (business_day + timedelta(days=10)).isoformat()
-            record["expected_close_date"] = (business_day + timedelta(days=15)).isoformat()
-        elif spec.profile == "procurement":
-            record["requested_date"] = business_day.isoformat()
-            record["promised_date"] = (business_day + timedelta(days=7)).isoformat()
-            record["received_date"] = (business_day + timedelta(days=idx % 9)).isoformat()
-            record["lead_time_days"] = 7
-            record["payment_term_code"] = payment_terms[idx % len(payment_terms)]
-            record["incoterm_code"] = incoterms[idx % len(incoterms)]
-        elif spec.profile == "inventory":
-            record["manufacture_date"] = (business_day - timedelta(days=30)).isoformat()
-            record["expiry_date"] = (business_day + timedelta(days=365)).isoformat()
-            record["available_quantity"] = qualified
-            record["reserved_quantity"] = rejected
-        elif spec.profile == "production":
-            record["start_time"] = event_time.strftime("%Y-%m-%d %H:%M:%S")
-            record["end_time"] = (event_time + timedelta(minutes=record["duration_minutes"])).strftime("%Y-%m-%d %H:%M:%S")
-            record["yield_rate"] = round(qualified / actual if actual else 0, 4)
-            record["scrap_quantity"] = rejected
-        elif spec.profile == "quality":
-            nominal = round(50 + idx % 10, 3)
-            record.update({"nominal_value": nominal, "lower_limit": nominal - 1, "upper_limit": nominal + 1, "measured_value": nominal + ((idx % 5) - 2) * 0.2})
-        elif spec.profile == "equipment":
-            reading = round(40 + idx % 20, 3)
-            record.update({"reading_value": reading, "lower_threshold": 35.0, "upper_threshold": 65.0, "meter_start": idx * 10.0, "meter_end": idx * 10.0 + quantity, "health_index": record["rate_value"]})
-        elif spec.profile == "finance":
-            record.update({"fiscal_year": business_day.year, "fiscal_period": business_day.month, "debit_amount": amount, "credit_amount": amount, "local_amount": amount, "exchange_rate": 1.0, "tax_rate": 0.13, "due_date": (business_day + timedelta(days=30)).isoformat()})
-            if spec.name == "fact_gl_entry_line":
-                is_debit = record["line_no"] == 1
-                record["debit_amount"] = amount if is_debit else 0.0
-                record["credit_amount"] = 0.0 if is_debit else amount
-                record["local_amount"] = amount if is_debit else -amount
-        elif spec.profile == "safety":
-            severity, likelihood = idx % 5 + 1, (idx * 3) % 5 + 1
-            record.update({"severity": severity, "likelihood": likelihood, "risk_score": severity * likelihood, "action_due_date": (business_day + timedelta(days=14)).isoformat(), "closed_date": (business_day + timedelta(days=10)).isoformat(), "emission_value": quantity, "limit_value": quantity * 1.2})
-        elif spec.profile == "hr":
-            record.update({"work_date": business_day.isoformat(), "regular_hours": 8.0, "overtime_hours": round(idx % 4 * 0.5, 2), "assessment_score": record["score_value"], "expiry_date": (business_day + timedelta(days=365)).isoformat()})
-        elif spec.profile == "planning":
-            record.update({"demand_quantity": planned, "supply_quantity": actual, "capacity_hours": record["duration_minutes"] / 60, "utilization_rate": record["rate_value"], "backlog_quantity": max(planned - actual, 0), "safety_stock_quantity": quantity * 0.2, "forecast_accuracy": record["rate_value"]})
-        elif spec.profile == "governance":
-            record.update({"detected_at": record["event_time"], "resolved_at": record["updated_at"], "exception_count": 0, "generator_version": GENERATOR_VERSION, "random_seed": seed})
-        if spec.name == "fact_legacy_material_issue":
-            record["mat_ref"] = material_codes[(idx * 5) % len(material_codes)]
-        rows.append([record.get(column) for column in columns])
-    placeholders = ",".join("?" for _ in columns)
-    con.executemany(
-        f"INSERT INTO {qident(spec.name)} ({','.join(qident(c) for c in columns)}) VALUES ({placeholders})",
-        rows,
-    )
+        rec = VAL.dim_record(spec, idx, _dim_refs(spec, idx, ctx, rng), ctx, rng, extras[idx - 1] if extras else None)
+        rec[spec.pk] = idx
+        records.append(rec)
+    _insert(con, spec, records)
+    ctx.invalidate(spec.name)
 
 
-TOKEN_CN = {
-    "id": "标识", "code": "编码", "name": "名称", "date": "日期", "time": "时间",
-    "status": "状态", "amount": "金额", "quantity": "数量", "price": "价格", "rate": "比率",
-    "score": "评分", "source": "来源", "target": "目标", "created": "创建", "updated": "更新",
-    "employee": "员工", "customer": "客户", "supplier": "供应商", "material": "物料", "product": "产品",
-    "equipment": "设备", "warehouse": "仓库", "factory": "工厂", "order": "订单", "line": "明细",
-    "business": "业务", "document": "单据", "reason": "原因", "quality": "质量", "inspection": "检验",
-    "actual": "实际", "planned": "计划", "qualified": "合格", "rejected": "不合格", "unit": "单位",
-    "data": "数据", "trace": "追溯", "version": "版本", "description": "说明", "remarks": "备注",
-}
+def seed_fact(con: sqlite3.Connection, spec: TableSpec, ctx: SEM.Context, seed: int,
+              gov_rows: list[dict[str, Any]] | None = None) -> None:
+    rng = random.Random(f"{seed}:{spec.name}")
+    scale = {"qty": SEM.lognorm(rng, 20.0, 0.8), "price": SEM.lognorm(rng, 800.0, 0.8), "amount": SEM.lognorm(rng, 20000.0, 0.6),
+             "duration": SEM.lognorm(rng, 90.0, 0.5), "rate": rng.uniform(0.82, 0.96), "score": rng.uniform(72, 90),
+             "reject": rng.uniform(0.005, 0.03)}
+    if gov_rows is not None:
+        rows = [{"_gov": g, **{k: v for k, v in g.items() if k.endswith("_id")}} for g in gov_rows]
+    else:
+        rows = VAL.derive_refs(spec.name, spec.refs, spec.rows, ctx, rng)
+    records = [VAL.fact_record(spec, i + 1, row, ctx, rng, seed, scale) for i, row in enumerate(rows)]
+    if spec.name == "fact_legacy_material_issue":
+        for rec, row in zip(records, rows):
+            rec["mat_ref"] = ctx.rows("dim_material", "material_id")[row["_material_id"]]["material_code"]
+    _insert(con, spec, records)
+    ctx.invalidate(spec.name)
 
 
-def column_cn(name: str) -> str:
-    return "".join(TOKEN_CN.get(token, token.upper()) for token in name.split("_"))
-
-
-def refresh_metadata(con: sqlite3.Connection, specs_by_name: dict[str, TableSpec]) -> None:
-    tables = user_tables(con)
-    existing_tables = {row[0] for row in con.execute("SELECT table_name FROM dim_table_metadata")}
-    next_table_id = con.execute("SELECT COALESCE(MAX(table_id),0)+1 FROM dim_table_metadata").fetchone()[0]
-    for table in tables:
-        if table in existing_tables:
+def aggregate_headers(con: sqlite3.Connection, ctx: SEM.Context) -> dict[str, int]:
+    """表头的数量与金额由明细汇总;单价为加权平均价。"""
+    done = {}
+    for header, (line, key) in SEM.HEADER_OF.items():
+        if header not in SEM.FACT_SEMANTICS or header == "fact_inspection_lot":
+            continue                                          # 原表表头(销售订单、发票、合同)不改,明细按表头拆分;
+                                                              # 检验批数量是批量(吨),检验结果是样本个数,不汇总
+        cols = {r[1] for r in con.execute(f'PRAGMA table_info("{header}")')}
+        if header == "fact_gl_entry":
+            con.execute("UPDATE fact_gl_entry SET debit_amount=amount, credit_amount=amount")
+            done[header] = 0
             continue
-        spec = specs_by_name.get(table)
-        cn = spec.cn_name if spec else table
-        desc = (
-            f"合同评测用合成{cn}数据表；数据由确定性生成器产生，不对应真实业务记录。"
-            if spec
-            else f"原108表数据库中的{table}表。"
-        )
-        category = "维度表" if table.startswith("dim_") else ("事实表" if table.startswith("fact_") else "汇总表")
-        con.execute(
-            "INSERT INTO dim_table_metadata(table_id,table_name,table_name_cn,table_desc,table_category,table_level) VALUES(?,?,?,?,?,?)",
-            (next_table_id, table, cn, desc, category, "contract_validation" if spec else "core"),
-        )
-        next_table_id += 1
+        sets = []
+        if "quantity" in cols:
+            for c in ("quantity", "base_quantity", "planned_quantity", "actual_quantity", "qualified_quantity", "rejected_quantity"):
+                sets.append(f"{c}=(SELECT ROUND(SUM(l.{c}),3) FROM {qident(line)} l WHERE l.{key}={qident(header)}.{key})")
+        if "amount" in cols:
+            for c in ("amount", "tax_amount", "cost_amount", "budget_amount"):
+                sets.append(f"{c}=(SELECT ROUND(SUM(l.{c}),2) FROM {qident(line)} l WHERE l.{key}={qident(header)}.{key})")
+        con.execute(f"UPDATE {qident(header)} SET {', '.join(sets)} WHERE {key} IN (SELECT {key} FROM {qident(line)})")
+        if "amount" in cols:
+            con.execute(f"UPDATE {qident(header)} SET local_amount=ROUND(amount*exchange_rate,2), "
+                        f"unit_price=CASE WHEN quantity>0 THEN ROUND(amount/quantity,4) ELSE unit_price END")
+        if "available_quantity" in cols:
+            con.execute(f"UPDATE {qident(header)} SET available_quantity=qualified_quantity, reserved_quantity=MIN(reserved_quantity, qualified_quantity)")
+        if "book_quantity" in cols:
+            con.execute(f"UPDATE {qident(header)} SET book_quantity=(SELECT ROUND(SUM(book_quantity),3) FROM {qident(line)} l WHERE l.{key}={qident(header)}.{key}), "
+                        f"counted_quantity=(SELECT ROUND(SUM(counted_quantity),3) FROM {qident(line)} l WHERE l.{key}={qident(header)}.{key})")
+            con.execute(f"UPDATE {qident(header)} SET variance_quantity=ROUND(counted_quantity-book_quantity,3), recount_required=ABS(counted_quantity-book_quantity)>0.01")
+        if "gross_weight_kg" in cols:
+            con.execute(f"UPDATE {qident(header)} SET gross_weight_kg=ROUND(quantity*1000*1.03,1), package_count=MAX(1, CAST(quantity*40 AS INTEGER))")
+        done[header] = con.execute(f"SELECT COUNT(*) FROM {qident(header)}").fetchone()[0]
+        ctx.invalidate(header)
+    return done
 
-    existing_cols = {(row[0], row[1]) for row in con.execute("SELECT table_name,column_name FROM dim_column_metadata")}
-    next_col_id = con.execute("SELECT COALESCE(MAX(column_id),0)+1 FROM dim_column_metadata").fetchone()[0]
-    for table in tables:
+
+def inject_dirty_data(con: sqlite3.Connection, seed: int) -> dict[str, int]:
+    """刻意构造并登记的脏数据:叶子事实表少量逻辑删除;遗留领料记录 5% 物料编码在物料主数据中找不到。"""
+    rng = random.Random(f"{seed}:dirty")
+    out = {}
+    for t in SOFT_DELETE_TABLES:
+        ids = [r[0] for r in con.execute(f"SELECT rowid FROM {qident(t)} ORDER BY rowid")]
+        pick = sorted(rng.sample(ids, max(1, int(len(ids) * 0.02))))
+        con.executemany(f"UPDATE {qident(t)} SET is_deleted=1, status='CANCELLED' WHERE rowid=?", [(i,) for i in pick])
+        out[t] = len(pick)
+    ids = [r[0] for r in con.execute("SELECT rowid FROM fact_legacy_material_issue ORDER BY rowid")]
+    pick = sorted(rng.sample(ids, max(1, int(len(ids) * LEGACY_UNRESOLVED_RATE))))
+    con.executemany("UPDATE fact_legacy_material_issue SET mat_ref=? WHERE rowid=?", [(f"LEGACY-{9000 + i}", r) for i, r in enumerate(pick)])
+    out["fact_legacy_material_issue.unresolved"] = len(pick)
+    return out
+
+
+def _new_ref_orphan_sql(specs: list[TableSpec]) -> str:
+    parts = [f"(SELECT COUNT(*) FROM {qident(s.name)} WHERE {qident(r.column)} IS NOT NULL AND {qident(r.column)} NOT IN "
+             f"(SELECT {qident(r.parent_column)} FROM {qident(r.parent_table)}))" for s in specs for r in s.refs]
+    return "SELECT " + " + ".join(parts)
+
+
+def build_cases(con: sqlite3.Connection, specs: list[TableSpec], dirty: dict[str, int]) -> list[dict[str, Any]]:
+    """验证案例:每条带可执行的检测 SQL,预期数量由生成时实测并写入,校验时复算比对。"""
+    soft_sql = "SELECT " + " + ".join(f"(SELECT COUNT(*) FROM {t} WHERE is_deleted=1)" for t in SOFT_DELETE_TABLES)
+    rows = [
+        ("MISSING_DECLARED_FK", "fact_legacy_material_issue", "mat_ref", "物料编码引用物料主数据,但没有声明外键",
+         "SELECT COUNT(*) FROM fact_legacy_material_issue WHERE mat_ref IN (SELECT material_code FROM dim_material)", "challenge"),
+        ("IRREGULAR_KEY_NAME", "fact_legacy_material_issue", "mat_ref", "引用列名(mat_ref)与父表键名(material_code)不同",
+         "SELECT COUNT(DISTINCT mat_ref) FROM fact_legacy_material_issue WHERE mat_ref IN (SELECT material_code FROM dim_material)", "challenge"),
+        ("LEGACY_UNRESOLVED_CODE", "fact_legacy_material_issue", "mat_ref", "约 5% 的遗留物料编码在主数据中找不到(孤儿,刻意构造)",
+         "SELECT COUNT(*) FROM fact_legacy_material_issue WHERE mat_ref NOT IN (SELECT material_code FROM dim_material)", "dirty_data"),
+        ("SOFT_DELETED_ROWS", ",".join(SOFT_DELETE_TABLES), "is_deleted", "叶子事实表约 2% 的行逻辑删除(刻意构造)", soft_sql, "dirty_data"),
+        ("INACTIVE_MASTER_DATA", "dim_*", "status", "部分新维表记录已停用(失效日期为 2026-03-31)",
+         "SELECT " + " + ".join(f"(SELECT COUNT(*) FROM {s.name} WHERE status='INACTIVE')" for s in specs if s.kind == "dim"), "dirty_data"),
+        ("COMPOSITE_KEY", "fact_shipment_line", "shipment_id,line_no", "发运单号 + 行号唯一标识一条发运明细",
+         "SELECT COUNT(*) FROM (SELECT shipment_id, line_no FROM fact_shipment_line GROUP BY 1,2 HAVING COUNT(*)>1)", "challenge"),
+        ("DUAL_WAREHOUSE_ROLE", "fact_transfer_order", "source_warehouse_id,target_warehouse_id", "来源仓与目标仓是同一父表的两个角色,不相同",
+         "SELECT COUNT(*) FROM fact_transfer_order WHERE source_warehouse_id=target_warehouse_id", "challenge"),
+        ("LOW_CARDINALITY_CODE", "dim_reason_code", "code", "原因码只有 12 个取值,被几乎所有事实表引用",
+         "SELECT COUNT(*) FROM dim_reason_code", "challenge"),
+        ("TEMPORAL_ORDER", "fact_shipment", "business_date,posting_date", "过账日期不早于业务日期",
+         "SELECT COUNT(*) FROM fact_shipment WHERE posting_date<business_date", "challenge"),
+        ("AMOUNT_RECONCILIATION", "fact_sales_order_line", "quantity,unit_price,amount", "明细金额 = 数量 × 单价(容差 0.05)",
+         "SELECT COUNT(*) FROM fact_sales_order_line WHERE ABS(amount-quantity*unit_price)>0.05", "challenge"),
+        ("HEADER_LINE_RECONCILIATION", "fact_shipment", "quantity,amount", "发运单数量与金额 = 其明细合计",
+         "SELECT COUNT(*) FROM fact_shipment h JOIN (SELECT shipment_id, SUM(quantity) q, SUM(amount) a FROM fact_shipment_line GROUP BY 1) x USING(shipment_id) WHERE ABS(h.quantity-x.q)>0.001 OR ABS(h.amount-x.a)>0.011", "challenge"),
+        ("QUALITY_DECOMPOSITION", "fact_inspection_result", "actual_quantity,qualified_quantity,rejected_quantity", "合格 + 不合格不超过实际数量",
+         "SELECT COUNT(*) FROM fact_inspection_result WHERE qualified_quantity+rejected_quantity>actual_quantity+0.000001", "challenge"),
+        ("TRACEABILITY", "fact_lot_trace", "trace_id", "每条记录有唯一追溯标识",
+         "SELECT COUNT(*)-COUNT(DISTINCT trace_id) FROM fact_lot_trace", "challenge"),
+        ("METADATA_COMPLETENESS", "dim_column_metadata", "column_desc", "每个物理列都有元数据",
+         "SELECT COUNT(*) FROM sqlite_master m, pragma_table_info(m.name) p WHERE m.type='table' AND m.name NOT LIKE 'sqlite_%' "
+         "AND NOT EXISTS (SELECT 1 FROM dim_column_metadata c WHERE c.table_name=m.name AND c.column_name=p.name)", "challenge"),
+        ("NEW_REFERENCE_INTEGRITY", "new tables", "*", "新表的引用(含未声明的)全部能在父表找到", _new_ref_orphan_sql(specs), "challenge"),
+    ] + [(code, tbl, col, desc, sql, "base_known_issue") for code, tbl, col, desc, sql in BASE_ISSUES]
+    counting = {"MISSING_DECLARED_FK", "IRREGULAR_KEY_NAME", "LOW_CARDINALITY_CODE"}   # 这几条是计数,其余挑战案例断言违反数为 0
+    out = []
+    for code, tbl, col, desc, sql, origin in rows:
+        count = con.execute(sql).fetchone()[0] or 0
+        out.append({"case_type": code, "target_table": tbl, "target_column": col, "expected_behavior": desc,
+                    "is_intentional": int(origin != "base_known_issue"), "detection_rule": sql, "expected_count": int(count),
+                    "tolerance_value": 0.0, "owner_team": "数据治理" if origin == "base_known_issue" else "本体评测",
+                    "remediation_hint": {"base_known_issue": "原 108 表的问题,如实保留并登记;修复须在源库进行",
+                                         "dirty_data": "刻意构造的脏数据,评测智能体是否识别并合理处理",
+                                         "challenge": "刻意构造的建模挑战,数据须满足描述"}[origin],
+                    "origin": {"base_known_issue": "原108表", "dirty_data": "刻意构造", "challenge": "刻意构造"}[origin],
+                    "asserts_zero": int(origin == "challenge" and code not in counting)})
+        if out[-1]["asserts_zero"] and count:
+            raise AssertionError(f"validation case {code} asserts no violations but found {count}: {desc}")
+    return out
+
+
+def refresh_metadata(con: sqlite3.Connection, specs: list[TableSpec]) -> None:
+    by_name = {s.name: s for s in specs}
+    table_cn = {r[0]: r[1] for r in con.execute("SELECT table_name, table_name_cn FROM dim_table_metadata")}
+    table_cn.update({s.name: s.cn_name for s in specs})
+    table_cn.setdefault("dim_workshop", "车间")
+    next_tid = con.execute("SELECT COALESCE(MAX(table_id),0)+1 FROM dim_table_metadata").fetchone()[0]
+    existing = {r[0] for r in con.execute("SELECT table_name FROM dim_table_metadata")}
+    for table in user_tables(con):
+        if table in existing:
+            continue
+        spec = by_name.get(table)
+        header = SEM.FACT_SEMANTICS.get(table, {}).get("line_of")
+        desc = META.table_description(spec, table_cn, table_cn.get(header[1]) if header else None) if spec else f"原108表数据库中的{table}表。"
+        category = "维度表" if table.startswith("dim_") else ("事实表" if table.startswith("fact_") else "汇总表")
+        con.execute("INSERT INTO dim_table_metadata(table_id,table_name,table_name_cn,table_desc,table_category,table_level) VALUES(?,?,?,?,?,?)",
+                    (next_tid, table, table_cn.get(table, table), desc, category, "contract_validation" if spec else "core"))
+        next_tid += 1
+    existing_cols = {(r[0], r[1]) for r in con.execute("SELECT table_name,column_name FROM dim_column_metadata")}
+    next_cid = con.execute("SELECT COALESCE(MAX(column_id),0)+1 FROM dim_column_metadata").fetchone()[0]
+    for table in user_tables(con):
+        spec = by_name.get(table)
+        refs = {r.column: r for r in spec.refs} if spec else {}
         for ordinal, info in enumerate(table_columns(con, table), start=1):
             column = info[1]
             if (table, column) in existing_cols:
                 continue
-            type_name = info[2] or "TEXT"
-            desc = f"{column_cn(column)}；物理类型为{type_name}。"
-            if table in specs_by_name:
-                desc += "合同评测用合成字段。"
-            con.execute(
-                "INSERT INTO dim_column_metadata(column_id,table_name,column_name,column_name_cn,column_desc,ordinal) VALUES(?,?,?,?,?,?)",
-                (next_col_id, table, column, column_cn(column), desc, ordinal),
-            )
-            next_col_id += 1
+            if spec:
+                cn = "主键" if column == spec.pk else META.column_cn(table, column, refs, table_cn)
+                if column == spec.pk:
+                    cn = f"{spec.cn_name}ID"
+                desc = f"{cn};物理类型为 {info[2] or 'TEXT'}"
+                if column in refs:
+                    r = refs[column]
+                    desc += f";引用{table_cn.get(r.parent_table, r.parent_table)}({r.parent_table}.{r.parent_column})"
+                desc += "。合成数据。"
+            else:
+                cn, desc = column, f"{column};物理类型为 {info[2] or 'TEXT'}。"
+            con.execute("INSERT INTO dim_column_metadata(column_id,table_name,column_name,column_name_cn,column_desc,ordinal) VALUES(?,?,?,?,?,?)",
+                        (next_cid, table, column, cn, desc, ordinal))
+            next_cid += 1
 
 
-def logical_checks(
-    con: sqlite3.Connection,
-    specs: list[TableSpec],
-) -> dict[str, int]:
-    checks: dict[str, int] = {}
-    new_fact_tables = sorted(spec.name for spec in specs if spec.kind == "fact")
-    checks["new_fact_negative_measures"] = sum(
-        con.execute(
-            f"SELECT COUNT(*) FROM {qident(table)} WHERE quantity<0 OR base_quantity<0 OR planned_quantity<0 "
-            "OR actual_quantity<0 OR qualified_quantity<0 OR rejected_quantity<0 OR amount<0 OR cost_amount<0"
-        ).fetchone()[0]
-        for table in new_fact_tables
-    )
-    checks["new_fact_bad_dates"] = sum(
-        con.execute(f"SELECT COUNT(*) FROM {qident(table)} WHERE date(posting_date)<date(business_date) OR datetime(updated_at)<datetime(created_at)").fetchone()[0]
-        for table in new_fact_tables
-    )
-    checks["new_fact_bad_quantity_decomposition"] = sum(
-        con.execute(f"SELECT COUNT(*) FROM {qident(table)} WHERE qualified_quantity + rejected_quantity > actual_quantity + 0.000001").fetchone()[0]
-        for table in new_fact_tables
-    )
-    checks["new_fact_bad_amount_formula"] = sum(
-        con.execute(f"SELECT COUNT(*) FROM {qident(table)} WHERE ABS(amount - ROUND(quantity*unit_price,2)) > 0.011").fetchone()[0]
-        for table in new_fact_tables
-    )
-    checks["legacy_material_unresolved"] = con.execute(
-        "SELECT COUNT(*) FROM fact_legacy_material_issue l LEFT JOIN dim_material m ON l.mat_ref=m.material_code WHERE m.material_id IS NULL"
-    ).fetchone()[0]
-    checks["fact_parent_temporal_violations"] = 0
-    for spec in specs:
-        if spec.kind != "fact":
-            continue
-        for ref in spec.refs:
-            if not ref.parent_table.startswith("fact_"):
-                continue
-            date_column = parent_date_column(con, ref.parent_table)
-            if date_column is None:
-                continue
-            checks["fact_parent_temporal_violations"] += con.execute(
-                f"SELECT COUNT(*) FROM {qident(spec.name)} child "
-                f"JOIN {qident(ref.parent_table)} parent "
-                f"ON child.{qident(ref.column)}=parent.{qident(ref.parent_column)} "
-                f"WHERE date(child.business_date)<date(parent.{qident(date_column)})"
-            ).fetchone()[0]
-    checks["same_source_target_location"] = con.execute(
-        "SELECT COUNT(*) FROM fact_transfer_order WHERE source_warehouse_id=target_warehouse_id"
-    ).fetchone()[0] + con.execute(
-        "SELECT COUNT(*) FROM fact_fixed_asset_transfer WHERE source_factory_id=target_factory_id"
-    ).fetchone()[0]
-    checks["cash_flow_invalid_counterparty"] = con.execute(
-        "SELECT COUNT(*) FROM fact_cash_flow "
-        "WHERE (cust_id IS NULL AND supplier_id IS NULL) OR (cust_id IS NOT NULL AND supplier_id IS NOT NULL)"
-    ).fetchone()[0]
-    checks["unbalanced_gl_entries"] = con.execute(
-        "SELECT COUNT(*) FROM ("
-        "SELECT gl_entry_id FROM fact_gl_entry_line GROUP BY gl_entry_id "
-        "HAVING ABS(SUM(debit_amount)-SUM(credit_amount))>0.01)"
-    ).fetchone()[0]
-    profile_tables = {
-        profile: [spec.name for spec in specs if spec.kind == "fact" and spec.profile == profile]
-        for profile in FACT_PROFILES
+def validate_database(con: sqlite3.Connection, specs: list[TableSpec], extra: dict[str, Any], seed: int) -> dict[str, Any]:
+    expected_new = {spec.name for spec in specs}
+    tables = user_tables(con)
+    columns = sum(len(table_columns(con, table)) for table in tables)
+    total_rows = sum(con.execute(f"SELECT COUNT(*) FROM {qident(table)}").fetchone()[0] for table in tables)
+    fks = list(con.execute("PRAGMA foreign_key_check"))
+    fk_by_table: dict[str, int] = {}
+    for row in fks:
+        fk_by_table[row[0]] = fk_by_table.get(row[0], 0) + 1
+    registered_orphans = {c["target_table"]: c["expected_count"] for c in extra["cases"] if c["case_type"].startswith("BASE_ORPHAN_")}
+    integrity = con.execute("PRAGMA integrity_check").fetchone()[0]
+    table_meta = {row[0] for row in con.execute("SELECT table_name FROM dim_table_metadata")}
+    col_meta = {(row[0], row[1]) for row in con.execute("SELECT table_name,column_name FROM dim_column_metadata")}
+    physical_cols = {(table, info[1]) for table in tables for info in table_columns(con, table)}
+    semantic = CHK.run(con, {s.name: s for s in specs})
+    plaintext_scan = scan_delivery_plaintext(con)
+    hard_checks = {
+        "table_count_exact_200": len(tables) == TARGET_TABLES,
+        "column_count_at_least_5000": columns >= TARGET_COLUMNS,
+        "integrity_check_ok": integrity == "ok",
+        "declared_fk_violations_only_registered_base_orphans": fk_by_table == {t: n for t, n in registered_orphans.items() if n},
+        "all_new_tables_present": expected_new.issubset(tables),
+        "table_metadata_complete": set(tables) == table_meta,
+        "column_metadata_complete": physical_cols == col_meta,
+        "all_tables_nonempty": all(con.execute(f"SELECT EXISTS(SELECT 1 FROM {qident(t)} LIMIT 1)").fetchone()[0] for t in tables),
+        "business_plaintext_scan_zero": sum(plaintext_scan.values()) == 0,
+        "semantic_checks_pass": all(v["pass"] for v in semantic.values()),
     }
-    checks["sales_date_sequence_violations"] = sum(
-        con.execute(
-            f"SELECT COUNT(*) FROM {qident(table)} "
-            "WHERE date(promised_delivery_date)<date(requested_delivery_date) "
-            "OR date(expected_close_date)<date(business_date)"
-        ).fetchone()[0]
-        for table in profile_tables["sales"]
-    )
-    checks["inventory_date_sequence_violations"] = sum(
-        con.execute(
-            f"SELECT COUNT(*) FROM {qident(table)} WHERE date(expiry_date)<=date(manufacture_date)"
-        ).fetchone()[0]
-        for table in profile_tables["inventory"]
-    )
-    checks["production_time_sequence_violations"] = sum(
-        con.execute(
-            f"SELECT COUNT(*) FROM {qident(table)} WHERE datetime(end_time)<datetime(start_time)"
-        ).fetchone()[0]
-        for table in profile_tables["production"]
-    )
-    checks["quality_measurement_bound_violations"] = sum(
-        con.execute(
-            f"SELECT COUNT(*) FROM {qident(table)} "
-            "WHERE measured_value<lower_limit OR measured_value>upper_limit"
-        ).fetchone()[0]
-        for table in profile_tables["quality"]
-    )
-    checks["equipment_meter_sequence_violations"] = sum(
-        con.execute(
-            f"SELECT COUNT(*) FROM {qident(table)} WHERE meter_end<meter_start"
-        ).fetchone()[0]
-        for table in profile_tables["equipment"]
-    )
-    checks["finance_due_date_violations"] = sum(
-        con.execute(
-            f"SELECT COUNT(*) FROM {qident(table)} WHERE date(due_date)<date(business_date)"
-        ).fetchone()[0]
-        for table in profile_tables["finance"]
-    )
-    checks["safety_action_date_violations"] = sum(
-        con.execute(
-            f"SELECT COUNT(*) FROM {qident(table)} "
-            "WHERE date(closed_date)<date(business_date) OR date(action_due_date)<date(closed_date)"
-        ).fetchone()[0]
-        for table in profile_tables["safety"]
-    )
-    checks["hr_expiry_date_violations"] = sum(
-        con.execute(
-            f"SELECT COUNT(*) FROM {qident(table)} WHERE date(expiry_date)<date(work_date)"
-        ).fetchone()[0]
-        for table in profile_tables["hr"]
-    )
-    checks["planning_balance_violations"] = sum(
-        con.execute(
-            f"SELECT COUNT(*) FROM {qident(table)} "
-            "WHERE ABS(backlog_quantity-MAX(demand_quantity-supply_quantity,0))>0.0001"
-        ).fetchone()[0]
-        for table in profile_tables["planning"]
-    )
-    checks["product_cost_total_formula_violations"] = con.execute(
-        "SELECT COUNT(*) FROM fact_product_cost "
-        "WHERE ABS(total_cost-(material_cost+labor_cost+overhead_cost))>0.011"
-    ).fetchone()[0]
-    checks["product_cost_unit_formula_violations"] = con.execute(
-        "SELECT COUNT(*) FROM fact_product_cost "
-        "WHERE output_qty<=0 OR ABS(unit_cost-(1.0*total_cost/output_qty))>0.00011"
-    ).fetchone()[0]
-    checks["product_cost_unresolved_product"] = con.execute(
-        "SELECT COUNT(*) FROM fact_product_cost c "
-        "LEFT JOIN dim_product p ON c.product_id=p.prod_id WHERE p.prod_id IS NULL"
-    ).fetchone()[0]
-    checks["dws_daily_duplicate_grains"] = 0
-    for (table,) in con.execute(
-        "SELECT name FROM sqlite_master "
-        "WHERE type='table' AND name LIKE 'DWS_%_DAILY' ORDER BY name"
-    ):
-        columns = [row[1] for row in table_columns(con, table)]
-        grain = [column for column in columns if column == "date" or column.startswith("dim_")]
-        if not grain:
-            continue
-        grouped = ",".join(qident(column) for column in grain)
-        checks["dws_daily_duplicate_grains"] += con.execute(
-            f"SELECT COALESCE(SUM(row_count-1),0) FROM ("
-            f"SELECT COUNT(*) row_count FROM {qident(table)} GROUP BY {grouped} "
-            "HAVING row_count>1)"
-        ).fetchone()[0]
-    temporal_sql = {
-        "delivery_before_order": "SELECT COUNT(*) FROM fact_delivery d JOIN fact_sales_order o ON d.order_id=o.order_id WHERE date(d.delivery_date)<date(o.order_date)",
-        "return_before_order": "SELECT COUNT(*) FROM fact_return r JOIN fact_sales_order o ON r.order_id=o.order_id WHERE date(r.return_date)<date(o.order_date)",
-        "invoice_before_delivery": "SELECT COUNT(*) FROM fact_invoice i JOIN fact_delivery d ON i.delivery_id=d.delivery_id WHERE date(i.invoice_date)<date(d.delivery_date)",
-        "ar_due_before_invoice": "SELECT COUNT(*) FROM fact_ar_aging a JOIN fact_invoice i ON a.invoice_id=i.invoice_id WHERE date(a.due_date)<date(i.invoice_date)",
+    return {
+        "ok": all(hard_checks.values()), "generator_version": GENERATOR_VERSION, "seed": seed,
+        "tables": len(tables), "columns": columns, "rows": total_rows, "new_tables": len(expected_new),
+        "new_fact_tables": sum(1 for s in specs if s.kind == "fact"), "new_dimension_tables": sum(1 for s in specs if s.kind == "dim"),
+        "declared_foreign_keys": sum(len(list(con.execute(f"PRAGMA foreign_key_list({qident(t)})"))) for t in tables),
+        "indexes": con.execute("SELECT COUNT(*) FROM sqlite_master WHERE type='index' AND name NOT LIKE 'sqlite_%'").fetchone()[0],
+        "integrity_check": integrity, "foreign_key_violations": fk_by_table,
+        "metadata": {"table_records": len(table_meta), "column_records": len(col_meta)},
+        "deidentification": extra["deidentification"], "seeded_base_empty_tables": extra["seeded"],
+        "header_aggregation": extra["headers"], "dirty_data": extra["dirty"],
+        "validation_cases": {c["case_type"]: c["expected_count"] for c in extra["cases"]},
+        "semantic_checks": semantic, "business_plaintext_scan": plaintext_scan, "hard_checks": hard_checks,
     }
-    for name, sql in temporal_sql.items():
-        checks[name] = con.execute(sql).fetchone()[0]
-    return checks
+
+
+def build(base: Path, output: Path, report: Path, dictionary: Path, force: bool, seed: int) -> dict[str, Any]:
+    base, output = base.resolve(), output.resolve()
+    if not base.is_file():
+        raise FileNotFoundError(f"base database not found: {base}")
+    if output == base:
+        raise ValueError("output must not overwrite the 108-table source database")
+    if output.exists() and not force:
+        raise FileExistsError(f"output exists; use --force to replace the generated destination: {output}")
+    for p in (output, report, dictionary):
+        p.parent.mkdir(parents=True, exist_ok=True)
+    base_hash = sha256_file(base)
+    specs = table_specs()
+    by_name = {s.name: s for s in specs}
+    tmp_handle = tempfile.NamedTemporaryFile(prefix="contract_200_", suffix=".db", dir=output.parent, delete=False)
+    tmp_path = Path(tmp_handle.name)
+    tmp_handle.close()
+    dest = None
+    try:
+        source = sqlite3.connect(f"file:{base}?mode=ro", uri=True)
+        dest = sqlite3.connect(tmp_path)
+        source.backup(dest)
+        source.close()
+        dest.execute("PRAGMA foreign_keys=OFF")
+        dest.execute("PRAGMA journal_mode=DELETE")
+        deidentification = deidentify_base_plaintext(dest)
+        seeded = seed_empty_base_tables(dest)
+        dest.commit()
+        collisions = set(user_tables(dest)) & set(by_name)
+        if collisions:
+            raise AssertionError(f"new tables collide with the base database: {sorted(collisions)}")
+        for spec in specs:
+            create_table(dest, spec)
+        ctx = SEM.Context(dest)
+        rng = random.Random(seed)
+        governance = ("dim_dataset_release", "dim_validation_case", "fact_data_quality_issue", "fact_validation_case_result")
+        for spec in specs:
+            if spec.kind == "dim" and spec.name not in governance:
+                seed_dimension(dest, spec, ctx, rng)
+        for spec in specs:
+            if spec.kind == "fact" and spec.name not in governance:
+                seed_fact(dest, spec, ctx, seed)
+        headers = aggregate_headers(dest, ctx)
+        dirty = inject_dirty_data(dest, seed)
+        refresh_metadata(dest, specs)                       # 案例 METADATA_COMPLETENESS 需要元数据先就位
+        cases = build_cases(dest, specs, dirty)
+        rel = by_name["dim_dataset_release"]
+        rel.rows = 1
+        seed_dimension(dest, rel, ctx, rng, [{"_release": {
+            "release_name": "contract-validation-200-v2", "generator_version": GENERATOR_VERSION, "random_seed": seed,
+            "base_sha256": base_hash, "table_count": TARGET_TABLES, "column_count": None, "release_date": "2026-10-03",
+            "owner_team": "本体评测"}}])
+        vc = by_name["dim_validation_case"]
+        vc.rows = len(cases)
+        seed_dimension(dest, vc, ctx, rng, [{"_case": c} for c in cases])
+        dest.execute("UPDATE dim_dataset_release SET column_count=(SELECT SUM(n) FROM (SELECT COUNT(*) n FROM sqlite_master m, pragma_table_info(m.name) WHERE m.type='table' AND m.name NOT LIKE 'sqlite_%'))")
+        ctx.invalidate("dim_dataset_release")
+        ctx.invalidate("dim_validation_case")
+        # 治理事实表:每个案例一条执行结果;每个登记的已知问题与脏数据一条数据质量问题
+        case_ids = {r[1]: r[0] for r in dest.execute("SELECT validation_case_id, case_type FROM dim_validation_case")}
+        results = []
+        for c in cases:
+            actual = dest.execute(c["detection_rule"]).fetchone()[0] or 0
+            results.append({"dataset_release_id": 1, "validation_case_id": case_ids[c["case_type"]], "rule_code": c["case_type"],
+                            "check_name": c["expected_behavior"], "severity": 3 if c["origin"] == "原108表" else 2,
+                            "detected_at": "2026-10-03 09:00:00", "resolved_at": "2026-10-03 09:05:00",
+                            "expected_value": str(c["expected_count"]), "actual_value": str(actual), "exception_count": int(actual),
+                            "owner_team": c["owner_team"], "resolution_status": "PASSED" if actual == c["expected_count"] else "FAILED",
+                            "generator_version": GENERATOR_VERSION, "random_seed": seed,
+                            "evidence_path": f"validation_report.json#validation_cases.{c['case_type']}",
+                            "validation_query": c["detection_rule"]})
+        issues = [r | {"resolution_status": "OPEN" if c["origin"] == "原108表" else "ACCEPTED"}
+                  for r, c in zip(results, cases) if c["origin"] != "刻意构造" or c["case_type"] in ("LEGACY_UNRESOLVED_CODE", "SOFT_DELETED_ROWS", "INACTIVE_MASTER_DATA")]
+        for spec_name, gov in (("fact_validation_case_result", results), ("fact_data_quality_issue", issues)):
+            spec = by_name[spec_name]
+            spec.rows = len(gov)
+            seed_fact(dest, spec, ctx, seed, gov_rows=gov)
+        refresh_metadata(dest, specs)
+        dest.commit()
+        validation = validate_database(dest, specs, {"deidentification": deidentification, "seeded": seeded, "headers": headers,
+                                                      "dirty": dirty, "cases": cases}, seed)
+        if not validation["ok"]:
+            failed = {k: v for k, v in validation["semantic_checks"].items() if not v["pass"]}
+            raise RuntimeError("generated database failed validation: " + json.dumps(
+                {"hard_checks": validation["hard_checks"], "failed_semantic_checks": failed,
+                 "foreign_key_violations": validation["foreign_key_violations"]}, ensure_ascii=False, default=str))
+        write_dictionary(dest, dictionary)
+        dest.execute("VACUUM")
+        dest.close()
+        dest = None
+        if output.exists():
+            output.unlink()
+        os.replace(tmp_path, output)
+        validation.update({"database_path": str(output), "database_bytes": output.stat().st_size, "database_sha256": sha256_file(output),
+                           "base_database_path": str(base), "base_database_sha256": base_hash, "dictionary_path": str(dictionary)})
+        report.write_text(json.dumps(validation, ensure_ascii=False, indent=2, default=str) + "\n", encoding="utf-8")
+        return validation
+    except Exception:
+        if dest is not None:
+            try:
+                dest.close()
+            except Exception:
+                pass
+        if tmp_path.exists():
+            if os.environ.get("CONTRACT200_KEEP_FAILED"):      # 调试:保留未通过校验的库
+                print(f"kept failed build: {tmp_path}", file=sys.stderr)
+            else:
+                tmp_path.unlink()
+        raise
 
 
 def scan_delivery_plaintext(con: sqlite3.Connection) -> dict[str, int]:
@@ -1456,78 +868,6 @@ def scan_delivery_plaintext(con: sqlite3.Connection) -> dict[str, int]:
     return counts
 
 
-def validate_database(
-    con: sqlite3.Connection,
-    specs: list[TableSpec],
-    deidentification: dict[str, Any],
-    aggregate_grain_repairs: dict[str, int],
-    fk_repairs: dict[str, int],
-    temporal_repairs: dict[str, int],
-    seeded_base_tables: dict[str, int],
-    seed: int,
-) -> dict[str, Any]:
-    expected_new = {spec.name for spec in specs}
-    tables = user_tables(con)
-    columns = sum(len(table_columns(con, table)) for table in tables)
-    total_rows = sum(con.execute(f"SELECT COUNT(*) FROM {qident(table)}").fetchone()[0] for table in tables)
-    fks = list(con.execute("PRAGMA foreign_key_check"))
-    integrity = con.execute("PRAGMA integrity_check").fetchone()[0]
-    quick = con.execute("PRAGMA quick_check").fetchone()[0]
-    table_meta = {row[0] for row in con.execute("SELECT table_name FROM dim_table_metadata")}
-    col_meta = {(row[0], row[1]) for row in con.execute("SELECT table_name,column_name FROM dim_column_metadata")}
-    physical_cols = {(table, info[1]) for table in tables for info in table_columns(con, table)}
-    new_fact_tables = sorted(table for table in expected_new if table.startswith("fact_"))
-    logic = logical_checks(con, specs)
-    plaintext_scan = scan_delivery_plaintext(con)
-    hard_checks = {
-        "table_count_exact_200": len(tables) == TARGET_TABLES,
-        "column_count_at_least_5000": columns >= TARGET_COLUMNS,
-        "integrity_check_ok": integrity == "ok",
-        "quick_check_ok": quick == "ok",
-        "declared_fk_violations_zero": len(fks) == 0,
-        "all_new_tables_present": expected_new.issubset(tables),
-        "table_metadata_complete": set(tables) == table_meta,
-        "column_metadata_complete": physical_cols == col_meta,
-        "all_tables_nonempty": all(
-            con.execute(f"SELECT EXISTS(SELECT 1 FROM {qident(table)} LIMIT 1)").fetchone()[0]
-            for table in tables
-        ),
-        "business_plaintext_scan_zero": sum(plaintext_scan.values()) == 0,
-        "logical_violations_zero": sum(logic.values()) == 0,
-    }
-    return {
-        "ok": all(hard_checks.values()),
-        "generator_version": GENERATOR_VERSION,
-        "seed": seed,
-        "tables": len(tables),
-        "columns": columns,
-        "rows": total_rows,
-        "new_tables": len(expected_new),
-        "new_fact_tables": len(new_fact_tables),
-        "new_dimension_tables": len(expected_new) - len(new_fact_tables),
-        "declared_foreign_keys": sum(len(list(con.execute(f"PRAGMA foreign_key_list({qident(table)})"))) for table in tables),
-        "indexes": con.execute("SELECT COUNT(*) FROM sqlite_master WHERE type='index' AND name NOT LIKE 'sqlite_%'").fetchone()[0],
-        "integrity_check": integrity,
-        "quick_check": quick,
-        "foreign_key_violations": len(fks),
-        "metadata": {
-            "table_records": len(table_meta),
-            "column_records": len(col_meta),
-            "table_coverage": round(len(set(tables) & table_meta) / len(tables), 6),
-            "column_coverage": round(len(physical_cols & col_meta) / len(physical_cols), 6),
-        },
-        "base_fk_repairs": fk_repairs,
-        "base_temporal_repairs": temporal_repairs,
-        "deidentification": deidentification,
-        "aggregate_grain_repairs": aggregate_grain_repairs,
-        "seeded_base_empty_tables": seeded_base_tables,
-        "logical_checks": logic,
-        "business_plaintext_scan": plaintext_scan,
-        "validation_cases": con.execute("SELECT COUNT(*) FROM dim_validation_case").fetchone()[0],
-        "hard_checks": hard_checks,
-    }
-
-
 def write_dictionary(con: sqlite3.Connection, output: Path) -> None:
     output.parent.mkdir(parents=True, exist_ok=True)
     table_meta = {
@@ -1546,96 +886,6 @@ def write_dictionary(con: sqlite3.Connection, output: Path) -> None:
             for info in table_columns(con, table):
                 cm = col_meta[(table, info[1])]
                 writer.writerow([table, tm[1], tm[3], tm[2], info[1], cm[2], info[2], info[3], info[5], cm[3], cm[4]])
-
-
-def build(base: Path, output: Path, report: Path, dictionary: Path, force: bool, seed: int) -> dict[str, Any]:
-    base = base.resolve()
-    output = output.resolve()
-    if not base.is_file():
-        raise FileNotFoundError(f"base database not found: {base}")
-    if output == base:
-        raise ValueError("output must not overwrite the 108-table source database")
-    if output.exists() and not force:
-        raise FileExistsError(f"output exists; use --force to replace the generated destination: {output}")
-    output.parent.mkdir(parents=True, exist_ok=True)
-    report.parent.mkdir(parents=True, exist_ok=True)
-    dictionary.parent.mkdir(parents=True, exist_ok=True)
-    base_hash = sha256_file(base)
-    rng = random.Random(seed)
-    specs = table_specs()
-    tmp_handle = tempfile.NamedTemporaryFile(prefix="contract_200_", suffix=".db", dir=output.parent, delete=False)
-    tmp_path = Path(tmp_handle.name)
-    tmp_handle.close()
-    try:
-        source = sqlite3.connect(f"file:{base}?mode=ro", uri=True)
-        dest = sqlite3.connect(tmp_path)
-        source.backup(dest)
-        source.close()
-        dest.row_factory = sqlite3.Row
-        dest.execute("PRAGMA foreign_keys=OFF")
-        dest.execute("PRAGMA journal_mode=DELETE")
-        dest.execute("PRAGMA synchronous=FULL")
-        deidentification = deidentify_base_plaintext(dest)
-        aggregate_grain_repairs = repair_base_aggregate_grains(dest)
-        fk_repairs = repair_base_foreign_keys(dest)
-        temporal_repairs = repair_base_temporal_rules(dest)
-        seeded_base_tables = seed_empty_base_tables(dest)
-        dest.commit()
-        dest.execute("PRAGMA foreign_keys=ON")
-        existing = set(user_tables(dest))
-        collisions = existing & {spec.name for spec in specs}
-        if collisions:
-            raise AssertionError(f"new tables collide with the base database: {sorted(collisions)}")
-        for spec in specs:
-            create_table(dest, spec)
-        for spec in specs:
-            if spec.kind == "dim":
-                seed_dimension(dest, spec, rng, base_hash, seed)
-            else:
-                seed_fact(dest, spec, rng, seed)
-        refresh_metadata(dest, {spec.name: spec for spec in specs})
-        dest.commit()
-        validation = validate_database(
-            dest,
-            specs,
-            deidentification,
-            aggregate_grain_repairs,
-            fk_repairs,
-            temporal_repairs,
-            seeded_base_tables,
-            seed,
-        )
-        if not validation["ok"]:
-            failure_detail = {
-                "hard_checks": validation["hard_checks"],
-                "logical_checks": validation["logical_checks"],
-            }
-            raise RuntimeError(
-                "generated database failed validation: "
-                + json.dumps(failure_detail, ensure_ascii=False)
-            )
-        write_dictionary(dest, dictionary)
-        dest.execute("VACUUM")
-        dest.close()
-        if output.exists():
-            output.unlink()
-        os.replace(tmp_path, output)
-        validation["database_path"] = str(output)
-        validation["database_bytes"] = output.stat().st_size
-        validation["database_sha256"] = sha256_file(output)
-        validation["base_database_path"] = str(base)
-        validation["base_database_sha256"] = base_hash
-        validation["dictionary_path"] = str(dictionary)
-        report.write_text(json.dumps(validation, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
-        return validation
-    except Exception:
-        try:
-            dest.close()
-        except Exception:
-            pass
-        if tmp_path.exists():
-            tmp_path.unlink()
-        raise
 
 
 def parse_args() -> argparse.Namespace:
