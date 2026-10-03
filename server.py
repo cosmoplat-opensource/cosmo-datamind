@@ -1102,6 +1102,47 @@ def _dict_cn(table):
     return _DICT_CN_CACHE[key]
 
 
+_CODE_TOKEN = re.compile(r"[A-Za-z0-9][A-Za-z0-9\-_/.]{2,39}")
+_CODE_COL = re.compile(r"(name|code|_no$|^no$|sku|model|spec)")
+_VALUE_OWNER_CACHE: dict = {}
+
+
+def _value_owners(question, objects):
+    """问句里的编号(字母与数字混排,如 PA66-GF30、D003)出现在哪些表的名称/编码列里:{表名小写: [编号]}。
+
+    按编号提问时没有词指向编号所在的表,关键词召回会让同样命中「PA66」的物料表抢先(DR-077)。
+    只查名称、编码类列的等值匹配,每次查询 LIMIT 1,结果按库缓存。"""
+    toks = [t.strip("./-_") for t in _CODE_TOKEN.findall(question or "")]
+    toks = [t for t in dict.fromkeys(toks) if re.search(r"\d", t) and re.search(r"[A-Za-z]", t)][:3]
+    if not toks:
+        return {}
+    out: dict = {}
+    for o in objects:
+        raw = (o.get("table") or "").lower()
+        db_path, t = (UPLOAD_DB, raw[3:]) if raw.startswith("up.") else (_qa_db(), raw)
+        if not t or not re.fullmatch(_SQL_IDENT, t):
+            continue
+        cols = [a.get("col") for a in (o.get("attrs") or []) if a.get("col")] or _table_cols(o.get("table"))
+        cols = [c for c in cols if _CODE_COL.search(c.lower()) and re.fullmatch(_SQL_IDENT, c)][:6]
+        for tok in toks:
+            for c in cols:
+                key = (db_path, t, c, tok)
+                if key not in _VALUE_OWNER_CACHE:
+                    try:
+                        con = ro_connect(db_path)
+                        try:
+                            _VALUE_OWNER_CACHE[key] = con.execute(
+                                f'SELECT 1 FROM "{t}" WHERE "{c}" = ? LIMIT 1', (tok,)).fetchone() is not None
+                        finally:
+                            con.close()
+                    except Exception:
+                        _VALUE_OWNER_CACHE[key] = False
+                if _VALUE_OWNER_CACHE[key]:
+                    out.setdefault(raw, []).append(tok)
+                    break
+    return out
+
+
 def _question_hits(question, col, cn):
     """列被问题提到的程度:中文名的双字片段与英文列名中长度不少于 3 的词,出现在问题里的个数。"""
     q = (question or "").lower()
@@ -1457,6 +1498,7 @@ def build_context(question, focus_tables=None, trace=None, graph_keys=None):
             trace["focus_miss"] = len(ft)             # 点选的表在本体里一张都没有 → 转打分召回,不静默当作已限定
     tabs, hmap = [], {}
     _kw_tables = {w.lower() for w in kws if "_" in w}
+    _owners = _value_owners(question, [x for x in ir.get("objects", []) if x.get("table")])
     _deg = {}
     for _r in _rels(ir)[0]:
         if _r.get("status") == "verified":
@@ -1480,6 +1522,8 @@ def build_context(question, focus_tables=None, trace=None, graph_keys=None):
                 hs.append(head)
                 break
         hs += cn_hs
+        _own = _owners.get((o.get("table") or "").lower()) or []
+        hs = _own + [h for h in hs if h not in _own]
         if hs and o.get("table"): hmap[o["table"]] = hs[:6]
         # DR-070 计分:中文名称命中按长度计(问句里原样出现的业务名最可信),术语词典折出的英文词每个记 1 分。
         # 只数命中个数时,「配置 → config」一类泛词让一串配置表与「计量关系」同分,后者按顺序被挤出上下文
@@ -1490,6 +1534,8 @@ def build_context(question, focus_tables=None, trace=None, graph_keys=None):
         # 术语词典把问句用语直接对应到这张表(「安全事件」→ fact_incident):与问句原样出现完整中文名同等可信。
         # 库里表中文名常与问句用语不同(写作「事故」),只记 1 分会被只命中「事件」「event」的表挤出上下文(DR-077)
         if (o.get("table") or "").lower() in _kw_tables:
+            _rs += 12
+        if _own:                       # 问句里的编号就在这张表里:与说出表的完整中文名同等可信
             _rs += 12
         # DR-072 同分时偏向主数据表:已验证关系多的对象(设备主表、用能单元)排在外围同名表前面
         tabs.append((_rs + (min(3.0, math.log2(1 + _deg.get(o.get("name"), 0))) if _rs > 0 else 0), o))

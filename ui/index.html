@@ -755,7 +755,7 @@ const cell=v=>(typeof v==='number'&&Number.isFinite(v)&&!Number.isInteger(v))?es
 Object.assign(window,{$,J,esc,jsAttr,cell});
 function toast(msg,ok){document.getElementById('app_toast')?.remove();const t=document.createElement('div');t.id='app_toast';t.setAttribute('role',ok?'status':'alert');t.textContent=msg;t.style.cssText='position:fixed;top:18px;left:50%;transform:translateX(-50%);z-index:9999;background:'+(ok?'#16a34a':'#1f2740')+';color:#fff;padding:10px 18px;border-radius:10px;font-size:13px;max-width:70vw;box-shadow:0 6px 20px rgba(31,39,64,.22);opacity:0;transition:opacity .2s';document.body.appendChild(t);requestAnimationFrame(()=>t.style.opacity='1');setTimeout(()=>{t.style.opacity='0';setTimeout(()=>t.remove(),250);},2800);}
 // 唯一的 kind 规范(五类：颜色 c / 中文 n)，全站图例·配色·标签·编辑下拉统一引用
-const KIND={object:{c:'#16a34a',n:'对象'},event:{c:'#7c3aed',n:'事件'},action:{c:'#d97706',n:'动作'},asset:{c:'#0ea5e9',n:'资产'},role:{c:'#db2777',n:'角色'}};
+const KIND={object:{c:'#16a34a',n:'对象'},event:{c:'#7c3aed',n:'事件'},action:{c:'#d97706',n:'动作'},asset:{c:'#0ea5e9',n:'资产'},role:{c:'#db2777',n:'角色'},ice:{c:'#7c6ff0',n:'信息内容实体'}};
 const KCOL=k=>(KIND[k]||{c:'#5b9dff'}).c, KNM=k=>(KIND[k]||{n:k}).n;
 const KINDS=Object.keys(KIND);
 // 可编辑对象种类：与后端 VALID_KIND / DR-001 对象元类型对齐(object/event/asset/role);
@@ -1007,7 +1007,7 @@ async function rvLoad(){RV_KEY=$('#rv_sel').value;if(!RV_KEY)return;
 const SB={verified:'已验证',asserted:'人工断言',candidate:'待取证',inferred:'推理得出',gap:'待补',rejected:'已否决'};
  $('#rv_body').innerHTML='<table><tr><th>关系</th><th>动词</th><th>状态</th><th>取值重合</th><th>语义评审</th><th>人审</th><th>操作</th></tr>'+d.rows.map(r=>{
   const tgt=r.s+'->'+r.t;const stTag=r.status==='verified'?'ok':r.status==='asserted'?'warn':'evt';
-  return `<tr style="${r.pending?'background:#FFFBEB':''}"><td>${esc(r.sn)} → ${esc(r.tn)}<div class="muted" style="font-size:11px">${esc(r.s)} → ${esc(r.t)}</div></td>
+  return `<tr style="${r.pending?'background:#FFFBEB':''}"><td>${esc(r.sn)} → ${esc(r.tn)}<div class="muted" style="font-size:11px;overflow-wrap:anywhere">${esc(r.s)} → ${esc(r.t)}</div></td>
   <td>${esc(r.verb)}</td><td><span class="tag ${stTag}">${SB[r.status]||esc(r.status)||'-'}</span></td>
   <td>${r.overlap!=null?esc(r.overlap)+'%':'<span class=muted>-</span>'}</td>
   <td>${r.semantic==='pass'?'<span class="tag ok">通过</span>':r.semantic==='fail'?'<span class="tag warn">存疑</span>':'<span class=muted>-</span>'}</td>

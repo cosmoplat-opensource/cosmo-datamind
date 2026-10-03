@@ -171,3 +171,12 @@ def test_hash_route_skips_the_page_the_nav_click_already_opened():
     fn = UI[UI.index("function routeHash(){"):UI.index("addEventListener('hashchange',routeHash);")]
     assert "document.querySelector('.nav.on')" in fn
     assert "on.dataset.p===h&&loaded[h]" in fn                 # 首屏带 #home 时该页尚未加载,不能跳过
+
+
+def test_every_backend_object_kind_has_a_chinese_label():
+    """后端会产出的对象种类(含 BFO 的信息内容实体 ice)在界面都要有中文名,
+    否则评审页「类型」列直接显示内部代码(部署环境走查发现「ice」)。"""
+    import content_quality
+    kinds = UI[UI.index("const KIND={"):UI.index("const KINDS=")]
+    for k in content_quality.VALID_KINDS:
+        assert re.search(r"\b" + k + r":\{c:'#[0-9a-fA-F]{6}',n:'[^']+'\}", kinds), k

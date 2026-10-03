@@ -110,3 +110,13 @@ def test_values_and_names_come_from_the_graph_source_database(make_sqlite):
     finally:
         server._QA_DB.reset(token)
     assert text == "status(单据状态;取值:CLOSED/RELEASED)"
+
+
+def test_table_holding_a_code_named_in_question_ranks_first():
+    """问句按编号问(「PA66-GF30 的平均成交单价」):编号是产品表名称列里的取值,没有词指向产品表。
+    库里查到该取值的表要排在前面,否则物料表等同样命中「PA66」的表抢先,模型按物料关联销售订单而被拦下。"""
+    tr: dict = {}
+    server.build_context("PA66-GF30 的平均成交单价是多少?", trace=tr)
+    tables = [o["table"] for o in tr["objects"]]
+    assert tables.index("dim_product") < tables.index("dim_material")
+    assert any("PA66-GF30" in h for o in tr["objects"] if o["table"] == "dim_product" for h in o.get("hits") or [])
