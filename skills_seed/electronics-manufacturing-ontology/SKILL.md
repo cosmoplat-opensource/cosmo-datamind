@@ -1,6 +1,6 @@
 ---
 name: electronics-manufacturing-ontology
-description: 电子制造(SMT/PCBA)领域的本体半自动构建方法。多厂多层湖仓里同一实体复制成多张表,先按表族归并成概念;以工单、项目为枢纽,过站、测试、返修、包装构成事件链;主数据有版本重复,先定有效行。与 ontology-build-method、ontology-semi-auto 配合使用。
+description: 电子制造（SMT/PCBA）领域的本体半自动构建方法。多工厂、多层湖仓中同一实体常复制为多张表，先按表族归并为概念；以工单和项目为主线，过站、测试、返修、包装构成事件链；主数据存在多版本记录，先确定有效行。与 ontology-build-method、ontology-semi-auto 配合使用。
 license: Apache-2.0
 version: 1.0
 ---

@@ -51,16 +51,16 @@ async function bcReadBuildStream(response, onEvent, idleMs = 120000) {
 }
 const BC_IC={true:'<span class="ic" style="color:#22c55e">✓</span>',false:'<span class="ic" style="color:#e0563f">✕</span>'};
 let BC_BUSY=false;
-/* opts(可选,供分轮构建调用):{q, tables, name}。给了 q 就不读、不清空输入框;
-   成功返回 done 事件,失败或未执行返回 null——调用方据此决定是否继续下一轮。 */
+/* opts(可选，供分轮构建调用):{q, tables, name}。给了 q 就不读、不清空输入框;
+   成功返回 done 事件，失败或未执行返回 null——调用方据此决定是否继续下一轮。 */
 async function bcInquire(opts){
  opts=opts&&typeof opts==='object'&&!(opts instanceof Event)?opts:{};
  if(BC_BUSY)return null;
  if(BC.contextLoading){toast('正在读取底本上下文，请稍候');return null;}
  if(BC.contextError){toast('底本上下文未加载，请重新选择本体或改为新建');return null;}
  const auto=!!opts.q;
- // 按计划逐轮构建期间,两轮之间 BC_BUSY 会短暂为 false;手动发送不能插进计划中间
- if(!auto&&window.bcPlanRunning&&bcPlanRunning()){toast('正在按计划逐轮构建,请等待完成或先停止');return null;}
+ // 按计划逐轮构建期间，两轮之间 BC_BUSY 会短暂为 false；手动发送不能插进计划中间
+ if(!auto&&window.bcPlanRunning&&bcPlanRunning()){toast('正在按计划逐轮构建，请等待完成或先停止');return null;}
  const q=(opts.q||$('#bc_q').value).trim();if(!q){toast('请描述要构建的本体');return null;}
  const cqs=$('#bc_cq').value.split(/\n+/).map(x=>x.trim()).filter(Boolean);
  const references=window.bcRefsPayload?bcRefsPayload():{version:1,industry:{id:$('#bc_ref_industry').value,mode:$('#bc_ref_industry_mode').value},ontology_standard:{id:$('#bc_ref_standard').value,mode:$('#bc_ref_standard_mode').value}};

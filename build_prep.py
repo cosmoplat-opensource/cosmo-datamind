@@ -59,8 +59,14 @@ def _connect(db):
     return sqlite3.connect(Path(db).absolute().as_uri() + "?mode=ro", uri=True)
 
 
+DICT_TABLES = ("dim_table_metadata", "dim_column_metadata")   # 库内数据字典(表名、字段名、中文名、说明)
+
+
 def _comments(con):
-    """ext_sample 保存的注释(若有):表 → 注释,(表, 列) → 注释,表 → 源库行数估计。"""
+    """表与字段注释:表 → 注释,(表, 列) → 注释,表 → 源库行数估计。
+
+    优先用只读抽样(ext_sample)保存的 _dm_tables/_dm_columns;没有时读库内数据字典
+    dim_table_metadata/dim_column_metadata(中文名与说明合成一条注释,DR-077)。"""
     tabs, cols, rows = {}, {}, {}
     names = {r[0] for r in con.execute("SELECT name FROM sqlite_master WHERE type='table'")}
     if "_dm_tables" in names:
@@ -70,7 +76,23 @@ def _comments(con):
     if "_dm_columns" in names:
         for t, c, cm in con.execute("SELECT table_name, column_name, comment FROM _dm_columns"):
             cols[(t, c)] = cm or ""
+    if not tabs and DICT_TABLES[0] in names and _has_cols(con, DICT_TABLES[0], ("table_name", "table_name_cn", "table_desc")):
+        for t, cn, desc in con.execute("SELECT table_name, table_name_cn, table_desc FROM dim_table_metadata"):
+            tabs[t] = _join_comment(cn, desc)
+    if not cols and DICT_TABLES[1] in names and _has_cols(con, DICT_TABLES[1], ("table_name", "column_name", "column_name_cn", "column_desc")):
+        for t, c, cn, desc in con.execute("SELECT table_name, column_name, column_name_cn, column_desc FROM dim_column_metadata"):
+            cols[(t, c)] = _join_comment(cn, desc)
     return tabs, cols, rows
+
+
+def _has_cols(con, table, need):
+    have = {r[1].lower() for r in con.execute(f"PRAGMA table_info({_qi(table)})")}
+    return all(c in have for c in need)
+
+
+def _join_comment(cn, desc):
+    cn, desc = (cn or "").strip(), (desc or "").strip()
+    return cn if not desc or desc == cn else (f"{cn};{desc}" if cn else desc)
 
 
 def profile(db, deleted_share_cap=40):

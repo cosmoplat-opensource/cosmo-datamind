@@ -12,7 +12,10 @@
 - 软删除:只保留父表未删除行后,重叠率是否仍达标;
 - 时间先后:子记录的创建时间不应系统性早于它引用的父记录;
 - 租户键:被大量表共用的编号列,「归属」在数据上成立,但不是业务关系;
-- 按类型分条件:未通过的关系若子表带判别列,按判别值分开看重叠率。
+- 按类型分条件:未通过的关系若子表带判别列,按判别值分开看重叠率;
+- 字段注释:库内字段注释(dim_column_metadata)写明「外键,关联 X」时,连到别的表为强冲突、连到 X 为支持;
+  注释写明是本表主键(且没写外键)时,把它当外键连到别的表为强冲突。同名键(order_id、line_id)在多张表里
+  都是主键、整数区间又重合时,取值重叠分不出该连哪张,注释是库作者给出的直接说明。
 
 只读 SQLite,只用标准库。名称不一致(父键为自增 id)与 id 碰撞是强冲突,其余是弱冲突(只送复核)。
 默认只出报告;--apply 时把强冲突的已验证关系降为候选并写明原因,
@@ -45,6 +48,9 @@ LIVE_MARKERS = (None, 0, "0", "N", "n", "false", "")
 _DEL_COL = re.compile(DEL_COL_PATTERN, re.I)
 _LIVE_SQL = ",".join(str(v) if isinstance(v, int) else "'" + v + "'" for v in LIVE_MARKERS if v is not None)
 _SUFFIX = re.compile(r"_(no|id|code|key|num)$", re.I)
+# 「外键,关联fact_x」「引用产线(dim_production_line.line_id)」:关键词后 20 字内的第一个英文标识符
+_COMMENT_REF = re.compile(r"(?:外键|关联|引用)[^A-Za-z_,，;；。]{0,20}([A-Za-z_][A-Za-z0-9_]*)")
+_COMMENT_PK = re.compile(r"主键")
 
 
 def q(name):
@@ -73,6 +79,26 @@ class Db:
 
     def col(self, table, name):
         return next((c for c in self.cols(table) if c.lower() == name.lower()), None)
+
+    def comment(self, table, col):
+        """字段注释:只读抽样保存的 _dm_columns 优先,否则用库内数据字典 dim_column_metadata(中文名 + 说明)。"""
+        if not hasattr(self, "_comments"):
+            self._comments = {}
+            has_dm = self.one("SELECT 1 FROM sqlite_master WHERE type='table' AND name='_dm_columns'")
+            if has_dm:
+                try:
+                    for t, c, cm in self.con.execute("SELECT table_name, column_name, comment FROM _dm_columns"):
+                        self._comments[(str(t).lower(), str(c).lower())] = cm or ""
+                except sqlite3.Error:
+                    pass
+            elif "dim_column_metadata" in self.tables:
+                try:
+                    for t, c, cn, desc in self.con.execute(
+                            "SELECT table_name, column_name, column_name_cn, column_desc FROM dim_column_metadata"):
+                        self._comments[(str(t).lower(), str(c).lower())] = f"{cn or ''} {desc or ''}"
+                except sqlite3.Error:
+                    pass
+        return self._comments.get((table.lower(), col.lower()), "")
 
     def one(self, sql, args=()):
         try:
@@ -105,6 +131,22 @@ def _markers(db, table, col):
             for v in vals]
     key = lambda v: (v is not None, str(v))                                 # noqa: E731
     return sorted((v for v in vals if _is_live(v)), key=key), sorted((v for v in vals if not _is_live(v)), key=key)
+
+
+def comment_channel(db, ct, ck, pt):
+    """字段注释点名了父表:是这张为支持,是别的表为冲突;注释说是本表主键而没写外键,连到别的表为冲突。"""
+    text = db.comment(ct, ck)
+    if not text:
+        return {"state": "none"}
+    tables = {t.lower(): t for t in db.tables}
+    named = [tables[m.lower()] for m in _COMMENT_REF.findall(text) if m.lower() in tables and m.lower() != ct.lower()]
+    if named:
+        if pt.lower() in {n.lower() for n in named}:
+            return {"state": "support", "comment": text.strip()[:80]}
+        return {"state": "conflict", "reason": f"字段注释写明关联 {named[0]}", "comment": text.strip()[:80]}
+    if _COMMENT_PK.search(text) and ct.lower() != pt.lower():
+        return {"state": "conflict", "reason": "字段注释写明为本表主键,不是外键", "comment": text.strip()[:80]}
+    return {"state": "none"}
 
 
 def overlap(db, ct, ck, pt, pk, parent_filter=""):
@@ -364,6 +406,7 @@ def check(ir, db):
             ch["temporal"] = temporal_channel(db, ct, ck, pt, pk)
             if ck.lower() in hubs:
                 row["tags"].append("tenant_or_hub_key")
+            ch["comment"] = comment_channel(db, ct, ck, pt)
             if ev.get("contract"):                     # 代码里就这么连:独立于数据的一条证据
                 ch["contract"] = {"state": "support", "code": ev["contract"].get("code"), "file": ev["contract"].get("file")}
             # 强冲突直接说明「这不是一条连接关系」;弱冲突可能有业务原因(补建的分组、引用已删除的父行、
@@ -373,13 +416,13 @@ def check(ir, db):
             name_bad = ch["name"].get("state") == "conflict"
             if name_bad and pk.lower() != "id":
                 ch["name"]["stale"] = True
-            strong = [k for k in ("id_collision",) if ch.get(k, {}).get("state") == "conflict"]
+            strong = [k for k in ("id_collision", "comment") if ch.get(k, {}).get("state") == "conflict"]
             if name_bad and pk.lower() == "id":
                 strong.insert(0, "name")
             weak = [k for k in ("bidirectional", "soft_delete", "temporal") if ch.get(k, {}).get("state") == "conflict"]
             if name_bad and pk.lower() != "id":
                 weak.insert(0, "name")
-            support = [k for k in ("name", "temporal", "contract") if ch.get(k, {}).get("state") == "support"]
+            support = [k for k in ("name", "temporal", "contract", "comment") if ch.get(k, {}).get("state") == "support"]
             row["conflicts"], row["weak_conflicts"], row["supports"] = strong, weak, support
             row["verdict"] = ("refuted" if strong else "review" if weak else
                               "corroborated" if support else "single_channel")

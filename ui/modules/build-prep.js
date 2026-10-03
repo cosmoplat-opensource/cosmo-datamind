@@ -1,7 +1,7 @@
-/* 构建前预处理(DR-060):外部库只读抽样、构建体检、分轮计划与逐轮构建。
-   体检只读、不调模型;逐轮构建复用 bcInquire,每轮在上一轮的本体上继续构建。 */
+/* 构建前预处理(DR-060)：外部库只读抽样、构建体检、分轮计划与逐轮构建。
+   体检只读、不调模型；逐轮构建复用 bcInquire，每轮在上一轮的本体上继续构建。 */
 (function () {
-  // 体检报告存在各自的卡片元素上(el._report):页面上可能有多张体检卡片,按钮必须用自己那张的计划
+  // 体检报告存在各自的卡片元素上(el._report)：页面上可能有多张体检卡片，按钮必须用自己那张的计划
   const PREP = {running: false, abort: false};
   const LV = {warn: '<span class="bp-lv warn">注意</span>', info: '<span class="bp-lv info">提示</span>'};
 
@@ -17,7 +17,7 @@
   }
 
   async function bcPrep() {
-    if (BC_BUSY || PREP.running) { toast('构建进行中,请稍候再体检'); return; }
+    if (BC_BUSY || PREP.running) { toast('构建进行中，请稍候再体检'); return; }
     const el = card(`<div class="bp-h">构建体检 · <b>${esc(BC.srcName || BC.src)}</b></div><div class="muted">正在读取表结构、识别建模规律、核对上传资料…</div>`);
     const d = await J('/api/build/prep', {method: 'POST', headers: {'Content-Type': 'application/json'},
       body: JSON.stringify({source: BC.src})}).catch(e => ({error: String(e)}));
@@ -47,8 +47,8 @@
     const docLine = doc.files
       ? `上传资料 ${doc.files} 份(${doc.chunks} 块)· 描述到本库 <b>${doc.described}/${doc.tables}</b> 张表`
         + (doc.doc_only_count ? ` · 资料里提到而库里没有的表 ${doc.doc_only_count} 张(如 ${doc.doc_only.slice(0, 3).map(esc).join('、')})` : '')
-      : '尚未上传资料;中文语义将只来自库表注释' + (s.has_comments ? '' : '(本库也没有注释,建议上传数据字典或设计文档)');
-    // 只预填使用者自己写的诉求;输入框里的默认示例诉求属于示例主库,带到别的数据源会误导建模
+      : '尚未上传资料；中文语义将只来自库表注释' + (s.has_comments ? '' : '(本库也没有注释，建议上传数据字典或设计文档)');
+    // 只预填使用者自己写的诉求；输入框里的默认示例诉求属于示例主库，带到别的数据源会误导建模
     const typed = ($('#bc_q').value || '').trim();
     const goal = typed && typed !== ((BC.def && BC.def.build_query) || '').trim() ? typed : '';
     el.innerHTML = `<div class="bp-h">构建体检 · <b>${esc(d.source.name)}</b></div>
@@ -60,11 +60,11 @@
       ${scen ? `<div class="bp-sec">场景画像(表与概念的对应方式)</div>${scen}` : ''}
       <div class="bp-sec">资料覆盖</div><div class="bp-line">${docLine}</div>
       ${refs ? `<div class="bp-sec">行业参照与领域技能建议(不同领域分别构建)</div>${refs}` : ''}
-      <div class="bp-sec">分轮计划 <span class="muted">枢纽表优先 · 每轮不超过 ${Number(d.max_tables)} 张表 · 每轮在上一轮的本体上继续构建;数据验证始终使用全库</span></div>
+      <div class="bp-sec">分轮计划 <span class="muted">枢纽表优先 · 每轮不超过 ${Number(d.max_tables)} 张表 · 每轮在上一轮的本体上继续构建；数据验证始终使用全库</span></div>
       ${d.excluded && d.excluded.length ? `<details class="bp-f"><summary><span class="bp-lv info">已排除</span>${d.excluded.length} 张演示/临时表、历史分表或第三方工具表(不进入计划)</summary><div class="bp-tabs">${d.excluded.map(esc).join('、')}</div></details>` : ''}
       <div class="bp-rounds">${rounds}</div>
       <div class="bp-run">
-        <textarea class="bp-goal" aria-label="整体建模目标" placeholder="整体建模目标(各轮均附带),例:构建能源管理本体,覆盖企业、设备、计量、能耗与告警工单">${esc(goal)}</textarea>
+        <textarea class="bp-goal" aria-label="整体建模目标" placeholder="整体建模目标(各轮均附带)，例：构建能源管理本体，覆盖企业、设备、计量、能耗与告警工单">${esc(goal)}</textarea>
         <div class="row" style="gap:6px"><button class="bp-go" onclick="bcPlanRun(this)">按计划逐轮构建</button>
         <button class="ghost bp-stop" style="display:none" onclick="bcPlanStop()">本轮结束后停止</button>
         <span class="muted bp-note"></span></div></div>`;
@@ -77,7 +77,7 @@
       bcRefsApply({version: 1, industry: {id: industry, mode: 'reference'},
         ontology_standard: cur.ontology_standard || {id: 'bfo_iof', mode: 'reference'}});
     }
-    // 领域技能随参照一起采用:勾选后构建时注入提示词
+    // 领域技能随参照一起采用：勾选后构建时注入提示词
     if (skill && !BC.skills.has(skill)) {
       BC.skills.add(skill);
       const n = document.getElementById('bc_cur_sk'); if (n) n.textContent = BC.skills.size;
@@ -89,8 +89,8 @@
   async function run(btn) {
     const box = btn.closest('.bc-prep'), d = box && box._report;
     if (!d || PREP.running || BC_BUSY) return;
-    // 体检之后切换了数据源:表清单属于原数据源,不能拿去另一个数据源上构建
-    if (d.source && d.source.id !== BC.src) { toast(`当前数据源已不是「${d.source.name}」,请重新体检后再逐轮构建`); return; }
+    // 体检之后切换了数据源：表清单属于原数据源，不能拿去另一个数据源上构建
+    if (d.source && d.source.id !== BC.src) { toast(`当前数据源已不是「${d.source.name}」，请重新体检后再逐轮构建`); return; }
     const picked = [...box.querySelectorAll('input[data-round]')].filter(x => x.checked).map(x => +x.dataset.round);
     const rounds = (d.plan || []).filter(p => picked.includes(p.round));
     if (!rounds.length) { toast('请至少勾选一轮'); return; }
@@ -105,17 +105,17 @@
         if (PREP.abort) { note.textContent = `已在第 ${i} 轮后停止`; break; }
         st.textContent = '构建中…'; note.textContent = `第 ${i + 1}/${rounds.length} 轮`;
         const q = `${goal}\n本轮范围(第 ${p.round} 轮,${p.count} 张表):${p.label}`;
-        // 第一轮新建本体时给出明确名称:留空会由模型自拟,实测会照搬提示词里的示例名
+        // 第一轮新建本体时给出明确名称：留空会由模型自拟，实测会照搬提示词里的示例名
         const first = i === 0 && !BC.base;
         // 名称框的默认值(示例主库的默认名)不算使用者填写
         const typedName = ($('#bc_name').value || '').trim();
         const userName = typedName && typedName !== ((BC.def && BC.def.build_name) || '').trim() ? typedName : '';
         const name = first ? (userName || goal.replace(/[,,。;;::\s].*$/, '').slice(0, 24) || `${d.source.name}本体`) : '';
         const done = await bcInquire({q, tables: p.tables, name});
-        if (!done) { st.textContent = '✕ 失败'; note.textContent = `第 ${p.round} 轮失败,后续轮次未执行;可修正后只勾选剩余轮次重跑`; break; }
+        if (!done) { st.textContent = '✕ 失败'; note.textContent = `第 ${p.round} 轮失败，后续轮次未执行；可修正后只勾选剩余轮次重跑`; break; }
         st.textContent = `✓ ${done.stats ? done.stats.objects + ' 对象 · ' + done.stats.links + ' 关系 · 已验证 ' + done.stats.verified : '完成'}`;
         ok++;
-        // 后续轮次在这张本体上继续构建(与「继续构建」同一机制:只增补与升级,不删除既有结论)
+        // 后续轮次在这张本体上继续构建(与「继续构建」同一机制：只增补与升级，不删除既有结论)
         if (!BC.base || BC.base !== done.graph_key) { BC.base = done.graph_key; BC.baseName = done.name || done.graph_key; bcIterSync(); bcHintSync(); }
       }
       if (ok === rounds.length) note.textContent = `全部 ${ok} 轮完成`;
@@ -125,7 +125,7 @@
   }
 
   /* ── 外部库只读抽样 ── */
-  // 与后端 /api/build/connect/sample 一致:只读抽样目前只支持 MySQL/Doris
+  // 与后端 /api/build/connect/sample 一致：只读抽样目前只支持 MySQL/Doris
   function sampleable(s) {
     if (!s || s.kind === 'sqlite' || s.kind === 'api') return false;
     const k = String(s.kind || '').toLowerCase();
@@ -172,7 +172,7 @@
           else if (ev.type === 'done') done = ev;
         }
       }
-      if (!done) throw new Error('连接中断,未收到完成结果');
+      if (!done) throw new Error('连接中断，未收到完成结果');
       msg.textContent = `完成:${done.tables} 张表 · ${done.rows.toLocaleString()} 行` + (done.failed.length ? ` · ${done.failed.length} 张读取失败` : '');
       toast('已导入为数据源:' + done.conn.name);
       await bcSources(); bcSelectSrc(done.conn.id);

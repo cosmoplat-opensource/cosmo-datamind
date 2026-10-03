@@ -86,7 +86,7 @@
       const retry = document.createElement('button');
       retry.type = 'button';
       retry.className = 'ghost';
-      retry.style.cssText = 'padding:2px 7px;font-size:10.5px';
+      retry.style.cssText = 'padding:2px 7px;font-size:11px';
       retry.textContent = '重新加载目录';
       retry.onclick = () => init(true);
       detail.appendChild(retry);

@@ -50,7 +50,7 @@ def test_legacy_metric_cannot_be_certified_in_ui():
 
 def test_metric_cards_expose_status_and_warn_on_unverified():
     assert "m.status?mstTag(m.status)" in UI
-    assert "该口径尚未核验,数值仅供参考" in UI
+    assert "该口径尚未核验，数值仅供参考" in UI
     assert "计算口径:<code" in UI
 
 

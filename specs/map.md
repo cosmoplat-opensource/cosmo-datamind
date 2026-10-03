@@ -37,6 +37,7 @@ COSMO DataMind 是「数据治理 × 本体 × 深度问数」原型：
 - [DR-072 · 全库评估与修正:注释接入、类型无关的取值比对、按取值补提与实例表识别](decisions/DR-072-whole-dataset-evaluation.md)
 - [DR-073 · 候选关系分流、问数选表修正与澄清、抽样截断标记与独立评审](decisions/DR-073-candidate-triage-and-independent-judging.md)
 - [DR-074 · 200 表合成验证库评估:星型模型键名、字段注释证据与几类误判](decisions/DR-074-contract-200-synthetic-db-evaluation.md)
+- [DR-077 · 库内数据字典进入构建取证、字段注释否决冲突关系、问数上下文与意图核对修正](decisions/DR-077-in-db-dictionary-and-comment-veto.md)
 - [DR-076 · 演示库按业务过程仿真重建:108 表基础库与 200 表验证库 v3](decisions/DR-076-process-simulated-demo-databases.md)
 - [DR-075 · 200 表合成验证库生成器 v2:业务链派生、如实登记底库缺陷与生成后语义校验](decisions/DR-075-contract-200-generator-v2.md)
 - [DR-071 · 全量分轮与留出评估:键匹配排序、同名概念消歧与方向反证](decisions/DR-071-full-scale-holdout-evaluation.md)
@@ -70,10 +71,10 @@ COSMO DataMind 是「数据治理 × 本体 × 深度问数」原型：
 - [DR-036 · 自引用与角色键发现(role_targets + 角色感知 name_ok + health 自反豁免)](decisions/DR-036-self-referential-and-role-keys.md)
 - [DR-035 · 单一裁决核 dao_core(消两份漂移实现 + classify 三态 + 引擎平价)](decisions/DR-035-unified-adjudication-core.md)
 - [DR-049 · 语义层关系型投影(OWL 标准出口 + 关系表消费出口)+ 深度问数链路显式编排](decisions/DR-049-relational-projection-and-explicit-pipeline.md)
-- [DR-048 · HTTP 慢速攻击缓解(请求头总时限 + 正文速率闸 + 并发上限;扫描中危闭环)](decisions/DR-048-slow-http-dos-mitigation.md)
+- [DR-048 · HTTP 慢速攻击缓解(请求头总时限 + 正文速率闸 + 并发上限;扫描中危项已修复)](decisions/DR-048-slow-http-dos-mitigation.md)
 - [DR-047 · 侧边栏信息架构与字号层级(本体页归一 + 动作中心独立 + 内容字号不倒挂)](decisions/DR-047-sidebar-ia-and-type-scale.md)
 - [DR-046 · 确定性模块的隔离单测(离线秒级 + quick_build 可测化)](decisions/DR-046-deterministic-module-unit-tests.md)
-- [DR-045 · 工程校验与 TDD 底座(pytest/coverage/ruff/CI + 文档计数自检)](decisions/DR-045-engineering-harness-and-tdd.md)
+- [DR-045 · 工程校验与 TDD 基础设施(pytest/coverage/ruff/CI + 文档计数自检)](decisions/DR-045-engineering-harness-and-tdd.md)
 - [DR-001 · 本地只读执行(避开平台 1142/方言/沙箱坑)](decisions/DR-001-local-readonly-execution.md)
 - [DR-002 · 多模态 LLM 本体自动构建 + 反幻觉取证(算法核心)](decisions/DR-002-multimodal-llm-anti-hallucination-build.md)
 - [DR-003 · 多引擎运行时 + 对外中性命名 + 限流兜底](decisions/DR-003-runtime-neutral-naming.md)
@@ -108,7 +109,7 @@ COSMO DataMind 是「数据治理 × 本体 × 深度问数」原型：
 - [IR-004 · 数据连接 + 数据可视化模块](iterations/IR-004-connection-and-viz.md) · **delivered**
 - [IR-005 · 安全加固 + 工业化 + 复审收敛](iterations/IR-005-hardening-and-review.md) · **delivered(持续)**
 - [IR-006 · IOF/BFO 语义工程层(注释/映射/导出/元数据覆盖)](iterations/IR-006-iof-bfo-semantic-layer.md) · **delivered**
-- [IR-007 · 工程校验与 TDD 底座(pytest/coverage/ruff/CI + 确定性模块单测)](iterations/IR-007-tdd-foundation.md) · **in-progress**
+- [IR-007 · 工程校验与 TDD 基础设施(pytest/coverage/ruff/CI + 确定性模块单测)](iterations/IR-007-tdd-foundation.md) · **in-progress**
 - [IR-008 · 裁决核收敛与算法强化(dao_core 单一事实源 + 引擎平价 + 零回归)](iterations/IR-008-adjudication-core-convergence.md) · **in-progress**
 - [IR-011 · 单体路由蓝图化(共享上下文基座 + 逐簇拆 blueprint)](iterations/IR-011-blueprint-modularization.md) · **in-progress**
 - [IR-012 · 恢复行业参照与本体标准构建配置](iterations/IR-012-build-reference-profiles.md) · **delivered**
@@ -126,7 +127,7 @@ COSMO DataMind 是「数据治理 × 本体 × 深度问数」原型：
 
 ## 现状校准
 - 计数(2026-10-03):**137 路由**(server.py 119 + bp_engine 5 + bp_actions 7 + bp_metrics 4 + bp_semantic 2)/ **565 集成断言** /
-  **1139 项 pytest 测试** / DR-001…DR-076 · IR-001…IR-013。
+  **1152 项 pytest 测试** / DR-001…DR-077 · IR-001…IR-013。
   DR-076 起 `examples/demo_metrics.db` 由 `scripts/build_demo_108_db.py` 按业务过程仿真生成(108 表 / 308,230 行)。
   DR-060 新增构建前预处理:外部库只读抽样 `ext_sample`、构建体检与分轮计划 `build_prep`。
   DR-059 新增长文分块检索 `doc_chunks`,以及能源管理 `energy_management`、碳排放核算 `carbon_accounting` 两个独立行业参照。

@@ -73,7 +73,7 @@
 |---|---|---|
 | **DR-043 蓝图化拆分** | `server.py` 按 6 簇拆 Flask blueprint(ontology/build/deepqa/actions/skills/engine) | 535 集成断言全程绿 = 重构安全网;新增路由计数自检断言 |
 | **DR-044 持久化仓储层** | 15 JSON store 收敛到 `Store` 接口(schema+校验+迁移)或 SQLite 应用态库 | Store 单测:半写恢复 / 并发写 / 迁移(补现无的负向持久化测试) |
-| **DR-045 工程校验 / TDD 底座** | pyproject+ruff+mypy+pytest+coverage+固定依赖+pre-commit+最小 CI+文档计数自检 | 校验规则本身即测试;pyflakes/断言/计数合并即挡 |
+| **DR-045 工程校验 / TDD 基础设施** | pyproject+ruff+mypy+pytest+coverage+固定依赖+pre-commit+最小 CI+文档计数自检 | 校验规则本身即测试;pyflakes/断言/计数合并即挡 |
 | **DR-046 确定性模块单测** | 11 个 `*_check` 模块补隔离单测(空图/环/复合键≥3列) | 每模块红-绿夹具(纯函数,天然 TDD) |
 | **DR-047 缓存与任务治理** | 9 全局缓存加 TTL/LRU;`EVAL_JOB`/`SKILL_CMP_JOB` 并入 keyed `JOBS` | 缓存淘汰 + 并发双任务测试先红 |
 
@@ -81,7 +81,7 @@
 
 | IR | 目标 | 含 DR | 为何这个次序 |
 |---|---|---|---|
-| **IR-007 工程校验与 TDD 底座** | 建 CI/coverage/lint/pytest/固定依赖;确立**已知绿基线** | DR-045、DR-046 | 没有自动化校验做不了 TDD;先立基线 |
+| **IR-007 工程校验与 TDD 基础设施** | 建 CI/coverage/lint/pytest/固定依赖;确立**已知绿基线** | DR-045、DR-046 | 没有自动化校验做不了 TDD;先立基线 |
 | **IR-008 裁决核统一与算法强化** | 单核 + 自引用键 + 多信号 + 自适应 θ | DR-035/036/037/038 | 消漂移→补召回→提精度,每步红-绿 |
 | **IR-009 评测台与定义质量** | 反幻觉基准 + 参考式定义评分 | DR-039、DR-040 | 把规范主张变可回归的数字 |
 | **IR-010 多源与多模态** | 跨库联邦键 + 文档/图纸提议器 | DR-041、DR-042 | 能力扩张,承接论文多源多模态 |

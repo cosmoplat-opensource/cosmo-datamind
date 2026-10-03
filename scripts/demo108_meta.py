@@ -88,7 +88,7 @@ COLUMN_FIX = {
     ("fact_equipment_runtime", "plan_run_hours"): ("负荷时长", "当日运行+停机小时(停机含故障等非计划停机与换产,不含计划保养)"),
     ("fact_equipment_runtime", "downtime_hours"): ("停机时长", "当日非计划停机与换产小时,按停机事件逐日切分;不含计划保养"),
     ("fact_equipment_runtime", "oee"): ("OEE", "可用率(运行/负荷时长)×性能稼动率×质量合格率×100"),
-    ("fact_downtime", "reason_code"): ("停机原因ID", "存的是 dim_downtime_reason.reason_id(1~8),不是 reason_code('D001'等)"),
+    ("fact_downtime", "reason_code"): ("停机原因ID", "外键,关联dim_downtime_reason.reason_id(存原因ID 1~8,不是 'D001' 等原因编码)"),
     ("fact_invoice", "amount_no_tax"): ("不含税金额", "元;退货开具的红字发票为负数"),
     ("fact_invoice", "tax_amount"): ("税额", "不含税金额×13%,元;红字发票为负数"),
     ("fact_invoice", "total_amount"): ("价税合计", "元;红字发票为负数"),

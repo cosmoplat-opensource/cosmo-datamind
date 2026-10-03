@@ -64,7 +64,7 @@ def _url(path):
 def g(path,**kw): return requests.get(_url(path),timeout=180,**kw)
 def po(path,**kw): return requests.post(_url(path),timeout=200,**kw)
 
-# ── 前置:测试进程与被测服务必须指向同一个数据底座 ─────────────────
+# ── 前置:测试进程与被测服务必须指向同一个数据库 ─────────────────
 # 部分断言在本进程内直接 import server 求值(build_context、_table_cols 等),
 # 读的是本进程环境变量里的 DATAMIND_DB。若只给服务端设了而没给测试进程设,
 # 这些断言会以「空 detail」的形式失败,现象与真实缺陷难以区分 —— 直接卡在这里报清楚。
@@ -75,7 +75,7 @@ def _preflight():
     except Exception as e:
         print("✗ 前置检查:服务未启动或不可达(%s)——先 python3 server.py" % str(e)[:80]); sys.exit(2)
     if not _srv_db.get("ok"):
-        print("✗ 前置检查:服务端数据底座不可用 —— %s" % _srv_db.get("error", "")); sys.exit(2)
+        print("✗ 前置检查:服务端数据库不可用 —— %s" % _srv_db.get("error", "")); sys.exit(2)
     # 只比较 basename 会把两个不同目录下的 demo_metrics.db 误判为同一个库。
     # 本测试后半段会直接 import server 做确定性断言，所以要比对「表名+行数+列数」指纹，
     # 不能等出现一批空 detail 失败后才猜是环境漂移。
@@ -242,6 +242,7 @@ r=po("/api/sparql",json={"query":"BADSPARQL","graph":"demo"}); chk("sparql 语�
 # DR-012: 页面内置的默认 SPARQL 示例必须可跑(防再混入 `>?var` 缺空格等非法 SPARQL 回归)
 import re as _re, os as _os
 _ui=open(_os.path.join(_os.path.dirname(__file__),"ui","index.html"),encoding="utf-8").read()
+_graph_render=open(_os.path.join(_os.path.dirname(__file__),"ui","modules","graph-render.js"),encoding="utf-8").read()
 _qa_anchor=open(_os.path.join(_os.path.dirname(__file__),"ui","modules","qa-anchor.js"),encoding="utf-8").read()
 _qa_anchor_css=open(_os.path.join(_os.path.dirname(__file__),"ui","styles","qa-anchor.css"),encoding="utf-8").read()
 _m=_re.search(r'id="sq_q"[^>]*>(.*?)</textarea>', _ui, _re.S)
@@ -673,7 +674,7 @@ r=g("/"); chk("V21 UI 含 业务助手+问数评测 页", 'data-p="assistant"' i
 chk("V22 UI 含 口径卡/流式渲染代码", "metric_cards" in r.text and "narrative_delta" in r.text)
 
 print("=== CQ. 能力问题核验(DR-024)===")
-_cqb={"graph":"demo","cqs":["月度聚合指标表(按人x月)和业务员维度表的关系","光刻机良率与封装产能的关联"]}
+_cqb={"graph":"demo","cqs":["月度聚合指标表(按人×月)和业务员维度表的关系","光刻机良率与封装产能的关联"]}
 r=po("/api/ont/cq",json=_cqb,headers=H); _cq=r.json()
 chk("CQ1 核验 200 + 三态计数齐全", r.status_code==200 and set(_cq["counts"])=={"answerable","partial","unanswerable"})
 chk("CQ2 真实关系判 answerable", _cq["items"][0]["verdict"]=="answerable")
@@ -717,7 +718,7 @@ _tir2={"objects":[{"id":"wo","cn":"工单","table":"t_wo","pk":"wo_id","attrs":[
 chk("DF10 检出关系断裂(键列已删)", "relation_broken" in {i["type"] for i in _dfm.check(_tir2,_dp)["issues"]})
 chk("DF11 漂移项进入待补清单", len(_dfm.gaps_from(_dr))>=2 and _dfm.gaps_from(_dr)[0]["type"].startswith("drift_"))
 _os3.remove(_dp)
-r=po("/api/ont/chain",json={"graph":"demo","chain":["月度聚合指标表(按人x月)","业务员维度表"]},headers=H); _ch=r.json()
+r=po("/api/ont/chain",json={"graph":"demo","chain":["月度聚合指标表(按人×月)","业务员维度表"]},headers=H); _ch=r.json()
 chk("CH1 链路核验 200 + 逐段", r.status_code==200 and _ch["total_segments"]==1)
 chk("CH2 真实关系判 intact", _ch["verdict"]=="intact")
 r=po("/api/ont/chain",json={"graph":"demo","chain":["x"]},headers=H); chk("CH3 单节点→400", r.status_code==400)
@@ -1388,11 +1389,11 @@ chk("AO25 锚定条与气泡复用同一段渲染(bare 模式,不做第二份实
 chk("AO26 可跳本体图谱高亮本次锚定的那一块",
     "function dqAncHighlight" in _qa_anchor and "GRAPH_HL" in _qa_anchor and "问数锚定视图" in _ui)
 chk("AO27 图谱渲染按高亮集淡出非锚定节点与关系",
-    "function _g6build(g,hl)" in _ui and "hl.set.has(n.id)" in _ui
-    and "hl.set.has(e.s)&&hl.set.has(e.t)" in _ui)
+    "function _g6build(g,hl)" in _graph_render and "hl.set.has(n.id)" in _graph_render
+    and "hl.set.has(e.s)&&hl.set.has(e.t)" in _graph_render)
 chk("AO28 高亮提示条独立于 g_info(后者会被元数据覆盖回调覆写)",
     'id="g_hlbar"' in _ui and "$('#g_hlbar')" in _ui)
-chk("AO29 高亮可一键清除", "清除高亮,看完整图谱" in _ui)
+chk("AO29 高亮可一键清除", "清除高亮，看完整图谱" in _ui)
 chk("AO30 新对话清空锚定条,不残留上一轮", "DQ_ANC_LAST=null;dqAncBar(null)" in _ui)
 chk("AO31 切到根因诊断清空锚定条(共用视图容器,免得指向另一条链路)",
     _ui.count("DQ_ANC_LAST=null;dqAncBar(null)") >= 3)

@@ -391,6 +391,8 @@ def summary_text(contracts, resolved):
 
 
 _COMMENT_REF = re.compile(r"(?:外键|关联|引用|参照|对应|references?|refers? to|fk)\s*[,，:：]?\s*(?:到|至|表)?\s*`?([A-Za-z_][\w.]*)`?", re.I)
+# 关键词后先写中文名、括号里再写表名:「引用产线(dim_production_line.line_id)」
+_COMMENT_REF_CN = re.compile(r"(?:外键|关联|引用|参照|对应)[^A-Za-z_\n,，;；。]{1,12}?[(（]`?([A-Za-z_][\w.]*)`?")
 
 
 def comment_contracts(column_comments, tab_cols):
@@ -402,13 +404,20 @@ def comment_contracts(column_comments, tab_cols):
     for (t, c), cm in (column_comments or {}).items():
         if t not in tab_cols:
             continue
-        for m in _COMMENT_REF.finditer(str(cm or "")):
-            name = m.group(1).split(".")[-1]
-            pt = lower.get(name.lower())
-            if not pt or pt == t:
+        text = str(cm or "")
+        for m in [*_COMMENT_REF.finditer(text), *_COMMENT_REF_CN.finditer(text)]:
+            # 写法可能是 表、库.表 或 表.列:取第一个是库中表名的片段,紧跟其后的片段若是该表的列即为父列
+            parts = m.group(1).split(".")
+            at = next((i for i, x in enumerate(parts) if x.lower() in lower), None)
+            if at is None:
+                continue
+            pt = lower[parts[at].lower()]
+            if pt == t:
                 continue
             pcols = [x for x, _ in tab_cols[pt]]
-            pc = next((x for x in pcols if x.lower() == c.lower()), None)
+            named_col = parts[at + 1] if at + 1 < len(parts) else ""
+            pc = next((x for x in pcols if x.lower() == named_col.lower()), None) if named_col else None
+            pc = pc or next((x for x in pcols if x.lower() == c.lower()), None)
             if not pc:
                 ids = [x for x in pcols if x.lower() == "id" or x.lower().endswith("_id")]
                 pc = ids[0] if ids and (ids[0].lower() == "id" or pcols and pcols[0] == ids[0]) else None

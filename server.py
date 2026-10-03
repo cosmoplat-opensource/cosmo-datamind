@@ -1049,13 +1049,89 @@ def _table_cols(table):
     return cols
 
 
-def _obj_cols_text(o, limit=18):
-    """对象的列清单文本:优先本体自带 attrs(含中文名),缺失则回落到库里现读的列名。"""
-    attrs = o.get("attrs") or []
-    if attrs:
-        # cn 可能是 None:用 or "" 兜住,否则会渲染出字面量 "None" 喂给模型
-        return ", ".join(f'{a["col"]}({a.get("cn") or ""})' for a in attrs[:limit] if a.get("col"))
-    return ", ".join(_table_cols(o.get("table"))[:limit])
+_VALUES_CACHE: dict = {}
+_KEYISH = re.compile(r"(^id$|_id$|_no$|_uuid$|_time$|_date$|^date$)")
+
+
+def _col_values(table, col, cap=10):
+    """低基数列在库中的实际取值(至多 cap 个,超过则视为高基数返回 None)。
+
+    问数模型不知道枚举列存的是「已完成」还是「完工」、是 'finished' 还是「成品仓」,
+    按猜测的取值过滤就会返回 0 行。把实际取值写进列说明,筛选条件才能写对(DR-077)。"""
+    raw = (table or "").lower()
+    db_path, t = (UPLOAD_DB, raw[3:]) if raw.startswith("up.") else (DB, raw)
+    if not t or not re.fullmatch(_SQL_IDENT, t) or not re.fullmatch(_SQL_IDENT, col or ""):
+        return None
+    key = (db_path, t, col)
+    if key in _VALUES_CACHE:
+        return _VALUES_CACHE[key]
+    try:
+        con = ro_connect(db_path)
+        try:
+            vals = [r[0] for r in con.execute(f'SELECT DISTINCT "{col}" FROM "{t}" WHERE "{col}" IS NOT NULL LIMIT {cap + 1}')]
+        finally:
+            con.close()
+    except Exception:
+        return None
+    ok = 0 < len(vals) <= cap and all(isinstance(v, (str, int)) and not isinstance(v, bool) and len(str(v)) <= 24 for v in vals)
+    _VALUES_CACHE[key] = [str(v) for v in sorted(vals, key=str)] if ok else None
+    return _VALUES_CACHE[key]
+
+
+_DICT_CN_CACHE: dict = {}
+
+
+def _dict_cn(table):
+    """库内数据字典里的字段中文名(dim_column_metadata.column_name_cn);没有字典时为空。"""
+    raw = (table or "").lower()
+    db_path, t = (UPLOAD_DB, raw[3:]) if raw.startswith("up.") else (DB, raw)
+    key = (db_path, t)
+    if key not in _DICT_CN_CACHE:
+        out = {}
+        try:
+            con = ro_connect(db_path)
+            try:
+                if con.execute("SELECT 1 FROM sqlite_master WHERE type='table' AND name='dim_column_metadata'").fetchone():
+                    out = {c.lower(): cn for c, cn in con.execute(
+                        "SELECT column_name, column_name_cn FROM dim_column_metadata WHERE lower(table_name)=?", (t,)) if cn}
+            finally:
+                con.close()
+        except Exception:
+            pass
+        _DICT_CN_CACHE[key] = out
+    return _DICT_CN_CACHE[key]
+
+
+def _question_hits(question, col, cn):
+    """列被问题提到的程度:中文名的双字片段与英文列名中长度不少于 3 的词,出现在问题里的个数。"""
+    q = (question or "").lower()
+    if not q:
+        return 0
+    cn = cn or ""
+    grams = {cn[i:i + 2] for i in range(len(cn) - 1)} | {w for w in (col or "").lower().split("_") if len(w) >= 3}
+    return sum(1 for g in grams if g in q)
+
+
+def _obj_cols_text(o, limit=30, question=""):
+    """对象的列清单文本:优先本体自带 attrs(含中文名),缺失则回落到库里现读的列名。
+    问题提到的列排在前面,不被列数上限截掉;低基数列附上库中实际取值(DR-077)。"""
+    attrs = [a for a in (o.get("attrs") or []) if a.get("col")]
+    # cn 可能是 None:用 or "" 兜住,否则会渲染出字面量 "None" 喂给模型
+    dict_cn = _dict_cn(o.get("table"))              # 属性没有中文名时用库内数据字典补(DR-077)
+    cols = [(a["col"], a.get("cn") or dict_cn.get(a["col"].lower(), "")) for a in attrs] or \
+        [(c, dict_cn.get(c.lower(), "")) for c in _table_cols(o.get("table"))]
+    vals_of = {col: None if _KEYISH.search(col.lower()) else _col_values(o.get("table"), col) for col, _cn in cols}
+    def _rank(c):
+        # 问题说出了列的某个取值(「缺勤」之于出勤结果、「已完成」之于工单状态)也算提到该列,权重高于名称片段
+        named = sum(2 for v in (vals_of[c[0]] or []) if len(v) >= 2 and v.lower() in (question or "").lower())
+        return -(_question_hits(question, c[0], c[1]) + named)
+    cols = sorted(cols, key=_rank)[:limit]                    # 稳定排序:同分保持原列序
+    out = []
+    for col, cn in cols:
+        vals = vals_of[col]
+        hint = f"取值:{'/'.join(vals)}" if vals else ""
+        out.append(f"{col}({cn}{';' if cn and hint else ''}{hint})" if (cn or hint) or attrs else col)
+    return ", ".join(out)
 
 
 def _normalize_tables(ir):
@@ -1164,7 +1240,7 @@ def _qa_table_inventory(path=None):
     """返回深度问数当前进程真正能执行的主库表与上传库表。
 
     按两个库文件的 mtime 指纹缓存:问数/图谱列表每个请求都要问一次「有哪些表」,
-    而底座库只在换库或上传时才变。返回副本,调用方改动不会污染缓存。
+    而数据库只在换库或上传时才变。返回副本,调用方改动不会污染缓存。
     path 缺省为本次问数的执行库(主库,或所选本体的来源库)。
     """
     path = path or _qa_db()
@@ -1362,7 +1438,7 @@ def build_context(question, focus_tables=None, trace=None, graph_keys=None):
         if picked:
             lines = []
             for o in picked:
-                cols = _obj_cols_text(o)
+                cols = _obj_cols_text(o, question=question)
                 _al = "、".join(o.get("aliases") or [])
                 lines.append(f'表 {o["table"]}({o.get("cn","")}{",业务别称:" + _al if _al else ""}): {cols}')
             _trace_objs(trace, picked, "数据源限定")
@@ -1380,6 +1456,7 @@ def build_context(question, focus_tables=None, trace=None, graph_keys=None):
         if trace is not None:
             trace["focus_miss"] = len(ft)             # 点选的表在本体里一张都没有 → 转打分召回,不静默当作已限定
     tabs, hmap = [], {}
+    _kw_tables = {w.lower() for w in kws if "_" in w}
     _deg = {}
     for _r in _rels(ir)[0]:
         if _r.get("status") == "verified":
@@ -1410,6 +1487,10 @@ def build_context(question, focus_tables=None, trace=None, graph_keys=None):
         _full = {str(x) for x in [o.get("cn")] + list(o.get("aliases") or []) if x}
         _rs = (sum((3 * len(h) + 6) if h in _full else 2 * len(h) for h in cn_hs) + (8 if head_hit else 0)
                + (len(hs) - len(cn_hs) - (1 if head_hit else 0)))
+        # 术语词典把问句用语直接对应到这张表(「安全事件」→ fact_incident):与问句原样出现完整中文名同等可信。
+        # 库里表中文名常与问句用语不同(写作「事故」),只记 1 分会被只命中「事件」「event」的表挤出上下文(DR-077)
+        if (o.get("table") or "").lower() in _kw_tables:
+            _rs += 12
         # DR-072 同分时偏向主数据表:已验证关系多的对象(设备主表、用能单元)排在外围同名表前面
         tabs.append((_rs + (min(3.0, math.log2(1 + _deg.get(o.get("name"), 0))) if _rs > 0 else 0), o))
     tabs.sort(key=lambda x: -x[0])
@@ -1426,21 +1507,31 @@ def build_context(question, focus_tables=None, trace=None, graph_keys=None):
     have = {o["table"].lower() for o in picked if o.get("table")}
     rels, sk, tk = _rels(ir)
     o_by_id = {_obj_key(o, i): o for i, o in enumerate(ir.get("objects", []))}
-    extras = []
+    # 取前 4 张邻居,先后依次为:命中表经编码列引用的码表、与问句相关度高的表、排名靠前的命中表的邻居。
+    # 按关系列表先后取时,设备主表的车间、资产等邻居占满名额,停机记录 reason_code(1~8)指向的
+    # 「停机原因」表进不来,模型只能猜编码对应的原因(DR-077)
+    rank = {(o.get("table") or "").lower(): i for i, o in enumerate(picked)}
+    rel_score = {(o.get("table") or "").lower(): s0 for s0, o in tabs}
+    cand: dict = {}
     for l in rels:
         if l.get("status") not in ("verified", "asserted"): continue
         so, to = o_by_id.get(l.get(sk)), o_by_id.get(l.get(tk))
         if not so or not to: continue
         st, tt = (so.get("table") or "").lower(), (to.get("table") or "").lower()
-        if st in have and tt and tt not in have and len(extras) < 4:
-            extras.append(to); have.add(tt)
-        elif tt in have and st and st not in have and len(extras) < 4:
-            extras.append(so); have.add(st)
+        ck = (l.get("evidence") or {}).get("child_key") or ""
+        for anchor, nb, o in ((st, tt, to), (tt, st, so)):
+            if anchor in have and nb and nb not in have:
+                code = bool(anchor == st and ck and _col_values(so.get("table"), ck) is not None)
+                key = (not code, -rel_score.get(nb, 0), rank[anchor], len(cand))
+                if nb not in cand or key < cand[nb][0]:
+                    cand[nb] = (key, o)
+    extras = [o for _k, o in sorted(cand.values(), key=lambda x: x[0])[:4]]
+    have.update((o.get("table") or "").lower() for o in extras)
     picked += extras
     _trace_objs(trace, extras, "沿本体关系召回", hmap)
     lines = []
     for o in picked:
-        cols = _obj_cols_text(o)
+        cols = _obj_cols_text(o, question=question)
         _al = "、".join(o.get("aliases") or [])
         _dg = _deg.get(o.get("name"), 0)
         _mk = f",主数据·被 {_dg} 条已验证关系引用" if _dg >= 5 else ""      # DR-072 同类表里标出主表,模型才不会挑外围表
@@ -1781,7 +1872,7 @@ def agent_sql_plan(question, context, steps):
 可用表结构:
 {context}
 只输出一个 JSON(不要其它文字): {{"analyses":[{{"title":"...","sql":"SELECT ...","chart":{{"type":"line|bar|pie","x":"列名","y":["列名"]}}}}], "note":"一句话分析思路"}}
-要求: 最多3个分析;SQL 只用上面列出的表列;若上下文给出「表间关系(⋈)」,跨表 JOIN 必须优先使用这些键,不要自造 JOIN 条件;聚合趋势用 substr(日期列,1,7) 按月;LIMIT 500 以内;「⋈⋈」为两跳链,须完整沿链 JOIN 中间表;均值口径:『月均/日均』分母用 count(DISTINCT 期间),不得除以固定常数;『最…的』单值问题:JOIN 后聚合再 ORDER BY … LIMIT 1。"""
+要求: 最多3个分析,第一个分析直接回答问题本身(问总量就给出总量,问排名就给出排名),拆分、趋势放在其后;SQL 只用上面列出的表列;若上下文给出「表间关系(⋈)」,跨表 JOIN 必须优先使用这些键,不要自造 JOIN 条件;聚合趋势用 substr(日期列,1,7) 按月;LIMIT 500 以内;「⋈⋈」为两跳链,须完整沿链 JOIN 中间表;均值口径:『月均/日均』分母用 count(DISTINCT 期间),不得除以固定常数;『最…的』单值问题:JOIN 后聚合再 ORDER BY … LIMIT 1。"""
     for drv in _drv_order():
         try:
             if drv not in available(): continue
@@ -5483,7 +5574,7 @@ def skill_compare_run():
     """启动技能对比:{query?, skills_a:[], skills_b:[]};后台跑两次真实构建(约 4-10 分钟)。"""
     if SKILL_CMP_JOB["running"]: return jsonify({"error": "对比实验进行中", "job": SKILL_CMP_JOB}), 409
     body = request.json or {}
-    query = (body.get("query") or "").strip() or "从 示例主库自动识别核心对象、事件与关系,构建一张可审计的制造企业本体"
+    query = (body.get("query") or "").strip() or "从示例主库自动识别核心对象、事件与关系，构建一张可审计的制造企业本体"
     a = [s for s in (body.get("skills_a") or []) if isinstance(s, str)][:5]
     b = [s for s in (body.get("skills_b") or []) if isinstance(s, str)][:5]
     known = _builtin_skill_names() | {os.path.basename(p).rsplit(".", 1)[0] for p in glob.glob(os.path.join(_BUILD_SKILL_D, "*"))}
@@ -5525,7 +5616,7 @@ def build_defaults():
         "sqlite_path": os.path.abspath(DB),                       # 真实 示例 库绝对路径(填入即可校验通过)
         "conn_name": "示例制造数据库",
         "build_name": "示例企业本体",
-        "build_query": "从 示例主库自动识别核心对象、事件与关系,构建一张可审计的制造企业本体(对象/事件/关系,每条关系带数据取证)",
+        "build_query": "从示例主库自动识别核心对象、事件与关系，构建一张可审计的制造企业本体（对象、事件、关系，每条关系附数据取证）",
         "default_skill": "ontology-semi-auto",                      # 本仓自带,无上游引擎也真实可用
         "ext": {"kind": "hive", "host": "<hive-host>", "port": "10000", "db": "default"},
     })
@@ -5786,6 +5877,11 @@ def _gather_evidence(db, cap_tabs=400, cap_docs=40, query="", focus=None):
             except Exception:
                 cols = []
             tab_cols[t] = cols                       # 保留全部表(供关系取证的表名映射)
+        if not dm_tables and not dm_cols:            # DR-077 没有抽样注释时用库内数据字典(dim_table_metadata/dim_column_metadata)
+            dm_tables, _cc, _rows = build_prep._comments(c)
+            for (t, col), cm in _cc.items():
+                ty = next((ty for x, ty in tab_cols.get(t, []) if x == col), "")
+                dm_cols.setdefault(t, []).append((col, ty, cm))
         c.close()
     except Exception:
         pass

@@ -50,3 +50,18 @@ def test_step_of_marks_mismatch_not_ok(ir_healthy):
     step = intent_check.step_of(res)
     assert step["ok"] is False
     assert step["step"] == "intent_crosscheck"
+
+
+def test_object_name_inside_a_filter_value_is_not_a_declared_object():
+    """「设备故障导致的停机总时长」里的「设备」是停机原因的取值「设备故障」的一部分,不是在问设备。
+    SQL 按 reason_name='设备故障' 过滤、没有 JOIN 设备表时,不能判为答非所问(DR-077)。"""
+    ir = {"objects": [{"id": "eq", "cn": "设备", "table": "dim_equipment"},
+                      {"id": "dt", "cn": "停机记录", "table": "fact_downtime"},
+                      {"id": "rs", "cn": "停机原因", "table": "dim_downtime_reason"}]}
+    sql = ("SELECT SUM(d.duration_hours) FROM fact_downtime d JOIN dim_downtime_reason r "
+           "ON d.reason_code = r.reason_id WHERE r.reason_name = '设备故障'")
+    res = intent_check.cross_check("设备故障导致的停机总时长是多少小时?", sql, ir)
+    assert res["verdict"] != "mismatch"
+    # 问句另外单独提到设备时照常比对
+    res2 = intent_check.cross_check("各设备因设备故障导致的停机时长?", sql, ir)
+    assert res2["verdict"] == "mismatch"

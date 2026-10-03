@@ -50,7 +50,7 @@ TOKEN = {
     "energy":"能耗","power":"电力","water":"水","gas":"燃气","labor":"人工","overhead":"制造费用","depreciation":"折旧","expense":"费用",
     "after":"售后","service":"服务","warranty":"保修","complaint":"投诉","satisfaction":"满意度","nps":"净推荐值","finance":"财务","fin":"财务",
     "row":"行","col":"列","period":"期间","fiscal":"财务","planning":"计划","forecast":"预测","forecasted":"预测","achieve":"达成","achievement":"达成",
-    "maint":"维护","maintenance":"维护","capacity":"产能","hazard":"隐患","sensor":"传感器","training":"培训",
+    "maint":"维护","maintenance":"维护","capacity":"产能","hazard":"危险源","sensor":"传感器","training":"培训",
     "column":"列","table":"表","cash":"现金","receivable":"应收","payable":"应付","inspection":"检验","inspect":"检验","repair":"维修",
     "alarm":"报警","threshold":"阈值","reading":"读数","temperature":"温度","temp":"温度","pressure":"压力","speed":"转速","vibration":"振动",
     "delay":"延误","delayed":"延误","overdue":"逾期","first":"首","last":"末","current":"当前","previous":"上期","ytd":"年初至今","mtd":"月初至今",
@@ -86,12 +86,13 @@ TABLE_PHRASE = {
     "dim_composite_metric_config":"复合指标配置","dim_cost_center":"成本中心","dim_derived_metric_config":"派生指标配置","dim_downtime_reason":"停机原因",
     "dim_fixed_asset":"固定资产","dim_metric_catalog":"指标目录","dim_pricing":"定价","dim_profit_center":"利润中心","dim_routing":"工艺路线",
     "dim_spare_part":"备件","dim_storage_location":"存储位置","dim_table_metadata":"表元数据","dim_tool":"工具","dim_work_center":"工作中心",
-    "fact_env_record":"环境记录","fact_goods_receipt":"收货记录","fact_incident_inv":"事故调查","fact_iot_data":"物联网数据","fact_maintenance_record":"维护记录",
+    "fact_env_record":"环境记录","fact_goods_receipt":"收货记录","fact_incident":"安全事件","fact_incident_inv":"安全事件调查","fact_po_line":"采购订单行","dim_bom_line":"BOM行","dim_operation":"工序","dim_hazard":"危险源","fact_iot_data":"物联网数据","fact_maintenance_record":"维护记录",
     "fact_payment_out":"付款记录","fact_purchase_order":"采购订单","fact_purchase_requisition":"采购申请","fact_quotation":"报价单","fact_safety_audit":"安全审计",
     "fact_safety_objective":"安全目标","fact_safety_plan":"安全计划","fact_safety_training":"安全培训","fact_work_permit":"作业许可"
 }
 # 短语级覆盖(整列名 → 更自然的中文,优先于逐词组合)
 PHRASE = {
+    "po_line":"采购订单行","bom_line":"BOM行","line_no":"行号",
     "gross_profit":"毛利","gross_profit_actual":"实际毛利","gross_profit_target":"目标毛利","gross_margin":"毛利率",
     "unit_price":"单价","yield_rate":"良品率","pass_rate":"合格率","defect_rate":"不良率","return_rate":"退货率",
     "on_time_rate":"准时率","delivery_rate":"交付率","completion_rate":"完成率","utilization_rate":"利用率",

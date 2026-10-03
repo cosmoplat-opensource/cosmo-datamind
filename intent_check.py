@@ -84,9 +84,22 @@ def actual_intent(sql, ir):
                                if t not in {o["table"] for o in hit})}
 
 
+def _mask_filter_values(question, sql):
+    """把问句里被 SQL 原样用作筛选值的词(≥2 字)替换掉,再交给通道 A。
+
+    「设备故障导致的停机总时长」里的「设备」属于停机原因的取值「设备故障」,不是在问设备;
+    不去掉的话,按 reason_name='设备故障' 过滤、没有 JOIN 设备表的正确 SQL 会被判成答非所问(DR-077)。
+    只用 SQL 的字符串常量,不用它查了哪些表,通道 A 仍然看不到通道 B 的结论。"""
+    q = question or ""
+    for lit in sorted({m.group(1) for m in re.finditer(r"'([^']{2,40})'", sql or "")}, key=len, reverse=True):
+        if lit in q:
+            q = q.replace(lit, " ")
+    return q
+
+
 def cross_check(question, sql, ir):
     """双盲比对。两通道各自独立产出后才比,任一通道不参考对方中间结果。"""
-    a = declared_intent(question, ir)
+    a = declared_intent(_mask_filter_values(question, sql), ir)
     b = actual_intent(sql, ir)
     ka = {o["key"] for o in a["objects"]}
     kb = {o["key"] for o in b["objects"]}

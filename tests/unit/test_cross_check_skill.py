@@ -197,3 +197,57 @@ def test_db_opens_readonly_even_with_uri_characters_in_filename(make_sqlite):
             h.con.execute("INSERT INTO t VALUES (2)")
     finally:
         h.con.close()
+
+
+def _comment_fixture(make_sqlite):
+    # 两张父表的主键同名(order_id),整数区间重合;付款表自己的主键 payment_id 与回款表主键同名
+    sales = [(i, f"SO{i}") for i in range(1, 61)]
+    prod = [(i, f"WO{i}") for i in range(1, 61)]
+    cons = [(i, (i % 50) + 1, 1.0) for i in range(1, 121)]
+    pay = [(i, i * 10.0) for i in range(1, 61)]
+    pay_out = [(i, i * 5.0) for i in range(1, 41)]
+    meta = [("fact_consumption", "order_id", "工单ID", "外键,关联fact_production_order"),
+            ("fact_payment_out", "payment_id", "付款ID", "主键,自增")]
+    return make_sqlite({
+        "fact_sales_order": ("order_id INTEGER PRIMARY KEY, order_no TEXT", sales),
+        "fact_production_order": ("order_id INTEGER PRIMARY KEY, order_no TEXT", prod),
+        "fact_consumption": ("consumption_id INTEGER PRIMARY KEY, order_id INTEGER, qty REAL", cons),
+        "fact_payment": ("payment_id INTEGER PRIMARY KEY, amount REAL", pay),
+        "fact_payment_out": ("payment_id INTEGER PRIMARY KEY, amount REAL", pay_out),
+        "dim_column_metadata": ("table_name TEXT, column_name TEXT, column_name_cn TEXT, column_desc TEXT", meta),
+    })
+
+
+def _verified(src, dst, ck, pk):
+    return {"source_concept": src, "target_concept": dst, "status": "verified",
+            "evidence": {"child_key": ck, "parent_key": pk, "overlap": 100.0}}
+
+
+def test_comment_naming_another_parent_or_own_primary_key_refutes_link(make_sqlite):
+    db = _comment_fixture(make_sqlite)
+    names = ("fact_sales_order", "fact_production_order", "fact_consumption", "fact_payment", "fact_payment_out")
+    ir = {"objects": [{"name": t, "table": t} for t in names],
+          "relations": [_verified("fact_consumption", "fact_sales_order", "order_id", "order_id"),        # 注释点名的是生产工单
+                        _verified("fact_consumption", "fact_production_order", "order_id", "order_id"),
+                        _verified("fact_payment_out", "fact_payment", "payment_id", "payment_id")]}     # 注释说是本表主键
+    handle = cc.Db(db)
+    rows, _hubs = cc.check(ir, handle)
+    verdict = {(r["source"], r["target"]): r for r in rows}
+    wrong = verdict[("fact_consumption", "fact_sales_order")]
+    assert wrong["verdict"] == "refuted" and "comment" in wrong["conflicts"]
+    right = verdict[("fact_consumption", "fact_production_order")]
+    assert right["verdict"] != "refuted" and "comment" in right["supports"]
+    own_pk = verdict[("fact_payment_out", "fact_payment")]
+    assert own_pk["verdict"] == "refuted" and "comment" in own_pk["conflicts"]
+    cc.apply(ir, rows)
+    assert [r["status"] for r in ir["relations"]] == ["candidate", "verified", "candidate"]
+
+
+def test_comment_reference_forms_recognised(make_sqlite):
+    db = make_sqlite({"dim_production_line": ("line_id INTEGER PRIMARY KEY", [(1,)]),
+                      "dim_column_metadata": ("table_name TEXT, column_name TEXT, column_name_cn TEXT, column_desc TEXT",
+                                              [("t", "a", "产线ID", "引用产线(dim_production_line.line_id)"),
+                                               ("t", "b", "原因ID", "外键,关联dim_production_line.line_id(说明)")])})
+    handle = cc.Db(db)
+    for col in ("a", "b"):
+        assert cc.comment_channel(handle, "t", col, "dim_production_line")["state"] == "support"

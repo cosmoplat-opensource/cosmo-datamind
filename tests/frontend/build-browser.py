@@ -72,7 +72,7 @@ async def main(output, base_url=None):
         page.on("pageerror", lambda error: failures.append(str(error)))
         await page.route("**/*", serve)
         await page.goto((base_url or "http://datamind-ui.test").rstrip("/") + "/#build", wait_until="networkidle")
-        await page.locator("#bc_skills .bc-skcard").wait_for()
+        await page.locator("#bc_skills .bc-skcard").first.wait_for()
         assert await page.locator("#bc_q").get_attribute("aria-label")
         await page.locator("#bc_q").fill("补充订单与客户关系")
         await page.locator("#bc_send").click()

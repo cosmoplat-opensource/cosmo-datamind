@@ -5,10 +5,10 @@
 <script src="/vendor/echarts.min.js"></script>
 <script src="/vendor/g6.min.js"></script>
 <style>*{box-sizing:border-box;margin:0;padding:0}
-/* 设计 token 对齐 iip.iiot-platform.com:主色 #4A5FF3、副蓝 #409EFF、页底 #F7F8FC、圆角 4px、Helvetica Neue/PingFang 字体 */
+/* 设计 token 对齐 iip.iiot-platform.com：主色 #4A5FF3、副蓝 #409EFF、页底 #F7F8FC、圆角 4px、Helvetica Neue/PingFang 字体 */
 :root{--bg:#F7F8FC;--panel:#ffffff;--line:#E4E7ED;--txt:#1f2d3d;--sub:#64748b;--acc:#4A5FF3;--acc2:#409EFF;--ok:#16a34a;--warn:#d97706;--evt:#7c3aed;--r:8px;--rs:4px}
 body{font-family:"Helvetica Neue",Helvetica,-apple-system,"PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;background:var(--bg);color:var(--txt);display:flex;flex-direction:column;height:100vh;overflow:hidden}
-/* 顶栏:对齐平台 48px 白条 + 柔和阴影 */
+/* 顶栏：对齐平台 48px 白条 + 柔和阴影 */
 .topbar{height:48px;flex:0 0 48px;background:#fff;box-shadow:0 0 10px rgba(0,0,0,.08);display:flex;align-items:center;justify-content:space-between;padding:0 18px;position:relative;z-index:20}
 .topbar .wm{font-size:16px;font-weight:700;color:var(--txt);display:flex;align-items:baseline;gap:8px}
 .topbar .wm small{font-weight:400;color:var(--sub);font-size:12px}
@@ -18,7 +18,7 @@ body{font-family:"Helvetica Neue",Helvetica,-apple-system,"PingFang SC","Hiragin
 .topbar .av{width:30px;height:30px;border-radius:50%;background:var(--acc2);color:#fff;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700}
 .shell{flex:1;display:flex;overflow:hidden}
 aside{width:210px;background:#fff;border-right:1px solid var(--line);padding:12px 10px;display:flex;flex-direction:column;gap:2px;overflow:auto}
-/* 侧栏用户卡:对齐平台顶部头像卡 */
+/* 侧栏用户卡：对齐平台顶部头像卡 */
 .ucard{display:flex;flex-direction:column;align-items:center;padding:10px 8px 12px;margin-bottom:8px;border-bottom:1px solid var(--line)}
 .ucard .av{width:54px;height:54px;border-radius:50%;background:var(--acc2);color:#fff;display:flex;align-items:center;justify-content:center;font-size:19px;font-weight:700}
 .ucard .nm{font-weight:700;font-size:14px;margin-top:8px}
@@ -46,9 +46,9 @@ th,td{padding:8px 8px;text-align:left;border-bottom:1px solid #eef2ff;white-spac
 th{color:var(--sub);font-weight:600;position:sticky;top:0;background:var(--panel)}
 tr:hover td{background:#f8fbff} .scroll{overflow:auto;max-height:60vh}
 input,textarea,select{background:#fff;border:1px solid var(--line);color:var(--txt);border-radius:var(--rs);padding:9px 12px;font-size:14px;width:100%}
-/* 上面那条把 width:100%+padding 套给了所有 input,勾选框也不例外:在 flex 行里
-   它会撑到 200 多像素、把同排文本挤成 0 宽,文字于是逐字竖排(技能编排面板实测如此)。
-   勾选框/单选框按内容定宽,且不参与 flex 伸缩。 */
+/* 上面那条把 width:100%+padding 套给了所有 input，勾选框也不例外：在 flex 行里
+   它会撑到 200 多像素、把同排文本挤成 0 宽，文字于是逐字竖排(技能编排面板实测如此)。
+   勾选框/单选框按内容定宽，且不参与 flex 伸缩。 */
 input[type=checkbox],input[type=radio]{width:auto;padding:0;flex:none;margin:0}
 input:focus,textarea:focus,select:focus{outline:none;border-color:var(--acc)}
 button{background:var(--acc);color:#fff;border:0;border-radius:var(--rs);padding:9px 16px;font-size:14px;cursor:pointer}
@@ -78,10 +78,10 @@ pre{background:#f6f8fe;border:1px solid #eef2ff;border-radius:8px;padding:10px;f
 .cn-row .x{margin-left:auto;color:#c0c6d0;font-size:13px}.cn-row .x:hover{color:#b91c1c}
 @media(max-width:820px){.vz-grid{grid-template-columns:1fr}}
 a{color:var(--acc)}
-/* 可访问性:键盘聚焦可见态(div/span 按钮同样有清晰焦点环)*/
+/* 可访问性：键盘聚焦可见态(div/span 按钮同样有清晰焦点环)*/
 :focus-visible{outline:2px solid var(--acc);outline-offset:2px;border-radius:4px}
 .nav:focus-visible,.dq-mode:focus-visible,.eg:focus-visible,.pill:focus-visible,.dq-sel:focus-visible,.nav-group .gh:focus-visible,.dq-hist .it:focus-visible,.ds-card:focus-visible,.sk-card:focus-visible{outline:2px solid var(--acc);outline-offset:-1px}
-/* ── 深度问数(对齐平台 chat-bi,三段式:模式/历史 · 对话流 · 输入)── */
+/* ── 深度问数(对齐平台 chat-bi，三段式：模式/历史 · 对话流 · 输入)── */
 .dq{display:flex;gap:14px;height:calc(100vh - 116px)}
 .dq-side{width:232px;flex:0 0 232px;background:#fff;border:1px solid var(--line);border-radius:var(--r);padding:10px;display:flex;flex-direction:column;overflow:hidden}
 .dq-mode{display:flex;align-items:center;gap:8px;padding:9px 12px;border-radius:var(--rs);cursor:pointer;font-size:14px;color:var(--txt);margin-bottom:2px}
@@ -140,7 +140,7 @@ a{color:var(--acc)}
 .rp-insight{font-size:14px;line-height:1.8;background:#F7F9FF;border-left:3px solid var(--acc);border-radius:0 6px 6px 0;padding:10px 14px}
 .rp-foot{margin-top:26px;padding-top:12px;border-top:1px dashed var(--line);font-size:12px;color:var(--sub)}
 @media print{aside,.topbar,.dq-side,.dq-inputbar,#dq_report button{display:none!important} .dq-report{border:0}}
-/* ── 质感精修:内容标签页 · 折叠 · 柔和阴影 · 聚焦环 · 渐变气泡 · 过渡 ── */
+/* ── 质感精修：内容标签页 · 折叠 · 柔和阴影 · 聚焦环 · 渐变气泡 · 过渡 ── */
 .dq-tabbar{display:flex;align-items:center;gap:6px;padding:0 2px 8px;flex:0 0 auto}
 .dq-tab{display:inline-flex;align-items:center;gap:8px;background:#fff;border:1px solid var(--line);border-bottom:2px solid var(--acc);border-radius:6px 6px 0 0;padding:7px 16px;font-size:13px;color:var(--acc);font-weight:600}
 .dq-tab .c{cursor:pointer;color:#c0c4cc;font-size:14px} .dq-tab .c:hover{color:var(--acc)}
@@ -158,7 +158,7 @@ a{color:var(--acc)}
 .dq-hero .eg:hover{transform:translateY(-1px);box-shadow:0 2px 8px rgba(74,95,243,.12)}
 .dq-insight{box-shadow:0 1px 5px rgba(74,95,243,.05)}
 .dq-res .chart{background:#fff;border:1px solid var(--line);border-radius:var(--rs);padding:6px}
-/* 数据概览(对齐平台:标题 + 蓝标签行) */
+/* 数据概览(对齐平台：标题 + 蓝标签行) */
 .dq-overview{margin:10px 0 4px}
 .dq-overview .ov-hd{font-size:15px;font-weight:600;color:#303133;margin-bottom:6px}
 .dq-overview .ov-row{font-size:13.5px;color:#303133;padding:2px 0}
@@ -166,12 +166,12 @@ a{color:var(--acc)}
 /* 查看SQL / 数据预览 折叠框加边(对齐平台 bordered 盒子) */
 .dq-res details{border:1px solid var(--line);border-radius:var(--rs);padding:4px 12px;margin-top:8px;background:#fff}
 .dq-res details summary{padding:4px 0}
-/* 空态:标题+副标+输入 居中成一簇(对齐平台) */
+/* 空态：标题+副标+输入 居中成一簇(对齐平台) */
 #dqv_deep.dqv-empty{justify-content:center}
 #dqv_deep.dqv-empty .dq-stream{flex:0 0 auto;overflow:visible}
 #dqv_deep.dqv-empty .dq-inputbar{max-width:820px;width:100%;margin:18px auto 0}
 #dqv_deep.dqv-empty .dq-hero{height:auto;padding:0 0 6px}
-/* 弹窗(数据源 / 技能,对齐平台 modal)*/
+/* 弹窗(数据源 / 技能，对齐平台 modal)*/
 .dq-modal{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:100;display:flex;align-items:center;justify-content:center}
 .dq-modal-box{background:#fff;border-radius:8px;width:920px;max-width:94vw;max-height:86vh;display:flex;flex-direction:column;box-shadow:0 8px 40px rgba(0,0,0,.2)}
 .dq-modal-box.sm{width:560px}
@@ -260,7 +260,7 @@ a{color:var(--acc)}
   <div class="grid2" style="grid-template-columns:390px 1fr;align-items:start">
    <div class="card"><div class="row" style="justify-content:space-between;align-items:center"><h3 style="margin:0">连接列表 <span class="muted" id="cn_n"></span></h3><button onclick="cnDlg()">+ 新建连接</button></div>
     <div id="cn_list" style="margin-top:10px"><div class="muted">加载中…</div></div>
-    <div class="muted" style="margin-top:10px;font-size:11.5px">内置库随系统就绪;SQLite 文件连接实时校验可读表;外部库(MySQL/Doris/Hive/PG)登记连接信息,取数需内网连通与驱动。</div></div>
+    <div class="muted" style="margin-top:10px;font-size:11.5px">内置库随系统就绪；SQLite 文件连接实时校验可读表；外部库(MySQL/Doris/Hive/PG)登记连接信息，取数需内网连通与驱动。</div></div>
    <div><div class="card" id="cn_browse"><h3>选择左侧「就绪」连接以浏览其数据表</h3></div>
     <div class="card scroll" id="cn_preview" style="margin-top:12px;display:none"></div></div></div>
   <div id="cn_modal" class="dq-modal" style="display:none"><div class="dq-modal-box" style="max-width:480px">
@@ -268,16 +268,16 @@ a{color:var(--acc)}
    <div class="row" style="margin-bottom:8px"><select id="cn_kind" onchange="cnKind()" style="width:150px">
     <option value="sqlite">SQLite 文件</option><option value="mysql">MySQL</option><option value="doris">Apache Doris</option><option value="hive">Hive</option><option value="postgresql">PostgreSQL</option><option value="api">API 接口</option><option value="external">其它(自定义 DSN)</option></select>
     <input id="cn_name" placeholder="连接名称" style="flex:1"></div>
-   <div id="cn_sqlite_f"><input id="cn_path" placeholder="SQLite 文件绝对路径,如 /data/sales.db" style="width:100%;margin-bottom:8px"></div>
+   <div id="cn_sqlite_f"><input id="cn_path" placeholder="SQLite 文件绝对路径，如 /data/sales.db" style="width:100%;margin-bottom:8px"></div>
    <div id="cn_api_f" style="display:none">
     <input id="cn_url" placeholder="API 地址(http(s)://…,返回 JSON)" style="width:100%;margin-bottom:8px">
-    <input id="cn_jpath" placeholder="json_path:对象数组所在路径,如 data.items(可空=根)" style="width:100%;margin-bottom:8px">
+    <input id="cn_jpath" placeholder="json_path：对象数组所在路径，如 data.items(可空=根)" style="width:100%;margin-bottom:8px">
     <div class="muted" style="font-size:11.5px;margin-bottom:8px">登记后点「取数」把返回的对象数组物化为 <code>up.api_*</code> 表(≤2MB/5000 行)—— 深度问数 / SQL 工作台 / 可视化即刻可用。</div></div>
    <div id="cn_ext_f" style="display:none">
     <div class="row" style="margin-bottom:8px"><input id="cn_host" placeholder="主机 host" style="flex:2" oninput="cnDsn()"><input id="cn_port" placeholder="端口" style="width:88px" oninput="cnDsn()"></div>
     <div class="row" style="margin-bottom:8px"><input id="cn_db" placeholder="数据库 / schema" style="flex:1" oninput="cnDsn()"><input id="cn_user" placeholder="用户名" style="width:130px"><input id="cn_pass" type="password" placeholder="密码(可空)" style="width:130px"></div>
     <input id="cn_dsn" placeholder="DSN 连接串(可自动生成或手填)" style="width:100%;margin-bottom:8px">
-    <div class="muted" style="font-size:11.5px;margin-bottom:8px">MySQL/Doris/PostgreSQL 已支持<b>实连取数</b>(需网络连通;MySQL 驱动已内置,PG 需 psycopg2)。凭据存 0600 独立文件,只写不回显、永不入连接列表。</div></div>
+    <div class="muted" style="font-size:11.5px;margin-bottom:8px">MySQL/Doris/PostgreSQL 已支持<b>实连取数</b>(需网络连通；MySQL 驱动已内置，PG 需 psycopg2)。凭据存 0600 独立文件，只写不回显、永不入连接列表。</div></div>
    <div class="row"><button onclick="cnCreate()">保存连接</button><button class="ghost" onclick="$('#cn_modal').style.display='none'">取消</button><span class="muted" id="cn_msg"></span></div>
   </div></div></div>
 
@@ -300,27 +300,27 @@ a{color:var(--acc)}
       <h3 style="margin:0">数据看板 <span class="muted" id="vz_board_n"></span></h3>
       <div class="row" style="gap:6px"><select id="vz_board_sel" onchange="vzLoadBoard()" style="width:150px"><option value="">— 新建看板 —</option></select>
        <input id="vz_board_name" placeholder="看板名称" style="width:120px"><button onclick="vzSaveBoard()">保存看板</button></div></div>
-     <div id="vz_grid" class="vz-grid" style="margin-top:12px"><div class="muted" style="padding:20px;text-align:center">运行取数后点「添加到看板」,可拼装多图看板并保存</div></div></div>
+     <div id="vz_grid" class="vz-grid" style="margin-top:12px"><div class="muted" style="padding:20px;text-align:center">运行取数后点「添加到看板」，可拼装多图看板并保存</div></div></div>
    </div></div></div>
 
  <div class="page" id="p_graph"><h2>本体图谱</h2>
-  <!-- 工具条按「组」排布:组内 white-space:nowrap,组间由 flex-wrap 整体换行。
+  <!-- 工具条按「组」排布：组内 white-space:nowrap，组间由 flex-wrap 整体换行。
        约束的是「标签被从中间拆开」这一形态——JSON-LD / RDF/XML / 补定义/反例 都含
-       连字符或斜杠,是浏览器的合法断行点,一旦容器压缩就会拆成「JSON-」「LD」两行。
-       当前视口(1180~1600px)下未观察到该现象,此处是预防性约束,不改变正常布局。 -->
+       连字符或斜杠，是浏览器的合法断行点，一旦容器压缩就会拆成「JSON-」「LD」两行。
+       当前视口(1180~1600px)下未观察到该现象，此处是预防性约束，不改变正常布局。 -->
   <div class="row" style="margin-bottom:10px;flex-wrap:wrap"><select id="g_sel" style="width:340px"></select>
    <span class="muted" id="g_info"></span><span style="flex:1"></span>
    <span id="g_legend"></span>
    <button id="g_ask" onclick="dqStartFromOntology($('#g_sel').value)" title="以当前本体为语义与数据边界新建深度问数">基于此本体问数</button>
    <span class="g-toolbar-group" style="display:inline-flex;align-items:center;gap:8px;white-space:nowrap">导出:<button class="ghost" onclick="expOnt('ttl')">TTL</button><button class="ghost" onclick="expOnt('jsonld')">JSON-LD</button><button class="ghost" onclick="expOnt('owl')">RDF/XML</button><button class="ghost" onclick="enrichOnt(this)" title="调用智能引擎为缺定义的对象提出属加种差定义、正例和反例；结果仍需人工复核">补定义/反例</button></span>
    <span class="g-toolbar-group" style="display:inline-flex;align-items:center;gap:6px;white-space:nowrap">视图<button class="ghost" onclick="gReadable()">可读</button><button class="ghost" onclick="gFitAll()">全图</button><button class="ghost" onclick="gZoom(1.25)" aria-label="放大图谱">＋</button><button class="ghost" onclick="gZoom(.8)" aria-label="缩小图谱">－</button></span>
-   <span class="g-toolbar-group" style="display:inline-flex;align-items:center;gap:8px;white-space:nowrap">布局<select id="g_layout" onchange="drawGraph($('#g_sel').value)" style="width:120px"><option value="dagre">分层(原版)</option><option value="force">力导向</option><option value="circular">环形</option><option value="radial">辐射</option></select></span></div>
+   <span class="g-toolbar-group" style="display:inline-flex;align-items:center;gap:8px;white-space:nowrap">布局<select id="g_layout" onchange="drawGraph($('#g_sel').value)" style="width:120px"><option value="dagre">分层</option><option value="force">力导向</option><option value="circular">环形</option><option value="radial">辐射</option></select></span></div>
   <div id="g_hlbar" style="display:none;margin:-4px 0 10px;padding:7px 12px;border:1px solid #C7D2FE;background:#EEF2FF;border-radius:6px;font-size:12.5px"></div>
   <div style="position:relative"><div class="card" style="padding:6px"><div id="g_canvas"></div></div>
    <div class="card" id="g_detail" style="position:absolute;top:12px;right:12px;width:340px;max-height:calc(100% - 24px);overflow:auto;display:none;z-index:6;box-shadow:0 8px 30px rgba(31,45,61,.16)"></div>
-   <div class="muted" style="position:absolute;bottom:10px;left:14px;font-size:11px;pointer-events:none">默认保持可读字号 · 点击节点/连线查看详情 · 滚轮缩放 · 拖拽平移</div></div></div>
+   <div class="muted" style="position:absolute;bottom:10px;left:14px;font-size:11px;pointer-events:none;background:rgba(255,255,255,.92);padding:2px 8px;border-radius:4px">默认保持可读字号 · 点击节点/连线查看详情(节点较多时悬停连线显示关系名) · 滚轮缩放 · 拖拽平移</div></div></div>
 
- <div class="page" id="p_review"><h2>本体评审 <span class="muted">人机协同人审:通过 / 否决 / 改动词 / 删除,每条记录评审人与意见 · 人只产生「人工断言」 · 全程可撤销 · v0726a</span></h2>
+ <div class="page" id="p_review"><h2>本体评审 <span class="muted">人机协同人审：通过 / 否决 / 改动词 / 删除，每条记录评审人与意见 · 人只产生「人工断言」 · 全程可撤销 · v0726a</span></h2>
   <div class="card"><div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">图谱 <select id="rv_sel" style="min-width:280px;max-width:440px" onchange="rvLoad()"></select>
    评审人 <input id="rv_who" placeholder="姓名或工号(必填)" style="width:150px" onchange="rvSaveWho()" title="记录到每条评审操作与元素上">
    <span id="rv_kpis"></span><span style="flex:1"></span>
@@ -328,7 +328,7 @@ a{color:var(--acc)}
   <div class="card scroll" id="rv_objs" style="margin-top:12px;display:none"></div>
   <div class="card scroll" id="rv_fb" style="margin-top:12px;display:none"></div>
   <div class="card scroll" id="rv_body" style="margin-top:12px"><div class="muted">加载中…</div></div></div>
- <div class="page" id="p_enginecfg"><h2>引擎设置 <span class="muted">实时切换智能体运行时 / 模型 / 接口密钥 · 改动即刻生效,无需重启 · Key 只写不回显(掩码),配置文件 0600</span></h2>
+ <div class="page" id="p_enginecfg"><h2>引擎设置 <span class="muted">实时切换智能体运行时 / 模型 / 接口密钥 · 改动即刻生效，无需重启 · Key 只写不回显(掩码)，配置文件 0600</span></h2>
   <div class="card" id="eg_llm"><div class="muted">加载中…</div></div>
   <div class="card" id="eg_runtimes" style="margin-top:12px"><div class="muted">加载中…</div></div>
   <div class="card" id="eg_tasks" style="margin-top:12px"><div class="muted">加载中…</div></div>
@@ -342,12 +342,12 @@ a{color:var(--acc)}
    <div><div class="card"><h3 style="margin-top:0">异常诊断 <span class="muted" style="font-size:12px">点击直达根因诊断</span></h3><div id="as_diag"></div></div>
     <div class="card" style="margin-top:12px"><h3 style="margin-top:0">我的动作 <span class="muted" style="font-size:12px">直达动作中心发起</span></h3><div id="as_acts"></div></div></div></div></div>
 
- <div class="page" id="p_qaeval"><h2>问数评测 <span class="muted">参考问题集 × 三组对照(A 朴素文本转 SQL / B 图谱增强 / C 本体全量)· 自动判分:答案正确率 / 出处引用率 / 口径拦截</span></h2>
+ <div class="page" id="p_qaeval"><h2>问数评测 <span class="muted">参考问题集 × 三组对照(A 朴素文本转 SQL / B 图谱增强 / C 本体全量)· 自动判分：答案正确率 / 出处引用率 / 口径拦截</span></h2>
   <div class="card"><div class="row" style="align-items:center;gap:10px">
     <button id="qe_run" onclick="qeRun()">跑一轮评测</button>
     <span class="muted" style="font-size:12px">模型覆盖(可空=跟随引擎)</span><input id="qe_model" placeholder="如 claude-haiku-4-5-20251001" style="width:220px">
     <span class="muted" id="qe_status"></span></div>
-   <div class="muted" style="font-size:11.5px;margin-top:6px">评测在后台运行(约 8-20 分钟,取决于模型);每题即时落盘,可中途查看部分结果。参考答案值全部经主库实测校准。</div></div>
+   <div class="muted" style="font-size:11.5px;margin-top:6px">评测在后台运行(约 8-20 分钟，取决于模型)；每题即时落盘，可中途查看部分结果。参考答案值全部经主库实测校准。</div></div>
   <div class="kpis" id="qe_kpis" style="grid-template-columns:repeat(3,1fr);margin-top:12px"></div>
   <div class="card scroll" id="qe_body" style="margin-top:12px"><div class="muted">加载中…</div></div></div>
  <div class="page" id="p_actioncenter"><h2>动作中心 <span class="muted">类型化参数 · 低风险直接登记 / 高风险人审批 · 决策记录全审计 · 当前不写回业务系统</span></h2>
@@ -358,7 +358,7 @@ a{color:var(--acc)}
   <h3 style="margin:0 0 4px" id="acm_title">发起动作</h3>
   <div class="muted" id="acm_sub" style="font-size:12px;margin-bottom:12px"></div>
   <div id="acm_fields"></div>
-  <div style="margin-bottom:14px">操作人(姓名或工号,必填)<br><input id="acm_op" style="width:100%;margin-top:4px"></div>
+  <div style="margin-bottom:14px">操作人(姓名或工号，必填)<br><input id="acm_op" style="width:100%;margin-top:4px"></div>
   <div style="display:flex;gap:8px;justify-content:flex-end"><button class="ghost" onclick="acmClose()">取消</button><button id="acm_ok" onclick="acmSubmit()">提交动作</button></div>
  </div></div>
  <div id="sk_modal" class="dq-modal" style="display:none"><div class="dq-modal-box" style="max-width:640px;padding:18px 20px">
@@ -377,9 +377,9 @@ a{color:var(--acc)}
  </div></div>
  <div id="skc_modal" class="dq-modal" style="display:none"><div class="dq-modal-box" style="max-width:640px;padding:18px 20px">
   <h3 style="margin:0 0 4px">技能对比实验</h3>
-  <div class="muted" style="font-size:12px;margin-bottom:10px">同一建模目标 × 两组技能各跑一次<b>真实构建</b>(大语言模型抽取+数据验证,约 8-15 分钟),对比产物差异——技能是否有用,以产物为证。两组产物都会保留在「已构建本体」,可进图谱细看。</div>
+  <div class="muted" style="font-size:12px;margin-bottom:10px">同一建模目标 × 两组技能各跑一次<b>真实构建</b>(大语言模型抽取+数据验证，约 8-15 分钟)，对比产物差异——技能是否有用，以产物为证。两组产物都会保留在「已构建本体」，可进图谱细看。</div>
   <textarea id="skc_q" rows="2" style="width:100%;margin-bottom:8px;resize:vertical"></textarea>
-  <div class="row" style="gap:8px;margin-bottom:8px"><span style="font-size:13px;white-space:nowrap">A 组技能</span><input id="skc_a" placeholder="逗号分隔,可空=不带技能" style="flex:1"></div>
+  <div class="row" style="gap:8px;margin-bottom:8px"><span style="font-size:13px;white-space:nowrap">A 组技能</span><input id="skc_a" placeholder="逗号分隔，可空=不带技能" style="flex:1"></div>
   <div class="row" style="gap:8px;margin-bottom:12px"><span style="font-size:13px;white-space:nowrap">B 组技能</span><input id="skc_b" placeholder="逗号分隔" style="flex:1"></div>
   <div id="skc_result" style="margin-bottom:12px"></div>
   <div style="display:flex;gap:8px;justify-content:flex-end;align-items:center">
@@ -389,28 +389,28 @@ a{color:var(--acc)}
  </div></div>
  <div id="act_modal" class="dq-modal" style="display:none"><div class="dq-modal-box" style="max-width:560px;padding:18px 20px">
   <h3 style="margin:0 0 4px" id="actm_title">新建动作类型</h3>
-  <div class="muted" style="font-size:12px;margin-bottom:12px">类型化参数 + 风险分级;高风险动作发起后须人审批。自建类型可编辑/删除,历史审计始终保留。</div>
-  <div class="row" style="gap:8px;margin-bottom:10px"><input id="actm_cn" placeholder="动作名称(如:冻结生产批次)" style="flex:1">
+  <div class="muted" style="font-size:12px;margin-bottom:12px">类型化参数 + 风险分级；高风险动作发起后须人审批。自建类型可编辑/删除，历史审计始终保留。</div>
+  <div class="row" style="gap:8px;margin-bottom:10px"><input id="actm_cn" placeholder="动作名称(如：冻结生产批次)" style="flex:1">
    <select id="actm_risk" style="width:150px"><option value="high">高风险·须审批</option><option value="low">低风险·直接登记</option></select></div>
-  <div class="row" style="gap:8px;margin-bottom:10px"><input id="actm_obj" placeholder="绑定业务表(可空,如 fact_production_order)" style="flex:1">
+  <div class="row" style="gap:8px;margin-bottom:10px"><input id="actm_obj" placeholder="绑定业务表(可空，如 fact_production_order)" style="flex:1">
    <input id="actm_creator" placeholder="创建人(必填)" style="width:150px"></div>
   <textarea id="actm_desc" rows="2" placeholder="动作说明(何时用/作用是什么)" style="width:100%;margin-bottom:10px;resize:vertical"></textarea>
-  <div style="margin-bottom:6px;font-size:13px">参数 schema <span class="muted" style="font-size:11px">name 用小写英文下划线;下拉型填选项</span></div>
+  <div style="margin-bottom:6px;font-size:13px">参数 schema <span class="muted" style="font-size:11px">name 用小写英文下划线；下拉型填选项</span></div>
   <div id="actm_rows" style="margin-bottom:10px"></div>
-  <input id="actm_eff" placeholder="执行效果说明(登记进审计,如:批次冻结指令已登记)" style="width:100%;margin-bottom:14px">
+  <input id="actm_eff" placeholder="执行效果说明(登记进审计，如：批次冻结指令已登记)" style="width:100%;margin-bottom:14px">
   <div style="display:flex;gap:8px;justify-content:flex-end"><button class="ghost" onclick="$('#act_modal').style.display='none'">取消</button><button onclick="actmSubmit()">保存</button></div>
  </div></div>
  <div id="rv_modal" class="dq-modal" style="display:none"><div class="dq-modal-box" style="max-width:460px;padding:18px 20px">
   <h3 style="margin:0 0 4px" id="rvm_title">评审</h3>
   <div class="muted" id="rvm_sub" style="font-size:12px;margin-bottom:12px"></div>
-  <div style="margin-bottom:10px">评审人(姓名或工号,必填)<br><input id="rvm_who" placeholder="如:张三 / 10021" style="width:100%;margin-top:4px"></div>
+  <div style="margin-bottom:10px">评审人(姓名或工号，必填)<br><input id="rvm_who" placeholder="如：张三 / 10021" style="width:100%;margin-top:4px"></div>
   <div style="margin-bottom:10px" id="rvm_verb_w" hidden>新关系动词(1~12字)<br><input id="rvm_verb" style="width:100%;margin-top:4px"></div>
   <div style="margin-bottom:14px"><span id="rvm_clabel">评审意见</span><br><textarea id="rvm_comment" rows="3" style="width:100%;margin-top:4px;resize:vertical" placeholder="填写评审意见 / 原因"></textarea></div>
   <div style="display:flex;gap:8px;justify-content:flex-end"><button class="ghost" onclick="rvmClose()">取消</button><button id="rvm_ok" onclick="rvmSubmit()">提交评审</button></div>
  </div></div>
- <div class="page" id="p_metrics"><h2>指标中心 <span class="muted">指标契约:口径可编译、可执行、与参照比对 · 已核验只来自证据 · 业务确认只能由人授予</span></h2>
+ <div class="page" id="p_metrics"><h2>指标中心 <span class="muted">指标契约：口径可编译、可执行、与参照比对 · 已核验只来自证据 · 业务确认只能由人授予</span></h2>
  <div class="row" style="gap:8px;align-items:center;margin-bottom:8px;flex-wrap:wrap">图谱 <select id="m_sel" style="width:300px" onchange="metrics()"></select>
-  <button class="ghost" onclick="metricReadjudicate()" title="按契约重新编译、只读执行并与已存参照比对;不新增候选">重跑核验</button><span id="m_kpi"></span></div>
+  <button class="ghost" onclick="metricReadjudicate()" title="按契约重新编译、只读执行并与已存参照比对；不新增候选">重跑核验</button><span id="m_kpi"></span></div>
  <div id="m_body"></div></div>
  <div class="page" id="p_ontquality"><h2>元数据覆盖 <span class="muted">统计定义、反例、开发状态、BFO/IOF 上层类别和标准关系映射；不代表本体完备性或业务正确性</span></h2>
   <div class="row" style="margin-bottom:10px"><select id="oq_sel" style="width:340px"></select>
@@ -422,7 +422,7 @@ a{color:var(--acc)}
    <div class="card" style="flex:1"><h3>成熟度分布</h3><div id="oq_mat"></div></div>
    <div class="card" style="flex:1"><h3>待补定义(前20)</h3><div id="oq_gaps"></div></div>
   </div></div>
- <div class="page" id="p_rules"><h2>构成规则 <span class="muted">自动构建流水线 × 三套建模规则(计数从当前IR派生,不臆造)</span></h2>
+ <div class="page" id="p_rules"><h2>构成规则 <span class="muted">自动构建流水线 × 三套建模规则(计数从当前IR派生，不臆造)</span></h2>
   <div class="row" style="margin-bottom:10px">运行时引擎: <select id="rt_sel" onchange="rtSet()" style="width:160px"></select><span class="muted" id="rt_info"></span></div>
   <div id="rules_body"></div></div>
 
@@ -519,15 +519,15 @@ a{color:var(--acc)}
   .bc-srow .x{margin-left:auto;color:#c0c6d0;font-size:13px;cursor:pointer}.bc-srow .x:hover{color:#b91c1c}
   .bc-assets{display:flex;flex-wrap:wrap;gap:5px;max-height:120px;overflow:auto}
   .bc-chip{display:inline-flex;align-items:center;gap:4px;background:#F4F6FB;border:1px solid var(--line);border-radius:9999px;padding:2px 9px;font-size:11px}
-  .bc-chip b{font-weight:600;background:#EEF2FF;color:#4A5FF3;border-radius:9999px;padding:0 6px;font-size:10px}
-  .bc-chip .use{font-size:10px;color:#94a3b8}
+  .bc-chip b{font-weight:600;background:#EEF2FF;color:#4A5FF3;border-radius:9999px;padding:0 6px;font-size:11px}
+  .bc-chip .use{font-size:11px;color:#94a3b8}
   .bc-chip .x{cursor:pointer;color:#c0c6d0;font-size:12px;padding:0 1px}.bc-chip .x:hover{color:#b91c1c}
   .bc-mod-文档 b{background:#FCF1DE;color:#F4B13D}.bc-mod-图像 b{background:#E8F7EE;color:#22a058}.bc-mod-代码 b{background:#F0EBFB;color:#7c50e6}.bc-mod-音频 b{background:#FDEBEF;color:#e05377}
   .bc-skcard{display:flex;gap:8px;align-items:flex-start;padding:7px 8px;border:1px solid var(--line);border-radius:8px;margin-bottom:6px;cursor:pointer;transition:.15s}
   .bc-skcard:hover{border-color:var(--acc)} .bc-skcard.on{border-color:var(--acc);background:#EEF2FF}
-  .bc-skcard input{margin-top:2px}.bc-skcard .nm{font-weight:600;font-size:12.5px}.bc-skcard .nm .tg{font-size:10px;font-weight:400}
-  .bc-skcard .ds{font-size:11px;color:var(--muted);line-height:1.4;margin-top:2px}
-  /* 对话面板动态高度:起始为原始高度(min),随对话增长,最多长到与左栏总高一致(max 由 JS 设为左栏高度) */
+  .bc-skcard input{margin-top:2px}.bc-skcard .nm{font-weight:600;font-size:12.5px}.bc-skcard .nm .tg{font-size:11px;font-weight:400}
+  .bc-skcard .ds{font-size:11px;color:var(--muted);line-height:1.4;margin-top:2px;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+  /* 对话面板动态高度：起始为原始高度(min)，随对话增长，最多长到与左栏总高一致(max 由 JS 设为左栏高度) */
   .bc-main{display:flex;flex-direction:column;height:auto;min-height:calc(100vh - 250px);padding:0;overflow:hidden;margin:0}
   .bc-log{flex:1 1 auto;min-height:0;overflow:auto;padding:16px 18px}
   .bc-welcome{text-align:center;color:var(--muted);padding:26px 10px}
@@ -538,14 +538,14 @@ a{color:var(--acc)}
   .bc-trace{border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin-bottom:12px;background:#FbFcfe}
   .bc-trace .st{display:flex;gap:8px;align-items:baseline;font-size:12.5px;padding:3px 0;border-bottom:1px dashed #eef0f4}
   .bc-trace .st:last-child{border-bottom:0} .bc-trace .st .ic{flex:0 0 auto}
-  .bc-trace .st .tm{color:#aab1bd;font-size:10.5px;flex:0 0 auto} .bc-trace .st .tx{flex:1}
+  .bc-trace .st .tm{color:#aab1bd;font-size:11px;flex:0 0 auto} .bc-trace .st .tx{flex:1}
   .bc-status{color:var(--acc);font-size:12px;padding:4px 0;display:flex;align-items:center;gap:6px}
   .bc-spin{width:11px;height:11px;border:2px solid #d5dcfb;border-top-color:var(--acc);border-radius:50%;animation:bcspin .7s linear infinite;display:inline-block}
   .bc-status .el{color:var(--sub);font-size:11px;margin-left:2px}
   .bc-proc{margin-top:6px;border-top:1px dashed #eef0f4;padding-top:4px}
   .bc-proc summary{cursor:pointer;font-size:12px;color:var(--sub);user-select:none;list-style:none;display:flex;align-items:center;gap:6px}
   .bc-proc summary::-webkit-details-marker{display:none}
-  .bc-proc summary .ar{display:inline-block;transition:transform .15s;font-size:10px}
+  .bc-proc summary .ar{display:inline-block;transition:transform .15s;font-size:11px}
   .bc-proc[open] summary{color:var(--acc)} .bc-proc[open] summary .ar{transform:rotate(90deg)}
   .bc-proclog{max-height:280px;overflow:auto;background:#FAFBFE;border:1px solid var(--line);border-radius:6px;padding:8px 10px;font-size:11.5px;line-height:1.55;white-space:pre-wrap;word-break:break-all;color:#334155;margin:6px 0 0;font-family:ui-monospace,Menlo,Consolas,monospace}
   .bc-proclog .lt{color:#aab1bd;margin-right:6px} .bc-proclog .raw{color:#5b6b8a}
@@ -606,46 +606,46 @@ a{color:var(--acc)}
       <select id="bc_ref_industry_mode" aria-label="行业参照模式" onchange="window.bcRefsSync&&bcRefsSync()" disabled><option value="reference">参照</option><option value="constraint">强约束</option></select></div>
      <div class="bc-ref-row"><select id="bc_ref_standard" aria-label="本体标准" onchange="window.bcRefsSync?bcRefsSync():document.getElementById('bc_ref_standard_mode').disabled=this.value==='none'"><option value="none">不选择本体标准</option><option value="bfo_iof" selected>BFO 2020 + IOF Core · BFO 2020 / IOF 202602</option><option value="isa95">ISA-95 / IEC 62264 · MESA B2MML V0701</option><option value="ufo">UFO / OntoUML · gUFO 1.0.0</option></select>
       <select id="bc_ref_standard_mode" aria-label="本体标准模式" onchange="window.bcRefsSync&&bcRefsSync()"><option value="reference">参照</option><option value="constraint">强约束</option></select></div>
-     <div class="muted" id="bc_ref_detail" style="font-size:10.8px;line-height:1.5;margin-top:7px">完整离线选项目录可用；服务端可用时会自动补充本地标准资产状态。</div>
-     <div class="muted" style="font-size:10.8px;margin-top:4px">参照项未满足时进入人工复核；强约束项未满足时验收不通过。没有证据时不会为满足模板而编造对象。</div></div>
+     <div class="muted" id="bc_ref_detail" style="font-size:11px;line-height:1.5;margin-top:7px">完整离线选项目录可用；服务端可用时会自动补充本地标准资产状态。</div>
+     <div class="muted" style="font-size:11px;margin-top:4px">参照项未满足时进入人工复核；强约束项未满足时验收不通过。没有证据时不会为满足模板而编造对象。</div></div>
     <div class="card bc-sec"><h3>技能编排 <span class="muted" id="bc_sk_n"></span></h3>
      <div id="bc_skills"><div class="muted">加载中…</div></div>
      <input type="file" id="bc_skfile" accept=".md,.txt" hidden onchange="bcSkillUpload()">
      <div class="row" style="gap:6px"><button class="ghost bc-add" onclick="$('#bc_skfile').click()">+ 上传技能(SKILL.md)</button>
       <button class="ghost bc-add" onclick="skNew()">+ 新建技能</button>
       <button class="ghost bc-add" onclick="skcOpen()">技能对比实验</button></div>
-     <div class="muted" style="font-size:11px;margin-top:4px">技能正文会注入构建建模规则(编辑即改变抽取行为)。内置技能同样可改可删:改动写成你的版本、删除记为隐藏,出厂正文均保留,可随时恢复默认。</div></div>
+     <div class="muted" style="font-size:11px;margin-top:4px">技能正文会注入构建建模规则(编辑即改变抽取行为)。内置技能同样可改可删：改动写成你的版本、删除记为隐藏，出厂正文均保留，可随时恢复默认。</div></div>
     <div class="card bc-sec"><h3>已构建本体 <span class="muted" id="bc_built_n"></span></h3>
-     <div id="bc_built" role="region" aria-label="已构建本体列表" tabindex="0"><div class="muted">暂无,构建后在此列出</div></div></div>
+     <div id="bc_built" role="region" aria-label="已构建本体列表" tabindex="0"><div class="muted">暂无，构建后在此列出</div></div></div>
    </div>
    <div class="bc-main card">
     <div id="bc_iter_bar" style="display:none;margin:0 0 8px;padding:7px 10px;border:1px solid #cfe0ff;background:#f2f7ff;border-radius:6px;font-size:12px;color:#24406e">
      <div style="display:flex;align-items:center;gap:8px">
-      <span style="flex:1;min-width:0"><b style="color:var(--acc)">继续构建模式</b> · 底本「<b id="bc_iter_nm"></b>」 —— 本轮只增补与升级,不删除既有结论</span>
+      <span style="flex:1;min-width:0"><b style="color:var(--acc)">继续构建模式</b> · 底本「<b id="bc_iter_nm"></b>」 —— 本轮只增补与升级，不删除既有结论</span>
       <a href="#" style="font-size:11px;white-space:nowrap" onclick="event.preventDefault();bcIterHist()">构建历程 <span id="bc_iter_ar">▾</span></a>
       <a href="#" style="font-size:11px;white-space:nowrap" onclick="event.preventDefault();bcIterClear()">改为新建本体</a></div>
      <div id="bc_iter_hist" style="display:none;margin-top:7px;padding-top:7px;border-top:1px dashed #cfe0ff;font-size:11.5px;line-height:1.6"></div></div>
     <div class="bc-mhd"><span>构建对话 <span class="muted" id="bc_conv_n" style="font-weight:400"></span></span>
      <div style="display:flex;gap:6px;position:relative">
-      <button class="ghost" onclick="bcPrep()" title="只读体检当前数据源:建模规律、资料覆盖、参照建议与分轮计划">构建体检</button>
+      <button class="ghost" onclick="bcPrep()" title="只读体检当前数据源：建模规律、资料覆盖、参照建议与分轮计划">构建体检</button>
       <button class="ghost" onclick="bcHistToggle()">历史对话 ▾</button>
       <button class="ghost" onclick="bcNew()">+ 新建对话</button>
       <div id="bc_hist_pop" class="bc-hist-pop" style="display:none"></div></div></div>
     <div id="bc_log" class="bc-log" role="region" aria-label="本体构建过程与结果" aria-busy="false"></div>
     <div class="bc-compose">
      <input id="bc_name" class="bc-name" aria-label="本体名称，可选" placeholder="本体命名(留空由智能引擎自动命名)">
-     <textarea id="bc_cq" aria-label="验收问题，每行一个，可选" style="min-height:46px;margin-bottom:6px" placeholder="验收问题(可选,每行一个)——本体建成后应当能回答的业务问题,用于验收;例:哪些工单关联了发生退货的订单?"></textarea>
+     <textarea id="bc_cq" aria-label="验收问题，每行一个，可选" style="min-height:46px;margin-bottom:6px" placeholder="验收问题(可选，每行一个)——本体建成后应当能回答的业务问题，用于验收；例：哪些工单关联了发生退货的订单?"></textarea>
      <div class="bc-inrow">
-      <textarea id="bc_q" aria-label="本轮建模诉求" placeholder="描述你要构建的本体,例:从售后与生产数据构建一张贯通「订单-产品-工单-客户」的制造运营本体" onkeydown="if(event.key==='Enter'&&!event.shiftKey&&!event.isComposing){event.preventDefault();bcInquire()}"></textarea>
+      <textarea id="bc_q" aria-label="本轮建模诉求" placeholder="描述你要构建的本体，例：从售后与生产数据构建一张贯通「订单-产品-工单-客户」的制造运营本体" onkeydown="if(event.key==='Enter'&&!event.shiftKey&&!event.isComposing){event.preventDefault();bcInquire()}"></textarea>
       <button id="bc_send" onclick="bcInquire()">构建 ▸</button></div>
-     <div class="muted bc-hint">Enter 发送 · Shift+Enter 换行 · 当前数据源 <b id="bc_cur_src">示例主库</b> · 技能 <b id="bc_cur_sk">0</b> 个 · 参照 <b id="bc_cur_ref">BFO 2020 + IOF Core（参照）</b> · <span id="bc_cur_dest">产出:新建本体</span></div>
+     <div class="muted bc-hint">Enter 发送 · Shift+Enter 换行 · 当前数据源 <b id="bc_cur_src">示例主库</b> · 技能 <b id="bc_cur_sk">0</b> 个 · 参照 <b id="bc_cur_ref">BFO 2020 + IOF Core（参照）</b> · <span id="bc_cur_dest">产出：新建本体</span></div>
     </div>
    </div>
   </div>
   <div id="bc_sample_modal" class="dq-modal" style="display:none">
    <div class="dq-modal-box" style="max-width:460px">
     <h3 style="margin-top:0">外部库只读抽样</h3>
-    <div class="muted" style="font-size:11.5px;margin-bottom:8px">以只读会话读取表结构、注释与数据样本(5 万行以内全量,更大的表取最新 2 万行),导入本地后作为构建数据源。多选时合并为一个抽样库,表名加「库名__」前缀,跨库关系也能用数据验证。</div>
+    <div class="muted" style="font-size:11.5px;margin-bottom:8px">以只读会话读取表结构、注释与数据样本(5 万行以内全量，更大的表取最新 2 万行)，导入本地后作为构建数据源。多选时合并为一个抽样库，表名加「库名__」前缀，跨库关系也能用数据验证。</div>
     <div class="bs-list" style="max-height:200px;overflow:auto;margin-bottom:8px"></div>
     <input class="bs-name" placeholder="抽样库名称(可选)" style="width:100%;margin-bottom:8px">
     <div class="row"><button class="bs-go" onclick="bcSampleGo()">开始抽样</button><button class="ghost" onclick="$('#bc_sample_modal').style.display='none'">关闭</button><span class="muted bs-msg" role="status" aria-live="polite"></span></div>
@@ -656,11 +656,11 @@ a{color:var(--acc)}
     <h3 style="margin-top:0">连接数据库</h3>
     <div class="row" style="margin-bottom:8px"><select id="bcc_kind" onchange="bccKind()" style="width:130px">
      <option value="sqlite">SQLite 文件</option><option value="external">外部库(登记)</option></select>
-     <input id="bcc_name" placeholder="连接名,如 售后库" style="flex:1"></div>
-    <input id="bcc_path" placeholder="SQLite 绝对路径,如 /data/sales.db" style="width:100%;margin-bottom:8px">
-    <input id="bcc_dsn" placeholder="连接串,如 jdbc:mysql://<host>:3306/<库名>" style="width:100%;margin-bottom:8px;display:none">
+     <input id="bcc_name" placeholder="连接名，如 售后库" style="flex:1"></div>
+    <input id="bcc_path" placeholder="SQLite 绝对路径，如 /data/sales.db" style="width:100%;margin-bottom:8px">
+    <input id="bcc_dsn" placeholder="连接串，如 jdbc:mysql://<host>:3306/<库名>" style="width:100%;margin-bottom:8px;display:none">
     <div class="row" id="bcc_cred" style="gap:6px;margin-bottom:8px;display:none"><input id="bcc_user" placeholder="用户名" autocomplete="off" style="flex:1">
-     <input id="bcc_pwd" type="password" placeholder="密码(加密保存,不回显)" autocomplete="new-password" style="flex:1"></div>
+     <input id="bcc_pwd" type="password" placeholder="密码(加密保存，不回显)" autocomplete="new-password" style="flex:1"></div>
     <div class="muted" id="bcc_hint" style="font-size:11.5px;margin-bottom:10px">SQLite 文件将实时校验可读表并作为构建数据源。</div>
     <div class="row"><button onclick="bcConnect()">连接</button><button class="ghost" onclick="$('#bc_conn_modal').style.display='none'">取消</button><span class="muted" id="bcc_msg"></span></div>
    </div>
@@ -669,7 +669,7 @@ a{color:var(--acc)}
  <div class="page" id="p_skills"><h2>技能中心 <span class="muted">skills_seed 构建技能</span></h2>
   <div id="sk_list"></div>
   <div class="card"><h3>运行技能</h3><div class="row"><select id="sk_sel" style="width:280px"></select>
-   <input id="sk_args" placeholder="参数,如 --ir workdir/demo_ir.json --out /tmp/x"><button onclick="skillRun()">运行</button></div>
+   <input id="sk_args" placeholder="参数，如 --ir workdir/demo_ir.json --out /tmp/x"><button onclick="skillRun()">运行</button></div>
    <pre id="sk_log" style="margin-top:8px;max-height:300px;display:none"></pre></div></div>
 
  <div class="page" id="p_claw"><h2>本体对话 <span class="muted">对话式本体完善(问答+白名单编辑+可撤销)· 可修改本体 + 变更审计</span></h2>
@@ -680,14 +680,14 @@ a{color:var(--acc)}
    <button class="ghost" style="width:100%;margin-bottom:6px" onclick="clawNew()">+ 新会话</button>
    <div class="scroll" id="claw_sessions" style="max-height:calc(100vh - 320px)"></div></div>
    <div style="flex:1"><div id="claw_log" style="max-height:calc(100vh - 320px);overflow:auto"></div></div></div>
-  <div class="row claw-compose" style="margin-top:10px"><input id="claw_q" placeholder="例:本体里有哪些对象?/ 把 dim_customer 的中文名改成 客户档案" onkeydown="if(event.key==='Enter'&&!event.isComposing)clawAsk()">
+  <div class="row claw-compose" style="margin-top:10px"><input id="claw_q" placeholder="例：本体里有哪些对象?/ 把 dim_customer 的中文名改成 客户档案" onkeydown="if(event.key==='Enter'&&!event.isComposing)clawAsk()">
    <input type="file" id="claw_file" multiple hidden onchange="clawFileLabel()">
    <button type="button" class="ghost" id="claw_file_btn" onclick="$('#claw_file').click()">选择附件</button>
    <button onclick="clawAsk()" id="claw_btn">发送</button><button class="ghost" onclick="clawUndo()">撤销上次编辑</button><button class="ghost" onclick="clawDel()">清空会话</button></div>
   <div class="muted" style="margin-top:6px" id="claw_edits"></div>
   <div class="card" style="margin-top:10px"><div class="row" style="align-items:center;margin-bottom:8px">
     <h3 style="margin:0;flex:1">变更审计</h3>
-    <input id="claw_who" placeholder="署名(必填,记入审计)" style="width:170px" onchange="clawSaveWho()">
+    <input id="claw_who" placeholder="署名(必填，记入审计)" style="width:170px" onchange="clawSaveWho()">
     <button class="ghost" onclick="clawAudit()">刷新审计</button></div>
    <div id="claw_audit" class="muted">点「刷新审计」查看谁改了什么</div></div></div>
 
@@ -698,7 +698,7 @@ a{color:var(--acc)}
   <div class="card"><div class="row" style="margin-bottom:10px"><input id="ag_q" placeholder="按名称筛选…" style="width:260px" oninput="agRender()"><span class="muted" id="ag_info"></span></div>
    <div class="scroll" id="ag_list"></div></div></div>
 
- <div class="page" id="p_glossary"><h2>术语管理 <span class="muted">英文↔中文业务词典(表名/列名/短语/词元),深度问数与中文化的语义基座</span></h2>
+ <div class="page" id="p_glossary"><h2>术语管理 <span class="muted">英文↔中文业务词典(表名/列名/短语/词元)，深度问数与中文化的语义基座</span></h2>
   <div class="card"><div class="row" style="margin-bottom:10px"><input id="gl_q" placeholder="搜索英文/中文术语…" style="width:280px" oninput="glRender()">
    <select id="gl_type" onchange="glRender()" style="width:120px"><option value="">全部类型</option><option>表名</option><option>列名</option><option>短语</option><option>词元</option></select>
    <span class="muted" id="gl_info"></span></div>
@@ -743,29 +743,30 @@ FROM fact_sales_order GROUP BY 1 ORDER BY 1 DESC LIMIT 12</textarea>
 <script src="/assets/modules/qa-ontology.js?v=4"></script>
 <script src="/assets/modules/qa-history.js?v=1"></script>
 <script src="/assets/modules/qa-anchor.js?v=1"></script>
-<script>const $=s=>document.querySelector(s), J=async(u,o)=>{try{const r=await fetch(u,o);const t=await r.text();try{return JSON.parse(t)}catch(_){return{error:`请求失败(HTTP ${r.status})`}}}catch(e){return{error:'网络错误:'+(e&&e.message||e)}}};  // 永不抛:后端 404/500 返回 HTML 时降级为 {error},交由既有 d.error 守卫提示,避免页面半渲染无提示
+<script src="/assets/modules/graph-render.js?v=1"></script>
+<script>const $=s=>document.querySelector(s), J=async(u,o)=>{try{const r=await fetch(u,o);const t=await r.text();try{return JSON.parse(t)}catch(_){return{error:`请求失败(HTTP ${r.status})`}}}catch(e){return{error:'网络错误:'+(e&&e.message||e)}}};  // 永不抛：后端 404/500 返回 HTML 时降级为 {error}，交由既有 d.error 守卫提示，避免页面半渲染无提示
 const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-// 安全地把值放进 onclick 等内联 JS 字符串:JSON.stringify 产生合法 JS 字面量,esc 再转义引号使其在属性内不越界
+// 安全地把值放进 onclick 等内联 JS 字符串:JSON.stringify 产生合法 JS 字面量，esc 再转义引号使其在属性内不越界
 const jsAttr=x=>esc(JSON.stringify(x));
-// 数据格子统一格式化:浮点去 IEEE-754 表示噪声(14.74000000000002→14.74、90.04999…8→90.05),保留12位有效数字;
-// 仅作用于显示层(预览/查询结果/看板),不改后端原始值与导出。非数字/整数原样经 esc 转义。
+// 数据格子统一格式化：浮点去 IEEE-754 表示噪声(14.74000000000002→14.74、90.04999…8→90.05)，保留12位有效数字;
+// 仅作用于显示层(预览/查询结果/看板)，不改后端原始值与导出。非数字/整数原样经 esc 转义。
 const cell=v=>(typeof v==='number'&&Number.isFinite(v)&&!Number.isInteger(v))?esc(parseFloat(v.toPrecision(12))):esc(v);
-// 核心助手显式挂 window:内联 onclick 处理器在全局作用域执行,const 顶层绑定跨浏览器可见性不保证,显式暴露杜绝隐患
+// 核心助手显式挂 window：内联 onclick 处理器在全局作用域执行，const 顶层绑定跨浏览器可见性不保证，显式暴露杜绝隐患
 Object.assign(window,{$,J,esc,jsAttr,cell});
 function toast(msg,ok){document.getElementById('app_toast')?.remove();const t=document.createElement('div');t.id='app_toast';t.setAttribute('role',ok?'status':'alert');t.textContent=msg;t.style.cssText='position:fixed;top:18px;left:50%;transform:translateX(-50%);z-index:9999;background:'+(ok?'#16a34a':'#1f2740')+';color:#fff;padding:10px 18px;border-radius:10px;font-size:13px;max-width:70vw;box-shadow:0 6px 20px rgba(31,39,64,.22);opacity:0;transition:opacity .2s';document.body.appendChild(t);requestAnimationFrame(()=>t.style.opacity='1');setTimeout(()=>{t.style.opacity='0';setTimeout(()=>t.remove(),250);},2800);}
-// 唯一的 kind 规范(五类:颜色 c / 中文 n),全站图例·配色·标签·编辑下拉统一引用
+// 唯一的 kind 规范(五类：颜色 c / 中文 n)，全站图例·配色·标签·编辑下拉统一引用
 const KIND={object:{c:'#16a34a',n:'对象'},event:{c:'#7c3aed',n:'事件'},action:{c:'#d97706',n:'动作'},asset:{c:'#0ea5e9',n:'资产'},role:{c:'#db2777',n:'角色'}};
 const KCOL=k=>(KIND[k]||{c:'#5b9dff'}).c, KNM=k=>(KIND[k]||{n:k}).n;
 const KINDS=Object.keys(KIND);
-// 可编辑对象种类:与后端 VALID_KIND / DR-001 对象元类型对齐(object/event/asset/role);
-// 「动作」是独立的 actions 顶层概念(action.kind='query'),不作为对象种类,故不入改类型下拉。
+// 可编辑对象种类：与后端 VALID_KIND / DR-001 对象元类型对齐(object/event/asset/role);
+// 「动作」是独立的 actions 顶层概念(action.kind='query')，不作为对象种类，故不入改类型下拉。
 const EDIT_KINDS=['object','event','asset','role'];
-// 页面切换 + URL 寻址:每个子页对应 #<page> hash,可直接寻址/前进后退/刷新保持
+// 页面切换 + URL 寻址：每个子页对应 #<page> hash，可直接寻址/前进后退/刷新保持
 function goPage(p){const nav=document.querySelector('[data-p="'+p+'"]');if(!nav)return false;
  document.querySelectorAll('.nav').forEach(x=>x.classList.remove('on'));nav.classList.add('on');
  document.querySelectorAll('.page').forEach(pg=>pg.classList.remove('on'));const el=$('#p_'+p);if(el)el.classList.add('on');
  const revisit=!!loaded[p];load(p);
- // 易变页每次进入都重取:别处(评审/动作/构建)的变动切回来即见,不吃首屏一次性缓存
+ // 易变页每次进入都重取：别处(评审/动作/构建)的变动切回来即见，不吃首屏一次性缓存
  if(revisit){try{
   if(p==='graph'&&$('#g_sel')&&$('#g_sel').value)drawGraph($('#g_sel').value);
   if(p==='review')rvLoad();
@@ -814,7 +815,7 @@ async function layersLoad(){const ts=await J('/api/tables');const used=new Set()
  const other=ts.filter(t=>!used.has(t.name));
  if(other.length)html+=`<div class="card"><h3>其它 <span class="muted">${other.length} 张</span></h3><div class="row" style="flex-wrap:wrap;gap:8px">`+other.map(t=>`<span class="tag" style="background:#F4F4F5">${esc(t.name)}</span>`).join('')+`</div></div>`;
  $('#layers_body').innerHTML=html;}
-// SQL 工作台(C7:可选外部库实连数据源)
+// SQL 工作台(C7：可选外部库实连数据源)
 function sqlDevInit(){}
 async function sdInit(){try{const d=await J('/api/build/sources');const ss=(d.sources||[]).filter(s=>s.kind!=='api');
  $('#sd_src').innerHTML=ss.map(s=>`<option value="${esc(s.id)}">${esc(s.name)}${s.kind!=='sqlite'?' · '+esc((s.kind||'').toUpperCase())+' 实连':''}</option>`).join('')||'<option value="demo">示例主库</option>';}catch(_){}}
@@ -835,7 +836,7 @@ async function qualityLoad(){const d=await J('/api/quality');const L=d.levels||{
 let APIS=[];
 async function apisLoad(){const d=await J('/api/routes');APIS=d.routes||[];apisRender();}
 function apisRender(){const q=($('#api_q').value||'').toLowerCase();const rows=APIS.filter(r=>!q||r.path.toLowerCase().includes(q));
- $('#api_info').textContent=`共 ${APIS.length} 个接口,筛出 ${rows.length}`;
+ $('#api_info').textContent=`共 ${APIS.length} 个接口，筛出 ${rows.length}`;
  const MC={GET:'ok',POST:'evt',PUT:'warn',DELETE:'warn'};
  $('#api_list').innerHTML='<table><tr><th>路径</th><th>方法</th><th>分组</th></tr>'+
   rows.map(r=>`<tr><td><code>${esc(r.path)}</code></td><td>${r.methods.map(m=>`<span class="tag ${MC[m]||''}">${m}</span>`).join('')}</td><td class="muted">${esc(r.group)}</td></tr>`).join('')+'</table>';}
@@ -860,17 +861,17 @@ let GLOSS=[];
 async function glossaryLoad(){const d=await J('/api/glossary');GLOSS=d.terms||[];glRender();}
 function glRender(){const q=($('#gl_q').value||'').toLowerCase();const tp=$('#gl_type').value;
  const rows=GLOSS.filter(t=>(!tp||t.type===tp)&&(!q||t.en.toLowerCase().includes(q)||t.cn.toLowerCase().includes(q)));
- $('#gl_info').textContent=`共 ${GLOSS.length} 条术语,筛出 ${rows.length}`;
+ $('#gl_info').textContent=`共 ${GLOSS.length} 条术语，筛出 ${rows.length}`;
  const TC={'表名':'ok','列名':'idx','短语':'evt','词元':''};
  $('#gl_list').innerHTML='<table><tr><th>英文/原词</th><th>中文</th><th>类型</th></tr>'+
-  rows.slice(0,600).map(t=>`<tr><td><code>${esc(t.en)}</code></td><td><b>${esc(t.cn)}</b></td><td><span class="tag ${TC[t.type]||''}">${esc(t.type)}</span></td></tr>`).join('')+'</table>'+(rows.length>600?`<div class="muted" style="padding:8px">仅显示前 600 条,请用搜索缩小范围</div>`:'');}
+  rows.slice(0,600).map(t=>`<tr><td><code>${esc(t.en)}</code></td><td><b>${esc(t.cn)}</b></td><td><span class="tag ${TC[t.type]||''}">${esc(t.type)}</span></td></tr>`).join('')+'</table>'+(rows.length>600?`<div class="muted" style="padding:8px">仅显示前 600 条，请用搜索缩小范围</div>`:'');}
 function mk(el,opt){const old=echarts.getInstanceByDom(el);if(old)old.dispose();const c=echarts.init(el,null,{renderer:'canvas'});c.setOption(opt);
  if(!mk._resizeHooked){mk._resizeHooked=true;addEventListener('resize',()=>{document.querySelectorAll('.chart,[_echarts_instance_]').forEach(d=>{const i=echarts.getInstanceByDom(d);if(i)i.resize();})});}
  return c}
 const AX={axisLine:{lineStyle:{color:'#dbe4fb'}},axisLabel:{color:'#64748b'},splitLine:{lineStyle:{color:'#eef2ff'}}};
 async function home(){const d=await J('/api/overview');
  if(d.error||!d.kpi){$('#kpis').innerHTML='<div class="kpi" style="grid-column:1/-1"><div class="l" style="color:#b91c1c">'+esc(d.error||'总览数据不可用')+'</div></div>';return;}
- const k=d.kpi;   // 守卫在前:后端故障时 d.kpi 为空,直接取 k.rows 会抛 TypeError 导致整页空白
+ const k=d.kpi;   // 守卫在前：后端故障时 d.kpi 为空，直接取 k.rows 会抛 TypeError 导致整页空白
  $('#kpis').innerHTML=[['数据表',k.tables],['总行数',k.rows.toLocaleString()],['指标',k.metrics],['本体对象',k.objects],['本体关系',k.links]]
   .map(([l,n])=>`<div class="kpi"><div class="n">${n}</div><div class="l">${l}</div></div>`).join('');
  mk($('#c_trend'),{grid:{top:30,left:50,right:20,bottom:30},legend:{textStyle:{color:'#64748b'}},tooltip:{trigger:'axis'},
@@ -883,11 +884,11 @@ async function home(){const d=await J('/api/overview');
 async function objDetail(k,oid){const d=await J('/api/ont/object/'+encodeURIComponent(k)+'/'+encodeURIComponent(oid));
  const w=window.open('','_blank');w.document.write(`<style>body{font-family:sans-serif;padding:20px;background:#f5f7fb}table{border-collapse:collapse}td,th{border:1px solid #dbe4fb;padding:4px 8px}</style>
  <h2>${esc(d.cn||d.name)} <small>${esc(d.kind)} · ${esc(d.table||'')}</small></h2>`+((d.bfo||d.definition)?`<div style="background:#eef2fb;padding:9px 12px;border-radius:6px;margin:8px 0;line-height:1.7"><b>BFO 范畴</b>: ${esc(d.bfo||'-')} &nbsp;·&nbsp; <b>成熟度</b>: ${esc(d.maturity||'-')}${d.isPrimitive?' &nbsp;·&nbsp; <b>原始概念</b>':''}${d.definition?`<br><b>定义</b>(属加种差): ${esc(d.definition)}`:''}${d.example?`<br><b>正例</b>: ${esc(d.example)}`:''}${d.counterExample?`<br><b>反例</b>: ${esc(d.counterExample)}`:''}${(d.provenance&&d.provenance.directSource)?`<br><b>来源</b>(directSource): ${esc(d.provenance.directSource)}`:''}</div>`:'')+`<h3>属性(${(d.attrs||[]).length})</h3>
- <table><tr><th>列</th><th>中文</th><th>类型</th><th>来源</th></tr>`+(d.attrs||[]).map(a=>`<tr><td>${esc(a.col)}</td><td>${esc(a.cn||'')}</td><td>${esc(a.type||'')}</td><td>${esc((a.sources||[]).join('/'))}</td></tr>`).join('')+`</table>`+(d.reused_from?`<h3>ISA-95 对齐(候选,待人审)</h3><div>${esc(JSON.stringify(d.reused_from))}</div>`:'')+(d.foundational_kind?`<h3>UFO 基础类型(候选)</h3><div>${esc(JSON.stringify(d.foundational_kind))}</div>`:'')+`<h3>证据来源</h3><pre>${esc(JSON.stringify(d.evidence,null,1))}</pre>`);}
+ <table><tr><th>列</th><th>中文</th><th>类型</th><th>来源</th></tr>`+(d.attrs||[]).map(a=>`<tr><td>${esc(a.col)}</td><td>${esc(a.cn||'')}</td><td>${esc(a.type||'')}</td><td>${esc((a.sources||[]).join('/'))}</td></tr>`).join('')+`</table>`+(d.reused_from?`<h3>ISA-95 对齐(候选，待人审)</h3><div>${esc(JSON.stringify(d.reused_from))}</div>`:'')+(d.foundational_kind?`<h3>UFO 基础类型(候选)</h3><div>${esc(JSON.stringify(d.foundational_kind))}</div>`:'')+`<h3>证据来源</h3><pre>${esc(JSON.stringify(d.evidence,null,1))}</pre>`);}
 let gChart;
 function expOnt(fmt){location='/api/graph/'+document.querySelector('#g_sel').value+'/export.'+fmt;}
 function gReadable(){if(!gChart)return;try{gChart.zoomTo(Math.max(.85,gChart.getZoom()));
- const item=gChart.__focusId&&gChart.findById(gChart.__focusId);if(item)gChart.focusItem(item);else gChart.fitCenter();}catch(_){}}
+ const item=gChart.__focusId&&gChart.findById(gChart.__focusId);if(item)gChart.focusItem(item,false);else gChart.fitCenter();}catch(_){}}
 function gFitAll(){if(!gChart)return;try{gChart.fitView([24,48,24,48]);}catch(_){}}
 function gZoom(scale){if(!gChart)return;try{gChart.zoomTo(Math.max(.2,Math.min(2.5,gChart.getZoom()*scale)));}catch(_){}}
 // 为缺定义对象提出属加种差定义、正例和反例；生成内容仍需人工复核。
@@ -910,7 +911,7 @@ async function promoteMaturity(key,oid,mat){            // 成熟度人审:candi
   (window.toast||alert)('成熟度已置为 '+r.maturity);
   const n=GRAPH_CUR.nodes.find(x=>x.id===oid);if(n){n.maturity=mat;showNodeDetail(n);}
  }catch(e){(window.toast||alert)('更新失败:'+e);}}
-// 图谱下拉统一分组渲染:精选/场景样例/构建历史 三组 optgroup(全站三个选择器共用,消散乱堆叠)
+// 图谱下拉统一分组渲染：精选/场景样例/构建历史 三组 optgroup(全站三个选择器共用，消散乱堆叠)
 const _GCAT=[['curated','精选本体'],['scenario','场景样例'],['built','构建历史']];
 function graphOptions(gs,label){
  return _GCAT.map(([cat,gl])=>{const items=gs.filter(g=>(g.cat||'curated')===cat);
@@ -927,68 +928,23 @@ async function graphs(pref){const gs=await J('/api/graphs');
 const GKIND={object:{fill:'#eef2ff',stroke:'#4a5ff3',text:'#4a5ff3'},event:{fill:'#fff5eb',stroke:'#ff7d00',text:'#d46b08'},
  action:{fill:'#fff7e6',stroke:'#d97706',text:'#b45309'},asset:{fill:'#fef0ff',stroke:'#a855f7',text:'#7c3aed'},role:{fill:'#e0f7fa',stroke:'#00bcd4',text:'#00838f'},ice:{fill:'#f5f3ff',stroke:'#7c6ff0',text:'#5b4fc8'}};
 // 关系状态 → 边样式:**集中定义**,本体图谱(G6 画布)与深度问数锚定子图(内联 SVG)共用。
-// 此前两处各有一套配色(图谱 verified=灰实线,锚定 verified=绿),同一语义两种颜色,看图易误判。
-// path(两跳可达)是锚定特有的「推导所得」概念,故与 inferred 同族(紫点线),不占用 verified 的灰。
+// 此前两处各有一套配色(图谱 verified=灰实线，锚定 verified=绿)，同一语义两种颜色，看图易误判。
+// path(两跳可达)是锚定特有的「推导所得」概念，故与 inferred 同族(紫点线)，不占用 verified 的灰。
 const EST={verified:{c:'#94a3b8',w:1.5,d:null,n:'已验证'},asserted:{c:'#4a5ff3',w:1.3,d:[2,2],n:'人审断言'},
            inferred:{c:'#a855f7',w:1.3,d:[1,3],n:'推理得出'},candidate:{c:'#ff7d00',w:1.2,d:[4,3],n:'待取证'},
            gap:{c:'#ff7d00',w:1.2,d:[4,3],n:'证据不足'},path:{c:'#a855f7',w:1.2,d:[1,3],n:'两跳可达'}};
 const estDash=st=>(st&&st.d?st.d.join(' '):'');
 const GEST=EST;   // 兼容既有引用名
 let GRAPH_CUR={key:'demo',nodes:[],edges:[]};
-// 共享 G6 渲染(本体图谱 + 建模工作台复用,统一布局/配色/自适应)
-let GRAPH_HL=null;      // 从深度问数跳来的锚定高亮:{key, set:锚定对象, used:SQL 实际用到的表}
-function _g6build(g,hl){
- const nodes=g.nodes.map(n=>{const kk=GKIND[n.kind]||GKIND.object;
-  const on=!hl||hl.set.has(n.id);
-  const hit=hl&&(n.tables||[]).some(t=>hl.used.has(String(t).toLowerCase()));
-  const _lb=String(n.name||n.id), _cjk=/[\u4e00-\u9fa5]/.test(_lb), _cap=_cjk?12:18;
-  return {id:n.id,label:_lb.length>_cap?_lb.slice(0,_cap-1)+'…':_lb,kind:n.kind,_n:n,
-  style:{fill:on?kk.fill:'#F6F7FA',stroke:on?kk.stroke:'#DDE1EA',lineWidth:hit?3:(on?2:1),radius:8},
-  labelCfg:{style:{fill:on?kk.text:'#A9B0BF',fontSize:13,fontWeight:600}}};});
- const edges=g.edges.map(e=>{let st=GEST[e.status]||GEST.gap;if(e.semantic==='fail')st={c:'#dc2626',w:st.w,d:[2,4]};
-  if(hl&&!(hl.set.has(e.s)&&hl.set.has(e.t)))st={c:'#E3E6ED',w:1,d:st.d};
-  return {source:e.s,target:e.t,label:e.verb||'',_e:e,
-  style:{stroke:st.c,lineWidth:st.w,lineDash:st.d,endArrow:{path:G6.Arrow.triangle(7,8,0),fill:st.c}},
-  labelCfg:{autoRotate:true,style:{fill:(hl&&!(hl.set.has(e.s)&&hl.set.has(e.t)))?'#C7CBD6':(e.status==='verified'?'#64748b':'#d46b08'),fontSize:12,background:{fill:'#fff',padding:[2,4,2,4],radius:3}}}};});
- return {nodes,edges};
-}
-function _g6layout(lay,n){const big=n>40;
- return lay==='dagre'?{type:'dagre',rankdir:'LR',align:'UL',nodesep:big?14:26,ranksep:big?70:52,controlPoints:true}
-  :lay==='force'?{type:'force',preventOverlap:true,linkDistance:130,nodeStrength:-70,edgeStrength:.6}
-  :lay==='circular'?{type:'circular'}:{type:'radial',unitRadius:130,preventOverlap:true,nodeSize:120};}
-function g6render(containerId,g,lay,opts){opts=opts||{};
- const c=$('#'+containerId);const {nodes,edges}=_g6build(g,opts.hl);
- const graph=new G6.Graph({container:containerId,width:c.offsetWidth,height:c.offsetHeight||480,layout:_g6layout(lay,nodes.length),
-  defaultNode:{type:'rect',size:[132,42],style:{radius:8},anchorPoints:[[0,0.5],[1,0.5]]},
- defaultEdge:{type:lay==='dagre'?'polyline':'quadratic',style:{radius:12,offset:18}},
-  modes:{default:['drag-canvas','zoom-canvas','drag-node']},fitView:false,animate:true});
- const degrees={};for(const e of edges){degrees[e.source]=(degrees[e.source]||0)+1;degrees[e.target]=(degrees[e.target]||0)+1;}
- graph.__focusId=nodes.reduce((best,n)=>(degrees[n.id]||0)>(degrees[best]||0)?n.id:best,nodes[0]&&nodes[0].id);
- // 关键:在布局完成后再自适应,并夹住过放大(此前 fitView 在异步布局前跑→内容坍缩成小框→放大到 ~7x)
- const fit=()=>{try{graph.fitView([24,48,24,48]);const z=graph.getZoom();
-  if(z>1){graph.zoomTo(1);graph.fitCenter();}
-  else if(nodes.length>40&&z<.85){graph.zoomTo(.85);const item=graph.findById(graph.__focusId);
-   if(item)graph.focusItem(item);else graph.fitCenter();}
- }catch(_){}};
- graph.on('afterlayout',fit);
- graph.data({nodes,edges});graph.render();
- fit();setTimeout(fit,320);
- if(opts.onNode)graph.on('node:click',e=>opts.onNode(e.item.getModel()._n));
- if(opts.onEdge)graph.on('edge:click',e=>opts.onEdge(e.item.getModel()._e));
- if(typeof ResizeObserver==='function'){let width=c.clientWidth,height=c.clientHeight;
-  const observer=new ResizeObserver(()=>{if(graph.get('destroyed')||!c.isConnected){observer.disconnect();return;}
-   if(c.clientWidth>0&&c.clientHeight>0&&(c.clientWidth!==width||c.clientHeight!==height)){
-    width=c.clientWidth;height=c.clientHeight;graph.changeSize(width,height);fit();}});
-  observer.observe(c);graph.on('beforedestroy',()=>observer.disconnect());}
- return graph;
-}
+// 共享 G6 渲染(本体图谱 + 建模工作台复用，统一布局/配色/自适应)
+let GRAPH_HL=null;      // 从深度问数跳来的锚定高亮:{key, set：锚定对象, used:SQL 实际用到的表}
 async function drawGraph(k){const g=await J('/api/graph/'+k);
  if(g.error||!Array.isArray(g.nodes)){$('#g_info').textContent=g.error||'图谱加载失败';return;}
  GRAPH_CUR={key:k,nodes:g.nodes,edges:g.edges};
  $('#g_info').textContent=`${g.nodes.length} 节点 · ${g.edges.length} 关系`;
  // 元数据覆盖率仅用于定位待补项，不代表本体完备性。
  J('/api/ont/completeness/'+k).then(cp=>{if(cp&&cp.score!=null&&GRAPH_CUR.key===k){const c=cp.score>=70?'#16a34a':cp.score>=40?'#d97706':'#b91c1c';
-  $('#g_info').innerHTML=`${g.nodes.length} 节点 · ${g.edges.length} 关系 · <span title="元数据覆盖:定义${cp.objects.withDefinition}/${cp.objects.total}、反例${cp.objects.withCounterExample}、标准关系映射${cp.relations.grounded}/${cp.relations.total}；不代表本体完备性" style="color:${c};font-weight:600">元数据覆盖 ${cp.score}%</span>`;}}).catch(()=>{});
+  $('#g_info').innerHTML=`${g.nodes.length} 节点 · ${g.edges.length} 关系 · <span title="元数据覆盖：定义${cp.objects.withDefinition}/${cp.objects.total}、反例${cp.objects.withCounterExample}、标准关系映射${cp.relations.grounded}/${cp.relations.total}；不代表本体完备性" style="color:${c};font-weight:600">元数据覆盖 ${cp.score}%</span>`;}}).catch(()=>{});
  const kset=[...new Set(g.nodes.map(n=>n.kind))].filter(x=>x);
  $('#g_legend').innerHTML=kset.map(x=>`<span class="tag" style="background:${KCOL(x)}22;color:${KCOL(x)}">${KNM(x)}</span>`).join('');
  if(gChart){try{gChart.destroy();}catch(_){}gChart=null;}
@@ -997,10 +953,10 @@ async function drawGraph(k){const g=await J('/api/graph/'+k);
  if(hl&&hb){const inG=g.nodes.filter(x=>hl.set.has(x.id)).length;
   hb.style.display='block';
   hb.innerHTML=`<b style="color:#4A5FF3">问数锚定视图</b> · 本次问数锚定到该本体的 `
-   +`<b>${inG}/${g.nodes.length}</b> 个对象(着色),其余淡出`
+   +`<b>${inG}/${g.nodes.length}</b> 个对象(着色)，其余淡出`
    +(hl.used.size?` · 其中 <b>${hl.used.size}</b> 个被最终 SQL 真正用到(粗边框)`:'')
-   +` <a href="#" onclick="GRAPH_HL=null;drawGraph('${esc(k)}');return false">清除高亮,看完整图谱</a>`;
-  if(inG===0)toast('本次锚定的对象不在该图谱中,未高亮',false);}
+   +` <a href="#" onclick="GRAPH_HL=null;drawGraph('${esc(k)}');return false">清除高亮，看完整图谱</a>`;
+  if(inG===0)toast('本次锚定的对象不在该图谱中，未高亮',false);}
  else if(hb)hb.style.display='none';
  gChart=g6render('g_canvas',g,($('#g_layout')&&$('#g_layout').value)||'dagre',{onNode:showNodeDetail,onEdge:showEdgeDetail,hl:hl});}
 async function showEdgeDetail(e){const k=GRAPH_CUR.key;
@@ -1021,7 +977,7 @@ async function showEdgeDetail(e){const k=GRAPH_CUR.key;
    <a href="#" style="margin-left:6px" onclick="event.preventDefault();goReview(GRAPH_CUR.key)">评审队列 ↗</a></div>`;}
 function gEdgeOp(op,s,t){rvmOpen(op,'rel:'+s+'->'+t,'关系 '+s+' → '+t,{},true);}
 function gEdgeVerb(s,t,cur){rvmOpen('verb','rel:'+s+'->'+t,'关系 '+s+' → '+t,{verb:cur},true);}
-// ── 本体评审(人机协同):机器提议 → 人逐条裁决;通过→asserted / 否决→剔除;白名单op可撤销 ──
+// ── 本体评审(人机协同)：机器提议 → 人逐条裁决；通过→asserted / 否决→剔除；白名单op可撤销 ──
 let RV_KEY=null;
 async function reviewInit(){const gs=await J('/api/graphs');
  $('#rv_sel').innerHTML=gs.map(g=>`<option value="${esc(g.id)}">${esc(g.name)}(${g.nodes}对象/${g.edges}关系)</option>`).join('');
@@ -1058,7 +1014,7 @@ const SB={verified:'已验证',asserted:'人工断言',candidate:'待取证',inf
    <button class="ghost" onclick="rvVerb(${jsAttr(tgt)},${jsAttr(r.verb)})">改动词</button>
    <button class="ghost" style="color:#b91c1c" onclick="rvDelRel(${jsAttr(tgt)})">删除</button>`:`<button class="ghost" onclick="rvOp('confirm_relation',${jsAttr(tgt)})">恢复为断言</button>`}</td></tr>`;}).join('')+'</table>';
  const ob=$('#rv_objs');if(ob){ob.style.display='block';
-  ob.innerHTML=`<h3 style="margin:0 0 8px">对象(${d.counts.objects} · 候选 ${d.counts.obj_candidate})<span class="muted" style="font-weight:400;font-size:12px;margin-left:8px">确认候选对象,或删除错误对象(级联删其关系,可撤销)</span></h3>`+
+  ob.innerHTML=`<h3 style="margin:0 0 8px">对象(${d.counts.objects} · 候选 ${d.counts.obj_candidate})<span class="muted" style="font-weight:400;font-size:12px;margin-left:8px">确认候选对象，或删除错误对象(级联删其关系，可撤销)</span></h3>`+
   '<table><tr><th>对象</th><th>类型</th><th>状态</th><th>绑定表</th><th>评审记录</th><th>操作</th></tr>'+(d.objects||[]).map(o=>
    `<tr style="${o.candidate?'background:#FFFBEB':''}"><td>${esc(o.name)}<div class="muted" style="font-size:11px">${esc(o.id)}</div></td>
     <td>${esc(KNM(o.kind))}</td><td>${o.candidate?'<span class="tag warn">候选</span>':'<span class="tag ok">已确认</span>'}</td>
@@ -1067,7 +1023,7 @@ const SB={verified:'已验证',asserted:'人工断言',candidate:'待取证',inf
     <td>${o.candidate?`<button class="ghost" onclick="rvObjConfirm(${jsAttr(o.id)})">确认</button> `:''}<button class="ghost" style="color:#b91c1c" onclick="rvObjDel(${jsAttr(o.id)})">删除</button></td></tr>`).join('')+'</table>';}}
 function rvWho(){return ($('#rv_who')&&$('#rv_who').value.trim())||localStorage.getItem('rv_reviewer')||'';}
 function rvSaveWho(){try{localStorage.setItem('rv_reviewer',$('#rv_who').value.trim());}catch(e){}}
-// ── 页面内评审表单(评审人 + 评审意见 可见输入;不依赖浏览器原生弹窗,防被"阻止对话框"设置吞掉)──
+// ── 页面内评审表单(评审人 + 评审意见 可见输入；不依赖浏览器原生弹窗，防被"阻止对话框"设置吞掉)──
 let RVM=null;   // {op,target,params,needReason,graphPage}
 const RVM_META={confirm_relation:['人审通过','评审意见(可选)',false],reject_relation:['人审否决','否决原因(必填)',true],
  remove_relation:['删除关系','删除原因(必填)',true],verb:['修改关系动词','修改说明(可选)',false],
@@ -1102,13 +1058,13 @@ async function rvUndo(){const d=await J('/api/ont/undo',{method:'POST',headers:{
  if(d.error){toast(d.error,false);return;}toast('已撤销',true);rvLoad();}
 function goReview(key){RV_KEY=key;document.querySelector('[data-p=review]').click();
  setTimeout(()=>{const el=$('#rv_sel');if(el&&el.value!==key){el.value=key;rvLoad();}},400);}
-// ── 动作中心(Palantir ActionType 式):类型化动作 · 风险分级 · 审批 · 审计 ──
+// ── 动作中心(Palantir ActionType 式)：类型化动作 · 风险分级 · 审批 · 审计 ──
 let AC_TYPES=null,ACM=null;
 async function acTypes(){if(!AC_TYPES){const d=await J('/api/actions').catch(()=>({types:[]}));AC_TYPES=d.types||[];}return AC_TYPES;}
 async function acCenter(){const d=await J('/api/actions').catch(()=>({types:[],pending:0}));AC_TYPES=d.types||[];
  const en=AC_TYPES.filter(t=>t.enabled!==false).length;
  $('#ac_types').innerHTML=`<div class="row" style="justify-content:space-between;align-items:center;margin-bottom:8px">
-   <h3 style="margin:0">动作类型 <span class="muted" style="font-weight:400;font-size:12px">启用 ${en}/${AC_TYPES.length} · 内置种子受保护(仅可停用/改说明),自建可编辑/删除</span></h3>
+   <h3 style="margin:0">动作类型 <span class="muted" style="font-weight:400;font-size:12px">启用 ${en}/${AC_TYPES.length} · 内置种子受保护(仅可停用/改说明)，自建可编辑/删除</span></h3>
    <button onclick="actNew()">+ 新建动作类型</button></div>`
   +`<div class="kpis" style="grid-template-columns:repeat(4,1fr);margin-bottom:10px">
     <div class="kpi"><div class="n" style="color:#4A5FF3">${en}/${AC_TYPES.length}</div><div class="l">启用类型</div></div>
@@ -1142,7 +1098,7 @@ function actmRows(){$('#actm_rows').innerHTML=ACTM.params.map((p,i)=>`<div class
   <input placeholder="name(英文)" value="${esc(p.name||'')}" style="width:110px" oninput="ACTM.params[${i}].name=this.value">
   <input placeholder="中文名" value="${esc(p.cn||'')}" style="width:100px" oninput="ACTM.params[${i}].cn=this.value">
   <select style="width:86px" onchange="ACTM.params[${i}].type=this.value;actmRows()"><option value="text" ${p.type==='text'?'selected':''}>短文本</option><option value="textarea" ${p.type==='textarea'?'selected':''}>长文本</option><option value="select" ${p.type==='select'?'selected':''}>下拉</option></select>
-  ${p.type==='select'?`<input placeholder="选项,逗号分隔" value="${esc((p.options||[]).join(','))}" style="flex:1" oninput="ACTM.params[${i}].options=this.value.split(/[,,]/).filter(x=>x.trim())">`:''}
+  ${p.type==='select'?`<input placeholder="选项，逗号分隔" value="${esc((p.options||[]).join(','))}" style="flex:1" oninput="ACTM.params[${i}].options=this.value.split(/[,,]/).filter(x=>x.trim())">`:''}
   <label style="font-size:12px;white-space:nowrap"><input type="checkbox" ${p.required?'checked':''} onchange="ACTM.params[${i}].required=this.checked"> 必填</label>
   <span class="x" onclick="ACTM.params.splice(${i},1);actmRows()">✕</span></div>`).join('')
  +`<button class="ghost" style="font-size:12px" onclick="ACTM.params.push({name:'',cn:'',type:'text',required:false});actmRows()">+ 加参数</button>`;}
@@ -1158,7 +1114,7 @@ async function actmSubmit(){const body={cn:$('#actm_cn').value.trim(),object_tab
  if(d.error){toast(d.error,false);return;}
  $('#act_modal').style.display='none';toast(ACTM.mode==='create'?'动作类型已创建':'已保存',true);AC_TYPES=null;acCenter();}
 async function actToggle(tid,enable){const d=await J('/api/action/type/update',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:tid,enabled:!!enable})}).catch(e=>({error:''+e}));
- if(d.error){toast(d.error,false);return;}toast(enable?'已启用':'已停用(不可再发起,历史审计保留)',true);AC_TYPES=null;acCenter();}
+ if(d.error){toast(d.error,false);return;}toast(enable?'已启用':'已停用(不可再发起，历史审计保留)',true);AC_TYPES=null;acCenter();}
 let ACT_DEL_ARM={};
 async function actDel(tid){const t=AC_TYPES.find(x=>x.id===tid);
  if(!ACT_DEL_ARM[tid]){ACT_DEL_ARM[tid]=1;toast('再点一次「删除」确认移除「'+(t?t.cn:tid)+'」(历史审计保留)',false);
@@ -1195,11 +1151,11 @@ function acLogRender(){const items=AC_LOG;
     <td><span class="tag ${SB[x.status][0]}">${SB[x.status][1]}</span></td><td>${esc(x.operator)}</td>
     <td class="muted" style="font-size:11px">${esc(x.approver||'-')}${x.approve_comment?' · '+esc(x.approve_comment):''}</td>
     <td class="muted" style="font-size:11px">${esc((x.effects||[]).join(' / '))||'-'}</td></tr>`).join('')+'</table>'
-   :'<div class="muted">'+(items.length?'无匹配记录(调整筛选)':'暂无记录 —— 在动作类型卡上「发起」,或从诊断结果一键派工')+'</div>');
+   :'<div class="muted">'+(items.length?'无匹配记录(调整筛选)':'暂无记录 —— 在动作类型卡上「发起」，或从诊断结果一键派工')+'</div>');
  const el=$('#acf_kw');if(el&&kw){el.focus();el.setSelectionRange(kw.length,kw.length);}}
 function acLogCsv(){const items=AC_LOG;if(!items.length){toast('暂无记录',false);return;}
  const esc2=v=>'"'+String(v==null?'':v).replace(/"/g,'""')+'"';
- const csv='﻿'+['时间,动作,状态,操作人,参数,审批人,审批意见,审批时间,效果']
+ const csv='﻿'+['时间，动作，状态，操作人，参数，审批人，审批意见，审批时间，效果']
   .concat(items.map(x=>[x.ts,x.action_cn,x.status,x.operator,Object.entries(x.params||{}).map(([k,v])=>k+':'+v).join(';'),
    x.approver||'',x.approve_comment||'',x.approve_ts||'',(x.effects||[]).join(';')].map(esc2).join(','))).join('\n');
  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));
@@ -1208,7 +1164,7 @@ async function acOpen(tid,prefill){if($('#acm_ok'))$('#acm_ok').textContent='提
  await acTypes();const t=AC_TYPES.find(x=>x.id===tid);if(!t){toast('动作类型不存在',false);return;}
  ACM={t,mode:'invoke'};
  $('#acm_title').textContent='发起动作:'+t.cn;
- $('#acm_sub').textContent=t.desc+(t.risk==='high'?' —— 高风险:提交后进入审批队列':' —— 低风险:提交后直接形成动作记录，不写回业务系统');
+ $('#acm_sub').textContent=t.desc+(t.risk==='high'?' —— 高风险：提交后进入审批队列':' —— 低风险：提交后直接形成动作记录，不写回业务系统');
  $('#acm_fields').innerHTML=t.params.map(p=>{
   const v=esc((prefill&&prefill[p.name])||'');
   if(p.type==='select')return `<div style="margin-bottom:10px">${esc(p.cn)}${p.required?'(必填)':''}<br><select id="acm_p_${esc(p.name)}" style="width:100%;margin-top:4px"><option value="">请选择</option>${(p.options||[]).map(o=>`<option>${esc(o)}</option>`).join('')}</select></div>`;
@@ -1233,7 +1189,7 @@ async function acmSubmit(){if(!ACM)return;
  if(d.error){toast(d.error,false);return;}
  acmClose();toast(d.status==='executed'?'已形成动作记录(未写回业务系统)':'已提交审批 · 动作中心「待审批」可见',true);
  if($('#p_actioncenter').classList.contains('on'))acLogLoad();}
-// ── 引擎设置(DR-017):运行时/模型/Key 实时切换;先测后切 ──
+// ── 引擎设置(DR-017)：运行时/模型/Key 实时切换；先测后切 ──
 let EG=null;
 async function egLoad(){EG=await J('/api/engine/config').catch(e=>({error:''+e}));
  if(EG.error){$('#eg_runtimes').innerHTML=`<div class="muted">${esc(EG.error)}</div>`;return;}
@@ -1241,14 +1197,14 @@ async function egLoad(){EG=await J('/api/engine/config').catch(e=>({error:''+e})
  const LBL={'claude-code':['Claude Code','订阅版 claude CLI(Anthropic 订阅计费)'],
             'hermes':['Hermes','多 provider:openai-codex 订阅 / GLM · DeepSeek · Moonshot 等 API Key'],
             'openclaw':['OpenClaw','订阅版 Codex/ChatGPT(OpenAI 订阅计费)'],
-            'openai':['OpenAI 兼容端点','任意 /chat/completions 服务(GLM · DeepSeek · Qwen · vLLM 自建);经 DATAMIND_LLM_BASE/_KEY/_MODEL 配置']};
+            'openai':['OpenAI 兼容端点','任意 /chat/completions 服务(GLM · DeepSeek · Qwen · vLLM 自建)；经 DATAMIND_LLM_BASE/_KEY/_MODEL 配置']};
  const _others=EG.runtimes.filter(r=>r!=='openai');
  const _curOk=EG.runtimes.includes(EG.driver);
  $('#eg_runtimes').innerHTML=`<h3 style="margin:0 0 8px">智能体运行时
    <span class="muted" style="font-weight:400;font-size:12px">当前:${esc(EG.driver)}${_curOk?'':' — 未注册'} · 切换与模型修改即刻生效</span></h3>`
   +(_curOk?'':`<div class="muted" style="font-size:12px;color:#b45309;margin-bottom:8px">
-     当前运行时 <code>${esc(EG.driver)}</code> 未注册,所有大模型环节会退回内置模板。
-     ${EG.llm&&EG.llm.ready?'上方端点已就绪,把当前运行时切到「OpenAI 兼容端点」即可。':'请先在上方配置 OpenAI 兼容端点,或设置 DATAMIND_ENGINE_DIR 接入上游本体引擎。'}</div>`)
+     当前运行时 <code>${esc(EG.driver)}</code> 未注册，所有大模型环节会退回内置模板。
+     ${EG.llm&&EG.llm.ready?'上方端点已就绪，把当前运行时切到「OpenAI 兼容端点」即可。':'请先在上方配置 OpenAI 兼容端点，或设置 DATAMIND_ENGINE_DIR 接入上游本体引擎。'}</div>`)
   +(_others.length?'':`<div class="muted" style="font-size:12px">${EG.runtimes.length?'当前仅注册了 OpenAI 兼容端点运行时。':'当前没有已注册的运行时；请配置端点或接入上游本体引擎。'}
      接入引擎后此处会出现 Claude Code / Hermes / OpenClaw 等可选项。</div>`)
   +'<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:10px">'
@@ -1261,15 +1217,15 @@ async function egLoad(){EG=await J('/api/engine/config').catch(e=>({error:''+e})
        <option value="">— 选择 —</option>${opts.map(o=>`<option value="${esc(o)}">${esc(o)}</option>`).join('')}</select>`:''}
      <input id="eg_m_${esc(r)}" value="${esc(m)}" placeholder="缺省" style="width:150px"></div>
     ${r==='hermes'?`<div style="margin-bottom:6px">Provider <select id="eg_hp" style="width:210px">${EG.hermes_providers.map(p=>`<option value="${esc(p)}" ${p===EG.hermes_provider?'selected':''}>${p||'(hermes 默认)'}</option>`).join('')}</select>
-     <div class="muted" style="font-size:11px;margin-top:2px">oauth 类 provider(codex/qwen)需先在终端完成登录;API 类读下方 Key</div></div>`:''}
+     <div class="muted" style="font-size:11px;margin-top:2px">oauth 类 provider(codex/qwen)需先在终端完成登录；API 类读下方 Key</div></div>`:''}
     <div style="display:flex;gap:6px;margin-top:4px">
      ${cur?'':`<button class="ghost" onclick="egSwitch(${jsAttr(r)})">设为当前</button>`}
      <button class="ghost" onclick="egSaveModel(${jsAttr(r)})">保存模型</button>
      <button class="ghost" onclick="egTest(${jsAttr(r)},this)">测试连通</button></div>
     <div class="muted" id="eg_t_${esc(r)}" style="font-size:12px;margin-top:6px"></div></div>`;}).join('')+'</div>'
-  +`<div class="muted" style="font-size:12px;margin-top:8px">另:agy(Google Antigravity)未接入为运行时 —— 当前网络地域受限(Gemini 接口按 IP 封禁),恢复后可按同模式注册。</div>`;
+  +`<div class="muted" style="font-size:12px;margin-top:8px">另:agy(Google Antigravity)未接入为运行时 —— 当前网络地域受限(Gemini 接口按 IP 封禁)，恢复后可按同模式注册。</div>`;
  // B4 按任务选模:SQL 计划 / 洞察叙述 / 根因诊断 各配独立模型(空=跟随当前引擎)
- const TN={plan:['SQL 计划生成','问数中最耗时的环节,可配轻量模型(如 haiku)降低时延与成本'],narrative:['洞察叙述','结论文字生成,轻量模型足够'],diagnose:['根因诊断','约束生成要求高,建议保持强模型']};
+ const TN={plan:['SQL 计划生成','问数中最耗时的环节，可配轻量模型(如 haiku)降低时延与成本'],narrative:['洞察叙述','结论文字生成，轻量模型足够'],diagnose:['根因诊断','约束生成要求高，建议保持强模型']};
  const allOpts=[...new Set([].concat(...Object.values(EG.model_options||{})))];
  $('#eg_tasks').innerHTML=`<h3 style="margin:0 0 8px">按任务选模 <span class="muted" style="font-weight:400;font-size:12px">每个环节独立指定模型 · 空=跟随当前引擎缺省 · 保存即刻生效</span></h3>`
   +'<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:10px">'
@@ -1293,11 +1249,11 @@ async function egPost(body){const d=await J('/api/engine/config',{method:'POST',
  if(d.error){toast(d.error,false);return null;}EG=d;return d;}
 async function egSwitch(r){if(await egPost({driver:r})){toast('已切换引擎:'+r+'(即刻生效)',true);egLoad();
  try{const rt=await J('/api/ont/runtimes');if(rt&&rt.current)$('#rt_pill').textContent='引擎 · '+engName(rt.current);}catch(e){}}}
-// ── OpenAI 兼容端点:本仓自带驱动的完整配置(端点/Key/模型/超时/额度)──
+// ── OpenAI 兼容端点：本仓自带驱动的完整配置(端点/Key/模型/超时/额度)──
 function egRenderLLM(){
  const L=EG.llm||{}, P=EG.llm_presets||[];
  const lock=new Set(L.env_locked||[]);
- const lk=f=>lock.has(f)?' disabled title="该项由环境变量注入,界面不可覆盖"':'';
+ const lk=f=>lock.has(f)?' disabled title="该项由环境变量注入，界面不可覆盖"':'';
  $('#eg_llm').innerHTML=`<h3 style="margin:0 0 4px">OpenAI 兼容端点
    <span class="tag ${L.ready?'ok':'warn'}">${L.ready?'已就绪':'未配置'}</span></h3>
   <div class="muted" style="font-size:12px;margin-bottom:10px">
@@ -1308,7 +1264,7 @@ function egRenderLLM(){
    ${P.map(p=>`<button class="ghost" style="font-size:12px" onclick="egPreset(${jsAttr(p.base)})">${esc(p.name)}</button>`).join('')}</div>
   <table style="width:100%;max-width:780px">
    <tr><td style="width:96px">端点地址</td><td><input id="eg_l_base" value="${esc(L.base||'')}"${lk('base')}
-     placeholder="https://…/v1  写到 /v1 或 /v4 为止,不含 /chat/completions" style="width:100%"></td></tr>
+     placeholder="https://…/v1  写到 /v1 或 /v4 为止，不含 /chat/completions" style="width:100%"></td></tr>
    <tr><td>API Key</td><td><input id="eg_l_key" type="password"
      placeholder="${L.key_set?'已保存 '+esc(L.key||'')+',留空则不改动':'粘贴 Key'}" style="width:100%"></td></tr>
    <tr><td>模型</td><td>
@@ -1317,22 +1273,22 @@ function egRenderLLM(){
        placeholder="如 glm-4.5" style="width:240px">
      <button class="ghost" onclick="egFetchModels(this)">拉取可用模型</button>
      <div class="muted" style="font-size:11.5px;margin-top:3px">端点不提供模型列表时直接手填模型名即可</div>
-     <!-- 拉取结果另起一行:该文案有二十余字,若与下拉框/输入框/按钮挤在同一行,
+     <!-- 拉取结果另起一行：该文案有二十余字，若与下拉框/输入框/按钮挤在同一行,
           会溢出单元格约 180px 而被截成「已拉到 …」(旧截图 docs/img/07 即此形态)。 -->
      <div class="muted" id="eg_l_ms" style="font-size:12px;margin-top:3px"></div></td></tr>
    <tr><td>单轮超时</td><td><input id="eg_l_timeout" value="${esc(L.timeout||'')}"${lk('timeout')}
      placeholder="180" style="width:80px"> 秒
-     <span class="muted" style="font-size:11.5px;margin-left:8px">推理型模型的思维链耗时计入其中,配紧了会被截断</span></td></tr>
+     <span class="muted" style="font-size:11.5px;margin-left:8px">推理型模型的思维链耗时计入其中，配紧了会被截断</span></td></tr>
    <tr><td>回复上限</td><td><input id="eg_l_max" value="${esc(L.max_tokens||'')}"${lk('max_tokens')}
      placeholder="16384" style="width:80px"> tokens
-     <span class="muted" style="font-size:11.5px;margin-left:8px">思维链占用同一份额度,配紧了正文会被挤没</span></td></tr>
+     <span class="muted" style="font-size:11.5px;margin-left:8px">思维链占用同一份额度，配紧了正文会被挤没</span></td></tr>
   </table>
   <div style="display:flex;gap:8px;margin-top:10px">
    <button class="ghost" onclick="egLLMTest(this)">测试连接</button>
    <button onclick="egLLMSave(this)">保存并启用</button>
    ${L.ready?'<button class="ghost" style="color:#b91c1c" onclick="egLLMClear(this)">清除配置</button>':''}</div>
   <div id="eg_l_out" class="muted" style="font-size:12.5px;margin-top:8px"></div>
-  ${lock.size?`<div class="muted" style="font-size:11.5px;margin-top:6px">灰显项由环境变量注入(${esc([...lock].join('、'))}),以部署配置为准,界面不覆盖。</div>`:''}`;}
+  ${lock.size?`<div class="muted" style="font-size:11.5px;margin-top:6px">灰显项由环境变量注入(${esc([...lock].join('、'))})，以部署配置为准，界面不覆盖。</div>`:''}`;}
 function egPreset(base){const el=$('#eg_l_base'); if(el&&!el.disabled){el.value=base; el.focus();}}
 function egLLMBody(){return {base:($('#eg_l_base')||{}).value||'', key:($('#eg_l_key')||{}).value||'',
   model:($('#eg_l_model')||{}).value||'', timeout:($('#eg_l_timeout')||{}).value||'',
@@ -1349,8 +1305,8 @@ async function egFetchModels(btn){
  sel.innerHTML='<option value="">— 选择模型 —</option>'
    +r.models.map(m=>`<option value="${esc(m)}" ${m===cur?'selected':''}>${esc(m)}</option>`).join('')
    +(cur&&!r.models.includes(cur)?`<option value="${esc(cur)}" selected>${esc(cur)}(自定义)</option>`:'');
- sel.style.display='';                                  // 拉到了才显示下拉,免得空框误导
- o.textContent=`已拉到 ${r.count} 个模型,在左侧下拉里选,或继续手填`;}
+ sel.style.display='';                                  // 拉到了才显示下拉，免得空框误导
+ o.textContent=`已拉到 ${r.count} 个模型，在左侧下拉里选，或继续手填`;}
 function egPickModel(){const sel=$('#eg_l_pick'), inp=$('#eg_l_model');
  if(sel&&inp&&sel.value){inp.value=sel.value;}}
 async function egLLMTest(btn){
@@ -1365,7 +1321,7 @@ async function egLLMTest(btn){
   +(r.reasoning_chars?` · 思维链 ${r.reasoning_chars} 字`:'')
   +(u.completion_tokens?` · 本次用 ${u.completion_tokens} tokens`:'')
   +(r.warn?`<div style="color:#b45309;margin-top:3px">${esc(r.warn)}</div>`:'')
-  +((EG.llm&&EG.llm.ready)?'':'<div style="color:#b45309;margin-top:3px">测试通过,但尚未保存 —— 点「保存并启用」后才会生效。</div>');}
+  +((EG.llm&&EG.llm.ready)?'':'<div style="color:#b45309;margin-top:3px">测试通过，但尚未保存 —— 点「保存并启用」后才会生效。</div>');}
 async function egLLMSave(btn){
  btn.disabled=true;
  const r=await J('/api/engine/config',{method:'POST',headers:{'Content-Type':'application/json'},
@@ -1375,7 +1331,7 @@ async function egLLMSave(btn){
  EG=r; egLoad();
  const okk=!!(r.llm&&r.llm.ready);
  toast(okk?(r.switched_from?`已保存并启用 · 当前运行时已从 ${r.switched_from} 切到 OpenAI 兼容端点`:'已保存并启用')
-          :'已保存,但端点或 Key 不全,尚未启用', okk);}
+          :'已保存，但端点或 Key 不全，尚未启用', okk);}
 async function egLLMClear(btn){
  btn.disabled=true;
  const r=await J('/api/engine/config',{method:'POST',headers:{'Content-Type':'application/json'},
@@ -1392,14 +1348,14 @@ async function egSaveKey(v){const el=$('#eg_k_'+v);const val=(el&&el.value.trim(
 async function egClearKey(v){if(await egPost({keys:{[v]:''}})){toast('Key 已清除',true);egLoad();}}
 async function egSaveTask(t){const v=($('#eg_tm_'+t)&&$('#eg_tm_'+t).value.trim())||'';
  if(await egPost({task_models:{[t]:v}})){toast(v?('任务模型已覆盖:'+v+'(即刻生效)'):'已恢复跟随引擎缺省',true);egLoad();}}
-// ══════ 业务助手(C10:按角色组装 问数/诊断/动作/待办;对齐平台『业务助手』场景)══════
+// ══════ 业务助手(C10：按角色组装 问数/诊断/动作/待办；对齐平台『业务助手』场景)══════
 const AS_ROLES={
  prod:{name:'生产主管',qs:['各月产量与计划达成情况如何?','2025年各产线的累计产量对比','最近的月度销售收入与毛利趋势'],
-  diag:['3 号线生产工单的合格率明显下降,可能是什么原因?','本月生产工单的产量落后于计划,帮我找找原因'],acts:['dispatch_inspection','adjust_delivery','adjust_temp_zone']},
+  diag:['3 号线生产工单的合格率明显下降，可能是什么原因?','本月生产工单的产量落后于计划，帮我找找原因'],acts:['dispatch_inspection','adjust_delivery','adjust_temp_zone']},
  quality:{name:'质量工程师',qs:['各月退货数量与退货原因分布','产出一等品率的月度趋势','退货金额占销售额的比例趋势'],
-  diag:['退货量近期上升,可能是什么原因?','生产工单的一等品率波动大,帮我诊断'],acts:['dispatch_inspection','freeze_batch','supplier_scar']},
+  diag:['退货量近期上升，可能是什么原因?','生产工单的一等品率波动大，帮我诊断'],acts:['dispatch_inspection','freeze_batch','supplier_scar']},
  equip:{name:'设备运维',qs:['各设备的运行状态分布','各产线设备数量与功率汇总','设备安装年限分布情况'],
-  diag:['设备故障导致产线停机,如何排查?'],acts:['report_repair']}};
+  diag:['设备故障导致产线停机，如何排查?'],acts:['report_repair']}};
 let AS_CUR=localStorage.getItem('as_role')||'prod';
 async function asLoad(){
  $('#as_roles').innerHTML=Object.entries(AS_ROLES).map(([k,r])=>
@@ -1410,8 +1366,8 @@ async function asLoad(){
  $('#as_diag').innerHTML=R.diag.map(q=>`<div class="cn-row" style="cursor:pointer" onclick="asDiag(${jsAttr(q)})"><span style="flex:1">${esc(q)}</span><span class="muted" style="font-size:11px">诊断 →</span></div>`).join('');
  let acts=[];try{acts=((await J('/api/actions')).types||[]);}catch(_){}
  $('#as_acts').innerHTML=acts.filter(a=>R.acts.includes(a.id)).map(a=>
-  `<div class="cn-row" style="cursor:pointer" onclick="asAct()"><span style="flex:1">${esc(a.cn)} <span class="tag ${a.risk==='high'?'warn':'ok'}" style="font-size:10px">${a.risk==='high'?'高风险·须审批':'低风险·直接登记'}</span></span><span class="muted" style="font-size:11px">发起 →</span></div>`).join('')||'<div class="muted">该角色暂无关联动作</div>';
- // 待办聚合:四个入口的实时计数(全部来自现有 API,无新状态)
+  `<div class="cn-row" style="cursor:pointer" onclick="asAct()"><span style="flex:1">${esc(a.cn)} <span class="tag ${a.risk==='high'?'warn':'ok'}" style="font-size:11px">${a.risk==='high'?'高风险·须审批':'低风险·直接登记'}</span></span><span class="muted" style="font-size:11px">发起 →</span></div>`).join('')||'<div class="muted">该角色暂无关联动作</div>';
+ // 待办聚合：四个入口的实时计数(全部来自现有 API，无新状态)
  let rv=0,ac=0,fb=0,ev='—';
  try{rv=((await J('/api/ont/review?graph=demo')).counts||{}).pending||0;}catch(_){}
  try{ac=(await J('/api/actions')).pending||0;}catch(_){}
@@ -1423,7 +1379,7 @@ function asRole(k){AS_CUR=k;try{localStorage.setItem('as_role',k)}catch(_){}asLo
 function asAsk(q){goPage('chat');location.hash='chat';setTimeout(()=>{const b=$('#mode_deep');if(b)b.click();const i=$('#chat_q');if(i){i.value=q;i.focus();}},350);}
 function asDiag(q){goPage('chat');location.hash='chat';setTimeout(()=>{const b=$('#mode_diag');if(b)b.click();const i=$('#chat_q');if(i){i.value=q;i.focus();}},350);}
 function asAct(){goPage('actioncenter');location.hash='actioncenter';}
-// ══════ 问数评测(C9:三组对照跑分)══════
+// ══════ 问数评测(C9：三组对照跑分)══════
 let QE_TIMER=null;
 async function qeLoad(){qeRender(await J('/api/eval/results').catch(()=>({empty:true})));qePoll();}
 async function qePoll(){if(QE_TIMER)clearTimeout(QE_TIMER);
@@ -1434,17 +1390,17 @@ async function qePoll(){if(QE_TIMER)clearTimeout(QE_TIMER);
 async function qeRun(){const model=$('#qe_model').value.trim();
  const d=await J('/api/eval/run',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(model?{model}:{})}).catch(e=>({error:''+e}));
  if(d.error){toast(d.error,false);return}
- toast('评测已启动(后台运行,每题即时落盘)',true);qePoll();}
+ toast('评测已启动(后台运行，每题即时落盘)',true);qePoll();}
 function qeRender(d){
- if(!d||d.empty||!(d.items||[]).length){$('#qe_kpis').innerHTML='';$('#qe_body').innerHTML='<div class="muted" style="padding:10px">尚未跑过评测 —— 点上方「跑一轮评测」。三组同题对照:A 只给英文表列(朴素基线),B 加中文语义+本体关系,C 本体全量(再叠加指标/术语/口径校验)。</div>';return;}
+ if(!d||d.empty||!(d.items||[]).length){$('#qe_kpis').innerHTML='';$('#qe_body').innerHTML='<div class="muted" style="padding:10px">尚未跑过评测 —— 点上方「跑一轮评测」。三组同题对照:A 只给英文表列(朴素基线),B 加中文语义+本体关系，C 本体全量(再叠加指标/术语/口径校验)。</div>';return;}
  const n=(d.items||[]).length;const A=d.arms||{};
  $('#qe_kpis').innerHTML=['A','B','C'].map(k=>{const a=A[k]||{};return `<div class="kpi"><div class="n" style="color:${k==='C'?'#16a34a':k==='B'?'#4A5FF3':'#6B7690'}">${a.correct||0}/${n}</div>
-  <div class="l">${k} 组 · ${esc((a.name||'').split('(')[0])}<br><span style="font-size:10.5px">出处引用 ${a.cite||0}/${n}${k==='C'?` · 口径拦截 ${a.gate_block||0}`:''}</span></div></div>`;}).join('');
- $('#qe_body').innerHTML=`<div class="muted" style="font-size:11.5px;margin-bottom:8px">模型:${esc(d.model||'')} · ${esc(d.ts||'')} · 判分=数值容差/字符串等值;出处=SQL 必须引用参考答案所需表</div>`
+  <div class="l">${k} 组 · ${esc((a.name||'').split('(')[0])}<br><span style="font-size:11px">出处引用 ${a.cite||0}/${n}${k==='C'?` · 口径拦截 ${a.gate_block||0}`:''}</span></div></div>`;}).join('');
+ $('#qe_body').innerHTML=`<div class="muted" style="font-size:11.5px;margin-bottom:8px">模型:${esc(d.model||'')} · ${esc(d.ts||'')} · 判分=数值容差/字符串等值；出处=SQL 必须引用参考答案所需表</div>`
   +'<table><tr><th>题目</th><th>参考集</th><th>A 朴素</th><th>B 图谱</th><th>C 本体全量</th></tr>'
   +(d.items||[]).map(it=>'<tr><td style="max-width:260px">'+esc(it.q)+'</td><td><code>'+esc(String(it.gold))+'</code></td>'
    +['A','B','C'].map(k=>{const r=(it.arms||{})[k]||{};const mk=r.correct?'<span style="color:#16a34a">✓</span>':r.gate_block?'<span style="color:#d97706">拦</span>':'<span style="color:#dc2626">✗</span>';
-    return `<td title="${esc(r.sql||r.err||'')}">${mk} <span class="muted" style="font-size:11px">${r.value!=null?esc(String(r.value)).slice(0,16):esc((r.err||'').slice(0,14))}</span>${r.cite?'':' <span class="muted" style="font-size:10px">出处✗</span>'}</td>`;}).join('')+'</tr>').join('')+'</table>';}
+    return `<td title="${esc(r.sql||r.err||'')}">${mk} <span class="muted" style="font-size:11px">${r.value!=null?esc(String(r.value)).slice(0,16):esc((r.err||'').slice(0,14))}</span>${r.cite?'':' <span class="muted" style="font-size:11px">出处✗</span>'}</td>`;}).join('')+'</tr>').join('')+'</table>';}
 async function egTest(r,btn){const out=$('#eg_t_'+r);out.textContent='测试中(最长 60s)…';btn.disabled=true;
  const d=await J('/api/engine/test',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({driver:r})}).catch(e=>({ok:false,reply:''+e}));
  btn.disabled=false;
@@ -1463,12 +1419,12 @@ function showNodeDetail(n){if(!n)return;const rel=GRAPH_CUR.edges.filter(x=>x.s=
   <h3 style="padding-right:18px">${esc(n.name)}</h3><div class="muted" style="margin-bottom:6px">${KNM(n.kind)} · 字段 ${n.fields||0} ${n.candidate===false?'<span class="tag ok">已确认</span>':'<span class="tag warn">语义候选</span>'}</div>
   <div id="gd_desc" class="step" style="background:#F7F9FF;border-radius:6px;padding:8px 10px;border-bottom:0">说明加载中…</div>
   <div id="gd_iof"></div>
-  <h3 style="margin-top:10px" class="gd-h">绑定表(${(n.tables||[]).filter(Boolean).length})</h3>`+((n.tables||[]).filter(Boolean).map(t=>`<div class="step">${esc(t)} <a href="#" onclick="event.preventDefault();document.querySelector('[data-p=catalog]').click();setTimeout(()=>tbl(${jsAttr(t)}),400)">查数据↗</a></div>`).join('')||(['event','action'].includes(n.kind)?`<div class="muted">业务${KNM(n.kind)}节点 · 由流程/规则定义,不直接绑数据表(正常)</div>`:'<div class="muted">无绑定表(纯概念节点)</div>'))+
+  <h3 style="margin-top:10px" class="gd-h">绑定表(${(n.tables||[]).filter(Boolean).length})</h3>`+((n.tables||[]).filter(Boolean).map(t=>`<div class="step">${esc(t)} <a href="#" onclick="event.preventDefault();document.querySelector('[data-p=catalog]').click();setTimeout(()=>tbl(${jsAttr(t)}),400)">查数据↗</a></div>`).join('')||(['event','action'].includes(n.kind)?`<div class="muted">业务${KNM(n.kind)}节点 · 由流程/规则定义，不直接绑数据表(正常)</div>`:'<div class="muted">无绑定表(纯概念节点)</div>'))+
   `<div id="gd_acts"></div><h3 style="margin-top:10px" class="gd-h">业务指标 <span class="muted" id="gd_metn"></span></h3><div id="gd_mets"><div class="muted">加载中…</div></div>
   <h3 style="margin-top:10px" class="gd-h">关系(${rel.length})</h3>`+(rel.slice(0,12).map(r=>`<div class="step">${r.s===n.id?'→':'←'} ${esc(r.verb)} <b>${esc(r.s===n.id?r.t:r.s)}</b> <span class="muted">${esc(r.status)}</span></div>`).join('')||'<div class="muted">无</div>')+
   `<h3 style="margin-top:10px" class="gd-h">字段/属性 <span class="muted" id="gd_attr_n"></span></h3><div id="gd_attrs"><div class="muted">加载中…</div></div>
   <div style="margin-top:10px"><button class="ghost" onclick="objDetail(${esc(JSON.stringify(GRAPH_CUR.key))},${esc(JSON.stringify(n.id))})">完整证据/来源↗</button></div>`;
- // 异步取对象详情:说明/描述、业务指标(编码+描述+类型)、字段(列名/中文/类型)——对齐平台『本体对象详情』
+ // 异步取对象详情：说明/描述、业务指标(编码+描述+类型)、字段(列名/中文/类型)——对齐平台『本体对象详情』
  J('/api/ont/object/'+encodeURIComponent(GRAPH_CUR.key)+'/'+encodeURIComponent(n.id)).then(d=>{
   if(det.style.display==='none')return;
   const dsc=$('#gd_desc');if(dsc)dsc.textContent=(d.description||'（无说明）').split(' 定义:')[0];
@@ -1476,7 +1432,7 @@ function showNodeDetail(n){if(!n)return;const rel=GRAPH_CUR.edges.filter(x=>x.s=
    const bits=[];
    if(d.bfo)bits.push(`<span class="tag" style="background:#eef2ff;color:#4a5ff3" title="BFO 2020 上层范畴">BFO · ${esc(d.bfo)}</span>`);
    const mat=d.maturity||'';if(mat)bits.push(`<span class="tag" style="background:${mat==='Released'?'#e7f7ec':'#fff4e5'};color:${mat==='Released'?'#16a34a':'#d97706'}" title="成熟度">${esc(mat)}</span>`);
-   if(d.isPrimitive)bits.push(`<span class="tag" style="background:#f3f4f6;color:#6b7280" title="无充要定义,标为原始概念(IOF isPrimitive)">原始概念</span>`);
+   if(d.isPrimitive)bits.push(`<span class="tag" style="background:#f3f4f6;color:#6b7280" title="无充要定义，标为原始概念(IOF isPrimitive)">原始概念</span>`);
    let h=bits.length?`<div style="margin:6px 0;display:flex;gap:6px;flex-wrap:wrap">${bits.join('')}</div>`:'';
    if(d.definition)h+=`<div class="step"><b>定义</b>(属加种差):${esc(d.definition)}</div>`;
    if(d.example)h+=`<div class="step"><b>正例</b>:${esc(d.example)}</div>`;
@@ -1497,7 +1453,7 @@ function showNodeDetail(n){if(!n)return;const rel=GRAPH_CUR.edges.filter(x=>x.s=
   if(mine.length)el.innerHTML='<h3 style="margin-top:10px" class="gd-h">已配置动作('+mine.length+')</h3>'
    +mine.map(t=>`<div class="step">${esc(t.cn)} <span class="tag ${t.risk==='high'?'warn':'ok'}" style="margin-left:4px">${t.risk==='high'?'须审批':'直接登记'}</span> <a href="#" onclick="event.preventDefault();acOpen(${jsAttr(t.id)})">发起 ↗</a></div>`).join('');}).catch(()=>{});}
 async function rules(){const d=await J('/api/ont/rules?graph=demo');
- // 后端故障时 J() 返回 {error},缺 counts/methodology —— 与全站守卫一致,先判后用
+ // 后端故障时 J() 返回 {error}，缺 counts/methodology —— 与全站守卫一致，先判后用
  if(d.error||!d.counts){$('#rules_body').innerHTML=`<div class="muted">${esc(d.error||'规则数据不可用')}</div>`;return;}
  const c=d.counts;
  const rt=await J('/api/ont/runtimes');
@@ -1505,7 +1461,7 @@ async function rules(){const d=await J('/api/ont/rules?graph=demo');
  $('#rt_sel').innerHTML=rts.length?rts.map(r=>`<option value="${esc(r)}" ${r===rt.current?'selected':''}>${esc(engName(r))}</option>`).join('')
    :'<option value="">(无可用运行时)</option>';
  $('#rt_info').textContent=rts.length?('当前: '+engName(rt.current)+((rt.current_ready===false)?' — 未注册':''))
-   :'未接入大模型:请在「引擎设置」配置 OpenAI 兼容端点';
+   :'未接入大模型：请在「引擎设置」配置 OpenAI 兼容端点';
  $('#rules_body').innerHTML=`<div class="kpis"><div class="kpi"><div class="n">${c.objects}</div><div class="l">对象</div></div>
   <div class="kpi"><div class="n">${c.links}</div><div class="l">关系(${c.verified}已核验)</div></div>
   <div class="kpi"><div class="n">${c.confirmed_objs}</div><div class="l">已确认对象</div></div>
@@ -1518,7 +1474,7 @@ async function rules(){const d=await J('/api/ont/rules?graph=demo');
   d.pipeline.map((st,i)=>`<div class="step"><b>${i+1}. ${esc(st.stage)}</b>— ${esc(st.io)}<br><span class="muted">判定: ${esc(st.rule)}</span></div>`).join('')+`</div>`;}
 async function rtSet(){const d=await J('/api/ont/runtime',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:$('#rt_sel').value})});
  $('#rt_info').textContent=d.error||('当前: '+d.current);}
-// 指标状态(DR-054):certified 业务已确认 > verified 已核验 > candidate 待核验;旧形状指标只有启发式口径
+// 指标状态(DR-054):certified 业务已确认 > verified 已核验 > candidate 待核验；旧形状指标只有启发式口径
 const MST={certified:['ok','业务已确认'],verified:['ok','已核验'],candidate:['warn','待核验'],deprecated:['evt','已停用'],heuristic:['warn','旧口径(启发式)']};
 function mStatus(x){return x.status||(x.measure&&x.measure.agg?'candidate':'heuristic');}
 function mstTag(st){const t=MST[st]||['evt',st||'-'];return `<span class="tag ${t[0]}">${esc(t[1])}</span>`;}
@@ -1561,17 +1517,17 @@ async function lineage(name){const g=mGraph();
    (ref.source?`<span class="muted"> 参照:${esc(ref.source)}${ref.note?' · '+esc(ref.note):''}</span>`:'')+(ev.error?`<div class="muted" style="color:var(--warn)">${esc(ev.error)}</div>`:'')+
    (ev.value!==undefined?`<div class="muted">标量值:${esc(String(ev.value))}${m.unit?' '+esc(m.unit):''}${ev.checked_at?' · 核验于 '+esc(ev.checked_at):''}</div>`:'')+`</div>`:'';
  const dims=(c&&c.allowed_dimensions)||null;
- const dimLine=dims?`<div class="step"><b>可下钻维度</b>: ${(dims.columns||[]).map(x=>`<code>${esc(x)}</code>`).join(' ')||'<span class=muted>无</span>'}${(dims.objects||[]).length?' · 关联对象: '+dims.objects.map(o=>`${esc(o.object)}<span class="muted">(${esc(o.table)}${o.fan_out_risk?' · 父侧,有扇出风险':''})</span>`).join('、'):''}</div>`:'';
+ const dimLine=dims?`<div class="step"><b>可下钻维度</b>: ${(dims.columns||[]).map(x=>`<code>${esc(x)}</code>`).join(' ')||'<span class=muted>无</span>'}${(dims.objects||[]).length?' · 关联对象: '+dims.objects.map(o=>`${esc(o.object)}<span class="muted">(${esc(o.table)}${o.fan_out_risk?' · 父侧，有扇出风险':''})</span>`).join('、'):''}</div>`:'';
  const prov=(m.provenance||[]).map(p=>`${esc(p.kind||'-')}:${esc(p.source||'')}`).join('; ');
  const who=localStorage.getItem('rv_reviewer')||'';
  const actions=isC?`<div class="step" style="border-top:1px dashed #E5E9F2;padding-top:8px">
    <div class="row" style="gap:8px;flex-wrap:wrap;align-items:center">
     确认人 <input id="ml_who" placeholder="姓名或工号" value="${esc(who)}" style="width:140px"> 意见 <input id="ml_reason" placeholder="口径依据(可选)" style="width:260px">
-    ${st!=='certified'?`<button onclick="metricStatus(${jsAttr(name)},'certified')" title="业务确认口径;等价于关系的人工断言">确认口径</button>`:''}
+    ${st!=='certified'?`<button onclick="metricStatus(${jsAttr(name)},'certified')" title="业务确认口径；等价于关系的人工断言">确认口径</button>`:''}
     ${st!=='deprecated'?`<button class="ghost" onclick="metricStatus(${jsAttr(name)},'deprecated')">停用</button>`:''}
     ${(st==='certified'||st==='deprecated')?`<button class="ghost" onclick="metricStatus(${jsAttr(name)},'candidate')">撤回为待核验</button>`:''}
-   </div><div class="muted" style="margin-top:4px">「已核验」只能由核验产生,人工只能授予「业务已确认」或「停用」。</div></div>`
-  :`<div class="step muted">该指标是旧形状(未声明聚合口径),不能确认为业务口径;先在构建时反解或补契约。</div>`;
+   </div><div class="muted" style="margin-top:4px">「已核验」只能由核验产生，人工只能授予「业务已确认」或「停用」。</div></div>`
+  :`<div class="step muted">该指标是旧形状(未声明聚合口径)，不能确认为业务口径；先在构建时反解或补契约。</div>`;
  el.innerHTML=`<h3>${esc(name)} ${mstTag(st)}<span class="tag ok">${esc(LAYER_CN[ly]||ly)}</span>${m.unit?`<span class="tag" style="background:#F4F4F5;color:#606266">${esc(m.unit)}</span>`:''}${m.certified_by?`<span class="muted" style="font-size:11px">确认人 ${esc(m.certified_by)}${m.certified_at?' · '+esc(m.certified_at):''}</span>`:''}</h3>
   ${isC?`<div class="step"><b>契约口径</b>: <code>${esc(c.caliber||'')}</code></div><div class="step"><b>编译 SQL</b>: <code style="font-size:11px;white-space:pre-wrap">${esc(c.compiled_sql||c.compile_error||'')}</code></div>`:''}
   ${m.desc?`<div class="step"><b>业务口径</b>: ${esc(m.desc)}</div>`:''}
@@ -1590,14 +1546,14 @@ async function chatInit(){const m=await J('/api/metrics');
 async function instantQ(){const n=$('#iq_sel').value;if(!n)return;
  const d=await J('/api/metric/quick?name='+encodeURIComponent(n));
  if(d.error){$('#iq_info').textContent=d.error;return}
- $('#iq_info').textContent=`${d.source} · ${d.agg}${d.unit?' · '+d.unit:''}${d.agg_note?' · '+d.agg_note:''}${d.status?' · '+((MST[d.status]||[0,d.status])[1]):''}`;  // 一并展示聚合口径说明(如比率取月均为近似),透明不误导
+ $('#iq_info').textContent=`${d.source} · ${d.agg}${d.unit?' · '+d.unit:''}${d.agg_note?' · '+d.agg_note:''}${d.status?' · '+((MST[d.status]||[0,d.status])[1]):''}`;  // 一并展示聚合口径说明(如比率取月均为近似)，透明不误导
  const el=$('#iq_chart');el.style.display='block';
  mk(el,{grid:{top:28,left:60,right:20,bottom:30},tooltip:{trigger:'axis'},
   xAxis:{type:'category',data:d.data.rows.map(r=>r['月']),...AX},yAxis:{type:'value',...AX},
   series:[{name:d.metric,type:'line',areaStyle:{opacity:.12},data:d.data.rows.map(r=>r[d.metric]),itemStyle:{color:'#4A5FF3'}}]});}
-// 对外统一引擎名:不暴露底层多智能体库(hermes/claude-code/openclaw)
+// 对外统一引擎名：不暴露底层多智能体库(hermes/claude-code/openclaw)
 function engName(r){return {hermes:'智能引擎','claude-code':'智能引擎(备选)',claude:'智能引擎(备选)',openclaw:'经典引擎'}[r]||'智能引擎';}
-const LOAD_STEPS=['加载 示例 本体上下文…','匹配相关表/指标,组装 schema…','智能引擎生成 SQL 分析计划(约 40-60s)…','本地 SQLite 执行查询…','生成业务洞察…'];
+const LOAD_STEPS=['加载 示例 本体上下文…','匹配相关表/指标，组装 schema…','智能引擎生成 SQL 分析计划(约 40-60s)…','本地 SQLite 执行查询…','生成业务洞察…'];
 let DQ_CONV=null, DQ_UID=0, DQ_ATTS=[], DQ_ABORT=null;
 function dqAbort(){if(DQ_ABORT){try{DQ_ABORT.abort()}catch(_){}DQ_ABORT=null;}}
 const EG_Q=['毛利为什么下降?收入有什么变化?产量趋势如何?','最近几个月毛利率的变化趋势','各月收入与实际毛利额对比'];
@@ -1607,19 +1563,19 @@ async function dqUpload(input){const fs=[...(input.files||[])];if(!fs.length)ret
  try{const d=await J('/api/build/upload',{method:'POST',body:fd});
   (d.tables||[]).forEach(t=>{if(t.table&&!t.error)DQ_ATTS.push({name:t.table,rows:t.rows});});
   (d.saved||[]).filter(n=>!/\.(csv|tsv)$/i.test(n)).forEach(n=>DQ_ATTS.push({name:n,rows:'附件'}));
-  dqRenderAtts();toast&&toast('已上传,可用 up.表 查询');}
+  dqRenderAtts();toast&&toast('已上传，可用 up.表 查询');}
  catch(e){toast&&toast('上传失败');}}
 function dqRenderAtts(){$('#dq_atts').innerHTML=DQ_ATTS.map((a,i)=>`<span class="dq-att"><b>${esc(a.name)}</b> <span class="muted">${esc(''+a.rows)}行</span> <span class="x" onclick="DQ_ATTS.splice(${i},1);dqRenderAtts()">✕</span></span>`).join('');}
-// ── 界面版本自检:标签页开着不刷新时,改动不会生效,现象是「说改了却没变」──
+// ── 界面版本自检：标签页开着不刷新时，改动不会生效，现象是「说改了却没变」──
 let UI_VER=null;
 function uiVerBanner(){
  let b=$('#uiver_bar');if(b)return b;
  b=document.createElement('div');b.id='uiver_bar';
- // 挂在 body 上而非某个页面容器里:放进 .page 内会随页面切换一起隐藏
+ // 挂在 body 上而非某个页面容器里：放进 .page 内会随页面切换一起隐藏
  b.style.cssText='display:none;position:fixed;top:10px;left:50%;transform:translateX(-50%);z-index:9999;'
   +'background:#FFFBEB;border:1px solid #FDE68A;color:#92400E;border-radius:6px;padding:7px 14px;'
   +'font-size:12.5px;box-shadow:0 2px 8px rgba(0,0,0,.08)';
- b.innerHTML='界面已更新,当前页面还是旧版 —— <a href="#" style="color:#4A5FF3">刷新以生效</a>'
+ b.innerHTML='界面已更新，当前页面还是旧版 —— <a href="#" style="color:#4A5FF3">刷新以生效</a>'
   +'<span style="cursor:pointer;margin-left:8px;color:#B45309">✕</span>';
  b.querySelector('a').onclick=e=>{e.preventDefault();location.reload();};
  b.querySelector('span').onclick=()=>{b.style.display='none';};
@@ -1636,9 +1592,9 @@ let DQ_DS={graphs:[],tables:[],allTables:true}, DQ_SKILL='demo-deep-qa', DQ_GRAP
 function dqCloseModal(id){$('#'+id).style.display='none';}
 // 弹窗:Esc 关闭 + 点遮罩关闭(可访问性)
 addEventListener('keydown',e=>{if(e.key==='Escape')document.querySelectorAll('.dq-modal').forEach(m=>{if(m.style.display!=='none'){if(m.id==='dq_dsmodal')dqDsCancel();else m.style.display='none';}});});
-// 表格单元格统一 max-width:260px + 省略号(见 th,td 规则),超长内容被吃掉且无从查看
+// 表格单元格统一 max-width:260px + 省略号(见 th,td 规则)，超长内容被吃掉且无从查看
 // —— 数据质量页的"分层对账"结论就这样被截在半句话上。悬停时按需补 title:
-// 只量当前这一格,不给每个格子预塞属性,动态渲染出来的表也一并覆盖。
+// 只量当前这一格，不给每个格子预塞属性，动态渲染出来的表也一并覆盖。
 addEventListener('mouseover',e=>{
   const c=e.target&&e.target.closest&&e.target.closest('td,th');
   if(!c||c.title)return;
@@ -1667,7 +1623,7 @@ async function dqDsTab(t){
    <div class="ds-grid" id="ds_tgrid">`+DQ_TABLES.map(t=>`<div class="ds-card ${sel.has(t.name)?'sel':''}" data-t="${esc(t.name)}" onclick="dqDsToggleT(${esc(JSON.stringify(t.name))})"><div class="ck">✓</div><div class="nm">${esc(t.name)}</div><div class="ds">${t.rows} 行 · ${t.cols} 列</div></div>`).join('')+`</div>`;
  }}
 function dqDsToggleG(id){const g=(DQ_GRAPHS||[]).find(x=>x.id===id);if(g&&!g.queryable){toast(g.reason||'该本体没有可查询的数据表',false);return;}const i=DQ_DS.graphs.indexOf(id);if(i<0)DQ_DS.graphs.push(id);else DQ_DS.graphs.splice(i,1);
- const c=$('#dq_ds_body').querySelector(`.ds-card[data-g="${CSS.escape(id)}"]`);if(c)c.classList.toggle('sel');   // 原地切换,不重建(避免闪烁)
+ const c=$('#dq_ds_body').querySelector(`.ds-card[data-g="${CSS.escape(id)}"]`);if(c)c.classList.toggle('sel');   // 原地切换，不重建(避免闪烁)
  const gc=$('#ds_gcount');if(gc)gc.textContent=DQ_DS.graphs.length;const all=$('#ds_all_g');if(all)all.checked=DQ_GRAPHS&&DQ_DS.graphs.length===DQ_GRAPHS.length;}
 function dqDsAllG(on){DQ_DS.graphs=on?DQ_GRAPHS.filter(g=>g.queryable).map(g=>g.id):[];$('#dq_ds_body').querySelectorAll('.ds-card[data-g]').forEach(c=>{const g=DQ_GRAPHS.find(x=>x.id===c.dataset.g);c.classList.toggle('sel',on&&g&&g.queryable)});const gc=$('#ds_gcount');if(gc)gc.textContent=DQ_DS.graphs.length;}
 function dqDsToggleT(nm){const i=DQ_DS.tables.indexOf(nm);if(i<0){DQ_DS.tables.push(nm);DQ_DS.allTables=false;}else DQ_DS.tables.splice(i,1);const c=$('#ds_tgrid').querySelector(`[data-t="${CSS.escape(nm)}"]`);if(c)c.classList.toggle('sel');}
@@ -1678,9 +1634,9 @@ async function dqOpenSkill(){$('#dq_skmodal').style.display='flex';const body=$(
  const cards=[{id:'demo-deep-qa',name:'demo-deep-qa',builtin:true,desc:'基于 示例 应用本体图谱的深度问数编排。就毛利/收入/产量/成本/费用/目标达成等业务指标提问时启用。'}]
   .concat((sinked||[]).map(s=>({id:s.id,name:(s.question||s.id).slice(0,24),desc:'沉淀自问数 · '+(s.analyses?s.analyses.length:0)+' 条SQL',used:s.analyses?s.analyses.length:0})));
  body.innerHTML=cards.map(c=>`<div class="sk-card ${DQ_SKILL===c.id?'sel':''}" onclick="dqSkillPick(${esc(JSON.stringify(c.id))})"><div style="flex:1"><div class="nm">${esc(c.name)}${c.builtin?'<span class="badge">内置</span>':'<span class="badge">沉淀</span>'}</div><div class="ds">${esc(c.desc)}</div></div></div>`).join('')
-  +`<div class="muted" style="text-align:center;margin-top:8px">单选:不选则自动匹配最优技能</div>`;}
+  +`<div class="muted" style="text-align:center;margin-top:8px">单选：不选则自动匹配最优技能</div>`;}
 function dqSkillPick(id){DQ_SKILL=id;$('#dq_skill_lbl').textContent='技能 '+(id||'自动匹配');document.querySelectorAll('#dq_sk_body .sk-card').forEach(c=>c.classList.remove('sel'));if($('#dq_skmodal').style.display!=='none')dqOpenSkill();}
-async function dqSkillUpload(input){const f=(input.files||[])[0];if(!f)return;toast&&toast('技能上传:.zip 需后端注册,当前记录名');DQ_SKILL=f.name.replace(/\.zip$/,'');$('#dq_skill_lbl').textContent='技能 '+DQ_SKILL;dqCloseModal('dq_skmodal');}
+async function dqSkillUpload(input){const f=(input.files||[])[0];if(!f)return;toast&&toast('技能上传:.zip 需后端注册，当前记录名');DQ_SKILL=f.name.replace(/\.zip$/,'');$('#dq_skill_lbl').textContent='技能 '+DQ_SKILL;dqCloseModal('dq_skmodal');}
 function dqHero(){
  if(typeof dqHeroScoped==='function')return dqHeroScoped();
  return `<div class="dq-hero"><h1>深度问数</h1><p>问数模块未完整加载，请刷新页面后重试。</p>`
@@ -1692,14 +1648,14 @@ function dqGroup(gh){gh.parentElement.classList.toggle('collapsed');}
 let DQ_MODE='deep';
 function dqMode(m){DQ_MODE=m;['deep','instant','report','diag'].forEach(x=>{const el=$('#mode_'+x);if(el)el.classList.toggle('on',x===m)});
  $('#dqv_deep').style.display=(m==='deep'||m==='diag')?'flex':'none';
- // 根因诊断与深度问数共用同一视图容器:切过去要清掉深度问数的锚定条,免得指向另一条链路
+ // 根因诊断与深度问数共用同一视图容器：切过去要清掉深度问数的锚定条，免得指向另一条链路
  if(m==='diag'&&typeof dqAncBar==='function'){DQ_ANC_LAST=null;dqAncBar(null);}
  $('#dqv_instant').style.display=m==='instant'?'block':'none';
  $('#dqv_report').style.display=m==='report'?'block':'none';
- const inp=$('#chat_q');if(inp)inp.placeholder=m==='diag'?'描述异常现象(如:3 号线本周直通率下降,可能是什么原因?)——诊断只在本体边界内作答':'请输入数据分析问题(支持上传 Excel、CSV、TXT 文件)';
+ const inp=$('#chat_q');if(inp)inp.placeholder=m==='diag'?'描述异常现象(如:3 号线本周直通率下降，可能是什么原因?)——诊断只在本体边界内作答':'请输入数据分析问题(支持上传 Excel、CSV、TXT 文件)';
  if(m==='report')dqReport();}
 function dqReport(){const el=$('#dq_report');const conv=DQ_CONV||dqAllConv()[0];
- if(!conv||!(conv.turns||[]).length){el.innerHTML='<div class="dq-hero" style="height:auto;padding:70px 20px"><h1>智能报告</h1><p>先在「深度问数」里完成一次分析,这里会把整段对话自动汇编成结构化分析报告(含图表,可打印/导出 PDF)。</p></div>';return;}
+ if(!conv||!(conv.turns||[]).length){el.innerHTML='<div class="dq-hero" style="height:auto;padding:70px 20px"><h1>智能报告</h1><p>先在「深度问数」里完成一次分析，这里会把整段对话自动汇编成结构化分析报告(含图表，可打印/导出 PDF)。</p></div>';return;}
  let html=`<div class="dq-report"><div class="rp-hd"><h1>${esc(conv.title||'数据分析报告')}</h1>
    <div class="rp-meta">COSMO DataMind · 深度问数报告 · 共 ${conv.turns.length} 轮分析 · ${new Date().toLocaleString('zh-CN')}</div></div>`;
  conv.turns.forEach((t,i)=>{const d=t.d||{};html+=`<div class="rp-sec"><h2>${i+1}. ${esc(t.q)}</h2>`;
@@ -1707,14 +1663,14 @@ function dqReport(){const el=$('#dq_report');const conv=DQ_CONV||dqAllConv()[0];
   (d.results||[]).forEach((r,j)=>{const cols=r.data.columns||[];
    html+=`<h3>${esc(r.title)}</h3><div class="chart" id="rpc_${i}_${j}"></div><div class="muted" style="font-size:12px;margin-top:4px">数据 ${r.data.rows.length} 行 × ${cols.length} 列 · ${cols.map(c=>esc(c)).join('、')}</div>`;});
   html+=`</div>`;});
- html+=`<div class="rp-foot">本报告由 COSMO DataMind 基于 ${esc(dqScopeReportName(conv.scope))} + 智能引擎本地生成,每项数据可追溯。</div>
+ html+=`<div class="rp-foot">本报告由 COSMO DataMind 基于 ${esc(dqScopeReportName(conv.scope))} + 智能引擎本地生成，每项数据可追溯。</div>
   <div style="margin-top:14px"><button class="ghost" onclick="window.print()">打印 / 导出 PDF</button></div></div>`;
  el.innerHTML=html;
  conv.turns.forEach((t,i)=>{((t.d&&t.d.results)||[]).forEach((r,j)=>{const c=el.querySelector('#rpc_'+i+'_'+j);if(c)dqChart(c,r);});});}
 function dqNew(){dqAbort();DQ_CONV=null;window.DQ_VIEW_MODE='new';CHAT_HIST=[];DQ_ANC_LAST=null;dqAncBar(null);$('#dq_stream').innerHTML=dqHero();dqRenderHist();$('#dqv_deep').classList.add('dqv-empty');dqMode('deep');if(typeof a11yScan==='function')a11yScan();}
 function dqMD(t){return esc(t||'').replace(/\*\*(.+?)\*\*/g,'<b>$1</b>').replace(/`([^`]+)`/g,'<code>$1</code>');}
 function dqTable(data){const cols=data.columns||[];const all=data.rows||[];
- // 长序列取首5+末5(时序时末尾为最新期,与图表/洞察口径一致),中间省略;短序列全展示
+ // 长序列取首5+末5(时序时末尾为最新期，与图表/洞察口径一致)，中间省略；短序列全展示
  const rows=all.length<=12?all.map(r=>({r})):[...all.slice(0,5).map(r=>({r})),{gap:all.length-10},...all.slice(-5).map(r=>({r}))];
  return `<div class="dq-prev"><table><tr>${cols.map(c=>`<th>${esc(c)}</th>`).join('')}</tr>`+
   rows.map(x=>x.gap?`<tr><td colspan="${cols.length}" class="muted" style="text-align:center">中间 ${x.gap} 行省略</td></tr>`:`<tr>${cols.map(c=>`<td>${cell(x.r[c])}</td>`).join('')}</tr>`).join('')+`</table></div>`;}
@@ -1734,13 +1690,13 @@ function dqRenderCard(card,q,d,origin='live'){const uid=DQ_UID++;const okN=d.ste
   d.steps.map(s=>`<div class="dq-logstep"><span class="ck ${s.ok?'':'no'}">${s.ok?'✓':'✗'}</span><span>${s.ts?`<span class="muted">[${esc(s.ts)}]</span> `:''}<b>${esc(s.step)}</b>${s.info?' — '+esc(s.info):''}</span></div>`).join('')+`</div></details>`;
  if(d.narrative)html+=`<div class="dq-insight">${dqMD(d.narrative)}</div>`;
  if(d.anchor)html+=dqAnchorHTML(d.anchor);        // DR-032 本体锚定可视化(含 SQL 实际命中)
- if((d.metric_cards||[]).length)   // A3 口径卡:命中指标的口径与出处,随答案可见
+ if((d.metric_cards||[]).length)   // A3 口径卡：命中指标的口径与出处，随答案可见
   html+=`<div style="display:flex;flex-wrap:wrap;gap:8px;margin:8px 0">`+d.metric_cards.map(m=>
    `<div style="border:1px solid #E5E9F2;border-left:3px solid #4A5FF3;border-radius:6px;padding:8px 12px;font-size:12px;background:#FAFBFF;max-width:340px">
-    <b>${esc(m.name)}</b> <span class="tag" style="font-size:10px;background:#EEF2FF;color:#4A5FF3">${esc(m.layer)}</span>${m.status?mstTag(m.status):''}
+    <b>${esc(m.name)}</b> <span class="tag" style="font-size:11px;background:#EEF2FF;color:#4A5FF3">${esc(m.layer)}</span>${m.status?mstTag(m.status):''}
     ${m.caliber?`<div style="margin-top:3px">计算口径:<code style="font-size:11px">${esc(m.caliber)}</code></div>`:''}
     ${m.desc?`<div class="muted" style="margin-top:3px">口径:${esc(m.desc)}</div>`:''}
-    ${m.status==='candidate'?`<div class="muted" style="margin-top:3px;color:var(--warn)">该口径尚未核验,数值仅供参考</div>`:''}
+    ${m.status==='candidate'?`<div class="muted" style="margin-top:3px;color:var(--warn)">该口径尚未核验，数值仅供参考</div>`:''}
     <div class="muted" style="margin-top:3px">出处:${m.table?`<code>${esc(m.table)}.${esc(m.col||'-')}</code>`:'派生/复合(见指标中心血缘)'}${m.unit?` · 单位 ${esc(m.unit)}`:''}
      <a href="#" onclick="event.preventDefault();document.querySelector('[data-p=metrics]').click()" style="font-size:11px">血缘↗</a></div></div>`).join('')+`</div>`;
  (d.results||[]).forEach((r,i)=>{const cols=r.data.columns||[];
@@ -1749,7 +1705,7 @@ function dqRenderCard(card,q,d,origin='live'){const uid=DQ_UID++;const okN=d.ste
     <div class="ov-row"><span class="ov-l">数据行数:</span>${r.data.rows.length}</div>
     <div class="ov-row"><span class="ov-l">数据列数:</span>${cols.length}</div>
     <div class="ov-row"><span class="ov-l">列名:</span>${cols.map(c=>esc(c)).join('、')||'-'}</div></div>
-   <details><summary class="muted">数据预览(首尾各 5 行,末尾为最新期)</summary>${dqTable(r.data)}</details>
+   <details><summary class="muted">数据预览(首尾各 5 行，末尾为最新期)</summary>${dqTable(r.data)}</details>
    <details><summary class="muted">查看 SQL</summary><pre>${esc(r.sql)}</pre></details></div>`;});
  html+=`<div id="dqact_${uid}" style="margin-top:8px"></div>`;
  html+=`<div class="dq-foot"><span>${d.cached?'缓存命中':'智能引擎 · 本地执行'}</span>
@@ -1771,13 +1727,13 @@ function dqRenderCard(card,q,d,origin='live'){const uid=DQ_UID++;const okN=d.ste
 async function dqSaveSkill(a,q){const card=a.closest('.dq-card');const d=card&&card._d;if(!d||!(d.results||[]).length){toast&&toast('无可沉淀结果');return;}
  a.textContent='沉淀中…';try{const r=await J('/api/chat/save_skill',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({question:q,results:d.results})});
   a.textContent=r.ok?`✓ 已沉淀(${r.count} 条SQL)`:'沉淀失败';}catch(e){a.textContent='沉淀失败';}}
-// ── 反馈落库(P24 证据回流):有用直接上报;待改进附意见 → 本体迭代候选队列(评审页处理)──
+// ── 反馈落库(P24 证据回流)：有用直接上报；待改进附意见 → 本体迭代候选队列(评审页处理)──
 async function dqFb(el,q,verdict,mode){const on=!el.classList.contains('on');
  el.classList.toggle('on');const sib=verdict==='useful'?el.nextElementSibling:el.previousElementSibling;if(sib)sib.classList.remove('on');
  if(!on)return;
  if(verdict==='needs_work'){const card=el.closest('.dq-card');let box=card.querySelector('.dq-fbbox');
   if(!box){box=document.createElement('div');box.className='dq-fbbox';box.style.cssText='margin-top:8px;display:flex;gap:6px;align-items:center';
-   box.innerHTML='<input placeholder="哪里待改进?(将进入本体迭代候选队列,由评审处理)" style="flex:1"><button class="ghost">提交反馈</button>';
+   box.innerHTML='<input placeholder="哪里待改进?(将进入本体迭代候选队列，由评审处理)" style="flex:1"><button class="ghost">提交反馈</button>';
    card.appendChild(box);
    box.querySelector('button').onclick=async()=>{const c=box.querySelector('input').value.trim();
     const r=await J('/api/chat/feedback',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({question:q,verdict:'needs_work',comment:c,mode:mode||'chat'})}).catch(e=>({error:''+e}));
@@ -1785,10 +1741,10 @@ async function dqFb(el,q,verdict,mode){const on=!el.classList.contains('on');
     box.innerHTML='<span class="muted" style="font-size:12px">已提交 · 进入本体迭代候选队列(评审页可见)✓</span>';toast('反馈已进入本体迭代候选队列',true);};}
   return;}
  const r=await J('/api/chat/feedback',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({question:q,verdict:'useful',mode:mode||'chat'})}).catch(e=>({error:''+e}));
- if(r.error){toast(r.error,false);return;}toast('已记录:有帮助',true);}
-// ── 根因诊断(P21 前三步实演):意图 → 沿关系召回 → 本体边界内约束生成 ──
+ if(r.error){toast(r.error,false);return;}toast('已记录：有帮助',true);}
+// ── 根因诊断(P21 前三步实演)：意图 → 沿关系召回 → 本体边界内约束生成 ──
 async function diagAsk(){const inp=$('#chat_q');const q=inp.value.trim();if(!q)return;inp.value='';$('#chat_btn').disabled=true;
- DQ_ANC_LAST=null;dqAncBar(null);        // 根因诊断走的是另一条链路,不能挂着深度问数上一轮的锚定条
+ DQ_ANC_LAST=null;dqAncBar(null);        // 根因诊断走的是另一条链路，不能挂着深度问数上一轮的锚定条
  $('#dqv_deep').classList.remove('dqv-empty');
  const stream=$('#dq_stream');const hero=stream.querySelector('.dq-hero');if(hero)hero.remove();
  stream.insertAdjacentHTML('beforeend',`<div class="dq-usermsg">${esc(q)}</div>`);
@@ -1810,7 +1766,7 @@ async function diagAsk(){const inp=$('#chat_q');const q=inp.value.trim();if(!q)r
      res.innerHTML=`<h3 style="margin:10px 0 6px">候选根因 <span class="muted" style="font-weight:400;font-size:12px">实体:${esc(d.entity)} · 沿 ${d.relations_used} 条本体关系召回${(d.metrics||[]).length?' · 指标:'+d.metrics.map(esc).join('、'):''}</span></h3>`
       +(d.causes||[]).map((c,i)=>`<div class="step" style="border-left:3px solid ${c.confidence==='verified'?'#16a34a':'#d97706'};padding-left:10px;margin-bottom:6px">
         <b>${'①②③'[i]||(i+1)} ${esc(c.cause)}</b> <span class="tag ${CB[c.confidence][0]}">${CB[c.confidence][1]}</span>
-        <div class="muted" style="font-size:12px">路径:${esc(c.path)}${c.in_bounds?'':' <span style="color:#d97706">(路径越界,已降候选)</span>'}</div>
+        <div class="muted" style="font-size:12px">路径:${esc(c.path)}${c.in_bounds?'':' <span style="color:#d97706">(路径越界，已降候选)</span>'}</div>
         <div class="muted" style="font-size:12px">依据:${esc(c.evidence)}</div></div>`).join('')
       +(d.checklist&&d.checklist.length?`<h3 style="margin:10px 0 6px">现场检查清单</h3>`+d.checklist.map(x=>`<div class="step">□ ${esc(x)}</div>`).join('')
         +`<div style="margin-top:8px"><button class="ghost" onclick='acOpen("dispatch_inspection",{line:${jsAttr(d.entity)},items:${jsAttr((d.checklist||[]).join("\n"))}})'>按清单发起检查工单(派工)↗</button></div>`:'')
@@ -1861,7 +1817,7 @@ async function ask(){if(DQ_MODE==='diag')return diagAsk();
    myConv.turns.push({q,d:dT});if(!myConv.title)myConv.title=q;dqSaveConv(myConv);}
  }catch(e){if(e&&e.name==='AbortError')return;
   if(card.isConnected){
-   // 流中途断掉时不要整卡抹掉:锚定与已完成的步骤/图表是用户已经看到的证据,擦了等于白跑一趟
+   // 流中途断掉时不要整卡抹掉：锚定与已完成的步骤/图表是用户已经看到的证据，擦了等于白跑一趟
    if(live.length||pr.length)rs.insertAdjacentHTML('beforeend',
      `<div class="dq-t warn" style="display:block;margin-top:8px">流中断:${esc(''+e)} —— 以上为中断前已完成的部分</div>`);
    else card.innerHTML=`<span class="dq-t warn">请求失败: ${esc(''+e)}</span>`;}}
@@ -1869,11 +1825,11 @@ async function ask(){if(DQ_MODE==='diag')return diagAsk();
  scroll();}
 // ══════ 本体构建·问询台 ══════
 const BC={src:'demo',srcName:'示例主库',skills:new Set(['ontology-semi-auto','ontology-build-method','ontology-cross-check']),welcomed:false,def:{},turns:0,base:'',baseName:''};
-function bcNew(){if(BC_BUSY){toast('构建进行中,请稍候再新建');return;}
+function bcNew(){if(BC_BUSY){toast('构建进行中，请稍候再新建');return;}
  bcSaveConv();                                             // 先把当前对话存入历史
- (BC._viz||[]).forEach(gr=>{try{gr.destroy();}catch(_){}});BC._viz=[];   // 销毁本轮对话内 G6 预览实例,防泄漏
+ (BC._viz||[]).forEach(gr=>{try{gr.destroy();}catch(_){}});BC._viz=[];   // 销毁本轮对话内 G6 预览实例，防泄漏
  BC_CONV=null;BC.welcomed=false;BC.turns=0;$('#bc_conv_n').textContent='';$('#bc_log').innerHTML='';
- bcIterClear();                                            // 新对话即新任务,不沿用上一轮的迭代底本
+ bcIterClear();                                            // 新对话即新任务，不沿用上一轮的迭代底本
  if(window.bcRefsReset)bcRefsReset();                       // 新任务回到兼容默认；仍可显式改成两项都不选
  bcWelcome();
  if(BC.def&&BC.def.build_name&&!$('#bc_name').value)$('#bc_name').value=BC.def.build_name;
@@ -1896,11 +1852,11 @@ async function bcVizNode(key,n,viewId){const det=$('#'+viewId+'_detail');if(!det
   +` <a href="#" onclick="event.preventDefault();bcView(${jsAttr(key)})" style="font-size:11px">在图谱中展开↗</a>`;}
 function bcVizEdge(key,e,viewId){const det=$('#'+viewId+'_detail');if(!det||!e)return;det._request=(det._request||0)+1;
  det.innerHTML=`<b>${esc(e.s)}</b> —<span class="k"> ${esc(e.verb||'关联')} </span>→ <b>${esc(e.t)}</b> `
-  +`<span class="tag ${e.status==='verified'?'ok':'warn'}" style="font-size:10px">${esc(e.status==='verified'?'已验证':'待取证')}</span>`;}
+  +`<span class="tag ${e.status==='verified'?'ok':'warn'}" style="font-size:11px">${esc(e.status==='verified'?'已验证':'待取证')}</span>`;}
 async function bcInit(){
  try{const rt=await J('/api/ont/runtimes');$('#bc_engine').textContent=engName(rt.current);}catch(_){}
  try{BC.def=await J('/api/build/defaults');}catch(_){BC.def={};}
- // 预填可用默认参数(可改):命名、诉求、默认编排技能
+ // 预填可用默认参数(可改)：命名、诉求、默认编排技能
  if(!$('#bc_name').value&&BC.def.build_name)$('#bc_name').value=BC.def.build_name;
  if(!$('#bc_q').value&&BC.def.build_query)$('#bc_q').value=BC.def.build_query;
  if(BC.def.default_skill&&!BC._skillSeeded){BC.skills.add(BC.def.default_skill);BC._skillSeeded=true;}
@@ -1908,7 +1864,7 @@ async function bcInit(){
  if(window.bcRefsInit)await bcRefsInit();
  bcSources();bcSkills();bcBuilt();bcWelcome();
  if(!bcInit._resize){bcInit._resize=1;addEventListener('resize',bcSyncHeight);}}
-// 对话面板动态上限 = 左栏总高:面板随对话增长(height:auto+min-height),但最多长到左栏高度,超出则内部滚动
+// 对话面板动态上限 = 左栏总高：面板随对话增长(height:auto+min-height)，但最多长到左栏高度，超出则内部滚动
 function bcSyncHeight(){const grid=document.querySelector('.bc-grid'),main=document.querySelector('.bc-main');
  if(window.matchMedia&&window.matchMedia('(max-width:820px)').matches){if(main)main.style.maxHeight='none';return;}
  if(!grid||!main)return;const leftH=grid.children[0]&&grid.children[0].getBoundingClientRect().height;
@@ -1920,15 +1876,15 @@ async function bcBuilt(){const bs=await J('/api/build/built').catch(()=>[]);
    <div class="nm" style="cursor:pointer;color:var(--acc)" onclick="bcView(${jsAttr(b.key)})" title="在图谱中查看">${esc(b.name)}</div>
    <div class="mt">${esc(b.objects)} 对象 · ${esc(b.events)} 事件 · ${esc(b.links)} 关系 · 数据已验证 ${esc(b.verified)} · 验收结果 ${esc(qrText(b.quality_result||b.quality_gate||'legacy'))}${b.rounds>1?' · 已构建 '+esc(b.rounds)+' 轮':''} · ${esc(b.ts)}</div></div>
    <a href="#" style="font-size:11px;white-space:nowrap;align-self:center;margin-right:8px" title="以这张本体为边界新建深度问数" onclick="event.preventDefault();dqStartFromOntology(${jsAttr(b.key)})">问数</a>
-   <a href="#" style="font-size:11px;white-space:nowrap;align-self:center;margin-right:8px" title="在这张本体上继续构建:本轮结果并入该图,已确立的结论不被覆盖,也不删除既有内容" onclick="event.preventDefault();bcIterate(${jsAttr(b.key)},${jsAttr(b.name)})">继续构建</a>
+   <a href="#" style="font-size:11px;white-space:nowrap;align-self:center;margin-right:8px" title="在这张本体上继续构建：本轮结果并入该图，已确立的结论不被覆盖，也不删除既有内容" onclick="event.preventDefault();bcIterate(${jsAttr(b.key)},${jsAttr(b.name)})">继续构建</a>
    <a href="#" style="font-size:11px;white-space:nowrap;align-self:center;margin-right:6px" title="把动词表/类型分布/定义风格沉淀为自定义技能" onclick="event.preventDefault();bcDistill(${jsAttr(b.key)},this)">沉淀为技能</a>
-   <span class="x" title="删除(再点确认)" onclick="bcDelBuilt(${jsAttr(b.key)},this)">✕</span></div>`).join(''):'<div class="muted">暂无,构建后在此列出</div>';bcSyncHeight();}
-async function bcIterate(key,name){   // 在已构建本体上继续构建:换上下文、示例与提示,不只是加一条细线
- if(BC_BUSY){toast('构建进行中,请稍候再切换底本');return;}
+   <span class="x" title="删除(再点确认)" onclick="bcDelBuilt(${jsAttr(b.key)},this)">✕</span></div>`).join(''):'<div class="muted">暂无，构建后在此列出</div>';bcSyncHeight();}
+async function bcIterate(key,name){   // 在已构建本体上继续构建：换上下文、示例与提示，不只是加一条细线
+ if(BC_BUSY){toast('构建进行中，请稍候再切换底本');return;}
  const epoch=BC.contextEpoch=(BC.contextEpoch||0)+1;BC.contextLoading=true;BC.contextError=false;$('#bc_send').disabled=true;
  BC.base=key;BC.baseName=name||key;bcIterSync();
- // 未开始对话时,把「新建本体」的欢迎页整体换成底本上下文卡——
- // 只在顶部加一条细线,用户在满屏「新建」文案里根本注意不到自己已切换到迭代模式。
+ // 未开始对话时，把「新建本体」的欢迎页整体换成底本上下文卡——
+ // 只在顶部加一条细线，用户在满屏「新建」文案里根本注意不到自己已切换到迭代模式。
  try{if(!BC.turns){BC.welcomed=true;await bcIterWelcome(key,name,epoch);}
  else{const d=await J('/api/build/history/'+encodeURIComponent(key)).catch(()=>null);
   if(epoch===BC.contextEpoch){if(!d||d.error){BC.contextError=true;toast('读取底本上下文失败，请重新选择本体');}
@@ -1936,12 +1892,12 @@ async function bcIterate(key,name){   // 在已构建本体上继续构建:换�
  if(epoch!==BC.contextEpoch)return;
  const box=$('#bc_q');
  if(box){
-  // 预填的是新建本体的诉求,迭代时会被原样发出去,等于用「重建一张图」的指令做增量。
+  // 预填的是新建本体的诉求，迭代时会被原样发出去，等于用「重建一张图」的指令做增量。
   if(box.value.trim() && box.value.trim()===(BC.def&&BC.def.build_query||'').trim())box.value='';
-  box.placeholder='描述本轮要补充的范围,例如「补上质量检测记录与产品、产线的关系」';
+  box.placeholder='描述本轮要补充的范围，例如「补上质量检测记录与产品、产线的关系」';
   box.focus();}
  bcHintSync();}finally{if(epoch===BC.contextEpoch){BC.contextLoading=false;$('#bc_send').disabled=BC_BUSY||BC.contextError;}}}
-async function bcIterWelcome(key,name,epoch=BC.contextEpoch){   // 底本上下文卡:规模、历次诉求、可点的增量示例
+async function bcIterWelcome(key,name,epoch=BC.contextEpoch){   // 底本上下文卡：规模、历次诉求、可点的增量示例
  const log=$('#bc_log');
  log.innerHTML='<div class="bc-welcome"><div class="muted">读取本体上下文…</div></div>';
  const d=await J('/api/build/history/'+encodeURIComponent(key)).catch(e=>({error:''+e}));
@@ -1951,7 +1907,7 @@ async function bcIterWelcome(key,name,epoch=BC.contextEpoch){   // 底本上下�
  const rounds=(d&&d.rounds)||[];
  const hist=rounds.length
   ? rounds.slice(-3).map(r=>`<div class="bc-eg" style="cursor:default"><b>第 ${r.round} 轮 ›</b> ${esc(r.request||'(无记录)')}</div>`).join('')
-  : '<div class="muted" style="font-size:11.5px">这张本体建于记录构建历程之前,没有逐轮记录;本轮起会开始记录。</div>';
+  : '<div class="muted" style="font-size:11.5px">这张本体建于记录构建历程之前，没有逐轮记录；本轮起会开始记录。</div>';
  const egs=['补上质量检测记录与产品、产线的关系',
             '补充设备与能耗域的对象和关系',
             '为已有对象补齐属加种差定义与反例'];
@@ -1960,13 +1916,13 @@ async function bcIterWelcome(key,name,epoch=BC.contextEpoch){   // 底本上下�
   <div style="font-size:15px;color:var(--txt);font-weight:600;margin-top:6px">在「${esc(name||key)}」上继续构建</div>
   <div style="margin-top:6px;font-size:12.5px">当前 <b>${d&&d.objects!=null?d.objects:'—'}</b> 个对象 · <b>${d&&d.relations!=null?d.relations:'—'}</b> 条关系${rounds.length?` · 已构建 <b>${rounds.length}</b> 轮`:''}。<br>
    继承构建参照:<b>${esc(window.bcRefsText?bcRefsText(d.references):'—')}</b>（可在左侧覆盖）。<br>
-   本轮结果<b>并入这张本体</b>:新增对象与关系、按更强证据升级状态;已确立的「已验证」「人工断言」与人审结论不被覆盖,也不会删除既有内容。</div>
+   本轮结果<b>并入这张本体</b>:新增对象与关系、按更强证据升级状态；已确立的「已验证」「人工断言」与人审结论不被覆盖，也不会删除既有内容。</div>
   ${rounds.length?'<div style="margin-top:10px;font-size:11.5px;color:var(--sub);text-align:left">历次建模诉求</div>':''}
   <div class="bc-egs">${hist}</div>
   <div style="margin-top:10px;font-size:11.5px;color:var(--sub);text-align:left">本轮可以这样提</div>
   <div class="bc-egs">`+egs.map(q=>`<div class="bc-eg" onclick="bcPick(${jsAttr(q)},'')"><b>示例 ›</b> ${esc(q)}</div>`).join('')+`</div></div>`;
  a11yScan();}
-async function bcIterHist(){   // 展开/收起该本体的构建历程(存在产物里,换浏览器也还在)
+async function bcIterHist(){   // 展开/收起该本体的构建历程(存在产物里，换浏览器也还在)
  const box=$('#bc_iter_hist'),ar=$('#bc_iter_ar');
  if(box.style.display!=='none'){box.style.display='none';ar.textContent='▾';return;}
  box.style.display='block';ar.textContent='▴';box.innerHTML='<span class="muted">读取中…</span>';
@@ -1983,9 +1939,9 @@ async function bcIterHist(){   // 展开/收起该本体的构建历程(存在�
     +(r.documents?` · 文档 ${r.documents} 份`:'')+(r.skills&&r.skills.length?` · 技能 ${esc(r.skills.join('、'))}`:'')
     +(r.references&&window.bcRefsText?` · 参照 ${esc(bcRefsText(r.references))}`:'')
     +(r.cq_count?` · 验收问题 ${r.cq_count} 条`:'')+esc(mg)+`</div></div>`;}).join('')
-  :'<span class="muted">这张本体建于加入构建历程记录之前,没有留下逐轮记录。本轮起会开始记录。</span>')
+  :'<span class="muted">这张本体建于加入构建历程记录之前，没有留下逐轮记录。本轮起会开始记录。</span>')
   +`<div class="muted" style="font-size:11px;margin-top:4px">当前 ${d.objects} 对象 / ${d.relations} 关系</div>`;}
-function bcIterClear(){if(BC_BUSY){toast('构建进行中,请稍候再切换底本');return;}
+function bcIterClear(){if(BC_BUSY){toast('构建进行中，请稍候再切换底本');return;}
  BC.contextEpoch=(BC.contextEpoch||0)+1;BC.contextLoading=false;BC.contextError=false;$('#bc_send').disabled=false;
  BC.base='';BC.baseName='';bcIterSync();
  const hb=$('#bc_iter_hist');if(hb){hb.style.display='none';hb.innerHTML='';}
@@ -1996,10 +1952,10 @@ function bcHintSync(){   // 底部「产出去向」与构建按钮文案随模�
  const dest=$('#bc_cur_dest'), btn=$('#bc_send');
  if(dest)dest.innerHTML=BC.base
    ? '产出:<b style="color:var(--acc)">并入「'+esc(BC.baseName)+'」</b>'
-   : '产出:新建本体';
+   : '产出：新建本体';
  if(btn&&!BC_BUSY)btn.textContent=BC.base?'继续构建 ▸':'构建 ▸';}
 function bcIterSync(){const bar=$('#bc_iter_bar');if(!bar)return;
- // 迭代目标只对「本体名称」输入框有约束:迭代时名称由底本决定,填了也不会生效,故禁用避免误解
+ // 迭代目标只对「本体名称」输入框有约束：迭代时名称由底本决定，填了也不会生效，故禁用避免误解
  const nm=$('#bc_name');
  if(BC.base){bar.style.display='flex';$('#bc_iter_nm').textContent=BC.baseName;
   if(nm){nm.disabled=true;nm.dataset.ph=nm.dataset.ph||nm.placeholder;
@@ -2014,7 +1970,7 @@ async function bcDistill(key,el){el.textContent='沉淀中…';   // 从已构�
  const d=await J('/api/build/skill/from_graph',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({graph:key})}).catch(e=>({error:''+e}));
  el.textContent='沉淀为技能';
  if(d.error){toast(d.error,false);return;}
- toast('已沉淀技能「'+d.name+'」(动词表 '+Object.keys(d.verbs||{}).length+' 项),技能区可编辑/编排',true);bcSkills();}
+ toast('已沉淀技能「'+d.name+'」(动词表 '+Object.keys(d.verbs||{}).length+' 项)，技能区可编辑/编排',true);bcSkills();}
 let BC_DEL_ARM={};
 async function bcDelBuilt(key,el){if(BC_BUSY&&BC.base===key){toast('该本体正在构建，请完成后再删除');return;}
  if(BC_DEL_ARM[key]==='pending')return;
@@ -2023,31 +1979,31 @@ async function bcDelBuilt(key,el){if(BC_BUSY&&BC.base===key){toast('该本体正
  BC_DEL_ARM[key]='pending';
  const d=await J('/api/build/delete',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key})});delete BC_DEL_ARM[key];
  if(!d||d.error){toast(d&&d.error||'删除失败',false);return;}
- if(BC.base===key)bcIterClear();          // 底本被删就解除选定,不留一个指向已不存在图谱的目标
+ if(BC.base===key)bcIterClear();          // 底本被删就解除选定，不留一个指向已不存在图谱的目标
  loaded.graph=0;bcBuilt();}
 function bcWelcome(){if(BC.welcomed)return;BC.welcomed=true;
  const egs=[['从售后与生产数据构建一张贯通「订单-产品-工单-客户」的制造运营本体','uploads'],
-  ['基于 示例主库自动识别核心对象、事件与关系,建一张企业数据本体','demo'],
-  ['分析上传的表格与文档,抽取实体并推断主外键关系,给出候选语义待确认','uploads']];
+  ['基于示例主库自动识别核心对象、事件与关系，建一张企业数据本体','demo'],
+  ['分析上传的表格与文档，抽取实体并推断主外键关系，给出候选语义待确认','uploads']];
  $('#bc_log').innerHTML=`<div class="bc-welcome">
   <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="var(--acc)" stroke-width="1.4" style="margin:0 auto;display:block"><circle cx="6" cy="17.5" r="2.3"/><circle cx="18" cy="17.5" r="2.3"/><circle cx="12" cy="5.5" r="2.3"/><line x1="11" y1="7.5" x2="7" y2="15.4"/><line x1="13" y1="7.5" x2="17" y2="15.4"/><line x1="8.3" y1="17.5" x2="15.7" y2="17.5"/></svg>
   <div style="font-size:15px;color:var(--txt);font-weight:600;margin-top:6px">数据库与文档辅助的本体半自动构建</div>
   <div style="margin-top:6px;font-size:12.5px">左侧选择数据源、行业参照/本体标准、辅助资料与技能，右侧描述建模范围。<br>系统依据可解析内容和所选参照提出对象与关系，再用声明约束、取值重叠、父键唯一性、标准对齐与未满足项规则验收；未解析文件只登记来源，不作为已读取证据。</div>
   <div class="bc-egs">`+egs.map(e=>`<div class="bc-eg" onclick="bcPick(${jsAttr(e[0])},${jsAttr(e[1])})"><b>示例 ›</b> ${esc(e[0])}</div>`).join('')+`</div></div>`;a11yScan();}
 function bcPick(q,src){if(src){const s=(BC._sources||[]).find(x=>x.id===src);
-  if(s&&s.ready)bcSelectSrc(src);                       // 仅切到就绪源;空的上传库不切,提示先上传
-  else if(src==='uploads')toast('上传数据库暂无数据,示例保留当前数据源;如需按上传数据构建请先在左侧上传');}
+  if(s&&s.ready)bcSelectSrc(src);                       // 仅切到就绪源；空的上传库不切，提示先上传
+  else if(src==='uploads')toast('上传数据库暂无数据，示例保留当前数据源；如需按上传数据构建请先在左侧上传');}
  $('#bc_q').value=q;$('#bc_q').focus();}
 async function bcSources(){const d=await J('/api/build/sources').catch(()=>({sources:[],assets:[]}));
  if(!d||d.error||!Array.isArray(d.sources)){$('#bc_sources').innerHTML='<div class="muted" role="alert">'+esc(d&&d.error||'数据源加载失败')+'</div><button class="ghost" onclick="bcSources()">重新加载</button>';return;}
  BC._sources=d.sources||[];
- // 若当前选中源不可用(如空的上传库),自动切到首个就绪源,避免构建时报"无可读表"
+ // 若当前选中源不可用(如空的上传库)，自动切到首个就绪源，避免构建时报"无可读表"
  if(!(d.sources||[]).some(s=>s.id===BC.src&&s.ready)){const rdy=(d.sources||[]).find(s=>s.ready);if(rdy){BC.src=rdy.id;BC.srcName=rdy.name;}}
  $('#bc_src_n').textContent='('+(d.sources||[]).length+')';
  $('#bc_sources').innerHTML=(d.sources||[]).map(s=>{
   const on=s.id===BC.src?' on':'';const dot=s.ready?'ok':(s.builtin?'':'off');
   const del=s.builtin?'':`<span class="x" title="移除" onclick="event.stopPropagation();bcDelConn(${jsAttr(s.id)})">✕</span>`;
-  // meta 一律是已转义的 HTML:只有抽样入口是固定标记,数据源自身的字段都经 esc
+  // meta 一律是已转义的 HTML：只有抽样入口是固定标记，数据源自身的字段都经 esc
   const meta=s.kind==='sqlite'?esc(`${s.tables} 张表 · ${s.ready?'就绪':(s.builtin?'空':'不可读')}${s.sampled_at?' · 只读抽样于 '+s.sampled_at:''}`)
    :s.kind==='api'?esc(`API 数据源 · ${s.ready?'已取数':'未取数'}`)
    :(window.bcSampleable&&bcSampleable(s))?`外部库 · 已登记 · <a href="#" onclick="event.stopPropagation();event.preventDefault();bcSampleDlg(${jsAttr(s.id)})">只读抽样</a>后可构建`
@@ -2056,7 +2012,7 @@ async function bcSources(){const d=await J('/api/build/sources').catch(()=>({sou
    <div style="flex:1;min-width:0"><div class="nm">${esc(s.name)}</div><div class="mt">${meta}</div></div>${del}</div>`;}).join('');
  // 辅助资料；未解析格式只登记来源。
  const as=d.assets||[];$('#bc_asset_n').textContent='('+as.length+')';
- $('#bc_assets').innerHTML=as.length?as.map(a=>`<span class="bc-chip bc-mod-${esc(a.modality)}" title="${a.usable?'构建时整份读入、分块检索,按本轮的表与诉求选取片段':'未解析格式：仅登记来源，不作为已读取证据'}"><b>${esc(a.modality)}</b>${esc(a.name)} <span class="muted">${a.kb}KB</span><span class="use">${a.usable?'· 证据':'· 仅登记'}</span><span class="x" title="删除该资料" onclick="bcDelAsset(${jsAttr(a.name)})">✕</span></span>`).join(''):'<span class="muted">尚无上传</span>';
+ $('#bc_assets').innerHTML=as.length?as.map(a=>`<span class="bc-chip bc-mod-${esc(a.modality)}" title="${a.usable?'构建时整份读入、分块检索，按本轮的表与诉求选取片段':'未解析格式：仅登记来源，不作为已读取证据'}"><b>${esc(a.modality)}</b>${esc(a.name)} <span class="muted">${a.kb}KB</span><span class="use">${a.usable?'· 证据':'· 仅登记'}</span><span class="x" title="删除该资料" onclick="bcDelAsset(${jsAttr(a.name)})">✕</span></span>`).join(''):'<span class="muted">尚无上传</span>';
  const cur=(d.sources||[]).find(s=>s.id===BC.src);if(cur){BC.srcName=cur.name;$('#bc_cur_src').textContent=cur.name;}a11yScan();bcSyncHeight();}
 function bcSelectSrc(id){BC.src=id;const s=(BC._sources||[]).find(x=>x.id===id);BC.srcName=s?s.name:id;
  $('#bc_cur_src').textContent=BC.srcName;
@@ -2068,11 +2024,11 @@ async function bcSkills(){const ss=await J('/api/build/skills').catch(()=>[]);
  $('#bc_sk_n').textContent='('+vis.length+')';
  $('#bc_skills').innerHTML=vis.map(s=>{const on=BC.skills.has(s.name)?' on':'';
   const tg=(s.builtin?'<span class="tag ok tg">内置</span>':'<span class="tag tg" style="background:#F0EBFB;color:#7c50e6">自有</span>')
-   +(s.overridden?'<span class="tag tg" style="background:#FFF4E5;color:#a5680a" title="已按你的改写生效,可在编辑页恢复默认">已改写</span>':'');
+   +(s.overridden?'<span class="tag tg" style="background:#FFF4E5;color:#a5680a" title="已按你的改写生效，可在编辑页恢复默认">已改写</span>':'');
   return `<label class="bc-skcard${on}"><input type="checkbox" ${BC.skills.has(s.name)?'checked':''} onchange="bcToggleSk(${jsAttr(s.name)},this.checked)">
-   <div style="flex:1;min-width:0"><div class="nm">${esc(s.name)} ${tg}</div><div class="ds">${esc(s.desc||'')}</div></div>
+   <div style="flex:1;min-width:0"><div class="nm">${esc(s.name)} ${tg}</div><div class="ds" title="${esc(s.desc||'')}">${esc(s.desc||'')}</div></div>
    <a href="#" style="font-size:11px;white-space:nowrap;align-self:center" onclick="event.preventDefault();event.stopPropagation();skView(${jsAttr(s.name)})">查看/编辑</a></label>`;}).join('')||'<div class="muted">无技能</div>';
- // 已隐藏的内置技能收在末尾一行:不占卡片位,但「恢复默认」始终点得到
+ // 已隐藏的内置技能收在末尾一行：不占卡片位，但「恢复默认」始终点得到
  $('#bc_skills').innerHTML+=hid.length?('<div class="muted" style="font-size:11px;margin-top:6px">已隐藏 '+hid.length+' 个内置技能:'
   +hid.map(s=>`<a href="#" style="font-size:11px;margin-left:6px" onclick="event.preventDefault();skRestoreByName(${jsAttr(s.name)})">${esc(s.name)} 恢复</a>`).join('、')+'</div>'):'';
  bcSyncHeight();}
@@ -2082,17 +2038,17 @@ async function skRestoreByName(name){const d=await J('/api/build/skill/restore',
  toast('已恢复内置技能「'+name+'」',true);bcSkills();}
 function bcToggleSk(n,on){on?BC.skills.add(n):BC.skills.delete(n);$('#bc_cur_sk').textContent=BC.skills.size;
  document.querySelectorAll('#bc_skills .bc-skcard').forEach(c=>{const cb=c.querySelector('input');c.classList.toggle('on',cb.checked);});}
-// ── 技能管理(DR-021):查看/新建/编辑/复制副本/删除;自定义正文注入构建建模规则 ──
+// ── 技能管理(DR-021)：查看/新建/编辑/复制副本/删除；自定义正文注入构建建模规则 ──
 let SKM=null,SKM_DEL_ARM=false;
 async function skView(name){const d=await J('/api/build/skill/'+encodeURIComponent(name)).catch(e=>({error:''+e}));
  if(d.error){toast(d.error,false);return;}
  SKM={mode:'edit',orig:name,builtin:!!d.builtin};SKM_DEL_ARM=false;
  $('#skm_title').textContent=(d.builtin?'编辑内置技能:':'编辑自定义技能:')+name;
  $('#skm_sub').textContent=d.builtin
-  ?(d.overridden?'当前生效的是你的改写版。改动保存在工作目录,出厂正文原样保留,可随时「恢复默认」。'
-                :'内置技能同样可改:保存后写成你的改写版,出厂正文不动,可随时「恢复默认」。删除记为隐藏,亦可恢复。')
-  :'保存后立即生效:下一次本体构建即按新内容编排(无需重启)。';
- $('#skm_name').value=name;$('#skm_name').disabled=true;   // 改名即另建技能,请用「复制为自定义副本」
+  ?(d.overridden?'当前生效的是你的改写版。改动保存在工作目录，出厂正文原样保留，可随时「恢复默认」。'
+                :'内置技能同样可改：保存后写成你的改写版，出厂正文不动，可随时「恢复默认」。删除记为隐藏，亦可恢复。')
+  :'保存后立即生效：下一次本体构建即按新内容编排(无需重启)。';
+ $('#skm_name').value=name;$('#skm_name').disabled=true;   // 改名即另建技能，请用「复制为自定义副本」
  $('#skm_files').textContent=(d.files||[]).length?('目录:'+d.files.join(' / ')):'';
  $('#skm_content').value=d.content||'';$('#skm_content').readOnly=false;
  $('#skm_msg').textContent='';
@@ -2110,7 +2066,7 @@ async function skRestore(){if(!SKM||!SKM.builtin)return;
  toast('已恢复「'+SKM.orig+'」的出厂正文',true);$('#sk_modal').style.display='none';bcSkills();}
 function skNew(){SKM={mode:'create'};SKM_DEL_ARM=false;
  $('#skm_title').textContent='新建技能';
- $('#skm_sub').textContent='正文会注入构建建模规则(建模目标之后、库表结构之前),写清楚建模规范与关注点即可。';
+ $('#skm_sub').textContent='正文会注入构建建模规则(建模目标之后、库表结构之前)，写清楚建模规范与关注点即可。';
  $('#skm_name').value='';$('#skm_name').disabled=false;$('#skm_files').textContent='';
  $('#skm_content').readOnly=false;
  $('#skm_content').value='---\ndescription: 一句话描述这个技能做什么\n---\n\n## 建模规则\n\n1. 优先识别……\n2. 关系动词使用……\n3. 严禁……\n';
@@ -2119,7 +2075,7 @@ function skNew(){SKM={mode:'create'};SKM_DEL_ARM=false;
  $('#sk_modal').style.display='flex';}
 function skCopy(){SKM={mode:'create'};
  $('#skm_title').textContent='复制为自定义副本';
- $('#skm_sub').textContent='改个名字保存,即可在副本上自由修改;副本正文会注入构建建模规则。';
+ $('#skm_sub').textContent='改个名字保存，即可在副本上自由修改；副本正文会注入构建建模规则。';
  $('#skm_name').value=$('#skm_name').value+'-custom';$('#skm_name').disabled=false;
  $('#skm_content').readOnly=false;
  $('#skm_copy').style.display='none';$('#skm_save').style.display='inline-block';}
@@ -2135,12 +2091,12 @@ async function skDel(){const name=SKM&&SKM.orig;if(!name)return;
  if(d.error){toast(d.error,false);return;}
  BC.skills.delete(name);$('#bc_cur_sk').textContent=BC.skills.size;
  $('#sk_modal').style.display='none';
- toast(d.restorable?('已隐藏内置技能「'+name+'」;出厂正文仍在,可在技能区末尾一键恢复')
+ toast(d.restorable?('已隐藏内置技能「'+name+'」；出厂正文仍在，可在技能区末尾一键恢复')
                    :('已删除技能:'+name),true);
  bcSkills();}
-// ── 技能对比实验(DR-022 #1):两组技能 × 同一目标,真实构建对比 ──
+// ── 技能对比实验(DR-022 #1)：两组技能 × 同一目标，真实构建对比 ──
 let SKC_TIMER=null;
-async function skcOpen(){$('#skc_q').value=(BC.def&&BC.def.build_query)||'从 示例主库自动识别核心对象、事件与关系,构建一张可审计的制造企业本体';
+async function skcOpen(){$('#skc_q').value=(BC.def&&BC.def.build_query)||'从示例主库自动识别核心对象、事件与关系，构建一张可审计的制造企业本体';
  const sel=[...BC.skills];
  $('#skc_a').value='ontology-semi-auto';
  $('#skc_b').value=sel.length?sel.join(','):'ontology-agentic';
@@ -2151,7 +2107,7 @@ async function skcRun(){const parse=v=>v.split(/[,,]/).map(x=>x.trim()).filter(B
  const d=await J('/api/build/skill_compare',{method:'POST',headers:{'Content-Type':'application/json'},
   body:JSON.stringify({query:$('#skc_q').value.trim(),skills_a:parse($('#skc_a').value),skills_b:parse($('#skc_b').value)})}).catch(e=>({error:''+e}));
  if(d.error){$('#skc_msg').textContent=d.error;return;}
- toast('对比实验已启动(后台构建两组,约 4-10 分钟)',true);skcPoll();}
+ toast('对比实验已启动(后台构建两组，约 4-10 分钟)',true);skcPoll();}
 async function skcPoll(){if(SKC_TIMER)clearTimeout(SKC_TIMER);
  if($('#skc_modal').style.display==='none')return;
  const st=await J('/api/build/skill_compare/status').catch(()=>({}));
@@ -2188,7 +2144,7 @@ function bcConnectDlg(){$('#bcc_msg').textContent='';const d=BC.def||{};
  $('#bc_conn_modal').style.display='flex';}
 function bccKind(){const k=$('#bcc_kind').value;$('#bcc_path').style.display=k==='sqlite'?'block':'none';
  $('#bcc_dsn').style.display=k==='sqlite'?'none':'block';$('#bcc_cred').style.display=k==='sqlite'?'none':'flex';
- $('#bcc_hint').textContent=k==='sqlite'?'SQLite 文件将实时校验可读表并作为构建数据源。':'外部库登记后,MySQL/Doris 可「只读抽样」到本地再构建(只读会话,不写源库);凭据加密保存、不回显。';}
+ $('#bcc_hint').textContent=k==='sqlite'?'SQLite 文件将实时校验可读表并作为构建数据源。':'外部库登记后，MySQL/Doris 可「只读抽样」到本地再构建(只读会话，不写源库)；凭据加密保存、不回显。';}
 async function bcConnect(){const kind=$('#bcc_kind').value;
  const body={kind,name:$('#bcc_name').value,path:$('#bcc_path').value,dsn:$('#bcc_dsn').value};
  if(kind!=='sqlite'){body.user=$('#bcc_user').value;body.password=$('#bcc_pwd').value;}
@@ -2207,7 +2163,7 @@ async function bcDelAsset(name){
  toast('已删除：'+name+(d.dropped_table?('（含上传表 '+d.dropped_table+'）'):''),true);bcSources();}
 async function bcView(key){loaded.graph=1;document.querySelector('[data-p=graph]').click();await graphs(key);}
 // 构建结果卡渲染(live 与历史回放共用)
-const QR={pass:'通过',review:'待复核',fail:'不通过',legacy:'旧版无记录'};   // 验收结果的中文名,集中定义
+const QR={pass:'通过',review:'待复核',fail:'不通过',legacy:'旧版无记录'};   // 验收结果的中文名，集中定义
 function qrText(v){return QR[v]||v||'—';}
 let BC_VIZ_SEQ=0;
 function bcResultHTML(done,viewId='bcpreview_'+(++BC_VIZ_SEQ)){const s=done.stats||{};const e=done.evidence||{};
@@ -2220,8 +2176,8 @@ function bcResultHTML(done,viewId='bcpreview_'+(++BC_VIZ_SEQ)){const s=done.stat
  return `<div class="bc-result">
    <div class="hd"><span><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#22a058;margin-right:7px;vertical-align:middle"></span>${done.iterated?`已并入本体「${esc(done.name)}」${done.iterations?` · 第 ${esc(done.iterations)} 轮`:''}`:`本体「${esc(done.name)}」构建完成`}</span><span class="muted" style="font-size:11px">${esc(done.elapsed)}s</span></div>
    ${done.iterated&&done.merge?`<div style="margin:8px 14px 0;padding:7px 10px;border:1px solid #cfe0ff;background:#f2f7ff;border-radius:6px;font-size:11.5px;color:#24406e">
-    本轮并入:新增 <b>${esc(done.merge.objects_added||0)}</b> 个对象 · 新增 <b>${esc(done.merge.relations_added||0)}</b> 条关系 · 证据升级 <b>${esc(done.merge.relations_upgraded||0)}</b> 条 · 补全字段 <b>${esc(done.merge.objects_enriched||0)}</b> 处<br>
-    <span class="muted">保留原结论 ${esc(done.merge.relations_kept||0)} 条;已确立的「已验证」「人工断言」与人审结论未被覆盖,既有内容未删除。下方统计为合并后的整张本体。</span></div>`:''}
+    本轮并入：新增 <b>${esc(done.merge.objects_added||0)}</b> 个对象 · 新增 <b>${esc(done.merge.relations_added||0)}</b> 条关系 · 证据升级 <b>${esc(done.merge.relations_upgraded||0)}</b> 条 · 补全字段 <b>${esc(done.merge.objects_enriched||0)}</b> 处<br>
+    <span class="muted">保留原结论 ${esc(done.merge.relations_kept||0)} 条；已确立的「已验证」「人工断言」与人审结论未被覆盖，既有内容未删除。下方统计为合并后的整张本体。</span></div>`:''}
    <div style="padding:8px 14px 0;display:flex;gap:6px;flex-wrap:wrap">
     <span class="tag ${isllm?'':'warn'}" style="${isllm?'background:#F0EBFB;color:#7c50e6':''}">${esc(done.method||'大语言模型辅助提议')}</span>
     ${evtxt?`<span class="tag" style="background:#F4F6FB;color:#606a7b">证据 ${esc(evtxt)}</span>`:''}
@@ -2239,17 +2195,17 @@ function bcResultHTML(done,viewId='bcpreview_'+(++BC_VIZ_SEQ)){const s=done.stat
    <div class="bc-acts"><button onclick="bcView(${jsAttr(done.graph_key)})">在本体图谱中查看 ↗</button>
     <button class="ghost" onclick="goReview(${jsAttr(done.graph_key)})">进入人审 ↗</button></div></div>`;}
 function bcRenderResult(log,done){const viewId='bcpreview_'+(++BC_VIZ_SEQ);log.insertAdjacentHTML('beforeend',bcResultHTML(done,viewId));bcRenderViz(done.graph_key,viewId);}
-// ── 构建对话历史(localStorage,类比深度问数)──
+// ── 构建对话历史(localStorage，类比深度问数)──
 let BC_CONV=null;
 function bcAllConv(){try{const all=JSON.parse(localStorage.getItem('bc_convs')||'[]');return Array.isArray(all)?all.filter(c=>c&&typeof c.id==='string'&&Array.isArray(c.turns)&&c.turns.every(t=>t&&t.done&&typeof t.done.graph_key==='string')):[]}catch(e){return[]}}
 function bcSaveConv(){if(!BC_CONV||!BC_CONV.turns.length)return;let all=bcAllConv().filter(c=>c.id!==BC_CONV.id);all.unshift(BC_CONV);all=all.slice(0,20);
  try{localStorage.setItem('bc_convs',JSON.stringify(all))}catch(e){}}
 function bcHistToggle(){const p=$('#bc_hist_pop');const show=p.style.display==='none';p.style.display=show?'block':'none';if(show)bcRenderHist();}
 function bcRenderHist(){const all=bcAllConv();
- $('#bc_hist_pop').innerHTML=all.length?all.map(c=>`<div class="it ${BC_CONV&&c.id===BC_CONV.id?'on':''}" onclick="bcOpen(${esc(JSON.stringify(c.id))})"><span class="t">${esc(c.title||'(空)')}</span><span class="muted" style="font-size:10px">${(c.turns||[]).length}次</span><span class="del" title="删除" onclick="event.stopPropagation();bcDelConv(${esc(JSON.stringify(c.id))})">✕</span></div>`).join(''):'<div class="muted" style="padding:8px 6px">暂无历史对话</div>';}
+ $('#bc_hist_pop').innerHTML=all.length?all.map(c=>`<div class="it ${BC_CONV&&c.id===BC_CONV.id?'on':''}" onclick="bcOpen(${esc(JSON.stringify(c.id))})"><span class="t">${esc(c.title||'(空)')}</span><span class="muted" style="font-size:11px">${(c.turns||[]).length}次</span><span class="del" title="删除" onclick="event.stopPropagation();bcDelConv(${esc(JSON.stringify(c.id))})">✕</span></div>`).join(''):'<div class="muted" style="padding:8px 6px">暂无历史对话</div>';}
 function bcDelConv(id){if(BC_BUSY){toast('构建进行中，请稍候再删除历史');return;}let all=bcAllConv().filter(c=>c.id!==id);try{localStorage.setItem('bc_convs',JSON.stringify(all))}catch(e){}
  if(BC_CONV&&BC_CONV.id===id){BC_CONV=null;bcNew();}bcRenderHist();}
-function bcOpen(id){if(BC_BUSY){toast('构建进行中,请稍候');return;}const c=bcAllConv().find(x=>x.id===id);if(!c)return;
+function bcOpen(id){if(BC_BUSY){toast('构建进行中，请稍候');return;}const c=bcAllConv().find(x=>x.id===id);if(!c)return;
  bcSaveConv();                                               // 先存当前
  bcIterClear();                                              // 历史回放不沿用另一对话的合并目标
  (BC._viz||[]).forEach(gr=>{try{gr.destroy();}catch(_){}});BC._viz=[];
@@ -2306,7 +2262,7 @@ async function cnCreate(){const k=$('#cn_kind').value;
  if(d.error){$('#cn_msg').textContent=d.error;return}
  $('#cn_modal').style.display='none';['cn_name','cn_path','cn_host','cn_port','cn_db','cn_user','cn_pass','cn_dsn','cn_url','cn_jpath'].forEach(i=>{if($('#'+i))$('#'+i).value='';});
  toast('已保存连接:'+d.conn.name);cnLoad();}
-async function cnApiFetch(id,btn){if(btn)btn.textContent='取数中…';   // C8 API 源:拉取物化 up.api_*
+async function cnApiFetch(id,btn){if(btn)btn.textContent='取数中…';   // C8 API 源：拉取物化 up.api_*
  const d=await J('/api/conn/api_fetch',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id})}).catch(e=>({error:''+e}));
  if(btn)btn.textContent='取数';
  if(d.error){toast(d.error,false);return}
@@ -2338,12 +2294,12 @@ async function vzRun(){const sql=$('#vz_sql').value.trim();if(!sql){toast('请�
  const d=await J('/api/viz/run',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({src:$('#vz_src').value,sql})}).catch(e=>({error:''+e}));
  if(d.error){$('#vz_info').textContent='';$('#vz_prev').innerHTML=`<div class="tag warn" style="margin:12px">${esc(d.error)}</div>`;VZ_DATA=null;return}
  VZ_DATA=d;$('#vz_info').textContent=`${d.rows.length} 行 × ${d.columns.length} 列`;
- // 自动映射:第一列为 X,其余数值列为 Y(X 若本身是数值列则从 Y 中排除,避免自己画自己)
+ // 自动映射：第一列为 X，其余数值列为 Y(X 若本身是数值列则从 Y 中排除，避免自己画自己)
  const cols=d.columns||[];const x0=cols[0]||'';
  const numCols=cols.filter(c=>d.rows.some(r=>r[c]!==''&&r[c]!=null&&!isNaN(r[c])));
  $('#vz_x').innerHTML=cols.map(c=>`<option value="${esc(c)}">${esc(c)}</option>`).join('');
  $('#vz_x').value=x0;
- let yc=numCols.filter(c=>c!==x0);if(!yc.length)yc=(numCols.length?numCols:cols.slice(1));  // 单列时回退,保证 KPI 可用
+ let yc=numCols.filter(c=>c!==x0);if(!yc.length)yc=(numCols.length?numCols:cols.slice(1));  // 单列时回退，保证 KPI 可用
  $('#vz_y').innerHTML=cols.map(c=>`<option value="${esc(c)}" ${yc.includes(c)?'selected':''}>${esc(c)}</option>`).join('');
  vzRender();}
 function vzSel(id){return [...$('#'+id).selectedOptions].map(o=>o.value);}
@@ -2365,13 +2321,13 @@ function vzAdd(){if(!VZ_DATA){toast('请先运行取数');return}
  VZ_BOARD.push(spec);$('#vz_title').value='';vzGridRender();toast('已添加到看板');}
 let VZ_BOARD=[],VZ_GEN=0;
 function vzGridRender(){const g=$('#vz_grid');$('#vz_board_n').textContent='('+VZ_BOARD.length+' 图)';
- g.querySelectorAll('.vc').forEach(el=>{const i=echarts.getInstanceByDom(el);if(i)i.dispose();});  // 释放旧实例,防重渲染泄漏
+ g.querySelectorAll('.vc').forEach(el=>{const i=echarts.getInstanceByDom(el);if(i)i.dispose();});  // 释放旧实例，防重渲染泄漏
  const gen=++VZ_GEN;
- if(!VZ_BOARD.length){g.innerHTML='<div class="muted" style="padding:20px;text-align:center;grid-column:1/-1">运行取数后点「添加到看板」,可拼装多图看板并保存</div>';return}
+ if(!VZ_BOARD.length){g.innerHTML='<div class="muted" style="padding:20px;text-align:center;grid-column:1/-1">运行取数后点「添加到看板」，可拼装多图看板并保存</div>';return}
  g.innerHTML=VZ_BOARD.map((c,i)=>`<div class="vz-card"><div class="hd"><span>${esc(c.title)}</span><span class="x" title="移除" onclick="VZ_BOARD.splice(${i},1);vzGridRender()">✕</span></div><div class="vc" id="vzc_${i}"><div class="muted" style="padding:20px;text-align:center">加载中…</div></div></div>`).join('');
  VZ_BOARD.forEach((c,i)=>vzCardRender(c,i,gen));}
 async function vzCardRender(c,i,gen){const d=await J('/api/viz/run',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({src:c.src,sql:c.sql})}).catch(e=>({error:''+e}));
- if(gen!==VZ_GEN)return;                     // 该渲染已被更新的取代,丢弃陈旧结果(防串卡)
+ if(gen!==VZ_GEN)return;                     // 该渲染已被更新的取代，丢弃陈旧结果(防串卡)
  const el=$('#vzc_'+i);if(!el)return;
  if(d.error){el.innerHTML=`<div class="tag warn" style="margin:8px">${esc(d.error)}</div>`;return}
  if(c.type==='table'){el.innerHTML=`<div class="scroll" style="max-height:210px"><table><tr>`+(d.columns||[]).map(x=>`<th>${esc(x)}</th>`).join('')+'</tr>'+(d.rows||[]).map(r=>'<tr>'+(d.columns||[]).map(x=>`<td>${cell(r[x])}</td>`).join('')+'</tr>').join('')+'</table></div>';return;}
@@ -2384,7 +2340,7 @@ let VZ_BOARDS=[];
 function vzLoadBoard(){const id=$('#vz_board_sel').value;if(!id){VZ_BOARD=[];$('#vz_board_name').value='';vzGridRender();return}
  const b=VZ_BOARDS.find(x=>x.id===id);if(!b)return;VZ_BOARD=JSON.parse(JSON.stringify(b.charts||[]));$('#vz_board_name').value=b.name;VZ_CURBOARD=id;vzGridRender();}
 let VZ_CURBOARD='';
-async function vzSaveBoard(){if(!VZ_BOARD.length){toast('看板为空,先添加图表');return}
+async function vzSaveBoard(){if(!VZ_BOARD.length){toast('看板为空，先添加图表');return}
  const name=$('#vz_board_name').value.trim();if(!name){toast('请输入看板名称');return}
  const id=$('#vz_board_sel').value||undefined;
  const d=await J('/api/viz/save',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id,name,charts:VZ_BOARD})}).catch(e=>({error:''+e}));
@@ -2444,7 +2400,7 @@ async function clawAsk(){const q=$('#claw_q').value.trim();if(!q)return;$('#claw
  $('#claw_btn').disabled=false;log.scrollTop=1e9;}
 async function clawApply(opStr){const op=JSON.parse(opStr);
  const d=await J('/api/ont/apply',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({graph:clawGraph(),op,source:'chat',reviewer:($('#claw_who')&&$('#claw_who').value||'').trim()})});
- toast(d.error||'已执行,可撤销');clawEdits();clawAudit();}
+ toast(d.error||'已执行，可撤销');clawEdits();clawAudit();}
 async function clawDel(){if(!CLAW_ID)return;await J('/api/ont/chats/delete',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:CLAW_ID})});CLAW_ID=null;document.querySelector('#claw_log').innerHTML='';}
 async function clawUndo(){const d=await J('/api/ont/undo',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({graph:clawGraph()})});
  toast(d.error||'已撤销');clawEdits();clawAudit();}
@@ -2478,22 +2434,22 @@ async function sparqlRun(){$('#sq_info').textContent='查询中…';
  $('#sq_info').textContent=`${d.type||''} · ${d.total??(d.rows||[]).length} 行`;
  const rows=d.rows||[];const cols=d.vars||(rows[0]?Object.keys(rows[0]):[]);
  $('#sq_out').innerHTML='<table><tr>'+cols.map(c=>`<th>${esc(c)}</th>`).join('')+'</tr>'+rows.map(r=>'<tr>'+cols.map(c=>`<td>${esc(r[c])}</td>`).join('')+'</tr>').join('')+'</table>';}
-// 初始寻址:带 hash 直达对应子页,否则默认首页
+// 初始寻址：带 hash 直达对应子页，否则默认首页
 if(location.hash.slice(1))routeHash();else{home();loaded.home=1;}
-// hash 路由:每个子页可经 #<page> 寻址;另支持 #graph=<key> / #obj=<key>:<id> 深链
+// hash 路由：每个子页可经 #<page> 寻址；另支持 #graph=<key> / #obj=<key>:<id> 深链
 function routeHash(){const h=location.hash.slice(1);
  const mg=h.match(/^graph=(.+)$/);if(mg){loaded.graph=1;goPage('graph');graphs(mg[1]);return;}
- const mo=h.match(/^obj=([^:]+):(.+)$/);if(mo){loaded.graph=1;goPage('graph');graphs(mo[1]);return;}   // 仅定位到图谱;对象级高亮随 studio 页一并移除
- if(h){if(!goPage(h)){goPage('home');history.replaceState(null,'','#home');}}else goPage('home');}  // 未知 hash 回首页并纠正 URL,避免地址与页面不一致
+ const mo=h.match(/^obj=([^:]+):(.+)$/);if(mo){loaded.graph=1;goPage('graph');graphs(mo[1]);return;}   // 仅定位到图谱；对象级高亮随 studio 页一并移除
+ if(h){if(!goPage(h)){goPage('home');history.replaceState(null,'','#home');}}else goPage('home');}  // 未知 hash 回首页并纠正 URL，避免地址与页面不一致
 addEventListener('hashchange',routeHash);
-// 可访问性:让 onclick 的 div/span 可 Tab 聚焦 + Enter/Space 触发(键盘可操作)
+// 可访问性：让 onclick 的 div/span 可 Tab 聚焦 + Enter/Space 触发(键盘可操作)
 const A11Y_SEL='.nav,.dq-mode,.eg,.pill,.dq-sel,.nav-group .gh,.dq-collapse,.dq-hist .it,.ds-card,.sk-card,.dq-react span,.dq-tab .c,.bc-eg[onclick],.bc-srow[onclick],.bc-hist-pop .it,.bc-hist-pop .del,.bc-srow .x,.bc-srow .nm[onclick],.bc-chip .x,.cn-row';
 function a11yScan(){document.querySelectorAll(A11Y_SEL).forEach(el=>{if(!el.hasAttribute('tabindex')){el.tabIndex=0;if(!el.hasAttribute('role'))el.setAttribute('role','button');}if(el.getAttribute('title')&&!el.hasAttribute('aria-label'))el.setAttribute('aria-label',el.getAttribute('title'));});}
 a11yScan();
 addEventListener('keydown',e=>{if((e.key==='Enter'||e.key===' ')&&e.target.matches&&e.target.matches(A11Y_SEL)){e.preventDefault();e.target.click();}});
-// 动态内容渲染后补扫(轻量:仅在导航/历史/弹窗容器变动时,避开高频的对话流)
+// 动态内容渲染后补扫(轻量：仅在导航/历史/弹窗容器变动时，避开高频的对话流)
 new MutationObserver(()=>a11yScan()).observe(document.querySelector('aside'),{childList:true,subtree:true});
 ['#dq_hist','#dq_ds_body','#dq_sk_body','#bc_hist_pop','#bc_built'].forEach(s=>{const el=document.querySelector(s);if(el)new MutationObserver(a11yScan).observe(el,{childList:true,subtree:true});});
-// 顶栏运行时药丸:显示当前引擎驱动(对齐平台"通用工作台"状态药丸)
+// 顶栏运行时药丸：显示当前引擎驱动(对齐平台"通用工作台"状态药丸)
 (async()=>{try{const rt=await J('/api/ont/runtimes');if(rt&&rt.current)$('#rt_pill').textContent='引擎 · '+engName(rt.current);}catch(e){}})();
 </script></body></html>
