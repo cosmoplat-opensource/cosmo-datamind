@@ -29,7 +29,7 @@
     },
     {
       "id": "MET-01",
-      "criterion": "新失败撤销旧机器状态，自动合并保留人工决定与原口径证据",
+      "criterion": "新失败撤销旧机器状态，自动合并保留人工决定与原计算规则的证据",
       "tests": [
         "tests/unit/test_metric_integrity.py::test_new_failed_adjudication_revokes_stale_verified_status",
         "tests/unit/test_metric_integrity.py::test_mining_cannot_overwrite_human_decision_or_attach_other_formula_evidence"
@@ -170,7 +170,7 @@
     },
     {
       "id": "VR-02",
-      "criterion": "按租户作用域成立的关系,问数 SQL 须同时按租户列关联,否则口径校验拦截",
+      "criterion": "按租户作用域成立的关系,问数 SQL 须同时按租户列关联,否则本体约束校验拦截",
       "tests": [
         "tests/unit/test_code_contracts.py::test_tenant_scoped_keys_must_be_joined_with_the_tenant_in_qa"
       ]
@@ -191,7 +191,7 @@
     },
     {
       "id": "OBS-01",
-      "criterion": "问数按运行记录追踪,口径拦截按原因计入指标,追踪中只留问句指纹不留原文",
+      "criterion": "问数按运行记录追踪,本体约束拦截按原因计入指标,追踪中只留问句指纹不留原文",
       "tests": [
         "tests/unit/test_observability.py::test_sensitive_attributes_are_fingerprinted"
       ]
@@ -228,7 +228,7 @@
     },
     {
       "id": "LIVE-01",
-      "criterion": "逻辑删除的「未删除」取值按复核观察结果记录;问数关联提示按实际取值生成条件,口径校验认可等价写法,含 NULL 时不丢行;早期证据按 = 0",
+      "criterion": "逻辑删除的「未删除」取值按复核观察结果记录;问数关联提示按实际取值生成条件,本体约束校验认可等价写法,含 NULL 时不丢行;早期证据按 = 0",
       "tests": [
         "tests/unit/test_live_rows.py::test_gate_accepts_equivalent_forms_for_char_flag",
         "tests/unit/test_live_rows.py::test_null_live_requires_keeping_nulls",
@@ -348,6 +348,15 @@
         "tests/unit/test_ui_nav.py::test_revisiting_graph_pages_refreshes_the_graph_lists",
         "tests/unit/test_ui_nav.py::test_graph_list_reload_is_last_call_wins",
         "tests/unit/test_ui_nav.py::test_hash_route_skips_the_page_the_nav_click_already_opened",
+        "tests/unit/test_ui_nav.py::test_every_backend_object_kind_has_a_chinese_label"
+      ]
+    },
+    {
+      "id": "LEGIBLE-01",
+      "criterion": "问数关系图按原尺寸显示、字号不小于 11 px,连线不穿过无关对象框;问数输入栏标签单行显示;后端对象种类在界面有中文名",
+      "tests": [
+        "tests/unit/test_qa_anchor_ui.py::test_relation_diagram_stays_readable_and_routes_around_boxes",
+        "tests/unit/test_ui_nav.py::test_qa_input_chips_stay_on_one_line",
         "tests/unit/test_ui_nav.py::test_every_backend_object_kind_has_a_chinese_label"
       ]
     }

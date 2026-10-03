@@ -31,7 +31,7 @@ def skip(name, why):
     """条件跳过:环境未提供可选依赖,不是代码缺陷。
 
     与 fail 分开计数,但必须逐条列出——「环境未配」不得让覆盖面悄悄缩水。
-    与 test_ui_ops.py 的 ⊘ 范式一致。
+    与 test_ui_ops.py 的 ⊘ 标记方式一致。
     """
     skips.append(f"{name} :: {why}")
     print(f"  ⊘ {name} :: {why}(环境未提供,跳过)")
@@ -621,7 +621,7 @@ if _bs:
         chk("撤销后:节点回到候选", _nb["candidate"] is True)
 
 print("=== V. 问数增强+实连+评测(DR-019)===")
-# V1 A1 术语扩展 + A2 口径校验(经模块直测,不耗引擎)
+# V1 A1 术语扩展 + A2 本体约束校验(经模块直测,不耗引擎)
 import importlib.util as _ilu, sys as _sys, os as _os
 _sys.path.insert(0, _os.path.dirname(_os.path.abspath(__file__)))
 _spec=_ilu.spec_from_file_location("_sv2", _os.path.join(_os.path.dirname(_os.path.abspath(__file__)),"server.py"))
@@ -629,14 +629,14 @@ _sv2=_ilu.module_from_spec(_spec); _spec.loader.exec_module(_sv2)
 _ir=_sv2.load_ir_edited("demo") or {}
 chk("V1 术语扩展:『设备』出英文补词", len(_sv2.expand_terms("设备的运行情况"))>0)
 _ok,_=_sv2._validate_sql_ontology("SELECT * FROM fact_sales_order LIMIT 1", _ir)
-chk("V2 口径校验:合法表放行", _ok)
+chk("V2 本体约束校验:合法表放行", _ok)
 _ok,_w=_sv2._validate_sql_ontology("SELECT * FROM fake_tbl_x", _ir)
-chk("V3 口径校验:臆造表拦截", not _ok and "臆造" in _w)
+chk("V3 本体约束校验:臆造表拦截", not _ok and "臆造" in _w)
 _ok,_w=_sv2._validate_sql_ontology("SELECT 1 FROM fact_sales_order a JOIN dim_equipment b ON a.cust_id=b.power_kw", _ir)
-chk("V4 口径校验:自造 JOIN 拦截", not _ok and "JOIN" in _w)
+chk("V4 本体约束校验:自造 JOIN 拦截", not _ok and "JOIN" in _w)
 _ok,_=_sv2._validate_sql_ontology("SELECT 1 FROM fact_sales_order a JOIN fact_return b ON a.order_id=b.order_id", _ir)
-chk("V5 口径校验:同名键 JOIN 放行", _ok)
-chk("V6 口径卡:命中计划产量", any(m["name"]=="计划产量" for m in _sv2._metric_cards("计划产量趋势", _ir)))
+chk("V5 本体约束校验:同名键 JOIN 放行", _ok)
+chk("V6 计算规则卡:命中计划产量", any(m["name"]=="计划产量" for m in _sv2._metric_cards("计划产量趋势", _ir)))
 _q2,_co=_sv2._carryover("它上个月呢?",[{"q":"销售订单的月度金额","summary":""}],_ir)
 chk("V7 指代延续:销售订单", "销售订单" in _co)
 chk("V8 任务模型族保护:hermes 拒 claude 名", not _sv2._model_fits("hermes","claude-opus-5") and _sv2._model_fits("claude-code","haiku"))
@@ -671,7 +671,7 @@ r=po("/api/query",json={"sql":"DROP TABLE x","src":"demo"})
 chk("V20 query 写语句仍拒", r.status_code==400)
 # V21 业务助手/评测页导航存在(UI 冒烟)
 r=g("/"); chk("V21 UI 含 业务助手+问数评测 页", 'data-p="assistant"' in r.text and 'data-p="qaeval"' in r.text)
-chk("V22 UI 含 口径卡/流式渲染代码", "metric_cards" in r.text and "narrative_delta" in r.text)
+chk("V22 UI 含 计算规则卡/流式渲染代码", "metric_cards" in r.text and "narrative_delta" in r.text)
 
 print("=== CQ. 能力问题核验(DR-024)===")
 _cqb={"graph":"demo","cqs":["月度聚合指标表(按人×月)和业务员维度表的关系","光刻机良率与封装产能的关联"]}
@@ -870,7 +870,7 @@ _hr=_hc.check(_bad); _ty={e["type"] for e in _hr["errors"]}; _sy={x["type"] for 
 chk("HL6 检出自反关系", "self_loop" in _ty)
 chk("HL7 检出悬空端点(引用不存在对象)", "dangling" in _ty)
 chk("HL8 检出状态矛盾(既 verified 又 rejected)", "status_conflict" in _ty)
-chk("HL9 检出重复边(口径二义)", "duplicate" in _sy)
+chk("HL9 检出重复边(语义二义)", "duplicate" in _sy)
 chk("HL10 检出孤岛", "isolated" in _sy)
 chk("HL11 阻断问题拉低结构一致性分", _hr["score"]<100.0 and _hr["healthy"] is False)
 chk("HL12 仅阻断问题进入待补清单(信号不制造噪声)",
@@ -1305,7 +1305,7 @@ chk("AN12 前端锚定渲染函数存在并被三处接线",
     "function dqAnchorHTML" in _qa_anchor and "dqAnchorHTML(d.anchor)" in _ui
     and "dqAnchorHTML(ev.anchor)" in _ui and "anchor:done.anchor" in _ui)
 chk("AN13 超出上限时显式说明截断(不静默少画)",
-    "图中只画了 ${CAP} 个对象" in _qa_anchor and "没有少喂给引擎" in _qa_anchor)
+    "图中只画了 ${CAP} 个对象" in _qa_anchor and "仍在规划上下文中，模型可以使用" in _qa_anchor)
 chk("AN14 UI 先解释本体约束再提供技术证据", "本体如何约束本次分析" in _qa_anchor
     and "为什么选入规划上下文" in _qa_anchor and "查看关系图（技术证据）" in _qa_anchor)
 
@@ -1425,7 +1425,7 @@ chk("QS1 无引擎垫片可承载 driver 注册", "_stub.register = lambda name,
 chk("QS2 OpenAI 驱动注册不依赖上游引擎在场",
     _shim_src.index("import openai_runtime") > _shim_src.index('sys.modules["agent_runtime"] = _stub'))
 # 改签名漏改调用点:_anchor_ir 曾返回 2 元组,加了「缺失提示」后变 3 元组,
-# 口径校验那处未同步,表现为问数流中途 500(套件当时未覆盖到那条路径)
+# 本体约束校验那处未同步,表现为问数流中途 500(套件当时未覆盖到那条路径)
 import ast as _ast
 _tree = _ast.parse(open("server.py", encoding="utf-8").read())
 _unpack = []
@@ -1689,13 +1689,13 @@ _big={"objects":[{"key":f"o{i}","cn":f"对象{i}","table":f"t{i}","reason":"数�
       "metrics":[],"scoped":True,"graphs":["demo"],"focus_n":60}
 _probe2=("const esc=x=>String(x==null?'':x).replace(/[&<>\"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;'}[c]));\n"
    +_fn+"\nconst h=dqAnchorHTML("+json.dumps(_big,ensure_ascii=False)+");"
-   +"console.log(JSON.stringify({rect:(h.match(/<rect /g)||[]).length,line:(h.match(/<line /g)||[]).length,"
+   +"console.log(JSON.stringify({rect:(h.match(/<rect /g)||[]).length,line:(h.match(/<path /g)||[]).length,"
    +"cut:/图中只画了/.test(h),sum:/108|60 个对象/.test(h)}));")
 try:
     _o2=_sp.run(["node","-e",_probe2],capture_output=True,text=True,timeout=20)
     _j2=json.loads(_o2.stdout.strip())
     chk("AN15 截断只画上限内对象", _j2["rect"]==16, str(_j2))
-    chk("AN15b 截断时优先保留有关系的对象(连线不为 0)", _j2["line"]==8, str(_j2))
+    chk("AN15b 截断时优先保留有关系的对象(连线为 8 条)", _j2["line"]==8, str(_j2))
     chk("AN15c 截断时给出说明", _j2["cut"])
 except Exception as _e:
     chk("AN15 截断策略探针", False, f"node 探针失败: {_e} / {_o2.stdout[:120] if '_o2' in dir() else ''}")

@@ -9,7 +9,7 @@
 # 这里把关卡与失败去向摊开写清楚。
 #
 # 三条设计原则(与本仓一贯规范一致,阅读时可据此对照):
-#   ① 能确定则不用概率:口径校验、只读校验、术语扩展全是确定性代码,不问模型;
+#   ① 能确定则不用概率:本体约束校验、只读校验、术语扩展全是确定性代码,不问模型;
 #   ② 拦截优于纠正:SQL 在**执行前**过关卡,不靠事后解释;
 #   ③ 降级必留痕:引擎离线/超时一律如实标注走了降级路径,不静默换路径。
 
@@ -28,7 +28,7 @@ nodes:
   - id: load_ontology
     type: deterministic
     code: "server.py:_anchor_ir(graph_keys)"
-    desc: 载入用户选中的本体 IR(含人审编辑；未选才用 demo),后续锚定与口径校验均以此为准
+    desc: 载入用户选中的本体 IR(含人审编辑；未选才用 demo),后续锚定与本体约束校验均以此为准
     output: ir_gate
 
   - id: coreference
@@ -82,11 +82,11 @@ nodes:
 
   - id: exec_guard.ontology
     type: gate
-    code: "server.py:_qa_validate_sql / _validate_sql_ontology  (A2 口径拦截)"
+    code: "server.py:_qa_validate_sql / _validate_sql_ontology  (A2 本体约束拦截)"
     desc: >
       ① 表白名单:FROM/JOIN 的表必须在本体/数据目录/上传库/CTE 内 —— 拦臆造表名;
       ② JOIN 键校验:异名等值 JOIN 的键对必须落在本体 verified/asserted 关系的
-         子键/父键上 —— 拦自造 JOIN。同名键等值放行(列名本身即口径)。
+         子键/父键上 —— 拦自造 JOIN。同名键等值放行(两端同名的列视为同一含义)。
       ③ 扇出关卡(DR-055):1:N JOIN 后对父侧表限定列做 SUM/AVG/COUNT(列)即拦,
          结果会按子表行数放大;COUNT(DISTINCT)/MIN/MAX/子侧列不拦。父侧由关系证据的父键唯一性判定。
       ④ 显式选表:SQLite EXPLAIN+authorizer检查真实读取表,同步/SSE和复用技能均不得越界。
@@ -136,7 +136,7 @@ gates:
   - name: 只读与单语句
     kind: deterministic
     blocks: 写操作、堆叠语句绕过
-  - name: 口径拦截
+  - name: 本体约束拦截
     kind: deterministic
     blocks: 臆造表名、本体中不存在的 JOIN 路径、1:N JOIN 父侧列的扇出聚合
   - name: 双盲意图检测

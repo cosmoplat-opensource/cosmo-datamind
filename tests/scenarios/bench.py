@@ -5,7 +5,7 @@
 (意图解析、抽取、语义评审、生成说明)换成固定输出——抽取返回一份「录制」的提议,
 其余返回不可用或固定文本。问数的 SQL 也由固定输出给出:一条会导致计数错误的,一条正确的。
 
-此前修复过的缺陷(计数翻倍、口径误拦已验证关系、降级构建全库、上传代码未读、构建流中断)若再次出现,
+此前修复过的缺陷(计数翻倍、本体约束校验误拦已验证关系、降级构建全库、上传代码未读、构建流中断)若再次出现,
 对应检查项会失败。用法:pytest tests/scenarios,或 python3 scripts/scenario_bench.py 查看逐项结果。
 """
 from __future__ import annotations
@@ -81,7 +81,7 @@ def _ask(server, graph, sql):
 
 
 def _ask_with_repair(server, graph, first, fixed, q="场景回归问数"):
-    """计划先给出有问题的 SQL;收到「修正要求」时给出修正后的 SQL(DR-069 口径、DR-073 答非所问)。"""
+    """计划先给出有问题的 SQL;收到「修正要求」时给出修正后的 SQL(DR-069 本体约束、DR-073 答非所问)。"""
     def plan(question, *a, **k):
         return {"analyses": [{"title": "基准", "sql": fixed if "[修正要求]" in question else first}]}
     with _patched(server, agent_sql_plan=plan):
@@ -169,7 +169,7 @@ def run_lakehouse(tmp):
         checks.append(Check(name, "问题场景成立:不带工厂关联时计数翻倍", direct == 2 * sum(fx["truth_pass_by_line"].values()),
                             f"直接执行得 {direct}"))
         r1 = _ask(server, graph, naive)
-        checks.append(Check(name, "问数:不带工厂的关联被口径校验拦下", _gate_blocked(r1, "factory_code"),
+        checks.append(Check(name, "问数:不带工厂的关联被本体约束校验拦下", _gate_blocked(r1, "factory_code"),
                             str([s["info"][:60] for s in r1.get("steps", [])][-2:])))
         r2 = _ask(server, graph, scoped)
         got = {r["线别"]: r["n"] for r in (_rows(r2) or [])}
@@ -210,7 +210,7 @@ def run_business(tmp):
         checks.append(Check(name, "问题场景成立:不排除已删除行时计数翻倍",
                             direct.get("电能表") == 2 * fx["truth_devices_by_type"]["电能表"], str(direct)))
         r1 = _ask(server, graph, naive)
-        checks.append(Check(name, "问数:未排除已删除行的关联被口径校验拦下", _gate_blocked(r1, "is_del"),
+        checks.append(Check(name, "问数:未排除已删除行的关联被本体约束校验拦下", _gate_blocked(r1, "is_del"),
                             str([s["info"][:60] for s in r1.get("steps", [])][-2:])))
         r2 = _ask(server, graph, live)
         got = {r["类型"]: r["n"] for r in (_rows(r2) or [])}
@@ -237,7 +237,7 @@ def run_business(tmp):
         zero_e = naive_e.replace("GROUP BY 1", "AND e.del_flag = 0 GROUP BY 1")
         live_e = naive_e.replace("GROUP BY 1", "AND e.del_flag = 'N' GROUP BY 1")
         r3 = _ask(server, graph, zero_e)
-        checks.append(Check(name, "问数:删除标记为 'N'/'Y' 时,按 = 0 过滤的关联被口径校验拦下", _gate_blocked(r3, "del_flag = 'N'"),
+        checks.append(Check(name, "问数:删除标记为 'N'/'Y' 时,按 = 0 过滤的关联被本体约束校验拦下", _gate_blocked(r3, "del_flag = 'N'"),
                             str([s["info"][:80] for s in r3.get("steps", [])][-2:])))
         r4 = _ask(server, graph, live_e)
         got = {r["能源"]: r["n"] for r in (_rows(r4) or [])}

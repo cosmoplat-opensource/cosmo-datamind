@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
-"""逻辑删除的「未删除」取值:体检、复核、问数口径使用同一定义(valid_rows_rules.json 的 soft_delete.detect)。
+"""逻辑删除的「未删除」取值:体检、复核、问数使用同一定义(valid_rows_rules.json 的 soft_delete.detect)。
 
 删除标记在不同库里写法不同:0/1、'N'/'Y'、NULL 表示未删除。复核按库里实际出现的取值记录,
-问数的关联提示与口径校验据此生成、判断条件,不再固定为「= 0」。
+问数的关联提示与本体约束校验据此生成、判断条件,不再固定为「= 0」。
 """
 import importlib.util
 import os

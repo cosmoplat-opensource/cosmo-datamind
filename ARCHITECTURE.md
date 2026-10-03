@@ -21,7 +21,7 @@
 │   构建: CQ/行业与标准/技能→来源整理→LLM提议→语义复核         │
 │         → dao_core数据验证→参照注释→指标反解/核验→build_quality验收→人审 │
 │   问数: _anchor_ir(选中图谱=锚定源) → build_context(带轨迹)   │
-│         → agent_sql_plan → 口径校验(表/JOIN 键/扇出) → q() → 双盲意图 → 叙事 │
+│         → agent_sql_plan → 本体约束校验(表/JOIN 键/扇出) → q() → 双盲意图 → 叙事 │
 │   体检: cq_check 能力核验 · drift_check 漂移 · health_check    │
 │         图结构 · compat_check 兼容 · module_split 模块化       │
 │   决策: rule_engine 规则+确定性推理 · 动作层(类型化+风险分级)│
@@ -49,7 +49,7 @@
 |---|---|---|
 | `sqlite_evidence.py` | 完整单列/元组集合的 SQL 聚合取证，记录匹配数、去重数与全表唯一性；调用者负责快照和超时 | DR-056 |
 | `dao_core.py` | **单一裁决核**:重叠/唯一度/命名校验/角色键/方向测试/自适应 θ,三态 `classify` | DR-035…038 |
-| `quick_build.py` | 纯数据驱动建本体,裁决决策委托 `dao_core`(compat 口径) | DR-011/035 |
+| `quick_build.py` | 纯数据驱动建本体,裁决决策委托 `dao_core`(compat 规则) | DR-011/035 |
 | `hallucination_eval.py` | 错误关系控制评测台:带标签基准上量化精确率/召回/**幻觉泄漏率**(judge 可选) | DR-039 |
 | `definition_eval.py` | 定义质量评分:属加种差/非循环/反例 + 参考重叠(LLM-judge 可选) | DR-040 |
 | `build_quality.py` | 确定性验收检查：图结构 + verified 证据契约 + 定义 + 上层关系映射 + CQ，输出 pass/review/fail | DR-050 |
@@ -79,13 +79,13 @@
 | `compat_check.py` | 向后兼容:结构 diff + **下游影响**(命中哪些规则/动作/技能) | DR-031 |
 | `module_split.py` | 模块化建议(按领域连通分量 / 按数仓分层),只建议不落盘 | DR-031 |
 | `openai_runtime.py` | OpenAI 兼容驱动(GLM/DeepSeek/Qwen/vLLM),空内容判失败不回传空串 | DR-029 |
-| `mcp_action_server.py` | 对外 MCP:发起动作是唯一写工具,审批不开放;另有只读语义工具(概念检索/指标口径/按 certified 口径取数);协议版本按规范协商,工具带 `annotations` 行为提示 | DR-015/053/055 |
+| `mcp_action_server.py` | 对外 MCP:发起动作是唯一写工具,审批不开放;另有只读语义工具(概念检索/指标计算规则/按 certified 指标取数);协议版本按规范协商,工具带 `annotations` 行为提示 | DR-015/053/055 |
 | `mcp_build_server.py` | 对外 MCP(构建):发起构建是唯一写工具,verified/asserted/certified 与删除不开放;start_build 立即返回作业 id,SSE 必须有 done 才算完成(DR-056 同规);验收复跑与人审队列只读 | DR-058/016 |
 | `llm_json.py` | LLM 回复 JSON 抽取的集中定义:字符串感知配平扫描+最小修复(尾逗号/非有限值),本体提议形状契约与剔除计数 | DR-058 |
 | `metric_contract.py` | **指标契约**:确定性编译 SQL、目录核对、只读执行、与参照比对;`verified` 只来自「可执行∧与参照一致」,`certified` 只能人授 | DR-054 |
-| `metric_mining.py` | 指标反解:历史 SQL / 口径表 / 沉淀 SQL / 参考基准 → 带来源的候选与参照;含 JOIN 不猜口径 | DR-054 |
+| `metric_mining.py` | 指标反解:历史 SQL / 指标定义表 / 沉淀 SQL / 参考基准 → 带来源的候选与参照;含 JOIN 不猜计算规则 | DR-054 |
 | `metric_pipeline.py` | 反解→归一→核验→并入 IR 的编排;`readjudicate` 复用已存参照重跑 | DR-054 |
-| `bp_metrics.py` | 指标契约 blueprint(4 路由:契约/维度/人工确认口径/重跑核验);不提供直接置 verified 的途径 | DR-054 |
+| `bp_metrics.py` | 指标契约 blueprint(4 路由:契约/维度/人工确认计算规则/重跑核验);不提供直接置 verified 的途径 | DR-054 |
 | `concept_profile.py` | 概念画像:对象的名称/定义/属性/强关系邻居/指标确定性聚合 + 可回放关键词检索(名称按 `ir_shape` 的中文表名后缀变体匹配) | DR-055 |
 | `osi_export.py` | Apache Ossie(原 OSI)语义模型与本体 YAML 出口:形状按 `ontology/standards/ossie/` 快照的官方 schema,状态与证据走 `custom_extensions`;自带确定性发射器,`validate()` 用官方 schema 校验 | DR-055 |
 | `bp_semantic.py` | 画像检索与 OSI 导出 blueprint(2 路由) | DR-055 |
@@ -105,7 +105,7 @@
 | kind→上层类别 | `KIND_DEFAULTS`(含 ice=InformationContentEntity) | `ontology_grounding.py` |
 | 数据源连接 | `build_connect` 按 path/dsn 幂等登记,去重复堆叠 | server.py |
 | 图谱选择器 | `graphOptions(gs,label)` 分组 optgroup(精选/场景/构建) | ui,图谱/工作台/元数据覆盖三处共用 |
-| 指标状态呈现 | `MST{状态→[tag 类,中文]}` + `mstTag()`,指标中心/口径卡/即时问数共用;人工操作只有确认口径/停用/撤回 | ui,DR-054 |
+| 指标状态呈现 | `MST{状态→[tag 类,中文]}` + `mstTag()`,指标中心/计算规则卡/即时问数共用;人工操作只有业务确认/停用/撤回 | ui,DR-054 |
 | 前端 kind 规范 | `KIND{c,n}` 颜色+中文,全站图例/配色/标签引用 | ui,`KCOL/KNM` |
 | 关系状态边样式 | `EST{c,w,d,n}` 集中定义(G6 图谱 + 锚定子图 SVG 共用),`estDash()` 转 SVG 虚线 | ui,消两套配色 |
 | 前端助手 | `$`/`esc`/`jsAttr`/`J` 显式挂 window | ui,防内联处理器作用域隐患 |

@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""指标反解(DR-054):从历史 SQL / 口径表 / 沉淀 SQL / 参考基准确定性抽取候选与参照。"""
+"""指标反解(DR-054):从历史 SQL / 指标定义表 / 沉淀 SQL / 参考基准确定性抽取候选与参照。"""
 import metric_mining as MM
 
 TAB = {"fact_sales_order": [("order_id", "INTEGER"), ("amount", "REAL"), ("status", "TEXT"), ("order_date", "DATE")],

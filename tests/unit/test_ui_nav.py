@@ -180,3 +180,13 @@ def test_every_backend_object_kind_has_a_chinese_label():
     kinds = UI[UI.index("const KIND={"):UI.index("const KINDS=")]
     for k in content_quality.VALID_KINDS:
         assert re.search(r"\b" + k + r":\{c:'#[0-9a-fA-F]{6}',n:'[^']+'\}", kinds), k
+
+
+def test_qa_input_chips_stay_on_one_line():
+    """问数输入栏的技能、数据源标签在窄面板里不折成多行(此前被挤成 3~4 行的竖条),
+    工具栏可换行,标签单行、过长省略,完整内容在悬停提示里。"""
+    css = UI[UI.index(".dq-tools{"):UI.index(".dq-icon:hover")]
+    assert "flex-wrap:wrap" in css
+    assert "white-space:nowrap" in css[css.index(".dq-sel{"):]
+    module = (UI_DIR / "modules" / "qa-ontology.js").read_text(encoding="utf-8")
+    assert "本体「" in module and "title" in module[module.index("const el = $('#dq_src_lbl')"):]

@@ -43,7 +43,7 @@ def run(db_path, ir, tab_cols=None, sql_texts=None, glossary_rows=None, qa_skill
         "rejected": rejected[:50],
         "merge": stat,
         "note": ("verified 只来自「编译执行成功且与参照一致」;可执行但无参照的指标仍为 candidate,"
-                 "人工确认口径后置 certified"),
+                 "人工确认计算规则后置 certified"),
     }
     return {"metric_layers": layers, "report": report}
 

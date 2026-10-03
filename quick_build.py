@@ -242,7 +242,7 @@ def _build(db, out, name, action_types=None, tables=None):
                 if not signals["child_distinct"]: continue
                 ov = signals["overlap"]
                 # 全量去重交集与双侧唯一性来自同一 SQL 取证；固定阈值和 compat
-                # 口径(min_distinct=1、不排除PK作子键)继续由共享裁决核决定。
+                # 规则(min_distinct=1、不排除PK作子键)继续由共享裁决核决定。
                 punique = signals["parent_unique"]
                 cunique = signals["child_unique"]
                 # DR-037 接线:子键唯一而父键不唯一 → 方向反了(真方向 pt→t)。
@@ -300,7 +300,7 @@ def _build(db, out, name, action_types=None, tables=None):
                 with open(action_types, encoding="utf-8") as fp:
                     action_types = json.load(fp)
             except (OSError, ValueError, TypeError):
-                # 与服务端 load_action_types 同口径:缺档/坏档=无已登记动作。
+                # 与服务端 load_action_types 同一规则:缺档/坏档=无已登记动作。
                 # 全新 workdir 没有该文件——此前直接 FileNotFoundError 让整轮
                 # 构建崩掉,/api/build/run 与 LLM 超时回退路径全部无产物。
                 action_types = []

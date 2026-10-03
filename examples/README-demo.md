@@ -41,7 +41,7 @@ DATAMIND_DB=$PWD/examples/demo_metrics.db ./start.sh
 | `built_bd2fec.json` | 10 对象 / 9 关系 | 小规模 |
 | `built_qsdemo.json` | 6 对象 / 6 关系 | 问数演示专用 |
 | `built_04f7b1.json`、`built_564f1f.json` | 1 对象 | 空构建的边界样例 |
-| `built_198e50.json` | 115 对象 / 267 关系 | 示例主库的离线兜底构建结果，可用于展示无外部大模型时的完整图谱 |
+| `built_198e50.json` | 115 对象 / 267 关系 | 示例主库的离线降级构建结果，可用于展示无外部大模型时的完整图谱 |
 | `built_a3d790.json` | 108 对象 / 119 关系 | 示例主库的 LLM 辅助构建结果，保留候选关系与证据判定 |
 | `built_be59bc.json` | 109 对象 / 124 关系 | 示例主库的 LLM 辅助构建结果，适合展示语义复核和待确认项 |
 | `built_motrix.json` | 142 对象 / 284 关系 | 工业世界模型仿真的工厂本体，用于大图可视化与交互演示 |

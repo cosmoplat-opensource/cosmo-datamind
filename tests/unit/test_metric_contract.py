@@ -101,7 +101,7 @@ def test_adjudicate_verified_only_with_matching_reference(make_sqlite):
     out = M.adjudicate(db, c, IR, [ref])
     assert out["status"] == "verified" and out["evidence"]["match"] is True
     assert out["evidence"]["value"] == 170.0
-    # 无参照:可执行但仍是 candidate——可执行不等于口径正确
+    # 无参照:可执行但仍是 candidate——可执行不等于计算规则正确
     out2 = M.adjudicate(db, c, IR, [])
     assert out2["status"] == "candidate" and out2["evidence"]["executed"] is True and out2["evidence"]["match"] is None
     # 参照不一致:candidate,并把差异记进证据

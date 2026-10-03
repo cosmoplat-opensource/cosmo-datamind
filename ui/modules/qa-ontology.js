@@ -43,12 +43,14 @@ function dqScopeReportName(scope) {
 function dqUpdateSourceLabel() {
   const ng = DQ_DS.graphs.length, nt = DQ_DS.tables.length;
   let label = '全部';
-  if (ng === 1 && !nt) label = `本体：${dqScopeNames(DQ_DS)[0]}`;
+  if (ng === 1 && !nt) label = `本体「${dqScopeNames(DQ_DS)[0]}」`;
   else if (ng && !nt) label = `本体 ${ng} 个`;
   else if (nt && !ng) label = `数据表 ${nt} 张`;
   else if (ng && nt) label = `本体 ${ng} 个 + 表 ${nt} 张`;
   const el = $('#dq_src_lbl');
   if (el) el.textContent = '数据源：' + label;
+  const chip = $('#dq_src_chip');
+  if (chip) chip.title = '数据源：' + label;           // 标签过长省略时,悬停可看全名
 }
 
 function dqRestoreScope(conv) {

@@ -104,10 +104,10 @@ a{color:var(--acc)}
 .dq-inputbar{border:1px solid var(--line);border-radius:var(--r);background:#fff;padding:10px 12px;margin-top:10px;box-shadow:0 1px 4px rgba(0,0,0,.03)}
 .dq-inputbar textarea{border:0;padding:2px;resize:none;height:46px;font-size:14px;width:100%}
 .dq-inputbar textarea:focus{outline:none;border:0}
-.dq-tools{display:flex;align-items:center;gap:8px;margin-top:6px}
+.dq-tools{display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin-top:6px}
 .dq-chip{display:inline-flex;align-items:center;gap:4px;background:#F4F4F5;color:#606266;border-radius:9999px;font-size:12px;padding:3px 10px}
-.dq-sel{border:1px solid var(--line);border-radius:9999px;font-size:12px;padding:4px 10px;background:#F4F4F5;color:#606266;width:auto;cursor:pointer}
-.dq-icon{display:inline-flex;align-items:center;justify-content:center;height:28px;padding:0 12px;border-radius:9999px;background:#F4F4F5;cursor:pointer;font-size:12px;color:#606266}
+.dq-sel{border:1px solid var(--line);border-radius:9999px;font-size:12px;padding:4px 10px;background:#F4F4F5;color:#606266;width:auto;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;min-width:0}
+.dq-icon{display:inline-flex;align-items:center;justify-content:center;height:28px;padding:0 12px;border-radius:9999px;background:#F4F4F5;cursor:pointer;font-size:12px;color:#606266;white-space:nowrap;flex:0 0 auto}
 .dq-icon:hover{background:#EEF2FF}
 .dq-atts{display:flex;gap:6px;flex-wrap:wrap;margin:6px 0 0}
 .dq-att{display:inline-flex;align-items:center;gap:5px;background:#EEF2FF;color:var(--acc);border-radius:6px;font-size:12px;padding:2px 8px}
@@ -115,7 +115,7 @@ a{color:var(--acc)}
 .dq-react{display:inline-flex;gap:2px;margin-left:2px}
 .dq-react span{cursor:pointer;height:24px;padding:0 9px;display:inline-flex;align-items:center;justify-content:center;border-radius:6px;font-size:12px;color:#94a3b8}
 .dq-react span:hover{background:#F2F4FF} .dq-react span.on{color:var(--acc);background:#EEF2FF}
-.dq-send{background:linear-gradient(135deg,#4A5FF3,#6B7BFF);color:#fff;border:0;border-radius:9999px;padding:8px 20px;font-size:13px;cursor:pointer;font-weight:600}
+.dq-send{background:linear-gradient(135deg,#4A5FF3,#6B7BFF);color:#fff;border:0;border-radius:9999px;padding:8px 20px;font-size:13px;cursor:pointer;font-weight:600;white-space:nowrap;flex:0 0 auto}
 .dq-send:disabled{opacity:.5;cursor:default}
 .dq-usermsg{max-width:78%;margin:14px 0 14px auto;background:var(--acc);color:#fff;border-radius:16px 16px 4px 16px;padding:9px 14px;font-size:14px;width:fit-content}
 .dq-card{background:#fff;border:1px solid var(--line);border-radius:var(--r);padding:14px 16px;margin-bottom:14px}
@@ -342,7 +342,7 @@ a{color:var(--acc)}
    <div><div class="card"><h3 style="margin-top:0">异常诊断 <span class="muted" style="font-size:12px">点击直达根因诊断</span></h3><div id="as_diag"></div></div>
     <div class="card" style="margin-top:12px"><h3 style="margin-top:0">我的动作 <span class="muted" style="font-size:12px">直达动作中心发起</span></h3><div id="as_acts"></div></div></div></div></div>
 
- <div class="page" id="p_qaeval"><h2>问数评测 <span class="muted">参考问题集 × 三组对照(A 朴素文本转 SQL / B 图谱增强 / C 本体全量)· 自动判分：答案正确率 / 出处引用率 / 口径拦截</span></h2>
+ <div class="page" id="p_qaeval"><h2>问数评测 <span class="muted">参考问题集 × 三组对照(A 朴素文本转 SQL / B 图谱增强 / C 本体全量)· 自动判分：答案正确率 / 出处引用率 / 本体约束拦截</span></h2>
   <div class="card"><div class="row" style="align-items:center;gap:10px">
     <button id="qe_run" onclick="qeRun()">跑一轮评测</button>
     <span class="muted" style="font-size:12px">模型覆盖(可空=跟随引擎)</span><input id="qe_model" placeholder="如 claude-haiku-4-5-20251001" style="width:220px">
@@ -408,7 +408,7 @@ a{color:var(--acc)}
   <div style="margin-bottom:14px"><span id="rvm_clabel">评审意见</span><br><textarea id="rvm_comment" rows="3" style="width:100%;margin-top:4px;resize:vertical" placeholder="填写评审意见 / 原因"></textarea></div>
   <div style="display:flex;gap:8px;justify-content:flex-end"><button class="ghost" onclick="rvmClose()">取消</button><button id="rvm_ok" onclick="rvmSubmit()">提交评审</button></div>
  </div></div>
- <div class="page" id="p_metrics"><h2>指标中心 <span class="muted">指标契约：口径可编译、可执行、与参照比对 · 已核验只来自证据 · 业务确认只能由人授予</span></h2>
+ <div class="page" id="p_metrics"><h2>指标中心 <span class="muted">指标契约：计算规则可编译、可执行、与参照比对 · 已核验只来自证据 · 业务确认只能由人授予</span></h2>
  <div class="row" style="gap:8px;align-items:center;margin-bottom:8px;flex-wrap:wrap">图谱 <select id="m_sel" style="width:300px" onchange="metrics()"></select>
   <button class="ghost" onclick="metricReadjudicate()" title="按契约重新编译、只读执行并与已存参照比对；不新增候选">重跑核验</button><span id="m_kpi"></span></div>
  <div id="m_body"></div></div>
@@ -715,7 +715,7 @@ FROM fact_sales_order GROUP BY 1 ORDER BY 1 DESC LIMIT 12</textarea>
    <div class="row" style="margin-top:8px"><button onclick="sqlDevRun()">运行</button><span class="muted" id="sd_info"></span></div>
    <div class="scroll" id="sd_out" style="margin-top:10px;max-height:52vh"></div></div></div>
 
- <div class="page" id="p_quality"><h2>数据质量 <span class="muted">空表/无列/业务口径预警(基于真实数据)· 对齐平台『数据治理·告警中心』</span></h2>
+ <div class="page" id="p_quality"><h2>数据质量 <span class="muted">空表/无列/业务指标预警(基于真实数据)· 对齐平台『数据治理·告警中心』</span></h2>
   <div class="kpis" id="quality_kpis" style="grid-template-columns:repeat(4,1fr)"></div>
   <div class="card scroll" id="quality_list" style="max-height:calc(100vh - 300px)"></div></div>
 
@@ -740,9 +740,9 @@ FROM fact_sales_order GROUP BY 1 ORDER BY 1 DESC LIMIT 12</textarea>
 <script src="/assets/modules/build-stream.js?v=3"></script>
 <script src="/assets/modules/build-prep.js?v=4"></script>
 <!-- 问数作用域模块先于主脚本执行，避免 #chat 首屏初始化竞态；版本号打破旧标签缓存。 -->
-<script src="/assets/modules/qa-ontology.js?v=4"></script>
+<script src="/assets/modules/qa-ontology.js?v=5"></script>
 <script src="/assets/modules/qa-history.js?v=1"></script>
-<script src="/assets/modules/qa-anchor.js?v=1"></script>
+<script src="/assets/modules/qa-anchor.js?v=4"></script>
 <script src="/assets/modules/graph-render.js?v=1"></script>
 <script>const $=s=>document.querySelector(s), J=async(u,o)=>{try{const r=await fetch(u,o);const t=await r.text();try{return JSON.parse(t)}catch(_){return{error:`请求失败(HTTP ${r.status})`}}}catch(e){return{error:'网络错误:'+(e&&e.message||e)}}};  // 永不抛：后端 404/500 返回 HTML 时降级为 {error}，交由既有 d.error 守卫提示，避免页面半渲染无提示
 const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -1395,10 +1395,10 @@ async function qeRun(){const model=$('#qe_model').value.trim();
  if(d.error){toast(d.error,false);return}
  toast('评测已启动(后台运行，每题即时落盘)',true);qePoll();}
 function qeRender(d){
- if(!d||d.empty||!(d.items||[]).length){$('#qe_kpis').innerHTML='';$('#qe_body').innerHTML='<div class="muted" style="padding:10px">尚未跑过评测 —— 点上方「跑一轮评测」。三组同题对照:A 只给英文表列(朴素基线),B 加中文语义+本体关系，C 本体全量(再叠加指标/术语/口径校验)。</div>';return;}
+ if(!d||d.empty||!(d.items||[]).length){$('#qe_kpis').innerHTML='';$('#qe_body').innerHTML='<div class="muted" style="padding:10px">尚未跑过评测 —— 点上方「跑一轮评测」。三组同题对照:A 只给英文表列(朴素基线),B 加中文语义+本体关系，C 本体全量(再叠加指标/术语/本体约束校验)。</div>';return;}
  const n=(d.items||[]).length;const A=d.arms||{};
  $('#qe_kpis').innerHTML=['A','B','C'].map(k=>{const a=A[k]||{};return `<div class="kpi"><div class="n" style="color:${k==='C'?'#16a34a':k==='B'?'#4A5FF3':'#6B7690'}">${a.correct||0}/${n}</div>
-  <div class="l">${k} 组 · ${esc((a.name||'').split('(')[0])}<br><span style="font-size:11px">出处引用 ${a.cite||0}/${n}${k==='C'?` · 口径拦截 ${a.gate_block||0}`:''}</span></div></div>`;}).join('');
+  <div class="l">${k} 组 · ${esc((a.name||'').split('(')[0])}<br><span style="font-size:11px">出处引用 ${a.cite||0}/${n}${k==='C'?` · 本体约束拦截 ${a.gate_block||0}`:''}</span></div></div>`;}).join('');
  $('#qe_body').innerHTML=`<div class="muted" style="font-size:11.5px;margin-bottom:8px">模型:${esc(d.model||'')} · ${esc(d.ts||'')} · 判分=数值容差/字符串等值；出处=SQL 必须引用参考答案所需表</div>`
   +'<table><tr><th>题目</th><th>参考集</th><th>A 朴素</th><th>B 图谱</th><th>C 本体全量</th></tr>'
   +(d.items||[]).map(it=>'<tr><td style="max-width:260px">'+esc(it.q)+'</td><td><code>'+esc(String(it.gold))+'</code></td>'
@@ -1477,8 +1477,8 @@ async function rules(){const d=await J('/api/ont/rules?graph=demo');
   d.pipeline.map((st,i)=>`<div class="step"><b>${i+1}. ${esc(st.stage)}</b>— ${esc(st.io)}<br><span class="muted">判定: ${esc(st.rule)}</span></div>`).join('')+`</div>`;}
 async function rtSet(){const d=await J('/api/ont/runtime',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:$('#rt_sel').value})});
  $('#rt_info').textContent=d.error||('当前: '+d.current);}
-// 指标状态(DR-054):certified 业务已确认 > verified 已核验 > candidate 待核验；旧形状指标只有启发式口径
-const MST={certified:['ok','业务已确认'],verified:['ok','已核验'],candidate:['warn','待核验'],deprecated:['evt','已停用'],heuristic:['warn','旧口径(启发式)']};
+// 指标状态(DR-054):certified 业务已确认 > verified 已核验 > candidate 待核验；旧形状指标只有启发式计算规则
+const MST={certified:['ok','业务已确认'],verified:['ok','已核验'],candidate:['warn','待核验'],deprecated:['evt','已停用'],heuristic:['warn','旧规则(启发式)']};
 function mStatus(x){return x.status||(x.measure&&x.measure.agg?'candidate':'heuristic');}
 function mstTag(st){const t=MST[st]||['evt',st||'-'];return `<span class="tag ${t[0]}">${esc(t[1])}</span>`;}
 function mCaliber(x){if(!(x.measure&&x.measure.agg))return '';const a=x.measure.agg.toUpperCase().replace('COUNT_DISTINCT','COUNT DISTINCT'),c=x.measure.col||'*';
@@ -1494,13 +1494,13 @@ async function metrics(){
  $('#m_kpi').innerHTML=['certified','verified','candidate','deprecated','heuristic'].filter(k=>cnt[k]).map(k=>`${mstTag(k)}<span class="muted" style="margin-right:8px">${cnt[k]}</span>`).join('');
  $('#m_body').innerHTML=`<div class="card" id="m_lineage" style="display:none"></div>`+
   Object.entries(m).map(([k,arr])=>`<div class="card"><h3>${names[k]||k}(${arr.length})<span class="muted">· 点行看契约与血缘</span></h3>
-  <div class="scroll" style="max-height:26vh"><table><tr><th>名称</th><th>状态</th><th>口径</th><th>来源表</th><th>取值列</th><th>单位</th><th>说明</th></tr>`+
+  <div class="scroll" style="max-height:26vh"><table><tr><th>名称</th><th>状态</th><th>计算规则</th><th>来源表</th><th>取值列</th><th>单位</th><th>说明</th></tr>`+
   arr.map(x=>`<tr style="cursor:pointer" onclick="lineage(${jsAttr(x.name)})"><td><b>${esc(x.name)}</b></td><td>${mstTag(mStatus(x))}</td><td><code style="font-size:11px">${esc(mCaliber(x))||'<span class=muted>未声明</span>'}</code></td><td>${esc(x.table)}</td><td>${esc(x.value_col)}</td><td>${esc(x.unit)}</td><td>${esc(x.desc||x.formula)}</td></tr>`).join('')+'</table></div></div>').join('');}
 async function metricReadjudicate(){const g=mGraph();toast('重跑核验中…');
  const d=await J('/api/metric/adjudicate',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({graph:g})}).catch(e=>({error:''+e}));
  if(d.error){toast(d.error,false);return;}toast(`核验完成 · 契约 ${d.contracts} 条 · 已核验 ${d.verified} 条`,true);metrics();}
 async function metricStatus(name,status){const g=mGraph();const who=($('#ml_who')&&$('#ml_who').value.trim())||'';const reason=($('#ml_reason')&&$('#ml_reason').value.trim())||'';
- if(status==='certified'&&!who){toast('确认口径须填写确认人(姓名或工号)',false);$('#ml_who').focus();return;}
+ if(status==='certified'&&!who){toast('业务确认须填写确认人(姓名或工号)',false);$('#ml_who').focus();return;}
  try{localStorage.setItem('rv_reviewer',who);}catch(e){}
  const d=await J('/api/metric/status',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({graph:g,metric:name,status,reviewer:who,reason})}).catch(e=>({error:''+e}));
  if(d.error){toast(d.error,false);return;}toast(`已置为 ${MST[status]?MST[status][1]:status}`,true);await metrics();lineage(name);}
@@ -1513,7 +1513,7 @@ async function lineage(name){const g=mGraph();
  const m=d.metric||{},ly=m.layer,st=mStatus(m),ev=m.evidence||{},ref=ev.reference||{};
  const srcLine=d.source_table
    ? `<b>数据来源</b>: ${esc(d.source_table)} . ${esc(d.source_col||'-')} <a href="#" onclick="event.preventDefault();document.querySelector('[data-p=catalog]').click();setTimeout(()=>tbl(${jsAttr((d.source_table||'').toLowerCase())}),400)">查表↗</a>`
-   : `<b>数据来源</b>: <span class="muted">${ly==='derived'?'派生指标 · 由原子指标按业务口径汇总/计算(未直接绑表)':ly==='composite'?'复合指标 · 由多指标按公式组合计算(未直接绑表)':'未绑定数据表'}</span>`;
+   : `<b>数据来源</b>: <span class="muted">${ly==='derived'?'派生指标 · 由原子指标按业务规则汇总/计算(未直接绑表)':ly==='composite'?'复合指标 · 由多指标按公式组合计算(未直接绑表)':'未绑定数据表'}</span>`;
  const isC=!!(c&&c.is_contract);
  const evLine=isC?`<div class="step"><b>核验证据</b>: ${ev.executed?'<span class="tag ok">已执行</span>':'<span class="tag warn">未执行</span>'}`+
    (ev.match===true?'<span class="tag ok">与参照一致</span>':ev.match===false?'<span class="tag warn">与参照不一致</span>':'<span class="tag evt">无参照</span>')+
@@ -1525,15 +1525,15 @@ async function lineage(name){const g=mGraph();
  const who=localStorage.getItem('rv_reviewer')||'';
  const actions=isC?`<div class="step" style="border-top:1px dashed #E5E9F2;padding-top:8px">
    <div class="row" style="gap:8px;flex-wrap:wrap;align-items:center">
-    确认人 <input id="ml_who" placeholder="姓名或工号" value="${esc(who)}" style="width:140px"> 意见 <input id="ml_reason" placeholder="口径依据(可选)" style="width:260px">
-    ${st!=='certified'?`<button onclick="metricStatus(${jsAttr(name)},'certified')" title="业务确认口径；等价于关系的人工断言">确认口径</button>`:''}
+    确认人 <input id="ml_who" placeholder="姓名或工号" value="${esc(who)}" style="width:140px"> 意见 <input id="ml_reason" placeholder="确认依据(可选)" style="width:260px">
+    ${st!=='certified'?`<button onclick="metricStatus(${jsAttr(name)},'certified')" title="由业务人员确认计算规则；等价于关系的人工断言">业务确认</button>`:''}
     ${st!=='deprecated'?`<button class="ghost" onclick="metricStatus(${jsAttr(name)},'deprecated')">停用</button>`:''}
     ${(st==='certified'||st==='deprecated')?`<button class="ghost" onclick="metricStatus(${jsAttr(name)},'candidate')">撤回为待核验</button>`:''}
    </div><div class="muted" style="margin-top:4px">「已核验」只能由核验产生，人工只能授予「业务已确认」或「停用」。</div></div>`
-  :`<div class="step muted">该指标是旧形状(未声明聚合口径)，不能确认为业务口径；先在构建时反解或补契约。</div>`;
+  :`<div class="step muted">该指标是旧形状(未声明聚合方式)，不能做业务确认；先在构建时反解或补契约。</div>`;
  el.innerHTML=`<h3>${esc(name)} ${mstTag(st)}<span class="tag ok">${esc(LAYER_CN[ly]||ly)}</span>${m.unit?`<span class="tag" style="background:#F4F4F5;color:#606266">${esc(m.unit)}</span>`:''}${m.certified_by?`<span class="muted" style="font-size:11px">确认人 ${esc(m.certified_by)}${m.certified_at?' · '+esc(m.certified_at):''}</span>`:''}</h3>
-  ${isC?`<div class="step"><b>契约口径</b>: <code>${esc(c.caliber||'')}</code></div><div class="step"><b>编译 SQL</b>: <code style="font-size:11px;white-space:pre-wrap">${esc(c.compiled_sql||c.compile_error||'')}</code></div>`:''}
-  ${m.desc?`<div class="step"><b>业务口径</b>: ${esc(m.desc)}</div>`:''}
+  ${isC?`<div class="step"><b>契约计算规则</b>: <code>${esc(c.caliber||'')}</code></div><div class="step"><b>编译 SQL</b>: <code style="font-size:11px;white-space:pre-wrap">${esc(c.compiled_sql||c.compile_error||'')}</code></div>`:''}
+  ${m.desc?`<div class="step"><b>业务说明</b>: ${esc(m.desc)}</div>`:''}
   <div class="step">${srcLine}</div>${d.formula?`<div class="step"><b>计算公式</b>: ${esc(d.formula)}</div>`:''}
   ${evLine}${dimLine}
   ${prov?`<div class="step"><b>来源</b>: <span class="muted">${prov}</span></div>`:''}
@@ -1549,7 +1549,7 @@ async function chatInit(){const m=await J('/api/metrics');
 async function instantQ(){const n=$('#iq_sel').value;if(!n)return;
  const d=await J('/api/metric/quick?name='+encodeURIComponent(n));
  if(d.error){$('#iq_info').textContent=d.error;return}
- $('#iq_info').textContent=`${d.source} · ${d.agg}${d.unit?' · '+d.unit:''}${d.agg_note?' · '+d.agg_note:''}${d.status?' · '+((MST[d.status]||[0,d.status])[1]):''}`;  // 一并展示聚合口径说明(如比率取月均为近似)，透明不误导
+ $('#iq_info').textContent=`${d.source} · ${d.agg}${d.unit?' · '+d.unit:''}${d.agg_note?' · '+d.agg_note:''}${d.status?' · '+((MST[d.status]||[0,d.status])[1]):''}`;  // 一并展示聚合方式说明(如比率取月均为近似)，透明不误导
  const el=$('#iq_chart');el.style.display='block';
  mk(el,{grid:{top:28,left:60,right:20,bottom:30},tooltip:{trigger:'axis'},
   xAxis:{type:'category',data:d.data.rows.map(r=>r['月']),...AX},yAxis:{type:'value',...AX},
@@ -1638,7 +1638,7 @@ async function dqOpenSkill(){$('#dq_skmodal').style.display='flex';const body=$(
   .concat((sinked||[]).map(s=>({id:s.id,name:(s.question||s.id).slice(0,24),desc:'沉淀自问数 · '+(s.analyses?s.analyses.length:0)+' 条SQL',used:s.analyses?s.analyses.length:0})));
  body.innerHTML=cards.map(c=>`<div class="sk-card ${DQ_SKILL===c.id?'sel':''}" onclick="dqSkillPick(${esc(JSON.stringify(c.id))})"><div style="flex:1"><div class="nm">${esc(c.name)}${c.builtin?'<span class="badge">内置</span>':'<span class="badge">沉淀</span>'}</div><div class="ds">${esc(c.desc)}</div></div></div>`).join('')
   +`<div class="muted" style="text-align:center;margin-top:8px">单选：不选则自动匹配最优技能</div>`;}
-function dqSkillPick(id){DQ_SKILL=id;$('#dq_skill_lbl').textContent='技能 '+(id||'自动匹配');document.querySelectorAll('#dq_sk_body .sk-card').forEach(c=>c.classList.remove('sel'));if($('#dq_skmodal').style.display!=='none')dqOpenSkill();}
+function dqSkillPick(id){DQ_SKILL=id;$('#dq_skill_lbl').textContent='技能 '+(id||'自动匹配');$('#dq_skill_chip').title=$('#dq_skill_lbl').textContent;document.querySelectorAll('#dq_sk_body .sk-card').forEach(c=>c.classList.remove('sel'));if($('#dq_skmodal').style.display!=='none')dqOpenSkill();}
 async function dqSkillUpload(input){const f=(input.files||[])[0];if(!f)return;toast&&toast('技能上传:.zip 需后端注册，当前记录名');DQ_SKILL=f.name.replace(/\.zip$/,'');$('#dq_skill_lbl').textContent='技能 '+DQ_SKILL;dqCloseModal('dq_skmodal');}
 function dqHero(){
  if(typeof dqHeroScoped==='function')return dqHeroScoped();
@@ -1673,7 +1673,7 @@ function dqReport(){const el=$('#dq_report');const conv=DQ_CONV||dqAllConv()[0];
 function dqNew(){dqAbort();DQ_CONV=null;window.DQ_VIEW_MODE='new';CHAT_HIST=[];DQ_ANC_LAST=null;dqAncBar(null);$('#dq_stream').innerHTML=dqHero();dqRenderHist();$('#dqv_deep').classList.add('dqv-empty');dqMode('deep');if(typeof a11yScan==='function')a11yScan();}
 function dqMD(t){return esc(t||'').replace(/\*\*(.+?)\*\*/g,'<b>$1</b>').replace(/`([^`]+)`/g,'<code>$1</code>');}
 function dqTable(data){const cols=data.columns||[];const all=data.rows||[];
- // 长序列取首5+末5(时序时末尾为最新期，与图表/洞察口径一致)，中间省略；短序列全展示
+ // 长序列取首5+末5(时序时末尾为最新期，与图表、洞察的取数范围一致)，中间省略；短序列全展示
  const rows=all.length<=12?all.map(r=>({r})):[...all.slice(0,5).map(r=>({r})),{gap:all.length-10},...all.slice(-5).map(r=>({r}))];
  return `<div class="dq-prev"><table><tr>${cols.map(c=>`<th>${esc(c)}</th>`).join('')}</tr>`+
   rows.map(x=>x.gap?`<tr><td colspan="${cols.length}" class="muted" style="text-align:center">中间 ${x.gap} 行省略</td></tr>`:`<tr>${cols.map(c=>`<td>${cell(x.r[c])}</td>`).join('')}</tr>`).join('')+`</table></div>`;}
@@ -1693,13 +1693,13 @@ function dqRenderCard(card,q,d,origin='live'){const uid=DQ_UID++;const okN=d.ste
   d.steps.map(s=>`<div class="dq-logstep"><span class="ck ${s.ok?'':'no'}">${s.ok?'✓':'✗'}</span><span>${s.ts?`<span class="muted">[${esc(s.ts)}]</span> `:''}<b>${esc(s.step)}</b>${s.info?' — '+esc(s.info):''}</span></div>`).join('')+`</div></details>`;
  if(d.narrative)html+=`<div class="dq-insight">${dqMD(d.narrative)}</div>`;
  if(d.anchor)html+=dqAnchorHTML(d.anchor);        // DR-032 本体锚定可视化(含 SQL 实际命中)
- if((d.metric_cards||[]).length)   // A3 口径卡：命中指标的口径与出处，随答案可见
+ if((d.metric_cards||[]).length)   // A3 计算规则卡：命中指标的计算规则与出处，随答案可见
   html+=`<div style="display:flex;flex-wrap:wrap;gap:8px;margin:8px 0">`+d.metric_cards.map(m=>
    `<div style="border:1px solid #E5E9F2;border-left:3px solid #4A5FF3;border-radius:6px;padding:8px 12px;font-size:12px;background:#FAFBFF;max-width:340px">
     <b>${esc(m.name)}</b> <span class="tag" style="font-size:11px;background:#EEF2FF;color:#4A5FF3">${esc(m.layer)}</span>${m.status?mstTag(m.status):''}
-    ${m.caliber?`<div style="margin-top:3px">计算口径:<code style="font-size:11px">${esc(m.caliber)}</code></div>`:''}
-    ${m.desc?`<div class="muted" style="margin-top:3px">口径:${esc(m.desc)}</div>`:''}
-    ${m.status==='candidate'?`<div class="muted" style="margin-top:3px;color:var(--warn)">该口径尚未核验，数值仅供参考</div>`:''}
+    ${m.caliber?`<div style="margin-top:3px">计算规则:<code style="font-size:11px">${esc(m.caliber)}</code></div>`:''}
+    ${m.desc?`<div class="muted" style="margin-top:3px">说明:${esc(m.desc)}</div>`:''}
+    ${m.status==='candidate'?`<div class="muted" style="margin-top:3px;color:var(--warn)">该计算规则尚未核验，数值仅供参考</div>`:''}
     <div class="muted" style="margin-top:3px">出处:${m.table?`<code>${esc(m.table)}.${esc(m.col||'-')}</code>`:'派生/复合(见指标中心血缘)'}${m.unit?` · 单位 ${esc(m.unit)}`:''}
      <a href="#" onclick="event.preventDefault();document.querySelector('[data-p=metrics]').click()" style="font-size:11px">血缘↗</a></div></div>`).join('')+`</div>`;
  (d.results||[]).forEach((r,i)=>{const cols=r.data.columns||[];

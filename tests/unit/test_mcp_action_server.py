@@ -253,7 +253,7 @@ class TestBaseResolution:
 
 
 class TestSemanticReadTools:
-    """DR-055:只读语义工具;query_metric 只放行 certified 口径。"""
+    """DR-055:只读语义工具;query_metric 只放行 certified 指标。"""
 
     def test_query_metric_refuses_uncertified(self, monkeypatch):
         monkeypatch.setattr(mcp, "_http", lambda method, path, payload=None: (
@@ -267,7 +267,7 @@ class TestSemanticReadTools:
              "caliber": "SUM(amount)", "compiled_sql": "SELECT SUM(amount) FROM t",
              "allowed_dimensions": {"columns": ["status"], "objects": [{"object": "customer"}]}}, None))
         text, err = mcp.call_tool("describe_metric", {"name": "销售金额"})
-        assert not err and "口径:SUM(amount)" in text and "尚未经业务确认" in text and "customer" in text
+        assert not err and "计算规则:SUM(amount)" in text and "尚未经业务确认" in text and "customer" in text
 
     def test_search_concept_renders_hits(self, monkeypatch):
         monkeypatch.setattr(mcp, "_http", lambda method, path, payload=None: (

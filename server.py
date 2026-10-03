@@ -935,7 +935,7 @@ def _metric_baselines(mets):
 
     对标 Trane M4(五法中唯一 100/100):在数据进入 AI 之前先做一次业务语义封装。此处封装
     全部由确定性 SQL 得出——与数据裁决同源,零幻觉;单个指标算不出就跳过,绝不猜数。
-    口径说明:给出的是**观测区间**(实际数据的 min/max),不是工艺规范意义上的"正常范围"
+    说明:给出的是**观测区间**(实际数据的 min/max),不是工艺规范意义上的"正常范围"
     ——后者需要工艺标准输入,系统无从推导,不可用观测极值冒充(极值可能本就是异常样本)。
     负值/零值单独标注:它们通常是业务异常信号(如负毛利订单),LLM 若默认"毛利必为正"会写错过滤条件。
     """
@@ -1595,10 +1595,10 @@ def build_context(question, focus_tables=None, trace=None, graph_keys=None):
         trace["metrics"] = [{"name": m["name"], "table": m["table"], "col": m["col"]} for m in hit_m]
     if hit_m:
         lines.append("相关指标: " + "; ".join(
-            f'{m["name"]}←{m["table"]}.{m["col"]}' + (f'[口径 {m["caliber"]} · {m["status"]}]' if m.get("caliber") else "")
+            f'{m["name"]}←{m["table"]}.{m["col"]}' + (f'[计算规则 {m["caliber"]} · {m["status"]}]' if m.get("caliber") else "")
             for m in hit_m))
         if any(m.get("caliber") for m in hit_m):
-            lines.append("指标口径为契约声明(聚合/过滤/时间列),按口径计算,不要改用别的聚合方式")
+            lines.append("指标的计算规则由契约声明(聚合/过滤/时间列),按该规则计算,不要改用别的聚合方式")
         bl = _metric_baselines(hit_m)                 # M4-b 指标统计基线(确定性 SQL)
         if bl: lines.append("指标基线(真实数据算出,勿自行假设量级):\n" + "\n".join("  " + b for b in bl))
     up = _uploads_schema()
@@ -1638,7 +1638,7 @@ def _eng_label(drv):
     return {"hermes": "智能引擎", "claude-code": "智能引擎(备选)", "claude": "智能引擎(备选)",
             "openclaw": "经典引擎"}.get(drv, "智能引擎")
 
-# ── 深度问数增强(DR-019):术语扩展 / 口径拦截 / 口径卡 / 指代延续 / 按任务选模 ──
+# ── 深度问数增强(DR-019):术语扩展 / 本体约束拦截 / 计算规则卡 / 指代延续 / 按任务选模 ──
 def _task_model(task):
     """B4 按任务选模:engine_config.task_models[task] 非空则单次覆盖模型(claude=--model, hermes=-m)。"""
     try: return ((_load_engine_cfg().get("task_models") or {}).get(task) or "").strip() or None
@@ -1695,10 +1695,10 @@ def expand_terms(question):
 _SQL_KW = {"on", "where", "group", "order", "left", "right", "inner", "outer", "cross",
            "join", "select", "limit", "using", "as", "union", "having", "with"}
 def _validate_sql_ontology(sql, ir, strict=False):
-    """A2 口径拦截(P8『口径错了直接拦截』落地):SQL 执行前对照本体校验。
+    """A2 本体约束拦截:SQL 执行前对照本体校验,不符合本体约束的查询直接拦下。
     ① 表白名单:FROM/JOIN 的表必须在本体/数据目录/上传库(up.)/CTE 内 —— 拦臆造表名;
     ② JOIN 键校验:ON a.x=b.y 两侧列名不同时,该键对必须落在本体 verified/asserted 关系
-      的 child/parent 键上(同名键等值 JOIN 放行,列名本身即口径)—— 拦自造 JOIN。
+      的 child/parent 键上(同名键等值 JOIN 放行,同名列即视为同一含义)—— 拦自造 JOIN。
     → (ok, reason)"""
     s = sql or ""
     ctes = {m.group(1).lower() for m in re.finditer(r"(?:\bwith|,)\s*(%s)\s+as\s*\(" % _SQL_IDENT, s, re.I)}
@@ -1725,7 +1725,7 @@ def _validate_sql_ontology(sql, ir, strict=False):
         elif base not in known and base not in ctes:
             return False, f"表 {base} 不在本体/数据目录中(疑似臆造表名)"
     # 端点可能是主键、对象名或序号键:示例本体用 links/source/target,构建产物用 relations/source_concept。
-    # 两种形状都要识别,否则自建本体上已验证的异名键 JOIN 会被误判为「口径未证实」。
+    # 两种形状都要识别,否则自建本体上已验证的异名键 JOIN 会被误判为「关联未经数据验证」。
     o2t = {}
     for i, o in enumerate(ir.get("objects", [])):
         for k in (o.get("id"), o.get("name"), _obj_key(o, i)):
@@ -1792,7 +1792,7 @@ def _validate_sql_ontology(sql, ir, strict=False):
                                    + " AND ".join(f"{_cst}.{c} = {_ctt}.{p}" for c, p in comps) + "(编码只在类别内唯一)")
         if ca == cb: continue
         if (ta, ca, tb, cb) not in relkeys:
-            return False, f"JOIN 键 {ta}.{ca}={tb}.{cb} 不在本体已验证关系上(口径未证实,已拦截)"
+            return False, f"JOIN 键 {ta}.{ca}={tb}.{cb} 不在本体已验证关系上(关联未经数据验证,已拦截)"
     # ③ 扇出关卡(DR-055):1:N JOIN 后对父侧列做 SUM/AVG/COUNT(列),结果会随子表行数放大。
     #    本体证据记录了父键唯一性,所以方向是已知的——这是关系证据除了「能不能 JOIN」之外的第二个用途。
     #    COUNT(DISTINCT …) 与 MIN/MAX 不受扇出影响,不拦;未限定表名的列无法归属,不猜。
@@ -1807,7 +1807,7 @@ def _validate_sql_ontology(sql, ir, strict=False):
 
 
 def _qa_validate_sql(sql, ir, strict=False, focus_tables=None):
-    """问数口径校验调用层；兼容仍实现旧两参数签名的测试替换与扩展。"""
+    """问数本体约束校验调用层；兼容仍实现旧两参数签名的测试替换与扩展。"""
     if strict or focus_tables:
         allowed = {(o.get("table") or "").lower() for o in ir.get("objects", []) if o.get("table")}
         if focus_tables:
@@ -1855,10 +1855,10 @@ def _qa_validate_sql(sql, ir, strict=False, focus_tables=None):
 
 _METRIC_LAYER_CN = {"atomic": "原子指标", "derived": "派生指标", "composite": "复合指标"}
 def _metric_cards(question, ir):
-    """A3 口径卡:问句命中的指标 → 名称/分层/口径说明/数据出处(表.列)/单位,随答案展示。
+    """A3 计算规则卡:问句命中的指标 → 名称/分层/计算规则/数据出处(表.列)/单位,随答案展示。
 
     DR-054:契约指标同时给出「怎么算」(聚合/过滤/时间)与状态,按 certified > verified > candidate
-    排序;candidate 明确标注未核验,而不是与已核验口径并列。"""
+    排序;candidate 明确标注未核验,而不是与已核验的指标并列。"""
     cards = []
     _ml = ir.get("metric_layers")
     for k, arr in (_ml if isinstance(_ml, dict) else {}).items():
@@ -1881,7 +1881,7 @@ def _metric_cards(question, ir):
     return cards[:4]
 
 def _record_metric_usage(cards, graph):
-    """指标使用度埋点(DR-054):口径卡命中即计一次;只读旁路,失败静默。返回 cards 原样。"""
+    """指标使用度埋点(DR-054):计算规则卡命中即计一次;只读旁路,失败静默。返回 cards 原样。"""
     try:
         import usage_stat
         usage_stat.record(WORK, graph, ["metric:" + c["name"] for c in cards if c.get("name")], "query")
@@ -1921,7 +1921,7 @@ def agent_sql_plan(question, context, steps):
 可用表结构:
 {context}
 只输出一个 JSON(不要其它文字): {{"analyses":[{{"title":"...","sql":"SELECT ...","chart":{{"type":"line|bar|pie","x":"列名","y":["列名"]}}}}], "note":"一句话分析思路"}}
-要求: 最多3个分析,第一个分析直接回答问题本身(问总量就给出总量,问排名就给出排名),拆分、趋势放在其后;SQL 只用上面列出的表列;若上下文给出「表间关系(⋈)」,跨表 JOIN 必须优先使用这些键,不要自造 JOIN 条件;聚合趋势用 substr(日期列,1,7) 按月;LIMIT 500 以内;「⋈⋈」为两跳链,须完整沿链 JOIN 中间表;均值口径:『月均/日均』分母用 count(DISTINCT 期间),不得除以固定常数;『最…的』单值问题:JOIN 后聚合再 ORDER BY … LIMIT 1。"""
+要求: 最多3个分析,第一个分析直接回答问题本身(问总量就给出总量,问排名就给出排名),拆分、趋势放在其后;SQL 只用上面列出的表列;若上下文给出「表间关系(⋈)」,跨表 JOIN 必须优先使用这些键,不要自造 JOIN 条件;聚合趋势用 substr(日期列,1,7) 按月;LIMIT 500 以内;「⋈⋈」为两跳链,须完整沿链 JOIN 中间表;均值计算:『月均/日均』分母用 count(DISTINCT 期间),不得除以固定常数;『最…的』单值问题:JOIN 后聚合再 ORDER BY … LIMIT 1。"""
     for drv in _drv_order():
         try:
             if drv not in available(): continue
@@ -2305,7 +2305,7 @@ def metric_quick():
         try:
             data = q(sql)
             return jsonify({"metric": name, "unit": hit.get("unit") or "", "layer": hit["layer"], "sql": sql,
-                            "agg": hit["measure"]["agg"], "agg_note": "契约口径(确定性编译)",
+                            "agg": hit["measure"]["agg"], "agg_note": "契约计算规则(确定性编译)",
                             "status": hit.get("status") or "candidate",
                             "source": f"{hit['table']}.{hit['measure']['col'] or '*'}", "data": data})
         except Exception as e:
@@ -2323,7 +2323,7 @@ def metric_quick():
             dcol = _safe_ident((dates or named or [None])[0])
     if not (vcol and dcol):
         return jsonify({"error": f"缺日期列或取值列(date={dcol}, value={vcol})"}), 400
-    # 聚合口径:比率/百分比 → 平均(不可求和);存量/快照(余额/库存/在册/期末/人数)→ 月均(按日求和会 ~30x 高估);流量 → 求和
+    # 聚合方式:比率/百分比 → 平均(不可求和);存量/快照(余额/库存/在册/期末/人数)→ 月均(按日求和会 ~30x 高估);流量 → 求和
     mtype, unit = (hit.get("type") or ""), (hit.get("unit") or "")
     is_ratio = ("比率" in mtype) or ("占比" in mtype) or unit.strip() == "%" or bool(re.search(r"率|占比|比率|均", name))
     is_stock = bool(re.search(r"余额|库存|在册|期末|存量|头寸|人数|结存|在制", name))
@@ -2337,14 +2337,14 @@ def metric_quick():
     try:
         data = q(sql)
         return jsonify({"metric": name, "unit": unit, "layer": hit["layer"], "status": "heuristic",
-                        "sql": sql, "agg": agg, "agg_note": "启发式口径(未核验):" + agg_note,
+                        "sql": sql, "agg": agg, "agg_note": "启发式计算规则(未核验):" + agg_note,
                         "source": f"{tbl}.{vcol}", "data": data})
     except Exception as e:
         return jsonify({"error": str(e), "sql": sql}), 400
 
 @app.get("/api/table/<name>/info")
 def table_info(name):
-    """表基本信息:行/列 + 所属本体对象 + 支撑指标(iip 元数据详情范式)"""
+    """表基本信息:行/列 + 所属本体对象 + 支撑指标(字段组织参照平台的元数据详情页)"""
     if not re.match(r"^[A-Za-z0-9_]+$", name): return jsonify({"error": "bad name"}), 400
     con = ro_connect(DB)
     try:
@@ -2879,7 +2879,7 @@ def ont_forge():
 
 @app.get("/api/ont/rules")
 def ont_rules():
-    """构成规则:建模规则映射 + 从当前IR派生的真实计数(同平台rules.js口径,不臆造)"""
+    """构成规则:建模规则映射 + 从当前IR派生的真实计数(与平台 rules.js 的计数规则相同,不臆造)"""
     key = request.args.get("graph", "demo")
     ir = load_ir_edited(key) or {}
     objs, links = ir.get("objects", []), ir.get("links", []) or ir.get("relations", [])
@@ -3445,7 +3445,7 @@ def ont_compat(key):
 
     比较**基线 IR** 与**当前编辑后 IR**:发布这批草案编辑会破坏什么。
 
-    本体是语义契约——问数靠它召回表与口径、规则靠它锚定对象、动作靠它绑表、
+    本体是语义契约——问数靠它召回表与计算规则、规则靠它锚定对象、动作靠它绑表、
     穿透链路靠它连通。删掉一个对象可能让几条规则失效、几个动作绑不到表,
     而这些往往直到线上报错才被发现。
 
@@ -3960,7 +3960,7 @@ def _qa_key(question, history, focus=None, graphs=None):
     try:
         if os.path.exists(UPLOAD_DB): up_sig = str(int(os.path.getmtime(UPLOAD_DB)))
     except Exception: pass
-    # 本体编辑指纹:本体是问数的语义锚点(召回/口径/双盲全靠它),改了本体却复用旧答案,
+    # 本体编辑指纹:本体是问数的语义锚点(召回、本体约束校验与双盲核对都依赖它),改了本体却复用旧答案,
     # 用户会持续拿到旧语义下的结果——别名新增后仍答不上就是这么来的(实测发现)
     ont_sig = ""
     for _gk in (sorted(graphs) if graphs else ["demo"]):     # 锚定本体各自的编辑指纹都要进键
@@ -3973,7 +3973,7 @@ def _qa_key(question, history, focus=None, graphs=None):
     return hashlib.md5(sig.encode("utf-8")).hexdigest()
 
 def _gate_category(why):
-    """口径拦截原因归类,供指标统计(不含具体表名)。"""
+    """本体约束拦截原因归类,供指标统计(不含具体表名)。"""
     w = str(why or "")
     for key, cat in (("租户", "tenant_scope"), ("分组", "group_scope"), ("软删除", "soft_delete"), ("已删除", "soft_delete"),
                      ("不在本体已验证关系", "join_not_verified"), ("臆造表名", "unknown_table"), ("不在所选本体", "out_of_scope"),
@@ -3985,7 +3985,7 @@ def _gate_category(why):
 
 @app.get("/api/obs/metrics")
 def obs_metrics():
-    """DR-066 观测:进程内计数器与耗时分布(构建 / 问数各步骤、降级构建、口径拦截按原因)。"""
+    """DR-066 观测:进程内计数器与耗时分布(构建 / 问数各步骤、降级构建、本体约束拦截按原因)。"""
     return jsonify(observability.snapshot())
 
 
@@ -4103,8 +4103,8 @@ def _chat_impl():
             sql, ir_gate, strict=bool(graph_keys and gate_keys != ["demo"] and not fallback),
             focus_tables=focus_tables)
         if not okv and engine_plan:
-            # DR-069 口径校验给出了明确原因(缺有效行、租户、判别条件等):让引擎按原因改一次,改后照样过校验
-            steps.append({"step": "ontology_gate", "ok": False, "info": "口径拦截:" + why + "(按原因修正一次)"})
+            # DR-069 本体约束校验给出了明确原因(缺有效行、租户、判别条件等):让引擎按原因改一次,改后照样过校验
+            steps.append({"step": "ontology_gate", "ok": False, "info": "本体约束拦截:" + why + "(按原因修正一次)"})
             fixed = _repair_sql(q_eff, ctx, sql, why)
             if fixed:
                 sql = fixed
@@ -4113,15 +4113,15 @@ def _chat_impl():
                     focus_tables=focus_tables)
         if not okv:
             blocked.append(why)
-            steps.append({"step": "ontology_gate", "ok": False, "info": "口径拦截:" + why}); continue
-        # DR-026 双盲意图检测:口径校验管「SQL 合不合规」,这里管「答的是不是问的那件事」。
-        # 只观测不阻断——确定性反解也会有漏判(如口径卡走视图名),
+            steps.append({"step": "ontology_gate", "ok": False, "info": "本体约束拦截:" + why}); continue
+        # DR-026 双盲意图检测:本体约束校验管「SQL 合不合规」,这里管「答的是不是问的那件事」。
+        # 只观测不阻断——确定性反解也会有漏判(如计算规则卡走视图名),
         # 因误判挡住正确答案的代价远高于标注一句存疑。
         try:
             import intent_check, usage_stat
             _ic = intent_check.cross_check(question, sql, ir_gate)
             if _ic["verdict"] == "mismatch" and engine_plan:
-                # DR-073 答非所问:改用问句提到的对象的表重写一次,改后照样过口径校验
+                # DR-073 答非所问:改用问句提到的对象的表重写一次,改后照样过本体约束校验
                 steps.append(intent_check.step_of(_ic))
                 _fx = _intent_repair(q_eff, ctx, sql, _ic)
                 if _fx and _qa_validate_sql(_fx, ir_gate, strict=bool(graph_keys and gate_keys != ["demo"] and not fallback),
@@ -4291,7 +4291,7 @@ def chat_stream():
                 strict=bool(graph_keys and _gate_keys != ["demo"] and not _gate_fallback),
                 focus_tables=focus_tables)
             if not okv and engine_plan:              # DR-069 按拦截原因修正一次,改后照样过校验
-                yield push("ontology_gate", False, f"[{idx}] 口径拦截:{why}(按原因修正一次)")
+                yield push("ontology_gate", False, f"[{idx}] 本体约束拦截:{why}(按原因修正一次)")
                 fixed = _repair_sql(q_eff, ctx, sql, why)
                 if fixed:
                     sql = fixed
@@ -4301,13 +4301,13 @@ def chat_stream():
                         focus_tables=focus_tables)
             if not okv:
                 blocked.append(why)
-                yield push("ontology_gate", False, f"[{idx}] 口径拦截:{why}"); continue
+                yield push("ontology_gate", False, f"[{idx}] 本体约束拦截:{why}"); continue
             yield push("ontology_gate", True, f"[{idx}] 本体校验通过 · 表与 JOIN 键均在本体边界内")
             try:                                     # DR-026 双盲意图检测(只观测不阻断)+ 使用度埋点
                 import intent_check, usage_stat
                 _ic = intent_check.cross_check(question, sql, ir_gate)
                 if _ic["verdict"] == "mismatch" and engine_plan:
-                    # DR-073 答非所问:改用问句提到的对象的表重写一次,改后照样过口径校验
+                    # DR-073 答非所问:改用问句提到的对象的表重写一次,改后照样过本体约束校验
                     yield push("intent_crosscheck", False, f"[{idx}] " + intent_check.step_of(_ic)["info"])
                     _fx = _intent_repair(q_eff, ctx, sql, _ic)
                     if _fx and _qa_validate_sql(_fx, ir_gate, strict=bool(graph_keys and _gate_keys != ["demo"] and not _gate_fallback),
@@ -4348,7 +4348,7 @@ def chat_stream():
             except Exception as e:
                 yield push("exec_sql", False, f"[{idx}] {title}: {str(e)[:90]}")
         if results:
-            yield push("review", True, f"审视分析结果 · 检查数据完整性与口径 · {len(results)}/{len(analyses)} 项有效")
+            yield push("review", True, f"审视分析结果 · 检查数据完整性与统计方式 · {len(results)}/{len(analyses)} 项有效")
             yield sse({"type": "status", "text": "汇总数据,生成业务洞察报告…"})
             # B6 叙述流式:后台线程生成,片段进 chunks;主循环轮询逐段外推 narrative_delta
             chunks, nbox = [], {"v": None, "done": False}
@@ -4573,7 +4573,7 @@ def diagnose_stream():
 _apply_engine_cfg(_load_engine_cfg())        # 启动即应用持久化配置(覆盖 start.sh 缺省)
 
 # ── 引擎设置路由已迁至 bp_engine blueprint(IR-011/DR-043);共享层在 srv_engine ──
-# ── C9 问数评测(P20 落地):参考问题集 × 三组对照(A朴素 / B图谱 / C本体全量),自动判分 ──
+# ── C9 问数评测(P20):参考问题集 × 三组对照(A朴素 / B图谱 / C本体全量),自动判分 ──
 _EVAL_SET_F = os.path.join(HERE, "benchmark", "qa_set.json")
 _EVAL_RES_F = os.path.join(WORK, "eval_results.json")
 EVAL_JOB = {"running": False, "progress": "", "done": 0, "total": 0, "started": ""}
@@ -4656,7 +4656,7 @@ def _eval_value(data):
     return None
 
 def _eval_judge(item, val):
-    """判分:数值容差(万元题同时接受 ×10000 的元口径);字符串等值/包含。"""
+    """判分:数值容差(万元题同时接受以元为单位、相差 10000 倍的数值);字符串等值/包含。"""
     if val is None: return False
     if "gold_str" in item:
         return str(val).strip() == item["gold_str"] or item["gold_str"] in str(val)
@@ -4671,7 +4671,7 @@ def _run_eval_thread(model=None, limit=None):
     ir = load_ir_edited("demo") or {}
     arms = [("A", "朴素 Text2SQL(仅英文表列)", lambda it: _ctx_naive(), False),
             ("B", "图谱增强(中文语义+关系)", lambda it: _ctx_graph(it["q"]), False),
-            ("C", "本体全量(语义+关系+指标+术语+口径校验)", lambda it: build_context(it["q"]), True)]
+            ("C", "本体全量(语义+关系+指标+术语+本体约束校验)", lambda it: build_context(it["q"]), True)]
     EVAL_JOB.update(running=True, done=0, total=len(items) * len(arms),
                     started=time.strftime("%Y-%m-%d %H:%M:%S"), progress="启动")
     out = {"ts": time.strftime("%Y-%m-%d %H:%M:%S"), "model": model or (_task_model("plan") or "(引擎缺省)"),
@@ -4686,7 +4686,7 @@ def _run_eval_thread(model=None, limit=None):
                 if gated:
                     okv, why = _validate_sql_ontology(sql, ir)
                     if not okv:
-                        rec["gate_block"] = True; rec["err"] = "口径拦截:" + why
+                        rec["gate_block"] = True; rec["err"] = "本体约束拦截:" + why
                         out["arms"][key]["gate_block"] += 1
                 if not rec["gate_block"]:
                     try:
@@ -4823,7 +4823,7 @@ def api_routes():
 
 @app.get("/api/quality")
 def data_quality():
-    """数据质量检查(对齐平台『数据治理/告警中心』):空表/行数/关键口径异常,基于真实数据"""
+    """数据质量检查(对齐平台『数据治理/告警中心』):空表/行数/关键指标异常,基于真实数据"""
     checks = []; scanned = 0; flagged = set()
     try:
         tl = table_list(); scanned = len(tl)
@@ -4834,13 +4834,13 @@ def data_quality():
                 checks.append({"target": t["name"], "rule": "无列检测", "level": "error", "detail": f'{t["name"]}: 无字段'}); flagged.add(t["name"])
     except Exception as e:
         checks.append({"target": "table_list", "rule": "库连通", "level": "error", "detail": str(e)[:80]})
-    # 业务口径异常:毛利率偏低(<12%)的月份
+    # 业务指标异常:毛利率偏低(<12%)的月份
     try:
         rows = q("SELECT substr(order_date,1,7) m, round(100.0*sum(gross_profit_actual)/nullif(sum(amount),0),1) mr FROM fact_sales_order GROUP BY 1 HAVING mr < 12 ORDER BY 1")["rows"]
         for r in rows:
             checks.append({"target": "fact_sales_order", "rule": "毛利率预警(<12%)", "level": "warn", "detail": f'{r["m"]} 毛利率 {r["mr"]}%'}); flagged.add("fact_sales_order")
     except Exception: pass
-    # 分层对账(DR-022 评测揪出):汇总层与事实层同口径合计差异 >5% 报警——层间不一致会让问数
+    # 分层对账(DR-022 评测揪出):汇总层与事实层按相同条件合计的差异 >5% 报警——层间不一致会让问数
     # 因选表不同得出不同答案(评测 Q7/Q8 败题即由此)。
     for tag, fact_sql, agg_sql, agg_t in [
         ("产量对账", "SELECT sum(o.quantity) FROM fact_production_output o JOIN fact_production_order po ON o.order_id=po.order_id",
@@ -5809,11 +5809,11 @@ def _read_asset_text(fname, cap=3500):
     ext = fname.rsplit(".", 1)[-1].lower() if "." in fname else ""
     if not os.path.exists(p): return ""
     if ext in ("xlsx", "xls"):
-        # Excel 知识包(看板/指标口径等):抽工作表名 + 前若干行,喂 LLM 以获得有业务意义的中文命名
+        # Excel 知识包(看板/指标定义等):抽工作表名 + 前若干行,喂 LLM 以获得有业务意义的中文命名
         try:
             import openpyxl
             wb = openpyxl.load_workbook(p, read_only=True, data_only=True)
-            out = []                                     # 取样即可(供 LLM 感知术语口径),不喂全表,避免撑大 prompt 拖慢/超时
+            out = []                                     # 取样即可(供 LLM 了解术语用法),不喂全表,避免撑大 prompt 拖慢/超时
             for sn in wb.sheetnames[:5]:
                 rows = []
                 for i, r in enumerate(wb[sn].iter_rows(values_only=True)):
@@ -5843,7 +5843,7 @@ _GLOSSARY_HEADERS = {"name": ("指标名称", "指标"), "desc": ("指标说明"
                      "dimension": ("业务维度", "分类"), "source": ("来源",)}
 
 def _glossary_rows(path, cap=400):
-    """Excel 口径表 → 行字典(指标名称/说明/计算逻辑/维度/来源);表头按包含匹配,容忍不同企业的列名差异。
+    """Excel 指标定义表 → 行字典(指标名称/说明/计算逻辑/维度/来源);表头按包含匹配,容忍不同企业的列名差异。
     openpyxl 缺失或文件损坏时返回空:反解拿不到看板证据只是少一个入口,不能让构建失败。"""
     try:
         import openpyxl
@@ -5873,7 +5873,7 @@ def _glossary_rows(path, cap=400):
     return out
 
 def _metric_inputs():
-    """指标反解的输入(DR-054):上传的 .sql/.ddl 文本、Excel 口径表、沉淀技能 SQL、参考基准。
+    """指标反解的输入(DR-054):上传的 .sql/.ddl 文本、Excel 指标定义表、沉淀技能 SQL、参考基准。
     → (sql_texts, glossary_rows, qa_skills, gold_items)"""
     sql_texts, rows = {}, []
     for p in sorted(glob.glob(os.path.join(WORK, "uploads_*"))):
@@ -5889,7 +5889,7 @@ def _metric_inputs():
     return sql_texts, rows, skills if isinstance(skills, list) else [], _eval_items()
 
 def _db_for_source(source):
-    """数据源标识 → 本地 SQLite 路径;外部库/不存在返回 None(与构建入口的解析口径一致)。"""
+    """数据源标识 → 本地 SQLite 路径;外部库/不存在返回 None(与构建入口的解析规则一致)。"""
     if not source or source == "demo": return DB
     if source == "uploads": return UPLOAD_DB
     for c in _load_conns():
@@ -6086,7 +6086,7 @@ def _iter_all_irs():
 def _review_history(force=False):
     """⑥ 可解释性第三问「历史上类似情况准确率?」——聚合人审结论。
 
-    口径:只统计带 human_review 的关系,按**系统原判**(review_prior_status)分组算人审同意率。
+    统计范围:只统计带 human_review 的关系,按**系统原判**(review_prior_status)分组算人审同意率。
     这才是工程师真正要问的那一问:"系统说 verified 时,人有多少次认同?"
     另按动词分组,暴露"哪类语义关系机器最容易判错"。
 
@@ -6566,8 +6566,8 @@ def _clarify_text(question, ir, ics=(), blocked=()):
 
 
 def _repair_sql(question, ctx, sql, why, budget=60):
-    """口径校验拦下的 SQL 按拦截原因让引擎改一次;返回只读的新 SQL 或 None(DR-069)。"""
-    ask = (f"{question}\n[修正要求] 下面这条 SQL 被本体口径校验拦下,原因:{why}。"
+    """本体约束校验拦下的 SQL 按拦截原因让引擎改一次;返回只读的新 SQL 或 None(DR-069)。"""
+    ask = (f"{question}\n[修正要求] 下面这条 SQL 被本体约束校验拦下,原因:{why}。"
            f"请只按该原因修正这一条 SQL,输出一个分析即可:\n{sql}")
     plan = _bounded(lambda: agent_sql_plan(ask, ctx, []), budget)
     new = ((plan or {}).get("analyses") or [{}])[0].get("sql") if isinstance(plan, dict) else None
@@ -6583,7 +6583,7 @@ def _dimension_caveat(warns):
 
 
 def _distinct_values(con, cache, table, col, where="", args=()):
-    """某列的去重非空取值(转成字符串比较,与 dao_core.clean 同口径),按 (表, 列, 条件) 缓存。"""
+    """某列的去重非空取值(转成字符串比较,与 dao_core.clean 的比较方式相同),按 (表, 列, 条件) 缓存。"""
     key = (table, col, where, args)
     if key not in cache:
         t, c = _safe_ident(table), _safe_ident(col)
@@ -7121,7 +7121,7 @@ def _adjudicate_ir(db, name, extracted, ev, base_ir=None):
                 note = (f"端点「{'、'.join(outside)}」来自已有本体,其表不在本轮数据源,"
                         "无法在本轮取证;跨源待取证")
             probed = saw_rows = False              # probed:至少有一对候选键取到了统计信号
-            # 数据裁决的前提是两端都落到真实表上。统计未落地的情形,好让「verified 0 条」
+            # 数据裁决的前提是两端都落到真实表上。统计未绑定到真实表的情形,好让「verified 0 条」
             # 可解释——用户否则无从区分「数据源太薄」与「裁决器坏了」。
             if not ts and not tt: ungrounded["both"] += 1
             elif not ts or not tt: ungrounded["one"] += 1
@@ -7892,18 +7892,18 @@ def build_inquire():
                        f"改绑对象 {_mg.get('objects_rebound', 0)} 个 · 同名概念注明表名 {_mg.get('cn_disambiguated', 0)} 个 · "
                        f"新增关系 {_mg['relations_added']} 条 · 证据升级 {_mg['relations_upgraded']} 条 · "
                        f"保留原结论 {_mg['relations_kept']} 条(已确立的 verified/asserted 不被覆盖)")
-        # ④″ 指标反解与核验(DR-054):历史 SQL / 口径表 / 沉淀 SQL / 参考基准 → 契约 → 只读执行 → 与参照比对。
+        # ④″ 指标反解与核验(DR-054):历史 SQL / 指标定义表 / 沉淀 SQL / 参考基准 → 契约 → 只读执行 → 与参照比对。
         # 指标自此与关系同等:verified 只来自可回放证据;失败不影响关系产物,但如实留痕。
         try:
             _mx = metric_pipeline.run(db, ir, ev.get("tab_cols"), *_metric_inputs())
             ir["metric_layers"] = _mx["metric_layers"]; ir["metric_report"] = _mx["report"]
             _mr = _mx["report"]; _ms = _mr["sources"]
             yield push("metric_mining", True,
-                       f"指标反解 · 候选 {_mr['candidates']} 条(历史 SQL {_ms['sql']} · 口径表 {_ms['dashboard']} · "
+                       f"指标反解 · 候选 {_mr['candidates']} 条(历史 SQL {_ms['sql']} · 指标定义表 {_ms['dashboard']} · "
                        f"沉淀 SQL {_ms['qa_skill']} · 参考基准 {_ms['gold']}) · 含 JOIN 待人工拆解 {len(_mr['skipped'])} 条")
             yield push("metric_adjudication", True,
                        f"指标核验 · verified {_mr['verified']} 条 · 可执行未核验 {_mr['executable_unverified']} 条 · "
-                       f"未绑定口径 {_mr['unbound']} 条")
+                       f"未绑定计算规则 {_mr['unbound']} 条")
         except Exception as _e:
             yield push("metric_mining", False, f"指标反解失败:{str(_e)[:90]}(关系产物不受影响)")
         # ④‴ 构建后自动复核(DR-063):选中 ontology-cross-check 技能时,用它的脚本在裁决之后复核关系、
@@ -8396,7 +8396,7 @@ def outputs_file():
     if not any(rp.startswith(os.path.realpath(a) + os.sep) for a in allowed): return "forbidden", 403
     return send_file(rp)
 
-# ── 指标契约 blueprint(DR-054):契约查看 / 人工确认口径 / 重跑核验 / 维度可达性 ──
+# ── 指标契约 blueprint(DR-054):契约查看 / 人工确认计算规则 / 重跑核验 / 维度可达性 ──
 from bp_metrics import bp_metrics as _bp_metrics, configure_metrics as _configure_metrics  # noqa: E402
 _configure_metrics(load_graph=lambda k: (None if _bad_gkey(k) else (load_ir_edited(k) or load_ir(k))),
                    open_writable=lambda k: _open_writable(k), db_for_source=lambda s: _db_for_source(s),

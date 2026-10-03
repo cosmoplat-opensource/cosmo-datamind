@@ -230,7 +230,7 @@ def test_ui_has_controls_payload_history_and_external_module():
 
 class TestEnergyAndCarbonProfiles:
     """能源管理与碳排放核算分成两个独立参照:一套能源管理系统往往只覆盖能源侧,
-    碳核算需要自己的核算边界、排放因子与范围口径,不能作为能源参照的附属可选项。"""
+    碳核算需要自己的核算边界、排放因子与排放范围划分,不能作为能源参照的附属可选项。"""
 
     def _profile(self, industry, mode="reference"):
         return refs.normalize({"version": 1, "industry": {"id": industry, "mode": mode},

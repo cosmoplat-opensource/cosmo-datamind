@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 """深度问数的本体约束说明必须区分规划候选与 SQL 执行事实。"""
+import re
 from pathlib import Path
 
 import server
@@ -49,8 +50,8 @@ def test_backend_explanation_counts_real_join_keywords_and_deduplicates_tables()
 
 def test_ui_module_load_order_and_plain_language_information_architecture():
     assert '/assets/styles/qa-anchor.css?v=1' in UI
-    assert '/assets/modules/qa-anchor.js?v=1' in UI
-    assert UI.index('/assets/modules/qa-anchor.js?v=1') < UI.index('<script>const $=')
+    assert '/assets/modules/qa-anchor.js?v=4' in UI
+    assert UI.index('/assets/modules/qa-anchor.js?v=4') < UI.index('<script>const $=')
     for text in ("SQL 最终直接使用", "为什么选入规划上下文", "候选不等于实际使用",
                  "本次 SQL 没有执行 JOIN", "查看关系图（技术证据）"):
         assert text in MODULE
@@ -62,3 +63,13 @@ def test_ui_module_load_order_and_plain_language_information_architecture():
 def test_index_keeps_anchor_module_out_of_monolith():
     assert "function dqAnchorHTML" not in UI
     assert len(UI.splitlines()) < 2500
+
+
+def test_relation_diagram_stays_readable_and_routes_around_boxes():
+    """关系图(技术证据)按原尺寸显示、不随窄面板缩小(缩到三成时字只有 4 px),字号不小于 11 px;
+    直线会穿过无关对象框时改走弧线,不让读者误以为连到了中间那个框。"""
+    fn = MODULE[MODULE.index("function dqAnchorGraph"):MODULE.index("function dqAnchorHTML")]
+    assert "max-width:none" in fn and "style=\"width:100%" not in fn
+    sizes = [float(x) for x in re.findall(r'font-size="([\d.]+)"', fn)]
+    assert sizes and min(sizes) >= 11
+    assert "function dqRoute" in MODULE and "dqRoute(" in fn

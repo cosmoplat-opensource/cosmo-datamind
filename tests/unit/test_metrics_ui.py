@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""指标中心与口径卡的界面契约(DR-054):状态可见、确认口径按钮的边界、图谱可切换。
+"""指标中心与计算规则卡的界面契约(DR-054):状态可见、业务确认按钮的边界、图谱可切换。
 
 与 test_ui.py 的浏览器走查互补:此处只做静态断言,离线秒级,防止改版时悄悄丢掉
 「状态标注」「已核验不可由人授予」这类不可退让的呈现约束。
@@ -15,12 +15,12 @@ def test_status_vocabulary_covers_all_states_and_labels_are_chinese():
     assert m, "指标状态词表缺失"
     body = m.group(1)
     for key, label in (("certified", "业务已确认"), ("verified", "已核验"), ("candidate", "待核验"),
-                       ("deprecated", "已停用"), ("heuristic", "旧口径(启发式)")):
+                       ("deprecated", "已停用"), ("heuristic", "旧规则(启发式)")):
         assert key in body and label in body
 
 
 def test_metrics_table_shows_status_and_caliber_columns():
-    assert "<th>状态</th><th>口径</th>" in UI
+    assert "<th>状态</th><th>计算规则</th>" in UI
     assert "mstTag(mStatus(x))" in UI and "mCaliber(x)" in UI
 
 
@@ -40,18 +40,18 @@ def test_ui_never_offers_verified_as_a_human_action():
 
 
 def test_certified_requires_reviewer_before_request():
-    assert "确认口径须填写确认人" in UI
+    assert "业务确认须填写确认人" in UI
     assert "if(status==='certified'&&!who)" in UI
 
 
 def test_legacy_metric_cannot_be_certified_in_ui():
-    assert "不能确认为业务口径" in UI
+    assert "不能做业务确认" in UI
 
 
 def test_metric_cards_expose_status_and_warn_on_unverified():
     assert "m.status?mstTag(m.status)" in UI
-    assert "该口径尚未核验，数值仅供参考" in UI
-    assert "计算口径:<code" in UI
+    assert "该计算规则尚未核验，数值仅供参考" in UI
+    assert "计算规则:<code" in UI
 
 
 def test_lineage_shows_evidence_and_dimension_reachability():

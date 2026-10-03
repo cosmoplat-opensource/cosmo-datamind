@@ -17,7 +17,7 @@
 状态(与关系的 verified/asserted/candidate 对称):
   candidate   提议或反解得到,尚未通过执行核验;可执行但无参照者仍是 candidate
   verified    编译结果只读执行成功,且与参照结果一致
-  certified   人工确认口径(等价于关系的 asserted);只能由人授予,本模块不会自动升
+  certified   人工确认计算规则(等价于关系的 asserted);只能由人授予,本模块不会自动升
   deprecated  人工停用;保留记录,不再被默认消费
 
 旧形状(只有 table/value_col)的指标仍可读取:``normalize`` 会把它归一成契约,但没有
@@ -73,7 +73,7 @@ def normalize(m, ir=None):
     """归一为契约。结构非法(标识符/聚合/算子不合法)时抛 ValueError——带病入库会污染下游。
 
     旧形状指标(无 measure)也归一,保留 table/value_col 供既有消费方使用,
-    但 measure.agg 为空,表示「尚无可编译口径」。
+    但 measure.agg 为空,表示「尚无可编译的计算规则」。
     """
     if not isinstance(m, dict):
         raise ValueError("指标须为对象")
@@ -110,7 +110,7 @@ def normalize(m, ir=None):
     if not table and out["entity"] and ir:
         table = _ident(_entity_table(out["entity"], ir))
     out["table"] = table
-    out["value_col"] = col                      # 旧消费方(口径卡/上下文)仍读这两个字段
+    out["value_col"] = col                      # 旧消费方(计算规则卡/上下文)仍读这两个字段
     filters = []
     for f in (m.get("filters") or []):
         if not isinstance(f, dict):
@@ -360,7 +360,7 @@ def schema_missing(db_path, contract, *, connection=None):
 
 
 def describe(contract):
-    """契约的一行口径文本(供口径卡与问数上下文):SUM(amount) WHERE status != 'cancelled' 按 order_date/month。"""
+    """契约的一行计算规则文本(供计算规则卡与问数上下文):SUM(amount) WHERE status != 'cancelled' 按 order_date/month。"""
     m = contract.get("measure") or {}
     agg, col = (m.get("agg") or "").upper(), m.get("col") or "*"
     if agg == "COUNT_DISTINCT":
@@ -425,7 +425,7 @@ def compare_results(mine, ref, tol=DEFAULT_TOLERANCE, allow_text=False):
     """比较完整结果:最后一列为度量,此前维度逐值逐类型精确匹配。
 
     返回 (是否一致, 说明)。形状不同(行数/列数)即不一致——不做「取第一列求和」之类的
-    宽松折算,那会把口径不同的两个指标判成相同。
+    宽松折算,那会把计算规则不同的两个指标判成相同。
     """
     tolerance = _num(tol)
     if tolerance is None or not 0 <= tolerance < 1:

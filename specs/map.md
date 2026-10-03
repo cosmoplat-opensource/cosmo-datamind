@@ -4,7 +4,7 @@
 > 规约驱动开发(SDD)。消费方式:`Consult @specs/map.md to find relevant context.`
 
 > **阅读说明（2026-08-28）：** `decisions/`、`iterations/` 与下文带日期的条目是历史决策记录，
-> 会保留当时的页面名、接口名和测试数字，不代表当前能力。当前可执行口径以 `README.md`、
+> 会保留当时的页面名、接口名和测试数字，不代表当前能力。当前能力以 `README.md`、
 > `ARCHITECTURE.md`、`docs/pipelines/ontology_build.yaml` 和测试结果为准。尤其不得把旧记录中的
 > “完备度 100%”“全部关系接地”“多模态解析”或 HermiT 文字当作已验证能力。
 
@@ -16,7 +16,7 @@ COSMO DataMind 是「数据治理 × 本体 × 深度问数」原型：
 并对齐 `iip.iiot-platform.com/bigdata` 的品类与观感。单端口 8092,`./start.sh` 启动。
 
 > 与平台的关系:平台(`../上游本体引擎/`)是**引擎与方法论真相源**(其 `specs/` 有 DR-001…DR-011);
-> DataMind 是**下游产品化前端**,复用其 engine/技能,但采用**独立的本地执行、路由、安全与命名口径**——
+> DataMind 是**下游产品化前端**,复用其 engine/技能,但采用**独立的本地执行、路由、安全与命名规则**——
 > 本 `specs/` 只记录 DataMind 自身的决定与迭代,与平台 specs 前缀独立、勿混用。
 
 ## 开发约定(DR-066)
@@ -37,6 +37,7 @@ COSMO DataMind 是「数据治理 × 本体 × 深度问数」原型：
 - [DR-072 · 全库评估与修正:注释接入、类型无关的取值比对、按取值补提与实例表识别](decisions/DR-072-whole-dataset-evaluation.md)
 - [DR-073 · 候选关系分流、问数选表修正与澄清、抽样截断标记与独立评审](decisions/DR-073-candidate-triage-and-independent-judging.md)
 - [DR-074 · 200 表合成验证库评估:星型模型键名、字段注释证据与几类误判](decisions/DR-074-contract-200-synthetic-db-evaluation.md)
+- [DR-078 · 界面与文档用语规范、问数关系图与输入栏排版](decisions/DR-078-terminology-and-figure-legibility.md)
 - [DR-077 · 库内数据字典进入构建取证、字段注释否决冲突关系、问数上下文与意图核对修正](decisions/DR-077-in-db-dictionary-and-comment-veto.md)
 - [DR-076 · 演示库按业务过程仿真重建:108 表基础库与 200 表验证库 v3](decisions/DR-076-process-simulated-demo-databases.md)
 - [DR-075 · 200 表合成验证库生成器 v2:业务链派生、如实登记底库缺陷与生成后语义校验](decisions/DR-075-contract-200-generator-v2.md)
@@ -127,7 +128,7 @@ COSMO DataMind 是「数据治理 × 本体 × 深度问数」原型：
 
 ## 现状校准
 - 计数(2026-10-03):**137 路由**(server.py 119 + bp_engine 5 + bp_actions 7 + bp_metrics 4 + bp_semantic 2)/ **565 集成断言** /
-  **1159 项 pytest 测试** / DR-001…DR-077 · IR-001…IR-013。
+  **1161 项 pytest 测试** / DR-001…DR-078 · IR-001…IR-013。
   DR-076 起 `examples/demo_metrics.db` 由 `scripts/build_demo_108_db.py` 按业务过程仿真生成(108 表 / 308,230 行)。
   DR-060 新增构建前预处理:外部库只读抽样 `ext_sample`、构建体检与分轮计划 `build_prep`。
   DR-059 新增长文分块检索 `doc_chunks`,以及能源管理 `energy_management`、碳排放核算 `carbon_accounting` 两个独立行业参照。
@@ -143,10 +144,10 @@ COSMO DataMind 是「数据治理 × 本体 × 深度问数」原型：
 - 新增(DR-016):`mcp_action_server.py` —— 动作层 MCP server(stdio,零依赖):list_actions / **invoke_action(唯一写)** / get_action_status;审批不暴露,治理单一实现留在 HTTP API,Agent 接入自动继承「只能提议、不能批准」。
 - 新增(DR-017):「引擎设置」页 + /api/engine/config·test —— 运行时/模型/API Key 实时切换(调用时读 env+清缓存,免重启);Key 只写不回显、0600、清除同步弹 env;先测后切(真实延迟/真实报错)。
 - 新增(DR-018):全部读方统一 `load_ir_edited`(单一当前真相)——修复 问数JOIN提示/总览/指标/表详情/graphs列表 读原始IR 的不一致;U 分区 18 断言锁定「写→图谱/总览/问数/SPARQL/评审/列表 即读→撤销复原」。套件 186 断言。
-- 新增(DR-019):深度问数十项升级 —— A1 术语词典进检索(term_expand 步)/ A2 SQL 口径拦截 `_validate_sql_ontology`(ontology_gate 步:表白名单+JOIN 键落本体关系)/ A3 指标口径卡(done.metric_cards)/ B4 按任务选模(task_models{plan/narrative/diagnose}+模型族保护)/ B5 多轮指代 `_carryover` / B6 叙述流式 narrative_delta / C7 外部库实连(pymysql;凭据 conn_secrets.json 0600 只写)/ C8 API 型数据源(api_fetch→up.api_* 物化)/ C9 问数评测(benchmark/qa_set.json 8 题参考集×三组,/api/eval/*,「问数评测」页)/ C10「业务助手」页(角色组装问数/诊断/动作/待办)。套件 212 断言。
+- 新增(DR-019):深度问数十项升级 —— A1 术语词典进检索(term_expand 步)/ A2 SQL 本体约束拦截 `_validate_sql_ontology`(ontology_gate 步:表白名单+JOIN 键落本体关系)/ A3 指标计算规则卡(done.metric_cards)/ B4 按任务选模(task_models{plan/narrative/diagnose}+模型族保护)/ B5 多轮指代 `_carryover` / B6 叙述流式 narrative_delta / C7 外部库实连(pymysql;凭据 conn_secrets.json 0600 只写)/ C8 API 型数据源(api_fetch→up.api_* 物化)/ C9 问数评测(benchmark/qa_set.json 8 题参考集×三组,/api/eval/*,「问数评测」页)/ C10「业务助手」页(角色组装问数/诊断/动作/待办)。套件 212 断言。
 - 新增(DR-020):动作层产品化 —— 动作类型管理 CRUD(/api/action/type·update·delete,内置种子受保护、停用即刻拦截发起)/ 3 个行业动作种子(冻结批次·温区调参·供应商 SCAR,均绑真实库表)/ 问数答案卡「相关动作」直达发起(SQL 命中表 × object_table 匹配)/ 动作中心 KPI+类型编辑弹窗+审计筛选与 CSV 导出;MCP 读同一注册表零改动继承。套件 226 断言。
 - 新增(DR-021):构建技能管理 —— 浏览(内置附目录清单)/在线新建/编辑/两击删除(/api/build/skill/<name>·save·delete);**自定义技能正文注入构建方法论**(_skill_method_text,剥 front-matter,编辑后下次构建即生效)——修复「能上传但从未被消费」的死代码问题;内置技能可改写与隐藏(DR-051:workdir 覆盖层+删除墓碑,出厂正文保留,可恢复默认)。套件 236 断言(105 路由)。
-- 新增(DR-022):技能生态五项 —— ①技能对比实验(/api/build/skill_compare·status·results:同目标×两组技能各跑真实构建,对比 对象/关系/verified/动词/类型/定义覆盖;组失败如实展示不充数)②构建流水线 skill_inject 注入痕迹步 ③产物沉淀为技能(/api/build/skill/from_graph:动词表/类型分布/定义样例,确定性提取)④评测败题通用修复(⋈⋈ 两跳路径召回 + 均值分母/单值聚合口径规范进 prompt)⑤存而不用审计(specs/audit-input-consumers.md;第 3 起死代码 qa_skills 已接上:_match_qa_skill 命中复用+skill_reuse 步)。套件 249 断言(109 路由;终跑 C 组 8/8)。
+- 新增(DR-022):技能生态五项 —— ①技能对比实验(/api/build/skill_compare·status·results:同目标×两组技能各跑真实构建,对比 对象/关系/verified/动词/类型/定义覆盖;组失败如实展示不充数)②构建流水线 skill_inject 注入痕迹步 ③产物沉淀为技能(/api/build/skill/from_graph:动词表/类型分布/定义样例,确定性提取)④评测败题通用修复(⋈⋈ 两跳路径召回 + 均值分母/单值聚合的计算规范进 prompt)⑤存而不用审计(specs/audit-input-consumers.md;第 3 起死代码 qa_skills 已接上:_match_qa_skill 命中复用+skill_reuse 步)。套件 249 断言(109 路由;终跑 C 组 8/8)。
 - 引擎在线依赖:深度问数与本体构建的 LLM 步骤依赖 `agent_runtime` 引擎在线;引擎限流(429)/超时时自动降级(深度问数走模板、构建走 quick_build),结果仍产出并如实标注。
 - 已知边界详见 `README.md` 末节(SPARQL 软超时、运行时切换 UI、G6/ECharts 本地内置等)。
 
@@ -177,11 +178,11 @@ Consult @specs/map.md to find relevant context.
   后者对齐四个行业案例同构的建模模式(5-6 类实体 + 一条纵向穿透链路),逐段判定给出断点。
   三者互补:CQ 答「够不够用」· 链路答「通不通」· 漂移答「还对不对得上数据」。
   套件 311 断言。
-- **DR-026 双盲与使用度**:`intent_check.py`(接入问数两分支,口径校验后执行前)、
+- **DR-026 双盲与使用度**:`intent_check.py`(接入问数两分支,本体约束校验后执行前)、
   `usage_stat.py` + `GET /api/ont/usage/<key>`。对齐报告电力案例的「双盲检测机制」
   与阶段六的「业务调用频次驱动迭代」。两通道互不透传(A 只看问句、B 只看 SQL),
   均不调 LLM;只观测不阻断。实测检出真阳性:问「业务员维度表有多少人」而 SQL
-  查销售订单去重——口径校验放行,双盲判 mismatch。套件 326 断言。
+  查销售订单去重——本体约束校验放行,双盲判 mismatch。套件 326 断言。
 - **DR-027 别名与审计**:`set_alias` 算子 + `GET /api/ont/audit/<key>`。别名贯通
   CQ 锚定/意图锚定/问数上下文评分与文本;审计按人/类型/来源聚合并标出风险
   (删除类、人审试图指定 verified)。本体对话页恢复(此前误删)并内置审计面板。
@@ -207,7 +208,7 @@ Consult @specs/map.md to find relevant context.
   记录锚定轨迹,SSE `anchor` 事件 + `done.anchor` 双路送达,前端 `dqAnchorHTML()` 在
   对话气泡内画静态 SVG 子图(入选理由配色 / 关系状态线型 / SQL 实际命中标记)。
   截断优先保留参与关系的对象(自查中修正)。套件 441 断言 · UI 走查 57 · UI 实操 25。
-- **DR-033 选中本体作锚定源**:`_anchor_ir()` 让选中的图谱真正成为锚定/口径/埋点的本体;
+- **DR-033 选中本体作锚定源**:`_anchor_ir()` 让选中的图谱真正成为锚定/本体约束校验/埋点的本体;
   区分「选表=限定」与「选本体=在其中锚定」;`_join_hints` 形状无关(构建产物此前恒出 0 条);
   构建器落结构化 JOIN 键;`_key_name_ok()` 键名词根校验拦截自增键值域巧合造出的假关系;
   UI 增锚定链路(本体→命中→扩展→上下文→SQL 实际用)与命中证据。

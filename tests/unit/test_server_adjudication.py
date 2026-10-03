@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""会话式 LLM 构建分支必须与 quick_build 共用同一数据裁决口径。"""
+"""会话式 LLM 构建分支必须与 quick_build 共用同一数据裁决规则。"""
 import server
 import cq_check
 import pytest

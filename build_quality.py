@@ -237,8 +237,8 @@ def evaluate(ir, cqs=None, definition_threshold=0.6):
                              "fix": "进入人审；争议关系不计入验收问题的强路径，人工确认后再置为 asserted"})
     if metric_counts["candidate"]:
         review_queue.append({"type": "candidate_metrics", "count": metric_counts["candidate"],
-                             "desc": f"{metric_counts['candidate']} 个指标尚未通过执行核验或未绑定口径",
-                             "fix": "补参照 SQL/参考基准后重跑指标核验;口径经业务确认后人工置 certified"})
+                             "desc": f"{metric_counts['candidate']} 个指标尚未通过执行核验或未绑定计算规则",
+                             "fix": "补参照 SQL/参考基准后重跑指标核验;计算规则经业务确认后人工置 certified"})
     query_errors = list((ir.get("scenario") or {}).get("query_errors") or [])
     if query_errors:
         review_queue.append({"type": "adjudication_query_errors", "count": len(query_errors),

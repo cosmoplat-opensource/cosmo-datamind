@@ -60,6 +60,22 @@ function dqTableChips(objects,limit){
  return `<div class="qa-table-chips">${xs.join('')}</div>`;
 }
 
+// 连线避让:直线不穿过其他对象框时照画直线;否则走网格间的空白通道(行间横向通道、列间纵向通道),
+// 从源框竖直进入相邻的行间通道,横移到目标列旁的列间通道,再沿目标行的通道进入目标框。
+// 直线从中间框底下穿过,读者会以为两端之外还连到了那个框。
+function dqRoute(a,b,boxes,g){
+ const cross=(p,q)=>boxes.some(r=>{for(let i=1;i<24;i++){const t=i/24,x=p.x+(q.x-p.x)*t,y=p.y+(q.y-p.y)*t;
+  if(x>r.x0&&x<r.x1&&y>r.y0&&y<r.y1)return true;}return false;});
+ if(!cross(a,b)){                                            // 直线从框边起止:框半透明时线不压在框内文字上
+  const dx=b.x-a.x,dy=b.y-a.y,k=Math.min(dx?g.NW/2/Math.abs(dx):1,dy?g.NH/2/Math.abs(dy):1);
+  return `M${(a.x+dx*k).toFixed(1)},${(a.y+dy*k).toFixed(1)} L${(b.x-dx*k).toFixed(1)},${(b.y-dy*k).toFixed(1)}`;}
+ const rowTop=r=>g.PAD+r*g.CH,chanBelow=r=>rowTop(r)+g.NH+(g.CH-g.NH)/2,chanAbove=r=>rowTop(r)-(g.CH-g.NH)/2;
+ const down=b.r>=a.r,ys=down?chanBelow(a.r):chanAbove(a.r),yt=b.r>a.r?chanAbove(b.r):(b.r<a.r?chanBelow(b.r):ys);
+ const xg=g.PAD+b.c*g.CW-(g.CW-g.NW)/4;                     // 目标列左侧的列间通道
+ const sy=a.y+(down?g.NH/2:-g.NH/2),ty=b.y+(yt>b.y?g.NH/2:-g.NH/2);
+ return `M${a.x},${sy} L${a.x},${ys} L${xg},${ys} L${xg},${yt} L${b.x},${yt} L${b.x},${ty}`;
+}
+
 function dqAnchorGraph(a,m){
  const all=m.all,rels=m.rels,CAP=16,LIM=20,ai={};
  all.forEach((o,i)=>{if(o.table)ai[String(o.table).toLowerCase()]=i;});
@@ -70,20 +86,24 @@ function dqAnchorGraph(a,m){
  const cut=all.length-keep.length,cutR=rels.length-drawn.length,adj={};
  drawn.forEach(r=>{const e=ends(r);(adj[e[0]]=adj[e[0]]||[]).push(e[1]);(adj[e[1]]=adj[e[1]]||[]).push(e[0]);});
  const order=[],seen=new Set();keep.slice().sort((x,y)=>(adj[y]||[]).length-(adj[x]||[]).length).forEach(st=>{if(seen.has(st))return;const q=[st];seen.add(st);while(q.length){const c=q.shift();order.push(c);(adj[c]||[]).forEach(n=>{if(!seen.has(n)){seen.add(n);q.push(n);}});}});
- const COL=Math.min(4,order.length),CW=164,CH=84,PAD=18,NW=144,NH=48,pos={};
- order.forEach((n,k)=>{pos[n]={x:PAD+(k%COL)*CW+CW/2,y:PAD+Math.floor(k/COL)*CH+NH/2};});
+ // 三列、按原尺寸显示:窄面板里横向滚动,不把整图缩小(缩到三成时字只有 4 px 左右)
+ const COL=Math.min(3,order.length),CW=188,CH=92,PAD=24,NW=156,NH=52,pos={},grid={PAD,CW,CH,NW,NH};
+ // 框在格内左对齐,右侧留出 32 px 的列间通道;第一列左侧的通道在 PAD 范围内
+ order.forEach((n,k)=>{const r=Math.floor(k/COL),c=k%COL;pos[n]={x:PAD+c*CW+(CW-NW)/2+NW/2,y:PAD+r*CH+NH/2,r,c};});
  const W=PAD*2+COL*CW,H=PAD*2+Math.ceil(order.length/COL)*CH;
- let svg=`<svg viewBox="0 0 ${W} ${H}" style="width:100%;max-width:${W}px;height:auto;display:block;margin:auto" role="img" aria-label="本体召回对象与候选关系图">`;
- drawn.forEach(r=>{const e=ends(r),st=EST[r.status]||EST.gap;svg+=`<line x1="${pos[e[0]].x}" y1="${pos[e[0]].y}" x2="${pos[e[1]].x}" y2="${pos[e[1]].y}" stroke="${st.c}" stroke-width="1.6"${estDash(st)?` stroke-dasharray="${estDash(st)}"`:''}><title>${esc(r.key||'')}</title></line>`;});
+ const box=n=>({n,x0:pos[n].x-NW/2-3,x1:pos[n].x+NW/2+3,y0:pos[n].y-NH/2-3,y1:pos[n].y+NH/2+3});
+ let svg=`<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" style="max-width:none;display:block;margin:auto" role="img" aria-label="本体召回对象与候选关系图">`;
+ drawn.forEach(r=>{const e=ends(r),st=EST[r.status]||EST.gap,others=order.filter(n=>n!==e[0]&&n!==e[1]).map(box);
+  svg+=`<path d="${dqRoute(pos[e[0]],pos[e[1]],others,grid)}" fill="none" stroke="${st.c}" stroke-width="1.6"${estDash(st)?` stroke-dasharray="${estDash(st)}"`:''}><title>${esc(r.key||'')}</title></path>`;});
  order.forEach(n=>{const o=all[n],p=pos[n],c=DQ_ANC_C[o.reason]||DQ_ANC_C['关键词命中'],on=m.used.has(String(o.table||'').toLowerCase());
-  const tb=String(o.table||''),label=dqObjectName(o),shown=label.length>11?label.slice(0,10)+'…':label;
+  const tb=String(o.table||''),label=dqObjectName(o),shown=label.length>10?label.slice(0,9)+'…':label;
   svg+=`<g><title>${esc(label)} · ${esc(tb)} · ${esc(o.reason||'')}</title><rect x="${p.x-NW/2}" y="${p.y-NH/2}" width="${NW}" height="${NH}" rx="7" fill="${on?'#effaf3':c[1]}" stroke="${on?'#16924b':c[0]}" stroke-width="${on?2.4:1}"${m.complete&&!on?' opacity="0.58"':''}/>`+
-   `<text x="${p.x}" y="${p.y-3}" text-anchor="middle" font-size="12" font-weight="${on?'650':'500'}" fill="#273244">${esc(shown)}${on?' ✓':''}</text>`+
-   `<text x="${p.x}" y="${p.y+13}" text-anchor="middle" font-size="9.5" fill="#697386">${esc(tb.length>25?tb.slice(0,24)+'…':tb)}</text></g>`;});
+   `<text x="${p.x}" y="${p.y-4}" text-anchor="middle" font-size="13" font-weight="${on?'650':'500'}" fill="#273244">${esc(shown)}${on?' ✓':''}</text>`+
+   `<text x="${p.x}" y="${p.y+15}" text-anchor="middle" font-size="11" fill="#566277">${esc(tb.length>22?tb.slice(0,21)+'…':tb)}</text></g>`;});
  svg+='</svg>';
  const est={};rels.forEach(r=>{est[r.status]=(est[r.status]||0)+1;});
  const legend=Object.keys(est).map(k=>{const s=EST[k]||EST.gap;return `<span><i style="display:inline-block;width:14px;border-top:2px ${estDash(s)?'dashed':'solid'} ${s.c};margin-right:4px"></i>${esc(s.n)} ${est[k]}</span>`;}).join('');
- const note=(cut||cutR)?`<div class="qa-proof-meta">${cut?`图中只画了 ${CAP} 个对象（共 ${all.length} 个，优先展示有关系的对象）`:''}${cut&&cutR?'；':''}${cutR?`另有 ${cutR} 条关系因端点未入图而未画`:''}。未显示的内容仍在规划上下文中，没有少喂给引擎。</div>`:'';
+ const note=(cut||cutR)?`<div class="qa-proof-meta">${cut?`图中只画了 ${CAP} 个对象（共 ${all.length} 个，优先展示有关系的对象）`:''}${cut&&cutR?'；':''}${cutR?`另有 ${cutR} 条关系因端点未入图而未画`:''}。未画出的对象和关系仍在规划上下文中，模型可以使用。</div>`:'';
  return `<div class="qa-graph-wrap">${svg}<div class="qa-graph-legend">${legend}</div>${note}</div>`;
 }
 

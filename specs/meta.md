@@ -2,7 +2,7 @@
 
 ## Intent
 定义 DataMind `specs/` 的结构与记录格式(SDD/规约驱动开发)。格式沿用 spex/`@sublang/spex` 约定,
-与上游平台 `../上游本体引擎/specs/meta.md` 保持一致口径,便于同一 AI 代理跨仓消费。
+与上游平台 `../上游本体引擎/specs/meta.md` 保持一致的约定,便于同一 AI 代理跨仓消费。
 
 ## 组织 / Organization
 | 路径 | 内容 | 命名 |

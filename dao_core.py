@@ -13,7 +13,7 @@
 因此 quick_build 的 SQL 路径(180k 行大表,SQL DISTINCT)与引擎的内存路径(dict of lists)
 可以喂各自抽取的信号、共用同一套判定。
 
-裁决口径(与 DR-002/DR-011 一致):
+裁决规则(与 DR-002/DR-011 一致):
   取值重叠率 = |子键distinct ∩ 父键distinct| / |子键distinct|
   verified   = 重叠≥θ ∧ 父键唯一 ∧ 列名有据 ∧ 子键 distinct≥下限 ∧ 子键非主键
   candidate  = 重叠≥θ 但列名无据(疑自增键值域巧合,送审)/ 或弱重叠(≥weak_floor)
@@ -35,7 +35,7 @@ _KEY_SUF_RE = re.compile(r"_?(id|code|key|no|num)$", re.I)
 
 
 def clean(values):
-    """非空值集合 + 非空计数(用于唯一度)。与 relation_discovery._clean 同口径。"""
+    """非空值集合 + 非空计数(用于唯一度)。与 relation_discovery._clean 规则相同。"""
     vals = [str(v).strip() for v in values if v is not None and str(v).strip() != ""]
     return set(vals), len(vals)
 
@@ -48,7 +48,7 @@ def unique_ratio(values):
 def is_pk_like(values, ratio=UNIQUE_PK_RATIO):
     """父键候选/主键判定:非空值**近似**唯一(默认 ≥0.95)。
 
-    注意本函数是**上游引擎口径的参照实现**,当前生产路径并不走它:
+    注意本函数是**上游引擎规则的参照实现**,当前生产路径并不走它:
     `quick_build`/`hallucination_eval` 判候选键用的是**精确唯一**
     (SQL 的 `COUNT(*) == COUNT(DISTINCT col)`,含 NULL 即不唯一),比此处更严。
     保留它是为与 `relation_discovery` 保持可对照的同名同义 API(见 DR-035 平价测试),
@@ -68,7 +68,7 @@ def overlap_pct(child_distinct, parent_distinct):
 
 
 def key_stem(c):
-    """剥尾部 id/code/key/no/num 后缀取词根(quick_build.key_stem 口径)。驼峰先拆成下划线(belongEntNo → belong_ent_no)。"""
+    """剥尾部 id/code/key/no/num 后缀取词根(quick_build.key_stem 规则)。驼峰先拆成下划线(belongEntNo → belong_ent_no)。"""
     return _KEY_SUF_RE.sub("", _snake(c or "")).strip("_")
 
 
@@ -90,7 +90,7 @@ def expand(name):
 
 def _core(col):
     """列名核心词:剥尾部 id/code + 剥 2-3 字母表缩写前缀;泛称或过短视为无核心词
-    (relation_discovery._core 口径,用于前缀式列名 we_mo_number↔pm_mo_number 佐证)。"""
+    (relation_discovery._core 规则,用于前缀式列名 we_mo_number↔pm_mo_number 佐证)。"""
     c = re.sub(r"(_?id|_?code)$", "", (col or "").lower()).strip("_")
     c = _ABBR_PREFIX_RE.sub("", c)
     return c if len(c) >= 3 and c not in _GENERIC_KEY else ""
@@ -142,7 +142,7 @@ def key_columns(key):
 
 
 def name_score(child_col, parent_table, parent_col, synonyms=None):
-    """列名一致性打分(relation_discovery 口径,比 key_name_ok 更富:
+    """列名一致性打分(relation_discovery 规则,比 key_name_ok 更富:
     2=子父键同名 / 子列名含父表名;1=去后缀相关 / 前缀缩写核心词一致 / 同义词;0=无关。
     比 key_name_ok 多考虑「父表名」与「异名同义」两个信号。"""
     cc, pt, pc = (child_col or "").lower(), (parent_table or "").lower(), (parent_col or "").lower()
@@ -235,7 +235,7 @@ def name_ok(child_col, parent_table, parent_key, child_table=None):
     if not _unrelated and name_score(child_col, parent_table or "", parent_key) > 0:
         return True
     # 泛化父键(id/code)时,子键词根按缩写展开后出现在父表名里:dev_group_id → meta_device_group.id(DR-069)。
-    # name_score 与上游引擎保持同口径,缩写放在这里补
+    # name_score 与上游引擎保持规则相同,缩写放在这里补
     if not key_stem(parent_key):
         st = expand(key_stem(child_col))
         if len(st) >= 3 and st in expand(_snake(parent_table or "")):

@@ -85,7 +85,7 @@ def test_gate_block_reasons_are_categorised():
     server = pytest.importorskip("server")
     assert server._gate_category("wip.zone_sn=area.zone_id 的编号按 factory_code 分租户复用,须同时按 factory_code 关联") == "tenant_scope"
     assert server._gate_category("device_type 有已删除行(按 is_del 软删除)") == "soft_delete"
-    assert server._gate_category("JOIN 键 a.x=b.y 不在本体已验证关系上(口径未证实,已拦截)") == "join_not_verified"
+    assert server._gate_category("JOIN 键 a.x=b.y 不在本体已验证关系上(关联未经数据验证,已拦截)") == "join_not_verified"
     assert server._gate_category("表 foo 不在本体/数据目录中(疑似臆造表名)") == "unknown_table"
 
 

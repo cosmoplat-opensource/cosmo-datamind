@@ -2,7 +2,7 @@
 """dao_core 一致性测试(DR-035)—— 单一裁决核。
 
 覆盖:重叠公式精度、统一裁决三态、compat 模式复现 quick_build、自引用键支持、
-以及与上游 relation_discovery 的 name_score 平价(证明两份实现同口径)。
+以及与上游 relation_discovery 的 name_score 平价(证明两份实现规则相同)。
 """
 import importlib.util
 import pathlib
@@ -53,7 +53,7 @@ class TestClassifyCanonical:
     def test_not_verified_when_parent_not_unique(self):
         # 父键不唯一 → 绝不 verified;100% 重叠仍落到弱 candidate(与 quick_build elif ov>=20 一致)。
         # 注:上游 relation_discovery 会直接跳过非唯一父键——此处是两引擎的又一处漂移,
-        # 统一核显式保留 quick_build 口径(弱候选送审,不静默丢弃)。
+        # 统一核显式保留 quick_build 规则(弱候选送审,不静默丢弃)。
         r = dao_core.classify(overlap=100.0, parent_unique=False, name_ok=True, child_distinct=50)
         assert r["status"] != "verified"
         assert r["status"] == "candidate"
@@ -213,7 +213,7 @@ class TestClassifyEdgeCases:
 
 
 class TestParityWithEngine:
-    """与上游 ../ontology-engine/engine/relation_discovery 的 name_score 平价 —— 证明同口径。"""
+    """与上游 ../ontology-engine/engine/relation_discovery 的 name_score 平价 —— 证明规则相同。"""
 
     @pytest.fixture(scope="class")
     @classmethod

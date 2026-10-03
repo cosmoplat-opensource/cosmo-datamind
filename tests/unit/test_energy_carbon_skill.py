@@ -27,7 +27,7 @@ def test_discoverable_with_metadata():
 def test_body_keeps_the_rules_learned_from_real_data():
     body = skill_registry.skill_body(open(_skill()["skill_md"], encoding="utf-8").read())
     for rule in ("不要一张表建一个对象", "关联表建成关系", "租户键不是业务关系", "多态引用", "类别作用域编码",
-                 "软删除", "编码口径冲突", "自增 id 碰撞", "排放因子必须作为独立概念", "二次能源",
+                 "软删除", "编码字典冲突", "自增 id 碰撞", "排放因子必须作为独立概念", "二次能源",
                  "GB/T 32150-2025"):
         assert rule in body, rule
 

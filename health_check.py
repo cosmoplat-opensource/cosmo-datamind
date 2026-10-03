@@ -20,7 +20,7 @@ CQ 全过的本体,结构上仍可能是病的——比如一半对象是孤岛(
 检出项(全部确定性图计算,不调 LLM):
   isolated        孤岛对象:不参与任何关系 —— 建了却用不上
   self_loop       自反关系:源=目标 —— 多为抽取误判
-  duplicate       重复边:同一对象对之间多条同向关系 —— 口径二义
+  duplicate       重复边:同一对象对之间多条同向关系 —— 语义二义
   bidirectional   双向对偶:A→B 与 B→A 同时存在 —— 方向未定,推理会绕圈
   hub             超级节点:度数远超均值 —— 常见原因是职责过多的宽表尚未拆分
   dangling        悬空端点:关系引用了不存在的对象 —— IR 自身不一致
@@ -101,7 +101,7 @@ def check(ir):
             signals.append({"type": "duplicate", "severity": "warn",
                             "relation": f"{s}->{t}", "count": c,
                             "desc": f"「{cn.get(s, s)}」→「{cn.get(t, t)}」有 {c} 条同向关系",
-                            "fix": "口径二义:合并为一条,或用不同动词明确区分语义"})
+                            "fix": "语义二义:合并为一条,或用不同动词明确区分语义"})
     for pair, items in pair_undir.items():
         dirs = {(a, b) for a, b, _, _ in items}
         if len(dirs) > 1:

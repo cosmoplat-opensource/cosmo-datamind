@@ -456,7 +456,7 @@ def apply(ir, rows):
             r["status"] = "candidate"
             r["note"] = "交叉复核冲突(" + "、".join(row["conflicts"]) + "),待人工复核;原裁决:" + str(r.get("note") or "")
         elif row.get("verdict") == "valid_rows_candidate" and ev.get("name_ok") is True:
-            # 有效行上父键唯一、重叠达标、键名有据(含代码契约):与数据裁决同一口径,只是先定了有效行
+            # 有效行上父键唯一、重叠达标、键名有据(含代码契约):与数据裁决用同一规则,只是先定了有效行
             vr = row["channels"]["valid_rows"]
             ev["cross_check"]["prev_status"] = r.get("status")
             ev["valid_rows"] = {k: vr.get(k) for k in ("state", "rule", "note", "column", "group", "tenant_column",

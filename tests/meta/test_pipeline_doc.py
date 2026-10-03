@@ -59,5 +59,5 @@ def test_every_code_anchor_resolves():
 def test_gates_documented():
     """三道执行前关卡必须都在文档里——这是评审最关心的部分,不允许漏写。"""
     text = DOC.read_text(encoding="utf-8")
-    for kw in ("只读", "口径拦截", "双盲意图检测"):
+    for kw in ("只读", "本体约束拦截", "双盲意图检测"):
         assert kw in text, f"关卡「{kw}」未在链路文档中说明"

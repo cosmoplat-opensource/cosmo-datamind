@@ -160,10 +160,10 @@ dim_product → fact_production_output   candidate
 **执行记录里有时会出现这样一行**（取决于模型这次生成了什么 SQL,不是每次都有）:
 
 ```
-✗ ontology_gate  [3] 口径拦截:JOIN 键 dim_product.prod_line_id=dim_production_line.line_id 不在已验证关系上
+✗ ontology_gate  [3] 本体约束拦截:JOIN 键 dim_product.prod_line_id=dim_production_line.line_id 不在已验证关系上
 ```
 
-模型想把「产品」与「产线」直接关联起来,被口径校验拦下。原因是本体里**没有**这条关系:
+模型想把「产品」与「产线」直接关联起来,被本体约束校验拦下。原因是本体里**没有**这条关系:
 示例库中产品表的 `prod_line_id` 与产线表的 `line_id` 列名不同,`quick_build` 未能据此确立关系,
 而校验只放行落在已验证关系上的 JOIN 键。
 
@@ -171,7 +171,7 @@ dim_product → fact_production_output   candidate
 问数阶段就不许模型凭空用上。被降为 `candidate` 的关系同理——校验只认 `verified` 与 `asserted`。
 
 这条拦截**能否出现取决于模型选了哪条 JOIN 路径**,同一个问题多问几次未必每次都触发:
-换用两端同名的键（如两表都叫 `prod_id`）时校验会放行——列名本身即口径,不属臆造。
+换用两端同名的键（如两表都叫 `prod_id`）时校验会放行——两端同名的列视为同一含义,不属臆造。
 校验拦的不是"得到答案",而是**没有本体依据的那条路**。
 
 ## 6. 看清楚「本体是怎么被用的」

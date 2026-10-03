@@ -65,7 +65,7 @@ def metric_dimensions():
 
 @bp_metrics.post("/api/metric/status")
 def metric_status():
-    """人工确认口径:certified(等价于关系的 asserted)/ deprecated / 撤回到 candidate。
+    """人工确认计算规则:certified(等价于关系的 asserted)/ deprecated / 撤回到 candidate。
     不接受 verified——那只能由核验产生。"""
     body = request.json or {}
     key = str(body.get("graph") or "").strip()
@@ -84,11 +84,11 @@ def metric_status():
         if not m: return jsonify({"error": "指标不存在"}), 404
         if status == "certified":
             if not metric_contract.is_contract(m):
-                return jsonify({"error": "旧形状指标没有可编译口径,不能确认为 certified;先补契约"}), 400
+                return jsonify({"error": "旧形状指标没有可编译的计算规则,不能确认为 certified;先补契约"}), 400
             try:
                 metric_contract.compile_sql(m)
             except ValueError as exc:
-                return jsonify({"error": f"口径无法编译:{exc}"}), 400
+                return jsonify({"error": f"计算规则无法编译:{exc}"}), 400
         m["status"] = status
         m["candidate"] = status == "candidate"
         if status == "certified":

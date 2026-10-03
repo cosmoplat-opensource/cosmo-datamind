@@ -53,7 +53,7 @@ def test_assertion_count_matches_canonical():
 
 def _stale_counts(doc, *, skip_route_re=None):
     """在文档里找与规范值不符的路由数/集成断言数。
-    只校验「集成断言」口径:UI 套件断言数(test_ui/test_ui_ops)与单测数各有其值,
+    只校验「集成断言」计数:UI 套件断言数(test_ui/test_ui_ops)与单测数各有其值,
     通过排除模式跳过,避免误报。"""
     stale = []
     for m in re.finditer(r"(\d{2,4})\s*(?:条)?\s*(?:后端)?路由", doc):

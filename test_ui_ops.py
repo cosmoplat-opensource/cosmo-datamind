@@ -381,7 +381,7 @@ async def main():
                 "说明合并语义(并入/不覆盖/不删除既有)",
                 "" if _merge_copy_ok else "缺合并语义说明")
             (ok if nm_dis else bad)("迭代时名称框禁用", f"disabled={nm_dis}")
-            (ok if "本轮" in ph else bad)("诉求框提示改为增量口径", ph[:40])
+            (ok if "本轮" in ph else bad)("诉求框提示改为增量说明", ph[:40])
             await pg.evaluate("bcIterClear()")
             await pg.wait_for_timeout(500)
             after = (await pg.inner_text("#bc_send")).strip()
