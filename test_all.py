@@ -1033,7 +1033,10 @@ chk("Y1 构建链含 skill_inject 步骤代码", "skill_inject" in open("server.
 # ④ 两跳路径提示
 _h=_sv2._join_hints(_sv2.load_ir_edited("demo"),["fact_production_output","dim_production_line"])
 chk("Y2 两跳链提示(⋈⋈ 经中间表)", any("⋈⋈" in x for x in _h))
-chk("Y3 build_context 两跳链贯通", "⋈⋈" in _sv2.build_context("累计产量最高的产线叫什么名字?"))
+# 只给两端的表(产出记录、产线),中间的生产工单不在上下文里:必须给出经生产工单的两跳链。
+# 此前不限定范围时靠「BOM产线」「采购订单产线」误译拉进的无关两跳链通过,译名改正后该写法不再成立(DR-077)
+_y3=_sv2.build_context("累计产量最高的产线叫什么名字?",focus_tables=["fact_production_output","dim_production_line"])
+chk("Y3 build_context 两跳链贯通", "⋈⋈" in _y3 and "经中间表 fact_production_order" in _y3)
 # ⑤ 沉淀技能复用
 _skm=_sv2._match_qa_skill("产量的月度趋势如何?")
 chk("Y4 沉淀技能命中", bool(_skm and _skm.get("analyses")))
