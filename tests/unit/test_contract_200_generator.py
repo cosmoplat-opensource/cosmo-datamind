@@ -1,4 +1,4 @@
-"""200 表合成验证库生成器 v2(DR-075):生成即校验;独立审计发现的问题都成为自动检查,且校验器能发现植入的不一致。"""
+"""200 表合成验证库生成器 v3(DR-076):以仿真生成的 108 表为基础库,新事实表由基础库的业务事件推导;生成即校验,校验器能发现植入的不一致。"""
 from __future__ import annotations
 
 import importlib.util
@@ -38,21 +38,19 @@ def test_build_passes_structure_and_semantic_checks(generated):
     assert all(v["pass"] for v in report["semantic_checks"].values())
     for name in ("cross_entity.shipment_line_product_matches_order_line", "cross_entity.sensor_mounted_on_equipment",
                  "header_lines.fact_shipment.amount_equals_line_sum", "values.placeholder_columns",
-                 "values.measure_sequences_repeated_across_tables", "metadata.untranslated_column_names", "cases.claims_match_data"):
+                 "events.shipment_matches_delivery", "events.snapshot_reconciles_with_movements", "events.meter_readings_continuous",
+                 "events.gl_revenue_equals_invoices", "values.all_null_columns", "metadata.untranslated_column_names", "cases.claims_match_data"):
         assert name in report["semantic_checks"], name
 
 
-def test_base_defects_registered_not_masked(generated):
+def test_clean_base_only_layout_quirk_registered(generated):
     _gen, db, report = generated
     con = sqlite3.connect(f"file:{db}?mode=ro", uri=True)
-    violations = {}
-    for row in con.execute("PRAGMA foreign_key_check"):
-        violations[row[0]] = violations.get(row[0], 0) + 1
-    cases = report["validation_cases"]
-    assert violations["fact_material_consumption"] == cases["BASE_ORPHAN_CONSUMPTION_ORDER"] > 0
-    assert set(violations) == {"fact_return", "fact_invoice", "fact_ar_aging", "fact_material_consumption"}
+    assert list(con.execute("PRAGMA foreign_key_check")) == []      # 仿真基础库没有孤儿外键,新表也没有
+    base = {k: v for k, v in report["validation_cases"].items() if k.startswith("BASE_")}
+    assert base == {"BASE_DOWNTIME_REASON_STORES_ID": con.execute("SELECT COUNT(*) FROM fact_downtime").fetchone()[0]}
     open_issues = con.execute("SELECT COUNT(*) FROM fact_data_quality_issue WHERE rule_code LIKE 'BASE_%' AND resolution_status='OPEN'").fetchone()[0]
-    assert open_issues == sum(1 for k in cases if k.startswith("BASE_"))
+    assert open_issues == 1
 
 
 def test_validation_results_are_real(generated):
@@ -77,8 +75,12 @@ def test_checker_catches_planted_inconsistencies(generated, tmp_path):
                 " WHERE l.prod_id <> (SELECT MAX(prod_id) FROM dim_product) LIMIT 1)")
     con.execute("UPDATE fact_lead SET next_action = 'fact_lead:next_action:0001' WHERE lead_id = 1")
     con.execute("UPDATE fact_shipment SET amount = amount + 100 WHERE shipment_id = 1")
+    con.execute("UPDATE fact_energy_meter_reading SET meter_start = meter_start + 5 WHERE energy_meter_reading_id = (SELECT MAX(energy_meter_reading_id) FROM fact_energy_meter_reading)")
+    con.execute("UPDATE fact_work_order_operation SET start_time = datetime(start_time, '-2 days') WHERE work_order_operation_id = 1")
     con.commit()
     result = chk.run(con, specs)
     assert not result["cross_entity.shipment_line_product_matches_order_line"]["pass"]
     assert not result["values.placeholder_columns"]["pass"]
     assert not result["header_lines.fact_shipment.amount_equals_line_sum"]["pass"]
+    assert not result["events.meter_readings_continuous"]["pass"]
+    assert not result["events.operations_within_order_window"]["pass"]

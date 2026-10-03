@@ -42,13 +42,13 @@ UNITS = [("EA", "个"), ("KG", "千克"), ("TON", "吨"), ("HOUR", "小时"), ("
 CURRENCIES = [("CNY", "人民币", "¥", "156", 2), ("USD", "美元", "$", "840", 2), ("EUR", "欧元", "€", "978", 2), ("JPY", "日元", "¥", "392", 0)]
 REASONS = [("QUALITY", "质量原因"), ("DELIVERY", "交付原因"), ("COST", "成本原因"), ("EQUIPMENT", "设备原因"), ("SAFETY", "安全原因"),
            ("ENVIRONMENT", "环境原因"), ("CUSTOMER", "客户原因"), ("SUPPLIER", "供应商原因"), ("PROCESS", "工艺原因"),
-           ("MATERIAL", "物料原因"), ("SYSTEM", "系统原因"), ("OTHER", "其他")]
+           ("MATERIAL", "物料原因"), ("SYSTEM", "系统原因"), ("OTHER", "常规业务(无特定原因)")]
 SHIFTS = [("DAY", "白班", "08:00", "16:00", 30), ("SWING", "中班", "16:00", "24:00", 30), ("NIGHT", "夜班", "00:00", "08:00", 45)]
-ENERGY_TYPES = [("ELEC", "电力", "KWH", 0.5703), ("WATER", "自来水", "M3", 0.0), ("NGAS", "天然气", "M3", 2.162), ("STEAM", "蒸汽", "TON", 0.11),
+ENERGY_TYPES = [("ELEC", "电力", "KWH", 0.5703), ("WATER", "自来水", "M3", 0.0), ("NGAS", "天然气", "M3", 2.162), ("STEAM", "蒸汽", "TON", 110.0),
                 ("CAIR", "压缩空气", "M3", 0.0), ("DIESEL", "柴油", "KG", 3.096), ("PV", "光伏发电", "KWH", 0.0), ("CHW", "冷冻水", "M3", 0.0),
                 ("HOTW", "热水", "TON", 0.0), ("N2", "氮气", "M3", 0.0)]
-EMISSION_TYPES = [("SO2", "二氧化硫", "mg/m3", 50.0), ("NOX", "氮氧化物", "mg/m3", 100.0), ("PM", "颗粒物", "mg/m3", 20.0), ("VOCS", "挥发性有机物", "mg/m3", 60.0),
-                  ("COD", "化学需氧量", "mg/L", 500.0), ("NH3N", "氨氮", "mg/L", 45.0), ("CO2", "二氧化碳", "t", 0.0), ("NOISE", "厂界噪声", "dB", 65.0),
+EMISSION_TYPES = [("SO2", "二氧化硫", "mg/m³", 50.0), ("NOX", "氮氧化物", "mg/m³", 100.0), ("PM", "颗粒物", "mg/m³", 20.0), ("VOCS", "挥发性有机物", "mg/m³", 60.0),
+                  ("COD", "化学需氧量", "mg/L", 500.0), ("NH3N", "氨氮", "mg/L", 45.0), ("CO2", "二氧化碳", "t", 0.0), ("NOISE", "厂界噪声", "dB(A)", 65.0),
                   ("TP", "总磷", "mg/L", 8.0), ("HW", "危险废物", "t", 0.0)]
 TAX_CODES = [("VAT13", "增值税13%", 0.13), ("VAT9", "增值税9%", 0.09), ("VAT6", "增值税6%", 0.06), ("VAT3", "小规模3%", 0.03),
              ("EXP0", "出口零税率", 0.0), ("EXEMPT", "免税", 0.0)]
@@ -481,8 +481,8 @@ _DROP = {
     "fact_rework_order": ["operation_seq", "routing_version", "cycle_time_seconds"],
     "fact_process_parameter_record": ["operation_seq", "routing_version", "yield_rate", "scrap_quantity", "setup_minutes",
                                       "run_minutes", "cycle_time_seconds", "sample_size"],
-    "fact_labor_booking": ["operation_seq", "routing_version", "cycle_time_seconds", "absence_type"],
-    "fact_tool_usage": ["operation_seq", "routing_version", "setup_minutes", "scrap_quantity"],
+    "fact_labor_booking": ["operation_seq", "routing_version", "cycle_time_seconds", "absence_type", "yield_rate"],
+    "fact_tool_usage": ["operation_seq", "routing_version", "setup_minutes", "scrap_quantity", "yield_rate"],
     "fact_wip_snapshot": ["operation_seq", "routing_version", "setup_minutes", "run_minutes", "cycle_time_seconds", "start_time", "end_time"],
     "fact_overtime": ["regular_hours", "clock_in", "clock_out", "absence_type"],
     "fact_condition_monitoring": ["alarm_code"],
@@ -497,7 +497,27 @@ _DROP = {
 _UPSTREAM = {"fact_scrap_event", "fact_inspection_lot", "fact_work_order_operation", "fact_work_order_material", "fact_lot_trace",
              "fact_wip_snapshot", "fact_tool_usage", "fact_rework_order", "fact_labor_booking", "fact_process_parameter_record",
              "fact_legacy_material_issue", "fact_advance_shipping_notice", "fact_sales_order_line", "fact_customer_complaint",
-             "fact_shipment", "fact_maintenance_task", "fact_sales_contract_line"}
+             "fact_shipment", "fact_maintenance_task", "fact_sales_contract_line", "fact_supplier_claim", "fact_supplier_quality_issue",
+             "fact_shipment_line", "fact_asn_line", "fact_inventory_movement", "fact_spare_part_issue", "fact_supplier_contract",
+             "fact_supplier_contract_line", "fact_transfer_order", "fact_transfer_order_line"}
+# 没有业务含义的通用列:非税单据的税率、计划表中的产能列、无预算可比的单据的预算金额
+for _t in ("fact_gl_entry", "fact_gl_entry_line", "fact_cash_flow", "fact_cost_allocation", "fact_fixed_asset_transfer"):
+    _DROP.setdefault(_t, []).append("tax_rate")
+for _t in ("fact_demand_plan", "fact_supply_plan"):
+    _DROP.setdefault(_t, []).extend(["capacity_hours", "utilization_rate"])
+_DROP.setdefault("fact_supply_plan", []).append("forecast_accuracy")
+for _t in ("fact_gl_entry", "fact_gl_entry_line", "fact_cash_flow", "fact_tax_invoice_line", "fact_cost_allocation", "fact_fixed_asset_transfer",
+           "fact_overtime", "fact_certification_record", "fact_corrective_action", "fact_safety_action", "fact_maintenance_task", "fact_lead",
+           "fact_price_adjustment", "fact_customer_complaint", "fact_supplier_claim", "fact_supplier_quality_issue", "fact_nonconformance",
+           "fact_emission_event", "fact_rework_order", "fact_scrap_event", "fact_energy_meter_reading"):
+    _DROP.setdefault(_t, []).append("budget_amount")
+# 按物料汇总(不对应单一批次)的表没有生产日期与失效日期;复核结论只在纠正措施等处置环节记录
+for _t in ("fact_cycle_count_line", "fact_inventory_snapshot", "fact_transfer_order", "fact_transfer_order_line"):
+    _DROP.setdefault(_t, []).extend(["manufacture_date", "expiry_date"])
+for _t in ("fact_inspection_lot", "fact_inspection_result", "fact_nonconformance", "fact_process_parameter_record"):
+    _DROP.setdefault(_t, []).append("verification_result")
+_DROP.setdefault("fact_sales_contract_line", []).append("customer_po_no")
+_DROP.setdefault("fact_scrap_event", []).extend(["containment_action", "due_date", "verification_result"])
 for _t, _cols in _DROP.items():
     FACT_SEMANTICS[_t]["drop"] = _cols
 for _t in _UPSTREAM:

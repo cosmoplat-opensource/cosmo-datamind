@@ -1052,7 +1052,8 @@ r=g("/")
 chk("Y11 UI 含对比弹窗+沉淀按钮", 'id="skc_modal"' in r.text and "沉淀为技能" in r.text)
 r=g("/api/quality")
 chk("Y12 分层对账检查上线(评测发现固化)", any("分层对账" in c["rule"] for c in r.json()["checks"]))
-chk("Y13 对账检出已知不一致(DWS/agg)", sum(1 for c in r.json()["checks"] if "分层对账" in c["rule"])==2)
+_rc=[c for c in r.json()["checks"] if "分层对账" in c["rule"]]
+chk("Y13 分层对账两项都给出结论(演示库按明细重算,层间一致)", len(_rc)==2 and all(c["level"]=="ok" for c in _rc))
 
 
 print("=== Z. 未覆盖路由补测(写端点守卫 + 上传 + 根页)===")

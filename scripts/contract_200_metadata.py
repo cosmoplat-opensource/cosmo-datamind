@@ -162,4 +162,68 @@ def table_description(spec: Any, table_cn: dict[str, str], header_cn: str | None
         if p not in parents:
             parents.append(p)
     rel = f";关联{'、'.join(parents)}" if parents else ""
-    return f"{cn}({spec.domain}域):{grain}{rel}。合成数据,不对应真实业务记录。"
+    note = TABLE_NOTE.get(spec.name)
+    return f"{cn}({spec.domain}域):{grain}{rel}。" + (f"{note}。" if note else "") + "合成数据,不对应真实业务记录。"
+
+
+# 推导来源与适用范围(写入表说明)
+TABLE_NOTE = {
+    "fact_shipment": "与交付单一一对应,合同号、客户订单号、交期取所发订单行",
+    "fact_shipment_line": "按先进先出回放发出的成品批次,批次在发货前完工(不合格批次返工放行后才发)",
+    "fact_sales_order_line": "实发量为按行顺序分配的交付量,发满才关闭",
+    "fact_gl_entry": "每天每类业务一张汇总记账凭证,借贷平衡;含 2025-01-01 的期初余额凭证",
+    "fact_cash_flow": "银行存款的全部收付:电汇回款、票据到期托收、支付货款、费用报销、发放工资、制造费用付款;银行承兑汇票回款先记应收票据",
+    "fact_tax_invoice_line": "只列蓝字发票明细;红字发票(退货冲销)在发票表中为负数,不列明细",
+    "fact_cost_allocation": "管理会计分摊,单号以 CO- 开头,不过总账",
+    "fact_fixed_asset_transfer": "调拨在审批或交接中,资产卡片的变更不在观测期内体现,不过总账",
+    "fact_capex_project_cost": "记入在建工程,完工当月整笔转固;转固后的资产原值调整未回写固定资产表",
+    "fact_rework_order": "不合格批次掺混调整后重新挤出,复检合格后整批放行(按整批合格记录)",
+    "fact_inventory_movement": "原料收货、仓间调拨与工单完工倒冲发料,按批次入库单价计价;期初库存在 2025-01-01 期初凭证中",
+    "fact_inventory_snapshot": "月末原料库存 = 期初 + 收货 − 发料,与库存移动勾稽",
+    "fact_attendance": "班组长按四班三运转在岗(含周末),其余员工上行政白班(工作日)",
+    "fact_labor_booking": "当班班组长为本班运行的工单报工,工时合计等于工单运行时长",
+    "fact_process_parameter_record": "挤出机关键参数按牌号与车间设定,开机 1 小时后首检、此后每 24 小时一次;辅机开机首检一次",
+    "fact_condition_monitoring": "与 108 表传感器采集数据逐条对应",
+    "fact_energy_meter_reading": "读数逐日累计,差值等于当日能耗",
+    "fact_demand_plan": "以销售预测为基础的共识需求,供应量为当月实际交付量",
+    "fact_kpi_snapshot": "实际值按指标定义由业务数据计算",
+}
+
+
+# 通用度量列在各表中的业务含义(写入字段说明,避免同名列含义不清)
+_RATE = {
+    "fact_capacity_plan": "负荷率 = 需求工时/可用机台工时", "fact_condition_monitoring": "1=读数未超报警限,0=超限",
+    "fact_corrective_action": "1=措施已关闭,0=未关闭", "fact_cost_allocation": "分摊比例 = 该车间运行工时/各车间运行工时合计",
+    "fact_customer_contact": "客户满意度/5", "fact_demand_plan": "需求满足率 = 当月交付量/需求计划量(上限 1)",
+    "fact_employee_assignment": "任职比例(全职为 1)", "fact_environment_measurement": "1=未超排放限值,0=超限",
+    "fact_equipment_event": "1=停机事件已处置", "fact_gauge_calibration": "1=校准合格,0=不合格",
+    "fact_hazard_observation": "1 − 风险分值/25", "fact_inspection_lot": "合格检验项占比", "fact_inspection_result": "1=合格,0=让步接收或不合格",
+    "fact_kpi_snapshot": "KPI 实际值(上限 1)", "fact_lead": "赢单概率(按商机阶段)", "fact_predictive_alert": "0=已发出预警",
+    "fact_process_parameter_record": "1=在规格限内,0=超规格", "fact_safety_action": "1=整改已关闭,0=未关闭",
+    "fact_sales_forecast": "预测准确率 = 1 − |预测量−实际订货量|/实际订货量", "fact_shift_report": "班次运行时长/8 小时",
+    "fact_skill_assessment": "评估得分/100", "fact_supplier_quality_issue": "0=来料不合格", "fact_supply_plan": "计划达成率 = 实际完工量/计划量(上限 1)",
+    "fact_training_attendance": "1=已签到", "fact_work_order_operation": "工序良率 = 合格量/产出量",
+}
+MEASURE_NOTE: dict[tuple[str, str], str] = {(t, "rate_value"): v for t, v in _RATE.items()}
+MEASURE_NOTE.update({(t, "score_value"): "评分(0~100);本表未单独定义的为比率值×100" for t in _RATE})
+MEASURE_NOTE.update({
+    ("fact_customer_contact", "score_value"): "客户满意度×20", ("fact_lead", "score_value"): "赢单概率×100",
+    ("fact_training_attendance", "score_value"): "考试成绩", ("fact_skill_assessment", "score_value"): "评估得分",
+    ("fact_kpi_snapshot", "score_value"): "达成率×100(上限 100)",
+    ("fact_sales_order_line", "budget_amount"): "订购量×产品指导价", ("fact_shipment_line", "budget_amount"): "发运量×产品指导价",
+    ("fact_shipment", "budget_amount"): "明细合计(发运量×产品指导价)", ("fact_capex_project_cost", "budget_amount"): "项目月度预算 = 项目预算/工期月数",
+    ("fact_sales_order_line", "cost_amount"): "已发部分按发出批次成本,未发部分按标准成本", ("fact_shipment_line", "cost_amount"): "发运量×批次单位成本",
+    ("fact_shipment", "cost_amount"): "明细合计(发出批次成本)", ("fact_tax_invoice_line", "cost_amount"): "对应发货的批次成本",
+})
+BUDGET_DEFAULT = "按标准价计的金额 = 计划数量×产品指导价或物料标准单价;没有标准价的为单据金额"
+COST_DEFAULT = "成本金额:物料类为批次入库成本,其余为单据金额"
+
+
+def measure_note(table: str, column: str) -> str | None:
+    if (table, column) in MEASURE_NOTE:
+        return MEASURE_NOTE[(table, column)]
+    if column == "budget_amount":
+        return BUDGET_DEFAULT
+    if column == "cost_amount":
+        return COST_DEFAULT
+    return None

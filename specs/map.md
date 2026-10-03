@@ -37,6 +37,7 @@ COSMO DataMind 是「数据治理 × 本体 × 深度问数」原型：
 - [DR-072 · 全库评估与修正:注释接入、类型无关的取值比对、按取值补提与实例表识别](decisions/DR-072-whole-dataset-evaluation.md)
 - [DR-073 · 候选关系分流、问数选表修正与澄清、抽样截断标记与独立评审](decisions/DR-073-candidate-triage-and-independent-judging.md)
 - [DR-074 · 200 表合成验证库评估:星型模型键名、字段注释证据与几类误判](decisions/DR-074-contract-200-synthetic-db-evaluation.md)
+- [DR-076 · 演示库按业务过程仿真重建:108 表基础库与 200 表验证库 v3](decisions/DR-076-process-simulated-demo-databases.md)
 - [DR-075 · 200 表合成验证库生成器 v2:业务链派生、如实登记底库缺陷与生成后语义校验](decisions/DR-075-contract-200-generator-v2.md)
 - [DR-071 · 全量分轮与留出评估:键匹配排序、同名概念消歧与方向反证](decisions/DR-071-full-scale-holdout-evaluation.md)
 - [DR-070 · 孤儿记录、类别作用域编码、码表关系、取值形态与对象类型](decisions/DR-070-orphans-scoped-codes-codebooks-kinds.md)
@@ -124,8 +125,9 @@ COSMO DataMind 是「数据治理 × 本体 × 深度问数」原型：
 - `SPEC.md` — 对**平台** web/ 的逆向规格(平台契约,非 DataMind;前缀不同勿混用)。
 
 ## 现状校准
-- 计数(2026-10-01):**137 路由**(server.py 119 + bp_engine 5 + bp_actions 7 + bp_metrics 4 + bp_semantic 2)/ **565 集成断言** /
-  **1136 项 pytest 测试** / DR-001…DR-075 · IR-001…IR-013。
+- 计数(2026-10-03):**137 路由**(server.py 119 + bp_engine 5 + bp_actions 7 + bp_metrics 4 + bp_semantic 2)/ **565 集成断言** /
+  **1139 项 pytest 测试** / DR-001…DR-076 · IR-001…IR-013。
+  DR-076 起 `examples/demo_metrics.db` 由 `scripts/build_demo_108_db.py` 按业务过程仿真生成(108 表 / 308,230 行)。
   DR-060 新增构建前预处理:外部库只读抽样 `ext_sample`、构建体检与分轮计划 `build_prep`。
   DR-059 新增长文分块检索 `doc_chunks`,以及能源管理 `energy_management`、碳排放核算 `carbon_accounting` 两个独立行业参照。
   新增共享层 `srv_context`/`srv_engine`、单一裁决核 `dao_core`、评测台 `hallucination_eval`/`definition_eval`、

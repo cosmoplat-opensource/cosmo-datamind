@@ -63,3 +63,23 @@ exclude = ["^test_all\\.py$", "^test_ui\\.py$", "^test_ui_ops\\.py$", "^data/"] 
 # 原型渐进式类型化:先不强制注解,只抓明确的类型错误。
 check_untyped_defs = false
 warn_unused_ignores = true
+
+[[tool.mypy.overrides]]
+# 演示库生成脚本(仿真与事件推导)大量使用逐行累积的临时列表/字典,按渐进式类型化不强制局部变量注解;
+# 其余类型错误照常检查
+module = [
+    "scripts.demo108_master",
+    "scripts.demo108_sim",
+    "scripts.demo108_rest",
+    "scripts.demo108_dws",
+    "scripts.demo108_meta",
+    "scripts.demo108_checks",
+    "scripts.build_demo_108_db",
+    "scripts.contract_200_events",
+    "scripts.contract_200_values",
+    "scripts.contract_200_semantics",
+    "scripts.contract_200_checks",
+    "scripts.contract_200_metadata",
+    "scripts.build_contract_200_db",
+]
+disable_error_code = ["var-annotated"]

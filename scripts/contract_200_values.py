@@ -13,7 +13,9 @@ import random
 from datetime import date, datetime, timedelta
 from typing import Any
 
+import contract_200_fill as FILL
 import contract_200_semantics as S
+import demo108_sim as SIM
 
 PARENT_DATE_COLUMNS = ("business_date", "order_date", "po_date", "delivery_date", "invoice_date", "wo_date",
                        "training_date", "start_date", "posting_date", "hire_date", "install_date", "cooperation_since",
@@ -368,8 +370,12 @@ def dim_record(spec: Any, idx: int, refs: dict[str, Any], ctx: S.Context, rng: r
     }
     rec.update(refs)
     rec.update(extra or {})
+    if t == "dim_validation_case" and rec.get("_case"):
+        rec["name"] = rec["description"] = f"{rec['_case']['case_type']}:{rec['_case']['expected_behavior']}"[:200]
+        rec["short_name"] = rec["_case"]["case_type"][:20]
     for col, _typ in S.DIM_ATTRS[t]:
-        rec[col] = dim_attr(t, col, idx, rec, ctx, rng)
+        if col not in (extra or {}):
+            rec[col] = dim_attr(t, col, idx, rec, ctx, rng)
     return rec
 
 
@@ -398,12 +404,12 @@ def _dim_identity(t: str, idx: int, spec: Any) -> tuple[str, str]:
         "dim_customer_segment": ["战略客户", "重点客户", "成长客户", "一般客户", "新客户", "流失预警客户", "海外客户", "渠道客户",
                                  "项目型客户", "零散客户"],
         "dim_sales_channel": ["直销", "经销商", "电商平台", "大客户部", "海外代理", "招投标", "OEM 合作", "门店"],
-        "dim_market_segment": ["家电", "汽车零部件", "电子电气", "包装", "建材", "医疗器械", "新能源", "轨道交通", "日用品", "管材",
+        "dim_market_segment": ["家电", "汽车零部件", "电子电气", "包装", "建材", "医疗器械", "新能源", "轨道交通", "电动工具", "管材",
                                "纺织", "农业"],
         "dim_asset_class": ["房屋建筑", "生产设备", "检测设备", "运输工具", "办公设备", "电子设备", "动力设备", "环保设施", "仓储设施",
                             "软件", "模具", "其他固定资产"],
-        "dim_skill": ["挤出操作", "注塑调机", "配色", "设备点检", "叉车驾驶", "电工", "焊接", "质量检验", "统计过程控制", "精益改善",
-                      "安全管理", "化学品管理", "仓储管理", "计划排程", "成本核算", "数据分析", "PLC 编程", "液压维修", "模具维修", "危化品运输"],
+        "dim_skill": ["挤出操作", "螺杆组合配置", "配色", "设备点检", "叉车驾驶", "电工", "焊接", "质量检验", "统计过程控制", "精益改善",
+                      "安全管理", "化学品管理", "仓储管理", "计划排程", "成本核算", "数据分析", "PLC 编程", "液压维修", "配方开发", "危化品运输"],
         "dim_certification": ["特种设备操作证", "电工证", "焊工证", "叉车证", "危化品安全证", "内审员证", "安全管理员证", "压力容器证",
                               "登高作业证", "有限空间作业证", "消防设施操作员", "计量检定员", "环境管理体系内审员", "6σ 绿带", "6σ 黑带", "PMP"],
         "dim_job_position": ["操作工", "班组长", "工艺工程师", "设备工程师", "质量工程师", "检验员", "计划员", "仓管员", "采购员", "销售代表",
@@ -422,9 +428,9 @@ def _dim_identity(t: str, idx: int, spec: Any) -> tuple[str, str]:
         kinds = ["产线扩建", "节能改造", "数字化车间", "环保设施升级", "新品试制", "仓库自动化", "质量实验室建设", "光伏屋顶", "安全隐患整改", "能源计量升级"]
         return f"PRJ-2025-{idx:03d}", f"{kinds[(idx - 1) % len(kinds)]}项目{(idx - 1) // len(kinds) + 1}期"
     if t == "dim_dataset_release":
-        return "REL-CV200-V2", "合同验证库 v2"
+        return "REL-CV200-V3", "合同验证库 v3"
     if t == "dim_validation_case":
-        return f"VC-{idx:03d}", f"验证案例{idx}"
+        return f"VC-{idx:03d}", f"验证案例{idx}"               # 名称在 dim_record 中改为案例类型
     return f"{t.removeprefix('dim_').upper()}-{idx:04d}", f"{spec.cn_name}{idx}"
 
 
@@ -435,11 +441,11 @@ def _dim_name_en(t: str, idx: int, code: str) -> str:
 def dim_attr(t: str, col: str, idx: int, rec: dict[str, Any], ctx: S.Context, rng: random.Random) -> Any:
     if t == "dim_calendar":
         d = S.DATE_START + timedelta(days=idx - 1)
-        hol = _holiday(d)
+        hol = _holiday(d) or ("法定节假日" if d in SIM.HOLIDAYS else None)
         return {"calendar_date": d.isoformat(), "calendar_year": d.year, "calendar_quarter": (d.month - 1) // 3 + 1,
                 "calendar_month": d.month, "calendar_week": int(d.strftime("%V")), "day_of_month": d.day,
-                "day_of_week": d.isoweekday(), "is_workday": int(d.isoweekday() <= 5 and not hol),
-                "is_holiday": int(bool(hol)), "holiday_name": hol, "fiscal_year": d.year, "fiscal_period": f"{d.year}-{d.month:02d}",
+                "day_of_week": d.isoweekday(), "is_workday": int(SIM.is_workday(d)),               # 与 108 表仿真的排班日历一致
+                "is_holiday": int(d in SIM.HOLIDAYS), "holiday_name": hol, "fiscal_year": d.year, "fiscal_period": f"{d.year}-{d.month:02d}",
                 "week_start_date": (d - timedelta(days=d.isoweekday() - 1)).isoformat(),
                 "month_end_flag": int((d + timedelta(days=1)).day == 1)}[col]
     if t == "dim_shift":
@@ -449,7 +455,7 @@ def dim_attr(t: str, col: str, idx: int, rec: dict[str, Any], ctx: S.Context, rn
         return {"shift_start": start, "shift_end": end, "break_minutes": sh[4], "paid_hours": round(span - sh[4] / 60, 2),
                 "crosses_midnight": int(sh[0] == "SWING"), "timezone_name": "Asia/Shanghai",
                 "night_allowance_rate": 0.3 if sh[0] == "NIGHT" else 0.15 if sh[0] == "SWING" else 0.0,
-                "team_size": rng.randint(8, 20)}[col]
+                "team_size": 4 * sum(1 for r in ctx.rows("dim_production_line", "line_id").values() if r["workshop_id"] == rec["workshop_id"])}[col]
     if t == "dim_currency":
         c = S.CURRENCIES[idx - 1]
         return {"symbol": c[2], "numeric_code": c[3], "decimal_places": c[4],
@@ -520,11 +526,16 @@ def dim_attr(t: str, col: str, idx: int, rec: dict[str, Any], ctx: S.Context, rn
                 "annual_potential": round(lognorm(rng, 5e8), -4), "growth_target": round(rng.uniform(0.02, 0.18), 3),
                 "price_tier": rng.choice(["高端", "中端", "经济"]), "competitor_count": rng.randint(3, 15)}[col]
     if t == "dim_supplier_site":
-        sup = ctx.rows("dim_supplier", "supplier_id").get(rec.get("supplier_id")) or {}
-        return {"site_type": rng.choice(["生产基地", "仓库", "办事处"]), "country_code": "CN", "province": sup.get("province"),
-                "city": sup.get("city"), "lead_time_days": rng.randint(3, 30), "minimum_order_qty": float(rng.choice([1, 5, 10, 20])),
-                "delivery_rating": round(rng.uniform(3.0, 5.0), 1), "quality_rating": round(rng.uniform(3.0, 5.0), 1),
-                "capacity_rating": round(rng.uniform(3.0, 5.0), 1), "approved_scope": rng.choice(["树脂", "助剂", "色母", "包材"])}[col]
+        sid = rec.get("supplier_id")
+        sup = ctx.rows("dim_supplier", "supplier_id").get(sid) or {}
+        mats = [m for m in ctx.rows("dim_material", "material_id").values() if m["supplier_id"] == sid]
+        perf = SIM.M.SUPPLIERS[sid - 1] if sid else None                       # 准时率、合格率取 108 表供应商档案
+        return {"site_type": "生产基地" if idx <= 12 else "中转仓库", "country_code": "CN", "province": sup.get("province"),
+                "city": sup.get("city"), "lead_time_days": max((m["lead_time_days"] for m in mats), default=7),
+                "minimum_order_qty": 5.0 if mats else 1.0,
+                "delivery_rating": round(perf[8] * 5, 1) if perf else 4.0, "quality_rating": round(perf[9] * 5, 1) if perf else 4.0,
+                "capacity_rating": 4.5 if idx <= 12 else 4.0,
+                "approved_scope": "、".join(m["material_name"] for m in mats) or "未供货"}[col]
     if t == "dim_contract_type":
         c = S.CONTRACT_TYPES[idx - 1]
         return {"default_term_days": c[2], "legal_template_no": f"LT-{c[0]}", "approval_level": "总经理" if c[2] >= 365 else "部门经理",
@@ -546,19 +557,25 @@ def dim_attr(t: str, col: str, idx: int, rec: dict[str, Any], ctx: S.Context, rn
     if t == "dim_energy_type":
         e = S.ENERGY_TYPES[idx - 1]
         return {"medium_type": e[1], "measurement_unit": e[2],
-                "standard_coal_factor": {"ELEC": 0.1229, "NGAS": 1.33, "STEAM": 0.1286, "DIESEL": 1.4571}.get(e[0], 0.0),
+                "standard_coal_factor": {"ELEC": 0.1229, "NGAS": 1.2143, "STEAM": 128.6, "DIESEL": 1.4571}.get(e[0], 0.0),   # kgce / 计量单位
                 "emission_factor": e[3], "scope_category": "范围二" if e[0] in ("ELEC", "STEAM", "HOTW", "CHW") else "范围一",
                 "reporting_standard": "GB/T 32150", "meter_type": "智能电表" if e[2] == "KWH" else "流量计",
                 "renewable_flag": int(e[0] == "PV")}[col]
     if t == "dim_emission_type":
         e = S.EMISSION_TYPES[idx - 1]
-        return {"pollutant_category": "废气" if e[2] == "mg/m3" else "废水" if e[2] == "mg/L" else "其他", "measurement_unit": e[2],
+        return {"pollutant_category": "废气" if e[2] == "mg/m³" else "废水" if e[2] == "mg/L" else "其他", "measurement_unit": e[2],
                 "regulatory_limit": e[3], "monitoring_frequency": rng.choice(["实时", "每日", "每月", "每季"]),
                 "reporting_standard": "排污许可证", "calculation_method": "实测法" if e[3] else "核算法", "medium_type": "环境"}[col]
     if t == "dim_skill":
-        return {"skill_family": rng.choice(["生产操作", "设备维护", "质量", "管理", "信息化"]), "proficiency_levels": 5,
-                "assessment_method": rng.choice(["实操考核", "笔试", "答辩"]), "training_hours": float(rng.choice([8, 16, 24, 40])),
-                "critical_skill": int(rng.random() < 0.3), "renewal_months": rng.choice([12, 24, 36])}[col]
+        fam = {"挤出操作": "生产操作", "螺杆组合配置": "工艺技术", "配色": "工艺技术", "配方开发": "工艺技术", "设备点检": "设备维护",
+               "电工": "设备维护", "焊接": "设备维护", "PLC 编程": "设备维护", "液压维修": "设备维护", "叉车驾驶": "仓储物流",
+               "仓储管理": "仓储物流", "危化品运输": "仓储物流", "质量检验": "质量", "统计过程控制": "质量", "精益改善": "管理",
+               "安全管理": "安全环保", "化学品管理": "安全环保", "计划排程": "计划", "成本核算": "财务", "数据分析": "信息化"}[rec["name"]]
+        hands_on = fam in ("生产操作", "设备维护", "仓储物流")
+        return {"skill_family": fam, "proficiency_levels": 5, "assessment_method": "实操考核" if hands_on else "答辩",
+                "training_hours": 40.0 if hands_on else 24.0,
+                "critical_skill": int(rec["name"] in ("挤出操作", "设备点检", "电工", "质量检验", "安全管理", "危化品运输")),
+                "renewal_months": 12 if rec["name"] in ("电工", "危化品运输", "叉车驾驶") else 24}[col]
     if t == "dim_certification":
         months = rng.choice([24, 36, 48, 72])
         return {"certificate_type": "操作资格" if "证" in rec["name"] else "专业资质", "issuing_authority": rng.choice(["应急管理局", "市场监管局", "行业协会", "认证机构"]),
@@ -610,28 +627,35 @@ def fact_record(spec: Any, idx: int, row: dict[str, Any], ctx: S.Context, rng: r
                 scale: dict[str, float]) -> dict[str, Any]:
     t = spec.name
     sem = S.FACT_SEMANTICS[t]
+    event = "_date" in row                                    # v3:由 108 表业务事件推导的行
     rec: dict[str, Any] = {spec.pk: idx, **{k: v for k, v in row.items() if not k.startswith("_")}}
     rec["_row"] = row
-    pdates = parent_dates(t, row, spec.refs, ctx)
-    bday = S.day(rng.randrange(0, S.DATE_SPAN + 1))
-    if pdates:
-        bday = max(bday, max(pdates) + timedelta(days=rng.randrange(0, 15)))
-    bday = min(bday, S.day(S.DATE_SPAN))
-    if pdates and bday < max(pdates):
-        bday = max(pdates)
-    ev = datetime.combine(bday, datetime.min.time()) + timedelta(hours=rng.randrange(7, 20), minutes=rng.randrange(60))
-    status = _status(rng, bday)
+    if event:
+        bday = row["_date"]
+        ev = row.get("_time") or datetime.combine(bday, datetime.min.time()) + timedelta(hours=rng.randrange(8, 18), minutes=rng.randrange(60))
+        status = row["_status"]
+    else:
+        pdates = parent_dates(t, row, spec.refs, ctx)
+        bday = S.day(rng.randrange(0, S.DATE_SPAN + 1))
+        if pdates:
+            bday = max(bday, max(pdates) + timedelta(days=rng.randrange(0, 15)))
+        bday = min(bday, S.day(S.DATE_SPAN))
+        if pdates and bday < max(pdates):
+            bday = max(pdates)
+        ev = datetime.combine(bday, datetime.min.time()) + timedelta(hours=rng.randrange(7, 20), minutes=rng.randrange(60))
+        status = _status(rng, bday)
     rec.update({
         "document_no": f"{_doc_prefix(t)}{bday.strftime('%Y%m%d')}{idx:05d}",
         "business_date": bday.isoformat(), "event_time": S.iso(ev),
         "posting_date": (bday + timedelta(days=rng.choice([0, 0, 0, 1, 1, 2, 3]))).isoformat(),
-        "status": status, "priority": rng.choices([1, 2, 3, 4, 5], weights=[5, 20, 50, 20, 5])[0],
-        "reason_code": _reason_for(t, rng),
+        "status": status, "priority": (min(5, 2 + int(row.get("_severity") or 1)) if row.get("_severity") else 3) if event
+        else rng.choices([1, 2, 3, 4, 5], weights=[5, 20, 50, 20, 5])[0],
+        "reason_code": (_REASON_BY_TABLE.get(t, "OTHER") if event else _reason_for(t, rng)),
         "source_system": S.SOURCE_BY_DOMAIN.get(spec.domain, "ERP"), "source_record_id": f"{t}:{idx}",
         "etl_batch_id": f"BATCH-{bday.strftime('%Y%m%d')}", "trace_id": hashlib.sha256(f"{t}:{idx}:{seed}".encode()).hexdigest()[:32],
         "tenant_code": "DEMO_TENANT", "created_at": S.iso(ev), "updated_at": S.iso(ev + timedelta(minutes=rng.randrange(1, 2880))),
-        "created_by": pick(rng, S.USERS), "updated_by": pick(rng, S.USERS),
-        "approved_by": pick(rng, S.USERS) if status in ("APPROVED", "CLOSED") else None,
+        "created_by": (creator := pick(rng, S.USERS)), "updated_by": pick(rng, S.USERS),
+        "approved_by": pick(rng, [u for u in S.USERS if u != creator]) if status in ("APPROVED", "CLOSED") else None,   # 不自审自批
         "approved_at": S.iso(ev + timedelta(hours=rng.randrange(1, 48))) if status in ("APPROVED", "CLOSED") else None,
         "source_document_no": _source_doc(t, row, ctx),
         "row_version": 1 + (rng.random() < 0.3) + (rng.random() < 0.08),
@@ -641,6 +665,10 @@ def fact_record(spec: Any, idx: int, row: dict[str, Any], ctx: S.Context, rng: r
     if sem.get("line_of"):
         rec["line_no"] = row["_line_no"]
     g = sem["groups"]
+    if event:
+        rec.update({k: v for k, v in row.items() if not k.startswith("_")})   # 事件给出的业务值优先于默认值
+        _event_measures(t, rec, row, ctx)
+        g = ""
     if "Q" in g:
         _quantities(t, rec, row, ctx, rng, scale)
     if "M" in g:
@@ -650,11 +678,77 @@ def fact_record(spec: Any, idx: int, row: dict[str, Any], ctx: S.Context, rng: r
     if "S" in g:
         rec["rate_value"] = round(min(0.999, max(0.3, rng.gauss(scale.get("rate", 0.9), 0.05))), 4)
         rec["score_value"] = round(min(100.0, max(40.0, rng.gauss(scale.get("score", 82.0), 8.0))), 1)
+    filler = _filler(ctx) if event else None
     for col, _typ in S.fact_columns(t):
         if col not in rec:
-            rec[col] = fact_attr(t, col, rec, row, ctx, rng)
+            v = filler.value(t, col, rec, row) if filler else FILL.MISSING
+            rec[col] = fact_attr(t, col, rec, row, ctx, rng) if v is FILL.MISSING else v
     rec.pop("_row", None)
     return rec
+
+
+def _standard_amount(rec: dict[str, Any], row: dict[str, Any], ctx: S.Context, amount: float) -> float:
+    """按标准价计的金额(计划数量 × 产品指导价或物料标准单价),用作预算金额;没有标准价的取单据金额。"""
+    q = rec.get("planned_quantity")
+    if q is None or rec.get("unit_code") != "TON":
+        return amount
+    if row.get("prod_id") is not None:
+        return round(q * ctx.rows("dim_product", "prod_id")[row["prod_id"]]["guide_price"], 2)
+    if row.get("material_id") is not None:
+        return round(q * ctx.rows("dim_material", "material_id")[row["material_id"]]["unit_price"], 2)
+    return amount
+
+
+def _filler(ctx: S.Context) -> FILL.Filler:
+    f = getattr(ctx, "_filler", None)
+    if f is None:
+        f = FILL.Filler(ctx)
+        ctx._filler = f
+    return f
+
+
+def _event_measures(t: str, rec: dict[str, Any], row: dict[str, Any], ctx: S.Context) -> None:
+    """事件行的数量、金额、时长、比率:事件给出的取事件值,其余由它们推导(不再随机)。"""
+    g = S.FACT_SEMANTICS[t]["groups"]
+    q = rec.get("quantity")
+    if "Q" in g:
+        rec["unit_code"] = rec.get("unit_code") or _unit_for(t, row, ctx)
+        if q is None:                                          # 表头:由明细汇总
+            q = 0.0
+            for c in ("quantity", "base_quantity", "planned_quantity", "actual_quantity", "qualified_quantity", "rejected_quantity"):
+                rec[c] = 0.0
+        else:
+            factor = {"TON": 1000.0, "HOUR": 60.0}.get(rec["unit_code"], 1.0)
+            rec.setdefault("base_quantity", round(q * factor, 3))
+            rec.setdefault("planned_quantity", q)
+            rec.setdefault("actual_quantity", q)
+            rec.setdefault("rejected_quantity", 0.0)
+            rec.setdefault("qualified_quantity", round(rec["actual_quantity"] - rec["rejected_quantity"], 4))
+    if "M" in g:
+        cur = rec.get("currency_code") or "CNY"
+        rate = S.RATES[cur]
+        amount, price = rec.get("amount"), rec.get("unit_price")
+        if amount is None:
+            amount = round(q * price, 2) if (q is not None and price is not None) else 0.0
+        if price is None:
+            price = round(amount / q, 4) if q else amount
+        cost = rec.get("cost_amount")
+        if cost is None:
+            std = None
+            if row.get("prod_id") is not None and q:
+                std = ctx.rows("dim_product", "prod_id")[row["prod_id"]]["standard_cost"] * q
+            elif row.get("material_id") is not None and q and rec.get("unit_code") == "TON":
+                std = ctx.rows("dim_material", "material_id")[row["material_id"]]["unit_price"] * q
+            cost = round(std, 2) if std is not None else amount
+        rec.update({"currency_code": cur, "exchange_rate": rate, "unit_price": price, "amount": amount, "local_amount": round(amount * rate, 2),
+                    "tax_amount": round(amount * row.get("_tax_rate", 0.0), 2), "cost_amount": cost,
+                    "budget_amount": rec["budget_amount"] if rec.get("budget_amount") is not None else _standard_amount(rec, row, ctx, amount)})
+    if "D" in g and rec.get("duration_minutes") is None:
+        rec["duration_minutes"] = 0.0
+    if "S" in g:
+        rec.setdefault("rate_value", 1.0)
+        if rec.get("score_value") is None:
+            rec["score_value"] = round(rec["rate_value"] * 100, 1)
 
 
 def _doc_prefix(t: str) -> str:

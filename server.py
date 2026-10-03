@@ -4717,6 +4717,9 @@ def data_quality():
                     checks.append({"target": agg_t, "rule": f"分层对账({tag})", "level": "warn",
                                    "detail": f"汇总层 {round(av):,} vs 事实层 {round(fv):,},差异 {diff:.1f}%(>5%,问数按层选表将得出不同答案)"})
                     flagged.add(agg_t)
+                else:                                          # 通过也列出:让人看到对账确实做了
+                    checks.append({"target": agg_t, "rule": f"分层对账({tag})", "level": "ok",
+                                   "detail": f"汇总层 {round(av):,} vs 事实层 {round(fv):,},差异 {diff:.2f}%(≤5%)"})
         except Exception:
             pass
     lv = {"error": 0, "warn": 0, "ok": 0}

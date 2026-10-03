@@ -302,12 +302,21 @@
     },
     {
       "id": "SYNTH-01",
-      "criterion": "200 表合成验证库生成即校验:引用沿业务链派生、表头由明细汇总、无占位串与表间重复度量、单位与币种合乎表含义、元数据按含义命名;底库缺陷如实保留并登记为验证案例;断言性质的验证案例违反数为 0;校验器能发现植入的不一致",
+      "criterion": "200 表合成验证库生成即校验:新事实表由 108 表基础库的业务事件推导(发运=交付与 FIFO 批次、工序与报工在工单窗口内、库存快照与移动勾稽、计量读数连续、凭证借贷平衡且与单据一致、考勤按日历与排班),表头由明细汇总、无占位串与全空列、单位与币种合乎表含义、元数据按含义命名;仿真基础库无孤儿外键,只登记表结构带来的一项已知问题;断言性质的验证案例违反数为 0;校验器能发现植入的不一致",
       "tests": [
         "tests/unit/test_contract_200_generator.py::test_build_passes_structure_and_semantic_checks",
-        "tests/unit/test_contract_200_generator.py::test_base_defects_registered_not_masked",
+        "tests/unit/test_contract_200_generator.py::test_clean_base_only_layout_quirk_registered",
         "tests/unit/test_contract_200_generator.py::test_validation_results_are_real",
         "tests/unit/test_contract_200_generator.py::test_checker_catches_planted_inconsistencies"
+      ]
+    },
+    {
+      "id": "SYNTH-02",
+      "criterion": "108 表演示库由业务过程仿真生成:销售、采购、生产、质量、设备、财务、安全环境各链路逐项勾稽,汇总层由明细重算,检验结论与记录值一致、事件不越出观测期;同种子逐字节可复现(以生成库为布局重跑结果不变);校验器能发现植入的业务矛盾",
+      "tests": [
+        "tests/unit/test_demo108_generator.py::test_build_passes_all_business_checks",
+        "tests/unit/test_demo108_generator.py::test_same_seed_reproduces_the_same_database",
+        "tests/unit/test_demo108_generator.py::test_checker_catches_planted_contradictions"
       ]
     }
   ]
