@@ -127,7 +127,7 @@ COSMO DataMind 是「数据治理 × 本体 × 深度问数」原型：
 
 ## 现状校准
 - 计数(2026-10-03):**137 路由**(server.py 119 + bp_engine 5 + bp_actions 7 + bp_metrics 4 + bp_semantic 2)/ **565 集成断言** /
-  **1158 项 pytest 测试** / DR-001…DR-077 · IR-001…IR-013。
+  **1159 项 pytest 测试** / DR-001…DR-077 · IR-001…IR-013。
   DR-076 起 `examples/demo_metrics.db` 由 `scripts/build_demo_108_db.py` 按业务过程仿真生成(108 表 / 308,230 行)。
   DR-060 新增构建前预处理:外部库只读抽样 `ext_sample`、构建体检与分轮计划 `build_prep`。
   DR-059 新增长文分块检索 `doc_chunks`,以及能源管理 `energy_management`、碳排放核算 `carbon_accounting` 两个独立行业参照。

@@ -174,7 +174,7 @@ def test_hash_route_skips_the_page_the_nav_click_already_opened():
 
 
 def test_every_backend_object_kind_has_a_chinese_label():
-    """后端会产出的对象种类(含 BFO 的信息内容实体 ice)在界面都要有中文名,
+    """后端会产出的对象种类(含 IAO 中的信息内容实体 ice,information content entity)在界面都要有中文名,
     否则评审页「类型」列直接显示内部代码(部署环境走查发现「ice」)。"""
     import content_quality
     kinds = UI[UI.index("const KIND={"):UI.index("const KINDS=")]

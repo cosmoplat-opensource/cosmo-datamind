@@ -120,3 +120,16 @@ def test_table_holding_a_code_named_in_question_ranks_first():
     tables = [o["table"] for o in tr["objects"]]
     assert tables.index("dim_product") < tables.index("dim_material")
     assert any("PA66-GF30" in h for o in tr["objects"] if o["table"] == "dim_product" for h in o.get("hits") or [])
+
+
+def test_column_list_comes_from_the_graph_source_database(make_sqlite):
+    """本体对象没有属性清单时列名现读数据库:本体来自登记的数据源时要读该库,
+    主库里的同名表列不同(缓存也要按库区分,不能把一个库的列名返回给另一个库)。"""
+    main_cols = server._table_cols("fact_production_order")
+    path = make_sqlite({"fact_production_order": ("doc_id INTEGER, doc_state TEXT", [(1, "A")])}, fname="src_cols.db")
+    token = server._QA_DB.set(path)
+    try:
+        assert server._table_cols("fact_production_order") == ["doc_id", "doc_state"]
+    finally:
+        server._QA_DB.reset(token)
+    assert server._table_cols("fact_production_order") == main_cols

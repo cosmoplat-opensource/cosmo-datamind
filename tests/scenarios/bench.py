@@ -90,6 +90,18 @@ def _ask_with_repair(server, graph, first, fixed, q="场景回归问数"):
                                                                 "nocache": True}).get_json()
 
 
+def _ask_capture(server, graph, q, sql):
+    """问数时记下交给计划模型的上下文,返回 (上下文, 响应)。"""
+    seen = []
+    def plan(question, context, *a, **k):
+        seen.append(context)
+        return {"analyses": [{"title": "基准", "sql": sql}]}
+    with _patched(server, agent_sql_plan=plan):
+        server._QA_CACHE.clear()
+        resp = server.app.test_client().post("/api/chat", json={"q": q, "graphs": [graph], "nocache": True}).get_json()
+    return (seen[0] if seen else ""), resp
+
+
 def _relation(ir, s, t):
     """关系列表里找;被候选分流驳回的在 rejected_relations 里,状态记为 rejected(DR-073)。"""
     r = next((r for r in ir["relations"] if r.get("source_concept") == s and r.get("target_concept") == t), None)
@@ -230,6 +242,15 @@ def run_business(tmp):
         r4 = _ask(server, graph, live_e)
         got = {r["能源"]: r["n"] for r in (_rows(r4) or [])}
         checks.append(Check(name, "问数:按 'N' 排除已删除行后的答案与标准答案一致", got == fx["truth_measures_by_energy"], str(got)))
+        # DR-077 问数上下文:本体来自登记的数据源时,列取值从该库读;问句里的编号(D12)把所在的表带进上下文
+        ctx_e, resp_e = _ask_capture(server, graph, "各能源类型的计量关系有多少条", live_e)
+        line = next((x for x in ctx_e.splitlines() if x.startswith("表 meta_energy_type(")), "")
+        checks.append(Check(name, "问数:列取值来自本体来源库(能源名称 水/电/蒸汽)",
+                            "取值:" in line and all(v in line for v in ("水", "电", "蒸汽")), line[:120]))
+        _ctx, resp_d = _ask_capture(server, graph, "D12 属于哪家企业?", live)
+        hits = next((o.get("hits") or [] for o in (resp_d.get("anchor") or {}).get("objects", [])
+                     if o.get("table") == "inst_device"), [])
+        checks.append(Check(name, "问数:问句里的编号 D12 所在的器具表进入上下文,并记为命中证据", "D12" in hits, str(hits)))
         steps, done, ir, error = _build(server, conn, None, tables=["inst_device", "meta_device_type"])
         tabs = {t for o in (ir or {}).get("objects", []) for t in (o.get("tables") or [o.get("table")]) if t}
         checks.append(Check(name, "模型不可用时的降级构建只建本轮范围", bool(tabs) and tabs <= {"inst_device", "meta_device_type"},

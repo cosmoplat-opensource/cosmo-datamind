@@ -44,7 +44,7 @@ function g6render(containerId,g,lay,opts){opts=opts||{};
   const y0=Math.max(...placed.map(m=>m.y))+100, colW=Math.max(...iso.map(n=>n.size[0]))+20;
   const cols=Math.max(4,Math.floor((right-left)/colW));
   iso.forEach((n,i)=>graph.addItem('node',{...n,x:left+colW/2+(i%cols)*colW,y:y0+Math.floor(i/cols)*60}));};
- // 关键：在布局完成后再自适应，并夹住过放大(此前 fitView 在异步布局前跑→内容坍缩成小框→放大到 ~7x)。
+ // 布局完成后再自适应,且缩放不超过 1:异步布局完成前调用 fitView 时内容尚未展开,会被放大到约 7 倍。
  // 聚焦不用动画:动画未完时 320 ms 后的第二次 fit 会打断它,视图停在空白处
  const fit=()=>{try{graph.fitView([24,48,24,48]);const z=graph.getZoom();
   if(z>1){graph.zoomTo(1);graph.fitCenter();}

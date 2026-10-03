@@ -1020,7 +1020,7 @@ def _obj_table(o):
 
 
 _SQL_IDENT = r"[A-Za-z_][A-Za-z0-9_]*"   # 标识符白名单(表名/列名),全站消毒共用
-_COLS_CACHE: dict[str, list[str]] = {}
+_COLS_CACHE: dict[tuple[str, str], list[str]] = {}
 
 
 def _table_cols(table):
@@ -1028,13 +1028,13 @@ def _table_cols(table):
     那样喂给引擎的上下文是「表 X(): 」一个列都没有,模型只能猜列名,SQL 必然报
     no such column。缺列宁可现查,也不能让模型盲写。"""
     raw = (table or "").lower()
-    db_path = DB
+    db_path = _qa_db()                    # 本体来自登记的数据源时读该库(DR-077)
     t = raw
     if raw.startswith("up."):
         db_path, t = UPLOAD_DB, raw[3:]
-    # 表名来自本体产物,按标识符白名单校验后才拼进 PRAGMA —— 与全站标识符消毒口径一致
+    # 表名来自本体产物,按标识符白名单校验后才拼进 PRAGMA,与全站的标识符校验规则一致
     if not t or not re.fullmatch(_SQL_IDENT, t): return []
-    cache_key = raw
+    cache_key = (db_path, raw)
     if cache_key in _COLS_CACHE: return _COLS_CACHE[cache_key]
     try:
         con = ro_connect(db_path)
@@ -1117,29 +1117,32 @@ def _value_owners(question, objects):
     if not toks:
         return {}
     out: dict = {}
-    for o in objects:
-        raw = (o.get("table") or "").lower()
-        db_path, t = (UPLOAD_DB, raw[3:]) if raw.startswith("up.") else (_qa_db(), raw)
-        if not t or not re.fullmatch(_SQL_IDENT, t):
-            continue
-        cols = [a.get("col") for a in (o.get("attrs") or []) if a.get("col")] or _table_cols(o.get("table"))
-        cols = [c for c in cols if _CODE_COL.search(c.lower()) and re.fullmatch(_SQL_IDENT, c)][:6]
-        for tok in toks:
-            for c in cols:
-                key = (db_path, t, c, tok)
-                if key not in _VALUE_OWNER_CACHE:
-                    try:
-                        con = ro_connect(db_path)
+    cons: dict = {}                       # 每个库只开一次连接:逐条开连接时 200 张表的查找要 2 秒以上
+    try:
+        for o in objects:
+            raw = (o.get("table") or "").lower()
+            db_path, t = (UPLOAD_DB, raw[3:]) if raw.startswith("up.") else (_qa_db(), raw)
+            if not t or not re.fullmatch(_SQL_IDENT, t):
+                continue
+            cols = [a.get("col") for a in (o.get("attrs") or []) if a.get("col")] or _table_cols(o.get("table"))
+            cols = [c for c in cols if _CODE_COL.search(c.lower()) and re.fullmatch(_SQL_IDENT, c)][:6]
+            for tok in toks:
+                for c in cols:
+                    key = (db_path, t, c, tok)
+                    if key not in _VALUE_OWNER_CACHE:
                         try:
-                            _VALUE_OWNER_CACHE[key] = con.execute(
+                            if db_path not in cons:
+                                cons[db_path] = ro_connect(db_path)
+                            _VALUE_OWNER_CACHE[key] = cons[db_path].execute(
                                 f'SELECT 1 FROM "{t}" WHERE "{c}" = ? LIMIT 1', (tok,)).fetchone() is not None
-                        finally:
-                            con.close()
-                    except Exception:
-                        _VALUE_OWNER_CACHE[key] = False
-                if _VALUE_OWNER_CACHE[key]:
-                    out.setdefault(raw, []).append(tok)
-                    break
+                        except Exception:
+                            _VALUE_OWNER_CACHE[key] = False
+                    if _VALUE_OWNER_CACHE[key]:
+                        out.setdefault(raw, []).append(tok)
+                        break
+    finally:
+        for con in cons.values():
+            con.close()
     return out
 
 
@@ -1157,7 +1160,7 @@ def _obj_cols_text(o, limit=30, question=""):
     """对象的列清单文本:优先本体自带 attrs(含中文名),缺失则回落到库里现读的列名。
     问题提到的列排在前面,不被列数上限截掉;低基数列附上库中实际取值(DR-077)。"""
     attrs = [a for a in (o.get("attrs") or []) if a.get("col")]
-    # cn 可能是 None:用 or "" 兜住,否则会渲染出字面量 "None" 喂给模型
+    # cn 可能是 None:用 or "" 处理,否则上下文里会出现字面量 "None"
     dict_cn = _dict_cn(o.get("table"))              # 属性没有中文名时用库内数据字典补(DR-077)
     cols = [(a["col"], a.get("cn") or dict_cn.get(a["col"].lower(), "")) for a in attrs] or \
         [(c, dict_cn.get(c.lower(), "")) for c in _table_cols(o.get("table"))]
@@ -1531,11 +1534,11 @@ def build_context(question, focus_tables=None, trace=None, graph_keys=None):
         _full = {str(x) for x in [o.get("cn")] + list(o.get("aliases") or []) if x}
         _rs = (sum((3 * len(h) + 6) if h in _full else 2 * len(h) for h in cn_hs) + (8 if head_hit else 0)
                + (len(hs) - len(cn_hs) - (1 if head_hit else 0)))
-        # 术语词典把问句用语直接对应到这张表(「安全事件」→ fact_incident):与问句原样出现完整中文名同等可信。
+        # 术语词典把问句用语直接对应到这张表(「安全事件」→ fact_incident):加 12 分,与问句中原样出现两字完整中文名的得分相同。
         # 库里表中文名常与问句用语不同(写作「事故」),只记 1 分会被只命中「事件」「event」的表挤出上下文(DR-077)
         if (o.get("table") or "").lower() in _kw_tables:
             _rs += 12
-        if _own:                       # 问句里的编号就在这张表里:与说出表的完整中文名同等可信
+        if _own:                       # 问句里的编号就在这张表的名称或编码列里:同样加 12 分
             _rs += 12
         # DR-072 同分时偏向主数据表:已验证关系多的对象(设备主表、用能单元)排在外围同名表前面
         tabs.append((_rs + (min(3.0, math.log2(1 + _deg.get(o.get("name"), 0))) if _rs > 0 else 0), o))
