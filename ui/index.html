@@ -768,10 +768,11 @@ function goPage(p){const nav=document.querySelector('[data-p="'+p+'"]');if(!nav)
  const revisit=!!loaded[p];load(p);
  // 易变页每次进入都重取：别处(评审/动作/构建)的变动切回来即见，不吃首屏一次性缓存
  if(revisit){try{
-  if(p==='graph'&&$('#g_sel')&&$('#g_sel').value)drawGraph($('#g_sel').value);
-  if(p==='review')rvLoad();
+  // 图谱列表也要重取:先看过这几页再新建本体,不重取的话下拉框里没有新本体,「进入人审 ↗」也选不中
+  if(p==='graph')graphs($('#g_sel').value);
+  if(p==='review')reviewInit();
   if(p==='actioncenter')acLogLoad();
-  if(p==='ontquality')ontQualityRender&&ontQualityRender();
+  if(p==='ontquality')ontQualityLoad();
   if(p==='assistant')asLoad();
   if(p==='qaeval')qeLoad();
  }catch(e){}}
@@ -789,8 +790,8 @@ async function load(p){if(loaded[p])return;loaded[p]=1;
  if(p==='layers')layersLoad();if(p==='sqldev')sqlDevInit();if(p==='quality')qualityLoad();
  if(p==='apis')apisLoad();if(p==='jobs')jobsLoad();if(p==='sysadmin')sysLoad();
  if(p==='ontquality')ontQualityLoad();}
-async function ontQualityLoad(){const gs=await J('/api/graphs');
- $('#oq_sel').innerHTML=graphOptions(gs,g=>g.name);
+async function ontQualityLoad(){const gs=await J('/api/graphs');const cur=$('#oq_sel').value;
+ $('#oq_sel').innerHTML=graphOptions(gs,g=>g.name);if(cur&&gs.some(g=>g.id===cur))$('#oq_sel').value=cur;
  $('#oq_sel').onchange=ontQualityRender;ontQualityRender();}
 async function ontQualityRender(){const k=$('#oq_sel').value;if(!k)return;
  const d=await J('/api/ont/completeness/'+k);if(!d||d.error){$('#oq_kpis').innerHTML='<div class="muted">加载失败</div>';return;}
@@ -918,7 +919,9 @@ function graphOptions(gs,label){
   if(!items.length)return '';
   return `<optgroup label="${gl}">`+items.map(g=>`<option value="${esc(g.id)}">${esc(label(g))}</option>`).join('')+`</optgroup>`;}).join('');
 }
-async function graphs(pref){const gs=await J('/api/graphs');
+let G_LIST_SEQ=0;
+async function graphs(pref){const seq=++G_LIST_SEQ;const gs=await J('/api/graphs');
+ if(seq!==G_LIST_SEQ)return;            // 只认最后一次调用:重访重取与「在本体图谱中查看」先后返回不定
  DQ_GRAPHS=gs;
  $('#g_sel').innerHTML=graphOptions(gs,g=>`${g.name}(${g.nodes}节点/${g.edges}关系)`);
  $('#g_sel').onchange=()=>{const k=$('#g_sel').value;gQaSync(k);drawGraph(k);};
@@ -2440,6 +2443,7 @@ if(location.hash.slice(1))routeHash();else{home();loaded.home=1;}
 function routeHash(){const h=location.hash.slice(1);
  const mg=h.match(/^graph=(.+)$/);if(mg){loaded.graph=1;goPage('graph');graphs(mg[1]);return;}
  const mo=h.match(/^obj=([^:]+):(.+)$/);if(mo){loaded.graph=1;goPage('graph');graphs(mo[1]);return;}   // 仅定位到图谱；对象级高亮随 studio 页一并移除
+ const on=document.querySelector('.nav.on');if(h&&on&&on.dataset.p===h&&loaded[h])return;   // 菜单点击已打开该页,hashchange 不再重复进入(首屏 #home 仍要加载)
  if(h){if(!goPage(h)){goPage('home');history.replaceState(null,'','#home');}}else goPage('home');}  // 未知 hash 回首页并纠正 URL，避免地址与页面不一致
 addEventListener('hashchange',routeHash);
 // 可访问性：让 onclick 的 div/span 可 Tab 聚焦 + Enter/Space 触发(键盘可操作)

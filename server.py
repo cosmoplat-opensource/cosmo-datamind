@@ -1059,7 +1059,7 @@ def _col_values(table, col, cap=10):
     问数模型不知道枚举列存的是「已完成」还是「完工」、是 'finished' 还是「成品仓」,
     按猜测的取值过滤就会返回 0 行。把实际取值写进列说明,筛选条件才能写对(DR-077)。"""
     raw = (table or "").lower()
-    db_path, t = (UPLOAD_DB, raw[3:]) if raw.startswith("up.") else (DB, raw)
+    db_path, t = (UPLOAD_DB, raw[3:]) if raw.startswith("up.") else (_qa_db(), raw)   # 本体来自登记数据源时读该库
     if not t or not re.fullmatch(_SQL_IDENT, t) or not re.fullmatch(_SQL_IDENT, col or ""):
         return None
     key = (db_path, t, col)
@@ -1084,7 +1084,7 @@ _DICT_CN_CACHE: dict = {}
 def _dict_cn(table):
     """库内数据字典里的字段中文名(dim_column_metadata.column_name_cn);没有字典时为空。"""
     raw = (table or "").lower()
-    db_path, t = (UPLOAD_DB, raw[3:]) if raw.startswith("up.") else (DB, raw)
+    db_path, t = (UPLOAD_DB, raw[3:]) if raw.startswith("up.") else (_qa_db(), raw)   # 本体来自登记数据源时读该库
     key = (db_path, t)
     if key not in _DICT_CN_CACHE:
         out = {}

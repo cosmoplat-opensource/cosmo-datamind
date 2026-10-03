@@ -94,3 +94,19 @@ def test_glossary_term_naming_a_table_outranks_generic_word_hits():
     finally:
         os.remove(path)
     assert "表 fact_incident(" in ctx
+
+
+def test_values_and_names_come_from_the_graph_source_database(make_sqlite):
+    """本体来自登记的 SQLite 数据源时,问数在该库上执行:取值与字段中文名也要从该库读,
+    不能读主库里同名表的取值(两个库常有同名表,取值不同)。"""
+    path = make_sqlite({
+        "fact_production_order": ("order_id INTEGER, status TEXT", [(1, "RELEASED"), (2, "CLOSED")]),
+        "dim_column_metadata": ("table_name TEXT, column_name TEXT, column_name_cn TEXT",
+                                [("fact_production_order", "status", "单据状态")]),
+    }, fname="source.db")
+    token = server._QA_DB.set(path)
+    try:
+        text = server._obj_cols_text({"table": "fact_production_order", "attrs": [{"col": "status"}]})
+    finally:
+        server._QA_DB.reset(token)
+    assert text == "status(单据状态;取值:CLOSED/RELEASED)"

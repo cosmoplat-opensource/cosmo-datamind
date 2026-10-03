@@ -144,3 +144,30 @@ class TestNavGrouping:
         groups, _ = _groups()
         g = next(g for g, ps in groups if "glossary" in ps)
         assert "治理" in g, f"术语管理在「{g}」组,应归数据治理"
+
+
+def test_revisiting_graph_pages_refreshes_the_graph_lists():
+    """先看过评审页、图谱页,再去新建本体:切回来时下拉框要包含新本体,「进入人审 ↗」才能选中它。
+    重访时只重画当前图谱、不重取列表,新本体选不到(部署环境端到端验收发现)。"""
+    block = UI[UI.index("if(revisit){try{"):UI.index("}catch(e){}}", UI.index("if(revisit){try{"))]
+    assert "graphs($('#g_sel').value)" in block
+    assert "reviewInit()" in block
+    assert "ontQualityLoad()" in block
+    load = UI[UI.index("async function ontQualityLoad"):UI.index("async function ontQualityRender")]
+    assert "const cur=$('#oq_sel').value" in load        # 重取列表后保留原选中项
+
+
+def test_graph_list_reload_is_last_call_wins():
+    """重访图谱页会重取列表(按原选中项),紧接着「在本体图谱中查看」又按新本体取一次:
+    两次请求先后返回不定,必须以后发起的那次为准,不能让旧选中项覆盖刚点开的新本体。"""
+    fn = UI[UI.index("async function graphs(pref)"):UI.index("// 与平台原版一致的 G6 渲染")]
+    assert "const seq=++G_LIST_SEQ" in fn
+    assert "if(seq!==G_LIST_SEQ)return" in fn
+
+
+def test_hash_route_skips_the_page_the_nav_click_already_opened():
+    """点菜单先 goPage 再改 hash,hashchange 又 goPage 一次:重访逻辑跑两遍,且第二次按旧选中项重取图谱,
+    会盖掉紧接着打开的新本体。当前页已是该页时 hash 路由不再重复进入。"""
+    fn = UI[UI.index("function routeHash(){"):UI.index("addEventListener('hashchange',routeHash);")]
+    assert "document.querySelector('.nav.on')" in fn
+    assert "on.dataset.p===h&&loaded[h]" in fn                 # 首屏带 #home 时该页尚未加载,不能跳过
