@@ -251,3 +251,12 @@ def test_comment_reference_forms_recognised(make_sqlite):
     handle = cc.Db(db)
     for col in ("a", "b"):
         assert cc.comment_channel(handle, "t", col, "dim_production_line")["state"] == "support"
+
+
+def test_id_collision_accepts_camel_case_and_plural_parent_tables():
+    """UserId → users.Id、OwnerUserId → users.Id 的键名指向父表,不是自增 id 碰撞;
+    UserId → posts.Id 才是(DR-079,BIRD codebase_community 中 9 条真外键曾被误降为候选)。"""
+    for ck, pt in (("UserId", "users"), ("OwnerUserId", "users"), ("PostId", "posts"), ("category_id", "categories")):
+        assert cc.id_collision(None, "t", ck, pt, "Id", "none")["state"] == "na", (ck, pt)
+    for ck, pt in (("UserId", "posts"), ("ViewCount", "users")):
+        assert cc.id_collision(None, "t", ck, pt, "Id", "none")["state"] == "conflict", (ck, pt)

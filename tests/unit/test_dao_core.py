@@ -241,3 +241,14 @@ class TestParityWithEngine:
         cvals, pvals = [1, 2, 3, 4], [1, 2, 3]
         assert round(dao_core.overlap_pct(set(map(str, cvals)), set(map(str, pvals))), 1) == \
                engine.overlap_pct(cvals, pvals)
+
+
+def test_role_prefixed_camel_case_keys_point_to_singular_parent_table():
+    """带角色前缀的驼峰键名(OwnerUserId、ExcerptPostId、LastEditorUserId)指向复数表名的父表 id。
+    BIRD codebase_community 对比实验中这些真外键因「列名词根不一致」被送审(DR-079)。"""
+    import dao_core
+    for child, parent in (("UserId", "users"), ("OwnerUserId", "users"), ("LastEditorUserId", "users"),
+                          ("ExcerptPostId", "posts"), ("PostId", "posts"), ("category_id", "categories")):
+        assert dao_core.name_ok(child, parent, "Id"), (child, parent)
+    for child, parent in (("OwnerUserId", "posts"), ("OrderId", "users"), ("UserId", "posts"), ("ViewCount", "users")):
+        assert not dao_core.name_ok(child, parent, "Id"), (child, parent)

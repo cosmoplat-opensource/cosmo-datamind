@@ -188,6 +188,18 @@ def _snake(col):
     return s.lower()
 
 
+def singular(word):
+    """英文表名常用复数:users → user、categories → category、addresses → address;其余原样返回。"""
+    w = (word or "").lower()
+    if len(w) > 4 and w.endswith("ies"):
+        return w[:-3] + "y"
+    if len(w) > 4 and w.endswith(("sses", "xes", "ches", "shes")):
+        return w[:-2]
+    if len(w) > 3 and w.endswith("s") and not w.endswith(("ss", "us", "is")):
+        return w[:-1]
+    return w
+
+
 def role_targets(col):
     """列名的语义角色目标(DR-036)。返回目标提示元组(可含 'self');非角色键返回 ()。
     先驼峰归一 + 剥尾部 id/code,再直接命中或按 <role>_ 前缀/_<role> 后缀命中。"""
@@ -240,6 +252,13 @@ def name_ok(child_col, parent_table, parent_key, child_table=None):
         st = expand(key_stem(child_col))
         if len(st) >= 3 and st in expand(_snake(parent_table or "")):
             return True
+        # 带角色前缀的键名指向复数表名(DR-079):owner_user_id → users.id、excerpt_post_id → posts.id。
+        # 只认以 id/code/key/no 结尾的子键,且子键词根的最后一个词元与父表名最后一个词元的单数形式相同
+        if _KEY_SUF_RE.search(_snake(child_col)):
+            _last = st.split("_")[-1] if st else ""
+            _pt = [t for t in expand(_snake(parent_table or "")).split("_") if t]
+            if len(_last) >= 3 and _pt and _last == singular(_pt[-1]):
+                return True
         # 词元前缀缩写:anal_obj_id → analysis_object.id(每个词元是父表名中对应词元的前缀,至少 3 个字母)
         toks = [t for t in st.split("_") if t]
         ptoks = [t for t in expand(_snake(parent_table or "")).replace("__", "_").split("_") if t]

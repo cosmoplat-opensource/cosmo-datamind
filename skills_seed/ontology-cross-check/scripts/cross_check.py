@@ -217,12 +217,27 @@ def _prefix_abbrev(ck, pt):
                for i in range(len(ptoks) - len(toks) + 1))
 
 
+def _singular(word):
+    w = word.lower()
+    if len(w) > 4 and w.endswith("ies"):
+        return w[:-3] + "y"
+    if len(w) > 4 and w.endswith(("sses", "xes", "ches", "shes")):
+        return w[:-2]
+    if len(w) > 3 and w.endswith("s") and not w.endswith(("ss", "us", "is")):
+        return w[:-1]
+    return w
+
+
 def id_collision(db, ct, ck, pt, pk, name_state):
     if pk.lower() != "id":
         return {"state": "na"}
+    # 驼峰键名与复数表名(DR-079):UserId、OwnerUserId → users.Id 的键名指向父表,不算自增 id 碰撞
+    snake = re.sub(r"(?<=[a-z0-9])(?=[A-Z])", "_", ck).lower()
     tokens = [t for t in re.split(r"[_\W]+", pt.split("__")[-1].lower()) if len(t) >= 3]
-    related = any(t in ck.lower() for t in tokens) or (_stem(ck) and _stem(ck) in pt.lower()) \
-        or _prefix_abbrev(ck, pt)
+    tokens += [_singular(t) for t in tokens if _singular(t) != t]
+    stem = _SUFFIX.sub("", snake)
+    related = any(t in snake.replace("_", "") for t in tokens) or (stem and stem in pt.lower()) \
+        or _prefix_abbrev(snake, pt)
     if name_state != "support" and (ck.lower() == "id" or not related):
         return {"state": "conflict", "reason": f"{ck} → {pt}.id:子键名与父表无关,且没有名称证据"}
     return {"state": "na"}

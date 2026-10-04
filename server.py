@@ -1243,6 +1243,8 @@ _INV_CACHE: dict = {}
 # 本次问数在该库上执行;否则仍是主库。按请求设置,请求结束即复位。
 import contextvars
 _QA_DB = contextvars.ContextVar("qa_db", default=None)
+# 作答形式:"" 为分析报告(可带拆分与趋势);"exact" 为精确作答,只回答问题本身,便于与标准答案逐行比对
+_ANSWER_STYLE = contextvars.ContextVar("answer_style", default="")
 
 
 def _qa_db():
@@ -1911,17 +1913,25 @@ def _carryover(question, history, ir):
     if not hits: return question, ""
     return question + "(指代延续:上文对象 " + "、".join(hits) + ")", "、".join(hits)
 
+_REPORT_RULES = "最多3个分析,第一个分析直接回答问题本身(问总量就给出总量,问排名就给出排名),拆分、趋势放在其后;聚合趋势用 substr(日期列,1,7) 按月;LIMIT 500 以内;"
+_EXACT_RULES = ("只输出 1 个分析,直接回答问题本身;SELECT 只包含问题要求返回的列,按问题提到的顺序排列,"
+                "用于排序、筛选或计算的中间列不要放进 SELECT,不额外加分组列、计数列或说明列;"
+                "不加 ROUND,除非问题要求保留小数;不加 LIMIT,除非问题问的是最…的或前 N 个;")
+
+
 def agent_sql_plan(question, context, steps):
     try:
         from agent_runtime import get_runtime, available
     except Exception as e:
         steps.append({"step": "agent_runtime", "ok": False, "info": str(e)[:100]}); return None
-    prompt = f"""你是数据分析引擎。基于 SQLite 库(方言:SQLite,日期是 TEXT 'YYYY-MM-DD')回答业务问题。
+    exact = _ANSWER_STYLE.get() == "exact"
+    # 不同库的日期格式不同(YYYY-MM-DD、YYYYMM、整数年份……),按列说明里的实际取值写条件,不预设格式
+    prompt = f"""你是数据分析引擎。基于 SQLite 库(方言:SQLite;日期列的格式以列说明中的实际取值为准)回答业务问题。
 问题: {question}
 可用表结构:
 {context}
 只输出一个 JSON(不要其它文字): {{"analyses":[{{"title":"...","sql":"SELECT ...","chart":{{"type":"line|bar|pie","x":"列名","y":["列名"]}}}}], "note":"一句话分析思路"}}
-要求: 最多3个分析,第一个分析直接回答问题本身(问总量就给出总量,问排名就给出排名),拆分、趋势放在其后;SQL 只用上面列出的表列;若上下文给出「表间关系(⋈)」,跨表 JOIN 必须优先使用这些键,不要自造 JOIN 条件;聚合趋势用 substr(日期列,1,7) 按月;LIMIT 500 以内;「⋈⋈」为两跳链,须完整沿链 JOIN 中间表;均值计算:『月均/日均』分母用 count(DISTINCT 期间),不得除以固定常数;『最…的』单值问题:JOIN 后聚合再 ORDER BY … LIMIT 1。"""
+要求: {_EXACT_RULES if exact else _REPORT_RULES}SQL 只用上面列出的表列;若上下文给出「表间关系(⋈)」,跨表 JOIN 必须优先使用这些键,不要自造 JOIN 条件;「⋈⋈」为两跳链,须完整沿链 JOIN 中间表;均值计算:『月均/日均』分母用 count(DISTINCT 期间),不得除以固定常数;『最…的』单值问题:JOIN 后聚合再 ORDER BY … LIMIT 1。"""
     for drv in _drv_order():
         try:
             if drv not in available(): continue
@@ -4027,6 +4037,7 @@ def _reset_qa_source(token):
 @app.post("/api/chat")
 def chat():
     token = _with_qa_source(_qa_scope(request.json or {})[1])
+    style = _ANSWER_STYLE.set("exact" if (request.json or {}).get("answer_style") == "exact" else "")
     run = observability.Run("qa", mode="sync", on_source_db=_QA_DB.get() is not None,
                             q=(request.json or {}).get("q", ""))
     try:
@@ -4046,6 +4057,7 @@ def chat():
         raise
     finally:
         _reset_qa_source(token)
+        _ANSWER_STYLE.reset(style)
 
 
 def _chat_impl():
@@ -4054,7 +4066,8 @@ def _chat_impl():
     history = body.get("history") or []          # [{q, summary}] 最近几轮
     focus_tables, graph_keys = _qa_scope(body)
     if not question: return jsonify({"error": "empty"}), 400
-    bypass_cache = _qa_bypass_cache(body)
+    exact = _ANSWER_STYLE.get() == "exact"
+    bypass_cache = _qa_bypass_cache(body) or exact          # 精确作答与分析报告的结果不同,不共用缓存
     cache_key, hit = _qa_cache_begin(
         question, history, focus_tables, graph_keys, bypass=bypass_cache)
     if hit:
@@ -4095,7 +4108,7 @@ def _chat_impl():
         steps.append({"step": "plan_timeout", "ok": False, "info": "引擎超时/离线 → 降级为内置模板"})
         plan = fallback_plan(q_eff, ir=ir_gate, focus_tables=focus_tables)
     results, dim_warns, unresolved, blocked = [], [], [], []
-    for a in (plan.get("analyses") or [])[:4]:
+    for a in (plan.get("analyses") or [])[:1 if exact else 4]:
         sql = a.get("sql", "")
         if not sql_is_readonly(sql):
             steps.append({"step": "exec_sql", "ok": False, "info": "非只读SQL被拒: " + sql[:60]}); continue
@@ -4154,7 +4167,8 @@ def _chat_impl():
         except Exception as e:
             steps.append({"step": "exec_sql", "ok": False, "info": f'{a.get("title","")}: {str(e)[:100]}'})
     if results:
-        text = _bounded(lambda: narrative_llm(question, results, steps), 50) or _rule_summary(results)
+        text = (_rule_summary(results) if exact
+                else _bounded(lambda: narrative_llm(question, results, steps), 50) or _rule_summary(results))
         text += _dimension_caveat(dim_warns)
     elif unresolved or blocked:
         text = _clarify_text(question, ir_gate, unresolved, blocked)          # DR-073 不给不可靠的答案,请使用者指明
