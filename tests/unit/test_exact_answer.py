@@ -83,3 +83,17 @@ def test_exact_style_names_only_and_prefers_detail_tables(monkeypatch):
     assert "从明细事实表计算" in p
     server.agent_sql_plan("计划产量合计最高的产品名称是什么?", "表 t(...)", [])
     assert "从明细事实表计算" not in seen["prompt"]          # 报告式不受影响
+
+
+def test_exact_style_returns_blocked_query_with_warning_instead_of_refusing(monkeypatch):
+    """DR-086:精确作答必须给出一条 SQL。全部查询被拦下时采用第一条并标注未通过校验;报告式仍请使用者澄清。"""
+    plans = {"analyses": [{"title": "答", "sql": "SELECT COUNT(*) AS n FROM fact_sales_order"}]}
+    monkeypatch.setattr(server, "agent_sql_plan", lambda *a, **k: plans)
+    monkeypatch.setattr(server, "narrative_llm", lambda *a, **k: "ok")
+    monkeypatch.setattr(server, "_qa_validate_sql", lambda *a, **k: (False, "JOIN 键不在已验证关系上"))
+    c = server.app.test_client()
+    exact = c.post("/api/chat", json={"q": "销售订单有多少条", "nocache": 1, "answer_style": "exact"}).get_json()
+    assert len(exact["results"]) == 1 and "未通过本体约束校验" in exact["results"][0]["unverified"]
+    assert any(s["step"] == "exact_fallback" for s in exact["steps"])
+    report = c.post("/api/chat", json={"q": "销售订单有多少条", "nocache": 1}).get_json()
+    assert not report["results"] and any(s["step"] == "clarify" for s in report["steps"])

@@ -1085,6 +1085,39 @@ def _col_values(table, col, cap=10):
 
 
 _DICT_CN_CACHE: dict = {}
+_EXT_DICT_CACHE: dict = {}
+
+
+def _ext_dict_path(db_path):
+    """外部数据字典文件(DR-083):按库文件的绝对路径登记在 workdir/dictionaries/index.json。"""
+    idx = os.path.join(WORK, "dictionaries", "index.json")
+    try:
+        with open(idx, encoding="utf-8") as f:
+            name = json.load(f).get(os.path.realpath(str(db_path or "")))
+        return _confined(os.path.join(WORK, "dictionaries"), name) if name else ""   # 越界抛 ValueError
+    except (OSError, ValueError, AttributeError):
+        return ""
+
+
+def _ext_dict(table):
+    """外部数据字典里某表的字段说明 {列小写: {"desc", "values"}}(DR-083)。
+
+    库里没有注释、说明另有文件时(如 BIRD 的 database_description,企业的数据字典表格),
+    登记数据源时可一并导入;问数上下文用它补字段含义与取值含义。没有登记时为空。"""
+    raw = (table or "").lower()
+    db_path, t = (UPLOAD_DB, raw[3:]) if raw.startswith("up.") else (_qa_db(), raw)
+    key = (db_path, t)
+    if key not in _EXT_DICT_CACHE:
+        out = {}
+        p = _ext_dict_path(db_path)
+        if p:
+            try:
+                with open(p, encoding="utf-8") as f:
+                    out = {c.lower(): v for c, v in ((json.load(f).get("tables") or {}).get(t) or {}).items()}
+            except (OSError, ValueError, AttributeError):
+                out = {}
+        _EXT_DICT_CACHE[key] = out
+    return _EXT_DICT_CACHE[key]
 
 
 def _dict_cn(table):
@@ -1106,6 +1139,59 @@ def _dict_cn(table):
             pass
         _DICT_CN_CACHE[key] = out
     return _DICT_CN_CACHE[key]
+
+
+_EXEMPLAR_CACHE: dict = {}
+_EX_TOK = re.compile(r"[A-Za-z0-9_]+|[\u4e00-\u9fff]")
+
+
+def _qa_exemplars(question, k=None):
+    """同一数据源上已验证的问答示例(问题 → SQL),按与当前问题的词重叠取最相近的 k 条(DR-084)。
+
+    示例登记在 workdir/exemplars/index.json(键为库文件绝对路径,值为 jsonl 文件名,每行 {question, sql});
+    目录可用环境变量 DATAMIND_EXEMPLARS_DIR 指定。
+    规划模型看到相近问题的写法(表的选取、连接、计算方式),但取值与条件仍按当前问题。没有登记时返回空列表。"""
+    db_path = os.path.realpath(str(_qa_db() or ""))
+    xdir = os.environ.get("DATAMIND_EXEMPLARS_DIR") or os.path.join(WORK, "exemplars")
+    if db_path not in _EXEMPLAR_CACHE:
+        rows = []
+        try:
+            with open(os.path.join(xdir, "index.json"), encoding="utf-8") as f:
+                name = json.load(f).get(db_path)
+            if name:
+                with open(_confined(xdir, name), encoding="utf-8") as f:
+                    rows = [r for r in (json.loads(x) for x in f if x.strip()) if r.get("question") and r.get("sql")]
+        except (OSError, ValueError, AttributeError):
+            rows = []
+        _EXEMPLAR_CACHE[db_path] = rows
+    same = re.sub(r"\s+", " ", question or "").strip().lower()
+    rows = [r for r in _EXEMPLAR_CACHE[db_path]          # 与当前问题完全相同的示例不作参考(完全相同的问题由沉淀技能复用处理)
+            if re.sub(r"\s+", " ", r["question"]).strip().lower() != same]
+    if not rows:
+        return []
+    toks = lambda t: [w.lower() for w in _EX_TOK.findall(t or "")]   # noqa: E731
+    df = {}
+    for r in rows:
+        for w in set(toks(r["question"])):
+            df[w] = df.get(w, 0) + 1
+    q = set(toks(question))
+    n = len(rows)
+
+    def score(r):
+        return sum(math.log(1 + n / df[w]) for w in q & set(toks(r["question"])))
+    k = k or int(os.environ.get("DATAMIND_EXEMPLAR_K") or 5)
+    ranked = sorted(rows, key=score, reverse=True)
+    return [r for r in ranked[:k] if score(r) > 0]
+
+
+def _exemplar_text(question):
+    ex = _qa_exemplars(question)
+    if not ex:
+        return "", 0
+    lines = ["[相似问题的已验证查询:参考其选表、连接与计算写法;取值与条件按当前问题]"]
+    for r in ex:
+        lines.append(f"- 问:{r['question'][:300]}\n  SQL:{r['sql'][:600]}")
+    return "\n".join(lines), len(ex)
 
 
 _CODE_TOKEN = re.compile(r"[A-Za-z0-9][A-Za-z0-9\-_/.]{2,39}")
@@ -1203,8 +1289,13 @@ def _obj_cols_text(o, limit=30, question=""):
     attrs = [a for a in (o.get("attrs") or []) if a.get("col")]
     # cn 可能是 None:用 or "" 处理,否则上下文里会出现字面量 "None"
     dict_cn = _dict_cn(o.get("table"))              # 属性没有中文名时用库内数据字典补(DR-077)
-    cols = [(a["col"], a.get("cn") or dict_cn.get(a["col"].lower(), "")) for a in attrs] or \
-        [(c, dict_cn.get(c.lower(), "")) for c in _table_cols(o.get("table"))]
+    ext = _ext_dict(o.get("table"))                  # 外部数据字典的字段说明与取值含义(DR-083)
+
+    def _label(col, cn):
+        desc = str((ext.get(col.lower()) or {}).get("desc") or "").strip()
+        return cn or desc[:80]
+    cols = [(a["col"], _label(a["col"], a.get("cn") or dict_cn.get(a["col"].lower(), ""))) for a in attrs] or \
+        [(c, _label(c, dict_cn.get(c.lower(), ""))) for c in _table_cols(o.get("table"))]
     vals_of = {col: None if _KEYISH.search(col.lower()) else _col_values(o.get("table"), col) for col, _cn in cols}
     def _rank(c):
         # 问题说出了列的某个取值(「缺勤」之于出勤结果、「已完成」之于工单状态)也算提到该列,权重高于名称片段
@@ -1215,6 +1306,9 @@ def _obj_cols_text(o, limit=30, question=""):
     for col, cn in cols:
         vals = vals_of[col]
         hint = f"取值:{'/'.join(vals)}" if vals else ""
+        vdesc = re.sub(r"\s+", " ", str((ext.get(col.lower()) or {}).get("values") or "")).strip()
+        if vdesc:                                      # 取值含义(如「1 表示…」)比只列取值更能决定筛选条件
+            hint = (hint + ";" if hint else "") + f"取值含义:{vdesc[:160]}"
         if not hint and _DATEISH.search(col):         # DR-080 日期列给出一个实际取值,模型按实际格式写条件
             ex = _col_sample(o.get("table"), col)
             hint = f"取值示例:{ex}" if ex else ""
@@ -1986,7 +2080,8 @@ _EXACT_RULES = ("只输出 1 个分析,直接回答问题本身;SELECT 只包含
                 "不加 ROUND,除非问题要求保留小数;不加 LIMIT,除非问题问的是最…的或前 N 个;"
                 "按某列排序取最大、最小时,先排除该列为 NULL 的行;"
                 "问『哪个/哪位/哪条/是什么』时,SELECT 只放所问对象的名称一列,排序用的合计值不放进 SELECT;"
-                "明细事实表与汇总层表(DWS_、agg_ 开头)都能回答时,从明细事实表计算,汇总层表只用于问题明确问汇总指标的情况;")
+                "明细事实表与汇总层表(DWS_、agg_ 开头)都能回答时,从明细事实表计算,汇总层表只用于问题明确问汇总指标的情况;"
+                "问题后附有定义说明(如 Evidence)时,按说明给出的字段、取值与计算式写 SQL,不改用含义相近的现成列;")
 
 
 MAX_PROBE_ROUNDS = 2
@@ -4247,6 +4342,7 @@ def _chat_candidates(k):
         "step": "candidate_vote", "ok": True,
         "info": (f"多路候选 · {len(variants)} 条候选 · {info['groups']} 组结果 · 采纳 {info['votes']} 票"
                  + (" · 票数相同,由模型选择" if info["tie"] else ""))})
+    chosen["candidates"] = [{"sql": c["sql"], "variant": variants[c["i"]] or "default"} for c in cands]
     return jsonify(chosen)
 
 
@@ -4307,6 +4403,10 @@ def _chat_impl():
     if _ctext:
         ctx += "\n\n" + _ctext
         steps.append({"step": "data_clean", "ok": True, "info": "带入清洗规则 · " + str(_ctext.count("\n- ")) + " 条(码表 / 自动更正 / 孤儿记录提示)"})
+    _xtext, _xn = _exemplar_text(q_eff)                     # DR-084 相似问题的已验证查询
+    if _xn:
+        ctx += "\n\n" + _xtext
+        steps.append({"step": "exemplars", "ok": True, "info": f"带入 {_xn} 条相似问题的已验证查询"})
     if history:
         hist_txt = "\n".join(f"上轮问: {h.get('q','')}\n上轮结果摘要: {h.get('summary','')[:800]}" for h in history[-2:])
         ctx = f"[对话历史,供追问理解指代]\n{hist_txt}\n\n[库结构]\n{ctx}"
@@ -4325,6 +4425,7 @@ def _chat_impl():
         steps.append({"step": "plan_timeout", "ok": False, "info": "引擎超时/离线 → 降级为内置模板"})
         plan = fallback_plan(q_eff, ir=ir_gate, focus_tables=focus_tables)
     results, dim_warns, unresolved, blocked = [], [], [], []
+    held = []                                  # DR-086 精确作答:被拦下或意图存疑的查询,全部落空时作为带警示的答案
     for a in (plan.get("analyses") or [])[:1 if exact else 4]:
         sql = a.get("sql", "")
         if not sql_is_readonly(sql):
@@ -4343,6 +4444,7 @@ def _chat_impl():
                     focus_tables=focus_tables)
         if not okv:
             blocked.append(why)
+            held.append((a, sql, "未通过本体约束校验:" + str(why)[:120]))
             steps.append({"step": "ontology_gate", "ok": False, "info": "本体约束拦截:" + why}); continue
         # DR-026 双盲意图检测:本体约束校验管「SQL 合不合规」,这里管「答的是不是问的那件事」。
         # 只观测不阻断——确定性反解也会有漏判(如计算规则卡走视图名),
@@ -4362,6 +4464,7 @@ def _chat_impl():
                         steps.append({"step": "intent_repair", "ok": True, "info": "按问句提到的业务对象重写查询"})
             if _ic["verdict"] == "mismatch" and engine_plan:      # 沉淀技能复用的 SQL 只观测不阻断(DR-026)
                 unresolved.append(_ic)
+                held.append((a, sql, "查询与问句提到的业务对象对不上"))
                 steps.append({"step": "intent_repair", "ok": False, "info": "查询与问句对象仍对不上,不作为答案给出"})
                 continue
             steps.append(intent_check.step_of(_ic))
@@ -4404,6 +4507,15 @@ def _chat_impl():
             for _st in _clean_steps(data):
                 steps.append(_st)
             results.append({"title": a.get("title", "分析"), "sql": sql, "chart": a.get("chart") or {}, "data": data})
+    if exact and not results and held:          # DR-086 精确作答须给出一条 SQL:用第一条被拦下的查询,明确标注未通过校验
+        _a, _sql, _why = held[0]
+        try:
+            _d = q(_sql, attach_uploads=True, clean=clean_rules)
+            results.append({"title": _a.get("title", "分析"), "sql": _sql, "chart": _a.get("chart") or {}, "data": _d,
+                            "unverified": _why})
+            steps.append({"step": "exact_fallback", "ok": False, "info": "精确作答:采用未通过校验的查询 · " + _why})
+        except Exception as e:
+            steps.append({"step": "exact_fallback", "ok": False, "info": "未通过校验的查询执行出错:" + str(e)[:80]})
     if results:
         text = (_rule_summary(results) if exact
                 else _bounded(lambda: narrative_llm(question, results, steps), 50) or _rule_summary(results))
@@ -4477,6 +4589,10 @@ def chat_stream():
         if _ctext:
             ctx += "\n\n" + _ctext
             yield push("data_clean", True, "带入清洗规则 · " + str(_ctext.count("\n- ")) + " 条(码表 / 自动更正 / 孤儿记录提示)")
+        _xtext, _xn = _exemplar_text(q_eff)                 # DR-084 相似问题的已验证查询
+        if _xn:
+            ctx += "\n\n" + _xtext
+            yield push("exemplars", True, f"带入 {_xn} 条相似问题的已验证查询")
         anchor["explanation"] = _qa_anchor_explanation(anchor)
         _ont = anchor.get("ontology") or {}
         yield push("anchor_ontology", True,
@@ -7445,6 +7561,8 @@ def _adjudicate_ir(db, name, extracted, ev, base_ir=None):
                         # 键名不同但代码中按这两列连接(如 zone_sn → zone_id):代码契约可替代键名相容性证据,数据门槛不变
                         name_supported = dao_core.name_ok(key, tt, pcol, child_table=ts) or bool(_contract)
                         _shared = not _contract and _shared_cols(key, pcol, tt)
+                        if _shared and len(pk_t) == 1 and pk_t[0].lower() == str(pcol).lower():
+                            _shared = False             # 父表声明该列为主键:列归父表所有,不是模板列(cik 之于 companies,DR-085)
                         if name_supported and _shared:
                             name_supported = False      # 同名共享列(模板列、同粒度汇总表的维度键)不是引用依据
                         reverse = ov >= dao_core.MIN_OVERLAP and dao_core.should_reverse(cunique, punique)

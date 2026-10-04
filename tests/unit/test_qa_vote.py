@@ -38,6 +38,8 @@ def test_exact_chat_with_candidates_returns_majority(monkeypatch):
     assert r["results"][0]["sql"] == sqls[""]
     vote = next(s for s in r["steps"] if s["step"] == "candidate_vote")
     assert "3 条候选" in vote["info"] and "2 票" in vote["info"]
+    assert sorted(c["variant"] for c in r["candidates"]) == ["decompose", "default", "probe"]   # 全部候选随响应返回
+    assert {c["sql"] for c in r["candidates"]} == set(sqls.values())
 
 
 def test_variant_changes_planner_instruction(monkeypatch):
