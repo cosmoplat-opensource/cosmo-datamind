@@ -68,3 +68,18 @@ def test_exact_style_prompt_has_no_report_only_instructions(monkeypatch):
     seen2 = _capture_prompt(monkeypatch)
     server.agent_sql_plan("q", "ctx", [])
     assert "LIMIT 500 以内" in seen2["prompt"]
+
+
+def test_exact_style_names_only_and_prefers_detail_tables(monkeypatch):
+    """DR-082:问『哪个/是什么』只返回名称一列;明细表与汇总层表都能回答时从明细计算。"""
+    seen = _capture_prompt(monkeypatch)
+    token = server._ANSWER_STYLE.set("exact")
+    try:
+        server.agent_sql_plan("计划产量合计最高的产品名称是什么?", "表 t(...)", [])
+    finally:
+        server._ANSWER_STYLE.reset(token)
+    p = seen["prompt"]
+    assert "只放所问对象的名称一列" in p
+    assert "从明细事实表计算" in p
+    server.agent_sql_plan("计划产量合计最高的产品名称是什么?", "表 t(...)", [])
+    assert "从明细事实表计算" not in seen["prompt"]          # 报告式不受影响
