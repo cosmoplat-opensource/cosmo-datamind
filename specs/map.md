@@ -37,6 +37,7 @@ COSMO DataMind 是「数据治理 × 本体 × 深度问数」原型：
 - [DR-072 · 全库评估与修正:注释接入、类型无关的取值比对、按取值补提与实例表识别](decisions/DR-072-whole-dataset-evaluation.md)
 - [DR-073 · 候选关系分流、问数选表修正与澄清、抽样截断标记与独立评审](decisions/DR-073-candidate-triage-and-independent-judging.md)
 - [DR-074 · 200 表合成验证库评估:星型模型键名、字段注释证据与几类误判](decisions/DR-074-contract-200-synthetic-db-evaluation.md)
+- [DR-081 · 精确作答的多路候选投票;本体约束校验作为智能体工具;跨方法投票](decisions/DR-081-candidate-vote-and-hybrid.md)
 - [DR-080 · 问数先探查再作答、按结果核对、角色键与取值出处](decisions/DR-080-qa-probe-verify-and-role-keys.md)
 - [DR-079 · 与 EvoOntology 对比实验:精确作答、驼峰与复数表名、带角色前缀的键名](decisions/DR-079-bird-comparison-exact-answer-and-key-names.md)
 - [DR-078 · 界面与文档用语规范、问数关系图与输入栏排版](decisions/DR-078-terminology-and-figure-legibility.md)
@@ -130,7 +131,7 @@ COSMO DataMind 是「数据治理 × 本体 × 深度问数」原型：
 
 ## 现状校准
 - 计数(2026-10-03):**137 路由**(server.py 119 + bp_engine 5 + bp_actions 7 + bp_metrics 4 + bp_semantic 2)/ **565 集成断言** /
-  **1181 项 pytest 测试** / DR-001…DR-080 · IR-001…IR-013。
+  **1186 项 pytest 测试** / DR-001…DR-081 · IR-001…IR-013。
   DR-076 起 `examples/demo_metrics.db` 由 `scripts/build_demo_108_db.py` 按业务过程仿真生成(108 表 / 308,230 行)。
   DR-060 新增构建前预处理:外部库只读抽样 `ext_sample`、构建体检与分轮计划 `build_prep`。
   DR-059 新增长文分块检索 `doc_chunks`,以及能源管理 `energy_management`、碳排放核算 `carbon_accounting` 两个独立行业参照。

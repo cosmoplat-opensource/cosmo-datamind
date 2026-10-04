@@ -1289,6 +1289,8 @@ import contextvars
 _QA_DB = contextvars.ContextVar("qa_db", default=None)
 # 作答形式:"" 为分析报告(可带拆分与趋势);"exact" 为精确作答,只回答问题本身,便于与标准答案逐行比对
 _ANSWER_STYLE = contextvars.ContextVar("answer_style", default="")
+# 规划策略(多路候选时各取其一,DR-081):"" 默认;probe 先探查;decompose 先写出所需表、列、条件
+_PLAN_VARIANT = contextvars.ContextVar("plan_variant", default="")
 
 
 def _qa_db():
@@ -2025,9 +2027,14 @@ def agent_sql_plan(question, context, steps, probe_runner=None):
 {context}
 只输出一个 JSON(不要其它文字): {{"analyses":[{{"title":"...","sql":"SELECT ...","chart":{{"type":"line|bar|pie","x":"列名","y":["列名"]}}}}], "note":"一句话分析思路"}}
 要求: {_EXACT_RULES if exact else _REPORT_RULES}SQL 只用上面列出的表列;若上下文给出「表间关系(⋈)」,跨表 JOIN 必须优先使用这些键,不要自造 JOIN 条件;「⋈⋈」为两跳链,须完整沿链 JOIN 中间表;均值计算:『月均/日均』分母用 count(DISTINCT 期间),不得除以固定常数;『最…的』单值问题:JOIN 后聚合再 ORDER BY … LIMIT 1。"""
+    _variant = _PLAN_VARIANT.get()
+    if _variant == "decompose":
+        prompt += "\n先在 note 中逐项写出:需要的表与列、筛选条件(含库中的实际取值)、聚合方式与返回的列,再写 SQL。"
     if probe_runner is None:
         return _plan_once(prompt, steps)
     prompt += _PROBE_RULE
+    if _variant == "probe":
+        prompt += "\n这一次先输出 probes(至少一轮),确认关键的表、列与取值后再作答。"
     observations = []
     for rnd in range(MAX_PROBE_ROUNDS + 1):
         p = prompt + ("\n\n[探查结果]\n" + "\n\n".join(observations) if observations else "")
@@ -4163,6 +4170,84 @@ def _reset_qa_source(token):
         _QA_DB.set(None)
 
 
+def _row_key(rows):
+    """结果行集合的比较键:只看取值(列名不同不影响),数值统一为 6 位小数的浮点,行序无关。"""
+    def norm(v):
+        if isinstance(v, bool) or v is None:
+            return v
+        if isinstance(v, (int, float)):
+            return round(float(v), 6)
+        return str(v)
+    return frozenset(tuple(norm(v) for v in (r.values() if isinstance(r, dict) else r)) for r in rows or [])
+
+
+def _choose_group(question, groups):
+    """票数相同时由模型在各组结果中选一组;失败时选第一组。"""
+    parts = []
+    for k, g in enumerate(groups):
+        c = g[0]
+        rows = c.get("rows") or []
+        sample = "\n".join(" | ".join(str(v)[:40] for v in (r.values() if isinstance(r, dict) else r)) for r in rows[:3])
+        parts.append(f"[{k}] SQL: {c.get('sql')}\n行数 {len(rows)};前 3 行:\n{sample or '(空)'}")
+    prompt = (f"问题: {question}\n下面几条 SQL 的执行结果不同,选出最能直接、准确回答问题的一条。\n\n"
+              + "\n\n".join(parts) + '\n\n只输出 JSON: {"choice": 编号}')
+    out = _plan_once(prompt, [])
+    try:
+        k = int((out or {}).get("choice"))
+        return k if 0 <= k < len(groups) else 0
+    except Exception:
+        return 0
+
+
+def _vote_candidates(question, cands, chooser=None):
+    """多路候选按执行结果投票(DR-081):结果行集合相同的候选归为一组,取票数最多的一组;
+    票数相同时由 chooser(缺省为模型)在并列的组中选一组。返回 (候选下标, 说明)。"""
+    groups: dict = {}
+    for i, c in enumerate(cands):
+        groups.setdefault(_row_key(c.get("rows")), []).append(i)
+    ordered = sorted(groups.values(), key=lambda g: (-len(g), g[0]))
+    top = [g for g in ordered if len(g) == len(ordered[0])]
+    pick = top[0]
+    if len(top) > 1:
+        k = (chooser or _choose_group)(question, [[cands[i] for i in g] for g in top])
+        pick = top[k if 0 <= k < len(top) else 0]
+    return pick[0], {"groups": len(ordered), "votes": len(pick), "tie": len(top) > 1}
+
+
+def _chat_candidates(k):
+    """精确作答的多路候选:按不同规划策略各走一遍完整问数链路(并行),再按执行结果投票。"""
+    variants = ["", "probe", "decompose"][:max(1, min(k, 3))]
+    outs = [None] * len(variants)
+
+    def one(i, v):
+        tok = _PLAN_VARIANT.set(v)
+        try:
+            outs[i] = _chat_impl().get_json()
+        except Exception:
+            outs[i] = None
+        finally:
+            _PLAN_VARIANT.reset(tok)
+    threads = []
+    for i, v in enumerate(variants):
+        ctx = contextvars.copy_context()
+        t = threading.Thread(target=ctx.run, args=(one, i, v), daemon=True)
+        t.start(); threads.append(t)
+    for t in threads:
+        t.join(300)
+    cands = [{"rows": o["results"][0]["data"]["rows"], "sql": o["results"][0]["sql"], "i": i}
+             for i, o in enumerate(outs) if o and o.get("results")]
+    base = next((o for o in outs if o), {"error": "多路候选均未完成"})
+    if not cands:
+        return jsonify(base)
+    idx, info = _vote_candidates((request.json or {}).get("q") or "", cands)
+    chosen = outs[cands[idx]["i"]]
+    chosen.setdefault("steps", []).append({
+        "step": "candidate_vote", "ok": True,
+        "info": (f"多路候选 · {len(variants)} 条候选 · {info['groups']} 组结果 · 采纳 {info['votes']} 票"
+                 + (" · 票数相同,由模型选择" if info["tie"] else ""))})
+    return jsonify(chosen)
+
+
 @app.post("/api/chat")
 def chat():
     token = _with_qa_source(_qa_scope(request.json or {})[1])
@@ -4170,7 +4255,8 @@ def chat():
     run = observability.Run("qa", mode="sync", on_source_db=_QA_DB.get() is not None,
                             q=(request.json or {}).get("q", ""))
     try:
-        resp = _chat_impl()
+        _k = int((request.json or {}).get("candidates") or 1) if _ANSWER_STYLE.get() == "exact" else 1
+        resp = _chat_candidates(_k) if _k > 1 else _chat_impl()
         data = resp.get_json(silent=True) if hasattr(resp, "get_json") else None
         for st in (data or {}).get("steps", []) if isinstance(data, dict) else []:
             run.step(st.get("step"), st.get("ok", True), timed=False)   # 同步接口事后补记:不记耗时
