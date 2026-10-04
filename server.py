@@ -671,7 +671,9 @@ def _bounded_ex(fn, secs, default=None):
         try: box["v"] = fn()
         except Exception as e: box["err"] = e
         box["done"] = True
-    t = threading.Thread(target=run, daemon=True); t.start(); t.join(secs)
+    # 带上调用方的上下文变量(问数执行库、作答形式):普通线程不继承 contextvars(DR-080)
+    _ctx = contextvars.copy_context()
+    t = threading.Thread(target=lambda: _ctx.run(run), daemon=True); t.start(); t.join(secs)
     if not box["done"]:
         return default, None, True
     return box["v"], box["err"], False
@@ -695,7 +697,8 @@ def _bounded_stream(fn, secs, tick=2.0):
         except Exception as e: box["err"] = e
         finally: qq.put(("__end__", None))
     t0 = time.time()
-    threading.Thread(target=run, daemon=True).start()
+    _ctx = contextvars.copy_context()                  # 同 _bounded_ex:带上调用方的上下文变量
+    threading.Thread(target=lambda: _ctx.run(run), daemon=True).start()
     last_tick = t0
     while True:
         try:
@@ -863,6 +866,9 @@ def _join_hints(ir, tables, pairs=None):
         key = (f"{st}.{ck} = {tt}.{pk}{_scope_join_text(_ev, st, tt)}" if (ck and pk and not bad)
                else f"{st} 关联 {tt}(键见列名)")
         out.append(f"⋈ {key}  [{l.get('verb','关联')} · {l.get('status')}]")
+        for _rk in (_ev.get("role_keys") or [])[:4]:      # DR-080 同一对表的其他角色键(hair/skin_colour_id)
+            if _rk.get("child_key") and _rk.get("parent_key"):
+                out.append(f"⋈ {st}.{_rk['child_key']} = {tt}.{_rk['parent_key']}  [角色键 · {l.get('status')}]")
         if pairs is not None:
             pairs.append({"s": st, "t": tt, "verb": l.get("verb") or "关联",
                           "status": l.get("status"), "key": key, "hop": 1,
@@ -1107,14 +1113,18 @@ _CODE_COL = re.compile(r"(name|code|_no$|^no$|sku|model|spec)")
 _VALUE_OWNER_CACHE: dict = {}
 
 
-def _value_owners(question, objects):
-    """问句里的编号(字母与数字混排,如 PA66-GF30、D003)出现在哪些表的名称/编码列里:{表名小写: [编号]}。
+def _value_owners(question, objects, found=None):
+    """问句里的具体取值出现在哪些表的哪些列:{表名小写: [取值]};found 为列表时追加 (取值, 表, 列)(DR-077、DR-080)。
 
-    按编号提问时没有词指向编号所在的表,关键词召回会让同样命中「PA66」的物料表抢先(DR-077)。
-    只查名称、编码类列的等值匹配,每次查询 LIMIT 1,结果按库缓存。"""
-    toks = [t.strip("./-_") for t in _CODE_TOKEN.findall(question or "")]
-    toks = [t for t in dict.fromkeys(toks) if re.search(r"\d", t) and re.search(r"[A-Za-z]", t)][:3]
-    if not toks:
+    查找三类取值:编号(字母与数字混排,如 PA66-GF30、D003,查名称/编码类列)、
+    引号内的文本(查文本列)、带小数的数(查数值列)。按编号或名称提问时,问句里没有词指向取值所在的表与列;
+    只做等值匹配,每次查询 LIMIT 1,结果按库缓存;每个库只开一次连接。"""
+    q = question or ""
+    codes = [t.strip("./-_") for t in _CODE_TOKEN.findall(q)]
+    codes = [t for t in dict.fromkeys(codes) if re.search(r"\d", t) and re.search(r"[A-Za-z]", t)][:3]
+    quoted = [t.strip() for t in re.findall(r"[\"'“‘「]([^\"'”’」]{2,60})[\"'”’」]", q)][:3]
+    decimals = list(dict.fromkeys(re.findall(r"(?<![\w.])\d+\.\d+(?![\w.])", q)))[:3]
+    if not (codes or quoted or decimals):
         return {}
     out: dict = {}
     cons: dict = {}                       # 每个库只开一次连接:逐条开连接时 200 张表的查找要 2 秒以上
@@ -1124,26 +1134,57 @@ def _value_owners(question, objects):
             db_path, t = (UPLOAD_DB, raw[3:]) if raw.startswith("up.") else (_qa_db(), raw)
             if not t or not re.fullmatch(_SQL_IDENT, t):
                 continue
-            cols = [a.get("col") for a in (o.get("attrs") or []) if a.get("col")] or _table_cols(o.get("table"))
-            cols = [c for c in cols if _CODE_COL.search(c.lower()) and re.fullmatch(_SQL_IDENT, c)][:6]
-            for tok in toks:
+            attrs = [a for a in (o.get("attrs") or []) if a.get("col")] or [{"col": c} for c in _table_cols(o.get("table"))]
+            text_cols = [a["col"] for a in attrs if re.search(r"char|text|clob", str(a.get("type") or "TEXT"), re.I)][:12]
+            num_cols = [a["col"] for a in attrs if re.search(r"real|num|dec|float|double", str(a.get("type") or ""), re.I)][:6]
+            plans = [(tok, [c for c in (a["col"] for a in attrs) if _CODE_COL.search(c.lower())][:6]) for tok in codes]
+            plans += [(tok, text_cols) for tok in quoted] + [(tok, num_cols) for tok in decimals]
+            for tok, cols in plans:
                 for c in cols:
+                    if not re.fullmatch(_SQL_IDENT, c):
+                        continue
                     key = (db_path, t, c, tok)
                     if key not in _VALUE_OWNER_CACHE:
                         try:
                             if db_path not in cons:
                                 cons[db_path] = ro_connect(db_path)
+                            arg = float(tok) if tok in decimals else tok
                             _VALUE_OWNER_CACHE[key] = cons[db_path].execute(
-                                f'SELECT 1 FROM "{t}" WHERE "{c}" = ? LIMIT 1', (tok,)).fetchone() is not None
+                                f'SELECT 1 FROM "{t}" WHERE "{c}" = ? LIMIT 1', (arg,)).fetchone() is not None
                         except Exception:
                             _VALUE_OWNER_CACHE[key] = False
                     if _VALUE_OWNER_CACHE[key]:
                         out.setdefault(raw, []).append(tok)
-                        break
+                        if found is not None:
+                            found.append((tok, o.get("table"), c))
     finally:
         for con in cons.values():
             con.close()
     return out
+
+
+_DATEISH = re.compile(r"(date|time|day|month|year|dt)$|^(date|dt|day|month|year)", re.I)
+_SAMPLE_CACHE: dict = {}
+
+
+def _col_sample(table, col):
+    """列的一个实际非空取值(取最小值,便于看出日期格式);取不到返回空串。"""
+    raw = (table or "").lower()
+    db_path, t = (UPLOAD_DB, raw[3:]) if raw.startswith("up.") else (_qa_db(), raw)
+    if not t or not re.fullmatch(_SQL_IDENT, t) or not re.fullmatch(_SQL_IDENT, col or ""):
+        return ""
+    key = (db_path, t, col)
+    if key not in _SAMPLE_CACHE:
+        try:
+            con = ro_connect(db_path)
+            try:
+                r = con.execute(f'SELECT MIN("{col}") FROM "{t}" WHERE "{col}" IS NOT NULL AND "{col}" <> \'\'').fetchone()
+            finally:
+                con.close()
+            _SAMPLE_CACHE[key] = str(r[0])[:32] if r and r[0] is not None else ""
+        except Exception:
+            _SAMPLE_CACHE[key] = ""
+    return _SAMPLE_CACHE[key]
 
 
 def _question_hits(question, col, cn):
@@ -1174,6 +1215,9 @@ def _obj_cols_text(o, limit=30, question=""):
     for col, cn in cols:
         vals = vals_of[col]
         hint = f"取值:{'/'.join(vals)}" if vals else ""
+        if not hint and _DATEISH.search(col):         # DR-080 日期列给出一个实际取值,模型按实际格式写条件
+            ex = _col_sample(o.get("table"), col)
+            hint = f"取值示例:{ex}" if ex else ""
         out.append(f"{col}({cn}{';' if cn and hint else ''}{hint})" if (cn or hint) or attrs else col)
     return ", ".join(out)
 
@@ -1503,7 +1547,8 @@ def build_context(question, focus_tables=None, trace=None, graph_keys=None):
             trace["focus_miss"] = len(ft)             # 点选的表在本体里一张都没有 → 转打分召回,不静默当作已限定
     tabs, hmap = [], {}
     _kw_tables = {w.lower() for w in kws if "_" in w}
-    _owners = _value_owners(question, [x for x in ir.get("objects", []) if x.get("table")])
+    _found: list = []
+    _owners = _value_owners(question, [x for x in ir.get("objects", []) if x.get("table")], found=_found)
     _deg = {}
     for _r in _rels(ir)[0]:
         if _r.get("status") == "verified":
@@ -1591,6 +1636,18 @@ def build_context(question, focus_tables=None, trace=None, graph_keys=None):
     jh = _join_hints(ir, [o.get("table") for o in picked], pairs=_pairs)
     if trace is not None: trace["relations"] = _pairs
     if jh: lines.append("表间关系(本体已验证,JOIN 优先用这些键):\n" + "\n".join(jh))
+    # DR-080 列出其余表名:召回不全时模型会编造表名;给出全部表名后,可先探查再用
+    _shown = {(o.get("table") or "").lower() for o in picked}
+    _rest = [f'{o["table"]}({o.get("cn") or ""})' if o.get("cn") else o["table"]
+             for o in ir.get("objects", []) if o.get("table") and o["table"].lower() not in _shown]
+    _rest = list(dict.fromkeys(_rest))[:400]
+    if _rest:
+        lines.append("库中其他表(未展开列;需要时先探查列与取值):" + "、".join(_rest))
+    if _found:                                   # DR-080 问句里的取值在库中的出处,按此写筛选条件
+        _loc: dict = {}
+        for tok, tb, col in _found:
+            _loc.setdefault(tok, []).append(f"{tb}.{col}")
+        lines.append("问句中的取值出处:" + ";".join(f"{k} → {'、'.join(v[:4])}" for k, v in _loc.items()))
     # 指标名同为中文,同样要反向匹配:否则「毛利率的变化趋势」召不回名为「毛利率」的指标
     hit_m = [m for m in mets if score(m["name"] or "") or cn_hits([m["name"]])][:10]
     if trace is not None:
@@ -1703,7 +1760,10 @@ def _validate_sql_ontology(sql, ir, strict=False):
       的 child/parent 键上(同名键等值 JOIN 放行,同名列即视为同一含义)—— 拦自造 JOIN。
     → (ok, reason)"""
     s = sql or ""
-    ctes = {m.group(1).lower() for m in re.finditer(r"(?:\bwith|,)\s*(%s)\s+as\s*\(" % _SQL_IDENT, s, re.I)}
+    # 只在解析表名时去掉字符串常量:WHERE title = '... from experts' 不能解析出表 experts;
+    # 有效行等条件校验仍看原文(要认出 del_flag = 'N')(DR-080)
+    s_tab = re.sub(r"'(?:[^']|'')*'", "''", s)
+    ctes = {m.group(1).lower() for m in re.finditer(r"(?:\bwith|,)\s*(%s)\s+as\s*\(" % _SQL_IDENT, s_tab, re.I)}
     known = {(o.get("table") or "").lower() for o in ir.get("objects", []) if o.get("table")}
     if not strict:
         try: known |= {t["name"].lower() for t in table_list()}
@@ -1712,7 +1772,7 @@ def _validate_sql_ontology(sql, ir, strict=False):
     try: up = {x.split("(")[0][3:].lower() for x in _uploads_schema().split("; ") if x.startswith("up.")}
     except Exception: pass
     alias, used = {}, []
-    for m in re.finditer(r"\b(?:from|join)\s+(up\.)?(%s)(?:\s+(?:as\s+)?(%s))?" % (_SQL_IDENT, _SQL_IDENT), s, re.I):
+    for m in re.finditer(r"\b(?:from|join)\s+(up\.)?(%s)(?:\s+(?:as\s+)?(%s))?" % (_SQL_IDENT, _SQL_IDENT), s_tab, re.I):
         pre, t, al = m.group(1), m.group(2).lower(), (m.group(3) or "").lower()
         if al in _SQL_KW: al = ""
         full = ("up." + t) if pre else t
@@ -1746,6 +1806,11 @@ def _validate_sql_ontology(sql, ir, strict=False):
         if ck and pk and st and tt:
             relkeys.add((st, ck, tt, pk)); relkeys.add((tt, pk, st, ck))
             parents[(st, ck, tt, pk)] = tt
+            for _rk in ev.get("role_keys") or []:          # DR-080 经数据裁决的角色键同样认可
+                rc, rp = str(_rk.get("child_key") or "").lower(), str(_rk.get("parent_key") or "").lower()
+                if rc and rp:
+                    relkeys.add((st, rc, tt, rp)); relkeys.add((tt, rp, st, rc))
+                    parents[(st, rc, tt, rp)] = tt
             cks, pks = ck.split(","), pk.split(",")
             if len(cks) == len(pks) > 1:                 # 复合键:逐列登记,并要求各列同时出现(DR-070)
                 comps = list(zip(cks, pks))
@@ -1916,22 +1981,22 @@ def _carryover(question, history, ir):
 _REPORT_RULES = "最多3个分析,第一个分析直接回答问题本身(问总量就给出总量,问排名就给出排名),拆分、趋势放在其后;聚合趋势用 substr(日期列,1,7) 按月;LIMIT 500 以内;"
 _EXACT_RULES = ("只输出 1 个分析,直接回答问题本身;SELECT 只包含问题要求返回的列,按问题提到的顺序排列,"
                 "用于排序、筛选或计算的中间列不要放进 SELECT,不额外加分组列、计数列或说明列;"
-                "不加 ROUND,除非问题要求保留小数;不加 LIMIT,除非问题问的是最…的或前 N 个;")
+                "不加 ROUND,除非问题要求保留小数;不加 LIMIT,除非问题问的是最…的或前 N 个;"
+                "按某列排序取最大、最小时,先排除该列为 NULL 的行;")
 
 
-def agent_sql_plan(question, context, steps):
+MAX_PROBE_ROUNDS = 2
+_PROBE_RULE = ('\n如需先查看取值、确认字段含义或试运行,可先只输出 {"probes":[{"why":"…","sql":"SELECT …"}]}'
+               '(每轮最多 3 条只读查询,每条只返回前 20 行),看到探查结果后再输出 analyses;'
+               '表名、列名、取值不确定时先探查,不要猜。')
+
+
+def _plan_once(prompt, steps):
+    """调用一次规划模型,返回解析出的 JSON(失败返回 None)。"""
     try:
         from agent_runtime import get_runtime, available
     except Exception as e:
         steps.append({"step": "agent_runtime", "ok": False, "info": str(e)[:100]}); return None
-    exact = _ANSWER_STYLE.get() == "exact"
-    # 不同库的日期格式不同(YYYY-MM-DD、YYYYMM、整数年份……),按列说明里的实际取值写条件,不预设格式
-    prompt = f"""你是数据分析引擎。基于 SQLite 库(方言:SQLite;日期列的格式以列说明中的实际取值为准)回答业务问题。
-问题: {question}
-可用表结构:
-{context}
-只输出一个 JSON(不要其它文字): {{"analyses":[{{"title":"...","sql":"SELECT ...","chart":{{"type":"line|bar|pie","x":"列名","y":["列名"]}}}}], "note":"一句话分析思路"}}
-要求: {_EXACT_RULES if exact else _REPORT_RULES}SQL 只用上面列出的表列;若上下文给出「表间关系(⋈)」,跨表 JOIN 必须优先使用这些键,不要自造 JOIN 条件;「⋈⋈」为两跳链,须完整沿链 JOIN 中间表;均值计算:『月均/日均』分母用 count(DISTINCT 期间),不得除以固定常数;『最…的』单值问题:JOIN 后聚合再 ORDER BY … LIMIT 1。"""
     for drv in _drv_order():
         try:
             if drv not in available(): continue
@@ -1947,6 +2012,70 @@ def agent_sql_plan(question, context, steps):
         except Exception as e:
             steps.append({"step": f"llm_plan({_eng_label(drv)})", "ok": False, "info": str(e)[:120]})
     return None
+
+
+def agent_sql_plan(question, context, steps, probe_runner=None):
+    """规划 SQL。给了 probe_runner 时,模型可先输出只读探查查询(看取值、试运行),
+    看到结果后再给出分析;探查最多 MAX_PROBE_ROUNDS 轮(DR-080)。"""
+    exact = _ANSWER_STYLE.get() == "exact"
+    # 不同库的日期格式不同(YYYY-MM-DD、YYYYMM、整数年份……),按列说明里的实际取值写条件,不预设格式
+    prompt = f"""你是数据分析引擎。基于 SQLite 库(方言:SQLite;日期列的格式以列说明中的实际取值为准)回答业务问题。
+问题: {question}
+可用表结构:
+{context}
+只输出一个 JSON(不要其它文字): {{"analyses":[{{"title":"...","sql":"SELECT ...","chart":{{"type":"line|bar|pie","x":"列名","y":["列名"]}}}}], "note":"一句话分析思路"}}
+要求: {_EXACT_RULES if exact else _REPORT_RULES}SQL 只用上面列出的表列;若上下文给出「表间关系(⋈)」,跨表 JOIN 必须优先使用这些键,不要自造 JOIN 条件;「⋈⋈」为两跳链,须完整沿链 JOIN 中间表;均值计算:『月均/日均』分母用 count(DISTINCT 期间),不得除以固定常数;『最…的』单值问题:JOIN 后聚合再 ORDER BY … LIMIT 1。"""
+    if probe_runner is None:
+        return _plan_once(prompt, steps)
+    prompt += _PROBE_RULE
+    observations = []
+    for rnd in range(MAX_PROBE_ROUNDS + 1):
+        p = prompt + ("\n\n[探查结果]\n" + "\n\n".join(observations) if observations else "")
+        if rnd == MAX_PROBE_ROUNDS:
+            p += "\n探查次数已用完,现在必须输出 analyses。"
+        plan = _plan_once(p, steps)
+        if not isinstance(plan, dict):
+            return plan
+        probes = [x for x in (plan.get("probes") or []) if isinstance(x, dict) and x.get("sql")][:3]
+        if plan.get("analyses") or not probes or rnd == MAX_PROBE_ROUNDS:
+            return plan
+        for pr in probes:
+            observations.append(f"-- {str(pr.get('why') or '')[:80]}\n{pr['sql']}\n=> {probe_runner(str(pr['sql']))}")
+        steps.append({"step": "probe", "ok": True, "info": f"探查数据 · 第 {rnd + 1} 轮 {len(probes)} 条只读查询"})
+    return None
+
+
+def _probe_runner(clean=None):
+    """探查查询的执行器:只读、最多 20 行、语句超时同 q();出错时把错误原文返回给模型。"""
+    def run(sql):
+        if not sql_is_readonly(sql):
+            return "拒绝:探查只允许只读 SELECT"
+        try:
+            d = q(sql, limit=20, attach_uploads=True, clean=clean)
+        except Exception as e:                                   # noqa: BLE001
+            return f"错误:{str(e)[:160]}"
+        cols = d.get("columns") or []
+        if not d.get("rows"):
+            return f"列 {cols};0 行"
+        return "\n".join([" | ".join(cols)] + [" | ".join(str(r.get(c))[:40] for c in cols) for r in d["rows"][:20]])
+    return run
+
+
+def _verify_answer(question, ctx, sql, data):
+    """按执行结果核对一次:结果是否直接回答问题、是否多带了列、是否为空。返回改写后的 SQL 或 None(DR-080)。"""
+    cols = data.get("columns") or []
+    rows = data.get("rows") or []
+    sample = "\n".join(" | ".join(str(r.get(c))[:40] for c in cols) for r in rows[:5])
+    seen = (f"执行出错:{data['error']}" if data.get("error") else
+            f"结果列: {cols}\n行数: {len(rows)}{'(至少)' if len(rows) >= 500 else ''}\n前 5 行:\n{sample or '(空)'}")
+    prompt = (f"问题: {question}\n可用表结构:\n{ctx[:12000]}\n\n已执行的 SQL:\n{sql}\n{seen}\n\n"
+              "逐项核对:①结果是否直接回答了问题;②SELECT 是否只包含问题要求返回的列(排序、筛选、计算用的列不应出现);"
+              "③结果为空或明显不合理时,条件、取值或表是否用错。全部满足时只输出 {\"ok\": true};"
+              "否则只输出 {\"sql\": \"修正后的完整 SQL\"}。不要输出其它文字。")
+    out = _plan_once(prompt, [])
+    new = (out or {}).get("sql") if isinstance(out, dict) else None
+    return new if new and new.strip() != sql.strip() and sql_is_readonly(new) else None
+
 
 def fallback_plan(question, ir=None, focus_tables=None):
     """Offline plans use actual ontology bindings; uncovered questions stay unanswered."""
@@ -4102,7 +4231,7 @@ def _chat_impl():
         steps.append({"step": "skill_reuse", "ok": True, "info": f"命中沉淀技能,复用 {len(plan['analyses'])} 条已验证 SQL"})
     # 硬性时间预算:引擎 90s 内不出计划就走内置模板,保证请求永不卡死
     if plan is None:
-        plan = _bounded(lambda: agent_sql_plan(q_eff, ctx, steps), 90)
+        plan = _bounded(lambda: agent_sql_plan(q_eff, ctx, steps, probe_runner=_probe_runner(clean_rules)), 150)
     engine_plan = bool(plan) and not _sk
     if not plan:
         steps.append({"step": "plan_timeout", "ok": False, "info": "引擎超时/离线 → 降级为内置模板"})
@@ -4158,14 +4287,35 @@ def _chat_impl():
                     anchor["used"].append(_o["table"])
         except Exception:
             pass
+        data, err = None, ""
         try:
             data = q(sql, attach_uploads=True, clean=clean_rules)
             steps.append({"step": "exec_sql", "ok": True, "info": f'{a.get("title","")} → {len(data["rows"])}行'})
+        except Exception as e:
+            err = str(e)[:200]
+            steps.append({"step": "exec_sql", "ok": False, "info": f'{a.get("title","")}: {err[:100]}'})
+        # DR-080 按结果核对:精确作答每次核对;报告式只在出错或空结果时核对。改写后照样过本体约束校验
+        if engine_plan and (exact or err or (data is not None and not data["rows"])):
+            _seen = data if data is not None else {"columns": [], "rows": [], "error": err}
+            revised = _bounded(lambda _s=sql, _d=_seen: _verify_answer(q_eff, ctx, _s, _d), 60)
+            if revised:
+                okr, whyr = _qa_validate_sql(
+                    revised, ir_gate, strict=bool(graph_keys and gate_keys != ["demo"] and not fallback),
+                    focus_tables=focus_tables)
+                if okr:
+                    try:
+                        data, sql, err = q(revised, attach_uploads=True, clean=clean_rules), revised, ""
+                        steps.append({"step": "self_check", "ok": True, "info": f"按结果核对后改写 → {len(data['rows'])}行"})
+                    except Exception as e2:
+                        steps.append({"step": "self_check", "ok": False, "info": "改写后执行出错:" + str(e2)[:80]})
+                else:
+                    steps.append({"step": "self_check", "ok": False, "info": "改写被本体约束校验拦下:" + str(whyr)[:80]})
+            elif exact and data is not None:
+                steps.append({"step": "self_check", "ok": True, "info": "按结果核对:无需改写"})
+        if data is not None and not err:
             for _st in _clean_steps(data):
                 steps.append(_st)
             results.append({"title": a.get("title", "分析"), "sql": sql, "chart": a.get("chart") or {}, "data": data})
-        except Exception as e:
-            steps.append({"step": "exec_sql", "ok": False, "info": f'{a.get("title","")}: {str(e)[:100]}'})
     if results:
         text = (_rule_summary(results) if exact
                 else _bounded(lambda: narrative_llm(question, results, steps), 50) or _rule_summary(results))
@@ -4267,15 +4417,16 @@ def chat_stream():
         # 引擎计划:后台线程跑,主循环轮询 plan_steps 实时外推 + 心跳
         plan_steps, box = [], {"v": None, "done": False}
         def _run():
-            try: box["v"] = agent_sql_plan(q_eff, ctx, plan_steps)
+            try: box["v"] = agent_sql_plan(q_eff, ctx, plan_steps, probe_runner=_probe_runner(clean_rules))
             except Exception: pass
             box["done"] = True
         if plan is not None:
             box["done"] = True                        # 技能复用命中:不启动引擎
         else:
-            th = threading.Thread(target=_run, daemon=True); th.start()
+            _pctx = contextvars.copy_context()           # 带上执行库等上下文变量(探查要查本体来源库,DR-080)
+            th = threading.Thread(target=lambda: _pctx.run(_run), daemon=True); th.start()
         emitted = 0; waited = 0.0
-        while not box["done"] and waited < 95:
+        while not box["done"] and waited < 155:
             th.join(1.0); waited += 1.0
             while emitted < len(plan_steps):
                 s = plan_steps[emitted]; emitted += 1; steps.append(s)
@@ -4370,7 +4521,8 @@ def chat_stream():
                 try: nbox["v"] = narrative_llm(question, results, steps, emit=chunks.append)
                 except Exception: pass
                 nbox["done"] = True
-            nth = threading.Thread(target=_run_n, daemon=True); nth.start()
+            _nctx = contextvars.copy_context()
+            nth = threading.Thread(target=lambda: _nctx.run(_run_n), daemon=True); nth.start()
             n_emit, n_wait = 0, 0.0
             while not nbox["done"] and n_wait < 55:
                 nth.join(0.5); n_wait += 0.5
@@ -7270,6 +7422,21 @@ def _adjudicate_ir(db, name, extracted, ev, base_ir=None):
                             status, overlap, note, ev_keys = "verified", round(ov, 1), reason, trial
                             break
                     if status == "verified": break
+                # DR-080 角色键:同一子表的其他列也指向这个父表(eye/hair/skin_colour_id → colour.id)。
+                # 每对表只保留一条关系,其余键名有据、且通过同样数据判据的键记在 role_keys
+                if status == "verified" and ev_keys and "," not in str(ev_keys.get("child_key") or ","):
+                    _roles = []
+                    for _c in cs:
+                        if _c.lower() == str(ev_keys["child_key"]).lower() or not dao_core._KEY_SUF_RE.search(dao_core._snake(_c)):
+                            continue
+                        if not dao_core.name_ok(_c, tt, ev_keys["parent_key"], child_table=ts):
+                            continue
+                        _sg = signals(ts, (_c,), tt, (ev_keys["parent_key"],))
+                        if _sg and _sg["overlap"] >= dao_core.MIN_OVERLAP and _sg["parent_unique"] is True:
+                            _roles.append({"child_key": _c, "parent_key": ev_keys["parent_key"],
+                                           "overlap": round(_sg["overlap"], 1), "child_distinct": _sg["child_distinct"]})
+                    if _roles:
+                        ev_keys = {**ev_keys, "role_keys": _roles[:6]}
                 # 复合键联合裁决：单列未通过时，优先验证模型提示和声明复合主键，
                 # 再尝试最多四列的同名列组合。元组整体计算重叠率和父键唯一性。
                 if status != "verified":

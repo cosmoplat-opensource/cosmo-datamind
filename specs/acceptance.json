@@ -371,6 +371,26 @@
         "tests/unit/test_dao_core.py::test_role_prefixed_camel_case_keys_point_to_singular_parent_table",
         "tests/unit/test_cross_check_skill.py::test_id_collision_accepts_camel_case_and_plural_parent_tables"
       ]
+    },
+    {
+      "id": "QA-EXPLORE-01",
+      "criterion": "问数可先只读探查再作答、按执行结果核对一次;守护线程带上请求上下文;上下文列出全部表名、日期示例与问句取值出处;字符串常量不当作表名;外键子表不判答非所问;角色键经数据裁决后可用于 JOIN",
+      "tests": [
+        "tests/unit/test_qa_explore.py::test_planner_can_probe_values_before_answering",
+        "tests/unit/test_qa_explore.py::test_probe_rounds_are_bounded_and_final_round_demands_an_answer",
+        "tests/unit/test_qa_explore.py::test_probe_runner_is_read_only_and_reports_errors",
+        "tests/unit/test_qa_explore.py::test_context_lists_every_ontology_table_name",
+        "tests/unit/test_qa_explore.py::test_exact_answer_is_checked_against_its_result_and_revised",
+        "tests/unit/test_qa_explore.py::test_bounded_worker_threads_see_request_context",
+        "tests/unit/test_qa_explore.py::test_words_inside_string_literals_are_not_parsed_as_tables",
+        "tests/unit/test_qa_explore.py::test_date_columns_show_an_example_value",
+        "tests/unit/test_qa_explore.py::test_question_values_are_located_to_columns",
+        "tests/unit/test_qa_explore.py::test_exact_rules_exclude_nulls_when_ranking",
+        "tests/unit/test_intent_check.py::test_table_linked_by_verified_relation_is_not_off_topic",
+        "tests/unit/test_role_keys.py::test_gate_accepts_verified_role_key_join",
+        "tests/unit/test_role_keys.py::test_join_hints_list_role_keys",
+        "tests/unit/test_role_keys.py::test_adjudication_records_other_verified_role_keys"
+      ]
     }
   ]
 }

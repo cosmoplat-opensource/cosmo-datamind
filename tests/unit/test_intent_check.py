@@ -65,3 +65,19 @@ def test_object_name_inside_a_filter_value_is_not_a_declared_object():
     # 问句另外单独提到设备时照常比对
     res2 = intent_check.cross_check("各设备因设备故障导致的停机时长?", sql, ir)
     assert res2["verdict"] == "mismatch"
+
+
+def test_table_linked_by_verified_relation_is_not_off_topic():
+    """「参加过 7 次以上活动的学生」:SQL 用考勤表(经已验证关系指向活动)计数,没有 JOIN 活动表,
+    不能判为答非所问(BIRD 对比实验中被拒答,DR-080)。与问句对象没有关系的表仍判 mismatch。"""
+    ir = {"objects": [{"name": "event", "cn": "活动", "table": "event"},
+                      {"name": "attendance", "cn": "出勤", "table": "attendance"},
+                      {"name": "member", "cn": "成员", "table": "member"},
+                      {"name": "budget", "cn": "预算", "table": "budget"}],
+          "relations": [{"source_concept": "attendance", "target_concept": "event", "status": "verified"},
+                        {"source_concept": "attendance", "target_concept": "member", "status": "verified"}]}
+    res = intent_check.cross_check("哪些人参加过 7 次以上活动",
+                                   "SELECT m.name FROM member m JOIN attendance a ON a.member_id = m.id GROUP BY m.id HAVING COUNT(*) > 7", ir)
+    assert res["verdict"] == "aligned" or res["verdict"] == "partial"
+    res2 = intent_check.cross_check("活动有哪些", "SELECT * FROM budget", ir)
+    assert res2["verdict"] == "mismatch"

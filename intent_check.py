@@ -63,7 +63,7 @@ def actual_intent(sql, ir):
 
     只认真实表:剔除 CTE 名与子查询别名——把 CTE 当成表会让「SQL 查了什么」失真。
     """
-    s = sql or ""
+    s = re.sub(r"'(?:[^']|'')*'", "''", sql or "")       # 字符串常量里的词不是表名(DR-080)
     ctes = {m.group(1).lower() for m in
             re.finditer(r"(?:\bwith\b|,)\s*(%s)\s+as\s*\(" % _IDENT, s, re.I)}
     tabs = set()
@@ -97,6 +97,20 @@ def _mask_filter_values(question, sql):
     return q
 
 
+def _linked(ka, kb, ir):
+    """问句对象与 SQL 所用对象之间是否有已验证(或人工确认)的直接关系。"""
+    rels = list(ir.get("relations") or []) + list(ir.get("links") or [])
+    for r in rels:
+        if r.get("status") not in ("verified", "asserted"):
+            continue
+        s_, t_ = r.get("source_concept") or r.get("source"), r.get("target_concept") or r.get("target")
+        # 只认「SQL 所用的表持有指向问句对象的外键」这一方向:考勤表 → 活动。
+        # 反方向(问句问器具、SQL 只查了器具的上级企业)仍是答非所问
+        if s_ in kb and t_ in ka:
+            return True
+    return False
+
+
 def cross_check(question, sql, ir):
     """双盲比对。两通道各自独立产出后才比,任一通道不参考对方中间结果。"""
     a = declared_intent(_mask_filter_values(question, sql), ir)
@@ -110,6 +124,12 @@ def cross_check(question, sql, ir):
                 "advice": ""}
     inter = ka & kb
     missed = [o for o in a["objects"] if o["key"] not in kb]
+    if not inter and _linked(ka, kb, ir):
+        # SQL 用的表经已验证关系直接指向问句对象(考勤表的活动外键之于「活动」):通过外键列回答,不算答非所问(DR-080)
+        return {"verdict": "partial", "declared": a, "actual": b, "overlap": 0.0, "missed": missed,
+                "reason": "SQL 未直接查询问句提到的对象,但所用的表经已验证关系与其相连: "
+                          + "、".join(o["cn"] for o in missed),
+                "advice": "答案经外键列间接覆盖问句对象,需标注覆盖方式"}
     if not inter:
         return {"verdict": "mismatch", "declared": a, "actual": b,
                 "overlap": 0.0, "missed": missed,
