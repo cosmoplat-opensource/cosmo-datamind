@@ -1084,6 +1084,34 @@ def _col_values(table, col, cap=10):
     return _VALUES_CACHE[key]
 
 
+_NULL_CACHE: dict = {}
+
+
+def _null_ratio(table, col, sample=20000):
+    """列的空值比例(按前 sample 行估计,DR-090)。冗余列常常大半为空(posts.OwnerDisplayName),
+    规划模型只看列名会选它,结果大半落空;写进列说明后会改走连接到有值的列。取不到时返回 None。"""
+    raw = (table or "").lower()
+    db_path, t = (UPLOAD_DB, raw[3:]) if raw.startswith("up.") else (_qa_db(), raw)
+    if not t or not re.fullmatch(_SQL_IDENT, t) or not re.fullmatch(_SQL_IDENT, col or ""):
+        return None
+    key = (db_path, t, col)
+    if key not in _NULL_CACHE:
+        try:
+            con = ro_connect(db_path)
+            try:
+                n, nn = con.execute(f'SELECT COUNT(*), COUNT("{col}") FROM (SELECT "{col}" FROM "{t}" LIMIT {int(sample)})').fetchone()
+                if n:   # 空串也按空值算
+                    blank = con.execute(f'SELECT COUNT(*) FROM (SELECT "{col}" FROM "{t}" LIMIT {int(sample)}) '
+                                        f'WHERE TRIM(CAST("{col}" AS TEXT)) = \'\'').fetchone()[0]
+                    nn -= blank
+            finally:
+                con.close()
+            _NULL_CACHE[key] = (1 - nn / n) if n else None
+        except Exception:
+            _NULL_CACHE[key] = None
+    return _NULL_CACHE[key]
+
+
 _DICT_CN_CACHE: dict = {}
 _EXT_DICT_CACHE: dict = {}
 
@@ -1116,6 +1144,18 @@ def _ext_dict(table):
                     out = {c.lower(): v for c, v in ((json.load(f).get("tables") or {}).get(t) or {}).items()}
             except (OSError, ValueError, AttributeError):
                 out = {}
+        else:                                          # 没有登记文件时用库内文档表(DR-087)
+            if ("docs", db_path) not in _EXT_DICT_CACHE:
+                try:
+                    import data_catalog
+                    con = ro_connect(db_path)
+                    try:
+                        _EXT_DICT_CACHE[("docs", db_path)] = data_catalog.doc_dictionary(con)
+                    finally:
+                        con.close()
+                except Exception:
+                    _EXT_DICT_CACHE[("docs", db_path)] = {}
+            out = {c: {"desc": d} for c, d in (_EXT_DICT_CACHE[("docs", db_path)].get(t) or {}).items()}
         _EXT_DICT_CACHE[key] = out
     return _EXT_DICT_CACHE[key]
 
@@ -1182,6 +1222,31 @@ def _qa_exemplars(question, k=None):
     k = k or int(os.environ.get("DATAMIND_EXEMPLAR_K") or 5)
     ranked = sorted(rows, key=score, reverse=True)
     return [r for r in ranked[:k] if score(r) > 0]
+
+
+def _concept_text(question, ir, k=8):
+    """DR-088 概念层:与问题相关的概念(表、列、筛选、汇总)与全部经数据核验的使用提醒。"""
+    cons, cavs = (ir or {}).get("concepts") or [], (ir or {}).get("caveats") or []
+    if not cons and not cavs:
+        return "", 0
+    words = {w.lower() for w in _EX_TOK.findall(question or "") if len(w) >= 3}
+
+    def score(c):
+        toks = {w.lower() for w in re.findall(r"[A-Za-z]{3,}|[\u4e00-\u9fff]", f"{c.get('name')} {c.get('definition')}")}
+        return len(toks & words)
+    picked = [c for c in sorted(cons, key=score, reverse=True)[:k] if score(c) > 0]
+    lines = []
+    if picked:
+        lines.append("[业务概念(已用数据核验):查询时按此取数]")
+        for c in picked:
+            lines.append(f"- {c['name']}:{c.get('definition','')} → {c['table']}"
+                         + (f".{c['column']}" if c.get("column") else "")
+                         + (f" WHERE {c['filter']}" if c.get("filter") else "")
+                         + (f";汇总:{c['aggregation']}" if c.get("aggregation") else ""))
+    if cavs:
+        lines.append("[数据使用提醒(已用数据核验)]")
+        lines += [f"- {c['statement']}" for c in cavs[:10]]
+    return "\n".join(lines), len(picked) + len(cavs[:10])
 
 
 def _exemplar_text(question):
@@ -1309,11 +1374,25 @@ def _obj_cols_text(o, limit=30, question=""):
         vdesc = re.sub(r"\s+", " ", str((ext.get(col.lower()) or {}).get("values") or "")).strip()
         if vdesc:                                      # 取值含义(如「1 表示…」)比只列取值更能决定筛选条件
             hint = (hint + ";" if hint else "") + f"取值含义:{vdesc[:160]}"
+        nr = _null_ratio(o.get("table"), col)
+        if nr is not None and nr >= 0.5:               # DR-090 大半为空的列:提示改从有值的列或关联表取
+            hint = (hint + ";" if hint else "") + f"多为空(约{round(nr * 100)}%)"
         if not hint and _DATEISH.search(col):         # DR-080 日期列给出一个实际取值,模型按实际格式写条件
             ex = _col_sample(o.get("table"), col)
             hint = f"取值示例:{ex}" if ex else ""
         out.append(f"{col}({cn}{';' if cn and hint else ''}{hint})" if (cn or hint) or attrs else col)
-    return ", ".join(out)
+    text = ", ".join(out)
+    cat = o.get("catalog") or {}
+    if cat.get("entries"):                         # DR-087 名称-取值型表:指标藏在名称列的取值里,列出常见取值供直接引用
+        words = {w.lower() for w in re.findall(r"[A-Za-z]{3,}", question or "")}
+        def _hit(e):
+            parts = {p.lower() for p in re.findall(r"[A-Z]?[a-z]+|[A-Z]+(?![a-z])", e["value"]) if len(p) >= 3}
+            return -len(parts & words)
+        ents = sorted(cat["entries"], key=_hit)[:40]
+        items = "、".join(e["value"] + (f"({e['unit']})" if e.get("unit") else "") for e in ents)
+        text += (f"\n  {cat['name_col']} 是指标名称列({cat['distinct']} 种,数值在 {cat['value_col']}"
+                 + (f",单位在 {cat['unit_col']}" if cat.get("unit_col") else "") + f"),常见取值:{items}")
+    return text
 
 
 def _normalize_tables(ir):
@@ -1383,7 +1462,8 @@ import contextvars
 _QA_DB = contextvars.ContextVar("qa_db", default=None)
 # 作答形式:"" 为分析报告(可带拆分与趋势);"exact" 为精确作答,只回答问题本身,便于与标准答案逐行比对
 _ANSWER_STYLE = contextvars.ContextVar("answer_style", default="")
-# 规划策略(多路候选时各取其一,DR-081):"" 默认;probe 先探查;decompose 先写出所需表、列、条件
+# 规划策略(多路候选时各取其一,DR-081):"" 默认;probe 先探查;decompose 先写出所需表、列、条件;
+# adapt 以相近的已验证查询为底稿;direct 最直接的写法(DR-089)
 _PLAN_VARIANT = contextvars.ContextVar("plan_variant", default="")
 
 
@@ -2081,7 +2161,9 @@ _EXACT_RULES = ("只输出 1 个分析,直接回答问题本身;SELECT 只包含
                 "按某列排序取最大、最小时,先排除该列为 NULL 的行;"
                 "问『哪个/哪位/哪条/是什么』时,SELECT 只放所问对象的名称一列,排序用的合计值不放进 SELECT;"
                 "明细事实表与汇总层表(DWS_、agg_ 开头)都能回答时,从明细事实表计算,汇总层表只用于问题明确问汇总指标的情况;"
-                "问题后附有定义说明(如 Evidence)时,按说明给出的字段、取值与计算式写 SQL,不改用含义相近的现成列;")
+                "问题后附有定义说明(如 Evidence)时,按说明给出的字段、取值与计算式写 SQL,不改用含义相近的现成列;"
+                "问题要求保留 N 位小数时用 ROUND(…, N);问百分比时乘 100;问「A 还是 B」「哪个更…」只返回胜出的那一个;"
+                "问题先后问了几样东西时,SELECT 的列按问题的先后顺序排列;")
 
 
 MAX_PROBE_ROUNDS = 2
@@ -2127,6 +2209,10 @@ def agent_sql_plan(question, context, steps, probe_runner=None):
     _variant = _PLAN_VARIANT.get()
     if _variant == "decompose":
         prompt += "\n先在 note 中逐项写出:需要的表与列、筛选条件(含库中的实际取值)、聚合方式与返回的列,再写 SQL。"
+    elif _variant == "adapt":                       # DR-089 以最相近的已验证查询为底稿改写
+        prompt += "\n若上下文给出了相似问题的已验证查询,先选最相近的一条为底稿,按当前问题改表、列、条件与返回列;没有时正常作答。"
+    elif _variant == "direct":                      # DR-089 最直接的写法
+        prompt += "\n写出能回答问题的最直接的 SQL:能单表就不 JOIN,不加问题没要求的过滤、去重与子查询。"
     if probe_runner is None:
         return _plan_once(prompt, steps)
     prompt += _PROBE_RULE
@@ -4313,7 +4399,7 @@ def _vote_candidates(question, cands, chooser=None):
 
 def _chat_candidates(k):
     """精确作答的多路候选:按不同规划策略各走一遍完整问数链路(并行),再按执行结果投票。"""
-    variants = ["", "probe", "decompose"][:max(1, min(k, 3))]
+    variants = ["", "probe", "decompose", "adapt", "direct"][:max(1, min(k, 5))]
     outs = [None] * len(variants)
 
     def one(i, v):
@@ -4403,6 +4489,10 @@ def _chat_impl():
     if _ctext:
         ctx += "\n\n" + _ctext
         steps.append({"step": "data_clean", "ok": True, "info": "带入清洗规则 · " + str(_ctext.count("\n- ")) + " 条(码表 / 自动更正 / 孤儿记录提示)"})
+    _ctx2, _cn2 = _concept_text(q_eff, ir_gate)              # DR-088 概念层与使用提醒
+    if _cn2:
+        ctx += "\n\n" + _ctx2
+        steps.append({"step": "concepts", "ok": True, "info": f"带入概念与使用提醒 {_cn2} 条"})
     _xtext, _xn = _exemplar_text(q_eff)                     # DR-084 相似问题的已验证查询
     if _xn:
         ctx += "\n\n" + _xtext
@@ -4589,6 +4679,10 @@ def chat_stream():
         if _ctext:
             ctx += "\n\n" + _ctext
             yield push("data_clean", True, "带入清洗规则 · " + str(_ctext.count("\n- ")) + " 条(码表 / 自动更正 / 孤儿记录提示)")
+        _ctx2, _cn2 = _concept_text(q_eff, ir_gate)          # DR-088 概念层与使用提醒
+        if _cn2:
+            ctx += "\n\n" + _ctx2
+            yield push("concepts", True, f"带入概念与使用提醒 {_cn2} 条")
         _xtext, _xn = _exemplar_text(q_eff)                 # DR-084 相似问题的已验证查询
         if _xn:
             ctx += "\n\n" + _xtext
@@ -7269,6 +7363,59 @@ def _poly_condition(con, child_table, key, parent_table, parent_key, disc, min_r
         return None
 
 
+def _llm_ask(prompt, timeout=240):
+    """单轮调用规划模型取文本回复;不可用时返回空串。"""
+    from agent_runtime import get_runtime, available
+    for drv in _drv_order():
+        if drv not in available():
+            continue
+        ok, reply = _llm_turn(get_runtime(drv), f"wc_{uuid.uuid4().hex[:6]}", prompt, timeout, task="build")
+        if ok and reply and not _looks_like_error(reply):
+            return reply
+    return ""
+
+
+def _workload_concepts(db, ir, workload):
+    import data_catalog
+    import workload_concepts
+    con = ro_connect(db)
+    try:
+        return workload_concepts.build(con, ir, data_catalog.doc_dictionary(con), workload, _llm_ask, llm_json.extract)
+    finally:
+        con.close()
+
+
+def _attach_data_catalog(db, ir):
+    """DR-087:对象带上库内文档表给出的列说明(attrs[].doc)与名称-取值型表的取值目录(catalog)。返回 (目录数, 有说明的表数)。"""
+    import data_catalog
+    con = ro_connect(db)
+    try:
+        docs = data_catalog.doc_dictionary(con)
+        ent = {}
+        for r in ir.get("relations") or []:          # 实体列:该表指向父表的已验证键,用来数「覆盖多少实体」
+            if r.get("status") == "verified" and (r.get("evidence") or {}).get("child_key"):
+                ent.setdefault(r.get("source_concept"), r["evidence"]["child_key"])
+        n_cat = n_doc = 0
+        for o in ir.get("objects") or []:
+            t = o.get("table")
+            if not t or o.get("kind") == "action":
+                continue
+            d = docs.get(t.lower()) or {}
+            if d:
+                n_doc += 1
+                for a in o.get("attrs") or []:
+                    if a.get("col") and d.get(a["col"].lower()):
+                        a["doc"] = d[a["col"].lower()][:300]
+            cols = [(r[1], r[2]) for r in con.execute(f'PRAGMA table_info("{_safe_ident(t) or t}")')]
+            cat = data_catalog.value_catalog(con, t, cols, entity_col=ent.get(o.get("name")))
+            if cat:
+                o["catalog"] = cat
+                n_cat += 1
+        return n_cat, n_doc
+    finally:
+        con.close()
+
+
 def _adjudicate_ir(db, name, extracted, ev, base_ir=None):
     """关系数据验证:LLM 提议的关系用真实数据裁决(取值重叠≥60%∧父键可辨→verified;有据无量→candidate)。
     产出与 ir_to_graph 兼容的 IR(objects 带 kind/table/attrs;relations 带 status)。
@@ -7947,6 +8094,8 @@ def build_inquire():
     name = (body.get("name") or "").strip()
     skills = body.get("skills") or []
     cqs = _normalize_build_cqs(body.get("cqs"))
+    workload = [str(x)[:500] for x in (body.get("workload") or []) if str(x).strip()][:200] \
+        if isinstance(body.get("workload"), list) else []      # DR-088 业务问题样本:只用来补概念层,不是验收问题
     stability = bool(body.get("stability"))    # M1 opt-in:二次独立生成量化一致性(构建耗时翻倍)
     # 分轮构建的本轮范围(构建体检给出的计划):只影响给模型看的结构与文档锚定,数据裁决仍用全库
     scope_tables = body.get("tables") or []
@@ -8186,6 +8335,28 @@ def build_inquire():
                            f"键名补提裁决 · 成立 {sum(1 for r in _klr if r.get('status') == 'verified')} 条 · "
                            f"待人工复核 {len(_klr) - len(_kl_weak) - sum(1 for r in _klr if r.get('status') == 'verified')} 条 · "
                            f"重叠不足未入图 {len(_kl_weak)} 条")
+            try:                                         # DR-087 库内文档表与名称-取值型表的取值目录
+                _ncat, _ndoc = _attach_data_catalog(db, ir)
+                if _ncat or _ndoc:
+                    yield push("data_catalog", True, f"数据目录 · 库内文档表说明 {_ndoc} 张表 · 名称-取值型表取值目录 {_ncat} 张")
+            except Exception as exc:
+                yield push("data_catalog", False, f"数据目录失败:{type(exc).__name__}")
+            if workload:                                 # DR-088 按业务问题样本补概念层:模型提议,数据裁决
+                yield sse({"type": "status", "text": f"按 {len(workload)} 条业务问题补充概念与使用提醒…"})
+                try:
+                    _wc = _workload_concepts(db, ir, workload)
+                    _prev = base_ir or {}                # 分轮构建:保留前几轮的概念与提醒,按名称/陈述去重
+                    _seen_c = {c["name"].lower() for c in _prev.get("concepts") or []}
+                    _seen_v = {c["statement"].lower() for c in _prev.get("caveats") or []}
+                    ir["concepts"] = list(_prev.get("concepts") or []) + [c for c in _wc["concepts"] if c["name"].lower() not in _seen_c]
+                    ir["caveats"] = list(_prev.get("caveats") or []) + [c for c in _wc["caveats"] if c["statement"].lower() not in _seen_v]
+                    _seen_d = {c["name"].lower() for c in _prev.get("derived") or []}
+                    ir["derived"] = list(_prev.get("derived") or []) + [c for c in _wc.get("derived") or [] if c["name"].lower() not in _seen_d]
+                    yield push("workload_concepts", True,
+                               f"概念层 · 提议 {_wc['proposed']} 条 · 数据核验成立概念 {len(_wc['concepts'])} 个、派生指标 {len(_wc.get('derived') or [])} 个、"
+                               f"使用提醒 {len(_wc['caveats'])} 条 · 未通过 {_wc['dropped']} 条")
+                except Exception as exc:
+                    yield push("workload_concepts", False, f"概念层失败:{type(exc).__name__}")
             _dg = (ir.get("scenario") or {}).get("adjudication_diagnostics") or {}
             if _dg.get("dropped_unknown_endpoint") or _dg.get("cross_source_endpoints") or _dg.get("no_data_relations"):
                 # 这三类会使提议条数与入图条数不一致,在构建步骤中列出各自数量
