@@ -46,6 +46,11 @@ def runtime_cached(drv):
 def _drv_order(cands=("openai", "hermes", "claude-code", "openclaw")):
     # LLM 引擎尝试顺序遵循 CLAW_DRIVER:选中的排最前(其余按原序回退),
     # 使 /api/ont/runtime 的引擎切换对所有 LLM 流程真正生效(而非只改显示标签)。
+    pin = os.environ.get("DATAMIND_PIN_DRIVER")
+    if pin in cands:
+        # DR-091 固定引擎:只用指定引擎,失败时同一引擎重试,不改用其他模型。
+        # 评测与对比实验要求全程同一个模型;此前接口偶发失败会退到其他引擎,混入别的模型的答案
+        return (pin,) * max(1, int(os.environ.get("DATAMIND_PIN_RETRIES") or 3))
     pref = os.environ.get("CLAW_DRIVER") or "hermes"
     if pref in cands:
         return (pref,) + tuple(d for d in cands if d != pref)
