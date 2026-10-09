@@ -414,7 +414,10 @@ def check(ir, db):
         if r.get("status") == "verified":
             base = ev.get("overlap") if isinstance(ev.get("overlap"), (int, float)) else overlap(db, ct, ck, pt, pk)[0]
             ch["name"] = name_channel(db, ct, ck, pt, pk)
-            ch["id_collision"] = id_collision(db, ct, ck, pt, pk, ch["name"]["state"])
+            _declared = bool(ev.get("contract")) or bool(ev.get("identifying_key"))
+            # v2:代码/注释/DDL 契约或同名主键标识关系(Laboratory.ID → Patient.ID)不按自增 id 碰撞处理
+            ch["id_collision"] = ({"state": "na", "reason": "契约或同名主键标识关系,不按自增 id 碰撞处理"} if _declared
+                                  else id_collision(db, ct, ck, pt, pk, ch["name"]["state"]))
             if ct != pt and (pt, ct) in verified_pairs:
                 ch["bidirectional"] = {"state": "conflict", "reason": "两个方向都被判为已验证"}
             ch["soft_delete"] = soft_delete_channel(db, ct, ck, pt, pk, base)
@@ -432,7 +435,7 @@ def check(ir, db):
             if name_bad and pk.lower() != "id":
                 ch["name"]["stale"] = True
             strong = [k for k in ("id_collision", "comment") if ch.get(k, {}).get("state") == "conflict"]
-            if name_bad and pk.lower() == "id":
+            if name_bad and pk.lower() == "id" and not _declared:
                 strong.insert(0, "name")
             weak = [k for k in ("bidirectional", "soft_delete", "temporal") if ch.get(k, {}).get("state") == "conflict"]
             if name_bad and pk.lower() != "id":

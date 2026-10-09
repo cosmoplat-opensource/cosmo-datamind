@@ -860,6 +860,7 @@ def _join_hints(ir, tables, pairs=None):
         _ev = l.get("evidence") or {}
         # 代码契约里就这么连(键名不同):不当作自增键巧合
         bad = (bool(ck and pk) and not dao_core.name_ok(ck, tt, pk, child_table=st) and not _ev.get("contract")
+               and not _ev.get("identifying_key") and not _ev.get("token_role")
                and not _ev.get("condition") and not _ev.get("value_pattern") and not _ev.get("scope")
                and _ev.get("name_basis") != "codebook")
         if bad: ksrc = "name_mismatch"                # 疑为自增键值域巧合:保留语义关系,不下发该键
@@ -6447,7 +6448,8 @@ def _gather_evidence(db, cap_tabs=400, cap_docs=40, query="", focus=None):
             "doc_stats": stats, "scope": scope if focus else None,
             "contracts": contracts,
             "contracts_resolved": code_contracts.resolve(contracts, tab_cols) + code_contracts.comment_contracts(
-                {(t, c): cm for t, cs in dm_cols.items() for c, _ty, cm in cs if cm}, tab_cols),
+                {(t, c): cm for t, cs in dm_cols.items() for c, _ty, cm in cs if cm}, tab_cols)
+            + code_contracts.ddl_contracts(db, tab_cols),      # DDL 声明外键也是契约(v2:可被 nofk 变体剥离)
             "contracts_codebooks": code_contracts.resolve_codebooks(contracts, tab_cols),
             "contracts_labels": code_contracts.resolve_labels(contracts, tab_cols)}
 
@@ -7668,6 +7670,9 @@ def _adjudicate_ir(db, name, extracted, ev, base_ir=None):
                         cand_keys.append(c)
                 for c in cs:
                     if c not in cand_keys and c.lower() in ctl and re.search(r"(id|code|key|no)$", c, re.I): cand_keys.append(c)
+                for c in cs:                      # v2 词元角色键:列名以父表词元结尾、可带序号(home_player_1 → Player)
+                    if c not in cand_keys and len(stem) >= 4 and re.search(rf"(^|_){re.escape(stem)}(_?\d+)?$", dao_core._snake(c)):
+                        cand_keys.append(c)
                 # DR-065 代码契约:代码里这两张表按哪两列连接,就先试这两列(仍要数据证明)
                 _pairs = []
                 for _alt in r.get("alt_keys") or []:            # DR-069 键名补提给出的备选键,同样要数据证明
@@ -7707,7 +7712,14 @@ def _adjudicate_ir(db, name, extracted, ev, base_ir=None):
                         _contract = code_contracts.hit((ev or {}).get("contracts_resolved"), ts, key, tt, pcol)
                         # 键名不同但代码中按这两列连接(如 zone_sn → zone_id):代码契约可替代键名相容性证据,数据门槛不变
                         name_supported = dao_core.name_ok(key, tt, pcol, child_table=ts) or bool(_contract)
-                        _shared = not _contract and _shared_cols(key, pcol, tt)
+                        _ident = _token = False
+                        if not name_supported and key.lower() == pcol.lower() and len(pk_t) == 1 \
+                                and pk_t[0].lower() == pcol.lower() and key.lower() in {p.lower() for p in (pkmap.get(ts) or [])}:
+                            name_supported = _ident = True   # v2 同名主键(标识关系:弱实体/一对一扩展表,Laboratory.ID → Patient.ID)
+                        if not name_supported and punique and ov >= 95 and len(stem) >= 4 \
+                                and re.search(rf"(^|_){re.escape(stem)}(_?\d+)?$", dao_core._snake(key)):
+                            name_supported = _token = True   # v2 词元角色键:列名含父表词元且取值几乎全部落入唯一父键
+                        _shared = not _contract and not _ident and _shared_cols(key, pcol, tt)
                         if _shared and len(pk_t) == 1 and pk_t[0].lower() == str(pcol).lower():
                             _shared = False             # 父表声明该列为主键:列归父表所有,不是模板列(cik 之于 companies,DR-085)
                         if name_supported and _shared:
@@ -7750,8 +7762,18 @@ def _adjudicate_ir(db, name, extracted, ev, base_ir=None):
                                 trial_status = "verified"
                                 reason = (f"父表标识键·父键唯一·重叠 {ov:.0f}%,其余 {100 - ov:.0f}% 为孤儿记录(父表中找不到),"
                                           "关联取数时这部分不会出现")
+                        if (_contract and _contract.get("declared") and trial_status != "verified" and not reverse
+                                and punique and ov > 0):
+                            # v2 DDL 声明外键 + 父键唯一:声明即语义依据,重叠不足记为孤儿率(数据质量),关系仍成立
+                            _orph = {"overlap": round(ov, 1), "orphan_rate": round(1 - ov / 100.0, 3), "declared": True}
+                            trial_status = "verified"
+                            reason = f"DDL 声明外键·父键唯一·重叠 {ov:.0f}%,其余 {100 - ov:.0f}% 为孤儿记录"
                         if _contract:
                             reason += f"·代码契约({_contract['file'].split(':')[-1].split('/')[-1]})"
+                        if _ident:
+                            reason += "·同名主键(标识关系)"
+                        if _token:
+                            reason += "·词元角色键"
                         if reverse:
                             trial_status = "candidate"
                             reason = (f"{key}→{tt}.{pcol} 方向反证:子列唯一而目标列不唯一,"
@@ -7764,7 +7786,10 @@ def _adjudicate_ir(db, name, extracted, ev, base_ir=None):
                                  "direction": ("reverse" if reverse else
                                                ("ambiguous" if cunique and punique else "child_to_parent")),
                                  "decision": reason, "adjudication_status": trial_status,
-                                 **({"contract": {"code": _contract["code"], "file": _contract["file"]}} if _contract else {}),
+                                 **({"contract": {"code": _contract["code"], "file": _contract["file"],
+                                                  **({"declared": True} if _contract.get("declared") else {})}} if _contract else {}),
+                                 **({"identifying_key": True} if _ident else {}),
+                                 **({"token_role": True} if _token else {}),
                                  **({"condition": {"column": _cond["column"], "value": _cond["value"]},
                                      "condition_overlap": _cond["overlap"]} if _cond else {}),
                                  **({"value_pattern": _vp} if _vp else {}),
@@ -7780,16 +7805,20 @@ def _adjudicate_ir(db, name, extracted, ev, base_ir=None):
                 if status == "verified" and ev_keys and "," not in str(ev_keys.get("child_key") or ","):
                     _roles = []
                     for _c in cs:
-                        if _c.lower() == str(ev_keys["child_key"]).lower() or not dao_core._KEY_SUF_RE.search(dao_core._snake(_c)):
+                        if _c.lower() == str(ev_keys["child_key"]).lower():
                             continue
-                        if not dao_core.name_ok(_c, tt, ev_keys["parent_key"], child_table=ts):
+                        _rc = code_contracts.hit((ev or {}).get("contracts_resolved"), ts, _c, tt, ev_keys["parent_key"])
+                        _rt = len(stem) >= 4 and re.search(rf"(^|_){re.escape(stem)}(_?\d+)?$", dao_core._snake(_c))
+                        if not (_rc or _rt) and not dao_core._KEY_SUF_RE.search(dao_core._snake(_c)):
+                            continue
+                        if not (_rc or _rt) and not dao_core.name_ok(_c, tt, ev_keys["parent_key"], child_table=ts):
                             continue
                         _sg = signals(ts, (_c,), tt, (ev_keys["parent_key"],))
                         if _sg and _sg["overlap"] >= dao_core.MIN_OVERLAP and _sg["parent_unique"] is True:
                             _roles.append({"child_key": _c, "parent_key": ev_keys["parent_key"],
                                            "overlap": round(_sg["overlap"], 1), "child_distinct": _sg["child_distinct"]})
                     if _roles:
-                        ev_keys = {**ev_keys, "role_keys": _roles[:6]}
+                        ev_keys = {**ev_keys, "role_keys": _roles[:24]}
                 # 复合键联合裁决：单列未通过时，优先验证模型提示和声明复合主键，
                 # 再尝试最多四列的同名列组合。元组整体计算重叠率和父键唯一性。
                 if status != "verified":
@@ -8094,7 +8123,7 @@ def build_inquire():
     name = (body.get("name") or "").strip()
     skills = body.get("skills") or []
     cqs = _normalize_build_cqs(body.get("cqs"))
-    workload = [str(x)[:500] for x in (body.get("workload") or []) if str(x).strip()][:200] \
+    workload = [str(x)[:500] for x in (body.get("workload") or []) if str(x).strip()][:1000] \
         if isinstance(body.get("workload"), list) else []      # DR-088 业务问题样本:只用来补概念层,不是验收问题
     stability = bool(body.get("stability"))    # M1 opt-in:二次独立生成量化一致性(构建耗时翻倍)
     # 分轮构建的本轮范围(构建体检给出的计划):只影响给模型看的结构与文档锚定,数据裁决仍用全库
@@ -8294,8 +8323,8 @@ def build_inquire():
                     probe=_overlap_probe(db),
                     used_keys=_used_child_keys(extracted),
                     labels=_table_comments(db), col_labels=_column_comments(db, cap=80),
-                    explicit=[(r["a"][0], r["a"][1], r["b"][0]) for r in ev.get("contracts_resolved") or []
-                              if r.get("file") == "库表注释"])
+                    explicit=[(r["a"][0], r["a"][1], r["b"][0], (r["b"][1] if r.get("declared") else None))
+                              for r in ev.get("contracts_resolved") or [] if r.get("file") in ("库表注释", "DDL")])
                 _used = _used_child_keys(extracted) | {(p["child_table"], p["child_key"]) for p in _kl}
                 _have = {(p["source"], p["target"]) for p in _kl} | {
                     (str(r.get("source") or "").strip(), str(r.get("target") or "").strip())
@@ -8350,6 +8379,9 @@ def build_inquire():
                     _seen_v = {c["statement"].lower() for c in _prev.get("caveats") or []}
                     ir["concepts"] = list(_prev.get("concepts") or []) + [c for c in _wc["concepts"] if c["name"].lower() not in _seen_c]
                     ir["caveats"] = list(_prev.get("caveats") or []) + [c for c in _wc["caveats"] if c["statement"].lower() not in _seen_v]
+                    ir["concept_rejected"] = list(_prev.get("concept_rejected") or []) + list(_wc.get("rejected") or [])
+                    _seen_t = {c["name"].lower() for c in _prev.get("themes") or []}
+                    ir["themes"] = list(_prev.get("themes") or []) + [c for c in _wc.get("themes") or [] if c["name"].lower() not in _seen_t]
                     _seen_d = {c["name"].lower() for c in _prev.get("derived") or []}
                     ir["derived"] = list(_prev.get("derived") or []) + [c for c in _wc.get("derived") or [] if c["name"].lower() not in _seen_d]
                     yield push("workload_concepts", True,

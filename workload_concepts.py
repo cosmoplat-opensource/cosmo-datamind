@@ -17,7 +17,7 @@ import sqlite3
 import time
 from typing import Callable
 
-MAX_Q = 120
+MAX_Q = 400
 BATCH = 40
 
 
@@ -52,8 +52,12 @@ PROMPT = """你在为一个数据库构建语义层。下面是这个库的结�
 {{"concepts":[{{"name":"概念名(英文)","aliases":["问题里对它的常见说法,3~6 个"],"definition":"一句话定义","table":"表名","column":"数值或属性所在列",
   "filter":"SQL WHERE 条件片段,没有就留空","aggregation":"怎样汇总(如 SUM / latest value per entity)"}}],
  "derived":[{{"name":"派生指标名(英文)","aliases":["常见说法,3~6 个"],"definition":"一句话定义","formula":"用上面概念名写的计算式,如 GrossProfit / Revenue","uses":["用到的概念名"]}}],
+ "themes":[{{"name":"分析主题名(英文)","aliases":["常见说法"],"definition":"这个主题回答什么问题、看哪些量","table":"名称-取值型表","name_col":"名称列","codes":["与主题相关的全部代码,5~20 个"]}}],
  "caveats":[{{"statement":"一句话说明数据里会让查询出错的情况","check_sql":"一条只读 SELECT,用来证实这个情况(返回计数或样例)"}}]}}
-要求:表名、列名、取值必须来自下面的库结构;不要编造;概念 15~40 个,派生指标 5~15 个(比率、增长率等问题里常要计算的量),使用提醒 3~10 条。
+要求:表名、列名、取值必须来自下面的库结构;不要编造;派生指标 5~15 个(比率、增长率等问题里常要计算的量),使用提醒 3~10 条。
+先把这批问题涉及的主题逐一列出(包括较少出现的主题),每个主题至少对应一个概念,概念数量不设上限;
+另外按问题的分析主题(如风险、融资、资本结构这一类)给出 themes:每个主题把名称-取值型表里所有相关代码列全;
+主题在库里由几种代码共同记录时,把这些代码都列进同一个概念的 filter。
 同一个业务概念在名称列里可能有几种写法(不同实体用不同的代码记录同一件事):把它们都列进 filter,
 写成「名称列 IN ('代码1','代码2',...)」,让概念覆盖尽量多的实体;不同概念不要重复。
 
@@ -76,21 +80,30 @@ def _run(con: sqlite3.Connection, sql: str, timeout: float = 15.0, limit: int = 
         con.set_progress_handler(None, 0)
 
 
+REJECTED: list = []          # 未通过核验的提议与原因(构建日志与调试用)
+
+
+def _reject(c: dict, why: str):
+    REJECTED.append({"name": str(c.get("name") or c.get("statement") or "")[:80], "why": why,
+                     "table": c.get("table"), "filter": str(c.get("filter") or c.get("check_sql") or "")[:200]})
+    return None
+
+
 def verify_concept(con: sqlite3.Connection, c: dict, tables: dict, entity_col: str | None = None) -> dict | None:
     t, col = str(c.get("table") or ""), str(c.get("column") or "")
     real_t = tables.get(t.lower())
     if not real_t:
-        return None
+        return _reject(c, "表不存在")
     cols = {r[1].lower(): r[1] for r in con.execute(f"PRAGMA table_info({_q(real_t)})")}
     if col and col.lower() not in cols:
-        return None
+        return _reject(c, "列不存在")
     flt = str(c.get("filter") or "").strip()
     try:
         n = _run(con, f"SELECT COUNT(*) FROM {_q(real_t)}" + (f" WHERE {flt}" if flt else ""))[0][0]
-    except (sqlite3.Error, ValueError):
-        return None
+    except (sqlite3.Error, ValueError) as e:
+        return _reject(c, f"筛选条件无法执行:{str(e)[:60]}")
     if not n:
-        return None
+        return _reject(c, "筛选条件命中 0 行")
     ev = {"rows": n}
     if entity_col and entity_col.lower() in cols:       # 覆盖的实体数:同一概念的几种代码合起来覆盖多少实体
         try:
@@ -102,6 +115,32 @@ def verify_concept(con: sqlite3.Connection, c: dict, tables: dict, entity_col: s
             "aliases": [str(a)[:60] for a in (c.get("aliases") or []) if str(a).strip()][:8],
             "table": real_t, "column": cols.get(col.lower(), "") if col else "", "filter": flt[:600],
             "aggregation": str(c.get("aggregation") or "")[:120], "evidence": ev}
+
+
+def verify_theme(con: sqlite3.Connection, th: dict, tables: dict, entity_of: dict) -> dict | None:
+    """主题:名称列里每个代码都要在库中存在;存在的不少于 2 个才成立。"""
+    real_t = tables.get(str(th.get("table") or "").lower())
+    if not real_t:
+        return _reject(th, "表不存在")
+    cols = {r[1].lower(): r[1] for r in con.execute(f"PRAGMA table_info({_q(real_t)})")}
+    nc = cols.get(str(th.get("name_col") or "").lower())
+    if not nc:
+        return _reject(th, "名称列不存在")
+    ent = entity_of.get(real_t.lower())
+    kept = []
+    for code in [str(x) for x in th.get("codes") or []][:40]:
+        try:
+            row = _run(con, f"SELECT COUNT(*)" + (f", COUNT(DISTINCT {_q(cols[ent.lower()])})" if ent and ent.lower() in cols else "")
+                       + f" FROM {_q(real_t)} WHERE {_q(nc)} = ?".replace("?", "'" + code.replace("'", "''") + "'"))[0]
+        except (sqlite3.Error, ValueError):
+            continue
+        if row[0]:
+            kept.append({"code": code, "rows": row[0], "entities": row[1] if len(row) > 1 else None})
+    if len(kept) < 2:
+        return _reject(th, "相关代码在库中不足 2 个")
+    return {"name": str(th.get("name") or "")[:80], "definition": str(th.get("definition") or "")[:300],
+            "aliases": [str(a)[:60] for a in (th.get("aliases") or []) if str(a).strip()][:8],
+            "table": real_t, "name_col": nc, "codes": kept}
 
 
 def verify_caveat(con: sqlite3.Connection, c: dict) -> dict | None:
@@ -119,6 +158,7 @@ def verify_caveat(con: sqlite3.Connection, c: dict) -> dict | None:
 def build(con: sqlite3.Connection, ir: dict, docs: dict, questions: list, ask: Callable[[str], str],
           extract: Callable[[str], dict | None]) -> dict:
     """返回 {"concepts": [...], "caveats": [...], "proposed": n, "dropped": m}。"""
+    REJECTED.clear()
     qs = [str(q).strip() for q in questions if str(q).strip()][:MAX_Q]
     if not qs:
         return {"concepts": [], "caveats": [], "proposed": 0, "dropped": 0}
@@ -126,6 +166,7 @@ def build(con: sqlite3.Connection, ir: dict, docs: dict, questions: list, ask: C
     brief = schema_brief(con, ir, docs)
     concepts, caveats, seen, seen_map, proposed = [], [], set(), set(), 0
     pending_derived: list = []
+    themes: list = []
     entity_of = {o["table"].lower(): (o.get("catalog") or {}).get("entity_col")
                  for o in ir.get("objects") or [] if o.get("table") and (o.get("catalog") or {}).get("entity_col")}
     for i in range(0, len(qs), BATCH):
@@ -141,6 +182,13 @@ def build(con: sqlite3.Connection, ir: dict, docs: dict, questions: list, ask: C
                 seen_map.add(sig)
                 concepts.append(v)
         pending_derived += [c for c in d.get("derived") or [] if isinstance(c, dict)]
+        for th in d.get("themes") or []:               # 主题:代码逐个在库中核验,存在的才保留,并记录覆盖实体数
+            if not isinstance(th, dict):
+                continue
+            proposed += 1
+            v = verify_theme(con, th, tables, entity_of)
+            if v and v["name"].lower() not in {x["name"].lower() for x in themes}:
+                themes.append(v)
         for c in d.get("caveats") or []:
             proposed += 1
             v = verify_caveat(con, c) if isinstance(c, dict) else None
@@ -157,5 +205,101 @@ def build(con: sqlite3.Connection, ir: dict, docs: dict, questions: list, ask: C
                             "formula": str(c["formula"])[:300], "uses": uses,
                             "inputs": [{"name": u, "table": names[u.lower()]["table"], "column": names[u.lower()]["column"],
                                         "filter": names[u.lower()]["filter"]} for u in uses]})
-    return {"concepts": concepts, "derived": derived, "caveats": caveats, "proposed": proposed,
-            "dropped": proposed - len(concepts) - len(caveats) - len(derived)}
+    return {"concepts": concepts, "derived": derived, "themes": themes, "caveats": caveats, "proposed": proposed, "rejected": list(REJECTED),
+            "dropped": proposed - len(concepts) - len(caveats) - len(derived) - len(themes)}
+
+
+# ── DR-092 按失败项补本体:模型提议,数据裁决 ───────────────────────────────────
+
+PATCH_PROMPT = """下面是数据分析智能体在一批分析任务上漏答或答错的检查项(问题、期望答案要点、评审说明),
+以及与这些项相关、在库中实际存在的代码(名称-取值型表的名称列,括号内为覆盖的实体数)。
+当前语义层已有的主题与概念名:{existing}
+
+请提议对语义层的补充,让智能体下次能找到回答这些问题所需的数据。只输出一个 JSON:
+{{"themes":[{{"name":"分析主题名(英文)","aliases":["常见说法"],"definition":"这个主题回答什么问题、看哪些量","table":"{table}","name_col":"{name_col}","codes":["相关代码,只能从下面列出的代码中选"]}}],
+ "guidance":[{{"statement":"一句话的取数建议或注意事项","check_sql":"一条只读 SELECT,证实这条建议所依据的数据情况"}}]}}
+要求:不要重复已有主题;代码只能取自下面列出的候选;没有合适数据的问题不要硬凑;
+只提最能覆盖这批失败项的主题,至多 3 个;取数建议至多 2 条。
+
+失败项:
+{failures}
+
+候选代码:
+{codes}
+"""
+
+_STOP = {"what", "which", "how", "does", "company", "companies", "their", "about", "trend", "trends", "recent", "during",
+         "period", "major", "main", "change", "changes", "changed", "affect", "affected", "should", "there", "these", "those",
+         "with", "from", "into", "over", "years", "year", "most", "were", "have", "been", "being", "that", "this"}
+
+
+def code_candidates(con: sqlite3.Connection, table: str, name_col: str, entity_col: str | None, texts: list,
+                    per_word: int = 6, cap: int = 160) -> list:
+    """按失败项里的关键词在名称列中检索实际存在的代码,按覆盖实体数排序。"""
+    words = []
+    for t in texts:
+        for w in re.findall(r"[A-Za-z]{5,}", t or ""):
+            w = w.lower()
+            if w not in _STOP and w not in words:
+                words.append(w)
+    out, seen = [], set()
+    ent = f"COUNT(DISTINCT {_q(entity_col)})" if entity_col else "COUNT(*)"
+    for w in words[:60]:
+        stem = w[:7]
+        try:
+            rows = _run(con, f"SELECT {_q(name_col)}, {ent} FROM {_q(table)} WHERE {_q(name_col)} LIKE ? "
+                             f"GROUP BY 1 ORDER BY 2 DESC LIMIT {per_word}".replace("?", f"'%{stem}%'"), limit=per_word)
+        except (sqlite3.Error, ValueError):
+            continue
+        for code, n in rows:
+            if code not in seen:
+                seen.add(code)
+                out.append((str(code), n))
+        if len(out) >= cap:
+            break
+    return out
+
+
+def propose_from_failures(con: sqlite3.Connection, ir: dict, failures: list, ask: Callable[[str], str],
+                          extract: Callable[[str], dict | None], batch: int = 25,
+                          max_themes: int = 15, max_guidance: int = 10) -> dict:
+    """failures: [{question, expected, reason}]。返回经数据核验的 {"themes": [...], "caveats": [...], "proposed": n}。"""
+    REJECTED.clear()
+    cat_obj = next((o for o in ir.get("objects") or [] if (o.get("catalog") or {}).get("name_col")), None)
+    if not cat_obj or not failures:
+        return {"themes": [], "caveats": [], "proposed": 0, "rejected": []}
+    cat = cat_obj["catalog"]
+    table, nc, ent = cat_obj["table"], cat["name_col"], cat.get("entity_col")
+    tables = {r[0].lower(): r[0] for r in con.execute("SELECT name FROM sqlite_master WHERE type='table'")}
+    existing = sorted({str(x.get("name")) for k in ("themes", "concepts") for x in ir.get(k) or []})
+    themes, caveats, proposed = [], [], 0
+    for i in range(0, len(failures), batch):
+        part = failures[i:i + batch]
+        codes = code_candidates(con, table, nc, ent, [f"{f['question']} {f.get('expected', '')}" for f in part])
+        if not codes:
+            continue
+        reply = ask(PATCH_PROMPT.format(
+            existing=", ".join(existing)[:3000], table=table, name_col=nc,
+            failures="\n".join(f"- 问题:{f['question'][:200]}\n  期望要点:{str(f.get('expected', ''))[:300]}\n  评审:{str(f.get('reason', ''))[:200]}" for f in part),
+            codes=", ".join(f"{c}({n})" for c, n in codes)))
+        d = extract(reply or "") or {}
+        allowed = {c for c, _ in codes}
+        for th in d.get("themes") or []:
+            if not isinstance(th, dict):
+                continue
+            proposed += 1
+            th = dict(th, table=table, name_col=nc, codes=[c for c in th.get("codes") or [] if str(c) in allowed])
+            v = verify_theme(con, th, tables, {table.lower(): ent} if ent else {})
+            if v and v["name"].lower() not in {x["name"].lower() for x in themes} and v["name"] not in existing:
+                themes.append(v)
+        for g in d.get("guidance") or []:
+            if not isinstance(g, dict):
+                continue
+            proposed += 1
+            v = verify_caveat(con, g)
+            if v:
+                caveats.append(v)
+    if max_themes:                                    # 补丁限量:按覆盖实体数保留前 max_themes 个主题
+        themes = sorted(themes, key=lambda t: -max([k.get("entities") or 0 for k in t["codes"]] or [0]))[:max_themes]
+    return {"themes": themes, "caveats": caveats[:max_guidance] if max_guidance else caveats,
+            "proposed": proposed, "rejected": list(REJECTED)}

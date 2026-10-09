@@ -395,6 +395,55 @@ _COMMENT_REF = re.compile(r"(?:外键|关联|引用|参照|对应|references?|re
 _COMMENT_REF_CN = re.compile(r"(?:外键|关联|引用|参照|对应)[^A-Za-z_\n,，;；。]{1,12}?[(（]`?([A-Za-z_][\w.]*)`?")
 
 
+
+def ddl_contracts(db_path, tab_cols):
+    """库 DDL 里声明的外键(PRAGMA foreign_key_list):设计者写明的引用,当作连接契约——
+    与代码契约、注释契约同等,可替代键名相容性证据;数据裁决照常进行并记录孤儿率。
+    标记 declared=True,裁决时父键唯一即使取值重叠不足也成立(声明即语义依据,孤儿是数据质量问题)。
+    复合外键按列逐对给出,并记 composite=True。"""
+    import sqlite3
+    from pathlib import Path
+    out, seen = [], set()
+    lower = {t.lower(): t for t in tab_cols}
+    try:
+        con = sqlite3.connect(Path(db_path).absolute().as_uri() + "?mode=ro", uri=True)
+    except Exception:
+        return out
+    try:
+        for t in tab_cols:
+            try:
+                rows = con.execute(f'PRAGMA foreign_key_list("{t}")').fetchall()
+            except Exception:
+                continue
+            groups = {}
+            for r in rows:                      # (id, seq, table, from, to, on_update, on_delete, match)
+                groups.setdefault(r[0], []).append(r)
+            for _fid, grp in groups.items():
+                for r in grp:
+                    pt = lower.get(str(r[2]).lower())
+                    if not pt:
+                        continue
+                    pcols = [x for x, _ in tab_cols.get(pt, [])]
+                    ccols = [x for x, _ in tab_cols.get(t, [])]
+                    cc = next((x for x in ccols if x.lower() == str(r[3]).lower()), None)
+                    pc = next((x for x in pcols if x.lower() == str(r[4] or "").lower()), None) if r[4] else None
+                    if not pc:                   # REFERENCES parent 未写列名:指父表主键
+                        try:
+                            pks = [x[1] for x in con.execute(f'PRAGMA table_info("{pt}")') if x[5]]
+                        except Exception:
+                            pks = []
+                        pc = pks[0] if len(pks) == 1 else None
+                    if not cc or not pc or (t, cc, pt, pc) in seen:
+                        continue
+                    seen.add((t, cc, pt, pc))
+                    out.append({"a": [t, cc], "b": [pt, pc], "file": "DDL", "declared": True,
+                                **({"composite": True} if len(grp) > 1 else {}),
+                                "code": f"FOREIGN KEY ({cc}) REFERENCES {pt}({pc})"})
+    finally:
+        con.close()
+    return out
+
+
 def comment_contracts(column_comments, tab_cols):
     """库表字段注释里写明的引用(「外键,关联 dim_product_line」):注释点名的表存在于库中时,
     当作连接契约——与代码契约同等,可替代键名相容性证据,数据门槛不变(DR-074)。

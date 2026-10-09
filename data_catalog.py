@@ -73,7 +73,16 @@ def value_catalog(con: sqlite3.Connection, table: str, cols: list, entity_col: s
                 unit_of[name] = unit                      # 按行数升序覆盖,最后留下最常用的单位
     except sqlite3.Error:
         return None
-    return {"name_col": nc, "value_col": values[0], "unit_col": units[0] if units else "",
+    per_entity = None
+    if entity_col:                                    # 每个实体记录了多少种代码:目录只列常见的,其余要按实体自行列出
+        try:
+            ks = sorted(r[0] for r in con.execute(
+                f"SELECT COUNT(DISTINCT {_q(nc)}) FROM {t} GROUP BY {_q(entity_col)}"))
+            if ks:
+                per_entity = {"min": ks[0], "median": ks[len(ks) // 2], "max": ks[-1], "entities": len(ks)}
+        except sqlite3.Error:
+            per_entity = None
+    return {"name_col": nc, "value_col": values[0], "unit_col": units[0] if units else "", "per_entity": per_entity,
             "entity_col": entity_col or "", "distinct": k, "rows": n_rows,
             "entries": [{"value": str(v), "rows": r, "entities": e, "unit": str(unit_of.get(v) or "")}
                         for v, r, e in rows]}

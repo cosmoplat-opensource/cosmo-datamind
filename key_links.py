@@ -271,8 +271,14 @@ def propose(tab_cols, objects, round_tables, existing=(), probe=None, max_propos
         sc = [(probe(ct, cc, pt, x), x) for x in dict.fromkeys(idc)] if probe is not None else [(None, idc[0])] if idc else []
         sc = [(v, x) for v, x in sc if v is not None or probe is None]
         return max(sc, key=lambda z: (z[0] or 0, -idc.index(z[1]))) if sc else (None, None)
-    for ct, cc, pt in explicit or ():
+    for _ex in explicit or ():
+        ct, cc, pt = _ex[0], _ex[1], _ex[2]
+        pc_decl = _ex[3] if len(_ex) > 3 and _ex[3] else None       # v2:DDL 契约写明了父列,直接用它
         if ct in t2o and pt in t2o and ct != pt and (ct in rnd or pt in rnd):
+            if pc_decl and pc_decl in cols[pt]:
+                ov = probe(ct, cc, pt, pc_decl) if probe is not None else None
+                add(ct, cc, pt, pc_decl, f"DDL 声明外键:{ct}.{cc} → {pt}.{pc_decl}", (2, ov or 0.0))
+                continue
             ov, pc = _best_col(ct, cc, pt)
             if pc and (ov is None or ov >= _WEAK_FLOOR):
                 add(ct, cc, pt, pc, f"字段注释点名:{ct}.{cc} 关联 {pt}", (2, ov or 0.0))
