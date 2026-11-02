@@ -1,5 +1,5 @@
 {
-  "iteration": "IR-014 / IR-015 / IR-016（规约阶段）",
+  "iteration": "IR-014 / IR-015 / IR-016（T03 GREEN，后续任务待实施）",
   "requirements": [
     {
       "id": "ALG-01",
@@ -128,28 +128,28 @@
     {
       "id": "ROB-01",
       "iteration": "IR-016",
-      "status": "baseline-recorded-awaiting-review",
+      "status": "green-current-slice",
       "criterion": "夹具带来源、SHA-256 和用途；兼容矩阵区分已有成功、协议失败和策略差异；通过项与已知失败不混记。",
       "tests": [
         "tests/unit/test_robotics_baseline.py::test_fixture_digests_and_compatibility_cases_are_recorded",
         "tests/unit/test_robotics_baseline.py::test_authoring_and_agent_owl_are_distinct_contract_fixtures"
       ],
-      "notes": "T01/T02 已执行，详见 docs/audits/IR-016-robotics-validation.md；测试已落地，等待人审，非最终验收。"
+      "notes": "用户已确认 T02 测试覆盖；T03 本轮已通过全部 23 项。ROB-08 当前为结构层覆盖，任务意图拒绝仍在 planned_tests；不代表 IR-016 最终验收。"
     },
     {
       "id": "ROB-02",
       "iteration": "IR-016",
-      "status": "red-awaiting-review",
+      "status": "green-current-slice",
       "criterion": "在不同工作目录及导入顺序下均可使用构建与消费模块，无 sys.path 注入和顶层 skill_runtime 名称碰撞；无需访问原归档路径。",
       "tests": [
         "tests/unit/test_robotics_imports.py::test_build_and_consume_are_independent_of_cwd_and_import_order"
       ],
-      "notes": "T01/T02 已执行，详见 docs/audits/IR-016-robotics-validation.md；测试已落地，等待人审，非最终验收。"
+      "notes": "用户已确认 T02 测试覆盖；T03 本轮已通过全部 23 项。ROB-08 当前为结构层覆盖，任务意图拒绝仍在 planned_tests；不代表 IR-016 最终验收。"
     },
     {
       "id": "ROB-03",
       "iteration": "IR-016",
-      "status": "red-awaiting-review",
+      "status": "green-current-slice",
       "criterion": "构建保留技能、实现、调用、步骤顺序、端口类型、参数绑定和黑板作用域；重复 MoveL 调用保持独立，未知模板或冲突模型明确失败。",
       "tests": [
         "tests/unit/test_robotics_semantics.py::test_repeated_invocations_ports_bindings_and_scope_survive_build",
@@ -157,8 +157,25 @@
         "tests/unit/test_robotics_semantics.py::test_empty_malformed_and_incomplete_inputs_are_rejected",
         "tests/unit/test_robotics_semantics.py::test_unknown_profile_and_missing_model_are_rejected"
       ],
-      "notes": "T01/T02 已执行，详见 docs/audits/IR-016-robotics-validation.md；测试已落地，等待人审，非最终验收。"
+      "notes": "用户已确认 T02 测试覆盖；T03 本轮已通过全部 23 项。ROB-08 当前为结构层覆盖，任务意图拒绝仍在 planned_tests；不代表 IR-016 最终验收。"
     },
+    {
+      "id": "ROB-08",
+      "iteration": "IR-016",
+      "status": "green-current-slice",
+      "criterion": "完整受支持任务仅改变允许公开配置，原有四棵树及调用顺序、固定绑定保持一致；重排或任意技能组合请求不能被静默接受。",
+      "tests": [
+        "tests/unit/test_robotics_compiler.py::test_only_public_configuration_changes_in_fixed_template",
+        "tests/unit/test_robotics_compiler.py::test_reordering_requests_are_not_silently_accepted",
+        "tests/unit/test_robotics_compiler.py::test_illegal_or_nonpublic_configuration_is_rejected"
+      ],
+      "notes": "用户已确认 T02 测试覆盖；T03 本轮已通过全部 23 项。ROB-08 当前为结构层覆盖，任务意图拒绝仍在 planned_tests；不代表 IR-016 最终验收。",
+      "planned_tests": [
+        "tests/unit/test_robotics_policy.py::test_task_reordering_request_is_unsupported"
+      ]
+    }
+  ],
+  "planned_requirements": [
     {
       "id": "ROB-04",
       "iteration": "IR-016",
@@ -204,21 +221,6 @@
         "tests/unit/test_robotics_policy.py::test_authoring_draft_cannot_be_returned_as_strict_generation"
       ],
       "notes": "验收草案，拟定测试尚未创建；口径确认且测试落地后迁入 tests。"
-    },
-    {
-      "id": "ROB-08",
-      "iteration": "IR-016",
-      "status": "red-awaiting-review",
-      "criterion": "完整受支持任务仅改变允许公开配置，原有四棵树及调用顺序、固定绑定保持一致；重排或任意技能组合请求不能被静默接受。",
-      "tests": [
-        "tests/unit/test_robotics_compiler.py::test_only_public_configuration_changes_in_fixed_template",
-        "tests/unit/test_robotics_compiler.py::test_reordering_requests_are_not_silently_accepted",
-        "tests/unit/test_robotics_compiler.py::test_illegal_or_nonpublic_configuration_is_rejected"
-      ],
-      "notes": "T01/T02 已执行，详见 docs/audits/IR-016-robotics-validation.md；测试已落地，等待人审，非最终验收。 当前覆盖编译结构与公开配置；自然语言/结构化任务重排意图的拒绝由 T06 补充。",
-      "planned_tests": [
-        "tests/unit/test_robotics_policy.py::test_task_reordering_request_is_unsupported"
-      ]
     },
     {
       "id": "ROB-09",
