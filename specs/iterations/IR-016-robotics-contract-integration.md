@@ -2,7 +2,7 @@
 
 - **状态 / Status**: in-progress
 - **日期 / Date**: 2026-11-02
-- **当前环节**：用户已确认 T02 和 T04 测试覆盖，T05 发布与消费实现完成，39 项机器人测试已通过。
+- **当前环节**：用户已确认 T02 和 T04 测试覆盖，T05 发布与消费实现及全量回归完成，39 项机器人测试已通过；T06 新增 33 项预期失败，待本批覆盖确认。
 - **关联 / Refs**: [[DR-059-unified-domain-semantic-graph]]、[[DR-060-robotics-source-recipes-and-reverse-build]]、[[DR-061-parameter-contracts-calibration-and-readiness]]、[[DR-062-behavior-tree-compilation-as-ontology-application]]、[[DR-065-robotics-migration-and-compatibility-validation]]
 - **方案**：[集成 Proposal](../PROPOSAL-yang-datamind-integration.md) 第 6 节步骤 0～1。
 - **验收映射**：[acceptance.json](../acceptance.json) 的 ROB-01～ROB-13。
@@ -15,7 +15,7 @@
 演示成功必须来自本轮构建及显式演示补充资料，真实缺证据时仍应拒绝生成正式候选。
 保留已有固定 UR 模板、技能调用身份、绑定与数据流语义，并区分作者草稿策略与严格生成策略。
 
-用户先授权编写 IR，后要求按 SDD 继续，并明确确认 T02 和 T04 测试覆盖；当前已执行 T01～T05。
+用户先授权编写 IR，后要求按 SDD 继续，并明确确认 T02 和 T04 测试覆盖；当前已执行 T01～T06，T06 测试待审。
 下列标准是从现有讨论与 DR 整理出的验收草案，未声明已经人审通过，也不自动将关联 DR 改为 accepted。
 实现阶段依次进行验收要求确认、失败测试及 review、实现、回归和人审交付。
 
@@ -172,8 +172,15 @@ ROB-08 的任务意图拒绝测试仍留待 T06，不将结构校验冒充完整
 - 全量检查实际退出 0：单元 868 通过 / 5 跳过，HTTP 551 通过 / 8 跳过，覆盖率 87.2%，其余检查段通过，真实模型 3 项跳过。
 - 详见 [T05 审计记录](../../docs/audits/IR-016-t05-green-results.json)，下一任务 T06 编写严格任务和作者草稿失败测试。
 
+### T06 RED 记录
+
+- 新增严格任务/作者草稿策略与来源独立测试，参数化展开共 33 项，均因 generation 模块缺失而预期失败，0 收集错误、0 跳过。
+- 覆盖新构建真实缺知识、逐类证据缺口、选择不升级确认、草稿隔离、固定模板、不支持/歧义任务、六字段协议、模式隔离、候选未验证及禁止源 XML 读取。
+- ROB-06/07/09/10 已映射到实际测试；ROB-08 补齐任务层测试，现为结构层通过、任务层待审。
+- 下一步依据 SDD 第⑤步审查本批覆盖，再进入 T07；详见 [T06 RED 记录](../../docs/audits/IR-016-t06-red-results.json)。
+
 ## 备注
 
-当前完成 T01 基线、已审 T02 RED、T03 GREEN 、已审 T04 RED 与 T05 GREEN，交付和验收复选框保留供最终人审，不提前标记 delivered。
+当前完成 T01 基线、已审 T02 RED、T03 GREEN 、已审 T04 RED 、T05 GREEN 与待审 T06 RED，交付和验收复选框保留供最终人审，不提前标记 delivered。
 本轮完成意味着机器人业务内核进入 DataMind 仓库并实现离线契约贯通，不意味着平台页面或生产部署已经完成。
 下一阶段对应 Proposal 步骤 2：统一资产/版本与持久化运行基础，继续复用已有对话历史。
