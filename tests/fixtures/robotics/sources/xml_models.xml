@@ -1,0 +1,159 @@
+<root BTCPP_format="4">
+    <TreeNodesModel>
+        <Action ID="AddOffset">
+            <output_port name="result" type="std::string"/>
+            <input_port name="offset" type="std::string"/>
+            <input_port name="origin" type="std::string"/>
+        </Action>
+        <Action ID="CadDrawingAnalysis">
+            <input_port name="service_name" type="std::string"/>
+            <output_port name="lock_circle_coordination" type="std::string"/>
+            <output_port name="long_circle_coordination" type="std::string"/>
+        </Action>
+        <Action ID="CaptureFrame">
+            <input_port name="service_name" type="std::string"/>
+            <input_port name="timeout_s" type="std::string" default="2.0">timeout</input_port>
+            <input_port name="exposure_time" type="std::string" default="123">曝光值</input_port>
+            <output_port name="topic_name" type="std::string"/>
+            <input_port name="type" type="std::string" default="rgb">采集类型</input_port>
+            <output_port name="frame_id" type="std::string"/>
+        </Action>
+        <Action ID="CapturePointCloud">
+            <input_port name="exposure_time" type="std::string" default="123">曝光值</input_port>
+            <output_port name="topic_name" type="std::string"/>
+            <input_port name="timeout_s" type="std::string" default="2.0">timeout</input_port>
+            <output_port name="frame_id" type="std::string"/>
+        </Action>
+        <Action ID="CloseGripper">
+            <input_port name="service_name" type="std::string" default="">Service name</input_port>
+            <input_port name="timeout_s" type="std::string" default="2.0">timeout</input_port>
+            <input_port name="acc" type="std::string"/>
+            <input_port name="force" type="std::string"/>
+            <input_port name="width" type="std::string"/>
+            <input_port name="vel" type="std::string"/>
+        </Action>
+        <Action ID="ErrorToFSM">
+            <input_port name="ercode" type="std::string"/>
+        </Action>
+        <Action ID="FrameTransform">
+            <output_port name="pos_target" type="robot_types::PoseQuat"/>
+            <input_port name="robot_pose" type="robot_types::PoseQuat">TCP [x,y,z,qw,qx,qy,qz], metres, in the message frame</input_port>
+            <input_port name="pos_source" type="robot_types::PoseQuat"/>
+            <input_port name="target" type="std::string"/>
+            <input_port name="source" type="std::string"/>
+        </Action>
+        <Action ID="GetGlobalParaTreeNode">
+            <output_port name="param_value" type="std::string">参数值（字符串）</output_port>
+            <input_port name="param_name" type="std::string">全局参数名称</input_port>
+        </Action>
+        <Action ID="GetIntrinsic">
+            <output_port name="res" type="std::string"/>
+            <input_port name="timeout_s" type="std::string" default="2.0">timeout</input_port>
+            <input_port name="service_name" type="std::string" default="">Service name</input_port>
+        </Action>
+        <Condition ID="GetJoints">
+            <output_port name="joints" type="std::vector&lt;double, std::allocator&lt;double&gt; &gt;"/>
+            <input_port name="topic_name" type="std::string" default="/topic">Topic name</input_port>
+        </Condition>
+        <Condition ID="GetTCP">
+            <output_port name="pose" type="robot_types::PoseQuat">TCP [x,y,z,w,x,y,z], metres/radians, in the message frame</output_port>
+            <input_port name="tool" type="robot_types::PoseRPY"/>
+            <input_port name="topic_name" type="std::string" default="/topic">Topic name</input_port>
+        </Condition>
+        <Action ID="HttpRequest"/>
+        <Action ID="IncOffsetByObjCor">
+            <output_port name="result" type="robot_types::PoseQuat"/>
+            <input_port name="offset" type="robot_types::PoseQuat"/>
+            <input_port name="origin" type="robot_types::PoseQuat"/>
+        </Action>
+        <Action ID="InitGripper">
+            <input_port name="service_name" type="std::string" default="">Service name</input_port>
+            <input_port name="timeout_s" type="std::string" default="2.0">timeout</input_port>
+            <input_port name="acc" type="std::string"/>
+            <input_port name="force" type="std::string"/>
+            <input_port name="width" type="std::string"/>
+            <input_port name="vel" type="std::string"/>
+        </Action>
+        <Action ID="MoveJ">
+            <input_port name="target" type="std::vector&lt;std::vector&lt;double, std::allocator&lt;double&gt; &gt;, std::allocator&lt;std::vector&lt;double, std::allocator&lt;double&gt; &gt; &gt; &gt;">[[1,1,1,1,1,1],[2,2,2,2,2]]</input_port>
+            <input_port name="vel" type="std::vector&lt;double, std::allocator&lt;double&gt; &gt;" default="[0.2]">vel</input_port>
+            <input_port name="acc" type="std::vector&lt;double, std::allocator&lt;double&gt; &gt;" default="[0.1]">acc</input_port>
+            <input_port name="radius" type="std::vector&lt;double, std::allocator&lt;double&gt; &gt;" default="[0.25]">r</input_port>
+            <output_port name="pose" type="std::string"/>
+            <input_port name="action_name" type="std::string" default="">Action server name</input_port>
+        </Action>
+        <Action ID="MoveL">
+            <input_port name="target" type="robot_types::PoseQuat"/>
+            <input_port name="tool" type="robot_types::PoseRPY"/>
+            <input_port name="vel" type="std::vector&lt;double, std::allocator&lt;double&gt; &gt;" default="[0.2]">vel</input_port>
+            <input_port name="acc" type="std::vector&lt;double, std::allocator&lt;double&gt; &gt;" default="[0.1]">acc</input_port>
+            <input_port name="radius" type="std::vector&lt;double, std::allocator&lt;double&gt; &gt;" default="[0.25]">r</input_port>
+            <output_port name="pose" type="std::string"/>
+            <input_port name="action_name" type="std::string" default="">Action server name</input_port>
+        </Action>
+        <Action ID="OpenGripper">
+            <input_port name="service_name" type="std::string" default="">Service name</input_port>
+            <input_port name="timeout_s" type="std::string" default="2.0">timeout</input_port>
+            <input_port name="acc" type="std::string"/>
+            <input_port name="force" type="std::string"/>
+            <input_port name="width" type="std::string"/>
+            <input_port name="vel" type="std::string"/>
+        </Action>
+        <Action ID="PLCControl">
+            <input_port name="service_name" type="std::string"/>
+            <input_port name="key" type="std::string"/>
+            <input_port name="value" type="std::string"/>
+        </Action>
+        <Action ID="PLCStatusReport">
+            <input_port name="service_name" type="std::string"/>
+            <input_port name="key" type="std::string"/>
+            <output_port name="value" type="std::string"/>
+        </Action>
+        <Action ID="PoseEstimate">
+            <input_port name="service_name" type="std::string"/>
+            <input_port name="intrinsic" type="std::string" default="">相机内参</input_port>
+            <input_port name="color_image_topic" type="std::string" default="/colcor">发布话题名</input_port>
+            <input_port name="object_name" type="std::string" default="">物体名</input_port>
+            <input_port name="color_image_frame_id" type="std::string" default="1111">对应帧</input_port>
+            <input_port name="depth_image_topic" type="std::string" default="/depth">发布话题名</input_port>
+            <input_port name="model_name" type="std::string" default="">模型名</input_port>
+            <input_port name="threshold" type="std::string" default="">检测阈值</input_port>
+            <input_port name="depth_image_frame_id" type="std::string" default="123">对应帧</input_port>
+            <output_port name="pose" type="robot_types::PoseQuat">相机坐标系下的6D位姿</output_port>
+            <input_port name="timeout_s" type="std::string" default="2.0">timeout</input_port>
+        </Action>
+        <Action ID="SimpleMock">
+            <input_port name="key" type="std::string"/>
+        </Action>
+        <Action ID="TemplateMatch2D">
+            <input_port name="service_name" type="std::string"/>
+            <input_port name="color_image_topic" type="std::string"/>
+            <input_port name="object_name" type="std::string"/>
+            <input_port name="color_image_frame_id" type="std::string"/>
+            <input_port name="threshold" type="std::string"/>
+            <input_port name="inner" type="std::string"/>
+            <output_port name="pose" type="std::string"/>
+        </Action>
+        <Action ID="Test">
+            <input_port name="acc" type="std::vector&lt;double, std::allocator&lt;double&gt; &gt;"/>
+            <input_port name="Cart" type="std::vector&lt;robot_types::PoseQuat, std::allocator&lt;robot_types::PoseQuat&gt; &gt;"/>
+            <input_port name="value" type="std::vector&lt;std::vector&lt;double, std::allocator&lt;double&gt; &gt;, std::allocator&lt;std::vector&lt;double, std::allocator&lt;double&gt; &gt; &gt; &gt;"/>
+        </Action>
+        <Action ID="ToolPoseCalculate">
+            <input_port name="gripper_ref" type="std::string"/>
+            <output_port name="gripper_pos" type="robot_types::PoseQuat"/>
+            <input_port name="robot_ref" type="std::string">[x,y,z,qw,qx,qy,qz], metres, in the message frame</input_port>
+            <input_port name="object_in_robot" type="robot_types::PoseQuat"/>
+        </Action>
+        <Action ID="TrajectoryPlanning">
+            <input_port name="service_name" type="std::string"/>
+            <output_port name="trajectory" type="std::string"/>
+            <input_port name="robot_id" type="std::string"/>
+            <input_port name="target" type="std::string"/>
+            <input_port name="method" type="std::string"/>
+            <input_port name="param2" type="std::string"/>
+            <input_port name="param1" type="std::string"/>
+        </Action>
+    </TreeNodesModel>
+</root>
+
