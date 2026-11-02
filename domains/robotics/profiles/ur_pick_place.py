@@ -91,21 +91,23 @@ def add_domain(g, root):
                 g.add((invocation(tree.get("ID"), index), S.usesResource, S[resource]))
 
 
+CONDITION_SPECS = [
+    ('PoseInRobotFrame', 'precondition', '输入物体位姿应处于机器人坐标系', 'static_symbolic', 'coordinate_frame', ['Grasp_Skill', 'ToolPoseCalculate_Skill']),
+    ('InputAvailable', 'precondition', '输入数据已由前序步骤或父接口提供', 'static_dataflow', 'unassigned_variable', ['Perception_Skill', 'Grasp_Skill', 'Place_Skill']),
+    ('GraspCompatible', 'applicability', '零件适用于当前固定抓取配置', 'evidence_registry_required', 'grasp_compatibility', ['Grasp_Skill']),
+    ('PlaceCompatible', 'applicability', '目标适用于当前中转与释放配置', 'evidence_registry_required', 'placement_compatibility', ['Place_Skill']),
+    ('CalibrationKnown', 'precondition', '标定与参考键解析已确认', 'external_configuration_required', 'calibration', ['Grasp_Skill', 'FrameTransform_Skill']),
+    ('GripperReady', 'precondition', '夹爪处于适合抓取的初始状态', 'runtime_feedback_required', 'gripper_ready', ['Grasp_Skill']),
+    ('HoldingObserved', 'precondition', '已获得零件稳定夹持反馈', 'runtime_feedback_required', 'holding_feedback', ['Place_Skill']),
+    ('SlotAvailable', 'precondition', '目标槽位可用', 'runtime_feedback_required', 'slot_available', ['Place_Skill']),
+    ('HoldingExpected', 'expected_effect', '期望零件被稳定夹持；不是已观测事实', 'runtime_feedback_required', 'holding_feedback', ['Grasp_Skill', 'CloseGripper_Skill']),
+    ('PlacedExpected', 'expected_effect', '期望零件完成放置；不是已观测事实', 'runtime_feedback_required', 'placement_feedback', ['Place_Skill', 'OpenGripper_Skill']),
+]
+
+
 def add_conditions(g):
-    conditions = [
-        ("PoseInRobotFrame", "precondition", "输入物体位姿应处于机器人坐标系", "static_symbolic", "coordinate_frame", ["Grasp_Skill", "ToolPoseCalculate_Skill"]),
-        ("InputAvailable", "precondition", "输入数据已由前序步骤或父接口提供", "static_dataflow", "unassigned_variable", ["Perception_Skill", "Grasp_Skill", "Place_Skill"]),
-        ("GraspCompatible", "applicability", "零件适用于当前固定抓取配置", "evidence_registry_required", "grasp_compatibility", ["Grasp_Skill"]),
-        ("PlaceCompatible", "applicability", "目标适用于当前中转与释放配置", "evidence_registry_required", "placement_compatibility", ["Place_Skill"]),
-        ("CalibrationKnown", "precondition", "标定与参考键解析已确认", "external_configuration_required", "calibration", ["Grasp_Skill", "FrameTransform_Skill"]),
-        ("GripperReady", "precondition", "夹爪处于适合抓取的初始状态", "runtime_feedback_required", "gripper_ready", ["Grasp_Skill"]),
-        ("HoldingObserved", "precondition", "已获得零件稳定夹持反馈", "runtime_feedback_required", "holding_feedback", ["Place_Skill"]),
-        ("SlotAvailable", "precondition", "目标槽位可用", "runtime_feedback_required", "slot_available", ["Place_Skill"]),
-        ("HoldingExpected", "expected_effect", "期望零件被稳定夹持；不是已观测事实", "runtime_feedback_required", "holding_feedback", ["Grasp_Skill", "CloseGripper_Skill"]),
-        ("PlacedExpected", "expected_effect", "期望零件完成放置；不是已观测事实", "runtime_feedback_required", "placement_feedback", ["Place_Skill", "OpenGripper_Skill"]),
-    ]
     relation = {"precondition": S.hasPrecondition, "applicability": S.hasApplicabilityCondition, "expected_effect": S.hasExpectedEffect}
-    for name, kind, label, mechanism, rule, skills in conditions:
+    for name, kind, label, mechanism, rule, skills in CONDITION_SPECS:
         item = individual(g, S[name], "SkillCondition", label, "specified_requirement")
         for prop, val in (("conditionKind", kind), ("checkMechanism", mechanism), ("ruleId", rule)):
             literal(g, item, prop, val)

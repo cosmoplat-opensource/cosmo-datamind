@@ -2,7 +2,7 @@
 
 - **状态 / Status**: in-progress
 - **日期 / Date**: 2026-11-02
-- **当前环节**：用户已确认 T02 测试覆盖，T03 包化实现及当前切片回归已完成；T04 发布契约 16 项预期失败，待本批测试人审后进入 T05。
+- **当前环节**：用户已确认 T02 和 T04 测试覆盖，T05 发布与消费实现完成，39 项机器人测试已通过。
 - **关联 / Refs**: [[DR-059-unified-domain-semantic-graph]]、[[DR-060-robotics-source-recipes-and-reverse-build]]、[[DR-061-parameter-contracts-calibration-and-readiness]]、[[DR-062-behavior-tree-compilation-as-ontology-application]]、[[DR-065-robotics-migration-and-compatibility-validation]]
 - **方案**：[集成 Proposal](../PROPOSAL-yang-datamind-integration.md) 第 6 节步骤 0～1。
 - **验收映射**：[acceptance.json](../acceptance.json) 的 ROB-01～ROB-13。
@@ -15,7 +15,7 @@
 演示成功必须来自本轮构建及显式演示补充资料，真实缺证据时仍应拒绝生成正式候选。
 保留已有固定 UR 模板、技能调用身份、绑定与数据流语义，并区分作者草稿策略与严格生成策略。
 
-用户先授权编写 IR，后要求按 SDD 继续，并明确确认 T02 测试覆盖；当前已执行 T01～T04，T04 测试待审。
+用户先授权编写 IR，后要求按 SDD 继续，并明确确认 T02 和 T04 测试覆盖；当前已执行 T01～T05。
 下列标准是从现有讨论与 DR 整理出的验收草案，未声明已经人审通过，也不自动将关联 DR 改为 accepted。
 实现阶段依次进行验收要求确认、失败测试及 review、实现、回归和人审交付。
 
@@ -162,10 +162,18 @@ ROB-08 的任务意图拒绝测试仍留待 T06，不将结构校验冒充完整
 - 新增发布/消费契约测试 16 项，全部因 publisher 或 consumer 模块缺失而失败，0 收集错误、0 跳过。
 - 覆盖新构建发布、既有 agent OWL 兼容、自包含加载、契约/规则篡改、外部依赖、绑定/条件/步骤破坏、DTD/实体与输入保护。
 - 已将 ROB-04/05 映射至真实测试；T02 已审测试保持不变，T05 实现尚未开始。
-- 依据 SDD 第⑤步，本批测试待用户审查；详见 [T04 RED 结果](../../docs/audits/IR-016-t04-red-results.json) 与测试审查记录。
+- 本批测试已由用户明确确认，随后进入 T05；详见 [T04 RED 结果](../../docs/audits/IR-016-t04-red-results.json) 与测试审查记录。
+
+### T05 GREEN 记录
+
+- T04 已由用户确认；实现发布器、消费加载器、共享可信规则与条件契约，39 项机器人测试全部通过，已审测试未修改。
+- 发布规范化仅消除一致的重复端口属性，输出经消费复验后原子创建，原输入不变。
+- 新发布 OWL 通过原 yang agent 的加载及生成准备；归一化发布物上的三类语义破坏均拒绝。
+- 全量检查实际退出 0：单元 868 通过 / 5 跳过，HTTP 551 通过 / 8 跳过，覆盖率 87.2%，其余检查段通过，真实模型 3 项跳过。
+- 详见 [T05 审计记录](../../docs/audits/IR-016-t05-green-results.json)，下一任务 T06 编写严格任务和作者草稿失败测试。
 
 ## 备注
 
-当前完成 T01 基线、已审 T02 RED、T03 GREEN 与待审 T04 RED，交付和验收复选框保留供最终人审，不提前标记 delivered。
+当前完成 T01 基线、已审 T02 RED、T03 GREEN 、已审 T04 RED 与 T05 GREEN，交付和验收复选框保留供最终人审，不提前标记 delivered。
 本轮完成意味着机器人业务内核进入 DataMind 仓库并实现离线契约贯通，不意味着平台页面或生产部署已经完成。
 下一阶段对应 Proposal 步骤 2：统一资产/版本与持久化运行基础，继续复用已有对话历史。

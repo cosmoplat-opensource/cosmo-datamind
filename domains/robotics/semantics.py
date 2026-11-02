@@ -5,7 +5,29 @@ Migrated from yang ontology_pipeline; no disk reads at import or reconstruction.
 import json
 import xml.etree.ElementTree as ET
 from rdflib import RDF
-from .graph import S, value
+from .graph import S, value, reference
+
+def parameter_contract(g, parameter):
+    """Authoring and v2 publications share one authoritative port contract."""
+    mapped = g.value(parameter, S.mapsToPort, any=False)
+    return mapped if mapped is not None else parameter
+
+
+def parameter_value(g, parameter, prop):
+    return value(g, parameter_contract(g, parameter), prop)
+
+
+def produced_data(g, call):
+    """Derive writes from bindings; v2 need not duplicate producesData edges."""
+    bindings = list(g.objects(call, S.hasBinding))
+    result = {data for binding in bindings for data in g.objects(binding, S.targetData)}
+    if (call, S.invokesSkill, S.SetBlackboard_Skill) in g:
+        parent = g.value(None, S.hasStep, call, any=False)
+        for binding in bindings:
+            if parameter_value(g, g.value(binding, S.bindsParameter), "parameterName") == "output_key":
+                result.add(reference(value(g, parent, "treeId"), value(g, binding, "literalValue")))
+    return result
+
 
 def xml_from_graph(g):
     """Reconstruct execution nodes from graph relations, not sourceNodeXML."""
@@ -31,7 +53,7 @@ def xml_from_graph(g):
                     raw = str(item)
                 else:
                     raw = "{" + value(g, item, "parameterName" if prop == S.sourceParameter else "dataKey") + "}"
-                node.set(value(g, p, "parameterName"), raw)
+                node.set(parameter_value(g, p, "parameterName"), raw)
     return root
 
 
@@ -62,11 +84,11 @@ def node_models_from_graph(g):
             for parameter in sorted(g.objects(skill, relation), key=str):
                 contracts = set()
                 for binding in g.subjects(S.sourceParameter, parameter):
-                    contracts.update(g.objects(g.value(binding, S.bindsParameter), S.cppType))
+                    contracts.update(g.objects(parameter_contract(g, g.value(binding, S.bindsParameter)), S.cppType))
                 if direction == "output":
                     data = g.value(parameter, S.parameterData)
                     for binding in g.subjects(S.targetData, data):
-                        contracts.update(g.objects(g.value(binding, S.bindsParameter), S.cppType))
+                        contracts.update(g.objects(parameter_contract(g, g.value(binding, S.bindsParameter)), S.cppType))
                 if len(contracts) != 1:
                     raise ValueError(f"复合技能参数缺少唯一端口类型：{parameter}")
                 ET.SubElement(model, direction + "_port", name=value(g, parameter, "parameterName"),
@@ -90,22 +112,22 @@ def _configuration_bindings(g):
             call, binding = bindings[0]
             data = g.value(binding, S.sourceData)
             if data is not None:
-                producers = list(g.subjects(S.producesData, data))
+                producers = [item for item in g.subjects(RDF.type, S.SkillInvocation) if data in produced_data(g, item)]
                 if len(producers) != 1 or value(g, producers[0], "xmlTag") != "SetBlackboard":
                     raise ValueError(f"公开参数的数据生产者不明确：{parameter}")
                 call = producers[0]
                 targets = [item for item in g.objects(call, S.hasBinding)
-                           if value(g, g.value(item, S.bindsParameter), "parameterName") == "value"]
+                           if parameter_value(g, g.value(item, S.bindsParameter), "parameterName") == "value"]
                 if len(targets) != 1:
                     raise ValueError(f"赋值节点缺少唯一value绑定：{call}")
                 binding = targets[0]
             if any(g.value(binding, prop) is not None for prop in (S.sourceParameter, S.sourceData, S.targetData)):
                 raise ValueError(f"配置必须指向本体中的字面量绑定：{binding}")
-            parent = g.value(call, S.inProcedure, any=False)
+            parent = g.value(None, S.hasStep, call, any=False)
             steps = sorted(g.objects(parent, S.hasStep), key=lambda item: int(value(g, item, "stepIndex")))
             fields[value(g, parameter, "parameterName")] = {
                 "binding": binding, "invocation": call, "tree_id": value(g, parent, "treeId"),
-                "step_position": steps.index(call), "port": value(g, g.value(binding, S.bindsParameter), "parameterName")}
+                "step_position": steps.index(call), "port": parameter_value(g, g.value(binding, S.bindsParameter), "parameterName")}
 
     return paths
 
