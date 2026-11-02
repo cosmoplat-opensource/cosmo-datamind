@@ -223,12 +223,13 @@
     {
       "id": "ROB-09",
       "iteration": "IR-016",
-      "status": "green-current-slice",
+      "status": "partial-green-new-tests-awaiting-review",
       "criterion": "发布后把源 XML 移走或设置读取拦截，生成结果仍可由 OWL 恢复；直接编译和任务生成两条入口均验证，输入摘要不变。",
       "tests": [
-        "tests/unit/test_robotics_source_independence.py::test_direct_compile_and_task_generation_do_not_read_source_xml"
+        "tests/unit/test_robotics_source_independence.py::test_direct_compile_and_task_generation_do_not_read_source_xml",
+        "tests/unit/test_robotics_pipeline.py::test_fresh_build_with_explicit_demo_supplement_generates_candidate"
       ],
-      "notes": "用户已确认 T06 覆盖及草稿边界；T07 严格任务/作者草稿实现通过全部 33 项。本批成功使用冻结演示夹具，完整新构建加演示补充和 CLI 仍由 T08/T09 验证。"
+      "notes": "T06 的读取拦截用例通过；T08 新增实际移走本轮来源 XML 后生成的端到端用例，待审且预期失败。"
     },
     {
       "id": "ROB-10",
@@ -242,44 +243,43 @@
         "tests/unit/test_robotics_policy.py::test_generated_candidate_is_not_execution_verified"
       ],
       "notes": "用户已确认 T06 覆盖及草稿边界；T07 严格任务/作者草稿实现通过全部 33 项。本批成功使用冻结演示夹具，完整新构建加演示补充和 CLI 仍由 T08/T09 验证。"
-    }
-  ],
-  "planned_requirements": [
+    },
     {
       "id": "ROB-11",
       "iteration": "IR-016",
-      "status": "proposed",
+      "status": "red-awaiting-review",
       "criterion": "临时来源构建加显式演示补充，完成发布和编译；XML 按结构/调用/端口/数据流比较，报告追溯来源和补充资料，输入及原归档文件不被覆盖。",
-      "tests": [],
-      "planned_tests": [
+      "tests": [
         "tests/unit/test_robotics_pipeline.py::test_fresh_build_with_explicit_demo_supplement_generates_candidate",
+        "tests/unit/test_robotics_pipeline.py::test_demo_supplement_cannot_rewrite_template_or_claim_real_evidence",
         "tests/unit/test_robotics_pipeline.py::test_source_and_archive_files_remain_unchanged"
       ],
-      "notes": "验收草案，拟定测试尚未创建；口径确认且测试落地后迁入 tests。"
+      "notes": "T08 测试已落地：17 项中存储保护 1 项通过、演示补充/CLI 缺失导致 16 项失败，待本批覆盖确认；最终 T09 仍需实际执行 CLI 与全量回归。"
     },
     {
       "id": "ROB-12",
       "iteration": "IR-016",
-      "status": "proposed",
+      "status": "green-current-slice",
       "criterion": "在选定的 DataMind 虚拟环境执行全部本轮测试和现有全量检查；依赖、退出码、跳过原因与报告位置完整，已有数据应用及对话存储无新增回归。",
-      "tests": [],
-      "planned_tests": [
+      "tests": [
         "tests/unit/test_robotics_regression.py::test_robotics_imports_do_not_mutate_datamind_data_or_chat_storage"
       ],
-      "notes": "验收草案，拟定测试尚未创建；口径确认且测试落地后迁入 tests。 实施交付还须运行 .venv/bin/python scripts/check.py --suite all 并保存完整报告。"
+      "notes": "T08 测试已落地：17 项中存储保护 1 项通过、演示补充/CLI 缺失导致 16 项失败，待本批覆盖确认；最终 T09 仍需实际执行 CLI 与全量回归。"
     },
     {
       "id": "ROB-13",
       "iteration": "IR-016",
-      "status": "proposed",
+      "status": "red-awaiting-review",
       "criterion": "用户可运行离线演示命令验证新构建成功、真实缺证据和契约拒绝三类场景；报告和产物可追溯，预期拒绝与运行异常区分，退出码准确且重复运行不覆盖旧结果。",
-      "tests": [],
-      "planned_tests": [
+      "tests": [
         "tests/unit/test_robotics_demo_cli.py::test_all_cases_run_offline_and_report_actual_artifacts",
+        "tests/unit/test_robotics_demo_cli.py::test_each_demo_case_is_independently_runnable",
         "tests/unit/test_robotics_demo_cli.py::test_unexpected_acceptance_and_runtime_errors_exit_nonzero",
+        "tests/unit/test_robotics_demo_cli.py::test_missing_input_is_an_error_not_an_expected_rejection",
         "tests/unit/test_robotics_demo_cli.py::test_repeated_runs_preserve_previous_outputs_and_inputs"
       ],
-      "notes": "用户明确要求增加的演示交付项；脚本和测试待实现，落地后将真实测试入口迁入 tests。"
+      "notes": "T08 测试已落地：17 项中存储保护 1 项通过、演示补充/CLI 缺失导致 16 项失败，待本批覆盖确认；最终 T09 仍需实际执行 CLI 与全量回归。"
     }
-  ]
+  ],
+  "planned_requirements": []
 }

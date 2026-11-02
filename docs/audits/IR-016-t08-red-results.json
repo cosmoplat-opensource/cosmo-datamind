@@ -1,0 +1,107 @@
+{
+  "iteration": "IR-016",
+  "task": "T08",
+  "phase": "RED",
+  "date": "2026-11-02",
+  "command": ".venv/bin/python -m pytest tests/unit/test_robotics_pipeline.py tests/unit/test_robotics_demo_cli.py tests/unit/test_robotics_regression.py -q --tb=no --junitxml=.check-results/ir016-t08-red.xml",
+  "exit_code": 1,
+  "tests": 17,
+  "passed": 1,
+  "failed": 16,
+  "collection_errors": 0,
+  "skipped": 0,
+  "cases": [
+    {
+      "name": "test_fresh_build_with_explicit_demo_supplement_generates_candidate",
+      "status": "failed",
+      "failure": "ModuleNotFoundError: No module named 'domains.robotics.demo'"
+    },
+    {
+      "name": "test_demo_supplement_cannot_rewrite_template_or_claim_real_evidence[source_hash]",
+      "status": "failed",
+      "failure": "ModuleNotFoundError: No module named 'domains.robotics.demo'"
+    },
+    {
+      "name": "test_demo_supplement_cannot_rewrite_template_or_claim_real_evidence[real_mode]",
+      "status": "failed",
+      "failure": "ModuleNotFoundError: No module named 'domains.robotics.demo'"
+    },
+    {
+      "name": "test_demo_supplement_cannot_rewrite_template_or_claim_real_evidence[fixed_parameter]",
+      "status": "failed",
+      "failure": "ModuleNotFoundError: No module named 'domains.robotics.demo'"
+    },
+    {
+      "name": "test_source_and_archive_files_remain_unchanged",
+      "status": "failed",
+      "failure": "ModuleNotFoundError: No module named 'domains.robotics.demo'"
+    },
+    {
+      "name": "test_all_cases_run_offline_and_report_actual_artifacts",
+      "status": "failed",
+      "failure": "AssertionError: T09 must deliver the runnable offline demo entry"
+    },
+    {
+      "name": "test_each_demo_case_is_independently_runnable[demo-success]",
+      "status": "failed",
+      "failure": "AssertionError: T09 must deliver the runnable offline demo entry"
+    },
+    {
+      "name": "test_each_demo_case_is_independently_runnable[real-missing-evidence]",
+      "status": "failed",
+      "failure": "AssertionError: T09 must deliver the runnable offline demo entry"
+    },
+    {
+      "name": "test_each_demo_case_is_independently_runnable[invalid-contract]",
+      "status": "failed",
+      "failure": "AssertionError: T09 must deliver the runnable offline demo entry"
+    },
+    {
+      "name": "test_unexpected_acceptance_and_runtime_errors_exit_nonzero[unexpected_acceptance]",
+      "status": "failed",
+      "failure": "ModuleNotFoundError: No module named 'scripts.demo_robotics'"
+    },
+    {
+      "name": "test_unexpected_acceptance_and_runtime_errors_exit_nonzero[accepted_contract]",
+      "status": "failed",
+      "failure": "ModuleNotFoundError: No module named 'scripts.demo_robotics'"
+    },
+    {
+      "name": "test_unexpected_acceptance_and_runtime_errors_exit_nonzero[missing_artifact]",
+      "status": "failed",
+      "failure": "ModuleNotFoundError: No module named 'scripts.demo_robotics'"
+    },
+    {
+      "name": "test_unexpected_acceptance_and_runtime_errors_exit_nonzero[runtime_error]",
+      "status": "failed",
+      "failure": "ModuleNotFoundError: No module named 'scripts.demo_robotics'"
+    },
+    {
+      "name": "test_unexpected_acceptance_and_runtime_errors_exit_nonzero[invalid_source]",
+      "status": "failed",
+      "failure": "ModuleNotFoundError: No module named 'scripts.demo_robotics'"
+    },
+    {
+      "name": "test_missing_input_is_an_error_not_an_expected_rejection",
+      "status": "failed",
+      "failure": "AssertionError: T09 must deliver the runnable offline demo entry"
+    },
+    {
+      "name": "test_repeated_runs_preserve_previous_outputs_and_inputs",
+      "status": "failed",
+      "failure": "AssertionError: T09 must deliver the runnable offline demo entry"
+    },
+    {
+      "name": "test_robotics_imports_do_not_mutate_datamind_data_or_chat_storage",
+      "status": "passed",
+      "failure": null
+    }
+  ],
+  "test_and_fixture_sha256": {
+    "tests/unit/test_robotics_pipeline.py": "2fb72b5f4d51fa338173188fdc73ece20c5fbb02efe42deb4f104b4b4de4774d",
+    "tests/unit/test_robotics_demo_cli.py": "bd5f05b5fceae7e924af5e3ccc9fd2fb68ad26433d95aa9f70f66b8b423c900b",
+    "tests/unit/test_robotics_regression.py": "ff61fb61bb207c84a2812e1706b45dc860d192ab2b67d9f9230898a1b1f9bd56",
+    "tests/fixtures/robotics/demo_supplement.json": "83519556d7b1dec8a1fb580325ae669a098300ad97ee4a5afe2bd0d1a2ffcc77"
+  },
+  "scope": "Await human review before T09. Storage preservation passes; pipeline and CLI fail at missing demo module/script, downstream assertions not executed."
+}
