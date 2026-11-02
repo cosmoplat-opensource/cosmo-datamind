@@ -2,7 +2,7 @@
 
 - **状态 / Status**: in-progress
 - **日期 / Date**: 2026-11-02
-- **当前环节**：T01 基线取证与 T02 首轮 RED 已执行，等待测试人审，尚未进入 T03 业务实现。
+- **当前环节**：用户已确认 T02 测试覆盖，T03 包化实现及当前切片回归已完成；后续发布契约任务待推进。
 - **关联 / Refs**: [[DR-059-unified-domain-semantic-graph]]、[[DR-060-robotics-source-recipes-and-reverse-build]]、[[DR-061-parameter-contracts-calibration-and-readiness]]、[[DR-062-behavior-tree-compilation-as-ontology-application]]、[[DR-065-robotics-migration-and-compatibility-validation]]
 - **方案**：[集成 Proposal](../PROPOSAL-yang-datamind-integration.md) 第 6 节步骤 0～1。
 - **验收映射**：[acceptance.json](../acceptance.json) 的 ROB-01～ROB-13。
@@ -15,7 +15,7 @@
 演示成功必须来自本轮构建及显式演示补充资料，真实缺证据时仍应拒绝生成正式候选。
 保留已有固定 UR 模板、技能调用身份、绑定与数据流语义，并区分作者草稿策略与严格生成策略。
 
-用户先授权编写 IR，后明确要求按 SDD 继续；当前已据此执行 T01/T02。
+用户先授权编写 IR，后要求按 SDD 继续，并明确确认 T02 测试覆盖；当前已执行 T01～T03。
 下列标准是从现有讨论与 DR 整理出的验收草案，未声明已经人审通过，也不自动将关联 DR 改为 accepted。
 实现阶段依次进行验收要求确认、失败测试及 review、实现、回归和人审交付。
 
@@ -135,8 +135,9 @@ T09 如暴露额外行为缺陷，先补可复现用例再修复，不扩大到 
 5. 运行不访问线上模型或机器人；未做真实模型和现场执行验收须在交付记录中明确。
 6. 现有 lint、类型检查和覆盖率门槛不得为迁移降低；依赖冲突和既有失败单独报告并处理，未解决阻断时不能标记 delivered。
 
-`acceptance.json` 已将 ROB-01/02/03/08 的真实测试入口记入 tests，状态分别注明基线已记录或 RED 等待审查。
-其余未落地用例保持 proposed 与 planned_tests；ROB-08 的任务意图拒绝测试仍留待 T06，不将结构校验冒充完整任务策略覆盖。
+`acceptance.json` 的 requirements 仅包含有真实测试入口的条目，ROB-01/02/03/08 已标记 green-current-slice。
+其余 9 项标准完整保留在 planned_requirements 中，仍为 proposed 并列出 planned_tests；避免空测试入口违反现有追溯检查。
+ROB-08 的任务意图拒绝测试仍留待 T06，不将结构校验冒充完整任务策略覆盖。
 
 ### T01/T02 进展记录
 
@@ -144,10 +145,20 @@ T09 如暴露额外行为缺陷，先补可复现用例再修复，不扩大到 
 - 首批测试共 23 项：2 通过、21 失败，失败均因 domains.robotics 尚未实现，0 收集错误、0 跳过。
 - 新增 Python 文件的 ruff 检查通过；没有写生产实现，没有执行最终全量回归。
 - 详见 [基线报告](../../docs/audits/IR-016-robotics-baseline.md) 和 [测试审查记录](../../docs/audits/IR-016-robotics-validation.md)。
-- 下一步为人审 T02 测试，再进入 T03 包化实现；本记录不代替最终交付验收。
+- T02 人审已由用户确认；本节保留原 RED 证据，不代替最终交付验收。
+
+### T03 GREEN 记录
+
+- 实现 domains/robotics 的显式包边界、UR profile、确定性抽取、语义恢复、公开配置实例化与符号校验。
+- 已审测试文件和辅助模块未改动，首批 23 项全部通过。
+- 将机器人模块纳入覆盖率统计，整体 87.1%，原 81% 门槛保持不变。
+- 首次全量检查发现 SDD 模板闲置导入、计划验收项空测试列表及 Node 不在 PATH；分别修复配置/记录或补齐环境后重跑失败检查段。
+- 最终各段：852 项单元通过（5 项可选上游跳过）、551 项 HTTP 通过（8 项可选上游跳过）、10 轮变序通过、UI 64 项通过、UI 实操 50 项通过（3 项真实模型跳过）、构建页浏览器 10 项通过。
+- 原全量命令退出码 1 如实保留，分段重验与结果见 [T03 记录](../../docs/audits/IR-016-t03-green-results.json)。
+- 发布器与严格任务准入尚未实现，第一阶段仍未交付，交付框保持待最终人审。
 
 ## 备注
 
-当前完成规约、T01 基线与 T02 RED，交付和验收复选框保留供最终人审，不提前标记 delivered。
+当前完成 T01 基线、已审 T02 RED 与 T03 GREEN，交付和验收复选框保留供最终人审，不提前标记 delivered。
 本轮完成意味着机器人业务内核进入 DataMind 仓库并实现离线契约贯通，不意味着平台页面或生产部署已经完成。
 下一阶段对应 Proposal 步骤 2：统一资产/版本与持久化运行基础，继续复用已有对话历史。

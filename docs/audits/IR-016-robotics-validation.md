@@ -1,6 +1,6 @@
 # IR-016 · T01 基线与 T02 首轮 RED 审查记录 — DR-060 / DR-062 / DR-065
 
-当前已完成基线取证和首轮失败测试编写，尚未进入 T03 实现。
+当前已完成 T01 基线、用户已审 T02 测试与 T03 实现，下面先保留首轮 RED 记录，再列 GREEN 结果。
 本记录不是第一阶段最终交付验收报告。
 
 ## 本轮执行结果
@@ -55,6 +55,32 @@ ROBOTICS 用户权限和运行并发不属于当前纯函数包化任务，由�
 ## 当前流程位置
 
 用户已要求按 SDD 继续下一步，本轮据 IR 执行 T01 和 T02。
-依据 [项目 SDD skill](../../.agents/skills/sdd-workflow/SKILL.md) 第⑤步“人 review 测试是否覆盖到位”，现提交上述测试及接口供人审。
+依据 [项目 SDD skill](../../.agents/skills/sdd-workflow/SKILL.md) 第⑤步“人 review 测试是否覆盖到位”，上述测试已由用户明确确认，随后进入 T03。
 审查后若需要补充或调整测试，应在进入 T03 之前记录修改原因；进入 GREEN 后按 skill 只修改实现，不为变绿削弱已审测试。
 IR 的最终交付与验收框尚未勾选，DR 状态不自动提升为 accepted。
+
+## T03 GREEN 与回归
+
+首批 23 项已全部通过，未修改 T02 已审测试，文件摘要见 [机器可读记录](IR-016-t03-green-results.json)。
+新增显式领域包，迁入原构建侧算法并拆分职责；固定四棵树的结构限制同时用于来源验证与编译校验。
+构建保留 25 次调用及其绑定；编译从 RDF 推导公开配置位置，严格比较基线，非法数值或模板修改被拒绝。
+当前 compiler 是低层结构性原语，正式任务的实体映射与证据准入仍属于后续任务。
+
+首次 `.venv/bin/python scripts/check.py --suite all` 退出 1，原因及修复如下：
+
+| 问题 | 处理 |
+|---|---|
+| 安装的 SDD 模板中 os 未使用 | 删除闲置导入，未改已审测试 |
+| 未来验收项 tests 为空，不满足现有追溯检查 | 保留全部要求，将未落地条目移到 planned_requirements，不填虚假测试或放宽检查 |
+| node 未在 PATH | 使用本机已有 Node v22.20.0，仅为检查进程补充 PATH |
+
+失败检查段分别重跑，原全量运行中已经通过的 UI 段保留结果，不伪造原退出码：
+
+```bash
+env PATH="/home/dyh/.local/opt/node-v22.20.0-linux-x64/bin:$PATH" .venv/bin/python scripts/check.py --suite unit --report-dir .check-results/ir016-t03-covered-unit
+env PATH="/home/dyh/.local/opt/node-v22.20.0-linux-x64/bin:$PATH" .venv/bin/python scripts/check.py --suite integration --report-dir .check-results/ir016-t03-fixed-integration
+```
+
+最终静态/类型检查通过，单元 852 通过 / 5 可选上游跳过，覆盖率 87.1%（含机器人模块，门槛仍为 81%）。
+HTTP 551 通过 / 8 可选上游跳过，10 轮变序通过，UI 64 通过，UI 实操 50 通过 / 3 真实模型跳过，构建页浏览器 10 项通过。
+本轮未验证真实模型或现场机器人，发布器和离线演示命令也尚未实现，不能据此宣布 IR-016 整体 delivered。
