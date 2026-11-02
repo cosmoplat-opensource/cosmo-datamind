@@ -1,6 +1,6 @@
-# IR-016 · T01 基线与 T02 首轮 RED 审查记录 — DR-060 / DR-062 / DR-065
+# IR-016 · 基线、T03 GREEN 与 T04 RED 审查记录 — DR-060 / DR-062 / DR-065
 
-当前已完成 T01 基线、用户已审 T02 测试与 T03 实现，下面先保留首轮 RED 记录，再列 GREEN 结果。
+当前已完成 T01 基线、用户已审 T02 测试与 T03 实现；新增 T04 发布契约测试待审。
 本记录不是第一阶段最终交付验收报告。
 
 ## 本轮执行结果
@@ -84,3 +84,31 @@ env PATH="/home/dyh/.local/opt/node-v22.20.0-linux-x64/bin:$PATH" .venv/bin/pyth
 最终静态/类型检查通过，单元 852 通过 / 5 可选上游跳过，覆盖率 87.1%（含机器人模块，门槛仍为 81%）。
 HTTP 551 通过 / 8 可选上游跳过，10 轮变序通过，UI 64 通过，UI 实操 50 通过 / 3 真实模型跳过，构建页浏览器 10 项通过。
 本轮未验证真实模型或现场机器人，发布器和离线演示命令也尚未实现，不能据此宣布 IR-016 整体 delivered。
+
+## T04 发布契约 RED（本次待审）
+
+新增 `tests/unit/test_robotics_publication.py`，参数化展开共 16 项，0 通过、16 失败、0 收集错误、0 跳过，退出码 1。
+全部失败来自尚不存在的 publisher 或 consumer 模块，具体断言需在 T05 实现后执行；没有新增占位实现或跳过用例。
+机器可读记录见 [T04 RED 结果](IR-016-t04-red-results.json)。
+
+```bash
+.venv/bin/python -m pytest tests/unit/test_robotics_publication.py -v --tb=short
+```
+
+| 覆盖内容 | 项数 |
+|---|---:|
+| 新 XML 构建图发布后加载：摘要、规则校验、四树结构、25 次调用和未确认业务映射保留 | 1 |
+| 既有 agent real/demo OWL 自包含加载，忽略外部 sidecar，demo 不进入 real | 2 |
+| 缺失/未知/重复协议、缺失/篡改规则、外部 imports 均拒绝 | 6 |
+| 错误绑定、未知条件规则、重复步骤号：发布和消费均拒绝，仅补正确元数据不能绕过 | 3 |
+| DTD/实体在 RDF 解析之前拒绝 | 2 |
+| 发布不覆盖已有文件，非 OWL 输入在读取前拒绝 | 2 |
+
+接口约定：`publisher.publish_ontology(graph, target, mode="real")` 验证后写入新文件，保持输入图不变；`consumer.load_ontology(path, mode="real")` 返回包含 graph 与 validation 的上下文。
+本阶段保留已冻结 agent 的 `ur-pick-place-owl-v2` 协议及其内嵌规则摘要，不自行升级协议或放宽可信规则。
+兼容性检查使用真实 agent OWL 夹具和迁入的消费入口；不声称本批测试执行了原项目 agent 进程。
+这些测试验证发布和加载边界，严格任务的缺证据拒绝及完整离线演示仍分别属于 T06 和 T08。
+
+用户此前的“测试覆盖已确认”用于 T02，本批 T04 是新的测试审查范围。
+依据 [项目 SDD skill](../../.agents/skills/sdd-workflow/SKILL.md) 第⑤步“人 review 测试是否覆盖到位”，本批测试提交后等待人审，再进入 T05 实现。
+T03 已通过的 23 项与 T04 新增的 16 项预期失败分开记录；当前工作树不能标记为全绿。

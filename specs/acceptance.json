@@ -173,32 +173,34 @@
       "planned_tests": [
         "tests/unit/test_robotics_policy.py::test_task_reordering_request_is_unsupported"
       ]
-    }
-  ],
-  "planned_requirements": [
+    },
     {
       "id": "ROB-04",
       "iteration": "IR-016",
-      "status": "proposed",
+      "status": "red-awaiting-review",
       "criterion": "对本轮 XML 新构建的图发布后，实际消费加载器通过协议、受信 SHACL、模板/条件/绑定验证；不能只验证预置 agent OWL。",
-      "tests": [],
-      "planned_tests": [
-        "tests/unit/test_robotics_publication.py::test_fresh_build_publishes_and_loads_in_consumer"
+      "tests": [
+        "tests/unit/test_robotics_publication.py::test_fresh_build_publishes_and_loads_in_consumer",
+        "tests/unit/test_robotics_publication.py::test_existing_agent_owl_loads_without_external_files"
       ],
-      "notes": "验收草案，拟定测试尚未创建；口径确认且测试落地后迁入 tests。"
+      "notes": "T04 新增 16 项参数化用例均因发布器/消费入口缺失而失败；待本批测试人审后进入 T05，不代表断言已执行或验收通过。"
     },
     {
       "id": "ROB-05",
       "iteration": "IR-016",
-      "status": "proposed",
+      "status": "red-awaiting-review",
       "criterion": "未知协议、篡改规则、外部 imports、DTD/实体及不兼容语义均明确拒绝，不产生成功发布或严格候选结果。",
-      "tests": [],
-      "planned_tests": [
+      "tests": [
         "tests/unit/test_robotics_publication.py::test_untrusted_contract_rules_and_external_dependencies_are_rejected",
-        "tests/unit/test_robotics_publication.py::test_semantically_incompatible_publication_is_rejected"
+        "tests/unit/test_robotics_publication.py::test_semantically_incompatible_publication_is_rejected",
+        "tests/unit/test_robotics_publication.py::test_dtd_and_entity_are_rejected_before_rdf_parsing",
+        "tests/unit/test_robotics_publication.py::test_publication_does_not_overwrite_existing_input",
+        "tests/unit/test_robotics_publication.py::test_non_owl_input_is_rejected_before_reading"
       ],
-      "notes": "验收草案，拟定测试尚未创建；口径确认且测试落地后迁入 tests。"
-    },
+      "notes": "T04 新增 16 项参数化用例均因发布器/消费入口缺失而失败；待本批测试人审后进入 T05，不代表断言已执行或验收通过。"
+    }
+  ],
+  "planned_requirements": [
     {
       "id": "ROB-06",
       "iteration": "IR-016",
