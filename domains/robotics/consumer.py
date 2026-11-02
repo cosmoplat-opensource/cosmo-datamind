@@ -7,6 +7,7 @@ from pathlib import Path
 from xml.sax import SAXException
 
 from rdflib import Graph, RDF
+from rdflib.compare import to_isomorphic
 from rdflib.exceptions import Error as RDFError
 
 from .artifact_contract import ARTIFACT_CONTRACT, VALIDATION_SHAPES_SHA256, CONDITIONS, graph_validation
@@ -81,4 +82,5 @@ def load_ontology(path, *, mode="real"):
         raise ValueError(f"无法解析本体 RDF/XML：{exc}") from exc
     validation, report = validate_graph(graph, mode=mode)
     validation["ontology_sha256"] = hashlib.sha256(content).hexdigest()
-    return {"graph": graph, "validation": validation, "shacl_report": report.serialize(format="turtle")}
+    return {"graph": graph, "graph_digest": to_isomorphic(graph).graph_digest(),
+            "validation": validation, "shacl_report": report.serialize(format="turtle")}
