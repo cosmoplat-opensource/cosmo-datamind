@@ -5,6 +5,7 @@
 用户在澄清 IR-017 不是最终阶段、后续另含 UI 与联动验收后，授权“继续下一步”。
 据此确认 IR-017 本轮范围与 AST-01～09 验收，进入 T02；不将此授权当作尚未编写测试的覆盖确认。
 用户已明确确认 T02 测试覆盖并授权实现；T03 已实现 ontology_assets，首批 30 项通过，全量回归实际退出 0。
+T04 已新增 49 项测试：1 项已有保护通过，48 项预期失败，待本批覆盖审查。
 domain_runs 尚未实现，整体 IR-017 仍未交付。
 
 ## T02 RED 结果
@@ -115,3 +116,80 @@ env PATH="/home/dyh/.local/opt/node-v22.20.0-linux-x64/bin:$PATH" .venv/bin/pyth
 T03 只完成资产与版本基础；运行、事件、manifest 和恢复尚未实现，后续故障/并发测试尚未审查。
 没有新增 UI/API，也未验证真实模型或机器人；上述 UI 检查是旧功能回归，不是新机器人页面联动验收。
 IR-017 保持 in-progress；下一任务 T04 编写运行、事件、工件与恢复失败测试，无需再次确认 T02 覆盖。
+
+## T04 RED 与测试覆盖审查
+
+日期：2026-11-03。用户了解资产存储用法后授权继续下一步，本批按原任务安排先写失败测试。
+没有修改 T02 已审测试、T03 生产实现或检查门槛，没有编写 domain_runs 实现。
+
+### 结果与复测
+
+收集 49 项，1 通过、48 预期失败、0 收集/运行错误、0 跳过，pytest 退出 1。
+通过的是现有 AssetStore 拒绝未知数据库 schema 且不修改原数据；其余均因 domain_runs 缺失而失败。
+三个测试文件和辅助模块的 ruff、mypy 检查通过。
+机器结果、失败原因与测试摘要见 [T04 RED 记录](IR-017-t04-red-results.json)。
+
+```bash
+.venv/bin/python -m pytest tests/unit/test_domain_run_store.py tests/unit/test_domain_artifacts.py tests/unit/test_domain_storage_integrity.py -v --tb=short
+```
+
+日志与 JUnit 位于 `.check-results/ir017-t04-red/`。
+本次没有运行全量回归；T03 全量通过记录仍保留，但不能据此说加入 RED 后的工作树全绿。
+
+### 覆盖内容
+
+| 文件 | 展开项数 | 检查内容 | 验收关联 |
+|---|---:|---|---|
+| `test_domain_run_store.py` | 20 | 固定输入/版本/组件；带命名空间的会话引用；空查询及非法输入；聊天文件保护；显式恢复；真实子进程异常退出和重新读取；中断/失败重试；并发事件、游标及终态竞争；非法状态变更拒绝 | AST-04、05、06 |
+| `test_domain_artifacts.py` | 22 | 产物字节与 manifest 对照；缺信息等业务拒绝不附候选；错误结果；不一致完成请求；写文件、摘要和事务故障；缺失、篡改及符号链接逃逸；文件名约束、工件 ID 与运行归属 | AST-04、06、07 |
+| `test_domain_storage_integrity.py` | 7 | 未知 schema 不重建；运行创建/完成时固定载荷损坏阻断；初始化运行存储保留原资产并共用一个数据库 | AST-07 |
+
+本批测试需要人审的关键规则：
+
+1. 运行保存当时的任务、模式、本体版本、来源摘要和组件版本；出现新版本或调用方修改字典，均不得改变旧记录。
+2. 会话只保存 namespace/id 引用，同名但来源不同的会话不混在一起；在明确配置旧聊天目录的新进程中创建运行，不复制或改写聊天正文。
+3. 打开存储只读取/初始化，不自动中断活跃任务；宿主显式执行启动恢复，才把遗留 running 标为 interrupted，重复恢复不增加事件。
+4. 重试使用原快照创建新 run，保留 retry_of，原记录、事件及产物不被重写。
+5. 四个线程各写十条事件，必须全部可查、各运行内序号连续且无重复；after 游标只返回之后的事件。
+6. 同一运行同时收到两次完成请求，只允许一次成功提交，另一次明确拒绝，不能重复产生完成事件和可见工件。
+7. 完成记录、终态事件、XML/报告索引及 manifest 一起可见；写入或事务故障不能留下部分可见的“成功”。
+8. 缺信息、需澄清和不支持是已处理的业务结果，保留报告但不附候选；执行错误记为 failed。
+9. manifest 来自固定输入和实际工件，逐项核对 ID、名称、媒体类型与摘要，不包含自身摘要，不接受模型凭据入库。
+10. 工件读取只接受登记 ID 并校验所属运行、目录和摘要；文件损坏时读取/清单校验报错，原历史记录不被改写。
+
+### Python 服务接口与状态约定
+
+以下名称为本批测试细化的接口，不是 HTTP 路由；操作返回独立字典/列表，错误返回异常。
+
+| 接口 | 行为约定 |
+|---|---|
+| `domain_runs.RunStore(root)` | 复用 AssetStore 根目录和 domain.sqlite3，初始化不破坏旧资产，不导入 server |
+| `create_run(...)` | 输入 ontology_id、version_id、operation、task、mode、session_ref、components；校验引用和摘要，派生 ontology_snapshot 并保存 queued 记录 |
+| `get_run / list_runs(session_ref=...)` | 读取固定记录；session_ref 包含 namespace 和 id；未知 run 不回退或自动创建 |
+| `start(run_id)` | queued → running，并在同一事务保存状态事件 |
+| `append_event(run_id, kind=..., payload=...) / events(run_id, after=...)` | 运行内单调连续的 seq，从 1 开始；游标不重复返回，终态禁止追加普通过程事件 |
+| `finish(run_id, result=..., artifacts=...)` | 仅允许 running 完成；generated 必须有候选，负向结果不能附候选；错误结果对应 failed，其余已处理结果对应 completed |
+| `recover_interrupted()` | 由宿主在启动时显式调用，返回被中断的运行 ID 列表；不处理 queued 或已终止记录 |
+| `retry(run_id)` | 对失败/中断记录创建新 queued run，沿用原快照并关联 retry_of，不复用原产物 |
+| `artifacts / read_artifact(run_id, artifact_id) / manifest(run_id)` | 查询登记产物、读取精确字节与验证清单；清单读取也检查其引用工件的完整性 |
+
+运行记录的 status 是生命周期状态；result.status 是 generated / needs_information / needs_clarification / unsupported / error 等业务结果。
+状态事件的 payload.status 对应生命周期状态；调用者的进度事件使用 kind=progress。
+artifacts 输入是 name、kind、media_type、content 字节的列表，不接受任意服务器来源路径。
+服务自动生成 kind=manifest、name=manifest.json 的工件；该文件不可由调用方覆盖，清单只列其他产物的摘要。
+`finish` 失败时，数据库记录、事件和可见索引保持调用前状态；宿主可另行记录失败，或者在启动时恢复为中断。
+未登记文件可能遗留，不计为成功也不能通过登记 ID 下载；自动清理不在本批实现范围。
+components 包含 profile_id、compiler_version、rule_digest、prompt_version、model；未调用模型时显式 model.invoked=false，凭据字段应拒绝且不回显。
+
+### 测试边界与故障方式
+
+合成任务使用数据 IR 的 inspect 操作和显式 storage-test 组件标识，XML 只是存储用字节，不代表已通过行为树语义校验或真实机器人生成。
+预期字节、摘要和参数来源由测试直接给出；manifest 必须与登记快照、下载字节独立比对，不由被测模块生成另一份预期清单。
+真实机器人内核、模型、UI 和下载 HTTP 路由均不在本批调用范围；真实 OWL/生成结果接入及 CLI 演示由 T06/T07 承接。
+本批检查已存在本体版本的运行记录；更完整的来源构建任务编排仍需后续业务接入测试。
+故障注入复用 T03 的 Storage.write_bytes 与 transaction 边界：第二次文件写入报错、写入后破坏字节、真实事务即将提交前抛出数据库异常。
+提交前故障用于验证实际 SQLite 回滚，不是模拟断电或磁盘硬件故障。
+进程恢复测试启动新 Python 进程，将运行置为 running 后 os._exit(23)，再由另一个新进程读取已完成记录、校验 manifest 并显式恢复中断记录。
+所有文件写入、损坏、删除及符号链接操作都限定在测试临时目录，不修改用户工作目录。
+
+依据 [SDD skill](../../.agents/skills/sdd-workflow/SKILL.md) 第⑤步“人 review 测试是否覆盖到位”，本批等待确认后进入 T05；此处不重复要求确认已通过审查的 T02。
