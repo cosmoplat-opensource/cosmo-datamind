@@ -241,3 +241,88 @@ env PATH="/home/dyh/.local/opt/node-v22.20.0-linux-x64/bin:$PATH" .venv/bin/pyth
 检查脚本使用隔离临时工作目录，没有改写用户已有聊天、编辑及业务文件。
 这些 UI 检查属于旧功能回归，不是新机器人 UI 与后端的联动验收。
 T05 完成，下一任务 T06 编写真实内核接入与跨进程演示失败测试；IR-017 保持 in-progress，AST-09 仍为计划项，交付清单不提前勾选。
+
+## T06 RED 与整链路测试覆盖审查
+
+用户在 T05 完成后授权“继续下一步”，按任务顺序编写接入与演示测试。
+本批没有修改生产代码、检查门槛或 T02/T04 已审测试；原八个测试/辅助文件 SHA-256 与 T05 记录一致。
+
+### 结果
+
+30 项全部预期失败，0 收集/运行错误、0 跳过，pytest 退出 1。
+失败原因是接入模块 `domain_runs.robotics` 或演示入口 `scripts/demo_domain_storage.py` 尚不存在；缺失导入位于测试函数内，不会阻止测试收集。
+新增三个文件的 ruff / mypy 检查通过；本批整理后 21 项验收映射及文档元测试通过，git diff --check 通过。
+没有运行全量回归；T05 GREEN 是上批历史基线，不能表示新增 RED 后的工作树全绿。
+
+```bash
+.venv/bin/python -m pytest tests/unit/test_domain_storage_pipeline.py tests/unit/test_domain_storage_demo_cli.py -v --tb=short
+```
+
+原始输出及 JUnit 在 `.check-results/ir017-t06-red/`；测试摘要、各项失败原因和辅助检查见 [T06 RED 机器记录](IR-017-t06-red-results.json)。
+
+### 本批检查哪些事情
+
+| 测试组 | 展开项数 | 核心预期 |
+|---|---:|---|
+| 真实内核输出与存储 | 1 | 两份 XML 新构建 OWL，demo 补充资料作为来源登记；发布并指定版本加载后实际调用生成内核；保存的候选字节、报告、六项参数依据与内核输出一致，来源及编译器/规则摘要可核对 |
+| 新旧版本生成 | 1 | 同一资产发布 threshold=0.61 的新版，旧版生成仍使用 0.72；两个结果都指向各自版本，旧 OWL 字节不变 |
+| 真实负向结果 | 5 | 缺证据、缺少实体选择、不支持操作、不支持附加要求、非法任务字段分别保留准确结果与报告，不产生候选；执行错误记为 failed |
+| 不可消费版本 | 5 | 未发布、模式不符、数据本体、版本不存在、载荷损坏，在生成和创建运行前拒绝 |
+| 内核异常与提交失败 | 2 | 内核意外异常成为有报告的 failed 运行；持久化提交失败必须抛错，不伪装成功，保留 running 供显式恢复 |
+| 新进程查询真实产物 | 1 | 实际生成后，用新 Python 进程逐字节核验产物并读取资产、事件、运行和 manifest，与原记录一致 |
+| 离线演示全部/单场景 | 4 | 三个场景都可独立执行；全部运行展示双领域目录、指定旧版本生成、真实缺证据无候选、崩溃与恢复；独立核验使用真实子进程 |
+| 只读核验 | 1 | 活跃 running 不被中断，运行/事件及磁盘文件保持不变 |
+| 重复执行 | 1 | 新建唯一运行目录和存储根，前次数据库、工件及所有来源夹具字节保持不变 |
+| 输入异常 | 2 | 来源缺失或非法 XML 必须退出非零并报告 error，不能算成预期的“缺证据”成功 |
+| 独立核验发现损坏 | 3 | 候选、manifest 或本体载荷被修改后，核验命令退出非零，历史终态不被改写 |
+| 命令退出码 | 2 | 演示返回 passed=false 或抛异常时，CLI 必须退出非零 |
+| 核验无效目录 | 2 | 不存在或空目录明确失败，不自动初始化新数据库并把空检查当作成功 |
+
+并发事件、双完成竞争、事务回滚、来源/工件路径约束及旧会话隔离继续由 T04 的已审测试守护，本批不复制这些存储层用例。
+用户业务目录保护由隔离的 legacy 哨兵文件核验；测试不读写当前用户业务数据。
+
+### 拟定的接入接口（T07 实现）
+
+`domain_runs.robotics.generate_from_version(root, *, ontology_id, version_id, task, mode, session_ref)` 返回持久化完成后的运行记录。
+它接收同一根目录内已经发布的机器人版本，先复用 AssetStore 的加载与消费校验，再创建 operation=generate_bt 的运行，调用现有 generation.generate_task，最后保存结果和工件。
+任务是六字段结构化输入；本批不引入自然语言提取、在线编辑或机器人执行。
+组件信息由实际执行侧派生：profile 来自固定版本，compiler_version 采用 `sha256:<compiler.py 实际字节摘要>`，rule_digest 来自实际消费校验；未调用模型时 model.invoked=false、prompt_version=null。
+此编译器摘要只标识编译器模块，不声称覆盖整个仓库代码或第三方依赖环境。
+
+正常生成必须保存原候选字节，不能仅存摘要或重新拼一份 XML。
+持久化 result 与原内核结果相同，但去掉临时 candidate_path；validation 工件保存同一 result JSON。
+持久化下载通过运行及 artifact_id 定位，不把生成临时目录的路径写入永久清单。
+业务负向结果保留具体 issues，无候选；内核意外异常转换成 error 报告。
+持久化失败则向调用方抛异常，不把数据库未提交解释成已经处理完成；残留 running 后续按已审恢复规则处理。
+
+### 拟定的演示与独立核验入口（T07 实现）
+
+```bash
+.venv/bin/python scripts/demo_domain_storage.py --case all --output-dir .check-results/domain-storage-demo
+.venv/bin/python scripts/demo_domain_storage.py --case demo-success --output-dir .check-results/domain-storage-demo
+.venv/bin/python scripts/demo_domain_storage.py --case real-missing-evidence --output-dir .check-results/domain-storage-demo
+.venv/bin/python scripts/demo_domain_storage.py --case interrupted-recovery --output-dir .check-results/domain-storage-demo
+.venv/bin/python scripts/demo_domain_storage.py --verify-storage /absolute/path/from/summary/storage_root
+```
+
+这些命令尚未实现，当前不能作为已可运行的交付物。
+三个场景的预期分别是 generated、needs_information、interrupted；双领域目录与旧版本固定包含在成功场景中，因此覆盖 IR 要求的四类结果。
+成功场景保存 demo 标记与模拟补充资料来源，并展示旧版 0.72 在新版存在后仍被使用；不把模拟证据当作真实证据。
+中断场景由真实子进程把运行置为 running 后以退出码 23 退出，再由另一个新进程显式恢复。
+每次演示新建唯一子目录，写 summary.json/summary.md；JSON 至少包含 run_dir、storage_root、producer_pid、passed、cases 和 verification。
+每个正常场景记录 case、expected_status、actual_status、passed、ontology_id、version_id、run_id；中断场景另记 crash_pid、crash_returncode、recovery_pid。
+verification 包含独立进程 pid、passed、run_ids、assets，必须来自对磁盘记录和实际工件的重新检查。
+`--verify-storage` 向 stdout 输出上述核验 JSON，遇到损坏或无效存储退出非零；只读检查不自动执行恢复。
+测试通过继承给子进程的 sitecustomize 记录实际 PID，禁止网络连接/DNS、归档工程或预制 OWL 读取以及 server 导入，避免只重建内存对象冒充跨进程检查。
+
+### XML 对照与测试前提
+
+成功用例的字节保真检查使用实际内核输出；另外独立解析原 XML，只修改已约定的六个公开参数位置，再逐树比较标签、属性和子节点顺序。
+该预期构造不调用编译器，因此能够发现保存了原始未替换模板或更改固定树结构的情况；不验证机器人现场动作或自然语言理解。
+新旧版本用例直接断言 main 流程对应调用位置的 threshold 为 0.72/0.61，不把子树中的黑板引用当作参数值。
+
+在未实现新接口的前提下，另用现有内核做独立前提检查：两份 XML 新构建并发布、demo 生成及六参数 XML 对照、新阈值发布生成、五种真实负向任务的状态均符合预期。
+还实际启动四个子进程，验证网络、预制 OWL、归档、server 导入禁用机制及 PID 日志有效。
+这些只是夹具和检查机制的前提验证，不计入新功能通过数量，也不替代 T07 后的 30 项真实联动测试。
+
+依据 [SDD skill](../../.agents/skills/sdd-workflow/SKILL.md) 第⑤步“人 review 测试是否覆盖到位”，本批覆盖需用户确认后进入 T07；整份 IR 尚未交付。

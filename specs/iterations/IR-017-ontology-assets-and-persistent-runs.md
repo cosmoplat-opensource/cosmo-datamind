@@ -2,7 +2,7 @@
 
 - **状态 / Status**: in-progress
 - **日期 / Date**: 2026-11-03
-- **当前环节**：T04 测试覆盖经用户确认；T05 已实现运行、事件、恢复与工件清单，49 项已审测试全部通过，全量回归退出 0；下一任务 T06，整链路演示待 T06/T07。
+- **当前环节**：T05 实现与全量回归通过；T06 已编写 30 项真实内核接入与跨进程演示测试，全部预期失败，待本批覆盖审查；T07 尚未实现。
 - **关联 / Refs**: [[DR-059-unified-domain-semantic-graph]]、[[DR-064-persistent-build-runs-and-artifact-manifests]]、[[DR-065-robotics-migration-and-compatibility-validation]]。
 - **前置**：[IR-016](IR-016-robotics-contract-integration.md) 已于 2026-11-03 经用户确认交付。
 - **方案**：[集成 Proposal](../PROPOSAL-yang-datamind-integration.md) 第 6 节步骤 2。
@@ -25,7 +25,7 @@ AST-08 的旧 UI 回归只能证明旧能力未受破坏，不能作为新 UI �
 | 阶段 | 对应 Proposal | 后端与 UI 一起交付的内容 | 联动验收入口 |
 |---|---|---|---|
 | 机器人内核，IR-016 已交付 | 步骤 0～1 | 构建、发布、加载、严格生成的离线内核 | 离线三场景；不是页面验收 |
-| 存储基础，本 IR T05 | 步骤 2 | 本体资产、版本、运行、事件、工件服务 | Python 接口与跨进程离线演示 |
+| 存储基础，本 IR T06 RED | 步骤 2 | 本体资产、版本、运行、事件、工件服务 | Python 接口与跨进程离线演示 |
 | 本体构建与目录，后续 IR | 步骤 3 | 上传与构建 API、后台执行、进度查询；构建配方、双文件上传、目录与候选详情页面 | 浏览器上传两类 XML，实际后端构建并保存，新候选及问题可在页面查看 |
 | 知识维护与发布，后续 IR | 步骤 4 | 业务映射、参数和证据、差异与发布接口；编辑、评审、发布页面 | 页面修改形成新版本；未通过发布校验时显示原因；历史版本不变 |
 | 任务生成与结果，后续 IR | 步骤 5～6 | bt_extract 配置、会话、严格生成、事件与下载接口；任务澄清、树预览、参数来源、报告及历史导航页面 | 从页面任务经解析、澄清到候选下载；缺知识和不支持状态在界面准确呈现 |
@@ -104,7 +104,7 @@ manifest 记录运行、会话引用、固定本体版本、来源、profile/编
 | T08 | 完成统一环境全量回归、文档及审计整理，进入最终交付人审 | T07 | AST-08、09 |
 
 实现不得改动已经人审的测试以取得 GREEN；新增行为先补测试并审查。
-T02 已将 AST-01～03、08 的首批真实测试入口登记到 `acceptance.json` 的 requirements，对应已审测试已在 T03 转绿；T04 已补 AST-04～07 的真实测试映射，经用户确认后已在 T05 转绿；AST-09 仍在 planned_requirements，整体交付尚未完成。
+T02 已将 AST-01～03、08 的首批真实测试入口登记到 `acceptance.json` 的 requirements，对应已审测试已在 T03 转绿；T04 已补 AST-04～07 的真实测试映射，经用户确认后已在 T05 转绿；T06 已补入整链路与演示的真实测试入口，AST-09 已从 planned_requirements 移至 requirements，当前为 RED 待审，整体交付尚未完成。
 
 ## 验收 Acceptance（范围已确认，交付尚未完成）
 
@@ -178,3 +178,15 @@ summary 输出 storage_root、run_id、版本引用和独立检查结果，说�
 - 10 轮变序、64 UI 走查、50 UI 实操及 10 构建页浏览器检查通过；3 项未配置真实模型端点检查跳过。
 - 详见 [T05 机器结果](../../docs/audits/IR-017-t05-green-results.json)、[审计说明](../../docs/audits/IR-017-storage-validation.md) 与 [运行服务用法](../../domain_runs/README.md)。
 - T05 不代表 IR-017 交付；下一任务 T06 为真实内核接入与跨进程演示编写失败测试，审查后由 T07 实现，最后 T08 进入整轮交付审查。
+
+
+### T06 RED 记录
+
+- 用户在 T05 完成后授权“继续下一步”，本批先编写失败测试，未修改生产实现或此前已审测试。
+- 新增 `tests/storage_pipeline_support.py`、`test_domain_storage_pipeline.py` 和 `test_domain_storage_demo_cli.py`，参数化展开 30 项：内核接入 15 项、CLI/跨进程核验 15 项。
+- 全部因 `domain_runs.robotics` 或 `scripts/demo_domain_storage.py` 尚未实现而预期失败；0 收集/运行错误、0 跳过，pytest 退出 1。
+- 从两份 XML 新构建 OWL，再发布入库，验证指定版本生成、独立六参数 XML 对照、真实缺证据等负向结果、异常与存储失败、跨进程历史、工件损坏及重复演示保护。
+- 拟定 `generate_from_version` 接入接口和 CLI 三场景/独立核验入口，完整契约见审计；任务仍为六字段结构化输入，不包含 LLM 和新 UI。
+- AST-02、04～09 已映射真实测试；ruff/mypy 通过，测试前提单独实测通过，不把前提检查算作新功能通过；没有运行全量回归。
+- 详见 [T06 覆盖审查](../../docs/audits/IR-017-storage-validation.md) 与 [机器结果](../../docs/audits/IR-017-t06-red-results.json)。
+- 按 SDD skill 第⑤步提交本批覆盖审查，确认后才进入 T07 实现；T02/T04 已审覆盖不需重复确认。
