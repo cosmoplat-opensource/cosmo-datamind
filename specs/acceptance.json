@@ -1,5 +1,5 @@
 {
-  "iteration": "IR-014 / IR-015 / IR-016（delivered）/ IR-017（T03 GREEN，后续任务待实施）",
+  "iteration": "IR-014 / IR-015 / IR-016（delivered）/ IR-017（T03 GREEN；T04 RED 待覆盖审查）",
   "requirements": [
     {
       "id": "ALG-01",
@@ -334,51 +334,71 @@
         "tests/unit/test_legacy_asset_adapter.py::test_actual_server_effective_ir_is_snapshotted_and_legacy_files_unchanged",
         "tests/unit/test_ontology_asset_catalog.py::test_catalog_can_be_read_in_a_new_process_without_server_import"
       ]
-    }
-  ],
-  "planned_requirements": [
+    },
     {
       "id": "AST-04",
       "iteration": "IR-017",
-      "status": "planned",
+      "status": "red-awaiting-test-review",
       "criterion": "运行与会话关联：新进程可读取固定输入、版本、状态、结果与事件，同一会话可关联多个运行；业务拒绝有报告但无候选，现有聊天正文不被复制、覆盖或重写。",
-      "planned_test_files": [
-        "tests/unit/test_domain_run_store.py",
-        "tests/unit/test_domain_storage_pipeline.py"
-      ],
-      "notes": "本轮范围已获继续授权；T04/T06 尚未编写对应测试，不代表已有覆盖或通过。"
+      "notes": "T04 共 49 项：1 项已有 schema 保护通过，48 项因 domain_runs 未实现而预期失败，无收集错误或跳过。使用合成任务和工件检查存储，不冒充真实生成；完整内核接入与离线演示由 T06/T07 承接。见 docs/audits/IR-017-storage-validation.md。",
+      "tests": [
+        "tests/unit/test_domain_run_store.py::test_run_fixes_version_task_components_and_namespaced_session",
+        "tests/unit/test_domain_run_store.py::test_invalid_run_inputs_are_rejected_without_records",
+        "tests/unit/test_domain_run_store.py::test_existing_chats_are_referenced_without_copy_or_rewrite",
+        "tests/unit/test_domain_run_store.py::test_new_process_reads_completed_history_and_crashed_run_can_be_recovered",
+        "tests/unit/test_domain_run_store.py::test_empty_store_and_missing_run_do_not_create_default_history",
+        "tests/unit/test_domain_artifacts.py::test_business_rejection_or_error_has_report_but_no_candidate"
+      ]
     },
     {
       "id": "AST-05",
       "iteration": "IR-017",
-      "status": "planned",
+      "status": "red-awaiting-test-review",
       "criterion": "恢复与事件一致性：显式启动恢复只中断遗留 running，不改已终止结果，重复恢复幂等；重试新建 run；并发事件无丢失或重复序号，非法状态转移及终态覆盖被拒绝。",
-      "planned_test_files": [
-        "tests/unit/test_domain_run_store.py"
-      ],
-      "notes": "本轮范围已获继续授权；T04/T06 尚未编写对应测试，不代表已有覆盖或通过。"
+      "notes": "T04 共 49 项：1 项已有 schema 保护通过，48 项因 domain_runs 未实现而预期失败，无收集错误或跳过。使用合成任务和工件检查存储，不冒充真实生成；完整内核接入与离线演示由 T06/T07 承接。见 docs/audits/IR-017-storage-validation.md。",
+      "tests": [
+        "tests/unit/test_domain_run_store.py::test_reopening_store_does_not_interrupt_active_run_and_recovery_is_explicit",
+        "tests/unit/test_domain_run_store.py::test_new_process_reads_completed_history_and_crashed_run_can_be_recovered",
+        "tests/unit/test_domain_run_store.py::test_retry_creates_new_run_with_same_snapshot_and_preserves_original",
+        "tests/unit/test_domain_run_store.py::test_events_are_ordered_replayable_and_isolated_under_concurrent_writes",
+        "tests/unit/test_domain_run_store.py::test_illegal_transitions_leave_state_and_events_unchanged",
+        "tests/unit/test_domain_run_store.py::test_concurrent_completion_has_one_winner_without_duplicate_artifacts"
+      ]
     },
     {
       "id": "AST-06",
       "iteration": "IR-017",
-      "status": "planned",
+      "status": "red-awaiting-test-review",
       "criterion": "工件提交与清单：成功记录指向实际存在且摘要匹配的工件；注入文件写入、摘要核对、数据库提交故障时，不出现伪成功或部分可见索引；清单追溯固定版本、任务及参数依据，不含凭据。",
-      "planned_test_files": [
-        "tests/unit/test_domain_artifacts.py"
-      ],
-      "notes": "本轮范围已获继续授权；T04/T06 尚未编写对应测试，不代表已有覆盖或通过。"
+      "notes": "T04 共 49 项：1 项已有 schema 保护通过，48 项因 domain_runs 未实现而预期失败，无收集错误或跳过。使用合成任务和工件检查存储，不冒充真实生成；完整内核接入与离线演示由 T06/T07 承接。见 docs/audits/IR-017-storage-validation.md。",
+      "tests": [
+        "tests/unit/test_domain_artifacts.py::test_manifest_and_downloaded_bytes_match_fixed_inputs_and_outputs",
+        "tests/unit/test_domain_artifacts.py::test_business_rejection_or_error_has_report_but_no_candidate",
+        "tests/unit/test_domain_artifacts.py::test_inconsistent_completion_does_not_publish_records",
+        "tests/unit/test_domain_artifacts.py::test_partial_file_or_transaction_failure_cannot_leave_visible_success",
+        "tests/unit/test_domain_run_store.py::test_invalid_run_inputs_are_rejected_without_records",
+        "tests/unit/test_domain_run_store.py::test_concurrent_completion_has_one_winner_without_duplicate_artifacts"
+      ]
     },
     {
       "id": "AST-07",
       "iteration": "IR-017",
-      "status": "planned",
+      "status": "red-awaiting-test-review",
       "criterion": "路径与完整性：任意路径、跨运行工件引用和符号链接逃逸被拒绝；文件缺失或篡改可诊断且不返回可信成功；未知数据库 schema 不静默重建或丢弃已有数据。",
-      "planned_test_files": [
-        "tests/unit/test_domain_artifacts.py",
-        "tests/unit/test_ontology_asset_versions.py"
-      ],
-      "notes": "本轮范围已获继续授权；T04/T06 尚未编写对应测试，不代表已有覆盖或通过。"
-    },
+      "notes": "T04 共 49 项：1 项已有 schema 保护通过，48 项因 domain_runs 未实现而预期失败，无收集错误或跳过。使用合成任务和工件检查存储，不冒充真实生成；完整内核接入与离线演示由 T06/T07 承接。见 docs/audits/IR-017-storage-validation.md。",
+      "tests": [
+        "tests/unit/test_domain_storage_integrity.py::test_unknown_database_schema_is_not_reinitialized",
+        "tests/unit/test_domain_storage_integrity.py::test_new_run_does_not_pin_a_damaged_ontology_file",
+        "tests/unit/test_domain_storage_integrity.py::test_snapshot_damage_after_start_prevents_successful_completion",
+        "tests/unit/test_domain_storage_integrity.py::test_run_schema_initialization_preserves_existing_asset_versions",
+        "tests/unit/test_domain_artifacts.py::test_artifact_damage_is_reported_without_rewriting_history",
+        "tests/unit/test_domain_artifacts.py::test_manifest_tampering_is_detected_from_registered_digest",
+        "tests/unit/test_domain_artifacts.py::test_artifact_names_cannot_escape_or_replace_manifest",
+        "tests/unit/test_domain_artifacts.py::test_downloads_require_registered_id_and_correct_run"
+      ]
+    }
+  ],
+  "planned_requirements": [
     {
       "id": "AST-09",
       "iteration": "IR-017",
@@ -388,7 +408,7 @@
         "tests/unit/test_domain_storage_pipeline.py",
         "tests/unit/test_domain_storage_demo_cli.py"
       ],
-      "notes": "本轮范围已获继续授权；T04/T06 尚未编写对应测试，不代表已有覆盖或通过。"
+      "notes": "T06/T07 的整链路及跨进程 CLI 演示尚未编写或实现，不代表已有覆盖或通过。"
     }
   ]
 }
