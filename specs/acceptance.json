@@ -1,5 +1,5 @@
 {
-  "iteration": "IR-014 / IR-015 / IR-016（delivered）/ IR-017（T05 GREEN；待 T06 整链路测试）",
+  "iteration": "IR-014 / IR-015 / IR-016（delivered）/ IR-017（T05 GREEN；T06 RED 待覆盖审查）",
   "requirements": [
     {
       "id": "ALG-01",
@@ -295,9 +295,9 @@
     {
       "id": "AST-02",
       "iteration": "IR-017",
-      "status": "t03-green-partial-coverage",
+      "status": "prior-green-t06-red-awaiting-test-review",
       "criterion": "不可变与保真：来源字节和摘要可复核，机器人 OWL 字节及 RDF 语义保留；新版本不覆盖旧版，指定旧版本生成不受新版影响，错误父版本、非法载荷和协议不被发布。",
-      "notes": "用户已确认 T02 覆盖；T03 已审 30 项全部转绿且测试摘要不变。全量命令退出 0：948 单元通过、551 HTTP 通过、覆盖率 86.8%，其余检查段通过；可选依赖及真实模型跳过保留。这里只代表首批覆盖，运行/工件及整链路按后续任务补齐，IR-017 尚未交付。详见 docs/audits/IR-017-t03-green-results.json。",
+      "notes": "用户已确认 T02 覆盖；T03 已审 30 项全部转绿且测试摘要不变。全量命令退出 0：948 单元通过、551 HTTP 通过、覆盖率 86.8%，其余检查段通过；可选依赖及真实模型跳过保留。这里只代表首批覆盖，运行/工件及整链路按后续任务补齐，IR-017 尚未交付。详见 docs/audits/IR-017-t03-green-results.json。 T06 新增整链路映射共 30 项，全部因接入模块/CLI 缺失而预期失败，待本批覆盖审查；T05 通过记录是历史基线，不代表新增 RED 后的当前工作树全绿。见 docs/audits/IR-017-t06-red-results.json。",
       "tests": [
         "tests/unit/test_ontology_asset_versions.py::test_versions_keep_old_bytes_and_snapshot_metadata",
         "tests/unit/test_ontology_asset_versions.py::test_invalid_parent_does_not_create_a_version",
@@ -306,7 +306,10 @@
         "tests/unit/test_ontology_asset_versions.py::test_fresh_owl_sources_and_consumer_validation_are_persisted",
         "tests/unit/test_ontology_asset_versions.py::test_publication_revalidates_actual_semantics_not_claimed_success",
         "tests/unit/test_ontology_asset_versions.py::test_old_published_snapshot_loads_after_new_version_is_registered",
-        "tests/unit/test_ontology_asset_catalog.py::test_sources_preserve_bytes_roles_and_hashes_after_reopen"
+        "tests/unit/test_ontology_asset_catalog.py::test_sources_preserve_bytes_roles_and_hashes_after_reopen",
+        "tests/unit/test_domain_storage_pipeline.py::test_fresh_published_version_generates_and_persists_exact_kernel_outputs",
+        "tests/unit/test_domain_storage_pipeline.py::test_generation_pins_old_version_even_when_new_parameters_are_published",
+        "tests/unit/test_domain_storage_pipeline.py::test_invalid_version_is_rejected_before_generation_or_run_creation"
       ]
     },
     {
@@ -327,65 +330,75 @@
     {
       "id": "AST-08",
       "iteration": "IR-017",
-      "status": "t05-green-partial-coverage",
+      "status": "prior-green-t06-red-awaiting-test-review",
       "criterion": "旧能力保持：旧图谱、编辑、问数、聊天与 jobs 行为无新增回归；测试在隔离工作目录运行，不改用户业务目录；不降低既有 lint、类型或覆盖率门槛。",
-      "notes": "T03 与 T05 全量回归通过；最新为 997 单元、551 HTTP、10 轮变序、64 UI 走查、50 UI 实操及 10 构建页检查通过，覆盖率 87.0%，门槛仍为 81%。单元/HTTP 可选上游跳过 5/8 项，UI 未配模型跳过 3 项。检查使用隔离目录，已审测试未改；整链路及最终回归待 T06～T08。见 docs/audits/IR-017-t05-green-results.json。",
+      "notes": "T03 与 T05 全量回归通过；最新为 997 单元、551 HTTP、10 轮变序、64 UI 走查、50 UI 实操及 10 构建页检查通过，覆盖率 87.0%，门槛仍为 81%。单元/HTTP 可选上游跳过 5/8 项，UI 未配模型跳过 3 项。检查使用隔离目录，已审测试未改；整链路及最终回归待 T06～T08。见 docs/audits/IR-017-t05-green-results.json。 T06 新增整链路映射共 30 项，全部因接入模块/CLI 缺失而预期失败，待本批覆盖审查；T05 通过记录是历史基线，不代表新增 RED 后的当前工作树全绿。见 docs/audits/IR-017-t06-red-results.json。",
       "tests": [
         "tests/unit/test_legacy_asset_adapter.py::test_actual_server_effective_ir_is_snapshotted_and_legacy_files_unchanged",
-        "tests/unit/test_ontology_asset_catalog.py::test_catalog_can_be_read_in_a_new_process_without_server_import"
+        "tests/unit/test_ontology_asset_catalog.py::test_catalog_can_be_read_in_a_new_process_without_server_import",
+        "tests/unit/test_domain_storage_demo_cli.py::test_all_cases_build_fresh_offline_and_verify_in_separate_processes",
+        "tests/unit/test_domain_storage_demo_cli.py::test_repeated_demo_preserves_prior_history_and_all_source_fixtures"
       ]
     },
     {
       "id": "AST-04",
       "iteration": "IR-017",
-      "status": "t05-green-partial-coverage",
+      "status": "prior-green-t06-red-awaiting-test-review",
       "criterion": "运行与会话关联：新进程可读取固定输入、版本、状态、结果与事件，同一会话可关联多个运行；业务拒绝有报告但无候选，现有聊天正文不被复制、覆盖或重写。",
-      "notes": "用户已确认 T04 覆盖；T05 使 49 项全部转绿，测试文件摘要不变。全量检查退出 0：997 单元、551 HTTP、其余检查段通过，覆盖率 87.0%；可选依赖和真实模型跳过如实保留。本批用合成任务与工件验证存储，真实内核接入及跨进程 CLI 由 T06/T07 承接，IR-017 尚未交付。见 docs/audits/IR-017-t05-green-results.json。",
+      "notes": "用户已确认 T04 覆盖；T05 使 49 项全部转绿，测试文件摘要不变。全量检查退出 0：997 单元、551 HTTP、其余检查段通过，覆盖率 87.0%；可选依赖和真实模型跳过如实保留。本批用合成任务与工件验证存储，真实内核接入及跨进程 CLI 由 T06/T07 承接，IR-017 尚未交付。见 docs/audits/IR-017-t05-green-results.json。 T06 新增整链路映射共 30 项，全部因接入模块/CLI 缺失而预期失败，待本批覆盖审查；T05 通过记录是历史基线，不代表新增 RED 后的当前工作树全绿。见 docs/audits/IR-017-t06-red-results.json。",
       "tests": [
         "tests/unit/test_domain_run_store.py::test_run_fixes_version_task_components_and_namespaced_session",
         "tests/unit/test_domain_run_store.py::test_invalid_run_inputs_are_rejected_without_records",
         "tests/unit/test_domain_run_store.py::test_existing_chats_are_referenced_without_copy_or_rewrite",
         "tests/unit/test_domain_run_store.py::test_new_process_reads_completed_history_and_crashed_run_can_be_recovered",
         "tests/unit/test_domain_run_store.py::test_empty_store_and_missing_run_do_not_create_default_history",
-        "tests/unit/test_domain_artifacts.py::test_business_rejection_or_error_has_report_but_no_candidate"
+        "tests/unit/test_domain_artifacts.py::test_business_rejection_or_error_has_report_but_no_candidate",
+        "tests/unit/test_domain_storage_pipeline.py::test_real_rejections_remain_reports_without_candidates",
+        "tests/unit/test_domain_storage_pipeline.py::test_new_process_reads_actual_generated_history_and_verifies_bytes"
       ]
     },
     {
       "id": "AST-05",
       "iteration": "IR-017",
-      "status": "t05-green-partial-coverage",
+      "status": "prior-green-t06-red-awaiting-test-review",
       "criterion": "恢复与事件一致性：显式启动恢复只中断遗留 running，不改已终止结果，重复恢复幂等；重试新建 run；并发事件无丢失或重复序号，非法状态转移及终态覆盖被拒绝。",
-      "notes": "用户已确认 T04 覆盖；T05 使 49 项全部转绿，测试文件摘要不变。全量检查退出 0：997 单元、551 HTTP、其余检查段通过，覆盖率 87.0%；可选依赖和真实模型跳过如实保留。本批用合成任务与工件验证存储，真实内核接入及跨进程 CLI 由 T06/T07 承接，IR-017 尚未交付。见 docs/audits/IR-017-t05-green-results.json。",
+      "notes": "用户已确认 T04 覆盖；T05 使 49 项全部转绿，测试文件摘要不变。全量检查退出 0：997 单元、551 HTTP、其余检查段通过，覆盖率 87.0%；可选依赖和真实模型跳过如实保留。本批用合成任务与工件验证存储，真实内核接入及跨进程 CLI 由 T06/T07 承接，IR-017 尚未交付。见 docs/audits/IR-017-t05-green-results.json。 T06 新增整链路映射共 30 项，全部因接入模块/CLI 缺失而预期失败，待本批覆盖审查；T05 通过记录是历史基线，不代表新增 RED 后的当前工作树全绿。见 docs/audits/IR-017-t06-red-results.json。",
       "tests": [
         "tests/unit/test_domain_run_store.py::test_reopening_store_does_not_interrupt_active_run_and_recovery_is_explicit",
         "tests/unit/test_domain_run_store.py::test_new_process_reads_completed_history_and_crashed_run_can_be_recovered",
         "tests/unit/test_domain_run_store.py::test_retry_creates_new_run_with_same_snapshot_and_preserves_original",
         "tests/unit/test_domain_run_store.py::test_events_are_ordered_replayable_and_isolated_under_concurrent_writes",
         "tests/unit/test_domain_run_store.py::test_illegal_transitions_leave_state_and_events_unchanged",
-        "tests/unit/test_domain_run_store.py::test_concurrent_completion_has_one_winner_without_duplicate_artifacts"
+        "tests/unit/test_domain_run_store.py::test_concurrent_completion_has_one_winner_without_duplicate_artifacts",
+        "tests/unit/test_domain_storage_pipeline.py::test_failed_storage_commit_cannot_be_reported_as_success",
+        "tests/unit/test_domain_storage_demo_cli.py::test_all_cases_build_fresh_offline_and_verify_in_separate_processes",
+        "tests/unit/test_domain_storage_demo_cli.py::test_independent_verification_is_read_only_and_does_not_interrupt_active_runs"
       ]
     },
     {
       "id": "AST-06",
       "iteration": "IR-017",
-      "status": "t05-green-partial-coverage",
+      "status": "prior-green-t06-red-awaiting-test-review",
       "criterion": "工件提交与清单：成功记录指向实际存在且摘要匹配的工件；注入文件写入、摘要核对、数据库提交故障时，不出现伪成功或部分可见索引；清单追溯固定版本、任务及参数依据，不含凭据。",
-      "notes": "用户已确认 T04 覆盖；T05 使 49 项全部转绿，测试文件摘要不变。全量检查退出 0：997 单元、551 HTTP、其余检查段通过，覆盖率 87.0%；可选依赖和真实模型跳过如实保留。本批用合成任务与工件验证存储，真实内核接入及跨进程 CLI 由 T06/T07 承接，IR-017 尚未交付。见 docs/audits/IR-017-t05-green-results.json。",
+      "notes": "用户已确认 T04 覆盖；T05 使 49 项全部转绿，测试文件摘要不变。全量检查退出 0：997 单元、551 HTTP、其余检查段通过，覆盖率 87.0%；可选依赖和真实模型跳过如实保留。本批用合成任务与工件验证存储，真实内核接入及跨进程 CLI 由 T06/T07 承接，IR-017 尚未交付。见 docs/audits/IR-017-t05-green-results.json。 T06 新增整链路映射共 30 项，全部因接入模块/CLI 缺失而预期失败，待本批覆盖审查；T05 通过记录是历史基线，不代表新增 RED 后的当前工作树全绿。见 docs/audits/IR-017-t06-red-results.json。",
       "tests": [
         "tests/unit/test_domain_artifacts.py::test_manifest_and_downloaded_bytes_match_fixed_inputs_and_outputs",
         "tests/unit/test_domain_artifacts.py::test_business_rejection_or_error_has_report_but_no_candidate",
         "tests/unit/test_domain_artifacts.py::test_inconsistent_completion_does_not_publish_records",
         "tests/unit/test_domain_artifacts.py::test_partial_file_or_transaction_failure_cannot_leave_visible_success",
         "tests/unit/test_domain_run_store.py::test_invalid_run_inputs_are_rejected_without_records",
-        "tests/unit/test_domain_run_store.py::test_concurrent_completion_has_one_winner_without_duplicate_artifacts"
+        "tests/unit/test_domain_run_store.py::test_concurrent_completion_has_one_winner_without_duplicate_artifacts",
+        "tests/unit/test_domain_storage_pipeline.py::test_fresh_published_version_generates_and_persists_exact_kernel_outputs",
+        "tests/unit/test_domain_storage_pipeline.py::test_unexpected_kernel_exception_leaves_failed_run_with_report",
+        "tests/unit/test_domain_storage_pipeline.py::test_failed_storage_commit_cannot_be_reported_as_success"
       ]
     },
     {
       "id": "AST-07",
       "iteration": "IR-017",
-      "status": "t05-green-partial-coverage",
+      "status": "prior-green-t06-red-awaiting-test-review",
       "criterion": "路径与完整性：任意路径、跨运行工件引用和符号链接逃逸被拒绝；文件缺失或篡改可诊断且不返回可信成功；未知数据库 schema 不静默重建或丢弃已有数据。",
-      "notes": "用户已确认 T04 覆盖；T05 使 49 项全部转绿，测试文件摘要不变。全量检查退出 0：997 单元、551 HTTP、其余检查段通过，覆盖率 87.0%；可选依赖和真实模型跳过如实保留。本批用合成任务与工件验证存储，真实内核接入及跨进程 CLI 由 T06/T07 承接，IR-017 尚未交付。见 docs/audits/IR-017-t05-green-results.json。",
+      "notes": "用户已确认 T04 覆盖；T05 使 49 项全部转绿，测试文件摘要不变。全量检查退出 0：997 单元、551 HTTP、其余检查段通过，覆盖率 87.0%；可选依赖和真实模型跳过如实保留。本批用合成任务与工件验证存储，真实内核接入及跨进程 CLI 由 T06/T07 承接，IR-017 尚未交付。见 docs/audits/IR-017-t05-green-results.json。 T06 新增整链路映射共 30 项，全部因接入模块/CLI 缺失而预期失败，待本批覆盖审查；T05 通过记录是历史基线，不代表新增 RED 后的当前工作树全绿。见 docs/audits/IR-017-t06-red-results.json。",
       "tests": [
         "tests/unit/test_domain_storage_integrity.py::test_unknown_database_schema_is_not_reinitialized",
         "tests/unit/test_domain_storage_integrity.py::test_new_run_does_not_pin_a_damaged_ontology_file",
@@ -394,21 +407,30 @@
         "tests/unit/test_domain_artifacts.py::test_artifact_damage_is_reported_without_rewriting_history",
         "tests/unit/test_domain_artifacts.py::test_manifest_tampering_is_detected_from_registered_digest",
         "tests/unit/test_domain_artifacts.py::test_artifact_names_cannot_escape_or_replace_manifest",
-        "tests/unit/test_domain_artifacts.py::test_downloads_require_registered_id_and_correct_run"
+        "tests/unit/test_domain_artifacts.py::test_downloads_require_registered_id_and_correct_run",
+        "tests/unit/test_domain_storage_pipeline.py::test_invalid_version_is_rejected_before_generation_or_run_creation",
+        "tests/unit/test_domain_storage_demo_cli.py::test_independent_verification_fails_on_damaged_files_without_changing_history",
+        "tests/unit/test_domain_storage_demo_cli.py::test_verification_does_not_initialize_missing_or_empty_storage"
       ]
-    }
-  ],
-  "planned_requirements": [
+    },
     {
       "id": "AST-09",
       "iteration": "IR-017",
-      "status": "planned",
+      "status": "red-awaiting-test-review",
       "criterion": "可直接复核：以下离线命令实际可执行；独立进程重新读取目录与历史，核对版本、事件、清单和工件；运行中断可恢复为 interrupted，真实缺证据仍阻断候选；重复演示不覆盖前次结果，全量检查通过且跳过原因有记录。",
-      "planned_test_files": [
-        "tests/unit/test_domain_storage_pipeline.py",
-        "tests/unit/test_domain_storage_demo_cli.py"
-      ],
-      "notes": "T06/T07 的整链路及跨进程 CLI 演示尚未编写或实现，不代表已有覆盖或通过。"
+      "notes": "T06 已建立真实机器人内核与持久化联动、跨进程演示及异常退出的 30 项测试，全部预期失败；尚未实现 T07。未调用 LLM、未接 UI，也未运行全量回归。见 docs/audits/IR-017-storage-validation.md。",
+      "tests": [
+        "tests/unit/test_domain_storage_demo_cli.py::test_all_cases_build_fresh_offline_and_verify_in_separate_processes",
+        "tests/unit/test_domain_storage_demo_cli.py::test_each_storage_demo_case_is_independently_runnable",
+        "tests/unit/test_domain_storage_demo_cli.py::test_repeated_demo_preserves_prior_history_and_all_source_fixtures",
+        "tests/unit/test_domain_storage_demo_cli.py::test_invalid_input_is_failure_not_expected_missing_evidence",
+        "tests/unit/test_domain_storage_demo_cli.py::test_independent_verification_fails_on_damaged_files_without_changing_history",
+        "tests/unit/test_domain_storage_demo_cli.py::test_cli_exit_code_follows_actual_failure",
+        "tests/unit/test_domain_storage_demo_cli.py::test_verification_does_not_initialize_missing_or_empty_storage",
+        "tests/unit/test_domain_storage_pipeline.py::test_new_process_reads_actual_generated_history_and_verifies_bytes",
+        "tests/unit/test_domain_storage_demo_cli.py::test_independent_verification_is_read_only_and_does_not_interrupt_active_runs"
+      ]
     }
-  ]
+  ],
+  "planned_requirements": []
 }
