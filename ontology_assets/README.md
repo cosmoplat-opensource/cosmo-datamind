@@ -20,10 +20,10 @@ ir = store.load_data_ir(asset["ontology_id"], version["version_id"])
 ```
 
 存储根必须是显式绝对路径；模块不导入 server，也不从用户工作目录自动迁移图谱。
-根目录中的 `domain.sqlite3` 保存资产、来源、版本及旧目录关联，`sources/` 保存来源原始字节，`versions/` 保存版本原始字节。
-数据库 schema 当前为 1；未知版本或已有但没有本模块 schema 的数据库明确拒绝初始化，不静默清空。
+根目录中的 `domain.sqlite3` 保存资产、来源、版本、旧目录关联以及运行/事件/工件索引，`sources/` 保存来源原始字节，`versions/` 保存版本原始字节。
+数据库 schema 当前为 2；打开 schema 1 时在事务内添加运行表，保留原有数据；未知版本或已有但没有本模块 schema 的数据库明确拒绝初始化，不静默清空。
 每个调用打开并关闭自己的连接，写入使用 SQLite 事务；先创建完整文件并核验摘要，再提交可见索引。
-失败可能留下未登记文件；目前不自动删除这些文件，避免误删历史工件，后续运行存储阶段补故障测试与清理策略。
+失败可能留下未登记文件；目前不自动删除这些文件，避免误删历史工件；未登记文件不会成为可查询或可下载的工件。
 
 ## 载荷与发布
 
@@ -51,5 +51,6 @@ ir = store.load_data_ir(asset["ontology_id"], version["version_id"])
 ## 验证与剩余工作
 
 已审测试位于 `tests/unit/test_ontology_asset_catalog.py`、`test_ontology_asset_versions.py`、`test_legacy_asset_adapter.py`。
-运行、事件、会话关联、manifest、重启恢复与故障注入仍由 IR-017 T04～T07 实施；不因资产目录存在而视为这些能力完成。
+运行、事件、会话关联、manifest、显式重启恢复已由 IR-017 T05 的 [domain_runs](../domain_runs/README.md) 实现，并通过 T04 的故障与并发测试。
+真实机器人内核与存储的整链路接入、跨进程演示仍由 T06/T07 承接。
 平台 UI 与前后端联动按 Proposal 步骤 3～7 承接。

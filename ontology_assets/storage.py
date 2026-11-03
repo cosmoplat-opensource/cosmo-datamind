@@ -8,7 +8,7 @@ import tempfile
 
 from srv_context import confine
 
-SCHEMA_VERSION = 1
+SCHEMA_VERSION = 2
 SCHEMA = (
     """CREATE TABLE assets (
         ontology_id TEXT PRIMARY KEY, name TEXT NOT NULL, domain TEXT NOT NULL,
@@ -30,6 +30,27 @@ SCHEMA = (
         version_id TEXT NOT NULL REFERENCES versions(version_id), fingerprint TEXT NOT NULL)""",
 )
 
+# DR-064: additive v1 -> v2 migration in the same metadata transaction.
+RUN_SCHEMA = (
+    """CREATE TABLE runs (
+        run_id TEXT PRIMARY KEY, ontology_id TEXT NOT NULL REFERENCES assets(ontology_id),
+        version_id TEXT NOT NULL REFERENCES versions(version_id), operation TEXT NOT NULL,
+        task TEXT NOT NULL, mode TEXT NOT NULL, session_ref TEXT NOT NULL,
+        components TEXT NOT NULL, ontology_snapshot TEXT NOT NULL,
+        status TEXT NOT NULL CHECK(status IN ('queued','running','completed','failed','interrupted')),
+        result TEXT, retry_of TEXT REFERENCES runs(run_id), created_at TEXT NOT NULL, updated_at TEXT NOT NULL)""",
+    "CREATE INDEX runs_by_session ON runs(session_ref)",
+    """CREATE TABLE run_events (
+        run_id TEXT NOT NULL REFERENCES runs(run_id), seq INTEGER NOT NULL CHECK(seq > 0),
+        kind TEXT NOT NULL, payload TEXT NOT NULL, created_at TEXT NOT NULL,
+        PRIMARY KEY(run_id,seq))""",
+    """CREATE TABLE run_artifacts (
+        artifact_id TEXT PRIMARY KEY, run_id TEXT NOT NULL REFERENCES runs(run_id),
+        name TEXT NOT NULL, kind TEXT NOT NULL, media_type TEXT NOT NULL,
+        sha256 TEXT NOT NULL, byte_size INTEGER NOT NULL, path TEXT NOT NULL UNIQUE,
+        created_at TEXT NOT NULL, UNIQUE(run_id,name))""",
+)
+
 
 def digest(content):
     return hashlib.sha256(content).hexdigest()
@@ -48,6 +69,10 @@ class Storage:
                 if conn.execute("SELECT name FROM sqlite_master WHERE type='table'").fetchone():
                     raise ValueError("未识别的已有数据库，拒绝初始化覆盖。")
                 for statement in SCHEMA:
+                    conn.execute(statement)
+                version = 1
+            if version == 1:
+                for statement in RUN_SCHEMA:
                     conn.execute(statement)
                 conn.execute(f"PRAGMA user_version={SCHEMA_VERSION}")
             elif version != SCHEMA_VERSION:

@@ -1,5 +1,5 @@
 {
-  "iteration": "IR-014 / IR-015 / IR-016（delivered）/ IR-017（T03 GREEN；T04 RED 待覆盖审查）",
+  "iteration": "IR-014 / IR-015 / IR-016（delivered）/ IR-017（T05 GREEN；待 T06 整链路测试）",
   "requirements": [
     {
       "id": "ALG-01",
@@ -327,9 +327,9 @@
     {
       "id": "AST-08",
       "iteration": "IR-017",
-      "status": "t03-green-partial-coverage",
+      "status": "t05-green-partial-coverage",
       "criterion": "旧能力保持：旧图谱、编辑、问数、聊天与 jobs 行为无新增回归；测试在隔离工作目录运行，不改用户业务目录；不降低既有 lint、类型或覆盖率门槛。",
-      "notes": "用户已确认 T02 覆盖；T03 已审 30 项全部转绿且测试摘要不变。全量命令退出 0：948 单元通过、551 HTTP 通过、覆盖率 86.8%，其余检查段通过；可选依赖及真实模型跳过保留。这里只代表首批覆盖，运行/工件及整链路按后续任务补齐，IR-017 尚未交付。详见 docs/audits/IR-017-t03-green-results.json。",
+      "notes": "T03 与 T05 全量回归通过；最新为 997 单元、551 HTTP、10 轮变序、64 UI 走查、50 UI 实操及 10 构建页检查通过，覆盖率 87.0%，门槛仍为 81%。单元/HTTP 可选上游跳过 5/8 项，UI 未配模型跳过 3 项。检查使用隔离目录，已审测试未改；整链路及最终回归待 T06～T08。见 docs/audits/IR-017-t05-green-results.json。",
       "tests": [
         "tests/unit/test_legacy_asset_adapter.py::test_actual_server_effective_ir_is_snapshotted_and_legacy_files_unchanged",
         "tests/unit/test_ontology_asset_catalog.py::test_catalog_can_be_read_in_a_new_process_without_server_import"
@@ -338,9 +338,9 @@
     {
       "id": "AST-04",
       "iteration": "IR-017",
-      "status": "red-awaiting-test-review",
+      "status": "t05-green-partial-coverage",
       "criterion": "运行与会话关联：新进程可读取固定输入、版本、状态、结果与事件，同一会话可关联多个运行；业务拒绝有报告但无候选，现有聊天正文不被复制、覆盖或重写。",
-      "notes": "T04 共 49 项：1 项已有 schema 保护通过，48 项因 domain_runs 未实现而预期失败，无收集错误或跳过。使用合成任务和工件检查存储，不冒充真实生成；完整内核接入与离线演示由 T06/T07 承接。见 docs/audits/IR-017-storage-validation.md。",
+      "notes": "用户已确认 T04 覆盖；T05 使 49 项全部转绿，测试文件摘要不变。全量检查退出 0：997 单元、551 HTTP、其余检查段通过，覆盖率 87.0%；可选依赖和真实模型跳过如实保留。本批用合成任务与工件验证存储，真实内核接入及跨进程 CLI 由 T06/T07 承接，IR-017 尚未交付。见 docs/audits/IR-017-t05-green-results.json。",
       "tests": [
         "tests/unit/test_domain_run_store.py::test_run_fixes_version_task_components_and_namespaced_session",
         "tests/unit/test_domain_run_store.py::test_invalid_run_inputs_are_rejected_without_records",
@@ -353,9 +353,9 @@
     {
       "id": "AST-05",
       "iteration": "IR-017",
-      "status": "red-awaiting-test-review",
+      "status": "t05-green-partial-coverage",
       "criterion": "恢复与事件一致性：显式启动恢复只中断遗留 running，不改已终止结果，重复恢复幂等；重试新建 run；并发事件无丢失或重复序号，非法状态转移及终态覆盖被拒绝。",
-      "notes": "T04 共 49 项：1 项已有 schema 保护通过，48 项因 domain_runs 未实现而预期失败，无收集错误或跳过。使用合成任务和工件检查存储，不冒充真实生成；完整内核接入与离线演示由 T06/T07 承接。见 docs/audits/IR-017-storage-validation.md。",
+      "notes": "用户已确认 T04 覆盖；T05 使 49 项全部转绿，测试文件摘要不变。全量检查退出 0：997 单元、551 HTTP、其余检查段通过，覆盖率 87.0%；可选依赖和真实模型跳过如实保留。本批用合成任务与工件验证存储，真实内核接入及跨进程 CLI 由 T06/T07 承接，IR-017 尚未交付。见 docs/audits/IR-017-t05-green-results.json。",
       "tests": [
         "tests/unit/test_domain_run_store.py::test_reopening_store_does_not_interrupt_active_run_and_recovery_is_explicit",
         "tests/unit/test_domain_run_store.py::test_new_process_reads_completed_history_and_crashed_run_can_be_recovered",
@@ -368,9 +368,9 @@
     {
       "id": "AST-06",
       "iteration": "IR-017",
-      "status": "red-awaiting-test-review",
+      "status": "t05-green-partial-coverage",
       "criterion": "工件提交与清单：成功记录指向实际存在且摘要匹配的工件；注入文件写入、摘要核对、数据库提交故障时，不出现伪成功或部分可见索引；清单追溯固定版本、任务及参数依据，不含凭据。",
-      "notes": "T04 共 49 项：1 项已有 schema 保护通过，48 项因 domain_runs 未实现而预期失败，无收集错误或跳过。使用合成任务和工件检查存储，不冒充真实生成；完整内核接入与离线演示由 T06/T07 承接。见 docs/audits/IR-017-storage-validation.md。",
+      "notes": "用户已确认 T04 覆盖；T05 使 49 项全部转绿，测试文件摘要不变。全量检查退出 0：997 单元、551 HTTP、其余检查段通过，覆盖率 87.0%；可选依赖和真实模型跳过如实保留。本批用合成任务与工件验证存储，真实内核接入及跨进程 CLI 由 T06/T07 承接，IR-017 尚未交付。见 docs/audits/IR-017-t05-green-results.json。",
       "tests": [
         "tests/unit/test_domain_artifacts.py::test_manifest_and_downloaded_bytes_match_fixed_inputs_and_outputs",
         "tests/unit/test_domain_artifacts.py::test_business_rejection_or_error_has_report_but_no_candidate",
@@ -383,9 +383,9 @@
     {
       "id": "AST-07",
       "iteration": "IR-017",
-      "status": "red-awaiting-test-review",
+      "status": "t05-green-partial-coverage",
       "criterion": "路径与完整性：任意路径、跨运行工件引用和符号链接逃逸被拒绝；文件缺失或篡改可诊断且不返回可信成功；未知数据库 schema 不静默重建或丢弃已有数据。",
-      "notes": "T04 共 49 项：1 项已有 schema 保护通过，48 项因 domain_runs 未实现而预期失败，无收集错误或跳过。使用合成任务和工件检查存储，不冒充真实生成；完整内核接入与离线演示由 T06/T07 承接。见 docs/audits/IR-017-storage-validation.md。",
+      "notes": "用户已确认 T04 覆盖；T05 使 49 项全部转绿，测试文件摘要不变。全量检查退出 0：997 单元、551 HTTP、其余检查段通过，覆盖率 87.0%；可选依赖和真实模型跳过如实保留。本批用合成任务与工件验证存储，真实内核接入及跨进程 CLI 由 T06/T07 承接，IR-017 尚未交付。见 docs/audits/IR-017-t05-green-results.json。",
       "tests": [
         "tests/unit/test_domain_storage_integrity.py::test_unknown_database_schema_is_not_reinitialized",
         "tests/unit/test_domain_storage_integrity.py::test_new_run_does_not_pin_a_damaged_ontology_file",
