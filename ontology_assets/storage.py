@@ -1,0 +1,100 @@
+"""SQLite transactions and exclusive immutable byte files — DR-059 / DR-064."""
+from contextlib import contextmanager
+import hashlib
+import os
+from pathlib import Path
+import sqlite3
+import tempfile
+
+from srv_context import confine
+
+SCHEMA_VERSION = 1
+SCHEMA = (
+    """CREATE TABLE assets (
+        ontology_id TEXT PRIMARY KEY, name TEXT NOT NULL, domain TEXT NOT NULL,
+        created_at TEXT NOT NULL)""",
+    """CREATE TABLE sources (
+        source_asset_id TEXT PRIMARY KEY, role TEXT NOT NULL, media_type TEXT NOT NULL,
+        sha256 TEXT NOT NULL, byte_size INTEGER NOT NULL, path TEXT NOT NULL UNIQUE,
+        created_at TEXT NOT NULL)""",
+    """CREATE TABLE versions (
+        version_id TEXT PRIMARY KEY, ontology_id TEXT NOT NULL REFERENCES assets(ontology_id),
+        parent_version_id TEXT REFERENCES versions(version_id), payload_kind TEXT NOT NULL,
+        payload_sha256 TEXT NOT NULL, byte_size INTEGER NOT NULL, path TEXT NOT NULL UNIQUE,
+        source_asset_ids TEXT NOT NULL, metadata TEXT NOT NULL,
+        publication_state TEXT NOT NULL, publication_mode TEXT, validation TEXT,
+        created_at TEXT NOT NULL)""",
+    "CREATE INDEX versions_by_asset ON versions(ontology_id)",
+    """CREATE TABLE legacy_assets (
+        legacy_key TEXT PRIMARY KEY, ontology_id TEXT NOT NULL UNIQUE REFERENCES assets(ontology_id),
+        version_id TEXT NOT NULL REFERENCES versions(version_id), fingerprint TEXT NOT NULL)""",
+)
+
+
+def digest(content):
+    return hashlib.sha256(content).hexdigest()
+
+
+class Storage:
+    def __init__(self, root):
+        root = Path(root)
+        if not root.is_absolute():
+            raise ValueError("存储根目录必须是显式绝对路径。")
+        self.root = root.resolve()
+        self.root.mkdir(parents=True, exist_ok=True)
+        with self.transaction(write=True) as conn:
+            version = conn.execute("PRAGMA user_version").fetchone()[0]
+            if version == 0:
+                if conn.execute("SELECT name FROM sqlite_master WHERE type='table'").fetchone():
+                    raise ValueError("未识别的已有数据库，拒绝初始化覆盖。")
+                for statement in SCHEMA:
+                    conn.execute(statement)
+                conn.execute(f"PRAGMA user_version={SCHEMA_VERSION}")
+            elif version != SCHEMA_VERSION:
+                raise ValueError(f"不支持的资产数据库 schema 版本：{version}")
+
+    @contextmanager
+    def transaction(self, *, write=False):
+        path = confine(self.root, "domain.sqlite3")
+        conn = sqlite3.connect(path, timeout=30, isolation_level=None)
+        conn.row_factory = sqlite3.Row
+        try:
+            conn.execute("PRAGMA foreign_keys=ON")
+            conn.execute("BEGIN IMMEDIATE" if write else "BEGIN")
+            yield conn
+            conn.commit()
+        except BaseException:
+            conn.rollback()
+            raise
+        finally:
+            conn.close()
+
+    def write_bytes(self, relative, content):
+        """Publish a complete file without replacement; DB visibility comes afterwards."""
+        target = Path(confine(self.root, relative))
+        target.parent.mkdir(parents=True, exist_ok=True)
+        temporary = None
+        try:
+            with tempfile.NamedTemporaryFile(dir=target.parent, prefix=".asset-", delete=False) as stream:
+                temporary = Path(stream.name)
+                stream.write(content)
+                stream.flush()
+                os.fsync(stream.fileno())
+            os.link(temporary, target)
+            directory = os.open(target.parent, os.O_RDONLY | os.O_DIRECTORY)
+            try:
+                os.fsync(directory)
+            finally:
+                os.close(directory)
+        finally:
+            if temporary is not None:
+                temporary.unlink(missing_ok=True)
+        expected = digest(content)
+        self.read_bytes(relative, expected)
+        return expected
+
+    def read_bytes(self, relative, expected):
+        content = Path(confine(self.root, relative)).read_bytes()
+        if digest(content) != expected:
+            raise ValueError("载荷文件摘要与登记记录不一致。")
+        return content

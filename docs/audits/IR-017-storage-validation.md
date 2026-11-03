@@ -4,8 +4,8 @@
 
 用户在澄清 IR-017 不是最终阶段、后续另含 UI 与联动验收后，授权“继续下一步”。
 据此确认 IR-017 本轮范围与 AST-01～09 验收，进入 T02；不将此授权当作尚未编写测试的覆盖确认。
-T02 仅新增测试及规约记录，没有创建 ontology_assets 或 domain_runs 的生产实现。
-当前为 SDD 第⑤步，等待本批测试覆盖审查。
+用户已明确确认 T02 测试覆盖并授权实现；T03 已实现 ontology_assets，首批 30 项通过，全量回归实际退出 0。
+domain_runs 尚未实现，整体 IR-017 仍未交付。
 
 ## T02 RED 结果
 
@@ -76,4 +76,42 @@ T02 仅新增测试及规约记录，没有创建 ontology_assets 或 domain_run
 - 本次没有执行全量回归；新的预期 RED 测试存在时，不能声称当前工作树全绿。
 - 新 UI、页面调用新后端及完整产品验收仍在 Proposal 步骤 3～7，不以本批或旧 UI 回归代替。
 
-依据 [SDD skill](../../.agents/skills/sdd-workflow/SKILL.md) 第⑤步“人 review 测试是否覆盖到位”，本批待用户确认后才进入 T03，实现时不改已审测试来取得 GREEN。
+依据 [SDD skill](../../.agents/skills/sdd-workflow/SKILL.md) 第⑤步“人 review 测试是否覆盖到位”，本批已由用户明确确认，随后进入 T03；三个已审测试文件和辅助模块摘要保持不变。
+
+
+## T03 GREEN 与回归记录
+
+日期：2026-11-03。用户已明确确认 T02 覆盖并授权实现。
+实现 ontology_assets 的资产、来源、不可变版本、发布/加载和旧图谱适配；服务不依赖 server 导入，旧接口继续独立使用。
+来源和版本保留原始字节，写入时独占创建文件并核验摘要，然后提交 SQLite 索引；重新读取时再核验摘要。
+候选与发布状态分开；实际 OWL 通过现有消费契约复验后才记录 published，调用方 metadata 中的成功声明不参与授权。
+旧目录适配器接收有效 IR 与来源回调，登记快照及编辑摘要，不迁移或覆盖聊天、原 IR 和编辑日志。
+共享 RDF 锁移至 srv_context，server 的 SPARQL/SHACL 与资产发布使用同一把锁；锁范围不包含模型调用。
+
+已审的三个测试文件及辅助模块摘要与 T02 机器记录一致，没有调整断言、跳过用例或修改夹具取得 GREEN。
+30 项定向测试全部通过；将 ontology_assets 纳入覆盖率统计，保持 81% 门槛。
+全量命令：
+
+```bash
+env PATH="/home/dyh/.local/opt/node-v22.20.0-linux-x64/bin:$PATH" .venv/bin/python scripts/check.py --suite all --report-dir .check-results/ir017-t03-all
+```
+
+命令实际退出 0，无失败段或补验。
+
+| 检查 | 结果 |
+|---|---|
+| lint / 类型 | 通过 |
+| 单元 | 948 通过，5 项可选上游依赖跳过 |
+| 覆盖率 | 86.8%，门槛 81% |
+| HTTP | 551 通过，8 项可选上游依赖跳过 |
+| 变序 | 10/10 通过 |
+| UI 走查 | 64 通过 |
+| UI 实操 | 50 通过，3 项因未配置真实模型端点跳过 |
+| 构建页浏览器 | 10 通过 |
+
+机器结果、已审测试摘要和日志摘要见 [T03 GREEN 记录](IR-017-t03-green-results.json)。
+报告目录为 `.check-results/ir017-t03-all/`，模块接口及存储布局见 [README](../../ontology_assets/README.md)。
+
+T03 只完成资产与版本基础；运行、事件、manifest 和恢复尚未实现，后续故障/并发测试尚未审查。
+没有新增 UI/API，也未验证真实模型或机器人；上述 UI 检查是旧功能回归，不是新机器人页面联动验收。
+IR-017 保持 in-progress；下一任务 T04 编写运行、事件、工件与恢复失败测试，无需再次确认 T02 覆盖。

@@ -63,7 +63,7 @@ _LOG = logging.getLogger("datamind")
 # DR-043 蓝图化前置:基础路径与原语(路径/只读连接/只读SQL判定/写锁/原子写)收敛到共享上下文,与后续 blueprint 共用
 from srv_context import (HERE, ROOT, DB, UPLOAD_DB, WORK, confine, sql_code,
                          ro_connect, sql_is_readonly, _WRITE_LOCK, _atomic_json, _atomic_text,
-                         _atomic_bytes)
+                         _atomic_bytes, _RDF_LOCK)
 # 引擎运行时与配置层(跨簇共享,故先于路由抽出;见 srv_engine 模块头)
 # engine 路由迁出后,server 仅用这几项:运行时选择、引擎回复语义、启动自举与按任务选模
 from srv_engine import (runtime_cached, _drv_order, _looks_like_error,
@@ -615,7 +615,7 @@ JOBS: dict[str, dict[str, Any]] = {}
 # rdflib 的 SPARQL 解析器基于 pyparsing,其 packrat 缓存/语法状态为进程级全局且非线程安全:
 # 多请求并发跑 SPARQL(或 SPARQL 与 pyshacl 内部 SPARQL 相撞)会污染语法,报出
 # 『Expected SelectQuery, found OPTIONAL』『postParse2() missing arg』等假语法错。故串行化所有 SPARQL 语法操作。
-_RDF_LOCK = threading.Lock()
+# _RDF_LOCK is shared with ontology_assets through srv_context (DR-064).
 def run_job(cmd, cwd=None, env=None, tag=""):
     jid = uuid.uuid4().hex[:8]
     logf = os.path.join(WORK, f"job_{jid}.log")
