@@ -52,5 +52,6 @@ ir = store.load_data_ir(asset["ontology_id"], version["version_id"])
 
 已审测试位于 `tests/unit/test_ontology_asset_catalog.py`、`test_ontology_asset_versions.py`、`test_legacy_asset_adapter.py`。
 运行、事件、会话关联、manifest、显式重启恢复已由 IR-017 T05 的 [domain_runs](../domain_runs/README.md) 实现，并通过 T04 的故障与并发测试。
-真实机器人内核与存储的整链路接入、跨进程演示仍由 T06/T07 承接。
+T07 已提供真实机器人内核与存储的接入和 [跨进程演示](../docs/domain-storage-demo.md)。
+`AssetStore(root, read_only=True)` 仅打开当前 schema 的已有数据库，不创建目录或迁移，写事务被拒绝。
 平台 UI 与前后端联动按 Proposal 步骤 3～7 承接。

@@ -46,9 +46,9 @@ def _manifest(run, artifacts):
 
 
 class RunStore:
-    def __init__(self, root):
+    def __init__(self, root, *, read_only=False):
         # Schema initialization never recovers or modifies active run state.
-        self.storage = Storage(root)
+        self.storage = Storage(root, read_only=read_only)
 
     def _snapshot(self, conn, ontology_id, version_id):
         asset = _required(conn, "SELECT * FROM assets WHERE ontology_id=?", (ontology_id,))

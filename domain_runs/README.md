@@ -2,7 +2,7 @@
 
 依据 DR-064 / DR-065，实现 IR-017 T05 的 Python 服务。
 与 AssetStore 使用同一个显式绝对根目录和 `domain.sqlite3`，工件保存到 `artifacts/<run_id>/<artifact_id>/<name>`。
-这是存储接口；后台调度、HTTP/SSE、新页面以及机器人内核接入由后续任务完成。
+这是存储接口；T07 已提供机器人内核接入及离线演示，后台调度、HTTP/SSE 和新页面由后续阶段完成。
 
 ## 创建与查询
 
@@ -60,5 +60,8 @@ SQLite 写事务串行分配运行内事件序号；`events(run_id, after=N)` �
 ## 验证
 
 已审测试：`test_domain_run_store.py`、`test_domain_artifacts.py`、`test_domain_storage_integrity.py`，共 49 项。
-测试使用合成任务与文件，验证存储行为；真实生成与存储联动、可直接运行的演示 CLI 由 T06/T07 实施。
+这 49 项测试使用合成任务与文件，验证存储行为；T06 另有 30 项已审真实内核接入和跨进程演示测试。
+T07 的 `domain_runs.robotics.generate_from_version` 接收指定已发布版本和结构化任务，保存实际候选字节及报告。
+`domain_runs.verification.verify_storage` 通过只读连接核验历史及文件，不初始化、迁移或恢复运行。
+可直接运行的 CLI、三场景说明和接口用法见 [离线演示](../docs/domain-storage-demo.md)。
 审计见 [IR-017 验证记录](../docs/audits/IR-017-storage-validation.md)。

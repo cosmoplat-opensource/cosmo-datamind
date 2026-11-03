@@ -57,11 +57,19 @@ def digest(content):
 
 
 class Storage:
-    def __init__(self, root):
+    def __init__(self, root, *, read_only=False):
         root = Path(root)
         if not root.is_absolute():
             raise ValueError("存储根目录必须是显式绝对路径。")
         self.root = root.resolve()
+        self.read_only = read_only
+        if read_only:
+            if not Path(confine(self.root, "domain.sqlite3")).is_file():
+                raise ValueError("只读检查需要已有的资产数据库。")
+            with self.transaction() as conn:
+                if conn.execute("PRAGMA user_version").fetchone()[0] != SCHEMA_VERSION:
+                    raise ValueError("只读检查不支持此 schema，且不会执行迁移。")
+            return
         self.root.mkdir(parents=True, exist_ok=True)
         with self.transaction(write=True) as conn:
             version = conn.execute("PRAGMA user_version").fetchone()[0]
@@ -81,7 +89,10 @@ class Storage:
     @contextmanager
     def transaction(self, *, write=False):
         path = confine(self.root, "domain.sqlite3")
-        conn = sqlite3.connect(path, timeout=30, isolation_level=None)
+        if self.read_only and write:
+            raise ValueError("只读存储不能执行写入。")
+        database = Path(path).as_uri() + "?mode=ro" if self.read_only else path
+        conn = sqlite3.connect(database, uri=self.read_only, timeout=30, isolation_level=None)
         conn.row_factory = sqlite3.Row
         try:
             conn.execute("PRAGMA foreign_keys=ON")
@@ -96,6 +107,8 @@ class Storage:
 
     def write_bytes(self, relative, content):
         """Publish a complete file without replacement; DB visibility comes afterwards."""
+        if self.read_only:
+            raise ValueError("只读存储不能写入文件。")
         target = Path(confine(self.root, relative))
         target.parent.mkdir(parents=True, exist_ok=True)
         temporary = None

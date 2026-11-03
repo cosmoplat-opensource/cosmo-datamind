@@ -325,4 +325,63 @@ verification 包含独立进程 pid、passed、run_ids、assets，必须来自�
 还实际启动四个子进程，验证网络、预制 OWL、归档、server 导入禁用机制及 PID 日志有效。
 这些只是夹具和检查机制的前提验证，不计入新功能通过数量，也不替代 T07 后的 30 项真实联动测试。
 
-依据 [SDD skill](../../.agents/skills/sdd-workflow/SKILL.md) 第⑤步“人 review 测试是否覆盖到位”，本批覆盖需用户确认后进入 T07；整份 IR 尚未交付。
+依据 [SDD skill](../../.agents/skills/sdd-workflow/SKILL.md) 第⑤步“人 review 测试是否覆盖到位”，本批先提交审查；用户听取测试解释后回复“继续下一步”，据此确认 T06 覆盖并进入 T07。上述 RED 记录保留，整份 IR 尚未交付。
+
+
+## T07 实现与验证
+
+用户听取 T06 覆盖解释后授权继续，已审的 30 项测试在本批实现后全部通过，无失败、错误或跳过。
+T02/T04/T06 共 11 个测试与辅助文件摘要保持不变。
+
+### 实现内容
+
+- `domain_runs.robotics.generate_from_version` 指定已发布版本加载，复用 IR-016 严格生成内核；保存实际候选字节、报告、参数依据和组件快照，去掉临时 candidate_path。
+- 生成异常保存 failed 报告；无效版本在创建运行前拒绝；持久化提交异常向外传播，不冒充已完成。
+- `domain_runs.offline_demo` 与 CLI 从两份 XML 新构建、发布入库，完成三个场景；中断、恢复及最终核验都使用真实子进程。
+- `domain_runs.verification.verify_storage` 校验目录、来源、版本、快照、事件和工件；资产/运行存储增加 read_only 模式，使用 SQLite mode=ro，不初始化、不迁移、不恢复、不写文件。
+- 独立生成及发布涉及 RDF/SHACL 的步骤复用既有共享锁，没有引入模型调用或服务器导入。
+- 完整命令与示例见 [演示说明](../domain-storage-demo.md)，实际执行及全量结果如下。
+
+### 检查预算调整
+
+30 项已审接入/CLI 测试实际耗时 208.617 秒；T05 全量单元段为 259.349 秒。
+新增实际 OWL 构建、校验及跨进程演示后，原单元段 360 秒总上限不足以容纳整个套件。
+`scripts/check.py` 仅将 unit 段超时设为 720 秒，其他段仍为 360 秒；未删除、跳过或改写已审测试，覆盖率门槛保持 81%。
+新 CLI 子进程自身仍受 60 秒超时约束，CLI 测试单次调用受 90 秒约束，超时继续失败。
+本次调整是扩大完整测试套件的运行预算，不放宽业务断言或候选生成条件。
+
+
+### T07 实际演示与全量结果
+
+执行 `.venv/bin/python scripts/demo_domain_storage.py --case all --output-dir .check-results/ir017-t07-demo`，退出 0。
+输出根为 `.check-results/ir017-t07-demo/20261103T095756Z-4havdesr/`，保存 summary.json/summary.md 与实际存储、工件。
+
+| 场景 | 实际结果 |
+|---|---|
+| demo-success | generated，旧版本候选使用 0.72，已存在新版，报告含六项参数依据，execution_readiness=not_verified |
+| real-missing-evidence | needs_information，报告实际业务确认/映射/适用性证据缺口，无候选 |
+| interrupted-recovery | interrupted，真实子进程异常退出后由另一个新进程恢复，无候选 |
+
+随后另行运行 `--verify-storage` 指向该存储根，退出 0；核验 PID 为 62546，与生产进程不同。
+完整运行标识、工件摘要、来源追溯及独立核验 JSON 已保存至 [T07 GREEN 记录](IR-017-t07-green-results.json)。
+
+```bash
+env PATH="/home/dyh/.local/opt/node-v22.20.0-linux-x64/bin:$PATH" .venv/bin/python scripts/check.py --suite all --report-dir .check-results/ir017-t07-all
+```
+
+全量命令退出 0，九个检查段全部通过：
+
+| 检查 | 结果 |
+|---|---|
+| lint / mypy | 通过 |
+| 单元测试 | 1027 通过、5 项可选上游引擎缺失跳过；耗时 525.403 秒，低于 720 秒预算 |
+| 覆盖率 | 84.6%，门槛保持 81% |
+| HTTP | 551 通过、8 项可选上游引擎缺失跳过 |
+| 变序 | 10/10 通过 |
+| UI 走查 | 64 通过 |
+| UI 实操 | 50 通过、3 项未配置真实模型端点跳过 |
+| 构建页浏览器 | 10 通过 |
+
+沿用现有覆盖率统计口径，CLI 子进程执行不会自动合并到父 pytest 进程的覆盖率；实际子进程验收由对应已审测试和独立演示证据证明。
+旧页面回归通过不代表已新增机器人 UI 或完成新前后端联动；本轮实际交付范围仍为存储及离线接入。
+T07 实现与检查完成，T08 整理最终交付记录；未将 IR 提前标记 delivered。
