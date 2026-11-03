@@ -35,8 +35,8 @@ def _version(row):
 
 
 class AssetStore:
-    def __init__(self, root):
-        self.storage = Storage(root)
+    def __init__(self, root, *, read_only=False):
+        self.storage = Storage(root, read_only=read_only)
 
     def _create_asset(self, conn, name, domain):
         _text(name, "name")

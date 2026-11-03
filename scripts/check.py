@@ -50,13 +50,16 @@ def isolated_env(directory):
 
 def run_check(name, args, env, reports, results):
     start = time.monotonic()
+    # DR-065 / IR-017: real OWL and child-process tests extend the unit suite;
+    # keep all checks and coverage gates, with a bounded 12-minute unit budget.
+    timeout = 720 if name == "unit" else 360
     with (reports / f"{name}.log").open("w", encoding="utf-8") as log:
         process = subprocess.Popen(args, cwd=ROOT, env=env, stdout=log, stderr=subprocess.STDOUT,
                                    start_new_session=True)
         try:
-            code = process.wait(timeout=360)
+            code = process.wait(timeout=timeout)
         except subprocess.TimeoutExpired:
-            log.write("\nFAIL: acceptance process exceeded 360 seconds\n")
+            log.write(f"\nFAIL: acceptance process exceeded {timeout} seconds\n")
             code = 124
         finally:
             if os.name == "posix":
