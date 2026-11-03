@@ -1,5 +1,5 @@
 {
-  "iteration": "IR-014 / IR-015 / IR-016（delivered，2026-11-03 用户确认）",
+  "iteration": "IR-014 / IR-015 / IR-016（delivered）/ IR-017（范围与验收草案）",
   "requirements": [
     {
       "id": "ALG-01",
@@ -281,5 +281,102 @@
       "notes": "T01～T09 自动验证已完成；89 项机器人测试通过，离线三场景实际通过；全量检查各段经补验均通过，首次失败及补验记录见 docs/audits/IR-016-t09-green-results.json。2026-11-03 用户明确确认交付，完成 SDD 第⑨步；XML 对照边界见 IR-016 最终审查记录。"
     }
   ],
-  "planned_requirements": []
+  "planned_requirements": [
+    {
+      "id": "AST-01",
+      "iteration": "IR-017",
+      "status": "proposed-awaiting-scope-review",
+      "criterion": "双领域目录：同一目录能列出有效数据 IR 快照和机器人 OWL，载荷类型及可用应用明确；机器人资产不被当作 SQL 数据源或触发默认演示库兜底。",
+      "planned_test_files": [
+        "tests/unit/test_ontology_asset_catalog.py"
+      ],
+      "notes": "范围与验收草案；测试文件尚未创建，不代表已有覆盖。测试实现后填写真实函数引用并转入 requirements。"
+    },
+    {
+      "id": "AST-02",
+      "iteration": "IR-017",
+      "status": "proposed-awaiting-scope-review",
+      "criterion": "不可变与保真：来源字节和摘要可复核，机器人 OWL 字节及 RDF 语义保留；新版本不覆盖旧版，指定旧版本生成不受新版影响，错误父版本、非法载荷和协议不被发布。",
+      "planned_test_files": [
+        "tests/unit/test_ontology_asset_versions.py",
+        "tests/unit/test_domain_storage_pipeline.py"
+      ],
+      "notes": "范围与验收草案；测试文件尚未创建，不代表已有覆盖。测试实现后填写真实函数引用并转入 requirements。"
+    },
+    {
+      "id": "AST-03",
+      "iteration": "IR-017",
+      "status": "proposed-awaiting-scope-review",
+      "criterion": "身份与旧图谱适配：相同 IRI 不跨资产或版本误合并；数据快照包含已有有效编辑，重复登记行为确定；来源更新只影响显式新登记，不改历史快照。",
+      "planned_test_files": [
+        "tests/unit/test_ontology_asset_versions.py",
+        "tests/unit/test_legacy_asset_adapter.py"
+      ],
+      "notes": "范围与验收草案；测试文件尚未创建，不代表已有覆盖。测试实现后填写真实函数引用并转入 requirements。"
+    },
+    {
+      "id": "AST-04",
+      "iteration": "IR-017",
+      "status": "proposed-awaiting-scope-review",
+      "criterion": "运行与会话关联：新进程可读取固定输入、版本、状态、结果与事件，同一会话可关联多个运行；业务拒绝有报告但无候选，现有聊天正文不被复制、覆盖或重写。",
+      "planned_test_files": [
+        "tests/unit/test_domain_run_store.py",
+        "tests/unit/test_domain_storage_pipeline.py"
+      ],
+      "notes": "范围与验收草案；测试文件尚未创建，不代表已有覆盖。测试实现后填写真实函数引用并转入 requirements。"
+    },
+    {
+      "id": "AST-05",
+      "iteration": "IR-017",
+      "status": "proposed-awaiting-scope-review",
+      "criterion": "恢复与事件一致性：显式启动恢复只中断遗留 running，不改已终止结果，重复恢复幂等；重试新建 run；并发事件无丢失或重复序号，非法状态转移及终态覆盖被拒绝。",
+      "planned_test_files": [
+        "tests/unit/test_domain_run_store.py"
+      ],
+      "notes": "范围与验收草案；测试文件尚未创建，不代表已有覆盖。测试实现后填写真实函数引用并转入 requirements。"
+    },
+    {
+      "id": "AST-06",
+      "iteration": "IR-017",
+      "status": "proposed-awaiting-scope-review",
+      "criterion": "工件提交与清单：成功记录指向实际存在且摘要匹配的工件；注入文件写入、摘要核对、数据库提交故障时，不出现伪成功或部分可见索引；清单追溯固定版本、任务及参数依据，不含凭据。",
+      "planned_test_files": [
+        "tests/unit/test_domain_artifacts.py"
+      ],
+      "notes": "范围与验收草案；测试文件尚未创建，不代表已有覆盖。测试实现后填写真实函数引用并转入 requirements。"
+    },
+    {
+      "id": "AST-07",
+      "iteration": "IR-017",
+      "status": "proposed-awaiting-scope-review",
+      "criterion": "路径与完整性：任意路径、跨运行工件引用和符号链接逃逸被拒绝；文件缺失或篡改可诊断且不返回可信成功；未知数据库 schema 不静默重建或丢弃已有数据。",
+      "planned_test_files": [
+        "tests/unit/test_domain_artifacts.py",
+        "tests/unit/test_ontology_asset_versions.py"
+      ],
+      "notes": "范围与验收草案；测试文件尚未创建，不代表已有覆盖。测试实现后填写真实函数引用并转入 requirements。"
+    },
+    {
+      "id": "AST-08",
+      "iteration": "IR-017",
+      "status": "proposed-awaiting-scope-review",
+      "criterion": "旧能力保持：旧图谱、编辑、问数、聊天与 jobs 行为无新增回归；测试在隔离工作目录运行，不改用户业务目录；不降低既有 lint、类型或覆盖率门槛。",
+      "planned_test_files": [
+        "tests/unit/test_legacy_asset_adapter.py",
+        "tests/unit/test_domain_storage_regression.py"
+      ],
+      "notes": "范围与验收草案；测试文件尚未创建，不代表已有覆盖。测试实现后填写真实函数引用并转入 requirements。"
+    },
+    {
+      "id": "AST-09",
+      "iteration": "IR-017",
+      "status": "proposed-awaiting-scope-review",
+      "criterion": "可直接复核：以下离线命令实际可执行；独立进程重新读取目录与历史，核对版本、事件、清单和工件；运行中断可恢复为 interrupted，真实缺证据仍阻断候选；重复演示不覆盖前次结果，全量检查通过且跳过原因有记录。",
+      "planned_test_files": [
+        "tests/unit/test_domain_storage_pipeline.py",
+        "tests/unit/test_domain_storage_demo_cli.py"
+      ],
+      "notes": "范围与验收草案；测试文件尚未创建，不代表已有覆盖。测试实现后填写真实函数引用并转入 requirements。"
+    }
+  ]
 }
