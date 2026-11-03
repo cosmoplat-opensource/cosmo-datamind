@@ -1,7 +1,7 @@
 # IR-016 · 基线与分批 RED/GREEN 审查记录 — DR-060 / DR-062 / DR-065
 
-当前 T07 实现及全量回归已完成，已审的 72 项机器人测试通过；T08 新增 17 项（1 通过 / 16 预期失败），覆盖说明见末节，待本批审查。
-本记录不是第一阶段最终交付验收报告。
+T09 实现及自动验证已完成：89 项机器人测试通过，实际三场景演示通过，各回归检查段通过；当前待最终交付人审。
+本记录是第一阶段自动验证与交付审查证据；最终交付状态由用户确认。
 
 ## 本轮执行结果
 
@@ -198,7 +198,7 @@ env PATH="/home/dyh/.local/opt/node-v22.20.0-linux-x64/bin:$PATH" .venv/bin/pyth
 HTTP 551 通过 / 8 可选上游跳过，10 轮变序通过；UI 64 项、UI 实操 50 项、构建页浏览器 10 项通过，3 项真实模型检查因未配置而跳过。
 结果见 [T07 GREEN 记录](IR-016-t07-green-results.json)，完整新构建演示补充与用户 CLI 仍由 T08/T09 完成。
 
-## T08 完整链路与离线命令 RED（本次待审）
+## T08 完整链路与离线命令 RED（历史记录，已确认）
 
 本批审查聚焦“用户实际运行离线命令，能否核对新链路是否完成”，不要求逐行看代码。
 17 项参数化测试中，1 项存储保护通过，16 项因演示模块或 CLI 尚未实现而失败，0 收集错误、0 跳过，退出码 1。
@@ -235,4 +235,56 @@ summary 记录 run_dir、passed，以及每场景的 case、expected_status、ac
 `--source` 支持显式输入覆盖，用于复现来源缺失；默认仍使用随工程提供的来源文件，不要求模型密钥或原归档目录。
 
 这些新增测试加入后，当前工作树为预期 RED；T07 全量退出 0 的记录不代表新增测试已通过。
-依据 [项目 SDD skill](../../.agents/skills/sdd-workflow/SKILL.md) 第⑤步“人 review 测试是否覆盖到位”，本批覆盖确认后进入 T09，实现离线演示并完成第一阶段最终验证。
+依据 [项目 SDD skill](../../.agents/skills/sdd-workflow/SKILL.md) 第⑤步“人 review 测试是否覆盖到位”，用户已确认本批覆盖，随后进入 T09，实现离线演示并完成第一阶段最终验证。
+
+
+## T09 GREEN 与最终交付审查证据
+
+日期：2026-11-03。用户已确认 T08 覆盖，已实现 demo.apply_demo_supplement、offline_demo 编排器与 scripts/demo_robotics.py。
+补充资料先核对来源/模型摘要和业务对象，校验公开配置，再生成独立 demo 图及逐条增删记录；不覆盖原图，不更改模板结构。
+实际输出经过消费加载、固定模板编译与独立候选结构对照，命令按实际状态、文件存在性、摘要与输入保护确定 PASS/FAIL。
+无效协议只在独立副本上制造，来源错误和读文件异常不会算作预期拒绝通过。
+
+已审的 T08 17 项全部通过，合计 89 项机器人测试通过，全部已审测试及 JSON 夹具摘要保持不变。
+直接运行交付命令退出 0：
+
+```bash
+.venv/bin/python scripts/demo_robotics.py --case all --output-dir .check-results/robotics-demo
+```
+
+| 场景 | 实际状态 | 产物核对 |
+|---|---|---|
+| demo-success | generated，PASS | 本轮 published.owl、demo_candidate.xml 和验证报告存在，公开阈值 0.72，四树固定结构保持，执行未验证 |
+| real-missing-evidence | needs_information，PASS | 报告列明未确认实体、映射及适配证据缺口；没有候选 XML |
+| invalid-contract | rejected，PASS | unknown-v99 协议被拒绝；正常发布物保留，无候选 XML |
+
+实际运行目录为 `.check-results/robotics-demo/20261103T015738Z-bg93d6z2/`。
+[本次可读汇总](../../.check-results/robotics-demo/20261103T015738Z-bg93d6z2/summary.md)可直接打开；工件摘要、汇总内容和检查结果亦归档于 [T09 机器记录](IR-016-t09-green-results.json)。
+用户说明见 [离线演示使用说明](../robotics-offline-demo.md)。
+
+首次全量检查退出 1，单元为 917 通过 / 1 失败 / 5 跳过。
+失败原因是测试运行期间 AI 更新了夹具目录的 demo_supplement.md 说明文件，输入保护用例正确检测到字节变化。
+完成说明编辑、固定输入后重跑单元检查，未修改测试、JSON 夹具或实现来绕过断言。
+原全量通过的 HTTP、变序、UI 检查保留结果，不重复执行或改写原退出码：
+
+```bash
+env PATH="/home/dyh/.local/opt/node-v22.20.0-linux-x64/bin:$PATH" .venv/bin/python scripts/check.py --suite all --report-dir .check-results/ir016-t09-all
+env PATH="/home/dyh/.local/opt/node-v22.20.0-linux-x64/bin:$PATH" .venv/bin/python scripts/check.py --suite unit --report-dir .check-results/ir016-t09-fixed-unit
+```
+
+最终验证结果：
+
+| 检查 | 结果 |
+|---|---|
+| lint / 类型 | 通过 |
+| 单元补验 | 918 通过，5 项可选上游跳过，命令退出 0 |
+| 覆盖率 | 86.8%，原门槛 81% |
+| HTTP | 551 通过，8 项可选上游跳过 |
+| 10 轮变序 | 通过 |
+| UI 走查 | 64 项通过 |
+| UI 实操 | 50 通过，3 项未配置真实模型而跳过 |
+| 构建页浏览器 | 10 项通过 |
+
+首次全量退出 1 和补验退出 0 分开记录，最终所有必需检查段通过。
+第一阶段业务内核与离线演示已就绪；平台 UI/API、真实 LLM 提取、持久化运行服务、在线 XML 编辑与机器人执行不在本轮范围。
+依据 [项目 SDD skill](../../.agents/skills/sdd-workflow/SKILL.md) 第⑨步“人确认这一轮做完了”，IR 保持 in-progress，等待用户最终验收后勾选清单并标记 delivered。
