@@ -1,5 +1,5 @@
 {
-  "iteration": "IR-014 / IR-015 / IR-016（delivered）/ IR-017（T02 RED，待测试覆盖审查）",
+  "iteration": "IR-014 / IR-015 / IR-016（delivered）/ IR-017（T03 GREEN，后续任务待实施）",
   "requirements": [
     {
       "id": "ALG-01",
@@ -283,9 +283,9 @@
     {
       "id": "AST-01",
       "iteration": "IR-017",
-      "status": "red-awaiting-test-review",
+      "status": "t03-green-partial-coverage",
       "criterion": "双领域目录：同一目录能列出有效数据 IR 快照和机器人 OWL，载荷类型及可用应用明确；机器人资产不被当作 SQL 数据源或触发默认演示库兜底。",
-      "notes": "IR-017 范围已获继续授权；T02 首批共 30 项因 ontology_assets 缺失而预期失败。此处为部分真实覆盖，尚未通过；AST-02 成功生成链路及 AST-08 完整回归由后续批次补齐，详见 docs/audits/IR-017-storage-validation.md。",
+      "notes": "用户已确认 T02 覆盖；T03 已审 30 项全部转绿且测试摘要不变。全量命令退出 0：948 单元通过、551 HTTP 通过、覆盖率 86.8%，其余检查段通过；可选依赖及真实模型跳过保留。这里只代表首批覆盖，运行/工件及整链路按后续任务补齐，IR-017 尚未交付。详见 docs/audits/IR-017-t03-green-results.json。",
       "tests": [
         "tests/unit/test_ontology_asset_catalog.py::test_catalog_lists_both_domains_and_rejects_robotics_as_data",
         "tests/unit/test_ontology_asset_catalog.py::test_empty_catalog_and_unknown_ids_do_not_fall_back",
@@ -295,9 +295,9 @@
     {
       "id": "AST-02",
       "iteration": "IR-017",
-      "status": "red-awaiting-test-review",
+      "status": "t03-green-partial-coverage",
       "criterion": "不可变与保真：来源字节和摘要可复核，机器人 OWL 字节及 RDF 语义保留；新版本不覆盖旧版，指定旧版本生成不受新版影响，错误父版本、非法载荷和协议不被发布。",
-      "notes": "IR-017 范围已获继续授权；T02 首批共 30 项因 ontology_assets 缺失而预期失败。此处为部分真实覆盖，尚未通过；AST-02 成功生成链路及 AST-08 完整回归由后续批次补齐，详见 docs/audits/IR-017-storage-validation.md。",
+      "notes": "用户已确认 T02 覆盖；T03 已审 30 项全部转绿且测试摘要不变。全量命令退出 0：948 单元通过、551 HTTP 通过、覆盖率 86.8%，其余检查段通过；可选依赖及真实模型跳过保留。这里只代表首批覆盖，运行/工件及整链路按后续任务补齐，IR-017 尚未交付。详见 docs/audits/IR-017-t03-green-results.json。",
       "tests": [
         "tests/unit/test_ontology_asset_versions.py::test_versions_keep_old_bytes_and_snapshot_metadata",
         "tests/unit/test_ontology_asset_versions.py::test_invalid_parent_does_not_create_a_version",
@@ -312,9 +312,9 @@
     {
       "id": "AST-03",
       "iteration": "IR-017",
-      "status": "red-awaiting-test-review",
+      "status": "t03-green-partial-coverage",
       "criterion": "身份与旧图谱适配：相同 IRI 不跨资产或版本误合并；数据快照包含已有有效编辑，重复登记行为确定；来源更新只影响显式新登记，不改历史快照。",
-      "notes": "IR-017 范围已获继续授权；T02 首批共 30 项因 ontology_assets 缺失而预期失败。此处为部分真实覆盖，尚未通过；AST-02 成功生成链路及 AST-08 完整回归由后续批次补齐，详见 docs/audits/IR-017-storage-validation.md。",
+      "notes": "用户已确认 T02 覆盖；T03 已审 30 项全部转绿且测试摘要不变。全量命令退出 0：948 单元通过、551 HTTP 通过、覆盖率 86.8%，其余检查段通过；可选依赖及真实模型跳过保留。这里只代表首批覆盖，运行/工件及整链路按后续任务补齐，IR-017 尚未交付。详见 docs/audits/IR-017-t03-green-results.json。",
       "tests": [
         "tests/unit/test_legacy_asset_adapter.py::test_effective_edits_are_registered_without_mutating_callback_inputs",
         "tests/unit/test_legacy_asset_adapter.py::test_repeated_registration_is_idempotent_and_changes_create_child_version",
@@ -327,9 +327,9 @@
     {
       "id": "AST-08",
       "iteration": "IR-017",
-      "status": "red-awaiting-test-review",
+      "status": "t03-green-partial-coverage",
       "criterion": "旧能力保持：旧图谱、编辑、问数、聊天与 jobs 行为无新增回归；测试在隔离工作目录运行，不改用户业务目录；不降低既有 lint、类型或覆盖率门槛。",
-      "notes": "IR-017 范围已获继续授权；T02 首批共 30 项因 ontology_assets 缺失而预期失败。此处为部分真实覆盖，尚未通过；AST-02 成功生成链路及 AST-08 完整回归由后续批次补齐，详见 docs/audits/IR-017-storage-validation.md。",
+      "notes": "用户已确认 T02 覆盖；T03 已审 30 项全部转绿且测试摘要不变。全量命令退出 0：948 单元通过、551 HTTP 通过、覆盖率 86.8%，其余检查段通过；可选依赖及真实模型跳过保留。这里只代表首批覆盖，运行/工件及整链路按后续任务补齐，IR-017 尚未交付。详见 docs/audits/IR-017-t03-green-results.json。",
       "tests": [
         "tests/unit/test_legacy_asset_adapter.py::test_actual_server_effective_ir_is_snapshotted_and_legacy_files_unchanged",
         "tests/unit/test_ontology_asset_catalog.py::test_catalog_can_be_read_in_a_new_process_without_server_import"

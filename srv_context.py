@@ -118,6 +118,8 @@ def sql_is_readonly(sql):
 
 # 保护 json 文件读-改-写(edits/chats),防并发丢更新/损坏。server 与各 blueprint 共用同一把锁。
 _WRITE_LOCK = threading.RLock()
+# DR-064: shared by server SPARQL/SHACL and ontology asset publication.
+_RDF_LOCK = threading.RLock()
 
 
 def _atomic_json(path, data):
