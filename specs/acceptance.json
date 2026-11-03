@@ -1,5 +1,5 @@
 {
-  "iteration": "IR-014 / IR-015 / IR-016（delivered）/ IR-017（T07 GREEN；待 T08 最终验收整理）",
+  "iteration": "IR-014 / IR-015 / IR-016（delivered）/ IR-017（T08 自动验收完成，待最终交付确认）",
   "requirements": [
     {
       "id": "ALG-01",
@@ -283,9 +283,9 @@
     {
       "id": "AST-01",
       "iteration": "IR-017",
-      "status": "t07-green-awaiting-final-review",
+      "status": "verified-awaiting-human-delivery",
       "criterion": "双领域目录：同一目录能列出有效数据 IR 快照和机器人 OWL，载荷类型及可用应用明确；机器人资产不被当作 SQL 数据源或触发默认演示库兜底。",
-      "notes": "T02/T04/T06 三批覆盖已确认，30/49/30 项已审测试通过且文件摘要不变。T07 三场景演示及独立进程核验实际退出 0；全量检查退出 0，1027 单元、551 HTTP、其余段通过，覆盖率 84.6%（门槛 81%）。单元/HTTP 可选上游跳过 5/8 项，UI 未配置模型跳过 3 项。T08 整理最终交付记录；本轮不含新 UI/API。见 docs/audits/IR-017-t07-green-results.json。",
+      "notes": "T02/T04/T06 三批已审 109 项测试全部通过且文件摘要不变；T07 实际三场景演示、独立进程核验及全量回归通过。全量 1027 单元、551 HTTP 和其余检查段通过，覆盖率 84.6%（门槛 81%）；可选上游/真实模型跳过见审计。T08 已核对最终证据、验收原文和文档；交付确认尚未取得，IR-017 保持 in-progress，不包含新 UI/API。见 docs/audits/IR-017-t08-delivery-review.json。",
       "tests": [
         "tests/unit/test_ontology_asset_catalog.py::test_catalog_lists_both_domains_and_rejects_robotics_as_data",
         "tests/unit/test_ontology_asset_catalog.py::test_empty_catalog_and_unknown_ids_do_not_fall_back",
@@ -295,9 +295,9 @@
     {
       "id": "AST-02",
       "iteration": "IR-017",
-      "status": "t07-green-awaiting-final-review",
+      "status": "verified-awaiting-human-delivery",
       "criterion": "不可变与保真：来源字节和摘要可复核，机器人 OWL 字节及 RDF 语义保留；新版本不覆盖旧版，指定旧版本生成不受新版影响，错误父版本、非法载荷和协议不被发布。",
-      "notes": "T02/T04/T06 三批覆盖已确认，30/49/30 项已审测试通过且文件摘要不变。T07 三场景演示及独立进程核验实际退出 0；全量检查退出 0，1027 单元、551 HTTP、其余段通过，覆盖率 84.6%（门槛 81%）。单元/HTTP 可选上游跳过 5/8 项，UI 未配置模型跳过 3 项。T08 整理最终交付记录；本轮不含新 UI/API。见 docs/audits/IR-017-t07-green-results.json。",
+      "notes": "T02/T04/T06 三批已审 109 项测试全部通过且文件摘要不变；T07 实际三场景演示、独立进程核验及全量回归通过。全量 1027 单元、551 HTTP 和其余检查段通过，覆盖率 84.6%（门槛 81%）；可选上游/真实模型跳过见审计。T08 已核对最终证据、验收原文和文档；交付确认尚未取得，IR-017 保持 in-progress，不包含新 UI/API。见 docs/audits/IR-017-t08-delivery-review.json。",
       "tests": [
         "tests/unit/test_ontology_asset_versions.py::test_versions_keep_old_bytes_and_snapshot_metadata",
         "tests/unit/test_ontology_asset_versions.py::test_invalid_parent_does_not_create_a_version",
@@ -315,9 +315,9 @@
     {
       "id": "AST-03",
       "iteration": "IR-017",
-      "status": "t07-green-awaiting-final-review",
+      "status": "verified-awaiting-human-delivery",
       "criterion": "身份与旧图谱适配：相同 IRI 不跨资产或版本误合并；数据快照包含已有有效编辑，重复登记行为确定；来源更新只影响显式新登记，不改历史快照。",
-      "notes": "T02/T04/T06 三批覆盖已确认，30/49/30 项已审测试通过且文件摘要不变。T07 三场景演示及独立进程核验实际退出 0；全量检查退出 0，1027 单元、551 HTTP、其余段通过，覆盖率 84.6%（门槛 81%）。单元/HTTP 可选上游跳过 5/8 项，UI 未配置模型跳过 3 项。T08 整理最终交付记录；本轮不含新 UI/API。见 docs/audits/IR-017-t07-green-results.json。",
+      "notes": "T02/T04/T06 三批已审 109 项测试全部通过且文件摘要不变；T07 实际三场景演示、独立进程核验及全量回归通过。全量 1027 单元、551 HTTP 和其余检查段通过，覆盖率 84.6%（门槛 81%）；可选上游/真实模型跳过见审计。T08 已核对最终证据、验收原文和文档；交付确认尚未取得，IR-017 保持 in-progress，不包含新 UI/API。见 docs/audits/IR-017-t08-delivery-review.json。",
       "tests": [
         "tests/unit/test_legacy_asset_adapter.py::test_effective_edits_are_registered_without_mutating_callback_inputs",
         "tests/unit/test_legacy_asset_adapter.py::test_repeated_registration_is_idempotent_and_changes_create_child_version",
@@ -330,9 +330,9 @@
     {
       "id": "AST-08",
       "iteration": "IR-017",
-      "status": "t07-green-awaiting-final-review",
+      "status": "verified-awaiting-human-delivery",
       "criterion": "旧能力保持：旧图谱、编辑、问数、聊天与 jobs 行为无新增回归；测试在隔离工作目录运行，不改用户业务目录；不降低既有 lint、类型或覆盖率门槛。",
-      "notes": "T02/T04/T06 三批覆盖已确认，30/49/30 项已审测试通过且文件摘要不变。T07 三场景演示及独立进程核验实际退出 0；全量检查退出 0，1027 单元、551 HTTP、其余段通过，覆盖率 84.6%（门槛 81%）。单元/HTTP 可选上游跳过 5/8 项，UI 未配置模型跳过 3 项。T08 整理最终交付记录；本轮不含新 UI/API。见 docs/audits/IR-017-t07-green-results.json。",
+      "notes": "T02/T04/T06 三批已审 109 项测试全部通过且文件摘要不变；T07 实际三场景演示、独立进程核验及全量回归通过。全量 1027 单元、551 HTTP 和其余检查段通过，覆盖率 84.6%（门槛 81%）；可选上游/真实模型跳过见审计。T08 已核对最终证据、验收原文和文档；交付确认尚未取得，IR-017 保持 in-progress，不包含新 UI/API。见 docs/audits/IR-017-t08-delivery-review.json。",
       "tests": [
         "tests/unit/test_legacy_asset_adapter.py::test_actual_server_effective_ir_is_snapshotted_and_legacy_files_unchanged",
         "tests/unit/test_ontology_asset_catalog.py::test_catalog_can_be_read_in_a_new_process_without_server_import",
@@ -343,9 +343,9 @@
     {
       "id": "AST-04",
       "iteration": "IR-017",
-      "status": "t07-green-awaiting-final-review",
+      "status": "verified-awaiting-human-delivery",
       "criterion": "运行与会话关联：新进程可读取固定输入、版本、状态、结果与事件，同一会话可关联多个运行；业务拒绝有报告但无候选，现有聊天正文不被复制、覆盖或重写。",
-      "notes": "T02/T04/T06 三批覆盖已确认，30/49/30 项已审测试通过且文件摘要不变。T07 三场景演示及独立进程核验实际退出 0；全量检查退出 0，1027 单元、551 HTTP、其余段通过，覆盖率 84.6%（门槛 81%）。单元/HTTP 可选上游跳过 5/8 项，UI 未配置模型跳过 3 项。T08 整理最终交付记录；本轮不含新 UI/API。见 docs/audits/IR-017-t07-green-results.json。",
+      "notes": "T02/T04/T06 三批已审 109 项测试全部通过且文件摘要不变；T07 实际三场景演示、独立进程核验及全量回归通过。全量 1027 单元、551 HTTP 和其余检查段通过，覆盖率 84.6%（门槛 81%）；可选上游/真实模型跳过见审计。T08 已核对最终证据、验收原文和文档；交付确认尚未取得，IR-017 保持 in-progress，不包含新 UI/API。见 docs/audits/IR-017-t08-delivery-review.json。",
       "tests": [
         "tests/unit/test_domain_run_store.py::test_run_fixes_version_task_components_and_namespaced_session",
         "tests/unit/test_domain_run_store.py::test_invalid_run_inputs_are_rejected_without_records",
@@ -360,9 +360,9 @@
     {
       "id": "AST-05",
       "iteration": "IR-017",
-      "status": "t07-green-awaiting-final-review",
+      "status": "verified-awaiting-human-delivery",
       "criterion": "恢复与事件一致性：显式启动恢复只中断遗留 running，不改已终止结果，重复恢复幂等；重试新建 run；并发事件无丢失或重复序号，非法状态转移及终态覆盖被拒绝。",
-      "notes": "T02/T04/T06 三批覆盖已确认，30/49/30 项已审测试通过且文件摘要不变。T07 三场景演示及独立进程核验实际退出 0；全量检查退出 0，1027 单元、551 HTTP、其余段通过，覆盖率 84.6%（门槛 81%）。单元/HTTP 可选上游跳过 5/8 项，UI 未配置模型跳过 3 项。T08 整理最终交付记录；本轮不含新 UI/API。见 docs/audits/IR-017-t07-green-results.json。",
+      "notes": "T02/T04/T06 三批已审 109 项测试全部通过且文件摘要不变；T07 实际三场景演示、独立进程核验及全量回归通过。全量 1027 单元、551 HTTP 和其余检查段通过，覆盖率 84.6%（门槛 81%）；可选上游/真实模型跳过见审计。T08 已核对最终证据、验收原文和文档；交付确认尚未取得，IR-017 保持 in-progress，不包含新 UI/API。见 docs/audits/IR-017-t08-delivery-review.json。",
       "tests": [
         "tests/unit/test_domain_run_store.py::test_reopening_store_does_not_interrupt_active_run_and_recovery_is_explicit",
         "tests/unit/test_domain_run_store.py::test_new_process_reads_completed_history_and_crashed_run_can_be_recovered",
@@ -378,9 +378,9 @@
     {
       "id": "AST-06",
       "iteration": "IR-017",
-      "status": "t07-green-awaiting-final-review",
+      "status": "verified-awaiting-human-delivery",
       "criterion": "工件提交与清单：成功记录指向实际存在且摘要匹配的工件；注入文件写入、摘要核对、数据库提交故障时，不出现伪成功或部分可见索引；清单追溯固定版本、任务及参数依据，不含凭据。",
-      "notes": "T02/T04/T06 三批覆盖已确认，30/49/30 项已审测试通过且文件摘要不变。T07 三场景演示及独立进程核验实际退出 0；全量检查退出 0，1027 单元、551 HTTP、其余段通过，覆盖率 84.6%（门槛 81%）。单元/HTTP 可选上游跳过 5/8 项，UI 未配置模型跳过 3 项。T08 整理最终交付记录；本轮不含新 UI/API。见 docs/audits/IR-017-t07-green-results.json。",
+      "notes": "T02/T04/T06 三批已审 109 项测试全部通过且文件摘要不变；T07 实际三场景演示、独立进程核验及全量回归通过。全量 1027 单元、551 HTTP 和其余检查段通过，覆盖率 84.6%（门槛 81%）；可选上游/真实模型跳过见审计。T08 已核对最终证据、验收原文和文档；交付确认尚未取得，IR-017 保持 in-progress，不包含新 UI/API。见 docs/audits/IR-017-t08-delivery-review.json。",
       "tests": [
         "tests/unit/test_domain_artifacts.py::test_manifest_and_downloaded_bytes_match_fixed_inputs_and_outputs",
         "tests/unit/test_domain_artifacts.py::test_business_rejection_or_error_has_report_but_no_candidate",
@@ -396,9 +396,9 @@
     {
       "id": "AST-07",
       "iteration": "IR-017",
-      "status": "t07-green-awaiting-final-review",
+      "status": "verified-awaiting-human-delivery",
       "criterion": "路径与完整性：任意路径、跨运行工件引用和符号链接逃逸被拒绝；文件缺失或篡改可诊断且不返回可信成功；未知数据库 schema 不静默重建或丢弃已有数据。",
-      "notes": "T02/T04/T06 三批覆盖已确认，30/49/30 项已审测试通过且文件摘要不变。T07 三场景演示及独立进程核验实际退出 0；全量检查退出 0，1027 单元、551 HTTP、其余段通过，覆盖率 84.6%（门槛 81%）。单元/HTTP 可选上游跳过 5/8 项，UI 未配置模型跳过 3 项。T08 整理最终交付记录；本轮不含新 UI/API。见 docs/audits/IR-017-t07-green-results.json。",
+      "notes": "T02/T04/T06 三批已审 109 项测试全部通过且文件摘要不变；T07 实际三场景演示、独立进程核验及全量回归通过。全量 1027 单元、551 HTTP 和其余检查段通过，覆盖率 84.6%（门槛 81%）；可选上游/真实模型跳过见审计。T08 已核对最终证据、验收原文和文档；交付确认尚未取得，IR-017 保持 in-progress，不包含新 UI/API。见 docs/audits/IR-017-t08-delivery-review.json。",
       "tests": [
         "tests/unit/test_domain_storage_integrity.py::test_unknown_database_schema_is_not_reinitialized",
         "tests/unit/test_domain_storage_integrity.py::test_new_run_does_not_pin_a_damaged_ontology_file",
@@ -416,9 +416,9 @@
     {
       "id": "AST-09",
       "iteration": "IR-017",
-      "status": "t07-green-awaiting-final-review",
+      "status": "verified-awaiting-human-delivery",
       "criterion": "可直接复核：以下离线命令实际可执行；独立进程重新读取目录与历史，核对版本、事件、清单和工件；运行中断可恢复为 interrupted，真实缺证据仍阻断候选；重复演示不覆盖前次结果，全量检查通过且跳过原因有记录。",
-      "notes": "T02/T04/T06 三批覆盖已确认，30/49/30 项已审测试通过且文件摘要不变。T07 三场景演示及独立进程核验实际退出 0；全量检查退出 0，1027 单元、551 HTTP、其余段通过，覆盖率 84.6%（门槛 81%）。单元/HTTP 可选上游跳过 5/8 项，UI 未配置模型跳过 3 项。T08 整理最终交付记录；本轮不含新 UI/API。见 docs/audits/IR-017-t07-green-results.json。",
+      "notes": "T02/T04/T06 三批已审 109 项测试全部通过且文件摘要不变；T07 实际三场景演示、独立进程核验及全量回归通过。全量 1027 单元、551 HTTP 和其余检查段通过，覆盖率 84.6%（门槛 81%）；可选上游/真实模型跳过见审计。T08 已核对最终证据、验收原文和文档；交付确认尚未取得，IR-017 保持 in-progress，不包含新 UI/API。见 docs/audits/IR-017-t08-delivery-review.json。",
       "tests": [
         "tests/unit/test_domain_storage_demo_cli.py::test_all_cases_build_fresh_offline_and_verify_in_separate_processes",
         "tests/unit/test_domain_storage_demo_cli.py::test_each_storage_demo_case_is_independently_runnable",
