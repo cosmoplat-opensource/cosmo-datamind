@@ -122,15 +122,19 @@ class RunStore:
             return self._insert(conn, inputs, snapshot)
 
     def create_build_run(self, *, name, recipe, profile_id, source_asset_ids, session_ref, components):
+        with self.storage.transaction(write=True) as conn:
+            return self._create_build_run(conn, name=name, recipe=recipe, profile_id=profile_id,
+                source_asset_ids=source_asset_ids, session_ref=session_ref, components=components)
+
+    def _create_build_run(self, conn, *, name, recipe, profile_id, source_asset_ids, session_ref, components):
         inputs = {"ontology_id": None, "version_id": None, "operation": "build_ontology", "task": {},
                   "mode": "real", "session_ref": contracts.session(session_ref),
                   "components": contracts.components(components)}
         if inputs["components"]["profile_id"] != profile_id or inputs["components"]["model"]["invoked"]:
             raise ValueError("构建组件必须匹配 profile，且不调用模型。")
-        with self.storage.transaction(write=True) as conn:
-            inputs["build_input"] = build_contracts.build_input(self.storage, conn, name=name, recipe=recipe,
-                profile_id=profile_id, source_asset_ids=source_asset_ids)
-            return self._insert(conn, inputs, None)
+        inputs["build_input"] = build_contracts.build_input(self.storage, conn, name=name, recipe=recipe,
+            profile_id=profile_id, source_asset_ids=source_asset_ids)
+        return self._insert(conn, inputs, None)
 
     def get_run(self, run_id):
         with self.storage.transaction() as conn:
@@ -172,13 +176,36 @@ class RunStore:
             return [{**dict(row), "payload": json.loads(row["payload"])} for row in conn.execute(
                 "SELECT * FROM run_events WHERE run_id=? AND seq>? ORDER BY seq", (run_id, after))]
 
-    def recover_interrupted(self):
+    def recover_interrupted(self, *, operation=None):
         """Call once from a single host's startup, before accepting new work (DR-064)."""
         with self.storage.transaction(write=True) as conn:
-            ids = [row[0] for row in conn.execute("SELECT run_id FROM runs WHERE status='running' ORDER BY rowid")]
+            clause, params = (" AND operation=?", (operation,)) if operation is not None else ("", ())
+            ids = [row[0] for row in conn.execute(
+                "SELECT run_id FROM runs WHERE status='running'" + clause + " ORDER BY rowid", params)]
             for run_id in ids:
                 self._state(conn, run_id, "interrupted")
             return ids
+
+    def claim_build(self):
+        """DR-064: only an exclusive executor calls this atomic FIFO claim.
+
+        Unlike start(), claim also admits damaged snapshots to computation, so
+        verification produces a durable failure instead of stranding the queue.
+        """
+        with self.storage.transaction(write=True) as conn:
+            row = conn.execute("SELECT run_id FROM runs WHERE operation='build_ontology' "
+                               "AND status='queued' ORDER BY rowid LIMIT 1").fetchone()
+            if row is None:
+                return None
+            self._state(conn, row[0], "running")
+            self._event(conn, row[0], "stage", {"stage": "computing"})
+            return _run(conn, row[0])
+
+    def interrupt_build(self, run_id):
+        with self.storage.transaction(write=True) as conn:
+            run = _run(conn, run_id)
+            if run["operation"] == "build_ontology" and run["status"] == "running":
+                self._state(conn, run_id, "interrupted")
 
     def retry(self, run_id):
         with self.storage.transaction(write=True) as conn:
