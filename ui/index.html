@@ -193,7 +193,7 @@ a{color:var(--acc)}
 .sk-card.sel{border-color:var(--acc);background:#F7F9FF}
 .sk-card .nm{font-size:14px;font-weight:600;color:var(--txt)} .sk-card .badge{font-size:11px;background:#EEF2FF;color:var(--acc);border-radius:4px;padding:1px 6px;margin-left:6px}
 .sk-card .ds{font-size:12px;color:var(--sub);margin-top:4px}
-</style><link rel="stylesheet" href="/assets/styles/responsive.css"><link rel="stylesheet" href="/assets/styles/qa-anchor.css?v=1"></head><body>
+</style><link rel="stylesheet" href="/assets/styles/responsive.css"><link rel="stylesheet" href="/assets/styles/qa-anchor.css?v=1"><link rel="stylesheet" href="/assets/styles/robotics.css?v=1"></head><body>
 <header class="topbar">
  <div class="wm">◈ COSMO DataMind <small>数据智脑 · 治理 × 本体 × 问数</small></div>
  <div class="tools">
@@ -484,6 +484,8 @@ a{color:var(--acc)}
   </div></div>
 
  <div class="page" id="p_build">
+  <div class="rb-toolbar"><label>本体构建配方<select id="rb_recipe" aria-label="本体构建配方" disabled><option value="data">数据 → 数据本体</option></select></label></div>
+  <div id="rb_panel" hidden></div>
   <style>
   .bc-hero{background:linear-gradient(120deg,#4A5FF3 0%,#6E4BF0 55%,#8B5CF6 100%);border-radius:12px;padding:18px 22px;color:#fff;display:flex;align-items:center;justify-content:space-between;gap:16px;box-shadow:0 10px 30px rgba(74,95,243,.28);position:relative;overflow:hidden}
   .bc-hero::after{content:"";position:absolute;right:-40px;top:-40px;width:220px;height:220px;background:radial-gradient(circle,rgba(255,255,255,.18),transparent 70%);pointer-events:none}
@@ -669,8 +671,9 @@ a{color:var(--acc)}
     <button class="ghost" onclick="clawAudit()">刷新审计</button></div>
    <div id="claw_audit" class="muted">点「刷新审计」查看谁改了什么</div></div></div>
 
- <div class="page" id="p_library"><h2>本体库 <span class="muted">锻造/构建的本体版本(/api/ont/forged)</span></h2>
-  <div class="card scroll" id="lib_list"></div></div>
+ <div class="page" id="p_library"><h2>本体库 <span class="muted">按领域浏览资产、固定版本和来源</span></h2>
+  <div id="ra_host"></div><div id="lib_legacy"><h3>原数据本体管理</h3>
+  <div class="card scroll" id="lib_list"></div></div></div>
 
  <div class="page" id="p_agents"><h2>智能体列表 <span class="muted">深度问数内置体 + 沉淀技能 + 构建技能包</span></h2>
   <div class="card"><div class="row" style="margin-bottom:10px"><input id="ag_q" placeholder="按名称筛选…" style="width:260px" oninput="agRender()"><span class="muted" id="ag_info"></span></div>
@@ -702,6 +705,7 @@ FROM fact_sales_order GROUP BY 1 ORDER BY 1 DESC LIMIT 12</textarea>
    <div class="scroll" id="api_list" style="max-height:calc(100vh - 260px)"></div></div></div>
 
  <div class="page" id="p_jobs"><h2>作业中心 <span class="muted">后台作业(技能运行/本体构建/部署)· 对齐平台『资源管理·作业』</span></h2>
+  <div class="card rb-content" id="ra_jobs" data-testid="robotics-jobs"></div>
   <div class="card scroll" id="jobs_list" style="max-height:calc(100vh - 220px)"></div></div>
 
  <div class="page" id="p_sysadmin"><h2>系统管理 <span class="muted">健康/引擎/库/缓存概况 · 对齐平台『系统管理』</span></h2>
@@ -713,6 +717,8 @@ FROM fact_sales_order GROUP BY 1 ORDER BY 1 DESC LIMIT 12</textarea>
    <div class="scroll" id="sq_out" style="margin-top:10px"></div></div></div>
 </main>
 </div>
+<script src="/assets/modules/robotics-assets.js?v=1"></script>
+<script src="/assets/modules/robotics-build.js?v=1"></script>
 <script src="/assets/modules/catalog.js"></script>
 <script src="/assets/modules/build-references.js?v=3"></script>
 <script src="/assets/modules/build-stream.js?v=1"></script>
@@ -741,6 +747,7 @@ const EDIT_KINDS=['object','event','asset','role'];
 function goPage(p){const nav=document.querySelector('[data-p="'+p+'"]');if(!nav)return false;
  document.querySelectorAll('.nav').forEach(x=>x.classList.remove('on'));nav.classList.add('on');
  document.querySelectorAll('.page').forEach(pg=>pg.classList.remove('on'));const el=$('#p_'+p);if(el)el.classList.add('on');
+ window.RoboticsBuild?.page(p);window.RoboticsAssets?.page(p);
  const revisit=!!loaded[p];load(p);
  // 易变页每次进入都重取:别处(评审/动作/构建)的变动切回来即见,不吃首屏一次性缓存
  if(revisit){try{
@@ -2454,6 +2461,8 @@ async function sparqlRun(){$('#sq_info').textContent='查询中…';
 if(location.hash.slice(1))routeHash();else{home();loaded.home=1;}
 // hash 路由:每个子页可经 #<page> 寻址;另支持 #graph=<key> / #obj=<key>:<id> 深链
 function routeHash(){const h=location.hash.slice(1);
+ if(/^build\?/.test(h)){goPage('build');return;}
+ if(/^library\?/.test(h)){goPage('library');return;}
  const mg=h.match(/^graph=(.+)$/);if(mg){loaded.graph=1;goPage('graph');graphs(mg[1]);return;}
  const mo=h.match(/^obj=([^:]+):(.+)$/);if(mo){loaded.graph=1;goPage('graph');graphs(mo[1]);return;}   // 仅定位到图谱;对象级高亮随 studio 页一并移除
  if(h){if(!goPage(h)){goPage('home');history.replaceState(null,'','#home');}}else goPage('home');}  // 未知 hash 回首页并纠正 URL,避免地址与页面不一致

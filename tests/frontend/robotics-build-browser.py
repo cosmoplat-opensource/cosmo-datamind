@@ -319,7 +319,7 @@ def test_damaged_download_is_an_error_not_a_saved_success_file(live):
     page.goto(site.url+f'/#library?asset={ref["ontology_id"]}&version={ref["version_id"]}')
     wait_version_ui(page, ref)
     downloads = []
-    page.on('download', downloads.append)
+    page.on('download', lambda download: downloads.append(download))
     page.get_by_role('link', name='下载 OWL', exact=True).click()
     expect(page.get_by_test_id('robotics-version').get_by_role('alert')).to_contain_text(
         re.compile(r'artifact_integrity|损坏|完整性'), timeout=3000)
