@@ -69,7 +69,13 @@ def load_ontology(path, *, mode="real"):
     path = Path(path)
     if path.suffix.lower() != ".owl":
         raise ValueError("本体输入只接受自包含的 .owl 文件（UTF-8 RDF/XML）。")
-    content = path.read_bytes()
+    return load_ontology_bytes(path.read_bytes(), mode=mode)
+
+
+def load_ontology_bytes(content, *, mode="real"):
+    """Validate explicit bytes without requiring a published asset or mutable path (DR-060)."""
+    if not isinstance(content, bytes) or not content:
+        raise ValueError("本体输入必须为非空 bytes。")
     try:
         text = content.decode("utf-8-sig")
     except UnicodeDecodeError as exc:

@@ -91,6 +91,9 @@ def main():
     with tempfile.TemporaryDirectory(prefix="datamind-check-") as raw:
         env = isolated_env(Path(raw))
         env["COVERAGE_FILE"] = str(reports / ".coverage")
+        # DR-065: targeted checks may use different follow-imports settings.
+        # Do not reuse their incremental type cache for the full regression gate.
+        env["MYPY_CACHE_DIR"] = str(reports / ".mypy_cache")
         py = sys.executable
         if args.suite in ("unit", "all"):
             for name, command in (
