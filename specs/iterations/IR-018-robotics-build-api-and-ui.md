@@ -2,7 +2,7 @@
 
 - **状态 / Status**: in-progress
 - **日期 / Date**: 2026-11-04
-- **当前环节**：用户已确认本轮 Goal / Acceptance；T02 首批失败测试已编写，待测试覆盖审查；尚未进入 T03 实现。
+- **当前环节**：T02 覆盖已确认；T03 实现、61 项 GREEN 及完整九段回归通过，已审测试/夹具不变；下一任务 T04，整轮仍 in-progress。
 - **关联 / Refs**: [[DR-059-unified-domain-semantic-graph]]、[[DR-060-robotics-source-recipes-and-reverse-build]]、[[DR-063-local-domain-registration-and-application-ui]]、[[DR-064-persistent-build-runs-and-artifact-manifests]]、[[DR-065-robotics-migration-and-compatibility-validation]]。
 - **前置**：[IR-017](IR-017-ontology-assets-and-persistent-runs.md) 于 2026-11-04 经用户确认 delivered；IR-016 业务内核已交付。
 - **方案**：[集成 Proposal](../PROPOSAL-yang-datamind-integration.md) 第 6 节步骤 3 与第 6.1 节前后端联动要求。
@@ -193,7 +193,7 @@ IR-017 的通过结果作为旧能力基线，不替代本轮的 RED/GREEN 与 U
 ### T02 范围确认与失败测试
 
 2026-11-04：用户确认本轮范围；新增三组测试及测试辅助模块、schema 2 冻结夹具。
-新增业务代码、HTTP 和 UI 尚未实现；以下是 T03 需要满足的服务边界，最终统计及覆盖表见 [审计记录](../../docs/audits/IR-018-build-ui-validation.md)。
+T02 当时尚未实现新增业务代码、HTTP 和 UI；以下是该批固定的 T03 服务边界，最终统计及覆盖表见 [审计记录](../../docs/audits/IR-018-build-ui-validation.md)。
 
 | 接口 / 字段 | T02 固定的含义 |
 |---|---|
@@ -215,3 +215,18 @@ IR-017 的通过结果作为旧能力基线，不替代本轮的 RED/GREEN 与 U
 
 T02 实测：61 项，4 通过、57 预期失败，0 收集错误/跳过；旧能力针对性回归 74 项、元测试 21 项通过，新增文件 ruff/mypy 通过。
 未更改生产代码或已审测试，未执行本轮完整回归；待本批覆盖确认后进入 T03。
+
+### T03 开始记录
+
+2026-11-04：用户了解本批测试及数据库迁移原因后回复“已确认，进行下一步”，确认 T02 覆盖并授权实现。
+本任务保持已审测试/夹具不变；HTTP、执行器和 UI 仍分别由 T04/T05、T06/T07 承接。
+
+
+### T03 完成记录
+
+来源输入型运行、只读构建计算、候选原子提交、结构化来源问题及 schema 2→3 迁移已实现。
+已审 T02 的 61 项全部通过；113 个既有测试/夹具文件保持不变。
+完整九段检查退出 0：1088 单元通过、5 可选上游跳过，覆盖率 85.0%（门槛 81%）；551 HTTP 通过、8 可选上游跳过，严格 10/10；旧 UI 64 项、UI 实操 50 项（3 未配置真实模型跳过）、旧浏览器 10 项通过。
+详细证据见 [T03 GREEN 报告](../../docs/audits/IR-018-t03-green-results.json) 与 [审计记录](../../docs/audits/IR-018-build-ui-validation.md)。
+本批没有新增 HTTP/UI，不将旧浏览器回归当作新机器人链路验收；RBU-01～04/09 标为 partial-green-t03，整轮 Deliverables / Acceptance 仍待后续任务及最终交付确认。
+下一任务 T04 为 HTTP/执行器/恢复/下载等失败测试，按 skill 第⑤步写完后再进行新覆盖审查。

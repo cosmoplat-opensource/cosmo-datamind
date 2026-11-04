@@ -8,7 +8,7 @@ import tempfile
 
 from srv_context import confine
 
-SCHEMA_VERSION = 2
+SCHEMA_VERSION = 3
 SCHEMA = (
     """CREATE TABLE assets (
         ontology_id TEXT PRIMARY KEY, name TEXT NOT NULL, domain TEXT NOT NULL,
@@ -56,6 +56,39 @@ def digest(content):
     return hashlib.sha256(content).hexdigest()
 
 
+def _migrate_build_runs(conn):
+    """DR-064: rebuild the three related tables in one transaction, retaining raw JSON.
+
+    Foreign keys remain enabled. Save children first, remove them before the parent,
+    and restore retry references in original insertion order. No artifact is rewritten.
+    """
+    tables = ("runs", "run_events", "run_artifacts")
+    saved = {name: [dict(row) for row in conn.execute(f"SELECT * FROM {name} ORDER BY rowid")]
+             for name in tables}
+    for name in reversed(tables):
+        # Delete the entire self-referencing run set before DROP (retry_of).
+        conn.execute(f"DELETE FROM {name}")
+        conn.execute(f"DROP TABLE {name}")
+    statement = RUN_SCHEMA[0].replace("ontology_id TEXT NOT NULL", "ontology_id TEXT")
+    statement = statement.replace("version_id TEXT NOT NULL", "version_id TEXT")
+    statement = statement.replace("ontology_snapshot TEXT NOT NULL", "ontology_snapshot TEXT")
+    statement = statement.removesuffix(")") + ", build_input TEXT, output_asset_ref TEXT, " + """
+        CHECK ((build_input IS NULL AND ontology_id IS NOT NULL AND version_id IS NOT NULL
+                AND ontology_snapshot IS NOT NULL AND output_asset_ref IS NULL)
+            OR (build_input IS NOT NULL AND operation='build_ontology' AND mode='real'
+                AND ontology_id IS NULL AND version_id IS NULL AND ontology_snapshot IS NULL)))"""
+    for sql in (statement, *RUN_SCHEMA[1:]):
+        conn.execute(sql)
+    for name in tables:
+        for row in saved[name]:
+            fields = ",".join(row)
+            placeholders = ",".join("?" for _ in row)
+            conn.execute(f"INSERT INTO {name} ({fields}) VALUES ({placeholders})", tuple(row.values()))
+    if conn.execute("PRAGMA foreign_key_check").fetchone():
+        raise ValueError("数据库迁移后的外键校验失败。")
+    conn.execute("PRAGMA user_version=3")
+
+
 class Storage:
     def __init__(self, root, *, read_only=False):
         root = Path(root)
@@ -82,7 +115,9 @@ class Storage:
             if version == 1:
                 for statement in RUN_SCHEMA:
                     conn.execute(statement)
-                conn.execute(f"PRAGMA user_version={SCHEMA_VERSION}")
+                version = 2
+            if version == 2:
+                _migrate_build_runs(conn)
             elif version != SCHEMA_VERSION:
                 raise ValueError(f"不支持的资产数据库 schema 版本：{version}")
 

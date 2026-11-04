@@ -17,7 +17,8 @@ def build_graph(source, models, *, profile="ur_pick_place"):
         raise ValueError(f"Unsupported robotics profile: {profile}")
     source, models = Path(source), Path(models)
     source_bytes, model_bytes = source.read_bytes(), models.read_bytes()
-    root, catalog = parse_xml(source_bytes), parse_xml(model_bytes)
+    root = parse_xml(source_bytes, source_role="behavior_tree")
+    catalog = parse_xml(model_bytes, source_role="node_models")
     validate_sources(root, catalog)
     hashes = {source: hashlib.sha256(source_bytes).hexdigest(),
               models: hashlib.sha256(model_bytes).hexdigest()}

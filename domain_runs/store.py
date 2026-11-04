@@ -5,11 +5,11 @@ import uuid
 
 from ontology_assets.payloads import json_text
 from ontology_assets.storage import Storage, digest
-from ontology_assets.store import _required, _version
+from ontology_assets.store import AssetStore, _required, _version
 
-from . import contracts
+from . import build_contracts, contracts
 
-JSON_FIELDS = ("task", "session_ref", "components", "ontology_snapshot", "result")
+JSON_FIELDS = ("task", "session_ref", "components", "ontology_snapshot", "result", "build_input", "output_asset_ref")
 MANIFEST_FIELDS = ("run_id", "ontology_id", "version_id", "operation", "task", "mode", "session_ref",
                    "components", "ontology_snapshot", "status", "result", "retry_of", "created_at", "updated_at")
 ARTIFACT_FIELDS = ("artifact_id", "name", "kind", "media_type", "sha256", "byte_size")
@@ -40,6 +40,9 @@ def _expect(run, *states):
 
 def _manifest(run, artifacts):
     data = {field: run[field] for field in MANIFEST_FIELDS}
+    # Keep every schema-2 manifest byte/shape valid; new fields apply only to builds.
+    if run["build_input"] is not None:
+        data.update(build_input=run["build_input"], output_asset_ref=run["output_asset_ref"])
     data["artifacts"] = [{field: item[field] for field in ARTIFACT_FIELDS}
                          for item in artifacts if item["kind"] != "manifest"]
     return data
@@ -69,6 +72,12 @@ class RunStore:
                 "rule_digest": validation.get("validation_shapes_sha256")}
 
     def _verify_snapshot(self, conn, run):
+        if run["build_input"] is not None:
+            if (run["operation"] != "build_ontology" or run["mode"] != "real"
+                    or any(run[key] is not None for key in ("ontology_id", "version_id", "ontology_snapshot"))):
+                raise ValueError("构建运行输入类型不一致。")
+            build_contracts.verify_input(self.storage, conn, run["build_input"])
+            return
         current = self._snapshot(conn, run["ontology_id"], run["version_id"])
         fixed = run["ontology_snapshot"]
         # Publication can add validation metadata; it cannot alter pinned payloads/sources.
@@ -85,14 +94,15 @@ class RunStore:
 
     def _insert(self, conn, inputs, snapshot, retry_of=None):
         timestamp = _now()
-        record = {**inputs, "ontology_snapshot": snapshot, "run_id": "run_" + uuid.uuid4().hex,
+        record = {"build_input": None, "output_asset_ref": None, **inputs, "ontology_snapshot": snapshot, "run_id": "run_" + uuid.uuid4().hex,
                   "status": "queued", "result": None, "retry_of": retry_of,
                   "created_at": timestamp, "updated_at": timestamp}
         stored = {**record}
         for field in JSON_FIELDS:
             stored[field] = json_text(stored[field]) if stored[field] is not None else None
         conn.execute("""INSERT INTO runs VALUES (:run_id,:ontology_id,:version_id,:operation,:task,:mode,
-            :session_ref,:components,:ontology_snapshot,:status,:result,:retry_of,:created_at,:updated_at)""", stored)
+            :session_ref,:components,:ontology_snapshot,:status,:result,:retry_of,:created_at,:updated_at,
+            :build_input,:output_asset_ref)""", stored)
         self._event(conn, record["run_id"], "state", {"status": "queued"})
         return _decode(stored)
 
@@ -100,6 +110,8 @@ class RunStore:
         contracts.text(ontology_id, "ontology_id")
         contracts.text(version_id, "version_id")
         contracts.text(operation, "operation")
+        if operation == "build_ontology":
+            raise ValueError("本体构建必须通过来源输入型运行创建。")
         if mode not in ("real", "demo"):
             raise ValueError("运行模式必须为 real 或 demo。")
         inputs = {"ontology_id": ontology_id, "version_id": version_id, "operation": operation,
@@ -108,6 +120,17 @@ class RunStore:
         with self.storage.transaction(write=True) as conn:
             snapshot = self._snapshot(conn, ontology_id, version_id)
             return self._insert(conn, inputs, snapshot)
+
+    def create_build_run(self, *, name, recipe, profile_id, source_asset_ids, session_ref, components):
+        inputs = {"ontology_id": None, "version_id": None, "operation": "build_ontology", "task": {},
+                  "mode": "real", "session_ref": contracts.session(session_ref),
+                  "components": contracts.components(components)}
+        if inputs["components"]["profile_id"] != profile_id or inputs["components"]["model"]["invoked"]:
+            raise ValueError("构建组件必须匹配 profile，且不调用模型。")
+        with self.storage.transaction(write=True) as conn:
+            inputs["build_input"] = build_contracts.build_input(self.storage, conn, name=name, recipe=recipe,
+                profile_id=profile_id, source_asset_ids=source_asset_ids)
+            return self._insert(conn, inputs, None)
 
     def get_run(self, run_id):
         with self.storage.transaction() as conn:
@@ -163,7 +186,7 @@ class RunStore:
             _expect(old, "interrupted", "failed")
             self._verify_snapshot(conn, old)
             inputs = {key: old[key] for key in ("ontology_id", "version_id", "operation", "task", "mode",
-                                               "session_ref", "components")}
+                                               "session_ref", "components", "build_input")}
             return self._insert(conn, inputs, old["ontology_snapshot"], retry_of=run_id)
 
     def _write_artifact(self, run_id, artifact):
@@ -182,22 +205,59 @@ class RunStore:
             run = _run(conn, run_id)
             _expect(run, "running")
             self._verify_snapshot(conn, run)
-            run.update(status="failed" if outcome["status"] == "error" else "completed",
-                       result=outcome, updated_at=_now())
-            records = [self._write_artifact(run_id, artifact) for artifact in artifacts]
-            manifest = _manifest(run, records)
-            records.append(self._write_artifact(run_id, {"name": "manifest.json", "kind": "manifest",
-                           "media_type": "application/json", "content": json_text(manifest).encode("utf-8")}))
-            # Re-read all actual bytes after writing, before any success becomes visible.
-            for record in records:
-                self.storage.read_bytes(record["path"], record["sha256"])
-                conn.execute("""INSERT INTO run_artifacts VALUES (:artifact_id,:run_id,:name,:kind,:media_type,
-                    :sha256,:byte_size,:path,:created_at)""", record)
+            if run["build_input"] is not None:
+                raise ValueError("来源构建不能通过生成完成契约提交。")
+            return self._complete(conn, run, outcome, artifacts)
+
+    def _complete(self, conn, run, outcome, artifacts):
+        """One shared durable commit path; caller owns the existing transaction."""
+        run_id = run["run_id"]
+        run.update(status="failed" if outcome["status"] == "error" else "completed",
+                   result=outcome, updated_at=_now())
+        records = [self._write_artifact(run_id, artifact) for artifact in artifacts]
+        manifest = _manifest(run, records)
+        records.append(self._write_artifact(run_id, {"name": "manifest.json", "kind": "manifest",
+                       "media_type": "application/json", "content": json_text(manifest).encode("utf-8")}))
+        for record in records:
+            self.storage.read_bytes(record["path"], record["sha256"])
+            conn.execute("""INSERT INTO run_artifacts VALUES (:artifact_id,:run_id,:name,:kind,:media_type,
+                :sha256,:byte_size,:path,:created_at)""", record)
+        # Recheck sources immediately before exposing success, including post-write damage.
+        if outcome["status"] != "error" or run["build_input"] is None:
             self._verify_snapshot(conn, run)
-            conn.execute("UPDATE runs SET status=?,result=?,updated_at=? WHERE run_id=?",
-                         (run["status"], json_text(outcome), run["updated_at"], run_id))
-            self._event(conn, run_id, "state", {"status": run["status"]})
-            return run
+        conn.execute("UPDATE runs SET status=?,result=?,updated_at=?,output_asset_ref=? WHERE run_id=?",
+                     (run["status"], json_text(outcome), run["updated_at"],
+                      json_text(run["output_asset_ref"]) if run["output_asset_ref"] is not None else None, run_id))
+        self._event(conn, run_id, "state", {"status": run["status"]})
+        return run
+
+    def finish_build(self, run_id, *, result, ontology):
+        # Validate expensive RDF outside the SQLite write lock (same ordering as publication).
+        initial = self.get_run(run_id)
+        _expect(initial, "running")
+        if initial["build_input"] is None or initial["operation"] != "build_ontology":
+            raise ValueError("只有来源构建运行可以提交本体候选。")
+        outcome = build_contracts.completion(result, ontology, initial["build_input"])
+        assets = AssetStore(self.storage.root)
+        with self.storage.transaction(write=True) as conn:
+            run = _run(conn, run_id)
+            _expect(run, "running")
+            if run["build_input"] != initial["build_input"]:
+                raise ValueError("提交期间构建输入发生变化。")
+            artifacts = []
+            if outcome["status"] == "built":
+                self._verify_snapshot(conn, run)
+                fixed = run["build_input"]
+                asset = assets._create_asset(conn, fixed["name"], "robotics")
+                version = assets._add_version(conn, asset["ontology_id"], ontology, payload_kind="robotics_rdf",
+                    source_asset_ids=[s["source_asset_id"] for s in fixed["sources"]],
+                    metadata={"profile_id": fixed["profile_id"], "build_recipe": fixed["recipe"], "build_run_id": run_id})
+                run["output_asset_ref"] = {key: version[key] for key in ("ontology_id", "version_id")}
+                artifacts.append({"name": "candidate.owl", "kind": "ontology", "media_type": "application/rdf+xml",
+                                  "content": ontology})
+            artifacts.append({"name": "validation.json", "kind": "validation", "media_type": "application/json",
+                              "content": json_text(outcome).encode("utf-8")})
+            return self._complete(conn, run, outcome, artifacts)
 
     def artifacts(self, run_id):
         with self.storage.transaction() as conn:
