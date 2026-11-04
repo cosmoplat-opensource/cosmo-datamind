@@ -2,7 +2,7 @@
 
 - **状态 / Status**: in-progress
 - **日期 / Date**: 2026-11-04
-- **当前环节**：T04 覆盖已确认；T05 实现、70 项 GREEN 与完整九段回归通过，下一任务 T06；UI 留 T06/T07，整轮仍 in-progress。
+- **当前环节**：T05 已完成；T06 新增 40 项 UI 状态/检查入口用例与 14 项浏览器用例，待覆盖审查后进入 T07；整轮仍 in-progress。
 - **关联 / Refs**: [[DR-059-unified-domain-semantic-graph]]、[[DR-060-robotics-source-recipes-and-reverse-build]]、[[DR-063-local-domain-registration-and-application-ui]]、[[DR-064-persistent-build-runs-and-artifact-manifests]]、[[DR-065-robotics-migration-and-compatibility-validation]]。
 - **前置**：[IR-017](IR-017-ontology-assets-and-persistent-runs.md) 于 2026-11-04 经用户确认 delivered；IR-016 业务内核已交付。
 - **方案**：[集成 Proposal](../PROPOSAL-yang-datamind-integration.md) 第 6 节步骤 3 与第 6.1 节前后端联动要求。
@@ -285,3 +285,83 @@ T04 已审 70 项全部通过；116 份已跟踪测试/夹具摘要保持不变�
 配置、隔离启动及可直接使用的 curl 命令见 [API 指南](../../docs/robotics-build-api.md)；结果见 [T05 GREEN 记录](../../docs/audits/IR-018-t05-green-results.json)。
 本任务没有新 UI，实际网络验证也不冒充浏览器联动；整轮仍 in-progress，交付与验收复选框留最终人审。
 下一任务 T06 编写 UI 行为及真实后端浏览器失败测试，再按 skill 第⑤步提交覆盖审查。
+
+
+### T06 · UI 与真实浏览器失败测试（待覆盖审查）
+
+2026-11-04：用户在 T05 完成后回复“继续下一步”，授权本批测试工作；不视为本批覆盖已确认。
+本次只增加测试辅助、用例与规格/审计，不修改生产 UI、后端、scripts/check.py 或任何已有测试。
+
+| 新文件 | 范围 |
+|---|---|
+| tests/unit/test_robotics_build_ui.py | pytest 入口：40 项控制器/HTTP 错误/表单/终态/目录/统一检查接线用例 |
+| tests/frontend/robotics-ui.cjs | Node 执行真实待实现模块；注入明确的合成响应、延迟请求和手动时钟，仅用于前端状态行为，不作为真实构建证据 |
+| tests/frontend/robotics-build-browser.py | 14 项 Chromium + 实际 Gunicorn 场景；自建临时根/服务，核心接口无 route.fulfill 或成功响应替身 |
+| tests/robotics_browser_support.py | 实际服务启停/重启、真实 XML 上传、只读存储观察、浏览器下载字节核验和失败截图/证据保存 |
+
+#### 供审查的前端模块边界
+
+模块仍为随平台加载的原生 JS，不更换 UI 框架。
+`window.RoboticsBuild.createController(options)` 与 `window.RoboticsAssets.createController(options)` 将请求/状态管理与 DOM 渲染分开；页面使用同一控制器，测试不会另造业务实现。
+options 接受 fetch、onChange；构建控制器另接受 schedule、cancelSchedule、requestId，用于确定性测试；生产使用实际 fetch、计时器和请求编号。
+
+| 控制器 | 测试固定的行为/接口 |
+|---|---|
+| 构建方法 | init、setDraft、submit、openRun(run_id)、poll、retry、dispose、snapshot；方法返回可等待的结果，HTTP/网络失败进入可展示错误状态，不留下未处理异常 |
+| 构建状态 | enabled、busy、draft、run、events、after、error；draft 包含 name/profile/behavior_tree/node_models，文件为 File 对象；error 至少有可展示 message，HTTP 错误保留 status/code |
+| 表单与提交 | 明确两角色，保留同名文件字节；缺名称/任一文件、空文件、超限、未支持 profile 不发上传；multipart 由浏览器填写 Content-Type boundary；只提交 name/recipe/profile/request_id 和双文件 |
+| 重复与失败 | 同一进行中的提交仅发一次；网络结果未知且草稿未变时重发沿用 request_id；改名称或重新选择内容不同的文件使用新 ID；失败保留文件与用户后来输入的草稿 |
+| 运行与事件 | openRun 只读，不自动上传或重试；事件按 seq 去重、after 前进；单个在途轮询，最多一个待执行定时器；终态停止，查询暂时失败不伪装成构建失败 |
+| 离开与迟到响应 | dispose 取消定时器并使在途/迟到响应失效；切换运行后旧响应不得覆盖新运行；定时回调间隔 250～5000 ms，浏览器离页观察窗口超过其最大值 |
+| 目录方法/状态 | loadCatalog({domain})、openVersion(ontology_id, version_id)、dispose、snapshot；状态 items/detail/error；目录加载失败明确报错，晚返回的旧筛选或旧版本不得覆盖新选择 |
+| 固定版本 | 直接请求指定 asset/version，不先找 latest；响应身份不符或版本不存在时不显示旧详情，不跳到数据 demo；旧数据引用保留其原分类 |
+
+这些是本批提交审查的模块契约，不表示当前生产文件已存在。
+
+#### 可访问名称、页面与观察标记
+
+沿用 #build、#library、#jobs；#build 默认保留数据构建。
+配方选择器的可访问名称为“本体构建配方”，值 data/robotics；关闭机器人功能时机器人选项不出现或不可选。
+机器人表单可访问名称为“机器人本体名称”“主行为树 XML”“节点模型 XML”“机器人 profile”，profile 值 ur_pick_place；提交按钮“构建机器人本体”支持键盘 Enter。
+本体库筛选器名“本体领域”，机器人筛选值 robotics。
+主要链接/按钮名：“查看本体候选”“重试构建”“下载 OWL”“下载报告”“下载 manifest”；下载先检查 HTTP 错误，不能把 409 JSON 当作成功文件保存。
+
+| 观察标记 | 用于核对的业务身份 |
+|---|---|
+| data-testid=robotics-run | data-run-id、data-status，事件条目 data-event-seq；与实际 RunStore 对照 |
+| data-testid=robotics-version | data-ontology-id、data-version-id、data-publication-state；数量字段 data-count-kind=AtomicSkill/CompositeSkill/SkillInvocation |
+| data-testid=ontology-catalog | 登记条目的 data-ontology-id；旧引用的 data-legacy-key，不伪造资产 ID |
+| data-testid=robotics-jobs | 新构建历史，与原 #jobs_list 分组共存 |
+
+观察标记用于稳定定位，测试仍检查可见文案、可访问标签、实际点击/键盘操作及下载字节，不能只填属性来制造通过。
+运行深链固定为 #build?recipe=robotics&run=<id>，版本深链为 #library?asset=<id>&version=<id>。
+旧 #graph=、#obj= 及普通页 hash 继续可用；缺失新运行/版本保留原地址并显示错误，不静默跳首页或 demo。
+
+#### 真实浏览器场景与证据边界
+
+1. 环境对照：实际 Chrome 打开原数据构建页，实际读取机器人能力接口，核对空运行存储；其通过只证明测试环境可用。
+2. 浏览器双文件上传、真实构建、来源字节和阶段序号对照；候选展示待评审/结构通过/任务适配未评估/执行未验证和实际节点/技能数量；下载 OWL/报告/manifest 并与实际登记字节/摘要一致；刷新及整个服务重启后回查同一版本，不重复提交。
+3. 实际模型冲突报告显示 model_conflict、MoveJ/target、两侧来源；下载报告与存储一致；刷新不重试，显式重试产生新运行且不改旧结果。
+4. 目录区分旧数据引用与机器人资产；机器人条目没有问数/数据图谱跳转；领域筛选有效，作业中心可打开指定构建历史。
+5. 增加真实新版本后，旧版本深链仍固定旧版本，下载不串记录。
+6. 用测试进程持有实际宿主锁，使真实任务处于 queued；离页停止轮询，释放锁后后台正常构建，回页恢复同一运行。没有模拟 queued 响应或替换计算内核。
+7. 缺失运行/版本深链明确显示错误；1440/768/390 三个宽度校验表单、下载操作和整页无横向溢出，键盘提交；文件/名称恶意文本不能执行脚本。
+8. 关闭功能保留原数据构建与旧深链；篡改已登记 OWL 后，页面明确报完整性错误，不下载错误 JSON 冒充本体，也不改历史。
+9. 单独用 RunStore 保存人工构造的恶意问题文字，验证报告渲染转义；明确标记为合成诊断，仅计显示安全检查，不计实际内核错误或成功构建证据。
+
+每场景保存 server.log、请求/响应摘要、pageerror、截图和 evidence.json；成功完成真实下载时才登记下载文件与 SHA-256。
+当前 RED 场景可能已经通过真实后端准备了资产，但没有通过 UI 上传/下载断言；不能把这种测试准备记录算作页面成果。
+
+#### 运行与后续接线
+
+```bash
+env PATH="/home/dyh/.local/opt/node-v22.20.0-linux-x64/bin:$PATH" .venv/bin/python -m pytest tests/unit/test_robotics_build_ui.py -q
+.venv/bin/python tests/frontend/robotics-build-browser.py --output .check-results/robotics-browser
+```
+
+浏览器命令自建隔离实际服务，不能传入用户业务服务；可用 --case 按场景名称复核。
+Node/Chromium 缺失时明确失败，不通过 skip 隐藏覆盖；当前使用已安装 Node 22 与 /usr/bin/google-chrome。
+T07 要在 scripts/check.py 的统一检查里调用真实浏览器程序；本次用一条失败断言约束这项接线，尚未修改检查入口。
+RED：40 项状态/接线测试失败；14 项浏览器中环境对照 1 通过、13 项 UI 相关失败；共 54 项、53 预期失败，0 收集错误/跳过。
+T05 已审后端 70 项回归通过，静态/规格检查通过；详细证据见 [审计记录](../../docs/audits/IR-018-build-ui-validation.md) 和 [T06 RED 记录](../../docs/audits/IR-018-t06-red-results.json)。
+依据 skill 第⑤步“人 review 测试是否覆盖到位”，等待本批覆盖确认后进入 T07；T07 保持这些已审测试不变实现页面和接线，本轮不提前交付。
