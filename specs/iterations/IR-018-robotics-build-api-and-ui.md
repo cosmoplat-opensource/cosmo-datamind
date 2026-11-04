@@ -2,7 +2,7 @@
 
 - **状态 / Status**: in-progress
 - **日期 / Date**: 2026-11-04
-- **当前环节**：T02 覆盖已确认；T03 实现、61 项 GREEN 及完整九段回归通过，已审测试/夹具不变；下一任务 T04，整轮仍 in-progress。
+- **当前环节**：T03 已完成；T04 新增 HTTP/执行器 70 项失败测试，等待覆盖审查后进入 T05；整轮仍 in-progress。
 - **关联 / Refs**: [[DR-059-unified-domain-semantic-graph]]、[[DR-060-robotics-source-recipes-and-reverse-build]]、[[DR-063-local-domain-registration-and-application-ui]]、[[DR-064-persistent-build-runs-and-artifact-manifests]]、[[DR-065-robotics-migration-and-compatibility-validation]]。
 - **前置**：[IR-017](IR-017-ontology-assets-and-persistent-runs.md) 于 2026-11-04 经用户确认 delivered；IR-016 业务内核已交付。
 - **方案**：[集成 Proposal](../PROPOSAL-yang-datamind-integration.md) 第 6 节步骤 3 与第 6.1 节前后端联动要求。
@@ -131,7 +131,7 @@ failed/interrupted 的重试创建新 run 并固定原来源快照，保留 retr
 | 位置 | 本轮用户操作和界面状态 |
 |---|---|
 | 本体构建 #build | 配方切换，默认保留原数据构建；机器人配方显示两个有独立标签的文件槽位、profile/支持范围、提交与清晰的错误提示 |
-| 构建进度 | 排队、解析、抽取、协议检查、保存、终态；阶段来自后端事件，不伪造百分比；提交等待期间防重复点击，HTTP 错误恢复按钮状态 |
+| 构建进度 | 排队、构建计算、保存、终态；首版计算包含解析/抽取/协议检查，阶段来自后端事件，不伪造百分比；提交等待期间防重复点击，HTTP 错误恢复按钮状态 |
 | 本体库 #library | 领域和来源分类；旧数据条目继续走原详情，机器人条目展示候选状态和固定版本，不显示问数按钮 |
 | 候选详情 | 来源角色/摘要、版本、节点/技能数量、结构报告和未评审提示；问题可定位到来源/节点；提供本体、报告和 manifest 下载 |
 | 作业中心 #jobs | 原 JOBS 与新构建历史分组显示，明确各自 ID 和状态；可返回指定构建或候选 |
@@ -151,7 +151,7 @@ failed/interrupted 的重试创建新 run 并固定原来源快照，保留 retr
 | T01 | 核对代码，建立本 IR、计划验收映射、API/UI 边界和审计起点 | IR-017 delivered | RBU-01～10 |
 | T02 | 来源构建运行、schema 迁移、候选提交、问题定位和生成兼容的失败测试；记录 RED、提交审查 | 本轮 Goal/Acceptance 确认 | RBU-01～04、09 |
 | T03 | 实现构建服务和来源型运行，使 T02 转绿；保持已审测试不变 | T02 review | 同上 |
-| T04 | HTTP/有界执行器/超时/重复请求/恢复/下载/开关的失败测试；记录 RED、提交审查 | T03 | RBU-01、03、05、06、09 |
+| T04 | HTTP/有界执行器/超时/重复请求/恢复/下载/开关的失败测试；记录 RED、提交审查 | T03 | RBU-01～06、08、09 |
 | T05 | 实现 Blueprint、执行器、启动装配、查询/下载与配置，使 T04 转绿 | T04 review | 同上 |
 | T06 | UI 行为及真实后端浏览器失败测试；覆盖上传、失败定位、目录/下载、刷新/重启与旧入口 | T05 | RBU-05、07～10 |
 | T07 | 实现配方 UI、候选详情和作业/历史导航，使 T06 转绿；保存实际浏览器证据 | T06 review | 同上 |
@@ -230,3 +230,41 @@ T02 实测：61 项，4 通过、57 预期失败，0 收集错误/跳过；旧�
 详细证据见 [T03 GREEN 报告](../../docs/audits/IR-018-t03-green-results.json) 与 [审计记录](../../docs/audits/IR-018-build-ui-validation.md)。
 本批没有新增 HTTP/UI，不将旧浏览器回归当作新机器人链路验收；RBU-01～04/09 标为 partial-green-t03，整轮 Deliverables / Acceptance 仍待后续任务及最终交付确认。
 下一任务 T04 为 HTTP/执行器/恢复/下载等失败测试，按 skill 第⑤步写完后再进行新覆盖审查。
+
+
+### T04 · HTTP 与执行器失败测试（待覆盖审查）
+
+2026-11-04：用户回复“继续下一步”，授权在 T03 完成后编写本批失败测试。
+本次只增加测试与规格/审计，不实现新 HTTP、执行器或 UI，不修改 T02 已审测试、生产代码或检查门槛。
+新增 `tests/unit/test_domain_build_executor.py`（25 项）、`tests/unit/test_robotics_build_http.py`（45 项）与辅助模块 `tests/build_runtime_support.py`。
+70 项均因待实现模块缺失而失败，0 收集错误、0 跳过；这表示 RED 已建立，不表示内部行为断言已验证通过。
+
+#### 本批供审查的具体约定
+
+| 边界 | T04 可执行测试约定 |
+|---|---|
+| `domain_runs.build_service.BuildService(root, max_pending=4, file_limit_bytes=10485760)` | `submit(name, recipe, profile_id, request_id, sources)` 原子受理；sources 按两个角色传 filename/content；返回持久 queued 运行。`retry(run_id, request_id=...)` 新建固定来源的关联运行。 |
+| `BuildRequestError` | 带 code/status_code；重复相同请求返回原运行，输入变化为 request_conflict/409；等待队列满为 queue_full/429。幂等登记跨进程保存，重发优先于容量检查，重试 ID 不能挪用于另一运行。 |
+| 受理事务 | 请求登记、双来源、queued 运行和初始事件共同提交；并发不能超额或重复登记；事务失败没有已登记的半份来源/运行，允许无索引孤立文件但不作为成功证据。 |
+| 组件记录 | compiler_version 记录实际 importer.py 的 SHA-256（不是整个仓库版本），rule_digest 使用实际校验规则摘要，profile 固定，model.invoked=false。 |
+| `domain_runs.executor.BuildExecutor(root, timeout_seconds=300, poll_interval=..., compute_fn=None)` | start/stop/is_owner；同一根仅一个宿主和一个计算子进程，其他根独立运行；备用宿主自动竞争释放后的所有权。compute_fn 仅供可信 Python 注入，不能由 HTTP 或环境配置指定。 |
+| 计算与提交 | 子进程只计算，父宿主持久提交；首版成功阶段事件为 computing、committing。子进程内部未上报的解析/抽取子阶段不伪装成实时进度，不制造百分比。 |
+| 故障与回收 | 超时、进程崩溃、异常、非法结果、提交故障分别报告 build_timeout / worker_crashed / worker_error / invalid_build_result / storage_error；回收子进程、释放名额，不留下成功输出。排队来源损坏报告 source_integrity，继续调度后续任务。 |
+| 恢复与重试 | 必须先获得独占所有权才恢复；只恢复本轮 build_ontology，其他 operation 的 running/queued 保持；遗留 running→interrupted，queued 可认领，已终态不重跑；重试保留原输入/组件和 retry_of，不改原历史。 |
+| `bp_robotics.init_app(app, workdir=..., legacy_catalog=..., start_executor=True)` | server.py 注入旧目录读取器，蓝图不能反向导入 server；返回 runtime(service/executor/close)，登记到 app.extensions['robotics']；默认启动后台执行器。测试可用 Python 参数关闭执行器以隔离 HTTP 断言，生产配置不暴露该测试选项。 |
+| HTTP 受理和查询 | 上表端点保持；拒绝重复/未知字段和额外文件，文件名不参与路径解析；受理 202，格式 400，大小 413，冲突 409，容量 429，存储故障 503/storage_unavailable。生命周期错误在运行报告返回，非法 XML 可以先受理再由后台报错。 |
+| 列表和详情 | 列表包在 items；历史 limit 1～100、offset≥0，事件 after≥0；run 详情含可下载工件描述；固定版本详情含 build_run_id；不暴露内部路径/命令。 |
+| 旧目录与下载 | 条目区分 entry_kind=asset/legacy_reference；旧 key 仅在明确登记关联时去重，GET 不注册旧资产；跨运行/未知标识 404，缺失/篡改/符号链接 409/artifact_integrity，原历史不改。 |
+
+配置由应用 config 优先、环境变量补充；开关 `DATAMIND_ROBOTICS_ENABLED` 默认关闭，关闭时能力可读，新写接口 503/feature_disabled，不创建新库或启动执行器。
+`DATAMIND_DOMAIN_STORAGE_ROOT` 为显式绝对路径，未指定时使用 WORK/domain_assets。
+`DATAMIND_ROBOTICS_FILE_LIMIT_BYTES` 默认 10 MiB，必须为正数；总请求继续受应用默认 25 MiB 限制。
+`DATAMIND_ROBOTICS_MAX_PENDING` 默认 4，范围 1～64，仅计 queued，运行名额另计 1。
+`DATAMIND_ROBOTICS_TIMEOUT_SECONDS` 默认 300 秒，须为有限正数且不超过 3600 秒；非法启用配置在写库前报错。
+测试将预算缩短至 30 秒，超时场景使用受控阻塞子进程及 1.5 秒预算，避免依赖 RDF 性能；注入仅存在于测试 Python 组合，不是用户可选算法。
+
+本批包含真实 Flask 应用装配、实际构建子进程、实际宿主终止及新进程导入 WSGI 回查；尚不包含网络服务器/浏览器操作，不能替代 T06 的真实浏览器联动。
+详细覆盖、运行统计与文件摘要见 [审计记录](../../docs/audits/IR-018-build-ui-validation.md) 及 [T04 RED 记录](../../docs/audits/IR-018-t04-red-results.json)。
+按照 skill 第⑤步“人 review 测试是否覆盖到位”，本批覆盖确认后才进入 T05；届时保持这些测试不变，只修改实现使其转绿。
+
+T04 检查补记：T03 已审 61 项回归通过、规格元测试 21 项通过，新三文件 ruff/mypy 通过；登记的 167 份基线文件（含 113 份既有测试/夹具）摘要未变，未运行本批全量回归。
