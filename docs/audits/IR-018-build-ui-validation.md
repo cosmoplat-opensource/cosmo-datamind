@@ -50,3 +50,55 @@ acceptance.json 本轮条目仅在 planned_requirements 中登记拟覆盖文件
 - 新测试文件只列于 planned_test_files，未把未编写的测试登记为已执行覆盖。
 - Proposal 与规格索引已同步本地阶段状态；这些文件此前已有未提交内容，沿用原工作区状态，不将其历史改动混入本次 T01 提交。
 - 本次未修改生产实现或已有测试；未重新执行完整回归，未产生新后端/UI 的通过证据。
+
+## T02 · 范围确认与首批失败测试（待覆盖审查）
+
+日期：2026-11-04。
+用户在了解请求保护、构建调度、RunStore 更新机制以及本轮 UI/可视化边界后回复“已确认，进行下一步”。
+据此将 Goal / Acceptance 标记为本轮已确认，新增以下测试；此消息不提前替代本批测试覆盖 review。
+
+### 本次测试覆盖什么
+
+| 文件 | 项数 | 主要验证内容 |
+|---|---:|---|
+| `tests/unit/test_domain_build_runs.py` | 35 | 构建前无本体版本也能排队；来源角色/摘要/参数固定；缺失、重复、非法输入及来源损坏拒绝；事件、显式恢复和重试；候选/报告/manifest 原子提交；文件写入、摘要回读和最终事务提交故障回滚；并发完成只允许一个赢家；构建与原生成完成契约相互隔离 |
+| `tests/unit/test_robotics_build_pipeline.py` | 19 | 实际调用 XML 构建内核和消费验证；按原 XML 独立核对 25 个调用、节点模型和端口；不调用 demo 补证据或自动正式发布；纯计算不提交持久数据；10 类非法来源返回真实定位；原 ValueError 捕获兼容；候选显式发布后真实任务仍缺证据，不生成 XML |
+| `tests/unit/test_domain_build_migration.py` | 7 | 从真实冻结的 schema 2 还原旧库；迁移保留旧行、文件、manifest、发布状态和外键；升级最终 commit 失败回滚；并发打开安全；未知 schema 拒绝；新进程只读查询不触发运行恢复 |
+
+辅助文件：`tests/build_pipeline_support.py`；旧库夹具及出处见 `tests/fixtures/domain_storage/README.md`。
+成功输出的核对不只看 built 标签，还会验证实际 OWL 能被消费侧加载、图中节点/端口与源 XML 相符、版本与工件字节/摘要一致、报告与 manifest 引用正确。
+新增负向场景包括“拿另一份来源成功构建出的合法 OWL/报告提交到当前运行”，必须因来源不匹配而拒绝。
+事务提交故障仅在候选版本、终态和三类工件已写入同一事务后触发，防止在初始化阶段提前抛错而未测试真正的部分提交风险。
+
+### 本次还没有测试什么
+
+- HTTP 上传大小/返回码、request_id 幂等、容量限制、超时终止、宿主独占与 worker 交接：T04。
+- 页面表单、目录/详情/下载、刷新与真实后端浏览器重启联动：T06。
+- 本批用显式调用模拟运行生命周期，不宣称后台执行器或 UI 已经存在。
+- 未连接 LLM、ROS 或真实机器人；候选构建成功不代表任务证据齐全或现场执行成功。
+
+### 实际结果
+
+执行：
+
+```bash
+.venv/bin/python -m pytest tests/unit/test_domain_build_runs.py tests/unit/test_robotics_build_pipeline.py tests/unit/test_domain_build_migration.py -v --tb=short --junitxml=.check-results/ir018-t02/red.xml
+```
+
+- 收集 **61 项**；**4 项通过、57 项失败、0 收集错误、0 跳过**；退出码 **1**。
+- 主要失败原因：create_build_run / finish_build 及 compute_build 入口尚未实现；来源异常尚无结构化 issues；schema 仍为 2，尚未升级。
+- 4 项通过是既有 generated 必须附带候选的限制、冻结夹具完整性以及 RunStore/AssetStore 拒绝未知 schema；不表示新构建功能已经完成。
+- 多数新增用例当前在缺少入口处失败，后续行为断言要等 T03 实现后才能执行，不能把 RED 数量当作全部行为已被验证。
+- 旧能力针对性回归 **74 项全部通过**：运行记录 20、工件 22、存储完整性 7、机器人语义 9、发布契约 16。
+- 元测试 **21 项通过**；新增 4 个 Python 文件 ruff、mypy（follow-imports=silent）通过。
+- RBU-01/02/03/04/09 已映射到真实函数，但只是本批覆盖；其他条目保持 scope-confirmed-tests-planned，未虚报整条验收通过。
+- 153 个本次记录摘要的已有生产/测试文件均未修改；新增测试与夹具摘要见 [机器可读记录](IR-018-t02-red-results.json)。
+- 未执行全量 `--suite all`，本次处于预期失败的 RED 阶段，不宣称全量通过；必要回归在 GREEN/最终交付继续执行。
+
+原始日志位于 `.check-results/ir018-t02/`，其摘要已登记在 JSON 审计记录中。
+本次提交只含新增测试/夹具和本轮规格/审计；Proposal 与索引已同步本地阶段状态，保留其原有未提交内容。
+
+### 下一步
+
+按 [SDD skill](../../.agents/skills/sdd-workflow/SKILL.md) 第⑤步的明确要求“人 review 测试是否覆盖到位”，本批等待用户审查覆盖内容。
+确认后执行 T03：只修改实现使这 61 项测试转绿，不修改已审测试或重生成旧库夹具来绕过失败。
