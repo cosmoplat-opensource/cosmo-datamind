@@ -2,7 +2,7 @@
 
 - **状态 / Status**: in-progress
 - **日期 / Date**: 2026-11-04
-- **当前环节**：T01 代码盘点、范围及验收草案完成，待用户确认本轮 Goal / Acceptance；尚未编写 RED 测试或生产实现。
+- **当前环节**：用户已确认本轮 Goal / Acceptance；T02 首批失败测试已编写，待测试覆盖审查；尚未进入 T03 实现。
 - **关联 / Refs**: [[DR-059-unified-domain-semantic-graph]]、[[DR-060-robotics-source-recipes-and-reverse-build]]、[[DR-063-local-domain-registration-and-application-ui]]、[[DR-064-persistent-build-runs-and-artifact-manifests]]、[[DR-065-robotics-migration-and-compatibility-validation]]。
 - **前置**：[IR-017](IR-017-ontology-assets-and-persistent-runs.md) 于 2026-11-04 经用户确认 delivered；IR-016 业务内核已交付。
 - **方案**：[集成 Proposal](../PROPOSAL-yang-datamind-integration.md) 第 6 节步骤 3 与第 6.1 节前后端联动要求。
@@ -15,7 +15,7 @@
 前后端在本轮一起交付，浏览器验收连接实际 HTTP 服务、真实存储和现有机器人内核。
 产物是待评审的机器人本体候选；本轮不提供任务到行为树 XML 的页面，不将构建成功表示为机器人已可执行。
 
-用户授权进入下一步，据此建立本轮实施草案；下面新增构建运行契约及 RBU-01～10 是本次具体化的范围和验收，尚待本轮确认。
+2026-11-04，用户在了解 Blueprint、后台执行、RunStore 及本轮 UI/可视化边界后回复“已确认，进行下一步”，确认本轮 Goal / Acceptance 与 RBU-01～10，授权进入 T02。
 跨阶段 DR 保持 proposed，不因本 IR 开始而整体批准后续编辑、发布、模型及应用阶段。
 
 ### 代码盘点与必须补齐的接入点
@@ -65,7 +65,7 @@
 - [ ] 使用指南、隔离启动/浏览器复核命令、审计报告及实际运行 ID、来源摘要、版本引用、下载文件和必要截图。
 - [ ] 更新 acceptance 映射、Proposal 和规格索引；未交付能力继续显式标记后续。
 
-### 最小后端契约（待本轮范围确认，T02/T04 细化可执行断言）
+### 最小后端契约（本轮范围已确认，T02/T04 细化可执行断言）
 
 **构建输入与版本输入分开。**
 已有生成运行仍固定已发布 ontology_id/version_id，保持其字段含义、状态和 candidate 工件约束。
@@ -160,7 +160,7 @@ failed/interrupted 的重试创建新 run 并固定原来源快照，保留 retr
 各批实现均按 skill 跑必要回归；最终交付必须通过完整检查与真实浏览器联动，不能以 T03/T05 后端通过宣称本轮 UI 功能完成。
 T01 阶段测试文件名只是计划，放在 acceptance.json 的 planned_requirements；实际测试创建后再填写 requirements 的真实函数引用。
 
-## 验收 Acceptance（本轮草案，待用户确认）
+## 验收 Acceptance（本轮已确认，待实现与交付验证）
 
 - [ ] **RBU-01 来源与配方**：从页面明确提交两种 XML 角色及受支持 profile，固定来源字节/摘要；缺文件、角色/配置错误、超限和重复请求按约定处理，不覆盖同名旧来源。
 - [ ] **RBU-02 构建与候选**：实际调用新构建内核和兼容校验，产生保真 OWL 候选及输出版本引用；候选保持待评审，不自动发布或补模拟证据，执行状态未验证。
@@ -188,3 +188,30 @@ IR-017 的通过结果作为旧能力基线，不替代本轮的 RED/GREEN 与 U
 - 已识别“现有运行强制输入版本”“候选与正式发布分离”“旧页面只读引用”“已有浏览器夹具不能替代真实联动”等接入差异，并纳入上述任务。
 - 尚未修改生产代码、UI、已审测试或启动线上构建；尚无本轮测试通过/失败统计。
 - 本轮 Goal / Acceptance 确认后开始 T02 的首批失败测试，再按 skill 第⑤步提交新测试覆盖审查。
+
+
+### T02 范围确认与失败测试
+
+2026-11-04：用户确认本轮范围；新增三组测试及测试辅助模块、schema 2 冻结夹具。
+新增业务代码、HTTP 和 UI 尚未实现；以下是 T03 需要满足的服务边界，最终统计及覆盖表见 [审计记录](../../docs/audits/IR-018-build-ui-validation.md)。
+
+| 接口 / 字段 | T02 固定的含义 |
+|---|---|
+| RunStore.create_build_run(name, recipe, profile_id, source_asset_ids, session_ref, components) | 从已登记的两类来源创建 queued 运行；本批不负责 HTTP 文件大小、请求幂等或执行器容量 |
+| build_input | 固定 name、recipe、profile_id 及 sources 的 source_asset_id/role/sha256/byte_size；不含服务器路径 |
+| ontology_id / version_id / ontology_snapshot | 构建运行保持 None；保留旧版本输入型运行的原字段含义 |
+| output_asset_ref | 初始/失败为 None，成功记录新候选的 ontology_id/version_id；不回填为输入版本 |
+| domain_runs.robotics_build.compute_build(root, run_id) | 对已 running 的构建读取来源快照、实际执行内核及消费兼容验证；只返回 result 与 ontology 字节或 None，不持久提交状态、事件或工件 |
+| RunStore.finish_build(run_id, result, ontology) | 核对来源、输出摘要/兼容及结果一致性，原子保存候选资产/版本、报告、manifest、终态及事件；失败为报告，无输出版本 |
+| completed / built | 沿用既有生命周期 completed，构建成功业务结果为 built；不增加名为 succeeded 的存储状态 |
+| execution_readiness / task_readiness | 构建结果分别为 not_verified / not_assessed；结构通过不表示任务证据齐全 |
+| 结构化来源异常 | importer 保留 ValueError 可捕获语义，增加 issues；构建边界补登记来源 ID，位置使用真实行列或 tree_id/node_tag/step_index/model_id/port；无位置则显式 unknown |
+
+本批 stable code：invalid_xml、forbidden_xml_declaration、unknown_node、model_conflict、invalid_port、unsupported_template、source_integrity、build_error。
+模型冲突需报告两侧声明；未知节点/端口的测试明确给出实际所在树、节点与端口；不以字符串正则反推结构化位置。
+存储故障注入包括第二次文件写入、工件回读摘要检查以及成功行/工件已写入事务后、commit 前抛错，必须回滚所有可见成功索引。
+尚未涉及的有界接纳、request_id 幂等、运行超时/宿主所有权、HTTP 返回码属于 T04；页面和真实浏览器联动属于 T06，不能以本批测试替代。
+按 skill 第⑤步，本批测试覆盖经用户 review 后才进入 T03；T03 不改已审测试来让其通过。
+
+T02 实测：61 项，4 通过、57 预期失败，0 收集错误/跳过；旧能力针对性回归 74 项、元测试 21 项通过，新增文件 ruff/mypy 通过。
+未更改生产代码或已审测试，未执行本轮完整回归；待本批覆盖确认后进入 T03。
