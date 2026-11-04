@@ -1,5 +1,5 @@
 {
-  "iteration": "IR-014 / IR-015 / IR-016 / IR-017（delivered）",
+  "iteration": "IR-014 / IR-015 / IR-016 / IR-017（delivered） / IR-018（T01 规划，待范围确认）",
   "requirements": [
     {
       "id": "ALG-01",
@@ -432,5 +432,121 @@
       ]
     }
   ],
-  "planned_requirements": []
+  "planned_requirements": [
+    {
+      "id": "RBU-01",
+      "iteration": "IR-018",
+      "status": "planned-awaiting-scope-review",
+      "criterion": "来源与配方：从页面明确提交两种 XML 角色及受支持 profile，固定来源字节/摘要；缺文件、角色/配置错误、超限和重复请求按约定处理，不覆盖同名旧来源。",
+      "planned_test_files": [
+        "tests/unit/test_robotics_build_pipeline.py",
+        "tests/unit/test_robotics_build_http.py"
+      ],
+      "notes": "T01 范围/验收草案待用户确认；仅登记拟覆盖文件，尚无新增测试或实现。实际测试编写并运行 RED 后再建立真实函数映射；真实浏览器联动不能用接口成功夹具替代。"
+    },
+    {
+      "id": "RBU-02",
+      "iteration": "IR-018",
+      "status": "planned-awaiting-scope-review",
+      "criterion": "构建与候选：实际调用新构建内核和兼容校验，产生保真 OWL 候选及输出版本引用；候选保持待评审，不自动发布或补模拟证据，执行状态未验证。",
+      "planned_test_files": [
+        "tests/unit/test_robotics_build_pipeline.py",
+        "tests/unit/test_domain_build_runs.py"
+      ],
+      "notes": "T01 范围/验收草案待用户确认；仅登记拟覆盖文件，尚无新增测试或实现。实际测试编写并运行 RED 后再建立真实函数映射；真实浏览器联动不能用接口成功夹具替代。"
+    },
+    {
+      "id": "RBU-03",
+      "iteration": "IR-018",
+      "status": "planned-awaiting-scope-review",
+      "criterion": "运行与原子性：尚无本体版本时可创建来源输入型运行；有界受理、阶段事件、超时、重启与重试行为可验证；失败或事务故障不留下可见成功版本/半份清单，原生成契约不被放宽。",
+      "planned_test_files": [
+        "tests/unit/test_domain_build_runs.py",
+        "tests/unit/test_domain_build_executor.py"
+      ],
+      "notes": "T01 范围/验收草案待用户确认；仅登记拟覆盖文件，尚无新增测试或实现。实际测试编写并运行 RED 后再建立真实函数映射；真实浏览器联动不能用接口成功夹具替代。"
+    },
+    {
+      "id": "RBU-04",
+      "iteration": "IR-018",
+      "status": "planned-awaiting-scope-review",
+      "criterion": "问题定位：非法 XML、未知节点、模型冲突和不兼容模板/端口显示稳定代码及真实来源/节点位置；页面与后端报告一致，不泄漏部署路径或伪造定位/成功。",
+      "planned_test_files": [
+        "tests/unit/test_robotics_build_pipeline.py",
+        "tests/unit/test_robotics_build_http.py",
+        "tests/unit/test_robotics_build_ui.py"
+      ],
+      "notes": "T01 范围/验收草案待用户确认；仅登记拟覆盖文件，尚无新增测试或实现。实际测试编写并运行 RED 后再建立真实函数映射；真实浏览器联动不能用接口成功夹具替代。"
+    },
+    {
+      "id": "RBU-05",
+      "iteration": "IR-018",
+      "status": "planned-awaiting-scope-review",
+      "criterion": "目录与版本：平台展示持久资产与旧数据引用并明确其差别，机器人详情固定资产/版本/来源；刷新或新版本出现不串用旧记录，机器人不进入 SQL 问数或默认 demo 兜底。",
+      "planned_test_files": [
+        "tests/unit/test_robotics_build_http.py",
+        "tests/unit/test_robotics_build_ui.py",
+        "tests/frontend/robotics-build-browser.py"
+      ],
+      "notes": "T01 范围/验收草案待用户确认；仅登记拟覆盖文件，尚无新增测试或实现。实际测试编写并运行 RED 后再建立真实函数映射；真实浏览器联动不能用接口成功夹具替代。"
+    },
+    {
+      "id": "RBU-06",
+      "iteration": "IR-018",
+      "status": "planned-awaiting-scope-review",
+      "criterion": "下载与完整性：按运行/工件 ID 下载的 OWL、报告与 manifest 字节和摘要一致；跨运行、越界、缺失及损坏请求明确失败且不改历史；构建输入和输出版本能互相追溯。",
+      "planned_test_files": [
+        "tests/unit/test_domain_build_runs.py",
+        "tests/unit/test_robotics_build_http.py",
+        "tests/frontend/robotics-build-browser.py"
+      ],
+      "notes": "T01 范围/验收草案待用户确认；仅登记拟覆盖文件，尚无新增测试或实现。实际测试编写并运行 RED 后再建立真实函数映射；真实浏览器联动不能用接口成功夹具替代。"
+    },
+    {
+      "id": "RBU-07",
+      "iteration": "IR-018",
+      "status": "planned-awaiting-scope-review",
+      "criterion": "页面交互：真实上传、配方切换、提交/排队/运行/失败/完成状态与后端一致；文件/问题显示安全、键盘可操作，1440/768/390 宽度无主要操作不可见或页面横向溢出。",
+      "planned_test_files": [
+        "tests/unit/test_robotics_build_ui.py",
+        "tests/frontend/robotics-build-browser.py"
+      ],
+      "notes": "T01 范围/验收草案待用户确认；仅登记拟覆盖文件，尚无新增测试或实现。实际测试编写并运行 RED 后再建立真实函数映射；真实浏览器联动不能用接口成功夹具替代。"
+    },
+    {
+      "id": "RBU-08",
+      "iteration": "IR-018",
+      "status": "planned-awaiting-scope-review",
+      "criterion": "历史与恢复：运行及指定版本可通过页面深链重开；事件按游标无重复，刷新不重提任务，真实服务重启后仍可查看；遗留 running 明确中断、queued 构建按契约恢复，新 worker 不误中断活跃宿主。",
+      "planned_test_files": [
+        "tests/unit/test_domain_build_executor.py",
+        "tests/unit/test_robotics_build_ui.py",
+        "tests/frontend/robotics-build-browser.py"
+      ],
+      "notes": "T01 范围/验收草案待用户确认；仅登记拟覆盖文件，尚无新增测试或实现。实际测试编写并运行 RED 后再建立真实函数映射；真实浏览器联动不能用接口成功夹具替代。"
+    },
+    {
+      "id": "RBU-09",
+      "iteration": "IR-018",
+      "status": "planned-awaiting-scope-review",
+      "criterion": "兼容与隔离：旧 schema 2 可无损升级且失败回滚，未知 schema 拒绝；既有生成/演示、数据构建、图谱、聊天和 JOBS 无回归；关闭机器人功能不破坏旧能力，校验使用隔离目录且门槛不降低。",
+      "planned_test_files": [
+        "tests/unit/test_domain_build_migration.py",
+        "tests/unit/test_robotics_build_pipeline.py",
+        "tests/unit/test_robotics_build_http.py"
+      ],
+      "notes": "T01 范围/验收草案待用户确认；仅登记拟覆盖文件，尚无新增测试或实现。实际测试编写并运行 RED 后再建立真实函数映射；真实浏览器联动不能用接口成功夹具替代。"
+    },
+    {
+      "id": "RBU-10",
+      "iteration": "IR-018",
+      "status": "planned-awaiting-scope-review",
+      "criterion": "可复核联动：自动浏览器连接真实服务，走通双文件上传到候选详情及下载，并覆盖实际失败、刷新和重启；保存运行/版本/来源/下载摘要及截图，交付启动/复核命令和人工路径，全量检查通过。",
+      "planned_test_files": [
+        "tests/unit/test_robotics_build_ui.py",
+        "tests/frontend/robotics-build-browser.py"
+      ],
+      "notes": "T01 范围/验收草案待用户确认；仅登记拟覆盖文件，尚无新增测试或实现。实际测试编写并运行 RED 后再建立真实函数映射；真实浏览器联动不能用接口成功夹具替代。"
+    }
+  ]
 }
