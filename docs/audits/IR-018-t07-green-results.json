@@ -1,0 +1,772 @@
+{
+  "iteration": "IR-018",
+  "task": "T07",
+  "date": "2026-11-04",
+  "status": "green-pending-t08-human-delivery",
+  "base_commit": "b1ddc564f94b23b0b132dcbf26e2065dbbfad272",
+  "authorization": "用户在 T06 覆盖说明与服务开关说明后回复“继续下一步”，确认覆盖并授权页面实现。",
+  "test_exception": {
+    "authorization": "用户明确回复“允许这处回调修正，保留全部断言”。",
+    "file": "tests/frontend/robotics-build-browser.py",
+    "before": "page.on('download', downloads.append)",
+    "after": "page.on('download', lambda download: downloads.append(download))",
+    "reason": "Playwright wraps handlers by assigning an attribute, which a Python builtin method does not support; failure happened before the download assertion.",
+    "before_sha256": "af7b418f41ee3120567a4a6e46b7b9597272e25424529ade08b5445a19f31a6d",
+    "after_sha256": "d1884fd9a210b4de77a8e257e86f7f68914afb4c960fa749350aaf8b809cd75c",
+    "entire_file_matches_only_authorized_substitution": true
+  },
+  "results": {
+    "ui_targeted": {
+      "tests": 40,
+      "passed": 40,
+      "failed": 0,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 1.188
+    },
+    "browser_targeted": {
+      "tests": 14,
+      "passed": 14,
+      "failed": 0,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 74.634
+    },
+    "full_check_exit_code": 0,
+    "full_check": [
+      {
+        "name": "lint",
+        "exit_code": 0,
+        "seconds": 0.032,
+        "log": "lint.log"
+      },
+      {
+        "name": "types",
+        "exit_code": 0,
+        "seconds": 5.09,
+        "log": "types.log"
+      },
+      {
+        "name": "unit",
+        "exit_code": 0,
+        "seconds": 817.154,
+        "log": "unit.log"
+      },
+      {
+        "name": "coverage",
+        "exit_code": 0,
+        "seconds": 0.415,
+        "log": "coverage.log"
+      },
+      {
+        "name": "integration",
+        "exit_code": 0,
+        "seconds": 7.843,
+        "log": "integration.log"
+      },
+      {
+        "name": "strict10",
+        "exit_code": 0,
+        "seconds": 0.216,
+        "log": "strict10.log"
+      },
+      {
+        "name": "test_ui",
+        "exit_code": 0,
+        "seconds": 122.938,
+        "log": "test_ui.log"
+      },
+      {
+        "name": "test_ui_ops",
+        "exit_code": 0,
+        "seconds": 42.983,
+        "log": "test_ui_ops.log"
+      },
+      {
+        "name": "build-browser",
+        "exit_code": 0,
+        "seconds": 2.322,
+        "log": "build-browser.log"
+      },
+      {
+        "name": "robotics-browser",
+        "exit_code": 0,
+        "seconds": 73.984,
+        "log": "robotics-browser.log"
+      }
+    ],
+    "unit": {
+      "passed": 1198,
+      "skipped": 5,
+      "skip_reason": "Optional upstream engine unavailable"
+    },
+    "coverage": {
+      "percent": 85.0,
+      "unchanged_gate_percent": 81.0
+    },
+    "http": {
+      "passed": 551,
+      "skipped": 8,
+      "skip_reason": "Optional upstream engine unavailable"
+    },
+    "strict": {
+      "passed": 10
+    },
+    "legacy_ui": {
+      "passed": 64
+    },
+    "legacy_ui_ops": {
+      "passed": 50,
+      "skipped": 3,
+      "skip_reason": "No real model configured"
+    },
+    "legacy_browser": {
+      "passed": 10
+    },
+    "real_robotics_browser": {
+      "tests": 14,
+      "passed": 14,
+      "failed": 0,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 73.726
+    }
+  },
+  "integrity": {
+    "tracked_test_files": 120,
+    "unchanged_files": 119,
+    "authorized_exception_files": 1,
+    "all_assertions_unchanged": true,
+    "criterion_and_test_references_unchanged": true,
+    "baseline_sha256": {
+      "tests/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "tests/asset_support.py": "6a568bfe4cc6798bf5c9e8c54ef2dd590ad3e1d8dcd91aa5c2160b0fd1f7c071",
+      "tests/browser_runtime.py": "743c7556f8f34ea9a9735ec2e7444439f91a26be8449cc6d553e705455d1583d",
+      "tests/build_pipeline_support.py": "4b44c2c90bfb5ca98a788973e3c3a9100a7d8c2a2b81ddbee177f416862ea648",
+      "tests/build_runtime_support.py": "2b47d7ca9ab29c2f701e6d0bf517d0d6a358d0c0fa5fff48eace5cb9e6784046",
+      "tests/conftest.py": "8a78824ada63ea498b2baad49188ef5d9b996e35c543cdb5e83e8f9149a19141",
+      "tests/fixtures/domain_storage/README.md": "0e01e842e2242d35dff151caa94ef69ee75103142698f051e5421f527e1ee676",
+      "tests/fixtures/domain_storage/schema2_snapshot.json": "b97203848dddd87c306bd287fd9cfe97d7a2f68c0172a6df03af96220cd44b39",
+      "tests/fixtures/robotics/README.md": "12a7cd4c9e91ba7538dc96dbfc642aff87b465cf1ecea0fbed98b5f554359e6c",
+      "tests/fixtures/robotics/demo_supplement.json": "83519556d7b1dec8a1fb580325ae669a098300ad97ee4a5afe2bd0d1a2ffcc77",
+      "tests/fixtures/robotics/demo_supplement.md": "e2bd917006060fcc3a0f8a46550d970d74fd0cfeab73947ed264892b97d52fee",
+      "tests/fixtures/robotics/manifest.json": "f0a8bc7e08b8f02d9a97cefd6b7faddd66ccd74f849b179f02c72a6d0ffb07fa",
+      "tests/fixtures/robotics/owl/agent_demo.owl": "a99de3f74705538e566d6eeaca5af028b5e15fd038e996733998522fc4f9933b",
+      "tests/fixtures/robotics/owl/agent_real.owl": "7f84a0baeb811df3771eee75b423e7c49229c1479755432120c6e963b279e805",
+      "tests/fixtures/robotics/owl/authoring.owl": "64ef1d99f7ed54b250c899015d0dccca4e6564962831e281116c7d3ced30e991",
+      "tests/fixtures/robotics/sources/ur_skill_shapes.ttl": "8853cb014fd4f931c4ba9e0ef8c2c1027f1cdb2b7f47502f657907a98b8bbb2b",
+      "tests/fixtures/robotics/sources/xingweishu.xml": "e676494a3b409bcb3fa7527fe23229d6df399eb7712bf12f714817d7ae5f4e5a",
+      "tests/fixtures/robotics/sources/xml_models.xml": "c1f3c6b46afb9878e030bcef8910a95af89bdff35682d42e5618da972cc08973",
+      "tests/fixtures/robotics/tasks/legacy_request.json": "8c008813504a88bc46d9f9c0b23c1c28f3139012820b52dc228b2709c3caa3cc",
+      "tests/fixtures/robotics/tasks/public_parameters.json": "58f87cc6bb641531a5cee7c8b57782893df88879ffd74c96e162d01e5b7b3e35",
+      "tests/frontend/build-browser.py": "cd58835b8fe4024f536fc613889471735af77006be5892925d8643467d455489",
+      "tests/frontend/build-ui.cjs": "32e3378c4180bf5548e29a0e0bace192345ab27e2c402b0b224dbd8b75351d97",
+      "tests/frontend/live-deployment.py": "1b5fe02e45e68a5d1e2edbbb17f0faab814d12d1a4ae550c2d050de6cf65d1e9",
+      "tests/frontend/live-upload.py": "68993b2c6895ceb8640f7afe0ba2fa965175347cb0c044d95cf5dadc956bdb96",
+      "tests/frontend/robotics-build-browser.py": "af7b418f41ee3120567a4a6e46b7b9597272e25424529ade08b5445a19f31a6d",
+      "tests/frontend/robotics-ui.cjs": "c3e4835b9130d7f0025d7efcf20043779ae82f1b006ad77d3181f5e60aafc1ea",
+      "tests/meta/test_acceptance_traceability.py": "9f24ace15e9e162743ea0c6ba894d20487136e01b783be677c14db3e09b1dda9",
+      "tests/meta/test_doc_consistency.py": "8eb2a6a0144e1abb0256e4c5b761e9206472c064d63ddb765eeaaec352abc42b",
+      "tests/meta/test_ontology_pipeline_doc.py": "8ba78feeffc70a6c813b1aa5399b4cb846b484c14073fc84f759e0e689168a81",
+      "tests/meta/test_pipeline_doc.py": "25389d548ff4eee209c973ae48bad6ed19a06104c6501842694ba272ba0e776b",
+      "tests/meta/test_ui_terminology.py": "d1493f164e33ff52328452368896f53be502c340b7370edcf1ecafa41b1f7d36",
+      "tests/robotics_browser_support.py": "39d0a266e8084ff17075921940fc32d760ee5068d1388c879a4e4757c3d32e95",
+      "tests/robotics_generation_support.py": "f25dad9b4c4d0c3c22f9a66a484d178e323d32bfed92bec6ca2f1ee977d40768",
+      "tests/robotics_support.py": "87d5e6601cc52115384fab6917ff748a9dae82cff5a04265bb7f6779abe2f44a",
+      "tests/run_support.py": "d8089a814296ae5fd513ab07c36a65f65e034fecaf759ac5f690a9a20b69da54",
+      "tests/storage_pipeline_support.py": "203d9eca9db08fa6e18952085ebc45a70c5a2faa81952a5ac0b597ceea6e6135",
+      "tests/unit/test_action_boundary_regressions.py": "96969d30986862cd54e5f9628e3576cbfefeb7f34d19d77f084f062f75f742de",
+      "tests/unit/test_action_ontology.py": "756f91ab7b9c586d7a85a2562c876f6811c02125d415f1090301d4e70db107d3",
+      "tests/unit/test_algorithm_evidence_regressions.py": "5b363f5c2d144084bf9d115eba541ab551466a635d35eb78bf2c6e7db040ed64",
+      "tests/unit/test_bp_metrics.py": "cf113e00c297cd2409f1f0c8e1dd9c9224f01c512896eb37cae59c91d3b1a2ee",
+      "tests/unit/test_build_iteration.py": "a23605914e491dd2e471b1b6a70665b32ebb7bc66e32890bc2f19682cddb1c9b",
+      "tests/unit/test_build_manifest.py": "21fa682eb979aea5cc94bca3d005b15a84863a87c7c4962944f3b3f2358a6587",
+      "tests/unit/test_build_quality.py": "d86800e569ebd3438037ded19dcb14aa9ccb0260f99a1be84809cf3fab59c40e",
+      "tests/unit/test_build_references.py": "666dc1fb752af74c345a5fe6710eea50ea4123bc810ea05359937c0b9af790f7",
+      "tests/unit/test_build_stream.py": "d2de7e14071363484dd0f3c70de3716babd974a879370aa49bcd2765f4616a10",
+      "tests/unit/test_build_ui.py": "abd2de50ef4e34f9ceb5ef2bd4784d66a834e0df9aed0d9d9b4b296f5fe4997b",
+      "tests/unit/test_check_isolation.py": "d0a1285dd3b6b4bf511b8ea54cef148822cba456f46cb50c6f65501632bb9024",
+      "tests/unit/test_compat_module_usage.py": "b0d296b143bd187c8a14a3e9b0e9222d82322f6c21cd6659026310b3a72b4a07",
+      "tests/unit/test_concept_profile.py": "1e25ab6791e27fd5e6850253529e528f34106b80762059ea06ee963176cf5e49",
+      "tests/unit/test_content_quality.py": "8f22f79e2e0fe743c97fc5977da0f20e9b74a83b98e45cde0790e165adebedcf",
+      "tests/unit/test_cq_check.py": "35d08f501af4ea81d0b7a3ec1dd56d96c68d014acf28f40c31905cab551c40b4",
+      "tests/unit/test_dao_core.py": "937d64e05e306dffb644082b69032a80ac5ec8d85c574e1929d369b7274e79ca",
+      "tests/unit/test_deep_qa_scope.py": "214583a38166ca02e0608a797c75dd5af72fbc8103fed4dce37a91307cd361e0",
+      "tests/unit/test_definition_eval.py": "e464a63490d64334332fb42bf378cd4b7a8edeb019ab792e2dd93629a698ab02",
+      "tests/unit/test_domain_artifacts.py": "54910d3ad4c4d50582a67cd11234bbebbcebb2f82d2fb911435e5d36083a2b5c",
+      "tests/unit/test_domain_build_executor.py": "d03589a34df1ffe8b73af5ffe5eb26853b5f05dbf6251d05aa9a0776609b5f6d",
+      "tests/unit/test_domain_build_migration.py": "05e3b2d903f23ee3ba8f473505bc5f0b909209a94539c93b7e464ce5b0f0882e",
+      "tests/unit/test_domain_build_runs.py": "ea7fa9798d7cb88f574486ac0c91f93de3d9b644b5cada06ec5c673787e069f1",
+      "tests/unit/test_domain_run_store.py": "ad7640cb6ddd895b1e20232d436c8d345ea71e42cc45006f671952be29ce1bd8",
+      "tests/unit/test_domain_storage_demo_cli.py": "4aa0534dabaf611080556543c8bbeda05bd919fdcf30d518d4bc5745391b4b6d",
+      "tests/unit/test_domain_storage_integrity.py": "d4b4959257998770f82e0fac377bc72b5fd6886759d5a20c8056203d0f067999",
+      "tests/unit/test_domain_storage_pipeline.py": "22494a80f1aeb7e5c7b9dda9ecf9cec867a77039699c0a7fbac5f8faa6078329",
+      "tests/unit/test_drift_check.py": "a970d1780ad399b45481abd3ee562320e65529e3266bc693d298da4738260f41",
+      "tests/unit/test_env_empty_values.py": "dd949ca6dc44888b94a4cbc1c14edba38b96262b85074a61d6abf7aa8aafde07",
+      "tests/unit/test_fanout_gate.py": "a7c9c93f83d74c12362ce57cc44851fef712148056eec93ec11321310282db2a",
+      "tests/unit/test_graph_cache.py": "a3c8a853e01c70e7df94d2bd661b965fcd7c37a1c10cb4553860144b2e25bdb8",
+      "tests/unit/test_hallucination_eval.py": "36c62ee21f7560bb5aaf9207313bf8df29f65362970f4b70cb33e03da95579d6",
+      "tests/unit/test_health_check.py": "ba7713d23c2ac48869f19433f58de95aa4d98a35e5efeb6efd2bddf3c8e067b0",
+      "tests/unit/test_intent_check.py": "eb83f924f79976de46ac1f7904df3f42262ed5dc3e0fb15017c2eaee5d5b28df",
+      "tests/unit/test_ir_relational.py": "8baa0e3a2f7a36f48a46e6cd4359917325588ab097d42da2a9ca9ec2095ea878",
+      "tests/unit/test_ir_shape.py": "f33c0b896ed8bbe593e6d4b62cc19786d813df2a36ecf5fd3a7f619f8092d19b",
+      "tests/unit/test_legacy_asset_adapter.py": "2d97524b9382b68161a9501449f3511674298e8cc0bffc7f7394743a41575d78",
+      "tests/unit/test_llm_json.py": "5649a0676cd7ea14e1656a243fff1b5782da25551790a7af6a9a132046c58171",
+      "tests/unit/test_mcp_action_server.py": "9ab50614bf80cf128c7b0117225cc933aa202e8fee6b62b483abc59ffd8857ce",
+      "tests/unit/test_mcp_build_server.py": "836029958ef0edc2b8df64bff02774f65dd4ba2787a4cf69782cf0081eda9a6a",
+      "tests/unit/test_metric_contract.py": "23931d07d6112f066faf3a2c7875df666c7ecd65aaecc7ea501c33baeb96ffd0",
+      "tests/unit/test_metric_integrity.py": "8297283282615fed4d369243ee50ea55d70c5e8bb78b267636cef09c7a2dcef0",
+      "tests/unit/test_metric_mining.py": "1dcd492f0f53fb7a827ddcf5fe7d2b73acf494c8a799e0c7744038e283cc0b4f",
+      "tests/unit/test_metric_pipeline.py": "565b3f5747ec9007409382976538e442aac1e31c36f3906cbb3ae4bc61884ef9",
+      "tests/unit/test_metrics_ui.py": "b81217b8f3d90cd087479f53389ae76f6ef0a3a26c47ec60650c771ff95da982",
+      "tests/unit/test_ontology_asset_catalog.py": "3d13fb2d5e2b9f985ecd9d81cfd51876d2bda4450e19e9612abf96bc18dede13",
+      "tests/unit/test_ontology_asset_versions.py": "a9409cf7fe4ac410ee597f0ab6d61fc3cc49afc7d8e41d9f96b4b7c7634182a3",
+      "tests/unit/test_ontology_chat_scope.py": "88a09b04c392782228a4e25c853ea964515b0f21367c7215dd651e9f690083be",
+      "tests/unit/test_ontology_grounding.py": "29c99c38a3da74350316f7bc103e5079f70bdf48df30a455f8a73faf0091e9f3",
+      "tests/unit/test_osi_export.py": "e441d27a1c24703f69be7bf1801bbdc450f78dcc937ebc01c27a27aee867c894",
+      "tests/unit/test_production_deploy.py": "581d42c38ab6342482a3779ea868e1e0729461cd1654ebf12df2996072967d5c",
+      "tests/unit/test_qa_anchor_ui.py": "65484ccab223ad3a2afe6ddf7384b35b5f2cb9f28ea16e6b6969a0008efd2f75",
+      "tests/unit/test_qa_fallback_scope.py": "06a7b683e6b05fba07ed5e5b9ae8023cb8908d9d62fb64910324526d167e4dcf",
+      "tests/unit/test_qa_history_ui.py": "543a2f5dd8da3d9d1eada06fd8a8731ab9ff64937c773d6939747837bd6cf677",
+      "tests/unit/test_qa_ontology_entry.py": "f018fb6709e59b12a835582355e96fcb191ed731308e6dc88fce0f452e0ce37b",
+      "tests/unit/test_quick_build.py": "9c4832bd0b28cb319e149032b666968d3bd530beae6965b5125ced12db154d0e",
+      "tests/unit/test_request_limits.py": "d40d43e4406610182d1373b877c03e83496b9804b132d94957c5ce3d05c79f75",
+      "tests/unit/test_robotics_baseline.py": "c8e5de2b1eef6968094f2e9377788cc9c9125ecc824c850c675a4c20634d4162",
+      "tests/unit/test_robotics_build_http.py": "c9cf82fccb0ed8a74ce0fea40dd67c5e5cf24f8fa067e6f567c0a4c40ada778f",
+      "tests/unit/test_robotics_build_pipeline.py": "25fef39cbd1754890cdde26ddb02a089a4b41eab5e7b8919a5a85623636ba527",
+      "tests/unit/test_robotics_build_ui.py": "554cf1d72e0a6346a2bf7ca2793f4aaf00147ab994c8db32060a604b32b9b852",
+      "tests/unit/test_robotics_compiler.py": "e8cd7dd3ac6db4142f2353d32610bf9dd8ef1de708193dd0a9c2bf60ceecbabf",
+      "tests/unit/test_robotics_demo_cli.py": "bd5f05b5fceae7e924af5e3ccc9fd2fb68ad26433d95aa9f70f66b8b423c900b",
+      "tests/unit/test_robotics_imports.py": "84b300e4ca22e2610712e553f542921fef5ff1c69f0d1688268a4638d1178501",
+      "tests/unit/test_robotics_pipeline.py": "2fb72b5f4d51fa338173188fdc73ece20c5fbb02efe42deb4f104b4b4de4774d",
+      "tests/unit/test_robotics_policy.py": "a3de21f7f225e2ff7a00e5475c140ddf28fa3737be1c0031e79be9796ca3882f",
+      "tests/unit/test_robotics_publication.py": "54464a4b937e1069ba78adc01a001a56a8fcb44be9a870b3e062ea20965a8775",
+      "tests/unit/test_robotics_regression.py": "ff61fb61bb207c84a2812e1706b45dc860d192ab2b67d9f9230898a1b1f9bd56",
+      "tests/unit/test_robotics_semantics.py": "3628b70bdd7456dd1e64f7c8c14a6874e89d1e63d788aa90c7aaef3e46d5692c",
+      "tests/unit/test_robotics_source_independence.py": "8b08f3b0e033c0465e6f18789651733223c7125af4f1e3772d41689f8b412b7f",
+      "tests/unit/test_rule_engine.py": "80e5c30263f8815e03d8e367809ea6236244127aa9ada3b2988487b979c167e1",
+      "tests/unit/test_security_guards.py": "c57ccb965950c07219bc49ededb93572ea1360f4c414de372014b06e70abffea",
+      "tests/unit/test_security_regressions.py": "63f17e673f0e6e57be0dcedf0c2f7e1152ec5f6955434b4fc11e91d6c62f261e",
+      "tests/unit/test_server_adjudication.py": "44e3c715189e2daca2ea9cc3c5ffec3f958e744d11b3f7c8f7ef0a347760d4f5",
+      "tests/unit/test_server_catalog.py": "145515f2a972dab766f6071bd9f53ebc9c7c054b19b349efb1802f6b5d2e52b2",
+      "tests/unit/test_service_manager.py": "198590f11a45b4ed3fb1b5b97b0465e3a923725dbf09a1e6ec72453de4fafbec",
+      "tests/unit/test_skill_registry.py": "d5c8e8f1ab77b97a54659d4341c9743f6132ed88a6912bb89e6954a313c1b72b",
+      "tests/unit/test_srv_context.py": "04f41262f0a8f52ab378e92a1f1a875e8b4a9606ac30dba81002fcde6d4434b5",
+      "tests/unit/test_srv_hardening.py": "cdd0a79eb119ef795106c6d4e58e47ac54a9e7239195d28d80b03f099519a5da",
+      "tests/unit/test_standard_assets.py": "11a5d93a764bbc9c78cbcb0c8b293d0b6c16c4201066f97a7f9ded627636c64d",
+      "tests/unit/test_store.py": "7cc4cf94d232cc7bbf984d3598f3b6614802e6fdfaba6455046ba55ecaf62c19",
+      "tests/unit/test_translate_cn.py": "1351c7d1fd1c2bae3c25f683e4a81ef8658cfe1e529d2f56fe196703e3ea2415",
+      "tests/unit/test_ui_nav.py": "73c412cde8fe64d9c233436ed509c263d551f3eac7c4439d2cb562ad022184b6",
+      "tests/unit/test_upload_transaction.py": "5c6fa6765e0e83cac8553436af50056468a757ef997c6222b1d3047c730aa844",
+      "tests/unit/test_usage_metrics.py": "a330bcf033864293f0196605868044ff85b7a341d63dc31682b747aac626f6b9"
+    },
+    "production_sha256": {
+      "ui/index.html": "7098f6b9392ae9f375547245b0fd547905442d2dbdb809e41bcde320f1d8d230",
+      "ui/modules/robotics-build.js": "c93b8d7d0ce230357ae0f80ff35d5eb89d3425744db2ba3296af47937b4e6a75",
+      "ui/modules/robotics-assets.js": "d0a3970a32e4f736d0b10a9a885bdaf1349aed9d5fe3ae288f4fddc1b4567fe5",
+      "ui/styles/robotics.css": "abb123f07626d5732d0b7379b6acd199455f58765bfafd5b8bf5ea328e4ae4d3",
+      "scripts/check.py": "f2bafee0d9030d0e62d545a7c3b4da36d604f8152eaaa03fa51c5afe8c829d56"
+    }
+  },
+  "browser_cases": [
+    {
+      "name": "test_actual_model_conflict_location_report_and_explicit_retry",
+      "assertions_completed": true,
+      "page_errors": [],
+      "evidence_path": ".check-results/ir018-t07-all/robotics-browser/test_actual_model_conflict_location_report_and_explicit_retry/evidence.json",
+      "evidence_sha256": "02514b61704225234f80b99b1d718b7d0eab7f1e420f29e72a52d6dd99f3a12d",
+      "request_count": 57,
+      "post_count": 2,
+      "restarted": false,
+      "diagnostic_fixture": null,
+      "runs": [
+        {
+          "run_id": "run_119137557cec4c79a219a4a369d70a58",
+          "status": "failed",
+          "sources": [
+            {
+              "byte_size": 10445,
+              "role": "behavior_tree",
+              "sha256": "1b619d26b990d5011131df55ff07d5ad639fcd620d266720a4bf5da72b211d1b",
+              "source_asset_id": "src_aca03a0c4e7b423183254e183b184660"
+            },
+            {
+              "byte_size": 10398,
+              "role": "node_models",
+              "sha256": "1a20a93b73ede6d1162df020d8ad6a5c61da4c5bc3d4c9aacdefb0cd021e7e16",
+              "source_asset_id": "src_0d8870920c874720aad91f7bdcaa7f2e"
+            }
+          ],
+          "output_asset_ref": null
+        },
+        {
+          "run_id": "run_2d0fdcfc5e794f66b082dc987433c279",
+          "status": "failed",
+          "sources": [
+            {
+              "byte_size": 10445,
+              "role": "behavior_tree",
+              "sha256": "1b619d26b990d5011131df55ff07d5ad639fcd620d266720a4bf5da72b211d1b",
+              "source_asset_id": "src_aca03a0c4e7b423183254e183b184660"
+            },
+            {
+              "byte_size": 10398,
+              "role": "node_models",
+              "sha256": "1a20a93b73ede6d1162df020d8ad6a5c61da4c5bc3d4c9aacdefb0cd021e7e16",
+              "source_asset_id": "src_0d8870920c874720aad91f7bdcaa7f2e"
+            }
+          ],
+          "output_asset_ref": null
+        }
+      ],
+      "downloads": [
+        {
+          "run_id": "run_119137557cec4c79a219a4a369d70a58",
+          "artifact_id": "art_eecc0c62a6da487cabb31c8c71f85d6d",
+          "kind": "validation",
+          "sha256": "32179bc8fbd4c9cd5b4e32a025684a456be09c568711789d63eb4e89e4b806ad",
+          "byte_size": 488,
+          "saved_path": ".check-results/ir018-t07-all/robotics-browser/test_actual_model_conflict_location_report_and_explicit_retry/validation.json"
+        }
+      ]
+    },
+    {
+      "name": "test_catalog_and_jobs_keep_robotics_separate_from_legacy_data",
+      "assertions_completed": true,
+      "page_errors": [],
+      "evidence_path": ".check-results/ir018-t07-all/robotics-browser/test_catalog_and_jobs_keep_robotics_separate_from_legacy_data/evidence.json",
+      "evidence_sha256": "fe5368bcedb927ca6948399e679128eeb1af3468876d7e584d97eaa9ee4b0368",
+      "request_count": 31,
+      "post_count": 0,
+      "restarted": false,
+      "diagnostic_fixture": null,
+      "runs": [
+        {
+          "run_id": "run_a09b0b22d38e41d4b3b3dc330e83c7af",
+          "status": "completed",
+          "sources": [
+            {
+              "byte_size": 13739,
+              "role": "behavior_tree",
+              "sha256": "e676494a3b409bcb3fa7527fe23229d6df399eb7712bf12f714817d7ae5f4e5a",
+              "source_asset_id": "src_a455a75c03f946ffb17d3cc2d3d52876"
+            },
+            {
+              "byte_size": 10169,
+              "role": "node_models",
+              "sha256": "c1f3c6b46afb9878e030bcef8910a95af89bdff35682d42e5618da972cc08973",
+              "source_asset_id": "src_9e563d1cc3604ae0b15af24f2dfa544b"
+            }
+          ],
+          "output_asset_ref": {
+            "ontology_id": "ont_00f66ca9d25f4ebe98783f2f6d05379b",
+            "version_id": "ver_8339a8c0c51c4c888c665fe5746d145f"
+          }
+        }
+      ],
+      "downloads": []
+    },
+    {
+      "name": "test_damaged_download_is_an_error_not_a_saved_success_file",
+      "assertions_completed": true,
+      "page_errors": [],
+      "evidence_path": ".check-results/ir018-t07-all/robotics-browser/test_damaged_download_is_an_error_not_a_saved_success_file/evidence.json",
+      "evidence_sha256": "b0ce7b4d1324f353125b80acb4e16ca770201f7f902ca816c99ee67a1c5705d5",
+      "request_count": 20,
+      "post_count": 0,
+      "restarted": false,
+      "diagnostic_fixture": null,
+      "runs": [
+        {
+          "run_id": "run_bc9087ad3c454d4d868da3de98c66e1b",
+          "status": "completed",
+          "sources": [
+            {
+              "byte_size": 13739,
+              "role": "behavior_tree",
+              "sha256": "e676494a3b409bcb3fa7527fe23229d6df399eb7712bf12f714817d7ae5f4e5a",
+              "source_asset_id": "src_c135b6053ae24234b876576d254b1cf1"
+            },
+            {
+              "byte_size": 10169,
+              "role": "node_models",
+              "sha256": "c1f3c6b46afb9878e030bcef8910a95af89bdff35682d42e5618da972cc08973",
+              "source_asset_id": "src_9062f1aa2eae4cd2a7efbb4bd5d41623"
+            }
+          ],
+          "output_asset_ref": {
+            "ontology_id": "ont_ff370b90639a4840bf91fe79880940bb",
+            "version_id": "ver_66b25aa5f17c4803946757b15bb9ba9b"
+          }
+        }
+      ],
+      "downloads": []
+    },
+    {
+      "name": "test_disabled_robotics_preserves_data_build_and_legacy_deep_links_live0_",
+      "assertions_completed": true,
+      "page_errors": [],
+      "evidence_path": ".check-results/ir018-t07-all/robotics-browser/test_disabled_robotics_preserves_data_build_and_legacy_deep_links_live0_/evidence.json",
+      "evidence_sha256": "a65380d408aadd72903110415d88afbbf90f7f3a5f4d338b3a2c54b88d1d284c",
+      "request_count": 25,
+      "post_count": 0,
+      "restarted": false,
+      "diagnostic_fixture": null,
+      "runs": [],
+      "downloads": []
+    },
+    {
+      "name": "test_keyboard_xss_and_responsive_controls_1440_",
+      "assertions_completed": true,
+      "page_errors": [],
+      "evidence_path": ".check-results/ir018-t07-all/robotics-browser/test_keyboard_xss_and_responsive_controls_1440_/evidence.json",
+      "evidence_sha256": "da25629c0b8a953f61a0f65cf780e7102403215fbba19b78b6ac84605252ab20",
+      "request_count": 39,
+      "post_count": 1,
+      "restarted": false,
+      "diagnostic_fixture": null,
+      "runs": [
+        {
+          "run_id": "run_25f6a49099e046719931e26847c829c2",
+          "status": "completed",
+          "sources": [
+            {
+              "byte_size": 13739,
+              "role": "behavior_tree",
+              "sha256": "e676494a3b409bcb3fa7527fe23229d6df399eb7712bf12f714817d7ae5f4e5a",
+              "source_asset_id": "src_d0d40e47160a4745bc80b628a53e6864"
+            },
+            {
+              "byte_size": 10169,
+              "role": "node_models",
+              "sha256": "c1f3c6b46afb9878e030bcef8910a95af89bdff35682d42e5618da972cc08973",
+              "source_asset_id": "src_040895ee6ec942178a20751a9940efac"
+            }
+          ],
+          "output_asset_ref": {
+            "ontology_id": "ont_e9fa2d9e40d04c06b50998c87c44e512",
+            "version_id": "ver_dd1ba42d5e8f4e468e56ebefd5e9b19b"
+          }
+        }
+      ],
+      "downloads": []
+    },
+    {
+      "name": "test_keyboard_xss_and_responsive_controls_390_",
+      "assertions_completed": true,
+      "page_errors": [],
+      "evidence_path": ".check-results/ir018-t07-all/robotics-browser/test_keyboard_xss_and_responsive_controls_390_/evidence.json",
+      "evidence_sha256": "f731b779d42fade2884c747bc2af7c2dcbcce72bd728733b69f7adb6589343a0",
+      "request_count": 39,
+      "post_count": 1,
+      "restarted": false,
+      "diagnostic_fixture": null,
+      "runs": [
+        {
+          "run_id": "run_751c71770f69470a84e4d97a5f75cee2",
+          "status": "completed",
+          "sources": [
+            {
+              "byte_size": 13739,
+              "role": "behavior_tree",
+              "sha256": "e676494a3b409bcb3fa7527fe23229d6df399eb7712bf12f714817d7ae5f4e5a",
+              "source_asset_id": "src_fbda784d8b484434971917123f327abb"
+            },
+            {
+              "byte_size": 10169,
+              "role": "node_models",
+              "sha256": "c1f3c6b46afb9878e030bcef8910a95af89bdff35682d42e5618da972cc08973",
+              "source_asset_id": "src_7251955eaa4242baa62afe0989edfbae"
+            }
+          ],
+          "output_asset_ref": {
+            "ontology_id": "ont_c5d894fd37c8422aabc967e084ec853a",
+            "version_id": "ver_145c7ffca0144680b4ca43f704abcd07"
+          }
+        }
+      ],
+      "downloads": []
+    },
+    {
+      "name": "test_keyboard_xss_and_responsive_controls_768_",
+      "assertions_completed": true,
+      "page_errors": [],
+      "evidence_path": ".check-results/ir018-t07-all/robotics-browser/test_keyboard_xss_and_responsive_controls_768_/evidence.json",
+      "evidence_sha256": "4a7bb09faedeae31cb0053cb95366c33fba5972208b421e9d2651b196349493d",
+      "request_count": 39,
+      "post_count": 1,
+      "restarted": false,
+      "diagnostic_fixture": null,
+      "runs": [
+        {
+          "run_id": "run_cf7e95b9e45b4388a551eb16403878bc",
+          "status": "completed",
+          "sources": [
+            {
+              "byte_size": 13739,
+              "role": "behavior_tree",
+              "sha256": "e676494a3b409bcb3fa7527fe23229d6df399eb7712bf12f714817d7ae5f4e5a",
+              "source_asset_id": "src_d8d407f2962a4af7b92c05c847e9825c"
+            },
+            {
+              "byte_size": 10169,
+              "role": "node_models",
+              "sha256": "c1f3c6b46afb9878e030bcef8910a95af89bdff35682d42e5618da972cc08973",
+              "source_asset_id": "src_cb70aa57230a4f4a8d94982db792fa4a"
+            }
+          ],
+          "output_asset_ref": {
+            "ontology_id": "ont_c3e84bd7cc1542d1913fb36c2a4b04c3",
+            "version_id": "ver_9fa790b63c0545dc93ee2aa1134109a3"
+          }
+        }
+      ],
+      "downloads": []
+    },
+    {
+      "name": "test_leaving_page_stops_polling_but_queued_build_continues_live0_",
+      "assertions_completed": true,
+      "page_errors": [],
+      "evidence_path": ".check-results/ir018-t07-all/robotics-browser/test_leaving_page_stops_polling_but_queued_build_continues_live0_/evidence.json",
+      "evidence_sha256": "13bd95abe133cb7cabedef1776baa8af85d7cc05cb99dfdedba87a41c42f372a",
+      "request_count": 29,
+      "post_count": 1,
+      "restarted": false,
+      "diagnostic_fixture": null,
+      "runs": [
+        {
+          "run_id": "run_b962b841c66d4e73813d836e239a4b1e",
+          "status": "completed",
+          "sources": [
+            {
+              "byte_size": 13739,
+              "role": "behavior_tree",
+              "sha256": "e676494a3b409bcb3fa7527fe23229d6df399eb7712bf12f714817d7ae5f4e5a",
+              "source_asset_id": "src_5d3bc11581894eecb4a11c074fdee9ef"
+            },
+            {
+              "byte_size": 10169,
+              "role": "node_models",
+              "sha256": "c1f3c6b46afb9878e030bcef8910a95af89bdff35682d42e5618da972cc08973",
+              "source_asset_id": "src_00bf0df15f344a2f804a713d9f1be096"
+            }
+          ],
+          "output_asset_ref": {
+            "ontology_id": "ont_961bc62011a3472898826669b0382244",
+            "version_id": "ver_ef572812a36e4165aaba4a1bfb06db42"
+          }
+        }
+      ],
+      "downloads": []
+    },
+    {
+      "name": "test_missing_deep_link_reports_error_without_demo_fallback_build_recipe_robotics_run_run_missing_",
+      "assertions_completed": true,
+      "page_errors": [],
+      "evidence_path": ".check-results/ir018-t07-all/robotics-browser/test_missing_deep_link_reports_error_without_demo_fallback_build_recipe_robotics_run_run_missing_/evidence.json",
+      "evidence_sha256": "65015618579a50524125b3ae36855a8d69429412b3fd2c82f14a268e3867507b",
+      "request_count": 24,
+      "post_count": 0,
+      "restarted": false,
+      "diagnostic_fixture": null,
+      "runs": [],
+      "downloads": []
+    },
+    {
+      "name": "test_missing_deep_link_reports_error_without_demo_fallback_library_asset_ont_missing_version_ver_missing_",
+      "assertions_completed": true,
+      "page_errors": [],
+      "evidence_path": ".check-results/ir018-t07-all/robotics-browser/test_missing_deep_link_reports_error_without_demo_fallback_library_asset_ont_missing_version_ver_missing_/evidence.json",
+      "evidence_sha256": "93a66e1c40a8c038f3006e8772223cb4d46a2c05000606e39eb48729bd066572",
+      "request_count": 19,
+      "post_count": 0,
+      "restarted": false,
+      "diagnostic_fixture": null,
+      "runs": [],
+      "downloads": []
+    },
+    {
+      "name": "test_persisted_untrusted_problem_text_is_rendered_as_text_live0_",
+      "assertions_completed": true,
+      "page_errors": [],
+      "evidence_path": ".check-results/ir018-t07-all/robotics-browser/test_persisted_untrusted_problem_text_is_rendered_as_text_live0_/evidence.json",
+      "evidence_sha256": "d351a92275c48deaea6a4e488143a9a8bc11e7245bd751d4fb93086fbe3a29a1",
+      "request_count": 25,
+      "post_count": 0,
+      "restarted": false,
+      "diagnostic_fixture": "synthetic persisted failure; not actual kernel-error evidence",
+      "runs": [],
+      "downloads": []
+    },
+    {
+      "name": "test_real_fixture_browser_and_backend_are_available",
+      "assertions_completed": true,
+      "page_errors": [],
+      "evidence_path": ".check-results/ir018-t07-all/robotics-browser/test_real_fixture_browser_and_backend_are_available/evidence.json",
+      "evidence_sha256": "2c314e535c6a44ac65b236b40351b6c402b47586648b76f07592c289c20b5ea9",
+      "request_count": 24,
+      "post_count": 0,
+      "restarted": false,
+      "diagnostic_fixture": null,
+      "runs": [],
+      "downloads": []
+    },
+    {
+      "name": "test_requested_version_stays_pinned_after_newer_version_is_added",
+      "assertions_completed": true,
+      "page_errors": [],
+      "evidence_path": ".check-results/ir018-t07-all/robotics-browser/test_requested_version_stays_pinned_after_newer_version_is_added/evidence.json",
+      "evidence_sha256": "97541b20e43c6fdbd665802af4fafd891bd0dbf4e78db7bad2ff260dd461a3e7",
+      "request_count": 39,
+      "post_count": 0,
+      "restarted": false,
+      "diagnostic_fixture": null,
+      "runs": [
+        {
+          "run_id": "run_96571ceec4484b46a3e2db402cf562bd",
+          "status": "completed",
+          "sources": [
+            {
+              "byte_size": 13739,
+              "role": "behavior_tree",
+              "sha256": "e676494a3b409bcb3fa7527fe23229d6df399eb7712bf12f714817d7ae5f4e5a",
+              "source_asset_id": "src_9f7427ecfd2041228bdb4a29550cb2f0"
+            },
+            {
+              "byte_size": 10169,
+              "role": "node_models",
+              "sha256": "c1f3c6b46afb9878e030bcef8910a95af89bdff35682d42e5618da972cc08973",
+              "source_asset_id": "src_173c4a0b0b504f16b5ae1f60c2b08354"
+            }
+          ],
+          "output_asset_ref": {
+            "ontology_id": "ont_a43c287358634c3e91b1805b52ddb1c6",
+            "version_id": "ver_79663ed0bbe947ea91f2a0f45ba8532d"
+          }
+        }
+      ],
+      "downloads": [
+        {
+          "run_id": "run_96571ceec4484b46a3e2db402cf562bd",
+          "artifact_id": "art_435b006d7597448b878a8c86f12fb6ff",
+          "kind": "ontology",
+          "sha256": "6561161a002bf8c80e2536a4a51ebeb9ade61b5e78fdf24462e214573ca0604f",
+          "byte_size": 482710,
+          "saved_path": ".check-results/ir018-t07-all/robotics-browser/test_requested_version_stays_pinned_after_newer_version_is_added/candidate.owl"
+        }
+      ]
+    },
+    {
+      "name": "test_upload_candidate_download_refresh_and_service_restart",
+      "assertions_completed": true,
+      "page_errors": [],
+      "evidence_path": ".check-results/ir018-t07-all/robotics-browser/test_upload_candidate_download_refresh_and_service_restart/evidence.json",
+      "evidence_sha256": "56e4eb849999b015a0ebb82a144b806bcbb1402c4fbbf08644bb88dacf0c2394",
+      "request_count": 81,
+      "post_count": 1,
+      "restarted": true,
+      "diagnostic_fixture": null,
+      "runs": [
+        {
+          "run_id": "run_1f6b8da6962f48ec81b466a566b99a64",
+          "status": "completed",
+          "sources": [
+            {
+              "byte_size": 13739,
+              "role": "behavior_tree",
+              "sha256": "e676494a3b409bcb3fa7527fe23229d6df399eb7712bf12f714817d7ae5f4e5a",
+              "source_asset_id": "src_f4cc579b9a3146ef936dd80ba157f2e5"
+            },
+            {
+              "byte_size": 10169,
+              "role": "node_models",
+              "sha256": "c1f3c6b46afb9878e030bcef8910a95af89bdff35682d42e5618da972cc08973",
+              "source_asset_id": "src_55e683d008734a88a13942d0470e0880"
+            }
+          ],
+          "output_asset_ref": {
+            "ontology_id": "ont_a5ea418b75894a25a9d21082e37556b4",
+            "version_id": "ver_8c0b91b44cbb4242b90aa51c9303c130"
+          }
+        }
+      ],
+      "downloads": [
+        {
+          "run_id": "run_1f6b8da6962f48ec81b466a566b99a64",
+          "artifact_id": "art_f27e1c70cd934bdfbd2d92a6ba745847",
+          "kind": "ontology",
+          "sha256": "ccbd8844fb9462754feb788e9da4471a359f25e19740ec7c852d955713dd0051",
+          "byte_size": 482710,
+          "saved_path": ".check-results/ir018-t07-all/robotics-browser/test_upload_candidate_download_refresh_and_service_restart/candidate.owl"
+        },
+        {
+          "run_id": "run_1f6b8da6962f48ec81b466a566b99a64",
+          "artifact_id": "art_5543b745a5b849f7be14b84a72c5a18b",
+          "kind": "validation",
+          "sha256": "410103b8d15be4fb265ac4636def24a731ea084af594249a16184a680105dd18",
+          "byte_size": 956,
+          "saved_path": ".check-results/ir018-t07-all/robotics-browser/test_upload_candidate_download_refresh_and_service_restart/validation.json"
+        },
+        {
+          "run_id": "run_1f6b8da6962f48ec81b466a566b99a64",
+          "artifact_id": "art_300911678eb540dd9cc68fe20e8139c2",
+          "kind": "manifest",
+          "sha256": "fc4f44b678e4921f3eac5a62608930664194f813d5c1930929757ca55a420189",
+          "byte_size": 2664,
+          "saved_path": ".check-results/ir018-t07-all/robotics-browser/test_upload_candidate_download_refresh_and_service_restart/manifest.json"
+        },
+        {
+          "run_id": "run_1f6b8da6962f48ec81b466a566b99a64",
+          "artifact_id": "art_f27e1c70cd934bdfbd2d92a6ba745847",
+          "kind": "ontology",
+          "sha256": "ccbd8844fb9462754feb788e9da4471a359f25e19740ec7c852d955713dd0051",
+          "byte_size": 482710,
+          "saved_path": ".check-results/ir018-t07-all/robotics-browser/test_upload_candidate_download_refresh_and_service_restart/candidate.owl"
+        }
+      ]
+    }
+  ],
+  "guide_smoke": {
+    "scope": "Guide env configuration with originally empty work directory; real browser XML upload and actual backend",
+    "run_id": "run_bee56f9421484aa7bbbf4718db31f326",
+    "status": "completed",
+    "output_asset_ref": {
+      "ontology_id": "ont_4de3ca0dd5544e4abaa7330f41c6f228",
+      "version_id": "ver_c2a67661555b4268a850fedf5ebd6156"
+    },
+    "sources": [
+      {
+        "byte_size": 13739,
+        "role": "behavior_tree",
+        "sha256": "e676494a3b409bcb3fa7527fe23229d6df399eb7712bf12f714817d7ae5f4e5a",
+        "source_asset_id": "src_00807af3b7db46faa1978a4960edd8d4"
+      },
+      {
+        "byte_size": 10169,
+        "role": "node_models",
+        "sha256": "c1f3c6b46afb9878e030bcef8910a95af89bdff35682d42e5618da972cc08973",
+        "source_asset_id": "src_9951987ab61547b8917c65014b8a363d"
+      }
+    ],
+    "ontology_sha256": "7d9727bd6086ed335163eceb2733b31b4c32426bcde570ccb1d1b1cacc0795c1",
+    "ontology_byte_size": 482710,
+    "page_errors": [],
+    "screenshots": {
+      "docs/audits/IR-018-t07-browser/candidate-desktop.png": "039285f807ab091efd5acf566e854489de6177074260aeffea7cebbf3aaba2f9",
+      "docs/audits/IR-018-t07-browser/build-desktop.png": "ccdba44f30032e5eb9c9a2d61667d53ab337d3bce45528aa2ed62f624a3bcac9",
+      "docs/audits/IR-018-t07-browser/candidate-mobile.png": "34e686d95d55f4eed85a81b38ba3e5b0297ae553bf5f59edecefc2419e114f98"
+    }
+  },
+  "limitations": [
+    "IR remains in-progress; no Deliverables or Acceptance checkbox marked as human-delivered.",
+    "Only bt_xml / ur_pick_place; result is candidate, task suitability not assessed, execution not verified.",
+    "No graph editing, formal publication, LLM task extraction or behavior-tree generation UI in this task.",
+    "Controller responses are synthetic; actual browser core HTTP routes are not intercepted. Persisted hostile diagnostic is a separate synthetic rendering case.",
+    "Screenshots and run IDs belong to disposable verification roots; temporary services and storage have been cleaned up.",
+    "Preexisting dirty/untracked design documents and user workdir files are excluded from the task commit."
+  ],
+  "raw_reports": {
+    "targeted": ".check-results/ir018-t07/",
+    "full": ".check-results/ir018-t07-all/"
+  }
+}

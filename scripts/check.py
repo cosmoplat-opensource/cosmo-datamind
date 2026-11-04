@@ -142,6 +142,9 @@ def main():
                         run_check("build-browser", [py, "tests/frontend/build-browser.py",
                                   "--url", env["DATAMIND_URL"], "--output", str(reports / "build-browser")],
                                   env, reports, results)
+                        # DR-065: owns an enabled server/root, never reuses the legacy server.
+                        run_check("robotics-browser", [py, "tests/frontend/robotics-build-browser.py",
+                                  "--output", str(reports / "robotics-browser")], env, reports, results)
                 finally:
                     server.terminate()
                     try:

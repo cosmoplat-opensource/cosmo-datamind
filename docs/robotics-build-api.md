@@ -1,6 +1,6 @@
 # 机器人本体构建 API（IR-018 T05）
 
-本批接通真实双 XML 上传、后台构建、持久运行、候选版本和下载；页面入口仍由 T06/T07 实现。
+T05 接通真实双 XML 上传、后台构建、持久运行、候选版本和下载；T07 已接入页面，操作路径见 [UI 指南](robotics-build-ui.md)。
 仅支持 `bt_xml` 配方和 `ur_pick_place` profile，不调用 LLM，不添加演示补充资料，不自动正式发布或执行机器人动作。
 
 ## 隔离启动
@@ -97,7 +97,7 @@ curl -sS -X POST 'http://127.0.0.1:8093/api/domain-runs/<run_id>/retry' \
 ## 验证边界
 
 T04 已审的 70 项测试验证服务/HTTP/真实计算子进程/宿主交接与实际应用装配；T05 另有实际 Gunicorn 网络上传、下载和重启回查证据。
-这不替代 T06 的浏览器和新 UI 联动验收。
+T07 已完成新 UI 与实际后端浏览器联动，证据见 [T07 审计记录](audits/IR-018-build-ui-validation.md)；整轮交付仍待 T08 人审。
 
 ```bash
 .venv/bin/python -m pytest tests/unit/test_domain_build_executor.py tests/unit/test_robotics_build_http.py -q

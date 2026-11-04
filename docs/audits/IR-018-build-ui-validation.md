@@ -280,7 +280,7 @@ env PATH="/home/dyh/.local/opt/node-v22.20.0-linux-x64/bin:$PATH" .venv/bin/pyth
 本次未实现新的 UI；IR-018 保持 in-progress，RBU 后端部分记录为 partial-green-t05，整轮交付仍待后续任务与人审。
 下一任务为 T06 的 UI 与真实后端浏览器失败测试，写好后再审查新覆盖。
 
-## T06 · UI 状态与真实浏览器契约（RED，待测试覆盖审查）
+## T06 · UI 状态与真实浏览器契约（RED 存档，覆盖已确认）
 
 2026-11-04：用户在 T05 完成后回复“继续下一步”，本次进入 SDD 第⑤步编写失败测试。
 新增四个测试/辅助文件，共 54 项；生产 UI、后端、检查入口和 116 份既有测试/夹具均未修改。
@@ -349,3 +349,59 @@ env PATH="/home/dyh/.local/opt/node-v22.20.0-linux-x64/bin:$PATH" .venv/bin/pyth
 依据 [SDD skill 第⑤步](../../.agents/skills/sdd-workflow/SKILL.md) 的明确要求：“人 review 测试是否覆盖到位”。
 本批测试和具体 UI 约定已经写好，当前停在覆盖审查点；确认后，T07 实现页面、路由、轮询清理、目录/详情/下载及统一检查接线，保持已审测试不变。
 IR-018 仍为 in-progress；最终交付和新 UI 联动通过需由 T07/T08 提供实际证据。
+
+## T07 · 页面实现与真实后端联动
+
+2026-11-04：用户在了解 T06 测试范围和服务端开关后回复“继续下一步”，确认覆盖并授权进入 TDD GREEN。
+本批实现原生 JS 控制器、构建表单、本体目录与固定版本、来源/问题展示、下载、历史导航及独立浏览器套件接线。
+
+### 实现与页面入口
+
+| 文件 / 入口 | 本批行为 |
+|---|---|
+| `ui/modules/robotics-build.js` / 本体构建 | 默认保留数据配方；能力读取完成后开放机器人表单；两角色独立上传、本地输入检查、单次在途提交、稳定重发编号；按真实阶段轮询、离页清理、终态停止、显式重试 |
+| `ui/modules/robotics-assets.js` / 本体库 | 领域筛选；保留旧数据入口；固定版本查询、校验响应身份、忽略迟到响应；候选/结构/任务/执行状态分开；来源摘要、节点数量和问题定位可读 |
+| 同上 / 作业中心与下载 | 分组显示持久构建历史，20 项分页、深链回查；先检查 HTTP 状态再保存文件，409 完整性错误在页面提示 |
+| `ui/index.html` / `ui/styles/robotics.css` | 沿用原导航、页面和样式；新模块独立加载，保留旧 graph/obj 深链；1440/768/390 宽度、键盘操作和恶意文本转义 |
+| `scripts/check.py` | 在原九段检查之后新增 robotics-browser；该程序自建实际启用机器人功能的服务和临时根，不复用旧回归服务；原覆盖率和超时预算不变 |
+
+控制器测试、真实浏览器与页面使用同一份生产模块。
+机器人功能通过服务端 DATAMIND_ROBOTICS_ENABLED 开关控制；关闭时页面隐藏机器人配方，既有历史仍可只读回查，UI 没有新增管理员开关。
+构建成功保持 candidate；不新增自动发布、补充业务证据、在线图谱编辑或任务生成 UI。
+
+### 唯一获授权的测试修正
+
+120 份已跟踪测试/夹具中，119 份 SHA-256 完全不变。
+`tests/frontend/robotics-build-browser.py` 的损坏下载场景原先把 Python 内置方法 downloads.append 直接传入 page.on；当前 Playwright 尝试给该内置方法设置属性，抛 AttributeError，尚未进入下载断言。
+已向用户解释 skill 第⑥步限制，用户明确回复“允许这处回调修正，保留全部断言”。
+仅将回调替换为 `lambda download: downloads.append(download)`；该文件其余内容和全部断言保持原样。
+本场景随后真实点击已损坏的 OWL：HTTP 409、页面完整性错误、零下载、历史不变，全部通过。
+没有降低门槛、跳过该场景或通过生产代码绕过测试框架异常。
+
+### 实际证据与复核路径
+
+[UI 指南](../robotics-build-ui.md) 提供空工作目录隔离启动、双 XML 选择、构建/失败/重试、目录、历史、下载和重启回查操作。
+另按指南环境配置实际启动空工作目录，浏览器上传冻结 XML 后得到候选，保存三张真实截图：
+
+- [桌面构建表单](IR-018-t07-browser/build-desktop.png)
+- [桌面候选详情](IR-018-t07-browser/candidate-desktop.png)
+- [手机候选详情](IR-018-t07-browser/candidate-mobile.png)
+
+截图中的候选来自运行 `run_bee56f9421484aa7bbbf4718db31f326`，版本 `ont_4de3ca0dd5544e4abaa7330f41c6f228 / ver_c2a67661555b4268a850fedf5ebd6156`；该隔离服务和临时存储已清理，截图与证据留存，不是用户业务库记录。
+合法夹具实际显示 13 原子技能、3 复合技能、25 技能调用，候选 OWL 为 482710 字节。
+已查看桌面/手机截图，长 ID 和摘要正常换行、表单和下载按钮可操作，没有横向溢出；旧手机导航布局继续沿用平台样式。
+
+独立 GREEN 浏览器批次 `.check-results/ir018-t07/browser-final/` 为 14/14，通过耗时 74.634 秒。
+前端状态/接线批次 40/40，无跳过；全量结果与最终代码摘要另记于下文和机器可读 T07 GREEN 报告。
+测试边界延续 T06：状态测试使用合成 HTTP；实际浏览器核心接口不拦截；恶意诊断文字是明确标记的人工显示夹具，不冒充真实内核失败。
+
+### 全量 GREEN 与交付边界
+
+统一命令：`env PATH="/home/dyh/.local/opt/node-v22.20.0-linux-x64/bin:$PATH" .venv/bin/python scripts/check.py --suite all --report-dir .check-results/ir018-t07-all`。
+十段全部退出 0：lint、types、unit、coverage、integration、strict10、test_ui、test_ui_ops、build-browser、robotics-browser。
+1198 单元通过、5 可选上游组件跳过，单元段 817.154 秒；覆盖率 85.0%，保留 81% 门槛。
+551 HTTP 通过、8 可选上游组件跳过；严格检查 10/10；旧 UI 64、UI 实操 50、旧浏览器 10 项通过，UI 实操另有 3 未配置真实模型场景跳过。
+新增真实机器人浏览器 14/14，无失败/错误/跳过，统一检查段 73.984 秒；全部场景 assertions_completed=true 且无 pageerror。
+全量日志和场景证据在 `.check-results/ir018-t07-all/`；摘要、代码/测试哈希及实际运行/下载引用见 [T07 GREEN 记录](IR-018-t07-green-results.json)。
+acceptance 的 criterion 和 tests 引用完全保留，仅更新阶段状态和实测说明。
+IR-018 仍为 in-progress，未勾选整轮 Deliverables/Acceptance；下一任务 T08 整理最终人审交付，后续图谱编辑、评审发布、LLM/行为树应用 UI 不在本批范围。

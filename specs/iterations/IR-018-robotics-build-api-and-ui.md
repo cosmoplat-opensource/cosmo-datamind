@@ -2,7 +2,7 @@
 
 - **状态 / Status**: in-progress
 - **日期 / Date**: 2026-11-04
-- **当前环节**：T05 已完成；T06 新增 40 项 UI 状态/检查入口用例与 14 项浏览器用例，待覆盖审查后进入 T07；整轮仍 in-progress。
+- **当前环节**：T07 页面、真实浏览器联动及全量十段检查已通过；待 T08 最终复核与交付人审；整轮仍 in-progress。
 - **关联 / Refs**: [[DR-059-unified-domain-semantic-graph]]、[[DR-060-robotics-source-recipes-and-reverse-build]]、[[DR-063-local-domain-registration-and-application-ui]]、[[DR-064-persistent-build-runs-and-artifact-manifests]]、[[DR-065-robotics-migration-and-compatibility-validation]]。
 - **前置**：[IR-017](IR-017-ontology-assets-and-persistent-runs.md) 于 2026-11-04 经用户确认 delivered；IR-016 业务内核已交付。
 - **方案**：[集成 Proposal](../PROPOSAL-yang-datamind-integration.md) 第 6 节步骤 3 与第 6.1 节前后端联动要求。
@@ -179,7 +179,7 @@ T01 阶段测试文件名只是计划，放在 acceptance.json 的 planned_requi
 新浏览器程序计划位于 `tests/frontend/robotics-build-browser.py`，与已有 mock 型 build-browser 检查独立运行。
 测试启动的服务必须启用机器人模块并使用临时 WORK/存储根；输入使用仓库冻结的 XML 和受控负向变体，不读取用户业务目录。
 本阶段不调用 LLM，成功来源不应用 demo_supplement；真实缺业务证据可以形成待评审本体，但不能被显示成任务已适配。
-T08 交付 `docs/robotics-build-ui.md` 的实际可运行命令和操作路径；这些新增入口目前尚未实现，不能宣称已有浏览器验收通过。
+T07 已提供 `docs/robotics-build-ui.md` 的实际可运行命令与操作路径，并验证新增页面和真实浏览器联动；T08 汇总最终交付与人审结果。
 IR-017 的通过结果作为旧能力基线，不替代本轮的 RED/GREEN 与 UI 联动证据。
 
 ### T01 记录
@@ -287,7 +287,7 @@ T04 已审 70 项全部通过；116 份已跟踪测试/夹具摘要保持不变�
 下一任务 T06 编写 UI 行为及真实后端浏览器失败测试，再按 skill 第⑤步提交覆盖审查。
 
 
-### T06 · UI 与真实浏览器失败测试（待覆盖审查）
+### T06 · UI 与真实浏览器失败测试（RED 存档，覆盖已确认）
 
 2026-11-04：用户在 T05 完成后回复“继续下一步”，授权本批测试工作；不视为本批覆盖已确认。
 本次只增加测试辅助、用例与规格/审计，不修改生产 UI、后端、scripts/check.py 或任何已有测试。
@@ -365,3 +365,30 @@ T07 要在 scripts/check.py 的统一检查里调用真实浏览器程序；本�
 RED：40 项状态/接线测试失败；14 项浏览器中环境对照 1 通过、13 项 UI 相关失败；共 54 项、53 预期失败，0 收集错误/跳过。
 T05 已审后端 70 项回归通过，静态/规格检查通过；详细证据见 [审计记录](../../docs/audits/IR-018-build-ui-validation.md) 和 [T06 RED 记录](../../docs/audits/IR-018-t06-red-results.json)。
 依据 skill 第⑤步“人 review 测试是否覆盖到位”，等待本批覆盖确认后进入 T07；T07 保持这些已审测试不变实现页面和接线，本轮不提前交付。
+
+
+### T07 · 页面与真实浏览器联动（GREEN，待 T08）
+
+2026-11-04：用户在了解 T06 测试范围及功能开关后回复“继续下一步”，确认本批覆盖并授权进入实现。
+遵循 SDD 第⑥步，保持 T06 及所有已跟踪测试/夹具不变；本批完成后仍需 T08 整轮交付人审。
+
+用户明确授权唯一测试修正：浏览器损坏下载用例的 `page.on('download', downloads.append)` 改为普通 lambda 回调，解决 Playwright 对 Python 内置方法的注册异常；保留本例全部断言，其余已审测试不变。
+
+已实现机器人配方表单、双 XML 上传、真实阶段事件、显式重试、本体领域目录、固定版本详情、来源与问题定位、OWL/报告/manifest 下载和作业历史导航。
+原数据构建、图谱/对象深链与旧作业入口继续可用；机器人关闭时隐藏配方，历史读取保留。
+能力读取完成后再开放表单，避免快速键盘操作落在尚未就绪的提交按钮；结构/发布/任务/执行状态分开显示。
+
+| 本批检查 | 结果 |
+|---|---|
+| 已审 UI 控制器/接线 | 40/40，通过且无跳过；包含在全量单元结果中 |
+| 新真实机器人浏览器 | 14/14，通过且无跳过；实际上传、下载字节、刷新/重启、目录/历史、错误与手机布局 |
+| 全量单元 | 1198 通过、5 可选上游组件跳过，817.154 秒 |
+| 覆盖率 | 85.0%，保留 81% 门槛 |
+| HTTP / 严格检查 | 551 通过、8 可选上游跳过；严格 10/10 |
+| 旧 UI / UI 实操 / 旧浏览器 | 64 / 50 / 10 通过；UI 实操另有 3 未配置真实模型跳过 |
+| 全量入口 | 十段全部退出 0，新增 robotics-browser 真正进入 --suite all / ui |
+| 来源保护 | 119 份测试/夹具完全不变；另一份仅有用户明确授权的 lambda 回调修正，全部断言不变 |
+
+使用路径和可直接执行的独立服务命令见 [UI 指南](../../docs/robotics-build-ui.md)。
+实际空工作目录启动、页面构建与桌面/手机截图已经核验；完整记录见 [T07 审计](../../docs/audits/IR-018-build-ui-validation.md) 和 [机器可读 GREEN 记录](../../docs/audits/IR-018-t07-green-results.json)。
+本任务只完成 T07，不代替整轮人审；下一步 T08 汇总本轮交付、复核清单及遗留边界，IR 状态与全部验收复选框仍待人审。
