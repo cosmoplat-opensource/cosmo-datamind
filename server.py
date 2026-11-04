@@ -6675,6 +6675,18 @@ from bp_semantic import bp_semantic as _bp_semantic, configure_semantic as _conf
 _configure_semantic(load_graph=lambda k: (None if _bad_gkey(k) else (load_ir_edited(k) or load_ir(k))))
 app.register_blueprint(_bp_semantic)
 
+# DR-063 / DR-064: independent robotics routes; no migration from catalog GETs.
+def _robotics_legacy_catalog():
+    entries = {row["id"]: {"key": row["id"], "name": row["name"]} for row in graphs().get_json()}
+    for row in ont_forged().get_json()["ontologies"]:
+        key = "forged_" + row["id"]
+        entries.setdefault(key, {"key": key, "name": row["name"] or key})
+    return list(entries.values())
+
+
+from bp_robotics import init_app as _init_robotics  # noqa: E402
+_init_robotics(app, workdir=WORK, legacy_catalog=_robotics_legacy_catalog)
+
 if __name__ == "__main__":
     # 监听地址/端口只有一个事实源(LISTEN_HOST/LISTEN_PORT),启动横幅照它打印,
     # 不再另写一份字面量 —— 此前改了 DATAMIND_HOST 却仍提示 127.0.0.1:8092,是误导。

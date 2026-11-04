@@ -1,5 +1,5 @@
 {
-  "iteration": "IR-014 / IR-015 / IR-016 / IR-017（delivered） / IR-018（T03 已完成；T04 的 70 项 RED 待覆盖审查）",
+  "iteration": "IR-014 / IR-015 / IR-016 / IR-017（delivered） / IR-018（T05 后端实现与全量回归通过；下一任务 T06 UI/浏览器 RED）",
   "requirements": [
     {
       "id": "ALG-01",
@@ -434,13 +434,13 @@
     {
       "id": "RBU-01",
       "iteration": "IR-018",
-      "status": "partial-red-t04-awaiting-review",
+      "status": "partial-green-t05",
       "criterion": "来源与配方：从页面明确提交两种 XML 角色及受支持 profile，固定来源字节/摘要；缺文件、角色/配置错误、超限和重复请求按约定处理，不覆盖同名旧来源。",
       "planned_test_files": [
         "tests/unit/test_robotics_build_pipeline.py",
         "tests/unit/test_robotics_build_http.py"
       ],
-      "notes": "T02 覆盖已获用户确认，T03 保持已审测试/夹具不变，61 项全部通过。完整九段检查退出 0：1088 单元通过（5 可选上游跳过），覆盖率 85.0%（门槛 81%），551 HTTP 通过及旧 UI 回归通过。本条仅完成构建/来源运行/候选提交/迁移/结构化问题部分；HTTP/执行器留 T04/T05，新 UI 与真实后端浏览器联动留 T06/T07，不标记整条验收完成。见 docs/audits/IR-018-t03-green-results.json。 T04 已新增本条对应的 HTTP/执行器用例；本批 70 项因待实现模块缺失全部 RED，等待覆盖审查后进入 T05。T03 已通过的检查保留，不表示新增断言已通过；UI/真实浏览器仍由 T06/T07 承接。见 docs/audits/IR-018-t04-red-results.json。",
+      "notes": "T02/T04 测试覆盖均经用户确认；T03 完成构建内核与来源型存储，T05 保持全部 116 份已审测试/夹具不变，使 T04 的 70 项 HTTP/执行器用例转绿。完整九段检查退出 0：1158 单元通过、5 可选上游跳过，覆盖率 85.0%（门槛 81%），551 HTTP 通过、旧 UI/浏览器回归通过；实际 Gunicorn 上传/下载/重启回查与 schema 3→4 补充验证通过。本条后端部分完成，新 UI/真实后端浏览器联动仍由 T06/T07 承接，整条验收及整轮交付尚未标记完成。见 docs/audits/IR-018-t05-green-results.json。",
       "tests": [
         "tests/unit/test_domain_build_runs.py::test_build_run_exists_before_any_ontology_version_and_pins_sources",
         "tests/unit/test_domain_build_runs.py::test_invalid_build_inputs_cannot_create_run_or_output",
@@ -462,13 +462,13 @@
     {
       "id": "RBU-02",
       "iteration": "IR-018",
-      "status": "partial-red-t04-awaiting-review",
+      "status": "partial-green-t05",
       "criterion": "构建与候选：实际调用新构建内核和兼容校验，产生保真 OWL 候选及输出版本引用；候选保持待评审，不自动发布或补模拟证据，执行状态未验证。",
       "planned_test_files": [
         "tests/unit/test_robotics_build_pipeline.py",
         "tests/unit/test_domain_build_runs.py"
       ],
-      "notes": "T02 覆盖已获用户确认，T03 保持已审测试/夹具不变，61 项全部通过。完整九段检查退出 0：1088 单元通过（5 可选上游跳过），覆盖率 85.0%（门槛 81%），551 HTTP 通过及旧 UI 回归通过。本条仅完成构建/来源运行/候选提交/迁移/结构化问题部分；HTTP/执行器留 T04/T05，新 UI 与真实后端浏览器联动留 T06/T07，不标记整条验收完成。见 docs/audits/IR-018-t03-green-results.json。 T04 已新增本条对应的 HTTP/执行器用例；本批 70 项因待实现模块缺失全部 RED，等待覆盖审查后进入 T05。T03 已通过的检查保留，不表示新增断言已通过；UI/真实浏览器仍由 T06/T07 承接。见 docs/audits/IR-018-t04-red-results.json。",
+      "notes": "T02/T04 测试覆盖均经用户确认；T03 完成构建内核与来源型存储，T05 保持全部 116 份已审测试/夹具不变，使 T04 的 70 项 HTTP/执行器用例转绿。完整九段检查退出 0：1158 单元通过、5 可选上游跳过，覆盖率 85.0%（门槛 81%），551 HTTP 通过、旧 UI/浏览器回归通过；实际 Gunicorn 上传/下载/重启回查与 schema 3→4 补充验证通过。本条后端部分完成，新 UI/真实后端浏览器联动仍由 T06/T07 承接，整条验收及整轮交付尚未标记完成。见 docs/audits/IR-018-t05-green-results.json。",
       "tests": [
         "tests/unit/test_robotics_build_pipeline.py::test_compute_uses_real_sources_and_kernel_without_persisting_or_publishing",
         "tests/unit/test_robotics_build_pipeline.py::test_candidate_requires_explicit_publication_and_real_task_still_lacks_evidence",
@@ -481,13 +481,13 @@
     {
       "id": "RBU-03",
       "iteration": "IR-018",
-      "status": "partial-red-t04-awaiting-review",
+      "status": "partial-green-t05",
       "criterion": "运行与原子性：尚无本体版本时可创建来源输入型运行；有界受理、阶段事件、超时、重启与重试行为可验证；失败或事务故障不留下可见成功版本/半份清单，原生成契约不被放宽。",
       "planned_test_files": [
         "tests/unit/test_domain_build_runs.py",
         "tests/unit/test_domain_build_executor.py"
       ],
-      "notes": "T02 覆盖已获用户确认，T03 保持已审测试/夹具不变，61 项全部通过。完整九段检查退出 0：1088 单元通过（5 可选上游跳过），覆盖率 85.0%（门槛 81%），551 HTTP 通过及旧 UI 回归通过。本条仅完成构建/来源运行/候选提交/迁移/结构化问题部分；HTTP/执行器留 T04/T05，新 UI 与真实后端浏览器联动留 T06/T07，不标记整条验收完成。见 docs/audits/IR-018-t03-green-results.json。 T04 已新增本条对应的 HTTP/执行器用例；本批 70 项因待实现模块缺失全部 RED，等待覆盖审查后进入 T05。T03 已通过的检查保留，不表示新增断言已通过；UI/真实浏览器仍由 T06/T07 承接。见 docs/audits/IR-018-t04-red-results.json。",
+      "notes": "T02/T04 测试覆盖均经用户确认；T03 完成构建内核与来源型存储，T05 保持全部 116 份已审测试/夹具不变，使 T04 的 70 项 HTTP/执行器用例转绿。完整九段检查退出 0：1158 单元通过、5 可选上游跳过，覆盖率 85.0%（门槛 81%），551 HTTP 通过、旧 UI/浏览器回归通过；实际 Gunicorn 上传/下载/重启回查与 schema 3→4 补充验证通过。本条后端部分完成，新 UI/真实后端浏览器联动仍由 T06/T07 承接，整条验收及整轮交付尚未标记完成。见 docs/audits/IR-018-t05-green-results.json。",
       "tests": [
         "tests/unit/test_domain_build_runs.py::test_build_run_exists_before_any_ontology_version_and_pins_sources",
         "tests/unit/test_domain_build_runs.py::test_start_rechecks_fixed_source_and_preserves_queued_record_on_damage",
@@ -527,14 +527,14 @@
     {
       "id": "RBU-04",
       "iteration": "IR-018",
-      "status": "partial-red-t04-awaiting-review",
+      "status": "partial-green-t05",
       "criterion": "问题定位：非法 XML、未知节点、模型冲突和不兼容模板/端口显示稳定代码及真实来源/节点位置；页面与后端报告一致，不泄漏部署路径或伪造定位/成功。",
       "planned_test_files": [
         "tests/unit/test_robotics_build_pipeline.py",
         "tests/unit/test_robotics_build_http.py",
         "tests/unit/test_robotics_build_ui.py"
       ],
-      "notes": "T02 覆盖已获用户确认，T03 保持已审测试/夹具不变，61 项全部通过。完整九段检查退出 0：1088 单元通过（5 可选上游跳过），覆盖率 85.0%（门槛 81%），551 HTTP 通过及旧 UI 回归通过。本条仅完成构建/来源运行/候选提交/迁移/结构化问题部分；HTTP/执行器留 T04/T05，新 UI 与真实后端浏览器联动留 T06/T07，不标记整条验收完成。见 docs/audits/IR-018-t03-green-results.json。 T04 已新增本条对应的 HTTP/执行器用例；本批 70 项因待实现模块缺失全部 RED，等待覆盖审查后进入 T05。T03 已通过的检查保留，不表示新增断言已通过；UI/真实浏览器仍由 T06/T07 承接。见 docs/audits/IR-018-t04-red-results.json。",
+      "notes": "T02/T04 测试覆盖均经用户确认；T03 完成构建内核与来源型存储，T05 保持全部 116 份已审测试/夹具不变，使 T04 的 70 项 HTTP/执行器用例转绿。完整九段检查退出 0：1158 单元通过、5 可选上游跳过，覆盖率 85.0%（门槛 81%），551 HTTP 通过、旧 UI/浏览器回归通过；实际 Gunicorn 上传/下载/重启回查与 schema 3→4 补充验证通过。本条后端部分完成，新 UI/真实后端浏览器联动仍由 T06/T07 承接，整条验收及整轮交付尚未标记完成。见 docs/audits/IR-018-t05-green-results.json。",
       "tests": [
         "tests/unit/test_robotics_build_pipeline.py::test_invalid_sources_return_located_report_without_candidate",
         "tests/unit/test_robotics_build_pipeline.py::test_importer_errors_are_structured_and_remain_value_error_compatible",
@@ -549,14 +549,14 @@
     {
       "id": "RBU-09",
       "iteration": "IR-018",
-      "status": "partial-red-t04-awaiting-review",
+      "status": "partial-green-t05",
       "criterion": "兼容与隔离：旧 schema 2 可无损升级且失败回滚，未知 schema 拒绝；既有生成/演示、数据构建、图谱、聊天和 JOBS 无回归；关闭机器人功能不破坏旧能力，校验使用隔离目录且门槛不降低。",
       "planned_test_files": [
         "tests/unit/test_domain_build_migration.py",
         "tests/unit/test_robotics_build_pipeline.py",
         "tests/unit/test_robotics_build_http.py"
       ],
-      "notes": "T02 覆盖已获用户确认，T03 保持已审测试/夹具不变，61 项全部通过。完整九段检查退出 0：1088 单元通过（5 可选上游跳过），覆盖率 85.0%（门槛 81%），551 HTTP 通过及旧 UI 回归通过。本条仅完成构建/来源运行/候选提交/迁移/结构化问题部分；HTTP/执行器留 T04/T05，新 UI 与真实后端浏览器联动留 T06/T07，不标记整条验收完成。见 docs/audits/IR-018-t03-green-results.json。 T04 已新增本条对应的 HTTP/执行器用例；本批 70 项因待实现模块缺失全部 RED，等待覆盖审查后进入 T05。T03 已通过的检查保留，不表示新增断言已通过；UI/真实浏览器仍由 T06/T07 承接。见 docs/audits/IR-018-t04-red-results.json。",
+      "notes": "T02/T04 测试覆盖均经用户确认；T03 完成构建内核与来源型存储，T05 保持全部 116 份已审测试/夹具不变，使 T04 的 70 项 HTTP/执行器用例转绿。完整九段检查退出 0：1158 单元通过、5 可选上游跳过，覆盖率 85.0%（门槛 81%），551 HTTP 通过、旧 UI/浏览器回归通过；实际 Gunicorn 上传/下载/重启回查与 schema 3→4 补充验证通过。本条后端部分完成，新 UI/真实后端浏览器联动仍由 T06/T07 承接，整条验收及整轮交付尚未标记完成。见 docs/audits/IR-018-t05-green-results.json。",
       "tests": [
         "tests/unit/test_domain_build_migration.py::test_frozen_fixture_is_schema_two_and_internally_consistent",
         "tests/unit/test_domain_build_migration.py::test_schema_two_upgrade_preserves_rows_blobs_manifests_and_accepts_source_run",
@@ -582,14 +582,14 @@
     {
       "id": "RBU-05",
       "iteration": "IR-018",
-      "status": "partial-red-t04-awaiting-review",
+      "status": "partial-green-t05",
       "criterion": "目录与版本：平台展示持久资产与旧数据引用并明确其差别，机器人详情固定资产/版本/来源；刷新或新版本出现不串用旧记录，机器人不进入 SQL 问数或默认 demo 兜底。",
       "planned_test_files": [
         "tests/unit/test_robotics_build_http.py",
         "tests/unit/test_robotics_build_ui.py",
         "tests/frontend/robotics-build-browser.py"
       ],
-      "notes": "2026-11-04 用户已确认本轮 Goal/Acceptance；本条完整覆盖仍待 T04/T06，尚无对应完整 HTTP/UI/浏览器验证，不以 T02 部分存储检查代替。 T04 已新增本条对应的 HTTP/执行器用例；本批 70 项因待实现模块缺失全部 RED，等待覆盖审查后进入 T05。T03 已通过的检查保留，不表示新增断言已通过；UI/真实浏览器仍由 T06/T07 承接。见 docs/audits/IR-018-t04-red-results.json。",
+      "notes": "T02/T04 测试覆盖均经用户确认；T03 完成构建内核与来源型存储，T05 保持全部 116 份已审测试/夹具不变，使 T04 的 70 项 HTTP/执行器用例转绿。完整九段检查退出 0：1158 单元通过、5 可选上游跳过，覆盖率 85.0%（门槛 81%），551 HTTP 通过、旧 UI/浏览器回归通过；实际 Gunicorn 上传/下载/重启回查与 schema 3→4 补充验证通过。本条后端部分完成，新 UI/真实后端浏览器联动仍由 T06/T07 承接，整条验收及整轮交付尚未标记完成。见 docs/audits/IR-018-t05-green-results.json。",
       "tests": [
         "tests/unit/test_robotics_build_http.py::test_catalog_keeps_legacy_references_distinct_and_does_not_migrate_on_get",
         "tests/unit/test_robotics_build_http.py::test_fixed_version_detail_and_download_match_actual_artifact_bytes",
@@ -599,14 +599,14 @@
     {
       "id": "RBU-06",
       "iteration": "IR-018",
-      "status": "partial-red-t04-awaiting-review",
+      "status": "partial-green-t05",
       "criterion": "下载与完整性：按运行/工件 ID 下载的 OWL、报告与 manifest 字节和摘要一致；跨运行、越界、缺失及损坏请求明确失败且不改历史；构建输入和输出版本能互相追溯。",
       "planned_test_files": [
         "tests/unit/test_domain_build_runs.py",
         "tests/unit/test_robotics_build_http.py",
         "tests/frontend/robotics-build-browser.py"
       ],
-      "notes": "2026-11-04 用户已确认本轮 Goal/Acceptance；本条完整覆盖仍待 T04/T06，尚无对应完整 HTTP/UI/浏览器验证，不以 T02 部分存储检查代替。 T04 已新增本条对应的 HTTP/执行器用例；本批 70 项因待实现模块缺失全部 RED，等待覆盖审查后进入 T05。T03 已通过的检查保留，不表示新增断言已通过；UI/真实浏览器仍由 T06/T07 承接。见 docs/audits/IR-018-t04-red-results.json。",
+      "notes": "T02/T04 测试覆盖均经用户确认；T03 完成构建内核与来源型存储，T05 保持全部 116 份已审测试/夹具不变，使 T04 的 70 项 HTTP/执行器用例转绿。完整九段检查退出 0：1158 单元通过、5 可选上游跳过，覆盖率 85.0%（门槛 81%），551 HTTP 通过、旧 UI/浏览器回归通过；实际 Gunicorn 上传/下载/重启回查与 schema 3→4 补充验证通过。本条后端部分完成，新 UI/真实后端浏览器联动仍由 T06/T07 承接，整条验收及整轮交付尚未标记完成。见 docs/audits/IR-018-t05-green-results.json。",
       "tests": [
         "tests/unit/test_robotics_build_http.py::test_fixed_version_detail_and_download_match_actual_artifact_bytes",
         "tests/unit/test_robotics_build_http.py::test_damaged_registered_download_returns_integrity_error_without_rewriting_history",
@@ -618,14 +618,14 @@
     {
       "id": "RBU-08",
       "iteration": "IR-018",
-      "status": "partial-red-t04-awaiting-review",
+      "status": "partial-green-t05",
       "criterion": "历史与恢复：运行及指定版本可通过页面深链重开；事件按游标无重复，刷新不重提任务，真实服务重启后仍可查看；遗留 running 明确中断、queued 构建按契约恢复，新 worker 不误中断活跃宿主。",
       "planned_test_files": [
         "tests/unit/test_domain_build_executor.py",
         "tests/unit/test_robotics_build_ui.py",
         "tests/frontend/robotics-build-browser.py"
       ],
-      "notes": "2026-11-04 用户已确认本轮 Goal/Acceptance；本条完整覆盖仍待 T04/T06，尚无对应完整 HTTP/UI/浏览器验证，不以 T02 部分存储检查代替。 T04 已新增本条对应的 HTTP/执行器用例；本批 70 项因待实现模块缺失全部 RED，等待覆盖审查后进入 T05。T03 已通过的检查保留，不表示新增断言已通过；UI/真实浏览器仍由 T06/T07 承接。见 docs/audits/IR-018-t04-red-results.json。",
+      "notes": "T02/T04 测试覆盖均经用户确认；T03 完成构建内核与来源型存储，T05 保持全部 116 份已审测试/夹具不变，使 T04 的 70 项 HTTP/执行器用例转绿。完整九段检查退出 0：1158 单元通过、5 可选上游跳过，覆盖率 85.0%（门槛 81%），551 HTTP 通过、旧 UI/浏览器回归通过；实际 Gunicorn 上传/下载/重启回查与 schema 3→4 补充验证通过。本条后端部分完成，新 UI/真实后端浏览器联动仍由 T06/T07 承接，整条验收及整轮交付尚未标记完成。见 docs/audits/IR-018-t05-green-results.json。",
       "tests": [
         "tests/unit/test_domain_build_executor.py::test_standby_does_not_recover_live_owner_and_takes_over_after_shutdown",
         "tests/unit/test_domain_build_executor.py::test_real_owner_death_preserves_queue_and_recovers_only_build_runs",
@@ -648,7 +648,7 @@
         "tests/unit/test_robotics_build_ui.py",
         "tests/frontend/robotics-build-browser.py"
       ],
-      "notes": "2026-11-04 用户已确认本轮 Goal/Acceptance；本条完整覆盖仍待 T04/T06，尚无对应完整 HTTP/UI/浏览器验证，不以 T02 部分存储检查代替。"
+      "notes": "用户已确认本轮 Goal/Acceptance；T05 后端已通过 70 项已审用例及完整九段回归。本条 UI/真实浏览器覆盖仍待 T06/T07，不以 HTTP/真实进程或旧浏览器回归替代。"
     },
     {
       "id": "RBU-10",
@@ -659,7 +659,7 @@
         "tests/unit/test_robotics_build_ui.py",
         "tests/frontend/robotics-build-browser.py"
       ],
-      "notes": "2026-11-04 用户已确认本轮 Goal/Acceptance；本条完整覆盖仍待 T04/T06，尚无对应完整 HTTP/UI/浏览器验证，不以 T02 部分存储检查代替。"
+      "notes": "用户已确认本轮 Goal/Acceptance；T05 后端已通过 70 项已审用例及完整九段回归。本条 UI/真实浏览器覆盖仍待 T06/T07，不以 HTTP/真实进程或旧浏览器回归替代。"
     }
   ]
 }

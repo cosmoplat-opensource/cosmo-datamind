@@ -60,6 +60,11 @@ class AssetStore:
             return _required(conn, "SELECT * FROM assets WHERE ontology_id=?", (ontology_id,))
 
     def put_source(self, content, *, role, media_type):
+        with self.storage.transaction(write=True) as conn:
+            return self._put_source(conn, content, role=role, media_type=media_type)
+
+    def _put_source(self, conn, content, *, role, media_type):
+        """DR-064: allow source registration inside an admission transaction."""
         if not isinstance(content, bytes):
             raise ValueError("来源必须为 bytes。")
         _text(role, "role")
@@ -68,10 +73,9 @@ class AssetStore:
         relative = f"sources/{sid}.bin"
         record = {"source_asset_id": sid, "role": role, "media_type": media_type,
                   "sha256": digest(content), "byte_size": len(content), "path": relative, "created_at": _now()}
-        with self.storage.transaction(write=True) as conn:
-            self.storage.write_bytes(relative, content)
-            conn.execute("INSERT INTO sources VALUES (:source_asset_id,:role,:media_type,:sha256,"
-                         ":byte_size,:path,:created_at)", record)
+        self.storage.write_bytes(relative, content)
+        conn.execute("INSERT INTO sources VALUES (:source_asset_id,:role,:media_type,:sha256,"
+                     ":byte_size,:path,:created_at)", record)
         return record
 
     def get_source(self, source_asset_id):

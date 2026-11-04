@@ -65,3 +65,11 @@ T07 的 `domain_runs.robotics.generate_from_version` 接收指定已发布版本
 `domain_runs.verification.verify_storage` 通过只读连接核验历史及文件，不初始化、迁移或恢复运行。
 可直接运行的 CLI、三场景说明和接口用法见 [离线演示](../docs/domain-storage-demo.md)。
 审计见 [IR-017 验证记录](../docs/audits/IR-017-storage-validation.md)。
+
+## 机器人构建 API 与执行器（IR-018 T05）
+
+`BuildService.submit` 原子登记双来源、请求去重和 queued 构建；`BuildExecutor` 在取得本地独占锁后按序认领、启动独立计算进程、保存结果。
+HTTP 能力、受理、运行/事件、目录/版本、重试与工件下载已通过独立 Blueprint 接入 server；新 UI 仍由后续任务实现。
+`RunStore.start()` 继续保留原先的来源校验；专用 `claim_build()` 允许认领损坏来源的 queued 运行，由只读计算返回明确失败报告，避免阻塞队列。
+`recover_interrupted(operation="build_ontology")` 只在独占构建宿主启动时使用，不处理其他运行类型；原无参恢复接口行为保留。
+使用方式、配置、恢复语义和隔离命令见 [机器人构建 API 指南](../docs/robotics-build-api.md)。
