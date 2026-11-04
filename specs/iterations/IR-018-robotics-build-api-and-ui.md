@@ -2,7 +2,7 @@
 
 - **状态 / Status**: in-progress
 - **日期 / Date**: 2026-11-04
-- **当前环节**：T07 页面、真实浏览器联动及全量十段检查已通过；待 T08 最终复核与交付人审；整轮仍 in-progress。
+- **当前环节**：T07 页面复核经用户确认；T08 交付材料与证据核对已完成，待整轮交付人审；仍 in-progress。
 - **关联 / Refs**: [[DR-059-unified-domain-semantic-graph]]、[[DR-060-robotics-source-recipes-and-reverse-build]]、[[DR-063-local-domain-registration-and-application-ui]]、[[DR-064-persistent-build-runs-and-artifact-manifests]]、[[DR-065-robotics-migration-and-compatibility-validation]]。
 - **前置**：[IR-017](IR-017-ontology-assets-and-persistent-runs.md) 于 2026-11-04 经用户确认 delivered；IR-016 业务内核已交付。
 - **方案**：[集成 Proposal](../PROPOSAL-yang-datamind-integration.md) 第 6 节步骤 3 与第 6.1 节前后端联动要求。
@@ -392,3 +392,14 @@ T05 已审后端 70 项回归通过，静态/规格检查通过；详细证据�
 使用路径和可直接执行的独立服务命令见 [UI 指南](../../docs/robotics-build-ui.md)。
 实际空工作目录启动、页面构建与桌面/手机截图已经核验；完整记录见 [T07 审计](../../docs/audits/IR-018-build-ui-validation.md) 和 [机器可读 GREEN 记录](../../docs/audits/IR-018-t07-green-results.json)。
 本任务只完成 T07，不代替整轮人审；下一步 T08 汇总本轮交付、复核清单及遗留边界，IR 状态与全部验收复选框仍待人审。
+
+
+### T08 · 最终交付审查
+
+2026-11-04：用户通过现有 start.sh 启用功能、查看页面并了解“任务适配/执行”状态后回复“这步确认没有问题”，记录为 T07 页面复核确认，进入本任务。
+核对 T03/T05/T07 的最终摘要：17 份生产文件和 120 份测试/夹具与已通过回归的版本一致；T07 唯一获授权的回调修正已计入测试基线。
+本次只补使用说明、验收对照与阶段状态，不改实现或测试；复用 T07 全量十段 GREEN，不把证据复核写成重新运行全部测试。
+已补 start.sh/.env 正常启动与重启路径、隔离试用区别、结构/任务适配/执行状态说明；不读取或修改用户业务存储，不提交 .env。
+RBU-01～10 criterion 与 tests 引用保持不变，状态更新为 verified-awaiting-human-delivery。
+最终审查入口见 [验收对照表](../../docs/audits/IR-018-build-ui-validation.md#t08-最终交付审查)、[交付机器记录](../../docs/audits/IR-018-t08-delivery-review.json) 和 [使用指南](../../docs/robotics-build-ui.md)。
+依 SDD skill 第⑨步“人确认这一轮做完了”，本 IR 的状态及 Deliverables/Acceptance 复选框留整轮人审；本次页面确认不自动批准后续图谱维护、发布、模型配置与行为树生成 UI。
