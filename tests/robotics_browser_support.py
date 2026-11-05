@@ -165,7 +165,7 @@ def choose_robotics(page, site):
     selector.wait_for(state='visible', timeout=2500)
     selector.select_option('robotics')
     page.get_by_label('主行为树 XML', exact=True).wait_for(state='visible')
-    assert page.get_by_label('机器人 profile', exact=True).input_value() == 'ur_pick_place'
+    assert page.get_by_label('构建模板', exact=True).input_value() == 'ur_pick_place'
 
 
 def fill_robotics(page, *, name='浏览器构建候选', source=None, models=None, filename='same.xml'):

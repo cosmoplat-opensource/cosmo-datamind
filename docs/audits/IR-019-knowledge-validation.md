@@ -62,3 +62,11 @@ T08 汇总新界面完整链路的实测证据后再交付人审；旧 IR-018 �
 当前待用户确认具体 Goal/Acceptance，之后进入 T02。
 
 T01 实测：21 项规格元测试通过，0 失败/错误/跳过；既有 requirements 原文与测试引用逐项相同，git diff --check 通过。
+
+## 术语调整与 T02 授权（2026-11-05）
+
+用户要求界面“机器人 profile”改为“构建模板”，并同步 IR、继续下一步；据此确认本轮范围并进入 T02。
+仅改用户可见术语，profile/profile_id、ur_pick_place、RDF 类及 API 字段保持不变。
+用户明确授权的两处已审测试定位文本同步：tests/robotics_browser_support.py、tests/frontend/robotics-build-browser.py；测试逻辑与业务断言不变。
+界面逻辑/规约 61 项通过，真实浏览器 14 项通过；两批均 0 失败、0 错误、0 跳过。
+运行证据：`.check-results/ir019-terminology/ui-meta.xml`、`browser/junit.xml`；新治理功能尚未实现。

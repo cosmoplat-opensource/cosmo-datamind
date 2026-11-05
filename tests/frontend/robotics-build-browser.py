@@ -259,7 +259,7 @@ def test_keyboard_xss_and_responsive_controls(live, width):
     name = '<img src=x onerror="window.__roboticsXss=1">' + '很长的候选名称' * 20
     filename = '<img onerror=window.__roboticsXss=1>.xml'
     fill_robotics(page, name=name, filename=filename)
-    for label in ['机器人本体名称', '主行为树 XML', '节点模型 XML', '机器人 profile']:
+    for label in ['机器人本体名称', '主行为树 XML', '节点模型 XML', '构建模板']:
         field = page.get_by_label(label, exact=True)
         field.scroll_into_view_if_needed()
         assert field.is_visible()

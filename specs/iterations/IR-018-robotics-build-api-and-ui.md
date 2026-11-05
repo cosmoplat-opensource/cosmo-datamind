@@ -322,7 +322,7 @@ options 接受 fetch、onChange；构建控制器另接受 schedule、cancelSche
 
 沿用 #build、#library、#jobs；#build 默认保留数据构建。
 配方选择器的可访问名称为“本体构建配方”，值 data/robotics；关闭机器人功能时机器人选项不出现或不可选。
-机器人表单可访问名称为“机器人本体名称”“主行为树 XML”“节点模型 XML”“机器人 profile”，profile 值 ur_pick_place；提交按钮“构建机器人本体”支持键盘 Enter。
+机器人表单可访问名称为“机器人本体名称”“主行为树 XML”“节点模型 XML”“构建模板”，profile 值 ur_pick_place；提交按钮“构建机器人本体”支持键盘 Enter。
 本体库筛选器名“本体领域”，机器人筛选值 robotics。
 主要链接/按钮名：“查看本体候选”“重试构建”“下载 OWL”“下载报告”“下载 manifest”；下载先检查 HTTP 错误，不能把 409 JSON 当作成功文件保存。
 
@@ -412,3 +412,9 @@ RBU-01～10 criterion 与 tests 引用保持不变，状态更新为 verified-aw
 关闭前再次核对 17 份生产文件和 120 份已审测试/夹具，均与有效 GREEN 基线一致；本次只更新交付状态，复用已通过的全量十段回归。
 此前“待人审”章节保留为过程记录，以本节和文件顶部状态为最终结论。
 交付范围为机器人本体构建 API/UI、来源/候选/历史/下载及其联动验证；本体维护与发布、任务提取、行为树生成 UI 仍由后续 IR 承接，跨阶段 DR 不整体改为 accepted。
+
+
+### 交付后术语澄清（2026-11-05）
+
+用户明确要求界面“机器人 profile”改为“构建模板”；只调整文案与对应浏览器定位名称，保留 profile/profile_id 字段和 ur_pick_place 值。
+业务知识中的 PerceptionProfile/PlacementProfile 分别称“感知参数配置”“放置参数配置”；业务映射是实体及其配置之间的关系，不是构建模板选择。
