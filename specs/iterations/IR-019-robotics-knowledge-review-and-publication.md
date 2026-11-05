@@ -2,13 +2,16 @@
 
 - **状态 / Status**: in-progress
 - **日期 / Date**: 2026-11-05
-- **当前环节**：T07 实现与全量回归 GREEN；待 T08 人审交付。IR-019 整轮仍为 in-progress。
+- **当前环节**：T07 实现与全量回归 GREEN；用户要求简化默认体验，T08 整轮交付暂缓，由 [DR-066](../decisions/DR-066-minimal-robotics-task-workflow.md) / [IR-020](IR-020-minimal-robotics-task-workflow.md) 优先打通构建到行为树生成。
 - **关联 / Refs**: [[DR-059-unified-domain-semantic-graph]]、[[DR-060-robotics-source-recipes-and-reverse-build]]、[[DR-061-parameter-contracts-calibration-and-readiness]]、[[DR-063-local-domain-registration-and-application-ui]]、[[DR-064-persistent-build-runs-and-artifact-manifests]]、[[DR-065-robotics-migration-and-compatibility-validation]]。
 - **前置**：[IR-018](IR-018-robotics-build-api-and-ui.md) 已于 2026-11-04 经用户确认 delivered。
 - **方案**：[集成 Proposal](../PROPOSAL-yang-datamind-integration.md) 步骤 4；步骤 5～6 的任务提取和行为树应用仍另立 IR。
 - **流程依据**：[SDD skill](../../.agents/skills/sdd-workflow/SKILL.md) 第③～⑤步；本轮范围确认与各批测试覆盖确认分别记录。
 
 ## 目标 Goal（已确认）
+
+2026-11-05 优先级修订：以下为原轮次范围，保留实现与审计记录，不再作为基础版用户必须经过的主流程。
+用户要求只显示当前版本并暂缓高级维护，随后明确选择先打通构建到行为树生成；不将此视为 T08 已验收。
 
 用户从 IR-018 构建的固定候选版本进入知识维护，补齐业务对象关系、参数配置与依据，保存为同一资产的新候选版本。
 用户可比较版本、审核指定版本并发布；发布复验实际 OWL 字节，不把缺少任务证据误报为结构不合法，也不把发布成功误报为任务或执行就绪。
