@@ -2,7 +2,7 @@
 
 - **状态 / Status**: in-progress
 - **日期 / Date**: 2026-11-05
-- **当前环节**：本轮范围与验收经用户确认，进入 T02 领域/存储失败测试；新治理功能尚未实现。
+- **当前环节**：本轮范围与验收已确认；T02 领域/存储测试已实测 RED，待用户审查覆盖，尚未进入 T03 实现。
 - **关联 / Refs**: [[DR-059-unified-domain-semantic-graph]]、[[DR-060-robotics-source-recipes-and-reverse-build]]、[[DR-061-parameter-contracts-calibration-and-readiness]]、[[DR-063-local-domain-registration-and-application-ui]]、[[DR-064-persistent-build-runs-and-artifact-manifests]]、[[DR-065-robotics-migration-and-compatibility-validation]]。
 - **前置**：[IR-018](IR-018-robotics-build-api-and-ui.md) 已于 2026-11-04 经用户确认 delivered。
 - **方案**：[集成 Proposal](../PROPOSAL-yang-datamind-integration.md) 步骤 4；步骤 5～6 的任务提取和行为树应用仍另立 IR。
@@ -37,7 +37,7 @@ API、RDF 类与字段标识不随文案改名；后续界面禁止把上述三�
 | AssetStore.add_version 已保存不可变 RDF/XML，parent_version_id 只验证同资产；没有工作头、并发条件或审核记录 | 增加治理事务服务、候选工作头/修订号、请求去重和追加式审核记录；保存总是生成新版本 |
 | publish_version 校验 consumer 后更新发布状态，没有署名、理由、所审差异或证据范围 | 领域发布服务在同一事务核对精确版本/摘要和审核记录，再登记发布；保留既有内部 API 兼容性 |
 | 候选载荷只验证 RDF/XML 语法；consumer.validate_graph 检查协议/SHACL/模板，并允许未解决作者参数 | 分开“可保存的缺信息草稿”“结构可发布”“任务证据是否足够”；不要求草稿先具备全部业务知识 |
-| grounding.resolve_request 已读取零件类型、工位/载具/槽位、Profile 和确认状态 | 表单操作映射到这些实际 RDF 关系；生成侧继续读取同一权威载荷，不能建立另一套编辑 JSON 真相源 |
+| grounding.resolve_request 已读取零件类型、工位/载具/槽位、参数配置和确认状态 | 表单操作映射到这些实际 RDF 关系；生成侧继续读取同一权威载荷，不能建立另一套编辑 JSON 真相源 |
 | compatibility_confirmed 当前检查来源主 XML hash、类型/实现/槽位、确认状态、依据字符串和到期时间 | 新治理版本增加节点模型与受影响配置范围的证据约束、审核关联和撤销检查；不能直接把状态字符串改成 confirmed |
 | invocation 身份由 tree_id/index 组成，步骤移动时同一索引可能代表不同调用 | 重建采用显式基线和语义前置条件；身份不明/顺序改变阻止自动重放，不按旧序号匹配 |
 | 版本详情从 metadata.build_run_id 读取原构建 result/artifacts | 增加版本专属验证报告/下载登记；编辑版本不能下载原构建 OWL 冒充当前版本 |
@@ -174,7 +174,7 @@ UI 只对机器人版本显示维护入口，明确基线及未保存变化；�
 | 编号 | 工作与提交边界 | 前置 | 对应验收 |
 |---|---|---|---|
 | T01 | 本轮代码盘点、IR、计划验收与审计起点；提交具体范围确认 | IR-018 delivered | 全部 |
-| T02 | 编辑/证据/差异合并/治理存储/发布准入/迁移与旧生成兼容的失败测试，记录 RED 后提交覆盖审查 | Goal/Acceptance 确认 | RKG-01～08、11 |
+| T02 | 编辑/证据/差异合并/治理存储/发布准入/迁移与旧生成兼容的失败测试，记录 RED 后提交覆盖审查 | Goal/Acceptance 确认 | RKG-01～08、09 的存储部分、11 |
 | T03 | 领域和治理服务实现，使 T02 转绿；已审测试保持不变，全量回归 | T02 review | 同上 |
 | T04 | HTTP/附件/条件写入/审核发布/当前版本下载/开关及实际应用装配失败测试，提交覆盖审查 | T03 | RKG-02～09、11 |
 | T05 | 实现治理 Blueprint/装配及版本详情接线，使 T04 转绿，全量回归 | T04 review | 同上 |
@@ -221,3 +221,39 @@ T02/T04/T06 的具体测试数量在实际编写后记录，不在规划阶段�
 本次仅编写规约、计划映射和审计，不改生产实现、已审测试、.env 或业务存储。
 planned_requirements 中列预计测试文件，尚无真实测试函数引用；只有实际写好测试后才迁入 requirements。
 用户确认本轮 Goal/Acceptance 后进入 T02，写 RED 测试再提交覆盖审查；新阶段的产品取舍不以 IR-018 交付确认代替。
+
+## T02 测试接口与审查范围（2026-11-05）
+
+以下为本批 RED 测试约定的 Python 服务边界，尚未实现；HTTP 参数在 T04 再固定。
+本批覆盖领域/存储以及版本工件的存储部分，不能据此宣称 HTTP、UI 或整轮验收完成。
+
+| 模块 / 接口 | 本批固定的行为 |
+|---|---|
+| `domains.robotics.authoring.apply_operations(graph, operations)` | 返回新 Graph；`create_entity / set_field / set_relation / delete_entity` 携完整 IRI、类型化字段和 basis；输入图不变，失败不部分修改 |
+| `authoring.inspect_knowledge(graph)` | 从 RDF 生成 entities、provenance、issues、execution_readiness；同名保留身份，未知值明确报告 |
+| `domains.robotics.evidence.register_evidence(graph, evidence, mode, now)` | 返回待审证据图；来源主 XML、节点模型及配置摘要由当前图计算，不能接收伪造摘要/confirmed 字段 |
+| `evidence.review_evidence / evaluate_evidence` | 精确内容署名审核；按 now、撤销记录和 required_scope 判断有效性，保留具体失效原因 |
+| `domains.robotics.version_diff.diff_graphs / merge_graphs` | RDF 语义比较；三方输入不变；未解决时 graph=None、conflicts 非空；字段冲突、删除冲突、身份变化和证据范围分别处理 |
+| `ontology_assets.governance.GovernanceService(root, read_only=False)` | 复用资产存储事务，初始化新 schema；read_only 不创建或升级存储 |
+| `head / save / history` | 头包含 version_id/revision；首次虚拟 revision=0，读取不落治理记录；保存含基线、摘要、当前头、修订、请求 ID、署名、理由和操作；返回固定版本 |
+| `register_evidence / review_evidence / review_knowledge` | 共用条件写入字段，每次创建新候选；登记与确认分开；知识审核只确认明确选择的对象，不替代实现适配证据或实机验证 |
+| `review / publish` | 审核与发布分开；review 固定 version_id/payload_sha256 和报告摘要；publish 再检查头、review_id、当前字节、可信规则及工件事务 |
+| `preview_merge / commit_merge` | B/L/R 均携资产、版本、摘要；预览只读；提交固定 token、原输入、决定和当前头，重复请求返回原版本 |
+| `artifacts / read_artifact` | 当前版本独立的 ontology/validation/manifest；关联版本/载荷摘要，读时核验字节，禁止借用原构建工件 |
+| `revoke_evidence` | 按资产/版本/证据 IRI 追加撤销，幂等；平台生成读取最新撤销，已发布 OWL 和历史运行工件不改 |
+
+`GovernanceError` 是带 code 的 ValueError；本批固定 head_conflict、request_conflict、merge_conflict、integrity_conflict 等服务冲突含义，HTTP 映射后续验收。
+模式从固定基线与来源确定，普通编辑不能把 real 改为 demo，也不能去掉新证据策略声明。
+治理图使用服务端控制的 `evidencePolicy=robotics-governance-v1`；证据的 modelsHash/configurationHash/reviewedContentHash 等字段与旧 sourceHash 共同限定有效性，不用第二份可编辑 JSON 代替 RDF。
+证据审核记录绑定具体内容，普通参数编辑不能直接设置 confirmationStatus；知识对象确认另行明确选对象、署名和理由，并保存为新候选。
+生产时间由服务端提供；纯领域测试显式注入带时区的 now，测试到期边界不依赖机器时钟。
+
+参数维护沿用 threshold、exposureTime、modelName、objectName、rawValue、lengthUnit、angleUnit、expressedInFrame 等实际词表。
+缺失单位/坐标系允许作为草稿保存并报告；填写错误类型、NaN、错误维数、悬空引用或无依据操作拒绝。
+字段冲突决定为 current/incoming/manual；manual 仍须合法；证据范围变更只允许明确作废并重新审核，不能通过保留旧字段复活。
+调用索引变化属于来源身份冲突，不能以选择 current 绕过受保护模板结构。
+
+冻结夹具 `tests/fixtures/domain_storage/schema4_snapshot.json` 由真实 schema 4 代码生成，记录生成提交，复用 schema2 冻结文件的摘要和原字节。
+恢复测试直接建冻结 SQL/文件，不调用当前初始化器伪造旧 schema；包含旧状态运行、已完成新来源构建、排队构建和去重记录。
+所有材料、署名、审核及 demo 正例均为合成测试输入；真实负例仍要求缺证据不能生成。
+本批结果、实际映射、失败原因和覆盖审查清单见 [T02 审计](../../docs/audits/IR-019-knowledge-validation.md)。
