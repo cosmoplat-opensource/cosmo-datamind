@@ -1,5 +1,5 @@
 {
-  "iteration": "IR-014 / IR-015 / IR-016 / IR-017（delivered） / IR-018（delivered） / IR-019（T07 GREEN，T08 暂缓） / IR-020（T02 RED，待覆盖审查）",
+  "iteration": "IR-014 / IR-015 / IR-016 / IR-017（delivered） / IR-018（delivered） / IR-019（T07 GREEN，T08 暂缓） / IR-020（T03 GREEN，待 T04 服务/浏览器 RED）",
   "requirements": [
     {
       "id": "ALG-01",
@@ -1024,7 +1024,7 @@
     {
       "id": "RMW-02",
       "iteration": "IR-020",
-      "status": "red-t02-awaiting-coverage-review",
+      "status": "partial-green-t03-awaiting-service-and-ui",
       "criterion": "复用 DataMind 模型配置及完整角色消息；JSON 契约、模型未配置、连接失败、拒答、截断和格式错误明确处理，不以默认任务假装成功。",
       "tests": [
         "tests/unit/test_robotics_task_model.py::test_parser_sends_role_messages_json_mode_and_does_not_mutate_inputs",
@@ -1041,12 +1041,12 @@
       "remaining_test_batches": [
         "T04 实际 HTTP、会话、按需补齐写入及浏览器链路；T05 实现与回归"
       ],
-      "notes": "本批只验证模型适配和确定性选择逻辑；外部模型被脚本替身替代，不代表在线模型语义质量或整条链路已验收。"
+      "notes": "用户确认 T02 扩展覆盖后完成 T03。77 项定向测试通过，全量 11 段退出码 0；1529 单元通过/5 可选跳过，覆盖率 83.9%。当前仅实现模型解析、用户选择重放及只读缺口投影；适配确认/补齐写入、HTTP、会话编排和新 UI 联动仍由 T04/T05 承接，不记为整轮验收。"
     },
     {
       "id": "RMW-03",
       "iteration": "IR-020",
-      "status": "red-t02-awaiting-coverage-review",
+      "status": "partial-green-t03-awaiting-service-and-ui",
       "criterion": "只接受完整六字段任务；未明确、否定、歧义和撤销需澄清，模型猜测不作选择，更换上游目标清除旧下游选择。",
       "tests": [
         "tests/unit/test_robotics_task_model.py::test_valid_task_preserves_missing_fields_and_unsupported_requests",
@@ -1065,12 +1065,12 @@
       "remaining_test_batches": [
         "T04 实际 HTTP、会话、按需补齐写入及浏览器链路；T05 实现与回归"
       ],
-      "notes": "本批只验证模型适配和确定性选择逻辑；外部模型被脚本替身替代，不代表在线模型语义质量或整条链路已验收。"
+      "notes": "用户确认 T02 扩展覆盖后完成 T03。77 项定向测试通过，全量 11 段退出码 0；1529 单元通过/5 可选跳过，覆盖率 83.9%。当前仅实现模型解析、用户选择重放及只读缺口投影；适配确认/补齐写入、HTTP、会话编排和新 UI 联动仍由 T04/T05 承接，不记为整轮验收。"
     },
     {
       "id": "RMW-10",
       "iteration": "IR-020",
-      "status": "partial-red-t02-projection-awaiting-review",
+      "status": "partial-green-t03-awaiting-service-and-ui",
       "criterion": "仅投影当前任务可确定的缺口；已有有效字段不重复填写，无关对象不入表单，未知映射不猜下游配置；任务歧义先澄清。",
       "tests": [
         "tests/unit/test_robotics_task_completion.py::test_fixture_is_complete_for_existing_grounding_without_new_completion_module",
@@ -1089,12 +1089,12 @@
       "remaining_test_batches": [
         "T04 页面可见输入项、任务切换、后端重新核验提交范围；T05 实现和浏览器回归"
       ],
-      "notes": "T02 为真实 RDF 的只读投影测试；实际 UI 和保存链路仍待 T04，不计为页面覆盖通过。"
+      "notes": "用户确认 T02 扩展覆盖后完成 T03。77 项定向测试通过，全量 11 段退出码 0；1529 单元通过/5 可选跳过，覆盖率 83.9%。当前仅实现模型解析、用户选择重放及只读缺口投影；适配确认/补齐写入、HTTP、会话编排和新 UI 联动仍由 T04/T05 承接，不记为整轮验收。"
     },
     {
       "id": "RMW-12",
       "iteration": "IR-020",
-      "status": "partial-red-t02-projection-awaiting-review",
+      "status": "partial-green-t03-awaiting-service-and-ui",
       "criterion": "必要业务/配置确认与任务适配在当前页完成；明确范围、实际依据与有效期；保存不等于确认，过期/撤销/配置改变重检，不宣称实机已验证。",
       "tests": [
         "tests/unit/test_robotics_task_completion.py::test_unconfirmed_knowledge_requests_confirmation_without_reentering_valid_values",
@@ -1104,7 +1104,7 @@
       "remaining_test_batches": [
         "T04 依据登记、明确确认、合法/无效输入、配置变更失效、操作来源、真实服务与浏览器；T05 实现"
       ],
-      "notes": "当前仅验证需确认/失效依据可被识别为补齐项，未实现或验收确认写入流程。"
+      "notes": "用户确认 T02 扩展覆盖后完成 T03。77 项定向测试通过，全量 11 段退出码 0；1529 单元通过/5 可选跳过，覆盖率 83.9%。当前仅实现模型解析、用户选择重放及只读缺口投影；适配确认/补齐写入、HTTP、会话编排和新 UI 联动仍由 T04/T05 承接，不记为整轮验收。"
     }
   ],
   "planned_requirements": [
