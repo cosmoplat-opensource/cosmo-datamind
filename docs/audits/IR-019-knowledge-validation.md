@@ -2,7 +2,7 @@
 
 - 日期：2026-11-05（Asia/Shanghai）
 - 依据：DR-059 / DR-060 / DR-061 / DR-063 / DR-064 / DR-065。
-- 当前阶段：T01，范围与验收草案；没有本轮实现或 RED/GREEN 结果。
+- 当前阶段：T02 RED，122 项中 5 通过、117 失败；待用户审查覆盖，尚无新治理实现。
 - 规约：[IR-019](../../specs/iterations/IR-019-robotics-knowledge-review-and-publication.md)。
 
 ## 起点与授权
@@ -70,3 +70,56 @@ T01 实测：21 项规格元测试通过，0 失败/错误/跳过；既有 requi
 用户明确授权的两处已审测试定位文本同步：tests/robotics_browser_support.py、tests/frontend/robotics-build-browser.py；测试逻辑与业务断言不变。
 界面逻辑/规约 61 项通过，真实浏览器 14 项通过；两批均 0 失败、0 错误、0 跳过。
 运行证据：`.check-results/ir019-terminology/ui-meta.xml`、`browser/junit.xml`；新治理功能尚未实现。
+
+## T02 · 领域与治理存储 RED（2026-11-05）
+
+本批以术语调整提交 `3c2e0cd` 为起点；用户已确认本轮 Goal/Acceptance 并授权继续。
+新建五份测试、一个辅助模块和一份真实 schema 4 冻结快照；未编写治理生产实现。
+
+### 覆盖审查清单
+
+| 测试文件 | 项数 | 主要验证内容 |
+|---|---:|---|
+| `tests/unit/test_robotics_knowledge.py` | 33 | RDF 身份、语言/类型/空白节点/列表保留；同名不同 IRI；业务映射落在真实 RDF；参数与依据；缺值可保存；错误类型/悬空引用/被引用删除拒绝；保护技能、调用、来源摘要、模式、策略与确认状态 |
+| `tests/unit/test_robotics_evidence.py` | 30 | 先登记后审核；实际来源与模型/配置摘要；审核内容不可偷换；范围、签名、期限、退回、撤销/替代；不相关名称变化不误作配置失效；新策略不能退回旧 confirmed 逻辑；真实负向仍未验证执行 |
+| `tests/unit/test_robotics_merge.py` | 15 | 语义差异忽略序列化/BNode 标号；保留类型/语言变化；三方独立修改保留；同字段冲突显式决定；删除/步骤身份冲突；证据不能强行恢复；真实构建 B/R、只读预览、提交来源与父版本、过期/伪造/未解决冲突拒绝 |
+| `tests/unit/test_asset_governance.py` | 32 | 不可变候选、工作头、摘要、两写者竞争、同请求竞争/重试；失败回滚；固定版本审核与发布；当前版本工件及损坏/串版拒绝；结构发布后缺证据仍不能生成；单独知识确认；证据附件与版本化审核；撤销后新生成阻断而历史产物不改 |
+| `tests/unit/test_domain_governance_migration.py` | 12 | 冻结 schema 4 完整性；新迁移逐值保留旧行/字节/manifest、排队及运行状态；迁移失败回滚、并发打开、只读/未知 schema、新进程回查；旧 demo 成功/real 缺信息及实际夹具前提 |
+
+### 实测结果
+
+- 收集 **122 项**：**5 通过、117 失败、0 收集错误、0 跳过**；退出码 **1**，耗时约 **18.57 秒**。
+- 112 项失败停在缺失的新治理模块导入；另外 5 项证明当前 schema 4 尚无本轮升级与只读旧版本拒绝行为。
+- 缺失模块在测试函数体内导入，因此是已收集测试失败，不是模块收集错误；没有 skip/xfail、空实现或伪造成功。
+- 5 项通过分别是冻结快照一致性、两个旧未知 schema 拒绝案例、旧 demo/real 生成结果和实际 XML/RDF 夹具前提；它们不是新治理功能通过。
+- RED 阶段多数后续业务断言尚未执行到；T03 必须让完整断言真实执行并转绿，不能把“已写断言”解释为“行为已经实现”。
+- 独立前提核验：修改实际源 XML 阈值为 0.73 后，原构建服务能成功构建且 RDF 取值确为 0.73；删除实际调用 stepIndex 后，既有可信 consumer 拒绝其结构。
+- 术语变更后的 61 项 UI/规约、14 项真实浏览器已通过；T02 期间原有 **120 个已跟踪测试/夹具文件逐字节未变**，生产文件未改。
+
+执行命令：
+
+```bash
+.venv/bin/python -m pytest \
+  tests/unit/test_robotics_knowledge.py \
+  tests/unit/test_robotics_evidence.py \
+  tests/unit/test_robotics_merge.py \
+  tests/unit/test_asset_governance.py \
+  tests/unit/test_domain_governance_migration.py \
+  -v --tb=short --junitxml=.check-results/ir019-t02-red/junit.xml
+```
+
+日志 `.check-results/ir019-t02-red/pytest.log`，夹具前提记录 `premises.json`；逐项结果及文件摘要保存在 [T02 机器审计](IR-019-t02-red-results.json)。
+冻结快照从实际 schema 4 代码及现有 schema2 历史生成，包含 8 个表、8 次运行、22 个文件；恢复不用当前存储初始化器。
+新增测试和原有测试/夹具摘要均已登记；测试覆盖确认后，T03 不得通过改本批断言来转绿。
+
+### 映射和本次边界
+
+RKG-01～09、11 已迁入 acceptance.json 的真实 tests 映射，状态为 partial-red-t02-awaiting-coverage-review；业务 criterion 保持本轮已确认文本。
+其中 RKG-09 仅验证存储工件，RKG-11 仅有本批兼容控制与真实负向；HTTP、完整旧功能回归、UI 和端到端验收仍未完成。
+RKG-10/12 保留计划项，未填写不存在的函数；T04 编写 HTTP/附件传输/保护测试，T06 编写 UI、CLI 和真实浏览器测试。
+本批没有宣称证据内容真实性、署名身份或机器人现场适配经自动验证；演示正例仍明确为 demo，真实缺证据仍是负例。
+当前是预期 RED，因此没有执行或声称全量检查通过；全量回归属于实现后的 T03。
+
+按 [SDD skill](../../.agents/skills/sdd-workflow/SKILL.md) 第⑤步“**人 review 测试是否覆盖到位**”，当前提交测试覆盖审查；收到确认后进入 T03，不提前实现新治理功能。
+
+T02 静态与规约核验：新增 6 个 Python 文件 ruff、mypy 均通过；21 项规格元测试通过，0 失败/错误/跳过；git diff --check 通过。

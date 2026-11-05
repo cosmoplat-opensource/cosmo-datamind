@@ -1,5 +1,5 @@
 {
-  "iteration": "IR-014 / IR-015 / IR-016 / IR-017（delivered） / IR-018（delivered） / IR-019（T01 范围与验收草案）",
+  "iteration": "IR-014 / IR-015 / IR-016 / IR-017（delivered） / IR-018（delivered） / IR-019（T02 RED，待覆盖审查）",
   "requirements": [
     {
       "id": "ALG-01",
@@ -713,107 +713,211 @@
         "tests/frontend/robotics-build-browser.py::test_disabled_robotics_preserves_data_build_and_legacy_deep_links",
         "tests/frontend/robotics-build-browser.py::test_damaged_download_is_an_error_not_a_saved_success_file"
       ]
-    }
-  ],
-  "planned_requirements": [
+    },
     {
       "id": "RKG-01",
       "iteration": "IR-019",
-      "status": "scope-approved-awaiting-red-tests",
+      "status": "partial-red-t02-awaiting-coverage-review",
       "criterion": "权威语义与编辑边界：受控操作只改变允许的业务知识，保留 RDF 身份、类型/语言/空白节点/列表与未改语义；保护技能模板、端口、调用、规则和来源事实；不隐式合并同名对象。",
-      "planned_test_files": [
-        "tests/unit/test_robotics_knowledge.py"
+      "notes": "2026-11-05 T02：领域/存储 RED 已实测，待人审覆盖；仅映射已存在函数，不表示整条验收通过。HTTP 在 T04，UI/离线 CLI/真实浏览器在 T06；RKG-09 本批仅存储工件，RKG-11 全量兼容待 T03 回归。",
+      "tests": [
+        "tests/unit/test_robotics_knowledge.py::test_edit_preserves_unknown_semantics_literals_lists_and_original_graph",
+        "tests/unit/test_robotics_knowledge.py::test_same_display_name_does_not_merge_full_iris_and_projection_keeps_identity",
+        "tests/unit/test_robotics_knowledge.py::test_protected_structure_protocol_and_confirmation_are_not_editable",
+        "tests/unit/test_robotics_knowledge.py::test_explicit_detach_then_delete_preserves_other_entities"
       ],
-      "notes": "2026-11-05 用户确认本轮范围并授权 T02；领域/存储、HTTP、UI 分批先 RED 再审覆盖，当前尚无新治理功能通过结果。"
+      "remaining_test_batches": [
+        "T04 HTTP（适用时）",
+        "T06 UI/CLI/真实浏览器（适用时）",
+        "T03/T05/T07 全量回归、T08 交付"
+      ]
     },
     {
       "id": "RKG-02",
       "iteration": "IR-019",
-      "status": "scope-approved-awaiting-red-tests",
+      "status": "partial-red-t02-awaiting-coverage-review",
       "criterion": "不可变与并发：每次保存生成固定新候选，父版本和来源可追溯；旧版本不变，工作头及输入摘要检查拒绝过期写入；重发幂等且失败不留下半份可见版本。",
-      "planned_test_files": [
-        "tests/unit/test_asset_governance.py",
-        "tests/unit/test_robotics_review_http.py"
+      "notes": "2026-11-05 T02：领域/存储 RED 已实测，待人审覆盖；仅映射已存在函数，不表示整条验收通过。HTTP 在 T04，UI/离线 CLI/真实浏览器在 T06；RKG-09 本批仅存储工件，RKG-11 全量兼容待 T03 回归。",
+      "tests": [
+        "tests/unit/test_asset_governance.py::test_save_creates_immutable_candidate_and_read_only_head_does_not_write",
+        "tests/unit/test_asset_governance.py::test_save_retry_across_reopen_is_idempotent_but_changed_input_conflicts",
+        "tests/unit/test_asset_governance.py::test_invalid_save_is_rejected_without_visible_partial_records",
+        "tests/unit/test_asset_governance.py::test_two_editors_cannot_both_replace_same_head",
+        "tests/unit/test_asset_governance.py::test_explicit_old_base_requires_current_head_but_preserves_selected_parent",
+        "tests/unit/test_asset_governance.py::test_commit_failure_rolls_back_version_head_history_and_retry_key",
+        "tests/unit/test_asset_governance.py::test_simultaneous_identical_requests_create_only_one_version",
+        "tests/unit/test_asset_governance.py::test_read_only_governance_denies_mutation_and_retains_head"
       ],
-      "notes": "2026-11-05 用户确认本轮范围并授权 T02；领域/存储、HTTP、UI 分批先 RED 再审覆盖，当前尚无新治理功能通过结果。"
+      "remaining_test_batches": [
+        "T04 HTTP（适用时）",
+        "T06 UI/CLI/真实浏览器（适用时）",
+        "T03/T05/T07 全量回归、T08 交付"
+      ]
     },
     {
       "id": "RKG-03",
       "iteration": "IR-019",
-      "status": "scope-approved-awaiting-red-tests",
+      "status": "partial-red-t02-awaiting-coverage-review",
       "criterion": "映射与参数依据：实际维护零件类型、工位/载具/槽位和参数配置关系及参数；缺值/单位/坐标系可保存并明确报告；错误值和引用被拒绝，源数值不会自动变成适配事实。",
-      "planned_test_files": [
-        "tests/unit/test_robotics_knowledge.py",
-        "tests/unit/test_robotics_review_http.py"
+      "notes": "2026-11-05 T02：领域/存储 RED 已实测，待人审覆盖；仅映射已存在函数，不表示整条验收通过。HTTP 在 T04，UI/离线 CLI/真实浏览器在 T06；RKG-09 本批仅存储工件，RKG-11 全量兼容待 T03 回归。",
+      "tests": [
+        "tests/unit/test_robotics_knowledge.py::test_business_mapping_is_real_rdf_and_never_confirmation",
+        "tests/unit/test_robotics_knowledge.py::test_parameter_updates_feed_existing_grounding_and_retain_basis",
+        "tests/unit/test_robotics_knowledge.py::test_unknown_values_units_and_frames_are_saved_as_gaps_without_defaults",
+        "tests/unit/test_robotics_knowledge.py::test_invalid_values_references_and_unexplained_edits_are_atomic",
+        "tests/unit/test_robotics_knowledge.py::test_explicit_detach_then_delete_preserves_other_entities"
       ],
-      "notes": "2026-11-05 用户确认本轮范围并授权 T02；领域/存储、HTTP、UI 分批先 RED 再审覆盖，当前尚无新治理功能通过结果。"
+      "remaining_test_batches": [
+        "T04 HTTP（适用时）",
+        "T06 UI/CLI/真实浏览器（适用时）",
+        "T03/T05/T07 全量回归、T08 交付"
+      ]
     },
     {
       "id": "RKG-04",
       "iteration": "IR-019",
-      "status": "scope-approved-awaiting-red-tests",
+      "status": "partial-red-t02-awaiting-coverage-review",
       "criterion": "证据审核与隔离：证据有来源、对象/实现/配置范围、时效和审核记录；保存/发布不自动确认；新 real 治理版本拒绝模拟依据，未知信息不靠默认值补齐。",
-      "planned_test_files": [
-        "tests/unit/test_robotics_evidence.py",
-        "tests/unit/test_robotics_review_http.py"
+      "notes": "2026-11-05 T02：领域/存储 RED 已实测，待人审覆盖；仅映射已存在函数，不表示整条验收通过。HTTP 在 T04，UI/离线 CLI/真实浏览器在 T06；RKG-09 本批仅存储工件，RKG-11 全量兼容待 T03 回归。",
+      "tests": [
+        "tests/unit/test_robotics_evidence.py::test_registration_is_pending_and_captures_actual_sources_and_scope",
+        "tests/unit/test_robotics_evidence.py::test_review_is_exact_content_signed_and_does_not_confirm_unrelated_entities",
+        "tests/unit/test_robotics_evidence.py::test_invalid_or_forged_evidence_is_rejected_without_graph_mutation",
+        "tests/unit/test_robotics_evidence.py::test_review_requires_signed_reason_and_valid_decision",
+        "tests/unit/test_robotics_evidence.py::test_rejected_evidence_cannot_satisfy_validity_gate",
+        "tests/unit/test_asset_governance.py::test_explicit_knowledge_review_only_confirms_selected_objects_in_new_candidate",
+        "tests/unit/test_asset_governance.py::test_evidence_attachment_uses_registered_bytes_and_review_rechecks_integrity"
       ],
-      "notes": "2026-11-05 用户确认本轮范围并授权 T02；领域/存储、HTTP、UI 分批先 RED 再审覆盖，当前尚无新治理功能通过结果。"
+      "remaining_test_batches": [
+        "T04 HTTP（适用时）",
+        "T06 UI/CLI/真实浏览器（适用时）",
+        "T03/T05/T07 全量回归、T08 交付"
+      ]
     },
     {
       "id": "RKG-05",
       "iteration": "IR-019",
-      "status": "scope-approved-awaiting-red-tests",
+      "status": "partial-red-t02-awaiting-coverage-review",
       "criterion": "失效与准入：来源模型/参数/映射变化、过期、撤销或替代使相应证据失效；新候选不继承旧审核；平台严格生成保持 needs_information/错误且无候选，历史报告不被改写。",
-      "planned_test_files": [
-        "tests/unit/test_robotics_evidence.py",
-        "tests/unit/test_asset_governance.py"
+      "notes": "2026-11-05 T02：领域/存储 RED 已实测，待人审覆盖；仅映射已存在函数，不表示整条验收通过。HTTP 在 T04，UI/离线 CLI/真实浏览器在 T06；RKG-09 本批仅存储工件，RKG-11 全量兼容待 T03 回归。",
+      "tests": [
+        "tests/unit/test_robotics_evidence.py::test_evidence_invalidation_has_specific_reason_without_rewriting_snapshot",
+        "tests/unit/test_robotics_evidence.py::test_unrelated_label_does_not_invalidate_configuration_scope",
+        "tests/unit/test_robotics_evidence.py::test_placement_evidence_cannot_authorize_another_slot_or_part_type",
+        "tests/unit/test_robotics_evidence.py::test_new_policy_cannot_fall_back_to_legacy_confirmed_evidence",
+        "tests/unit/test_asset_governance.py::test_evidence_review_is_a_new_version_and_revocation_blocks_platform_generation"
       ],
-      "notes": "2026-11-05 用户确认本轮范围并授权 T02；领域/存储、HTTP、UI 分批先 RED 再审覆盖，当前尚无新治理功能通过结果。"
+      "remaining_test_batches": [
+        "T04 HTTP（适用时）",
+        "T06 UI/CLI/真实浏览器（适用时）",
+        "T03/T05/T07 全量回归、T08 交付"
+      ]
     },
     {
       "id": "RKG-06",
       "iteration": "IR-019",
-      "status": "scope-approved-awaiting-red-tests",
+      "status": "partial-red-t02-awaiting-coverage-review",
       "criterion": "语义差异与重建合并：三方基线和新来源身份固定；保留可重放的人工修改，展示冲突，拒绝按旧步骤序号猜对应；未解决冲突或过期预览不能提交，旧版本和原构建不变。",
-      "planned_test_files": [
-        "tests/unit/test_robotics_merge.py",
-        "tests/unit/test_robotics_review_http.py"
+      "notes": "2026-11-05 T02：领域/存储 RED 已实测，待人审覆盖；仅映射已存在函数，不表示整条验收通过。HTTP 在 T04，UI/离线 CLI/真实浏览器在 T06；RKG-09 本批仅存储工件，RKG-11 全量兼容待 T03 回归。",
+      "tests": [
+        "tests/unit/test_robotics_merge.py::test_diff_ignores_serialization_and_blank_node_identifiers",
+        "tests/unit/test_robotics_merge.py::test_diff_distinguishes_language_datatype_and_unrecognized_semantics",
+        "tests/unit/test_robotics_merge.py::test_three_way_merge_retains_independent_manual_and_source_changes",
+        "tests/unit/test_robotics_merge.py::test_same_field_conflict_requires_explicit_valid_choice",
+        "tests/unit/test_robotics_merge.py::test_deletion_with_manual_changes_is_not_silently_replayed",
+        "tests/unit/test_robotics_merge.py::test_moved_invocations_cannot_be_matched_by_old_sequence_index",
+        "tests/unit/test_robotics_merge.py::test_merge_cannot_restore_confirmation_after_evidence_scope_change",
+        "tests/unit/test_robotics_merge.py::test_merge_preview_is_read_only_commit_keeps_lineage_and_sources",
+        "tests/unit/test_robotics_merge.py::test_merge_rejects_stale_or_unproven_inputs_without_partial_commit",
+        "tests/unit/test_robotics_merge.py::test_unresolved_merge_conflicts_cannot_create_candidate"
       ],
-      "notes": "2026-11-05 用户确认本轮范围并授权 T02；领域/存储、HTTP、UI 分批先 RED 再审覆盖，当前尚无新治理功能通过结果。"
+      "remaining_test_batches": [
+        "T04 HTTP（适用时）",
+        "T06 UI/CLI/真实浏览器（适用时）",
+        "T03/T05/T07 全量回归、T08 交付"
+      ]
     },
     {
       "id": "RKG-07",
       "iteration": "IR-019",
-      "status": "scope-approved-awaiting-red-tests",
+      "status": "partial-red-t02-awaiting-coverage-review",
       "criterion": "审核与发布：审核固定版本/摘要/理由，发布复验实际 OWL 和受信规则；拒绝未审核/被退回/过期审核/非法结构，重复请求不重复发布；结构发布不等于全任务适配或执行通过。",
-      "planned_test_files": [
-        "tests/unit/test_asset_governance.py",
-        "tests/unit/test_robotics_review_http.py"
+      "notes": "2026-11-05 T02：领域/存储 RED 已实测，待人审覆盖；仅映射已存在函数，不表示整条验收通过。HTTP 在 T04，UI/离线 CLI/真实浏览器在 T06；RKG-09 本批仅存储工件，RKG-11 全量兼容待 T03 回归。",
+      "tests": [
+        "tests/unit/test_asset_governance.py::test_publication_rejects_missing_stale_or_mismatched_review",
+        "tests/unit/test_asset_governance.py::test_review_requires_reason_and_cannot_be_reused_after_new_save",
+        "tests/unit/test_asset_governance.py::test_review_revalidates_structure_even_when_stored_digest_matches_bad_payload",
+        "tests/unit/test_asset_governance.py::test_structural_publication_retains_gaps_and_strict_generation_is_blocked",
+        "tests/unit/test_asset_governance.py::test_publish_artifact_failure_cannot_leave_published_state"
       ],
-      "notes": "2026-11-05 用户确认本轮范围并授权 T02；领域/存储、HTTP、UI 分批先 RED 再审覆盖，当前尚无新治理功能通过结果。"
+      "remaining_test_batches": [
+        "T04 HTTP（适用时）",
+        "T06 UI/CLI/真实浏览器（适用时）",
+        "T03/T05/T07 全量回归、T08 交付"
+      ]
     },
     {
       "id": "RKG-08",
       "iteration": "IR-019",
-      "status": "scope-approved-awaiting-red-tests",
+      "status": "partial-red-t02-awaiting-coverage-review",
       "criterion": "存储与旧契约：schema 4 升级及故障回滚保持原资产、运行、来源、manifest；只读和未知版本遵守既有约束；旧发布/生成/演示可复现，新治理策略不被旧模式绕过。",
-      "planned_test_files": [
-        "tests/unit/test_domain_governance_migration.py",
-        "tests/unit/test_asset_governance.py"
+      "notes": "2026-11-05 T02：领域/存储 RED 已实测，待人审覆盖；仅映射已存在函数，不表示整条验收通过。HTTP 在 T04，UI/离线 CLI/真实浏览器在 T06；RKG-09 本批仅存储工件，RKG-11 全量兼容待 T03 回归。",
+      "tests": [
+        "tests/unit/test_domain_governance_migration.py::test_frozen_schema_four_fixture_has_real_history_and_consistent_bytes",
+        "tests/unit/test_domain_governance_migration.py::test_upgrade_preserves_all_old_columns_rows_bytes_manifests_and_queued_build",
+        "tests/unit/test_domain_governance_migration.py::test_failed_migration_rolls_back_schema_rows_and_all_blobs",
+        "tests/unit/test_domain_governance_migration.py::test_parallel_initializers_upgrade_once_without_recovering_running_tasks",
+        "tests/unit/test_domain_governance_migration.py::test_read_only_schema_four_is_not_silently_upgraded",
+        "tests/unit/test_domain_governance_migration.py::test_unknown_schema_preserves_every_file",
+        "tests/unit/test_domain_governance_migration.py::test_read_only_governance_never_creates_missing_storage",
+        "tests/unit/test_domain_governance_migration.py::test_new_process_reads_migrated_head_and_history_without_recovery",
+        "tests/unit/test_domain_governance_migration.py::test_legacy_demo_and_real_contracts_keep_their_original_outcomes",
+        "tests/unit/test_domain_governance_migration.py::test_fixture_premises_have_real_protected_invocations_and_unmapped_parameters",
+        "tests/unit/test_robotics_evidence.py::test_new_policy_cannot_fall_back_to_legacy_confirmed_evidence"
       ],
-      "notes": "2026-11-05 用户确认本轮范围并授权 T02；领域/存储、HTTP、UI 分批先 RED 再审覆盖，当前尚无新治理功能通过结果。"
+      "remaining_test_batches": [
+        "T04 HTTP（适用时）",
+        "T06 UI/CLI/真实浏览器（适用时）",
+        "T03/T05/T07 全量回归、T08 交付"
+      ]
     },
     {
       "id": "RKG-09",
       "iteration": "IR-019",
-      "status": "scope-approved-awaiting-red-tests",
+      "status": "partial-red-t02-awaiting-coverage-review",
       "criterion": "版本工件与保护：编辑后下载的是本版本 OWL/报告/清单，摘要与登记一致；不误用原构建结果；错误身份、损坏、越界、功能关闭和超限明确拒绝，旧下载入口保持兼容。",
-      "planned_test_files": [
-        "tests/unit/test_robotics_review_http.py",
-        "tests/frontend/robotics-review-browser.py"
+      "notes": "2026-11-05 T02：领域/存储 RED 已实测，待人审覆盖；仅映射已存在函数，不表示整条验收通过。HTTP 在 T04，UI/离线 CLI/真实浏览器在 T06；RKG-09 本批仅存储工件，RKG-11 全量兼容待 T03 回归。",
+      "tests": [
+        "tests/unit/test_asset_governance.py::test_version_artifacts_belong_to_edited_bytes_not_origin_build",
+        "tests/unit/test_asset_governance.py::test_publish_artifact_failure_cannot_leave_published_state",
+        "tests/unit/test_asset_governance.py::test_corrupt_version_artifact_is_rejected_without_success_bytes"
       ],
-      "notes": "2026-11-05 用户确认本轮范围并授权 T02；领域/存储、HTTP、UI 分批先 RED 再审覆盖，当前尚无新治理功能通过结果。"
+      "remaining_test_batches": [
+        "T04 HTTP（适用时）",
+        "T06 UI/CLI/真实浏览器（适用时）",
+        "T03/T05/T07 全量回归、T08 交付"
+      ]
     },
+    {
+      "id": "RKG-11",
+      "iteration": "IR-019",
+      "status": "partial-red-t02-awaiting-coverage-review",
+      "criterion": "兼容及真实负向：原数据构建/图谱/评审/聊天与 IR-016～018 无回归；真实缺证据可发布结构合格版本但严格生成仍不成功；execution_readiness 始终未验证，模拟成功不冒充现场适用。",
+      "notes": "2026-11-05 T02：领域/存储 RED 已实测，待人审覆盖；仅映射已存在函数，不表示整条验收通过。HTTP 在 T04，UI/离线 CLI/真实浏览器在 T06；RKG-09 本批仅存储工件，RKG-11 全量兼容待 T03 回归。",
+      "tests": [
+        "tests/unit/test_asset_governance.py::test_structural_publication_retains_gaps_and_strict_generation_is_blocked",
+        "tests/unit/test_asset_governance.py::test_evidence_review_is_a_new_version_and_revocation_blocks_platform_generation",
+        "tests/unit/test_domain_governance_migration.py::test_legacy_demo_and_real_contracts_keep_their_original_outcomes",
+        "tests/unit/test_robotics_evidence.py::test_real_knowledge_projection_never_claims_execution_or_fills_evidence"
+      ],
+      "remaining_test_batches": [
+        "T04 HTTP（适用时）",
+        "T06 UI/CLI/真实浏览器（适用时）",
+        "T03/T05/T07 全量回归、T08 交付"
+      ]
+    }
+  ],
+  "planned_requirements": [
     {
       "id": "RKG-10",
       "iteration": "IR-019",
@@ -821,18 +925,6 @@
       "criterion": "UI 操作与冲突呈现：用户可在现有入口完成知识保存、证据查看/审核、差异、冲突处理和发布；未保存输入不被迟到响应或 409 覆盖；键盘、1440/768/390 布局和文字安全通过。",
       "planned_test_files": [
         "tests/unit/test_robotics_review_ui.py",
-        "tests/frontend/robotics-review-browser.py"
-      ],
-      "notes": "2026-11-05 用户确认本轮范围并授权 T02；领域/存储、HTTP、UI 分批先 RED 再审覆盖，当前尚无新治理功能通过结果。"
-    },
-    {
-      "id": "RKG-11",
-      "iteration": "IR-019",
-      "status": "scope-approved-awaiting-red-tests",
-      "criterion": "兼容及真实负向：原数据构建/图谱/评审/聊天与 IR-016～018 无回归；真实缺证据可发布结构合格版本但严格生成仍不成功；execution_readiness 始终未验证，模拟成功不冒充现场适用。",
-      "planned_test_files": [
-        "tests/unit/test_robotics_evidence.py",
-        "tests/unit/test_robotics_review_http.py",
         "tests/frontend/robotics-review-browser.py"
       ],
       "notes": "2026-11-05 用户确认本轮范围并授权 T02；领域/存储、HTTP、UI 分批先 RED 再审覆盖，当前尚无新治理功能通过结果。"
