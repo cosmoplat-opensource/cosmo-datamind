@@ -2,7 +2,7 @@
 
 - **状态 / Status**: in-progress
 - **日期 / Date**: 2026-11-05
-- **当前环节**：T03 领域与治理存储实现完成，已审测试及全量十段检查通过；下一步为 T04 HTTP 失败测试，IR-019 整轮仍在进行。
+- **当前环节**：T03 领域与治理存储实现完成；T04 HTTP 失败测试与接口契约已编写，待覆盖审查后进入 T05 实现，IR-019 整轮仍在进行。
 - **关联 / Refs**: [[DR-059-unified-domain-semantic-graph]]、[[DR-060-robotics-source-recipes-and-reverse-build]]、[[DR-061-parameter-contracts-calibration-and-readiness]]、[[DR-063-local-domain-registration-and-application-ui]]、[[DR-064-persistent-build-runs-and-artifact-manifests]]、[[DR-065-robotics-migration-and-compatibility-validation]]。
 - **前置**：[IR-018](IR-018-robotics-build-api-and-ui.md) 已于 2026-11-04 经用户确认 delivered。
 - **方案**：[集成 Proposal](../PROPOSAL-yang-datamind-integration.md) 步骤 4；步骤 5～6 的任务提取和行为树应用仍另立 IR。
@@ -146,9 +146,9 @@ publication_state 从 candidate 到 published 是生命周期元信息变化；�
 扩展 schema 4 时验证旧资产/构建/生成/来源/清单逐值保持；只读不升级，未知 schema 拒绝，迁移失败回滚。
 采用本地有界操作及现有 RDF 锁，不新增分布式调度；解析和校验异常返回结构化问题，不能覆盖旧数据功能。
 
-## HTTP 与 UI 接线草案
+## HTTP 与 UI 接线契约（T04 固定）
 
-下表是待实现的职责边界；T04 测试批次前固定精确字段和状态码，已有 IR-018 路由契约不删除或改义。
+下表固定 T04 的职责边界和测试契约；T05 实现，已有 IR-018 路由契约不删除或改义。
 
 | 接口/模块 | 用途 |
 |---|---|
@@ -157,10 +157,59 @@ publication_state 从 candidate 到 published 是生命周期元信息变化；�
 | GET `/api/ontology-assets/<id>/diff?base=<v>&target=<v>` | 同资产语义差异与字段变化 |
 | POST `/api/ontology-assets/<id>/merge-previews`、`/merges` | 固定新来源候选的三方比较与冲突提交 |
 | POST `/api/ontology-assets/<id>/evidence-sources` | 受限本地证据附件上传，返回来源 ID/摘要，不自动认可内容 |
+| POST `/api/ontology-assets/<id>/evidence`、`/evidence-reviews`、`/knowledge-reviews` | 登记范围证据、审核证据、审核指定业务对象；每次生成新候选 |
 | POST `/api/ontology-assets/<id>/versions/<v>/reviews`、`/publish` | 固定版本审核及发布 |
-| POST `/api/ontology-assets/<id>/evidence/<evidence-id>/revocations` | 追加撤销记录，保留旧快照 |
+| POST `/api/ontology-assets/<id>/evidence-revocations` | 正文传完整 evidence_iri，追加撤销记录，保留旧快照 |
+| GET `/api/ontology-assets/<id>/versions/<v>/payload` | 下载固定候选或发布版本自身的 OWL，不回退到原构建工件 |
 | GET `/api/ontology-assets/<id>/versions/<v>/artifacts/<artifact-id>` | 当前版本的登记字节下载与完整性保护 |
 | `ui/modules/robotics-review.js` 与必要样式 | 原生 JS 控制器；知识表单、依据、差异、冲突、评审/发布与历史 |
+
+### HTTP 字段与响应边界
+
+所有 JSON 写入只接受对象，拒绝多余字段、缺失字段和错误类型；字段中 `actor`、`reason`、`request_id` 必须为非空字符串。
+`actor` 是用户声明的操作者，不把它描述为已认证身份；本轮不增加账户体系。
+`expected_revision` 必须为非负整数，布尔值和数字字符串不接受；摘要必须为 64 位十六进制字符串。
+完整 RDF IRI 通过 JSON 字符串传递，不截取片段作对象身份，也不把 IRI 当成路由路径。
+
+| 请求 | 正文 / 查询字段 | 成功响应 |
+|---|---|---|
+| drafts | `base_version_id, base_payload_sha256, expected_head_version_id, expected_revision, request_id, actor, reason, operations` | 201，新版本记录 |
+| evidence | 上述条件写入字段去掉 operations，加 `evidence` | 201，新版本记录 |
+| evidence-reviews | 条件写入字段去掉 operations，加 `evidence_iri, decision` | 201，新版本记录 |
+| knowledge-reviews | 条件写入字段去掉 operations，加 `entity_iris, decision` | 201，新版本记录 |
+| diff | 唯一且必填查询参数 `base, target`；同资产版本 ID | 200，`base, target` 固定引用及 `changes` 语义变化数组 |
+| merge-previews | `base, current, incoming, expected_head_version_id, expected_revision` | 200，`merge_token, conflicts, inputs`；只读预览 |
+| merges | `merge_token, inputs, decisions, request_id, actor, reason` | 201，新版本记录 |
+| evidence-sources | multipart，仅一个 `file` 文件字段；不接受 URL、服务端路径或额外表单字段 | 201，`source_asset_id, role, sha256, byte_size, media_type` 等公开来源信息 |
+| versions/<v>/reviews | `payload_sha256, decision, actor, reason, request_id` | 201，固定版本审核记录与结构/缺口/证据报告 |
+| versions/<v>/publish | `payload_sha256, review_id, expected_head_version_id, expected_revision, request_id, actor, reason` | 200，已发布版本记录；版本 ID 取自路由 |
+| evidence-revocations | `evidence_iri, version_id, kind, actor, reason, request_id` | 201，追加记录；kind 为 revoked / superseded |
+
+`decision` 为 accepted / rejected；审核版本、审核证据和审核业务对象是三个独立动作，不能相互替代。
+`operations` 沿用 T02/T03 受控编辑格式和依据字段；不允许提交整个 RDF 替换现有载荷。
+`evidence` 固定字段为 `iri, kind, implementation, part_type, slot, reference, source_asset_ids, valid_until`，沿用 T03 范围/期限规则。
+合并引用固定为 `ontology_id, version_id, payload_sha256`；decisions 沿用 T03 以冲突 ID 为键的显式选择格式；不得凭任意 OWL 副本推测来源构建。
+除附件上传外，有 request_id 的写入保持已有服务的持久幂等语义，重放返回原结果及同一成功状态码；同 ID 改输入返回 409。
+附件只是不可变来源材料；上传不生成候选、不确认其内容，也不等价于证据登记或审核。重复上传可生成新的来源 ID。
+文件名不参与存储寻址；上传读入受现有 file_bytes 与应用总请求上限共同限制；空文件拒绝，不借用 CSV/数据库上传链路。
+
+knowledge 响应包含 `ontology_id, version_id, payload_sha256, head, knowledge, evidence_policy, evidence, revocations, history, reviews, task_readiness, execution_readiness`。
+knowledge 内的 entities/schema/provenance/issues 直接投影本版本 RDF；evidence 列出本版本证据的完整 IRI 与当前有效性/失效原因，revocations 为资产当前撤销台账。
+history 为资产追加历史；reviews 仅返回针对当前固定版本的审核记录；旧版本知识不会因工作头移动而切换成新版本内容。
+head 包含 `version_id, revision`，只读查询不得初始化工作头。
+没有额外任务评估时 task_readiness=not_assessed，execution_readiness 始终 not_verified；结构审核通过不等于现场执行验证。
+版本详情对机器人候选增加 `payload_url`；未发布治理候选 artifacts=[]，不能把 origin_build_run_id 的旧 OWL 当成新候选工件。
+发布后详情 artifacts 提供当前版本 ontology/validation/manifest 的登记元数据及版本下载 URL；旧构建详情及运行下载 URL 保持可用。
+payload 与工件下载均校验资产/版本归属、固定摘要、大小、路径与符号链接；损坏返回错误 JSON，不附带下载头或返回部分文件。
+工件字节保持已登记摘要；manifest 可包含登记的相对位置，不泄漏存储绝对路径，也不临时改写已登记清单。
+
+新增路由错误格式为 `{"error":{"code":"...","message":"..."}}`。
+400 invalid_request 表示请求形状/类型/空身份字段或错误领域入口；422 domain_validation 表示格式合法但映射、参数、证据或执行结构不符合领域规则。
+404 not_found 表示缺少或不属于该资产/版本的记录；409 保留 head_conflict/request_conflict/review_conflict/merge_conflict/integrity_conflict，下载损坏使用 artifact_integrity。
+413 file_too_large 表示上传超限；503 feature_disabled/storage_unavailable 分别表示关闭与存储不可用；不得泄漏原始异常或本机路径。
+应用级 Host/CSRF/JSON guard 已有响应形状与 400/403 状态保持兼容，不要求它们改成新增路由错误格式。
+关闭开关时所有新增 POST（含只读的合并预览 POST）均返回 503；GET 仍允许读取已有兼容存储。
+缺库 GET 返回 404 且不建库；schema 4 只读 GET 返回 503 且不迁移，升级仍由显式可写初始化承担。
 
 复用服务端 CSRF/JSON guard、请求限制、DATAMIND_ROBOTICS_ENABLED；关闭时新增写入口不可用，历史与版本仍可读。
 返回 400 字段/类型错误、404 缺记录、409 版本/幂等/审核/完整性冲突、413 超限、422 领域校验失败、503 功能关闭/存储不可用；不得靠错误 HTML 伪造成功 JSON。
@@ -284,3 +333,12 @@ T03 最终结果：原有 127 个测试/夹具文件摘要不变；全量十段�
 单元检查实测 1196.827 秒，距原 1200 秒上限不足 4 秒；因此 scripts/check.py 将单元段有界预算增至 1500 秒，其余预算、测试选择和覆盖率门槛不变。
 该全量运行已在更严格的原预算内通过；预算调整本身已通过静态与 CLI 接线检查，不另重跑相同的全量测试。
 T03 为后端切片完成，完整 UI/HTTP/CLI 的交付和 RKG 最终勾选仍由后续 T04～T08 承接，不把本次后端 GREEN 记为整轮 delivered。
+
+
+### T04 执行记录（2026-11-05）
+
+HTTP 契约与失败测试已编写；34 个函数展开为 83 项，最终 7 项对照通过、76 项预期失败，0 错误、0 跳过。
+现有全局保护 6 项与 T03 夹具对照 1 项已通过，不代表新增 HTTP 已实现；失败来自新增路由缺失或版本详情尚无新工件字段。
+元测试 21 项、ruff、mypy 和 diff 检查通过；原 127 个已审测试/夹具与 T03 生产实现保持不变。
+覆盖矩阵、运行命令、失败边界见 [T04 审计](../../docs/audits/IR-019-knowledge-validation.md#t04--http-red-覆盖审查2026-11-05)。
+当前等待 SDD 第⑤步的覆盖审查；T05 HTTP 实现与全量回归尚未开始，Deliverables/Acceptance 不提前勾选。
