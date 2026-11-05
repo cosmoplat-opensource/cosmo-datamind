@@ -2,7 +2,7 @@
 
 - 日期：2026-11-05（Asia/Shanghai）
 - 依据：DR-059 / DR-060 / DR-061 / DR-063 / DR-064 / DR-065。
-- 当前阶段：T03 GREEN；T04 HTTP RED 已完成，83 项中 7 项对照通过、76 项预期失败，待覆盖审查。
+- 当前阶段：T05 HTTP GREEN；定向 158 项及全量独立重跑十段通过，待 T06 UI/CLI RED。
 - 规约：[IR-019](../../specs/iterations/IR-019-robotics-knowledge-review-and-publication.md)。
 
 ## 起点与授权
@@ -246,3 +246,70 @@ RKG-10/12 的 UI、浏览器全链路与 CLI 留在 T06 编写失败测试，不
 本次请审查上表是否覆盖预期接口行为，特别是“保存知识、审核业务对象、审核证据、审核版本、发布”这几个动作的区别。
 依据 [SDD skill 第⑤步](../../.agents/skills/sdd-workflow/SKILL.md) 的“**人 review 测试是否覆盖到位**”，本批停在覆盖审查；用户确认后进入 T05，实现 HTTP/版本详情并跑全量回归。
 这次没有需要访问本机真实机器人或认定现场适配的验收，所有材料均为合成测试输入；UI 操作和实际浏览器交付仍属后续任务。
+
+
+## T05 · 治理 HTTP 与版本下载实现（2026-11-05）
+
+用户明确确认 T04 测试覆盖并要求继续实现；基线提交 `8d93ca7`，仍使用 `dyh_dev`。
+本批严格保留 129 个已审测试、辅助模块与夹具的字节，未改断言来获得通过。
+
+### 实现范围
+
+- `bp_robotics_review.py`：独立治理 Blueprint，14 个新路由；JSON 字段/类型/摘要与条件写入检查，错误码转换、开关及既有应用保护接线。
+- `ontology_assets/governance.py`：增加固定版本知识投影、语义 diff、附件登记、候选载荷读取；知识/工作头/审核/撤销在同一个只读事务里读取，GET 不建库或迁移。
+- `bp_robotics.py`：真实应用初始化时装配治理 Blueprint；机器人版本详情增加 payload_url，优先提供本版本发布工件；旧构建运行详情与下载继续兼容；只读遇不兼容存储返回 503。
+- `domains/robotics/evidence.py`：真实模式同时拒绝单独的 demo-only 与带冒号的 demo-only: 标记，防止裸标记绕过模拟依据隔离。
+- [调用说明](../robotics-knowledge-service.md)：补充 HTTP 请求、条件写入、版本下载、开关与启动方式；新 UI 和独立演示 CLI 仍在 T06/T07。
+
+知识保存、对象审核、证据审核都调用原治理事务创建新候选；版本审核/发布调用精确版本服务，不暴露绕过审核的 AssetStore.publish_version。
+知识响应的 evidence 同时带实际 RDF 声明（对象/实现/范围/期限/来源 ID）、确认状态与当前有效性；历史审核报告仍保持当时快照。
+附件按实际字节登记为 evidence，不使用原文件名寻址，不拉取 URL，不读取客户端指定服务端路径。
+未发布治理候选可下载自身 OWL，artifacts 为空；发布后工件为自身 ontology/validation/manifest。原构建的 OWL 仍可从旧运行 URL 下载。
+下载先核对身份、路径/符号链接、摘要和长度，再一次性返回登记字节；错误响应不带下载头。
+声明式 actor 不是认证身份；结构发布仍不代表任务适配或机器人执行已验证。
+本批未修改用户 `.env`、工作区业务资料、常驻服务或实际资产数据库。
+
+### 定向结果与修复
+
+首轮新 HTTP 83 项：82 通过、1 失败，失败是测试中的裸 `demo-only` 引用被既有证据规则接受。
+修复生产规则后，连同旧构建 HTTP 与证据规则复验：**158 通过，0 失败、0 错误、0 跳过；177.83 秒**。
+此前只到路由缺失的 RED 用例，现在成功流程、后续存储/摘要/真实生成断言也已实际执行。
+包含两个客户端竞争、实际来源构建冲突合并、真实严格生成，以及 server/wsgi 独立进程保存和重新读取。
+
+```bash
+.venv/bin/python -m pytest tests/unit/test_robotics_review_http.py tests/unit/test_robotics_evidence.py tests/unit/test_robotics_build_http.py --tb=short --junitxml=.check-results/ir019-t05-green/targeted.xml
+env PATH="/home/dyh/.local/opt/node-v22.20.0-linux-x64/bin:$PATH" .venv/bin/python scripts/check.py --suite all --report-dir .check-results/ir019-t05-all
+```
+
+本批生产代码在定向通过后冻结，再运行全量；不以回归进程启动前的旧模块代表后续实现。
+
+
+### 全量中断记录与重跑方式
+
+首次 `--suite all` 的 lint/types 通过，单元日志记录 1403 通过、5 项可选上游跳过（1388.62 秒），但外层进程以 SIGTERM / 143 退出，summary 未记录单元段、覆盖率和后续段未执行。
+没有把该命令记为完整 GREEN；中断来源未确定，原日志保存在 `.check-results/ir019-t05-all`。
+为完整取得最终退出码，使用独立进程执行相同的 `scripts/check.py --suite all`，输出到 `.check-results/ir019-t05-all-retry`，额外保存 exit.json。
+独立启动器第一次错误地解析了虚拟环境解释器的符号链接，落到系统 Python，因缺依赖立即失败；修正为直接使用 `.venv/bin/python` 路径，失败启动日志保留在 `.check-results/ir019-t05-launcher-wrong-interpreter`。
+上述恢复没有修改生产代码、测试、检查范围或时间预算；最终结果以独立重跑的 summary.json / exit.json 为准。
+
+
+### T05 最终结果
+
+| 检查 | 结果 |
+|---|---|
+| 新 HTTP + 证据规则 + 旧构建 HTTP 定向 | 158 通过，0 失败/错误/跳过 |
+| 全量 lint / types | 均通过 |
+| 全量单元 | 1403 通过，5 可选上游组件跳过；1376.411 秒 |
+| 覆盖率 | 85.4%，门槛 81% |
+| HTTP 集成 | 551 通过，0 失败，8 可选上游条件跳过 |
+| 严格场景 | 10/10 通过 |
+| 原 UI 走查 / 实操 | 64 通过；50 通过 / 3 未配置模型跳过 |
+| 原构建 / 机器人真实浏览器 | 10 项通过；14 项通过 |
+| 已审文件冻结 | 129 个测试、辅助模块与夹具 SHA-256 不变 |
+| 全量实现时点 | 4 个本批生产文件与全量启动前摘要一致，无启动后改实现 |
+
+最终 `.check-results/ir019-t05-all-retry/summary.json` 十段均 exit_code=0，exit.json 的外层退出码为 0。
+没有把可选组件/未配置模型跳过计作通过；本批单元仍在原 1500 秒预算内完成。
+最终结果、源码摘要、测试冻结、各段日志摘要和早期失败记录见 [T05 机器审计](IR-019-t05-green-results.json)。
+本批更新 acceptance 的状态与剩余批次，不改变 criterion、已审测试映射或尚未编写的 UI/CLI 计划验收。
+T05 已完成，IR-019 仍为 in-progress；下一步为 T06：先写新知识维护 UI、浏览器实际联动和独立演示 CLI 的失败测试，再提交覆盖审查。

@@ -1,7 +1,7 @@
-# 机器人知识维护服务（IR-019 T03）
+# 机器人知识维护服务（IR-019 T03 / T05）
 
 依据 DR-059 / DR-060 / DR-061 / DR-064 / DR-065。
-本页说明已实现的本地 Python 服务；新增 HTTP 和 UI 由 IR-019 后续任务接入。
+本页说明本地 Python 服务及 T05 HTTP 接口；新知识维护 UI 留待 T06/T07 接入。
 当前 UI 的“构建模板”仍用于双 XML 导入，业务映射维护尚未增加界面入口。
 
 ## 存储与版本
@@ -98,3 +98,74 @@ saved = service.save(
 
 事务失败可能留下无登记的不可变文件，但不会通过目录/下载索引暴露为成功结果；本阶段不自动删除未知文件。
 独立 `scripts/demo_robotics_review.py` 和新维护 UI 仍按 T06 先写失败测试、T07 实现。
+
+
+## T05：通过 HTTP 调用
+
+已有 `server.app` 和 `wsgi.application` 随机器人模块装配治理 Blueprint，不需要另开一个后端服务。
+继续使用现有启动方式与 `DATAMIND_ROBOTICS_ENABLED` 开关；部署新代码后需重启后端进程才能加载新增路由。
+本批没有修改用户 `.env`、重启常驻服务或迁移用户实际存储。
+
+先从 `GET /api/ontology-assets?domain=robotics` 选择资产与固定版本，再读取：
+
+```text
+GET /api/ontology-assets/<ontology_id>/versions/<version_id>/knowledge
+```
+
+响应中的 `knowledge` 是该版本的 RDF 投影，包含 entities、schema、provenance 和 issues。
+`head.version_id` / `head.revision` 用于下一次条件写入，`payload_sha256` 用于固定本次编辑底本。
+`evidence` 包含证据声明、确认状态、当前有效性及原因，`reviews` 是该版本审核记录，`history` 是资产维护历史。
+它们不会把旧版本的 RDF 内容替换为当前工作头内容。
+
+例如保存一项业务映射时，发送以下 JSON；示例中的 ID、摘要和修订号必须取自真实读取结果：
+
+```text
+POST /api/ontology-assets/<ontology_id>/drafts
+Content-Type: application/json
+```
+
+```json
+{
+  "base_version_id": "ver_从读取结果复制",
+  "base_payload_sha256": "从读取结果复制64位摘要",
+  "expected_head_version_id": "ver_从head复制",
+  "expected_revision": 0,
+  "request_id": "本次操作唯一ID",
+  "actor": "操作者署名",
+  "reason": "根据已核对的工程记录建立业务映射",
+  "operations": [{
+    "op": "set_relation",
+    "iri": "https://example.org/ur-skill#PartType_A",
+    "relation": "hasPerceptionProfile",
+    "targets": ["https://example.org/ur-skill#Perception_Current"],
+    "basis": "工程记录编号和适用范围"
+  }]
+}
+```
+
+201 返回新候选；请求重发保持 request_id 和正文不变。409 时保留当前输入，重新读取 head 并比较版本，不能盲目重试覆盖。
+提交对象完整 IRI；不要把展示名称或 IRI 的末尾片段当作对象 ID。
+
+| 操作 | 路由后缀（共同前缀 `/api/ontology-assets/<ontology_id>`） |
+|---|---|
+| 比较同资产两个版本 | `GET /diff?base=<version_id>&target=<version_id>` |
+| 登记附件 | `POST /evidence-sources`，multipart 单个 file，返回来源 ID；没有自动确认 |
+| 登记/审核证据 | `POST /evidence`、`POST /evidence-reviews` |
+| 审核指定业务对象 | `POST /knowledge-reviews` |
+| 来源合并预览/提交 | `POST /merge-previews`、`POST /merges` |
+| 审核版本/发布版本 | `POST /versions/<version_id>/reviews`、`POST /versions/<version_id>/publish` |
+| 撤销/替代证据 | `POST /evidence-revocations`，正文含完整 evidence_iri |
+
+完整请求字段和错误码见 [IR-019 HTTP 契约](../specs/iterations/IR-019-robotics-knowledge-review-and-publication.md#http-与-ui-接线契约t04-固定)。
+JSON 路由严格校验字段和类型；应用级 Host/CSRF/JSON guard 继续按原契约工作。
+署名是用户声明的追溯信息，不是认证身份。
+
+版本详情 `GET /api/ontology-assets/<ontology_id>/versions/<version_id>` 中的 `payload_url` 可下载候选自身的 OWL。
+未发布治理候选的 artifacts 为空；发布后提供该版本 ontology、validation、manifest 三类工件的 download_url。
+沿用服务端返回的 URL，不用 origin_build_run_id 拼出旧文件 URL 代替当前版本。
+旧构建运行的下载 URL 保持兼容，仍返回原始构建字节。
+
+开关关闭时所有新增 POST 返回 503，已有版本的 GET 和下载仍可用。
+缺少数据库的读取返回 404；不兼容 schema 返回 503，不借 GET 创建或迁移数据库。
+附件上传受原单文件限制和应用请求总大小限制；文件名不决定服务器存储路径。
+HTTP 操作不会启动行为树执行，也没有增加自然语言生成或 XML 在线编辑接口。

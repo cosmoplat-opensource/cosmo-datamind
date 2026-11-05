@@ -2,7 +2,7 @@
 
 - **状态 / Status**: in-progress
 - **日期 / Date**: 2026-11-05
-- **当前环节**：T03 领域与治理存储实现完成；T04 HTTP 失败测试与接口契约已编写，待覆盖审查后进入 T05 实现，IR-019 整轮仍在进行。
+- **当前环节**：用户已确认 T04 覆盖；T05 HTTP 与下载接线实现完成，定向 158 项及全量十段通过；下一步 T06 UI/CLI 失败测试，IR-019 整轮仍在进行。
 - **关联 / Refs**: [[DR-059-unified-domain-semantic-graph]]、[[DR-060-robotics-source-recipes-and-reverse-build]]、[[DR-061-parameter-contracts-calibration-and-readiness]]、[[DR-063-local-domain-registration-and-application-ui]]、[[DR-064-persistent-build-runs-and-artifact-manifests]]、[[DR-065-robotics-migration-and-compatibility-validation]]。
 - **前置**：[IR-018](IR-018-robotics-build-api-and-ui.md) 已于 2026-11-04 经用户确认 delivered。
 - **方案**：[集成 Proposal](../PROPOSAL-yang-datamind-integration.md) 步骤 4；步骤 5～6 的任务提取和行为树应用仍另立 IR。
@@ -342,3 +342,16 @@ HTTP 契约与失败测试已编写；34 个函数展开为 83 项，最终 7 �
 元测试 21 项、ruff、mypy 和 diff 检查通过；原 127 个已审测试/夹具与 T03 生产实现保持不变。
 覆盖矩阵、运行命令、失败边界见 [T04 审计](../../docs/audits/IR-019-knowledge-validation.md#t04--http-red-覆盖审查2026-11-05)。
 当前等待 SDD 第⑤步的覆盖审查；T05 HTTP 实现与全量回归尚未开始，Deliverables/Acceptance 不提前勾选。
+
+
+### T05 覆盖授权与实现（2026-11-05）
+
+用户明确回复“这部分测试覆盖确认没有问题，继续下一步实现。”，T04 覆盖审查通过。
+本任务保持已审测试不变，接入独立治理 Blueprint、版本详情与下载；按 SDD 第⑥～⑦步运行定向和全量回归。
+
+
+T05 最终结果：新增治理 HTTP、固定版本知识/差异/附件读取与写入、审核发布及版本下载已实现；未修改已审测试。
+定向 158 项通过；全量独立重跑十段均退出 0，其中单元 1403 通过 / 5 可选跳过，覆盖率 85.4%，HTTP 551 通过 / 8 条件跳过，严格场景 10/10，UI 64 通过，UI 实操 50 通过 / 3 未配置模型跳过，原构建浏览器 10 通过，机器人真实浏览器 14 通过。
+首轮外层 SIGTERM 中断未计为完整通过；保留日志并独立重跑同一全量命令取得退出码 0，未缩减检查或修改预算。
+详细结果与中断记录见 [T05 审计](../../docs/audits/IR-019-knowledge-validation.md#t05--治理-http-与版本下载实现2026-11-05) 和 [机器审计](../../docs/audits/IR-019-t05-green-results.json)。
+本批仍不包含新知识维护 UI / 独立演示 CLI；下一步 T06 先写状态、浏览器与 CLI 失败测试并提交覆盖审查，整轮 Deliverables/Acceptance 不提前勾选。

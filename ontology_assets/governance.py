@@ -254,6 +254,54 @@ class GovernanceService:
             self._asset(conn,ontology_id)
             return [json.loads(row[0]) for row in conn.execute('SELECT record FROM governance_events WHERE ontology_id=? ORDER BY rowid',(ontology_id,))]
 
+    def inspect(self, ontology_id, version_id):
+        """DR-059/061: project one RDF snapshot and current governance in one read transaction."""
+        with self._atomic() as conn:
+            version = self._version(conn, ontology_id, version_id)
+            graph = self._graph(conn, version)
+            revoked = self._revocations(conn, ontology_id)
+            outcomes = []
+            for subject in sorted(graph.subjects(RDF.type, S.ReadinessEvidence), key=str):
+                self._check_evidence_attachments(conn, graph, subject)
+                declaration = {key: str(graph.value(subject, predicate) or '') for key, predicate in (
+                    ('kind', S.evidenceKind), ('implementation', S.forImplementation),
+                    ('part_type', S.forPartType), ('reference', S.evidenceReference), ('valid_until', S.validUntil))}
+                slot = graph.value(subject, S.forSlot)
+                declaration.update(iri=str(subject), slot=str(slot) if slot is not None else None,
+                                   source_asset_ids=[str(v) for v in graph.objects(subject, S.evidenceSourceId)])
+                outcomes.append({'evidence_iri': str(subject),
+                    'declaration': declaration,
+                    'confirmation_status': str(graph.value(subject, S.confirmationStatus) or 'unknown'),
+                    **evidence.evaluate_evidence(graph, str(subject), revocations=revoked)})
+            history = [json.loads(r[0]) for r in conn.execute(
+                'SELECT record FROM governance_events WHERE ontology_id=? ORDER BY rowid', (ontology_id,))]
+            reviews = [json.loads(r[0]) for r in conn.execute(
+                'SELECT record FROM governance_reviews WHERE ontology_id=? AND version_id=? ORDER BY rowid',
+                (ontology_id, version_id))]
+            return {'ontology_id': ontology_id, 'version_id': version_id,
+                    'payload_sha256': version['payload_sha256'], 'head': self._head(conn, ontology_id),
+                    'knowledge': authoring.inspect_knowledge(graph), 'evidence_policy': evidence.policy(graph) or 'legacy',
+                    'evidence': outcomes, 'revocations': revoked, 'history': history, 'reviews': reviews,
+                    'task_readiness': 'not_assessed', 'execution_readiness': 'not_verified'}
+
+    def diff(self, ontology_id, base_version_id, target_version_id):
+        with self._atomic() as conn:
+            base = self._version(conn, ontology_id, base_version_id)
+            target = self._version(conn, ontology_id, target_version_id)
+            fields = ('ontology_id', 'version_id', 'payload_sha256')
+            return {'base': {k: base[k] for k in fields}, 'target': {k: target[k] for k in fields},
+                    'changes': version_diff.diff_graphs(self._graph(conn, base), self._graph(conn, target))}
+
+    def register_source(self, ontology_id, content, media_type):
+        """Register inert evidence bytes only after checking the target asset in the same transaction."""
+        with self._atomic(write=True) as conn:
+            self._asset(conn, ontology_id)
+            return self.assets._put_source(conn, content, role='evidence', media_type=media_type)
+
+    def read_payload(self, ontology_id, version_id):
+        with self._atomic() as conn:
+            return self._bytes(self._version(conn, ontology_id, version_id))
+
     def _report(self, conn, oid, version, graph):
         mode = self._mode(version,graph)
         validation, _ = consumer.validate_graph(graph,mode=mode)

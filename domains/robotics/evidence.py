@@ -115,7 +115,7 @@ def register_evidence(graph, evidence, *, mode, now=None):
     reference = text(evidence['reference'], 'reference')
     if reference.startswith(('/', '\\', 'file:')) or re.match(r'^[A-Za-z]:[\\/]', reference):
         raise ValueError('附件需要逻辑来源 ID，不能使用服务器路径。')
-    if mode == 'real' and reference.lower().startswith('demo-only:'):
+    if mode == 'real' and (reference.lower() == 'demo-only' or reference.lower().startswith('demo-only:')):
         raise ValueError('真实证据不能使用模拟依据。')
     if mode == 'demo' and not reference.startswith('demo-only:'):
         raise ValueError('模拟证据需要明确 demo-only 标记。')
