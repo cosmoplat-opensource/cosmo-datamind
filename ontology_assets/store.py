@@ -152,6 +152,10 @@ class AssetStore:
         with _RDF_LOCK:
             self.storage.read_bytes(record["path"], record["payload_sha256"])
             context = load_ontology(Path(confine(self.storage.root, record["path"])), mode=mode)
+        if record['metadata'].get('evidence_policy'):
+            from domains.robotics.evidence import policy, POLICY
+            if policy(context['graph']) != POLICY:
+                raise ValueError('治理版本不可退回旧证据契约。')
         if context["validation"]["ontology_sha256"] != record["payload_sha256"]:
             raise ValueError("校验读取的本体与固定版本摘要不一致。")
         return context

@@ -8,7 +8,7 @@ from ontology_assets.payloads import json_text
 from ontology_assets.storage import digest
 from srv_context import _RDF_LOCK
 
-from .store import RunStore
+from .store import RunStore, _run, _expect
 
 
 def execution_components(version, validation):
@@ -23,6 +23,10 @@ def generate_from_version(root, *, ontology_id, version_id, task, mode, session_
     assets = AssetStore(root)
     context = assets.load_robotics(ontology_id, version_id, mode=mode)
     version = assets.get_version(ontology_id, version_id)
+    from domains.robotics.evidence import policy
+    if policy(context['graph']):
+        from ontology_assets.governance import GovernanceService
+        context['evidence_revocations'] = GovernanceService(root, read_only=True).revocations(ontology_id)
     runs = RunStore(root)
     run = runs.create_run(ontology_id=ontology_id, version_id=version_id, operation="generate_bt",
         task=task, mode=mode, session_ref=session_ref, components=execution_components(version, context["validation"]))
@@ -51,4 +55,37 @@ def generate_from_version(root, *, ontology_id, version_id, task, mode, session_
     artifacts.append({"name": "validation.json", "kind": "validation", "media_type": "application/json",
                       "content": json_text(result).encode("utf-8")})
     # A failed durable commit must propagate; never convert it to a pretend completed report.
+    if policy(context['graph']):
+        return _finish_governed(runs,run['run_id'],context,result,artifacts)
     return runs.finish(run["run_id"], result=result, artifacts=artifacts)
+
+
+def _finish_governed(runs, run_id, context, result, artifacts):
+    """DR-061/064: serialize current evidence admission with durable completion.
+
+    A revocation that commits during computation must block the candidate. The
+    ordinary RunStore completion contract and old manifest layout stay intact.
+    """
+    import json
+    from domains.robotics import grounding, evidence
+    from . import contracts
+    with _RDF_LOCK, runs.storage.transaction(write=True) as conn:
+        run = _run(conn,run_id)
+        _expect(run,'running')
+        runs._verify_snapshot(conn,run)
+        revocations = [json.loads(row[0]) for row in conn.execute(
+            'SELECT record FROM evidence_revocations WHERE ontology_id=? ORDER BY rowid',(run['ontology_id'],))]
+        if result['status'] == 'generated':
+            resolved = grounding.resolve_request(context['graph'],
+                {key:run['task'][key] for key in ('part','station','carrier','slot')},
+                mode=run['mode'],revocations=revocations)
+            if resolved['issues']:
+                result = {**result,'status':'needs_information','candidate_written':False,
+                          'issues':resolved['issues'],'grounding':resolved}
+                artifacts = [item for item in artifacts if item['kind'] != 'candidate']
+        result = {**result,'evidence_check':{'policy':evidence.POLICY,'checked_at':evidence.utc_now(),
+                   'revocation_ids':[item['revocation_id'] for item in revocations]}}
+        artifacts = [{**item,'content':json_text(result).encode('utf-8')} if item['kind']=='validation' else item
+                     for item in artifacts]
+        outcome, checked = contracts.completion(result,artifacts)
+        return runs._complete(conn,run,outcome,checked)

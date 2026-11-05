@@ -50,10 +50,10 @@ def isolated_env(directory):
 
 def run_check(name, args, env, reports, results):
     start = time.monotonic()
-    # DR-065 / IR-018 T05: the previous suite took 709s of its 720s budget.
-    # Add real HTTP/child/recovery checks without dropping cases or coverage gates.
-    # Keep a bounded 20-minute unit budget; other check budgets remain unchanged.
-    timeout = 1200 if name == "unit" else 360
+    # DR-065 / IR-019 T03: 1320 tests passed in 1196.827s of the 1200s budget.
+    # Allow a bounded 25 minutes for the expanded governance/migration suite.
+    # Test selection, coverage gates and other check budgets remain unchanged.
+    timeout = 1500 if name == "unit" else 360
     with (reports / f"{name}.log").open("w", encoding="utf-8") as log:
         process = subprocess.Popen(args, cwd=ROOT, env=env, stdout=log, stderr=subprocess.STDOUT,
                                    start_new_session=True)

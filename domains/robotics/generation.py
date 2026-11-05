@@ -102,7 +102,7 @@ def generate_task(context, task, *, mode="real", output_dir):
         if task["operation"] != "pick_place":
             return _issue(result, "unsupported_operation", f"当前不支持任务：{task['operation']}", status="unsupported")
         grounding = resolve_request(graph, {field: task[field] for field in ("part", "station", "carrier", "slot")},
-                                    mode=mode)
+                                    mode=mode, revocations=context.get("evidence_revocations", ()))
         result["grounding"] = grounding
         if grounding["issues"]:
             clarification = any(item["code"] in CLARIFICATION_CODES for item in grounding["issues"])

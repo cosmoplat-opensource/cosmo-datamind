@@ -8,7 +8,7 @@ import tempfile
 
 from srv_context import confine
 
-SCHEMA_VERSION = 4
+SCHEMA_VERSION = 5
 SCHEMA = (
     """CREATE TABLE assets (
         ontology_id TEXT PRIMARY KEY, name TEXT NOT NULL, domain TEXT NOT NULL,
@@ -126,6 +126,10 @@ class Storage:
                     run_id TEXT NOT NULL UNIQUE REFERENCES runs(run_id))""")
                 conn.execute("CREATE INDEX queued_builds ON runs(operation,status)")
                 conn.execute("PRAGMA user_version=4")
+                version = 4
+            if version == 4:
+                from .governance_schema import migrate
+                migrate(conn)
             elif version != SCHEMA_VERSION:
                 raise ValueError(f"不支持的资产数据库 schema 版本：{version}")
 
