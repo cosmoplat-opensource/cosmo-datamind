@@ -52,7 +52,7 @@ env DATAMIND_WORKDIR="$robotics_ui_root/work" \
 ## 从上传到下载
 
 1. 打开“本体构建”，在“本体构建配方”选择“行为树 XML → 机器人本体”。默认仍为数据本体。
-2. 填写“机器人本体名称”，保留当前唯一支持的 `ur_pick_place` profile。
+2. 填写“机器人本体名称”，保留“构建模板”中当前唯一支持的 `ur_pick_place`。
 3. “主行为树 XML”选择仓库中的 `tests/fixtures/robotics/sources/xingweishu.xml`。
 4. “节点模型 XML”选择 `tests/fixtures/robotics/sources/xml_models.xml`。两者按角色接收，文件同名也不会互相覆盖。
 5. 点击“构建机器人本体”，或聚焦按钮后按 Enter。页面显示运行编号、排队/构建状态、实际阶段事件；受理不是构建成功。

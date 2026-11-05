@@ -49,7 +49,7 @@
       const d = state.draft;
       if (!d.name?.trim()) return '请填写机器人本体名称。';
       if (d.name.length > 256) return '本体名称不能超过 256 个字符。';
-      if (!caps?.recipes?.find(r => r.id === 'bt_xml')?.profiles?.includes(d.profile)) return '此机器人 profile 不受支持。';
+      if (!caps?.recipes?.find(r => r.id === 'bt_xml')?.profiles?.includes(d.profile)) return '此构建模板 不受支持。';
       for (const [key, label] of [['behavior_tree','主行为树 XML'], ['node_models','节点模型 XML']]) {
         const file = d[key];
         if (!file || !file.size) return `请选择非空的${label}。`;
@@ -139,7 +139,7 @@
     panel.innerHTML = `<div class="rb-heading"><span class="tag">机器人本体 · XML 导入</span><h2>从行为树构建本体候选</h2><p class="muted">上传两份 XML，系统保存来源快照并在后台构建。成功后可查看待评审版本及下载文件。</p></div>
       <form id="rb_form" class="card rb-form" novalidate hidden>
         <label>机器人本体名称<input id="rb_name" maxlength="256" autocomplete="off" placeholder="例如：UR 抓移放工作站"></label>
-        <label>机器人 profile<select id="rb_profile" aria-label="机器人 profile"><option value="ur_pick_place">UR 抓移放 · ur_pick_place</option></select></label>
+        <label>构建模板<select id="rb_profile" aria-label="构建模板"><option value="ur_pick_place">UR 抓移放 · ur_pick_place</option></select></label>
         <label>主行为树 XML<input id="rb_tree" type="file" accept=".xml,application/xml,text/xml"></label>
         <label>节点模型 XML<input id="rb_models" type="file" accept=".xml,application/xml,text/xml"></label>
         <p class="muted rb-wide" id="rb_limits">正在读取构建能力…</p>
