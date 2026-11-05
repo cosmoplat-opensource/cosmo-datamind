@@ -44,7 +44,7 @@ def profile_parameters(g, profile, skill):
     return values, sources
 
 
-def resolve_request(g, request, *, mode="real"):
+def resolve_request(g, request, *, mode="real", revocations=()):
     """Ground names without inventing entities, configuration, or confirmation."""
     result = {"part": None, "part_type": None, "station": None, "carrier": None,
               "slot": None, "issues": [], "config": None, "profiles": {}, "parameter_sources": []}
@@ -128,8 +128,16 @@ def resolve_request(g, request, *, mode="real"):
     if len(dp) != 1:
         issue("placement_mapping", "slot", "缺少唯一的槽位→机器人目标位姿映射。")
     for kind, implementation in (("grasp_compatibility", S.grasp_Subtree_Impl), ("placement_compatibility", S.Place_Subtree_Impl)):
-        if not compatibility_confirmed(g, kind, implementation, part_type, slot, mode=mode):
+        if not compatibility_confirmed(g, kind, implementation, part_type, slot, mode=mode, revocations=revocations):
             issue(kind, "part" if kind == "grasp_compatibility" else "slot", "缺少对应零件/实现/目标的有效、带来源且匹配当前XML版本的适用性确认。")
+            from .evidence import policy
+            if policy(g):
+                revoked = {event['evidence_iri'] for event in revocations if event.get('kind') in ('revoked', 'superseded')}
+                if any(str(item) in revoked and (item, S.forPartType, part_type) in g and
+                       (kind != 'placement_compatibility' or (item, S.forSlot, slot) in g)
+                       for item in g.subjects(S.forImplementation, implementation)):
+                    issue('evidence_revoked', 'evidence', '对应范围的适配证据已撤销或被替代。')
+
     if len(pp) == len(dp) == 1:
         for profile in (pp[0], dp[0]):
             if value(g, profile, "confirmationStatus") != expected_status:
@@ -151,11 +159,17 @@ def resolve_request(g, request, *, mode="real"):
     return result
 
 
-def compatibility_confirmed(g, kind, implementation, part_type, slot, *, mode="real"):
+def compatibility_confirmed(g, kind, implementation, part_type, slot, *, mode="real", revocations=()):
     try:
         check_mode(g, mode)
     except ValueError:
         return False
+    from .evidence import policy, evaluate_evidence
+    if policy(g):
+        required = {'kind': kind, 'implementation': str(implementation), 'part_type': str(part_type)}
+        if kind == 'placement_compatibility': required['slot'] = str(slot)
+        return any(evaluate_evidence(g, str(item), revocations=revocations, required_scope=required)['valid']
+                   for item in g.subjects(RDF.type, S.ReadinessEvidence))
     source_hash = value(g, S.BehaviorTree_Source, "sha256")
     if not re.fullmatch(r"[0-9a-f]{64}", source_hash):
         return False

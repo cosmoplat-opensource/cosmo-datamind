@@ -17,6 +17,8 @@ from .validator import validate_tree
 
 
 def check_mode(graph, mode):
+    from .evidence import policy
+    policy(graph)  # DR-061: an unknown policy cannot silently use the legacy gate.
     if mode not in ("real", "demo"):
         raise ValueError("mode 必须为 real 或 demo。")
     kinds = list(graph.objects(ONTOLOGY, S.datasetKind))
