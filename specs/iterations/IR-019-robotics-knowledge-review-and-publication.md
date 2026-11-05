@@ -2,7 +2,7 @@
 
 - **状态 / Status**: in-progress
 - **日期 / Date**: 2026-11-05
-- **当前环节**：用户已确认 T04 覆盖；T05 HTTP 与下载接线实现完成，定向 158 项及全量十段通过；下一步 T06 UI/CLI 失败测试，IR-019 整轮仍在进行。
+- **当前环节**：T05 HTTP GREEN；T06 UI 状态、真实浏览器与离线 CLI 失败测试已编写，待覆盖审查后进入 T07；IR-019 整轮仍在进行。
 - **关联 / Refs**: [[DR-059-unified-domain-semantic-graph]]、[[DR-060-robotics-source-recipes-and-reverse-build]]、[[DR-061-parameter-contracts-calibration-and-readiness]]、[[DR-063-local-domain-registration-and-application-ui]]、[[DR-064-persistent-build-runs-and-artifact-manifests]]、[[DR-065-robotics-migration-and-compatibility-validation]]。
 - **前置**：[IR-018](IR-018-robotics-build-api-and-ui.md) 已于 2026-11-04 经用户确认 delivered。
 - **方案**：[集成 Proposal](../PROPOSAL-yang-datamind-integration.md) 步骤 4；步骤 5～6 的任务提取和行为树应用仍另立 IR。
@@ -218,6 +218,71 @@ UI 只对机器人版本显示维护入口，明确基线及未保存变化；�
 修改后跳转新候选固定版本，原深链仍指向原版本；成功/失败、待审核/已退回/已发布与适配/执行状态分别显示。
 本体评审中的机器人区独立于现有数据评审；现有数据图谱、聊天及作业入口照常可用。
 
+## T06 UI 与离线演示测试契约（待覆盖审查）
+
+本节固定 T06 测试边界，T07 实现；不增加完整图画布、XML 编辑或自然语言生成接口。
+
+### 页面与操作
+
+本体库固定机器人版本提供“维护知识”链接，知识维护深链使用 `#library?asset=<id>&version=<v>&tab=knowledge`。
+“机器人评审”链接进入 `#review?asset=<id>&version=<v>`，在原本体评审页增加独立机器人区；原数据图谱/评审/深度问数/本体对话保留。
+维护区提供“知识维护、证据管理、版本比较、重建合并、审核发布”五个可键盘操作的分区按钮；操作者署名和操作理由作为公共输入。
+测试用 `robotics-review` 根区域及固定资产/版本/发布状态属性核对身份；不要求具体颜色、卡片尺寸或图画布布局。
+
+| 流程 | 用户操作与结果 |
+|---|---|
+| 业务知识 | 编辑方式选择 set_field / set_relation / create_entity / delete_entity；对象、关系和引用使用完整 IRI；填写修改依据后“加入修改”，再“保存新候选” |
+| 字段/关系 | 知识对象、知识字段、字段值；关联关系、关联对象；字段来自 schema，技能/端口/执行结构不能通过编辑表单修改 |
+| 新增对象 | 新对象 IRI、对象类型、对象名称及依据；已有对象不隐式重命名身份；未被引用对象可显式删除 |
+| 未保存变化 | 待保存操作列表可见；站内离开弹出“未保存的知识修改”，选择“继续编辑”或“放弃修改并离开”；关闭/刷新页面使用浏览器 beforeunload 保护 |
+| 并发保存 | 真实两页面写入时一个成功、另一个 409；失败页保留操作和固定底本，不自动覆盖或重发 |
+| 证据 | 上传证据附件→填写证据 IRI/类型/技能实现/零件类型/可选放置位/引用/有效期→登记证据→独立接受或退回→可撤销；附件不自动等于确认 |
+| 证据失效 | 证据条目明确显示确认状态与失效原因；参数变化的例子先显式建立零件类型→感知配置关系，再修改范围内阈值，要求提示范围变化及重新评审 |
+| 版本比较 | 明确选择同资产的比较基线版本/目标版本，展示语义变化，比较不写版本 |
+| 来源合并 | 明确选择原始构建版本、新来源资产/版本；当前人工版本固定；预览展示两边值，未选择冲突处理前不可提交；明确选择后提交新候选并保留来源/历史 |
+| 版本审核 | “接受当前版本”或“退回当前版本”；退回、新保存、身份/摘要变化后不能沿用旧审核启用“发布当前版本” |
+| 发布与下载 | 发布后评审区和本体库原固定版本详情都能下载本版本 OWL/报告/manifest；结构通过、任务未评估、执行未验证分别显示；错误文件返回可见错误，不产生下载 |
+
+“字段留空可保存”不意味着一定允许发布。
+实际规则复核发现 PerceptionProfile.threshold 是发布 SHACL 的必填字段：可留空保存并显示未知，但接受版本审核返回 422；补回合法阈值后结构审核/发布可通过，严格任务生成仍因业务依据不足而阻断。
+本批测试遵守这一现有契约，不通过 UI 放宽发布规则。
+证据确认状态使用实际条目的 `data-evidence-iri` / `data-confirmation-status` 核对；可见文案使用中文，范围失效和撤销不得只藏在状态属性里。
+键盘保存、1440/768/390 三种宽度、用户输入的 HTML 字符串作为文字显示、错误提示及下载失败均需真实浏览器验证。
+
+### 前端状态边界
+
+`ui/modules/robotics-review.js` 暴露 `window.RoboticsReview.createController({fetch,onChange,onVersion,requestId})`。
+控制器提供 init、openVersion、setOperations、setIdentity、save、review、publish、compare、previewMerge、merge、snapshot、dispose。
+openVersion(ontology_id, version_id, {discard:false}) 遇未保存修改拒绝切换；明确 discard 后才能丢弃。
+snapshot 返回隔离的状态副本，包含 enabled、knowledge（完整知识响应）、operations、dirty、busy、error、review、diff、mergePreview。
+init 只读能力信息，能力失败或关闭时写入不可用；固定版本知识仍可读取。
+所有提交绑定显示中的版本/摘要及工作头；未保存操作不能直接审核/发布；接受审核仅对该版本有效。
+重复点击只有一次在途请求；网络响应丢失后的同输入重试复用 request_id，输入变化使用新 ID。
+迟到版本响应、已销毁控制器响应不覆盖当前页面；保存期间产生的新输入仍保留为未保存状态。
+状态测试允许合成 HTTP 响应以稳定制造时序；它们不作为实际后端成功的证据。
+真实浏览器套件连接隔离 Gunicorn/SQLite/实际构建与治理接口，不使用核心 API route fulfilment。
+
+### 离线演示的具体输出
+
+脚本仍为 `scripts/demo_robotics_review.py`，命令沿用下方交付契约；本轮不改变已有两个演示脚本。
+`--case` 支持 all / incomplete-publication / concurrent-edit / rebuild-conflict / tamper-detection。
+output-dir 直接包含 summary.json、summary.md 和 storage/；目录非空拒绝覆盖，verify 不建库、不恢复运行、不修复文件。
+summary 的 schema_version=1 是演示汇总格式版本，和资产数据库 schema 5 分开；storage_root 固定为相对值 storage，复制到其他临时目录后仍可核验。
+summary 包含 passed、producer_pid、verification（passed/pid）和 cases；每个 case 包含 case、passed、ontology_id、base_version_id、version_id，按场景增加实际审核/运行/合并或损坏探针引用。
+
+| 场景 | 持久化证据与独立断言 |
+|---|---|
+| incomplete-publication | 从冻结双 XML 实际构建；保存结构合格但缺业务依据的新候选→审核发布→严格生成 needs_information，无候选 XML；记录 review_id、run_id |
+| concurrent-edit | 两编辑者使用相同旧工作头；只有一个新版本和一次 save 历史，另一方 head_conflict；记录 loser_error，并通过独立陈旧写入复核 CAS |
+| rebuild-conflict | 新来源真实构建，阈值与人工值冲突；保留人工 0.71，显式处理受影响证据，提交候选；记录 conflict_ids、evidence_iri、evidence_review_required，核对实际 merge 元数据及证据无效原因 |
+| tamper-detection | 主输出保存完整可核验的发布版本；tamper-probe/ 下使用独立存储副本制造文件损坏，独立 verify 返回非零；记录 review_id、damaged_artifact_id、tamper_probe、probe_exit_code；不污染或“修复”主输出 |
+
+`--verify <output-dir>` 成功时向 stdout 输出 JSON，含 passed、pid、verified_versions（每项为固定资产/版本及摘要）；失败返回非零。
+核验从实际存储枚举全部版本、来源、运行、审核与工件，核对引用/摘要，不能只按 summary 自报的 cases 或 passed 判断成功。
+演示生产与自动核验使用不同进程；测试通过 sitecustomize 审计禁止联网、读取原归档/预置 OWL、导入线上 server，并记录子进程 PID。
+每个场景可单独执行；损坏测试从一次真实 all-case 模板复制隔离目录，避免反复构建造成无意义耗时，所有篡改仍针对实际字节或数据库记录。
+故障核验包括 OWL、manifest、来源、工件缺失、审核摘要不符及 summary 谎报成功；也检查运行中任务不被 verify 中断。
+
 ## 任务 Tasks（每项一次提交）
 
 | 编号 | 工作与提交边界 | 前置 | 对应验收 |
@@ -355,3 +420,13 @@ T05 最终结果：新增治理 HTTP、固定版本知识/差异/附件读取与
 首轮外层 SIGTERM 中断未计为完整通过；保留日志并独立重跑同一全量命令取得退出码 0，未缩减检查或修改预算。
 详细结果与中断记录见 [T05 审计](../../docs/audits/IR-019-knowledge-validation.md#t05--治理-http-与版本下载实现2026-11-05) 和 [机器审计](../../docs/audits/IR-019-t05-green-results.json)。
 本批仍不包含新知识维护 UI / 独立演示 CLI；下一步 T06 先写状态、浏览器与 CLI 失败测试并提交覆盖审查，整轮 Deliverables/Acceptance 不提前勾选。
+
+## T06 执行记录（2026-11-05，待覆盖审查）
+
+新增 5 个测试/辅助文件：30 项前端状态、1 项统一检查接线、18 项 CLI、16 项真实浏览器，共 65 项。
+最终 RED 为 63 失败、2 已有功能对照通过，0 收集/执行错误、0 跳过；失败分别来自新控制器、CLI、维护入口不存在或统一检查未接线。
+后续断言已经写入但尚未到达，不把 RED 结果当作 UI/CLI 功能通过。
+新增测试静态检查通过，规约元测试 21 项通过；129 个已有已审文件和 16 个生产文件保持不变。
+acceptance 的 RKG-10 / RKG-12 已由计划映射转成实际测试引用，全部 criterion 和旧测试引用保留。
+具体范围、阈值发布前提修正、命令及日志见 [T06 审计](../../docs/audits/IR-019-knowledge-validation.md)与[机器结果](../../docs/audits/IR-019-t06-red-results.json)。
+按 SDD 第⑤步等待人审覆盖后再进入 T07，实现知识维护/审核 UI、独立演示 CLI 及统一浏览器检查；整轮交付与验收项不提前勾选。

@@ -2,7 +2,7 @@
 
 - 日期：2026-11-05（Asia/Shanghai）
 - 依据：DR-059 / DR-060 / DR-061 / DR-063 / DR-064 / DR-065。
-- 当前阶段：T05 HTTP GREEN；定向 158 项及全量独立重跑十段通过，待 T06 UI/CLI RED。
+- 当前阶段：T05 HTTP GREEN；T06 UI/浏览器/CLI RED 共 65 项（2 对照通过、63 预期失败），待测试覆盖审查后进入 T07。
 - 规约：[IR-019](../../specs/iterations/IR-019-robotics-knowledge-review-and-publication.md)。
 
 ## 起点与授权
@@ -313,3 +313,60 @@ env PATH="/home/dyh/.local/opt/node-v22.20.0-linux-x64/bin:$PATH" .venv/bin/pyth
 最终结果、源码摘要、测试冻结、各段日志摘要和早期失败记录见 [T05 机器审计](IR-019-t05-green-results.json)。
 本批更新 acceptance 的状态与剩余批次，不改变 criterion、已审测试映射或尚未编写的 UI/CLI 计划验收。
 T05 已完成，IR-019 仍为 in-progress；下一步为 T06：先写新知识维护 UI、浏览器实际联动和独立演示 CLI 的失败测试，再提交覆盖审查。
+
+## T06 · UI、真实浏览器与离线演示 RED（2026-11-05，待覆盖审查）
+
+用户要求“继续下一步”，承接 T05 提交 `7bea285`；本批在 `dyh_dev` 编写 T06 测试，不提前执行 T07 实现。
+页面操作、控制器边界及 CLI 输出契约已补入 [IR-019 的 T06 测试契约](../../specs/iterations/IR-019-robotics-knowledge-review-and-publication.md)。
+acceptance 保留全部 criterion 和已有测试引用，把 RKG-10 / RKG-12 从计划映射转成实际函数映射；状态仍为 RED、待人审。
+
+### 本次覆盖哪些行为
+
+| 测试层 | 数量 | 主要检查 |
+|---|---:|---|
+| 前端状态 | 30 | 固定版本读取、写入开关、身份与理由、保存幂等、重复点击、迟到响应、保存期间新输入、409/其他错误保留草稿、脏状态离开保护、审核绑定及失效、差异与合并输入固定 |
+| 统一检查接线 | 1 | 新真实浏览器套件进入现有 `scripts/check.py` 的执行命令 |
+| 实际浏览器 | 16 | 双 XML 上传构建→知识维护→比较→审核发布→当前版本下载→刷新/进程重启；双页面竞争；站内离开及原生关闭保护；对象/关系维护；缺参数与缺证据的区别；附件登记、独立审核、范围失效、撤销；显式三方合并；退回/失效审核；损坏下载；功能关闭只读；键盘、安全文字及三种宽度；旧页面对照 |
+| 离线演示 CLI | 18 | 四个场景分别/合并运行；真实 XML 构建与持久化结果；不同进程只读核验；摘要、来源、审核、manifest 损坏及汇总谎报；非空目录不覆盖；缺失目录不初始化；运行中任务不被恢复；真实 CAS 拒绝及失败退出码 |
+
+前端状态用合成 HTTP 响应稳定制造网络时序；真实浏览器连接隔离的 Gunicorn、SQLite 和真实构建/治理接口，不伪造核心 API 响应。
+浏览器两项通过的对照分别证明真实构建与知识读取基础设施正常，以及原数据图谱/评审/深度问数/本体对话入口可用。
+离线 CLI 测试独立读取实际数据库、来源、OWL、审核与工件，不仅检查脚本输出的 `passed`。
+损坏探针应使用单独存储副本；主输出仍可完整核验。各负向测试只修改自己的隔离副本。
+
+### 测试前提复核
+
+初稿曾把“阈值留空可保存”理解为“可以直接审核发布”；实际服务探针证明 SHACL 要求阈值存在。
+已在本批首次人审前修正测试：保存空阈值成功、审核返回 422；补回合法阈值后审核发布成功，但严格任务生成仍因业务依据不足返回 needs_information、没有候选 XML。
+参数导致证据失效的用例，先明确建立零件类型到感知配置的业务映射，再改变该范围内阈值；实际服务探针返回 scope_changed。
+探针结果保存在 `.check-results/ir019-t06-red/preflight.json`；它验证领域前提，不计作新 UI 通过。
+原生 beforeunload 机制已用独立本地页面和真实 Chromium 显式上下文检查；应用中的对应测试仍因维护入口缺失而 RED。
+
+### 实际运行结果
+
+| 检查 | 最终结果 |
+|---|---|
+| 状态/接线/CLI pytest | 49 失败，0 通过、0 错误、0 跳过；退出码 1；JUnit 0.700 秒 |
+| 真实浏览器 pytest | 14 失败、2 对照通过，0 错误、0 跳过；退出码 1；JUnit 154.825 秒 |
+| 合计 | 65 项，63 预期失败、2 对照通过；不是功能完成报告 |
+| 新增 Python 文件 ruff / mypy | 均通过 |
+| 新增 JavaScript 语法检查 | 通过 |
+| 规约/验收映射元测试 | 21 通过 |
+| 冻结检查 | T05 的 129 个已审测试/辅助/夹具、16 个生产文件 SHA-256 均未变化 |
+
+```bash
+env PATH="/home/dyh/.local/opt/node-v22.20.0-linux-x64/bin:$PATH" .venv/bin/python -m pytest tests/unit/test_robotics_review_ui.py tests/unit/test_robotics_review_demo_cli.py --tb=short --junitxml=.check-results/ir019-t06-red/unit-final.xml
+.venv/bin/python tests/frontend/robotics-review-browser.py --output .check-results/ir019-t06-red/browser-reviewed
+.venv/bin/python -m pytest tests/meta --junitxml=.check-results/ir019-t06-red/meta.xml
+```
+
+30 项前端状态失败于缺少 `ui/modules/robotics-review.js`，1 项失败于检查脚本尚未接线；18 项 CLI 失败于脚本不存在，14 项浏览器失败于找不到“维护知识”入口。
+这些测试已经写入后续断言，但本次运行未到达这些断言；只有 T07 实现后完整执行才能证明后续行为正确。
+前两次浏览器各为 15 项（2 通过、13 失败），最终加入原生关闭保护后为 16 项；最终证据以 browser-reviewed 为准。
+本批未改生产代码、既有已审测试、用户配置或业务资产，也未把 T05 全量 GREEN 当作新 UI/CLI 的通过结果。
+新文件及全部冻结摘要、具体用例、失败分类和日志摘要见 [T06 机器审计](IR-019-t06-red-results.json)。
+
+### 下一步的审查边界
+
+按 [SDD skill 第⑤步](../../.agents/skills/sdd-workflow/SKILL.md)“人 review 测试是否覆盖到位”，本批提交后等待覆盖审查；确认后进入 T07，实现并运行全部已审测试及全量回归。
+当前无需确认 UI 已实现；请审查上表中的操作、异常和预期结果是否符合需求。IR-019 整轮仍为 in-progress。
