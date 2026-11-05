@@ -169,6 +169,11 @@ def inspect_knowledge(graph):
         if label and len(identities) > 1: issues.append({'code': 'ambiguous_label', 'label': label, 'entities': identities})
     changes = [{'iri': str(graph.value(item, S.entityIRI)), 'field': str(graph.value(item, S.field)),
                 'basis': str(graph.value(item, S.basis))} for item in sorted(graph.subjects(RDF.type, S.KnowledgeChange), key=str)]
-    return {'entities': entities, 'provenance': changes, 'issues': issues, 'execution_readiness': 'not_verified',
+    # DR-063: selectors need immutable reference identities, not editable skill templates.
+    references = [{'iri': str(entity), 'entity_type': name,
+                   'label': str(graph.value(entity, RDFS.label) or entity)}
+                  for name in ('SkillImplementation', 'CoordinateFrame')
+                  for entity in sorted(set(graph.subjects(RDF.type, S[name])), key=str)]
+    return {'entities': entities, 'references': references, 'provenance': changes, 'issues': issues, 'execution_readiness': 'not_verified',
             'schema': {'editable_types': sorted(EDITABLE), 'fields': {k: sorted(v | FIELDS) for k, v in TYPE_FIELDS.items()},
                        'relations': {k: {'source_type': a, 'target_type': b, 'max_count': n} for k, (a,b,n) in RELATIONS.items()}}}

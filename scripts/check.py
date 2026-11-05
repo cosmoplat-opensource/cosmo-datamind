@@ -145,6 +145,8 @@ def main():
                         # DR-065: owns an enabled server/root, never reuses the legacy server.
                         run_check("robotics-browser", [py, "tests/frontend/robotics-build-browser.py",
                                   "--output", str(reports / "robotics-browser")], env, reports, results)
+                        run_check("robotics-review-browser", [py, "tests/frontend/robotics-review-browser.py",
+                                  "--output", str(reports / "robotics-review-browser")], env, reports, results)
                 finally:
                     server.terminate()
                     try:
