@@ -14,6 +14,7 @@ from domain_runs.build_service import BuildRequestError, BuildService, ROLES
 from domain_runs.executor import BuildExecutor
 from domain_runs.store import _decode
 from ontology_assets import AssetStore
+import bp_robotics_review
 
 
 class Runtime:
@@ -40,10 +41,16 @@ class Runtime:
     def runs(self):
         if not (self.root / 'domain.sqlite3').exists():
             raise KeyError('尚无运行记录。')
-        return RunStore(self.root, read_only=True)
+        return self._reader(RunStore)
 
     def assets(self):
-        return AssetStore(self.root, read_only=True)
+        return self._reader(AssetStore)
+
+    def _reader(self, factory):
+        try:
+            return factory(self.root, read_only=True)
+        except ValueError as exc:
+            raise BuildRequestError('storage_unavailable', '存储格式暂不可读；读取请求不会执行迁移。', 503) from exc
 
     def public(self, value):
         if isinstance(value, dict):
@@ -275,8 +282,14 @@ def init_app(app, *, workdir, legacy_catalog, start_executor=True):
             build = run_row(runs, rid)
             result['artifacts'] = artifact_items(runs, rid)
             result['result'] = build['result']
+        if result['asset']['domain'] == 'robotics':
+            result['payload_url'] = url_for('robotics_review.payload', ontology_id=ontology_id, version_id=version_id)
+            current_artifacts = bp_robotics_review.version_artifacts(runtime, ontology_id, version_id)
+            if current_artifacts or not rid:
+                result['artifacts'] = current_artifacts
         return jsonify(runtime.public(result))
 
+    bp_robotics_review.init_app(app, runtime)
     app.register_blueprint(bp)
     app.extensions['robotics'] = runtime
     return runtime
