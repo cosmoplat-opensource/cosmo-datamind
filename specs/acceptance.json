@@ -1039,7 +1039,7 @@
         "tests/unit/test_robotics_task_model.py::test_saved_datamind_config_works_without_new_bt_environment_variables"
       ],
       "remaining_test_batches": [
-        "T04 实际 HTTP、会话服务和浏览器链路；T05 实现与回归"
+        "T04 实际 HTTP、会话、按需补齐写入及浏览器链路；T05 实现与回归"
       ],
       "notes": "本批只验证模型适配和确定性选择逻辑；外部模型被脚本替身替代，不代表在线模型语义质量或整条链路已验收。"
     },
@@ -1063,9 +1063,48 @@
         "tests/unit/test_robotics_task_dialogue.py::test_confirmation_phrase_does_not_choose_missing_objects_or_create_knowledge"
       ],
       "remaining_test_batches": [
-        "T04 实际 HTTP、会话服务和浏览器链路；T05 实现与回归"
+        "T04 实际 HTTP、会话、按需补齐写入及浏览器链路；T05 实现与回归"
       ],
       "notes": "本批只验证模型适配和确定性选择逻辑；外部模型被脚本替身替代，不代表在线模型语义质量或整条链路已验收。"
+    },
+    {
+      "id": "RMW-10",
+      "iteration": "IR-020",
+      "status": "partial-red-t02-projection-awaiting-review",
+      "criterion": "仅投影当前任务可确定的缺口；已有有效字段不重复填写，无关对象不入表单，未知映射不猜下游配置；任务歧义先澄清。",
+      "tests": [
+        "tests/unit/test_robotics_task_completion.py::test_fixture_is_complete_for_existing_grounding_without_new_completion_module",
+        "tests/unit/test_robotics_task_completion.py::test_complete_task_has_no_completion_form_and_inspection_is_read_only",
+        "tests/unit/test_robotics_task_completion.py::test_only_missing_public_parameter_becomes_an_input",
+        "tests/unit/test_robotics_task_completion.py::test_present_but_invalid_parameter_is_still_a_gap",
+        "tests/unit/test_robotics_task_completion.py::test_missing_relation_is_exposed_on_current_task_object",
+        "tests/unit/test_robotics_task_completion.py::test_unrelated_incomplete_objects_do_not_expand_current_task_form",
+        "tests/unit/test_robotics_task_completion.py::test_unconfirmed_knowledge_requests_confirmation_without_reentering_valid_values",
+        "tests/unit/test_robotics_task_completion.py::test_only_invalid_applicability_scope_is_requested_and_not_auto_confirmed",
+        "tests/unit/test_robotics_task_completion.py::test_changed_parameter_reopens_applicability_without_requiring_valid_parameter_again",
+        "tests/unit/test_robotics_task_completion.py::test_task_choice_must_be_clear_before_knowledge_form_is_shown",
+        "tests/unit/test_robotics_task_completion.py::test_unsupported_task_does_not_open_irrelevant_completion_forms",
+        "tests/unit/test_robotics_task_completion.py::test_same_gap_has_stable_identity_and_reinspection_after_fill_removes_it"
+      ],
+      "remaining_test_batches": [
+        "T04 页面可见输入项、任务切换、后端重新核验提交范围；T05 实现和浏览器回归"
+      ],
+      "notes": "T02 为真实 RDF 的只读投影测试；实际 UI 和保存链路仍待 T04，不计为页面覆盖通过。"
+    },
+    {
+      "id": "RMW-12",
+      "iteration": "IR-020",
+      "status": "partial-red-t02-projection-awaiting-review",
+      "criterion": "必要业务/配置确认与任务适配在当前页完成；明确范围、实际依据与有效期；保存不等于确认，过期/撤销/配置改变重检，不宣称实机已验证。",
+      "tests": [
+        "tests/unit/test_robotics_task_completion.py::test_unconfirmed_knowledge_requests_confirmation_without_reentering_valid_values",
+        "tests/unit/test_robotics_task_completion.py::test_only_invalid_applicability_scope_is_requested_and_not_auto_confirmed",
+        "tests/unit/test_robotics_task_completion.py::test_changed_parameter_reopens_applicability_without_requiring_valid_parameter_again"
+      ],
+      "remaining_test_batches": [
+        "T04 依据登记、明确确认、合法/无效输入、配置变更失效、操作来源、真实服务与浏览器；T05 实现"
+      ],
+      "notes": "当前仅验证需确认/失效依据可被识别为补齐项，未实现或验收确认写入流程。"
     }
   ],
   "planned_requirements": [
@@ -1086,7 +1125,7 @@
     {
       "id": "RMW-05",
       "iteration": "IR-020",
-      "criterion": "真实本体缺知识明确提示；显式独立演示走通构建到生成，不修改真实本体或伪造任务证据。",
+      "criterion": "真实本体缺知识时在 DataMind 展示当前任务需补齐的信息，不伪造完成；独立演示与用户真实本体隔离。",
       "planned_test_batch": "T04",
       "status": "planned-not-covered"
     },
@@ -1114,7 +1153,21 @@
     {
       "id": "RMW-09",
       "iteration": "IR-020",
-      "criterion": "四个离线演示命令可执行并核验本体、会话及产物，显式注明模型替身，真实模型另做人工冒烟。",
+      "criterion": "五个离线演示命令可执行并核验本体、会话及产物，包含经真实补齐服务保存后生成的案例；标明模型替身和合成适配资料，真实模型另做人工冒烟。",
+      "planned_test_batch": "T04",
+      "status": "planned-not-covered"
+    },
+    {
+      "id": "RMW-11",
+      "iteration": "IR-020",
+      "criterion": "当前任务的映射、参数及缺少的对象/配置可页内补齐；合法输入原子保存新 OWL 版本，保留历史及无关语义，错误输入不部分保存。",
+      "planned_test_batch": "T04",
+      "status": "planned-not-covered"
+    },
+    {
+      "id": "RMW-13",
+      "iteration": "IR-020",
+      "criterion": "真实后端浏览器从缺知识构建开始，页内补映射/参数/适配并接续同一任务生成可核对 XML；不依赖 Protégé，不用演示模式代替补齐验收。",
       "planned_test_batch": "T04",
       "status": "planned-not-covered"
     }

@@ -1,0 +1,92 @@
+{
+  "iteration": "IR-020",
+  "task": "T02 completion extension",
+  "date": "2026-11-05",
+  "stage": "RED awaiting coverage review",
+  "authorization": "用户要求在 DataMind 内按任务缺口补参数、映射及必要适配，同步规约与测试覆盖。",
+  "results": {
+    "red": {
+      "command": [
+        ".venv/bin/python",
+        "-m",
+        "pytest",
+        "tests/unit/test_robotics_task_model.py",
+        "tests/unit/test_robotics_task_dialogue.py",
+        "tests/unit/test_robotics_task_completion.py",
+        "--tb=short",
+        "--junitxml=/home/dyh/workspace/Project/cosmo-datamind/.check-results/ir020-t02-completion/red.xml"
+      ],
+      "exit_code": 1,
+      "log": ".check-results/ir020-t02-completion/red.log",
+      "sha256": "30cc0743956bda7daa46d4cbc6d2d823439f640b96273a2b6a7c041a9b44c8a2",
+      "counts": {
+        "tests": 77,
+        "failures": 76,
+        "errors": 0,
+        "skipped": 0
+      },
+      "failure_messages": [
+        "ModuleNotFoundError: No module named 'domains.robotics.task_completion'",
+        "ModuleNotFoundError: No module named 'domains.robotics.task_dialogue'",
+        "ModuleNotFoundError: No module named 'domains.robotics.task_model'"
+      ]
+    },
+    "meta": {
+      "command": [
+        ".venv/bin/python",
+        "-m",
+        "pytest",
+        "tests/meta",
+        "--tb=short"
+      ],
+      "exit_code": 0,
+      "log": ".check-results/ir020-t02-completion/meta.log",
+      "sha256": "3a3f3aeffc309611181b13cca5be7461f358bb1451c0d23878d63fdf8bcd4428"
+    },
+    "lint": {
+      "command": [
+        ".venv/bin/python",
+        "-m",
+        "ruff",
+        "check",
+        "tests/unit/test_robotics_task_model.py",
+        "tests/unit/test_robotics_task_dialogue.py",
+        "tests/unit/test_robotics_task_completion.py"
+      ],
+      "exit_code": 0,
+      "log": ".check-results/ir020-t02-completion/lint.log",
+      "sha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18"
+    },
+    "types": {
+      "command": [
+        ".venv/bin/python",
+        "-m",
+        "mypy",
+        "tests/unit/test_robotics_task_model.py",
+        "tests/unit/test_robotics_task_dialogue.py",
+        "tests/unit/test_robotics_task_completion.py",
+        "--no-error-summary"
+      ],
+      "exit_code": 0,
+      "log": ".check-results/ir020-t02-completion/types.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "unchanged": {
+      "previous_t02_files": true,
+      "previous_134_reviewed_files": true,
+      "previous_10_frozen_production_files": true
+    },
+    "test_file_sha256": {
+      "tests/unit/test_robotics_task_model.py": "ce8eff11ae93e440a1f32353e83437a97d9bc03c551f5a8ce76d78e83f772ddf",
+      "tests/unit/test_robotics_task_dialogue.py": "ae2f7147fddfaf94f732f1a83304b2e011571ec35ae05ff3475ee98dcaf1d948",
+      "tests/unit/test_robotics_task_completion.py": "0c1769879c14002d5a5190b63fc18234c3cd1a7c201efc843f81e71a906a727c"
+    }
+  },
+  "initial_attempt": "New fixture control initially failed because its fixed 2030 review time was compared to the current clock. The new control test now injects the same frozen clock into the existing evidence evaluator; no old tests or production code changed.",
+  "limits": [
+    "Only read-only gap projection added to RED coverage; submit/storage/browser requirements explicitly planned for T04",
+    "One existing-grounding positive control validates synthetic fixture; it is not new-feature success",
+    "No real model calls or user runtime data touched",
+    "No full GREEN regression claimed"
+  ]
+}
