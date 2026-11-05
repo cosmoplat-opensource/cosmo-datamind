@@ -1,5 +1,5 @@
 {
-  "iteration": "IR-014 / IR-015 / IR-016 / IR-017（delivered） / IR-018（delivered） / IR-019（T05 HTTP GREEN / T06 UI、浏览器与 CLI RED，待覆盖审查）",
+  "iteration": "IR-014 / IR-015 / IR-016 / IR-017（delivered） / IR-018（delivered） / IR-019（T07 GREEN，待 T08 人审交付）",
   "requirements": [
     {
       "id": "ALG-01",
@@ -717,9 +717,9 @@
     {
       "id": "RKG-01",
       "iteration": "IR-019",
-      "status": "partial-green-t05-t06-red-awaiting-review",
+      "status": "green-t07-awaiting-delivery-review",
       "criterion": "权威语义与编辑边界：受控操作只改变允许的业务知识，保留 RDF 身份、类型/语言/空白节点/列表与未改语义；保护技能模板、端口、调用、规则和来源事实；不隐式合并同名对象。",
-      "notes": "2026-11-05 T05 HTTP GREEN 已完成；T06 新增 UI 状态、真实浏览器与离线 CLI 测试，共 65 项，2 项已有功能对照通过、63 项预期失败，0 错误/跳过。当前失败停在新模块/入口/脚本缺失或检查未接线，后续断言尚未执行；待人审覆盖后 T07 实现，整轮未交付。见 IR-019 T06 审计。",
+      "notes": "2026-11-05 用户确认 T06 覆盖后完成 T07：新 UI 状态/接线/CLI 49 项及真实浏览器 16 项转绿；全量 11 段退出码均为 0，单元 1452 通过/5 可选跳过，覆盖率 84.0%（门槛 81%）。134 个已审文件不变；实现冻结时点、可选跳过、早期失败和最终证据见 T07 审计。整轮待 T08 人审交付。",
       "tests": [
         "tests/unit/test_robotics_knowledge.py::test_edit_preserves_unknown_semantics_literals_lists_and_original_graph",
         "tests/unit/test_robotics_knowledge.py::test_same_display_name_does_not_merge_full_iris_and_projection_keeps_identity",
@@ -729,17 +729,15 @@
         "tests/unit/test_robotics_review_http.py::test_business_mapping_http_save_keeps_complete_iri_and_basis"
       ],
       "remaining_test_batches": [
-        "T06 测试覆盖审查",
-        "T07 实现与全量回归",
         "T08 整轮交付审查"
       ]
     },
     {
       "id": "RKG-02",
       "iteration": "IR-019",
-      "status": "partial-green-t05-t06-red-awaiting-review",
+      "status": "green-t07-awaiting-delivery-review",
       "criterion": "不可变与并发：每次保存生成固定新候选，父版本和来源可追溯；旧版本不变，工作头及输入摘要检查拒绝过期写入；重发幂等且失败不留下半份可见版本。",
-      "notes": "2026-11-05 T05 HTTP GREEN 已完成；T06 新增 UI 状态、真实浏览器与离线 CLI 测试，共 65 项，2 项已有功能对照通过、63 项预期失败，0 错误/跳过。当前失败停在新模块/入口/脚本缺失或检查未接线，后续断言尚未执行；待人审覆盖后 T07 实现，整轮未交付。见 IR-019 T06 审计。",
+      "notes": "2026-11-05 用户确认 T06 覆盖后完成 T07：新 UI 状态/接线/CLI 49 项及真实浏览器 16 项转绿；全量 11 段退出码均为 0，单元 1452 通过/5 可选跳过，覆盖率 84.0%（门槛 81%）。134 个已审文件不变；实现冻结时点、可选跳过、早期失败和最终证据见 T07 审计。整轮待 T08 人审交付。",
       "tests": [
         "tests/unit/test_asset_governance.py::test_save_creates_immutable_candidate_and_read_only_head_does_not_write",
         "tests/unit/test_asset_governance.py::test_save_retry_across_reopen_is_idempotent_but_changed_input_conflicts",
@@ -757,17 +755,15 @@
         "tests/frontend/robotics-review-browser.py::test_two_pages_keep_unsaved_draft_on_real_cas_conflict"
       ],
       "remaining_test_batches": [
-        "T06 测试覆盖审查",
-        "T07 实现与全量回归",
         "T08 整轮交付审查"
       ]
     },
     {
       "id": "RKG-03",
       "iteration": "IR-019",
-      "status": "partial-green-t05-t06-red-awaiting-review",
+      "status": "green-t07-awaiting-delivery-review",
       "criterion": "映射与参数依据：实际维护零件类型、工位/载具/槽位和参数配置关系及参数；缺值/单位/坐标系可保存并明确报告；错误值和引用被拒绝，源数值不会自动变成适配事实。",
-      "notes": "2026-11-05 T05 HTTP GREEN 已完成；T06 新增 UI 状态、真实浏览器与离线 CLI 测试，共 65 项，2 项已有功能对照通过、63 项预期失败，0 错误/跳过。当前失败停在新模块/入口/脚本缺失或检查未接线，后续断言尚未执行；待人审覆盖后 T07 实现，整轮未交付。见 IR-019 T06 审计。",
+      "notes": "2026-11-05 用户确认 T06 覆盖后完成 T07：新 UI 状态/接线/CLI 49 项及真实浏览器 16 项转绿；全量 11 段退出码均为 0，单元 1452 通过/5 可选跳过，覆盖率 84.0%（门槛 81%）。134 个已审文件不变；实现冻结时点、可选跳过、早期失败和最终证据见 T07 审计。整轮待 T08 人审交付。",
       "tests": [
         "tests/unit/test_robotics_knowledge.py::test_business_mapping_is_real_rdf_and_never_confirmation",
         "tests/unit/test_robotics_knowledge.py::test_parameter_updates_feed_existing_grounding_and_retain_basis",
@@ -783,17 +779,15 @@
         "tests/frontend/robotics-review-browser.py::test_unknown_parameter_gap_and_publication_structure_gate_are_distinct"
       ],
       "remaining_test_batches": [
-        "T06 测试覆盖审查",
-        "T07 实现与全量回归",
         "T08 整轮交付审查"
       ]
     },
     {
       "id": "RKG-04",
       "iteration": "IR-019",
-      "status": "partial-green-t05-t06-red-awaiting-review",
+      "status": "green-t07-awaiting-delivery-review",
       "criterion": "证据审核与隔离：证据有来源、对象/实现/配置范围、时效和审核记录；保存/发布不自动确认；新 real 治理版本拒绝模拟依据，未知信息不靠默认值补齐。",
-      "notes": "2026-11-05 T05 HTTP GREEN 已完成；T06 新增 UI 状态、真实浏览器与离线 CLI 测试，共 65 项，2 项已有功能对照通过、63 项预期失败，0 错误/跳过。当前失败停在新模块/入口/脚本缺失或检查未接线，后续断言尚未执行；待人审覆盖后 T07 实现，整轮未交付。见 IR-019 T06 审计。",
+      "notes": "2026-11-05 用户确认 T06 覆盖后完成 T07：新 UI 状态/接线/CLI 49 项及真实浏览器 16 项转绿；全量 11 段退出码均为 0，单元 1452 通过/5 可选跳过，覆盖率 84.0%（门槛 81%）。134 个已审文件不变；实现冻结时点、可选跳过、早期失败和最终证据见 T07 审计。整轮待 T08 人审交付。",
       "tests": [
         "tests/unit/test_robotics_evidence.py::test_registration_is_pending_and_captures_actual_sources_and_scope",
         "tests/unit/test_robotics_evidence.py::test_review_is_exact_content_signed_and_does_not_confirm_unrelated_entities",
@@ -809,17 +803,15 @@
         "tests/frontend/robotics-review-browser.py::test_attachment_evidence_review_parameter_invalidation_and_revocation"
       ],
       "remaining_test_batches": [
-        "T06 测试覆盖审查",
-        "T07 实现与全量回归",
         "T08 整轮交付审查"
       ]
     },
     {
       "id": "RKG-05",
       "iteration": "IR-019",
-      "status": "partial-green-t05-t06-red-awaiting-review",
+      "status": "green-t07-awaiting-delivery-review",
       "criterion": "失效与准入：来源模型/参数/映射变化、过期、撤销或替代使相应证据失效；新候选不继承旧审核；平台严格生成保持 needs_information/错误且无候选，历史报告不被改写。",
-      "notes": "2026-11-05 T05 HTTP GREEN 已完成；T06 新增 UI 状态、真实浏览器与离线 CLI 测试，共 65 项，2 项已有功能对照通过、63 项预期失败，0 错误/跳过。当前失败停在新模块/入口/脚本缺失或检查未接线，后续断言尚未执行；待人审覆盖后 T07 实现，整轮未交付。见 IR-019 T06 审计。",
+      "notes": "2026-11-05 用户确认 T06 覆盖后完成 T07：新 UI 状态/接线/CLI 49 项及真实浏览器 16 项转绿；全量 11 段退出码均为 0，单元 1452 通过/5 可选跳过，覆盖率 84.0%（门槛 81%）。134 个已审文件不变；实现冻结时点、可选跳过、早期失败和最终证据见 T07 审计。整轮待 T08 人审交付。",
       "tests": [
         "tests/unit/test_robotics_evidence.py::test_evidence_invalidation_has_specific_reason_without_rewriting_snapshot",
         "tests/unit/test_robotics_evidence.py::test_unrelated_label_does_not_invalidate_configuration_scope",
@@ -834,17 +826,15 @@
         "tests/frontend/robotics-review-browser.py::test_rejected_review_and_changed_version_do_not_enable_publish"
       ],
       "remaining_test_batches": [
-        "T06 测试覆盖审查",
-        "T07 实现与全量回归",
         "T08 整轮交付审查"
       ]
     },
     {
       "id": "RKG-06",
       "iteration": "IR-019",
-      "status": "partial-green-t05-t06-red-awaiting-review",
+      "status": "green-t07-awaiting-delivery-review",
       "criterion": "语义差异与重建合并：三方基线和新来源身份固定；保留可重放的人工修改，展示冲突，拒绝按旧步骤序号猜对应；未解决冲突或过期预览不能提交，旧版本和原构建不变。",
-      "notes": "2026-11-05 T05 HTTP GREEN 已完成；T06 新增 UI 状态、真实浏览器与离线 CLI 测试，共 65 项，2 项已有功能对照通过、63 项预期失败，0 错误/跳过。当前失败停在新模块/入口/脚本缺失或检查未接线，后续断言尚未执行；待人审覆盖后 T07 实现，整轮未交付。见 IR-019 T06 审计。",
+      "notes": "2026-11-05 用户确认 T06 覆盖后完成 T07：新 UI 状态/接线/CLI 49 项及真实浏览器 16 项转绿；全量 11 段退出码均为 0，单元 1452 通过/5 可选跳过，覆盖率 84.0%（门槛 81%）。134 个已审文件不变；实现冻结时点、可选跳过、早期失败和最终证据见 T07 审计。整轮待 T08 人审交付。",
       "tests": [
         "tests/unit/test_robotics_merge.py::test_diff_ignores_serialization_and_blank_node_identifiers",
         "tests/unit/test_robotics_merge.py::test_diff_distinguishes_language_datatype_and_unrecognized_semantics",
@@ -864,17 +854,15 @@
         "tests/frontend/robotics-review-browser.py::test_ui_upload_edit_compare_review_publish_download_and_restart"
       ],
       "remaining_test_batches": [
-        "T06 测试覆盖审查",
-        "T07 实现与全量回归",
         "T08 整轮交付审查"
       ]
     },
     {
       "id": "RKG-07",
       "iteration": "IR-019",
-      "status": "partial-green-t05-t06-red-awaiting-review",
+      "status": "green-t07-awaiting-delivery-review",
       "criterion": "审核与发布：审核固定版本/摘要/理由，发布复验实际 OWL 和受信规则；拒绝未审核/被退回/过期审核/非法结构，重复请求不重复发布；结构发布不等于全任务适配或执行通过。",
-      "notes": "2026-11-05 T05 HTTP GREEN 已完成；T06 新增 UI 状态、真实浏览器与离线 CLI 测试，共 65 项，2 项已有功能对照通过、63 项预期失败，0 错误/跳过。当前失败停在新模块/入口/脚本缺失或检查未接线，后续断言尚未执行；待人审覆盖后 T07 实现，整轮未交付。见 IR-019 T06 审计。",
+      "notes": "2026-11-05 用户确认 T06 覆盖后完成 T07：新 UI 状态/接线/CLI 49 项及真实浏览器 16 项转绿；全量 11 段退出码均为 0，单元 1452 通过/5 可选跳过，覆盖率 84.0%（门槛 81%）。134 个已审文件不变；实现冻结时点、可选跳过、早期失败和最终证据见 T07 审计。整轮待 T08 人审交付。",
       "tests": [
         "tests/unit/test_asset_governance.py::test_publication_rejects_missing_stale_or_mismatched_review",
         "tests/unit/test_asset_governance.py::test_review_requires_reason_and_cannot_be_reused_after_new_save",
@@ -890,17 +878,15 @@
         "tests/frontend/robotics-review-browser.py::test_unknown_parameter_gap_and_publication_structure_gate_are_distinct"
       ],
       "remaining_test_batches": [
-        "T06 测试覆盖审查",
-        "T07 实现与全量回归",
         "T08 整轮交付审查"
       ]
     },
     {
       "id": "RKG-08",
       "iteration": "IR-019",
-      "status": "partial-green-t05-t06-red-awaiting-review",
+      "status": "green-t07-awaiting-delivery-review",
       "criterion": "存储与旧契约：schema 4 升级及故障回滚保持原资产、运行、来源、manifest；只读和未知版本遵守既有约束；旧发布/生成/演示可复现，新治理策略不被旧模式绕过。",
-      "notes": "2026-11-05 T05 HTTP GREEN 已完成；T06 新增 UI 状态、真实浏览器与离线 CLI 测试，共 65 项，2 项已有功能对照通过、63 项预期失败，0 错误/跳过。当前失败停在新模块/入口/脚本缺失或检查未接线，后续断言尚未执行；待人审覆盖后 T07 实现，整轮未交付。见 IR-019 T06 审计。",
+      "notes": "2026-11-05 用户确认 T06 覆盖后完成 T07：新 UI 状态/接线/CLI 49 项及真实浏览器 16 项转绿；全量 11 段退出码均为 0，单元 1452 通过/5 可选跳过，覆盖率 84.0%（门槛 81%）。134 个已审文件不变；实现冻结时点、可选跳过、早期失败和最终证据见 T07 审计。整轮待 T08 人审交付。",
       "tests": [
         "tests/unit/test_domain_governance_migration.py::test_frozen_schema_four_fixture_has_real_history_and_consistent_bytes",
         "tests/unit/test_domain_governance_migration.py::test_upgrade_preserves_all_old_columns_rows_bytes_manifests_and_queued_build",
@@ -919,17 +905,15 @@
         "tests/unit/test_robotics_review_http.py::test_data_assets_are_not_admitted_to_robotics_editor"
       ],
       "remaining_test_batches": [
-        "T06 测试覆盖审查",
-        "T07 实现与全量回归",
         "T08 整轮交付审查"
       ]
     },
     {
       "id": "RKG-09",
       "iteration": "IR-019",
-      "status": "partial-green-t05-t06-red-awaiting-review",
+      "status": "green-t07-awaiting-delivery-review",
       "criterion": "版本工件与保护：编辑后下载的是本版本 OWL/报告/清单，摘要与登记一致；不误用原构建结果；错误身份、损坏、越界、功能关闭和超限明确拒绝，旧下载入口保持兼容。",
-      "notes": "2026-11-05 T05 HTTP GREEN 已完成；T06 新增 UI 状态、真实浏览器与离线 CLI 测试，共 65 项，2 项已有功能对照通过、63 项预期失败，0 错误/跳过。当前失败停在新模块/入口/脚本缺失或检查未接线，后续断言尚未执行；待人审覆盖后 T07 实现，整轮未交付。见 IR-019 T06 审计。",
+      "notes": "2026-11-05 用户确认 T06 覆盖后完成 T07：新 UI 状态/接线/CLI 49 项及真实浏览器 16 项转绿；全量 11 段退出码均为 0，单元 1452 通过/5 可选跳过，覆盖率 84.0%（门槛 81%）。134 个已审文件不变；实现冻结时点、可选跳过、早期失败和最终证据见 T07 审计。整轮待 T08 人审交付。",
       "tests": [
         "tests/unit/test_asset_governance.py::test_version_artifacts_belong_to_edited_bytes_not_origin_build",
         "tests/unit/test_asset_governance.py::test_publish_artifact_failure_cannot_leave_published_state",
@@ -949,17 +933,15 @@
         "tests/unit/test_robotics_review_demo_cli.py::test_independent_verifier_rejects_tampering_without_repair"
       ],
       "remaining_test_batches": [
-        "T06 测试覆盖审查",
-        "T07 实现与全量回归",
         "T08 整轮交付审查"
       ]
     },
     {
       "id": "RKG-11",
       "iteration": "IR-019",
-      "status": "partial-green-t05-t06-red-awaiting-review",
+      "status": "green-t07-awaiting-delivery-review",
       "criterion": "兼容及真实负向：原数据构建/图谱/评审/聊天与 IR-016～018 无回归；真实缺证据可发布结构合格版本但严格生成仍不成功；execution_readiness 始终未验证，模拟成功不冒充现场适用。",
-      "notes": "2026-11-05 T05 HTTP GREEN 已完成；T06 新增 UI 状态、真实浏览器与离线 CLI 测试，共 65 项，2 项已有功能对照通过、63 项预期失败，0 错误/跳过。当前失败停在新模块/入口/脚本缺失或检查未接线，后续断言尚未执行；待人审覆盖后 T07 实现，整轮未交付。见 IR-019 T06 审计。",
+      "notes": "2026-11-05 用户确认 T06 覆盖后完成 T07：新 UI 状态/接线/CLI 49 项及真实浏览器 16 项转绿；全量 11 段退出码均为 0，单元 1452 通过/5 可选跳过，覆盖率 84.0%（门槛 81%）。134 个已审文件不变；实现冻结时点、可选跳过、早期失败和最终证据见 T07 审计。整轮待 T08 人审交付。",
       "tests": [
         "tests/unit/test_asset_governance.py::test_structural_publication_retains_gaps_and_strict_generation_is_blocked",
         "tests/unit/test_asset_governance.py::test_evidence_review_is_a_new_version_and_revocation_blocks_platform_generation",
@@ -973,17 +955,15 @@
         "tests/unit/test_robotics_review_demo_cli.py::test_all_offline_cases_build_fresh_sources_and_independently_verify"
       ],
       "remaining_test_batches": [
-        "T06 测试覆盖审查",
-        "T07 实现与全量回归",
         "T08 整轮交付审查"
       ]
     },
     {
       "id": "RKG-10",
       "iteration": "IR-019",
-      "status": "red-t06-awaiting-review",
+      "status": "green-t07-awaiting-delivery-review",
       "criterion": "UI 操作与冲突呈现：用户可在现有入口完成知识保存、证据查看/审核、差异、冲突处理和发布；未保存输入不被迟到响应或 409 覆盖；键盘、1440/768/390 布局和文字安全通过。",
-      "notes": "2026-11-05 T05 HTTP GREEN 已完成；T06 新增 UI 状态、真实浏览器与离线 CLI 测试，共 65 项，2 项已有功能对照通过、63 项预期失败，0 错误/跳过。当前失败停在新模块/入口/脚本缺失或检查未接线，后续断言尚未执行；待人审覆盖后 T07 实现，整轮未交付。见 IR-019 T06 审计。",
+      "notes": "2026-11-05 用户确认 T06 覆盖后完成 T07：新 UI 状态/接线/CLI 49 项及真实浏览器 16 项转绿；全量 11 段退出码均为 0，单元 1452 通过/5 可选跳过，覆盖率 84.0%（门槛 81%）。134 个已审文件不变；实现冻结时点、可选跳过、早期失败和最终证据见 T07 审计。整轮待 T08 人审交付。",
       "tests": [
         "tests/unit/test_robotics_review_ui.py::test_knowledge_controller_retains_reviewed_state_contracts",
         "tests/unit/test_robotics_review_ui.py::test_knowledge_http_errors_preserve_unsaved_input",
@@ -1001,17 +981,15 @@
         "tests/frontend/robotics-review-browser.py::test_keyboard_safe_text_and_responsive_knowledge_forms"
       ],
       "remaining_test_batches": [
-        "T06 测试覆盖审查",
-        "T07 实现与全量回归",
         "T08 整轮交付审查"
       ]
     },
     {
       "id": "RKG-12",
       "iteration": "IR-019",
-      "status": "red-t06-awaiting-review",
+      "status": "green-t07-awaiting-delivery-review",
       "criterion": "可运行交付与联动：实际浏览器走通新来源候选→维护→比较→审核发布→当前版本下载→刷新/重启回查，并覆盖重建冲突和失效；离线演示直接可运行，保存版本/审核/来源/下载证据，全量检查通过。",
-      "notes": "2026-11-05 T05 HTTP GREEN 已完成；T06 新增 UI 状态、真实浏览器与离线 CLI 测试，共 65 项，2 项已有功能对照通过、63 项预期失败，0 错误/跳过。当前失败停在新模块/入口/脚本缺失或检查未接线，后续断言尚未执行；待人审覆盖后 T07 实现，整轮未交付。见 IR-019 T06 审计。",
+      "notes": "2026-11-05 用户确认 T06 覆盖后完成 T07：新 UI 状态/接线/CLI 49 项及真实浏览器 16 项转绿；全量 11 段退出码均为 0，单元 1452 通过/5 可选跳过，覆盖率 84.0%（门槛 81%）。134 个已审文件不变；实现冻结时点、可选跳过、早期失败和最终证据见 T07 审计。整轮待 T08 人审交付。",
       "tests": [
         "tests/unit/test_robotics_review_demo_cli.py::test_all_offline_cases_build_fresh_sources_and_independently_verify",
         "tests/unit/test_robotics_review_demo_cli.py::test_offline_case_can_be_run_individually",
@@ -1028,8 +1006,6 @@
         "tests/frontend/robotics-review-browser.py::test_attachment_evidence_review_parameter_invalidation_and_revocation"
       ],
       "remaining_test_batches": [
-        "T06 测试覆盖审查",
-        "T07 实现与全量回归",
         "T08 整轮交付审查"
       ]
     }

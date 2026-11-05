@@ -58,7 +58,7 @@
   }
   function downloads(rows = []) {
     return '<div class="rb-actions rb-downloads">' + (rows || []).filter(a => ['ontology','validation','manifest'].includes(a.kind)).map(a =>
-      `<a href="${escape(a.download_url)}" data-artifact-name="${escape(a.name)}">${({ontology:'下载 OWL',validation:'下载报告',manifest:'下载 manifest'})[a.kind]}</a>`).join('') + '</div>';
+      `<a href="${escape(a.download_url)}" data-artifact-name="${escape(a.name || a.version_id + '-' + a.kind + (a.kind === 'ontology' ? '.owl' : '.json'))}">${({ontology:'下载 OWL',validation:'下载报告',manifest:'下载 manifest'})[a.kind]}</a>`).join('') + '</div>';
   }
   function bindDownloads(container) {
     container.querySelectorAll('[data-artifact-name]').forEach(link => { link.onclick = async event => {
@@ -67,7 +67,7 @@
       message.hidden = true; message.textContent = '';
       try {
         const url = new URL(link.getAttribute('href'), global.location.origin);
-        if (url.origin !== global.location.origin || !url.pathname.startsWith('/api/domain-runs/')) throw new Error('下载地址不可信。');
+        if (url.origin !== global.location.origin || !(/^\/api\/domain-runs\/[^/]+\/artifacts\/[^/]+$/.test(url.pathname) || /^\/api\/ontology-assets\/[^/]+\/versions\/[^/]+\/(payload|artifacts\/[^/]+)$/.test(url.pathname))) throw new Error('下载地址不可信。');
         const response = await global.fetch(url.href);
         if (!response.ok) {
           let body; try { body = await response.json(); } catch (_) { body = {}; }
@@ -84,7 +84,7 @@
   function page(pageName) {
     if (pageName !== 'jobs') { jobsGeneration++; jobsActive = false; }
     else if (!jobsActive) { jobsActive = true; loadJobs(); }
-    if (pageName !== 'library') { active?.dispose(); active = null; routeKey = null; return; }
+    if (pageName !== 'library' || new URLSearchParams(global.location.hash.split('?')[1] || '').get('tab') === 'knowledge') { active?.dispose(); active = null; routeKey = null; return; }
     const params = new URLSearchParams(global.location.hash.startsWith('#library?') ? global.location.hash.split('?')[1] : '');
     const oid = params.get('asset'), vid = params.get('version'), key = (oid || '') + ':' + (vid || '');
     if (active && routeKey === key) return;
@@ -103,9 +103,9 @@
         const counts = d.result?.validation?.ontology_counts || {};
         panel.innerHTML = `<a href="#library">返回本体目录</a><div class="rb-heading"><span class="tag">${escape(statusText(d.publication_state))}</span><h2>${escape(d.asset?.name || d.ontology_id)}</h2><p>${escape(d.asset?.domain === 'robotics' ? '机器人本体' : '数据本体')} · 固定版本</p></div>
           <dl class="rb-identities"><dt>本体 ID</dt><dd>${escape(d.ontology_id)}</dd><dt>版本 ID</dt><dd>${escape(d.version_id)}</dd></dl>
-          ${d.asset?.domain === 'robotics' ? readiness(d.result) : ''}
+          ${d.asset?.domain === 'robotics' ? readiness(d.result || {status:d.validation?.shacl_conforms ? 'built' : undefined, validation:d.validation}) : ''}
           <div class="rb-counts">${Object.entries(counts).map(([kind,n]) => `<div><strong data-count-kind="${escape(kind)}">${escape(n)}</strong><span>${escape(({AtomicSkill:'原子技能',CompositeSkill:'复合技能',SkillInvocation:'技能调用',DataReference:'数据引用',ImplementationConfiguration:'实现配置',ParameterBinding:'参数绑定',SkillParameter:'技能参数'})[kind] || kind)}</span></div>`).join('')}</div>
-          ${sources(d.sources)}${issues(d.result?.issues)}
+          ${d.asset?.domain === 'robotics' ? `<p><a href="${escape(versionLink(d.ontology_id,d.version_id) + '&tab=knowledge')}">维护知识</a></p>` : ''}${sources(d.sources)}${issues(d.result?.issues)}
           ${d.build_run_id ? `<p><a href="${escape(runLink(d.build_run_id))}">查看构建运行与阶段记录</a></p>` : ''}
           ${downloads(d.artifacts)}<div data-download-error role="alert" hidden></div>`;
         bindDownloads(panel);

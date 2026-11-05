@@ -719,6 +719,8 @@ FROM fact_sales_order GROUP BY 1 ORDER BY 1 DESC LIMIT 12</textarea>
 </div>
 <script src="/assets/modules/robotics-assets.js?v=1"></script>
 <script src="/assets/modules/robotics-build.js?v=1"></script>
+<script src="/assets/modules/robotics-review.js?v=1"></script>
+<script src="/assets/modules/robotics-review-page.js?v=1"></script>
 <script src="/assets/modules/catalog.js"></script>
 <script src="/assets/modules/build-references.js?v=3"></script>
 <script src="/assets/modules/build-stream.js?v=1"></script>
@@ -747,7 +749,7 @@ const EDIT_KINDS=['object','event','asset','role'];
 function goPage(p){const nav=document.querySelector('[data-p="'+p+'"]');if(!nav)return false;
  document.querySelectorAll('.nav').forEach(x=>x.classList.remove('on'));nav.classList.add('on');
  document.querySelectorAll('.page').forEach(pg=>pg.classList.remove('on'));const el=$('#p_'+p);if(el)el.classList.add('on');
- window.RoboticsBuild?.page(p);window.RoboticsAssets?.page(p);
+ window.RoboticsBuild?.page(p);window.RoboticsAssets?.page(p);window.RoboticsReview?.page(p);
  const revisit=!!loaded[p];load(p);
  // 易变页每次进入都重取:别处(评审/动作/构建)的变动切回来即见,不吃首屏一次性缓存
  if(revisit){try{
@@ -2460,9 +2462,10 @@ async function sparqlRun(){$('#sq_info').textContent='查询中…';
 // 初始寻址:带 hash 直达对应子页,否则默认首页
 if(location.hash.slice(1))routeHash();else{home();loaded.home=1;}
 // hash 路由:每个子页可经 #<page> 寻址;另支持 #graph=<key> / #obj=<key>:<id> 深链
-function routeHash(){const h=location.hash.slice(1);
+function routeHash(){if(window.RoboticsReview?.guardHash())return;const h=location.hash.slice(1);
  if(/^build\?/.test(h)){goPage('build');return;}
  if(/^library\?/.test(h)){goPage('library');return;}
+ if(/^review\?/.test(h)){goPage('review');return;}
  const mg=h.match(/^graph=(.+)$/);if(mg){loaded.graph=1;goPage('graph');graphs(mg[1]);return;}
  const mo=h.match(/^obj=([^:]+):(.+)$/);if(mo){loaded.graph=1;goPage('graph');graphs(mo[1]);return;}   // 仅定位到图谱;对象级高亮随 studio 页一并移除
  if(h){if(!goPage(h)){goPage('home');history.replaceState(null,'','#home');}}else goPage('home');}  // 未知 hash 回首页并纠正 URL,避免地址与页面不一致

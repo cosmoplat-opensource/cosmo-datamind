@@ -6,6 +6,7 @@ import hashlib
 from pathlib import Path
 from rdflib import BNode, Graph, Literal, Namespace, RDF, OWL, XSD
 from rdflib.collection import Collection
+from rdflib.plugins.sparql import prepareQuery
 from pyshacl import validate
 from .graph import S, ONTOLOGY, value
 from .profiles.ur_pick_place import CONDITION_SPECS
@@ -14,6 +15,29 @@ ARTIFACT_CONTRACT = "ur-pick-place-owl-v2"
 VALIDATION_SHAPES_SHA256 = "b57e61b049b0a521cf1812987a24522178412867e6d358571a8a0658c6021ae2"
 CONDITIONS = {name: {"kind": kind, "mechanism": mechanism, "rule": rule, "skills": skills}
               for name, kind, label, mechanism, rule, skills in CONDITION_SPECS}
+
+class _ValidationGraph(Graph):
+    """DR-063: prepare repeated SHACL queries once, execute every focus binding.
+
+    This graph is an isolated copy owned by one validation. No validation result,
+    mutable source graph, query bindings or global RDFLib behavior is cached.
+    """
+    def __init__(self):
+        super().__init__()
+        self._prepared = {}
+
+    def query(self, query_object, processor='sparql', result='sparql', initNs=None,
+              initBindings=None, use_store_provided=True, **kwargs):
+        namespaces = initNs or dict(self.namespaces())
+        if isinstance(query_object, str) and processor == 'sparql':
+            key = (query_object, tuple(sorted(namespaces.items())), kwargs.get('base'))
+            prepared = self._prepared.get(key)
+            if prepared is None:
+                prepared = prepareQuery(query_object, initNs=namespaces, base=kwargs.get('base'))
+                if len(self._prepared) < 32: self._prepared[key] = prepared
+            query_object = prepared
+        return super().query(query_object, processor=processor, result=result, initNs=namespaces,
+                             initBindings=initBindings, use_store_provided=use_store_provided, **kwargs)
 
 
 def trusted_shapes():
@@ -68,5 +92,9 @@ def graph_validation(g):
             shapes.add((constraint, sh["in"], allowed))
             shapes.add((constraint, sh.minCount, Literal(len(skills))))
             shapes.add((constraint, sh.maxCount, Literal(len(skills))))
-    conforms, report, text = validate(g, shacl_graph=shapes, inference="rdfs", advanced=True)
+    # Preserve caller RDF exactly: only this private copy receives RDFS inference.
+    working = _ValidationGraph()
+    for prefix, namespace in g.namespaces(): working.bind(prefix, namespace)
+    for triple in g: working.add(triple)
+    conforms, report, text = validate(working, shacl_graph=shapes, inference="rdfs", advanced=True, inplace=True)
     return bool(conforms), report, text
