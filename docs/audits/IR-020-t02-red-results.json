@@ -1,0 +1,87 @@
+{
+  "iteration": "IR-020",
+  "task": "T02",
+  "date": "2026-11-05",
+  "stage": "RED awaiting coverage review",
+  "base_commit": "9ba5884",
+  "results": {
+    "red": {
+      "command": [
+        ".venv/bin/python",
+        "-m",
+        "pytest",
+        "tests/unit/test_robotics_task_model.py",
+        "tests/unit/test_robotics_task_dialogue.py",
+        "--tb=no",
+        "--junitxml=/home/dyh/workspace/Project/cosmo-datamind/.check-results/ir020-t02/red.xml"
+      ],
+      "exit_code": 1,
+      "log": ".check-results/ir020-t02/red.log",
+      "sha256": "acbf23ee5eff69a89c7ccbb5f6c306f5322b862dc62a1818eddd02707e28f971",
+      "counts": {
+        "tests": 45,
+        "failures": 45,
+        "errors": 0,
+        "skipped": 0
+      },
+      "failure_messages": [
+        "ModuleNotFoundError: No module named 'domains.robotics.task_dialogue'",
+        "ModuleNotFoundError: No module named 'domains.robotics.task_model'"
+      ]
+    },
+    "meta": {
+      "command": [
+        ".venv/bin/python",
+        "-m",
+        "pytest",
+        "tests/meta",
+        "--tb=short"
+      ],
+      "exit_code": 0,
+      "log": ".check-results/ir020-t02/meta.log",
+      "sha256": "a7fefb4dd62bcc6bb2a5d47ecf0ac3f82f770363211bfb12308632adc1ed49b9"
+    },
+    "lint": {
+      "command": [
+        ".venv/bin/python",
+        "-m",
+        "ruff",
+        "check",
+        "tests/unit/test_robotics_task_model.py",
+        "tests/unit/test_robotics_task_dialogue.py"
+      ],
+      "exit_code": 0,
+      "log": ".check-results/ir020-t02/lint.log",
+      "sha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18"
+    },
+    "types": {
+      "command": [
+        ".venv/bin/python",
+        "-m",
+        "mypy",
+        "tests/unit/test_robotics_task_model.py",
+        "tests/unit/test_robotics_task_dialogue.py",
+        "--no-error-summary"
+      ],
+      "exit_code": 0,
+      "log": ".check-results/ir020-t02/types.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "baseline": {
+      "reviewed_files": 134,
+      "unchanged": true,
+      "production_files": 10,
+      "production_unchanged": true
+    },
+    "new_test_sha256": {
+      "tests/unit/test_robotics_task_model.py": "ce8eff11ae93e440a1f32353e83437a97d9bc03c551f5a8ce76d78e83f772ddf",
+      "tests/unit/test_robotics_task_dialogue.py": "ae2f7147fddfaf94f732f1a83304b2e011571ec35ae05ff3475ee98dcaf1d948"
+    }
+  },
+  "limits": [
+    "No production code or historical tests changed",
+    "No real model calls",
+    "Service/HTTP/browser cases planned for T04; not covered by T02",
+    "Full suite not run because new functionality intentionally absent"
+  ]
+}

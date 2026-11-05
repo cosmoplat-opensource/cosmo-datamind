@@ -4,7 +4,7 @@
 - **日期 / Date**：2026-11-05。
 - **关联 / Refs**：[DR-066](../decisions/DR-066-minimal-robotics-task-workflow.md)、DR-060、DR-061、DR-062、DR-064。
 - **范围来源**：用户明确选择“先打通构建到行为树生成，暂缓高级维护功能”。
-- **当前环节**：T01 范围与代码复核完成，进入 T02 任务解析及澄清失败测试。
+- **当前环节**：T01 已提交；T02 45 项 RED 已运行，等待任务解析及澄清测试覆盖审查，尚未进入 T03 实现。
 
 ## 目标 Goal
 
@@ -104,3 +104,12 @@ missing-knowledge 使用未补充知识的真实构建；model-error 不产生�
 唯一上级推导仍由已有 grounding 根据实际 RDF 关系完成，不由模型猜测。
 
 审计与本批执行记录见 [IR-020 validation](../../docs/audits/IR-020-minimal-workflow-validation.md)。
+
+## T02 执行记录（2026-11-05）
+
+新增任务模型测试 30 项、明确选择测试 15 项，合计 45 项。
+实际运行：45 项预期失败、0 收集错误、0 跳过；失败均因 task_model / task_dialogue 尚未实现。
+21 项元测试、两个新测试文件的 ruff 和 mypy 均通过。
+IR-019 审计登记的 134 个已审文件与 10 个冻结生产文件摘要不变；未修改生产实现或旧测试。
+acceptance.json 已映射 RMW-02/03；其余要求保留为 planned_requirements，不虚报覆盖。
+按 SDD 第⑤步“人 review 测试是否覆盖到位”，本批审查通过后进入 T03。
