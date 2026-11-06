@@ -43,7 +43,7 @@ def inspect_structure(graph, mode):
     return graph
 
 
-def create(graph, spec, expected_kind):
+def create_entity(graph, spec, expected_kind):
     if not isinstance(spec, dict) or set(spec) != {'kind', 'label'} or spec['kind'] != expected_kind:
         raise ValueError('请选择当前缺口对应的对象类型，只填写名称。')
     identity = URIRef('urn:datamind:robotics:' + uuid.uuid4().hex)
@@ -79,6 +79,25 @@ def pending_answer(graph, item, *, revocations=()):
     return drafts[0] if len(drafts) == 1 else None
 
 
+def replace_configuration(graph, task, *, field, mode, target=None, create=None, revocations=()):
+    """DR-066: explicitly replace only a resolved task's current profile binding."""
+    projection = inspect_gaps(graph, task, mode=mode, revocations=revocations)
+    item = next((row for row in projection['configurations'] if row['field'] == field), None)
+    if item is None:
+        raise ValueError('请先明确任务对象；只能更换当前任务已关联的感知配置或放置配置。')
+    if (target is None) == (create is None):
+        raise ValueError('请选择其他已有配置或明确新建配置。')
+    changed = graph
+    if create is not None:
+        changed, selected = create_entity(graph, create, item['target_kind'])
+    else:
+        selected = authoring.iri(target)
+        if str(selected) == item['profile_iri']:
+            raise ValueError('当前已使用该配置，请选择其他配置。')
+    return authoring.apply_operations(changed, [{'op': 'set_relation', 'iri': item['entity_iri'],
+        'relation': field, 'targets': [str(selected)], 'basis': ORIGIN + '；主动更换当前任务配置'}])
+
+
 def apply_answers(graph, task, answers, *, mode, revocations=()):
     if not isinstance(answers, list) or not 1 <= len(answers) <= 256:
         raise ValueError('请至少填写一项当前缺少的信息。')
@@ -105,7 +124,7 @@ def apply_answers(graph, task, answers, *, mode, revocations=()):
                 raise ValueError('关联仅接受已有对象选择或明确新建。')
             expected = authoring.RELATIONS[field][1]
             if 'create' in answer:
-                changed, target = create(changed, answer['create'], expected)
+                changed, target = create_entity(changed, answer['create'], expected)
             else:
                 target = authoring.iri(answer['target'])
             targets = {target}

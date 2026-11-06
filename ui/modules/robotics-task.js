@@ -65,6 +65,7 @@
         if(dead || token!==generation)return;
         if(result.session_id!==original.session_id || result.ontology_id!==original.ontology_id)throw new Error('返回的任务身份不匹配。');
         state.session=result;
+        if(operation==='configurations')state.answers={};
         if(operation==='completion')for(const [id,answer] of Object.entries(answers))
           if(JSON.stringify(state.answers[id])===JSON.stringify(answer))delete state.answers[id];
         savedAnswers();
@@ -77,6 +78,8 @@
       send:text=>submit('messages',{text}),
       save:()=>submit('completion',{answers:Object.entries(state.answers).map(([gap_id,answer])=>({gap_id,...answer}))}),
       choose:choice=>submit('choices',choice),
+      configure:choice=>submit('configurations',choice),
+      dismissError(){state.error=null;notify();},
       dispose(){dead=true;generation++;}
     };
   }
@@ -88,10 +91,10 @@
     if(name!=='robotics-task')return;
     const host=global.document.getElementById('rt_task');if(!host)return;
     const params=new URLSearchParams(global.location.hash.split('?')[1]||'');
-    const view={controller:null,text:'',creates:{},capabilities:null,timer:null,initial:true};active=view;
+    const view={controller:null,text:'',creates:{},configEdit:null,capabilities:null,timer:null,initial:true};active=view;
     function render(state){
       if(active!==view)return;
-      const s=state.session, answer=id=>state.answers[id]||{}, gaps=s?.gaps||[], confirmations=gaps.filter(g=>g.kind==='confirmation');
+      const s=state.session, answer=id=>state.answers[id]||{};
       host.setAttribute('data-testid','robotics-task');
       if(!s){host.innerHTML=state.error?`<p role="alert">${esc(state.error.message)}</p>`:'<p>正在准备任务…</p>';return;}
       for(const [attr,value] of Object.entries({'session-id':s?.session_id,'version-id':s?.version_id,'ontology-id':s?.ontology_id,mode:s?.mode,status:s?.status}))host.setAttribute('data-'+attr,value||'');
@@ -100,7 +103,11 @@
       global.history.replaceState(null,'',route);
       const model=view.capabilities?.model || s.model_status || {}, enabled=view.capabilities?.enabled!==false;
       const error=state.error || s.error, busy=state.busy || s.status==='running';
+      if(view.configEdit && (view.configEdit.session!==s.session_id || view.configEdit.revision!==s.revision))view.configEdit=null;
+      const editing=view.configEdit;
+      const gaps=editing?[]:s.gaps||[], confirmations=gaps.filter(g=>g.kind==='confirmation');
       const saveError=error?.operation==='completion' && gaps.length;
+      const configError=error?.operation==='configurations' && editing;
       const alert=error?`<p class="rt-error" role="alert" tabindex="-1">${saveError?'保存未成功：':''}${esc(error.message)}</p>`:'';
       const stillCurrent=()=>{const current=view.controller.snapshot().session;return active===view && current?.session_id===s.session_id && current?.revision===s.revision;};
       host.innerHTML=`<header class="rt-heading"><div><span class="rt-eyebrow">机器人任务 · ${s.mode==='demo'?'独立演示':'行为树生成'}</span><h3>${esc(s.asset_name||'行为树生成')}</h3><p data-testid="task-current-version">当前版本 <code>${esc(s.version_id)}</code></p></div><button type="button" class="ghost" data-new>新任务</button></header>
@@ -108,9 +115,14 @@
         <div class="dq-inputbar rt-composer"><label for="rt_text">任务描述</label><textarea id="rt_text" placeholder="例如：把零部件A放到工位B的载具B01、放置位B01">${esc(view.text)}</textarea>
           <div class="rt-compose-tools"><p data-testid="task-model-status" class="rt-model">${!enabled?'机器人功能未启用':model.configured?'任务解析模型：'+esc(model.model):'模型未配置，请到引擎设置完成配置。'} <a href="#enginecfg">模型设置</a></p><button type="button" class="dq-send" data-send ${busy||!enabled||!model.configured?'disabled':''}>生成行为树</button></div>
         </div><div class="rt-status-row"><span role="status" class="rt-status">${busy?'处理中…':s.status==='generated'?'行为树已生成':s.status==='needs_information'?'请补齐当前任务需要的信息':s.status==='needs_clarification'?'请明确任务中的对象或目标':''}</span><p class="muted rt-safety">生成离线候选行为树，需经设备侧验证后使用。</p></div>
-        ${!saveError?alert:''}
+        ${!saveError&&!configError?alert:''}
         ${s.status==='unsupported'?'<p role="alert">当前仅支持固定抓移放流程，请调整任务描述。</p>':''}
         ${s.status==='needs_clarification'?(s.issues||[]).map(i=>`<div class="rt-choice dq-card"><span class="rt-eyebrow">确认任务目标</span><p>${esc(i.message)}</p>${i.field&&['part','station','carrier','slot'].includes(i.field)?`<label>选择对象<select data-choice="${esc(i.field)}"><option value="">请选择</option>${(i.candidates||[]).map(c=>`<option value="${esc(c.id)}">${esc(displayLabel(c.label))}</option>`).join('')}</select></label><button class="ghost" data-create-choice="${esc(i.field)}">新建所需对象</button>`:''}</div>`).join(''):''}
+        ${(s.configurations||[]).length?`<section class="rt-configurations dq-card"><div class="rt-section-heading"><div><h3>本次使用的配置</h3><p>来自当前本体版本。已有配置直接复用，需要时可更换。</p></div><span class="rb-soft-tag">已关联</span></div><div class="rt-config-grid">${s.configurations.map(c=>{
+          const edit=editing?.field===c.field?editing:null;
+          const candidates=(c.candidates||[]).filter(p=>p.id!==c.profile_iri);
+          return `<article class="rt-config-card" data-config="${esc(c.field)}"><div class="rt-config-title"><h4>${esc(c.label)}</h4><button type="button" class="ghost" aria-label="更换${esc(c.label)}" data-change-config="${esc(c.field)}" ${busy||!enabled?'disabled':''}>更换配置</button></div><p class="rt-config-owner">${esc(displayLabel(c.entity_label))}</p><p class="rt-config-name">${esc(displayLabel(c.profile_label))}</p><details class="rt-config-params"><summary>查看参数（${c.parameters.length} 项）</summary><dl>${c.parameters.map(p=>`<div><dt>${esc(p.label)}</dt><dd>${p.value==null?'<span class="muted">待补齐</span>':esc(p.value)}</dd></div>`).join('')}</dl></details>${edit?`<div class="rt-config-editor">${edit.create?`<label for="rt_config_name">配置名称</label><input id="rt_config_name" data-config-name value="${esc(edit.label)}" placeholder="填写易于识别的配置名称" ${busy?'disabled':''}><button type="button" class="ghost" data-config-existing ${busy?'disabled':''}>选择已有配置</button>`:`<label for="rt_config_target">选择配置</label><select id="rt_config_target" data-config-target ${busy?'disabled':''}><option value="">请选择其他配置</option>${candidates.map(p=>`<option value="${esc(p.id)}" ${edit.target===p.id?'selected':''}>${esc(displayLabel(p.label))}</option>`).join('')}</select>${!candidates.length?'<p class="muted">暂无其他配置，可新建配置。</p>':''}<button type="button" class="ghost" data-config-create ${busy?'disabled':''}>新建配置</button>`}<p class="rt-config-note">保存为新的本体版本，后续任务可复用；将重新检查缺项和适配依据。${Object.keys(state.answers).length?'其他尚未保存的补齐内容将清空，请按新的提示填写。':''}</p>${configError?alert:''}<div class="rb-actions"><button type="button" class="dq-send" data-config-save ${busy||!enabled||!(edit.create?edit.label.trim():edit.target)?'disabled':''}>保存配置更换</button><button type="button" class="ghost" data-config-cancel ${busy?'disabled':''}>取消</button></div></div>`:''}</article>`;
+        }).join('')}</div></section>`:''}
         ${gaps.length?'<section class="rt-completion dq-card"><div class="rt-section-heading"><div><h3>补齐生成信息</h3><p class="muted">已有有效信息直接复用，只需完成下列项目。</p></div><span class="rb-soft-tag">按需补齐</span></div><div class="rt-gap-grid">':''}
         ${gaps.filter(g=>g.kind!=='confirmation').map(g=>{
           const a=answer(g.id), id='rt_'+g.id;let control='';
@@ -122,13 +134,21 @@
         ${gaps.length?'</div>':''}
         ${confirmations.length?`<div class="rt-confirm"><details><summary>核对当前任务知识（${confirmations.length} 项）</summary>${confirmations.map(g=>`<p>${esc(displayLabel(g.entity_label))} ${esc(Object.values(g.values||{}).join(' · '))}</p>`).join('')}</details><label class="rt-check"><input type="checkbox" data-confirm ${confirmations.every(g=>answer(g.id).confirmed)?'checked':''}>我已核对当前任务知识</label></div>`:''}
         ${gaps.length?`${saveError?alert:''}<button type="button" class="dq-send" data-save ${busy||!enabled?'disabled':''}>保存并继续</button></section>`:''}
-        ${s.candidate&&s.tree?`<section class="rt-result dq-card"><div class="rt-section-heading"><div><span class="rt-eyebrow">生成结果</span><h3>行为树预览</h3></div><a class="dq-send rt-download" data-download href="${prefix}/${encodeURIComponent(s.session_id)}/candidate?revision=${s.revision}">下载行为树 XML</a></div><div class="rt-tree" data-testid="task-tree" data-run-id="${esc(s.run_id)}"><ul>${renderTree(s.tree)}</ul></div><details class="rt-report"><summary>参数来源与验证报告</summary><pre>${esc(JSON.stringify(s.result,null,2))}</pre></details></section>`:''}
+        ${s.candidate&&s.tree&&!busy&&!editing?`<section class="rt-result dq-card"><div class="rt-section-heading"><div><span class="rt-eyebrow">生成结果</span><h3>行为树预览</h3></div><a class="dq-send rt-download" data-download href="${prefix}/${encodeURIComponent(s.session_id)}/candidate?revision=${s.revision}">下载行为树 XML</a></div><div class="rt-tree" data-testid="task-tree" data-run-id="${esc(s.run_id)}"><ul>${renderTree(s.tree)}</ul></div><details class="rt-report"><summary>参数来源与验证报告</summary><pre>${esc(JSON.stringify(s.result,null,2))}</pre></details></section>`:''}
         ${s.messages.length?`<details class="rt-history"><summary>任务对话记录</summary><div class="rt-conversation">${s.messages.map(m=>`<div class="${m.role==='user'?'rt-message-user':'rt-message-system'}"><span>${m.role==='user'?'你':'机器人助手'}</span><p>${esc(m.content)}</p></div>`).join('')}</div></details>`:''}
         <div class="rb-actions rt-secondary"><a href="#library">返回本体库</a><a href="/api/ontology-assets/${encodeURIComponent(s.ontology_id)}/versions/${encodeURIComponent(s.version_id)}/payload">下载当前 OWL</a>${s.mode==='real'?'<button type="button" class="ghost" data-demo>打开独立演示</button>':''}</div>`;
       host.querySelector('#rt_text').oninput=e=>{view.text=e.target.value;};
       host.querySelector('[data-send]').onclick=()=>view.controller.send(view.text);
       host.querySelector('[data-new]').onclick=()=>{view.text='';view.creates={};view.controller.open({ontology_id:s.ontology_id,version_id:s.version_id,mode:s.mode});};
       host.querySelector('[data-save]')?.addEventListener('click',()=>view.controller.save());
+      host.querySelectorAll('[data-change-config]').forEach(el=>el.onclick=()=>{view.configEdit={field:el.dataset.changeConfig,session:s.session_id,revision:s.revision,target:'',create:false,label:''};view.controller.dismissError();});
+      host.querySelector('[data-config-cancel]')?.addEventListener('click',()=>{view.configEdit=null;view.controller.dismissError();});
+      host.querySelector('[data-config-create]')?.addEventListener('click',()=>{editing.create=true;view.controller.dismissError();});
+      host.querySelector('[data-config-existing]')?.addEventListener('click',()=>{editing.create=false;view.controller.dismissError();});
+      const configSave=host.querySelector('[data-config-save]');
+      host.querySelector('[data-config-target]')?.addEventListener('change',e=>{editing.target=e.target.value;configSave.disabled=busy||!enabled||!editing.target;});
+      host.querySelector('[data-config-name]')?.addEventListener('input',e=>{editing.label=e.target.value;configSave.disabled=busy||!enabled||!editing.label.trim();});
+      configSave?.addEventListener('click',()=>{const c=s.configurations.find(c=>c.field===editing.field);view.controller.configure({field:c.field,...(editing.create?{create:{kind:c.target_kind,label:editing.label.trim()}}:{target:editing.target})});});
       const set=(id,changes)=>view.controller.setAnswer(id,{...(view.controller.snapshot().answers[id]||{}),...changes});
       host.querySelectorAll('[data-target]').forEach(el=>el.onchange=()=>{view.controller.setAnswer(el.dataset.target,{target:el.value});});
       host.querySelectorAll('[data-value]').forEach(el=>el.oninput=()=>set(el.dataset.value,{value:el.value}));

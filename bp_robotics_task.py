@@ -78,6 +78,11 @@ def init_app(app, runtime):
     def choose(session_id):
         return jsonify(service().choose(session_id, **body(('field', 'expected_revision', 'request_id'), ('target', 'create'))))
 
+    @bp.post('/api/robotics/tasks/<session_id>/configurations')
+    def configure(session_id):
+        return jsonify(service().configure(session_id,
+            **body(('field', 'expected_revision', 'request_id'), ('target', 'create'))))
+
     @bp.get('/api/robotics/tasks/<session_id>/candidate')
     def download(session_id):
         if set(request.args) != {'revision'} or len(request.args.getlist('revision')) != 1 or not request.args['revision'].isdigit():
