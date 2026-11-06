@@ -63,7 +63,7 @@ def add_domain(g, root):
     for subject, prop, obj in [("Part_A_001", "hasPartType", "PartType_A"), ("Station_B", "hasCarrier", "Carrier_B_01"), ("Carrier_B_01", "hasSlot", "Slot_B_01")]:
         g.add((S[subject], S[prop], S[obj]))
     main = root.find("BehaviorTree[@ID='main']/Sequence")
-    perception = individual(g, S.Perception_Current, "PerceptionProfile", "源文件当前感知参数；尚未绑定业务零件类型")
+    perception = individual(g, S.Perception_Current, "PerceptionProfile", "源文件感知配置")
     settings = {key: main[4].get(key) for key in ("object_name", "model_name", "threshold", "exposure_time")}
     settings["position"] = main[1].get("value")
     for key, prop in (("object_name", "objectName"), ("model_name", "modelName"), ("threshold", "threshold"), ("exposure_time", "exposureTime")):
@@ -72,7 +72,7 @@ def add_domain(g, root):
     literal(g, joints, "rawValue", settings["position"])
     literal(g, joints, "unitStatus", "unconfirmed")
     g.add((perception, S.hasCaptureJoints, joints))
-    placement = individual(g, S.Placement_Current, "PlacementProfile", "源文件当前放置目标；尚未绑定业务槽位")
+    placement = individual(g, S.Placement_Current, "PlacementProfile", "源文件放置配置")
     pose = individual(g, S.PlacePose_Current, "CartesianPose", "当前机器人放置目标原始值")
     literal(g, pose, "rawValue", main[8].get("place_pose"))
     literal(g, pose, "unitStatus", "unconfirmed")
