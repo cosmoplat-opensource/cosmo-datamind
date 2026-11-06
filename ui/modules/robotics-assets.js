@@ -57,8 +57,15 @@
   function issues(rows = []) {
     return rows?.length ? '<h4>构建问题与来源定位</h4>' + rows.map(issue => `<div class="rb-issue"><b>${escape(issue.code)}</b><p>${escape(issue.message)}</p><p>${escape(issue.source_role)} · ${escape(issue.source_asset_id)}</p><pre>${escape(JSON.stringify(issue.location || {}, null, 2))}</pre></div>`).join('') : '';
   }
+  function sourceSize(bytes) {
+    if (!Number.isSafeInteger(bytes) || bytes < 0) return '大小未记录';
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  }
   function sources(rows = [], {expanded = true} = {}) {
-    return rows?.length ? `<details class="rb-sources"${expanded ? ' open' : ''}><summary>固定来源快照</summary>` + rows.map(source => `<div><b>${escape(({behavior_tree:'主行为树 XML',node_models:'节点模型 XML'})[source.role] || source.role || '来源')}</b><p>${escape(source.source_asset_id)}</p><p>SHA-256 <code>${escape(source.sha256)}</code></p><small>${escape(source.byte_size)} 字节</small></div>`).join('') + '</details>' : '';
+    const labels = {behavior_tree:'主行为树 XML',node_models:'节点模型 XML',imported_ontology:'导入的机器人本体 OWL',demo_supplement:'演示补充材料',evidence:'适配资料',data_snapshot:'数据来源'};
+    return rows?.length ? `<details class="rb-sources"${expanded ? ' open' : ''}><summary>构建来源</summary><p class="rb-source-note">本体基于上传或登记时保存的文件副本构建。</p>` + rows.map(source => `<div class="rb-source-file"><svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9l-6-6Z"/><path d="M14 3v6h6M8 13h8M8 17h5"/></svg><div><b>${escape(labels[source.role] || '来源文件')}</b><p>${escape(sourceSize(source.byte_size))}</p></div></div>`).join('') + '</details>' : '';
   }
   function downloads(rows = []) {
     return '<div class="rb-actions rb-downloads">' + (rows || []).filter(a => ['ontology','validation','manifest'].includes(a.kind)).map(a =>
