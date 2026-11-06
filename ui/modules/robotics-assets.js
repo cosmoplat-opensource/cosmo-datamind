@@ -5,6 +5,7 @@
   const errorText = error => [error.status ? `HTTP ${error.status}` : '', error.code, error.message].filter(Boolean).join(' · ');
   const versionLink = (oid, vid) => '#library?asset=' + encodeURIComponent(oid) + '&version=' + encodeURIComponent(vid);
   const runLink = rid => '#build?recipe=robotics&run=' + encodeURIComponent(rid);
+  const assetIcon = '<svg aria-hidden="true" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="m12 3 9 5-9 5-9-5 9-5Zm-9 9 9 5 9-5M3 16l9 5 9-5"/></svg>';
   const statusText = status => ({queued:'排队中', running:'构建中', completed:'构建完成', failed:'构建失败', interrupted:'运行中断',
     computing:'计算与结构校验', committing:'保存候选与报告', candidate:'待评审', published:'已发布', retired:'已退役'})[status] || status || '未记录';
   async function json(fetcher, url) {
@@ -53,8 +54,8 @@
   function issues(rows = []) {
     return rows?.length ? '<h4>构建问题与来源定位</h4>' + rows.map(issue => `<div class="rb-issue"><b>${escape(issue.code)}</b><p>${escape(issue.message)}</p><p>${escape(issue.source_role)} · ${escape(issue.source_asset_id)}</p><pre>${escape(JSON.stringify(issue.location || {}, null, 2))}</pre></div>`).join('') : '';
   }
-  function sources(rows = []) {
-    return rows?.length ? '<details class="rb-sources" open><summary>固定来源快照</summary>' + rows.map(source => `<div><b>${escape(({behavior_tree:'主行为树 XML',node_models:'节点模型 XML'})[source.role] || source.role || '来源')}</b><p>${escape(source.source_asset_id)}</p><p>SHA-256 <code>${escape(source.sha256)}</code></p><small>${escape(source.byte_size)} 字节</small></div>`).join('') + '</details>' : '';
+  function sources(rows = [], {expanded = true} = {}) {
+    return rows?.length ? `<details class="rb-sources"${expanded ? ' open' : ''}><summary>固定来源快照</summary>` + rows.map(source => `<div><b>${escape(({behavior_tree:'主行为树 XML',node_models:'节点模型 XML'})[source.role] || source.role || '来源')}</b><p>${escape(source.source_asset_id)}</p><p>SHA-256 <code>${escape(source.sha256)}</code></p><small>${escape(source.byte_size)} 字节</small></div>`).join('') + '</details>' : '';
   }
   function downloads(rows = []) {
     return '<div class="rb-actions rb-downloads">' + (rows || []).filter(a => ['ontology','validation','manifest'].includes(a.kind)).map(a =>
@@ -90,37 +91,37 @@
     if (active && routeKey === key) return;
     active?.dispose(); routeKey = key;
     const doc = global.document, host = doc.getElementById('ra_host'), version = !!(oid || vid);
-    host.innerHTML = version ? '<section class="card rb-content" data-testid="robotics-version"><p>正在读取指定版本…</p></section>' :
-      '<div class="rb-toolbar"><label>本体领域<select id="ra_domain" aria-label="本体领域"><option value="">全部领域</option><option value="data">数据本体</option><option value="robotics">机器人本体</option></select></label></div><div data-testid="ontology-catalog" class="rb-catalog"></div>';
-    if(!version)global.RoboticsTask?.importButton(host);
+    host.innerHTML = version ? '<section class="ra-detail" data-testid="robotics-version"><p class="ra-empty">正在读取指定版本…</p></section>' :
+      `<header class="rb-hero ra-hero"><div class="rb-hero-copy">${assetIcon}<div><h2>让本体知识持续复用</h2><p>管理数据与机器人本体，从已有知识开始探索或生成任务。</p></div></div><a class="ra-button ra-hero-action" href="#build">构建本体 <span aria-hidden="true">＋</span></a></header>
+      <div class="ra-toolbar card"><label for="ra_domain">本体领域</label><select id="ra_domain" aria-label="本体领域"><option value="">全部领域</option><option value="data">数据本体</option><option value="robotics">机器人本体</option></select><div class="ra-import-host"></div></div><div data-testid="ontology-catalog" class="rb-catalog ra-catalog"></div>`;
+    if(!version)global.RoboticsTask?.importButton(host.querySelector('.ra-import-host'));
     const legacy = doc.getElementById('lib_legacy'); if (legacy) legacy.hidden = version;
     const controller = createController({onChange:state => {
       if (version) {
         const panel = host.querySelector('[data-testid="robotics-version"]'), d = state.detail;
         for (const key of ['ontologyId','versionId','publicationState']) delete panel.dataset[key];
         if (state.error) { panel.innerHTML = `<div role="alert">${escape(errorText(state.error))}</div>`; return; }
-        if (!d) { panel.innerHTML = '<p>正在读取指定版本…</p>'; return; }
+        if (!d) { panel.innerHTML = '<p class="ra-empty">正在读取指定版本…</p>'; return; }
         panel.dataset.ontologyId = d.ontology_id; panel.dataset.versionId = d.version_id; panel.dataset.publicationState = d.publication_state;
         const counts = d.result?.validation?.ontology_counts || {};
-        panel.innerHTML = `<a href="#library">返回本体目录</a><div class="rb-heading"><span class="tag">${escape(statusText(d.publication_state))}</span><h2>${escape(d.asset?.name || d.ontology_id)}</h2><p>${escape(d.asset?.domain === 'robotics' ? '机器人本体' : '数据本体')} · 固定版本</p></div>
-          <p class="rb-identities">当前：版本 ${escape(d.version_number)}</p>
-          ${d.asset?.domain === 'robotics' ? readiness(d.result || {status:d.validation?.shacl_conforms ? 'built' : undefined, validation:d.validation}) : ''}
-          <div class="rb-counts">${Object.entries(counts).map(([kind,n]) => `<div><strong data-count-kind="${escape(kind)}">${escape(n)}</strong><span>${escape(({AtomicSkill:'原子技能',CompositeSkill:'复合技能',SkillInvocation:'技能调用',DataReference:'数据引用',ImplementationConfiguration:'实现配置',ParameterBinding:'参数绑定',SkillParameter:'技能参数'})[kind] || kind)}</span></div>`).join('')}</div>
-          ${d.asset?.domain === 'robotics' ? `<p><a href="${escape(global.RoboticsTask.link(d.ontology_id,d.version_id,d.metadata?.mode||d.publication_mode||'real'))}">生成行为树</a></p><p class="muted">高级功能：<a href="${escape(versionLink(d.ontology_id,d.version_id) + '&tab=knowledge')}">维护知识</a></p>` : ''}${sources(d.sources)}${issues(d.result?.issues)}
-          ${d.build_run_id ? `<p><a href="${escape(runLink(d.build_run_id))}">查看构建运行与阶段记录</a></p>` : ''}
-          ${downloads(d.artifacts)}<div data-download-error role="alert" hidden></div>`;
+        panel.innerHTML = `<a class="ra-back" href="#library"><span aria-hidden="true">← </span>返回本体目录</a>
+          <section class="card ra-overview"><div class="ra-detail-heading"><div class="ra-icon">${assetIcon}</div><div class="ra-title"><span class="rt-eyebrow">${d.asset?.domain === 'robotics' ? '机器人本体' : '数据本体'} · 本体详情</span><h2>${escape(d.asset?.name || '未命名本体')}</h2><p>当前：版本 ${escape(d.version_number)}</p></div><span class="rb-soft-tag">${escape(statusText(d.publication_state))}</span></div>
+          <div class="ra-detail-actions">${d.asset?.domain === 'robotics' ? `<a class="ra-button ra-primary" href="${escape(global.RoboticsTask.link(d.ontology_id,d.version_id,d.metadata?.mode||d.publication_mode||'real'))}">生成行为树 <span aria-hidden="true">→</span></a>` : ''}${downloads(d.artifacts)}</div><div data-download-error role="alert" hidden></div></section>
+          ${d.asset?.domain === 'robotics' ? `<section class="card ra-section"><div class="ra-section-heading"><h3>验证状态</h3><span>当前版本的检查结果</span></div>${readiness(d.result || {status:d.validation?.shacl_conforms ? 'built' : undefined, validation:d.validation})}</section>` : ''}
+          ${Object.keys(counts).length ? `<section class="card ra-section"><div class="ra-section-heading"><h3>知识概览</h3><span>本体中的技能与配置</span></div><div class="rb-counts">${Object.entries(counts).map(([kind,n]) => `<div><strong data-count-kind="${escape(kind)}">${escape(n)}</strong><span>${escape(({AtomicSkill:'原子技能',CompositeSkill:'复合技能',SkillInvocation:'技能调用',DataReference:'数据引用',ImplementationConfiguration:'实现配置',ParameterBinding:'参数绑定',SkillParameter:'技能参数'})[kind] || kind)}</span></div>`).join('')}</div></section>` : ''}
+          ${d.sources?.length || d.build_run_id || d.asset?.domain === 'robotics' ? `<section class="card ra-section ra-provenance"><div class="ra-section-heading"><h3>来源与维护</h3><span>需要追溯或调整知识时展开查看</span></div>${sources(d.sources,{expanded:false})}<div class="ra-secondary-links">${d.build_run_id ? `<a href="${escape(runLink(d.build_run_id))}">查看构建运行与阶段记录 →</a>` : ''}${d.asset?.domain === 'robotics' ? `<a href="${escape(versionLink(d.ontology_id,d.version_id) + '&tab=knowledge')}">维护知识 →</a>` : ''}</div></section>` : ''}${issues(d.result?.issues)}`;
         bindDownloads(panel);
       } else {
         const list = host.querySelector('[data-testid="ontology-catalog"]');
         if (state.error) { list.innerHTML = `<div role="alert">${escape(errorText(state.error))}</div>`; return; }
         list.innerHTML = state.items.map(item => {
           const legacy = item.entry_kind === 'legacy_reference';
-          const title = escape(item.name || item.ontology_id || item.legacy_key);
+          const title = escape(item.name || item.legacy_key || '未命名本体');
           const link = legacy || (item.domain === 'data' && item.legacy_key)
             ? `<a href="#graph=${escape(encodeURIComponent(item.legacy_key))}">打开数据图谱</a>`
             : item.version_id ? `<a href="${escape(versionLink(item.ontology_id,item.version_id))}">查看固定版本</a>` : '<span class="muted">暂无版本</span>';
-          return `<article class="card rb-content" ${legacy ? `data-legacy-key="${escape(item.legacy_key)}"` : `data-ontology-id="${escape(item.ontology_id)}"`}><h3>${title}</h3><p>${legacy ? '旧数据图谱 · 未登记版本' : (item.domain === 'robotics' ? '机器人本体' : '数据本体') + ' · ' + escape(statusText(item.publication_state))}${item.version_number?' · 版本 '+escape(item.version_number):''}</p>${link}${item.domain==='robotics'&&item.version_id?` · <a href="${escape(global.RoboticsTask.link(item.ontology_id,item.version_id,item.versions?.at(-1)?.metadata?.mode||'real'))}">生成行为树</a>`:''}</article>`;
-        }).join('') || '<p class="muted">此领域暂无登记条目。</p>';
+          return `<article class="card ra-asset" ${legacy ? `data-legacy-key="${escape(item.legacy_key)}"` : `data-ontology-id="${escape(item.ontology_id)}"`}><div class="ra-card-top"><span class="ra-icon">${assetIcon}</span><span class="rb-soft-tag">${legacy ? '未登记版本' : escape(statusText(item.publication_state))}</span></div><span class="rt-eyebrow">${legacy ? '旧数据图谱' : item.domain === 'robotics' ? '机器人本体' : '数据本体'}</span><h3>${title}</h3><p class="ra-version">${item.version_number ? '版本 '+escape(item.version_number) : '保留原有数据图谱'}</p><div class="ra-card-actions">${link}${item.domain==='robotics'&&item.version_id?`<a class="ra-task-link" href="${escape(global.RoboticsTask.link(item.ontology_id,item.version_id,item.versions?.at(-1)?.metadata?.mode||'real'))}">生成行为树 <span aria-hidden="true">→</span></a>`:''}</div></article>`;
+        }).join('') || '<div class="card ra-empty"><div class="rb-empty-mark" aria-hidden="true">◇</div><h3>此领域暂无登记条目</h3><p>构建或导入本体后，即可在这里查看和使用。</p></div>';
       }
     }});
     active = controller;
