@@ -1,5 +1,5 @@
 {
-  "iteration": "IR-014 / IR-015 / IR-016 / IR-017（delivered） / IR-018（delivered） / IR-019（T07 GREEN，T08 暂缓） / IR-020（T03 GREEN，T04 RED 待覆盖审查）",
+  "iteration": "IR-014 / IR-015 / IR-016 / IR-017（delivered） / IR-018（delivered） / IR-019（T07 GREEN，T08 暂缓） / IR-020（T05 GREEN，待 T06 人审交付）",
   "requirements": [
     {
       "id": "ALG-01",
@@ -1024,7 +1024,7 @@
     {
       "id": "RMW-02",
       "iteration": "IR-020",
-      "status": "t04-red-awaiting-coverage-review",
+      "status": "t05-green-awaiting-human-delivery",
       "criterion": "复用 DataMind 模型配置及完整角色消息；JSON 契约、模型未配置、连接失败、拒答、截断和格式错误明确处理，不以默认任务假装成功。",
       "tests": [
         "tests/unit/test_robotics_task_model.py::test_parser_sends_role_messages_json_mode_and_does_not_mutate_inputs",
@@ -1046,14 +1046,14 @@
         "tests/frontend/robotics-task-browser.py::test_model_setting_bt_extract_is_saved_and_used_without_exposing_secret"
       ],
       "remaining_test_batches": [
-        "T04 人审新增覆盖；T05 实现转绿及全量回归；T06 人审交付"
+        "T06 人工界面与真实模型冒烟、整轮交付确认"
       ],
-      "notes": "T03 的 77 项已通过且未修改；T04 新增服务、HTTP、补齐保存、页面状态、真实浏览器和离线命令测试。RED 表示未实现，不代表本轮验收通过。"
+      "notes": "T05 新增 118 项覆盖全部转绿，最终全量 12 段通过。用户只授权修正一处浏览器预览计数，其余已审测试未改；自动化使用模型替身，真实模型及整轮交付留待 T06。"
     },
     {
       "id": "RMW-03",
       "iteration": "IR-020",
-      "status": "t04-red-awaiting-coverage-review",
+      "status": "t05-green-awaiting-human-delivery",
       "criterion": "只接受完整六字段任务；未明确、否定、歧义和撤销需澄清，模型猜测不作选择，更换上游目标清除旧下游选择。",
       "tests": [
         "tests/unit/test_robotics_task_model.py::test_valid_task_preserves_missing_fields_and_unsupported_requests",
@@ -1073,14 +1073,14 @@
         "tests/unit/test_robotics_task_http.py::test_bad_or_cross_origin_task_requests_do_not_mutate_state"
       ],
       "remaining_test_batches": [
-        "T04 人审新增覆盖；T05 实现转绿及全量回归；T06 人审交付"
+        "T06 人工界面与真实模型冒烟、整轮交付确认"
       ],
-      "notes": "T03 的 77 项已通过且未修改；T04 新增服务、HTTP、补齐保存、页面状态、真实浏览器和离线命令测试。RED 表示未实现，不代表本轮验收通过。"
+      "notes": "T05 新增 118 项覆盖全部转绿，最终全量 12 段通过。用户只授权修正一处浏览器预览计数，其余已审测试未改；自动化使用模型替身，真实模型及整轮交付留待 T06。"
     },
     {
       "id": "RMW-10",
       "iteration": "IR-020",
-      "status": "t04-red-awaiting-coverage-review",
+      "status": "t05-green-awaiting-human-delivery",
       "criterion": "仅投影当前任务可确定的缺口；已有有效字段不重复填写，无关对象不入表单，未知映射不猜下游配置；任务歧义先澄清。",
       "tests": [
         "tests/unit/test_robotics_task_completion.py::test_fixture_is_complete_for_existing_grounding_without_new_completion_module",
@@ -1103,14 +1103,14 @@
         "tests/frontend/robotics-task-browser.py::test_missing_parameter_has_no_guessed_default_and_invalid_value_stays_editable"
       ],
       "remaining_test_batches": [
-        "T04 人审新增覆盖；T05 实现转绿及全量回归；T06 人审交付"
+        "T06 人工界面与真实模型冒烟、整轮交付确认"
       ],
-      "notes": "T03 的 77 项已通过且未修改；T04 新增服务、HTTP、补齐保存、页面状态、真实浏览器和离线命令测试。RED 表示未实现，不代表本轮验收通过。"
+      "notes": "T05 新增 118 项覆盖全部转绿，最终全量 12 段通过。用户只授权修正一处浏览器预览计数，其余已审测试未改；自动化使用模型替身，真实模型及整轮交付留待 T06。"
     },
     {
       "id": "RMW-12",
       "iteration": "IR-020",
-      "status": "t04-red-awaiting-coverage-review",
+      "status": "t05-green-awaiting-human-delivery",
       "criterion": "必要业务/配置确认与任务适配在当前页完成；明确范围、实际依据与有效期；保存不等于确认，过期/撤销/配置改变重检，不宣称实机已验证。",
       "tests": [
         "tests/unit/test_robotics_task_completion.py::test_unconfirmed_knowledge_requests_confirmation_without_reentering_valid_values",
@@ -1125,28 +1125,28 @@
         "tests/frontend/robotics-task-browser.py::test_basis_and_expiry_do_not_count_as_confirmation_until_checkbox_is_explicit"
       ],
       "remaining_test_batches": [
-        "T04 人审新增覆盖；T05 实现转绿及全量回归；T06 人审交付"
+        "T06 人工界面与真实模型冒烟、整轮交付确认"
       ],
-      "notes": "T03 的 77 项已通过且未修改；T04 新增服务、HTTP、补齐保存、页面状态、真实浏览器和离线命令测试。RED 表示未实现，不代表本轮验收通过。"
+      "notes": "T05 新增 118 项覆盖全部转绿，最终全量 12 段通过。用户只授权修正一处浏览器预览计数，其余已审测试未改；自动化使用模型替身，真实模型及整轮交付留待 T06。"
     },
     {
       "id": "RMW-01",
       "iteration": "IR-020",
       "criterion": "构建成功后直接进入任务页面，只显示当前版本，无需署名、理由、工作头或审核操作。",
-      "status": "t04-red-awaiting-coverage-review",
+      "status": "t05-green-awaiting-human-delivery",
       "tests": [
         "tests/frontend/robotics-task-browser.py::test_real_build_to_inline_completion_generation_download_and_restart"
       ],
       "remaining_test_batches": [
-        "T04 人审新增覆盖；T05 实现转绿及全量回归；T06 人审交付"
+        "T06 人工界面与真实模型冒烟、整轮交付确认"
       ],
-      "notes": "T03 的 77 项已通过且未修改；T04 新增服务、HTTP、补齐保存、页面状态、真实浏览器和离线命令测试。RED 表示未实现，不代表本轮验收通过。"
+      "notes": "T05 新增 118 项覆盖全部转绿，最终全量 12 段通过。用户只授权修正一处浏览器预览计数，其余已审测试未改；自动化使用模型替身，真实模型及整轮交付留待 T06。"
     },
     {
       "id": "RMW-04",
       "iteration": "IR-020",
       "criterion": "自然语言任务经过真实 OWL、确定性编译和验证，树预览与 XML 下载属于同次运行并与冻结预期核对。",
-      "status": "t04-red-awaiting-coverage-review",
+      "status": "t05-green-awaiting-human-delivery",
       "tests": [
         "tests/unit/test_robotics_task_service.py::test_complete_candidate_generates_real_xml_matching_independent_frozen_oracle",
         "tests/unit/test_robotics_task_service.py::test_fresh_build_completes_in_stages_and_compiles_saved_owl_without_demo_bypass",
@@ -1157,30 +1157,30 @@
         "tests/frontend/robotics-task-browser.py::test_missing_parameter_has_no_guessed_default_and_invalid_value_stays_editable"
       ],
       "remaining_test_batches": [
-        "T04 人审新增覆盖；T05 实现转绿及全量回归；T06 人审交付"
+        "T06 人工界面与真实模型冒烟、整轮交付确认"
       ],
-      "notes": "T03 的 77 项已通过且未修改；T04 新增服务、HTTP、补齐保存、页面状态、真实浏览器和离线命令测试。RED 表示未实现，不代表本轮验收通过。"
+      "notes": "T05 新增 118 项覆盖全部转绿，最终全量 12 段通过。用户只授权修正一处浏览器预览计数，其余已审测试未改；自动化使用模型替身，真实模型及整轮交付留待 T06。"
     },
     {
       "id": "RMW-05",
       "iteration": "IR-020",
       "criterion": "真实本体缺知识时在 DataMind 展示当前任务需补齐的信息，不伪造完成；独立演示与用户真实本体隔离。",
-      "status": "t04-red-awaiting-coverage-review",
+      "status": "t05-green-awaiting-human-delivery",
       "tests": [
         "tests/unit/test_robotics_task_service.py::test_fresh_build_completes_in_stages_and_compiles_saved_owl_without_demo_bypass",
         "tests/unit/test_robotics_task_service.py::test_chat_confirmation_never_accepts_knowledge_or_applicability",
         "tests/frontend/robotics-task-browser.py::test_import_demo_is_explicit_and_real_asset_cannot_use_demo_switch_to_fill_gaps"
       ],
       "remaining_test_batches": [
-        "T04 人审新增覆盖；T05 实现转绿及全量回归；T06 人审交付"
+        "T06 人工界面与真实模型冒烟、整轮交付确认"
       ],
-      "notes": "T03 的 77 项已通过且未修改；T04 新增服务、HTTP、补齐保存、页面状态、真实浏览器和离线命令测试。RED 表示未实现，不代表本轮验收通过。"
+      "notes": "T05 新增 118 项覆盖全部转绿，最终全量 12 段通过。用户只授权修正一处浏览器预览计数，其余已审测试未改；自动化使用模型替身，真实模型及整轮交付留待 T06。"
     },
     {
       "id": "RMW-06",
       "iteration": "IR-020",
       "criterion": "支持符合平台契约的 OWL 导入及候选试用，不自动审核/发布，不放宽旧发布加载契约。",
-      "status": "t04-red-awaiting-coverage-review",
+      "status": "t05-green-awaiting-human-delivery",
       "tests": [
         "tests/unit/test_robotics_task_service.py::test_candidate_application_loader_checks_structure_without_publishing",
         "tests/unit/test_robotics_task_service.py::test_application_loader_rejects_tampered_or_wrong_mode_snapshot",
@@ -1191,15 +1191,15 @@
         "tests/frontend/robotics-task-browser.py::test_import_demo_is_explicit_and_real_asset_cannot_use_demo_switch_to_fill_gaps"
       ],
       "remaining_test_batches": [
-        "T04 人审新增覆盖；T05 实现转绿及全量回归；T06 人审交付"
+        "T06 人工界面与真实模型冒烟、整轮交付确认"
       ],
-      "notes": "T03 的 77 项已通过且未修改；T04 新增服务、HTTP、补齐保存、页面状态、真实浏览器和离线命令测试。RED 表示未实现，不代表本轮验收通过。"
+      "notes": "T05 新增 118 项覆盖全部转绿，最终全量 12 段通过。用户只授权修正一处浏览器预览计数，其余已审测试未改；自动化使用模型替身，真实模型及整轮交付留待 T06。"
     },
     {
       "id": "RMW-07",
       "iteration": "IR-020",
       "criterion": "会话及产物可回看，刷新/重启和换版本/模式/任务不会混用旧结果，失败及澄清时没有本次 XML 下载。",
-      "status": "t04-red-awaiting-coverage-review",
+      "status": "t05-green-awaiting-human-delivery",
       "tests": [
         "tests/unit/test_robotics_task_service.py::test_task_change_rejects_old_gap_form_and_removes_old_download",
         "tests/unit/test_robotics_task_service.py::test_model_error_clears_active_result_and_persists_error_without_secrets",
@@ -1214,15 +1214,15 @@
         "tests/frontend/robotics-task-browser.py::test_new_task_during_slow_model_response_cannot_restore_old_form"
       ],
       "remaining_test_batches": [
-        "T04 人审新增覆盖；T05 实现转绿及全量回归；T06 人审交付"
+        "T06 人工界面与真实模型冒烟、整轮交付确认"
       ],
-      "notes": "T03 的 77 项已通过且未修改；T04 新增服务、HTTP、补齐保存、页面状态、真实浏览器和离线命令测试。RED 表示未实现，不代表本轮验收通过。"
+      "notes": "T05 新增 118 项覆盖全部转绿，最终全量 12 段通过。用户只授权修正一处浏览器预览计数，其余已审测试未改；自动化使用模型替身，真实模型及整轮交付留待 T06。"
     },
     {
       "id": "RMW-08",
       "iteration": "IR-020",
       "criterion": "真实浏览器走通简洁基础流程，默认无高级治理输入，旧数据本体入口可用，统一检查通过。",
-      "status": "t04-red-awaiting-coverage-review",
+      "status": "t05-green-awaiting-human-delivery",
       "tests": [
         "tests/unit/test_robotics_task_ui.py::test_actual_task_browser_suite_is_wired_into_all_checks",
         "tests/frontend/robotics-task-browser.py::test_real_build_to_inline_completion_generation_download_and_restart",
@@ -1230,15 +1230,15 @@
         "tests/frontend/robotics-task-browser.py::test_legacy_data_entries_and_direct_advanced_route_remain_available"
       ],
       "remaining_test_batches": [
-        "T04 人审新增覆盖；T05 实现转绿及全量回归；T06 人审交付"
+        "T06 人工界面与真实模型冒烟、整轮交付确认"
       ],
-      "notes": "T03 的 77 项已通过且未修改；T04 新增服务、HTTP、补齐保存、页面状态、真实浏览器和离线命令测试。RED 表示未实现，不代表本轮验收通过。"
+      "notes": "T05 新增 118 项覆盖全部转绿，最终全量 12 段通过。用户只授权修正一处浏览器预览计数，其余已审测试未改；自动化使用模型替身，真实模型及整轮交付留待 T06。"
     },
     {
       "id": "RMW-09",
       "iteration": "IR-020",
       "criterion": "五个离线演示命令可执行并核验本体、会话及产物，包含经真实补齐服务保存后生成的案例；标明模型替身和合成适配资料，真实模型另做人工冒烟。",
-      "status": "t04-red-awaiting-coverage-review",
+      "status": "t05-green-awaiting-human-delivery",
       "tests": [
         "tests/unit/test_robotics_task_demo_cli.py::test_documented_offline_command_builds_fresh_and_emits_independently_verifiable_artifacts",
         "tests/unit/test_robotics_task_demo_cli.py::test_complete_information_demo_uses_real_scoped_save_and_explicit_synthetic_answers",
@@ -1246,15 +1246,15 @@
         "tests/unit/test_robotics_task_demo_cli.py::test_cli_exit_status_follows_actual_failure"
       ],
       "remaining_test_batches": [
-        "T04 人审新增覆盖；T05 实现转绿及全量回归；T06 人审交付"
+        "T06 人工界面与真实模型冒烟、整轮交付确认"
       ],
-      "notes": "T03 的 77 项已通过且未修改；T04 新增服务、HTTP、补齐保存、页面状态、真实浏览器和离线命令测试。RED 表示未实现，不代表本轮验收通过。"
+      "notes": "T05 新增 118 项覆盖全部转绿，最终全量 12 段通过。用户只授权修正一处浏览器预览计数，其余已审测试未改；自动化使用模型替身，真实模型及整轮交付留待 T06。"
     },
     {
       "id": "RMW-11",
       "iteration": "IR-020",
       "criterion": "当前任务的映射、参数及缺少的对象/配置可页内补齐；合法输入原子保存新 OWL 版本，保留历史及无关语义，错误输入不部分保存。",
-      "status": "t04-red-awaiting-coverage-review",
+      "status": "t05-green-awaiting-human-delivery",
       "tests": [
         "tests/unit/test_robotics_task_service.py::test_fresh_build_completes_in_stages_and_compiles_saved_owl_without_demo_bypass",
         "tests/unit/test_robotics_task_service.py::test_only_missing_parameter_is_saved_and_changes_exact_public_xml_slot",
@@ -1274,15 +1274,15 @@
         "tests/frontend/robotics-task-browser.py::test_unknown_configuration_can_be_created_inline_without_user_iri"
       ],
       "remaining_test_batches": [
-        "T04 人审新增覆盖；T05 实现转绿及全量回归；T06 人审交付"
+        "T06 人工界面与真实模型冒烟、整轮交付确认"
       ],
-      "notes": "T03 的 77 项已通过且未修改；T04 新增服务、HTTP、补齐保存、页面状态、真实浏览器和离线命令测试。RED 表示未实现，不代表本轮验收通过。"
+      "notes": "T05 新增 118 项覆盖全部转绿，最终全量 12 段通过。用户只授权修正一处浏览器预览计数，其余已审测试未改；自动化使用模型替身，真实模型及整轮交付留待 T06。"
     },
     {
       "id": "RMW-13",
       "iteration": "IR-020",
       "criterion": "真实后端浏览器从缺知识构建开始，页内补映射/参数/适配并接续同一任务生成可核对 XML；不依赖 Protégé，不用演示模式代替补齐验收。",
-      "status": "t04-red-awaiting-coverage-review",
+      "status": "t05-green-awaiting-human-delivery",
       "tests": [
         "tests/frontend/robotics-task-browser.py::test_real_build_to_inline_completion_generation_download_and_restart",
         "tests/frontend/robotics-task-browser.py::test_missing_parameter_has_no_guessed_default_and_invalid_value_stays_editable",
@@ -1292,9 +1292,9 @@
         "tests/unit/test_robotics_task_demo_cli.py::test_complete_information_demo_uses_real_scoped_save_and_explicit_synthetic_answers"
       ],
       "remaining_test_batches": [
-        "T04 人审新增覆盖；T05 实现转绿及全量回归；T06 人审交付"
+        "T06 人工界面与真实模型冒烟、整轮交付确认"
       ],
-      "notes": "T03 的 77 项已通过且未修改；T04 新增服务、HTTP、补齐保存、页面状态、真实浏览器和离线命令测试。RED 表示未实现，不代表本轮验收通过。"
+      "notes": "T05 新增 118 项覆盖全部转绿，最终全量 12 段通过。用户只授权修正一处浏览器预览计数，其余已审测试未改；自动化使用模型替身，真实模型及整轮交付留待 T06。"
     }
   ],
   "planned_requirements": []

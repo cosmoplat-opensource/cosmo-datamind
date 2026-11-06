@@ -22,14 +22,29 @@ def execution_components(version, validation):
 def generate_from_version(root, *, ontology_id, version_id, task, mode, session_ref):
     assets = AssetStore(root)
     context = assets.load_robotics(ontology_id, version_id, mode=mode)
+    return _generate(root, assets, context, ontology_id, version_id, task, mode, session_ref)
+
+
+def generate_application(root, *, ontology_id, version_id, task, mode, session_ref, model_info=None):
+    """DR-066: same validated compiler/run pipeline, without automatic publication."""
+    assets = AssetStore(root)
+    context = assets.load_robotics_application(ontology_id, version_id, mode=mode)
+    return _generate(root, assets, context, ontology_id, version_id, task, mode, session_ref, model_info)
+
+
+def _generate(root, assets, context, ontology_id, version_id, task, mode, session_ref, model_info=None):
     version = assets.get_version(ontology_id, version_id)
     from domains.robotics.evidence import policy
     if policy(context['graph']):
         from ontology_assets.governance import GovernanceService
         context['evidence_revocations'] = GovernanceService(root, read_only=True).revocations(ontology_id)
     runs = RunStore(root)
+    components = execution_components(version, context["validation"])
+    if model_info:
+        from domains.robotics.task_model import PROMPT_VERSION
+        components.update(prompt_version=PROMPT_VERSION, model=model_info)
     run = runs.create_run(ontology_id=ontology_id, version_id=version_id, operation="generate_bt",
-        task=task, mode=mode, session_ref=session_ref, components=execution_components(version, context["validation"]))
+        task=task, mode=mode, session_ref=session_ref, components=components)
     runs.start(run["run_id"])
     artifacts = []
     try:

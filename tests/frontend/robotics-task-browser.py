@@ -133,7 +133,7 @@ def download(page, site, panel, current, *, values=None):
     expect(panel.get_by_test_id('task-tree')).to_have_attribute('data-run-id', current['run_id'])
     # Each real XML node is represented in the read-only hierarchy, not an unrelated previous preview.
     expected = expected_xml(values)
-    expect(panel.get_by_test_id('task-tree').locator('[data-node-tag]')).to_have_count(len(list(expected.iter())))
+    expect(panel.get_by_test_id('task-tree').locator('[data-node-tag]')).to_have_count(1 + sum(len(list(tree.iter())) for tree in expected.findall('BehaviorTree')))
     with page.expect_download() as pending:
         panel.get_by_role('link', name='下载行为树 XML', exact=True).click()
     path = site.output / pending.value.suggested_filename

@@ -218,6 +218,7 @@ a{color:var(--acc)}
   <div class="nav" data-p="review">本体评审</div>
   <div class="nav" data-p="ontquality">元数据覆盖</div>
   <div class="nav" data-p="library">本体库</div>
+  <div class="nav" data-p="robotics-task" hidden>行为树生成</div>
   <div class="nav" data-p="sparql">SPARQL 查询</div></div>
 <div class="nav-group"><div class="gh" onclick="dqGroup(this)">指标平台 <span class="ar">▾</span></div>
   <div class="nav" data-p="metrics">指标中心</div>
@@ -715,9 +716,11 @@ FROM fact_sales_order GROUP BY 1 ORDER BY 1 DESC LIMIT 12</textarea>
   <div class="card"><textarea id="sq_q" style="height:120px;font-family:monospace">SELECT ?cls ?label WHERE { ?cls a <http://www.w3.org/2002/07/owl#Class>. OPTIONAL{?cls <http://www.w3.org/2000/01/rdf-schema#label> ?label} } LIMIT 20</textarea>
    <div class="row" style="margin-top:8px"><button onclick="sparqlRun()">执行</button><span class="muted" id="sq_info"></span></div>
    <div class="scroll" id="sq_out" style="margin-top:10px"></div></div></div>
+<div class="page" id="p_robotics-task"><h2>机器人任务</h2><div class="card" id="rt_task"></div></div>
 </main>
 </div>
-<script src="/assets/modules/robotics-assets.js?v=1"></script>
+<script src="/assets/modules/robotics-task.js?v=1"></script>
+<script src="/assets/modules/robotics-assets.js?v=2"></script>
 <script src="/assets/modules/robotics-build.js?v=1"></script>
 <script src="/assets/modules/robotics-review.js?v=1"></script>
 <script src="/assets/modules/robotics-review-page.js?v=1"></script>
@@ -749,7 +752,7 @@ const EDIT_KINDS=['object','event','asset','role'];
 function goPage(p){const nav=document.querySelector('[data-p="'+p+'"]');if(!nav)return false;
  document.querySelectorAll('.nav').forEach(x=>x.classList.remove('on'));nav.classList.add('on');
  document.querySelectorAll('.page').forEach(pg=>pg.classList.remove('on'));const el=$('#p_'+p);if(el)el.classList.add('on');
- window.RoboticsBuild?.page(p);window.RoboticsAssets?.page(p);window.RoboticsReview?.page(p);
+ window.RoboticsBuild?.page(p);window.RoboticsAssets?.page(p);window.RoboticsReview?.page(p);window.RoboticsTask?.page(p);
  const revisit=!!loaded[p];load(p);
  // 易变页每次进入都重取:别处(评审/动作/构建)的变动切回来即见,不吃首屏一次性缓存
  if(revisit){try{
@@ -1255,7 +1258,7 @@ async function egLoad(){EG=await J('/api/engine/config').catch(e=>({error:''+e})
     <div class="muted" id="eg_t_${esc(r)}" style="font-size:12px;margin-top:6px"></div></div>`;}).join('')+'</div>'
   +`<div class="muted" style="font-size:12px;margin-top:8px">另:agy(Google Antigravity)未接入为运行时 —— 当前网络地域受限(Gemini 接口按 IP 封禁),恢复后可按同模式注册。</div>`;
  // B4 按任务选模:SQL 计划 / 洞察叙述 / 根因诊断 各配独立模型(空=跟随当前引擎)
- const TN={plan:['SQL 计划生成','问数中最耗时的环节,可配轻量模型(如 haiku)降低时延与成本'],narrative:['洞察叙述','结论文字生成,轻量模型足够'],diagnose:['根因诊断','约束生成要求高,建议保持强模型']};
+ const TN={bt_extract:['机器人任务解析','提取零件与目标等任务信息，空值沿用平台 OpenAI 兼容接口的默认模型'],plan:['SQL 计划生成','问数中最耗时的环节,可配轻量模型(如 haiku)降低时延与成本'],narrative:['洞察叙述','结论文字生成,轻量模型足够'],diagnose:['根因诊断','约束生成要求高,建议保持强模型']};
  const allOpts=[...new Set([].concat(...Object.values(EG.model_options||{})))];
  $('#eg_tasks').innerHTML=`<h3 style="margin:0 0 8px">按任务选模 <span class="muted" style="font-weight:400;font-size:12px">每个环节独立指定模型 · 空=跟随当前引擎缺省 · 保存即刻生效</span></h3>`
   +'<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:10px">'
@@ -2463,6 +2466,7 @@ async function sparqlRun(){$('#sq_info').textContent='查询中…';
 if(location.hash.slice(1))routeHash();else{home();loaded.home=1;}
 // hash 路由:每个子页可经 #<page> 寻址;另支持 #graph=<key> / #obj=<key>:<id> 深链
 function routeHash(){if(window.RoboticsReview?.guardHash())return;const h=location.hash.slice(1);
+ if(/^robotics-task\?/.test(h)){goPage('robotics-task');return;}
  if(/^build\?/.test(h)){goPage('build');return;}
  if(/^library\?/.test(h)){goPage('library');return;}
  if(/^review\?/.test(h)){goPage('review');return;}
