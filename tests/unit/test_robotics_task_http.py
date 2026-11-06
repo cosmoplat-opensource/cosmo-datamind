@@ -189,17 +189,17 @@ def test_uploading_evidence_alone_does_not_confirm_task_and_selected_attachment_
         current = message(client, start(client, version))
         # Only map/confirm the dependencies to expose the actual applicability scope.
         for index in range(5):
-            if any(g['kind'] == 'applicability' for g in current['gaps']): break
+            if any(g['kind'] == 'applicability' for g in current['optional_gaps']): break
             current = ok(post(client, f"{PREFIX}/{current['session_id']}/completion", {
-                'answers': synthetic_answers(current), 'expected_revision': current['revision'],
+                'answers': synthetic_answers({**current, 'gaps': current['gaps'] + current['optional_gaps']}), 'expected_revision': current['revision'],
                 'request_id': f'stage-{index}'}))
-        assert any(g['kind'] == 'applicability' for g in current['gaps'])
+        assert any(g['kind'] == 'applicability' for g in current['optional_gaps'])
         raw = b'SYNTHETIC TEST MATERIAL; NOT A ROBOT VALIDATION'
         attached = ok(client.post(f"/api/ontology-assets/{version['ontology_id']}/evidence-sources",
             data={'file': (io.BytesIO(raw), 'synthetic.txt', 'text/plain')}, base_url=BASE_URL), 201)
         assert ok(client.get(f"{PREFIX}/{current['session_id']}", base_url=BASE_URL)) == current
         assert_no_result(current)
-        answers = synthetic_answers(current)
+        answers = synthetic_answers({**current, 'gaps': current['gaps'] + current['optional_gaps']})
         for answer in answers:
             if 'reference' in answer: answer['source_asset_ids'] = [attached['source_asset_id']]
         after = ok(post(client, f"{PREFIX}/{current['session_id']}/completion", {

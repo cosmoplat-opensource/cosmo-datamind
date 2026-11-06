@@ -158,7 +158,7 @@ def test_real_build_to_inline_completion_generation_download_and_restart(live):
     page.get_by_role('link', name='生成行为树', exact=True).click()
     panel = page.get_by_test_id('robotics-task')
     expect(panel.get_by_test_id('task-current-version')).to_have_count(1)
-    expect(panel.get_by_test_id('task-current-version')).to_contain_text(original_ref['version_id'])
+    expect(panel.get_by_test_id('task-current-version')).to_contain_text('版本 1')
     for label in ['操作者署名', '操作理由', '工作头', '编辑底本', '修改依据']:
         assert panel.get_by_label(label, exact=True).count() == 0
     for name in ['知识维护', '证据管理', '版本比较', '重建合并', '审核发布']:
@@ -178,7 +178,7 @@ def test_real_build_to_inline_completion_generation_download_and_restart(live):
     assert download(page, site, page.get_by_test_id('robotics-task'), final) == raw
     site.restart()
     page.reload()
-    expect(page.get_by_test_id('task-current-version')).to_contain_text(final['version_id'])
+    expect(page.get_by_test_id('task-current-version')).to_contain_text('版本 ' + str(final['version_number']))
     assert download(page, site, page.get_by_test_id('robotics-task'), final) == raw
     assert len(calls) == 1
     assert not [r for r in site.evidence['requests'] if any(x in r['url'] for x in ('/publish', '/reviews', '/demo'))]
@@ -250,29 +250,30 @@ def test_unknown_configuration_can_be_created_inline_without_user_iri(live):
     done(site)
 
 
-def test_basis_and_expiry_do_not_count_as_confirmation_until_checkbox_is_explicit(live):
+def test_optional_notes_do_not_block_generation_or_confirm_applicability(live):
     site, page, _ = live
     panel = open_task(page, site, site.submit()['output_asset_ref'])
     state = submit_task(page, panel)
     for _ in range(5):
-        if any(g['kind'] == 'applicability' for g in state['gaps']): break
+        if state['status'] == 'generated': break
         fill_gaps(panel, state)
         state = save_gaps(page, panel)
-    assert any(g['kind'] == 'applicability' for g in state['gaps'])
-    item = next(g for g in state['gaps'] if g['kind'] == 'applicability')
-    card = panel.locator('[data-gap-id="' + item['id'] + '"]')
-    with page.expect_response(lambda r: r.request.method == 'POST' and r.url.endswith('/evidence-sources')) as pending:
-        card.get_by_label('适配资料（可选）', exact=True).set_input_files({
-            'name': 'synthetic.txt', 'mimeType': 'text/plain', 'buffer': BASIS.encode()})
-    assert pending.value.status == 201
-    assert site.get('/api/robotics/tasks/' + state['session_id']) == state
-    fill_gaps(panel, state)
-    boxes = panel.get_by_role('checkbox', name='我确认以上依据适用于当前范围', exact=True)
-    for box in boxes.all(): box.uncheck()
-    after = save_gaps(page, panel)
-    assert after['status'] == 'needs_information'
-    assert panel.get_by_role('link', name='下载行为树 XML', exact=True).count() == 0
-    assert any(g['kind'] == 'applicability' for g in after['gaps'])
+    assert state['status'] == 'generated' and state['task_readiness'] == 'not_verified'
+    expect(panel.get_by_role('link', name='下载行为树 XML', exact=True)).to_be_visible()
+    assert panel.get_by_label('有效期', exact=True).count() == 0
+    panel.get_by_text('适配记录（可选）', exact=True).click()
+    panel.get_by_label('抓取备注', exact=True).fill(BASIS)
+    with page.expect_response(lambda r: r.request.method == 'POST' and r.url.endswith('/notes')) as pending:
+        panel.get_by_role('button', name='保存记录', exact=True).click()
+    assert pending.value.status == 200
+    after = pending.value.json()
+    assert after['version_id'] == state['version_id']
+    assert after['task_readiness'] == 'not_verified' and after['status'] == 'generated'
+    assert after['adaptation_notes'][-1]['text'] == BASIS
+    page.reload()
+    expect(panel.get_by_role('link', name='下载行为树 XML', exact=True)).to_be_visible()
+    panel.get_by_text('适配记录（可选）', exact=True).click()
+    expect(panel.get_by_label('抓取备注', exact=True)).to_have_value(BASIS)
     done(site)
 
 
