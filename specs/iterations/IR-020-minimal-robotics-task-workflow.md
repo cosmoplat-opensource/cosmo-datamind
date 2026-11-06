@@ -4,7 +4,7 @@
 - **日期 / Date**：2026-11-05。
 - **关联 / Refs**：[DR-066](../decisions/DR-066-minimal-robotics-task-workflow.md)、DR-060、DR-061、DR-062、DR-064。
 - **范围来源**：用户明确选择先打通构建到行为树生成，并要求在 DataMind 内按当前任务缺口完成参数、映射及适配补齐，不依赖 Protégé。
-- **当前环节**：用户确认继续，T02 扩展覆盖通过；T03 77 项测试及全量 11 段回归 GREEN；下一步 T04 为补齐写入、HTTP 与页面联动编写 RED 测试。
+- **当前环节**：T03 77 项及全量 11 段 GREEN；用户确认继续后进入 T04，服务、补齐写入、HTTP、页面与离线演示 RED 测试已编写，待人审覆盖后进入 T05。
 
 ## 目标 Goal
 
@@ -174,7 +174,7 @@ field 为实际属性名或 grasp_compatibility / placement_compatibility，完�
 未填写的参数仅生成输入项；source_extracted 等待确认状态生成确认项，已有值不重复成为参数输入项。
 该 API 不修改 RDF、不生成 XML、不创建运行或版本；现有 grounding、authoring 和 evidence 是规则依据。
 
-### T04 必须补齐的服务与浏览器覆盖矩阵（计划，尚未执行）
+### T04 服务与浏览器覆盖矩阵（测试已编写，RED 待审）
 
 | 场景 | 必须断言的行为 | 验收 |
 |---|---|---|
@@ -193,6 +193,44 @@ field 为实际属性名或 grasp_compatibility / placement_compatibility，完�
 
 只替换外部模型以及合成输入资料；不得 mock 补齐服务、存储、生成器或下载结果。
 该矩阵与新增投影 RED 区分记录，浏览器及写入未运行前不得标成覆盖通过。
+
+### T04 固定的应用边界与轻量交互
+
+本节把已确定的产品范围转为可测试接口，不表示 T05 已实现。
+详细覆盖、旧入口处理和实际运行结果见 [T04 测试覆盖说明](../../docs/audits/IR-020-t04-coverage.md)。
+
+`domain_runs.robotics_task_service.TaskService(root, model_client=None)` 复用现有资产和运行存储，默认模型来自 DataMind 配置。
+提供 start / get / message / choose / complete / read_candidate；用户输入不直接变成编译配置。
+start 固定 ontology_id、version_id、mode 和 request_id；message 接收 text、expected_revision、request_id。
+complete 接收 answers、expected_revision、request_id；revision 和请求标识由页面自动处理，不让用户填写。
+会话至少返回 session_id、ontology_id、version_id、mode、revision、messages、task、status、gaps、run_id、tree、candidate。
+开始为空闲 idle；调用模型期间允许 running；完成后为 generated / needs_clarification / needs_information / unsupported / error。
+补齐提交只携带 gap_id 与对应 value / target / create / confirmed / reference / valid_until / source_asset_ids，不接受任意 RDF 编辑或客户自报的证据范围和摘要。
+新建对象仅提交 kind 和 label，后台分配身份；不自动合并同名对象，不接受客户端强行指定 IRI 或 confirmed。
+已有任务目标缺少实体时，由 choose 接收明确的 field 与 target 或 create 意图；模型提及陌生名字不能自动创建对象。
+重复请求返回原结果；同一 request_id 改内容报 request_conflict，旧 revision 的新提交报 session_conflict。
+数据落盘失败保持旧会话和旧版本，输入由前端保留，同请求可重试。
+新版本 metadata.task_completion 记录 session_id、origin=local_session、authenticated_actor=false；不冒充已认证人工审核。
+
+`AssetStore.load_robotics_application` 保持与严格消费者相同的结构复验，但允许未发布候选试用；不修改旧 load_robotics 的发布要求。
+任务补齐读取与严格生成是不同门槛：已保存但缺参数/关系的候选可以读取并投影缺口，不能先要求它通过完整 SHACL 才允许打开补齐页。
+补齐读取必须核对固定字节与契约，不允许把损坏的技能执行结构当成可填写参数。
+此区分沿用 IR-019 候选可保存尚不完整 RDF 的能力，不修改原 SHACL、发布器或严格生成器以放行半成品。
+补齐完成后重新读取实际 OWL，通过严格消费者、编译与符号验证才产生候选 XML。
+
+HTTP 使用 `/api/robotics/tasks` 建立会话，`/{session_id}` 回看，`/messages` 提交自然语言，`/completion` 提交补齐，`/choices` 提交明确选择/创建，`/candidate?revision=...` 下载本任务当前结果。
+`/api/robotics/imports` 接收可选 OWL 导入；完整校验后存为候选，不自动发布。
+适配附件复用已有 `/api/ontology-assets/{ontology_id}/evidence-sources`；上传本身不改变任务确认状态。
+错误保留稳定 code/message，应用级保护及现有文件大小限制继续生效。
+任务的旧下载链接在任务变化后失效；历史 RunStore 产物保持不可变，历史下载能力不被删除。
+只读预览 tree 使用 tag / attributes / children 层级，由同次运行的实际 XML 生成。
+
+基础路由为 `#robotics-task`，从构建结果或本体入口进入；刷新恢复 URL 中对应的会话，不自动重新提交任务。
+只显示一个“当前版本”；模型未配置时展示设置提示，配置复用引擎设置中的 bt_extract 可选覆盖。
+已有有效参数不重复输入，真正缺值时留空，仅给格式提示；未确认来源值以只读上下文呈现。
+当前任务的知识确认合并为一个明确勾选“我已核对当前任务知识”，后台仍记录具体对象范围，不出现逐对象重复署名表单。
+适配项展示各自实际范围，填写依据和有效期，可选上传附件；明确勾选“我确认以上依据适用于当前范围”后才计为确认。
+高级治理不在默认生成路径中；兼容旧显式知识/评审路由，不删除已有后端和冻结测试。
 
 ### 追加覆盖执行记录（2026-11-05）
 
@@ -216,3 +254,14 @@ tests/meta 21 项通过，三个测试文件的 ruff/mypy 通过。
 UI 64 通过、操作 50 通过/3 未配置模型跳过，机器人构建浏览器 14 通过、治理浏览器 16 通过。
 137 个已审文件、10 个既有冻结生产文件保持不变；新模块在全量期间摘要一致。
 结果见 [T03 机器审计](../../docs/audits/IR-020-t03-green-results.json)；整轮 Deliverables/Acceptance 保留待全部交付后验收。
+
+## T04 RED 记录（2026-11-06）
+
+用户回复“继续下一步”，按本 IR 编写服务、写入、HTTP、页面状态、真实浏览器和离线命令测试。
+新增 118 项：15 个既有能力/夹具对照通过、103 个新功能预期失败，0 收集错误、0 跳过。
+其中 Python/Node 包装测试 108 项为 14 通过/94 失败；真实 Chromium + Gunicorn 浏览器 10 项为 1 通过/9 失败。
+既有 77 项及 21 项元检查全部通过；新增 Python 文件 Ruff/mypy 通过。
+原 137 个已审文件摘要与全部已跟踪生产文件未改变；未修改旧 UI 测试来消除断言。
+RMW-01 至 RMW-13 已映射到实际测试函数，标记 T04 RED 待人审，不提前勾选整轮交付或验收。
+人审入口：[T04 覆盖说明](../../docs/audits/IR-020-t04-coverage.md)；运行证据：[T04 机器结果](../../docs/audits/IR-020-t04-red-results.json)。
+下一步是用户审查覆盖，再进入 T05 实现、离线演示交付及全量回归。
