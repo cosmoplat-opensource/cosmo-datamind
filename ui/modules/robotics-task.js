@@ -38,6 +38,21 @@
     }
     async function submit(operation,args){
       if(dead || state.busy || !state.session)return;
+      if(operation==='completion'){
+        const missing=[];
+        for(const gap of state.session.gaps||[]){
+          const answer=state.answers[gap.id];
+          if(gap.kind!=='applicability' || !answer)continue;
+          const fields=[];
+          if(!String(answer.reference||'').trim())fields.push('适配依据');
+          if(!answer.valid_until)fields.push('有效期');
+          if(fields.length)missing.push(`${gap.label}：请填写${fields.join('和')}`);
+        }
+        if(missing.length){
+          state.error={code:'invalid_answer',operation,message:missing.join('；')+'。勾选确认不能代替依据和有效期。'};
+          notify();return state.session;
+        }
+      }
       const token=generation, original=copy(state.session), answers=copy(state.answers);
       const payload={...args,expected_revision:original.revision};
       payload.request_id=identity({session_id:original.session_id,operation,...payload});
@@ -54,7 +69,7 @@
           if(JSON.stringify(state.answers[id])===JSON.stringify(answer))delete state.answers[id];
         savedAnswers();
         lastRequest=null;
-      }catch(e){if(dead || token!==generation)return;state.error={message:e.message,code:e.code};}
+      }catch(e){if(dead || token!==generation)return;state.error={message:e.message,code:e.code,operation};}
       if(dead || token!==generation)return;state.busy=false;notify();return state.session;
     }
     return {snapshot,open:ref=>load(ref),restore:sid=>load(null,sid),
@@ -85,13 +100,15 @@
       global.history.replaceState(null,'',route);
       const model=view.capabilities?.model || s.model_status || {}, enabled=view.capabilities?.enabled!==false;
       const error=state.error || s.error, busy=state.busy || s.status==='running';
+      const saveError=error?.operation==='completion' && gaps.length;
+      const alert=error?`<p class="rt-error" role="alert" tabindex="-1">${saveError?'保存未成功：':''}${esc(error.message)}</p>`:'';
       const stillCurrent=()=>{const current=view.controller.snapshot().session;return active===view && current?.session_id===s.session_id && current?.revision===s.revision;};
       host.innerHTML=`<div class="rt-heading"><div><h3>${s.mode==='demo'?'独立演示 · ':''}${esc(s.asset_name||'行为树生成')}</h3><p data-testid="task-current-version">当前版本 <code>${esc(s.version_id)}</code></p></div><button type="button" data-new>新任务</button></div>
         <p class="muted">生成离线候选行为树，需经设备侧验证后使用。</p>
         <p data-testid="task-model-status">${!enabled?'机器人功能未启用':model.configured?'任务解析模型：'+esc(model.model):'模型未配置，请到引擎设置完成配置。'} <a href="#enginecfg">模型设置</a></p>
         <label for="rt_text">任务描述</label><textarea id="rt_text" placeholder="例如：把零部件A放到工位B的载具B01、放置位B01">${esc(view.text)}</textarea>
         <div class="rb-actions"><button type="button" data-send ${busy||!enabled||!model.configured?'disabled':''}>生成行为树</button><span role="status">${busy?'处理中…':s.status==='generated'?'行为树已生成':s.status==='needs_information'?'请补齐当前任务需要的信息':s.status==='needs_clarification'?'请明确任务中的对象或目标':''}</span></div>
-        ${error?`<p role="alert">${esc(error.message)}</p>`:''}
+        ${!saveError?alert:''}
         ${s.status==='unsupported'?'<p role="alert">当前仅支持固定抓移放流程，请调整任务描述。</p>':''}
         ${s.status==='needs_clarification'?(s.issues||[]).map(i=>`<div class="rt-choice"><p>${esc(i.message)}</p>${i.field&&['part','station','carrier','slot'].includes(i.field)?`<label>选择对象<select data-choice="${esc(i.field)}"><option value="">请选择</option>${(i.candidates||[]).map(c=>`<option value="${esc(c.id)}">${esc(displayLabel(c.label))}</option>`).join('')}</select></label><button data-create-choice="${esc(i.field)}">新建所需对象</button>`:''}</div>`).join(''):''}
         ${gaps.length?'<section class="rt-completion"><h3>补齐生成信息</h3><p class="muted">已有有效信息直接复用，只需完成下列项目。</p>':''}
@@ -103,7 +120,7 @@
           return `<div class="rt-gap" data-testid="task-gap" data-gap-id="${esc(g.id)}" data-kind="${g.kind}"><h4>${esc(g.label)}</h4><p>${esc(displayLabel(g.entity_label)||'')}</p><p class="muted">${esc(g.reason)}</p>${control}</div>`;
         }).join('')}
         ${confirmations.length?`<div class="rt-confirm"><details><summary>核对当前任务知识（${confirmations.length} 项）</summary>${confirmations.map(g=>`<p>${esc(displayLabel(g.entity_label))} ${esc(Object.values(g.values||{}).join(' · '))}</p>`).join('')}</details><label class="rt-check"><input type="checkbox" data-confirm ${confirmations.every(g=>answer(g.id).confirmed)?'checked':''}>我已核对当前任务知识</label></div>`:''}
-        ${gaps.length?`<button type="button" data-save ${busy||!enabled?'disabled':''}>保存并继续</button></section>`:''}
+        ${gaps.length?`${saveError?alert:''}<button type="button" data-save ${busy||!enabled?'disabled':''}>保存并继续</button></section>`:''}
         ${s.candidate&&s.tree?`<section><h3>行为树预览</h3><div class="rt-tree" data-testid="task-tree" data-run-id="${esc(s.run_id)}"><ul>${renderTree(s.tree)}</ul></div><a data-download href="${prefix}/${encodeURIComponent(s.session_id)}/candidate?revision=${s.revision}">下载行为树 XML</a><details><summary>参数来源与验证报告</summary><pre>${esc(JSON.stringify(s.result,null,2))}</pre></details></section>`:''}
         ${s.messages.length?`<details class="rt-history"><summary>任务对话记录</summary>${s.messages.map(m=>`<p><b>${m.role==='user'?'你':'系统'}：</b>${esc(m.content)}</p>`).join('')}</details>`:''}
         <div class="rb-actions rt-secondary"><a href="#library">返回本体库</a><a href="/api/ontology-assets/${encodeURIComponent(s.ontology_id)}/versions/${encodeURIComponent(s.version_id)}/payload">下载当前 OWL</a>${s.mode==='real'?'<button type="button" class="ghost" data-demo>打开独立演示</button>':''}</div>`;
@@ -125,6 +142,11 @@
       host.querySelectorAll('[data-create-choice]').forEach(el=>el.onclick=()=>{const field=el.dataset.createChoice,label=global.prompt('请输入当前任务所需对象的名称');if(label)view.controller.choose({field,create:{kind:({part:'Workpiece',station:'Workstation',carrier:'Carrier',slot:'PlacementSlot'})[field],label}});});
       host.querySelector('[data-demo]')?.addEventListener('click',async event=>{const button=event.currentTarget;button.disabled=true;try{const result=await json(global.fetch.bind(global),'/api/robotics/task-demo',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({request_id:global.crypto.randomUUID()})});if(stillCurrent()){view.text='';view.creates={};await view.controller.restore(result.session_id);}}catch(e){if(stillCurrent())showError(e.message);}finally{if(button.isConnected)button.disabled=false;}});
       host.querySelector('[data-download]')?.addEventListener('click',async e=>{e.preventDefault();try{const response=await global.fetch(e.currentTarget.href);if(!response.ok){const problem=await response.json();throw new Error(problem.error?.message||'下载失败');}const blob=await response.blob();if(!stillCurrent())return;const url=URL.createObjectURL(blob),a=global.document.createElement('a');a.href=url;a.download='behavior-tree.xml';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);}catch(e){if(stillCurrent())showError(e.message);}});
+      if(error){
+        const notice=host.querySelector('.rt-error');
+        notice?.focus({preventScroll:true});
+        notice?.scrollIntoView({block:'center'});
+      }
       clearTimeout(view.timer);
       if(s.status==='running'&&!state.busy)view.timer=setTimeout(()=>{if(active===view)view.controller.restore(s.session_id);},1000);
     }
