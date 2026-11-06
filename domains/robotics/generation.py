@@ -80,9 +80,13 @@ def _write_xml(root, directory, name):
     return str(target)
 
 
-def generate_task(context, task, *, mode="real", output_dir):
+def generate_task(context, task, *, mode="real", output_dir, purpose="strict"):
     """Generate only after explicit task selection, knowledge and template checks."""
     result = _result(mode)
+    if purpose not in ('strict', 'offline'):
+        return _issue(result, 'invalid_purpose', '未知的生成用途。')
+    if purpose == 'offline':
+        result.update(generation_purpose='offline', task_readiness='not_verified', applicability_issues=[])
     try:
         _validate_task(task)
     except ValueError as exc:
@@ -102,8 +106,13 @@ def generate_task(context, task, *, mode="real", output_dir):
         if task["operation"] != "pick_place":
             return _issue(result, "unsupported_operation", f"当前不支持任务：{task['operation']}", status="unsupported")
         grounding = resolve_request(graph, {field: task[field] for field in ("part", "station", "carrier", "slot")},
-                                    mode=mode, revocations=context.get("evidence_revocations", ()))
+                                    mode=mode, revocations=context.get("evidence_revocations", ()),
+                                    require_applicability=purpose == 'strict')
         result["grounding"] = grounding
+        if purpose == 'offline':
+            result.update(applicability_issues=grounding.get('applicability_issues', []),
+                          task_readiness='evidence_confirmed' if grounding['config'] is not None
+                          and not grounding.get('applicability_issues') else 'not_verified')
         if grounding["issues"]:
             clarification = any(item["code"] in CLARIFICATION_CODES for item in grounding["issues"])
             result.update(status="needs_clarification" if clarification else "needs_information",
@@ -121,6 +130,8 @@ def generate_task(context, task, *, mode="real", output_dir):
             raise ValueError(symbolic["errors"])
         if mode == "demo":
             candidate.insert(0, ET.Comment(" DEMO ONLY - simulated knowledge; NOT FOR ROBOT EXECUTION "))
+        if purpose == 'offline':
+            candidate.insert(0, ET.Comment(' OFFLINE CANDIDATE ONLY - NOT VALIDATED FOR ROBOT EXECUTION; see validation report '))
         validation.update(ontology_sha256=context["validation"]["ontology_sha256"], symbolic_validation=symbolic)
         path = _write_xml(candidate, output_dir, "demo_candidate.xml" if mode == "demo" else "candidate.xml")
         result.update(status="generated", candidate_written=True, candidate_path=path,

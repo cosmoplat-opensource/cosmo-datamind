@@ -255,8 +255,10 @@ def init_app(app, *, workdir, legacy_catalog, start_executor=True):
             bound = set(bindings.values())
             for asset in assets.list_assets():
                 versions = assets.list_versions(asset['ontology_id'])
+                versions = [{**v, 'version_number': i} for i, v in enumerate(versions, 1)]
                 latest = versions[-1] if versions else None
                 item = {**asset, 'entry_kind': 'asset', 'version_id': latest['version_id'] if latest else None,
+                        'version_number': latest['version_number'] if latest else None,
                         'publication_state': latest['publication_state'] if latest else None,
                         'versions': versions}
                 if asset['ontology_id'] in bindings:
@@ -275,7 +277,8 @@ def init_app(app, *, workdir, legacy_catalog, start_executor=True):
         assets = runtime.assets()
         row = assets.get_version(ontology_id, version_id)
         rid = row['metadata'].get('build_run_id')
-        result = {**row, 'asset': assets.get_asset(ontology_id), 'build_run_id': rid,
+        result = {**row, 'version_number': assets.version_number(ontology_id, version_id),
+                  'asset': assets.get_asset(ontology_id), 'build_run_id': rid,
                   'sources': [assets.get_source(sid) for sid in row['source_asset_ids']]}
         if rid:
             runs = runtime.runs()
