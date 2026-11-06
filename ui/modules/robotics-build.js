@@ -136,15 +136,21 @@
     doc.querySelector('#p_build .bc-hero').hidden = robotic;
     panel.hidden = !robotic;
     const ui = global.RoboticsAssets;
-    panel.innerHTML = `<div class="rb-heading"><span class="tag">机器人本体 · XML 导入</span><h2>从行为树构建本体候选</h2><p class="muted">上传两份 XML，系统保存来源快照并在后台构建。成功后可查看待评审版本及下载文件。</p></div>
-      <form id="rb_form" class="card rb-form" novalidate hidden>
-        <label>机器人本体名称<input id="rb_name" maxlength="256" autocomplete="off" placeholder="例如：UR 抓移放工作站"></label>
-        <label>构建模板<select id="rb_profile" aria-label="构建模板"><option value="ur_pick_place">UR 抓移放 · ur_pick_place</option></select></label>
-        <label>主行为树 XML<input id="rb_tree" type="file" accept=".xml,application/xml,text/xml"></label>
-        <label>节点模型 XML<input id="rb_models" type="file" accept=".xml,application/xml,text/xml"></label>
-        <p class="muted rb-wide" id="rb_limits">正在读取构建能力…</p>
-        <div class="rb-actions rb-wide"><button type="submit">构建机器人本体</button><a href="#jobs">查看构建历史</a></div>
-      </form><div id="rb_error" role="alert" hidden></div><section class="card rb-content" data-testid="robotics-run" hidden></section>`;
+    panel.innerHTML = `<header class="rb-hero"><div class="rb-hero-copy"><svg aria-hidden="true" width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="5" r="2.5"/><circle cx="5" cy="18" r="2.5"/><circle cx="19" cy="18" r="2.5"/><path d="M11 7 6 16M13 7l5 9M8 18h8"/></svg><div><h2>机器人本体构建</h2><p>从已有行为树整理技能、参数与业务知识，为任务生成准备本体。</p><div class="rb-pipeline"><span>上传 XML</span><i>→</i><span>构建与检查</span><i>→</i><span>生成行为树</span></div></div></div><span class="rb-hero-badge">构建模板<br><b>UR 抓移放</b></span></header>
+      <div class="rb-workspace"><div class="rb-source-panel card"><div class="rb-section-title"><h3>构建来源</h3><span class="rb-soft-tag">2 份 XML</span></div>
+      <form id="rb_form" class="rb-form" novalidate hidden>
+        <div><label for="rb_name">机器人本体名称</label><input id="rb_name" maxlength="256" autocomplete="off" placeholder="例如：UR 抓移放工作站"></div>
+        <div><label for="rb_profile">构建模板</label><select id="rb_profile" aria-label="构建模板"><option value="ur_pick_place">UR 抓移放 · ur_pick_place</option></select></div>
+        <div class="rb-upload"><div class="rb-upload-title"><span aria-hidden="true">01</span><label for="rb_tree">主行为树 XML</label></div><p>包含抓取、移动与放置的流程。</p><input id="rb_tree" type="file" accept=".xml,application/xml,text/xml"></div>
+        <div class="rb-upload"><div class="rb-upload-title"><span aria-hidden="true">02</span><label for="rb_models">节点模型 XML</label></div><p>定义节点接口及输入、输出参数。</p><input id="rb_models" type="file" accept=".xml,application/xml,text/xml"></div>
+        <p class="muted" id="rb_limits">正在读取构建能力…</p>
+        <div id="rb_error" role="alert" hidden></div>
+        <button type="submit" class="dq-send rb-submit">构建机器人本体</button><a class="rb-history-link" href="#jobs">查看构建历史 →</a>
+      </form></div>
+      <section class="rb-workbench card"><div class="rb-section-title"><h3>构建工作区</h3><span id="rb_stage" class="rb-soft-tag" role="status">等待上传</span></div>
+        <div id="rb_welcome" class="rb-welcome"><div class="rb-empty-mark" aria-hidden="true">◇</div><h3>让已有流程成为可复用的知识</h3><p>在左侧选择两份 XML，点击构建。<br>完成后可查看本体、下载 OWL，并开始描述机器人任务。</p><div class="rb-feature-list"><div><b>技能与流程</b><span>保留原行为树的执行结构</span></div><div><b>配置与参数</b><span>整理已有参数及其来源</span></div><div><b>任务生成</b><span>复用本体，按需补齐信息</span></div></div></div>
+        <section class="rb-content" data-testid="robotics-run" hidden></section>
+      </section></div>`;
     const form = doc.getElementById('rb_form'), runPanel = panel.querySelector('[data-testid="robotics-run"]');
     const error = doc.getElementById('rb_error');
     let controller;
@@ -158,10 +164,12 @@
       error.hidden = !state.error; error.textContent = state.error ? ui.errorText(state.error) : '';
       const row = state.run;
       runPanel.hidden = !row;
+      doc.getElementById('rb_welcome').hidden = !!row;
+      doc.getElementById('rb_stage').textContent = state.busy ? '正在提交' : row ? ui.statusText(row.status) : '等待上传';
       if (!row) return;
       const e = ui.escape, ref = row.output_asset_ref;
       runPanel.dataset.runId = row.run_id; runPanel.dataset.status = row.status;
-      runPanel.innerHTML = `<div class="rb-heading"><span class="tag">${e(ui.statusText(row.status))}</span><h3>${e(row.build_input?.name)}</h3><p>运行 <code>${e(row.run_id)}</code></p></div>
+      runPanel.innerHTML = `<div class="rb-heading"><span class="tag">${e(ui.statusText(row.status))}</span><h3>${e(row.build_input?.name)}</h3><details class="rb-run-meta"><summary>运行详情</summary><code>${e(row.run_id)}</code></details></div>
         ${row.retry_of ? `<p>重试来源 <a href="${e(ui.runLink(row.retry_of))}">${e(row.retry_of)}</a></p>` : ''}
         <ol class="rb-events">${state.events.map(event => `<li data-event-seq="${e(event.seq)}"><span>${e(event.seq)} · ${e(ui.statusText(event.payload?.status || event.payload?.stage || event.kind))}</span><small>${e(event.created_at || '')}</small></li>`).join('')}</ol>
         ${row.result ? ui.readiness(row.result) + ui.issues(row.result.issues) : '<p class="muted">构建在后台运行，离开页面不会取消任务。</p>'}
@@ -188,7 +196,7 @@
       if (active !== controller) return;
       select.disabled = false; form.hidden = false;
       doc.getElementById('rb_limits').textContent = controller.snapshot().enabled
-        ? `两份文件按角色独立保存；单文件上限 ${controller.snapshot().limits.file_bytes} 字节。仅支持 UR 抓移放模板。` : '机器人构建未启用或能力暂不可读，请联系服务管理员。';
+        ? `每份 XML 最大 ${Math.round(controller.snapshot().limits.file_bytes / 1024 / 1024)} MiB。源文件与构建结果均会保留。` : '机器人构建未启用或能力暂不可读，请联系服务管理员。';
       if (runId) await controller.openRun(runId);
     });
   }
