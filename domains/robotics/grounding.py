@@ -44,11 +44,14 @@ def profile_parameters(g, profile, skill):
     return values, sources
 
 
-def resolve_request(g, request, *, mode="real", revocations=()):
+def resolve_request(g, request, *, mode="real", revocations=(), require_applicability=True):
     """Ground names without inventing entities, configuration, or confirmation."""
     result = {"part": None, "part_type": None, "station": None, "carrier": None,
               "slot": None, "issues": [], "config": None, "profiles": {}, "parameter_sources": []}
     issues = result["issues"]
+    applicability_issues = []
+    if not require_applicability:
+        result['applicability_issues'] = applicability_issues
 
     def candidates(items):
         return [{"id": local_name(item), "label": str(g.value(item, RDFS.label) or local_name(item))}
@@ -128,6 +131,7 @@ def resolve_request(g, request, *, mode="real", revocations=()):
     if len(dp) != 1:
         issue("placement_mapping", "slot", "缺少唯一的槽位→机器人目标位姿映射。")
     for kind, implementation in (("grasp_compatibility", S.grasp_Subtree_Impl), ("placement_compatibility", S.Place_Subtree_Impl)):
+        first_issue = len(issues)
         if not compatibility_confirmed(g, kind, implementation, part_type, slot, mode=mode, revocations=revocations):
             issue(kind, "part" if kind == "grasp_compatibility" else "slot", "缺少对应零件/实现/目标的有效、带来源且匹配当前XML版本的适用性确认。")
             from .evidence import policy
@@ -137,6 +141,10 @@ def resolve_request(g, request, *, mode="real", revocations=()):
                        (kind != 'placement_compatibility' or (item, S.forSlot, slot) in g)
                        for item in g.subjects(S.forImplementation, implementation)):
                     issue('evidence_revoked', 'evidence', '对应范围的适配证据已撤销或被替代。')
+        if not require_applicability:
+            # DR-067: report evidence honestly, while retaining every parameter/entity gate.
+            applicability_issues.extend(issues[first_issue:])
+            del issues[first_issue:]
 
     if len(pp) == len(dp) == 1:
         for profile in (pp[0], dp[0]):

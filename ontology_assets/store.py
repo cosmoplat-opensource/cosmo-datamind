@@ -134,6 +134,17 @@ class AssetStore:
             return _version(_required(conn, "SELECT * FROM versions WHERE ontology_id=? AND version_id=?",
                                       (ontology_id, version_id)))
 
+    def _version_number(self, conn, ontology_id, version_id):
+        """DR-067: asset-local ordinal in the append-only registration order."""
+        row = _required(conn, 'SELECT rowid AS position FROM versions WHERE ontology_id=? AND version_id=?',
+                        (ontology_id, version_id))
+        return conn.execute('SELECT COUNT(*) FROM versions WHERE ontology_id=? AND rowid<=?',
+                            (ontology_id, row['position'])).fetchone()[0]
+
+    def version_number(self, ontology_id, version_id):
+        with self.storage.transaction() as conn:
+            return self._version_number(conn, ontology_id, version_id)
+
     def read_payload(self, ontology_id, version_id):
         record = self.get_version(ontology_id, version_id)
         return self.storage.read_bytes(record["path"], record["payload_sha256"])

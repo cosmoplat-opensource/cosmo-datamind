@@ -51,10 +51,14 @@ def _tree(node):
 
 def _clear(state):
     state.update(candidate=None, tree=None, run_id=None, error=None, result=None, gaps=[], issues=[], configurations=[])
+    state.update(optional_gaps=[], task_readiness='not_verified')
 
 
 class TaskService:
-    def __init__(self, root, model_client=None):
+    def __init__(self, root, model_client=None, *, generation_policy='strict'):
+        if generation_policy not in ('strict', 'offline'):
+            raise ValueError('未知的生成策略。')
+        self.generation_policy = generation_policy
         self.assets = AssetStore(root)
         self.storage = self.assets.storage
         self.root = self.storage.root
@@ -84,7 +88,11 @@ class TaskService:
         row = conn.execute('SELECT record FROM robotics_task_sessions WHERE session_id=?', (sid,)).fetchone()
         if row is None:
             raise TaskError('not_found', '指定任务不存在。')
-        return json.loads(row[0])
+        state = json.loads(row[0])
+        state.setdefault('generation_policy', self.generation_policy)
+        state.setdefault('adaptation_notes', [])
+        state['version_number'] = self.assets._version_number(conn, state['ontology_id'], state['version_id'])
+        return state
 
     def _put(self, conn, state):
         conn.execute('INSERT INTO robotics_task_sessions VALUES (?,?) ON CONFLICT(session_id) '
@@ -93,6 +101,9 @@ class TaskService:
     def get(self, session_id):
         with _RDF_LOCK, self.storage.transaction() as conn:
             state = self._get(conn, session_id)
+            if state['generation_policy'] == 'offline' and state.get('task'):
+                self._project(state, self._graph(state, conn, inspect_structure=False),
+                              self.governance._revocations(conn, state['ontology_id']))
             if 'configurations' not in state:
                 state['configurations'] = (inspect_gaps(self._graph(state, conn, inspect_structure=False),
                     state['task'], mode=state['mode'])['configurations'] if state.get('task') else [])
@@ -152,6 +163,8 @@ class TaskService:
                 'asset_name': self.governance._asset(conn, ontology_id)['name'],
                 'version_id': version_id, 'mode': mode, 'revision': 0, 'status': 'idle', 'messages': [],
                 'task': None, 'model_status': self.model.status(), 'execution_readiness': 'not_verified'}
+            state.update(generation_policy=self.generation_policy, adaptation_notes=[],
+                         version_number=self.assets._version_number(conn, ontology_id, version_id))
             _clear(state)
             self._graph(state, conn)
             self._put(conn, state)
@@ -191,6 +204,33 @@ class TaskService:
                 'message': '无法完成本次任务，请检查本体和连接后重试。'})
         return self._finish(state, request_id)
 
+    def _project(self, state, graph, revocations):
+        """DR-067: split optional applicability from required knowledge, without writes."""
+        projection = inspect_gaps(graph, state['task'], mode=state['mode'], revocations=revocations)
+        items = projection['items']
+        optional = [g for g in items if g['kind'] == 'applicability'] if state['generation_policy'] == 'offline' else []
+        required = [g for g in items if g not in optional]
+        status = projection['status']
+        if status == 'needs_information' and not required:
+            status = 'ready'
+        state.update(gaps=required, optional_gaps=optional, issues=projection['issues'],
+                     configurations=projection['configurations'],
+                     task_readiness='evidence_confirmed' if projection['status'] == 'ready' else 'not_verified')
+        for item in state['gaps'] + state['optional_gaps']:
+            subject = URIRef(item['entity_iri'])
+            item['entity_label'] = str(graph.value(subject, RDFS.label) or subject)
+            if item['kind'] == 'mapping':
+                item['target_kind'] = task_knowledge.authoring.RELATIONS[item['field']][1]
+            if item['kind'] == 'confirmation':
+                item['values'] = {name: str(value) for name in ('objectName', 'modelName', 'threshold', 'exposureTime', 'rawValue')
+                                 if (value := graph.value(subject, S[name])) is not None}
+            if item['kind'] == 'applicability':
+                item['scope_labels'] = [str(graph.value(URIRef(item['scope'][key]), RDFS.label)
+                    or item['scope'][key].rsplit('#', 1)[-1])
+                    for key in ('part_type', 'slot', 'implementation') if item['scope'].get(key)]
+                item['saved_answer'] = task_knowledge.pending_answer(graph, item, revocations=revocations)
+        return status
+
     def _evaluate(self, state):
         with _RDF_LOCK:
             # The admitted snapshot was inspected before extraction or controlled edits.
@@ -198,31 +238,17 @@ class TaskService:
             # in generate_application and again in the existing compiler pipeline.
             graph = self._graph(state, inspect_structure=False)
             revocations = self.governance.revocations(state['ontology_id'])
-            projection = inspect_gaps(graph, state['task'], mode=state['mode'], revocations=revocations)
-            state.update(status=projection['status'], gaps=projection['items'], issues=projection['issues'],
-                         configurations=projection['configurations'])
-            for item in state['gaps']:
-                subject = URIRef(item['entity_iri'])
-                item['entity_label'] = str(graph.value(subject, RDFS.label) or subject)
-                if item['kind'] == 'mapping':
-                    item['target_kind'] = task_knowledge.authoring.RELATIONS[item['field']][1]
-                if item['kind'] == 'confirmation':
-                    item['values'] = {name: str(value) for name in ('objectName', 'modelName', 'threshold', 'exposureTime', 'rawValue')
-                                      if (value := graph.value(subject, S[name])) is not None}
-                if item['kind'] == 'applicability':
-                    item['scope_labels'] = [str(graph.value(URIRef(item['scope'][key]), RDFS.label)
-                        or item['scope'][key].rsplit('#', 1)[-1])
-                        for key in ('part_type', 'slot', 'implementation') if item['scope'].get(key)]
-                    item['saved_answer'] = task_knowledge.pending_answer(graph, item, revocations=revocations)
+            state['status'] = self._project(state, graph, revocations)
             if state['status'] != 'ready':
                 if state['status'] == 'error':
                     state['error'] = {'code': 'invalid_ontology', 'message': '本体知识格式不兼容。'}
                 return
             run = generate_application(self.root, ontology_id=state['ontology_id'], version_id=state['version_id'],
                 task=state['task'], mode=state['mode'], session_ref={'namespace': 'robotics_task', 'id': state['session_id']},
-                model_info={'invoked': True, 'provider': 'openai-compatible',
+                purpose=state['generation_policy'], model_info={'invoked': True, 'provider': 'openai-compatible',
                             'model': state['model_status'].get('model') or 'unconfigured'})
             state.update(run_id=run['run_id'], result=run['result'], status=run['result']['status'])
+            state['task_readiness'] = run['result'].get('task_readiness', state['task_readiness'])
             if state['status'] == 'generated':
                 runs = RunStore(self.root)
                 artifact = next(a for a in runs.artifacts(run['run_id']) if a['kind'] == 'candidate')
@@ -264,6 +290,43 @@ class TaskService:
                 'DO UPDATE SET version_id=excluded.version_id,revision=excluded.revision',
                 (state['ontology_id'], version['version_id'], head['revision'] + 1))
         state['version_id'] = version['version_id']
+        state['version_number'] = self.assets._version_number(conn, state['ontology_id'], version['version_id'])
+
+    def generate(self, session_id, *, expected_revision, request_id):
+        return self._edit(session_id, 'generate', {}, expected_revision, request_id)
+
+    def save_notes(self, session_id, *, notes, expected_revision, request_id):
+        """Store optional, version-scoped notes; never manufacture RDF evidence."""
+        with self._atomic() as conn:
+            state = self._get(conn, session_id)
+            replay = self._request(conn, session_id, request_id, 'notes', {'notes': notes, 'revision': expected_revision})
+            if replay is not None:
+                return replay
+            self._revision(state, expected_revision)
+            if state['task'] is None or not isinstance(notes, list) or not 1 <= len(notes) <= 2:
+                raise TaskError('invalid_answer', '请先明确任务，并填写抓取或放置备注。')
+            projection = inspect_gaps(self._graph(state, conn, inspect_structure=False), state['task'], mode=state['mode'])
+            if state['generation_policy'] == 'offline':
+                self._project(state, self._graph(state, conn, inspect_structure=False),
+                              self.governance._revocations(conn, state['ontology_id']))
+            available = {c['field'] for c in projection['configurations']}
+            seen = set()
+            relations = {'grasp_compatibility': 'hasPerceptionProfile', 'placement_compatibility': 'hasPlacementProfile'}
+            for note in notes:
+                if not isinstance(note, dict) or set(note) != {'kind', 'text'} or not isinstance(note['kind'], str):
+                    raise TaskError('invalid_answer', '记录只接受类型和备注文字。')
+                kind = note['kind']
+                if kind not in relations or kind in seen or relations[kind] not in available:
+                    raise TaskError('invalid_answer', '只能记录当前任务已明确的抓取或放置配置。')
+                if not isinstance(note['text'], str) or not note['text'].strip() or len(note['text']) > 4096:
+                    raise TaskError('invalid_answer', '备注必须为 1～4096 字符的非空文字。')
+                seen.add(kind)
+            state['adaptation_notes'] = [n for n in state['adaptation_notes']
+                if n['version_id'] != state['version_id'] or n.get('task') != state['task'] or n['kind'] not in seen]
+            state['adaptation_notes'].extend({**note, 'version_id': state['version_id'], 'task': deepcopy(state['task'])} for note in notes)
+            state['revision'] += 1
+            self._put(conn, state)
+            return self._reply(conn, session_id, request_id, state)
 
     def complete(self, session_id, *, answers, expected_revision, request_id):
         return self._edit(session_id, 'complete', {'answers': answers}, expected_revision, request_id)
@@ -296,6 +359,8 @@ class TaskService:
                 graph, state['task'], sources = task_knowledge.apply_answers(graph, state['task'], args['answers'],
                     mode=state['mode'], revocations=revocations)
                 self._save_version(conn, state, graph, sources)
+            elif operation == 'generate':
+                pass  # Explicit continuation: reuse the selected task; no LLM or version edit.
             elif operation == 'configure':
                 graph = task_knowledge.replace_configuration(graph, state['task'], mode=state['mode'],
                     revocations=self.governance._revocations(conn, state['ontology_id']), **args)

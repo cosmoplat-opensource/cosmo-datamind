@@ -20,7 +20,7 @@ def init_app(app, runtime):
             runtime.writer()
         if not (runtime.root / 'domain.sqlite3').is_file():
             raise TaskError('not_found', '尚无任务记录。')
-        return TaskService(runtime.root)
+        return TaskService(runtime.root, generation_policy='offline')
 
     def body(required, optional=()):
         data = request.get_json()
@@ -73,6 +73,14 @@ def init_app(app, runtime):
     @bp.post('/api/robotics/tasks/<session_id>/completion')
     def complete(session_id):
         return jsonify(service().complete(session_id, **body(('answers', 'expected_revision', 'request_id'))))
+
+    @bp.post('/api/robotics/tasks/<session_id>/generate')
+    def generate(session_id):
+        return jsonify(service().generate(session_id, **body(('expected_revision', 'request_id'))))
+
+    @bp.post('/api/robotics/tasks/<session_id>/notes')
+    def notes(session_id):
+        return jsonify(service().save_notes(session_id, **body(('notes', 'expected_revision', 'request_id'))))
 
     @bp.post('/api/robotics/tasks/<session_id>/choices')
     def choose(session_id):
