@@ -1296,6 +1296,21 @@
         "T06 人工界面与真实模型冒烟、整轮交付确认"
       ],
       "notes": "T05 新增 118 项覆盖全部转绿，最终全量 12 段通过。用户只授权修正一处浏览器预览计数，其余已审测试未改；自动化使用模型替身，真实模型及整轮交付留待 T06。"
+    },
+    {
+      "id": "RMW-14",
+      "iteration": "IR-020",
+      "criterion": "默认复用配置时展示本次感知/放置配置及参数，允许明确更换或新建当前任务配置；保存新版本后重新检查缺项及适配，取消无写入、失败保留输入。",
+      "status": "t06-followup-awaiting-human-delivery",
+      "tests": [
+        "tests/unit/test_robotics_task_configurations.py::test_configuration_summary_is_task_scoped_read_only_and_includes_parameter_sources",
+        "tests/unit/test_robotics_task_configurations.py::test_replace_configuration_invalidates_scope_without_changing_other_slots_or_old_graph",
+        "tests/unit/test_robotics_task_configurations.py::test_invalid_configuration_replacement_cannot_modify_graph",
+        "tests/unit/test_robotics_task_configurations.py::test_create_configuration_requires_completion_and_unresolved_tasks_cannot_replace",
+        "tests/unit/test_robotics_task_configurations.py::test_configuration_http_is_atomic_versioned_idempotent_and_legacy_session_is_readable",
+        "tests/unit/test_robotics_task_configuration_ui.py::test_configuration_replacement_controller_scope_and_draft_retention"
+      ],
+      "notes": "用户批准继续完善当前配置展示与更换；新增独立测试，既有已审测试不改。界面取消、新建、保存及窄屏由浏览器实际复核。"
     }
   ],
   "planned_requirements": []

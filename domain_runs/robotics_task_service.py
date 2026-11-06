@@ -50,7 +50,7 @@ def _tree(node):
 
 
 def _clear(state):
-    state.update(candidate=None, tree=None, run_id=None, error=None, result=None, gaps=[], issues=[])
+    state.update(candidate=None, tree=None, run_id=None, error=None, result=None, gaps=[], issues=[], configurations=[])
 
 
 class TaskService:
@@ -91,8 +91,12 @@ class TaskService:
                      'DO UPDATE SET record=excluded.record', (state['session_id'], json_text(state)))
 
     def get(self, session_id):
-        with self.storage.transaction() as conn:
-            return self._get(conn, session_id)
+        with _RDF_LOCK, self.storage.transaction() as conn:
+            state = self._get(conn, session_id)
+            if 'configurations' not in state:
+                state['configurations'] = (inspect_gaps(self._graph(state, conn, inspect_structure=False),
+                    state['task'], mode=state['mode'])['configurations'] if state.get('task') else [])
+            return state
 
     def _request(self, conn, scope, request_id, operation, args):
         _text(request_id, 'request_id', 128)
@@ -195,7 +199,8 @@ class TaskService:
             graph = self._graph(state, inspect_structure=False)
             revocations = self.governance.revocations(state['ontology_id'])
             projection = inspect_gaps(graph, state['task'], mode=state['mode'], revocations=revocations)
-            state.update(status=projection['status'], gaps=projection['items'], issues=projection['issues'])
+            state.update(status=projection['status'], gaps=projection['items'], issues=projection['issues'],
+                         configurations=projection['configurations'])
             for item in state['gaps']:
                 subject = URIRef(item['entity_iri'])
                 item['entity_label'] = str(graph.value(subject, RDFS.label) or subject)
@@ -263,6 +268,10 @@ class TaskService:
     def complete(self, session_id, *, answers, expected_revision, request_id):
         return self._edit(session_id, 'complete', {'answers': answers}, expected_revision, request_id)
 
+    def configure(self, session_id, *, field, expected_revision, request_id, target=None, create=None):
+        return self._edit(session_id, 'configure', {'field': field, 'target': target, 'create': create},
+                          expected_revision, request_id)
+
     def choose(self, session_id, *, field, expected_revision, request_id, target=None, create=None):
         return self._edit(session_id, 'choose', {'field': field, 'target': target, 'create': create},
                           expected_revision, request_id)
@@ -287,6 +296,12 @@ class TaskService:
                 graph, state['task'], sources = task_knowledge.apply_answers(graph, state['task'], args['answers'],
                     mode=state['mode'], revocations=revocations)
                 self._save_version(conn, state, graph, sources)
+            elif operation == 'configure':
+                graph = task_knowledge.replace_configuration(graph, state['task'], mode=state['mode'],
+                    revocations=self.governance._revocations(conn, state['ontology_id']), **args)
+                self._save_version(conn, state, graph)
+                state['messages'].append({'role': 'user', 'content': '更换' +
+                    ('感知配置' if args['field'] == 'hasPerceptionProfile' else '放置配置') + '，保存为新的本体版本。'})
             else:
                 field, target, spec = args['field'], args['target'], args['create']
                 if field not in ENTITY_FIELDS or not any(i.get('field') == field for i in state['issues']):
@@ -295,7 +310,7 @@ class TaskService:
                 if (target is None) == (spec is None):
                     raise TaskError('invalid_answer', '请选择已有对象或明确新建对象。')
                 if spec is not None:
-                    graph, selected = task_knowledge.create(graph, spec, kind)
+                    graph, selected = task_knowledge.create_entity(graph, spec, kind)
                     self._save_version(conn, state, graph)
                 else:
                     selected = task_knowledge.authoring.iri(target)

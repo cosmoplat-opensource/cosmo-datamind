@@ -42,6 +42,7 @@ class _Projection:
         self.revocations = tuple(revocations)
         self.items = {}
         self.issues = []
+        self.configurations = []
         self.expected_status = 'simulated' if mode == 'demo' else 'confirmed'
 
     def candidates(self, entities):
@@ -84,10 +85,34 @@ class _Projection:
         targets = list(self.graph.objects(entity, S[field]))
         if (len(targets) == 1 and isinstance(targets[0], URIRef)
                 and (targets[0], RDF.type, S[expected_kind]) in self.graph):
+            if field in ('hasPerceptionProfile', 'hasPlacementProfile'):
+                self.configuration(entity, field, targets[0], expected_kind)
             return targets[0]
         self.add('mapping', entity, field, '缺少唯一且类型正确的关联，请选择或新建对应配置。',
                  candidates=self.candidates(self.graph.subjects(RDF.type, S[expected_kind])))
         return None
+
+    def configuration(self, entity, field, profile, kind):
+        """Expose existing task bindings without turning them into missing fields."""
+        parameters = []
+        if kind == 'PerceptionProfile':
+            for name in ('objectName', 'modelName', 'threshold', 'exposureTime'):
+                values = list(self.graph.objects(profile, S[name]))
+                parameters.append({'field': name, 'label': LABELS[name], 'source_iri': str(profile),
+                                   'value': str(values[0]) if len(values) == 1 else None})
+            relation, name, label = 'hasCaptureJoints', 'captureJoints', '拍照关节值'
+        else:
+            relation, name, label = 'hasTargetPose', 'targetPose', '放置位姿'
+        targets = list(self.graph.objects(profile, S[relation]))
+        target = targets[0] if len(targets) == 1 and isinstance(targets[0], URIRef) else None
+        values = list(self.graph.objects(target, S.rawValue)) if target is not None else []
+        parameters.append({'field': name, 'label': label, 'source_iri': str(target) if target is not None else None,
+                           'value': str(values[0]) if len(values) == 1 else None})
+        self.configurations.append({'field': field, 'label': LABELS[field], 'entity_iri': str(entity),
+            'entity_label': str(self.graph.value(entity, RDFS.label) or local_name(entity)),
+            'profile_iri': str(profile), 'profile_label': str(self.graph.value(profile, RDFS.label) or local_name(profile)),
+            'target_kind': kind, 'parameters': parameters,
+            'candidates': self.candidates(self.graph.subjects(RDF.type, S[kind]))})
 
     def parameter(self, entity, field, entity_kind):
         values = list(self.graph.objects(entity, S[field]))
@@ -211,7 +236,7 @@ class _Projection:
 
 
 def inspect_gaps(graph, task, *, mode, now=None, revocations=()):
-    result = {'status': 'error', 'items': [], 'execution_readiness': 'not_verified', 'issues': []}
+    result = {'status': 'error', 'items': [], 'execution_readiness': 'not_verified', 'issues': [], 'configurations': []}
     try:
         task = validate_task(task)
         if not isinstance(graph, Graph):
@@ -229,6 +254,7 @@ def inspect_gaps(graph, task, *, mode, now=None, revocations=()):
         result['issues'] = projection.issues
         if result['status'] != 'needs_clarification':
             result['items'] = list(projection.items.values())
+            result['configurations'] = projection.configurations
     except (ValueError, TypeError, KeyError) as exc:
         result['issues'] = [{'code': exc.code if isinstance(exc, ModelError) else 'invalid_knowledge',
                              'message': str(exc)}]
