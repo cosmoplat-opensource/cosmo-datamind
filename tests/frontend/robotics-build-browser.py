@@ -105,8 +105,12 @@ def test_upload_candidate_download_refresh_and_service_restart(live):
     text = version.inner_text()
     for words in [r'待评审', r'任务适配.{0,5}未评估', r'执行.{0,5}未验证', r'结构.{0,5}通过']:
         assert re.search(words, text), text
+    version.locator('.rb-sources summary').click()
+    source_text = version.locator('.rb-sources').inner_text()
+    assert '构建来源' in source_text and '主行为树 XML' in source_text and '节点模型 XML' in source_text
     for source in fixed:
-        assert source['source_asset_id'] in text and source['sha256'] in text
+        assert source['source_asset_id'] not in source_text and source['sha256'] not in source_text
+        assert f"{source['byte_size'] / 1024:.1f} KB" in source_text
     for kind in ['AtomicSkill', 'CompositeSkill', 'SkillInvocation']:
         expected = row['result']['validation']['ontology_counts'][kind]
         expect(version.locator(f'[data-count-kind="{kind}"]')).to_have_text(str(expected))
