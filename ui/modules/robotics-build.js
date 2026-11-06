@@ -166,7 +166,7 @@
         <ol class="rb-events">${state.events.map(event => `<li data-event-seq="${e(event.seq)}"><span>${e(event.seq)} · ${e(ui.statusText(event.payload?.status || event.payload?.stage || event.kind))}</span><small>${e(event.created_at || '')}</small></li>`).join('')}</ol>
         ${row.result ? ui.readiness(row.result) + ui.issues(row.result.issues) : '<p class="muted">构建在后台运行，离开页面不会取消任务。</p>'}
         ${ui.sources(row.build_input?.sources)}
-        <div class="rb-actions">${ref ? `<a href="${e(ui.versionLink(ref.ontology_id,ref.version_id))}">查看本体候选</a>` : ''}
+        <div class="rb-actions">${ref ? `<a href="${e(global.RoboticsTask.link(ref.ontology_id,ref.version_id))}">生成行为树</a><a href="${e(ui.versionLink(ref.ontology_id,ref.version_id))}">查看本体候选</a>` : ''}
         ${['failed','interrupted'].includes(row.status) && state.enabled ? '<button type="button" data-retry>重试构建</button>' : ''}</div>
         ${ui.downloads(row.artifacts)}<div data-download-error role="alert" hidden></div>`;
       const retryButton = runPanel.querySelector('[data-retry]');

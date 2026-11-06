@@ -1,5 +1,6 @@
 """SQLite transactions and exclusive immutable byte files — DR-059 / DR-064."""
 from contextlib import contextmanager
+from contextvars import ContextVar
 import hashlib
 import os
 from pathlib import Path
@@ -9,6 +10,7 @@ import tempfile
 from srv_context import confine
 
 SCHEMA_VERSION = 5
+_TRANSACTION_FILES = ContextVar('asset_transaction_files', default=None)
 SCHEMA = (
     """CREATE TABLE assets (
         ontology_id TEXT PRIMARY KEY, name TEXT NOT NULL, domain TEXT NOT NULL,
@@ -141,6 +143,8 @@ class Storage:
         database = Path(path).as_uri() + "?mode=ro" if self.read_only else path
         conn = sqlite3.connect(database, uri=self.read_only, timeout=30, isolation_level=None)
         conn.row_factory = sqlite3.Row
+        created = [] if write else None
+        token = _TRANSACTION_FILES.set(created) if write else None
         try:
             conn.execute("PRAGMA foreign_keys=ON")
             conn.execute("BEGIN IMMEDIATE" if write else "BEGIN")
@@ -148,8 +152,13 @@ class Storage:
             conn.commit()
         except BaseException:
             conn.rollback()
+            # DR-064/066: a rejected atomic save cannot leave its private immutable blobs.
+            for target in created or ():
+                target.unlink(missing_ok=True)
             raise
         finally:
+            if token is not None:
+                _TRANSACTION_FILES.reset(token)
             conn.close()
 
     def write_bytes(self, relative, content):
@@ -166,6 +175,9 @@ class Storage:
                 stream.flush()
                 os.fsync(stream.fileno())
             os.link(temporary, target)
+            created = _TRANSACTION_FILES.get()
+            if created is not None:
+                created.append(target)
             directory = os.open(target.parent, os.O_RDONLY | os.O_DIRECTORY)
             try:
                 os.fsync(directory)

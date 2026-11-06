@@ -290,6 +290,8 @@ def init_app(app, *, workdir, legacy_catalog, start_executor=True):
         return jsonify(runtime.public(result))
 
     bp_robotics_review.init_app(app, runtime)
+    from bp_robotics_task import init_app as init_tasks
+    init_tasks(app, runtime)
     app.register_blueprint(bp)
     app.extensions['robotics'] = runtime
     return runtime

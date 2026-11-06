@@ -182,6 +182,10 @@ class AssetStore:
             raise ValueError("只能加载已发布且模式一致的机器人版本。")
         return self._robotics_context(record, mode)
 
+    def load_robotics_application(self, ontology_id, version_id, *, mode="real"):
+        """DR-066: candidate application still uses the complete consumer validation."""
+        return self._robotics_context(self.get_version(ontology_id, version_id), mode)
+
     def _register_legacy(self, entries):
         """Commit each prepared inventory as one transaction; callbacks have no DB lock."""
         results = []

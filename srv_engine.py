@@ -88,7 +88,7 @@ ENGINE_MODEL_OPTS = {
 }
 ENGINE_HERMES_PROVIDERS = ["", "openai-codex", "zai", "deepseek", "moonshot", "qwen-oauth"]
 # B4 按任务选模:每个环节可配独立模型(空=跟随当前引擎缺省)。SQL 计划/叙述可用轻量模型提速,诊断可用强模型保质。
-ENGINE_TASKS = ["plan", "narrative", "diagnose"]
+ENGINE_TASKS = ["plan", "narrative", "diagnose", "bt_extract"]
 ENGINE_TASK_CN = {"plan": "SQL 计划生成", "narrative": "洞察叙述", "diagnose": "根因诊断"}
 
 
