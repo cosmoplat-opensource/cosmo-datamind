@@ -1122,7 +1122,7 @@
         "tests/unit/test_robotics_task_service.py::test_revoked_evidence_is_rechecked_before_new_generation",
         "tests/unit/test_robotics_task_service.py::test_completion_reports_honest_local_origin_not_authenticated_review",
         "tests/unit/test_robotics_task_http.py::test_uploading_evidence_alone_does_not_confirm_task_and_selected_attachment_is_bound",
-        "tests/frontend/robotics-task-browser.py::test_basis_and_expiry_do_not_count_as_confirmation_until_checkbox_is_explicit"
+        "tests/frontend/robotics-task-browser.py::test_optional_notes_do_not_block_generation_or_confirm_applicability"
       ],
       "remaining_test_batches": [
         "T06 人工界面与真实模型冒烟、整轮交付确认"
@@ -1288,7 +1288,7 @@
         "tests/frontend/robotics-task-browser.py::test_real_build_to_inline_completion_generation_download_and_restart",
         "tests/frontend/robotics-task-browser.py::test_missing_parameter_has_no_guessed_default_and_invalid_value_stays_editable",
         "tests/frontend/robotics-task-browser.py::test_unknown_configuration_can_be_created_inline_without_user_iri",
-        "tests/frontend/robotics-task-browser.py::test_basis_and_expiry_do_not_count_as_confirmation_until_checkbox_is_explicit",
+        "tests/frontend/robotics-task-browser.py::test_optional_notes_do_not_block_generation_or_confirm_applicability",
         "tests/unit/test_robotics_task_http.py::test_http_fresh_build_completes_without_generic_actor_reason_or_publish",
         "tests/unit/test_robotics_task_demo_cli.py::test_complete_information_demo_uses_real_scoped_save_and_explicit_synthetic_answers"
       ],
@@ -1311,6 +1311,24 @@
         "tests/unit/test_robotics_task_configuration_ui.py::test_configuration_replacement_controller_scope_and_draft_retention"
       ],
       "notes": "用户批准继续完善当前配置展示与更换；新增独立测试，既有已审测试不改。界面取消、新建、保存及窄屏由浏览器实际复核。"
+    },
+    {
+      "id": "RMW-15",
+      "iteration": "IR-021",
+      "criterion": "基础任务无适配证据也可生成经过软件校验的离线候选，真实显示适配及执行状态；可选备注不确认适配；本体内版本编号稳定并显示保存前后的变化。",
+      "tests": [
+        "tests/unit/test_robotics_offline_candidates.py::test_offline_candidate_is_generated_without_false_applicability_and_strict_still_blocks",
+        "tests/unit/test_robotics_offline_candidates.py::test_offline_http_generates_without_notes_and_notes_do_not_change_version_or_validate_applicability",
+        "tests/unit/test_robotics_offline_candidates.py::test_offline_mode_keeps_required_information_gates",
+        "tests/unit/test_robotics_offline_candidates.py::test_old_task_can_resume_offline_without_llm_and_get_is_read_only",
+        "tests/unit/test_robotics_offline_candidates.py::test_version_numbers_are_asset_local_stable_across_branches_and_reopen",
+        "tests/unit/test_robotics_offline_candidates.py::test_revocation_during_offline_generation_updates_durable_report",
+        "tests/unit/test_robotics_offline_candidates.py::test_offline_still_rejects_tampered_snapshot_and_notes_reject_forged_status",
+        "tests/unit/test_robotics_offline_ui.py::test_offline_controller_requests_and_version_notice",
+        "tests/frontend/robotics-task-browser.py::test_optional_notes_do_not_block_generation_or_confirm_applicability"
+      ],
+      "status": "implementation-in-progress",
+      "notes": "用户明确批准替代基础页面证据必填和长 ID 展示；原严格领域默认契约保留。"
     }
   ],
   "planned_requirements": []
