@@ -64,9 +64,18 @@ released (`rescore.json`), `stats_v4.py`, `stats_dr093.py` and `analysis_ablatio
 4. Model access: the scripts read an OpenAI-compatible endpoint and key from environment variables
    (`DEEPSEEK_API_KEY` or `BIRD_AGENT_API_KEY`; see `evo_env.sh`). All runs used the `deepseek-flash` model; the
    EvoOntology builder ran through the Claude Code CLI with `--model deepseek-flash`.
-5. Ontology builds: `build_evo_v2.py` (EvoOntology builder agent) and `build_dm_v2.py` (DataMind builder, this
-   repository at the commit of this branch); conversion with `dm2evo.py` (`DM2EVO_FULL=1`; Section 6.2 additionally
+5. Ontology builds: `build_evo_v2.py` (EvoOntology builder agent) and `build_dm_v2.py` (DataMind builder: this
+   repository at the commit of this branch, checked out next to the experiment root as `../cosmo-datamind-exp`, the
+   path `build_dm_v2.py` and `bird_datamind.py` expect); conversion with `dm2evo.py` (`DM2EVO_FULL=1`; Section 6.2 additionally
    `DM2EVO_DEDUP=1 DM2EVO_READABLE=1`).
+   Code versions: the ontologies of Sections 3 to 6.1 were built at commit `b9fa576` of this branch (recorded in
+   `ontologies/datamind/<build>/meta.json`); the protocol-v3 and v4 answering runs used `b9fa576` plus the ablation
+   switches that are part of commit `dbe9260`. Commit `dbe9260` also adds the Section 6.2 builder changes, which are on
+   by default; to rebuild the Section 3–6.1 ontologies, check out `b9fa576`, or run `dbe9260` with
+   `DATAMIND_ABLATE=grounding,value_semantics` (this still differs from `b9fa576` in not attaching action nodes from the
+   manufacturing registry to non-manufacturing schemas). Section 6.2 used the code in `results/v4/dr093_frozen_code/`.
+   The answering chain is selected with `DM_ROOT` (set by `run_method.sh` and `queue_v2.py`); the ReAct agent does not
+   use DataMind code.
 6. Runs: `queue_v4.py plan` then `queue_v4.py run`; `audit_infra_v4.py --requeue` before scoring (runs with an API
    connection error or five or more timeouts are rerun).
 
