@@ -1,0 +1,322 @@
+[
+  {
+    "id": "ev_metadata_tables",
+    "source": "ind200.sqlite",
+    "query": "SELECT COUNT(*) FROM dim_table_metadata; SELECT COUNT(*) FROM dim_column_metadata",
+    "result": "200 tables with Chinese names/descriptions; 5002 documented columns. dim_table_metadata.table_name_cn and dim_column_metadata.column_name_cn/column_desc are queryable in-database documentation of every table and column.",
+    "validation_method": "schema and row-count verification",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_status_column_spread",
+    "source": "ind200.sqlite",
+    "query": "SELECT column_name, COUNT(DISTINCT table_name) FROM dim_column_metadata GROUP BY column_name",
+    "result": "column `status` exists in 118 of 200 tables; `remarks` in 92; `updated_by` in 92; `created_by` in 92; `approved_by` in 67; `business_date` in 67; `posting_date` in 67; `event_time` in 67; `priority` in 68; `reason_code` in 69; `row_version` in 67; `data_quality_score` in 92; `is_deleted` in 92; `currency_code` in 40.",
+    "validation_method": "metadata aggregation",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_status_vocab_upper",
+    "source": "ind200.sqlite",
+    "query": "SELECT DISTINCT status FROM fact_gl_entry / fact_inventory_snapshot / fact_shift_report / fact_wip_snapshot",
+    "result": "Document-workflow fact tables use an UPPERCASE controlled vocabulary: CLOSED, APPROVED, IN_PROGRESS, OPEN (e.g. fact_gl_entry=CLOSED,APPROVED; fact_shift_report=CLOSED,APPROVED; fact_work_order_operation=CLOSED,IN_PROGRESS; fact_fixed_asset_transfer=CLOSED,OPEN).",
+    "validation_method": "distinct-value sampling",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_status_vocab_lower",
+    "source": "ind200.sqlite",
+    "query": "SELECT DISTINCT status FROM fact_ap / fact_sales_order / fact_quotation / fact_goods_receipt / fact_safety_plan / fact_safety_audit",
+    "result": "Business-process fact tables use lowercase domain-specific values: fact_ap=closed,open; fact_sales_order=delivered,undelivered,returned; fact_quotation=won,lost,draft; fact_goods_receipt=posted,inspected; fact_safety_plan=closed,active; fact_safety_audit=completed.",
+    "validation_method": "distinct-value sampling",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_status_vocab_chinese",
+    "source": "ind200.sqlite",
+    "query": "SELECT status, COUNT(*) FROM fact_production_order GROUP BY status",
+    "result": "fact_production_order.status uses Chinese values: 已完成(2930), 待生产(27), 生产中(12). dim_column_metadata documents '取值:已完成/待生产/生产中'.",
+    "validation_method": "distinct-value sampling + column_desc",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_remarks_vocabulary",
+    "source": "ind200.sqlite",
+    "query": "SELECT remarks, COUNT(*) FROM fact_equipment_event / fact_inventory_snapshot / fact_batch_quality_hold / fact_attendance GROUP BY remarks",
+    "result": "备注 draws on one shared closed vocabulary across tables: 加急, 客户指定批次, 已电话确认, 跨月处理, 补录, plus the empty string for records with no remark.",
+    "validation_method": "distinct-value sampling",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_remarks_empty_string",
+    "source": "ind200.sqlite",
+    "query": "SELECT SUM(remarks IS NULL), SUM(remarks='') FROM fact_equipment_event",
+    "result": "0 NULL rows, 3602 rows with remarks=''. Absent remarks are stored as the empty string, not SQL NULL.",
+    "validation_method": "null-vs-empty verification",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_operator_namespace",
+    "source": "ind200.sqlite",
+    "query": "SELECT DISTINCT updated_by FROM fact_gl_entry; SELECT COUNT(*) FROM dim_employee WHERE emp_id LIKE 'U%'",
+    "result": "updated_by / created_by / approved_by all draw on the same closed synthetic actor set U0001..U0012. dim_employee.emp_id holds numeric ids 1..122 and contains no 'U' code, so these operator codes are not joinable to dim_employee.",
+    "validation_method": "value-set comparison across tables",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_operator_roles",
+    "source": "ind200.sqlite",
+    "query": "SELECT DISTINCT updated_by FROM fact_equipment_event; SELECT DISTINCT operator_code, handled_by_code FROM fact_equipment_event",
+    "result": "fact_equipment_event carries updated_by (U-codes) independently of operator_code / handled_by_code, which use different, table-local operator namespaces. 更新人 and 操作员 are distinct roles.",
+    "validation_method": "column and value inspection",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_reason_code_join",
+    "source": "ind200.sqlite",
+    "query": "SELECT DISTINCT reason_code FROM fact_condition_monitoring; SELECT COUNT(*) FROM (SELECT DISTINCT reason_code r FROM fact_condition_monitoring WHERE r NOT IN (SELECT code FROM dim_reason_code))",
+    "result": "All distinct reason_code values resolve to dim_reason_code.code (0 unmatched). dim_reason_code exposes short_name and abbreviation for 原因码简称.",
+    "validation_method": "referential containment check",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_currency_join",
+    "source": "ind200.sqlite",
+    "query": "SELECT DISTINCT currency_code FROM fact_emission_event; SELECT code, short_name FROM dim_currency",
+    "result": "currency_code values (CNY, USD, EUR, JPY) match dim_currency.code, which also carries short_name (人民币/美元/欧元/日元) and rate_to_cny.",
+    "validation_method": "referential containment check",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_product_line_twohop",
+    "source": "ind200.sqlite",
+    "query": "SELECT COUNT(*) FROM fact_batch_quality_hold b JOIN dim_product p ON b.prod_id=p.prod_id JOIN dim_product_line l ON p.prod_line_id=l.prod_line_id WHERE l.prod_line_name='PP改性系列'",
+    "result": "53 rows. Fact tables expose prod_id; the product line is reached only through dim_product.prod_line_id -> dim_product_line.prod_line_name. dim_product_line holds PP改性系列 / PA改性系列 / ABS/PC合金系列 / 特种工程塑料系列.",
+    "validation_method": "two-hop join verification",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_equipment_type_twohop",
+    "source": "ind200.sqlite",
+    "query": "SELECT type_id, type_name FROM dim_equipment_type; dim_equipment.type_id",
+    "result": "dim_equipment_type.type_name holds 双螺杆挤出机 / 高速混合机 / 失重式喂料机 / 切粒机 / 除湿干燥机 / 自动包装机, reached from facts via equipment_id -> dim_equipment.type_id.",
+    "validation_method": "two-hop join verification",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_sensor_link",
+    "source": "ind200.sqlite",
+    "query": "SELECT sensor_type, COUNT(*) FROM dim_sensor GROUP BY sensor_type",
+    "result": "dim_sensor carries sensor_name, sensor_type (压力/振动/料位/流量/温度/电流/转速/速度/重量), unit and accuracy. fact_alarm, fact_iot_data, fact_condition_monitoring, fact_predictive_alert and fact_gauge_calibration expose sensor_id.",
+    "validation_method": "dimension inspection",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_factory_link",
+    "source": "ind200.sqlite",
+    "query": "SELECT f.factory_name, ROUND(SUM(e.actual_quantity),2) FROM fact_emission_event e JOIN dim_factory f ON e.factory_id=f.factory_id GROUP BY 1",
+    "result": "fact_emission_event.factory_id joins dim_factory.factory_id (工厂名称). fact_fixed_asset_transfer instead uses target_factory_id / source_factory_id.",
+    "validation_method": "join verification",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_workshop_link",
+    "source": "ind200.sqlite",
+    "query": "SELECT COUNT(*) FROM fact_hazard_observation h JOIN dim_workshop w ON h.workshop_id=w.workshop_id WHERE w.location='青岛二厂A栋'",
+    "result": "67 rows. dim_workshop carries workshop_name and location (位置描述) such as 青岛一厂A栋 / 合肥工厂A栋; fact_hazard_observation and fact_safety_audit expose workshop_id.",
+    "validation_method": "join verification",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_warehouse_link",
+    "source": "ind200.sqlite",
+    "query": "dim_warehouse.warehouse_id / warehouse_name / location; fact_cycle_count.warehouse_id",
+    "result": "dim_warehouse is referenced by warehouse_id (fact_cycle_count, fact_inventory_snapshot, fact_inventory_movement, fact_shipment) and holds factory_id + warehouse_type.",
+    "validation_method": "schema inspection",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_supplier_link",
+    "source": "ind200.sqlite",
+    "query": "fact_ap.supplier_id -> dim_supplier.supplier_id; dim_supplier.supplier_name",
+    "result": "fact_ap and fact_supplier_eval reference dim_supplier.supplier_id; dim_supplier carries supplier_name, credit_level, province, city.",
+    "validation_method": "schema inspection",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_customer_link",
+    "source": "ind200.sqlite",
+    "query": "SELECT industry, COUNT(*) FROM dim_customer GROUP BY industry; dim_customer.last_deal_date",
+    "result": "dim_customer carries cust_id / cust_name / industry (家电,建材,汽车,电动工具,电子电气) / last_deal_date (最近交易日期, e.g. 2026-06-24 present) / first_deal_date. Referenced by cust_id from fact_quotation, fact_sales_order, fact_lead, fact_demand_plan.",
+    "validation_method": "dimension inspection",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_department_link",
+    "source": "ind200.sqlite",
+    "query": "fact_purchase_requisition.dept_id -> dim_department.dept_id (dept_name, region_id)",
+    "result": "采购申请的申请部门 dept_id joins dim_department; dim_department also links to dim_region through region_id.",
+    "validation_method": "schema inspection",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_sales_region_denormalized",
+    "source": "ind200.sqlite",
+    "query": "SELECT DISTINCT sales_region FROM fact_sales_order_line; SELECT region_name FROM dim_region",
+    "result": "fact_sales_order_line.sales_region holds region NAMES (华东,华中,华北,华南,西北,西南) that match dim_region.region_name rather than a region_id. The same name-valued column appears in fact_sales_contract_line, fact_sales_forecast, fact_price_adjustment and fact_lead.",
+    "validation_method": "value-domain comparison",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_storage_days",
+    "source": "ind200.sqlite",
+    "query": "fact_inventory.warehouse_date (入库日期) + fact_inventory.storage_days; dim_column_metadata column_desc = '从入库到今天的天数'",
+    "result": "在库天数 is documented as days elapsed from 入库日期 to the present, so 2026年入库 filters apply to warehouse_date, not to business_date (fact_inventory has no business_date).",
+    "validation_method": "column_desc + value inspection",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_maintenance_interval",
+    "source": "ind200.sqlite",
+    "query": "fact_maintenance_plan.interval_days ('两次维护之间的天数') / interval_hours ('两次维护之间的运行小时数') / next_date (下次维护日期)",
+    "result": "维护间隔 is stored pre-computed on fact_maintenance_plan as both a calendar-day interval and a running-hour interval; next_date is the scheduled 下次维护日期.",
+    "validation_method": "column_desc inspection",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_alarm_is_handled",
+    "source": "ind200.sqlite",
+    "query": "SELECT COUNT(*), SUM(is_handled) FROM fact_alarm",
+    "result": "3109 rows, SUM(is_handled)=3109: the 是否处理 flag is 1 for every fact_alarm row, so per-sensor sums of it tie. dim_column_metadata documents '1=已处理, 0=未处理'.",
+    "validation_method": "aggregate verification",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_priority_degenerate",
+    "source": "ind200.sqlite",
+    "query": "SELECT group_concat(DISTINCT priority) FROM fact_cycle_count / fact_work_order_material / fact_gauge_calibration / fact_condition_monitoring / fact_emission_event / fact_inventory_movement / fact_legacy_material_issue / fact_predictive_alert; fact_hazard_observation",
+    "result": "优先级 is the constant value 3 in eight sampled tables and only varies in fact_hazard_observation (3,4,5). dim_column_metadata describes the domain as 'normal/high/urgent', which does not match the stored numeric values.",
+    "validation_method": "distinct-value sampling",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_likelihood_two_forms",
+    "source": "ind200.sqlite",
+    "query": "SELECT likelihood FROM fact_risk_assessment GROUP BY 1; SELECT likelihood, COUNT(*) FROM fact_hazard_observation GROUP BY 1",
+    "result": "可能性 has two representations: a TEXT ordinal in fact_risk_assessment (unlikely,possible,likely) and an INTEGER 1/2/3 in fact_hazard_observation (and fact_emission_event, fact_safety_action).",
+    "validation_method": "type and value-domain comparison",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_row_version_counter",
+    "source": "ind200.sqlite",
+    "query": "SELECT MIN(row_version), MAX(row_version) FROM fact_hazard_observation",
+    "result": "行版本 ranges over small integers (1..3) and is therefore an optimistic-locking / revision counter, not a document version identifier. Summing or averaging it, as the workload does for 危险源观察 and 销售线索, aggregates that counter.",
+    "validation_method": "range verification",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_data_quality_score_range",
+    "source": "ind200.sqlite",
+    "query": "SELECT MIN(data_quality_score), MAX(data_quality_score), AVG(data_quality_score) FROM fact_shift_report",
+    "result": "数据质量分 lies in [0.9, 1.0] with mean 0.95 - a 0..1 quality ratio attached to the standard fact block of 92 tables.",
+    "validation_method": "range verification",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_date_domain",
+    "source": "ind200.sqlite",
+    "query": "SELECT substr(business_date,1,4), COUNT(*) FROM fact_shift_report GROUP BY 1; same for posting_date",
+    "result": "business_date and posting_date both span calendar years 2025 and 2026 in the sampled tables, so 'N年' filters select on the year of these DATE columns.",
+    "validation_method": "year-domain verification",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_units_variants",
+    "source": "ind200.sqlite",
+    "query": "SELECT DISTINCT column_name, column_name_cn FROM dim_column_metadata WHERE column_name IN ('unit','unit_code','measurement_unit','reading_unit')",
+    "result": "计量单位 is carried under four different column names: unit_code (39 tables, 计量单位), measurement_unit (排放/环境监测), reading_unit (读数单位: condition monitoring, predictive alert, energy meter reading) and unit (dim_sensor 测量单位, fact_iot_data 单位, dim_product, fact_env_record).",
+    "validation_method": "column-name survey",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_iot_unit",
+    "source": "ind200.sqlite",
+    "query": "SELECT unit, COUNT(*) FROM fact_iot_data GROUP BY unit",
+    "result": "fact_iot_data.unit holds %, A, MPa, kg, kg/h, mm/s, rpm, ℃, 包/h - the same unit vocabulary used by fact_predictive_alert.reading_unit.",
+    "validation_method": "distinct-value sampling",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_goods_receipt_ap_join",
+    "source": "ind200.sqlite",
+    "query": "SELECT COUNT(*) FROM fact_goods_receipt g JOIN fact_ap a ON g.gr_id=a.gr_id WHERE g.inspection_result='pass'",
+    "result": "1001 rows. 已付金额合计 for 收货单 is reached through fact_goods_receipt.gr_id -> fact_ap.gr_id -> fact_ap.paid_amount; fact_goods_receipt itself has no amount column. inspection_result takes only pass(1001) / fail(16).",
+    "validation_method": "join verification",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_production_order_inspection",
+    "source": "ind200.sqlite",
+    "query": "fact_production_order.order_id -> fact_inspection_lot.order_id; fact_inspection_lot.lower_limit (下限)",
+    "result": "检验批 is linked to 生产工单 through order_id/工单号, and carries lower_limit / upper_limit for 下限/上限. fact_production_order.status is the Chinese 工单状态.",
+    "validation_method": "join verification",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_grade_values",
+    "source": "ind200.sqlite",
+    "query": "SELECT grade, COUNT(*) FROM fact_production_output GROUP BY grade",
+    "result": "fact_production_output.grade (产品等级) takes 一等品, 优等品, 合格品, 返工品; the table also carries quantity (产出数量) and output_date (产出日期).",
+    "validation_method": "distinct-value sampling",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_audit_and_absence_enums",
+    "source": "ind200.sqlite",
+    "query": "SELECT audit_type FROM fact_safety_audit GROUP BY 1; SELECT absence_type FROM fact_attendance GROUP BY 1",
+    "result": "审计类型 = 月度安全审计/专项审计; 缺勤类型 = 事假/年假/病假 plus the empty string. Feedback results and complaint/appeal states follow the same pattern of a small table-local controlled vocabulary.",
+    "validation_method": "distinct-value sampling",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_expected_quantity_aliases",
+    "source": "ind200.sqlite",
+    "query": "dim_column_metadata.column_name_cn for amount/quantity/actual_quantity/qualified_quantity/qualified_quantity/planned_quantity",
+    "result": "Measure columns are polymorphic: `amount` is documented per table (应付金额, 订单金额, 退货金额, 价税合计...), and `quantity` is 库存数量(吨) in fact_inventory but 收货数量(吨) in fact_goods_receipt. Bare 数量/金额 must be resolved against the target table's own column_name_cn.",
+    "validation_method": "column_desc survey",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_is_deleted_constant",
+    "source": "ind200.sqlite",
+    "query": "SELECT is_deleted, COUNT(*) FROM fact_gauge_calibration GROUP BY 1",
+    "result": "逻辑删除标记 is 0 for all 150 sampled fact_gauge_calibration rows; the workload asks for sums of this flag, which therefore aggregate to 0 unless deleted rows exist.",
+    "validation_method": "distinct-value sampling",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_batch_key",
+    "source": "ind200.sqlite",
+    "query": "batch_no / lot_no present in fact_batch_quality_hold, fact_wip_snapshot, fact_inventory_snapshot, fact_lot_trace",
+    "result": "批次号 (batch_no) and 批号 (lot_no) are parallel text keys used across the quality, inventory and traceability facts.",
+    "validation_method": "schema inspection",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_invoice_shipment_link",
+    "source": "ind200.sqlite",
+    "query": "SELECT COUNT(*) FROM fact_invoice i WHERE i.delivery_id IN (SELECT delivery_id FROM fact_shipment); SELECT delivery_id, COUNT(*) FROM fact_shipment GROUP BY 1 HAVING COUNT(*)>1",
+    "result": "5162 of 5162 fact_invoice rows link to fact_shipment on delivery_id; fact_shipment.delivery_id is unique (1..5113) and numerically coincides with shipment_id in this data, so 发票 -> 发运单 is a one-to-many reference on delivery_id. fact_invoice also carries invoice_date, amount_no_tax, tax_amount, total_amount and days_to_invoice.",
+    "validation_method": "referential containment check",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_return_reason_vocab",
+    "source": "ind200.sqlite",
+    "query": "SELECT reason, COUNT(*) FROM fact_return GROUP BY 1",
+    "result": "fact_return.reason (退货原因) is a closed vocabulary of five reasons: 产品质量问题:冲击强度偏低(31), 包装破损受潮(9), 客户订单变更取消(12), 规格型号发错(9), 颜色与样板不符(22). fact_return also carries order_id, return_date, quantity and amount.",
+    "validation_method": "distinct-value sampling",
+    "timestamp": "2026-10-10"
+  }
+]

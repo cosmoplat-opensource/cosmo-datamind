@@ -1,0 +1,114 @@
+[
+  {
+    "id": "evidence_schema_inspection",
+    "source": "debit_card_specializing (SQLite, read-only)",
+    "query": "sqlite3 \".schema\" and \".tables\"",
+    "result": "Five base tables: customers(CustomerID PK, Segment, Currency); gasstations(GasStationID PK, ChainID, Country, Segment); products(ProductID PK, Description); transactions_1k(TransactionID PK, Date, Time, CustomerID, CardID, GasStationID, ProductID, Amount, Price); yearmonth(CustomerID, Date, Consumption, PK(Date, CustomerID)).",
+    "validation_method": "Read-only schema dump of the target SQLite file",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_row_counts",
+    "source": "debit_card_specializing",
+    "query": "SELECT COUNT(*) per table; COUNT(DISTINCT key) per table",
+    "result": "customers 32461 rows / 32461 distinct CustomerID; gasstations 5716 / 5716; products 591 / 591; transactions_1k 1000 / 1000; yearmonth 383282 rows / 30566 distinct CustomerID.",
+    "validation_method": "Count aggregation over each table",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_customer_domains",
+    "source": "debit_card_specializing",
+    "query": "SELECT Segment, COUNT(*) FROM customers GROUP BY 1; SELECT Currency, COUNT(*) FROM customers GROUP BY 1; SELECT Segment, Currency, COUNT(*) FROM customers GROUP BY 1,2",
+    "result": "Segment: KAM 2040, LAM 3658, SME 26763. Currency: CZK 30459, EUR 2002. No NULL in either column.",
+    "validation_method": "Grouped distinct-value counts and NULL checks",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_gasstation_domains",
+    "source": "debit_card_specializing",
+    "query": "SELECT Country, COUNT(*) FROM gasstations GROUP BY 1; SELECT Segment, COUNT(*) FROM gasstations GROUP BY 1; SELECT COUNT(DISTINCT ChainID) FROM gasstations",
+    "result": "Country: CZE 4836, SVK 880. Segment: Discount 294, Noname 1005, Other 2392, Premium 1428, Value for money 597. 233 distinct ChainID. No NULL in Country or Segment.",
+    "validation_method": "Grouped distinct-value counts and NULL checks",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_segment_name_collision",
+    "source": "debit_card_specializing",
+    "query": "Compare the Segment column of customers with the Segment column of gasstations",
+    "result": "Both tables expose a column named Segment. customers.Segment values {KAM, LAM, SME} and gasstations.Segment values {Discount, Noname, Other, Premium, Value for money} are disjoint; the intersection is empty.",
+    "validation_method": "Value-domain comparison of two identically named columns",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_transaction_scope",
+    "source": "debit_card_specializing",
+    "query": "SELECT MIN(Date), MAX(Date), MIN(Time), MAX(Time) FROM transactions_1k; SELECT DISTINCT Date FROM transactions_1k ORDER BY 1",
+    "result": "Date spans 2012-08-23 to 2012-08-26 only (4 distinct dates); Time spans 00:07:00 to 23:20:00 and is stored as zero-padded HH:MM:SS text.",
+    "validation_method": "Range and distinct-value inspection",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_transaction_cardinality",
+    "source": "debit_card_specializing",
+    "query": "SELECT COUNT(DISTINCT CardID), COUNT(DISTINCT CustomerID), COUNT(DISTINCT GasStationID), COUNT(DISTINCT ProductID) FROM transactions_1k",
+    "result": "902 distinct CardID, 517 distinct CustomerID, 437 distinct GasStationID, 28 distinct ProductID across 1000 rows.",
+    "validation_method": "Distinct-key counts",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_yearmonth_scope",
+    "source": "debit_card_specializing",
+    "query": "SELECT MIN(Date), MAX(Date), COUNT(DISTINCT Date) FROM yearmonth; SELECT DISTINCT substr(Date,1,4) FROM yearmonth; SELECT COUNT(*) FROM yearmonth WHERE CAST(substr(Date,1,4) AS INT)=2012",
+    "result": "Date spans '201112' to '201311' with 21 distinct values (6-character YYYYMM text); years present 2011-2013; 158808 rows fall in 2012. Consumption is never NULL.",
+    "validation_method": "Range, format and NULL inspection",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_join_integrity",
+    "source": "debit_card_specializing",
+    "query": "COUNT(*) of transactions_1k joined to customers / gasstations / products on their id columns; COUNT(*) of yearmonth joined to customers",
+    "result": "1000/1000 transactions resolve to a customers row, 1000/1000 to a gasstations row, 1000/1000 to a products row; 383282/383282 consumption rows resolve to a customers row. No orphan references in either direction.",
+    "validation_method": "Inner-join row-count reconciliation",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_customer_coverage",
+    "source": "debit_card_specializing",
+    "query": "COUNT(DISTINCT y.CustomerID) FROM yearmonth y WHERE NOT EXISTS (SELECT 1 FROM customers c WHERE c.CustomerID=y.CustomerID); same test against transactions_1k",
+    "result": "All 30566 consumption customers exist in customers (32461 total, so 1895 customers have no consumption record). Only 517 customers appear in transactions_1k; 30049 consumption customers have no transaction in the sample.",
+    "validation_method": "Anti-join coverage check",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_card_customer_dependency",
+    "source": "debit_card_specializing",
+    "query": "SELECT CardID, COUNT(DISTINCT CustomerID) FROM transactions_1k GROUP BY CardID HAVING COUNT(DISTINCT CustomerID)>1",
+    "result": "Zero CardIDs map to more than one CustomerID, while a single CustomerID can hold up to 17 distinct CardIDs (CustomerID 31543). Cards are therefore dependent on, not equivalent to, customers.",
+    "validation_method": "Functional-dependency check on CardID",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_amount_price_ranges",
+    "source": "debit_card_specializing",
+    "query": "SELECT MIN(Amount),MAX(Amount),MIN(Price),MAX(Price) FROM transactions_1k; SELECT COUNT(*) FROM transactions_1k WHERE Amount=0; SELECT ROUND(SUM(Price),2), ROUND(SUM(Price)/SUM(Amount),2) FROM transactions_1k",
+    "result": "Amount ranges 0-264 with 91 zero-quantity lines; Price ranges 1.76-5762.49. Total Price over the sample is 425576.16 and the sample-wide ratio SUM(Price)/SUM(Amount) is 21.63.",
+    "validation_method": "Range, zero-value and ratio computation",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_product_description_duplicates",
+    "source": "debit_card_specializing",
+    "query": "SELECT COUNT(*), COUNT(DISTINCT Description) FROM products; SELECT Description, COUNT(*) FROM products GROUP BY 1 HAVING COUNT(*)>1 ORDER BY 2 DESC",
+    "result": "591 product rows carry only 529 distinct descriptions; 51 descriptions are reused by multiple ProductIDs (e.g. 'Servisni poplatek' 4x, 'Ostatni zbozi' 4x, 'Vratne obaly' 3x). Products include non-fuel items such as fees and services.",
+    "validation_method": "Duplicate-value analysis on Description",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_consumption_by_currency_2012",
+    "source": "debit_card_specializing",
+    "query": "SELECT c.Currency, ROUND(SUM(y.Consumption),2) FROM yearmonth y JOIN customers c ON y.CustomerID=c.CustomerID WHERE substr(y.Date,1,4)='2012' GROUP BY 1",
+    "result": "2012 summed Consumption is 404716983.98 for CZK customers and 2192413.81 for EUR customers, a ratio near 185, whereas the underlying customer counts are 25134 CZK vs 1629 EUR (ratio near 15).",
+    "validation_method": "Cross-tabulation of consumption against customer currency",
+    "timestamp": "2026-10-10"
+  }
+]

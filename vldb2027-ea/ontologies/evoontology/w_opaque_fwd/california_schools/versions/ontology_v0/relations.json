@@ -1,0 +1,126 @@
+[
+  {
+    "id": "rel_district_school_composition",
+    "source": "term_school_district",
+    "relation_type": "composition",
+    "target": "term_school",
+    "connection_condition": "A school row carries its district name in tab03.fld045; the district is not stored as a separate keyed entity, so the link is by exact district name.",
+    "description": "A district is composed of the schools that carry its district name; a school record cannot exist without an operating district, and district-level values repeat on every school row.",
+    "evidence": [
+      "ev_blank_school_names"
+    ]
+  },
+  {
+    "id": "rel_school_sat_composition",
+    "source": "term_school",
+    "relation_type": "composition",
+    "target": "term_sat_report",
+    "connection_condition": "tab02.fld030 is the CDS code of the reporting unit and corresponds to tab03.fld001 after leading-zero normalization.",
+    "description": "A SAT report is a performance record attached to a reporting unit; without the school or district there is no meaningful SAT record.",
+    "evidence": [
+      "ev_join_sat",
+      "ev_id_lengths"
+    ]
+  },
+  {
+    "id": "rel_school_frpm_composition",
+    "source": "term_school",
+    "relation_type": "composition",
+    "target": "term_frpm_report",
+    "connection_condition": "tab01.fld001 equals tab03.fld001 as a 14-character CDS code.",
+    "description": "A meal-eligibility report is an annual record attached to a school; each school has one row, and the record is meaningless without the school.",
+    "evidence": [
+      "ev_join_frpm"
+    ]
+  },
+  {
+    "id": "rel_cds_equivalence",
+    "source": "term_school_cds_code",
+    "relation_type": "equivalence",
+    "target": "term_sat_cds_code",
+    "connection_condition": "The same CDS identifier value appears in tab03.fld001/tab01.fld001 (14 characters) and tab02.fld030 (13 or 14 characters because a leading zero is sometimes dropped).",
+    "description": "Both terms designate the same school identifier; the SAT table is just a differently formatted representation.",
+    "evidence": [
+      "ev_id_lengths",
+      "ev_join_sat"
+    ]
+  },
+  {
+    "id": "rel_grade_span_equivalence",
+    "source": "term_grade_span",
+    "relation_type": "equivalence",
+    "target": "term_alternate_grade_span",
+    "connection_condition": "tab03.fld073 and fld074 both hold text grade ranges; they agree on most schools and differ on 2487.",
+    "description": "The two columns express the same grade-span concept through different recordings; fld073 is the more complete representation.",
+    "evidence": [
+      "ev_grade_span"
+    ]
+  },
+  {
+    "id": "rel_excellence_rate_derivation",
+    "source": "term_sat_ge1500_count",
+    "relation_type": "derivation",
+    "target": "term_excellence_rate",
+    "connection_condition": "Excellence rate for a SAT record equals tab02.fld040 divided by tab02.fld036.",
+    "description": "The excellence rate is derived by dividing the number of test takers scoring at least 1500 by the number of test takers; no stored percentage column exists.",
+    "evidence": [
+      "ev_excellence_rate",
+      "ev_schema_overview"
+    ]
+  },
+  {
+    "id": "rel_eligible_free_rate_derivation",
+    "source": "term_free_meal_count_k12",
+    "relation_type": "derivation",
+    "target": "term_eligible_free_rate_k12",
+    "connection_condition": "Eligible free rate equals tab01.fld020 divided by tab01.fld019 and is also stored directly in fld021.",
+    "description": "The K-12 eligible free rate is derived from the free meal count and K-12 enrollment.",
+    "evidence": [
+      "ev_frpm_rate_identity"
+    ]
+  },
+  {
+    "id": "rel_state_special_school_hierarchy",
+    "source": "term_state_special_school",
+    "relation_type": "hierarchy",
+    "target": "term_school",
+    "connection_condition": "Rows with tab03.fld069 = 'SSS' are a subset of directory rows.",
+    "description": "A State Special School is a specific category of public school; its three rows are a subset of the school directory.",
+    "evidence": [
+      "ev_sss_schools"
+    ]
+  },
+  {
+    "id": "rel_high_school_hierarchy",
+    "source": "term_high_school",
+    "relation_type": "hierarchy",
+    "target": "term_school",
+    "connection_condition": "Rows with tab03.fld067 = '66' are a subset of directory rows.",
+    "description": "A high school is a specific category of school; the 1776 High Schools (Public) rows are a subset of all directory rows.",
+    "evidence": [
+      "ev_school_type"
+    ]
+  },
+  {
+    "id": "rel_school_administrator_composition",
+    "source": "term_school",
+    "relation_type": "composition",
+    "target": "term_school_administrator",
+    "connection_condition": "Administrator name and e-mail are stored in tab03.fld079-fld087 on the same row as the school.",
+    "description": "The administrator contact is part of the school directory record; it has no independent identifier or record of its own.",
+    "evidence": [
+      "ev_admin"
+    ]
+  },
+  {
+    "id": "rel_county_district_association",
+    "source": "term_county",
+    "relation_type": "association",
+    "target": "term_school_district",
+    "connection_condition": "The county appears as a text attribute (tab03.fld044) on rows of the district; there is no county table to reference.",
+    "description": "Districts operate within a county and share its name space, but county and district are related only through text attributes, with no structural identifier link.",
+    "evidence": [
+      "ev_place_ambiguity"
+    ]
+  }
+]

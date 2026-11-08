@@ -1,0 +1,218 @@
+[
+  {
+    "id": "evidence_results_grain_and_counts",
+    "source": "formula_1",
+    "query": "SELECT COUNT(*) FROM each of circuits, constructors, drivers, seasons, races, constructorResults, constructorStandings, driverStandings, lapTimes, pitStops, qualifying, status, results",
+    "result": "results 23657; driverStandings 31578; lapTimes 420369; constructorStandings 11836; constructorResults 11082; qualifying 7397; pitStops 6070; races 976; drivers 840; constructors 208; status 134; circuits 72; seasons 68",
+    "validation_method": "read-only SQLite row counts over an immutable connection",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_seasons_races",
+    "source": "formula_1",
+    "query": "SELECT MIN(year), MAX(year), COUNT(*) FROM seasons; SELECT MIN(date), MAX(date) FROM races; SELECT COUNT(*) FROM (SELECT year, round, COUNT(*) c FROM races GROUP BY year, round HAVING c>1)",
+    "result": "seasons 1950-2017, 68 rows; races 976 rows from 1950-05-13 to 2017-11-26 with 68 distinct years; no duplicate year and round; no season year without races and no racing year without a season row; no race whose date year differs from its season year",
+    "validation_method": "range, coverage and uniqueness check",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_race_win_position",
+    "source": "formula_1",
+    "query": "SELECT SUM(CASE WHEN position=1 THEN 1 ELSE 0 END), SUM(CASE WHEN positionOrder<=3 THEN 1 ELSE 0 END) FROM results",
+    "result": "wins with position equal to 1: 973; top-three entries by positionOrder: 2932",
+    "validation_method": "aggregate verification of the finishing-position definitions",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_position_text_codes",
+    "source": "formula_1",
+    "query": "SELECT r.positionText, r.statusId, s.status, COUNT(*) FROM results r JOIN status s ON s.statusId=r.statusId WHERE r.positionText IN ('R','D','E','W','F','N') GROUP BY r.positionText, r.statusId ORDER BY r.positionText, 4 DESC",
+    "result": "R 8495 rows mapping to non-finish statuses led by Engine 1819, Accident 908, Gearbox 750, Spun off 746; F 1368 rows mapping to Did not qualify 1025, Did not prequalify 331, 107 percent rule 9 and Injury 3; W 323 rows led by Withdrew 224; N 190 rows led by Not classified 171; D 141 rows led by Disqualified 137; E 9 rows mapping to Excluded 8 and Underweight 1",
+    "validation_method": "cross-tabulation of classification code against car status",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_position_null",
+    "source": "formula_1",
+    "query": "SELECT CASE WHEN position IS NULL THEN 'NULL' ELSE 'not null' END, COUNT(*) FROM results GROUP BY 1; SELECT positionText, COUNT(*) FROM results WHERE position IS NULL GROUP BY positionText ORDER BY 2 DESC",
+    "result": "10528 rows with NULL position against 13129 with a value; among the NULL rows 10526 carry a non-numeric code or an empty code and 2 rows carry numeric codes 11 and 14",
+    "validation_method": "null census and cross-tabulation",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_status_domain",
+    "source": "formula_1",
+    "query": "SELECT statusId, status FROM status ORDER BY statusId; SELECT statusId, COUNT(*) FROM results GROUP BY statusId ORDER BY 2 DESC; SELECT statusId, status FROM status WHERE statusId NOT IN (SELECT DISTINCT statusId FROM results)",
+    "result": "134 status rows; the most frequent result statuses are Finished 5966, +1 Lap 3265, Engine 1971, +2 Laps 1486 and Did not qualify 1025; only statuses 133 (+49 Laps) and 134 (+38 Laps) never occur in results",
+    "validation_method": "reference-table census and coverage check against results",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_points_system_eras",
+    "source": "formula_1",
+    "query": "SELECT ra.year, MAX(r.points) FROM results r JOIN races ra ON ra.raceId=r.raceId WHERE r.position=1 GROUP BY ra.year; SELECT GROUP_CONCAT(DISTINCT ra.year) FROM results r JOIN races ra ON ra.raceId=r.raceId WHERE r.position=1 AND r.points=<value>",
+    "result": "winner base value 8 in 1950-1960, 9 in 1961-1990, 10 in 1991-2009 and 25 in 2010-2017; the value 9 also appears for winners in 1950-1959 because of a fastest-lap bonus point; the 2014 season alone contains a winning entry worth 50.0 points, from double points at the final round; fractional values 0.5, 1.33, 1.5, 3.14, 4.14, 2.5, 4.5, 6.5 and 8.5 appear in 1952-1956 and indicate points shared between drivers",
+    "validation_method": "year-by-year detection of the scoring value awarded for first place",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_points_nonfinishers_scored",
+    "source": "formula_1",
+    "query": "SELECT statusId, COUNT(*) c, SUM(CASE WHEN points>0 THEN 1 ELSE 0 END) pos FROM results GROUP BY statusId ORDER BY c DESC",
+    "result": "Finished 5966 rows with 5082 scoring; +1 Lap 3265 rows with 1094 scoring; +2 Laps 1486 rows with 223 scoring; Engine 1971 rows with 14 scoring; +3 Laps 719 rows with 78 scoring",
+    "validation_method": "cross-tabulation of car status against non-zero points",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_constructor_points_mismatch",
+    "source": "formula_1",
+    "query": "SELECT COUNT(*) FROM constructorResults cr JOIN (SELECT raceId, constructorId, SUM(points) p FROM results GROUP BY raceId, constructorId) r ON r.raceId=cr.raceId AND r.constructorId=cr.constructorId WHERE ABS(COALESCE(cr.points,0)-COALESCE(r.p,0))>0.001; grouped by year",
+    "result": "302 mismatching constructor-race rows, distributed year by year only across 1958-1978; examples include the 1978 Belgian Grand Prix where Team Lotus records 9.0 against a driver sum of 15.0 and the 1978 Argentine Grand Prix where McLaren records 3.0 against a sum of 4.0",
+    "validation_method": "reconciliation of constructorResults against aggregated result points with a year breakdown",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_standings_cumulative",
+    "source": "formula_1",
+    "query": "SELECT ds.raceId, ra.round, ds.points, ds.position, ds.wins FROM driverStandings ds JOIN races ra ON ra.raceId=ds.raceId WHERE ds.driverId=(SELECT driverId FROM drivers WHERE driverRef='hamilton') AND ra.year=2017 ORDER BY ra.round; SELECT COUNT(*) FROM (SELECT raceId, driverId, COUNT(*) c FROM driverStandings GROUP BY raceId, driverId HAVING c>1)",
+    "result": "For Hamilton in 2017 the points run 18, 43, 61, 73, 98, 104, 129, 139, 151, 176, 188, 213, 238, 263 across rounds 1 to 14, showing a season-to-date accumulation, with position moving from 2 to 1 at round 13 and wins rising from 0 to 7; there are no duplicate race and driver rows in driverStandings (31578 rows)",
+    "validation_method": "ordering of a single driver's season rows and a uniqueness check",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_standings_coverage",
+    "source": "formula_1",
+    "query": "SELECT COUNT(DISTINCT raceId) FROM driverStandings; same for constructorStandings and constructorResults; SELECT ra.year, ra.round, ra.name FROM races ra WHERE ra.raceId NOT IN (SELECT DISTINCT raceId FROM constructorStandings) ORDER BY ra.year",
+    "result": "driverStandings covers 970 of 976 races, missing 2017 rounds 15 to 20; constructorStandings covers 906 races, missing every race from 1950 to 1957 and the same 2017 rounds 15 to 20; constructorResults covers 907 races; both standings tables have no duplicate race and driver or race and constructor rows",
+    "validation_method": "distinct-race coverage count and explicit listing of uncovered races",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_results_milliseconds_lead_lap_only",
+    "source": "formula_1",
+    "query": "SELECT position, positionText, time, milliseconds, laps FROM results WHERE raceId=972 ORDER BY positionOrder; SELECT SUM(CASE WHEN time IS NULL THEN 1 ELSE 0 END), COUNT(*) FROM results",
+    "result": "In race 972 the winner records 5288743 milliseconds over 52 laps and places 2 to 8 record cumulative values with relative gaps in the time column; places 9 to 15 cover 51 or 50 laps and hold NULL for both time and milliseconds; 17696 of 23657 result rows have NULL time",
+    "validation_method": "row-level inspection of a race plus a null census",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_lapped_finishers_time_null",
+    "source": "formula_1",
+    "query": "SELECT time, COUNT(*) FROM results WHERE milliseconds IS NULL AND positionText NOT IN ('R','F','D','E','W','N') GROUP BY time ORDER BY 2 DESC",
+    "result": "7173 rows are classified with a numeric classification code yet have NULL milliseconds and a NULL time, confirming that lapped but classified finishers carry no race time; a single row holds a malformed value of +1:10",
+    "validation_method": "null census restricted to classified entries",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_grid_zero",
+    "source": "formula_1",
+    "query": "SELECT grid, COUNT(*) FROM results GROUP BY grid ORDER BY grid LIMIT 8; SELECT positionText, COUNT(*) FROM results WHERE grid=0 GROUP BY positionText ORDER BY 2 DESC",
+    "result": "grid 0 occurs 1565 times while grid 1 occurs 980 times; among grid-0 entries 1348 failed to qualify, 199 withdrew, 7 were excluded, 6 disqualified, 4 retired and 1 was classified tenth",
+    "validation_method": "value distribution and cross-tabulation of grid 0 against classification codes",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_qualifying_availability",
+    "source": "formula_1",
+    "query": "SELECT ra.year, SUM(CASE WHEN q.q1 IS NULL THEN 1 ELSE 0 END), SUM(CASE WHEN q.q2 IS NULL THEN 1 ELSE 0 END), SUM(CASE WHEN q.q3 IS NULL THEN 1 ELSE 0 END), COUNT(*) FROM qualifying q JOIN races ra ON ra.raceId=q.raceId GROUP BY ra.year ORDER BY ra.year",
+    "result": "7397 qualifying rows covering 1994-2017; q2 and q3 are empty for essentially every row before 2005, q2 becomes populated from 2005 and q3 from 2006 onward, and from 2017 residual nulls in q1, q2 and q3 correspond to drivers eliminated in earlier sessions",
+    "validation_method": "per-year null census of the three session columns",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_laptimes_availability",
+    "source": "formula_1",
+    "query": "SELECT MIN(ra.year), MAX(ra.year), COUNT(DISTINCT lt.raceId), MIN(lt.milliseconds), MAX(lt.milliseconds), SUM(CASE WHEN lt.milliseconds IS NULL THEN 1 ELSE 0 END), COUNT(*) FROM lapTimes lt JOIN races ra ON ra.raceId=lt.raceId",
+    "result": "420369 rows covering 1996-2017 and 389 races; milliseconds range from 67411 to 7507547 with no NULL values in either the text or the numeric column; the text form uses minutes and seconds and the numeric form is millisecond-equivalent",
+    "validation_method": "coverage range, null census and format comparison",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_fastest_lap_availability",
+    "source": "formula_1",
+    "query": "SELECT MIN(ra.year), MAX(ra.year), COUNT(*) FROM results r JOIN races ra ON ra.raceId=r.raceId WHERE r.fastestLapSpeed IS NOT NULL; SELECT CASE WHEN fastestLap IS NULL THEN 'null' ELSE 'value' END, COUNT(*) FROM results WHERE rank=0 GROUP BY 1; SELECT raceId, driverId, fastestLapTime FROM results r WHERE r.rank=1",
+    "result": "fastestLapSpeed and fastestLapTime are populated in 5268 rows, all between 2004 and 2017; 18389 rows have no fastest lap time; rank 0 appears in 143 rows, all without a fastest lap time; rank 1 appears in 256 rows; for entries with lap-by-lap data the recorded fastest lap time equals the minimum lapTimes value, for example 1:27.418 against 87418 milliseconds",
+    "validation_method": "coverage range, null census and cross-source reconciliation against lapTimes",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_pitstops_availability",
+    "source": "formula_1",
+    "query": "SELECT MIN(ra.year), MAX(ra.year), COUNT(DISTINCT ps.raceId), COUNT(*) FROM pitStops ps JOIN races ra ON ra.raceId=ps.raceId; SELECT duration, milliseconds FROM pitStops ORDER BY milliseconds DESC LIMIT 5; same ORDER BY milliseconds ASC",
+    "result": "6070 rows covering 2011-2017 and 131 races; duration and milliseconds are never NULL; the smallest duration is 12.897 seconds and the largest 33 minutes 31 seconds, the latter reflecting repair or red-flag stops rather than routine service",
+    "validation_method": "coverage range, null census and distribution extremes",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_circuits_domain",
+    "source": "formula_1",
+    "query": "SELECT COUNT(*) FROM circuits; SELECT country, COUNT(*) FROM circuits GROUP BY country ORDER BY 2 DESC LIMIT 20",
+    "result": "72 circuits; country values are nominal, led by USA 11, France 7, Spain 6, UK 4, Portugal 3, Japan 3, Italy 3, Germany 3",
+    "validation_method": "row count and country value distribution",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_nationality_vocabulary",
+    "source": "formula_1",
+    "query": "SELECT nationality, COUNT(*) FROM drivers GROUP BY nationality ORDER BY 2 DESC LIMIT 15; same for constructors; SELECT country, COUNT(*) FROM circuits GROUP BY country; SELECT COUNT(*) FROM (SELECT DISTINCT nationality FROM drivers INTERSECT SELECT DISTINCT country FROM circuits); SELECT DISTINCT nationality FROM constructors EXCEPT SELECT DISTINCT nationality FROM drivers",
+    "result": "drivers.nationality is adjectival, led by British 162, American 157, Italian 99, French 72, German 49; constructors.nationality uses the same adjectival style with 21 values shared with drivers and three constructor-only values, Belgium, Hong Kong and New Zealand; circuits.country is nominal, for example USA and UK, and the intersection with driver nationality is empty",
+    "validation_method": "value distribution and set intersection across the three vocabulary columns",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_results_duplicate_grain",
+    "source": "formula_1",
+    "query": "SELECT COUNT(*) FROM (SELECT raceId, driverId, COUNT(*) c FROM results GROUP BY raceId, driverId HAVING c>1); SELECT r.raceId, ra.year, r.driverId, r.constructorId, r.grid, r.position, r.positionText, r.points, r.laps FROM results r JOIN races ra ON ra.raceId=r.raceId WHERE (r.raceId,r.driverId) IN (SELECT raceId, driverId FROM results GROUP BY raceId, driverId HAVING COUNT(*)>1)",
+    "result": "83 duplicate race and driver groups covering 172 rows, all within 1950-1978; for example the 1950 Italian Grand Prix holds two rows for driver 579 with grids 1 and 7 and two rows for driver 647 with grids 2 and 6; the 1950 Indianapolis 500 holds two rows for driver 529 under constructors 150 and 113",
+    "validation_method": "grain uniqueness test followed by inspection of the repeated rows",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_shared_drive_multi_entry",
+    "source": "formula_1",
+    "query": "SELECT COUNT(*) FROM (SELECT raceId, constructorId, COUNT(DISTINCT driverId) dc FROM results GROUP BY raceId, constructorId HAVING dc>2); SELECT ra.year, COUNT(*) FROM (SELECT raceId, constructorId, COUNT(DISTINCT driverId) dc FROM results GROUP BY raceId, constructorId HAVING dc>2) x JOIN races ra ON ra.raceId=x.raceId GROUP BY ra.year",
+    "result": "1042 race and constructor combinations field more than two distinct drivers; the pattern is concentrated in the 1950s to 1980s, with 13 such combinations in 1980 and 5 in 1982",
+    "validation_method": "group-level count of distinct drivers per race and constructor with a year breakdown",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_driver_constructor_mobility",
+    "source": "formula_1",
+    "query": "SELECT COUNT(*) FROM (SELECT ra.year, r.driverId, COUNT(DISTINCT r.constructorId) c FROM results r JOIN races ra ON ra.raceId=r.raceId GROUP BY ra.year, r.driverId HAVING c>1)",
+    "result": "308 driver-season combinations involve more than one constructor, so a driver is not tied to a single constructor within a season",
+    "validation_method": "group-level count of distinct constructors per driver and season",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_car_number",
+    "source": "formula_1",
+    "query": "SELECT ra.year, ra.round, r.number, q.number, d.number, d.code FROM results r JOIN races ra ON ra.raceId=r.raceId JOIN drivers d ON d.driverId=r.driverId LEFT JOIN qualifying q ON q.raceId=r.raceId AND q.driverId=r.driverId WHERE d.driverRef='vettel' AND ra.year=2017; SELECT SUM(CASE WHEN number IS NULL THEN 1 ELSE 0 END), SUM(CASE WHEN code IS NULL THEN 1 ELSE 0 END), COUNT(*) FROM drivers",
+    "result": "For Vettel in 2017 the results number and the qualifying number both equal 5 in every round and match the permanent number in drivers; across all drivers, number is NULL for 804 of 840 rows and code is NULL for 757 of 840",
+    "validation_method": "per-race comparison of the three number columns plus a null census on drivers",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_status_table_flags",
+    "source": "formula_1",
+    "query": "SELECT status, COUNT(*) FROM constructorResults GROUP BY status; SELECT DISTINCT cr.status FROM constructorResults cr WHERE cr.status NOT IN (SELECT status FROM status)",
+    "result": "constructorResults.status is empty for 11065 rows and holds D for 17 rows; the value D does not occur in the status table, confirming it is a text flag rather than a status identifier",
+    "validation_method": "value distribution and cross-table membership test",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_race_laps",
+    "source": "formula_1",
+    "query": "SELECT MAX(laps), MIN(laps) FROM results WHERE raceId=972; SELECT position, positionText, laps FROM results WHERE raceId=972 ORDER BY positionOrder",
+    "result": "In race 972 the winner completed 52 laps, classified cars behind the winner completed 51 or 50, and retired or withdrawn entries recorded 0 laps; the maximum laps value per race equals the winner's lap count",
+    "validation_method": "row-level inspection of a race and comparison against the classification",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_indianapolis",
+    "source": "formula_1",
+    "query": "SELECT MIN(year), MAX(year), COUNT(*) FROM races WHERE name LIKE '%Indianapolis%'",
+    "result": "11 Indianapolis 500 races between 1950 and 1960 counted as championship rounds",
+    "validation_method": "name filter with a year range check",
+    "timestamp": "2026-10-10"
+  }
+]

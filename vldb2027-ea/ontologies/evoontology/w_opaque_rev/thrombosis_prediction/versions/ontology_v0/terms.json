@@ -1,0 +1,489 @@
+[
+  {
+    "id": "term_patient",
+    "name": "Patient",
+    "type": "entity",
+    "definition": "An individual patient in the cohort. Each patient has one stable identifier and patient-level attributes such as sex, birth date, diagnosis date, first visit date, follow-up status and a patient-level diagnosis.",
+    "scope": "Patient-level analysis; source table tab02.",
+    "aliases": [
+      "subject",
+      "case",
+      "patient record"
+    ],
+    "evidence": [
+      "evidence_002",
+      "evidence_003",
+      "evidence_004"
+    ]
+  },
+  {
+    "id": "term_patient_identifier",
+    "name": "Patient Identifier",
+    "type": "concept",
+    "definition": "The numeric identifier that links patient-level, diagnosis-record and laboratory-examination data. The same identifier domain is used by tab02.fld001, tab03.fld001 and tab01.fld001.",
+    "scope": "Joining records across the three tables; linkage between tab01 and the other tables is incomplete (see constraint_tab01_patient_linkage).",
+    "aliases": [
+      "ID",
+      "patient ID",
+      "patient number"
+    ],
+    "evidence": [
+      "evidence_002",
+      "evidence_009",
+      "evidence_010"
+    ]
+  },
+  {
+    "id": "term_laboratory_examination",
+    "name": "Laboratory Examination",
+    "type": "entity",
+    "definition": "A laboratory examination event for a patient on a given examination date, containing many concurrently measured laboratory values. Stored one row per patient per examination date.",
+    "scope": "Laboratory value analysis in tab03.",
+    "aliases": [
+      "examination",
+      "lab record",
+      "laboratory record",
+      "lab test visit"
+    ],
+    "evidence": [
+      "evidence_010",
+      "evidence_011"
+    ]
+  },
+  {
+    "id": "term_diagnosis_record",
+    "name": "Diagnosis Record",
+    "type": "entity",
+    "definition": "A diagnosis event record that carries a diagnosis date, diagnosis label(s), symptoms and thrombosis-related status for a patient.",
+    "scope": "tab01; each row is a diagnosis event.",
+    "aliases": [
+      "diagnosis event",
+      "diagnosis entry"
+    ],
+    "evidence": [
+      "evidence_007",
+      "evidence_008",
+      "evidence_009"
+    ]
+  },
+  {
+    "id": "term_sex",
+    "name": "Sex",
+    "type": "dimension",
+    "definition": "Patient sex recorded as 'M' (male) or 'F' (female); 13 patients have no recorded value.",
+    "scope": "tab02.fld014; applies to patient-level analysis.",
+    "aliases": [
+      "gender",
+      "male/female"
+    ],
+    "evidence": [
+      "evidence_003"
+    ]
+  },
+  {
+    "id": "term_birthday",
+    "name": "Birthday",
+    "type": "dimension",
+    "definition": "Patient date of birth in ISO date form. A later date corresponds to a younger person; the maximum birthday identifies the youngest patient.",
+    "scope": "tab02.fld015.",
+    "aliases": [
+      "birth date",
+      "date of birth",
+      "DOB"
+    ],
+    "evidence": [
+      "evidence_004"
+    ]
+  },
+  {
+    "id": "term_age",
+    "name": "Age",
+    "type": "metric",
+    "definition": "Patient age derived at year granularity as the current calendar year minus the birth year. It is an approximation because day-level elapsed time is not applied in the workload.",
+    "scope": "Derived from birthday; used for age filters such as underage (<18) and older than 55.",
+    "aliases": [
+      "years old",
+      "patient age"
+    ],
+    "evidence": [
+      "evidence_004"
+    ]
+  },
+  {
+    "id": "term_patient_diagnosis",
+    "name": "Patient Diagnosis",
+    "type": "concept",
+    "definition": "The patient-level diagnosis label stored on the patient record. Values are free-text, often multi-label and may include qualifiers such as 'susp'.",
+    "scope": "tab02.fld008; patient-level diagnosis.",
+    "aliases": [
+      "diagnosis",
+      "disease",
+      "diagnosed with"
+    ],
+    "evidence": [
+      "evidence_006",
+      "evidence_020"
+    ]
+  },
+  {
+    "id": "term_diagnosis_record_label",
+    "name": "Diagnosis Record Label",
+    "type": "concept",
+    "definition": "The diagnosis label attached to a diagnosis event record. It uses the same disease vocabulary as the patient-level diagnosis but differs in spelling variants and granularity.",
+    "scope": "tab01.fld008.",
+    "aliases": [
+      "diagnosis at event",
+      "event diagnosis"
+    ],
+    "evidence": [
+      "evidence_007",
+      "evidence_012"
+    ]
+  },
+  {
+    "id": "term_symptom",
+    "name": "Symptom",
+    "type": "concept",
+    "definition": "Free-text description of observed symptoms or thrombotic manifestations recorded on a diagnosis event. Populated only when a thrombosis-related status code other than zero is present.",
+    "scope": "tab01.fld012.",
+    "aliases": [
+      "symptoms observed",
+      "clinical symptoms"
+    ],
+    "evidence": [
+      "evidence_008"
+    ]
+  },
+  {
+    "id": "term_thrombosis_status",
+    "name": "Thrombosis-Related Status",
+    "type": "category",
+    "definition": "Coded status recorded on a diagnosis event describing the presence and type of thrombosis-related complication: 0 = none, 1 = thrombotic event (for example AMI, brain infarction, DVT, thrombophlebitis, abortion), 2 = CNS lupus, 3 = thrombocytopenia.",
+    "scope": "tab01.fld013.",
+    "aliases": [
+      "thrombosis",
+      "thrombosis degree",
+      "thrombosis severity",
+      "complication status"
+    ],
+    "evidence": [
+      "evidence_008"
+    ]
+  },
+  {
+    "id": "term_examination_date",
+    "name": "Examination Date",
+    "type": "dimension",
+    "definition": "Date on which a laboratory examination was performed; ISO date text.",
+    "scope": "tab03.fld019; together with the patient identifier it forms the laboratory record grain.",
+    "aliases": [
+      "examination date",
+      "lab date",
+      "test date"
+    ],
+    "evidence": [
+      "evidence_010"
+    ]
+  },
+  {
+    "id": "term_diagnosis_date",
+    "name": "Diagnosis Date",
+    "type": "dimension",
+    "definition": "Patient-level date associated with the diagnosis on the patient record; ISO date text. Question wording such as 'came at the hospital in <year>' is mapped to this field in the workload, although its primary semantic role is the diagnosis date.",
+    "scope": "tab02.fld016.",
+    "aliases": [
+      "diagnosis date",
+      "date diagnosed",
+      "came at the hospital"
+    ],
+    "evidence": [
+      "evidence_004"
+    ]
+  },
+  {
+    "id": "term_first_visit_date",
+    "name": "First Visit Date",
+    "type": "dimension",
+    "definition": "Patient's first visit date at the hospital; ISO date text and generally earlier than the diagnosis date. Question wording such as 'came to the hospital after <date>' is mapped to this field in the workload.",
+    "scope": "tab02.fld017.",
+    "aliases": [
+      "first visit",
+      "initial visit",
+      "came to the hospital"
+    ],
+    "evidence": [
+      "evidence_004"
+    ]
+  },
+  {
+    "id": "term_diagnosis_record_date",
+    "name": "Diagnosis Record Date",
+    "type": "dimension",
+    "definition": "Date attached to a diagnosis event record; ISO date text. Question wording such as 'examined during <period>' can refer to this field when the diagnosis table is the source.",
+    "scope": "tab01.fld002.",
+    "aliases": [
+      "diagnosis event date",
+      "record date"
+    ],
+    "evidence": [
+      "evidence_009"
+    ]
+  },
+  {
+    "id": "term_laboratory_examination_count",
+    "name": "Laboratory Examination Count",
+    "type": "metric",
+    "definition": "Number of laboratory examination records associated with a patient. Because tab03 is long-format, a patient with multiple visits has multiple records.",
+    "scope": "Derived by counting laboratory records per patient.",
+    "aliases": [
+      "number of examinations",
+      "count of lab tests",
+      "two or more examinations"
+    ],
+    "evidence": [
+      "evidence_010"
+    ]
+  },
+  {
+    "id": "term_follow_up_status",
+    "name": "Follow-Up Status",
+    "type": "category",
+    "definition": "Coded follow-up status on the patient record: '-' is treated in the workload as immediately followed at the outpatient clinic; '+' and '+(' are other follow-up states; some patients have no value.",
+    "scope": "tab02.fld018.",
+    "aliases": [
+      "follow-up",
+      "followed at outpatient clinic",
+      "outpatient follow-up"
+    ],
+    "evidence": [
+      "evidence_005"
+    ]
+  },
+  {
+    "id": "term_uric_acid",
+    "name": "Uric Acid",
+    "type": "metric",
+    "definition": "Serum uric acid concentration recorded in laboratory examinations.",
+    "scope": "tab03.fld026; 11103 non-null values.",
+    "aliases": [
+      "uric acid",
+      "urate",
+      "UA"
+    ],
+    "evidence": [
+      "evidence_011"
+    ]
+  },
+  {
+    "id": "term_hematocrit",
+    "name": "Hematocrit",
+    "type": "metric",
+    "definition": "Hematocrit level recorded in laboratory examinations.",
+    "scope": "tab03.fld037; 12081 non-null values.",
+    "aliases": [
+      "hematocrit",
+      "hematoclit",
+      "HCT",
+      "Ht"
+    ],
+    "evidence": [
+      "evidence_012"
+    ]
+  },
+  {
+    "id": "term_red_blood_cell_count",
+    "name": "Red Blood Cell Count",
+    "type": "metric",
+    "definition": "Red blood cell count recorded in laboratory examinations.",
+    "scope": "tab03.fld035; 12081 non-null values.",
+    "aliases": [
+      "red blood cell",
+      "RBC",
+      "red blood cells"
+    ],
+    "evidence": [
+      "evidence_013"
+    ]
+  },
+  {
+    "id": "term_ldh",
+    "name": "Lactate Dehydrogenase",
+    "type": "metric",
+    "definition": "Lactate dehydrogenase (LDH) level recorded in laboratory examinations.",
+    "scope": "tab03.fld022; 11305 non-null values.",
+    "aliases": [
+      "LDH",
+      "lactate dehydrogenase"
+    ],
+    "evidence": [
+      "evidence_014"
+    ]
+  },
+  {
+    "id": "term_total_cholesterol",
+    "name": "Total Cholesterol",
+    "type": "metric",
+    "definition": "Total cholesterol concentration recorded in laboratory examinations.",
+    "scope": "tab03.fld030; 10664 non-null values.",
+    "aliases": [
+      "total cholesterol",
+      "cholesterol",
+      "TC"
+    ],
+    "evidence": [
+      "evidence_018"
+    ]
+  },
+  {
+    "id": "term_prothrombin_time",
+    "name": "Prothrombin Time",
+    "type": "metric",
+    "definition": "Prothrombin time (PT) recorded in laboratory examinations.",
+    "scope": "tab03.fld039; 621 non-null values.",
+    "aliases": [
+      "prothrombin time",
+      "PT"
+    ],
+    "evidence": [
+      "evidence_016"
+    ]
+  },
+  {
+    "id": "term_immunoglobulin_a",
+    "name": "Immunoglobulin A",
+    "type": "metric",
+    "definition": "Immunoglobulin A (IgA) level recorded in laboratory examinations.",
+    "scope": "tab03.fld047; 2680 non-null values.",
+    "aliases": [
+      "IgA",
+      "immunoglobulin A",
+      "Ig A"
+    ],
+    "evidence": [
+      "evidence_015"
+    ]
+  },
+  {
+    "id": "term_anti_cardiolipin_antibody",
+    "name": "Anti-Cardiolipin Antibody",
+    "type": "metric",
+    "definition": "Anti-cardiolipin antibody (aCL) measurement recorded in laboratory examinations.",
+    "scope": "tab03.fld048; 2678 non-null values.",
+    "aliases": [
+      "anti-Cardiolipin",
+      "aCL",
+      "anticardiolipin"
+    ],
+    "evidence": [
+      "evidence_017"
+    ]
+  },
+  {
+    "id": "term_anti_sm_antibody",
+    "name": "Anti-Sm Antibody",
+    "type": "metric",
+    "definition": "Anti-Sm antibody result recorded in laboratory examinations; stored as coded text values rather than numeric titres.",
+    "scope": "tab03.fld055; mostly null.",
+    "aliases": [
+      "anti-SM",
+      "anti-Sm",
+      "anti Smith",
+      "anti-Smith"
+    ],
+    "evidence": [
+      "evidence_019"
+    ]
+  },
+  {
+    "id": "term_percentage",
+    "name": "Percentage",
+    "type": "metric",
+    "definition": "A part-to-whole proportion expressed as a percentage: part count divided by whole count, multiplied by 100.",
+    "scope": "Derived metric used in cohort composition questions.",
+    "aliases": [
+      "percent",
+      "%",
+      "proportion"
+    ],
+    "evidence": [
+      "evidence_003",
+      "evidence_006"
+    ]
+  },
+  {
+    "id": "term_sex_ratio",
+    "name": "Sex Ratio",
+    "type": "metric",
+    "definition": "Ratio of male patient count to female patient count (or another specified pair of subgroup counts).",
+    "scope": "Derived metric used in cohort composition questions.",
+    "aliases": [
+      "male to female ratio",
+      "ratio",
+      "M:F ratio"
+    ],
+    "evidence": [
+      "evidence_003"
+    ]
+  },
+  {
+    "id": "term_decrease_rate",
+    "name": "Decrease Rate",
+    "type": "metric",
+    "definition": "Relative decrease between an earlier and a later measurement, computed as (earlier value minus later value) divided by the later value.",
+    "scope": "Derived metric for month-over-month change in a laboratory value.",
+    "aliases": [
+      "decrease rate",
+      "rate of decrease",
+      "relative change",
+      "percentage decrease"
+    ],
+    "evidence": [
+      "evidence_018"
+    ]
+  },
+  {
+    "id": "term_sle_diagnosis",
+    "name": "SLE Diagnosis",
+    "type": "category",
+    "definition": "Systemic lupus erythematosus (SLE) appearing in a diagnosis label, including combination labels such as 'SLE, SJS' and qualifiers such as 'SLE susp'.",
+    "scope": "Diagnosis labels in tab02.fld008 (and corresponding values in tab01.fld008).",
+    "aliases": [
+      "SLE",
+      "systemic lupus erythematosus",
+      "lupus"
+    ],
+    "evidence": [
+      "evidence_006",
+      "evidence_007"
+    ]
+  },
+  {
+    "id": "term_ra_diagnosis",
+    "name": "RA Diagnosis",
+    "type": "category",
+    "definition": "Rheumatoid arthritis (RA) appearing as a diagnosis label component, including variants such as 'RA susp', 'RA (seronegative)' and combination labels. MRA and Raynaud are different entities.",
+    "scope": "Diagnosis labels in tab02.fld008 (and corresponding values in tab01.fld008).",
+    "aliases": [
+      "RA",
+      "rheumatoid arthritis"
+    ],
+    "evidence": [
+      "evidence_006",
+      "evidence_020"
+    ]
+  },
+  {
+    "id": "term_aps_diagnosis",
+    "name": "APS Diagnosis",
+    "type": "category",
+    "definition": "Antiphospholipid syndrome (APS) appearing in a diagnosis label, including combination labels such as 'APS, RA susp' and 'SLE, APS'.",
+    "scope": "Diagnosis labels in tab02.fld008.",
+    "aliases": [
+      "APS",
+      "antiphospholipid syndrome"
+    ],
+    "evidence": [
+      "evidence_006"
+    ]
+  }
+]

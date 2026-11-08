@@ -1,0 +1,433 @@
+[
+  {
+    "id": "constraint_district_geography_columns",
+    "target": "term_district",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "district",
+      "A2",
+      "A3",
+      "district name",
+      "region",
+      "region name",
+      "state",
+      "location",
+      "area",
+      "Sokolov",
+      "south Bohemia",
+      "Bohemia",
+      "stayed in",
+      "live in",
+      "located in"
+    ],
+    "severity": "block",
+    "scope": "Applies whenever district or region geography is referenced, including district names, region names and branch locations.",
+    "confidence": "high",
+    "description": "District geography is stored in anonymous columns whose meaning is fixed: A2 holds the district name, with one distinct value per district, and A3 holds the name of the region that contains the district. Names such as Sokolov appear in A2 and belong to districts, while names such as south Bohemia appear in A3 and belong to regions that group several districts; the data has 8 regions. A district name must never be read from A3 and a region name must never be read from A2.",
+    "evidence": [
+      "evidence_district_columns",
+      "evidence_regions"
+    ]
+  },
+  {
+    "id": "constraint_district_population_column_type",
+    "target": "term_district_population",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "inhabitants",
+      "population",
+      "number of inhabitants",
+      "biggest",
+      "largest",
+      "most populated",
+      "A4",
+      "A5",
+      "A6",
+      "A7",
+      "municipalities",
+      "compare",
+      "greater than"
+    ],
+    "severity": "block",
+    "scope": "Applies to the district size columns whenever they are compared, ranked or thresholded numerically.",
+    "confidence": "high",
+    "description": "The district population column and its sibling size columns store numeric magnitudes as text, so ordinary text comparison orders them lexicographically and produces wrong extremes: text ordering rates Havlickuv Brod at 95907 above the capital district, while the true largest value is 1204953 for Hl.m. Praha. Ranking, extremes and numeric thresholds on these columns require numeric conversion of the stored text first. All values in the column are numeric, with a numeric range of 42821 to 1204953.",
+    "evidence": [
+      "evidence_district_population_type"
+    ]
+  },
+  {
+    "id": "constraint_district_reference_meaning",
+    "target": "term_client",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "branch",
+      "branch location",
+      "district",
+      "located in",
+      "stayed in",
+      "live",
+      "residence",
+      "where the client is",
+      "client district",
+      "account district"
+    ],
+    "severity": "block",
+    "scope": "Applies whenever a district is joined to a client or to an account.",
+    "confidence": "high",
+    "description": "The district reference exists twice with different meanings. On the client it is the district of residence of the customer; on the account it is the district in which the branch holding the account is located. The two differ for 409 of the 4500 owned accounts, so a question about where a client lives must use the client's district while a question about a branch location must use the account's district; joining through the wrong one silently returns a plausible but incorrect population.",
+    "evidence": [
+      "evidence_district_mismatch"
+    ]
+  },
+  {
+    "id": "constraint_gender_enum",
+    "target": "term_client_gender",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "female",
+      "male",
+      "gender",
+      "sex",
+      "women",
+      "men",
+      "F",
+      "M"
+    ],
+    "severity": "block",
+    "scope": "Applies whenever clients are filtered or grouped by gender.",
+    "confidence": "high",
+    "description": "Gender is a single-letter code: 'F' denotes female and 'M' denotes male. Words such as female, women and female pronouns refer to 'F'; male, men and male pronouns refer to 'M'. The data holds 2645 female and 2724 male clients.",
+    "evidence": [
+      "evidence_gender_distribution"
+    ]
+  },
+  {
+    "id": "constraint_loan_status_enum",
+    "target": "term_loan_status",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "status",
+      "contract status",
+      "running contract",
+      "still running",
+      "in debt",
+      "debt",
+      "finished",
+      "contract state",
+      "A",
+      "B",
+      "C",
+      "D"
+    ],
+    "severity": "block",
+    "scope": "Applies whenever loan contracts are filtered or labelled by status.",
+    "confidence": "high",
+    "description": "Loan status is a single-letter code: 'A' means the contract finished with no problems, 'B' means it finished with problems, 'C' means a contract still running and serviced without problems, and 'D' means a contract still running with the client in debt. A client-in-debt condition is status 'D'.",
+    "evidence": [
+      "evidence_loan_status"
+    ]
+  },
+  {
+    "id": "constraint_running_contract_scope",
+    "target": "term_running_contract",
+    "constraint_type": "scope",
+    "trigger_keywords": [
+      "running contract",
+      "still running",
+      "still on running",
+      "ongoing",
+      "active contract",
+      "not finished",
+      "unfinished"
+    ],
+    "severity": "block",
+    "scope": "Applies whenever contracts described as still running are selected.",
+    "confidence": "high",
+    "description": "A contract counts as still running when its status denotes an unterminated contract, which covers both the debt-free running case and the running case with the client in debt. Expecting a single status code omits the debt case and loses about a tenth of the running portfolio: the data holds 403 running contracts without debt and 45 running contracts with debt.",
+    "evidence": [
+      "evidence_loan_status"
+    ]
+  },
+  {
+    "id": "constraint_statement_frequency_enum",
+    "target": "term_account_statement_frequency",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "statement",
+      "statement issuance",
+      "statement frequency",
+      "after each transaction",
+      "POPLATEK PO OBRATU",
+      "POPLATEK MESICNE",
+      "POPLATEK TYDNE",
+      "frequency",
+      "monthly statement",
+      "weekly statement"
+    ],
+    "severity": "block",
+    "scope": "Applies when accounts are selected by their statement regime or when statement issuance timing is referenced.",
+    "confidence": "high",
+    "description": "Account statement frequency uses coded values: the monthly regime, the weekly regime, and the regime that issues a statement after each transaction. A phrase such as statement issuance after each transaction selects the after-transaction regime, under which only 93 of the 4500 accounts operate.",
+    "evidence": [
+      "evidence_account_frequency"
+    ]
+  },
+  {
+    "id": "constraint_card_type_enum",
+    "target": "term_card_type",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "gold",
+      "classic",
+      "junior",
+      "high level",
+      "high-level card",
+      "credit card level",
+      "card type",
+      "card level"
+    ],
+    "severity": "block",
+    "scope": "Applies when cards are filtered by class.",
+    "confidence": "high",
+    "description": "Card class takes three values: 'classic', 'gold' and 'junior'. A high-level or top-level card is 'gold'. The data holds 659 classic, 88 gold and 145 junior cards.",
+    "evidence": [
+      "evidence_card_types"
+    ]
+  },
+  {
+    "id": "constraint_transaction_operation_enum",
+    "target": "term_transaction_operation",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "operation",
+      "credit card withdrawal",
+      "card payment",
+      "VYBER KARTOU",
+      "VYBER",
+      "VKLAD",
+      "PREVOD NA UCET",
+      "PREVOD Z UCTU",
+      "withdrawal",
+      "deposit",
+      "remittance"
+    ],
+    "severity": "block",
+    "scope": "Applies when movements are selected by operation mode.",
+    "confidence": "high",
+    "description": "Operation codes describe the mode of a movement: a cash withdrawal over the counter, a withdrawal made with a payment card, a cash deposit, a remittance to another account, and a collection from another account. The phrase credit card withdrawal, or a transaction on the credit card, selects the card withdrawal code, which occurs 8036 times. Note that the column is empty for some movements, so an operation filter excludes them.",
+    "evidence": [
+      "evidence_transaction_operations",
+      "evidence_card_withdrawal"
+    ]
+  },
+  {
+    "id": "constraint_transaction_direction_enum",
+    "target": "term_transaction_direction",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "PRIJEM",
+      "VYDAJ",
+      "VYBER",
+      "credit",
+      "debit",
+      "incoming",
+      "outgoing",
+      "type",
+      "direction"
+    ],
+    "severity": "block",
+    "scope": "Applies whenever the direction of value flow of a movement is interpreted.",
+    "confidence": "high",
+    "description": "The transaction direction code carries the direction of value flow: one code denotes an incoming credit and the other two denote outgoing debits, one of them being the cash-withdrawal direction. Withdrawals, including card withdrawals, are recorded under a debit direction.",
+    "evidence": [
+      "evidence_transaction_types",
+      "evidence_transaction_amount_sign"
+    ]
+  },
+  {
+    "id": "constraint_transaction_amount_magnitude",
+    "target": "term_account_transaction",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "amount",
+      "negative",
+      "sign",
+      "magnitude",
+      "less than the average",
+      "average amount",
+      "positive"
+    ],
+    "severity": "block",
+    "scope": "Applies whenever transaction amounts are compared, averaged or summed.",
+    "confidence": "high",
+    "description": "Transaction amounts are stored as non-negative magnitudes: across 1056320 movements no amount is negative in any direction, and card withdrawals also carry positive stored amounts. Direction is carried by the transaction direction code rather than by the sign. A comparison of a withdrawal amount against an average therefore compares magnitudes and must interpret direction separately.",
+    "evidence": [
+      "evidence_transaction_amount_sign",
+      "evidence_card_withdrawal"
+    ]
+  },
+  {
+    "id": "constraint_account_holder_role",
+    "target": "term_account_owner",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "account holder",
+      "holder",
+      "owner",
+      "eligible for loans",
+      "OWNER",
+      "DISPONENT",
+      "who holds",
+      "identification number"
+    ],
+    "severity": "block",
+    "scope": "Applies when resolving which client stands behind an account.",
+    "confidence": "high",
+    "description": "Every account has exactly one owner disposition and no account has more than one owner; an additional disponent exists for 869 accounts, and 869 accounts therefore carry both roles. A client is linked to an account through a disposition whose role decides whether they are the owner or only a disponent, so statements about account holders must state which role is meant. Ownership is the role used when the workload expresses loan eligibility.",
+    "evidence": [
+      "evidence_disposition_uniqueness"
+    ]
+  },
+  {
+    "id": "constraint_card_issued_on_owner_disposition",
+    "target": "term_payment_card",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "credit card",
+      "card holder",
+      "card owner",
+      "issued",
+      "gold card"
+    ],
+    "severity": "warning",
+    "scope": "Applies when relating cards to the client who holds them.",
+    "confidence": "high",
+    "description": "All 892 cards are issued against owner dispositions and no card hangs off a disponent disposition, so a card reaches its holder through the owner role of the disposition it was issued on.",
+    "evidence": [
+      "evidence_card_types"
+    ]
+  },
+  {
+    "id": "constraint_district_indicator_missing_values",
+    "target": "term_district_unemployment_rate_1995",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "unemployment rate",
+      "crimes",
+      "missing",
+      "null",
+      "absent",
+      "A12",
+      "A15"
+    ],
+    "severity": "warning",
+    "scope": "Applies to the district indicator columns when they are aggregated, averaged or thresholded.",
+    "confidence": "high",
+    "description": "The district indicator columns are almost but not entirely complete: the 1995 unemployment rate column and the 1995 crime count column each hold one missing value among the 77 districts, while the corresponding later-year columns are complete. Aggregations should account for the missing district rather than treating the blank as zero.",
+    "evidence": [
+      "evidence_district_nulls"
+    ]
+  },
+  {
+    "id": "constraint_age_reference_date",
+    "target": "term_client_age",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "age",
+      "oldest",
+      "youngest",
+      "how old",
+      "born before",
+      "birth date",
+      "seniority"
+    ],
+    "severity": "warning",
+    "scope": "Applies whenever the age or the seniority of clients is expressed.",
+    "confidence": "high",
+    "description": "Age is not stored in the data and must be derived from the birth date against a reference date the analysis must fix, so the same client yields different ages under different reference dates. The oldest client is the one with the earliest birth date, so a larger birth date means a younger client. Birth dates in the data range from 1911 to 1987, so a condition such as born before 1950 is a cohort filter on the birth date itself.",
+    "evidence": [
+      "evidence_client_birth_range"
+    ]
+  },
+  {
+    "id": "constraint_loan_eligibility_is_a_role",
+    "target": "term_account_owner",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "eligible for loans",
+      "loan eligibility",
+      "who can take a loan",
+      "qualified for loans"
+    ],
+    "severity": "info",
+    "scope": "Applies when the workload expresses loan eligibility as an ownership condition.",
+    "confidence": "medium",
+    "description": "Loan eligibility is expressed in this workload through the owner role of the disposition; no dedicated eligibility column exists in the data. The condition is therefore a business definition to be applied to the disposition role rather than a stored attribute.",
+    "evidence": [
+      "evidence_disposition_roles"
+    ]
+  },
+  {
+    "id": "constraint_payment_symbol_columns",
+    "target": "term_standing_order",
+    "constraint_type": "scope",
+    "trigger_keywords": [
+      "k_symbol",
+      "symbol",
+      "standing order",
+      "order",
+      "SIPO",
+      "UVER",
+      "POJISTNE",
+      "purpose of payment"
+    ],
+    "severity": "warning",
+    "scope": "Applies when a symbol code is used to identify the purpose of a payment.",
+    "confidence": "high",
+    "description": "A symbol code exists on two different tables with different roles. On transactions it labels the purpose of an individual movement, dominated by interest and bank charges. On standing orders it labels the kind of recurring payment instruction, dominated by the standing-order and loan-payment codes. The two columns are not interchangeable and their value sets only partly overlap, so a purpose filter must be applied to the column that matches the record type being analysed.",
+    "evidence": [
+      "evidence_symbol_columns"
+    ]
+  },
+  {
+    "id": "constraint_gender_proportion_denominator",
+    "target": "term_gender_proportion",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "percentage of male clients",
+      "percentage of female clients",
+      "proportion",
+      "share",
+      "percent",
+      "ratio"
+    ],
+    "severity": "warning",
+    "scope": "Applies when a gender share is computed for a branch or a district.",
+    "confidence": "high",
+    "description": "A gender percentage is the count of clients of that gender divided by the count of all clients in the same population, multiplied by one hundred. The population must be fixed consistently before the share is computed, for example the clients reached through the accounts belonging to one branch district; mixing a branch population with a residence population changes the denominator and the result.",
+    "evidence": [
+      "evidence_female_per_district",
+      "evidence_gender_distribution"
+    ]
+  },
+  {
+    "id": "constraint_salary_gap_comparison_set",
+    "target": "term_average_salary_gap",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "gap",
+      "difference",
+      "lowest average salary",
+      "highest average salary",
+      "spread"
+    ],
+    "severity": "warning",
+    "scope": "Applies when a spread between district salary levels is requested.",
+    "confidence": "high",
+    "description": "The gap between average salary levels is the difference between the highest and the lowest level being compared, so the comparison set must be fixed before the gap is computed. Across all districts the average salary level ranges from 8110 to 12541, the capital district being the highest.",
+    "evidence": [
+      "evidence_district_salary"
+    ]
+  }
+]

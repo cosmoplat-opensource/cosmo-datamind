@@ -1,0 +1,146 @@
+[
+  {
+    "id": "ev_schema_tables",
+    "source": "formula_1.sqlite",
+    "query": ".schema ; SELECT COUNT(*) per table",
+    "result": "13 tables: circuits 72, constructors 208, drivers 840, seasons 68, races 976, constructorResults 11082, constructorStandings 11836, driverStandings 31578, lapTimes 420369, pitStops 6070, qualifying 7397, status 134, results 23657; races span 1950 to 2017",
+    "validation_method": "schema dump and row counts per table",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_result_time_null",
+    "source": "formula_1.sqlite",
+    "query": "SELECT COUNT(*) total, SUM(time IS NULL) time_null FROM results ; SELECT positionText, SUM(time IS NULL), COUNT(*) FROM results GROUP BY 1 ; SELECT COUNT(*), SUM(time IS NULL) FROM results WHERE statusId=1",
+    "result": "total 23657 with 17696 null times; all 8495 rows with positionText 'R' and all 1368 rows with positionText 'F' are null; 5966 rows have statusId 1 'Finished' of which 10 have a null time",
+    "validation_method": "count, null check and cross-tabulation against status and positionText",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_position_text",
+    "source": "formula_1.sqlite",
+    "query": "SELECT positionText, COUNT(*) FROM results GROUP BY 1 ORDER BY 2 DESC LIMIT 12 ; SELECT s.status, COUNT(*) FROM results res JOIN status s ON s.statusId=res.statusId WHERE res.positionText='F' GROUP BY 1",
+    "result": "R 8495, F 1368, then numeric texts 1 upward with roughly 900 to 980 rows each; the F rows resolve to 'Did not qualify' 1025, 'Did not prequalify' 331, '107% Rule' 9 and 'Injury' 3",
+    "validation_method": "value enumeration joined to the status table",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_status_domain",
+    "source": "formula_1.sqlite",
+    "query": "SELECT statusId, status FROM status LIMIT 20",
+    "result": "statusId 1 'Finished', 2 'Disqualified', 3 'Accident', 4 'Collision', 5 'Engine', 6 'Gearbox', 7 'Transmission', 8 'Clutch', 9 'Hydraulics', 10 'Electrical', 11 '+1 Lap' and so on for 134 rows",
+    "validation_method": "value enumeration of the status reference table",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_winner_time_format",
+    "source": "formula_1.sqlite",
+    "query": "SELECT position, positionText, LENGTH(time)-LENGTH(REPLACE(time,':','')) colons, COUNT(*) FROM results WHERE time IS NOT NULL GROUP BY 1,2,3 ; SELECT year, position, time FROM results res JOIN races r ON r.raceId=res.raceId WHERE r.year=2009 AND res.time LIKE '%:%:%'",
+    "result": "970 entries with position 1 carry two colons, a full H:MM:SS.mmm value such as '1:34:15.784'; every other position carries at most one colon or a '+gap' text; 2 winning entries carry one colon and 1 carries no time",
+    "validation_method": "format grouping by position and inspection of 2009 winning times",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_lap_time_ms",
+    "source": "formula_1.sqlite",
+    "query": "SELECT COUNT(*), SUM(milliseconds IS NULL), MIN(milliseconds), MAX(milliseconds) FROM lapTimes ; SELECT LENGTH(time)-LENGTH(REPLACE(time,':','')) colons, COUNT(*) FROM lapTimes GROUP BY 1",
+    "result": "420369 rows with no null milliseconds; milliseconds is an integer lap duration such as 109088 matching the text '1:49.088'; 420326 rows render as M:SS.mmm with one colon and 43 rows hold an H:MM:SS.mmm cumulative value; lap ordinals run 1 to 78",
+    "validation_method": "null check, numeric range check and text-format grouping",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_qualifying_time_format",
+    "source": "formula_1.sqlite",
+    "query": "SELECT LENGTH(q3)-LENGTH(REPLACE(q3,':','')) colons, COUNT(*) FROM qualifying WHERE q3 IS NOT NULL GROUP BY 1 ; SELECT LENGTH(q1)-LENGTH(REPLACE(q1,':','')) colons, COUNT(*) FROM qualifying WHERE q1 IS NOT NULL GROUP BY 1 ; SELECT DISTINCT position FROM qualifying",
+    "result": "q3 has 2118 values with one colon and 28 empty strings; q1 has 7280 values all with one colon; segment times are M:SS.mmm such as '1:26.572'; qualifying.position runs 1 upward",
+    "validation_method": "text-format grouping and value enumeration",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_fastest_lap",
+    "source": "formula_1.sqlite",
+    "query": "SELECT rank, COUNT(*) FROM results WHERE fastestLapTime IS NOT NULL GROUP BY 1 ; SELECT LENGTH(fastestLapTime)-LENGTH(REPLACE(fastestLapTime,':','')) colons, COUNT(*) FROM results WHERE fastestLapTime IS NOT NULL GROUP BY 1",
+    "result": "5268 entries carry a fastestLapTime, all M:SS.mmm with one colon, for example '1:45.008'; results.rank holds the fastest-lap rank within the race with 256 entries per rank from 1 upward",
+    "validation_method": "text-format grouping and rank distribution",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_raceid_scheme",
+    "source": "formula_1.sqlite",
+    "query": "SELECT year, MIN(raceId), MAX(raceId), COUNT(*) FROM races GROUP BY 1 ORDER BY 1",
+    "result": "2009 maps to raceIds 1 to 17, 2008 to 18 to 35, 2007 to 36 to 52, descending year by descending identifier down to 1950 at 833 to 839, then 2010 at 337 to 355, 2011 at 841 to 859 and 2017 at 969 to 988; within each season the raceId ordering matches the round ordering",
+    "validation_method": "per-season identifier range scan and round alignment check",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_standings_grain",
+    "source": "formula_1.sqlite",
+    "query": "SELECT COUNT(DISTINCT raceId) FROM driverStandings ; SELECT COUNT(DISTINCT raceId) FROM constructorStandings ; SELECT * FROM driverStandings WHERE raceId=17 ORDER BY position",
+    "result": "driverStandings covers 970 distinct raceIds and constructorStandings 906 of the 976 races; raceId 17 is the final round of 2009 and shows driver 18 at position 1 with 95.0 points and 6 wins, driver 20 second with 84.0 and driver 22 third with 77.0",
+    "validation_method": "coverage count and inspection of a season's final standings",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_points_grain",
+    "source": "formula_1.sqlite",
+    "query": "SELECT points, COUNT(*) FROM results GROUP BY 1 ORDER BY 2 DESC LIMIT 12 ; SELECT * FROM constructorStandings ORDER BY raceId DESC LIMIT 5",
+    "result": "results.points is 0.0 for 17037 of 23657 rows and takes the scoring values 1, 2, 3, 4, 6, 8, 9, 10, 12, 18 and 25 otherwise; constructorStandings at raceId 982 shows cumulative totals of 475.0 and 373.0",
+    "validation_method": "value distribution and inspection of standings totals",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_driver_identifiers",
+    "source": "formula_1.sqlite",
+    "query": "SELECT driverId, driverRef, number, code, forename, surname, dob, nationality FROM drivers LIMIT 8 ; SELECT SUM(number IS NULL), SUM(code IS NULL), SUM(dob IS NULL) FROM drivers ; PRAGMA table_info(drivers)",
+    "result": "row 1 is (1, 'hamilton', 44, 'HAM', 'Lewis', 'Hamilton', '1985-01-07', 'British'); number is null for 804 of 840 rows and code is null for 757; the drivers table has no gender column",
+    "validation_method": "representative row inspection, null counts and schema inspection",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_dob",
+    "source": "formula_1.sqlite",
+    "query": "SELECT MIN(dob), MAX(dob), SUM(dob IS NULL) FROM drivers",
+    "result": "date of birth is stored as YYYY-MM-DD across 840 drivers with exactly one null value",
+    "validation_method": "range and null check",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_nationality_values",
+    "source": "formula_1.sqlite",
+    "query": "SELECT nationality, COUNT(*) FROM drivers GROUP BY 1 ORDER BY 2 DESC LIMIT 20 ; SELECT nationality, COUNT(*) FROM constructors GROUP BY 1 ORDER BY 2 DESC",
+    "result": "driver nationalities include British 162, American 157, Italian 99, French 72, German 49, Brazilian 31, Japanese 19 and Dutch 17; constructor nationalities include British 85, American 39, Italian 29, French 12, German 10 and Japanese 5; the string 'Netherlandic' never appears and the stored value is 'Dutch'",
+    "validation_method": "value enumeration for both nationality columns",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_circuit_coords",
+    "source": "formula_1.sqlite",
+    "query": "SELECT circuitId, circuitRef, name, location, country, lat, lng FROM circuits WHERE name LIKE '%Marina Bay%' ; SELECT country, COUNT(*) FROM circuits GROUP BY 1 ORDER BY 2 DESC",
+    "result": "circuitId 15 is ('marina_bay', 'Marina Bay Street Circuit', 'Marina Bay', 'Singapore', 1.2914, 103.864); 72 circuits with plain country names, USA 11, France 7, Spain 6, Germany 3, Singapore 1",
+    "validation_method": "representative row inspection and country value enumeration",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_url_values",
+    "source": "formula_1.sqlite",
+    "query": "SELECT url FROM constructors LIMIT 3 ; SELECT url FROM drivers LIMIT 3 ; SELECT url FROM circuits LIMIT 3",
+    "result": "every entity table carries a url column holding a reference page such as 'http://en.wikipedia.org/wiki/McLaren'; drivers.url and circuits.url are declared unique",
+    "validation_method": "representative value inspection",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_race_names",
+    "source": "formula_1.sqlite",
+    "query": "SELECT name, COUNT(*) FROM races GROUP BY 1 ORDER BY 2 DESC LIMIT 12",
+    "result": "races.name is a Grand Prix title reused across seasons and circuits: Italian Grand Prix 68, British Grand Prix 68, Monaco Grand Prix 64, German Grand Prix 62, European Grand Prix 23",
+    "validation_method": "value enumeration",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_european_gp_hosts",
+    "source": "formula_1.sqlite",
+    "query": "SELECT c.country, COUNT(*) FROM races r JOIN circuits c ON c.circuitId=r.circuitId WHERE r.name='European Grand Prix' GROUP BY 1 ; SELECT circuitId, name, location, country FROM circuits WHERE circuitId IN (12,20,26)",
+    "result": "European Grand Prix races were hosted at circuits in Germany 12, Spain 7, UK 3 and Azerbaijan 1; circuit 20 is Nurburgring in Germany while circuits 12 and 26 are in Spain",
+    "validation_method": "race title enumeration joined to circuit country",
+    "timestamp": "2026-10-10"
+  }
+]

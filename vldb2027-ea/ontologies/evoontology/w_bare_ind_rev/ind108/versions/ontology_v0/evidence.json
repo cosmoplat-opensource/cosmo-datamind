@@ -1,0 +1,306 @@
+[
+  {
+    "id": "ev_table_inventory",
+    "source": "ind108 (sqlite, read-only)",
+    "query": "SELECT name, type FROM sqlite_master WHERE type='table' ORDER BY name",
+    "result": "107 tables: 45 dim_* master-data tables, 52 fact_* transaction tables, 15 DWS_* pre-aggregated daily marts, agg_metric_monthly, and 3 metric-configuration tables (dim_metric_catalog, dim_derived_metric_config, dim_composite_metric_config).",
+    "validation_method": "schema inspection via sqlite_master",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_time_coverage",
+    "source": "ind108 (sqlite, read-only)",
+    "query": "SELECT MIN(x), MAX(x) per date column: fact_sales_order.order_date, fact_production_order.order_date, fact_quotation.quotation_date, fact_sample.sample_date/feedback_date, fact_opportunity.create_date, fact_ap.due_date, fact_contract.end_date, fact_inventory.warehouse_date, fact_incident.incident_date, fact_risk_assessment.assess_date, fact_safety_plan.issued_date, fact_safety_audit.audit_date, fact_safety_training.training_date, fact_supplier_eval.eval_date, fact_purchase_requisition.pr_date, fact_env_record.record_date, fact_downtime.start_time, fact_energy_consumption.record_date",
+    "result": "Detail data spans 2025-01-01 to 2026-06-30 for most facts (fact_supplier_eval eval_date to 2026-07-06; fact_ap due_date to 2026-08-29; fact_contract end_date to 2026-12-31). No records before 2025. fact_inventory.warehouse_date covers only 2026-06-15..2026-06-30.",
+    "validation_method": "min/max date scan per fact table",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_payment_receipt_enum",
+    "source": "ind108 (sqlite, read-only)",
+    "query": "SELECT payment_type, is_bank_accepted, COUNT(*) FROM fact_payment GROUP BY 1,2",
+    "result": "电汇 | 0 | 3239 ; 银承 | 1 | 1705. Total 4944 receipt rows. is_bank_accepted is exactly 1 for 银承 and 0 for 电汇. Example year filter: payment_date LIKE '2026%' AND payment_type='电汇' returns 1392.",
+    "validation_method": "value distribution check",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_payment_out_enum",
+    "source": "ind108 (sqlite, read-only)",
+    "query": "SELECT payment_method, COUNT(*) FROM fact_payment_out GROUP BY 1; SELECT DISTINCT bank_account FROM fact_payment_out LIMIT 8",
+    "result": "payment_method: bank_transfer 599, letter_of_credit 280 (879 rows). bank_account values are SYN-ACCOUNT-0001 .. SYN-ACCOUNT-0011; SYN-ACCOUNT-0011 alone holds 72 payment rows.",
+    "validation_method": "value distribution check",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_incident_enum",
+    "source": "ind108 (sqlite, read-only)",
+    "query": "SELECT severity, COUNT(*) FROM fact_incident GROUP BY 1; SELECT incident_type, COUNT(*) FROM fact_incident GROUP BY 1; SELECT status, COUNT(*), SUM(injury_count) FROM fact_incident",
+    "result": "severity: fa 14, mtc 7, near_miss 11. incident_type: 机械伤害 8, 灼烫 5, 物体打击 3, 触电 4, 车辆伤害 5, 高处坠落 7. status: closed 29, investigating 1, reported 2. SUM(injury_count)=21; 2025 subset sums to 9. incident_date 2025-03-09..2026-06-10.",
+    "validation_method": "value distribution check",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_risk_assessment_enum",
+    "source": "ind108 (sqlite, read-only)",
+    "query": "SELECT likelihood, consequence, risk_level, control_needed, COUNT(*) FROM fact_risk_assessment GROUP BY 1,2,3,4",
+    "result": "30 rows. likelihood in {unlikely, possible, likely}; consequence in {minor, moderate, major, catastrophic}; risk_level in {L1,L2,L3,L4}; control_needed in {0,1}. Mappings observed: unlikely+minor->L1, unlikely+moderate/major->L2, possible+minor/moderate->L2, possible+catastrophic/major->L3, unlikely+catastrophic->L3, likely+major/catastrophic->L4. assess_date 2025-01-14..2026-02-03.",
+    "validation_method": "value distribution check",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_risk_level_dim",
+    "source": "ind108 (sqlite, read-only)",
+    "query": "SELECT * FROM dim_risk_level",
+    "result": "L1 可接受; L2 可容忍; L3 不可容忍 (须限期整改, 一个月内完成); L4 重大 (立即停止作业). Each level carries description and action_required text.",
+    "validation_method": "reference-table read",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_safety_objective_unit",
+    "source": "ind108 (sqlite, read-only)",
+    "query": "SELECT unit, COUNT(*) FROM fact_safety_objective GROUP BY 1",
+    "result": "unit: % 2 rows, ‰ 2 rows, 起 2 rows (6 objectives total). SUM(target_value) is 0.0 for the 起 group, so unit filtering must be on the unit column, not on the numeric value.",
+    "validation_method": "value distribution check",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_sales_order_status",
+    "source": "ind108 (sqlite, read-only)",
+    "query": "SELECT status, COUNT(*) FROM fact_sales_order GROUP BY 1",
+    "result": "delivered 4576, undelivered 152, returned 3 (4731 rows). order_date 2025-01-02..2026-06-30; 3229 rows in 2025, 1502 in 2026.",
+    "validation_method": "value distribution check",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_production_order_status",
+    "source": "ind108 (sqlite, read-only)",
+    "query": "SELECT status, COUNT(*) FROM fact_production_order GROUP BY 1",
+    "result": "已完成 2930, 待生产 27, 生产中 12 (Chinese status values, not English). order_date 2025-01-01..2026-06-30.",
+    "validation_method": "value distribution check",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_quotation_status",
+    "source": "ind108 (sqlite, read-only)",
+    "query": "SELECT status, COUNT(*) FROM fact_quotation GROUP BY 1",
+    "result": "draft 6, lost 113, won 357. quotation_date 2025-01-01..2026-06-26; unit_price range 9238.85..51333.96.",
+    "validation_method": "value distribution check",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_opportunity_status",
+    "source": "ind108 (sqlite, read-only)",
+    "query": "SELECT status, COUNT(*) FROM fact_opportunity GROUP BY 1",
+    "result": "lost 20, open 22, stalled 6, won 36 (84 rows). create_date 2025-01-30..2026-06-04; SUM(estimated_amount)=380452350.0.",
+    "validation_method": "value distribution check",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_return_reason",
+    "source": "ind108 (sqlite, read-only)",
+    "query": "SELECT reason, COUNT(*) FROM fact_return GROUP BY 1",
+    "result": "5 distinct reasons (83 return rows): 产品质量问题:冲击强度偏低 31, 包装破损受潮 9, 客户订单变更取消 12, 规格型号发错 9, 颜色与样板不符 22. reason is free text, not a coded enum.",
+    "validation_method": "value distribution check",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_goods_receipt_result",
+    "source": "ind108 (sqlite, read-only)",
+    "query": "SELECT status, COUNT(*) FROM fact_goods_receipt GROUP BY 1; SELECT inspection_result, COUNT(*) FROM fact_goods_receipt GROUP BY 1",
+    "result": "status: posted 1001, inspected 16. inspection_result: pass 1001, fail 16 (1017 rows). The two columns are perfectly aligned: pass<->posted, fail<->inspected.",
+    "validation_method": "value distribution check",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_sample_feedback",
+    "source": "ind108 (sqlite, read-only)",
+    "query": "SELECT feedback_result, is_success, is_feedback, COUNT(*) FROM fact_sample GROUP BY 1,2,3; SELECT COUNT(*) WHERE feedback_date LIKE '2025%'",
+    "result": "NULL | is_success=0 | is_feedback=0 | 8 rows; fail | 0 | 1 | 22 rows; success | 1 | 1 | 20 rows (50 samples). is_success=1 exactly when feedback_result='success'. feedback_date 2025-02-16..2026-06-20; 31 samples carry a 2025 feedback_date. sample_date 2025-02-03..2026-06-16.",
+    "validation_method": "value distribution check",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_output_grade",
+    "source": "ind108 (sqlite, read-only)",
+    "query": "SELECT grade, is_first_grade, COUNT(*) FROM fact_production_output GROUP BY 1,2",
+    "result": "一等品 | is_first_grade=0 | 2721; 优等品 | 1 | 2721; 合格品 | 0 | 93; 返工品 | 0 | 116. is_first_grade=1 ONLY for 优等品; 一等品 has is_first_grade=0, so a 一等品 filter must use the grade column.",
+    "validation_method": "value distribution check",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_supplier_eval_grade",
+    "source": "ind108 (sqlite, read-only)",
+    "query": "SELECT grade, COUNT(*) FROM fact_supplier_eval GROUP BY 1; SELECT DISTINCT eval_period FROM fact_supplier_eval",
+    "result": "grade: AA 54, A 12 (66 rows). eval_period is quarterly text: 2025-Q1..2026-Q2. eval_date 2025-04-06..2026-07-06.",
+    "validation_method": "value distribution check",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_downtime_reason",
+    "source": "ind108 (sqlite, read-only)",
+    "query": "SELECT reason_id, reason_code, reason_name, category FROM dim_downtime_reason; SELECT DISTINCT reason_code FROM fact_downtime",
+    "result": "dim_downtime_reason has 8 rows with reason_id 1..8 and codes D001..D008: 设备故障(设备), 换产清机(工艺), 计划保养(计划), 物料短缺(物料), 质量异常(质量), 能源中断(能源), 人员不足(人力), 滤网更换(工艺). fact_downtime.reason_code stores the integer 1..8 (the reason_id), NOT the D00x text code; all 3741 rows resolve to a dim row.",
+    "validation_method": "value distribution and referential check",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_env_record_enum",
+    "source": "ind108 (sqlite, read-only)",
+    "query": "SELECT record_type, emission_type, unit, is_compliant, COUNT(*) FROM fact_env_record GROUP BY 1,2,3,4",
+    "result": "90 rows. record_type in {季度监测 (30 rows), 月度监测 (60 rows)}. emission_type in {COD, VOCs, 噪声, 氨氮, 颗粒物}. unit varies by pollutant: mg/L (COD, 氨氮), mg/m³ (VOCs, 颗粒物), dB(A) (噪声). is_compliant in {0,1} with no NULLs. record_date 2025-01-15..2026-06-15.",
+    "validation_method": "value distribution check",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_alarm_severity",
+    "source": "ind108 (sqlite, read-only)",
+    "query": "SELECT severity, is_handled, COUNT(*) FROM fact_alarm GROUP BY 1,2; SELECT COUNT(*) WHERE handled_time IS NULL",
+    "result": "critical | is_handled=1 | 639 ; warning | 1 | 2470. All 3109 alarms are already handled and every row has a handled_time, so 'handled alarms' cannot be distinguished from total alarms in this dataset.",
+    "validation_method": "value distribution check",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_energy_columns",
+    "source": "ind108 (sqlite, read-only)",
+    "query": "SELECT record_date, line_id, workshop_id, electricity_kwh, water_tons, steam_tons FROM fact_energy_consumption LIMIT 5; SELECT MIN(record_date), MAX(record_date), COUNT(*) FROM fact_energy_consumption",
+    "result": "One row per line x day, carrying electricity_kwh, water_tons, steam_tons and unit_energy_consumption together (e.g. 2025-01-01 line 1 workshop 1: 7726.82 kWh, 18.57 t water, 3.94 t steam). 6552 rows, 2025-01-01..2026-06-30.",
+    "validation_method": "row sampling and grain inspection",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_fk_integrity",
+    "source": "ind108 (sqlite, read-only)",
+    "query": "Anti-join orphan counts for 24 candidate relationships, e.g. SELECT COUNT(*) FROM fact_delivery d WHERE NOT EXISTS (SELECT 1 FROM fact_sales_order o WHERE o.order_id=d.order_id)",
+    "result": "Zero orphans for every pair checked: sales_order->customer, sales_order->product, delivery->sales_order, return->sales_order, goods_receipt->purchase_order, ap->goods_receipt, po_line->purchase_order, po_line->material, maintenance_record->equipment, maintenance_plan->equipment, equipment->production_line, supplier_eval->supplier, risk_assessment->hazard, budget_expense->department, safety_objective->safety_plan, incident->workshop, alarm->equipment, energy_consumption->production_line, downtime->downtime_reason, sample->employee, product_cost->product, payment->ar_aging, payment_out->ap, product->sales_order.",
+    "validation_method": "referential-integrity anti-join checks",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_ap_payment_chain",
+    "source": "ind108 (sqlite, read-only)",
+    "query": "SELECT status, COUNT(*) FROM fact_ap GROUP BY 1; orphan checks fact_ap.gr_id -> fact_goods_receipt.gr_id and fact_payment_out.ap_id -> fact_ap.ap_id",
+    "result": "fact_ap: closed 879, open 122 (1001 rows). Every AP row has a non-null gr_id that resolves to a goods receipt. 879 AP rows have at least one fact_payment_out row; 122 (exactly the open ones) have none.",
+    "validation_method": "referential-integrity and chain check",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_expense_type",
+    "source": "ind108 (sqlite, read-only)",
+    "query": "SELECT expense_type, COUNT(*), MIN(expense_date), MAX(expense_date) FROM fact_expense GROUP BY 1",
+    "result": "8 types over 2592 rows: 业务招待费 479, 办公费 162, 小车费 409, 差旅费 819, 市场推广费 36, 渠道佣金 259, 运输费 260, 通讯费 168. expense_date 2025-01-02..2026-06-30.",
+    "validation_method": "value distribution check",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_iot_quality",
+    "source": "ind108 (sqlite, read-only)",
+    "query": "SELECT quality_flag, COUNT(*) FROM fact_iot_data GROUP BY 1",
+    "result": "good 28476, uncertain 282 (28758 rows). Only these two quality values exist.",
+    "validation_method": "value distribution check",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_contract_enum",
+    "source": "ind108 (sqlite, read-only)",
+    "query": "SELECT contract_type, status, COUNT(*) FROM fact_contract GROUP BY 1,2; SELECT MIN(end_date), MAX(end_date); SELECT COUNT(*) WHERE end_date='2026-12-31'",
+    "result": "purchase|active|11; sales|active|7; sales|terminated|1 (19 rows). end_date 2026-03-12..2026-12-31; 18 contracts end exactly on 2026-12-31. No due_date column exists; the expiry date is end_date.",
+    "validation_method": "value distribution check",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_fixed_asset",
+    "source": "ind108 (sqlite, read-only)",
+    "query": "SELECT asset_type, COUNT(*) FROM dim_fixed_asset GROUP BY 1; SELECT SUM(accumulated_dep), COUNT(*) FROM dim_fixed_asset",
+    "result": "asset_type: building 6, production_equipment 60, utility 3 (69 assets). SUM(accumulated_dep)=203383404.88. Each row also carries monthly_depreciation, original_value and net_book_value.",
+    "validation_method": "value distribution check",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_hazard_location",
+    "source": "ind108 (sqlite, read-only)",
+    "query": "SELECT DISTINCT hazard_category, location FROM dim_hazard; SELECT h.location, COUNT(*) FROM fact_risk_assessment r JOIN dim_hazard h ON h.hazard_id=r.hazard_id GROUP BY 1",
+    "result": "8 hazards with exact location strings: PP改性车间挤出区 (2 hazards, 6 assessments, SUM(control_needed)=6), PA改性车间切粒区, PA改性车间料仓平台, 阻燃材料车间配料间 (2 hazards), ABS/PC合金车间成品区, ABS/PC合金车间包装区, 特种工程塑料车间配电室, 特种工程塑料车间料仓内部.",
+    "validation_method": "join and value inspection",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_metric_config",
+    "source": "ind108 (sqlite, read-only)",
+    "query": "SELECT derived_metric_name, atomic_metric_names, calc_method FROM dim_derived_metric_config; SELECT composite_metric_name, formula FROM dim_composite_metric_config",
+    "result": "24 derived-metric definitions stating aggregation semantics (累计产量=SUM(实际产量), 最高成材率=MAX, 日均接单金额=AVG, 总折旧=SUM(折旧额)) and 9 composite metrics with explicit formulas (投入产出比, 经营利润率, 设备可用率, 一次合格率, 安全健康度, 能耗效率, 维保强度, 预算偏差度, 单位产出成本). This table records the database's own aggregation conventions.",
+    "validation_method": "reference-table read",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_dws_marts",
+    "source": "ind108 (sqlite, read-only)",
+    "query": "SELECT COUNT(*) FROM DWS_PRODUCTION_DAILY; SELECT COUNT(*) FROM agg_metric_monthly",
+    "result": "15 DWS_* daily mart tables (e.g. DWS_PRODUCTION_DAILY 7974 rows) plus agg_metric_monthly (441 rows) already contain pre-aggregated metrics keyed by date / employee / department / workshop, coexisting with the row-level fact tables that hold the same measures.",
+    "validation_method": "row counts and grain inspection",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_purchase_order_enum",
+    "source": "ind108 (sqlite, read-only)",
+    "query": "SELECT payment_terms, COUNT(*) FROM fact_purchase_order GROUP BY 1; SELECT status, COUNT(*) FROM fact_purchase_order GROUP BY 1; SELECT MIN(po_date), MAX(po_date)",
+    "result": "payment_terms: 月结30天 372, 月结45天 322, 月结60天 201 (895 orders). status: closed 777, confirmed 10, received 108. po_date 2025-01-07..2026-06-24.",
+    "validation_method": "value distribution check",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_inventory_grain",
+    "source": "ind108 (sqlite, read-only)",
+    "query": "SELECT COUNT(*), MIN(warehouse_date), MAX(warehouse_date), MIN(storage_days), MAX(storage_days) FROM fact_inventory",
+    "result": "37 rows only, all with warehouse_date between 2026-06-15 and 2026-06-30 (a single intake window), storage_days populated per row.",
+    "validation_method": "range and grain inspection",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_ar_aging_buckets",
+    "source": "ind108 (sqlite, read-only)",
+    "query": "SELECT COUNT(*), SUM(aging_3m), SUM(aging_4m), SUM(balance_amount) FROM fact_ar_aging",
+    "result": "5162 rows. aging_1m..aging_6m, aging_6_12m, aging_12m_plus are AMOUNT buckets (not month counts). SUM(aging_3m)=51609385.92, SUM(aging_4m)=11289959.36, SUM(balance_amount)=317341171.53 with no NULL balances. Also carries is_overdue and overdue_months.",
+    "validation_method": "column-semantics and aggregate check",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_budget_dual_source",
+    "source": "ind108 (sqlite, read-only)",
+    "query": "SELECT COUNT(*) FROM fact_budget; SELECT COUNT(*) FROM fact_budget_expense; PRAGMA table_info",
+    "result": "fact_budget: 180 rows keyed by cc_id (cost centre) with budget_amount and actual_amount plus budget_type. fact_budget_expense: 108 rows keyed by dept_id with budget_amount only. Two different organisational grains for budget analysis.",
+    "validation_method": "grain comparison of two candidate sources",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_maintenance_enum",
+    "source": "ind108 (sqlite, read-only)",
+    "query": "SELECT maint_type, COUNT(*) FROM fact_maintenance_plan GROUP BY 1; SELECT maint_type, COUNT(*) FROM fact_maintenance_wo GROUP BY 1; SELECT MIN(next_date), MAX(next_date) FROM fact_maintenance_plan; SELECT result, COUNT(*) FROM fact_maintenance_record GROUP BY 1",
+    "result": "fact_maintenance_plan (72 rows): 季度大修 12, 月度检修 60; next_date 2026-07-01..2026-09-28. fact_maintenance_wo (1700 rows): 月度检修 993, 故障维修 639, 季度大修 68. fact_maintenance_record (1694 rows): result all 'completed'.",
+    "validation_method": "value distribution check across related tables",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_equipment_manufacturer",
+    "source": "ind108 (sqlite, read-only)",
+    "query": "SELECT manufacturer, COUNT(*) FROM dim_equipment GROUP BY 1",
+    "result": "示例机械A 12, 示例机械B 12, 示例机械C 12, 示例机械D 12, 示例机械E 7, 示例机械F 5 (60 equipment). Equipment -> production line resolves cleanly; e.g. 示例机械F equipment carries 117 maintenance records, PA挤出3线 carries 6 maintenance plans and PP挤出1线 167 maintenance records.",
+    "validation_method": "value distribution and join check",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_department_region",
+    "source": "ind108 (sqlite, read-only)",
+    "query": "SELECT dept_name, region_id FROM dim_department; SELECT region_name FROM dim_region",
+    "result": "dim_region has 6 regions 华东/华南/华北/西南/华中/西北 (id 1..6). Only the six sales departments carry a region_id (华东销售部=1 ... 西北销售部=6); production and functional departments (生产部, 质量部, 设备部, 采购部, 仓储物流部, 财务部, 人力资源部, 安全环保部, 计划部, 研发中心, 总经办) have NULL region_id.",
+    "validation_method": "reference-table read and NULL inspection",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_downtime_volume",
+    "source": "ind108 (sqlite, read-only)",
+    "query": "SELECT COUNT(*) FROM fact_downtime; SELECT COUNT(*) FROM DWS_PRODUCTION_DAILY",
+    "result": "fact_downtime holds 3741 event rows, each with equipment_id, line_id, start_time, end_time and duration_hours; DWS_PRODUCTION_DAILY holds 7974 pre-aggregated rows carrying a downtime_hours column as well.",
+    "validation_method": "row counts and grain inspection",
+    "timestamp": "2026-10-10"
+  }
+]

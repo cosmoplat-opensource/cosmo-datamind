@@ -1,0 +1,256 @@
+[
+  {
+    "id": "constraint_yearmonth_date_encoding",
+    "target": "term_year_month_period",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "year",
+      "month",
+      "2012",
+      "2013",
+      "date",
+      "yearmonth",
+      "monthly",
+      "September",
+      "peak month",
+      "month code"
+    ],
+    "severity": "block",
+    "scope": "Applies whenever a calendar year or month is used with consumption data",
+    "confidence": "high",
+    "description": "Consumption months are stored as six-character text codes in the form YYYYMM: the first four characters are the four-digit year and the last two characters are the two-digit month. A year therefore corresponds to the twelve consecutive month codes that share the same four-digit year prefix, and expressions such as 'September 2013' correspond to the code 201309. The month part must be read as characters 5-6, not as a numeric date.",
+    "evidence": [
+      "ev_yearmonth_date_codes"
+    ]
+  },
+  {
+    "id": "constraint_year_selection_semantics",
+    "target": "term_year_month_period",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "year 2013",
+      "year 2012",
+      "between 201301 and 201312",
+      "full year",
+      "annual",
+      "for the year"
+    ],
+    "severity": "block",
+    "scope": "Applies when a question refers to a whole calendar year of consumption",
+    "confidence": "high",
+    "description": "Because periods are ordered codes, a calendar year is the set of month codes sharing that year's four-digit prefix. Workload questions express a year as the range from the year's first month code to its last month code, so the year and the code range describe the same set of months. Year codes must not be mixed across years, and a year-level figure combines only the months carrying that year prefix.",
+    "evidence": [
+      "ev_yearmonth_date_codes",
+      "ev_workload_definitions"
+    ]
+  },
+  {
+    "id": "constraint_yearmonth_coverage",
+    "target": "term_year_month_period",
+    "constraint_type": "scope",
+    "trigger_keywords": [
+      "2013",
+      "2012",
+      "2011",
+      "full year",
+      "twelve months",
+      "annual",
+      "December",
+      "October 2012"
+    ],
+    "severity": "warning",
+    "scope": "Applies when interpreting year totals, annual averages or year-over-year comparisons of consumption",
+    "confidence": "high",
+    "description": "Consumption periods are not equally complete across years. 2013 covers January to November only (201301-201311) and has no December; 2012 covers January to September only (201201-201209); 2011 contains the single month 201112. A request phrased as a full year, or as a range ending in December, therefore covers fewer months than twelve in this dataset, and December 2013 as well as October-December 2012 have no consumption data at all.",
+    "evidence": [
+      "ev_yearmonth_coverage"
+    ]
+  },
+  {
+    "id": "constraint_customer_segment_values",
+    "target": "term_customer_segment",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "SME",
+      "LAM",
+      "KAM",
+      "segment",
+      "customer segment",
+      "three segments",
+      "small and medium"
+    ],
+    "severity": "block",
+    "scope": "Applies when grouping, filtering or comparing customers and their consumption by segment",
+    "confidence": "high",
+    "description": "The customer segment domain contains exactly three values, written in upper case: SME (26763 customers), LAM (3658) and KAM (2040). Every customer has exactly one segment and no customer is unclassified. Segment is a static customer attribute with no time dimension, so a customer's segment at any past moment is the same as the segment currently recorded for that customer.",
+    "evidence": [
+      "ev_customer_segment_values"
+    ]
+  },
+  {
+    "id": "constraint_segment_terminology",
+    "target": "term_gas_station_segment",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "segment",
+      "Segment column",
+      "Premium",
+      "Discount",
+      "Value for money",
+      "Noname",
+      "station segment"
+    ],
+    "severity": "warning",
+    "scope": "Applies when a question mentions segment while referring to gas stations, stations, chains or station types",
+    "confidence": "high",
+    "description": "Two different concepts are both stored in a column named Segment. On customers, Segment means the customer category SME/LAM/KAM. On gasstations, Segment means the station type with values Discount, Noname, Other, Premium and Value for money. The two value domains are disjoint, and a request about the segment of a station is not a request about a customer segment.",
+    "evidence": [
+      "ev_customer_segment_values",
+      "ev_station_segment_values"
+    ]
+  },
+  {
+    "id": "constraint_payment_currency_values",
+    "target": "term_payment_currency",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "euro",
+      "EUR",
+      "CZK",
+      "currency",
+      "paid in",
+      "pays in",
+      "koruna",
+      "Czech koruna"
+    ],
+    "severity": "block",
+    "scope": "Applies to any question that mentions currency or a currency name",
+    "confidence": "high",
+    "description": "The settlement currency domain contains exactly two values: CZK (30459 customers) and EUR (2002 customers). 'Paid in euro', 'pays in euro' and 'in EUR' all refer to the value EUR; 'paid in CZK' refers to CZK. The database stores no exchange rate, so consumption or price figures in CZK and EUR are not comparable and must not be combined without an explicit conversion rule.",
+    "evidence": [
+      "ev_customer_currency_values"
+    ]
+  },
+  {
+    "id": "constraint_avg_monthly_definition",
+    "target": "term_avg_monthly_consumption",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "average monthly consumption",
+      "monthly average",
+      "average consumption",
+      "per month"
+    ],
+    "severity": "warning",
+    "scope": "Applies when an average monthly consumption figure is requested for a year or a customer group",
+    "confidence": "medium",
+    "description": "In this workload, average monthly consumption for a year is defined as the mean of the year's monthly consumption values divided by 12, treating the year as twelve months regardless of how many monthly records are present. This definition is a stated convention rather than a property of the stored data, and it differs from simply averaging the monthly values.",
+    "evidence": [
+      "ev_workload_definitions"
+    ]
+  },
+  {
+    "id": "constraint_consumption_value_semantics",
+    "target": "term_customer_monthly_consumption",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "consumption",
+      "monthly consumption",
+      "highest consumption",
+      "lowest consumption",
+      "negative",
+      "over 1000"
+    ],
+    "severity": "warning",
+    "scope": "Applies when filtering on consumption magnitude or when taking maximum and minimum monthly values",
+    "confidence": "high",
+    "description": "Consumption is a signed real value, not a non-negative quantity: observed values range from -582092.86 to 2052187.11, with 152 negative and 28 zero monthly records among 383282 rows. Negative values represent reversals or corrections of consumption, so thresholds and rankings such as 'over 1000' or 'least consumption' operate on a domain that includes negative entries.",
+    "evidence": [
+      "ev_consumption_value_range"
+    ]
+  },
+  {
+    "id": "constraint_consumption_grain_attribution",
+    "target": "term_customer_monthly_consumption",
+    "constraint_type": "scope",
+    "trigger_keywords": [
+      "consumption",
+      "products consumed",
+      "product",
+      "gas station",
+      "chain",
+      "per month",
+      "monthly"
+    ],
+    "severity": "warning",
+    "scope": "Applies when relating consumption to products, gas stations or chains",
+    "confidence": "high",
+    "description": "Consumption is recorded only at customer-month grain. It carries no product identifier and no gas-station or chain identifier, so consumption cannot be attributed to a product, a station or a chain from the consumption records themselves. Product and station attribution exists only on transaction records, at event grain.",
+    "evidence": [
+      "ev_product_attribution_gap",
+      "ev_schema_tables"
+    ]
+  },
+  {
+    "id": "constraint_transaction_window",
+    "target": "term_transaction_date",
+    "constraint_type": "scope",
+    "trigger_keywords": [
+      "transaction",
+      "transactions",
+      "2012/1/1",
+      "after 2012",
+      "September 2013",
+      "date of transaction"
+    ],
+    "severity": "warning",
+    "scope": "Applies to any question that filters or reasons about transaction dates",
+    "confidence": "high",
+    "description": "Transaction-level data covers only four consecutive days, 2012-08-23 through 2012-08-26, in 1000 records. There are no transactions in 2013 and none in September of any year. Consequently a date filter such as 'after 2012/1/1' selects the entire transaction set, and product-level purchase records simply do not exist for months outside this four-day window.",
+    "evidence": [
+      "ev_transaction_date_coverage",
+      "ev_product_attribution_gap"
+    ]
+  },
+  {
+    "id": "constraint_date_literal_format",
+    "target": "term_transaction_date",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "2012/8/23",
+      "2012/1/1",
+      "date literal",
+      "timestamp",
+      "2012-08-23",
+      "at 21:20"
+    ],
+    "severity": "info",
+    "scope": "Applies when a question expresses a day in slash form such as 2012/8/23",
+    "confidence": "high",
+    "description": "Days written in slash form in questions, for example 2012/8/23 or 2012/1/1, denote the same calendar days that the transaction data stores in ISO form as 2012-08-23 and 2012-01-01. The slash notation is question wording, not a stored representation. A combined date and time expression such as 2012/8/23 21:20:00 refers to the transaction day together with the clock time 21:20:00.",
+    "evidence": [
+      "ev_workload_definitions",
+      "ev_transaction_date_coverage"
+    ]
+  },
+  {
+    "id": "constraint_station_country_values",
+    "target": "term_gas_station_country",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "Czech Republic",
+      "CZE",
+      "Slovakia",
+      "SVK",
+      "country",
+      "Czech"
+    ],
+    "severity": "block",
+    "scope": "Applies when a question names a country for gas stations",
+    "confidence": "high",
+    "description": "Station countries are stored as three-letter codes. The Czech Republic is the value CZE (4836 stations) and Slovakia is the value SVK (880 stations). No other country value exists.",
+    "evidence": [
+      "ev_station_country_values"
+    ]
+  }
+]

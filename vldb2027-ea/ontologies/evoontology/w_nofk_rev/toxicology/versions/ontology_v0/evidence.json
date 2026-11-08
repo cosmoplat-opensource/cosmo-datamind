@@ -1,0 +1,138 @@
+[
+  {
+    "id": "ev_schema_tables",
+    "source": "toxicology.sqlite (read-only)",
+    "query": "SELECT name FROM sqlite_master WHERE type='table' ORDER BY name",
+    "result": "atom, bond, connected, molecule",
+    "validation_method": "sqlite_master metadata inspection",
+    "timestamp": "2026-10-09T19:40:00Z"
+  },
+  {
+    "id": "ev_row_counts",
+    "source": "toxicology.sqlite (read-only)",
+    "query": "SELECT 'atom', COUNT(*) FROM atom UNION ALL SELECT 'bond', COUNT(*) FROM bond UNION ALL SELECT 'connected', COUNT(*) FROM connected UNION ALL SELECT 'molecule', COUNT(*) FROM molecule",
+    "result": "atom=12333, bond=12379, connected=24758, molecule=343",
+    "validation_method": "full-table count",
+    "timestamp": "2026-10-09T19:40:00Z"
+  },
+  {
+    "id": "ev_element_values",
+    "source": "toxicology.sqlite (read-only)",
+    "query": "SELECT element, COUNT(*) FROM atom GROUP BY element ORDER BY 2 DESC",
+    "result": "21 distinct lowercase symbols: h=5518, c=4605, o=1043, n=480, cl=429, s=113, br=47, na=35, p=31, f=11, i=6, si=4, sn=2, cu=2, and one occurrence each of zn, y, te, pb, k, ca, b",
+    "validation_method": "distinct-value enumeration with frequency counts",
+    "timestamp": "2026-10-09T19:40:00Z"
+  },
+  {
+    "id": "ev_bond_type_values",
+    "source": "toxicology.sqlite (read-only)",
+    "query": "SELECT bond_type, COUNT(*) FROM bond GROUP BY bond_type",
+    "result": "'-' = 10528, '=' = 1844, '#' = 6, NULL = 1",
+    "validation_method": "distinct-value enumeration; quote() used to reveal the NULL row",
+    "timestamp": "2026-10-09T19:40:00Z"
+  },
+  {
+    "id": "ev_label_values",
+    "source": "toxicology.sqlite (read-only)",
+    "query": "SELECT label, COUNT(*) FROM molecule GROUP BY label",
+    "result": "'+' = 152, '-' = 191; no NULL and no third value",
+    "validation_method": "distinct-value enumeration plus NULL check",
+    "timestamp": "2026-10-09T19:40:00Z"
+  },
+  {
+    "id": "ev_molecule_coverage",
+    "source": "toxicology.sqlite (read-only)",
+    "query": "SELECT (SELECT COUNT(DISTINCT molecule_id) FROM atom), (SELECT COUNT(DISTINCT molecule_id) FROM bond), (SELECT COUNT(*) FROM molecule), (SELECT COUNT(*) FROM atom WHERE molecule_id NOT IN (SELECT molecule_id FROM molecule))",
+    "result": "444 distinct molecule ids in atom, 444 in bond, 343 rows in molecule, 3222 atom rows belong to molecules absent from the molecule table; 101 molecules are unlabelled",
+    "validation_method": "cross-table identifier coverage comparison",
+    "timestamp": "2026-10-09T19:40:00Z"
+  },
+  {
+    "id": "ev_connection_symmetry",
+    "source": "toxicology.sqlite (read-only)",
+    "query": "SELECT COUNT(*) FROM connected; SELECT bond_id, COUNT(*) FROM connected GROUP BY bond_id; SELECT COUNT(*) FROM connected c JOIN connected d ON c.atom_id=d.atom_id2 AND c.atom_id2=d.atom_id AND c.bond_id=d.bond_id; SELECT COUNT(DISTINCT bond_id) FROM connected",
+    "result": "24758 rows; every bond_id occurs exactly 2 times (12379 bonds); the mirrored self-join returns all 24758 rows, so the table is fully symmetric; connected covers all 12379 bond rows",
+    "validation_method": "multiplicity and symmetry checks against the bond table",
+    "timestamp": "2026-10-09T19:40:00Z"
+  },
+  {
+    "id": "ev_atom_id_format",
+    "source": "toxicology.sqlite (read-only)",
+    "query": "SELECT COUNT(*) FROM atom WHERE substr(atom_id,1,5) <> molecule_id; SELECT COUNT(*) FROM atom WHERE atom_id NOT LIKE 'TR___\\_%' ESCAPE '\\'",
+    "result": "0 mismatches out of 12333 atoms; every atom_id matches the pattern of a five-character molecule prefix, an underscore and an index",
+    "validation_method": "pattern check and prefix-to-column comparison",
+    "timestamp": "2026-10-09T19:40:00Z"
+  },
+  {
+    "id": "ev_bond_id_format",
+    "source": "toxicology.sqlite (read-only)",
+    "query": "SELECT COUNT(*) FROM bond WHERE substr(bond_id,1,5) <> molecule_id; and a decode check joining bond TR000_1_2 to connected on bond_id",
+    "result": "0 prefix mismatches out of 12379 bonds; bond TR000_1_2 maps to the connected atom pair (TR000_1, TR000_2), confirming that the two trailing numbers are the indices of the bonded atoms",
+    "validation_method": "pattern check, prefix comparison and endpoint decode against connected",
+    "timestamp": "2026-10-09T19:40:00Z"
+  },
+  {
+    "id": "ev_atom_index_digits",
+    "source": "toxicology.sqlite (read-only)",
+    "query": "SELECT substr(atom_id,7,1), COUNT(*) FROM atom GROUP BY 1 ORDER BY 1; SELECT COUNT(*) FROM atom WHERE CAST(substr(atom_id,7) AS INTEGER) >= 10",
+    "result": "leading index characters are the digits 1 to 9 only, distributed 1=4001, 2=2632, 3=1623, 4=1061, 5=822, 6=690, 7=568, 8=492, 9=444; 8441 atoms have an index of 10 or more",
+    "validation_method": "character-position distribution and numeric-suffix comparison",
+    "timestamp": "2026-10-09T19:40:00Z"
+  },
+  {
+    "id": "ev_atom_index19",
+    "source": "toxicology.sqlite (read-only)",
+    "query": "SELECT COUNT(*) FROM atom WHERE atom_id LIKE 'TR%_19'; SELECT COUNT(*) FROM connected WHERE atom_id LIKE 'TR%_19'",
+    "result": "289 atoms carry index 19 across the dataset; those atoms contribute 498 connection rows in the first-endpoint position",
+    "validation_method": "identifier pattern match with row count",
+    "timestamp": "2026-10-09T19:40:00Z"
+  },
+  {
+    "id": "ev_bond_atom_lookup",
+    "source": "toxicology.sqlite (read-only)",
+    "query": "SELECT COUNT(DISTINCT b.bond_id) FROM bond b JOIN connected c ON b.bond_id = c.bond_id WHERE c.atom_id = 'TR009_12'",
+    "result": "3 distinct bonds involve atom TR009_12, confirming that the atoms of a bond are reached through the connected table and that a single atom can participate in several bonds",
+    "validation_method": "join between bond and connected resolved by bonded atom",
+    "timestamp": "2026-10-09T19:40:00Z"
+  },
+  {
+    "id": "ev_unconnected_atoms",
+    "source": "toxicology.sqlite (read-only)",
+    "query": "SELECT COUNT(*) FROM atom WHERE atom_id NOT IN (SELECT atom_id FROM connected) AND atom_id NOT IN (SELECT atom_id2 FROM connected); SELECT DISTINCT element FROM atom WHERE atom_id NOT IN (SELECT atom_id FROM connected) AND atom_id NOT IN (SELECT atom_id2 FROM connected)",
+    "result": "49 atoms appear in no connection; their element symbols are na, cl, h, zn and k",
+    "validation_method": "set difference between the atom table and both endpoint columns of connected",
+    "timestamp": "2026-10-09T19:40:00Z"
+  },
+  {
+    "id": "ev_molecule_size",
+    "source": "toxicology.sqlite (read-only)",
+    "query": "SELECT MIN(c), MAX(c), ROUND(AVG(c),4) FROM (SELECT molecule_id, COUNT(*) c FROM atom GROUP BY molecule_id); and the same over bond",
+    "result": "atoms per molecule range from 4 to 174 with mean 27.777; bonds per molecule range from 2 to 175 with mean 27.8806",
+    "validation_method": "per-molecule aggregation statistics",
+    "timestamp": "2026-10-09T19:40:00Z"
+  },
+  {
+    "id": "ev_percentage_reference",
+    "source": "toxicology.sqlite (read-only)",
+    "query": "SELECT ROUND(100.0*SUM(element='c')/COUNT(*),5) FROM atom WHERE molecule_id IN (SELECT molecule_id FROM bond WHERE bond_type='='); SELECT ROUND(100.0*SUM(bond_type='=')/COUNT(*),5) FROM bond WHERE molecule_id='TR008'",
+    "result": "carbon share among atoms of molecules containing a double bond = 38.69851 percent; double bond share within molecule TR008 = 3.84615 percent",
+    "validation_method": "part-over-total ratio recomputed from the raw rows of the same reference set",
+    "timestamp": "2026-10-09T19:40:00Z"
+  },
+  {
+    "id": "ev_extremum_tie",
+    "source": "toxicology.sqlite (read-only)",
+    "query": "SELECT molecule_id, COUNT(*) c FROM bond WHERE bond_type='=' GROUP BY molecule_id ORDER BY c DESC LIMIT 3",
+    "result": "TR430=26, TR397=26, TR405=25; the maximum of 26 double bonds is shared by two molecules, both labelled '+'",
+    "validation_method": "ordered aggregation with tie inspection",
+    "timestamp": "2026-10-09T19:40:00Z"
+  },
+  {
+    "id": "ev_triple_bond_carcinogenic",
+    "source": "toxicology.sqlite (read-only)",
+    "query": "SELECT DISTINCT b.molecule_id FROM bond b JOIN molecule m ON b.molecule_id = m.molecule_id WHERE b.bond_type='#' AND m.label='+'",
+    "result": "TR041 and TR499 are the molecules that contain a triple bond and are labelled carcinogenic",
+    "validation_method": "join between bond and molecule filtered by bond type and label",
+    "timestamp": "2026-10-09T19:40:00Z"
+  }
+]

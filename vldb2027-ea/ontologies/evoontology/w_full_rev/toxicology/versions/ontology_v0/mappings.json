@@ -1,0 +1,200 @@
+[
+  {
+    "id": "mapping_molecule_id",
+    "term_id": "term_molecule",
+    "database_source": "toxicology",
+    "table": "molecule",
+    "column": "molecule_id",
+    "semantic_filter": "One row per molecule record.",
+    "aggregation_semantics": "distinct molecule records; count of molecules when counting rows",
+    "grain": "one row per molecule",
+    "validation": "molecule is the primary key of the molecule table; 343 rows, all matching TR followed by three digits."
+  },
+  {
+    "id": "mapping_molecule_label",
+    "term_id": "term_molecule_label",
+    "database_source": "toxicology",
+    "table": "molecule",
+    "column": "label",
+    "semantic_filter": "Each molecule record carries exactly one label value; no null labels were observed.",
+    "aggregation_semantics": "grouping molecules by label",
+    "grain": "one label per molecule",
+    "validation": "SELECT label, COUNT(*) FROM molecule GROUP BY label returned '+':152 and '-':191 with no null group."
+  },
+  {
+    "id": "mapping_atom_id",
+    "term_id": "term_atom",
+    "database_source": "toxicology",
+    "table": "atom",
+    "column": "atom_id",
+    "semantic_filter": "One row per atom.",
+    "aggregation_semantics": "count of atoms when counting rows",
+    "grain": "one row per atom",
+    "validation": "atom_id is the primary key of the atom table; 12333 rows, all matching TR followed by three digits and an underscore."
+  },
+  {
+    "id": "mapping_atom_element",
+    "term_id": "term_element",
+    "database_source": "toxicology",
+    "table": "atom",
+    "column": "element",
+    "semantic_filter": "Each atom carries exactly one element code.",
+    "aggregation_semantics": "grouping atoms by element; counting atoms of an element",
+    "grain": "one element per atom",
+    "validation": "SELECT element, COUNT(*) FROM atom GROUP BY element returned 21 distinct lower-case symbol codes."
+  },
+  {
+    "id": "mapping_atom_molecule_ref",
+    "term_id": "term_molecule_identifier",
+    "database_source": "toxicology",
+    "table": "atom",
+    "column": "molecule_id",
+    "semantic_filter": "Identifies the molecule that owns the atom.",
+    "aggregation_semantics": "grouping atoms by owning molecule",
+    "grain": "one molecule reference per atom",
+    "validation": "atom.molecule_id values share the TRnnn form of molecule.molecule_id; all 12333 atom rows carry one."
+  },
+  {
+    "id": "mapping_atom_id_prefix",
+    "term_id": "term_molecule_identifier",
+    "database_source": "toxicology",
+    "table": "atom",
+    "column": "atom_id",
+    "semantic_filter": "Only the leading TRnnn segment of the atom identifier is a molecule reference; the remainder is the atom number.",
+    "aggregation_semantics": "not aggregatable; identifier extraction only",
+    "grain": "one molecule prefix per atom",
+    "validation": "For every atom row the five-character prefix of atom_id equals the owning molecule_id; zero prefix mismatches were observed in the connected records."
+  },
+  {
+    "id": "mapping_atom_number_position",
+    "term_id": "term_atom_number",
+    "database_source": "toxicology",
+    "table": "atom",
+    "column": "atom_id",
+    "semantic_filter": "Only the numeric suffix after the molecule prefix is the atom number; it is not zero-padded, so the digit offset from the start of the identifier is not the atom position.",
+    "aggregation_semantics": "not aggregatable; identifier parsing only",
+    "grain": "one atom number per atom",
+    "validation": "atom_id lengths are 7, 8 or 9 characters; the character at offset 7 is always in the range 1-9, never 0."
+  },
+  {
+    "id": "mapping_bond_id",
+    "term_id": "term_bond",
+    "database_source": "toxicology",
+    "table": "bond",
+    "column": "bond_id",
+    "semantic_filter": "One row per bond.",
+    "aggregation_semantics": "count of bonds when counting rows",
+    "grain": "one row per bond",
+    "validation": "bond_id is the primary key of the bond table; 12379 rows."
+  },
+  {
+    "id": "mapping_bond_type_value",
+    "term_id": "term_bond_type",
+    "database_source": "toxicology",
+    "table": "bond",
+    "column": "bond_type",
+    "semantic_filter": "Each bond carries one bond type code; one bond row carries no code at all.",
+    "aggregation_semantics": "grouping bonds by bond type; counting bonds of a type",
+    "grain": "one bond type per bond",
+    "validation": "SELECT bond_type, COUNT(*) FROM bond GROUP BY bond_type returned '-':10528, '=':1844, '#':6 and one null value on bond TR345_7_10."
+  },
+  {
+    "id": "mapping_bond_molecule_ref",
+    "term_id": "term_molecule_identifier",
+    "database_source": "toxicology",
+    "table": "bond",
+    "column": "molecule_id",
+    "semantic_filter": "Identifies the molecule that owns the bond.",
+    "aggregation_semantics": "grouping bonds by owning molecule",
+    "grain": "one molecule reference per bond",
+    "validation": "bond.molecule_id values share the TRnnn form of molecule.molecule_id; every bond_id begins with its molecule_id."
+  },
+  {
+    "id": "mapping_connection_atom",
+    "term_id": "term_atom_bond_connection",
+    "database_source": "toxicology",
+    "table": "connected",
+    "column": "atom_id",
+    "semantic_filter": "One row per directed atom end of a bond; each bond is stored twice, once from each participating atom.",
+    "aggregation_semantics": "counting connections as rows of this table, or counting distinct bond references",
+    "grain": "one row per atom end of a bond",
+    "validation": "24758 rows covering 12379 distinct bond references, each appearing exactly twice; counting a single atom column for atom TR009_12 returned 3 rows while adding the second atom column returned 6 rows for the same 3 bonds."
+  },
+  {
+    "id": "mapping_connection_atom2",
+    "term_id": "term_atom_bond_connection",
+    "database_source": "toxicology",
+    "table": "connected",
+    "column": "atom_id2",
+    "semantic_filter": "The second atom end of the same bond; it is the reverse direction of the row stored under atom_id.",
+    "aggregation_semantics": "same connection counted from the opposite atom end; must not be added to the first atom column without removing duplicates",
+    "grain": "one row per atom end of a bond",
+    "validation": "No row has atom_id equal to atom_id2, so the two directions are always distinct atoms."
+  },
+  {
+    "id": "mapping_connection_bond",
+    "term_id": "term_atom_bond_connection",
+    "database_source": "toxicology",
+    "table": "connected",
+    "column": "bond_id",
+    "semantic_filter": "Identifies the bond that the connection row belongs to.",
+    "aggregation_semantics": "counting distinct bonds touching a set of atoms",
+    "grain": "one bond reference per connection row",
+    "validation": "Every one of the 12379 bonds appears in the connection records, and the molecule prefix of the connection atoms always equals the molecule prefix of its bond."
+  },
+  {
+    "id": "mapping_unbonded_atom",
+    "term_id": "term_unbonded_atom",
+    "database_source": "toxicology",
+    "table": "atom",
+    "column": "atom_id",
+    "semantic_filter": "Atoms that appear in no connection record, in either atom position, participate in no bond.",
+    "aggregation_semantics": "counting unbonded atoms; grouping them by element",
+    "grain": "one row per atom",
+    "validation": "49 atoms satisfy this condition; their elements are na, cl, h, zn and k."
+  },
+  {
+    "id": "mapping_molecule_atom_count",
+    "term_id": "term_molecule_atom_count",
+    "database_source": "toxicology",
+    "table": "atom",
+    "column": "atom_id",
+    "semantic_filter": "Atoms are attributed to their owning molecule before counting.",
+    "aggregation_semantics": "count of atoms within each molecule group",
+    "grain": "one count per molecule",
+    "validation": "Atoms per molecule range from 4 to 174 with a mean of about 27.8."
+  },
+  {
+    "id": "mapping_bond_type_share",
+    "term_id": "term_bond_type_share",
+    "database_source": "toxicology",
+    "table": "bond",
+    "column": "bond_type",
+    "semantic_filter": "Numerator and denominator must be taken over the same bond set, for example the bonds of one molecule.",
+    "aggregation_semantics": "count of bonds of the target type divided by the count of all bonds in the same set",
+    "grain": "one ratio per scope",
+    "validation": "molecule TR008 has 26 bonds of which 1 is a double bond; molecule TR010 has 17 bonds of which 1 is a double bond."
+  },
+  {
+    "id": "mapping_element_share",
+    "term_id": "term_element_share",
+    "database_source": "toxicology",
+    "table": "atom",
+    "column": "element",
+    "semantic_filter": "Numerator and denominator must be taken over the same atom set, such as the atoms of one molecule or of all molecules containing a given bond type.",
+    "aggregation_semantics": "count of atoms of the target element divided by the count of all atoms in the same set",
+    "grain": "one ratio per scope",
+    "validation": "10972 atoms belong to molecules containing at least one double bond, of which 4246 are carbon."
+  },
+  {
+    "id": "mapping_majority_bond_type",
+    "term_id": "term_majority_bond_type",
+    "database_source": "toxicology",
+    "table": "bond",
+    "column": "bond_type",
+    "semantic_filter": "Requires grouping the bonds of the scope by bond type and comparing the group sizes.",
+    "aggregation_semantics": "bond type with the largest bond count in the scope",
+    "grain": "one bond type per scope",
+    "validation": "Single bonds dominate in the dataset as a whole and in sampled molecules such as TR008 and TR010."
+  }
+]

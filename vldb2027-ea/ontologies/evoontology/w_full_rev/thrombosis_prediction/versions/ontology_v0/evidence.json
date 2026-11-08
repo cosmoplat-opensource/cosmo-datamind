@@ -1,0 +1,202 @@
+[
+  {
+    "id": "ev_patient_grain",
+    "source": "thrombosis_prediction.sqlite / Patient",
+    "query": "SELECT COUNT(*) AS rows, COUNT(DISTINCT ID) AS distinct_id FROM Patient;",
+    "result": "1238 rows and 1238 distinct identifiers, so Patient holds exactly one row per patient.",
+    "validation_method": "read-only count over the primary-key column",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_patient_domain",
+    "source": "thrombosis_prediction.sqlite / Patient",
+    "query": "SELECT SEX, COUNT(*) FROM Patient GROUP BY SEX ORDER BY 2 DESC;",
+    "result": "F 1023, M 202, empty 13. Sex is a single-letter code with a small number of empty values; no other code appears.",
+    "validation_method": "read-only grouped distinct-value inspection",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_date_formats",
+    "source": "thrombosis_prediction.sqlite / Patient, Examination, Laboratory",
+    "query": "SELECT ID, Birthday, Description, `First Date`, Admission FROM Patient LIMIT 5; SELECT `Examination Date` FROM Examination WHERE `Examination Date` IS NOT NULL LIMIT 3; SELECT ID, Date, UA, HCT FROM Laboratory LIMIT 3;",
+    "result": "All date columns hold 'YYYY-MM-DD' strings, for example Birthday 1934-02-13, Examination Date 1997-05-27, Laboratory Date 1991-09-11. Patient.Description holds a date such as 1994-02-14 despite its name.",
+    "validation_method": "representative row inspection",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_age_derivation",
+    "source": "thrombosis_prediction.sqlite / Patient",
+    "query": "SELECT MIN(Birthday), MAX(Birthday) FROM Patient; SELECT COUNT(*) FROM Patient WHERE Birthday IS NULL;",
+    "result": "Birth dates span 1912-08-28 to 2007-05-28 with a single empty value. No age column exists in any table, so age has to be derived from the birth date.",
+    "validation_method": "column inventory plus range inspection",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_patient_diagnosis_vocab",
+    "source": "thrombosis_prediction.sqlite / Patient",
+    "query": "SELECT Diagnosis, COUNT(*) FROM Patient GROUP BY Diagnosis ORDER BY 2 DESC;",
+    "result": "220 distinct values. Most frequent: SLE 195, SJS 160, RA 152, BEHCET 90, PSS 45, SLE, SJS 35, MCTD 35, SJS susp 26, RA, SJS 25, SLE susp 19, RA susp 19, APS 18.",
+    "validation_method": "read-only grouped distinct-value inspection",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_examination_diagnosis_vocab",
+    "source": "thrombosis_prediction.sqlite / Examination",
+    "query": "SELECT Diagnosis, COUNT(*) FROM Examination GROUP BY Diagnosis ORDER BY 2 DESC;",
+    "result": "331 of 806 rows have an empty diagnosis. Most frequent values: SLE 95, SjS 41, RA 29, SLE, SjS 18, MCTD 15, PSS 10, APS 10, Behcet 9, SLE, APS 8. Values also include non-disease findings such as vertigo, brain infarction, abortion, ITP, CNS and LA(-).",
+    "validation_method": "read-only grouped distinct-value inspection",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_diagnosis_multivalue",
+    "source": "thrombosis_prediction.sqlite / Patient and Examination",
+    "query": "SELECT COUNT(*) FROM Patient WHERE Diagnosis LIKE '%,%'; SELECT ID, `Examination Date`, Diagnosis, Thrombosis FROM Examination LIMIT 5;",
+    "result": "244 of 1238 patient records contain a comma and therefore more than one diagnosis code; examination records show the same form, for example 'MCTD, AMI' and 'SLE, SjS, vertigo'. One patient record separates codes with a doubled space instead of a comma ('SJS  RA').",
+    "validation_method": "read-only pattern count plus representative rows",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_diagnosis_token_counts",
+    "source": "thrombosis_prediction.sqlite / Patient",
+    "query": "SELECT SUM(Diagnosis='RA'), SUM(Diagnosis LIKE '%RA%') FROM Patient; and the same comparison for SLE, APS and SJS; SELECT Diagnosis, COUNT(*) FROM Patient WHERE Diagnosis LIKE '%RA%' AND Diagnosis NOT LIKE 'RA%' GROUP BY 1;",
+    "result": "Exact single-code counts are far smaller than loose substring counts: RA 152 versus 283, SLE 195 versus 309, APS 18 versus 56, SJS 160 versus 366. The records that a loose match adds for RA include the distinct code MRA (9 rows), the juvenile form JRA (3 rows), the code combined with another disease (SJS, RA 8 rows), and ordinary words containing the letter pair, namely generalized morphea and arthralgia.",
+    "validation_method": "read-only comparison of exact and pattern counts with inspection of the added rows",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_diagnosis_spelling_variance",
+    "source": "thrombosis_prediction.sqlite / Patient and Examination",
+    "query": "SELECT SUM(Diagnosis LIKE '%SJS%'), SUM(Diagnosis LIKE '%SjS%') FROM Examination; and spelling inspection of both diagnosis fields",
+    "result": "Sjogren's syndrome appears as SJS (160 rows) and 'SJS, ...' combinations in Patient but as SjS (41 rows) in Examination. Behcet appears as BEHCET (90) in Patient and Behcet (9) in Examination; Adult Still appears as 'Adult STILL' (5) in Patient and 'Adult Still' (2) in Examination.",
+    "validation_method": "cross-table comparison of the code spellings",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_susp_counts",
+    "source": "thrombosis_prediction.sqlite / Patient and Examination",
+    "query": "SELECT COUNT(*) FROM Patient WHERE Diagnosis LIKE '%susp%'; SELECT COUNT(*) FROM Examination WHERE Diagnosis LIKE '%susp%';",
+    "result": "154 of 1238 patient records and 43 of 806 examination records carry the suspected qualifier, either on the whole text or on one code inside a multi-code value.",
+    "validation_method": "read-only pattern count",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_description_is_date",
+    "source": "thrombosis_prediction.sqlite / Patient",
+    "query": "SELECT Description FROM Patient WHERE Description IS NOT NULL LIMIT 5; SELECT substr(Description,1,4) AS yr, COUNT(*) FROM Patient WHERE Description IS NOT NULL GROUP BY 1 ORDER BY 1;",
+    "result": "All non-empty values are dates such as 1994-02-14. Years covered: 1991 (80), 1992 (20), 1993 (2), 1994 (232), 1996 (140), 1997 (329), 1998 (219); 216 of 1238 rows are empty.",
+    "validation_method": "value inspection and year histogram",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_first_date_range",
+    "source": "thrombosis_prediction.sqlite / Patient",
+    "query": "SELECT MIN(`First Date`), MAX(`First Date`) FROM Patient; SELECT COUNT(*) FROM Patient WHERE `First Date` IS NULL;",
+    "result": "First visit dates span 1972-08-02 to 1998-08-28; 251 of 1238 rows are empty.",
+    "validation_method": "range and null count",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_admission_domain",
+    "source": "thrombosis_prediction.sqlite / Patient",
+    "query": "SELECT Admission, COUNT(*) FROM Patient GROUP BY Admission ORDER BY 2 DESC;",
+    "result": "The run-on flag has 713 rows, the other flag 488 rows, 34 rows are empty and 3 rows carry a compound value.",
+    "validation_method": "read-only grouped distinct-value inspection",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_examination_grain",
+    "source": "thrombosis_prediction.sqlite / Examination",
+    "query": "SELECT COUNT(*), COUNT(DISTINCT ID) FROM Examination; SELECT COUNT(*) FROM (SELECT ID, `Examination Date`, COUNT(*) c FROM Examination GROUP BY 1,2 HAVING c>1);",
+    "result": "806 rows with 763 distinct non-empty identifiers; 6 identifier and date pairs are duplicated.",
+    "validation_method": "read-only count and duplicate detection",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_exam_coverage",
+    "source": "thrombosis_prediction.sqlite / Examination and Patient",
+    "query": "SELECT COUNT(*) FROM Examination WHERE NOT EXISTS (SELECT 1 FROM Patient p WHERE p.ID = Examination.ID); SELECT COUNT(DISTINCT e.ID) FROM Examination e WHERE EXISTS (SELECT 1 FROM Patient p WHERE p.ID=e.ID); SELECT SUM(ID IS NULL) FROM Examination; SELECT COUNT(*) FROM Examination e JOIN Patient p ON e.ID=p.ID WHERE e.Thrombosis=2; SELECT COUNT(*) FROM Examination WHERE Thrombosis=2;",
+    "result": "736 of 806 examination rows do not resolve to a patient. Only 69 of the 763 distinct examination identifiers occur in Patient, covering 70 rows, and 36 rows carry no identifier. Consequently only 3 of the 18 examinations with thrombosis code 2 can be joined to patient attributes.",
+    "validation_method": "read-only existence join and coverage count",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_thrombosis_domain",
+    "source": "thrombosis_prediction.sqlite / Examination",
+    "query": "SELECT Thrombosis, COUNT(*) FROM Examination GROUP BY Thrombosis;",
+    "result": "Code 0 has 726 rows, code 1 has 57, code 2 has 18 and code 3 has 5; no other value occurs.",
+    "validation_method": "read-only grouped distinct-value inspection",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_symptom_content",
+    "source": "thrombosis_prediction.sqlite / Examination",
+    "query": "SELECT COUNT(*) FROM Examination WHERE Symptoms IS NOT NULL; SELECT Symptoms, COUNT(*) FROM Examination WHERE Symptoms IS NOT NULL GROUP BY 1 ORDER BY 2 DESC LIMIT 8;",
+    "result": "Only 80 of 806 examination rows carry a symptom text. Frequent values include CNS lupus (14), brain infarction (7), thrombophlebitis (4), thrombocytopenia (4), PH (4), AMI (4).",
+    "validation_method": "null count and grouped value inspection",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_lab_grain",
+    "source": "thrombosis_prediction.sqlite / Laboratory",
+    "query": "SELECT COUNT(*), COUNT(DISTINCT ID) FROM Laboratory; SELECT COUNT(*) FROM (SELECT ID, Date, COUNT(*) c FROM Laboratory GROUP BY 1,2 HAVING c>1); SELECT COUNT(*) FROM Laboratory l WHERE NOT EXISTS (SELECT 1 FROM Patient p WHERE p.ID=l.ID);",
+    "result": "13908 rows covering 302 distinct patients, with no duplicated identifier and date pair and no row without a matching patient.",
+    "validation_method": "read-only count, duplicate detection and existence join",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_time_coverage",
+    "source": "thrombosis_prediction.sqlite / all tables",
+    "query": "SELECT MIN(`Examination Date`), MAX(`Examination Date`) FROM Examination; SELECT MIN(Date), MAX(Date) FROM Laboratory; SELECT MIN(`First Date`), MAX(`First Date`) FROM Patient;",
+    "result": "Examination dates run 1989-04-18 to 1998-04-17; laboratory test dates run 1981-01-27 to 1999-03-04; first visit dates run 1972-08-02 to 1998-08-28; the patient encounter date covers 1991 to 1998. Only 8 laboratory rows share both patient and date with an examination row.",
+    "validation_method": "range inspection across date columns",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_ua_thresholds",
+    "source": "thrombosis_prediction.sqlite / Laboratory and Patient",
+    "query": "SELECT SUM(UA>8.0), SUM(UA<=8.0), SUM(UA>6.5), SUM(UA<=6.5) FROM Laboratory; SELECT p.SEX, SUM(CASE WHEN l.UA>8.0 THEN 1 ELSE 0 END), SUM(CASE WHEN l.UA>6.5 THEN 1 ELSE 0 END), COUNT(*) FROM Laboratory l JOIN Patient p ON l.ID=p.ID GROUP BY p.SEX;",
+    "result": "11103 non-null uric acid values spanning 0.4 to 17.3. 224 values exceed 8.0 and 698 exceed 6.5. By sex: male patients contribute 182 values above 8.0 and 438 above 6.5; female patients contribute 42 above 8.0 and 260 above 6.5; 80 rows have no recorded sex.",
+    "validation_method": "read-only threshold counts with and without the sex join",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_lab_threshold_counts",
+    "source": "thrombosis_prediction.sqlite / Laboratory",
+    "query": "SELECT SUM(HCT>=52), SUM(RBC<3.5), SUM(LDH>500), SUM(PT>=14), SUM(IGA>80 AND IGA<500), SUM(IGA<=80), SUM(IGA>=500) FROM Laboratory; SELECT MIN(UA),MAX(UA),MIN(HCT),MAX(HCT),MIN(RBC),MAX(RBC),MIN(LDH),MAX(LDH),MIN(PT),MAX(PT),MIN(IGA),MAX(IGA) FROM Laboratory;",
+    "result": "Hematocrit at or above 52: 30 measurements. Red cell count below 3.5: 759. LDH above 500: 1281. Prothrombin time at or above 14: 183. Immunoglobulin A strictly inside the band 80 to 500: 2204, at or below 80: 18, at or above 500: 458. Observed ranges: uric acid 0.4-17.3, hematocrit 3.0-56.0, red cell count 0.4-6.6, LDH 25-67080, prothrombin time 10.1-27.0, immunoglobulin A 1-1765.",
+    "validation_method": "read-only threshold counts and range inspection",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_lab_sparsity",
+    "source": "thrombosis_prediction.sqlite / Laboratory",
+    "query": "SELECT COUNT(PT), COUNT(IGA), COUNT(IGG), COUNT(IGM), COUNT(CRP), COUNT(`T-CHO`), COUNT(UA), COUNT(SM), COUNT(DNA) FROM Laboratory;",
+    "result": "Of 13908 panels: prothrombin time 621, immunoglobulin A 2680, immunoglobulin G 2680, immunoglobulin M 2678, C-reactive protein 11455, total cholesterol 10664, uric acid 11103, anti-SM 128, anti-DNA 69. Empty cells mean the test was not performed on that date.",
+    "validation_method": "per-column non-null counts",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_sm_domain",
+    "source": "thrombosis_prediction.sqlite / Laboratory",
+    "query": "SELECT SM, COUNT(*) FROM Laboratory GROUP BY 1 ORDER BY 2 DESC;",
+    "result": "Of 13908 panels only 128 carry an anti-SM result; the non-empty values are 'negative' (20), '0' (102), '1' (4), '2' (1) and '8' (1). The word and the numeric codes coexist in the same column.",
+    "validation_method": "read-only grouped distinct-value inspection",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_acl_igm_domain",
+    "source": "thrombosis_prediction.sqlite / Examination",
+    "query": "SELECT COUNT(`aCL IgM`), MIN(`aCL IgM`), MAX(`aCL IgM`), SUM(`aCL IgM`=0), SUM(`aCL IgM`>10), SUM(`aCL IgM`>100) FROM Examination;",
+    "result": "806 values, minimum 0.0, maximum 187122.0, with 104 exact zeros, 62 values above 10 and 10 values above 100; the column is never empty.",
+    "validation_method": "range, zero and threshold counts",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_cholesterol_series",
+    "source": "thrombosis_prediction.sqlite / Laboratory and Patient",
+    "query": "SELECT l.ID, l.Date, l.`T-CHO` FROM Laboratory l JOIN Patient p ON l.ID=p.ID WHERE p.Birthday='1959-02-18' AND l.Date LIKE '1981-1%-%' ORDER BY l.Date;",
+    "result": "The patient born 1959-02-18 has total cholesterol measurements dated 1981-10-26 (208), 1981-11-16 (211) and 1981-12-21 (199), showing that repeated measurements of one patient in adjacent months exist and can be ordered by the laboratory test date.",
+    "validation_method": "per-patient time series inspection",
+    "timestamp": "2026-10-10"
+  }
+]

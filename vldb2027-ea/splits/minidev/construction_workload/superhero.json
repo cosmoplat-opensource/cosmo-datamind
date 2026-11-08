@@ -1,0 +1,113 @@
+{
+ "db_id": "superhero",
+ "questions": [
+  {
+   "question_id": 766,
+   "question": "What is the hero's full name with the highest attribute in strength?",
+   "evidence": "highest attribute in strength refers to MAX(attribute_value) WHERE attribute_name = 'strength';",
+   "difficulty": "moderate"
+  },
+  {
+   "question_id": 736,
+   "question": "Who is the dumbest superhero?",
+   "evidence": "the dumbest superhero refers to MIN(attribute_value) where attribute_name = 'Intelligence'",
+   "difficulty": "moderate"
+  },
+  {
+   "question_id": 794,
+   "question": "Which hero was the fastest?",
+   "evidence": "which hero refers to superhero_name; fastest refers to MAX(attribute_value) WHERE attribute_name = 'Speed';",
+   "difficulty": "moderate"
+  },
+  {
+   "question_id": 798,
+   "question": "What is the publisher for Hawkman, Karate Kid and Speedy?",
+   "evidence": "publisher refers to publisher_name; Hawkman refers to superhero_name = 'Hawkman'; Karate Kid refers to superhero_name = 'Karate Kid'; Speedy refers to superhero_name = 'Speedy';",
+   "difficulty": "moderate"
+  },
+  {
+   "question_id": 829,
+   "question": "Which publisher created more superheroes: DC or Marvel Comics? Find the difference in the number of superheroes.",
+   "evidence": "DC refers to publisher_name = 'DC Comics'; Marvel Comics refers to publisher_name = 'Marvel Comics'; difference = SUBTRACT(SUM(publisher_name = 'DC Comics'), SUM(publisher_name = 'Marvel Comics'));",
+   "difficulty": "challenging"
+  },
+  {
+   "question_id": 772,
+   "question": "List the eyes, hair and skin colour of all female superheroes published by Dark Horse Comics.",
+   "evidence": "eyes refers to eye_colour_id; hair refers to hair_colour_id; skin colour refers to skin_colour_id; female superheroes refers to gender = 'Female'; published by Dark Horse Comics refers to publisher_name = 'Dark Horse Comics';",
+   "difficulty": "challenging"
+  },
+  {
+   "question_id": 724,
+   "question": "Please list the superhero names of all the superheroes that have blue eyes and blond hair.",
+   "evidence": "blue eyes refers to colour = 'Blue' and eye_colour_id = colour.id; blond hair refers to colour = 'Blond' and hair_colour_id = colour.id; super power of \"Agility\" refers to power_name = 'Agility'",
+   "difficulty": "challenging"
+  },
+  {
+   "question_id": 760,
+   "question": "In superheroes with height between 150 to 180, what is the percentage of heroes published by Marvel Comics?",
+   "evidence": "height between 150 to 180 refers to height_cm BETWEEN 150 AND 180; heroes published by Marvel Comics refers to publisher_name = 'Marvel Comics'; calculation = MULTIPLY(DIVIDE(SUM(publisher.id = 13)), COUNT(publisher.id), 100)",
+   "difficulty": "challenging"
+  },
+  {
+   "question_id": 819,
+   "question": "In superheroes with missing weight data, calculate the difference between the number of superheroes with blue eyes and no eye color.",
+   "evidence": "missing weight data refers to weight_kg = 0 OR T1.weight_kg = NULL; difference = SUBTRACT(SUM(colour.id = 7), SUM(colour.id = 1)); blue eyes refers to eye_colour_id WHERE colour.id = 7; no eye color refers to eye_colour_id WHERE colour.id = 1;",
+   "difficulty": "challenging"
+  },
+  {
+   "question_id": 773,
+   "question": "Which superhero has the same eyes, hair and skin colour? Indicate the publisher of the superhero.",
+   "evidence": "which superhero refers to superhero_name; the same eyes, hair and skin colour refers to hair_colour_id = skin_colour_id AND hair_colour_id = eye_colour_id; publisher refers to publisher_name;",
+   "difficulty": "challenging"
+  },
+  {
+   "question_id": 765,
+   "question": "How many heroes have stealth power?",
+   "evidence": "stealth power refers to power_name = 'Stealth';",
+   "difficulty": "simple"
+  },
+  {
+   "question_id": 751,
+   "question": "List down at least five superpowers of male superheroes.",
+   "evidence": "male refers to gender = 'Male'; superpowers refers to power_name;",
+   "difficulty": "moderate"
+  },
+  {
+   "question_id": 728,
+   "question": "Rank superheroes from Marvel Comics by their eye color popularity, starting with the most common color.",
+   "evidence": "the superheroes from Marvel Comics refers to publisher_name = 'Marvel Comics'; most common color refers to COUNT(superhero.id) DESC;",
+   "difficulty": "moderate"
+  },
+  {
+   "question_id": 717,
+   "question": "Please list all the superpowers of 3-D Man.",
+   "evidence": "3-D Man refers to superhero_name = '3-D Man'; superpowers refers to power_name",
+   "difficulty": "simple"
+  },
+  {
+   "question_id": 747,
+   "question": "What is the total number of superheroes without full name?",
+   "evidence": "superheroes without full name refers to full_name IS NULL",
+   "difficulty": "simple"
+  },
+  {
+   "question_id": 723,
+   "question": "Among the superheroes with blue eyes, how many of them have the super power of \"Agility\"?",
+   "evidence": "blue eyes refers to colour = 'Blue' and eye_colour_id = colour.id; super power of \"Agility\" refers to power_name = 'Agility'",
+   "difficulty": "moderate"
+  },
+  {
+   "question_id": 758,
+   "question": "Provide the hair colour of the human superhero who is 185 cm tall.",
+   "evidence": "185 cm tall refers to height_cm = 185; human superhero refers to race = 'human'; hair colour refers to colour where hair_colour_id = colour.id;",
+   "difficulty": "moderate"
+  },
+  {
+   "question_id": 782,
+   "question": "List the heroes' names whose eyes and hair colours are both black.",
+   "evidence": "heroes' names refers to superhero_name; eyes and hair colours are both black refers to eye_colour_id AND hair_colour_id WHERE colour.colour = 'Black';",
+   "difficulty": "moderate"
+  }
+ ]
+}

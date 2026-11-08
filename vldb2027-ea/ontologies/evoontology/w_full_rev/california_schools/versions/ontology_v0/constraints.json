@@ -1,0 +1,340 @@
+[
+  {
+    "confidence": "high",
+    "constraint_type": "data_quality",
+    "description": "The schools table holds 17686 rows but only 16317 are school records; the other 1369 rows are district-level records whose CDS school segment is '0000000' and whose School name is null, one per district. Counting rows without excluding them over-counts schools. The frpm table similarly contains 45 rows labelled 'District Office' that describe a district rather than a school.",
+    "evidence": [
+      "e_schools_district_level_rows"
+    ],
+    "id": "constraint_schools_table_includes_district_level_rows",
+    "scope": "Any counting or listing of schools from the schools table.",
+    "severity": "block",
+    "target": "term_school",
+    "trigger_keywords": [
+      "number of schools",
+      "count of schools",
+      "total schools",
+      "how many schools",
+      "schools in county",
+      "list schools",
+      "school count"
+    ]
+  },
+  {
+    "confidence": "high",
+    "constraint_type": "data_quality",
+    "description": "211 of the 2269 satscores rows store cds without its leading zero, so the value is 13 characters rather than 14. An equality join against schools.CDSCode silently drops those rows and matches only 2058 of 2269. Zero-padding cds to 14 characters or comparing the values numerically recovers all 2269 rows.",
+    "evidence": [
+      "e_satscores_cds_leading_zero",
+      "e_join_coverage"
+    ],
+    "id": "constraint_satscores_cds_join_key_format",
+    "scope": "Joining the satscores table to schools or frpm on the CDS code.",
+    "severity": "block",
+    "target": "mapping_cds_satscores",
+    "trigger_keywords": [
+      "satscores",
+      "SAT score join",
+      "join satscores with schools",
+      "CDS code",
+      "cds",
+      "SAT score per school"
+    ]
+  },
+  {
+    "confidence": "high",
+    "constraint_type": "business_rule",
+    "description": "The satscores table holds both school-level rows (rtype = 'S', 1749 rows, sname populated) and district-level aggregate rows (rtype = 'D', 520 rows, sname null, CDS code ending in '0000000'). Mixing the two mixes granularity and double-counts students; a school-level analysis must restrict to rtype = 'S' and a district-level analysis to rtype = 'D'.",
+    "evidence": [
+      "e_sat_rtype_semantics"
+    ],
+    "id": "constraint_sat_record_type_level",
+    "scope": "Any use of the satscores table.",
+    "severity": "block",
+    "target": "term_sat_record_type",
+    "trigger_keywords": [
+      "SAT",
+      "average SAT score",
+      "satscores",
+      "average math score",
+      "average reading score",
+      "average writing score",
+      "SAT score per school",
+      "district average SAT"
+    ]
+  },
+  {
+    "confidence": "high",
+    "constraint_type": "unit",
+    "description": "The frpm columns whose names begin with 'Percent (%)' store a ratio between 0 and 1, not a value on a 0-100 scale; the observed range for both rate columns is about 0.002 to 1.0 and each equals its numerator count divided by K-12 enrollment. A threshold expressed as a percentage must therefore be divided by 100 before it is compared with the stored value, and a stored value must be multiplied by 100 to be reported as a percentage.",
+    "evidence": [
+      "e_frpm_percent_columns_fraction"
+    ],
+    "id": "constraint_percent_columns_are_ratios",
+    "scope": "Reading or filtering the 'Percent (%) ...' columns of the frpm table.",
+    "severity": "block",
+    "target": "term_free_meal_rate_k12",
+    "trigger_keywords": [
+      "percent eligible free",
+      "percent (%) eligible free",
+      "eligible free rate",
+      "free meal rate",
+      "FRPM rate",
+      "percent (%)",
+      "percentage",
+      "0.18%"
+    ]
+  },
+  {
+    "confidence": "high",
+    "constraint_type": "business_rule",
+    "description": "FRPM Count (K-12) counts students eligible for free or reduced-price meals and is the sum of the free-meal count and the reduced-price-meal count. It is greater than or equal to Free Meal Count (K-12) in all 9930 rows where both are populated. Wording such as 'free or reduced price' must not be narrowed to free meals only.",
+    "evidence": [
+      "e_frpm_count_ge_free_meal"
+    ],
+    "id": "constraint_frpm_count_includes_free_meal_count",
+    "scope": "Interpreting or comparing the meal-count measures of the frpm table.",
+    "severity": "info",
+    "target": "term_frpm_count_k12",
+    "trigger_keywords": [
+      "FRPM",
+      "free or reduced price",
+      "free meal count",
+      "reduced price meal",
+      "eligible FRPM"
+    ]
+  },
+  {
+    "confidence": "high",
+    "constraint_type": "enum_semantics",
+    "description": "In schools.Virtual the value 'F' denotes a school that is exclusively virtual and therefore does not offer a physical building; 'N' denotes a school that is not virtual. The distribution is 69 rows 'F', 9703 'N', 1046 'P' and 1369 blank, the blanks being the district-level rows. The meaning of 'P' is not documented anywhere inside the database and must not be assumed to be the same as 'F'.",
+    "evidence": [
+      "e_virtual_code_values"
+    ],
+    "id": "constraint_virtual_code_f_means_no_physical_building",
+    "scope": "Filtering schools by virtual instruction status.",
+    "severity": "block",
+    "target": "term_virtual_status",
+    "trigger_keywords": [
+      "virtual",
+      "virtual school",
+      "does not offer physical building",
+      "exclusively virtual",
+      "online school",
+      "no physical building"
+    ]
+  },
+  {
+    "confidence": "high",
+    "constraint_type": "enum_semantics",
+    "description": "schools.DOC, mirrored by the descriptive text in frpm.'District Type', codes the district type: 54 = Unified School District (10190 rows), 52 = Elementary School District (4378), 56 = High School District (1079), 00 = County Office of Education (1703), 98 = Regional Occupation Center/Program (156). The code is stored as text, so comparisons must use string literals such as '54' rather than numbers.",
+    "evidence": [
+      "e_doc_codes"
+    ],
+    "id": "constraint_district_ownership_codes",
+    "scope": "Filtering schools or districts by district type.",
+    "severity": "block",
+    "target": "term_district_ownership_code",
+    "trigger_keywords": [
+      "unified school district",
+      "elementary school district",
+      "high school district",
+      "DOC",
+      "district type",
+      "district ownership code",
+      "county office of education"
+    ]
+  },
+  {
+    "confidence": "high",
+    "constraint_type": "enum_semantics",
+    "description": "schools.SOC codes the ownership and level of a school, with the matching label in schools.SOCType and frpm.'School Type': 66 = High Schools (Public) (1776 rows), 60 = Elementary Schools (Public) (7591), 62 = Intermediate/Middle Schools (Public) (1652), 65 = K-12 Schools (Public) (438), 68 = Continuation High Schools (754), 09 = Special Education Schools (Public) (750). Values are stored as text, so '66' is a string.",
+    "evidence": [
+      "e_soc_codes"
+    ],
+    "id": "constraint_school_ownership_codes",
+    "scope": "Filtering schools by ownership or level code.",
+    "severity": "block",
+    "target": "term_school_ownership_code",
+    "trigger_keywords": [
+      "ownership code",
+      "SOC",
+      "school ownership code",
+      "school type code",
+      "ownership code 66"
+    ]
+  },
+  {
+    "confidence": "high",
+    "constraint_type": "enum_semantics",
+    "description": "schools.Charter is 1 for charter schools and 0 for non-charter schools, blank only for the 1369 district-level rows. frpm.'Charter School (Y/N)' uses the same coding but disagrees with schools.Charter on 7 of the 9986 joined rows, so one table should be chosen as authoritative rather than mixing both.",
+    "evidence": [
+      "e_charter_code_values"
+    ],
+    "id": "constraint_charter_code_semantics",
+    "scope": "Filtering schools by charter status.",
+    "severity": "warning",
+    "target": "term_charter_status",
+    "trigger_keywords": [
+      "charter",
+      "non-chartered",
+      "non-charter",
+      "charter school",
+      "charter status",
+      "Charter = 0"
+    ]
+  },
+  {
+    "confidence": "high",
+    "constraint_type": "scope",
+    "description": "The frpm table contains a single academic year, 2014-2015, for 9986 schools, and every row carries CALPADS Fall 1 certification status 1. No year-over-year or trend analysis is possible from this table.",
+    "evidence": [
+      "e_frpm_single_year"
+    ],
+    "id": "constraint_frpm_single_academic_year",
+    "scope": "Any temporal analysis over the frpm table.",
+    "severity": "info",
+    "target": "term_enrollment_k12",
+    "trigger_keywords": [
+      "academic year",
+      "year over year",
+      "trend",
+      "time series",
+      "2014-2015"
+    ]
+  },
+  {
+    "confidence": "high",
+    "constraint_type": "business_rule",
+    "description": "schools.StatusType is Active (11708 rows), Closed (4518), Merged (1448) or Pending (12). Records are retained after closure or merger, so a question about the schools of a county includes closed and merged sites unless the question restricts status; 1297 records carry a ClosedDate while being marked Active.",
+    "evidence": [
+      "e_status_type_values"
+    ],
+    "id": "constraint_status_type_and_closed_schools",
+    "scope": "Deciding which school records a question about 'schools' should include.",
+    "severity": "warning",
+    "target": "term_school_status_type",
+    "trigger_keywords": [
+      "active school",
+      "currently operating",
+      "still open",
+      "closed school",
+      "merged",
+      "school status"
+    ]
+  },
+  {
+    "confidence": "medium",
+    "constraint_type": "unit",
+    "description": "schools.OpenDate and schools.ClosedDate are stored as ISO date strings of the form YYYY-MM-DD. The observed OpenDate range is 1850-07-01 to 2017-09-22 and the ClosedDate range is 1980-07-01 to 2016-09-01. A phrase such as 'opened after 1991' refers to a year boundary, so the comparison should use the year component or a cutoff such as 1991-12-31 rather than the bare date 1991-01-01.",
+    "evidence": [
+      "e_open_close_date_format"
+    ],
+    "id": "constraint_open_close_date_encoding",
+    "scope": "Comparing schools.OpenDate or schools.ClosedDate against a year.",
+    "severity": "warning",
+    "target": "term_school_open_date",
+    "trigger_keywords": [
+      "opened after",
+      "opened before",
+      "closed before",
+      "opening year",
+      "closure year",
+      "established"
+    ]
+  },
+  {
+    "confidence": "high",
+    "constraint_type": "data_quality",
+    "description": "AvgScrRead, AvgScrMath and AvgScrWrite are section averages on the 200-800 SAT scale, with observed values between 289 and 699. All three are null for 596 of the 2269 satscores rows, which are schools that reported no test takers; such schools can never satisfy a score threshold.",
+    "evidence": [
+      "e_sat_score_scale_and_nulls"
+    ],
+    "id": "constraint_sat_score_scale_and_missing_values",
+    "scope": "Filtering or thresholding SAT scores.",
+    "severity": "warning",
+    "target": "term_sat_avg_math",
+    "trigger_keywords": [
+      "average SAT score",
+      "math score",
+      "reading score",
+      "writing score",
+      "score greater than",
+      "above 400"
+    ]
+  },
+  {
+    "confidence": "high",
+    "constraint_type": "data_quality",
+    "description": "Enrollment (K-12) is never null and never zero across the 9986 frpm rows, so it is a safe denominator, but Free Meal Count (K-12) is null in 56 rows, FRPM Count (K-12) in 50 rows and Enrollment (Ages 5-17) in 14 rows. Rate calculations and enrollment comparisons must handle those missing counts.",
+    "evidence": [
+      "e_frpm_nulls"
+    ],
+    "id": "constraint_meal_rate_denominator",
+    "scope": "Computing meal-program rates from the frpm table.",
+    "severity": "warning",
+    "target": "term_enrollment_k12",
+    "trigger_keywords": [
+      "free meal rate",
+      "enrollment K-12",
+      "rate calculation",
+      "eligible free",
+      "divide by enrollment"
+    ]
+  },
+  {
+    "confidence": "high",
+    "constraint_type": "business_rule",
+    "description": "Enrollment (Ages 5-17) is never greater than Enrollment (K-12) in any of the 9972 rows where both are populated, because the 5-17 age band covers a subset of the K-12 population. A difference between the two enrollment measures is therefore always zero or positive.",
+    "evidence": [
+      "e_enrollment_scope_relation"
+    ],
+    "id": "constraint_enrollment_scope_relationship",
+    "scope": "Comparing the two enrollment measures of the frpm table.",
+    "severity": "info",
+    "target": "term_enrollment_ages_5_17",
+    "trigger_keywords": [
+      "enrollment difference",
+      "K-12 enrollment",
+      "ages 5-17",
+      "enrollment comparison"
+    ]
+  },
+  {
+    "confidence": "high",
+    "constraint_type": "business_rule",
+    "description": "Districts, schools and counties are matched by free-text labels rather than identifiers: a district appears as schools.District, frpm.'District Name' and satscores.dname, and county labels agree exactly across the three tables over all 9986 joined rows. Name matching must allow for label variants, for example 'Fresno Unified' for 151 schools versus 'Fresno County Office of Education' for 29.",
+    "evidence": [
+      "e_county_and_name_consistency"
+    ],
+    "id": "constraint_name_columns_are_text_labels",
+    "scope": "Matching districts, schools or counties by name.",
+    "severity": "info",
+    "target": "term_school_district",
+    "trigger_keywords": [
+      "district name",
+      "school name",
+      "name of the school",
+      "Fresno Unified"
+    ]
+  },
+  {
+    "confidence": "high",
+    "constraint_type": "data_quality",
+    "description": "Only 2269 satscores rows exist against 16317 school records, and the frpm table covers 9986 schools. Any list of schools derived through a join with satscores is therefore a strict subset of all schools, and schools absent from satscores can never appear in a SAT-based result.",
+    "evidence": [
+      "e_join_coverage",
+      "e_table_sizes"
+    ],
+    "id": "constraint_satscores_coverage",
+    "scope": "Joining school lists to the satscores table.",
+    "severity": "warning",
+    "target": "term_sat_avg_reading",
+    "trigger_keywords": [
+      "SAT",
+      "how many schools have SAT",
+      "satscores coverage",
+      "all schools with SAT"
+    ]
+  }
+]

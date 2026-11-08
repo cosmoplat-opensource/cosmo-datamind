@@ -1,0 +1,363 @@
+[
+  {
+    "aliases": [
+      "compound",
+      "chemical compound",
+      "molecule record"
+    ],
+    "definition": "A chemical compound record in the toxicology database, identified by a molecule_id of the form 'TR' plus a zero-padded serial number. It is the unit that carries the carcinogenicity label and that owns atoms and bonds.",
+    "evidence": [
+      "evidence_001",
+      "evidence_002",
+      "evidence_011",
+      "evidence_016"
+    ],
+    "id": "term_molecule",
+    "name": "Molecule",
+    "scope": "Molecule-level analysis of chemical structure and carcinogenicity in the toxicology database.",
+    "type": "entity"
+  },
+  {
+    "aliases": [
+      "molecule_id",
+      "molecule key",
+      "TR id"
+    ],
+    "definition": "The text key molecule_id that uniquely identifies a molecule in the molecule table.",
+    "evidence": [
+      "evidence_001",
+      "evidence_011"
+    ],
+    "id": "term_molecule_identifier",
+    "name": "Molecule Identifier",
+    "scope": "Identifying and grouping molecules; the join key between molecule and its atoms and bonds.",
+    "type": "dimension"
+  },
+  {
+    "aliases": [
+      "atom.molecule_id",
+      "bond.molecule_id",
+      "owning molecule"
+    ],
+    "definition": "The molecule_id value carried on atom and bond records to state which molecule the atom or bond belongs to; it shares the value domain of the molecule table key.",
+    "evidence": [
+      "evidence_001",
+      "evidence_007",
+      "evidence_015"
+    ],
+    "id": "term_molecule_reference",
+    "name": "Molecule Reference on Child Records",
+    "scope": "Relating atoms or bonds back to their owning molecule, for example to attach a molecule-level label to a bond or atom.",
+    "type": "dimension"
+  },
+  {
+    "aliases": [
+      "label",
+      "carcinogenic label",
+      "toxicity label",
+      "cancer label"
+    ],
+    "definition": "The molecule-level classification that records whether a molecule is carcinogenic, stored as a single-character code on the molecule record.",
+    "evidence": [
+      "evidence_001",
+      "evidence_003"
+    ],
+    "id": "term_carcinogenicity_label",
+    "name": "Carcinogenicity Label",
+    "scope": "Any question that distinguishes carcinogenic from non-carcinogenic molecules or their constituent atoms, bonds, or elements.",
+    "type": "category"
+  },
+  {
+    "aliases": [
+      "carcinogenic",
+      "positive label molecules",
+      "cancer-causing molecule"
+    ],
+    "definition": "A molecule whose carcinogenicity label marks it as carcinogenic.",
+    "evidence": [
+      "evidence_003"
+    ],
+    "id": "term_carcinogenic_molecule",
+    "name": "Carcinogenic Molecule",
+    "scope": "Molecule-scoped filtering in carcinogenicity questions.",
+    "type": "category"
+  },
+  {
+    "aliases": [
+      "non-carcinogenic",
+      "not carcinogenic",
+      "negative label molecules"
+    ],
+    "definition": "A molecule whose carcinogenicity label marks it as not carcinogenic.",
+    "evidence": [
+      "evidence_003"
+    ],
+    "id": "term_non_carcinogenic_molecule",
+    "name": "Non-carcinogenic Molecule",
+    "scope": "Molecule-scoped filtering in carcinogenicity questions.",
+    "type": "category"
+  },
+  {
+    "aliases": [
+      "atom record",
+      "atom occurrence"
+    ],
+    "definition": "A single atom occurrence belonging to exactly one molecule, identified by atom_id and carrying one chemical element symbol.",
+    "evidence": [
+      "evidence_001",
+      "evidence_002",
+      "evidence_007"
+    ],
+    "id": "term_atom",
+    "name": "Atom",
+    "scope": "Atomic composition analysis of molecules in the toxicology database.",
+    "type": "entity"
+  },
+  {
+    "aliases": [
+      "atom_id",
+      "atom key"
+    ],
+    "definition": "The text key atom_id identifying an atom; it is composed of the owning molecule_id, an underscore, and the atom's serial number within that molecule.",
+    "evidence": [
+      "evidence_007",
+      "evidence_008"
+    ],
+    "id": "term_atom_identifier",
+    "name": "Atom Identifier",
+    "scope": "Identifying atoms and resolving atom references that appear inside bond identifiers and in the connectivity relation.",
+    "type": "dimension"
+  },
+  {
+    "aliases": [
+      "connected.atom_id",
+      "connected.atom_id2",
+      "endpoint atom"
+    ],
+    "definition": "An atom reference recorded as an endpoint of a bond in the atom connectivity relation; it denotes the same atoms as the atom table identifiers.",
+    "evidence": [
+      "evidence_006",
+      "evidence_009"
+    ],
+    "id": "term_bond_endpoint_atom",
+    "name": "Bond Endpoint Atom Reference",
+    "scope": "Identifying which two atoms a bond joins, including for bonds named only by their identifier.",
+    "type": "dimension"
+  },
+  {
+    "aliases": [
+      "element symbol",
+      "element type",
+      "atom type"
+    ],
+    "definition": "The chemical element of an atom, stored as a lowercase element symbol; it is the attribute that describes a molecule's atomic composition.",
+    "evidence": [
+      "evidence_004"
+    ],
+    "id": "term_element",
+    "name": "Chemical Element",
+    "scope": "Element-based filtering and composition analysis of molecules, atoms, and bonds.",
+    "type": "dimension"
+  },
+  {
+    "aliases": [
+      "bond record",
+      "chemical bond"
+    ],
+    "definition": "A chemical bond belonging to exactly one molecule, identified by bond_id and typed as a single, double, or triple bond.",
+    "evidence": [
+      "evidence_001",
+      "evidence_002"
+    ],
+    "id": "term_bond",
+    "name": "Bond",
+    "scope": "Bond-level analysis of molecules in the toxicology database.",
+    "type": "entity"
+  },
+  {
+    "aliases": [
+      "bond_id",
+      "bond key"
+    ],
+    "definition": "The text key bond_id identifying a bond; it is composed of the owning molecule_id followed by the serial numbers of the two atoms the bond joins.",
+    "evidence": [
+      "evidence_008",
+      "evidence_009"
+    ],
+    "id": "term_bond_identifier",
+    "name": "Bond Identifier",
+    "scope": "Identifying a bond directly and reading its endpoint atoms out of the identifier.",
+    "type": "dimension"
+  },
+  {
+    "aliases": [
+      "connected.bond_id"
+    ],
+    "definition": "The bond_id value recorded in the atom connectivity relation to state which bond realizes a connection between two atoms.",
+    "evidence": [
+      "evidence_006",
+      "evidence_009"
+    ],
+    "id": "term_bond_reference",
+    "name": "Bond Reference in Connectivity",
+    "scope": "Mapping adjacency between atoms back to the bond record that carries the bond type.",
+    "type": "dimension"
+  },
+  {
+    "aliases": [
+      "bond type",
+      "bond order"
+    ],
+    "definition": "The kind of chemical bond joining two atoms: single, double, or triple, stored as a single-character code on the bond record.",
+    "evidence": [
+      "evidence_005"
+    ],
+    "id": "term_bond_type",
+    "name": "Bond Type",
+    "scope": "Filtering and comparing bonds by order within a molecule, a molecule set, or the whole database.",
+    "type": "dimension"
+  },
+  {
+    "aliases": [
+      "single bond",
+      "single-bond",
+      "single bonded"
+    ],
+    "definition": "A bond whose bond type code marks it as a single bond; it is one of the three bond order categories.",
+    "evidence": [
+      "evidence_005",
+      "evidence_008"
+    ],
+    "id": "term_single_bond",
+    "name": "Single Bond",
+    "scope": "Questions that select or count single bonds, or that restrict a molecule or atom set to molecules containing them.",
+    "type": "category"
+  },
+  {
+    "aliases": [
+      "double bond",
+      "double-bond",
+      "double bonded"
+    ],
+    "definition": "A bond whose bond type code marks it as a double bond; it is one of the three bond order categories.",
+    "evidence": [
+      "evidence_005",
+      "evidence_009"
+    ],
+    "id": "term_double_bond",
+    "name": "Double Bond",
+    "scope": "Questions that select or count double bonds.",
+    "type": "category"
+  },
+  {
+    "aliases": [
+      "triple bond",
+      "triple-bond",
+      "triple bonded"
+    ],
+    "definition": "A bond whose bond type code marks it as a triple bond; it is one of the three bond order categories and by far the rarest.",
+    "evidence": [
+      "evidence_005",
+      "evidence_015"
+    ],
+    "id": "term_triple_bond",
+    "name": "Triple Bond",
+    "scope": "Questions that select or count triple bonds, or that restrict a molecule set to molecules containing them.",
+    "type": "category"
+  },
+  {
+    "aliases": [
+      "connection",
+      "adjacency",
+      "atom pair",
+      "bonded atoms"
+    ],
+    "definition": "The relation stating that two atoms are joined by a specific bond. It is recorded once for each direction of the atom pair.",
+    "evidence": [
+      "evidence_006",
+      "evidence_010"
+    ],
+    "id": "term_atom_connectivity",
+    "name": "Atom Connectivity",
+    "scope": "Reasoning about which atoms are bonded, how many bonds an atom has, and which atoms a bond connects.",
+    "type": "concept"
+  },
+  {
+    "aliases": [
+      "percentage of carcinogenic molecules",
+      "carcinogenic proportion",
+      "carcinogenic percentage"
+    ],
+    "definition": "The proportion of molecules that carry the carcinogenic label, relative to all molecules in the stated scope.",
+    "evidence": [
+      "evidence_003"
+    ],
+    "id": "term_molecule_carcinogenic_ratio",
+    "name": "Carcinogenic Share of Molecules",
+    "scope": "Molecule-level carcinogenicity prevalence questions.",
+    "type": "metric"
+  },
+  {
+    "aliases": [
+      "number of atoms of an element",
+      "element frequency",
+      "element count"
+    ],
+    "definition": "The number of distinct atoms carrying a given element symbol within a stated molecule scope, such as all molecules, carcinogenic molecules, or non-carcinogenic molecules.",
+    "evidence": [
+      "evidence_004",
+      "evidence_010"
+    ],
+    "id": "term_element_atom_count",
+    "name": "Element Atom Count",
+    "scope": "Questions asking how many or how numerous atoms of an element are, including most and least numerous element questions.",
+    "type": "metric"
+  },
+  {
+    "aliases": [
+      "most common bond type",
+      "bond type count",
+      "bond count by type"
+    ],
+    "definition": "The number of bonds of each bond type within a stated molecule scope.",
+    "evidence": [
+      "evidence_005",
+      "evidence_015"
+    ],
+    "id": "term_bond_type_frequency",
+    "name": "Bond Type Frequency",
+    "scope": "Questions about the most or least common bond type, or the count of single, double, and triple bonds.",
+    "type": "metric"
+  },
+  {
+    "aliases": [
+      "element fraction in molecule",
+      "composition ratio",
+      "share of an element in a molecule"
+    ],
+    "definition": "Within a single molecule, the share of its atoms that carry a given element symbol, relative to all atoms of that molecule.",
+    "evidence": [
+      "evidence_013"
+    ],
+    "id": "term_element_ratio_in_molecule",
+    "name": "Element Ratio within a Molecule",
+    "scope": "Composition questions about one named molecule.",
+    "type": "metric"
+  },
+  {
+    "aliases": [
+      "average bonds",
+      "bonds per atom",
+      "average bond count"
+    ],
+    "definition": "For a stated set of atoms, the mean number of bonds incident to those atoms.",
+    "evidence": [
+      "evidence_010",
+      "evidence_006"
+    ],
+    "id": "term_average_bonds_per_atom",
+    "name": "Average Bonds per Atom",
+    "scope": "Questions asking how many bonds an element's atoms typically have.",
+    "type": "metric"
+  }
+]

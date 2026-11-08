@@ -1,0 +1,344 @@
+[
+  {
+    "id": "rel_product_product_line",
+    "source": "term_product",
+    "relation_type": "hierarchy",
+    "target": "term_product_line",
+    "connection_condition": "dim_product.prod_line_id corresponds to dim_product_line.prod_line_id",
+    "description": "产品是产品线的成员：每个产品归属一个产品系列，产品线是产品的类别层级，产品取值域按产品线划分。",
+    "evidence": [
+      "ev_product_line_twohop"
+    ]
+  },
+  {
+    "id": "rel_material_material_category",
+    "source": "term_material",
+    "relation_type": "hierarchy",
+    "target": "term_material_category",
+    "connection_condition": "dim_material.category_id corresponds to dim_material_category.category_id",
+    "description": "原材料是其物料类别的成员，类别自身还带父子层级（parent_id）。",
+    "evidence": [
+      "ev_expected_quantity_aliases"
+    ]
+  },
+  {
+    "id": "rel_equipment_equipment_type",
+    "source": "term_equipment",
+    "relation_type": "hierarchy",
+    "target": "term_equipment_type",
+    "connection_condition": "dim_equipment.type_id corresponds to dim_equipment_type.type_id",
+    "description": "具体设备是其设备类型的实例，设备类型按 type_name 划分设备取值域。",
+    "evidence": [
+      "ev_equipment_type_twohop"
+    ]
+  },
+  {
+    "id": "rel_sensor_equipment",
+    "source": "term_sensor",
+    "relation_type": "composition",
+    "target": "term_equipment",
+    "connection_condition": "dim_sensor.equipment_id corresponds to dim_equipment.equipment_id",
+    "description": "传感器安装于设备之上，是设备的组成部分；传感器记录脱离所属设备无意义。",
+    "evidence": [
+      "ev_sensor_link"
+    ]
+  },
+  {
+    "id": "rel_equipment_production_line",
+    "source": "term_equipment",
+    "relation_type": "composition",
+    "target": "term_production_line",
+    "connection_condition": "dim_equipment.line_id corresponds to dim_production_line.line_id",
+    "description": "设备固定归属一条产线，产线由设备构成。",
+    "evidence": [
+      "ev_equipment_type_twohop"
+    ]
+  },
+  {
+    "id": "rel_production_line_workshop",
+    "source": "term_production_line",
+    "relation_type": "composition",
+    "target": "term_workshop",
+    "connection_condition": "dim_production_line.workshop_id corresponds to dim_workshop.workshop_id",
+    "description": "产线位于车间内，车间由产线组成；车间位置（如合肥工厂A栋）用于按位置筛选产线相关记录。",
+    "evidence": [
+      "ev_workshop_link"
+    ]
+  },
+  {
+    "id": "rel_warehouse_factory",
+    "source": "term_warehouse",
+    "relation_type": "composition",
+    "target": "term_factory",
+    "connection_condition": "dim_warehouse.factory_id corresponds to dim_factory.factory_id",
+    "description": "仓库隶属于工厂，是工厂的组成部分。",
+    "evidence": [
+      "ev_warehouse_link"
+    ]
+  },
+  {
+    "id": "rel_department_region",
+    "source": "term_department",
+    "relation_type": "association",
+    "target": "term_sales_region",
+    "connection_condition": "dim_department.region_id corresponds to dim_region.region_id",
+    "description": "部门带有所属区域编码，与销售区域维度使用同一套区域划分，但两者通过 region 编码间接关联。",
+    "evidence": [
+      "ev_department_link",
+      "ev_sales_region_denormalized"
+    ]
+  },
+  {
+    "id": "rel_production_order_production_line",
+    "source": "term_production_order",
+    "relation_type": "association",
+    "target": "term_production_line",
+    "connection_condition": "fact_production_order.line_id corresponds to dim_production_line.line_id",
+    "description": "生产工单在特定产线上执行。",
+    "evidence": [
+      "ev_production_order_inspection"
+    ]
+  },
+  {
+    "id": "rel_production_order_product",
+    "source": "term_production_order",
+    "relation_type": "association",
+    "target": "term_product",
+    "connection_condition": "fact_production_order.prod_id corresponds to dim_product.prod_id",
+    "description": "生产工单生产特定产品。",
+    "evidence": [
+      "ev_production_order_inspection"
+    ]
+  },
+  {
+    "id": "rel_sales_order_customer",
+    "source": "term_sales_order",
+    "relation_type": "association",
+    "target": "term_customer",
+    "connection_condition": "fact_sales_order.cust_id corresponds to dim_customer.cust_id",
+    "description": "销售订单属于特定客户。",
+    "evidence": [
+      "ev_customer_link"
+    ]
+  },
+  {
+    "id": "rel_sales_order_product",
+    "source": "term_sales_order",
+    "relation_type": "association",
+    "target": "term_product",
+    "connection_condition": "fact_sales_order.prod_id corresponds to dim_product.prod_id",
+    "description": "销售订单针对特定产品。",
+    "evidence": [
+      "ev_status_vocab_lower"
+    ]
+  },
+  {
+    "id": "rel_purchase_order_supplier",
+    "source": "term_purchase_order",
+    "relation_type": "association",
+    "target": "term_supplier",
+    "connection_condition": "fact_purchase_order.supplier_id corresponds to dim_supplier.supplier_id",
+    "description": "采购订单来自特定供应商。",
+    "evidence": [
+      "ev_supplier_link"
+    ]
+  },
+  {
+    "id": "rel_product_quantity",
+    "source": "term_product",
+    "relation_type": "association",
+    "target": "term_quantity",
+    "connection_condition": "fact_inventory.prod_id corresponds to dim_product.prod_id",
+    "description": "库存、产出与销售的数量度量以产品为分组维度：按产品名称汇总库存数量（或合格数量）即经由该关联。",
+    "evidence": [
+      "ev_product_line_twohop"
+    ]
+  },
+  {
+    "id": "rel_wip_snapshot_production_line",
+    "source": "term_wip_snapshot",
+    "relation_type": "association",
+    "target": "term_production_line",
+    "connection_condition": "fact_wip_snapshot.line_id corresponds to dim_production_line.line_id",
+    "description": "在制品快照记录了所在产线，用于按产线名称定位在制品记录。",
+    "evidence": [
+      "ev_workshop_link"
+    ]
+  },
+  {
+    "id": "rel_wip_snapshot_production_order",
+    "source": "term_wip_snapshot",
+    "relation_type": "association",
+    "target": "term_production_order",
+    "connection_condition": "fact_wip_snapshot.order_id corresponds to fact_production_order.order_id",
+    "description": "在制品快照关联到其所属生产工单。",
+    "evidence": [
+      "ev_production_order_inspection"
+    ]
+  },
+  {
+    "id": "rel_batch_quality_hold_product",
+    "source": "term_batch_quality_hold",
+    "relation_type": "association",
+    "target": "term_product",
+    "connection_condition": "fact_batch_quality_hold.prod_id corresponds to dim_product.prod_id",
+    "description": "批次质量冻结记录针对特定产品，按产品线筛选需再经产品维表。",
+    "evidence": [
+      "ev_product_line_twohop"
+    ]
+  },
+  {
+    "id": "rel_hazard_observation_workshop",
+    "source": "term_hazard_observation",
+    "relation_type": "association",
+    "target": "term_workshop",
+    "connection_condition": "fact_hazard_observation.workshop_id corresponds to dim_workshop.workshop_id",
+    "description": "危险源观察发生在特定车间，车间位置描述用于按厂区/楼栋筛选观察记录。",
+    "evidence": [
+      "ev_workshop_link"
+    ]
+  },
+  {
+    "id": "rel_cycle_count_warehouse",
+    "source": "term_cycle_count",
+    "relation_type": "association",
+    "target": "term_warehouse",
+    "connection_condition": "fact_cycle_count.warehouse_id corresponds to dim_warehouse.warehouse_id",
+    "description": "循环盘点单针对特定仓库。",
+    "evidence": [
+      "ev_warehouse_link"
+    ]
+  },
+  {
+    "id": "rel_equipment_event_equipment",
+    "source": "term_equipment_event",
+    "relation_type": "association",
+    "target": "term_equipment",
+    "connection_condition": "fact_equipment_event.equipment_id corresponds to dim_equipment.equipment_id",
+    "description": "设备事件发生在特定设备上，按设备类型筛选需再经设备维表。",
+    "evidence": [
+      "ev_equipment_type_twohop"
+    ]
+  },
+  {
+    "id": "rel_alarm_sensor",
+    "source": "term_alarm",
+    "relation_type": "association",
+    "target": "term_sensor",
+    "connection_condition": "fact_alarm.sensor_id corresponds to dim_sensor.sensor_id",
+    "description": "告警由特定传感器触发，按传感器名称或类型汇总告警需经传感器维表。",
+    "evidence": [
+      "ev_sensor_link"
+    ]
+  },
+  {
+    "id": "rel_alarm_equipment",
+    "source": "term_alarm",
+    "relation_type": "association",
+    "target": "term_equipment",
+    "connection_condition": "fact_alarm.equipment_id corresponds to dim_equipment.equipment_id",
+    "description": "告警同时挂在具体设备上。",
+    "evidence": [
+      "ev_sensor_link"
+    ]
+  },
+  {
+    "id": "rel_emission_factory",
+    "source": "term_actual_quantity",
+    "relation_type": "association",
+    "target": "term_factory",
+    "connection_condition": "fact_emission_event.factory_id corresponds to dim_factory.factory_id",
+    "description": "排放事件发生在特定工厂，实际排放数量以工厂为分组维度汇总。",
+    "evidence": [
+      "ev_factory_link"
+    ]
+  },
+  {
+    "id": "rel_hazard_observation_likelihood_risk",
+    "source": "term_likelihood",
+    "relation_type": "derivation",
+    "target": "term_risk_score",
+    "connection_condition": "fact_hazard_observation jointly stores likelihood and risk_score",
+    "description": "风险分值由可能性和严重度共同决定，是在可能性等级之上的风险量化结果。",
+    "evidence": [
+      "ev_likelihood_two_forms"
+    ]
+  },
+  {
+    "id": "rel_storage_days_derivation",
+    "source": "term_warehouse_date",
+    "relation_type": "derivation",
+    "target": "term_storage_days",
+    "connection_condition": "fact_inventory.storage_days is documented as the elapsed days from warehouse_date to today",
+    "description": "在库天数由入库日期推导而来：天数 = 当前日期 - 入库日期，因此按年筛选入库批次等价于对入库日期取年。",
+    "evidence": [
+      "ev_storage_days"
+    ]
+  },
+  {
+    "id": "rel_maintenance_interval_derivation",
+    "source": "term_maintenance_interval",
+    "relation_type": "derivation",
+    "target": "term_equipment",
+    "connection_condition": "fact_maintenance_plan stores interval_days/interval_hours per equipment maintenance plan",
+    "description": "维护间隔由设备维护计划决定，按运行小时和日历天两种口径同时记录。",
+    "evidence": [
+      "ev_maintenance_interval"
+    ]
+  },
+  {
+    "id": "rel_currency_amount",
+    "source": "term_currency",
+    "relation_type": "association",
+    "target": "term_amount",
+    "connection_condition": "fact table currency_code corresponds to dim_currency.code and qualifies the amount columns",
+    "description": "金额必须结合币种解读；按币种汇总金额/成本需要先取币种简称再分组。",
+    "evidence": [
+      "ev_currency_join"
+    ]
+  },
+  {
+    "id": "rel_reason_code_measured_value",
+    "source": "term_reason_code",
+    "relation_type": "association",
+    "target": "term_measured_value",
+    "connection_condition": "fact_condition_monitoring.reason_code and reading_value co-occur per record",
+    "description": "设备状态监测按原因码分组汇总读数，原因码简称来自原因码维表。",
+    "evidence": [
+      "ev_reason_code_join"
+    ]
+  },
+  {
+    "id": "rel_batch_quality_code",
+    "source": "term_batch_no",
+    "relation_type": "association",
+    "target": "term_status",
+    "connection_condition": "batch_no / lot_no link quality-hold, WIP, inventory-snapshot and traceability facts",
+    "description": "批次号把质量冻结、在制品与库存快照等单据串成同一条批次链路，批次状态在各表中独立记录。",
+    "evidence": [
+      "ev_batch_key"
+    ]
+  },
+  {
+    "id": "rel_return_sales_order",
+    "source": "term_return",
+    "relation_type": "association",
+    "target": "term_sales_order",
+    "connection_condition": "fact_return.order_id corresponds to fact_sales_order.order_id",
+    "description": "退货单据源自某张销售订单（83 条退货记录的 order_id 全部命中销售订单），因此销售订单的退货/未发货状态可与其退货记录互相印证。",
+    "evidence": [
+      "ev_return_reason_vocab"
+    ]
+  },
+  {
+    "id": "rel_invoice_delivery",
+    "source": "term_invoice",
+    "relation_type": "association",
+    "target": "term_shipment",
+    "connection_condition": "fact_invoice.delivery_id corresponds to fact_shipment.delivery_id",
+    "description": "发票通过交付标识挂到发运单上（5162 张发票全部命中发运单），“已开具发票”是对该交付标识存在性的判断，而不是发票表自身的状态列。",
+    "evidence": [
+      "ev_invoice_shipment_link"
+    ]
+  }
+]

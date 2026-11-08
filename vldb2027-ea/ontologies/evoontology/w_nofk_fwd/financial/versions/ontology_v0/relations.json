@@ -1,0 +1,134 @@
+[
+  {
+    "id": "rel_transaction_cash_withdrawal",
+    "source": "term_transaction",
+    "relation_type": "hierarchy",
+    "target": "term_cash_withdrawal",
+    "connection_condition": "both are grounded in the trans table; the cash withdrawal value domain is the subset of transaction rows whose operation code is 'VYBER'",
+    "description": "A cash withdrawal is a specific kind of transaction, so every cash withdrawal is a transaction while only some transactions are cash withdrawals.",
+    "evidence": [
+      "ev_021_cash_withdrawal_encoding"
+    ]
+  },
+  {
+    "id": "rel_region_district",
+    "source": "term_region",
+    "relation_type": "composition",
+    "target": "term_district",
+    "connection_condition": "the region of a district is carried as the district attribute A3, so each district belongs to exactly one region",
+    "description": "A region is composed of the districts assigned to it; the 77 districts are partitioned into 8 regions.",
+    "evidence": [
+      "ev_006_region_values"
+    ]
+  },
+  {
+    "id": "rel_account_transaction",
+    "source": "term_account",
+    "relation_type": "composition",
+    "target": "term_transaction",
+    "connection_condition": "trans.account_id references account.account_id and every transaction carries exactly one account identifier",
+    "description": "An account is composed of the transactions recorded against it; a transaction has no meaning without the account it belongs to.",
+    "evidence": [
+      "ev_014_fk_integrity"
+    ]
+  },
+  {
+    "id": "rel_account_loan",
+    "source": "term_account",
+    "relation_type": "composition",
+    "target": "term_loan",
+    "connection_condition": "loan.account_id references account.account_id; 682 loans map onto 682 distinct accounts, so at most one loan exists per account in this data",
+    "description": "A loan is granted on exactly one account and cannot be interpreted without it.",
+    "evidence": [
+      "ev_016_loan_account_1to1"
+    ]
+  },
+  {
+    "id": "rel_client_account",
+    "source": "term_client",
+    "relation_type": "association",
+    "target": "term_account",
+    "connection_condition": "the link is indirect: it is mediated by the disposition record, which carries both client_id and account_id and the role held",
+    "description": "A client holds accounts and an account may be shared by several clients, so the relationship is many-to-many and always resolved through the disposition record.",
+    "evidence": [
+      "ev_015_disp_cardinality"
+    ]
+  },
+  {
+    "id": "rel_client_district",
+    "source": "term_client",
+    "relation_type": "association",
+    "target": "term_district",
+    "connection_condition": "client.district_id references district.district_id and denotes the client's residence",
+    "description": "A client lives in a district, which is one of the two independent roles a district plays in this schema.",
+    "evidence": [
+      "ev_017_district_role_divergence"
+    ]
+  },
+  {
+    "id": "rel_account_district",
+    "source": "term_account",
+    "relation_type": "association",
+    "target": "term_district",
+    "connection_condition": "account.district_id references district.district_id and denotes the branch where the account was opened",
+    "description": "An account was opened at a branch in a district; this is the second, distinct role a district plays and it does not always coincide with the client residence district.",
+    "evidence": [
+      "ev_017_district_role_divergence"
+    ]
+  },
+  {
+    "id": "rel_district_average_salary",
+    "source": "term_district",
+    "relation_type": "association",
+    "target": "term_average_salary",
+    "connection_condition": "the value is carried as the district attribute A11 and is therefore only reachable through the district record",
+    "description": "Average salary is a measured attribute of the district rather than a value derived from the clients living there.",
+    "evidence": [
+      "ev_008_average_salary"
+    ]
+  },
+  {
+    "id": "rel_disposition_client",
+    "source": "term_disposition",
+    "relation_type": "association",
+    "target": "term_client",
+    "connection_condition": "disp.client_id references client.client_id and every disposition belongs to exactly one client",
+    "description": "A disposition is granted to one client, which is how a client is attached to an account.",
+    "evidence": [
+      "ev_015_disp_cardinality"
+    ]
+  },
+  {
+    "id": "rel_disposition_account",
+    "source": "term_disposition",
+    "relation_type": "association",
+    "target": "term_account",
+    "connection_condition": "disp.account_id references account.account_id and an account may carry one owner and one disponent disposition",
+    "description": "A disposition targets one account; accounts with two dispositions are exactly those carrying a disponent in addition to an owner.",
+    "evidence": [
+      "ev_015_disp_cardinality"
+    ]
+  },
+  {
+    "id": "rel_account_percentage",
+    "source": "term_account",
+    "relation_type": "derivation",
+    "target": "term_percentage_metric",
+    "connection_condition": "numerator is the count or loan total of accounts satisfying the stated condition and denominator is the corresponding count or total over all accounts in scope",
+    "description": "A percentage over accounts is derived from account-level counts or totals, for example the share of accounts whose loan is still running.",
+    "evidence": [
+      "ev_019_percentage_definition"
+    ]
+  },
+  {
+    "id": "rel_client_percentage",
+    "source": "term_client",
+    "relation_type": "derivation",
+    "target": "term_percentage_metric",
+    "connection_condition": "numerator is the count of clients satisfying the stated condition and denominator is the corresponding count over the client population in scope",
+    "description": "A percentage over clients is derived from client-level counts, for example the share of male clients who requested weekly statements.",
+    "evidence": [
+      "ev_019_percentage_definition"
+    ]
+  }
+]

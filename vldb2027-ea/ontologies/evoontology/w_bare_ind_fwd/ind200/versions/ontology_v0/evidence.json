@@ -1,0 +1,354 @@
+[
+  {
+    "id": "ev_001_schema_inventory",
+    "source": "ind200",
+    "query": "SELECT count(*) FROM sqlite_master WHERE type='table'; SELECT count(*) FROM sqlite_master WHERE type='view'",
+    "result": "198 张表（fact_ 前缀 115 张、dim_ 前缀 67 张），0 个视图。",
+    "validation_method": "sqlite_master 元数据统计（只读连接）",
+    "timestamp": "2026-10-10T05:45:00+00:00"
+  },
+  {
+    "id": "ev_002_no_declared_fk",
+    "source": "ind200",
+    "query": "SELECT count(*) FROM sqlite_master WHERE upper(coalesce(sql,'')) LIKE '%FOREIGN KEY%'",
+    "result": "0 —— 全库没有任何声明外键，表间关系只能通过同名列与命名约定推断。",
+    "validation_method": "元数据扫描，未做写入操作",
+    "timestamp": "2026-10-10T05:45:00+00:00"
+  },
+  {
+    "id": "ev_003_governed_template",
+    "source": "ind200",
+    "query": "SELECT (SELECT count(*) FROM sqlite_master WHERE type='table' AND sql LIKE '%business_date%') ... 对 business_date/postion_date/event_time/status/created_by/updated_by/approved_by/remarks/is_deleted/row_version/data_quality_score/quantity 分别计数",
+    "result": "business_date=67, posting_date=67, event_time=67, status=118, created_by=92, updated_by=92, approved_by=67, remarks=92, is_deleted=92, row_version=67, data_quality_score=92, quantity=59（按含该列的表计数）。",
+    "validation_method": "列存在性统计",
+    "timestamp": "2026-10-10T05:45:00+00:00"
+  },
+  {
+    "id": "ev_004_legacy_family",
+    "source": "ind200",
+    "query": "SELECT group_concat(name,', ') FROM sqlite_master WHERE type='table' AND name LIKE 'fact_%' AND sql NOT LIKE '%business_date%'",
+    "result": "48 张 fact_ 表没有 business_date：fact_purchase_order、fact_sales_order、fact_production_order、fact_inventory、fact_goods_receipt、fact_purchase_requisition、fact_quotation、fact_return、fact_maintenance_plan、fact_iot_data、fact_alarm、fact_ap、fact_delivery、fact_invoice、fact_opportunity、fact_sample、fact_supplier_eval、fact_risk_assessment、fact_safety_plan 等。",
+    "validation_method": "列存在性统计",
+    "timestamp": "2026-10-10T05:45:00+00:00"
+  },
+  {
+    "id": "ev_005_calendar_year_domain",
+    "source": "ind200",
+    "query": "SELECT DISTINCT calendar_year FROM dim_calendar; SELECT min(business_date), max(business_date) FROM fact_data_quality_issue; SELECT min(posting_date), max(posting_date) FROM fact_cycle_count",
+    "result": "日历年份仅 2025、2026；业务日期与过账日期集中在 2025-01 至 2026-07 区间。",
+    "validation_method": "取值域抽样",
+    "timestamp": "2026-10-10T05:45:00+00:00"
+  },
+  {
+    "id": "ev_006_status_styles",
+    "source": "ind200",
+    "query": "SELECT status, count(*) FROM <table> GROUP BY 1（对多张表抽样）",
+    "result": "状态取值存在三套书写风格。大写英文族：fact_cycle_count(CLOSED 5/APPROVED 1)、fact_cycle_count_line(CLOSED 75/APPROVED 15)、fact_inventory_snapshot(CLOSED 510/APPROVED 30)、fact_gl_entry(CLOSED 3946/APPROVED 50)、fact_shift_report(CLOSED 16569/APPROVED 1063)、fact_hazard_observation(CLOSED 316/APPROVED 18)、fact_capex_project_cost(CLOSED 133/APPROVED 4)、fact_customer_complaint(CLOSED 248/APPROVED 12)、fact_wip_snapshot(CLOSED 172/APPROVED 12)、fact_safety_action(CLOSED 175/IN_PROGRESS 1)。小写英文族：fact_purchase_order(closed 777/confirmed 10/received 108)、fact_sales_order(delivered 4576/undelivered 152/returned 3)、fact_ap(closed 879/open 122)、fact_quotation(won 357/lost 113/draft 6)、fact_goods_receipt(posted 1001/inspected 16)、fact_safety_plan(active 1/closed 1)、fact_maintenance_wo(completed 1694/created 6)。中文族：fact_production_order(已完成 2930/待生产 27/生产中 12)、fact_inspection_lot.result_code(合格 2721/不合格 116/让步接收 93)。",
+    "validation_method": "多表 DISTINCT 抽样",
+    "timestamp": "2026-10-10T05:45:00+00:00"
+  },
+  {
+    "id": "ev_007_remarks_vocab",
+    "source": "ind200",
+    "query": "SELECT remarks, count(*) FROM fact_equipment_event / fact_attendance / fact_inventory_snapshot / fact_batch_quality_hold GROUP BY 1",
+    "result": "备注为封闭词表，仅五类：加急、客户指定批次、已电话确认、补录、跨月处理。fact_equipment_event 分别 33/30/26/25/25；fact_attendance 376/382/384/376/372；fact_inventory_snapshot 含 补录 7、跨月处理 1、加急 2、客户指定批次 2、已电话确认 7；fact_batch_quality_hold 含 补录 5、加急 3、客户指定批次 3。",
+    "validation_method": "按表分组计数",
+    "timestamp": "2026-10-10T05:45:00+00:00"
+  },
+  {
+    "id": "ev_008_persona_domains",
+    "source": "ind200",
+    "query": "SELECT DISTINCT created_by FROM fact_equipment_event; SELECT emp_id FROM dim_employee; SELECT DISTINCT employee_no FROM fact_attendance",
+    "result": "创建人/更新人/审批人取值为 U0001–U0012 共 12 个账号；dim_employee.emp_id 为整数主键；事实表中的员工列是 employee_no，形如 E0001。三者是完全不同的取值域。",
+    "validation_method": "跨表取值域对比",
+    "timestamp": "2026-10-10T05:45:00+00:00"
+  },
+  {
+    "id": "ev_009_flags",
+    "source": "ind200",
+    "query": "SELECT count(*), sum(is_deleted) FROM fact_gauge_calibration; SELECT count(*), sum(is_deleted) FROM fact_equipment_event; SELECT count(*), count(DISTINCT is_handled), sum(is_handled) FROM fact_alarm",
+    "result": "is_deleted 恒为 0（fact_gauge_calibration 150 行合计 0、fact_equipment_event 3741 行合计 0）；fact_alarm.is_handled 恒为 1（3109 行、distinct=1、合计 3109）。",
+    "validation_method": "聚合校验",
+    "timestamp": "2026-10-10T05:45:00+00:00"
+  },
+  {
+    "id": "ev_010_row_version",
+    "source": "ind200",
+    "query": "SELECT min(row_version), max(row_version), avg(row_version) FROM fact_hazard_observation; SELECT min(row_version), max(row_version) FROM fact_lead",
+    "result": "行版本取值域为 1..3；fact_hazard_observation 平均 1.3922（仅 2025 年整改期限子集为 1.3832）。",
+    "validation_method": "取值域与聚合抽样",
+    "timestamp": "2026-10-10T05:45:00+00:00"
+  },
+  {
+    "id": "ev_011_dqs",
+    "source": "ind200",
+    "query": "SELECT min(data_quality_score), max(data_quality_score) FROM fact_environment_measurement",
+    "result": "数据质量分取值 0.901..0.999；2025 年环境监测子集平均 0.9477。",
+    "validation_method": "取值域抽样",
+    "timestamp": "2026-10-10T05:45:00+00:00"
+  },
+  {
+    "id": "ev_012_qualified_equivalence",
+    "source": "ind200",
+    "query": "SELECT sum(qualified_quantity) FROM fact_inspection_lot; SELECT sum(quantity) FROM fact_production_output WHERE grade<>'返工品'; SELECT sum(quantity) FROM fact_production_output",
+    "result": "检验批合格数量合计 110105.09，与产出记录中非返工品等级的数量合计 110105.09 完全一致；全部产出（含返工品）为 114351.2。两者是同一业务量的两种表示。",
+    "validation_method": "跨表合计比对",
+    "timestamp": "2026-10-10T05:45:00+00:00"
+  },
+  {
+    "id": "ev_013_mat_ref",
+    "source": "ind200",
+    "query": "SELECT count(*) FROM fact_legacy_material_issue; SELECT count(*) FROM fact_legacy_material_issue WHERE mat_ref IN (SELECT material_code FROM dim_material)",
+    "result": "740 行中 703 行的 mat_ref 可以匹配 dim_material.material_code，37 行无匹配。这是文本引用而非受约束外键。",
+    "validation_method": "关联覆盖率校验",
+    "timestamp": "2026-10-10T05:45:00+00:00"
+  },
+  {
+    "id": "ev_014_reason_code",
+    "source": "ind200",
+    "query": "SELECT code, abbreviation, reason_group FROM dim_reason_code; SELECT DISTINCT reason_code FROM fact_condition_monitoring; SELECT DISTINCT reason_code FROM fact_gauge_calibration",
+    "result": "原因码字典 12 项：QUALITY/QUA、DELIVERY/DEL、COST/COS、EQUIPMENT/EQU、SAFETY/SAF、ENVIRONMENT/ENV、CUSTOMER/CUS、SUPPLIER/SUP、PROCESS/PRO、MATERIAL/MAT、SYSTEM/SYS、OTHER/OTH（OTHER 的简称是 OTH）；分组仅 内部(9 个码) 与 外部(ENVIRONMENT、CUSTOMER、SUPPLIER)。事实表 reason_code 存的正是这些大写代码；fact_condition_monitoring 与 fact_gauge_calibration 的 reason_code 全部为 OTHER。",
+    "validation_method": "字典与事实表取值域比对",
+    "timestamp": "2026-10-10T05:45:00+00:00"
+  },
+  {
+    "id": "ev_015_emission_zero",
+    "source": "ind200",
+    "query": "SELECT count(*), count(DISTINCT actual_quantity), sum(actual_quantity), sum(emission_value) FROM fact_emission_event",
+    "result": "5 行；actual_quantity 只有 1 个取值且合计为 0；emission_value 合计 342.99。排放量列在本版本中不可用，浓度列可用。",
+    "validation_method": "聚合校验",
+    "timestamp": "2026-10-10T05:45:00+00:00"
+  },
+  {
+    "id": "ev_016_fat_zero_tax",
+    "source": "ind200",
+    "query": "SELECT count(*), count(DISTINCT tax_amount), sum(tax_amount), sum(net_book_value) FROM fact_fixed_asset_transfer",
+    "result": "3 行；tax_amount 只有 1 个取值且合计为 0；net_book_value 合计 170594.38。",
+    "validation_method": "聚合校验",
+    "timestamp": "2026-10-10T05:45:00+00:00"
+  },
+  {
+    "id": "ev_017_currency",
+    "source": "ind200",
+    "query": "SELECT count(DISTINCT currency_code) FROM fact_work_order_material / fact_inventory_movement / fact_scrap_event / fact_transfer_order; SELECT short_name, code FROM dim_currency",
+    "result": "各事实表的币种列取值单一（均为 CNY），无法形成有意义的币种分组差异；dim_currency 提供 人民币/CNY、美元/USD、欧元/EUR、日元/JPY 四个币种及其简称。",
+    "validation_method": "取值域抽样",
+    "timestamp": "2026-10-10T05:45:00+00:00"
+  },
+  {
+    "id": "ev_018_inventory_grains",
+    "source": "ind200",
+    "query": "SELECT count(*) FROM fact_inventory; SELECT count(*) FROM fact_inventory_snapshot",
+    "result": "fact_inventory 37 行（产品级，含 storage_days，无状态列）；fact_inventory_snapshot 540 行（物料级，含 status 与可用/预留数量）。同名概念不同粒度。",
+    "validation_method": "行数与粒度对比",
+    "timestamp": "2026-10-10T05:45:00+00:00"
+  },
+  {
+    "id": "ev_019_storage_days",
+    "source": "ind200",
+    "query": "SELECT count(*), sum(storage_days), avg(storage_days) FROM fact_inventory; SELECT count(*), sum(storage_days), avg(storage_days) FROM fact_inventory WHERE strftime('%Y',warehouse_date)='2026'",
+    "result": "37 行；在库天数合计 202、平均 5.4595；全部记录的入库年份均为 2026，按年筛选不改变结果。",
+    "validation_method": "聚合与年份筛选校验",
+    "timestamp": "2026-10-10T05:45:00+00:00"
+  },
+  {
+    "id": "ev_020_maintenance_plan",
+    "source": "ind200",
+    "query": "SELECT count(*), avg(interval_days), sum(interval_hours) FROM fact_maintenance_plan; SELECT count(*) FROM fact_maintenance_plan WHERE strftime('%Y',next_date)='2026'; SELECT type_name, count(*) FROM fact_maintenance_plan JOIN dim_equipment ON ... JOIN dim_equipment_type ON ... GROUP BY 1",
+    "result": "72 行；interval_days 平均 40、interval_hours 合计 57600；全部 next_date 落在 2026 年；maint_type 为 月度检修/季度大修；按设备类型分组得 双螺杆挤出机 24、高速混合机 12、失重式喂料机 12、切粒机 12、除湿干燥机 7、自动包装机 5。",
+    "validation_method": "聚合、年份与两跳关联校验",
+    "timestamp": "2026-10-10T05:45:00+00:00"
+  },
+  {
+    "id": "ev_021_iot_unit",
+    "source": "ind200",
+    "query": "SELECT unit, count(*) FROM fact_iot_data GROUP BY 1 ORDER BY count(*) DESC",
+    "result": "9 种单位：A=9586、℃=7988、MPa=6090、mm/s=1748、rpm=874、kg/h=874、%=874、包/h=362、kg=362。",
+    "validation_method": "取值域计数",
+    "timestamp": "2026-10-10T05:45:00+00:00"
+  },
+  {
+    "id": "ev_022_gr_inspection",
+    "source": "ind200",
+    "query": "SELECT status, count(*) FROM fact_goods_receipt GROUP BY 1; SELECT inspection_result, count(*) FROM fact_goods_receipt GROUP BY 1",
+    "result": "status 的 posted=1001 / inspected=16 与 inspection_result 的 pass=1001 / fail=16 一一对应。",
+    "validation_method": "两列交叉计数",
+    "timestamp": "2026-10-10T05:45:00+00:00"
+  },
+  {
+    "id": "ev_023_order_chain",
+    "source": "ind200",
+    "query": "SELECT count(*) FROM fact_sales_order s JOIN fact_delivery d ON d.order_id=s.order_id JOIN fact_invoice i ON i.delivery_id=d.delivery_id WHERE s.status='returned'; ... WHERE s.status='undelivered'",
+    "result": "订单→发货→发票链路可连接：状态 returned 且已开票 6，状态 undelivered 且已开票 2。",
+    "validation_method": "三表串联校验",
+    "timestamp": "2026-10-10T05:45:00+00:00"
+  },
+  {
+    "id": "ev_024_calendar_link",
+    "source": "ind200",
+    "query": "SELECT count(*) FROM dim_calendar WHERE created_by='U0003'; SELECT sum(i.priority) FROM fact_legacy_material_issue i JOIN dim_calendar c ON c.calendar_date=i.business_date WHERE c.created_by='U0003'",
+    "result": "dim_calendar 中创建人为 U0003 的日历 47 行；按 calendar_date=business_date 关联后，遗留系统领料记录的优先级合计 186。",
+    "validation_method": "文本/日期键关联校验",
+    "timestamp": "2026-10-10T05:45:00+00:00"
+  },
+  {
+    "id": "ev_025_prod_order_inspection",
+    "source": "ind200",
+    "query": "SELECT status, count(*) FROM fact_production_order GROUP BY 1; SELECT count(*) FROM fact_inspection_lot l WHERE l.order_id IN (SELECT order_id FROM fact_production_order); SELECT sum(l.lower_limit) FROM fact_production_order o JOIN fact_inspection_lot l ON l.order_id=o.order_id WHERE o.status='已完成'",
+    "result": "工单状态 已完成 2930 / 待生产 27 / 生产中 12；2930 个工单全部可在检验批中找到对应行；已完成工单对应的检验批下限合计 193695.82。",
+    "validation_method": "状态分组与关联校验",
+    "timestamp": "2026-10-10T05:45:00+00:00"
+  },
+  {
+    "id": "ev_026_population_top",
+    "source": "ind200",
+    "query": "SELECT s.supplier_name, sum(a.amount) FROM fact_ap a JOIN dim_supplier s ON s.supplier_id=a.supplier_id GROUP BY 1 ORDER BY 2 DESC; 同类查询用于采购申请/班次报告/循环盘点",
+    "result": "应付金额合计最高供应商 合成供应商0007（488630948.97）；采购申请总金额最高部门 计划部（1591075080.0）；正常工时合计最高产线 特塑挤出2线（11749.5，取自 fact_shift_report.regular_hours）；循环盘点优先级合计最高仓库 一厂原料仓（18）。",
+    "validation_method": "分组取首校验",
+    "timestamp": "2026-10-10T05:45:00+00:00"
+  },
+  {
+    "id": "ev_027_top_product",
+    "source": "ind200",
+    "query": "SELECT p.prod_name, sum(i.quantity) FROM fact_inventory i JOIN dim_product p ON p.prod_id=i.prod_id GROUP BY 1 ORDER BY 2 DESC; SELECT p.prod_name, sum(t.qualified_quantity) FROM (fact_inspection_lot UNION ALL fact_batch_quality_hold UNION ALL fact_scrap_event) t JOIN dim_product p ON p.prod_id=t.prod_id GROUP BY 1 ORDER BY 2 DESC",
+    "result": "库存数量合计最高产品 PP-EP（274.73）；合格数量合计最高产品 PC/ABS（三表并集 18078.35，仅检验批口径 17708.98）。合格数量分布在检验批、批次冻结与报废事件三张表中。",
+    "validation_method": "分组取首与并集口径校验",
+    "timestamp": "2026-10-10T05:45:00+00:00"
+  },
+  {
+    "id": "ev_028_dimension_values",
+    "source": "ind200",
+    "query": "SELECT DISTINCT ... FROM dim_sensor / dim_equipment_type / dim_material_category / dim_product_line / dim_workshop / dim_customer / dim_region / dim_production_line",
+    "result": "sensor_type 9 类（压力、振动、料位、流量、温度、电流、转速、速度、重量）；equipment_type 6 类（双螺杆挤出机、高速混合机、失重式喂料机、切粒机、除湿干燥机、自动包装机），分属 生产设备/辅助设备 两个大类；material_category 6 类（树脂、通用树脂、工程塑料树脂、特种工程塑料树脂、增强与填充、助剂），其中 3 项有 parent_id；product_line 4 条（PP改性系列、PA改性系列、ABS/PC合金系列、特种工程塑料系列）；workshop.location 5 个（合肥工厂A栋、青岛一厂A栋、青岛一厂B栋、青岛二厂A栋、青岛二厂B栋）；customer.industry 5 类（家电、建材、汽车、电动工具、电子电气）；region_name 6 个（华东、华南、华北、西南、华中、西北）；production_line 12 条（PP挤出1–3线、PA挤出1–3线、合金挤出1–2线、阻燃挤出1–2线、特塑挤出1–2线）。",
+    "validation_method": "维度取值域抽样",
+    "timestamp": "2026-10-10T05:45:00+00:00"
+  },
+  {
+    "id": "ev_029_sales_region",
+    "source": "ind200",
+    "query": "SELECT sales_region, count(*) FROM fact_sales_order_line / fact_sales_forecast / fact_price_adjustment GROUP BY 1",
+    "result": "销售区域取值 华东/华中/华北/华南/西北/西南，存在于 fact_sales_order_line(1730/666/503/1461/571/442)、fact_sales_forecast(292/99/121/209/103/98)、fact_price_adjustment(19/8/7/12/7/6)。",
+    "validation_method": "取值域抽样",
+    "timestamp": "2026-10-10T05:45:00+00:00"
+  },
+  {
+    "id": "ev_030_customer_last_deal",
+    "source": "ind200",
+    "query": "SELECT count(*) FROM dim_customer WHERE last_deal_date='2026-06-24'; SELECT sum(d.planned_quantity) FROM fact_demand_plan d JOIN dim_customer c ON c.cust_id=d.cust_id WHERE c.last_deal_date='2026-06-24'",
+    "result": "1 个客户满足最近交易日期 2026-06-24；其需求计划计划数量合计 3501.32。",
+    "validation_method": "主数据筛选后关联事实表",
+    "timestamp": "2026-10-10T05:45:00+00:00"
+  },
+  {
+    "id": "ev_031_bom_ratio",
+    "source": "ind200",
+    "query": "SELECT DISTINCT bom_qty_per_ton FROM fact_work_order_material LIMIT 6; SELECT sum(bom_qty_per_ton) FROM fact_work_order_material; SELECT sum(qty_per_ton) FROM dim_bom_line",
+    "result": "fact_work_order_material.bom_qty_per_ton 为每吨产品的物料配比（样本 792.2607、203.666、4.0733）；事实表合计 2930000 来自 2930 行，dim_bom_line.qty_per_ton 合计 15000 来自 15 行，两者行数与口径不同，不可直接相加比较。",
+    "validation_method": "口径对比",
+    "timestamp": "2026-10-10T05:45:00+00:00"
+  },
+  {
+    "id": "ev_032_hazard_location",
+    "source": "ind200",
+    "query": "SELECT DISTINCT location_code FROM fact_hazard_observation; SELECT sum(h.likelihood) FROM fact_hazard_observation h JOIN dim_workshop w ON w.workshop_id=h.workshop_id WHERE w.location='合肥工厂A栋'; SELECT sum(h.risk_score) FROM fact_hazard_observation h JOIN dim_workshop w ON w.workshop_id=h.workshop_id WHERE w.location='青岛二厂A栋'",
+    "result": "fact_hazard_observation.location_code 是车间内区域（如 PP改性车间挤出区 67、阻燃材料车间配料间 68），不含厂区位置；厂区位置（合肥工厂A栋等）需经 dim_workshop.location 关联。合肥工厂A栋 可能性合计 120；青岛二厂A栋 风险分值合计 333.0。",
+    "validation_method": "位置口径与两跳关联校验",
+    "timestamp": "2026-10-10T05:45:00+00:00"
+  },
+  {
+    "id": "ev_033_prod_grade_hold",
+    "source": "ind200",
+    "query": "SELECT grade, count(*) FROM fact_production_output GROUP BY 1; SELECT disposition, count(*) FROM fact_batch_quality_hold GROUP BY 1; SELECT count(*) FROM fact_batch_quality_hold WHERE strftime('%Y',expiry_date)='2028' AND disposition='返工'",
+    "result": "产出等级 一等品 2721 / 优等品 2721 / 合格品 93 / 返工品 116；冻结处置 返工 116 / 让步接收 93；2028 年失效且处置为返工 33。",
+    "validation_method": "取值域交叉计数",
+    "timestamp": "2026-10-10T05:45:00+00:00"
+  },
+  {
+    "id": "ev_034_supplier_eval",
+    "source": "ind200",
+    "query": "SELECT eval_date, count(*) FROM fact_supplier_eval GROUP BY 1",
+    "result": "6 个评估日期（2025-04-06、2025-07-06、2025-10-06、2026-01-06、2026-04-06、2026-07-06），每个 11 条。",
+    "validation_method": "分组计数",
+    "timestamp": "2026-10-10T05:45:00+00:00"
+  },
+  {
+    "id": "ev_035_safety_objective",
+    "source": "ind200",
+    "query": "SELECT count(*) FROM fact_safety_objective WHERE deadline='2026-12-31'",
+    "result": "3 条安全目标的期限为 2026-12-31。",
+    "validation_method": "条件计数",
+    "timestamp": "2026-10-10T05:45:00+00:00"
+  },
+  {
+    "id": "ev_036_persona_distribution",
+    "source": "ind200",
+    "query": "SELECT created_by/updated_by/approved_by, count(*) FROM fact_rework_order / fact_inspection_result / fact_cash_flow / fact_training_attendance / fact_certification_record GROUP BY 1",
+    "result": "治理人列在规范单据表中均匀分布在 12 个 U 账号上：fact_inspection_result.approved_by 各 1063–1202；fact_cash_flow.approved_by 各 359–428；fact_training_attendance.approved_by 各 53–71；fact_rework_order.created_by 各 4–12；fact_rework_order.updated_by 各 6–14。",
+    "validation_method": "分组计数",
+    "timestamp": "2026-10-10T05:45:00+00:00"
+  },
+  {
+    "id": "ev_037_absences_sample",
+    "source": "ind200",
+    "query": "SELECT absence_type/feedback_result/audit_type/consequence, count(*) FROM fact_attendance / fact_sample / fact_safety_audit / fact_risk_assessment GROUP BY 1",
+    "result": "考勤缺勤类型 事假 225 / 年假 212 / 病假 224；送样反馈结果 success 20 / fail 22；安全审计类型 专项审计 18 / 月度安全审计 18；风险评估后果等级 catastrophic 5 / major 15 / minor 3 / moderate 7。",
+    "validation_method": "取值域计数",
+    "timestamp": "2026-10-10T05:45:00+00:00"
+  },
+  {
+    "id": "ev_038_return_reasons",
+    "source": "ind200",
+    "query": "SELECT reason, count(*) FROM fact_return GROUP BY 1; SELECT count(*) FROM fact_sales_order WHERE status='returned'",
+    "result": "退货原因 5 类：产品质量问题:冲击强度偏低 31、包装破损受潮 9、客户订单变更取消 12、规格型号发错 9、颜色与样板不符 22（合计 83 条）；而 fact_sales_order.status='returned' 只有 3 条，两者不是同一粒度。",
+    "validation_method": "口径对比",
+    "timestamp": "2026-10-10T05:45:00+00:00"
+  },
+  {
+    "id": "ev_039_reason_group",
+    "source": "ind200",
+    "query": "SELECT reason_group, code FROM dim_reason_code GROUP BY 1,2",
+    "result": "原因码分组仅两值：内部（QUALITY、DELIVERY、COST、EQUIPMENT、SAFETY、PROCESS、MATERIAL、SYSTEM、OTHER 共 9 个）与外部（ENVIRONMENT、CUSTOMER、SUPPLIER 共 3 个）。",
+    "validation_method": "分组枚举",
+    "timestamp": "2026-10-10T05:45:00+00:00"
+  },
+  {
+    "id": "ev_040_shift_domain",
+    "source": "ind200",
+    "query": "SELECT name FROM dim_shift; SELECT location FROM dim_workshop",
+    "result": "15 个班次，命名为 1–5 号车间的白班/中班/夜班；而 dim_workshop 只有 5 个厂区位置且以 location 文本标识，班次名称中的车间序号与 dim_workshop 没有可用的标识符关联。",
+    "validation_method": "取值域对比",
+    "timestamp": "2026-10-10T05:45:00+00:00"
+  },
+  {
+    "id": "ev_041_entity_links",
+    "source": "ind200",
+    "query": "SELECT count(*) FROM dim_equipment WHERE line_id IS NOT NULL; SELECT count(*) FROM dim_warehouse WHERE factory_id IS NOT NULL; SELECT count(*) FROM dim_product WHERE prod_line_id IS NOT NULL",
+    "result": "dim_equipment 60 行全部有 line_id；dim_warehouse 7 行全部有 factory_id；dim_product 15 行全部有 prod_line_id。实体层级关系通过整型标识列连接。",
+    "validation_method": "标识列覆盖率校验",
+    "timestamp": "2026-10-10T05:45:00+00:00"
+  },
+  {
+    "id": "ev_042_toplevel_by_attr",
+    "source": "ind200",
+    "query": "SELECT s.sensor_name, sum(a.is_handled) FROM fact_alarm a JOIN dim_sensor s ON s.sensor_id=a.sensor_id GROUP BY 1 ORDER BY 2 DESC LIMIT 1; SELECT sum(c.reading_value) FROM fact_condition_monitoring c JOIN dim_sensor s ON s.sensor_id=c.sensor_id WHERE s.sensor_type='振动'",
+    "result": "是否处理合计最高的传感器名称为 电机电流-PP挤出3线（58）；传感器类型为 振动 的监测读数合计 4854.395。",
+    "validation_method": "两跳属性过滤与聚合",
+    "timestamp": "2026-10-10T05:45:00+00:00"
+  },
+  {
+    "id": "ev_043_year_scoped_measures",
+    "source": "ind200",
+    "query": "按年份筛选后对多表度量求和/求平均",
+    "result": "2025 年：工单物料投用实际数量合计 75875.24；工单工序执行数量合计 408925.58（全部年份 623568.4）；收货数量合计 78267.0；环境监测限值合计 24840.0；到货预告明细平均预留数量 17.1982；班次生产报告数据质量分合计 10937.862；报价单平均总金额 489057.09；环境监测数据质量分平均 0.9477；危险源观察行版本平均 1.3832；供应商合同明细（2025-01-03 过账）4 条。2026 年：备件领用合格数量合计 562.0；验证案例执行结果数据质量分合计 15.198；数据质量问题异常数合计 4383；读数单位为 kg/h 的预测性维护告警 2 条；循环盘点单（2026-04-01 过账）1 张；员工资质记录（2025-01-04）1 条。",
+    "validation_method": "年份筛选后聚合校验",
+    "timestamp": "2026-10-10T05:45:00+00:00"
+  },
+  {
+    "id": "ev_044_governed_scale",
+    "source": "ind200",
+    "query": "SELECT count(*) FROM fact_shift_report / fact_gl_entry / fact_inspection_result / fact_inventory_snapshot / fact_equipment_event / fact_lead",
+    "result": "规范单据表的规模从数十行到数万行不等：fact_shift_report 17632 行、fact_gl_entry 3996 行、fact_inspection_result 约 1.4 万行、fact_equipment_event 3741 行、fact_inventory_snapshot 540 行、fact_lead 393 行。",
+    "validation_method": "行数统计",
+    "timestamp": "2026-10-10T05:45:00+00:00"
+  }
+]

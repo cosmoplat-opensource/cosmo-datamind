@@ -1,0 +1,285 @@
+[
+  {
+    "id": "constraint_event_status_semantics",
+    "target": "event_status",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "closed",
+      "open",
+      "planning",
+      "event status",
+      "held",
+      "concluded",
+      "upcoming",
+      "completed events"
+    ],
+    "severity": "block",
+    "scope": "Filters and groupings that rely on the lifecycle state of an event or its budget lines",
+    "confidence": "high",
+    "description": "Event status takes exactly three values. Closed marks an event that has already concluded: all 18 Closed events fall in 2019. Open marks an event that is active or already scheduled in the current year, and Planning marks one still being arranged; Open and Planning events fall in 2020. The same state is duplicated onto each budget line of the event, so status must be drawn from one source rather than joined in a way that multiplies budget rows.",
+    "evidence": [
+      "evidence_event_status_temporal",
+      "evidence_event_type_status_values",
+      "evidence_budget_event_status_agreement"
+    ]
+  },
+  {
+    "id": "constraint_member_position_semantics",
+    "target": "member_position",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "inactive",
+      "active member",
+      "current member",
+      "position",
+      "officer",
+      "roster size",
+      "how many members"
+    ],
+    "severity": "warning",
+    "scope": "Counting members, identifying officers, or excluding non-participants",
+    "confidence": "high",
+    "description": "Position mixes two kinds of value: a participation flag and an office title. The value Inactive marks a member who is no longer participating; every other value, including the ordinary value Member and the officer titles President, Vice President, Treasurer and Secretary, marks a participating member. Counting the roster without excluding Inactive overstates the active membership: 33 records contain 3 Inactive members.",
+    "evidence": [
+      "evidence_member_position_values"
+    ]
+  },
+  {
+    "id": "constraint_income_source_semantics",
+    "target": "income_source",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "dues",
+      "sponsorship",
+      "fundraising",
+      "appropriation",
+      "income source",
+      "funding source",
+      "where did income come from"
+    ],
+    "severity": "warning",
+    "scope": "Grouping income by origin or isolating member-derived receipts",
+    "confidence": "high",
+    "description": "Source takes four values. Dues is the member-derived recurrent funding and accounts for 33 of 36 receipts; Sponsorship, School Appropriation and Fundraising are non-member sources with one receipt each. The appropriation value is spelled in the data as School Appropration, so a query written with the conventional spelling will match nothing. Dues receipts are always attributed to a member, whereas the three non-dues receipts carry no member link.",
+    "evidence": [
+      "evidence_income_source_values",
+      "evidence_income_missing_member"
+    ]
+  },
+  {
+    "id": "constraint_expense_approval_encoding",
+    "target": "expense_approval_status",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "approved",
+      "unapproved",
+      "not approved",
+      "approval",
+      "pending"
+    ],
+    "severity": "block",
+    "scope": "Filtering expenses by approval state",
+    "confidence": "high",
+    "description": "The approval flag is stored as text, not as a number or native boolean: the only observed value is the string true on 31 rows, and 1 row is null. No value representing a denied expense is present, so the complement of approved is not the same as rejected. A null flag means unrecorded, not refused, and a comparison against numeric 1 or against the lowercase string false will not behave as intended.",
+    "evidence": [
+      "evidence_expense_approved_values"
+    ]
+  },
+  {
+    "id": "constraint_budget_arithmetic",
+    "target": "budget",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "remaining",
+      "overspent",
+      "over budget",
+      "budget balance",
+      "headroom",
+      "unspent"
+    ],
+    "severity": "warning",
+    "scope": "Any interpretation of allocated, spent and remaining budget amounts",
+    "confidence": "high",
+    "description": "Within every budget line the spent amount plus the remaining amount equals the allocated amount; the identity holds on all 52 lines with no exceptions. Remaining therefore becomes negative on an overspent line rather than being floored at zero, for example -0.199999999999999 on a line allocated 20. Summing remaining across lines is only meaningful when the sum is taken over the same set of lines whose allocations were summed.",
+    "evidence": [
+      "evidence_budget_arithmetic"
+    ]
+  },
+  {
+    "id": "constraint_budget_grain_multirow",
+    "target": "budget",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "total budget",
+      "budget per event",
+      "budget allocation",
+      "how much was budgeted",
+      "budget by category"
+    ],
+    "severity": "block",
+    "scope": "Aggregating budget amounts by event or period",
+    "confidence": "high",
+    "description": "A budget line is scoped to one spending category within one event, so a single event may hold several lines: 52 lines cover only 23 distinct events and one event holds four lines. Budget lines are therefore not one-per-event; counting lines as a proxy for counting events, or joining events to budget lines while grouping by event, will overstate or multiply results. The correct unit for an event total is the sum over that event's lines.",
+    "evidence": [
+      "evidence_budget_grain_multirow",
+      "evidence_event_budget_coverage"
+    ]
+  },
+  {
+    "id": "constraint_event_budget_coverage",
+    "target": "event",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "all events",
+      "events without budget",
+      "budget coverage",
+      "every event has a budget"
+    ],
+    "severity": "warning",
+    "scope": "Comparisons of event counts with budget or expense activity",
+    "confidence": "high",
+    "description": "Budget coverage of the event portfolio is partial: 19 of the 42 events have no budget line at all, and only 23 events appear in the budget table. An event-level financial comparison therefore covers a subset of the calendar, and treating absent budget lines as zero allocation is an assumption not supported by the data.",
+    "evidence": [
+      "evidence_event_budget_coverage"
+    ]
+  },
+  {
+    "id": "constraint_attendance_coverage",
+    "target": "attendance",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "all events",
+      "attendance for every event",
+      "who attended",
+      "attendance rate",
+      "average attendance"
+    ],
+    "severity": "warning",
+    "scope": "Engagement rates and per-event attendance comparisons",
+    "confidence": "high",
+    "description": "Attendance exists for only 17 of the 42 events, so 25 events have no attendance records; 3 of the 33 members likewise never appear. Averaging attendance over all events rather than over the events that actually carry attendance records understates the per-event figure, and the absence of a record cannot be distinguished from genuine non-attendance.",
+    "evidence": [
+      "evidence_attendance_coverage",
+      "evidence_attendance_grain"
+    ]
+  },
+  {
+    "id": "constraint_income_missing_member",
+    "target": "income",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "income by member",
+      "member income",
+      "who paid dues",
+      "per-member income"
+    ],
+    "severity": "warning",
+    "scope": "Attributing income to members",
+    "confidence": "high",
+    "description": "Three income receipts carry no member link, and all three are non-dues sources, so every member-attributed receipt is a dues payment. Grouping income by member silently drops these three receipts and therefore does not reconcile with the club-level income total.",
+    "evidence": [
+      "evidence_income_missing_member"
+    ]
+  },
+  {
+    "id": "constraint_date_format_mismatch",
+    "target": "event_date",
+    "constraint_type": "unit",
+    "trigger_keywords": [
+      "date range",
+      "year",
+      "time period",
+      "compare dates",
+      "monthly",
+      "when did"
+    ],
+    "severity": "block",
+    "scope": "Any temporal filtering, ordering or cross-table period comparison",
+    "confidence": "high",
+    "description": "Dates are stored as text in two different shapes. The event date carries a time component after a T separator, such as 2020-03-10T12:00:00, whereas the expense date and the income receipt date are date-only strings, such as 2019-10-08. A date comparison that treats the two shapes as interchangeable fails for events, and an equality test against a date-only literal never matches an event date. Both shapes sort correctly on the leading ten characters.",
+    "evidence": [
+      "evidence_date_formats"
+    ]
+  },
+  {
+    "id": "constraint_expense_date_scope",
+    "target": "expense",
+    "constraint_type": "scope",
+    "trigger_keywords": [
+      "2020 expenses",
+      "expense period",
+      "yearly spending",
+      "spending trend",
+      "when did we spend"
+    ],
+    "severity": "warning",
+    "scope": "Periodic comparisons of spending against event or income activity",
+    "confidence": "high",
+    "description": "Every expense record is dated within 2019, from 2019-08-20 to 2019-11-19, and every income receipt likewise falls in 2019, while events extend into 2020. Expense and income therefore describe a narrower window than the event calendar, and a period comparison that assumes both cover the same span will attribute 2020 events to a year in which no spending is recorded.",
+    "evidence": [
+      "evidence_date_formats",
+      "evidence_financial_totals"
+    ]
+  },
+  {
+    "id": "constraint_zip_code_reference_scope",
+    "target": "zip_code",
+    "constraint_type": "scope",
+    "trigger_keywords": [
+      "zip",
+      "city",
+      "state",
+      "geography",
+      "where do members live",
+      "location"
+    ],
+    "severity": "info",
+    "scope": "Geographic aggregation of members",
+    "confidence": "high",
+    "description": "The postal table is a national reference set of 41877 rows covering 18729 cities, of which only the handful referenced by member.zip describe club members; counting or aggregating over the table as a whole describes the country, not the club. A city name is not unique within the table, and each postal code also carries a type distinguishing standard delivery addresses from PO Box and Unique designations, so city-level grouping should be recognised as coarser than postal-code-level grouping.",
+    "evidence": [
+      "evidence_zip_reference_scale",
+      "evidence_member_zip_join"
+    ]
+  },
+  {
+    "id": "constraint_member_major_optional",
+    "target": "member",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "major",
+      "college",
+      "academic background",
+      "field of study"
+    ],
+    "severity": "info",
+    "scope": "Academic-composition breakdowns of the roster",
+    "confidence": "high",
+    "description": "Declaring a major is optional: 1 of the 33 members has no major link, so a breakdown by college covers 32 members and does not sum to the roster size.",
+    "evidence": [
+      "evidence_member_major_join"
+    ]
+  },
+  {
+    "id": "constraint_amount_units",
+    "target": "income_amount",
+    "constraint_type": "unit",
+    "trigger_keywords": [
+      "dollars",
+      "amount",
+      "total income",
+      "currency",
+      "net balance",
+      "how much money"
+    ],
+    "severity": "info",
+    "scope": "Combining monetary values across tables",
+    "confidence": "high",
+    "description": "Monetary columns do not share a single numeric type or precision. Income amounts and budget allocations are whole numbers, while expense costs and the spent and remaining budget amounts carry fractional values. All values are in the same unnamed currency and no currency column exists, so cross-table comparison is valid as long as the differing precision is not mistaken for a unit difference.",
+    "evidence": [
+      "evidence_income_amount_integers",
+      "evidence_expense_amounts",
+      "evidence_budget_arithmetic"
+    ]
+  }
+]

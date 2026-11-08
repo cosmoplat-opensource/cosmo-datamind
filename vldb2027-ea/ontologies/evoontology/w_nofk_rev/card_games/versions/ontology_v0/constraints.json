@@ -1,0 +1,329 @@
+[
+  {
+    "id": "constraint_power_infinite_marker",
+    "target": "term_power",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "infinite power",
+      "power",
+      "unlimited power",
+      "asterisk power",
+      "power value"
+    ],
+    "severity": "block",
+    "scope": "Filtering or interpreting the power characteristic of a card",
+    "confidence": "high",
+    "description": "A power value of '*' denotes infinite or unbounded power. Filtering for infinite power must match that literal marker; it is not a numeric value and will not match any comparison against a number. 429 printings carry this marker.",
+    "evidence": [
+      "evidence_power_domain"
+    ]
+  },
+  {
+    "id": "constraint_power_unknown_semantics",
+    "target": "term_power",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "unknown power",
+      "power is null",
+      "no power",
+      "missing power",
+      "power is null or star"
+    ],
+    "severity": "warning",
+    "scope": "Interpreting an absent power value",
+    "confidence": "high",
+    "description": "30624 printings have no power value, but 30623 of those are non-creature cards that were never meant to have a power characteristic, such as lands, instants and artifacts; only one creature has a missing power. Treating 'unknown power' as simply a missing power value therefore returns almost entirely cards that legitimately have no power, so the workload's reading of unknown power as the missing value or the infinite marker should be applied with that composition in mind.",
+    "evidence": [
+      "evidence_power_null_nature",
+      "evidence_power_domain"
+    ]
+  },
+  {
+    "id": "constraint_border_color_values",
+    "target": "term_border_color",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "border color",
+      "borderless",
+      "black border",
+      "white border",
+      "gold border",
+      "silver border"
+    ],
+    "severity": "block",
+    "scope": "Filtering or interpreting border colour",
+    "confidence": "high",
+    "description": "Border colour takes exactly five stored values: black (49729), white (5017), gold (1244), silver (591) and borderless (241). Values are already lowercase and no row has a missing border colour, so borderless is a genuine category rather than an absent value.",
+    "evidence": [
+      "evidence_border_color"
+    ]
+  },
+  {
+    "id": "constraint_language_value_spelling",
+    "target": "term_card_language",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "language",
+      "translation",
+      "Chinese Simplified",
+      "Chinese Traditional",
+      "Italian",
+      "German",
+      "Russian",
+      "Japanese",
+      "Korean"
+    ],
+    "severity": "block",
+    "scope": "Filtering translations by language",
+    "confidence": "high",
+    "description": "Language values are full English names, case sensitive, with no language codes. Chinese Simplified and Chinese Traditional are distinct values and there is no value 'Chinese' or a code such as 'zh'. Translation questions must match the exact language name string.",
+    "evidence": [
+      "evidence_card_languages",
+      "evidence_set_languages"
+    ]
+  },
+  {
+    "id": "constraint_two_translation_sources",
+    "target": "term_card_translation",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "translation",
+      "translated name",
+      "translation of the name of the set",
+      "set name translation",
+      "card translation",
+      "foreign language"
+    ],
+    "severity": "block",
+    "scope": "Choosing the correct translation source for a question",
+    "confidence": "high",
+    "description": "The database stores two independent translation sources. Card-level translations, covering the name, rules text and type line of an individual card, live in foreign_data keyed by card uuid. Set-level translations, covering only the product title, live in set_translations keyed by set code. A question about the translation of a set's name must use the set-level source; a question about a card existing in a language must use the card-level source. The two vocabularies overlap but their coverage differs: card translations span 16 languages, set translations exactly 10.",
+    "evidence": [
+      "evidence_card_languages",
+      "evidence_set_languages",
+      "evidence_set_translation_coverage"
+    ]
+  },
+  {
+    "id": "constraint_set_name_ambiguity",
+    "target": "term_card_set",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "set name",
+      "card set",
+      "in the set",
+      "Eighth Edition",
+      "Coldsnap",
+      "Hour of Devastation",
+      "edition"
+    ],
+    "severity": "block",
+    "scope": "Resolving a named set from a question",
+    "confidence": "high",
+    "description": "Set names are not unique identifiers. 176 set names are a strict prefix of another set name, for example 'Eighth Edition' against 'Eighth Edition Promos', 'Coldsnap' against 'Coldsnap Theme Decks' and 'Hour of Devastation' against 'Hour of Devastation Promos', so substring or prefix matching over-matches. In addition 14 names occur both as a card name and as a set name, including 'Hour of Devastation', 'Conflux' and 'Future Sight'. Resolving a named set requires exact name equality against the sets table and qualification of which table the name was meant to come from.",
+    "evidence": [
+      "evidence_set_name_collision"
+    ]
+  },
+  {
+    "id": "constraint_printing_grain",
+    "target": "term_card_printing",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "how many cards",
+      "count cards",
+      "percentage of cards",
+      "number of cards",
+      "card id",
+      "card name",
+      "list all cards"
+    ],
+    "severity": "block",
+    "scope": "Choosing the counting unit for card-level questions",
+    "confidence": "high",
+    "description": "The cards table stores one row per printing rather than per distinct card. The uuid is unique per row across 56822 rows, while 11170 card names appear in more than one row because the same card was printed in several sets. Counts and percentages over cards therefore depend on which grain is intended, and a card name on its own identifies a card shared by several printing rows. A further 428 printings carry a variant marker in the collector number and are separate printings of an already counted card.",
+    "evidence": [
+      "evidence_card_grain",
+      "evidence_number_star"
+    ]
+  },
+  {
+    "id": "constraint_legality_status_values",
+    "target": "term_legality_status",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "legal",
+      "banned",
+      "restricted",
+      "legal in",
+      "legal for",
+      "commander",
+      "format",
+      "status"
+    ],
+    "severity": "block",
+    "scope": "Interpreting whether a card may be played in a format",
+    "confidence": "high",
+    "description": "Legality status takes three values: Legal (424958 rows), Banned (2313) and Restricted (636). A card normally has a row for every format it has been evaluated for, so the mere presence of a legality row does not mean the card is legal; 'legal in format X' requires the status to be Legal within that format specifically. A card can be Legal in one format and Banned in another.",
+    "evidence": [
+      "evidence_legality_status"
+    ]
+  },
+  {
+    "id": "constraint_textless_vs_stored_text",
+    "target": "term_textless_printing",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "textless",
+      "no text box",
+      "without text box",
+      "text",
+      "rules text",
+      "does not have a text box"
+    ],
+    "severity": "warning",
+    "scope": "Interpreting the absence of a text box",
+    "confidence": "high",
+    "description": "The textless flag and the stored rules text disagree. 115 printings are flagged textless yet still carry rules text, while 955 printings hold no rules text at all and are not flagged textless, being overwhelmingly non-creature cards with no rules text to store. 'Does not have a text box' must therefore be interpreted through the textless flag rather than as a missing rules text column, and the two readings give different populations.",
+    "evidence": [
+      "evidence_textless_text",
+      "evidence_flags"
+    ]
+  },
+  {
+    "id": "constraint_originaltype_scope",
+    "target": "term_card_type",
+    "constraint_type": "scope",
+    "trigger_keywords": [
+      "Artifact card",
+      "originalType",
+      "card type",
+      "type line",
+      "artifact",
+      "enchantment"
+    ],
+    "severity": "warning",
+    "scope": "Type-line filters written against the originally printed type line",
+    "confidence": "high",
+    "description": "The originally printed type line is recorded for only part of the card pool: 14766 printings have no value, these being older cards, whereas the general type line is populated for all 56822 printings. Filters against the originally printed type line therefore cover a reduced population and cannot be combined with a full-population denominator without accounting for that reduced scope.",
+    "evidence": [
+      "evidence_originaltype",
+      "evidence_types_scope"
+    ]
+  },
+  {
+    "id": "constraint_color_values",
+    "target": "term_color",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "black color",
+      "black card",
+      "colorless",
+      "colors",
+      "color identity",
+      "colored"
+    ],
+    "severity": "warning",
+    "scope": "Filtering or interpreting card colour",
+    "confidence": "high",
+    "description": "Colour is stored as a comma separated list of single letter codes W, U, B, R and G, for example 'B' alone or 'B,U' for a black and blue card. 12540 printings have no colour value at all, dominated by artifacts and lands, which means the card has no colour rather than an unknown colour. 'Black cards' must be matched as the exact value 'B', and multi-colour cards require list membership rather than equality.",
+    "evidence": [
+      "evidence_colors"
+    ]
+  },
+  {
+    "id": "constraint_foil_purchase_pairing",
+    "target": "term_foil_purchase_availability",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "foil",
+      "powerful foil",
+      "incredibly powerful",
+      "promo foil",
+      "cardKingdomFoilId",
+      "cardKingdomId"
+    ],
+    "severity": "warning",
+    "scope": "Counting printings that are available in a foil version",
+    "confidence": "high",
+    "description": "A printing counts as available in a foil version when both the regular and the foil purchase identifiers are present. The regular identifier is absent for 13622 printings and the foil identifier for 27910, so the two columns are not interchangeable and testing either one alone over-counts or under-counts the foil population.",
+    "evidence": [
+      "evidence_kingdom_foil"
+    ]
+  },
+  {
+    "id": "constraint_base_set_size_semantics",
+    "target": "term_set_base_size",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "base set number",
+      "base set size",
+      "set size",
+      "number of cards in the set"
+    ],
+    "severity": "info",
+    "scope": "Thresholding or comparing sets by size",
+    "confidence": "medium",
+    "description": "Base set size counts only the cards in a set's base numbering and excludes additional or specially numbered cards, so it is normally smaller than the total set size. Observed values run from 0 to 1694 with a mean of 99.6 and no set has a missing value; 356 of 551 sets are below 100.",
+    "evidence": [
+      "evidence_basesetsize"
+    ]
+  },
+  {
+    "id": "constraint_set_translation_coverage",
+    "target": "term_set_translation",
+    "constraint_type": "scope",
+    "trigger_keywords": [
+      "set name translation",
+      "translated set name",
+      "translation of the name of the set",
+      "Simplified Chinese set name"
+    ],
+    "severity": "warning",
+    "scope": "Availability of translated set names",
+    "confidence": "high",
+    "description": "Only 121 of 551 sets have any set-name translation recorded, and each of those has exactly the same ten languages. A set with no rows in set_translations has no translated name at all, which is different from having an empty translation, so a missing result for a set name translation may reflect absent coverage rather than a genuine null.",
+    "evidence": [
+      "evidence_set_translation_coverage",
+      "evidence_set_languages"
+    ]
+  },
+  {
+    "id": "constraint_foreign_only_semantics",
+    "target": "term_foreign_only_set",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "foreign only",
+      "only available outside the United States",
+      "isForeignOnly",
+      "availability",
+      "available in the United States"
+    ],
+    "severity": "warning",
+    "scope": "Interpreting whether a card was available only abroad",
+    "confidence": "medium",
+    "description": "The foreign-only flag marks a set as released only outside the United States and is carried by 16 of 551 sets. It is a property of the set rather than of an individual card, so a question about whether a card was available only abroad is answered through the set that its printing belongs to. The cards table separately carries an availability column listing distribution channels such as paper, online play clients and digital platforms, which is a different concept from geographic availability.",
+    "evidence": [
+      "evidence_isforeignonly",
+      "evidence_availability"
+    ]
+  },
+  {
+    "id": "constraint_legalities_orphans",
+    "target": "term_legality_record",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "legality",
+      "join",
+      "missing card",
+      "orphan"
+    ],
+    "severity": "info",
+    "scope": "Joining child records to the card table",
+    "confidence": "high",
+    "description": "A small number of child rows do not resolve to a card: 9 uuid values in the legality table and 3 in the card translation table are absent from the card table. Inner joins silently drop these rows, while outer joins would surface them as unmatched.",
+    "evidence": [
+      "evidence_uuid_join"
+    ]
+  }
+]

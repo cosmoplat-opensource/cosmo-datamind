@@ -1,0 +1,122 @@
+[
+  {
+    "id": "ev_001",
+    "source": "toxicology",
+    "query": "SELECT 'molecule', COUNT(*) FROM molecule UNION ALL SELECT 'atom', COUNT(*) FROM atom UNION ALL SELECT 'bond', COUNT(*) FROM bond UNION ALL SELECT 'connected', COUNT(*) FROM connected",
+    "result": "molecule 343; atom 12333; bond 12379; connected 24758",
+    "validation_method": "read-only row counts on all four tables",
+    "timestamp": "2026-10-10T00:00:00Z"
+  },
+  {
+    "id": "ev_002",
+    "source": "toxicology",
+    "query": "SELECT label, COUNT(*) FROM molecule GROUP BY label",
+    "result": "exactly two distinct values: '+' 152 and '-' 191; total 343",
+    "validation_method": "distinct value enumeration and grouping",
+    "timestamp": "2026-10-10T00:00:00Z"
+  },
+  {
+    "id": "ev_003",
+    "source": "toxicology",
+    "query": "SELECT element, COUNT(*) AS c, COUNT(DISTINCT molecule_id) AS m FROM atom GROUP BY element ORDER BY c DESC",
+    "result": "21 distinct elements. h:5518 atoms/426 molecules, c:4605/438, o:1043/311, n:480/233, cl:429/155, s:113/70, br:47/18, na:35/19, p:31/28, f:11/4, i:6/2, si:4/2, sn:2/2, cu:2/1, zn:1/1, y:1/1, te:1/1, pb:1/1, k:1/1, ca:1/1, b:1/1",
+    "validation_method": "value-domain enumeration with counts and molecule coverage",
+    "timestamp": "2026-10-10T00:00:00Z"
+  },
+  {
+    "id": "ev_004",
+    "source": "toxicology",
+    "query": "SELECT bond_type, COUNT(*) AS c, COUNT(DISTINCT molecule_id) AS m FROM bond GROUP BY bond_type ORDER BY c DESC",
+    "result": "'-' 10528 bonds/442 molecules; '=' 1844/370; '#' 6/4; plus one group of 1 row whose bond_type is NULL",
+    "validation_method": "value-domain enumeration and grouping",
+    "timestamp": "2026-10-10T00:00:00Z"
+  },
+  {
+    "id": "ev_005",
+    "source": "toxicology",
+    "query": "SELECT 'atom.element null', COUNT(*) FROM atom WHERE element IS NULL UNION ALL ... (NULL audit) ; SELECT bond_id, molecule_id, quote(bond_type) FROM bond WHERE bond_type IS NULL OR bond_type NOT IN ('-','=','#')",
+    "result": "No NULLs in atom.element, atom.molecule_id, bond.molecule_id, molecule.label, or connected.bond_id. Exactly one anomalous bond row: bond_id TR345_7_10, molecule TR345, bond_type NULL.",
+    "validation_method": "explicit NULL audit across all nullable columns plus anomaly filter on the bond-type domain",
+    "timestamp": "2026-10-10T00:00:00Z"
+  },
+  {
+    "id": "ev_006",
+    "source": "toxicology",
+    "query": ".schema",
+    "result": "Four tables: molecule(molecule_id PK, label); atom(atom_id PK, molecule_id FK->molecule, element); bond(bond_id PK, molecule_id FK->molecule, bond_type); connected(atom_id, atom_id2 composite PK, bond_id FK->bond) with FKs from atom_id and atom_id2 to atom. Element, bond type and label are all inline value columns; no element, bond-type or label dimension table exists.",
+    "validation_method": "schema inspection of the SQLite DDL",
+    "timestamp": "2026-10-10T00:00:00Z"
+  },
+  {
+    "id": "ev_007",
+    "source": "toxicology",
+    "query": "SELECT SUM(CASE WHEN atom_id LIKE molecule_id || '\\_%' ESCAPE '\\' THEN 1 ELSE 0 END), COUNT(*) FROM atom; (same for bond)",
+    "result": "atom: 12333 of 12333 identifiers are prefixed with their molecule_id followed by '_'. bond: 12379 of 12379 likewise. bond_id examples: TR000_1_2, TR001_10_11.",
+    "validation_method": "full-population prefix test, not sampling",
+    "timestamp": "2026-10-10T00:00:00Z"
+  },
+  {
+    "id": "ev_008",
+    "source": "toxicology",
+    "query": "SELECT (SELECT COUNT(*) FROM molecule), (SELECT COUNT(DISTINCT molecule_id) FROM atom), (SELECT COUNT(DISTINCT molecule_id) FROM bond); ... LEFT JOIN molecule ... WHERE m.molecule_id IS NULL",
+    "result": "molecule rows 343; distinct atom.molecule_id 444; distinct bond.molecule_id 444. The 101 orphan identifiers are the same set in both tables (full overlap), covering 3222 atom rows and 3223 bond rows. Examples: TR003, TR005, TR013, TR016, TR018, TR026, TR027, TR042.",
+    "validation_method": "referential integrity check by anti-join on the declared foreign key",
+    "timestamp": "2026-10-10T00:00:00Z"
+  },
+  {
+    "id": "ev_009",
+    "source": "toxicology",
+    "query": "SELECT n, COUNT(*) FROM (SELECT bond_id, COUNT(*) n FROM connected GROUP BY bond_id) GROUP BY n ORDER BY n; SELECT COUNT(*) FROM connected WHERE atom_id = atom_id2",
+    "result": "Every bond_id occurs exactly twice (12379 bonds -> 24758 adjacency rows, all groups of size 2). Zero self-pairs where atom_id = atom_id2.",
+    "validation_method": "cardinality grouping per bond plus self-loop check",
+    "timestamp": "2026-10-10T00:00:00Z"
+  },
+  {
+    "id": "ev_010",
+    "source": "toxicology",
+    "query": "SELECT COUNT(*) FROM connected c LEFT JOIN bond b ON b.bond_id=c.bond_id WHERE b.bond_id IS NULL; SELECT COUNT(*) FROM connected c LEFT JOIN atom a ON a.atom_id=c.atom_id WHERE a.atom_id IS NULL; SELECT COUNT(*) FROM connected c JOIN bond b ON b.bond_id=c.bond_id WHERE b.molecule_id <> (SELECT molecule_id FROM atom WHERE atom_id=c.atom_id)",
+    "result": "0 orphan bond references, 0 orphan atom references, and 0 rows where the bond's molecule differs from the atom's molecule. All connectivity entries are internally consistent.",
+    "validation_method": "anti-join referential checks across connected, bond and atom",
+    "timestamp": "2026-10-10T00:00:00Z"
+  },
+  {
+    "id": "ev_011",
+    "source": "toxicology",
+    "query": "SELECT a.element, COUNT(*) FROM atom a WHERE NOT EXISTS (SELECT 1 FROM connected c WHERE c.atom_id=a.atom_id) GROUP BY a.element ORDER BY 2 DESC",
+    "result": "49 atoms have no adjacency entry: na 35, h 7, cl 5, zn 1, k 1. Example molecules: TR006, TR011, TR101, TR158, TR172. Separately, 0 molecules lack atoms and 0 molecules lack bonds.",
+    "validation_method": "anti-join on connected per atom, grouped by element",
+    "timestamp": "2026-10-10T00:00:00Z"
+  },
+  {
+    "id": "ev_012",
+    "source": "toxicology",
+    "query": "SELECT m.label, COUNT(DISTINCT m.molecule_id) mols, COUNT(a.atom_id) atoms, ROUND(AVG(x.n),2) avg_atoms FROM molecule m JOIN (...) ; plus hydrogen and heavy-atom counts per label; plus bond-type counts per label",
+    "result": "Label '+': 152 molecules, 3692 atoms, average 36.20 atoms, 1569 hydrogen atoms, 2123 heavy atoms, 3078 single bonds, 634 double bonds, 3 triple bonds. Label '-': 191 molecules, 5419 atoms, average 38.43 atoms, 2465 hydrogen atoms, 2954 heavy atoms, 4665 single bonds, 774 double bonds, 2 triple bonds.",
+    "validation_method": "class-conditional aggregation over measured counts",
+    "timestamp": "2026-10-10T00:00:00Z"
+  },
+  {
+    "id": "ev_013",
+    "source": "toxicology",
+    "query": "SELECT MIN(c), MAX(c), AVG(c) FROM (SELECT molecule_id, COUNT(*) c FROM atom GROUP BY molecule_id); (same over bond) ; top molecules by atom count",
+    "result": "Per-molecule atoms: min 4, max 174, mean 27.78. Per-molecule bonds: min 2, max 175, mean 27.88. Largest molecules by atom count: TR338 174, TR496 109, TR060 103, TR059 102, TR397 88.",
+    "validation_method": "grouped count statistics with extrema",
+    "timestamp": "2026-10-10T00:00:00Z"
+  },
+  {
+    "id": "ev_014",
+    "source": "toxicology",
+    "query": "SELECT COUNT(*) FROM (SELECT atom_id, molecule_id, element, COUNT(*) c FROM atom GROUP BY 1,2,3 HAVING c>1); (same for bond); SELECT COUNT(*) FROM molecule mo WHERE NOT EXISTS (SELECT 1 FROM atom a WHERE a.molecule_id=mo.molecule_id)",
+    "result": "No duplicate atom or bond rows. Every one of the 343 labelled molecules has at least one atom and at least one bond; every atom and bond row has a non-NULL molecule reference.",
+    "validation_method": "duplicate detection and existence checks",
+    "timestamp": "2026-10-10T00:00:00Z"
+  },
+  {
+    "id": "ev_015",
+    "source": "toxicology",
+    "query": "SELECT m.label, SUM(CASE WHEN a.element='h' THEN 1 ELSE 0 END) h_cnt, COUNT(*) tot FROM molecule m JOIN atom a ON a.molecule_id=m.molecule_id GROUP BY m.label; SELECT m.label, COUNT(*) FROM molecule m JOIN atom a ON a.molecule_id=m.molecule_id WHERE a.element<>'h' GROUP BY m.label",
+    "result": "Hydrogen atoms: 1569 for '+', 2465 for '-'. Heavy (non-hydrogen) atoms: 2123 for '+', 2954 for '-'. Overall hydrogen atoms 5518 of 12333 atoms.",
+    "validation_method": "class-conditional element split",
+    "timestamp": "2026-10-10T00:00:00Z"
+  }
+]

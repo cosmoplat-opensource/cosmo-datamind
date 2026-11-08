@@ -1,0 +1,150 @@
+[
+  {
+    "id": "rel_eye_colour_is_colour",
+    "source": "term_eye_colour",
+    "relation_type": "hierarchy",
+    "target": "term_colour",
+    "connection_condition": "tab07.fld011 references tab03.fld001 and every stored identifier resolves to a tab03.fld004 label",
+    "description": "Eye colour is a narrower appearance attribute whose value domain is a subset of the shared colour vocabulary.",
+    "evidence": [
+      "ev_007",
+      "ev_013"
+    ]
+  },
+  {
+    "id": "rel_hair_colour_is_colour",
+    "source": "term_hair_colour",
+    "relation_type": "hierarchy",
+    "target": "term_colour",
+    "connection_condition": "tab07.fld012 references tab03.fld001 and every stored identifier resolves to a tab03.fld004 label",
+    "description": "Hair colour is a narrower appearance attribute whose value domain is a subset of the shared colour vocabulary.",
+    "evidence": [
+      "ev_007",
+      "ev_013"
+    ]
+  },
+  {
+    "id": "rel_skin_colour_is_colour",
+    "source": "term_skin_colour",
+    "relation_type": "hierarchy",
+    "target": "term_colour",
+    "connection_condition": "tab07.fld013 references tab03.fld001 and every stored identifier resolves to a tab03.fld004 label",
+    "description": "Skin colour is a narrower appearance attribute whose value domain is a subset of the shared colour vocabulary.",
+    "evidence": [
+      "ev_007",
+      "ev_013"
+    ]
+  },
+  {
+    "id": "rel_superhero_attribute_score",
+    "source": "term_superhero",
+    "relation_type": "composition",
+    "target": "term_attribute_score",
+    "connection_condition": "tab08.fld019 references tab07.fld001; each score row belongs to exactly one hero",
+    "description": "Attribute scores are component measurements of a hero and have no meaning without the hero they rate.",
+    "evidence": [
+      "ev_009"
+    ]
+  },
+  {
+    "id": "rel_attribute_score_measure",
+    "source": "term_hero_attribute",
+    "relation_type": "composition",
+    "target": "term_attribute_score",
+    "connection_condition": "tab08.fld020 references tab02.fld001; each score row belongs to exactly one attribute",
+    "description": "An attribute score is a measurement of one named attribute and is undefined without that attribute.",
+    "evidence": [
+      "ev_003",
+      "ev_009"
+    ]
+  },
+  {
+    "id": "rel_superhero_superpower",
+    "source": "term_superhero",
+    "relation_type": "association",
+    "target": "term_superpower",
+    "connection_condition": "tab10.fld019 references tab07.fld001 and tab10.fld023 references tab09.fld001; the relationship is many-to-many",
+    "description": "A hero may possess any number of independently defined superpowers, and a power may be shared by many heroes.",
+    "evidence": [
+      "ev_008"
+    ]
+  },
+  {
+    "id": "rel_superhero_publisher",
+    "source": "term_superhero",
+    "relation_type": "association",
+    "target": "term_publisher",
+    "connection_condition": "tab07.fld015 references tab05.fld001",
+    "description": "Each hero is attributed to at most one publishing company through a nullable reference.",
+    "evidence": [
+      "ev_004",
+      "ev_016"
+    ]
+  },
+  {
+    "id": "rel_superhero_gender",
+    "source": "term_superhero",
+    "relation_type": "association",
+    "target": "term_gender",
+    "connection_condition": "tab07.fld010 references tab04.fld001",
+    "description": "Each hero carries one gender category reference.",
+    "evidence": [
+      "ev_005"
+    ]
+  },
+  {
+    "id": "rel_superhero_race",
+    "source": "term_superhero",
+    "relation_type": "association",
+    "target": "term_race",
+    "connection_condition": "tab07.fld014 references tab06.fld001",
+    "description": "Each hero carries one species or race category reference.",
+    "evidence": [
+      "ev_006"
+    ]
+  },
+  {
+    "id": "rel_superhero_name",
+    "source": "term_superhero",
+    "relation_type": "association",
+    "target": "term_hero_name",
+    "connection_condition": "tab07.fld008 stores the name on the hero row",
+    "description": "The hero name is the display identifier of a hero and is not guaranteed to be unique.",
+    "evidence": [
+      "ev_014"
+    ]
+  },
+  {
+    "id": "rel_superhero_full_name",
+    "source": "term_superhero",
+    "relation_type": "association",
+    "target": "term_full_name",
+    "connection_condition": "tab07.fld009 stores the full name on the hero row",
+    "description": "The full personal name is a descriptive attribute of a hero, distinct from the superhero codename.",
+    "evidence": [
+      "ev_012"
+    ]
+  },
+  {
+    "id": "rel_superhero_height",
+    "source": "term_superhero",
+    "relation_type": "association",
+    "target": "term_height",
+    "connection_condition": "tab07.fld017 stores the height on the hero row",
+    "description": "Height is a physical measurement recorded per hero.",
+    "evidence": [
+      "ev_011"
+    ]
+  },
+  {
+    "id": "rel_superhero_weight",
+    "source": "term_superhero",
+    "relation_type": "association",
+    "target": "term_weight",
+    "connection_condition": "tab07.fld018 stores the weight on the hero row",
+    "description": "Weight is a physical measurement recorded per hero.",
+    "evidence": [
+      "ev_010"
+    ]
+  }
+]

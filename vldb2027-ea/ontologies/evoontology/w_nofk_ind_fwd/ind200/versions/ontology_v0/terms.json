@@ -1,0 +1,1057 @@
+[
+  {
+    "id": "term_status",
+    "name": "状态",
+    "type": "dimension",
+    "definition": "记录或单据所处的业务流程状态。中文问题中的“状态/工单状态/订单状态/凭证状态/投诉状态”均指该维度。",
+    "scope": "适用于所有带 status 列的表；取值域随表而异，必须先确认目标表自身的取值集合。",
+    "aliases": [
+      "状态",
+      "status",
+      "工单状态",
+      "订单状态",
+      "凭证状态",
+      "单据状态"
+    ],
+    "evidence": [
+      "ev_status_column_spread",
+      "ev_status_vocab_upper",
+      "ev_status_vocab_lower",
+      "ev_status_vocab_chinese"
+    ]
+  },
+  {
+    "id": "term_remarks",
+    "name": "备注",
+    "type": "dimension",
+    "definition": "记录的自由文本备注字段，承载少量受控的补充说明用语（加急/客户指定批次/已电话确认/跨月处理/补录）。",
+    "scope": "适用于 92 张带 remarks 列的表；问题中的“备注是X”是对该列的等值过滤。",
+    "aliases": [
+      "备注",
+      "remarks",
+      "说明",
+      "补充说明"
+    ],
+    "evidence": [
+      "ev_remarks_vocabulary",
+      "ev_remarks_empty_string"
+    ]
+  },
+  {
+    "id": "term_priority",
+    "name": "优先级",
+    "type": "dimension",
+    "definition": "单据的处理优先级。字段名为 priority，实际存储为数值 3/4/5。",
+    "scope": "带 priority 列的 68 张表；“优先级合计最高”类问题汇总该列。",
+    "aliases": [
+      "优先级",
+      "priority"
+    ],
+    "evidence": [
+      "ev_priority_degenerate"
+    ]
+  },
+  {
+    "id": "term_is_deleted",
+    "name": "逻辑删除标记",
+    "type": "dimension",
+    "definition": "记录是否被逻辑删除的标记（0=未删除，1=已删除）。",
+    "scope": "带 is_deleted 列的 92 张表；“逻辑删除标记合计”汇总该标记。",
+    "aliases": [
+      "逻辑删除标记",
+      "is_deleted",
+      "删除标记",
+      "软删除"
+    ],
+    "evidence": [
+      "ev_is_deleted_constant"
+    ]
+  },
+  {
+    "id": "term_data_quality_score",
+    "name": "数据质量分",
+    "type": "metric",
+    "definition": "同步到数仓的该条记录的数据质量评分，取值区间约 [0,1]，越高表示质量越好。",
+    "scope": "带 data_quality_score 列的 92 张表；用于“数据质量分的平均值/合计”类问题。",
+    "aliases": [
+      "数据质量分",
+      "data_quality_score",
+      "质量分"
+    ],
+    "evidence": [
+      "ev_data_quality_score_range"
+    ]
+  },
+  {
+    "id": "term_row_version",
+    "name": "行版本",
+    "type": "metric",
+    "definition": "记录的行级版本计数（乐观锁版本号），为小整数而非单据版本编号。",
+    "scope": "带 row_version 列的 67 张表；“行版本合计/平均值”汇总的是该计数。",
+    "aliases": [
+      "行版本",
+      "row_version",
+      "版本号"
+    ],
+    "evidence": [
+      "ev_row_version_counter"
+    ]
+  },
+  {
+    "id": "term_updated_by",
+    "name": "更新人",
+    "type": "dimension",
+    "definition": "最后更新该记录的操作人代码。",
+    "scope": "带 updated_by 列的 92 张表；“更新人为Uxxxx的记录数”过滤该列。与创建人、审批人是相互独立的角色。",
+    "aliases": [
+      "更新人",
+      "updated_by"
+    ],
+    "evidence": [
+      "ev_operator_namespace",
+      "ev_operator_roles"
+    ]
+  },
+  {
+    "id": "term_created_by",
+    "name": "创建人",
+    "type": "dimension",
+    "definition": "创建该记录的操作人代码。",
+    "scope": "带 created_by 列的 92 张表；“创建人为Uxxxx”过滤该列。",
+    "aliases": [
+      "创建人",
+      "created_by",
+      "建单人"
+    ],
+    "evidence": [
+      "ev_operator_namespace"
+    ]
+  },
+  {
+    "id": "term_approved_by",
+    "name": "审批人",
+    "type": "dimension",
+    "definition": "审批该单据的操作人代码。",
+    "scope": "带 approved_by 列的 67 张表；“每个审批人审批了多少条”按该列分组。",
+    "aliases": [
+      "审批人",
+      "approved_by",
+      "审核人"
+    ],
+    "evidence": [
+      "ev_operator_namespace"
+    ]
+  },
+  {
+    "id": "term_business_date",
+    "name": "业务日期",
+    "type": "dimension",
+    "definition": "业务事实实际发生的会计/业务日期（DATE）。",
+    "scope": "带 business_date 列的 67 张表；“2026年业务日期中”指按该列取年度过滤。",
+    "aliases": [
+      "业务日期",
+      "business_date",
+      "日期"
+    ],
+    "evidence": [
+      "ev_date_domain",
+      "ev_operator_namespace"
+    ]
+  },
+  {
+    "id": "term_posting_date",
+    "name": "过账日期",
+    "type": "dimension",
+    "definition": "单据在账务上过账的日期（DATE），可以晚于业务日期。",
+    "scope": "带 posting_date 列的 67 张表；“X日过账的…”“过账日期中”按该列过滤。",
+    "aliases": [
+      "过账日期",
+      "posting_date",
+      "记账日期"
+    ],
+    "evidence": [
+      "ev_date_domain"
+    ]
+  },
+  {
+    "id": "term_event_time",
+    "name": "发生时间",
+    "type": "dimension",
+    "definition": "事件发生的精确时间戳（DATETIME），精度高于业务日期。",
+    "scope": "带 event_time 列的 67 张表；用于“发生时间为 2026-07-01 13:29:00”等精确到分钟的时间点过滤。",
+    "aliases": [
+      "发生时间",
+      "event_time",
+      "时间戳"
+    ],
+    "evidence": [
+      "ev_date_domain"
+    ]
+  },
+  {
+    "id": "term_calendar_year",
+    "name": "年度",
+    "type": "dimension",
+    "definition": "日期所属的日历年或会计年度。",
+    "scope": "问题中的“2026年”是年度筛选；可由日期列取年，也可直接取年度列。",
+    "aliases": [
+      "年度",
+      "年份",
+      "2026年",
+      "会计年度",
+      "fiscal year"
+    ],
+    "evidence": [
+      "ev_date_domain"
+    ]
+  },
+  {
+    "id": "term_warehouse_date",
+    "name": "入库日期",
+    "type": "dimension",
+    "definition": "库存入库的日期。",
+    "scope": "fact_inventory.warehouse_date；“2026年入库的库存”按该列取年度。",
+    "aliases": [
+      "入库日期",
+      "warehouse_date"
+    ],
+    "evidence": [
+      "ev_storage_days"
+    ]
+  },
+  {
+    "id": "term_quantity",
+    "name": "数量",
+    "type": "metric",
+    "definition": "单据或库存的基本数量度量，具体口径随表而异（如库存数量、收货数量、产出数量、送样数量）。",
+    "scope": "带 quantity 列的 47 张表；“数量合计”按表内 quantity 列汇总。",
+    "aliases": [
+      "数量",
+      "quantity",
+      "库存数量",
+      "收货数量",
+      "产出数量"
+    ],
+    "evidence": [
+      "ev_expected_quantity_aliases",
+      "ev_goods_receipt_ap_join"
+    ]
+  },
+  {
+    "id": "term_amount",
+    "name": "金额",
+    "type": "metric",
+    "definition": "单据金额度量，币种由 currency_code 指定；不同表的 amount 口径不同（应付金额、订单金额、退货金额、价税合计、申请总额）。",
+    "scope": "带 amount 列的 48 张表；“金额合计最高”先在表内汇总再取最大。",
+    "aliases": [
+      "金额",
+      "amount",
+      "应付金额",
+      "总金额",
+      "退货金额"
+    ],
+    "evidence": [
+      "ev_expected_quantity_aliases",
+      "ev_goods_receipt_ap_join"
+    ]
+  },
+  {
+    "id": "term_cost_amount",
+    "name": "成本金额",
+    "type": "metric",
+    "definition": "与记录关联的成本金额（物料类为批次入库成本，其余为单据金额）。",
+    "scope": "带 cost_amount 列的 40 张表；“成本金额合计”按该列汇总，常与 currency_code 组合。",
+    "aliases": [
+      "成本金额",
+      "cost_amount",
+      "成本"
+    ],
+    "evidence": [
+      "ev_expected_quantity_aliases"
+    ]
+  },
+  {
+    "id": "term_qualified_quantity",
+    "name": "合格数量",
+    "type": "metric",
+    "definition": "检验或产出中被判定为合格的数量。",
+    "scope": "带 qualified_quantity 列的 38 张表；“合格数量合计最高的产品名称”先按产品分组汇总该列。",
+    "aliases": [
+      "合格数量",
+      "qualified_quantity"
+    ],
+    "evidence": [
+      "ev_expected_quantity_aliases"
+    ]
+  },
+  {
+    "id": "term_actual_quantity",
+    "name": "实际数量",
+    "type": "metric",
+    "definition": "实际发生或实际消耗的数量，与计划数量相对。",
+    "scope": "带 actual_quantity 列的 41 张表；“实际数量合计”按该列汇总。",
+    "aliases": [
+      "实际数量",
+      "actual_quantity",
+      "实际投料",
+      "实际排放数量"
+    ],
+    "evidence": [
+      "ev_expected_quantity_aliases"
+    ]
+  },
+  {
+    "id": "term_planned_quantity",
+    "name": "计划数量",
+    "type": "metric",
+    "definition": "计划或预留的数量口径。",
+    "scope": "带 planned_quantity 列的 42 张表；“计划数量合计”按该列汇总。",
+    "aliases": [
+      "计划数量",
+      "planned_quantity",
+      "计划量"
+    ],
+    "evidence": [
+      "ev_expected_quantity_aliases"
+    ]
+  },
+  {
+    "id": "term_unit_price",
+    "name": "单价",
+    "type": "metric",
+    "definition": "单位价格（元/吨等）。",
+    "scope": "带 unit_price 列的 46 张表；“单价合计”按该列汇总。",
+    "aliases": [
+      "单价",
+      "unit_price",
+      "成交单价"
+    ],
+    "evidence": [
+      "ev_expected_quantity_aliases"
+    ]
+  },
+  {
+    "id": "term_tax_amount",
+    "name": "税额",
+    "type": "metric",
+    "definition": "单据的税额。",
+    "scope": "带 tax_amount 列的 41 张表；“税额合计最高”按该列汇总后取最大。",
+    "aliases": [
+      "税额",
+      "tax_amount",
+      "税金"
+    ],
+    "evidence": [
+      "ev_expected_quantity_aliases"
+    ]
+  },
+  {
+    "id": "term_available_quantity",
+    "name": "可用数量",
+    "type": "metric",
+    "definition": "库存/调拨中当前可支配的数量。",
+    "scope": "带 available_quantity 列的库存类表；“可用数量合计最高”按该列汇总。",
+    "aliases": [
+      "可用数量",
+      "available_quantity"
+    ],
+    "evidence": [
+      "ev_expected_quantity_aliases"
+    ]
+  },
+  {
+    "id": "term_reserved_quantity",
+    "name": "预留数量",
+    "type": "metric",
+    "definition": "单据中已预留（占用未发出）的数量。",
+    "scope": "带 reserved_quantity 列的库存类表；“平均预留数量”按该列求平均。",
+    "aliases": [
+      "预留数量",
+      "reserved_quantity"
+    ],
+    "evidence": [
+      "ev_expected_quantity_aliases"
+    ]
+  },
+  {
+    "id": "term_storage_days",
+    "name": "在库天数",
+    "type": "metric",
+    "definition": "从入库日期起算至今的在库天数，是一个派生指标。",
+    "scope": "fact_inventory.storage_days；“在库天数合计/平均”按该列汇总或求平均。",
+    "aliases": [
+      "在库天数",
+      "storage_days",
+      "库龄"
+    ],
+    "evidence": [
+      "ev_storage_days"
+    ]
+  },
+  {
+    "id": "term_measured_value",
+    "name": "测量值",
+    "type": "metric",
+    "definition": "测量/读数类度量：测量值、读数、传感器读数。",
+    "scope": "出现在 fact_iot_data.value、fact_condition_monitoring.reading_value、fact_predictive_alert.reading_value、fact_gauge_calibration.measured_value 等表；“测量值合计/读数合计”按该列汇总。",
+    "aliases": [
+      "测量值",
+      "读数",
+      "measured_value",
+      "reading_value",
+      "传感器读数"
+    ],
+    "evidence": [
+      "ev_sensor_link",
+      "ev_units_variants"
+    ]
+  },
+  {
+    "id": "term_limit_value",
+    "name": "限值",
+    "type": "metric",
+    "definition": "法定或工艺允许的限值，用于与实测值比较判断是否超标。",
+    "scope": "fact_env_record / fact_environment_measurement / fact_emission_event 的 limit_value；“限值合计”按该列汇总。",
+    "aliases": [
+      "限值",
+      "limit_value",
+      "法定限值",
+      "上限阈值"
+    ],
+    "evidence": [
+      "ev_expected_quantity_aliases"
+    ]
+  },
+  {
+    "id": "term_exception_count",
+    "name": "异常数",
+    "type": "metric",
+    "definition": "数据质量校验发现的异常记录条数。",
+    "scope": "fact_data_quality_issue / fact_validation_case_result 的 exception_count；“异常数合计”按该列汇总。",
+    "aliases": [
+      "异常数",
+      "exception_count",
+      "异常条数"
+    ],
+    "evidence": [
+      "ev_expected_quantity_aliases"
+    ]
+  },
+  {
+    "id": "term_risk_score",
+    "name": "风险分值",
+    "type": "metric",
+    "definition": "危险源/排放等风险评分，与可能性、严重度共同描述风险。",
+    "scope": "fact_hazard_observation.risk_score、fact_emission_event.risk_score；“风险分值合计”按该列汇总。",
+    "aliases": [
+      "风险分值",
+      "risk_score",
+      "风险值"
+    ],
+    "evidence": [
+      "ev_likelihood_two_forms"
+    ]
+  },
+  {
+    "id": "term_likelihood",
+    "name": "可能性",
+    "type": "dimension",
+    "definition": "风险发生可能性的等级。注意存在两种表示：文本序数（unlikely/possible/likely）与整数等级（1/2/3）。",
+    "scope": "fact_risk_assessment.likelihood 为文本序数；fact_hazard_observation / fact_emission_event / fact_safety_action 的 likelihood 为整数等级。“可能性合计”汇总的是整数形式。",
+    "aliases": [
+      "可能性",
+      "likelihood",
+      "发生可能性"
+    ],
+    "evidence": [
+      "ev_likelihood_two_forms"
+    ]
+  },
+  {
+    "id": "term_maintenance_interval",
+    "name": "维护间隔",
+    "type": "metric",
+    "definition": "两次维护之间的间隔，fact_maintenance_plan 同时保存按日历天的间隔天数和按运行小时的间隔小时数。",
+    "scope": "fact_maintenance_plan.interval_days / interval_hours；“间隔小时合计/间隔天数平均”按对应列汇总。",
+    "aliases": [
+      "维护间隔",
+      "间隔小时",
+      "间隔天数",
+      "interval_hours",
+      "interval_days"
+    ],
+    "evidence": [
+      "ev_maintenance_interval"
+    ]
+  },
+  {
+    "id": "term_regular_hours",
+    "name": "正常工时",
+    "type": "metric",
+    "definition": "班次/考勤记录中的正常（非加班）工时。",
+    "scope": "fact_shift_report / fact_attendance / fact_labor_booking 的 regular_hours；“正常工时合计最高的产线”先按产线分组汇总该列。",
+    "aliases": [
+      "正常工时",
+      "regular_hours",
+      "标准工时"
+    ],
+    "evidence": [
+      "ev_expected_quantity_aliases"
+    ]
+  },
+  {
+    "id": "term_reason_code",
+    "name": "原因码",
+    "type": "dimension",
+    "definition": "标准化原因编码（如 QUALITY/DELIVERY/COST/EQUIPMENT/SAFETY/ENVIRONMENT），命中原因码维表。",
+    "scope": "事实表的 reason_code 列对应 dim_reason_code.code；“原因码简称”取 dim_reason_code.short_name 或 abbreviation。",
+    "aliases": [
+      "原因码",
+      "原因编码",
+      "原因码简称",
+      "reason_code"
+    ],
+    "evidence": [
+      "ev_reason_code_join"
+    ]
+  },
+  {
+    "id": "term_currency",
+    "name": "币种",
+    "type": "dimension",
+    "definition": "金额所属的币种编码（CNY/USD/EUR/JPY），命中币种维表。",
+    "scope": "事实表的 currency_code 列对应 dim_currency.code；“币种简称”取 dim_currency.short_name。",
+    "aliases": [
+      "币种",
+      "币种简称",
+      "currency_code",
+      "货币"
+    ],
+    "evidence": [
+      "ev_currency_join"
+    ]
+  },
+  {
+    "id": "term_unit_of_measure",
+    "name": "计量单位",
+    "type": "dimension",
+    "definition": "数量/读数的计量单位。在不同表中列名不同：unit_code / measurement_unit / reading_unit / unit。",
+    "scope": "“按单位统计有多少条IoT数据”“读数单位为kg/h”等按对应表的单位列过滤或分组。",
+    "aliases": [
+      "计量单位",
+      "单位",
+      "读数单位",
+      "unit_code",
+      "unit"
+    ],
+    "evidence": [
+      "ev_units_variants",
+      "ev_iot_unit"
+    ]
+  },
+  {
+    "id": "term_batch_no",
+    "name": "批次号",
+    "type": "dimension",
+    "definition": "生产或库存批次标识，是质量冻结、在制品、库存快照、批次追溯之间的业务键。",
+    "scope": "batch_no（批次号）与 lot_no（批号）并行存在；“批次追溯记录”等按该键关联。",
+    "aliases": [
+      "批次号",
+      "批号",
+      "batch_no",
+      "lot_no",
+      "批次"
+    ],
+    "evidence": [
+      "ev_batch_key"
+    ]
+  },
+  {
+    "id": "term_employee",
+    "name": "员工",
+    "type": "entity",
+    "definition": "企业员工主数据。",
+    "scope": "dim_employee（emp_id/emp_name/status/hire_date/dept_id）；事实表中的 emp_id 引用该维表。注意：更新人/创建人/审批人的 U 代码不属于该维表。",
+    "aliases": [
+      "员工",
+      "employee",
+      "emp_id",
+      "业务员",
+      "员工姓名"
+    ],
+    "evidence": [
+      "ev_operator_namespace"
+    ]
+  },
+  {
+    "id": "term_product",
+    "name": "产品",
+    "type": "entity",
+    "definition": "产品主数据（品号、名称、规格、标准成本、所属产品线）。",
+    "scope": "dim_product（prod_id/prod_name/prod_line_id/standard_cost/unit）；事实表的 prod_id 引用该维表。",
+    "aliases": [
+      "产品",
+      "产品名称",
+      "product",
+      "prod_id",
+      "品号"
+    ],
+    "evidence": [
+      "ev_product_line_twohop"
+    ]
+  },
+  {
+    "id": "term_product_line",
+    "name": "产品线",
+    "type": "entity",
+    "definition": "产品所属的产品系列/产品线（PP改性系列、PA改性系列、ABS/PC合金系列、特种工程塑料系列）。",
+    "scope": "dim_product_line（prod_line_id/prod_line_name）；只能经 dim_product.prod_line_id 从事实表到达。",
+    "aliases": [
+      "产品线",
+      "产品线名称",
+      "产品系列",
+      "product_line"
+    ],
+    "evidence": [
+      "ev_product_line_twohop"
+    ]
+  },
+  {
+    "id": "term_material",
+    "name": "原材料",
+    "type": "entity",
+    "definition": "原材料主数据（料号、名称、规格、安全库存、所属类别）。",
+    "scope": "dim_material（material_id/material_name/category_id/supplier_id）；事实表的 material_id 引用该维表。",
+    "aliases": [
+      "原材料",
+      "物料",
+      "material",
+      "material_id",
+      "物料编码"
+    ],
+    "evidence": [
+      "ev_expected_quantity_aliases"
+    ]
+  },
+  {
+    "id": "term_material_category",
+    "name": "物料类别",
+    "type": "entity",
+    "definition": "原材料的类别分类，含父子层级。",
+    "scope": "dim_material_category（category_id/category_name/parent_id）；经 dim_material.category_id 到达。",
+    "aliases": [
+      "物料类别",
+      "类别名称",
+      "material_category"
+    ],
+    "evidence": [
+      "ev_expected_quantity_aliases"
+    ]
+  },
+  {
+    "id": "term_equipment",
+    "name": "设备",
+    "type": "entity",
+    "definition": "设备主数据（设备编码、名称、制造商、功率、所属产线、设备类型）。",
+    "scope": "dim_equipment（equipment_id/equipment_name/line_id/type_id/status）；事实表的 equipment_id 引用该维表。",
+    "aliases": [
+      "设备",
+      "设备名称",
+      "equipment",
+      "equipment_id"
+    ],
+    "evidence": [
+      "ev_equipment_type_twohop"
+    ]
+  },
+  {
+    "id": "term_equipment_type",
+    "name": "设备类型",
+    "type": "entity",
+    "definition": "设备类型分类（双螺杆挤出机、高速混合机、失重式喂料机、切粒机、除湿干燥机、自动包装机）。",
+    "scope": "dim_equipment_type（type_id/type_name/category/manufacturer）；经 dim_equipment.type_id 到达。",
+    "aliases": [
+      "设备类型",
+      "设备类别",
+      "equipment_type",
+      "type_name"
+    ],
+    "evidence": [
+      "ev_equipment_type_twohop"
+    ]
+  },
+  {
+    "id": "term_sensor",
+    "name": "传感器",
+    "type": "entity",
+    "definition": "传感器主数据（编码、名称、类型、测量单位、所属设备）。",
+    "scope": "dim_sensor（sensor_id/sensor_name/sensor_type/equipment_id/unit）；fact_alarm / fact_iot_data / fact_condition_monitoring / fact_predictive_alert / fact_gauge_calibration 的 sensor_id 引用该维表。",
+    "aliases": [
+      "传感器",
+      "传感器名称",
+      "传感器类型",
+      "sensor"
+    ],
+    "evidence": [
+      "ev_sensor_link"
+    ]
+  },
+  {
+    "id": "term_factory",
+    "name": "工厂",
+    "type": "entity",
+    "definition": "工厂主数据（名称、地址、所属业务单元）。",
+    "scope": "dim_factory（factory_id/factory_name/location/bu_id）；事实表通过 factory_id / target_factory_id / source_factory_id 引用。",
+    "aliases": [
+      "工厂",
+      "工厂名称",
+      "factory",
+      "目标工厂"
+    ],
+    "evidence": [
+      "ev_factory_link"
+    ]
+  },
+  {
+    "id": "term_warehouse",
+    "name": "仓库",
+    "type": "entity",
+    "definition": "仓库/库位主数据。",
+    "scope": "dim_warehouse（warehouse_id/warehouse_name/location/warehouse_type/factory_id）；库存类事实表的 warehouse_id 引用该维表。",
+    "aliases": [
+      "仓库",
+      "仓库名称",
+      "warehouse"
+    ],
+    "evidence": [
+      "ev_warehouse_link"
+    ]
+  },
+  {
+    "id": "term_production_line",
+    "name": "产线",
+    "type": "entity",
+    "definition": "生产线主数据（线名、设计产能、生产产品类型、所属车间、运行状态）。",
+    "scope": "dim_production_line（line_id/line_name/workshop_id/capacity_tph）；事实表通过 line_id 引用。",
+    "aliases": [
+      "产线",
+      "生产线",
+      "产线名称",
+      "production_line",
+      "line_name"
+    ],
+    "evidence": [
+      "ev_workshop_link"
+    ]
+  },
+  {
+    "id": "term_workshop",
+    "name": "车间",
+    "type": "entity",
+    "definition": "车间主数据（车间名、位置描述，如青岛一厂A栋、合肥工厂A栋）。",
+    "scope": "dim_workshop（workshop_id/workshop_name/location）；fact_hazard_observation / fact_safety_audit 的 workshop_id 引用该维表。",
+    "aliases": [
+      "车间",
+      "车间名称",
+      "位置",
+      "workshop"
+    ],
+    "evidence": [
+      "ev_workshop_link"
+    ]
+  },
+  {
+    "id": "term_supplier",
+    "name": "供应商",
+    "type": "entity",
+    "definition": "供应商主数据（名称、信用等级、省市、合作起始日期）。",
+    "scope": "dim_supplier（supplier_id/supplier_name/credit_level）；事实表的 supplier_id 引用该维表。",
+    "aliases": [
+      "供应商",
+      "供应商名称",
+      "supplier",
+      "供应商编码"
+    ],
+    "evidence": [
+      "ev_supplier_link"
+    ]
+  },
+  {
+    "id": "term_customer",
+    "name": "客户",
+    "type": "entity",
+    "definition": "客户主数据（名称、所属行业、最近/首次交易日期、市场份额）。",
+    "scope": "dim_customer（cust_id/cust_name/industry/last_deal_date/first_deal_date）；事实表的 cust_id 引用该维表。",
+    "aliases": [
+      "客户",
+      "客户名称",
+      "所属行业",
+      "最近交易日期",
+      "customer",
+      "cust_id"
+    ],
+    "evidence": [
+      "ev_customer_link"
+    ]
+  },
+  {
+    "id": "term_department",
+    "name": "部门",
+    "type": "entity",
+    "definition": "组织部门主数据（部门名、所属区域）。",
+    "scope": "dim_department（dept_id/dept_name/region_id）；事实表通过 dept_id 引用。",
+    "aliases": [
+      "部门",
+      "部门名称",
+      "department",
+      "申请部门",
+      "责任部门"
+    ],
+    "evidence": [
+      "ev_department_link"
+    ]
+  },
+  {
+    "id": "term_sales_region",
+    "name": "销售区域",
+    "type": "entity",
+    "definition": "销售区域维度（华东、华中、华北、华南、西北、西南）。",
+    "scope": "dim_region（region_id/region_name）为参考维表；事实表则以名称形式冗余保存在 sales_region 列中（fact_sales_order_line / fact_sales_contract_line / fact_sales_forecast / fact_price_adjustment / fact_lead）。",
+    "aliases": [
+      "销售区域",
+      "区域",
+      "大区",
+      "sales_region",
+      "region_name"
+    ],
+    "evidence": [
+      "ev_sales_region_denormalized"
+    ]
+  },
+  {
+    "id": "term_production_order",
+    "name": "生产工单",
+    "type": "entity",
+    "definition": "生产工单单据：下达日期、产线、产品、批次、计划/实际产量、成材率与工单状态。",
+    "scope": "fact_production_order（order_id/order_no/order_date/line_id/prod_id/batch_no/status）。",
+    "aliases": [
+      "生产工单",
+      "工单",
+      "工单号",
+      "production_order"
+    ],
+    "evidence": [
+      "ev_production_order_inspection"
+    ]
+  },
+  {
+    "id": "term_sales_order",
+    "name": "销售订单",
+    "type": "entity",
+    "definition": "销售订单单据：订单日期、客户、产品、数量、订单金额与订单状态。",
+    "scope": "fact_sales_order（order_id/order_date/cust_id/prod_id/quantity/amount/status）；明细在 fact_sales_order_line。",
+    "aliases": [
+      "销售订单",
+      "订单",
+      "订单状态",
+      "sales_order"
+    ],
+    "evidence": [
+      "ev_status_vocab_lower"
+    ]
+  },
+  {
+    "id": "term_purchase_order",
+    "name": "采购订单",
+    "type": "entity",
+    "definition": "采购订单单据：下单日期、供应商、币种、总额与订单状态；明细在 fact_po_line。",
+    "scope": "fact_purchase_order（po_id/po_no/po_date/supplier_id/total_amount/status）。",
+    "aliases": [
+      "采购订单",
+      "采购单",
+      "purchase_order",
+      "采购订单行"
+    ],
+    "evidence": [
+      "ev_status_vocab_lower"
+    ]
+  },
+  {
+    "id": "term_inventory_snapshot",
+    "name": "库存快照",
+    "type": "entity",
+    "definition": "库存快照记录：业务日期、仓库、物料、数量、状态、备注与质量分。",
+    "scope": "fact_inventory_snapshot（inventory_snapshot_id/warehouse_id/status/business_date/remarks）。",
+    "aliases": [
+      "库存快照",
+      "inventory_snapshot"
+    ],
+    "evidence": [
+      "ev_remarks_vocabulary"
+    ]
+  },
+  {
+    "id": "term_wip_snapshot",
+    "name": "在制品快照",
+    "type": "entity",
+    "definition": "在制品（WIP）快照记录：产线、工单、工艺阶段、数量与状态。",
+    "scope": "fact_wip_snapshot（wip_snapshot_id/line_id/order_id/process_stage/status）。",
+    "aliases": [
+      "在制品快照",
+      "在制品",
+      "WIP",
+      "wip_snapshot"
+    ],
+    "evidence": [
+      "ev_workshop_link"
+    ]
+  },
+  {
+    "id": "term_batch_quality_hold",
+    "name": "成品批次质量冻结",
+    "type": "entity",
+    "definition": "成品批次的质 量冻结记录：产品、批次、数量、处置方式、失效日期与状态。",
+    "scope": "fact_batch_quality_hold（batch_quality_hold_id/prod_id/batch_no/disposition/expiry_date/status）。",
+    "aliases": [
+      "成品批次质量冻结",
+      "质量冻结",
+      "批次冻结",
+      "batch_quality_hold"
+    ],
+    "evidence": [
+      "ev_product_line_twohop",
+      "ev_remarks_vocabulary"
+    ]
+  },
+  {
+    "id": "term_hazard_observation",
+    "name": "危险源观察",
+    "type": "entity",
+    "definition": "危险源观察记录：车间、可能性、风险分值、整改期限、行版本与状态。",
+    "scope": "fact_hazard_observation（hazard_observation_id/workshop_id/likelihood/risk_score/action_due_date/row_version/status）。",
+    "aliases": [
+      "危险源观察",
+      "危险源",
+      "隐患观察",
+      "hazard_observation"
+    ],
+    "evidence": [
+      "ev_workshop_link",
+      "ev_likelihood_two_forms",
+      "ev_row_version_counter"
+    ]
+  },
+  {
+    "id": "term_cycle_count",
+    "name": "循环盘点单",
+    "type": "entity",
+    "definition": "循环盘点单：仓库、业务日期/过账日期、优先级、状态；明细在 fact_cycle_count_line。",
+    "scope": "fact_cycle_count（cycle_count_id/warehouse_id/priority/status/business_date/posting_date）。",
+    "aliases": [
+      "循环盘点单",
+      "循环盘点",
+      "盘点单",
+      "cycle_count"
+    ],
+    "evidence": [
+      "ev_priority_degenerate"
+    ]
+  },
+  {
+    "id": "term_equipment_event",
+    "name": "设备事件",
+    "type": "entity",
+    "definition": "设备事件记录：设备、事件编码、故障方式、停机分钟、更新人与备注。",
+    "scope": "fact_equipment_event（equipment_event_id/equipment_id/event_code/updated_by/remarks）。",
+    "aliases": [
+      "设备事件",
+      "equipment_event"
+    ],
+    "evidence": [
+      "ev_remarks_vocabulary",
+      "ev_operator_roles"
+    ]
+  },
+  {
+    "id": "term_data_quality_issue",
+    "name": "数据质量问题",
+    "type": "entity",
+    "definition": "数仓数据质量问题记录：业务日期、发生时间、异常数、更新人与质量分。",
+    "scope": "fact_data_quality_issue（data_quality_issue_id/business_date/event_time/exception_count/updated_by）。",
+    "aliases": [
+      "数据质量问题",
+      "数据质量",
+      "data_quality_issue"
+    ],
+    "evidence": [
+      "ev_operator_namespace"
+    ]
+  },
+  {
+    "id": "term_alarm",
+    "name": "告警",
+    "type": "entity",
+    "definition": "设备告警记录：传感器、设备、告警类型、严重度、是否已处理。",
+    "scope": "fact_alarm（alarm_id/sensor_id/equipment_id/alarm_type/severity/is_handled）。",
+    "aliases": [
+      "告警",
+      "报警",
+      "alarm",
+      "是否处理"
+    ],
+    "evidence": [
+      "ev_alarm_is_handled",
+      "ev_sensor_link"
+    ]
+  },
+  {
+    "id": "term_invoice",
+    "name": "发票",
+    "type": "entity",
+    "definition": "销售发票单据：开票日期、不含税金额、税额、价税合计与开票天数；通过交付标识关联发运单。",
+    "scope": "fact_invoice（invoice_id/delivery_id/invoice_date/amount_no_tax/tax_amount/total_amount/days_to_invoice）。",
+    "aliases": [
+      "发票",
+      "已开具发票",
+      "开票",
+      "invoice"
+    ],
+    "evidence": [
+      "ev_invoice_shipment_link"
+    ]
+  },
+  {
+    "id": "term_return",
+    "name": "退货",
+    "type": "entity",
+    "definition": "销售退货单据：退货日期、退货原因、退货数量与退货金额。",
+    "scope": "fact_return（return_id/order_id/return_date/quantity/amount/reason）。",
+    "aliases": [
+      "退货",
+      "退货原因",
+      "退货金额",
+      "退货笔数",
+      "return"
+    ],
+    "evidence": [
+      "ev_return_reason_vocab"
+    ]
+  },
+  {
+    "id": "term_shipment",
+    "name": "发运单",
+    "type": "entity",
+    "definition": "发运/交货单据：交货标识、客户、仓库、承运商、发运数量与金额、启运地/目的地、销售区域与单据状态；单值交货标识是发票挂接的键。",
+    "scope": "fact_shipment（shipment_id/delivery_id/cust_id/warehouse_id/carrier_id/status/business_date/created_by/sales_region/quantity/amount）。",
+    "aliases": [
+      "发运单",
+      "交货单",
+      "发运",
+      "shipment",
+      "delivery"
+    ],
+    "evidence": [
+      "ev_invoice_shipment_link"
+    ]
+  }
+]

@@ -1,0 +1,699 @@
+[
+  {
+    "id": "m_country",
+    "term_id": "term_country",
+    "database_source": "european_football_2",
+    "table": "Country",
+    "column": "name",
+    "grain": "one row per country",
+    "validation": "11 rows, values unique",
+    "evidence": [
+      "ev_row_counts"
+    ]
+  },
+  {
+    "id": "m_country_league_link",
+    "term_id": "term_country",
+    "database_source": "european_football_2",
+    "table": "League",
+    "column": "country_id",
+    "semantic_filter": "identifies the country whose national league this row describes",
+    "grain": "one row per league",
+    "validation": "every League.country_id resolves to a Country.id",
+    "evidence": [
+      "ev_league_country_link"
+    ]
+  },
+  {
+    "id": "m_league",
+    "term_id": "term_league",
+    "database_source": "european_football_2",
+    "table": "League",
+    "column": "name",
+    "grain": "one row per league",
+    "validation": "11 rows, names unique",
+    "evidence": [
+      "ev_league_country_link"
+    ]
+  },
+  {
+    "id": "m_league_match_link",
+    "term_id": "term_league",
+    "database_source": "european_football_2",
+    "table": "Match",
+    "column": "league_id",
+    "semantic_filter": "the competition the fixture belongs to; non-null for every match",
+    "grain": "one row per match",
+    "validation": "11 distinct values, all resolving to League.id",
+    "evidence": [
+      "ev_league_season_coverage"
+    ]
+  },
+  {
+    "id": "m_match",
+    "term_id": "term_match",
+    "database_source": "european_football_2",
+    "table": "Match",
+    "column": "match_api_id",
+    "grain": "one row per fixture",
+    "validation": "25979 rows and 25979 distinct values, unique as declared",
+    "evidence": [
+      "ev_row_counts"
+    ]
+  },
+  {
+    "id": "m_season",
+    "term_id": "term_season",
+    "database_source": "european_football_2",
+    "table": "Match",
+    "column": "season",
+    "semantic_filter": "the competition year label of the fixture",
+    "grain": "one value per match, shared by all leagues in the same campaign",
+    "validation": "8 distinct values; each accounts for a coherent calendar window",
+    "evidence": [
+      "ev_season_range"
+    ]
+  },
+  {
+    "id": "m_season_stage",
+    "term_id": "term_match_stage",
+    "database_source": "european_football_2",
+    "table": "Match",
+    "column": "stage",
+    "semantic_filter": "position of the fixture within the league season fixture list",
+    "grain": "one integer per match",
+    "validation": "integers 1..38; the count of distinct stages per league season matches the derived number of rounds",
+    "evidence": [
+      "ev_stage_count"
+    ]
+  },
+  {
+    "id": "m_home_team",
+    "term_id": "term_team",
+    "database_source": "european_football_2",
+    "table": "Match",
+    "column": "home_team_api_id",
+    "semantic_filter": "the side playing at its own ground in this fixture",
+    "grain": "one team per match slot",
+    "validation": "resolves to Team.team_api_id for every match; 1821 matches carry no lineup coordinates but the team reference is always present",
+    "evidence": [
+      "ev_match_team_fk"
+    ]
+  },
+  {
+    "id": "m_away_team",
+    "term_id": "term_team",
+    "database_source": "european_football_2",
+    "table": "Match",
+    "column": "away_team_api_id",
+    "semantic_filter": "the visiting side in this fixture",
+    "grain": "one team per match slot",
+    "validation": "resolves to Team.team_api_id for every match",
+    "evidence": [
+      "ev_match_team_fk"
+    ]
+  },
+  {
+    "id": "m_team_name",
+    "term_id": "term_team",
+    "database_source": "european_football_2",
+    "table": "Team",
+    "column": "team_long_name",
+    "grain": "one row per club",
+    "validation": "299 rows; team_short_name gives an abbreviated alternative label",
+    "evidence": [
+      "ev_row_counts"
+    ]
+  },
+  {
+    "id": "m_team_api_id",
+    "term_id": "term_team_api_identifier",
+    "database_source": "european_football_2",
+    "table": "Team",
+    "column": "team_api_id",
+    "grain": "one row per club",
+    "validation": "299 distinct values, unique as declared and referenced by Match and Team_Attributes",
+    "evidence": [
+      "ev_match_team_fk",
+      "ev_team_attr_coverage"
+    ]
+  },
+  {
+    "id": "m_team_fifa_id",
+    "term_id": "term_team_fifa_identifier",
+    "database_source": "european_football_2",
+    "table": "Team",
+    "column": "team_fifa_api_id",
+    "grain": "one row per club where recorded",
+    "validation": "unique and non-null for 288 of 299 clubs; 11 rows are null",
+    "evidence": [
+      "ev_team_fifa_nulls"
+    ]
+  },
+  {
+    "id": "m_team_attr_api_id",
+    "term_id": "term_team_api_identifier",
+    "database_source": "european_football_2",
+    "table": "Team_Attributes",
+    "column": "team_api_id",
+    "grain": "one team reference per snapshot row",
+    "validation": "288 distinct values, all resolving to Team.team_api_id",
+    "evidence": [
+      "ev_team_attr_coverage"
+    ]
+  },
+  {
+    "id": "m_team_attr_fifa_id",
+    "term_id": "term_team_fifa_identifier",
+    "database_source": "european_football_2",
+    "table": "Team_Attributes",
+    "column": "team_fifa_api_id",
+    "grain": "one team reference per snapshot row",
+    "validation": "285 distinct values, all non-null, a subset of Team.team_fifa_api_id",
+    "evidence": [
+      "ev_team_fifa_nulls"
+    ]
+  },
+  {
+    "id": "m_player",
+    "term_id": "term_player",
+    "database_source": "european_football_2",
+    "table": "Player",
+    "column": "player_name",
+    "grain": "one row per player",
+    "validation": "11060 rows, none with a missing name",
+    "evidence": [
+      "ev_row_counts"
+    ]
+  },
+  {
+    "id": "m_player_api_id",
+    "term_id": "term_player_api_identifier",
+    "database_source": "european_football_2",
+    "table": "Player",
+    "column": "player_api_id",
+    "grain": "one row per player",
+    "validation": "11060 distinct values, unique as declared and referenced by Match and Player_Attributes",
+    "evidence": [
+      "ev_player_player_fk"
+    ]
+  },
+  {
+    "id": "m_player_api_id_lineup",
+    "term_id": "term_player_api_identifier",
+    "database_source": "european_football_2",
+    "table": "Match",
+    "column": "home_player_1, home_player_2, ... home_player_11, away_player_1, ... away_player_11",
+    "semantic_filter": "each slot holds one selected player, distinguished by which side and which shirt slot it represents",
+    "grain": "22 player references per match",
+    "validation": "every non-empty slot resolves to Player.player_api_id; 23632 of 25979 matches have all 22 slots filled",
+    "evidence": [
+      "ev_lineup_completeness",
+      "ev_player_player_fk"
+    ]
+  },
+  {
+    "id": "m_player_api_id_snapshot",
+    "term_id": "term_player_api_identifier",
+    "database_source": "european_football_2",
+    "table": "Player_Attributes",
+    "column": "player_api_id",
+    "grain": "one player reference per snapshot row",
+    "validation": "11060 distinct values, all resolving to Player.player_api_id",
+    "evidence": [
+      "ev_player_player_fk"
+    ]
+  },
+  {
+    "id": "m_player_fifa_id",
+    "term_id": "term_player_fifa_identifier",
+    "database_source": "european_football_2",
+    "table": "Player",
+    "column": "player_fifa_api_id",
+    "grain": "one row per player",
+    "validation": "11060 distinct values, unique and non-null",
+    "evidence": [
+      "ev_player_player_fk"
+    ]
+  },
+  {
+    "id": "m_player_fifa_id_snapshot",
+    "term_id": "term_player_fifa_identifier",
+    "database_source": "european_football_2",
+    "table": "Player_Attributes",
+    "column": "player_fifa_api_id",
+    "grain": "one player reference per snapshot row",
+    "validation": "11062 distinct values on 183978 rows, two more than the player table holds",
+    "evidence": [
+      "ev_player_player_fk"
+    ]
+  },
+  {
+    "id": "m_player_birthday",
+    "term_id": "term_player",
+    "database_source": "european_football_2",
+    "table": "Player",
+    "column": "birthday",
+    "semantic_filter": "date of birth, stored as text in the form YYYY-MM-DD 00:00:00",
+    "grain": "one value per player",
+    "validation": "non-null for all 11060 players, including leap-day births such as 1992-02-29",
+    "evidence": [
+      "ev_player_snapshot_dates"
+    ]
+  },
+  {
+    "id": "m_player_age",
+    "term_id": "term_player_age",
+    "database_source": "european_football_2",
+    "table": "Player",
+    "column": "birthday",
+    "semantic_filter": "the birth date is combined with a comparison date to yield completed years",
+    "aggregation_semantics": "per-player difference between the comparison date and the birth date, expressed in completed years",
+    "grain": "one value per player per comparison date",
+    "validation": "the comparison date must come from the same snapshot row as any attribute being analysed",
+    "evidence": [
+      "ev_player_snapshot_dates"
+    ]
+  },
+  {
+    "id": "m_player_height",
+    "term_id": "term_player_physical_profile",
+    "database_source": "european_football_2",
+    "table": "Player",
+    "column": "height",
+    "semantic_filter": "recorded in centimetres",
+    "unit": "centimetres",
+    "grain": "one value per player",
+    "validation": "all 11060 values equal a whole number of inches multiplied by 2.54, so centimetres were produced by converting whole-inch measurements",
+    "evidence": [
+      "ev_height_inches_conversion"
+    ]
+  },
+  {
+    "id": "m_player_weight",
+    "term_id": "term_player_physical_profile",
+    "database_source": "european_football_2",
+    "table": "Player",
+    "column": "weight",
+    "semantic_filter": "recorded in pounds; the database stores no unit label",
+    "unit": "pounds",
+    "grain": "one value per player",
+    "validation": "integers from 117 to 243 with mean 168.38; those magnitudes are only plausible as pounds",
+    "evidence": [
+      "ev_weight_units"
+    ]
+  },
+  {
+    "id": "m_player_overall_rating",
+    "term_id": "term_player_overall_rating",
+    "database_source": "european_football_2",
+    "table": "Player_Attributes",
+    "column": "overall_rating",
+    "aggregation_semantics": "read per snapshot row rather than across rows; any average must be taken over a deliberately chosen set of snapshots",
+    "grain": "one value per player per snapshot date",
+    "validation": "obs 33..94, no nulls among the 183978 rows",
+    "evidence": [
+      "ev_skill_column_range"
+    ]
+  },
+  {
+    "id": "m_player_potential",
+    "term_id": "term_player_potential",
+    "database_source": "european_football_2",
+    "table": "Player_Attributes",
+    "column": "potential",
+    "aggregation_semantics": "read per snapshot row",
+    "grain": "one value per player per snapshot date",
+    "validation": "observed 39..97",
+    "evidence": [
+      "ev_skill_column_range"
+    ]
+  },
+  {
+    "id": "m_player_skill_attribute",
+    "term_id": "term_player_skill_attribute",
+    "database_source": "european_football_2",
+    "table": "Player_Attributes",
+    "column": "crossing, finishing, heading_accuracy, short_passing, volleys, dribbling, curve, free_kick_accuracy, long_passing, ball_control, acceleration, sprint_speed, agility, reactions, balance, shot_power, jumping, stamina, strength, long_shots, aggression, interceptions, positioning, vision, penalties, marking, standing_tackle, sliding_tackle",
+    "semantic_filter": "outfield technical, mental and physical ability scores",
+    "aggregation_semantics": "each column is an independent score; there is no stored composite, so any combined score must be defined by the analyst",
+    "grain": "one value per column per player per snapshot date",
+    "validation": "28 columns, observed range 1..98, all jointly null on the same 836 snapshot rows",
+    "evidence": [
+      "ev_skill_column_range"
+    ]
+  },
+  {
+    "id": "m_gk_skill_attribute",
+    "term_id": "term_goalkeeper_skill_attribute",
+    "database_source": "european_football_2",
+    "table": "Player_Attributes",
+    "column": "gk_diving, gk_handling, gk_kicking, gk_positioning, gk_reflexes",
+    "semantic_filter": "goalkeeping ability scores, populated for every player but only meaningful for goalkeepers",
+    "aggregation_semantics": "each column is an independent score",
+    "grain": "one value per column per player per snapshot date",
+    "validation": "5 columns, observed range 1..98, jointly null on the same 836 snapshot rows",
+    "evidence": [
+      "ev_skill_column_range"
+    ]
+  },
+  {
+    "id": "m_work_rate",
+    "term_id": "term_work_rate",
+    "database_source": "european_football_2",
+    "table": "Player_Attributes",
+    "column": "attacking_work_rate, defensive_work_rate",
+    "semantic_filter": "the two phases are held in separate columns and must not be combined; both columns also contain values outside the intended three-level vocabulary",
+    "grain": "one value per column per player per snapshot date",
+    "validation": "valid levels low, medium, high coexist with fragment values such as le, norm, stoc, y, _0, ean, es, o, ormal, tocky and the digits 0 to 9",
+    "evidence": [
+      "ev_work_rate_values"
+    ]
+  },
+  {
+    "id": "m_preferred_foot",
+    "term_id": "term_preferred_foot",
+    "database_source": "european_football_2",
+    "table": "Player_Attributes",
+    "column": "preferred_foot",
+    "grain": "one value per player per snapshot date",
+    "validation": "left 44733 and right 138409 rows, with 836 rows empty",
+    "evidence": [
+      "ev_preferred_foot_values"
+    ]
+  },
+  {
+    "id": "m_player_snapshot_date",
+    "term_id": "term_player_attribute_snapshot",
+    "database_source": "european_football_2",
+    "table": "Player_Attributes",
+    "column": "date",
+    "semantic_filter": "the point in time at which this player's measurements were taken",
+    "grain": "one snapshot date per attribute row",
+    "validation": "197 distinct dates from 2007-02-22 to 2016-07-07; the earliest date alone carries 11794 rows while later dates carry tens to thousands",
+    "evidence": [
+      "ev_player_snapshot_dates"
+    ]
+  },
+  {
+    "id": "m_player_snapshot_row",
+    "term_id": "term_player_attribute_snapshot",
+    "database_source": "european_football_2",
+    "table": "Player_Attributes",
+    "column": "id",
+    "semantic_filter": "the surrogate key of one dated measurement of one player",
+    "grain": "one row per player per snapshot date, except for 835 duplicated player-date combinations",
+    "validation": "183978 rows covering 11060 players",
+    "evidence": [
+      "ev_player_attr_dupes"
+    ]
+  },
+  {
+    "id": "m_team_snapshot_row",
+    "term_id": "term_team_attribute_snapshot",
+    "database_source": "european_football_2",
+    "table": "Team_Attributes",
+    "column": "id",
+    "semantic_filter": "the surrogate key of one dated measurement of one team",
+    "grain": "one row per team per snapshot date, except for one duplicated team-date combination",
+    "validation": "1458 rows covering 288 distinct teams",
+    "evidence": [
+      "ev_team_attr_coverage"
+    ]
+  },
+  {
+    "id": "m_team_snapshot_date",
+    "term_id": "term_team_attribute_snapshot",
+    "database_source": "european_football_2",
+    "table": "Team_Attributes",
+    "column": "date",
+    "semantic_filter": "the point in time at which this team's tactical profile was measured",
+    "grain": "one snapshot date per attribute row",
+    "validation": "only 6 distinct dates between 2010-02-22 and 2015-09-10",
+    "evidence": [
+      "ev_team_attr_coverage"
+    ]
+  },
+  {
+    "id": "m_team_style_metric",
+    "term_id": "term_team_style_metric",
+    "database_source": "european_football_2",
+    "table": "Team_Attributes",
+    "column": "buildUpPlaySpeed, buildUpPlayDribbling, buildUpPlayPassing, chanceCreationPassing, chanceCreationCrossing, chanceCreationShooting, defencePressure, defenceAggression, defenceTeamWidth",
+    "semantic_filter": "numeric tactical intensity scores grouped into build-up, chance creation and defensive families",
+    "aggregation_semantics": "each column scores a different tactical facet, so they are read side by side rather than summed",
+    "grain": "one value per column per team per snapshot date",
+    "validation": "9 columns, none null, observed values 20..80",
+    "evidence": [
+      "ev_team_class_bounds"
+    ]
+  },
+  {
+    "id": "m_team_style_class",
+    "term_id": "term_team_style_class",
+    "database_source": "european_football_2",
+    "table": "Team_Attributes",
+    "column": "buildUpPlaySpeedClass, buildUpPlayDribblingClass, buildUpPlayPassingClass, buildUpPlayPositioningClass, chanceCreationPassingClass, chanceCreationCrossingClass, chanceCreationShootingClass, chanceCreationPositioningClass, defencePressureClass, defenceAggressionClass, defenceTeamWidthClass, defenceDefenderLineClass",
+    "semantic_filter": "the categorical band belonging to the same-named numeric metric on the same row",
+    "grain": "one value per column per team per snapshot date",
+    "validation": "12 columns, none null; bands partition the numeric metric range without gaps or overlap",
+    "evidence": [
+      "ev_team_class_bounds"
+    ]
+  },
+  {
+    "id": "m_betting_odds",
+    "term_id": "term_betting_odds",
+    "database_source": "european_football_2",
+    "table": "Match",
+    "column": "B365H, B365D, B365A, BWH, BWD, BWA, IWH, IWD, IWA, LBH, LBD, LBA, PSH, PSD, PSA, WHH, WHD, WHA, SJH, SJD, SJA, VCH, VCD, VCA, GBH, GBD, GBA, BSH, BSD, BSA",
+    "semantic_filter": "within each three-column group the suffixes denote home win, draw and away win respectively",
+    "aggregation_semantics": "prices are read per match per bookmaker; averaging prices across bookmakers or matches changes their meaning",
+    "grain": "one price per outcome per match",
+    "validation": "B365 is present on 22592 of 25979 matches; the three columns of a bookmaker are always jointly present or jointly absent",
+    "evidence": [
+      "ev_odds_coverage",
+      "ev_odds_triple_nullability"
+    ]
+  },
+  {
+    "id": "m_bookmaker",
+    "term_id": "term_bookmaker",
+    "database_source": "european_football_2",
+    "table": "Match",
+    "column": "B365H, BWH, IWH, LBH, PSH, WHH, SJH, VCH, GBH, BSH (and the matching D and A columns)",
+    "semantic_filter": "the alphabetic prefix of the column name identifies the operator; no bookmaker key or name table exists",
+    "grain": "one operator per three-column group",
+    "validation": "11 prefixes observed; per-operator coverage ranges from 2756 matches for all eleven together down to 11168 matches for PS",
+    "evidence": [
+      "ev_odds_coverage"
+    ]
+  },
+  {
+    "id": "m_implied_probability",
+    "term_id": "term_implied_probability",
+    "database_source": "european_football_2",
+    "table": "Match",
+    "column": "B365H, B365D, B365A (and the equivalent columns for the other operators)",
+    "semantic_filter": "derived from a decimal price as its reciprocal; no such value is stored",
+    "aggregation_semantics": "one derived probability per outcome; the three reciprocals for a match sum to about 1.07 to 1.10 because of the bookmaker margin",
+    "grain": "one derived value per outcome per match",
+    "validation": "sampled reciprocal sums fall between 1.072 and 1.103",
+    "evidence": [
+      "ev_odds_overround"
+    ]
+  },
+  {
+    "id": "m_event_log",
+    "term_id": "term_match_event_log",
+    "database_source": "european_football_2",
+    "table": "Match",
+    "column": "goal, shoton, shotoff, foulcommit, card, cross, corner, possession",
+    "semantic_filter": "each column holds an XML-like block whose value elements are individual events for that family",
+    "aggregation_semantics": "event counts are obtained by counting value elements rather than by reading a stored total",
+    "grain": "one text block per column per match",
+    "validation": "all eight columns are jointly null or empty on exactly 11762 of 25979 matches",
+    "evidence": [
+      "ev_event_column_nulls"
+    ]
+  },
+  {
+    "id": "m_goal_event_team",
+    "term_id": "term_goal",
+    "database_source": "european_football_2",
+    "table": "Match",
+    "column": "goal",
+    "semantic_filter": "each goal value element carries a team element holding the team_api_id of one of the two sides in that same match",
+    "aggregation_semantics": "a goal event is attributed by matching its team element against the match's own home and away team references",
+    "grain": "one goal event",
+    "validation": "across 14217 matches no goal event carries a team identifier other than that match's own two sides",
+    "evidence": [
+      "ev_goal_xml_team_scope"
+    ]
+  },
+  {
+    "id": "m_goal_type",
+    "term_id": "term_goal_type",
+    "database_source": "european_football_2",
+    "table": "Match",
+    "column": "goal",
+    "semantic_filter": "read from the goal_type element inside a goal event block",
+    "grain": "one code per goal event",
+    "validation": "seven distinct codes observed: n 25104, p 2149, o 781, npm 482, dg 342, rp 9, psm 1",
+    "evidence": [
+      "ev_goal_type_values"
+    ]
+  },
+  {
+    "id": "m_card_type",
+    "term_id": "term_card_type",
+    "database_source": "european_football_2",
+    "table": "Match",
+    "column": "card",
+    "semantic_filter": "read from the card_type element inside a card event block",
+    "grain": "one code per card event",
+    "validation": "y 58045, y2 1708, r 1756, and 605 card value elements carrying no card_type element at all",
+    "evidence": [
+      "ev_card_type_values"
+    ]
+  },
+  {
+    "id": "m_possession",
+    "term_id": "term_possession",
+    "database_source": "european_football_2",
+    "table": "Match",
+    "column": "possession",
+    "semantic_filter": "homepos and awaypos are read from inside each possession value element; they are not match columns",
+    "aggregation_semantics": "each value element is one reading; a match-level share requires choosing or averaging readings rather than summing them",
+    "grain": "one reading pair per possession event",
+    "validation": "2876 sampled reading pairs all have homepos plus awaypos equal to 100",
+    "evidence": [
+      "ev_possession_sums_100"
+    ]
+  },
+  {
+    "id": "m_lineup_slots",
+    "term_id": "term_starting_lineup",
+    "database_source": "european_football_2",
+    "table": "Match",
+    "column": "home_player_1, home_player_2, ... home_player_11, away_player_1, ... away_player_11",
+    "semantic_filter": "the eleven slots of one side form one lineup; the slot index is a shirt order, not a position",
+    "aggregation_semantics": "counting appearances means counting non-empty slots per player across matches",
+    "grain": "one lineup per side per match",
+    "validation": "23632 of 25979 matches have all 22 slots filled; the remaining matches have at least one empty slot",
+    "evidence": [
+      "ev_lineup_completeness"
+    ]
+  },
+  {
+    "id": "m_position_coordinates",
+    "term_id": "term_player_position_coordinate",
+    "database_source": "european_football_2",
+    "table": "Match",
+    "column": "home_player_X1, home_player_Y1, ... home_player_X11, home_player_Y11, away_player_X1, away_player_Y1, ... away_player_X11, away_player_Y11",
+    "semantic_filter": "the X and Y column with the same slot index belong together and describe the player in the matching lineup slot",
+    "grain": "one coordinate pair per lineup slot",
+    "validation": "X takes integer values 0..9 and Y takes integer values 0..11; 20130 of 285769 coordinate slots are null",
+    "evidence": [
+      "ev_formation_grid"
+    ]
+  },
+  {
+    "id": "m_formation",
+    "term_id": "term_formation",
+    "database_source": "european_football_2",
+    "table": "Match",
+    "column": "home_player_X1..X11 with home_player_Y1..Y11 (and the away equivalents)",
+    "semantic_filter": "the shape is reconstructed from the coordinates; no formation column is stored",
+    "aggregation_semantics": "group the eleven slots of one side by their depth coordinate and count the players in each group to obtain a line-by-line shape",
+    "grain": "one derived shape per side per match",
+    "validation": "on a sample 4-4-2 side the goalkeeper sits at X=1, Y=1, the back four at Y=3 and the two forwards at Y=10",
+    "evidence": [
+      "ev_formation_grid"
+    ]
+  },
+  {
+    "id": "m_goals_for",
+    "term_id": "term_team_goals_for",
+    "database_source": "european_football_2",
+    "table": "Match",
+    "column": "home_team_goal when the team is the home side, away_team_goal when it is the away side",
+    "semantic_filter": "the column that belongs to the analysed team depends on that team's role in each match",
+    "aggregation_semantics": "sum of the team's own scoreline value across the chosen matches",
+    "grain": "one value per team per match",
+    "validation": "both scoreline columns are non-null on all 25979 matches",
+    "evidence": [
+      "ev_home_away_role_required"
+    ]
+  },
+  {
+    "id": "m_goals_against",
+    "term_id": "term_team_goals_against",
+    "database_source": "european_football_2",
+    "table": "Match",
+    "column": "away_team_goal when the team is the home side, home_team_goal when it is the away side",
+    "semantic_filter": "the conceded column is always the opposite side's scoreline column",
+    "aggregation_semantics": "sum of the opponent's scoreline value across the chosen matches",
+    "grain": "one value per team per match",
+    "validation": "both scoreline columns are non-null on all 25979 matches",
+    "evidence": [
+      "ev_home_away_role_required"
+    ]
+  },
+  {
+    "id": "m_match_outcome",
+    "term_id": "term_match_outcome",
+    "database_source": "european_football_2",
+    "table": "Match",
+    "column": "home_team_goal compared with away_team_goal",
+    "semantic_filter": "the outcome is derived by comparing the two scoreline columns, not read from a column",
+    "aggregation_semantics": "count of matches falling into each of win, draw and loss from one side's perspective",
+    "grain": "one outcome per side per match",
+    "validation": "no outcome column exists on Match; every match has both scoreline values",
+    "evidence": [
+      "ev_home_away_role_required"
+    ]
+  },
+  {
+    "id": "m_goal_difference",
+    "term_id": "term_goal_difference",
+    "database_source": "european_football_2",
+    "table": "Match",
+    "column": "home_team_goal and away_team_goal",
+    "semantic_filter": "derived as goals for minus goals against over an identical set of matches",
+    "aggregation_semantics": "signed sum over the chosen matches from one team's perspective",
+    "grain": "one value per team per chosen scope",
+    "validation": "no goal difference column exists on Match",
+    "evidence": [
+      "ev_home_away_role_required"
+    ]
+  },
+  {
+    "id": "m_league_points",
+    "term_id": "term_league_points",
+    "database_source": "european_football_2",
+    "table": "Match",
+    "column": "home_team_goal and away_team_goal",
+    "semantic_filter": "the database stores no points column and no point-award rule; points exist only if the analyst supplies a convention",
+    "aggregation_semantics": "sum of the points the analyst's convention awards for each derived outcome",
+    "grain": "one value per team per league season",
+    "validation": "no points or standings table exists in the schema",
+    "evidence": [
+      "ev_league_points_absent"
+    ]
+  },
+  {
+    "id": "m_home_advantage",
+    "term_id": "term_home_advantage",
+    "database_source": "european_football_2",
+    "table": "Match",
+    "column": "home_team_goal and away_team_goal, grouped by the home and away team references",
+    "semantic_filter": "the effect is measured by contrasting home-side and away-side outcomes over a comparable set of matches",
+    "aggregation_semantics": "rate of favourable outcomes and goals per match computed separately for the home and away role",
+    "grain": "one rate per chosen scope",
+    "validation": "the home and away roles are column prefixes rather than a stored role value",
+    "evidence": [
+      "ev_home_away_role_required"
+    ]
+  }
+]

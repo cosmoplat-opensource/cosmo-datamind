@@ -1,0 +1,150 @@
+[
+  {
+    "id": "rel_customer_gas_consumption",
+    "source": "term_customer",
+    "relation_type": "composition",
+    "target": "term_gas_consumption",
+    "connection_condition": "A consumption record is attributed to exactly one customer through the customer identifier carried on the consumption ledger.",
+    "description": "A customer's recorded activity is composed of monthly consumption records; a consumption quantity has no meaning without the customer it belongs to.",
+    "evidence": [
+      "ev_yearmonth_key_coverage"
+    ]
+  },
+  {
+    "id": "rel_customer_transaction",
+    "source": "term_customer",
+    "relation_type": "composition",
+    "target": "term_transaction",
+    "connection_condition": "A transaction is attributed to exactly one paying customer through the customer identifier carried on the transaction ledger.",
+    "description": "A customer's purchase activity is composed of individual card transactions; a transaction cannot exist without a paying customer.",
+    "evidence": [
+      "ev_transactions_fk_coverage"
+    ]
+  },
+  {
+    "id": "rel_gas_station_transaction",
+    "source": "term_gas_station",
+    "relation_type": "composition",
+    "target": "term_transaction",
+    "connection_condition": "A transaction is attributed to exactly one station through the station identifier carried on the transaction ledger.",
+    "description": "The purchase activity recorded at a station is composed of the transactions made there; a transaction occurs at one station and is meaningless without it.",
+    "evidence": [
+      "ev_transactions_fk_coverage"
+    ]
+  },
+  {
+    "id": "rel_product_transaction",
+    "source": "term_product",
+    "relation_type": "composition",
+    "target": "term_transaction",
+    "connection_condition": "A transaction is attributed to exactly one product through the product identifier carried on the transaction ledger.",
+    "description": "A transaction is composed of a purchase of one product; the purchased item is identified by the product dimension.",
+    "evidence": [
+      "ev_transactions_fk_coverage"
+    ]
+  },
+  {
+    "id": "rel_chain_gas_station",
+    "source": "term_gas_station_chain",
+    "relation_type": "composition",
+    "target": "term_gas_station",
+    "connection_condition": "A station carries one chain identifier, and many stations share the same chain identifier.",
+    "description": "A chain is composed of the stations that operate under it; a station's chain membership is recorded on the station itself.",
+    "evidence": [
+      "ev_chain11_stations"
+    ]
+  },
+  {
+    "id": "rel_transaction_timestamp_part",
+    "source": "term_transaction",
+    "relation_type": "composition",
+    "target": "term_transaction_timestamp",
+    "connection_condition": "The day and the clock time of a transaction are both held as separate attributes of the transaction row.",
+    "description": "The moment of a transaction is a component of the transaction record and cannot be read independently of it.",
+    "evidence": [
+      "ev_transactions_time_window",
+      "ev_transactions_time_format"
+    ]
+  },
+  {
+    "id": "rel_gas_consumption_peak_month",
+    "source": "term_gas_consumption",
+    "relation_type": "derivation",
+    "target": "term_peak_consumption_month",
+    "connection_condition": "Monthly consumption totals are aggregated over the analysed scope and the greatest month is selected.",
+    "description": "The peak consumption month is derived from monthly consumption by taking the month with the largest aggregated consumption within the period.",
+    "evidence": [
+      "ev_sme_2013_monthly"
+    ]
+  },
+  {
+    "id": "rel_gas_consumption_avg_monthly",
+    "source": "term_gas_consumption",
+    "relation_type": "derivation",
+    "target": "term_average_monthly_consumption",
+    "connection_condition": "Monthly consumption values recorded within a year are averaged for the analysed scope and related to the twelve months of that year.",
+    "description": "Average monthly consumption is derived from the monthly consumption values of a year rather than stored as its own quantity.",
+    "evidence": [
+      "ev_yearmonth_sparse_coverage"
+    ]
+  },
+  {
+    "id": "rel_gas_consumption_annual_average",
+    "source": "term_gas_consumption",
+    "relation_type": "derivation",
+    "target": "term_annual_average_consumption",
+    "connection_condition": "Annual consumption of a set of customers is summed and divided by the number of customers in that set.",
+    "description": "Annual average consumption is derived by normalising the total annual consumption of a customer set by the size of that set.",
+    "evidence": [
+      "ev_sme_2013_monthly"
+    ]
+  },
+  {
+    "id": "rel_gas_consumption_growth",
+    "source": "term_gas_consumption",
+    "relation_type": "derivation",
+    "target": "term_consumption_growth_rate",
+    "connection_condition": "Annual consumption totals of two consecutive years are compared for the analysed scope.",
+    "description": "The percentage increase in consumption is derived from the annual consumption totals of two years rather than stored directly.",
+    "evidence": [
+      "ev_sme_2013_monthly"
+    ]
+  },
+  {
+    "id": "rel_gas_consumption_transaction",
+    "source": "term_gas_consumption",
+    "relation_type": "association",
+    "target": "term_transaction",
+    "connection_condition": "Indirect: both ledgers carry the same customer identifier, so the two activity streams can be related per customer, but they differ in grain, time coverage and measured quantity and no row-level correspondence exists.",
+    "description": "Metered gas consumption and station card transactions are two independently recorded views of the same customer base; they are related through the shared customer identifier but describe different phenomena at different grains.",
+    "evidence": [
+      "ev_customer_key_overlap",
+      "ev_transactions_time_window",
+      "ev_yearmonth_date_range"
+    ]
+  },
+  {
+    "id": "rel_segment_currency",
+    "source": "term_customer_segment",
+    "relation_type": "association",
+    "target": "term_payment_currency",
+    "connection_condition": "Both are attributes carried on the same customer row, so any cross-tabulation of segment and currency is available at customer grain.",
+    "description": "Segment and settlement currency are two customer attributes that the workload combines when comparing consumption across segments within one currency.",
+    "evidence": [
+      "ev_customer_segment_values",
+      "ev_customer_currency_values"
+    ]
+  },
+  {
+    "id": "rel_period_timestamp",
+    "source": "term_year_month_period",
+    "relation_type": "association",
+    "target": "term_transaction_timestamp",
+    "connection_condition": "Not equivalent: the consumption ledger holds a six-character year-month period while the transaction ledger holds a calendar day plus a separate clock time, so the two temporal encodings are not interchangeable and share no comparable value form.",
+    "description": "Both ledgers express when activity happened, but they record time at different granularities and in different encodings, which makes the shared column name a discovery hazard rather than a join key.",
+    "evidence": [
+      "ev_yearmonth_date_format",
+      "ev_transactions_time_format"
+    ]
+  }
+]

@@ -1,0 +1,408 @@
+[
+ {
+  "id": "superhero",
+  "name": "Superhero",
+  "type": "entity",
+  "definition": "A comic-book character recorded in this universe, identified by a superhero_name codename and optionally a real full_name, carrying biographical facets (gender, race, alignment, publisher, eye/skin colour, height, weight) plus rated attributes and superpowers.",
+  "scope": "The central entity of the database; every other fact is ultimately about a superhero.",
+  "aliases": [
+   "hero",
+   "heroes",
+   "superheroes",
+   "character",
+   "super hero"
+  ],
+  "evidence": [
+   "ev_row_counts",
+   "ev_schema_inventory"
+  ]
+ },
+ {
+  "id": "superhero_name",
+  "name": "Superhero Name",
+  "type": "concept",
+  "definition": "The codename that labels a superhero, e.g. '3-D Man', 'Copycat', 'Abomination'. This is the label a question uses when it says 'which superhero' or 'the superheroes'.",
+  "scope": "Identifying label column of the superhero table.",
+  "aliases": [
+   "super hero name",
+   "hero name",
+   "codename",
+   "name of the superhero"
+  ],
+  "evidence": [
+   "ev_identity_sample",
+   "ev_name_fields"
+  ]
+ },
+ {
+  "id": "full_name",
+  "name": "Full Name",
+  "type": "concept",
+  "definition": "The real-world personal name recorded for a superhero, e.g. 'Charles Chandler' for 3-D Man, 'Emil Blonsky' for Abomination. Distinct from superhero_name.",
+  "scope": "Secondary identifying label; frequently not recorded.",
+  "aliases": [
+   "real name",
+   "civilian name",
+   "full name of superhero"
+  ],
+  "evidence": [
+   "ev_name_fields",
+   "ev_identity_sample"
+  ]
+ },
+ {
+  "id": "superhero_id",
+  "name": "Superhero Identifier",
+  "type": "concept",
+  "definition": "The numeric primary key that identifies a superhero row, e.g. hero ID 1 is 3-D Man.",
+  "scope": "Primary key of the superhero table.",
+  "aliases": [
+   "hero id",
+   "id of the hero",
+   "heroes with ID",
+   "superhero id"
+  ],
+  "evidence": [
+   "ev_identity_sample",
+   "ev_referential_integrity"
+  ]
+ },
+ {
+  "id": "hero_id",
+  "name": "Hero Reference",
+  "type": "concept",
+  "definition": "The superhero identifier as carried by the link tables that attach attributes and superpowers to a superhero.",
+  "scope": "Foreign-key usage of the superhero identifier in rating and power link rows.",
+  "aliases": [
+   "hero reference",
+   "heroid"
+  ],
+  "evidence": [
+   "ev_referential_integrity",
+   "ev_attribute_pair_uniqueness"
+  ]
+ },
+ {
+  "id": "superpower",
+  "name": "Superpower",
+  "type": "category",
+  "definition": "A named ability that a superhero may possess, e.g. 'Super Strength', 'Flight'. A superhero may possess several superpowers and a superpower may belong to many superheroes.",
+  "scope": "Capability dimension, attached to superheroes through a many-to-many link.",
+  "aliases": [
+   "power",
+   "powers",
+   "super power",
+   "superpowers",
+   "ability"
+  ],
+  "evidence": [
+   "ev_row_counts",
+   "ev_power_link_integrity"
+  ]
+ },
+ {
+  "id": "super_attribute",
+  "name": "Super Attribute",
+  "type": "dimension",
+  "definition": "One of the six named capability dimensions on which superheroes are rated: Intelligence, Strength, Speed, Durability, Power, Combat.",
+  "scope": "Rating dimension; each superhero has at most one rating per attribute.",
+  "aliases": [
+   "attribute",
+   "attributes",
+   "attribute name",
+   "stat",
+   "stats"
+  ],
+  "evidence": [
+   "ev_attribute_domain"
+  ]
+ },
+ {
+  "id": "super_attribute_rating",
+  "name": "Super Attribute Rating",
+  "type": "concept",
+  "definition": "A single recorded rating of one superhero on one super attribute; it links a superhero to an attribute and carries the numeric attribute_value.",
+  "scope": "Row-level concept grounded in the attribute-rating link table.",
+  "aliases": [
+   "hero attribute",
+   "attribute record",
+   "rating"
+  ],
+  "evidence": [
+   "ev_attribute_pair_uniqueness",
+   "ev_hero_coverage"
+  ]
+ },
+ {
+  "id": "attribute_value",
+  "name": "Attribute Value",
+  "type": "metric",
+  "definition": "The numeric score a superhero receives on a super attribute. Higher means more capable; the observed scale runs from 5 to 100, with Intelligence starting at 35.",
+  "scope": "Interpreted only together with a super attribute and a superhero.",
+  "aliases": [
+   "attribute value",
+   "value",
+   "score",
+   "strength value",
+   "durability value",
+   "rating value"
+  ],
+  "evidence": [
+   "ev_attribute_value_range",
+   "ev_strength_max"
+  ]
+ },
+ {
+  "id": "gender",
+  "name": "Gender",
+  "type": "dimension",
+  "definition": "The recorded gender category of a superhero: Male, Female, or N/A.",
+  "scope": "Categorical descriptor of a superhero.",
+  "aliases": [
+   "male",
+   "female",
+   "man",
+   "woman",
+   "gender"
+  ],
+  "evidence": [
+   "ev_gender_domain",
+   "ev_gender_distribution"
+  ]
+ },
+ {
+  "id": "alignment",
+  "name": "Alignment",
+  "type": "dimension",
+  "definition": "The moral alignment of a superhero: Good, Bad, Neutral, or N/A. 'Villain' corresponds to Bad and 'hero' to Good.",
+  "scope": "Categorical descriptor of a superhero.",
+  "aliases": [
+   "good",
+   "bad",
+   "neutral",
+   "villain",
+   "villains",
+   "evil",
+   "alignment"
+  ],
+  "evidence": [
+   "ev_alignment_domain",
+   "ev_skin_colour_green_alignment"
+  ]
+ },
+ {
+  "id": "publisher",
+  "name": "Publisher",
+  "type": "dimension",
+  "definition": "The publishing imprint or franchise that owns a superhero, e.g. 'Marvel Comics', 'DC Comics', 'Dark Horse Comics', 'Star Trek'.",
+  "scope": "Categorical descriptor linking a superhero to a publishing entity.",
+  "aliases": [
+   "publisher name",
+   "published by",
+   "comics publisher",
+   "imprint"
+  ],
+  "evidence": [
+   "ev_publisher_vocabulary",
+   "ev_publisher_distribution"
+  ]
+ },
+ {
+  "id": "publisher_id",
+  "name": "Publisher Identifier",
+  "type": "concept",
+  "definition": "The numeric primary key of a publisher record, e.g. Star Trek has publisher ID 20.",
+  "scope": "Primary key of the publisher table.",
+  "aliases": [
+   "publisher id",
+   "publisher identifier"
+  ],
+  "evidence": [
+   "ev_publisher_vocabulary"
+  ]
+ },
+ {
+  "id": "race",
+  "name": "Race",
+  "type": "dimension",
+  "definition": "The species or racial origin recorded for a superhero, e.g. Human, Mutant, Symbiote.",
+  "scope": "Categorical descriptor of a superhero.",
+  "aliases": [
+   "race",
+   "species"
+  ],
+  "evidence": [
+   "ev_row_counts"
+  ]
+ },
+ {
+  "id": "colour",
+  "name": "Colour",
+  "type": "dimension",
+  "definition": "The shared colour vocabulary used for superhero physical features. It includes the literal category 'No Colour', used when a feature is recorded as absent or colourless rather than unknown.",
+  "scope": "Shared vocabulary behind eye colour, hair colour and skin colour references.",
+  "aliases": [
+   "color",
+   "colour",
+   "colour value",
+   "no colour",
+   "no color"
+  ],
+  "evidence": [
+   "ev_colour_vocabulary",
+   "ev_colour_fk_usage"
+  ]
+ },
+ {
+  "id": "skin_colour",
+  "name": "Skin Colour",
+  "type": "dimension",
+  "definition": "The colour recorded for a superhero's skin; a superhero described as 'green-skinned' has skin colour Green.",
+  "scope": "Physical descriptor of a superhero.",
+  "aliases": [
+   "skin colour",
+   "skin color",
+   "green-skinned",
+   "skinned"
+  ],
+  "evidence": [
+   "ev_skin_colour_green_alignment",
+   "ev_colour_fk_usage"
+  ]
+ },
+ {
+  "id": "eye_colour",
+  "name": "Eye Colour",
+  "type": "dimension",
+  "definition": "The colour recorded for a superhero's eyes; 'no eye colour' corresponds to the recorded colour value 'No Colour'.",
+  "scope": "Physical descriptor of a superhero.",
+  "aliases": [
+   "eye colour",
+   "eye color",
+   "no eye color",
+   "no eye colour"
+  ],
+  "evidence": [
+   "ev_eye_colour_usage",
+   "ev_colour_vocabulary"
+  ]
+ },
+ {
+  "id": "height",
+  "name": "Height",
+  "type": "metric",
+  "definition": "The recorded height of a superhero, expressed in centimetres.",
+  "scope": "Physical measurement of a superhero; used for thresholds such as 'over 200cm' or ranges such as 170 to 190.",
+  "aliases": [
+   "height",
+   "height_cm",
+   "tall",
+   "tallest"
+  ],
+  "evidence": [
+   "ev_height_weight_extremes",
+   "ev_height_weight_null"
+  ]
+ },
+ {
+  "id": "weight",
+  "name": "Weight",
+  "type": "metric",
+  "definition": "The recorded weight of a superhero, expressed in kilograms.",
+  "scope": "Physical measurement of a superhero; used for averages and comparisons.",
+  "aliases": [
+   "weight",
+   "weight_kg",
+   "heavy",
+   "heaviest",
+   "average weight"
+  ],
+  "evidence": [
+   "ev_height_weight_extremes",
+   "ev_gender_distribution"
+  ]
+ },
+ {
+  "id": "superhero_count",
+  "name": "Superhero Count",
+  "type": "metric",
+  "definition": "The number of distinct superheroes matching a stated condition or belonging to a stated group.",
+  "scope": "Aggregate metric; counts superheroes, not ratings or powers.",
+  "aliases": [
+   "how many superheroes",
+   "number of superheroes",
+   "count of heroes",
+   "how many heroes"
+  ],
+  "evidence": [
+   "ev_row_counts",
+   "ev_hero_coverage"
+  ]
+ },
+ {
+  "id": "maximum_attribute_value",
+  "name": "Maximum Attribute Value",
+  "type": "metric",
+  "definition": "The largest attribute_value observed for a named super attribute within the superheroes in scope; used for phrasing such as 'most durability', 'highest strength', or 'the strongest'.",
+  "scope": "Derived metric, valid only for one named super attribute at a time.",
+  "aliases": [
+   "most durability",
+   "highest strength",
+   "maximum value",
+   "highest attribute value",
+   "the strongest",
+   "most powerful"
+  ],
+  "evidence": [
+   "ev_strength_max",
+   "ev_attribute_value_range"
+  ]
+ },
+ {
+  "id": "minimum_attribute_value",
+  "name": "Minimum Attribute Value",
+  "type": "metric",
+  "definition": "The smallest attribute_value observed for a named super attribute within the superheroes in scope; used for phrasing such as 'the slowest superhero'.",
+  "scope": "Derived metric, valid only for one named super attribute at a time.",
+  "aliases": [
+   "slowest",
+   "lowest value",
+   "minimum value",
+   "the weakest",
+   "least durable"
+  ],
+  "evidence": [
+   "ev_attribute_value_range"
+  ]
+ },
+ {
+  "id": "average_weight",
+  "name": "Average Weight",
+  "type": "metric",
+  "definition": "The mean weight in kilograms across the superheroes in scope; used for averages and for percentage-of-average thresholds.",
+  "scope": "Derived metric over a stated population of superheroes.",
+  "aliases": [
+   "average weight",
+   "mean weight",
+   "avg weight"
+  ],
+  "evidence": [
+   "ev_gender_distribution",
+   "ev_height_weight_extremes"
+  ]
+ },
+ {
+  "id": "gender_ratio",
+  "name": "Gender Ratio",
+  "type": "metric",
+  "definition": "The quotient between the number of male superheroes and the number of female superheroes in scope.",
+  "scope": "Derived metric over superhero counts grouped by gender.",
+  "aliases": [
+   "ratio between male and female",
+   "male to female ratio"
+  ],
+  "evidence": [
+   "ev_gender_distribution"
+  ]
+ }
+]

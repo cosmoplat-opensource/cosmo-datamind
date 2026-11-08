@@ -1,0 +1,269 @@
+[
+  {
+    "id": "rel_race_result_composition",
+    "source": "term_race",
+    "relation_type": "composition",
+    "target": "term_race_result",
+    "connection_condition": "results.raceId corresponds to races.raceId",
+    "description": "Race results are the component entries of a race; an entry cannot exist without the race it belongs to.",
+    "evidence": [
+      "ev_schema_tables"
+    ]
+  },
+  {
+    "id": "rel_qualifying_composition",
+    "source": "term_race",
+    "relation_type": "composition",
+    "target": "term_qualifying_result",
+    "connection_condition": "qualifying.raceId corresponds to races.raceId",
+    "description": "Qualifying records are component parts of the race weekend they belong to.",
+    "evidence": [
+      "ev_qualifying_time_format"
+    ]
+  },
+  {
+    "id": "rel_lap_record_composition",
+    "source": "term_race",
+    "relation_type": "composition",
+    "target": "term_lap_record",
+    "connection_condition": "lapTimes.raceId corresponds to races.raceId",
+    "description": "Lap records are component parts of the race in which the laps were driven.",
+    "evidence": [
+      "ev_lap_time_ms"
+    ]
+  },
+  {
+    "id": "rel_driver_result_composition",
+    "source": "term_driver",
+    "relation_type": "composition",
+    "target": "term_race_result",
+    "connection_condition": "results.driverId corresponds to drivers.driverId",
+    "description": "A race result is one component of a driver's participation record; it has no meaning without its driver.",
+    "evidence": [
+      "ev_driver_identifiers"
+    ]
+  },
+  {
+    "id": "rel_constructor_result_composition",
+    "source": "term_constructor",
+    "relation_type": "composition",
+    "target": "term_race_result",
+    "connection_condition": "results.constructorId corresponds to constructors.constructorId",
+    "description": "A race result names exactly one constructor as a component of the entry.",
+    "evidence": [
+      "ev_schema_tables"
+    ]
+  },
+  {
+    "id": "rel_constructor_qualifying_composition",
+    "source": "term_constructor",
+    "relation_type": "composition",
+    "target": "term_qualifying_result",
+    "connection_condition": "qualifying.constructorId corresponds to constructors.constructorId",
+    "description": "A qualifying record names exactly one constructor as a component of the entry.",
+    "evidence": [
+      "ev_qualifying_time_format"
+    ]
+  },
+  {
+    "id": "rel_season_race_composition",
+    "source": "term_season",
+    "relation_type": "composition",
+    "target": "term_race",
+    "connection_condition": "races.year corresponds to seasons.year",
+    "description": "A season is composed of the races scheduled in its year; a race cannot exist outside a season.",
+    "evidence": [
+      "ev_schema_tables"
+    ]
+  },
+  {
+    "id": "rel_race_circuit_association",
+    "source": "term_race",
+    "relation_type": "association",
+    "target": "term_circuit",
+    "connection_condition": "races.circuitId corresponds to circuits.circuitId; the connection is indirect in that a race is hosted at a circuit rather than made of one",
+    "description": "A race is hosted at a circuit. A race is not a kind of circuit and is not composed of one, so the relationship is a host association.",
+    "evidence": [
+      "ev_circuit_coords"
+    ]
+  },
+  {
+    "id": "rel_driver_full_name_derivation",
+    "source": "term_driver",
+    "relation_type": "derivation",
+    "target": "term_driver_full_name",
+    "connection_condition": "",
+    "description": "The full name of a driver is derived by concatenating the driver's forename and surname in that order.",
+    "evidence": [
+      "ev_driver_identifiers"
+    ]
+  },
+  {
+    "id": "rel_driver_age_derivation",
+    "source": "term_driver_dob",
+    "relation_type": "derivation",
+    "target": "term_driver_age",
+    "connection_condition": "",
+    "description": "Age is computed from the date of birth relative to a reference date; the youngest driver therefore has the maximum date of birth and the oldest has the minimum.",
+    "evidence": [
+      "ev_dob"
+    ]
+  },
+  {
+    "id": "rel_fastest_lap_derivation",
+    "source": "term_lap_time",
+    "relation_type": "derivation",
+    "target": "term_fastest_lap_time",
+    "connection_condition": "",
+    "description": "The fastest lap time of an entry is the minimum of that entry's individual lap times, the same quantity that is also stored per entry in results.fastestLapTime.",
+    "evidence": [
+      "ev_fastest_lap",
+      "ev_lap_time_ms"
+    ]
+  },
+  {
+    "id": "rel_fastest_lap_number_derivation",
+    "source": "term_lap_number",
+    "relation_type": "derivation",
+    "target": "term_fastest_lap_number",
+    "connection_condition": "",
+    "description": "The fastest lap number is the lap ordinal at which the entry's minimum lap time was set.",
+    "evidence": [
+      "ev_fastest_lap"
+    ]
+  },
+  {
+    "id": "rel_race_winner_derivation",
+    "source": "term_finish_position",
+    "relation_type": "derivation",
+    "target": "term_race_winner",
+    "connection_condition": "",
+    "description": "The race winner is the entry whose finishing position is 1 in that race.",
+    "evidence": [
+      "ev_winner_time_format"
+    ]
+  },
+  {
+    "id": "rel_season_champion_derivation",
+    "source": "term_championship_position",
+    "relation_type": "derivation",
+    "target": "term_season_champion",
+    "connection_condition": "",
+    "description": "The season champion is the driver or constructor holding championship position 1 in the standings after the final race of the season.",
+    "evidence": [
+      "ev_standings_grain"
+    ]
+  },
+  {
+    "id": "rel_completion_status_association",
+    "source": "term_result_status",
+    "relation_type": "association",
+    "target": "term_race_completion",
+    "connection_condition": "an entry's completion is visible both in its results.time and in its finishing status, and the two usually agree because statusId 1 means 'Finished'",
+    "description": "Status and completion describe the same outcome from two angles: whether the entry ran to the end and why it did not.",
+    "evidence": [
+      "ev_result_time_null",
+      "ev_status_domain"
+    ]
+  },
+  {
+    "id": "rel_completion_rate_derivation",
+    "source": "term_race_completion",
+    "relation_type": "derivation",
+    "target": "term_race_completion_rate",
+    "connection_condition": "",
+    "description": "A completion rate is derived by dividing the number of completed entries by the total entries in scope and expressing the result as a percentage.",
+    "evidence": [
+      "ev_result_time_null"
+    ]
+  },
+  {
+    "id": "rel_driver_nationality_association",
+    "source": "term_driver",
+    "relation_type": "association",
+    "target": "term_driver_nationality",
+    "connection_condition": "nationality is an attribute column on the driver row rather than a reference to a country table",
+    "description": "A driver has a nationality recorded as a demonym string; there is no country dimension table to join.",
+    "evidence": [
+      "ev_nationality_values"
+    ]
+  },
+  {
+    "id": "rel_constructor_nationality_association",
+    "source": "term_constructor",
+    "relation_type": "association",
+    "target": "term_constructor_nationality",
+    "connection_condition": "nationality is an attribute column on the constructor row",
+    "description": "A constructor has a nationality recorded as a demonym string drawn from the same vocabulary as driver nationality.",
+    "evidence": [
+      "ev_nationality_values"
+    ]
+  },
+  {
+    "id": "rel_circuit_country_association",
+    "source": "term_circuit",
+    "relation_type": "association",
+    "target": "term_circuit_country",
+    "connection_condition": "country is an attribute column on the circuit row",
+    "description": "A circuit lies in a country recorded as a plain country name on the circuit row.",
+    "evidence": [
+      "ev_circuit_coords"
+    ]
+  },
+  {
+    "id": "rel_driver_identifier_equivalence",
+    "source": "term_driver_reference_name",
+    "relation_type": "equivalence",
+    "target": "term_driver_code",
+    "connection_condition": "drivers.driverRef and drivers.code are two columns of the same drivers row",
+    "description": "The reference name and the three-letter code are alternative identifiers for the same driver, asked for interchangeably as 'reference name' or 'abbreviated code'.",
+    "evidence": [
+      "ev_driver_identifiers"
+    ]
+  },
+  {
+    "id": "rel_race_winner_constructor_association",
+    "source": "term_race_winner",
+    "relation_type": "association",
+    "target": "term_constructor",
+    "connection_condition": "the constructor of the winning entry is the value of results.constructorId on the row whose position is 1",
+    "description": "A race winner drives for a constructor, so a question about the constructor of a race champion is answered from the winning entry's constructor reference.",
+    "evidence": [
+      "ev_winner_time_format"
+    ]
+  },
+  {
+    "id": "rel_points_wins_association",
+    "source": "term_points",
+    "relation_type": "association",
+    "target": "term_wins",
+    "connection_condition": "both are accumulated per season in the standings tables and both are also derivable entry by entry from results",
+    "description": "Wins and points are the two correlated championship measures, accumulated over the same season standings.",
+    "evidence": [
+      "ev_points_grain",
+      "ev_standings_grain"
+    ]
+  },
+  {
+    "id": "rel_race_total_time_winner_association",
+    "source": "term_race_total_time",
+    "relation_type": "association",
+    "target": "term_race_winner",
+    "connection_condition": "only the winning entry carries a total race duration in results.time, so the value identifies the winner",
+    "description": "The recorded total race time distinguishes the winner from the rest of the field, whose times are gaps.",
+    "evidence": [
+      "ev_winner_time_format"
+    ]
+  },
+  {
+    "id": "rel_qualifying_position_time_association",
+    "source": "term_qualifying_position",
+    "relation_type": "association",
+    "target": "term_qualifying_time",
+    "connection_condition": "the classification position orders the drivers whose segment times are recorded on the same qualifying row",
+    "description": "The qualifying classification summarises the segment times of the same qualifying record.",
+    "evidence": [
+      "ev_qualifying_time_format"
+    ]
+  }
+]

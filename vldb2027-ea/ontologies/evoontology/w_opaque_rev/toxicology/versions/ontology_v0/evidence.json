@@ -1,0 +1,106 @@
+[
+  {
+    "id": "evidence_table_inventory",
+    "source": "toxicology SQLite database",
+    "query": "SELECT 'tab01', COUNT(*) FROM tab01 UNION ALL SELECT 'tab02', COUNT(*) FROM tab02 UNION ALL SELECT 'tab03', COUNT(*) FROM tab03 UNION ALL SELECT 'tab04', COUNT(*) FROM tab04;",
+    "result": "tab01 = 12,333 rows; tab02 = 12,379 rows; tab03 = 24,758 rows; tab04 = 343 rows",
+    "validation_method": "Read-only aggregate row counts on the specified SQLite file",
+    "timestamp": "2026-11-06T01:45:00Z"
+  },
+  {
+    "id": "evidence_atom_id_format",
+    "source": "toxicology SQLite database, tab01",
+    "query": "SELECT COUNT(*) FROM tab01 WHERE fld001 NOT GLOB 'TR[0-9][0-9][0-9]_[0-9]*'; SELECT COUNT(*) FROM (SELECT fld002, COUNT(*) c, MAX(CAST(substr(fld001, length(fld002)+2) AS INTEGER)) m FROM tab01 GROUP BY fld002 HAVING c <> m);",
+    "result": "0 identifiers deviate from the molecule-ordinal format; 0 molecules have a maximum ordinal different from their atom count, so ordinals are contiguous from 1 to the atom count",
+    "validation_method": "Identifier pattern check and per-molecule ordinal contiguity check",
+    "timestamp": "2026-11-06T01:45:00Z"
+  },
+  {
+    "id": "evidence_atom_ordinal_digits",
+    "source": "toxicology SQLite database, tab01",
+    "query": "SELECT COUNT(*) FROM tab01 WHERE fld001 LIKE '%\\_4' ESCAPE '\\'; SELECT COUNT(*) FROM tab01 WHERE substr(fld001,7,1)='4'; SELECT MIN(LENGTH(fld001)), MAX(LENGTH(fld001)) FROM tab01;",
+    "result": "444 atoms have ordinal exactly 4; 1,061 atoms have the character '4' at identifier position 7; identifier lengths range from 7 to 9, confirming that ordinals can have multiple digits",
+    "validation_method": "Comparison of exact-ordinal matching against first-character matching, plus identifier length distribution",
+    "timestamp": "2026-11-06T01:45:00Z"
+  },
+  {
+    "id": "evidence_bond_id_format",
+    "source": "toxicology SQLite database, tab02",
+    "query": "SELECT COUNT(*) FROM tab02 WHERE fld004 NOT GLOB 'TR[0-9][0-9][0-9]_[0-9]*_[0-9]*';",
+    "result": "0; every bond identifier has the form molecule identifier, atom ordinal, atom ordinal",
+    "validation_method": "Identifier pattern check over all 12,379 bond rows",
+    "timestamp": "2026-11-06T01:45:00Z"
+  },
+  {
+    "id": "evidence_bond_order_domain",
+    "source": "toxicology SQLite database, tab02",
+    "query": "SELECT fld005, COUNT(*) FROM tab02 GROUP BY fld005; SELECT COUNT(DISTINCT fld002) FROM tab02 WHERE fld005='='; SELECT COUNT(DISTINCT fld002) FROM tab02 WHERE fld005='#';",
+    "result": "'-' = 10,528 bonds; '=' = 1,844 bonds; '#' = 6 bonds; NULL = 1 bond. 370 molecules contain at least one double bond and 4 molecules contain at least one triple bond",
+    "validation_method": "Value-domain aggregation and per-molecule presence check",
+    "timestamp": "2026-11-06T01:45:00Z"
+  },
+  {
+    "id": "evidence_bond_type_missing",
+    "source": "toxicology SQLite database, tab02",
+    "query": "SELECT * FROM tab02 WHERE fld005 IS NULL;",
+    "result": "One row: bond TR345_7_10 of molecule TR345 with a NULL bond order",
+    "validation_method": "Direct inspection of rows outside the known bond order domain",
+    "timestamp": "2026-11-06T01:45:00Z"
+  },
+  {
+    "id": "evidence_carcinogenicity_domain",
+    "source": "toxicology SQLite database, tab04",
+    "query": "SELECT fld007, COUNT(*) FROM tab04 GROUP BY fld007; SELECT COUNT(*) FROM tab04 WHERE fld007 IS NULL;",
+    "result": "'+' = 152 molecules; '-' = 191 molecules; 0 NULL labels",
+    "validation_method": "Value-domain aggregation on the molecule label table",
+    "timestamp": "2026-11-06T01:45:00Z"
+  },
+  {
+    "id": "evidence_molecule_population",
+    "source": "toxicology SQLite database, tab01, tab02, tab04",
+    "query": "SELECT COUNT(*) FROM tab04; SELECT COUNT(DISTINCT fld002) FROM tab01; SELECT COUNT(DISTINCT fld002) FROM tab02; SELECT COUNT(DISTINCT fld002) FROM tab01 WHERE fld002 NOT IN (SELECT fld002 FROM tab04);",
+    "result": "343 labeled molecules; 444 molecules in the atom data; 444 molecules in the bond data; 101 molecules have no label row. The atom and bond molecule sets are identical",
+    "validation_method": "Population comparison between structure tables and label table",
+    "timestamp": "2026-11-06T01:45:00Z"
+  },
+  {
+    "id": "evidence_incidence_symmetry",
+    "source": "toxicology SQLite database, tab03",
+    "query": "SELECT cnt, COUNT(*) FROM (SELECT fld004, COUNT(*) cnt FROM tab03 GROUP BY fld004) GROUP BY cnt; SELECT COUNT(*) FROM tab03 t WHERE NOT EXISTS (SELECT 1 FROM tab03 u WHERE u.fld001=t.fld006 AND u.fld006=t.fld001 AND u.fld004=t.fld004);",
+    "result": "Every one of the 12,379 bonds has exactly 2 incidence rows; 0 bonds lack a reverse row. There are no self-loops",
+    "validation_method": "Per-bond row count and reverse-pair existence check",
+    "timestamp": "2026-11-06T01:45:00Z"
+  },
+  {
+    "id": "evidence_incidence_integrity",
+    "source": "toxicology SQLite database, tab01, tab02, tab03",
+    "query": "SELECT COUNT(*) FROM tab03 WHERE fld001 NOT IN (SELECT fld001 FROM tab01) OR fld006 NOT IN (SELECT fld001 FROM tab01); SELECT COUNT(*) FROM tab03 t JOIN tab01 a ON a.fld001=t.fld001 JOIN tab01 b ON b.fld001=t.fld006 WHERE a.fld002<>b.fld002; SELECT COUNT(*) FROM tab02 WHERE fld004 NOT IN (SELECT fld004 FROM tab03);",
+    "result": "0 invalid atom references; 0 incidence rows linking atoms of different molecules; 0 bonds absent from the connectivity relation",
+    "validation_method": "Referential integrity and cross-molecule endpoint checks",
+    "timestamp": "2026-11-06T01:45:00Z"
+  },
+  {
+    "id": "evidence_unconnected_atoms",
+    "source": "toxicology SQLite database, tab01, tab03",
+    "query": "SELECT COUNT(*) FROM tab01 WHERE fld001 NOT IN (SELECT fld001 FROM tab03); SELECT fld003, COUNT(*) FROM tab01 WHERE fld001 NOT IN (SELECT fld001 FROM tab03) GROUP BY fld003;",
+    "result": "49 atoms have no incidence record; elements are na = 35, h = 7, cl = 5, k = 1, zn = 1",
+    "validation_method": "Set difference between the atom table and both endpoint columns of the connectivity relation",
+    "timestamp": "2026-11-06T01:45:00Z"
+  },
+  {
+    "id": "evidence_element_domain",
+    "source": "toxicology SQLite database, tab01",
+    "query": "SELECT COUNT(DISTINCT fld003) FROM tab01; SELECT fld003, COUNT(*) FROM tab01 GROUP BY fld003 ORDER BY COUNT(*) DESC; SELECT COUNT(*) FROM tab01 WHERE fld003 <> lower(fld003);",
+    "result": "21 distinct symbols, all lowercase: h = 5,518; c = 4,605; o = 1,043; n = 480; cl = 429; s = 113; br = 47; na = 35; p = 31; f = 11; i = 6; si = 4; sn = 2; cu = 2; zn = 1; y = 1; te = 1; pb = 1; k = 1; ca = 1; b = 1",
+    "validation_method": "Value-domain aggregation and lowercase consistency check",
+    "timestamp": "2026-11-06T01:45:00Z"
+  },
+  {
+    "id": "evidence_molecule_size",
+    "source": "toxicology SQLite database, tab01, tab02",
+    "query": "SELECT MIN(c), MAX(c), ROUND(AVG(c),2) FROM (SELECT fld002, COUNT(*) c FROM tab01 GROUP BY fld002); SELECT MIN(c), MAX(c) FROM (SELECT fld002, COUNT(*) c FROM tab02 GROUP BY fld002);",
+    "result": "Atoms per molecule: minimum 4, maximum 174, average 27.78. Bonds per molecule: minimum 2, maximum 175",
+    "validation_method": "Per-molecule aggregation ranges",
+    "timestamp": "2026-11-06T01:45:00Z"
+  }
+]

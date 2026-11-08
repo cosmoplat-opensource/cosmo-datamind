@@ -1,0 +1,154 @@
+[
+  {
+    "id": "evidence_001",
+    "source": "formula_1 sqlite (read-only)",
+    "query": "schema dump via sqlite_master and SELECT COUNT(*) per table",
+    "result": "13 tables: circuits 72, constructors 208, drivers 840, seasons 68, races 976, constructorResults 11082, constructorStandings 11836, driverStandings 31578, lapTimes 420369, pitStops 6070, qualifying 7397, status 134, results 23657. drivers, constructors and circuits each carry a url column; seasons carries year and url.",
+    "validation_method": "read-only schema dump plus per-table row count",
+    "timestamp": "2026-10-09"
+  },
+  {
+    "id": "evidence_002",
+    "source": "formula_1 sqlite (read-only)",
+    "query": "SELECT statusId, status FROM status ORDER BY statusId",
+    "result": "134 rows. statusId 1 = 'Finished', 2 = 'Disqualified', 3 = 'Accident', 4 = 'Collision', 5 = 'Engine', 11 = '+1 Lap', 20 = 'Spun off', 81 = 'Did not qualify', 104 = 'Fatal accident', 130 = 'Collision damage'. 1007 result entries carry statusId 3.",
+    "validation_method": "full enumeration of the lookup table and a counting join to results",
+    "timestamp": "2026-10-09"
+  },
+  {
+    "id": "evidence_003",
+    "source": "formula_1 sqlite (read-only)",
+    "query": "SELECT CASE WHEN time LIKE '+%' THEN 'plus' WHEN time LIKE '%:%' THEN 'hms' ELSE 'other' END fmt, COUNT(*) FROM results WHERE time IS NOT NULL GROUP BY fmt; and SELECT COUNT(*) FROM results WHERE time IS NOT NULL AND time NOT LIKE '+%' AND position IS NOT 1; and SELECT raceId, position, time FROM results WHERE position=1 LIMIT 5",
+    "result": "5961 result entries have a time. 4989 begin with '+' (values such as '+0.807', '+1:08.130'); 972 do not; the non-prefixed rows form exactly one row per race event that has results, are always the first-placed entries in their race, and use the form '1:34:50.616'. Zero non-prefixed rows are outside first place. Fractional precision of the absolute values: 611 rows with three decimals, 118 with two, 243 with one.",
+    "validation_method": "format partition, join to finishing position, and per-race grouping",
+    "timestamp": "2026-10-09"
+  },
+  {
+    "id": "evidence_004",
+    "source": "formula_1 sqlite (read-only)",
+    "query": "SELECT statusId, COUNT(*) n, SUM(CASE WHEN time IS NOT NULL THEN 1 ELSE 0 END) time_notnull FROM results GROUP BY statusId ORDER BY n DESC LIMIT 12",
+    "result": "statusId 1 'Finished': 5966 rows, 5956 with a time. statusId 11 '+1 Lap': 3265 rows, 1 with a time. Every other status code has zero rows with a time. So the time-based and status-based readings of finishing overlap almost completely but differ on lapped classifications and on ten finished rows.",
+    "validation_method": "cross-tabulation of status against presence of a time",
+    "timestamp": "2026-10-09"
+  },
+  {
+    "id": "evidence_005",
+    "source": "formula_1 sqlite (read-only)",
+    "query": "SELECT COUNT(*) FROM results WHERE position IS NULL; and SELECT raceId,driverId,position,positionText,positionOrder,time,statusId FROM results WHERE position IS NULL LIMIT 6",
+    "result": "10528 of 23657 result entries have no finishing position; in those rows positionText holds a marker such as 'R' while positionOrder still holds an ordering value (9, 10, 11 in the sampled rows). 13129 entries have a finishing position.",
+    "validation_method": "null count plus inspection of unclassified rows",
+    "timestamp": "2026-10-09"
+  },
+  {
+    "id": "evidence_006",
+    "source": "formula_1 sqlite (read-only)",
+    "query": "SELECT typeof(fastestLapSpeed), COUNT(*) FROM results GROUP BY 1; and SELECT raceId,driverId,fastestLap,rank,fastestLapTime,fastestLapSpeed FROM results WHERE fastestLapSpeed IS NOT NULL LIMIT 6; and SELECT COUNT(DISTINCT raceId) FROM results WHERE rank=1",
+    "result": "fastestLapSpeed is stored with SQLite type text in 5268 rows and is null in 18389. Sampled values are decimal-looking strings such as '218.300' and '212.974'. fastestLap holds the lap number and rank holds the within-race rank of the quickest lap, with rank 1 denoting the fastest lap of the race; rank 1 appears for only 256 distinct race events.",
+    "validation_method": "storage-type inspection, value sampling and distinct-race counting",
+    "timestamp": "2026-10-09"
+  },
+  {
+    "id": "evidence_007",
+    "source": "formula_1 sqlite (read-only)",
+    "query": "SELECT name, COUNT(*) FROM races GROUP BY name ORDER BY 2 DESC LIMIT 8; SELECT COUNT(*) FROM races WHERE name='Canadian Grand Prix'; SELECT COUNT(DISTINCT name) FROM races",
+    "result": "976 race events carry only 42 distinct names. 'Canadian Grand Prix' occurs 48 times, 'Italian Grand Prix' 68 times, 'British Grand Prix' 68 times, 'Monaco Grand Prix' 64 times. Race keys run from 1 to 982.",
+    "validation_method": "group-by cardinality comparison",
+    "timestamp": "2026-10-09"
+  },
+  {
+    "id": "evidence_008",
+    "source": "formula_1 sqlite (read-only)",
+    "query": "SELECT 'lapTimes', MIN(raceId), MAX(raceId), COUNT(DISTINCT raceId) FROM lapTimes UNION ALL SELECT 'pitStops', ... UNION ALL SELECT 'qualifying', ... UNION ALL SELECT 'results', ...; and year ranges joined to races",
+    "result": "results covers 970 race events; qualifying covers 339 race events starting with the 1994 season; lapTimes covers 389 race events starting with the 1996 season; pitStops covers only 131 race events, all with race keys from the recent era. seasons holds 68 rows spanning 1950 to 2017.",
+    "validation_method": "min/max keys and distinct race counts, joined to season years",
+    "timestamp": "2026-10-09"
+  },
+  {
+    "id": "evidence_009",
+    "source": "formula_1 sqlite (read-only)",
+    "query": "SELECT position,q1,q2,q3 FROM qualifying WHERE raceId=20 ORDER BY position; and SELECT COUNT(*) total, SUM(CASE WHEN q1 IS NULL THEN 1 ELSE 0 END), SUM(CASE WHEN q2 IS NULL THEN 1 ELSE 0 END), SUM(CASE WHEN q3 IS NULL THEN 1 ELSE 0 END) FROM qualifying; and SELECT q1 FROM qualifying WHERE q1 IS NOT NULL ORDER BY q1 LIMIT 3",
+    "result": "For race 20 the 22 rows split cleanly: positions 1-10 have all three segments, positions 11-16 have the first two with the third empty, positions 17-22 have only the first. The rows with an empty second segment are exactly the six slowest first-segment times of that session. Over the whole table: 7397 rows, 117 empty first segment, 3807 empty second, 5251 empty third. Ordering the first segment as text yields '16:42.640' before '1:05.064', and the table contains one value '1:43.69' whose fractional part is short by one digit.",
+    "validation_method": "ordered inspection of a full session, null counts, and lexical-versus-temporal ordering probe",
+    "timestamp": "2026-10-09"
+  },
+  {
+    "id": "evidence_010",
+    "source": "formula_1 sqlite (read-only)",
+    "query": "SELECT raceId,driverId,stop,lap,time,duration,milliseconds FROM pitStops LIMIT 5; and SELECT COUNT(*) total, SUM(CASE WHEN duration IS NULL OR duration='' THEN 1 ELSE 0 END), SUM(CASE WHEN milliseconds IS NULL THEN 1 ELSE 0 END) FROM pitStops",
+    "result": "6070 stop rows, none missing a duration or a millisecond value; duration is a text duration such as '23.227' or '12.897' with its millisecond equivalent, and time is a clock timestamp such as '17:28:24'. Each row is keyed by race, driver and stop sequence.",
+    "validation_method": "null counts plus format sampling",
+    "timestamp": "2026-10-09"
+  },
+  {
+    "id": "evidence_011",
+    "source": "formula_1 sqlite (read-only)",
+    "query": "SELECT nationality, COUNT(*) FROM drivers GROUP BY nationality ORDER BY 2 DESC LIMIT 8; the same for constructors; SELECT country, COUNT(*) FROM circuits GROUP BY country",
+    "result": "drivers.nationality holds demonyms: British 162, American 157, Italian 99, French 72, German 49. constructors.nationality uses the same style: British 85, American 39, Italian 29. circuits.country holds country names across 32 distinct values, including 'UK', 'Austria', 'Malaysia' and 'Bahrain'. The two vocabularies never coincide for the same country, for example British against UK.",
+    "validation_method": "distinct value listings per table and cross-vocabulary comparison",
+    "timestamp": "2026-10-09"
+  },
+  {
+    "id": "evidence_012",
+    "source": "formula_1 sqlite (read-only)",
+    "query": "SELECT MIN(dob),MAX(dob),typeof(dob),COUNT(*) FROM drivers; SELECT driverId,driverRef,forename,surname FROM drivers WHERE surname='Hamilton'; SELECT COUNT(*) FROM drivers WHERE nationality='German' AND CAST(strftime('%Y',dob) AS INTEGER) BETWEEN 1980 AND 1985",
+    "result": "840 drivers; dob is text in YYYY-MM-DD form ranging from 1896-12-28 to 1998-10-29. Names are stored as separate given-name and family-name columns; the family name 'Hamilton' matches two drivers, the champion of that name and an earlier compatriot, so the family name is not a unique identifier. Five German drivers were born between 1980 and 1985.",
+    "validation_method": "range and storage-type inspection, duplicate-surname probe, and a birth-year filter",
+    "timestamp": "2026-10-09"
+  },
+  {
+    "id": "evidence_013",
+    "source": "formula_1 sqlite (read-only)",
+    "query": "SELECT circuitId,circuitRef,name,location,country,lat,lng,alt FROM circuits LIMIT 5; SELECT ... WHERE country='Austria'; SELECT ... WHERE name='Silverstone Circuit'; SELECT COUNT(DISTINCT country), COUNT(DISTINCT location), SUM(lat IS NULL), SUM(country IS NULL OR country='') FROM circuits; SELECT COUNT(*) FROM races WHERE circuitId IN (SELECT circuitId FROM circuits WHERE country='Austria')",
+    "result": "72 circuits; latitude, longitude and country are populated for all of them. 32 distinct countries against 69 distinct locations, so a country is coarser than a location. 'Silverstone Circuit' sits in location 'Silverstone', country 'UK', at 52.0786, -1.01694. Three circuits lie in Austria (A1-Ring, Zeltweg, Red Bull Ring), and 30 race events were held at Austrian circuits.",
+    "validation_method": "null counts, targeted lookups, and a joined race count",
+    "timestamp": "2026-10-09"
+  },
+  {
+    "id": "evidence_014",
+    "source": "formula_1 sqlite (read-only)",
+    "query": "SELECT MIN(points),MAX(points),COUNT(*),SUM(CASE WHEN points=0 THEN 1 ELSE 0 END) FROM results; SELECT raceId,constructorId,points,status FROM constructorResults WHERE raceId=9 ORDER BY points DESC; SELECT driverStandingsId,raceId,driverId,points,position,positionText,wins FROM driverStandings LIMIT 4; row counts of both standings tables",
+    "result": "results.points runs 0.0-50.0 over 23657 rows with 17037 zeros. constructorResults.points is per constructor per race (11082 rows); for race 9 the values descend 18.0, 7.0, 6.0, 5.0, 2.0, 1.0 followed by six zero rows. driverStandings.points is cumulative per driver after each race (31578 rows over 970 race events; the first race shows 10.0, 8.0, 6.0, 5.0 with positions 1 to 4 in order). constructorStandings has 11836 rows over 906 race events. constructorResults.status is empty in 11065 rows and holds a disqualification marker in 17.",
+    "validation_method": "per-table sampling, zero counts and row-count comparison across the four points grains",
+    "timestamp": "2026-10-09"
+  },
+  {
+    "id": "evidence_015",
+    "source": "formula_1 sqlite (read-only)",
+    "query": "SELECT MIN(date),MAX(date) FROM races; and a filter selecting races in the earliest year and month",
+    "result": "race dates are text in YYYY-MM-DD form running from 1950-05-13 to 2017-11-26. The earliest year and month is the fifth month of 1950 and contains three race events. Race years span 1950 to 2017 across 68 distinct seasons.",
+    "validation_method": "range inspection and a filtered earliest-period query",
+    "timestamp": "2026-10-09"
+  },
+  {
+    "id": "evidence_016",
+    "source": "formula_1 sqlite (read-only)",
+    "query": "declared foreign keys in the schema dump",
+    "result": "Declared references: races.year to seasons.year, races.circuitId to circuits.circuitId, results.raceId/driverId/constructorId/statusId to races/drivers/constructors/status, qualifying and lapTimes and pitStops keyed by race and driver, constructorResults and constructorStandings to races and constructors, driverStandings to races and drivers. results also carries a grid column separate from position.",
+    "validation_method": "schema inspection of declared constraints",
+    "timestamp": "2026-10-09"
+  },
+  {
+    "id": "evidence_017",
+    "source": "formula_1 sqlite (read-only)",
+    "query": "PRAGMA foreign_key_check; and SELECT COUNT(*), COUNT(DISTINCT name), MIN(year), MAX(year) FROM races WHERE circuitId NOT IN (SELECT circuitId FROM circuits)",
+    "result": "The integrity check reports 22 violations, all of the form races referencing circuits with a missing parent key, and the missing key is the value 1, which no circuit row carries because the circuit key sequence starts at 2. All 22 affected race events share a single name, the Australian Grand Prix, and span the 1996 to 2017 seasons.",
+    "validation_method": "referential integrity check plus characterisation of the offending rows",
+    "timestamp": "2026-10-09"
+  },
+  {
+    "id": "evidence_018",
+    "source": "formula_1 sqlite (read-only)",
+    "query": "SELECT raceId, COUNT(*) FROM results WHERE time IS NOT NULL AND time NOT LIKE '+%' GROUP BY raceId HAVING COUNT(*)>1; then joining those races to races and inspecting the tied rows",
+    "result": "Three race events have two entries carrying an absolute time. All three pairs are classified first with the same car number and the same constructor in the same race: the 1951 French Grand Prix, the 1956 Argentine Grand Prix and the 1957 British Grand Prix. Their absolute times are written with a single decimal, for example '3:06:37.8'.",
+    "validation_method": "grouped anomaly detection followed by inspection of the affected rows",
+    "timestamp": "2026-10-09"
+  },
+  {
+    "id": "evidence_019",
+    "source": "formula_1 sqlite (read-only)",
+    "query": "SELECT MIN(time), MAX(time) FROM lapTimes ORDER BY milliseconds LIMIT 2 / DESC LIMIT 2; and null counts over lapTimes",
+    "result": "420369 lap rows, none with a missing time, millisecond value or running position. Lap times are text durations from '1:07.411' up to '2:05:07.547', so a lap record can span more than an hour in the early part of the covered range and the column mixes minute-scale and hour-scale values.",
+    "validation_method": "extremes by millisecond ordering plus null counts",
+    "timestamp": "2026-10-09"
+  }
+]

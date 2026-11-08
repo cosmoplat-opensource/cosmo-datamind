@@ -1,0 +1,670 @@
+[
+  {
+    "confidence": "high",
+    "constraint_type": "business_rule",
+    "description": "在合成事实表家族上,问题中的“YYYY年”默认限定 business_date(业务日期)的年份;仅当问题显式点名其他日期(如“过账日期”“发生时间”“下次维护日期”“整改期限”“入库日期”)时才改用对应列。切勿对这类表使用 created_at/updated_at 作为业务期间列。",
+    "evidence": [
+      "evidence_business_date_family",
+      "evidence_business_date_range",
+      "evidence_question_date_columns"
+    ],
+    "id": "constraint_year_filter_business_date",
+    "scope": "ind200 全部合成事实表家族(约67张,含设备事件、库存快照、循环盘点明细、在制品快照、数据质量问题、验证案例执行结果、销售订单明细、危险源观察、工单物料投用、排班报告等)",
+    "severity": "block",
+    "target": "term_business_date",
+    "trigger_keywords": [
+      "2025年",
+      "2026年",
+      "2028年",
+      "某年",
+      "年",
+      "年度",
+      "按年",
+      "业务日期"
+    ]
+  },
+  {
+    "confidence": "high",
+    "constraint_type": "business_rule",
+    "description": "业务核心表没有 business_date 列,年度限制必须落在各自领域日期列上:采购订单用到 po_date,销售订单用到 order_date,收货单用到 receipt_date,成品库存用到 warehouse_date,报价单用到 quotation_date,风险评估用到 assess_date,产出记录用到 output_date,供应商评估用到 eval_date,安全审计用到 audit_date,发货单用到 delivery_date,生产工单用到 order_date。",
+    "evidence": [
+      "evidence_business_core_dates"
+    ],
+    "id": "constraint_year_filter_business_core",
+    "scope": "ind200 业务核心表(fact_purchase_order, fact_sales_order, fact_goods_receipt, fact_inventory, fact_quotation, fact_risk_assessment, fact_production_output, fact_supplier_eval, fact_safety_audit, fact_delivery, fact_production_order)",
+    "severity": "block",
+    "target": "term_business_date",
+    "trigger_keywords": [
+      "2025年",
+      "2026年",
+      "订单日期",
+      "下单日期",
+      "收货日期",
+      "入库日期",
+      "报价日期",
+      "评估日期",
+      "产出日期",
+      "审计日期",
+      "发货日期",
+      "年份"
+    ]
+  },
+  {
+    "confidence": "high",
+    "constraint_type": "enum_semantics",
+    "description": "合成事实表家族上的 status 是记录生命周期标记,取值仅为 APPROVED / CLOSED(个别表另有 OPEN / IN_PROGRESS),与业务含义无关(如“APPROVED 的循环盘点明细”只是该记录处于已审批状态)。不要把它与销售订单、采购订单、生产工单等领域状态混为一谈。",
+    "evidence": [
+      "evidence_record_status_vocab"
+    ],
+    "id": "constraint_record_status_governance",
+    "scope": "ind200 合成事实表家族上名为 status 的列",
+    "severity": "block",
+    "target": "term_record_status",
+    "trigger_keywords": [
+      "状态",
+      "CLOSED",
+      "APPROVED",
+      "OPEN",
+      "IN_PROGRESS",
+      "已关闭",
+      "已审批"
+    ]
+  },
+  {
+    "confidence": "high",
+    "constraint_type": "enum_semantics",
+    "description": "生产工单状态为中文取值:待生产(27)、生产中(12)、已完成(2930),不是英文枚举。",
+    "evidence": [
+      "evidence_production_order_status"
+    ],
+    "id": "constraint_production_order_status_chinese",
+    "scope": "fact_production_order.status",
+    "severity": "block",
+    "target": "term_production_order",
+    "trigger_keywords": [
+      "工单状态",
+      "待生产",
+      "生产中",
+      "已完成",
+      "生产工单状态"
+    ]
+  },
+  {
+    "confidence": "high",
+    "constraint_type": "enum_semantics",
+    "description": "销售订单状态为英文小写取值:delivered / returned / undelivered。问题中的“未交付”“退货订单”分别对应 undelivered 与 returned。",
+    "evidence": [
+      "evidence_so_status"
+    ],
+    "id": "constraint_sales_order_status",
+    "scope": "fact_sales_order.status",
+    "severity": "block",
+    "target": "term_sales_order",
+    "trigger_keywords": [
+      "订单状态",
+      "undelivered",
+      "returned",
+      "delivered",
+      "未交付",
+      "退货",
+      "已交付"
+    ]
+  },
+  {
+    "confidence": "high",
+    "constraint_type": "enum_semantics",
+    "description": "采购订单状态实际取值为 closed / received / confirmed 三种;虽然表描述提到 draft,但当前数据中不存在 draft。",
+    "evidence": [
+      "evidence_po_status"
+    ],
+    "id": "constraint_purchase_order_status",
+    "scope": "fact_purchase_order.status",
+    "severity": "warning",
+    "target": "term_purchase_order",
+    "trigger_keywords": [
+      "采购订单状态",
+      "confirmed",
+      "received",
+      "closed",
+      "已确认",
+      "已收货"
+    ]
+  },
+  {
+    "confidence": "high",
+    "constraint_type": "enum_semantics",
+    "description": "报价单状态取值:won / lost / draft。“掉单/丢单”对应 lost。",
+    "evidence": [
+      "evidence_quotation_status"
+    ],
+    "id": "constraint_quotation_status",
+    "scope": "fact_quotation.status",
+    "severity": "block",
+    "target": "term_quotation",
+    "trigger_keywords": [
+      "报价单状态",
+      "lost",
+      "won",
+      "draft",
+      "丢单",
+      "赢单"
+    ]
+  },
+  {
+    "confidence": "high",
+    "constraint_type": "enum_semantics",
+    "description": "应付账款状态取值:closed(已付清)/ open(未付清)。",
+    "evidence": [
+      "evidence_ap_status"
+    ],
+    "id": "constraint_ap_status",
+    "scope": "fact_ap.status",
+    "severity": "block",
+    "target": "term_ap",
+    "trigger_keywords": [
+      "应付账款状态",
+      "closed",
+      "open",
+      "付清",
+      "未清"
+    ]
+  },
+  {
+    "confidence": "high",
+    "constraint_type": "enum_semantics",
+    "description": "安全计划状态取值:active / closed。",
+    "evidence": [
+      "evidence_safety_plan_status"
+    ],
+    "id": "constraint_safety_plan_status",
+    "scope": "fact_safety_plan.status",
+    "severity": "warning",
+    "target": "term_safety_plan",
+    "trigger_keywords": [
+      "安全计划状态",
+      "active",
+      "closed"
+    ]
+  },
+  {
+    "confidence": "high",
+    "constraint_type": "enum_semantics",
+    "description": "remarks 取值来自一个跨表共享的小词表:{已电话确认, 加急, 客户指定批次, 补录, 跨月处理}。按“备注是 X”筛选时直接匹配该中文文本即可,不同表共用同一词表。",
+    "evidence": [
+      "evidence_remarks_vocab",
+      "evidence_inventory_snapshot_remarks",
+      "evidence_attendance_remarks"
+    ],
+    "id": "constraint_remarks_vocabulary",
+    "scope": "ind200 合成事实表家族(设备事件、库存快照、考勤、成品批次质量冻结等)",
+    "severity": "block",
+    "target": "term_remarks",
+    "trigger_keywords": [
+      "备注",
+      "跨月处理",
+      "补录",
+      "加急",
+      "客户指定批次",
+      "已电话确认"
+    ]
+  },
+  {
+    "confidence": "high",
+    "constraint_type": "enum_semantics",
+    "description": "人员编码取值为 U0001..U0012 形式的文本;问题的“由 Uxxxx 创建/更新/审批”分别对应 created_by / updated_by / approved_by。该编码体系与 dim_employee.emp_id(整数)不是同一标识,人员相关筛选不要经 emp_id 关联。",
+    "evidence": [
+      "evidence_operator_codes"
+    ],
+    "id": "constraint_person_code_vocabulary",
+    "scope": "ind200 合成表家族的 created_by / updated_by / approved_by",
+    "severity": "block",
+    "target": "term_person_code",
+    "trigger_keywords": [
+      "U0001",
+      "创建人",
+      "更新人",
+      "审批人",
+      "操作员"
+    ]
+  },
+  {
+    "confidence": "high",
+    "constraint_type": "data_quality",
+    "description": "合成事实表家族中的 currency_code 在当前数据中全部为 CNY(人民币),因此“哪个币种合计最高”这类分组聚合只会得到一个分组,答案币种为人民币。若要覆盖多种币种需另行确认数据范围。",
+    "evidence": [
+      "evidence_currency_uniform",
+      "evidence_currency_master"
+    ],
+    "id": "constraint_currency_uniform_cny",
+    "scope": "ind200 合成事实表家族的 currency_code 列",
+    "severity": "warning",
+    "target": "term_currency",
+    "trigger_keywords": [
+      "币种",
+      "币种简称",
+      "currency",
+      "成本金额",
+      "税额",
+      "按币种"
+    ]
+  },
+  {
+    "confidence": "high",
+    "constraint_type": "data_quality",
+    "description": "设备状态监测与在线仪表校准两表的 reason_code 当前全部为 OTHER(对应 dim_reason_code 中 code=OTHER、简称“常规业务(无#”),因此按原因码做 top 分组时只有一个分组。设备事件的 reason_code 则有 6 种取值。中文简称必须经 dim_reason_code 字典按 code 映射取得。",
+    "evidence": [
+      "evidence_reason_code_usage",
+      "evidence_reason_code_master",
+      "evidence_gauge_calibration"
+    ],
+    "id": "constraint_reason_code_scope",
+    "scope": "fact_condition_monitoring, fact_gauge_calibration, fact_equipment_event 的 reason_code 列",
+    "severity": "warning",
+    "target": "term_reason_code",
+    "trigger_keywords": [
+      "原因码",
+      "原因码简称",
+      "reason_code",
+      "设备状态监测",
+      "仪表校准"
+    ]
+  },
+  {
+    "confidence": "high",
+    "constraint_type": "enum_semantics",
+    "description": "单位取值为混合符号与中文:{℃, A, mm/s, kg/h, %, MPa, rpm, kg, 包/h}。“读数单位为 kg/h”需按文本精确匹配 kg/h。",
+    "evidence": [
+      "evidence_iot_unit"
+    ],
+    "id": "constraint_iot_unit_vocabulary",
+    "scope": "fact_iot_data.unit 与各监测表的读数/计量单位列",
+    "severity": "block",
+    "target": "term_iot_unit",
+    "trigger_keywords": [
+      "单位",
+      "读数单位",
+      "kg/h",
+      "IoT",
+      "计量单位"
+    ]
+  },
+  {
+    "confidence": "high",
+    "constraint_type": "enum_semantics",
+    "description": "传感器类型取值为中文:{温度, 电流, 振动, 流量, 料位, 压力, 转速, 重量, 速度}。按类型筛选测量值需经 dim_sensor 关联。",
+    "evidence": [
+      "evidence_sensor_type"
+    ],
+    "id": "constraint_sensor_type_vocabulary",
+    "scope": "dim_sensor.sensor_type",
+    "severity": "block",
+    "target": "term_sensor_type",
+    "trigger_keywords": [
+      "传感器类型",
+      "振动",
+      "温度",
+      "压力",
+      "转速"
+    ]
+  },
+  {
+    "confidence": "high",
+    "constraint_type": "enum_semantics",
+    "description": "销售区域取值为:{华东, 华南, 华北, 华中, 西南, 西北}。区域以事实表上的文本列存储,不经 dim_region 外键。",
+    "evidence": [
+      "evidence_region_values"
+    ],
+    "id": "constraint_sales_region_vocabulary",
+    "scope": "fact_sales_order_line, fact_sales_contract_line, fact_sales_forecast, fact_price_adjustment 的 sales_region",
+    "severity": "block",
+    "target": "term_sales_region",
+    "trigger_keywords": [
+      "销售区域",
+      "华中",
+      "华北",
+      "华东",
+      "区域"
+    ]
+  },
+  {
+    "confidence": "high",
+    "constraint_type": "enum_semantics",
+    "description": "客户所属行业取值为:{汽车, 家电, 电子电气, 电动工具, 建材}。",
+    "evidence": [
+      "evidence_customer_industry"
+    ],
+    "id": "constraint_customer_industry_vocabulary",
+    "scope": "dim_customer.industry",
+    "severity": "block",
+    "target": "term_customer_industry",
+    "trigger_keywords": [
+      "所属行业",
+      "行业",
+      "汽车"
+    ]
+  },
+  {
+    "confidence": "high",
+    "constraint_type": "enum_semantics",
+    "description": "员工状态取值为 active / inactive。“在职员工”对应 active。",
+    "evidence": [
+      "evidence_employee_status"
+    ],
+    "id": "constraint_employee_status_vocabulary",
+    "scope": "dim_employee.status",
+    "severity": "warning",
+    "target": "term_employee",
+    "trigger_keywords": [
+      "员工状态",
+      "active",
+      "在职"
+    ]
+  },
+  {
+    "confidence": "high",
+    "constraint_type": "enum_semantics",
+    "description": "产出记录的产品等级取值为:{优等品, 一等品, 合格品, 返工品}。",
+    "evidence": [
+      "evidence_production_grade"
+    ],
+    "id": "constraint_production_grade_vocabulary",
+    "scope": "fact_production_output.grade",
+    "severity": "block",
+    "target": "term_production_output",
+    "trigger_keywords": [
+      "产品等级",
+      "返工品",
+      "优等品",
+      "一等品",
+      "合格品"
+    ]
+  },
+  {
+    "confidence": "high",
+    "constraint_type": "enum_semantics",
+    "description": "风险评估的后果等级为英文小写:{minor, moderate, major, catastrophic};风险等级取值为 L1..L4。二者是不同列,不要混用。",
+    "evidence": [
+      "evidence_risk_consequence"
+    ],
+    "id": "constraint_risk_consequence_vocabulary",
+    "scope": "fact_risk_assessment.consequence 与 risk_level",
+    "severity": "block",
+    "target": "term_risk_assessment",
+    "trigger_keywords": [
+      "后果等级",
+      "major",
+      "catastrophic",
+      "minor",
+      "moderate",
+      "风险评估"
+    ]
+  },
+  {
+    "confidence": "high",
+    "constraint_type": "enum_semantics",
+    "description": "缺勤类型取值为:{年假, 病假, 事假}。",
+    "evidence": [
+      "evidence_absence_type"
+    ],
+    "id": "constraint_absence_type_vocabulary",
+    "scope": "fact_attendance.absence_type",
+    "severity": "block",
+    "target": "term_attendance",
+    "trigger_keywords": [
+      "缺勤类型",
+      "年假",
+      "病假",
+      "事假",
+      "考勤"
+    ]
+  },
+  {
+    "confidence": "high",
+    "constraint_type": "enum_semantics",
+    "description": "成品批次质量冻结的处置取值为:{返工, 让步接收}。“处置为返工”匹配 返工。",
+    "evidence": [
+      "evidence_batch_disposition"
+    ],
+    "id": "constraint_batch_disposition_vocabulary",
+    "scope": "fact_batch_quality_hold.disposition",
+    "severity": "block",
+    "target": "term_batch_quality_hold",
+    "trigger_keywords": [
+      "处置",
+      "返工",
+      "让步接收",
+      "质量冻结"
+    ]
+  },
+  {
+    "confidence": "high",
+    "constraint_type": "enum_semantics",
+    "description": "收货单检验结果为英文取值 pass / fail(表描述提到的 conditional/pending 在当前数据中未出现)。",
+    "evidence": [
+      "evidence_goods_receipt"
+    ],
+    "id": "constraint_inspection_result_vocabulary",
+    "scope": "fact_goods_receipt.inspection_result",
+    "severity": "block",
+    "target": "term_goods_receipt",
+    "trigger_keywords": [
+      "检验结果",
+      "pass",
+      "fail",
+      "收货单"
+    ]
+  },
+  {
+    "confidence": "high",
+    "constraint_type": "enum_semantics",
+    "description": "送样反馈结果为英文取值 success / fail。",
+    "evidence": [
+      "evidence_sample_result"
+    ],
+    "id": "constraint_sample_result_vocabulary",
+    "scope": "fact_sample.feedback_result",
+    "severity": "block",
+    "target": "term_sample",
+    "trigger_keywords": [
+      "反馈结果",
+      "success",
+      "fail",
+      "送样"
+    ]
+  },
+  {
+    "confidence": "high",
+    "constraint_type": "enum_semantics",
+    "description": "安全审计类型的取值为:{月度安全审计, 专项审计}。",
+    "evidence": [
+      "evidence_audit_type"
+    ],
+    "id": "constraint_audit_type_vocabulary",
+    "scope": "fact_safety_audit.audit_type",
+    "severity": "block",
+    "target": "term_safety_audit",
+    "trigger_keywords": [
+      "审计类型",
+      "安全审计",
+      "月度安全审计",
+      "专项审计"
+    ]
+  },
+  {
+    "confidence": "high",
+    "constraint_type": "enum_semantics",
+    "description": "安全整改措施状态取值为 CLOSED / IN_PROGRESS(比其他合成表多出 IN_PROGRESS)。",
+    "evidence": [
+      "evidence_safety_action_status"
+    ],
+    "id": "constraint_safety_action_status",
+    "scope": "fact_safety_action.status",
+    "severity": "warning",
+    "target": "term_safety_action",
+    "trigger_keywords": [
+      "安全整改措施",
+      "整改状态",
+      "IN_PROGRESS",
+      "CLOSED"
+    ]
+  },
+  {
+    "confidence": "high",
+    "constraint_type": "enum_semantics",
+    "description": "总账凭证状态取值为 APPROVED / CLOSED(沿用合成表的通用记录状态词表)。",
+    "evidence": [
+      "evidence_gl_status"
+    ],
+    "id": "constraint_gl_status",
+    "scope": "fact_gl_entry.status",
+    "severity": "warning",
+    "target": "term_gl_entry",
+    "trigger_keywords": [
+      "凭证状态",
+      "总账凭证",
+      "CLOSED",
+      "APPROVED"
+    ]
+  },
+  {
+    "confidence": "high",
+    "constraint_type": "unit",
+    "description": "data_quality_score 为记录级评分,可用于求和与求平均;问题中的“数据质量分合计/平均”直接对该列聚合。",
+    "evidence": [
+      "evidence_column_blocks"
+    ],
+    "id": "constraint_data_quality_score_scale",
+    "scope": "ind200 合成表家族的 data_quality_score",
+    "severity": "info",
+    "target": "term_data_quality_score",
+    "trigger_keywords": [
+      "数据质量分",
+      "质量分",
+      "评分"
+    ]
+  },
+  {
+    "confidence": "high",
+    "constraint_type": "enum_semantics",
+    "description": "is_deleted 为 0/1 标记,1 表示逻辑删除。问题若直接要求“逻辑删除标记合计”,应对该 0/1 列求和,而不是先过滤掉已删除记录。",
+    "evidence": [
+      "evidence_gauge_calibration"
+    ],
+    "id": "constraint_is_deleted_semantics",
+    "scope": "ind200 合成表家族",
+    "severity": "warning",
+    "target": "term_is_deleted",
+    "trigger_keywords": [
+      "逻辑删除标记",
+      "is_deleted",
+      "已删除"
+    ]
+  },
+  {
+    "confidence": "high",
+    "constraint_type": "scope",
+    "description": "维护计划无 business_date。“2026年的维护计划”通常指 next_date(下次维护日期)落在 2026 年;维护间隔用 interval_hours / interval_days 两个独立列。",
+    "evidence": [
+      "evidence_maintenance_plan"
+    ],
+    "id": "constraint_maintenance_plan_date",
+    "scope": "fact_maintenance_plan",
+    "severity": "warning",
+    "target": "term_maintenance_plan",
+    "trigger_keywords": [
+      "维护计划",
+      "下次维护日期",
+      "维护间隔"
+    ]
+  },
+  {
+    "confidence": "high",
+    "constraint_type": "scope",
+    "description": "“2025年整改期限的危险源观察记录”应使用 action_due_date(整改期限),而不是 business_date;行版本聚合使用 row_version。",
+    "evidence": [
+      "evidence_hazard_row_version",
+      "evidence_hazard_observation"
+    ],
+    "id": "constraint_hazard_observation_due_date",
+    "scope": "fact_hazard_observation",
+    "severity": "warning",
+    "target": "term_hazard_observation",
+    "trigger_keywords": [
+      "整改期限",
+      "危险源观察",
+      "行版本"
+    ]
+  },
+  {
+    "confidence": "high",
+    "constraint_type": "scope",
+    "description": "dim_calendar 覆盖 2025-01-01 至 2026-07-01,每日一行,含年/季/月/周与是否工作日。事实表与它没有标识符外键,只能按日期值对齐;它本身的 created_by 也使用 Uxxxx 人员编码。",
+    "evidence": [
+      "evidence_calendar_range",
+      "evidence_calendar_join"
+    ],
+    "id": "constraint_calendar_scope",
+    "scope": "dim_calendar",
+    "severity": "info",
+    "target": "term_calendar",
+    "trigger_keywords": [
+      "日历",
+      "日期维度",
+      "calendar"
+    ]
+  },
+  {
+    "confidence": "high",
+    "constraint_type": "business_rule",
+    "description": "多类“按父级属性筛选”的需求没有直接外键,必须经中间维表两跳:产品线→产品→事实表(prod_id);设备类型→设备→事实表(equipment_id);物料类别→物料→事实表(material_id);客户行业→客户→事实表(cust_id)。另需注意 fact_wip_snapshot 自带 line_id,到产线只需一跳;fact_material_consumption 只有 order_id,到产线需经生产工单两跳。",
+    "evidence": [
+      "evidence_product_line_join",
+      "evidence_equipment_type_join",
+      "evidence_material_category_join",
+      "evidence_production_line_join"
+    ],
+    "id": "constraint_two_hop_dimension_paths",
+    "scope": "ind200 事实表与维度表之间",
+    "severity": "block",
+    "target": "term_product_line",
+    "trigger_keywords": [
+      "产品线",
+      "设备类型",
+      "物料类别",
+      "两跳",
+      "所属"
+    ]
+  },
+  {
+    "confidence": "high",
+    "constraint_type": "business_rule",
+    "description": "“位置为 X 的车间”匹配 dim_workshop.location(如 青岛二厂A栋、合肥工厂A栋);而 dim_hazard.location 记录的是“车间名+区域”(如 PP改性车间挤出区),两者是不同粒度的文本,不能直接等值连接。",
+    "evidence": [
+      "evidence_factory_workshop"
+    ],
+    "id": "constraint_warehouse_workshop_location",
+    "scope": "dim_workshop.location 与 dim_hazard.location",
+    "severity": "warning",
+    "target": "term_workshop",
+    "trigger_keywords": [
+      "位置",
+      "车间",
+      "楼层",
+      "A栋",
+      "B栋"
+    ]
+  },
+  {
+    "confidence": "high",
+    "constraint_type": "info",
+    "description": "本层仅记录语义与数据接地,不含查询模板。所有聚合与筛选需由分析代理在数据库上自行校验后使用。",
+    "evidence": [
+      "evidence_column_blocks"
+    ],
+    "id": "constraint_relation_not_join_template",
+    "scope": "本体层使用说明",
+    "severity": "info",
+    "target": "term_business_date",
+    "trigger_keywords": []
+  }
+]

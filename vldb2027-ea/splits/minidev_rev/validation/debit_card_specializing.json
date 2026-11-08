@@ -1,0 +1,45 @@
+{
+ "db_id": "debit_card_specializing",
+ "questions": [
+  {
+   "question_id": 1514,
+   "db_id": "debit_card_specializing",
+   "question": "What kind of currency did the customer paid at 16:25:00 in 2012/8/24?",
+   "evidence": "'2012/8/24' can be represented by '2012-08-24'; ",
+   "SQL": "SELECT DISTINCT T3.Currency FROM transactions_1k AS T1 INNER JOIN gasstations AS T2 ON T1.GasStationID = T2.GasStationID INNER JOIN customers AS T3 ON T1.CustomerID = T3.CustomerID WHERE T1.Date = '2012-08-24' AND T1.Time = '16:25:00'",
+   "difficulty": "simple"
+  },
+  {
+   "question_id": 1483,
+   "db_id": "debit_card_specializing",
+   "question": "How much did customer 6 consume in total between August and November 2013?",
+   "evidence": "Between August And November 2013 refers to Between 201308 And 201311; The first 4 strings of the Date values in the yearmonth table can represent year; The 5th and 6th string of the date can refer to month.",
+   "SQL": "SELECT SUM(Consumption) FROM yearmonth WHERE CustomerID = 6 AND Date BETWEEN '201308' AND '201311'",
+   "difficulty": "simple"
+  },
+  {
+   "question_id": 1472,
+   "db_id": "debit_card_specializing",
+   "question": "In 2012, who had the least consumption in LAM?",
+   "evidence": "Year 2012 can be presented as Between 201201 And 201212; The first 4 strings of the Date values in the yearmonth table can represent year.",
+   "SQL": "SELECT T1.CustomerID FROM customers AS T1 INNER JOIN yearmonth AS T2 ON T1.CustomerID = T2.CustomerID WHERE T1.Segment = 'LAM' AND SUBSTR(T2.Date, 1, 4) = '2012' GROUP BY T1.CustomerID ORDER BY SUM(T2.Consumption) ASC LIMIT 1",
+   "difficulty": "moderate"
+  },
+  {
+   "question_id": 1479,
+   "db_id": "debit_card_specializing",
+   "question": "Which year recorded the most consumption of gas paid in CZK?",
+   "evidence": "The first 4 strings of the Date values in the yearmonth table can represent year.",
+   "SQL": "SELECT SUBSTR(T2.Date, 1, 4) FROM customers AS T1 INNER JOIN yearmonth AS T2 ON T1.CustomerID = T2.CustomerID WHERE T1.Currency = 'CZK' GROUP BY SUBSTR(T2.Date, 1, 4) ORDER BY SUM(T2.Consumption) DESC LIMIT 1",
+   "difficulty": "moderate"
+  },
+  {
+   "question_id": 1490,
+   "db_id": "debit_card_specializing",
+   "question": "How many percent of LAM customer consumed more than 46.73?",
+   "evidence": "Percentage of LAM customer consumed more than 46.73 = (Total no. of LAM customers who consumed more than 46.73 / Total no. of LAM customers) * 100.",
+   "SQL": "SELECT CAST(SUM(IIF(T2.Consumption > 46.73, 1, 0)) AS FLOAT) * 100 / COUNT(T1.CustomerID) FROM customers AS T1 INNER JOIN yearmonth AS T2 ON T1.CustomerID = T2.CustomerID WHERE T1.Segment = 'LAM'",
+   "difficulty": "moderate"
+  }
+ ]
+}

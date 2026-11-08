@@ -1,0 +1,1797 @@
+[
+  {
+    "aliases": [
+      "业务日期",
+      "business_date"
+    ],
+    "definition": "业务日期:与合成事实表记录关联的会计/业务日期,决定该记录所属的年、月、日期间。",
+    "evidence": [
+      "evidence_business_date_family",
+      "evidence_business_date_range"
+    ],
+    "id": "term_business_date",
+    "name": "Business Date",
+    "scope": "ind200 合成事实表家族(约67张);业务核心表(如采购订单、销售订单、生产工单、库存)没有该列。",
+    "type": "dimension"
+  },
+  {
+    "aliases": [
+      "发生时间",
+      "event_time"
+    ],
+    "definition": "发生时间:合成事实记录对应业务事件发生的精确时间戳。",
+    "evidence": [
+      "evidence_business_date_range"
+    ],
+    "id": "term_event_time",
+    "name": "Occurrence Timestamp",
+    "scope": "ind200 合成事实表家族。",
+    "type": "dimension"
+  },
+  {
+    "aliases": [
+      "过账日期",
+      "posting_date"
+    ],
+    "definition": "过账日期:记录在账务/系统上正式过账的日期,可与业务日期不同。",
+    "evidence": [
+      "evidence_business_date_family"
+    ],
+    "id": "term_posting_date",
+    "name": "Posting Date",
+    "scope": "ind200 合成事实表家族。",
+    "type": "dimension"
+  },
+  {
+    "aliases": [
+      "创建人",
+      "created_by"
+    ],
+    "definition": "创建人:创建该记录的操作用户编码。",
+    "evidence": [
+      "evidence_operator_codes"
+    ],
+    "id": "term_created_by",
+    "name": "Record Creator",
+    "scope": "ind200 合成事实表与主数据表。",
+    "type": "dimension"
+  },
+  {
+    "aliases": [
+      "更新人",
+      "updated_by"
+    ],
+    "definition": "更新人:最后一次更新该记录的操作用户编码。",
+    "evidence": [
+      "evidence_operator_codes"
+    ],
+    "id": "term_updated_by",
+    "name": "Record Updater",
+    "scope": "ind200 合成事实表与主数据表。",
+    "type": "dimension"
+  },
+  {
+    "aliases": [
+      "审批人",
+      "approved_by"
+    ],
+    "definition": "审批人:审批该记录的操作用户编码。",
+    "evidence": [
+      "evidence_operator_codes"
+    ],
+    "id": "term_approved_by",
+    "name": "Record Approver",
+    "scope": "ind200 合成事实表与主数据表。",
+    "type": "dimension"
+  },
+  {
+    "aliases": [
+      "操作员编码",
+      "用户编码",
+      "U代码"
+    ],
+    "definition": "人员编码:形如 U0001..U0012 的操作用户标识,是创建人/更新人/审批人三类角色列共享的取值域。",
+    "evidence": [
+      "evidence_operator_codes"
+    ],
+    "id": "term_person_code",
+    "name": "Person Code (Uxxxx)",
+    "scope": "ind200 全库审计列;与 dim_employee.emp_id(整数)不是同一标识体系。",
+    "type": "dimension"
+  },
+  {
+    "aliases": [
+      "备注",
+      "remarks"
+    ],
+    "definition": "备注:附在业务记录上的简短说明标记,取值来自一个跨表共享的小型词表。",
+    "evidence": [
+      "evidence_remarks_vocab"
+    ],
+    "id": "term_remarks",
+    "name": "Remarks",
+    "scope": "ind200 合成事实表家族。",
+    "type": "dimension"
+  },
+  {
+    "aliases": [
+      "状态",
+      "status"
+    ],
+    "definition": "状态:合成事实表上表示记录生命周期的通用状态标记,与具体业务语义无关。",
+    "evidence": [
+      "evidence_record_status_vocab"
+    ],
+    "id": "term_record_status",
+    "name": "Record Status",
+    "scope": "ind200 合成事实表家族(约67张);业务核心表另有各自领域状态。",
+    "type": "dimension"
+  },
+  {
+    "aliases": [
+      "优先级",
+      "priority"
+    ],
+    "definition": "优先级:记录上的通用优先级别数值,可被求和或取平均。",
+    "evidence": [
+      "evidence_column_blocks"
+    ],
+    "id": "term_priority",
+    "name": "Priority",
+    "scope": "ind200 合成事实表家族。",
+    "type": "metric"
+  },
+  {
+    "aliases": [
+      "逻辑删除标记",
+      "is_deleted"
+    ],
+    "definition": "逻辑删除标记:0/1 标记,1 表示记录已被逻辑删除。",
+    "evidence": [
+      "evidence_gauge_calibration"
+    ],
+    "id": "term_is_deleted",
+    "name": "Soft-delete Flag",
+    "scope": "ind200 合成事实表与主数据表。",
+    "type": "metric"
+  },
+  {
+    "aliases": [
+      "行版本",
+      "row_version"
+    ],
+    "definition": "行版本:记录的行版本计数,可用于求和与求平均。",
+    "evidence": [
+      "evidence_hazard_row_version"
+    ],
+    "id": "term_row_version",
+    "name": "Row Version",
+    "scope": "ind200 合成事实表与主数据表。",
+    "type": "metric"
+  },
+  {
+    "aliases": [
+      "数据质量分",
+      "data_quality_score"
+    ],
+    "definition": "数据质量分:记录级的数据质量评分。",
+    "evidence": [
+      "evidence_column_blocks"
+    ],
+    "id": "term_data_quality_score",
+    "name": "Data Quality Score",
+    "scope": "ind200 合成事实表与主数据表。",
+    "type": "metric"
+  },
+  {
+    "aliases": [
+      "金额",
+      "总金额",
+      "amount",
+      "total_amount"
+    ],
+    "definition": "金额:记录上的通用金额度量(业务行金额、总金额等)。",
+    "evidence": [
+      "evidence_column_blocks"
+    ],
+    "id": "term_amount",
+    "name": "Amount",
+    "scope": "ind200 合成事实表;币种见 currency_code。",
+    "type": "metric"
+  },
+  {
+    "aliases": [
+      "成本金额",
+      "cost_amount"
+    ],
+    "definition": "成本金额:记录上的成本口径金额。",
+    "evidence": [
+      "evidence_currency_uniform"
+    ],
+    "id": "term_cost_amount",
+    "name": "Cost Amount",
+    "scope": "ind200 合成事实表。",
+    "type": "metric"
+  },
+  {
+    "aliases": [
+      "税额",
+      "tax_amount"
+    ],
+    "definition": "税额:记录上的税额度量。",
+    "evidence": [
+      "evidence_column_blocks"
+    ],
+    "id": "term_tax_amount",
+    "name": "Tax Amount",
+    "scope": "ind200 合成事实表。",
+    "type": "metric"
+  },
+  {
+    "aliases": [
+      "数量",
+      "quantity"
+    ],
+    "definition": "数量:记录上的通用数量度量,单位随表而异(吨、个等)。",
+    "evidence": [
+      "evidence_column_blocks"
+    ],
+    "id": "term_quantity",
+    "name": "Quantity",
+    "scope": "ind200 合成事实表。",
+    "type": "metric"
+  },
+  {
+    "aliases": [
+      "实际数量",
+      "actual_quantity"
+    ],
+    "definition": "实际数量:实际发生的数量(与计划数量相对)。",
+    "evidence": [
+      "evidence_column_blocks"
+    ],
+    "id": "term_actual_quantity",
+    "name": "Actual Quantity",
+    "scope": "ind200 合成事实表。",
+    "type": "metric"
+  },
+  {
+    "aliases": [
+      "计划数量",
+      "planned_quantity"
+    ],
+    "definition": "计划数量:计划口径的数量。",
+    "evidence": [
+      "evidence_column_blocks"
+    ],
+    "id": "term_planned_quantity",
+    "name": "Planned Quantity",
+    "scope": "ind200 合成事实表。",
+    "type": "metric"
+  },
+  {
+    "aliases": [
+      "合格数量",
+      "qualified_quantity"
+    ],
+    "definition": "合格数量:经检验判定合格的数量。",
+    "evidence": [
+      "evidence_qualified_by_product"
+    ],
+    "id": "term_qualified_quantity",
+    "name": "Qualified Quantity",
+    "scope": "ind200 合成事实表。",
+    "type": "metric"
+  },
+  {
+    "aliases": [
+      "可用数量",
+      "available_quantity"
+    ],
+    "definition": "可用数量:当前可支配的数量。",
+    "evidence": [
+      "evidence_column_blocks"
+    ],
+    "id": "term_available_quantity",
+    "name": "Available Quantity",
+    "scope": "ind200 库存类合成事实表。",
+    "type": "metric"
+  },
+  {
+    "aliases": [
+      "预留数量",
+      "reserved_quantity"
+    ],
+    "definition": "预留数量:已被预留/占用的数量。",
+    "evidence": [
+      "evidence_column_blocks"
+    ],
+    "id": "term_reserved_quantity",
+    "name": "Reserved Quantity",
+    "scope": "ind200 库存与采购类合成事实表。",
+    "type": "metric"
+  },
+  {
+    "aliases": [
+      "读数",
+      "测量值",
+      "reading_value",
+      "measured_value"
+    ],
+    "definition": "读数/测量值:传感器或计量设备采集的物理量读数。",
+    "evidence": [
+      "evidence_condition_monitoring",
+      "evidence_sensor_vibration"
+    ],
+    "id": "term_reading_value",
+    "name": "Sensor Reading Value",
+    "scope": "ind200 设备监测类表(设备状态监测、预测性维护告警)。",
+    "type": "metric"
+  },
+  {
+    "aliases": [
+      "时长(分钟)",
+      "duration_minutes"
+    ],
+    "definition": "时长(分钟):记录对应活动的持续分钟数。",
+    "evidence": [
+      "evidence_column_blocks"
+    ],
+    "id": "term_duration_minutes",
+    "name": "Duration (minutes)",
+    "scope": "ind200 合成事实表。",
+    "type": "metric"
+  },
+  {
+    "aliases": [
+      "正常工时",
+      "regular_hours"
+    ],
+    "definition": "正常工时:人员在正常班次内的工作小时数。",
+    "evidence": [
+      "evidence_regular_hours_by_line"
+    ],
+    "id": "term_regular_hours",
+    "name": "Regular Working Hours",
+    "scope": "ind200 报工与考勤类表。",
+    "type": "metric"
+  },
+  {
+    "aliases": [
+      "间隔小时",
+      "维护间隔小时",
+      "interval_hours"
+    ],
+    "definition": "维护间隔小时:维护计划中两次维护之间的间隔小时数。",
+    "evidence": [
+      "evidence_maintenance_plan"
+    ],
+    "id": "term_interval_hours",
+    "name": "Maintenance Interval (hours)",
+    "scope": "ind200 维护计划。",
+    "type": "metric"
+  },
+  {
+    "aliases": [
+      "间隔天数",
+      "维护间隔天数",
+      "interval_days"
+    ],
+    "definition": "维护间隔天数:维护计划中两次维护之间的间隔天数。",
+    "evidence": [
+      "evidence_maintenance_plan"
+    ],
+    "id": "term_interval_days",
+    "name": "Maintenance Interval (days)",
+    "scope": "ind200 维护计划。",
+    "type": "metric"
+  },
+  {
+    "aliases": [
+      "在库天数",
+      "storage_days"
+    ],
+    "definition": "在库天数:成品库存自入库以来已在库的天数。",
+    "evidence": [
+      "evidence_inventory_storage_days"
+    ],
+    "id": "term_storage_days",
+    "name": "Days in Storage",
+    "scope": "ind200 成品库存表。",
+    "type": "metric"
+  },
+  {
+    "aliases": [
+      "异常数",
+      "exception_count"
+    ],
+    "definition": "异常数:数据质量检查发现的异常条数。",
+    "evidence": [
+      "evidence_data_quality_issue"
+    ],
+    "id": "term_exception_count",
+    "name": "Exception Count",
+    "scope": "ind200 数据质量问题表。",
+    "type": "metric"
+  },
+  {
+    "aliases": [
+      "限值",
+      "limit_value"
+    ],
+    "definition": "限值:环境监测项目的法规排放限值。",
+    "evidence": [
+      "evidence_environment_measurement"
+    ],
+    "id": "term_limit_value",
+    "name": "Regulatory Limit Value",
+    "scope": "ind200 环境监测记录。",
+    "type": "metric"
+  },
+  {
+    "aliases": [
+      "可能性",
+      "likelihood"
+    ],
+    "definition": "可能性:风险评估/危险源观察中事件发生可能性的等级数值。",
+    "evidence": [
+      "evidence_hazard_observation"
+    ],
+    "id": "term_likelihood",
+    "name": "Likelihood",
+    "scope": "ind200 安全域表。",
+    "type": "metric"
+  },
+  {
+    "aliases": [
+      "风险分值",
+      "risk_score"
+    ],
+    "definition": "风险分值:综合可能性与后果得到的风险数值。",
+    "evidence": [
+      "evidence_hazard_observation"
+    ],
+    "id": "term_risk_score",
+    "name": "Risk Score",
+    "scope": "ind200 危险源观察与安全整改措施。",
+    "type": "metric"
+  },
+  {
+    "aliases": [
+      "下限",
+      "lower_limit"
+    ],
+    "definition": "下限:检验特性的规格下限值。",
+    "evidence": [
+      "evidence_inspection_limits"
+    ],
+    "id": "term_lower_limit",
+    "name": "Lower Specification Limit",
+    "scope": "ind200 检验批与检验结果。",
+    "type": "metric"
+  },
+  {
+    "aliases": [
+      "BOM 吨耗",
+      "bom_qty_per_ton"
+    ],
+    "definition": "BOM吨耗:每吨成品对应的物料理论用量。",
+    "evidence": [
+      "evidence_column_blocks"
+    ],
+    "id": "term_bom_qty_per_ton",
+    "name": "BOM Quantity per Ton",
+    "scope": "ind200 工单物料投用与批次追溯。",
+    "type": "metric"
+  },
+  {
+    "aliases": [
+      "产品",
+      "产品名称",
+      "prod_name"
+    ],
+    "definition": "产品/成品:销售与生产的基本物料主数据。",
+    "evidence": [
+      "evidence_product_line_join"
+    ],
+    "id": "term_product",
+    "name": "Product",
+    "scope": "ind200 主数据。",
+    "type": "entity"
+  },
+  {
+    "aliases": [
+      "产品线",
+      "prod_line_name"
+    ],
+    "definition": "产品线:产品的大类分组,如 PA改性系列、PP改性系列。",
+    "evidence": [
+      "evidence_product_line_join"
+    ],
+    "id": "term_product_line",
+    "name": "Product Line",
+    "scope": "ind200 主数据。",
+    "type": "entity"
+  },
+  {
+    "aliases": [
+      "设备",
+      "equipment_name"
+    ],
+    "definition": "设备:生产设备主数据,含设备类型与所属产线。",
+    "evidence": [
+      "evidence_equipment_type_join"
+    ],
+    "id": "term_equipment",
+    "name": "Equipment",
+    "scope": "ind200 主数据。",
+    "type": "entity"
+  },
+  {
+    "aliases": [
+      "设备类型",
+      "type_name"
+    ],
+    "definition": "设备类型:设备分类,如双螺杆挤出机、自动包装机。",
+    "evidence": [
+      "evidence_equipment_type_join"
+    ],
+    "id": "term_equipment_type",
+    "name": "Equipment Type",
+    "scope": "ind200 主数据。",
+    "type": "entity"
+  },
+  {
+    "aliases": [
+      "传感器",
+      "传感器名称",
+      "sensor_name"
+    ],
+    "definition": "传感器:挂在设备上的测点主数据,含传感器类型与单位。",
+    "evidence": [
+      "evidence_sensor_vibration",
+      "evidence_alarm_sensor"
+    ],
+    "id": "term_sensor",
+    "name": "Sensor",
+    "scope": "ind200 主数据。",
+    "type": "entity"
+  },
+  {
+    "aliases": [
+      "传感器类型",
+      "sensor_type"
+    ],
+    "definition": "传感器类型:传感器测量的物理量类别。",
+    "evidence": [
+      "evidence_sensor_type"
+    ],
+    "id": "term_sensor_type",
+    "name": "Sensor Type",
+    "scope": "ind200 主数据 dim_sensor。",
+    "type": "dimension"
+  },
+  {
+    "aliases": [
+      "原材料",
+      "物料",
+      "material_name"
+    ],
+    "definition": "原材料/物料:采购物料主数据。",
+    "evidence": [
+      "evidence_material_category_join"
+    ],
+    "id": "term_material",
+    "name": "Material",
+    "scope": "ind200 主数据。",
+    "type": "entity"
+  },
+  {
+    "aliases": [
+      "物料类别",
+      "category_name"
+    ],
+    "definition": "物料类别:物料分类层级,如工程塑料树脂、抗氧剂。",
+    "evidence": [
+      "evidence_material_category_join"
+    ],
+    "id": "term_material_category",
+    "name": "Material Category",
+    "scope": "ind200 主数据。",
+    "type": "entity"
+  },
+  {
+    "aliases": [
+      "客户",
+      "客户名称",
+      "cust_name"
+    ],
+    "definition": "客户:客户维度,含所属行业、省市、最近交易日期。",
+    "evidence": [
+      "evidence_customer_industry"
+    ],
+    "id": "term_customer",
+    "name": "Customer",
+    "scope": "ind200 主数据。",
+    "type": "entity"
+  },
+  {
+    "aliases": [
+      "所属行业",
+      "industry"
+    ],
+    "definition": "所属行业:客户所处行业分类。",
+    "evidence": [
+      "evidence_customer_industry"
+    ],
+    "id": "term_customer_industry",
+    "name": "Customer Industry",
+    "scope": "ind200 客户主数据属性。",
+    "type": "dimension"
+  },
+  {
+    "aliases": [
+      "销售区域",
+      "区域",
+      "sales_region"
+    ],
+    "definition": "销售区域:业务发生的地理销售区域。",
+    "evidence": [
+      "evidence_region_values"
+    ],
+    "id": "term_sales_region",
+    "name": "Sales Region",
+    "scope": "ind200 销售类表上的文本区域列。",
+    "type": "dimension"
+  },
+  {
+    "aliases": [
+      "仓库",
+      "warehouse_name"
+    ],
+    "definition": "仓库:仓库主数据,含所属工厂与类型。",
+    "evidence": [
+      "evidence_column_blocks"
+    ],
+    "id": "term_warehouse",
+    "name": "Warehouse",
+    "scope": "ind200 主数据。",
+    "type": "entity"
+  },
+  {
+    "aliases": [
+      "工厂",
+      "factory_name"
+    ],
+    "definition": "工厂:物理生产基地。",
+    "evidence": [
+      "evidence_factory_workshop"
+    ],
+    "id": "term_factory",
+    "name": "Factory",
+    "scope": "ind200 主数据。",
+    "type": "entity"
+  },
+  {
+    "aliases": [
+      "车间",
+      "workshop_name",
+      "位置"
+    ],
+    "definition": "车间:工厂下设的生产车间,是生产活动与成本归集的基本单元。",
+    "evidence": [
+      "evidence_factory_workshop"
+    ],
+    "id": "term_workshop",
+    "name": "Workshop",
+    "scope": "ind200 主数据。",
+    "type": "entity"
+  },
+  {
+    "aliases": [
+      "危险源",
+      "hazard_name"
+    ],
+    "definition": "危险源:危险源清单,含类别、所在位置与固有风险等级。",
+    "evidence": [
+      "evidence_factory_workshop"
+    ],
+    "id": "term_hazard",
+    "name": "Hazard",
+    "scope": "ind200 主数据。",
+    "type": "entity"
+  },
+  {
+    "aliases": [
+      "原因码",
+      "原因码简称",
+      "reason_code",
+      "short_name"
+    ],
+    "definition": "原因码:业务事件原因的编码字典,含英文编码、中文简称与缩写。",
+    "evidence": [
+      "evidence_reason_code_master",
+      "evidence_reason_code_usage"
+    ],
+    "id": "term_reason_code",
+    "name": "Reason Code",
+    "scope": "ind200 主数据 dim_reason_code 与各事实表的 reason_code 文本列。",
+    "type": "dimension"
+  },
+  {
+    "aliases": [
+      "币种",
+      "币种简称",
+      "currency_code",
+      "short_name"
+    ],
+    "definition": "币种:币种字典,含编码与中文简称。",
+    "evidence": [
+      "evidence_currency_master",
+      "evidence_currency_uniform"
+    ],
+    "id": "term_currency",
+    "name": "Currency",
+    "scope": "ind200 主数据 dim_currency 与事实表的 currency_code 文本列。",
+    "type": "entity"
+  },
+  {
+    "aliases": [
+      "部门",
+      "需求部门",
+      "dept_name"
+    ],
+    "definition": "部门:企业职能部门维度,销售部按区域分组。",
+    "evidence": [
+      "evidence_department"
+    ],
+    "id": "term_department",
+    "name": "Department",
+    "scope": "ind200 主数据。",
+    "type": "entity"
+  },
+  {
+    "aliases": [
+      "供应商",
+      "supplier_name"
+    ],
+    "definition": "供应商:供应商维度,含类别、所在地、信用等级。",
+    "evidence": [
+      "evidence_column_blocks"
+    ],
+    "id": "term_supplier",
+    "name": "Supplier",
+    "scope": "ind200 主数据。",
+    "type": "entity"
+  },
+  {
+    "aliases": [
+      "员工",
+      "员工状态",
+      "emp_name"
+    ],
+    "definition": "员工:员工档案,含所属部门与在职状态。",
+    "evidence": [
+      "evidence_employee_status"
+    ],
+    "id": "term_employee",
+    "name": "Employee",
+    "scope": "ind200 主数据。",
+    "type": "entity"
+  },
+  {
+    "aliases": [
+      "产线",
+      "生产线",
+      "line_name"
+    ],
+    "definition": "产线:生产线主数据,如阻燃挤出1线、特塑挤出2线。",
+    "evidence": [
+      "evidence_regular_hours_by_line"
+    ],
+    "id": "term_production_line",
+    "name": "Production Line",
+    "scope": "ind200 主数据。",
+    "type": "entity"
+  },
+  {
+    "aliases": [
+      "日历",
+      "calendar_date"
+    ],
+    "definition": "日历:按日展开的日期维度,含年/季/月/周、是否工作日与会计年度。",
+    "evidence": [
+      "evidence_calendar_range"
+    ],
+    "id": "term_calendar",
+    "name": "Calendar",
+    "scope": "ind200 主数据 dim_calendar。",
+    "type": "entity"
+  },
+  {
+    "aliases": [
+      "项目",
+      "project_id"
+    ],
+    "definition": "项目:项目主数据,关联企业与员工。",
+    "evidence": [
+      "evidence_column_blocks"
+    ],
+    "id": "term_project",
+    "name": "Project",
+    "scope": "ind200 主数据。",
+    "type": "entity"
+  },
+  {
+    "aliases": [
+      "固定资产",
+      "资产"
+    ],
+    "definition": "固定资产:资产卡片主数据。",
+    "evidence": [
+      "evidence_column_blocks"
+    ],
+    "id": "term_fixed_asset",
+    "name": "Fixed Asset",
+    "scope": "ind200 主数据。",
+    "type": "entity"
+  },
+  {
+    "aliases": [
+      "单位",
+      "读数单位",
+      "计量单位",
+      "unit",
+      "measurement_unit"
+    ],
+    "definition": "测量单位:传感器读数/IoT数据所用的单位。",
+    "evidence": [
+      "evidence_iot_unit"
+    ],
+    "id": "term_iot_unit",
+    "name": "Measurement Unit",
+    "scope": "ind200 IoT数据与设备监测类表。",
+    "type": "dimension"
+  },
+  {
+    "aliases": [
+      "采购订单"
+    ],
+    "definition": "采购订单:采购订单事实表。",
+    "evidence": [
+      "evidence_po_status"
+    ],
+    "id": "term_purchase_order",
+    "name": "Purchase Order",
+    "scope": "ind200 采购域。",
+    "type": "entity"
+  },
+  {
+    "aliases": [
+      "采购订单行"
+    ],
+    "definition": "采购订单行:采购订单的明细行。",
+    "evidence": [
+      "evidence_material_category_join"
+    ],
+    "id": "term_po_line",
+    "name": "Purchase Order Line",
+    "scope": "ind200 采购域。",
+    "type": "entity"
+  },
+  {
+    "aliases": [
+      "采购申请"
+    ],
+    "definition": "采购申请单:记录申请部门、申请人、需求日期与总金额。",
+    "evidence": [
+      "evidence_column_blocks"
+    ],
+    "id": "term_purchase_requisition",
+    "name": "Purchase Requisition",
+    "scope": "ind200 采购域。",
+    "type": "entity"
+  },
+  {
+    "aliases": [
+      "收货单",
+      "收货"
+    ],
+    "definition": "收货单:采购收货记录,含检验员与检验结果。",
+    "evidence": [
+      "evidence_goods_receipt"
+    ],
+    "id": "term_goods_receipt",
+    "name": "Goods Receipt",
+    "scope": "ind200 采购域。",
+    "type": "entity"
+  },
+  {
+    "aliases": [
+      "应付账款",
+      "应付金额"
+    ],
+    "definition": "应付账款:每张合格收货单一条,状态为 closed(付清)或 open。",
+    "evidence": [
+      "evidence_ap_status"
+    ],
+    "id": "term_ap",
+    "name": "Accounts Payable",
+    "scope": "ind200 财务/采购域。",
+    "type": "entity"
+  },
+  {
+    "aliases": [
+      "到货预告明细"
+    ],
+    "definition": "到货预告明细:一张到货预告的一条明细。",
+    "evidence": [
+      "evidence_column_blocks"
+    ],
+    "id": "term_asn_line",
+    "name": "Advance Shipping Notice Line",
+    "scope": "ind200 采购域。",
+    "type": "entity"
+  },
+  {
+    "aliases": [
+      "供应商合同明细"
+    ],
+    "definition": "供应商合同明细:一张供应商合同的一条明细。",
+    "evidence": [
+      "evidence_column_blocks"
+    ],
+    "id": "term_supplier_contract_line",
+    "name": "Supplier Contract Line",
+    "scope": "ind200 采购域。",
+    "type": "entity"
+  },
+  {
+    "aliases": [
+      "供应商评估"
+    ],
+    "definition": "供应商评估:按季度评估交付/质量/服务/综合评分与评级。",
+    "evidence": [
+      "evidence_column_blocks"
+    ],
+    "id": "term_supplier_eval",
+    "name": "Supplier Evaluation",
+    "scope": "ind200 采购域。",
+    "type": "entity"
+  },
+  {
+    "aliases": [
+      "生产工单",
+      "工单"
+    ],
+    "definition": "生产工单:记录下单日期、产线、产品、计划/实际产量与工单状态。",
+    "evidence": [
+      "evidence_production_order_status"
+    ],
+    "id": "term_production_order",
+    "name": "Production Order",
+    "scope": "ind200 生产域。",
+    "type": "entity"
+  },
+  {
+    "aliases": [
+      "产出记录",
+      "产出"
+    ],
+    "definition": "产出记录:关联工单,含产出日期、数量与产品等级。",
+    "evidence": [
+      "evidence_production_grade"
+    ],
+    "id": "term_production_output",
+    "name": "Production Output",
+    "scope": "ind200 生产域。",
+    "type": "entity"
+  },
+  {
+    "aliases": [
+      "工单物料投用",
+      "工单物料"
+    ],
+    "definition": "工单物料投用:按工单×原料记录标准用量与实际用量。",
+    "evidence": [
+      "evidence_column_blocks"
+    ],
+    "id": "term_work_order_material",
+    "name": "Work Order Material Issue",
+    "scope": "ind200 生产域。",
+    "type": "entity"
+  },
+  {
+    "aliases": [
+      "工单工序执行"
+    ],
+    "definition": "工单工序执行:记录工单的工序执行数量与时长。",
+    "evidence": [
+      "evidence_column_blocks"
+    ],
+    "id": "term_work_order_operation",
+    "name": "Work Order Operation",
+    "scope": "ind200 生产域。",
+    "type": "entity"
+  },
+  {
+    "aliases": [
+      "投料记录",
+      "投料"
+    ],
+    "definition": "投料记录:按工单×原料记录BOM理论用量与实际投料,自身不含产线列,到产线需经生产工单。",
+    "evidence": [
+      "evidence_production_line_join"
+    ],
+    "id": "term_material_consumption",
+    "name": "Material Consumption",
+    "scope": "ind200 生产域。",
+    "type": "entity"
+  },
+  {
+    "aliases": [
+      "在制品快照",
+      "在制品"
+    ],
+    "definition": "在制品快照:同时携带生产工单与产线标识,到产线只需一跳。",
+    "evidence": [
+      "evidence_production_line_join"
+    ],
+    "id": "term_wip_snapshot",
+    "name": "WIP Snapshot",
+    "scope": "ind200 生产域。",
+    "type": "entity"
+  },
+  {
+    "aliases": [
+      "返工单"
+    ],
+    "definition": "返工单:关联生产工单与员工,记录返工处置与结果。",
+    "evidence": [
+      "evidence_column_blocks"
+    ],
+    "id": "term_rework_order",
+    "name": "Rework Order",
+    "scope": "ind200 生产域。",
+    "type": "entity"
+  },
+  {
+    "aliases": [
+      "报废事件",
+      "报废"
+    ],
+    "definition": "报废事件:关联生产工单与产品,含成本金额与币种。",
+    "evidence": [
+      "evidence_currency_uniform"
+    ],
+    "id": "term_scrap_event",
+    "name": "Scrap Event",
+    "scope": "ind200 生产域。",
+    "type": "entity"
+  },
+  {
+    "aliases": [
+      "生产工时报工",
+      "报工"
+    ],
+    "definition": "生产工时报工:关联工单、员工与班次,含正常工时与加班工时。",
+    "evidence": [
+      "evidence_regular_hours_by_line"
+    ],
+    "id": "term_labor_booking",
+    "name": "Labor Booking",
+    "scope": "ind200 生产域。",
+    "type": "entity"
+  },
+  {
+    "aliases": [
+      "产能计划"
+    ],
+    "definition": "产能计划:关联产线与生产班次。",
+    "evidence": [
+      "evidence_column_blocks"
+    ],
+    "id": "term_capacity_plan",
+    "name": "Capacity Plan",
+    "scope": "ind200 计划域。",
+    "type": "entity"
+  },
+  {
+    "aliases": [
+      "班次生产报告"
+    ],
+    "definition": "班次生产报告:关联产线与班次,含良率与数据质量分。",
+    "evidence": [
+      "evidence_column_blocks"
+    ],
+    "id": "term_shift_report",
+    "name": "Shift Production Report",
+    "scope": "ind200 生产域。",
+    "type": "entity"
+  },
+  {
+    "aliases": [
+      "遗留系统领料记录"
+    ],
+    "definition": "遗留系统领料记录:关联生产工单,含优先级与BOM吨耗。",
+    "evidence": [
+      "evidence_calendar_join"
+    ],
+    "id": "term_legacy_material_issue",
+    "name": "Legacy Material Issue",
+    "scope": "ind200 生产域。",
+    "type": "entity"
+  },
+  {
+    "aliases": [
+      "批次追溯"
+    ],
+    "definition": "批次追溯:关联原材料与生产工单。",
+    "evidence": [
+      "evidence_column_blocks"
+    ],
+    "id": "term_lot_trace",
+    "name": "Lot Trace",
+    "scope": "ind200 库存域。",
+    "type": "entity"
+  },
+  {
+    "aliases": [
+      "库存"
+    ],
+    "definition": "库存:按产品×批次记录入库日期、库存数量与在库天数。",
+    "evidence": [
+      "evidence_inventory_storage_days"
+    ],
+    "id": "term_inventory",
+    "name": "Finished Goods Inventory",
+    "scope": "ind200 库存域。",
+    "type": "entity"
+  },
+  {
+    "aliases": [
+      "库存快照"
+    ],
+    "definition": "库存快照:关联原材料与仓库的月末原料库存快照。",
+    "evidence": [
+      "evidence_inventory_snapshot_remarks"
+    ],
+    "id": "term_inventory_snapshot",
+    "name": "Inventory Snapshot",
+    "scope": "ind200 库存域。",
+    "type": "entity"
+  },
+  {
+    "aliases": [
+      "库存移动"
+    ],
+    "definition": "库存移动:关联原材料、仓库与库位的移动记录,含成本金额与币种。",
+    "evidence": [
+      "evidence_currency_uniform"
+    ],
+    "id": "term_inventory_movement",
+    "name": "Inventory Movement",
+    "scope": "ind200 库存域。",
+    "type": "entity"
+  },
+  {
+    "aliases": [
+      "库存调拨单",
+      "库存调拨"
+    ],
+    "definition": "库存调拨单:关联来源仓库与目标仓库,含可用数量与币种。",
+    "evidence": [
+      "evidence_column_blocks"
+    ],
+    "id": "term_transfer_order",
+    "name": "Stock Transfer Order",
+    "scope": "ind200 库存域。",
+    "type": "entity"
+  },
+  {
+    "aliases": [
+      "循环盘点单",
+      "盘点单"
+    ],
+    "definition": "循环盘点单:关联仓库与员工,含优先级与账面/实盘数量。",
+    "evidence": [
+      "evidence_cycle_count_priority"
+    ],
+    "id": "term_cycle_count",
+    "name": "Cycle Count",
+    "scope": "ind200 库存域。",
+    "type": "entity"
+  },
+  {
+    "aliases": [
+      "循环盘点明细",
+      "盘点明细"
+    ],
+    "definition": "循环盘点明细:一张循环盘点单的一条明细。",
+    "evidence": [
+      "evidence_record_status_vocab"
+    ],
+    "id": "term_cycle_count_line",
+    "name": "Cycle Count Line",
+    "scope": "ind200 库存域。",
+    "type": "entity"
+  },
+  {
+    "aliases": [
+      "成品批次质量冻结",
+      "质量冻结"
+    ],
+    "definition": "成品批次质量冻结:关联产品与员工,含处置方式与失效日期。",
+    "evidence": [
+      "evidence_batch_disposition",
+      "evidence_product_line_join"
+    ],
+    "id": "term_batch_quality_hold",
+    "name": "Batch Quality Hold",
+    "scope": "ind200 库存/质量域。",
+    "type": "entity"
+  },
+  {
+    "aliases": [
+      "检验批",
+      "批次"
+    ],
+    "definition": "检验批:关联生产工单与产品,含规格上下限。",
+    "evidence": [
+      "evidence_inspection_limits"
+    ],
+    "id": "term_inspection_lot",
+    "name": "Inspection Lot",
+    "scope": "ind200 质量域。",
+    "type": "entity"
+  },
+  {
+    "aliases": [
+      "检验结果"
+    ],
+    "definition": "检验结果:一张检验批的一条明细,关联质量特性与检验方法。",
+    "evidence": [
+      "evidence_column_blocks"
+    ],
+    "id": "term_inspection_result",
+    "name": "Inspection Result",
+    "scope": "ind200 质量域。",
+    "type": "entity"
+  },
+  {
+    "aliases": [
+      "在线仪表校准",
+      "仪表校准"
+    ],
+    "definition": "在线仪表校准:关联设备与传感器,含标准值、测量值与误差。",
+    "evidence": [
+      "evidence_gauge_calibration"
+    ],
+    "id": "term_gauge_calibration",
+    "name": "Gauge Calibration",
+    "scope": "ind200 质量域。",
+    "type": "entity"
+  },
+  {
+    "aliases": [
+      "不合格记录"
+    ],
+    "definition": "不合格记录:关联检验批与原因码。",
+    "evidence": [
+      "evidence_column_blocks"
+    ],
+    "id": "term_nonconformance",
+    "name": "Nonconformance",
+    "scope": "ind200 质量域。",
+    "type": "entity"
+  },
+  {
+    "aliases": [
+      "客户投诉",
+      "投诉"
+    ],
+    "definition": "客户投诉:关联客户、产品与销售订单。",
+    "evidence": [
+      "evidence_column_blocks"
+    ],
+    "id": "term_customer_complaint",
+    "name": "Customer Complaint",
+    "scope": "ind200 质量域。",
+    "type": "entity"
+  },
+  {
+    "aliases": [
+      "数据质量问题"
+    ],
+    "definition": "数据质量问题:关联数据集版本与验证案例,含异常数与处理状态。",
+    "evidence": [
+      "evidence_data_quality_issue"
+    ],
+    "id": "term_data_quality_issue",
+    "name": "Data Quality Issue",
+    "scope": "ind200 治理域。",
+    "type": "entity"
+  },
+  {
+    "aliases": [
+      "验证案例执行结果"
+    ],
+    "definition": "验证案例执行结果:关联数据集版本与验证案例。",
+    "evidence": [
+      "evidence_data_quality_issue"
+    ],
+    "id": "term_validation_case_result",
+    "name": "Validation Case Result",
+    "scope": "ind200 治理域。",
+    "type": "entity"
+  },
+  {
+    "aliases": [
+      "设备事件"
+    ],
+    "definition": "设备事件:关联设备与原因码的设备事件记录。",
+    "evidence": [
+      "evidence_synthetic_fact_family",
+      "evidence_remarks_vocab"
+    ],
+    "id": "term_equipment_event",
+    "name": "Equipment Event",
+    "scope": "ind200 设备域。",
+    "type": "entity"
+  },
+  {
+    "aliases": [
+      "设备状态监测"
+    ],
+    "definition": "设备状态监测:关联设备与传感器,含读数与阈值。",
+    "evidence": [
+      "evidence_condition_monitoring"
+    ],
+    "id": "term_condition_monitoring",
+    "name": "Condition Monitoring",
+    "scope": "ind200 设备域。",
+    "type": "entity"
+  },
+  {
+    "aliases": [
+      "预测性维护告警"
+    ],
+    "definition": "预测性维护告警:关联设备与传感器,含读数单位与阈值。",
+    "evidence": [
+      "evidence_column_blocks"
+    ],
+    "id": "term_predictive_alert",
+    "name": "Predictive Maintenance Alert",
+    "scope": "ind200 设备域。",
+    "type": "entity"
+  },
+  {
+    "aliases": [
+      "告警"
+    ],
+    "definition": "告警:关联传感器与设备,含告警类型、严重度与是否处理。",
+    "evidence": [
+      "evidence_alarm_sensor"
+    ],
+    "id": "term_alarm",
+    "name": "Equipment Alarm",
+    "scope": "ind200 设备域。",
+    "type": "entity"
+  },
+  {
+    "aliases": [
+      "维护计划"
+    ],
+    "definition": "维护计划:按设备设置维护类型、间隔天数/小时与下次维护日期。",
+    "evidence": [
+      "evidence_maintenance_plan",
+      "evidence_equipment_type_join"
+    ],
+    "id": "term_maintenance_plan",
+    "name": "Maintenance Plan",
+    "scope": "ind200 设备域。",
+    "type": "entity"
+  },
+  {
+    "aliases": [
+      "备件领用"
+    ],
+    "definition": "备件领用:关联设备与备件。",
+    "evidence": [
+      "evidence_column_blocks"
+    ],
+    "id": "term_spare_part_issue",
+    "name": "Spare Part Issue",
+    "scope": "ind200 设备域。",
+    "type": "entity"
+  },
+  {
+    "aliases": [
+      "能源计量读数"
+    ],
+    "definition": "能源计量读数:关联设备与能源类型,读数逐日累计。",
+    "evidence": [
+      "evidence_column_blocks"
+    ],
+    "id": "term_energy_meter_reading",
+    "name": "Energy Meter Reading",
+    "scope": "ind200 能源域。",
+    "type": "entity"
+  },
+  {
+    "aliases": [
+      "排放事件"
+    ],
+    "definition": "排放事件:关联工厂与排放物类型。",
+    "evidence": [
+      "evidence_column_blocks"
+    ],
+    "id": "term_emission_event",
+    "name": "Emission Event",
+    "scope": "ind200 环境域。",
+    "type": "entity"
+  },
+  {
+    "aliases": [
+      "环境监测",
+      "环境监测记录"
+    ],
+    "definition": "环境监测记录:关联工厂与排放物类型,含排放值、限值与是否超标。",
+    "evidence": [
+      "evidence_environment_measurement"
+    ],
+    "id": "term_environment_measurement",
+    "name": "Environment Measurement",
+    "scope": "ind200 环境域。",
+    "type": "entity"
+  },
+  {
+    "aliases": [
+      "危险源观察"
+    ],
+    "definition": "危险源观察:关联危险源、员工、车间与风险等级。",
+    "evidence": [
+      "evidence_hazard_observation"
+    ],
+    "id": "term_hazard_observation",
+    "name": "Hazard Observation",
+    "scope": "ind200 安全域。",
+    "type": "entity"
+  },
+  {
+    "aliases": [
+      "风险评估"
+    ],
+    "definition": "风险评估:记录危险源、评估人、评估日期、可能性与后果等级。",
+    "evidence": [
+      "evidence_risk_consequence"
+    ],
+    "id": "term_risk_assessment",
+    "name": "Risk Assessment",
+    "scope": "ind200 安全域。",
+    "type": "entity"
+  },
+  {
+    "aliases": [
+      "安全整改措施",
+      "整改措施"
+    ],
+    "definition": "安全整改措施:关联危险源、员工与风险等级。",
+    "evidence": [
+      "evidence_safety_action_status"
+    ],
+    "id": "term_safety_action",
+    "name": "Safety Corrective Action",
+    "scope": "ind200 安全域。",
+    "type": "entity"
+  },
+  {
+    "aliases": [
+      "安全审计记录",
+      "安全审计"
+    ],
+    "definition": "安全审计记录:含审计类型、被审计车间、评分与发现项数。",
+    "evidence": [
+      "evidence_audit_type"
+    ],
+    "id": "term_safety_audit",
+    "name": "Safety Audit",
+    "scope": "ind200 安全域。",
+    "type": "entity"
+  },
+  {
+    "aliases": [
+      "安全目标"
+    ],
+    "definition": "安全目标:记录目标描述、目标值、期限与责任部门。",
+    "evidence": [
+      "evidence_column_blocks"
+    ],
+    "id": "term_safety_objective",
+    "name": "Safety Objective",
+    "scope": "ind200 安全域。",
+    "type": "entity"
+  },
+  {
+    "aliases": [
+      "安全计划"
+    ],
+    "definition": "安全计划:年度安全工作计划。",
+    "evidence": [
+      "evidence_safety_plan_status"
+    ],
+    "id": "term_safety_plan",
+    "name": "Safety Plan",
+    "scope": "ind200 安全域。",
+    "type": "entity"
+  },
+  {
+    "aliases": [
+      "安全培训签到",
+      "培训签到"
+    ],
+    "definition": "安全培训签到:关联安全培训与员工。",
+    "evidence": [
+      "evidence_column_blocks"
+    ],
+    "id": "term_training_attendance",
+    "name": "Safety Training Attendance",
+    "scope": "ind200 安全域。",
+    "type": "entity"
+  },
+  {
+    "aliases": [
+      "考勤记录",
+      "考勤"
+    ],
+    "definition": "考勤记录:关联员工与生产班次,含缺勤类型与考勤备注。",
+    "evidence": [
+      "evidence_absence_type",
+      "evidence_attendance_remarks"
+    ],
+    "id": "term_attendance",
+    "name": "Attendance Record",
+    "scope": "ind200 人力域。",
+    "type": "entity"
+  },
+  {
+    "aliases": [
+      "员工资质记录",
+      "资质记录"
+    ],
+    "definition": "员工资质记录:关联员工与资质证书。",
+    "evidence": [
+      "evidence_column_blocks"
+    ],
+    "id": "term_certification_record",
+    "name": "Certification Record",
+    "scope": "ind200 人力域。",
+    "type": "entity"
+  },
+  {
+    "aliases": [
+      "销售订单"
+    ],
+    "definition": "销售订单:记录客户、业务员、产品、金额、毛利的订单头。",
+    "evidence": [
+      "evidence_so_status"
+    ],
+    "id": "term_sales_order",
+    "name": "Sales Order",
+    "scope": "ind200 销售域。",
+    "type": "entity"
+  },
+  {
+    "aliases": [
+      "销售订单明细"
+    ],
+    "definition": "销售订单明细:一张销售订单的一条明细。",
+    "evidence": [
+      "evidence_region_values"
+    ],
+    "id": "term_sales_order_line",
+    "name": "Sales Order Line",
+    "scope": "ind200 销售域。",
+    "type": "entity"
+  },
+  {
+    "aliases": [
+      "销售合同明细"
+    ],
+    "definition": "销售合同明细:一张销售合同的一条明细。",
+    "evidence": [
+      "evidence_region_values"
+    ],
+    "id": "term_sales_contract_line",
+    "name": "Sales Contract Line",
+    "scope": "ind200 销售域。",
+    "type": "entity"
+  },
+  {
+    "aliases": [
+      "销售预测"
+    ],
+    "definition": "销售预测:关联客户、产品与市场细分。",
+    "evidence": [
+      "evidence_region_values"
+    ],
+    "id": "term_sales_forecast",
+    "name": "Sales Forecast",
+    "scope": "ind200 销售域。",
+    "type": "entity"
+  },
+  {
+    "aliases": [
+      "价格调整"
+    ],
+    "definition": "价格调整:关联客户、产品与定价,含销售区域。",
+    "evidence": [
+      "evidence_region_values"
+    ],
+    "id": "term_price_adjustment",
+    "name": "Price Adjustment",
+    "scope": "ind200 销售域。",
+    "type": "entity"
+  },
+  {
+    "aliases": [
+      "报价单"
+    ],
+    "definition": "报价单:记录客户、业务员、产品、数量与金额。",
+    "evidence": [
+      "evidence_quotation_status"
+    ],
+    "id": "term_quotation",
+    "name": "Quotation",
+    "scope": "ind200 销售域。",
+    "type": "entity"
+  },
+  {
+    "aliases": [
+      "退货"
+    ],
+    "definition": "退货:记录原销售订单、退货日期、数量、金额与退货原因。",
+    "evidence": [
+      "evidence_return_reason"
+    ],
+    "id": "term_sales_return",
+    "name": "Sales Return",
+    "scope": "ind200 销售域。",
+    "type": "entity"
+  },
+  {
+    "aliases": [
+      "送样"
+    ],
+    "definition": "送样:记录送样日期、客户、数量与反馈结果。",
+    "evidence": [
+      "evidence_sample_result"
+    ],
+    "id": "term_sample",
+    "name": "Sample Delivery",
+    "scope": "ind200 销售域。",
+    "type": "entity"
+  },
+  {
+    "aliases": [
+      "销售线索",
+      "线索"
+    ],
+    "definition": "销售线索:关联客户、员工、销售渠道与客户分群。",
+    "evidence": [
+      "evidence_customer_industry"
+    ],
+    "id": "term_lead",
+    "name": "Sales Lead",
+    "scope": "ind200 销售域。",
+    "type": "entity"
+  },
+  {
+    "aliases": [
+      "发运单"
+    ],
+    "definition": "发运单:关联发货单、客户、仓库与承运商。",
+    "evidence": [
+      "evidence_column_blocks"
+    ],
+    "id": "term_shipment",
+    "name": "Shipment",
+    "scope": "ind200 销售域。",
+    "type": "entity"
+  },
+  {
+    "aliases": [
+      "发货单",
+      "交付单"
+    ],
+    "definition": "发货单:关联销售订单的发货记录。",
+    "evidence": [
+      "evidence_column_blocks"
+    ],
+    "id": "term_delivery",
+    "name": "Delivery",
+    "scope": "ind200 销售域。",
+    "type": "entity"
+  },
+  {
+    "aliases": [
+      "发票",
+      "已开票"
+    ],
+    "definition": "发票:蓝字发票与发货单一一对应,退货开具红字发票。",
+    "evidence": [
+      "evidence_column_blocks"
+    ],
+    "id": "term_invoice",
+    "name": "Sales Invoice",
+    "scope": "ind200 财务/销售域。",
+    "type": "entity"
+  },
+  {
+    "aliases": [
+      "总账凭证",
+      "凭证"
+    ],
+    "definition": "总账凭证:关联会计科目、成本中心与科目表,借贷平衡。",
+    "evidence": [
+      "evidence_gl_status"
+    ],
+    "id": "term_gl_entry",
+    "name": "GL Entry",
+    "scope": "ind200 财务域。",
+    "type": "entity"
+  },
+  {
+    "aliases": [
+      "现金流记录",
+      "现金流"
+    ],
+    "definition": "现金流记录:关联会计科目、客户与供应商。",
+    "evidence": [
+      "evidence_column_blocks"
+    ],
+    "id": "term_cash_flow",
+    "name": "Cash Flow Record",
+    "scope": "ind200 财务域。",
+    "type": "entity"
+  },
+  {
+    "aliases": [
+      "资本项目成本"
+    ],
+    "definition": "资本项目成本:关联项目、固定资产与资产类别。",
+    "evidence": [
+      "evidence_capex_status"
+    ],
+    "id": "term_capex_project_cost",
+    "name": "Capex Project Cost",
+    "scope": "ind200 项目域。",
+    "type": "entity"
+  },
+  {
+    "aliases": [
+      "固定资产调拨"
+    ],
+    "definition": "固定资产调拨:关联固定资产、来源工厂与目标工厂。",
+    "evidence": [
+      "evidence_column_blocks"
+    ],
+    "id": "term_fixed_asset_transfer",
+    "name": "Fixed Asset Transfer",
+    "scope": "ind200 资产域。",
+    "type": "entity"
+  },
+  {
+    "aliases": [
+      "IoT数据"
+    ],
+    "definition": "IoT数据:传感器物联网数据流,含时间戳、测量值与单位。",
+    "evidence": [
+      "evidence_iot_unit"
+    ],
+    "id": "term_iot_data",
+    "name": "IoT Sensor Data",
+    "scope": "ind200 设备域。",
+    "type": "entity"
+  }
+]

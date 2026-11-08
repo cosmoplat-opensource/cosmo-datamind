@@ -1,0 +1,530 @@
+[
+  {
+    "id": "c_finished_time",
+    "target": "term_race_finish",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "finished",
+      "did not finish",
+      "not finished",
+      "finished the race",
+      "finished the game",
+      "completed the race",
+      "DNF"
+    ],
+    "severity": "block",
+    "scope": "Interpreting whether a driver finished a race",
+    "confidence": "high",
+    "description": "In this database a driver is treated as having finished when the result entry has a time value: 5961 of 23657 entries do. This set is nearly, but not exactly, the same as the entries whose status is 'Finished' (5966 entries); entries with the '+1 Lap' style classification are often classified without any time, and a few entries marked 'Finished' have no time. The two readings must be chosen deliberately rather than assumed to coincide, and the negated reading ('did not finish') is the complement of the chosen one.",
+    "evidence": [
+      "evidence_004"
+    ]
+  },
+  {
+    "id": "c_time_encoding",
+    "target": "term_race_time",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "finish time",
+      "time",
+      "champion time",
+      "incremental time",
+      "gap",
+      "how much faster",
+      "last driver time",
+      "finished time"
+    ],
+    "severity": "block",
+    "scope": "Reading or comparing any recorded race time",
+    "confidence": "high",
+    "description": "One column holds two different quantities. The first-placed entry of a race carries the absolute elapsed race duration written as hours, minutes and seconds with a fractional part; exactly 972 entries have this form, one for each race that has results, and they are always the first-placed entries. Every other classified entry carries a gap relative to the winner, always introduced by a plus sign (4989 entries), written either as seconds with a fraction or as minutes, seconds and a fraction. The two forms cannot be compared as strings, and a gap must be added to the winner's absolute duration to obtain another driver's absolute finishing time. Fractional-second precision is not uniform: 611 entries have three decimals, 118 have two and 243 have one.",
+    "evidence": [
+      "evidence_003",
+      "evidence_018"
+    ]
+  },
+  {
+    "id": "c_time_numeric_form",
+    "target": "term_race_time",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "time",
+      "milliseconds",
+      "faster",
+      "duration",
+      "order by time"
+    ],
+    "severity": "warning",
+    "scope": "Ordering or doing arithmetic on race times",
+    "confidence": "high",
+    "description": "Race times are stored as text durations rather than numbers. A companion numeric column holds the same value expressed as total milliseconds for 5960 of the 5961 timed entries and is the reliable basis for ordering or arithmetic; the text form should not be compared directly.",
+    "evidence": [
+      "evidence_003"
+    ]
+  },
+  {
+    "id": "c_race_name_ambiguity",
+    "target": "term_race_name",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "Grand Prix",
+      "race name",
+      "the Canadian Grand Prix",
+      "name of the race",
+      "race of name"
+    ],
+    "severity": "block",
+    "scope": "Selecting a race event from a Grand Prix name",
+    "confidence": "high",
+    "description": "A Grand Prix name is a recurring event title, not an event identity. The data holds 976 race events under only 42 distinct titles, and the Canadian Grand Prix alone appears 48 times, once per season in which it was held. A single event is identified by its race identifier or by the combination of its title and its season.",
+    "evidence": [
+      "evidence_007"
+    ]
+  },
+  {
+    "id": "c_race_number_meaning",
+    "target": "term_race_identifier",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "race number",
+      "race No.",
+      "race at",
+      "raceId",
+      "race 291"
+    ],
+    "severity": "block",
+    "scope": "Interpreting a numeric race reference in a question",
+    "confidence": "high",
+    "description": "A race number in a question denotes the numeric key of a single race event, whose values run from 1 to 982. It is not a round number within a season and not a row position.",
+    "evidence": [
+      "evidence_007"
+    ]
+  },
+  {
+    "id": "c_winner_uniqueness",
+    "target": "term_race_winner",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "champion",
+      "winner",
+      "won the race",
+      "first place",
+      "first position"
+    ],
+    "severity": "warning",
+    "scope": "Treating the first-placed entry of a race as a single driver",
+    "confidence": "high",
+    "description": "Being classified first is not always unique. In three early races, two drivers are classified first in the same car with an identical absolute time, reflecting shared drives. Any analysis that assumes exactly one winner per race can return more rows than expected for those races.",
+    "evidence": [
+      "evidence_018"
+    ]
+  },
+  {
+    "id": "c_champion_scope",
+    "target": "term_race_winner",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "champion",
+      "winner",
+      "season champion",
+      "championship"
+    ],
+    "severity": "warning",
+    "scope": "Interpreting the word champion",
+    "confidence": "medium",
+    "description": "When a question names a Grand Prix and a season, the word champion refers to the winner of that single race, that is the entry classified first. A season or world champion is a different concept and follows from the cumulative standings rather than from one race result.",
+    "evidence": [
+      "evidence_014",
+      "evidence_018"
+    ]
+  },
+  {
+    "id": "c_position_null",
+    "target": "term_finish_position",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "position",
+      "finishing position",
+      "ranked",
+      "track number",
+      "place",
+      "last driver",
+      "finishing order"
+    ],
+    "severity": "block",
+    "scope": "Ranking or filtering drivers within a race",
+    "confidence": "high",
+    "description": "The finishing position is empty for 10528 of 23657 entries, namely for every entry that was not classified; a text marker such as a retirement letter takes its place. All entries, including the unclassified ones, still carry a separate ordering index for that race. A ranking over all entrants of a race must therefore use the ordering index, while a ranking restricted to drivers who completed the race must use the finishing position.",
+    "evidence": [
+      "evidence_005"
+    ]
+  },
+  {
+    "id": "c_grid_versus_position",
+    "target": "term_grid_position",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "track number",
+      "grid",
+      "starting position",
+      "position",
+      "from pole"
+    ],
+    "severity": "warning",
+    "scope": "Distinguishing starting order from finishing order",
+    "confidence": "high",
+    "description": "The grid column is the starting slot assigned before the race, where zero marks a pit-lane start; the position column is the finishing classification. A question that speaks of the track number of a driver refers to the finishing order, not to the grid slot.",
+    "evidence": [
+      "evidence_016"
+    ]
+  },
+  {
+    "id": "c_accident_status",
+    "target": "term_accident",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "accident",
+      "accidents",
+      "crash",
+      "number of accidents"
+    ],
+    "severity": "block",
+    "scope": "Counting or filtering accidents",
+    "confidence": "high",
+    "description": "Accidents are counted through the race status code whose label is 'Accident'. The status vocabulary deliberately separates nearby outcomes that must not be merged into it: 'Collision', 'Collision damage' and 'Fatal accident' are distinct codes. Counting a driver's accidents means counting that driver's result entries carrying the accident code.",
+    "evidence": [
+      "evidence_002"
+    ]
+  },
+  {
+    "id": "c_status_vocabulary",
+    "target": "term_race_status",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "status",
+      "retired",
+      "disqualified",
+      "finished",
+      "statusid",
+      "outcome"
+    ],
+    "severity": "info",
+    "scope": "Interpreting the outcome code of a result entry",
+    "confidence": "high",
+    "description": "The status vocabulary has 134 entries reached from each result entry through its status reference. It contains a finished code, a disqualified code, a family of lapped-finish codes written as a lap deficit, and dozens of mechanical and incident codes such as engine, gearbox, collision and the accident code. Entries that were not classified also have no finishing position.",
+    "evidence": [
+      "evidence_002"
+    ]
+  },
+  {
+    "id": "c_fastest_lap_speed_type",
+    "target": "term_fastest_lap_speed",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "fastest lap speed",
+      "fastest speed",
+      "lap speed",
+      "maximum speed",
+      "rank"
+    ],
+    "severity": "block",
+    "scope": "Finding a maximum or minimum fastest lap speed",
+    "confidence": "high",
+    "description": "The fastest lap speed column is declared as text even though its values are decimal numbers, for the 5268 entries where it is populated. Selecting a maximum therefore requires an explicit numeric conversion. The accompanying rank column gives the rank of a driver's quickest lap within that race, where the value 1 marks the fastest lap of the race, and the fastest lap column gives the lap number on which that lap was set.",
+    "evidence": [
+      "evidence_006"
+    ]
+  },
+  {
+    "id": "c_fastest_lap_coverage",
+    "target": "term_fastest_lap",
+    "constraint_type": "scope",
+    "trigger_keywords": [
+      "fastest lap",
+      "lap speed",
+      "rank",
+      "quickest lap"
+    ],
+    "severity": "warning",
+    "scope": "Applying fastest lap analysis across the whole dataset",
+    "confidence": "high",
+    "description": "Fastest lap information is sparse. The speed column is populated for 5268 entries, while a rank of 1, marking the fastest lap of a race, exists for only 256 race events. Fastest lap analysis is therefore confined to the modern era and cannot be applied to the full historical range.",
+    "evidence": [
+      "evidence_006"
+    ]
+  },
+  {
+    "id": "c_qualifying_coverage",
+    "target": "term_qualifying_result",
+    "constraint_type": "scope",
+    "trigger_keywords": [
+      "qualifying",
+      "quali",
+      "q1",
+      "q2",
+      "q3",
+      "grid session"
+    ],
+    "severity": "warning",
+    "scope": "Answering qualifying questions for a given race",
+    "confidence": "high",
+    "description": "Qualifying entries exist for 339 of the 976 race events and begin with the 1994 season. Race events before that point have no qualifying data, so a qualifying question about an early race has no supporting rows.",
+    "evidence": [
+      "evidence_008"
+    ]
+  },
+  {
+    "id": "c_qualifying_elimination",
+    "target": "term_qualifying_period",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "eliminated",
+      "eliminated in the first period",
+      "first qualifying period",
+      "knocked out",
+      "q1",
+      "q2",
+      "q3"
+    ],
+    "severity": "warning",
+    "scope": "Determining which drivers were eliminated in a qualifying segment",
+    "confidence": "high",
+    "description": "Each of the three qualifying segments holds the best lap a driver set in it. A driver eliminated in the first period has a value in the first segment but nothing in the second; a driver eliminated in the second period has a value in the second segment but nothing in the third; only the survivors of the final segment have a value in the third. In a full session, the drivers who do not advance out of the first period are the ones with the slowest laps of that first segment. Across the whole table 3807 of 7397 rows have nothing in the second segment.",
+    "evidence": [
+      "evidence_009"
+    ]
+  },
+  {
+    "id": "c_qualifying_time_format",
+    "target": "term_qualifying_period",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "q1",
+      "q2",
+      "q3",
+      "qualifying time",
+      "fastest qualifying"
+    ],
+    "severity": "warning",
+    "scope": "Ordering or comparing qualifying lap times",
+    "confidence": "high",
+    "description": "Qualifying segment values are text durations in minutes, seconds and thousandths. Ordering them as text is not a valid time ordering, which is visible in the data: a value read as sixteen minutes and forty-two seconds sorts ahead of a value read as one minute and five seconds. The data also contains at least one value with a missing digit in the fractional part, so a value that cannot be parsed as a proper duration may occur.",
+    "evidence": [
+      "evidence_009"
+    ]
+  },
+  {
+    "id": "c_lap_time_coverage",
+    "target": "term_lap_time",
+    "constraint_type": "scope",
+    "trigger_keywords": [
+      "lap time",
+      "each lap",
+      "lap by lap",
+      "laps"
+    ],
+    "severity": "warning",
+    "scope": "Answering lap-level questions for a given race",
+    "confidence": "high",
+    "description": "Lap records exist for 389 of the 976 race events and none earlier than the 1996 season. Within that range the table is complete: each row is one lap of one driver in one race, every lap time is populated, and each row also carries the driver's running position at the end of that lap. Lap-level questions are unanswerable outside this range.",
+    "evidence": [
+      "evidence_008",
+      "evidence_019"
+    ]
+  },
+  {
+    "id": "c_pit_stop_coverage",
+    "target": "term_pit_stop",
+    "constraint_type": "scope",
+    "trigger_keywords": [
+      "pit stop",
+      "pitstop",
+      "stop",
+      "average pitstop duration"
+    ],
+    "severity": "warning",
+    "scope": "Answering pit stop questions for a given race",
+    "confidence": "high",
+    "description": "Pit stop records exist for only 131 race events, all of them from the recent era of the data. Within that range the table is complete and both the text duration and its millisecond equivalent are populated for every stop. Pit stop questions about older races cannot be answered.",
+    "evidence": [
+      "evidence_008",
+      "evidence_010"
+    ]
+  },
+  {
+    "id": "c_nationality_versus_country",
+    "target": "term_nationality",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "nationality",
+      "British",
+      "German",
+      "British constructors",
+      "German drivers",
+      "country",
+      "Austria",
+      "held in"
+    ],
+    "severity": "block",
+    "scope": "Combining affiliation values with place values",
+    "confidence": "high",
+    "description": "Driver and constructor nationality values are demonyms such as British, German and Italian and express affiliation rather than a country row. The country value of a circuit is a country name such as UK, Austria or Malaysia and expresses where the venue lies. The two vocabularies are not interchangeable, and in particular the demonym for a country never equals the country name, so the two must not be compared by equality on their text values.",
+    "evidence": [
+      "evidence_011"
+    ]
+  },
+  {
+    "id": "c_points_grain",
+    "target": "term_points",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "points",
+      "maximum points",
+      "highest point",
+      "0 points",
+      "score",
+      "championship points"
+    ],
+    "severity": "block",
+    "scope": "Choosing which points value a question refers to",
+    "confidence": "high",
+    "description": "Points appear at four different grains and choosing the wrong one changes the answer. Points are awarded per driver per race and per constructor per race, and each of those also exists in a cumulative form that accumulates the season up to and including a given race. The per-race driver grain has 23657 rows of which 17037 are zero, the per-race constructor grain has 11082 rows, and the two cumulative grains have 31578 and 11836 rows. A maximum or a zero over a single race belongs to a per-race grain, whereas a season total or a championship position belongs to a cumulative grain.",
+    "evidence": [
+      "evidence_014"
+    ]
+  },
+  {
+    "id": "c_constructor_result_status",
+    "target": "term_constructor_standing",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "constructor points",
+      "disqualified constructor",
+      "constructor result"
+    ],
+    "severity": "info",
+    "scope": "Reading per-race constructor results",
+    "confidence": "high",
+    "description": "The per-race constructor points table carries a status column that is empty for 11065 rows and holds a disqualification marker for 17 rows, marking constructor entries that were removed from a race result. Entries with that marker still carry their points value.",
+    "evidence": [
+      "evidence_014"
+    ]
+  },
+  {
+    "id": "c_date_of_birth_semantics",
+    "target": "term_date_of_birth",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "oldest",
+      "youngest",
+      "born between",
+      "age",
+      "date of birth",
+      "dob",
+      "birthday"
+    ],
+    "severity": "block",
+    "scope": "Reasoning about driver age or birth period",
+    "confidence": "high",
+    "description": "A driver's date of birth is stored as a text date covering the range from the end of the nineteenth century to the late twentieth century. The oldest driver has the smallest birth date and the youngest the largest, so a question about the oldest driver selects a minimum and one about the youngest selects a maximum. A birth-period condition such as being born between two years is a condition on the year part of the date.",
+    "evidence": [
+      "evidence_012"
+    ]
+  },
+  {
+    "id": "c_driver_name_composition",
+    "target": "term_driver_full_name",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "full name",
+      "first name",
+      "surname",
+      "Lewis Hamilton",
+      "name of the driver",
+      "player"
+    ],
+    "severity": "warning",
+    "scope": "Matching a driver named in a question",
+    "confidence": "high",
+    "description": "A driver's full name is the given name followed by the family name. The family name alone is not a unique driver identifier, because it is shared by different drivers of different generations, so a full name must be matched on both name parts together.",
+    "evidence": [
+      "evidence_012"
+    ]
+  },
+  {
+    "id": "c_circuit_reference_gap",
+    "target": "term_circuit",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "Australian Grand Prix",
+      "circuit",
+      "track",
+      "coordinates",
+      "country",
+      "location"
+    ],
+    "severity": "block",
+    "scope": "Joining race events to circuits",
+    "confidence": "high",
+    "description": "Twenty-two race events reference a circuit key that has no matching circuit row, because the circuit key sequence in use starts after that value. All of them are Australian Grand Prix events from the 1996 to 2017 seasons. Those events therefore have no circuit name, location, country or coordinates available through the circuit relationship, and any analysis by country or coordinates silently drops them. A referential integrity check over the data reports exactly these violations.",
+    "evidence": [
+      "evidence_017"
+    ]
+  },
+  {
+    "id": "c_circuit_country_grain",
+    "target": "term_circuit_country",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "held in",
+      "hosted",
+      "circuits in",
+      "country",
+      "location"
+    ],
+    "severity": "warning",
+    "scope": "Counting races by country",
+    "confidence": "high",
+    "description": "A circuit's country is the country of the venue, so asking how many times races were held in a country counts race events whose circuit lies in that country rather than the number of circuit rows for that country. For Austria this distinction is visible: three circuits lie in Austria while thirty race events were held at Austrian circuits. Note also that a country is coarser than a location: seventy-two circuits share only thirty-two countries but sixty-nine distinct locations.",
+    "evidence": [
+      "evidence_013"
+    ]
+  },
+  {
+    "id": "c_season_scope",
+    "target": "term_season",
+    "constraint_type": "scope",
+    "trigger_keywords": [
+      "year",
+      "season",
+      "since 2010",
+      "earliest year"
+    ],
+    "severity": "info",
+    "scope": "Restricting analysis to a period",
+    "confidence": "high",
+    "description": "The data covers the seasons from 1950 to 2017, sixty-eight championship years, with race dates running from the middle of May 1950 to late November 2017. Every race event belongs to exactly one season year, and a lower bound on the season is the natural way to express a period restriction.",
+    "evidence": [
+      "evidence_015",
+      "evidence_008"
+    ]
+  },
+  {
+    "id": "c_introduction_website_scope",
+    "target": "term_introduction_website",
+    "constraint_type": "scope",
+    "trigger_keywords": [
+      "introduction website",
+      "url",
+      "website",
+      "profile"
+    ],
+    "severity": "info",
+    "scope": "Retrieving a profile link",
+    "confidence": "high",
+    "description": "Both drivers and constructors carry a single descriptive link. The same concept therefore resolves to two different columns depending on whether the subject of the question is a driver or a constructor.",
+    "evidence": [
+      "evidence_001"
+    ]
+  }
+]

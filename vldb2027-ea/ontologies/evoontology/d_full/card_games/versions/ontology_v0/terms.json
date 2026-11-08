@@ -1,0 +1,345 @@
+[
+  {
+    "id": "card_printing",
+    "name": "Card Printing",
+    "type": "entity",
+    "definition": "One physical printing of a Magic card in one set, identified by the printing uuid. It is the unit of rows in the cards table and the unit that rulings, legalities and foreign_data rows reference.",
+    "scope": "Row-level card data in the card_games database; the default entity when a question refers to 'cards' without qualifying identity.",
+    "aliases": [
+      "printing",
+      "card version",
+      "card row",
+      "card copy"
+    ],
+    "evidence": [
+      "evidence_cards_counts",
+      "evidence_setcode_subset"
+    ]
+  },
+  {
+    "id": "card_identity",
+    "name": "Card Identity",
+    "type": "entity",
+    "definition": "The abstract card shared by all of its printings, identified by scryfallOracleId and normally also by name. Many printings, from different sets and years, collapse onto one card identity.",
+    "scope": "Required whenever a question counts distinct cards, compares a card across sets, or aggregates reprints, rulings or translations per card.",
+    "aliases": [
+      "distinct card",
+      "unique card",
+      "oracle card",
+      "oracle id",
+      "the same card"
+    ],
+    "evidence": [
+      "evidence_cards_counts",
+      "evidence_name_multi_oracle"
+    ]
+  },
+  {
+    "id": "card_set",
+    "name": "Card Set",
+    "type": "entity",
+    "definition": "An expansion or product release that groups printings, identified by a short set code. Sets carry release date, product type, block, parent set and size attributes.",
+    "scope": "Grouping of printings for release-level, product-level and per-set analysis.",
+    "aliases": [
+      "set",
+      "edition",
+      "expansion",
+      "release"
+    ],
+    "evidence": [
+      "evidence_sets_counts",
+      "evidence_set_type"
+    ]
+  },
+  {
+    "id": "card_face",
+    "name": "Card Face",
+    "type": "entity",
+    "definition": "One face of a multi-face card printing. Faces of the same printing are distinguished by the side marker and linked through otherFaceIds and faceName; they share the printing uuid.",
+    "scope": "Multi-face layouts only: transform, modal_dfc, split, adventure, aftermath, flip and meld.",
+    "aliases": [
+      "face",
+      "side",
+      "half",
+      "front face",
+      "back face"
+    ],
+    "evidence": [
+      "evidence_layout_side",
+      "evidence_face_rows"
+    ]
+  },
+  {
+    "id": "ruling",
+    "name": "Ruling",
+    "type": "entity",
+    "definition": "An official clarification of how a card works, carrying an issue date and attached to a card printing uuid.",
+    "scope": "Card rules clarification content stored in the rulings table.",
+    "aliases": [
+      "ruling",
+      "clarification",
+      "official ruling"
+    ],
+    "evidence": [
+      "evidence_rulings"
+    ]
+  },
+  {
+    "id": "rarity",
+    "name": "Rarity",
+    "type": "dimension",
+    "definition": "The print rarity of a card printing, describing how frequently it appears in boosters of its set.",
+    "scope": "Filtering and distributing printings by print rarity.",
+    "aliases": [
+      "rarity",
+      "common",
+      "uncommon",
+      "rare",
+      "mythic"
+    ],
+    "evidence": [
+      "evidence_rarity"
+    ]
+  },
+  {
+    "id": "card_color",
+    "name": "Card Color",
+    "type": "dimension",
+    "definition": "The set of mana colors that make up the card's color, derived from its mana cost and color indicator. A card with no mana color is colorless.",
+    "scope": "Color-based grouping and filtering of printings.",
+    "aliases": [
+      "color",
+      "colors",
+      "mono color",
+      "multicolor",
+      "colorless"
+    ],
+    "evidence": [
+      "evidence_colors",
+      "evidence_color_letters"
+    ]
+  },
+  {
+    "id": "color_identity",
+    "name": "Color Identity",
+    "type": "dimension",
+    "definition": "The full set of colors associated with a card, combining its color with the colors of mana symbols appearing anywhere in its rules text. Used for Commander deck construction rules.",
+    "scope": "Deck-construction color rules; differs from plain card color for cards with off-color mana symbols in their text.",
+    "aliases": [
+      "color identity",
+      "commander identity",
+      "identity"
+    ],
+    "evidence": [
+      "evidence_colors"
+    ]
+  },
+  {
+    "id": "card_type",
+    "name": "Card Type",
+    "type": "dimension",
+    "definition": "The type information of a card: card types (Creature, Instant, Land, ...), supertypes (Legendary, Basic, Snow, ...) and subtypes (Human, Wizard, Equipment, ...).",
+    "scope": "Type-based grouping and filtering of printings.",
+    "aliases": [
+      "type",
+      "card type",
+      "type line",
+      "subtype",
+      "supertype",
+      "creature type"
+    ],
+    "evidence": [
+      "evidence_type_encoding",
+      "evidence_joke_type"
+    ]
+  },
+  {
+    "id": "tournament_format",
+    "name": "Tournament Format",
+    "type": "dimension",
+    "definition": "A named constructed or limited play format in which a card printing may be legal, banned or restricted.",
+    "scope": "Format-scoped legality analysis over the legalities table.",
+    "aliases": [
+      "format",
+      "legality format",
+      "constructed format"
+    ],
+    "evidence": [
+      "evidence_legalities_formats"
+    ]
+  },
+  {
+    "id": "legality_status",
+    "name": "Legality Status",
+    "type": "dimension",
+    "definition": "The legality verdict of a card printing in a format. Only Legal, Banned and Restricted are stored; a printing with no row for a format is not legal in that format.",
+    "scope": "Value interpretation of the legalities table.",
+    "aliases": [
+      "status",
+      "legal",
+      "banned",
+      "restricted",
+      "not legal"
+    ],
+    "evidence": [
+      "evidence_legalities_formats",
+      "evidence_legalities_coverage"
+    ]
+  },
+  {
+    "id": "mana_cost",
+    "name": "Mana Cost",
+    "type": "dimension",
+    "definition": "The mana cost printed on a card printing, expressed as a sequence of mana symbols. Printings without a mana cost (predominantly lands) have no value.",
+    "scope": "Cost composition of printings; the direct input to converted mana cost.",
+    "aliases": [
+      "mana cost",
+      "cost",
+      "mana symbols"
+    ],
+    "evidence": [
+      "evidence_cmc"
+    ]
+  },
+  {
+    "id": "language",
+    "name": "Language",
+    "type": "dimension",
+    "definition": "A natural language in which card text or set names are additionally published. The same language vocabulary is used for card-level and set-level localization.",
+    "scope": "Localization analysis across foreign_data and set_translations.",
+    "aliases": [
+      "language",
+      "localization language",
+      "translated language"
+    ],
+    "evidence": [
+      "evidence_foreign_data",
+      "evidence_set_translations"
+    ]
+  },
+  {
+    "id": "set_type",
+    "name": "Set Type",
+    "type": "dimension",
+    "definition": "The product category of a set, such as expansion, core, promo, masters, memorabilia, token or funny.",
+    "scope": "Distinguishing playable expansions from promotional or collectible products.",
+    "aliases": [
+      "set type",
+      "product type",
+      "expansion type",
+      "promo set"
+    ],
+    "evidence": [
+      "evidence_set_type"
+    ]
+  },
+  {
+    "id": "set_release_date",
+    "name": "Set Release Date",
+    "type": "dimension",
+    "definition": "The calendar date on which a set was released, which orders sets in time and bounds the card pool available to a format at a given moment.",
+    "scope": "Temporal filtering and ordering of sets and their printings.",
+    "aliases": [
+      "release date",
+      "released",
+      "set date",
+      "newest set"
+    ],
+    "evidence": [
+      "evidence_release_dates"
+    ]
+  },
+  {
+    "id": "converted_mana_cost",
+    "name": "Converted Mana Cost",
+    "type": "metric",
+    "definition": "The total amount of mana in a card's mana cost, computed by summing its mana symbols. Stored per printing, and separately per face for multi-face printings.",
+    "scope": "Quantitative cost analysis of printings.",
+    "aliases": [
+      "converted mana cost",
+      "cmc",
+      "mana value",
+      "mana cost total"
+    ],
+    "evidence": [
+      "evidence_cmc"
+    ]
+  },
+  {
+    "id": "creature_power",
+    "name": "Creature Power",
+    "type": "metric",
+    "definition": "The power of a creature, describing the damage it deals in combat. Stored as text because some cards use variable or symbolic power.",
+    "scope": "Quantitative comparison of creatures by combat strength.",
+    "aliases": [
+      "power",
+      "P/T",
+      "attack strength"
+    ],
+    "evidence": [
+      "evidence_power_toughness"
+    ]
+  },
+  {
+    "id": "creature_toughness",
+    "name": "Creature Toughness",
+    "type": "metric",
+    "definition": "The toughness of a creature, describing the damage it can survive. Stored as text because some cards use variable or symbolic toughness.",
+    "scope": "Quantitative comparison of creatures by resilience.",
+    "aliases": [
+      "toughness",
+      "P/T",
+      "durability"
+    ],
+    "evidence": [
+      "evidence_power_toughness"
+    ]
+  },
+  {
+    "id": "reprint",
+    "name": "Reprint",
+    "type": "concept",
+    "definition": "A card printing that is not the first appearance of its card identity, i.e. the card was already printed in an earlier set.",
+    "scope": "Reprint-history analysis over card identities and sets.",
+    "aliases": [
+      "reprint",
+      "reprinted",
+      "reissue"
+    ],
+    "evidence": [
+      "evidence_reprint_flags",
+      "evidence_printings_list"
+    ]
+  },
+  {
+    "id": "card_localization",
+    "name": "Card Localization",
+    "type": "concept",
+    "definition": "The name, type line, rules text and flavor text of a card printing published in a non-English language.",
+    "scope": "Card-level translation coverage across languages.",
+    "aliases": [
+      "translation",
+      "localized card text",
+      "foreign card text",
+      "foreign name"
+    ],
+    "evidence": [
+      "evidence_foreign_data"
+    ]
+  },
+  {
+    "id": "set_localization",
+    "name": "Set Localization",
+    "type": "concept",
+    "definition": "The translated name of a set in a given language.",
+    "scope": "Set-level translation coverage across languages.",
+    "aliases": [
+      "set translation",
+      "translated set name",
+      "localized set name"
+    ],
+    "evidence": [
+      "evidence_set_translations"
+    ]
+  }
+]

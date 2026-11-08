@@ -1,0 +1,126 @@
+[
+  {
+    "id": "rel_district_school",
+    "source": "term_district",
+    "relation_type": "composition",
+    "target": "term_school",
+    "connection_condition": "A district owns the schools that carry it: the district is identified by the county+district prefix of the CDS code and by the district name repeated on each school record; each district also has its own administrative record whose CDS code ends in seven zeros.",
+    "description": "A district is composed of the schools it operates. A school record cannot be interpreted without the district that operates it, and district-level measures are obtained by aggregating their schools.",
+    "evidence": [
+      "evidence_district_rows",
+      "evidence_name_linkage"
+    ]
+  },
+  {
+    "id": "rel_county_district",
+    "source": "term_county",
+    "relation_type": "composition",
+    "target": "term_district",
+    "connection_condition": "The first two digits of the CDS code are the county code, and the county name is repeated on each district and school record.",
+    "description": "A county is composed of the districts located in it; a district belongs to exactly one county, and county-level results aggregate their districts and schools.",
+    "evidence": [
+      "evidence_county_domain",
+      "evidence_cds_format"
+    ]
+  },
+  {
+    "id": "rel_frpm_free_meal",
+    "source": "term_frpm_count",
+    "relation_type": "hierarchy",
+    "target": "term_free_meal_count",
+    "connection_condition": "Both counts are reported on the same frpm record and in the same K-12 or ages 5-17 universe; the free-meal count is not greater than the FRPM count on 9930 of 9986 records.",
+    "description": "Students eligible for free meals are a subset of students eligible for free or reduced-price meals, so the free meal count is a narrower measure of the same population as the FRPM count. A small number of records report a free meal count above the FRPM count, which is inconsistent with the subset reading.",
+    "evidence": [
+      "evidence_meal_counts",
+      "evidence_meal_count_exception"
+    ]
+  },
+  {
+    "id": "rel_free_count_to_free_rate",
+    "source": "term_free_meal_count",
+    "relation_type": "derivation",
+    "target": "term_eligible_free_meal_rate",
+    "connection_condition": "The rate is formed from the free meal count on the same record and the same enrollment universe.",
+    "description": "The eligible free meal rate is derived from the free meal count as its numerator; the free meal population determines the magnitude of the rate for a school.",
+    "evidence": [
+      "evidence_rate_is_fraction"
+    ]
+  },
+  {
+    "id": "rel_enrollment_to_free_rate",
+    "source": "term_enrollment_k12",
+    "relation_type": "derivation",
+    "target": "term_eligible_free_meal_rate",
+    "connection_condition": "The rate is formed from K-12 enrollment on the same record as its denominator.",
+    "description": "The eligible free meal rate is derived from K-12 enrollment as its denominator, so the same free meal count yields a smaller rate at a school with larger enrollment.",
+    "evidence": [
+      "evidence_rate_is_fraction"
+    ]
+  },
+  {
+    "id": "rel_frpm_count_to_frpm_rate",
+    "source": "term_frpm_count",
+    "relation_type": "derivation",
+    "target": "term_eligible_frpm_rate",
+    "connection_condition": "The rate is formed from the FRPM count on the same record.",
+    "description": "The eligible FRPM rate is derived from the free or reduced-price meal count as its numerator.",
+    "evidence": [
+      "evidence_rate_is_fraction"
+    ]
+  },
+  {
+    "id": "rel_enrollment_to_frpm_rate",
+    "source": "term_enrollment_k12",
+    "relation_type": "derivation",
+    "target": "term_eligible_frpm_rate",
+    "connection_condition": "The rate is formed from K-12 enrollment on the same record as its denominator.",
+    "description": "The eligible FRPM rate is derived from K-12 enrollment as its denominator for the same enrollment universe as the count.",
+    "evidence": [
+      "evidence_rate_is_fraction"
+    ]
+  },
+  {
+    "id": "rel_enrollment_to_difference",
+    "source": "term_enrollment_k12",
+    "relation_type": "derivation",
+    "target": "term_enrollment_difference",
+    "connection_condition": "Both enrollment columns are read from the same frpm record.",
+    "description": "The enrollment difference uses K-12 enrollment as the minuend; it is derived from the two enrollment count columns rather than stored.",
+    "evidence": [
+      "evidence_enrollment_diff"
+    ]
+  },
+  {
+    "id": "rel_enrollment_517_to_difference",
+    "source": "term_enrollment_ages_5_17",
+    "relation_type": "derivation",
+    "target": "term_enrollment_difference",
+    "connection_condition": "Both enrollment columns are read from the same frpm record.",
+    "description": "The enrollment difference uses ages 5-17 enrollment as the subtrahend against the same school's K-12 enrollment.",
+    "evidence": [
+      "evidence_enrollment_diff"
+    ]
+  },
+  {
+    "id": "rel_sat_math_to_district_average",
+    "source": "term_sat_math_score",
+    "relation_type": "derivation",
+    "target": "term_district_sat_math_average",
+    "connection_condition": "School-level and district-level rows are distinguished by the reporting type on the SAT row, and district membership is carried by the district name on that row.",
+    "description": "The district average of math averages is derived from the school-level SAT math averages by taking their unweighted mean per district, which differs from an enrollment- or test-taker-weighted average.",
+    "evidence": [
+      "evidence_district_avg_math"
+    ]
+  },
+  {
+    "id": "rel_street_mailing_equivalence",
+    "source": "term_school_street_address",
+    "relation_type": "equivalence",
+    "target": "term_school_mailing_address",
+    "connection_condition": "The two column pairs sit on the same schools record, and the full-form values coincide on 14403 of 17686 records; the abbreviated pair mirrors the same addresses.",
+    "description": "The street address and the mailing address are treated as the same business concept of a school's postal street address, so a request for a postal street address can be satisfied from either column, although they are physically distinct columns that may differ.",
+    "evidence": [
+      "evidence_address_columns"
+    ]
+  }
+]

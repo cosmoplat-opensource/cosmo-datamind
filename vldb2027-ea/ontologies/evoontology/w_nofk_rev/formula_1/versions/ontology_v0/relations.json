@@ -1,0 +1,248 @@
+[
+  {
+    "id": "rel_circuit_race",
+    "source": "term_circuit",
+    "relation_type": "composition",
+    "target": "term_race",
+    "connection_condition": "races.circuitId corresponds to circuits.circuitId, so each race is held at exactly one circuit",
+    "description": "A circuit is the host venue of the race events held on it; a race cannot exist without the circuit at which it takes place, while a circuit persists across many races.",
+    "evidence": [
+      "evidence_014",
+      "evidence_017"
+    ]
+  },
+  {
+    "id": "rel_season_race",
+    "source": "term_season",
+    "relation_type": "composition",
+    "target": "term_race",
+    "connection_condition": "races.year corresponds to seasons.year",
+    "description": "A season is composed of the race events held within its championship year; a race belongs to exactly one season.",
+    "evidence": [
+      "evidence_014",
+      "evidence_019"
+    ]
+  },
+  {
+    "id": "rel_race_race_result",
+    "source": "term_race",
+    "relation_type": "composition",
+    "target": "term_race_result",
+    "connection_condition": "results.raceId corresponds to races.raceId",
+    "description": "A race is composed of one result entry per participating driver; a result entry has no meaning apart from its race.",
+    "evidence": [
+      "evidence_004",
+      "evidence_016"
+    ]
+  },
+  {
+    "id": "rel_driver_race_result",
+    "source": "term_driver",
+    "relation_type": "composition",
+    "target": "term_race_result",
+    "connection_condition": "results.driverId corresponds to drivers.driverId",
+    "description": "A driver's competitive record is composed of that driver's per-race result entries; an entry cannot exist without its driver.",
+    "evidence": [
+      "evidence_004",
+      "evidence_013"
+    ]
+  },
+  {
+    "id": "rel_constructor_race_result",
+    "source": "term_constructor",
+    "relation_type": "association",
+    "target": "term_race_result",
+    "connection_condition": "results.constructorId corresponds to constructors.constructorId",
+    "description": "Each race entry is attributed to the constructor that entered the car, linking team identity to per-race driver results.",
+    "evidence": [
+      "evidence_015",
+      "evidence_016"
+    ]
+  },
+  {
+    "id": "rel_driver_full_name_derivation",
+    "source": "term_driver",
+    "relation_type": "derivation",
+    "target": "term_driver_full_name",
+    "connection_condition": "",
+    "description": "A driver's full name is derived by combining the driver's given name and family name; neither component alone identifies a driver unambiguously.",
+    "evidence": [
+      "evidence_013"
+    ]
+  },
+  {
+    "id": "rel_dob_age_derivation",
+    "source": "term_driver_date_of_birth",
+    "relation_type": "derivation",
+    "target": "term_driver_age",
+    "connection_condition": "",
+    "description": "Age is derived from the date of birth relative to a comparison date; consequently the oldest driver is the one with the earliest date of birth.",
+    "evidence": [
+      "evidence_013"
+    ]
+  },
+  {
+    "id": "rel_lap_time_fastest_lap",
+    "source": "term_lap_time",
+    "relation_type": "derivation",
+    "target": "term_fastest_lap",
+    "connection_condition": "",
+    "description": "A driver's fastest lap is derived as the quickest lap time recorded by that driver within a race, and the race's fastest lap is the quickest of those minima across the field.",
+    "evidence": [
+      "evidence_008",
+      "evidence_020",
+      "evidence_021"
+    ]
+  },
+  {
+    "id": "rel_fastest_lap_speed_derivation",
+    "source": "term_fastest_lap",
+    "relation_type": "derivation",
+    "target": "term_fastest_lap_speed",
+    "connection_condition": "",
+    "description": "The speed attributed to a fastest lap is derived from that lap's duration over the lap distance, so the quickest lap in a race corresponds to the highest recorded lap speed.",
+    "evidence": [
+      "evidence_008"
+    ]
+  },
+  {
+    "id": "rel_elapsed_time_finish_time",
+    "source": "term_elapsed_race_time",
+    "relation_type": "derivation",
+    "target": "term_race_finish_time",
+    "connection_condition": "",
+    "description": "The absolute elapsed race time of an entry is the same total expressed in milliseconds; the winner's finish time is the absolute elapsed time itself, whereas the finish-time value recorded for other entries is only a gap.",
+    "evidence": [
+      "evidence_004",
+      "evidence_007"
+    ]
+  },
+  {
+    "id": "rel_finish_time_gap",
+    "source": "term_race_finish_time",
+    "relation_type": "derivation",
+    "target": "term_time_gap",
+    "connection_condition": "",
+    "description": "A driver's gap is derived as the difference between that driver's absolute elapsed race time and the winner's absolute elapsed race time, so the last classified driver's total is the winner's elapsed time plus the last driver's gap.",
+    "evidence": [
+      "evidence_004",
+      "evidence_016"
+    ]
+  },
+  {
+    "id": "rel_race_points_standing_points",
+    "source": "term_race_points",
+    "relation_type": "derivation",
+    "target": "term_standing_points",
+    "connection_condition": "",
+    "description": "Cumulative championship points are derived by accumulating per-race points across the events of a season up to the race in question.",
+    "evidence": [
+      "evidence_015",
+      "evidence_016"
+    ]
+  },
+  {
+    "id": "rel_finish_position_race_winner",
+    "source": "term_finish_position",
+    "relation_type": "derivation",
+    "target": "term_race_winner",
+    "connection_condition": "",
+    "description": "The race winner is derived as the driver holding the first final classification position in that race.",
+    "evidence": [
+      "evidence_004",
+      "evidence_016"
+    ]
+  },
+  {
+    "id": "rel_race_status_accident",
+    "source": "term_race_status",
+    "relation_type": "hierarchy",
+    "target": "term_accident",
+    "connection_condition": "",
+    "description": "An accident outcome is one specific category of race outcome status; the set of entries recorded with the accident category is a subset of all entries carrying an outcome status.",
+    "evidence": [
+      "evidence_003",
+      "evidence_016"
+    ]
+  },
+  {
+    "id": "rel_qualifying_result_period",
+    "source": "term_qualifying_result",
+    "relation_type": "composition",
+    "target": "term_qualifying_period",
+    "connection_condition": "",
+    "description": "A qualifying record is composed of the timed segments the driver took part in; a period time has no meaning apart from the qualifying record it belongs to.",
+    "evidence": [
+      "evidence_009",
+      "evidence_011"
+    ]
+  },
+  {
+    "id": "rel_qualifying_period_elimination",
+    "source": "term_qualifying_period",
+    "relation_type": "derivation",
+    "target": "term_qualifying_elimination",
+    "connection_condition": "",
+    "description": "Elimination at a qualifying stage is derived from the absence of any time in later segments together with the relative standing of the driver's time in the segment where they stopped.",
+    "evidence": [
+      "evidence_009",
+      "evidence_010"
+    ]
+  },
+  {
+    "id": "rel_pit_stop_duration_derivation",
+    "source": "term_pit_stop",
+    "relation_type": "derivation",
+    "target": "term_pit_stop_duration",
+    "connection_condition": "",
+    "description": "A pit stop's duration is derived from the interval the car was stationary, recorded both as a seconds value and as milliseconds.",
+    "evidence": [
+      "evidence_018"
+    ]
+  },
+  {
+    "id": "rel_pit_stop_race_result",
+    "source": "term_pit_stop",
+    "relation_type": "association",
+    "target": "term_race_result",
+    "connection_condition": "pitStops.raceId and pitStops.driverId together identify the race entry to which the stop belongs",
+    "description": "Pit stops are associated with the race entry of the driver who made them, allowing pit-lane activity to be read alongside that driver's result for the same race.",
+    "evidence": [
+      "evidence_018"
+    ]
+  },
+  {
+    "id": "rel_driver_nationality_equivalence",
+    "source": "term_driver_nationality",
+    "relation_type": "equivalence",
+    "target": "term_constructor_nationality",
+    "connection_condition": "drivers.nationality and constructors.nationality share the same value domain of nation labels",
+    "description": "Driver nationality and constructor nationality express the same notion of sporting nationality applied to different participant types; 21 nation labels occur in both tables, so a nation-based filter is expressed against either table in the same vocabulary.",
+    "evidence": [
+      "evidence_012"
+    ]
+  },
+  {
+    "id": "rel_circuit_location_coordinates",
+    "source": "term_circuit_location",
+    "relation_type": "association",
+    "target": "term_circuit_coordinates",
+    "connection_condition": "both attributes belong to the same circuit record",
+    "description": "A circuit's named location and its geographic coordinates describe the same venue at different levels of precision; they are complementary rather than redundant.",
+    "evidence": [
+      "evidence_017"
+    ]
+  },
+  {
+    "id": "rel_qualifying_race_result",
+    "source": "term_qualifying_result",
+    "relation_type": "association",
+    "target": "term_race_result",
+    "connection_condition": "qualifying.raceId and qualifying.driverId correspond to results.raceId and results.driverId",
+    "description": "A driver's qualifying performance for a race relates to that driver's race result for the same event, connecting starting performance with the outcome of the race.",
+    "evidence": [
+      "evidence_009",
+      "evidence_011"
+    ]
+  }
+]

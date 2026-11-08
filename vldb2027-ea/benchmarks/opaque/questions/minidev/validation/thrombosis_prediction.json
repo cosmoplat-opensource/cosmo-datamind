@@ -1,0 +1,68 @@
+{
+ "db_id": "thrombosis_prediction",
+ "questions": [
+  {
+   "question_id": 1152,
+   "db_id": "thrombosis_prediction",
+   "question": "What is the ratio of outpatient to inpatient followed up treatment among all the 'SLE' diagnosed patient?",
+   "evidence": "'SLE' diagnosed patient means fld008 = 'SLE'; inpatient refers to fld018 = '+'; outpatient refers to fld018 = '-'; calculation =  DIVIDE(COUNT(fld001) where fld008 = 'SLE' and fld018 = '+', COUNT(fld001) where fld008 = 'SLE' and fld018 = '-')",
+   "SQL": "SELECT SUM(CASE WHEN fld018 = '+' THEN 1.0 ELSE 0 END) / SUM(CASE WHEN fld018 = '-' THEN 1 ELSE 0 END) FROM tab02 WHERE fld008 = 'SLE'",
+   "difficulty": "moderate",
+   "SQL_original": "SELECT SUM(CASE WHEN Admission = '+' THEN 1.0 ELSE 0 END) / SUM(CASE WHEN Admission = '-' THEN 1 ELSE 0 END) FROM Patient WHERE Diagnosis = 'SLE'"
+  },
+  {
+   "question_id": 1175,
+   "db_id": "thrombosis_prediction",
+   "question": "How old was the patient who had the highest hemoglobin count at the time of the examination, and what is the doctor's diagnosis?",
+   "evidence": "How old the patient refers to SUBTRACT(year(fld002), year(fld015)); the highest hemoglobin count refers to MAX(fld036)",
+   "SQL": "SELECT STRFTIME('%Y', T2.fld019) - STRFTIME('%Y', T1.fld015), T1.fld008 FROM tab02 AS T1 INNER JOIN tab03 AS T2 ON T1.fld001 = T2.fld001 ORDER BY T2.fld036 DESC LIMIT 1",
+   "difficulty": "moderate",
+   "SQL_original": "SELECT STRFTIME('%Y', T2.Date) - STRFTIME('%Y', T1.Birthday), T1.Diagnosis FROM Patient AS T1 INNER JOIN Laboratory AS T2 ON T1.ID = T2.ID ORDER BY T2.HGB DESC LIMIT 1"
+  },
+  {
+   "question_id": 1281,
+   "db_id": "thrombosis_prediction",
+   "question": "Among the patients who have an abnormal level of glutamic oxaloacetic transaminase, when was the youngest of them born?",
+   "evidence": "abnormal level of glutamic oxaloacetic transaminase refers to fld020 > = 60; The larger the birthday value, the younger the person is, and vice versa;",
+   "SQL": "SELECT T1.fld015 FROM tab02 AS T1 INNER JOIN tab03 AS T2 ON T1.fld001 = T2.fld001 WHERE T2.fld020 >= 60 ORDER BY T1.fld015 DESC LIMIT 1",
+   "difficulty": "moderate",
+   "SQL_original": "SELECT T1.Birthday FROM Patient AS T1 INNER JOIN Laboratory AS T2 ON T1.ID = T2.ID WHERE T2.GOT >= 60 ORDER BY T1.Birthday DESC LIMIT 1"
+  },
+  {
+   "question_id": 1241,
+   "db_id": "thrombosis_prediction",
+   "question": "For patients with abnormal platelet level, state the number of patients with lower than normal range. How is it compare to the number of patients with higher than normal range?",
+   "evidence": "abnormal platelet level refers to fld038 <= 100 or fld038 >= 400; platelet level lower than normal range refers to fld038 < 100; calculation = SUBTRACT(SUM(fld038 < 100), SUM(fld038 > 400)); platelet level higher than normal range refers to fld038 > 400;",
+   "SQL": "SELECT SUM(CASE WHEN T2.fld038 <= 100 THEN 1 ELSE 0 END) - SUM(CASE WHEN T2.fld038 >= 400 THEN 1 ELSE 0 END) FROM tab02 AS T1 INNER JOIN tab03 AS T2 ON T1.fld001 = T2.fld001",
+   "difficulty": "challenging",
+   "SQL_original": "SELECT SUM(CASE WHEN T2.PLT <= 100 THEN 1 ELSE 0 END) - SUM(CASE WHEN T2.PLT >= 400 THEN 1 ELSE 0 END) FROM Patient AS T1 INNER JOIN Laboratory AS T2 ON T1.ID = T2.ID"
+  },
+  {
+   "question_id": 1225,
+   "db_id": "thrombosis_prediction",
+   "question": "List and group all patients by sex for total bilirubin (T-BIL) level not within the normal range.",
+   "evidence": "List refers to GROUP_CONCAT(DISTINCT fld001); total bilirubin (T-BIL) not within normal range refers to T-BIL > = 2.0",
+   "SQL": "SELECT T1.fld001, T1.fld014 FROM tab02 AS T1 INNER JOIN tab03 AS T2 ON T1.fld001 = T2.fld001 WHERE T2.fld029 >= 2.0 GROUP BY T1.fld014, T1.fld001",
+   "difficulty": "moderate",
+   "SQL_original": "SELECT T1.ID,T1.SEX FROM Patient AS T1 INNER JOIN Laboratory AS T2 ON T1.ID = T2.ID WHERE T2.`T-BIL` >= 2.0 GROUP BY T1.SEX,T1.ID"
+  },
+  {
+   "question_id": 1251,
+   "db_id": "thrombosis_prediction",
+   "question": "How many patients with an Ig G higher than normal?",
+   "evidence": "Ig G higher than normal refers to fld046 >= 2000; Should consider DISTINCT in the final result;",
+   "SQL": "SELECT COUNT(DISTINCT T1.fld001) FROM tab02 AS T1 INNER JOIN tab03 AS T2 ON T1.fld001 = T2.fld001 INNER JOIN tab01 AS T3 ON T3.fld001 = T2.fld001 WHERE T2.fld046 >= 2000",
+   "difficulty": "simple",
+   "SQL_original": "SELECT COUNT(DISTINCT T1.ID) FROM Patient AS T1 INNER JOIN Laboratory AS T2 ON T1.ID = T2.ID INNER JOIN Examination AS T3 ON T3.ID = T2.ID WHERE T2.IGG >= 2000"
+  },
+  {
+   "question_id": 1242,
+   "db_id": "thrombosis_prediction",
+   "question": "For laboratory examinations take in 1984, list all patients below 50 years old with normal platelet level.",
+   "evidence": "laboratory examinations take in 1984 refers to YEAR(fld019) = '1984'; below 50 years old = SUBTRACT(year(current_timestamp), year(fld015)) < 50; normal platelet level refers to fld038 between 100 and 400; ",
+   "SQL": "SELECT DISTINCT T1.fld001 FROM tab02 AS T1 INNER JOIN tab03 AS T2 ON T1.fld001 = T2.fld001 WHERE T2.fld038 BETWEEN 100 AND 400 AND STRFTIME('%Y', T2.fld019) - STRFTIME('%Y', T1.fld015) < 50 AND STRFTIME('%Y', T2.fld019) = '1984'",
+   "difficulty": "challenging",
+   "SQL_original": "SELECT DISTINCT T1.ID FROM Patient AS T1 INNER JOIN Laboratory AS T2 ON T1.ID = T2.ID WHERE T2.PLT BETWEEN 100 AND 400 AND STRFTIME('%Y', T2.Date) - STRFTIME('%Y', T1.Birthday) < 50 AND STRFTIME('%Y', T2.Date) = '1984'"
+  }
+ ]
+}

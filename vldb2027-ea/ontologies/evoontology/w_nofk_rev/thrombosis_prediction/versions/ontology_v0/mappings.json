@@ -1,0 +1,398 @@
+[
+  {
+    "id": "m_patient_entity",
+    "term_id": "patient",
+    "database_source": "thrombosis_prediction",
+    "table": "Patient",
+    "column": "",
+    "semantic_filter": "One row per enrolled patient; ID is unique in this table.",
+    "aggregation_semantics": "count of rows equals the number of enrolled patients",
+    "grain": "one row per patient",
+    "validation": "row count 1238 equals distinct ID count 1238",
+    "evidence_refs": [
+      "ev_patient_table"
+    ]
+  },
+  {
+    "id": "m_patient_identifier",
+    "term_id": "patient_identifier",
+    "database_source": "thrombosis_prediction",
+    "table": "Patient",
+    "column": "ID",
+    "semantic_filter": "",
+    "aggregation_semantics": "identifying attribute, not a measure; used for grouping and joining",
+    "grain": "one value per patient",
+    "validation": "1238 distinct values in 1238 rows",
+    "evidence_refs": [
+      "ev_patient_identifier_range"
+    ]
+  },
+  {
+    "id": "m_patient_sex",
+    "term_id": "sex",
+    "database_source": "thrombosis_prediction",
+    "table": "Patient",
+    "column": "SEX",
+    "semantic_filter": "Only 'M' and 'F' are meaningful; 13 rows carry an empty string and should be excluded when a sex filter is applied.",
+    "aggregation_semantics": "count of patients per sex category",
+    "grain": "one value per patient",
+    "validation": "distinct values F 1023, M 202, empty 13",
+    "evidence_refs": [
+      "ev_sex_values"
+    ]
+  },
+  {
+    "id": "m_patient_birthday",
+    "term_id": "birthday",
+    "database_source": "thrombosis_prediction",
+    "table": "Patient",
+    "column": "Birthday",
+    "semantic_filter": "One row has a NULL birthday.",
+    "aggregation_semantics": "date attribute; year component used for birth-year cohort filters",
+    "grain": "one value per patient",
+    "validation": "range 1912-08-28 to 2007-05-28, 1 NULL",
+    "evidence_refs": [
+      "ev_birthday_range"
+    ]
+  },
+  {
+    "id": "m_patient_record_date",
+    "term_id": "record_date",
+    "database_source": "thrombosis_prediction",
+    "table": "Patient",
+    "column": "Description",
+    "semantic_filter": "216 rows are NULL or empty; the same value is shared by many patients.",
+    "aggregation_semantics": "date attribute used for year selection, not a measure",
+    "grain": "one value per patient",
+    "validation": "97 distinct values across 1022 non-empty rows",
+    "evidence_refs": [
+      "ev_record_date_semantics"
+    ]
+  },
+  {
+    "id": "m_patient_first_visit_date",
+    "term_id": "first_visit_date",
+    "database_source": "thrombosis_prediction",
+    "table": "Patient",
+    "column": "First Date",
+    "semantic_filter": "251 rows are NULL or empty.",
+    "aggregation_semantics": "date attribute used for 'after date' selection, not a measure",
+    "grain": "one value per patient",
+    "validation": "range 1972-08-02 to 1998-08-28, 251 NULL or empty",
+    "evidence_refs": [
+      "ev_first_visit_date_range"
+    ]
+  },
+  {
+    "id": "m_patient_admission",
+    "term_id": "admission_status",
+    "database_source": "thrombosis_prediction",
+    "table": "Patient",
+    "column": "Admission",
+    "semantic_filter": "Only '+' (inpatient) and '-' (outpatient) are meaningful; 34 rows are empty and 3 rows contain a stray '+' variant.",
+    "aggregation_semantics": "count of patients per admission status",
+    "grain": "one value per patient",
+    "validation": "distinct values: '+' 488, '-' 713, empty 34, other 3",
+    "evidence_refs": [
+      "ev_admission_values"
+    ]
+  },
+  {
+    "id": "m_patient_diagnosis",
+    "term_id": "patient_diagnosis",
+    "database_source": "thrombosis_prediction",
+    "table": "Patient",
+    "column": "Diagnosis",
+    "semantic_filter": "Free-text disease abbreviations; multi-disease cells are comma separated and 154 rows carry a 'susp' (suspected) suffix.",
+    "aggregation_semantics": "count of patients whose diagnosis field embeds the target disease code",
+    "grain": "one value per patient",
+    "validation": "no NULL rows; 366 rows contain an SJS/SjS token, 195 rows equal 'SLE'",
+    "evidence_refs": [
+      "ev_patient_diagnosis_codes",
+      "ev_diagnosis_vocabulary_overlap"
+    ]
+  },
+  {
+    "id": "m_examination_entity",
+    "term_id": "examination",
+    "database_source": "thrombosis_prediction",
+    "table": "Examination",
+    "column": "",
+    "semantic_filter": "806 rows covering 763 distinct patient IDs; a few patients have multiple examinations.",
+    "aggregation_semantics": "count of rows equals the number of examination events",
+    "grain": "one row per examination event",
+    "validation": "806 rows, 763 distinct IDs, 8 IDs with more than one row",
+    "evidence_refs": [
+      "ev_examination_table"
+    ]
+  },
+  {
+    "id": "m_examination_date",
+    "term_id": "examination_date",
+    "database_source": "thrombosis_prediction",
+    "table": "Examination",
+    "column": "Examination Date",
+    "semantic_filter": "10 rows are NULL.",
+    "aggregation_semantics": "date attribute used for year selection",
+    "grain": "one value per examination event",
+    "validation": "range 1989-04-18 to 1998-04-17, 10 NULL",
+    "evidence_refs": [
+      "ev_examination_date_range"
+    ]
+  },
+  {
+    "id": "m_examination_diagnosis",
+    "term_id": "examination_diagnosis",
+    "database_source": "thrombosis_prediction",
+    "table": "Examination",
+    "column": "Diagnosis",
+    "semantic_filter": "331 of 806 rows are NULL, so this column cannot be used as a complete disease source.",
+    "aggregation_semantics": "count of examinations whose diagnosis field embeds the target disease code",
+    "grain": "one value per examination event",
+    "validation": "331 NULL rows; uses 'SjS' spelling where the Patient table uses 'SJS'",
+    "evidence_refs": [
+      "ev_examination_diagnosis_codes",
+      "ev_diagnosis_vocabulary_overlap"
+    ]
+  },
+  {
+    "id": "m_examination_thrombosis",
+    "term_id": "thrombosis_severity",
+    "database_source": "thrombosis_prediction",
+    "table": "Examination",
+    "column": "Thrombosis",
+    "semantic_filter": "Ordinal 0-3 grade; 0 means no thrombosis and non-zero values encode severity grades.",
+    "aggregation_semantics": "count of examinations per thrombosis grade",
+    "grain": "one value per examination event",
+    "validation": "distinct values 0 (726), 1 (57), 2 (18), 3 (5)",
+    "evidence_refs": [
+      "ev_thrombosis_distribution"
+    ]
+  },
+  {
+    "id": "m_examination_symptoms",
+    "term_id": "symptom",
+    "database_source": "thrombosis_prediction",
+    "table": "Examination",
+    "column": "Symptoms",
+    "semantic_filter": "Populated only for examinations whose Thrombosis grade is non-zero (80 of 806 rows).",
+    "aggregation_semantics": "presence or text listing of observed symptoms per examination",
+    "grain": "one value per examination event",
+    "validation": "80 non-NULL rows, exactly matching the 80 rows with Thrombosis <> 0",
+    "evidence_refs": [
+      "ev_symptoms_only_for_thrombosis"
+    ]
+  },
+  {
+    "id": "m_examination_ana",
+    "term_id": "antinuclear_antibody",
+    "database_source": "thrombosis_prediction",
+    "table": "Examination",
+    "column": "ANA",
+    "semantic_filter": "38 rows are NULL; 0 encodes a negative result.",
+    "aggregation_semantics": "titre values are ordinal strengths, not additive quantities",
+    "grain": "one value per examination event",
+    "validation": "observed titres 0, 4, 16, 64, 256, 1024, 4096",
+    "evidence_refs": [
+      "ev_ana_titer_values"
+    ]
+  },
+  {
+    "id": "m_examination_ana_pattern",
+    "term_id": "ana_pattern",
+    "database_source": "thrombosis_prediction",
+    "table": "Examination",
+    "column": "ANA Pattern",
+    "semantic_filter": "261 rows are NULL; letter codes may be combined with commas, periods or case variation.",
+    "aggregation_semantics": "categorical descriptor; count per pattern code",
+    "grain": "one value per examination event",
+    "validation": "observed codes S, P, P,S, S,P, D, N and lowercase variants",
+    "evidence_refs": [
+      "ev_ana_pattern_values"
+    ]
+  },
+  {
+    "id": "m_examination_acl_igg",
+    "term_id": "anticardiolipin_antibody",
+    "database_source": "thrombosis_prediction",
+    "table": "Examination",
+    "column": "aCL IgG",
+    "semantic_filter": "",
+    "aggregation_semantics": "concentration; select the isotype named by the question rather than combining isotypes",
+    "grain": "one value per examination event",
+    "validation": "no NULL rows; range 0.0 to 2150.3",
+    "evidence_refs": [
+      "ev_acl_columns"
+    ]
+  },
+  {
+    "id": "m_examination_acl_igm",
+    "term_id": "anticardiolipin_antibody",
+    "database_source": "thrombosis_prediction",
+    "table": "Examination",
+    "column": "aCL IgM",
+    "semantic_filter": "",
+    "aggregation_semantics": "concentration; select the isotype named by the question rather than combining isotypes",
+    "grain": "one value per examination event",
+    "validation": "no NULL rows; range 0.0 to 187122.0",
+    "evidence_refs": [
+      "ev_acl_columns"
+    ]
+  },
+  {
+    "id": "m_examination_acl_iga",
+    "term_id": "anticardiolipin_antibody",
+    "database_source": "thrombosis_prediction",
+    "table": "Examination",
+    "column": "aCL IgA",
+    "semantic_filter": "",
+    "aggregation_semantics": "concentration; select the isotype named by the question rather than combining isotypes",
+    "grain": "one value per examination event",
+    "validation": "no NULL rows; range 0 to 48547 despite an INTEGER column affinity",
+    "evidence_refs": [
+      "ev_acl_columns"
+    ]
+  },
+  {
+    "id": "m_laboratory_entity",
+    "term_id": "laboratory_record",
+    "database_source": "thrombosis_prediction",
+    "table": "Laboratory",
+    "column": "",
+    "semantic_filter": "13908 rows covering 302 distinct patient IDs; the composite key is (ID, Date).",
+    "aggregation_semantics": "count of rows equals the number of laboratory test events",
+    "grain": "one row per patient per test date",
+    "validation": "13908 rows, 302 distinct IDs, up to 226 rows for one patient",
+    "evidence_refs": [
+      "ev_laboratory_table",
+      "ev_lab_wide_format_and_nulls"
+    ]
+  },
+  {
+    "id": "m_laboratory_date",
+    "term_id": "lab_test_date",
+    "database_source": "thrombosis_prediction",
+    "table": "Laboratory",
+    "column": "Date",
+    "semantic_filter": "Column default is a zero date but no placeholder rows were observed.",
+    "aggregation_semantics": "date attribute used for period selection and ordering of repeated tests",
+    "grain": "one value per laboratory test event",
+    "validation": "range 1981-01-27 to 1999-03-04; 0 rows equal '0000-00-00'",
+    "evidence_refs": [
+      "ev_lab_test_date_range"
+    ]
+  },
+  {
+    "id": "m_laboratory_ua",
+    "term_id": "uric_acid",
+    "database_source": "thrombosis_prediction",
+    "table": "Laboratory",
+    "column": "UA",
+    "semantic_filter": "Treat as abnormal when above the sex-specific upper bound; the patient's SEX is required and lives in the Patient table.",
+    "aggregation_semantics": "concentration measurement; abnormal counts are per test record",
+    "grain": "one value per laboratory test event",
+    "validation": "range 0.4 to 17.3; 224 records above 8.0 and 698 above 6.5",
+    "evidence_refs": [
+      "ev_ua_distribution"
+    ]
+  },
+  {
+    "id": "m_laboratory_hct",
+    "term_id": "hematocrit",
+    "database_source": "thrombosis_prediction",
+    "table": "Laboratory",
+    "column": "HCT",
+    "semantic_filter": "Above-reference direction is the abnormal one.",
+    "aggregation_semantics": "percentage measurement; abnormal counts are per test record",
+    "grain": "one value per laboratory test event",
+    "validation": "range 3.0 to 56.0; 30 records at or above 52",
+    "evidence_refs": [
+      "ev_hematocrit_distribution"
+    ]
+  },
+  {
+    "id": "m_laboratory_rbc",
+    "term_id": "red_blood_cell_count",
+    "database_source": "thrombosis_prediction",
+    "table": "Laboratory",
+    "column": "RBC",
+    "semantic_filter": "Below-reference direction is the abnormal one.",
+    "aggregation_semantics": "cell count measurement; abnormal counts are per test record",
+    "grain": "one value per laboratory test event",
+    "validation": "range 0.4 to 6.6; 759 records below 3.5",
+    "evidence_refs": [
+      "ev_rbc_distribution"
+    ]
+  },
+  {
+    "id": "m_laboratory_ldh",
+    "term_id": "lactate_dehydrogenase",
+    "database_source": "thrombosis_prediction",
+    "table": "Laboratory",
+    "column": "LDH",
+    "semantic_filter": "Above-reference direction is the abnormal one.",
+    "aggregation_semantics": "enzyme activity measurement; abnormal counts are per test record",
+    "grain": "one value per laboratory test event",
+    "validation": "range 25 to 67080; 1281 records above 500",
+    "evidence_refs": [
+      "ev_ldh_distribution"
+    ]
+  },
+  {
+    "id": "m_laboratory_pt",
+    "term_id": "prothrombin_time",
+    "database_source": "thrombosis_prediction",
+    "table": "Laboratory",
+    "column": "PT",
+    "semantic_filter": "At-or-above-reference direction is the abnormal one; NULL is not the same as normal.",
+    "aggregation_semantics": "clotting time measurement; abnormal counts are per test record",
+    "grain": "one value per laboratory test event",
+    "validation": "range 10.1 to 27.0; 183 records at or above 14",
+    "evidence_refs": [
+      "ev_pt_distribution"
+    ]
+  },
+  {
+    "id": "m_laboratory_iga",
+    "term_id": "immunoglobulin_a",
+    "database_source": "thrombosis_prediction",
+    "table": "Laboratory",
+    "column": "IGA",
+    "semantic_filter": "Two-sided reference interval, so both low and high values are abnormal.",
+    "aggregation_semantics": "concentration measurement; abnormal counts are per test record",
+    "grain": "one value per laboratory test event",
+    "validation": "range 1 to 1765; 2204 of 2680 non-NULL records inside the 80-500 interval",
+    "evidence_refs": [
+      "ev_iga_distribution"
+    ]
+  },
+  {
+    "id": "m_laboratory_tcho",
+    "term_id": "total_cholesterol",
+    "database_source": "thrombosis_prediction",
+    "table": "Laboratory",
+    "column": "T-CHO",
+    "semantic_filter": "Values are recorded per test date, so a change between two months requires comparing two records for the same patient.",
+    "aggregation_semantics": "concentration measurement; period change is a relative change between two records",
+    "grain": "one value per laboratory test event",
+    "validation": "mean 203.06 over 13908 rows",
+    "evidence_refs": [
+      "ev_tcho_distribution"
+    ]
+  },
+  {
+    "id": "m_laboratory_sm",
+    "term_id": "anti_sm_antibody",
+    "database_source": "thrombosis_prediction",
+    "table": "Laboratory",
+    "column": "SM",
+    "semantic_filter": "Negativity is written as '0', 'negative' or an empty string depending on the row; numeric values are titres.",
+    "aggregation_semantics": "serology result; count of records or patients per positivity class",
+    "grain": "one value per laboratory test event",
+    "validation": "non-empty values: '0' 102, 'negative' 20, '1' 4, '2' 1, '8' 1",
+    "evidence_refs": [
+      "ev_sm_encodings",
+      "ev_serology_text_encodings"
+    ]
+  }
+]

@@ -1,0 +1,194 @@
+[
+  {
+    "id": "e_tables_tiers",
+    "source": "ind200.sqlite",
+    "query": "SELECT name FROM sqlite_master WHERE type='table' 并逐表 PRAGMA table_info 统计列集合",
+    "result": "共 200 张表:69 张 dim_* 主数据/维表(其中 25 张带完整审计头)、67 张标准事实表(含 created_by/updated_by/approved_at/status/remarks/is_deleted/data_quality_score 等 12 列审计头,并含 document_no/business_date/posting_date/row_version/priority 等扩展列)、约 50 张业务域事实表(无审计头)、15 张 DWS_* 按日期汇总表与 1 张 agg_metric_monthly(员工×年×月)。",
+    "validation_method": "sqlite_master 列表 + 全表 PRAGMA table_info 列集合分组",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "e_envelope_cn",
+    "source": "dim_column_metadata",
+    "query": "SELECT table_name,column_name,column_name_cn FROM dim_column_metadata WHERE column_name IN ('created_at','created_by','updated_at','updated_by','approved_at','approved_by','status','remarks','is_deleted','data_quality_score')",
+    "result": "审计头列的中文名:创建时间/创建人/更新时间/更新人/审批时间/审批人/状态/备注/逻辑删除标记/数据质量分。",
+    "validation_method": "元数据字典查询",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "e_fk_meta",
+    "source": "dim_column_metadata",
+    "query": "SELECT table_name,column_name,column_name_cn,column_desc FROM dim_column_metadata WHERE column_desc LIKE '%外键%'",
+    "result": "129 条外键说明,恢复了本变体删除的外键约束语义,例如 dim_production_line.workshop_id→dim_workshop、dim_product.prod_line_id→dim_product_line、dim_employee.dept_id→dim_department、dim_material.supplier_id→dim_supplier(主供应商)、fact_material_consumption.material_id→dim_material(按BOM投入的原料)、fact_safety_objective.responsible_dept_id→dim_department、dim_department.region_id→dim_region(销售部门必填)、dim_profit_center.bu_id→dim_business_unit。",
+    "validation_method": "元数据字典外键描述提取",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "e_user_codes",
+    "source": "ind200.sqlite",
+    "query": "SELECT DISTINCT created_by FROM fact_sales_order_line; 以及 dim_employee 与 fact_lead(emp_id,created_by) 交叉抽样",
+    "result": "created_by/updated_by/approved_by 取值恒为 U0001~U0012 共 12 个账号编码;dim_employee 有 122 行(emp_id 1~122,emp_name 形如“合成员工0086”);fact_lead 中同一 emp_id 可对应多种不同 created_by,证明两类标识相互独立。",
+    "validation_method": "取值域枚举 + 双表交叉抽样",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "e_status_lifecycle",
+    "source": "ind200.sqlite",
+    "query": "PRAGMA table_info(fact_sales_order_line) 的 CHECK 约束;以及各标准事实表 status 的 GROUP BY",
+    "result": "CHECK(status IN ('OPEN','IN_PROGRESS','APPROVED','CLOSED','CANCELLED'));fact_scrap_event 与 fact_inspection_lot 观察期仅 APPROVED:178 / CLOSED:2752,fact_transfer_order 仅 APPROVED:48 / CLOSED:819,fact_employee_assignment 仅 APPROVED:121 / CLOSED:1。",
+    "validation_method": "DDL 约束读取 + 状态取值分布统计",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "e_status_domain",
+    "source": "ind200.sqlite",
+    "query": "对业务域表 status 做 GROUP BY 统计",
+    "result": "fact_sales_order: delivered:4576/undelivered:152/returned:3;fact_opportunity: won:36/open:22/lost:20/stalled:6;fact_quotation: won:357/lost:113/draft:6;fact_goods_receipt: posted:1001/inspected:16;fact_ap: closed:879/open:122;dim_employee: active:121/inactive:1;dim_customer: active:22/lost:2/dormant:1;fact_return 无 status 列。",
+    "validation_method": "按表分组统计取值分布",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "e_reason_dual",
+    "source": "ind200.sqlite",
+    "query": "fact_shipment_line / fact_transfer_order_line / fact_scrap_event / fact_downtime 的 reason_code 分布,以及 fact_equipment_runtime.downtime_reason 分布",
+    "result": "fact_shipment_line.reason_code 仅 OTHER:8094;fact_transfer_order_line.reason_code 仅 OTHER:4349;fact_scrap_event.reason_code 仅 QUALITY:2930;fact_downtime.reason_code 为整数 1:639 2:1851 3:211 4:191 5:257 6:103 7:92 8:397;fact_equipment_runtime.downtime_reason 为中文名(设备故障/滤网更换/换产清机/物料短缺/质量异常/能源中断/人员不足)。",
+    "validation_method": "多表同名属性取值域对比",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "e_downtime_reason",
+    "source": "dim_downtime_reason",
+    "query": "SELECT reason_id,reason_code,reason_name,category FROM dim_downtime_reason",
+    "result": "1|D001|设备故障|设备;2|D002|换产清机|工艺;3|D003|计划保养|计划;4|D004|物料短缺|物料;5|D005|质量异常|质量;6|D006|能源中断|能源;7|D007|人员不足|人力;8|D008|滤网更换|工艺。",
+    "validation_method": "字典表全量读取",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "e_reason_code_dim",
+    "source": "dim_reason_code",
+    "query": "SELECT code,name,short_name,abbreviation FROM dim_reason_code",
+    "result": "12 行:QUALITY|质量原因|质量原因|QUA;DELIVERY;COST;EQUIPMENT;SAFETY;ENVIRONMENT;CUSTOMER;SUPPLIER;PROCESS;MATERIAL;SYSTEM;OTHER|常规业务(无特定原因)。name 与 short_name 观察期同值。",
+    "validation_method": "字典表全量读取",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "e_year_shift",
+    "source": "ind200.sqlite",
+    "query": "对 fact_sales_order_line 按 created_at/posting_date/business_date/updated_at 分别统计年度分布",
+    "result": "2025 年分别 3671/3663/3671/3659,2026 年分别 1702/1710/1702/1714。四个时间列的年度分布彼此接近但不等,说明它们语义不同,不能互相替代。",
+    "validation_method": "同一表多时间列年度分布并行统计",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "e_domain_dates",
+    "source": "ind200.sqlite",
+    "query": "对业务域事实表 PRAGMA table_info,抽取日期型列",
+    "result": "业务域表无审计头,日期为领域列:fact_sales_order.order_date、fact_goods_receipt.receipt_date、fact_safety_audit.audit_date、fact_energy_consumption.record_date、fact_production_output.output_date、fact_quotation.quotation_date、fact_opportunity.create_date/close_date、fact_return.return_date、fact_incident.incident_date、fact_payment.payment_date、fact_ap.due_date、fact_purchase_requisition.required_date/pr_date、fact_ar_aging.due_date。",
+    "validation_method": "业务域表列结构抽取",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "e_remarks",
+    "source": "ind200.sqlite",
+    "query": "SELECT DISTINCT remarks FROM fact_labor_booking / fact_skill_assessment / fact_customer_contact",
+    "result": "三张表的 remarks 取值同属一个受控词表:补录、加急、跨月处理、已电话确认、客户指定批次。",
+    "validation_method": "多表备注取值域比对",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "e_disposition",
+    "source": "ind200.sqlite",
+    "query": "SELECT DISTINCT disposition FROM fact_inspection_lot / fact_inspection_result / fact_scrap_event;SELECT DISTINCT inspection_result FROM fact_goods_receipt",
+    "result": "fact_inspection_lot.disposition:退货/让步接收/报废/返工;fact_inspection_result.disposition:返工/让步接收;fact_scrap_event.disposition:报废;fact_goods_receipt.inspection_result:pass/fail。",
+    "validation_method": "处置与检验结果取值域枚举",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "e_ranges",
+    "source": "ind200.sqlite",
+    "query": "MIN/MAX/COUNT 统计 row_version、data_quality_score、priority、is_deleted",
+    "result": "fact_shipment_line: row_version 1-3、data_quality_score 0.9-1.0、priority 恒 3、is_deleted 恒 0;fact_lead: row_version 1-3;fact_sales_forecast.priority 仅取 3(922 行)。",
+    "validation_method": "数值范围的 MIN/MAX 与取值分布",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "e_soft_delete",
+    "source": "ind200.sqlite",
+    "query": "SELECT is_deleted, COUNT(*) FROM fact_sales_order_line GROUP BY is_deleted",
+    "result": "观察期 is_deleted 全为 0,无逻辑删除记录;该列是预留的业务过滤条件。",
+    "validation_method": "标记列取值分布",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "e_org_hierarchy",
+    "source": "ind200.sqlite",
+    "query": "SELECT * FROM dim_workshop / dim_production_line / dim_product_line / dim_business_unit / dim_department",
+    "result": "车间 5 个:PP改性车间/PA改性车间/ABS/PC合金车间/阻燃材料车间/特种工程塑料车间;产线 12 条按 workshop_id 分属 5 车间(如 PP挤出1线@1、特塑挤出2线@5);产品线 4 条:PP改性系列/PA改性系列/ABS/PC合金系列/特种工程塑料系列;事业部 3 个:通用改性事业部/工程塑料事业部/特种材料事业部;部门 17 个且 region_id 仅销售部门填充。",
+    "validation_method": "维表全量读取与层级外键核对",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "e_region_denorm",
+    "source": "ind200.sqlite",
+    "query": "SELECT DISTINCT sales_region FROM fact_sales_order_line;SELECT region_name FROM dim_region",
+    "result": "事实表冗余列 sales_region 取值 华东/华南/华北/西南/华中/西北,与 dim_region.region_name 的 6 个区域值域一致;客户地理信息在 dim_customer.province/city。",
+    "validation_method": "冗余列与维表值域比对",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "e_calendar",
+    "source": "ind200.sqlite",
+    "query": "SELECT calendar_date,name,holiday_name,is_holiday FROM dim_calendar WHERE is_holiday=1",
+    "result": "name 为中文日期名“2025年01月01日”式;holiday_name 取值为元旦/春节/清明节/劳动节/端午节/中秋节/国庆节/法定节假日;2025 年国庆节覆盖 10-01~10-03 与 10-07、10-08,10-04、10-05 记为“法定节假日”。",
+    "validation_method": "日历维表节假日行枚举",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "e_currency",
+    "source": "ind200.sqlite",
+    "query": "SELECT code,name,rate_to_cny,is_functional FROM dim_currency",
+    "result": "CNY|人民币|1.0|1(唯一本位币);USD|美元|7.12|0;EUR|欧元|7.78|0;JPY|日元|0.048|0。事实表以 currency_code 文本关联,并有 amount 与 local_amount 并列。",
+    "validation_method": "币种维表与汇率字段读取",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "e_skill_hazard",
+    "source": "ind200.sqlite",
+    "query": "SELECT name,short_name FROM dim_skill;SELECT hazard_name,hazard_category FROM dim_hazard;SELECT DISTINCT hazard_type FROM fact_hazard_observation",
+    "result": "dim_skill 有 name 与 short_name(观察期同值),如挤出操作/螺杆组合配置/配色/设备点检;dim_hazard.hazard_category 为物理性/化学性/人机工程(如熔体高温烫伤|物理性、粉尘爆炸|化学性、重复性搬运劳损|人机工程);fact_hazard_observation.hazard_type 同值域冗余存储。",
+    "validation_method": "维表与事实表取值域读取",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "e_payment_vocab",
+    "source": "ind200.sqlite",
+    "query": "SELECT DISTINCT payment_method FROM fact_payment_out;SELECT DISTINCT payment_type FROM fact_payment",
+    "result": "fact_payment_out.payment_method 为英文字典 bank_transfer/letter_of_credit;fact_payment.payment_type 为中文字典 银承/电汇。两表词表互不通用。",
+    "validation_method": "两表收付款方式取值域比对",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "e_control_measure",
+    "source": "ind200.sqlite",
+    "query": "PRAGMA table_info(fact_corrective_action / fact_safety_action / fact_hazard_observation);SELECT DISTINCT control_measure FROM fact_safety_action",
+    "result": "fact_corrective_action 无 control_measure 与 action_due_date 列(仅有 due_date/closed_date);fact_safety_action 与 fact_hazard_observation 均有 control_measure(工程控制/管理控制/个体防护)与 action_due_date。",
+    "validation_method": "候选表列结构比对",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "e_summary_tables",
+    "source": "ind200.sqlite",
+    "query": "PRAGMA table_info(DWS_*) 与 agg_metric_monthly;dim_table_metadata 表分类",
+    "result": "15 张 DWS_* 均以 date 列起始并按 dim_emp_id/dim_dept_id/dim_line_id/dim_workshop_id/dim_prod_id/dim_cust_id/dim_supplier_id/dim_cc_id/dim_region_id 聚合;agg_metric_monthly 按 emp_id×year×month。均为预聚合表,与 fact_* 明细表口径不同。",
+    "validation_method": "汇总表结构读取与元数据分类核对",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "e_envelope_scope",
+    "source": "dim_table_metadata",
+    "query": "SELECT table_name,table_category,table_level FROM dim_table_metadata",
+    "result": "200 张表均有中文表名、表说明、表分类与层级说明,用于确认标准事实表与业务域事实表的分层及审计头覆盖范围。",
+    "validation_method": "表级元数据字典读取",
+    "timestamp": "2026-10-10"
+  }
+]

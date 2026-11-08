@@ -1,0 +1,113 @@
+{
+ "db_id": "european_football_2",
+ "questions": [
+  {
+   "question_id": 1035,
+   "question": "Give the team_fifa_api_id of teams with more than 50 but less than 60 build-up play speed.",
+   "evidence": "teams with more than 50 but less than 60 build-up play speed refers to buildUpPlaySpeed >50 AND buildUpPlaySpeed <60; ",
+   "difficulty": "simple"
+  },
+  {
+   "question_id": 1025,
+   "question": "Give the name of the league had the most goals in the 2016 season?",
+   "evidence": "league that had the most goals refers to MAX(SUM(home_team_goal, away_team_goal)); 2016 season refers to season = '2015/2016';",
+   "difficulty": "moderate"
+  },
+  {
+   "question_id": 1105,
+   "question": "How was Francesco Migliore's attacking work rate on 2015/5/1?",
+   "evidence": "Francesco Migliore refers to player_name = 'Francesco Migliore'; on 2015/5/1 refers to date LIKE '2015-05-01%';",
+   "difficulty": "moderate"
+  },
+  {
+   "question_id": 1028,
+   "question": "In Scotland Premier League, which away team won the most during the 2010 season?",
+   "evidence": "Final result should return the Team.team_long_name; Scotland Premier League refers to League.name = 'Scotland Premier League'; away team refers to away_team_api_id; away team that won the most refers to MAX(SUBTRACT(away_team_goal, home_team_goal) > 0); 2010 season refers to season = '2009/2010'; won the most refers to MAX(COUNT(*));",
+   "difficulty": "challenging"
+  },
+  {
+   "question_id": 1133,
+   "question": "How many football players born after the 1990s have the first name \"Aaron\"?",
+   "evidence": "first name \"Aaron\" refers to player_name LIKE 'Aaron%'; born after the 1990s refers to birthday > '1990'",
+   "difficulty": "simple"
+  },
+  {
+   "question_id": 1115,
+   "question": "What percentage is Landon Donovan's overall rating higher than Jordan Bowery on 2013/7/12?",
+   "evidence": "Landon Donovan's refers to player_name = 'Landon Donovan'; Jordan Bowery refers to player_name = 'Jordan Bowery'; percentage refers to DIVIDE(SUBTRACT(player_name = 'Landon Donovan' overall_rating; player_name = 'Jordan Bowery' overall_rating), player_name = 'Landon Donovan' overall_rating)*100",
+   "difficulty": "challenging"
+  },
+  {
+   "question_id": 1036,
+   "question": "List the long name of teams with above-average build-up play passing in 2012.",
+   "evidence": "long name of teams refers to team_long_name; build-up play passing refers to buildUpPlayPassing; above-average build-up play passing = buildUpPlayPassing > DIVIDE(SUM(buildUpPlayPassing), COUNT(team_long_name) WHERE buildUpPlayPassing IS NOT NULL); in 2012 refers to strftime('%Y', date) = '2012'; ",
+   "difficulty": "challenging"
+  },
+  {
+   "question_id": 1096,
+   "question": "Calculate the average overall rating of Pietro Marino.",
+   "evidence": "Pietro Marino refers to player_name = 'Pietro Marino'; average overall rating AVG(T1.overall_rating)",
+   "difficulty": "moderate"
+  },
+  {
+   "question_id": 1084,
+   "question": "Among the players born before the year 1986, how many of them would remain in his position and defense while the team attacked?",
+   "evidence": "players born before the year 1986 refers to strftime('%Y', birthday)<'1986'; players who would remain in his position and defense while the team attacked refers to defensive_work_rate = 'high'; Should consider DISTINCT in the final result;",
+   "difficulty": "challenging"
+  },
+  {
+   "question_id": 1124,
+   "question": "Who are the players that tend to be attacking when their mates were doing attack moves? List down their name.",
+   "evidence": "tend to be attacking when their mates were doing attack moves refers to attacking_work_rate = 'high';",
+   "difficulty": "moderate"
+  },
+  {
+   "question_id": 1116,
+   "question": "List down most tallest players' name.",
+   "evidence": "tallest refers to rank based on the height in descending order; Most tallest players refers to rank = 1 ",
+   "difficulty": "simple"
+  },
+  {
+   "question_id": 1103,
+   "question": "What was the overall rating for Aaron Mooy on 2016/2/4?",
+   "evidence": "Aaron Mooy refers to player_name = 'Aaron Mooy'; on 2016/2/4 refers to date LIKE '2016-02-04%';",
+   "difficulty": "moderate"
+  },
+  {
+   "question_id": 1114,
+   "question": "What was the average overall rating for Marko Arnautovic from 2007/2/22 to 2016/4/21?",
+   "evidence": "average overall rating refers to avg(overall_rating); Marko Arnautovic refers to player_name = 'Marko Arnautovic'; from 2007/2/22 to 2016/4/21 refers to the first 10 characters of date BETWEEN '2007-02-22' and '2016-04-21'",
+   "difficulty": "challenging"
+  },
+  {
+   "question_id": 1092,
+   "question": "Give the name of the league had the most matches in the 2008/2009 season?",
+   "evidence": "league that had the most matches in the 2008/2009 season refers to MAX(league_name WHERE season = '2008/2009');",
+   "difficulty": "simple"
+  },
+  {
+   "question_id": 1088,
+   "question": "Please list the names of the players whose volley score and dribbling score are over 70.",
+   "evidence": "volley score are over 70 refers to volleys > 70; dribbling score refers to dribbling are over 70 refers to dribbling > 70;",
+   "difficulty": "moderate"
+  },
+  {
+   "question_id": 1058,
+   "question": "Who has the highest average finishing rate between the highest and shortest football player?",
+   "evidence": "finishing rate refers to finishing; highest average finishing rate = MAX(AVG(finishing)); highest football player refers to MAX(height); shortest football player refers to MIN(height);",
+   "difficulty": "challenging"
+  },
+  {
+   "question_id": 1079,
+   "question": "Which player is the tallest?",
+   "evidence": "tallest player refers to MAX(height);",
+   "difficulty": "simple"
+  },
+  {
+   "question_id": 1130,
+   "question": "What are the short name of team who played safe while creating chance of passing?",
+   "evidence": "played safe while creating chance of passing refers to chanceCreationPassingClass = 'Safe'; short name of team refers to team_short_name",
+   "difficulty": "moderate"
+  }
+ ]
+}

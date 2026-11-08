@@ -1,0 +1,427 @@
+[
+  {
+    "id": "rel_atomic_to_derived",
+    "source": "term_atomic_metric",
+    "relation_type": "derivation",
+    "target": "term_derived_metric",
+    "connection_condition": "派生指标配置的 atomic_metric_names 指向原子指标名称,calc_method 与 group_by_columns 定义聚合方式",
+    "description": "派生指标由原子指标经 SUM/AVG/MAX 聚合并按指定维度分组计算得到。",
+    "evidence": [
+      "ev_06_derived_config"
+    ]
+  },
+  {
+    "id": "rel_derived_to_composite",
+    "source": "term_derived_metric",
+    "relation_type": "derivation",
+    "target": "term_composite_metric",
+    "connection_condition": "复合指标配置的 component_metric_names 指向派生指标名称",
+    "description": "复合指标由多个派生指标按显式公式组合计算得到。",
+    "evidence": [
+      "ev_07_composite_config"
+    ]
+  },
+  {
+    "id": "rel_summary_detail",
+    "source": "term_summary_layer",
+    "relation_type": "association",
+    "target": "term_detail_layer",
+    "connection_condition": "汇总表由明细表按 维度成员×日 聚合生成,两层的金额与数量合计逐一对应",
+    "description": "汇总层与明细层描述同一批业务活动的不同粒度表示:汇总层便于按预定义维度取数,明细层支持下钻与对账。",
+    "evidence": [
+      "ev_09_perf_sales_recon",
+      "ev_10_production_recon",
+      "ev_33_procurement_recon"
+    ]
+  },
+  {
+    "id": "rel_sales_amount_to_gross_profit",
+    "source": "term_sales_amount",
+    "relation_type": "derivation",
+    "target": "term_gross_profit_actual",
+    "connection_condition": "事实表按订单行保存接单金额与实际成本金额,两者相减得到实际毛利",
+    "description": "实际毛利以接单金额为被减数。",
+    "evidence": [
+      "ev_30_gross_profit_formula"
+    ]
+  },
+  {
+    "id": "rel_actual_cost_to_gross_profit",
+    "source": "term_actual_cost_amount",
+    "relation_type": "derivation",
+    "target": "term_gross_profit_actual",
+    "connection_condition": "订单实际成本金额为实际毛利的扣减项,未发货部分按当月同产品平均成本估算",
+    "description": "实际毛利以实际成本金额为减数。",
+    "evidence": [
+      "ev_30_gross_profit_formula"
+    ]
+  },
+  {
+    "id": "rel_gross_profit_to_negative_margin",
+    "source": "term_gross_profit_actual",
+    "relation_type": "derivation",
+    "target": "term_negative_margin_qty",
+    "connection_condition": "负毛利订单标志由实际毛利的正负号推导,风险汇总表据此按业务员×产品×日累计负毛利销量",
+    "description": "负毛利订单量是实际毛利为负的订单的数量口径。",
+    "evidence": [
+      "ev_30_gross_profit_formula",
+      "ev_20_risk_snapshot"
+    ]
+  },
+  {
+    "id": "rel_monthly_target_to_daily_target",
+    "source": "term_monthly_quantity_target",
+    "relation_type": "derivation",
+    "target": "term_sales_quantity_target",
+    "connection_condition": "月度目标除以当月天数得到每日目标,同月逐日累加精确还原月度目标",
+    "description": "按日折算销量目标由月度销量目标派生,用于逐日达成跟踪。",
+    "evidence": [
+      "ev_12_target_proration"
+    ]
+  },
+  {
+    "id": "rel_kpi_person_to_dept",
+    "source": "term_kpi_person_count",
+    "relation_type": "derivation",
+    "target": "term_kpi_dept_count",
+    "connection_condition": "同一部门同日各员工行的人员达标标志求和,即为该部门的部门达标人数",
+    "description": "部门KPI达标数由部门内人员达标标志汇总得到。",
+    "evidence": [
+      "ev_13_kpi_dept_constant"
+    ]
+  },
+  {
+    "id": "rel_sales_quantity_to_target",
+    "source": "term_sales_quantity_target",
+    "relation_type": "association",
+    "target": "term_sales_quantity",
+    "connection_condition": "两者同为吨口径且共享业务员×日粒度,相除即得目标达成率",
+    "description": "销量与按日折算销量目标构成目标达成分析的两端。",
+    "evidence": [
+      "ev_12_target_proration",
+      "ev_09_perf_sales_recon"
+    ]
+  },
+  {
+    "id": "rel_material_input_to_yield",
+    "source": "term_material_input_qty",
+    "relation_type": "derivation",
+    "target": "term_yield_rate",
+    "connection_condition": "成材率 = 实际产量 / 投料量 × 100",
+    "description": "成材率由投料量与产出量之比派生。",
+    "evidence": [
+      "ev_10_production_recon"
+    ]
+  },
+  {
+    "id": "rel_actual_quantity_to_yield",
+    "source": "term_actual_quantity",
+    "relation_type": "derivation",
+    "target": "term_yield_rate",
+    "connection_condition": "成材率的分子为实际产量",
+    "description": "成材率由实际产量与投料量共同决定。",
+    "evidence": [
+      "ev_10_production_recon"
+    ]
+  },
+  {
+    "id": "rel_run_hours_to_availability",
+    "source": "term_equipment_run_hours",
+    "relation_type": "derivation",
+    "target": "term_equipment_availability",
+    "connection_condition": "设备可用率 = 总运行小时 / (总运行小时 + 总停机时长) × 100",
+    "description": "设备可用率以运行时长为主要输入。",
+    "evidence": [
+      "ev_07_composite_config",
+      "ev_16_equipment_run_broadcast"
+    ]
+  },
+  {
+    "id": "rel_downtime_to_availability",
+    "source": "term_downtime_hours",
+    "relation_type": "derivation",
+    "target": "term_equipment_availability",
+    "connection_condition": "停机时长构成设备可用率分母中的停机部分",
+    "description": "设备可用率以停机时长为扣减项。",
+    "evidence": [
+      "ev_07_composite_config",
+      "ev_18_downtime_recon"
+    ]
+  },
+  {
+    "id": "rel_actual_quantity_to_energy_efficiency",
+    "source": "term_actual_quantity",
+    "relation_type": "derivation",
+    "target": "term_energy_efficiency",
+    "connection_condition": "能耗效率 = 累计产量 / 累计用电量",
+    "description": "能耗效率以产量为分子。",
+    "evidence": [
+      "ev_07_composite_config"
+    ]
+  },
+  {
+    "id": "rel_electricity_to_energy_efficiency",
+    "source": "term_electricity_kwh",
+    "relation_type": "derivation",
+    "target": "term_energy_efficiency",
+    "connection_condition": "用电量构成能耗效率的分母",
+    "description": "能耗效率以用电量为分母。",
+    "evidence": [
+      "ev_07_composite_config"
+    ]
+  },
+  {
+    "id": "rel_total_cost_to_unit_cost",
+    "source": "term_total_product_cost",
+    "relation_type": "derivation",
+    "target": "term_unit_output_cost",
+    "connection_condition": "单位产出成本 = 总成本 / 累计产量",
+    "description": "单位产出成本以产品总成本为分子。",
+    "evidence": [
+      "ev_07_composite_config"
+    ]
+  },
+  {
+    "id": "rel_actual_quantity_to_unit_cost",
+    "source": "term_actual_quantity",
+    "relation_type": "derivation",
+    "target": "term_unit_output_cost",
+    "connection_condition": "累计产量构成单位产出成本的分母",
+    "description": "单位产出成本以累计产量为分母。",
+    "evidence": [
+      "ev_07_composite_config"
+    ]
+  },
+  {
+    "id": "rel_sales_amount_to_margin",
+    "source": "term_sales_amount",
+    "relation_type": "derivation",
+    "target": "term_operating_margin",
+    "connection_condition": "经营利润率 = (累计接单金额 − 总成本) / 累计接单金额 × 100",
+    "description": "经营利润率以接单金额为收入基准。",
+    "evidence": [
+      "ev_07_composite_config"
+    ]
+  },
+  {
+    "id": "rel_total_cost_to_margin",
+    "source": "term_total_product_cost",
+    "relation_type": "derivation",
+    "target": "term_operating_margin",
+    "connection_condition": "总成本为经营利润率的扣减项,制造费用已含折旧",
+    "description": "经营利润率以产品总成本为成本项。",
+    "evidence": [
+      "ev_07_composite_config"
+    ]
+  },
+  {
+    "id": "rel_budget_to_deviation",
+    "source": "term_budget_amount",
+    "relation_type": "derivation",
+    "target": "term_budget_deviation",
+    "connection_condition": "预算偏差度 = (累计实际支出 − 累计预算) / 累计预算 × 100",
+    "description": "预算偏差度以预算金额为基准。",
+    "evidence": [
+      "ev_07_composite_config",
+      "ev_34_budget_and_cost_recon"
+    ]
+  },
+  {
+    "id": "rel_actual_budget_to_deviation",
+    "source": "term_budget_actual_amount",
+    "relation_type": "derivation",
+    "target": "term_budget_deviation",
+    "connection_condition": "实际支出为预算偏差度的被减项",
+    "description": "预算偏差度以预算实际金额为执行项。",
+    "evidence": [
+      "ev_07_composite_config"
+    ]
+  },
+  {
+    "id": "rel_material_to_total_cost",
+    "source": "term_material_cost",
+    "relation_type": "composition",
+    "target": "term_total_product_cost",
+    "connection_condition": "产品总成本 = 材料成本 + 人工成本 + 制造费用",
+    "description": "材料成本是产品总成本的组成部分。",
+    "evidence": [
+      "ev_34_budget_and_cost_recon"
+    ]
+  },
+  {
+    "id": "rel_labor_to_total_cost",
+    "source": "term_labor_cost",
+    "relation_type": "composition",
+    "target": "term_total_product_cost",
+    "connection_condition": "人工成本为产品总成本的组成部分",
+    "description": "人工成本是产品总成本的组成部分。",
+    "evidence": [
+      "ev_34_budget_and_cost_recon"
+    ]
+  },
+  {
+    "id": "rel_overhead_to_total_cost",
+    "source": "term_overhead_cost",
+    "relation_type": "composition",
+    "target": "term_total_product_cost",
+    "connection_condition": "制造费用为产品总成本的组成部分且已含折旧",
+    "description": "制造费用是产品总成本的组成部分。",
+    "evidence": [
+      "ev_34_budget_and_cost_recon"
+    ]
+  },
+  {
+    "id": "rel_dep_to_overhead",
+    "source": "term_dep_amount",
+    "relation_type": "composition",
+    "target": "term_overhead_cost",
+    "connection_condition": "折旧额计入制造费用,不再在利润计算中重复扣减",
+    "description": "折旧额构成制造费用的一部分。",
+    "evidence": [
+      "ev_07_composite_config"
+    ]
+  },
+  {
+    "id": "rel_workshop_line",
+    "source": "term_workshop",
+    "relation_type": "composition",
+    "target": "term_production_line",
+    "connection_condition": "dim_production_line.workshop_id 指向 dim_workshop.workshop_id",
+    "description": "车间由多条产线组成,产线不能脱离车间存在。",
+    "evidence": [
+      "ev_35_denorm_joins"
+    ]
+  },
+  {
+    "id": "rel_line_equipment",
+    "source": "term_production_line",
+    "relation_type": "composition",
+    "target": "term_equipment",
+    "connection_condition": "dim_equipment.line_id 指向 dim_production_line.line_id",
+    "description": "产线由多台设备组成,每条产线 5 台设备。",
+    "evidence": [
+      "ev_15_equipment_line_level"
+    ]
+  },
+  {
+    "id": "rel_region_dept",
+    "source": "term_region",
+    "relation_type": "composition",
+    "target": "term_department",
+    "connection_condition": "dim_department.region_id 指向 dim_region.region_id",
+    "description": "销售区域由区域销售部组成,6 个销售部各对应一个区域。",
+    "evidence": [
+      "ev_35_denorm_joins"
+    ]
+  },
+  {
+    "id": "rel_dept_employee",
+    "source": "term_department",
+    "relation_type": "composition",
+    "target": "term_employee",
+    "connection_condition": "dim_employee.dept_id 指向 dim_department.dept_id",
+    "description": "部门由员工组成,员工不能脱离部门存在。",
+    "evidence": [
+      "ev_35_denorm_joins"
+    ]
+  },
+  {
+    "id": "rel_product_line_product",
+    "source": "term_product_line",
+    "relation_type": "composition",
+    "target": "term_product",
+    "connection_condition": "dim_product.prod_line_id 指向 dim_product_line.prod_line_id",
+    "description": "产品线由具体产品组成,15 个产品分属 4 条产品线。",
+    "evidence": [
+      "ev_35_denorm_joins"
+    ]
+  },
+  {
+    "id": "rel_customer_ar",
+    "source": "term_customer",
+    "relation_type": "association",
+    "target": "term_accounts_receivable",
+    "connection_condition": "账龄表按客户+业务员记录每笔应收的未清余额与账龄分布",
+    "description": "应收账款按客户归集,客户是应收分析的责任主体。",
+    "evidence": [
+      "ev_22_ar_snapshot"
+    ]
+  },
+  {
+    "id": "rel_customer_overdue",
+    "source": "term_customer",
+    "relation_type": "association",
+    "target": "term_accounts_receivable_overdue",
+    "connection_condition": "超期余额可由账龄表的超期标志筛选得到",
+    "description": "客户信用风险以其超期应收余额衡量。",
+    "evidence": [
+      "ev_22_ar_snapshot"
+    ]
+  },
+  {
+    "id": "rel_employee_target",
+    "source": "term_employee",
+    "relation_type": "association",
+    "target": "term_sales_quantity_target",
+    "connection_condition": "目标按业务员×年月下达,再按日折算",
+    "description": "销量目标按业务员下达与考核。",
+    "evidence": [
+      "ev_12_target_proration"
+    ]
+  },
+  {
+    "id": "rel_equipment_downtime_reason",
+    "source": "term_downtime_hours",
+    "relation_type": "association",
+    "target": "term_downtime_reason",
+    "connection_condition": "明细停机记录以原因编号引用停机原因字典",
+    "description": "停机时长可归因到 8 类停机原因,用于损失归因分析。",
+    "evidence": [
+      "ev_19_downtime_reason_code"
+    ]
+  },
+  {
+    "id": "rel_customer_market_share",
+    "source": "term_customer",
+    "relation_type": "association",
+    "target": "term_market_share",
+    "connection_condition": "市场份额按客户随市场容量一并记录",
+    "description": "市场份额是客户所处市场的属性,用于市场结构分析。",
+    "evidence": [
+      "ev_24_market_flags"
+    ]
+  },
+  {
+    "id": "rel_actual_quantity_output_equiv",
+    "source": "term_actual_quantity",
+    "relation_type": "equivalence",
+    "target": "term_production_output_quantity",
+    "connection_condition": "生产汇总的实际产量合计 114351.20 吨等于明细产出记录数量合计",
+    "description": "汇总层实际产量与明细层产出量表达同一业务事实,仅粒度不同。",
+    "evidence": [
+      "ev_10_production_recon"
+    ]
+  },
+  {
+    "id": "rel_run_hours_equiv",
+    "source": "term_equipment_run_hours",
+    "relation_type": "equivalence",
+    "target": "term_equipment_runtime_hours",
+    "connection_condition": "设备汇总按产线去重后的运行时长合计等于设备运行记录表合计",
+    "description": "设备汇总的运行时长与运行记录表的运行台时表达同一业务事实。",
+    "evidence": [
+      "ev_16_equipment_run_broadcast"
+    ]
+  },
+  {
+    "id": "rel_sales_amount_equiv",
+    "source": "term_sales_amount",
+    "relation_type": "equivalence",
+    "target": "term_order_amount",
+    "connection_condition": "汇总层接单金额合计 2166039729.04 元等于明细订单金额合计",
+    "description": "汇总层接单金额与明细订单金额表达同一业务事实。",
+    "evidence": [
+      "ev_09_perf_sales_recon"
+    ]
+  }
+]

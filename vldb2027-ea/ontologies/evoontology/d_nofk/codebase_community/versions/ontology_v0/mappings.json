@@ -1,0 +1,280 @@
+[
+  {
+    "id": "mapping_term_post",
+    "term_id": "term_post",
+    "database_source": "codebase_community",
+    "table": "posts",
+    "column": "Id",
+    "grain": "one row per post",
+    "validation": "91966 rows; Id is the primary key"
+  },
+  {
+    "id": "mapping_term_question",
+    "term_id": "term_question",
+    "database_source": "codebase_community",
+    "table": "posts",
+    "column": "Id",
+    "semantic_filter": "rows whose PostTypeId equals 1",
+    "grain": "one row per question",
+    "validation": "42912 rows carry PostTypeId = 1"
+  },
+  {
+    "id": "mapping_term_question_title",
+    "term_id": "term_question",
+    "database_source": "codebase_community",
+    "table": "posts",
+    "column": "Title",
+    "semantic_filter": "populated on question posts only; null elsewhere",
+    "grain": "one title per question",
+    "validation": "49054 null titles out of 91966 exactly accounts for the 42912 non-question posts"
+  },
+  {
+    "id": "mapping_term_question_tags_text",
+    "term_id": "term_question",
+    "database_source": "codebase_community",
+    "table": "posts",
+    "column": "Tags",
+    "semantic_filter": "non-empty only on question posts",
+    "grain": "one delimited tag string per question",
+    "validation": "42912 non-empty values, matching the question count"
+  },
+  {
+    "id": "mapping_term_answer",
+    "term_id": "term_answer",
+    "database_source": "codebase_community",
+    "table": "posts",
+    "column": "Id",
+    "semantic_filter": "rows whose PostTypeId equals 2",
+    "grain": "one row per answer",
+    "validation": "47755 rows carry PostTypeId = 2"
+  },
+  {
+    "id": "mapping_term_answer_parent",
+    "term_id": "term_answer",
+    "database_source": "codebase_community",
+    "table": "posts",
+    "column": "ParentId",
+    "semantic_filter": "set on answer posts, pointing at the question being answered",
+    "grain": "one parent question per answer",
+    "validation": "47749 answer rows resolve to an existing question post"
+  },
+  {
+    "id": "mapping_term_user",
+    "term_id": "term_user",
+    "database_source": "codebase_community",
+    "table": "users",
+    "column": "Id",
+    "grain": "one row per account",
+    "validation": "40325 rows; includes the system account Id = -1"
+  },
+  {
+    "id": "mapping_term_user_reputation",
+    "term_id": "term_user_reputation",
+    "database_source": "codebase_community",
+    "table": "users",
+    "column": "Reputation",
+    "aggregation_semantics": "point-in-time balance stored per user, not a quantity to be summed across users",
+    "grain": "one value per user",
+    "validation": "non-null for all 40325 users; observed range 1 to 87393"
+  },
+  {
+    "id": "mapping_term_tag_name",
+    "term_id": "term_tag",
+    "database_source": "codebase_community",
+    "table": "tags",
+    "column": "TagName",
+    "grain": "one row per distinct tag",
+    "validation": "1032 rows with non-null TagName"
+  },
+  {
+    "id": "mapping_term_tag_count",
+    "term_id": "term_tag",
+    "database_source": "codebase_community",
+    "table": "tags",
+    "column": "Count",
+    "aggregation_semantics": "total number of questions carrying the tag, stored directly on the tag row",
+    "grain": "one value per tag",
+    "validation": "observed range 1 to 7244 for the tag 'r'"
+  },
+  {
+    "id": "mapping_term_badge",
+    "term_id": "term_badge",
+    "database_source": "codebase_community",
+    "table": "badges",
+    "column": "Id",
+    "grain": "one row per badge award event",
+    "validation": "79851 rows"
+  },
+  {
+    "id": "mapping_term_badge_name",
+    "term_id": "term_badge",
+    "database_source": "codebase_community",
+    "table": "badges",
+    "column": "Name",
+    "grain": "badge name attached to one award event",
+    "validation": "153 distinct names, mixing general badges and tag-award badges"
+  },
+  {
+    "id": "mapping_term_badge_count",
+    "term_id": "term_badge_count",
+    "database_source": "codebase_community",
+    "table": "badges",
+    "column": "Id",
+    "aggregation_semantics": "count of award events grouped by UserId",
+    "grain": "one value per user",
+    "validation": "the most frequent count is 1 badge for 11259 users"
+  },
+  {
+    "id": "mapping_term_comment",
+    "term_id": "term_comment",
+    "database_source": "codebase_community",
+    "table": "comments",
+    "column": "Id",
+    "grain": "one row per comment",
+    "validation": "174285 rows"
+  },
+  {
+    "id": "mapping_term_vote",
+    "term_id": "term_vote",
+    "database_source": "codebase_community",
+    "table": "votes",
+    "column": "Id",
+    "grain": "one row per voting action",
+    "validation": "38930 rows"
+  },
+  {
+    "id": "mapping_term_vote_type",
+    "term_id": "term_vote_type",
+    "database_source": "codebase_community",
+    "table": "votes",
+    "column": "VoteTypeId",
+    "grain": "one code per voting action",
+    "validation": "observed codes 1, 2, 3, 5, 8, 9, 10, 11, 15, 16"
+  },
+  {
+    "id": "mapping_term_bounty_amount",
+    "term_id": "term_bounty_amount",
+    "database_source": "codebase_community",
+    "table": "votes",
+    "column": "BountyAmount",
+    "semantic_filter": "populated only on bounty-related voting actions",
+    "grain": "one value per bounty vote",
+    "validation": "101 non-null values among 38930 vote rows"
+  },
+  {
+    "id": "mapping_term_post_score",
+    "term_id": "term_post_score",
+    "database_source": "codebase_community",
+    "table": "posts",
+    "column": "Score",
+    "aggregation_semantics": "the stored score per post; summing it across posts aggregates post-level quality rather than a single user quantity",
+    "grain": "one value per post",
+    "validation": "non-null for all question and answer posts"
+  },
+  {
+    "id": "mapping_term_view_count",
+    "term_id": "term_question_view_count",
+    "database_source": "codebase_community",
+    "table": "posts",
+    "column": "ViewCount",
+    "semantic_filter": "populated on question posts only",
+    "grain": "one value per question",
+    "validation": "42912 non-null values, exactly the question count"
+  },
+  {
+    "id": "mapping_term_answer_count",
+    "term_id": "term_answer_count",
+    "database_source": "codebase_community",
+    "table": "posts",
+    "column": "AnswerCount",
+    "semantic_filter": "populated on question posts only",
+    "aggregation_semantics": "count of answers attached to the question, stored denormalised on the question row",
+    "grain": "one value per question",
+    "validation": "reproduces the count of child answer posts for all 42912 questions"
+  },
+  {
+    "id": "mapping_term_comment_count",
+    "term_id": "term_comment",
+    "database_source": "codebase_community",
+    "table": "posts",
+    "column": "CommentCount",
+    "semantic_filter": "populated on question and answer posts",
+    "aggregation_semantics": "count of comments attached to the post, stored denormalised on the post row",
+    "grain": "one value per post",
+    "validation": "matches the counted child comments for 91946 of 91966 posts"
+  },
+  {
+    "id": "mapping_term_accepted_answer",
+    "term_id": "term_accepted_answer",
+    "database_source": "codebase_community",
+    "table": "posts",
+    "column": "AcceptedAnswerId",
+    "semantic_filter": "set on the question, referencing the selected answer post",
+    "grain": "one accepted answer reference per question",
+    "validation": "14697 questions carry the reference; 14696 resolve and all targets are answer posts"
+  },
+  {
+    "id": "mapping_term_link_type",
+    "term_id": "term_link_type",
+    "database_source": "codebase_community",
+    "table": "postLinks",
+    "column": "LinkTypeId",
+    "grain": "one code per link",
+    "validation": "observed codes 1 and 3"
+  },
+  {
+    "id": "mapping_term_post_link",
+    "term_id": "term_post_link",
+    "database_source": "codebase_community",
+    "table": "postLinks",
+    "column": "Id",
+    "grain": "one row per declared link",
+    "validation": "11102 rows; no row links a post to itself"
+  },
+  {
+    "id": "mapping_term_history_type",
+    "term_id": "term_post_history_type",
+    "database_source": "codebase_community",
+    "table": "postHistory",
+    "column": "PostHistoryTypeId",
+    "grain": "one code per revision event",
+    "validation": "codes observed from 1 to 38"
+  },
+  {
+    "id": "mapping_term_revision",
+    "term_id": "term_post_revision",
+    "database_source": "codebase_community",
+    "table": "postHistory",
+    "column": "Id",
+    "grain": "one row per revision event",
+    "validation": "303155 rows"
+  },
+  {
+    "id": "mapping_term_activity_date_posts",
+    "term_id": "term_activity_date",
+    "database_source": "codebase_community",
+    "table": "posts",
+    "column": "CreaionDate",
+    "semantic_filter": "physical column name retains the misspelling 'CreaionDate'",
+    "grain": "one creation timestamp per post, with time-of-day",
+    "validation": "spans 2009-02-02 to 2014-09-14"
+  },
+  {
+    "id": "mapping_term_activity_date_votes",
+    "term_id": "term_activity_date",
+    "database_source": "codebase_community",
+    "table": "votes",
+    "column": "CreationDate",
+    "grain": "one date per voting action, without time-of-day",
+    "validation": "spans 2010-07-19 to 2011-05-01; values carry date granularity only"
+  },
+  {
+    "id": "mapping_term_activity_date_badges",
+    "term_id": "term_activity_date",
+    "database_source": "codebase_community",
+    "table": "badges",
+    "column": "Date",
+    "grain": "one award timestamp per badge",
+    "validation": "spans 2010-07-19 to 2014-09-14"
+  }
+]

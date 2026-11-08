@@ -1,0 +1,200 @@
+[
+  {
+    "id": "mapping_customer",
+    "term_id": "customer",
+    "database_source": "debit_card_specializing",
+    "table": "customers",
+    "column": "CustomerID",
+    "semantic_filter": "",
+    "aggregation_semantics": "count of distinct CustomerID yields the number of customers",
+    "grain": "one row per customer",
+    "validation": "declared primary key with a UNIQUE constraint; 32461 rows, 32461 distinct values, no nulls"
+  },
+  {
+    "id": "mapping_customer_segment",
+    "term_id": "customer_segment",
+    "database_source": "debit_card_specializing",
+    "table": "customers",
+    "column": "Segment",
+    "semantic_filter": "",
+    "aggregation_semantics": "grouping customers by segment; the dimension is not additive",
+    "grain": "one value per customer",
+    "validation": "three distinct non-null values: SME 26763, LAM 3658, KAM 2040"
+  },
+  {
+    "id": "mapping_customer_currency",
+    "term_id": "customer_currency",
+    "database_source": "debit_card_specializing",
+    "table": "customers",
+    "column": "Currency",
+    "semantic_filter": "",
+    "aggregation_semantics": "grouping customers by currency; amounts must be kept within one currency before being combined",
+    "grain": "one value per customer",
+    "validation": "two distinct non-null values: CZK 30459 customers, EUR 2002 customers"
+  },
+  {
+    "id": "mapping_payment_card",
+    "term_id": "payment_card",
+    "database_source": "debit_card_specializing",
+    "table": "transactions_1k",
+    "column": "CardID",
+    "semantic_filter": "",
+    "aggregation_semantics": "count of distinct CardID counts cards, not customers",
+    "grain": "one value per transaction line; a card reappears across many lines",
+    "validation": "902 distinct CardID values across 1000 rows and 517 distinct CustomerID values; every CardID maps to exactly one CustomerID"
+  },
+  {
+    "id": "mapping_monthly_consumption",
+    "term_id": "monthly_consumption",
+    "database_source": "debit_card_specializing",
+    "table": "yearmonth",
+    "column": "Consumption",
+    "semantic_filter": "value is denominated in the currency of the customer named by the same row's CustomerID",
+    "aggregation_semantics": "summing a single customer's Consumption over months gives that customer's total consumption; summing across customers requires a single currency",
+    "grain": "one row per customer per calendar month",
+    "validation": "383282 rows, no nulls; 383102 positive, 28 zero and 152 negative values; range -582092.86 to 2052187.11"
+  },
+  {
+    "id": "mapping_consumption_month",
+    "term_id": "consumption_month",
+    "database_source": "debit_card_specializing",
+    "table": "yearmonth",
+    "column": "Date",
+    "semantic_filter": "",
+    "aggregation_semantics": "grouping consumption records into month buckets",
+    "grain": "one month label per (customer, month) row; 21 distinct labels",
+    "validation": "TEXT in YYYYMM form; distinct values run 201112 to 201209 and 201301 to 201311, so 201210 to 201212 are absent"
+  },
+  {
+    "id": "mapping_transaction",
+    "term_id": "transaction",
+    "database_source": "debit_card_specializing",
+    "table": "transactions_1k",
+    "column": "TransactionID",
+    "semantic_filter": "",
+    "aggregation_semantics": "count of TransactionID counts individual purchase lines",
+    "grain": "one row per purchase line",
+    "validation": "declared INTEGER primary key; 1000 rows spanning 2012-08-23 to 2012-08-26 for 517 customers and 437 stations"
+  },
+  {
+    "id": "mapping_transaction_paid_amount",
+    "term_id": "transaction_paid_amount",
+    "database_source": "debit_card_specializing",
+    "table": "transactions_1k",
+    "column": "Price",
+    "semantic_filter": "value is the total paid for the line and is denominated in the currency of the customer named by the same row's CustomerID",
+    "aggregation_semantics": "summing Price across lines gives total spend; Price must not be multiplied by Amount and must not be summed across currencies",
+    "grain": "one value per transaction line",
+    "validation": "no nulls and no non-positive values; range 1.76 to 5762.49; SUM(Price) = 425576.16 against SUM(Amount*Price) = 17525454.02, confirming Price is the line total"
+  },
+  {
+    "id": "mapping_transaction_quantity",
+    "term_id": "transaction_quantity",
+    "database_source": "debit_card_specializing",
+    "table": "transactions_1k",
+    "column": "Amount",
+    "semantic_filter": "",
+    "aggregation_semantics": "summing Amount is meaningful only within a single product or across products that share one measurement unit",
+    "grain": "one value per transaction line",
+    "validation": "no nulls; integer range 0 to 264; 91 zero values, 89 of which fall on non-fuel goods and services"
+  },
+  {
+    "id": "mapping_transaction_date",
+    "term_id": "transaction_datetime",
+    "database_source": "debit_card_specializing",
+    "table": "transactions_1k",
+    "column": "Date",
+    "semantic_filter": "",
+    "aggregation_semantics": "grouping purchase lines into calendar days",
+    "grain": "one value per transaction line",
+    "validation": "declared DATE; all 1000 values fall in 2012-08, distributed 10 / 492 / 425 / 73 over 2012-08-23 to 2012-08-26"
+  },
+  {
+    "id": "mapping_transaction_time",
+    "term_id": "transaction_datetime",
+    "database_source": "debit_card_specializing",
+    "table": "transactions_1k",
+    "column": "Time",
+    "semantic_filter": "",
+    "aggregation_semantics": "grouping purchase lines within a day",
+    "grain": "one value per transaction line",
+    "validation": "all values are 8 characters in HH:MM:SS form, for example 23:20:00"
+  },
+  {
+    "id": "mapping_implied_unit_price",
+    "term_id": "implied_unit_price",
+    "database_source": "debit_card_specializing",
+    "table": "transactions_1k",
+    "column": "",
+    "semantic_filter": "defined only where Amount is greater than zero and the product's quantity unit is known; the value is the line's Price divided by its Amount",
+    "aggregation_semantics": "averaging or distributing the per-unit price; it is a ratio and must not be summed",
+    "grain": "one derived value per transaction line",
+    "validation": "no physical column exists for this concept; it is derived from transactions_1k.Price and transactions_1k.Amount, and for fuel products it takes the value 23.273 for CZK customers and 0.918 for EUR customers"
+  },
+  {
+    "id": "mapping_gas_station",
+    "term_id": "gas_station",
+    "database_source": "debit_card_specializing",
+    "table": "gasstations",
+    "column": "GasStationID",
+    "semantic_filter": "",
+    "aggregation_semantics": "count of distinct GasStationID counts stations",
+    "grain": "one row per station",
+    "validation": "declared primary key with a UNIQUE constraint; 5716 rows, 5716 distinct values, no nulls"
+  },
+  {
+    "id": "mapping_station_chain",
+    "term_id": "station_chain",
+    "database_source": "debit_card_specializing",
+    "table": "gasstations",
+    "column": "ChainID",
+    "semantic_filter": "",
+    "aggregation_semantics": "counting stations per ChainID measures chain size",
+    "grain": "one value per station",
+    "validation": "233 distinct values, no nulls; largest chains hold 1462, 853, 340, 285 and 227 stations and many chains hold a single station"
+  },
+  {
+    "id": "mapping_station_segment",
+    "term_id": "station_segment",
+    "database_source": "debit_card_specializing",
+    "table": "gasstations",
+    "column": "Segment",
+    "semantic_filter": "",
+    "aggregation_semantics": "grouping stations by positioning; the dimension is not additive",
+    "grain": "one value per station",
+    "validation": "five distinct non-null values: Other 2392, Premium 1428, Noname 1005, Value for money 597, Discount 294"
+  },
+  {
+    "id": "mapping_station_country",
+    "term_id": "station_country",
+    "database_source": "debit_card_specializing",
+    "table": "gasstations",
+    "column": "Country",
+    "semantic_filter": "",
+    "aggregation_semantics": "grouping stations by country",
+    "grain": "one value per station",
+    "validation": "two distinct non-null values: CZE 4836 stations, SVK 880 stations"
+  },
+  {
+    "id": "mapping_product",
+    "term_id": "product",
+    "database_source": "debit_card_specializing",
+    "table": "products",
+    "column": "ProductID",
+    "semantic_filter": "",
+    "aggregation_semantics": "count of distinct ProductID counts catalogue items",
+    "grain": "one row per catalogue product",
+    "validation": "declared primary key with a UNIQUE constraint; 591 rows, 591 distinct values, no nulls; transactions_1k references only 28 of them"
+  },
+  {
+    "id": "mapping_product_description",
+    "term_id": "product",
+    "database_source": "debit_card_specializing",
+    "table": "products",
+    "column": "Description",
+    "semantic_filter": "",
+    "aggregation_semantics": "the label of a product; counts over Description are not counts of distinct products because labels repeat",
+    "grain": "one label per catalogue product",
+    "validation": "591 rows but only 529 distinct values; labels are written in Czech and no category column accompanies them"
+  }
+]

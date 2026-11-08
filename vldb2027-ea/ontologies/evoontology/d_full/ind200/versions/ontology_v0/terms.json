@@ -1,0 +1,646 @@
+[
+  {
+    "id": "detail_fact_layer",
+    "name": "明细事实层",
+    "type": "concept",
+    "definition": "以 fact_* 命名的明细事实表集合,每行一条业务事件或业务记录(订单行、投料、产出、停机、事故等),粒度最细,是各类汇总表的来源。",
+    "scope": "适用于需要逐笔明细、批次追溯或与汇总层对账的分析。",
+    "aliases": [
+      "明细层",
+      "事实表",
+      "fact tables",
+      "detail facts"
+    ],
+    "evidence": [
+      "ev_01",
+      "ev_26"
+    ]
+  },
+  {
+    "id": "dws_summary_layer",
+    "name": "汇总层(DWS日/月汇总)",
+    "type": "concept",
+    "definition": "以 DWS_*_DAILY 命名的预聚合汇总表集合,由明细事实表汇总生成,按核心维度组合(产线、车间、设备、客户、业务员、供应商、成本中心等)×日期提供指标快照,文档标明可与明细对账。",
+    "scope": "适用于按维度组合的时间序列、趋势与达成率分析。各表粒度与过滤口径不同,使用前必须确认粒度。",
+    "aliases": [
+      "DWS",
+      "汇总表",
+      "日汇总",
+      "summary layer"
+    ],
+    "evidence": [
+      "ev_01",
+      "ev_02",
+      "ev_06",
+      "ev_29"
+    ]
+  },
+  {
+    "id": "monthly_performance_agg",
+    "name": "月度绩效聚合",
+    "type": "concept",
+    "definition": "agg_metric_monthly 表,按 员工×月 聚合销量、销售额、毛利、发货量、费用、回款、月末应收、商机、送样、订单、退货与目标的宽表快照,是全维度绩效分析的单表入口。",
+    "scope": "适用于按业务员×月度的绩效对比与目标达成分析;不适用于日粒度或非员工维度分析。",
+    "aliases": [
+      "agg_metric_monthly",
+      "月度绩效",
+      "人×月快照"
+    ],
+    "evidence": [
+      "ev_08"
+    ]
+  },
+  {
+    "id": "metric_system",
+    "name": "指标体系",
+    "type": "concept",
+    "definition": "由 dim_metric_catalog(原子/派生/复合指标目录)、dim_derived_metric_config(派生指标聚合配置)与 dim_composite_metric_config(复合指标公式)共同定义的指标元数据体系,标注每个指标的视角、来源表、日期列与取值列。",
+    "scope": "适用于确定指标口径、来源表与指标间依赖关系;不直接存储指标数值。",
+    "aliases": [
+      "指标目录",
+      "metric catalog",
+      "指标元数据"
+    ],
+    "evidence": [
+      "ev_09",
+      "ev_10",
+      "ev_11",
+      "ev_12"
+    ]
+  },
+  {
+    "id": "customer",
+    "name": "客户",
+    "type": "entity",
+    "definition": "购买方主体,主数据表 dim_customer,含客户名称、行业、区域、信用额度与生命周期状态。DWS_MARKET_DAILY 与 DWS_RISK_DAILY 分别按客户×日提供市场与风险快照。",
+    "scope": "适用于客户结构、客户生命周期、市场容量与份额、超期应收归属等分析。",
+    "aliases": [
+      "客户",
+      "顾客",
+      "cust",
+      "customer"
+    ],
+    "evidence": [
+      "ev_17",
+      "ev_16",
+      "ev_25"
+    ]
+  },
+  {
+    "id": "employee",
+    "name": "业务员",
+    "type": "entity",
+    "definition": "销售人员主体,主数据表 dim_employee,含姓名、所属部门、入职日期与在职状态。是多数日汇总(组织业绩、目标、KPI、费用、售前、售中、售后、变现)与 agg_metric_monthly 的核心维度。",
+    "scope": "适用于按业务员的业绩、目标达成与销售过程分析;注意当前仅 1 名在职状态为 inactive。",
+    "aliases": [
+      "业务员",
+      "销售员",
+      "员工",
+      "emp",
+      "salesperson"
+    ],
+    "evidence": [
+      "ev_25",
+      "ev_17"
+    ]
+  },
+  {
+    "id": "department",
+    "name": "部门",
+    "type": "entity",
+    "definition": "组织单元,主数据表 dim_department,含部门名称与所属区域;业务员通过 dept_id 归属部门,部门通过区域关联 dim_region。",
+    "scope": "适用于部门级费用预算与组织维度分析。",
+    "aliases": [
+      "部门",
+      "dept",
+      "department"
+    ],
+    "evidence": [
+      "ev_25"
+    ]
+  },
+  {
+    "id": "product",
+    "name": "产品",
+    "type": "entity",
+    "definition": "产出产品主体,主数据表 dim_product,含产品名称、所属产品线(prod_line_id)、规格、单位与标准成本/技术成本/指导价。",
+    "scope": "适用于产品结构、毛利与定价分析。",
+    "aliases": [
+      "产品",
+      "prod",
+      "product"
+    ],
+    "evidence": [
+      "ev_25",
+      "ev_23"
+    ]
+  },
+  {
+    "id": "product_line",
+    "name": "产品线",
+    "type": "entity",
+    "definition": "产品分组维度 dim_product_line,共 4 个系列(PP改性系列、PA改性系列、ABS/PC合金系列、特种工程塑料系列),产品通过 prod_line_id 归属产品线。",
+    "scope": "适用于按产品系列的产量、质量与毛利汇总;与产线(dim_production_line,物理产线)不是同一概念。",
+    "aliases": [
+      "产品线",
+      "prod_line",
+      "product line"
+    ],
+    "evidence": [
+      "ev_25"
+    ]
+  },
+  {
+    "id": "production_line",
+    "name": "产线",
+    "type": "entity",
+    "definition": "物理生产线主体,主数据表 dim_production_line(line_id 为主键),含产线名称、所属车间、生产品类与设计产能;共 12 条产线。多数生产类指标按产线维度汇总,明细引用列为 line_id,而 DWS_PRODUCTION_DAILY 中对应列为 dim_line_id。",
+    "scope": "适用于产量、成材率、OEE、能耗等按产线的分析。",
+    "aliases": [
+      "产线",
+      "生产线",
+      "line",
+      "production line"
+    ],
+    "evidence": [
+      "ev_25",
+      "ev_03"
+    ]
+  },
+  {
+    "id": "workshop",
+    "name": "车间",
+    "type": "entity",
+    "definition": "生产车间主体,主数据表 dim_workshop(workshop_id 为主键),共 5 个车间,含车间名称与位置;产线通过 workshop_id 归属车间,是安全与环境类日汇总的维度。",
+    "scope": "适用于按车间的安全、环保与生产分析。",
+    "aliases": [
+      "车间",
+      "workshop"
+    ],
+    "evidence": [
+      "ev_25",
+      "ev_14"
+    ]
+  },
+  {
+    "id": "equipment",
+    "name": "设备",
+    "type": "entity",
+    "definition": "生产设备主体,主数据表 dim_equipment,含设备编码、名称、设备类型、所属产线、制造商与设计寿命;共 60 台设备,分布于 12 条产线。是 DWS_EQUIPMENT_DAILY 与停机、报警、维护类明细的维度。",
+    "scope": "适用于设备运行、停机、OEE 与维护分析。",
+    "aliases": [
+      "设备",
+      "equipment",
+      "asset"
+    ],
+    "evidence": [
+      "ev_25",
+      "ev_29"
+    ]
+  },
+  {
+    "id": "supplier",
+    "name": "供应商",
+    "type": "entity",
+    "definition": "供应方主体,主数据表 dim_supplier,含供应商名称、品类、所在地、信用等级与合作起始日期;是采购类日汇总与来料检验指标的维度。",
+    "scope": "适用于采购额、收货、来料检验合格率与供应商结构分析。",
+    "aliases": [
+      "供应商",
+      "supplier",
+      "vendor"
+    ],
+    "evidence": [
+      "ev_20"
+    ]
+  },
+  {
+    "id": "cost_center",
+    "name": "成本中心",
+    "type": "entity",
+    "definition": "财务核算单元 dim_cost_center,共 10 个,含成本中心名称、类型(production/quality/equipment/sales/rd)及所属部门与业务单元;是 DWS_FINANCE_DAILY 的唯一维度。",
+    "scope": "适用于预算与实际支出、成本构成、折旧等财务分析。",
+    "aliases": [
+      "成本中心",
+      "cost center",
+      "cc"
+    ],
+    "evidence": [
+      "ev_22",
+      "ev_07"
+    ]
+  },
+  {
+    "id": "material",
+    "name": "物料",
+    "type": "entity",
+    "definition": "采购/生产用物料与原料主体 dim_material,含物料编码、名称、类别、规格、单位、单价、安全库存与提前期;库存与投料类事实引用 material_id。",
+    "scope": "适用于投料、损耗、库存与领料分析。",
+    "aliases": [
+      "物料",
+      "原料",
+      "material"
+    ],
+    "evidence": [
+      "ev_01"
+    ]
+  },
+  {
+    "id": "sales_order",
+    "name": "销售订单",
+    "type": "entity",
+    "definition": "销售订单主体 fact_sales_order(order_id 为主键),含下单日期、客户、业务员、产品、数量、单价、金额、技术/标准/实际成本金额、实际与标准毛利、指导价、订单状态与负毛利标记;另有订单行级表 fact_sales_order_line。",
+    "scope": "适用于订单级销售、毛利与客户/业务员归属分析。",
+    "aliases": [
+      "销售订单",
+      "订单",
+      "sales order"
+    ],
+    "evidence": [
+      "ev_23"
+    ]
+  },
+  {
+    "id": "analytical_perspective",
+    "name": "分析视角",
+    "type": "dimension",
+    "definition": "指标目录中的业务视角分类,共 8 个:1.营销与客户、2.采购与供应、3.生产与制造、4.设备与资产、5.财务与成本、6.安全与环保、7.组织与人力、综合;每个指标归属于一个视角。",
+    "scope": "适用于确定分析主题范围与按视角检索指标。",
+    "aliases": [
+      "视角",
+      "perspective",
+      "业务域"
+    ],
+    "evidence": [
+      "ev_10"
+    ]
+  },
+  {
+    "id": "business_date",
+    "name": "业务日期",
+    "type": "dimension",
+    "definition": "各类汇总表与事实表的日期维度列(通常名为 date、business_date、output_date、order_date 等)。配套的 dim_calendar 提供日历属性:年/季/月/周、是否工作日、是否节假日、会计年度与期间、月末标记。",
+    "scope": "所有时间序列分析必须落在数据窗口内;日历表的存在不能推断超出事实数据窗口的可用性。",
+    "aliases": [
+      "日期",
+      "业务日期",
+      "date",
+      "calendar_date"
+    ],
+    "evidence": [
+      "ev_27"
+    ]
+  },
+  {
+    "id": "customer_status",
+    "name": "客户状态",
+    "type": "dimension",
+    "definition": "客户生命周期状态,取自 dim_customer.status,观测值为 active / dormant / lost。",
+    "scope": "适用于客户结构与流失分析;为当前状态快照,不含历史变更记录。",
+    "aliases": [
+      "客户状态",
+      "customer status",
+      "active",
+      "dormant",
+      "lost"
+    ],
+    "evidence": [
+      "ev_17"
+    ]
+  },
+  {
+    "id": "customer_lifecycle_flag",
+    "name": "客户状态标记列",
+    "type": "dimension",
+    "definition": "DWS_MARKET_DAILY 中按客户×日的 0/1 标记列(existing/new/dormant/lost/risk_customer_count),每行至多一列为 1,表达该客户当日的生命周期归类。",
+    "scope": "适用于按日的客户状态变化趋势分析;需注意其与 dim_customer.status 的对应关系。",
+    "aliases": [
+      "客户状态标记",
+      "存量客户",
+      "新客户",
+      "休眠客户",
+      "失活客户",
+      "风险客户"
+    ],
+    "evidence": [
+      "ev_16",
+      "ev_17"
+    ]
+  },
+  {
+    "id": "risk_level",
+    "name": "风险等级",
+    "type": "dimension",
+    "definition": "风险评估等级枚举 dim_risk_level,level_code 取 L1/L2/L3/L4,分别对应 可接受/可容忍/不可容忍/重大,并配有描述与所需措施。",
+    "scope": "适用于风险分级与高风险筛选;L3 及以上属于高风险口径。",
+    "aliases": [
+      "风险等级",
+      "L3",
+      "高风险",
+      "risk level"
+    ],
+    "evidence": [
+      "ev_15",
+      "ev_14"
+    ]
+  },
+  {
+    "id": "incident_severity",
+    "name": "事故严重度",
+    "type": "dimension",
+    "definition": "fact_incident.severity 的取值,观测值为 fa(急救处理)、mtc(医疗处理)、near_miss(未遂);severity 而非 incident_type 承担未遂与事故的区分。",
+    "scope": "适用于事故与未遂的分类统计;未遂事件必须通过 severity='near_miss' 识别。",
+    "aliases": [
+      "严重度",
+      "未遂",
+      "near_miss",
+      "severity"
+    ],
+    "evidence": [
+      "ev_28",
+      "ev_13"
+    ]
+  },
+  {
+    "id": "sales_amount",
+    "name": "接单金额(销售额)",
+    "type": "metric",
+    "definition": "按下单日汇总的销售订单金额(不含税),含未交付与后续退货部分;指标目录明确其与按发货或开票确认的收入不同。",
+    "scope": "适用于接单口径的销售规模分析;不等同于确认收入。对应列 DWS_ORG_PERFORMANCE_DAILY.sales_amount 的列注释写为销售收入,与指标目录口径不一致,以指标目录为准。",
+    "aliases": [
+      "销售额",
+      "接单金额",
+      "订单金额",
+      "sales_amount"
+    ],
+    "evidence": [
+      "ev_30",
+      "ev_31",
+      "ev_09"
+    ]
+  },
+  {
+    "id": "sales_quantity",
+    "name": "销量",
+    "type": "metric",
+    "definition": "销售订单量合计(吨),按业务员×日汇总于 DWS_ORG_PERFORMANCE_DAILY.sales_quantity,并按月聚合于 agg_metric_monthly.sales_quantity。",
+    "scope": "适用于销量规模、结构与方法达成分析。",
+    "aliases": [
+      "销量",
+      "销售数量",
+      "sales_quantity"
+    ],
+    "evidence": [
+      "ev_09",
+      "ev_08"
+    ]
+  },
+  {
+    "id": "gross_profit",
+    "name": "毛利",
+    "type": "metric",
+    "definition": "订单毛利,分为实际毛利(amount - actual_cost_amount)与标准毛利(amount - standard_cost_amount),fact_sales_order 中直接给出 gross_profit_actual 与 gross_profit_standard 两列。",
+    "scope": "适用于产品/客户/业务员毛利与负毛利分析;须区分实际与标准两个口径。",
+    "aliases": [
+      "毛利",
+      "实际毛利",
+      "标准毛利",
+      "gross profit",
+      "margin"
+    ],
+    "evidence": [
+      "ev_23"
+    ]
+  },
+  {
+    "id": "production_actual_quantity",
+    "name": "实际产量",
+    "type": "metric",
+    "definition": "工单实际产量(吨)。汇总口径见 DWS_PRODUCTION_DAILY.actual_quantity(按产线×日×产品),明细口径见 fact_production_order.actual_quantity 与 fact_production_output.quantity。",
+    "scope": "适用于产量与计划达成分析;两个口径的粒度与稀疏性不同,汇总前需明确选用哪一层。",
+    "aliases": [
+      "实际产量",
+      "产量",
+      "actual_quantity",
+      "产出量"
+    ],
+    "evidence": [
+      "ev_03",
+      "ev_05",
+      "ev_09"
+    ]
+  },
+  {
+    "id": "yield_rate",
+    "name": "成材率",
+    "type": "metric",
+    "definition": "实际产量与投料量之比(百分比),定义见指标目录(实际产量/投料量×100),数值列 DWS_PRODUCTION_DAILY.yield_rate;明细层由产出量除以投料量得到。",
+    "scope": "适用于产线/产品的原料利用效率分析;为比率指标,跨维度汇总时不能简单相加。",
+    "aliases": [
+      "成材率",
+      "yield_rate",
+      "收得率"
+    ],
+    "evidence": [
+      "ev_09",
+      "ev_02",
+      "ev_11"
+    ]
+  },
+  {
+    "id": "equipment_oee",
+    "name": "设备OEE",
+    "type": "metric",
+    "definition": "设备综合效率(百分比),数值列 DWS_PRODUCTION_DAILY.oee 与 DWS_EQUIPMENT_DAILY 中的产线 OEE;设备可用率定义为 总运行小时/(总运行小时+总停机时长)×100 的复合指标。",
+    "scope": "适用于设备与产线效率分析;设备可用率为比率,需用时长求和后再计算,不能对比率直接取平均。",
+    "aliases": [
+      "OEE",
+      "设备综合效率",
+      "设备可用率"
+    ],
+    "evidence": [
+      "ev_09",
+      "ev_12",
+      "ev_11"
+    ]
+  },
+  {
+    "id": "downtime_hours",
+    "name": "停机时长",
+    "type": "metric",
+    "definition": "设备停机时长(小时),明细口径见 fact_downtime.duration_hours(含停机原因),汇总口径见 DWS_PRODUCTION_DAILY.downtime_hours 与 DWS_EQUIPMENT_DAILY 的本设备停机时长与次数。",
+    "scope": "适用于停机损失与原因分析;停机原因通过 fact_downtime.reason_code 关联 dim_downtime_reason 的类别。",
+    "aliases": [
+      "停机时长",
+      "停机",
+      "downtime"
+    ],
+    "evidence": [
+      "ev_02",
+      "ev_29",
+      "ev_11"
+    ]
+  },
+  {
+    "id": "ar_balance",
+    "name": "应收账款余额",
+    "type": "metric",
+    "definition": "期末应收账款余额(元,含税)。汇总口径见 DWS_ORG_PERFORMANCE_DAILY 的当日末应收余额与 agg_metric_monthly.ar_balance;账龄口径见 fact_ar_aging(含 8 段账龄与超期标记)。",
+    "scope": "适用于应收规模与账龄结构分析;须区分余额口径与账龄分摊口径。",
+    "aliases": [
+      "应收账款",
+      "应收余额",
+      "AR",
+      "ar_balance"
+    ],
+    "evidence": [
+      "ev_18",
+      "ev_08"
+    ]
+  },
+  {
+    "id": "overdue_ar",
+    "name": "超期应收",
+    "type": "metric",
+    "definition": "超过到期日的应收金额。汇总口径为 DWS_RISK_DAILY.overdue_ar_amt 与 overdue_ar_count(按业务员×产品×日),明细口径由 fact_ar_aging 的 is_overdue 与账龄分段派生。",
+    "scope": "适用于超期应收归集与风险分析;DWS_RISK_DAILY 仅保留存在风险的组合,不构成全量分母。",
+    "aliases": [
+      "超期应收",
+      "超期货款",
+      "overdue_ar",
+      "逾期应收"
+    ],
+    "evidence": [
+      "ev_19",
+      "ev_18",
+      "ev_09"
+    ]
+  },
+  {
+    "id": "overdue_inventory",
+    "name": "超期库存",
+    "type": "metric",
+    "definition": "在库超过 90 天的成品库存数量与金额,口径见 DWS_RISK_DAILY.overdue_inventory_qty 与 overdue_inventory_amt(按业务员×产品×日)。",
+    "scope": "适用于呆滞库存与减值风险分析;仅覆盖存在风险的业务员×产品组合。",
+    "aliases": [
+      "超期库存",
+      "呆滞库存",
+      "overdue inventory"
+    ],
+    "evidence": [
+      "ev_19",
+      "ev_20"
+    ]
+  },
+  {
+    "id": "safety_incident_count",
+    "name": "安全事故数",
+    "type": "metric",
+    "definition": "事故数量,口径为不含未遂的事故,DWS_SAFETY_DAILY.incident_count 按车间×日汇总;明细层对应 fact_incident 中 severity 不为 near_miss 的记录。",
+    "scope": "适用于安全事故统计;严禁把未遂事件计入事故数。",
+    "aliases": [
+      "事故数",
+      "安全事故",
+      "incident_count"
+    ],
+    "evidence": [
+      "ev_13",
+      "ev_28"
+    ]
+  },
+  {
+    "id": "near_miss_count",
+    "name": "未遂事件数",
+    "type": "metric",
+    "definition": "未遂事件(险肇事件)数量,DWS_SAFETY_DAILY.near_miss_count 按车间×日汇总;明细层对应 fact_incident 中 severity='near_miss' 的记录。",
+    "scope": "适用于安全先兆指标分析;与事故数互为互斥口径。",
+    "aliases": [
+      "未遂",
+      "未遂事件",
+      "near_miss_count",
+      "险肇"
+    ],
+    "evidence": [
+      "ev_13",
+      "ev_28"
+    ]
+  },
+  {
+    "id": "budget_amount",
+    "name": "预算金额",
+    "type": "metric",
+    "definition": "预算金额(元)。财务口径见 DWS_FINANCE_DAILY.budget_amount(按成本中心×月末)与 actual_amount(实际发生);费用口径见 fact_budget_expense.budget_amount(按部门×月)及按天与人数折算的 DWS_ORG_EXPENSE_DAILY 预算列。",
+    "scope": "适用于预算执行与偏差分析;不同来源的预算口径按成本中心或部门,不可混用分母。",
+    "aliases": [
+      "预算",
+      "预算金额",
+      "budget",
+      "budget_amount"
+    ],
+    "evidence": [
+      "ev_06",
+      "ev_11",
+      "ev_02"
+    ]
+  },
+  {
+    "id": "incoming_inspection_pass_rate",
+    "name": "来料检验合格率",
+    "type": "metric",
+    "definition": "来料检验合格率(百分比),汇总于 DWS_PROCUREMENT_DAILY 的合格率列,并按供应商取平均形成派生指标(平均合格率)。",
+    "scope": "适用于供应商质量分析;为比率指标,跨供应商或跨期汇总应按批次加权而非简单平均。",
+    "aliases": [
+      "合格率",
+      "来料检验合格率",
+      "pass rate"
+    ],
+    "evidence": [
+      "ev_10",
+      "ev_11",
+      "ev_20"
+    ]
+  },
+  {
+    "id": "atomic_metric",
+    "name": "原子指标",
+    "type": "category",
+    "definition": "指标目录 category='原子指标' 的指标,共 75 个,直接对应汇总表中的数值列(value_column)与日期列(date_column),是其余指标的基础。",
+    "scope": "适用于指标口径溯源与字段定位。",
+    "aliases": [
+      "原子指标",
+      "基础指标"
+    ],
+    "evidence": [
+      "ev_09",
+      "ev_11"
+    ]
+  },
+  {
+    "id": "derived_metric",
+    "name": "派生指标",
+    "type": "category",
+    "definition": "指标目录 category='派生指标' 的指标,共 23 个,由原子指标经聚合方法(SUM/MAX/AVG)在指定维度(group_by_columns)上派生,配置见 dim_derived_metric_config;其表来源为空,不直接对应数值列。",
+    "scope": "适用于确定聚合口径与分组维度;不可当作已存在的物理列查询。",
+    "aliases": [
+      "派生指标"
+    ],
+    "evidence": [
+      "ev_09",
+      "ev_11"
+    ]
+  },
+  {
+    "id": "composite_metric",
+    "name": "复合指标",
+    "type": "category",
+    "definition": "指标目录 category='复合指标' 的指标,共 9 个,由多个派生指标按公式组合,如 投入产出比、经营利润率、设备可用率、一次合格率、安全健康度、能耗效率、维保强度、预算偏差度、单位产出成本;公式见 dim_composite_metric_config。",
+    "scope": "适用于跨主题的综合评价;公式中的比率型分量在汇总时需先还原为总量再计算。",
+    "aliases": [
+      "复合指标",
+      "综合评价指标"
+    ],
+    "evidence": [
+      "ev_09",
+      "ev_12"
+    ]
+  }
+]

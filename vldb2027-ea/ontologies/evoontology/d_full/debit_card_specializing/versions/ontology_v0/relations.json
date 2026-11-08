@@ -1,0 +1,182 @@
+[
+  {
+    "id": "rel_customer_monthly_records",
+    "source": "term_customer",
+    "relation_type": "composition",
+    "target": "term_customer_month_consumption_record",
+    "connection_condition": "yearmonth.CustomerID corresponds to customers.CustomerID; every monthly record carries a customer identifier and no record exists without a matching customer",
+    "description": "A customer is composed of one monthly consumption record per reporting month; a monthly record has no meaning apart from the customer it is recorded for.",
+    "evidence": [
+      "evidence_yearmonth_structure"
+    ]
+  },
+  {
+    "id": "rel_customer_cards",
+    "source": "term_customer",
+    "relation_type": "composition",
+    "target": "term_payment_card",
+    "connection_condition": "transactions_1k.CardID is always accompanied by exactly one transactions_1k.CustomerID for that card",
+    "description": "Cards belong to a customer; in the observed transactions every card is used by exactly one customer, while a customer may use up to 17 distinct cards.",
+    "evidence": [
+      "evidence_card_ownership"
+    ]
+  },
+  {
+    "id": "rel_customer_transactions",
+    "source": "term_customer",
+    "relation_type": "composition",
+    "target": "term_transaction",
+    "connection_condition": "transactions_1k.CustomerID corresponds to customers.CustomerID; all 517 observed values resolve to customers",
+    "description": "A customer is composed of the transaction lines recorded in its name; a line without its customer record loses attribution.",
+    "evidence": [
+      "evidence_transaction_fk_resolution"
+    ]
+  },
+  {
+    "id": "rel_chain_stations",
+    "source": "term_station_chain",
+    "relation_type": "composition",
+    "target": "term_gas_station",
+    "connection_condition": "gasstations.ChainID groups gas stations; each station carries exactly one chain number and the largest chain covers 1462 of 5716 stations",
+    "description": "A chain is composed of its member stations; the chain is expressed only through the ChainID value on stations, with no separate chain table.",
+    "evidence": [
+      "evidence_chain_counts"
+    ]
+  },
+  {
+    "id": "rel_transaction_station",
+    "source": "term_transaction",
+    "relation_type": "association",
+    "target": "term_gas_station",
+    "connection_condition": "transactions_1k.GasStationID corresponds to gasstations.GasStationID; all 437 observed values resolve to stations",
+    "description": "A transaction line is located at the gas station recorded on it, so line-level results can be described by the station's chain, country and segment.",
+    "evidence": [
+      "evidence_transaction_fk_resolution",
+      "evidence_gasstation_values"
+    ]
+  },
+  {
+    "id": "rel_transaction_product",
+    "source": "term_transaction",
+    "relation_type": "association",
+    "target": "term_product",
+    "connection_condition": "transactions_1k.ProductID corresponds to products.ProductID; the 28 distinct observed values all resolve to products",
+    "description": "Each transaction line records the sale of one product, so line quantities and values can be grouped by product description.",
+    "evidence": [
+      "evidence_transaction_fk_resolution",
+      "evidence_product_catalog"
+    ]
+  },
+  {
+    "id": "rel_customer_segment_membership",
+    "source": "term_customer",
+    "relation_type": "hierarchy",
+    "target": "term_customer_segment",
+    "connection_condition": "customers.Segment partitions the customer set; the KAM, LAM and SME groups are disjoint and together contain all 32461 customers",
+    "description": "Each recorded segment is a subcategory of customer, so the customers in any one segment form a subset of all customers.",
+    "evidence": [
+      "evidence_customer_segment_values"
+    ]
+  },
+  {
+    "id": "rel_station_segment_membership",
+    "source": "term_gas_station",
+    "relation_type": "hierarchy",
+    "target": "term_station_segment",
+    "connection_condition": "gasstations.Segment partitions the station set; the five observed site categories together contain all 5716 stations",
+    "description": "Each recorded site category is a subcategory of gas station, so stations in one category form a subset of all stations.",
+    "evidence": [
+      "evidence_gasstation_values"
+    ]
+  },
+  {
+    "id": "rel_product_band_membership",
+    "source": "term_product",
+    "relation_type": "hierarchy",
+    "target": "term_product_catalog_band",
+    "connection_condition": "band membership is decided by the numeric ProductID range, so each band contains a disjoint subset of the products table",
+    "description": "A product in a catalog band is a subtype of product; the two bands are disjoint subsets of the catalog.",
+    "evidence": [
+      "evidence_product_catalog",
+      "evidence_product_band_chain"
+    ]
+  },
+  {
+    "id": "rel_transaction_customer_equiv",
+    "source": "term_transaction_customer_reference",
+    "relation_type": "equivalence",
+    "target": "term_consumption_customer_reference",
+    "connection_condition": "transactions_1k.CustomerID and yearmonth.CustomerID draw on the same customer identifier set; all 517 transaction customer identifiers also appear in yearmonth",
+    "description": "The two columns express the same customer reference concept in different tables, so a customer found through transactions can be followed into the monthly panel and the reverse.",
+    "evidence": [
+      "evidence_scope_overlap"
+    ]
+  },
+  {
+    "id": "rel_line_value_monthly_consumption",
+    "source": "term_line_value",
+    "relation_type": "association",
+    "target": "term_monthly_consumption",
+    "connection_condition": "line values and monthly consumption meet only through the customer identifier and the reporting period, with no shared key and no declared conversion",
+    "description": "Both concepts describe amounts attributed to a customer in a period, but they are recorded at different grains and over different scopes, so their magnitudes are not interchangeable.",
+    "evidence": [
+      "evidence_transaction_scope",
+      "evidence_scope_overlap"
+    ]
+  },
+  {
+    "id": "rel_implied_unit_price_from_value",
+    "source": "term_line_value",
+    "relation_type": "derivation",
+    "target": "term_implied_unit_price",
+    "connection_condition": "derived as the line value divided by the matching line quantity",
+    "description": "The implied unit value is computed from the recorded line value and is defined only where the line quantity is greater than zero.",
+    "evidence": [
+      "evidence_price_amount_relation"
+    ]
+  },
+  {
+    "id": "rel_implied_unit_price_from_quantity",
+    "source": "term_line_quantity",
+    "relation_type": "derivation",
+    "target": "term_implied_unit_price",
+    "connection_condition": "line quantity is the divisor of the derivation and must be greater than zero",
+    "description": "The implied unit value depends on the line quantity as its divisor, so zero-quantity lines have no implied unit value.",
+    "evidence": [
+      "evidence_price_amount_relation"
+    ]
+  },
+  {
+    "id": "rel_avg_consumption_derivation",
+    "source": "term_monthly_consumption",
+    "relation_type": "derivation",
+    "target": "term_avg_consumption_per_customer",
+    "connection_condition": "derived by dividing the month total of Consumption by the number of distinct customers recorded in the same month",
+    "description": "Average consumption per customer is derived from the monthly consumption totals together with the monthly customer coverage.",
+    "evidence": [
+      "evidence_yearmonth_months_coverage"
+    ]
+  },
+  {
+    "id": "rel_coverage_derivation",
+    "source": "term_customer_month_consumption_record",
+    "relation_type": "derivation",
+    "target": "term_month_customer_coverage",
+    "connection_condition": "derived by counting distinct CustomerID values within each reporting month",
+    "description": "Month customer coverage is derived from the monthly records by counting the customers present in each month.",
+    "evidence": [
+      "evidence_yearmonth_months_coverage"
+    ]
+  },
+  {
+    "id": "rel_record_month",
+    "source": "term_consumption_month",
+    "relation_type": "association",
+    "target": "term_customer_month_consumption_record",
+    "connection_condition": "the reporting month is one component of the record identity pair (Date, CustomerID)",
+    "description": "Each monthly consumption record is stamped with exactly one reporting month, which is what makes month-over-month comparison possible.",
+    "evidence": [
+      "evidence_yearmonth_structure"
+    ]
+  }
+]

@@ -1,0 +1,371 @@
+[
+  {
+    "id": "map_customer_id",
+    "term_id": "term_customer",
+    "database_source": "debit_card_specializing",
+    "table": "tab01",
+    "column": "fld001",
+    "semantic_filter": "",
+    "aggregation_semantics": "count of distinct customers",
+    "grain": "one row per customer",
+    "validation": {
+      "description": "32461 rows and 32461 distinct fld001 values; fld001 is the primary key.",
+      "evidence": [
+        "ev_tab01_profile",
+        "ev_fk_integrity"
+      ],
+      "confidence": "high"
+    }
+  },
+  {
+    "id": "map_customer_in_transaction",
+    "term_id": "term_customer",
+    "database_source": "debit_card_specializing",
+    "table": "tab04",
+    "column": "fld001",
+    "semantic_filter": "",
+    "aggregation_semantics": "distinct customers represented in transaction lines",
+    "grain": "transaction line",
+    "validation": {
+      "description": "517 distinct values, all resolving to tab01.fld001 (0 orphans).",
+      "evidence": [
+        "ev_tab04_profile",
+        "ev_fk_integrity"
+      ],
+      "confidence": "high"
+    }
+  },
+  {
+    "id": "map_customer_in_yearmonth",
+    "term_id": "term_customer",
+    "database_source": "debit_card_specializing",
+    "table": "tab05",
+    "column": "fld001",
+    "semantic_filter": "",
+    "aggregation_semantics": "distinct customers with monthly consumption records",
+    "grain": "customer-month",
+    "validation": {
+      "description": "30566 distinct customers, all resolving to tab01.fld001 (0 orphans).",
+      "evidence": [
+        "ev_tab05_profile",
+        "ev_fk_integrity"
+      ],
+      "confidence": "high"
+    }
+  },
+  {
+    "id": "map_customer_segment",
+    "term_id": "term_customer_segment",
+    "database_source": "debit_card_specializing",
+    "table": "tab01",
+    "column": "fld002",
+    "semantic_filter": "",
+    "aggregation_semantics": "count of customers per segment",
+    "grain": "customer",
+    "validation": {
+      "description": "Values KAM 2040, LAM 3658, SME 26763; no nulls.",
+      "evidence": [
+        "ev_tab01_profile"
+      ],
+      "confidence": "high"
+    }
+  },
+  {
+    "id": "map_payment_currency",
+    "term_id": "term_payment_currency",
+    "database_source": "debit_card_specializing",
+    "table": "tab01",
+    "column": "fld003",
+    "semantic_filter": "",
+    "aggregation_semantics": "count of customers per currency",
+    "grain": "customer",
+    "validation": {
+      "description": "Values CZK 30459 and EUR 2002; no nulls.",
+      "evidence": [
+        "ev_tab01_profile",
+        "ev_currency_semantics"
+      ],
+      "confidence": "high"
+    }
+  },
+  {
+    "id": "map_gas_station_id",
+    "term_id": "term_gas_station",
+    "database_source": "debit_card_specializing",
+    "table": "tab02",
+    "column": "fld004",
+    "semantic_filter": "",
+    "aggregation_semantics": "count of distinct stations",
+    "grain": "one row per station",
+    "validation": {
+      "description": "5716 rows and 5716 distinct fld004 values; fld004 is the primary key.",
+      "evidence": [
+        "ev_tab02_profile"
+      ],
+      "confidence": "high"
+    }
+  },
+  {
+    "id": "map_gas_station_in_transaction",
+    "term_id": "term_gas_station",
+    "database_source": "debit_card_specializing",
+    "table": "tab04",
+    "column": "fld004",
+    "semantic_filter": "",
+    "aggregation_semantics": "distinct stations appearing in transaction lines",
+    "grain": "transaction line",
+    "validation": {
+      "description": "437 distinct values, all resolving to tab02.fld004 (0 orphans).",
+      "evidence": [
+        "ev_tab04_profile",
+        "ev_fk_integrity"
+      ],
+      "confidence": "high"
+    }
+  },
+  {
+    "id": "map_gas_station_country",
+    "term_id": "term_gas_station_country",
+    "database_source": "debit_card_specializing",
+    "table": "tab02",
+    "column": "fld006",
+    "semantic_filter": "",
+    "aggregation_semantics": "count of stations per country",
+    "grain": "station",
+    "validation": {
+      "description": "Values CZE 4836 and SVK 880; no nulls.",
+      "evidence": [
+        "ev_tab02_profile",
+        "ev_country_semantics"
+      ],
+      "confidence": "high"
+    }
+  },
+  {
+    "id": "map_gas_station_segment",
+    "term_id": "term_gas_station_segment",
+    "database_source": "debit_card_specializing",
+    "table": "tab02",
+    "column": "fld002",
+    "semantic_filter": "",
+    "aggregation_semantics": "count of stations per segment",
+    "grain": "station",
+    "validation": {
+      "description": "Values Discount 294, Noname 1005, Other 2392, Premium 1428, Value for money 597.",
+      "evidence": [
+        "ev_tab02_profile"
+      ],
+      "confidence": "high"
+    }
+  },
+  {
+    "id": "map_product_id",
+    "term_id": "term_product",
+    "database_source": "debit_card_specializing",
+    "table": "tab03",
+    "column": "fld007",
+    "semantic_filter": "",
+    "aggregation_semantics": "count of distinct products",
+    "grain": "one row per product",
+    "validation": {
+      "description": "591 rows and 591 distinct fld007 values; fld007 is the primary key.",
+      "evidence": [
+        "ev_tab03_profile"
+      ],
+      "confidence": "high"
+    }
+  },
+  {
+    "id": "map_product_in_transaction",
+    "term_id": "term_product",
+    "database_source": "debit_card_specializing",
+    "table": "tab04",
+    "column": "fld007",
+    "semantic_filter": "",
+    "aggregation_semantics": "distinct products appearing in transaction lines",
+    "grain": "transaction line",
+    "validation": {
+      "description": "28 distinct products occur in tab04, all resolving to tab03.fld007 (0 orphans).",
+      "evidence": [
+        "ev_tab03_profile",
+        "ev_fk_integrity"
+      ],
+      "confidence": "high"
+    }
+  },
+  {
+    "id": "map_product_description",
+    "term_id": "term_product_description",
+    "database_source": "debit_card_specializing",
+    "table": "tab03",
+    "column": "fld008",
+    "semantic_filter": "",
+    "aggregation_semantics": "list or count of distinct product descriptions",
+    "grain": "product",
+    "validation": {
+      "description": "591 non-null free-text descriptions; examples include 'Nafta', 'Natural', 'Diesel' and 'Oleje,tuky'.",
+      "evidence": [
+        "ev_tab03_profile"
+      ],
+      "confidence": "high"
+    }
+  },
+  {
+    "id": "map_transaction_id",
+    "term_id": "term_transaction",
+    "database_source": "debit_card_specializing",
+    "table": "tab04",
+    "column": "fld009",
+    "semantic_filter": "",
+    "aggregation_semantics": "count of transaction lines",
+    "grain": "transaction line",
+    "validation": {
+      "description": "1000 rows and 1000 distinct fld009 values; fld009 is the primary key.",
+      "evidence": [
+        "ev_tab04_profile"
+      ],
+      "confidence": "high"
+    }
+  },
+  {
+    "id": "map_transaction_date",
+    "term_id": "term_transaction_date",
+    "database_source": "debit_card_specializing",
+    "table": "tab04",
+    "column": "fld010",
+    "semantic_filter": "",
+    "aggregation_semantics": "grouping by calendar date",
+    "grain": "transaction line",
+    "validation": {
+      "description": "Text values in YYYY-MM-DD form; four distinct dates from 2012-08-23 to 2012-08-26.",
+      "evidence": [
+        "ev_date_time_formats",
+        "ev_transaction_scope"
+      ],
+      "confidence": "high"
+    }
+  },
+  {
+    "id": "map_transaction_time",
+    "term_id": "term_transaction_time",
+    "database_source": "debit_card_specializing",
+    "table": "tab04",
+    "column": "fld011",
+    "semantic_filter": "",
+    "aggregation_semantics": "grouping or interval filtering by time of day",
+    "grain": "transaction line",
+    "validation": {
+      "description": "Text values in HH:MM:SS form ranging from 00:07:00 to 23:20:00.",
+      "evidence": [
+        "ev_date_time_formats"
+      ],
+      "confidence": "high"
+    }
+  },
+  {
+    "id": "map_transaction_quantity",
+    "term_id": "term_transaction_quantity",
+    "database_source": "debit_card_specializing",
+    "table": "tab04",
+    "column": "fld013",
+    "semantic_filter": "",
+    "aggregation_semantics": "sum of units across transaction lines",
+    "grain": "transaction line",
+    "validation": {
+      "description": "Integer values from 0 to 264; 91 of 1000 lines are zero.",
+      "evidence": [
+        "ev_tab04_profile",
+        "ev_amount_zero"
+      ],
+      "confidence": "high"
+    }
+  },
+  {
+    "id": "map_transaction_price",
+    "term_id": "term_transaction_price",
+    "database_source": "debit_card_specializing",
+    "table": "tab04",
+    "column": "fld014",
+    "semantic_filter": "",
+    "aggregation_semantics": "sum of line prices for total spending; mean across lines for an average line price",
+    "grain": "transaction line",
+    "validation": {
+      "description": "Real values from 1.76 to 5762.49; no nulls.",
+      "evidence": [
+        "ev_tab04_profile"
+      ],
+      "confidence": "high"
+    }
+  },
+  {
+    "id": "map_avg_unit_price",
+    "term_id": "term_avg_unit_price",
+    "database_source": "debit_card_specializing",
+    "table": "tab04",
+    "column": "fld014",
+    "semantic_filter": "the ratio is defined only when the total quantity over the selected scope is non-zero",
+    "aggregation_semantics": "total price divided by total quantity over the selected transaction scope",
+    "grain": "aggregated transaction lines",
+    "validation": {
+      "description": "Definition supplied by the construction workload (average price per single item equals total fld014 divided by total fld013), cross-checked against the quantity and price column profiles.",
+      "evidence": [
+        "ev_avg_unit_price_definition",
+        "ev_amount_zero"
+      ],
+      "confidence": "high"
+    }
+  },
+  {
+    "id": "map_customer_spending",
+    "term_id": "term_customer_spending",
+    "database_source": "debit_card_specializing",
+    "table": "tab04",
+    "column": "fld014",
+    "semantic_filter": "",
+    "aggregation_semantics": "sum of transaction-line prices per customer",
+    "grain": "customer",
+    "validation": {
+      "description": "tab04.fld001 identifies the customer of each line and fld014 holds its price; spending is summable per customer.",
+      "evidence": [
+        "ev_customer_spending_definition",
+        "ev_fk_integrity"
+      ],
+      "confidence": "high"
+    }
+  },
+  {
+    "id": "map_monthly_consumption",
+    "term_id": "term_monthly_consumption",
+    "database_source": "debit_card_specializing",
+    "table": "tab05",
+    "column": "fld015",
+    "semantic_filter": "",
+    "aggregation_semantics": "sum across months for annual totals; mean across observed months for a typical monthly level",
+    "grain": "customer-month",
+    "validation": {
+      "description": "383282 rows with values from -582092.86 to 2052187.11; 152 negative and 28 zero values.",
+      "evidence": [
+        "ev_tab05_profile"
+      ],
+      "confidence": "high"
+    }
+  },
+  {
+    "id": "map_year_month",
+    "term_id": "term_year_month",
+    "database_source": "debit_card_specializing",
+    "table": "tab05",
+    "column": "fld010",
+    "semantic_filter": "",
+    "aggregation_semantics": "grouping by YYYYMM period",
+    "grain": "customer-month",
+    "validation": {
+      "description": "Six-character YYYYMM text with 21 distinct months from 201112 to 201311.",
+      "evidence": [
+        "ev_tab05_profile",
+        "ev_date_time_formats"
+      ],
+      "confidence": "high"
+    }
+  }
+]

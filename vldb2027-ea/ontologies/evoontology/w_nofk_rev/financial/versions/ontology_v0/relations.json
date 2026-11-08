@@ -1,0 +1,197 @@
+[
+  {
+    "id": "r_region_district",
+    "source": "t_region",
+    "relation_type": "composition",
+    "target": "t_district",
+    "connection_condition": "district.A3 groups districts: several district records share one region name",
+    "description": "A region is composed of a set of districts; each district belongs to exactly one region, and a district record is meaningful only within its region grouping.",
+    "evidence": [
+      "e011_district_regions"
+    ]
+  },
+  {
+    "id": "r_branch_account",
+    "source": "t_account_branch",
+    "relation_type": "composition",
+    "target": "t_account",
+    "connection_condition": "account.district_id references district.district_id",
+    "description": "An account is held at a branch district; every account carries a branch reference and cannot exist without one.",
+    "evidence": [
+      "e014_fk_integrity",
+      "e016_district_roles"
+    ]
+  },
+  {
+    "id": "r_district_client",
+    "source": "t_district",
+    "relation_type": "association",
+    "target": "t_client",
+    "connection_condition": "client.district_id references district.district_id; the link is an indirect residence attribute rather than a containment of the client by the district",
+    "description": "A client resides in a district. The client record carries a district reference, but a client is not a component of a district, so the connection is a business association rather than a part-of relationship.",
+    "evidence": [
+      "e014_fk_integrity",
+      "e016_district_roles"
+    ]
+  },
+  {
+    "id": "r_account_dispositions",
+    "source": "t_account",
+    "relation_type": "composition",
+    "target": "t_disposition",
+    "connection_condition": "disp.account_id references account.account_id",
+    "description": "An account is composed of its dispositions. Every account has exactly one disposition carrying the owner role and may have further dispositions for additional authorized users.",
+    "evidence": [
+      "e015_cardinality"
+    ]
+  },
+  {
+    "id": "r_client_dispositions",
+    "source": "t_client",
+    "relation_type": "composition",
+    "target": "t_disposition",
+    "connection_condition": "disp.client_id references client.client_id",
+    "description": "A client's account relationships are expressed through dispositions; every client has exactly one such record in this database.",
+    "evidence": [
+      "e015_cardinality"
+    ]
+  },
+  {
+    "id": "r_client_account_holder",
+    "source": "t_client",
+    "relation_type": "hierarchy",
+    "target": "t_account_holder",
+    "connection_condition": "every client identifier that owns an account is drawn from the set of client identifiers",
+    "description": "An account holder is a client. The set of account holders is a subset of the set of clients, since only some clients hold an account.",
+    "evidence": [
+      "e005_disp_type",
+      "e015_cardinality"
+    ]
+  },
+  {
+    "id": "r_disposition_card",
+    "source": "t_disposition",
+    "relation_type": "composition",
+    "target": "t_card",
+    "connection_condition": "card.disp_id references disp.disp_id",
+    "description": "A card is issued against a disposition of an account; a card cannot exist without the disposition it was issued for.",
+    "evidence": [
+      "e015_cardinality",
+      "e004_card_type"
+    ]
+  },
+  {
+    "id": "r_account_transactions",
+    "source": "t_account",
+    "relation_type": "composition",
+    "target": "t_transaction",
+    "connection_condition": "trans.account_id references account.account_id",
+    "description": "An account is composed of its transactions; the movement records have no meaning apart from the account they belong to.",
+    "evidence": [
+      "e014_fk_integrity",
+      "e002_row_counts"
+    ]
+  },
+  {
+    "id": "r_account_loans",
+    "source": "t_account",
+    "relation_type": "composition",
+    "target": "t_loan",
+    "connection_condition": "loan.account_id references account.account_id",
+    "description": "Loan contracts are granted against an account and cannot exist without it.",
+    "evidence": [
+      "e014_fk_integrity",
+      "e020_loan_ranges"
+    ]
+  },
+  {
+    "id": "r_loan_running",
+    "source": "t_loan",
+    "relation_type": "hierarchy",
+    "target": "t_running_loan_contract",
+    "connection_condition": "running contracts are the subset of loan rows whose status denotes a running contract",
+    "description": "A running loan contract is a loan contract. Running contracts form a strict subset of all loan contracts.",
+    "evidence": [
+      "e006_loan_status",
+      "e020_loan_ranges"
+    ]
+  },
+  {
+    "id": "r_card_type_high_level",
+    "source": "t_card_type",
+    "relation_type": "hierarchy",
+    "target": "t_high_level_card",
+    "connection_condition": "the highest card class is one of the values the card type column takes",
+    "description": "A high-level card is a card type. The highest class is one of the classes a card can have, so its value set is a subset of the card type value set.",
+    "evidence": [
+      "e004_card_type"
+    ]
+  },
+  {
+    "id": "r_transaction_credit_card",
+    "source": "t_transaction",
+    "relation_type": "hierarchy",
+    "target": "t_credit_card_transaction",
+    "connection_condition": "transactions performed with a card are the subset of transaction rows carrying the card withdrawal operation mode",
+    "description": "A credit card transaction is a transaction. Card operations form a subset of the account transaction ledger.",
+    "evidence": [
+      "e021_credit_card_txn"
+    ]
+  },
+  {
+    "id": "r_birth_age",
+    "source": "t_client_birth_date",
+    "relation_type": "derivation",
+    "target": "t_client_age",
+    "connection_condition": "",
+    "description": "Client age is derived from the client's birth date relative to a stated reference date. An earlier birth date corresponds to an older client.",
+    "evidence": [
+      "e017_date_ranges"
+    ]
+  },
+  {
+    "id": "r_unemployment_increment",
+    "source": "t_district_unemployment_rate",
+    "relation_type": "derivation",
+    "target": "t_unemployment_increment_rate",
+    "connection_condition": "the district's 1995 rate and 1996 rate supply the two inputs for the same district",
+    "description": "The unemployment increment rate is computed from a district's unemployment rate at the start and the end of the period, expressing the change as a percentage of the starting rate.",
+    "evidence": [
+      "e018_unemployment"
+    ]
+  },
+  {
+    "id": "r_salary_gap",
+    "source": "t_district_average_salary",
+    "relation_type": "derivation",
+    "target": "t_average_salary_gap",
+    "connection_condition": "",
+    "description": "The average salary gap is computed as the difference between the highest and the lowest district average salary within the selected set of districts.",
+    "evidence": [
+      "e010_district_columns"
+    ]
+  },
+  {
+    "id": "r_gender_share",
+    "source": "t_client_gender",
+    "relation_type": "derivation",
+    "target": "t_client_gender_share",
+    "connection_condition": "",
+    "description": "The gender share of a client population is computed from the count of clients of the selected gender relative to the total count of clients in the same population.",
+    "evidence": [
+      "e003_gender"
+    ]
+  },
+  {
+    "id": "r_branch_district_equiv",
+    "source": "t_account_branch",
+    "relation_type": "equivalence",
+    "target": "t_district",
+    "connection_condition": "account.district_id and district.district_id draw from the same district identifier value domain of 1 to 77",
+    "description": "The branch of an account and the district master refer to the same district entity: the account-side reference records where the account is held, while the district record carries that district's name, region and statistics. The equivalence is documented so that a branch mentioned in one question is recognised as the same district referred to in another.",
+    "evidence": [
+      "e016_district_roles",
+      "e014_fk_integrity"
+    ]
+  }
+]

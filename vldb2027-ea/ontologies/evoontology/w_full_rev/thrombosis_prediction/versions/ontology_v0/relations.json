@@ -1,0 +1,187 @@
+[
+  {
+    "id": "rel_patient_examination",
+    "source": "term_patient",
+    "relation_type": "composition",
+    "target": "term_examination",
+    "connection_condition": "Examination.ID references Patient.ID, but identifiers overlap only partially in this database.",
+    "description": "An examination event belongs to one patient and has no meaning without that patient; a patient is composed of the examination events recorded for it.",
+    "evidence": [
+      "ev_examination_grain",
+      "ev_exam_coverage"
+    ]
+  },
+  {
+    "id": "rel_patient_laboratory",
+    "source": "term_patient",
+    "relation_type": "composition",
+    "target": "term_laboratory_record",
+    "connection_condition": "Laboratory.ID references Patient.ID; every laboratory identifier resolves to a patient.",
+    "description": "A laboratory panel belongs to one patient and has no meaning without that patient; a patient is composed of the panels recorded for it.",
+    "evidence": [
+      "ev_lab_grain"
+    ]
+  },
+  {
+    "id": "rel_examination_laboratory",
+    "source": "term_examination",
+    "relation_type": "association",
+    "target": "term_laboratory_record",
+    "connection_condition": "Both streams carry the same patient identifier; their dates coincide in only 8 rows, so they are related through the patient rather than through a shared event record.",
+    "description": "Examinations and laboratory panels are parallel clinical event streams for the same patient; a question may need findings from one and measurements from the other without a shared event key.",
+    "evidence": [
+      "ev_lab_grain",
+      "ev_time_coverage"
+    ]
+  },
+  {
+    "id": "rel_examination_thrombosis",
+    "source": "term_examination",
+    "relation_type": "composition",
+    "target": "term_thrombosis_severity",
+    "connection_condition": "",
+    "description": "Thrombosis severity is a finding attribute of a single examination event and cannot be interpreted apart from that event.",
+    "evidence": [
+      "ev_thrombosis_domain"
+    ]
+  },
+  {
+    "id": "rel_examination_symptom",
+    "source": "term_examination",
+    "relation_type": "composition",
+    "target": "term_symptom",
+    "connection_condition": "",
+    "description": "Observed symptoms are recorded as part of an examination event; an examination carries at most one symptom text.",
+    "evidence": [
+      "ev_symptom_content"
+    ]
+  },
+  {
+    "id": "rel_examination_acl_igm",
+    "source": "term_examination",
+    "relation_type": "composition",
+    "target": "term_anticardiolipin_igm",
+    "connection_condition": "",
+    "description": "The anti-cardiolipin IgM concentration is measured as part of an examination event and is tied to that examination date.",
+    "evidence": [
+      "ev_acl_igm_domain"
+    ]
+  },
+  {
+    "id": "rel_birthday_age",
+    "source": "term_birthday",
+    "relation_type": "derivation",
+    "target": "term_age",
+    "connection_condition": "",
+    "description": "Age is computed from the date of birth as the difference in calendar years between the reference date of the question and the calendar year of birth.",
+    "evidence": [
+      "ev_age_derivation"
+    ]
+  },
+  {
+    "id": "rel_patient_diagnosis_equivalence",
+    "source": "term_patient_diagnosis",
+    "relation_type": "equivalence",
+    "target": "term_examination_diagnosis",
+    "connection_condition": "Patient.Diagnosis and Examination.Diagnosis are different columns of different tables, populated from the same clinical diagnosis vocabulary but with differing spellings.",
+    "description": "The two diagnosis fields express the same business concept at different grains: the disease a patient has, versus the disease recorded at one examination.",
+    "evidence": [
+      "ev_patient_diagnosis_vocab",
+      "ev_examination_diagnosis_vocab",
+      "ev_diagnosis_spelling_variance"
+    ]
+  },
+  {
+    "id": "rel_suspected_diagnosis",
+    "source": "term_suspected_diagnosis",
+    "relation_type": "hierarchy",
+    "target": "term_patient_diagnosis",
+    "connection_condition": "",
+    "description": "A suspected diagnosis is a subcategory of diagnosis entry; its value domain is the confirmed diagnosis codes with the 'susp' qualifier appended, and it never covers codes that are not otherwise present.",
+    "evidence": [
+      "ev_susp_counts",
+      "ev_patient_diagnosis_vocab"
+    ]
+  },
+  {
+    "id": "rel_normal_range_abnormal",
+    "source": "term_lab_normal_range",
+    "relation_type": "derivation",
+    "target": "term_lab_abnormal_result",
+    "connection_condition": "",
+    "description": "An abnormal result is defined as the complement of the normal band for the same measurement: a value is abnormal exactly when it is not normal, including values below the lower bound and above the upper bound.",
+    "evidence": [
+      "ev_lab_threshold_counts",
+      "ev_ua_thresholds"
+    ]
+  },
+  {
+    "id": "rel_normal_range_laboratory",
+    "source": "term_lab_normal_range",
+    "relation_type": "association",
+    "target": "term_laboratory_record",
+    "connection_condition": "No normal-range column exists in the data; normal bands are attached to individual measurement columns.",
+    "description": "Normal ranges are interpreted per measurement column rather than read from the data, so the applicable band has to be supplied by the workload or by domain knowledge rather than discovered in a table.",
+    "evidence": [
+      "ev_lab_threshold_counts"
+    ]
+  },
+  {
+    "id": "rel_sex_uric_acid",
+    "source": "term_patient_sex",
+    "relation_type": "association",
+    "target": "term_uric_acid",
+    "connection_condition": "The sex of the patient owning a Laboratory row is reached through Patient.ID, so the band cannot be applied without joining the laboratory record to the patient.",
+    "description": "The normal band for uric acid differs by patient sex, making the sex dimension part of the interpretation of the measurement.",
+    "evidence": [
+      "ev_ua_thresholds"
+    ]
+  },
+  {
+    "id": "rel_patient_thrombosis",
+    "source": "term_patient",
+    "relation_type": "association",
+    "target": "term_thrombosis_severity",
+    "connection_condition": "Thrombosis severity is stored per examination event and reaches the patient only through Examination.ID, whose overlap with Patient.ID is limited.",
+    "description": "Thrombosis status is a property recorded at examination events, so a patient-level thrombosis statement has to be assembled from that patient's examination events.",
+    "evidence": [
+      "ev_thrombosis_domain",
+      "ev_exam_coverage"
+    ]
+  },
+  {
+    "id": "rel_diagnosis_date_examination_date",
+    "source": "term_examination_date",
+    "relation_type": "association",
+    "target": "term_diagnosis_date",
+    "connection_condition": "Both are encounter dates but they belong to different event records and different tables; only 8 examination rows share a date with a laboratory row of the same patient, and the diagnosis date is a patient-level attribute.",
+    "description": "Two distinct encounter-date concepts that a question may use to place the same patient in time; treating them as one date field would conflate events recorded at different grains.",
+    "evidence": [
+      "ev_time_coverage",
+      "ev_description_is_date"
+    ]
+  },
+  {
+    "id": "rel_total_cholesterol_change_rate",
+    "source": "term_total_cholesterol",
+    "relation_type": "derivation",
+    "target": "term_lab_value_change_rate",
+    "connection_condition": "",
+    "description": "The change rate of a laboratory measurement is computed from two measurements of the same patient at different dates, so it depends on the measurement concept and on the laboratory test date.",
+    "evidence": [
+      "ev_cholesterol_series"
+    ]
+  },
+  {
+    "id": "rel_diagnosis_thrombosis",
+    "source": "term_patient_diagnosis",
+    "relation_type": "association",
+    "target": "term_thrombosis_severity",
+    "connection_condition": "Reached by combining the patient-level diagnosis with the thrombosis codes of the same patient's examination events.",
+    "description": "Disease and thrombosis severity are clinically related attributes of the same cohort and are requested together when a question asks which diseases occur among patients with a given thrombosis degree.",
+    "evidence": [
+      "ev_patient_diagnosis_vocab",
+      "ev_thrombosis_domain"
+    ]
+  }
+]

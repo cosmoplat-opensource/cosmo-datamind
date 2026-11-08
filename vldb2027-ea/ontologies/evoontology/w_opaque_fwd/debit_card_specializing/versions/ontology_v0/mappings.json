@@ -1,0 +1,189 @@
+[
+  {
+    "id": "mapping_customer",
+    "term_id": "term_customer",
+    "database_source": "debit_card_specializing",
+    "table": "tab01",
+    "column": "fld001",
+    "semantic_filter": "",
+    "aggregation_semantics": "",
+    "grain": "one row per customer",
+    "validation": "32461 rows; fld001 is the integer primary key and is unique."
+  },
+  {
+    "id": "mapping_customer_segment",
+    "term_id": "term_customer_segment",
+    "database_source": "debit_card_specializing",
+    "table": "tab01",
+    "column": "fld002",
+    "semantic_filter": "",
+    "aggregation_semantics": "",
+    "grain": "one segment value per customer",
+    "validation": "3 distinct values: SME 26763, LAM 3658, KAM 2040; no nulls."
+  },
+  {
+    "id": "mapping_billing_currency",
+    "term_id": "term_billing_currency",
+    "database_source": "debit_card_specializing",
+    "table": "tab01",
+    "column": "fld003",
+    "semantic_filter": "",
+    "aggregation_semantics": "",
+    "grain": "one currency value per customer",
+    "validation": "2 distinct values: CZK 30459, EUR 2002; no nulls."
+  },
+  {
+    "id": "mapping_monthly_consumption",
+    "term_id": "term_monthly_consumption",
+    "database_source": "debit_card_specializing",
+    "table": "tab05",
+    "column": "fld015",
+    "semantic_filter": "",
+    "aggregation_semantics": "sum across months yields annual consumption; averaging across months yields a typical monthly level",
+    "grain": "one row per customer per month; (fld010, fld001) is unique",
+    "validation": "383282 rows; no duplicate customer-month pairs; 152 negative and 28 zero values retained."
+  },
+  {
+    "id": "mapping_year_month",
+    "term_id": "term_year_month",
+    "database_source": "debit_card_specializing",
+    "table": "tab05",
+    "column": "fld010",
+    "semantic_filter": "",
+    "aggregation_semantics": "",
+    "grain": "one calendar month per row, encoded YYYYMM",
+    "validation": "21 distinct six-character values from 201112 to 201311."
+  },
+  {
+    "id": "mapping_gas_station",
+    "term_id": "term_gas_station",
+    "database_source": "debit_card_specializing",
+    "table": "tab02",
+    "column": "fld004",
+    "semantic_filter": "",
+    "aggregation_semantics": "",
+    "grain": "one row per gas station",
+    "validation": "5716 rows; fld004 is the integer primary key."
+  },
+  {
+    "id": "mapping_gas_station_chain",
+    "term_id": "term_gas_station_chain",
+    "database_source": "debit_card_specializing",
+    "table": "tab02",
+    "column": "fld005",
+    "semantic_filter": "",
+    "aggregation_semantics": "",
+    "grain": "one chain number per gas station",
+    "validation": "233 distinct values in the range 1 to 290; chain 11 covers 3 sampled transactions."
+  },
+  {
+    "id": "mapping_gas_station_country",
+    "term_id": "term_gas_station_country",
+    "database_source": "debit_card_specializing",
+    "table": "tab02",
+    "column": "fld006",
+    "semantic_filter": "",
+    "aggregation_semantics": "",
+    "grain": "one country code per gas station",
+    "validation": "CZE 4836, SVK 880."
+  },
+  {
+    "id": "mapping_gas_station_segment",
+    "term_id": "term_gas_station_segment",
+    "database_source": "debit_card_specializing",
+    "table": "tab02",
+    "column": "fld002",
+    "semantic_filter": "",
+    "aggregation_semantics": "",
+    "grain": "one segment value per gas station",
+    "validation": "Other 2392, Premium 1428, Noname 1005, Value for money 597, Discount 294."
+  },
+  {
+    "id": "mapping_product",
+    "term_id": "term_product",
+    "database_source": "debit_card_specializing",
+    "table": "tab03",
+    "column": "fld007",
+    "semantic_filter": "",
+    "aggregation_semantics": "",
+    "grain": "one row per product",
+    "validation": "591 rows; fld007 is the integer primary key; 563 products have no sampled transaction."
+  },
+  {
+    "id": "mapping_product_description",
+    "term_id": "term_product_description",
+    "database_source": "debit_card_specializing",
+    "table": "tab03",
+    "column": "fld008",
+    "semantic_filter": "",
+    "aggregation_semantics": "",
+    "grain": "one description per product",
+    "validation": "Short text values such as Nafta, Natural, Diesel, Oleje,tuky, Myti vozidel."
+  },
+  {
+    "id": "mapping_transaction",
+    "term_id": "term_transaction",
+    "database_source": "debit_card_specializing",
+    "table": "tab04",
+    "column": "fld009",
+    "semantic_filter": "",
+    "aggregation_semantics": "",
+    "grain": "one row per transaction",
+    "validation": "1000 rows; fld009 is the autoincrement primary key; covers 4 distinct dates."
+  },
+  {
+    "id": "mapping_transaction_date",
+    "term_id": "term_transaction_date",
+    "database_source": "debit_card_specializing",
+    "table": "tab04",
+    "column": "fld010",
+    "semantic_filter": "",
+    "aggregation_semantics": "",
+    "grain": "one date per transaction",
+    "validation": "Range 2012-08-23 to 2012-08-26; 4 distinct YYYY-MM-DD values; no nulls."
+  },
+  {
+    "id": "mapping_transaction_time",
+    "term_id": "term_transaction_time",
+    "database_source": "debit_card_specializing",
+    "table": "tab04",
+    "column": "fld011",
+    "semantic_filter": "",
+    "aggregation_semantics": "",
+    "grain": "one clock time per transaction",
+    "validation": "Range 00:07:00 to 23:20:00; 599 distinct HH:MM:SS values; no nulls."
+  },
+  {
+    "id": "mapping_transaction_qty",
+    "term_id": "term_transaction_qty",
+    "database_source": "debit_card_specializing",
+    "table": "tab04",
+    "column": "fld013",
+    "semantic_filter": "",
+    "aggregation_semantics": "sum of quantities across transactions",
+    "grain": "one quantity per transaction",
+    "validation": "Integer range 0 to 264; 91 zero values."
+  },
+  {
+    "id": "mapping_transaction_price",
+    "term_id": "term_transaction_price",
+    "database_source": "debit_card_specializing",
+    "table": "tab04",
+    "column": "fld014",
+    "semantic_filter": "",
+    "aggregation_semantics": "sum of transaction prices across transactions",
+    "grain": "one price per transaction",
+    "validation": "Real range 1.76 to 5762.49; no nulls."
+  },
+  {
+    "id": "mapping_annual_consumption",
+    "term_id": "term_annual_consumption",
+    "database_source": "debit_card_specializing",
+    "table": "tab05",
+    "column": "fld015",
+    "semantic_filter": "",
+    "aggregation_semantics": "annual total = sum of monthly consumption within a calendar year; average monthly level for the year = annual total divided by twelve",
+    "grain": "customer-year, derived from customer-month rows",
+    "validation": "Derived from 383282 customer-month rows; year coverage is partial (see consumption coverage)."
+  }
+]

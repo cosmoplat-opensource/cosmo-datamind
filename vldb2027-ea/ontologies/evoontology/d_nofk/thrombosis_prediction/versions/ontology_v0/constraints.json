@@ -1,0 +1,425 @@
+[
+  {
+    "id": "constraint_thrombosis_ordinal_encoding",
+    "target": "term_thrombosis_grade",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "thrombosis",
+      "thrombotic event",
+      "thrombosis grade",
+      "positive thrombosis",
+      "no thrombosis",
+      "without thrombosis",
+      "thrombosis severity",
+      "thrombotic complication"
+    ],
+    "severity": "block",
+    "scope": "Any filtering or aggregation involving Examination.Thrombosis",
+    "confidence": "high",
+    "description": "Examination.Thrombosis is a non-null integer code taking the values 0, 1, 2 and 3, observed 726, 57, 18 and 5 times. The environment publishes no legend for the codes, so only the zero versus non-zero distinction is directly interpretable: 0 means no thrombotic event recorded and any value above 0 means an event was recorded. Do not assume the codes form an interval scale or that a difference between codes 2 and 3 has a defined magnitude. Filtering for thrombosis must use a greater-than-zero comparison rather than equality with a single code, and a negative group must use equality with 0.",
+    "evidence": "evidence_thrombosis_distribution"
+  },
+  {
+    "id": "constraint_thrombotic_cohort_size",
+    "target": "term_thrombotic_event",
+    "constraint_type": "scope",
+    "trigger_keywords": [
+      "how many patients",
+      "thrombosis patients",
+      "thrombotic cohort",
+      "positive cases",
+      "cohort size"
+    ],
+    "severity": "info",
+    "scope": "Patient-level counting of thrombotic events",
+    "confidence": "high",
+    "description": "80 examination records carry a thrombosis code greater than zero, belonging to 75 distinct patient identifiers. Counting records and counting patients therefore give different numbers, and a patient-level count must de-duplicate on the identifier.",
+    "evidence": "evidence_thrombosis_distribution"
+  },
+  {
+    "id": "constraint_symptoms_populated_iff_thrombosis",
+    "target": "term_thrombosis_symptom",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "symptoms",
+      "symptom text",
+      "manifestation",
+      "clinical symptoms",
+      "thrombotic symptoms"
+    ],
+    "severity": "block",
+    "scope": "Interpretation and filtering of the Examination.Symptoms field",
+    "confidence": "high",
+    "description": "The Symptoms field is populated in exactly the 80 examination records whose thrombosis code is greater than zero and is blank in all 726 records whose code is zero, with no exceptions in either direction. A blank Symptoms value therefore means no thrombotic event was recorded rather than that the field was skipped, and a populated Symptoms value always implies a recorded event.",
+    "evidence": "evidence_symptoms_thrombosis_crosstab"
+  },
+  {
+    "id": "constraint_id_column_namespace_not_shared",
+    "target": "term_patient_identifier",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "join",
+      "link",
+      "foreign key",
+      "patient id",
+      "ID column",
+      "merge tables",
+      "relate tables"
+    ],
+    "severity": "block",
+    "scope": "Any query that joins Examination or Laboratory to Patient or to each other",
+    "confidence": "high",
+    "description": "All three tables have a column named ID, but they do not draw from one shared identifier namespace. Examination contains 763 distinct identifiers of which only 69 resolve to a row in Patient, leaving 700 examination rows unattached to any patient record. Laboratory contains 302 distinct identifiers and all of them resolve to a Patient row. A join on ID therefore silently discards the majority of examination records, and an inner join must never be treated as a complete cohort.",
+    "evidence": "evidence_id_overlap"
+  },
+  {
+    "id": "constraint_examination_laboratory_overlap_tiny",
+    "target": "term_examination_record",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "examination and laboratory",
+      "combine exam and lab",
+      "thrombosis and platelet",
+      "thrombosis and coagulation",
+      "cross-table analysis",
+      "serology and thrombosis"
+    ],
+    "severity": "block",
+    "scope": "Any patient-level analysis that uses both thrombosis status and laboratory measurements",
+    "confidence": "high",
+    "description": "Only 20 patient identifiers occur in both the Examination and the Laboratory table. Of the 75 patients with a recorded thrombotic event, only 2 have any Laboratory rows at all, and only 7 of them resolve to a Patient row. Any analysis relating laboratory values to thrombotic events is therefore restricted to a handful of patients in this environment, and results from such an analysis cannot be generalised to the full cohort. Report the surviving sample size whenever such a join is used.",
+    "evidence": "evidence_id_overlap"
+  },
+  {
+    "id": "constraint_laboratory_sample_sizes",
+    "target": "term_laboratory_record",
+    "constraint_type": "scope",
+    "trigger_keywords": [
+      "laboratory coverage",
+      "how many lab",
+      "lab sample size",
+      "patients with lab"
+    ],
+    "severity": "warning",
+    "scope": "Any laboratory-based cohort description",
+    "confidence": "high",
+    "description": "The Laboratory table holds 13908 rows but covers only 302 distinct patients, with up to 226 rows for a single patient. Row counts are measurement counts, not patient counts, and a patient-level summary must aggregate within patient before being compared across patients.",
+    "evidence": "evidence_lab_patient_counts"
+  },
+  {
+    "id": "constraint_dna_ii_empty_column",
+    "target": "term_anti_dsdna_antibody",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "DNA-II",
+      "anti-dsDNA",
+      "DNA antibody",
+      "double stranded DNA"
+    ],
+    "severity": "block",
+    "scope": "Selection of a laboratory column for anti-double-stranded-DNA analysis",
+    "confidence": "high",
+    "description": "The DNA-II column of the Laboratory table is null in all 13908 rows and must not be used. The usable anti-double-stranded-DNA measurement is the separate DNA column, which holds only 69 non-null values, so any analysis of this marker is based on a very small subset of the laboratory data.",
+    "evidence": "evidence_dna_ii_all_null"
+  },
+  {
+    "id": "constraint_crp_censored_text_encoding",
+    "target": "term_inflammatory_marker_crp",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "CRP",
+      "C-reactive protein",
+      "inflammation",
+      "acute phase",
+      "inflammatory marker"
+    ],
+    "severity": "block",
+    "scope": "Any filtering, comparison or aggregation of the Laboratory.CRP field",
+    "confidence": "high",
+    "description": "CRP is stored as text, not as a number. Observed values include the censoring forms <0.002, <0.1, <0.2 and <0.3, which mean the value lies below a detection limit rather than equalling zero, the bound forms >6 and >7.0, which mean the value exceeds the stated bound, and a hyphen used as a non-numeric marker. Treating the column as numeric silently loses all censored records and misorders the remaining ones. A threshold comparison must first decide how to place censored values relative to the threshold.",
+    "evidence": "evidence_crp_text_domain"
+  },
+  {
+    "id": "constraint_urinary_protein_mixed_encoding",
+    "target": "term_urinary_protein",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "U-PRO",
+      "urinary protein",
+      "proteinuria",
+      "urine protein"
+    ],
+    "severity": "warning",
+    "scope": "Any use of the Laboratory.U-PRO field",
+    "confidence": "high",
+    "description": "U-PRO mixes categorical dipstick grades and numeric concentrations in one text column: observed forms include the negative marker, TR for trace, %%, the grades 0 to 4, the compound grades +1(30) and +2(100), and numeric concentrations 10, 30, 100, 300 together with the bounds >=300 and >=1000. The categorical and numeric forms must be normalised before any comparison, and the negative marker and numeric zero coexist as separate encodings of an absent result.",
+    "evidence": "evidence_upro_domain"
+  },
+  {
+    "id": "constraint_qualitative_autoantibody_encoding",
+    "target": "term_autoantibody_panel",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "RNP",
+      "SM",
+      "SC170",
+      "SSA",
+      "SSB",
+      "CENTROMEA",
+      "ENA",
+      "autoantibody",
+      "extractable nuclear antigen"
+    ],
+    "severity": "warning",
+    "scope": "Any use of the RNP, SM, SC170, SSA, SSB or CENTROMEA columns",
+    "confidence": "high",
+    "description": "These columns are text and mix negative markers with numeric titres. Both a literal negative word and the numeric value 0 appear as negative encodings, and the non-null coverage varies from 28 rows for SC170 to 143 rows for RNP out of 13908. Positive results must be identified by excluding both negative encodings rather than by testing for equality with a single value.",
+    "evidence": "evidence_autoantibody_text_domain"
+  },
+  {
+    "id": "constraint_rheumatoid_factor_dual_columns",
+    "target": "term_rheumatoid_factor",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "rheumatoid factor",
+      "RF",
+      "RA test",
+      "RA factor"
+    ],
+    "severity": "warning",
+    "scope": "Selection of a laboratory column for rheumatoid factor analysis",
+    "confidence": "medium",
+    "description": "Rheumatoid factor is represented in two separate Laboratory columns with different encodings. The RA column holds qualitative forms including the negative marker, a plus sign, plus-minus and the grade 2+ across 2855 non-null rows, while the RF column holds numeric values across 3337 non-null rows. The two columns are not interchangeable and their relationship is not documented in the environment; an analysis must either state which representation it uses or reconcile both explicitly.",
+    "evidence": "evidence_rf_ra_domain"
+  },
+  {
+    "id": "constraint_ana_titer_serial_dilution",
+    "target": "term_antinuclear_antibody_titer",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "ANA",
+      "antinuclear antibody",
+      "ANA titre",
+      "ANA titer",
+      "positive ANA"
+    ],
+    "severity": "warning",
+    "scope": "Any filtering, comparison or averaging of the Examination.ANA field",
+    "confidence": "high",
+    "description": "ANA is an integer titre following a four-fold serial dilution series: observed values are 0, 4, 16, 64, 256, 1024 and 4096, with 38 null values out of 806 records. One record carries the value 4094, which is a single-record anomaly adjacent to 4096 and should be treated as an outlier rather than as a distinct titre. The titre is ordinal, so a mean titre has no meaning; counts per titre, or a positivity threshold, must be used instead. A null value means the titre was not recorded and must not be read as zero.",
+    "evidence": "evidence_ana_domain"
+  },
+  {
+    "id": "constraint_ana_pattern_multi_valued",
+    "target": "term_ana_staining_pattern",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "ANA pattern",
+      "staining pattern",
+      "fluorescence pattern",
+      "speckled",
+      "peripheral",
+      "homogeneous"
+    ],
+    "severity": "warning",
+    "scope": "Any counting or filtering of the Examination.'ANA Pattern' field",
+    "confidence": "high",
+    "description": "The ANA Pattern field is free text that may combine several patterns in one value, and the delimiters are inconsistent, using a comma, a period, a comma with a space, or no delimiter at all. Case is also inconsistent, with a lower-case p appearing alongside the upper-case P. Counting distinct raw strings therefore undercounts each pattern, and the field must be split on its several delimiters and case-folded before counting. The field is blank in 261 of 806 records.",
+    "evidence": "evidence_ana_pattern_domain"
+  },
+  {
+    "id": "constraint_diagnosis_multivalued_free_text",
+    "target": "term_autoimmune_diagnosis",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "diagnosis",
+      "disease",
+      "SLE",
+      "cohort selection",
+      "disease group",
+      "patient group"
+    ],
+    "severity": "block",
+    "scope": "Cohort definition and disease subgroup analysis using Patient.Diagnosis or Examination.Diagnosis",
+    "confidence": "high",
+    "description": "Diagnosis is free text in both tables and a single row may hold up to four disease labels. The separators are not consistent: the Patient table uses a comma, a caret-bracket sequence and plain spaces, while the Examination table uses a comma and a plus sign. Labels also carry suffixes indicating uncertainty, such as susp, and spelling, case and spacing variants of the same label occur. Counting patients by exact string equality therefore undercounts every disease group, and selection of a disease cohort must split multi-valued entries and normalise variants before counting. Whitespace variants alone, such as the same label written with one space and with two, appear as separate strings.",
+    "evidence": "evidence_diagnosis_tokens_patient"
+  },
+  {
+    "id": "constraint_diagnosis_vocabulary_divergence",
+    "target": "term_autoimmune_diagnosis",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "Sjogren",
+      "SjS",
+      "SJS",
+      "diagnosis spelling",
+      "disease name",
+      "same disease"
+    ],
+    "severity": "block",
+    "scope": "Any query that compares or combines diagnoses across the Patient and Examination tables",
+    "confidence": "high",
+    "description": "The two tables use different spellings for the same disease name. The Patient table writes SJS in 366 rows and never writes SjS, while the Examination table writes SjS in 116 rows and never writes SJS. A case-sensitive filter on either spelling therefore finds nothing in the other table, and a case-insensitive filter hides the divergence entirely. Any cross-table disease analysis must normalise this abbreviation before comparing the tables.",
+    "evidence": "evidence_sjs_spelling"
+  },
+  {
+    "id": "constraint_lac_kct_rvvt_three_state",
+    "target": "term_lupus_anticoagulant",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "LAC",
+      "lupus anticoagulant",
+      "KCT",
+      "RVVT",
+      "antiphospholipid",
+      "blank",
+      "missing",
+      "not performed"
+    ],
+    "severity": "block",
+    "scope": "Any filtering or comparison of the LAC, KCT and RVVT fields",
+    "confidence": "high",
+    "description": "LAC, KCT and RVVT are three-state text fields whose observed values are a plus sign, a hyphen and a blank. The blank form is by far the most common, occurring in 584 of 806 records for LAC and 660 of 806 for KCT and RVVT, and it means the determination was not performed. A blank must not be grouped with the hyphen, which means the determination was performed and was negative; treating the two as one negative class inflates the negative denominator substantially.",
+    "evidence": "evidence_kct_rvvt_lac_domain"
+  },
+  {
+    "id": "constraint_lac_not_determined_by_assays",
+    "target": "term_lupus_anticoagulant",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "LAC and KCT",
+      "lupus anticoagulant positive",
+      "phospholipid dependent",
+      "RVVT positive"
+    ],
+    "severity": "warning",
+    "scope": "Interpretation of the relationship between LAC and the KCT and RVVT assays",
+    "confidence": "high",
+    "description": "The recorded lupus anticoagulant result is not a deterministic function of the recorded assay results. 75 records are positive for lupus anticoagulant, while only 56 records have a positive KCT or RVVT; 17 lupus-anticoagulant-positive records have both assays blank and 2 have both assays negative, and conversely some records with a positive assay carry a negative lupus anticoagulant result. The three fields must be treated as separately recorded determinations that agree in most but not all records, and neither can be derived from the others.",
+    "evidence": "evidence_lac_kct_rvvt_crosstab"
+  },
+  {
+    "id": "constraint_acl_units_uncalibrated",
+    "target": "term_anticardiolipin_antibody",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "aCL",
+      "anticardiolipin",
+      "cardiolipin antibody",
+      "IgG",
+      "IgM",
+      "IgA",
+      "antibody level",
+      "cutoff"
+    ],
+    "severity": "warning",
+    "scope": "Any thresholding, comparison or summarisation of the aCL fields",
+    "confidence": "medium",
+    "description": "The three anticardiolipin fields have no recorded unit and no recorded reference range. Their observed maxima differ by orders of magnitude across isotypes, with aCL IgG reaching 2150.3, aCL IgA reaching 48547 and aCL IgM reaching 187122, and all three have a minimum of zero. Without a documented cutoff, a positivity threshold cannot be derived from the environment, and the extreme maxima should be treated as potential outliers rather than as ordinary observations.",
+    "evidence": "evidence_acl_ranges"
+  },
+  {
+    "id": "constraint_coagulation_marker_coverage",
+    "target": "term_coagulation_panel",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "PT",
+      "APTT",
+      "fibrinogen",
+      "FG",
+      "PIC",
+      "TAT",
+      "TAT2",
+      "coagulation",
+      "fibrinolysis"
+    ],
+    "severity": "warning",
+    "scope": "Any analysis of the coagulation and fibrinolysis markers in the Laboratory table",
+    "confidence": "high",
+    "description": "The molecular haemostatic markers are very sparsely populated relative to the size of the Laboratory table: PIC has 76 non-null values, TAT2 has 119 and TAT has 142, out of 13908 rows. PT, APTT and FG are also frequently absent. Any comparison involving these markers is based on a small and possibly selected subset of measurements, and the coverage of each marker must be reported alongside any result derived from it.",
+    "evidence": "evidence_coag_lab_domain"
+  },
+  {
+    "id": "constraint_first_date_semantics",
+    "target": "term_first_visit_date",
+    "constraint_type": "scope",
+    "trigger_keywords": [
+      "first date",
+      "first visit",
+      "index date",
+      "baseline date",
+      "follow up start",
+      "study entry"
+    ],
+    "severity": "warning",
+    "scope": "Any analysis that uses Patient.'First Date' as a temporal origin",
+    "confidence": "medium",
+    "description": "The First Date column spans 1972-08-02 to 1998-08-28 and is null for 251 of 1238 patients. It represents the patient's earliest recorded contact rather than a study enrolment date, and it is not a reliable lower bound for all observations: 1909 of 13908 laboratory rows carry a date earlier than the patient first visit date. One patient also has a birth date later than the first visit date, implying a negative age of about nine years, so any age computed from these two columns must be range-checked rather than assumed valid. An interval measured from the first visit date is therefore well defined only where both dates exist and the observation date follows the first visit.",
+    "evidence": "evidence_date_consistency"
+  },
+  {
+    "id": "constraint_description_is_registration_date",
+    "target": "term_patient",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "description",
+      "Patient description",
+      "registration date",
+      "enrolment"
+    ],
+    "severity": "warning",
+    "scope": "Interpretation of the Patient.Description column",
+    "confidence": "high",
+    "description": "Despite its name, Patient.Description is a date column, not a free-text description. Its values span 1991-06-10 to 1998-12-03 and it is null for 216 of 1238 patients. It behaves as a registration or record-writing date, falling on or after the first visit date in 858 patients and before it in 12, so it must not be treated as a clinical description field and cannot be assumed to follow the first visit date in every case.",
+    "evidence": "evidence_date_consistency"
+  },
+  {
+    "id": "constraint_examination_date_nulls",
+    "target": "term_observation_date",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "examination date",
+      "missing date",
+      "null date",
+      "date completeness"
+    ],
+    "severity": "info",
+    "scope": "Any time-ordered analysis of examination records",
+    "confidence": "high",
+    "description": "10 of 806 examination records have a null Examination Date. The Laboratory.Date column uses no placeholder value despite the schema declaring a default, so laboratory records are date-complete, while examination records are not. Any ordering or interval computation over examination records must state how the ten undated records are handled.",
+    "evidence": "evidence_date_ranges"
+  },
+  {
+    "id": "constraint_admission_flag_encoding",
+    "target": "term_admission_flag",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "admission",
+      "inpatient",
+      "outpatient",
+      "admitted"
+    ],
+    "severity": "warning",
+    "scope": "Any use of Patient.Admission for stratification",
+    "confidence": "medium",
+    "description": "The Admission field is a short text code with four observed forms: a hyphen in 713 patients, a plus sign in 488, the two-character form of a plus followed by an opening parenthesis in 3, and a blank in 34. The environment documents no legend for these forms, so the field can be used only as an observed category and its clinical meaning must not be asserted. In particular the blank form must not be collapsed into the hyphen form without evidence.",
+    "evidence": "evidence_admission_domain"
+  },
+  {
+    "id": "constraint_sex_domain",
+    "target": "term_sex",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "sex",
+      "gender",
+      "male",
+      "female"
+    ],
+    "severity": "info",
+    "scope": "Demographic description of the patient cohort",
+    "confidence": "high",
+    "description": "The SEX field takes the single-letter values F for 1023 patients and M for 202 patients, and is null for 13. An analysis by sex must decide explicitly how the 13 unrecorded patients are handled, since they are not negligible for a cohort of this size.",
+    "evidence": "evidence_sex_domain"
+  }
+]

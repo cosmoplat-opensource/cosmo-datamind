@@ -1,0 +1,250 @@
+[
+  {
+    "id": "ev_schema",
+    "source": "financial_sqlite",
+    "query": "SELECT name, sql FROM sqlite_master WHERE type IN ('table','view') ORDER BY name",
+    "result": "Eight base tables tab01-tab08 with foreign keys: tab01(account) references tab05(district); tab02(card) references tab04(disposition); tab03(client) references tab05; tab04(disposition) references tab01 and tab03; tab06(loan), tab07(order), tab08(transaction) reference tab01. No views, no age column, no account-number text column.",
+    "validation_method": "read-only schema introspection",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "ev_counts",
+    "source": "financial_sqlite",
+    "query": "SELECT COUNT(*) FROM tab01; ... tab08",
+    "result": "tab01 4,500; tab02 892; tab03 5,369; tab04 5,369; tab05 77; tab06 682; tab07 6,471; tab08 1,056,320.",
+    "validation_method": "row-count verification",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "ev_client_key",
+    "source": "financial_sqlite",
+    "query": "SELECT COUNT(*), COUNT(DISTINCT fld009) FROM tab03; SELECT COUNT(*), COUNT(DISTINCT fld001) FROM tab01; SELECT COUNT(*), COUNT(DISTINCT fld006) FROM tab04",
+    "result": "tab03 5,369/5,369; tab01 4,500/4,500; tab04 5,369/5,369. All three identifier columns are unique keys in their own tables.",
+    "validation_method": "uniqueness verification",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "ev_gender",
+    "source": "financial_sqlite",
+    "query": "SELECT fld010, COUNT(*) FROM tab03 GROUP BY fld010 ORDER BY fld010",
+    "result": "F 2,645; M 2,724. No other values. Of clients born before 1950-01-01: F 1,084 and M 1,162.",
+    "validation_method": "distinct-value verification",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "ev_birth",
+    "source": "financial_sqlite",
+    "query": "SELECT MIN(fld011), MAX(fld011) FROM tab03; SELECT MIN(fld011) FROM tab03 WHERE fld010='F'",
+    "result": "Birth dates range from 1911-08-20 to 1987-09-27. The minimum female birth date is 1914-03-01 and exactly one female client has it.",
+    "validation_method": "range and value verification",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "ev_account_open_years",
+    "source": "financial_sqlite",
+    "query": "SELECT substr(fld004,1,4) AS y, COUNT(*) FROM tab01 GROUP BY y ORDER BY y",
+    "result": "1993: 1,139; 1994: 439; 1995: 661; 1996: 1,363; 1997: 898. Min 1993-01-01, max 1997-12-29, no NULLs.",
+    "validation_method": "date-range and distribution verification",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "ev_freq",
+    "source": "financial_sqlite",
+    "query": "SELECT fld003, COUNT(*) FROM tab01 GROUP BY fld003",
+    "result": "POPLATEK MESICNE 4,167; POPLATEK TYDNE 240; POPLATEK PO OBRATU 93.",
+    "validation_method": "distinct-value verification",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "ev_branch_domain",
+    "source": "financial_sqlite",
+    "query": "SELECT COUNT(DISTINCT fld002) FROM tab01; SELECT COUNT(*) FROM tab01 a LEFT JOIN tab05 d ON a.fld002=d.fld002 WHERE d.fld002 IS NULL",
+    "result": "77 distinct branch district identifiers; 0 accounts without a matching district row.",
+    "validation_method": "referential-integrity verification",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "ev_disposition",
+    "source": "financial_sqlite",
+    "query": "SELECT fld007, COUNT(*) FROM tab04 GROUP BY fld007; SELECT fld001, SUM(CASE WHEN fld007='OWNER' THEN 1 ELSE 0 END) c FROM tab04 GROUP BY fld001",
+    "result": "OWNER 4,500 and DISPONENT 869. Every account has exactly one OWNER record; 0 accounts have more than one OWNER. 4,500 accounts and 5,369 holder records.",
+    "validation_method": "cardinality verification",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "ev_card",
+    "source": "financial_sqlite",
+    "query": "SELECT COUNT(*), COUNT(DISTINCT fld005), COUNT(DISTINCT fld006) FROM tab02; SELECT COUNT(*) FROM tab02 ca LEFT JOIN tab04 d ON ca.fld006=d.fld006 WHERE d.fld006 IS NULL",
+    "result": "892 cards, 892 distinct card ids, 892 distinct holder records; one card per holder record; 0 orphan cards.",
+    "validation_method": "uniqueness and referential-integrity verification",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "ev_cardtype",
+    "source": "financial_sqlite",
+    "query": "SELECT fld007, COUNT(*) FROM tab02 GROUP BY fld007; SELECT d.fld007, COUNT(*) FROM tab02 ca JOIN tab04 d ON ca.fld006=d.fld006 WHERE ca.fld007='gold' GROUP BY d.fld007",
+    "result": "classic 659; gold 88; junior 145. All 88 gold cards are attached to OWNER holder records.",
+    "validation_method": "distinct-value and join verification",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "ev_loan",
+    "source": "financial_sqlite",
+    "query": "SELECT COUNT(*), COUNT(DISTINCT fld027), COUNT(DISTINCT fld001) FROM tab06; SELECT fld001 FROM tab06 GROUP BY fld001 HAVING COUNT(*)>1",
+    "result": "682 loans, 682 distinct loan ids, 682 distinct accounts; no account has more than one loan.",
+    "validation_method": "cardinality verification",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "ev_loan_status",
+    "source": "financial_sqlite",
+    "query": "SELECT fld031, COUNT(*) FROM tab06 GROUP BY fld031 ORDER BY fld031",
+    "result": "A 203; B 31; C 403; D 45.",
+    "validation_method": "distinct-value verification",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "ev_loan_amount",
+    "source": "financial_sqlite",
+    "query": "SELECT MIN(fld028), MAX(fld028) FROM tab06",
+    "result": "Loan amount range 4,980 to 590,820; no NULLs.",
+    "validation_method": "range verification",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "ev_loan_date",
+    "source": "financial_sqlite",
+    "query": "SELECT MIN(fld004), MAX(fld004) FROM tab06",
+    "result": "1993-07-05 to 1998-12-08.",
+    "validation_method": "range verification",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "ev_txn",
+    "source": "financial_sqlite",
+    "query": "SELECT COUNT(*) FROM tab08",
+    "result": "1,056,320 transaction rows.",
+    "validation_method": "row-count verification",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "ev_txn_amount",
+    "source": "financial_sqlite",
+    "query": "SELECT MIN(fld028), MAX(fld028) FROM tab08; SELECT AVG(fld028) FROM tab08; SELECT AVG(fld028) FROM tab08 WHERE fld037='VYBER KARTOU'; SELECT AVG(fld028) FROM tab08 WHERE fld037='VYBER KARTOU' AND fld004>='1998-01-01' AND fld004<'1999-01-01'",
+    "result": "Min 0, max 87,400, no negatives, 162 zero amounts. Mean all transactions 5,924.21; mean all credit-card withdrawals 2,261.12; mean 1998 credit-card withdrawals 2,270.94 (4,560 rows, min 100, max 8,000).",
+    "validation_method": "range and aggregate verification",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "ev_txn_type",
+    "source": "financial_sqlite",
+    "query": "SELECT fld007, COUNT(*) FROM tab08 GROUP BY fld007",
+    "result": "PRIJEM 405,083; VYDAJ 634,571; VYBER 16,666. Sum equals 1,056,320.",
+    "validation_method": "distinct-value verification",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "ev_txn_operation",
+    "source": "financial_sqlite",
+    "query": "SELECT fld037, COUNT(*) FROM tab08 GROUP BY fld037 ORDER BY COUNT(*) DESC",
+    "result": "VYBER 434,918; PREVOD NA UCET 208,283; NULL 183,114; VKLAD 156,743; PREVOD Z UCTU 65,226; VYBER KARTOU 8,036.",
+    "validation_method": "distinct-value verification",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "ev_type_operation_cross",
+    "source": "financial_sqlite",
+    "query": "SELECT fld007, fld037, COUNT(*) FROM tab08 GROUP BY fld007, fld037 ORDER BY fld007, COUNT(*) DESC",
+    "result": "VYDAJ/VYBER KARTOU 8,036; VYBER/VYBER 16,666; VYDAJ/VYBER 418,252; PRIJEM/VKLAD 156,743; PRIJEM/PREVOD Z UCTU 65,226; VYDAJ/PREVOD NA UCET 208,283; PRIJEM/NULL 183,114.",
+    "validation_method": "cross-tabulation",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "ev_credit_card",
+    "source": "financial_sqlite",
+    "query": "SELECT fld037, COUNT(*) FROM tab08 WHERE fld037='VYBER KARTOU'; SELECT COUNT(DISTINCT fld001) FROM tab08 WHERE fld037='VYBER KARTOU' AND fld004>='1998-01-01' AND fld004<'1999-01-01'",
+    "result": "8,036 credit-card withdrawals in total. In 1998 there are 4,560 such transactions on 801 distinct accounts. All 801 accounts also have a card through a holder record.",
+    "validation_method": "filter and join verification",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "ev_txn_date",
+    "source": "financial_sqlite",
+    "query": "SELECT MIN(fld004), MAX(fld004) FROM tab08; SELECT substr(fld004,1,4) y, COUNT(*) FROM tab08 GROUP BY y",
+    "result": "1993-01-01 to 1998-12-31; yearly counts 28,205 (1993), 91,628 (1994), 133,022 (1995), 196,779 (1996), 284,409 (1997), 322,277 (1998). All dates are 10-character ISO strings.",
+    "validation_method": "range and distribution verification",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "ev_district",
+    "source": "financial_sqlite",
+    "query": "SELECT COUNT(*), COUNT(DISTINCT fld002), COUNT(DISTINCT fld012) FROM tab05",
+    "result": "77 rows, 77 distinct district ids, 77 distinct district names. District 1 is Hl.m. Praha / Prague; district 30 is Sokolov / west Bohemia.",
+    "validation_method": "uniqueness verification",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "ev_region",
+    "source": "financial_sqlite",
+    "query": "SELECT fld013, COUNT(*), SUM(CAST(fld014 AS INTEGER)) FROM tab05 GROUP BY fld013 ORDER BY fld013",
+    "result": "Prague 1 district (1,204,953); central Bohemia 12 (1,105,234); east Bohemia 11 (1,234,781); north Bohemia 10 (1,178,977); north Moravia 11 (1,970,302); south Bohemia 8 (700,595); south Moravia 14 (2,054,989); west Bohemia 10 (859,306).",
+    "validation_method": "grouping verification",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "ev_population",
+    "source": "financial_sqlite",
+    "query": "SELECT typeof(fld014), COUNT(*) FROM tab05 GROUP BY typeof(fld014); SELECT MIN(CAST(fld014 AS INTEGER)), MAX(CAST(fld014 AS INTEGER)) FROM tab05",
+    "result": "All 77 values are stored as TEXT, with no leading/trailing spaces. Numeric range 42,821 to 1,204,953. In south Bohemia the maximum is district 14 Ceske Budejovice with 177,686 inhabitants.",
+    "validation_method": "type and range verification",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "ev_salary",
+    "source": "financial_sqlite",
+    "query": "SELECT MIN(fld021), MAX(fld021) FROM tab05; SELECT fld002, fld012, fld021 FROM tab05 WHERE fld002 IN (1,30)",
+    "result": "Range 8,110 to 12,541; no NULLs. District 1 (Hl.m. Praha) 12,541; district 30 (Sokolov) 9,650.",
+    "validation_method": "range and value verification",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "ev_unemployment",
+    "source": "financial_sqlite",
+    "query": "SELECT COUNT(*), COUNT(fld022), MIN(fld022), MAX(fld022) FROM tab05; SELECT COUNT(fld023), MIN(fld023), MAX(fld023) FROM tab05; SELECT fld002, fld012 FROM tab05 WHERE fld022 IS NULL",
+    "result": "fld022: 76 of 77 non-null, range 0.2 to 7.3. fld023: 77 of 77 non-null, range 0.43 to 9.4. The only NULL fld022 is district 69 (Jesenik, north Moravia).",
+    "validation_method": "null and range verification",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "ev_crimes",
+    "source": "financial_sqlite",
+    "query": "SELECT COUNT(fld025), MIN(fld025), MAX(fld025) FROM tab05; SELECT COUNT(*) FROM tab05 WHERE fld025 > 4000; SELECT fld002, fld012 FROM tab05 WHERE fld025 IS NULL",
+    "result": "fld025: 76 of 77 non-null, range 818 to 85,677; 26 districts exceed 4,000. NULL only for district 69 (Jesenik). fld026 is complete for all 77 districts (888 to 99,107).",
+    "validation_method": "null, range and filter verification",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "ev_join_integrity",
+    "source": "financial_sqlite",
+    "query": "SELECT COUNT(*) FROM tab06 l LEFT JOIN tab01 a ON l.fld001=a.fld001 WHERE a.fld001 IS NULL; same for tab08 and tab02",
+    "result": "0 loans, 0 transactions and 0 cards without their parent account or holder record. All 5,369 clients have a district value that exists in tab05.",
+    "validation_method": "referential-integrity verification",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "ev_age_absence",
+    "source": "financial_sqlite",
+    "query": "SELECT name, sql FROM sqlite_master; SELECT MAX(fld004) FROM tab08; SELECT MAX(fld004) FROM tab06",
+    "result": "No age column exists in any table. Latest transaction date 1998-12-31; latest loan date 1998-12-08. Age can only be derived from tab03.fld011 with an assumed reference date.",
+    "validation_method": "schema inspection and date-range verification",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "ev_district_vs_branch",
+    "source": "financial_sqlite",
+    "query": "SELECT SUM(CASE WHEN c.fld002=a.fld002 THEN 1 ELSE 0 END), SUM(CASE WHEN c.fld002<>a.fld002 THEN 1 ELSE 0 END) FROM tab04 d JOIN tab03 c ON d.fld009=c.fld009 JOIN tab01 a ON d.fld001=a.fld001",
+    "result": "4,875 holder records have client residence district equal to the account branch district; 494 have a different value. The two attributes are therefore not interchangeable.",
+    "validation_method": "cross-attribute comparison",
+    "timestamp": "2026-11-06"
+  }
+]

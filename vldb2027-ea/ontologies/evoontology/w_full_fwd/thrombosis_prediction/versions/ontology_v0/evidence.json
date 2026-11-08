@@ -1,0 +1,122 @@
+[
+  {
+    "id": "evidence_table_scale",
+    "source": "thrombosis_prediction (read-only sqlite)",
+    "query": "SELECT COUNT(*) FROM Patient; SELECT COUNT(*) FROM Examination; SELECT COUNT(*) FROM Laboratory;",
+    "result": "Patient 1238 rows, Examination 806 rows, Laboratory 13908 rows",
+    "validation_method": "direct row counts on a read-only connection",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_sex_and_admission_distribution",
+    "source": "thrombosis_prediction (read-only sqlite)",
+    "query": "SELECT SEX, COUNT(*) FROM Patient GROUP BY SEX; SELECT Admission, COUNT(*) FROM Patient GROUP BY Admission;",
+    "result": "SEX: 'F' 1023, 'M' 202, unrecorded 13. Admission: '+' 488, '-' 713, empty 34, '+(' 3",
+    "validation_method": "value distribution counts",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_diagnosis_vocabulary",
+    "source": "thrombosis_prediction (read-only sqlite)",
+    "query": "SELECT Diagnosis, COUNT(*) FROM Patient GROUP BY Diagnosis ORDER BY COUNT(*) DESC; SELECT COUNT(*) FROM Patient WHERE Diagnosis='SLE'; SELECT COUNT(*) FROM Patient WHERE Diagnosis LIKE '%SLE%'; SELECT COUNT(*) FROM Patient WHERE Diagnosis LIKE '%,%'; SELECT COUNT(*) FROM Patient WHERE instr(Diagnosis, char(29))>0; SELECT COUNT(*) FROM Patient WHERE Diagnosis LIKE '%susp%';",
+    "result": "About 200 distinct free-text values spanning single labels and multi-label combinations such as 'SLE', 'SLE, SJS', 'RA, PSS', 'MCTD', 'BEHCET', 'AORTITIS', 'FUO'. Rows equal to 'SLE': 195; rows containing 'SLE': 309; rows containing a comma: 244; rows containing the non-printing separator char(29): 10; rows containing 'susp': 154; one empty string; no nulls",
+    "validation_method": "grouped value counts plus substring and control-character tests",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_examination_diagnosis_coverage",
+    "source": "thrombosis_prediction (read-only sqlite)",
+    "query": "SELECT Diagnosis, COUNT(*) FROM Examination GROUP BY Diagnosis; SELECT SUM(Diagnosis IS NULL), COUNT(*) FROM Examination;",
+    "result": "331 of 806 examination rows have no diagnosis. The non-null vocabulary overlaps the patient-level labels: 'SjS', 'SLE', 'RA', 'APS', 'MCTD', 'Behcet', 'PSS', 'PM', 'DM', 'IP', 'FUO', 'thrombosis', 'brain infarction'. One value contains non-ASCII bytes",
+    "validation_method": "value distribution and null counts",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_ana_columns",
+    "source": "thrombosis_prediction (read-only sqlite)",
+    "query": "SELECT ANA, COUNT(*) FROM Examination GROUP BY ANA; SELECT `ANA Pattern`, COUNT(*) FROM Examination GROUP BY `ANA Pattern`;",
+    "result": "ANA numeric titers: 0 (206), 4 (108), 16 (155), 64 (112), 256 (82), 1024 (58), 4096 (46), 4094 (1), unrecorded (38). ANA Pattern codes: 'S' 252, 'P' 178, 'P,S' 89, 'S,P' 11, 'S,D' 2, 'D,P,S' 2, 'D,P' 2, 'D,S' 1, 'S,N' 1, 'P.S' 1, 'P.D' 1, 'p' 2, 'N' 1, unrecorded 261",
+    "validation_method": "value distribution counts on both columns",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_crp_values",
+    "source": "thrombosis_prediction (read-only sqlite)",
+    "query": "SELECT CRP, COUNT(*) FROM Laboratory GROUP BY CRP ORDER BY COUNT(*) DESC;",
+    "result": "Unrecorded 2453; '-' 2991; '+' 693; the remaining values mix numerals ('0.5', '1.5', '9.9', '31.8'), qualifier forms ('2+', '3+', '4+', '5+', '6+', '6+<'), comparator forms ('<0.002', '<0.1', '<0.2', '<0.3', '>6', '>7.0') and one 'M'",
+    "validation_method": "full distinct value listing",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_coagulation_values",
+    "source": "thrombosis_prediction (read-only sqlite)",
+    "query": "SELECT KCT, COUNT(*) FROM Examination GROUP BY KCT; same for RVVT and LAC;",
+    "result": "KCT: '+' 41, '-' 105, unrecorded 660. RVVT: '+' 47, '-' 99, unrecorded 660. LAC: '+' 75, '-' 147, unrecorded 584",
+    "validation_method": "value distribution counts",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_thrombosis_distribution",
+    "source": "thrombosis_prediction (read-only sqlite)",
+    "query": "SELECT Thrombosis, COUNT(*) FROM Examination GROUP BY Thrombosis;",
+    "result": "0: 726, 1: 57, 2: 18, 3: 5; no unrecorded rows",
+    "validation_method": "value distribution count",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_ena_antibody_values",
+    "source": "thrombosis_prediction (read-only sqlite)",
+    "query": "SELECT SC170, COUNT(*) FROM Laboratory GROUP BY SC170; same for SSA, SSB, CENTROMEA, RNP, SM;",
+    "result": "SC170: unrecorded 13880, 'negative' 12, '0' 12, '1' 1, '4' 2, '16' 1. CENTROMEA: unrecorded 13893, 'negative' 4, '0' 11. SSB: unrecorded 13815, 'negative' 30, '0' 58, '1' 1, '2' 1, '8' 1, '32' 2. SSA: unrecorded 13809, 'negative' 27, '0' 41 and titers up to 256. RNP and SM follow the same pattern. No '-' or '+-' literals occur in any of these columns",
+    "validation_method": "full distinct value listing per column",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_analyte_coverage_and_ranges",
+    "source": "thrombosis_prediction (read-only sqlite)",
+    "query": "SELECT COUNT(col), MIN(col), MAX(col) FROM Laboratory for each analyte column;",
+    "result": "ALB 11068 populated, 1.0 to 5.8; GPT 11274, 1 to 4780; GOT 11278, 3 to 21480; GLU 1705, 62 to 499; T-CHO 10664, 37 to 568; CRE 11253, 0.1 to 17.1; UN 11238, 0 to 152; CPK 5016, 0 to 10835; TG 6437, 1 to 867; IGG 2680, 3 to 6510; IGA 2680, 1 to 1765; IGM 2678, 0 to 1573; PLT 11287, 5 to 5844; LDH 11305, 25 to 67080. All against 13908 rows",
+    "validation_method": "non-null counts with min and max per column",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_acl_antibody_values",
+    "source": "thrombosis_prediction (read-only sqlite)",
+    "query": "SELECT COUNT(col), MIN(col), MAX(col) FROM Examination for aCL IgG, aCL IgM, aCL IgA; SELECT AVG(\"aCL IgM\") FROM Examination;",
+    "result": "aCL IgG fully populated (806/806), 0.0 to 2150.3; aCL IgM fully populated, 0.0 to 187122.0 with mean 238.2; aCL IgA fully populated, 0 to 48547",
+    "validation_method": "non-null counts with min, max and mean",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_patient_identifier_linkage",
+    "source": "thrombosis_prediction (read-only sqlite)",
+    "query": "SELECT COUNT(*) FROM Examination e JOIN Patient p ON e.ID=p.ID; SELECT COUNT(*) FROM Laboratory l JOIN Patient p ON l.ID=p.ID; SELECT COUNT(DISTINCT ID) FROM Laboratory; SELECT COUNT(DISTINCT ID) FROM Examination; SELECT COUNT(*) FROM (SELECT DISTINCT ID FROM Laboratory INTERSECT SELECT DISTINCT ID FROM Examination);",
+    "result": "Laboratory rows joining Patient: 13908 of 13908 over 302 distinct patient IDs. Examination rows joining Patient: 70 of 806 over only 69 distinct IDs. Patient IDs present in both Laboratory and Examination: 20. Patient has 1238 distinct IDs with no duplicates; average 46.05 laboratory rows per patient; maximum 36 examination rows for one patient",
+    "validation_method": "join cardinality and identifier overlap counts",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_date_ranges",
+    "source": "thrombosis_prediction (read-only sqlite)",
+    "query": "SELECT MIN(Date), MAX(Date) FROM Laboratory; SELECT MIN(`Examination Date`), MAX(`Examination Date`) FROM Examination; SELECT MIN(Birthday), MAX(Birthday) FROM Patient; SELECT MIN(`First Date`), MAX(`First Date`) FROM Patient; SELECT SUM(Description IS NULL) FROM Patient;",
+    "result": "Laboratory.Date 1981-01-27 to 1999-03-04; Examination.\"Examination Date\" 1989-04-18 to 1998-04-17; Patient.Birthday 1912-08-28 to 2007-05-28 with one unrecorded; Patient.\"First Date\" 1972-08-02 to 1998-08-28 with 251 unrecorded; Patient.Description unrecorded for 216 of 1238 patients and stored as date text",
+    "validation_method": "min and max with null counts",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_symptoms_coverage",
+    "source": "thrombosis_prediction (read-only sqlite)",
+    "query": "SELECT SUM(Symptoms IS NULL), SUM(Symptoms IS NOT NULL) FROM Examination; SELECT COUNT(*) FROM Examination WHERE Symptoms IS NOT NULL AND length(cast(Symptoms as blob))<>length(Symptoms);",
+    "result": "726 of 806 examination rows have no symptom text and 80 carry a value; 7 of those 80 values contain non-ASCII bytes in a mis-encoded form",
+    "validation_method": "null counts and byte-length comparison against character length",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_threshold_counts",
+    "source": "thrombosis_prediction (read-only sqlite)",
+    "query": "row counts for GPT>=60, GPT>30, GLU>=180, `T-CHO`>=250, `T-CHO`<250, CRE>=1.5, CPK>=250, PLT>400, UN=29, ALB<4, IGG>900 AND IGG<2000, IGM<=40 OR IGM>=400, CRP='+';",
+    "result": "GPT>=60: 890; GPT>30: 2599; GLU>=180: 129; T-CHO>=250: 1545; T-CHO<250: 9119; CRE>=1.5: 361; CPK>=250: 287; PLT>400: 875; UN=29: 44; ALB<4: 3287; IgG strictly between 900 and 2000: 1764; IgM 40 or below or 400 or above: 208; CRP '+': 693",
+    "validation_method": "row counts under each candidate threshold",
+    "timestamp": "2026-10-10"
+  }
+]

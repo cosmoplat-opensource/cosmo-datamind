@@ -1,0 +1,138 @@
+[
+  {
+    "id": "ev_schema_superhero",
+    "source": "superhero.sqlite",
+    "query": "SELECT name FROM sqlite_master WHERE type='table'; PRAGMA table_info(superhero);",
+    "result": "Nine tables: alignment, attribute, colour, gender, hero_attribute, hero_power, publisher, race, superhero, superpower. The superhero table carries superhero_name, full_name, gender_id, eye_colour_id, hair_colour_id, skin_colour_id, race_id, publisher_id, alignment_id, height_cm and weight_kg. hero_attribute holds hero_id, attribute_id, attribute_value; hero_power holds hero_id and power_id.",
+    "validation_method": "read-only schema inspection with sqlite3 -readonly",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_counts",
+    "source": "superhero.sqlite",
+    "query": "SELECT COUNT(*) FROM superhero; plus per-publisher counts grouped by publisher_name",
+    "result": "750 superhero rows. Publisher counts: Marvel Comics 387, DC Comics 224, NBC - Heroes 19, Dark Horse Comics 19, empty publisher name 17, George Lucas 15, Image Comics 14. Gender counts: Male 519, Female 203, N/A 28. Alignment counts: Good 504, Bad 212, Neutral 28.",
+    "validation_method": "row counting with sqlite3 -readonly",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_attribute_vocab",
+    "source": "superhero.sqlite",
+    "query": "SELECT id, attribute_name FROM attribute ORDER BY id",
+    "result": "Six dimensions: 1 Intelligence, 2 Strength, 3 Speed, 4 Durability, 5 Power, 6 Combat.",
+    "validation_method": "distinct value inspection",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_attr_range",
+    "source": "superhero.sqlite",
+    "query": "SELECT a.attribute_name, COUNT(*), MIN(ha.attribute_value), MAX(ha.attribute_value), SUM(ha.attribute_value IS NULL) FROM hero_attribute ha JOIN attribute a ON ha.attribute_id=a.id GROUP BY a.attribute_name",
+    "result": "Each of the six dimensions has 623 rating rows, with minimum 5 and maximum 100 and no null ratings. 3738 rating rows in total. 127 of 750 heroes have no rating rows at all (0 orphan rating rows).",
+    "validation_method": "aggregate verification over the rating table",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_extremum_ties",
+    "source": "superhero.sqlite",
+    "query": "SELECT a.attribute_name, ha.attribute_value, COUNT(*) FROM hero_attribute ha JOIN attribute a ON a.id=ha.attribute_id WHERE (a.attribute_name='Strength' AND ha.attribute_value=100) OR (a.attribute_name='Speed' AND ha.attribute_value=100) OR (a.attribute_name='Intelligence' AND ha.attribute_value=35) GROUP BY 1,2",
+    "result": "63 heroes tie at the maximum Strength rating of 100; 40 heroes tie at the maximum Speed rating of 100; 3 heroes tie at the minimum Intelligence rating of 35 (Ammo, Ando Masahashi, Jack-Jack).",
+    "validation_method": "extreme value counting",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_colour_vocab",
+    "source": "superhero.sqlite",
+    "query": "SELECT id, colour FROM colour ORDER BY id",
+    "result": "35 colour labels. id 1 'No Colour', id 4 'Black', id 5 'Black/Blue', id 6 'Blond', id 7 'Blue', id 9 'Brown', id 29 'Strawberry Blond', id 31 'White'. Compound labels such as 'Black/Blue' and 'Brown/White' are separate values from their base colours.",
+    "validation_method": "distinct value inspection",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_colour_usage",
+    "source": "superhero.sqlite",
+    "query": "SELECT eye_colour_id, COUNT(*) FROM superhero GROUP BY 1 ORDER BY 2 DESC; SELECT SUM(eye_colour_id IS NULL), SUM(hair_colour_id IS NULL), SUM(skin_colour_id IS NULL) FROM superhero; SELECT c.colour, COUNT(*) FROM superhero s JOIN colour c ON c.id=s.hair_colour_id GROUP BY 1 ORDER BY 2 DESC",
+    "result": "Eye colour: 'Blue' (id 7) 234 heroes, 'No Colour' (id 1) 169, 'Brown' 131, 'Green' 76, 'Red' 47. Hair colour: 'No Colour' 246, 'Black' 166, 'Blond' 105, 'Brown' 90. No superhero has a null eye, hair or skin colour identifier, so the sentinel 'No Colour' is the only representation of an unrecorded colour.",
+    "validation_method": "distribution and null verification",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_colour_same_triple",
+    "source": "superhero.sqlite",
+    "query": "SELECT SUM(eye_colour_id=1), SUM(eye_colour_id<>1), COUNT(*) FROM superhero WHERE eye_colour_id=hair_colour_id AND hair_colour_id=skin_colour_id",
+    "result": "159 heroes have the same value for all three colour dimensions; 155 of those matches are the shared sentinel 'No Colour' and only 4 are a real matching colour.",
+    "validation_method": "conditional counting over the three colour columns",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_gender_values",
+    "source": "superhero.sqlite",
+    "query": "SELECT g.gender, COUNT(*) FROM superhero s JOIN gender g ON s.gender_id=g.id GROUP BY 1",
+    "result": "Male 519, Female 203, N/A 28. Three gender rows exist and the counts sum to 750, so no superhero has a null gender reference.",
+    "validation_method": "grouped count and completeness check",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_race_values",
+    "source": "superhero.sqlite",
+    "query": "SELECT COUNT(*) FROM race; SELECT race, COUNT(*) FROM race WHERE LOWER(race)='human' GROUP BY 1",
+    "result": "61 race values. Exactly one row matches 'human' case-insensitively and its stored label is 'Human'. Human-derived labels exist as separate values, including 'Human / Altered', 'Human / Clone', 'Human / Cosmic', 'Human / Radiation' and 'Human-Kree'. Four superheroes have a null race reference.",
+    "validation_method": "value enumeration and case comparison",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_alignment_values",
+    "source": "superhero.sqlite",
+    "query": "SELECT al.alignment, COUNT(*) FROM superhero s JOIN alignment al ON s.alignment_id=al.id GROUP BY 1",
+    "result": "Good 504, Bad 212, Neutral 28; six superheroes have a null alignment reference, so the grouped counts sum to 744 of 750.",
+    "validation_method": "grouped count and completeness check",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_publisher_values",
+    "source": "superhero.sqlite",
+    "query": "SELECT p.publisher_name, COUNT(*) FROM superhero s JOIN publisher p ON s.publisher_id=p.id GROUP BY 1 ORDER BY 2 DESC",
+    "result": "25 publisher rows. Marvel Comics 387 heroes, DC Comics 224, Dark Horse Comics 19, an empty-name publisher row 17, George Lucas 15, Image Comics 14. Three superheroes have a null publisher reference, and no publisher name carries leading or trailing whitespace.",
+    "validation_method": "grouped count and identifier integrity check",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_power_vocab",
+    "source": "superhero.sqlite",
+    "query": "SELECT COUNT(*) FROM superpower; SELECT COUNT(*) FROM hero_power; SELECT COUNT(*) FROM hero_power hp LEFT JOIN superpower sp ON sp.id=hp.power_id WHERE sp.id IS NULL; SELECT COUNT(DISTINCT sp.power_name) FROM superhero s JOIN gender g ON s.gender_id=g.id JOIN hero_power hp ON hp.hero_id=s.id JOIN superpower sp ON sp.id=hp.power_id WHERE g.gender='Male'",
+    "result": "167 power values and 5825 hero-power assignment records with no orphan power references and no duplicate hero-power pairs. 98 of 750 heroes have no power assignment. The 519 male heroes collectively carry 162 distinct powers. 'Agility' is power id 1 and 'Stealth' is power id 7.",
+    "validation_method": "count and referential integrity check",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_dup_names",
+    "source": "superhero.sqlite",
+    "query": "SELECT superhero_name, COUNT(*), GROUP_CONCAT(id) FROM superhero GROUP BY superhero_name HAVING COUNT(*)>1",
+    "result": "Five duplicated names: Angel (ids 24, 25), Ares (44, 45), Atlas (50, 51, 52, 53), Captain Marvel (160, 161), Chameleon (174, 175). 745 distinct names across 750 heroes.",
+    "validation_method": "duplicate detection on the name column",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_fullname_missing",
+    "source": "superhero.sqlite",
+    "query": "SELECT SUM(full_name IS NULL), SUM(full_name='-'), SUM(full_name=''), COUNT(*) FROM superhero",
+    "result": "122 heroes have a null full name, 125 have the single-hyphen placeholder '-' and none have an empty string, out of 750 heroes.",
+    "validation_method": "sentinel and null distribution check",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_height_missing",
+    "source": "superhero.sqlite",
+    "query": "SELECT SUM(height_cm IS NULL), SUM(height_cm=0), SUM(height_cm BETWEEN 1 AND 1000), MIN(CASE WHEN height_cm>0 THEN height_cm END), MAX(height_cm) FROM superhero",
+    "result": "58 heroes have a null height and 155 have a height of 0, so 213 of 750 heroes have no usable height. 537 heroes hold a positive value; the positive range is 61 to 30480 cm with only 7 heroes above 1000 cm, all giant characters such as Godzilla (10800) and Surtur (30480).",
+    "validation_method": "null and sentinel distribution check with range verification",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_weight_missing",
+    "source": "superhero.sqlite",
+    "query": "SELECT SUM(weight_kg IS NULL), SUM(weight_kg=0), SUM(weight_kg BETWEEN 1 AND 1000), MAX(weight_kg) FROM superhero",
+    "result": "64 heroes have a null weight and 172 have a weight of 0, so 236 of 750 heroes have no usable weight. 514 heroes hold a positive value; the maximum is 90000000 kg for Godzilla.",
+    "validation_method": "null and sentinel distribution check",
+    "timestamp": "2026-10-10"
+  }
+]

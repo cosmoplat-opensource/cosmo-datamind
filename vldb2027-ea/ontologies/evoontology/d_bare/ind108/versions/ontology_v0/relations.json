@@ -1,0 +1,195 @@
+[
+  {
+    "id": "rel_derived_composed_of_atomic",
+    "source": "term_derived_metric",
+    "relation_type": "composition",
+    "target": "term_atomic_metric",
+    "connection_condition": "dim_derived_metric_config.atomic_metric_names 指向 dim_metric_catalog 中的原子指标名",
+    "description": "派生指标由一个原子指标加上聚合方法（SUM/AVG/MAX）与分组维度构成，原子指标是其构成成分，两者不是同一种指标",
+    "evidence": [
+      "ev_metric_formula_derived",
+      "ev_metric_catalog_three_tiers"
+    ]
+  },
+  {
+    "id": "rel_composite_composed_of_derived",
+    "source": "term_composite_metric",
+    "relation_type": "composition",
+    "target": "term_derived_metric",
+    "connection_condition": "dim_composite_metric_config.component_metric_names 指向已完成聚合的派生指标名",
+    "description": "复合指标由两个及以上已完成聚合的派生指标按公式构成，例如“设备可用率”由总运行小时与总停机时长构成；其输入必须是聚合后的量，不能直接作用于明细行",
+    "evidence": [
+      "ev_metric_formula_composite",
+      "ev_metric_catalog_three_tiers"
+    ]
+  },
+  {
+    "id": "rel_atomic_grounded_in_dws",
+    "source": "term_atomic_metric",
+    "relation_type": "association",
+    "target": "term_dws_summary_table",
+    "connection_condition": "dim_metric_catalog 的 dws_table/date_column/value_column 三元组把原子指标定位到具体汇总表的具体取值列",
+    "description": "原子指标与其物理落点之间不存在类型或结构上的包含关系，而是通过指标目录登记的“指向”关联；目录是横向元数据，不参与事实表连接",
+    "evidence": [
+      "ev_metric_catalog_columns",
+      "ev_dws_all_tables"
+    ]
+  },
+  {
+    "id": "rel_equipment_run_hours_derivation",
+    "source": "term_line_run_hours",
+    "relation_type": "derivation",
+    "target": "term_equipment_run_hours",
+    "connection_condition": "DWS_EQUIPMENT_DAILY 按 dim_equipment_id 展开，把所在产线当日运行时长复制给该产线的每台设备（每条产线 5 台）",
+    "description": "设备运行小时由产线运行时长派生：设备-日表取所在产线当日运行时长，每台设备各记一份，因此按设备汇总约为产线值的 5 倍。理解这一派生关系是避免重复计算运行时长的前提",
+    "evidence": [
+      "ev_equipment_runhours_5x",
+      "ev_equipment_per_line_five",
+      "ev_metric_catalog_scope_notes"
+    ]
+  },
+  {
+    "id": "rel_workshop_composed_of_line",
+    "source": "term_workshop",
+    "relation_type": "composition",
+    "target": "term_production_line",
+    "connection_condition": "dim_production_line.workshop_id 指向 dim_workshop.workshop_id",
+    "description": "车间由多条产线构成，产线通过 workshop_id 归属车间；产线脱离车间不构成生产组织单元。同一关系在汇总层表现为 dim_workshop_id 与 dim_line_id 同时出现于 DWS_PRODUCTION_DAILY",
+    "evidence": [
+      "ev_production_line_workshop_map",
+      "ev_safety_daily_reconcile"
+    ]
+  },
+  {
+    "id": "rel_line_composed_of_equipment",
+    "source": "term_production_line",
+    "relation_type": "composition",
+    "target": "term_equipment",
+    "connection_condition": "dim_equipment.line_id 指向 dim_production_line.line_id",
+    "description": "产线由设备构成，每台设备通过 line_id 归属唯一产线；这是设备运行小时按产线复制这一派生关系的结构基础",
+    "evidence": [
+      "ev_equipment_per_line_five"
+    ]
+  },
+  {
+    "id": "rel_department_composed_of_employee",
+    "source": "term_department",
+    "relation_type": "composition",
+    "target": "term_employee",
+    "connection_condition": "dim_employee.dept_id 指向 dim_department.dept_id",
+    "description": "部门由员工构成，员工通过 dept_id 归属部门；销售类指标按 dim_emp_id 汇总后可上卷至部门",
+    "evidence": [
+      "ev_employee_dept_region_chain"
+    ]
+  },
+  {
+    "id": "rel_region_composed_of_department",
+    "source": "term_region",
+    "relation_type": "composition",
+    "target": "term_department",
+    "connection_condition": "dim_department.region_id 指向 dim_region.region_id，仅销售类部门有值",
+    "description": "区域由销售部门构成，只有销售部门通过 region_id 归属区域，职能部门不参与区域划分",
+    "evidence": [
+      "ev_employee_dept_region_chain"
+    ]
+  },
+  {
+    "id": "rel_output_to_yield_derivation",
+    "source": "term_production_output",
+    "relation_type": "derivation",
+    "target": "term_yield_rate",
+    "connection_condition": "成材率 = 实际产量 / 投料量 × 100，两分量均取自同一产线-车间-产品-日记录",
+    "description": "成材率由实际产量与投料量派生；当实际产量为 0 时该比率为空而非 0",
+    "evidence": [
+      "ev_metric_catalog_columns",
+      "ev_production_null_rates"
+    ]
+  },
+  {
+    "id": "rel_sales_amount_to_gross_profit_derivation",
+    "source": "term_sales_order_amount",
+    "relation_type": "derivation",
+    "target": "term_gross_profit",
+    "connection_condition": "订单毛利由订单金额与实际成本金额相减派生，实际毛利为负时订单被标记为负毛利",
+    "description": "毛利由接单金额与成本派生，同一订单同时保留实际与标准两套口径",
+    "evidence": [
+      "ev_negative_margin_orders",
+      "ev_sales_order_reconcile"
+    ]
+  },
+  {
+    "id": "rel_ar_balance_and_overdue",
+    "source": "term_ar_balance",
+    "relation_type": "association",
+    "target": "term_overdue_ar",
+    "connection_condition": "两者都是应收的时点快照：前者是全部未清余额，后者是其中已逾期的部分，分别落在 DWS_ORG_PERFORMANCE_DAILY.accounts_receivable 与 DWS_RISK_DAILY.overdue_ar_amt",
+    "description": "应收余额与超期金额是同一业务对象的整体与逾期子集，但分别位于不同汇总表、口径与维度不同，属于需要显式区分口径的关联而非可互换的等价概念",
+    "evidence": [
+      "ev_ar_snapshot_daily",
+      "ev_ar_balance_timepoint_note",
+      "ev_metric_catalog_scope_notes"
+    ]
+  },
+  {
+    "id": "rel_sales_order_to_target",
+    "source": "term_sales_order_amount",
+    "relation_type": "association",
+    "target": "term_sales_target",
+    "connection_condition": "实测接单金额与销售目标通过 dim_emp_id 与年月对齐后比较",
+    "description": "实际接单与目标分处事实表与目标表，两者无外键约束，仅通过业务员与期间在业务上对应",
+    "evidence": [
+      "ev_sales_target_grain",
+      "ev_sales_order_reconcile"
+    ]
+  },
+  {
+    "id": "rel_risk_assessment_to_high_risk_derivation",
+    "source": "term_risk_assessment",
+    "relation_type": "derivation",
+    "target": "term_high_risk",
+    "connection_condition": "高风险项 = 风险评估中 risk_level 属于 L3（不可容忍）或 L4（重大）的记录",
+    "description": "高风险项由风险评估的等级判定派生，是评估记录的一个子集而非独立数据",
+    "evidence": [
+      "ev_high_risk_l3l4",
+      "ev_risk_level_dim_actions",
+      "ev_safety_daily_reconcile"
+    ]
+  },
+  {
+    "id": "rel_incident_to_severity",
+    "source": "term_incident",
+    "relation_type": "association",
+    "target": "term_incident_severity",
+    "connection_condition": "fact_incident.severity 是事件记录上的一个分类列，非独立维度表",
+    "description": "事故与严重度是记录与其分类属性的关系；严重度取值直接决定该事件是否计入“事故数”",
+    "evidence": [
+      "ev_incident_severity_enum",
+      "ev_safety_daily_reconcile"
+    ]
+  },
+  {
+    "id": "rel_total_cost_composed_of_components",
+    "source": "term_product_total_cost",
+    "relation_type": "composition",
+    "target": "term_cost_component",
+    "connection_condition": "total_product_cost 由同一记录中的 material_cost、labor_cost、overhead_cost 三项相加构成",
+    "description": "产品总成本由材料、人工、制造费用三项构成；制造费用已含折旧，故三项之外不应再单独扣减折旧",
+    "evidence": [
+      "ev_cost_component_relation",
+      "ev_metric_formula_composite",
+      "ev_metric_catalog_columns"
+    ]
+  },
+  {
+    "id": "rel_supplier_to_evaluation",
+    "source": "term_supplier",
+    "relation_type": "association",
+    "target": "term_supplier_evaluation",
+    "connection_condition": "fact_supplier_eval.supplier_id 指向 dim_supplier.supplier_id，按评价周期给出得分与等级",
+    "description": "供应商评价是供应商在特定评价周期上的绩效度量，评价等级与检验合格率是两个不同来源的质量视角",
+    "evidence": [
+      "ev_supplier_eval_grade",
+      "ev_procurement_reconcile"
+    ]
+  }
+]

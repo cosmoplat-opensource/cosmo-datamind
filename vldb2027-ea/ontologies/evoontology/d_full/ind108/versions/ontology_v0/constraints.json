@@ -1,0 +1,727 @@
+[
+  {
+    "id": "con_kpi_dept_repeat",
+    "target": "map_kpi_dept_count",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "部门KPI达标数",
+      "区域KPI达标数",
+      "达标人数",
+      "kpi_dept_count",
+      "kpi_region_count",
+      "KPT达标"
+    ],
+    "severity": "block",
+    "scope": "查询 DWS_KPI_DAILY 的部门/区域达标计数时",
+    "confidence": "high",
+    "description": "kpi_dept_count 与 kpi_region_count 是部门/区域级取值,在同一部门当日每一条员工行上重复填写。跨员工行直接 SUM 会把部门达标人数放大约 4 倍(部门人数);应按部门×日取一次值(如 MAX)或先对部门去重。人员层面的达标人数应改用 kpi_person_count 求和。",
+    "evidence": [
+      "ev_13_kpi_dept_constant"
+    ]
+  },
+  {
+    "id": "con_equipment_line_level",
+    "target": "map_equipment_run_hours",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "设备运行时长",
+      "运行小时",
+      "OEE",
+      "设备综合效率",
+      "actual_run_hours",
+      "DWS_EQUIPMENT_DAILY",
+      "设备日汇总"
+    ],
+    "severity": "block",
+    "scope": "查询 DWS_EQUIPMENT_DAILY 的 actual_run_hours 或 oee 时",
+    "confidence": "high",
+    "description": "DWS_EQUIPMENT_DAILY 中 actual_run_hours 与 oee 是产线级取值,在同产线同日的每条设备行上重复填写(每条产线 5 台设备)。跨设备行求和会将该产线运行时长放大约 5 倍;应按产线×日取一次值后再汇总 OEE 或计算可用率。",
+    "evidence": [
+      "ev_15_equipment_line_level",
+      "ev_16_equipment_run_broadcast"
+    ]
+  },
+  {
+    "id": "con_equipment_per_equipment_cols",
+    "target": "map_downtime_hours",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "停机时长",
+      "停机次数",
+      "报警次数",
+      "维护工单数",
+      "downtime_hours",
+      "alarm_count",
+      "maint_wo_count"
+    ],
+    "severity": "info",
+    "scope": "查询 DWS_EQUIPMENT_DAILY 的停机、报警与维护计数时",
+    "confidence": "high",
+    "description": "与运行时长不同,downtime_hours、downtime_count、alarm_count、maint_wo_count、maint_completed_count 是设备级度量,同产线各设备取值互不相同,可直接跨设备行求和并与明细表对账。",
+    "evidence": [
+      "ev_15_equipment_line_level",
+      "ev_17_equipment_maint_recon",
+      "ev_18_downtime_recon"
+    ]
+  },
+  {
+    "id": "con_increment_vs_snapshot",
+    "target": "map_accounts_receivable",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "应收账款余额",
+      "应收余额",
+      "期末余额",
+      "accounts_receivable",
+      "日汇总口径",
+      "累计"
+    ],
+    "severity": "block",
+    "scope": "查询 DWS_ORG_PERFORMANCE_DAILY 时",
+    "confidence": "high",
+    "description": "同一张表中 sales_quantity、sales_amount 是日增量(跨日求和得到期间累计),而 accounts_receivable 是当日末快照余额(跨日求和会重复计数)。分析期间应收余额必须取指定业务日或期末单值。",
+    "evidence": [
+      "ev_09_perf_sales_recon",
+      "ev_22_ar_snapshot"
+    ]
+  },
+  {
+    "id": "con_risk_snapshot",
+    "target": "map_overdue_ar_amt",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "超期货款金额",
+      "超期应收",
+      "overdue_ar_amt",
+      "DWS_RISK_DAILY",
+      "风险日汇总",
+      "平均超期"
+    ],
+    "severity": "block",
+    "scope": "查询 DWS_RISK_DAILY 时",
+    "confidence": "high",
+    "description": "overdue_ar_amt 是按日记录的期末快照余额,不是当日新增。跨全部日期求和无业务含义(全期求和 187.7 亿元,而期末实际仅 4273 万元);应取期末或指定日期的单值,或先按业务员/产品分组后再取期末值。",
+    "evidence": [
+      "ev_20_risk_snapshot"
+    ]
+  },
+  {
+    "id": "con_risk_inventory_zero",
+    "target": "map_negative_margin_qty_risk",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "超期库存",
+      "超期库存量",
+      "超过90天",
+      "overdue_inventory_qty",
+      "overdue_inventory_amt",
+      "呆滞库存"
+    ],
+    "severity": "warning",
+    "scope": "查询 DWS_RISK_DAILY 的超期库存字段时",
+    "confidence": "high",
+    "description": "overdue_inventory_qty 与 overdue_inventory_amt 在全部 18184 行中恒为 0,该指标在当前数据中未落值。涉及超期/呆滞库存的问题不能仅依赖风险汇总表,需改用库存明细表的在库天数判断。",
+    "evidence": [
+      "ev_21_risk_inventory_zero"
+    ]
+  },
+  {
+    "id": "con_ar_snapshot_period",
+    "target": "map_ar_balance",
+    "constraint_type": "scope",
+    "trigger_keywords": [
+      "账龄",
+      "应收账款账龄",
+      "fact_ar_aging",
+      "期末",
+      "2026-06-30",
+      "未清余额"
+    ],
+    "severity": "block",
+    "scope": "查询 fact_ar_aging 时",
+    "confidence": "high",
+    "description": "账龄表保存的是 2026-06-30 这一个时点的应收快照,不含时间维度。任何按日期、按月的时间序列分析都不能在本表上做;同时表中 5162 行里有 4491 行未清余额为 0(已结清的历史记录),统计时必须过滤 balance_amount > 0。",
+    "evidence": [
+      "ev_22_ar_snapshot"
+    ]
+  },
+  {
+    "id": "con_ar_overdue_rule",
+    "target": "map_ar_overdue_flag",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "超期",
+      "是否超期",
+      "逾期",
+      "is_overdue",
+      "账龄",
+      "到期日"
+    ],
+    "severity": "block",
+    "scope": "判定应收是否超期时",
+    "confidence": "high",
+    "description": "is_overdue = 1 当且仅当该笔应收未清余额大于 0 且到期日早于期末(2026-06-30)。未清余额为 0 的历史记录即便到期日已过也不计为超期,直接按 due_date 比较会严重高估超期笔数。",
+    "evidence": [
+      "ev_22_ar_snapshot"
+    ]
+  },
+  {
+    "id": "con_ar_aging_bucket",
+    "target": "map_ar_balance",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "账龄段",
+      "账龄结构",
+      "1-2月",
+      "6-12月",
+      "12月以上",
+      "aging_1m",
+      "aging_12m_plus",
+      "账龄分布"
+    ],
+    "severity": "block",
+    "scope": "分析账龄结构时",
+    "confidence": "high",
+    "description": "每笔应收的未清余额恰好落在 8 个账龄段中的一个(已逐行校验 5162 行),因此 8 段求和等于未清余额,不可对同一笔重复计入多段,也不能把各段合计再与余额相加。",
+    "evidence": [
+      "ev_23_ar_buckets"
+    ]
+  },
+  {
+    "id": "con_finance_month_end",
+    "target": "map_budget_amount",
+    "constraint_type": "scope",
+    "trigger_keywords": [
+      "财务月汇总",
+      "DWS_FINANCE_DAILY",
+      "成本中心",
+      "月度财务",
+      "预算",
+      "月末"
+    ],
+    "severity": "block",
+    "scope": "查询 DWS_FINANCE_DAILY 时",
+    "confidence": "high",
+    "description": "DWS_FINANCE_DAILY 的时间粒度是月末日而非自然日:date 全部取当月最后一天,共 18 个月 × 10 个成本中心 = 180 行。按日过滤或按日期求平均会得到错误结果,应按年月的月末日取数。",
+    "evidence": [
+      "ev_27_finance_grain"
+    ]
+  },
+  {
+    "id": "con_market_status_flags",
+    "target": "term_customer",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "客户状态",
+      "存量客户",
+      "新增客户",
+      "休眠客户",
+      "流失客户",
+      "风险客户",
+      "existing_customer_count",
+      "risk_customer_count",
+      "客户结构"
+    ],
+    "severity": "block",
+    "scope": "统计客户状态分布时",
+    "confidence": "high",
+    "description": "DWS_MARKET_DAILY 的 existing/new/dormant/lost/risk_customer_count 五列是每个客户当日的 0/1 客户状态标志,不是人数。12595 个客户日恰好只有一个标志为 1,但另有 244 个客户日有两个标志同时为 1、811 个客户日五个标志全为 0。统计某类客户数应针对该单一标志求和,不能把五个标志相加当作客户总数,也不能假设五者互斥且完备。",
+    "evidence": [
+      "ev_24_market_flags"
+    ]
+  },
+  {
+    "id": "con_safety_null_semantics",
+    "target": "map_audit_score",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "安全审计评分",
+      "审计得分",
+      "排放合规率",
+      "环保合规率",
+      "audit_score",
+      "env_compliant_rate",
+      "DWS_SAFETY_DAILY",
+      "0分",
+      "平均分"
+    ],
+    "severity": "block",
+    "scope": "查询 DWS_SAFETY_DAILY 的审计与环境字段时",
+    "confidence": "high",
+    "description": "audit_score 与 env_compliant_rate 只在当日确有审计或环境监测事件时取值,无事件则为 NULL(如 2025-06-30 五个车间两列全为空)。求平均分或合规率时必须过滤空值;把空值当作 0 分会显著拉低结果。",
+    "evidence": [
+      "ev_25_safety_nulls"
+    ]
+  },
+  {
+    "id": "con_procurement_null_rate",
+    "target": "map_inspection_pass_rate",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "来料检验合格率",
+      "进料合格率",
+      "inspection_pass_rate",
+      "DWS_PROCUREMENT_DAILY",
+      "合格率平均"
+    ],
+    "severity": "warning",
+    "scope": "查询 DWS_PROCUREMENT_DAILY 的合格率时",
+    "confidence": "high",
+    "description": "inspection_pass_rate 仅在当日有收货(gr_count > 0)时有值,无收货日为空。按供应商求平均合格率时应排除空值,并用收货批次加权,简单日平均会偏向频繁收货日期。",
+    "evidence": [
+      "ev_26_procurement_nulls"
+    ]
+  },
+  {
+    "id": "con_downtime_reason_key",
+    "target": "map_downtime_reason",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "停机原因",
+      "reason_code",
+      "fact_downtime",
+      "停机归因",
+      "原因编码"
+    ],
+    "severity": "block",
+    "scope": "关联停机明细与停机原因字典时",
+    "confidence": "high",
+    "description": "fact_downtime.reason_code 列名虽含 code,实际存的是 1–8 的整数,对应 dim_downtime_reason.reason_id,而不是该字典中类型为文本的 reason_code('D001'–'D008')。按文本 code 关联会全部失配;另需注意 dim_downtime_reason.reason_id 与 fact_downtime.reason_code 同为 1–8,恰好一一对应。",
+    "evidence": [
+      "ev_19_downtime_reason_code"
+    ]
+  },
+  {
+    "id": "con_order_status_return",
+    "target": "map_order_status",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "订单状态",
+      "退货订单",
+      "delivered",
+      "returned",
+      "undelivered",
+      "履约状态",
+      "已交付订单"
+    ],
+    "severity": "warning",
+    "scope": "按订单状态筛选退货订单时",
+    "confidence": "high",
+    "description": "fact_sales_order.status 取 returned 的订单仅有 3 笔,但实际发生退货的订单有 83 笔,其中 80 笔状态仍为 delivered(退货后未回写状态)。识别退货必须使用 fact_return(或退货汇总),不能依赖订单状态等于 returned。",
+    "evidence": [
+      "ev_28_order_status_return"
+    ]
+  },
+  {
+    "id": "con_return_scrap",
+    "target": "term_sales_return",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "退货",
+      "退货量",
+      "红字发票",
+      "退货入库",
+      "库存",
+      "return"
+    ],
+    "severity": "warning",
+    "scope": "分析退货对库存与应收的影响时",
+    "confidence": "high",
+    "description": "退货不回到成品库存,而是按不合格品报废处理;财务上为每笔退货开具金额为负的红字发票冲减原发票应收(共 83 笔负金额发票,与 83 笔退货一一对应)。因此退货影响收入与应收,但不增加可售库存。",
+    "evidence": [
+      "ev_29_invoice_return"
+    ]
+  },
+  {
+    "id": "con_gross_profit_formula",
+    "target": "map_gross_profit_actual",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "毛利",
+      "实际毛利",
+      "gross_profit_actual",
+      "毛利计算",
+      "标准毛利",
+      "成本口径"
+    ],
+    "severity": "block",
+    "scope": "计算或引用毛利时",
+    "confidence": "high",
+    "description": "实际毛利严格等于订单不含税金额减实际成本金额(4731 笔全部成立)。实际成本已发货部分按发出批次真实生产成本计、未发货部分按当月同产品平均成本计,因此未发货订单的毛利是估算值;另有标准毛利口径(金额−标准成本金额),两者不可混用。",
+    "evidence": [
+      "ev_30_gross_profit_formula"
+    ]
+  },
+  {
+    "id": "con_negative_margin_flag",
+    "target": "term_negative_margin_qty",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "负毛利",
+      "亏损订单",
+      "negative margin",
+      "is_negative_margin",
+      "负毛利订单量"
+    ],
+    "severity": "info",
+    "scope": "识别负毛利订单时",
+    "confidence": "high",
+    "description": "is_negative_margin = 1 与实际毛利为负完全等价(41 笔全期),两种写法结果一致,可放心互换使用。",
+    "evidence": [
+      "ev_30_gross_profit_formula"
+    ]
+  },
+  {
+    "id": "con_opportunity_status",
+    "target": "map_opportunity_count",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "商机状态",
+      "赢单",
+      "丢单",
+      "搁置",
+      "open",
+      "won",
+      "lost",
+      "stalled",
+      "赢单率"
+    ],
+    "severity": "warning",
+    "scope": "分析商机漏斗时",
+    "confidence": "high",
+    "description": "商机状态取值为 open / won / lost / stalled 四类(全期分别 22 / 36 / 20 / 6 条)。赢单率的分母应明确是全部商机还是已关闭商机(open 与 stalled 尚未结束),两种口径结果差异明显。",
+    "evidence": [
+      "ev_31_opportunity_status"
+    ]
+  },
+  {
+    "id": "con_opportunity_conversion",
+    "target": "map_opportunity_count",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "商机转化",
+      "转化订单",
+      "converted_order_id",
+      "赢单",
+      "商机转订单"
+    ],
+    "severity": "info",
+    "scope": "判断商机是否转化为订单时",
+    "confidence": "high",
+    "description": "状态为 won 的商机全部带非空转化订单号(36/36),其余状态均为空。converted_order_id IS NOT NULL 与 status='won' 等价,可用于关联销售订单。",
+    "evidence": [
+      "ev_31_opportunity_status"
+    ]
+  },
+  {
+    "id": "con_grade_enum",
+    "target": "map_first_grade_rate",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "产品等级",
+      "优等品",
+      "一等品",
+      "合格品",
+      "返工品",
+      "grade",
+      "优等品率",
+      "first_grade"
+    ],
+    "severity": "warning",
+    "scope": "按产品等级分析产出时",
+    "confidence": "high",
+    "description": "产出等级实际有 4 个取值:优等品(2721)、一等品(2721)、合格品(93)、返工品(116),比表注释中列出的三类多出'返工品'。is_first_grade = 1 与 grade = '优等品' 完全对应,计算优等品率时应以该标志为准。",
+    "evidence": [
+      "ev_36_grade_first_grade"
+    ]
+  },
+  {
+    "id": "con_high_risk_level",
+    "target": "map_high_risk_count",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "高风险",
+      "高风险评估",
+      "风险等级",
+      "L3",
+      "L4",
+      "不可容忍",
+      "重大风险",
+      "high_risk_count"
+    ],
+    "severity": "block",
+    "scope": "统计高风险项时",
+    "confidence": "high",
+    "description": "高风险的口径是风险等级 L3(不可容忍)及以上。风险等级字典共 4 级:L1 可接受、L2 可容忍、L3 不可容忍、L4 重大。仅按'高风险'字面匹配或把 L2 一并计入都会得到错误结果。",
+    "evidence": [
+      "ev_02_table_metadata"
+    ]
+  },
+  {
+    "id": "con_incident_excludes_near_miss",
+    "target": "map_incident_count",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "事故数",
+      "事故起数",
+      "未遂",
+      "near_miss",
+      "incident_count",
+      "安全事故",
+      "工伤"
+    ],
+    "severity": "block",
+    "scope": "统计安全事故时",
+    "confidence": "high",
+    "description": "事故数的口径不含未遂事件,未遂事件在汇总表中单列为 near_miss_count。用严重度字段自行汇总事故时必须排除 severity='near_miss',否则会把未遂事件误计为事故。",
+    "evidence": [
+      "ev_37_incident_severity"
+    ]
+  },
+  {
+    "id": "con_incident_severity_domain",
+    "target": "term_incident_count",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "严重度",
+      "事故严重度",
+      "severity",
+      "fa",
+      "mtc",
+      "lti",
+      "fatality",
+      "死亡"
+    ],
+    "severity": "warning",
+    "scope": "按严重度分析事故时",
+    "confidence": "high",
+    "description": "事故表的 severity 实际只出现 3 个取值:fa(14 起)、mtc(7 起)、near_miss(11 起)。字典中提到的 fatality 与 lti 在当前数据中没有任何记录,按这些取值过滤会返回空集。",
+    "evidence": [
+      "ev_37_incident_severity"
+    ]
+  },
+  {
+    "id": "con_target_proration",
+    "target": "map_sales_quantity_target",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "销量目标",
+      "毛利目标",
+      "回款目标",
+      "目标达成率",
+      "按日折算",
+      "DWS_ORG_TARGET_DAILY",
+      "月度目标"
+    ],
+    "severity": "block",
+    "scope": "计算目标达成率时",
+    "confidence": "high",
+    "description": "DWS_ORG_TARGET_DAILY 中的目标值是月度目标按当月天数折算后的日度值,直接与全期销量比较会得到严重偏低或偏高的达成率。同月逐日累加即可精确还原月度目标(已对 25 名业务员 × 18 个月逐项校验),因此应按月对照或在同一时间窗口内比较。",
+    "evidence": [
+      "ev_12_target_proration"
+    ]
+  },
+  {
+    "id": "con_target_source_of_truth",
+    "target": "term_monthly_quantity_target",
+    "constraint_type": "scope",
+    "trigger_keywords": [
+      "月度目标",
+      "销量目标设定",
+      "fact_sales_target",
+      "目标来源",
+      "sales_quantity_target"
+    ],
+    "severity": "info",
+    "scope": "获取月度目标原值时",
+    "confidence": "high",
+    "description": "月度目标的原值是 fact_sales_target 按业务员×年月的一条记录(另含销售额目标 sales_amount_target 与回款目标 payment_target);汇总层的日度目标是其折算结果。需要部门/区域层级的月度目标时,应先取原值再按组织维度汇总,而不是对日度值做平均。",
+    "evidence": [
+      "ev_12_target_proration"
+    ]
+  },
+  {
+    "id": "con_sales_scope",
+    "target": "term_employee",
+    "constraint_type": "scope",
+    "trigger_keywords": [
+      "业务员",
+      "人员范围",
+      "销售覆盖",
+      "员工数",
+      "有多少业务员",
+      "dim_employee"
+    ],
+    "severity": "warning",
+    "scope": "涉及人数口径的分析",
+    "confidence": "high",
+    "description": "人员档案有 122 人,但人级汇总表(DWS_ORG_PERFORMANCE_DAILY、DWS_KPI_DAILY、DWS_ORG_TARGET_DAILY 等)只覆盖 25 名销售业务员与 6 个销售部门(24 人在 KPI 表)。用 dim_employee 的行数当作销售人数会高估约 5 倍;人均类指标必须限定在汇总表实际覆盖的人员范围内。",
+    "evidence": [
+      "ev_14_sales_scope"
+    ]
+  },
+  {
+    "id": "con_period_scope",
+    "target": "term_analysis_period",
+    "constraint_type": "scope",
+    "trigger_keywords": [
+      "数据期间",
+      "时间范围",
+      "2025",
+      "2026上半年",
+      "起止日期",
+      "最新数据"
+    ],
+    "severity": "info",
+    "scope": "所有时间相关分析",
+    "confidence": "high",
+    "description": "所有事实与汇总数据均落在 2025-01-01 至 2026-06-30,共 546 天、18 个月。查询该范围外的日期会返回空结果;'最新'应理解为 2026-06-30 而非当前系统日期。",
+    "evidence": [
+      "ev_08_analysis_period"
+    ]
+  },
+  {
+    "id": "con_denorm_join_naming",
+    "target": "term_summary_layer",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "关联",
+      "JOIN",
+      "外键",
+      "维度字段",
+      "dim_emp_id",
+      "dim_line_id",
+      "字段对应"
+    ],
+    "severity": "warning",
+    "scope": "关联汇总表与维度表时",
+    "confidence": "high",
+    "description": "汇总表中的维度键统一带 dim_ 前缀(如 dim_emp_id、dim_line_id、dim_prod_id、dim_cust_id、dim_cc_id、dim_equipment_id、dim_supplier_id、dim_workshop_id),对应维度表的不带前缀主键(emp_id、line_id、prod_id、cust_id、cc_id、equipment_id、supplier_id、workshop_id)。同表还冗余了 *_name 文本列,取值与维度表一致,可直接用于展示但不应作为关联键。",
+    "evidence": [
+      "ev_35_denorm_joins"
+    ]
+  },
+  {
+    "id": "con_expense_accrual_types",
+    "target": "map_sales_expense",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "销售费用",
+      "费用类型",
+      "运输费",
+      "渠道佣金",
+      "市场推广费",
+      "报销",
+      "expense_type"
+    ],
+    "severity": "warning",
+    "scope": "按费用类型分析销售费用时",
+    "confidence": "high",
+    "description": "费用类型共 8 种:差旅费、业务招待费、小车费、通讯费、办公费为业务员实际报销,而运输费(按发货吨数计提)、渠道佣金(按开票额计提)、市场推广费(季度计提)是按口径计提后分摊的费用,与个人报销的性质和节奏不同,按费用类型比较时须区分。",
+    "evidence": [
+      "ev_38_expense_type"
+    ]
+  },
+  {
+    "id": "con_composite_nullif",
+    "target": "map_operating_margin",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "复合指标",
+      "经营利润率",
+      "预算偏差度",
+      "设备可用率",
+      "单位产出成本",
+      "能耗效率",
+      "公式",
+      "除零"
+    ],
+    "severity": "info",
+    "scope": "计算复合指标时",
+    "confidence": "high",
+    "description": "复合指标公式统一使用 NULLIF(分母,0) 保护,分母为 0 时结果为空而非 0 或报错。此外各复合指标的适用前提不同:经营利润率以当期生产成本近似已售成本、不扣期间费用,制造费用已含折旧不可再扣;设备可用率的运行时长须使用按产线去重后的口径。",
+    "evidence": [
+      "ev_07_composite_config"
+    ]
+  },
+  {
+    "id": "con_product_line_vs_production_line",
+    "target": "term_product_line",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "产品线",
+      "产线",
+      "产品大类",
+      "挤出线",
+      "归属",
+      "混淆"
+    ],
+    "severity": "block",
+    "scope": "同时使用产品线与产线两个维度时",
+    "confidence": "high",
+    "description": "产品线(dim_product_line,4 条产品大类)与产线(dim_production_line,12 条挤出线)是两个独立维度、数值范围与语义都不同,不存在直接关联关系。例如阻燃产品 PP-FR 归属产品线'PP改性系列',却在'阻燃材料车间'的产线上生产。需要打通时只能经 DWS_PRODUCTION_DAILY 的产线×产品组合间接关联(该表在 date+line+product 上唯一)。",
+    "evidence": [
+      "ev_35_denorm_joins",
+      "ev_10_production_recon"
+    ]
+  },
+  {
+    "id": "con_kpi_definition",
+    "target": "map_kpi_person_count",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "KPI",
+      "KPT",
+      "达标",
+      "月累计",
+      "目标达成",
+      "人员KPI达标数"
+    ],
+    "severity": "info",
+    "scope": "解释 KPI 达标口径时",
+    "confidence": "high",
+    "description": "人员 KPI 达标的口径是'截至当日的月累计销量与毛利是否达到按日折算的目标',该标志每日随月累计进度变化,同一个月内早晚期取值不同。因此按月统计达标情况时,应取月末日(如每月最后一天)的标志,或明确说明取哪一天的口径。",
+    "evidence": [
+      "ev_13_kpi_dept_constant"
+    ]
+  },
+  {
+    "id": "con_segment_ratio_recompute",
+    "target": "map_yield_rate",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "成材率",
+      "优等品率",
+      "合格率",
+      "比率汇总",
+      "平均比率",
+      "加权"
+    ],
+    "severity": "block",
+    "scope": "汇总比率型指标时",
+    "confidence": "high",
+    "description": "成材率、优等品率、质检合格率均为行级比率(yield_rate 已逐行校验等于实际产量/投料量×100)。跨产线或跨期间汇总时不能对这些比率求简单平均,必须用分子分母总量重新计算,否则产量小的行会被过度加权。",
+    "evidence": [
+      "ev_10_production_recon"
+    ]
+  },
+  {
+    "id": "con_grade_rate_field",
+    "target": "map_first_grade_rate",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "优等品率",
+      "批次",
+      "first_grade_rate",
+      "产出等级",
+      "等级占比"
+    ],
+    "severity": "warning",
+    "scope": "计算优等品率时",
+    "confidence": "medium",
+    "description": "明细产出表的 first_grade_rate 是单笔产出的等级占比,汇总表的优等品率是产线×产品×日的口径;两者粒度不同。按产品统计时应以优等品数量占总产出数量的比例计算,而不是对占比求平均。",
+    "evidence": [
+      "ev_36_grade_first_grade"
+    ]
+  }
+]

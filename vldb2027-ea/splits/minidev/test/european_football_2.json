@@ -1,0 +1,213 @@
+{
+ "db_id": "european_football_2",
+ "questions": [
+  {
+   "question_id": 1035,
+   "db_id": "european_football_2",
+   "question": "Give the team_fifa_api_id of teams with more than 50 but less than 60 build-up play speed.",
+   "evidence": "teams with more than 50 but less than 60 build-up play speed refers to buildUpPlaySpeed >50 AND buildUpPlaySpeed <60; ",
+   "SQL": "SELECT DISTINCT team_fifa_api_id FROM Team_Attributes WHERE buildUpPlaySpeed > 50 AND buildUpPlaySpeed < 60",
+   "difficulty": "simple"
+  },
+  {
+   "question_id": 1025,
+   "db_id": "european_football_2",
+   "question": "Give the name of the league had the most goals in the 2016 season?",
+   "evidence": "league that had the most goals refers to MAX(SUM(home_team_goal, away_team_goal)); 2016 season refers to season = '2015/2016';",
+   "SQL": "SELECT t2.name FROM Match AS t1 INNER JOIN League AS t2 ON t1.league_id = t2.id WHERE t1.season = '2015/2016' GROUP BY t2.name ORDER BY SUM(t1.home_team_goal + t1.away_team_goal) DESC LIMIT 1",
+   "difficulty": "moderate"
+  },
+  {
+   "question_id": 1105,
+   "db_id": "european_football_2",
+   "question": "How was Francesco Migliore's attacking work rate on 2015/5/1?",
+   "evidence": "Francesco Migliore refers to player_name = 'Francesco Migliore'; on 2015/5/1 refers to date LIKE '2015-05-01%';",
+   "SQL": "SELECT t2.attacking_work_rate FROM Player AS t1 INNER JOIN Player_Attributes AS t2 ON t1.player_api_id = t2.player_api_id WHERE t2.`date` LIKE '2015-05-01%' AND t1.player_name = 'Francesco Migliore'",
+   "difficulty": "moderate"
+  },
+  {
+   "question_id": 1028,
+   "db_id": "european_football_2",
+   "question": "In Scotland Premier League, which away team won the most during the 2010 season?",
+   "evidence": "Final result should return the Team.team_long_name; Scotland Premier League refers to League.name = 'Scotland Premier League'; away team refers to away_team_api_id; away team that won the most refers to MAX(SUBTRACT(away_team_goal, home_team_goal) > 0); 2010 season refers to season = '2009/2010'; won the most refers to MAX(COUNT(*));",
+   "SQL": "SELECT teamInfo.team_long_name FROM League AS leagueData INNER JOIN Match AS matchData ON leagueData.id = matchData.league_id INNER JOIN Team AS teamInfo ON matchData.away_team_api_id = teamInfo.team_api_id WHERE leagueData.name = 'Scotland Premier League' AND matchData.season = '2009/2010' AND matchData.away_team_goal - matchData.home_team_goal > 0 GROUP BY matchData.away_team_api_id ORDER BY COUNT(*) DESC LIMIT 1",
+   "difficulty": "challenging"
+  },
+  {
+   "question_id": 1133,
+   "db_id": "european_football_2",
+   "question": "How many football players born after the 1990s have the first name \"Aaron\"?",
+   "evidence": "first name \"Aaron\" refers to player_name LIKE 'Aaron%'; born after the 1990s refers to birthday > '1990'",
+   "SQL": "SELECT COUNT(id) FROM Player WHERE birthday > '1990' AND player_name LIKE 'Aaron%'",
+   "difficulty": "simple"
+  },
+  {
+   "question_id": 1115,
+   "db_id": "european_football_2",
+   "question": "What percentage is Landon Donovan's overall rating higher than Jordan Bowery on 2013/7/12?",
+   "evidence": "Landon Donovan's refers to player_name = 'Landon Donovan'; Jordan Bowery refers to player_name = 'Jordan Bowery'; percentage refers to DIVIDE(SUBTRACT(player_name = 'Landon Donovan' overall_rating; player_name = 'Jordan Bowery' overall_rating), player_name = 'Landon Donovan' overall_rating)*100",
+   "SQL": "SELECT (SUM(CASE WHEN t1.player_name = 'Landon Donovan' THEN t2.overall_rating ELSE 0 END) * 1.0 - SUM(CASE WHEN t1.player_name = 'Jordan Bowery' THEN t2.overall_rating ELSE 0 END)) * 100 / SUM(CASE WHEN t1.player_name = 'Landon Donovan' THEN t2.overall_rating ELSE 0 END) LvsJ_percent FROM Player AS t1 INNER JOIN Player_Attributes AS t2 ON t1.player_fifa_api_id = t2.player_fifa_api_id WHERE SUBSTR(t2.`date`, 1, 10) = '2013-07-12'",
+   "difficulty": "challenging"
+  },
+  {
+   "question_id": 1036,
+   "db_id": "european_football_2",
+   "question": "List the long name of teams with above-average build-up play passing in 2012.",
+   "evidence": "long name of teams refers to team_long_name; build-up play passing refers to buildUpPlayPassing; above-average build-up play passing = buildUpPlayPassing > DIVIDE(SUM(buildUpPlayPassing), COUNT(team_long_name) WHERE buildUpPlayPassing IS NOT NULL); in 2012 refers to strftime('%Y', date) = '2012'; ",
+   "SQL": "SELECT DISTINCT t4.team_long_name FROM Team_Attributes AS t3 INNER JOIN Team AS t4 ON t3.team_api_id = t4.team_api_id WHERE SUBSTR(t3.`date`, 1, 4) = '2012' AND t3.buildUpPlayPassing > ( SELECT CAST(SUM(t2.buildUpPlayPassing) AS REAL) / COUNT(t1.id) FROM Team AS t1 INNER JOIN Team_Attributes AS t2 ON t1.team_api_id = t2.team_api_id WHERE STRFTIME('%Y',t2.`date`) = '2012')",
+   "difficulty": "challenging"
+  },
+  {
+   "question_id": 1096,
+   "db_id": "european_football_2",
+   "question": "Calculate the average overall rating of Pietro Marino.",
+   "evidence": "Pietro Marino refers to player_name = 'Pietro Marino'; average overall rating AVG(T1.overall_rating)",
+   "SQL": "SELECT CAST(SUM(t2.overall_rating) AS REAL) / COUNT(t2.id) FROM Player AS t1 INNER JOIN Player_Attributes AS t2 ON t1.player_api_id = t2.player_api_id WHERE t1.player_name = 'Pietro Marino'",
+   "difficulty": "moderate"
+  },
+  {
+   "question_id": 1084,
+   "db_id": "european_football_2",
+   "question": "Among the players born before the year 1986, how many of them would remain in his position and defense while the team attacked?",
+   "evidence": "players born before the year 1986 refers to strftime('%Y', birthday)<'1986'; players who would remain in his position and defense while the team attacked refers to defensive_work_rate = 'high'; Should consider DISTINCT in the final result;",
+   "SQL": "SELECT COUNT(DISTINCT t1.player_name) FROM Player AS t1 INNER JOIN Player_Attributes AS t2 ON t1.player_api_id = t2.player_api_id WHERE STRFTIME('%Y',t1.birthday) < '1986' AND t2.defensive_work_rate = 'high'",
+   "difficulty": "challenging"
+  },
+  {
+   "question_id": 1124,
+   "db_id": "european_football_2",
+   "question": "Who are the players that tend to be attacking when their mates were doing attack moves? List down their name.",
+   "evidence": "tend to be attacking when their mates were doing attack moves refers to attacking_work_rate = 'high';",
+   "SQL": "SELECT DISTINCT t1.player_name FROM Player AS t1 INNER JOIN Player_Attributes AS t2 ON t1.player_api_id = t2.player_api_id WHERE t2.attacking_work_rate = 'high'",
+   "difficulty": "moderate"
+  },
+  {
+   "question_id": 1116,
+   "db_id": "european_football_2",
+   "question": "List down most tallest players' name.",
+   "evidence": "tallest refers to rank based on the height in descending order; Most tallest players refers to rank = 1 ",
+   "SQL": "SELECT player_name FROM (SELECT player_name, height, DENSE_RANK() OVER (ORDER BY height DESC) as rank FROM Player) WHERE rank = 1",
+   "difficulty": "simple"
+  },
+  {
+   "question_id": 1103,
+   "db_id": "european_football_2",
+   "question": "What was the overall rating for Aaron Mooy on 2016/2/4?",
+   "evidence": "Aaron Mooy refers to player_name = 'Aaron Mooy'; on 2016/2/4 refers to date LIKE '2016-02-04%';",
+   "SQL": "SELECT t2.overall_rating FROM Player AS t1 INNER JOIN Player_Attributes AS t2 ON t1.player_api_id = t2.player_api_id WHERE SUBSTR(t2.`date`, 1, 10) = '2016-02-04' AND t1.player_name = 'Aaron Mooy'",
+   "difficulty": "moderate"
+  },
+  {
+   "question_id": 1114,
+   "db_id": "european_football_2",
+   "question": "What was the average overall rating for Marko Arnautovic from 2007/2/22 to 2016/4/21?",
+   "evidence": "average overall rating refers to avg(overall_rating); Marko Arnautovic refers to player_name = 'Marko Arnautovic'; from 2007/2/22 to 2016/4/21 refers to the first 10 characters of date BETWEEN '2007-02-22' and '2016-04-21'",
+   "SQL": "SELECT CAST(SUM(t2.overall_rating) AS REAL) / COUNT(t2.id) FROM Player AS t1 INNER JOIN Player_Attributes AS t2 ON t1.player_fifa_api_id = t2.player_fifa_api_id WHERE t1.player_name = 'Marko Arnautovic' AND SUBSTR(t2.`date`, 1, 10) BETWEEN '2007-02-22' AND '2016-04-21'",
+   "difficulty": "challenging"
+  },
+  {
+   "question_id": 1092,
+   "db_id": "european_football_2",
+   "question": "Give the name of the league had the most matches in the 2008/2009 season?",
+   "evidence": "league that had the most matches in the 2008/2009 season refers to MAX(league_name WHERE season = '2008/2009');",
+   "SQL": "SELECT t1.name FROM League AS t1 JOIN Match AS t2 ON t1.id = t2.league_id WHERE t2.season = '2008/2009' GROUP BY t1.name HAVING COUNT(t2.id) = (SELECT MAX(match_count) FROM (SELECT COUNT(t2.id) AS match_count FROM Match AS t2 WHERE t2.season = '2008/2009' GROUP BY t2.league_id))",
+   "difficulty": "simple"
+  },
+  {
+   "question_id": 1088,
+   "db_id": "european_football_2",
+   "question": "Please list the names of the players whose volley score and dribbling score are over 70.",
+   "evidence": "volley score are over 70 refers to volleys > 70; dribbling score refers to dribbling are over 70 refers to dribbling > 70;",
+   "SQL": "SELECT DISTINCT t1.player_name FROM Player AS t1 INNER JOIN Player_Attributes AS t2 ON t1.player_api_id = t2.player_api_id WHERE t2.volleys > 70 AND t2.dribbling > 70",
+   "difficulty": "moderate"
+  },
+  {
+   "question_id": 1058,
+   "db_id": "european_football_2",
+   "question": "Who has the highest average finishing rate between the highest and shortest football player?",
+   "evidence": "finishing rate refers to finishing; highest average finishing rate = MAX(AVG(finishing)); highest football player refers to MAX(height); shortest football player refers to MIN(height);",
+   "SQL": "SELECT A FROM ( SELECT AVG(finishing) result, 'Max' A FROM Player AS T1 INNER JOIN Player_Attributes AS T2 ON T1.player_api_id = T2.player_api_id WHERE T1.height = ( SELECT MAX(height) FROM Player ) UNION SELECT AVG(finishing) result, 'Min' A FROM Player AS T1 INNER JOIN Player_Attributes AS T2 ON T1.player_api_id = T2.player_api_id WHERE T1.height = ( SELECT MIN(height) FROM Player ) ) ORDER BY result DESC LIMIT 1",
+   "difficulty": "challenging"
+  },
+  {
+   "question_id": 1079,
+   "db_id": "european_football_2",
+   "question": "Which player is the tallest?",
+   "evidence": "tallest player refers to MAX(height);",
+   "SQL": "SELECT player_name FROM Player ORDER BY height DESC LIMIT 1",
+   "difficulty": "simple"
+  },
+  {
+   "question_id": 1130,
+   "db_id": "european_football_2",
+   "question": "What are the short name of team who played safe while creating chance of passing?",
+   "evidence": "played safe while creating chance of passing refers to chanceCreationPassingClass = 'Safe'; short name of team refers to team_short_name",
+   "SQL": "SELECT DISTINCT t1.team_short_name FROM Team AS t1 INNER JOIN Team_Attributes AS t2 ON t1.team_api_id = t2.team_api_id WHERE t2.chanceCreationPassingClass = 'Safe'",
+   "difficulty": "moderate"
+  },
+  {
+   "question_id": 1068,
+   "db_id": "european_football_2",
+   "question": "From 2010 to 2015, what was the average overall rating of players who are higher than 170?",
+   "evidence": "from 2010 to 2015 refers to strftime('%Y', date) >= '2010' AND <= '2015'; average overall rating = SUM(t2.overall_rating)/ COUNT(t2.id); higher than 170 refers to Player.height > 170;",
+   "SQL": "SELECT CAST(SUM(t2.overall_rating) AS REAL) / COUNT(t2.id) FROM Player AS t1 INNER JOIN Player_Attributes AS t2 ON t1.player_api_id = t2.player_api_id WHERE t1.height > 170 AND STRFTIME('%Y',t2.`date`) >= '2010' AND STRFTIME('%Y',t2.`date`) <= '2015'",
+   "difficulty": "moderate"
+  },
+  {
+   "question_id": 1110,
+   "db_id": "european_football_2",
+   "question": "Tell the build Up play passing class for \"FC Lorient\" on 2010/2/22.",
+   "evidence": "\"FC Lorient\" refers to team_long_name = 'FC Lorient'; on 2010/2/22 refers to date LIKE '2010-02-22%';",
+   "SQL": "SELECT t2.buildUpPlayPassingClass FROM Team AS t1 INNER JOIN Team_Attributes AS t2 ON t1.team_api_id = t2.team_api_id WHERE t1.team_long_name = 'FC Lorient' AND t2.`date` LIKE '2010-02-22%'",
+   "difficulty": "moderate"
+  },
+  {
+   "question_id": 1076,
+   "db_id": "european_football_2",
+   "question": "What is the difference of the average ball control score between Abdou Diallo and Aaron Appindangoye\n?",
+   "evidence": "difference of the average ball control = SUBTRACT(AVG(ball_control WHERE player_name = 'Abdou Diallo'), AVG(ball_control WHERE player_name = 'Aaron Appindangoye')); AVG(ball_control WHERE player_name = 'XX XX') = SUM(CASE WHEN player_name = 'XX XX' THEN ball_control ELSE 0 END) / COUNT(CASE WHEN player_name = 'XX XX' THEN id ELSE NULL END)",
+   "SQL": "SELECT CAST(SUM(CASE WHEN t1.player_name = 'Abdou Diallo' THEN t2.ball_control ELSE 0 END) AS REAL) / COUNT(CASE WHEN t1.player_name = 'Abdou Diallo' THEN t2.id ELSE NULL END) - CAST(SUM(CASE WHEN t1.player_name = 'Aaron Appindangoye' THEN t2.ball_control ELSE 0 END) AS REAL) / COUNT(CASE WHEN t1.player_name = 'Aaron Appindangoye' THEN t2.id ELSE NULL END) FROM Player AS t1 INNER JOIN Player_Attributes AS t2 ON t1.player_api_id = t2.player_api_id",
+   "difficulty": "challenging"
+  },
+  {
+   "question_id": 1146,
+   "db_id": "european_football_2",
+   "question": "Please provide the full name of the away team that scored the most goals.",
+   "evidence": "full name refers to team_long_name; away team refers to away_team_api_id; scored the most goals refers to MAX(away_team_goal)",
+   "SQL": "SELECT t2.team_long_name FROM Match AS t1 INNER JOIN Team AS t2 ON t1.away_team_api_id = t2.team_api_id ORDER BY t1.away_team_goal DESC LIMIT 1",
+   "difficulty": "moderate"
+  },
+  {
+   "question_id": 1078,
+   "db_id": "european_football_2",
+   "question": "Which player is older, Aaron Lennon or Abdelaziz Barrada?",
+   "evidence": "The larger the birthday value, the younger the person is, and vice versa;",
+   "SQL": "SELECT player_name FROM Player WHERE player_name IN ('Aaron Lennon', 'Abdelaziz Barrada') ORDER BY birthday ASC LIMIT 1",
+   "difficulty": "simple"
+  },
+  {
+   "question_id": 1139,
+   "db_id": "european_football_2",
+   "question": "What was the final score for the match on September 24, 2008, in the Belgian Jupiler League between the home team and the away team?",
+   "evidence": "September 24, 2008 refers to date like '2008-09-24%'; in the Belgian Jupiler League refers to League.name = 'Belgium Jupiler League'; final score for home team refers to home_team_goal; final score for away team refers to away_team_goal",
+   "SQL": "SELECT t2.home_team_goal, t2.away_team_goal FROM League AS t1 INNER JOIN Match AS t2 ON t1.id = t2.league_id WHERE t1.name = 'Belgium Jupiler League' AND t2.`date` LIKE '2008-09-24%'",
+   "difficulty": "challenging"
+  },
+  {
+   "question_id": 1107,
+   "db_id": "european_football_2",
+   "question": "When was the first time did Kevin Constant have his highest crossing score? Give the date.",
+   "evidence": "Kevin Constant refers to player_name = 'Kevin Constant'; highest crossing score refers to MAX(crossing)",
+   "SQL": "SELECT `date` FROM ( SELECT t2.crossing, t2.`date` FROM Player AS t1 INNER JOIN Player_Attributes AS t2 ON t1.player_fifa_api_id = t2.player_fifa_api_id WHERE t1.player_name = 'Kevin Constant' ORDER BY t2.crossing DESC) ORDER BY date DESC LIMIT 1",
+   "difficulty": "moderate"
+  },
+  {
+   "question_id": 1141,
+   "db_id": "european_football_2",
+   "question": "Does the KSV Cercle Brugge team have a slow, balanced or fast speed class?",
+   "evidence": "KSV Cercle Brugge refers to team_long_name = 'KSV Cercle Brugge'; speed class refers to buildUpPlaySpeedClass",
+   "SQL": "SELECT DISTINCT t1.buildUpPlaySpeedClass FROM Team_Attributes AS t1 INNER JOIN Team AS t2 ON t1.team_api_id = t2.team_api_id WHERE t2.team_long_name = 'KSV Cercle Brugge'",
+   "difficulty": "moderate"
+  }
+ ]
+}

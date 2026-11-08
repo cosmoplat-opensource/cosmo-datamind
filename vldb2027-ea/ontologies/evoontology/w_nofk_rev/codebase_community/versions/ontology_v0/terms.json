@@ -1,0 +1,509 @@
+[
+  {
+    "id": "term_user",
+    "name": "User",
+    "type": "entity",
+    "definition": "A registered account of the codebase_community site, identified by a numeric Id and labelled by a DisplayName.",
+    "scope": "All user-level analysis: identity, demographics, reputation, badges, activity attribution.",
+    "aliases": [
+      "account",
+      "member",
+      "user account"
+    ],
+    "evidence": [
+      "ev_schema_inventory",
+      "ev_row_counts"
+    ]
+  },
+  {
+    "id": "term_post",
+    "name": "Post",
+    "type": "entity",
+    "definition": "Any content item published on the site. The single rows source for questions, answers and the wiki post kinds, discriminated by PostTypeId.",
+    "scope": "Any analysis of published content, its ownership, score, views and lifecycle.",
+    "aliases": [
+      "content item",
+      "entry"
+    ],
+    "evidence": [
+      "ev_post_type_distribution",
+      "ev_schema_inventory"
+    ]
+  },
+  {
+    "id": "term_question",
+    "name": "Question",
+    "type": "entity",
+    "definition": "A post whose PostTypeId is 1. Questions are the only post kind that carries a Title and a Tags list.",
+    "scope": "Question-level analysis: titles, tags, answers received.",
+    "aliases": [
+      "question post"
+    ],
+    "evidence": [
+      "ev_post_type_distribution",
+      "ev_post_scalar_nullability"
+    ]
+  },
+  {
+    "id": "term_answer",
+    "name": "Answer",
+    "type": "entity",
+    "definition": "A post whose PostTypeId is 2, attached to the question it responds to through the ParentId column.",
+    "scope": "Answer-level analysis and question/answer relationships.",
+    "aliases": [
+      "answer post",
+      "response"
+    ],
+    "evidence": [
+      "ev_post_type_distribution",
+      "ev_post_scalar_nullability"
+    ]
+  },
+  {
+    "id": "term_comment",
+    "name": "Comment",
+    "type": "entity",
+    "definition": "A short user remark attached to a post, recorded with its own author and creation timestamp.",
+    "scope": "Comment activity, per-post comment trails, comment authorship.",
+    "aliases": [
+      "remark",
+      "note"
+    ],
+    "evidence": [
+      "ev_row_counts",
+      "ev_comment_attribution_columns"
+    ]
+  },
+  {
+    "id": "term_vote",
+    "name": "Vote",
+    "type": "entity",
+    "definition": "A single voting event cast by a user on a post, carrying a vote type and optionally a bounty amount.",
+    "scope": "Voting behaviour, bounties, first-vote timing, vote receipts.",
+    "aliases": [
+      "voting event",
+      "ballot"
+    ],
+    "evidence": [
+      "ev_row_counts",
+      "ev_vote_type_distribution"
+    ]
+  },
+  {
+    "id": "term_badge_award",
+    "name": "Badge Award",
+    "type": "entity",
+    "definition": "A record that a named badge was granted to a user on a given date.",
+    "scope": "Badge achievement analysis, earliest achievement timing, badge tallies.",
+    "aliases": [
+      "badge",
+      "achievement",
+      "award"
+    ],
+    "evidence": [
+      "ev_row_counts",
+      "ev_badge_cardinality"
+    ]
+  },
+  {
+    "id": "term_tag",
+    "name": "Tag",
+    "type": "entity",
+    "definition": "A topic label maintained in its own catalogue with a tag name and a post count.",
+    "scope": "Topic-level analysis and tag catalogue lookups.",
+    "aliases": [
+      "topic",
+      "label"
+    ],
+    "evidence": [
+      "ev_schema_inventory",
+      "ev_tag_count_comparison"
+    ]
+  },
+  {
+    "id": "term_post_revision",
+    "name": "Post Revision",
+    "type": "entity",
+    "definition": "A single recorded change to a post, carrying the revision kind, the acting user and the changed text.",
+    "scope": "Editing history: who edited a post, when, and what field changed.",
+    "aliases": [
+      "edit",
+      "revision",
+      "post history entry",
+      "editor activity"
+    ],
+    "evidence": [
+      "ev_revision_type_distribution",
+      "ev_revision_attribution_columns"
+    ]
+  },
+  {
+    "id": "term_user_id",
+    "name": "User Identifier",
+    "type": "dimension",
+    "definition": "The numeric key that identifies a user account and is reused wherever activity is attributed to a registered account.",
+    "scope": "Joining activity tables to the user catalogue.",
+    "aliases": [
+      "UserId",
+      "user number",
+      "user id",
+      "Id of user"
+    ],
+    "evidence": [
+      "ev_user_id_reference_integrity",
+      "ev_schema_inventory"
+    ]
+  },
+  {
+    "id": "term_display_name",
+    "name": "Display Name",
+    "type": "dimension",
+    "definition": "The human-readable name shown for a user. It is the label that analytical questions normally use to refer to a person, but it is not a key.",
+    "scope": "Naming a user in a question and returning a user as an answer label.",
+    "aliases": [
+      "DisplayName",
+      "user name",
+      "name of user"
+    ],
+    "evidence": [
+      "ev_displayname_not_unique",
+      "ev_displayname_synthesized"
+    ]
+  },
+  {
+    "id": "term_age",
+    "name": "User Age",
+    "type": "dimension",
+    "definition": "The self-declared age in years stored on a user account.",
+    "scope": "Only defined for the subset of users who disclosed an age.",
+    "aliases": [
+      "Age"
+    ],
+    "evidence": [
+      "ev_age_coverage"
+    ]
+  },
+  {
+    "id": "term_reputation",
+    "name": "User Reputation",
+    "type": "dimension",
+    "definition": "The accumulated site reputation score of a user, used as the standard measure of standing in the community.",
+    "scope": "Ranking or comparing users, and as a prominence threshold for their posts.",
+    "aliases": [
+      "Reputation",
+      "points",
+      "score of a user"
+    ],
+    "evidence": [
+      "ev_schema_inventory",
+      "ev_reputation_extremes"
+    ]
+  },
+  {
+    "id": "term_post_title",
+    "name": "Post Title",
+    "type": "dimension",
+    "definition": "The headline text of a question. Matching a title is the usual way questions refer to a specific post.",
+    "scope": "Available only for questions; answers and wiki posts have no title.",
+    "aliases": [
+      "Title",
+      "headline"
+    ],
+    "evidence": [
+      "ev_post_scalar_nullability"
+    ]
+  },
+  {
+    "id": "term_post_tags",
+    "name": "Post Tag List",
+    "type": "dimension",
+    "definition": "The topic labels attached to a question, stored as one delimited string on the post row rather than as separate rows.",
+    "scope": "Topic membership of questions; membership tests must operate on the delimited list.",
+    "aliases": [
+      "Tags",
+      "post tags",
+      "labels of a post"
+    ],
+    "evidence": [
+      "ev_tag_string_format"
+    ]
+  },
+  {
+    "id": "term_post_type",
+    "name": "Post Type",
+    "type": "dimension",
+    "definition": "The discriminator that determines which kind of content a post row represents.",
+    "scope": "Separating questions from answers and from the wiki/maintenance post kinds.",
+    "aliases": [
+      "PostTypeId",
+      "kind of post"
+    ],
+    "evidence": [
+      "ev_post_type_distribution"
+    ]
+  },
+  {
+    "id": "term_vote_type",
+    "name": "Vote Type",
+    "type": "dimension",
+    "definition": "The categorical kind of a voting event, distinguishing upvotes, downvotes, acceptance, favourites, bounties and moderation actions.",
+    "scope": "Any analysis that needs a specific class of vote rather than votes in general.",
+    "aliases": [
+      "VoteTypeId",
+      "kind of vote"
+    ],
+    "evidence": [
+      "ev_vote_type_distribution"
+    ]
+  },
+  {
+    "id": "term_creation_date",
+    "name": "Creation Date",
+    "type": "dimension",
+    "definition": "The timestamp at which a recorded event or entity came into existence.",
+    "scope": "Time filtering, year extraction and earliest-event selection across posts, comments, votes and badges.",
+    "aliases": [
+      "CreationDate",
+      "created on",
+      "posted on",
+      "date"
+    ],
+    "evidence": [
+      "ev_date_ranges_and_formats",
+      "ev_posts_column_spelling"
+    ]
+  },
+  {
+    "id": "term_post_score",
+    "name": "Post Score",
+    "type": "metric",
+    "definition": "The net score of a post as maintained by the platform, reflecting the balance of positive and negative reactions.",
+    "scope": "Measuring how well received a post is; also the field questions filter on with phrases such as 'score of over N'.",
+    "aliases": [
+      "Score",
+      "points of a post"
+    ],
+    "evidence": [
+      "ev_score_range"
+    ]
+  },
+  {
+    "id": "term_view_count",
+    "name": "Post View Count",
+    "type": "metric",
+    "definition": "The number of times a question has been viewed.",
+    "scope": "Available only for questions.",
+    "aliases": [
+      "ViewCount",
+      "views",
+      "total views"
+    ],
+    "evidence": [
+      "ev_post_scalar_nullability"
+    ]
+  },
+  {
+    "id": "term_favorite_count",
+    "name": "Post Favorite Count",
+    "type": "metric",
+    "definition": "The number of users who marked a question as a favourite, maintained as a counter on the post row.",
+    "scope": "Question bookmarking interest. Sparse: only populated for questions that have been favourited.",
+    "aliases": [
+      "FavoriteCount",
+      "favourite count",
+      "favorite counts",
+      "bookmarks"
+    ],
+    "evidence": [
+      "ev_favorite_count_divergence"
+    ]
+  },
+  {
+    "id": "term_comment_count",
+    "name": "Post Comment Count",
+    "type": "metric",
+    "definition": "The number of comments attached to a post.",
+    "scope": "Comment volume per post; populated for every post row.",
+    "aliases": [
+      "CommentCount",
+      "number of comments"
+    ],
+    "evidence": [
+      "ev_post_scalar_nullability"
+    ]
+  },
+  {
+    "id": "term_answer_count",
+    "name": "Post Answer Count",
+    "type": "metric",
+    "definition": "The number of answers a question has received.",
+    "scope": "Populated only for questions.",
+    "aliases": [
+      "AnswerCount",
+      "number of answers"
+    ],
+    "evidence": [
+      "ev_post_scalar_nullability"
+    ]
+  },
+  {
+    "id": "term_user_badge_count",
+    "name": "Badge Count per User",
+    "type": "metric",
+    "definition": "The number of badge awards a user has accumulated. Formulated in questions as 'number of users with more than N badges'.",
+    "scope": "Per-user badge tallies.",
+    "aliases": [
+      "number of badges",
+      "badges awarded",
+      "Count(Name)"
+    ],
+    "evidence": [
+      "ev_badge_cardinality"
+    ]
+  },
+  {
+    "id": "term_bounty_amount",
+    "name": "Bounty Amount",
+    "type": "metric",
+    "definition": "The reputation amount attached to a bounty vote, representing the reward a user offered on a post.",
+    "scope": "Only defined on bounty-related votes; absent on all other vote rows.",
+    "aliases": [
+      "BountyAmount",
+      "bounty",
+      "bounty amount of N"
+    ],
+    "evidence": [
+      "ev_bounty_rows"
+    ]
+  },
+  {
+    "id": "term_post_percentage",
+    "name": "Percentage of Posts",
+    "type": "metric",
+    "definition": "A ratio expressing the share of posts satisfying a stated condition, computed as the conditional post count divided by a stated denominator post population and expressed on a 0-100 scale.",
+    "scope": "Share-type questions. The denominator population must be the one the question names; the numerator is the same population restricted by the stated condition.",
+    "aliases": [
+      "percentage",
+      "percent",
+      "proportion",
+      "share",
+      "DIVIDE(...)*100"
+    ],
+    "evidence": [
+      "ev_workload_percentage_pattern"
+    ]
+  },
+  {
+    "id": "term_elder_user",
+    "name": "Elder User",
+    "type": "concept",
+    "definition": "A user above senior age. The workload defines this as a user whose declared age exceeds 65.",
+    "scope": "Demographic segmentation of post owners. Undefined for users with no declared age.",
+    "aliases": [
+      "elder user",
+      "elder users",
+      "older user",
+      "senior user"
+    ],
+    "evidence": [
+      "ev_age_coverage"
+    ]
+  },
+  {
+    "id": "term_closed_post",
+    "name": "Closed Post",
+    "type": "concept",
+    "definition": "A post that the community has closed. Closeness is recorded by the presence of a closed date; absence of that date means the post was not closed.",
+    "scope": "Post lifecycle status, including questions about whether a post is finished.",
+    "aliases": [
+      "closed",
+      "well-finished",
+      "finished post",
+      "open post",
+      "unclosed"
+    ],
+    "evidence": [
+      "ev_closed_posts"
+    ]
+  },
+  {
+    "id": "term_community_user",
+    "name": "Community Account",
+    "type": "concept",
+    "definition": "The platform's background account, named Community, which takes ownership of community-wiki content on behalf of the site rather than acting as a person.",
+    "scope": "Content attributed to Community must not be treated as authored by a human user; profile measures such as age are not meaningful for it.",
+    "aliases": [
+      "Community",
+      "community user",
+      "community-wiki owner"
+    ],
+    "evidence": [
+      "ev_community_account"
+    ]
+  },
+  {
+    "id": "term_unregistered_author",
+    "name": "Unregistered Author Label",
+    "type": "concept",
+    "definition": "A display name recorded alongside an attribution slot that has no user identifier, used when the acting account is unavailable. The platform also synthesises names for accounts that never chose one.",
+    "scope": "Distinguishing attributable registered authorship from label-only authorship.",
+    "aliases": [
+      "anonymous author",
+      "unregistered user",
+      "user28",
+      "deleted user"
+    ],
+    "evidence": [
+      "ev_owner_attribution_columns",
+      "ev_displayname_synthesized"
+    ]
+  },
+  {
+    "id": "term_post_popularity",
+    "name": "Post Popularity",
+    "type": "concept",
+    "definition": "How widely read a post is. The workload expresses popularity as the post's view count.",
+    "scope": "Comparisons of posts or of their authors by readership.",
+    "aliases": [
+      "popularity",
+      "more popular",
+      "higher popularity",
+      "most popular"
+    ],
+    "evidence": [
+      "ev_post_scalar_nullability"
+    ]
+  },
+  {
+    "id": "term_user_influence",
+    "name": "User Influence",
+    "type": "concept",
+    "definition": "How much standing a user has in the community. The workload expresses influence through reputation, so the most influential user is the user with the highest reputation.",
+    "scope": "Selecting a single dominant user for ranking or comparison questions.",
+    "aliases": [
+      "influence",
+      "most influential user",
+      "most influential",
+      "higher reputation"
+    ],
+    "evidence": [
+      "ev_reputation_extremes"
+    ]
+  },
+  {
+    "id": "term_first_occurrence",
+    "name": "Earliest Event",
+    "type": "concept",
+    "definition": "The chronologically first event of a kind performed by or awarded to an entity, obtained by selecting the minimum creation date over that entity's events.",
+    "scope": "Phrases such as 'first vote', 'first badge', 'acquired the first'.",
+    "aliases": [
+      "first",
+      "earliest",
+      "earliest date",
+      "MIN(CreationDate)"
+    ],
+    "evidence": [
+      "ev_date_ranges_and_formats"
+    ]
+  }
+]

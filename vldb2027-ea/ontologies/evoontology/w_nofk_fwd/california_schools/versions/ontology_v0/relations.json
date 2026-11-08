@@ -1,0 +1,294 @@
+[
+  {
+    "id": "rel_district_composed_of_schools",
+    "source": "term_district",
+    "relation_type": "composition",
+    "target": "term_school",
+    "connection_condition": "every school record carries the name of the district that administers it, and the school portion of the CDS code identifies its position within that district",
+    "description": "A district is composed of the schools it administers; a school site belongs to exactly one district and has no meaning without it.",
+    "evidence": [
+      "evidence_schools_record_composition",
+      "evidence_cds_structure"
+    ]
+  },
+  {
+    "id": "rel_county_composed_of_districts",
+    "source": "term_county",
+    "relation_type": "composition",
+    "target": "term_district",
+    "connection_condition": "districts are identified within a county through the county portion of the CDS code and the county name carried on each school record",
+    "description": "A county is composed of the school districts located within it; county-level totals are obtained by aggregating the districts and schools it contains.",
+    "evidence": [
+      "evidence_cds_structure",
+      "evidence_county_values"
+    ]
+  },
+  {
+    "id": "rel_school_type_hierarchy",
+    "source": "term_school",
+    "relation_type": "hierarchy",
+    "target": "term_school_type_soc",
+    "connection_condition": "the school type code classifies the school site itself",
+    "description": "Every school site belongs to exactly one school operation category, so each category is a subtype of School; district and agency records have no school category.",
+    "evidence": [
+      "evidence_soc_values"
+    ]
+  },
+  {
+    "id": "rel_district_type_hierarchy",
+    "source": "term_district",
+    "relation_type": "hierarchy",
+    "target": "term_district_type_doc",
+    "connection_condition": "the district type code classifies districts and agencies",
+    "description": "A district is an instance of exactly one district operation category, such as Unified School District or Elementary School District.",
+    "evidence": [
+      "evidence_doc_values"
+    ]
+  },
+  {
+    "id": "rel_school_edops_hierarchy",
+    "source": "term_school",
+    "relation_type": "hierarchy",
+    "target": "term_educational_option_type",
+    "connection_condition": "the educational option code is assigned to the school site",
+    "description": "A school's educational option code identifies which operating model it is an instance of, for example a Continuation School or a State Special School.",
+    "evidence": [
+      "evidence_edops_values"
+    ]
+  },
+  {
+    "id": "rel_school_virtual_hierarchy",
+    "source": "term_school",
+    "relation_type": "hierarchy",
+    "target": "term_virtual_status",
+    "connection_condition": "the virtual status is assigned to the school site",
+    "description": "A school is an instance of one virtual delivery category, from not virtual through exclusively virtual.",
+    "evidence": [
+      "evidence_virtual_values"
+    ]
+  },
+  {
+    "id": "rel_school_charter_hierarchy",
+    "source": "term_school",
+    "relation_type": "hierarchy",
+    "target": "term_charter_school",
+    "connection_condition": "the charter indicator is assigned to the school site",
+    "description": "A charter school is a particular kind of school; charter schools form a subset of all schools.",
+    "evidence": [
+      "evidence_charter_values"
+    ]
+  },
+  {
+    "id": "rel_school_composed_of_magnet_program",
+    "source": "term_school",
+    "relation_type": "composition",
+    "target": "term_magnet_program",
+    "connection_condition": "the magnet indicator is recorded on the school record",
+    "description": "A magnet program is a programme component offered by a school; a school that offers one is composed of that programme, and the programme cannot exist without the school.",
+    "evidence": [
+      "evidence_magnet_values"
+    ]
+  },
+  {
+    "id": "rel_school_composed_of_nslp_provision",
+    "source": "term_school",
+    "relation_type": "composition",
+    "target": "term_nslp_provision_status",
+    "connection_condition": "the provision status is recorded on the school's meal-reporting record",
+    "description": "The meal-provision arrangement is a component of how a school operates its meal service and is meaningful only in the context of that school.",
+    "evidence": [
+      "evidence_nslp_values"
+    ]
+  },
+  {
+    "id": "rel_school_composed_of_address",
+    "source": "term_school",
+    "relation_type": "composition",
+    "target": "term_school_address",
+    "connection_condition": "street, city, state and zip values are recorded on the school record",
+    "description": "A school's address is a component of its identity and contact information; an address record has no meaning independently of the school it locates.",
+    "evidence": [
+      "evidence_address_fields"
+    ]
+  },
+  {
+    "id": "rel_school_composed_of_location",
+    "source": "term_school",
+    "relation_type": "composition",
+    "target": "term_school_location",
+    "connection_condition": "latitude and longitude are recorded on the school record",
+    "description": "The geographic coordinates are a component of the school's location identity used for spatial selection.",
+    "evidence": [
+      "evidence_coordinates"
+    ]
+  },
+  {
+    "id": "rel_school_composed_of_administrator",
+    "source": "term_school",
+    "relation_type": "composition",
+    "target": "term_administrator",
+    "connection_condition": "up to three administrator slots are recorded on the school record",
+    "description": "Administrators are people attached to a school; each administrator slot is a component of the school record and is meaningless without the school it belongs to.",
+    "evidence": [
+      "evidence_admin_fields"
+    ]
+  },
+  {
+    "id": "rel_administrator_composed_of_email",
+    "source": "term_administrator",
+    "relation_type": "composition",
+    "target": "term_administrator_email",
+    "connection_condition": "the e-mail address is stored in the same numbered slot as the administrator's first and last name",
+    "description": "An administrator's e-mail address is a component of that administrator's contact details and is only interpretable together with the matching name slot.",
+    "evidence": [
+      "evidence_admin_fields"
+    ]
+  },
+  {
+    "id": "rel_school_composed_of_sat_result",
+    "source": "term_school",
+    "relation_type": "composition",
+    "target": "term_sat_avg_score",
+    "connection_condition": "school-level SAT rows carry a CDS code that matches the school's CDS code",
+    "description": "A school's SAT results are a component of its reported performance; school-level SAT rows exist only in relation to the school that produced them.",
+    "evidence": [
+      "evidence_sat_rtype_levels",
+      "evidence_cds_linkage"
+    ]
+  },
+  {
+    "id": "rel_district_sat_aggregate_association",
+    "source": "term_district",
+    "relation_type": "association",
+    "target": "term_sat_avg_score",
+    "connection_condition": "district-level SAT rows carry the district CDS code whose school portion is 0000000",
+    "description": "The same SAT table also holds district-wide aggregates, so SAT performance can legitimately be measured at district level; a district aggregate must not be mistaken for one of its schools.",
+    "evidence": [
+      "evidence_sat_rtype_levels",
+      "evidence_cds_linkage"
+    ]
+  },
+  {
+    "id": "rel_grade_span_equivalence",
+    "source": "term_grade_span_offered",
+    "relation_type": "equivalence",
+    "target": "term_frpm_grade_range",
+    "connection_condition": "the low and high grade values on the meal record describe the same school's grade range that the grade span column states as a range",
+    "description": "The grade span offered on the school record and the low/high grade pair on the meal record express the same underlying concept of which grades a school covers, using two different encodings.",
+    "evidence": [
+      "evidence_grade_span_values",
+      "evidence_frpm_grade_values"
+    ]
+  },
+  {
+    "id": "rel_grade_span_served_association",
+    "source": "term_grade_span_offered",
+    "relation_type": "association",
+    "target": "term_grade_span_served",
+    "connection_condition": "both columns are recorded on the school record but encode different ranges of grades",
+    "description": "The grades a school is authorised to offer and the grades it actually serves are closely related but not identical; they differ for a substantial minority of schools.",
+    "evidence": [
+      "evidence_grade_span_values"
+    ]
+  },
+  {
+    "id": "rel_eligible_free_rate_derivation",
+    "source": "term_free_meal_count_k12",
+    "relation_type": "derivation",
+    "target": "term_eligible_free_rate_k12",
+    "connection_condition": "the free meal count is the numerator and K-12 enrolment the denominator of the same school's rate",
+    "description": "The eligible free rate is derived by dividing a school's free-meal-eligible K-12 count by its K-12 enrolment.",
+    "evidence": [
+      "evidence_percent_columns_are_fractions"
+    ]
+  },
+  {
+    "id": "rel_eligible_frpm_rate_derivation",
+    "source": "term_frpm_count_k12",
+    "relation_type": "derivation",
+    "target": "term_eligible_frpm_rate_k12",
+    "connection_condition": "the FRPM count is the numerator and K-12 enrolment the denominator of the same school's rate",
+    "description": "The eligible FRPM rate is derived by dividing a school's free-or-reduced-price-meal-eligible K-12 count by its K-12 enrolment.",
+    "evidence": [
+      "evidence_percent_columns_are_fractions"
+    ]
+  },
+  {
+    "id": "rel_excellence_rate_derivation",
+    "source": "term_sat_num_ge_1500",
+    "relation_type": "derivation",
+    "target": "term_excellence_rate",
+    "connection_condition": "NumGE1500 is the numerator and NumTstTakr the denominator within the same SAT record",
+    "description": "The excellence rate is derived by dividing the number of test takers scoring 1500 or above by the total number of test takers at the same reporting level.",
+    "evidence": [
+      "evidence_excellence_rate"
+    ]
+  },
+  {
+    "id": "rel_enrollment_basis_association",
+    "source": "term_enrollment_k12",
+    "relation_type": "association",
+    "target": "term_enrollment_ages_5_17",
+    "connection_condition": "both counts are recorded on the same meal-reporting row but over different populations",
+    "description": "K-12 grade-basis enrolment and ages 5-17 enrolment are two related but distinct measures of school size; the correct measure depends on whether a question is phrased by grade or by age.",
+    "evidence": [
+      "evidence_enrollment_bases"
+    ]
+  },
+  {
+    "id": "rel_free_meal_basis_association",
+    "source": "term_free_meal_count_k12",
+    "relation_type": "association",
+    "target": "term_free_meal_count_ages_5_17",
+    "connection_condition": "both counts are recorded on the same meal-reporting row over different populations",
+    "description": "Free-meal-eligible counts are reported on both a grade basis and an age basis and the two differ; the basis must match the phrasing of the question.",
+    "evidence": [
+      "evidence_enrollment_bases",
+      "evidence_free_meal_vs_frpm"
+    ]
+  },
+  {
+    "id": "rel_free_meal_and_frpm_association",
+    "source": "term_free_meal_count_k12",
+    "relation_type": "association",
+    "target": "term_frpm_count_k12",
+    "connection_condition": "both counts are recorded on the same meal-reporting row, the FRPM count including reduced-price-eligible students",
+    "description": "Free-meal eligibility and free-or-reduced-price eligibility are related measures of meal need; the FRPM count is the broader population, so the two are not interchangeable.",
+    "evidence": [
+      "evidence_free_meal_vs_frpm"
+    ]
+  },
+  {
+    "id": "rel_school_open_date_association",
+    "source": "term_school",
+    "relation_type": "association",
+    "target": "term_school_open_date",
+    "connection_condition": "the open date is recorded on the school record",
+    "description": "A school is associated with the date it opened; opening-period analysis depends on that date being a genuine observation rather than a default value.",
+    "evidence": [
+      "evidence_opendate_placeholder"
+    ]
+  },
+  {
+    "id": "rel_school_status_association",
+    "source": "term_school",
+    "relation_type": "association",
+    "target": "term_school_status_type",
+    "connection_condition": "the status is recorded on the school record and the closed date is populated only for closed schools",
+    "description": "A school carries an operating status that determines whether it is currently in scope for analysis.",
+    "evidence": [
+      "evidence_status_values"
+    ]
+  },
+  {
+    "id": "rel_academic_year_scope_association",
+    "source": "term_academic_year",
+    "relation_type": "association",
+    "target": "term_enrollment_k12",
+    "connection_condition": "the academic year label is carried on the same meal-reporting row as the enrolment and meal counts",
+    "description": "Enrolment and meal-eligibility facts are scoped to a single reported academic year, so they cannot be compared across years.",
+    "evidence": [
+      "evidence_academic_year"
+    ]
+  }
+]

@@ -1,0 +1,234 @@
+[
+  {
+    "id": "term_molecule",
+    "name": "Molecule",
+    "type": "entity",
+    "definition": "A chemical compound in the toxicology dataset, identified by a molecule identifier and, when classified, carrying a carcinogenicity label.",
+    "scope": "Molecule-level counting, filtering and comparison across the toxicology database.",
+    "aliases": [
+      "compound",
+      "chemical",
+      "molecule_id",
+      "TR identifier"
+    ],
+    "evidence": [
+      "ev_molecule_universe",
+      "ev_molecule_label_enum"
+    ]
+  },
+  {
+    "id": "term_atom",
+    "name": "Atom",
+    "type": "entity",
+    "definition": "A single atom belonging to a molecule, identified by an atom identifier and characterized by exactly one chemical element.",
+    "scope": "Atom-level counting and element composition analysis.",
+    "aliases": [
+      "atom_id",
+      "atomic site"
+    ],
+    "evidence": [
+      "ev_atom_presence",
+      "ev_element_domain"
+    ]
+  },
+  {
+    "id": "term_bond",
+    "name": "Bond",
+    "type": "entity",
+    "definition": "A chemical bond within a molecule, identified by a bond identifier, recording a bond type and connecting two atoms of that molecule.",
+    "scope": "Bond-level counting and bond-type analysis.",
+    "aliases": [
+      "bond_id",
+      "linkage"
+    ],
+    "evidence": [
+      "ev_bond_type_enum",
+      "ev_connected_direction"
+    ]
+  },
+  {
+    "id": "term_element",
+    "name": "Chemical Element",
+    "type": "dimension",
+    "definition": "The chemical element of an atom, recorded as a lowercase chemical symbol. It is the classification dimension used for composition questions.",
+    "scope": "Atom-level composition questions such as atoms containing hydrogen, or the share of chlorine.",
+    "aliases": [
+      "element",
+      "chemical element",
+      "symbol",
+      "atom kind"
+    ],
+    "evidence": [
+      "ev_element_domain"
+    ]
+  },
+  {
+    "id": "term_bond_type",
+    "name": "Bond Type",
+    "type": "dimension",
+    "definition": "The order of a chemical bond, expressed as a one-character symbol denoting a single, double or triple link between two atoms.",
+    "scope": "Bond-level questions such as single bonds or the most common bond type.",
+    "aliases": [
+      "bond_type",
+      "bond order",
+      "single bond",
+      "double bond",
+      "triple bond"
+    ],
+    "evidence": [
+      "ev_bond_type_enum"
+    ]
+  },
+  {
+    "id": "term_carcinogenicity_label",
+    "name": "Carcinogenicity Label",
+    "type": "dimension",
+    "definition": "The toxicity classification assigned to a molecule, recorded as a one-character symbol that distinguishes carcinogenic from non-carcinogenic compounds.",
+    "scope": "Any question that filters or groups molecules by carcinogenicity.",
+    "aliases": [
+      "label",
+      "carcinogenic",
+      "non-carcinogenic",
+      "toxicity class"
+    ],
+    "evidence": [
+      "ev_molecule_label_enum"
+    ]
+  },
+  {
+    "id": "term_carcinogenic_molecule",
+    "name": "Carcinogenic Molecule",
+    "type": "category",
+    "definition": "A molecule whose carcinogenicity classification marks it as carcinogenic.",
+    "scope": "Molecule populations restricted to carcinogenic compounds.",
+    "aliases": [
+      "carcinogenic",
+      "positive label",
+      "toxicity positive"
+    ],
+    "evidence": [
+      "ev_molecule_label_enum"
+    ]
+  },
+  {
+    "id": "term_non_carcinogenic_molecule",
+    "name": "Non-Carcinogenic Molecule",
+    "type": "category",
+    "definition": "A molecule whose carcinogenicity classification marks it as not carcinogenic.",
+    "scope": "Molecule populations restricted to non-carcinogenic compounds.",
+    "aliases": [
+      "non-carcinogenic",
+      "not carcinogenic",
+      "negative label"
+    ],
+    "evidence": [
+      "ev_molecule_label_enum"
+    ]
+  },
+  {
+    "id": "term_single_bond",
+    "name": "Single Bond",
+    "type": "category",
+    "definition": "A bond whose type symbol denotes a single (order-one) covalent link between two atoms.",
+    "scope": "Question conditions that restrict bonds or molecules to single bonds.",
+    "aliases": [
+      "single bond",
+      "single type bond",
+      "single-bond molecule"
+    ],
+    "evidence": [
+      "ev_bond_type_enum"
+    ]
+  },
+  {
+    "id": "term_double_bond",
+    "name": "Double Bond",
+    "type": "category",
+    "definition": "A bond whose type symbol denotes a double (order-two) covalent link between two atoms.",
+    "scope": "Question conditions that restrict bonds to double bonds.",
+    "aliases": [
+      "double bond",
+      "double type bond"
+    ],
+    "evidence": [
+      "ev_bond_type_enum"
+    ]
+  },
+  {
+    "id": "term_triple_bond",
+    "name": "Triple Bond",
+    "type": "category",
+    "definition": "A bond whose type symbol denotes a triple (order-three) covalent link between two atoms.",
+    "scope": "Question conditions that restrict bonds or molecules to triple bonds.",
+    "aliases": [
+      "triple bond",
+      "triple-bond molecule"
+    ],
+    "evidence": [
+      "ev_bond_type_enum"
+    ]
+  },
+  {
+    "id": "term_atom_bond_adjacency",
+    "name": "Atom-Bond Adjacency",
+    "type": "concept",
+    "definition": "The connectivity fact stating that a given atom participates in a given bond together with a partner atom. It is the link that relates atoms to the bonds they take part in.",
+    "scope": "Questions that count bonds per atom, or that need the two atoms connected by a bond.",
+    "aliases": [
+      "connected",
+      "adjacency",
+      "connectivity",
+      "atom pair"
+    ],
+    "evidence": [
+      "ev_connected_direction",
+      "ev_connected_pair_bond"
+    ]
+  },
+  {
+    "id": "term_molecule_reference",
+    "name": "Molecule Reference",
+    "type": "dimension",
+    "definition": "The molecule identifier used to attach atoms and bonds to the molecule they belong to. It names the same compounds as the molecule identifier itself, but appears as a referencing value on atom and bond records.",
+    "scope": "Grounding molecule membership of atoms and bonds, and joining atom/bond facts to molecule classification.",
+    "aliases": [
+      "molecule_id in atom",
+      "molecule_id in bond",
+      "molecule membership"
+    ],
+    "evidence": [
+      "ev_molecule_universe"
+    ]
+  },
+  {
+    "id": "term_element_occurrence_share",
+    "name": "Element Occurrence Share",
+    "type": "metric",
+    "definition": "The share of atoms of a specified element within a molecule or within a set of molecules, taken relative to the total number of atoms of that same population.",
+    "scope": "Composition ratio and percentage questions, such as the ratio of hydrogen in a given molecule.",
+    "aliases": [
+      "ratio",
+      "proportion",
+      "percentage",
+      "composition share"
+    ],
+    "evidence": [
+      "ev_tr006_hydrogen_ratio"
+    ]
+  },
+  {
+    "id": "term_average_bonds_per_atom",
+    "name": "Average Bonds per Atom",
+    "type": "metric",
+    "definition": "The mean number of bonds incident to the atoms of a specified population.",
+    "scope": "Questions asking how many bonds atoms of a given element have on average.",
+    "aliases": [
+      "average number of bonds",
+      "bonds per atom",
+      "average degree"
+    ],
+    "evidence": [
+      "ev_iodine_adjacency"
+    ]
+  }
+]

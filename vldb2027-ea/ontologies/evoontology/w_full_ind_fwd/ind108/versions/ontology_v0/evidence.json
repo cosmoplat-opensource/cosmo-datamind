@@ -1,0 +1,410 @@
+[
+  {
+    "id": "ev_schema",
+    "source": "ind108.sqlite (read-only)",
+    "query": "SELECT COUNT(*) FROM sqlite_master WHERE type='table'",
+    "result": "108 tables; naming convention dim_* (dimension), fact_* (transaction), DWS_* (aggregate marts) plus metadata tables dim_table_metadata/dim_column_metadata/dim_metric_catalog.",
+    "validation_method": "schema listing",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_supplier_master",
+    "source": "ind108.sqlite (read-only)",
+    "query": "SELECT supplier_id,supplier_name,city,credit_level,contact_person FROM dim_supplier; SELECT credit_level,COUNT(*) FROM dim_supplier GROUP BY 1",
+    "result": "12 suppliers, one per city. credit_level: A=7, AA=2 (supplier 3 示例化工C(上海)有限公司, supplier 5 示例特材B有限公司), B=3. 南通 -> supplier 11 示例助剂H有限公司. 唐经理 is a contact_person value.",
+    "validation_method": "schema and value verification",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_supplier_eval_scores",
+    "source": "ind108.sqlite (read-only)",
+    "query": "SELECT COUNT(*), SUM(ABS(total_score-(0.4*delivery_score+0.4*quality_score+0.2*service_score))<0.01) FROM fact_supplier_eval",
+    "result": "66/66 rows satisfy total_score = 0.4*delivery_score + 0.4*quality_score + 0.2*service_score. Columns: delivery_score, quality_score, service_score, total_score, grade, eval_date, eval_period. eval_date range 2025-04-06..2026-07-06; eval_period values like 2025-Q1.",
+    "validation_method": "formula verification over all rows",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_supplier_eval_grade",
+    "source": "ind108.sqlite (read-only)",
+    "query": "SELECT grade,COUNT(*),COUNT(DISTINCT supplier_id) FROM fact_supplier_eval GROUP BY 1; SELECT supplier_id,credit_level,GROUP_CONCAT(DISTINCT grade) FROM dim_supplier s JOIN fact_supplier_eval e USING(supplier_id) GROUP BY 1",
+    "result": "grade A=12 records (7 distinct suppliers), AA=54 records (11 distinct suppliers). The same supplier shows different grades across periods (e.g. supplier 1: A,AA), so eval grade is period-specific and distinct from the static credit_level.",
+    "validation_method": "grouping and cross-check",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_supplier_category_taxonomy",
+    "source": "ind108.sqlite (read-only)",
+    "query": "SELECT * FROM dim_supplier_category",
+    "result": "Root nodes (parent_id null): 1 树脂供应商, 2 助剂供应商, 3 增强填充供应商, 4 包装材料供应商. Child nodes (parent_id set): 11 通用树脂(->1), 12 工程塑料树脂(->1), 21 阻燃剂(->2), 22 增韧剂与抗氧剂(->2).",
+    "validation_method": "hierarchy verification",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_material_category_taxonomy",
+    "source": "ind108.sqlite (read-only)",
+    "query": "SELECT * FROM dim_material_category",
+    "result": "A separate taxonomy with different naming: 6 树脂 is root; 1 通用树脂, 2 工程塑料树脂, 3 特种工程塑料树脂 are its children. '通用树脂' therefore appears in both supplier and material category tables.",
+    "validation_method": "taxonomy comparison",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_po_status",
+    "source": "ind108.sqlite (read-only)",
+    "query": "SELECT status,COUNT(*) FROM fact_purchase_order GROUP BY 1; SELECT MIN(po_date),MAX(po_date) FROM fact_purchase_order",
+    "result": "status: closed=777, received=108, confirmed=10 (895 rows). po_date range 2025-01-07..2026-06-24. delivery_date and total_amount present.",
+    "validation_method": "enum and range verification",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_po_terms",
+    "source": "ind108.sqlite (read-only)",
+    "query": "SELECT payment_terms,COUNT(*) FROM fact_purchase_order GROUP BY 1",
+    "result": "月结30天=372, 月结45天=322, 月结60天=201 (3 distinct Chinese values).",
+    "validation_method": "enum verification",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_po_line_join",
+    "source": "ind108.sqlite (read-only)",
+    "query": "SELECT COUNT(*) FROM fact_po_line l JOIN fact_purchase_order p ON l.po_id=p.po_id; SELECT COUNT(*) FROM fact_po_line l JOIN dim_material m ON l.material_id=m.material_id",
+    "result": "895/895 PO lines join to purchase orders and to materials. Supplier->PO-line counts are identical via the material path and the PO path: A=594, AA=201, B=100.",
+    "validation_method": "join verification",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_goods_receipt",
+    "source": "ind108.sqlite (read-only)",
+    "query": "SELECT status,inspection_result,COUNT(*) FROM fact_goods_receipt GROUP BY 1,2; SELECT COUNT(*) FROM fact_goods_receipt g JOIN dim_employee e ON g.inspector_id=e.emp_id",
+    "result": "1017 receipts: status posted/inspection_result pass=1001; status inspected/inspection_result fail=16. 1017/1017 receipts join to dim_employee on inspector_id. All join to fact_purchase_order on po_id. sum(quantity)=14336.0 overall 14336.0 for received POs? (received POs: 129 receipts, 14336.0).",
+    "validation_method": "enum, join and aggregate verification",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_ap",
+    "source": "ind108.sqlite (read-only)",
+    "query": "SELECT status,COUNT(*) FROM fact_ap GROUP BY 1; SELECT COUNT(*),SUM(amount),SUM(paid_amount),SUM(amount-paid_amount) FROM fact_ap; SELECT COUNT(*) FROM fact_ap a JOIN fact_goods_receipt g ON a.gr_id=g.gr_id",
+    "result": "1001 AP records: closed=879, open=122. sum(amount)=1768332050.78, sum(paid_amount)=1541601885.66, unpaid balance=226730165.12. All 1001 join to goods receipts on gr_id.",
+    "validation_method": "aggregate and join verification",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_payment_out",
+    "source": "ind108.sqlite (read-only)",
+    "query": "SELECT payment_method,COUNT(*) FROM fact_payment_out GROUP BY 1; SELECT MIN(payment_date),MAX(payment_date) FROM fact_payment_out; SELECT COUNT(*) FROM fact_payment_out p JOIN fact_ap a ON p.ap_id=a.ap_id",
+    "result": "879 payments: payment_method bank_transfer=599, letter_of_credit=280. payment_date range 2025-03-02..2026-06-30. bank_account column carries values like SYN-ACCOUNT-0002/SYN-ACCOUNT-0011. All 879 join to fact_ap on ap_id.",
+    "validation_method": "enum, range and join verification",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_receipt_payment",
+    "source": "ind108.sqlite (read-only)",
+    "query": "SELECT payment_type,COUNT(*) FROM fact_payment GROUP BY 1; SELECT COUNT(*) FROM fact_payment p JOIN fact_ar_aging a ON p.ar_id=a.ar_id",
+    "result": "4944 receipt payments: 电汇=3239, 银承=1705 (2 distinct Chinese values). All 4944 join to ar_aging on ar_id. is_bank_accepted flag exists.",
+    "validation_method": "enum and join verification",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_ar_aging",
+    "source": "ind108.sqlite (read-only)",
+    "query": "SELECT COUNT(*),SUM(overdue_months) FROM fact_ar_aging a JOIN dim_employee e ON a.emp_id=e.emp_id WHERE e.status='active'; SELECT COUNT(*) FROM fact_ar_aging a JOIN fact_invoice i ON a.invoice_id=i.invoice_id",
+    "result": "5162 AR records; overdue_months sums to 130 across records owned by active employees. All join to fact_invoice on invoice_id; cust_id and emp_id present.",
+    "validation_method": "aggregate and join verification",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_sales_order",
+    "source": "ind108.sqlite (read-only)",
+    "query": "SELECT status,COUNT(*) FROM fact_sales_order GROUP BY 1; SELECT MIN(order_date),MAX(order_date) FROM fact_sales_order",
+    "result": "4731 orders: delivered=4576, returned=3, undelivered=152. order_date range 2025-01-02..2026-06-30. Columns include amount, standard_cost_amount, actual_cost_amount, gross_profit_standard, gross_profit_actual, guide_price, is_negative_margin.",
+    "validation_method": "enum, range and column verification",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_delivery",
+    "source": "ind108.sqlite (read-only)",
+    "query": "SELECT COUNT(*) FROM fact_delivery d JOIN fact_sales_order o ON d.order_id=o.order_id",
+    "result": "5113 deliveries, all joining to sales orders on order_id. Columns: delivery_date, quantity, amount, is_consignment. 4584 distinct sales orders have at least one delivery among active employees' orders.",
+    "validation_method": "join verification",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_invoice",
+    "source": "ind108.sqlite (read-only)",
+    "query": "SELECT COUNT(*) FROM fact_invoice i JOIN fact_delivery d ON i.delivery_id=d.delivery_id; SELECT MIN(invoice_date),MAX(invoice_date) FROM fact_invoice",
+    "result": "5162 invoices, all joining to deliveries on delivery_id. Columns: amount_no_tax, tax_amount (13% 增值税), total_amount (价税合计), days_to_invoice. invoice_date range 2025-01-07..2026-06-30.",
+    "validation_method": "join and column verification",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_invoice_days",
+    "source": "ind108.sqlite (read-only)",
+    "query": "SELECT COUNT(*), SUM(ABS(days_to_invoice - CAST(julianday(i.invoice_date)-julianday(d.delivery_date) AS INT))<0.5) FROM fact_invoice i JOIN fact_delivery d ON i.delivery_id=d.delivery_id",
+    "result": "5162/5162 rows satisfy days_to_invoice = invoice_date - delivery_date.",
+    "validation_method": "formula verification over all rows",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_return",
+    "source": "ind108.sqlite (read-only)",
+    "query": "SELECT reason,COUNT(*) FROM fact_return GROUP BY 1; SELECT COUNT(*) FROM fact_return r JOIN fact_sales_order o ON r.order_id=o.order_id",
+    "result": "83 returns, all joining to sales orders on order_id. Reasons: 产品质量问题:冲击强度偏低=31, 颜色与样板不符=22, 客户订单变更取消=12, 包装破损受潮=9, 规格型号发错=9. Columns: return_date, quantity, amount.",
+    "validation_method": "enum and join verification",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_quotation_join",
+    "source": "ind108.sqlite (read-only)",
+    "query": "SELECT COUNT(*) FROM fact_quotation q JOIN dim_product p ON q.product_id=p.prod_id; SELECT * FROM dim_product_line",
+    "result": "476/476 quotations join to dim_product via product_id (column named product_id, not prod_id). dim_product_line holds 4 lines: PP改性系列, PA改性系列, ABS/PC合金系列, 特种工程塑料系列. Columns: quantity, unit_price, total_amount, quotation_date, cust_id, emp_id.",
+    "validation_method": "join and dimension verification",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_opportunity",
+    "source": "ind108.sqlite (read-only)",
+    "query": "SELECT status,COUNT(*),SUM(close_date IS NULL) FROM fact_opportunity GROUP BY 1; SELECT MIN(create_date),MAX(create_date) FROM fact_opportunity",
+    "result": "84 opportunities: won=36 (0 null close_date, range 2025-03-16..2026-06-27), lost=20 (0 null, 2025-03-13..2026-04-29), open=22 (all close_date null), stalled=6 (all close_date null). create_date range 2025-01-30..2026-06-04. 33 opportunities have close_date in 2025 (estimated_quantity sum 7416.9).",
+    "validation_method": "enum, null and range verification",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_sample",
+    "source": "ind108.sqlite (read-only)",
+    "query": "SELECT feedback_result,COUNT(*) FROM fact_sample GROUP BY 1",
+    "result": "50 samples: success=20, fail=22, empty=8. Columns: sample_date, quantity, feedback_date, feedback_result, is_feedback, is_success, cust_id, emp_id.",
+    "validation_method": "enum verification",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_contract",
+    "source": "ind108.sqlite (read-only)",
+    "query": "SELECT * FROM fact_contract LIMIT 5",
+    "result": "19 contracts; contract_type=purchase, party_id resolves to supplier ids, start_date 2025-01-01, end_date 2026-12-31, total_amount, status='active'.",
+    "validation_method": "value verification",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_production_order",
+    "source": "ind108.sqlite (read-only)",
+    "query": "SELECT status,COUNT(*) FROM fact_production_order GROUP BY 1; SELECT MIN(order_date),MAX(order_date) FROM fact_production_order",
+    "result": "2969 orders: 已完成=2930, 待生产=27, 生产中=12. order_date range 2025-01-01..2026-06-30. Columns include line_id, prod_id, planned_quantity, actual_quantity, yield_rate, runtime_hours.",
+    "validation_method": "enum, range and column verification",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_production_output_grade",
+    "source": "ind108.sqlite (read-only)",
+    "query": "SELECT grade,COUNT(*) FROM fact_production_output GROUP BY 1",
+    "result": "5651 output rows: 优等品=2721, 一等品=2721, 合格品=93, 返工品=116. All join to production orders on order_id.",
+    "validation_method": "enum and join verification",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_production_plan",
+    "source": "ind108.sqlite (read-only)",
+    "query": "SELECT COUNT(*) FROM fact_production_plan p JOIN dim_production_line l ON p.line_id=l.line_id",
+    "result": "216 monthly plan rows (line x month), all joining to production lines. Numeric columns planned_quantity/actual_quantity/plan_achievement with no single amount column.",
+    "validation_method": "join and column verification",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_equipment_runtime",
+    "source": "ind108.sqlite (read-only)",
+    "query": "SELECT COUNT(*),COUNT(line_id) FROM fact_equipment_runtime; SELECT SUM(actual_run_hours) FROM fact_equipment_runtime",
+    "result": "6215 rows, all with line_id (grain = line x day). sum(actual_run_hours)=129539.56. Columns: plan_run_hours, actual_run_hours, downtime_hours, downtime_reason, oee.",
+    "validation_method": "grain and aggregate verification",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_downtime",
+    "source": "ind108.sqlite (read-only)",
+    "query": "SELECT COUNT(*),COUNT(line_id) FROM fact_downtime",
+    "result": "3741 downtime events, all with line_id and equipment_id. Columns: start_time, end_time, duration_hours, reason_code, description.",
+    "validation_method": "grain verification",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_runtime_vs_downtime",
+    "source": "ind108.sqlite (read-only)",
+    "query": "SELECT SUM(d.duration_hours) FROM fact_downtime d JOIN dim_production_line l ON d.line_id=l.line_id WHERE l.line_name='PP挤出2线'; SELECT SUM(r.downtime_hours) FROM fact_equipment_runtime r JOIN dim_production_line l ON r.line_id=l.line_id WHERE l.line_name='PP挤出2线'",
+    "result": "For line PP挤出2线 the two candidate sources differ: fact_downtime.duration_hours sums to 1012.09 while fact_equipment_runtime.downtime_hours sums to 699.66.",
+    "validation_method": "cross-source comparison",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_maintenance",
+    "source": "ind108.sqlite (read-only)",
+    "query": "SELECT COUNT(*) FROM fact_maintenance_plan m JOIN dim_equipment e ON m.equipment_id=e.equipment_id; SELECT record_id,equipment_id,maint_date,labor_hours,cost FROM fact_maintenance_record LIMIT 3",
+    "result": "72 maintenance plans, all joining to equipment; columns interval_days and interval_hours. 1694 maintenance records with maint_date, labor_hours (e.g. 2.9), cost (e.g. 18848.0), result='completed' default.",
+    "validation_method": "join and column verification",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_iot",
+    "source": "ind108.sqlite (read-only)",
+    "query": "SELECT COUNT(*) FROM fact_iot_data i JOIN dim_sensor s ON i.sensor_id=s.sensor_id; SELECT COUNT(*) FROM fact_iot_data i JOIN dim_sensor s ON i.sensor_id=s.sensor_id JOIN dim_equipment e ON s.equipment_id=e.equipment_id WHERE e.manufacturer='示例机械F'",
+    "result": "28758 IoT rows, all joining sensor -> equipment. manufacturer 示例机械F yields 1086 rows; 示例机械B yields 2622 rows. timestamp range 2025-01-01..2026-06-30.",
+    "validation_method": "join and filter verification",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_sensor_unit",
+    "source": "ind108.sqlite (read-only)",
+    "query": "SELECT unit,COUNT(*) FROM dim_sensor GROUP BY 1; SELECT unit,COUNT(*) FROM fact_iot_data GROUP BY 1",
+    "result": "dim_sensor units: ℃=38, A=60, %, MPa, kg, kg/h, mm/s, rpm, 包/h. fact_iot_data units mirror these (℃=7988 rows). 180 sensors, all with equipment_id.",
+    "validation_method": "enum and join verification",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_env_unit",
+    "source": "ind108.sqlite (read-only)",
+    "query": "SELECT unit,COUNT(*) FROM fact_env_record GROUP BY 1; SELECT MIN(record_date),MAX(record_date) FROM fact_env_record",
+    "result": "90 env records: mg/L=36, mg/m³=36, dB(A)=18. record_date range 2025-01-15..2026-06-15. Columns: record_type, emission_type, measured_value, limit_value, is_compliant.",
+    "validation_method": "enum and range verification",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_alarm",
+    "source": "ind108.sqlite (read-only)",
+    "query": "SELECT alarm_type,COUNT(*) FROM fact_alarm GROUP BY 1; SELECT severity,COUNT(*) FROM fact_alarm GROUP BY 1",
+    "result": "3109 alarms across 9 Chinese alarm types (超温=727, 过电流=1034, 振动异常=330, 超压=321, 喂料波动=183, 料位异常=184, 转速异常=184, 称重偏差=66, 速度异常=80). severity: warning=2470, critical=639.",
+    "validation_method": "enum verification",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_energy",
+    "source": "ind108.sqlite (read-only)",
+    "query": "SELECT MIN(record_date),MAX(record_date) FROM fact_energy_consumption",
+    "result": "6552 energy rows at line x day grain, record_date 2025-01-01..2026-06-30. Columns: electricity_kwh, water_tons, gas_m3, steam_tons, unit_energy_consumption.",
+    "validation_method": "grain and column verification",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_safety_audit",
+    "source": "ind108.sqlite (read-only)",
+    "query": "SELECT audit_type,COUNT(*) FROM fact_safety_audit GROUP BY 1; SELECT COUNT(*) FROM fact_safety_audit a JOIN dim_workshop w ON a.workshop_id=w.workshop_id",
+    "result": "36 audits: 专项审计=18, 月度安全审计=18. All join to workshops. Columns: audit_no, auditor_id, audit_date, score, finding_count, status.",
+    "validation_method": "enum and join verification",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_safety_training",
+    "source": "ind108.sqlite (read-only)",
+    "query": "SELECT training_type,COUNT(*) FROM fact_safety_training GROUP BY 1; SELECT COUNT(*) FROM fact_safety_training t JOIN dim_employee e ON t.trainer_id=e.emp_id; SELECT MIN(training_date),MAX(training_date) FROM fact_safety_training",
+    "result": "27 trainings: 危险化学品=7, 岗位安全复训=6, 应急演练=6, 机械安全=3, 消防安全=3, 新员工三级安全教育=1, 职业健康=1. All 27 join to employees on trainer_id. training_date range 2025-01-17..2026-06-13. Columns: duration_hours, attendee_count, score_avg.",
+    "validation_method": "enum, join and range verification",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_safety_plan",
+    "source": "ind108.sqlite (read-only)",
+    "query": "SELECT COUNT(*),COUNT(issued_date),MIN(issued_date),MAX(issued_date) FROM fact_safety_plan",
+    "result": "2 safety plans, both with issued_date (2025-01-08 and 2026-01-06). Columns: year, plan_type, status, issued_by.",
+    "validation_method": "grain verification",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_incident",
+    "source": "ind108.sqlite (read-only)",
+    "query": "SELECT status,COUNT(*) FROM fact_incident GROUP BY 1; SELECT incident_type,COUNT(*) FROM fact_incident GROUP BY 1",
+    "result": "32 incidents: closed=29, investigating=1, reported=2. Types: 机械伤害=8, 高处坠落=7, 灼烫=5, 车辆伤害=5, 触电=4, 物体打击=3. incident_date range 2025-03-09..2026-06-10. Columns: property_loss, injury_count, fatality_count, workshop_id, line_id, location_desc.",
+    "validation_method": "enum and range verification",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_risk",
+    "source": "ind108.sqlite (read-only)",
+    "query": "SELECT likelihood,COUNT(*) FROM fact_risk_assessment GROUP BY 1; SELECT consequence,COUNT(*) FROM fact_risk_assessment GROUP BY 1; SELECT risk_level,COUNT(*) FROM fact_risk_assessment GROUP BY 1",
+    "result": "30 assessments. likelihood: possible=15, unlikely=8, likely=7. consequence: major=15, moderate=7, catastrophic=5, minor=3. risk_level: L2=13, L3=9, L4=7, L1=1. assess_date range 2025-01-14..2026-02-03. hazard_id and assessor_id both non-null.",
+    "validation_method": "enum and range verification",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_risk_level_dim",
+    "source": "ind108.sqlite (read-only)",
+    "query": "SELECT * FROM dim_risk_level",
+    "result": "L1 可接受 (风险低,现有控制措施有效); L2 可容忍 (风险中等,需关注); L3 不可容忍 (风险较高,须限期整改); L4 重大 (重大风险,可能导致严重后果).",
+    "validation_method": "reference table verification",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_workshop_line",
+    "source": "ind108.sqlite (read-only)",
+    "query": "SELECT workshop_id,workshop_name,location FROM dim_workshop; SELECT line_id,line_name,workshop_id FROM dim_production_line",
+    "result": "5 workshops: 1 PP改性车间/青岛一厂A栋, 2 PA改性车间/青岛一厂B栋, 3 ABS/PC合金车间/青岛二厂A栋, 4 阻燃材料车间/青岛二厂B栋, 5 特种工程塑料车间/合肥工厂A栋. 12 lines, 2-3 per workshop (e.g. PP挤出2线->workshop 1; 阻燃挤出1线->workshop 4; 特塑挤出2线->workshop 5).",
+    "validation_method": "hierarchy verification",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_equipment_manufacturer",
+    "source": "ind108.sqlite (read-only)",
+    "query": "SELECT manufacturer,COUNT(*) FROM dim_equipment GROUP BY 1",
+    "result": "60 equipment with 6 manufacturers: 示例机械A=12, 示例机械B=12, 示例机械C=12, 示例机械D=12, 示例机械E=7, 示例机械F=5. All have line_id.",
+    "validation_method": "enum and join verification",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_customer",
+    "source": "ind108.sqlite (read-only)",
+    "query": "SELECT industry,COUNT(*) FROM dim_customer GROUP BY 1; SELECT cust_id,cust_name,industry,last_deal_date FROM dim_customer WHERE last_deal_date LIKE '2026-06-23%'",
+    "result": "25 customers. industry: 电子电气=7, 家电=6, 汽车=6, 建材=3, 电动工具=3. last_deal_date 2026-06-23 matches cust_id 15 (示例电子E有限公司).",
+    "validation_method": "enum and filter verification",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_employee",
+    "source": "ind108.sqlite (read-only)",
+    "query": "SELECT status,COUNT(*) FROM dim_employee GROUP BY 1; SELECT e.emp_id,e.emp_name,SUM(g.quantity) FROM fact_goods_receipt g JOIN dim_employee e ON g.inspector_id=e.emp_id GROUP BY 1,2 ORDER BY 3 DESC LIMIT 3",
+    "result": "122 employees: active=121, inactive=1. Top receipt inspectors by summed quantity: 黄艳 (24286.2), 宋佳怡 (23830.2), 黄平 (23450.4).",
+    "validation_method": "enum and aggregate verification",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_inventory",
+    "source": "ind108.sqlite (read-only)",
+    "query": "SELECT COUNT(*) FROM fact_inventory i JOIN dim_product p ON i.prod_id=p.prod_id",
+    "result": "37 inventory batch rows, all joining to products on prod_id. Columns: batch_no, warehouse_date, quantity, unit_cost, total_cost, storage_days.",
+    "validation_method": "join verification",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_product_cost",
+    "source": "ind108.sqlite (read-only)",
+    "query": "SELECT COUNT(*) FROM fact_product_cost c JOIN dim_product p ON c.product_id=p.prod_id; SELECT p.prod_name,SUM(c.total_cost) FROM fact_product_cost c JOIN dim_product p ON c.product_id=p.prod_id GROUP BY 1 ORDER BY 2 DESC LIMIT 2",
+    "result": "2930 cost rows, all joining to products via product_id (naming differs from prod_id). Top products by summed total_cost: PC/ABS (293574776.13), PP-FR (196311382.6).",
+    "validation_method": "join and aggregate verification",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_product_line",
+    "source": "ind108.sqlite (read-only)",
+    "query": "SELECT * FROM dim_product_line; SELECT COUNT(*) FROM fact_quotation q JOIN dim_product p ON q.product_id=p.prod_id",
+    "result": "4 product lines: 1 PP改性系列, 2 PA改性系列, 3 ABS/PC合金系列, 4 特种工程塑料系列. dim_product.prod_line_id links products to lines; quotations reach lines via product_id -> prod_id.",
+    "validation_method": "dimension verification",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_material",
+    "source": "ind108.sqlite (read-only)",
+    "query": "SELECT * FROM dim_material LIMIT 5; SELECT COUNT(*),COUNT(supplier_id) FROM dim_material",
+    "result": "15 materials, all with a non-null supplier_id. Columns: material_code, material_name, category_id, unit_price, safety_stock, lead_time_days, supplier_id, status.",
+    "validation_method": "column verification",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_date_range",
+    "source": "ind108.sqlite (read-only)",
+    "query": "SELECT 'sales_order',MIN(order_date),MAX(order_date) FROM fact_sales_order UNION ALL SELECT 'po',MIN(po_date),MAX(po_date) FROM fact_purchase_order UNION ALL SELECT 'payment_out',MIN(payment_date),MAX(payment_date) FROM fact_payment_out UNION ALL SELECT 'invoice',MIN(invoice_date),MAX(invoice_date) FROM fact_invoice UNION ALL SELECT 'opportunity',MIN(create_date),MAX(create_date) FROM fact_opportunity UNION ALL SELECT 'production_order',MIN(order_date),MAX(order_date) FROM fact_production_order UNION ALL SELECT 'contract',MIN(start_date),MAX(end_date) FROM fact_contract UNION ALL SELECT 'safety_training',MIN(training_date),MAX(training_date) FROM fact_safety_training UNION ALL SELECT 'supplier_eval',MIN(eval_date),MAX(eval_date) FROM fact_supplier_eval UNION ALL SELECT 'iot',MIN(timestamp),MAX(timestamp) FROM fact_iot_data UNION ALL SELECT 'energy',MIN(record_date),MAX(record_date) FROM fact_energy_consumption UNION ALL SELECT 'env',MIN(record_date),MAX(record_date) FROM fact_env_record",
+    "result": "All business dates fall in 2025-01 .. 2026-07, so '2025年'/'2026年' filters are meaningful and must use each domain's own date column.",
+    "validation_method": "range verification",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_metric_catalog_rules",
+    "source": "ind108.sqlite (read-only)",
+    "query": "SELECT metric_name,description FROM dim_metric_catalog WHERE metric_name IN ('新增应付账款','设备运行小时','接单金额','应收账款余额')",
+    "result": "新增应付账款: 期末未付余额 = 应付金额 − 已付金额(fact_ap). 设备运行小时: 取所在产线当日运行时长,每台设备各记一份;按设备汇总约为产线运行时长的 5 倍. 接单金额: 按下单日汇总的订单金额(不含税),含未交付与后续退货部分;与按发货或开票确认的收入不同. 应收账款余额: 当日末未清应收余额(含税),时点值;跨日只能取期末一天,不能按日累加.",
+    "validation_method": "metadata cross-check",
+    "timestamp": "2026-10-10"
+  }
+]

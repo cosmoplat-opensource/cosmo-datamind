@@ -1,0 +1,231 @@
+[
+  {
+    "id": "rel_superhero_publisher",
+    "source": "superhero",
+    "relation_type": "association",
+    "target": "publisher",
+    "connection_condition": "superhero.publisher_id references publisher.id; each superhero carries at most one publisher",
+    "description": "A superhero is published by a publishing imprint; the connection is a direct identifier reference but a publisher is an independent entity, not a part of the superhero.",
+    "evidence": [
+      "ev_publisher_distribution",
+      "ev_referential_integrity"
+    ]
+  },
+  {
+    "id": "rel_superhero_gender",
+    "source": "superhero",
+    "relation_type": "association",
+    "target": "gender",
+    "connection_condition": "superhero.gender_id references gender.id",
+    "description": "A superhero has one recorded gender category drawn from an independent vocabulary.",
+    "evidence": [
+      "ev_gender_domain",
+      "ev_gender_distribution"
+    ]
+  },
+  {
+    "id": "rel_superhero_alignment",
+    "source": "superhero",
+    "relation_type": "association",
+    "target": "alignment",
+    "connection_condition": "superhero.alignment_id references alignment.id",
+    "description": "A superhero has one recorded moral alignment, which is what distinguishes heroes from villains.",
+    "evidence": [
+      "ev_alignment_domain",
+      "ev_skin_colour_green_alignment"
+    ]
+  },
+  {
+    "id": "rel_superhero_race",
+    "source": "superhero",
+    "relation_type": "association",
+    "target": "race",
+    "connection_condition": "superhero.race_id references race.id",
+    "description": "A superhero has one recorded racial origin drawn from an independent vocabulary.",
+    "evidence": [
+      "ev_row_counts"
+    ]
+  },
+  {
+    "id": "rel_superhero_skin_colour",
+    "source": "superhero",
+    "relation_type": "association",
+    "target": "skin_colour",
+    "connection_condition": "superhero.skin_colour_id references colour.id",
+    "description": "A superhero has one recorded skin colour drawn from the shared colour vocabulary.",
+    "evidence": [
+      "ev_skin_colour_green_alignment"
+    ]
+  },
+  {
+    "id": "rel_superhero_eye_colour",
+    "source": "superhero",
+    "relation_type": "association",
+    "target": "eye_colour",
+    "connection_condition": "superhero.eye_colour_id references colour.id",
+    "description": "A superhero has one recorded eye colour drawn from the shared colour vocabulary.",
+    "evidence": [
+      "ev_eye_colour_usage"
+    ]
+  },
+  {
+    "id": "rel_skin_colour_colour",
+    "source": "skin_colour",
+    "relation_type": "hierarchy",
+    "target": "colour",
+    "connection_condition": "",
+    "description": "Skin colour is a colour role: its recorded values are a subset of the shared colour vocabulary and are drawn from the same value domain.",
+    "evidence": [
+      "ev_skin_colour_green_alignment",
+      "ev_colour_vocabulary"
+    ]
+  },
+  {
+    "id": "rel_eye_colour_colour",
+    "source": "eye_colour",
+    "relation_type": "hierarchy",
+    "target": "colour",
+    "connection_condition": "",
+    "description": "Eye colour is a colour role: its recorded values are a subset of the shared colour vocabulary and include 'No Colour'.",
+    "evidence": [
+      "ev_eye_colour_usage",
+      "ev_colour_vocabulary"
+    ]
+  },
+  {
+    "id": "rel_superhero_superpower",
+    "source": "superhero",
+    "relation_type": "association",
+    "target": "superpower",
+    "connection_condition": "hero_power.hero_id references superhero.id and hero_power.power_id references superpower.id",
+    "description": "A superhero possesses zero or more superpowers and a superpower may be possessed by many superheroes; the relation is many-to-many and neither side depends on the other for existence.",
+    "evidence": [
+      "ev_power_link_integrity",
+      "ev_row_counts"
+    ]
+  },
+  {
+    "id": "rel_superhero_attribute_rating",
+    "source": "superhero",
+    "relation_type": "composition",
+    "target": "super_attribute_rating",
+    "connection_condition": "hero_attribute.hero_id references superhero.id",
+    "description": "A superhero is composed of its attribute ratings: a rating row carries no meaning without the superhero it rates and is removed together with that superhero.",
+    "evidence": [
+      "ev_attribute_pair_uniqueness",
+      "ev_referential_integrity"
+    ]
+  },
+  {
+    "id": "rel_super_attribute_rating",
+    "source": "super_attribute",
+    "relation_type": "association",
+    "target": "super_attribute_rating",
+    "connection_condition": "hero_attribute.attribute_id references attribute.id",
+    "description": "A rating measures exactly one named super attribute; the attribute is an independent vocabulary entry.",
+    "evidence": [
+      "ev_attribute_domain"
+    ]
+  },
+  {
+    "id": "rel_super_attribute_rating_value",
+    "source": "super_attribute_rating",
+    "relation_type": "association",
+    "target": "attribute_value",
+    "connection_condition": "",
+    "description": "Each rating carries exactly one numeric attribute value; the value is interpretable only in combination with its attribute.",
+    "evidence": [
+      "ev_attribute_value_range",
+      "ev_attribute_pair_uniqueness"
+    ]
+  },
+  {
+    "id": "rel_superhero_id_hero_id",
+    "source": "superhero_id",
+    "relation_type": "equivalence",
+    "target": "hero_id",
+    "connection_condition": "superhero.id, hero_attribute.hero_id and hero_power.hero_id share the same value domain; no link row references a missing superhero",
+    "description": "The superhero identifier appears under a different column name in the link tables; both name the same identifier concept and can be used interchangeably when joining.",
+    "evidence": [
+      "ev_referential_integrity"
+    ]
+  },
+  {
+    "id": "rel_superhero_name_full_name",
+    "source": "superhero_name",
+    "relation_type": "association",
+    "target": "full_name",
+    "connection_condition": "",
+    "description": "Both are labels of the same superhero row: superhero_name is the published codename and full_name the real-world name, which is frequently unrecorded.",
+    "evidence": [
+      "ev_name_fields",
+      "ev_identity_sample"
+    ]
+  },
+  {
+    "id": "rel_publisher_id_publisher",
+    "source": "publisher_id",
+    "relation_type": "association",
+    "target": "publisher",
+    "connection_condition": "publisher.id identifies the record whose publisher_name carries the label",
+    "description": "The publisher identifier and the publisher name refer to the same publishing entity; questions may ask for either the name or the identifier.",
+    "evidence": [
+      "ev_publisher_vocabulary"
+    ]
+  },
+  {
+    "id": "rel_superhero_count_gender_ratio",
+    "source": "superhero_count",
+    "relation_type": "derivation",
+    "target": "gender_ratio",
+    "connection_condition": "",
+    "description": "The gender ratio is derived from the superhero count taken separately for each gender: the male count divided by the female count.",
+    "evidence": [
+      "ev_gender_distribution"
+    ]
+  },
+  {
+    "id": "rel_attribute_value_maximum",
+    "source": "attribute_value",
+    "relation_type": "derivation",
+    "target": "maximum_attribute_value",
+    "connection_condition": "",
+    "description": "The maximum attribute value for a named attribute is derived as the largest attribute value recorded under that attribute.",
+    "evidence": [
+      "ev_strength_max"
+    ]
+  },
+  {
+    "id": "rel_attribute_value_minimum",
+    "source": "attribute_value",
+    "relation_type": "derivation",
+    "target": "minimum_attribute_value",
+    "connection_condition": "",
+    "description": "The minimum attribute value for a named attribute is derived as the smallest attribute value recorded under that attribute.",
+    "evidence": [
+      "ev_attribute_value_range"
+    ]
+  },
+  {
+    "id": "rel_weight_average_weight",
+    "source": "weight",
+    "relation_type": "derivation",
+    "target": "average_weight",
+    "connection_condition": "",
+    "description": "The average weight is derived as the arithmetic mean of the recorded weights within the stated population of superheroes.",
+    "evidence": [
+      "ev_gender_distribution"
+    ]
+  },
+  {
+    "id": "rel_superhero_superhero_count",
+    "source": "superhero",
+    "relation_type": "derivation",
+    "target": "superhero_count",
+    "connection_condition": "",
+    "description": "The superhero count is derived by counting the distinct superheroes that satisfy the stated condition.",
+    "evidence": [
+      "ev_row_counts"
+    ]
+  }
+]

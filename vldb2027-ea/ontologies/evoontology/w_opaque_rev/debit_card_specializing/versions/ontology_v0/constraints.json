@@ -1,0 +1,270 @@
+[
+  {
+    "id": "constraint_payment_currency_values",
+    "target": "term_payment_currency",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "currency",
+      "payment currency",
+      "EUR",
+      "CZK",
+      "euro",
+      "euros",
+      "Czech koruna",
+      "pay in EUR",
+      "pay in CZK",
+      "paying customers"
+    ],
+    "severity": "block",
+    "scope": "Filtering or grouping customers by payment currency.",
+    "confidence": "high",
+    "description": "tab01.fld003 contains exactly two values: CZK (Czech koruna) and EUR (euro). CZK-paying customers are those with fld003 = 'CZK'; EUR-paying customers are those with fld003 = 'EUR'. Currency is recorded per customer, not per transaction.",
+    "evidence": [
+      "ev_currency_semantics"
+    ]
+  },
+  {
+    "id": "constraint_customer_segment_values",
+    "target": "term_customer_segment",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "segment",
+      "customer segment",
+      "SME",
+      "SMEs",
+      "KAM",
+      "LAM"
+    ],
+    "severity": "warning",
+    "scope": "Filtering or grouping customers by segment.",
+    "confidence": "high",
+    "description": "tab01.fld002 contains three values: KAM (2040 customers), LAM (3658) and SME (26763). Construction questions use 'SME'/'SMEs' for the SME value. No further business meaning is asserted for KAM or LAM.",
+    "evidence": [
+      "ev_tab01_profile"
+    ]
+  },
+  {
+    "id": "constraint_gas_station_country_values",
+    "target": "term_gas_station_country",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "country",
+      "Czech Republic",
+      "CZE",
+      "Slovakia",
+      "SVK",
+      "countries"
+    ],
+    "severity": "block",
+    "scope": "Filtering or comparing gas stations by country.",
+    "confidence": "high",
+    "description": "tab02.fld006 contains exactly two values: CZE for the Czech Republic (4836 stations) and SVK for Slovakia (880 stations).",
+    "evidence": [
+      "ev_country_semantics"
+    ]
+  },
+  {
+    "id": "constraint_gas_station_segment_values",
+    "target": "term_gas_station_segment",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "segment",
+      "gas station segment",
+      "discount",
+      "premium",
+      "noname",
+      "value for money",
+      "other"
+    ],
+    "severity": "warning",
+    "scope": "Filtering or comparing gas stations by market segment.",
+    "confidence": "high",
+    "description": "tab02.fld002 contains five values: Discount (294 stations), Noname (1005), Other (2392), Premium (1428) and Value for money (597). Question wording may be lowercase (for example 'discount' or 'premium'); value matching should treat the stored labels case-insensitively.",
+    "evidence": [
+      "ev_tab02_profile"
+    ]
+  },
+  {
+    "id": "constraint_year_month_format",
+    "target": "term_year_month",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "year",
+      "month",
+      "yearmonth",
+      "June 2013",
+      "February 2012",
+      "2012",
+      "201306",
+      "201202",
+      "monthly"
+    ],
+    "severity": "block",
+    "scope": "Interpreting or filtering the YYYYMM period key in tab05.fld010.",
+    "confidence": "high",
+    "description": "tab05.fld010 is a six-character YYYYMM text. The year is the first four characters and the month is the last two: February 2012 is '201202' and June 2013 is '201306'. Values span 201112 to 201311 (21 distinct months). A full year such as 2012 corresponds to the twelve keys from '201201' through '201212'.",
+    "evidence": [
+      "ev_date_time_formats",
+      "ev_tab05_profile"
+    ]
+  },
+  {
+    "id": "constraint_transaction_date_format",
+    "target": "term_transaction_date",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "date",
+      "transaction date",
+      "2012/8/26",
+      "2012-08-26",
+      "August 2012",
+      "day"
+    ],
+    "severity": "block",
+    "scope": "Interpreting or filtering transaction dates in tab04.fld010.",
+    "confidence": "high",
+    "description": "tab04.fld010 is text in YYYY-MM-DD form. The question notation '2012/8/26' corresponds to the stored value '2012-08-26'. All stored dates fall between 2012-08-23 and 2012-08-26.",
+    "evidence": [
+      "ev_date_time_formats",
+      "ev_transaction_scope"
+    ]
+  },
+  {
+    "id": "constraint_transaction_time_format",
+    "target": "term_transaction_time",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "time",
+      "transaction time",
+      "8:00-9:00",
+      "during",
+      "hour"
+    ],
+    "severity": "warning",
+    "scope": "Interpreting or filtering transaction times in tab04.fld011.",
+    "confidence": "high",
+    "description": "tab04.fld011 is text in HH:MM:SS form with zero-padded hours. The interval '8:00-9:00' corresponds to stored times from '08:00:00' through '09:00:00'.",
+    "evidence": [
+      "ev_date_time_formats"
+    ]
+  },
+  {
+    "id": "constraint_transaction_coverage",
+    "target": "term_transaction",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "transactions",
+      "transaction history",
+      "June 2013",
+      "2013",
+      "date range",
+      "when did transactions happen"
+    ],
+    "severity": "warning",
+    "scope": "Any analysis that filters transactions by date.",
+    "confidence": "high",
+    "description": "tab04 contains 1000 transaction lines covering only 2012-08-23 to 2012-08-26 (10, 492, 425 and 73 rows on the four dates). There are no transaction rows in 2013 or in any other month, so a date filter such as June 2013 yields an empty result rather than indicating missing data.",
+    "evidence": [
+      "ev_transaction_scope"
+    ]
+  },
+  {
+    "id": "constraint_monthly_consumption_quality",
+    "target": "term_monthly_consumption",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "consumption",
+      "gas consumption",
+      "fuel consumption",
+      "negative",
+      "outlier"
+    ],
+    "severity": "info",
+    "scope": "Interpreting monthly consumption values in tab05.fld015.",
+    "confidence": "high",
+    "description": "tab05 contains 383282 customer-month rows. Most consumption values are positive (mean about 8911), but 152 rows across 140 customers are negative and 28 rows are zero. Negative consumption should be retained and interpreted as an observed anomaly rather than silently discarded.",
+    "evidence": [
+      "ev_tab05_profile"
+    ]
+  },
+  {
+    "id": "constraint_monthly_consumption_coverage",
+    "target": "term_monthly_consumption",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "consumption",
+      "coverage",
+      "customers",
+      "missing",
+      "all customers"
+    ],
+    "severity": "warning",
+    "scope": "Customer-level consumption analysis over the full customer base.",
+    "confidence": "high",
+    "description": "Monthly consumption exists for 30566 of the 32461 customers in tab01. Absence of a consumption row for a customer is missing data and must not be assumed to mean zero consumption.",
+    "evidence": [
+      "ev_consumption_scope",
+      "ev_tab01_profile"
+    ]
+  },
+  {
+    "id": "constraint_monthly_consumption_grain",
+    "target": "term_monthly_consumption",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "annual",
+      "yearly",
+      "2012",
+      "total consumption",
+      "average monthly",
+      "consumption per customer"
+    ],
+    "severity": "warning",
+    "scope": "Aggregating consumption over time.",
+    "confidence": "high",
+    "description": "tab05 has one row per customer and month. Each customer has between 1 and 20 monthly rows (average about 12.5). Annual consumption for a year sums the monthly values whose YYYYMM key belongs to that year; a monthly average divides by the number of observed months.",
+    "evidence": [
+      "ev_tab05_profile",
+      "ev_date_time_formats"
+    ]
+  },
+  {
+    "id": "constraint_zero_quantity_transactions",
+    "target": "term_transaction_quantity",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "average price",
+      "price per single item",
+      "price per item",
+      "quantity",
+      "zero quantity",
+      "amount"
+    ],
+    "severity": "warning",
+    "scope": "Computing quantity-based ratios such as average unit price.",
+    "confidence": "high",
+    "description": "91 of the 1000 transaction lines have quantity 0 while still carrying a price. Ratios defined as total price divided by total quantity include their price in the numerator but add nothing to the denominator.",
+    "evidence": [
+      "ev_amount_zero",
+      "ev_tab04_profile"
+    ]
+  },
+  {
+    "id": "constraint_product_description_text",
+    "target": "term_product_description",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "product description",
+      "product name",
+      "product label",
+      "description"
+    ],
+    "severity": "info",
+    "scope": "Interpreting or listing product descriptions.",
+    "confidence": "high",
+    "description": "tab03.fld008 holds free-text Czech/Slovak product labels, including abbreviations and diacritics. Descriptions should be compared and returned as stored, without translation or normalization.",
+    "evidence": [
+      "ev_tab03_profile"
+    ]
+  }
+]

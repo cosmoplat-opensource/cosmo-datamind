@@ -1,0 +1,238 @@
+[
+  {
+    "connection_condition": "an atom carries the molecule_id of its owning molecule",
+    "description": "A molecule is composed of its atoms; every atom belongs to exactly one molecule and has no meaning without it.",
+    "evidence": [
+      "evidence_001",
+      "evidence_007",
+      "evidence_016"
+    ],
+    "id": "rel_molecule_composed_of_atoms",
+    "relation_type": "composition",
+    "source": "term_molecule",
+    "target": "term_atom"
+  },
+  {
+    "connection_condition": "a bond carries the molecule_id of its owning molecule",
+    "description": "A molecule is composed of its bonds; every bond belongs to exactly one molecule.",
+    "evidence": [
+      "evidence_001",
+      "evidence_007",
+      "evidence_016"
+    ],
+    "id": "rel_molecule_composed_of_bonds",
+    "relation_type": "composition",
+    "source": "term_molecule",
+    "target": "term_bond"
+  },
+  {
+    "connection_condition": "",
+    "description": "Carcinogenic molecules are a subset of molecules, defined by one value of the carcinogenicity label.",
+    "evidence": [
+      "evidence_003"
+    ],
+    "id": "rel_carcinogenic_molecule_is_molecule",
+    "relation_type": "hierarchy",
+    "source": "term_carcinogenic_molecule",
+    "target": "term_molecule"
+  },
+  {
+    "connection_condition": "",
+    "description": "Non-carcinogenic molecules are a subset of molecules, defined by the other value of the carcinogenicity label.",
+    "evidence": [
+      "evidence_003"
+    ],
+    "id": "rel_non_carcinogenic_molecule_is_molecule",
+    "relation_type": "hierarchy",
+    "source": "term_non_carcinogenic_molecule",
+    "target": "term_molecule"
+  },
+  {
+    "connection_condition": "",
+    "description": "A single bond is a specific kind of bond; its value domain is the single-bond code, a subset of the bond type value domain.",
+    "evidence": [
+      "evidence_005",
+      "evidence_008"
+    ],
+    "id": "rel_single_bond_is_bond",
+    "relation_type": "hierarchy",
+    "source": "term_single_bond",
+    "target": "term_bond"
+  },
+  {
+    "connection_condition": "",
+    "description": "A double bond is a specific kind of bond; its value domain is the double-bond code, a subset of the bond type value domain.",
+    "evidence": [
+      "evidence_005",
+      "evidence_009"
+    ],
+    "id": "rel_double_bond_is_bond",
+    "relation_type": "hierarchy",
+    "source": "term_double_bond",
+    "target": "term_bond"
+  },
+  {
+    "connection_condition": "",
+    "description": "A triple bond is a specific kind of bond; its value domain is the triple-bond code, a subset of the bond type value domain.",
+    "evidence": [
+      "evidence_005"
+    ],
+    "id": "rel_triple_bond_is_bond",
+    "relation_type": "hierarchy",
+    "source": "term_triple_bond",
+    "target": "term_bond"
+  },
+  {
+    "connection_condition": "molecule.label holds the carcinogenicity code of the molecule identified by molecule.molecule_id",
+    "description": "The carcinogenicity label is the molecule-level attribute that determines whether a molecule counts as carcinogenic.",
+    "evidence": [
+      "evidence_003"
+    ],
+    "id": "rel_label_classifies_molecule",
+    "relation_type": "association",
+    "source": "term_carcinogenicity_label",
+    "target": "term_molecule"
+  },
+  {
+    "connection_condition": "atom.element holds the element symbol of the atom identified by atom.atom_id",
+    "description": "An atom carries exactly one chemical element, which determines how it contributes to a molecule's composition.",
+    "evidence": [
+      "evidence_004"
+    ],
+    "id": "rel_element_of_atom",
+    "relation_type": "association",
+    "source": "term_element",
+    "target": "term_atom"
+  },
+  {
+    "connection_condition": "bond.bond_type holds the bond order code of the bond identified by bond.bond_id",
+    "description": "The bond type is the attribute that distinguishes single, double, and triple bonds.",
+    "evidence": [
+      "evidence_005"
+    ],
+    "id": "rel_bond_type_of_bond",
+    "relation_type": "association",
+    "source": "term_bond_type",
+    "target": "term_bond"
+  },
+  {
+    "connection_condition": "the connectivity relation associates a bond_id with exactly two endpoint atom references",
+    "description": "Each bond joins exactly two atoms of its molecule; this is the structural relationship that makes bond counts and atom counts comparable.",
+    "evidence": [
+      "evidence_006",
+      "evidence_008",
+      "evidence_009"
+    ],
+    "id": "rel_bond_connects_two_atoms",
+    "relation_type": "association",
+    "source": "term_bond",
+    "target": "term_atom"
+  },
+  {
+    "connection_condition": "each connectivity row pairs a bond reference with one of the two atom references that bond joins",
+    "description": "The atom adjacency relation is derived by pairing each bond with the two atoms it joins.",
+    "evidence": [
+      "evidence_006",
+      "evidence_009"
+    ],
+    "id": "rel_connectivity_derived_from_bond_and_atom",
+    "relation_type": "derivation",
+    "source": "term_bond",
+    "target": "term_atom_connectivity"
+  },
+  {
+    "connection_condition": "molecule.molecule_id, atom.molecule_id, and bond.molecule_id share the same value domain",
+    "description": "The molecule identifier appears both as the molecule table key and as the reference carried by atoms and bonds, so molecule-level attributes can be attached to child records through it.",
+    "evidence": [
+      "evidence_001",
+      "evidence_007",
+      "evidence_015"
+    ],
+    "id": "rel_molecule_key_equivalence",
+    "relation_type": "equivalence",
+    "source": "term_molecule_identifier",
+    "target": "term_molecule_reference"
+  },
+  {
+    "connection_condition": "the endpoint atom references in the connectivity relation hold the same atom identifiers as atom.atom_id",
+    "description": "Atom references used to describe which atoms a bond joins denote the same atoms as the atom table, so element information reached through either representation is the same.",
+    "evidence": [
+      "evidence_006",
+      "evidence_009"
+    ],
+    "id": "rel_atom_reference_equivalence",
+    "relation_type": "equivalence",
+    "source": "term_atom_identifier",
+    "target": "term_bond_endpoint_atom"
+  },
+  {
+    "connection_condition": "the bond reference in the connectivity relation holds the same bond identifiers as bond.bond_id",
+    "description": "The bond reference carried by adjacency rows denotes the same bond records as the bond table, so bond-level attributes such as bond type apply to it.",
+    "evidence": [
+      "evidence_006",
+      "evidence_009"
+    ],
+    "id": "rel_bond_reference_equivalence",
+    "relation_type": "equivalence",
+    "source": "term_bond_identifier",
+    "target": "term_bond_reference"
+  },
+  {
+    "connection_condition": "",
+    "description": "The carcinogenic share is derived from the molecule-level carcinogenicity labels as the count of carcinogenic-labelled molecules over the count of all molecules in scope.",
+    "evidence": [
+      "evidence_003"
+    ],
+    "id": "rel_carcinogenic_ratio_derived",
+    "relation_type": "derivation",
+    "source": "term_carcinogenicity_label",
+    "target": "term_molecule_carcinogenic_ratio"
+  },
+  {
+    "connection_condition": "",
+    "description": "The element atom count is derived by counting distinct atoms per element symbol, optionally restricted by the carcinogenicity class of their molecules.",
+    "evidence": [
+      "evidence_004",
+      "evidence_010"
+    ],
+    "id": "rel_element_atom_count_derived",
+    "relation_type": "derivation",
+    "source": "term_element",
+    "target": "term_element_atom_count"
+  },
+  {
+    "connection_condition": "",
+    "description": "The bond type frequency is derived by counting bonds per bond type code within the stated molecule scope.",
+    "evidence": [
+      "evidence_005",
+      "evidence_015"
+    ],
+    "id": "rel_bond_type_frequency_derived",
+    "relation_type": "derivation",
+    "source": "term_bond_type",
+    "target": "term_bond_type_frequency"
+  },
+  {
+    "connection_condition": "",
+    "description": "The within-molecule element ratio is derived from the count of atoms of that element and the total atom count of the same molecule.",
+    "evidence": [
+      "evidence_013"
+    ],
+    "id": "rel_element_ratio_derived_from_count",
+    "relation_type": "derivation",
+    "source": "term_element_atom_count",
+    "target": "term_element_ratio_in_molecule"
+  },
+  {
+    "connection_condition": "",
+    "description": "The average number of bonds per atom is derived from the atom adjacency relation as the number of bond incidences divided by the number of distinct atoms in the set.",
+    "evidence": [
+      "evidence_006",
+      "evidence_010"
+    ],
+    "id": "rel_avg_bonds_per_atom_derived_from_connectivity",
+    "relation_type": "derivation",
+    "source": "term_atom_connectivity",
+    "target": "term_average_bonds_per_atom"
+  }
+]

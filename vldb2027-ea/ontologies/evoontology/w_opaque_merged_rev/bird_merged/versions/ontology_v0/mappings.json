@@ -1,0 +1,1676 @@
+[
+  {
+    "id": "map_cs_school",
+    "term_id": "term_cs_school",
+    "database_source": "bird_merged",
+    "table": "tb003",
+    "column": "cl0001",
+    "grain": "one row per school",
+    "validation": "cl0065/cl0066 district type distribution and school name cl0046 confirmed"
+  },
+  {
+    "id": "map_cs_school_name",
+    "term_id": "term_cs_school",
+    "database_source": "bird_merged",
+    "table": "tb003",
+    "column": "cl0047",
+    "grain": "school",
+    "validation": "values are school names matching tb002.cl0032"
+  },
+  {
+    "id": "map_cs_district_name",
+    "term_id": "term_cs_district",
+    "database_source": "bird_merged",
+    "table": "tb003",
+    "column": "cl0046",
+    "grain": "school row carries district name",
+    "validation": "values like 'Fresno Unified' confirmed"
+  },
+  {
+    "id": "map_cs_county",
+    "term_id": "term_cs_county",
+    "database_source": "bird_merged",
+    "table": "tb003",
+    "column": "cl0045",
+    "grain": "school",
+    "validation": "values are California county names"
+  },
+  {
+    "id": "map_cs_frpm_record",
+    "term_id": "term_cs_frpm_record",
+    "database_source": "bird_merged",
+    "table": "tb001",
+    "column": "cl0001",
+    "grain": "school x academic year",
+    "validation": "joins tb003 on cl0001; 9986 rows"
+  },
+  {
+    "id": "map_cs_sat_record",
+    "term_id": "term_cs_sat_record",
+    "database_source": "bird_merged",
+    "table": "tb002",
+    "column": "cl0030",
+    "grain": "school or district aggregate",
+    "validation": "cl0031 = D/S; 2269 rows"
+  },
+  {
+    "id": "map_cs_district_type",
+    "term_id": "term_cs_district_type",
+    "database_source": "bird_merged",
+    "table": "tb003",
+    "column": "cl0065",
+    "grain": "school",
+    "validation": "52 Elementary School District, 54 Unified School District confirmed"
+  },
+  {
+    "id": "map_cs_district_type_text",
+    "term_id": "term_cs_district_type",
+    "database_source": "bird_merged",
+    "table": "tb003",
+    "column": "cl0066",
+    "grain": "school",
+    "validation": "text mirrors cl0065"
+  },
+  {
+    "id": "map_cs_school_status",
+    "term_id": "term_cs_school_status",
+    "database_source": "bird_merged",
+    "table": "tb003",
+    "column": "cl0043",
+    "grain": "school",
+    "validation": "Active 11708, Closed 4518, Merged 1448, Pending 12"
+  },
+  {
+    "id": "map_cs_charter_status",
+    "term_id": "term_cs_charter_status",
+    "database_source": "bird_merged",
+    "table": "tb003",
+    "column": "cl0062",
+    "grain": "school",
+    "validation": "1 = 1729, 0 = 14588, blank = 1369"
+  },
+  {
+    "id": "map_cs_virtual_status",
+    "term_id": "term_cs_virtual_status",
+    "database_source": "bird_merged",
+    "table": "tb003",
+    "column": "cl0075",
+    "grain": "school",
+    "validation": "F 69, N 9703, P 1046, blank 6868"
+  },
+  {
+    "id": "map_cs_funding_type",
+    "term_id": "term_cs_funding_type",
+    "database_source": "bird_merged",
+    "table": "tb003",
+    "column": "cl0064",
+    "grain": "school",
+    "validation": "Directly funded 1176, Locally funded 460"
+  },
+  {
+    "id": "map_cs_k12_enrollment",
+    "term_id": "term_cs_k12_enrollment",
+    "database_source": "bird_merged",
+    "table": "tb001",
+    "column": "cl0019",
+    "grain": "school x year",
+    "validation": "cl0021 = cl0020/cl0019 to full precision"
+  },
+  {
+    "id": "map_cs_k12_free_meal_count",
+    "term_id": "term_cs_k12_free_meal_count",
+    "database_source": "bird_merged",
+    "table": "tb001",
+    "column": "cl0020",
+    "grain": "school x year",
+    "validation": "<= cl0022 FRPM count"
+  },
+  {
+    "id": "map_cs_k12_free_meal_rate",
+    "term_id": "term_cs_k12_free_meal_rate",
+    "database_source": "bird_merged",
+    "table": "tb001",
+    "column": "cl0021",
+    "grain": "school x year",
+    "validation": "equals cl0020/cl0019"
+  },
+  {
+    "id": "map_cs_k12_frpm_count",
+    "term_id": "term_cs_k12_frpm_count",
+    "database_source": "bird_merged",
+    "table": "tb001",
+    "column": "cl0022",
+    "grain": "school x year",
+    "validation": "median magnitude consistent with enrollment"
+  },
+  {
+    "id": "map_cs_k12_frpm_rate",
+    "term_id": "term_cs_k12_frpm_rate",
+    "database_source": "bird_merged",
+    "table": "tb001",
+    "column": "cl0023",
+    "grain": "school x year",
+    "validation": "equals cl0022/cl0019"
+  },
+  {
+    "id": "map_cs_age5_17_enrollment",
+    "term_id": "term_cs_age5_17_enrollment",
+    "database_source": "bird_merged",
+    "table": "tb001",
+    "column": "cl0024",
+    "grain": "school x year",
+    "validation": "close to cl0019 for grade-aligned schools"
+  },
+  {
+    "id": "map_cs_age5_17_frpm_count",
+    "term_id": "term_cs_age5_17_frpm_count",
+    "database_source": "bird_merged",
+    "table": "tb001",
+    "column": "cl0027",
+    "grain": "school x year",
+    "validation": "pairs with cl0025/cl0026 rate columns"
+  },
+  {
+    "id": "map_cs_sat_avg_reading",
+    "term_id": "term_cs_sat_avg_reading",
+    "database_source": "bird_merged",
+    "table": "tb002",
+    "column": "cl0037",
+    "grain": "school or district",
+    "validation": "three score columns vary independently 400-650"
+  },
+  {
+    "id": "map_cs_sat_avg_math",
+    "term_id": "term_cs_sat_avg_math",
+    "database_source": "bird_merged",
+    "table": "tb002",
+    "column": "cl0038",
+    "grain": "school or district",
+    "validation": "matches BIRD satscores column order (read, math, write)"
+  },
+  {
+    "id": "map_cs_sat_avg_writing",
+    "term_id": "term_cs_sat_avg_writing",
+    "database_source": "bird_merged",
+    "table": "tb002",
+    "column": "cl0039",
+    "grain": "school or district",
+    "validation": "third score column after reading and math"
+  },
+  {
+    "id": "map_cs_school_street",
+    "term_id": "term_cs_school_address",
+    "database_source": "bird_merged",
+    "table": "tb003",
+    "column": "cl0048",
+    "grain": "school",
+    "validation": "same value as mailing street cl0052 on most rows"
+  },
+  {
+    "id": "map_cs_school_mailing_street",
+    "term_id": "term_cs_school_address",
+    "database_source": "bird_merged",
+    "table": "tb003",
+    "column": "cl0052",
+    "grain": "school",
+    "validation": "postal street synonym"
+  },
+  {
+    "id": "map_cs_school_phone",
+    "term_id": "term_cs_school_phone",
+    "database_source": "bird_merged",
+    "table": "tb003",
+    "column": "cl0057",
+    "grain": "school",
+    "validation": "values formatted like '(510) 887-0152'"
+  },
+  {
+    "id": "map_cg_card",
+    "term_id": "term_cg_card",
+    "database_source": "bird_merged",
+    "table": "tb004",
+    "column": "cl0089",
+    "grain": "one row per card printing",
+    "validation": "56822 rows; cl0160 is the stable uuid"
+  },
+  {
+    "id": "map_cg_card_name",
+    "term_id": "term_cg_card",
+    "database_source": "bird_merged",
+    "table": "tb004",
+    "column": "cl0137",
+    "grain": "card printing",
+    "validation": "values like \"Ancestor's Chosen\""
+  },
+  {
+    "id": "map_cg_card_set",
+    "term_id": "term_cg_card_set",
+    "database_source": "bird_merged",
+    "table": "tb007",
+    "column": "cl0169",
+    "grain": "one row per set",
+    "validation": "set code matches tb004.cl0151"
+  },
+  {
+    "id": "map_cg_card_set_name",
+    "term_id": "term_cg_card_set",
+    "database_source": "bird_merged",
+    "table": "tb007",
+    "column": "cl0137",
+    "grain": "set",
+    "validation": "names like 'Tenth Edition' confirmed"
+  },
+  {
+    "id": "map_cg_artist",
+    "term_id": "term_cg_artist",
+    "database_source": "bird_merged",
+    "table": "tb004",
+    "column": "cl0090",
+    "grain": "card printing",
+    "validation": "991 distinct illustrator names"
+  },
+  {
+    "id": "map_cg_foreign_printing",
+    "term_id": "term_cg_foreign_printing",
+    "database_source": "bird_merged",
+    "table": "tb005",
+    "column": "cl0163",
+    "grain": "card x language",
+    "validation": "229186 rows across 16 languages"
+  },
+  {
+    "id": "map_cg_card_legality",
+    "term_id": "term_cg_card_legality",
+    "database_source": "bird_merged",
+    "table": "tb006",
+    "column": "cl0164",
+    "grain": "card x format",
+    "validation": "427907 rows across 15 formats"
+  },
+  {
+    "id": "map_cg_card_ruling",
+    "term_id": "term_cg_card_ruling",
+    "database_source": "bird_merged",
+    "table": "tb009",
+    "column": "cl0160",
+    "grain": "card x ruling date",
+    "validation": "87769 rows linked to cards by uuid"
+  },
+  {
+    "id": "map_cg_set_translation",
+    "term_id": "term_cg_set_translation",
+    "database_source": "bird_merged",
+    "table": "tb008",
+    "column": "cl0182",
+    "grain": "set x language",
+    "validation": "1210 rows; null when no translation"
+  },
+  {
+    "id": "map_cg_language",
+    "term_id": "term_cg_language",
+    "database_source": "bird_merged",
+    "table": "tb005",
+    "column": "cl0163",
+    "grain": "card printing",
+    "validation": "German, Spanish, French, Italian, Chinese Simplified among 16"
+  },
+  {
+    "id": "map_cg_set_language",
+    "term_id": "term_cg_language",
+    "database_source": "bird_merged",
+    "table": "tb008",
+    "column": "cl0163",
+    "grain": "set translation",
+    "validation": "10 languages in set translations"
+  },
+  {
+    "id": "map_cg_play_format",
+    "term_id": "term_cg_play_format",
+    "database_source": "bird_merged",
+    "table": "tb006",
+    "column": "cl0164",
+    "grain": "card x format",
+    "validation": "commander, duel, legacy, modern among 15"
+  },
+  {
+    "id": "map_cg_legality_status",
+    "term_id": "term_cg_legality_status",
+    "database_source": "bird_merged",
+    "table": "tb006",
+    "column": "cl0165",
+    "grain": "card x format",
+    "validation": "exactly Legal, Banned, Restricted"
+  },
+  {
+    "id": "map_cg_border_color",
+    "term_id": "term_cg_border_color",
+    "database_source": "bird_merged",
+    "table": "tb004",
+    "column": "cl0093",
+    "grain": "card printing",
+    "validation": "black 49729, white 5017, gold 1244, silver 591, borderless 241"
+  },
+  {
+    "id": "map_cg_card_color",
+    "term_id": "term_cg_card_color",
+    "database_source": "bird_merged",
+    "table": "tb004",
+    "column": "cl0098",
+    "grain": "card printing",
+    "validation": "single-letter colour values W/U/B/R/G"
+  },
+  {
+    "id": "map_cg_card_type",
+    "term_id": "term_cg_card_type",
+    "database_source": "bird_merged",
+    "table": "tb004",
+    "column": "cl0159",
+    "grain": "card printing",
+    "validation": "Creature 24229, Instant 6739, Land 6573"
+  },
+  {
+    "id": "map_cg_card_subtype",
+    "term_id": "term_cg_card_subtype",
+    "database_source": "bird_merged",
+    "table": "tb004",
+    "column": "cl0153",
+    "grain": "card printing",
+    "validation": "comma list e.g. 'Human,Cleric'"
+  },
+  {
+    "id": "map_cg_card_supertype",
+    "term_id": "term_cg_card_supertype",
+    "database_source": "bird_merged",
+    "table": "tb004",
+    "column": "cl0154",
+    "grain": "card printing",
+    "validation": "Legendary, Basic, Snow, World"
+  },
+  {
+    "id": "map_cg_frame_version",
+    "term_id": "term_cg_frame_version",
+    "database_source": "bird_merged",
+    "table": "tb004",
+    "column": "cl0107",
+    "grain": "card printing",
+    "validation": "five values 1993/1997/2003/2015"
+  },
+  {
+    "id": "map_cg_promo_flag",
+    "term_id": "term_cg_promo_flag",
+    "database_source": "bird_merged",
+    "table": "tb004",
+    "column": "cl0117",
+    "grain": "card printing",
+    "validation": "binary 0/1 flag among cl0109-cl0123"
+  },
+  {
+    "id": "map_cg_textless_flag",
+    "term_id": "term_cg_textless_flag",
+    "database_source": "bird_merged",
+    "table": "tb004",
+    "column": "cl0122",
+    "grain": "card printing",
+    "validation": "binary 0/1 flag"
+  },
+  {
+    "id": "map_cg_card_power",
+    "term_id": "term_cg_card_power",
+    "database_source": "bird_merged",
+    "table": "tb004",
+    "column": "cl0143",
+    "grain": "card printing",
+    "validation": "28 distinct values; NULL for 30624 non-creature rows"
+  },
+  {
+    "id": "map_cg_base_set_size",
+    "term_id": "term_cg_base_set_size",
+    "database_source": "bird_merged",
+    "table": "tb007",
+    "column": "cl0166",
+    "grain": "set",
+    "validation": "166 distinct sizes, e.g. 383 for Tenth Edition"
+  },
+  {
+    "id": "map_cg_foreign_only",
+    "term_id": "term_cg_foreign_only",
+    "database_source": "bird_merged",
+    "table": "tb007",
+    "column": "cl0171",
+    "grain": "set",
+    "validation": "binary flag; Fourth Edition Foreign Black Border = 1"
+  },
+  {
+    "id": "map_dc_customer",
+    "term_id": "term_dc_customer",
+    "database_source": "bird_merged",
+    "table": "tb010",
+    "column": "cl0184",
+    "grain": "one row per customer",
+    "validation": "32461 customers"
+  },
+  {
+    "id": "map_dc_customer_segment",
+    "term_id": "term_dc_customer_segment",
+    "database_source": "bird_merged",
+    "table": "tb010",
+    "column": "cl0185",
+    "grain": "customer",
+    "validation": "SME, LAM, KAM"
+  },
+  {
+    "id": "map_dc_currency",
+    "term_id": "term_dc_currency",
+    "database_source": "bird_merged",
+    "table": "tb010",
+    "column": "cl0186",
+    "grain": "customer",
+    "validation": "EUR, CZK only"
+  },
+  {
+    "id": "map_dc_gas_station",
+    "term_id": "term_dc_gas_station",
+    "database_source": "bird_merged",
+    "table": "tb011",
+    "column": "cl0187",
+    "grain": "one row per station",
+    "validation": "5716 stations"
+  },
+  {
+    "id": "map_dc_country",
+    "term_id": "term_dc_country",
+    "database_source": "bird_merged",
+    "table": "tb011",
+    "column": "cl0189",
+    "grain": "station",
+    "validation": "CZE, SVK only"
+  },
+  {
+    "id": "map_dc_station_segment",
+    "term_id": "term_dc_gas_station",
+    "database_source": "bird_merged",
+    "table": "tb011",
+    "column": "cl0185",
+    "grain": "station",
+    "validation": "Premium, Value for money, Noname, Other; note different domain from tb010.cl0185"
+  },
+  {
+    "id": "map_dc_product",
+    "term_id": "term_dc_product",
+    "database_source": "bird_merged",
+    "table": "tb012",
+    "column": "cl0191",
+    "grain": "one row per product",
+    "validation": "591 products with descriptions"
+  },
+  {
+    "id": "map_dc_transaction",
+    "term_id": "term_dc_transaction",
+    "database_source": "bird_merged",
+    "table": "tb013",
+    "column": "cl0192",
+    "grain": "one row per transaction",
+    "validation": "1000 sample transactions"
+  },
+  {
+    "id": "map_dc_transaction_date",
+    "term_id": "term_dc_transaction",
+    "database_source": "bird_merged",
+    "table": "tb013",
+    "column": "cl0193",
+    "grain": "transaction",
+    "validation": "ISO dates 2012-08-2x"
+  },
+  {
+    "id": "map_dc_transaction_time",
+    "term_id": "term_dc_transaction",
+    "database_source": "bird_merged",
+    "table": "tb013",
+    "column": "cl0194",
+    "grain": "transaction",
+    "validation": "HH:MM:SS strings"
+  },
+  {
+    "id": "map_dc_monthly_consumption",
+    "term_id": "term_dc_monthly_consumption",
+    "database_source": "bird_merged",
+    "table": "tb014",
+    "column": "cl0198",
+    "grain": "customer x yearmonth",
+    "validation": "383282 rows"
+  },
+  {
+    "id": "map_dc_yearmonth",
+    "term_id": "term_dc_yearmonth",
+    "database_source": "bird_merged",
+    "table": "tb014",
+    "column": "cl0193",
+    "grain": "customer x month",
+    "validation": "values 201112, 201201, 201202"
+  },
+  {
+    "id": "map_dc_transaction_quantity",
+    "term_id": "term_dc_transaction_quantity",
+    "database_source": "bird_merged",
+    "table": "tb013",
+    "column": "cl0196",
+    "grain": "transaction",
+    "validation": "83 distinct small integers"
+  },
+  {
+    "id": "map_dc_transaction_amount",
+    "term_id": "term_dc_transaction_amount",
+    "database_source": "bird_merged",
+    "table": "tb013",
+    "column": "cl0197",
+    "grain": "transaction",
+    "validation": "REAL monetary values e.g. 672.64"
+  },
+  {
+    "id": "map_dc_gas_consumption",
+    "term_id": "term_dc_gas_consumption",
+    "database_source": "bird_merged",
+    "table": "tb014",
+    "column": "cl0198",
+    "grain": "customer x yearmonth",
+    "validation": "values like 528.3, 1598.28"
+  },
+  {
+    "id": "map_fi_account",
+    "term_id": "term_fi_account",
+    "database_source": "bird_merged",
+    "table": "tb015",
+    "column": "cl0199",
+    "grain": "one row per account",
+    "validation": "4500 accounts"
+  },
+  {
+    "id": "map_fi_account_frequency",
+    "term_id": "term_fi_account_frequency",
+    "database_source": "bird_merged",
+    "table": "tb015",
+    "column": "cl0201",
+    "grain": "account",
+    "validation": "POPLATEK MESICNE/TYDNE/PO OBRATU"
+  },
+  {
+    "id": "map_fi_client",
+    "term_id": "term_fi_client",
+    "database_source": "bird_merged",
+    "table": "tb017",
+    "column": "cl0207",
+    "grain": "one row per client",
+    "validation": "5369 clients"
+  },
+  {
+    "id": "map_fi_gender",
+    "term_id": "term_fi_gender",
+    "database_source": "bird_merged",
+    "table": "tb017",
+    "column": "cl0208",
+    "grain": "client",
+    "validation": "F, M only"
+  },
+  {
+    "id": "map_fi_birth_date",
+    "term_id": "term_fi_client",
+    "database_source": "bird_merged",
+    "table": "tb017",
+    "column": "cl0209",
+    "grain": "client",
+    "validation": "DATE values 1940s-1990s"
+  },
+  {
+    "id": "map_fi_disposition",
+    "term_id": "term_fi_disposition",
+    "database_source": "bird_merged",
+    "table": "tb018",
+    "column": "cl0204",
+    "grain": "client x account",
+    "validation": "5369 dispositions"
+  },
+  {
+    "id": "map_fi_disposition_type",
+    "term_id": "term_fi_disposition_type",
+    "database_source": "bird_merged",
+    "table": "tb018",
+    "column": "cl0205",
+    "grain": "disposition",
+    "validation": "OWNER, DISPONENT"
+  },
+  {
+    "id": "map_fi_district",
+    "term_id": "term_fi_district",
+    "database_source": "bird_merged",
+    "table": "tb019",
+    "column": "cl0200",
+    "grain": "one row per district",
+    "validation": "77 districts"
+  },
+  {
+    "id": "map_fi_district_name",
+    "term_id": "term_fi_district",
+    "database_source": "bird_merged",
+    "table": "tb019",
+    "column": "cl0210",
+    "grain": "district",
+    "validation": "e.g. Hl.m. Praha, Benesov"
+  },
+  {
+    "id": "map_fi_region",
+    "term_id": "term_fi_region",
+    "database_source": "bird_merged",
+    "table": "tb019",
+    "column": "cl0211",
+    "grain": "district",
+    "validation": "8 region names including south Bohemia"
+  },
+  {
+    "id": "map_fi_inhabitants",
+    "term_id": "term_fi_inhabitants",
+    "database_source": "bird_merged",
+    "table": "tb019",
+    "column": "cl0212",
+    "grain": "district",
+    "validation": "population magnitudes 75232-1204953"
+  },
+  {
+    "id": "map_fi_avg_salary",
+    "term_id": "term_fi_avg_salary",
+    "database_source": "bird_merged",
+    "table": "tb019",
+    "column": "cl0219",
+    "grain": "district",
+    "validation": "integers 8507-12541"
+  },
+  {
+    "id": "map_fi_unemployment_1995",
+    "term_id": "term_fi_unemployment_rate_1995",
+    "database_source": "bird_merged",
+    "table": "tb019",
+    "column": "cl0220",
+    "grain": "district",
+    "validation": "values 0.2-4.6, matches 1995 rates"
+  },
+  {
+    "id": "map_fi_unemployment_1996",
+    "term_id": "term_fi_unemployment_rate_1996",
+    "database_source": "bird_merged",
+    "table": "tb019",
+    "column": "cl0221",
+    "grain": "district",
+    "validation": "values 0.43-5.05, always >= cl0220"
+  },
+  {
+    "id": "map_fi_crimes_1995",
+    "term_id": "term_fi_crime_count_1995",
+    "database_source": "bird_merged",
+    "table": "tb019",
+    "column": "cl0223",
+    "grain": "district",
+    "validation": "crimes magnitudes 2159-85677"
+  },
+  {
+    "id": "map_fi_loan",
+    "term_id": "term_fi_loan",
+    "database_source": "bird_merged",
+    "table": "tb020",
+    "column": "cl0225",
+    "grain": "one row per loan",
+    "validation": "682 loans"
+  },
+  {
+    "id": "map_fi_loan_amount",
+    "term_id": "term_fi_loan_amount",
+    "database_source": "bird_merged",
+    "table": "tb020",
+    "column": "cl0226",
+    "grain": "loan",
+    "validation": "monetary REAL values"
+  },
+  {
+    "id": "map_fi_loan_status",
+    "term_id": "term_fi_loan_status",
+    "database_source": "bird_merged",
+    "table": "tb020",
+    "column": "cl0229",
+    "grain": "loan",
+    "validation": "A 203, B 31, C 403, D 45"
+  },
+  {
+    "id": "map_fi_credit_card",
+    "term_id": "term_fi_credit_card",
+    "database_source": "bird_merged",
+    "table": "tb016",
+    "column": "cl0203",
+    "grain": "one row per card",
+    "validation": "892 cards"
+  },
+  {
+    "id": "map_fi_card_type",
+    "term_id": "term_fi_card_type",
+    "database_source": "bird_merged",
+    "table": "tb016",
+    "column": "cl0205",
+    "grain": "card",
+    "validation": "gold, classic, junior"
+  },
+  {
+    "id": "map_fi_transaction",
+    "term_id": "term_fi_transaction",
+    "database_source": "bird_merged",
+    "table": "tb022",
+    "column": "cl0234",
+    "grain": "one row per transaction",
+    "validation": "1056320 rows"
+  },
+  {
+    "id": "map_fi_transaction_type",
+    "term_id": "term_fi_transaction_type",
+    "database_source": "bird_merged",
+    "table": "tb022",
+    "column": "cl0205",
+    "grain": "transaction",
+    "validation": "PRIJEM, VYDAJ, VYBER"
+  },
+  {
+    "id": "map_fi_operation",
+    "term_id": "term_fi_operation",
+    "database_source": "bird_merged",
+    "table": "tb022",
+    "column": "cl0235",
+    "grain": "transaction",
+    "validation": "VKLAD, PREVOD Z UCTU, VYBER KARTOU among values"
+  },
+  {
+    "id": "map_fi_transaction_amount",
+    "term_id": "term_fi_transaction_amount",
+    "database_source": "bird_merged",
+    "table": "tb022",
+    "column": "cl0226",
+    "grain": "transaction",
+    "validation": "integer amounts"
+  },
+  {
+    "id": "map_f1_circuit",
+    "term_id": "term_f1_circuit",
+    "database_source": "bird_merged",
+    "table": "tb023",
+    "column": "cl0239",
+    "grain": "one row per circuit",
+    "validation": "72 circuits"
+  },
+  {
+    "id": "map_f1_circuit_name",
+    "term_id": "term_f1_circuit",
+    "database_source": "bird_merged",
+    "table": "tb023",
+    "column": "cl0241",
+    "grain": "circuit",
+    "validation": "e.g. Silverstone Circuit"
+  },
+  {
+    "id": "map_f1_circuit_country",
+    "term_id": "term_f1_circuit",
+    "database_source": "bird_merged",
+    "table": "tb023",
+    "column": "cl0243",
+    "grain": "circuit",
+    "validation": "country names e.g. Austria"
+  },
+  {
+    "id": "map_f1_circuit_location",
+    "term_id": "term_f1_circuit_location",
+    "database_source": "bird_merged",
+    "table": "tb023",
+    "column": "cl0244",
+    "grain": "circuit",
+    "validation": "latitude REAL, longitude in cl0245"
+  },
+  {
+    "id": "map_f1_constructor",
+    "term_id": "term_f1_constructor",
+    "database_source": "bird_merged",
+    "table": "tb024",
+    "column": "cl0248",
+    "grain": "one row per constructor",
+    "validation": "208 constructors"
+  },
+  {
+    "id": "map_f1_constructor_name",
+    "term_id": "term_f1_constructor",
+    "database_source": "bird_merged",
+    "table": "tb024",
+    "column": "cl0241",
+    "grain": "constructor",
+    "validation": "team names e.g. McLaren"
+  },
+  {
+    "id": "map_f1_driver",
+    "term_id": "term_f1_driver",
+    "database_source": "bird_merged",
+    "table": "tb025",
+    "column": "cl0251",
+    "grain": "one row per driver",
+    "validation": "840 drivers"
+  },
+  {
+    "id": "map_f1_driver_ref",
+    "term_id": "term_f1_driver",
+    "database_source": "bird_merged",
+    "table": "tb025",
+    "column": "cl0252",
+    "grain": "driver",
+    "validation": "reference names e.g. hamilton"
+  },
+  {
+    "id": "map_f1_driver_forename",
+    "term_id": "term_f1_driver",
+    "database_source": "bird_merged",
+    "table": "tb025",
+    "column": "cl0255",
+    "grain": "driver",
+    "validation": "first names"
+  },
+  {
+    "id": "map_f1_driver_surname",
+    "term_id": "term_f1_driver",
+    "database_source": "bird_merged",
+    "table": "tb025",
+    "column": "cl0256",
+    "grain": "driver",
+    "validation": "surnames; full name = cl0255 + ' ' + cl0256"
+  },
+  {
+    "id": "map_f1_driver_dob",
+    "term_id": "term_f1_driver",
+    "database_source": "bird_merged",
+    "table": "tb025",
+    "column": "cl0257",
+    "grain": "driver",
+    "validation": "DATE values"
+  },
+  {
+    "id": "map_f1_nationality_driver",
+    "term_id": "term_f1_nationality",
+    "database_source": "bird_merged",
+    "table": "tb025",
+    "column": "cl0250",
+    "grain": "driver",
+    "validation": "free-text nationality"
+  },
+  {
+    "id": "map_f1_nationality_constructor",
+    "term_id": "term_f1_nationality",
+    "database_source": "bird_merged",
+    "table": "tb024",
+    "column": "cl0250",
+    "grain": "constructor",
+    "validation": "free-text nationality"
+  },
+  {
+    "id": "map_f1_season",
+    "term_id": "term_f1_season",
+    "database_source": "bird_merged",
+    "table": "tb026",
+    "column": "cl0258",
+    "grain": "one row per season year",
+    "validation": "68 seasons 1950-2017"
+  },
+  {
+    "id": "map_f1_race",
+    "term_id": "term_f1_race",
+    "database_source": "bird_merged",
+    "table": "tb027",
+    "column": "cl0259",
+    "grain": "one row per race",
+    "validation": "976 races"
+  },
+  {
+    "id": "map_f1_race_name",
+    "term_id": "term_f1_race",
+    "database_source": "bird_merged",
+    "table": "tb027",
+    "column": "cl0241",
+    "grain": "race",
+    "validation": "e.g. Bahrain Grand Prix"
+  },
+  {
+    "id": "map_f1_race_date",
+    "term_id": "term_f1_race",
+    "database_source": "bird_merged",
+    "table": "tb027",
+    "column": "cl0261",
+    "grain": "race",
+    "validation": "DATE values"
+  },
+  {
+    "id": "map_f1_result",
+    "term_id": "term_f1_result",
+    "database_source": "bird_merged",
+    "table": "tb035",
+    "column": "cl0280",
+    "grain": "driver x race",
+    "validation": "23657 rows"
+  },
+  {
+    "id": "map_f1_finish_time",
+    "term_id": "term_f1_finish_time",
+    "database_source": "bird_merged",
+    "table": "tb035",
+    "column": "cl0262",
+    "grain": "result",
+    "validation": "champion '1:34:50.616' vs '+5.478'"
+  },
+  {
+    "id": "map_f1_points",
+    "term_id": "term_f1_points",
+    "database_source": "bird_merged",
+    "table": "tb035",
+    "column": "cl0264",
+    "grain": "result",
+    "validation": "points 0-25"
+  },
+  {
+    "id": "map_f1_grid_position",
+    "term_id": "term_f1_grid_position",
+    "database_source": "bird_merged",
+    "table": "tb035",
+    "column": "cl0281",
+    "grain": "result",
+    "validation": "grid integers"
+  },
+  {
+    "id": "map_f1_fastest_lap_speed",
+    "term_id": "term_f1_fastest_lap_speed",
+    "database_source": "bird_merged",
+    "table": "tb035",
+    "column": "cl0287",
+    "grain": "result",
+    "validation": "kph values e.g. 218.300"
+  },
+  {
+    "id": "map_f1_lap_time",
+    "term_id": "term_f1_lap_time",
+    "database_source": "bird_merged",
+    "table": "tb031",
+    "column": "cl0262",
+    "grain": "driver x race x lap",
+    "validation": "values '1:49.088'"
+  },
+  {
+    "id": "map_f1_pit_stop",
+    "term_id": "term_f1_pit_stop",
+    "database_source": "bird_merged",
+    "table": "tb032",
+    "column": "cl0273",
+    "grain": "driver x race x stop",
+    "validation": "6070 stops"
+  },
+  {
+    "id": "map_f1_pit_stop_duration",
+    "term_id": "term_f1_pit_stop_duration",
+    "database_source": "bird_merged",
+    "table": "tb032",
+    "column": "cl0274",
+    "grain": "pit stop",
+    "validation": "seconds e.g. 23.227"
+  },
+  {
+    "id": "map_f1_qualifying",
+    "term_id": "term_f1_qualifying",
+    "database_source": "bird_merged",
+    "table": "tb033",
+    "column": "cl0275",
+    "grain": "driver x race",
+    "validation": "7397 rows"
+  },
+  {
+    "id": "map_f1_q1",
+    "term_id": "term_f1_qualifying",
+    "database_source": "bird_merged",
+    "table": "tb033",
+    "column": "cl0276",
+    "grain": "driver x race",
+    "validation": "Q1 time strings"
+  },
+  {
+    "id": "map_f1_status",
+    "term_id": "term_f1_status",
+    "database_source": "bird_merged",
+    "table": "tb034",
+    "column": "cl0265",
+    "grain": "one row per status",
+    "validation": "Finished, Accident, Collision, Disqualified"
+  },
+  {
+    "id": "map_sc_event",
+    "term_id": "term_sc_event",
+    "database_source": "bird_merged",
+    "table": "tb036",
+    "column": "cl0288",
+    "grain": "one row per event",
+    "validation": "42 events"
+  },
+  {
+    "id": "map_sc_event_name",
+    "term_id": "term_sc_event",
+    "database_source": "bird_merged",
+    "table": "tb036",
+    "column": "cl0289",
+    "grain": "event",
+    "validation": "e.g. Yearly Kickoff, October Meeting"
+  },
+  {
+    "id": "map_sc_event_status",
+    "term_id": "term_sc_event_status",
+    "database_source": "bird_merged",
+    "table": "tb036",
+    "column": "cl0294",
+    "grain": "event",
+    "validation": "Open, Planning, Closed"
+  },
+  {
+    "id": "map_sc_member",
+    "term_id": "term_sc_member",
+    "database_source": "bird_merged",
+    "table": "tb043",
+    "column": "cl0321",
+    "grain": "one row per member",
+    "validation": "33 members"
+  },
+  {
+    "id": "map_sc_member_first_name",
+    "term_id": "term_sc_member",
+    "database_source": "bird_merged",
+    "table": "tb043",
+    "column": "cl0322",
+    "grain": "member",
+    "validation": "full name = cl0322 + ' ' + cl0323"
+  },
+  {
+    "id": "map_sc_member_last_name",
+    "term_id": "term_sc_member",
+    "database_source": "bird_merged",
+    "table": "tb043",
+    "column": "cl0323",
+    "grain": "member",
+    "validation": "surnames"
+  },
+  {
+    "id": "map_sc_member_phone",
+    "term_id": "term_sc_member",
+    "database_source": "bird_merged",
+    "table": "tb043",
+    "column": "cl0327",
+    "grain": "member",
+    "validation": "formatted '(651) 928-4507'"
+  },
+  {
+    "id": "map_sc_member_position",
+    "term_id": "term_sc_member_position",
+    "database_source": "bird_merged",
+    "table": "tb043",
+    "column": "cl0325",
+    "grain": "member",
+    "validation": "President, Vice President, Member, Inactive"
+  },
+  {
+    "id": "map_sc_tshirt",
+    "term_id": "term_sc_member",
+    "database_source": "bird_merged",
+    "table": "tb043",
+    "column": "cl0326",
+    "grain": "member",
+    "validation": "Small, Medium, Large, X-Large"
+  },
+  {
+    "id": "map_sc_member_zip",
+    "term_id": "term_sc_member",
+    "database_source": "bird_merged",
+    "table": "tb043",
+    "column": "cl0328",
+    "grain": "member",
+    "validation": "integer zip"
+  },
+  {
+    "id": "map_sc_major",
+    "term_id": "term_sc_major",
+    "database_source": "bird_merged",
+    "table": "tb037",
+    "column": "cl0295",
+    "grain": "one row per major",
+    "validation": "113 majors"
+  },
+  {
+    "id": "map_sc_major_name",
+    "term_id": "term_sc_major",
+    "database_source": "bird_merged",
+    "table": "tb037",
+    "column": "cl0296",
+    "grain": "major",
+    "validation": "e.g. Finance, Business"
+  },
+  {
+    "id": "map_sc_department",
+    "term_id": "term_sc_department",
+    "database_source": "bird_merged",
+    "table": "tb037",
+    "column": "cl0297",
+    "grain": "major",
+    "validation": "department names"
+  },
+  {
+    "id": "map_sc_zip_code",
+    "term_id": "term_sc_zip_code",
+    "database_source": "bird_merged",
+    "table": "tb038",
+    "column": "cl0299",
+    "grain": "zip code",
+    "validation": "41877 zips"
+  },
+  {
+    "id": "map_sc_city",
+    "term_id": "term_sc_zip_code",
+    "database_source": "bird_merged",
+    "table": "tb038",
+    "column": "cl0300",
+    "grain": "zip code",
+    "validation": "city names"
+  },
+  {
+    "id": "map_sc_county",
+    "term_id": "term_sc_zip_code",
+    "database_source": "bird_merged",
+    "table": "tb038",
+    "column": "cl0301",
+    "grain": "zip code",
+    "validation": "e.g. Orange County"
+  },
+  {
+    "id": "map_sc_state",
+    "term_id": "term_sc_zip_code",
+    "database_source": "bird_merged",
+    "table": "tb038",
+    "column": "cl0302",
+    "grain": "zip code",
+    "validation": "state names e.g. Virginia"
+  },
+  {
+    "id": "map_sc_budget",
+    "term_id": "term_sc_budget",
+    "database_source": "bird_merged",
+    "table": "tb040",
+    "column": "cl0306",
+    "grain": "one row per budget line",
+    "validation": "52 budget lines"
+  },
+  {
+    "id": "map_sc_budget_category",
+    "term_id": "term_sc_budget_category",
+    "database_source": "bird_merged",
+    "table": "tb040",
+    "column": "cl0307",
+    "grain": "budget line",
+    "validation": "Advertisement, Food, Speaker Gifts, Parking"
+  },
+  {
+    "id": "map_sc_budget_spent",
+    "term_id": "term_sc_budget_spent",
+    "database_source": "bird_merged",
+    "table": "tb040",
+    "column": "cl0308",
+    "grain": "budget line",
+    "validation": "REAL amounts"
+  },
+  {
+    "id": "map_sc_budget_remaining",
+    "term_id": "term_sc_budget_remaining",
+    "database_source": "bird_merged",
+    "table": "tb040",
+    "column": "cl0309",
+    "grain": "budget line",
+    "validation": "can be negative"
+  },
+  {
+    "id": "map_sc_budget_amount",
+    "term_id": "term_sc_budget_amount",
+    "database_source": "bird_merged",
+    "table": "tb040",
+    "column": "cl0310",
+    "grain": "budget line",
+    "validation": "integer amounts 20-3000"
+  },
+  {
+    "id": "map_sc_budget_status",
+    "term_id": "term_sc_budget_status",
+    "database_source": "bird_merged",
+    "table": "tb040",
+    "column": "cl0311",
+    "grain": "budget line",
+    "validation": "Closed, Open, Planning"
+  },
+  {
+    "id": "map_sc_expense",
+    "term_id": "term_sc_expense",
+    "database_source": "bird_merged",
+    "table": "tb041",
+    "column": "cl0312",
+    "grain": "one row per expense",
+    "validation": "32 expenses"
+  },
+  {
+    "id": "map_sc_expense_description",
+    "term_id": "term_sc_expense",
+    "database_source": "bird_merged",
+    "table": "tb041",
+    "column": "cl0313",
+    "grain": "expense",
+    "validation": "e.g. Post Cards, Posters"
+  },
+  {
+    "id": "map_sc_expense_date",
+    "term_id": "term_sc_expense",
+    "database_source": "bird_merged",
+    "table": "tb041",
+    "column": "cl0314",
+    "grain": "expense",
+    "validation": "text dates 'YYYY-M-D'"
+  },
+  {
+    "id": "map_sc_expense_cost",
+    "term_id": "term_sc_expense_cost",
+    "database_source": "bird_merged",
+    "table": "tb041",
+    "column": "cl0315",
+    "grain": "expense",
+    "validation": "REAL amounts"
+  },
+  {
+    "id": "map_sc_attendance",
+    "term_id": "term_sc_event_attendance",
+    "database_source": "bird_merged",
+    "table": "tb039",
+    "column": "cl0304",
+    "grain": "event x member",
+    "validation": "326 attendance rows"
+  },
+  {
+    "id": "map_sh_superhero",
+    "term_id": "term_sh_superhero",
+    "database_source": "bird_merged",
+    "table": "tb050",
+    "column": "cl0330",
+    "grain": "one row per superhero",
+    "validation": "750 heroes"
+  },
+  {
+    "id": "map_sh_hero_name",
+    "term_id": "term_sh_superhero",
+    "database_source": "bird_merged",
+    "table": "tb050",
+    "column": "cl0337",
+    "grain": "hero",
+    "validation": "e.g. 3-D Man, Copycat"
+  },
+  {
+    "id": "map_sh_hero_full_name",
+    "term_id": "term_sh_superhero",
+    "database_source": "bird_merged",
+    "table": "tb050",
+    "column": "cl0338",
+    "grain": "hero",
+    "validation": "e.g. Emil Blonsky"
+  },
+  {
+    "id": "map_sh_gender",
+    "term_id": "term_sh_gender",
+    "database_source": "bird_merged",
+    "table": "tb047",
+    "column": "cl0334",
+    "grain": "gender code",
+    "validation": "1 Male, 2 Female, 3 N/A; tb050.cl0339 holds the code"
+  },
+  {
+    "id": "map_sh_attribute",
+    "term_id": "term_sh_attribute",
+    "database_source": "bird_merged",
+    "table": "tb045",
+    "column": "cl0332",
+    "grain": "attribute",
+    "validation": "Intelligence, Strength, Speed, Durability, Power, Combat"
+  },
+  {
+    "id": "map_sh_superpower",
+    "term_id": "term_sh_superpower",
+    "database_source": "bird_merged",
+    "table": "tb052",
+    "column": "cl0351",
+    "grain": "power",
+    "validation": "167 powers incl. Super Strength"
+  },
+  {
+    "id": "map_sh_hero_attribute",
+    "term_id": "term_sh_hero_attribute",
+    "database_source": "bird_merged",
+    "table": "tb051",
+    "column": "cl0350",
+    "grain": "hero x attribute",
+    "validation": "3738 rows, values 0-100"
+  },
+  {
+    "id": "map_sh_hero_power",
+    "term_id": "term_sh_hero_power",
+    "database_source": "bird_merged",
+    "table": "tb053",
+    "column": "cl0352",
+    "grain": "hero x power",
+    "validation": "5825 rows"
+  },
+  {
+    "id": "map_sh_publisher",
+    "term_id": "term_sh_publisher",
+    "database_source": "bird_merged",
+    "table": "tb048",
+    "column": "cl0335",
+    "grain": "publisher",
+    "validation": "Marvel Comics, DC Comics, Dark Horse Comics; tb050.cl0344 holds code"
+  },
+  {
+    "id": "map_sh_alignment",
+    "term_id": "term_sh_alignment",
+    "database_source": "bird_merged",
+    "table": "tb044",
+    "column": "cl0331",
+    "grain": "alignment",
+    "validation": "Good, Bad, Neutral, N/A"
+  },
+  {
+    "id": "map_sh_height",
+    "term_id": "term_sh_height",
+    "database_source": "bird_merged",
+    "table": "tb050",
+    "column": "cl0346",
+    "grain": "hero",
+    "validation": "cm integers"
+  },
+  {
+    "id": "map_sh_weight",
+    "term_id": "term_sh_weight",
+    "database_source": "bird_merged",
+    "table": "tb050",
+    "column": "cl0347",
+    "grain": "hero",
+    "validation": "kg integers, 0 when unknown"
+  },
+  {
+    "id": "map_th_patient",
+    "term_id": "term_th_patient",
+    "database_source": "bird_merged",
+    "table": "tb055",
+    "column": "cl0353",
+    "grain": "one row per patient",
+    "validation": "1238 patients"
+  },
+  {
+    "id": "map_th_sex",
+    "term_id": "term_th_sex",
+    "database_source": "bird_merged",
+    "table": "tb055",
+    "column": "cl0366",
+    "grain": "patient",
+    "validation": "F, M, blank"
+  },
+  {
+    "id": "map_th_birthday",
+    "term_id": "term_th_patient",
+    "database_source": "bird_merged",
+    "table": "tb055",
+    "column": "cl0367",
+    "grain": "patient",
+    "validation": "DATE values"
+  },
+  {
+    "id": "map_th_first_visit",
+    "term_id": "term_th_patient",
+    "database_source": "bird_merged",
+    "table": "tb055",
+    "column": "cl0368",
+    "grain": "patient",
+    "validation": "admission date, 97 distinct"
+  },
+  {
+    "id": "map_th_last_visit",
+    "term_id": "term_th_patient",
+    "database_source": "bird_merged",
+    "table": "tb055",
+    "column": "cl0369",
+    "grain": "patient",
+    "validation": "admission date, 797 distinct"
+  },
+  {
+    "id": "map_th_examination",
+    "term_id": "term_th_examination",
+    "database_source": "bird_merged",
+    "table": "tb054",
+    "column": "cl0353",
+    "grain": "patient x examination",
+    "validation": "806 examinations"
+  },
+  {
+    "id": "map_th_exam_date",
+    "term_id": "term_th_examination",
+    "database_source": "bird_merged",
+    "table": "tb054",
+    "column": "cl0354",
+    "grain": "examination",
+    "validation": "DATE values"
+  },
+  {
+    "id": "map_th_diagnosis",
+    "term_id": "term_th_diagnosis",
+    "database_source": "bird_merged",
+    "table": "tb054",
+    "column": "cl0360",
+    "grain": "examination",
+    "validation": "SLE, MCTD, PSS, RA etc."
+  },
+  {
+    "id": "map_th_diagnosis_patient",
+    "term_id": "term_th_diagnosis",
+    "database_source": "bird_merged",
+    "table": "tb055",
+    "column": "cl0360",
+    "grain": "patient",
+    "validation": "patient-level diagnosis text"
+  },
+  {
+    "id": "map_th_symptoms",
+    "term_id": "term_th_symptoms",
+    "database_source": "bird_merged",
+    "table": "tb054",
+    "column": "cl0364",
+    "grain": "examination",
+    "validation": "39 distinct symptom texts"
+  },
+  {
+    "id": "map_th_thrombosis",
+    "term_id": "term_th_thrombosis_severity",
+    "database_source": "bird_merged",
+    "table": "tb054",
+    "column": "cl0365",
+    "grain": "examination",
+    "validation": "0,1,2,3"
+  },
+  {
+    "id": "map_th_lab_test",
+    "term_id": "term_th_lab_test",
+    "database_source": "bird_merged",
+    "table": "tb056",
+    "column": "cl0353",
+    "grain": "patient x test date",
+    "validation": "13908 lab rows"
+  },
+  {
+    "id": "map_th_lab_date",
+    "term_id": "term_th_lab_test",
+    "database_source": "bird_merged",
+    "table": "tb056",
+    "column": "cl0371",
+    "grain": "lab test",
+    "validation": "DATE values"
+  },
+  {
+    "id": "map_th_ldh",
+    "term_id": "term_th_ldh",
+    "database_source": "bird_merged",
+    "table": "tb056",
+    "column": "cl0374",
+    "grain": "lab test",
+    "validation": "integers 500-700"
+  },
+  {
+    "id": "map_th_uric_acid",
+    "term_id": "term_th_uric_acid",
+    "database_source": "bird_merged",
+    "table": "tb056",
+    "column": "cl0378",
+    "grain": "lab test",
+    "validation": "REAL 3-8"
+  },
+  {
+    "id": "map_th_cholesterol",
+    "term_id": "term_th_total_cholesterol",
+    "database_source": "bird_merged",
+    "table": "tb056",
+    "column": "cl0382",
+    "grain": "lab test",
+    "validation": "integers 120-200"
+  },
+  {
+    "id": "map_th_rbc",
+    "term_id": "term_th_red_blood_cell",
+    "database_source": "bird_merged",
+    "table": "tb056",
+    "column": "cl0387",
+    "grain": "lab test",
+    "validation": "REAL 2.5-4.0"
+  },
+  {
+    "id": "map_th_hematocrit",
+    "term_id": "term_th_hematocrit",
+    "database_source": "bird_merged",
+    "table": "tb056",
+    "column": "cl0389",
+    "grain": "lab test",
+    "validation": "REAL values incl. >= 52"
+  },
+  {
+    "id": "map_th_pt",
+    "term_id": "term_th_prothrombin_time",
+    "database_source": "bird_merged",
+    "table": "tb056",
+    "column": "cl0391",
+    "grain": "lab test",
+    "validation": "REAL 11-14"
+  },
+  {
+    "id": "map_th_iga",
+    "term_id": "term_th_iga",
+    "database_source": "bird_merged",
+    "table": "tb056",
+    "column": "cl0399",
+    "grain": "lab test",
+    "validation": "integers 80-500 normal"
+  },
+  {
+    "id": "map_th_acl",
+    "term_id": "term_th_anti_cardiolipin",
+    "database_source": "bird_merged",
+    "table": "tb056",
+    "column": "cl0400",
+    "grain": "lab test",
+    "validation": "integers"
+  },
+  {
+    "id": "map_th_anti_sm",
+    "term_id": "term_th_anti_sm",
+    "database_source": "bird_merged",
+    "table": "tb056",
+    "column": "cl0407",
+    "grain": "lab test",
+    "validation": "values 0, 1, negative, 2"
+  },
+  {
+    "id": "map_tx_molecule",
+    "term_id": "term_tx_molecule",
+    "database_source": "bird_merged",
+    "table": "tb060",
+    "column": "cl0415",
+    "grain": "one row per molecule",
+    "validation": "343 molecules"
+  },
+  {
+    "id": "map_tx_carcinogenic",
+    "term_id": "term_tx_carcinogenic",
+    "database_source": "bird_merged",
+    "table": "tb060",
+    "column": "cl0420",
+    "grain": "molecule",
+    "validation": "'+' and '-' only"
+  },
+  {
+    "id": "map_tx_atom",
+    "term_id": "term_tx_atom",
+    "database_source": "bird_merged",
+    "table": "tb057",
+    "column": "cl0414",
+    "grain": "one row per atom",
+    "validation": "ids like TR000_1"
+  },
+  {
+    "id": "map_tx_element",
+    "term_id": "term_tx_element",
+    "database_source": "bird_merged",
+    "table": "tb057",
+    "column": "cl0416",
+    "grain": "atom",
+    "validation": "symbols c, h, o, n, cl"
+  },
+  {
+    "id": "map_tx_bond",
+    "term_id": "term_tx_bond",
+    "database_source": "bird_merged",
+    "table": "tb058",
+    "column": "cl0417",
+    "grain": "one row per bond",
+    "validation": "ids like TR000_1_2"
+  },
+  {
+    "id": "map_tx_bond_type",
+    "term_id": "term_tx_bond_type",
+    "database_source": "bird_merged",
+    "table": "tb058",
+    "column": "cl0418",
+    "grain": "bond",
+    "validation": "'-', '=', '#'"
+  },
+  {
+    "id": "map_tx_connected",
+    "term_id": "term_tx_connected_pair",
+    "database_source": "bird_merged",
+    "table": "tb059",
+    "column": "cl0414",
+    "grain": "atom pair",
+    "validation": "24758 rows; cl0419 holds the other atom"
+  },
+  {
+    "id": "map_tx_connected_bond",
+    "term_id": "term_tx_connected_pair",
+    "database_source": "bird_merged",
+    "table": "tb059",
+    "column": "cl0417",
+    "grain": "atom pair",
+    "validation": "bond id links to tb058"
+  }
+]

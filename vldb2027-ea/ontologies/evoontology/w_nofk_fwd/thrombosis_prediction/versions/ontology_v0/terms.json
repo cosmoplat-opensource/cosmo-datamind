@@ -1,0 +1,663 @@
+[
+  {
+    "id": "term_patient",
+    "name": "Patient",
+    "type": "entity",
+    "definition": "A person enrolled in the thrombosis study cohort, recorded once on a summary row in the Patient table with demographics and one aggregated diagnosis string.",
+    "scope": "Any question that identifies, filters, counts or describes patients.",
+    "aliases": [
+      "patient record",
+      "subject",
+      "case",
+      "person"
+    ],
+    "evidence": [
+      "ev_table_sizes"
+    ]
+  },
+  {
+    "id": "term_patient_id",
+    "name": "Patient ID",
+    "type": "dimension",
+    "definition": "Identifier that uniquely identifies one patient. It is the primary key of the Patient table and the value used to associate Laboratory and Examination rows with a patient.",
+    "scope": "Patient identification and cross-table association; used by every question that returns or filters on patient identity.",
+    "aliases": [
+      "ID",
+      "patient identifier",
+      "subject id",
+      "patient number"
+    ],
+    "evidence": [
+      "ev_table_sizes",
+      "ev_lab_linkage",
+      "ev_exam_linkage"
+    ]
+  },
+  {
+    "id": "term_sex",
+    "name": "Sex",
+    "type": "dimension",
+    "definition": "Recorded sex of the patient, held as a single uppercase letter code on the patient record.",
+    "scope": "Sex-stratified filters and counts over the patient cohort.",
+    "aliases": [
+      "gender",
+      "SEX",
+      "male",
+      "female"
+    ],
+    "evidence": [
+      "ev_sex_values"
+    ]
+  },
+  {
+    "id": "term_birthday",
+    "name": "Birthday",
+    "type": "dimension",
+    "definition": "Date of birth of the patient, stored as a text date value on the patient record.",
+    "scope": "Age computation and birth-year cohort selection.",
+    "aliases": [
+      "birth date",
+      "date of birth",
+      "DOB",
+      "born"
+    ],
+    "evidence": [
+      "ev_age_anomaly"
+    ]
+  },
+  {
+    "id": "term_age",
+    "name": "Age",
+    "type": "metric",
+    "definition": "Patient age expressed as whole years, obtained as the difference between the year of the reference date and the year of the patient's birthday.",
+    "scope": "Age filters and average-age aggregation over the patient cohort; a derived quantity with no dedicated column.",
+    "aliases": [
+      "age at reference date",
+      "how old",
+      "years old"
+    ],
+    "evidence": [
+      "ev_age_anomaly"
+    ]
+  },
+  {
+    "id": "term_admission_type",
+    "name": "Admission Type",
+    "type": "category",
+    "definition": "Whether the patient was managed as an in-patient or as an out-patient, expressed by a sign code in the Admission column of the patient record.",
+    "scope": "Comparing in-patient versus out-patient sub-cohorts.",
+    "aliases": [
+      "in-patient",
+      "inpatient",
+      "out-patient",
+      "outpatient",
+      "admission status",
+      "hospitalised"
+    ],
+    "evidence": [
+      "ev_admission_values"
+    ]
+  },
+  {
+    "id": "term_record_description_date",
+    "name": "Patient Record Description Date",
+    "type": "dimension",
+    "definition": "A date carried on the patient summary row that records when that patient's descriptive record was documented. Because it is a date field, the presence or absence of the value is what distinguishes patients whose record was documented from those whose data was not recorded.",
+    "scope": "Assessing whether a patient's record data was recorded; the field is not a clinical measurement.",
+    "aliases": [
+      "Description",
+      "data recorded",
+      "record date",
+      "data not recorded",
+      "record documented"
+    ],
+    "evidence": [
+      "ev_description"
+    ]
+  },
+  {
+    "id": "term_laboratory_measurement",
+    "name": "Laboratory Measurement",
+    "type": "entity",
+    "definition": "One laboratory panel for one patient on one test date. A single row carries many analyte results at once, so it is the measurement event, not an individual analyte.",
+    "scope": "Laboratory-based cohorts, date-window filtering, and longitudinal per-patient history.",
+    "aliases": [
+      "lab test",
+      "lab result row",
+      "blood test",
+      "laboratory record",
+      "test panel"
+    ],
+    "evidence": [
+      "ev_table_sizes",
+      "ev_lab_linkage",
+      "ev_lab_dates"
+    ]
+  },
+  {
+    "id": "term_lab_test_date",
+    "name": "Laboratory Test Date",
+    "type": "dimension",
+    "definition": "Date on which the laboratory panel was drawn for a patient.",
+    "scope": "Restricting laboratory findings to a date window and ordering a patient's test history.",
+    "aliases": [
+      "Date",
+      "test date",
+      "examined",
+      "examined between",
+      "sample date",
+      "test performed"
+    ],
+    "evidence": [
+      "ev_lab_dates"
+    ]
+  },
+  {
+    "id": "term_lab_result",
+    "name": "Laboratory Result",
+    "type": "concept",
+    "definition": "A single measured laboratory quantity belonging to a panel, either numeric (for example albumin, GPT) or a semi-quantitative text code (for example CRP).",
+    "scope": "Generic discovery entry point for any measured laboratory quantity; specific analytes are subtypes of this concept.",
+    "aliases": [
+      "lab value",
+      "test value",
+      "analyte",
+      "laboratory finding",
+      "measurement"
+    ],
+    "evidence": [
+      "ev_table_sizes"
+    ]
+  },
+  {
+    "id": "term_albumin",
+    "name": "Blood Albumin (ALB)",
+    "type": "metric",
+    "definition": "Serum albumin concentration measured in the laboratory panel.",
+    "scope": "Nutritional and inflammatory status assessment; reported as an average over qualifying laboratory rows.",
+    "aliases": [
+      "ALB",
+      "blood albumin",
+      "albumin level",
+      "serum albumin"
+    ],
+    "evidence": [
+      "ev_normal_ranges"
+    ]
+  },
+  {
+    "id": "term_platelet_count",
+    "name": "Platelet Count (PLT)",
+    "type": "metric",
+    "definition": "Platelet count measured in the laboratory panel.",
+    "scope": "Haematological assessment and thrombocytosis/thrombocytopenia filtering.",
+    "aliases": [
+      "PLT",
+      "platelet count",
+      "platelets",
+      "thrombocyte count"
+    ],
+    "evidence": [
+      "ev_normal_ranges"
+    ]
+  },
+  {
+    "id": "term_gpt",
+    "name": "ALT / GPT",
+    "type": "metric",
+    "definition": "Alanine aminotransferase activity, a liver enzyme marker recorded in the laboratory panel.",
+    "scope": "Liver-injury filtering, including detection of a patient whose enzyme level ever exceeded the reference interval.",
+    "aliases": [
+      "GPT",
+      "ALT",
+      "glutamic pyruvic transaminase",
+      "ALT glutamic pylvic transaminase",
+      "glutamic pylvic transaminase"
+    ],
+    "evidence": [
+      "ev_normal_ranges"
+    ]
+  },
+  {
+    "id": "term_glucose",
+    "name": "Blood Glucose (GLU)",
+    "type": "metric",
+    "definition": "Blood glucose concentration measured in the laboratory panel.",
+    "scope": "Glycaemic status filtering.",
+    "aliases": [
+      "GLU",
+      "blood glucose",
+      "glucose",
+      "blood sugar"
+    ],
+    "evidence": [
+      "ev_normal_ranges"
+    ]
+  },
+  {
+    "id": "term_total_cholesterol",
+    "name": "Total Cholesterol (T-CHO)",
+    "type": "metric",
+    "definition": "Total serum cholesterol measured in the laboratory panel.",
+    "scope": "Lipid status filtering, including identification of hypercholesterolaemia.",
+    "aliases": [
+      "T-CHO",
+      "total cholesterol",
+      "cholesterol",
+      "high cholesterol"
+    ],
+    "evidence": [
+      "ev_normal_ranges"
+    ]
+  },
+  {
+    "id": "term_creatinine_phosphokinase",
+    "name": "Creatinine Phosphokinase (CPK)",
+    "type": "metric",
+    "definition": "Creatine phosphokinase enzyme activity measured in the laboratory panel.",
+    "scope": "Muscle-damage and myositis assessment.",
+    "aliases": [
+      "CPK",
+      "creatinine phosphokinase",
+      "creatine kinase",
+      "CK"
+    ],
+    "evidence": [
+      "ev_normal_ranges"
+    ]
+  },
+  {
+    "id": "term_creatinine",
+    "name": "Creatinine (CRE)",
+    "type": "metric",
+    "definition": "Serum creatinine concentration measured in the laboratory panel.",
+    "scope": "Renal function filtering.",
+    "aliases": [
+      "CRE",
+      "creatinine",
+      "creatinine level"
+    ],
+    "evidence": [
+      "ev_normal_ranges"
+    ]
+  },
+  {
+    "id": "term_urea_nitrogen",
+    "name": "Urea Nitrogen (UN)",
+    "type": "metric",
+    "definition": "Blood urea nitrogen concentration measured in the laboratory panel.",
+    "scope": "Renal function filtering; the workload also refers to a borderline passing value of this analyte.",
+    "aliases": [
+      "UN",
+      "urea nitrogen",
+      "blood urea nitrogen",
+      "BUN"
+    ],
+    "evidence": [
+      "ev_normal_ranges"
+    ]
+  },
+  {
+    "id": "term_igg",
+    "name": "Immunoglobulin G (IGG)",
+    "type": "metric",
+    "definition": "Serum immunoglobulin G concentration measured in the laboratory panel.",
+    "scope": "Humoral immunity assessment; a substantial minority of laboratory rows leave this analyte unmeasured.",
+    "aliases": [
+      "IGG",
+      "Ig G",
+      "immunoglobulin G",
+      "gamma globulin"
+    ],
+    "evidence": [
+      "ev_normal_ranges",
+      "ev_lab_nulls"
+    ]
+  },
+  {
+    "id": "term_igm",
+    "name": "Immunoglobulin M (IGM)",
+    "type": "metric",
+    "definition": "Serum immunoglobulin M concentration measured in the laboratory panel.",
+    "scope": "Humoral immunity assessment and abnormal-immunoglobulin cohort selection.",
+    "aliases": [
+      "IGM",
+      "Ig M",
+      "immunoglobulin M"
+    ],
+    "evidence": [
+      "ev_normal_ranges"
+    ]
+  },
+  {
+    "id": "term_acl_igm",
+    "name": "Anti-Cardiolipin Antibody IgM (aCL IgM)",
+    "type": "metric",
+    "definition": "Anti-cardiolipin antibody of the IgM isotype, recorded in the examination record as a numeric level.",
+    "scope": "Antiphospholipid antibody assessment, evaluated against a cohort average.",
+    "aliases": [
+      "aCL IgM",
+      "anti-Cardiolip in antibody (IgM)",
+      "anticardiolipin IgM",
+      "cardiolipin antibody IgM"
+    ],
+    "evidence": [
+      "ev_acl_igm"
+    ]
+  },
+  {
+    "id": "term_crp",
+    "name": "C-Reactive Protein (CRP)",
+    "type": "metric",
+    "definition": "Acute-phase inflammation marker recorded as a semi-quantitative text code rather than a plain number.",
+    "scope": "Inflammation filtering and cohorts defined by a positive inflammatory flag.",
+    "aliases": [
+      "CRP",
+      "C-reactive protein",
+      "C reactive protein"
+    ],
+    "evidence": [
+      "ev_crp_values"
+    ]
+  },
+  {
+    "id": "term_analyte_normal_range",
+    "name": "Reference Interval (Normal Range)",
+    "type": "concept",
+    "definition": "The interval of values considered normal for one specific laboratory analyte. It is analytic-specific and is not stored as its own column; each analyte carries its own applicable interval.",
+    "scope": "Deciding whether a measured value counts as normal; required whenever a question says within, beyond, exceed or abnormal for an analyte.",
+    "aliases": [
+      "normal range",
+      "reference range",
+      "reference interval",
+      "within normal",
+      "normal level",
+      "borderline"
+    ],
+    "evidence": [
+      "ev_normal_ranges"
+    ]
+  },
+  {
+    "id": "term_analyte_abnormality",
+    "name": "Abnormal Laboratory Result",
+    "type": "concept",
+    "definition": "Status of a laboratory result that falls outside the reference interval of its analyte, whether above, below, or, for semi-quantitative markers, flagged positive.",
+    "scope": "Cohort definitions phrased as abnormal, not within normal range, beyond the normal range, or exceeding the normal range.",
+    "aliases": [
+      "abnormal",
+      "abnormal level",
+      "beyond the normal range",
+      "not within normal range",
+      "exceed the normal range",
+      "outside normal"
+    ],
+    "evidence": [
+      "ev_normal_ranges"
+    ]
+  },
+  {
+    "id": "term_autoantibody_marker",
+    "name": "Autoantibody Marker",
+    "type": "concept",
+    "definition": "Semi-quantitative antinuclear or autoantibody marker recorded as text, where a negative result is expressed through sentinel codes rather than through a numeric zero.",
+    "scope": "Autoantibody panels used for connective-tissue-disease classification.",
+    "aliases": [
+      "antibody",
+      "autoantibody",
+      "ANA profile",
+      "antibody panel"
+    ],
+    "evidence": [
+      "ev_antibody_sentinels"
+    ]
+  },
+  {
+    "id": "term_sc170",
+    "name": "Anti-Scl-70 (SC170)",
+    "type": "metric",
+    "definition": "Anti-Scl-70 autoantibody recorded in the laboratory panel, with negativity encoded as a sentinel text value.",
+    "scope": "Systemic-sclerosis-related autoantibody assessment.",
+    "aliases": [
+      "SC170",
+      "anti-scl70",
+      "anti-Scl 70",
+      "anti-scl-70",
+      "Scl-70"
+    ],
+    "evidence": [
+      "ev_antibody_sentinels"
+    ]
+  },
+  {
+    "id": "term_centromere",
+    "name": "Anti-Centromere (CENTROMEA)",
+    "type": "metric",
+    "definition": "Anti-centromere autoantibody recorded in the laboratory panel, with negativity encoded as a sentinel text value.",
+    "scope": "Limited cutaneous systemic sclerosis assessment.",
+    "aliases": [
+      "CENTROMEA",
+      "anti-centromere",
+      "centromere antibody"
+    ],
+    "evidence": [
+      "ev_antibody_sentinels"
+    ]
+  },
+  {
+    "id": "term_ssb",
+    "name": "Anti-SSB (SSB)",
+    "type": "metric",
+    "definition": "Anti-SSB (La) autoantibody recorded in the laboratory panel, with negativity encoded as a sentinel text value.",
+    "scope": "Sjogren-syndrome-related autoantibody assessment.",
+    "aliases": [
+      "SSB",
+      "anti-SSB",
+      "anti-La",
+      "La antibody"
+    ],
+    "evidence": [
+      "ev_antibody_sentinels"
+    ]
+  },
+  {
+    "id": "term_negative_result_sentinel",
+    "name": "Negative Result Sentinel",
+    "type": "category",
+    "definition": "Text codes used inside the autoantibody columns to express a negative, seronegative result instead of a measurable titre.",
+    "scope": "Interpreting normal or negative autoantibody findings; a negative finding must be recognised as a coded value, not as a missing measurement.",
+    "aliases": [
+      "negative",
+      "normal autoantibody",
+      "seronegative",
+      "normal level of antibody"
+    ],
+    "evidence": [
+      "ev_antibody_sentinels"
+    ]
+  },
+  {
+    "id": "term_ana_titer",
+    "name": "ANA Titre (ANA)",
+    "type": "metric",
+    "definition": "Antinuclear antibody titre recorded on the examination record as an integer, where zero denotes no detectable titre and positive values are dilution steps.",
+    "scope": "Antinuclear antibody quantification; distinct from the fluorescence pattern field recorded alongside it.",
+    "aliases": [
+      "ANA",
+      "antinuclear antibody",
+      "ANA level",
+      "ANA titre",
+      "ANA titer"
+    ],
+    "evidence": [
+      "ev_ana_columns"
+    ]
+  },
+  {
+    "id": "term_ana_pattern",
+    "name": "ANA Pattern",
+    "type": "category",
+    "definition": "Fluorescence staining pattern of the antinuclear antibody test, recorded as one or more letter codes describing the pattern(s) observed.",
+    "scope": "Pattern-based selection such as a pattern consisting of only one code; separate from the ANA titre column.",
+    "aliases": [
+      "ANA Pattern",
+      "ANA pattern of only S",
+      "pattern S",
+      "speckled pattern",
+      "ANA staining pattern"
+    ],
+    "evidence": [
+      "ev_ana_columns"
+    ]
+  },
+  {
+    "id": "term_thrombosis_grade",
+    "name": "Degree of Thrombosis",
+    "type": "dimension",
+    "definition": "Ordinal grade of thrombotic involvement recorded for an examination, from no involvement up to marked involvement.",
+    "scope": "Thrombosis-level cohort selection and comparison.",
+    "aliases": [
+      "Thrombosis",
+      "thrombosis level",
+      "degree of thrombosis",
+      "thrombosis grade"
+    ],
+    "evidence": [
+      "ev_symptoms_thrombosis"
+    ]
+  },
+  {
+    "id": "term_coagulation_assay",
+    "name": "Coagulation Assay (KCT / RVVT / LAC)",
+    "type": "concept",
+    "definition": "Panel of three phospholipid-dependent coagulation assays, each recorded as a positive or negative code on the examination record.",
+    "scope": "Coagulation abnormality assessment; the panel is evaluated as a set of three assays.",
+    "aliases": [
+      "KCT",
+      "RVVT",
+      "LAC",
+      "coagulation test",
+      "coagulation assay",
+      "lupus anticoagulant"
+    ],
+    "evidence": [
+      "ev_coagulation_values"
+    ]
+  },
+  {
+    "id": "term_coagulation_positivity",
+    "name": "Positive Degree of Coagulation",
+    "type": "concept",
+    "definition": "Status of a patient or examination for which the coagulation assay panel shows at least one positive result.",
+    "scope": "Cohort definitions phrased as a positive degree of coagulation or a positive measure of degree of coagulation.",
+    "aliases": [
+      "positive degree of coagulation",
+      "positive measure of degree of coagulation",
+      "positive coagulation"
+    ],
+    "evidence": [
+      "ev_coagulation_values"
+    ]
+  },
+  {
+    "id": "term_symptoms",
+    "name": "Recorded Symptoms",
+    "type": "dimension",
+    "definition": "Free-text clinical symptom or symptoms recorded for an examination. The field is populated only for examinations that carry a non-zero thrombosis grade, so its presence encodes the occurrence of a thrombotic clinical event.",
+    "scope": "Filtering patients who did or did not experience recorded symptoms.",
+    "aliases": [
+      "Symptoms",
+      "symptom",
+      "have symptoms",
+      "clinical symptoms",
+      "does not have any symptom"
+    ],
+    "evidence": [
+      "ev_symptoms_thrombosis"
+    ]
+  },
+  {
+    "id": "term_diagnosis",
+    "name": "Diagnosis",
+    "type": "concept",
+    "definition": "Disease or diseases attributed to a patient, recorded in a text field that may hold several comma-separated disease designations at once.",
+    "scope": "Disease-based cohort selection and disease-frequency aggregation.",
+    "aliases": [
+      "disease",
+      "diagnosed with",
+      "diagnosis",
+      "most common disease"
+    ],
+    "evidence": [
+      "ev_diagnosis_patient_vocab",
+      "ev_diagnosis_exam_vocab",
+      "ev_diagnosis_multivalue"
+    ]
+  },
+  {
+    "id": "term_disease_sle",
+    "name": "Systemic Lupus Erythematosus (SLE)",
+    "type": "category",
+    "definition": "Systemic lupus erythematosus, one of the disease designations used in the diagnosis field.",
+    "scope": "Selecting patients diagnosed with lupus.",
+    "aliases": [
+      "SLE",
+      "lupus",
+      "systemic lupus erythematosus"
+    ],
+    "evidence": [
+      "ev_diagnosis_patient_vocab",
+      "ev_diagnosis_exam_vocab"
+    ]
+  },
+  {
+    "id": "term_disease_sjs",
+    "name": "Sjogren's Syndrome (SjS / SJS)",
+    "type": "category",
+    "definition": "Sjogren's syndrome, one of the disease designations used in the diagnosis field. Its spelling differs between the two tables that carry a diagnosis.",
+    "scope": "Selecting patients diagnosed with Sjogren's syndrome.",
+    "aliases": [
+      "SjS",
+      "SJS",
+      "Sjogren",
+      "Sjogren's syndrome",
+      "sicca syndrome"
+    ],
+    "evidence": [
+      "ev_diagnosis_patient_vocab",
+      "ev_diagnosis_exam_vocab"
+    ]
+  },
+  {
+    "id": "term_examination_visit",
+    "name": "Examination",
+    "type": "entity",
+    "definition": "A clinical examination record for a patient, holding the thrombosis grade, the coagulation assay panel, the antinuclear antibody result and a diagnosis for that encounter.",
+    "scope": "Questions about thrombosis grading, coagulation positivity, ANA findings or examination-level diagnosis.",
+    "aliases": [
+      "Examination",
+      "examination record",
+      "visit",
+      "encounter"
+    ],
+    "evidence": [
+      "ev_table_sizes",
+      "ev_exam_linkage"
+    ]
+  },
+  {
+    "id": "term_examination_date",
+    "name": "Examination Date",
+    "type": "dimension",
+    "definition": "Date on which an examination record was created for a patient.",
+    "scope": "Date-restricted examination cohorts.",
+    "aliases": [
+      "Examination Date",
+      "examination date",
+      "date of examination"
+    ],
+    "evidence": [
+      "ev_lab_dates"
+    ]
+  }
+]

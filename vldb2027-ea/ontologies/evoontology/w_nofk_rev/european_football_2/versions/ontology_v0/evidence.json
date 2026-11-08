@@ -1,0 +1,202 @@
+[
+  {
+    "id": "evidence_schema_tables",
+    "source": "european_football_2.sqlite (read-only)",
+    "query": "SELECT name FROM sqlite_master WHERE type='table'",
+    "result": "Seven tables: Player, Player_Attributes, Team, Team_Attributes, League, Country, Match. Identifiers are player_api_id/player_fifa_api_id on Player, team_api_id/team_fifa_api_id on Team, match_api_id on Match. Player.player_api_id, Player.player_fifa_api_id, Team.team_api_id, League.name, Country.name and Match.match_api_id carry UNIQUE constraints; no foreign keys are declared.",
+    "validation_method": "schema inspection via sqlite3 .schema",
+    "timestamp": "2026-10-10T00:00:00+00:00"
+  },
+  {
+    "id": "evidence_row_counts",
+    "source": "european_football_2.sqlite (read-only)",
+    "query": "SELECT COUNT(*) per table",
+    "result": "Player 11060, Player_Attributes 183978, Team 299, Team_Attributes 1458, League 11, Country 11, Match 25979.",
+    "validation_method": "row count per table",
+    "timestamp": "2026-10-10T00:00:00+00:00"
+  },
+  {
+    "id": "evidence_player_attribute_columns_and_ranges",
+    "source": "european_football_2.sqlite (read-only)",
+    "query": "SELECT MIN/MAX(overall_rating) FROM Player_Attributes",
+    "result": "overall_rating ranges from 33 to 94. Column set covers overall_rating, potential, preferred_foot, two work rate columns, and 34 individual skill columns. 836 rows have a NULL overall_rating.",
+    "validation_method": "min/max and null count",
+    "timestamp": "2026-10-10T00:00:00+00:00"
+  },
+  {
+    "id": "evidence_player_attribute_dates",
+    "source": "european_football_2.sqlite (read-only)",
+    "query": "SELECT COUNT(DISTINCT date) FROM Player_Attributes; SELECT substr(date,1,4), COUNT(DISTINCT date) GROUP BY 1",
+    "result": "197 distinct snapshot dates from 2007-02-22 to 2016-07-07. Two dates per year for 2007 to 2012, then 47 dates in 2013, 51 in 2014, 58 in 2015 and 29 in 2016. Dates are text with a zero time component. Per player the number of snapshots ranges from 2 to 56.",
+    "validation_method": "distinct-date distribution",
+    "timestamp": "2026-10-10T00:00:00+00:00"
+  },
+  {
+    "id": "evidence_work_rate_value_domain",
+    "source": "european_football_2.sqlite (read-only)",
+    "query": "SELECT attacking_work_rate, COUNT(*) FROM Player_Attributes GROUP BY 1; same for defensive_work_rate",
+    "result": "attacking_work_rate: high 42823, medium 125070, low 8569, None 3639, empty 3230, and fragments le 104, norm 348, stoc 89, y 106, o 1550, _0 2394 plus values 0-9. defensive_work_rate: high 27041, medium 130846, low 18432, None 3639, empty 836, and fragments ean 104, es 106, ormal 348, tocky 89, o 1550, _0 2394 plus values 0-9. The fragment counts mirror each other, indicating parse artefacts rather than genuine categories.",
+    "validation_method": "value domain distribution per column",
+    "timestamp": "2026-10-10T00:00:00+00:00"
+  },
+  {
+    "id": "evidence_player_attribute_duplicates",
+    "source": "european_football_2.sqlite (read-only)",
+    "query": "SELECT COUNT(*) FROM (SELECT player_api_id, date, COUNT(*) c FROM Player_Attributes GROUP BY 1,2 HAVING c>1)",
+    "result": "835 player and date pairs appear more than once. None of the duplicated groups contains more than one distinct overall_rating value.",
+    "validation_method": "group-by duplicate detection with value comparison",
+    "timestamp": "2026-10-10T00:00:00+00:00"
+  },
+  {
+    "id": "evidence_team_attribute_dates",
+    "source": "european_football_2.sqlite (read-only)",
+    "query": "SELECT DISTINCT substr(date,1,10) FROM Team_Attributes ORDER BY 1",
+    "result": "Six snapshot dates: 2010-02-22, 2011-02-22, 2012-02-22, 2013-09-20, 2014-09-19, 2015-09-10.",
+    "validation_method": "distinct date listing",
+    "timestamp": "2026-10-10T00:00:00+00:00"
+  },
+  {
+    "id": "evidence_team_numeric_ranges",
+    "source": "european_football_2.sqlite (read-only)",
+    "query": "SELECT MIN/MAX per numeric team tactic column",
+    "result": "buildUpPlaySpeed 20-80, buildUpPlayPassing 20-80, chanceCreationPassing 21-80, all fully populated. buildUpPlayDribbling 24-77 with 969 NULL values. Remaining tactical numeric columns sit in the same 20-80 band.",
+    "validation_method": "min/max and null count per column",
+    "timestamp": "2026-10-10T00:00:00+00:00"
+  },
+  {
+    "id": "evidence_team_class_tertile_ranges",
+    "source": "european_football_2.sqlite (read-only)",
+    "query": "SELECT <Class>, MIN(<numeric>), MAX(<numeric>), COUNT(*) FROM Team_Attributes GROUP BY 1 for each tactical dimension",
+    "result": "Every class column partitions the same bands. buildUpPlaySpeedClass: Slow 20-33 (102), Balanced 34-66 (1184), Fast 67-80 (172). buildUpPlayDribblingClass: Little 24-33, Normal 34-66, Lots 67-77. buildUpPlayPassingClass: Short 20-33, Mixed 34-66, Long 67-80. chanceCreationPassingClass: Safe 21-33 (56), Normal 34-66 (1231), Risky 67-80 (171). chanceCreationCrossingClass and chanceCreationShootingClass: Little 20/22-33, Normal 34-66, Lots 67-80. defencePressureClass: Deep 23-33, Medium 34-66, High 67-72. defenceAggressionClass: Contain 24-33, Press 34-66, Double 67-72. defenceTeamWidthClass: Narrow 29-33, Normal 34-66, Wide 67-73.",
+    "validation_method": "cross-tabulation of class label against numeric companion range",
+    "timestamp": "2026-10-10T00:00:00+00:00"
+  },
+  {
+    "id": "evidence_team_class_value_domains",
+    "source": "european_football_2.sqlite (read-only)",
+    "query": "SELECT <Class>, COUNT(*) FROM Team_Attributes GROUP BY 1",
+    "result": "Each class column has exactly three values: buildUpPlaySpeedClass Slow/Balanced/Fast, buildUpPlayDribblingClass Little/Normal/Lots, buildUpPlayPassingClass Short/Mixed/Long, buildUpPlayPositioningClass Free Form/Organised, chanceCreationPassingClass Safe/Normal/Risky, chanceCreationCrossingClass and chanceCreationShootingClass Little/Normal/Lots, chanceCreationPositioningClass Free Form/Organised, defencePressureClass Deep/Medium/High, defenceAggressionClass Contain/Press/Double, defenceTeamWidthClass Narrow/Normal/Wide, defenceDefenderLineClass Cover/Offside Trap.",
+    "validation_method": "value domain listing per class column",
+    "timestamp": "2026-10-10T00:00:00+00:00"
+  },
+  {
+    "id": "evidence_team_attribute_duplicate",
+    "source": "european_football_2.sqlite (read-only)",
+    "query": "SELECT team_api_id, date, COUNT(*) c FROM Team_Attributes GROUP BY 1,2 HAVING c>1",
+    "result": "A single duplicated pair: team_api_id 9996 on 2015-09-10. All other team and date pairs are unique.",
+    "validation_method": "group-by duplicate detection",
+    "timestamp": "2026-10-10T00:00:00+00:00"
+  },
+  {
+    "id": "evidence_team_fifa_api_id_completeness",
+    "source": "european_football_2.sqlite (read-only)",
+    "query": "SELECT COUNT(*), COUNT(team_fifa_api_id), COUNT(DISTINCT team_fifa_api_id) FROM Team",
+    "result": "299 teams, 288 with a non-null FIFA identifier, 285 distinct values. 11 teams have no FIFA identifier and 3 values repeat, so the column is neither complete nor unique.",
+    "validation_method": "completeness and cardinality check",
+    "timestamp": "2026-10-10T00:00:00+00:00"
+  },
+  {
+    "id": "evidence_team_name_cardinality",
+    "source": "european_football_2.sqlite (read-only)",
+    "query": "SELECT COUNT(*), COUNT(DISTINCT team_short_name), COUNT(DISTINCT team_long_name) FROM Team",
+    "result": "299 teams, 259 distinct short names and 296 distinct long names, so neither name column is unique per team.",
+    "validation_method": "distinct value cardinality",
+    "timestamp": "2026-10-10T00:00:00+00:00"
+  },
+  {
+    "id": "evidence_join_integrity",
+    "source": "european_football_2.sqlite (read-only)",
+    "query": "Join counts between Player/Player_Attributes, Team/Team_Attributes, Match team slots/Team, Match/League, League/Country",
+    "result": "Player_Attributes to Player by player_api_id resolves 183978 of 183978. Team_Attributes to Team by team_api_id resolves 1458 of 1458, and by team_fifa_api_id 1458 of 1458. Match.home_team_api_id and Match.away_team_api_id each have zero values outside Team.team_api_id. Match to League resolves 25979 of 25979 and Match to Country 25979 of 25979. League to Country resolves 11 of 11. Match.home_player_1 has 0 values outside Player.player_api_id; 1224 fixtures have no home player slot filled and 1234 have no away player slot filled. Player_Attributes joined to Player on player_fifa_api_id resolves 183929 of 183978.",
+    "validation_method": "referential join coverage counts",
+    "timestamp": "2026-10-10T00:00:00+00:00"
+  },
+  {
+    "id": "evidence_match_season_values",
+    "source": "european_football_2.sqlite (read-only)",
+    "query": "SELECT DISTINCT season FROM Match ORDER BY season",
+    "result": "Eight seasons: 2008/2009, 2009/2010, 2010/2011, 2011/2012, 2012/2013, 2013/2014, 2014/2015, 2015/2016.",
+    "validation_method": "distinct value listing",
+    "timestamp": "2026-10-10T00:00:00+00:00"
+  },
+  {
+    "id": "evidence_match_team_refs",
+    "source": "european_football_2.sqlite (read-only)",
+    "query": "SELECT COUNT(*) FROM Match m WHERE m.home_team_api_id NOT IN (SELECT team_api_id FROM Team); same for away_team_api_id",
+    "result": "Zero orphan references on either side, so both team slots draw from the team identifier domain.",
+    "validation_method": "subset verification of team identifier domains",
+    "timestamp": "2026-10-10T00:00:00+00:00"
+  },
+  {
+    "id": "evidence_match_goals_and_xml",
+    "source": "european_football_2.sqlite (read-only)",
+    "query": "SELECT SUM(home_team_goal+away_team_goal>0 AND (goal IS NULL OR goal='')) FROM Match; SELECT SUM(goal IS NOT NULL AND goal<>'') FROM Match",
+    "result": "home_team_goal and away_team_goal are fully populated integers (home 0-10, away 0-9). The XML goal column is non-empty for only 14217 of 25979 fixtures, and 10873 fixtures in which goals were scored have no XML goal log at all. A further 1089 fixtures carry a goal log while the score is 0-0. The same 14217 coverage applies to the shots, cards, fouls, crosses, corners and possession logs.",
+    "validation_method": "null/coverage cross-check between goal totals and the XML event column",
+    "timestamp": "2026-10-10T00:00:00+00:00"
+  },
+  {
+    "id": "evidence_match_position_columns_empty",
+    "source": "european_football_2.sqlite (read-only)",
+    "query": "SELECT home_player_X1, home_player_Y1, home_player_11, home_player_Y11 FROM Match LIMIT 3",
+    "result": "All sampled position values are empty strings across the home and away X and Y coordinate columns, so the positional layout columns carry no usable data.",
+    "validation_method": "representative row inspection of position columns",
+    "timestamp": "2026-10-10T00:00:00+00:00"
+  },
+  {
+    "id": "evidence_player_demographics",
+    "source": "european_football_2.sqlite (read-only)",
+    "query": "SELECT MIN(height), MAX(height), MIN(weight), MAX(weight) FROM Player; SELECT birthday FROM Player LIMIT 3",
+    "result": "Height 157.48 to 208.28, weight 117 to 243, across 11060 players. Birth dates are text timestamps with a zero time component, for example 1992-02-29 00:00:00. The tallest players reach 208.28 and 203.2, with a single player at the maximum.",
+    "validation_method": "range inspection and representative row sampling",
+    "timestamp": "2026-10-10T00:00:00+00:00"
+  },
+  {
+    "id": "evidence_player_name_prefix",
+    "source": "european_football_2.sqlite (read-only)",
+    "query": "SELECT player_name, birthday FROM Player WHERE player_name LIKE 'Aaron%' LIMIT 8",
+    "result": "Names are stored as given name followed by family name in one field, for example Aaron Cresswell, Aaron Hunt, Aaron Lennon and Aaron Mooy. The prefix 'Aaron%' matches multiple distinct players, and the birth years within that match alone span 1979 to 1996.",
+    "validation_method": "prefix match sampling",
+    "timestamp": "2026-10-10T00:00:00+00:00"
+  },
+  {
+    "id": "evidence_skill_value_range",
+    "source": "european_football_2.sqlite (read-only)",
+    "query": "SELECT MIN/MAX(volleys), MIN/MAX(dribbling), MIN/MAX(finishing) FROM Player_Attributes",
+    "result": "Skill scores are bounded integers: volleys 1-93, dribbling 1-97, finishing 1-97, with 836 NULLs on each. Threshold phrases such as 'over 70' are plain numeric comparisons on the named column.",
+    "validation_method": "min/max and null count per skill column",
+    "timestamp": "2026-10-10T00:00:00+00:00"
+  },
+  {
+    "id": "evidence_league_country",
+    "source": "european_football_2.sqlite (read-only)",
+    "query": "SELECT l.name, c.name FROM League l JOIN Country c ON l.country_id=c.id",
+    "result": "Eleven leagues each join to exactly one country, and each league name embeds that country name: Belgium Jupiler League, England Premier League, France Ligue 1, Germany 1. Bundesliga, Italy Serie A, Netherlands Eredivisie, Poland Ekstraklasa, Portugal Liga ZON Sagres, Scotland Premier League, Spain LIGA BBVA, Switzerland Super League.",
+    "validation_method": "join inspection and naming pattern check",
+    "timestamp": "2026-10-10T00:00:00+00:00"
+  },
+  {
+    "id": "evidence_league_match_volumes",
+    "source": "european_football_2.sqlite (read-only)",
+    "query": "SELECT l.name, m.season, COUNT(*) FROM Match m JOIN League l ON m.league_id=l.id GROUP BY 1,2 ORDER BY 3 DESC LIMIT 5",
+    "result": "Top leagues play 380 fixtures per complete season, for example England Premier League in each of the eight seasons covered. League sizes differ within a season, from 306 fixtures upwards.",
+    "validation_method": "fixture count per league and season",
+    "timestamp": "2026-10-10T00:00:00+00:00"
+  },
+  {
+    "id": "evidence_league_ties_2008_2009",
+    "source": "european_football_2.sqlite (read-only)",
+    "query": "SELECT l.name, COUNT(*) c FROM Match m JOIN League l ON m.league_id=l.id WHERE m.season='2008/2009' GROUP BY 1 ORDER BY c DESC LIMIT 6",
+    "result": "Spain LIGA BBVA, Italy Serie A, France Ligue 1 and England Premier League each played 380 fixtures in 2008/2009, a four-way tie at the maximum. Netherlands Eredivisie and Germany 1. Bundesliga each played 306.",
+    "validation_method": "ranked aggregate inspection revealing tied maxima",
+    "timestamp": "2026-10-10T00:00:00+00:00"
+  },
+  {
+    "id": "evidence_goals_by_league_2015_2016",
+    "source": "european_football_2.sqlite (read-only)",
+    "query": "SELECT l.name, SUM(m.home_team_goal+m.away_team_goal) g FROM Match m JOIN League l ON m.league_id=l.id WHERE m.season='2015/2016' GROUP BY 1 ORDER BY g DESC LIMIT 3",
+    "result": "Spain LIGA BBVA 1043 goals, England Premier League 1026, Italy Serie A 979. The sum of the two goal columns across a league's fixtures is well defined because both goal columns are fully populated.",
+    "validation_method": "aggregate goal sum per league for the season",
+    "timestamp": "2026-10-10T00:00:00+00:00"
+  }
+]

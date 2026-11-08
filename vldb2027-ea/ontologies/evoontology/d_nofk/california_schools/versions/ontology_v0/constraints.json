@@ -1,0 +1,334 @@
+[
+  {
+    "id": "constraint_frpm_pct_fraction",
+    "target": "term_frpm_eligibility_rate",
+    "constraint_type": "unit",
+    "trigger_keywords": [
+      "percent",
+      "percentage",
+      "rate",
+      "share",
+      "proportion",
+      "eligible",
+      "FRPM",
+      "free meal",
+      "poverty rate",
+      "percentage points"
+    ],
+    "severity": "block",
+    "scope": "All percent columns in the FRPM file at either population scope",
+    "confidence": "high",
+    "description": "Columns named Percent (%) are stored as fractions between 0 and 1, not as 0 to 100 values. A value of 0.52 means 52 percent. Comparing the column directly against a percentage threshold, or multiplying a difference of two such columns by 100 without justification, produces wrong results. The observed minimum is about 0.0018 and the observed maximum is exactly 1.0, with no value above 1.",
+    "evidence": [
+      "evidence_03"
+    ]
+  },
+  {
+    "id": "constraint_sat_suppression_threshold",
+    "target": "term_sat_section_average_score",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "suppressed",
+      "suppression",
+      "missing score",
+      "null score",
+      "small school",
+      "small cohort",
+      "reporting threshold",
+      "no score",
+      "absent score"
+    ],
+    "severity": "block",
+    "scope": "SAT file section average scores and the 1500-or-above count",
+    "confidence": "high",
+    "description": "The three section average score columns and the 1500-or-above count are suppressed, meaning null, whenever the test taker count is 10 or below. This affects 596 of 2269 records: 218 with zero test takers and 378 with between 1 and 10. The smallest test taker count with a reported score is 11, and no record above 10 is suppressed. Treating null scores as zeros, or averaging scores without excluding these records, biases results downward. The test taker count itself is always reported.",
+    "evidence": [
+      "evidence_10",
+      "evidence_11"
+    ]
+  },
+  {
+    "id": "constraint_cds_code_normalization",
+    "target": "term_cds_code_satscores",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "join",
+      "CDSCode",
+      "cds",
+      "match",
+      "link",
+      "identifier",
+      "leading zero",
+      "county code",
+      "lookup",
+      "merge"
+    ],
+    "severity": "block",
+    "scope": "Every comparison of the SAT file against the school directory or the FRPM file",
+    "confidence": "high",
+    "description": "The SAT file identifier drops the leading zero of county codes 01 to 09, so 211 of its 2269 values are 13 characters while the directory and FRPM identifiers are always 14 characters. A direct equality match links only 2058 records and silently loses 211; prefixing a zero to the 13-character values links all 2269. The lost records are not random: they are exactly the schools in the nine lowest-numbered counties, so an uncorrected join biases any county-level comparison.",
+    "evidence": [
+      "evidence_05",
+      "evidence_06"
+    ]
+  },
+  {
+    "id": "constraint_enroll12_grain",
+    "target": "term_twelfth_grade_enrollment",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "enrollment",
+      "enroll12",
+      "school size",
+      "twelfth grade",
+      "senior",
+      "participation denominator",
+      "grade 12"
+    ],
+    "severity": "block",
+    "scope": "Any comparison that uses twelfth-grade enrollment, and any comparison against the FRPM enrollment columns",
+    "confidence": "high",
+    "description": "The SAT file enrollment column is a single-grade headcount and is much smaller than the K-12 enrollment reported in the FRPM file for the same school; one school reports 62 against 1087. It is the correct denominator for SAT participation but the wrong denominator for any whole-school rate. Thirty records also report more test takers than twelfth-grade enrollment, and five report zero enrollment, so a participation rate can exceed one or be undefined.",
+    "evidence": [
+      "evidence_14"
+    ]
+  },
+  {
+    "id": "constraint_sat_record_grain",
+    "target": "term_sat_record_type",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "district level",
+      "school level",
+      "record type",
+      "rtype",
+      "grain",
+      "aggregate",
+      "roll-up",
+      "D",
+      "S"
+    ],
+    "severity": "block",
+    "scope": "All SAT file aggregations and comparisons",
+    "confidence": "high",
+    "description": "The SAT file mixes two grains in one table: 520 records with record type D are district roll-ups whose identifier ends in a school segment of 0000000, and 1749 records with record type S are individual schools. Each D record aligns exactly with a district row in the directory and each S record with a school row. Pooling both grains in an average or a count double-counts students, and joining D records to school-level FRPM rows matches the district row rather than any school.",
+    "evidence": [
+      "evidence_13",
+      "evidence_07"
+    ]
+  },
+  {
+    "id": "constraint_district_level_rows_present",
+    "target": "term_school",
+    "constraint_type": "scope",
+    "trigger_keywords": [
+      "district record",
+      "0000000",
+      "school code",
+      "filter",
+      "school level",
+      "aggregate row",
+      "pseudo school",
+      "directory row"
+    ],
+    "severity": "block",
+    "scope": "All three tables",
+    "confidence": "high",
+    "description": "All three tables carry records whose seven-character school segment is 0000000 and which describe an administrative unit rather than a school: 45 rows in the FRPM file and 1369 rows in the school directory. The FRPM district rows also have blank school type, educational option type and charter fields, so they silently become their own category in any group-by. A school-level analysis must exclude them explicitly.",
+    "evidence": [
+      "evidence_07"
+    ]
+  },
+  {
+    "id": "constraint_frpm_single_year",
+    "target": "term_academic_year",
+    "constraint_type": "scope",
+    "trigger_keywords": [
+      "year",
+      "trend",
+      "time series",
+      "over time",
+      "change",
+      "2014-2015",
+      "academic year",
+      "compare years"
+    ],
+    "severity": "warning",
+    "scope": "FRPM file and any cross-year claim",
+    "confidence": "high",
+    "description": "The FRPM file contains a single academic year, 2014-2015, on all 9986 rows, and the SAT file carries no explicit year column. No trend, year-over-year change or time series analysis is possible from this data environment, and results should not be described as anything other than a single-year snapshot.",
+    "evidence": [
+      "evidence_02"
+    ]
+  },
+  {
+    "id": "constraint_school_status_scope",
+    "target": "term_school_operational_status",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "active",
+      "closed",
+      "merged",
+      "pending",
+      "current school",
+      "open school",
+      "still operating",
+      "closure"
+    ],
+    "severity": "warning",
+    "scope": "School directory status and any population definition built on it",
+    "confidence": "high",
+    "description": "Directory status takes four values: Active 11708, Closed 4518, Merged 1448 and Pending 12. Neither the FRPM file nor the SAT file is restricted to Active schools, and 140 FRPM rows belong to schools the directory marks Closed. A claim about schools currently operating requires an explicit status restriction; without one the population mixes 2014-2015 reporting with the directory's later lifecycle state.",
+    "evidence": [
+      "evidence_20"
+    ]
+  },
+  {
+    "id": "constraint_charter_blank_vs_zero",
+    "target": "term_charter_status",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "charter",
+      "null",
+      "blank",
+      "missing",
+      "unknown",
+      "non-charter",
+      "charter flag",
+      "not applicable"
+    ],
+    "severity": "warning",
+    "scope": "Charter status columns in both the FRPM file and the school directory",
+    "confidence": "high",
+    "description": "Charter status uses 1 for charter, 0 for non-charter and blank for not applicable. The blank count matches the district-level row count exactly in each table, 45 in the FRPM file and 1369 in the directory, so blank means the record is not a school rather than that charter status is unknown. Filtering on the flag without excluding blanks, or treating blank as non-charter, changes the denominator of any charter share.",
+    "evidence": [
+      "evidence_18"
+    ]
+  },
+  {
+    "id": "constraint_frpm_rate_nulls",
+    "target": "term_frpm_eligibility_rate",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "null",
+      "missing",
+      "blank",
+      "incomplete",
+      "FRPM percentage",
+      "missing rate"
+    ],
+    "severity": "warning",
+    "scope": "FRPM percentage and free meal count columns",
+    "confidence": "high",
+    "description": "The FRPM percentage columns are null in 50 rows and the free meal percentage and free meal count columns are null in 56 rows, while enrollment is never null. Averages over rates therefore silently drop a small number of schools, and a computed rate for those rows cannot be reconstructed from the count columns because the counts are null too.",
+    "evidence": [
+      "evidence_22"
+    ]
+  },
+  {
+    "id": "constraint_frpm_ge_free_meal",
+    "target": "term_frpm_eligible_count",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "free meal",
+      "reduced price",
+      "FRPM",
+      "subset",
+      "difference",
+      "reduced only",
+      "narrower measure"
+    ],
+    "severity": "info",
+    "scope": "Comparison of the two eligibility measures",
+    "confidence": "high",
+    "description": "The FRPM count is never smaller than the free meal count, with zero violations across all 9986 rows, and the two are equal in 578 rows. The FRPM measure therefore includes every free-meal-eligible student plus any student eligible only on reduced-price terms. Reporting the two shares as if they measured different populations when they coincide is misleading, and subtracting one from the other to isolate reduced-price eligibility is only valid where the two differ.",
+    "evidence": [
+      "evidence_15"
+    ]
+  },
+  {
+    "id": "constraint_district_name_not_unique",
+    "target": "term_school_district",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "district name",
+      "duplicate",
+      "identify district",
+      "name collision",
+      "group by district",
+      "county"
+    ],
+    "severity": "block",
+    "scope": "Any grouping or aggregation keyed on a district label",
+    "confidence": "high",
+    "description": "District names repeat across counties: labels such as Jefferson Elementary appear in three different counties, and there are 1430 distinct seven-character district prefixes against a smaller number of distinct district labels. Grouping by district name merges unrelated districts from different counties. The seven-character county-and-district prefix of the CDS code, or the county and district label together, is the reliable district key.",
+    "evidence": [
+      "evidence_09"
+    ]
+  },
+  {
+    "id": "constraint_sat_coverage_limits",
+    "target": "term_sat_participation_count",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "coverage",
+      "missing SAT",
+      "no test takers",
+      "not reported",
+      "sample",
+      "all schools",
+      "SAT availability"
+    ],
+    "severity": "warning",
+    "scope": "Any statement about California schools as a whole",
+    "confidence": "high",
+    "description": "The SAT file covers only 2269 school and district records and only 1782 of the 9986 FRPM schools have a matching SAT record, while the directory lists 16317 school-level records. SAT analysis therefore describes a self-selected subset, mostly schools that enrol twelfth-grade students and reported results, and cannot be generalised to all California public schools or to elementary and middle schools.",
+    "evidence": [
+      "evidence_21",
+      "evidence_01"
+    ]
+  },
+  {
+    "id": "constraint_enrollment_two_scopes",
+    "target": "term_enrollment",
+    "constraint_type": "scope",
+    "trigger_keywords": [
+      "enrollment",
+      "ages 5-17",
+      "K-12",
+      "population scope",
+      "denominator",
+      "enrolled students",
+      "which enrollment"
+    ],
+    "severity": "warning",
+    "scope": "FRPM file enrollment, count and rate columns",
+    "confidence": "high",
+    "description": "Enrollment, eligibility counts and eligibility rates are each reported twice, once for the K-12 population and once for the Ages 5-17 population. The two scopes give different values for the same school. Mixing a K-12 numerator with an Ages 5-17 denominator, or choosing a scope without stating it, produces a rate that matches neither reported column.",
+    "evidence": [
+      "evidence_04",
+      "evidence_24"
+    ]
+  },
+  {
+    "id": "constraint_sat_score_scale",
+    "target": "term_sat_section_average_score",
+    "constraint_type": "unit",
+    "trigger_keywords": [
+      "SAT score",
+      "scale",
+      "200-800",
+      "section score",
+      "1500",
+      "combined score",
+      "total score"
+    ],
+    "severity": "warning",
+    "scope": "SAT section averages and the 1500 threshold",
+    "confidence": "high",
+    "description": "Each section average is reported on the 200 to 800 scale of the pre-2016 SAT; observed non-null values run from 289 to 699. The 1500 threshold used by the high-scoring count applies to the sum of the three sections, not to one section. Comparing a single section average against 1500, or summing three section averages from schools with different test taker counts, mixes two different scales.",
+    "evidence": [
+      "evidence_12"
+    ]
+  }
+]

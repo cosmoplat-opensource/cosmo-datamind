@@ -1,0 +1,457 @@
+[
+  {
+    "id": "patient",
+    "name": "Patient",
+    "type": "entity",
+    "definition": "A person enrolled in the thrombosis study, identified by a unique patient ID and carrying demographics (sex, birthday), a record date, a first-visit date, an admission status and the recorded autoimmune disease diagnosis.",
+    "scope": "Root entity for per-patient analysis across the Patient, Examination and Laboratory tables.",
+    "aliases": [
+      "patients",
+      "subject",
+      "case",
+      "patient record"
+    ],
+    "evidence": [
+      "ev_patient_table",
+      "ev_patient_linkage_coverage"
+    ]
+  },
+  {
+    "id": "examination",
+    "name": "Clinical Examination",
+    "type": "entity",
+    "definition": "One clinical examination event for a patient, recording the examination date, the autoimmune disease diagnosis at that visit, the thrombosis severity grade, observed symptoms, and the antinuclear and anticardiolipin antibody panel.",
+    "scope": "Per-visit clinical observation stored in the Examination table; a patient may have more than one examination record.",
+    "aliases": [
+      "medical examination",
+      "exam",
+      "visit record",
+      "Examination"
+    ],
+    "evidence": [
+      "ev_examination_table"
+    ]
+  },
+  {
+    "id": "laboratory_record",
+    "name": "Laboratory Test Record",
+    "type": "entity",
+    "definition": "One laboratory test event for a patient on a given date. The table is stored in wide format: every analyte has its own column and most analyte columns are empty on a given row.",
+    "scope": "Per-test-date laboratory measurement stored in the Laboratory table; a patient may accumulate hundreds of records.",
+    "aliases": [
+      "laboratory examination",
+      "lab test",
+      "laboratory test",
+      "blood test",
+      "Laboratory"
+    ],
+    "evidence": [
+      "ev_laboratory_table",
+      "ev_lab_wide_format_and_nulls"
+    ]
+  },
+  {
+    "id": "patient_identifier",
+    "name": "Patient Identifier",
+    "type": "dimension",
+    "definition": "The numeric ID that uniquely identifies a patient. Patient IDs are large multi-digit integers (observed 2110-5845877), not dense sequence numbers, so they must never be treated as a continuous range.",
+    "scope": "Used to identify, list and join patients across the Patient, Examination and Laboratory tables.",
+    "aliases": [
+      "ID",
+      "patient ID",
+      "patient number",
+      "patient code"
+    ],
+    "evidence": [
+      "ev_patient_identifier_range"
+    ]
+  },
+  {
+    "id": "sex",
+    "name": "Sex",
+    "type": "dimension",
+    "definition": "Recorded sex of the patient, encoded as 'M' or 'F'.",
+    "scope": "Patient demographic dimension; used both as a cohort filter and as the conditioning variable for sex-specific reference ranges such as uric acid.",
+    "aliases": [
+      "SEX",
+      "gender",
+      "male",
+      "female",
+      "men",
+      "women"
+    ],
+    "evidence": [
+      "ev_sex_values"
+    ]
+  },
+  {
+    "id": "birthday",
+    "name": "Birthday",
+    "type": "dimension",
+    "definition": "The patient's date of birth, stored as a date (observed 1912-08-28 to 2007-05-28).",
+    "scope": "Basis for age computation and for birth-year cohort filters.",
+    "aliases": [
+      "birth date",
+      "date of birth",
+      "born",
+      "DOB"
+    ],
+    "evidence": [
+      "ev_birthday_range"
+    ]
+  },
+  {
+    "id": "age",
+    "name": "Patient Age",
+    "type": "metric",
+    "definition": "The patient's age in years, derived from the birthday relative to the current date (current year minus birth year, or an equivalent date difference). It is not a stored column.",
+    "scope": "Derived per-patient attribute used for age thresholds and for 'youngest'/'oldest' comparisons.",
+    "aliases": [
+      "age",
+      "years old",
+      "underage",
+      "older than",
+      "youngest",
+      "oldest"
+    ],
+    "evidence": [
+      "ev_age_derivation",
+      "ev_schema_no_derived_metrics"
+    ]
+  },
+  {
+    "id": "admission_status",
+    "name": "Admission Status",
+    "type": "dimension",
+    "definition": "Whether the patient was admitted to the hospital as an inpatient ('+') or merely followed as an outpatient ('-') for the recorded visit.",
+    "scope": "Patient-level visit attribute used to separate inpatient from outpatient cohorts.",
+    "aliases": [
+      "Admission",
+      "outpatient",
+      "inpatient",
+      "admitted",
+      "followed at the outpatient clinic"
+    ],
+    "evidence": [
+      "ev_admission_values"
+    ]
+  },
+  {
+    "id": "patient_diagnosis",
+    "name": "Patient Diagnosis",
+    "type": "category",
+    "definition": "The autoimmune disease or diseases recorded for a patient in the Patient table, expressed as one or more disease abbreviations joined by commas (for example 'SLE', 'RA', 'APS', 'SLE, APS').",
+    "scope": "Patient-level diagnosis used for disease cohort filters; absent from the Patient table only for an empty string.",
+    "aliases": [
+      "diagnosis",
+      "disease",
+      "diagnosed with",
+      "Diagnosis of the patient",
+      "diagnosed with SLE"
+    ],
+    "evidence": [
+      "ev_patient_diagnosis_codes",
+      "ev_diagnosis_vocabulary_overlap"
+    ]
+  },
+  {
+    "id": "examination_diagnosis",
+    "name": "Examination Diagnosis",
+    "type": "category",
+    "definition": "The autoimmune disease or diseases recorded for a patient at a specific examination event in the Examination table, using the same disease abbreviation vocabulary as the patient-level diagnosis.",
+    "scope": "Visit-level diagnosis used when the question ties a disease to an examination date; frequently empty (331 of 806 rows).",
+    "aliases": [
+      "diagnosis at examination",
+      "examination disease",
+      "Diagnosis of the examination"
+    ],
+    "evidence": [
+      "ev_examination_diagnosis_codes",
+      "ev_diagnosis_vocabulary_overlap"
+    ]
+  },
+  {
+    "id": "thrombosis_severity",
+    "name": "Thrombosis Severity",
+    "type": "dimension",
+    "definition": "Graded severity of thrombosis recorded at an examination on a 0-3 ordinal scale, where 0 means no thrombosis and non-zero values encode clinical severity grades.",
+    "scope": "Examination-level thrombosis grading; the workload distinguishes grade 1 as the most serious and grade 2 as severe.",
+    "aliases": [
+      "Thrombosis",
+      "thrombosis",
+      "degree of thrombosis",
+      "severe thrombosis",
+      "most serious thrombosis",
+      "does not have thrombosis",
+      "thrombosis cases"
+    ],
+    "evidence": [
+      "ev_thrombosis_distribution",
+      "ev_symptoms_only_for_thrombosis"
+    ]
+  },
+  {
+    "id": "symptom",
+    "name": "Observed Symptom",
+    "type": "dimension",
+    "definition": "Free-text clinical symptom description recorded at an examination. It is populated only when the examination carries a non-zero thrombosis grade, so it doubles as a presence/absence signal.",
+    "scope": "Examination-level textual observation, not a coded diagnosis.",
+    "aliases": [
+      "Symptoms",
+      "symptoms observed",
+      "clinical symptoms",
+      "symptom"
+    ],
+    "evidence": [
+      "ev_symptoms_only_for_thrombosis",
+      "ev_lab_wide_format_and_nulls"
+    ]
+  },
+  {
+    "id": "examination_date",
+    "name": "Examination Date",
+    "type": "dimension",
+    "definition": "The date on which a clinical examination was performed (observed 1989-04-18 to 1998-04-17).",
+    "scope": "Time dimension for examination-level selection and year filters.",
+    "aliases": [
+      "Examination Date",
+      "date of examination",
+      "examined in",
+      "examination year",
+      "examined in 1997"
+    ],
+    "evidence": [
+      "ev_examination_date_range"
+    ]
+  },
+  {
+    "id": "record_date",
+    "name": "Patient Record Date",
+    "type": "dimension",
+    "definition": "The date stored on the patient record in the Patient table, used in the workload as the date on which the patient was diagnosed and/or came to the hospital.",
+    "scope": "Patient-level event date used for year-based patient selection; many patients share the same value because records were entered in batches (97 distinct values for 1022 non-empty records).",
+    "aliases": [
+      "Description",
+      "came at the hospital",
+      "came to the hospital",
+      "diagnosed on",
+      "date of diagnosis"
+    ],
+    "evidence": [
+      "ev_record_date_semantics"
+    ]
+  },
+  {
+    "id": "first_visit_date",
+    "name": "First Visit Date",
+    "type": "dimension",
+    "definition": "The date of the patient's first recorded visit to the hospital (observed 1972-08-02 to 1998-08-28). It is generally earlier than the record date and is often empty.",
+    "scope": "Patient-level entry date into the study; used for 'came to the hospital after ...' filters.",
+    "aliases": [
+      "First Date",
+      "first visit",
+      "came to the hospital after",
+      "first attendance"
+    ],
+    "evidence": [
+      "ev_first_visit_date_range"
+    ]
+  },
+  {
+    "id": "lab_test_date",
+    "name": "Laboratory Test Date",
+    "type": "dimension",
+    "definition": "The date on which a laboratory test record was produced (observed 1981-01-27 to 1999-03-04, no placeholder dates).",
+    "scope": "Time dimension for laboratory-level analysis and month-over-month or year-over-year comparisons.",
+    "aliases": [
+      "Date",
+      "test date",
+      "lab date"
+    ],
+    "evidence": [
+      "ev_lab_test_date_range"
+    ]
+  },
+  {
+    "id": "antinuclear_antibody",
+    "name": "Antinuclear Antibody (ANA)",
+    "type": "metric",
+    "definition": "Antinuclear antibody titre measured at an examination; reported as a numeric titre where 0 means negative and higher powers of two indicate stronger positivity. A parallel qualitative staining-pattern field is recorded.",
+    "scope": "Examination-level serology used in connective-tissue-disease assessment.",
+    "aliases": [
+      "ANA",
+      "antinuclear antibody",
+      "ANA titer",
+      "ANA (+)"
+    ],
+    "evidence": [
+      "ev_ana_titer_values"
+    ]
+  },
+  {
+    "id": "ana_pattern",
+    "name": "ANA Staining Pattern",
+    "type": "dimension",
+    "definition": "Immunofluorescence staining pattern or patterns accompanying the ANA titre, encoded as letters such as S (speckled), P (peripheral), D (diffuse) or N, sometimes combined with commas or periods.",
+    "scope": "Examination-level qualitative descriptor; not suitable for numeric comparison.",
+    "aliases": [
+      "ANA Pattern",
+      "staining pattern",
+      "speckled",
+      "peripheral",
+      "diffuse"
+    ],
+    "evidence": [
+      "ev_ana_pattern_values"
+    ]
+  },
+  {
+    "id": "anticardiolipin_antibody",
+    "name": "Anticardiolipin Antibody",
+    "type": "metric",
+    "definition": "Anticardiolipin antibody concentration measured at an examination, reported separately for the IgG, IgM and IgA isotypes in three parallel columns.",
+    "scope": "Examination-level serology; the phrase 'anti-Cardiolipin' in analytical questions maps onto the aCL isotype columns.",
+    "aliases": [
+      "aCL",
+      "anti-Cardiolipin",
+      "anticardiolipin",
+      "cardiolipin antibody",
+      "aCL IgM",
+      "aCL IgG",
+      "aCL IgA"
+    ],
+    "evidence": [
+      "ev_acl_columns"
+    ]
+  },
+  {
+    "id": "anti_sm_antibody",
+    "name": "Anti-Sm Antibody",
+    "type": "metric",
+    "definition": "Anti-Smith antibody result from a laboratory record. It is recorded either as a numeric titre or as a textual marker, so a negative result appears in several interchangeable encodings.",
+    "scope": "Laboratory-level serology; 'normal anti-SM' means a negative result.",
+    "aliases": [
+      "SM",
+      "anti-SM",
+      "anti Smith",
+      "anti-Sm antibody",
+      "normal anti-SM"
+    ],
+    "evidence": [
+      "ev_sm_encodings",
+      "ev_serology_text_encodings"
+    ]
+  },
+  {
+    "id": "uric_acid",
+    "name": "Uric Acid (UA)",
+    "type": "metric",
+    "definition": "Serum uric acid concentration from a laboratory record. The reference range is sex-specific: the upper normal bound is 8.0 for males and 6.5 for females.",
+    "scope": "Laboratory analyte compared against a sex-specific upper reference bound.",
+    "aliases": [
+      "UA",
+      "uric acid",
+      "serum uric acid",
+      "abnormal uric acid"
+    ],
+    "evidence": [
+      "ev_ua_distribution"
+    ]
+  },
+  {
+    "id": "hematocrit",
+    "name": "Hematocrit (HCT)",
+    "type": "metric",
+    "definition": "Hematocrit level from a laboratory record; elevated values above the upper reference bound are the abnormal direction used in the workload.",
+    "scope": "Laboratory analyte compared against an upper reference bound.",
+    "aliases": [
+      "HCT",
+      "hematocrit",
+      "hematoclit",
+      "hematocrit level"
+    ],
+    "evidence": [
+      "ev_hematocrit_distribution"
+    ]
+  },
+  {
+    "id": "red_blood_cell_count",
+    "name": "Red Blood Cell Count (RBC)",
+    "type": "metric",
+    "definition": "Red blood cell count from a laboratory record; low values are the abnormal direction used in the workload.",
+    "scope": "Laboratory analyte compared against a lower reference bound.",
+    "aliases": [
+      "RBC",
+      "red blood cell",
+      "red blood count",
+      "lower red blood cell"
+    ],
+    "evidence": [
+      "ev_rbc_distribution"
+    ]
+  },
+  {
+    "id": "lactate_dehydrogenase",
+    "name": "Lactate Dehydrogenase (LDH)",
+    "type": "metric",
+    "definition": "Lactate dehydrogenase enzyme activity from a laboratory record; values above the upper reference bound are the abnormal direction used in the workload.",
+    "scope": "Laboratory analyte compared against an upper reference bound.",
+    "aliases": [
+      "LDH",
+      "lactate dehydrogenase",
+      "LDH beyond normal range"
+    ],
+    "evidence": [
+      "ev_ldh_distribution"
+    ]
+  },
+  {
+    "id": "prothrombin_time",
+    "name": "Prothrombin Time (PT)",
+    "type": "metric",
+    "definition": "Prothrombin time from a laboratory record; values at or above the upper reference bound are the abnormal direction used in the workload.",
+    "scope": "Laboratory analyte used in coagulation assessment.",
+    "aliases": [
+      "PT",
+      "prothrombin time",
+      "abnormal prothrombin time"
+    ],
+    "evidence": [
+      "ev_pt_distribution"
+    ]
+  },
+  {
+    "id": "immunoglobulin_a",
+    "name": "Immunoglobulin A (IgA)",
+    "type": "metric",
+    "definition": "Serum immunoglobulin A concentration from a laboratory record; a two-sided reference interval applies, so both low and high values count as abnormal.",
+    "scope": "Laboratory analyte compared against both a lower and an upper reference bound.",
+    "aliases": [
+      "IGA",
+      "IgA",
+      "Ig A",
+      "immunoglobulin A",
+      "normal Ig A level"
+    ],
+    "evidence": [
+      "ev_iga_distribution"
+    ]
+  },
+  {
+    "id": "total_cholesterol",
+    "name": "Total Cholesterol (T-CHO)",
+    "type": "metric",
+    "definition": "Total serum cholesterol from a laboratory record. Change between two test dates is expressed as the relative change between the two measured values.",
+    "scope": "Laboratory analyte used for month-over-month comparisons.",
+    "aliases": [
+      "T-CHO",
+      "TCHO",
+      "total cholesterol",
+      "cholesterol",
+      "decrease rate for total cholesterol"
+    ],
+    "evidence": [
+      "ev_tcho_distribution"
+    ]
+  }
+]

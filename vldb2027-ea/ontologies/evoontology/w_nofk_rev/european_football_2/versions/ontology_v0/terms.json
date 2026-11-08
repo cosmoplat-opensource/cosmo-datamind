@@ -1,0 +1,498 @@
+[
+  {
+    "id": "player",
+    "name": "Player",
+    "type": "entity",
+    "definition": "A football player represented once in the Player table and identified by player_api_id. Carries identity and physical demographics only; ability measures live in dated attribute records.",
+    "scope": "Player-level analysis: identity, demographics, and joins to dated FIFA attribute records.",
+    "aliases": [
+      "footballer",
+      "football player",
+      "player record"
+    ],
+    "evidence": [
+      "evidence_schema_tables",
+      "evidence_row_counts"
+    ]
+  },
+  {
+    "id": "player_api_id",
+    "name": "Player API Identifier",
+    "type": "concept",
+    "definition": "The database-native numeric identifier of a player; unique within the Player table.",
+    "scope": "Primary join key between Player and Player_Attributes, and the value stored in the Match home_player_N and away_player_N slots.",
+    "aliases": [
+      "player id",
+      "player_api_id",
+      "api id"
+    ],
+    "evidence": [
+      "evidence_schema_tables",
+      "evidence_join_integrity"
+    ]
+  },
+  {
+    "id": "player_ref_in_attributes",
+    "name": "Player Reference in Player Attributes",
+    "type": "concept",
+    "definition": "The player identifier carried on each Player_Attributes record, pointing back to the player it describes.",
+    "scope": "Used to attach a dated attribute snapshot to its player.",
+    "aliases": [
+      "Player_Attributes.player_api_id",
+      "attribute player reference"
+    ],
+    "evidence": [
+      "evidence_join_integrity"
+    ]
+  },
+  {
+    "id": "player_name",
+    "name": "Player Name",
+    "type": "dimension",
+    "definition": "The full display name of a player held in a single text field, given name first and family name last.",
+    "scope": "Identity filters such as exact full-name lookup or given-name prefix search. Names are not unique across players.",
+    "aliases": [
+      "player_name",
+      "name",
+      "full name"
+    ],
+    "evidence": [
+      "evidence_player_name_prefix"
+    ]
+  },
+  {
+    "id": "player_birthday",
+    "name": "Player Birthday",
+    "type": "dimension",
+    "definition": "The player's date of birth, stored with a zero time component.",
+    "scope": "Age and cohort filters such as players born before or after a given year.",
+    "aliases": [
+      "birthday",
+      "date of birth",
+      "birth date"
+    ],
+    "evidence": [
+      "evidence_player_demographics"
+    ]
+  },
+  {
+    "id": "player_height",
+    "name": "Player Height",
+    "type": "metric",
+    "definition": "The player's physical height expressed in centimetres.",
+    "scope": "Physical comparisons such as the tallest or shortest players.",
+    "aliases": [
+      "height",
+      "tallest",
+      "shortest"
+    ],
+    "evidence": [
+      "evidence_player_demographics"
+    ]
+  },
+  {
+    "id": "player_attribute_record",
+    "name": "Player Attribute Record",
+    "type": "concept",
+    "definition": "A date-stamped FIFA attribute snapshot describing one player at one point in time; holds overall rating, individual skill scores and work rates.",
+    "scope": "The source of all per-player skill and rating measures. One player has between 2 and 56 records, so most measures must be aggregated or pinned to a date.",
+    "aliases": [
+      "Player_Attributes row",
+      "player snapshot",
+      "player attribute"
+    ],
+    "evidence": [
+      "evidence_player_attribute_dates",
+      "evidence_row_counts",
+      "evidence_player_attribute_duplicates"
+    ]
+  },
+  {
+    "id": "overall_rating",
+    "name": "Overall Rating",
+    "type": "metric",
+    "definition": "FIFA's composite current-ability score for a player inside one attribute snapshot, expressed as an integer.",
+    "scope": "Ability comparisons, single-snapshot lookups and averages across a player's snapshots.",
+    "aliases": [
+      "overall rating",
+      "rating",
+      "overall_rating"
+    ],
+    "evidence": [
+      "evidence_player_attribute_columns_and_ranges"
+    ]
+  },
+  {
+    "id": "player_skill_attribute",
+    "name": "Player Skill Attribute",
+    "type": "metric",
+    "definition": "A single FIFA skill score for a player inside one attribute snapshot, such as finishing, volleys, dribbling, crossing or short passing.",
+    "scope": "Skill-threshold filters and skill-based comparisons across snapshots.",
+    "aliases": [
+      "skill",
+      "skill score",
+      "finishing",
+      "volleys",
+      "dribbling"
+    ],
+    "evidence": [
+      "evidence_skill_value_range"
+    ]
+  },
+  {
+    "id": "attacking_work_rate",
+    "name": "Attacking Work Rate",
+    "type": "dimension",
+    "definition": "A categorical descriptor of how strongly a player pushes forward and joins attacking moves in a snapshot.",
+    "scope": "Player role filters such as identifying players who tend to attack. Stored as a text category, not a number.",
+    "aliases": [
+      "attacking work rate",
+      "attacking_work_rate",
+      "attack moves",
+      "tend to be attacking"
+    ],
+    "evidence": [
+      "evidence_work_rate_value_domain"
+    ]
+  },
+  {
+    "id": "defensive_work_rate",
+    "name": "Defensive Work Rate",
+    "type": "dimension",
+    "definition": "A categorical descriptor of how strongly a player holds position and defends while the team attacks in a snapshot.",
+    "scope": "Player role filters such as identifying players who stay back and defend. Stored as a text category, not a number.",
+    "aliases": [
+      "defensive work rate",
+      "defensive_work_rate",
+      "remain in his position",
+      "stay back"
+    ],
+    "evidence": [
+      "evidence_work_rate_value_domain"
+    ]
+  },
+  {
+    "id": "team",
+    "name": "Team",
+    "type": "entity",
+    "definition": "A football club represented once in the Team table, identified by team_api_id and optionally by the FIFA identifier team_fifa_api_id.",
+    "scope": "Team-level analysis: naming, identity, fixtures and tactical attribute snapshots.",
+    "aliases": [
+      "club",
+      "team record",
+      "side"
+    ],
+    "evidence": [
+      "evidence_schema_tables",
+      "evidence_row_counts"
+    ]
+  },
+  {
+    "id": "team_api_id",
+    "name": "Team API Identifier",
+    "type": "concept",
+    "definition": "The database-native numeric identifier of a team; unique within the Team table.",
+    "scope": "Primary join key linking Team to Team_Attributes and to the home and away team slots of Match.",
+    "aliases": [
+      "team id",
+      "team_api_id",
+      "api id"
+    ],
+    "evidence": [
+      "evidence_schema_tables",
+      "evidence_join_integrity"
+    ]
+  },
+  {
+    "id": "team_fifa_api_id",
+    "name": "Team FIFA API Identifier",
+    "type": "concept",
+    "definition": "The FIFA-supplied numeric identifier of a team, distinct from the database-native team_api_id and not interchangeable with it.",
+    "scope": "Used when a question asks specifically for the FIFA identifier of a team. Not unique and not always present.",
+    "aliases": [
+      "fifa team id",
+      "team_fifa_api_id",
+      "fifa id"
+    ],
+    "evidence": [
+      "evidence_team_fifa_api_id_completeness"
+    ]
+  },
+  {
+    "id": "team_ref_in_attributes",
+    "name": "Team Reference in Team Attributes",
+    "type": "concept",
+    "definition": "The team identifier carried on each Team_Attributes record, pointing back to the team it describes.",
+    "scope": "Used to attach a dated tactical attribute snapshot to its team.",
+    "aliases": [
+      "Team_Attributes.team_api_id",
+      "attribute team reference"
+    ],
+    "evidence": [
+      "evidence_join_integrity"
+    ]
+  },
+  {
+    "id": "fifa_team_ref_in_attributes",
+    "name": "FIFA Team Reference in Team Attributes",
+    "type": "concept",
+    "definition": "The FIFA team identifier carried on each Team_Attributes record, mirroring the identifier held on Team.",
+    "scope": "Lets a FIFA team identifier be filtered and returned without leaving the team attribute table.",
+    "aliases": [
+      "Team_Attributes.team_fifa_api_id",
+      "attribute fifa team reference"
+    ],
+    "evidence": [
+      "evidence_join_integrity",
+      "evidence_team_fifa_api_id_completeness"
+    ]
+  },
+  {
+    "id": "team_long_name",
+    "name": "Team Long Name",
+    "type": "dimension",
+    "definition": "The full official name of a team.",
+    "scope": "Reported when a question asks for the name of a team.",
+    "aliases": [
+      "team long name",
+      "team_long_name",
+      "full team name"
+    ],
+    "evidence": [
+      "evidence_team_name_cardinality"
+    ]
+  },
+  {
+    "id": "team_short_name",
+    "name": "Team Short Name",
+    "type": "dimension",
+    "definition": "A short display code for a team, such as a three-letter abbreviation.",
+    "scope": "Reported when a question asks for the short name of a team.",
+    "aliases": [
+      "team short name",
+      "team_short_name",
+      "abbreviation"
+    ],
+    "evidence": [
+      "evidence_team_name_cardinality"
+    ]
+  },
+  {
+    "id": "team_attribute_record",
+    "name": "Team Attribute Record",
+    "type": "concept",
+    "definition": "A date-stamped tactical profile of one team, holding both numeric tactical values and their categorical class labels.",
+    "scope": "The source of tactical measures such as build-up play and chance creation. Recorded only at a small number of fixed snapshot dates per team.",
+    "aliases": [
+      "Team_Attributes row",
+      "team snapshot",
+      "team tactic"
+    ],
+    "evidence": [
+      "evidence_team_attribute_dates",
+      "evidence_team_attribute_duplicate"
+    ]
+  },
+  {
+    "id": "build_up_play_speed",
+    "name": "Build-up Play Speed",
+    "type": "metric",
+    "definition": "A numeric tactical score describing how quickly a team advances the ball during build-up play.",
+    "scope": "Numeric range filters on a team's tactical profile; the companion class label is a separate concept.",
+    "aliases": [
+      "buildUpPlaySpeed",
+      "build-up play speed",
+      "speed of build up"
+    ],
+    "evidence": [
+      "evidence_team_numeric_ranges"
+    ]
+  },
+  {
+    "id": "build_up_play_passing",
+    "name": "Build-up Play Passing",
+    "type": "metric",
+    "definition": "A numeric tactical score describing how much a team passes the ball during build-up play.",
+    "scope": "Numeric thresholds and above-average comparisons on a team's tactical profile.",
+    "aliases": [
+      "buildUpPlayPassing",
+      "build-up play passing",
+      "passing in build up"
+    ],
+    "evidence": [
+      "evidence_team_numeric_ranges"
+    ]
+  },
+  {
+    "id": "chance_creation_passing",
+    "name": "Chance Creation Passing",
+    "type": "metric",
+    "definition": "A numeric tactical score describing how much a team uses passing to create chances.",
+    "scope": "Numeric thresholds and comparisons on a team's attacking profile.",
+    "aliases": [
+      "chanceCreationPassing",
+      "chance creation passing",
+      "creating chance of passing"
+    ],
+    "evidence": [
+      "evidence_team_numeric_ranges"
+    ]
+  },
+  {
+    "id": "team_attribute_class",
+    "name": "Team Attribute Class Label",
+    "type": "category",
+    "definition": "The categorical companion label of a numeric team tactical value, produced by splitting the value range into low, middle and high bands. Each tactical dimension names its three bands differently.",
+    "scope": "Categorical filters on team tactics. The band labels are attribute-specific and their ordering is not obvious: the band boundaries are shared across all dimensions but the words differ.",
+    "aliases": [
+      "class",
+      "buildUpPlaySpeedClass",
+      "chanceCreationPassingClass",
+      "band",
+      "tactic category"
+    ],
+    "evidence": [
+      "evidence_team_class_tertile_ranges",
+      "evidence_team_class_value_domains"
+    ]
+  },
+  {
+    "id": "league",
+    "name": "League",
+    "type": "entity",
+    "definition": "A domestic football competition, named with a country prefix, belonging to exactly one country.",
+    "scope": "Competition-level grouping of matches and seasons.",
+    "aliases": [
+      "competition",
+      "division",
+      "league record"
+    ],
+    "evidence": [
+      "evidence_league_country"
+    ]
+  },
+  {
+    "id": "country",
+    "name": "Country",
+    "type": "entity",
+    "definition": "A country that hosts one or more leagues; each league belongs to exactly one country.",
+    "scope": "Geographic grouping above the league level.",
+    "aliases": [
+      "nation",
+      "country record"
+    ],
+    "evidence": [
+      "evidence_league_country"
+    ]
+  },
+  {
+    "id": "match",
+    "name": "Match",
+    "type": "entity",
+    "definition": "A single fixture between a home team and an away team in a league and season, identified by match_api_id, and carrying the two goal totals.",
+    "scope": "Fixture-level analysis: results, goal totals, match counting and league standings inputs.",
+    "aliases": [
+      "fixture",
+      "game",
+      "match record"
+    ],
+    "evidence": [
+      "evidence_schema_tables",
+      "evidence_row_counts"
+    ]
+  },
+  {
+    "id": "season",
+    "name": "Season",
+    "type": "dimension",
+    "definition": "The competition season a match belongs to, written as two slash-separated years spanning a European football year.",
+    "scope": "Seasonal grouping of matches. Ordinary year phrases in questions map onto the European season spelling.",
+    "aliases": [
+      "season",
+      "campaign",
+      "year"
+    ],
+    "evidence": [
+      "evidence_match_season_values"
+    ]
+  },
+  {
+    "id": "home_team",
+    "name": "Home Team",
+    "type": "concept",
+    "definition": "The team playing at its own ground in a fixture, holding the home role in that match.",
+    "scope": "Role-specific team analysis within a fixture, such as home advantage and home-side goals.",
+    "aliases": [
+      "home side",
+      "home_team_api_id",
+      "home team"
+    ],
+    "evidence": [
+      "evidence_match_team_refs"
+    ]
+  },
+  {
+    "id": "away_team",
+    "name": "Away Team",
+    "type": "concept",
+    "definition": "The team playing away from its own ground in a fixture, holding the away role in that match.",
+    "scope": "Role-specific team analysis within a fixture, such as away wins and away-side goals.",
+    "aliases": [
+      "away side",
+      "away_team_api_id",
+      "visiting team"
+    ],
+    "evidence": [
+      "evidence_match_team_refs"
+    ]
+  },
+  {
+    "id": "team_goals",
+    "name": "Team Goals in a Match",
+    "type": "metric",
+    "definition": "The number of goals a team scored in a single fixture. The same measure is stored twice per match, once from each side's perspective.",
+    "scope": "Goal totals, goal-based aggregates and result determination.",
+    "aliases": [
+      "goals",
+      "score",
+      "goal total"
+    ],
+    "evidence": [
+      "evidence_match_goals_and_xml"
+    ]
+  },
+  {
+    "id": "match_result",
+    "name": "Match Result",
+    "type": "concept",
+    "definition": "The outcome of a fixture from one team's point of view, obtained by comparing that team's goals with the opponent's goals; expresses win, draw or loss.",
+    "scope": "Win and loss counts per team, including away wins, where the comparison is made from the away side's perspective.",
+    "aliases": [
+      "result",
+      "won",
+      "win",
+      "defeat",
+      "outcome"
+    ],
+    "evidence": [
+      "evidence_match_goals_and_xml",
+      "evidence_league_ties_2008_2009"
+    ]
+  },
+  {
+    "id": "match_count",
+    "name": "Match Count",
+    "type": "metric",
+    "definition": "The number of fixtures that fall inside a grouping such as a league and season.",
+    "scope": "Volume comparison across leagues or seasons.",
+    "aliases": [
+      "number of matches",
+      "matches played",
+      "fixture count"
+    ],
+    "evidence": [
+      "evidence_league_ties_2008_2009",
+      "evidence_league_match_volumes"
+    ]
+  }
+]

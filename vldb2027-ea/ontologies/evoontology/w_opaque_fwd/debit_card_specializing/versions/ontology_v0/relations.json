@@ -1,0 +1,190 @@
+[
+  {
+    "id": "rel_customer_segment",
+    "source": "term_customer",
+    "relation_type": "association",
+    "target": "term_customer_segment",
+    "connection_condition": "customers.fld002 carries the segment value on the same row as the customer identifier customers.fld001",
+    "description": "Each customer belongs to one of the segments SME, LAM or KAM.",
+    "evidence": [
+      "evidence_customer_segment_values"
+    ]
+  },
+  {
+    "id": "rel_customer_currency",
+    "source": "term_customer",
+    "relation_type": "association",
+    "target": "term_billing_currency",
+    "connection_condition": "customers.fld003 carries the billing currency on the same row as the customer identifier",
+    "description": "Each customer settles in one billing currency, CZK or EUR.",
+    "evidence": [
+      "evidence_currency_values"
+    ]
+  },
+  {
+    "id": "rel_customer_monthly_consumption",
+    "source": "term_customer",
+    "relation_type": "composition",
+    "target": "term_monthly_consumption",
+    "connection_condition": "yearmonth.fld001 corresponds to customers.fld001; every consumption row belongs to exactly one customer",
+    "description": "A customer is composed of monthly consumption records; a consumption record cannot exist without its customer. 30566 of 32461 customers have at least one consumption record.",
+    "evidence": [
+      "evidence_customer_coverage",
+      "evidence_yearmonth_profile"
+    ]
+  },
+  {
+    "id": "rel_monthly_consumption_year_month",
+    "source": "term_monthly_consumption",
+    "relation_type": "association",
+    "target": "term_year_month",
+    "connection_condition": "yearmonth.fld010 is the YYYYMM period on the same row as the consumption value",
+    "description": "Each monthly consumption value is recorded for one calendar month.",
+    "evidence": [
+      "evidence_yearmonth_date_format"
+    ]
+  },
+  {
+    "id": "rel_chain_station",
+    "source": "term_gas_station_chain",
+    "relation_type": "composition",
+    "target": "term_gas_station",
+    "connection_condition": "gasstations.fld005 holds the chain number for each station; many stations share one chain",
+    "description": "A chain is composed of gas stations; each station belongs to exactly one chain.",
+    "evidence": [
+      "evidence_chain_values"
+    ]
+  },
+  {
+    "id": "rel_station_country",
+    "source": "term_gas_station",
+    "relation_type": "association",
+    "target": "term_gas_station_country",
+    "connection_condition": "gasstations.fld006 carries the country code on the station row",
+    "description": "Each gas station is located in one country.",
+    "evidence": [
+      "evidence_country_values"
+    ]
+  },
+  {
+    "id": "rel_station_segment",
+    "source": "term_gas_station",
+    "relation_type": "association",
+    "target": "term_gas_station_segment",
+    "connection_condition": "gasstations.fld002 carries the station segment on the station row",
+    "description": "Each gas station is classified into one commercial segment.",
+    "evidence": [
+      "evidence_station_segment_values"
+    ]
+  },
+  {
+    "id": "rel_transaction_customer",
+    "source": "term_transaction",
+    "relation_type": "association",
+    "target": "term_customer",
+    "connection_condition": "transactions.fld001 corresponds to customers.fld001; zero orphan transactions",
+    "description": "Each transaction is made by one customer.",
+    "evidence": [
+      "evidence_referential_integrity"
+    ]
+  },
+  {
+    "id": "rel_transaction_station",
+    "source": "term_transaction",
+    "relation_type": "association",
+    "target": "term_gas_station",
+    "connection_condition": "transactions.fld004 corresponds to gasstations.fld004; zero orphan transactions",
+    "description": "Each transaction takes place at one gas station.",
+    "evidence": [
+      "evidence_referential_integrity"
+    ]
+  },
+  {
+    "id": "rel_transaction_product",
+    "source": "term_transaction",
+    "relation_type": "association",
+    "target": "term_product",
+    "connection_condition": "transactions.fld007 corresponds to products.fld007; zero orphan transactions",
+    "description": "Each transaction purchases one product.",
+    "evidence": [
+      "evidence_referential_integrity"
+    ]
+  },
+  {
+    "id": "rel_transaction_date",
+    "source": "term_transaction",
+    "relation_type": "association",
+    "target": "term_transaction_date",
+    "connection_condition": "transactions.fld010 is the transaction date on the same row",
+    "description": "Each transaction occurs on one calendar date.",
+    "evidence": [
+      "evidence_transaction_date_format"
+    ]
+  },
+  {
+    "id": "rel_transaction_time",
+    "source": "term_transaction",
+    "relation_type": "association",
+    "target": "term_transaction_time",
+    "connection_condition": "transactions.fld011 is the clock time on the same row",
+    "description": "Each transaction occurs at one clock time; date and time together form a timestamp.",
+    "evidence": [
+      "evidence_transaction_time_format"
+    ]
+  },
+  {
+    "id": "rel_transaction_price",
+    "source": "term_transaction",
+    "relation_type": "association",
+    "target": "term_transaction_price",
+    "connection_condition": "transactions.fld014 is the total price on the same row",
+    "description": "Each transaction has one total price.",
+    "evidence": [
+      "evidence_transaction_price_range"
+    ]
+  },
+  {
+    "id": "rel_transaction_qty",
+    "source": "term_transaction",
+    "relation_type": "association",
+    "target": "term_transaction_qty",
+    "connection_condition": "transactions.fld013 is the quantity on the same row",
+    "description": "Each transaction records the quantity of the purchased product.",
+    "evidence": [
+      "evidence_unit_price_ratio"
+    ]
+  },
+  {
+    "id": "rel_product_description",
+    "source": "term_product",
+    "relation_type": "association",
+    "target": "term_product_description",
+    "connection_condition": "products.fld008 carries the description on the product row",
+    "description": "Each product has one textual description.",
+    "evidence": [
+      "evidence_product_table"
+    ]
+  },
+  {
+    "id": "rel_annual_consumption_derivation",
+    "source": "term_monthly_consumption",
+    "relation_type": "derivation",
+    "target": "term_annual_consumption",
+    "connection_condition": "annual consumption aggregates the monthly consumption values of one calendar year for the same customer or group",
+    "description": "Annual consumption is computed as the sum of monthly consumption over the months of a calendar year; average monthly consumption for the year divides that total by twelve.",
+    "evidence": [
+      "evidence_consumption_coverage"
+    ]
+  },
+  {
+    "id": "rel_consumption_growth_derivation",
+    "source": "term_annual_consumption",
+    "relation_type": "derivation",
+    "target": "term_consumption_growth",
+    "connection_condition": "growth compares the annual consumption totals of two calendar years for the same customer group",
+    "description": "Consumption growth is the difference between two years' annual consumption, optionally expressed as a percentage of the base year.",
+    "evidence": [
+      "evidence_consumption_coverage"
+    ]
+  }
+]

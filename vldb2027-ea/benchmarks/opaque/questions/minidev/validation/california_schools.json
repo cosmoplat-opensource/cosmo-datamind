@@ -1,0 +1,50 @@
+{
+ "db_id": "california_schools",
+ "questions": [
+  {
+   "question_id": 46,
+   "db_id": "california_schools",
+   "question": "Which state special schools have the highest number of enrollees from grades 1 through 12?",
+   "evidence": "State Special Schools refers to fld065 = 31; Grades 1 through 12 means K-12",
+   "SQL": "SELECT T2.fld046 FROM tab01 AS T1 INNER JOIN tab03 AS T2 ON T1.fld001 = T2.fld001 WHERE T2.fld065 = 31 ORDER BY T1.fld019 DESC LIMIT 1",
+   "difficulty": "simple",
+   "SQL_original": "SELECT T2.School FROM frpm AS T1 INNER JOIN schools AS T2 ON T1.CDSCode = T2.CDSCode WHERE T2.DOC = 31 ORDER BY T1.`Enrollment (K-12)` DESC LIMIT 1"
+  },
+  {
+   "question_id": 12,
+   "db_id": "california_schools",
+   "question": "Among the schools with an SAT excellence rate of over 0.3, what is the highest eligible free rate for students aged 5-17?",
+   "evidence": "Excellence rate = fld040 / fld036; Eligible free rates for students aged 5-17 = fld025 / fld024",
+   "SQL": "SELECT MAX(CAST(T1.fld025 AS REAL) / T1.fld024) FROM tab01 AS T1 INNER JOIN tab02 AS T2 ON T1.fld001 = T2.fld030 WHERE CAST(T2.fld040 AS REAL) / T2.fld036 > 0.3",
+   "difficulty": "moderate",
+   "SQL_original": "SELECT MAX(CAST(T1.`Free Meal Count (Ages 5-17)` AS REAL) / T1.`Enrollment (Ages 5-17)`) FROM frpm AS T1 INNER JOIN satscores AS T2 ON T1.CDSCode = T2.cds WHERE CAST(T2.NumGE1500 AS REAL) / T2.NumTstTakr > 0.3"
+  },
+  {
+   "question_id": 39,
+   "db_id": "california_schools",
+   "question": "What is the average number of test takers from Fresno schools that opened between 1/1/1980 and 12/31/1980?",
+   "evidence": "between 1/1/1980 and 12/31/1980 means the year = 1980",
+   "SQL": "SELECT AVG(T1.fld036) FROM tab02 AS T1 INNER JOIN tab03 AS T2 ON T1.fld030 = T2.fld001 WHERE STRFTIME('%Y', T2.fld060) = '1980' AND T2.fld044 = 'Fresno'",
+   "difficulty": "simple",
+   "SQL_original": "SELECT AVG(T1.NumTstTakr) FROM satscores AS T1 INNER JOIN schools AS T2 ON T1.cds = T2.CDSCode WHERE strftime('%Y', T2.OpenDate) = '1980' AND T2.County = 'Fresno'"
+  },
+  {
+   "question_id": 85,
+   "db_id": "california_schools",
+   "question": "What is the Percent (%) Eligible Free (K-12) in the school administered by an administrator whose first name is Alusine. List the district code of the school.",
+   "evidence": "Percent (%) Eligible Free (K-12) = fld020 / fld019 * 100%",
+   "SQL": "SELECT T1.fld020 * 100 / T1.fld019, T1.fld004 FROM tab01 AS T1 INNER JOIN tab03 AS T2 ON T1.fld001 = T2.fld001 WHERE T2.fld079 = 'Alusine'",
+   "difficulty": "moderate",
+   "SQL_original": "SELECT T1.`Free Meal Count (K-12)` * 100 / T1.`Enrollment (K-12)`, T1.`District Code` FROM frpm AS T1 INNER JOIN schools AS T2 ON T1.CDSCode = T2.CDSCode WHERE T2.AdmFName1 = 'Alusine'"
+  },
+  {
+   "question_id": 17,
+   "db_id": "california_schools",
+   "question": "Rank schools by their average score in Writing where the score is greater than 499, showing their charter numbers.",
+   "evidence": "Valid charter number means the number is not null",
+   "SQL": "SELECT fld063, fld039, RANK() OVER (ORDER BY fld039 DESC) AS WritingScoreRank FROM tab03 AS T1 INNER JOIN tab02 AS T2 ON T1.fld001 = T2.fld030 WHERE T2.fld039 > 499 AND NOT fld063 IS NULL",
+   "difficulty": "simple",
+   "SQL_original": "SELECT CharterNum, AvgScrWrite, RANK() OVER (ORDER BY AvgScrWrite DESC) AS WritingScoreRank FROM schools AS T1  INNER JOIN satscores AS T2 ON T1.CDSCode = T2.cds WHERE T2.AvgScrWrite > 499 AND CharterNum is not null"
+  }
+ ]
+}

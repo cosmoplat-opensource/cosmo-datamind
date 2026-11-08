@@ -1,0 +1,303 @@
+[
+  {
+    "id": "term_customer",
+    "name": "Customer",
+    "type": "entity",
+    "definition": "A customer account in the debit-card program, uniquely identified by fld001 in tab01.",
+    "scope": "Customer-level analysis of payment currency, segment membership, transactions and monthly fuel consumption.",
+    "aliases": [
+      "customer",
+      "client",
+      "cardholder",
+      "customers"
+    ],
+    "evidence": [
+      "ev_tab01_profile",
+      "ev_fk_integrity"
+    ]
+  },
+  {
+    "id": "term_customer_segment",
+    "name": "Customer Segment",
+    "type": "dimension",
+    "definition": "Business classification of a customer stored in tab01.fld002. Observed values are KAM, LAM and SME.",
+    "scope": "Customer segmentation analysis. Construction questions refer to SMEs, which is the 'SME' value.",
+    "aliases": [
+      "segment",
+      "customer segment",
+      "customer category",
+      "SME",
+      "SMEs",
+      "KAM",
+      "LAM"
+    ],
+    "evidence": [
+      "ev_tab01_profile"
+    ]
+  },
+  {
+    "id": "term_payment_currency",
+    "name": "Payment Currency",
+    "type": "dimension",
+    "definition": "Currency in which a customer pays, stored in tab01.fld003. Observed values are CZK (Czech koruna) and EUR (euro). The attribute is recorded once per customer, not per transaction.",
+    "scope": "Customer currency grouping and CZK-paying versus EUR-paying customer comparisons.",
+    "aliases": [
+      "currency",
+      "payment currency",
+      "pay in EUR",
+      "pay in CZK",
+      "customers who pay in EUR",
+      "customers who pay in CZK",
+      "CZK-paying customers",
+      "EUR-paying customers",
+      "CZK-paying",
+      "EUR-paying",
+      "Czech koruna",
+      "euros"
+    ],
+    "evidence": [
+      "ev_tab01_profile",
+      "ev_currency_semantics"
+    ]
+  },
+  {
+    "id": "term_gas_station",
+    "name": "Gas Station",
+    "type": "entity",
+    "definition": "A fuel retail station, uniquely identified by fld004 in tab02.",
+    "scope": "Station-level attributes and station location of transactions.",
+    "aliases": [
+      "gas station",
+      "petrol station",
+      "filling station",
+      "station"
+    ],
+    "evidence": [
+      "ev_tab02_profile",
+      "ev_fk_integrity"
+    ]
+  },
+  {
+    "id": "term_gas_station_country",
+    "name": "Gas Station Country",
+    "type": "dimension",
+    "definition": "Country in which a gas station is located, stored in tab02.fld006. Observed values are CZE (Czech Republic) and SVK (Slovakia).",
+    "scope": "Country-level comparison and filtering of stations and their transactions.",
+    "aliases": [
+      "country",
+      "station country",
+      "Czech Republic",
+      "CZE",
+      "Slovakia",
+      "SVK"
+    ],
+    "evidence": [
+      "ev_tab02_profile",
+      "ev_country_semantics"
+    ]
+  },
+  {
+    "id": "term_gas_station_segment",
+    "name": "Gas Station Segment",
+    "type": "dimension",
+    "definition": "Market segment of a gas station stored in tab02.fld002. Observed values are Discount, Noname, Other, Premium and Value for money.",
+    "scope": "Station segment analysis, including discount and premium station counts.",
+    "aliases": [
+      "gas station segment",
+      "station segment",
+      "discount",
+      "discount gas stations",
+      "discount gas station",
+      "premium",
+      "premium stations",
+      "premium station",
+      "noname",
+      "value for money"
+    ],
+    "evidence": [
+      "ev_tab02_profile"
+    ]
+  },
+  {
+    "id": "term_product",
+    "name": "Product",
+    "type": "entity",
+    "definition": "A product sold at gas stations, uniquely identified by fld007 in tab03.",
+    "scope": "Product-level transaction analysis.",
+    "aliases": [
+      "product",
+      "item",
+      "products"
+    ],
+    "evidence": [
+      "ev_tab03_profile",
+      "ev_fk_integrity"
+    ]
+  },
+  {
+    "id": "term_product_description",
+    "name": "Product Description",
+    "type": "dimension",
+    "definition": "Human-readable product name or description stored in tab03.fld008; values are free-text Czech/Slovak product labels such as 'Nafta', 'Natural' and 'Diesel'.",
+    "scope": "Listing or grouping products by their description.",
+    "aliases": [
+      "product description",
+      "product name",
+      "description",
+      "product label"
+    ],
+    "evidence": [
+      "ev_tab03_profile"
+    ]
+  },
+  {
+    "id": "term_transaction",
+    "name": "Transaction",
+    "type": "entity",
+    "definition": "A single purchase line recorded in tab04, identified by fld009, carrying a date, time, customer, gas station, product, quantity and price.",
+    "scope": "Transaction-level analysis; the transaction table covers only 2012-08-23 through 2012-08-26.",
+    "aliases": [
+      "transaction",
+      "purchase",
+      "sale",
+      "transactions"
+    ],
+    "evidence": [
+      "ev_tab04_profile",
+      "ev_transaction_scope"
+    ]
+  },
+  {
+    "id": "term_transaction_date",
+    "name": "Transaction Date",
+    "type": "dimension",
+    "definition": "Calendar date of a transaction, stored as text in tab04.fld010 in YYYY-MM-DD form.",
+    "scope": "Date and date-range analysis of transactions.",
+    "aliases": [
+      "transaction date",
+      "date",
+      "day"
+    ],
+    "evidence": [
+      "ev_date_time_formats"
+    ]
+  },
+  {
+    "id": "term_transaction_time",
+    "name": "Transaction Time",
+    "type": "dimension",
+    "definition": "Time of day of a transaction, stored as text in tab04.fld011 in HH:MM:SS form.",
+    "scope": "Time-of-day analysis of transactions.",
+    "aliases": [
+      "transaction time",
+      "time",
+      "hour of day"
+    ],
+    "evidence": [
+      "ev_date_time_formats"
+    ]
+  },
+  {
+    "id": "term_transaction_quantity",
+    "name": "Transaction Quantity",
+    "type": "metric",
+    "definition": "Number of product units purchased on a transaction line, stored as an integer in tab04.fld013. Observed range is 0 to 264; 91 of 1000 lines have zero quantity.",
+    "scope": "Volume and quantity aggregation, and the denominator of average unit price.",
+    "aliases": [
+      "quantity",
+      "amount",
+      "items purchased",
+      "units",
+      "number of items"
+    ],
+    "evidence": [
+      "ev_tab04_profile",
+      "ev_amount_zero"
+    ]
+  },
+  {
+    "id": "term_transaction_price",
+    "name": "Transaction Price",
+    "type": "metric",
+    "definition": "Monetary price recorded for a transaction line, stored as a real value in tab04.fld014. Observed range is 1.76 to 5762.49.",
+    "scope": "Spending and price aggregation at transaction-line level.",
+    "aliases": [
+      "price",
+      "line price",
+      "amount paid",
+      "spending"
+    ],
+    "evidence": [
+      "ev_tab04_profile"
+    ]
+  },
+  {
+    "id": "term_avg_unit_price",
+    "name": "Average Unit Price",
+    "type": "metric",
+    "definition": "Average price paid per single item or unit, defined as the total transaction price divided by the total transaction quantity across the considered scope.",
+    "scope": "Price-per-item analysis for a customer or transaction set.",
+    "aliases": [
+      "average price per single item",
+      "average price per item",
+      "price per unit",
+      "unit price"
+    ],
+    "evidence": [
+      "ev_avg_unit_price_definition"
+    ]
+  },
+  {
+    "id": "term_customer_spending",
+    "name": "Customer Spending",
+    "type": "metric",
+    "definition": "Total monetary value of a customer's transactions, obtained by summing transaction prices over that customer's transaction lines.",
+    "scope": "Customer ranking and spending comparison.",
+    "aliases": [
+      "customer spending",
+      "total spending",
+      "top spending customer",
+      "customer spend"
+    ],
+    "evidence": [
+      "ev_customer_spending_definition"
+    ]
+  },
+  {
+    "id": "term_monthly_consumption",
+    "name": "Monthly Fuel Consumption",
+    "type": "metric",
+    "definition": "Fuel consumption attributed to a customer for one calendar month, stored as a real value in tab05.fld015.",
+    "scope": "Customer monthly and annual fuel consumption analysis over 201112-201311.",
+    "aliases": [
+      "consumption",
+      "gas consumption",
+      "fuel consumption",
+      "monthly consumption",
+      "consumed"
+    ],
+    "evidence": [
+      "ev_tab05_profile",
+      "ev_consumption_scope"
+    ]
+  },
+  {
+    "id": "term_year_month",
+    "name": "Year-Month Period",
+    "type": "dimension",
+    "definition": "Monthly period key stored as six-character YYYYMM text in tab05.fld010; the first four characters are the year and the last two the month.",
+    "scope": "Monthly period filtering and aggregation of consumption data.",
+    "aliases": [
+      "yearmonth",
+      "year-month",
+      "month",
+      "year",
+      "201306",
+      "201202"
+    ],
+    "evidence": [
+      "ev_tab05_profile",
+      "ev_date_time_formats"
+    ]
+  }
+]

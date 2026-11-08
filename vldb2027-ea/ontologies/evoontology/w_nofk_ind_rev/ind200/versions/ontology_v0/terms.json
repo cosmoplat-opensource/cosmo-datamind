@@ -1,0 +1,734 @@
+[
+  {
+    "id": "t_business_record",
+    "name": "业务记录",
+    "type": "entity",
+    "definition": "事实表或明细表中的一行,代表一张业务单据或一条业务记录。问“多少条/多少笔/多少个”时统计的对象。",
+    "scope": "全部 fact_* 事实表与 DWS_*/agg_* 汇总表",
+    "aliases": [
+      "单据",
+      "记录",
+      "单量",
+      "笔数",
+      "条数",
+      "多少条",
+      "多少笔",
+      "多少个"
+    ],
+    "evidence": [
+      "e_tables_tiers"
+    ]
+  },
+  {
+    "id": "t_record_status",
+    "name": "单据状态",
+    "type": "dimension",
+    "definition": "业务单据的生命周期状态。标准事实表仅使用大写枚举 OPEN/IN_PROGRESS/APPROVED/CLOSED/CANCELLED;业务域表使用各自语义的小写枚举(销售订单 delivered/returned/undelivered、商机 open/won/lost/stalled、报价单 draft/lost/won、收货单 inspected/posted、应付 open/closed、员工 active/inactive)。中文状态词需按所在表映射到对应词表。",
+    "scope": "118 张含 status 列的表",
+    "aliases": [
+      "状态",
+      "单据状态",
+      "商机状态",
+      "订单状态",
+      "发票状态",
+      "工单状态",
+      "已关闭",
+      "已交付",
+      "已过账",
+      "已批准"
+    ],
+    "evidence": [
+      "e_status_lifecycle",
+      "e_status_domain"
+    ]
+  },
+  {
+    "id": "t_record_remarks",
+    "name": "备注",
+    "type": "dimension",
+    "definition": "单据的自由文本备注,承载业务场景标签。标准事实表中出现的取值来自同一受控词表(补录/加急/跨月处理/已电话确认/客户指定批次)。",
+    "scope": "含 remarks 列的 67 张标准事实表",
+    "aliases": [
+      "备注",
+      "说明",
+      "描述"
+    ],
+    "evidence": [
+      "e_remarks"
+    ]
+  },
+  {
+    "id": "t_row_version",
+    "name": "行版本",
+    "type": "metric",
+    "definition": "记录被更新次数的版本号,整数且 ≥1(观察期取值 1~3)。问“行版本合计/平均”即对该整数求和/求平均。",
+    "scope": "67 张标准事实表",
+    "aliases": [
+      "行版本",
+      "版本号"
+    ],
+    "evidence": [
+      "e_ranges"
+    ]
+  },
+  {
+    "id": "t_data_quality_score",
+    "name": "数据质量分",
+    "type": "metric",
+    "definition": "记录级数据质量评分,取值 0~1 的实数(观察期 0.9~1.0)。问“数据质量分合计/平均”即对该小数求和/求平均。",
+    "scope": "67 张标准事实表",
+    "aliases": [
+      "数据质量分",
+      "质量分"
+    ],
+    "evidence": [
+      "e_ranges"
+    ]
+  },
+  {
+    "id": "t_record_priority",
+    "name": "优先级",
+    "type": "metric",
+    "definition": "单据优先级,整数 1~5。问“优先级合计”即对该整数求和。",
+    "scope": "含 priority 列的事实表",
+    "aliases": [
+      "优先级"
+    ],
+    "evidence": [
+      "e_ranges"
+    ]
+  },
+  {
+    "id": "t_reason_reference",
+    "name": "业务原因",
+    "type": "dimension",
+    "definition": "业务原因。标准事实表的 reason_code 存原因大类编码,值域为 dim_reason_code.code(QUALITY/DELIVERY/COST/EQUIPMENT/SAFETY/ENVIRONMENT/CUSTOMER/SUPPLIER/PROCESS/MATERIAL/SYSTEM/OTHER);名称需经 dim_reason_code.name/short_name 取得。设备停机语境下同名/近名属性含义不同(见 c_reason_dual_meaning)。",
+    "scope": "标准事实表 reason_code 列与 dim_reason_code 字典",
+    "aliases": [
+      "原因",
+      "原因码",
+      "原因名称",
+      "原因简称",
+      "简称",
+      "报废原因",
+      "调拨原因",
+      "停机原因",
+      "退货原因"
+    ],
+    "evidence": [
+      "e_reason_dual",
+      "e_reason_code_dim"
+    ]
+  },
+  {
+    "id": "t_soft_delete_flag",
+    "name": "逻辑删除标记",
+    "type": "dimension",
+    "definition": "is_deleted=1 表示记录已被逻辑删除。统计业务单据/金额时应排除,避免把作废记录计入。",
+    "scope": "67 张标准事实表",
+    "aliases": [
+      "逻辑删除",
+      "是否删除"
+    ],
+    "evidence": [
+      "e_soft_delete"
+    ]
+  },
+  {
+    "id": "t_creator_user",
+    "name": "创建人",
+    "type": "dimension",
+    "definition": "创建该记录的系统用户账号编码,取值 U0001~U0012(12 个)。是账号标识,不是员工编号 emp_id。",
+    "scope": "created_by 列(67 张标准事实表 + 25 张主数据表)",
+    "aliases": [
+      "创建人",
+      "创建者",
+      "由某人创建"
+    ],
+    "evidence": [
+      "e_user_codes",
+      "e_fk_meta"
+    ]
+  },
+  {
+    "id": "t_updater_user",
+    "name": "更新人",
+    "type": "dimension",
+    "definition": "最后更新该记录的系统用户账号编码,取值 U0001~U0012。与创建人同一账号空间,可与 emp_id 混淆。",
+    "scope": "updated_by 列",
+    "aliases": [
+      "更新人",
+      "由某人更新"
+    ],
+    "evidence": [
+      "e_user_codes"
+    ]
+  },
+  {
+    "id": "t_approver_user",
+    "name": "审批人",
+    "type": "dimension",
+    "definition": "审批该记录的系统用户账号编码,取值 U0001~U0012;仅 67 张标准事实表中带审批语义的表拥有该列。",
+    "scope": "approved_by 列",
+    "aliases": [
+      "审批人",
+      "由某人审批"
+    ],
+    "evidence": [
+      "e_user_codes"
+    ]
+  },
+  {
+    "id": "t_created_time",
+    "name": "创建时间",
+    "type": "dimension",
+    "definition": "记录被创建的时间戳(created_at)。业务域建模表中不存在,以各自领域日期列代替(如商机 create_date)。",
+    "scope": "created_at 列",
+    "aliases": [
+      "创建时间",
+      "创建于"
+    ],
+    "evidence": [
+      "e_year_shift",
+      "e_domain_dates"
+    ]
+  },
+  {
+    "id": "t_updated_time",
+    "name": "更新时间",
+    "type": "dimension",
+    "definition": "记录最后被更新的时间戳(updated_at)。",
+    "scope": "updated_at 列",
+    "aliases": [
+      "更新时间",
+      "更新于"
+    ],
+    "evidence": [
+      "e_year_shift"
+    ]
+  },
+  {
+    "id": "t_approved_time",
+    "name": "审批时间",
+    "type": "dimension",
+    "definition": "记录被审批通过的时间戳(approved_at)。按“审批时间”分组统计的是该属性本身。",
+    "scope": "approved_at 列",
+    "aliases": [
+      "审批时间",
+      "审批于"
+    ],
+    "evidence": [
+      "e_year_shift"
+    ]
+  },
+  {
+    "id": "t_posting_date",
+    "name": "过账日期",
+    "type": "dimension",
+    "definition": "记录在财务/账务口径下过账的日期(posting_date),与业务日期、创建时间不同,是独立的时间维度。",
+    "scope": "67 张标准事实表的 posting_date 列",
+    "aliases": [
+      "过账日期",
+      "过账"
+    ],
+    "evidence": [
+      "e_year_shift",
+      "e_domain_dates"
+    ]
+  },
+  {
+    "id": "t_business_event_date",
+    "name": "业务发生日期",
+    "type": "dimension",
+    "definition": "业务事件实际发生的日期。标准事实表为 business_date(DATE);业务域建模表没有 business_date,以该表自身的领域日期列承担同一角色(order_date/receipt_date/audit_date/record_date/incident_date/quotation_date/return_date/output_date/create_date/manufacture_date/payment_date 等)。中文“2025年/2026年的X”若不指明动作,优先落到本角色。",
+    "scope": "标准事实表 business_date 及各业务域表的领域日期列",
+    "aliases": [
+      "业务日期",
+      "发生时间",
+      "日期",
+      "下单日期",
+      "收货日期",
+      "审计日期",
+      "生产日期",
+      "记录日期",
+      "报价日期",
+      "退货日期",
+      "事故日期",
+      "付款日期",
+      "创建日期"
+    ],
+    "evidence": [
+      "e_domain_dates",
+      "e_fk_meta"
+    ]
+  },
+  {
+    "id": "t_due_date",
+    "name": "到期与期限日期",
+    "type": "dimension",
+    "definition": "计划/应完成的日期:应付到期日、安全整改期限、批号失效日期、资质有效截止、合同要求交货/承诺交货、投诉处理期限。同一角色在不同表列名不同。",
+    "scope": "due_date / action_due_date / expiry_date / requested_delivery_date / promised_date 等列",
+    "aliases": [
+      "到期",
+      "到期日",
+      "期限",
+      "整改期限",
+      "失效日期",
+      "有效期至",
+      "要求交货",
+      "承诺",
+      "承诺日期"
+    ],
+    "evidence": [
+      "e_domain_dates"
+    ]
+  },
+  {
+    "id": "t_close_date",
+    "name": "关闭日期",
+    "type": "dimension",
+    "definition": "记录被关闭/结束的日期(closed_date;商机为 close_date)。问“已关闭”的时点依据。",
+    "scope": "closed_date / close_date 列",
+    "aliases": [
+      "关闭日期",
+      "已关闭",
+      "关闭",
+      "赢单日期",
+      "丢失日期"
+    ],
+    "evidence": [
+      "e_domain_dates",
+      "e_status_domain"
+    ]
+  },
+  {
+    "id": "t_amount",
+    "name": "金额",
+    "type": "metric",
+    "definition": "单据的原币金额。不同表的列名不同(amount/total_amount/estimated_amount),业务含义为“该记录代表的金额”,可加总。",
+    "scope": "各事实表的 amount 类列",
+    "aliases": [
+      "金额",
+      "总金额",
+      "预估金额",
+      "金额合计",
+      "付款金额",
+      "已付金额"
+    ],
+    "evidence": [
+      "e_tables_tiers"
+    ]
+  },
+  {
+    "id": "t_local_amount",
+    "name": "本位币金额",
+    "type": "metric",
+    "definition": "按汇率折算后的本位币(CNY)金额,与 amount(原币)并列存储,不可与 amount 混用。",
+    "scope": "local_amount 列",
+    "aliases": [
+      "本位币金额",
+      "本位币"
+    ],
+    "evidence": [
+      "e_currency"
+    ]
+  },
+  {
+    "id": "t_tax_amount",
+    "name": "税额",
+    "type": "metric",
+    "definition": "单据税额,可加总;问“税额合计”即对该列求和。",
+    "scope": "tax_amount 列",
+    "aliases": [
+      "税额",
+      "税额合计"
+    ],
+    "evidence": [
+      "e_tables_tiers"
+    ]
+  },
+  {
+    "id": "t_cost_amount",
+    "name": "成本金额",
+    "type": "metric",
+    "definition": "成本口径金额(实际成本/技术成本/标准成本/总成本)。同一表可能同时存在多个成本列,需按问题措辞区分。",
+    "scope": "cost_amount / actual_cost_amount / tech_cost_amount / total_cost 列",
+    "aliases": [
+      "成本金额",
+      "成本",
+      "实际成本",
+      "技术成本",
+      "标准成本",
+      "总成本"
+    ],
+    "evidence": [
+      "e_tables_tiers"
+    ]
+  },
+  {
+    "id": "t_quantity",
+    "name": "数量",
+    "type": "metric",
+    "definition": "单据以单据单位计的数量。列名随业务语义变化:数量 quantity、计划数量 planned_quantity、预留数量 reserved_quantity、实际投料 actual_qty/actual_quantity、报废数量 scrap_quantity。",
+    "scope": "各事实表的 quantity 类列",
+    "aliases": [
+      "数量",
+      "计划数量",
+      "预留数量",
+      "实际投料",
+      "投料",
+      "报废数量",
+      "不合格数量"
+    ],
+    "evidence": [
+      "e_tables_tiers"
+    ]
+  },
+  {
+    "id": "t_base_quantity",
+    "name": "基本单位数量",
+    "type": "metric",
+    "definition": "换算到基本单位后的数量(base_quantity),与单据单位数量 quantity 并列;unit_code='吨' 时二者数值一致。问题明确说“基本单位数量”时应取本列。",
+    "scope": "base_quantity 列",
+    "aliases": [
+      "基本单位数量",
+      "基本单位"
+    ],
+    "evidence": [
+      "e_tables_tiers"
+    ]
+  },
+  {
+    "id": "t_score_value",
+    "name": "评分值",
+    "type": "metric",
+    "definition": "评审/观测/审计/检验得到的分值。标准事实表为 score_value;业务域表列名不同(安全审计为 score、检验为 score_value)。",
+    "scope": "score_value / score 列",
+    "aliases": [
+      "评分",
+      "得分",
+      "观察评分",
+      "审计评分",
+      "评估得分"
+    ],
+    "evidence": [
+      "e_tables_tiers"
+    ]
+  },
+  {
+    "id": "t_target_value",
+    "name": "目标值",
+    "type": "metric",
+    "definition": "计划或考核目标值,与实绩列并列:安全目标值 target_value、周转率目标 turnover_rate_target、计划产量 planned_quantity、KPI 目标值 target_value。",
+    "scope": "target_value / turnover_rate_target / planned_quantity 列",
+    "aliases": [
+      "目标值",
+      "安全目标值",
+      "周转率目标",
+      "计划产量",
+      "目标"
+    ],
+    "evidence": [
+      "e_tables_tiers"
+    ]
+  },
+  {
+    "id": "t_exchange_rate",
+    "name": "汇率",
+    "type": "metric",
+    "definition": "原币对本位币的折算汇率(如 USD=7.12、EUR=7.78、JPY=0.048)。为比率值,与 dim_currency.rate_to_cny 同一口径。",
+    "scope": "exchange_rate 列与 dim_currency.rate_to_cny",
+    "aliases": [
+      "汇率"
+    ],
+    "evidence": [
+      "e_currency"
+    ]
+  },
+  {
+    "id": "t_employee",
+    "name": "员工",
+    "type": "entity",
+    "definition": "企业内部人员(业务员/检验员/讲师/申请人/评估人/审计人)。主数据 dim_employee(emp_id 1~122,emp_name 形如“合成员工0086”)。注意:与创建人/更新人/审批人的 U000x 账号编码不是同一标识空间。",
+    "scope": "dim_employee 及各事实表的 emp_id/trainer_id/requester_id/inspector_id/auditor_id 列",
+    "aliases": [
+      "员工",
+      "员工姓名",
+      "业务员",
+      "讲师",
+      "申请人",
+      "检验员",
+      "评估人",
+      "审计人"
+    ],
+    "evidence": [
+      "e_user_codes",
+      "e_fk_meta"
+    ]
+  },
+  {
+    "id": "t_department",
+    "name": "部门",
+    "type": "entity",
+    "definition": "企业内部组织部门(dim_department,dept_id);销售类部门拥有 region_id。事实表通过 dept_id/responsible_dept_id 关联。",
+    "scope": "dim_department 及事实表 dept_id 列",
+    "aliases": [
+      "部门",
+      "申请部门",
+      "责任部门"
+    ],
+    "evidence": [
+      "e_org_hierarchy",
+      "e_fk_meta"
+    ]
+  },
+  {
+    "id": "t_workshop",
+    "name": "车间",
+    "type": "entity",
+    "definition": "生产车间(dim_workshop,5 个:PP改性车间/PA改性车间/ABS/PC合金车间/阻燃材料车间/特种工程塑料车间)。产线的上级组织,事实表经 workshop_id 直接关联。",
+    "scope": "dim_workshop 及事实表 workshop_id 列",
+    "aliases": [
+      "车间",
+      "车间名称"
+    ],
+    "evidence": [
+      "e_org_hierarchy"
+    ]
+  },
+  {
+    "id": "t_production_line",
+    "name": "产线",
+    "type": "entity",
+    "definition": "生产线(dim_production_line,12 条),拥有 workshop_id 与 product_type,是车间与设备/工单之间的中间层。",
+    "scope": "dim_production_line 及事实表 line_id 列",
+    "aliases": [
+      "产线",
+      "产线名称",
+      "生产线"
+    ],
+    "evidence": [
+      "e_org_hierarchy",
+      "e_fk_meta"
+    ]
+  },
+  {
+    "id": "t_product",
+    "name": "产品",
+    "type": "entity",
+    "definition": "成品/产品主数据(dim_product,prod_id,prod_name),经 prod_line_id 归属产品线;含 spec/unit/standard_cost/tech_cost/guide_price。",
+    "scope": "dim_product 及事实表 prod_id/product_id 列",
+    "aliases": [
+      "产品",
+      "产品名称"
+    ],
+    "evidence": [
+      "e_org_hierarchy",
+      "e_fk_meta"
+    ]
+  },
+  {
+    "id": "t_product_line",
+    "name": "产品线",
+    "type": "entity",
+    "definition": "产品系列(dim_product_line,4 个:PP改性系列/PA改性系列/ABS/PC合金系列/特种工程塑料系列)。产品的上级分类。",
+    "scope": "dim_product_line 及 dim_product.prod_line_id",
+    "aliases": [
+      "产品线",
+      "产品线名称",
+      "系列"
+    ],
+    "evidence": [
+      "e_org_hierarchy"
+    ]
+  },
+  {
+    "id": "t_material",
+    "name": "原材料",
+    "type": "entity",
+    "definition": "原料/物料主数据(dim_material,material_id,material_name),含 category_id 与主供应商 supplier_id。与“产品”是不同主数据。",
+    "scope": "dim_material 及事实表 material_id 列",
+    "aliases": [
+      "原材料",
+      "物料",
+      "原料",
+      "物料名称"
+    ],
+    "evidence": [
+      "e_fk_meta",
+      "e_tables_tiers"
+    ]
+  },
+  {
+    "id": "t_supplier",
+    "name": "供应商",
+    "type": "entity",
+    "definition": "供应商主数据(dim_supplier,supplier_id,supplier_name),含 cooperation_since(合作起始日期)、province/city、credit_level。",
+    "scope": "dim_supplier 及事实表 supplier_id 列",
+    "aliases": [
+      "供应商",
+      "供应商名称"
+    ],
+    "evidence": [
+      "e_fk_meta"
+    ]
+  },
+  {
+    "id": "t_customer",
+    "name": "客户",
+    "type": "entity",
+    "definition": "客户主数据(dim_customer,cust_id,cust_name),含 industry/province/city 与 status(active/dormant/lost/risk)。",
+    "scope": "dim_customer 及事实表 cust_id 列",
+    "aliases": [
+      "客户",
+      "客户名称"
+    ],
+    "evidence": [
+      "e_status_domain",
+      "e_fk_meta"
+    ]
+  },
+  {
+    "id": "t_equipment",
+    "name": "设备",
+    "type": "entity",
+    "definition": "设备主数据(dim_equipment,equipment_id,equipment_name),经 line_id 归属产线,经 type_id 归属设备类型。",
+    "scope": "dim_equipment 及事实表 equipment_id 列",
+    "aliases": [
+      "设备",
+      "设备名称"
+    ],
+    "evidence": [
+      "e_fk_meta"
+    ]
+  },
+  {
+    "id": "t_sensor",
+    "name": "传感器",
+    "type": "entity",
+    "definition": "传感器主数据(dim_sensor,sensor_id,sensor_name),归属设备 equipment_id,含 unit(读数单位)。IoT 数据与告警经 sensor_id 关联。",
+    "scope": "dim_sensor 及 fact_iot_data/fact_alarm 的 sensor_id",
+    "aliases": [
+      "传感器",
+      "传感器名称",
+      "读数单位"
+    ],
+    "evidence": [
+      "e_fk_meta"
+    ]
+  },
+  {
+    "id": "t_warehouse",
+    "name": "仓库",
+    "type": "entity",
+    "definition": "仓库主数据(dim_warehouse,warehouse_id,warehouse_name),归属工厂 factory_id。批次追溯的领用仓库以文本形式冗余在 fact_lot_trace.issue_warehouse。",
+    "scope": "dim_warehouse 及仓库相关列",
+    "aliases": [
+      "仓库",
+      "仓库名称",
+      "领用仓库",
+      "原料仓"
+    ],
+    "evidence": [
+      "e_fk_meta"
+    ]
+  },
+  {
+    "id": "t_currency",
+    "name": "币种",
+    "type": "dimension",
+    "definition": "币种主数据(dim_currency):code(CNY/USD/EUR/JPY)、name、rate_to_cny 与 is_functional(仅 CNY 为本位币)。事实表以 currency_code 文本关联。",
+    "scope": "dim_currency 及事实表 currency_code 列",
+    "aliases": [
+      "币种",
+      "币种名称",
+      "货币"
+    ],
+    "evidence": [
+      "e_currency"
+    ]
+  },
+  {
+    "id": "t_region",
+    "name": "区域",
+    "type": "dimension",
+    "definition": "销售区域(dim_region,6 个:华东/华南/华北/西南/华中/西北)。既作为维度表存在,又以文本列 sales_region 冗余在部分销售事实表中;与客户所在省市不是同一口径。",
+    "scope": "dim_region、dim_department.region_id、事实表 sales_region",
+    "aliases": [
+      "区域",
+      "地区",
+      "销售区域"
+    ],
+    "evidence": [
+      "e_region_denorm"
+    ]
+  },
+  {
+    "id": "t_organization_unit",
+    "name": "事业部",
+    "type": "entity",
+    "definition": "业务单元/事业部(dim_business_unit,3 个:通用改性事业部/工程塑料事业部/特种材料事业部),上承企业 dim_enterprise,下接利润中心 dim_profit_center 与工厂 dim_factory。",
+    "scope": "dim_business_unit 及 dim_profit_center.bu_id / dim_factory.bu_id",
+    "aliases": [
+      "事业部",
+      "业务单元",
+      "利润中心"
+    ],
+    "evidence": [
+      "e_org_hierarchy",
+      "e_fk_meta"
+    ]
+  },
+  {
+    "id": "t_calendar_date",
+    "name": "日历日期",
+    "type": "entity",
+    "definition": "日历主数据(dim_calendar):calendar_date 为日期键,name 为中文日期名(形如“2025年01月01日”),holiday_name 为节假日名称(元旦/春节/清明节/劳动节/端午节/中秋节/国庆节/法定节假日),is_holiday 为节假日标记。业务日期可关联到本表以获得日期名称与节假日名称。",
+    "scope": "dim_calendar",
+    "aliases": [
+      "日历日期",
+      "日期名称",
+      "节假日名称",
+      "节假日",
+      "国庆节",
+      "元旦"
+    ],
+    "evidence": [
+      "e_calendar"
+    ]
+  },
+  {
+    "id": "t_hazard",
+    "name": "危险源",
+    "type": "entity",
+    "definition": "危险源主数据(dim_hazard,hazard_id,hazard_name,hazard_category);危险类型(物理性/化学性/人机工程)以文本列 hazard_type 冗余在 fact_hazard_observation 中。",
+    "scope": "dim_hazard 及 fact_hazard_observation.hazard_type",
+    "aliases": [
+      "危险源",
+      "危害源",
+      "危险类型",
+      "物理性",
+      "化学性",
+      "人机工程"
+    ],
+    "evidence": [
+      "e_skill_hazard"
+    ]
+  },
+  {
+    "id": "t_skill",
+    "name": "岗位技能",
+    "type": "entity",
+    "definition": "岗位技能主数据(dim_skill,skill_id,name,short_name),技能评估经 skill_id 关联。",
+    "scope": "dim_skill 及 fact_skill_assessment.skill_id",
+    "aliases": [
+      "岗位技能",
+      "技能",
+      "技能名称",
+      "技能简称"
+    ],
+    "evidence": [
+      "e_skill_hazard"
+    ]
+  }
+]

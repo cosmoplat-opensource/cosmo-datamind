@@ -1,0 +1,178 @@
+[
+  {
+    "id": "ev_001_schema",
+    "source": "financial sqlite database",
+    "query": "SELECT name, sql FROM sqlite_master WHERE type = 'table'",
+    "result": "Eight tables: account(account_id, district_id, frequency, date), card(card_id, disp_id, type, issued), client(client_id, gender, birth_date, district_id), disp(disp_id, client_id, account_id, type), district(district_id, A2..A16), loan(loan_id, account_id, date, amount, duration, payments, status), order(order_id, account_id, bank_to, account_to, amount, k_symbol), trans(trans_id, account_id, date, type, operation, amount, balance, k_symbol, bank, account). The client table carries no name attribute.",
+    "validation_method": "sqlite_master schema inspection, read only",
+    "timestamp": "2026-10-09T19:05:00+00:00"
+  },
+  {
+    "id": "ev_002_row_counts",
+    "source": "financial sqlite database",
+    "query": "SELECT COUNT(*) FROM each of account, card, client, disp, district, loan, order, trans",
+    "result": "account 4500, card 892, client 5369, disp 5369, district 77, loan 682, order 6471, trans 1056320",
+    "validation_method": "direct row counts",
+    "timestamp": "2026-10-09T19:05:00+00:00"
+  },
+  {
+    "id": "ev_003_account_frequency",
+    "source": "financial sqlite database",
+    "query": "SELECT frequency, COUNT(*) FROM account GROUP BY frequency",
+    "result": "POPLATEK MESICNE 4167, POPLATEK PO OBRATU 93, POPLATEK TYDNE 240. Three codes only.",
+    "validation_method": "grouped count of the full column",
+    "timestamp": "2026-10-09T19:05:00+00:00"
+  },
+  {
+    "id": "ev_004_client_gender",
+    "source": "financial sqlite database",
+    "query": "SELECT gender, COUNT(*) FROM client GROUP BY gender",
+    "result": "F 2645, M 2724. Two codes only, no null.",
+    "validation_method": "grouped count of the full column",
+    "timestamp": "2026-10-09T19:05:00+00:00"
+  },
+  {
+    "id": "ev_005_disp_type",
+    "source": "financial sqlite database",
+    "query": "SELECT type, COUNT(*) FROM disp GROUP BY type",
+    "result": "OWNER 4500, DISPONENT 869",
+    "validation_method": "grouped count of the full column",
+    "timestamp": "2026-10-09T19:05:00+00:00"
+  },
+  {
+    "id": "ev_006_region_values",
+    "source": "financial sqlite database",
+    "query": "SELECT DISTINCT A3 FROM district",
+    "result": "Eight labels: Prague, central Bohemia, south Bohemia, west Bohemia, north Bohemia, east Bohemia, south Moravia, north Moravia. Only Prague is capitalised; the requested 'East Bohemia' and 'North Bohemia' are stored lower case.",
+    "validation_method": "distinct value enumeration across all 77 districts",
+    "timestamp": "2026-10-09T19:05:00+00:00"
+  },
+  {
+    "id": "ev_007_district_name_values",
+    "source": "financial sqlite database",
+    "query": "SELECT COUNT(DISTINCT A2) FROM district",
+    "result": "77 distinct names across 77 district rows, so the name uniquely identifies a district.",
+    "validation_method": "distinct count compared against row count",
+    "timestamp": "2026-10-09T19:05:00+00:00"
+  },
+  {
+    "id": "ev_008_average_salary",
+    "source": "financial sqlite database",
+    "query": "SELECT MIN(A11), MAX(A11) FROM district; SELECT COUNT(DISTINCT A11) FROM district; SELECT COUNT(*) FROM district WHERE A11 > 10000",
+    "result": "Range 8110 to 12541, 76 distinct values across 77 districts, and 8 districts above 10000. Integer values, one per district.",
+    "validation_method": "range and distinct-count verification",
+    "timestamp": "2026-10-09T19:05:00+00:00"
+  },
+  {
+    "id": "ev_009_account_dates",
+    "source": "financial sqlite database",
+    "query": "SELECT MIN(date), MAX(date) FROM account; SELECT substr(date,1,4), COUNT(*) FROM account GROUP BY 1",
+    "result": "Range 1993-01-01 to 1997-12-29. Yearly counts: 1993 1139, 1994 439, 1995 661, 1996 1363, 1997 898. 21 accounts were opened in 1993 with frequency POPLATEK PO OBRATU.",
+    "validation_method": "min, max and grouped year extraction",
+    "timestamp": "2026-10-09T19:05:00+00:00"
+  },
+  {
+    "id": "ev_010_loan_profile",
+    "source": "financial sqlite database",
+    "query": "SELECT MIN(date), MAX(date), MIN(amount), MAX(amount), MIN(duration), MAX(duration) FROM loan",
+    "result": "Approval dates 1993-07-05 to 1998-12-08, so loan approvals extend one year beyond the latest account opening date. Amounts 4980 to 590820. Duration 12 to 60, interpreted as months. Payments range 304.0 to 9910.0.",
+    "validation_method": "min and max over the full loan table",
+    "timestamp": "2026-10-09T19:05:00+00:00"
+  },
+  {
+    "id": "ev_011_loan_status",
+    "source": "financial sqlite database",
+    "query": "SELECT status, COUNT(*) FROM loan GROUP BY status",
+    "result": "A 203, B 31, C 403, D 45. Four single-letter codes. Of the 305 loans below 100000 in amount, 139 are A, 16 are B, 143 are C and 7 are D.",
+    "validation_method": "grouped count overall and restricted to amounts below 100000",
+    "timestamp": "2026-10-09T19:05:00+00:00"
+  },
+  {
+    "id": "ev_012_trans_crosstab",
+    "source": "financial sqlite database",
+    "query": "SELECT type, COALESCE(operation,'NULL'), COUNT(*) FROM trans GROUP BY type, operation ORDER BY type",
+    "result": "PRIJEM with NULL operation 183114, PRIJEM with VKLAD 156743, PRIJEM with PREVOD Z UCTU 65226, VYBER with VYBER 16666, VYDAJ with VYBER 418252, VYDAJ with PREVOD NA UCET 208283, VYDAJ with VYBER KARTOU 8036. Operation is never NULL for type VYDAJ or VYBER, and PREVOD NA UCET and VYBER KARTOU never co-occur with PRIJEM.",
+    "validation_method": "full cross tabulation of both coded columns",
+    "timestamp": "2026-10-09T19:05:00+00:00"
+  },
+  {
+    "id": "ev_013_trans_amount_sign",
+    "source": "financial sqlite database",
+    "query": "SELECT type, MIN(amount), MAX(amount), SUM(CASE WHEN amount < 0 THEN 1 ELSE 0 END) FROM trans GROUP BY type",
+    "result": "No negative amounts in any group. PRIJEM 0 to 74812, VYBER 2001 to 24997, VYDAJ 0 to 87400. Direction is therefore not encoded by the sign.",
+    "validation_method": "sign census per direction type",
+    "timestamp": "2026-10-09T19:05:00+00:00"
+  },
+  {
+    "id": "ev_014_fk_integrity",
+    "source": "financial sqlite database",
+    "query": "LEFT JOIN orphan checks for account.district_id, client.district_id, disp.client_id, disp.account_id, loan.account_id, trans.account_id, card.disp_id, order.account_id against their referenced tables",
+    "result": "Zero orphan rows in all eight checks, so every declared reference resolves to an existing row.",
+    "validation_method": "anti join count per reference",
+    "timestamp": "2026-10-09T19:05:00+00:00"
+  },
+  {
+    "id": "ev_015_disp_cardinality",
+    "source": "financial sqlite database",
+    "query": "SELECT COUNT(DISTINCT client_id), COUNT(DISTINCT account_id) FROM disp; SELECT COUNT(*) FROM (SELECT account_id FROM disp GROUP BY account_id HAVING COUNT(*) > 1); SELECT COUNT(*) FROM (SELECT client_id FROM disp GROUP BY client_id HAVING COUNT(*) > 1)",
+    "result": "5369 distinct clients, 4500 distinct accounts, 869 accounts carry more than one disposition row and 0 clients do. The 869 multi-row accounts equal the 869 disponent grants exactly, so each such account has one owner and one disponent.",
+    "validation_method": "distinct counts and grouped having counts",
+    "timestamp": "2026-10-09T19:05:00+00:00"
+  },
+  {
+    "id": "ev_016_loan_account_1to1",
+    "source": "financial sqlite database",
+    "query": "SELECT COUNT(*) FROM loan; SELECT COUNT(DISTINCT account_id) FROM loan; SELECT COUNT(*) FROM (SELECT account_id FROM loan GROUP BY account_id HAVING COUNT(*) > 1)",
+    "result": "682 loan rows, 682 distinct account identifiers, 0 accounts with more than one loan. The loan to account relationship is one-to-one in this data.",
+    "validation_method": "distinct count against row count",
+    "timestamp": "2026-10-09T19:05:00+00:00"
+  },
+  {
+    "id": "ev_017_district_role_divergence",
+    "source": "financial sqlite database",
+    "query": "SELECT COUNT(*), SUM(CASE WHEN c.district_id = a.district_id THEN 1 ELSE 0 END) FROM client c JOIN disp d USING(client_id) JOIN account a USING(account_id)",
+    "result": "5369 links, of which 4875 have equal client and account districts and 494 differ. The two district roles are therefore genuinely independent and cannot be substituted for one another.",
+    "validation_method": "agreement census across every client-account link",
+    "timestamp": "2026-10-09T19:05:00+00:00"
+  },
+  {
+    "id": "ev_018_counterparty_overlap",
+    "source": "financial sqlite database",
+    "query": "SELECT COUNT(DISTINCT account) FROM trans WHERE account IS NOT NULL; SELECT COUNT(*) FROM trans WHERE account IN (SELECT account_id FROM account)",
+    "result": "7665 distinct counterparty account numbers, of which only 30 coincide with an identifier present in the account table. The bank column holds short codes including AB, YZ, ST, QR, WX, CD, UV, KL and GH.",
+    "validation_method": "distinct count and overlap count against the account entity",
+    "timestamp": "2026-10-09T19:05:00+00:00"
+  },
+  {
+    "id": "ev_019_percentage_definition",
+    "source": "construction workload evidence for questions 118 and 186",
+    "query": "Not applicable, the definition is stated in the supplied workload evidence",
+    "result": "The workload states the percentage of accounts by condition as the total satisfying the condition divided by the total, times 100, and the percentage of male clients who requested weekly statements as the count of male clients who requested weekly statements divided by the count of clients who requested weekly statements, times 100. The two wordings place the condition differently between numerator and denominator, so the population in the denominator must be read from each question. Question 118 also establishes that status 'C' means a running contract, ok so far.",
+    "validation_method": "restatement of the supplied workload evidence, no reference answers consulted",
+    "timestamp": "2026-10-09T19:05:00+00:00"
+  },
+  {
+    "id": "ev_020_attribute_ranges",
+    "source": "financial sqlite database",
+    "query": "SELECT MIN and MAX of A4 through A16 FROM district",
+    "result": "Observed numeric ranges for the uninterpreted district attributes: A4 102609 to 95907 as text collation, A5 0 to 99, A6 0 to 8, A7 0 to 9, A8 0 to 5, A9 1 to 11, A10 33.9 to 100.0, A12 0.2 to 7.3, A13 0.43 to 9.4, A14 81 to 167, A15 818 to 85677, A16 888 to 99107. Ranges are recorded for reproducibility only; no business meaning is asserted for these columns.",
+    "validation_method": "min and max scan recorded without semantic interpretation",
+    "timestamp": "2026-10-09T19:05:00+00:00"
+  },
+  {
+    "id": "ev_021_cash_withdrawal_encoding",
+    "source": "financial sqlite database",
+    "query": "SELECT COUNT(*) FROM trans WHERE operation = 'VYBER'; SELECT COUNT(*) FROM trans WHERE type = 'VYBER'; SELECT COUNT(*) FROM trans WHERE operation = 'VYBER' AND type = 'VYBER'",
+    "result": "434918 rows carry operation 'VYBER', only 16666 rows carry type 'VYBER', and the intersection is exactly the 16666 type 'VYBER' rows, leaving 418252 cash withdrawals coded as type 'VYDAJ'. Filtering on the type code alone would retain about 3.8 percent of all cash withdrawals.",
+    "validation_method": "three counting queries isolating the overlap between the two encodings",
+    "timestamp": "2026-10-09T19:05:00+00:00"
+  },
+  {
+    "id": "ev_022_workload_units",
+    "source": "construction workload evidence for questions 99 and 136",
+    "query": "Not applicable, the unit interpretation is stated in the supplied workload evidence",
+    "result": "The workload states that loan validity of more than 12 months refers to duration greater than 12, confirming that loan.duration is expressed in months, and that monthly statement issuance corresponds to frequency 'POPLATEK MESICNE' and weekly issuance to 'POPLATEK TYDNE'.",
+    "validation_method": "restatement of supplied workload evidence",
+    "timestamp": "2026-10-09T19:05:00+00:00"
+  }
+]

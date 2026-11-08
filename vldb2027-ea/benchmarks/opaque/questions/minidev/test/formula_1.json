@@ -1,0 +1,302 @@
+{
+ "db_id": "formula_1",
+ "questions": [
+  {
+   "question_id": 1003,
+   "db_id": "formula_1",
+   "question": "How many accidents did the driver who had the highest number accidents in the Canadian Grand Prix have?",
+   "evidence": "number of accidents refers to the number where fld041 = 3; Canadian Grand Prix refers to the race of name\n",
+   "SQL": "SELECT COUNT(T1.fld013) FROM tab13 AS T1 INNER JOIN tab05 AS T2 ON T1.fld021 = T2.fld021 INNER JOIN tab12 AS T3 ON T1.fld041 = T3.fld041 WHERE T3.fld041 = 3 AND T2.fld003 = 'Canadian Grand Prix' GROUP BY T1.fld013 ORDER BY COUNT(T1.fld013) DESC LIMIT 1",
+   "difficulty": "moderate",
+   "SQL_original": "SELECT COUNT(T1.driverId) FROM results AS T1 INNER JOIN races AS T2 on T1.raceId = T2.raceId INNER JOIN status AS T3 on T1.statusId = T3.statusId WHERE T3.statusId = 3 AND T2.name = 'Canadian Grand Prix' GROUP BY T1.driverId ORDER BY COUNT(T1.driverId) DESC LIMIT 1"
+  },
+  {
+   "question_id": 906,
+   "db_id": "formula_1",
+   "question": "Which was Lewis Hamilton first race? What was his points recorded for his first race event?",
+   "evidence": "first race refers to min(fld020); Lewis Hamiltonrefers to the full name of the driver; Full name of the driver refers to tab03.fld017 and tab03.fld018;",
+   "SQL": "SELECT T1.fld003, T2.fld026 FROM tab05 AS T1 INNER JOIN tab08 AS T2 ON T2.fld021 = T1.fld021 INNER JOIN tab03 AS T3 ON T3.fld013 = T2.fld013 WHERE T3.fld017 = 'Lewis' AND T3.fld018 = 'Hamilton' ORDER BY T1.fld020 ASC LIMIT 1",
+   "difficulty": "moderate",
+   "SQL_original": "SELECT T1.name, T2.points FROM races AS T1 INNER JOIN driverStandings AS T2 ON T2.raceId = T1.raceId INNER JOIN drivers AS T3 ON T3.driverId = T2.driverId WHERE T3.forename = 'Lewis' AND T3.surname = 'Hamilton' ORDER BY T1.year ASC LIMIT 1"
+  },
+  {
+   "question_id": 846,
+   "db_id": "formula_1",
+   "question": "Please list the reference names of the drivers who are eliminated in the first period in race number 20.",
+   "evidence": "driver reference name refers to fld014; first qualifying period refers to fld038; drivers who are eliminated in the first qualifying period refers to 5 drivers with MAX(fld038); race number refers to fld021;",
+   "SQL": "SELECT T2.fld014 FROM tab11 AS T1 INNER JOIN tab03 AS T2 ON T2.fld013 = T1.fld013 WHERE T1.fld021 = 20 ORDER BY T1.fld038 DESC LIMIT 5",
+   "difficulty": "moderate",
+   "SQL_original": "SELECT T2.driverRef FROM qualifying AS T1 INNER JOIN drivers AS T2 ON T2.driverId = T1.driverId WHERE T1.raceId = 20 ORDER BY T1.q1 DESC LIMIT 5"
+  },
+  {
+   "question_id": 950,
+   "db_id": "formula_1",
+   "question": "Please list the constructor names with 0 points at race 291.",
+   "evidence": "race at 291 refers to fld021 = 291;",
+   "SQL": "SELECT T2.fld003 FROM tab07 AS T1 INNER JOIN tab02 AS T2 ON T1.fld010 = T2.fld010 WHERE T1.fld026 = 0 AND T1.fld021 = 291",
+   "difficulty": "simple",
+   "SQL_original": "SELECT T2.name FROM constructorStandings AS T1 INNER JOIN constructors AS T2 on T1.constructorId = T2.constructorId WHERE T1.points = 0 AND T1.raceId = 291"
+  },
+  {
+   "question_id": 862,
+   "db_id": "formula_1",
+   "question": "For the Bahrain Grand Prix in 2007, how many drivers not finished the game?",
+   "evidence": "Bahrain Grand Prix refers to tab05.fld003 = 'Bahrain Grand Prix'; drivers who finished the race refers to fld024 is not empty (i.e. fld024 IS NOT NULL);",
+   "SQL": "SELECT COUNT(T3.fld013) FROM tab05 AS T1 INNER JOIN tab13 AS T2 ON T2.fld021 = T1.fld021 INNER JOIN tab03 AS T3 ON T3.fld013 = T2.fld013 WHERE T1.fld020 = 2007 AND T1.fld003 = 'Bahrain Grand Prix' AND T2.fld024 IS NULL",
+   "difficulty": "simple",
+   "SQL_original": "SELECT COUNT(T3.driverId) FROM races AS T1 INNER JOIN results AS T2 ON T2.raceId = T1.raceId INNER JOIN drivers AS T3 ON T3.driverId = T2.driverId WHERE T1.year = 2007 AND T1.name = 'Bahrain Grand Prix' AND T2.time IS NULL"
+  },
+  {
+   "question_id": 989,
+   "db_id": "formula_1",
+   "question": "Who is the champion of the Canadian Grand Prix in 2008? Indicate his finish time.",
+   "evidence": "Only the time of the champion shows in the format of \"hour: minutes: seconds.millionsecond\";",
+   "SQL": "SELECT T1.fld024 FROM tab13 AS T1 INNER JOIN tab05 AS T2 ON T1.fld021 = T2.fld021 WHERE T2.fld003 = 'Canadian Grand Prix' AND T2.fld020 = 2008 AND T1.fld024 LIKE '_:%:__.___'",
+   "difficulty": "moderate",
+   "SQL_original": "SELECT T1.time FROM results AS T1 INNER JOIN races AS T2 ON T1.raceId = T2.raceId WHERE T2.name = 'Canadian Grand Prix' AND T2.year = 2008 AND T1.time LIKE '_:%:__.___'"
+  },
+  {
+   "question_id": 940,
+   "db_id": "formula_1",
+   "question": "Among the drivers that finished the race in the 2008 Chinese Grand Prix, how many of them have participated in Formula_1 races?",
+   "evidence": "COUNT(fld021) > 0 reveals that this driver participated in races; drivers who finished the race refers to time has value.",
+   "SQL": "SELECT COUNT(*) FROM (SELECT T1.fld013 FROM tab13 AS T1 INNER JOIN tab05 AS T2 ON T1.fld021 = T2.fld021 WHERE T2.fld003 = 'Chinese Grand Prix' AND T2.fld020 = 2008 AND NOT T1.fld024 IS NULL GROUP BY T1.fld013 HAVING COUNT(T2.fld021) > 0)",
+   "difficulty": "moderate",
+   "SQL_original": "SELECT COUNT(*) FROM ( SELECT T1.driverId FROM results AS T1 INNER JOIN races AS T2 on T1.raceId = T2.raceId WHERE T2.name = 'Chinese Grand Prix' AND T2.year = 2008 AND T1.time IS NOT NULL GROUP BY T1.driverId HAVING COUNT(T2.raceId) > 0 )"
+  },
+  {
+   "question_id": 988,
+   "db_id": "formula_1",
+   "question": "List down top 3 German drivers who has the shortest average pit stop duration and were born between 1980-1985.",
+   "evidence": "Full name of the driver refers to tab03.fld017 and tab03.fld018; born between 1980-1985 refers to 1980<= year(fld019) <=1985; Average pitstop duration refers to Divide(SUM(fld036),COUNT(fld036)); shortest average refers to Min(avg(fld036));",
+   "SQL": "SELECT T2.fld017, T2.fld018 FROM tab10 AS T1 INNER JOIN tab03 AS T2 ON T1.fld013 = T2.fld013 WHERE T2.fld012 = 'German' AND STRFTIME('%Y', T2.fld019) BETWEEN '1980' AND '1985' GROUP BY T2.fld017, T2.fld018 ORDER BY AVG(T1.fld036) LIMIT 3",
+   "difficulty": "challenging",
+   "SQL_original": "SELECT T2.forename, T2.surname FROM pitStops AS T1 INNER JOIN drivers AS T2 on T1.driverId = T2.driverId WHERE T2.nationality = 'German' AND STRFTIME('%Y', T2.dob) BETWEEN '1980' AND '1985' GROUP BY T2.forename, T2.surname ORDER BY AVG(T1.duration) LIMIT 3"
+  },
+  {
+   "question_id": 865,
+   "db_id": "formula_1",
+   "question": "For all the drivers who finished the game in race No. 592, who is the oldest?",
+   "evidence": "drivers who finished the race refers to fld024 is not empty (i.e. fld024 IS NOT NULL); race number refers to fld021; date of birth refers to tab03.fld019; The larger the birthday value, the younger the person is, and vice versa;",
+   "SQL": "SELECT T1.fld017, T1.fld018 FROM tab03 AS T1 INNER JOIN tab13 AS T2 ON T2.fld013 = T1.fld013 WHERE T2.fld021 = 592 AND NOT T2.fld024 IS NULL AND NOT T1.fld019 IS NULL ORDER BY T1.fld019 ASC LIMIT 1",
+   "difficulty": "moderate",
+   "SQL_original": "SELECT T1.forename, T1.surname FROM drivers AS T1 INNER JOIN results AS T2 ON T2.driverId = T1.driverId WHERE T2.raceId = 592 AND T2.time IS NOT NULL AND T1.dob IS NOT NULL ORDER BY T1.dob ASC LIMIT 1"
+  },
+  {
+   "question_id": 866,
+   "db_id": "formula_1",
+   "question": "Who was the player that got the lap time of 0:01:27 in the race No. 161? Show his introduction website.",
+   "evidence": "player and driver are synonyms; the lap time of 0:0M:SS refers to lapTime.fld024 LIKE 'M:SS%';race number refers to fld021; introduction website of the drivers refers to url;",
+   "SQL": "SELECT DISTINCT T2.fld017, T2.fld018, T2.fld009 FROM tab09 AS T1 INNER JOIN tab03 AS T2 ON T2.fld013 = T1.fld013 WHERE T1.fld021 = 161 AND T1.fld024 LIKE '1:27%'",
+   "difficulty": "moderate",
+   "SQL_original": "SELECT DISTINCT T2.forename, T2.surname, T2.url FROM lapTimes AS T1 INNER JOIN drivers AS T2 ON T2.driverId = T1.driverId WHERE T1.raceId = 161 AND T1.time LIKE '1:27%'"
+  },
+  {
+   "question_id": 910,
+   "db_id": "formula_1",
+   "question": "What's the location coordinates of Silverstone Circuit?",
+   "evidence": "location coordinates refers to (fld006, fld007); Silverstone Circuit refers to tab01.fld003 = 'Silverstone Circuit'",
+   "SQL": "SELECT fld006, fld007 FROM tab01 WHERE fld003 = 'Silverstone Circuit'",
+   "difficulty": "simple",
+   "SQL_original": "SELECT lat, lng FROM circuits WHERE name = 'Silverstone Circuit'"
+  },
+  {
+   "question_id": 944,
+   "db_id": "formula_1",
+   "question": "How much faster in percentage is the champion than the driver who finished the race last in the 2008 Australian Grand Prix?",
+   "evidence": "how much faster in percentage = divide(subtract(incremental fld024, champion fld024), last_driver fld024) * 100; last driver finished fld024 = incremental time + champion time; only champion's finished fld024 is represented by 'HH:MM:SS.mmm'; finished the game refers to fld024 is not null",
+   "SQL": "WITH time_in_seconds AS (SELECT T1.fld044, CASE WHEN T1.fld044 = 1 THEN (CAST(SUBSTRING(T1.fld024, 1, 1) AS REAL) * 3600) + (CAST(SUBSTRING(T1.fld024, 3, 2) AS REAL) * 60) + CAST(SUBSTRING(T1.fld024, 6) AS REAL) ELSE CAST(SUBSTRING(T1.fld024, 2) AS REAL) END AS time_seconds FROM tab13 AS T1 INNER JOIN tab05 AS T2 ON T1.fld021 = T2.fld021 WHERE T2.fld003 = 'Australian Grand Prix' AND NOT T1.fld024 IS NULL AND T2.fld020 = 2008), champion_time AS (SELECT time_seconds FROM time_in_seconds WHERE fld044 = 1), last_driver_incremental AS (SELECT time_seconds FROM time_in_seconds WHERE fld044 = (SELECT MAX(fld044) FROM time_in_seconds)) SELECT (CAST((SELECT time_seconds FROM last_driver_incremental) AS REAL) * 100) / (SELECT time_seconds + (SELECT time_seconds FROM last_driver_incremental) FROM champion_time)",
+   "difficulty": "challenging",
+   "SQL_original": "WITH time_in_seconds AS ( SELECT T1.positionOrder, CASE WHEN T1.positionOrder = 1 THEN (CAST(SUBSTR(T1.time, 1, 1) AS REAL) * 3600) + (CAST(SUBSTR(T1.time, 3, 2) AS REAL) * 60) + CAST(SUBSTR(T1.time, 6) AS REAL) ELSE CAST(SUBSTR(T1.time, 2) AS REAL) END AS time_seconds FROM results AS T1 INNER JOIN races AS T2 ON T1.raceId = T2.raceId WHERE T2.name = 'Australian Grand Prix' AND T1.time IS NOT NULL AND T2.year = 2008 ), champion_time AS ( SELECT time_seconds FROM time_in_seconds WHERE positionOrder = 1), last_driver_incremental AS ( SELECT time_seconds FROM time_in_seconds WHERE positionOrder = (SELECT MAX(positionOrder) FROM time_in_seconds) ) SELECT (CAST((SELECT time_seconds FROM last_driver_incremental) AS REAL) * 100) / (SELECT time_seconds + (SELECT time_seconds FROM last_driver_incremental) FROM champion_time)"
+  },
+  {
+   "question_id": 857,
+   "db_id": "formula_1",
+   "question": "Give the coordinate position for Abu Dhabi Grand Prix.",
+   "evidence": "coordinate position/location refers to fld006, lng; Abu Dhabi Grand Prix refers to tab05.fld003 = 'Abu Dhabi Grand Prix'",
+   "SQL": "SELECT DISTINCT T1.fld006, T1.fld007 FROM tab01 AS T1 INNER JOIN tab05 AS T2 ON T2.fld001 = T1.fld001 WHERE T2.fld003 = 'Abu Dhabi Grand Prix'",
+   "difficulty": "simple",
+   "SQL_original": "SELECT DISTINCT T1.lat, T1.lng FROM circuits AS T1 INNER JOIN races AS T2 ON T2.circuitID = T1.circuitId WHERE T2.name = 'Abu Dhabi Grand Prix'"
+  },
+  {
+   "question_id": 879,
+   "db_id": "formula_1",
+   "question": "For the driver who set the fastest lap speed, what is his nationality?",
+   "evidence": "the fastest lap speed refers to (MAX) fld049;",
+   "SQL": "SELECT T1.fld012 FROM tab03 AS T1 INNER JOIN tab13 AS T2 ON T2.fld013 = T1.fld013 ORDER BY CAST(T2.fld049 AS REAL) DESC LIMIT 1",
+   "difficulty": "moderate",
+   "SQL_original": "SELECT T1.nationality FROM drivers AS T1 INNER JOIN results AS T2 ON T2.driverId = T1.driverId ORDER BY CAST(T2.fastestLapSpeed AS REAL) DESC LIMIT 1"
+  },
+  {
+   "question_id": 869,
+   "db_id": "formula_1",
+   "question": "For the constructor which got the highest point in the race No. 9 , what is its introduction website?",
+   "evidence": "race number refers to fld021; constructor which got the highest point refers to MAX(tab06.fld026); introduction website of the constructor refers to url;",
+   "SQL": "SELECT T2.fld009 FROM tab06 AS T1 INNER JOIN tab02 AS T2 ON T2.fld010 = T1.fld010 WHERE T1.fld021 = 9 ORDER BY T1.fld026 DESC LIMIT 1",
+   "difficulty": "moderate",
+   "SQL_original": "SELECT T2.url FROM constructorResults AS T1 INNER JOIN constructors AS T2 ON T2.constructorId = T1.constructorId WHERE T1.raceId = 9 ORDER BY T1.points DESC LIMIT 1"
+  },
+  {
+   "question_id": 896,
+   "db_id": "formula_1",
+   "question": "Calculate the percentage whereby Hamilton was not at the 1st track of the the f1 circuit since 2010.",
+   "evidence": "percentage = DIVIDE(COUNT(fld021) where fld018 = 'Hamilton' and fld029>1), (COUNT(fld021) where fld018 = 'Hamilton'); since 2010 refers to fld020 >= 2010",
+   "SQL": "SELECT CAST(COUNT(CASE WHEN T2.fld029 <> 1 THEN T2.fld029 END) AS REAL) * 100 / COUNT(T2.fld032) FROM tab05 AS T1 INNER JOIN tab08 AS T2 ON T2.fld021 = T1.fld021 INNER JOIN tab03 AS T3 ON T3.fld013 = T2.fld013 WHERE T3.fld018 = 'Hamilton' AND T1.fld020 >= 2010",
+   "difficulty": "challenging",
+   "SQL_original": "SELECT CAST(COUNT(CASE WHEN T2.position <> 1 THEN T2.position END) AS REAL) * 100 / COUNT(T2.driverStandingsId) FROM races AS T1 INNER JOIN driverStandings AS T2 ON T2.raceId = T1.raceId INNER JOIN drivers AS T3 ON T3.driverId = T2.driverId WHERE T3.surname = 'Hamilton' AND T1.year >= 2010"
+  },
+  {
+   "question_id": 978,
+   "db_id": "formula_1",
+   "question": "How many times the circuits were held in Austria? Please give their location and coordinates.",
+   "evidence": "location coordinates refers to (fld006,fld007); Austria refers to fld005 = 'Austria';",
+   "SQL": "SELECT DISTINCT fld004, fld006, fld007 FROM tab01 WHERE fld005 = 'Austria'",
+   "difficulty": "simple",
+   "SQL_original": "SELECT DISTINCT location, lat, lng FROM circuits WHERE country = 'Austria'"
+  },
+  {
+   "question_id": 859,
+   "db_id": "formula_1",
+   "question": "What's Bruno Senna's Q1 result in the qualifying race No. 354?",
+   "evidence": "race number refers to fld021; Bruno Senna refers to the full name of the driver; Full name of the driver refers to tab03.fld017 and tab03.fld018;",
+   "SQL": "SELECT T1.fld038 FROM tab11 AS T1 INNER JOIN tab03 AS T2 ON T2.fld013 = T1.fld013 WHERE T1.fld021 = 354 AND T2.fld017 = 'Bruno' AND T2.fld018 = 'Senna'",
+   "difficulty": "simple",
+   "SQL_original": "SELECT T1.q1 FROM qualifying AS T1 INNER JOIN drivers AS T2 ON T2.driverId = T1.driverId WHERE T1.raceId = 354 AND T2.forename = 'Bruno' AND T2.surname = 'Senna'"
+  },
+  {
+   "question_id": 884,
+   "db_id": "formula_1",
+   "question": "List the names of all races that occurred in the earliest recorded year and month.",
+   "evidence": "earliest recorded year and month refers to fld020 = year(min(fld023)) and month = month(min(fld023));",
+   "SQL": "SELECT fld003 FROM tab05 WHERE STRFTIME('%Y', fld023) = (SELECT STRFTIME('%Y', fld023) FROM tab05 ORDER BY fld023 ASC LIMIT 1) AND STRFTIME('%m', fld023) = (SELECT STRFTIME('%m', fld023) FROM tab05 ORDER BY fld023 ASC LIMIT 1)",
+   "difficulty": "moderate",
+   "SQL_original": "SELECT name FROM races WHERE STRFTIME('%Y', date) = ( SELECT STRFTIME('%Y', date) FROM races ORDER BY date ASC LIMIT 1 ) AND STRFTIME('%m', date) = ( SELECT STRFTIME('%m', date) FROM races ORDER BY date ASC LIMIT 1 )"
+  },
+  {
+   "question_id": 931,
+   "db_id": "formula_1",
+   "question": "What was the fastest lap speed among all drivers in the 2009 Spanish Grand Prix?",
+   "evidence": "the fastest lap speed among all refers to max(fld049); Spanish Grand Prix refers to tab05.fld003 = 'Spanish Grand Prix';",
+   "SQL": "SELECT T2.fld049 FROM tab05 AS T1 INNER JOIN tab13 AS T2 ON T2.fld021 = T1.fld021 WHERE T1.fld003 = 'Spanish Grand Prix' AND T1.fld020 = 2009 AND NOT T2.fld049 IS NULL ORDER BY T2.fld049 DESC LIMIT 1",
+   "difficulty": "moderate",
+   "SQL_original": "SELECT T2.fastestLapSpeed FROM races AS T1 INNER JOIN results AS T2 ON T2.raceId = T1.raceId WHERE T1.name = 'Spanish Grand Prix' AND T1.year = 2009 AND T2.fastestLapSpeed IS NOT NULL ORDER BY T2.fastestLapSpeed DESC LIMIT 1"
+  },
+  {
+   "question_id": 937,
+   "db_id": "formula_1",
+   "question": "What's the finish time for the driver who ranked second in 2008's AustChineseralian Grand Prix?",
+   "evidence": "finish time refers to time; Chinese Grand Prix refers to tab05.fld003 = 'Chinese Grand Prix';",
+   "SQL": "SELECT T1.fld024 FROM tab13 AS T1 INNER JOIN tab05 AS T2 ON T1.fld021 = T2.fld021 WHERE T1.fld047 = 2 AND T2.fld003 = 'Chinese Grand Prix' AND T2.fld020 = 2008",
+   "difficulty": "simple",
+   "SQL_original": "SELECT T1.time FROM results AS T1 INNER JOIN races AS T2 on T1.raceId = T2.raceId WHERE T1.rank = 2 AND T2.name = 'Chinese Grand Prix' AND T2.year = 2008"
+  },
+  {
+   "question_id": 902,
+   "db_id": "formula_1",
+   "question": "Which race was Alex Yoong in when he was in track number less than 20?",
+   "evidence": "Alex Yoong refers to the full name of the driver; Full name of the driver refers to tab03.fld017 and tab03.fld018;track number less than 10 refers to fld029 < 20",
+   "SQL": "SELECT T1.fld003 FROM tab05 AS T1 INNER JOIN tab08 AS T2 ON T2.fld021 = T1.fld021 INNER JOIN tab03 AS T3 ON T3.fld013 = T2.fld013 WHERE T3.fld017 = 'Alex' AND T3.fld018 = 'Yoong' AND T2.fld029 < 20",
+   "difficulty": "simple",
+   "SQL_original": "SELECT T1.name FROM races AS T1 INNER JOIN driverStandings AS T2 ON T2.raceId = T1.raceId INNER JOIN drivers AS T3 ON T3.driverId = T2.driverId WHERE T3.forename = 'Alex' AND T3.surname = 'Yoong' AND T2.position < 20"
+  },
+  {
+   "question_id": 948,
+   "db_id": "formula_1",
+   "question": "What are the maximum points of British constructors?",
+   "evidence": "maximum fld026 = MAX(fld026); British is a nationality",
+   "SQL": "SELECT MAX(T1.fld026) FROM tab07 AS T1 INNER JOIN tab02 AS T2 ON T1.fld010 = T2.fld010 WHERE T2.fld012 = 'British'",
+   "difficulty": "simple",
+   "SQL_original": "SELECT MAX(T1.points) FROM constructorStandings AS T1 INNER JOIN constructors AS T2 on T1.constructorId = T2.constructorId WHERE T2.nationality = 'British'"
+  },
+  {
+   "question_id": 880,
+   "db_id": "formula_1",
+   "question": "Paul di Resta was in the No. 853 race, what percent faster did he finish in the 853rd race than the next race for the fastest lap speed?",
+   "evidence": "Paul di Resta refers to the full name of the driver; Full name of the driver refers to tab03.fld017 ='Paul' and tab03.fld018 = 'di Resta'; race number refers to fld021; percentage = DIVIDE(SUBTRACT(fld049(fld021 = 853), (fld049 (fld021 = 854)) * 100 , (fld049(fld021 = 853))",
+   "SQL": "SELECT (SUM(IIF(T2.fld021 = 853, T2.fld049, 0)) - SUM(IIF(T2.fld021 = 854, T2.fld049, 0))) * 100 / SUM(IIF(T2.fld021 = 853, T2.fld049, 0)) FROM tab03 AS T1 INNER JOIN tab13 AS T2 ON T2.fld013 = T1.fld013 WHERE T1.fld017 = 'Paul' AND T1.fld018 = 'di Resta'",
+   "difficulty": "challenging",
+   "SQL_original": "SELECT (SUM(IIF(T2.raceId = 853, T2.fastestLapSpeed, 0)) - SUM(IIF(T2.raceId = 854, T2.fastestLapSpeed, 0))) * 100 / SUM(IIF(T2.raceId = 853, T2.fastestLapSpeed, 0)) FROM drivers AS T1 INNER JOIN results AS T2 ON T2.driverId = T1.driverId WHERE T1.forename = 'Paul' AND T1.surname = 'di Resta'"
+  },
+  {
+   "question_id": 945,
+   "db_id": "formula_1",
+   "question": "How many circuits are there in Adelaide, Australia?",
+   "evidence": "Australia is the country; Melbourne is the location of circuit;",
+   "SQL": "SELECT COUNT(fld001) FROM tab01 WHERE fld004 = 'Adelaide' AND fld005 = 'Australia'",
+   "difficulty": "simple",
+   "SQL_original": "SELECT COUNT(circuitId) FROM circuits WHERE location = 'Adelaide' AND country = 'Australia'"
+  },
+  {
+   "question_id": 1014,
+   "db_id": "formula_1",
+   "question": "Please list the lap records for the circuits in Italy.",
+   "evidence": "lap record means the fastest time recorded which refers to time",
+   "SQL": "WITH fastest_lap_times AS (SELECT T1.fld021, T1.fld048, (CAST(SUBSTRING(T1.fld048, 1, INSTR(T1.fld048, ':') - 1) AS REAL) * 60) + (CAST(SUBSTRING(T1.fld048, INSTR(T1.fld048, ':') + 1, INSTR(T1.fld048, '.') - INSTR(T1.fld048, ':') - 1) AS REAL)) + (CAST(SUBSTRING(T1.fld048, INSTR(T1.fld048, '.') + 1) AS REAL) / 1000) AS time_in_seconds FROM tab13 AS T1 WHERE NOT T1.fld048 IS NULL) SELECT T1.fld048 AS lap_record FROM tab13 AS T1 INNER JOIN tab05 AS T2 ON T1.fld021 = T2.fld021 INNER JOIN tab01 AS T3 ON T2.fld001 = T3.fld001 INNER JOIN (SELECT MIN(fastest_lap_times.time_in_seconds) AS min_time_in_seconds FROM fastest_lap_times INNER JOIN tab05 AS T2 ON fastest_lap_times.fld021 = T2.fld021 INNER JOIN tab01 AS T3 ON T2.fld001 = T3.fld001 WHERE T3.fld005 = 'Italy') AS T4 ON (CAST(SUBSTRING(T1.fld048, 1, INSTR(T1.fld048, ':') - 1) AS REAL) * 60) + (CAST(SUBSTRING(T1.fld048, INSTR(T1.fld048, ':') + 1, INSTR(T1.fld048, '.') - INSTR(T1.fld048, ':') - 1) AS REAL)) + (CAST(SUBSTRING(T1.fld048, INSTR(T1.fld048, '.') + 1) AS REAL) / 1000) = T4.min_time_in_seconds LIMIT 1",
+   "difficulty": "challenging",
+   "SQL_original": "WITH fastest_lap_times AS (SELECT T1.raceId, T1.FastestLapTime, (CAST(SUBSTR(T1.FastestLapTime, 1, INSTR(T1.FastestLapTime, ':') - 1) AS REAL) * 60) + (CAST(SUBSTR(T1.FastestLapTime, INSTR(T1.FastestLapTime, ':') + 1, INSTR(T1.FastestLapTime, '.') - INSTR(T1.FastestLapTime, ':') - 1) AS REAL)) + (CAST(SUBSTR(T1.FastestLapTime, INSTR(T1.FastestLapTime, '.') + 1) AS REAL) / 1000) as time_in_seconds FROM results AS T1 WHERE T1.FastestLapTime IS NOT NULL ) SELECT T1.FastestLapTime as lap_record FROM results AS T1 INNER JOIN races AS T2 on T1.raceId = T2.raceId INNER JOIN circuits AS T3 on T2.circuitId = T3.circuitId INNER JOIN (SELECT MIN(fastest_lap_times.time_in_seconds) as min_time_in_seconds FROM fastest_lap_times INNER JOIN races AS T2 on fastest_lap_times.raceId = T2.raceId INNER JOIN circuits AS T3 on T2.circuitId = T3.circuitId WHERE T3.country = 'Italy' ) AS T4 ON (CAST(SUBSTR(T1.FastestLapTime, 1, INSTR(T1.FastestLapTime, ':') - 1) AS REAL) * 60) + (CAST(SUBSTR(T1.FastestLapTime, INSTR(T1.FastestLapTime, ':') + 1, INSTR(T1.FastestLapTime, '.') - INSTR(T1.FastestLapTime, ':') - 1) AS REAL)) + (CAST(SUBSTR(T1.FastestLapTime, INSTR(T1.FastestLapTime, '.') + 1) AS REAL) / 1000) = T4.min_time_in_seconds LIMIT 1"
+  },
+  {
+   "question_id": 977,
+   "db_id": "formula_1",
+   "question": "From race no. 50 to 100, how many finishers have been disqualified?",
+   "evidence": "disqualified refers to fld041 = 2, finisher refers to time! = null; race no. refers to fld021; fld021 > 50 and fld021 < 100;",
+   "SQL": "SELECT SUM(IIF(NOT fld024 IS NULL, 1, 0)) FROM tab13 WHERE fld041 = 2 AND fld021 < 100 AND fld021 > 50",
+   "difficulty": "simple",
+   "SQL_original": "SELECT SUM(IIF(time IS NOT NULL, 1, 0)) FROM results WHERE statusId = 2 AND raceID < 100 AND raceId > 50"
+  },
+  {
+   "question_id": 955,
+   "db_id": "formula_1",
+   "question": "What is the average time in seconds of champion for each year, before year 1975?",
+   "evidence": "only champion's finished fld024 is represented by 'HH:MM:SS.mmm'; finished the game refers to fld024 is not null; before year 1975 refers to fld020 < 1975;",
+   "SQL": "WITH time_in_seconds AS (SELECT T2.fld020, T2.fld021, T1.fld044, CASE WHEN T1.fld044 = 1 THEN (CAST(SUBSTRING(T1.fld024, 1, 1) AS REAL) * 3600) + (CAST(SUBSTRING(T1.fld024, 3, 2) AS REAL) * 60) + CAST(SUBSTRING(T1.fld024, 6, 2) AS REAL) + CAST(SUBSTRING(T1.fld024, 9) AS REAL) / 1000 ELSE 0 END AS time_seconds FROM tab13 AS T1 INNER JOIN tab05 AS T2 ON T1.fld021 = T2.fld021 WHERE NOT T1.fld024 IS NULL), champion_time AS (SELECT fld020, fld021, time_seconds FROM time_in_seconds WHERE fld044 = 1) SELECT fld020, AVG(time_seconds) FROM champion_time WHERE fld020 < 1975 GROUP BY fld020 HAVING NOT AVG(time_seconds) IS NULL",
+   "difficulty": "challenging",
+   "SQL_original": "WITH time_in_seconds AS ( SELECT T2.year, T2.raceId, T1.positionOrder, CASE WHEN T1.positionOrder = 1 THEN (CAST(SUBSTR(T1.time, 1, 1) AS REAL) * 3600) + (CAST(SUBSTR(T1.time, 3, 2) AS REAL) * 60) + CAST(SUBSTR(T1.time, 6,2) AS REAL )   + CAST(SUBSTR(T1.time, 9) AS REAL)/1000 ELSE 0 END AS time_seconds FROM results AS T1 INNER JOIN races AS T2 ON T1.raceId = T2.raceId WHERE T1.time IS NOT NULL ), champion_time AS ( SELECT year, raceId, time_seconds FROM time_in_seconds WHERE positionOrder = 1 ) SELECT year, AVG(time_seconds) FROM champion_time WHERE year < 1975 GROUP BY year HAVING AVG(time_seconds) IS NOT NULL"
+  },
+  {
+   "question_id": 892,
+   "db_id": "formula_1",
+   "question": "State the driver with the most points scored. Find his full name with that points.",
+   "evidence": "the most points scored refers to max(fld026); Full name of the driver refers to tab03.fld017 and tab03.fld018;",
+   "SQL": "SELECT T3.fld017, T3.fld018, T2.fld026 FROM tab05 AS T1 INNER JOIN tab08 AS T2 ON T2.fld021 = T1.fld021 INNER JOIN tab03 AS T3 ON T3.fld013 = T2.fld013 ORDER BY T2.fld026 DESC LIMIT 1",
+   "difficulty": "moderate",
+   "SQL_original": "SELECT T3.forename, T3.surname, T2.points FROM races AS T1 INNER JOIN driverStandings AS T2 ON T2.raceId = T1.raceId INNER JOIN drivers AS T3 ON T3.driverId = T2.driverId ORDER BY T2.points DESC LIMIT 1"
+  },
+  {
+   "question_id": 964,
+   "db_id": "formula_1",
+   "question": "List out the code for drivers who have nationality in American.",
+   "evidence": "fld012 = 'American'",
+   "SQL": "SELECT fld016 FROM tab03 WHERE fld012 = 'American'",
+   "difficulty": "simple",
+   "SQL_original": "SELECT code FROM drivers WHERE Nationality = 'American'"
+  },
+  {
+   "question_id": 994,
+   "db_id": "formula_1",
+   "question": "Which constructor scored most points from Monaco Grand Prix between 1980 and 2010? List the score, name and nationality of this team.",
+   "evidence": "Monaco Grand Priz refers to the race; race in fld020 between 1980 and 2010",
+   "SQL": "SELECT SUM(T1.fld026), T2.fld003, T2.fld012 FROM tab06 AS T1 INNER JOIN tab02 AS T2 ON T1.fld010 = T2.fld010 INNER JOIN tab05 AS T3 ON T3.fld021 = T1.fld021 WHERE T3.fld003 = 'Monaco Grand Prix' AND T3.fld020 BETWEEN 1980 AND 2010 GROUP BY T2.fld003 ORDER BY SUM(T1.fld026) DESC LIMIT 1",
+   "difficulty": "challenging",
+   "SQL_original": "SELECT SUM(T1.points), T2.name, T2.nationality FROM constructorResults AS T1 INNER JOIN constructors AS T2 ON T1.constructorId = T2.constructorId INNER JOIN races AS T3 ON T3.raceid = T1.raceid WHERE T3.name = 'Monaco Grand Prix' AND T3.year BETWEEN 1980 AND 2010 GROUP BY T2.name ORDER BY SUM(T1.points) DESC LIMIT 1"
+  },
+  {
+   "question_id": 1011,
+   "db_id": "formula_1",
+   "question": "Which top 20 driver created the shortest lap time ever record in a Formula_1 race? Please give them full names.",
+   "evidence": "shortest lap time refers to MIN(fld024); the time format for the shortest lap fld024 is 'MM:SS.mmm' or 'M:SS.mmm'; full name of the driver refers to fld017, surname",
+   "SQL": "WITH lap_times_in_seconds AS (SELECT fld013, (CASE WHEN SUBSTRING(fld024, 1, INSTR(fld024, ':') - 1) <> '' THEN CAST(SUBSTRING(fld024, 1, INSTR(fld024, ':') - 1) AS REAL) * 60 ELSE 0 END + CASE WHEN SUBSTRING(fld024, INSTR(fld024, ':') + 1, INSTR(fld024, '.') - INSTR(fld024, ':') - 1) <> '' THEN CAST(SUBSTRING(fld024, INSTR(fld024, ':') + 1, INSTR(fld024, '.') - INSTR(fld024, ':') - 1) AS REAL) ELSE 0 END + CASE WHEN SUBSTRING(fld024, INSTR(fld024, '.') + 1) <> '' THEN CAST(SUBSTRING(fld024, INSTR(fld024, '.') + 1) AS REAL) / 1000 ELSE 0 END) AS time_in_seconds FROM tab09) SELECT T2.fld017, T2.fld018, T1.fld013 FROM (SELECT fld013, MIN(time_in_seconds) AS min_time_in_seconds FROM lap_times_in_seconds GROUP BY fld013) AS T1 INNER JOIN tab03 AS T2 ON T1.fld013 = T2.fld013 ORDER BY T1.min_time_in_seconds ASC LIMIT 20",
+   "difficulty": "challenging",
+   "SQL_original": "WITH lap_times_in_seconds AS (SELECT driverId, (CASE WHEN SUBSTR(time, 1, INSTR(time, ':') - 1) <> '' THEN CAST(SUBSTR(time, 1, INSTR(time, ':') - 1) AS REAL) * 60 ELSE 0 END + CASE WHEN SUBSTR(time, INSTR(time, ':') + 1, INSTR(time, '.') - INSTR(time, ':') - 1) <> '' THEN CAST(SUBSTR(time, INSTR(time, ':') + 1, INSTR(time, '.') - INSTR(time, ':') - 1) AS REAL) ELSE 0 END + CASE WHEN SUBSTR(time, INSTR(time, '.') + 1) <> '' THEN CAST(SUBSTR(time, INSTR(time, '.') + 1) AS REAL) / 1000 ELSE 0 END) AS time_in_seconds FROM lapTimes) SELECT T2.forename, T2.surname, T1.driverId FROM (SELECT driverId, MIN(time_in_seconds) AS min_time_in_seconds FROM lap_times_in_seconds GROUP BY driverId) AS T1 INNER JOIN drivers AS T2 ON T1.driverId = T2.driverId ORDER BY T1.min_time_in_seconds ASC LIMIT 20"
+  },
+  {
+   "question_id": 847,
+   "db_id": "formula_1",
+   "question": "What is the surname of the driver with the best lap time in race number 19 in the second qualifying period?",
+   "evidence": "race number refers to fld021; second qualifying period refers to fld039; best lap time refers to MIN(fld039);",
+   "SQL": "SELECT T2.fld018 FROM tab11 AS T1 INNER JOIN tab03 AS T2 ON T2.fld013 = T1.fld013 WHERE T1.fld021 = 19 ORDER BY T1.fld039 ASC LIMIT 1",
+   "difficulty": "simple",
+   "SQL_original": "SELECT T2.surname FROM qualifying AS T1 INNER JOIN drivers AS T2 ON T2.driverId = T1.driverId WHERE T1.raceId = 19 ORDER BY T1.q2 ASC LIMIT 1"
+  }
+ ]
+}

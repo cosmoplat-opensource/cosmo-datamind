@@ -1,0 +1,61 @@
+{
+ "db_id": "student_club",
+ "questions": [
+  {
+   "question_id": 1427,
+   "db_id": "student_club",
+   "question": "What are the budget category of the events located at MU 215 and a guest speaker type with a 0 budget spent?",
+   "evidence": "budget category refers to category; events located at refers to location; type = 'Guest Speaker'; 0 budget spent refers to spent = 0; ",
+   "SQL": "SELECT DISTINCT T2.category, T1.type FROM event AS T1 INNER JOIN budget AS T2 ON T1.event_id = T2.link_to_event WHERE T1.location = 'MU 215' AND T2.spent = 0 AND T1.type = 'Guest Speaker'",
+   "difficulty": "moderate"
+  },
+  {
+   "question_id": 1398,
+   "db_id": "student_club",
+   "question": "Name the event with the highest amount spent on advertisement.",
+   "evidence": "Name of event refers to event_name; highest amount spent on advertisement refers to MAX(spent) where category = 'Advertisement'",
+   "SQL": "SELECT T2.event_name FROM budget AS T1 INNER JOIN event AS T2 ON T1.link_to_event = T2.event_id WHERE T1.category = 'Advertisement' ORDER BY T1.spent DESC LIMIT 1",
+   "difficulty": "moderate"
+  },
+  {
+   "question_id": 1322,
+   "db_id": "student_club",
+   "question": "Among the events attended by more than 10 members of the Student_Club, how many of them are meetings?",
+   "evidence": "meetings events refers to type = 'Meeting'; attended by more than 10 members refers to COUNT(event_id) > 10",
+   "SQL": "SELECT COUNT(DISTINCT T1.event_id) FROM event AS T1 INNER JOIN attendance AS T2 ON T1.event_id = T2.link_to_event WHERE T1.type = 'Meeting' GROUP BY T1.event_id HAVING COUNT(T2.link_to_event) > 10",
+   "difficulty": "moderate"
+  },
+  {
+   "question_id": 1346,
+   "db_id": "student_club",
+   "question": "Tell the phone number of \"Carlo Jacobs\".",
+   "evidence": "Carlo Jacobs is the full name; full name refers to first_name, last_name;",
+   "SQL": "SELECT phone FROM member WHERE first_name = 'Carlo' AND last_name = 'Jacobs'",
+   "difficulty": "simple"
+  },
+  {
+   "question_id": 1401,
+   "db_id": "student_club",
+   "question": "Indicate the cost of posters for 'September Speaker' event.",
+   "evidence": "'Posters' is the expense description; 'September Speaker' is an event name",
+   "SQL": "SELECT T3.cost FROM event AS T1 INNER JOIN budget AS T2 ON T1.event_id = T2.link_to_event INNER JOIN expense AS T3 ON T2.budget_id = T3.link_to_budget WHERE T1.event_name = 'September Speaker' AND T3.expense_description = 'Posters'",
+   "difficulty": "moderate"
+  },
+  {
+   "question_id": 1331,
+   "db_id": "student_club",
+   "question": "What is the amount of the funds that the Vice President received?",
+   "evidence": "'Vice President' is a position of Student Club; funds received refers to amount.",
+   "SQL": "SELECT T2.amount FROM member AS T1 INNER JOIN income AS T2 ON T1.member_id = T2.link_to_member WHERE T1.position = 'Vice President'",
+   "difficulty": "simple"
+  },
+  {
+   "question_id": 1381,
+   "db_id": "student_club",
+   "question": "List the name of students that have attended more than 7 events.",
+   "evidence": "name of students means the full name; full name refers to first_name, last_name; attended more than 7 events refers to COUNT(link_to_event) > 7",
+   "SQL": "SELECT T1.first_name, T1.last_name FROM member AS T1 INNER JOIN attendance AS T2 ON T1.member_id = T2.link_to_member GROUP BY T2.link_to_member HAVING COUNT(T2.link_to_event) > 7",
+   "difficulty": "moderate"
+  }
+ ]
+}

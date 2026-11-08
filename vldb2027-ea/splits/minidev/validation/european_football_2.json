@@ -1,0 +1,61 @@
+{
+ "db_id": "european_football_2",
+ "questions": [
+  {
+   "question_id": 1145,
+   "db_id": "european_football_2",
+   "question": "Which top 4 leagues had the most games in the 2015-2016 season?",
+   "evidence": "in the 2015-2016 season refers to season = '2015/2016'; league with most games refers to League.name where MAX(COUNT(id))",
+   "SQL": "SELECT t1.name FROM League AS t1 INNER JOIN Match AS t2 ON t1.id = t2.league_id WHERE t2.season = '2015/2016' GROUP BY t1.name ORDER BY COUNT(t2.id) DESC LIMIT 4",
+   "difficulty": "simple"
+  },
+  {
+   "question_id": 1113,
+   "db_id": "european_football_2",
+   "question": "For the team \"Hannover 96\", what was its defence aggression class on 2015/9/10?",
+   "evidence": "\"Hannover 96\" refers to team_long_name = 'Hannover 96'; on 2015/9/10 refers to date LIKE '2015-09-10%';",
+   "SQL": "SELECT t2.defenceAggressionClass FROM Team AS t1 INNER JOIN Team_Attributes AS t2 ON t1.team_api_id = t2.team_api_id WHERE t1.team_long_name = 'Hannover 96' AND t2.`date` LIKE '2015-09-10%'",
+   "difficulty": "moderate"
+  },
+  {
+   "question_id": 1032,
+   "db_id": "european_football_2",
+   "question": "Give the name of the league with the highest matches of all time and how many matches were played in the said league.",
+   "evidence": " league with highest matches of all time refers to MAX(COUNT(league_id));",
+   "SQL": "SELECT t2.name, t1.max_count FROM League AS t2 JOIN (SELECT league_id, MAX(cnt) AS max_count FROM (SELECT league_id, COUNT(id) AS cnt FROM Match GROUP BY league_id) AS subquery) AS t1 ON t1.league_id = t2.id",
+   "difficulty": "moderate"
+  },
+  {
+   "question_id": 1094,
+   "db_id": "european_football_2",
+   "question": "How much higher in percentage is Ariel Borysiuk's overall rating than that of Paulin Puel?",
+   "evidence": "how much higher in percentage = MULTIPLY(DIVIDE(SUBTRACT(overall_rating WHERE player_name = 'Ariel Borysiuk', overall_rating WHERE player_name = 'Paulin Puel'), overall_rating WHERE player_name = 'Paulin Puel'), 100);",
+   "SQL": "SELECT (SUM(CASE WHEN t1.player_name = 'Ariel Borysiuk' THEN t2.overall_rating ELSE 0 END) * 1.0 - SUM(CASE WHEN t1.player_name = 'Paulin Puel' THEN t2.overall_rating ELSE 0 END)) * 100 / SUM(CASE WHEN t1.player_name = 'Paulin Puel' THEN t2.overall_rating ELSE 0 END) FROM Player AS t1 INNER JOIN Player_Attributes AS t2 ON t1.player_api_id = t2.player_api_id",
+   "difficulty": "challenging"
+  },
+  {
+   "question_id": 1042,
+   "db_id": "european_football_2",
+   "question": "List the name of leagues in which the average goals by the home team is higher than the away team in the 2009/2010 season.",
+   "evidence": "name of league refers to League.name; average goals by the home team is higher than the away team = AVG(home_team_goal) > AVG(away_team_goal); AVG(xx_goal) = SUM(xx_goal) / COUNT(DISTINCT Match.id); 2009/2010 season refers to season = '2009/2010'",
+   "SQL": "SELECT t1.name FROM League AS t1 INNER JOIN Match AS t2 ON t1.id = t2.league_id WHERE t2.season = '2009/2010' GROUP BY t1.name HAVING (CAST(SUM(t2.home_team_goal) AS REAL) / COUNT(DISTINCT t2.id)) - (CAST(SUM(t2.away_team_goal) AS REAL) / COUNT(DISTINCT t2.id)) > 0",
+   "difficulty": "challenging"
+  },
+  {
+   "question_id": 1122,
+   "db_id": "european_football_2",
+   "question": "State the name of the most strongest player.",
+   "evidence": "strongest players refers to player has MAX(overall_rating)",
+   "SQL": "SELECT DISTINCT t1.player_name FROM Player AS t1 INNER JOIN Player_Attributes AS t2 ON t1.player_api_id = t2.player_api_id WHERE t2.overall_rating = (SELECT MAX(overall_rating) FROM Player_Attributes)",
+   "difficulty": "simple"
+  },
+  {
+   "question_id": 1080,
+   "db_id": "european_football_2",
+   "question": "Among the players whose preferred foot was the left foot when attacking, how many of them would remain in his position when the team attacked?",
+   "evidence": "preferred foot when attacking was the left refers to preferred_foot = 'left'; players who would remain in his position when the team attacked refers to attacking_work_rate = 'low';",
+   "SQL": "SELECT COUNT(player_api_id) FROM Player_Attributes WHERE preferred_foot = 'left' AND attacking_work_rate = 'low'",
+   "difficulty": "moderate"
+  }
+ ]
+}

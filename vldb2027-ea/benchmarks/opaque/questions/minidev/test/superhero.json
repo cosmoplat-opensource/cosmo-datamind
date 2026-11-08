@@ -1,0 +1,239 @@
+{
+ "db_id": "superhero",
+ "questions": [
+  {
+   "question_id": 740,
+   "db_id": "superhero",
+   "question": "How many female superheroes have a strength value of 100?",
+   "evidence": "female refers to fld005 = 'Female'; strength value of 100 refers to fld003 = 'Strength' AND fld021 = 100",
+   "SQL": "SELECT COUNT(T1.fld001) FROM tab07 AS T1 INNER JOIN tab08 AS T2 ON T1.fld001 = T2.fld019 INNER JOIN tab02 AS T3 ON T2.fld020 = T3.fld001 INNER JOIN tab04 AS T4 ON T1.fld010 = T4.fld001 WHERE T3.fld003 = 'Strength' AND T2.fld021 = 100 AND T4.fld005 = 'Female'",
+   "difficulty": "moderate",
+   "SQL_original": "SELECT COUNT(T1.id) FROM superhero AS T1 INNER JOIN hero_attribute AS T2 ON T1.id = T2.hero_id INNER JOIN attribute AS T3 ON T2.attribute_id = T3.id INNER JOIN gender AS T4 ON T1.gender_id = T4.id WHERE T3.attribute_name = 'Strength' AND T2.attribute_value = 100 AND T4.gender = 'Female'"
+  },
+  {
+   "question_id": 769,
+   "db_id": "superhero",
+   "question": "Which superhero has the most durability published by Dark Horse Comics?",
+   "evidence": "which superhero refers to fld008; most durability refers to MAX(fld021) WHERE fld003 = 'durability'; published by Dark Horse Comics refers to fld006 = 'Dark Horse Comics';",
+   "SQL": "SELECT T1.fld008 FROM tab07 AS T1 INNER JOIN tab08 AS T2 ON T1.fld001 = T2.fld019 INNER JOIN tab02 AS T3 ON T3.fld001 = T2.fld020 INNER JOIN tab05 AS T4 ON T4.fld001 = T1.fld015 WHERE T4.fld006 = 'Dark Horse Comics' AND T3.fld003 = 'Durability' ORDER BY T2.fld021 DESC LIMIT 1",
+   "difficulty": "challenging",
+   "SQL_original": "SELECT T1.superhero_name FROM superhero AS T1 INNER JOIN hero_attribute AS T2 ON T1.id = T2.hero_id INNER JOIN attribute AS T3 ON T3.id = T2.attribute_id INNER JOIN publisher AS T4 ON T4.id = T1.publisher_id WHERE T4.publisher_name = 'Dark Horse Comics' AND T3.attribute_name = 'Durability' ORDER BY T2.attribute_value DESC LIMIT 1"
+  },
+  {
+   "question_id": 730,
+   "db_id": "superhero",
+   "question": "List the superheroes from Marvel Comics who have the super power of 'Super Strength'.",
+   "evidence": "the superheroes from Marvel Comics refers to fld006 = 'Marvel Comics'; super power of \"Super Strength\" refers to fld022 = 'Super Strength';",
+   "SQL": "SELECT fld008 FROM tab07 AS T1 WHERE EXISTS(SELECT 1 FROM tab10 AS T2 INNER JOIN tab09 AS T3 ON T2.fld023 = T3.fld001 WHERE T3.fld022 = 'Super Strength' AND T1.fld001 = T2.fld019) AND EXISTS(SELECT 1 FROM tab05 AS T4 WHERE T4.fld006 = 'Marvel Comics' AND T1.fld015 = T4.fld001)",
+   "difficulty": "challenging",
+   "SQL_original": "SELECT superhero_name FROM superhero AS T1 WHERE EXISTS (SELECT 1 FROM hero_power AS T2 INNER JOIN superpower AS T3 ON T2.power_id = T3.id WHERE T3.power_name = 'Super Strength' AND T1.id = T2.hero_id)AND EXISTS (SELECT 1 FROM publisher AS T4 WHERE T4.publisher_name = 'Marvel Comics' AND T1.publisher_id = T4.id)"
+  },
+  {
+   "question_id": 732,
+   "db_id": "superhero",
+   "question": "Which publisher published the slowest superhero?",
+   "evidence": "the slowest superhero refers to fld003 = 'Speed' where MIN(fld021); publisher refers to fld006",
+   "SQL": "SELECT T2.fld006 FROM tab07 AS T1 INNER JOIN tab05 AS T2 ON T1.fld015 = T2.fld001 INNER JOIN tab08 AS T3 ON T1.fld001 = T3.fld019 INNER JOIN tab02 AS T4 ON T3.fld020 = T4.fld001 WHERE T4.fld003 = 'Speed' ORDER BY T3.fld021 LIMIT 1",
+   "difficulty": "moderate",
+   "SQL_original": "SELECT T2.publisher_name FROM superhero AS T1 INNER JOIN publisher AS T2 ON T1.publisher_id = T2.id INNER JOIN hero_attribute AS T3 ON T1.id = T3.hero_id INNER JOIN attribute AS T4 ON T3.attribute_id = T4.id WHERE T4.attribute_name = 'Speed' ORDER BY T3.attribute_value LIMIT 1"
+  },
+  {
+   "question_id": 801,
+   "db_id": "superhero",
+   "question": "Find the ratio between male superheroes and female superheroes.",
+   "evidence": "ratio = DIVIDE(SUM(fld010 = 1) / SUM(fld010 = 2)); male superheroes refers to fld005 = 'Female'; female superheroes refers to fld005 = 'Male';",
+   "SQL": "SELECT CAST(COUNT(CASE WHEN T2.fld005 = 'Male' THEN T1.fld001 ELSE NULL END) AS REAL) / COUNT(CASE WHEN T2.fld005 = 'Female' THEN T1.fld001 ELSE NULL END) FROM tab07 AS T1 INNER JOIN tab04 AS T2 ON T1.fld010 = T2.fld001",
+   "difficulty": "moderate",
+   "SQL_original": "SELECT CAST(COUNT(CASE WHEN T2.gender = 'Male' THEN T1.id ELSE NULL END) AS REAL) / COUNT(CASE WHEN T2.gender = 'Female' THEN T1.id ELSE NULL END) FROM superhero AS T1 INNER JOIN gender AS T2 ON T1.gender_id = T2.id"
+  },
+  {
+   "question_id": 796,
+   "db_id": "superhero",
+   "question": "State all of 3-D Man's attributes along with their values.",
+   "evidence": "3-D Man is the fld008. attributes refers to fld003; values refers to fld021;",
+   "SQL": "SELECT T3.fld003, T2.fld021 FROM tab07 AS T1 INNER JOIN tab08 AS T2 ON T1.fld001 = T2.fld019 INNER JOIN tab02 AS T3 ON T2.fld020 = T3.fld001 WHERE T1.fld008 = '3-D Man'",
+   "difficulty": "moderate",
+   "SQL_original": "SELECT T3.attribute_name, T2.attribute_value FROM superhero AS T1 INNER JOIN hero_attribute AS T2 ON T1.id = T2.hero_id INNER JOIN attribute AS T3 ON T2.attribute_id = T3.id WHERE T1.superhero_name = '3-D Man'"
+  },
+  {
+   "question_id": 737,
+   "db_id": "superhero",
+   "question": "What is Copycat's race?",
+   "evidence": "Copycat is the fld008;",
+   "SQL": "SELECT T2.fld007 FROM tab07 AS T1 INNER JOIN tab06 AS T2 ON T1.fld014 = T2.fld001 WHERE T1.fld008 = 'Copycat'",
+   "difficulty": "simple",
+   "SQL_original": "SELECT T2.race FROM superhero AS T1 INNER JOIN race AS T2 ON T1.race_id = T2.id WHERE T1.superhero_name = 'Copycat'"
+  },
+  {
+   "question_id": 761,
+   "db_id": "superhero",
+   "question": "Among the male superheroes, list the super hero names of superheroes with weight greater than the 79% average weight of all superheroes.",
+   "evidence": "super hero names refers to fld008;male superheros refers to fld005 = 'Male';Calculation = fld018 > MULTIPLY(AVG(fld018), 0.79)",
+   "SQL": "SELECT T1.fld008 FROM tab07 AS T1 INNER JOIN tab04 AS T2 ON T1.fld010 = T2.fld001 WHERE T2.fld005 = 'Male' AND T1.fld018 * 100 > (SELECT AVG(fld018) FROM tab07) * 79",
+   "difficulty": "moderate",
+   "SQL_original": "SELECT T1.superhero_name FROM superhero AS T1 INNER JOIN gender AS T2 ON T1.gender_id = T2.id WHERE T2.gender = 'Male' AND T1.weight_kg * 100 > ( SELECT AVG(weight_kg) FROM superhero ) * 79"
+  },
+  {
+   "question_id": 745,
+   "db_id": "superhero",
+   "question": "Give the publisher ID of Star Trek.",
+   "evidence": "Star Trek is the fld006;",
+   "SQL": "SELECT fld001 FROM tab05 WHERE fld006 = 'Star Trek'",
+   "difficulty": "simple",
+   "SQL_original": "SELECT id FROM publisher WHERE publisher_name = 'Star Trek'"
+  },
+  {
+   "question_id": 790,
+   "db_id": "superhero",
+   "question": "Calculate the difference between Emil Blonsky's weight and Charles Chandler's weight.",
+   "evidence": "difference = SUBTRACT(SUM(fld018 WHERE fld009 = 'Emil Blonsky'), SUM(fld018 WHERE fld009 = 'Charles Chandler')); Emil Blonsky is the full name of superhero; Charles Chandler is the full name of superhero;",
+   "SQL": "SELECT (SELECT fld018 FROM tab07 WHERE fld009 LIKE 'Emil Blonsky') - (SELECT fld018 FROM tab07 WHERE fld009 LIKE 'Charles Chandler') AS CALCULATE",
+   "difficulty": "moderate",
+   "SQL_original": "SELECT ( SELECT weight_kg FROM superhero WHERE full_name LIKE 'Emil Blonsky' ) - ( SELECT weight_kg FROM superhero WHERE full_name LIKE 'Charles Chandler' ) AS CALCULATE"
+  },
+  {
+   "question_id": 738,
+   "db_id": "superhero",
+   "question": "Which superheroes have a durability attribute value of less than 50?",
+   "evidence": "durability of less than 50 refers to fld003 = 'Durability' AND fld021 < 50",
+   "SQL": "SELECT fld008 FROM tab07 AS T1 WHERE EXISTS(SELECT 1 FROM tab08 AS T2 INNER JOIN tab02 AS T3 ON T2.fld020 = T3.fld001 WHERE T3.fld003 = 'Durability' AND T2.fld021 < 50 AND T1.fld001 = T2.fld019)",
+   "difficulty": "simple",
+   "SQL_original": "SELECT superhero_name FROM superhero AS T1 WHERE EXISTS (SELECT 1 FROM hero_attribute AS T2 INNER JOIN attribute AS T3 ON T2.attribute_id = T3.id WHERE T3.attribute_name = 'Durability' AND T2.attribute_value < 50 AND T1.id = T2.hero_id)"
+  },
+  {
+   "question_id": 744,
+   "db_id": "superhero",
+   "question": "Between DC and Marvel Comics, which publisher has published more superheroes? Find the difference in the number of superheroes they have published.",
+   "evidence": "DC refers to fld006 = 'DC Comics'; Marvel Comics refers to fld006 = 'Marvel Comics'; calculation = SUBTRACT(SUM(fld006 = 'Marvel Comics'), SUM(fld006 = 'DC Comics'))",
+   "SQL": "SELECT SUM(CASE WHEN T2.fld006 = 'Marvel Comics' THEN 1 ELSE 0 END) - SUM(CASE WHEN T2.fld006 = 'DC Comics' THEN 1 ELSE 0 END) FROM tab07 AS T1 INNER JOIN tab05 AS T2 ON T1.fld015 = T2.fld001",
+   "difficulty": "challenging",
+   "SQL_original": "SELECT SUM(CASE WHEN T2.publisher_name = 'Marvel Comics' THEN 1 ELSE 0 END) - SUM(CASE WHEN T2.publisher_name = 'DC Comics' THEN 1 ELSE 0 END) FROM superhero AS T1 INNER JOIN publisher AS T2 ON T1.publisher_id = T2.id"
+  },
+  {
+   "question_id": 750,
+   "db_id": "superhero",
+   "question": "What is the average weight of all female superheroes?",
+   "evidence": "female refers to fld005 = 'Female'; average weight refers to AVG(fld018)",
+   "SQL": "SELECT AVG(T1.fld018) FROM tab07 AS T1 INNER JOIN tab04 AS T2 ON T1.fld010 = T2.fld001 WHERE T2.fld005 = 'Female'",
+   "difficulty": "simple",
+   "SQL_original": "SELECT AVG(T1.weight_kg) FROM superhero AS T1 INNER JOIN gender AS T2 ON T1.gender_id = T2.id WHERE T2.gender = 'Female'"
+  },
+  {
+   "question_id": 822,
+   "db_id": "superhero",
+   "question": "How many green-skinned villains are there in the superhero universe?",
+   "evidence": "green-skinned refers to fld004.fld004 = 'Green' WHERE fld013 = fld004.fld001; villains refers to fld002 = 'Bad';",
+   "SQL": "SELECT COUNT(T1.fld001) FROM tab07 AS T1 INNER JOIN tab01 AS T2 ON T1.fld016 = T2.fld001 INNER JOIN tab03 AS T3 ON T1.fld013 = T3.fld001 WHERE T2.fld002 = 'Bad' AND T3.fld004 = 'Green'",
+   "difficulty": "moderate",
+   "SQL_original": "SELECT COUNT(T1.id) FROM superhero AS T1 INNER JOIN alignment AS T2 ON T1.alignment_id = T2.id INNER JOIN colour AS T3 ON T1.skin_colour_id = T3.id WHERE T2.alignment = 'Bad' AND T3.colour = 'Green'"
+  },
+  {
+   "question_id": 786,
+   "db_id": "superhero",
+   "question": "How many heroes have the highest attribute value in strength?",
+   "evidence": "highest attribute value in strength refers to MAX(fld021) WHERE fld003 = 'Strength';",
+   "SQL": "SELECT COUNT(T1.fld019) FROM tab08 AS T1 INNER JOIN tab02 AS T2 ON T1.fld020 = T2.fld001 WHERE T2.fld003 = 'Strength' AND T1.fld021 = (SELECT MAX(fld021) FROM tab08)",
+   "difficulty": "moderate",
+   "SQL_original": "SELECT COUNT(T1.hero_id) FROM hero_attribute AS T1 INNER JOIN attribute AS T2 ON T1.attribute_id = T2.id WHERE T2.attribute_name = 'Strength' AND T1.attribute_value = ( SELECT MAX(attribute_value) FROM hero_attribute )"
+  },
+  {
+   "question_id": 719,
+   "db_id": "superhero",
+   "question": "Among the superheroes with the super power of \"Super Strength\", how many of them have a height of over 200cm?",
+   "evidence": "super power of \"Super Strength\" refers to fld022 = 'Super Strength'; a height of over 200cm refers to fld017 > 200",
+   "SQL": "SELECT COUNT(T1.fld001) FROM tab07 AS T1 INNER JOIN tab10 AS T2 ON T1.fld001 = T2.fld019 INNER JOIN tab09 AS T3 ON T2.fld023 = T3.fld001 WHERE T3.fld022 = 'Super Strength' AND T1.fld017 > 200",
+   "difficulty": "moderate",
+   "SQL_original": "SELECT COUNT(T1.id) FROM superhero AS T1 INNER JOIN hero_power AS T2 ON T1.id = T2.hero_id INNER JOIN superpower AS T3 ON T2.power_id = T3.id WHERE T3.power_name = 'Super Strength' AND T1.height_cm > 200"
+  },
+  {
+   "question_id": 753,
+   "db_id": "superhero",
+   "question": "Among the superheroes with height from 170 to 190, list the names of the superheroes with no eye color.",
+   "evidence": "height from 170 to 190 refers to fld017 BETWEEN 170 AND 190; no eye color refers to fld004 = 'No Colour'",
+   "SQL": "SELECT DISTINCT T1.fld008 FROM tab07 AS T1 INNER JOIN tab03 AS T2 ON T1.fld011 = T2.fld001 WHERE T1.fld017 BETWEEN 170 AND 190 AND T2.fld004 = 'No Colour'",
+   "difficulty": "moderate",
+   "SQL_original": "SELECT DISTINCT T1.superhero_name FROM superhero AS T1 INNER JOIN colour AS T2 ON T1.eye_colour_id = T2.id WHERE T1.height_cm BETWEEN 170 AND 190 AND T2.colour = 'No Colour'"
+  },
+  {
+   "question_id": 764,
+   "db_id": "superhero",
+   "question": "What are the superpowers of heroes with ID 1?",
+   "evidence": "superpowers refers to fld022; heroes with ID 1 refers to fld019 = 1;",
+   "SQL": "SELECT DISTINCT T2.fld022 FROM tab10 AS T1 INNER JOIN tab09 AS T2 ON T1.fld023 = T2.fld001 WHERE T1.fld019 = 1",
+   "difficulty": "simple",
+   "SQL_original": "SELECT DISTINCT T2.power_name FROM hero_power AS T1 INNER JOIN superpower AS T2 ON T1.power_id = T2.id WHERE T1.hero_id = 1"
+  },
+  {
+   "question_id": 800,
+   "db_id": "superhero",
+   "question": "Calculate the percentage of superheroes with blue eyes.",
+   "evidence": "percentage = MULTIPLY(DIVIDE(SUM(fld008 WHERE color = 'Blue'), COUNT(fld008)), 100.0); blue eyes refers to color = 'Blue' and color.fld001 =  fld011 = 7;",
+   "SQL": "SELECT CAST(COUNT(CASE WHEN T2.fld004 = 'Blue' THEN 1 ELSE NULL END) AS REAL) * 100 / COUNT(T1.fld001) FROM tab07 AS T1 INNER JOIN tab03 AS T2 ON T1.fld011 = T2.fld001",
+   "difficulty": "moderate",
+   "SQL_original": "SELECT CAST(COUNT(CASE WHEN T2.colour = 'Blue' THEN 1 ELSE NULL END) AS REAL) * 100 / COUNT(T1.id) FROM superhero AS T1 INNER JOIN colour AS T2 ON T1.eye_colour_id = T2.id"
+  },
+  {
+   "question_id": 781,
+   "db_id": "superhero",
+   "question": "Provide the heights of the heroes whose eye colours are amber.",
+   "evidence": "heights of the heroes refers to fld017; eye colours are amber refers to fld004.fld004 = 'Amber' WHERE fld011 = fld004.fld001;",
+   "SQL": "SELECT T1.fld017 FROM tab07 AS T1 INNER JOIN tab03 AS T2 ON T1.fld011 = T2.fld001 WHERE T2.fld004 = 'Amber'",
+   "difficulty": "simple",
+   "SQL_original": "SELECT T1.height_cm FROM superhero AS T1 INNER JOIN colour AS T2 ON T1.eye_colour_id = T2.id WHERE T2.colour = 'Amber'"
+  },
+  {
+   "question_id": 824,
+   "db_id": "superhero",
+   "question": "Identify superheroes who can control wind and list their names in alphabetical order.",
+   "evidence": "superheroes refers to fld008; can control wind refers to fld022 = 'Wind Control';",
+   "SQL": "SELECT T1.fld008 FROM tab07 AS T1 INNER JOIN tab10 AS T2 ON T1.fld001 = T2.fld019 INNER JOIN tab09 AS T3 ON T2.fld023 = T3.fld001 WHERE T3.fld022 = 'Wind Control' ORDER BY T1.fld008",
+   "difficulty": "moderate",
+   "SQL_original": "SELECT T1.superhero_name FROM superhero AS T1 INNER JOIN hero_power AS T2 ON T1.id = T2.hero_id INNER JOIN superpower AS T3 ON T2.power_id = T3.id WHERE T3.power_name = 'Wind Control' ORDER BY T1.superhero_name"
+  },
+  {
+   "question_id": 775,
+   "db_id": "superhero",
+   "question": "What is the percentage of blue female superheroes among all female superheroes?",
+   "evidence": "percentage = MULTIPLY(DIVIDE(SUM(fld004 = 'Blue' WHERE fld005 = 'Female'), COUNT(fld005 = 'Female')), 100); blue refers to the color = 'Blue' WHERE fld013 = fld004.fld001; female refers to fld005 = 'Female';",
+   "SQL": "SELECT CAST(COUNT(CASE WHEN T3.fld004 = 'Blue' THEN T1.fld001 ELSE NULL END) AS REAL) * 100 / COUNT(T1.fld001) FROM tab07 AS T1 INNER JOIN tab04 AS T2 ON T1.fld010 = T2.fld001 INNER JOIN tab03 AS T3 ON T1.fld013 = T3.fld001 WHERE T2.fld005 = 'Female'",
+   "difficulty": "challenging",
+   "SQL_original": "SELECT CAST(COUNT(CASE WHEN T3.colour = 'Blue' THEN T1.id ELSE NULL END) AS REAL) * 100 / COUNT(T1.id) FROM superhero AS T1 INNER JOIN gender AS T2 ON T1.gender_id = T2.id INNER JOIN colour AS T3 ON T1.skin_colour_id = T3.id WHERE T2.gender = 'Female'"
+  },
+  {
+   "question_id": 825,
+   "db_id": "superhero",
+   "question": "Identify the gender of the superhero who has the ability of Phoenix Force.",
+   "evidence": "ability of Phoenix Force refers to fld022 = 'Phoenix Force';",
+   "SQL": "SELECT T4.fld005 FROM tab07 AS T1 INNER JOIN tab10 AS T2 ON T1.fld001 = T2.fld019 INNER JOIN tab09 AS T3 ON T2.fld023 = T3.fld001 INNER JOIN tab04 AS T4 ON T1.fld010 = T4.fld001 WHERE T3.fld022 = 'Phoenix Force'",
+   "difficulty": "moderate",
+   "SQL_original": "SELECT T4.gender FROM superhero AS T1 INNER JOIN hero_power AS T2 ON T1.id = T2.hero_id INNER JOIN superpower AS T3 ON T2.power_id = T3.id INNER JOIN gender AS T4 ON T1.gender_id = T4.id WHERE T3.power_name = 'Phoenix Force'"
+  },
+  {
+   "question_id": 743,
+   "db_id": "superhero",
+   "question": "What is the percentage of superheroes who act in their own self-interest or make decisions based on their own moral code? Indicate how many of the said superheroes were published by Marvel Comics.",
+   "evidence": "published by Marvel Comics refers to fld006 = 'Marvel Comics'; superheroes who act in their own self-interest or make decisions based on their own moral code refers to fld002 = 'Bad'; calculation = MULTIPLY(DIVIDE(SUM(fld002 = 'Bad); count(fld001)), 100)",
+   "SQL": "SELECT (CAST(COUNT(*) AS REAL) * 100 / (SELECT COUNT(*) FROM tab07)), CAST(SUM(CASE WHEN T2.fld006 = 'Marvel Comics' THEN 1 ELSE 0 END) AS REAL) FROM tab07 AS T1 INNER JOIN tab05 AS T2 ON T1.fld015 = T2.fld001 INNER JOIN tab01 AS T3 ON T3.fld001 = T1.fld016 WHERE T3.fld002 = 'Bad'",
+   "difficulty": "challenging",
+   "SQL_original": "SELECT (CAST(COUNT(*) AS REAL) * 100 / (SELECT COUNT(*) FROM superhero)), CAST(SUM(CASE WHEN T2.publisher_name = 'Marvel Comics' THEN 1 ELSE 0 END) AS REAL) FROM superhero AS T1 INNER JOIN publisher AS T2 ON T1.publisher_id = T2.id INNER JOIN alignment AS T3 ON T3.id = T1.alignment_id WHERE T3.alignment = 'Bad'"
+  },
+  {
+   "question_id": 788,
+   "db_id": "superhero",
+   "question": "How many percent of female heroes were published by Marvel Comics?",
+   "evidence": "percent = MULTIPLY(DIVIDE(SUM(fld005 = 'Female' WHERE fld006 = 'Marvel Comics'), COUNT(fld006 = 'Marvel Comics')), 100); female heroes refers to fld005 = 'Female'; Marvel Comics refers to fld006 = 'Marvel Comics';",
+   "SQL": "SELECT CAST(COUNT(CASE WHEN T3.fld005 = 'Female' AND T2.fld006 = 'Marvel Comics' THEN 1 ELSE NULL END) AS REAL) / COUNT(CASE WHEN T2.fld006 = 'Marvel Comics' THEN 1 ELSE NULL END) * 100 FROM tab07 AS T1 INNER JOIN tab05 AS T2 ON T1.fld015 = T2.fld001 INNER JOIN tab04 AS T3 ON T1.fld010 = T3.fld001",
+   "difficulty": "challenging",
+   "SQL_original": "SELECT CAST(COUNT(CASE WHEN T3.gender = 'Female' AND T2.publisher_name = 'Marvel Comics' THEN 1 ELSE NULL END) AS REAL) / COUNT(CASE WHEN T2.publisher_name = 'Marvel Comics' THEN 1 ELSE NULL END) * 100 FROM superhero AS T1 INNER JOIN publisher AS T2 ON T1.publisher_id = T2.id INNER JOIN gender AS T3 ON T1.gender_id = T3.id"
+  },
+  {
+   "question_id": 792,
+   "db_id": "superhero",
+   "question": "What is Abomination's superpower?",
+   "evidence": "Abomination refers to fld008 = 'Abomination'; superpower refers to fld022;",
+   "SQL": "SELECT T3.fld022 FROM tab07 AS T1 INNER JOIN tab10 AS T2 ON T1.fld001 = T2.fld019 INNER JOIN tab09 AS T3 ON T2.fld023 = T3.fld001 WHERE T1.fld008 = 'Abomination'",
+   "difficulty": "simple",
+   "SQL_original": "SELECT T3.power_name FROM superhero AS T1 INNER JOIN hero_power AS T2 ON T1.id = T2.hero_id INNER JOIN superpower AS T3 ON T2.power_id = T3.id WHERE T1.superhero_name = 'Abomination'"
+  }
+ ]
+}

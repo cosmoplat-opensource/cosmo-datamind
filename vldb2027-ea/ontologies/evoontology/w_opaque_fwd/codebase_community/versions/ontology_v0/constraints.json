@@ -1,0 +1,366 @@
+[
+  {
+    "id": "constraint_post_type_enum",
+    "target": "post_type",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "post",
+      "posts",
+      "question",
+      "questions",
+      "answer",
+      "answers",
+      "post type",
+      "wiki",
+      "tag wiki",
+      "asked",
+      "owned posts",
+      "posts by"
+    ],
+    "severity": "block",
+    "scope": "Any analysis over the post table, especially when a question says 'post' but means questions or answers.",
+    "confidence": "high",
+    "description": "Post type values observed in the data: 1 = question (42912 rows), 2 = answer (47755), 3 = wiki (6), 4 = tag wiki excerpt (639), 5 = tag wiki (640), 6 = moderator nomination (9), 7 = moderator election (5). Questions and answers dominate. Only questions carry tags, titles, views, answer counts and favourite counts, so unfiltered post counting mixes answers and wiki entries into question-level results.",
+    "evidence": [
+      "ev_02_post_type_enum",
+      "ev_12_question_metric_coverage"
+    ]
+  },
+  {
+    "id": "constraint_vote_type_enum",
+    "target": "vote_type",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "vote",
+      "votes",
+      "vote type",
+      "up vote",
+      "upvote",
+      "down vote",
+      "favorite",
+      "favourite",
+      "accepted answer",
+      "bounty",
+      "most votes"
+    ],
+    "severity": "block",
+    "scope": "Interpreting or counting vote records.",
+    "confidence": "high",
+    "description": "Observed vote type values: 1 = accepted answer (1451 rows), 2 = up-vote (33323), 3 = down-vote (444), 5 = favourite (3365), 8 = bounty start (60), 9 = bounty close (59), 10 = deletion (1), 11 = undeletion (44), 15 = moderator review (72), 16 = edit-suggestion approval (111). A plain count of vote records is dominated by up-votes and is not interchangeable with the per-user up-vote counter stored on the user account.",
+    "evidence": [
+      "ev_03_vote_type_enum"
+    ]
+  },
+  {
+    "id": "constraint_vote_user_attribution",
+    "target": "vote_caster",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "votes by user",
+      "user votes",
+      "number of votes",
+      "his votes",
+      "her votes",
+      "who voted",
+      "voters",
+      "votes compared to",
+      "average up votes",
+      "down votes"
+    ],
+    "severity": "block",
+    "scope": "Any per-user vote counting from the vote table.",
+    "confidence": "high",
+    "description": "Only vote type 5 (favourite, 3365 rows) and vote type 8 (bounty start, 60 rows) carry a non-null caster identifier. All accepted-answer, up-vote, down-vote and other vote records have a null caster. Counting vote records per user therefore measures favourite and bounty activity only, not all voting. Per-user up-vote and down-vote totals must come from the stored counters on the user account.",
+    "evidence": [
+      "ev_04_vote_user_attribution",
+      "ev_23_user_activity_columns"
+    ]
+  },
+  {
+    "id": "constraint_shared_field_006_score",
+    "target": "post_score",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "score",
+      "comment score",
+      "post score",
+      "highest score",
+      "score of 17",
+      "score of comments",
+      "best comment",
+      "top comment"
+    ],
+    "severity": "block",
+    "scope": "Any analysis mentioning 'score' without naming the entity.",
+    "confidence": "high",
+    "description": "The same physical field identifier is used for post score in the post table and for comment score in the comment table. They are different concepts over different row sets: post scores range from -19 to 192 over 91966 posts, comment scores range from 0 to 90 over 174285 comments. A bare 'score' must be resolved to post score or comment score from the surrounding entity before use.",
+    "evidence": [
+      "ev_21_post_score_range",
+      "ev_22_comment_score"
+    ]
+  },
+  {
+    "id": "constraint_creation_date_columns",
+    "target": "post_creation_date",
+    "constraint_type": "scope",
+    "trigger_keywords": [
+      "created",
+      "creation date",
+      "posted",
+      "year",
+      "in 2010",
+      "in 2011",
+      "during 2010",
+      "account created",
+      "registered",
+      "badge given",
+      "link created",
+      "comment created",
+      "vote date"
+    ],
+    "severity": "block",
+    "scope": "Time-window filtering across any table.",
+    "confidence": "high",
+    "description": "Post creation time uses its own field on the post table, which is different from the creation-date field shared by users, badges, comments, post links and votes. Using the shared creation-date field against the post table is not possible because that field does not exist there. Each entity's time filter must use that entity's own date field: post creation, account creation, badge award date, comment creation, post-link creation, vote date.",
+    "evidence": [
+      "ev_18_date_columns"
+    ]
+  },
+  {
+    "id": "constraint_display_name_not_unique",
+    "target": "user_display_name",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "display name",
+      "user name",
+      "username",
+      "named",
+      "by the user",
+      "the user's name",
+      "who is",
+      "name of the user"
+    ],
+    "severity": "warning",
+    "scope": "Locating a user by display name and joining posts or comments to users.",
+    "confidence": "high",
+    "description": "Display names are not unique: 40325 accounts share 35644 distinct names and 1563 names are used by more than one account. Matching by name can return several users and duplicate rows in downstream joins. The names appearing in the workload (Harvey Motulsky, Mark Meckes, Tiago Pasqualini, A Lion) each currently occur once.",
+    "evidence": [
+      "ev_10_display_name_duplicates"
+    ]
+  },
+  {
+    "id": "constraint_age_sparse",
+    "target": "user_age",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "age",
+      "user age",
+      "average age",
+      "how old",
+      "years old"
+    ],
+    "severity": "warning",
+    "scope": "Age-based user aggregates.",
+    "confidence": "high",
+    "description": "Only 8318 of 40325 user accounts declared an age. Average age is therefore computed over the declared subset only and excludes most accounts; observed range 13 to 94 with mean about 31.6.",
+    "evidence": [
+      "ev_11_age_coverage"
+    ]
+  },
+  {
+    "id": "constraint_question_only_metrics",
+    "target": "post_view_count",
+    "constraint_type": "scope",
+    "trigger_keywords": [
+      "views",
+      "view count",
+      "viewed",
+      "most views",
+      "answer count",
+      "answers",
+      "comment count",
+      "comments",
+      "favorite",
+      "favourites",
+      "most valuable",
+      "tags",
+      "title"
+    ],
+    "severity": "block",
+    "scope": "Post-level metrics that exist only on questions.",
+    "confidence": "high",
+    "description": "Tags, title, view count, answer count and comment count are populated only for question posts; answer and wiki rows have null in these fields. Favourite count is populated for only 13243 of 42912 questions. Metric averages must be restricted to the questions where the metric is non-null, otherwise null rows silently drop out or distort the denominator.",
+    "evidence": [
+      "ev_12_question_metric_coverage"
+    ]
+  },
+  {
+    "id": "constraint_tags_encoding",
+    "target": "post_tags",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "tag",
+      "tags",
+      "tagged",
+      "tagged as",
+      "tags used",
+      "tag of the post",
+      "humor",
+      "bayesian",
+      "which tags"
+    ],
+    "severity": "block",
+    "scope": "Reading, filtering or extracting tags from posts.",
+    "confidence": "high",
+    "description": "Post tags are stored as concatenated angle-bracket tokens inside one field, for example a single-tag post stores the tag as an angle-bracket-wrapped name and a multi-tag post stores several wrapped names back to back. The tag vocabulary stores bare names without brackets. Matching a bare tag name directly against the post tag field will not match; the bracket-wrapped form is required for substring matching, and extraction must split on the bracket delimiters.",
+    "evidence": [
+      "ev_07_tag_token_format"
+    ]
+  },
+  {
+    "id": "constraint_tag_count_semantics",
+    "target": "tag_post_count",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "tag count",
+      "number of posts with the tag",
+      "tag usage",
+      "popular tag",
+      "tag popularity"
+    ],
+    "severity": "info",
+    "scope": "Interpreting the tag usage count.",
+    "confidence": "high",
+    "description": "The stored tag count equals the number of question posts carrying that tag, not a vote or view total. Verified for the tags humor (stored 4, observed 4 posts) and bayesian (stored 1342, observed 1342 posts).",
+    "evidence": [
+      "ev_08_tag_count_match"
+    ]
+  },
+  {
+    "id": "constraint_tag_excerpt_nullable",
+    "target": "tag_excerpt_post",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "excerpt",
+      "excerpted from",
+      "tag excerpt",
+      "tag wiki",
+      "tag description",
+      "tag body"
+    ],
+    "severity": "warning",
+    "scope": "Retrieving tag excerpt or wiki text.",
+    "confidence": "high",
+    "description": "437 of 1032 tags have no excerpt post and 436 have no wiki post, so the identifier is null for many tags. A tag can have an excerpt but no wiki, or neither. Any lookup must tolerate a missing excerpt post.",
+    "evidence": [
+      "ev_15_tag_excerpt_nullable"
+    ]
+  },
+  {
+    "id": "constraint_comment_count_denormalized",
+    "target": "post_comment_count",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "comment count",
+      "number of comments",
+      "posts with 1 comment",
+      "doesn't have comments",
+      "no comments",
+      "without comments",
+      "has comments"
+    ],
+    "severity": "info",
+    "scope": "Filtering posts by comment volume.",
+    "confidence": "high",
+    "description": "The stored comment count on posts agrees with the actual number of comment rows for all but 15 questions out of 42912. The two definitions are close but not identical, so a result may shift by those few rows depending on which is used.",
+    "evidence": [
+      "ev_13_comment_count_mismatch"
+    ]
+  },
+  {
+    "id": "constraint_user_upvotes_column",
+    "target": "user_up_votes",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "up votes",
+      "upvotes",
+      "up-votes",
+      "average up votes",
+      "votes of the user",
+      "user's votes",
+      "down votes"
+    ],
+    "severity": "block",
+    "scope": "Any per-user vote total.",
+    "confidence": "high",
+    "description": "Lifetime up-vote and down-vote totals per user are stored as counters on the user account and are the authoritative source. Reconstructing them from vote records is impossible in this database because individual up-vote and down-vote records carry no user identifier. Averaging 'up votes' across a user population means averaging the stored per-user counter.",
+    "evidence": [
+      "ev_23_user_activity_columns",
+      "ev_04_vote_user_attribution"
+    ]
+  },
+  {
+    "id": "constraint_post_owner_nullable",
+    "target": "post_owner",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "owned",
+      "owner",
+      "posts by",
+      "user's posts",
+      "his posts",
+      "her posts",
+      "authored",
+      "created by"
+    ],
+    "severity": "warning",
+    "scope": "Counting posts per user and attributing posts to users.",
+    "confidence": "high",
+    "description": "1392 posts have no owner identifier, including community wiki and migrated content. Counting only owned posts undercounts total posts; inner joins to users drop those rows.",
+    "evidence": [
+      "ev_16_post_owner_null"
+    ]
+  },
+  {
+    "id": "constraint_link_type_enum",
+    "target": "post_link_type",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "link",
+      "links",
+      "links created",
+      "linked",
+      "duplicate",
+      "related post",
+      "link type"
+    ],
+    "severity": "warning",
+    "scope": "Counting or interpreting post links.",
+    "confidence": "high",
+    "description": "Two link type values are present: one denotes an ordinary linked-post relation (10186 links) and the other denotes a duplicate marking (916 links). A request that says only 'links' should be clarified as all links or ordinary links; the distinction changes the volume by roughly nine percent.",
+    "evidence": [
+      "ev_17_link_type_enum"
+    ]
+  },
+  {
+    "id": "constraint_post_score_not_vote_reconstruction",
+    "target": "post_score",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "score",
+      "votes of a post",
+      "post votes",
+      "how many votes",
+      "upvotes of the post",
+      "rating"
+    ],
+    "severity": "warning",
+    "scope": "Interpreting a post's score.",
+    "confidence": "medium",
+    "description": "A post's stored score is a platform-maintained net score. The vote table holds only a small sampled subset of votes per post (38930 vote records across 91966 posts), so recomputing score from vote records does not reproduce the stored score. Use the stored score when the question concerns the post's score.",
+    "evidence": [
+      "ev_03_vote_type_enum",
+      "ev_21_post_score_range"
+    ]
+  }
+]

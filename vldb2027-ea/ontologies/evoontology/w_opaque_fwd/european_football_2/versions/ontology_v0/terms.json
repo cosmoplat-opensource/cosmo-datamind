@@ -1,0 +1,672 @@
+[
+  {
+    "id": "term_player",
+    "name": "Player",
+    "type": "entity",
+    "definition": "A professional football player recorded in the player master table, identified by a public player API identifier and a FIFA player identifier, with a full display name, a date of birth, a height and a weight.",
+    "scope": "Player-level analysis over the whole dataset; one row per distinct player.",
+    "aliases": [
+      "footballer",
+      "football player",
+      "player"
+    ],
+    "evidence": [
+      "ev_tab02_profile",
+      "ev_join_integrity"
+    ]
+  },
+  {
+    "id": "term_player_name",
+    "name": "Player Name",
+    "type": "dimension",
+    "definition": "The full display name of a player as stored in the player master table. It is a label, not a unique key: several distinct players can carry exactly the same name.",
+    "scope": "Naming and filtering players; combine with an identifier when the result must be unique.",
+    "aliases": [
+      "player name",
+      "name",
+      "player's name",
+      "full name"
+    ],
+    "evidence": [
+      "ev_tab02_profile"
+    ]
+  },
+  {
+    "id": "term_player_birthday",
+    "name": "Player Birthday",
+    "type": "dimension",
+    "definition": "The player's date of birth, stored as a timestamp with a zero time component. Later dates correspond to younger players.",
+    "scope": "Age, birth-year and birth-month analysis.",
+    "aliases": [
+      "birthday",
+      "date of birth",
+      "birth date",
+      "birthyear",
+      "birthmonth",
+      "born"
+    ],
+    "evidence": [
+      "ev_tab02_profile"
+    ]
+  },
+  {
+    "id": "term_player_age",
+    "name": "Player Age",
+    "type": "metric",
+    "definition": "A player's age in years, computed as the difference between a reference date (for example the current date) and the player's date of birth. No age column is stored; age must be derived.",
+    "scope": "Age-based comparisons and filtering. The reference date must be stated explicitly.",
+    "aliases": [
+      "age",
+      "player's age",
+      "oldest",
+      "youngest",
+      "how old"
+    ],
+    "evidence": [
+      "ev_tab02_profile"
+    ]
+  },
+  {
+    "id": "term_player_height",
+    "name": "Player Height",
+    "type": "metric",
+    "definition": "The player's standing height recorded as a decimal number of centimetres (values such as 182.88 arise from inch-to-centimetre conversion of the source measurements).",
+    "scope": "Physical profile and height-threshold filtering.",
+    "aliases": [
+      "height",
+      "how tall",
+      "cm",
+      "centimetres",
+      "tall"
+    ],
+    "evidence": [
+      "ev_height_weight_distribution"
+    ]
+  },
+  {
+    "id": "term_player_weight",
+    "name": "Player Weight",
+    "type": "metric",
+    "definition": "The player's body weight recorded as a whole number of pounds, ranging from 117 to 243 in this dataset.",
+    "scope": "Physical profile and weight-based ranking.",
+    "aliases": [
+      "weight",
+      "heaviest",
+      "body weight",
+      "pounds",
+      "lbs"
+    ],
+    "evidence": [
+      "ev_height_weight_distribution"
+    ]
+  },
+  {
+    "id": "term_overall_rating",
+    "name": "Overall Rating",
+    "type": "metric",
+    "definition": "A dated FIFA-style score on a 0-100 scale expressing the player's current overall ability at the observation date. Values in this dataset range from 33 to 94.",
+    "scope": "Player quality ranking and strength comparisons.",
+    "aliases": [
+      "overall",
+      "overall rating",
+      "overall strength",
+      "overall score",
+      "rating",
+      "overall points"
+    ],
+    "evidence": [
+      "ev_tab01_profile"
+    ]
+  },
+  {
+    "id": "term_potential",
+    "name": "Potential",
+    "type": "metric",
+    "definition": "A dated FIFA-style score on a 0-100 scale expressing the highest overall rating the player is expected to be able to reach. Values in this dataset range from 39 to 97.",
+    "scope": "Player upside and ceiling comparisons.",
+    "aliases": [
+      "potential",
+      "potential score",
+      "ceiling",
+      "upside"
+    ],
+    "evidence": [
+      "ev_tab01_profile"
+    ]
+  },
+  {
+    "id": "term_preferred_foot",
+    "name": "Preferred Foot",
+    "type": "dimension",
+    "definition": "The foot the player preferentially uses, stored as the lower-case text values 'left' or 'right', or null when unrecorded.",
+    "scope": "Foot-preference filtering and player profiling.",
+    "aliases": [
+      "preferred foot",
+      "foot",
+      "left foot",
+      "right foot",
+      "left foots",
+      "prefer left foot",
+      "prefer right foot"
+    ],
+    "evidence": [
+      "ev_preferred_foot_counts"
+    ]
+  },
+  {
+    "id": "term_heading_accuracy",
+    "name": "Heading Accuracy",
+    "type": "metric",
+    "definition": "A dated 0-100 skill score describing how accurately the player heads the ball.",
+    "scope": "Skill comparison and ranking; repeated across observation dates.",
+    "aliases": [
+      "heading accuracy",
+      "heading",
+      "average heading accuracy"
+    ],
+    "evidence": [
+      "ev_tab01_profile"
+    ]
+  },
+  {
+    "id": "term_crossing",
+    "name": "Crossing",
+    "type": "metric",
+    "definition": "A dated 0-100 skill score describing the quality of the player's crosses into the penalty area.",
+    "scope": "Skill comparison and ranking; repeated across observation dates.",
+    "aliases": [
+      "crossing",
+      "cross accuracy",
+      "potential score for crossing",
+      "cross score"
+    ],
+    "evidence": [
+      "ev_tab01_profile"
+    ]
+  },
+  {
+    "id": "term_finishing",
+    "name": "Finishing",
+    "type": "metric",
+    "definition": "A dated 0-100 skill score describing the player's shooting accuracy in front of goal.",
+    "scope": "Skill comparison and ranking; repeated across observation dates.",
+    "aliases": [
+      "finishing",
+      "finishing rate",
+      "shooting accuracy",
+      "finishing score"
+    ],
+    "evidence": [
+      "ev_tab01_profile"
+    ]
+  },
+  {
+    "id": "term_curve",
+    "name": "Curve",
+    "type": "metric",
+    "definition": "A dated 0-100 skill score describing how much bend the player imparts to the ball when striking it.",
+    "scope": "Skill comparison and ranking; repeated across observation dates.",
+    "aliases": [
+      "curve",
+      "curve score",
+      "ball curve"
+    ],
+    "evidence": [
+      "ev_tab01_profile"
+    ]
+  },
+  {
+    "id": "term_sprint_speed",
+    "name": "Sprint Speed",
+    "type": "metric",
+    "definition": "A dated 0-100 skill score describing the player's top sprinting speed.",
+    "scope": "Speed comparison and threshold filtering; repeated across observation dates.",
+    "aliases": [
+      "sprint speed",
+      "speed",
+      "pace",
+      "sprinting"
+    ],
+    "evidence": [
+      "ev_tab01_profile"
+    ]
+  },
+  {
+    "id": "term_jumping",
+    "name": "Jumping",
+    "type": "metric",
+    "definition": "A dated 0-100 skill score describing the player's jumping ability.",
+    "scope": "Physical skill comparison; repeated across observation dates.",
+    "aliases": [
+      "jumping",
+      "jumping score",
+      "jump"
+    ],
+    "evidence": [
+      "ev_tab01_profile"
+    ]
+  },
+  {
+    "id": "term_strength",
+    "name": "Strength",
+    "type": "metric",
+    "definition": "A dated 0-100 skill score describing the player's physical strength in duels.",
+    "scope": "Physical skill comparison; repeated across observation dates.",
+    "aliases": [
+      "strength",
+      "physical strength",
+      "overall strength"
+    ],
+    "evidence": [
+      "ev_tab01_profile"
+    ]
+  },
+  {
+    "id": "term_long_shots",
+    "name": "Long Shots",
+    "type": "metric",
+    "definition": "A dated 0-100 skill score describing the player's ability to shoot accurately from long range.",
+    "scope": "Skill comparison; repeated across observation dates.",
+    "aliases": [
+      "long shots",
+      "long-shot",
+      "long shot",
+      "long shots ability"
+    ],
+    "evidence": [
+      "ev_tab01_profile"
+    ]
+  },
+  {
+    "id": "term_player_attribute_record",
+    "name": "Player Attribute Snapshot",
+    "type": "entity",
+    "definition": "A dated evaluation record holding one player's ratings, preferred foot, work rates and skill scores at one observation date. A player has several such records, so a raw attribute value is an observation at a point in time rather than a constant player property.",
+    "scope": "All attribute, rating and skill analysis. Grain: one player per observation date.",
+    "aliases": [
+      "player attributes",
+      "player_attributes",
+      "player rating snapshot",
+      "attribute records"
+    ],
+    "evidence": [
+      "ev_tab01_profile",
+      "ev_player_rows_per_player"
+    ]
+  },
+  {
+    "id": "term_team",
+    "name": "Team",
+    "type": "entity",
+    "definition": "A football club that takes part in matches, carrying a public team API identifier, an optional FIFA team identifier, a long club name and a short club code.",
+    "scope": "Club-level analysis; one row per distinct team (299 teams).",
+    "aliases": [
+      "team",
+      "club",
+      "football club",
+      "side"
+    ],
+    "evidence": [
+      "ev_tab05_profile"
+    ]
+  },
+  {
+    "id": "term_team_long_name",
+    "name": "Team Long Name",
+    "type": "dimension",
+    "definition": "The full textual club name, for example 'KRC Genk' or 'Ajax'. 296 distinct values across 299 teams, so it is nearly but not perfectly unique.",
+    "scope": "Displaying and filtering teams by name.",
+    "aliases": [
+      "team long name",
+      "club name",
+      "team name",
+      "long name"
+    ],
+    "evidence": [
+      "ev_tab05_profile"
+    ]
+  },
+  {
+    "id": "term_team_short_name",
+    "name": "Team Short Name",
+    "type": "dimension",
+    "definition": "A three-letter club abbreviation such as 'GEN', 'AJA' or 'ZUL'. 259 distinct values across 299 teams, so it is not unique.",
+    "scope": "Compact team labels; not a reliable join key.",
+    "aliases": [
+      "team short name",
+      "short name",
+      "abbreviation",
+      "team code"
+    ],
+    "evidence": [
+      "ev_tab05_profile"
+    ]
+  },
+  {
+    "id": "term_team_api_id",
+    "name": "Team API Identifier",
+    "type": "dimension",
+    "definition": "The public team identifier used by the source football API. It is the identifier carried by match home/away team references and by team attribute records.",
+    "scope": "Joining teams to matches and to team attribute snapshots.",
+    "aliases": [
+      "team api id",
+      "team_api_id",
+      "team identifier"
+    ],
+    "evidence": [
+      "ev_join_integrity"
+    ]
+  },
+  {
+    "id": "term_team_fifa_id",
+    "name": "Team FIFA Identifier",
+    "type": "dimension",
+    "definition": "The FIFA in-game team identifier. Only 285 of the 299 teams carry one, and the values are not unique within the column.",
+    "scope": "Linking to FIFA-derived team attribute data; not a safe primary key.",
+    "aliases": [
+      "team fifa id",
+      "team_fifa_api_id",
+      "fifa team id"
+    ],
+    "evidence": [
+      "ev_tab05_profile",
+      "ev_join_integrity"
+    ]
+  },
+  {
+    "id": "term_team_attribute_record",
+    "name": "Team Attribute Snapshot",
+    "type": "entity",
+    "definition": "A dated evaluation record holding a team's tactical ratings and their paired qualitative class labels for build-up play, chance creation and defence. Each team has several such records across six observation dates.",
+    "scope": "Team tactical style analysis. Grain: one team per observation date.",
+    "aliases": [
+      "team attributes",
+      "team_attributes",
+      "tactical attributes",
+      "team style"
+    ],
+    "evidence": [
+      "ev_tab06_profile",
+      "ev_team_class_labels"
+    ]
+  },
+  {
+    "id": "term_build_up_play_speed",
+    "name": "Build Up Play Speed",
+    "type": "metric",
+    "definition": "A dated 0-80 tactical score describing how quickly a team moves the ball forward from defence into attack, ranging from 20 to 80 in this dataset. It is paired with a qualitative speed class (Balanced/Fast/Slow).",
+    "scope": "Team playing-style comparisons; repeated across observation dates.",
+    "aliases": [
+      "build up play speed",
+      "build-up play speed",
+      "speed in which attacks are put together",
+      "attacking speed",
+      "tempo"
+    ],
+    "evidence": [
+      "ev_tab06_profile",
+      "ev_team_class_labels"
+    ]
+  },
+  {
+    "id": "term_chance_creation_passing",
+    "name": "Chance Creation Passing",
+    "type": "metric",
+    "definition": "A dated 0-80 tactical score describing how much a team creates chances through passing, ranging from 21 to 80. It is paired with a qualitative passing class (Normal/Risky/Safe).",
+    "scope": "Team playing-style comparisons; repeated across observation dates.",
+    "aliases": [
+      "chance creation passing",
+      "chance creation passing score",
+      "passing chance creation"
+    ],
+    "evidence": [
+      "ev_tab06_profile",
+      "ev_team_class_labels"
+    ]
+  },
+  {
+    "id": "term_league",
+    "name": "League",
+    "type": "entity",
+    "definition": "A domestic football competition belonging to one country, identified by a league identifier and carrying the competition name.",
+    "scope": "Competition-level analysis; 11 leagues in this dataset.",
+    "aliases": [
+      "league",
+      "competition",
+      "division"
+    ],
+    "evidence": [
+      "ev_tab03_tab04_profile"
+    ]
+  },
+  {
+    "id": "term_league_name",
+    "name": "League Name",
+    "type": "dimension",
+    "definition": "The textual competition name. Every value begins with the host country name followed by the competition name, for example 'Poland Ekstraklasa' or 'Belgium Jupiler League'.",
+    "scope": "Displaying and filtering leagues.",
+    "aliases": [
+      "league name",
+      "league",
+      "competition name",
+      "Belgium Jupiler League",
+      "Poland Ekstraklasa"
+    ],
+    "evidence": [
+      "ev_tab03_tab04_profile"
+    ]
+  },
+  {
+    "id": "term_country",
+    "name": "Country",
+    "type": "entity",
+    "definition": "A country that hosts one or more leagues, identified by a country identifier and carrying the country name.",
+    "scope": "Country-level analysis; 11 countries in this dataset.",
+    "aliases": [
+      "country",
+      "nation"
+    ],
+    "evidence": [
+      "ev_tab03_tab04_profile"
+    ]
+  },
+  {
+    "id": "term_country_name",
+    "name": "Country Name",
+    "type": "dimension",
+    "definition": "The plain country name such as 'Poland', 'Belgium' or 'England', without the competition suffix used in league names.",
+    "scope": "Country filtering and grouping.",
+    "aliases": [
+      "country name",
+      "country",
+      "nation name"
+    ],
+    "evidence": [
+      "ev_tab03_tab04_profile"
+    ]
+  },
+  {
+    "id": "term_match",
+    "name": "Match",
+    "type": "entity",
+    "definition": "A single football fixture with a season label, a stage number, a calendar date, a home team, an away team and the final home and away goal counts.",
+    "scope": "Match-level analysis; 25,979 matches across eight seasons.",
+    "aliases": [
+      "match",
+      "game",
+      "fixture",
+      "played"
+    ],
+    "evidence": [
+      "ev_tab07_profile",
+      "ev_join_integrity"
+    ]
+  },
+  {
+    "id": "term_season",
+    "name": "Season",
+    "type": "dimension",
+    "definition": "The competition season a match belongs to, stored as a two-year text label of the form 'YYYY/YYYY' (for example '2015/2016'). There are eight seasons from '2008/2009' to '2015/2016'.",
+    "scope": "Season filtering and season-level aggregation.",
+    "aliases": [
+      "season",
+      "2016 season",
+      "2015/2016",
+      "2010/2011",
+      "campaign",
+      "year"
+    ],
+    "evidence": [
+      "ev_season_calendar"
+    ]
+  },
+  {
+    "id": "term_match_stage",
+    "name": "Match Stage",
+    "type": "dimension",
+    "definition": "The round or matchday number within a season, taking whole values from 1 to 38.",
+    "scope": "Within-season scheduling analysis.",
+    "aliases": [
+      "stage",
+      "round",
+      "matchday"
+    ],
+    "evidence": [
+      "ev_tab07_profile"
+    ]
+  },
+  {
+    "id": "term_match_date",
+    "name": "Match Date",
+    "type": "dimension",
+    "definition": "The calendar date on which the match was played, stored as a timestamp with a zero time component.",
+    "scope": "Date-range, month and year filtering of matches.",
+    "aliases": [
+      "match date",
+      "date",
+      "when",
+      "kickoff date"
+    ],
+    "evidence": [
+      "ev_tab07_profile"
+    ]
+  },
+  {
+    "id": "term_home_team_goal",
+    "name": "Home Team Goals",
+    "type": "metric",
+    "definition": "The number of goals scored by the home team in a match, a small non-negative integer.",
+    "scope": "Scoring and result analysis at match grain.",
+    "aliases": [
+      "home team goal",
+      "home goals",
+      "goals scored at home",
+      "home score"
+    ],
+    "evidence": [
+      "ev_tab07_profile",
+      "ev_poland_home_goals"
+    ]
+  },
+  {
+    "id": "term_away_team_goal",
+    "name": "Away Team Goals",
+    "type": "metric",
+    "definition": "The number of goals scored by the away team in a match, a small non-negative integer.",
+    "scope": "Scoring and result analysis at match grain.",
+    "aliases": [
+      "away team goal",
+      "away goals",
+      "goals scored away",
+      "away score"
+    ],
+    "evidence": [
+      "ev_tab07_profile"
+    ]
+  },
+  {
+    "id": "term_match_outcome",
+    "name": "Match Outcome",
+    "type": "category",
+    "definition": "The result category of a match: home win, draw, or away win, determined by comparing the home team goal count with the away team goal count. A draw is the case where the two counts are equal.",
+    "scope": "Result classification and win/draw/loss counting.",
+    "aliases": [
+      "draw",
+      "result",
+      "outcome",
+      "match ended as draw",
+      "win",
+      "loss",
+      "tie"
+    ],
+    "evidence": [
+      "ev_draw_by_league"
+    ]
+  },
+  {
+    "id": "term_match_event_xml",
+    "name": "Match Event Log",
+    "type": "concept",
+    "definition": "Eight text columns storing the per-match event log as XML fragments, one column per event family: goals, shots on target, shots off target, committed fouls, cards, crosses, corners and possession. Each fragment lists per-event player, team, elapsed minute and event subtype.",
+    "scope": "Event-level match analysis only; the columns are populated for a minority subset of matches.",
+    "aliases": [
+      "match events",
+      "goal events",
+      "shot events",
+      "card events",
+      "possession",
+      "event log"
+    ],
+    "evidence": [
+      "ev_event_xml_tags"
+    ]
+  },
+  {
+    "id": "term_match_betting_odds",
+    "name": "Match Betting Odds",
+    "type": "metric",
+    "definition": "Thirty real-valued columns holding pre-match bookmaker odds arranged as ten bookmakers times the three outcomes home/draw/away. Column identity is positional only and coverage varies strongly by column.",
+    "scope": "Odds analysis; not usable for general match statistics.",
+    "aliases": [
+      "betting odds",
+      "odds",
+      "bookmaker odds",
+      "B365"
+    ],
+    "evidence": [
+      "ev_odds_coverage"
+    ]
+  },
+  {
+    "id": "term_player_api_id",
+    "name": "Player API Identifier",
+    "type": "dimension",
+    "definition": "The public player identifier used by the source football API. It is unique per player in the master table and is the identifier carried by match lineup references.",
+    "scope": "Joining players to attribute records and match lineups.",
+    "aliases": [
+      "player api id",
+      "player_api_id",
+      "player id",
+      "player's ID"
+    ],
+    "evidence": [
+      "ev_join_integrity",
+      "ev_tab02_profile"
+    ]
+  },
+  {
+    "id": "term_player_fifa_id",
+    "name": "Player FIFA Identifier",
+    "type": "dimension",
+    "definition": "The FIFA in-game player identifier. It is unique in the player master table but the attribute table contains a small number of player rows whose FIFA identifier has no master row.",
+    "scope": "Joining to FIFA-derived attribute data; slightly less complete than the API identifier.",
+    "aliases": [
+      "player fifa id",
+      "player_fifa_api_id",
+      "fifa player id"
+    ],
+    "evidence": [
+      "ev_join_integrity"
+    ]
+  }
+]

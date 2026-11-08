@@ -1,0 +1,223 @@
+[
+  {
+    "id": "rel_region_composition_district",
+    "source": "term_region",
+    "relation_type": "composition",
+    "target": "term_district",
+    "connection_condition": "every district row carries the name of the region that contains it, so one region groups several districts",
+    "description": "A region is composed of its districts; a district belongs to exactly one containing region.",
+    "evidence": [
+      "evidence_regions"
+    ]
+  },
+  {
+    "id": "rel_account_owner_hierarchy_holder",
+    "source": "term_account_owner",
+    "relation_type": "hierarchy",
+    "target": "term_account_holder",
+    "connection_condition": "the owner role is one of the two values of the disposition role that distinguish holders",
+    "description": "An account owner is a kind of account holder; the owner role is a subset of the holder roles.",
+    "evidence": [
+      "evidence_disposition_roles"
+    ]
+  },
+  {
+    "id": "rel_disponent_hierarchy_holder",
+    "source": "term_disponent",
+    "relation_type": "hierarchy",
+    "target": "term_account_holder",
+    "connection_condition": "the disponent role is the other value of the disposition role that distinguishes holders",
+    "description": "A disponent is a kind of account holder; the disponent role is a subset of the holder roles.",
+    "evidence": [
+      "evidence_disposition_roles"
+    ]
+  },
+  {
+    "id": "rel_account_composition_disposition",
+    "source": "term_bank_account",
+    "relation_type": "composition",
+    "target": "term_disposition",
+    "connection_condition": "a disposition references the account it belongs to",
+    "description": "An account is composed of its dispositions; a disposition cannot exist without its account.",
+    "evidence": [
+      "evidence_disposition_uniqueness"
+    ]
+  },
+  {
+    "id": "rel_client_composition_disposition",
+    "source": "term_client",
+    "relation_type": "composition",
+    "target": "term_disposition",
+    "connection_condition": "a disposition references the client it belongs to",
+    "description": "A client is composed of the dispositions recording their account roles; a disposition cannot exist without its client.",
+    "evidence": [
+      "evidence_disposition_uniqueness"
+    ]
+  },
+  {
+    "id": "rel_disposition_composition_card",
+    "source": "term_disposition",
+    "relation_type": "composition",
+    "target": "term_payment_card",
+    "connection_condition": "a card references the disposition it was issued against",
+    "description": "A card is issued against a disposition and cannot exist without it; in this data every card hangs off an owner disposition.",
+    "evidence": [
+      "evidence_card_types"
+    ]
+  },
+  {
+    "id": "rel_account_composition_loan",
+    "source": "term_bank_account",
+    "relation_type": "composition",
+    "target": "term_loan_contract",
+    "connection_condition": "a loan contract references the account it is granted on",
+    "description": "An account is composed of its loan contracts; a loan contract cannot exist without its account.",
+    "evidence": [
+      "evidence_loan_status"
+    ]
+  },
+  {
+    "id": "rel_account_composition_transaction",
+    "source": "term_bank_account",
+    "relation_type": "composition",
+    "target": "term_account_transaction",
+    "connection_condition": "a transaction references the account on which the movement occurred",
+    "description": "An account is composed of its transactions; a transaction cannot exist without its account.",
+    "evidence": [
+      "evidence_transaction_types"
+    ]
+  },
+  {
+    "id": "rel_account_composition_standing_order",
+    "source": "term_bank_account",
+    "relation_type": "composition",
+    "target": "term_standing_order",
+    "connection_condition": "a standing order references the account it debits",
+    "description": "An account is composed of its standing orders; a standing order cannot exist without its account.",
+    "evidence": [
+      "evidence_order_symbols"
+    ]
+  },
+  {
+    "id": "rel_district_composition_client",
+    "source": "term_district",
+    "relation_type": "composition",
+    "target": "term_client",
+    "connection_condition": "a client references the district in which the client lives",
+    "description": "A district groups the clients residing in it; this district reference is the residence of the client and is recorded independently of the district of the client's accounts.",
+    "evidence": [
+      "evidence_district_mismatch"
+    ]
+  },
+  {
+    "id": "rel_district_composition_account",
+    "source": "term_district",
+    "relation_type": "composition",
+    "target": "term_bank_account",
+    "connection_condition": "an account references the district in which its branch is located",
+    "description": "A district groups the accounts held at the branch located in it; this district reference is the branch location, distinct from the residence district of the client.",
+    "evidence": [
+      "evidence_district_mismatch"
+    ]
+  },
+  {
+    "id": "rel_running_contract_hierarchy_loan_status",
+    "source": "term_running_contract",
+    "relation_type": "hierarchy",
+    "target": "term_loan_status",
+    "connection_condition": "the running-contract codes are a subset of the loan contract status value domain",
+    "description": "A running contract is one of the possible contract states; the running states are a subset of all contract states.",
+    "evidence": [
+      "evidence_loan_status"
+    ]
+  },
+  {
+    "id": "rel_credit_card_withdrawal_hierarchy_operation",
+    "source": "term_credit_card_withdrawal",
+    "relation_type": "hierarchy",
+    "target": "term_transaction_operation",
+    "connection_condition": "the card withdrawal is one of the codes of the transaction operation dimension",
+    "description": "A credit card withdrawal is a kind of transaction operation; its code is a subset of the operation value domain.",
+    "evidence": [
+      "evidence_card_withdrawal"
+    ]
+  },
+  {
+    "id": "rel_account_owner_association_loan",
+    "source": "term_account_owner",
+    "relation_type": "association",
+    "target": "term_loan_contract",
+    "connection_condition": "indirect: a contract references an account, and each account has exactly one owner disposition, so the owner is the client standing behind the contract",
+    "description": "Ownership of an account is the condition under which a client is treated as holding that account's contracts; the connection is indirect because contracts reference accounts rather than clients.",
+    "evidence": [
+      "evidence_disposition_uniqueness",
+      "evidence_loan_status"
+    ]
+  },
+  {
+    "id": "rel_account_owner_association_card",
+    "source": "term_account_owner",
+    "relation_type": "association",
+    "target": "term_payment_card",
+    "connection_condition": "indirect: a card references a disposition, and every card in the data hangs off an owner disposition",
+    "description": "Cards are held by account owners; the connection is indirect because cards reference dispositions rather than clients.",
+    "evidence": [
+      "evidence_card_types"
+    ]
+  },
+  {
+    "id": "rel_birth_date_derivation_age",
+    "source": "term_client_birth_date",
+    "relation_type": "derivation",
+    "target": "term_client_age",
+    "connection_condition": "age is computed from the birth date relative to a reference date fixed by the analysis",
+    "description": "Client age is derived from the birth date; because no age column exists, the reference date must be fixed explicitly by the analysis.",
+    "evidence": [
+      "evidence_client_birth_range"
+    ]
+  },
+  {
+    "id": "rel_gender_derivation_gender_proportion",
+    "source": "term_client_gender",
+    "relation_type": "derivation",
+    "target": "term_gender_proportion",
+    "connection_condition": "the share is the count of clients of one gender divided by the count of all clients in the same population",
+    "description": "Gender proportion is derived from client gender counts taken over a defined client population.",
+    "evidence": [
+      "evidence_female_per_district"
+    ]
+  },
+  {
+    "id": "rel_rate_1995_derivation_increment",
+    "source": "term_district_unemployment_rate_1995",
+    "relation_type": "derivation",
+    "target": "term_unemployment_rate_increment",
+    "connection_condition": "the increment is the relative change of the later rate against the 1995 rate as the baseline denominator",
+    "description": "The unemployment rate increment uses the 1995 rate as its baseline value.",
+    "evidence": [
+      "evidence_district_unemployment"
+    ]
+  },
+  {
+    "id": "rel_rate_1996_derivation_increment",
+    "source": "term_district_unemployment_rate_1996",
+    "relation_type": "derivation",
+    "target": "term_unemployment_rate_increment",
+    "connection_condition": "the increment is the relative change of the later rate against the 1995 rate as the baseline denominator",
+    "description": "The unemployment rate increment uses the 1996 rate as the later value being compared against the baseline.",
+    "evidence": [
+      "evidence_district_unemployment"
+    ]
+  },
+  {
+    "id": "rel_salary_derivation_salary_gap",
+    "source": "term_district_average_salary",
+    "relation_type": "derivation",
+    "target": "term_average_salary_gap",
+    "connection_condition": "the gap is the difference between the highest and the lowest salary level among the districts being compared",
+    "description": "The average salary gap is derived from the district average salary levels once the comparison set is fixed.",
+    "evidence": [
+      "evidence_district_salary"
+    ]
+  }
+]

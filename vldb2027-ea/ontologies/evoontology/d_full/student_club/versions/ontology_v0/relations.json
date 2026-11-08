@@ -1,0 +1,159 @@
+[
+  {
+    "id": "rel_event_attendance",
+    "source": "event",
+    "relation_type": "composition",
+    "target": "attendance",
+    "connection_condition": "attendance.link_to_event corresponds to event.event_id",
+    "description": "An attendance record is a component of the event it records; without the event the attendance assertion has no meaning.",
+    "evidence": [
+      "evidence_attendance_grain",
+      "evidence_attendance_coverage"
+    ]
+  },
+  {
+    "id": "rel_member_attendance",
+    "source": "member",
+    "relation_type": "composition",
+    "target": "attendance",
+    "connection_condition": "attendance.link_to_member corresponds to member.member_id",
+    "description": "An attendance record is a component of the member it records; without the member the attendance assertion has no meaning.",
+    "evidence": [
+      "evidence_attendance_grain"
+    ]
+  },
+  {
+    "id": "rel_event_budget",
+    "source": "event",
+    "relation_type": "composition",
+    "target": "budget",
+    "connection_condition": "budget.link_to_event corresponds to event.event_id",
+    "description": "A budget line is a component of the event it funds; an event is composed of one or more category-level budget lines.",
+    "evidence": [
+      "evidence_budget_grain_multirow",
+      "evidence_event_budget_coverage"
+    ]
+  },
+  {
+    "id": "rel_budget_expense",
+    "source": "budget",
+    "relation_type": "composition",
+    "target": "expense",
+    "connection_condition": "expense.link_to_budget corresponds to budget.budget_id",
+    "description": "An expense is a component charged against the budget line that funds it; every expense carries a budget link.",
+    "evidence": [
+      "evidence_budget_spent_equals_expense_sum"
+    ]
+  },
+  {
+    "id": "rel_member_expense",
+    "source": "member",
+    "relation_type": "composition",
+    "target": "expense",
+    "connection_condition": "expense.link_to_member corresponds to member.member_id",
+    "description": "An expense belongs to the member who submitted it; every expense record carries a member link, so removing the member would strip the expense of its attribution.",
+    "evidence": [
+      "evidence_referential_integrity"
+    ]
+  },
+  {
+    "id": "rel_member_income",
+    "source": "member",
+    "relation_type": "association",
+    "target": "income",
+    "connection_condition": "income.link_to_member corresponds to member.member_id where present; the link is absent for receipts that do not come from a member",
+    "description": "An income receipt may be attributed to a member, but non-member funding sources produce receipts with no member association, so the connection is optional rather than compositional.",
+    "evidence": [
+      "evidence_income_missing_member"
+    ]
+  },
+  {
+    "id": "rel_major_member",
+    "source": "major",
+    "relation_type": "association",
+    "target": "member",
+    "connection_condition": "member.link_to_major corresponds to major.major_id where present",
+    "description": "A member declares a major, which places the member in an academic programme and its college; the declaration is optional, so the connection is not compositional.",
+    "evidence": [
+      "evidence_member_major_join"
+    ]
+  },
+  {
+    "id": "rel_zip_code_member",
+    "source": "zip_code",
+    "relation_type": "association",
+    "target": "member",
+    "connection_condition": "member.zip corresponds to zip_code.zip_code",
+    "description": "A member's zip code resolves to one postal reference record, which supplies the member's city and state. The postal table is a national reference set, not a club-owned entity.",
+    "evidence": [
+      "evidence_member_zip_join",
+      "evidence_zip_reference_scale"
+    ]
+  },
+  {
+    "id": "rel_active_member_is_a",
+    "source": "active_member",
+    "relation_type": "hierarchy",
+    "target": "member",
+    "connection_condition": "the member's position value is not Inactive",
+    "description": "An active member is a member; the category's value domain is a subset of the roster, distinguished purely by the recorded position.",
+    "evidence": [
+      "evidence_member_position_values"
+    ]
+  },
+  {
+    "id": "rel_dues_income_is_a",
+    "source": "dues_income",
+    "relation_type": "hierarchy",
+    "target": "income_source",
+    "connection_condition": "the receipt's source value is Dues",
+    "description": "Dues income is a kind of income source; the category's value domain is a subset of the source values.",
+    "evidence": [
+      "evidence_income_source_values"
+    ]
+  },
+  {
+    "id": "rel_budget_spent_from_expense",
+    "source": "expense_cost",
+    "relation_type": "derivation",
+    "target": "budget_spent_amount",
+    "connection_condition": "the derived value aggregates the costs of the expenses charged to the same budget line",
+    "description": "The spent amount of a budget line is the accumulated cost of the expenses charged against that line.",
+    "evidence": [
+      "evidence_budget_spent_equals_expense_sum"
+    ]
+  },
+  {
+    "id": "rel_budget_remaining_derivation",
+    "source": "budget_spent_amount",
+    "relation_type": "derivation",
+    "target": "budget_remaining_amount",
+    "connection_condition": "the remaining value is formed from the allocated amount less the spent amount of the same budget line",
+    "description": "The remaining amount of a budget line is its allocation not yet consumed; it turns negative when the line is overspent.",
+    "evidence": [
+      "evidence_budget_arithmetic"
+    ]
+  },
+  {
+    "id": "rel_net_balance_derivation",
+    "source": "income_amount",
+    "relation_type": "derivation",
+    "target": "net_financial_balance",
+    "connection_condition": "total income is reduced by the total expense cost recorded over the same period",
+    "description": "The club's net financial balance is computed from total income and total expense rather than stored anywhere in the database.",
+    "evidence": [
+      "evidence_financial_totals"
+    ]
+  },
+  {
+    "id": "rel_budget_utilization_derivation",
+    "source": "budget_spent_amount",
+    "relation_type": "derivation",
+    "target": "budget_utilization_rate",
+    "connection_condition": "the spent amount is expressed relative to the allocated amount of the same budget line",
+    "description": "Budget utilization is computed from the spent and allocated amounts of each budget line.",
+    "evidence": [
+      "evidence_budget_arithmetic"
+    ]
+  }
+]

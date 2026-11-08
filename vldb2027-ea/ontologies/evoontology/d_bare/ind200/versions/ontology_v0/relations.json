@@ -1,0 +1,349 @@
+[
+  {
+    "id": "rel_department_has_employee",
+    "source": "t_department",
+    "relation_type": "composition",
+    "target": "t_employee",
+    "connection_condition": "dim_employee.dept_id 对应 dim_department.dept_id",
+    "description": "部门由员工构成,员工必然归属唯一部门;部门消失则其员工的归属失去意义。",
+    "evidence": [
+      "ev_org_key_consistency"
+    ]
+  },
+  {
+    "id": "rel_region_has_department",
+    "source": "t_region",
+    "relation_type": "composition",
+    "target": "t_department",
+    "connection_condition": "dim_department.region_id 对应 dim_region.region_id",
+    "description": "区域由部门构成,部门必然归属唯一区域,是销量按地理上卷的层级路径。",
+    "evidence": [
+      "ev_org_key_consistency"
+    ]
+  },
+  {
+    "id": "rel_workshop_has_line",
+    "source": "t_workshop",
+    "relation_type": "composition",
+    "target": "t_production_line",
+    "connection_condition": "dim_production_line.workshop_id 对应 dim_workshop.workshop_id",
+    "description": "车间由产线构成,产线必然归属唯一车间。",
+    "evidence": [
+      "ev_production_grain"
+    ]
+  },
+  {
+    "id": "rel_line_has_equipment",
+    "source": "t_production_line",
+    "relation_type": "composition",
+    "target": "t_equipment",
+    "connection_condition": "dim_equipment.line_id 对应 dim_production_line.line_id;每条产线固定 5 台设备",
+    "description": "产线由设备构成,设备必然归属唯一产线;该 1 对 5 关系正是设备层指标出现 5 倍重复的根源。",
+    "evidence": [
+      "ev_equipment_replication"
+    ]
+  },
+  {
+    "id": "rel_department_has_cost_center",
+    "source": "t_department",
+    "relation_type": "composition",
+    "target": "t_cost_center",
+    "connection_condition": "dim_cost_center.dept_id 对应 dim_department.dept_id",
+    "description": "部门下设成本中心,是费用与预算归集的组织下钻路径。",
+    "evidence": [
+      "ev_expense_reconciliation"
+    ]
+  },
+  {
+    "id": "rel_product_production_line",
+    "source": "t_product",
+    "relation_type": "association",
+    "target": "t_production_line",
+    "connection_condition": "dim_product.prod_line_id 对应 dim_production_line.line_id,但生产日汇总层显示同一产品可在多条产线投产",
+    "description": "产品按产品线归类,但产品与产线并非排他的归属关系,属业务弱关联。",
+    "evidence": [
+      "ev_production_grain"
+    ]
+  },
+  {
+    "id": "rel_gross_profit_actual_derivation",
+    "source": "t_sales_amount",
+    "relation_type": "derivation",
+    "target": "t_gross_profit_actual",
+    "connection_condition": "实际毛利 = 接单金额 - 实际成本;fact_sales_order 中 amount 减 actual_cost_amount",
+    "description": "实际毛利由接单金额扣除实际成本派生。",
+    "evidence": [
+      "ev_gross_profit_split"
+    ]
+  },
+  {
+    "id": "rel_gross_profit_standard_derivation",
+    "source": "t_sales_amount",
+    "relation_type": "derivation",
+    "target": "t_gross_profit_standard",
+    "connection_condition": "标准毛利 = 接单金额 - 标准成本;fact_sales_order 中 amount 减 standard_cost_amount",
+    "description": "标准毛利由接单金额扣除标准成本派生,与 实际毛利 构成两个平行的成本口径。",
+    "evidence": [
+      "ev_gross_profit_split"
+    ]
+  },
+  {
+    "id": "rel_gross_profit_twin_association",
+    "source": "t_gross_profit_actual",
+    "relation_type": "association",
+    "target": "t_gross_profit_standard",
+    "connection_condition": "",
+    "description": "两者同源于同一批接单,但成本口径不同;全期分别为 417819800.57 与 433475973.27 元,混用会造成盈利结论偏差。",
+    "evidence": [
+      "ev_gross_profit_split"
+    ]
+  },
+  {
+    "id": "rel_yield_rate_derivation",
+    "source": "t_actual_quantity",
+    "relation_type": "derivation",
+    "target": "t_yield_rate",
+    "connection_condition": "成材率 = 实际产量 / 投料量 × 100,投料量记录在 DWS_PRODUCTION_DAILY.material_input_qty",
+    "description": "成材率由实际产量与投料量派生,衡量投入原料的转化效率。",
+    "evidence": [
+      "ev_ratio_definitions"
+    ]
+  },
+  {
+    "id": "rel_unit_energy_derivation",
+    "source": "t_electricity_kwh",
+    "relation_type": "derivation",
+    "target": "t_unit_energy_consumption",
+    "connection_condition": "单位能耗按产线日口径由该产线日用电量与其产出量导出,而非按单个产品行的电量与产量相除",
+    "description": "单位能耗由用电量与产出量派生,但派生发生在产线日口径而非产品行口径。",
+    "evidence": [
+      "ev_unit_energy_mismatch"
+    ]
+  },
+  {
+    "id": "rel_energy_efficiency_derivation",
+    "source": "t_electricity_kwh",
+    "relation_type": "derivation",
+    "target": "t_energy_efficiency",
+    "connection_condition": "能耗效率 = 累计产量 / 累计用电量,是单位能耗的倒数口径",
+    "description": "能耗效率由累计产量与累计用电量派生。",
+    "evidence": [
+      "ev_metric_config"
+    ]
+  },
+  {
+    "id": "rel_equipment_availability_derivation",
+    "source": "t_actual_run_hours",
+    "relation_type": "derivation",
+    "target": "t_equipment_availability",
+    "connection_condition": "设备可用率 = 总运行小时 / (总运行小时 + 总停机时长) × 100",
+    "description": "设备可用率由运行时长与停机时长派生;与 OEE 口径不同,不含性能与质量维度。",
+    "evidence": [
+      "ev_metric_config",
+      "ev_ratio_definitions"
+    ]
+  },
+  {
+    "id": "rel_operating_profit_rate_derivation",
+    "source": "t_sales_amount",
+    "relation_type": "derivation",
+    "target": "t_operating_profit_rate",
+    "connection_condition": "(累计接单金额 - 总成本) / 累计接单金额 × 100,总成本按成本中心汇总产品总成本",
+    "description": "经营利润率由接单金额与产品总成本派生,是近似毛利率而非会计净利率。",
+    "evidence": [
+      "ev_metric_config"
+    ]
+  },
+  {
+    "id": "rel_budget_deviation_derivation",
+    "source": "t_expense_budget",
+    "relation_type": "derivation",
+    "target": "t_budget_deviation",
+    "connection_condition": "(累计实际支出 - 累计预算) / 累计预算 × 100,预算与实支均按成本中心汇总",
+    "description": "预算偏差度由实际支出与预算派生。",
+    "evidence": [
+      "ev_metric_config"
+    ]
+  },
+  {
+    "id": "rel_unit_output_cost_derivation",
+    "source": "t_actual_quantity",
+    "relation_type": "derivation",
+    "target": "t_unit_output_cost",
+    "connection_condition": "单位产出成本 = 产品总成本 / 累计产量",
+    "description": "单位产出成本由产品成本与产量派生。",
+    "evidence": [
+      "ev_metric_config"
+    ]
+  },
+  {
+    "id": "rel_sales_target_association",
+    "source": "t_sales_quantity",
+    "relation_type": "association",
+    "target": "t_sales_quantity_target",
+    "connection_condition": "两者分别记录在 DWS_ORG_PERFORMANCE_DAILY 与 DWS_ORG_TARGET_DAILY,同为 员工 × 日 粒度,可按同一键对齐",
+    "description": "实际销量与销量目标构成达成率的两端,粒度对齐但属于两套独立的计划与实绩数据。",
+    "evidence": [
+      "ev_monthly_rollup"
+    ]
+  },
+  {
+    "id": "rel_ar_sales_association",
+    "source": "t_accounts_receivable",
+    "relation_type": "association",
+    "target": "t_sales_amount",
+    "connection_condition": "",
+    "description": "应收余额由接单与回款共同驱动,但接单是期间流量而应收是时点存量,不能相互直接换算。",
+    "evidence": [
+      "ev_ar_stock"
+    ]
+  },
+  {
+    "id": "rel_overdue_ar_association",
+    "source": "t_overdue_ar_amt",
+    "relation_type": "association",
+    "target": "t_accounts_receivable",
+    "connection_condition": "超期金额来源表 DWS_RISK_DAILY 与应收余额来源表不同,且只在事件日出现,需按日期对齐后比较",
+    "description": "超期货款是应收余额中已超期的部分,属业务关联但在数据层无稳定结构连接。",
+    "evidence": [
+      "ev_risk_degenerate",
+      "ev_ar_stock"
+    ]
+  },
+  {
+    "id": "rel_negative_margin_association",
+    "source": "t_negative_margin_qty",
+    "relation_type": "association",
+    "target": "t_gross_profit_actual",
+    "connection_condition": "负毛利量对应实际毛利为负的订单,由 fact_sales_order.is_negative_margin 标记",
+    "description": "负毛利量与毛利为负的接单相对应,反映定价失效带来的量级。",
+    "evidence": [
+      "ev_negative_margin"
+    ]
+  },
+  {
+    "id": "rel_oee_availability_association",
+    "source": "t_oee",
+    "relation_type": "association",
+    "target": "t_equipment_availability",
+    "connection_condition": "",
+    "description": "两者都刻画设备效率,但 OEE 为外部给定且含性能与质量维度,可用率仅含时间维度,不可互相替代。",
+    "evidence": [
+      "ev_oee_not_derivable",
+      "ev_metric_config"
+    ]
+  },
+  {
+    "id": "rel_market_share_sales_association",
+    "source": "t_market_share",
+    "relation_type": "association",
+    "target": "t_sales_quantity",
+    "connection_condition": "",
+    "description": "市场份额与销量同为客户经营的结果,但份额来自市场维度表、销量来自订单与组织维度表,数据层无直接连接。",
+    "evidence": [
+      "ev_market_metrics",
+      "ev_sales_reconciliation"
+    ]
+  },
+  {
+    "id": "rel_safety_health_association",
+    "source": "t_audit_score",
+    "relation_type": "association",
+    "target": "t_incident_count",
+    "connection_condition": "",
+    "description": "审计评分与事故数共同构成安全健康度复合指标的两项输入,但分别记录且稀疏程度不同。",
+    "evidence": [
+      "ev_safety_sparse",
+      "ev_metric_config"
+    ]
+  },
+  {
+    "id": "rel_first_grade_rate_grade_association",
+    "source": "t_first_grade_rate",
+    "relation_type": "association",
+    "target": "t_product_grade",
+    "connection_condition": "优等品率的分子限定为 产品等级 = 优等品 的产出量",
+    "description": "优等品率由产品等级维度中最高等级一档确定,口径取决于等级枚举的定义。",
+    "evidence": [
+      "ev_grade_semantics"
+    ]
+  },
+  {
+    "id": "rel_quality_pass_inspection_association",
+    "source": "t_inspection_pass_rate",
+    "relation_type": "association",
+    "target": "t_inspection_result_code",
+    "connection_condition": "合格率分子对应 检验结果代码 = 合格,分母为全部检验结果行",
+    "description": "来料检验合格率由检验结果枚举派生,合格与让步接收的取舍决定口径。",
+    "evidence": [
+      "ev_inspection_domain"
+    ]
+  },
+  {
+    "id": "rel_atomic_tier_hierarchy",
+    "source": "t_atomic_metric",
+    "relation_type": "hierarchy",
+    "target": "t_metric_tier",
+    "connection_condition": "",
+    "description": "原子指标是指标层级体系中的一种类型,其指标集合是指标层级值域的子集。",
+    "evidence": [
+      "ev_metric_catalog"
+    ]
+  },
+  {
+    "id": "rel_derived_tier_hierarchy",
+    "source": "t_derived_metric",
+    "relation_type": "hierarchy",
+    "target": "t_metric_tier",
+    "connection_condition": "",
+    "description": "派生指标是指标层级体系中的一种类型,由原子指标经聚合或过滤产生。",
+    "evidence": [
+      "ev_metric_catalog",
+      "ev_metric_config"
+    ]
+  },
+  {
+    "id": "rel_composite_tier_hierarchy",
+    "source": "t_composite_metric",
+    "relation_type": "hierarchy",
+    "target": "t_metric_tier",
+    "connection_condition": "",
+    "description": "复合指标是指标层级体系中的一种类型,由多个派生或原子指标按公式合成。",
+    "evidence": [
+      "ev_metric_config"
+    ]
+  },
+  {
+    "id": "rel_energy_equivalence",
+    "source": "t_electricity_kwh",
+    "relation_type": "equivalence",
+    "target": "t_line_energy",
+    "connection_condition": "DWS_PRODUCTION_DAILY 按 (date, line) 分组后的 electricity_kwh 合计与 fact_energy_consumption 的同键行逐行相等(6552/6552)",
+    "description": "生产汇总层的用电量与实际能耗明细表表达同一业务概念,仅粒度与存储位置不同。",
+    "evidence": [
+      "ev_energy_reconciliation"
+    ]
+  },
+  {
+    "id": "rel_expense_equivalence",
+    "source": "t_sales_expense",
+    "relation_type": "equivalence",
+    "target": "t_expense_booking",
+    "connection_condition": "DWS_ORG_EXPENSE_DAILY.sales_expense 全期合计 35866792.64 与 fact_expense.amount 合计相等",
+    "description": "组织费用汇总层的销售费用与费用明细表表达同一业务概念,后者可分解到费用类型。",
+    "evidence": [
+      "ev_expense_reconciliation"
+    ]
+  },
+  {
+    "id": "rel_sales_amount_equivalence",
+    "source": "t_sales_amount",
+    "relation_type": "equivalence",
+    "target": "t_monthly_sales_amount",
+    "connection_condition": "agg_metric_monthly 按 (emp_id, year, month) 的 sales_amount 等于 DWS_ORG_PERFORMANCE_DAILY 同期的汇总",
+    "description": "日汇总层与月汇总层表达同一接单金额概念,仅时间粒度不同。",
+    "evidence": [
+      "ev_monthly_rollup"
+    ]
+  }
+]

@@ -1,0 +1,226 @@
+[
+  {
+    "id": "ev_table_inventory",
+    "source": "ind200.sqlite (SQLite, read-only)",
+    "query": "SELECT COUNT(*) FROM sqlite_master WHERE type='table'",
+    "result": "198 张表:12 个 DWS_*_DAILY 日汇总表、agg_metric_monthly、约 80 个 dim_* 维表、约 90 个 fact_* 事实表。行业为中国改性塑料制造( dim_enterprise.industry = 改性塑料制造)。",
+    "validation_method": "元数据清点 (sqlite_master)",
+    "timestamp": "2026-10-09T20:50:00Z"
+  },
+  {
+    "id": "ev_metric_catalog",
+    "source": "ind200.sqlite (SQLite, read-only)",
+    "query": "SELECT category, metric_type, COUNT(*) FROM dim_metric_catalog GROUP BY 1,2",
+    "result": "107 条指标目录。category 取值 {原子指标, 派生指标, 复合指标};metric_type 为计量类型 {计数30, 金额29, 比率18, 销量12, 产量6, 时长6, 评分3, 能耗2, 价格1};is_base_metric ∈ {Y, N}。每条原子指标带 table_source/dws_table/date_column/value_column/unit_code。",
+    "validation_method": "目录表全量读取与枚举值分组",
+    "timestamp": "2026-10-09T20:50:00Z"
+  },
+  {
+    "id": "ev_metric_config",
+    "source": "ind200.sqlite (SQLite, read-only)",
+    "query": "SELECT * FROM dim_derived_metric_config; SELECT * FROM dim_composite_metric_config",
+    "result": "23 条派生指标配置,含 atomic_metric_names/calc_method(SUM|AVG|MAX)/group_by_columns(dim_line_id|dim_emp_id|dim_supplier_id|dim_equipment_id|dim_workshop_id|dim_cc_id)。9 条复合指标配置,含 component_metric_names 与公式,例如 经营利润率=(累计接单金额-总成本)/NULLIF(累计接单金额,0)*100、设备可用率=总运行小时/NULLIF(总运行小时+总停机时长,0)*100、能耗效率=累计产量/NULLIF(累计用电量,0)。",
+    "validation_method": "配置表全量读取",
+    "timestamp": "2026-10-09T20:50:00Z"
+  },
+  {
+    "id": "ev_time_coverage",
+    "source": "ind200.sqlite (SQLite, read-only)",
+    "query": "SELECT MIN(date), MAX(date), COUNT(DISTINCT date) FROM DWS_*_DAILY",
+    "result": "全部 DWS 日汇总表覆盖 2025-01-01 至 2026-06-30 共 546 天。覆盖度不一:DWS_SAFETY_DAILY/FINANCE/PROCUREMENT/RISK 的日期集更稀疏(见各表证据)。",
+    "validation_method": "日期范围与去重日期计数",
+    "timestamp": "2026-10-09T20:50:00Z"
+  },
+  {
+    "id": "ev_sales_reconciliation",
+    "source": "ind200.sqlite (SQLite, read-only)",
+    "query": "SELECT SUM(sales_quantity), SUM(sales_amount) FROM DWS_ORG_PERFORMANCE_DAILY; SELECT SUM(quantity), SUM(amount) FROM fact_sales_order",
+    "result": "DWS_ORG_PERFORMANCE_DAILY 合计 sales_quantity=116796.78、sales_amount=2166039729.04,与 fact_sales_order 全表合计(含 delivered/undelivered/returned 全部状态)完全相等。agg_metric_monthly.sales_amount 合计同为 2166039729.04。",
+    "validation_method": "跨表层合计对账",
+    "timestamp": "2026-10-09T20:50:00Z"
+  },
+  {
+    "id": "ev_expense_reconciliation",
+    "source": "ind200.sqlite (SQLite, read-only)",
+    "query": "SELECT SUM(sales_expense) FROM DWS_ORG_EXPENSE_DAILY; SELECT SUM(amount) FROM fact_expense",
+    "result": "两表合计均为 35866792.64,覆盖 8 种费用类型(运输费 18049805.59、渠道佣金 10341421.21、市场推广费 4396962.73、差旅费 2072768.48、业务招待费 787349.00、小车费 140729.37、办公费 43954.28、通讯费 33801.98)。",
+    "validation_method": "跨表层合计对账",
+    "timestamp": "2026-10-09T20:50:00Z"
+  },
+  {
+    "id": "ev_energy_reconciliation",
+    "source": "ind200.sqlite (SQLite, read-only)",
+    "query": "SELECT SUM(electricity_kwh) FROM DWS_PRODUCTION_DAILY; SELECT SUM(electricity_kwh) FROM fact_energy_consumption",
+    "result": "两表合计均为 50184286.4 kWh。进一步按 (date, line) 分组后 6552/6552 个产线日的用电量逐行精确相等。",
+    "validation_method": "跨表层合计对账 + 分组级逐行比对",
+    "timestamp": "2026-10-09T20:50:00Z"
+  },
+  {
+    "id": "ev_monthly_rollup",
+    "source": "ind200.sqlite (SQLite, read-only)",
+    "query": "SELECT a.emp_id,a.year,a.month,a.sales_quantity,d.q FROM agg_metric_monthly a JOIN (SELECT dim_emp_id,strftime('%Y',date),strftime('%m',date),SUM(sales_quantity) q FROM DWS_ORG_PERFORMANCE_DAILY GROUP BY 1,2,3) d ON ...",
+    "result": "agg_metric_monthly 的 sales_quantity 与 quantity_target 逐 (emp_id, year, month) 等于 DWS_ORG_PERFORMANCE_DAILY / DWS_ORG_TARGET_DAILY 的月度汇总,抽验 2025 年 1-5 月全部精确相等。agg_metric_monthly 覆盖 25 名员工 × 2025-2026 的 18 个年月,共 441 行。",
+    "validation_method": "月度分组逐行比对",
+    "timestamp": "2026-10-09T20:50:00Z"
+  },
+  {
+    "id": "ev_production_grain",
+    "source": "ind200.sqlite (SQLite, read-only)",
+    "query": "SELECT COUNT(*) FROM (SELECT date,dim_line_id,dim_prod_id,COUNT(*) c FROM DWS_PRODUCTION_DAILY GROUP BY 1,2,3 HAVING c>1); SELECT COUNT(*),SUM(planned_quantity=0 AND actual_quantity=0) FROM DWS_PRODUCTION_DAILY",
+    "result": "7974 行,(date, dim_line_id, dim_prod_id) 无重复,即粒度为 日×产线×产品;含 6552 个产线日、5638 个产品日。5089 行的 planned_quantity 与 actual_quantity 同时为 0(非生产组合),仅 2885 行为真实生产行。",
+    "validation_method": "粒度唯一性检验与零值分布统计",
+    "timestamp": "2026-10-09T20:50:00Z"
+  },
+  {
+    "id": "ev_ratio_definitions",
+    "source": "ind200.sqlite (SQLite, read-only)",
+    "query": "SELECT yield_rate, actual_quantity/material_input_qty*100 FROM DWS_PRODUCTION_DAILY WHERE planned_quantity>0; SELECT utilization_rate, actual_run_hours/24*100 FROM DWS_PRODUCTION_DAILY",
+    "result": "yield_rate = actual_quantity / material_input_qty × 100,2885/2885 生产行精确成立。utilization_rate = actual_run_hours / 24 × 100(以自然日 24 小时为分母),抽验全部成立。生产行的 unit_energy_consumption 仅 118/2885 行等于 electricity_kwh / actual_quantity。",
+    "validation_method": "公式逐行反算验证",
+    "timestamp": "2026-10-09T20:50:00Z"
+  },
+  {
+    "id": "ev_oee_line_constant",
+    "source": "ind200.sqlite (SQLite, read-only)",
+    "query": "SELECT COUNT(*) line_days, SUM(nd=1) FROM (SELECT date,dim_line_id,COUNT(DISTINCT oee) nd FROM DWS_PRODUCTION_DAILY GROUP BY 1,2)",
+    "result": "6552 个产线日全部满足 COUNT(DISTINCT oee)=1,即同一条产线同一天内所有产品行的 oee 完全相同,oee 是产线日口径值被复制到产品行。此外 actual_run_hours 与 electricity_kwh 在同一产线日的多个产品行之间分摊且合计等于产线日总量。",
+    "validation_method": "组内唯一性检验 + 分组求和比对",
+    "timestamp": "2026-10-09T20:50:00Z"
+  },
+  {
+    "id": "ev_equipment_replication",
+    "source": "ind200.sqlite (SQLite, read-only)",
+    "query": "SELECT COUNT(*) line_days, SUM(nd=1) FROM (SELECT date,dim_line_id,COUNT(DISTINCT actual_run_hours) nd FROM DWS_EQUIPMENT_DAILY GROUP BY 1,2); SELECT SUM(actual_run_hours) FROM DWS_EQUIPMENT_DAILY",
+    "result": "6266 个产线日全部满足组内 actual_run_hours 唯一(同时 oee 亦唯一),而每条产线固定挂 5 台设备(dim_equipment 每 line_id 5 行)。整表 SUM(actual_run_hours)=647698 小时,而 DWS_PRODUCTION_DAILY 与 fact_equipment_runtime 的产线日合计均为 129540 小时,恰为 5 倍膨胀。",
+    "validation_method": "组内唯一性检验 + 跨表合计比对",
+    "timestamp": "2026-10-09T20:50:00Z"
+  },
+  {
+    "id": "ev_unit_energy_mismatch",
+    "source": "ind200.sqlite (SQLite, read-only)",
+    "query": "SELECT COUNT(*), SUM(ABS(unit_energy_consumption - electricity_kwh/NULLIF(actual_quantity,0))<0.01) FROM DWS_PRODUCTION_DAILY WHERE planned_quantity>0 AND actual_quantity>0",
+    "result": "2885 个生产行中仅 118 行满足 unit_energy_consumption = electricity_kwh / actual_quantity。多产品产线日的失配显著,例如 2025-01-02 产线 3:actual_quantity=19.79、electricity_kwh=2519.5402、系统值 unit_energy_consumption=388.3,而行内比值仅 127.31。",
+    "validation_method": "公式逐行反算并统计失配行",
+    "timestamp": "2026-10-09T20:50:00Z"
+  },
+  {
+    "id": "ev_oee_not_derivable",
+    "source": "ind200.sqlite (SQLite, read-only)",
+    "query": "SELECT COUNT(*), SUM(ABS(oee - utilization_rate*quality_pass_rate/100)<0.05), SUM(ABS(oee-utilization_rate)<0.05) FROM DWS_PRODUCTION_DAILY WHERE planned_quantity>0",
+    "result": "2885 个生产行中,oee 等于 utilization_rate×quality_pass_rate/100 的仅 1 行,等于 utilization_rate 的亦仅 1 行。OEE(如 85.56)与 availability×performance×quality 的常见分解不吻合,说明 oee 是外部给定的独立观测值。",
+    "validation_method": "竞争公式假设检验",
+    "timestamp": "2026-10-09T20:50:00Z"
+  },
+  {
+    "id": "ev_grade_semantics",
+    "source": "ind200.sqlite (SQLite, read-only)",
+    "query": "SELECT grade, is_first_grade, COUNT(*) FROM fact_production_output GROUP BY 1,2",
+    "result": "优等品 is_first_grade=1(2721 行);一等品 is_first_grade=0(2721 行)、合格品 is_first_grade=0(93 行)、返工品 is_first_grade=0(116 行)。即 first_grade 的分子是 优等品,而中文名为\"一等品\"的等级并不计入。按产线回算 2025-01-01 产线 1 的优等品占比 92.24%,与 DWS_PRODUCTION_DAILY.first_grade_rate=92.23 一致。",
+    "validation_method": "枚举值与布尔标记交叉统计 + 按产线回算比对",
+    "timestamp": "2026-10-09T20:50:00Z"
+  },
+  {
+    "id": "ev_ar_stock",
+    "source": "ind200.sqlite (SQLite, read-only)",
+    "query": "SELECT SUM(accounts_receivable) FROM DWS_ORG_PERFORMANCE_DAILY; SELECT date,SUM(accounts_receivable) FROM DWS_ORG_PERFORMANCE_DAILY WHERE date='2026-06-30' GROUP BY date",
+    "result": "2025-01-01 全表 accounts_receivable 合计为 0.0;至 2026-06-30 为 317341171.53(24 名员工)。整表直接 SUM 得 148415452120.38,是跨日期重复累加的结果,证明该列是时点存量而非期间流量。",
+    "validation_method": "分日期合计对比 + 期初期末值检查",
+    "timestamp": "2026-10-09T20:50:00Z"
+  },
+  {
+    "id": "ev_market_metrics",
+    "source": "ind200.sqlite (SQLite, read-only)",
+    "query": "SELECT SUM(market_capacity), SUM(DISTINCT market_capacity) FROM DWS_MARKET_DAILY; SELECT DISTINCT dim_cust_id, market_capacity FROM DWS_MARKET_DAILY",
+    "result": "DWS_MARKET_DAILY 为 25 客户 × 546 天 = 13650 行的稠密网格。market_capacity 对每个客户是常量并逐日重复,整表 SUM=186431700,按客户去重合计=341450(与 dim_customer 合计 341450 一致)。market_share 是客户日度序列,例如客户 1 从 0.0 单调爬升至 29-30% 区间并围绕该水平波动。",
+    "validation_method": "重复度检验 (SUM vs SUM DISTINCT) + 跨表口径比对",
+    "timestamp": "2026-10-09T20:50:00Z"
+  },
+  {
+    "id": "ev_safety_sparse",
+    "source": "ind200.sqlite (SQLite, read-only)",
+    "query": "SELECT COUNT(*), SUM(audit_score IS NULL), SUM(incident_count), SUM(near_miss_count) FROM DWS_SAFETY_DAILY; SELECT COUNT(DISTINCT date) FROM DWS_SAFETY_DAILY WHERE ...",
+    "result": "2730 行(5 车间 × 546 天),其中 audit_score 有 2694 行为 NULL;仅 177 个日期存在任何安全活动。全期 incident_count 合计 21 起、near_miss_count 合计 11 起。",
+    "validation_method": "空值率统计与活动日期计数",
+    "timestamp": "2026-10-09T20:50:00Z"
+  },
+  {
+    "id": "ev_risk_degenerate",
+    "source": "ind200.sqlite (SQLite, read-only)",
+    "query": "SELECT SUM(overdue_inventory_qty), SUM(overdue_inventory_amt), SUM(negative_margin_qty), SUM(overdue_ar_amt), SUM(overdue_ar_count) FROM DWS_RISK_DAILY",
+    "result": "18184 行但仅覆盖 506 个日期(2025-01-03 起),为事件驱动而非稠密日网格。overdue_inventory_qty 与 overdue_inventory_amt 全表合计均为 0.0(退化列)。negative_margin_qty 合计 1110.38 吨,overdue_ar_amt 合计 18769707283.86 元。",
+    "validation_method": "列级合计与日期覆盖度检查",
+    "timestamp": "2026-10-09T20:50:00Z"
+  },
+  {
+    "id": "ev_gl_balance",
+    "source": "ind200.sqlite (SQLite, read-only)",
+    "query": "SELECT SUM(debit_amount), SUM(credit_amount), SUM(debit_amount=credit_amount) FROM fact_gl_entry",
+    "result": "3996 行全部满足 debit_amount = credit_amount(0 行只有单边),借贷合计同为 14095462266.64,即任何筛选下的借方合计恒等于贷方合计。",
+    "validation_method": "逐行借贷相等性检验",
+    "timestamp": "2026-10-09T20:50:00Z"
+  },
+  {
+    "id": "ev_governance_metadata",
+    "source": "ind200.sqlite (SQLite, read-only)",
+    "query": "SELECT status, COUNT(*) FROM fact_* GROUP BY 1; SELECT is_deleted, COUNT(*) ...; SELECT tenant_code, COUNT(*) ...",
+    "result": "治理型事实表带 status ∈ {OPEN, IN_PROGRESS, APPROVED, CLOSED, CANCELLED},实测仅出现 4 种(如 fact_sales_order_line: CLOSED 5020 / APPROVED 182 / OPEN 166 / IN_PROGRESS 5;CANCELLED 未出现)。is_deleted 在所有被检查表中恒为 0。tenant_code 恒为 DEMO_TENANT。",
+    "validation_method": "枚举域与标记列全表分组统计",
+    "timestamp": "2026-10-09T20:50:00Z"
+  },
+  {
+    "id": "ev_posting_vs_business_date",
+    "source": "ind200.sqlite (SQLite, read-only)",
+    "query": "SELECT SUM(posting_date<>business_date), COUNT(*) FROM fact_sales_order_line",
+    "result": "5373 行中 3012 行(约 56%)的 posting_date 与 business_date 不等,且约束 CHECK(date(posting_date) >= date(business_date)) 保证记账日期不早于业务日期。",
+    "validation_method": "日期列差异计数",
+    "timestamp": "2026-10-09T20:50:00Z"
+  },
+  {
+    "id": "ev_org_key_consistency",
+    "source": "ind200.sqlite (SQLite, read-only)",
+    "query": "SELECT COUNT(*) FROM DWS_ORG_PERFORMANCE_DAILY d JOIN dim_employee e ON d.dim_emp_id=e.emp_id WHERE d.dim_dept_id<>e.dept_id; ... JOIN dim_department p ON d.dim_dept_id=p.dept_id WHERE d.dim_region_id<>p.region_id",
+    "result": "DWS_ORG_PERFORMANCE_DAILY 中的 dim_dept_id 与 dim_employee.dept_id 零失配;dim_region_id 与 dim_department.region_id 亦零失配。组织层级为 员工 → 部门 → 区域,共 25 名员工、6 个部门、6 个区域。dim_employee 121 人处于 active、1 人 inactive,而日汇总层仅覆盖 25 名销售员工。",
+    "validation_method": "外键一致性零失配检验",
+    "timestamp": "2026-10-09T20:50:00Z"
+  },
+  {
+    "id": "ev_sales_order_status",
+    "source": "ind200.sqlite (SQLite, read-only)",
+    "query": "SELECT status, SUM(quantity), SUM(amount), COUNT(*) FROM fact_sales_order GROUP BY status",
+    "result": "delivered 4576 单 / 113321.47 吨 / 2088825972.07 元;undelivered 152 单 / 3417.40 吨 / 75999906.51 元;returned 3 单 / 57.91 吨 / 1213850.46 元。三者合计即 116796.78 吨 / 2166039729.04 元,与 DWS 销量口径一致。fact_delivery 合计 113456.43 吨,略高于 delivered 订单量。",
+    "validation_method": "状态分组统计与口径比对",
+    "timestamp": "2026-10-09T20:50:00Z"
+  },
+  {
+    "id": "ev_gross_profit_split",
+    "source": "ind200.sqlite (SQLite, read-only)",
+    "query": "SELECT SUM(amount), SUM(actual_cost_amount), SUM(standard_cost_amount), SUM(gross_profit_actual), SUM(gross_profit_standard) FROM fact_sales_order",
+    "result": "接单金额 2166039729.04;actual_cost_amount 合计 1748219928.47,amount 减之得 417819800.57,与 gross_profit_actual 合计精确相等;standard_cost_amount 合计 1732563755.77,amount 减之得 433475973.27,与 gross_profit_standard 合计精确相等。两口径毛利相差约 1566 万元。",
+    "validation_method": "加总恒等式反算验证",
+    "timestamp": "2026-10-09T20:50:00Z"
+  },
+  {
+    "id": "ev_dataset_release",
+    "source": "ind200.sqlite (SQLite, read-only)",
+    "query": "SELECT code, name, status, source_system, random_seed, table_count, column_count, release_date, owner_team FROM dim_dataset_release",
+    "result": "单行:code=REL-CV200-V3、name=合同验证库 v3、source_system=DQ、random_seed=20260828、table_count=200、column_count=5002、release_date=2026-10-03、owner_team=本体评测。库内主体名称均为合成值(合成员工0086、合成客户0012、合成供应商0003),电话号码前缀为 SYN-PHONE。",
+    "validation_method": "数据集发布元数据读取 + 主体名称抽样",
+    "timestamp": "2026-10-09T20:50:00Z"
+  },
+  {
+    "id": "ev_inspection_domain",
+    "source": "ind200.sqlite (SQLite, read-only)",
+    "query": "SELECT result_code, COUNT(*) FROM fact_inspection_result GROUP BY 1",
+    "result": "检验结果枚举为 {合格 13494, 不合格 117, 让步接收 93}。fact_quality_inspection 的同名列 result 取值为同一业务概念的文本表示(合格/不合格等),但两表无直接可连接键(inspector/inspector_code 未对齐)。",
+    "validation_method": "枚举域统计与连接可行性检验",
+    "timestamp": "2026-10-09T20:50:00Z"
+  },
+  {
+    "id": "ev_negative_margin",
+    "source": "ind200.sqlite (SQLite, read-only)",
+    "query": "SELECT is_negative_margin, COUNT(*) FROM fact_sales_order GROUP BY 1",
+    "result": "4731 单中 41 单标记 is_negative_margin=1,其余 4690 单为 0。DWS_RISK_DAILY.negative_margin_qty 全期合计 1110.38 吨,是标记订单的销量口径汇总。",
+    "validation_method": "布尔标记分组统计与跨表口径比对",
+    "timestamp": "2026-10-09T20:50:00Z"
+  }
+]

@@ -1,0 +1,566 @@
+[
+  {
+    "id": "term_school",
+    "name": "School",
+    "type": "entity",
+    "definition": "A California public school or other local educational agency location recorded by the California Department of Education (CDE), identified by a County-District-School (CDS) code and described by location, type, status, grade span and program attributes.",
+    "scope": "Applies to every row of the schools registry and to the schools referenced by the frpm and satscores tables. The registry is a snapshot of the CDE public school directory and mixes currently active, closed, merged and pending records.",
+    "aliases": [
+      "schools",
+      "school record",
+      "school site",
+      "educational institution"
+    ],
+    "evidence": [
+      "ev_schools_rowcount",
+      "ev_schools_district_records"
+    ]
+  },
+  {
+    "id": "term_school_cds_code",
+    "name": "CDS Code (schools/frpm representation)",
+    "type": "concept",
+    "definition": "The County-District-School code, a 14-character zero-padded identifier composed of a 2-digit county code, a 5-digit district code and a 7-digit school code. It is the primary key of the schools registry and the join key of the FRPM meal table.",
+    "scope": "Used as the school identifier in the schools and frpm tables, where it is always stored as a 14-character text value with a leading zero for single-digit county codes.",
+    "aliases": [
+      "CDSCode",
+      "cds",
+      "CDS",
+      "school code",
+      "county-district-school code"
+    ],
+    "evidence": [
+      "ev_cds_lengths",
+      "ev_cds_decomposition",
+      "ev_join_frpm_schools"
+    ]
+  },
+  {
+    "id": "term_sat_cds_code",
+    "name": "CDS Code (satscores representation)",
+    "type": "concept",
+    "definition": "The CDS code as recorded in the SAT score table. It denotes the same school or district as schools.CDSCode but is stored without the leading zero for county codes below 10, so the value is sometimes 13 characters long instead of 14.",
+    "scope": "Applies to the satscores table only. Every SAT record has a counterpart row in the schools registry, but textual comparison of the two identifier columns fails for part of the data.",
+    "aliases": [
+      "satscores.cds",
+      "SAT cds",
+      "SAT school code"
+    ],
+    "evidence": [
+      "ev_cds_lengths",
+      "ev_join_satscores_string",
+      "ev_join_satscores_numeric",
+      "ev_join_satscores_zeropad"
+    ]
+  },
+  {
+    "id": "term_district",
+    "name": "District / Local Educational Agency",
+    "type": "entity",
+    "definition": "The school district, county office of education or other local educational agency that administers a school. It is identified by the district portion of the CDS code and classified by a District Operational Type (DOC) with a corresponding type name.",
+    "scope": "Recorded for every school in the schools registry and repeated per row in the FRPM meal table. A district itself also appears as an administrative record in the registry.",
+    "aliases": [
+      "District",
+      "District Name",
+      "LEA",
+      "school district"
+    ],
+    "evidence": [
+      "ev_doc_domain",
+      "ev_county_name_consistency"
+    ]
+  },
+  {
+    "id": "term_county",
+    "name": "County",
+    "type": "dimension",
+    "definition": "The California county in which a school or district is located. It is the top-level geographic unit of the CDS code and is recorded as a plain county name.",
+    "scope": "Available for every school and every FRPM record; values are county names such as 'Alameda', 'Monterey' or 'San Bernardino'.",
+    "aliases": [
+      "County Name",
+      "county of the school"
+    ],
+    "evidence": [
+      "ev_county_name_consistency",
+      "ev_county_monterey"
+    ]
+  },
+  {
+    "id": "term_city",
+    "name": "City",
+    "type": "dimension",
+    "definition": "The city of the school's location address, used as a sub-county geographic grouping for counting schools.",
+    "scope": "Recorded on the schools registry only; not available in the FRPM or SAT tables. Missing together with the rest of the location address for the records that carry no address.",
+    "aliases": [
+      "City of the school",
+      "school city"
+    ],
+    "evidence": [
+      "ev_address_nulls"
+    ]
+  },
+  {
+    "id": "term_administrator",
+    "name": "School Administrator",
+    "type": "entity",
+    "definition": "A person recorded as an administrator (principal or head) of a school, with a first name, last name and e-mail address. A school record can carry up to three administrators.",
+    "scope": "Stored on the schools registry as three parallel name/email triplets (AdmFName1..3, AdmLName1..3, AdmEmail1..3). The role of each administrator slot is not distinguished by the data.",
+    "aliases": [
+      "administrator",
+      "principal",
+      "school head",
+      "AdmFName",
+      "AdmLName",
+      "AdmEmail"
+    ],
+    "evidence": [
+      "ev_administrator_slots"
+    ]
+  },
+  {
+    "id": "term_district_operational_type",
+    "name": "District Operational Type (DOC)",
+    "type": "category",
+    "definition": "The administrative category of a local educational agency, expressed as a two-digit DOC code together with a descriptive DOCType label such as 'Elementary School District', 'Unified School District' or 'County Office of Education (COE)'.",
+    "scope": "Recorded for every school registry row. It classifies the agency, not the school site, so a single school type can appear under several district operational types.",
+    "aliases": [
+      "DOC",
+      "DOCType",
+      "District Type",
+      "district category",
+      "Unified School District",
+      "Elementary School District"
+    ],
+    "evidence": [
+      "ev_doc_domain",
+      "ev_frpm_district_type_domain"
+    ]
+  },
+  {
+    "id": "term_school_operational_type",
+    "name": "School Operational Type (SOC)",
+    "type": "category",
+    "definition": "The operational category of the school site, expressed as a two-digit SOC code together with a descriptive SOCType label such as 'Elementary Schools (Public)', 'Intermediate/Middle Schools (Public)', 'High Schools (Public)' or 'K-12 Schools (Public)'.",
+    "scope": "Recorded for most school registry rows and mirrored in the FRPM table as a 'School Type' label. Missing for administrative records that are not school sites.",
+    "aliases": [
+      "SOC",
+      "SOCType",
+      "School Type",
+      "school category",
+      "Intermediate/Middle Schools",
+      "State Special Schools"
+    ],
+    "evidence": [
+      "ev_soc_domain",
+      "ev_frpm_school_type_domain"
+    ]
+  },
+  {
+    "id": "term_education_option_type",
+    "name": "Educational Option Type (EdOpsCode)",
+    "type": "category",
+    "definition": "The educational program/option category under which a school operates, expressed as an EdOpsCode together with an EdOpsName label such as 'Traditional', 'Continuation School', 'Special Education School' or 'State Special School'.",
+    "scope": "Recorded on the schools registry and mirrored by an equivalent label column in the FRPM table. It overlaps with the SOC taxonomy: some categories are named in both.",
+    "aliases": [
+      "EdOpsCode",
+      "EdOpsName",
+      "Educational Option Type",
+      "State Special School",
+      "SSS",
+      "Traditional"
+    ],
+    "evidence": [
+      "ev_edopscode_domain",
+      "ev_frpm_education_option_domain",
+      "ev_sss_schools"
+    ]
+  },
+  {
+    "id": "term_school_status",
+    "name": "School Status Type",
+    "type": "dimension",
+    "definition": "The lifecycle state of the school registry record: Active, Closed, Merged or Pending. It indicates whether the school was in operation at the time of the snapshot.",
+    "scope": "Recorded for every school registry row; not available in the FRPM or SAT tables.",
+    "aliases": [
+      "StatusType",
+      "status",
+      "active school",
+      "closed school"
+    ],
+    "evidence": [
+      "ev_status_domain"
+    ]
+  },
+  {
+    "id": "term_charter_school",
+    "name": "Charter School Status",
+    "type": "dimension",
+    "definition": "Whether a school is a charter school, together with its charter number and charter funding type (Directly funded, Locally funded, Not in CS funding model).",
+    "scope": "Recorded on the schools registry and mirrored in the FRPM table as a charter flag, charter number and charter funding type.",
+    "aliases": [
+      "Charter",
+      "Charter School (Y/N)",
+      "charter school",
+      "FundingType",
+      "Charter Funding Type"
+    ],
+    "evidence": [
+      "ev_charter_domain",
+      "ev_charter_funding_domain"
+    ]
+  },
+  {
+    "id": "term_grade_span",
+    "name": "Grade Span",
+    "type": "dimension",
+    "definition": "The range of grades associated with a school, written as a compact label such as 'K-8', 'K-12', '9-12' or 'P-5'. The data distinguishes the grade span the school offers (declared) from the grade span it actually serves, and the FRPM table records the same information as separate lowest and highest grade columns.",
+    "scope": "Available on the schools registry for most rows (missing for a large share of administrative and inactive records) and on every FRPM row as Low Grade / High Grade.",
+    "aliases": [
+      "GSoffered",
+      "GSserved",
+      "grade span offered",
+      "grade span served",
+      "K-8",
+      "Kindergarten to 8th grade",
+      "Low Grade",
+      "High Grade"
+    ],
+    "evidence": [
+      "ev_grade_span_domain",
+      "ev_grade_span_offered_served_diff",
+      "ev_grade_span_nulls"
+    ]
+  },
+  {
+    "id": "term_virtual_status",
+    "name": "Virtual Instruction Status",
+    "type": "dimension",
+    "definition": "The degree to which a school delivers instruction virtually rather than in a physical setting. The value 'F' denotes a school that is exclusively/full-time virtual.",
+    "scope": "Recorded on the schools registry; a large share of records do not report a value.",
+    "aliases": [
+      "Virtual",
+      "virtual school",
+      "exclusively virtual",
+      "online school",
+      "Virtual = F"
+    ],
+    "evidence": [
+      "ev_virtual_domain"
+    ]
+  },
+  {
+    "id": "term_magnet_program",
+    "name": "Magnet Program",
+    "type": "dimension",
+    "definition": "Whether the school offers a magnet program, recorded as a flag whose value 1 means the school offers a magnet program and 0 means it does not.",
+    "scope": "Recorded on the schools registry; a large share of records leave the flag unset.",
+    "aliases": [
+      "Magnet",
+      "magnet program",
+      "magnet school",
+      "Magnet = 1"
+    ],
+    "evidence": [
+      "ev_magnet_domain",
+      "ev_magnet_k8_multiple_provision"
+    ]
+  },
+  {
+    "id": "term_school_address",
+    "name": "School Location Address",
+    "type": "concept",
+    "definition": "The physical location address of the school, composed of a street, city, state and ZIP code. The state is always California and the ZIP code may include a four-digit delivery suffix.",
+    "scope": "Recorded on the schools registry; the components are missing together for the rows that carry no address (mainly administrative and inactive records).",
+    "aliases": [
+      "address",
+      "Street",
+      "Zip",
+      "State",
+      "complete address",
+      "full communication address"
+    ],
+    "evidence": [
+      "ev_address_nulls",
+      "ev_state_domain",
+      "ev_zip_format"
+    ]
+  },
+  {
+    "id": "term_mailing_address",
+    "name": "School Mailing (Communication) Address",
+    "type": "concept",
+    "definition": "The mailing address at which the school or its administering agency receives correspondence, composed of a mail street, mail city, mail ZIP code and mail state. It may differ from the physical location address.",
+    "scope": "Recorded on the schools registry as a parallel set of address columns. Questions that ask for a 'communication address' refer to this mailing address rather than the physical location.",
+    "aliases": [
+      "MailStreet",
+      "MailCity",
+      "MailZip",
+      "MailState",
+      "mailing address",
+      "communication address"
+    ],
+    "evidence": [
+      "ev_mailing_vs_location_diff",
+      "ev_address_nulls"
+    ]
+  },
+  {
+    "id": "term_geo_coordinates",
+    "name": "School Geographic Coordinates",
+    "type": "dimension",
+    "definition": "The latitude and longitude of the school location in decimal degrees. Because California lies in the western hemisphere, longitude values are negative.",
+    "scope": "Recorded on the schools registry for a minority of rows; the two coordinates are populated together.",
+    "aliases": [
+      "Latitude",
+      "Longitude",
+      "coordinates",
+      "longitude",
+      "latitude",
+      "highest longitude"
+    ],
+    "evidence": [
+      "ev_coordinates_range",
+      "ev_coordinates_nulls"
+    ]
+  },
+  {
+    "id": "term_enrollment",
+    "name": "Student Enrollment",
+    "type": "metric",
+    "definition": "The number of students enrolled at a school in the 2014-2015 reporting period. The FRPM table provides this measure under two parallel population labels: enrollment of students in the K-12 grade range, and enrollment of students aged 5 to 17. The SAT table carries a separate grade-12 enrollment figure.",
+    "scope": "Available on every FRPM row under both labels, and on every SAT record as enroll12. The two FRPM populations are not interchangeable.",
+    "aliases": [
+      "Enrollment (K-12)",
+      "Enrollment (Ages 5-17)",
+      "enrolment",
+      "number of students",
+      "enroll12",
+      "highest enrolment"
+    ],
+    "evidence": [
+      "ev_frpm_measure_nulls",
+      "ev_enrollment_population_diff"
+    ]
+  },
+  {
+    "id": "term_free_meal_count",
+    "name": "Free Meal Eligible Count",
+    "type": "metric",
+    "definition": "The number of students at a school who are eligible for free meals under the National School Lunch Program, reported for the same two populations as enrollment.",
+    "scope": "Available on FRPM rows for the 2014-2015 academic year, under the K-12 and Ages 5-17 population labels. It is the numerator of the eligible free rate.",
+    "aliases": [
+      "Free Meal Count (K-12)",
+      "Free Meal Count (Ages 5-17)",
+      "free meals",
+      "free or reduced price meals",
+      "free meal count"
+    ],
+    "evidence": [
+      "ev_frpm_measure_nulls",
+      "ev_percent_consistency"
+    ]
+  },
+  {
+    "id": "term_frpm_count",
+    "name": "Free or Reduced-Price Meal Eligible Count",
+    "type": "metric",
+    "definition": "The number of students at a school who are eligible for free or reduced-price meals, a broader population than the free-meal-only count because it also includes students eligible on the reduced-price scale.",
+    "scope": "Available on FRPM rows for the 2014-2015 academic year, under the K-12 and Ages 5-17 population labels.",
+    "aliases": [
+      "FRPM Count (K-12)",
+      "FRPM Count (Ages 5-17)",
+      "FRPM",
+      "free or reduced price meal count"
+    ],
+    "evidence": [
+      "ev_percent_consistency",
+      "ev_frpm_measure_nulls"
+    ]
+  },
+  {
+    "id": "term_eligible_free_rate",
+    "name": "Eligible Free Rate",
+    "type": "metric",
+    "definition": "The share of a school's enrollment that is eligible for free meals, equal to the free-meal eligible count divided by the enrollment count of the same population.",
+    "scope": "Stored as a precomputed ratio on every FRPM row under both population labels, where it is expressed as a fraction between 0 and 1 rather than as a percentage out of 100.",
+    "aliases": [
+      "Percent (%) Eligible Free (K-12)",
+      "Percent (%) Eligible Free (Ages 5-17)",
+      "eligible free rate",
+      "free rate",
+      "percent eligible free"
+    ],
+    "evidence": [
+      "ev_percent_consistency",
+      "ev_percent_range"
+    ]
+  },
+  {
+    "id": "term_eligible_frpm_rate",
+    "name": "Eligible FRPM Rate",
+    "type": "metric",
+    "definition": "The share of a school's enrollment that is eligible for free or reduced-price meals, equal to the FRPM eligible count divided by the enrollment count of the same population, expressed as a fraction between 0 and 1.",
+    "scope": "Stored as a precomputed ratio on every FRPM row under both population labels.",
+    "aliases": [
+      "Percent (%) Eligible FRPM (K-12)",
+      "Percent (%) Eligible FRPM (Ages 5-17)",
+      "eligible FRPM rate",
+      "percent eligible FRPM"
+    ],
+    "evidence": [
+      "ev_percent_consistency",
+      "ev_percent_range"
+    ]
+  },
+  {
+    "id": "term_nslp_provision_status",
+    "name": "NSLP Provision Status",
+    "type": "category",
+    "definition": "The meal-claiming provision under which a school operates its National School Lunch Program, for example Provision 2, Community Eligibility Provision (CEP) or Multiple Provision Types. It describes how the school claims meal reimbursements and governs how meal counts are reported.",
+    "scope": "Recorded on FRPM rows for the 2014-2015 academic year; most rows leave the field unset.",
+    "aliases": [
+      "NSLP Provision Status",
+      "provision status",
+      "Multiple Provision Types",
+      "CEP",
+      "Provision 2"
+    ],
+    "evidence": [
+      "ev_nslp_domain"
+    ]
+  },
+  {
+    "id": "term_sat_test_taker_count",
+    "name": "SAT Test Taker Count",
+    "type": "metric",
+    "definition": "The number of students from the reporting unit who took the SAT, used as the denominator of the excellence rate. It is populated for every SAT record.",
+    "scope": "Available on every SAT record; unlike the score fields it is never missing.",
+    "aliases": [
+      "NumTstTakr",
+      "number of test takers",
+      "test takers"
+    ],
+    "evidence": [
+      "ev_sat_measure_nulls"
+    ]
+  },
+  {
+    "id": "term_sat_average_score",
+    "name": "SAT Average Score",
+    "type": "metric",
+    "definition": "The mean SAT score achieved by the reporting unit's test takers, reported separately for Reading, Mathematics and Writing.",
+    "scope": "Available on SAT records; the score fields are missing together for a subset of records even though the test taker count is present.",
+    "aliases": [
+      "AvgScrRead",
+      "AvgScrMath",
+      "AvgScrWrite",
+      "average score in Math",
+      "average writing score",
+      "SAT score"
+    ],
+    "evidence": [
+      "ev_sat_measure_nulls",
+      "ev_sat_coverage"
+    ]
+  },
+  {
+    "id": "term_sat_score_above_1500_count",
+    "name": "SAT Score At or Above 1500 Count",
+    "type": "metric",
+    "definition": "The number of the reporting unit's SAT test takers whose total score reached 1500 or above. It is the numerator of the excellence rate.",
+    "scope": "Available on SAT records; missing together with the average score fields for a subset of records.",
+    "aliases": [
+      "NumGE1500",
+      "number of students scoring 1500 or above",
+      "1500"
+    ],
+    "evidence": [
+      "ev_sat_measure_nulls"
+    ]
+  },
+  {
+    "id": "term_excellence_rate",
+    "name": "Excellence Rate",
+    "type": "metric",
+    "definition": "The share of a reporting unit's SAT test takers who reached a total score of 1500 or above, computed as the count of test takers scoring at or above 1500 divided by the total test taker count. It is not stored as a column and must be computed from the SAT measures.",
+    "scope": "Defined only for reporting units that have a SAT record with a non-zero test taker count.",
+    "aliases": [
+      "excellence rate",
+      "rate of excellent scores",
+      "NumGE1500 / NumTstTakr",
+      "lowest excellence rate"
+    ],
+    "evidence": [
+      "ev_sat_measure_nulls",
+      "ev_sat_coverage"
+    ]
+  },
+  {
+    "id": "term_open_date",
+    "name": "School Open Date",
+    "type": "dimension",
+    "definition": "The date on which the school began operating, stored as an ISO date text value. It is absent for administrative records and, for a large majority of school-site records, carries a shared placeholder date rather than a genuine founding date.",
+    "scope": "Recorded on the schools registry. Because of the placeholder value, the year component alone does not reliably identify the year a school opened.",
+    "aliases": [
+      "OpenDate",
+      "opened",
+      "opening date",
+      "established",
+      "founded",
+      "opened in 1980",
+      "opened between 2009 and 2010"
+    ],
+    "evidence": [
+      "ev_open_date_null",
+      "ev_open_date_sentinel"
+    ]
+  },
+  {
+    "id": "term_closed_date",
+    "name": "School Closed Date",
+    "type": "dimension",
+    "definition": "The date on which the school stopped operating, stored as an ISO date text value. It is populated only for records that are closed or merged.",
+    "scope": "Recorded on the schools registry.",
+    "aliases": [
+      "ClosedDate",
+      "closed",
+      "closure date"
+    ],
+    "evidence": [
+      "ev_closed_date_sample"
+    ]
+  },
+  {
+    "id": "term_academic_year",
+    "name": "Academic Year",
+    "type": "dimension",
+    "definition": "The school year to which a set of annual school measures applies, expressed as a label of the form '2014-2015'.",
+    "scope": "Recorded on every FRPM row; the FRPM table covers a single academic year only, so the filter is implicit rather than a real choice.",
+    "aliases": [
+      "Academic Year",
+      "school year",
+      "2014-2015",
+      "reporting year"
+    ],
+    "evidence": [
+      "ev_frpm_academic_year"
+    ]
+  },
+  {
+    "id": "term_sat_record_level",
+    "name": "SAT Record Level",
+    "type": "category",
+    "definition": "The aggregation level of a SAT record: a school-level record reports one school's SAT results, while a district-level record aggregates all schools of a district or agency. The two levels are distinguished by a record type flag.",
+    "scope": "Recorded on every SAT record. District-level records carry no school name and their CDS code ends in zeros; mixing the two levels would double-count schools and distort averages.",
+    "aliases": [
+      "rtype",
+      "record type",
+      "district-level SAT",
+      "school-level SAT"
+    ],
+    "evidence": [
+      "ev_satscores_rtype",
+      "ev_satscores_district_rows"
+    ]
+  }
+]

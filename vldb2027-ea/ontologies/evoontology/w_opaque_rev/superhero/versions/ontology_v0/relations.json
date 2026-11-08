@@ -1,0 +1,145 @@
+[
+  {
+    "id": "rel_superhero_attribute_rating",
+    "source": "term_superhero",
+    "relation_type": "composition",
+    "target": "term_attribute_rating",
+    "connection_condition": "tab08.fld019 refers to tab07.fld001, so each rating row belongs to exactly one superhero.",
+    "description": "A superhero is composed of zero or more attribute ratings; a rating record has no meaning without its superhero. 623 of 750 superheroes have exactly six ratings each.",
+    "evidence": [
+      "ev_005",
+      "ev_012",
+      "ev_013"
+    ]
+  },
+  {
+    "id": "rel_attribute_attribute_rating",
+    "source": "term_attribute",
+    "relation_type": "composition",
+    "target": "term_attribute_rating",
+    "connection_condition": "tab08.fld020 refers to tab02.fld001, so each rating row measures exactly one attribute of the six-attribute catalogue.",
+    "description": "An attribute groups the ratings measured for it; every attribute rating is a measurement of one attribute category.",
+    "evidence": [
+      "ev_002",
+      "ev_005"
+    ]
+  },
+  {
+    "id": "rel_superhero_superpower",
+    "source": "term_superhero",
+    "relation_type": "association",
+    "target": "term_superpower",
+    "connection_condition": "tab10.fld019 refers to tab07.fld001 and tab10.fld023 refers to tab09.fld001; the assignment is many-to-many with no duplicate pairs.",
+    "description": "Superheroes are associated with named superpowers through an assignment link. 652 superheroes have at least one assigned power across 5825 assignment rows.",
+    "evidence": [
+      "ev_012",
+      "ev_014",
+      "ev_013"
+    ]
+  },
+  {
+    "id": "rel_publisher_superhero",
+    "source": "term_publisher",
+    "relation_type": "association",
+    "target": "term_superhero",
+    "connection_condition": "tab07.fld015 refers to tab05.fld001; 3 superheroes have no publisher.",
+    "description": "A publisher publishes many superheroes; each superhero record usually names one publisher. Publisher is a business affiliation rather than a part of the superhero record.",
+    "evidence": [
+      "ev_011",
+      "ev_015"
+    ]
+  },
+  {
+    "id": "rel_gender_superhero",
+    "source": "term_gender",
+    "relation_type": "association",
+    "target": "term_superhero",
+    "connection_condition": "tab07.fld010 refers to tab04.fld001.",
+    "description": "Each superhero record carries one gender code classifying the character.",
+    "evidence": [
+      "ev_002",
+      "ev_007"
+    ]
+  },
+  {
+    "id": "rel_race_superhero",
+    "source": "term_race",
+    "relation_type": "association",
+    "target": "term_superhero",
+    "connection_condition": "tab07.fld014 refers to tab06.fld001; 4 superheroes have no race reference.",
+    "description": "Each superhero record carries one race reference describing the character's species; the '-' race marks an unspecified species.",
+    "evidence": [
+      "ev_003",
+      "ev_010"
+    ]
+  },
+  {
+    "id": "rel_alignment_superhero",
+    "source": "term_alignment",
+    "relation_type": "association",
+    "target": "term_superhero",
+    "connection_condition": "tab07.fld016 refers to tab01.fld001; 6 superheroes have no alignment.",
+    "description": "Each superhero record carries one moral alignment code describing the character as good, bad, neutral or unspecified.",
+    "evidence": [
+      "ev_002",
+      "ev_007"
+    ]
+  },
+  {
+    "id": "rel_villain_alignment",
+    "source": "term_villain",
+    "relation_type": "hierarchy",
+    "target": "term_alignment",
+    "connection_condition": "A villain is the subset of the alignment value domain where tab01.fld002 equals 'Bad' (code 2).",
+    "description": "Villain is a subtype-like category of alignment: its value domain ('Bad') is contained in the alignment value domain (Good, Bad, Neutral, N/A).",
+    "evidence": [
+      "ev_002",
+      "ev_007"
+    ]
+  },
+  {
+    "id": "rel_colour_eye_colour",
+    "source": "term_colour",
+    "relation_type": "association",
+    "target": "term_eye_colour",
+    "connection_condition": "tab07.fld011 stores colour ids that refer to tab03.fld001.",
+    "description": "Eye colour is one of three roles that draw their labels from the shared colour list; the label meaning is identical across roles.",
+    "evidence": [
+      "ev_004"
+    ]
+  },
+  {
+    "id": "rel_colour_hair_colour",
+    "source": "term_colour",
+    "relation_type": "association",
+    "target": "term_hair_colour",
+    "connection_condition": "tab07.fld012 stores colour ids that refer to tab03.fld001.",
+    "description": "Hair colour is one of three roles that draw their labels from the shared colour list.",
+    "evidence": [
+      "ev_004"
+    ]
+  },
+  {
+    "id": "rel_colour_skin_colour",
+    "source": "term_colour",
+    "relation_type": "association",
+    "target": "term_skin_colour",
+    "connection_condition": "tab07.fld013 stores colour ids that refer to tab03.fld001.",
+    "description": "Skin colour is one of three roles that draw their labels from the shared colour list; it is the role used by green-skinned or blue-skinned descriptions.",
+    "evidence": [
+      "ev_004"
+    ]
+  },
+  {
+    "id": "rel_superhero_count",
+    "source": "term_superhero",
+    "relation_type": "derivation",
+    "target": "term_superhero_count",
+    "connection_condition": "Counting distinct tab07.fld001 values in the filtered scope.",
+    "description": "Superhero count is derived from superhero records by counting them within a population defined by publisher, gender, alignment, rating or power conditions.",
+    "evidence": [
+      "ev_001",
+      "ev_015"
+    ]
+  }
+]

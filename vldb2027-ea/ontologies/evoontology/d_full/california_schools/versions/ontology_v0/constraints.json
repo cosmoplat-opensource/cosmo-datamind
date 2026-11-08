@@ -1,0 +1,321 @@
+[
+  {
+    "id": "constraint_percent_columns_fraction",
+    "target": "term_frpm_eligibility_rate",
+    "constraint_type": "unit",
+    "trigger_keywords": [
+      "percent",
+      "percentage",
+      "rate",
+      "share",
+      "ratio",
+      "eligible free",
+      "eligible FRPM",
+      "Percent (%) Eligible FRPM",
+      "proportion",
+      "0-100"
+    ],
+    "severity": "block",
+    "scope": "Any interpretation or presentation of the Percent (%) Eligible columns in the frpm table",
+    "confidence": "high",
+    "description": "The Percent (%) Eligible Free and Percent (%) Eligible FRPM columns store a fraction between 0 and 1 rather than a value on a 0-100 scale, despite the parentheses in the column names. The observed range is 0.00176 to 1.0 and no value exceeds 1. A figure expressed as a percentage is this stored value multiplied by 100.",
+    "evidence": [
+      "evidence_frpm_percent_fraction",
+      "evidence_frpm_percent_derivation"
+    ]
+  },
+  {
+    "id": "constraint_satscores_cds_leading_zero",
+    "target": "term_cds_code_satscores",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "cds",
+      "CDSCode",
+      "join schools satscores",
+      "match school",
+      "leading zero",
+      "13 digit",
+      "14 digit",
+      "link SAT to school"
+    ],
+    "severity": "block",
+    "scope": "Any join between satscores and the schools or frpm tables",
+    "confidence": "high",
+    "description": "The cds column in satscores has lost the leading zero of the county code, so 211 of its 2269 rows are 13 characters long while schools.CDSCode is always 14 characters. The values match only after the shorter form is left-padded with a zero: without normalisation just 2058 rows join directly and the remaining 211, all from counties 01 to 09, are silently dropped.",
+    "evidence": [
+      "evidence_satscores_cds_length",
+      "evidence_cdscode_join_coverage"
+    ]
+  },
+  {
+    "id": "constraint_satscores_rtype_level",
+    "target": "term_sat_record_level",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "rtype",
+      "district level SAT",
+      "school level SAT",
+      "district aggregate",
+      "S",
+      "D",
+      "SAT by district",
+      "SAT by school"
+    ],
+    "severity": "block",
+    "scope": "Any aggregation, average or ranking computed over satscores",
+    "confidence": "high",
+    "description": "rtype S marks school-level SAT aggregates (1749 rows) and rtype D marks district-level aggregates (520 rows). Every district-level row joins to an agency record with no school name, and every school-level row joins to a named school. Summing or averaging both levels together double-counts students, and ranking records without filtering the level mixes districts with schools.",
+    "evidence": [
+      "evidence_satscores_rtype_level"
+    ]
+  },
+  {
+    "id": "constraint_schools_status_filter",
+    "target": "term_school_status",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "active",
+      "closed",
+      "merged",
+      "pending",
+      "currently operating",
+      "open school",
+      "StatusType",
+      "school status",
+      "existing school"
+    ],
+    "severity": "warning",
+    "scope": "Selecting records for current-state analysis over the schools table",
+    "confidence": "high",
+    "description": "StatusType takes four values: Active (11708 rows), Closed (4518), Merged (1448) and Pending (12). Closed and merged records are historical, so counts, averages and rankings of currently operating schools must filter on Active.",
+    "evidence": [
+      "evidence_schools_status_type"
+    ]
+  },
+  {
+    "id": "constraint_schools_agency_rows",
+    "target": "term_district_agency",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "district row",
+      "agency",
+      "no school name",
+      "district office",
+      "schools table district",
+      "count schools",
+      "0000000"
+    ],
+    "severity": "warning",
+    "scope": "Any query over the schools table",
+    "confidence": "high",
+    "description": "The schools table holds both schools and administrative agencies in one table. The 1369 agency rows have a blank School column and a blank Charter column and their CDS code ends in 0000000; the other 16317 rows are schools. Counting the table without separating the two mixes districts and county offices into school counts.",
+    "evidence": [
+      "evidence_schools_agency_rows",
+      "evidence_schools_charter_blank"
+    ]
+  },
+  {
+    "id": "constraint_frpm_district_office_rows",
+    "target": "term_district_agency",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "District Office",
+      "district FRPM row",
+      "frpm district row",
+      "district enrollment",
+      "sentinel"
+    ],
+    "severity": "warning",
+    "scope": "Any query over the frpm table",
+    "confidence": "high",
+    "description": "45 frpm rows are district-level rather than school-level. Their School Name holds the sentinel value 'District Office', their School Type, Educational Option Type and Charter School (Y/N) columns are blank, and their CDS code ends in 0000000. Their enrollment figures are district totals and must not be counted as a school's enrollment.",
+    "evidence": [
+      "evidence_frpm_district_office_rows"
+    ]
+  },
+  {
+    "id": "constraint_academic_year_scope",
+    "target": "term_academic_year",
+    "constraint_type": "scope",
+    "trigger_keywords": [
+      "academic year",
+      "2014-2015",
+      "year over year",
+      "trend",
+      "over time",
+      "historical",
+      "time series"
+    ],
+    "severity": "warning",
+    "scope": "Any comparison across years using the frpm table",
+    "confidence": "high",
+    "description": "The frpm table holds a single academic year, 2014-2015, on all 9986 rows. No year-over-year comparison, trend or time-series analysis can be produced from this table, and the figures are a snapshot of that year.",
+    "evidence": [
+      "evidence_academic_year_single"
+    ]
+  },
+  {
+    "id": "constraint_frpm_free_subset",
+    "target": "term_free_meal_count",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "free meal",
+      "reduced price",
+      "FRPM",
+      "free or reduced",
+      "eligibility definition",
+      "low income"
+    ],
+    "severity": "info",
+    "scope": "Interpreting free-meal figures against FRPM figures",
+    "confidence": "high",
+    "description": "Free Meal Count is the free-only component while FRPM Count adds reduced-price eligibility. Across all 9930 non-null rows the FRPM count is greater than or equal to the free-meal count, so questions about 'free meal' and about 'free or reduced price meal' eligibility refer to different, nested populations and are not interchangeable.",
+    "evidence": [
+      "evidence_frpm_free_subset"
+    ]
+  },
+  {
+    "id": "constraint_enrollment_basis",
+    "target": "term_enrollment_k12",
+    "constraint_type": "scope",
+    "trigger_keywords": [
+      "enrollment basis",
+      "K-12",
+      "ages 5-17",
+      "denominator",
+      "eligibility rate comparison",
+      "enrollment definition"
+    ],
+    "severity": "warning",
+    "scope": "Comparing eligibility rates across schools or aggregating them",
+    "confidence": "high",
+    "description": "Each school records two enrollment populations, K-12 and ages 5-17. They are equal for 3512 schools and the ages 5-17 count is strictly smaller for 6460, so the two eligibility bases yield different rates for the same school. Rates computed on different bases must not be mixed, and a group rate must be rebuilt from summed counts rather than averaged across schools.",
+    "evidence": [
+      "evidence_enrollment_universes",
+      "evidence_frpm_percent_derivation"
+    ]
+  },
+  {
+    "id": "constraint_sat_null_and_zero",
+    "target": "term_sat_avg_score",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "null SAT score",
+      "missing score",
+      "zero test takers",
+      "divide by zero",
+      "NumTstTakr",
+      "no score reported"
+    ],
+    "severity": "warning",
+    "scope": "Averaging, ranking or dividing SAT values",
+    "confidence": "high",
+    "description": "596 of the 2269 SAT records carry no subject scores at all (98 district-level and 498 school-level), and NumTstTakr is zero on 218 rows. Averages must exclude the unscored records, and any ratio with test takers in the denominator is undefined on the zero rows, which would otherwise either error or silently distort a ranking.",
+    "evidence": [
+      "evidence_sat_null_scores",
+      "evidence_sat_ge1500_bounds"
+    ]
+  },
+  {
+    "id": "constraint_charter_source_discrepancy",
+    "target": "term_charter_school",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "charter",
+      "charter flag",
+      "Charter School (Y/N)",
+      "Charter",
+      "charter disagreement",
+      "charter count"
+    ],
+    "severity": "info",
+    "scope": "Charter classification and charter counts across tables",
+    "confidence": "high",
+    "description": "The schools.Charter flag and the frpm Charter School (Y/N) flag agree on 9934 joined rows but disagree on 7: four schools are charter only in frpm and three only in schools. The FRPM file additionally leaves the field blank on its 45 district-level rows. A charter count therefore depends on which table it is taken from, and the two flags should not be assumed identical.",
+    "evidence": [
+      "evidence_charter_discrepancy"
+    ]
+  },
+  {
+    "id": "constraint_grade_span_coding",
+    "target": "term_grade_span",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "low grade",
+      "high grade",
+      "kindergarten",
+      "K",
+      "grade span",
+      "Adult",
+      "preschool",
+      "P",
+      "grade level"
+    ],
+    "severity": "warning",
+    "scope": "Interpreting, ordering or comparing grade levels",
+    "confidence": "high",
+    "description": "Low Grade and High Grade are text codes rather than numbers. K (6057 low-grade rows) denotes kindergarten and sorts before grade 1, P denotes preschool, and Adult (35 high-grade rows) lies beyond grade 12. Treating the raw values as numeric misorders every one of these levels, and a span test such as lowest grade 0 and highest grade 12 must map K to 0 explicitly.",
+    "evidence": [
+      "evidence_frpm_grade_domain"
+    ]
+  },
+  {
+    "id": "constraint_satscores_enroll12_grain",
+    "target": "term_grade12_enrollment",
+    "constraint_type": "scope",
+    "trigger_keywords": [
+      "enroll12",
+      "grade 12",
+      "senior class",
+      "participation denominator",
+      "total enrollment",
+      "12th grade"
+    ],
+    "severity": "info",
+    "scope": "SAT participation ratios and any comparison against school enrollment",
+    "confidence": "high",
+    "description": "enroll12 counts grade-12 students only and is not a school's total enrollment. It ranges from 0 to 43324, is zero on 5 rows, and is exceeded by the test-taker count on 35 rows, so a participation ratio built on it can exceed 1 or be undefined and should not be read as a share of the whole school.",
+    "evidence": [
+      "evidence_satscores_enroll12_grain"
+    ]
+  },
+  {
+    "id": "constraint_nslp_blank_meaning",
+    "target": "term_nslp_provision_status",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "NSLP",
+      "provision status",
+      "provision 2",
+      "CEP",
+      "meal program",
+      "blank provision"
+    ],
+    "severity": "info",
+    "scope": "Interpreting NSLP Provision Status",
+    "confidence": "high",
+    "description": "8139 of 9986 rows leave NSLP Provision Status blank, which means the school does not operate under a meal provision rather than that the value is missing. The populated values are Provision 1, Provision 2, Provision 3, Breakfast Provision 2, Lunch Provision 2, Multiple Provision Types and CEP, so a blank-versus-provision split is the meaningful comparison.",
+    "evidence": [
+      "evidence_nslp_domain"
+    ]
+  },
+  {
+    "id": "constraint_satscores_dname_discrepancy",
+    "target": "term_district_agency",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "dname",
+      "district name mismatch",
+      "cname",
+      "county name",
+      "name mismatch"
+    ],
+    "severity": "info",
+    "scope": "Joining or reconciling district and county text between satscores and schools",
+    "confidence": "medium",
+    "description": "The district name in satscores matches the district recorded in schools for 2264 of 2269 rows and the county name matches for all 2269, so the naming columns are reliable but not perfectly aligned. Reconciliation should prefer the CDS code over name text.",
+    "evidence": [
+      "evidence_schools_name_columns"
+    ]
+  }
+]

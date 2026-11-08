@@ -1,0 +1,149 @@
+{
+ "db_id": "card_games",
+ "questions": [
+  {
+   "question_id": 358,
+   "db_id": "card_games",
+   "question": "What is the border color of card \"Ancestor's Chosen\"?",
+   "evidence": "name of card  = 'Ancestor''s Chosen' ;",
+   "SQL": "SELECT DISTINCT borderColor FROM cards WHERE name = 'Ancestor''s Chosen'",
+   "difficulty": "simple"
+  },
+  {
+   "question_id": 474,
+   "db_id": "card_games",
+   "question": "Among the sets of cards that have an Italian translation, how many of them have a base set number of under 100?",
+   "evidence": "Italian translation refers to language = 'Italian'; have a translation means translation is not null; base set number of under 100 refers to baseSetSize < 10",
+   "SQL": "SELECT COUNT(T1.id) FROM sets AS T1 INNER JOIN set_translations AS T2 ON T2.setCode = T1.code WHERE T2.translation IS NOT NULL AND T1.baseSetSize < 100 AND T2.language = 'Italian'",
+   "difficulty": "moderate"
+  },
+  {
+   "question_id": 468,
+   "db_id": "card_games",
+   "question": "What is the Simplified Chinese translation of the name of the set \"Eighth Edition\"?",
+   "evidence": "Eighth Edition is the name of card set which refers to name = 'Eighth Edition'; Simplified Chinese refers to language = 'Chinese Simplified'; translation of the name refers to translation",
+   "SQL": "SELECT T2.translation FROM sets AS T1 INNER JOIN set_translations AS T2 ON T2.setCode = T1.code WHERE T1.name = 'Eighth Edition' AND T2.language = 'Chinese Simplified'",
+   "difficulty": "moderate"
+  },
+  {
+   "question_id": 346,
+   "db_id": "card_games",
+   "question": "List all the card id and artist with unknown power which are legal for commander play format.",
+   "evidence": "unknown power refers to power = '*' or POWER IS NULL; commander play format refers to format = 'commander'; legal for commander play format refers to format = 'commander' where status = 'Legal'",
+   "SQL": "SELECT T1.id, T1.artist FROM cards AS T1 INNER JOIN legalities AS T2 ON T1.uuid = T2.uuid WHERE T2.status = 'Legal' AND T2.format = 'commander' AND (T1.power IS NULL OR T1.power = '*')",
+   "difficulty": "moderate"
+  },
+  {
+   "question_id": 349,
+   "db_id": "card_games",
+   "question": "Name the card and artist with the most ruling information. Also state if the card is a promotional printing.",
+   "evidence": "with the most ruling information refers to Max(count(rulings.uuid)); the card is the promotional printing refers to isPromo = 1;",
+   "SQL": "SELECT T1.name, T1.artist, T1.isPromo FROM cards AS T1 INNER JOIN rulings AS T2 ON T1.uuid = T2.uuid WHERE T1.isPromo = 1 AND T1.artist = (SELECT artist FROM cards WHERE isPromo = 1 GROUP BY artist HAVING COUNT(DISTINCT uuid) = (SELECT MAX(count_uuid) FROM ( SELECT COUNT(DISTINCT uuid) AS count_uuid FROM cards WHERE isPromo = 1 GROUP BY artist ))) LIMIT 1",
+   "difficulty": "moderate"
+  },
+  {
+   "question_id": 352,
+   "db_id": "card_games",
+   "question": "Calculate the percentage of the cards availabe in Chinese Simplified.",
+   "evidence": "Chinese Simplified' is the language; percentage = Divide(Sum(id where language = 'Chinese Simplified'), Count(id)) *100",
+   "SQL": "SELECT CAST(SUM(CASE WHEN T2.language = 'Chinese Simplified' THEN 1 ELSE 0 END) AS REAL) * 100 / COUNT(T1.id) FROM cards AS T1 INNER JOIN foreign_data AS T2 ON T1.uuid = T2.uuid",
+   "difficulty": "moderate"
+  },
+  {
+   "question_id": 530,
+   "db_id": "card_games",
+   "question": "List all the frame styles and cards Allen Williams worked on and find any banned cards if there are any.",
+   "evidence": "frame styles refers to frameVersion; cards Allen Williams worked on refers to artist = 'Allen Williams'; banned cards refers to status = 'Banned'",
+   "SQL": "SELECT DISTINCT T1.frameVersion, T1.name , IIF(T2.status = 'Banned', T1.name, 'NO') FROM cards AS T1 INNER JOIN legalities AS T2 ON T1.uuid = T2.uuid WHERE T1.artist = 'Allen Williams'",
+   "difficulty": "moderate"
+  },
+  {
+   "question_id": 402,
+   "db_id": "card_games",
+   "question": "What is the percentage of Story Spotlight cards that do not have a text box? List them by their ID.",
+   "evidence": "Story Spotlight cards that do not have a text box refers to isStorylight = 1 and isTextless = 0; Percentage = DIVIDE(SUM(count(id) where isStorylight = 1 AND isTextless = 0 ), SUM(count(id))) * 100",
+   "SQL": "SELECT CAST(SUM(CASE WHEN isTextless = 0 AND  isStorySpotlight = 1 THEN 1 ELSE 0 END) AS REAL) * 100 / COUNT(id) FROM cards",
+   "difficulty": "moderate"
+  },
+  {
+   "question_id": 356,
+   "db_id": "card_games",
+   "question": "How many cards have infinite power?",
+   "evidence": "infinite power refers to power = '*';",
+   "SQL": "SELECT COUNT(*) FROM cards WHERE power = '*'",
+   "difficulty": "simple"
+  },
+  {
+   "question_id": 368,
+   "db_id": "card_games",
+   "question": "What is the percentage of borderless cards?",
+   "evidence": "borderless card refers to borderColor = 'borderless'; percentage = Divide(Count (id) where borderColor = 'borderless', Count(id)) *100",
+   "SQL": "SELECT CAST(SUM(CASE WHEN borderColor = 'borderless' THEN 1 ELSE 0 END) AS REAL) * 100 / COUNT(id) FROM cards",
+   "difficulty": "simple"
+  },
+  {
+   "question_id": 408,
+   "db_id": "card_games",
+   "question": "How many unknown power cards contain info about the triggered ability",
+   "evidence": "unknown power cards refers to power is null or power = '*';contain info about the triggered ability refers to text contains 'triggered ability'",
+   "SQL": "SELECT Count(DISTINCT T1.id) FROM cards AS T1 INNER JOIN rulings AS T2 ON T1.uuid = T2.uuid WHERE (T1.power IS NULL OR T1.power = '*') AND T2.text LIKE '%triggered ability%'",
+   "difficulty": "moderate"
+  },
+  {
+   "question_id": 477,
+   "db_id": "card_games",
+   "question": "Which of these artists have designed a card in the set Coldsnap, Jeremy Jarvis, Aaron Miller or Chippy?",
+   "evidence": "card set Coldsnap refers to name = 'Coldsnap'; Jeremy Jarvis, Aaron Miller or Chippy are the name of artists which refers to artist IN ('Jeremy Jarvis', 'Aaron Miller','Chippy');",
+   "SQL": "SELECT T1.artist FROM cards AS T1 INNER JOIN sets AS T2 ON T2.code = T1.setCode WHERE (T2.name = 'Coldsnap' AND T1.artist = 'Chippy') OR (T2.name = 'Coldsnap' AND T1.artist = 'Aaron Miller') OR (T2.name = 'Coldsnap' AND T1.artist = 'Jeremy Jarvis') GROUP BY T1.artist",
+   "difficulty": "challenging"
+  },
+  {
+   "question_id": 341,
+   "db_id": "card_games",
+   "question": "What are the borderless cards available without powerful foils?",
+   "evidence": "borderless' refers to borderColor; poweful foils refers to cardKingdomFoilId paired with cardKingdomId AND cardKingdomId is not null",
+   "SQL": "SELECT id FROM cards WHERE borderColor = 'borderless' AND (cardKingdomId IS NULL OR cardKingdomId IS NULL)",
+   "difficulty": "simple"
+  },
+  {
+   "question_id": 407,
+   "db_id": "card_games",
+   "question": "Lists all types of cards in German.",
+   "evidence": "German refer to language; all types refer to the subtypes, supertypes; subtypes is not null AND supertypes is not null",
+   "SQL": "SELECT T1.subtypes, T1.supertypes FROM cards AS T1 INNER JOIN foreign_data AS T2 ON T1.uuid = T2.uuid WHERE T2.language = 'German' AND T1.subtypes IS NOT NULL AND T1.supertypes IS NOT NULL",
+   "difficulty": "moderate"
+  },
+  {
+   "question_id": 473,
+   "db_id": "card_games",
+   "question": "Is the set of cards with Adarkar Valkyrie only available outside the United States?",
+   "evidence": "card set Adarkar Valkyrie refers to name = 'Adarkar Valkyrie'; isForeignOnly = 1 means only available outside the United States;",
+   "SQL": "SELECT IIF(isForeignOnly = 1, 'YES', 'NO') FROM cards AS T1 INNER JOIN sets AS T2 ON T2.code = T1.setCode WHERE T1.name = 'Adarkar Valkyrie'",
+   "difficulty": "moderate"
+  },
+  {
+   "question_id": 487,
+   "db_id": "card_games",
+   "question": "What is the percentage of incredibly powerful cards in the set Coldsnap?",
+   "evidence": "card set Coldsnap refers to name = 'Coldsnap'; foil is incredibly powerful refers to cardKingdomFoilId is not null AND cardKingdomId is not null; the percentage of incredibly powerful cards in the set refers to DIVIDE(SUM(incredibly powerful), SUM(name = 'Coldsnap'))*100",
+   "SQL": "SELECT CAST(SUM(CASE WHEN T1.cardKingdomFoilId IS NOT NULL AND T1.cardKingdomId IS NOT NULL THEN 1 ELSE 0 END) AS REAL) * 100 / COUNT(T1.id) FROM cards AS T1 INNER JOIN sets AS T2 ON T2.code = T1.setCode WHERE T2.name = 'Coldsnap'",
+   "difficulty": "challenging"
+  },
+  {
+   "question_id": 391,
+   "db_id": "card_games",
+   "question": "Among the Artifact cards, which are black color and comes with foreign languague translation?",
+   "evidence": "Artifact card refers to originalType = 'Artifact'; black color refers to colors = 'B'; foreign language refers to language in foreign_data",
+   "SQL": "SELECT DISTINCT T1.name FROM cards AS T1 INNER JOIN foreign_data AS T2 ON T1.uuid = T2.uuid WHERE T1.originalType = 'Artifact' AND T1.colors = 'B'",
+   "difficulty": "moderate"
+  },
+  {
+   "question_id": 528,
+   "db_id": "card_games",
+   "question": "List the names of all the cards in the set Hour of Devastation and find the formats in which these cards are legal.",
+   "evidence": "the set Hour of Devastation refers to set.name = 'Hour of Devastation'; names of all the cards in the set refers to cards.name; legal cards refers to status = 'Legal'; the formats refers to format",
+   "SQL": "SELECT DISTINCT T2.name , CASE WHEN T1.status = 'Legal' THEN T1.format ELSE NULL END FROM legalities AS T1 INNER JOIN cards AS T2 ON T2.uuid = T1.uuid WHERE T2.setCode IN ( SELECT code FROM sets WHERE name = 'Hour of Devastation' )",
+   "difficulty": "challenging"
+  }
+ ]
+}

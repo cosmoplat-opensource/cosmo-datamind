@@ -1,0 +1,166 @@
+[
+  {
+    "id": "constraint_label_binary_domain",
+    "target": "term_molecule_activity_label",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "label",
+      "activity",
+      "class",
+      "positive",
+      "negative",
+      "active",
+      "inactive",
+      "toxic",
+      "non-toxic",
+      "mutagenic",
+      "outcome",
+      "classification"
+    ],
+    "severity": "block",
+    "scope": "Applies whenever the molecule label is filtered, grouped, compared or interpreted",
+    "confidence": "high",
+    "description": "molecule.label takes exactly two observed values: '+' (152 molecules) and '-' (191 molecules). No row is NULL. The database contains no legend, code table, or documentation column explaining the two symbols, so the data alone does not establish which symbol denotes the positive/active class. Analytical output must treat the label as a two-valued class and must not assume the polarity of '+' or '-' from the symbol itself; if a question implies a positive or negative class, that mapping is an assumption to be stated explicitly.",
+    "evidence": [
+      "ev_002",
+      "ev_005"
+    ]
+  },
+  {
+    "id": "constraint_labeled_vs_compositional_molecules",
+    "target": "term_molecule",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "all molecules",
+      "total molecules",
+      "how many molecules",
+      "join",
+      "label coverage",
+      "missing label",
+      "unlabelled",
+      "count of molecules",
+      "molecule table"
+    ],
+    "severity": "block",
+    "scope": "Applies to any count of molecules or any join between structural tables and the molecule table",
+    "confidence": "high",
+    "description": "The atom and bond tables reference 444 distinct molecule identifiers while the molecule table contains only 343 rows. 101 molecule identifiers (examples TR003, TR005, TR013, TR016) appear in both atom and bond but have no molecule row, and they account for 3222 atom rows and 3223 bond rows. Consequently: counting molecules from the molecule table gives 343; counting distinct molecules from atom or bond gives 444; and any inner join from atom or bond to molecule silently drops those 101 molecules (25.0% of the molecules present in the structural tables). Unlabelled molecules have no activity class and cannot take part in class comparison.",
+    "evidence": [
+      "ev_008"
+    ]
+  },
+  {
+    "id": "constraint_connected_bidirectional",
+    "target": "term_atom_connectivity",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "connected",
+      "connectivity",
+      "adjacency",
+      "neighbours",
+      "neighbors",
+      "degree",
+      "number of bonds",
+      "bonded pairs",
+      "connection count"
+    ],
+    "severity": "block",
+    "scope": "Applies whenever connectivity entries are counted or traversed",
+    "confidence": "high",
+    "description": "The connected table stores every bond twice, once in each direction: 24758 rows for 12379 bonds, and every bond_id occurs exactly twice. Counting rows in connected therefore reports twice the number of bonds, and counting rows per atom counts each incident bond once per direction. To count bonds, use the bond table or deduplicate the adjacency entries; to count neighbours, count distinct neighbour values rather than rows.",
+    "evidence": [
+      "ev_009"
+    ]
+  },
+  {
+    "id": "constraint_bond_type_symbols",
+    "target": "term_bond_type",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "bond type",
+      "bond order",
+      "single bond",
+      "double bond",
+      "triple bond",
+      "unsaturation",
+      "bond_type",
+      "pi bond"
+    ],
+    "severity": "warning",
+    "scope": "Applies whenever bonds are filtered, grouped or interpreted by type",
+    "confidence": "medium",
+    "description": "bond.bond_type takes the symbols '-', '=', and '#', which are the conventional notations for single, double and triple bond order; the database itself provides no legend, so the bond-order reading is conventional notation rather than a value documented in the data. Observed totals are '-' 10528, '=' 1844, '#' 6. Exactly one bond row (bond_id TR345_7_10) has a NULL bond_type and is excluded by any filter on a specific type, so per-type counts do not sum to the full 12379 bonds.",
+    "evidence": [
+      "ev_004",
+      "ev_005"
+    ]
+  },
+  {
+    "id": "constraint_hydrogen_inclusion",
+    "target": "term_heavy_atom",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "heavy atom",
+      "hydrogen",
+      "non-hydrogen",
+      "molecular size",
+      "atom count",
+      "number of atoms",
+      "skeleton",
+      "molecular weight proxy"
+    ],
+    "severity": "warning",
+    "scope": "Applies to any measure of molecular size or composition expressed in atoms",
+    "confidence": "high",
+    "description": "Hydrogens are stored explicitly as atom rows and are the largest single group: 5518 of 12333 atoms (44.7%). Hydrogen-free heavy-atom counts are 6815. Any statement about molecule size, atom counts or element composition must state whether hydrogens are included; mixing the two bases can change a molecule's reported size by roughly a factor of two and changes class comparisons (heavy atoms: 2123 for '+' versus 2954 for '-', hydrogen atoms: 1569 versus 2465).",
+    "evidence": [
+      "ev_003",
+      "ev_012",
+      "ev_015"
+    ]
+  },
+  {
+    "id": "constraint_atoms_without_bonds",
+    "target": "term_atom",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "degree",
+      "isolated atom",
+      "unbonded atom",
+      "no bonds",
+      "neighbours",
+      "counterion",
+      "salt",
+      "connected to",
+      "valence"
+    ],
+    "severity": "warning",
+    "scope": "Applies to connectivity, degree and valence-style analysis over atoms",
+    "confidence": "high",
+    "description": "49 of 12333 atoms never appear in the connected table and therefore have no bonded neighbour: element 'na' 35 atoms, 'h' 7, 'cl' 5, 'zn' 1, 'k' 1. They occur in molecules that do contain bonds, so atom existence does not imply bondedness. Analyses that restrict to bonded atoms, or that assume every atom has degree at least one, will silently exclude these 49 rows; the elements involved suggest separate ionic species such as counterions rather than defects in the bond graph, but the database does not label them as such.",
+    "evidence": [
+      "ev_011",
+      "ev_009"
+    ]
+  },
+  {
+    "id": "constraint_identifier_prefix_convention",
+    "target": "term_atom",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "atom id",
+      "bond id",
+      "identifier",
+      "id format",
+      "molecule prefix",
+      "naming"
+    ],
+    "severity": "info",
+    "scope": "Applies when interpreting or parsing atom_id and bond_id values",
+    "confidence": "high",
+    "description": "Both component identifier columns embed their owning molecule: atom_id has the form <molecule_id>_<n> and bond_id has the form <molecule_id>_<n>_<m>. This holds for all 12333 atom rows and all 12379 bond rows, so the owning molecule can be recovered from an identifier without joining. The suffix integers are per-molecule sequence numbers, not positions meaningful on their own, and identifiers are not globally numeric.",
+    "evidence": [
+      "ev_007"
+    ]
+  }
+]

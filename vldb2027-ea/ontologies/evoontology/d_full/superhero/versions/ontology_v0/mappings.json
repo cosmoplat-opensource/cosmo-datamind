@@ -1,0 +1,222 @@
+[
+  {
+    "id": "map_superhero_entity",
+    "term_id": "term_superhero",
+    "database_source": "superhero",
+    "table": "superhero",
+    "column": "id",
+    "semantic_filter": "One row per distinct character record; no status or version column exists, so no filtering is needed to enumerate the catalogue.",
+    "aggregation_semantics": "Counting distinct superhero base rows yields the size of the catalogue.",
+    "grain": "one row per superhero",
+    "validation": "750 rows observed in superhero with ids spanning 1 to 756."
+  },
+  {
+    "id": "map_superhero_code_name",
+    "term_id": "term_superhero_code_name",
+    "database_source": "superhero",
+    "table": "superhero",
+    "column": "superhero_name",
+    "semantic_filter": "Always populated; no NULL, empty or dash placeholder was observed.",
+    "aggregation_semantics": "Counted as a distinct text label; the label is not unique and several characters share a code name.",
+    "grain": "one value per superhero",
+    "validation": "750 non-null values observed; repeated labels include Atlas appearing 4 times and Chameleon, Captain Marvel, Ares, Angel appearing twice each."
+  },
+  {
+    "id": "map_hero_full_name",
+    "term_id": "term_hero_full_name",
+    "database_source": "superhero",
+    "table": "superhero",
+    "column": "full_name",
+    "semantic_filter": "Useful only for rows whose value is neither SQL NULL nor the single-character dash placeholder.",
+    "aggregation_semantics": "Counted as a distinct text label; the value is not unique across heroes.",
+    "grain": "one value per superhero, frequently absent",
+    "validation": "750 rows: 122 NULL, 125 equal to '-' and 503 carrying an actual name."
+  },
+  {
+    "id": "map_hero_id_primary",
+    "term_id": "term_hero_id",
+    "database_source": "superhero",
+    "table": "superhero",
+    "column": "id",
+    "semantic_filter": "Authoritative definition of the hero identifier; it is the primary key of the catalogue.",
+    "aggregation_semantics": "Counted as distinct values for catalogue cardinality.",
+    "grain": "one value per superhero",
+    "validation": "750 distinct values observed within the range 1 to 756."
+  },
+  {
+    "id": "map_hero_id_attribute_ref",
+    "term_id": "term_hero_id",
+    "database_source": "superhero",
+    "table": "hero_attribute",
+    "column": "hero_id",
+    "semantic_filter": "Only meaningful when it matches an existing superhero.id; rows without a match would be orphan ratings.",
+    "aggregation_semantics": "Grouped to attach attribute ratings to the hero they belong to.",
+    "grain": "repeated once per attribute rating",
+    "validation": "All 3738 hero_attribute rows reference an existing superhero.id; no orphans were found."
+  },
+  {
+    "id": "map_hero_id_power_ref",
+    "term_id": "term_hero_id",
+    "database_source": "superhero",
+    "table": "hero_power",
+    "column": "hero_id",
+    "semantic_filter": "Only meaningful when it matches an existing superhero.id; rows without a match would be orphan power assignments.",
+    "aggregation_semantics": "Grouped to attach power assignments to the hero they belong to.",
+    "grain": "repeated once per assigned power",
+    "validation": "All 5825 hero_power rows reference an existing superhero.id; no orphans were found."
+  },
+  {
+    "id": "map_publisher",
+    "term_id": "term_publisher",
+    "database_source": "superhero",
+    "table": "publisher",
+    "column": "publisher_name",
+    "semantic_filter": "Row id 1 exists but carries an empty string rather than a real publisher name, and is referenced by 17 superheroes.",
+    "aggregation_semantics": "Used as the grouping label for roster counts; heroes whose publisher reference is missing must be grouped separately.",
+    "grain": "one row per publisher label",
+    "validation": "25 rows observed; the largest rosters are Marvel Comics 387 and DC Comics 224."
+  },
+  {
+    "id": "map_alignment",
+    "term_id": "term_alignment",
+    "database_source": "superhero",
+    "table": "alignment",
+    "column": "alignment",
+    "semantic_filter": "The four values are a closed list; the N/A entry denotes an unclassified character.",
+    "aggregation_semantics": "Used as a categorical grouping key; not additive.",
+    "grain": "one row per alignment value",
+    "validation": "4 rows observed: Good, Bad, Neutral, N/A."
+  },
+  {
+    "id": "map_gender",
+    "term_id": "term_gender",
+    "database_source": "superhero",
+    "table": "gender",
+    "column": "gender",
+    "semantic_filter": "The three values are a closed list; the N/A entry denotes an unrecorded gender.",
+    "aggregation_semantics": "Used as a categorical grouping key; not additive.",
+    "grain": "one row per gender value",
+    "validation": "3 rows observed: Male, Female, N/A."
+  },
+  {
+    "id": "map_race",
+    "term_id": "term_race",
+    "database_source": "superhero",
+    "table": "race",
+    "column": "race",
+    "semantic_filter": "The dash entry represents an unspecified race and must not be treated as a species label; a further 4 superheroes carry no race reference at all.",
+    "aggregation_semantics": "Used as a categorical grouping key; compound labels such as 'Human / Radiation' are distinct categories rather than members of a single Human group.",
+    "grain": "one row per race label",
+    "validation": "61 rows observed; largest groups are '-' 295, Human 219, Mutant 63."
+  },
+  {
+    "id": "map_colour_eye",
+    "term_id": "term_colour_value",
+    "database_source": "superhero",
+    "table": "superhero",
+    "column": "eye_colour_id",
+    "semantic_filter": "Always populated; the placeholder value 'No Colour' accounts for 169 heroes.",
+    "aggregation_semantics": "Counted as a categorical frequency over heroes.",
+    "grain": "one colour per superhero for the eye attribute",
+    "validation": "All 750 non-null values resolve to an existing colour row."
+  },
+  {
+    "id": "map_colour_hair",
+    "term_id": "term_colour_value",
+    "database_source": "superhero",
+    "table": "superhero",
+    "column": "hair_colour_id",
+    "semantic_filter": "Always populated; the placeholder value 'No Colour' accounts for 246 heroes.",
+    "aggregation_semantics": "Counted as a categorical frequency over heroes.",
+    "grain": "one colour per superhero for the hair attribute",
+    "validation": "All 750 non-null values resolve to an existing colour row; Blond 105 and Black 166 are the leading real colours."
+  },
+  {
+    "id": "map_colour_skin",
+    "term_id": "term_colour_value",
+    "database_source": "superhero",
+    "table": "superhero",
+    "column": "skin_colour_id",
+    "semantic_filter": "Always populated; the placeholder value 'No Colour' accounts for 681 heroes, making it the dominant value.",
+    "aggregation_semantics": "Counted as a categorical frequency over heroes.",
+    "grain": "one colour per superhero for the skin attribute",
+    "validation": "All 750 non-null values resolve to an existing colour row."
+  },
+  {
+    "id": "map_attribute_dimension",
+    "term_id": "term_attribute_dimension",
+    "database_source": "superhero",
+    "table": "attribute",
+    "column": "attribute_name",
+    "semantic_filter": "A closed list of exactly six dimensions.",
+    "aggregation_semantics": "Used to label and pivot the numeric ratings; not additive.",
+    "grain": "one row per attribute dimension",
+    "validation": "6 rows observed: Intelligence, Strength, Speed, Durability, Power, Combat."
+  },
+  {
+    "id": "map_hero_attribute_score",
+    "term_id": "term_hero_attribute_score",
+    "database_source": "superhero",
+    "table": "hero_attribute",
+    "column": "attribute_value",
+    "semantic_filter": "Only defined for heroes that have rating rows; the referenced hero and attribute must both exist.",
+    "aggregation_semantics": "Averaged or compared across a chosen set of heroes for one dimension at a time; the six dimensions are separate scales and should not be summed into a single score without an explicit business definition.",
+    "grain": "one score per superhero per attribute dimension",
+    "validation": "3738 rows observed across 623 heroes, each with exactly 6 dimension rows; values span 5 to 100."
+  },
+  {
+    "id": "map_hero_height",
+    "term_id": "term_hero_height",
+    "database_source": "superhero",
+    "table": "superhero",
+    "column": "height_cm",
+    "semantic_filter": "Only rows with a strictly positive value represent a recorded height; zero is a placeholder for unrecorded height.",
+    "aggregation_semantics": "Averaged across the heroes that carry a real measurement; zero and implausible extremes must be excluded first.",
+    "grain": "one value per superhero, frequently a placeholder",
+    "validation": "750 rows: 58 NULL, 155 zero and 537 positive; positive values span 61 to 30480."
+  },
+  {
+    "id": "map_hero_weight",
+    "term_id": "term_hero_weight",
+    "database_source": "superhero",
+    "table": "superhero",
+    "column": "weight_kg",
+    "semantic_filter": "Only rows with a strictly positive value represent a recorded weight; zero is a placeholder for unrecorded weight.",
+    "aggregation_semantics": "Averaged across the heroes that carry a real measurement; zero and implausible extremes must be excluded first.",
+    "grain": "one value per superhero, frequently a placeholder",
+    "validation": "750 rows: 64 NULL, 172 zero and 514 positive; positive values span 14 to 90000000."
+  },
+  {
+    "id": "map_superpower",
+    "term_id": "term_superpower",
+    "database_source": "superhero",
+    "table": "superpower",
+    "column": "power_name",
+    "semantic_filter": "A reference list of distinct ability labels; labels are unique within the list.",
+    "aggregation_semantics": "Counted as a categorical frequency over the hero-to-power association.",
+    "grain": "one row per distinct superpower",
+    "validation": "167 rows observed with no duplicate power names."
+  },
+  {
+    "id": "map_hero_power_count",
+    "term_id": "term_hero_power_count",
+    "database_source": "superhero",
+    "table": "hero_power",
+    "column": "power_id",
+    "semantic_filter": "Counted per hero over the association rows; heroes absent from this table have no recorded powers rather than a count of zero.",
+    "aggregation_semantics": "Derived by counting distinct powers assigned to one hero.",
+    "grain": "one derived value per superhero",
+    "validation": "5825 association rows across 652 heroes; per-hero counts span 1 to 49 with a mean of about 8.93."
+  },
+  {
+    "id": "map_publisher_roster_size",
+    "term_id": "term_publisher_roster_size",
+    "database_source": "superhero",
+    "table": "superhero",
+    "column": "publisher_id",
+    "semantic_filter": "Counted by grouping superhero records on their publisher reference; records with a missing reference form a separate group instead of being dropped silently.",
+    "aggregation_semantics": "Derived by counting superhero records attributed to one publisher.",
+    "grain": "one derived value per publisher",
+    "validation": "Marvel Comics 387, DC Comics 224, NBC - Heroes 19, Dark Horse Comics 19, unnamed publisher 17, plus 3 records with no publisher reference."
+  }
+]

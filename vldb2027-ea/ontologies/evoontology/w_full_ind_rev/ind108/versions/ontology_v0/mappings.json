@@ -1,0 +1,1641 @@
+[
+  {
+    "id": "map_employee_name",
+    "term_id": "term_employee",
+    "database_source": "ind108",
+    "table": "dim_employee",
+    "column": "emp_name",
+    "semantic_filter": "",
+    "aggregation_semantics": "按 emp_id 或 emp_name 分组计数，或作为业务员维度关联事实表汇总",
+    "grain": "一行一个员工",
+    "validation": "dim_employee 主键 emp_id，emp_name 非空",
+    "evidence_refs": [
+      "ev_employee_status"
+    ]
+  },
+  {
+    "id": "map_employee_status",
+    "term_id": "term_employee",
+    "database_source": "ind108",
+    "table": "dim_employee",
+    "column": "status",
+    "semantic_filter": "status='active' 表示在职员工，'inactive' 表示离职",
+    "aggregation_semantics": "",
+    "grain": "员工行级",
+    "validation": "取值仅 active 与 inactive",
+    "evidence_refs": [
+      "ev_employee_status"
+    ]
+  },
+  {
+    "id": "map_department_name",
+    "term_id": "term_department",
+    "database_source": "ind108",
+    "table": "dim_department",
+    "column": "dept_name",
+    "semantic_filter": "",
+    "aggregation_semantics": "按部门分组计数或汇总",
+    "grain": "一行一个部门",
+    "validation": "共 17 个部门",
+    "evidence_refs": [
+      "ev_region_department"
+    ]
+  },
+  {
+    "id": "map_department_region",
+    "term_id": "term_department",
+    "database_source": "ind108",
+    "table": "dim_department",
+    "column": "region_id",
+    "semantic_filter": "只有 6 个销售部门带非空 region_id，职能部门的 region_id 为空",
+    "aggregation_semantics": "",
+    "grain": "部门行级",
+    "validation": "6 个销售部门各关联 1 个区域",
+    "evidence_refs": [
+      "ev_region_department"
+    ]
+  },
+  {
+    "id": "map_region_name",
+    "term_id": "term_region",
+    "database_source": "ind108",
+    "table": "dim_region",
+    "column": "region_name",
+    "semantic_filter": "",
+    "aggregation_semantics": "按区域分组计数或汇总",
+    "grain": "一行一个区域",
+    "validation": "6 个区域",
+    "evidence_refs": [
+      "ev_region_department"
+    ]
+  },
+  {
+    "id": "map_customer_name",
+    "term_id": "term_customer",
+    "database_source": "ind108",
+    "table": "dim_customer",
+    "column": "cust_name",
+    "semantic_filter": "",
+    "aggregation_semantics": "按客户汇总业务金额、数量或记录数",
+    "grain": "一行一个客户",
+    "validation": "cust_id 为主键",
+    "evidence_refs": [
+      "ev_customer_status"
+    ]
+  },
+  {
+    "id": "map_customer_status",
+    "term_id": "term_customer",
+    "database_source": "ind108",
+    "table": "dim_customer",
+    "column": "status",
+    "semantic_filter": "active/dormant/lost",
+    "aggregation_semantics": "",
+    "grain": "客户行级",
+    "validation": "观测到 active=22、dormant=1、lost=2",
+    "evidence_refs": [
+      "ev_customer_status"
+    ]
+  },
+  {
+    "id": "map_customer_last_deal",
+    "term_id": "term_customer",
+    "database_source": "ind108",
+    "table": "dim_customer",
+    "column": "last_deal_date",
+    "semantic_filter": "最近交易日期，可作为客户筛选条件",
+    "aggregation_semantics": "",
+    "grain": "客户行级",
+    "validation": "日期列，存在具体取值如 2025-09-24",
+    "evidence_refs": [
+      "ev_customer_status"
+    ]
+  },
+  {
+    "id": "map_supplier_name",
+    "term_id": "term_supplier",
+    "database_source": "ind108",
+    "table": "dim_supplier",
+    "column": "supplier_name",
+    "semantic_filter": "",
+    "aggregation_semantics": "按供应商汇总评估综合评分、采购金额或应付账款",
+    "grain": "一行一个供应商",
+    "validation": "supplier_id 为主键",
+    "evidence_refs": [
+      "ev_supplier_category"
+    ]
+  },
+  {
+    "id": "map_supplier_city",
+    "term_id": "term_supplier",
+    "database_source": "ind108",
+    "table": "dim_supplier",
+    "column": "city",
+    "semantic_filter": "供应商所在城市，如 海城",
+    "aggregation_semantics": "",
+    "grain": "供应商行级",
+    "validation": "每个城市各 1 个供应商",
+    "evidence_refs": [
+      "ev_supplier_category"
+    ]
+  },
+  {
+    "id": "map_supplier_category_name",
+    "term_id": "term_supplier_category",
+    "database_source": "ind108",
+    "table": "dim_supplier_category",
+    "column": "category_name",
+    "semantic_filter": "两级类别，二级如 工程塑料树脂",
+    "aggregation_semantics": "按类别分组统计下游供应商数据",
+    "grain": "一行一个类别",
+    "validation": "共 8 条类别(4 个一级、4 个二级)",
+    "evidence_refs": [
+      "ev_supplier_category"
+    ]
+  },
+  {
+    "id": "map_material_name",
+    "term_id": "term_material",
+    "database_source": "ind108",
+    "table": "dim_material",
+    "column": "material_name",
+    "semantic_filter": "",
+    "aggregation_semantics": "按物料汇总采购金额或已收货数量",
+    "grain": "一行一个物料",
+    "validation": "material_id 为主键",
+    "evidence_refs": [
+      "ev_po_line_material"
+    ]
+  },
+  {
+    "id": "map_product_name",
+    "term_id": "term_product",
+    "database_source": "ind108",
+    "table": "dim_product",
+    "column": "prod_name",
+    "semantic_filter": "",
+    "aggregation_semantics": "按产品汇总成本、销量或金额",
+    "grain": "一行一个产品",
+    "validation": "prod_id 为主键",
+    "evidence_refs": [
+      "ev_product_cost"
+    ]
+  },
+  {
+    "id": "map_product_line_name",
+    "term_id": "term_product_line",
+    "database_source": "ind108",
+    "table": "dim_product_line",
+    "column": "prod_line_name",
+    "semantic_filter": "",
+    "aggregation_semantics": "按产品线分组汇总",
+    "grain": "一行一个产品线",
+    "validation": "4 个产品线",
+    "evidence_refs": [
+      "ev_product_line"
+    ]
+  },
+  {
+    "id": "map_production_line_name",
+    "term_id": "term_production_line",
+    "database_source": "ind108",
+    "table": "dim_production_line",
+    "column": "line_name",
+    "semantic_filter": "",
+    "aggregation_semantics": "按产线汇总能耗、停机、工单运行时长等",
+    "grain": "一行一条产线",
+    "validation": "12 条产线",
+    "evidence_refs": [
+      "ev_line_workshop"
+    ]
+  },
+  {
+    "id": "map_workshop_name",
+    "term_id": "term_workshop",
+    "database_source": "ind108",
+    "table": "dim_workshop",
+    "column": "workshop_name",
+    "semantic_filter": "",
+    "aggregation_semantics": "按车间汇总事故、审计或能耗",
+    "grain": "一行一个车间",
+    "validation": "5 个车间",
+    "evidence_refs": [
+      "ev_line_workshop"
+    ]
+  },
+  {
+    "id": "map_equipment_name",
+    "term_id": "term_equipment",
+    "database_source": "ind108",
+    "table": "dim_equipment",
+    "column": "equipment_name",
+    "semantic_filter": "",
+    "aggregation_semantics": "按设备汇总告警数、维护工时或维护费用",
+    "grain": "一行一台设备",
+    "validation": "equipment_id 为主键",
+    "evidence_refs": [
+      "ev_equipment_manufacturer"
+    ]
+  },
+  {
+    "id": "map_equipment_manufacturer",
+    "term_id": "term_equipment",
+    "database_source": "ind108",
+    "table": "dim_equipment",
+    "column": "manufacturer",
+    "semantic_filter": "设备制造商，如 示例机械D、示例机械F",
+    "aggregation_semantics": "按制造商汇总其设备的维护工时或维护费用",
+    "grain": "设备行级",
+    "validation": "6 个制造商(A=12,B=12,C=12,D=12,E=7,F=5)",
+    "evidence_refs": [
+      "ev_equipment_manufacturer"
+    ]
+  },
+  {
+    "id": "map_cost_center_name",
+    "term_id": "term_cost_center",
+    "database_source": "ind108",
+    "table": "dim_cost_center",
+    "column": "cc_name",
+    "semantic_filter": "",
+    "aggregation_semantics": "按成本中心汇总预算金额",
+    "grain": "一行一个成本中心",
+    "validation": "cc_id 为主键",
+    "evidence_refs": [
+      "ev_budget_cost_center"
+    ]
+  },
+  {
+    "id": "map_fixed_asset_name",
+    "term_id": "term_fixed_asset",
+    "database_source": "ind108",
+    "table": "dim_fixed_asset",
+    "column": "asset_name",
+    "semantic_filter": "",
+    "aggregation_semantics": "按资产取累计折旧最大者对应的名称",
+    "grain": "一行一张资产卡",
+    "validation": "69 行资产卡",
+    "evidence_refs": [
+      "ev_fixed_asset"
+    ]
+  },
+  {
+    "id": "map_fixed_asset_accum_dep",
+    "term_id": "term_fixed_asset",
+    "database_source": "ind108",
+    "table": "dim_fixed_asset",
+    "column": "accumulated_dep",
+    "semantic_filter": "",
+    "aggregation_semantics": "资产卡片上的累计折旧金额，可与其他资产比较取最大值",
+    "grain": "资产卡行级",
+    "validation": "最大值 51,870,000 元",
+    "evidence_refs": [
+      "ev_fixed_asset"
+    ]
+  },
+  {
+    "id": "map_hazard_name",
+    "term_id": "term_hazard",
+    "database_source": "ind108",
+    "table": "dim_hazard",
+    "column": "hazard_name",
+    "semantic_filter": "",
+    "aggregation_semantics": "按危险源汇总风险评估",
+    "grain": "一行一个危险源",
+    "validation": "hazard_id 为主键",
+    "evidence_refs": [
+      "ev_hazard_location"
+    ]
+  },
+  {
+    "id": "map_hazard_location",
+    "term_id": "term_hazard",
+    "database_source": "ind108",
+    "table": "dim_hazard",
+    "column": "location",
+    "semantic_filter": "危险源位置文本，如 PP改性车间挤出区",
+    "aggregation_semantics": "",
+    "grain": "危险源行级",
+    "validation": "8 个不同位置，PP改性车间挤出区有 2 个危险源",
+    "evidence_refs": [
+      "ev_hazard_location"
+    ]
+  },
+  {
+    "id": "map_downtime_reason_name",
+    "term_id": "term_downtime_reason",
+    "database_source": "ind108",
+    "table": "dim_downtime_reason",
+    "column": "reason_name",
+    "semantic_filter": "",
+    "aggregation_semantics": "按停机原因名称分组统计停机次数或时长",
+    "grain": "一行一个停机原因",
+    "validation": "8 条原因字典",
+    "evidence_refs": [
+      "ev_downtime_reason"
+    ]
+  },
+  {
+    "id": "map_sales_order_amount",
+    "term_id": "term_sales_order",
+    "database_source": "ind108",
+    "table": "fact_sales_order",
+    "column": "amount",
+    "semantic_filter": "",
+    "aggregation_semantics": "按维度汇总销售金额(元)",
+    "grain": "一行一张销售订单",
+    "validation": "order_id 为主键",
+    "evidence_refs": [
+      "ev_sales_order_status"
+    ]
+  },
+  {
+    "id": "map_sales_order_status",
+    "term_id": "term_sales_order",
+    "database_source": "ind108",
+    "table": "fact_sales_order",
+    "column": "status",
+    "semantic_filter": "delivered=已交付 / undelivered=未交付 / returned=已退货",
+    "aggregation_semantics": "按订单状态分组计数",
+    "grain": "订单行级",
+    "validation": "delivered=4576、undelivered=152、returned=3",
+    "evidence_refs": [
+      "ev_sales_order_status"
+    ]
+  },
+  {
+    "id": "map_sales_order_order_date",
+    "term_id": "term_sales_order",
+    "database_source": "ind108",
+    "table": "fact_sales_order",
+    "column": "order_date",
+    "semantic_filter": "下单日期，年度筛选依据",
+    "aggregation_semantics": "",
+    "grain": "订单行级",
+    "validation": "覆盖 2025-01-02 至 2026-06-30",
+    "evidence_refs": [
+      "ev_date_coverage"
+    ]
+  },
+  {
+    "id": "map_delivery_amount",
+    "term_id": "term_delivery",
+    "database_source": "ind108",
+    "table": "fact_delivery",
+    "column": "amount",
+    "semantic_filter": "",
+    "aggregation_semantics": "按销售订单状态等维度汇总发货金额(元)",
+    "grain": "一行一张交货单",
+    "validation": "按订单状态汇总：delivered 2,088,825,972.1 元",
+    "evidence_refs": [
+      "ev_delivery_linkage"
+    ]
+  },
+  {
+    "id": "map_delivery_quantity",
+    "term_id": "term_delivery",
+    "database_source": "ind108",
+    "table": "fact_delivery",
+    "column": "quantity",
+    "semantic_filter": "",
+    "aggregation_semantics": "按维度汇总发货数量(吨)",
+    "grain": "交货单行级",
+    "validation": "quantity 为吨",
+    "evidence_refs": [
+      "ev_delivery_linkage"
+    ]
+  },
+  {
+    "id": "map_quotation_unit_price",
+    "term_id": "term_quotation",
+    "database_source": "ind108",
+    "table": "fact_quotation",
+    "column": "unit_price",
+    "semantic_filter": "",
+    "aggregation_semantics": "按报价单集合求单价平均",
+    "grain": "一行一张报价单",
+    "validation": "unit_price 为元/吨",
+    "evidence_refs": [
+      "ev_quotation_status"
+    ]
+  },
+  {
+    "id": "map_quotation_status",
+    "term_id": "term_quotation",
+    "database_source": "ind108",
+    "table": "fact_quotation",
+    "column": "status",
+    "semantic_filter": "draft=草稿 / won / lost",
+    "aggregation_semantics": "按报价单状态分组计数",
+    "grain": "报价单行级",
+    "validation": "won=357、lost=113、draft=6",
+    "evidence_refs": [
+      "ev_quotation_status"
+    ]
+  },
+  {
+    "id": "map_quotation_date",
+    "term_id": "term_quotation",
+    "database_source": "ind108",
+    "table": "fact_quotation",
+    "column": "quotation_date",
+    "semantic_filter": "报价日期，年度筛选依据",
+    "aggregation_semantics": "",
+    "grain": "报价单行级",
+    "validation": "覆盖 2025-01-01 至 2026-06-26",
+    "evidence_refs": [
+      "ev_date_coverage"
+    ]
+  },
+  {
+    "id": "map_return_reason",
+    "term_id": "term_return",
+    "database_source": "ind108",
+    "table": "fact_return",
+    "column": "reason",
+    "semantic_filter": "文本退货原因，如 客户订单变更取消",
+    "aggregation_semantics": "按退货原因分组计数",
+    "grain": "一行一张退货单",
+    "validation": "5 类原因，客户订单变更取消=12",
+    "evidence_refs": [
+      "ev_return_reason"
+    ]
+  },
+  {
+    "id": "map_receipt_amount",
+    "term_id": "term_receipt",
+    "database_source": "ind108",
+    "table": "fact_payment",
+    "column": "amount",
+    "semantic_filter": "",
+    "aggregation_semantics": "按维度汇总回款金额(元)",
+    "grain": "一行一次回款",
+    "validation": "payment_id 为主键",
+    "evidence_refs": [
+      "ev_receipt_payment_type"
+    ]
+  },
+  {
+    "id": "map_receipt_payment_type",
+    "term_id": "term_receipt",
+    "database_source": "ind108",
+    "table": "fact_payment",
+    "column": "payment_type",
+    "semantic_filter": "仅取值为 电汇 或 银承",
+    "aggregation_semantics": "按收款方式分组统计收款的笔数",
+    "grain": "回款行级",
+    "validation": "电汇=3239、银承=1705",
+    "evidence_refs": [
+      "ev_receipt_payment_type"
+    ]
+  },
+  {
+    "id": "map_receipt_payment_date",
+    "term_id": "term_receipt",
+    "database_source": "ind108",
+    "table": "fact_payment",
+    "column": "payment_date",
+    "semantic_filter": "回款日期，年度筛选依据",
+    "aggregation_semantics": "",
+    "grain": "回款行级",
+    "validation": "覆盖 2025-02-09 至 2026-06-30",
+    "evidence_refs": [
+      "ev_date_coverage"
+    ]
+  },
+  {
+    "id": "map_payment_out_amount",
+    "term_id": "term_payment_out",
+    "database_source": "ind108",
+    "table": "fact_payment_out",
+    "column": "amount",
+    "semantic_filter": "",
+    "aggregation_semantics": "按维度汇总对外付款金额(元)",
+    "grain": "一行一次付款",
+    "validation": "共 879 行",
+    "evidence_refs": [
+      "ev_payment_out_accounts"
+    ]
+  },
+  {
+    "id": "map_payment_out_bank_account",
+    "term_id": "term_payment_out",
+    "database_source": "ind108",
+    "table": "fact_payment_out",
+    "column": "bank_account",
+    "semantic_filter": "银行账号取值 SYN-ACCOUNT-0001 至 SYN-ACCOUNT-0011",
+    "aggregation_semantics": "按银行账号分组统计付款笔数",
+    "grain": "付款行级",
+    "validation": "11 个银行账号，SYN-ACCOUNT-0011 有 72 笔",
+    "evidence_refs": [
+      "ev_payment_out_accounts"
+    ]
+  },
+  {
+    "id": "map_payment_out_method",
+    "term_id": "term_payment_out",
+    "database_source": "ind108",
+    "table": "fact_payment_out",
+    "column": "payment_method",
+    "semantic_filter": "bank_transfer / letter_of_credit",
+    "aggregation_semantics": "",
+    "grain": "付款行级",
+    "validation": "仅两个取值",
+    "evidence_refs": [
+      "ev_payment_out_accounts"
+    ]
+  },
+  {
+    "id": "map_ar_aging_balance",
+    "term_id": "term_ar_aging",
+    "database_source": "ind108",
+    "table": "fact_ar_aging",
+    "column": "balance_amount",
+    "semantic_filter": "",
+    "aggregation_semantics": "按客户或业务员汇总未清余额",
+    "grain": "一行一条应收",
+    "validation": "ar_id 为主键",
+    "evidence_refs": [
+      "ev_ar_aging_columns"
+    ]
+  },
+  {
+    "id": "map_ar_aging_band_3_4m",
+    "term_id": "term_ar_aging",
+    "database_source": "ind108",
+    "table": "fact_ar_aging",
+    "column": "aging_4m",
+    "semantic_filter": "列名后缀 4m 表示账龄 3-4 个月区间",
+    "aggregation_semantics": "按业务员汇总该账龄区间金额并比较大小",
+    "grain": "应收行级",
+    "validation": "最大单行 1,129,610.1 元",
+    "evidence_refs": [
+      "ev_ar_aging_columns"
+    ]
+  },
+  {
+    "id": "map_ar_aging_band_1m",
+    "term_id": "term_ar_aging",
+    "database_source": "ind108",
+    "table": "fact_ar_aging",
+    "column": "aging_1m",
+    "semantic_filter": "1 个月以内",
+    "aggregation_semantics": "按维度汇总该账龄区间金额",
+    "grain": "应收行级",
+    "validation": "分段列存在",
+    "evidence_refs": [
+      "ev_ar_aging_columns"
+    ]
+  },
+  {
+    "id": "map_ar_aging_band_12m_plus",
+    "term_id": "term_ar_aging",
+    "database_source": "ind108",
+    "table": "fact_ar_aging",
+    "column": "aging_12m_plus",
+    "semantic_filter": "12 个月以上",
+    "aggregation_semantics": "按维度汇总该账龄区间金额",
+    "grain": "应收行级",
+    "validation": "分段列存在",
+    "evidence_refs": [
+      "ev_ar_aging_columns"
+    ]
+  },
+  {
+    "id": "map_turnover_target",
+    "term_id": "term_payment_turnover_target",
+    "database_source": "ind108",
+    "table": "fact_payment_target",
+    "column": "turnover_rate_target",
+    "semantic_filter": "",
+    "aggregation_semantics": "按业务员汇总目标值后比较大小",
+    "grain": "一行一个业务员年度目标",
+    "validation": "emp_id 关联 dim_employee",
+    "evidence_refs": [
+      "ev_payment_target"
+    ]
+  },
+  {
+    "id": "map_gross_profit_actual",
+    "term_id": "term_gross_profit_actual",
+    "database_source": "ind108",
+    "table": "fact_sales_order",
+    "column": "gross_profit_actual",
+    "semantic_filter": "实际毛利，区别于按标准成本计算的销售毛利",
+    "aggregation_semantics": "按订单集合求平均实际毛利",
+    "grain": "订单行级",
+    "validation": "与 gross_profit_standard 并存",
+    "evidence_refs": [
+      "ev_gross_profit_columns"
+    ]
+  },
+  {
+    "id": "map_opportunity_estimated_amount",
+    "term_id": "term_opportunity",
+    "database_source": "ind108",
+    "table": "fact_opportunity",
+    "column": "estimated_amount",
+    "semantic_filter": "",
+    "aggregation_semantics": "按客户或业务员汇总商机预估金额(元)",
+    "grain": "一行一个商机",
+    "validation": "opp_id 为主键",
+    "evidence_refs": [
+      "ev_opportunity_status"
+    ]
+  },
+  {
+    "id": "map_opportunity_estimated_quantity",
+    "term_id": "term_opportunity",
+    "database_source": "ind108",
+    "table": "fact_opportunity",
+    "column": "estimated_quantity",
+    "semantic_filter": "",
+    "aggregation_semantics": "按业务员汇总商机预估销量(吨)",
+    "grain": "商机行级",
+    "validation": "汇总后业务员 1 为 3884.2 吨",
+    "evidence_refs": [
+      "ev_opportunity_status"
+    ]
+  },
+  {
+    "id": "map_opportunity_status",
+    "term_id": "term_opportunity",
+    "database_source": "ind108",
+    "table": "fact_opportunity",
+    "column": "status",
+    "semantic_filter": "open/won/lost/stalled",
+    "aggregation_semantics": "按商机状态分组计数",
+    "grain": "商机行级",
+    "validation": "won=36、open=22、lost=20、stalled=6",
+    "evidence_refs": [
+      "ev_opportunity_status"
+    ]
+  },
+  {
+    "id": "map_opportunity_close_date",
+    "term_id": "term_opportunity",
+    "database_source": "ind108",
+    "table": "fact_opportunity",
+    "column": "close_date",
+    "semantic_filter": "关闭日期，'某年关闭的商机'的筛选依据",
+    "aggregation_semantics": "",
+    "grain": "商机行级",
+    "validation": "覆盖 2025-03-13 至 2026-06-27",
+    "evidence_refs": [
+      "ev_date_coverage"
+    ]
+  },
+  {
+    "id": "map_sample_is_success",
+    "term_id": "term_sample",
+    "database_source": "ind108",
+    "table": "fact_sample",
+    "column": "is_success",
+    "semantic_filter": "1=送样成功",
+    "aggregation_semantics": "对送样成功的标识求和或计数",
+    "grain": "一行一次送样",
+    "validation": "is_success=1 共 20 条",
+    "evidence_refs": [
+      "ev_sample_feedback"
+    ]
+  },
+  {
+    "id": "map_sample_feedback_result",
+    "term_id": "term_sample",
+    "database_source": "ind108",
+    "table": "fact_sample",
+    "column": "feedback_result",
+    "semantic_filter": "success/fail/空值表示未反馈",
+    "aggregation_semantics": "按反馈结果分组计数",
+    "grain": "送样行级",
+    "validation": "success=20、fail=22、空=8",
+    "evidence_refs": [
+      "ev_sample_feedback"
+    ]
+  },
+  {
+    "id": "map_sample_feedback_date",
+    "term_id": "term_sample",
+    "database_source": "ind108",
+    "table": "fact_sample",
+    "column": "feedback_date",
+    "semantic_filter": "反馈日期，'某年反馈的送样'的筛选依据",
+    "aggregation_semantics": "",
+    "grain": "送样行级",
+    "validation": "日期列，可为空表示未反馈",
+    "evidence_refs": [
+      "ev_date_coverage"
+    ]
+  },
+  {
+    "id": "map_expense_amount",
+    "term_id": "term_expense",
+    "database_source": "ind108",
+    "table": "fact_expense",
+    "column": "amount",
+    "semantic_filter": "",
+    "aggregation_semantics": "按业务员或部门汇总费用金额(元)",
+    "grain": "一行一笔费用",
+    "validation": "expense_id 为主键",
+    "evidence_refs": [
+      "ev_expense_type"
+    ]
+  },
+  {
+    "id": "map_expense_type",
+    "term_id": "term_expense",
+    "database_source": "ind108",
+    "table": "fact_expense",
+    "column": "expense_type",
+    "semantic_filter": "8 类费用类型",
+    "aggregation_semantics": "按费用类型分组统计笔数",
+    "grain": "费用行级",
+    "validation": "渠道佣金=259 笔",
+    "evidence_refs": [
+      "ev_expense_type"
+    ]
+  },
+  {
+    "id": "map_expense_budget_amount",
+    "term_id": "term_expense_budget",
+    "database_source": "ind108",
+    "table": "fact_budget_expense",
+    "column": "budget_amount",
+    "semantic_filter": "",
+    "aggregation_semantics": "按部门分组统计预算记录数或汇总预算金额",
+    "grain": "一行一个部门×月",
+    "validation": "每个区域 18 条记录",
+    "evidence_refs": [
+      "ev_cost_dept_region_rows"
+    ]
+  },
+  {
+    "id": "map_budget_amount",
+    "term_id": "term_budget",
+    "database_source": "ind108",
+    "table": "fact_budget",
+    "column": "budget_amount",
+    "semantic_filter": "",
+    "aggregation_semantics": "按成本中心汇总预算金额(元)",
+    "grain": "一行一个成本中心×年月",
+    "validation": "成本中心 1 合计 35,190,100 元",
+    "evidence_refs": [
+      "ev_budget_cost_center"
+    ]
+  },
+  {
+    "id": "map_product_cost_material",
+    "term_id": "term_product_cost",
+    "database_source": "ind108",
+    "table": "fact_product_cost",
+    "column": "material_cost",
+    "semantic_filter": "",
+    "aggregation_semantics": "按产品汇总材料成本(元)",
+    "grain": "一行一个产品×批次×期间",
+    "validation": "产品 10 合计 273,135,300.2 元",
+    "evidence_refs": [
+      "ev_product_cost"
+    ]
+  },
+  {
+    "id": "map_product_cost_total",
+    "term_id": "term_product_cost",
+    "database_source": "ind108",
+    "table": "fact_product_cost",
+    "column": "total_cost",
+    "semantic_filter": "",
+    "aggregation_semantics": "按产品汇总产品总成本(元)",
+    "grain": "产品×批次×期间",
+    "validation": "cost_id 为主键",
+    "evidence_refs": [
+      "ev_product_cost"
+    ]
+  },
+  {
+    "id": "map_depreciation_accum",
+    "term_id": "term_depreciation",
+    "database_source": "ind108",
+    "table": "fact_depreciation",
+    "column": "accumulated_dep",
+    "semantic_filter": "按期间的累计折旧",
+    "aggregation_semantics": "按资产取期间的累计折旧",
+    "grain": "一行一个资产×期间",
+    "validation": "dep_id 为主键",
+    "evidence_refs": [
+      "ev_fixed_asset"
+    ]
+  },
+  {
+    "id": "map_po_payment_terms",
+    "term_id": "term_purchase_order",
+    "database_source": "ind108",
+    "table": "fact_purchase_order",
+    "column": "payment_terms",
+    "semantic_filter": "月结30天/月结45天/月结60天",
+    "aggregation_semantics": "按付款条件分组汇总采购订单总金额",
+    "grain": "一行一张采购订单",
+    "validation": "月结45天 closed=275、received=42、confirmed=5",
+    "evidence_refs": [
+      "ev_po_terms_status"
+    ]
+  },
+  {
+    "id": "map_po_total_amount",
+    "term_id": "term_purchase_order",
+    "database_source": "ind108",
+    "table": "fact_purchase_order",
+    "column": "total_amount",
+    "semantic_filter": "",
+    "aggregation_semantics": "按筛选条件汇总采购订单总金额(元)",
+    "grain": "采购订单行级",
+    "validation": "total_amount 为元",
+    "evidence_refs": [
+      "ev_po_terms_status"
+    ]
+  },
+  {
+    "id": "map_po_status",
+    "term_id": "term_purchase_order",
+    "database_source": "ind108",
+    "table": "fact_purchase_order",
+    "column": "status",
+    "semantic_filter": "draft/confirmed/received/closed",
+    "aggregation_semantics": "按状态分组计数或作为下游订单行的过滤条件",
+    "grain": "采购订单行级",
+    "validation": "received 状态共 108 张",
+    "evidence_refs": [
+      "ev_po_terms_status"
+    ]
+  },
+  {
+    "id": "map_po_line_unit_price",
+    "term_id": "term_po_line",
+    "database_source": "ind108",
+    "table": "fact_po_line",
+    "column": "unit_price",
+    "semantic_filter": "",
+    "aggregation_semantics": "按筛选后的采购订单汇总订单行单价",
+    "grain": "一行一条订单行",
+    "validation": "line_id 为主键",
+    "evidence_refs": [
+      "ev_po_line_material"
+    ]
+  },
+  {
+    "id": "map_po_line_amount",
+    "term_id": "term_po_line",
+    "database_source": "ind108",
+    "table": "fact_po_line",
+    "column": "amount",
+    "semantic_filter": "",
+    "aggregation_semantics": "按物料汇总采购金额(元)",
+    "grain": "订单行级",
+    "validation": "物料 5 合计 228,196,379.4 元",
+    "evidence_refs": [
+      "ev_po_line_material"
+    ]
+  },
+  {
+    "id": "map_po_line_received_qty",
+    "term_id": "term_po_line",
+    "database_source": "ind108",
+    "table": "fact_po_line",
+    "column": "received_qty",
+    "semantic_filter": "",
+    "aggregation_semantics": "按物料汇总已收货数量后比较大小",
+    "grain": "订单行级",
+    "validation": "物料 1 合计 24845.0",
+    "evidence_refs": [
+      "ev_po_line_material"
+    ]
+  },
+  {
+    "id": "map_gr_inspection_result",
+    "term_id": "term_goods_receipt",
+    "database_source": "ind108",
+    "table": "fact_goods_receipt",
+    "column": "inspection_result",
+    "semantic_filter": "pass/fail/pending",
+    "aggregation_semantics": "按检验结果筛选收货单，再向上关联应付与付款",
+    "grain": "一行一张收货单",
+    "validation": "pass=1001、fail=16",
+    "evidence_refs": [
+      "ev_gr_inspection"
+    ]
+  },
+  {
+    "id": "map_ap_amount",
+    "term_id": "term_ap",
+    "database_source": "ind108",
+    "table": "fact_ap",
+    "column": "amount",
+    "semantic_filter": "",
+    "aggregation_semantics": "对应付金额求平均或合计",
+    "grain": "一行一条应付账款",
+    "validation": "共 1001 行",
+    "evidence_refs": [
+      "ev_ap_paymentout_linkage"
+    ]
+  },
+  {
+    "id": "map_ap_status",
+    "term_id": "term_ap",
+    "database_source": "ind108",
+    "table": "fact_ap",
+    "column": "status",
+    "semantic_filter": "open=未结 / closed=已关闭",
+    "aggregation_semantics": "按状态分组计数",
+    "grain": "应付行级",
+    "validation": "closed=879、open=122",
+    "evidence_refs": [
+      "ev_ap_paymentout_linkage"
+    ]
+  },
+  {
+    "id": "map_ap_due_date",
+    "term_id": "term_ap",
+    "database_source": "ind108",
+    "table": "fact_ap",
+    "column": "due_date",
+    "semantic_filter": "到期日，'某年到期的应付账款'的筛选依据",
+    "aggregation_semantics": "",
+    "grain": "应付行级",
+    "validation": "日期列",
+    "evidence_refs": [
+      "ev_ap_paymentout_linkage"
+    ]
+  },
+  {
+    "id": "map_pr_total_amount",
+    "term_id": "term_purchase_requisition",
+    "database_source": "ind108",
+    "table": "fact_purchase_requisition",
+    "column": "total_amount",
+    "semantic_filter": "",
+    "aggregation_semantics": "按年份汇总或求平均采购申请总金额(元)",
+    "grain": "一行一张采购申请",
+    "validation": "pr_id 为主键",
+    "evidence_refs": [
+      "ev_purchase_requisition"
+    ]
+  },
+  {
+    "id": "map_pr_date",
+    "term_id": "term_purchase_requisition",
+    "database_source": "ind108",
+    "table": "fact_purchase_requisition",
+    "column": "pr_date",
+    "semantic_filter": "申请日期，年度筛选依据",
+    "aggregation_semantics": "",
+    "grain": "采购申请行级",
+    "validation": "覆盖 2025-01-06 至 2026-06-22",
+    "evidence_refs": [
+      "ev_purchase_requisition"
+    ]
+  },
+  {
+    "id": "map_supplier_eval_grade",
+    "term_id": "term_supplier_eval",
+    "database_source": "ind108",
+    "table": "fact_supplier_eval",
+    "column": "grade",
+    "semantic_filter": "AA/A（AA 为主）",
+    "aggregation_semantics": "按评级分组统计评估记录数",
+    "grain": "一行一次评估",
+    "validation": "AA=54、A=12",
+    "evidence_refs": [
+      "ev_supplier_eval_grade"
+    ]
+  },
+  {
+    "id": "map_supplier_eval_total_score",
+    "term_id": "term_supplier_eval",
+    "database_source": "ind108",
+    "table": "fact_supplier_eval",
+    "column": "total_score",
+    "semantic_filter": "",
+    "aggregation_semantics": "按供应商汇总综合评分后比较大小",
+    "grain": "评估行级",
+    "validation": "total_score 为综合评分",
+    "evidence_refs": [
+      "ev_supplier_eval_grade"
+    ]
+  },
+  {
+    "id": "map_supplier_eval_period",
+    "term_id": "term_supplier_eval",
+    "database_source": "ind108",
+    "table": "fact_supplier_eval",
+    "column": "eval_period",
+    "semantic_filter": "如 2025-Q3，可直接用于季度筛选",
+    "aggregation_semantics": "按评估周期分组计数",
+    "grain": "评估行级",
+    "validation": "6 个周期各 11 条",
+    "evidence_refs": [
+      "ev_supplier_eval_grade"
+    ]
+  },
+  {
+    "id": "map_production_order_actual_qty",
+    "term_id": "term_production_order",
+    "database_source": "ind108",
+    "table": "fact_production_order",
+    "column": "actual_quantity",
+    "semantic_filter": "",
+    "aggregation_semantics": "按筛选条件汇总实际产量(吨)",
+    "grain": "一行一个工单",
+    "validation": "order_id 为主键",
+    "evidence_refs": [
+      "ev_production_order_status"
+    ]
+  },
+  {
+    "id": "map_production_order_runtime",
+    "term_id": "term_production_order",
+    "database_source": "ind108",
+    "table": "fact_production_order",
+    "column": "runtime_hours",
+    "semantic_filter": "",
+    "aggregation_semantics": "按产线汇总工单运行时长(小时)",
+    "grain": "工单行级",
+    "validation": "runtime_hours 为小时",
+    "evidence_refs": [
+      "ev_production_order_status"
+    ]
+  },
+  {
+    "id": "map_production_order_status",
+    "term_id": "term_production_order",
+    "database_source": "ind108",
+    "table": "fact_production_order",
+    "column": "status",
+    "semantic_filter": "已完成/待生产/生产中",
+    "aggregation_semantics": "按工单状态分组计数",
+    "grain": "工单行级",
+    "validation": "已完成=2930、待生产=27、生产中=12",
+    "evidence_refs": [
+      "ev_production_order_status"
+    ]
+  },
+  {
+    "id": "map_production_order_date",
+    "term_id": "term_production_order",
+    "database_source": "ind108",
+    "table": "fact_production_order",
+    "column": "order_date",
+    "semantic_filter": "下达日期，'某年下单'的筛选依据",
+    "aggregation_semantics": "",
+    "grain": "工单行级",
+    "validation": "日期列",
+    "evidence_refs": [
+      "ev_date_coverage"
+    ]
+  },
+  {
+    "id": "map_output_grade",
+    "term_id": "term_production_output",
+    "database_source": "ind108",
+    "table": "fact_production_output",
+    "column": "grade",
+    "semantic_filter": "一等品/优等品/合格品/返工品",
+    "aggregation_semantics": "按产品等级分组统计产出记录数",
+    "grain": "一行一条产出记录",
+    "validation": "一等品=2721、优等品=2721、合格品=93、返工品=116",
+    "evidence_refs": [
+      "ev_production_output_grade"
+    ]
+  },
+  {
+    "id": "map_output_quantity",
+    "term_id": "term_production_output",
+    "database_source": "ind108",
+    "table": "fact_production_output",
+    "column": "quantity",
+    "semantic_filter": "",
+    "aggregation_semantics": "按维度汇总产出量(吨)",
+    "grain": "产出行级",
+    "validation": "quantity 为吨",
+    "evidence_refs": [
+      "ev_production_output_grade"
+    ]
+  },
+  {
+    "id": "map_energy_electricity",
+    "term_id": "term_energy_consumption",
+    "database_source": "ind108",
+    "table": "fact_energy_consumption",
+    "column": "electricity_kwh",
+    "semantic_filter": "",
+    "aggregation_semantics": "按产线或车间汇总用电量(kWh)后比较大小",
+    "grain": "一行一条产线×日期",
+    "validation": "energy_id 为主键",
+    "evidence_refs": [
+      "ev_energy_columns"
+    ]
+  },
+  {
+    "id": "map_energy_water",
+    "term_id": "term_energy_consumption",
+    "database_source": "ind108",
+    "table": "fact_energy_consumption",
+    "column": "water_tons",
+    "semantic_filter": "",
+    "aggregation_semantics": "按产线汇总用水量(吨)",
+    "grain": "产线×日期",
+    "validation": "产线 11 合计 6869.2 吨",
+    "evidence_refs": [
+      "ev_energy_columns"
+    ]
+  },
+  {
+    "id": "map_energy_steam",
+    "term_id": "term_energy_consumption",
+    "database_source": "ind108",
+    "table": "fact_energy_consumption",
+    "column": "steam_tons",
+    "semantic_filter": "",
+    "aggregation_semantics": "按产线汇总蒸汽量(吨)后比较大小",
+    "grain": "产线×日期",
+    "validation": "各产线合计约 711-740 吨",
+    "evidence_refs": [
+      "ev_energy_columns"
+    ]
+  },
+  {
+    "id": "map_inventory_storage_days",
+    "term_id": "term_inventory",
+    "database_source": "ind108",
+    "table": "fact_inventory",
+    "column": "storage_days",
+    "semantic_filter": "",
+    "aggregation_semantics": "对库存批次求平均在库天数",
+    "grain": "一行一个库存批次",
+    "validation": "37 行，平均 5.46 天",
+    "evidence_refs": [
+      "ev_inventory_dates"
+    ]
+  },
+  {
+    "id": "map_runtime_actual_hours",
+    "term_id": "term_equipment_runtime",
+    "database_source": "ind108",
+    "table": "fact_equipment_runtime",
+    "column": "actual_run_hours",
+    "semantic_filter": "",
+    "aggregation_semantics": "按年份汇总实际运行小时数",
+    "grain": "一行一条产线×日期",
+    "validation": "2025 年合计 84259.5 小时(4111 行)",
+    "evidence_refs": [
+      "ev_equipment_runtime"
+    ]
+  },
+  {
+    "id": "map_runtime_downtime_hours",
+    "term_id": "term_equipment_runtime",
+    "database_source": "ind108",
+    "table": "fact_equipment_runtime",
+    "column": "downtime_hours",
+    "semantic_filter": "产线级停机时长，区别于设备级停机记录",
+    "aggregation_semantics": "按产线汇总停机时长",
+    "grain": "产线×日期",
+    "validation": "runtime_id 为主键",
+    "evidence_refs": [
+      "ev_equipment_runtime"
+    ]
+  },
+  {
+    "id": "map_maint_plan_type",
+    "term_id": "term_maintenance_plan",
+    "database_source": "ind108",
+    "table": "fact_maintenance_plan",
+    "column": "maint_type",
+    "semantic_filter": "季度大修/月度检修",
+    "aggregation_semantics": "按维护类型分组统计维护计划数",
+    "grain": "一行一条维护计划",
+    "validation": "季度大修=12、月度检修=60",
+    "evidence_refs": [
+      "ev_maintenance_plan_next_date"
+    ]
+  },
+  {
+    "id": "map_maint_plan_next_date",
+    "term_id": "term_maintenance_plan",
+    "database_source": "ind108",
+    "table": "fact_maintenance_plan",
+    "column": "next_date",
+    "semantic_filter": "下次维护日期",
+    "aggregation_semantics": "",
+    "grain": "维护计划行级",
+    "validation": "全部落在 2026-07-01 至 2026-09-28",
+    "evidence_refs": [
+      "ev_maintenance_plan_next_date"
+    ]
+  },
+  {
+    "id": "map_maint_record_labor_hours",
+    "term_id": "term_maintenance_record",
+    "database_source": "ind108",
+    "table": "fact_maintenance_record",
+    "column": "labor_hours",
+    "semantic_filter": "",
+    "aggregation_semantics": "按设备所在地或其制造商汇总维护工时",
+    "grain": "一行一条维护记录",
+    "validation": "示例机械F 的 117 条记录合计 441.9 小时",
+    "evidence_refs": [
+      "ev_maintenance_record_join"
+    ]
+  },
+  {
+    "id": "map_maint_record_cost",
+    "term_id": "term_maintenance_record",
+    "database_source": "ind108",
+    "table": "fact_maintenance_record",
+    "column": "cost",
+    "semantic_filter": "",
+    "aggregation_semantics": "按设备所在地或其制造商汇总维护费用(元)",
+    "grain": "维护记录行级",
+    "validation": "示例机械D 的 267 条记录合计 835,176 元",
+    "evidence_refs": [
+      "ev_maintenance_record_join"
+    ]
+  },
+  {
+    "id": "map_alarm_severity",
+    "term_id": "term_alarm",
+    "database_source": "ind108",
+    "table": "fact_alarm",
+    "column": "severity",
+    "semantic_filter": "critical/warning",
+    "aggregation_semantics": "按告警严重度分组计数",
+    "grain": "一行一条告警",
+    "validation": "critical=639、warning=2470",
+    "evidence_refs": [
+      "ev_alarm_severity"
+    ]
+  },
+  {
+    "id": "map_alarm_handled",
+    "term_id": "term_alarm",
+    "database_source": "ind108",
+    "table": "fact_alarm",
+    "column": "is_handled",
+    "semantic_filter": "1=已处理",
+    "aggregation_semantics": "按设备统计已处理告警数量",
+    "grain": "告警行级",
+    "validation": "全部告警 is_handled=1",
+    "evidence_refs": [
+      "ev_alarm_severity"
+    ]
+  },
+  {
+    "id": "map_alarm_equipment",
+    "term_id": "term_alarm",
+    "database_source": "ind108",
+    "table": "fact_alarm",
+    "column": "equipment_id",
+    "semantic_filter": "",
+    "aggregation_semantics": "按设备分组统计告警数量",
+    "grain": "告警行级",
+    "validation": "equipment_id 引用 dim_equipment",
+    "evidence_refs": [
+      "ev_alarm_severity"
+    ]
+  },
+  {
+    "id": "map_downtime_duration",
+    "term_id": "term_downtime",
+    "database_source": "ind108",
+    "table": "fact_downtime",
+    "column": "duration_hours",
+    "semantic_filter": "",
+    "aggregation_semantics": "按停机原因或产线汇总停机时长(小时)",
+    "grain": "一行一次停机",
+    "validation": "按原因汇总：原因2 最长 3494.0 小时",
+    "evidence_refs": [
+      "ev_downtime_reason"
+    ]
+  },
+  {
+    "id": "map_downtime_reason_code",
+    "term_id": "term_downtime",
+    "database_source": "ind108",
+    "table": "fact_downtime",
+    "column": "reason_code",
+    "semantic_filter": "整数编码，需关联 dim_downtime_reason.reason_id 得到原因名称",
+    "aggregation_semantics": "按停机原因编码分组统计次数或时长",
+    "grain": "停机行级",
+    "validation": "8 个编码 1-8，均可关联字典",
+    "evidence_refs": [
+      "ev_downtime_reason"
+    ]
+  },
+  {
+    "id": "map_incident_injury",
+    "term_id": "term_incident",
+    "database_source": "ind108",
+    "table": "fact_incident",
+    "column": "injury_count",
+    "semantic_filter": "",
+    "aggregation_semantics": "对事故集合汇总受伤人数，或求每次事故平均受伤人数",
+    "grain": "一行一起事故",
+    "validation": "PA改性车间(workshop_id=2) 7 起事故合计 3 人受伤",
+    "evidence_refs": [
+      "ev_incident_workshop"
+    ]
+  },
+  {
+    "id": "map_incident_severity",
+    "term_id": "term_incident",
+    "database_source": "ind108",
+    "table": "fact_incident",
+    "column": "severity",
+    "semantic_filter": "fa/mtc/near_miss",
+    "aggregation_semantics": "按事故严重度分组计数",
+    "grain": "事故行级",
+    "validation": "fa=14、near_miss=11、mtc=7",
+    "evidence_refs": [
+      "ev_incident_severity_type"
+    ]
+  },
+  {
+    "id": "map_incident_type",
+    "term_id": "term_incident",
+    "database_source": "ind108",
+    "table": "fact_incident",
+    "column": "incident_type",
+    "semantic_filter": "机械伤害/灼烫/物体打击/触电/车辆伤害/高处坠落",
+    "aggregation_semantics": "按事故类型分组计数",
+    "grain": "事故行级",
+    "validation": "6 类事故类型",
+    "evidence_refs": [
+      "ev_incident_severity_type"
+    ]
+  },
+  {
+    "id": "map_incident_date",
+    "term_id": "term_incident",
+    "database_source": "ind108",
+    "table": "fact_incident",
+    "column": "incident_date",
+    "semantic_filter": "发生日期，年度筛选依据",
+    "aggregation_semantics": "",
+    "grain": "事故行级",
+    "validation": "覆盖 2025-03-09 至 2026-06-10",
+    "evidence_refs": [
+      "ev_date_coverage"
+    ]
+  },
+  {
+    "id": "map_risk_level",
+    "term_id": "term_risk_assessment",
+    "database_source": "ind108",
+    "table": "fact_risk_assessment",
+    "column": "risk_level",
+    "semantic_filter": "L1/L2/L3/L4",
+    "aggregation_semantics": "按风险等级分组计数",
+    "grain": "一行一次评估",
+    "validation": "L1=1、L2=13、L3=9、L4=7",
+    "evidence_refs": [
+      "ev_risk_assessment_levels"
+    ]
+  },
+  {
+    "id": "map_risk_likelihood",
+    "term_id": "term_risk_assessment",
+    "database_source": "ind108",
+    "table": "fact_risk_assessment",
+    "column": "likelihood",
+    "semantic_filter": "unlikely/possible/likely",
+    "aggregation_semantics": "按可能性分组计数",
+    "grain": "评估行级",
+    "validation": "取值仅三种",
+    "evidence_refs": [
+      "ev_risk_assessment_levels"
+    ]
+  },
+  {
+    "id": "map_risk_control_needed",
+    "term_id": "term_risk_assessment",
+    "database_source": "ind108",
+    "table": "fact_risk_assessment",
+    "column": "control_needed",
+    "semantic_filter": "0/1 整数标识",
+    "aggregation_semantics": "按危险源汇总是否需要控制的取值合计",
+    "grain": "评估行级",
+    "validation": "PP改性车间挤出区两个危险源各 3 条评估合计 3",
+    "evidence_refs": [
+      "ev_risk_assessment_levels"
+    ]
+  },
+  {
+    "id": "map_safety_plan_status",
+    "term_id": "term_safety_plan",
+    "database_source": "ind108",
+    "table": "fact_safety_plan",
+    "column": "status",
+    "semantic_filter": "active/closed",
+    "aggregation_semantics": "按安全计划状态分组计数",
+    "grain": "一行一条安全计划",
+    "validation": "active=1、closed=1",
+    "evidence_refs": [
+      "ev_safety_plan_rows"
+    ]
+  },
+  {
+    "id": "map_safety_plan_issued",
+    "term_id": "term_safety_plan",
+    "database_source": "ind108",
+    "table": "fact_safety_plan",
+    "column": "issued_date",
+    "semantic_filter": "签发日期，与 year 字段年份一致",
+    "aggregation_semantics": "",
+    "grain": "安全计划行级",
+    "validation": "2025-01-08 与 2026-01-06 各一条",
+    "evidence_refs": [
+      "ev_safety_plan_rows"
+    ]
+  },
+  {
+    "id": "map_safety_obj_target_value",
+    "term_id": "term_safety_objective",
+    "database_source": "ind108",
+    "table": "fact_safety_objective",
+    "column": "target_value",
+    "semantic_filter": "",
+    "aggregation_semantics": "按安全计划汇总目标值",
+    "grain": "一行一个目标项",
+    "validation": "obj_id 为主键",
+    "evidence_refs": [
+      "ev_safety_objective_unit"
+    ]
+  },
+  {
+    "id": "map_safety_obj_unit",
+    "term_id": "term_safety_objective",
+    "database_source": "ind108",
+    "table": "fact_safety_objective",
+    "column": "unit",
+    "semantic_filter": "%、‰、起",
+    "aggregation_semantics": "按单位分组统计目标项数",
+    "grain": "目标项行级",
+    "validation": "单位“起”共 2 条",
+    "evidence_refs": [
+      "ev_safety_objective_unit"
+    ]
+  },
+  {
+    "id": "map_audit_score",
+    "term_id": "term_safety_audit",
+    "database_source": "ind108",
+    "table": "fact_safety_audit",
+    "column": "score",
+    "semantic_filter": "",
+    "aggregation_semantics": "按年份求审计平均评分",
+    "grain": "一行一次审计",
+    "validation": "2025 年 24 次审计平均 88.8 分",
+    "evidence_refs": [
+      "ev_safety_audit_year"
+    ]
+  },
+  {
+    "id": "map_audit_finding",
+    "term_id": "term_safety_audit",
+    "database_source": "ind108",
+    "table": "fact_safety_audit",
+    "column": "finding_count",
+    "semantic_filter": "",
+    "aggregation_semantics": "按年份汇总发现项数",
+    "grain": "审计行级",
+    "validation": "2025 年合计 78 项",
+    "evidence_refs": [
+      "ev_safety_audit_year"
+    ]
+  },
+  {
+    "id": "map_training_duration",
+    "term_id": "term_safety_training",
+    "database_source": "ind108",
+    "table": "fact_safety_training",
+    "column": "duration_hours",
+    "semantic_filter": "",
+    "aggregation_semantics": "按讲师汇总培训时长(小时)",
+    "grain": "一行一次培训",
+    "validation": "trainer_id 全部非空且引用 dim_employee",
+    "evidence_refs": [
+      "ev_safety_training"
+    ]
+  },
+  {
+    "id": "map_training_attendee",
+    "term_id": "term_safety_training",
+    "database_source": "ind108",
+    "table": "fact_safety_training",
+    "column": "attendee_count",
+    "semantic_filter": "",
+    "aggregation_semantics": "按讲师汇总参训人数后比较大小",
+    "grain": "培训行级",
+    "validation": "attendee_count 为整数人数",
+    "evidence_refs": [
+      "ev_safety_training"
+    ]
+  },
+  {
+    "id": "map_env_record_type",
+    "term_id": "term_env_record",
+    "database_source": "ind108",
+    "table": "fact_env_record",
+    "column": "record_type",
+    "semantic_filter": "月度监测/季度监测；问题中的“监测类型”对应此列",
+    "aggregation_semantics": "按监测类型分组统计记录数",
+    "grain": "一行一条监测记录",
+    "validation": "月度监测=73、季度监测=32",
+    "evidence_refs": [
+      "ev_env_record_types"
+    ]
+  },
+  {
+    "id": "map_env_compliant",
+    "term_id": "term_env_record",
+    "database_source": "ind108",
+    "table": "fact_env_record",
+    "column": "is_compliant",
+    "semantic_filter": "1=合规，0=不合规",
+    "aggregation_semantics": "对合规标识计数以衡量合规情况",
+    "grain": "监测记录行级",
+    "validation": "2025 年 60 条中 56 条合规",
+    "evidence_refs": [
+      "ev_env_record_types"
+    ]
+  },
+  {
+    "id": "map_env_emission_type",
+    "term_id": "term_env_record",
+    "database_source": "ind108",
+    "table": "fact_env_record",
+    "column": "emission_type",
+    "semantic_filter": "COD/氨氮/颗粒物/VOCs/噪声",
+    "aggregation_semantics": "按污染物类型分组计数",
+    "grain": "监测记录行级",
+    "validation": "5 类污染物",
+    "evidence_refs": [
+      "ev_env_record_types"
+    ]
+  },
+  {
+    "id": "map_iot_quality",
+    "term_id": "term_iot_data",
+    "database_source": "ind108",
+    "table": "fact_iot_data",
+    "column": "quality_flag",
+    "semantic_filter": "good/uncertain",
+    "aggregation_semantics": "按数据质量标识分组计数",
+    "grain": "一行一条IoT数据",
+    "validation": "good=28476、uncertain=282",
+    "evidence_refs": [
+      "ev_iot_quality"
+    ]
+  },
+  {
+    "id": "map_contract_type",
+    "term_id": "term_contract",
+    "database_source": "ind108",
+    "table": "fact_contract",
+    "column": "contract_type",
+    "semantic_filter": "purchase/sales",
+    "aggregation_semantics": "按合同类型分组计数",
+    "grain": "一行一份合同",
+    "validation": "purchase=11、sales=8",
+    "evidence_refs": [
+      "ev_contract_type"
+    ]
+  },
+  {
+    "id": "map_contract_end_date",
+    "term_id": "term_contract",
+    "database_source": "ind108",
+    "table": "fact_contract",
+    "column": "end_date",
+    "semantic_filter": "",
+    "aggregation_semantics": "按到期日期筛选合同后计数",
+    "grain": "合同行级",
+    "validation": "14 份合同 end_date 为 2026-12-31",
+    "evidence_refs": [
+      "ev_contract_type"
+    ]
+  },
+  {
+    "id": "map_dws_representative",
+    "term_id": "term_dws_daily_summary",
+    "database_source": "ind108",
+    "table": "DWS_PRODUCTION_DAILY",
+    "column": "actual_quantity",
+    "semantic_filter": "该列为 DWS 汇总族的代表性指标，用于说明汇总层粒度",
+    "aggregation_semantics": "汇总层已按维度×日期预聚合，再次跨维度求和会与明细重复",
+    "grain": "按产线×产品×日",
+    "validation": "DWS_*_DAILY 共 17 张，另有 agg_metric_monthly 按月×人",
+    "evidence_refs": [
+      "ev_metadata_tables",
+      "ev_metric_catalog"
+    ]
+  }
+]

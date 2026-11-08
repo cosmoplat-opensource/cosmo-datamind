@@ -1,0 +1,1081 @@
+[
+  {
+    "id": "term_analysis_period",
+    "name": "分析期间",
+    "type": "dimension",
+    "definition": "ind108 全部事实与汇总数据覆盖的业务期间,自 2025-01-01 起至 2026-06-30 止,共 546 个自然日(18 个月)。",
+    "scope": "所有基于 ind108 的分析默认限定在该期间内;超出该期间的日期条件不会返回数据。",
+    "aliases": [
+      "数据期间",
+      "统计区间"
+    ],
+    "evidence": [
+      "ev_08_analysis_period"
+    ]
+  },
+  {
+    "id": "term_summary_layer",
+    "name": "汇总层(DWS)",
+    "type": "category",
+    "definition": "按业务视角预聚合的日/月汇总表集合,共 16 张:15 张 DWS_*_DAILY 与 1 张 agg_metric_monthly,由明细层汇总生成且可与明细对账。",
+    "scope": "面向指标取数的首选入口;粒度通常为 维度成员×日。",
+    "aliases": [
+      "DWS 层",
+      "汇总表",
+      "指标层"
+    ],
+    "evidence": [
+      "ev_02_table_metadata",
+      "ev_09_perf_sales_recon"
+    ]
+  },
+  {
+    "id": "term_detail_layer",
+    "name": "明细层(fact)",
+    "type": "category",
+    "definition": "记录业务事件明细的 48 张 fact_* 表,保存每一笔订单、发货、退货、产出、停机、事故等原始事件。",
+    "scope": "用于下钻、按非预聚合维度分析、与汇总层对账。",
+    "aliases": [
+      "事实层",
+      "明细表",
+      "事实表"
+    ],
+    "evidence": [
+      "ev_02_table_metadata"
+    ]
+  },
+  {
+    "id": "term_atomic_metric",
+    "name": "原子指标",
+    "type": "category",
+    "definition": "指标目录中不可再分的 75 个基础指标,每个直接对应某张汇总表的一个日期列与取值列。",
+    "scope": "指标推理的起点;派生指标与复合指标均由原子指标组合而成。",
+    "aliases": [
+      "基础指标"
+    ],
+    "evidence": [
+      "ev_04_metric_catalog"
+    ]
+  },
+  {
+    "id": "term_derived_metric",
+    "name": "派生指标",
+    "type": "category",
+    "definition": "在原子指标上施加聚合方法(SUM/AVG/MAX)并按某一维度分组得到的 23 个指标,例如按产线汇总的实际产量、按业务员日均接单金额。",
+    "scope": "跨期或跨成员汇总时使用;聚合方法与分组维度记录在派生指标配置中。",
+    "aliases": [
+      "衍生指标",
+      "聚合指标"
+    ],
+    "evidence": [
+      "ev_04_metric_catalog",
+      "ev_06_derived_config"
+    ]
+  },
+  {
+    "id": "term_composite_metric",
+    "name": "复合指标",
+    "type": "category",
+    "definition": "由多个派生指标按显式公式运算得到的 9 个综合指标,例如经营利润率、预算偏差度、设备可用率。",
+    "scope": "跨视角综合评估;公式以 NULLIF 处理分母为 0 的情形。",
+    "aliases": [
+      "综合指标",
+      "组合指标"
+    ],
+    "evidence": [
+      "ev_04_metric_catalog",
+      "ev_07_composite_config"
+    ]
+  },
+  {
+    "id": "term_metric_perspective",
+    "name": "指标视角",
+    "type": "dimension",
+    "definition": "指标目录对指标的业务分类,共 7 个业务视角(营销与客户、采购与供应、生产与制造、设备与资产、财务与成本、安全与环保、组织与人力)加一个综合视角。",
+    "scope": "用于按业务主题检索指标;'综合'视角下的指标为复合指标。",
+    "aliases": [
+      "所属视角",
+      "业务主题"
+    ],
+    "evidence": [
+      "ev_05_metric_perspective"
+    ]
+  },
+  {
+    "id": "term_daily_increment_measure",
+    "name": "日增量口径指标",
+    "type": "concept",
+    "definition": "汇总表中按自然日记录的当期发生量,仅代表该日新发生的业务量,跨日求和即得到期间累计值。",
+    "scope": "适用于销量、接单金额、退货次数、产量等流量型指标。",
+    "aliases": [
+      "当期发生",
+      "流量指标"
+    ],
+    "evidence": [
+      "ev_09_perf_sales_recon"
+    ]
+  },
+  {
+    "id": "term_period_end_snapshot_measure",
+    "name": "期末快照口径指标",
+    "type": "concept",
+    "definition": "汇总表中记录某日业务结束时刻余额的存量型指标,同一日只有一个有效值,跨日求和会重复计数。",
+    "scope": "适用于应收账款余额、超期应收、库存等在库/在欠类指标。",
+    "aliases": [
+      "余额指标",
+      "存量指标",
+      "时点值"
+    ],
+    "evidence": [
+      "ev_20_risk_snapshot",
+      "ev_22_ar_snapshot"
+    ]
+  },
+  {
+    "id": "term_daily_prorated_target",
+    "name": "按日折算目标",
+    "type": "concept",
+    "definition": "将月度目标按月内天数(费用类再按人数)均摊到每一天形成的日度目标,逐日累加可精确还原月度目标。",
+    "scope": "适用于销量目标、毛利目标、回款目标与费用预算。",
+    "aliases": [
+      "日均目标",
+      "目标折算"
+    ],
+    "evidence": [
+      "ev_12_target_proration"
+    ]
+  },
+  {
+    "id": "term_region",
+    "name": "销售区域",
+    "type": "dimension",
+    "definition": "按地理划分的销售区域,共 6 个:华东、华南、华北、西南、华中、西北。",
+    "scope": "销售业绩与客户结构的最高层地理维度。",
+    "aliases": [
+      "区域",
+      "大区"
+    ],
+    "evidence": [
+      "ev_35_denorm_joins"
+    ]
+  },
+  {
+    "id": "term_department",
+    "name": "部门",
+    "type": "entity",
+    "definition": "企业组织单元,共 17 个:6 个区域销售部(各绑定一个区域)与生产部、质量部、设备部、采购部等 11 个职能部门。",
+    "scope": "组织业绩、费用预算与 KPI 的组织维度。",
+    "aliases": [
+      "组织",
+      "部门维度"
+    ],
+    "evidence": [
+      "ev_35_denorm_joins",
+      "ev_14_sales_scope"
+    ]
+  },
+  {
+    "id": "term_employee",
+    "name": "业务员",
+    "type": "entity",
+    "definition": "员工档案中的销售人员,共 122 人(121 active / 1 inactive),每人归属一个部门。",
+    "scope": "人级汇总表(DWS_ORG_*、DWS_KPI_DAILY)只覆盖 25 名销售业务员,不覆盖一线操作工与职能人员。",
+    "aliases": [
+      "员工",
+      "销售人员",
+      "负责人"
+    ],
+    "evidence": [
+      "ev_14_sales_scope"
+    ]
+  },
+  {
+    "id": "term_customer",
+    "name": "客户",
+    "type": "entity",
+    "definition": "客户主数据,共 25 家,含所属行业、省市、市场容量、市场份额、状态(active/dormant/lost)与信用状态(normal/frozen)。",
+    "scope": "销售、应收、市场与风险分析的客户维度。",
+    "aliases": [
+      "客户维度",
+      "客户主数据"
+    ],
+    "evidence": [
+      "ev_32_customer_attrs",
+      "ev_24_market_flags"
+    ]
+  },
+  {
+    "id": "term_product",
+    "name": "产品",
+    "type": "entity",
+    "definition": "改性塑料成品主数据,共 15 个产品(如 PP-T20、PA66-GF30、PPS-GF40),含规格、标准成本、技术成本与指导价。",
+    "scope": "生产、销售、成本与质量分析的产品维度。",
+    "aliases": [
+      "产品维度",
+      "物料成品"
+    ],
+    "evidence": [
+      "ev_35_denorm_joins"
+    ]
+  },
+  {
+    "id": "term_product_line",
+    "name": "产品线",
+    "type": "dimension",
+    "definition": "产品大类维度,共 4 类:PP改性系列、PA改性系列、ABS/PC合金系列、特种工程塑料系列。",
+    "scope": "产品侧分类;与生产侧的产线(dim_production_line)不是同一概念。",
+    "aliases": [
+      "产品大类",
+      "系列"
+    ],
+    "evidence": [
+      "ev_35_denorm_joins"
+    ]
+  },
+  {
+    "id": "term_production_line",
+    "name": "产线",
+    "type": "entity",
+    "definition": "生产线主数据,共 12 条挤出线,分属 5 个车间,含生产品类、设计产能(吨/小时)与运行状态。",
+    "scope": "生产、设备、能耗与 OEE 分析的产线维度。",
+    "aliases": [
+      "生产线",
+      "挤出线"
+    ],
+    "evidence": [
+      "ev_35_denorm_joins"
+    ]
+  },
+  {
+    "id": "term_workshop",
+    "name": "车间",
+    "type": "entity",
+    "definition": "生产车间主数据,共 5 个:PP改性车间、PA改性车间、ABS/PC合金车间、阻燃材料车间、特种工程塑料车间。",
+    "scope": "生产汇总与安全汇总(DWS_SAFETY_DAILY)的组织维度。",
+    "aliases": [
+      "生产车间"
+    ],
+    "evidence": [
+      "ev_35_denorm_joins"
+    ]
+  },
+  {
+    "id": "term_equipment",
+    "name": "设备",
+    "type": "entity",
+    "definition": "生产设备主数据,共 60 台,分属 12 条产线(每条 5 台),含设备类型、制造商、安装日期与设计寿命。",
+    "scope": "设备运行、停机、报警与维护分析的设备维度。",
+    "aliases": [
+      "设备维度",
+      "台机"
+    ],
+    "evidence": [
+      "ev_15_equipment_line_level"
+    ]
+  },
+  {
+    "id": "term_supplier",
+    "name": "供应商",
+    "type": "entity",
+    "definition": "供应商主数据,共 12 家,含分类、省市、信用等级(A/AA/B)与合作起始日期。",
+    "scope": "采购、来料检验与应付分析的供应商维度。",
+    "aliases": [
+      "供应商维度",
+      "供方"
+    ],
+    "evidence": [
+      "ev_33_procurement_recon"
+    ]
+  },
+  {
+    "id": "term_cost_center",
+    "name": "成本中心",
+    "type": "entity",
+    "definition": "费用归集与成本核算单元,共 10 个 CC001–CC010,类型含 production/quality/equipment/sales/rd。",
+    "scope": "财务汇总(DWS_FINANCE_DAILY)与预算分析的成本中心维度。",
+    "aliases": [
+      "CC",
+      "费用中心"
+    ],
+    "evidence": [
+      "ev_27_finance_grain"
+    ]
+  },
+  {
+    "id": "term_downtime_reason",
+    "name": "停机原因",
+    "type": "dimension",
+    "definition": "停机原因字典,共 8 类:设备故障、换产清机、计划保养、物料短缺、质量异常、能源中断、人员不足、滤网更换。",
+    "scope": "停机归因分析;明细停机表通过原因编号引用本字典。",
+    "aliases": [
+      "停机原因编码",
+      "停机原因字典"
+    ],
+    "evidence": [
+      "ev_19_downtime_reason_code"
+    ]
+  },
+  {
+    "id": "term_order_status",
+    "name": "订单状态",
+    "type": "dimension",
+    "definition": "销售订单状态枚举,取值 delivered / returned / undelivered。",
+    "scope": "订单履约分析;退货场景下状态未必回写,须结合退货明细判断。",
+    "aliases": [
+      "订单状态标志"
+    ],
+    "evidence": [
+      "ev_28_order_status_return"
+    ]
+  },
+  {
+    "id": "term_sales_quantity",
+    "name": "销量",
+    "type": "metric",
+    "definition": "按订单日期统计的当日接单数量,单位吨。",
+    "scope": "销售业绩与目标达成分析;跨日求和得到期间销量。",
+    "aliases": [
+      "接单量",
+      "销售数量",
+      "累计销量"
+    ],
+    "evidence": [
+      "ev_09_perf_sales_recon"
+    ]
+  },
+  {
+    "id": "term_sales_amount",
+    "name": "接单金额",
+    "type": "metric",
+    "definition": "按订单日期统计的当日接单金额,不含税,单位元。",
+    "scope": "销售收入与目标达成分析;汇总层合计与明细订单金额完全一致。",
+    "aliases": [
+      "销售收入",
+      "销售额",
+      "接单额"
+    ],
+    "evidence": [
+      "ev_09_perf_sales_recon"
+    ]
+  },
+  {
+    "id": "term_order_amount",
+    "name": "订单金额(明细)",
+    "type": "metric",
+    "definition": "明细销售订单的金额,等于数量×不含税单价,单位元。",
+    "scope": "明细层口径;与汇总层接单金额等价,用于下钻与对账。",
+    "aliases": [
+      "订单金额",
+      "不含税金额"
+    ],
+    "evidence": [
+      "ev_09_perf_sales_recon"
+    ]
+  },
+  {
+    "id": "term_actual_cost_amount",
+    "name": "实际成本金额",
+    "type": "metric",
+    "definition": "订单对应的实际成本:已发货部分按发出批次的真实生产成本计,未发货部分按当月同产品平均成本计,单位元。",
+    "scope": "实际毛利计算的扣减项;与标准成本金额口径不同。",
+    "aliases": [
+      "实际成本",
+      "销售成本"
+    ],
+    "evidence": [
+      "ev_30_gross_profit_formula"
+    ]
+  },
+  {
+    "id": "term_gross_profit_actual",
+    "name": "实际毛利",
+    "type": "metric",
+    "definition": "订单不含税金额扣除实际成本金额后的毛利,单位元。",
+    "scope": "盈利能力与负毛利分析;毛利目标考核使用该口径。",
+    "aliases": [
+      "毛利",
+      "实际毛利额"
+    ],
+    "evidence": [
+      "ev_30_gross_profit_formula"
+    ]
+  },
+  {
+    "id": "term_accounts_receivable",
+    "name": "应收账款余额",
+    "type": "metric",
+    "definition": "截至某业务日结束时尚未收回的应收账款余额(含税),单位元,属期末快照口径。",
+    "scope": "应收与回款分析;取值须取指定日或期末,不可跨日累加。",
+    "aliases": [
+      "应收余额",
+      "应收账款"
+    ],
+    "evidence": [
+      "ev_22_ar_snapshot"
+    ]
+  },
+  {
+    "id": "term_accounts_receivable_overdue",
+    "name": "超期应收余额",
+    "type": "metric",
+    "definition": "已过到期日且仍未收回的应收余额(含税),单位元。",
+    "scope": "账龄与信用风险分析;判定期点为 2026-06-30。",
+    "aliases": [
+      "超期账款",
+      "逾期应收"
+    ],
+    "evidence": [
+      "ev_22_ar_snapshot"
+    ]
+  },
+  {
+    "id": "term_overdue_ar_amt",
+    "name": "超期货款金额",
+    "type": "metric",
+    "definition": "风险汇总表中按业务员×产品×日记录的当日末超期应收金额,单位元,属期末快照口径。",
+    "scope": "风险汇总分析;仅在有风险的业务员×产品组合上留存。",
+    "aliases": [
+      "超期货款",
+      "超期应收金额"
+    ],
+    "evidence": [
+      "ev_20_risk_snapshot"
+    ]
+  },
+  {
+    "id": "term_negative_margin_qty",
+    "name": "负毛利订单量",
+    "type": "metric",
+    "definition": "实际毛利为负的订单的数量,单位吨。",
+    "scope": "低质量销售的度量;标志位与毛利的正负号完全一致。",
+    "aliases": [
+      "负毛利销量",
+      "亏损订单量"
+    ],
+    "evidence": [
+      "ev_30_gross_profit_formula",
+      "ev_20_risk_snapshot"
+    ]
+  },
+  {
+    "id": "term_sales_return",
+    "name": "销售退货",
+    "type": "metric",
+    "definition": "因质量、包装、错发或客户变更等原因退回的销售货物,以退货次数(次)与退货数量(吨)度量。",
+    "scope": "售后质量与客户满意度分析;退货货物按不合格品报废,不回到成品库存。",
+    "aliases": [
+      "退货",
+      "退货量",
+      "退货次数"
+    ],
+    "evidence": [
+      "ev_29_invoice_return"
+    ]
+  },
+  {
+    "id": "term_opportunity_count",
+    "name": "商机数量",
+    "type": "metric",
+    "definition": "当期新建的销售商机个数,按创建日期归集。",
+    "scope": "售前漏斗分析;商机状态含 open/won/lost/stalled。",
+    "aliases": [
+      "商机数",
+      "新建商机"
+    ],
+    "evidence": [
+      "ev_31_opportunity_status"
+    ]
+  },
+  {
+    "id": "term_sample_count",
+    "name": "送样次数",
+    "type": "metric",
+    "definition": "当期向客户送样的次数,单位次。",
+    "scope": "售前推广活动度量,可与商机转化率结合分析。",
+    "aliases": [
+      "送样数",
+      "打样次数"
+    ],
+    "evidence": [
+      "ev_02_table_metadata"
+    ]
+  },
+  {
+    "id": "term_market_share",
+    "name": "市场份额",
+    "type": "metric",
+    "definition": "客户所处市场中本企业的份额百分比,按客户×日随市场容量一并记录。",
+    "scope": "市场结构分析;该值随客户属性滚动,不随逐日业务波动。",
+    "aliases": [
+      "份额",
+      "市占率"
+    ],
+    "evidence": [
+      "ev_24_market_flags"
+    ]
+  },
+  {
+    "id": "term_monthly_quantity_target",
+    "name": "月度销量目标",
+    "type": "metric",
+    "definition": "按业务员×年月设定的整月销量目标,单位吨。",
+    "scope": "目标下达口径;派生为日度目标后再参与达标计算。",
+    "aliases": [
+      "月销量目标",
+      "销量目标(月)"
+    ],
+    "evidence": [
+      "ev_12_target_proration"
+    ]
+  },
+  {
+    "id": "term_sales_quantity_target",
+    "name": "按日折算销量目标",
+    "type": "metric",
+    "definition": "月度销量目标按当月天数折算到每一天的日度目标,单位吨;同月逐日累加等于月度目标。",
+    "scope": "目标达成与 KPI 计算;遗漏前缀过滤条件。",
+    "aliases": [
+      "日销量目标",
+      "折算销量目标"
+    ],
+    "evidence": [
+      "ev_12_target_proration"
+    ]
+  },
+  {
+    "id": "term_profit_target",
+    "name": "毛利目标",
+    "type": "metric",
+    "definition": "按业务员×日记录的月度毛利目标折算值,单位元。",
+    "scope": "毛利达标分析;与按日折算销量目标同源同粒度。",
+    "aliases": [
+      "毛利目标值",
+      "月毛利目标"
+    ],
+    "evidence": [
+      "ev_12_target_proration"
+    ]
+  },
+  {
+    "id": "term_payment_target",
+    "name": "回款目标",
+    "type": "metric",
+    "definition": "按业务员×日记录的月度回款目标折算值,单位元。",
+    "scope": "回款与现金流考核,与应收账款余额配合使用。",
+    "aliases": [
+      "回款目标值",
+      "收款目标"
+    ],
+    "evidence": [
+      "ev_12_target_proration"
+    ]
+  },
+  {
+    "id": "term_kpi_person_count",
+    "name": "人员KPI达标数",
+    "type": "metric",
+    "definition": "单名业务员当日截至月累计销量与毛利是否达到按日折算目标的标志,取值为 0 或 1。",
+    "scope": "人员级达标度量;在部门/区域层面汇总是对本列按部门求和。",
+    "aliases": [
+      "人员达标",
+      "个人KPI"
+    ],
+    "evidence": [
+      "ev_13_kpi_dept_constant"
+    ]
+  },
+  {
+    "id": "term_kpi_dept_count",
+    "name": "部门KPI达标数",
+    "type": "metric",
+    "definition": "该部门(区域)当日达标人数,同一部门当日所有员工行上取值相同。",
+    "scope": "部门级达标度量;按部门取一次值即可,跨员工行求和会成倍放大。",
+    "aliases": [
+      "部门达标数",
+      "区域达标数"
+    ],
+    "evidence": [
+      "ev_13_kpi_dept_constant"
+    ]
+  },
+  {
+    "id": "term_planned_quantity",
+    "name": "计划产量",
+    "type": "metric",
+    "definition": "按产线×日(×产品)记录的计划生产量,单位吨。",
+    "scope": "产能利用与计划达成分析,与计划达成率配套。",
+    "aliases": [
+      "计划量",
+      "排产量"
+    ],
+    "evidence": [
+      "ev_10_production_recon"
+    ]
+  },
+  {
+    "id": "term_actual_quantity",
+    "name": "实际产量",
+    "type": "metric",
+    "definition": "按产线×日(×产品)记录的实际生产产出量,单位吨。",
+    "scope": "生产汇总口径;合计与明细产出记录完全一致。",
+    "aliases": [
+      "产量",
+      "产出量"
+    ],
+    "evidence": [
+      "ev_10_production_recon"
+    ]
+  },
+  {
+    "id": "term_production_output_quantity",
+    "name": "产出量(明细)",
+    "type": "metric",
+    "definition": "明细产出记录中每笔产出的数量,单位吨,关联到具体工单与产品等级。",
+    "scope": "明细层口径;用于与生产汇总的实际产量对账及按等级下钻。",
+    "aliases": [
+      "明细产出量"
+    ],
+    "evidence": [
+      "ev_10_production_recon"
+    ]
+  },
+  {
+    "id": "term_material_input_qty",
+    "name": "投料量",
+    "type": "metric",
+    "definition": "生产过程中投入的原料总量,单位吨。",
+    "scope": "成材率与损耗率计算的分母基准。",
+    "aliases": [
+      "原料投料",
+      "投入量"
+    ],
+    "evidence": [
+      "ev_10_production_recon"
+    ]
+  },
+  {
+    "id": "term_yield_rate",
+    "name": "成材率",
+    "type": "metric",
+    "definition": "实际产量占投料量的百分比,衡量原料转化为成品的效率。",
+    "scope": "生产制造效率分析;按产线或产品汇总时须重新计算比值而非平均。",
+    "aliases": [
+      "收率",
+      "良品产出率"
+    ],
+    "evidence": [
+      "ev_10_production_recon"
+    ]
+  },
+  {
+    "id": "term_first_grade_rate",
+    "name": "优等品率",
+    "type": "metric",
+    "definition": "产出中优等品所占的百分比。",
+    "scope": "产品质量分级分析;与产品等级枚举配套使用。",
+    "aliases": [
+      "一等品率",
+      "优质品率"
+    ],
+    "evidence": [
+      "ev_36_grade_first_grade"
+    ]
+  },
+  {
+    "id": "term_quality_pass_rate",
+    "name": "质检合格率",
+    "type": "metric",
+    "definition": "检验批次判定为合格的比例百分比。",
+    "scope": "生产过程质量分析;与来料检验合格率针对不同环节。",
+    "aliases": [
+      "检验合格率",
+      "合格率"
+    ],
+    "evidence": [
+      "ev_10_production_recon"
+    ]
+  },
+  {
+    "id": "term_electricity_kwh",
+    "name": "用电量",
+    "type": "metric",
+    "definition": "按产线(车间)×日记录的电力消耗量,单位 kWh。",
+    "scope": "能耗与单位能耗分析。",
+    "aliases": [
+      "耗电量",
+      "电力消耗"
+    ],
+    "evidence": [
+      "ev_02_table_metadata"
+    ]
+  },
+  {
+    "id": "term_equipment_run_hours",
+    "name": "设备运行时长",
+    "type": "metric",
+    "definition": "按设备×日记录的运行小时数,单位小时。该值为产线级运行时长,同日同产线各设备行上取值相同。",
+    "scope": "设备可用率与 OEE 分析;使用前须按产线去重。",
+    "aliases": [
+      "运行小时",
+      "开机时长"
+    ],
+    "evidence": [
+      "ev_15_equipment_line_level",
+      "ev_16_equipment_run_broadcast"
+    ]
+  },
+  {
+    "id": "term_equipment_runtime_hours",
+    "name": "运行台时(设备运行记录)",
+    "type": "metric",
+    "definition": "设备运行记录表中按产线×日记录的实际运行小时数,单位小时。",
+    "scope": "明细层口径,与设备汇总的运行时长等价,用于对账与设备可用率计算。",
+    "aliases": [
+      "运行台时",
+      "实际运行小时"
+    ],
+    "evidence": [
+      "ev_16_equipment_run_broadcast"
+    ]
+  },
+  {
+    "id": "term_downtime_hours",
+    "name": "停机时长",
+    "type": "metric",
+    "definition": "设备停机持续时间,单位小时,可按设备汇总并归因到停机原因。",
+    "scope": "设备可用率与停机归因分析;设备级取值可直接求和。",
+    "aliases": [
+      "停机小时",
+      "停机时间"
+    ],
+    "evidence": [
+      "ev_18_downtime_recon"
+    ]
+  },
+  {
+    "id": "term_oee",
+    "name": "设备OEE",
+    "type": "metric",
+    "definition": "设备综合效率百分比,综合可用率、性能与合格率。",
+    "scope": "设备与生产汇总表均按产线级记录该值;跨行求和或平均无意义,应按产线取一次值。",
+    "aliases": [
+      "OEE",
+      "设备综合效率"
+    ],
+    "evidence": [
+      "ev_15_equipment_line_level"
+    ]
+  },
+  {
+    "id": "term_po_amount",
+    "name": "采购金额",
+    "type": "metric",
+    "definition": "当期采购订单金额,单位元。",
+    "scope": "采购支出与供应商分析。",
+    "aliases": [
+      "采购额",
+      "下单金额"
+    ],
+    "evidence": [
+      "ev_33_procurement_recon"
+    ]
+  },
+  {
+    "id": "term_gr_quantity",
+    "name": "收货数量",
+    "type": "metric",
+    "definition": "当期采购收货数量,单位吨。",
+    "scope": "到货履约与来料质量分析。",
+    "aliases": [
+      "到货量",
+      "入库数量"
+    ],
+    "evidence": [
+      "ev_33_procurement_recon"
+    ]
+  },
+  {
+    "id": "term_inspection_pass_rate",
+    "name": "来料检验合格率",
+    "type": "metric",
+    "definition": "来料检验判定合格的比例百分比。",
+    "scope": "供应商质量分析;收货当日之外为空值。",
+    "aliases": [
+      "进料合格率",
+      "来料合格率"
+    ],
+    "evidence": [
+      "ev_26_procurement_nulls",
+      "ev_33_procurement_recon"
+    ]
+  },
+  {
+    "id": "term_incident_count",
+    "name": "事故数",
+    "type": "metric",
+    "definition": "已发生并记录的安全事故起数,不含未遂事件。",
+    "scope": "安全绩效分析;按事故所在车间归集。",
+    "aliases": [
+      "事故起数",
+      "工伤事故数"
+    ],
+    "evidence": [
+      "ev_37_incident_severity"
+    ]
+  },
+  {
+    "id": "term_near_miss_count",
+    "name": "未遂事件数",
+    "type": "metric",
+    "definition": "未造成伤害的未遂事件起数。",
+    "scope": "安全领先指标;与事故数分列,不合并。",
+    "aliases": [
+      "未遂数",
+      "险兆事件"
+    ],
+    "evidence": [
+      "ev_37_incident_severity"
+    ]
+  },
+  {
+    "id": "term_high_risk_count",
+    "name": "高风险评估数",
+    "type": "metric",
+    "definition": "风险等级达到 L3(不可容忍)及以上的风险评估条数。",
+    "scope": "安全风险分析;L1/L2 不计入。",
+    "aliases": [
+      "高风险数",
+      "重大风险数"
+    ],
+    "evidence": [
+      "ev_02_table_metadata"
+    ]
+  },
+  {
+    "id": "term_audit_score",
+    "name": "安全审计评分",
+    "type": "metric",
+    "definition": "安全审计当日对车间的评分,满分 100 分。",
+    "scope": "安全绩效分析;无审计事件的日期为空值。",
+    "aliases": [
+      "审计得分",
+      "安全评分"
+    ],
+    "evidence": [
+      "ev_25_safety_nulls"
+    ]
+  },
+  {
+    "id": "term_env_compliant_rate",
+    "name": "排放合规率",
+    "type": "metric",
+    "definition": "当日环境监测中达标项所占百分比。",
+    "scope": "环保绩效分析;无监测记录的日期为空值。",
+    "aliases": [
+      "环保合规率",
+      "排放达标率"
+    ],
+    "evidence": [
+      "ev_25_safety_nulls"
+    ]
+  },
+  {
+    "id": "term_budget_amount",
+    "name": "预算金额",
+    "type": "metric",
+    "definition": "按成本中心×月下达的预算额度,单位元。",
+    "scope": "预算执行与偏差分析;汇总层按成本中心×月末日记录。",
+    "aliases": [
+      "预算额",
+      "预算值"
+    ],
+    "evidence": [
+      "ev_34_budget_and_cost_recon"
+    ]
+  },
+  {
+    "id": "term_budget_actual_amount",
+    "name": "预算实际金额",
+    "type": "metric",
+    "definition": "成本中心当月实际发生金额,单位元,与预算金额同表同粒度。",
+    "scope": "预算执行分析;与预算金额配对使用。",
+    "aliases": [
+      "实际支出",
+      "预算实际"
+    ],
+    "evidence": [
+      "ev_34_budget_and_cost_recon"
+    ]
+  },
+  {
+    "id": "term_material_cost",
+    "name": "材料成本",
+    "type": "metric",
+    "definition": "产品生产中的原材料成本,单位元。",
+    "scope": "产品成本构成分析。",
+    "aliases": [
+      "原料成本",
+      "直接材料"
+    ],
+    "evidence": [
+      "ev_34_budget_and_cost_recon"
+    ]
+  },
+  {
+    "id": "term_labor_cost",
+    "name": "人工成本",
+    "type": "metric",
+    "definition": "产品生产中的人工成本,单位元。",
+    "scope": "产品成本构成分析。",
+    "aliases": [
+      "直接人工",
+      "人力成本"
+    ],
+    "evidence": [
+      "ev_34_budget_and_cost_recon"
+    ]
+  },
+  {
+    "id": "term_overhead_cost",
+    "name": "制造费用",
+    "type": "metric",
+    "definition": "产品生产中的间接制造费用,单位元,已包含折旧,不再重复扣减。",
+    "scope": "产品成本构成分析;计算经营利润率时须避免二次扣减折旧。",
+    "aliases": [
+      "间接费用",
+      "制造间接费"
+    ],
+    "evidence": [
+      "ev_07_composite_config",
+      "ev_34_budget_and_cost_recon"
+    ]
+  },
+  {
+    "id": "term_total_product_cost",
+    "name": "产品总成本",
+    "type": "metric",
+    "definition": "材料成本、人工成本与制造费用之和,单位元。",
+    "scope": "成本与利润分析;复合指标的单位产出成本与经营利润率均以其为基础。",
+    "aliases": [
+      "总成本",
+      "生产成本"
+    ],
+    "evidence": [
+      "ev_34_budget_and_cost_recon"
+    ]
+  },
+  {
+    "id": "term_dep_amount",
+    "name": "折旧额",
+    "type": "metric",
+    "definition": "固定资产当期计提的折旧金额,单位元。",
+    "scope": "成本与资产分析;已计入制造费用。",
+    "aliases": [
+      "折旧",
+      "本期折旧"
+    ],
+    "evidence": [
+      "ev_34_budget_and_cost_recon"
+    ]
+  },
+  {
+    "id": "term_sales_expense",
+    "name": "销售费用",
+    "type": "metric",
+    "definition": "业务员当日报销的销售费用,单位元,含差旅、招待、运输、渠道佣金等类型。",
+    "scope": "费用管控分析;部分费用类型按月计提后跨日分摊。",
+    "aliases": [
+      "费用报销",
+      "期间费用"
+    ],
+    "evidence": [
+      "ev_11_expense_recon",
+      "ev_38_expense_type"
+    ]
+  },
+  {
+    "id": "term_expense_budget",
+    "name": "费用预算",
+    "type": "metric",
+    "definition": "部门月度费用预算按当月天数与部门人数折算后的日均每人预算,单位元。",
+    "scope": "费用偏差分析;逐日累加可还原部门月度预算。",
+    "aliases": [
+      "费用预算额",
+      "费用额度"
+    ],
+    "evidence": [
+      "ev_11_expense_recon"
+    ]
+  },
+  {
+    "id": "term_unit_output_cost",
+    "name": "单位产出成本",
+    "type": "metric",
+    "definition": "复合指标:产品总成本除以累计产量,表示每吨产品的综合成本,单位元/吨。",
+    "scope": "成本效率横向比较;分母为累计产量。",
+    "aliases": [
+      "吨成本",
+      "单位成本"
+    ],
+    "evidence": [
+      "ev_07_composite_config"
+    ]
+  },
+  {
+    "id": "term_operating_margin",
+    "name": "经营利润率",
+    "type": "metric",
+    "definition": "复合指标:(累计接单金额 − 总成本)/累计接单金额×100,以当期生产成本近似已售成本的毛利率。",
+    "scope": "综合盈利能力分析;不扣期间费用,不等同于会计净利润率。",
+    "aliases": [
+      "利润率",
+      "毛利率(复合)"
+    ],
+    "evidence": [
+      "ev_07_composite_config"
+    ]
+  },
+  {
+    "id": "term_budget_deviation",
+    "name": "预算偏差度",
+    "type": "metric",
+    "definition": "复合指标:(累计实际支出 − 累计预算)/累计预算×100,正值表示超支。",
+    "scope": "预算控制分析;分母为 0 时结果为空。",
+    "aliases": [
+      "预算偏差",
+      "超支率"
+    ],
+    "evidence": [
+      "ev_07_composite_config"
+    ]
+  },
+  {
+    "id": "term_equipment_availability",
+    "name": "设备可用率",
+    "type": "metric",
+    "definition": "复合指标:总运行小时/(总运行小时+总停机时长)×100。",
+    "scope": "设备效率分析;分子分母均须按产线去重后的口径取数。",
+    "aliases": [
+      "可用率",
+      "开机率"
+    ],
+    "evidence": [
+      "ev_07_composite_config",
+      "ev_16_equipment_run_broadcast"
+    ]
+  },
+  {
+    "id": "term_energy_efficiency",
+    "name": "能耗效率",
+    "type": "metric",
+    "definition": "复合指标:累计产量/累计用电量,表示每度电的产出吨数。",
+    "scope": "能耗绩效分析;与单位能耗(kWh/吨)互为倒数。",
+    "aliases": [
+      "能效",
+      "每度电产出"
+    ],
+    "evidence": [
+      "ev_07_composite_config"
+    ]
+  }
+]

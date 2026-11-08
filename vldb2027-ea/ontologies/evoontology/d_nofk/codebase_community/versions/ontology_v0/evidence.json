@@ -1,0 +1,226 @@
+[
+  {
+    "id": "evidence_post_row_counts",
+    "source": "codebase_community read-only SQLite",
+    "query": "SELECT COUNT(*) FROM posts; plus equivalent counts for badges, comments, postHistory, postLinks, tags, users and votes",
+    "result": "posts 91966, badges 79851, comments 174285, postHistory 303155, postLinks 11102, tags 1032, users 40325, votes 38930",
+    "validation_method": "row count per table on a read-only connection",
+    "timestamp": "2026-10-09T19:45:00Z"
+  },
+  {
+    "id": "evidence_post_type_distribution",
+    "source": "codebase_community read-only SQLite",
+    "query": "SELECT PostTypeId, COUNT(*) FROM posts GROUP BY 1 ORDER BY 1",
+    "result": "1 -> 42912, 2 -> 47755, 3 -> 6, 4 -> 639, 5 -> 640, 6 -> 9, 7 -> 5",
+    "validation_method": "grouped enumeration of the discriminator column",
+    "timestamp": "2026-10-09T19:45:00Z"
+  },
+  {
+    "id": "evidence_post_type_field_population",
+    "source": "codebase_community read-only SQLite",
+    "query": "SELECT PostTypeId, COUNT(*), SUM(ViewCount IS NOT NULL), SUM(AnswerCount IS NOT NULL), SUM(CommentCount IS NOT NULL) FROM posts GROUP BY 1",
+    "result": "PostTypeId 1 has 42912 rows with ViewCount, AnswerCount and CommentCount all populated; PostTypeId 2 has 47755 rows with Score populated and the three count columns all null; categories 3 to 7 similarly have those three columns null",
+    "validation_method": "per-category null accounting",
+    "timestamp": "2026-10-09T19:45:00Z"
+  },
+  {
+    "id": "evidence_title_only_on_questions",
+    "source": "codebase_community read-only SQLite",
+    "query": "SELECT SUM(Tags IS NULL), SUM(Body IS NULL), SUM(Title IS NULL), SUM(OwnerUserId IS NULL), SUM(ClosedDate IS NOT NULL), SUM(AcceptedAnswerId IS NOT NULL) FROM posts",
+    "result": "49054 posts have a null Title and 42912 have a non-empty Tags value; 49054 + 42912 = 91966, exactly the posts total, and 1610 posts carry a ClosedDate",
+    "validation_method": "null accounting reconciled against the question count",
+    "timestamp": "2026-10-09T19:45:00Z"
+  },
+  {
+    "id": "evidence_answer_parent_linkage",
+    "source": "codebase_community read-only SQLite",
+    "query": "SELECT p.PostTypeId, q.PostTypeId AS parent_type, COUNT(*) FROM posts p LEFT JOIN posts q ON p.ParentId = q.Id WHERE p.ParentId IS NOT NULL GROUP BY 1, 2",
+    "result": "47749 answer posts have ParentId resolving to a question post with PostTypeId 1; 6 answer posts have a ParentId that resolves to no post",
+    "validation_method": "self-join between answers and their parent posts",
+    "timestamp": "2026-10-09T19:45:00Z"
+  },
+  {
+    "id": "evidence_answer_count_faithful",
+    "source": "codebase_community read-only SQLite",
+    "query": "WITH ac AS (SELECT ParentId pid, COUNT(*) n FROM posts WHERE PostTypeId = 2 AND ParentId IS NOT NULL GROUP BY 1) SELECT SUM(CASE WHEN p.AnswerCount = COALESCE(ac.n, 0) THEN 1 ELSE 0 END), SUM(CASE WHEN p.AnswerCount <> COALESCE(ac.n, 0) THEN 1 ELSE 0 END), COUNT(*) FROM posts p LEFT JOIN ac ON ac.pid = p.Id WHERE p.PostTypeId = 1",
+    "result": "match 42912, mismatch 0, total 42912; the stored answer count reproduces the counted child answers for every question",
+    "validation_method": "denormalised value checked against the underlying child rows",
+    "timestamp": "2026-10-09T19:45:00Z"
+  },
+  {
+    "id": "evidence_accepted_answer_targets",
+    "source": "codebase_community read-only SQLite",
+    "query": "SELECT a.PostTypeId, SUM(a.ParentId = q.Id), COUNT(*) FROM posts q JOIN posts a ON q.AcceptedAnswerId = a.Id GROUP BY 1; and SELECT COUNT(*) FROM posts WHERE PostTypeId = 1 AND AcceptedAnswerId IS NOT NULL",
+    "result": "14697 questions carry AcceptedAnswerId; 14696 of them resolve through the join and every resolved target has PostTypeId 2 with ParentId equal to that question; one reference is dangling",
+    "validation_method": "join from the acceptance reference to the target answer and back to its parent",
+    "timestamp": "2026-10-09T19:45:00Z"
+  },
+  {
+    "id": "evidence_vote_type_distribution",
+    "source": "codebase_community read-only SQLite",
+    "query": "SELECT VoteTypeId, COUNT(*) FROM votes GROUP BY 1 ORDER BY 1",
+    "result": "1 -> 1451, 2 -> 33323, 3 -> 444, 5 -> 3365, 8 -> 60, 9 -> 59, 10 -> 1, 11 -> 44, 15 -> 72, 16 -> 111",
+    "validation_method": "grouped enumeration of the vote category column",
+    "timestamp": "2026-10-09T19:45:00Z"
+  },
+  {
+    "id": "evidence_score_not_vote_sum",
+    "source": "codebase_community read-only SQLite",
+    "query": "SELECT SUM(CASE WHEN p.Score = (SELECT COALESCE(SUM(CASE WHEN v.VoteTypeId = 2 THEN 1 WHEN v.VoteTypeId = 3 THEN -1 ELSE 0 END), 0) FROM votes v WHERE v.PostId = p.Id) THEN 1 ELSE 0 END), COUNT(*) FROM posts p WHERE p.PostTypeId IN (1, 2)",
+    "result": "22031 of 90667 question and answer posts have a stored score equal to the upvote-minus-downvote total of their vote rows, so the stored score is not reproducible from the votes table",
+    "validation_method": "stored score compared against an independent aggregation of vote rows",
+    "timestamp": "2026-10-09T19:45:00Z"
+  },
+  {
+    "id": "evidence_votes_date_coverage",
+    "source": "codebase_community read-only SQLite",
+    "query": "SELECT COUNT(*), COUNT(UserId), COUNT(BountyAmount), MIN(CreationDate), MAX(CreationDate) FROM votes; and SELECT DISTINCT length(CreationDate) FROM votes",
+    "result": "38930 rows, of which 3425 carry a UserId and 101 carry a BountyAmount; dates span 2010-07-19 to 2011-05-01 and every stored value has length 10, i.e. date granularity without time of day",
+    "validation_method": "coverage and granularity accounting on the votes table",
+    "timestamp": "2026-10-09T19:45:00Z"
+  },
+  {
+    "id": "evidence_comment_coverage",
+    "source": "codebase_community read-only SQLite",
+    "query": "SELECT COUNT(*), COUNT(PostId), COUNT(UserId), COUNT(UserDisplayName), MIN(CreationDate), MAX(CreationDate), MIN(Score), MAX(Score), SUM(Score < 0) FROM comments; and SELECT 'comments.PostId orphans', COUNT(*) FROM comments c LEFT JOIN posts p ON c.PostId = p.Id WHERE p.Id IS NULL",
+    "result": "174285 comments, all with a PostId, 171450 with a UserId, only 2831 with a UserDisplayName; scores range 0 to 90 with no negative values; 36 comments reference a post that does not exist",
+    "validation_method": "coverage accounting and outer join orphan count",
+    "timestamp": "2026-10-09T19:45:00Z"
+  },
+  {
+    "id": "evidence_comment_count_denormalized",
+    "source": "codebase_community read-only SQLite",
+    "query": "WITH cc AS (SELECT PostId pid, COUNT(*) n FROM comments GROUP BY 1) SELECT SUM(CASE WHEN p.CommentCount = COALESCE(cc.n, 0) THEN 1 ELSE 0 END), SUM(CASE WHEN p.CommentCount <> COALESCE(cc.n, 0) THEN 1 ELSE 0 END), COUNT(*) FROM posts p LEFT JOIN cc ON cc.pid = p.Id WHERE p.CommentCount IS NOT NULL",
+    "result": "match 91946, mismatch 20, total 91966; the stored comment count disagrees with the counted comments on 20 posts",
+    "validation_method": "denormalised value checked against the underlying child rows",
+    "timestamp": "2026-10-09T19:45:00Z"
+  },
+  {
+    "id": "evidence_user_population",
+    "source": "codebase_community read-only SQLite",
+    "query": "SELECT COUNT(*), COUNT(Reputation), MIN(Reputation), MAX(Reputation), COUNT(Location), COUNT(Age), MIN(Age), MAX(Age) FROM users; and anti-joins against posts.OwnerUserId and comments.UserId",
+    "result": "40325 users, all with a Reputation, minimum 1 and maximum 87393; Location populated for 11691 and Age for 8318 with range 13 to 94; 18346 accounts own no post and 621 accounts are reachable only through comments",
+    "validation_method": "coverage accounting plus anti-joins from users to authored content",
+    "timestamp": "2026-10-09T19:45:00Z"
+  },
+  {
+    "id": "evidence_user_reputation_skew",
+    "source": "codebase_community read-only SQLite",
+    "query": "SELECT SUM(Reputation >= 10000), SUM(Reputation BETWEEN 1000 AND 9999), SUM(Reputation BETWEEN 100 AND 999), SUM(Reputation < 100) FROM users; and an offset query for the median",
+    "result": "29 accounts at or above 10000, 276 between 1000 and 9999, 12764 between 100 and 999 and 27256 below 100; the median reputation is approximately 11 and the top accounts are 919 at 87393, 805 at 65272 and 686 at 44152",
+    "validation_method": "bucketed distribution and median position over the reputation column",
+    "timestamp": "2026-10-09T19:45:00Z"
+  },
+  {
+    "id": "evidence_community_user",
+    "source": "codebase_community read-only SQLite",
+    "query": "SELECT COUNT(*) FROM users WHERE Id < 0; SELECT Id, Reputation, DisplayName, Location FROM users WHERE Id = -1",
+    "result": "one row with Id = -1, named Community, with Reputation 1 and location 'on the server farm'",
+    "validation_method": "negative identifier scan",
+    "timestamp": "2026-10-09T19:45:00Z"
+  },
+  {
+    "id": "evidence_badge_distribution",
+    "source": "codebase_community read-only SQLite",
+    "query": "SELECT COUNT(*), COUNT(DISTINCT Name) FROM badges; and SELECT UserId, COUNT(*) nb FROM badges GROUP BY 1 ORDER BY nb DESC LIMIT 3",
+    "result": "79851 badge rows and 153 distinct names; the most common award count is a single badge for 11259 users, and the top earners are user 919 with 456 badges, user 805 with 318 and user 930 with 282",
+    "validation_method": "distribution over badge awards grouped by user",
+    "timestamp": "2026-10-09T19:45:00Z"
+  },
+  {
+    "id": "evidence_badge_name_composition",
+    "source": "codebase_community read-only SQLite",
+    "query": "SELECT COUNT(*) FROM badges WHERE Name IN (SELECT TagName FROM tags WHERE TagName IS NOT NULL); and the same with COUNT(DISTINCT Name) and COUNT(DISTINCT TagName)",
+    "result": "300 badge rows across 73 distinct names match a tag name, and those 73 names cover 73 distinct tag names, out of 153 distinct badge names in total; the remaining badge names are general achievements such as Teacher, Student and Yearling",
+    "validation_method": "value-domain overlap between badge names and tag names",
+    "timestamp": "2026-10-09T19:45:00Z"
+  },
+  {
+    "id": "evidence_tags_format",
+    "source": "codebase_community read-only SQLite",
+    "query": "SELECT Tags FROM posts WHERE Tags IS NOT NULL AND Tags <> '' LIMIT 3",
+    "result": "values such as '<bayesian><prior><elicitation>', '<distributions><normality>' and '<software><open-source>', showing angle-bracket delimited tag names inside a single text column",
+    "validation_method": "inspection of representative tag values",
+    "timestamp": "2026-10-09T19:45:00Z"
+  },
+  {
+    "id": "evidence_tags_population",
+    "source": "codebase_community read-only SQLite",
+    "query": "SELECT COUNT(*), COUNT(ExcerptPostId), COUNT(WikiPostId), MIN(Count), MAX(Count) FROM tags; and SELECT SUM(Tags IS NOT NULL AND Tags <> '') FROM posts",
+    "result": "1032 tags, of which 596 carry an ExcerptPostId and a WikiPostId; tag counts range 1 to 7244 with 'r' the largest; 42912 posts carry a non-empty tag string, exactly the question count",
+    "validation_method": "coverage accounting across the tags table and the tag text column",
+    "timestamp": "2026-10-09T19:45:00Z"
+  },
+  {
+    "id": "evidence_viewcount_scope",
+    "source": "codebase_community read-only SQLite",
+    "query": "SELECT PostTypeId, COUNT(*), SUM(ViewCount IS NOT NULL) FROM posts GROUP BY 1",
+    "result": "ViewCount is populated on all 42912 question posts and on none of the posts in every other category",
+    "validation_method": "per-category null accounting",
+    "timestamp": "2026-10-09T19:45:00Z"
+  },
+  {
+    "id": "evidence_post_history_types",
+    "source": "codebase_community read-only SQLite",
+    "query": "SELECT PostHistoryTypeId, COUNT(*), SUM(Text IS NULL) FROM postHistory GROUP BY 1 ORDER BY 1",
+    "result": "303155 rows in total; leading codes are 2 -> 91974, 5 -> 69413, 3 -> 42921, 1 -> 42909, 4 -> 16008, 6 -> 12731, 25 -> 10320, 24 -> 7017 and 16 -> 2193, with further codes up to 38 in smaller numbers; Text is populated on all rows including codes 1, 2, 3, 16, 24 and 25",
+    "validation_method": "grouped enumeration of the revision category column",
+    "timestamp": "2026-10-09T19:45:00Z"
+  },
+  {
+    "id": "evidence_post_history_initial_types",
+    "source": "codebase_community read-only SQLite",
+    "query": "SELECT PostHistoryTypeId, COUNT(*) FROM postHistory WHERE PostHistoryTypeId IN (1, 2, 3, 16, 24, 25) GROUP BY 1",
+    "result": "code 1 has 42909 rows approximating the 42912 questions, code 3 has 42921 rows also approximating the question count, and code 2 has 91974 rows approximating the 91966 posts",
+    "validation_method": "creation-event counts reconciled against post and question counts",
+    "timestamp": "2026-10-09T19:45:00Z"
+  },
+  {
+    "id": "evidence_postlinks_types",
+    "source": "codebase_community read-only SQLite",
+    "query": "SELECT LinkTypeId, COUNT(*), SUM(PostId = RelatedPostId), COUNT(DISTINCT PostId) FROM postLinks GROUP BY 1; and an outer join from postLinks to posts",
+    "result": "11102 links in total: LinkTypeId 1 has 10186 rows and LinkTypeId 3 has 916 rows; no row links a post to itself; one link references a PostId with no matching post",
+    "validation_method": "grouped enumeration plus self-link and orphan checks",
+    "timestamp": "2026-10-09T19:45:00Z"
+  },
+  {
+    "id": "evidence_post_dates",
+    "source": "codebase_community read-only SQLite",
+    "query": "SELECT MIN(CreaionDate), MAX(CreaionDate), MIN(LasActivityDate), MAX(LasActivityDate), MIN(LastEditDate), MAX(LastEditDate) FROM posts; and SELECT DISTINCT length(CreaionDate) FROM posts LIMIT 3",
+    "result": "posts span 2009-02-02 to 2014-09-14 on the creation column, the last-activity column spans the same window and the last-edit column starts at 2010-07-19; stored post timestamps include time of day with length 21",
+    "validation_method": "range and granularity inspection of the post timestamp columns",
+    "timestamp": "2026-10-09T19:45:00Z"
+  },
+  {
+    "id": "evidence_user_dates",
+    "source": "codebase_community read-only SQLite",
+    "query": "SELECT MIN(CreationDate), MAX(CreationDate), MIN(LastAccessDate), MAX(LastAccessDate) FROM users",
+    "result": "account creation dates span 2010-07-19 to 2014-09-14 and last-access dates span 2010-07-19 to 2014-09-14",
+    "validation_method": "range inspection of the user timestamp columns",
+    "timestamp": "2026-10-09T19:45:00Z"
+  },
+  {
+    "id": "evidence_displayname_fallback",
+    "source": "codebase_community read-only SQLite",
+    "query": "SELECT SUM(OwnerUserId IS NULL AND OwnerDisplayName IS NOT NULL), SUM(OwnerUserId IS NULL AND OwnerDisplayName IS NULL), SUM(OwnerUserId IS NOT NULL AND OwnerDisplayName IS NULL) FROM posts; and the equivalent query over comments",
+    "result": "in posts, 1388 rows have a display name but no user identifier, 4 have neither and 89453 have an identifier but no display name; in comments, 2831 rows have a display name but no identifier and 171450 have an identifier but no display name",
+    "validation_method": "cross-tabulation of identifier presence against display-name presence",
+    "timestamp": "2026-10-09T19:45:00Z"
+  },
+  {
+    "id": "evidence_orphan_references",
+    "source": "codebase_community read-only SQLite",
+    "query": "left outer joins from posts to users on OwnerUserId, from posts to posts on AcceptedAnswerId and ParentId, from badges to users on UserId, from comments to posts on PostId and from postLinks to posts on PostId",
+    "result": "no orphans on posts.OwnerUserId or badges.UserId; 1 orphan on posts.AcceptedAnswerId, 6 on posts.ParentId, 36 on comments.PostId and 1 on postLinks.PostId",
+    "validation_method": "outer join orphan counts for each declared reference",
+    "timestamp": "2026-10-09T19:45:00Z"
+  },
+  {
+    "id": "evidence_badge_dates_and_names",
+    "source": "codebase_community read-only SQLite",
+    "query": "SELECT MIN(Date), MAX(Date) FROM badges; and SELECT DISTINCT Name FROM badges ORDER BY 1; and SELECT * FROM badges LIMIT 5",
+    "result": "badge awards span 2010-07-19 to 2014-09-14; the distinct names include general achievements such as Teacher, Student, Scholar, Yearling and Fanatic alongside subject-shaped names such as anova, arima, bayesian, r and regression",
+    "validation_method": "range inspection and enumeration of the badge name domain",
+    "timestamp": "2026-10-09T19:45:00Z"
+  }
+]

@@ -1,0 +1,317 @@
+[
+  {
+    "id": "constraint_segment_name_ambiguity",
+    "target": "customer_segment",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "segment",
+      "segments",
+      "premium segment",
+      "discount segment",
+      "customer segment",
+      "station segment",
+      "SME",
+      "KAM",
+      "LAM",
+      "overall segment"
+    ],
+    "severity": "block",
+    "scope": "Any question mentioning a segment, especially one that also mentions a country or a station attribute",
+    "confidence": "high",
+    "description": "Two different tables each contain a column named Segment with completely disjoint value domains. customers.Segment holds business customer classes (KAM, LAM, SME) and describes who the customer is. gasstations.Segment holds retail station categories (Discount, Noname, Other, Premium, Value for money) and describes what kind of outlet the station is. Mentioning 'premium' or 'discount' indicates the gas station segment; mentioning an enterprise class such as SME indicates the customer segment. Selecting the wrong column silently produces a value that does not exist in the intended domain.",
+    "evidence": [
+      "e_customer_segment_values",
+      "e_gasstation_segment_values"
+    ]
+  },
+  {
+    "id": "constraint_customer_segment_enum",
+    "target": "m_customer_segment",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "SME",
+      "SMEs",
+      "KAM",
+      "LAM",
+      "customer segment",
+      "enterprise",
+      "small and medium"
+    ],
+    "severity": "warning",
+    "scope": "Filtering or grouping customers by their segment value",
+    "confidence": "high",
+    "description": "customers.Segment takes exactly three values: 'SME' (26763 customers), 'LAM' (3658) and 'KAM' (2040). The construction workload refers to customers with the value 'SME' as SMEs and asks how many more of them pay in one currency than another. Values are upper-case and should be matched exactly.",
+    "evidence": [
+      "e_customer_segment_values"
+    ]
+  },
+  {
+    "id": "constraint_gas_station_segment_enum",
+    "target": "m_gas_station_segment",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "premium",
+      "discount",
+      "noname",
+      "value for money",
+      "other",
+      "station segment",
+      "gas station type"
+    ],
+    "severity": "block",
+    "scope": "Filtering or grouping gas stations by their segment value",
+    "confidence": "high",
+    "description": "gasstations.Segment takes exactly five values: 'Other' (2392 stations), 'Premium' (1428), 'Noname' (1005), 'Value for money' (597) and 'Discount' (294). Only the first letter is capitalised, so 'premium' in a question must match the stored value 'Premium' and 'discount' must match 'Discount'. A percentage of one segment against the overall segment means that segment's station count divided by the total station count of the stated scope.",
+    "evidence": [
+      "e_gasstation_segment_values"
+    ]
+  },
+  {
+    "id": "constraint_gas_station_country_enum",
+    "target": "m_gas_station_country",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "country",
+      "CZE",
+      "SVK",
+      "Czech Republic",
+      "Slovakia",
+      "Czech",
+      "Slovak"
+    ],
+    "severity": "block",
+    "scope": "Filtering or grouping gas stations by country",
+    "confidence": "high",
+    "description": "gasstations.Country takes exactly two three-letter values: 'CZE' for the Czech Republic (4836 stations) and 'SVK' for Slovakia (880 stations). Questions naming the countries in prose must be translated to these codes; no other country values exist in the data. The country belongs to the station, so a country filter applies to the station where a transaction took place, not to the customer.",
+    "evidence": [
+      "e_gasstation_country_values"
+    ]
+  },
+  {
+    "id": "constraint_customer_currency_enum",
+    "target": "m_customer_currency",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "currency",
+      "CZK",
+      "EUR",
+      "Czech koruna",
+      "koruna",
+      "euro",
+      "euros",
+      "pay in",
+      "paying"
+    ],
+    "severity": "block",
+    "scope": "Filtering or grouping customers by currency",
+    "confidence": "high",
+    "description": "customers.Currency takes exactly two values: 'CZK' for the Czech koruna (30459 customers) and 'EUR' for the euro (2002 customers). The construction workload refers to Czech koruna as CZK and to euros as EUR. Currency is an attribute of the customer record, so questions about customers who pay in a currency and questions about consumption or transactions of those customers are answered by attributing the customer's currency to their records.",
+    "evidence": [
+      "e_customer_currency_values"
+    ]
+  },
+  {
+    "id": "constraint_transactions_scope",
+    "target": "m_transaction",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "transactions",
+      "transaction history",
+      "when did transactions happen",
+      "date range",
+      "2013",
+      "June 2013",
+      "coverage",
+      "sample"
+    ],
+    "severity": "block",
+    "scope": "Any question that filters transactions by a period other than late August 2012",
+    "confidence": "high",
+    "description": "transactions_1k holds only 1000 rows and covers just four consecutive days: 2012-08-23 (10 lines), 2012-08-24 (492), 2012-08-25 (425) and 2012-08-26 (73). A question asking for transactions in a period outside this window, such as June 2013, matches no rows and legitimately returns an empty result rather than indicating a query error. The table is a sample and must not be treated as the complete transaction history of the business.",
+    "evidence": [
+      "e_transaction_date_range",
+      "e_transaction_scope"
+    ]
+  },
+  {
+    "id": "constraint_yearmonth_scope",
+    "target": "m_year_month",
+    "constraint_type": "scope",
+    "trigger_keywords": [
+      "2012",
+      "2013",
+      "year",
+      "month",
+      "period",
+      "gas consumption period",
+      "over the year"
+    ],
+    "severity": "warning",
+    "scope": "Time filtering of consumption records",
+    "confidence": "high",
+    "description": "Consumption records span the periods 201112 through 201311, of which 21 distinct months are actually present: every month of calendar year 2012 is covered, while 201112 and the first months of 2013 are sparse (201112 has 8 records and 201301 has 139). A question about a calendar year such as 2012 means all periods whose four-character year prefix is '2012', covering January through December 2012 inclusive.",
+    "evidence": [
+      "e_yearmonth_date_format",
+      "e_yearmonth_scope"
+    ]
+  },
+  {
+    "id": "constraint_yearmonth_date_format",
+    "target": "m_year_month",
+    "constraint_type": "unit",
+    "trigger_keywords": [
+      "date format",
+      "YYYYMM",
+      "yearmonth",
+      "month filter",
+      "201202",
+      "201306"
+    ],
+    "severity": "block",
+    "scope": "Interpreting or filtering the consumption period column",
+    "confidence": "high",
+    "description": "The period column in the consumption table is a six-character text value of the form 'YYYYMM' such as '201202' for February 2012, not a calendar date. The first four characters are the year and the final two are the zero-padded month, so a month-level filter is expressed by matching the six-character code and a year-level filter by the four-character prefix.",
+    "evidence": [
+      "e_yearmonth_date_format"
+    ]
+  },
+  {
+    "id": "constraint_transaction_date_format",
+    "target": "m_transaction_date",
+    "constraint_type": "unit",
+    "trigger_keywords": [
+      "date",
+      "2012-08-26",
+      "2012/8/26",
+      "date format",
+      "on a day"
+    ],
+    "severity": "warning",
+    "scope": "Interpreting or filtering the transaction date column",
+    "confidence": "high",
+    "description": "Transaction dates are stored as 'YYYY-MM-DD' text values, for example '2012-08-26'. A date written in another notation, such as 2012/8/26, must be normalised to this format before comparison.",
+    "evidence": [
+      "e_transaction_date_range"
+    ]
+  },
+  {
+    "id": "constraint_transaction_time_format",
+    "target": "m_transaction_time",
+    "constraint_type": "unit",
+    "trigger_keywords": [
+      "time",
+      "8:00",
+      "9:00",
+      "hour",
+      "time of day",
+      "HH:MM:SS"
+    ],
+    "severity": "warning",
+    "scope": "Interpreting or filtering the transaction time column",
+    "confidence": "high",
+    "description": "Transaction times are stored as zero-padded 'HH:MM:SS' text values ranging from 00:07:00 to 23:20:00. Because the format is fixed-width, a window such as 8:00 to 9:00 is expressed with the padded literals '08:00:00' and '09:00:00' and the comparison behaves like a chronological one.",
+    "evidence": [
+      "e_time_format"
+    ]
+  },
+  {
+    "id": "constraint_transaction_grain",
+    "target": "transaction",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "transaction",
+      "line item",
+      "row",
+      "purchase",
+      "spending",
+      "amount",
+      "price"
+    ],
+    "severity": "info",
+    "scope": "Any aggregation over the transaction table",
+    "confidence": "high",
+    "description": "One row of the transaction table represents a single purchase line: one product bought at one gas station at one recorded time by one card belonging to one customer. Amount is the quantity bought on that line and Price is the total monetary value paid for that line, not a unit price. The table also carries a card identifier; a card belongs to exactly one customer while a customer may hold many cards, so counting customers and counting cards give different numbers and aggregating spending by card is not the same as aggregating it by customer.",
+    "evidence": [
+      "e_transaction_join_integrity",
+      "e_card_grain"
+    ]
+  },
+  {
+    "id": "constraint_amount_zero",
+    "target": "m_transaction_amount",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "amount",
+      "quantity",
+      "zero",
+      "divide",
+      "average price",
+      "price per item"
+    ],
+    "severity": "warning",
+    "scope": "Computing ratios that use the purchased quantity as a denominator",
+    "confidence": "high",
+    "description": "91 of the 1000 transaction lines record a purchased quantity of zero while still carrying a positive price, so a price-per-unit ratio computed line by line would divide by zero or drop those lines inconsistently. Ratios such as average price per unit must be formed from aggregated totals, and line-level division must be avoided.",
+    "evidence": [
+      "e_amount_zero"
+    ]
+  },
+  {
+    "id": "constraint_avg_price_definition",
+    "target": "average_price_per_unit",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "average price",
+      "price per item",
+      "per single item",
+      "unit price",
+      "average price per single item"
+    ],
+    "severity": "block",
+    "scope": "Answering questions about the average price of purchased items",
+    "confidence": "high",
+    "description": "The average price per single item is defined as the customer's total transaction price divided by the customer's total purchased amount. It is an aggregate ratio over that customer's transaction lines, not the mean of per-line prices, and the same definition applies when the customer is first identified as the highest spending customer.",
+    "evidence": [
+      "e_top_spending_customer"
+    ]
+  },
+  {
+    "id": "constraint_customer_population_scope",
+    "target": "m_customer",
+    "constraint_type": "scope",
+    "trigger_keywords": [
+      "how many customers",
+      "number of customers",
+      "percentage of customers",
+      "customer population"
+    ],
+    "severity": "warning",
+    "scope": "Any count or percentage whose base is a customer population",
+    "confidence": "high",
+    "description": "The customer population depends on which table defines it. The customer table holds 32461 customers, the consumption table covers 30566 distinct customers and the transaction table touches only 517. A percentage of customers is therefore computed against the base implied by the question: a monthly consumption question uses the customers present in that month, whereas a currency or segment question uses the full customer table.",
+    "evidence": [
+      "e_rowcounts",
+      "e_yearmonth_integrity",
+      "e_transaction_join_integrity"
+    ]
+  },
+  {
+    "id": "constraint_consumption_meaning",
+    "target": "gas_consumption",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "consumption",
+      "gas consumption",
+      "fuel",
+      "consumed",
+      "more than"
+    ],
+    "severity": "warning",
+    "scope": "Interpreting or thresholding monthly consumption values",
+    "confidence": "medium",
+    "description": "Consumption records the fuel volume a customer used during the month and is independent of the transaction table. Values range from -582092.86 to 2052187.11 and 152 records are negative, which indicates that the measure can carry corrections or reversals rather than being strictly positive usage. A question asking what share of customers consumed more than a given threshold compares that threshold directly against the consumption value for the stated month.",
+    "evidence": [
+      "e_consumption_stats"
+    ]
+  }
+]

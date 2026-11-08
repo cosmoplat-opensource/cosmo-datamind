@@ -1,0 +1,644 @@
+[
+  {
+    "id": "term_match",
+    "name": "Match",
+    "type": "entity",
+    "definition": "A single competitive football fixture between two teams, identified by Match.match_api_id and uniquely stored in the Match table.",
+    "scope": "european_football_2; the central fact table of the football domain",
+    "aliases": [
+      "fixture",
+      "game",
+      "Match"
+    ],
+    "evidence": [
+      "ev_schema_tables",
+      "ev_row_counts"
+    ]
+  },
+  {
+    "id": "term_team",
+    "name": "Team",
+    "type": "entity",
+    "definition": "A football club that can appear as the home or away side of a match and carries both a long and a short display name.",
+    "scope": "european_football_2; 299 clubs across 11 national leagues",
+    "aliases": [
+      "club",
+      "side",
+      "Team"
+    ],
+    "evidence": [
+      "ev_row_counts",
+      "ev_match_team_fk"
+    ]
+  },
+  {
+    "id": "term_player",
+    "name": "Player",
+    "type": "entity",
+    "definition": "A footballer with a name, a FIFA identifier, a birth date, a height and a weight, who can be selected in a match lineup.",
+    "scope": "european_football_2; 11060 players",
+    "aliases": [
+      "footballer",
+      "Player"
+    ],
+    "evidence": [
+      "ev_row_counts",
+      "ev_player_player_fk"
+    ]
+  },
+  {
+    "id": "term_league",
+    "name": "League",
+    "type": "entity",
+    "definition": "A national top-division competition, identified by League.id and named in League.name, to which each match belongs.",
+    "scope": "european_football_2; 11 leagues",
+    "aliases": [
+      "competition",
+      "division",
+      "League"
+    ],
+    "evidence": [
+      "ev_league_country_link",
+      "ev_league_season_coverage"
+    ]
+  },
+  {
+    "id": "term_country",
+    "name": "Country",
+    "type": "entity",
+    "definition": "The country associated with a league, stored in the Country table and referenced by League.country_id.",
+    "scope": "european_football_2; 11 countries",
+    "aliases": [
+      "nation",
+      "Country"
+    ],
+    "evidence": [
+      "ev_league_country_link"
+    ]
+  },
+  {
+    "id": "term_season",
+    "name": "Season",
+    "type": "dimension",
+    "definition": "The competition year label used by this database, a TEXT value of the form 'YYYY/YYYY' naming a start and an end year.",
+    "scope": "european_football_2; eight values from 2008/2009 to 2015/2016",
+    "aliases": [
+      "campaign",
+      "season label"
+    ],
+    "evidence": [
+      "ev_season_range",
+      "ev_league_season_coverage"
+    ]
+  },
+  {
+    "id": "term_match_stage",
+    "name": "Match Stage",
+    "type": "dimension",
+    "definition": "The integer round or matchday index within a league season, from 1 up to the number of rounds that the league's fixture list produces.",
+    "scope": "european_football_2; Match.stage takes integer values 1..38",
+    "aliases": [
+      "matchday",
+      "round",
+      "stage"
+    ],
+    "evidence": [
+      "ev_stage_count"
+    ]
+  },
+  {
+    "id": "term_home_away_role",
+    "name": "Home/Away Role",
+    "type": "dimension",
+    "definition": "Which of the two participating sides a match row describes, expressed in this database through the home_-prefixed and away_-prefixed column pairs rather than through a role column.",
+    "scope": "european_football_2; applies to team, goal and player-slot columns of Match",
+    "aliases": [
+      "home side",
+      "away side",
+      "venue role"
+    ],
+    "evidence": [
+      "ev_schema_tables",
+      "ev_match_team_fk"
+    ]
+  },
+  {
+    "id": "term_match_outcome",
+    "name": "Match Outcome",
+    "type": "category",
+    "definition": "The result of a match from one side's perspective: win, draw or loss, determined by comparing the goals that side scored with the goals it conceded.",
+    "scope": "european_football_2; derived from the scoreline columns, not stored as a column",
+    "aliases": [
+      "result",
+      "win",
+      "draw",
+      "loss",
+      "match result"
+    ],
+    "evidence": [
+      "ev_schema_tables",
+      "ev_goal_xml_vs_scoreline"
+    ]
+  },
+  {
+    "id": "term_goal",
+    "name": "Goal",
+    "type": "metric",
+    "definition": "A single scoring event, counted for the side that benefits from it; goals are the atomic unit behind every scoreline in the database.",
+    "scope": "european_football_2; stored only as an aggregate per side in the scoreline columns",
+    "aliases": [
+      "scored",
+      "goal scored",
+      "goals"
+    ],
+    "evidence": [
+      "ev_row_counts",
+      "ev_goal_type_values"
+    ]
+  },
+  {
+    "id": "term_team_goals_for",
+    "name": "Team Goals For",
+    "type": "metric",
+    "definition": "The number of goals a given team scored across a chosen scope of matches, taking the home or away scoreline column according to that team's role in each match.",
+    "scope": "european_football_2; aggregation scope is any set of matches",
+    "aliases": [
+      "goals scored",
+      "goals for",
+      "GF"
+    ],
+    "evidence": [
+      "ev_match_team_fk",
+      "ev_home_away_role_required"
+    ]
+  },
+  {
+    "id": "term_team_goals_against",
+    "name": "Team Goals Against",
+    "type": "metric",
+    "definition": "The number of goals a given team conceded across a chosen scope of matches, taking the scoreline column belonging to its opponent in each match.",
+    "scope": "european_football_2; aggregation scope is any set of matches",
+    "aliases": [
+      "goals conceded",
+      "goals against",
+      "GA"
+    ],
+    "evidence": [
+      "ev_match_team_fk",
+      "ev_home_away_role_required"
+    ]
+  },
+  {
+    "id": "term_goal_difference",
+    "name": "Goal Difference",
+    "type": "metric",
+    "definition": "Team goals for minus team goals against over the same scope of matches, used as a measure of dominance independent of the number of matches played.",
+    "scope": "european_football_2; meaningful only within a fixed league and season scope",
+    "aliases": [
+      "GD",
+      "goal differential"
+    ],
+    "evidence": [
+      "ev_home_away_role_required"
+    ]
+  },
+  {
+    "id": "term_league_points",
+    "name": "League Points",
+    "type": "metric",
+    "definition": "The competition points a team accumulates from match outcomes within a league season, conventionally three for a win, one for a draw and zero for a loss.",
+    "scope": "european_football_2; the point award rule is not encoded anywhere in the database",
+    "aliases": [
+      "points",
+      "standings points",
+      "pts"
+    ],
+    "evidence": [
+      "ev_league_points_absent"
+    ]
+  },
+  {
+    "id": "term_home_advantage",
+    "name": "Home Advantage",
+    "type": "concept",
+    "definition": "The tendency for the side playing at its own ground to achieve better outcomes and score more goals than the visiting side over a comparable set of matches.",
+    "scope": "european_football_2; measurable by comparing home-side and away-side outcome rates",
+    "aliases": [
+      "home field advantage",
+      "home bias"
+    ],
+    "evidence": [
+      "ev_schema_tables"
+    ]
+  },
+  {
+    "id": "term_team_api_identifier",
+    "name": "Team API Identifier",
+    "type": "concept",
+    "definition": "The identifier used by the match and team tables to link a team consistently across fixtures and team attribute snapshots.",
+    "scope": "european_football_2; Team.team_api_id, Match.home_team_api_id, Match.away_team_api_id, Team_Attributes.team_api_id",
+    "aliases": [
+      "team_api_id"
+    ],
+    "evidence": [
+      "ev_match_team_fk",
+      "ev_team_attr_coverage"
+    ]
+  },
+  {
+    "id": "term_team_fifa_identifier",
+    "name": "Team FIFA Identifier",
+    "type": "concept",
+    "definition": "The alternative team identifier carried both on the team record and on every team attribute snapshot, absent for a small number of teams.",
+    "scope": "european_football_2; Team.team_fifa_api_id, Team_Attributes.team_fifa_api_id",
+    "aliases": [
+      "team_fifa_api_id"
+    ],
+    "evidence": [
+      "ev_team_fifa_nulls"
+    ]
+  },
+  {
+    "id": "term_player_api_identifier",
+    "name": "Player API Identifier",
+    "type": "concept",
+    "definition": "The identifier used by the player table, the match lineup slots and the player attribute snapshots to link a player consistently.",
+    "scope": "european_football_2; Player.player_api_id, Match.home_player_1..11 and away_player_1..11, Player_Attributes.player_api_id",
+    "aliases": [
+      "player_api_id"
+    ],
+    "evidence": [
+      "ev_player_player_fk",
+      "ev_lineup_completeness"
+    ]
+  },
+  {
+    "id": "term_player_fifa_identifier",
+    "name": "Player FIFA Identifier",
+    "type": "concept",
+    "definition": "The alternative player identifier carried both on the player record and on every player attribute snapshot.",
+    "scope": "european_football_2; Player.player_fifa_api_id, Player_Attributes.player_fifa_api_id",
+    "aliases": [
+      "player_fifa_api_id"
+    ],
+    "evidence": [
+      "ev_player_player_fk"
+    ]
+  },
+  {
+    "id": "term_player_overall_rating",
+    "name": "Player Overall Rating",
+    "type": "metric",
+    "definition": "A single summary quality score for a player at a point in time, recorded on the player attribute snapshot.",
+    "scope": "european_football_2; observed values run from 33 to 94",
+    "aliases": [
+      "overall rating",
+      "rating",
+      "overall_rating"
+    ],
+    "evidence": [
+      "ev_skill_column_range",
+      "ev_player_snapshot_dates"
+    ]
+  },
+  {
+    "id": "term_player_potential",
+    "name": "Player Potential",
+    "type": "metric",
+    "definition": "An upper-bound quality score for a player at a point in time, recording how good the player is judged likely to become.",
+    "scope": "european_football_2; observed values run from 39 to 97",
+    "aliases": [
+      "potential",
+      "ceiling"
+    ],
+    "evidence": [
+      "ev_skill_column_range"
+    ]
+  },
+  {
+    "id": "term_player_skill_attribute",
+    "name": "Player Skill Attribute",
+    "type": "concept",
+    "definition": "One of the 33 granular per-player ability scores on a player attribute snapshot, covering technical, mental and physical facets of outfield and goalkeeping play.",
+    "scope": "european_football_2; observed values run from 1 to 98 on a bounded rating scale",
+    "aliases": [
+      "skill",
+      "attribute",
+      "ability score",
+      "FIFA attributes"
+    ],
+    "evidence": [
+      "ev_skill_column_range"
+    ]
+  },
+  {
+    "id": "term_goalkeeper_skill_attribute",
+    "name": "Goalkeeper Skill Attribute",
+    "type": "concept",
+    "definition": "The subset of player skill attributes that describe goalkeeping ability specifically, namely diving, handling, kicking, positioning and reflexes.",
+    "scope": "european_football_2; present on every player snapshot, but only meaningful for goalkeepers",
+    "aliases": [
+      "gk attributes",
+      "goalkeeping ability"
+    ],
+    "evidence": [
+      "ev_skill_column_range"
+    ]
+  },
+  {
+    "id": "term_player_physical_profile",
+    "name": "Player Physical Profile",
+    "type": "concept",
+    "definition": "The recorded body measurements of a player, stored as a height and a weight on the player record.",
+    "scope": "european_football_2; height recorded in centimetres, weight recorded in pounds",
+    "aliases": [
+      "height",
+      "weight",
+      "body measurements",
+      "physical"
+    ],
+    "evidence": [
+      "ev_height_inches_conversion",
+      "ev_weight_units"
+    ]
+  },
+  {
+    "id": "term_player_age",
+    "name": "Player Age",
+    "type": "metric",
+    "definition": "A player's completed years between the recorded birth date and the date of the observation, which for attribute questions must be the snapshot date rather than a fixed current date.",
+    "scope": "european_football_2; derived from Player.birthday and a comparison date",
+    "aliases": [
+      "age",
+      "years old"
+    ],
+    "evidence": [
+      "ev_player_snapshot_dates"
+    ]
+  },
+  {
+    "id": "term_work_rate",
+    "name": "Work Rate",
+    "type": "dimension",
+    "definition": "A categorical descriptor of how intensively a player contributes to attacking and to defensive phases, held in two separate snapshot columns.",
+    "scope": "european_football_2; both columns contain values outside the intended vocabulary",
+    "aliases": [
+      "attacking work rate",
+      "defensive work rate",
+      "work rate"
+    ],
+    "evidence": [
+      "ev_work_rate_values"
+    ]
+  },
+  {
+    "id": "term_preferred_foot",
+    "name": "Preferred Foot",
+    "type": "dimension",
+    "definition": "Which foot a player favours, recorded as a two-value categorical descriptor on the player attribute snapshot.",
+    "scope": "european_football_2; values observed left and right, plus empty entries",
+    "aliases": [
+      "foot",
+      "left footed",
+      "right footed"
+    ],
+    "evidence": [
+      "ev_preferred_foot_values"
+    ]
+  },
+  {
+    "id": "term_player_attribute_snapshot",
+    "name": "Player Attribute Snapshot",
+    "type": "concept",
+    "definition": "A dated record of one player's ratings and skill attributes, so that a player's ability is represented as a time series of point-in-time measurements rather than a single current value.",
+    "scope": "european_football_2; Player_Attributes, keyed by player_api_id together with date",
+    "aliases": [
+      "player attributes",
+      "snapshot",
+      "Player_Attributes"
+    ],
+    "evidence": [
+      "ev_player_snapshot_dates",
+      "ev_player_attr_dupes"
+    ]
+  },
+  {
+    "id": "term_team_playing_style_profile",
+    "name": "Team Playing Style Profile",
+    "type": "concept",
+    "definition": "The dated set of tactical descriptors characterising how a team builds up play, creates chances and defends, recorded together on a single snapshot row.",
+    "scope": "european_football_2; Team_Attributes, available for only six snapshot dates",
+    "aliases": [
+      "team attributes",
+      "playing style",
+      "tactics",
+      "Team_Attributes"
+    ],
+    "evidence": [
+      "ev_team_attr_coverage"
+    ]
+  },
+  {
+    "id": "term_team_style_metric",
+    "name": "Team Style Metric",
+    "type": "metric",
+    "definition": "One of the numeric tactical intensity scores on a team snapshot, spanning build-up, chance creation and defensive dimensions on a bounded scale.",
+    "scope": "european_football_2; nine numeric columns on Team_Attributes",
+    "aliases": [
+      "style score",
+      "tactical metric",
+      "buildUpPlaySpeed"
+    ],
+    "evidence": [
+      "ev_team_class_bounds"
+    ]
+  },
+  {
+    "id": "term_team_style_class",
+    "name": "Team Style Class",
+    "type": "category",
+    "definition": "The categorical band that accompanies each numeric team style metric, splitting the metric's range into a small set of labelled levels.",
+    "scope": "european_football_2; twelve class columns on Team_Attributes",
+    "aliases": [
+      "style class",
+      "tactical band",
+      "Balanced",
+      "Fast",
+      "Slow"
+    ],
+    "evidence": [
+      "ev_team_class_bounds"
+    ]
+  },
+  {
+    "id": "term_team_attribute_snapshot",
+    "name": "Team Attribute Snapshot",
+    "type": "concept",
+    "definition": "A dated record of one team's tactical profile, so that team style is represented as a sparse time series of measurements rather than a current value.",
+    "scope": "european_football_2; Team_Attributes, six dates between 2010 and 2015",
+    "aliases": [
+      "team snapshot",
+      "team attributes date"
+    ],
+    "evidence": [
+      "ev_team_attr_coverage"
+    ]
+  },
+  {
+    "id": "term_betting_odds",
+    "name": "Betting Odds",
+    "type": "metric",
+    "definition": "The pre-match decimal prices offered by a bookmaker for the three match outcomes of home win, draw and away win, held as three adjacent columns per bookmaker.",
+    "scope": "european_football_2; eleven bookmakers on the Match table, coverage varies by bookmaker",
+    "aliases": [
+      "odds",
+      "prices",
+      "B365H",
+      "home win odds"
+    ],
+    "evidence": [
+      "ev_odds_coverage",
+      "ev_odds_overround"
+    ]
+  },
+  {
+    "id": "term_bookmaker",
+    "name": "Bookmaker",
+    "type": "dimension",
+    "definition": "The betting operator whose prices are recorded, represented in this database by a short alphabetic prefix on the odds columns rather than by a stored name or key.",
+    "scope": "european_football_2; eleven prefixes observed on the Match table",
+    "aliases": [
+      "book",
+      "betting operator",
+      "odds provider"
+    ],
+    "evidence": [
+      "ev_odds_coverage"
+    ]
+  },
+  {
+    "id": "term_implied_probability",
+    "name": "Implied Probability",
+    "type": "metric",
+    "definition": "The probability of an outcome that a decimal price implies, obtained as the reciprocal of that price and summing to slightly more than one across the three outcomes because of the bookmaker margin.",
+    "scope": "european_football_2; derived from the odds columns, never stored",
+    "aliases": [
+      "implied odds",
+      "market probability",
+      "overround"
+    ],
+    "evidence": [
+      "ev_odds_overround"
+    ]
+  },
+  {
+    "id": "term_match_event_log",
+    "name": "Match Event Log",
+    "type": "concept",
+    "definition": "The XML-like per-match event feed recording individual goals, shots, fouls, cards, crosses, corners and possession readings, stored as one text block per event family in a separate column.",
+    "scope": "european_football_2; eight columns on Match, jointly absent for a large share of matches",
+    "aliases": [
+      "event data",
+      "match events",
+      "goal xml",
+      "match feed"
+    ],
+    "evidence": [
+      "ev_event_column_nulls",
+      "ev_goal_xml_team_scope"
+    ]
+  },
+  {
+    "id": "term_goal_type",
+    "name": "Goal Type",
+    "type": "category",
+    "definition": "The short code attached to a goal event classifying how the goal came about, drawn from a fixed but undocumented code set.",
+    "scope": "european_football_2; seven distinct codes observed in the goal event feed",
+    "aliases": [
+      "goal_type",
+      "type of goal",
+      "goal category"
+    ],
+    "evidence": [
+      "ev_goal_type_values"
+    ]
+  },
+  {
+    "id": "term_card_type",
+    "name": "Card Type",
+    "type": "category",
+    "definition": "The short code attached to a disciplinary event classifying the sanction shown to a player.",
+    "scope": "european_football_2; three distinct codes observed in the card event feed",
+    "aliases": [
+      "card_type",
+      "booking",
+      "dismissal"
+    ],
+    "evidence": [
+      "ev_card_type_values"
+    ]
+  },
+  {
+    "id": "term_possession",
+    "name": "Possession Reading",
+    "type": "metric",
+    "definition": "A point-in-time share of ball possession attributed to the home side and to the away side, recorded at intervals during a match.",
+    "scope": "european_football_2; encoded inside the possession event feed, not stored as a match column",
+    "aliases": [
+      "possession",
+      "ball possession",
+      "homepos",
+      "awaypos"
+    ],
+    "evidence": [
+      "ev_possession_sums_100"
+    ]
+  },
+  {
+    "id": "term_starting_lineup",
+    "name": "Starting Lineup",
+    "type": "concept",
+    "definition": "The eleven players fielded by one side in a match, stored as eleven player reference slots laid out per side on the match row.",
+    "scope": "european_football_2; 22 player slots per match, incomplete for a small share of matches",
+    "aliases": [
+      "lineup",
+      "starting eleven",
+      "team sheet"
+    ],
+    "evidence": [
+      "ev_lineup_completeness",
+      "ev_player_player_fk"
+    ]
+  },
+  {
+    "id": "term_player_position_coordinate",
+    "name": "Player Position Coordinate",
+    "type": "concept",
+    "definition": "The grid coordinate pair recorded for each lineup slot, giving that player's lateral and depth position on the pitch for the match.",
+    "scope": "european_football_2; 44 coordinate columns on Match, jointly absent for a small share of matches",
+    "aliases": [
+      "position",
+      "pitch coordinate",
+      "home_player_X1",
+      "formation grid"
+    ],
+    "evidence": [
+      "ev_formation_grid"
+    ]
+  },
+  {
+    "id": "term_formation",
+    "name": "Formation",
+    "type": "concept",
+    "definition": "The shape a side played, reconstructed by grouping the eleven lineup position coordinates into depth lines and counting how many players occupied each line.",
+    "scope": "european_football_2; derived from the position coordinates, never stored",
+    "aliases": [
+      "shape",
+      "tactical formation",
+      "4-4-2"
+    ],
+    "evidence": [
+      "ev_formation_grid"
+    ]
+  }
+]

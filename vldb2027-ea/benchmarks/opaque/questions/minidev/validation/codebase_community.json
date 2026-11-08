@@ -1,0 +1,68 @@
+{
+ "db_id": "codebase_community",
+ "questions": [
+  {
+   "question_id": 539,
+   "db_id": "codebase_community",
+   "question": "Who is the owner of the post \"Eliciting priors from experts\"?",
+   "evidence": "\"Eliciting priors from experts\" is the Title of post; owner refers to fld039",
+   "SQL": "SELECT T2.fld039 FROM tab05 AS T1 INNER JOIN tab07 AS T2 ON T1.fld020 = T2.fld001 WHERE T1.fld022 = 'Eliciting priors from experts'",
+   "difficulty": "simple",
+   "SQL_original": "SELECT T2.DisplayName FROM posts AS T1 INNER JOIN users AS T2 ON T1.OwnerUserId = T2.Id WHERE T1.Title = 'Eliciting priors from experts'"
+  },
+  {
+   "question_id": 633,
+   "db_id": "codebase_community",
+   "question": "Which post by slashnick has the most answers count? State the post ID.",
+   "evidence": "most answers count refers to MAX(fld024); post by slashnick refers to fld039 = 'slashnick';",
+   "SQL": "SELECT T2.fld005 FROM tab07 AS T1 INNER JOIN tab03 AS T2 ON T1.fld001 = T2.fld002 INNER JOIN tab05 AS T3 ON T2.fld005 = T3.fld001 WHERE T1.fld039 = 'slashnick' ORDER BY T3.fld024 DESC LIMIT 1",
+   "difficulty": "moderate",
+   "SQL_original": "SELECT T2.PostId FROM users AS T1 INNER JOIN postHistory AS T2 ON T1.Id = T2.UserId INNER JOIN posts AS T3 ON T2.PostId = T3.Id WHERE T1.DisplayName = 'slashnick' ORDER BY T3.AnswerCount DESC LIMIT 1"
+  },
+  {
+   "question_id": 705,
+   "db_id": "codebase_community",
+   "question": "Give the user's reputation and up vote number of the user that commented \"fine, you win :)\".",
+   "evidence": "fld007 = 'fine, you win :)';",
+   "SQL": "SELECT T2.fld038, T2.fld045 FROM tab02 AS T1 INNER JOIN tab07 AS T2 ON T1.fld002 = T2.fld001 WHERE T1.fld007 = 'fine, you win :)'",
+   "difficulty": "simple",
+   "SQL_original": "SELECT T2.Reputation, T2.UpVotes FROM comments AS T1 INNER JOIN users AS T2 ON T1.UserId = T2.Id WHERE T1.Text = 'fine, you win :)'"
+  },
+  {
+   "question_id": 572,
+   "db_id": "codebase_community",
+   "question": "How many views did the post titled 'Integration of Weka and/or RapidMiner into Informatica PowerCenter/Developer' get?",
+   "evidence": "\"Integration of Weka and/or RapidMiner into Informatica PowerCenter/Developer\" is the Title of post; views refers to fld018",
+   "SQL": "SELECT fld018 FROM tab05 WHERE fld022 = 'Integration of Weka and/or RapidMiner into Informatica PowerCenter/Developer'",
+   "difficulty": "moderate",
+   "SQL_original": "SELECT ViewCount FROM posts WHERE Title = 'Integration of Weka and/or RapidMiner into Informatica PowerCenter/Developer'"
+  },
+  {
+   "question_id": 672,
+   "db_id": "codebase_community",
+   "question": "Among the users located in United Kingdom, how many users whose post have a total favorite amount of 4 or more?",
+   "evidence": "favorite amount of 4 or more refers to fld026 > = 4; fld042 = 'United Kingdom';",
+   "SQL": "SELECT COUNT(T1.fld001) FROM tab07 AS T1 INNER JOIN tab05 AS T2 ON T1.fld001 = T2.fld020 WHERE T1.fld042 = 'United Kingdom' AND T2.fld026 >= 4",
+   "difficulty": "moderate",
+   "SQL_original": "SELECT COUNT(T1.Id) FROM users AS T1 INNER JOIN posts AS T2 ON T1.Id = T2.OwnerUserId WHERE T1.Location = 'United Kingdom' AND T2.FavoriteCount >= 4"
+  },
+  {
+   "question_id": 704,
+   "db_id": "codebase_community",
+   "question": "What is the excerpt post ID and wiki post ID of the tag named sample?",
+   "evidence": "tag named sample refers to fld034 = 'sample';",
+   "SQL": "SELECT fld036, fld037 FROM tab06 WHERE fld034 = 'sample'",
+   "difficulty": "simple",
+   "SQL_original": "SELECT ExcerptPostId, WikiPostId FROM tags WHERE TagName = 'sample'"
+  },
+  {
+   "question_id": 595,
+   "db_id": "codebase_community",
+   "question": "Which user have only one post history per post and having at least 1000 views?",
+   "evidence": "having at least 1000 view refers to fld044 > = 1000; user refers to fld002",
+   "SQL": "SELECT T2.fld002 FROM tab07 AS T1 INNER JOIN tab03 AS T2 ON T1.fld001 = T2.fld002 INNER JOIN tab05 AS T3 ON T2.fld005 = T3.fld001 WHERE T3.fld018 >= 1000 GROUP BY T2.fld002 HAVING COUNT(DISTINCT T2.fld010) = 1",
+   "difficulty": "moderate",
+   "SQL_original": "SELECT T2.UserId FROM users AS T1 INNER JOIN postHistory AS T2 ON T1.Id = T2.UserId INNER JOIN posts AS T3 ON T2.PostId = T3.Id WHERE T3.ViewCount >= 1000 GROUP BY T2.UserId HAVING COUNT(DISTINCT T2.PostHistoryTypeId) = 1"
+  }
+ ]
+}

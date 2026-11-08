@@ -1,0 +1,309 @@
+[
+  {
+    "id": "constraint_customer_segment_enum",
+    "target": "term_customer_segment",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "segment",
+      "customer segment",
+      "KAM",
+      "LAM",
+      "SME",
+      "customer group",
+      "customer type"
+    ],
+    "severity": "warning",
+    "scope": "Applies whenever customers are grouped or filtered by customers.Segment",
+    "confidence": "high",
+    "description": "customers.Segment holds exactly three values: KAM (2040 customers), LAM (3658) and SME (26763). The three values are disjoint and cover all 32461 customers, so no customer is unclassified and no group overlaps. The schema declares no expansion of these codes, so any business meaning attached to KAM, LAM or SME is an assumption rather than recorded data; segment groups should be named by their literal code.",
+    "evidence": [
+      "evidence_customer_segment_values"
+    ]
+  },
+  {
+    "id": "constraint_currency_enum",
+    "target": "term_customer_currency",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "currency",
+      "CZK",
+      "EUR",
+      "exchange rate",
+      "euro",
+      "crown",
+      "convert"
+    ],
+    "severity": "warning",
+    "scope": "Applies when grouping customers by customers.Currency or when interpreting the unit of a measured amount",
+    "confidence": "high",
+    "description": "customers.Currency holds CZK (30459 customers) and EUR (2002 customers). No currency column exists on yearmonth.Consumption or transactions_1k.Price, so a measured amount cannot be converted or attributed to a currency from the data alone; summing amounts across customers of different currencies produces a mixed-unit total.",
+    "evidence": [
+      "evidence_customer_currency_values"
+    ]
+  },
+  {
+    "id": "constraint_station_country_enum",
+    "target": "term_station_country",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "country",
+      "CZE",
+      "SVK",
+      "Czech",
+      "Slovakia",
+      "region"
+    ],
+    "severity": "info",
+    "scope": "Applies when grouping or filtering gas stations by country",
+    "confidence": "high",
+    "description": "gasstations.Country holds CZE (4836 stations) and SVK (880 stations), covering all 5716 rows. Chain membership spans countries, so a chain-level total mixes both countries unless country is filtered explicitly.",
+    "evidence": [
+      "evidence_gasstation_values"
+    ]
+  },
+  {
+    "id": "constraint_station_segment_enum",
+    "target": "term_station_segment",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "station segment",
+      "Premium",
+      "Discount",
+      "Noname",
+      "Value for money",
+      "station type",
+      "site category"
+    ],
+    "severity": "warning",
+    "scope": "Applies when grouping or filtering gas stations by gasstations.Segment",
+    "confidence": "high",
+    "description": "gasstations.Segment holds five values: Other (2392 stations), Premium (1428), Noname (1005), Value for money (597) and Discount (294). All five occur in both CZE and SVK. The schema declares no definition of these categories, so they must be treated as recorded labels rather than as a declared price or quality ranking.",
+    "evidence": [
+      "evidence_gasstation_values"
+    ]
+  },
+  {
+    "id": "constraint_consumption_month_grain",
+    "target": "term_monthly_consumption",
+    "constraint_type": "scope",
+    "trigger_keywords": [
+      "monthly consumption",
+      "yearmonth",
+      "month",
+      "reporting period",
+      "YYYYMM",
+      "date"
+    ],
+    "severity": "block",
+    "scope": "Applies whenever yearmonth is joined to or compared with day-level data",
+    "confidence": "high",
+    "description": "yearmonth.Date is a six-character text value in YYYYMM form with no day component, and a record is keyed by the pair (Date, CustomerID). Consumption is therefore a month-level figure and cannot be placed on a specific day or compared with a day-level figure without an explicit aggregation rule.",
+    "evidence": [
+      "evidence_yearmonth_structure"
+    ]
+  },
+  {
+    "id": "constraint_transaction_four_day_scope",
+    "target": "term_transaction",
+    "constraint_type": "scope",
+    "trigger_keywords": [
+      "transactions_1k",
+      "transaction",
+      "transaction history",
+      "all transactions",
+      "full year",
+      "sales data"
+    ],
+    "severity": "block",
+    "scope": "Applies to any analysis that treats transactions_1k as the transaction history",
+    "confidence": "high",
+    "description": "transactions_1k contains 1000 rows covering only four days, 2012-08-23 through 2012-08-26, with 517 distinct customers, 437 stations and 28 products. It is a four-day sample, so totals, rankings and seasonality computed from it describe those four days only and must not be presented as yearly or company-wide figures.",
+    "evidence": [
+      "evidence_transaction_scope"
+    ]
+  },
+  {
+    "id": "constraint_yearmonth_coverage_gap",
+    "target": "term_month_customer_coverage",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "coverage",
+      "missing months",
+      "compare months",
+      "trend",
+      "year over year",
+      "change over time",
+      "active customers"
+    ],
+    "severity": "block",
+    "scope": "Applies to any month-over-month, year-over-year or trend comparison over yearmonth",
+    "confidence": "high",
+    "description": "Monthly distinct-customer counts are strongly uneven: 201112 has 8 customers, 201201 through 201209 hold roughly 12894 to 18866, 201210 through 201212 are absent entirely, 201301 holds 139 and 201302 holds 2415, while 201303 through 201311 hold roughly 20723 to 25506. Months in the 2013 group therefore cover far more customers than the 2012 group, so a rise in monthly totals across the gap reflects changed coverage rather than comparable growth, and totals must be paired with per-customer figures before being compared.",
+    "evidence": [
+      "evidence_yearmonth_months_coverage"
+    ]
+  },
+  {
+    "id": "constraint_negative_consumption",
+    "target": "term_monthly_consumption",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "negative consumption",
+      "refund",
+      "adjustment",
+      "reversal",
+      "negative value",
+      "credit"
+    ],
+    "severity": "warning",
+    "scope": "Applies when summing or averaging yearmonth.Consumption",
+    "confidence": "high",
+    "description": "152 yearmonth rows carry a negative Consumption value, with the minimum at -582092.86 while the maximum is 2052187.11. The schema documents no adjustment or refund concept, so negative rows must be kept visible in counts and explicitly handled before totals, averages or consumption rankings are reported.",
+    "evidence": [
+      "evidence_yearmonth_negative"
+    ]
+  },
+  {
+    "id": "constraint_line_quantity_zero",
+    "target": "term_line_quantity",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "unit price",
+      "price per unit",
+      "price per liter",
+      "quantity",
+      "amount",
+      "liters",
+      "divide by amount"
+    ],
+    "severity": "block",
+    "scope": "Applies to any computation that divides transactions_1k.Price by transactions_1k.Amount",
+    "confidence": "high",
+    "description": "91 of the 1000 transactions_1k rows record Amount as 0 while Price is above zero, and the observed Amount range is 0 to 264. A unit-value calculation must exclude lines with a zero quantity, otherwise those lines either drop out silently or produce undefined values, and averages computed over them are biased.",
+    "evidence": [
+      "evidence_price_amount_relation"
+    ]
+  },
+  {
+    "id": "constraint_line_value_is_line_total",
+    "target": "term_line_value",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "price",
+      "line value",
+      "total price",
+      "amount paid",
+      "revenue",
+      "transaction value",
+      "spend"
+    ],
+    "severity": "warning",
+    "scope": "Applies when aggregating or interpreting transactions_1k.Price",
+    "confidence": "medium",
+    "description": "transactions_1k.Price is recorded as a line total rather than a per-unit rate: for fuel lines with ProductID 2 and a positive Amount, Price divided by Amount stays between 22.68 and 24.02 across sampled rows while Price itself ranges from 1.76 to 5762.49. Summing Price therefore yields monetary value, and comparing Price directly across lines of different quantity compares basket size rather than price level.",
+    "evidence": [
+      "evidence_price_amount_relation"
+    ]
+  },
+  {
+    "id": "constraint_product_id_bands",
+    "target": "term_product_catalog_band",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "product category",
+      "product group",
+      "product range",
+      "fuel type",
+      "catalog",
+      "belongs to"
+    ],
+    "severity": "warning",
+    "scope": "Applies when grouping products or when assuming a product category exists",
+    "confidence": "medium",
+    "description": "products declares no category column, and ProductID runs from 1 to 630 over only 591 rows, so identifiers are not contiguous and carry no documented meaning. Two observed bands behave differently: identifiers below 100 carry Czech descriptions and appear at ChainID 1, 2, 4, 6, 9, 13, 19, 21, 24, 25, 26, 29, 30, 31, 33 and 35, while identifiers of 300 and above carry descriptions including English entries and appear at ChainID 61, 70, 76, 77, 98, 130, 219 and 246. The banding is an observed regularity and must not be reported as a declared catalog category.",
+    "evidence": [
+      "evidence_product_band_chain",
+      "evidence_product_catalog"
+    ]
+  },
+  {
+    "id": "constraint_product_description_not_unique",
+    "target": "term_product",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "product name",
+      "product description",
+      "distinct products",
+      "duplicate",
+      "same product",
+      "how many products"
+    ],
+    "severity": "warning",
+    "scope": "Applies when counting products or grouping by products.Description",
+    "confidence": "high",
+    "description": "products.Description is not unique per product: Servisni poplatek and Ostatni zbozi each appear 4 times, Service charge and Potraviny 3 times, among other repeats, and descriptions mix Czech and English spellings. Counting distinct descriptions therefore undercounts products, and grouping transactions by description merges products that share a label.",
+    "evidence": [
+      "evidence_product_catalog"
+    ]
+  },
+  {
+    "id": "constraint_card_customer_ownership",
+    "target": "term_payment_card",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "card",
+      "CardID",
+      "card number",
+      "multiple cards",
+      "cards per customer"
+    ],
+    "severity": "info",
+    "scope": "Applies when counting cards or attributing transactions to a customer through CardID",
+    "confidence": "high",
+    "description": "In the observed transactions every CardID belongs to exactly one CustomerID, while the 517 customers use 902 distinct cards, with 386 customers using a single card and the remainder using between 2 and 17. Card count is therefore a per-customer attribute, and a transaction count per card is not comparable with a transaction count per customer.",
+    "evidence": [
+      "evidence_card_ownership"
+    ]
+  },
+  {
+    "id": "constraint_value_and_consumption_not_interchangeable",
+    "target": "term_monthly_consumption",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "compare price and consumption",
+      "total spending",
+      "monthly spending",
+      "consumption vs transactions",
+      "reconcile",
+      "match totals"
+    ],
+    "severity": "block",
+    "scope": "Applies whenever transaction values and monthly consumption are compared or combined",
+    "confidence": "high",
+    "description": "Summed transaction value and monthly consumption cannot be substituted for one another: transactions_1k covers four days in 2012-08 for 517 customers, while yearmonth covers 21 months for 30566 customers, and no column or documented rule converts between them. The overlap is real but partial, since all 517 transaction customers appear in yearmonth, so a comparison is possible only for those customers and only as a coverage comparison, not as a reconciliation of identical quantities.",
+    "evidence": [
+      "evidence_transaction_scope",
+      "evidence_scope_overlap"
+    ]
+  },
+  {
+    "id": "constraint_units_of_quantity",
+    "target": "term_line_quantity",
+    "constraint_type": "unit",
+    "trigger_keywords": [
+      "liter",
+      "litre",
+      "volume",
+      "quantity unit",
+      "how much fuel",
+      "gallons"
+    ],
+    "severity": "info",
+    "scope": "Applies when interpreting or aggregating transactions_1k.Amount",
+    "confidence": "low",
+    "description": "No unit is declared for transactions_1k.Amount. For fuel lines the value behaves as a volume in the low tens per line, which is consistent with litres given the recorded line values, but the schema states no unit and non-fuel lines such as car washes carry a quantity of zero or one. Amount must therefore be described as a recorded quantity rather than as litres unless the unit is stated as an assumption.",
+    "evidence": [
+      "evidence_price_amount_relation"
+    ]
+  }
+]

@@ -1,0 +1,585 @@
+[
+  {
+    "id": "client",
+    "name": "Client",
+    "type": "entity",
+    "definition": "A person who is a bank customer, identified by client_id and carrying demographic attributes: gender, birth_date and a district of residence.",
+    "scope": "Customer-level analysis across accounts, dispositions, loans and transactions.",
+    "aliases": [
+      "customer",
+      "account holder",
+      "bank client",
+      "person",
+      "clients"
+    ],
+    "evidence": [
+      "ev_schema_financial",
+      "ev_row_counts",
+      "ev_client_gender"
+    ]
+  },
+  {
+    "id": "account",
+    "name": "Account",
+    "type": "entity",
+    "definition": "A bank account identified by account_id, opened on a date at a particular district branch, and carrying a statement-issuance frequency.",
+    "scope": "Account-level analysis of balances, statements, loans and transactions.",
+    "aliases": [
+      "bank account",
+      "account record",
+      "ucet"
+    ],
+    "evidence": [
+      "ev_schema_financial",
+      "ev_account_frequency"
+    ]
+  },
+  {
+    "id": "district",
+    "name": "District",
+    "type": "entity",
+    "definition": "An administrative district (okres) of the Czech Republic, identified by district_id and carrying a name, a region and socio-economic attributes encoded in columns A2-A16.",
+    "scope": "Geographic and socio-economic context for clients and accounts.",
+    "aliases": [
+      "okres",
+      "area",
+      "location",
+      "district record"
+    ],
+    "evidence": [
+      "ev_schema_financial",
+      "ev_district_sample",
+      "ev_district_regions"
+    ]
+  },
+  {
+    "id": "disposition",
+    "name": "Disposition",
+    "type": "entity",
+    "definition": "A record in the disp table that links exactly one client to exactly one account and states the role that client holds on that account.",
+    "scope": "Resolving which clients are attached to which accounts and in what role.",
+    "aliases": [
+      "disp",
+      "account-client link",
+      "ownership record",
+      "account holder role"
+    ],
+    "evidence": [
+      "ev_disp_type",
+      "ev_row_counts"
+    ]
+  },
+  {
+    "id": "loan",
+    "name": "Loan",
+    "type": "entity",
+    "definition": "A loan contract granted on an account, carrying an approval date, principal amount, duration in months, periodic payment and a status code.",
+    "scope": "Credit analysis: approval timing, amounts, terms and contract status.",
+    "aliases": [
+      "loan contract",
+      "credit",
+      "uver",
+      "loans"
+    ],
+    "evidence": [
+      "ev_schema_financial",
+      "ev_loan_amounts",
+      "ev_loans_per_account"
+    ]
+  },
+  {
+    "id": "transaction",
+    "name": "Transaction",
+    "type": "entity",
+    "definition": "A single money movement recorded on an account, carrying a date, a direction, an operation mode, an amount, the resulting balance and an optional purpose code.",
+    "scope": "Account activity analysis: deposits, withdrawals and transfers.",
+    "aliases": [
+      "trans",
+      "account movement",
+      "transaction record",
+      "payment"
+    ],
+    "evidence": [
+      "ev_schema_financial",
+      "ev_row_counts",
+      "ev_trans_type"
+    ]
+  },
+  {
+    "id": "card",
+    "name": "Card",
+    "type": "entity",
+    "definition": "A payment card issued against a disposition record, carrying a card type and an issuance date.",
+    "scope": "Card issuance analysis; not exercised by the construction workload.",
+    "aliases": [
+      "payment card",
+      "bank card"
+    ],
+    "evidence": [
+      "ev_card_types",
+      "ev_fk_integrity"
+    ]
+  },
+  {
+    "id": "standing_order",
+    "name": "Standing Order",
+    "type": "entity",
+    "definition": "A recurring bank order defined on an account towards an external counterparty, carrying a counterparty bank, counterparty account, amount and purpose code.",
+    "scope": "Recurring payment analysis; not exercised by the construction workload.",
+    "aliases": [
+      "order",
+      "permanent order",
+      "recurring payment",
+      "standing payment"
+    ],
+    "evidence": [
+      "ev_order_k_symbol",
+      "ev_fk_integrity"
+    ]
+  },
+  {
+    "id": "statement_frequency",
+    "name": "Statement Frequency",
+    "type": "concept",
+    "definition": "The cadence at which the bank issues a statement for an account, recorded as a coded value on the account: monthly, weekly, or issued after each transaction.",
+    "scope": "Any question about how often a statement is issued or about clients/accounts that choose a particular issuance mode.",
+    "aliases": [
+      "issuance",
+      "statement issuance",
+      "frequency",
+      "POPLATEK",
+      "statement issue frequency",
+      "account statement frequency",
+      "issuance statement",
+      "statement type",
+      "weekly issuance",
+      "monthly issuance",
+      "issuance after transaction"
+    ],
+    "evidence": [
+      "ev_account_frequency",
+      "ev_workload_enum_hints"
+    ]
+  },
+  {
+    "id": "loan_status",
+    "name": "Loan Status",
+    "type": "concept",
+    "definition": "The state of a loan contract expressed as a single-letter status code recorded on the loan record.",
+    "scope": "Questions about whether a contract is still running, finished, or problematic.",
+    "aliases": [
+      "status",
+      "contract status",
+      "loan state",
+      "running contract",
+      "loan condition",
+      "no issue"
+    ],
+    "evidence": [
+      "ev_loan_status",
+      "ev_workload_enum_hints"
+    ]
+  },
+  {
+    "id": "transaction_direction",
+    "name": "Transaction Direction",
+    "type": "concept",
+    "definition": "The direction class of a transaction as recorded in trans.type: money credited to the account versus money debited from it.",
+    "scope": "Separating incoming from outgoing movements.",
+    "aliases": [
+      "trans type",
+      "transaction type",
+      "direction",
+      "PRIJEM",
+      "VYDAJ",
+      "credit or debit",
+      "money in",
+      "money out"
+    ],
+    "evidence": [
+      "ev_trans_type",
+      "ev_workload_enum_hints"
+    ]
+  },
+  {
+    "id": "transaction_operation",
+    "name": "Transaction Operation",
+    "type": "concept",
+    "definition": "The detailed mode of a transaction as recorded in trans.operation: cash deposit, cash withdrawal, card withdrawal, transfer in or transfer out.",
+    "scope": "Identifying how a movement was performed, independently of its direction.",
+    "aliases": [
+      "operation",
+      "operation mode",
+      "trans operation",
+      "payment mode",
+      "transaction mode",
+      "VKLAD",
+      "PREVOD NA UCET",
+      "PREVOD Z UCTU",
+      "VYBER KARTOU"
+    ],
+    "evidence": [
+      "ev_trans_operation",
+      "ev_vyber_cross"
+    ]
+  },
+  {
+    "id": "cash_withdrawal",
+    "name": "Cash Withdrawal",
+    "type": "concept",
+    "definition": "The analytical concept of taking cash out of an account; in this database it is expressed by the operation code VYBER.",
+    "scope": "Questions about withdrawals in cash or cash transactions, as distinct from transfers and card operations.",
+    "aliases": [
+      "withdrawal in cash",
+      "cash withdrawal",
+      "withdrawals",
+      "cash out",
+      "withdraw",
+      "cash transaction",
+      "VYBER"
+    ],
+    "evidence": [
+      "ev_vyber_cross",
+      "ev_workload_enum_hints"
+    ]
+  },
+  {
+    "id": "transaction_purpose_code",
+    "name": "Transaction Purpose Code",
+    "type": "concept",
+    "definition": "The coded purpose or counterparty category of a transaction as recorded in trans.k_symbol, such as interest, bank services, standing order, pension, insurance or loan repayment.",
+    "scope": "Classifying transactions by what they were for.",
+    "aliases": [
+      "k_symbol",
+      "transaction purpose",
+      "purpose code",
+      "payment purpose",
+      "transaction category"
+    ],
+    "evidence": [
+      "ev_trans_k_symbol"
+    ]
+  },
+  {
+    "id": "standing_order_purpose_code",
+    "name": "Standing Order Purpose Code",
+    "type": "concept",
+    "definition": "The coded purpose of a recurring bank order as recorded in order.k_symbol.",
+    "scope": "Classifying recurring orders by what they are for.",
+    "aliases": [
+      "order k_symbol",
+      "standing order purpose",
+      "recurring payment purpose"
+    ],
+    "evidence": [
+      "ev_order_k_symbol",
+      "ev_k_symbol_overlap"
+    ]
+  },
+  {
+    "id": "disposition_role",
+    "name": "Disposition Role",
+    "type": "concept",
+    "definition": "The role a client holds on an account, recorded in disp.type: OWNER (the account owner) or DISPONENT (an authorised user of the account).",
+    "scope": "Determining who owns an account versus who is merely authorised on it.",
+    "aliases": [
+      "disp type",
+      "owner",
+      "disponent",
+      "account role",
+      "holder type",
+      "authorised user",
+      "account owner"
+    ],
+    "evidence": [
+      "ev_disp_type",
+      "ev_workload_enum_hints"
+    ]
+  },
+  {
+    "id": "client_gender",
+    "name": "Client Gender",
+    "type": "dimension",
+    "definition": "The recorded gender of a client, stored as a single-letter code.",
+    "scope": "Gender-based segmentation of clients.",
+    "aliases": [
+      "gender",
+      "sex",
+      "male",
+      "female",
+      "man",
+      "woman",
+      "men",
+      "women"
+    ],
+    "evidence": [
+      "ev_client_gender",
+      "ev_workload_enum_hints"
+    ]
+  },
+  {
+    "id": "district_name",
+    "name": "District Name",
+    "type": "dimension",
+    "definition": "The human-readable name of a district, stored in district.A2.",
+    "scope": "Reporting a district by name.",
+    "aliases": [
+      "A2",
+      "district name",
+      "name of district",
+      "okres name",
+      "name"
+    ],
+    "evidence": [
+      "ev_district_sample",
+      "ev_workload_enum_hints"
+    ]
+  },
+  {
+    "id": "district_region",
+    "name": "District Region",
+    "type": "dimension",
+    "definition": "The larger geographic region to which a district belongs, stored in district.A3.",
+    "scope": "Grouping or filtering districts by region.",
+    "aliases": [
+      "A3",
+      "region",
+      "district region",
+      "geographic region"
+    ],
+    "evidence": [
+      "ev_district_regions",
+      "ev_workload_enum_hints"
+    ]
+  },
+  {
+    "id": "account_opening_district",
+    "name": "Account Opening District",
+    "type": "dimension",
+    "definition": "The district attached to an account record, i.e. the district of the branch where the account was opened.",
+    "scope": "Questions about where an account was opened; must not be confused with the client's district of residence.",
+    "aliases": [
+      "account district",
+      "district of account",
+      "branch district",
+      "district where account was opened",
+      "opened account in district"
+    ],
+    "evidence": [
+      "ev_district_id_divergence",
+      "ev_workload_enum_hints"
+    ]
+  },
+  {
+    "id": "client_residence_district",
+    "name": "Client Residence District",
+    "type": "dimension",
+    "definition": "The district attached to a client record, i.e. the district in which the client lives.",
+    "scope": "Questions about where clients live or stay; must not be confused with the account's branch district.",
+    "aliases": [
+      "client district",
+      "district of client",
+      "residence district",
+      "home district",
+      "living district",
+      "district they live in"
+    ],
+    "evidence": [
+      "ev_district_id_divergence",
+      "ev_workload_enum_hints"
+    ]
+  },
+  {
+    "id": "account_opening_date",
+    "name": "Account Opening Date",
+    "type": "dimension",
+    "definition": "The date on which an account was opened, recorded on the account record.",
+    "scope": "Temporal filtering and cohorting of accounts.",
+    "aliases": [
+      "account date",
+      "opening date",
+      "date of account opening",
+      "account start date",
+      "accounts in 1993"
+    ],
+    "evidence": [
+      "ev_date_ranges",
+      "ev_accounts_per_year"
+    ]
+  },
+  {
+    "id": "loan_approval_date",
+    "name": "Loan Approval Date",
+    "type": "dimension",
+    "definition": "The date on which a loan contract was granted or approved, recorded on the loan record.",
+    "scope": "Temporal filtering of loans by approval time.",
+    "aliases": [
+      "loan date",
+      "approval date",
+      "approved date",
+      "date of loan",
+      "grant date",
+      "loan approved in"
+    ],
+    "evidence": [
+      "ev_date_ranges",
+      "ev_workload_enum_hints"
+    ]
+  },
+  {
+    "id": "client_birth_date",
+    "name": "Client Birth Date",
+    "type": "dimension",
+    "definition": "The date of birth of a client.",
+    "scope": "Age-related and date-of-birth identification of clients.",
+    "aliases": [
+      "birth_date",
+      "date of birth",
+      "birthday",
+      "born",
+      "born in"
+    ],
+    "evidence": [
+      "ev_date_ranges"
+    ]
+  },
+  {
+    "id": "loan_amount",
+    "name": "Loan Amount",
+    "type": "metric",
+    "definition": "The principal amount of a loan contract as recorded on the loan record.",
+    "scope": "Sizing loans and applying amount thresholds; also the approved amount of the contract.",
+    "aliases": [
+      "approved amount",
+      "loan principal",
+      "amount of loan",
+      "credit amount",
+      "loan value",
+      "amount approved"
+    ],
+    "evidence": [
+      "ev_loan_amounts",
+      "ev_workload_enum_hints"
+    ]
+  },
+  {
+    "id": "loan_duration",
+    "name": "Loan Duration",
+    "type": "metric",
+    "definition": "The agreed term of a loan contract, expressed in months.",
+    "scope": "Comparing loan terms; the basis of statements such as loan validity longer than 12 months.",
+    "aliases": [
+      "duration",
+      "loan validity",
+      "term",
+      "loan period",
+      "length of loan",
+      "validity"
+    ],
+    "evidence": [
+      "ev_loan_duration"
+    ]
+  },
+  {
+    "id": "loan_payment",
+    "name": "Loan Payment",
+    "type": "metric",
+    "definition": "The contractual periodic instalment amount of a loan contract.",
+    "scope": "Assessing the repayment burden of a loan; not exercised by the construction workload.",
+    "aliases": [
+      "payments",
+      "instalment",
+      "installment",
+      "monthly payment",
+      "repayment amount"
+    ],
+    "evidence": [
+      "ev_loan_amounts"
+    ]
+  },
+  {
+    "id": "transaction_amount",
+    "name": "Transaction Amount",
+    "type": "metric",
+    "definition": "The monetary amount moved by a single transaction.",
+    "scope": "Sizing individual movements and summing activity.",
+    "aliases": [
+      "amount",
+      "trans amount",
+      "movement amount",
+      "payment amount"
+    ],
+    "evidence": [
+      "ev_trans_amount_range"
+    ]
+  },
+  {
+    "id": "transaction_balance",
+    "name": "Transaction Balance",
+    "type": "metric",
+    "definition": "The account balance recorded immediately after a transaction.",
+    "scope": "Tracking account balance over time.",
+    "aliases": [
+      "balance",
+      "running balance",
+      "account balance"
+    ],
+    "evidence": [
+      "ev_trans_amount_range"
+    ]
+  },
+  {
+    "id": "district_average_salary",
+    "name": "District Average Salary",
+    "type": "metric",
+    "definition": "The average salary recorded for a district, stored in district.A11.",
+    "scope": "Socio-economic characterisation of districts; basis of salary thresholds in questions.",
+    "aliases": [
+      "A11",
+      "average salary",
+      "avg salary",
+      "mean wage",
+      "salaries",
+      "salary"
+    ],
+    "evidence": [
+      "ev_district_a11",
+      "ev_workload_enum_hints"
+    ]
+  },
+  {
+    "id": "account_loan_total_amount",
+    "name": "Account Loan Total Amount",
+    "type": "metric",
+    "definition": "The total approved loan amount attributed to an account, obtained by aggregating the amounts of the loan contracts held on that account.",
+    "scope": "Per-account loan sizing when an account may hold more than one contract.",
+    "aliases": [
+      "total loan amount",
+      "per account loan amount",
+      "sum of loan amount",
+      "total approved amount"
+    ],
+    "evidence": [
+      "ev_loans_per_account"
+    ]
+  },
+  {
+    "id": "conditional_share_percentage",
+    "name": "Conditional Share Percentage",
+    "type": "metric",
+    "definition": "The share of a conditioned subgroup within a base population, expressed as a percentage; the measured quantity may be a count of records or a summed amount.",
+    "scope": "Requests phrased as what percentage of a group satisfies a condition.",
+    "aliases": [
+      "percentage",
+      "percent",
+      "%",
+      "proportion",
+      "share",
+      "ratio",
+      "percentage of"
+    ],
+    "evidence": [
+      "ev_workload_enum_hints"
+    ]
+  }
+]

@@ -1,0 +1,603 @@
+[
+  {
+    "id": "term_patient",
+    "name": "Patient",
+    "type": "entity",
+    "definition": "A person enrolled in the thrombosis study. Each patient has a unique patient identifier and one consolidated patient-level record.",
+    "scope": "Patient-level attributes: identifier, sex, birthday, diagnosis, inpatient/outpatient status and patient record dates. Visits and laboratory panels are separate child records.",
+    "aliases": [
+      "patient",
+      "patients",
+      "subject",
+      "case",
+      "person",
+      "patient record"
+    ],
+    "evidence": [
+      "ev_001_database_structure",
+      "ev_002_patient_grain"
+    ]
+  },
+  {
+    "id": "term_patient_id",
+    "name": "Patient Identifier",
+    "type": "dimension",
+    "definition": "Unique identifier assigned to a patient; the join key linking patient, examination and laboratory records.",
+    "scope": "Stored once per patient in tab02.fld001. tab01.fld001 and tab03.fld001 use the same declared reference, but only part of tab01 resolves to a patient record.",
+    "aliases": [
+      "patient ID",
+      "ID",
+      "patient identifier",
+      "patient number",
+      "subject ID",
+      "PID"
+    ],
+    "evidence": [
+      "ev_002_patient_grain",
+      "ev_010_join_coverage"
+    ]
+  },
+  {
+    "id": "term_sex",
+    "name": "Sex",
+    "type": "dimension",
+    "definition": "Recorded sex of the patient, coded 'M' for male and 'F' for female.",
+    "scope": "Patient-level attribute. Blank values exist and are unknown, not a third category.",
+    "aliases": [
+      "sex",
+      "gender",
+      "male",
+      "female",
+      "male patient",
+      "female patient",
+      "men",
+      "women"
+    ],
+    "evidence": [
+      "ev_003_sex"
+    ]
+  },
+  {
+    "id": "term_birthday",
+    "name": "Birthday",
+    "type": "dimension",
+    "definition": "Patient date of birth, stored as a calendar date.",
+    "scope": "Used to derive age and to filter by birth year. One patient has no birthday recorded.",
+    "aliases": [
+      "birthday",
+      "birth date",
+      "date of birth",
+      "born",
+      "birth year",
+      "year of birth",
+      "DOB"
+    ],
+    "evidence": [
+      "ev_004_birthday"
+    ]
+  },
+  {
+    "id": "term_age",
+    "name": "Age",
+    "type": "metric",
+    "definition": "Patient age in whole years, computed as the difference between the current calendar year and the year of birth. No age column is stored.",
+    "scope": "Derived and time-dependent: the same patient yields different ages in different calendar years. Applies only where a birthday is recorded.",
+    "aliases": [
+      "age",
+      "years old",
+      "how old",
+      "current age",
+      "patient age",
+      "average age"
+    ],
+    "evidence": [
+      "ev_028_age_derivation",
+      "ev_004_birthday"
+    ]
+  },
+  {
+    "id": "term_patient_diagnosis",
+    "name": "Patient Diagnosis",
+    "type": "concept",
+    "definition": "The disease or diseases recorded for a patient at patient level; free-text labels that may combine several diagnoses separated by commas and may be marked 'susp' for suspected.",
+    "scope": "One consolidated label per patient (tab02.fld008). Use for patient-level questions such as 'diagnosed with SLE' or 'most common disease'.",
+    "aliases": [
+      "diagnosis",
+      "disease",
+      "diagnosed with",
+      "condition",
+      "illness",
+      "patient diagnosis",
+      "SLE",
+      "RA",
+      "PSS",
+      "MCTD",
+      "APS",
+      "Behcet",
+      "SjS",
+      "SJS"
+    ],
+    "evidence": [
+      "ev_002_patient_grain",
+      "ev_006_diagnosis_labels",
+      "ev_007_diagnosis_two_tables"
+    ]
+  },
+  {
+    "id": "term_examination_diagnosis",
+    "name": "Examination Diagnosis",
+    "type": "concept",
+    "definition": "Diagnosis recorded on an individual examination record, which may be more specific to that visit than the patient-level diagnosis.",
+    "scope": "Recorded per examination in tab01.fld008 (475 of 806 non-null, 181 distinct labels). Linkable to patient or laboratory records only for the subset of examination IDs that resolve in tab02.",
+    "aliases": [
+      "examination diagnosis",
+      "visit diagnosis",
+      "exam diagnosis",
+      "diagnosis at examination"
+    ],
+    "evidence": [
+      "ev_009_exam_grain",
+      "ev_007_diagnosis_two_tables",
+      "ev_010_join_coverage"
+    ]
+  },
+  {
+    "id": "term_examination",
+    "name": "Examination",
+    "type": "entity",
+    "definition": "A clinical examination record for a patient on a given date, holding ANA results, anti-cardiolipin values, thrombosis level, coagulation and symptom flags, and a visit-level diagnosis.",
+    "scope": "One row per examination in tab01. Records carry fld001 as patient identifier, but only 69 of 763 distinct identifiers also exist in the patient table.",
+    "aliases": [
+      "examination",
+      "exam",
+      "examination record",
+      "clinical examination",
+      "visit"
+    ],
+    "evidence": [
+      "ev_009_exam_grain",
+      "ev_010_join_coverage"
+    ]
+  },
+  {
+    "id": "term_examination_date",
+    "name": "Examination Date",
+    "type": "dimension",
+    "definition": "Calendar date on which an examination record was created.",
+    "scope": "tab01.fld002; range 1989-04-18 to 1998-04-17; 10 blank values.",
+    "aliases": [
+      "examination date",
+      "exam date",
+      "date of examination",
+      "examined on"
+    ],
+    "evidence": [
+      "ev_009_exam_grain",
+      "ev_030_date_ranges"
+    ]
+  },
+  {
+    "id": "term_inpatient_status",
+    "name": "Inpatient or Outpatient Status",
+    "type": "dimension",
+    "definition": "Whether the patient was an inpatient or an outpatient, coded '+' for inpatient and '-' for outpatient.",
+    "scope": "Patient-level attribute in tab02.fld018. Blank and '+(' values exist and should be treated as unknown or inpatient respectively, not as additional categories.",
+    "aliases": [
+      "in-patient",
+      "inpatient",
+      "outpatient",
+      "hospitalization",
+      "hospital stay",
+      "admitted"
+    ],
+    "evidence": [
+      "ev_005_inpatient_status"
+    ]
+  },
+  {
+    "id": "term_laboratory_test",
+    "name": "Laboratory Test Panel",
+    "type": "entity",
+    "definition": "A laboratory test panel for one patient collected on one date; the same patient usually has many panels over time.",
+    "scope": "One row per patient and test date in tab03. 13,908 rows for 302 patients, with 1 to 226 panels per patient.",
+    "aliases": [
+      "laboratory test",
+      "lab test",
+      "lab result",
+      "laboratory result",
+      "blood test",
+      "panel",
+      "lab"
+    ],
+    "evidence": [
+      "ev_008_lab_grain"
+    ]
+  },
+  {
+    "id": "term_lab_test_date",
+    "name": "Laboratory Test Date",
+    "type": "dimension",
+    "definition": "Date on which a laboratory panel was collected.",
+    "scope": "tab03.fld019; range 1981-01-27 to 1999-03-04; stored as ISO date text and unique per patient.",
+    "aliases": [
+      "laboratory test date",
+      "lab test date",
+      "test date",
+      "date of laboratory tests",
+      "lab date",
+      "collected on"
+    ],
+    "evidence": [
+      "ev_008_lab_grain",
+      "ev_030_date_ranges"
+    ]
+  },
+  {
+    "id": "term_albumin",
+    "name": "Albumin",
+    "type": "metric",
+    "definition": "Serum albumin concentration measured in the laboratory panel, expressed in g/dL.",
+    "scope": "Laboratory measurement available for part of the panels; values below a stated cutoff mean low albumin.",
+    "aliases": [
+      "albumin",
+      "ALB",
+      "blood albumin",
+      "serum albumin",
+      "albumin level",
+      "average blood albumin level"
+    ],
+    "evidence": [
+      "ev_011_albumin"
+    ]
+  },
+  {
+    "id": "term_alt_gpt",
+    "name": "ALT / GPT",
+    "type": "metric",
+    "definition": "Alanine aminotransferase (ALT, also called GPT) activity in serum, expressed in U/L.",
+    "scope": "Laboratory measurement; values above the stated upper limit mean elevated liver enzyme.",
+    "aliases": [
+      "GPT",
+      "ALT",
+      "ALT glutamic pylvic transaminase",
+      "glutamic pyruvic transaminase",
+      "GPT level",
+      "ALT level",
+      "alanine aminotransferase"
+    ],
+    "evidence": [
+      "ev_012_gpt"
+    ]
+  },
+  {
+    "id": "term_glucose",
+    "name": "Blood Glucose",
+    "type": "metric",
+    "definition": "Blood glucose (GLU) concentration measured in the laboratory panel.",
+    "scope": "Laboratory measurement; normal versus abnormal is decided by the stated glucose cutoff.",
+    "aliases": [
+      "blood glucose",
+      "GLU",
+      "glucose",
+      "blood sugar",
+      "fasting glucose",
+      "glucose level"
+    ],
+    "evidence": [
+      "ev_013_glucose"
+    ]
+  },
+  {
+    "id": "term_total_cholesterol",
+    "name": "Total Cholesterol",
+    "type": "metric",
+    "definition": "Total cholesterol (T-CHO) concentration in blood.",
+    "scope": "Laboratory measurement; normal versus high is decided by the stated cholesterol cutoff.",
+    "aliases": [
+      "total cholesterol",
+      "T-CHO",
+      "cholesterol",
+      "TCHO",
+      "serum cholesterol",
+      "high cholesterol"
+    ],
+    "evidence": [
+      "ev_014_cholesterol"
+    ]
+  },
+  {
+    "id": "term_creatinine",
+    "name": "Creatinine",
+    "type": "metric",
+    "definition": "Serum creatinine concentration, a marker of renal function.",
+    "scope": "Laboratory measurement; abnormal versus normal is decided by the stated creatinine cutoff.",
+    "aliases": [
+      "creatinine",
+      "CRE",
+      "serum creatinine",
+      "creatinine level"
+    ],
+    "evidence": [
+      "ev_015_creatinine"
+    ]
+  },
+  {
+    "id": "term_creatine_phosphokinase",
+    "name": "Creatine Phosphokinase",
+    "type": "metric",
+    "definition": "Creatine phosphokinase (CPK, also CK) enzyme activity in serum.",
+    "scope": "Laboratory measurement; normal versus beyond-normal is decided by the stated CPK cutoff.",
+    "aliases": [
+      "creatinine phosphokinase",
+      "creatine phosphokinase",
+      "CPK",
+      "CK",
+      "creatine kinase",
+      "CPK level"
+    ],
+    "evidence": [
+      "ev_016_cpk"
+    ]
+  },
+  {
+    "id": "term_urea_nitrogen",
+    "name": "Urea Nitrogen",
+    "type": "metric",
+    "definition": "Blood urea nitrogen (UN) concentration.",
+    "scope": "Laboratory measurement with a stated borderline value in the workload.",
+    "aliases": [
+      "urea nitrogen",
+      "UN",
+      "BUN",
+      "blood urea nitrogen",
+      "urea"
+    ],
+    "evidence": [
+      "ev_017_urea_nitrogen"
+    ]
+  },
+  {
+    "id": "term_platelet_count",
+    "name": "Platelet Count",
+    "type": "metric",
+    "definition": "Platelet count (PLT) from the complete blood count in the laboratory panel.",
+    "scope": "Laboratory measurement; a stated threshold marks elevated platelet values.",
+    "aliases": [
+      "PLT",
+      "platelet",
+      "platelet count",
+      "platelets",
+      "thrombocyte count"
+    ],
+    "evidence": [
+      "ev_018_platelet"
+    ]
+  },
+  {
+    "id": "term_igg",
+    "name": "Immunoglobulin G",
+    "type": "metric",
+    "definition": "Serum immunoglobulin G (IgG) concentration.",
+    "scope": "Laboratory measurement; normal range is stated by a lower and an upper bound.",
+    "aliases": [
+      "IgG",
+      "immunoglobulin G",
+      "Ig G",
+      "serum IgG",
+      "normal Ig G level"
+    ],
+    "evidence": [
+      "ev_019_igg"
+    ]
+  },
+  {
+    "id": "term_igm",
+    "name": "Immunoglobulin M",
+    "type": "metric",
+    "definition": "Serum immunoglobulin M (IgM) concentration.",
+    "scope": "Laboratory measurement; abnormal is defined by a lower and an upper bound.",
+    "aliases": [
+      "IgM",
+      "immunoglobulin M",
+      "Ig M",
+      "serum IgM",
+      "abnormal Ig M level"
+    ],
+    "evidence": [
+      "ev_020_igm"
+    ]
+  },
+  {
+    "id": "term_c_reactive_protein",
+    "name": "C-Reactive Protein",
+    "type": "metric",
+    "definition": "C-reactive protein (CRP) result, an inflammation marker. Qualitative results ('+', '-') and numeric or threshold values coexist in one column.",
+    "scope": "Laboratory measurement; abnormal is expressed as a positive qualitative result.",
+    "aliases": [
+      "C-reactive protein",
+      "CRP",
+      "c reactive protein",
+      "CRP level",
+      "inflammation marker"
+    ],
+    "evidence": [
+      "ev_021_crp"
+    ]
+  },
+  {
+    "id": "term_anti_scl70",
+    "name": "Anti-Scl70 Antibody",
+    "type": "metric",
+    "definition": "Anti-Scl-70 (anti-topoisomerase I) autoantibody result recorded either as a negative indicator ('negative' or '0') or as a numeric titer.",
+    "scope": "Laboratory measurement present on a small subset of panels; negative results dominate.",
+    "aliases": [
+      "anti-scl70",
+      "anti scl70",
+      "Scl-70",
+      "anti-Scl-70 antibody",
+      "anti-topoisomerase I",
+      "normal anti-scl70"
+    ],
+    "evidence": [
+      "ev_022_antibodies"
+    ]
+  },
+  {
+    "id": "term_anti_ssb",
+    "name": "Anti-SSB Antibody",
+    "type": "metric",
+    "definition": "Anti-SSB (anti-La) autoantibody result recorded either as a negative indicator ('negative' or '0') or as a numeric titer.",
+    "scope": "Laboratory measurement present on a small subset of panels.",
+    "aliases": [
+      "anti-SSB",
+      "anti SSB",
+      "SS-B",
+      "anti-La",
+      "anti SS-B antibody",
+      "normal anti-SSB"
+    ],
+    "evidence": [
+      "ev_022_antibodies"
+    ]
+  },
+  {
+    "id": "term_anti_centromere",
+    "name": "Anti-Centromere Antibody",
+    "type": "metric",
+    "definition": "Anti-centromere autoantibody result recorded either as a negative indicator ('negative' or '0') or as a numeric titer.",
+    "scope": "Laboratory measurement present on a very small subset of panels.",
+    "aliases": [
+      "anti-centromere",
+      "anti centromere",
+      "centromere antibody",
+      "ACA",
+      "normal anti-centromere"
+    ],
+    "evidence": [
+      "ev_022_antibodies"
+    ]
+  },
+  {
+    "id": "term_ana_pattern",
+    "name": "ANA Pattern",
+    "type": "dimension",
+    "definition": "Antinuclear antibody (ANA) staining pattern, recorded as one or more letter codes (S, P, D, N) that may be combined in a comma-separated string.",
+    "scope": "Examination-level result in tab01.fld006. 'Only S' means exactly the single code 'S' rather than a combined pattern such as 'P,S'.",
+    "aliases": [
+      "ANA pattern",
+      "antinuclear antibody pattern",
+      "ANA",
+      "pattern S",
+      "ANA pattern of only S"
+    ],
+    "evidence": [
+      "ev_023_ana"
+    ]
+  },
+  {
+    "id": "term_ana_titer",
+    "name": "ANA Titer",
+    "type": "metric",
+    "definition": "Antinuclear antibody titer, recorded as a numeric dilution level where 0 indicates not detected.",
+    "scope": "Examination-level result in tab01.fld005; observed values 0, 4, 16, 64, 256, 1024 and 4096.",
+    "aliases": [
+      "ANA titer",
+      "antinuclear antibody titer",
+      "ANA",
+      "titer"
+    ],
+    "evidence": [
+      "ev_023_ana"
+    ]
+  },
+  {
+    "id": "term_anti_cardiolipin",
+    "name": "Anti-Cardiolipin Antibody",
+    "type": "metric",
+    "definition": "Anti-cardiolipin antibody level measured in the examination, recorded separately for two immunoglobulin isotypes.",
+    "scope": "Two numeric columns in tab01: fld003 for the IgG isotype and fld004 for the IgM isotype. Statements may name only the isotype, so the target column must be chosen by isotype.",
+    "aliases": [
+      "anti-cardiolipin",
+      "anticardiolipin",
+      "aCL",
+      "anti-cardiolipin antibody",
+      "anti-Cardiolip in antibody",
+      "cardiolipin antibody",
+      "aCL IgG",
+      "aCL IgM"
+    ],
+    "evidence": [
+      "ev_032_anti_cardiolipin"
+    ]
+  },
+  {
+    "id": "term_thrombosis_level",
+    "name": "Thrombosis Level",
+    "type": "dimension",
+    "definition": "Ordinal degree of thrombosis recorded on the examination, from 0 (none) to 3 (highest recorded degree).",
+    "scope": "Examination-level categorical attribute in tab01.fld013.",
+    "aliases": [
+      "thrombosis level",
+      "degree of thrombosis",
+      "thrombosis degree",
+      "thrombosis grade"
+    ],
+    "evidence": [
+      "ev_024_thrombosis_level"
+    ]
+  },
+  {
+    "id": "term_coagulation_degree",
+    "name": "Degree of Coagulation",
+    "type": "dimension",
+    "definition": "Coagulation-related abnormality flags recorded on the examination as '+' (positive/present) or '-' (negative/absent) in three adjacent columns.",
+    "scope": "tab01.fld009, fld010 and fld011. A 'positive degree of coagulation' means at least one of the three flags is '+'.",
+    "aliases": [
+      "degree of coagulation",
+      "coagulation",
+      "positive degree of coagulation",
+      "coagulation flag",
+      "positive measure of degree of coagulation"
+    ],
+    "evidence": [
+      "ev_025_coagulation_flags"
+    ]
+  },
+  {
+    "id": "term_symptom_manifestation",
+    "name": "Symptom Manifestation",
+    "type": "concept",
+    "definition": "Free-text description of the clinical symptoms recorded on an examination, such as AMI, CNS lupus, DVT, abortion or thrombocytopenia.",
+    "scope": "tab01.fld012. A non-null value means symptoms were recorded; a null value means no symptom was recorded.",
+    "aliases": [
+      "symptoms",
+      "symptom",
+      "have symptoms",
+      "no symptom",
+      "manifestation",
+      "complaint",
+      "clinical symptoms"
+    ],
+    "evidence": [
+      "ev_026_symptoms"
+    ]
+  },
+  {
+    "id": "term_patient_record_date",
+    "name": "Patient Record Date",
+    "type": "dimension",
+    "definition": "A patient-level calendar date held in tab02.fld016 and present for 1022 of 1238 patients. The workload treats a missing value as 'data not recorded'; whether the column represents death, discharge or last contact cannot be established from the data alone.",
+    "scope": "Do not use for visit or laboratory timing; those come from tab01.fld002 and tab03.fld019.",
+    "aliases": [
+      "date of death",
+      "death date",
+      "record date",
+      "data recorded",
+      "don't have data recorded",
+      "fld016"
+    ],
+    "evidence": [
+      "ev_031_patient_dates"
+    ]
+  }
+]

@@ -1,0 +1,233 @@
+[
+  {
+    "id": "rel_patient_examination",
+    "source": "term_patient",
+    "relation_type": "composition",
+    "target": "term_examination",
+    "connection_condition": "Examination.ID is declared as a foreign key to Patient.ID, but only 70 of 806 rows actually resolve to a patient row.",
+    "description": "An examination is an assessment event belonging to a patient and has no identity outside that patient. The declared foreign key is the intended connection, though observed coverage is very low.",
+    "evidence": [
+      "ev_exam_patient_linkage",
+      "ev_schema_tables"
+    ]
+  },
+  {
+    "id": "rel_patient_laboratory",
+    "source": "term_patient",
+    "relation_type": "composition",
+    "target": "term_laboratory_record",
+    "connection_condition": "Laboratory.ID references Patient.ID as a declared foreign key and all 13908 rows resolve to one of 302 patients.",
+    "description": "A laboratory record is a test panel belonging to a patient; it cannot exist without that patient. This is the reliably connected child table of the database.",
+    "evidence": [
+      "ev_lab_patient_linkage",
+      "ev_schema_tables"
+    ]
+  },
+  {
+    "id": "rel_acl_igg_isotype",
+    "source": "term_acl_igg",
+    "relation_type": "hierarchy",
+    "target": "term_anticardiolipin_antibody",
+    "connection_condition": "",
+    "description": "The IgG isotype is a specific kind of anticardiolipin antibody measurement; its value domain is one of the three independent isotype scales of that family.",
+    "evidence": [
+      "ev_acl_igg_distribution"
+    ]
+  },
+  {
+    "id": "rel_acl_igm_isotype",
+    "source": "term_acl_igm",
+    "relation_type": "hierarchy",
+    "target": "term_anticardiolipin_antibody",
+    "connection_condition": "",
+    "description": "The IgM isotype is a specific kind of anticardiolipin antibody measurement.",
+    "evidence": [
+      "ev_acl_igm_distribution"
+    ]
+  },
+  {
+    "id": "rel_acl_iga_isotype",
+    "source": "term_acl_iga",
+    "relation_type": "hierarchy",
+    "target": "term_anticardiolipin_antibody",
+    "connection_condition": "",
+    "description": "The IgA isotype is a specific kind of anticardiolipin antibody measurement; it is stored on a different, integer-valued scale from the other two isotypes.",
+    "evidence": [
+      "ev_acl_iga_distribution"
+    ]
+  },
+  {
+    "id": "rel_igg_isotype",
+    "source": "term_igg",
+    "relation_type": "hierarchy",
+    "target": "term_immunoglobulin",
+    "connection_condition": "",
+    "description": "Serum IgG is one specific isotype of the serum immunoglobulin family.",
+    "evidence": [
+      "ev_immunoglobulin_ranges"
+    ]
+  },
+  {
+    "id": "rel_iga_isotype",
+    "source": "term_iga",
+    "relation_type": "hierarchy",
+    "target": "term_immunoglobulin",
+    "connection_condition": "",
+    "description": "Serum IgA is one specific isotype of the serum immunoglobulin family.",
+    "evidence": [
+      "ev_immunoglobulin_ranges"
+    ]
+  },
+  {
+    "id": "rel_igm_isotype",
+    "source": "term_igm",
+    "relation_type": "hierarchy",
+    "target": "term_immunoglobulin",
+    "connection_condition": "",
+    "description": "Serum IgM is one specific isotype of the serum immunoglobulin family.",
+    "evidence": [
+      "ev_immunoglobulin_ranges"
+    ]
+  },
+  {
+    "id": "rel_age_from_birth_date",
+    "source": "term_birth_date",
+    "relation_type": "derivation",
+    "target": "term_age_at_first_visit",
+    "connection_condition": "",
+    "description": "Age at a visit is computed by subtracting the patient's birth date from a visit date; the birth date supplies the origin of the age scale.",
+    "evidence": [
+      "ev_patient_date_fields"
+    ]
+  },
+  {
+    "id": "rel_age_from_reference_date",
+    "source": "term_first_visit_date",
+    "relation_type": "derivation",
+    "target": "term_age_at_first_visit",
+    "connection_condition": "",
+    "description": "Age at presentation is computed from a patient-level reference date; the column named 'First Date' is one candidate provider of that date, and the companion Description date is another.",
+    "evidence": [
+      "ev_patient_date_fields",
+      "ev_date_ranges"
+    ]
+  },
+  {
+    "id": "rel_diagnosis_equivalence",
+    "source": "term_patient_diagnosis",
+    "relation_type": "equivalence",
+    "target": "term_examination_diagnosis",
+    "connection_condition": "Both columns draw on the same disease token vocabulary; SLE, RA, PSS and MCTD are spelled identically in both, while the Sjogren and Behcet labels appear as SJS and BEHCET in the patient column and as SjS and Behcet in the examination column.",
+    "description": "The patient-level and examination-level diagnosis columns express the same disease attribution concept at two different grains (once per patient, once per assessment) and differ only in naming convention for two of the leading categories.",
+    "evidence": [
+      "ev_diagnosis_naming_convention",
+      "ev_patient_diagnosis_tokens",
+      "ev_examination_diagnosis_tokens"
+    ]
+  },
+  {
+    "id": "rel_thrombosis_symptom",
+    "source": "term_thrombosis",
+    "relation_type": "association",
+    "target": "term_thrombotic_symptom",
+    "connection_condition": "Both are recorded on the same Examination row; the symptom note is populated on exactly the rows whose thrombosis grade is above zero and is NULL on all others.",
+    "description": "The recorded symptom text accompanies a recorded thrombotic event and serves as its qualitative description.",
+    "evidence": [
+      "ev_thrombosis_symptoms_coupling"
+    ]
+  },
+  {
+    "id": "rel_category_from_patient_diagnosis",
+    "source": "term_patient_diagnosis",
+    "relation_type": "derivation",
+    "target": "term_disease_category",
+    "connection_condition": "",
+    "description": "A normalised disease category is derived from the patient-level label by removing uncertainty qualifiers, splitting multi-label values and unifying abbreviation and case variants.",
+    "evidence": [
+      "ev_patient_diagnosis_tokens",
+      "ev_diagnosis_multilabel_encoding"
+    ]
+  },
+  {
+    "id": "rel_category_from_examination_diagnosis",
+    "source": "term_examination_diagnosis",
+    "relation_type": "derivation",
+    "target": "term_disease_category",
+    "connection_condition": "",
+    "description": "The same normalised disease category is derived from the examination-level label, which uses a different naming convention for the Sjogren and Behcet categories.",
+    "evidence": [
+      "ev_examination_diagnosis_tokens",
+      "ev_diagnosis_naming_convention"
+    ]
+  },
+  {
+    "id": "rel_ana_pattern_titre",
+    "source": "term_ana_pattern",
+    "relation_type": "association",
+    "target": "term_antinuclear_antibody",
+    "connection_condition": "Both are recorded on the same Examination row; the pattern field is non-NULL on every row where the titre is recorded and NULL on all 38 rows where the titre itself is NULL.",
+    "description": "The staining pattern qualifies the antinuclear antibody titre and is recorded alongside it, but it is stored as an independent multi-valued code field.",
+    "evidence": [
+      "ev_ana_vs_pattern",
+      "ev_ana_pattern"
+    ]
+  },
+  {
+    "id": "rel_lac_kct",
+    "source": "term_lupus_anticoagulant",
+    "relation_type": "association",
+    "target": "term_kct",
+    "connection_condition": "Both are phospholipid-dependent clotting assays recorded on the same examination table, although they are not recorded on the same rows: LAC appears on 222 rows and KCT on 146.",
+    "description": "The kaolin clotting time and the lupus anticoagulant result both probe the same anticoagulant phenomenon through different assays and are ordered together in practice.",
+    "evidence": [
+      "ev_lac_values",
+      "ev_kct_rvvt_coupling"
+    ]
+  },
+  {
+    "id": "rel_lac_rvvt",
+    "source": "term_lupus_anticoagulant",
+    "relation_type": "association",
+    "target": "term_rvvt",
+    "connection_condition": "Both are phospholipid-dependent clotting assays recorded on the same examination table with different row coverage (LAC 222 rows, RVVT 146 rows).",
+    "description": "The dilute Russell viper venom time and the lupus anticoagulant result both probe the same anticoagulant phenomenon through different assays.",
+    "evidence": [
+      "ev_lac_values",
+      "ev_kct_rvvt_coupling"
+    ]
+  },
+  {
+    "id": "rel_urinary_protein_creatinine",
+    "source": "term_urinary_protein",
+    "relation_type": "association",
+    "target": "term_creatinine",
+    "connection_condition": "Both are recorded on the same Laboratory row and are commonly requested together as a renal assessment panel, with very different population rates (9667 and 11253 non-NULL rows).",
+    "description": "Urinary protein excretion and serum creatinine are two complementary markers of renal involvement recorded on the same laboratory record.",
+    "evidence": [
+      "ev_urinary_protein_categories",
+      "ev_laboratory_numeric_ranges"
+    ]
+  },
+  {
+    "id": "rel_thrombosis_disease_category",
+    "source": "term_thrombosis",
+    "relation_type": "association",
+    "target": "term_disease_category",
+    "connection_condition": "Among the 23 examinations with a thrombosis grade of 2 or 3 the examination diagnosis text contains the SLE token in 20 cases, the Sjogren token in 3 cases, and is NULL in one.",
+    "description": "A recorded thrombotic event co-occurs strongly with the SLE disease category in this cohort, which makes the disease category a natural grouping dimension for thrombosis questions.",
+    "evidence": [
+      "ev_thrombosis_positive_diagnoses"
+    ]
+  },
+  {
+    "id": "rel_examination_laboratory",
+    "source": "term_examination",
+    "relation_type": "association",
+    "target": "term_laboratory_record",
+    "connection_condition": "Both are keyed by the patient identifier and carry a date, but they are not aligned events: only 20 patients appear in both tables and only 8 rows share an identical identifier and date.",
+    "description": "The examination and laboratory tables describe the same patients through different observation channels, but their connection is indirect; treating them as a single per-visit record would discard most of the data.",
+    "evidence": [
+      "ev_exam_lab_overlap"
+    ]
+  }
+]

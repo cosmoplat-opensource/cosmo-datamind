@@ -1,0 +1,150 @@
+[
+  {
+    "id": "rel_league_match_composition",
+    "source": "term_league",
+    "relation_type": "composition",
+    "target": "term_match",
+    "connection_condition": "Match.league_id corresponds to League.id",
+    "description": "A league's competition period is composed of its matches; a match record cannot exist without the league it belongs to.",
+    "evidence": [
+      "ev_002_league_country",
+      "ev_004_match_date_and_nulls"
+    ]
+  },
+  {
+    "id": "rel_country_league_composition",
+    "source": "term_country",
+    "relation_type": "composition",
+    "target": "term_league",
+    "connection_condition": "League.country_id corresponds to Country.id",
+    "description": "A country's competition structure is composed of the leagues held in it; a league cannot exist without its country.",
+    "evidence": [
+      "ev_002_league_country"
+    ]
+  },
+  {
+    "id": "rel_match_team_association",
+    "source": "term_match",
+    "relation_type": "association",
+    "target": "term_team",
+    "connection_condition": "Match.home_team_api_id and Match.away_team_api_id each correspond to Team.team_api_id, so a match references its two teams through two separate identifier columns",
+    "description": "Every match involves a home team and an away team; team participation is recorded per match rather than through a membership record, so the connection is an association between two concepts rather than a part-of composition.",
+    "evidence": [
+      "ev_019_team_lookup"
+    ]
+  },
+  {
+    "id": "rel_player_snapshots_composition",
+    "source": "term_player",
+    "relation_type": "composition",
+    "target": "term_player_attributes",
+    "connection_condition": "Player_Attributes.player_api_id corresponds to Player.player_api_id",
+    "description": "A player's attribute history is composed of dated attribute snapshots; a snapshot row cannot exist without its player.",
+    "evidence": [
+      "ev_016_player_attributes_join",
+      "ev_012_player_attribute_duplicates"
+    ]
+  },
+  {
+    "id": "rel_team_snapshots_composition",
+    "source": "term_team",
+    "relation_type": "composition",
+    "target": "term_team_attributes",
+    "connection_condition": "Team_Attributes.team_api_id corresponds to Team.team_api_id",
+    "description": "A team's tactical profile is composed of dated attribute snapshots; a snapshot row cannot exist without its team.",
+    "evidence": [
+      "ev_020_team_attributes_join"
+    ]
+  },
+  {
+    "id": "rel_birthday_age_derivation",
+    "source": "term_birthday",
+    "relation_type": "derivation",
+    "target": "term_player_age",
+    "connection_condition": "",
+    "description": "Player age is computed from the date of birth relative to a reference instant; a more recent date of birth yields a smaller age.",
+    "evidence": [
+      "ev_009_player_birthday_and_units",
+      "ev_021_reference_clock"
+    ]
+  },
+  {
+    "id": "rel_home_goal_draw_derivation",
+    "source": "term_home_team_goal",
+    "relation_type": "derivation",
+    "target": "term_draw_match",
+    "connection_condition": "",
+    "description": "A drawn match is inferred from the goals of both teams: a match counts as a draw when the home team goal count equals the away team goal count.",
+    "evidence": [
+      "ev_007_draw_by_league_2015_2016"
+    ]
+  },
+  {
+    "id": "rel_average_attribute_derivation",
+    "source": "term_player_attributes",
+    "relation_type": "derivation",
+    "target": "term_average_player_attribute",
+    "connection_condition": "",
+    "description": "The average player attribute value is derived from the attribute snapshot records of the qualifying players by dividing the summed attribute value by the number of those records.",
+    "evidence": [
+      "ev_012_player_attribute_duplicates",
+      "ev_013_player_attribute_nulls"
+    ]
+  },
+  {
+    "id": "rel_speed_class_derivation",
+    "source": "term_build_up_play_speed",
+    "relation_type": "derivation",
+    "target": "term_build_up_play_speed_class",
+    "connection_condition": "",
+    "description": "The build up play speed class is the categorical band derived from the numeric build up play speed score of the same snapshot.",
+    "evidence": [
+      "ev_017_team_attributes_classes"
+    ]
+  },
+  {
+    "id": "rel_passing_class_derivation",
+    "source": "term_chance_creation_passing",
+    "relation_type": "derivation",
+    "target": "term_chance_creation_passing_class",
+    "connection_condition": "",
+    "description": "The chance creation passing class is the categorical band derived from the numeric chance creation passing score of the same snapshot.",
+    "evidence": [
+      "ev_017_team_attributes_classes"
+    ]
+  },
+  {
+    "id": "rel_player_ids_equivalence",
+    "source": "term_player_api_id",
+    "relation_type": "equivalence",
+    "target": "term_player_fifa_api_id",
+    "connection_condition": "Player.player_api_id and Player.player_fifa_api_id are both declared unique on the same Player row",
+    "description": "The player API identifier and the player FIFA identifier label the same player one-to-one, while originating from different identifier systems.",
+    "evidence": [
+      "ev_015_player_identifiers"
+    ]
+  },
+  {
+    "id": "rel_row_id_association",
+    "source": "term_player_attributes_row_id",
+    "relation_type": "association",
+    "target": "term_player_attributes",
+    "connection_condition": "Player_Attributes.id addresses one row of Player_Attributes",
+    "description": "The surrogate row identifier addresses a single attribute snapshot row; it does not identify a player, since one player owns many snapshot rows.",
+    "evidence": [
+      "ev_014_player_attribute_row_ids"
+    ]
+  },
+  {
+    "id": "rel_overall_rating_strength_association",
+    "source": "term_overall_rating",
+    "relation_type": "association",
+    "target": "term_strength",
+    "connection_condition": "",
+    "description": "Overall rating and strength are distinct player metrics on comparable numeric scales; the phrase 'overall strength' denotes the composite overall rating, whereas a bare 'strength' denotes the physical strength skill score.",
+    "evidence": [
+      "ev_013_player_attribute_nulls",
+      "ev_022_attribute_extremes"
+    ]
+  }
+]

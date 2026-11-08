@@ -1,0 +1,233 @@
+[
+  {
+    "id": "map_customer",
+    "term_id": "term_customer",
+    "database_source": "debit_card_specializing",
+    "table": "customers",
+    "column": "CustomerID",
+    "semantic_filter": "",
+    "aggregation_semantics": "count of distinct customers",
+    "grain": "one row per customer",
+    "validation": "verified: unique primary key, 32461 rows, no orphan customer identifiers in transactions_1k or yearmonth"
+  },
+  {
+    "id": "map_gas_station",
+    "term_id": "term_gas_station",
+    "database_source": "debit_card_specializing",
+    "table": "gasstations",
+    "column": "GasStationID",
+    "semantic_filter": "",
+    "aggregation_semantics": "count of distinct stations",
+    "grain": "one row per gas station",
+    "validation": "verified: unique primary key, 5716 rows, no orphan station identifiers in transactions_1k"
+  },
+  {
+    "id": "map_product",
+    "term_id": "term_product",
+    "database_source": "debit_card_specializing",
+    "table": "products",
+    "column": "ProductID",
+    "semantic_filter": "",
+    "aggregation_semantics": "count of distinct products",
+    "grain": "one row per product",
+    "validation": "verified: unique primary key, 591 rows covering identifiers 1 to 630, no orphan product identifiers in transactions_1k"
+  },
+  {
+    "id": "map_transaction",
+    "term_id": "term_transaction",
+    "database_source": "debit_card_specializing",
+    "table": "transactions_1k",
+    "column": "TransactionID",
+    "semantic_filter": "",
+    "aggregation_semantics": "count of transaction events",
+    "grain": "one row per card purchase event",
+    "validation": "verified: 1000 rows, primary key TransactionID, foreign references to customers, gasstations and products all resolve"
+  },
+  {
+    "id": "map_customer_segment",
+    "term_id": "term_customer_segment",
+    "database_source": "debit_card_specializing",
+    "table": "customers",
+    "column": "Segment",
+    "semantic_filter": "applies to the customer record; the value is the customer's own segment classification",
+    "aggregation_semantics": "grouping key for customer-level aggregation",
+    "grain": "one segment value per customer",
+    "validation": "verified: exactly three distinct values SME, LAM, KAM; no nulls; counts 26763 / 3658 / 2040"
+  },
+  {
+    "id": "map_payment_currency",
+    "term_id": "term_payment_currency",
+    "database_source": "debit_card_specializing",
+    "table": "customers",
+    "column": "Currency",
+    "semantic_filter": "the currency in which the customer settles payments; a customer has exactly one currency",
+    "aggregation_semantics": "grouping key that scopes monetary comparison",
+    "grain": "one currency value per customer",
+    "validation": "verified: exactly two distinct values CZK (30459 customers) and EUR (2002 customers); no nulls"
+  },
+  {
+    "id": "map_year_month_period",
+    "term_id": "term_year_month_period",
+    "database_source": "debit_card_specializing",
+    "table": "yearmonth",
+    "column": "Date",
+    "semantic_filter": "value is a six-character year-month code: four-digit year followed by two-digit month",
+    "aggregation_semantics": "grouping key for month-level aggregation; a calendar year groups the codes sharing the same four-digit year prefix",
+    "grain": "one code per calendar month of consumption",
+    "validation": "verified: all values are 6-character text; 21 distinct codes 201112 and 201201-201209, 201301-201311"
+  },
+  {
+    "id": "map_transaction_date",
+    "term_id": "term_transaction_date",
+    "database_source": "debit_card_specializing",
+    "table": "transactions_1k",
+    "column": "Date",
+    "semantic_filter": "value is a calendar day in ISO YYYY-MM-DD form",
+    "aggregation_semantics": "grouping key or range boundary at day granularity",
+    "grain": "one calendar day per transaction",
+    "validation": "verified: 10-character ISO text; 4 distinct days, 2012-08-23 to 2012-08-26"
+  },
+  {
+    "id": "map_transaction_time",
+    "term_id": "term_transaction_time",
+    "database_source": "debit_card_specializing",
+    "table": "transactions_1k",
+    "column": "Time",
+    "semantic_filter": "",
+    "aggregation_semantics": "distinct clock times of transactions",
+    "grain": "one clock time per transaction",
+    "validation": "verified: 8-character HH:MM:SS text"
+  },
+  {
+    "id": "map_gas_station_chain",
+    "term_id": "term_gas_station_chain",
+    "database_source": "debit_card_specializing",
+    "table": "gasstations",
+    "column": "ChainID",
+    "semantic_filter": "chain identifier as a number; 'chain no. 11' denotes the value 11",
+    "aggregation_semantics": "grouping key that collects all stations of a chain",
+    "grain": "one chain identifier per gas station",
+    "validation": "verified: 233 distinct chain identifiers across 5716 stations; chain 11 contains 25 stations"
+  },
+  {
+    "id": "map_gas_station_country",
+    "term_id": "term_gas_station_country",
+    "database_source": "debit_card_specializing",
+    "table": "gasstations",
+    "column": "Country",
+    "semantic_filter": "country of the station location",
+    "aggregation_semantics": "grouping key for country-level restriction",
+    "grain": "one country per gas station",
+    "validation": "verified: exactly CZE (4836 stations) and SVK (880 stations); CZE denotes the Czech Republic"
+  },
+  {
+    "id": "map_gas_station_segment",
+    "term_id": "term_gas_station_segment",
+    "database_source": "debit_card_specializing",
+    "table": "gasstations",
+    "column": "Segment",
+    "semantic_filter": "station-type classification of the station; not a customer classification",
+    "aggregation_semantics": "grouping key for station-type restriction",
+    "grain": "one segment value per gas station",
+    "validation": "verified: five distinct values Discount 294, Noname 1005, Other 2392, Premium 1428, Value for money 597; no chain mixes segment values"
+  },
+  {
+    "id": "map_product_description",
+    "term_id": "term_product_description",
+    "database_source": "debit_card_specializing",
+    "table": "products",
+    "column": "Description",
+    "semantic_filter": "",
+    "aggregation_semantics": "distinct product labels",
+    "grain": "one description per product",
+    "validation": "verified: text labels such as Diesel, Natural, Super, Special, and lubricant names"
+  },
+  {
+    "id": "map_customer_monthly_consumption",
+    "term_id": "term_customer_monthly_consumption",
+    "database_source": "debit_card_specializing",
+    "table": "yearmonth",
+    "column": "Consumption",
+    "semantic_filter": "one value per customer and month as recorded; signed values are meaningful and negative entries exist",
+    "aggregation_semantics": "sum across customers and months for group totals; mean across a customer's observed months for a per-customer average",
+    "grain": "one value per customer per calendar month",
+    "validation": "verified: 383282 rows at customer-month grain, no null values, range -582092.86 to 2052187.11"
+  },
+  {
+    "id": "map_annual_consumption",
+    "term_id": "term_annual_consumption",
+    "database_source": "debit_card_specializing",
+    "table": "yearmonth",
+    "column": "Consumption",
+    "semantic_filter": "restricted to the month codes belonging to a single calendar year",
+    "aggregation_semantics": "sum of the monthly consumption values within the year, per customer or per customer group",
+    "grain": "one annual total per customer (or per group) per year",
+    "validation": "verified: year prefix selects the months of that year; 2013 covers 11 codes, 2012 covers 9 codes"
+  },
+  {
+    "id": "map_avg_monthly_consumption",
+    "term_id": "term_avg_monthly_consumption",
+    "database_source": "debit_card_specializing",
+    "table": "yearmonth",
+    "column": "Consumption",
+    "semantic_filter": "restricted to the month codes of the target year",
+    "aggregation_semantics": "mean of the monthly consumption values in the year divided by 12, following the workload definition of average monthly consumption",
+    "grain": "one average per customer (or per group) per year",
+    "validation": "workload evidence defines Average Monthly consumption as AVG(Consumption) / 12; both the year-scope and the division factor are stated explicitly"
+  },
+  {
+    "id": "map_consumption_growth_rate",
+    "term_id": "term_consumption_growth_rate",
+    "database_source": "debit_card_specializing",
+    "table": "yearmonth",
+    "column": "Consumption",
+    "semantic_filter": "requires the month codes of two consecutive years for the same customer group",
+    "aggregation_semantics": "difference between the two years' totals expressed as a percentage of the later year's total",
+    "grain": "one rate per customer group per year pair",
+    "validation": "workload evidence defines Increase or Decrease as the later-year consumption minus the earlier-year consumption, and percentage of increase as that difference divided by the later year's consumption"
+  },
+  {
+    "id": "map_peak_consumption_month",
+    "term_id": "term_peak_consumption_month",
+    "database_source": "debit_card_specializing",
+    "table": "yearmonth",
+    "column": "Consumption",
+    "semantic_filter": "restricted to a single year and customer group",
+    "aggregation_semantics": "month whose aggregated consumption is the largest within the year",
+    "grain": "one month code per year and group",
+    "validation": "verified: month totals are obtainable by grouping consumption on the month part of the period code; SME 2013 peaks at month 04"
+  },
+  {
+    "id": "map_least_consuming_customer",
+    "term_id": "term_least_consuming_customer",
+    "database_source": "debit_card_specializing",
+    "table": "yearmonth",
+    "column": "Consumption",
+    "semantic_filter": "ranking is taken on the customer's annual total consumption within a segment and year",
+    "aggregation_semantics": "minimum annual total per customer within the group",
+    "grain": "one customer (or a set of tied customers) per segment and year",
+    "validation": "verified: customer-year totals exist at customer-month grain and can be ranked; negative and zero monthly values occur and affect totals"
+  },
+  {
+    "id": "map_transaction_amount",
+    "term_id": "term_transaction_amount",
+    "database_source": "debit_card_specializing",
+    "table": "transactions_1k",
+    "column": "Amount",
+    "semantic_filter": "",
+    "aggregation_semantics": "per-event integer quantity; may be summed across transactions but is not a customer-month consumption figure",
+    "grain": "one integer amount per transaction",
+    "validation": "verified: integer values from 0 to 264, with 91 zero-valued transactions"
+  },
+  {
+    "id": "map_transaction_price",
+    "term_id": "term_transaction_price",
+    "database_source": "debit_card_specializing",
+    "table": "transactions_1k",
+    "column": "Price",
+    "semantic_filter": "monetary value of the transaction; the currency is inherited from the paying customer",
+    "aggregation_semantics": "per-event monetary value; summing across customers of different currencies mixes units",
+    "grain": "one price per transaction",
+    "validation": "verified: real values from 1.76 to 5762.49"
+  }
+]

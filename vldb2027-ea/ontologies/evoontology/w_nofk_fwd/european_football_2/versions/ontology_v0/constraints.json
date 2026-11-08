@@ -1,0 +1,411 @@
+[
+  {
+    "confidence": "high",
+    "constraint_type": "enum_semantics",
+    "description": "Season values are two-year span labels of the form 'YYYY/YYYY' listing 8 competitions years from 2008/2009 to 2015/2016. A season spans roughly July of the first year to May or June of the second year, so calendar months in January to June belong to the season whose label ends in that year. A question naming a single year as a season means the season label that ends in that year, for example the 2016 season means 2015/2016, while a question naming a month and year such as April 2009 falls in the season 2008/2009. Never filter a season by matching a bare year against the season label.",
+    "evidence": [
+      "evidence_003",
+      "evidence_014"
+    ],
+    "id": "constraint_season_label_semantics",
+    "scope": "Any question that names a season or a single year to scope matches",
+    "severity": "block",
+    "target": "term_season",
+    "trigger_keywords": [
+      "season",
+      "2016 season",
+      "2010/2011",
+      "2015/2016",
+      "which season",
+      "in the season",
+      "this season"
+    ]
+  },
+  {
+    "confidence": "high",
+    "constraint_type": "business_rule",
+    "description": "An 'average' of a player ability is the sum of that ability's values across the player's attribute snapshots divided by the number of snapshot rows counted, that is the total divided by the count of the player identity column over those rows. The unit of averaging is the snapshot row, not the player and not the distinct match, so a player observed more often contributes more rows. Averaging without first selecting a snapshot date therefore means averaging over the player's whole observed history.",
+    "evidence": [
+      "evidence_006",
+      "evidence_012"
+    ],
+    "id": "constraint_average_over_snapshots",
+    "scope": "Averaging a player ability or score that is recorded on dated attribute snapshots",
+    "severity": "block",
+    "target": "term_player_attribute_snapshot",
+    "trigger_keywords": [
+      "average",
+      "average number of",
+      "average heading accuracy",
+      "average long shot",
+      "average of a player",
+      "average score"
+    ]
+  },
+  {
+    "confidence": "high",
+    "constraint_type": "business_rule",
+    "description": "A percentage of players is computed as one hundred times the count of players satisfying the stated condition divided by the count of players in the applicable population. The denominator counts player identity, so the population must first be collapsed to one row per player before the ratio is formed; counting attribute snapshot rows instead would weight frequently-observed players more heavily. The same collapse rule applies when the question restricts the population by a birth period, since several snapshots exist per player.",
+    "evidence": [
+      "evidence_005",
+      "evidence_006"
+    ],
+    "id": "constraint_percentage_denominator",
+    "scope": "Percentage questions over players or matches",
+    "severity": "block",
+    "target": "term_player",
+    "trigger_keywords": [
+      "percentage",
+      "percent",
+      "ratio",
+      "proportion",
+      "share of players"
+    ]
+  },
+  {
+    "confidence": "high",
+    "constraint_type": "business_rule",
+    "description": "The phrase 'overall strength' in a player question refers to the overall rating score on the attribute snapshot, not to the fine-grained 'strength' ability column. The two live in the same table on the same row and both are integers, so confusing them silently returns a plausible but wrong number. 'Greatest overall strength' means the maximum overall rating, and 'overall strength of more than 70' means an overall rating above seventy.",
+    "evidence": [
+      "evidence_017"
+    ],
+    "id": "constraint_overall_strength_is_overall_rating",
+    "scope": "Phrasings using the word strength about a player's general ability",
+    "severity": "block",
+    "target": "term_overall_rating",
+    "trigger_keywords": [
+      "overall strength",
+      "overall strength is the greatest",
+      "strength of more than 70",
+      "overall rating",
+      "strongest",
+      "strength"
+    ]
+  },
+  {
+    "confidence": "high",
+    "constraint_type": "data_quality",
+    "description": "Three candidate player identifiers exist. The player record's bare id column is an auto-increment surrogate key with no external meaning, and a question that names small bare numbers such as players 6 and 23 means this surrogate key. The player_api_id column links a player to every one of their attribute snapshots. The player_fifa_api_id column identifies the same players under a different convention but is not a complete link: a small number of attribute snapshots carry a FIFA API identifier that no player row matches, so joining on it can silently drop rows. Prefer player_api_id when joining players to attribute snapshots, and use the surrogate id only when the question supplies bare integers.",
+    "evidence": [
+      "evidence_005",
+      "evidence_011"
+    ],
+    "id": "constraint_player_id_space",
+    "scope": "Identifying players by a numeric identifier and joining players to their attribute snapshots",
+    "severity": "warning",
+    "target": "term_player_api_id",
+    "trigger_keywords": [
+      "player id",
+      "players' IDs",
+      "players 6 and 23",
+      "player identifier",
+      "player_api_id",
+      "player_fifa_api_id"
+    ]
+  },
+  {
+    "confidence": "high",
+    "constraint_type": "scope",
+    "description": "The player attribute table stores repeated dated observations of the same player. Observation dates run from 2007-02-22 to 2016-07-07, are stored as text timestamps, and follow two cadences: roughly twice a year up to 2012 and roughly weekly from 2013 onward, giving between 2 and 56 observations per player. A question naming a specific date selects only the snapshot rows recorded on that date, so it may return no row for players not observed that day; a question naming a year selects all snapshots whose year matches; and a question naming a year range selects every snapshot in that range, which can yield one value per matching snapshot rather than one value per player.",
+    "evidence": [
+      "evidence_006"
+    ],
+    "id": "constraint_attribute_snapshot_date_filter",
+    "scope": "Player rating and ability questions that mention a year or a specific date",
+    "severity": "block",
+    "target": "term_player_attribute_snapshot",
+    "trigger_keywords": [
+      "in year 2011",
+      "on 2016/6/23",
+      "between 2013 to 2015",
+      "at that time",
+      "snapshot",
+      "player rating in",
+      "date"
+    ]
+  },
+  {
+    "confidence": "high",
+    "constraint_type": "enum_semantics",
+    "description": "Every numeric team style score has a paired text class column whose label is fully determined by the numeric band the score falls into. All score families share the same boundaries, low band up to 33 and high band from 67, with a middle band between 34 and 66. The low band reads Slow for build-up play speed, Safe for chance creation passing, Little for chance creation crossing and shooting, Deep for defensive pressure, Contain for defensive aggression and Narrow for defensive team width. The middle band reads Balanced, Normal, Medium or Normal respectively. The high band reads Fast, Risky, Lots, High, Double and Wide respectively. Because the label is a deterministic function of the score, the correct class for a queried score can be read from the same snapshot row or reconstructed from the band.",
+    "evidence": [
+      "evidence_008",
+      "evidence_015"
+    ],
+    "id": "constraint_team_attribute_class_bands",
+    "scope": "Interpreting or producing a team style class label",
+    "severity": "block",
+    "target": "term_team_attribute_class",
+    "trigger_keywords": [
+      "classified as",
+      "class",
+      "Balanced",
+      "Fast",
+      "Slow",
+      "Risky",
+      "Safe",
+      "Normal",
+      "Lots",
+      "Little",
+      "Deep",
+      "High",
+      "Medium",
+      "Contain",
+      "Press",
+      "Double",
+      "Narrow",
+      "Wide",
+      "style"
+    ]
+  },
+  {
+    "confidence": "high",
+    "constraint_type": "scope",
+    "description": "Team tactical profiles are also stored as repeated dated observations. Six observation dates exist between 2010-02-22 and 2015-09-10, so a team normally has several style rows and the same team name can appear with different scores. A question asking for a team's highest or best score in a style category means the maximum across that team's observation rows. Coverage is incomplete: only 288 of the 299 clubs have any tactical observation at all, so a team missing from this table cannot be ranked by style.",
+    "evidence": [
+      "evidence_007",
+      "evidence_015"
+    ],
+    "id": "constraint_team_attributes_time_varying",
+    "scope": "Team style score questions",
+    "severity": "block",
+    "target": "term_team_attribute_snapshot",
+    "trigger_keywords": [
+      "build up play speed",
+      "chance creation passing",
+      "team attributes",
+      "team tactics",
+      "playing style",
+      "highest",
+      "team score"
+    ]
+  },
+  {
+    "confidence": "high",
+    "constraint_type": "data_quality",
+    "description": "The attacking work rate and defensive work rate columns are corrupted and must not be used as filters or as answer values. Besides the legitimate levels low, medium and high, they contain truncated fragments such as 'le', 'norm', 'stoc', 'y', 'o', 'ormal', 'tocky', 'ean' and 'es', empty strings, and stray single digits from 0 to 9 in the defensive column. The corruption is concentrated in observations from 2007 to 2011. Because the damage is partial rather than uniform, filtering on these columns silently returns a biased subset.",
+    "evidence": [
+      "evidence_009"
+    ],
+    "id": "constraint_work_rate_columns_corrupted",
+    "scope": "Any use of the player work-rate columns",
+    "severity": "block",
+    "target": "term_player_attribute_snapshot",
+    "trigger_keywords": [
+      "work rate",
+      "attacking work rate",
+      "defensive work rate",
+      "attacking_work_rate",
+      "defensive_work_rate"
+    ]
+  },
+  {
+    "confidence": "high",
+    "constraint_type": "data_quality",
+    "description": "The preferred foot column holds the values left or right on the large majority of snapshot rows, but 836 rows carry no value. Those 836 rows are the same records whose work-rate fields were damaged, and they are concentrated in the earliest observation year. A test such as preferred foot equals left or equals right therefore excludes those rows automatically, which is the intended behaviour, but any count of all players that is meant to include them must not assume the column is always populated.",
+    "evidence": [
+      "evidence_010",
+      "evidence_009"
+    ],
+    "id": "constraint_preferred_foot_null_rows",
+    "scope": "Foot-preference filtering and foot-conditional player counts",
+    "severity": "warning",
+    "target": "term_preferred_foot",
+    "trigger_keywords": [
+      "preferred foot",
+      "preferred_foot",
+      "right foot",
+      "left foot",
+      "prefers to use",
+      "left foots"
+    ]
+  },
+  {
+    "confidence": "high",
+    "constraint_type": "business_rule",
+    "description": "Each of the eleven countries hosts exactly one league, and the match records store the same numeric value in the country column and the league column on every row. The league and country tables also share the same identifier value per nation, and each league name begins with its country name. Consequently a country name and its league name select exactly the same matches, so a question phrasing a filter as the country of Poland and a question phrasing it as the Poland league are equivalent. A question that pairs a country with a season still needs the season filter applied on the match records themselves.",
+    "evidence": [
+      "evidence_004",
+      "evidence_013"
+    ],
+    "id": "constraint_country_league_identity",
+    "scope": "Filtering matches by country or by league",
+    "severity": "info",
+    "target": "term_country",
+    "trigger_keywords": [
+      "country of Poland",
+      "Poland",
+      "country",
+      "league",
+      "Belgium Jupiler League",
+      "Poland Ekstraklasa",
+      "in the country"
+    ]
+  },
+  {
+    "confidence": "high",
+    "constraint_type": "business_rule",
+    "description": "Goal counts are stored once per match and are never null, ranging from 0 to 10 for the home team and 0 to 9 for the away team. An average goal figure is the total goals divided by the number of matches in scope, where the denominator is the count of distinct match identifiers over those rows, not the count of goal values and not the count of participating teams. Each match row already carries both teams' scores, so joining to the team table before averaging would multiply rows and inflate the denominator.",
+    "evidence": [
+      "evidence_013",
+      "evidence_020"
+    ],
+    "id": "constraint_match_goal_aggregation",
+    "scope": "Averaging goals across a set of matches",
+    "severity": "block",
+    "target": "term_home_team_goal",
+    "trigger_keywords": [
+      "average home team goal",
+      "average goals",
+      "goals per match",
+      "average number of goals",
+      "home goals"
+    ]
+  },
+  {
+    "confidence": "high",
+    "constraint_type": "unit",
+    "description": "Match dates are stored as text timestamps in year-month-day order with a zeroed time component. A calendar month test therefore compares the first seven characters of the date, and a single-day test compares the first ten. Match dates span July 2008 to May 2016, and each season's matches fall between July of the earlier year and May or June of the later year.",
+    "evidence": [
+      "evidence_018",
+      "evidence_014"
+    ],
+    "id": "constraint_match_date_text_format",
+    "scope": "Filtering matches by calendar month or day",
+    "severity": "warning",
+    "target": "term_match",
+    "trigger_keywords": [
+      "April, 2009",
+      "in April",
+      "month",
+      "matches held in",
+      "date"
+    ]
+  },
+  {
+    "confidence": "high",
+    "constraint_type": "business_rule",
+    "description": "The birthday column is a date of birth, so its ordering is inverted with respect to age: the smallest date value is the oldest person and the largest is the youngest. The oldest player among a group is therefore the one with the minimum birthday, and age at present is obtained by comparing the date of birth against the current date rather than against any column in the database. Birth year and birth month filters are evaluated on the leading characters of the stored text, and the observed birth years run from 1967 to 1999.",
+    "evidence": [
+      "evidence_011",
+      "evidence_018"
+    ],
+    "id": "constraint_birthday_direction",
+    "scope": "Age and birth-date questions about players",
+    "severity": "block",
+    "target": "term_player_birthday",
+    "trigger_keywords": [
+      "oldest",
+      "youngest",
+      "age",
+      "born between",
+      "birthyear",
+      "birthmonth",
+      "date of birth"
+    ]
+  },
+  {
+    "confidence": "high",
+    "constraint_type": "unit",
+    "description": "Player height is recorded in centimetres as a non-integer number, with observed values between about 157 and about 208 and no missing values. Height thresholds stated in a question, such as above 180 or under 180 centimetres, compare directly against this column. Because the stored values carry decimals, a threshold expressed as above 180 admits a player recorded slightly above 180 and excludes one recorded at exactly 180.00, so comparisons should use the stated inequality literally against the stored value rather than against a rounded value.",
+    "evidence": [
+      "evidence_011"
+    ],
+    "id": "constraint_height_units",
+    "scope": "Height thresholds in player questions",
+    "severity": "block",
+    "target": "term_player_height",
+    "trigger_keywords": [
+      "height",
+      "heights are above 180",
+      "under 180 cm",
+      "tall",
+      "short",
+      "cm"
+    ]
+  },
+  {
+    "confidence": "high",
+    "constraint_type": "data_quality",
+    "description": "Most ability columns are populated on every snapshot row, but two are sparser. The curve and jumping scores are missing on 2713 rows each and are absent from 478 of the 11060 players entirely, while heading accuracy is missing on only 836 rows and every player retains at least one value. Totals skip missing values, so a per-player average over curve or jumping is formed over fewer rows than the player's total snapshot count and cannot be computed at all for those 478 players. Any ranking or average that depends on curve or jumping therefore covers a strictly smaller player population than one that depends on most other abilities.",
+    "evidence": [
+      "evidence_012",
+      "evidence_021"
+    ],
+    "id": "constraint_skill_attribute_sparse_rows",
+    "scope": "Averaging, filtering or ranking on individual player ability scores",
+    "severity": "warning",
+    "target": "term_player_skill_attribute",
+    "trigger_keywords": [
+      "heading accuracy",
+      "jumping",
+      "curve",
+      "average heading accuracy",
+      "highest potential score for crossing",
+      "ability",
+      "jumping scores"
+    ]
+  },
+  {
+    "confidence": "high",
+    "constraint_type": "scope",
+    "description": "Clubs carry both a full display name and an abbreviated three-letter short name. Questions name clubs by their full display name, such as Ajax, while the short name is an abbreviation such as AJA. Matching a question's club name against the abbreviated column will fail, and the full-name column should be used for lookup.",
+    "evidence": [
+      "evidence_015"
+    ],
+    "id": "constraint_team_name_grain",
+    "scope": "Matching a club named in a question",
+    "severity": "info",
+    "target": "term_team",
+    "trigger_keywords": [
+      "team name",
+      "Ajax",
+      "long name",
+      "short name",
+      "club name",
+      "Belgium Jupiler League"
+    ]
+  },
+  {
+    "confidence": "high",
+    "constraint_type": "scope",
+    "description": "Every league is represented in all eight seasons, and each league contributes a constant number of matches per season, so a league-scoped count restricted to a season returns the same figure for every season. A question that asks which league leads on some per-season statistic is comparing leagues on an equal match base rather than being distorted by differing match volumes.",
+    "evidence": [
+      "evidence_014"
+    ],
+    "id": "constraint_league_season_full_coverage",
+    "scope": "League-scoped counting of matches",
+    "severity": "info",
+    "target": "term_league",
+    "trigger_keywords": [
+      "league",
+      "season",
+      "matches held in",
+      "in the league",
+      "Belgium Jupiler League"
+    ]
+  },
+  {
+    "confidence": "high",
+    "constraint_type": "business_rule",
+    "description": "A player's ability scores, overall rating, potential and preferred foot all change between snapshots, so values combined in a single answer must be read from one and the same snapshot row of that player. Taking the maximum of one ability over a player's history and then pairing it with a different ability or a foot preference drawn from another row produces a combination the player never actually had. When a question constrains by a value such as a foot preference and then asks for another value of the same player, both the filter and the returned value belong to the same row; when a question asks for a difference between two players' scores, each player's score should be taken under a consistent snapshot rule.",
+    "evidence": [
+      "evidence_006",
+      "evidence_015",
+      "evidence_021"
+    ],
+    "id": "constraint_single_snapshot_row_consistency",
+    "scope": "Questions that combine several player attribute values in one answer",
+    "severity": "block",
+    "target": "term_player_attribute_snapshot",
+    "trigger_keywords": [
+      "highest potential score for crossing",
+      "preferred to use their left foots",
+      "difference between players",
+      "jumping scores",
+      "finishing rate and curve score",
+      "and what is it classified as",
+      "same player"
+    ]
+  }
+]

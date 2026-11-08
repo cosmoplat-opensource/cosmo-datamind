@@ -1,0 +1,149 @@
+{
+ "db_id": "thrombosis_prediction",
+ "questions": [
+  {
+   "question_id": 1179,
+   "db_id": "thrombosis_prediction",
+   "question": "For the patient who was diagnosed with SLE on 1994/2/19, what was his/her anti-Cardiolipin antibody concentration status on 1993/11/12?",
+   "evidence": "diagnosed with SLE refers to Diagnosis = 'SLE'; 1994/2/19 refers to Description = '1994-02-19'; anti-Cardiolipin refers to aCL IgM; 1993/11/12 refers to Examination Date = '1993/11/12'",
+   "SQL": "SELECT `aCL IgA`, `aCL IgG`, `aCL IgM` FROM Examination WHERE ID IN ( SELECT ID FROM Patient WHERE Diagnosis = 'SLE' AND Description = '1994-02-19' ) AND `Examination Date` = '1993-11-12'",
+   "difficulty": "moderate"
+  },
+  {
+   "question_id": 1205,
+   "db_id": "thrombosis_prediction",
+   "question": "Was the patient with the number 57266's uric acid within a normal range?",
+   "evidence": "uric acid within a normal range refers to UA > 8.0 and SEX = 'M'OR UA > 6.5 and SEX = 'F'",
+   "SQL": "SELECT CASE WHEN (T1.SEX = 'F' AND T2.UA > 6.5) OR (T1.SEX = 'M' AND T2.UA > 8.0) THEN true ELSE false END FROM Patient AS T1 INNER JOIN Laboratory AS T2 ON T1.ID = T2.ID WHERE T1.ID = 57266",
+   "difficulty": "moderate"
+  },
+  {
+   "question_id": 1239,
+   "db_id": "thrombosis_prediction",
+   "question": "Name the ID and age of patient with two or more laboratory examinations which show their hematoclit level exceeded the normal range.",
+   "evidence": "age = SUBTRACT(year(current_timestamp), year(Birthday)); patient with two or more laboratory examinations refers to COUNT(ID) > 2; hematoclit level exceeded the normal range refers to HCT > = 52;",
+   "SQL": "SELECT DISTINCT T1.ID, STRFTIME('%Y', CURRENT_TIMESTAMP) - STRFTIME('%Y', T1.Birthday) FROM Patient AS T1 INNER JOIN Laboratory AS T2 ON T1.ID = T2.ID WHERE T1.ID IN ( SELECT ID FROM Laboratory WHERE HCT >= 52 GROUP BY ID HAVING COUNT(ID) >= 2 )",
+   "difficulty": "challenging"
+  },
+  {
+   "question_id": 1157,
+   "db_id": "thrombosis_prediction",
+   "question": "For patients with severe degree of thrombosis, list their ID, sex and disease the patient is diagnosed with.",
+   "evidence": "severe degree of thrombosis refers to thrombosis = 2; disease refers to diagnosis;",
+   "SQL": "SELECT DISTINCT T1.ID, T1.SEX, T1.Diagnosis FROM Patient AS T1 INNER JOIN Examination AS T2 ON T1.ID = T2.ID WHERE T2.Thrombosis = 2",
+   "difficulty": "simple"
+  },
+  {
+   "question_id": 1171,
+   "db_id": "thrombosis_prediction",
+   "question": "How many underage patients were examined during the course of the three-year period from 1990 to 1993?",
+   "evidence": "underage patients refers to year(Birthday) < 18; three-year period from 1990 to 1993 refers to year(`Examination Date`) between '1990' and '1993'",
+   "SQL": "SELECT COUNT(T1.ID) FROM Patient AS T1 INNER JOIN Examination AS T2 ON T1.ID = T2.ID WHERE STRFTIME('%Y', T2.`Examination Date`) BETWEEN '1990' AND '1993' AND STRFTIME('%Y', T2.`Examination Date`) - STRFTIME('%Y', T1.Birthday) < 18",
+   "difficulty": "challenging"
+  },
+  {
+   "question_id": 1267,
+   "db_id": "thrombosis_prediction",
+   "question": "Among the patients with normal anti-SM, how many of them does not have thrombosis?",
+   "evidence": "normal anti-SM refers to SM IN('-', '+-'); SM = 'negative' means '-'; SM = '0' means '+-'; SM = '1' means '+'; does not have thrombosis refers to Thrombosis = 0;",
+   "SQL": "SELECT COUNT(T1.ID) FROM Examination AS T1 INNER JOIN Laboratory AS T2 ON T1.ID = T2.ID WHERE T2.SM IN ('negative','0') AND T1.Thrombosis = 0",
+   "difficulty": "moderate"
+  },
+  {
+   "question_id": 1185,
+   "db_id": "thrombosis_prediction",
+   "question": "For the patient who was born on 1959/2/18, what is the decrease rate for his/her total cholesterol from November to December in 1981?",
+   "evidence": "born on 1959/2/18 refers to Birthday = '1959-02-18'; calculation = DIVISION(SUBTRACT(SUM(Birthday = '1959-02-18' and Date like '1981-11-%' THEN `T-CHO`), SUM(Birthday = '1959-02-18' and Date like '1981-12-%' THEN `T-CHO`)), SUM(Birthday = '1959-02-18' and Date like '1981-12-%' THEN `T-CHO`))",
+   "SQL": "SELECT CAST((SUM(CASE WHEN T2.Date LIKE '1981-11-%' THEN T2.`T-CHO` ELSE 0 END) - SUM(CASE WHEN T2.Date LIKE '1981-12-%' THEN T2.`T-CHO` ELSE 0 END)) AS REAL) / SUM(CASE WHEN T2.Date LIKE '1981-12-%' THEN T2.`T-CHO` ELSE 0 END) FROM Patient AS T1 INNER JOIN Laboratory AS T2 ON T1.ID = T2.ID WHERE T1.Birthday = '1959-02-18'",
+   "difficulty": "challenging"
+  },
+  {
+   "question_id": 1166,
+   "db_id": "thrombosis_prediction",
+   "question": "What are the symptoms observed by the youngest patient to ever did a medical examination? Identify their diagnosis.",
+   "evidence": "The larger the birthday value, the younger the person is, and vice versa; symptoms observed refers to the symptoms is not NULL",
+   "SQL": "SELECT T2.Symptoms, T1.Diagnosis FROM Patient AS T1 INNER JOIN Examination AS T2 ON T1.ID = T2.ID WHERE T2.Symptoms IS NOT NULL ORDER BY T1.Birthday DESC LIMIT 1",
+   "difficulty": "simple"
+  },
+  {
+   "question_id": 1235,
+   "db_id": "thrombosis_prediction",
+   "question": "What are the patient's diagnosis for those who has lower red blood blood cell? State their ID and age.",
+   "evidence": "patient's diagnosis refers to Diagnosis; lower red blood cell refers to RBC < 3.5; age = SUBTRACT(year(current_timestamp), year(Birthday)); ",
+   "SQL": "SELECT DISTINCT T1.Diagnosis, T1.ID , STRFTIME('%Y', CURRENT_TIMESTAMP) -STRFTIME('%Y', T1.Birthday) FROM Patient AS T1 INNER JOIN Laboratory AS T2 ON T1.ID = T2.ID WHERE T2.RBC < 3.5",
+   "difficulty": "moderate"
+  },
+  {
+   "question_id": 1201,
+   "db_id": "thrombosis_prediction",
+   "question": "What percentage of patients who were born in 1980 and were diagnosed with RA are women?",
+   "evidence": "born in 1980 refers to YEAR(BIRTHDAY) = '1980'; 'RA' refers to Diagnosis='RA' ; women refers to SEX = 'F'; calculation = DIVIDE(SUM(SEX = 'F'), COUNT(SEX)) * 100",
+   "SQL": "SELECT CAST(SUM(CASE WHEN SEX = 'F' THEN 1 ELSE 0 END) AS REAL) * 100 / COUNT(ID) FROM Patient WHERE Diagnosis = 'RA' AND STRFTIME('%Y', Birthday) = '1980'",
+   "difficulty": "moderate"
+  },
+  {
+   "question_id": 1169,
+   "db_id": "thrombosis_prediction",
+   "question": "What is the ratio of male to female patients among all those with abnormal uric acid counts?",
+   "evidence": "male refers to SEX = 'M'; female refers to SEX = 'F'; abnormal uric acid refers to UA < = '8.0' where SEX = 'M', UA < = '6.5' where SEX = 'F'; calculation = DIVIDE(SUM(UA <= '8.0' and SEX = 'M'), SUM(UA <= '6.5 and SEX = 'F'))",
+   "SQL": "SELECT CAST(SUM(CASE WHEN T2.UA <= 8.0 AND T1.SEX = 'M' THEN 1 ELSE 0 END) AS REAL) / SUM(CASE WHEN T2.UA <= 6.5 AND T1.SEX = 'F' THEN 1 ELSE 0 END) FROM Patient AS T1 INNER JOIN Laboratory AS T2 ON T1.ID = T2.ID",
+   "difficulty": "challenging"
+  },
+  {
+   "question_id": 1150,
+   "db_id": "thrombosis_prediction",
+   "question": "What is the percentage of female patient were born after 1930?",
+   "evidence": "female refers to Sex = 'F'; patient who were born after 1930 refers to year(Birthday) > '1930'; calculation = DIVIDE(COUNT(ID) where year(Birthday) > '1930' and SEX = 'F'), (COUNT(ID) where SEX = 'F')",
+   "SQL": "SELECT CAST(SUM(CASE WHEN STRFTIME('%Y', Birthday) > '1930' THEN 1 ELSE 0 END) AS REAL) * 100 / COUNT(*) FROM Patient WHERE SEX = 'F'",
+   "difficulty": "moderate"
+  },
+  {
+   "question_id": 1254,
+   "db_id": "thrombosis_prediction",
+   "question": "How many patients with a normal Ig A level came to the hospital after 1990/1/1?",
+   "evidence": "normal Ig A level refers to IGA > 80 AND IGA < 500; came to the hospital after 1990/1/1 refers to YEAR(`First Date`) > = 1990;",
+   "SQL": "SELECT COUNT(T1.ID) FROM Patient AS T1 INNER JOIN Laboratory AS T2 ON T1.ID = T2.ID WHERE T2.IGA BETWEEN 80 AND 500 AND  strftime('%Y',  T1.`First Date`) > '1990'",
+   "difficulty": "moderate"
+  },
+  {
+   "question_id": 1155,
+   "db_id": "thrombosis_prediction",
+   "question": "List the patient ID, sex and birthday of patient with LDH beyond normal range.",
+   "evidence": "LDH beyond normal range refers to LDH > '500';",
+   "SQL": "SELECT DISTINCT T1.ID, T1.SEX, T1.Birthday FROM Patient AS T1 INNER JOIN Laboratory AS T2 ON T1.ID = T2.ID WHERE T2.LDH > 500",
+   "difficulty": "simple"
+  },
+  {
+   "question_id": 1164,
+   "db_id": "thrombosis_prediction",
+   "question": "How many of the patients with the most serious thrombosis cases examined in 1997 are women?",
+   "evidence": "the most serious thrombosis refers to Thrombosis = '1' (the most severe one); women refers to sex = 'F'",
+   "SQL": "SELECT  COUNT(*) FROM Patient AS T1 INNER JOIN Examination AS T2 ON T1.ID = T2.ID WHERE T1.SEX = 'F' AND STRFTIME('%Y', T2.`Examination Date`) = '1997' AND T2.Thrombosis = 1",
+   "difficulty": "moderate"
+  },
+  {
+   "question_id": 1162,
+   "db_id": "thrombosis_prediction",
+   "question": "How many female patients who came at the hospital in 1997 was immediately followed at the outpatient clinic?",
+   "evidence": "female refers to sex = 'F'; came at the hospital in 1997 refers to year(Description) = '1997'; immediately followed at the outpatient clinic refers to Admission = '-'",
+   "SQL": "SELECT COUNT(*) FROM Patient WHERE STRFTIME('%Y', Description) = '1997' AND SEX = 'F' AND Admission = '-'",
+   "difficulty": "moderate"
+  },
+  {
+   "question_id": 1243,
+   "db_id": "thrombosis_prediction",
+   "question": "For all patients who are older than 55 years old, what is the percentage of female who has abnormal prothrombin time (PT)?",
+   "evidence": "older than 55 years old = SUBTRACT(year(current_timestamp), year(Birthday)) > 55; abnormal prothrombin time (PT) refers to PT > = 14; percentage = DIVIDE(SUM(PT > = 14 AND SEX = 'F'), SUM(PT > = 14)) * 100; female refers to sex = 'F'; ",
+   "SQL": "SELECT CAST(SUM(CASE WHEN T2.PT >= 14 AND T1.SEX = 'F' THEN 1 ELSE 0 END) AS REAL) * 100 / COUNT(CASE WHEN T2.PT >= 14 THEN 1 ELSE 0 END) FROM Patient AS T1 INNER JOIN Laboratory AS T2 ON T1.ID = T2.ID WHERE STRFTIME('%Y', CURRENT_TIMESTAMP) - STRFTIME('%Y', T1.Birthday) > 55",
+   "difficulty": "challenging"
+  },
+  {
+   "question_id": 1198,
+   "db_id": "thrombosis_prediction",
+   "question": "How many female patients were given an APS diagnosis?",
+   "evidence": "female refers to SEX = 'F'; APS diagnosis refers to Diagnosis='APS'",
+   "SQL": "SELECT COUNT(ID) FROM Patient WHERE SEX = 'F' AND Diagnosis = 'APS'",
+   "difficulty": "simple"
+  }
+ ]
+}

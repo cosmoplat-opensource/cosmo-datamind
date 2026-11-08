@@ -1,0 +1,479 @@
+[
+  {
+    "id": "map_match",
+    "term_id": "term_match",
+    "database_source": "european_football_2",
+    "table": "Match",
+    "column": "",
+    "grain": "one row per match",
+    "validation": "Match holds 25979 rows; country_id, league_id, home_team_goal, away_team_goal, date and season are never null.",
+    "evidence_refs": [
+      "ev_001_source_schema",
+      "ev_004_match_date_and_nulls"
+    ]
+  },
+  {
+    "id": "map_league_name",
+    "term_id": "term_league",
+    "database_source": "european_football_2",
+    "table": "League",
+    "column": "name",
+    "grain": "one row per league",
+    "validation": "11 leagues with unique names.",
+    "evidence_refs": [
+      "ev_008_country_league_values"
+    ]
+  },
+  {
+    "id": "map_country_name",
+    "term_id": "term_country",
+    "database_source": "european_football_2",
+    "table": "Country",
+    "column": "name",
+    "grain": "one row per country",
+    "validation": "11 countries with unique names, matching one league each.",
+    "evidence_refs": [
+      "ev_008_country_league_values"
+    ]
+  },
+  {
+    "id": "map_country_id_via_league",
+    "term_id": "term_country",
+    "database_source": "european_football_2",
+    "table": "League",
+    "column": "country_id",
+    "semantic_filter": "resolves the country of a competition from the league of the match",
+    "grain": "one country per league",
+    "validation": "11 leagues carry 11 distinct country_id values; no league is without a country.",
+    "evidence_refs": [
+      "ev_002_league_country"
+    ]
+  },
+  {
+    "id": "map_country_id_via_match",
+    "term_id": "term_country",
+    "database_source": "european_football_2",
+    "table": "Match",
+    "column": "country_id",
+    "semantic_filter": "duplicates the country already implied by the match's league",
+    "grain": "one country per match",
+    "validation": "0 matches differ from their league's country_id.",
+    "evidence_refs": [
+      "ev_002_league_country"
+    ]
+  },
+  {
+    "id": "map_team_name",
+    "term_id": "term_team",
+    "database_source": "european_football_2",
+    "table": "Team",
+    "column": "team_long_name",
+    "grain": "one row per team",
+    "validation": "299 teams; long and short names present; 11 teams have no FIFA identifier.",
+    "evidence_refs": [
+      "ev_019_team_lookup"
+    ]
+  },
+  {
+    "id": "map_player_name",
+    "term_id": "term_player",
+    "database_source": "european_football_2",
+    "table": "Player",
+    "column": "player_name",
+    "grain": "one row per player",
+    "validation": "11060 players with unique player_api_id and player_fifa_api_id.",
+    "evidence_refs": [
+      "ev_015_player_identifiers"
+    ]
+  },
+  {
+    "id": "map_player_attributes_row",
+    "term_id": "term_player_attributes",
+    "database_source": "european_football_2",
+    "table": "Player_Attributes",
+    "column": "",
+    "grain": "one row per dated attribute snapshot of one player",
+    "validation": "183978 rows over 11060 players and 197 snapshot dates; rows per player 2 to 56.",
+    "evidence_refs": [
+      "ev_011_player_attribute_snapshot_dates",
+      "ev_012_player_attribute_duplicates"
+    ]
+  },
+  {
+    "id": "map_team_attributes_row",
+    "term_id": "term_team_attributes",
+    "database_source": "european_football_2",
+    "table": "Team_Attributes",
+    "column": "",
+    "grain": "one row per dated attribute snapshot of one team",
+    "validation": "1458 rows over 288 teams and 6 snapshot dates; 0 rows without a matching team.",
+    "evidence_refs": [
+      "ev_018_team_attributes_snapshots",
+      "ev_020_team_attributes_join"
+    ]
+  },
+  {
+    "id": "map_season",
+    "term_id": "term_season",
+    "database_source": "european_football_2",
+    "table": "Match",
+    "column": "season",
+    "grain": "one season label per match",
+    "validation": "8 distinct season labels, never null.",
+    "evidence_refs": [
+      "ev_003_season_values"
+    ]
+  },
+  {
+    "id": "map_match_date",
+    "term_id": "term_match_date",
+    "database_source": "european_football_2",
+    "table": "Match",
+    "column": "date",
+    "grain": "one calendar date per match",
+    "validation": "stored as 'YYYY-MM-DD HH:MM:SS'; never null.",
+    "evidence_refs": [
+      "ev_004_match_date_and_nulls"
+    ]
+  },
+  {
+    "id": "map_preferred_foot",
+    "term_id": "term_preferred_foot",
+    "database_source": "european_football_2",
+    "table": "Player_Attributes",
+    "column": "preferred_foot",
+    "grain": "one value per attribute snapshot",
+    "validation": "right=138409, left=44733, NULL=836.",
+    "evidence_refs": [
+      "ev_010_preferred_foot"
+    ]
+  },
+  {
+    "id": "map_player_api_id",
+    "term_id": "term_player_api_id",
+    "database_source": "european_football_2",
+    "table": "Player",
+    "column": "player_api_id",
+    "grain": "one value per player",
+    "validation": "unique across 11060 players; no attribute row lacks a matching player_api_id.",
+    "evidence_refs": [
+      "ev_015_player_identifiers",
+      "ev_016_player_attributes_join"
+    ]
+  },
+  {
+    "id": "map_player_fifa_api_id",
+    "term_id": "term_player_fifa_api_id",
+    "database_source": "european_football_2",
+    "table": "Player",
+    "column": "player_fifa_api_id",
+    "grain": "one value per player",
+    "validation": "unique across 11060 players and one-to-one with player_api_id; never null in Player_Attributes.",
+    "evidence_refs": [
+      "ev_015_player_identifiers"
+    ]
+  },
+  {
+    "id": "map_player_attributes_row_id",
+    "term_id": "term_player_attributes_row_id",
+    "database_source": "european_football_2",
+    "table": "Player_Attributes",
+    "column": "id",
+    "grain": "one value per attribute snapshot row",
+    "validation": "surrogate key ranging 1..183978; distinct rows can share the same player.",
+    "evidence_refs": [
+      "ev_014_player_attribute_row_ids"
+    ]
+  },
+  {
+    "id": "map_home_team_goal",
+    "term_id": "term_home_team_goal",
+    "database_source": "european_football_2",
+    "table": "Match",
+    "column": "home_team_goal",
+    "aggregation_semantics": "summed over matches gives total home goals; divided by the number of matches considered gives the average home goals per match",
+    "grain": "one value per match",
+    "validation": "never null; Poland Ekstraklasa 2010/2011 averages 1.5042 over 240 matches.",
+    "evidence_refs": [
+      "ev_004_match_date_and_nulls",
+      "ev_005_poland_2010_2011"
+    ]
+  },
+  {
+    "id": "map_away_team_goal",
+    "term_id": "term_away_team_goal",
+    "database_source": "european_football_2",
+    "table": "Match",
+    "column": "away_team_goal",
+    "grain": "one value per match",
+    "validation": "never null.",
+    "evidence_refs": [
+      "ev_004_match_date_and_nulls"
+    ]
+  },
+  {
+    "id": "map_draw_match",
+    "term_id": "term_draw_match",
+    "database_source": "european_football_2",
+    "table": "Match",
+    "column": "",
+    "semantic_filter": "matches whose home team goal count equals their away team goal count",
+    "aggregation_semantics": "counted as the number of matches satisfying the goal equality within the chosen league and season",
+    "grain": "one flag per match",
+    "validation": "season 2015/2016 draw counts: France Ligue 1 = 108, England Premier League = 107, Italy Serie A = 95.",
+    "evidence_refs": [
+      "ev_007_draw_by_league_2015_2016"
+    ]
+  },
+  {
+    "id": "map_height",
+    "term_id": "term_height",
+    "database_source": "european_football_2",
+    "table": "Player",
+    "column": "height",
+    "aggregation_semantics": "compared per player against a height threshold",
+    "grain": "one value per player",
+    "validation": "ranges 157.48 to 208.28 centimetres.",
+    "evidence_refs": [
+      "ev_009_player_birthday_and_units"
+    ]
+  },
+  {
+    "id": "map_weight",
+    "term_id": "term_weight",
+    "database_source": "european_football_2",
+    "table": "Player",
+    "column": "weight",
+    "aggregation_semantics": "compared per player to rank players by body weight",
+    "grain": "one value per player",
+    "validation": "ranges 117 to 243 pounds; the maximum is held by 2 players.",
+    "evidence_refs": [
+      "ev_009_player_birthday_and_units",
+      "ev_022_attribute_extremes"
+    ]
+  },
+  {
+    "id": "map_birthday",
+    "term_id": "term_birthday",
+    "database_source": "european_football_2",
+    "table": "Player",
+    "column": "birthday",
+    "grain": "one value per player",
+    "validation": "stored as 'YYYY-MM-DD 00:00:00'.",
+    "evidence_refs": [
+      "ev_009_player_birthday_and_units"
+    ]
+  },
+  {
+    "id": "map_player_age",
+    "term_id": "term_player_age",
+    "database_source": "european_football_2",
+    "table": "Player",
+    "column": "birthday",
+    "semantic_filter": "reference instant defaults to the current time when the question says 'at present'",
+    "aggregation_semantics": "computed per player by comparing the reference instant with the player's date of birth",
+    "grain": "one value per player per reference instant",
+    "validation": "current instant on inspection was 2026-10-09 17:04:24 UTC.",
+    "evidence_refs": [
+      "ev_009_player_birthday_and_units",
+      "ev_021_reference_clock"
+    ]
+  },
+  {
+    "id": "map_overall_rating",
+    "term_id": "term_overall_rating",
+    "database_source": "european_football_2",
+    "table": "Player_Attributes",
+    "column": "overall_rating",
+    "aggregation_semantics": "compared per attribute snapshot to rank players; the maximum observed value is the highest overall rating",
+    "grain": "one value per attribute snapshot",
+    "validation": "maximum observed value 94; NULL in 836 rows.",
+    "evidence_refs": [
+      "ev_022_attribute_extremes",
+      "ev_013_player_attribute_nulls"
+    ]
+  },
+  {
+    "id": "map_potential",
+    "term_id": "term_potential",
+    "database_source": "european_football_2",
+    "table": "Player_Attributes",
+    "column": "potential",
+    "aggregation_semantics": "compared per attribute snapshot to rank players; the minimum observed value is the lowest potential",
+    "grain": "one value per attribute snapshot",
+    "validation": "minimum observed value 39; NULL in 836 rows.",
+    "evidence_refs": [
+      "ev_022_attribute_extremes",
+      "ev_013_player_attribute_nulls"
+    ]
+  },
+  {
+    "id": "map_heading_accuracy",
+    "term_id": "term_heading_accuracy",
+    "database_source": "european_football_2",
+    "table": "Player_Attributes",
+    "column": "heading_accuracy",
+    "aggregation_semantics": "averaged over a player's qualifying attribute snapshots as the summed score divided by the number of those snapshots",
+    "grain": "one value per attribute snapshot",
+    "validation": "NULL in 836 rows.",
+    "evidence_refs": [
+      "ev_013_player_attribute_nulls"
+    ]
+  },
+  {
+    "id": "map_crossing",
+    "term_id": "term_crossing",
+    "database_source": "european_football_2",
+    "table": "Player_Attributes",
+    "column": "crossing",
+    "aggregation_semantics": "compared per attribute snapshot against the maximum observed crossing score",
+    "grain": "one value per attribute snapshot",
+    "validation": "maximum observed value 95; NULL in 836 rows.",
+    "evidence_refs": [
+      "ev_022_attribute_extremes",
+      "ev_013_player_attribute_nulls"
+    ]
+  },
+  {
+    "id": "map_jumping",
+    "term_id": "term_jumping",
+    "database_source": "european_football_2",
+    "table": "Player_Attributes",
+    "column": "jumping",
+    "aggregation_semantics": "compared between two attribute snapshot rows",
+    "grain": "one value per attribute snapshot",
+    "validation": "NULL in 2713 rows; row id 6 holds 85 and row id 23 holds 84.",
+    "evidence_refs": [
+      "ev_014_player_attribute_row_ids",
+      "ev_013_player_attribute_nulls"
+    ]
+  },
+  {
+    "id": "map_finishing",
+    "term_id": "term_finishing",
+    "database_source": "european_football_2",
+    "table": "Player_Attributes",
+    "column": "finishing",
+    "grain": "one value per attribute snapshot",
+    "validation": "NULL in 836 rows.",
+    "evidence_refs": [
+      "ev_013_player_attribute_nulls"
+    ]
+  },
+  {
+    "id": "map_curve",
+    "term_id": "term_curve",
+    "database_source": "european_football_2",
+    "table": "Player_Attributes",
+    "column": "curve",
+    "grain": "one value per attribute snapshot",
+    "validation": "NULL in 836 rows.",
+    "evidence_refs": [
+      "ev_013_player_attribute_nulls"
+    ]
+  },
+  {
+    "id": "map_long_shots",
+    "term_id": "term_long_shots",
+    "database_source": "european_football_2",
+    "table": "Player_Attributes",
+    "column": "long_shots",
+    "aggregation_semantics": "averaged over a player's qualifying attribute snapshots as the summed score divided by the number of those snapshots",
+    "grain": "one value per attribute snapshot",
+    "validation": "NULL in 836 rows.",
+    "evidence_refs": [
+      "ev_013_player_attribute_nulls"
+    ]
+  },
+  {
+    "id": "map_sprint_speed",
+    "term_id": "term_sprint_speed",
+    "database_source": "european_football_2",
+    "table": "Player_Attributes",
+    "column": "sprint_speed",
+    "semantic_filter": "compared against a numeric speed floor within a date range of snapshots",
+    "grain": "one value per attribute snapshot",
+    "validation": "23 attribute rows reach at least 97 within 2013-2015; NULL in 836 rows.",
+    "evidence_refs": [
+      "ev_022_attribute_extremes",
+      "ev_013_player_attribute_nulls"
+    ]
+  },
+  {
+    "id": "map_strength",
+    "term_id": "term_strength",
+    "database_source": "european_football_2",
+    "table": "Player_Attributes",
+    "column": "strength",
+    "semantic_filter": "the physical strength skill score column, distinct from the composite overall rating column",
+    "grain": "one value per attribute snapshot",
+    "validation": "NULL in 836 rows.",
+    "evidence_refs": [
+      "ev_013_player_attribute_nulls"
+    ]
+  },
+  {
+    "id": "map_build_up_play_speed",
+    "term_id": "term_build_up_play_speed",
+    "database_source": "european_football_2",
+    "table": "Team_Attributes",
+    "column": "buildUpPlaySpeed",
+    "aggregation_semantics": "compared per team snapshot to rank teams; the maximum across a team's snapshots is that team's highest build up play speed",
+    "grain": "one value per team attribute snapshot",
+    "validation": "ranges 20 to 80; never null.",
+    "evidence_refs": [
+      "ev_017_team_attributes_classes"
+    ]
+  },
+  {
+    "id": "map_chance_creation_passing",
+    "term_id": "term_chance_creation_passing",
+    "database_source": "european_football_2",
+    "table": "Team_Attributes",
+    "column": "chanceCreationPassing",
+    "aggregation_semantics": "compared per team snapshot to rank teams by passing-based chance creation",
+    "grain": "one value per team attribute snapshot",
+    "validation": "ranges 21 to 80; never null.",
+    "evidence_refs": [
+      "ev_017_team_attributes_classes"
+    ]
+  },
+  {
+    "id": "map_build_up_play_speed_class",
+    "term_id": "term_build_up_play_speed_class",
+    "database_source": "european_football_2",
+    "table": "Team_Attributes",
+    "column": "buildUpPlaySpeedClass",
+    "grain": "one value per team attribute snapshot",
+    "validation": "Balanced=1184, Fast=172, Slow=102.",
+    "evidence_refs": [
+      "ev_017_team_attributes_classes"
+    ]
+  },
+  {
+    "id": "map_chance_creation_passing_class",
+    "term_id": "term_chance_creation_passing_class",
+    "database_source": "european_football_2",
+    "table": "Team_Attributes",
+    "column": "chanceCreationPassingClass",
+    "grain": "one value per team attribute snapshot",
+    "validation": "Normal=1231, Risky=171, Safe=56.",
+    "evidence_refs": [
+      "ev_017_team_attributes_classes"
+    ]
+  },
+  {
+    "id": "map_average_player_attribute",
+    "term_id": "term_average_player_attribute",
+    "database_source": "european_football_2",
+    "table": "Player_Attributes",
+    "column": "",
+    "aggregation_semantics": "sum of the chosen attribute values across the qualifying attribute records divided by the number of those attribute records",
+    "grain": "one value per player per attribute",
+    "validation": "835 (player, snapshot date) pairs hold more than one row, so record counts exceed player counts.",
+    "evidence_refs": [
+      "ev_012_player_attribute_duplicates",
+      "ev_013_player_attribute_nulls"
+    ]
+  }
+]

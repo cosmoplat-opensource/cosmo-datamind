@@ -1,0 +1,518 @@
+[
+  {
+    "id": "constraint_post_creation_date_column_misspelled",
+    "target": "term_post_creation_date",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "creation date",
+      "created",
+      "CreationDate",
+      "CreaionDate",
+      "post date",
+      "date posted",
+      "posted in",
+      "in the year",
+      "year of the post"
+    ],
+    "severity": "block",
+    "scope": "Any time filtering, year extraction or date ordering applied to posts",
+    "confidence": "high",
+    "description": "The post creation timestamp column is physically named CreaionDate (misspelled) in the posts table; there is no column named CreationDate in posts. The companion activity column is likewise named LasActivityDate. Time filtering on posts must use the misspelled names, whereas users, badges and postLinks genuinely use CreationDate.",
+    "evidence": [
+      "ev_post_creation_date_revision_match",
+      "ev_schema_columns"
+    ]
+  },
+  {
+    "id": "constraint_user_id_not_account_id",
+    "target": "term_user_id",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "user id",
+      "user no.",
+      "user number",
+      "user 24",
+      "UserId",
+      "AccountId",
+      "which user",
+      "identify the user"
+    ],
+    "severity": "block",
+    "scope": "Any question that identifies a user by a number",
+    "confidence": "high",
+    "description": "A numbered user reference in a question means the user identifier carried by users.Id and by all user-reference columns such as post owner, comment author and vote author. The users table also carries an AccountId column that holds different numbering for almost every account and must not be used to resolve a numbered user reference.",
+    "evidence": [
+      "ev_user_id_vs_account_id",
+      "ev_workload_user24"
+    ]
+  },
+  {
+    "id": "constraint_user_id_includes_placeholder_account",
+    "target": "term_user_id",
+    "constraint_type": "scope",
+    "trigger_keywords": [
+      "all users",
+      "average reputation",
+      "community user",
+      "user -1",
+      "user count",
+      "number of users"
+    ],
+    "severity": "info",
+    "scope": "Aggregates over the whole user table",
+    "confidence": "high",
+    "description": "The user identifier space includes a reserved placeholder account carrying the identifier value -1, representing the platform itself rather than a person. Whole-table aggregates such as counts, averages of activity counters and rankings over users include this row unless it is explicitly excluded.",
+    "evidence": [
+      "ev_user_id_vs_account_id"
+    ]
+  },
+  {
+    "id": "constraint_display_name_duplicates",
+    "target": "term_display_name",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "display name",
+      "DisplayName",
+      "user name",
+      "name of the user",
+      "username",
+      "named"
+    ],
+    "severity": "warning",
+    "scope": "Any lookup of a user by their human-readable name",
+    "confidence": "high",
+    "description": "Display names are labels, not keys: 35644 distinct labels are shared across 40325 users, with common names repeated many times. A question naming a person identifies a label whose holder set must be inspected before posts, comments or badges are attributed to that name.",
+    "evidence": [
+      "ev_display_name_duplicates",
+      "ev_workload_named_users"
+    ]
+  },
+  {
+    "id": "constraint_display_name_denormalized_copies_sparse",
+    "target": "term_display_name",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "display name",
+      "owner name",
+      "commenter name",
+      "last editor name",
+      "who commented",
+      "asked by"
+    ],
+    "severity": "warning",
+    "scope": "Resolving a display name at the point where the user is referenced",
+    "confidence": "high",
+    "description": "Several tables carry denormalized display-name copies alongside the user reference, and these copies are almost always empty: the post owner-name copy is empty on 89457 of 91966 posts, the post last-editor name copy on 91501, the comment author name copy on 171454 of 174285 comments, and the revision author name copy on 298316 of 303155 revisions. Display names must be resolved through the user reference instead of relied on from these copies.",
+    "evidence": [
+      "ev_display_name_denorm_null",
+      "ev_comment_author_displayname_null"
+    ]
+  },
+  {
+    "id": "constraint_user_age_sparse",
+    "target": "term_user_age",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "age",
+      "average age",
+      "user age",
+      "how old",
+      "demographic"
+    ],
+    "severity": "warning",
+    "scope": "Age-based filtering or averaging over users",
+    "confidence": "high",
+    "description": "Age is supplied by only 8318 of 40325 users; it is unset for 32007 users. Averaging age therefore silently restricts the population to users who reported an age, which can materially differ from the population selected by any other filter in the same question.",
+    "evidence": [
+      "ev_user_age_null"
+    ]
+  },
+  {
+    "id": "constraint_vote_author_mostly_unattributable",
+    "target": "term_vote_author",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "votes by a user",
+      "his votes",
+      "her votes",
+      "votes cast",
+      "number of votes",
+      "votes compared to posts"
+    ],
+    "severity": "block",
+    "scope": "Counting or attributing votes to a person",
+    "confidence": "high",
+    "description": "The casting user is recorded on only 3425 of 38930 vote rows; 35505 votes carry no user reference. A per-user vote count therefore reflects only the attributable minority and should not be treated as the user's complete voting history.",
+    "evidence": [
+      "ev_votes_user_null",
+      "ev_workload_user24"
+    ]
+  },
+  {
+    "id": "constraint_vote_type_semantics",
+    "target": "term_vote_type",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "up vote",
+      "upvote",
+      "upvotes",
+      "down vote",
+      "downvote",
+      "favorite vote",
+      "vote type",
+      "votes",
+      "voting"
+    ],
+    "severity": "block",
+    "scope": "Interpreting or filtering vote records by reaction kind",
+    "confidence": "high",
+    "description": "The vote type code distinguishes reaction kinds rather than indicating a simple positive/negative split. Observed codes and frequencies are: 1 accepted-by-originator (1451), 2 up vote (33323), 3 down vote (444), 5 favorite (3365), 8 bounty start (60), 9 bounty close (59), 10 deletion (1), 11 undeletion (44), 15 moderator review (72), 16 approve edit suggestion (111). Counts of up votes must select the up-vote code rather than count all vote rows, and the dominant code by volume is the up vote.",
+    "evidence": [
+      "ev_vote_type_enum",
+      "ev_workload_user24"
+    ]
+  },
+  {
+    "id": "constraint_post_type_semantics",
+    "target": "term_post_type",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "post type",
+      "question",
+      "answer",
+      "tag wiki",
+      "excerpt",
+      "wiki post",
+      "content type",
+      "all posts"
+    ],
+    "severity": "block",
+    "scope": "Separating content kinds and interpreting which post columns are populated",
+    "confidence": "high",
+    "description": "The post type code determines what a post row represents. Observed codes and row counts are: 1 question (42912), 2 answer (47755), 3 orphaned tag wiki (6), 4 tag wiki excerpt (639), 5 tag wiki (640), 6 moderator nomination (9), 7 wiki/help page (5). Phrases such as 'all posts' or 'each post' are ambiguous until a content kind is chosen: question-only columns are unset for the other kinds.",
+    "evidence": [
+      "ev_post_type_enum",
+      "ev_post_type_metric_nonnull"
+    ]
+  },
+  {
+    "id": "constraint_tags_serialized_with_brackets",
+    "target": "term_post_tags",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "tagged as",
+      "tag",
+      "tags",
+      "humor",
+      "bayesian",
+      "tag name",
+      "which tags",
+      "used tags"
+    ],
+    "severity": "block",
+    "scope": "Testing whether a post carries a given tag",
+    "confidence": "high",
+    "description": "The tags held by a post are serialized into one text value as the tag names concatenated with each name wrapped in bracket characters, for example a post tagged with three topics stores three bracketed names in sequence. The tag table stores the bare name without any brackets, and no stored tag name contains bracket characters. A membership test must therefore match the bracketed form of the name, not the bare name, or it will also match unrelated tags that merely contain the same substring.",
+    "evidence": [
+      "ev_tags_format",
+      "ev_tags_bracket_absence",
+      "ev_tag_humor"
+    ]
+  },
+  {
+    "id": "constraint_question_only_columns",
+    "target": "term_view_count",
+    "constraint_type": "scope",
+    "trigger_keywords": [
+      "view count",
+      "views",
+      "most views",
+      "favorite",
+      "favorite count",
+      "answer count",
+      "tags",
+      "title"
+    ],
+    "severity": "block",
+    "scope": "Reading the counters and attributes attached to posts",
+    "confidence": "high",
+    "description": "View count, answer count, favorite count, tags and title are populated only for question-type posts; 49054 rows, exactly the non-question rows, leave them unset. Aggregations over these columns therefore silently restrict the population to questions, which is usually intended but must be stated explicitly when a question refers to posts generally.",
+    "evidence": [
+      "ev_post_type_metric_nonnull",
+      "ev_post_nullability"
+    ]
+  },
+  {
+    "id": "constraint_favorite_count_sparse_and_non_reconciling",
+    "target": "term_favorite_count",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "most valuable",
+      "value of post",
+      "favorite",
+      "favorites",
+      "favorite count",
+      "bookmarked",
+      "most popular",
+      "most noteworthy"
+    ],
+    "severity": "warning",
+    "scope": "Ranking posts by how valuable or bookmarked they are",
+    "confidence": "high",
+    "description": "Favorite count is unset on 29669 of 42912 questions, and the missing share grows sharply over time (2013: 9513 of 13187; 2014: 11980 of 14450). Ranking by maximum favorite count silently excludes posts with no recorded value, which biases comparisons across years. Separately, the total of the stored counters (33688) does not reconcile with the number of favorite-type vote rows (3365), so the two representations of favoriting must not be mixed.",
+    "evidence": [
+      "ev_favorite_count_null",
+      "ev_favorite_vs_vote_rows",
+      "ev_workload_time_2010"
+    ]
+  },
+  {
+    "id": "constraint_comment_count_denormalized",
+    "target": "term_comment_count",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "comment count",
+      "has no comments",
+      "without comments",
+      "number of comments",
+      "no comments"
+    ],
+    "severity": "info",
+    "scope": "Filtering posts by how many comments they have",
+    "confidence": "high",
+    "description": "The comment counter stored on posts is a materialized copy of the comment rows: the counters total 174269 while 174285 comment rows exist, a small divergence. Filtering on the stored counter is valid for questions phrased in terms of a post's comment count, and answers derived from it can differ marginally from counting comment rows directly.",
+    "evidence": [
+      "ev_comment_count_vs_rows",
+      "ev_workload_mark_meckes"
+    ]
+  },
+  {
+    "id": "constraint_tag_excerpt_optional",
+    "target": "term_tag_excerpt_post",
+    "constraint_type": "scope",
+    "trigger_keywords": [
+      "excerpt",
+      "excerpted from",
+      "tag wiki",
+      "tag description",
+      "tag documentation"
+    ],
+    "severity": "warning",
+    "scope": "Resolving the documentation content behind a tag",
+    "confidence": "high",
+    "description": "Only 596 of 1032 tags reference excerpt content; 436 tags have no excerpt reference at all, and the wiki reference is likewise optional. A question asking which post a tag's excerpt comes from applies only to tags that actually carry the reference, and the referenced post is tag documentation content rather than a question or answer.",
+    "evidence": [
+      "ev_tag_excerpt_nullable",
+      "ev_tag_excerpt_targets"
+    ]
+  },
+  {
+    "id": "constraint_badge_name_exact_label",
+    "target": "term_badge_name",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "badge",
+      "badges",
+      "student badge",
+      "awarded badge",
+      "achievement"
+    ],
+    "severity": "info",
+    "scope": "Filtering badge awards by achievement type",
+    "confidence": "high",
+    "description": "Badge names are exact free-text achievement labels with fixed capitalization; 153 distinct names exist across 79851 awards. A phrase such as 'student badges' denotes the badge whose name is the single word Student, which is the most frequently awarded badge, and matching must respect the exact label rather than a loose textual pattern.",
+    "evidence": [
+      "ev_badge_names",
+      "ev_workload_student_badges"
+    ]
+  },
+  {
+    "id": "constraint_user_vote_counters_not_reconciling",
+    "target": "term_user_upvotes",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "up votes",
+      "upvotes",
+      "down votes",
+      "average up votes",
+      "reputation",
+      "user activity counters"
+    ],
+    "severity": "warning",
+    "scope": "Using per-user voting counters",
+    "confidence": "high",
+    "description": "The per-user up-vote and down-vote counters are cumulative profile totals that do not reconcile with the vote table: they sum to 265639 and 10521, while the vote table holds 33323 up-vote rows and 444 down-vote rows, and most vote rows carry no user at all. Observed case: the user numbered 24 stores 36 up votes while having no up-vote rows attributed to them. These counters must be used as stored profile totals and never recomputed from the vote table.",
+    "evidence": [
+      "ev_upvotes_vs_vote_rows",
+      "ev_workload_user24",
+      "ev_votes_user_null"
+    ]
+  },
+  {
+    "id": "constraint_votes_short_date_coverage",
+    "target": "term_vote",
+    "constraint_type": "scope",
+    "trigger_keywords": [
+      "votes in a year",
+      "vote date",
+      "voting history",
+      "when did they vote",
+      "votes over time"
+    ],
+    "severity": "warning",
+    "scope": "Time-based analysis of voting activity",
+    "confidence": "high",
+    "description": "Vote timestamps are stored with day precision only, unlike the timestamp columns elsewhere in the database, and they span just 2010-07-19 to 2011-05-01. Voting analysis confined to a year is only meaningful for those two calendar years, and time-of-day comparisons are impossible.",
+    "evidence": [
+      "ev_votes_date_range",
+      "ev_vote_type_enum"
+    ]
+  },
+  {
+    "id": "constraint_data_time_range",
+    "target": "term_user_creation_date",
+    "constraint_type": "scope",
+    "trigger_keywords": [
+      "since 2015",
+      "after 2014",
+      "date range",
+      "earliest",
+      "latest",
+      "recent years",
+      "over the years"
+    ],
+    "severity": "warning",
+    "scope": "Any time filter or year-based grouping across the database",
+    "confidence": "high",
+    "description": "The observable time span of the collected data is bounded: post creation runs from 2009-02-02 to 2014-09-14 (only 18 posts predate 2010), account creation from 2010-07-19 to 2014-09-14, badge awards from 2010-07-19 to 2014-09-14, and post links from 2010-07-21 to 2014-09-13. Filters or comparisons targeting periods outside this window return empty or misleadingly empty results.",
+    "evidence": [
+      "ev_date_ranges",
+      "ev_workload_time_2010"
+    ]
+  },
+  {
+    "id": "constraint_post_score_signed",
+    "target": "term_post_score",
+    "constraint_type": "unit",
+    "trigger_keywords": [
+      "score",
+      "highest score",
+      "negative score",
+      "downvoted",
+      "rating",
+      "most upvoted"
+    ],
+    "severity": "info",
+    "scope": "Interpreting or ranking post scores",
+    "confidence": "high",
+    "description": "Post scores are signed net ratings, observed between -19 and 192, so a ranking must consider that low scores may be negative while most rows are non-negative. Comment scores, by contrast, are observed between 0 and 90 and are never negative in this data set.",
+    "evidence": [
+      "ev_score_ranges"
+    ]
+  },
+  {
+    "id": "constraint_comment_text_versus_revision_text",
+    "target": "term_comment_text",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "comment of the post",
+      "text of the post",
+      "contents of comments",
+      "what was commented",
+      "comment text",
+      "the comment"
+    ],
+    "severity": "warning",
+    "scope": "Resolving wording such as 'the comment of a post'",
+    "confidence": "medium",
+    "description": "Two distinct text stores can be meant by phrasing about the 'comment' or 'text' of a post: the comment table holds the discussion remarks users left on a post, while the revision history stores the post's own title and body text at each edit event. A request to list a post's comment alongside its title selects the comment table, whereas wording about the post's own contents selects the post body or, for historical states, the revision text.",
+    "evidence": [
+      "ev_workload_comment53",
+      "ev_post_history_type_enum"
+    ]
+  },
+  {
+    "id": "constraint_answer_parent_linkage",
+    "target": "term_answer_post",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "answer",
+      "answers to",
+      "parent question",
+      "accepted answer",
+      "answered",
+      "how many answers"
+    ],
+    "severity": "info",
+    "scope": "Relating answers to the questions they respond to",
+    "confidence": "high",
+    "description": "Answers are tied to their question through the parent reference carried on the answer row, and 47749 of 47755 answers resolve to a question-type parent; questions carry no parent reference and are the roots of the relation. Separately, a question may designate one of its answers as accepted by storing a reference to that answer, and every such reference resolves to an answer-type post.",
+    "evidence": [
+      "ev_answer_parent_linkage",
+      "ev_post_type_enum"
+    ]
+  },
+  {
+    "id": "constraint_owner_and_editor_optional",
+    "target": "term_post_owner",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "owner",
+      "asked by",
+      "posted by",
+      "last edited",
+      "editor",
+      "who owns"
+    ],
+    "severity": "warning",
+    "scope": "Attributing posts to the owner or the editor",
+    "confidence": "high",
+    "description": "Ownership is recorded for 90574 of 91966 posts, leaving 1392 posts with no attributable owner, typically imported or anonymous content. A last editor is recorded for only 44605 posts, and where it exists it differs from the owner on 20693 posts. A request about the user associated with a post must therefore distinguish authorship from editing, and both attributes are legitimately absent in some cases.",
+    "evidence": [
+      "ev_post_nullability",
+      "ev_display_name_denorm_null",
+      "ev_workload_title_lookup"
+    ]
+  },
+  {
+    "id": "constraint_revision_event_semantics",
+    "target": "term_post_revision",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "revision",
+      "edit history",
+      "edited",
+      "title changed",
+      "body changed",
+      "who edited"
+    ],
+    "severity": "info",
+    "scope": "Interpreting edit-history events",
+    "confidence": "medium",
+    "description": "Revision events are typed: the dominant types are initial title creation (42909 rows), initial body creation (91974), tag application (42921), edit comments (16008) and body edits (69413), alongside rarer event types for title changes, rollbacks, closures and reopenings. The stored text on an event is the value as of that event: title-creation and body-creation events carry the original wording, while body-edit events carry the prior wording rather than the new one.",
+    "evidence": [
+      "ev_post_history_type_enum",
+      "ev_post_creation_date_revision_match"
+    ]
+  },
+  {
+    "id": "constraint_post_link_type_semantics",
+    "target": "term_post_link",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "post link",
+      "linked posts",
+      "duplicate",
+      "related post",
+      "links between posts"
+    ],
+    "severity": "info",
+    "scope": "Interpreting relationships between posts",
+    "confidence": "high",
+    "description": "Recorded post-to-post relationships carry a type distinguishing an ordinary link from a duplicate marking. Observed types: 1 for a plain link (10186 rows) and 3 for a duplicate marking (916 rows). Counting 'links' without choosing a type conflates the two.",
+    "evidence": [
+      "ev_link_type_enum",
+      "ev_date_ranges"
+    ]
+  }
+]

@@ -1,0 +1,159 @@
+[
+  {
+    "id": "rel_player_attr_composition",
+    "source": "term_player_attribute_record",
+    "relation_type": "composition",
+    "target": "term_player",
+    "connection_condition": "Player attribute rows carry the player API identifier that also identifies the player master row.",
+    "description": "A player attribute snapshot is a dated component of a player's evaluation history; without the player the snapshot has no meaning, and each player owns several snapshots.",
+    "evidence": [
+      "ev_join_integrity",
+      "ev_player_rows_per_player"
+    ]
+  },
+  {
+    "id": "rel_team_attr_composition",
+    "source": "term_team_attribute_record",
+    "relation_type": "composition",
+    "target": "term_team",
+    "connection_condition": "Team attribute rows carry the team API identifier that also identifies the team master row.",
+    "description": "A team attribute snapshot is a dated component of a team's tactical profile; every snapshot resolves to exactly one team and every team has several snapshots.",
+    "evidence": [
+      "ev_join_integrity",
+      "ev_tab06_profile"
+    ]
+  },
+  {
+    "id": "rel_league_country_composition",
+    "source": "term_league",
+    "relation_type": "composition",
+    "target": "term_country",
+    "connection_condition": "League rows carry the country identifier.",
+    "description": "A country is composed of its domestic leagues; a league belongs to exactly one country and cannot exist without it.",
+    "evidence": [
+      "ev_tab03_tab04_profile"
+    ]
+  },
+  {
+    "id": "rel_league_match_composition",
+    "source": "term_league",
+    "relation_type": "composition",
+    "target": "term_match",
+    "connection_condition": "Match rows carry the league identifier.",
+    "description": "A league season is composed of its matches; a match belongs to one league, and all 25979 matches resolve to a league.",
+    "evidence": [
+      "ev_join_integrity"
+    ]
+  },
+  {
+    "id": "rel_home_goal_to_outcome",
+    "source": "term_home_team_goal",
+    "relation_type": "derivation",
+    "target": "term_match_outcome",
+    "connection_condition": "Compared against the away team goal count of the same match.",
+    "description": "The match outcome is derived from the home goal count and the away goal count; the home count alone determines the home-win and draw conditions when compared with the away count.",
+    "evidence": [
+      "ev_draw_by_league"
+    ]
+  },
+  {
+    "id": "rel_away_goal_to_outcome",
+    "source": "term_away_team_goal",
+    "relation_type": "derivation",
+    "target": "term_match_outcome",
+    "connection_condition": "Compared against the home team goal count of the same match.",
+    "description": "The match outcome is derived from the away goal count together with the home goal count; an away win is the case where the away count exceeds the home count.",
+    "evidence": [
+      "ev_draw_by_league"
+    ]
+  },
+  {
+    "id": "rel_birthday_to_age",
+    "source": "term_player_birthday",
+    "relation_type": "derivation",
+    "target": "term_player_age",
+    "connection_condition": "Age is the elapsed time from the birthday to a stated reference date.",
+    "description": "A player's age is computed from the date of birth; later birthdays produce smaller ages, so ordering by birthday orders players by age in reverse.",
+    "evidence": [
+      "ev_tab02_profile"
+    ]
+  },
+  {
+    "id": "rel_player_id_equivalence",
+    "source": "term_player_api_id",
+    "relation_type": "equivalence",
+    "target": "term_player_fifa_id",
+    "connection_condition": "Both identify the same player; the API identifier resolves more attribute rows than the FIFA identifier.",
+    "description": "The public player API identifier and the FIFA player identifier are two synonymous identifiers for the same player, stored in separate columns of the player master table.",
+    "evidence": [
+      "ev_join_integrity"
+    ]
+  },
+  {
+    "id": "rel_team_id_equivalence",
+    "source": "term_team_api_id",
+    "relation_type": "equivalence",
+    "target": "term_team_fifa_id",
+    "connection_condition": "Team attribute rows carry both identifiers; the FIFA identifier is missing for some teams and is not unique.",
+    "description": "The public team API identifier and the FIFA team identifier both designate the same club, but only the API identifier is complete and unique.",
+    "evidence": [
+      "ev_join_integrity",
+      "ev_tab05_profile"
+    ]
+  },
+  {
+    "id": "rel_team_name_equivalence",
+    "source": "term_team_long_name",
+    "relation_type": "equivalence",
+    "target": "term_team_short_name",
+    "connection_condition": "Both are stored on the same team row.",
+    "description": "The full club name and the three-letter club code are alternative representations of the same team label, neither of which is unique.",
+    "evidence": [
+      "ev_tab05_profile"
+    ]
+  },
+  {
+    "id": "rel_match_team_association",
+    "source": "term_match",
+    "relation_type": "association",
+    "target": "term_team",
+    "connection_condition": "Each match references two teams: a home team and an away team, both through the team API identifier.",
+    "description": "Matches are contested by teams. The participation link is recorded through the home and away team references rather than through a membership table, so a match is associated with two distinct teams simultaneously.",
+    "evidence": [
+      "ev_join_integrity"
+    ]
+  },
+  {
+    "id": "rel_league_country_name_association",
+    "source": "term_league_name",
+    "relation_type": "association",
+    "target": "term_country_name",
+    "connection_condition": "Every league name string begins with the name of its host country, but the structural country reference is stored separately.",
+    "description": "League names embed their country name as a text prefix. The country of a league is also available structurally, so the textual prefix and the country entity are related but not interchangeable.",
+    "evidence": [
+      "ev_tab03_tab04_profile"
+    ]
+  },
+  {
+    "id": "rel_attribute_rating_association",
+    "source": "term_overall_rating",
+    "relation_type": "association",
+    "target": "term_player_attribute_record",
+    "connection_condition": "The rating is one column of the dated attribute record.",
+    "description": "The overall rating is an attribute carried by a dated player attribute snapshot; its value is only meaningful together with the snapshot date.",
+    "evidence": [
+      "ev_tab01_profile"
+    ]
+  },
+  {
+    "id": "rel_team_style_association",
+    "source": "term_build_up_play_speed",
+    "relation_type": "association",
+    "target": "term_chance_creation_passing",
+    "connection_condition": "Both are tactical scores on the same dated team attribute record.",
+    "description": "Build-up play speed and chance creation passing are two facets of the same team playing style, recorded together on each dated team snapshot.",
+    "evidence": [
+      "ev_tab06_profile"
+    ]
+  }
+]

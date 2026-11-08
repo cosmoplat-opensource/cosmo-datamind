@@ -1,0 +1,150 @@
+[
+  {
+    "id": "rel_county_districts",
+    "source": "term_county",
+    "relation_type": "composition",
+    "target": "term_district_agency",
+    "connection_condition": "County membership is carried by the leading two digits of the CDS code and by the parallel County and County Name columns, since no separate county table exists.",
+    "description": "A county is composed of the districts and county offices within it; a district belongs to exactly one county.",
+    "evidence": [
+      "evidence_cdscode_composition",
+      "evidence_schools_name_columns"
+    ]
+  },
+  {
+    "id": "rel_district_schools",
+    "source": "term_district_agency",
+    "relation_type": "composition",
+    "target": "term_school",
+    "connection_condition": "A school's district is the agency record whose CDS code shares its first seven characters; the district code is embedded in every school's CDS code.",
+    "description": "A district is composed of the schools it operates; a school's record is meaningless without the district that administers it.",
+    "evidence": [
+      "evidence_cdscode_composition",
+      "evidence_schools_agency_rows"
+    ]
+  },
+  {
+    "id": "rel_charter_is_school",
+    "source": "term_school",
+    "relation_type": "hierarchy",
+    "target": "term_charter_school",
+    "connection_condition": "Charter-flagged records are drawn from the same population as schools and are identified by a flag rather than a separate table.",
+    "description": "A charter school is a kind of school; the set of charter-flagged records is a subset of all school records.",
+    "evidence": [
+      "evidence_schools_charter_blank"
+    ]
+  },
+  {
+    "id": "rel_cds_equivalence_satscores",
+    "source": "term_cds_code",
+    "relation_type": "equivalence",
+    "target": "term_cds_code_satscores",
+    "connection_condition": "schools.CDSCode and satscores.cds denote the same school or agency; satscores stores the value with the leading zero of the county code stripped, so the two forms coincide only after normalisation.",
+    "description": "The same identifier is held in two representations; the SAT file's shorter form is an alternative encoding of the CDS code rather than a different identifier.",
+    "evidence": [
+      "evidence_satscores_cds_length",
+      "evidence_cdscode_join_coverage"
+    ]
+  },
+  {
+    "id": "rel_free_meal_part_of_frpm",
+    "source": "term_frpm_count",
+    "relation_type": "composition",
+    "target": "term_free_meal_count",
+    "connection_condition": "Both counts are reported side by side for the same school and enrollment basis, and the free-meal count is never the larger of the two.",
+    "description": "Free-meal eligibility is a component part of FRPM eligibility, which additionally includes reduced-price-meal eligibility.",
+    "evidence": [
+      "evidence_frpm_free_subset"
+    ]
+  },
+  {
+    "id": "rel_frpm_rate_derivation",
+    "source": "term_frpm_count",
+    "relation_type": "derivation",
+    "target": "term_frpm_eligibility_rate",
+    "connection_condition": "The stored rate reproduces exactly from the FRPM count divided by the enrollment count for every non-null row.",
+    "description": "The FRPM eligibility rate is computed as the FRPM count divided by the enrollment count on the same basis.",
+    "evidence": [
+      "evidence_frpm_percent_derivation",
+      "evidence_frpm_percent_fraction"
+    ]
+  },
+  {
+    "id": "rel_free_rate_derivation",
+    "source": "term_free_meal_count",
+    "relation_type": "derivation",
+    "target": "term_free_meal_eligibility_rate",
+    "connection_condition": "The stored rate reproduces from the free-meal count divided by the enrollment count for every non-null row.",
+    "description": "The free-meal eligibility rate is computed as the free-meal count divided by the enrollment count on the same basis.",
+    "evidence": [
+      "evidence_frpm_percent_derivation",
+      "evidence_frpm_percent_fraction"
+    ]
+  },
+  {
+    "id": "rel_ge1500_share_derivation",
+    "source": "term_sat_ge1500_count",
+    "relation_type": "derivation",
+    "target": "term_sat_ge1500_share",
+    "connection_condition": "The count of high scorers and the total test takers are reported in the same record, so the share is fully determined by that row.",
+    "description": "The share of test takers scoring 1500 or above is computed as that count divided by the number of test takers.",
+    "evidence": [
+      "evidence_sat_ge1500_bounds"
+    ]
+  },
+  {
+    "id": "rel_participation_derivation",
+    "source": "term_sat_test_takers",
+    "relation_type": "derivation",
+    "target": "term_sat_participation_rate",
+    "connection_condition": "Test takers and grade-12 enrollment are reported in the same record, so the rate is determined by that row wherever grade-12 enrollment is positive.",
+    "description": "The SAT participation rate is computed as the number of test takers divided by grade-12 enrollment.",
+    "evidence": [
+      "evidence_satscores_enroll12_grain"
+    ]
+  },
+  {
+    "id": "rel_school_sat_association",
+    "source": "term_school",
+    "relation_type": "association",
+    "target": "term_sat_avg_score",
+    "connection_condition": "SAT records reach their school through the CDS code, and school-level records are distinguished from district-level ones by the record level flag.",
+    "description": "A school's SAT results describe its own grade-12 test takers; the linkage is through the shared identifier rather than a structural dependency.",
+    "evidence": [
+      "evidence_satscores_rtype_level"
+    ]
+  },
+  {
+    "id": "rel_school_type_option_association",
+    "source": "term_school_type",
+    "relation_type": "association",
+    "target": "term_educational_option_type",
+    "connection_condition": "Both columns are recorded for the same schools in the same file and leave the same 45 district-level rows blank.",
+    "description": "School Type and Educational Option Type classify the same schools along different axes; their vocabularies overlap in meaning but are not interchangeable.",
+    "evidence": [
+      "evidence_frpm_school_type_domain"
+    ]
+  },
+  {
+    "id": "rel_enrollment_basis_association",
+    "source": "term_enrollment_k12",
+    "relation_type": "association",
+    "target": "term_enrollment_ages_5_17",
+    "connection_condition": "The two counts are reported side by side for the same school and coincide for some schools while differing for others.",
+    "description": "The two enrollment columns describe overlapping student populations and produce different eligibility denominators for the same school.",
+    "evidence": [
+      "evidence_enrollment_universes"
+    ]
+  },
+  {
+    "id": "rel_grade12_enrollment_association",
+    "source": "term_enrollment_k12",
+    "relation_type": "association",
+    "target": "term_grade12_enrollment",
+    "connection_condition": "Both are enrollment counts for the same schools but are recorded in different tables and joined through the CDS code.",
+    "description": "Grade-12 enrollment is a grade-specific subset of a school's overall enrollment and is measured in the SAT file rather than the FRPM file.",
+    "evidence": [
+      "evidence_satscores_enroll12_grain"
+    ]
+  }
+]

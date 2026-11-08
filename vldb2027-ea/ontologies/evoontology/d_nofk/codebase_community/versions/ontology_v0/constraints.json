@@ -1,0 +1,470 @@
+[
+  {
+    "id": "constraint_post_type_enum",
+    "target": "term_post_type",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "question",
+      "answer",
+      "post type",
+      "PostTypeId",
+      "content type",
+      "how many questions",
+      "how many answers",
+      "wiki post"
+    ],
+    "severity": "block",
+    "scope": "Applies whenever posts are counted, filtered or joined by category",
+    "confidence": "high",
+    "description": "posts.PostTypeId 1 marks a question and 2 marks an answer; the observed distribution is 1 = 42912 rows, 2 = 47755 rows, 3 = 6, 4 = 639, 5 = 640, 6 = 9 and 7 = 5. Questions and answers together account for 90667 of 91966 posts. Counting all posts without filtering PostTypeId overstates the number of questions or answers, and the small categories 3 to 7 are wiki, excerpt and administrative posts with a different attribute profile.",
+    "evidence": [
+      "evidence_post_type_distribution",
+      "evidence_post_type_field_population"
+    ]
+  },
+  {
+    "id": "constraint_question_only_metrics",
+    "target": "mapping_term_view_count",
+    "constraint_type": "scope",
+    "trigger_keywords": [
+      "views",
+      "view count",
+      "ViewCount",
+      "favorite count",
+      "comment count",
+      "question metrics",
+      "popular question"
+    ],
+    "severity": "block",
+    "scope": "Applies to ViewCount, AnswerCount, CommentCount and FavoriteCount on posts",
+    "confidence": "high",
+    "description": "ViewCount, AnswerCount, CommentCount and FavoriteCount are populated on question posts only; on all other post categories they are null. Aggregating these columns across the whole posts table silently restricts the population to the 42912 questions rather than the 91966 posts, so any per-post average must state which population is intended.",
+    "evidence": [
+      "evidence_post_type_field_population",
+      "evidence_viewcount_scope"
+    ]
+  },
+  {
+    "id": "constraint_title_questions_only",
+    "target": "term_question",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "title",
+      "post title",
+      "question title",
+      "title text",
+      "search title"
+    ],
+    "severity": "warning",
+    "scope": "Applies to text analysis and filtering on posts.Title",
+    "confidence": "high",
+    "description": "posts.Title is populated on question posts only; 49054 of 91966 posts have a null title, which exactly accounts for the 42912 non-question posts. Filtering or ranking on Title implicitly restricts the result to questions.",
+    "evidence": [
+      "evidence_title_only_on_questions"
+    ]
+  },
+  {
+    "id": "constraint_answer_parent_linkage",
+    "target": "term_answer",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "answer",
+      "which question",
+      "parent question",
+      "answers to a question",
+      "answered",
+      "responses"
+    ],
+    "severity": "block",
+    "scope": "Applies when relating answers to the questions they belong to",
+    "confidence": "high",
+    "description": "An answer post identifies its question through posts.ParentId; there is no QuestionId column on the answer. Restricting to ParentId not null and PostTypeId = 2 yields 47749 answers; 6 answer rows carry a ParentId that matches no post and must be treated as dangling.",
+    "evidence": [
+      "evidence_answer_parent_linkage",
+      "evidence_orphan_references"
+    ]
+  },
+  {
+    "id": "constraint_accepted_answer_semantics",
+    "target": "term_accepted_answer",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "accepted answer",
+      "accepted",
+      "solved",
+      "resolution",
+      "answer accepted",
+      "best answer"
+    ],
+    "severity": "warning",
+    "scope": "Applies when measuring question resolution",
+    "confidence": "high",
+    "description": "Acceptance is stored on the question, not on the answer: posts.AcceptedAnswerId on a question row points at the selected answer post. 14697 questions carry a reference, 14696 of them resolve to an existing answer whose ParentId is that same question, and one reference is dangling. Questions without an accepted answer are unresolved or were answered after the recorded window.",
+    "evidence": [
+      "evidence_accepted_answer_targets"
+    ]
+  },
+  {
+    "id": "constraint_answer_count_faithful",
+    "target": "term_answer_count",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "answer count",
+      "AnswerCount",
+      "number of answers",
+      "answers received",
+      "unanswered"
+    ],
+    "severity": "info",
+    "scope": "Applies when using the stored answer count instead of counting answers",
+    "confidence": "high",
+    "description": "posts.AnswerCount is populated on every question and reproduces the count of child answer posts for all 42912 questions, so it can be used directly as the number of answers. An answer count of zero identifies 13911 questions that received no answer at all.",
+    "evidence": [
+      "evidence_answer_count_faithful",
+      "evidence_post_type_field_population"
+    ]
+  },
+  {
+    "id": "constraint_comment_count_drift",
+    "target": "mapping_term_comment_count",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "comment count",
+      "CommentCount",
+      "number of comments",
+      "comments on a post"
+    ],
+    "severity": "warning",
+    "scope": "Applies when using the stored comment count instead of counting comments",
+    "confidence": "high",
+    "description": "posts.CommentCount matches the counted comments for 91946 of 91966 posts, leaving 20 posts where the stored count differs from the rows present in comments. Counting the comments table is the authoritative route when exact per-post comment totals matter.",
+    "evidence": [
+      "evidence_comment_count_denormalized"
+    ]
+  },
+  {
+    "id": "constraint_score_not_vote_sum",
+    "target": "term_post_score",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "score",
+      "net votes",
+      "upvotes minus downvotes",
+      "points",
+      "ranking",
+      "recompute score"
+    ],
+    "severity": "warning",
+    "scope": "Applies when relating posts.Score to the votes table",
+    "confidence": "high",
+    "description": "posts.Score is a stored value, not a recomputation of the votes table. Deriving score by subtracting downvotes from upvotes in votes reproduces the stored value for only 22031 of the 90667 question and answer posts. The votes table covers a shorter period than posts, so vote rows are not a complete record of the voting that produced a score and must not be used to recompute it.",
+    "evidence": [
+      "evidence_score_not_vote_sum",
+      "evidence_votes_date_coverage"
+    ]
+  },
+  {
+    "id": "constraint_vote_type_enum",
+    "target": "term_vote_type",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "vote type",
+      "VoteTypeId",
+      "upvote",
+      "downvote",
+      "favorite",
+      "bounty",
+      "moderation vote"
+    ],
+    "severity": "block",
+    "scope": "Applies whenever votes are filtered or grouped by kind",
+    "confidence": "high",
+    "description": "votes.VoteTypeId encodes the voting action. The observed distribution is 1 = 1451, 2 = 33323, 3 = 444, 5 = 3365, 8 = 60, 9 = 59, 10 = 1, 11 = 44, 15 = 72 and 16 = 111. Code 2 dominates and represents the ordinary positive vote, while codes 8 and 9 are bounty opening and closing events and 5 marks a favourite. Treating all vote rows as equivalent upvotes overstates positive sentiment by including favourites, bounties and moderation actions.",
+    "evidence": [
+      "evidence_vote_type_distribution"
+    ]
+  },
+  {
+    "id": "constraint_votes_time_scope",
+    "target": "term_vote",
+    "constraint_type": "scope",
+    "trigger_keywords": [
+      "votes over time",
+      "voting trend",
+      "vote date",
+      "when votes happened",
+      "votes by year"
+    ],
+    "severity": "warning",
+    "scope": "Applies to any time-based analysis of the votes table",
+    "confidence": "high",
+    "description": "The votes table spans only 2010-07-19 to 2011-05-01, a far shorter window than posts, which spans 2009-02-02 to 2014-09-14. Vote counts therefore cannot be compared across the full dataset period, and the dates carry day granularity with no time of day. Only 3425 of 38930 vote rows carry a UserId, so per-voter analysis covers a small minority of the table.",
+    "evidence": [
+      "evidence_votes_date_coverage"
+    ]
+  },
+  {
+    "id": "constraint_bounty_amount_scope",
+    "target": "term_bounty_amount",
+    "constraint_type": "scope",
+    "trigger_keywords": [
+      "bounty",
+      "BountyAmount",
+      "bounty points",
+      "reward"
+    ],
+    "severity": "warning",
+    "scope": "Applies when analysing bounty amounts from votes",
+    "confidence": "high",
+    "description": "votes.BountyAmount is non-null on only 101 of 38930 vote rows, so bounty analysis rests on a very small subset. Bounty amounts should be joined to the bounty vote types rather than treated as a general column of the votes table.",
+    "evidence": [
+      "evidence_vote_type_distribution",
+      "evidence_votes_date_coverage"
+    ]
+  },
+  {
+    "id": "constraint_reputation_scope",
+    "target": "term_user_reputation",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "reputation",
+      "Reputation",
+      "user standing",
+      "high reputation",
+      "expertise",
+      "top users"
+    ],
+    "severity": "warning",
+    "scope": "Applies to any distribution or ranking over users.Reputation",
+    "confidence": "high",
+    "description": "users.Reputation is populated for all 40325 accounts but is strongly skewed: the minimum is 1, there are no negative values, the median is approximately 11, and only 29 accounts reach 10000 or more, with a maximum of 87393. Averages over reputation are dominated by a handful of prolific users; medians, buckets or explicit thresholds describe the population far better.",
+    "evidence": [
+      "evidence_user_reputation_skew",
+      "evidence_community_user"
+    ]
+  },
+  {
+    "id": "constraint_community_user",
+    "target": "term_user",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "user id",
+      "community user",
+      "system account",
+      "deleted user",
+      "anonymous"
+    ],
+    "severity": "warning",
+    "scope": "Applies when counting or ranking users",
+    "confidence": "high",
+    "description": "users contains one row with Id = -1, the Community account, which owns no ordinary content and carries a placeholder reputation of 1. It should be excluded from user rankings and from per-user averages. Separately, 18346 accounts own no post at all, so a join from posts to users covers only part of the account table, and 621 accounts are reachable only through comments.",
+    "evidence": [
+      "evidence_community_user",
+      "evidence_user_population"
+    ]
+  },
+  {
+    "id": "constraint_badge_name_composition",
+    "target": "term_badge",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "badge",
+      "badge name",
+      "badges by type",
+      "tag badge",
+      "award type",
+      "achievement"
+    ],
+    "severity": "warning",
+    "scope": "Applies when grouping or filtering badges by Name",
+    "confidence": "high",
+    "description": "badges.Name mixes two different kinds of award: general achievement badges and per-tag badges whose names reuse the tag vocabulary. 300 badge rows covering 73 distinct names match a tags.TagName, out of 153 distinct badge names overall. A badge named after a subject is a tag award, not a general achievement, so grouping badges by name without this distinction mixes two populations.",
+    "evidence": [
+      "evidence_badge_name_composition"
+    ]
+  },
+  {
+    "id": "constraint_tags_delimited_format",
+    "target": "term_tag",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "tags",
+      "Tags column",
+      "tag list",
+      "questions by tag",
+      "which tags",
+      "tag frequency"
+    ],
+    "severity": "block",
+    "scope": "Applies whenever questions are analysed by tag",
+    "confidence": "high",
+    "description": "A question's tags live inside the single text column posts.Tags as angle-bracket delimited names, for example the value '<bayesian><prior><elicitation>'. There is no key-based join between questions and the tags table; the association is by name and must be resolved by parsing the delimited string. Substring matching on the raw text produces false matches, because one tag name is a prefix of another. Tags are non-empty on exactly the 42912 questions, and the tags table holds 1032 distinct names.",
+    "evidence": [
+      "evidence_tags_format",
+      "evidence_tags_population"
+    ]
+  },
+  {
+    "id": "constraint_tag_table_count_semantics",
+    "target": "mapping_term_tag_count",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "tag count",
+      "popular tag",
+      "tag usage",
+      "how many questions per tag",
+      "tag frequency"
+    ],
+    "severity": "info",
+    "scope": "Applies when measuring tag popularity",
+    "confidence": "high",
+    "description": "tags.Count is a stored total of how many questions carry the tag and is a legitimate popularity measure on its own, reaching 7244 for the tag 'r'. It should not be confused with the number of rows in the tags table, and it must not be summed across tags to infer a question total, because a question carries several tags. tags.ExcerptPostId and tags.WikiPostId are populated on only 596 of 1032 tags, so most tags have no associated wiki content.",
+    "evidence": [
+      "evidence_tags_population"
+    ]
+  },
+  {
+    "id": "constraint_displayname_fallback",
+    "target": "term_user",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "display name",
+      "user name",
+      "OwnerDisplayName",
+      "UserDisplayName",
+      "author name",
+      "who wrote"
+    ],
+    "severity": "warning",
+    "scope": "Applies when resolving authorship names on posts and comments",
+    "confidence": "high",
+    "description": "posts.OwnerDisplayName and comments.UserDisplayName are not general author fields. They are populated almost exclusively on rows whose user identifier is null, that is for content whose author is no longer linked to an account: OwnerDisplayName is non-null on 1392 posts, of which 1388 have no OwnerUserId, while 89453 posts have an identifier and no display name. Resolving an author name therefore requires coalescing the identifier path with the fallback text, and the fallback text is absent for most content.",
+    "evidence": [
+      "evidence_displayname_fallback"
+    ]
+  },
+  {
+    "id": "constraint_orphan_references",
+    "target": "term_post",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "referential integrity",
+      "missing parent",
+      "orphan",
+      "dangling reference",
+      "join drops rows"
+    ],
+    "severity": "warning",
+    "scope": "Applies when joining posts to related tables",
+    "confidence": "high",
+    "description": "Most references resolve cleanly: posts.OwnerUserId and badges.UserId have no orphans at all. A small number of dangling references remain and will silently drop rows on inner joins: 6 posts whose ParentId matches no post, 1 post whose AcceptedAnswerId matches no post, 36 comments whose PostId matches no post, and 1 post link whose PostId matches no post. Outer joins or explicit orphan accounting avoid unexplained row losses.",
+    "evidence": [
+      "evidence_orphan_references",
+      "evidence_comment_coverage"
+    ]
+  },
+  {
+    "id": "constraint_post_history_type_enum",
+    "target": "term_post_history_type",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "post history",
+      "revision type",
+      "PostHistoryTypeId",
+      "edits",
+      "rollback",
+      "closed",
+      "reopened"
+    ],
+    "severity": "warning",
+    "scope": "Applies when classifying or filtering revision events",
+    "confidence": "medium",
+    "description": "postHistory.PostHistoryTypeId classifies revision events, with the observed distribution led by 2 = 91974, 5 = 69413, 1 = 42909, 3 = 42921, 6 = 12731, 25 = 10320, 24 = 7017, 4 = 16008 and 16 = 2193, with further codes up to 38 in small numbers. The low codes describe creation and edit events while the higher codes describe closure, deletion, notice and other lifecycle changes, and codes appeared incrementally over the dataset period so their meaning is version-dependent. The initial-body code count of 91974 closely approximates the 91966 posts, indicating one creation event per post.",
+    "evidence": [
+      "evidence_post_history_types",
+      "evidence_post_history_initial_types"
+    ]
+  },
+  {
+    "id": "constraint_link_type_enum",
+    "target": "term_link_type",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "duplicate",
+      "linked post",
+      "LinkTypeId",
+      "related question",
+      "marked as duplicate",
+      "post links"
+    ],
+    "severity": "warning",
+    "scope": "Applies when interpreting or filtering post-to-post links",
+    "confidence": "high",
+    "description": "postLinks.LinkTypeId takes two observed values: 1 with 10186 rows marking a general link and 3 with 916 rows marking a duplicate relationship. Only the smaller group expresses duplication, so treating all links as duplicates overstates duplicate activity by more than an order of magnitude. No row links a post to itself.",
+    "evidence": [
+      "evidence_postlinks_types"
+    ]
+  },
+  {
+    "id": "constraint_date_column_spelling",
+    "target": "term_activity_date",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "creation date",
+      "CreaionDate",
+      "CreationDate",
+      "last activity",
+      "LasActivityDate",
+      "timestamp column"
+    ],
+    "severity": "block",
+    "scope": "Applies to any query referencing post timestamps",
+    "confidence": "high",
+    "description": "The physical column names in posts retain two misspellings that must be used verbatim: posts.CreaionDate holds the post creation timestamp and posts.LasActivityDate holds the last activity timestamp. Other tables spell the same concept correctly as CreationDate. Writing the correctly spelled name against posts fails, and the misspelled names must not be mistaken for a different concept.",
+    "evidence": [
+      "evidence_post_dates"
+    ]
+  },
+  {
+    "id": "constraint_dataset_time_window",
+    "target": "term_activity_date",
+    "constraint_type": "scope",
+    "trigger_keywords": [
+      "time range",
+      "date range",
+      "over time",
+      "trend",
+      "when",
+      "period covered"
+    ],
+    "severity": "info",
+    "scope": "Applies to all temporal analysis",
+    "confidence": "high",
+    "description": "All tables describe a single historical window rather than the present day. Posts span 2009-02-02 to 2014-09-14, user accounts were created between 2010-07-19 and 2014-09-14, badges were awarded between 2010-07-19 and 2014-09-14, and votes cover only 2010-07-19 to 2011-05-01. After 2014-09-14 the data is truncated rather than empty, so a trend reaching the end of the range reflects the snapshot boundary and not a real decline in activity.",
+    "evidence": [
+      "evidence_post_dates",
+      "evidence_user_dates",
+      "evidence_votes_date_coverage"
+    ]
+  },
+  {
+    "id": "constraint_user_attribute_coverage",
+    "target": "term_user",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "location",
+      "age",
+      "demographics",
+      "profile",
+      "user attributes",
+      "where users are"
+    ],
+    "severity": "warning",
+    "scope": "Applies to profile attribute analysis on users",
+    "confidence": "high",
+    "description": "Optional user profile attributes are sparsely populated: Location is non-null for 11691 of 40325 accounts and Age for only 8318, with observed ages between 13 and 94. Any analysis grouping users by location or age covers a minority subgroup that is unlikely to represent the whole account population.",
+    "evidence": [
+      "evidence_user_population"
+    ]
+  }
+]

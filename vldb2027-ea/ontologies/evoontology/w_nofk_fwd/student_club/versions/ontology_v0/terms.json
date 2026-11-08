@@ -1,0 +1,490 @@
+[
+  {
+    "id": "term_member",
+    "name": "Member",
+    "type": "entity",
+    "definition": "A person affiliated with the Student Club, recorded with a name, contact details, a club role (position), a t-shirt size, a postal ZIP code and a link to their academic major.",
+    "scope": "All person-level analysis: identifying individuals, their role, their apparel size and their academic affiliation.",
+    "aliases": [
+      "student",
+      "student member",
+      "club member",
+      "person",
+      "members"
+    ],
+    "evidence": [
+      "evidence_001_schema_inventory",
+      "evidence_002_member_distinct_values",
+      "evidence_013_member_identity"
+    ]
+  },
+  {
+    "id": "term_major",
+    "name": "Major",
+    "type": "entity",
+    "definition": "An academic degree program / field of study offered by the university, classified by exactly one department and one college.",
+    "scope": "Academic-affiliation analysis: what a member studies and which organisational units that program sits in.",
+    "aliases": [
+      "field of study",
+      "degree program",
+      "program of study",
+      "major_name"
+    ],
+    "evidence": [
+      "evidence_001_schema_inventory",
+      "evidence_006_major_hierarchy"
+    ]
+  },
+  {
+    "id": "term_event",
+    "name": "Event",
+    "type": "entity",
+    "definition": "A Student Club activity scheduled on a date at a venue, classified by an event type (category) and carrying a lifecycle status.",
+    "scope": "Event-level analysis: what happened, when, where, what kind of event it was and whether it is closed, open or still being planned.",
+    "aliases": [
+      "activity",
+      "club event",
+      "meeting",
+      "event_name"
+    ],
+    "evidence": [
+      "evidence_001_schema_inventory",
+      "evidence_005_event_type_status_location"
+    ]
+  },
+  {
+    "id": "term_budget",
+    "name": "Budget Line",
+    "type": "entity",
+    "definition": "A budget line that allocates money to one spending category of one event, tracking the budgeted amount, the amount spent so far and the remainder.",
+    "scope": "Budgeting analysis: how much was allocated to a category or event and how much of it has been used.",
+    "aliases": [
+      "budget",
+      "budget item",
+      "allocation",
+      "budget line item"
+    ],
+    "evidence": [
+      "evidence_001_schema_inventory",
+      "evidence_004_budget_category_and_amounts",
+      "evidence_012_cost_reconciliation"
+    ]
+  },
+  {
+    "id": "term_expense",
+    "name": "Expense",
+    "type": "entity",
+    "definition": "An individual spending transaction recording what was purchased, the date, the cost, the approval state, the member who incurred it and the budget line it is charged against.",
+    "scope": "Expense-level analysis: individual purchases, their cost, their date and who spent the money.",
+    "aliases": [
+      "expenditure",
+      "purchase",
+      "spending record",
+      "expense_description",
+      "cost"
+    ],
+    "evidence": [
+      "evidence_001_schema_inventory",
+      "evidence_011_expense_details",
+      "evidence_012_cost_reconciliation"
+    ]
+  },
+  {
+    "id": "term_income",
+    "name": "Income",
+    "type": "entity",
+    "definition": "A receipt of money by the club recording the date received, the amount, the source and optional notes, and optionally attributed to a member.",
+    "scope": "Revenue analysis: dues, fundraising, sponsorship and appropriation receipts and when they arrived.",
+    "aliases": [
+      "revenue",
+      "funds received",
+      "receipt",
+      "money received",
+      "amount received"
+    ],
+    "evidence": [
+      "evidence_001_schema_inventory",
+      "evidence_003_income_source_and_amounts",
+      "evidence_008_income_member_link_optional"
+    ]
+  },
+  {
+    "id": "term_attendance",
+    "name": "Attendance Record",
+    "type": "entity",
+    "definition": "A participation record linking one member to one event, representing that the member attended that event.",
+    "scope": "Participation analysis: which members attended which events.",
+    "aliases": [
+      "participation",
+      "attendance",
+      "attended",
+      "event attendance"
+    ],
+    "evidence": [
+      "evidence_001_schema_inventory",
+      "evidence_007_referential_integrity",
+      "evidence_010_attendance_join"
+    ]
+  },
+  {
+    "id": "term_zip_code",
+    "name": "ZIP Code",
+    "type": "entity",
+    "definition": "A United States postal ZIP code reference record carrying the code type, city, county, state and state abbreviation.",
+    "scope": "Geographic enrichment of members; used only when a question requires the location behind a member's ZIP code.",
+    "aliases": [
+      "postal code",
+      "zip",
+      "zip code reference"
+    ],
+    "evidence": [
+      "evidence_001_schema_inventory",
+      "evidence_014_zip_code_reference"
+    ]
+  },
+  {
+    "id": "term_department",
+    "name": "Department",
+    "type": "dimension",
+    "definition": "An academic administrative unit within a college that groups related majors.",
+    "scope": "Organisational grouping between college and major; used to select members by the department of their major.",
+    "aliases": [
+      "academic department",
+      "school",
+      "department name"
+    ],
+    "evidence": [
+      "evidence_006_major_hierarchy"
+    ]
+  },
+  {
+    "id": "term_college",
+    "name": "College",
+    "type": "dimension",
+    "definition": "The highest-level academic organisational unit of the university, containing departments.",
+    "scope": "Top-level academic grouping; used when a question asks for the college a major or member belongs to.",
+    "aliases": [
+      "academic college",
+      "school of the university",
+      "college name"
+    ],
+    "evidence": [
+      "evidence_006_major_hierarchy"
+    ]
+  },
+  {
+    "id": "term_member_position",
+    "name": "Member Position",
+    "type": "dimension",
+    "definition": "The club role a member holds: Member, Inactive, President, Vice President, Secretary or Treasurer.",
+    "scope": "Distinguishing ordinary members from officers from inactive members.",
+    "aliases": [
+      "position",
+      "role",
+      "officer",
+      "club role"
+    ],
+    "evidence": [
+      "evidence_002_member_distinct_values"
+    ]
+  },
+  {
+    "id": "term_t_shirt_size",
+    "name": "T-Shirt Size",
+    "type": "dimension",
+    "definition": "The apparel size associated with a member: Small, Medium, Large or X-Large.",
+    "scope": "Selecting the member population a question scopes to by apparel size.",
+    "aliases": [
+      "tshirt size",
+      "t-shirt size",
+      "shirt size",
+      "size"
+    ],
+    "evidence": [
+      "evidence_002_member_distinct_values"
+    ]
+  },
+  {
+    "id": "term_budget_event_status",
+    "name": "Budget Event Status",
+    "type": "dimension",
+    "definition": "The lifecycle state of the event a budget line belongs to, recorded redundantly on the budget row itself.",
+    "scope": "Filtering budget lines by event lifecycle state; its values mirror the event's own status.",
+    "aliases": [
+      "budget event status",
+      "event_status on budget"
+    ],
+    "evidence": [
+      "evidence_015_budget_event_status_alignment"
+    ]
+  },
+  {
+    "id": "term_event_location",
+    "name": "Event Location",
+    "type": "dimension",
+    "definition": "The free-text venue where an event took place, such as 'MU 215' or 'Campus Football stadium'.",
+    "scope": "Choosing events by where they were held.",
+    "aliases": [
+      "location",
+      "venue",
+      "place",
+      "held at"
+    ],
+    "evidence": [
+      "evidence_005_event_type_status_location"
+    ]
+  },
+  {
+    "id": "term_expense_description",
+    "name": "Expense Description",
+    "type": "dimension",
+    "definition": "The free-text description of what an expense purchased, such as 'Pizza', 'Posters' or 'Water, Veggie tray, supplies'.",
+    "scope": "Selecting expenses by what was bought.",
+    "aliases": [
+      "expense description",
+      "what was bought",
+      "purchase description",
+      "description"
+    ],
+    "evidence": [
+      "evidence_011_expense_details"
+    ]
+  },
+  {
+    "id": "term_event_type",
+    "name": "Event Type",
+    "type": "category",
+    "definition": "The classification of an event: Budget, Community Service, Election, Game, Guest Speaker, Meeting, Registration or Social. Questions that ask for the 'category of events' mean this classification.",
+    "scope": "Classifying or filtering events by kind of activity.",
+    "aliases": [
+      "event category",
+      "category of events",
+      "type of event",
+      "kind of event",
+      "event type"
+    ],
+    "evidence": [
+      "evidence_005_event_type_status_location"
+    ]
+  },
+  {
+    "id": "term_event_status",
+    "name": "Event Status",
+    "type": "category",
+    "definition": "The lifecycle state of an event: Closed, Open or Planning.",
+    "scope": "Filtering events by whether they have finished, are running or are still being planned.",
+    "aliases": [
+      "status",
+      "event lifecycle",
+      "closed event",
+      "open",
+      "planning"
+    ],
+    "evidence": [
+      "evidence_005_event_type_status_location",
+      "evidence_015_budget_event_status_alignment"
+    ]
+  },
+  {
+    "id": "term_budget_category",
+    "name": "Budget Category",
+    "type": "category",
+    "definition": "The spending category a budget line covers: Food, Advertisement, Speaker Gifts, Parking or Club T-Shirts.",
+    "scope": "Selecting budget lines by what the money was budgeted for.",
+    "aliases": [
+      "budget category",
+      "budgeted category",
+      "budgeted categories",
+      "spending category",
+      "category"
+    ],
+    "evidence": [
+      "evidence_004_budget_category_and_amounts"
+    ]
+  },
+  {
+    "id": "term_income_source",
+    "name": "Income Source",
+    "type": "category",
+    "definition": "The origin of a received amount: Dues, Fundraising, Sponsorship or School Appropration (stored with this spelling in the data).",
+    "scope": "Classifying or filtering income by where the money came from.",
+    "aliases": [
+      "source",
+      "source of income",
+      "funding source",
+      "income source"
+    ],
+    "evidence": [
+      "evidence_003_income_source_and_amounts"
+    ]
+  },
+  {
+    "id": "term_record_notes",
+    "name": "Record Notes",
+    "type": "concept",
+    "definition": "A free-text annotation attached to a club record, supplying context such as the purpose of a fundraising receipt or a remark on an event.",
+    "scope": "Explanatory text lookups on income and event records.",
+    "aliases": [
+      "note",
+      "notes",
+      "remark",
+      "comment",
+      "description of fundraising"
+    ],
+    "evidence": [
+      "evidence_001_schema_inventory",
+      "evidence_003_income_source_and_amounts"
+    ]
+  },
+  {
+    "id": "term_dues_payment",
+    "name": "Dues Payment",
+    "type": "concept",
+    "definition": "A member's payment of club dues, recorded as an income receipt whose source is Dues.",
+    "scope": "Membership-fee analysis: who paid dues and when.",
+    "aliases": [
+      "dues",
+      "membership dues",
+      "dues paid",
+      "pay dues"
+    ],
+    "evidence": [
+      "evidence_003_income_source_and_amounts"
+    ]
+  },
+  {
+    "id": "term_full_name",
+    "name": "Full Name",
+    "type": "metric",
+    "definition": "The complete name of a person, formed from the member's first name and last name.",
+    "scope": "Any question that asks to list, name or identify people by their full name.",
+    "aliases": [
+      "full name",
+      "name of member",
+      "member name",
+      "student name",
+      "person name"
+    ],
+    "evidence": [
+      "evidence_013_member_identity"
+    ]
+  },
+  {
+    "id": "term_total_budgeted_amount",
+    "name": "Total Budgeted Amount",
+    "type": "metric",
+    "definition": "The sum of the money allocated across budget lines within a chosen scope (a category, an event, or all events).",
+    "scope": "Questions asking how much was budgeted or allocated.",
+    "aliases": [
+      "amount budgeted",
+      "budgeted amount",
+      "budget amount",
+      "total budget",
+      "budgeted"
+    ],
+    "evidence": [
+      "evidence_004_budget_category_and_amounts",
+      "evidence_012_cost_reconciliation"
+    ]
+  },
+  {
+    "id": "term_total_spent_amount",
+    "name": "Total Spent Amount",
+    "type": "metric",
+    "definition": "The sum of the money actually spent against budget lines within a chosen scope.",
+    "scope": "Questions asking how much money was spent against budgets.",
+    "aliases": [
+      "amount spent",
+      "total spent",
+      "money spent",
+      "spent",
+      "total amount of money spent"
+    ],
+    "evidence": [
+      "evidence_012_cost_reconciliation"
+    ]
+  },
+  {
+    "id": "term_total_expense_cost",
+    "name": "Total Expense Cost",
+    "type": "metric",
+    "definition": "The sum of recorded expense transaction costs within a chosen scope (a date, an event, or all expenses).",
+    "scope": "Questions asking for total expense, total cost or cost on a date.",
+    "aliases": [
+      "total expense",
+      "total cost",
+      "expense total",
+      "cost",
+      "total cost for all events"
+    ],
+    "evidence": [
+      "evidence_012_cost_reconciliation",
+      "evidence_011_expense_details"
+    ]
+  },
+  {
+    "id": "term_total_income_amount",
+    "name": "Total Income Amount",
+    "type": "metric",
+    "definition": "The sum of received amounts recorded as income within a chosen scope.",
+    "scope": "Questions asking for total income or funds received.",
+    "aliases": [
+      "total income",
+      "amount received",
+      "funds received",
+      "total received"
+    ],
+    "evidence": [
+      "evidence_003_income_source_and_amounts"
+    ]
+  },
+  {
+    "id": "term_event_expense_cost",
+    "name": "Event Expense Cost",
+    "type": "metric",
+    "definition": "The total expense cost attributed to a single event, obtained by summing the costs of the expenses charged to that event's budget lines.",
+    "scope": "Cost-per-event analysis; the numerator of an event's cost share.",
+    "aliases": [
+      "cost of event",
+      "event cost",
+      "total cost for event",
+      "spent on event"
+    ],
+    "evidence": [
+      "evidence_012_cost_reconciliation"
+    ]
+  },
+  {
+    "id": "term_cost_share_percentage",
+    "name": "Cost Share Percentage",
+    "type": "metric",
+    "definition": "The share of one event's expense cost relative to the total expense cost across all events, expressed as a percentage.",
+    "scope": "Comparing how much of overall spending one event accounts for.",
+    "aliases": [
+      "percentage of cost",
+      "cost percentage",
+      "proportion of total cost",
+      "share of cost"
+    ],
+    "evidence": [
+      "evidence_012_cost_reconciliation"
+    ]
+  },
+  {
+    "id": "term_ratio_percentage",
+    "name": "Ratio Percentage",
+    "type": "metric",
+    "definition": "A proportion expressing one counted or summed quantity as a percentage of a relevant total within a scope defined by the question.",
+    "scope": "Questions that ask what percentage or proportion a subset represents of a stated population or total.",
+    "aliases": [
+      "percentage",
+      "proportion",
+      "share",
+      "percent",
+      "what is the percentage"
+    ],
+    "evidence": [
+      "evidence_016_medium_member_dues_share"
+    ]
+  }
+]

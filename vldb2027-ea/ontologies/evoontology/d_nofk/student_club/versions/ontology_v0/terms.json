@@ -1,0 +1,390 @@
+[
+  {
+    "id": "term_member",
+    "name": "Member",
+    "type": "entity",
+    "definition": "A person on the student club roster, identified by member_id, with a name, email, phone, t-shirt size, club position, and links to a declared academic major and a residential ZIP code.",
+    "scope": "Membership roster analysis over the member table (33 records).",
+    "aliases": [
+      "student",
+      "club member",
+      "roster member"
+    ],
+    "evidence": [
+      "evidence_schema_tables",
+      "evidence_member_position_values"
+    ]
+  },
+  {
+    "id": "term_event",
+    "name": "Club Event",
+    "type": "entity",
+    "definition": "A scheduled club activity such as a meeting, guest speaker, game, social, community service activity, election, registration or budget review, carrying a name, timestamp, type, location and status.",
+    "scope": "Event planning and participation analysis over the event table (42 records).",
+    "aliases": [
+      "activity",
+      "meeting",
+      "club event"
+    ],
+    "evidence": [
+      "evidence_schema_tables",
+      "evidence_event_type_status"
+    ]
+  },
+  {
+    "id": "term_budget",
+    "name": "Budget Line Item",
+    "type": "entity",
+    "definition": "An allocation of club funds for a spending category tied to a specific event, recording the amount allocated, the amount spent and the remaining balance.",
+    "scope": "Budget planning and utilisation analysis over the budget table (52 records).",
+    "aliases": [
+      "budget item",
+      "allocation",
+      "budget line"
+    ],
+    "evidence": [
+      "evidence_budget_totals"
+    ]
+  },
+  {
+    "id": "term_expense",
+    "name": "Expense",
+    "type": "entity",
+    "definition": "An individual expenditure with a description, date, cost and approval flag, attributed to a member and charged against a budget line item.",
+    "scope": "Expense tracking and approval analysis over the expense table (32 records).",
+    "aliases": [
+      "expenditure",
+      "purchase",
+      "spending record"
+    ],
+    "evidence": [
+      "evidence_expense_approved_values"
+    ]
+  },
+  {
+    "id": "term_income",
+    "name": "Income Record",
+    "type": "entity",
+    "definition": "A receipt of funds by the club from a source such as membership dues, fundraising, sponsorship or school appropriation, optionally attributed to a member.",
+    "scope": "Revenue analysis over the income table (36 records).",
+    "aliases": [
+      "revenue",
+      "receipt",
+      "funds received"
+    ],
+    "evidence": [
+      "evidence_income_source_totals"
+    ]
+  },
+  {
+    "id": "term_attendance",
+    "name": "Attendance Record",
+    "type": "entity",
+    "definition": "A link recording that a specific member attended a specific event. The attendance table carries no attributes beyond the event and member references.",
+    "scope": "Participation analysis wherever attendance rows exist (326 rows over 17 events and 30 members).",
+    "aliases": [
+      "participation record",
+      "check-in",
+      "attendance"
+    ],
+    "evidence": [
+      "evidence_attendance_links"
+    ]
+  },
+  {
+    "id": "term_major",
+    "name": "Academic Major",
+    "type": "entity",
+    "definition": "An academic programme of study with a name, department and college, used as the declared major of a club member.",
+    "scope": "Academic composition analysis over the major table (113 majors).",
+    "aliases": [
+      "programme",
+      "field of study",
+      "degree program"
+    ],
+    "evidence": [
+      "evidence_major_college_values"
+    ]
+  },
+  {
+    "id": "term_zip_code",
+    "name": "ZIP Code Reference",
+    "type": "entity",
+    "definition": "A United States postal ZIP code reference record giving the locality type, city, county and state for a numeric ZIP code.",
+    "scope": "Geographic reference and member location analysis; the zip_code table is a 41877-row reference table covering US postal codes.",
+    "aliases": [
+      "postal code",
+      "zip",
+      "postcode"
+    ],
+    "evidence": [
+      "evidence_member_zip_state_join",
+      "evidence_zip_leading_zero"
+    ]
+  },
+  {
+    "id": "term_member_position",
+    "name": "Club Position",
+    "type": "dimension",
+    "definition": "The role a member holds in the club: President, Vice President, Treasurer, Secretary, Member or Inactive.",
+    "scope": "Role-based segmentation of the member table.",
+    "aliases": [
+      "role",
+      "office",
+      "member role"
+    ],
+    "evidence": [
+      "evidence_member_position_values"
+    ]
+  },
+  {
+    "id": "term_event_type",
+    "name": "Event Type",
+    "type": "dimension",
+    "definition": "The category of a club event: Meeting, Guest Speaker, Game, Social, Community Service, Election, Registration or Budget.",
+    "scope": "Event categorisation in the event table.",
+    "aliases": [
+      "event category",
+      "activity type"
+    ],
+    "evidence": [
+      "evidence_event_type_status"
+    ]
+  },
+  {
+    "id": "term_event_status",
+    "name": "Event Status",
+    "type": "dimension",
+    "definition": "The lifecycle state of a club event: Open, Planning or Closed.",
+    "scope": "Event lifecycle analysis in the event table.",
+    "aliases": [
+      "event state",
+      "lifecycle status"
+    ],
+    "evidence": [
+      "evidence_event_status_date_relation"
+    ]
+  },
+  {
+    "id": "term_budget_event_status",
+    "name": "Budget Event Status",
+    "type": "dimension",
+    "definition": "The event lifecycle state recorded on a budget line item. It shares the value domain Open, Planning, Closed with event status and always agrees with the status of the linked event.",
+    "scope": "Redundant copy of event status carried on the budget table.",
+    "aliases": [
+      "budget event state",
+      "event_status on budget"
+    ],
+    "evidence": [
+      "evidence_budget_event_status_match"
+    ]
+  },
+  {
+    "id": "term_budget_category",
+    "name": "Budget Category",
+    "type": "dimension",
+    "definition": "The spending category of a budget line item: Food, Advertisement, Parking, Speaker Gifts or Club T-Shirts.",
+    "scope": "Budget allocation analysis by category.",
+    "aliases": [
+      "spending category",
+      "budget type"
+    ],
+    "evidence": [
+      "evidence_budget_category_totals"
+    ]
+  },
+  {
+    "id": "term_income_source",
+    "name": "Income Source",
+    "type": "dimension",
+    "definition": "The origin of club income: Dues, Fundraising, Sponsorship or School Appropration.",
+    "scope": "Revenue segmentation in the income table.",
+    "aliases": [
+      "revenue source",
+      "funding source"
+    ],
+    "evidence": [
+      "evidence_income_source_totals"
+    ]
+  },
+  {
+    "id": "term_college",
+    "name": "College",
+    "type": "dimension",
+    "definition": "The academic college or school that hosts a major, such as College of Engineering or School of Business. Eight distinct values exist in the major table.",
+    "scope": "Academic organisation analysis; naming is not uniform across values.",
+    "aliases": [
+      "school",
+      "faculty"
+    ],
+    "evidence": [
+      "evidence_major_college_values"
+    ]
+  },
+  {
+    "id": "term_member_state",
+    "name": "Member State",
+    "type": "dimension",
+    "definition": "The US state of a member's residential address, obtained through the member's ZIP code rather than stored directly on the member record.",
+    "scope": "Geographic distribution analysis of members.",
+    "aliases": [
+      "state",
+      "home state",
+      "residence state"
+    ],
+    "evidence": [
+      "evidence_member_zip_state_join"
+    ]
+  },
+  {
+    "id": "term_member_zip",
+    "name": "Member ZIP Code",
+    "type": "concept",
+    "definition": "The residential ZIP code recorded on a member record, identifying the same postal geography as the ZIP code reference table.",
+    "scope": "Member address analysis; stored as an integer so leading zeros are not preserved.",
+    "aliases": [
+      "member postal code",
+      "member zip"
+    ],
+    "evidence": [
+      "evidence_zip_leading_zero"
+    ]
+  },
+  {
+    "id": "term_attendance_count",
+    "name": "Attendance Count",
+    "type": "metric",
+    "definition": "The number of attendance records associated with an event or with a member, counting distinct event-member links.",
+    "scope": "Participation volume measurement over the attendance table.",
+    "aliases": [
+      "number of attendees",
+      "participation count",
+      "headcount"
+    ],
+    "evidence": [
+      "evidence_attendance_links",
+      "evidence_attendance_coverage"
+    ]
+  },
+  {
+    "id": "term_budget_amount",
+    "name": "Budgeted Amount",
+    "type": "metric",
+    "definition": "The total funds allocated to a budget line item before any spending.",
+    "scope": "Budget planning measurement.",
+    "aliases": [
+      "allocation",
+      "budgeted",
+      "planned amount"
+    ],
+    "evidence": [
+      "evidence_budget_totals"
+    ]
+  },
+  {
+    "id": "term_budget_spent",
+    "name": "Budget Spent Amount",
+    "type": "metric",
+    "definition": "The funds consumed against a budget line item, equal to the sum of the costs of the expenses charged to it.",
+    "scope": "Budget consumption measurement; reconciles exactly with linked expense records.",
+    "aliases": [
+      "spent",
+      "actual spend",
+      "consumed budget"
+    ],
+    "evidence": [
+      "evidence_budget_expense_reconciliation"
+    ]
+  },
+  {
+    "id": "term_budget_remaining",
+    "name": "Budget Remaining Amount",
+    "type": "metric",
+    "definition": "The funds still available on a budget line item, defined as the allocated amount minus the spent amount. It becomes negative when the line item is overspent.",
+    "scope": "Budget availability measurement.",
+    "aliases": [
+      "remaining",
+      "balance",
+      "leftover budget"
+    ],
+    "evidence": [
+      "evidence_budget_over_budget"
+    ]
+  },
+  {
+    "id": "term_budget_utilization",
+    "name": "Budget Utilisation Rate",
+    "type": "metric",
+    "definition": "The proportion of a budget line item that has been consumed, computed as the spent amount divided by the allocated amount.",
+    "scope": "Budget efficiency comparison across categories and events.",
+    "aliases": [
+      "utilisation",
+      "burn rate",
+      "spend ratio"
+    ],
+    "evidence": [
+      "evidence_budget_totals"
+    ]
+  },
+  {
+    "id": "term_expense_cost",
+    "name": "Expense Cost",
+    "type": "metric",
+    "definition": "The monetary amount of a single expense record.",
+    "scope": "Expense-level measurement feeding budget consumption.",
+    "aliases": [
+      "cost",
+      "expense amount",
+      "price"
+    ],
+    "evidence": [
+      "evidence_expense_approved_values"
+    ]
+  },
+  {
+    "id": "term_income_amount",
+    "name": "Income Amount",
+    "type": "metric",
+    "definition": "The monetary amount received in a single income record.",
+    "scope": "Revenue measurement at the individual receipt level.",
+    "aliases": [
+      "received amount",
+      "income",
+      "revenue amount"
+    ],
+    "evidence": [
+      "evidence_income_source_totals"
+    ]
+  },
+  {
+    "id": "term_member_count",
+    "name": "Member Count",
+    "type": "metric",
+    "definition": "The number of member records on the roster, including members whose position is Inactive.",
+    "scope": "Roster size measurement.",
+    "aliases": [
+      "number of members",
+      "membership size",
+      "roster size"
+    ],
+    "evidence": [
+      "evidence_schema_tables",
+      "evidence_member_position_values"
+    ]
+  },
+  {
+    "id": "term_dues_income",
+    "name": "Dues Income",
+    "type": "metric",
+    "definition": "The portion of club income received from membership dues, paid in uniform amounts per member.",
+    "scope": "Recurring membership revenue measurement.",
+    "aliases": [
+      "dues",
+      "membership fees",
+      "dues revenue"
+    ],
+    "evidence": [
+      "evidence_income_source_totals"
+    ]
+  }
+]

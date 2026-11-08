@@ -1,0 +1,615 @@
+{
+ "db_id": "bird_merged",
+ "questions": [
+  {
+   "question_id": 46,
+   "db_id": "bird_merged",
+   "question": "Which state special schools have the highest number of enrollees from grades 1 through 12?",
+   "evidence": "State Special Schools refers to cl0065 = 31; Grades 1 through 12 means K-12",
+   "SQL": "SELECT T2.cl0046 FROM tb001 AS T1 INNER JOIN tb003 AS T2 ON T1.cl0001 = T2.cl0001 WHERE T2.cl0065 = 31 ORDER BY T1.cl0019 DESC LIMIT 1",
+   "difficulty": "simple",
+   "source_db": "california_schools",
+   "SQL_original": "SELECT T2.School FROM frpm AS T1 INNER JOIN schools AS T2 ON T1.CDSCode = T2.CDSCode WHERE T2.DOC = 31 ORDER BY T1.`Enrollment (K-12)` DESC LIMIT 1"
+  },
+  {
+   "question_id": 12,
+   "db_id": "bird_merged",
+   "question": "Among the schools with an SAT excellence rate of over 0.3, what is the highest eligible free rate for students aged 5-17?",
+   "evidence": "Excellence rate = cl0040 / cl0036; Eligible free rates for students aged 5-17 = cl0025 / cl0024",
+   "SQL": "SELECT MAX(CAST(T1.cl0025 AS REAL) / T1.cl0024) FROM tb001 AS T1 INNER JOIN tb002 AS T2 ON T1.cl0001 = T2.cl0030 WHERE CAST(T2.cl0040 AS REAL) / T2.cl0036 > 0.3",
+   "difficulty": "moderate",
+   "source_db": "california_schools",
+   "SQL_original": "SELECT MAX(CAST(T1.`Free Meal Count (Ages 5-17)` AS REAL) / T1.`Enrollment (Ages 5-17)`) FROM frpm AS T1 INNER JOIN satscores AS T2 ON T1.CDSCode = T2.cds WHERE CAST(T2.NumGE1500 AS REAL) / T2.NumTstTakr > 0.3"
+  },
+  {
+   "question_id": 39,
+   "db_id": "bird_merged",
+   "question": "What is the average number of test takers from Fresno schools that opened between 1/1/1980 and 12/31/1980?",
+   "evidence": "between 1/1/1980 and 12/31/1980 means the year = 1980",
+   "SQL": "SELECT AVG(T1.cl0036) FROM tb002 AS T1 INNER JOIN tb003 AS T2 ON T1.cl0030 = T2.cl0001 WHERE STRFTIME('%Y', T2.cl0060) = '1980' AND T2.cl0044 = 'Fresno'",
+   "difficulty": "simple",
+   "source_db": "california_schools",
+   "SQL_original": "SELECT AVG(T1.NumTstTakr) FROM satscores AS T1 INNER JOIN schools AS T2 ON T1.cds = T2.CDSCode WHERE strftime('%Y', T2.OpenDate) = '1980' AND T2.County = 'Fresno'"
+  },
+  {
+   "question_id": 85,
+   "db_id": "bird_merged",
+   "question": "What is the Percent (%) Eligible Free (K-12) in the school administered by an administrator whose first name is Alusine. List the district code of the school.",
+   "evidence": "Percent (%) Eligible Free (K-12) = cl0020 / cl0019 * 100%",
+   "SQL": "SELECT T1.cl0020 * 100 / T1.cl0019, T1.cl0004 FROM tb001 AS T1 INNER JOIN tb003 AS T2 ON T1.cl0001 = T2.cl0001 WHERE T2.cl0079 = 'Alusine'",
+   "difficulty": "moderate",
+   "source_db": "california_schools",
+   "SQL_original": "SELECT T1.`Free Meal Count (K-12)` * 100 / T1.`Enrollment (K-12)`, T1.`District Code` FROM frpm AS T1 INNER JOIN schools AS T2 ON T1.CDSCode = T2.CDSCode WHERE T2.AdmFName1 = 'Alusine'"
+  },
+  {
+   "question_id": 17,
+   "db_id": "bird_merged",
+   "question": "Rank schools by their average score in Writing where the score is greater than 499, showing their charter numbers.",
+   "evidence": "Valid charter number means the number is not null",
+   "SQL": "SELECT cl0063, cl0039, RANK() OVER (ORDER BY cl0039 DESC) AS WritingScoreRank FROM tb003 AS T1 INNER JOIN tb002 AS T2 ON T1.cl0001 = T2.cl0030 WHERE T2.cl0039 > 499 AND NOT cl0063 IS NULL",
+   "difficulty": "simple",
+   "source_db": "california_schools",
+   "SQL_original": "SELECT CharterNum, AvgScrWrite, RANK() OVER (ORDER BY AvgScrWrite DESC) AS WritingScoreRank FROM schools AS T1  INNER JOIN satscores AS T2 ON T1.CDSCode = T2.cds WHERE T2.AvgScrWrite > 499 AND CharterNum is not null"
+  },
+  {
+   "question_id": 472,
+   "db_id": "bird_merged",
+   "question": "Among the sets in the block \"Ice Age\", how many of them have an Italian translation?",
+   "evidence": "tb007 in the block \"Ice Age\" refers to cl0167 = 'Ice Age'; Italian translation refers to cl0163 = 'Italian' and cl0182 is not null",
+   "SQL": "SELECT COUNT(DISTINCT T1.cl0089) FROM tb007 AS T1 INNER JOIN tb008 AS T2 ON T2.cl0151 = T1.cl0169 WHERE T1.cl0167 = 'Ice Age' AND T2.cl0163 = 'Italian' AND NOT T2.cl0182 IS NULL",
+   "difficulty": "moderate",
+   "source_db": "card_games",
+   "SQL_original": "SELECT COUNT(DISTINCT T1.id) FROM sets AS T1 INNER JOIN set_translations AS T2 ON T2.setCode = T1.code WHERE T1.block = 'Ice Age' AND T2.language = 'Italian' AND T2.translation IS NOT NULL"
+  },
+  {
+   "question_id": 440,
+   "db_id": "bird_merged",
+   "question": "Which foreign language used by \"A Pedra Fellwar\"?",
+   "evidence": "\"A Pedra Fellwar\" refers to cl0137 = 'A Pedra Fellwar'",
+   "SQL": "SELECT DISTINCT cl0163 FROM tb005 WHERE cl0137 = 'A Pedra Fellwar'",
+   "difficulty": "simple",
+   "source_db": "card_games",
+   "SQL_original": "SELECT DISTINCT language FROM foreign_data WHERE name = 'A Pedra Fellwar'"
+  },
+  {
+   "question_id": 340,
+   "db_id": "bird_merged",
+   "question": "Which are the cards that have incredibly powerful foils.",
+   "evidence": "incredibly poweful foils refers to cl0094 is not null AND cl0095 is not null",
+   "SQL": "SELECT cl0089 FROM tb004 WHERE NOT cl0094 IS NULL AND NOT cl0095 IS NULL",
+   "difficulty": "simple",
+   "source_db": "card_games",
+   "SQL_original": "SELECT id FROM cards WHERE cardKingdomFoilId IS NOT NULL AND cardKingdomId IS NOT NULL"
+  },
+  {
+   "question_id": 424,
+   "db_id": "bird_merged",
+   "question": "What proportion of cards do not have a text box with a normal layout?",
+   "evidence": "do not have a text box refers to cl0122 = 1; proportion refers to DIVIDE(COUNT(Textless = 1 and cl0125 = 'normal'),COUNT(Textless))*100",
+   "SQL": "SELECT CAST(SUM(CASE WHEN cl0122 = 1 AND cl0125 = 'normal' THEN 1 ELSE 0 END) AS REAL) * 100 / COUNT(*) FROM tb004",
+   "difficulty": "simple",
+   "source_db": "card_games",
+   "SQL_original": "SELECT CAST(SUM(CASE WHEN isTextless = 1 AND layout = 'normal' THEN 1 ELSE 0 END) AS REAL) * 100 / COUNT(*) FROM cards"
+  },
+  {
+   "question_id": 486,
+   "db_id": "bird_merged",
+   "question": "What is the percentage of the cards with a converted mana cost of 7 in the set Coldsnap?",
+   "evidence": "converted mana cost of 7 refers to cl0099 = 7; card set Coldsnap refers to cl0137 = 'Coldsnap'; percentage = DIVIDE(SUM(cl0099 = 7), SUM(cl0099))*100",
+   "SQL": "SELECT CAST(SUM(CASE WHEN T1.cl0099 = 7 THEN 1 ELSE 0 END) AS REAL) * 100 / COUNT(T1.cl0089) FROM tb004 AS T1 INNER JOIN tb007 AS T2 ON T2.cl0169 = T1.cl0151 WHERE T2.cl0137 = 'Coldsnap'",
+   "difficulty": "moderate",
+   "source_db": "card_games",
+   "SQL_original": "SELECT CAST(SUM(CASE WHEN T1.convertedManaCost = 7 THEN 1 ELSE 0 END) AS REAL) * 100 / COUNT(T1.id) FROM cards AS T1 INNER JOIN sets AS T2 ON T2.code = T1.setCode WHERE T2.name = 'Coldsnap'"
+  },
+  {
+   "question_id": 479,
+   "db_id": "bird_merged",
+   "question": "Among the cards with converted mana cost higher than 5 in the set Coldsnap, how many of them have unknown power?",
+   "evidence": "card set Coldsnap refers to cl0137 = 'Coldsnap'; converted mana cost higher than 5 refers to cl0099 > 5; unknown power refers to cl0143 = '*' or T1.cl0143 is null",
+   "SQL": "SELECT SUM(CASE WHEN T1.cl0143 = '*' OR T1.cl0143 IS NULL THEN 1 ELSE 0 END) FROM tb004 AS T1 INNER JOIN tb007 AS T2 ON T2.cl0169 = T1.cl0151 WHERE T2.cl0137 = 'Coldsnap' AND T1.cl0099 > 5",
+   "difficulty": "moderate",
+   "source_db": "card_games",
+   "SQL_original": "SELECT SUM(CASE WHEN T1.power = '*' OR T1.power IS NULL THEN 1 ELSE 0 END) FROM cards AS T1 INNER JOIN sets AS T2 ON T2.code = T1.setCode WHERE T2.name = 'Coldsnap' AND T1.convertedManaCost > 5"
+  },
+  {
+   "question_id": 409,
+   "db_id": "bird_merged",
+   "question": "Indicates the number of cards with pre-modern format, ruling text \"This is a triggered mana ability.\" that do not have multiple faces.",
+   "evidence": "pre-modern format refers to cl0164 = 'premodern' ;do not have multiple faces refers to cl0152 IS NULL",
+   "SQL": "SELECT COUNT(T1.cl0089) FROM tb004 AS T1 INNER JOIN tb006 AS T2 ON T1.cl0160 = T2.cl0160 INNER JOIN tb009 AS T3 ON T1.cl0160 = T3.cl0160 WHERE T2.cl0164 = 'premodern' AND T3.cl0156 = 'This is a triggered mana ability.' AND T1.cl0152 IS NULL",
+   "difficulty": "moderate",
+   "source_db": "card_games",
+   "SQL_original": "SELECT COUNT(T1.id) FROM cards AS T1 INNER JOIN legalities AS T2 ON T1.uuid = T2.uuid INNER JOIN rulings AS T3 ON T1.uuid = T3.uuid WHERE T2.format = 'premodern' AND T3.text = 'This is a triggered mana ability.' AND T1.Side IS NULL"
+  },
+  {
+   "question_id": 518,
+   "db_id": "bird_merged",
+   "question": "Which of the play format has the highest number of banned status? Indicate the play format and the names of all the card meet the condition.",
+   "evidence": "play format refers to format; banned status refers to cl0165 = 'Banned'; the highest number of banned status refers to MAX(COUNT(cl0165 = 'Banned'))",
+   "SQL": "WITH MaxBanned AS (SELECT cl0164, COUNT(*) AS count_banned FROM tb006 WHERE cl0165 = 'Banned' GROUP BY cl0164 ORDER BY COUNT(*) DESC LIMIT 1) SELECT T2.cl0164, T1.cl0137 FROM tb004 AS T1 INNER JOIN tb006 AS T2 ON T2.cl0160 = T1.cl0160 INNER JOIN MaxBanned AS MB ON MB.cl0164 = T2.cl0164 WHERE T2.cl0165 = 'Banned'",
+   "difficulty": "moderate",
+   "source_db": "card_games",
+   "SQL_original": "WITH MaxBanned AS (SELECT format, COUNT(*) AS count_banned FROM legalities WHERE status = 'Banned' GROUP BY format ORDER BY COUNT(*) DESC LIMIT 1) SELECT T2.format, T1.name FROM cards AS T1 INNER JOIN legalities AS T2 ON T2.uuid = T1.uuid INNER JOIN MaxBanned MB ON MB.format = T2.format WHERE T2.status = 'Banned'"
+  },
+  {
+   "question_id": 1526,
+   "db_id": "bird_merged",
+   "question": "For the customer who paid 634.8 in 2012/8/25, what was the consumption decrease rate from Year 2012 to 2013?",
+   "evidence": "'2012/8/24' can be represented by '2012-08-24'; Consumption decrease rate = (consumption_2012 - consumption_2013) / consumption_2012",
+   "SQL": "SELECT CAST(SUM(IIF(SUBSTRING(cl0193, 1, 4) = '2012', cl0198, 0)) - SUM(IIF(SUBSTRING(cl0193, 1, 4) = '2013', cl0198, 0)) AS REAL) / SUM(IIF(SUBSTRING(cl0193, 1, 4) = '2012', cl0198, 0)) FROM tb014 WHERE cl0184 = (SELECT T1.cl0184 FROM tb013 AS T1 INNER JOIN tb011 AS T2 ON T1.cl0187 = T2.cl0187 WHERE T1.cl0193 = '2012-08-25' AND T1.cl0197 = 1513.12)",
+   "difficulty": "challenging",
+   "source_db": "debit_card_specializing",
+   "SQL_original": "SELECT CAST(SUM(IIF(SUBSTRING(Date, 1, 4) = '2012', Consumption, 0)) - SUM(IIF(SUBSTRING(Date, 1, 4) = '2013', Consumption, 0)) AS FLOAT) / SUM(IIF(SUBSTRING(Date, 1, 4) = '2012', Consumption, 0)) FROM yearmonth WHERE CustomerID = ( SELECT T1.CustomerID FROM transactions_1k AS T1 INNER JOIN gasstations AS T2 ON T1.GasStationID = T2.GasStationID WHERE T1.Date = '2012-08-25' AND T1.Price  = 1513.12 )"
+  },
+  {
+   "question_id": 1524,
+   "db_id": "bird_merged",
+   "question": "What's the nationality of the customer who spent 548.4 in 2012/8/24?",
+   "evidence": "'2012/8/24' can be represented by '2012-08-24'",
+   "SQL": "SELECT T2.cl0189 FROM tb013 AS T1 INNER JOIN tb011 AS T2 ON T1.cl0187 = T2.cl0187 WHERE T1.cl0193 = '2012-08-24' AND T1.cl0197 = 548.4",
+   "difficulty": "simple",
+   "source_db": "debit_card_specializing",
+   "SQL_original": "SELECT T2.Country FROM transactions_1k AS T1 INNER JOIN gasstations AS T2 ON T1.GasStationID = T2.GasStationID WHERE T1.Date = '2012-08-24' AND T1.Price  = 548.4"
+  },
+  {
+   "question_id": 1529,
+   "db_id": "bird_merged",
+   "question": "What is the amount spent by customer \"38508\" at the gas stations? How much had the customer spent in January 2012?",
+   "evidence": "January 2012 refers to the Date value = '201201'",
+   "SQL": "SELECT SUM(T1.cl0197), SUM(IIF(T3.cl0193 = '201201', T1.cl0197, 0)) FROM tb013 AS T1 INNER JOIN tb011 AS T2 ON T1.cl0187 = T2.cl0187 INNER JOIN tb014 AS T3 ON T1.cl0184 = T3.cl0184 WHERE T1.cl0184 = '38508'",
+   "difficulty": "moderate",
+   "source_db": "debit_card_specializing",
+   "SQL_original": "SELECT SUM(T1.Price ) , SUM(IIF(T3.Date = '201201', T1.Price, 0)) FROM transactions_1k AS T1 INNER JOIN gasstations AS T2 ON T1.GasStationID = T2.GasStationID INNER JOIN yearmonth AS T3 ON T1.CustomerID = T3.CustomerID WHERE T1.CustomerID = '38508'"
+  },
+  {
+   "question_id": 1525,
+   "db_id": "bird_merged",
+   "question": "What is the percentage of the customers who used EUR in 2012/8/25?",
+   "evidence": "'2012/8/25' can be represented by '2012-08-25'",
+   "SQL": "SELECT CAST(SUM(IIF(T2.cl0186 = 'EUR', 1, 0)) AS REAL) * 100 / COUNT(T1.cl0184) FROM tb013 AS T1 INNER JOIN tb010 AS T2 ON T1.cl0184 = T2.cl0184 WHERE T1.cl0193 = '2012-08-25'",
+   "difficulty": "simple",
+   "source_db": "debit_card_specializing",
+   "SQL_original": "SELECT CAST(SUM(IIF(T2.Currency = 'EUR', 1, 0)) AS FLOAT) * 100 / COUNT(T1.CustomerID) FROM transactions_1k AS T1 INNER JOIN customers AS T2 ON T1.CustomerID = T2.CustomerID WHERE T1.Date = '2012-08-25'"
+  },
+  {
+   "question_id": 1533,
+   "db_id": "bird_merged",
+   "question": "For all the people who paid more than 29.00 per unit of product id No.5. Give their consumption status in the August of 2012.",
+   "evidence": "August of 2012 refers to the Date value = '201208' ; Price per unit of product = Price / Amount;",
+   "SQL": "SELECT T2.cl0198 FROM tb013 AS T1 INNER JOIN tb014 AS T2 ON T1.cl0184 = T2.cl0184 WHERE T1.cl0197 / T1.cl0196 > 29.00 AND T1.cl0190 = 5 AND T2.cl0193 = '201208'",
+   "difficulty": "moderate",
+   "source_db": "debit_card_specializing",
+   "SQL_original": "SELECT T2.Consumption FROM transactions_1k AS T1 INNER JOIN yearmonth AS T2 ON T1.CustomerID = T2.CustomerID WHERE T1.Price / T1.Amount > 29.00 AND T1.ProductID = 5 AND T2.Date = '201208'"
+  },
+  {
+   "question_id": 138,
+   "db_id": "bird_merged",
+   "question": "In the branch where the second-highest number of crimes were committed in 1995 occurred, how many male clients are there?",
+   "evidence": "Male refers to cl0208 = 'M'; cl0223 stands for no. of commited crimes 1995",
+   "SQL": "SELECT COUNT(T1.cl0207) FROM tb017 AS T1 INNER JOIN tb019 AS T2 ON T1.cl0200 = T2.cl0200 WHERE T1.cl0208 = 'M' AND T2.cl0223 = (SELECT T3.cl0223 FROM tb019 AS T3 ORDER BY T3.cl0223 DESC LIMIT 1 OFFSET 1)",
+   "difficulty": "moderate",
+   "source_db": "financial",
+   "SQL_original": "SELECT COUNT(T1.client_id) FROM client AS T1 INNER JOIN district AS T2 ON T1.district_id = T2.district_id WHERE T1.gender = 'M' AND T2.A15 = (SELECT T3.A15 FROM district AS T3 ORDER BY T3.A15 DESC LIMIT 1, 1)"
+  },
+  {
+   "question_id": 173,
+   "db_id": "bird_merged",
+   "question": "How often does account number 3 request an account statement to be released? What was the aim of debiting 3539 in total?",
+   "evidence": "cl0233 refers to the purpose of payments",
+   "SQL": "SELECT T1.cl0201, T2.cl0233 FROM tb015 AS T1 INNER JOIN (SELECT cl0199, cl0233, SUM(cl0226) AS total_amount FROM tb021 GROUP BY cl0199, cl0233) AS T2 ON T1.cl0199 = T2.cl0199 WHERE T1.cl0199 = 3 AND T2.total_amount = 3539",
+   "difficulty": "challenging",
+   "source_db": "financial",
+   "SQL_original": "SELECT T1.frequency, T2.k_symbol FROM account AS T1 INNER JOIN (SELECT account_id, k_symbol, SUM(amount) AS total_amount FROM `order` GROUP BY account_id, k_symbol) AS T2 ON T1.account_id = T2.account_id WHERE T1.account_id = 3 AND T2.total_amount = 3539"
+  },
+  {
+   "question_id": 117,
+   "db_id": "bird_merged",
+   "question": "What is the percentage of loan amount that has been fully paid with no issue.",
+   "evidence": "Loan paid with no issue means contract finished, no problems; cl0229 = 'A' means contract finished, no problems; Percentage of accounts by condition = [(total(cl0226) & condition) / (total cl0226)] * 100%",
+   "SQL": "SELECT (CAST(SUM(CASE WHEN cl0229 = 'A' THEN cl0226 ELSE 0 END) AS REAL) * 100) / SUM(cl0226) FROM tb020",
+   "difficulty": "moderate",
+   "source_db": "financial",
+   "SQL_original": "SELECT (CAST(SUM(CASE WHEN status = 'A' THEN amount ELSE 0 END) AS REAL) * 100) / SUM(amount) FROM loan"
+  },
+  {
+   "question_id": 95,
+   "db_id": "bird_merged",
+   "question": "List out the account numbers of clients who are youngest and have highest average salary?",
+   "evidence": "If the person A's birthdate < B's birthdate, it means that person B is younger than person A; cl0219 refers to average salary",
+   "SQL": "SELECT T1.cl0199 FROM tb015 AS T1 INNER JOIN tb018 AS T2 ON T1.cl0199 = T2.cl0199 INNER JOIN tb017 AS T3 ON T2.cl0207 = T3.cl0207 INNER JOIN tb019 AS T4 ON T4.cl0200 = T1.cl0200 WHERE T2.cl0207 = (SELECT cl0207 FROM tb017 ORDER BY cl0209 DESC LIMIT 1) GROUP BY T4.cl0219, T1.cl0199",
+   "difficulty": "moderate",
+   "source_db": "financial",
+   "SQL_original": "SELECT T1.account_id  FROM account AS T1 INNER JOIN disp AS T2 ON T1.account_id = T2.account_id INNER JOIN client AS T3 ON T2.client_id = T3.client_id INNER JOIN district AS T4 on T4.district_id = T1.district_id WHERE T2.client_id = ( SELECT client_id FROM client ORDER BY birth_date DESC LIMIT 1) GROUP BY T4.A11, T1.account_id"
+  },
+  {
+   "question_id": 120,
+   "db_id": "bird_merged",
+   "question": "From Year 1995 to 2000, who are the accounts holders from 'east Bohemia'. State the account ID the frequency of statement issuance.",
+   "evidence": "Accounts holder refers to the person who own this account.",
+   "SQL": "SELECT T1.cl0199, T1.cl0201 FROM tb015 AS T1 INNER JOIN tb019 AS T2 ON T1.cl0200 = T2.cl0200 WHERE T2.cl0211 = 'east Bohemia' AND STRFTIME('%Y', T1.cl0202) BETWEEN '1995' AND '2000'",
+   "difficulty": "moderate",
+   "source_db": "financial",
+   "SQL_original": "SELECT T1.account_id, T1.frequency FROM account AS T1 INNER JOIN district AS T2 ON T1.district_id = T2.district_id WHERE T2.A3 = 'east Bohemia' AND STRFTIME('%Y', T1.date) BETWEEN '1995' AND '2000'"
+  },
+  {
+   "question_id": 960,
+   "db_id": "bird_merged",
+   "question": "What is the average of fastest lap speed in the 2009 Spanish Grand Prix race?",
+   "evidence": "Spanish Grand Prix is the name of race refers to cl0241 = 'Spanish Grand Prix'; average fastest lap speed refers to avg(cl0287);",
+   "SQL": "SELECT AVG(T1.cl0287) FROM tb035 AS T1 INNER JOIN tb027 AS T2 ON T1.cl0259 = T2.cl0259 WHERE T2.cl0258 = 2009 AND T2.cl0241 = 'Spanish Grand Prix'",
+   "difficulty": "moderate",
+   "source_db": "formula_1",
+   "SQL_original": "SELECT AVG(T1.fastestLapSpeed) FROM results AS T1 INNER JOIN races AS T2 on T1.raceId = T2.raceId WHERE T2.year = 2009 AND T2.name = 'Spanish Grand Prix'"
+  },
+  {
+   "question_id": 928,
+   "db_id": "bird_merged",
+   "question": "Which driver ranked the first in the Canadian Grand Prix in 2007? Please give his reference name.",
+   "evidence": "reference name refers to cl0252; Canadian Grand Prix refers to tb027.cl0241 = 'Canadian Grand Prix';",
+   "SQL": "SELECT T3.cl0255, T3.cl0256, T3.cl0252 FROM tb027 AS T1 INNER JOIN tb035 AS T2 ON T2.cl0259 = T1.cl0259 INNER JOIN tb025 AS T3 ON T3.cl0251 = T2.cl0251 WHERE T1.cl0241 = 'Canadian Grand Prix' AND T2.cl0285 = 1 AND T1.cl0258 = 2007",
+   "difficulty": "moderate",
+   "source_db": "formula_1",
+   "SQL_original": "SELECT T3.forename, T3.surname, T3.driverRef FROM races AS T1 INNER JOIN results AS T2 ON T2.raceId = T1.raceId INNER JOIN drivers AS T3 ON T3.driverId = T2.driverId WHERE T1.name = 'Canadian Grand Prix' AND T2.rank = 1 AND T1.year = 2007"
+  },
+  {
+   "question_id": 861,
+   "db_id": "bird_merged",
+   "question": "What is his number of the driver who finished 0:01:54 in the Q3 of qualifying race No.903?",
+   "evidence": "race number refers to cl0259; finished 0:0M:SS in the cl0278 refers to cl0278 LIKE 'M:SS%'",
+   "SQL": "SELECT T2.cl0253 FROM tb033 AS T1 INNER JOIN tb025 AS T2 ON T2.cl0251 = T1.cl0251 WHERE T1.cl0259 = 903 AND T1.cl0278 LIKE '1:54%'",
+   "difficulty": "simple",
+   "source_db": "formula_1",
+   "SQL_original": "SELECT T2.number FROM qualifying AS T1 INNER JOIN drivers AS T2 ON T2.driverId = T1.driverId WHERE T1.raceId = 903 AND T1.q3 LIKE '1:54%'"
+  },
+  {
+   "question_id": 868,
+   "db_id": "bird_merged",
+   "question": "Where is Malaysian Grand Prix held? Give the location coordinates.",
+   "evidence": "location coordinates refers to (cl0244, cl0245); Malaysian Grand Prix refers to tb027.cl0241 = 'Malaysian Grand Prix'",
+   "SQL": "SELECT DISTINCT T1.cl0244, T1.cl0245 FROM tb023 AS T1 INNER JOIN tb027 AS T2 ON T2.cl0239 = T1.cl0239 WHERE T2.cl0241 = 'Malaysian Grand Prix'",
+   "difficulty": "simple",
+   "source_db": "formula_1",
+   "SQL_original": "SELECT DISTINCT T1.lat, T1.lng FROM circuits AS T1 INNER JOIN races AS T2 ON T2.circuitID = T1.circuitId WHERE T2.name = 'Malaysian Grand Prix'"
+  },
+  {
+   "question_id": 898,
+   "db_id": "bird_merged",
+   "question": "How old is the youngest Japanese driver? What is his name?",
+   "evidence": "date of birth refers to tb025.cl0257; The larger the birthday value, the younger the person is, and vice versa; Japanese refers to cl0250 = 'Japanese'; age = YEAR(CURRENT_TIMESTAMP) - YEAR(cl0257);",
+   "SQL": "SELECT STRFTIME('%Y', CURRENT_TIMESTAMP) - STRFTIME('%Y', cl0257), cl0255, cl0256 FROM tb025 WHERE cl0250 = 'Japanese' ORDER BY cl0257 DESC LIMIT 1",
+   "difficulty": "simple",
+   "source_db": "formula_1",
+   "SQL_original": "SELECT STRFTIME('%Y', CURRENT_TIMESTAMP) - STRFTIME('%Y', dob), forename , surname FROM drivers WHERE nationality = 'Japanese' ORDER BY dob DESC LIMIT 1"
+  },
+  {
+   "question_id": 981,
+   "db_id": "bird_merged",
+   "question": "On what year did the youngest driver had his first qualifying race? Also state the name, date and time of the race.",
+   "evidence": "date of birth refers to tb025.cl0257; The larger the birthday value, the younger the person is, and vice versa; first qualifying race refers to MIN(tb027.cl0261);",
+   "SQL": "SELECT T3.cl0258, T3.cl0241, T3.cl0261, T3.cl0262 FROM tb033 AS T1 INNER JOIN tb025 AS T2 ON T1.cl0251 = T2.cl0251 INNER JOIN tb027 AS T3 ON T1.cl0259 = T3.cl0259 WHERE T1.cl0251 = (SELECT cl0251 FROM tb025 ORDER BY cl0257 DESC LIMIT 1) ORDER BY T3.cl0261 ASC LIMIT 1",
+   "difficulty": "moderate",
+   "source_db": "formula_1",
+   "SQL_original": "SELECT T3.year, T3.name, T3.date, T3.time FROM qualifying AS T1 INNER JOIN drivers AS T2 on T1.driverId = T2.driverId INNER JOIN races AS T3 on T1.raceId = T3.raceId WHERE T1.driverId = ( SELECT driverId FROM drivers ORDER BY dob DESC LIMIT 1 ) ORDER BY T3.date ASC LIMIT 1"
+  },
+  {
+   "question_id": 915,
+   "db_id": "bird_merged",
+   "question": "Which country is the oldest driver from?",
+   "evidence": "date of birth refers to tb025.cl0257; The larger the birthday value, the younger the person is, and vice versa;",
+   "SQL": "SELECT cl0250 FROM tb025 WHERE NOT cl0257 IS NULL ORDER BY cl0257 ASC LIMIT 1",
+   "difficulty": "simple",
+   "source_db": "formula_1",
+   "SQL_original": "SELECT nationality FROM drivers WHERE dob IS NOT NULL ORDER BY dob ASC LIMIT 1"
+  },
+  {
+   "question_id": 875,
+   "db_id": "bird_merged",
+   "question": "Show me the season page of year when the race No. 901 took place.",
+   "evidence": "the season page refers to url; race number refers to cl0259;",
+   "SQL": "SELECT T2.cl0247 FROM tb027 AS T1 INNER JOIN tb026 AS T2 ON T2.cl0258 = T1.cl0258 WHERE T1.cl0259 = 901",
+   "difficulty": "simple",
+   "source_db": "formula_1",
+   "SQL_original": "SELECT T2.url FROM races AS T1 INNER JOIN seasons AS T2 ON T2.year = T1.year WHERE T1.raceId = 901"
+  },
+  {
+   "question_id": 894,
+   "db_id": "bird_merged",
+   "question": "What is the best lap time recorded? List the driver and race with such recorded lap time.",
+   "evidence": "the best lap time refers to min(cl0272); List the driver refers to tb025.cl0255 and tb025.cl0256; List the race refers to tb027.cl0241",
+   "SQL": "SELECT T2.cl0272, T1.cl0255, T1.cl0256, T3.cl0241 FROM tb025 AS T1 INNER JOIN tb031 AS T2 ON T1.cl0251 = T2.cl0251 INNER JOIN tb027 AS T3 ON T2.cl0259 = T3.cl0259 ORDER BY T2.cl0272 ASC LIMIT 1",
+   "difficulty": "moderate",
+   "source_db": "formula_1",
+   "SQL_original": "SELECT T2.milliseconds, T1.forename, T1.surname, T3.name FROM drivers AS T1 INNER JOIN lapTimes AS T2 ON T1.driverId = T2.driverId INNER JOIN races AS T3 ON T2.raceId = T3.raceId ORDER BY T2.milliseconds ASC LIMIT 1"
+  },
+  {
+   "question_id": 933,
+   "db_id": "bird_merged",
+   "question": "What was Lewis Hamilton's final rank in the 2008 Chinese Grand Prix?",
+   "evidence": "Lewis Hamilton refers to the full name of the driver; Full name of the driver refers to tb025.cl0255 and tb025.cl0256; final rank refers to cl0282; Chinese Grand Prix refers to tb027.cl0241 = 'Chinese Grand Prix';",
+   "SQL": "SELECT T2.cl0282 FROM tb027 AS T1 INNER JOIN tb035 AS T2 ON T2.cl0259 = T1.cl0259 INNER JOIN tb025 AS T3 ON T3.cl0251 = T2.cl0251 WHERE T3.cl0255 = 'Lewis' AND T3.cl0256 = 'Hamilton' AND T1.cl0241 = 'Chinese Grand Prix' AND T1.cl0258 = 2008",
+   "difficulty": "moderate",
+   "source_db": "formula_1",
+   "SQL_original": "SELECT T2.positionOrder FROM races AS T1 INNER JOIN results AS T2 ON T2.raceId = T1.raceId INNER JOIN drivers AS T3 ON T3.driverId = T2.driverId WHERE T3.forename = 'Lewis' AND T3.surname = 'Hamilton' AND T1.name = 'Chinese Grand Prix' AND T1.year = 2008"
+  },
+  {
+   "question_id": 1427,
+   "db_id": "bird_merged",
+   "question": "What are the budget category of the events located at MU 215 and a guest speaker type with a 0 budget spent?",
+   "evidence": "budget category refers to category; events located at refers to location; cl0291 = 'Guest Speaker'; 0 budget spent refers to cl0308 = 0; ",
+   "SQL": "SELECT DISTINCT T2.cl0307, T1.cl0291 FROM tb036 AS T1 INNER JOIN tb040 AS T2 ON T1.cl0288 = T2.cl0304 WHERE T1.cl0293 = 'MU 215' AND T2.cl0308 = 0 AND T1.cl0291 = 'Guest Speaker'",
+   "difficulty": "moderate",
+   "source_db": "student_club",
+   "SQL_original": "SELECT DISTINCT T2.category, T1.type FROM event AS T1 INNER JOIN budget AS T2 ON T1.event_id = T2.link_to_event WHERE T1.location = 'MU 215' AND T2.spent = 0 AND T1.type = 'Guest Speaker'"
+  },
+  {
+   "question_id": 1398,
+   "db_id": "bird_merged",
+   "question": "Name the event with the highest amount spent on advertisement.",
+   "evidence": "Name of event refers to cl0289; highest amount spent on advertisement refers to MAX(cl0308) where cl0307 = 'Advertisement'",
+   "SQL": "SELECT T2.cl0289 FROM tb040 AS T1 INNER JOIN tb036 AS T2 ON T1.cl0304 = T2.cl0288 WHERE T1.cl0307 = 'Advertisement' ORDER BY T1.cl0308 DESC LIMIT 1",
+   "difficulty": "moderate",
+   "source_db": "student_club",
+   "SQL_original": "SELECT T2.event_name FROM budget AS T1 INNER JOIN event AS T2 ON T1.link_to_event = T2.event_id WHERE T1.category = 'Advertisement' ORDER BY T1.spent DESC LIMIT 1"
+  },
+  {
+   "question_id": 1322,
+   "db_id": "bird_merged",
+   "question": "Among the events attended by more than 10 members of the Student_Club, how many of them are meetings?",
+   "evidence": "meetings events refers to cl0291 = 'Meeting'; attended by more than 10 members refers to COUNT(cl0288) > 10",
+   "SQL": "SELECT COUNT(DISTINCT T1.cl0288) FROM tb036 AS T1 INNER JOIN tb039 AS T2 ON T1.cl0288 = T2.cl0304 WHERE T1.cl0291 = 'Meeting' GROUP BY T1.cl0288 HAVING COUNT(T2.cl0304) > 10",
+   "difficulty": "moderate",
+   "source_db": "student_club",
+   "SQL_original": "SELECT COUNT(DISTINCT T1.event_id) FROM event AS T1 INNER JOIN attendance AS T2 ON T1.event_id = T2.link_to_event WHERE T1.type = 'Meeting' GROUP BY T1.event_id HAVING COUNT(T2.link_to_event) > 10"
+  },
+  {
+   "question_id": 1346,
+   "db_id": "bird_merged",
+   "question": "Tell the phone number of \"Carlo Jacobs\".",
+   "evidence": "Carlo Jacobs is the full name; full name refers to cl0322, cl0323;",
+   "SQL": "SELECT cl0327 FROM tb043 WHERE cl0322 = 'Carlo' AND cl0323 = 'Jacobs'",
+   "difficulty": "simple",
+   "source_db": "student_club",
+   "SQL_original": "SELECT phone FROM member WHERE first_name = 'Carlo' AND last_name = 'Jacobs'"
+  },
+  {
+   "question_id": 1401,
+   "db_id": "bird_merged",
+   "question": "Indicate the cost of posters for 'September Speaker' event.",
+   "evidence": "'Posters' is the expense description; 'September Speaker' is an event name",
+   "SQL": "SELECT T3.cl0315 FROM tb036 AS T1 INNER JOIN tb040 AS T2 ON T1.cl0288 = T2.cl0304 INNER JOIN tb041 AS T3 ON T2.cl0306 = T3.cl0317 WHERE T1.cl0289 = 'September Speaker' AND T3.cl0313 = 'Posters'",
+   "difficulty": "moderate",
+   "source_db": "student_club",
+   "SQL_original": "SELECT T3.cost FROM event AS T1 INNER JOIN budget AS T2 ON T1.event_id = T2.link_to_event INNER JOIN expense AS T3 ON T2.budget_id = T3.link_to_budget WHERE T1.event_name = 'September Speaker' AND T3.expense_description = 'Posters'"
+  },
+  {
+   "question_id": 1331,
+   "db_id": "bird_merged",
+   "question": "What is the amount of the funds that the Vice President received?",
+   "evidence": "'Vice President' is a position of Student Club; funds received refers to amount.",
+   "SQL": "SELECT T2.cl0310 FROM tb043 AS T1 INNER JOIN tb042 AS T2 ON T1.cl0321 = T2.cl0305 WHERE T1.cl0325 = 'Vice President'",
+   "difficulty": "simple",
+   "source_db": "student_club",
+   "SQL_original": "SELECT T2.amount FROM member AS T1 INNER JOIN income AS T2 ON T1.member_id = T2.link_to_member WHERE T1.position = 'Vice President'"
+  },
+  {
+   "question_id": 1381,
+   "db_id": "bird_merged",
+   "question": "List the name of students that have attended more than 7 events.",
+   "evidence": "name of students means the full name; full name refers to cl0322, cl0323; attended more than 7 events refers to COUNT(cl0304) > 7",
+   "SQL": "SELECT T1.cl0322, T1.cl0323 FROM tb043 AS T1 INNER JOIN tb039 AS T2 ON T1.cl0321 = T2.cl0305 GROUP BY T2.cl0305 HAVING COUNT(T2.cl0304) > 7",
+   "difficulty": "moderate",
+   "source_db": "student_club",
+   "SQL_original": "SELECT T1.first_name, T1.last_name FROM member AS T1 INNER JOIN attendance AS T2 ON T1.member_id = T2.link_to_member GROUP BY T2.link_to_member HAVING COUNT(T2.link_to_event) > 7"
+  },
+  {
+   "question_id": 791,
+   "db_id": "bird_merged",
+   "question": "Calculate the average height for all superhero.",
+   "evidence": "average = DIVIDE(SUM(cl0346), COUNT(all heros));",
+   "SQL": "SELECT CAST(SUM(cl0346) AS REAL) / COUNT(cl0330) FROM tb050",
+   "difficulty": "simple",
+   "source_db": "superhero",
+   "SQL_original": "SELECT CAST(SUM(height_cm) AS REAL) / COUNT(id) FROM superhero"
+  },
+  {
+   "question_id": 739,
+   "db_id": "bird_merged",
+   "question": "What are the names of the superheroes with the power of death touch?",
+   "evidence": "name of superheroes refers to refers to cl0337; the power of death touch refers to cl0351 = 'Death Touch'",
+   "SQL": "SELECT T1.cl0337 FROM tb050 AS T1 INNER JOIN tb053 AS T2 ON T1.cl0330 = T2.cl0348 INNER JOIN tb052 AS T3 ON T2.cl0352 = T3.cl0330 WHERE T3.cl0351 = 'Death Touch'",
+   "difficulty": "moderate",
+   "source_db": "superhero",
+   "SQL_original": "SELECT T1.superhero_name FROM superhero AS T1 INNER JOIN hero_power AS T2 ON T1.id = T2.hero_id INNER JOIN superpower AS T3 ON T2.power_id = T3.id WHERE T3.power_name = 'Death Touch'"
+  },
+  {
+   "question_id": 806,
+   "db_id": "bird_merged",
+   "question": "Provide the eye colour of the superhero who has Karen Beecher-Duncan as their full name.",
+   "evidence": "eye colour refers to cl0333.cl0333 where cl0340 = cl0333.cl0330; Karen Beecher-Duncan is the full name of superhero;",
+   "SQL": "SELECT T2.cl0333 FROM tb050 AS T1 INNER JOIN tb046 AS T2 ON T1.cl0340 = T2.cl0330 WHERE T1.cl0338 = 'Karen Beecher-Duncan'",
+   "difficulty": "simple",
+   "source_db": "superhero",
+   "SQL_original": "SELECT T2.colour FROM superhero AS T1 INNER JOIN colour AS T2 ON T1.eye_colour_id = T2.id WHERE T1.full_name = 'Karen Beecher-Duncan'"
+  },
+  {
+   "question_id": 733,
+   "db_id": "bird_merged",
+   "question": "How many gold-eyed superheroes did Marvel Comics publish?",
+   "evidence": "gold-eyed refers to cl0333 = 'Gold' where cl0340 = cl0333.cl0330; superheroes that Marvel Comics published refers to cl0335 = 'Marvel Comics'",
+   "SQL": "SELECT COUNT(T1.cl0330) FROM tb050 AS T1 INNER JOIN tb048 AS T2 ON T1.cl0344 = T2.cl0330 INNER JOIN tb046 AS T3 ON T1.cl0340 = T3.cl0330 WHERE T2.cl0335 = 'Marvel Comics' AND T3.cl0333 = 'Gold'",
+   "difficulty": "moderate",
+   "source_db": "superhero",
+   "SQL_original": "SELECT COUNT(T1.id) FROM superhero AS T1 INNER JOIN publisher AS T2 ON T1.publisher_id = T2.id INNER JOIN colour AS T3 ON T1.eye_colour_id = T3.id WHERE T2.publisher_name = 'Marvel Comics' AND T3.colour = 'Gold'"
+  },
+  {
+   "question_id": 785,
+   "db_id": "bird_merged",
+   "question": "Describe the names of neutral alignment superheroes.",
+   "evidence": "names of superheroes refers to cl0337; neutral alignment refers to cl0331 = 'Neutral';",
+   "SQL": "SELECT T1.cl0337 FROM tb050 AS T1 INNER JOIN tb044 AS T2 ON T1.cl0345 = T2.cl0330 WHERE T2.cl0331 = 'Neutral'",
+   "difficulty": "simple",
+   "source_db": "superhero",
+   "SQL_original": "SELECT T1.superhero_name FROM superhero AS T1 INNER JOIN alignment AS T2 ON T1.alignment_id = T2.id WHERE T2.alignment = 'Neutral'"
+  },
+  {
+   "question_id": 797,
+   "db_id": "bird_merged",
+   "question": "Which superheroes have blue eyes with brown hair?",
+   "evidence": "which superheroes refers to cl0337; blue eyes refers to color = 'Blue' and color.cl0330 = cl0340; brown hair refers to color = 'Brown' and color.cl0330 = cl0341;",
+   "SQL": "SELECT T1.cl0337 FROM tb050 AS T1 INNER JOIN tb046 AS T2 ON T1.cl0340 = T2.cl0330 INNER JOIN tb046 AS T3 ON T1.cl0341 = T3.cl0330 WHERE T2.cl0333 = 'Blue' AND T3.cl0333 = 'Brown'",
+   "difficulty": "moderate",
+   "source_db": "superhero",
+   "SQL_original": "SELECT T1.superhero_name FROM superhero AS T1 INNER JOIN colour AS T2 ON T1.eye_colour_id = T2.id INNER JOIN colour AS T3 ON T1.hair_colour_id = T3.id WHERE T2.colour = 'Blue' AND T3.colour = 'Brown'"
+  },
+  {
+   "question_id": 726,
+   "db_id": "bird_merged",
+   "question": "Rank heroes published by Marvel Comics by their height in descending order.",
+   "evidence": "name refers to cl0337; the tallest hero refers to MAX(cl0346); published by Marvel Comics refers to cl0335 = 'Marvel Comics'",
+   "SQL": "SELECT cl0337, cl0346, RANK() OVER (ORDER BY cl0346 DESC) AS HeightRank FROM tb050 INNER JOIN tb048 ON tb050.cl0344 = tb048.cl0330 WHERE tb048.cl0335 = 'Marvel Comics'",
+   "difficulty": "moderate",
+   "source_db": "superhero",
+   "SQL_original": "SELECT superhero_name, height_cm, RANK() OVER (ORDER BY height_cm DESC) AS HeightRank FROM superhero INNER JOIN publisher ON superhero.publisher_id = publisher.id WHERE publisher.publisher_name = 'Marvel Comics'"
+  },
+  {
+   "question_id": 779,
+   "db_id": "bird_merged",
+   "question": "How many powers does Amazo hero have?",
+   "evidence": "Amazo hero refers to cl0337 = 'Amazo';",
+   "SQL": "SELECT COUNT(T1.cl0352) FROM tb053 AS T1 INNER JOIN tb050 AS T2 ON T1.cl0348 = T2.cl0330 WHERE T2.cl0337 = 'Amazo'",
+   "difficulty": "simple",
+   "source_db": "superhero",
+   "SQL_original": "SELECT COUNT(T1.power_id) FROM hero_power AS T1 INNER JOIN superhero AS T2 ON T1.hero_id = T2.id WHERE T2.superhero_name = 'Amazo'"
+  },
+  {
+   "question_id": 1152,
+   "db_id": "bird_merged",
+   "question": "What is the ratio of outpatient to inpatient followed up treatment among all the 'SLE' diagnosed patient?",
+   "evidence": "'SLE' diagnosed patient means cl0360 = 'SLE'; inpatient refers to cl0370 = '+'; outpatient refers to cl0370 = '-'; calculation =  DIVIDE(COUNT(cl0353) where cl0360 = 'SLE' and cl0370 = '+', COUNT(cl0353) where cl0360 = 'SLE' and cl0370 = '-')",
+   "SQL": "SELECT SUM(CASE WHEN cl0370 = '+' THEN 1.0 ELSE 0 END) / SUM(CASE WHEN cl0370 = '-' THEN 1 ELSE 0 END) FROM tb055 WHERE cl0360 = 'SLE'",
+   "difficulty": "moderate",
+   "source_db": "thrombosis_prediction",
+   "SQL_original": "SELECT SUM(CASE WHEN Admission = '+' THEN 1.0 ELSE 0 END) / SUM(CASE WHEN Admission = '-' THEN 1 ELSE 0 END) FROM Patient WHERE Diagnosis = 'SLE'"
+  },
+  {
+   "question_id": 1175,
+   "db_id": "bird_merged",
+   "question": "How old was the patient who had the highest hemoglobin count at the time of the examination, and what is the doctor's diagnosis?",
+   "evidence": "How old the patient refers to SUBTRACT(year(cl0354), year(cl0367)); the highest hemoglobin count refers to MAX(cl0388)",
+   "SQL": "SELECT STRFTIME('%Y', T2.cl0371) - STRFTIME('%Y', T1.cl0367), T1.cl0360 FROM tb055 AS T1 INNER JOIN tb056 AS T2 ON T1.cl0353 = T2.cl0353 ORDER BY T2.cl0388 DESC LIMIT 1",
+   "difficulty": "moderate",
+   "source_db": "thrombosis_prediction",
+   "SQL_original": "SELECT STRFTIME('%Y', T2.Date) - STRFTIME('%Y', T1.Birthday), T1.Diagnosis FROM Patient AS T1 INNER JOIN Laboratory AS T2 ON T1.ID = T2.ID ORDER BY T2.HGB DESC LIMIT 1"
+  },
+  {
+   "question_id": 1281,
+   "db_id": "bird_merged",
+   "question": "Among the patients who have an abnormal level of glutamic oxaloacetic transaminase, when was the youngest of them born?",
+   "evidence": "abnormal level of glutamic oxaloacetic transaminase refers to cl0372 > = 60; The larger the birthday value, the younger the person is, and vice versa;",
+   "SQL": "SELECT T1.cl0367 FROM tb055 AS T1 INNER JOIN tb056 AS T2 ON T1.cl0353 = T2.cl0353 WHERE T2.cl0372 >= 60 ORDER BY T1.cl0367 DESC LIMIT 1",
+   "difficulty": "moderate",
+   "source_db": "thrombosis_prediction",
+   "SQL_original": "SELECT T1.Birthday FROM Patient AS T1 INNER JOIN Laboratory AS T2 ON T1.ID = T2.ID WHERE T2.GOT >= 60 ORDER BY T1.Birthday DESC LIMIT 1"
+  },
+  {
+   "question_id": 1241,
+   "db_id": "bird_merged",
+   "question": "For patients with abnormal platelet level, state the number of patients with lower than normal range. How is it compare to the number of patients with higher than normal range?",
+   "evidence": "abnormal platelet level refers to cl0390 <= 100 or cl0390 >= 400; platelet level lower than normal range refers to cl0390 < 100; calculation = SUBTRACT(SUM(cl0390 < 100), SUM(cl0390 > 400)); platelet level higher than normal range refers to cl0390 > 400;",
+   "SQL": "SELECT SUM(CASE WHEN T2.cl0390 <= 100 THEN 1 ELSE 0 END) - SUM(CASE WHEN T2.cl0390 >= 400 THEN 1 ELSE 0 END) FROM tb055 AS T1 INNER JOIN tb056 AS T2 ON T1.cl0353 = T2.cl0353",
+   "difficulty": "challenging",
+   "source_db": "thrombosis_prediction",
+   "SQL_original": "SELECT SUM(CASE WHEN T2.PLT <= 100 THEN 1 ELSE 0 END) - SUM(CASE WHEN T2.PLT >= 400 THEN 1 ELSE 0 END) FROM Patient AS T1 INNER JOIN Laboratory AS T2 ON T1.ID = T2.ID"
+  },
+  {
+   "question_id": 1225,
+   "db_id": "bird_merged",
+   "question": "List and group all patients by sex for total bilirubin (T-BIL) level not within the normal range.",
+   "evidence": "List refers to GROUP_CONCAT(DISTINCT cl0353); total bilirubin (T-BIL) not within normal range refers to T-BIL > = 2.0",
+   "SQL": "SELECT T1.cl0353, T1.cl0366 FROM tb055 AS T1 INNER JOIN tb056 AS T2 ON T1.cl0353 = T2.cl0353 WHERE T2.cl0381 >= 2.0 GROUP BY T1.cl0366, T1.cl0353",
+   "difficulty": "moderate",
+   "source_db": "thrombosis_prediction",
+   "SQL_original": "SELECT T1.ID,T1.SEX FROM Patient AS T1 INNER JOIN Laboratory AS T2 ON T1.ID = T2.ID WHERE T2.`T-BIL` >= 2.0 GROUP BY T1.SEX,T1.ID"
+  },
+  {
+   "question_id": 1251,
+   "db_id": "bird_merged",
+   "question": "How many patients with an Ig G higher than normal?",
+   "evidence": "Ig G higher than normal refers to cl0398 >= 2000; Should consider DISTINCT in the final result;",
+   "SQL": "SELECT COUNT(DISTINCT T1.cl0353) FROM tb055 AS T1 INNER JOIN tb056 AS T2 ON T1.cl0353 = T2.cl0353 INNER JOIN tb054 AS T3 ON T3.cl0353 = T2.cl0353 WHERE T2.cl0398 >= 2000",
+   "difficulty": "simple",
+   "source_db": "thrombosis_prediction",
+   "SQL_original": "SELECT COUNT(DISTINCT T1.ID) FROM Patient AS T1 INNER JOIN Laboratory AS T2 ON T1.ID = T2.ID INNER JOIN Examination AS T3 ON T3.ID = T2.ID WHERE T2.IGG >= 2000"
+  },
+  {
+   "question_id": 1242,
+   "db_id": "bird_merged",
+   "question": "For laboratory examinations take in 1984, list all patients below 50 years old with normal platelet level.",
+   "evidence": "laboratory examinations take in 1984 refers to YEAR(cl0371) = '1984'; below 50 years old = SUBTRACT(year(current_timestamp), year(cl0367)) < 50; normal platelet level refers to cl0390 between 100 and 400; ",
+   "SQL": "SELECT DISTINCT T1.cl0353 FROM tb055 AS T1 INNER JOIN tb056 AS T2 ON T1.cl0353 = T2.cl0353 WHERE T2.cl0390 BETWEEN 100 AND 400 AND STRFTIME('%Y', T2.cl0371) - STRFTIME('%Y', T1.cl0367) < 50 AND STRFTIME('%Y', T2.cl0371) = '1984'",
+   "difficulty": "challenging",
+   "source_db": "thrombosis_prediction",
+   "SQL_original": "SELECT DISTINCT T1.ID FROM Patient AS T1 INNER JOIN Laboratory AS T2 ON T1.ID = T2.ID WHERE T2.PLT BETWEEN 100 AND 400 AND STRFTIME('%Y', T2.Date) - STRFTIME('%Y', T1.Birthday) < 50 AND STRFTIME('%Y', T2.Date) = '1984'"
+  },
+  {
+   "question_id": 243,
+   "db_id": "bird_merged",
+   "question": "What are the bonds that have phosphorus and nitrogen as their atom elements?",
+   "evidence": "have phosphorus as atom elements refers to cl0416 = 'p'; have nitrogen as atom elements refers to cl0416 = 'n'",
+   "SQL": "SELECT T2.cl0417 FROM tb057 AS T1 INNER JOIN tb059 AS T2 ON T1.cl0414 = T2.cl0414 WHERE T2.cl0417 IN (SELECT T3.cl0417 FROM tb059 AS T3 INNER JOIN tb057 AS T4 ON T3.cl0414 = T4.cl0414 WHERE T4.cl0416 = 'p') AND T1.cl0416 = 'n'",
+   "difficulty": "moderate",
+   "source_db": "toxicology",
+   "SQL_original": "SELECT T2.bond_id FROM atom AS T1 INNER JOIN connected AS T2 ON T1.atom_id = T2.atom_id WHERE T2.bond_id IN ( SELECT T3.bond_id FROM connected AS T3 INNER JOIN atom AS T4 ON T3.atom_id = T4.atom_id WHERE T4.element = 'p' ) AND T1.element = 'n'"
+  },
+  {
+   "question_id": 213,
+   "db_id": "bird_merged",
+   "question": "What type of bond is there between the atoms TR004_8 and TR004_20?",
+   "evidence": "type of bond refers to cl0418; between the atoms TR004_8 and TR004_20 refers to cl0414 = 'TR004_8' AND cl0419 = 'TR004_20' OR another way around",
+   "SQL": "SELECT T1.cl0418 FROM tb058 AS T1 INNER JOIN tb059 AS T2 ON T1.cl0417 = T2.cl0417 WHERE T2.cl0414 = 'TR004_8' AND T2.cl0419 = 'TR004_20' OR T2.cl0419 = 'TR004_8' AND T2.cl0414 = 'TR004_20'",
+   "difficulty": "moderate",
+   "source_db": "toxicology",
+   "SQL_original": "SELECT T1.bond_type FROM bond AS T1 INNER JOIN connected AS T2 ON T1.bond_id = T2.bond_id WHERE T2.atom_id = 'TR004_8' AND T2.atom_id2 = 'TR004_20' OR T2.atom_id2 = 'TR004_8' AND T2.atom_id = 'TR004_20'"
+  },
+  {
+   "question_id": 220,
+   "db_id": "bird_merged",
+   "question": "Please list top three elements of the toxicology of the molecule TR000 in alphabetical order.",
+   "evidence": "TR000 is the molecule id;",
+   "SQL": "SELECT DISTINCT T.cl0416 FROM tb057 AS T WHERE T.cl0415 = 'TR000' ORDER BY T.cl0416 LIMIT 3",
+   "difficulty": "challenging",
+   "source_db": "toxicology",
+   "SQL_original": "SELECT DISTINCT T.element FROM atom AS T WHERE T.molecule_id = 'TR000' ORDER BY T.element LIMIT 3"
+  },
+  {
+   "question_id": 240,
+   "db_id": "bird_merged",
+   "question": "List all the elements of the toxicology of the molecule \"TR004\".",
+   "evidence": "TR004 is the molecule id;",
+   "SQL": "SELECT DISTINCT T.cl0416 FROM tb057 AS T WHERE T.cl0415 = 'TR004'",
+   "difficulty": "challenging",
+   "source_db": "toxicology",
+   "SQL_original": "SELECT DISTINCT T.element FROM atom AS T WHERE T.molecule_id = 'TR004'"
+  },
+  {
+   "question_id": 219,
+   "db_id": "bird_merged",
+   "question": "What is the percentage of carcinogenic molecules in triple type bonds?",
+   "evidence": "cl0420 = '+' mean molecules are carcinogenic; triple bond refers to cl0418 = '#'; percentage = DIVIDE(SUM(cl0418 = '#') * 100, COUNT(cl0417)) as percent where cl0420 = '+'",
+   "SQL": "SELECT CAST(COUNT(DISTINCT CASE WHEN T2.cl0420 = '+' THEN T2.cl0415 ELSE NULL END) AS REAL) * 100 / COUNT(DISTINCT T2.cl0415) FROM tb057 AS T1 INNER JOIN tb060 AS T2 ON T1.cl0415 = T2.cl0415 INNER JOIN tb058 AS T3 ON T2.cl0415 = T3.cl0415 WHERE T3.cl0418 = '#'",
+   "difficulty": "challenging",
+   "source_db": "toxicology",
+   "SQL_original": "SELECT CAST(COUNT(DISTINCT CASE WHEN T2.label = '+' THEN T2.molecule_id ELSE NULL END) AS REAL) * 100 / COUNT(DISTINCT T2.molecule_id) FROM atom AS T1 INNER JOIN molecule AS T2 ON T1.molecule_id = T2.molecule_id INNER JOIN bond AS T3 ON T2.molecule_id = T3.molecule_id WHERE T3.bond_type = '#'"
+  },
+  {
+   "question_id": 249,
+   "db_id": "bird_merged",
+   "question": "What are the elements of the atoms of TR144_8_19?",
+   "evidence": "TR144_8_19 is the bond id; ",
+   "SQL": "SELECT T2.cl0416 FROM tb059 AS T1 INNER JOIN tb057 AS T2 ON T1.cl0414 = T2.cl0414 WHERE T1.cl0417 = 'TR144_8_19'",
+   "difficulty": "challenging",
+   "source_db": "toxicology",
+   "SQL_original": "SELECT T2.element FROM connected AS T1 INNER JOIN atom AS T2 ON T1.atom_id = T2.atom_id WHERE T1.bond_id = 'TR144_8_19'"
+  }
+ ]
+}

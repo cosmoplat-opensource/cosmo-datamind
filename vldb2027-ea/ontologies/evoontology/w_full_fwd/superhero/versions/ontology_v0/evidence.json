@@ -1,0 +1,178 @@
+[
+  {
+    "id": "evidence_superhero_schema",
+    "source": "superhero.sqlite",
+    "query": "sqlite3 -readonly superhero.sqlite '.schema superhero'",
+    "result": "superhero(id INTEGER PRIMARY KEY, superhero_name TEXT, full_name TEXT, gender_id INTEGER, eye_colour_id INTEGER, hair_colour_id INTEGER, skin_colour_id INTEGER, race_id INTEGER, publisher_id INTEGER, alignment_id INTEGER, height_cm INTEGER, weight_kg INTEGER) with foreign keys from alignment_id, eye_colour_id, hair_colour_id, skin_colour_id, gender_id, publisher_id, race_id to their lookup tables.",
+    "validation_method": "read-only schema dump",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_lookup_tables_schema",
+    "source": "superhero.sqlite",
+    "query": "sqlite3 -readonly superhero.sqlite '.schema'",
+    "result": "Lookup tables alignment(id, alignment), attribute(id, attribute_name), colour(id, colour), gender(id, gender), publisher(id, publisher_name), race(id, race), superpower(id, power_name); link tables hero_attribute(hero_id, attribute_id, attribute_value) and hero_power(hero_id, power_id); no primary key on either link table.",
+    "validation_method": "read-only schema dump",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_hero_count_total",
+    "source": "superhero.sqlite",
+    "query": "SELECT COUNT(*) FROM superhero;",
+    "result": "750",
+    "validation_method": "read-only aggregate query",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_attribute_vocabulary",
+    "source": "superhero.sqlite",
+    "query": "SELECT id, attribute_name FROM attribute ORDER BY id;",
+    "result": "6 rows: 1 Intelligence, 2 Strength, 3 Speed, 4 Durability, 5 Power, 6 Combat.",
+    "validation_method": "read-only lookup table scan",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_attribute_value_range",
+    "source": "superhero.sqlite",
+    "query": "SELECT a.attribute_name, COUNT(*), MIN(ha.attribute_value), MAX(ha.attribute_value) FROM hero_attribute ha JOIN attribute a ON a.id = ha.attribute_id GROUP BY a.id;",
+    "result": "Each of the six traits has 623 ratings. Intelligence ranges 35-100; Strength, Speed, Durability, Power and Combat each range 5-100. Overall minimum 5, maximum 100, with no NULL and no zero values.",
+    "validation_method": "read-only grouped aggregate",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_hero_attribute_cardinality",
+    "source": "superhero.sqlite",
+    "query": "SELECT COUNT(*), COUNT(DISTINCT CAST(hero_id AS TEXT) || '-' || CAST(attribute_id AS TEXT)) FROM hero_attribute; SELECT COUNT(DISTINCT hero_id) FROM hero_attribute;",
+    "result": "3738 rows and 3738 distinct hero-attribute pairs, so no duplicate ratings. 623 distinct heroes have ratings, meaning 127 of the 750 heroes have no scored attributes at all.",
+    "validation_method": "read-only cardinality check",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_hero_power_cardinality",
+    "source": "superhero.sqlite",
+    "query": "SELECT COUNT(*), COUNT(DISTINCT CAST(hero_id AS TEXT) || '-' || CAST(power_id AS TEXT)) FROM hero_power; SELECT MIN(c), MAX(c) FROM (SELECT hero_id, COUNT(*) c FROM hero_power GROUP BY hero_id);",
+    "result": "5825 rows and 5825 distinct hero-power pairs, so no duplicates. Each hero with abilities has between 1 and 49 of them, and 98 of the 750 heroes have none.",
+    "validation_method": "read-only cardinality check",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_colour_vocabulary",
+    "source": "superhero.sqlite",
+    "query": "SELECT id, colour FROM colour ORDER BY id;",
+    "result": "35 colour values with capitalized names, including 1 No Colour, 4 Black, 6 Blond, 7 Blue, 9 Brown, 23 Red, 31 White, 13 Grey, 14 Green, 33 Yellow.",
+    "validation_method": "read-only lookup table scan",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_colour_no_colour_usage",
+    "source": "superhero.sqlite",
+    "query": "SELECT 'eye', eye_colour_id, COUNT(*) FROM superhero GROUP BY 2 UNION ALL SELECT 'hair', hair_colour_id, COUNT(*) FROM superhero GROUP BY 2 UNION ALL SELECT 'skin', skin_colour_id, COUNT(*) FROM superhero GROUP BY 2;",
+    "result": "The placeholder colour id 1 'No Colour' is used by 169 heroes as eye colour, 246 as hair colour and 681 as skin colour. eye_colour_id is never NULL.",
+    "validation_method": "read-only grouped distribution",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_colour_enums_for_questions",
+    "source": "superhero.sqlite",
+    "query": "SELECT COUNT(*) FROM superhero WHERE eye_colour_id = 7 AND hair_colour_id = 6; SELECT COUNT(*) FROM superhero WHERE eye_colour_id = 4 AND hair_colour_id = 4;",
+    "result": "90 heroes have blue eyes (colour id 7) and blond hair (colour id 6). 11 heroes have black eyes and black hair (colour id 4 in both positions), demonstrating that the same colour value is shared across the eye and hair positions.",
+    "validation_method": "read-only filtered counts",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_publisher_vocabulary",
+    "source": "superhero.sqlite",
+    "query": "SELECT p.id, p.publisher_name, COUNT(s.id) FROM publisher p LEFT JOIN superhero s ON s.publisher_id = p.id GROUP BY p.id ORDER BY 3 DESC;",
+    "result": "25 publisher rows. Marvel Comics (id 13) has 387 heroes and DC Comics (id 4) has 224; Dark Horse Comics (id 3) and NBC - Heroes (id 15) each have 19. Publisher id 1 has an empty name and holds 17 heroes, and 3 heroes have publisher_id NULL.",
+    "validation_method": "read-only grouped aggregate",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_publisher_counts_dc_marvel",
+    "source": "superhero.sqlite",
+    "query": "SELECT p.publisher_name, COUNT(*) FROM superhero s JOIN publisher p ON p.id = s.publisher_id WHERE p.publisher_name IN ('DC Comics','Marvel Comics') GROUP BY 1;",
+    "result": "DC Comics 224 heroes, Marvel Comics 387 heroes; the difference is 163 in Marvel's favour.",
+    "validation_method": "read-only grouped aggregate",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_gender_vocabulary",
+    "source": "superhero.sqlite",
+    "query": "SELECT * FROM gender;",
+    "result": "3 rows: 1 Male, 2 Female, 3 N/A. Every hero carries a gender reference (0 NULL gender_id).",
+    "validation_method": "read-only lookup table scan",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_alignment_vocabulary",
+    "source": "superhero.sqlite",
+    "query": "SELECT alignment_id, COUNT(*) FROM superhero GROUP BY 1; SELECT * FROM alignment;",
+    "result": "alignment holds 1 Good, 2 Bad, 3 Neutral, 4 N/A. Hero distribution: Good 504, Bad 212, Neutral 28, and 6 heroes with no alignment reference.",
+    "validation_method": "read-only lookup and distribution",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_race_vocabulary",
+    "source": "superhero.sqlite",
+    "query": "SELECT id, race FROM race ORDER BY id;",
+    "result": "61 race values, including the placeholder '-' at id 1, 'Human' at id 24, plus Human variants (Human / Altered, Human / Clone, Human / Cosmic, Human / Radiation, Human-Kree) and non-human species such as Alien, Mutant, Kryptonian. 0 heroes have a NULL race_id.",
+    "validation_method": "read-only lookup table scan",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_race_case_sensitivity",
+    "source": "superhero.sqlite",
+    "query": "SELECT (SELECT COUNT(*) FROM race WHERE race='human'), (SELECT COUNT(*) FROM race WHERE race='Human'), (SELECT COUNT(*) FROM superhero s JOIN race r ON r.id=s.race_id WHERE r.race='human'), (SELECT COUNT(*) FROM superhero s JOIN race r ON r.id=s.race_id WHERE r.race='Human');",
+    "result": "race='human' matches 0 lookup rows and 0 heroes; race='Human' matches 1 lookup row and 219 heroes. Text equality is case-sensitive, so the stored capitalization must be matched exactly.",
+    "validation_method": "read-only comparative count",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_superhero_name_duplicates",
+    "source": "superhero.sqlite",
+    "query": "SELECT COUNT(*), COUNT(DISTINCT superhero_name) FROM superhero; SELECT superhero_name, COUNT(*) FROM superhero GROUP BY 1 HAVING COUNT(*) > 1 ORDER BY 2 DESC;",
+    "result": "750 rows but only 743 distinct hero names. Reused names include Atlas (4 rows), Chameleon, Captain Marvel, Ares and Angel (2 rows each), typically distinguishing different publishers or continuities of the same name.",
+    "validation_method": "read-only distinct-value check",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_full_name_missing",
+    "source": "superhero.sqlite",
+    "query": "SELECT SUM(full_name IS NULL), SUM(full_name = '-'), COUNT(*) FROM superhero;",
+    "result": "122 rows have full_name NULL and 125 rows have the placeholder '-', out of 750 rows. The two encodings together cover 247 heroes.",
+    "validation_method": "read-only null and placeholder count",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_height_missing_and_range",
+    "source": "superhero.sqlite",
+    "query": "SELECT CASE WHEN height_cm IS NULL THEN 'null' WHEN height_cm = 0 THEN '0' WHEN height_cm < 150 THEN '<150' WHEN height_cm <= 180 THEN '150-180' WHEN height_cm <= 250 THEN '181-250' ELSE '>250' END b, COUNT(*) FROM superhero GROUP BY 1;",
+    "result": "height_cm is 0 for 155 heroes and NULL for 58. Of the recorded non-zero heights, 11 are below 150, 230 fall in 150-180, 275 fall in 181-250 and 21 exceed 250, with a maximum of 30480 (Surtur, Ymir) and giants such as Godzilla 10800 and Giganta 6250.",
+    "validation_method": "read-only bucketed distribution",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_weight_missing_and_range",
+    "source": "superhero.sqlite",
+    "query": "SELECT SUM(weight_kg IS NULL), SUM(weight_kg = 0), SUM(CASE WHEN weight_kg IS NULL OR weight_kg = 0 THEN 1 ELSE 0 END), COUNT(*) FROM superhero;",
+    "result": "weight_kg is NULL for 64 heroes and 0 for 172, so 236 of 750 heroes have an unrecorded weight. Recorded weights reach 90000000 (Godzilla), 9000000 (King Kong) and 58000 (Utgard-Loki), far above ordinary human weights such as 630.",
+    "validation_method": "read-only null and range check",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_superpower_vocabulary",
+    "source": "superhero.sqlite",
+    "query": "SELECT power_name, COUNT(*) c FROM superpower sp JOIN hero_power hp ON hp.power_id = sp.id GROUP BY sp.id ORDER BY c DESC LIMIT 10;",
+    "result": "167 distinct power names. Most widely held are Super Strength 358, Stamina 288, Durability 257, Super Speed 249, Agility 239 and Flight 208. The vocabulary mixes generic abilities with hero-specific names.",
+    "validation_method": "read-only grouped aggregate",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_attribute_power_name_overlap",
+    "source": "superhero.sqlite",
+    "query": "SELECT sp.power_name FROM superpower sp WHERE sp.power_name IN (SELECT attribute_name FROM attribute); SELECT power_name FROM superpower WHERE power_name LIKE '%Speed%' OR power_name LIKE '%Strength%' OR power_name LIKE '%Intelligence%' OR power_name LIKE '%Durability%';",
+    "result": "'Durability' and 'Intelligence' occur as both an attribute name and a power name. The powers 'Super Speed' and 'Super Strength' contain the attribute words Speed and Strength, and 'Speed Force' also exists. The two vocabularies are independent measures over the same hero.",
+    "validation_method": "read-only cross-vocabulary comparison",
+    "timestamp": "2026-10-10"
+  }
+]

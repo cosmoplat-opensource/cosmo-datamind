@@ -1,0 +1,149 @@
+{
+ "db_id": "european_football_2",
+ "questions": [
+  {
+   "question_id": 1057,
+   "db_id": "european_football_2",
+   "question": "Calculate the average home team goal in the 2010/2011 season in the country of Poland.",
+   "evidence": "average home team goal = AVG(home_team_goal)= SUM(home_team_goal) / COUNT(DISTINCT Match.id) WHERE name = 'Poland' and season = '2010/2011';",
+   "SQL": "SELECT CAST(SUM(t2.home_team_goal) AS REAL) / COUNT(t2.id) FROM Country AS t1 INNER JOIN Match AS t2 ON t1.id = t2.country_id WHERE t1.name = 'Poland' AND t2.season = '2010/2011'",
+   "difficulty": "moderate"
+  },
+  {
+   "question_id": 1029,
+   "db_id": "european_football_2",
+   "question": "What are the speed in which attacks are put together of the top 4 teams with the highest build Up Play Speed?",
+   "evidence": "speed in which attacks are put together refers to buildUpPlaySpeed;highest build up play speed refers to MAX(buildUpPlaySpeed)",
+   "SQL": "SELECT t1.buildUpPlaySpeed FROM Team_Attributes AS t1 INNER JOIN Team AS t2 ON t1.team_api_id = t2.team_api_id ORDER BY t1.buildUpPlaySpeed ASC LIMIT 4",
+   "difficulty": "moderate"
+  },
+  {
+   "question_id": 1147,
+   "db_id": "european_football_2",
+   "question": "Please name one player whose overall strength is the greatest.",
+   "evidence": "overall strength is the greatest refers to MAX(overall_rating)",
+   "SQL": "SELECT DISTINCT t1.player_name FROM Player AS t1 INNER JOIN Player_Attributes AS t2 ON t1.player_api_id = t2.player_api_id WHERE t2.overall_rating = ( SELECT MAX(overall_rating) FROM Player_Attributes)",
+   "difficulty": "simple"
+  },
+  {
+   "question_id": 1135,
+   "db_id": "european_football_2",
+   "question": "Please provide top four football players' IDs who are among the lowest potential players and prefer to use the right foot when attacking.",
+   "evidence": "lowest potential players refers to MIN(potential); prefer to use the right foot when attacking refers to preferred_foot = 'right'",
+   "SQL": "SELECT id FROM Player_Attributes WHERE preferred_foot = 'right' ORDER BY potential ASC LIMIT 4",
+   "difficulty": "moderate"
+  },
+  {
+   "question_id": 1040,
+   "db_id": "european_football_2",
+   "question": "List the top 10 players' names whose heights are above 180 in descending order of average heading accuracy.",
+   "evidence": "heights are above 180 refers to Player.height > 180; average heading accuracy = DIVIDE(SUM(heading_accuracy), COUNT(player_fifa_api_id));",
+   "SQL": "SELECT t1.player_name FROM Player AS t1 INNER JOIN Player_Attributes AS t2 ON t1.player_api_id = t2.player_api_id WHERE t1.height > 180 GROUP BY t1.id ORDER BY CAST(SUM(t2.heading_accuracy) AS REAL) / COUNT(t2.`player_fifa_api_id`) DESC LIMIT 10",
+   "difficulty": "moderate"
+  },
+  {
+   "question_id": 1048,
+   "db_id": "european_football_2",
+   "question": "What is the overall rating of the football player Gabriel Tamas in year 2011?",
+   "evidence": "in year 2011 refers to strftime('%Y', date) = '2011';",
+   "SQL": "SELECT t2.overall_rating FROM Player AS t1 INNER JOIN Player_Attributes AS t2 ON t1.player_api_id = t2.player_api_id WHERE t1.player_name = 'Gabriel Tamas' AND strftime('%Y', t2.date) = '2011'",
+   "difficulty": "simple"
+  },
+  {
+   "question_id": 1030,
+   "db_id": "european_football_2",
+   "question": "Give the name of the league had the most matches end as draw in the 2016 season?",
+   "evidence": "most matches end as draw refers to MAX(SUM(home_team_goal = away_team_goal)); 2016 season refers to season = '2015/2016';",
+   "SQL": "SELECT t2.name FROM Match AS t1 INNER JOIN League AS t2 ON t1.league_id = t2.id WHERE t1.season = '2015/2016' AND t1.home_team_goal = t1.away_team_goal GROUP BY t2.name ORDER BY COUNT(t1.id) DESC LIMIT 1",
+   "difficulty": "moderate"
+  },
+  {
+   "question_id": 1148,
+   "db_id": "european_football_2",
+   "question": "What is the percentage of players that are under 180 cm who have an overall strength of more than 70?",
+   "evidence": "percentage refers to DIVIDE(COUNT(height < 180 AND overall_rating > 70),COUNT(id)) * 100",
+   "SQL": "SELECT CAST(COUNT(CASE WHEN t2.overall_rating > 70  AND t1.height < 180 THEN t1.id ELSE NULL END) AS REAL) * 100 / COUNT(t1.id) percent FROM Player AS t1 INNER JOIN Player_Attributes AS t2 ON t1.player_api_id = t2.player_api_id ",
+   "difficulty": "moderate"
+  },
+  {
+   "question_id": 1039,
+   "db_id": "european_football_2",
+   "question": "Find the average number of long-shot done by Ahmed Samir Farag.",
+   "evidence": "average number of long shot = DIVIDE(SUM(long_shots), COUNT(player_fifa_api_id));",
+   "SQL": "SELECT CAST(SUM(t2.long_shots) AS REAL) / COUNT(t2.`date`) FROM Player AS t1 INNER JOIN Player_Attributes AS t2 ON t1.player_api_id = t2.player_api_id WHERE t1.player_name = 'Ahmed Samir Farag'",
+   "difficulty": "simple"
+  },
+  {
+   "question_id": 1134,
+   "db_id": "european_football_2",
+   "question": "What is the difference between players 6 and 23's jumping scores?",
+   "evidence": "difference between players 6 and 23's jumping scores refers to SUBTRACT(jumping AND id = 6,jumping AND id = 23)",
+   "SQL": "SELECT SUM(CASE WHEN t1.id = 6 THEN t1.jumping ELSE 0 END) - SUM(CASE WHEN t1.id = 23 THEN t1.jumping ELSE 0 END) FROM Player_Attributes AS t1",
+   "difficulty": "simple"
+  },
+  {
+   "question_id": 1144,
+   "db_id": "european_football_2",
+   "question": "Please state the finishing rate and curve score of the player who has the heaviest weight.",
+   "evidence": "finishing rate refer to finishing; curve score refer to curve; heaviest weight refers to MAX(weight)",
+   "SQL": "SELECT id, finishing, curve FROM Player_Attributes WHERE player_api_id = ( SELECT player_api_id FROM Player ORDER BY weight DESC LIMIT 1 ) LIMIT 1",
+   "difficulty": "simple"
+  },
+  {
+   "question_id": 1091,
+   "db_id": "european_football_2",
+   "question": "How many matches were held in the Belgium Jupiler League in April, 2009?",
+   "evidence": "Belgium Jupiler League refers to League.name = 'Belgium Jupiler League'; in April, 2009 refers to SUBSTR(`date`, 1, 7);",
+   "SQL": "SELECT COUNT(t2.id) FROM League AS t1 INNER JOIN Match AS t2 ON t1.id = t2.league_id WHERE t1.name = 'Belgium Jupiler League' AND SUBSTR(t2.`date`, 1, 7) = '2009-04'",
+   "difficulty": "moderate"
+  },
+  {
+   "question_id": 1098,
+   "db_id": "european_football_2",
+   "question": "What is Ajax's highest chance creation passing score and what is it classified as?",
+   "evidence": "Ajax's refers to team_long_name = 'Ajax'; chance creation passing score refers to MAX(chanceCreationPassing); classified refer to chanceCreationPassingClass",
+   "SQL": "SELECT t2.chanceCreationPassing, t2.chanceCreationPassingClass FROM Team AS t1 INNER JOIN Team_Attributes AS t2 ON t1.team_api_id = t2.team_api_id WHERE t1.team_long_name = 'Ajax' ORDER BY t2.chanceCreationPassing DESC LIMIT 1",
+   "difficulty": "moderate"
+  },
+  {
+   "question_id": 1102,
+   "db_id": "european_football_2",
+   "question": "For the players who had a 77 points overall rating on 2016/6/23, who was the oldest? Give the name of the player.",
+   "evidence": "77 points overall rating refers to overall_rating = 77; on 2016/6/23 refers to date LIKE '2016-06-23%'; The larger the birthday value, the younger the person is, and vice versa;",
+   "SQL": "SELECT t1.player_name FROM Player AS t1 INNER JOIN Player_Attributes AS t2 ON t1.player_api_id = t2.player_api_id WHERE SUBSTR(t2.`date`, 1, 10) = '2016-06-23' AND t2.overall_rating = 77 ORDER BY t1.birthday ASC LIMIT 1",
+   "difficulty": "moderate"
+  },
+  {
+   "question_id": 1136,
+   "db_id": "european_football_2",
+   "question": "How many players had the highest potential score for crossing that preferred to use their left foots while attacking?",
+   "evidence": "highest potential score for crossing refers to MAX(crossing); preferred to use their left foots while attacking refers to preferred_foot = 'left'",
+   "SQL": "SELECT COUNT(t1.id) FROM Player_Attributes AS t1 WHERE t1.preferred_foot = 'left' AND t1.crossing = ( SELECT MAX(crossing) FROM Player_Attributes)",
+   "difficulty": "moderate"
+  },
+  {
+   "question_id": 1044,
+   "db_id": "european_football_2",
+   "question": "List the football players with a birthyear of 1970 and a birthmonth of October.",
+   "evidence": "players with a birthyear of 1970 and a birthmonth of October refers to substr(birthday,1,7) AS 'year-month',WHERE year = '1970' AND month = '10';",
+   "SQL": "SELECT player_name FROM Player WHERE SUBSTR(birthday, 1, 7) = '1970-10'",
+   "difficulty": "simple"
+  },
+  {
+   "question_id": 1037,
+   "db_id": "european_football_2",
+   "question": "Calculate the percentage of players who prefer left foot, who were born between 1987 and 1992.",
+   "evidence": "players who prefer left foot refers to preferred_foot = 'left'; percentage of players who prefer left foot = DIVIDE(MULTIPLY((SUM(preferred_foot = 'left'), 100)), COUNT(player_fifa_api_id)); born between 1987 and 1992 refers to YEAR(birthday) BETWEEN '1987' AND '1992';",
+   "SQL": "SELECT CAST(COUNT(CASE WHEN t2.preferred_foot = 'left' THEN t1.id ELSE NULL END) AS REAL) * 100 / COUNT(t1.id) percent FROM Player AS t1 INNER JOIN Player_Attributes AS t2 ON t1.player_api_id = t2.player_api_id WHERE SUBSTR(t1.birthday, 1, 4) BETWEEN '1987' AND '1992'",
+   "difficulty": "challenging"
+  },
+  {
+   "question_id": 1031,
+   "db_id": "european_football_2",
+   "question": "At present, calculate for the player's age who have a sprint speed of no less than 97 between 2013 to 2015.",
+   "evidence": "players age at present = SUBTRACT((DATETIME(), birthday)); sprint speed of no less than 97 refers to sprint_speed > = 97; between 2013 to 2015 refers to YEAR(date) > = '2013' AND YEAR(date) < = '2015'; ",
+   "SQL": "SELECT DISTINCT DATETIME() - T2.birthday age FROM Player_Attributes AS t1 INNER JOIN Player AS t2 ON t1.player_api_id = t2.player_api_id WHERE STRFTIME('%Y',t1.`date`) >= '2013' AND STRFTIME('%Y',t1.`date`) <= '2015' AND t1.sprint_speed >= 97",
+   "difficulty": "challenging"
+  }
+ ]
+}

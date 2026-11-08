@@ -1,0 +1,160 @@
+[
+  {
+    "id": "rel_patient_examination",
+    "source": "term_patient",
+    "relation_type": "composition",
+    "target": "term_examination",
+    "connection_condition": "Examination.ID carries the patient identifier and corresponds to Patient.ID",
+    "description": "An examination is a component event of a patient; examination findings cannot be interpreted without the patient record they belong to.",
+    "evidence": [
+      "evidence_patient_identifier_linkage"
+    ]
+  },
+  {
+    "id": "rel_patient_laboratory_test",
+    "source": "term_patient",
+    "relation_type": "composition",
+    "target": "term_laboratory_test",
+    "connection_condition": "Laboratory.ID carries the patient identifier and corresponds to Patient.ID",
+    "description": "A laboratory test record is a component measurement event of a patient; its analyte values are meaningless without the patient they describe.",
+    "evidence": [
+      "evidence_patient_identifier_linkage"
+    ]
+  },
+  {
+    "id": "rel_patient_diagnosis",
+    "source": "term_patient",
+    "relation_type": "association",
+    "target": "term_diagnosis",
+    "connection_condition": "the diagnosis is stored as free text inside the patient record itself; no separate disease dimension table exists",
+    "description": "The disease diagnosis is an attribute carried on the patient record rather than a distinct entity that could be joined to it.",
+    "evidence": [
+      "evidence_diagnosis_vocabulary"
+    ]
+  },
+  {
+    "id": "rel_diagnosis_sle",
+    "source": "term_diagnosis",
+    "relation_type": "hierarchy",
+    "target": "term_sle",
+    "connection_condition": "",
+    "description": "SLE is one of the disease categories occurring as a value of the patient diagnosis vocabulary, so its value domain is a subset of all diagnosis labels rather than a peer of them.",
+    "evidence": [
+      "evidence_diagnosis_vocabulary"
+    ]
+  },
+  {
+    "id": "rel_birth_date_age",
+    "source": "term_birth_date",
+    "relation_type": "derivation",
+    "target": "term_age",
+    "connection_condition": "",
+    "description": "Age is derived from the birth date; at year granularity it is the current year minus the year of the birth date, so it is a computed metric rather than a stored column.",
+    "evidence": [
+      "evidence_date_ranges"
+    ]
+  },
+  {
+    "id": "rel_diagnosis_equivalence",
+    "source": "term_diagnosis",
+    "relation_type": "equivalence",
+    "target": "term_examination_diagnosis",
+    "connection_condition": "Patient.Diagnosis and Examination.Diagnosis both hold free-text disease labels drawn from an overlapping vocabulary and describing the same patient identifier",
+    "description": "The patient-level diagnosis and the examination-stage diagnosis express the same business concept, a disease label for a patient, but differ in granularity: the examination-stage value records the assessment at that examination and is unrecorded for most examinations.",
+    "evidence": [
+      "evidence_diagnosis_vocabulary",
+      "evidence_examination_diagnosis_coverage"
+    ]
+  },
+  {
+    "id": "rel_examination_ana_titer",
+    "source": "term_examination",
+    "relation_type": "composition",
+    "target": "term_ana_titer",
+    "connection_condition": "the titer is a column on the examination record",
+    "description": "The antinuclear antibody titer is a finding that is a component of an examination; it has no meaning apart from the examination it was measured at.",
+    "evidence": [
+      "evidence_ana_columns"
+    ]
+  },
+  {
+    "id": "rel_examination_ana_pattern",
+    "source": "term_examination",
+    "relation_type": "composition",
+    "target": "term_ana_pattern",
+    "connection_condition": "the pattern code is a column on the examination record",
+    "description": "The ANA staining pattern is a finding that is a component of the same examination record as the antibody titer.",
+    "evidence": [
+      "evidence_ana_columns"
+    ]
+  },
+  {
+    "id": "rel_examination_acl",
+    "source": "term_examination",
+    "relation_type": "composition",
+    "target": "term_antiphospholipid_antibody",
+    "connection_condition": "one column per antibody isotype on the examination record",
+    "description": "Anti-cardiolipin antibody levels are findings that are components of an examination, recorded as one column per isotype.",
+    "evidence": [
+      "evidence_acl_antibody_values"
+    ]
+  },
+  {
+    "id": "rel_examination_coagulation",
+    "source": "term_examination",
+    "relation_type": "composition",
+    "target": "term_coagulation_inhibitor_test",
+    "connection_condition": "one column per screening test on the examination record",
+    "description": "The coagulation inhibitor screening results are findings that are components of an examination, recorded as one column per test.",
+    "evidence": [
+      "evidence_coagulation_values"
+    ]
+  },
+  {
+    "id": "rel_examination_thrombosis",
+    "source": "term_examination",
+    "relation_type": "composition",
+    "target": "term_thrombosis_degree",
+    "connection_condition": "the grade is a column on the examination record",
+    "description": "The degree of thrombosis is a finding that is a component of an examination record.",
+    "evidence": [
+      "evidence_thrombosis_distribution"
+    ]
+  },
+  {
+    "id": "rel_ana_ena_association",
+    "source": "term_ana_titer",
+    "relation_type": "association",
+    "target": "term_ena_antibody",
+    "connection_condition": "both are autoantibody results for the same patient, recorded on different tables and at different granularity",
+    "description": "The antinuclear antibody assay is the broad screening test for autoantibodies while the specific extractable nuclear antigen antibodies are the follow-up tests of the same autoantibody family; they are related clinically but grounded in different tables.",
+    "evidence": [
+      "evidence_ana_columns",
+      "evidence_ena_antibody_values"
+    ]
+  },
+  {
+    "id": "rel_acl_coagulation_association",
+    "source": "term_antiphospholipid_antibody",
+    "relation_type": "association",
+    "target": "term_coagulation_inhibitor_test",
+    "connection_condition": "both are recorded on the same examination record for the same patient",
+    "description": "Anti-cardiolipin antibodies and the lupus-anticoagulant screening tests are both antiphospholipid-related findings measured on the same examination and together characterise a patient's antiphospholipid status.",
+    "evidence": [
+      "evidence_acl_antibody_values",
+      "evidence_coagulation_values"
+    ]
+  },
+  {
+    "id": "rel_coagulation_thrombosis_association",
+    "source": "term_coagulation_inhibitor_test",
+    "relation_type": "association",
+    "target": "term_thrombosis_degree",
+    "connection_condition": "both are recorded on the same examination record for the same patient",
+    "description": "Coagulation inhibitor positivity and the recorded degree of thrombosis are related expressions of the same patient's thrombotic status.",
+    "evidence": [
+      "evidence_coagulation_values",
+      "evidence_thrombosis_distribution"
+    ]
+  }
+]

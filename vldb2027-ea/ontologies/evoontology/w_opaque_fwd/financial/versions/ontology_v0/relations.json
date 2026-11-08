@@ -1,0 +1,111 @@
+[
+  {
+    "id": "rel_account_district",
+    "source": "term_account",
+    "relation_type": "association",
+    "target": "term_district",
+    "connection_condition": "tab01.fld002 corresponds to tab05.fld002; the district recorded on the account is the district where the account is held or was opened.",
+    "description": "An account is associated with one district through the account's own district column. This is the account-side district affiliation and is distinct from the client's residence district.",
+    "evidence": [
+      "ev_schema_tables",
+      "ev_fk_integrity",
+      "ev_two_district_links"
+    ]
+  },
+  {
+    "id": "rel_client_district",
+    "source": "term_client",
+    "relation_type": "association",
+    "target": "term_district",
+    "connection_condition": "tab03.fld002 corresponds to tab05.fld002; the district recorded on the client is the client's residence district.",
+    "description": "A client is associated with one district through the client's own district column. This is the client's residence affiliation, which may differ from the district of the account the client owns.",
+    "evidence": [
+      "ev_schema_tables",
+      "ev_fk_integrity",
+      "ev_two_district_links"
+    ]
+  },
+  {
+    "id": "rel_client_account",
+    "source": "term_client",
+    "relation_type": "association",
+    "target": "term_account",
+    "connection_condition": "Linked through tab04: tab04.fld009 corresponds to tab03.fld009 and tab04.fld001 corresponds to tab01.fld001; tab04.fld007 gives the role OWNER or DISPONENT.",
+    "description": "Clients hold accounts through disposition records. A client can hold more than one account, and an account has exactly one OWNER plus optionally several DISPONENT clients.",
+    "evidence": [
+      "ev_disposition",
+      "ev_schema_tables"
+    ]
+  },
+  {
+    "id": "rel_district_region",
+    "source": "term_district",
+    "relation_type": "association",
+    "target": "term_region",
+    "connection_condition": "tab05.fld013 holds the region of the district described by the same tab05 row.",
+    "description": "Each district belongs to exactly one of eight regions; the region is an attribute of the district and is the level at which district groups are compared.",
+    "evidence": [
+      "ev_district_region"
+    ]
+  },
+  {
+    "id": "rel_account_loan",
+    "source": "term_account",
+    "relation_type": "composition",
+    "target": "term_loan",
+    "connection_condition": "tab06.fld001 corresponds to tab01.fld001; a loan row cannot exist without its account.",
+    "description": "Loans are facilities held on an account: an account can carry zero or more loans, and each loan is a component of exactly one account's portfolio.",
+    "evidence": [
+      "ev_schema_tables",
+      "ev_fk_integrity"
+    ]
+  },
+  {
+    "id": "rel_account_transaction",
+    "source": "term_account",
+    "relation_type": "composition",
+    "target": "term_transaction",
+    "connection_condition": "tab08.fld001 corresponds to tab01.fld001; a transaction row cannot exist without its account.",
+    "description": "Transactions are postings that belong to an account: every transaction is a component of the activity of exactly one account.",
+    "evidence": [
+      "ev_schema_tables",
+      "ev_fk_integrity"
+    ]
+  },
+  {
+    "id": "rel_transaction_type_operation",
+    "source": "term_transaction_type",
+    "relation_type": "association",
+    "target": "term_transaction_operation",
+    "connection_condition": "Both attributes are on the same tab08 transaction row: fld007 is the direction type and fld037 is the operation kind. They are correlated but not interchangeable.",
+    "description": "Type and operation describe different facets of a transaction. Cash withdrawals appear as operation VYBER, while the direction type for the same rows can be either VYDAJ or VYBER.",
+    "evidence": [
+      "ev_trans_operation",
+      "ev_type_column_domains"
+    ]
+  },
+  {
+    "id": "rel_percentage_of_accounts",
+    "source": "term_account",
+    "relation_type": "derivation",
+    "target": "term_percentage_share",
+    "connection_condition": "Numerator and denominator are both counts of accounts drawn from tab01, optionally joined to other tables to apply the condition.",
+    "description": "A percentage of accounts is derived as the count of accounts in the reference population that satisfy the condition divided by the count of accounts in that population, expressed as a percentage.",
+    "evidence": [
+      "ev_percentage_semantics",
+      "ev_row_counts"
+    ]
+  },
+  {
+    "id": "rel_percentage_of_clients",
+    "source": "term_client",
+    "relation_type": "derivation",
+    "target": "term_percentage_share",
+    "connection_condition": "Numerator and denominator are both counts of clients drawn from tab03, optionally joined through tab04 to account attributes.",
+    "description": "A percentage of clients is derived as the count of clients in the reference population that satisfy the condition divided by the count of clients in that population, expressed as a percentage.",
+    "evidence": [
+      "ev_percentage_semantics",
+      "ev_row_counts"
+    ]
+  }
+]

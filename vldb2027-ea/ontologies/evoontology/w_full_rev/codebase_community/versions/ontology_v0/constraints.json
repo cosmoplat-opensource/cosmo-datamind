@@ -1,0 +1,449 @@
+[
+  {
+    "id": "constraint_post_creation_date_column_name",
+    "target": "term_post",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "creation date",
+      "created",
+      "post date",
+      "when was the post created",
+      "in 2011",
+      "year of the post",
+      "posting date"
+    ],
+    "severity": "block",
+    "scope": "Any access to the creation timestamp of a post.",
+    "confidence": "high",
+    "description": "The post creation timestamp column is stored under the misspelled name 'CreaionDate', not 'CreationDate'. The activity timestamp column is likewise named 'LasActivityDate'. Referencing a conventionally spelled creation-date column on posts will fail. The column is populated for every post and stores a full timestamp with a trailing fractional part.",
+    "evidence": [
+      "evidence_posts_schema",
+      "evidence_post_creation_date_non_null"
+    ]
+  },
+  {
+    "id": "constraint_user_age_sparse",
+    "target": "term_user_age",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "age",
+      "elder user",
+      "older user",
+      "elderly",
+      "age over",
+      "how old",
+      "senior"
+    ],
+    "severity": "warn",
+    "scope": "Any filter or cohort definition based on user age.",
+    "confidence": "high",
+    "description": "Age is recorded for only 8318 of 40325 accounts; 32007 accounts have no age at all, and recorded ages span 13 to 94. Age-conditioned filters therefore silently exclude roughly four fifths of users, and cohort counts describe only users with a declared age.",
+    "evidence": [
+      "evidence_age_nulls",
+      "evidence_age_range"
+    ]
+  },
+  {
+    "id": "constraint_elder_user_definition",
+    "target": "term_user_age",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "elder user",
+      "elder users",
+      "older user",
+      "elderly",
+      "senior user"
+    ],
+    "severity": "warn",
+    "scope": "Interpreting the phrase 'elder user' in analytical questions.",
+    "confidence": "high",
+    "description": "In this workload the phrase 'elder user' denotes a user whose recorded age is greater than 65. The phrase is a cohort label, not a stored category, so it must be resolved to the age attribute before use.",
+    "evidence": [
+      "evidence_age_range",
+      "evidence_age_nulls"
+    ]
+  },
+  {
+    "id": "constraint_post_score_sign_and_comparison",
+    "target": "term_post_score",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "score",
+      "post score",
+      "score of over",
+      "score above",
+      "higher score",
+      "points of a post"
+    ],
+    "severity": "info",
+    "scope": "Threshold and comparison questions over post score.",
+    "confidence": "high",
+    "description": "Post score is a net standing that ranges from -19 to 192 and is negative for 1020 posts. Phrases such as 'over N' or 'above N' are strict comparisons that exclude posts scoring exactly N, and negative-scoring posts are legitimately returned by low thresholds.",
+    "evidence": [
+      "evidence_score_range"
+    ]
+  },
+  {
+    "id": "constraint_view_count_questions_only",
+    "target": "term_post_view_count",
+    "constraint_type": "scope",
+    "trigger_keywords": [
+      "views",
+      "view count",
+      "total views",
+      "popularity",
+      "popular",
+      "most viewed",
+      "how many views"
+    ],
+    "severity": "warn",
+    "scope": "Any popularity or view-based comparison over posts.",
+    "confidence": "high",
+    "description": "View count is populated only for question posts. Answer posts and tag or moderation posts carry no view count at all, so a popularity comparison across the whole post table treats those types as unknown rather than as zero, and popularity is only defined within the question population.",
+    "evidence": [
+      "evidence_viewcount_by_posttype"
+    ]
+  },
+  {
+    "id": "constraint_post_tags_encoding",
+    "target": "term_post_tags",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "tag",
+      "tags",
+      "tagged",
+      "language",
+      "topic of the post",
+      "uses the tag",
+      "r language"
+    ],
+    "severity": "warn",
+    "scope": "Testing whether a post carries a given label.",
+    "confidence": "high",
+    "description": "The attached labels of a question are stored as one string of angle-bracket delimited labels, and the column is populated only for question posts. Membership of a label must be tested against the delimited label itself rather than as a loose substring of the whole string, otherwise short labels match inside longer ones.",
+    "evidence": [
+      "evidence_tags_string_format",
+      "evidence_tags_column_by_posttype"
+    ]
+  },
+  {
+    "id": "constraint_tags_catalogue_count_drift",
+    "target": "term_tag",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "tag count",
+      "number of posts with the tag",
+      "most used tag",
+      "popular tag",
+      "how many questions use"
+    ],
+    "severity": "info",
+    "scope": "Choosing between the catalogue usage count and a recount of question tag lists.",
+    "confidence": "high",
+    "description": "The catalogue usage count for a tag and the number of question posts whose label list contains that label agree closely but not exactly; the catalogue value is slightly higher for some tags. Counts derived from the two sources will differ by small amounts, so the source must be stated when a count is reported.",
+    "evidence": [
+      "evidence_tag_count_vs_occurrence"
+    ]
+  },
+  {
+    "id": "constraint_post_closure_nullability",
+    "target": "term_post_closure_status",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "closed",
+      "closure",
+      "closed date",
+      "well-finished",
+      "finished",
+      "resolved",
+      "still open",
+      "shut down",
+      "was it closed"
+    ],
+    "severity": "warn",
+    "scope": "Interpreting whether a post is still open or has been closed.",
+    "confidence": "high",
+    "description": "Closure is expressed by the presence or absence of a closure timestamp on the post, not by a status flag: 1610 posts carry a timestamp and were closed, while the remaining 90356 carry nothing and have never been closed. A missing value therefore means open, not unknown.",
+    "evidence": [
+      "evidence_closed_date_nullability"
+    ]
+  },
+  {
+    "id": "constraint_vote_date_granularity",
+    "target": "term_vote",
+    "constraint_type": "unit",
+    "trigger_keywords": [
+      "vote date",
+      "first vote",
+      "when did",
+      "vote time",
+      "cast a vote",
+      "voted at"
+    ],
+    "severity": "warn",
+    "scope": "Time comparisons and first-occurrence questions over votes.",
+    "confidence": "high",
+    "description": "The vote timestamp stores a calendar date only, with no time of day, unlike comments, badges and posts which store full timestamps. A 'when did X first vote' answer can therefore only be resolved to a day, and several votes by the same user on that day are indistinguishable in ordering.",
+    "evidence": [
+      "evidence_vote_date_granularity",
+      "evidence_first_vote_lookup"
+    ]
+  },
+  {
+    "id": "constraint_bounty_vote_types",
+    "target": "term_bounty_amount",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "bounty",
+      "bounty amount",
+      "bounty of 50",
+      "added a bounty",
+      "offered a bounty"
+    ],
+    "severity": "warn",
+    "scope": "Identifying bounty activity on a post.",
+    "confidence": "high",
+    "description": "A bounty amount is present only on bounty-related vote records: all 60 records of the bounty-open type carry an amount, and 41 of 59 records of the bounty-close type do. Every other vote type carries no amount, so filtering on a bounty value implicitly restricts the analysis to bounty vote records and can return both the opening and the closing record of one bounty.",
+    "evidence": [
+      "evidence_vote_types_bounty"
+    ]
+  },
+  {
+    "id": "constraint_post_type_enum",
+    "target": "term_post_type",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "post type",
+      "questions",
+      "answers",
+      "only questions",
+      "type of post",
+      "posts"
+    ],
+    "severity": "warn",
+    "scope": "Interpreting the meaning of the post type enumeration.",
+    "confidence": "high",
+    "description": "The dominant post types are the question type (42912 rows) and the answer type (47755 rows). Two further types (639 and 640 rows) are verified as the tag-excerpt and tag-wiki posts because the tag catalogue links to them through its excerpt and wiki columns. Remaining types exist only in tiny volumes (between 5 and 9 rows) and their semantics are not established from the data environment, so they should not be relied upon. Attributes such as title, tag list and view count are question-only, so a query that omits the post type restriction may silently include unrelated short-table records.",
+    "evidence": [
+      "evidence_post_type_distribution",
+      "evidence_tags_post_linkage",
+      "evidence_tags_column_by_posttype"
+    ]
+  },
+  {
+    "id": "constraint_display_name_not_unique",
+    "target": "term_user_display_name",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "display name",
+      "username",
+      "named",
+      "user named",
+      "csgillespie",
+      "who is the user",
+      "harlan",
+      "by user"
+    ],
+    "severity": "block",
+    "scope": "Resolving a person named in a question to a user account.",
+    "confidence": "high",
+    "description": "Display names are not unique: 40325 accounts share only 35644 distinct names, and the most repeated name occurs 80 times. Matching a person by name alone can therefore return several accounts and multiply or distort aggregates, so name resolution must be treated as potentially ambiguous.",
+    "evidence": [
+      "evidence_displayname_not_unique"
+    ]
+  },
+  {
+    "id": "constraint_denormalized_name_population",
+    "target": "term_denormalized_user_display_name",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "user display name",
+      "name on record",
+      "display name of the user",
+      "who wrote",
+      "who edited"
+    ],
+    "severity": "warn",
+    "scope": "Using a name stored on an activity record instead of joining the user table.",
+    "confidence": "high",
+    "description": "The copies of the display name stored on activity records are populated very unevenly: every revision record carries one, but only 2831 of 174285 comments and 2509 of 91966 posts do. Where present they agree with the account name, so they are accurate but frequently absent, and a filter on them drops most rows.",
+    "evidence": [
+      "evidence_denormalized_names"
+    ]
+  },
+  {
+    "id": "constraint_first_occurrence_ties",
+    "target": "term_first_occurrence",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "first",
+      "earliest",
+      "first badge",
+      "first vote",
+      "initial",
+      "the very first"
+    ],
+    "severity": "warn",
+    "scope": "Earliest-award and first-event questions.",
+    "confidence": "high",
+    "description": "Earliest timestamps are frequently shared. All 4480 Autobiographer awards carry timestamps within seconds of account creation, and many accounts share the identical earliest award timestamp, so 'the first holder' is not determined by the timestamp alone. Where a question asks who holds the earliest award, ties must be acknowledged or disambiguated by a stated rule.",
+    "evidence": [
+      "evidence_first_badge_date_ties"
+    ]
+  },
+  {
+    "id": "constraint_post_title_matching",
+    "target": "term_post_title",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "title",
+      "titled",
+      "post named",
+      "post called",
+      "the post about"
+    ],
+    "severity": "warn",
+    "scope": "Locating a specific post from a title quoted in a question.",
+    "confidence": "high",
+    "description": "Titles are stored exactly as authored, and the casing used in a question may differ from the stored casing. A title quoted as 'Computer Game Datasets' is stored as 'Computer game datasets', so a case-sensitive equality test returns no rows where a case-insensitive match succeeds. Title lookups should be case-insensitive, and an exact full-title match is reliable only when the quoted text matches the whole stored title.",
+    "evidence": [
+      "evidence_title_case_sensitivity"
+    ]
+  },
+  {
+    "id": "constraint_reputation_defines_influence",
+    "target": "term_user_influence",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "influential",
+      "most influential",
+      "influence",
+      "higher reputation",
+      "highest reputation",
+      "more reputable"
+    ],
+    "severity": "warn",
+    "scope": "Ranking users by standing or selecting a single most influential user.",
+    "confidence": "high",
+    "description": "Influence in this workload is equated with reputation standing: the more reputed a user is, the more influential. Selecting the most influential user means selecting the account with the greatest reputation value, and comparing two named users by influence means comparing their reputation values.",
+    "evidence": [
+      "evidence_reputation_range"
+    ]
+  },
+  {
+    "id": "constraint_community_account",
+    "target": "term_user",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "community",
+      "posted by community",
+      "community user",
+      "community-owned"
+    ],
+    "severity": "info",
+    "scope": "Resolving references to 'Community' as a poster.",
+    "confidence": "high",
+    "description": "One synthetic account represents the community itself rather than a person: it holds an identifier below zero, the display name 'Community', and a reputation of 1, and it owns 211 posts. It is a legitimate value in aggregation results and should not be discarded as corrupt, but it is not a human participant.",
+    "evidence": [
+      "evidence_community_user"
+    ]
+  },
+  {
+    "id": "constraint_percentage_reference_population",
+    "target": "term_percentage_share",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "percentage",
+      "percent",
+      "share",
+      "proportion",
+      "what percentage",
+      "ratio"
+    ],
+    "severity": "block",
+    "scope": "Computing a percentage over posts or users.",
+    "confidence": "high",
+    "description": "A percentage is a conditioned count divided by the count of a reference population, expressed as a percentage. The reference population is named in the question and varies: all posts, posts created in a given year, posts of one author, or posts meeting a prior filter. Choosing the wrong denominator changes the answer, so the population must be fixed before the ratio is computed.",
+    "evidence": [
+      "evidence_percentage_reference_populations"
+    ]
+  },
+  {
+    "id": "constraint_last_editor_pointer_vs_history",
+    "target": "term_post_editing",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "edited",
+      "editor",
+      "who edited",
+      "last editor",
+      "posted it last time",
+      "modified the post"
+    ],
+    "severity": "warn",
+    "scope": "Attributing editing activity on a post to a user.",
+    "confidence": "high",
+    "description": "The editor pointer on a post records only the most recent editor and is absent for 47361 of 91966 posts; where it is present it coincides with the owner in more than half of cases. Enumerating editors of a post, or answering who edited it in the general case, requires the revision records rather than the pointer, and answers differ depending on which source is used.",
+    "evidence": [
+      "evidence_last_editor_pointer",
+      "evidence_post_history_types"
+    ]
+  },
+  {
+    "id": "constraint_comment_post_reference_integrity",
+    "target": "term_comment",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "comment",
+      "comments on the post",
+      "commented"
+    ],
+    "severity": "info",
+    "scope": "Joining comments to posts.",
+    "confidence": "high",
+    "description": "36 comment records reference a post identifier that does not exist in the post table, although the declared foreign key would forbid it. Joining comments to posts therefore loses these rows, and the loss is small enough to be invisible but should be noted when comment totals are reconciled.",
+    "evidence": [
+      "evidence_fk_integrity"
+    ]
+  },
+  {
+    "id": "constraint_badge_count_row_semantics",
+    "target": "term_badge_count",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "number of badges",
+      "how many badges",
+      "more than 5 badges",
+      "badges awarded",
+      "badge count"
+    ],
+    "severity": "warn",
+    "scope": "Counting badges per user.",
+    "confidence": "high",
+    "description": "Each badge record is one award event, and a user may hold the same badge name repeatedly across time, so the badge count of a user is the number of award events rather than the number of distinct achievement names. Both readings are defensible in natural language, and the two give different counts, so the intended reading must be fixed before counting.",
+    "evidence": [
+      "evidence_badge_count_gt5",
+      "evidence_badge_names"
+    ]
+  },
+  {
+    "id": "constraint_post_ownership_gaps",
+    "target": "term_post_ownership",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "owner",
+      "author",
+      "owner of the post",
+      "posted by",
+      "who posted"
+    ],
+    "severity": "warn",
+    "scope": "Joining posts to their creating account.",
+    "confidence": "high",
+    "description": "Most posts carry an owner identifier that resolves to an existing account, but some posts have no owner identifier at all and instead carry only a stored owner name; a further 1388 posts carry a stored owner name with no identifier. An inner join from posts to users therefore drops those posts, and a question asking for the owner of such a post has no account-level answer.",
+    "evidence": [
+      "evidence_owner_display_name",
+      "evidence_fk_integrity"
+    ]
+  }
+]

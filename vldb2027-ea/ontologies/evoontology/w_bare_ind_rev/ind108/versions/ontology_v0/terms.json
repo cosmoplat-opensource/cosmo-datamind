@@ -1,0 +1,1834 @@
+[
+  {
+    "id": "payment_receipt",
+    "name": "收款",
+    "type": "entity",
+    "definition": "客户回款的记录，每一行代表一笔收款，用于统计「收款笔数」。",
+    "scope": "收款笔数、收款方式与收款日期相关的分析",
+    "aliases": [
+      "收款",
+      "回款",
+      "收款单",
+      "receipts",
+      "incoming payment"
+    ],
+    "evidence": [
+      "ev_payment_receipt_enum"
+    ]
+  },
+  {
+    "id": "receipt_payment_type",
+    "name": "收款方式",
+    "type": "dimension",
+    "definition": "收款使用的结算方式，取值为「电汇」或「银承」；与 is_bank_accepted 一一对应（银承=1，电汇=0）。",
+    "scope": "按收款方式筛选或分组的收款统计",
+    "aliases": [
+      "收款方式",
+      "结算方式",
+      "电汇",
+      "银承",
+      "payment_type"
+    ],
+    "evidence": [
+      "ev_payment_receipt_enum"
+    ]
+  },
+  {
+    "id": "payment_out",
+    "name": "付款（对外付款）",
+    "type": "entity",
+    "definition": "向供应商支付款项的记录，一行代表一笔付款，用于统计「付款笔数」；与客户收款是不同业务对象。",
+    "scope": "付款笔数、付款方式、付款银行账号分析",
+    "aliases": [
+      "付款",
+      "对外付款",
+      "付款笔数",
+      "payment out",
+      "outgoing payment"
+    ],
+    "evidence": [
+      "ev_payment_out_enum",
+      "ev_ap_payment_chain"
+    ]
+  },
+  {
+    "id": "outbound_payment_method",
+    "name": "付款方式（对外付款）",
+    "type": "dimension",
+    "definition": "对外付款采用的结算方式，取值为 bank_transfer 或 letter_of_credit。",
+    "scope": "对外付款的付款方式分析",
+    "aliases": [
+      "付款方式",
+      "payment_method",
+      "bank_transfer",
+      "letter_of_credit"
+    ],
+    "evidence": [
+      "ev_payment_out_enum"
+    ]
+  },
+  {
+    "id": "bank_account",
+    "name": "银行账号",
+    "type": "dimension",
+    "definition": "对外付款所使用的银行账号，形如 SYN-ACCOUNT-0001，是付款笔数的筛选与分组维度。",
+    "scope": "按银行账号统计付款笔数",
+    "aliases": [
+      "银行账号",
+      "账号",
+      "bank_account"
+    ],
+    "evidence": [
+      "ev_payment_out_enum"
+    ]
+  },
+  {
+    "id": "supplier",
+    "name": "供应商",
+    "type": "entity",
+    "definition": "供应商主数据，含供应商类别、省市、信用等级、合作起始日期等属性。",
+    "scope": "供应商相关的两跳分析（城市或类别 -> 业务记录）",
+    "aliases": [
+      "供应商",
+      "厂商",
+      "supplier",
+      "vendor"
+    ],
+    "evidence": [
+      "ev_fk_integrity"
+    ]
+  },
+  {
+    "id": "supplier_category",
+    "name": "供应商类别",
+    "type": "category",
+    "definition": "供应商的分类，如「树脂供应商」「助剂供应商」「增强填充供应商」「包装材料供应商」。",
+    "scope": "按供应商类别筛选与统计",
+    "aliases": [
+      "供应商类别",
+      "供应商分类",
+      "supplier category"
+    ],
+    "evidence": [
+      "ev_fk_integrity"
+    ]
+  },
+  {
+    "id": "supplier_eval",
+    "name": "供应商评估",
+    "type": "entity",
+    "definition": "对供应商的周期性评估记录，含交付、质量、服务分项得分与综合评分 total_score、评级 grade。",
+    "scope": "供应商评级、评估期间与综合评分统计",
+    "aliases": [
+      "供应商评估",
+      "供应商考评",
+      "supplier evaluation"
+    ],
+    "evidence": [
+      "ev_supplier_eval_grade"
+    ]
+  },
+  {
+    "id": "supplier_grade",
+    "name": "供应商评级",
+    "type": "category",
+    "definition": "供应商评估的等级结论，取值为 AA 或 A。",
+    "scope": "按评级筛选供应商评估记录",
+    "aliases": [
+      "评级",
+      "等级",
+      "grade",
+      "AA",
+      "A"
+    ],
+    "evidence": [
+      "ev_supplier_eval_grade"
+    ]
+  },
+  {
+    "id": "purchase_order",
+    "name": "采购订单",
+    "type": "entity",
+    "definition": "采购订单主表，含供应商、下单日期、交货日期、总金额、付款条件与状态。",
+    "scope": "采购订单金额、付款条件与状态统计",
+    "aliases": [
+      "采购订单",
+      "采购单",
+      "PO",
+      "purchase order"
+    ],
+    "evidence": [
+      "ev_purchase_order_enum"
+    ]
+  },
+  {
+    "id": "po_payment_terms",
+    "name": "付款条件",
+    "type": "dimension",
+    "definition": "采购订单约定的付款条件，取值为「月结30天」「月结45天」「月结60天」。",
+    "scope": "按付款条件筛选采购订单",
+    "aliases": [
+      "付款条件",
+      "账期",
+      "payment_terms",
+      "月结"
+    ],
+    "evidence": [
+      "ev_purchase_order_enum"
+    ]
+  },
+  {
+    "id": "po_line",
+    "name": "采购订单行",
+    "type": "entity",
+    "definition": "采购订单明细行，含物料、数量、单价、金额与累计已收货数量 received_qty。",
+    "scope": "订单行单价、金额与累计已收货数量统计",
+    "aliases": [
+      "采购订单行",
+      "订单明细",
+      "po line"
+    ],
+    "evidence": [
+      "ev_fk_integrity"
+    ]
+  },
+  {
+    "id": "po_line_received_qty",
+    "name": "累计已收货数量",
+    "type": "metric",
+    "definition": "采购订单行上累计已收货的数量，按物料汇总即得物料的累计已收货量。",
+    "scope": "物料累计已收货数量排序",
+    "aliases": [
+      "累计已收货数量",
+      "已收货数量",
+      "received_qty"
+    ],
+    "evidence": [
+      "ev_fk_integrity"
+    ]
+  },
+  {
+    "id": "purchase_requisition",
+    "name": "采购申请",
+    "type": "entity",
+    "definition": "采购申请记录，含申请部门、申请人、申请日期、需求日期与总金额。",
+    "scope": "采购申请的条数、金额与状态统计",
+    "aliases": [
+      "采购申请",
+      "请购单",
+      "PR",
+      "purchase requisition"
+    ],
+    "evidence": [
+      "ev_time_coverage"
+    ]
+  },
+  {
+    "id": "goods_receipt",
+    "name": "收货单",
+    "type": "entity",
+    "definition": "采购收货单，含关联采购订单、收货日期、收货数量与来料检验结果。",
+    "scope": "收货单条数、检验结果与收货量统计",
+    "aliases": [
+      "收货单",
+      "入库单",
+      "收货记录",
+      "goods receipt"
+    ],
+    "evidence": [
+      "ev_goods_receipt_result"
+    ]
+  },
+  {
+    "id": "inspection_result",
+    "name": "来料检验结果",
+    "type": "dimension",
+    "definition": "收货单的来料检验结论，取值为 pass 或 fail。",
+    "scope": "按检验结果筛选收货单",
+    "aliases": [
+      "检验结果",
+      "来料检验",
+      "inspection_result",
+      "pass",
+      "fail"
+    ],
+    "evidence": [
+      "ev_goods_receipt_result"
+    ]
+  },
+  {
+    "id": "account_payable",
+    "name": "应付账款",
+    "type": "entity",
+    "definition": "应付账款记录，含供应商、金额、到期日期与状态（closed / open）。",
+    "scope": "应付账款到期、金额与状态统计",
+    "aliases": [
+      "应付账款",
+      "应付",
+      "应付款",
+      "AP",
+      "account payable"
+    ],
+    "evidence": [
+      "ev_ap_payment_chain"
+    ]
+  },
+  {
+    "id": "contract",
+    "name": "合同",
+    "type": "entity",
+    "definition": "合同记录，含合同类型（purchase / sales）、交易方、起止日期、合同金额与状态。",
+    "scope": "合同类型与到期日期筛选",
+    "aliases": [
+      "合同",
+      "contract",
+      "合同类型"
+    ],
+    "evidence": [
+      "ev_contract_enum"
+    ]
+  },
+  {
+    "id": "fixed_asset",
+    "name": "固定资产",
+    "type": "entity",
+    "definition": "固定资产台账，含资产类别、原值、月折旧额、累计折旧 accumulated_dep 与净值。",
+    "scope": "固定资产折旧分析",
+    "aliases": [
+      "固定资产",
+      "资产",
+      "fixed asset"
+    ],
+    "evidence": [
+      "ev_fixed_asset"
+    ]
+  },
+  {
+    "id": "accumulated_dep",
+    "name": "累计折旧金额",
+    "type": "metric",
+    "definition": "固定资产自投入使用以来累计计提的折旧金额（账面静态值）。",
+    "scope": "累计折旧金额的排序与比较",
+    "aliases": [
+      "累计折旧",
+      "累计折旧金额",
+      "accumulated_dep"
+    ],
+    "evidence": [
+      "ev_fixed_asset"
+    ]
+  },
+  {
+    "id": "inventory",
+    "name": "库存",
+    "type": "entity",
+    "definition": "库存记录，含产品、批次、入库日期 warehouse_date、数量、单位成本与在库天数 storage_days。",
+    "scope": "平均在库天数、按入库年份筛选库存",
+    "aliases": [
+      "库存",
+      "在库",
+      "inventory",
+      "stock"
+    ],
+    "evidence": [
+      "ev_inventory_grain"
+    ]
+  },
+  {
+    "id": "storage_days",
+    "name": "在库天数",
+    "type": "metric",
+    "definition": "库存自入库日期起在库的天数，由入库日期推算。",
+    "scope": "平均在库天数计算",
+    "aliases": [
+      "在库天数",
+      "库龄",
+      "storage_days"
+    ],
+    "evidence": [
+      "ev_inventory_grain"
+    ]
+  },
+  {
+    "id": "product_cost",
+    "name": "产品成本",
+    "type": "entity",
+    "definition": "按期间或批次归集的产品成本记录，含 material_cost、labor_cost、overhead_cost、total_cost 与单位成本。",
+    "scope": "产品成本构成与材料成本分析",
+    "aliases": [
+      "产品成本",
+      "成本核算",
+      "product cost"
+    ],
+    "evidence": [
+      "ev_fk_integrity"
+    ]
+  },
+  {
+    "id": "material_cost",
+    "name": "材料成本",
+    "type": "metric",
+    "definition": "产品在给定期间或批次归集的材料成本金额。",
+    "scope": "按产品汇总材料成本",
+    "aliases": [
+      "材料成本",
+      "原材料成本",
+      "material_cost"
+    ],
+    "evidence": [
+      "ev_fk_integrity"
+    ]
+  },
+  {
+    "id": "expense",
+    "name": "费用报销",
+    "type": "entity",
+    "definition": "费用报销记录，含报销人、部门、费用类型、报销日期与金额。",
+    "scope": "费用类型分布与报销金额统计",
+    "aliases": [
+      "费用报销",
+      "报销",
+      "费用",
+      "expense",
+      "reimbursement"
+    ],
+    "evidence": [
+      "ev_expense_type"
+    ]
+  },
+  {
+    "id": "expense_type",
+    "name": "费用类型",
+    "type": "dimension",
+    "definition": "报销的费用科目，如差旅费、渠道佣金、业务招待费、办公费、运输费等，共 8 类。",
+    "scope": "按费用类型筛选或分组报销",
+    "aliases": [
+      "费用类型",
+      "费用科目",
+      "expense_type"
+    ],
+    "evidence": [
+      "ev_expense_type"
+    ]
+  },
+  {
+    "id": "budget",
+    "name": "预算（成本中心口径）",
+    "type": "concept",
+    "definition": "以成本中心为口径的年度/月度预算记录，含预算金额与实际金额。",
+    "scope": "成本中心维度的预算金额分析",
+    "aliases": [
+      "预算",
+      "预算金额",
+      "budget"
+    ],
+    "evidence": [
+      "ev_budget_dual_source"
+    ]
+  },
+  {
+    "id": "budget_expense",
+    "name": "费用预算（部门口径）",
+    "type": "concept",
+    "definition": "以部门为口径的年度/月度费用预算记录，仅含预算金额，需经部门再关联区域。",
+    "scope": "区域或部门维度的费用预算条数统计",
+    "aliases": [
+      "费用预算",
+      "部门预算",
+      "budget_expense"
+    ],
+    "evidence": [
+      "ev_budget_dual_source",
+      "ev_department_region"
+    ]
+  },
+  {
+    "id": "cost_center",
+    "name": "成本中心",
+    "type": "entity",
+    "definition": "成本中心主数据，含编码、名称、所属部门与业务单元；车间同名成本中心用于车间成本归集。",
+    "scope": "预算与成本按成本中心归集",
+    "aliases": [
+      "成本中心",
+      "cost center",
+      "cc"
+    ],
+    "evidence": [
+      "ev_budget_dual_source"
+    ]
+  },
+  {
+    "id": "department",
+    "name": "部门",
+    "type": "entity",
+    "definition": "部门主数据；销售部门通过 region_id 关联区域，职能与生产部门无区域。",
+    "scope": "部门到区域的两跳分析、部门口径的预算与报销",
+    "aliases": [
+      "部门",
+      "department",
+      "dept"
+    ],
+    "evidence": [
+      "ev_department_region"
+    ]
+  },
+  {
+    "id": "region",
+    "name": "区域",
+    "type": "dimension",
+    "definition": "销售区域，取值为华东、华南、华北、西南、华中、西北。",
+    "scope": "按区域筛选部门相关的记录",
+    "aliases": [
+      "区域",
+      "大区",
+      "region"
+    ],
+    "evidence": [
+      "ev_department_region"
+    ]
+  },
+  {
+    "id": "ar_aging",
+    "name": "应收账款账龄",
+    "type": "entity",
+    "definition": "应收账款账龄记录，按账龄区间分列金额，并按业务员与客户归集。",
+    "scope": "账龄区间金额与业务员排序",
+    "aliases": [
+      "应收账款",
+      "账龄",
+      "应收",
+      "AR aging"
+    ],
+    "evidence": [
+      "ev_ar_aging_buckets"
+    ]
+  },
+  {
+    "id": "aging_bucket",
+    "name": "账龄区间",
+    "type": "dimension",
+    "definition": "账龄金额分桶列：aging_1m、aging_2m、aging_3m、aging_4m、aging_5m、aging_6m、aging_6_12m、aging_12m_plus，另有余额列 balance_amount。",
+    "scope": "按账龄区间筛选应收账款金额",
+    "aliases": [
+      "账龄",
+      "账龄区间",
+      "3-4月",
+      "aging"
+    ],
+    "evidence": [
+      "ev_ar_aging_buckets"
+    ]
+  },
+  {
+    "id": "turnover_rate_target",
+    "name": "周转率目标",
+    "type": "metric",
+    "definition": "按员工与年度设定的周转率目标值。",
+    "scope": "周转率目标合计排序",
+    "aliases": [
+      "周转率目标",
+      "周转率",
+      "turnover rate target"
+    ],
+    "evidence": [
+      "ev_metric_config"
+    ]
+  },
+  {
+    "id": "customer",
+    "name": "客户",
+    "type": "entity",
+    "definition": "客户主数据，含行业、省市、市场容量、最近交易日期 last_deal_date、信用状态等。",
+    "scope": "客户维度及其两跳分析",
+    "aliases": [
+      "客户",
+      "customer"
+    ],
+    "evidence": [
+      "ev_fk_integrity"
+    ]
+  },
+  {
+    "id": "customer_last_deal_date",
+    "name": "最近交易日期",
+    "type": "dimension",
+    "definition": "客户主数据上记录的最后一次交易日期，是客户属性而非订单日期。",
+    "scope": "按最近交易日期筛选客户",
+    "aliases": [
+      "最近交易日期",
+      "最后交易日",
+      "last_deal_date"
+    ],
+    "evidence": [
+      "ev_fk_integrity"
+    ]
+  },
+  {
+    "id": "sales_order",
+    "name": "销售订单",
+    "type": "entity",
+    "definition": "销售订单主表，含客户、业务员、产品、数量、金额、成本与毛利、以及订单状态。",
+    "scope": "订单数、金额、毛利与状态统计",
+    "aliases": [
+      "销售订单",
+      "订单",
+      "SO",
+      "sales order"
+    ],
+    "evidence": [
+      "ev_sales_order_status"
+    ]
+  },
+  {
+    "id": "sales_order_status",
+    "name": "销售订单状态",
+    "type": "dimension",
+    "definition": "销售订单状态，取值为 delivered（已交付）、undelivered（未交付）、returned（已退回）。",
+    "scope": "按订单状态筛选或分组",
+    "aliases": [
+      "订单状态",
+      "status",
+      "delivered",
+      "undelivered",
+      "已交付"
+    ],
+    "evidence": [
+      "ev_sales_order_status"
+    ]
+  },
+  {
+    "id": "delivery",
+    "name": "发货",
+    "type": "entity",
+    "definition": "销售订单对应的发货记录，含发货日期、数量与金额，并可标记寄售。",
+    "scope": "发货金额与发货数量汇总",
+    "aliases": [
+      "发货",
+      "出库",
+      "发货单",
+      "delivery",
+      "shipment"
+    ],
+    "evidence": [
+      "ev_fk_integrity"
+    ]
+  },
+  {
+    "id": "delivery_amount",
+    "name": "发货金额",
+    "type": "metric",
+    "definition": "发货记录对应的金额。",
+    "scope": "按订单状态等维度汇总发货金额",
+    "aliases": [
+      "发货金额",
+      "delivery amount"
+    ],
+    "evidence": [
+      "ev_fk_integrity"
+    ]
+  },
+  {
+    "id": "delivery_quantity",
+    "name": "发货数量",
+    "type": "metric",
+    "definition": "发货记录的数量，单位为吨。",
+    "scope": "按订单状态等维度汇总发货数量",
+    "aliases": [
+      "发货数量",
+      "delivery quantity"
+    ],
+    "evidence": [
+      "ev_fk_integrity"
+    ]
+  },
+  {
+    "id": "sales_return",
+    "name": "退货单",
+    "type": "entity",
+    "definition": "销售退货记录，含关联订单、退货日期、数量、金额与退货原因。",
+    "scope": "退货笔数与退货原因统计",
+    "aliases": [
+      "退货",
+      "退货单",
+      "return"
+    ],
+    "evidence": [
+      "ev_return_reason"
+    ]
+  },
+  {
+    "id": "return_reason",
+    "name": "退货原因",
+    "type": "dimension",
+    "definition": "退货原因自由文本，共 5 种取值，如「客户订单变更取消」「产品质量问题:冲击强度偏低」。",
+    "scope": "按退货原因筛选或分组退货",
+    "aliases": [
+      "退货原因",
+      "退货理由",
+      "reason"
+    ],
+    "evidence": [
+      "ev_return_reason"
+    ]
+  },
+  {
+    "id": "quotation",
+    "name": "报价单",
+    "type": "entity",
+    "definition": "报价单记录，含客户、业务员、产品、数量、单价、有效期与状态。",
+    "scope": "报价单张数、单价与状态统计",
+    "aliases": [
+      "报价单",
+      "报价",
+      "quotation",
+      "quote"
+    ],
+    "evidence": [
+      "ev_quotation_status"
+    ]
+  },
+  {
+    "id": "quotation_status",
+    "name": "报价单状态",
+    "type": "dimension",
+    "definition": "报价单状态，取值为 draft（草稿）、won（成交）、lost（流失）。",
+    "scope": "按报价单状态筛选或分组",
+    "aliases": [
+      "报价单状态",
+      "draft",
+      "won",
+      "lost",
+      "草稿"
+    ],
+    "evidence": [
+      "ev_quotation_status"
+    ]
+  },
+  {
+    "id": "opportunity",
+    "name": "商机",
+    "type": "entity",
+    "definition": "商机记录，含客户、负责业务员、创建日期、预估数量与金额、状态与关闭日期。",
+    "scope": "商机数量、预估金额与状态统计",
+    "aliases": [
+      "商机",
+      "销售机会",
+      "opportunity",
+      "opp"
+    ],
+    "evidence": [
+      "ev_opportunity_status"
+    ]
+  },
+  {
+    "id": "opportunity_status",
+    "name": "商机状态",
+    "type": "dimension",
+    "definition": "商机状态，取值为 open、won、lost、stalled；「已关闭的商机」按 close_date 判断。",
+    "scope": "按商机状态筛选或分组",
+    "aliases": [
+      "商机状态",
+      "商机阶段",
+      "open",
+      "won",
+      "lost",
+      "stalled"
+    ],
+    "evidence": [
+      "ev_opportunity_status"
+    ]
+  },
+  {
+    "id": "estimated_amount",
+    "name": "商机预估金额",
+    "type": "metric",
+    "definition": "商机的预估金额，按业务员或客户汇总即得「预估金额合计」。",
+    "scope": "预估金额合计排序",
+    "aliases": [
+      "预估金额",
+      "商机金额",
+      "estimated_amount"
+    ],
+    "evidence": [
+      "ev_opportunity_status"
+    ]
+  },
+  {
+    "id": "estimated_quantity",
+    "name": "商机预估数量",
+    "type": "metric",
+    "definition": "商机的预估数量（销量口径）；数据库的指标目录把「商机预估销量」定义在商机预估数量上。",
+    "scope": "预估销量合计排序",
+    "aliases": [
+      "预估销量",
+      "商机预估数量",
+      "estimated_quantity"
+    ],
+    "evidence": [
+      "ev_metric_config"
+    ]
+  },
+  {
+    "id": "sample",
+    "name": "送样",
+    "type": "entity",
+    "definition": "送样记录，含客户、业务员、送样日期、送样数量、反馈日期、反馈结果与是否成功。",
+    "scope": "送样成功数、反馈结果分布与按年份筛选",
+    "aliases": [
+      "送样",
+      "样品",
+      "sample"
+    ],
+    "evidence": [
+      "ev_sample_feedback"
+    ]
+  },
+  {
+    "id": "sample_feedback_result",
+    "name": "送样反馈结果",
+    "type": "dimension",
+    "definition": "送样反馈结论，取值为 success 或 fail；未反馈的记录该列为空值。",
+    "scope": "按反馈结果筛选或分组送样",
+    "aliases": [
+      "反馈结果",
+      "送样反馈",
+      "feedback_result",
+      "success",
+      "fail"
+    ],
+    "evidence": [
+      "ev_sample_feedback"
+    ]
+  },
+  {
+    "id": "sample_success",
+    "name": "送样成功",
+    "type": "metric",
+    "definition": "送样成功标识 is_success，1 表示成功，与反馈结果为 success 等价；可求和或计数。",
+    "scope": "送样成功合计",
+    "aliases": [
+      "送样成功",
+      "成功数",
+      "is_success"
+    ],
+    "evidence": [
+      "ev_sample_feedback"
+    ]
+  },
+  {
+    "id": "gross_profit_actual",
+    "name": "实际毛利",
+    "type": "metric",
+    "definition": "销售订单上的实际毛利金额；该表同时存在标准毛利与多种成本列，实际毛利须取实际值列。",
+    "scope": "实际毛利的合计与平均",
+    "aliases": [
+      "实际毛利",
+      "毛利",
+      "gross_profit_actual",
+      "gross profit"
+    ],
+    "evidence": [
+      "ev_fk_integrity"
+    ]
+  },
+  {
+    "id": "sales_target",
+    "name": "销售目标",
+    "type": "entity",
+    "definition": "按员工与年月分解的销售目标，含销量目标、利润目标、收款目标与销售额目标。",
+    "scope": "销售目标类指标的合计与排序",
+    "aliases": [
+      "销售目标",
+      "目标",
+      "sales target"
+    ],
+    "evidence": [
+      "ev_metric_config"
+    ]
+  },
+  {
+    "id": "target_sales_quantity",
+    "name": "销量目标",
+    "type": "metric",
+    "definition": "销售目标记录中分解到员工与月份的销量目标值。",
+    "scope": "销量目标合计排序",
+    "aliases": [
+      "销量目标",
+      "销售数量目标",
+      "sales_quantity_target"
+    ],
+    "evidence": [
+      "ev_metric_config"
+    ]
+  },
+  {
+    "id": "product",
+    "name": "产品",
+    "type": "entity",
+    "definition": "产品主数据，含所属产品线、规格、标准成本、技术成本与指导价。",
+    "scope": "产品维度关联与产品名称输出",
+    "aliases": [
+      "产品",
+      "产品名称",
+      "product"
+    ],
+    "evidence": [
+      "ev_fk_integrity"
+    ]
+  },
+  {
+    "id": "product_line",
+    "name": "产品线",
+    "type": "entity",
+    "definition": "产品线主数据，如「PP改性系列」「PA改性系列」「ABS/PC合金系列」「特种工程塑料系列」，经产品关联到销售订单。",
+    "scope": "按产品线筛选销售订单等业务",
+    "aliases": [
+      "产品线",
+      "产品系列",
+      "product line"
+    ],
+    "evidence": [
+      "ev_fk_integrity"
+    ]
+  },
+  {
+    "id": "material",
+    "name": "物料",
+    "type": "entity",
+    "definition": "物料主数据（原材料口径），含物料类别、规格、单位、单价与默认供应商。",
+    "scope": "物料相关的采购与收货分析",
+    "aliases": [
+      "物料",
+      "原材料",
+      "material"
+    ],
+    "evidence": [
+      "ev_fk_integrity"
+    ]
+  },
+  {
+    "id": "material_category",
+    "name": "物料类别",
+    "type": "category",
+    "definition": "物料的分类，如「通用树脂」「工程塑料树脂」「特种工程塑料树脂」「增强与填充」「助剂」「树脂」。",
+    "scope": "按物料类别筛选与统计物料",
+    "aliases": [
+      "物料类别",
+      "物料分类",
+      "material category"
+    ],
+    "evidence": [
+      "ev_fk_integrity"
+    ]
+  },
+  {
+    "id": "iot_data",
+    "name": "IoT数据",
+    "type": "entity",
+    "definition": "传感器采集的 IoT 数据，含时间戳、数值、单位与数据质量标志。",
+    "scope": "IoT 数据条数与质量分布",
+    "aliases": [
+      "IoT数据",
+      "传感器数据",
+      "iot data"
+    ],
+    "evidence": [
+      "ev_iot_quality"
+    ]
+  },
+  {
+    "id": "iot_quality_flag",
+    "name": "数据质量标志",
+    "type": "dimension",
+    "definition": "IoT 数据的质量标志，取值为 good 或 uncertain。",
+    "scope": "按质量标志筛选 IoT 数据",
+    "aliases": [
+      "数据质量",
+      "质量标志",
+      "quality_flag",
+      "good",
+      "uncertain"
+    ],
+    "evidence": [
+      "ev_iot_quality"
+    ]
+  },
+  {
+    "id": "production_order",
+    "name": "生产工单",
+    "type": "entity",
+    "definition": "生产工单，含产线、产品、批次、计划与实际产量、运行时长与状态。",
+    "scope": "工单数、产量、运行时长与状态统计",
+    "aliases": [
+      "生产工单",
+      "工单",
+      "MO",
+      "production order"
+    ],
+    "evidence": [
+      "ev_production_order_status"
+    ]
+  },
+  {
+    "id": "production_order_status",
+    "name": "工单状态",
+    "type": "dimension",
+    "definition": "生产工单状态，取中文值「已完成」「待生产」「生产中」。",
+    "scope": "按工单状态筛选或分组",
+    "aliases": [
+      "工单状态",
+      "已完成",
+      "待生产",
+      "生产中"
+    ],
+    "evidence": [
+      "ev_production_order_status"
+    ]
+  },
+  {
+    "id": "order_runtime_hours",
+    "name": "工单运行时长",
+    "type": "metric",
+    "definition": "生产工单的运行时长（小时），可按产线汇总。",
+    "scope": "按产线汇总工单运行时长",
+    "aliases": [
+      "运行时长",
+      "工单时长",
+      "runtime_hours"
+    ],
+    "evidence": [
+      "ev_production_order_status"
+    ]
+  },
+  {
+    "id": "actual_run_hours",
+    "name": "实际运行小时数",
+    "type": "metric",
+    "definition": "设备或产线的实际运行小时数。",
+    "scope": "实际运行小时数的合计",
+    "aliases": [
+      "实际运行小时数",
+      "运行小时",
+      "actual_run_hours"
+    ],
+    "evidence": [
+      "ev_downtime_volume"
+    ]
+  },
+  {
+    "id": "production_output",
+    "name": "产出记录",
+    "type": "entity",
+    "definition": "生产产出记录，含关联工单、产出日期、产出数量与产品等级 grade。",
+    "scope": "产品等级分布与产出条数统计",
+    "aliases": [
+      "产出记录",
+      "产量记录",
+      "production output"
+    ],
+    "evidence": [
+      "ev_output_grade"
+    ]
+  },
+  {
+    "id": "output_grade",
+    "name": "产品等级",
+    "type": "category",
+    "definition": "产出记录的产品等级，取值为「一等品」「优等品」「合格品」「返工品」。",
+    "scope": "按产品等级筛选或分组产出记录",
+    "aliases": [
+      "产品等级",
+      "等级",
+      "grade",
+      "一等品",
+      "优等品"
+    ],
+    "evidence": [
+      "ev_output_grade"
+    ]
+  },
+  {
+    "id": "production_line",
+    "name": "产线",
+    "type": "entity",
+    "definition": "产线主数据（如 PP挤出1线、PA挤出3线、特塑挤出1线），上属车间。",
+    "scope": "产线维度的产量、能耗、停机与维护分析",
+    "aliases": [
+      "产线",
+      "生产线",
+      "line"
+    ],
+    "evidence": [
+      "ev_equipment_manufacturer"
+    ]
+  },
+  {
+    "id": "workshop",
+    "name": "车间",
+    "type": "entity",
+    "definition": "车间主数据（如 PP改性车间、PA改性车间、阻燃材料车间）；产线、事故、能耗与审计均按车间归集。",
+    "scope": "车间维度统计",
+    "aliases": [
+      "车间",
+      "workshop"
+    ],
+    "evidence": [
+      "ev_department_region"
+    ]
+  },
+  {
+    "id": "equipment",
+    "name": "设备",
+    "type": "entity",
+    "definition": "设备台账，含设备类型、所在产线、制造商、安装日期与状态。",
+    "scope": "设备维度的维护、告警与运行分析",
+    "aliases": [
+      "设备",
+      "机台",
+      "equipment"
+    ],
+    "evidence": [
+      "ev_equipment_manufacturer"
+    ]
+  },
+  {
+    "id": "equipment_manufacturer",
+    "name": "设备制造商",
+    "type": "dimension",
+    "definition": "设备台账上的制造商名称，如「示例机械F」。",
+    "scope": "按制造商筛选设备相关记录",
+    "aliases": [
+      "制造商",
+      "厂商",
+      "manufacturer",
+      "示例机械"
+    ],
+    "evidence": [
+      "ev_equipment_manufacturer"
+    ]
+  },
+  {
+    "id": "equipment_runtime_record",
+    "name": "设备运行记录",
+    "type": "entity",
+    "definition": "按产线与日期记录的设备运行情况，含计划运行小时、实际运行小时、停机小时与 OEE。",
+    "scope": "设备运行小时数与停机汇总",
+    "aliases": [
+      "设备运行记录",
+      "运行记录",
+      "runtime record"
+    ],
+    "evidence": [
+      "ev_downtime_volume"
+    ]
+  },
+  {
+    "id": "downtime",
+    "name": "停机记录",
+    "type": "entity",
+    "definition": "停机事件记录，含设备、产线、起止时间、持续时长与停机原因。",
+    "scope": "停机次数与停机时长按原因或产线统计",
+    "aliases": [
+      "停机",
+      "停机记录",
+      "downtime"
+    ],
+    "evidence": [
+      "ev_downtime_reason"
+    ]
+  },
+  {
+    "id": "downtime_reason",
+    "name": "停机原因",
+    "type": "category",
+    "definition": "停机原因字典项，共 8 项：设备故障、换产清机、计划保养、物料短缺、质量异常、能源中断、人员不足、滤网更换。",
+    "scope": "按停机原因分组或排序停机次数与时长",
+    "aliases": [
+      "停机原因",
+      "停机分类",
+      "downtime reason"
+    ],
+    "evidence": [
+      "ev_downtime_reason"
+    ]
+  },
+  {
+    "id": "downtime_reason_category",
+    "name": "停机原因大类",
+    "type": "category",
+    "definition": "停机原因的上位分类：设备、工艺、计划、物料、质量、能源、人力。",
+    "scope": "把停机原因汇总到大类",
+    "aliases": [
+      "停机原因大类",
+      "原因分类",
+      "category"
+    ],
+    "evidence": [
+      "ev_downtime_reason"
+    ]
+  },
+  {
+    "id": "downtime_hours",
+    "name": "停机时长",
+    "type": "metric",
+    "definition": "停机事件的持续时长（小时）；日汇总表中也存在同名口径的停机小时数。",
+    "scope": "停机时长合计与排序",
+    "aliases": [
+      "停机时长",
+      "停机时间",
+      "duration_hours"
+    ],
+    "evidence": [
+      "ev_downtime_volume",
+      "ev_downtime_reason"
+    ]
+  },
+  {
+    "id": "maintenance_plan",
+    "name": "维护计划",
+    "type": "entity",
+    "definition": "设备维护计划，含设备、维护类型、周期、下次维护日期与说明。",
+    "scope": "维护计划条数与按类型、日期统计",
+    "aliases": [
+      "维护计划",
+      "保养计划",
+      "maintenance plan"
+    ],
+    "evidence": [
+      "ev_maintenance_enum"
+    ]
+  },
+  {
+    "id": "maint_type",
+    "name": "维护类型",
+    "type": "dimension",
+    "definition": "维护类型；维护计划中取值为「月度检修」「季度大修」，维护工单中还包含「故障维修」。",
+    "scope": "按维护类型筛选或分组",
+    "aliases": [
+      "维护类型",
+      "maint_type",
+      "月度检修",
+      "季度大修",
+      "故障维修"
+    ],
+    "evidence": [
+      "ev_maintenance_enum"
+    ]
+  },
+  {
+    "id": "next_maint_date",
+    "name": "下次维护日期",
+    "type": "dimension",
+    "definition": "维护计划中计划的下一次执行日期。",
+    "scope": "按下次维护日期的年份筛选维护计划",
+    "aliases": [
+      "下次维护日期",
+      "计划日期",
+      "next_date"
+    ],
+    "evidence": [
+      "ev_maintenance_enum"
+    ]
+  },
+  {
+    "id": "maintenance_record",
+    "name": "维护记录",
+    "type": "entity",
+    "definition": "维护执行记录，含设备、维护日期、维护说明、更换备件、工时与费用。",
+    "scope": "维护记录条数、维护工时与费用统计",
+    "aliases": [
+      "维护记录",
+      "维保记录",
+      "maintenance record"
+    ],
+    "evidence": [
+      "ev_maintenance_enum"
+    ]
+  },
+  {
+    "id": "maintenance_labor_hours",
+    "name": "维护工时",
+    "type": "metric",
+    "definition": "维护记录中消耗的工时数，可按设备或制造商汇总。",
+    "scope": "维护工时合计",
+    "aliases": [
+      "维护工时",
+      "工时",
+      "labor_hours"
+    ],
+    "evidence": [
+      "ev_maintenance_enum"
+    ]
+  },
+  {
+    "id": "maintenance_cost",
+    "name": "维护费用",
+    "type": "metric",
+    "definition": "维护记录中发生的费用金额，可按设备或制造商汇总。",
+    "scope": "维护费用合计",
+    "aliases": [
+      "维护费用",
+      "维保费用",
+      "maintenance cost"
+    ],
+    "evidence": [
+      "ev_maintenance_enum"
+    ]
+  },
+  {
+    "id": "alarm",
+    "name": "告警",
+    "type": "entity",
+    "definition": "设备或传感器告警记录，含告警类型、严重度、发生时间、是否处理与处理人。",
+    "scope": "告警条数、严重度分布与按设备统计",
+    "aliases": [
+      "告警",
+      "报警",
+      "alarm"
+    ],
+    "evidence": [
+      "ev_alarm_severity"
+    ]
+  },
+  {
+    "id": "alarm_severity",
+    "name": "告警严重度",
+    "type": "dimension",
+    "definition": "告警严重度，取值为 critical 或 warning。",
+    "scope": "按严重度分组告警",
+    "aliases": [
+      "告警严重度",
+      "severity",
+      "critical",
+      "warning"
+    ],
+    "evidence": [
+      "ev_alarm_severity"
+    ]
+  },
+  {
+    "id": "handled_alarm",
+    "name": "已处理告警",
+    "type": "metric",
+    "definition": "已处理告警的标识 is_handled（1=已处理），用于统计设备的已处理告警数量。",
+    "scope": "按设备统计已处理告警数量",
+    "aliases": [
+      "已处理告警",
+      "已处理",
+      "is_handled"
+    ],
+    "evidence": [
+      "ev_alarm_severity"
+    ]
+  },
+  {
+    "id": "energy_consumption",
+    "name": "能耗记录",
+    "type": "entity",
+    "definition": "产线与车间的能耗记录，同一行同时含用电量、用水量、天然气与蒸汽量以及单位能耗。",
+    "scope": "用电量、用水量、蒸汽量的合计与产线/车间排序",
+    "aliases": [
+      "能耗",
+      "能耗记录",
+      "energy consumption"
+    ],
+    "evidence": [
+      "ev_energy_columns"
+    ]
+  },
+  {
+    "id": "electricity_kwh",
+    "name": "用电量",
+    "type": "metric",
+    "definition": "能耗记录中的用电量（kWh）。",
+    "scope": "用电量合计排序",
+    "aliases": [
+      "用电量",
+      "耗电量",
+      "electricity"
+    ],
+    "evidence": [
+      "ev_energy_columns"
+    ]
+  },
+  {
+    "id": "water_tons",
+    "name": "用水量",
+    "type": "metric",
+    "definition": "能耗记录中的用水量（吨）。",
+    "scope": "用水量合计",
+    "aliases": [
+      "用水量",
+      "水耗",
+      "water"
+    ],
+    "evidence": [
+      "ev_energy_columns"
+    ]
+  },
+  {
+    "id": "steam_tons",
+    "name": "蒸汽量",
+    "type": "metric",
+    "definition": "能耗记录中的蒸汽量（吨）。",
+    "scope": "蒸汽量合计排序",
+    "aliases": [
+      "蒸汽",
+      "蒸汽量",
+      "steam"
+    ],
+    "evidence": [
+      "ev_energy_columns"
+    ]
+  },
+  {
+    "id": "incident",
+    "name": "事故",
+    "type": "entity",
+    "definition": "安全事故记录，含事故类型、严重度、发生日期、车间与产线、受伤人数与死亡人数。",
+    "scope": "事故起数、受伤人数、按类型或严重度分布",
+    "aliases": [
+      "事故",
+      "安全事故",
+      "incident"
+    ],
+    "evidence": [
+      "ev_incident_enum"
+    ]
+  },
+  {
+    "id": "incident_severity",
+    "name": "事故严重度",
+    "type": "category",
+    "definition": "事故严重度编码：fa（死亡事故）、mtc（医疗处理事故）、near_miss（未遂事件）。",
+    "scope": "按严重度筛选或统计事故",
+    "aliases": [
+      "严重度",
+      "事故严重度",
+      "severity",
+      "near_miss",
+      "fa",
+      "mtc"
+    ],
+    "evidence": [
+      "ev_incident_enum"
+    ]
+  },
+  {
+    "id": "incident_type",
+    "name": "事故类型",
+    "type": "dimension",
+    "definition": "事故类型，取值为机械伤害、灼烫、物体打击、触电、车辆伤害、高处坠落。",
+    "scope": "按事故类型分组统计事故起数",
+    "aliases": [
+      "事故类型",
+      "事故类别",
+      "incident_type"
+    ],
+    "evidence": [
+      "ev_incident_enum"
+    ]
+  },
+  {
+    "id": "injury_count",
+    "name": "受伤人数",
+    "type": "metric",
+    "definition": "事故记录中的受伤人数；求和得到受伤人数合计，求平均得到每次事故平均受伤人数。",
+    "scope": "受伤人数合计与平均",
+    "aliases": [
+      "受伤人数",
+      "伤员数",
+      "injury_count"
+    ],
+    "evidence": [
+      "ev_incident_enum"
+    ]
+  },
+  {
+    "id": "risk_assessment",
+    "name": "风险评估",
+    "type": "entity",
+    "definition": "危险源的风险评估记录，含可能性、后果、风险等级与是否需要控制。",
+    "scope": "风险评估次数、等级分布与按危险源统计",
+    "aliases": [
+      "风险评估",
+      "风险评价",
+      "risk assessment"
+    ],
+    "evidence": [
+      "ev_risk_assessment_enum"
+    ]
+  },
+  {
+    "id": "risk_level",
+    "name": "风险等级",
+    "type": "category",
+    "definition": "风险评估得出的等级，取值为 L1 可接受 / L2 可容忍 / L3 不可容忍 / L4 重大。",
+    "scope": "按风险等级筛选或分组风险评估",
+    "aliases": [
+      "风险等级",
+      "等级",
+      "L3",
+      "risk_level"
+    ],
+    "evidence": [
+      "ev_risk_level_dim",
+      "ev_risk_assessment_enum"
+    ]
+  },
+  {
+    "id": "likelihood",
+    "name": "可能性",
+    "type": "dimension",
+    "definition": "风险发生的可能性，取值为 unlikely、possible、likely。",
+    "scope": "按可能性筛选风险评估",
+    "aliases": [
+      "可能性",
+      "likelihood",
+      "unlikely",
+      "possible",
+      "likely"
+    ],
+    "evidence": [
+      "ev_risk_assessment_enum"
+    ]
+  },
+  {
+    "id": "consequence",
+    "name": "后果严重性",
+    "type": "dimension",
+    "definition": "风险后果等级，取值为 minor、moderate、major、catastrophic。",
+    "scope": "按后果等级筛选风险评估",
+    "aliases": [
+      "后果",
+      "后果严重性",
+      "consequence"
+    ],
+    "evidence": [
+      "ev_risk_assessment_enum"
+    ]
+  },
+  {
+    "id": "control_needed",
+    "name": "是否需要控制",
+    "type": "metric",
+    "definition": "风险评估中表示是否需要控制措施的标识（1=需要，0=不需要），可求和。",
+    "scope": "是否需要控制的合计",
+    "aliases": [
+      "是否需要控制",
+      "控制措施",
+      "control_needed"
+    ],
+    "evidence": [
+      "ev_risk_assessment_enum",
+      "ev_hazard_location"
+    ]
+  },
+  {
+    "id": "hazard",
+    "name": "危险源",
+    "type": "entity",
+    "definition": "危险源台账，含危险源类别、所在位置与固有风险等级。",
+    "scope": "按危险源位置筛选并关联风险评估",
+    "aliases": [
+      "危险源",
+      "危害源",
+      "hazard"
+    ],
+    "evidence": [
+      "ev_hazard_location"
+    ]
+  },
+  {
+    "id": "hazard_location",
+    "name": "危险源位置",
+    "type": "dimension",
+    "definition": "危险源的所在位置描述，如「PP改性车间挤出区」「PA改性车间切粒区」。",
+    "scope": "按位置筛选危险源",
+    "aliases": [
+      "位置",
+      "危险源位置",
+      "location"
+    ],
+    "evidence": [
+      "ev_hazard_location"
+    ]
+  },
+  {
+    "id": "safety_plan",
+    "name": "安全计划",
+    "type": "entity",
+    "definition": "安全计划主表，含年度、计划类型、状态、签发日期与签发人。",
+    "scope": "安全计划条数、状态分布与按签发日期筛选",
+    "aliases": [
+      "安全计划",
+      "安全规划",
+      "safety plan"
+    ],
+    "evidence": [
+      "ev_time_coverage"
+    ]
+  },
+  {
+    "id": "safety_plan_status",
+    "name": "安全计划状态",
+    "type": "dimension",
+    "definition": "安全计划状态，取值为 active 或 closed。",
+    "scope": "按状态筛选或分组安全计划",
+    "aliases": [
+      "计划状态",
+      "active",
+      "closed"
+    ],
+    "evidence": [
+      "ev_time_coverage"
+    ]
+  },
+  {
+    "id": "safety_objective",
+    "name": "安全目标",
+    "type": "entity",
+    "definition": "安全计划下的具体目标项，含目标描述、目标值、单位与截止日期。",
+    "scope": "目标值合计与按单位筛选",
+    "aliases": [
+      "安全目标",
+      "目标项",
+      "safety objective"
+    ],
+    "evidence": [
+      "ev_safety_objective_unit"
+    ]
+  },
+  {
+    "id": "objective_target_value",
+    "name": "目标值",
+    "type": "metric",
+    "definition": "安全目标的目标值数值，须结合其单位解释，可求和。",
+    "scope": "安全目标目标值合计",
+    "aliases": [
+      "目标值",
+      "target_value"
+    ],
+    "evidence": [
+      "ev_safety_objective_unit"
+    ]
+  },
+  {
+    "id": "objective_unit",
+    "name": "安全目标单位",
+    "type": "dimension",
+    "definition": "安全目标的计量单位，取值为 %、‰、起。",
+    "scope": "按单位筛选安全目标",
+    "aliases": [
+      "单位",
+      "unit",
+      "起"
+    ],
+    "evidence": [
+      "ev_safety_objective_unit"
+    ]
+  },
+  {
+    "id": "safety_audit",
+    "name": "安全审计",
+    "type": "entity",
+    "definition": "安全审计记录，含审计类型、受审车间、审计日期、评分与发现项数。",
+    "scope": "审计评分平均、发现项数合计与按车间统计",
+    "aliases": [
+      "安全审计",
+      "审计",
+      "safety audit"
+    ],
+    "evidence": [
+      "ev_time_coverage"
+    ]
+  },
+  {
+    "id": "audit_score",
+    "name": "安全审计评分",
+    "type": "metric",
+    "definition": "安全审计得分，取值区间约 82-97 分。",
+    "scope": "审计评分的平均与比较",
+    "aliases": [
+      "审计评分",
+      "评分",
+      "score"
+    ],
+    "evidence": [
+      "ev_time_coverage"
+    ]
+  },
+  {
+    "id": "audit_finding_count",
+    "name": "审计发现项数",
+    "type": "metric",
+    "definition": "安全审计中发现的问题项数量。",
+    "scope": "发现项数合计",
+    "aliases": [
+      "发现项数",
+      "问题项数",
+      "finding_count"
+    ],
+    "evidence": [
+      "ev_time_coverage"
+    ]
+  },
+  {
+    "id": "safety_training",
+    "name": "安全培训",
+    "type": "entity",
+    "definition": "安全培训记录，含培训类型、讲师、培训日期、时长、参训人数与平均分。",
+    "scope": "培训时长、参训人数与讲师维度统计",
+    "aliases": [
+      "安全培训",
+      "培训",
+      "safety training"
+    ],
+    "evidence": [
+      "ev_time_coverage"
+    ]
+  },
+  {
+    "id": "training_trainer",
+    "name": "培训讲师",
+    "type": "entity",
+    "definition": "担任安全培训讲师的人员，通过 trainer_id 关联到员工；讲师本身是员工承担的角色。",
+    "scope": "按讲师汇总培训时长与参训人数",
+    "aliases": [
+      "讲师",
+      "培训师",
+      "trainer"
+    ],
+    "evidence": [
+      "ev_time_coverage"
+    ]
+  },
+  {
+    "id": "attendee_count",
+    "name": "参训人数",
+    "type": "metric",
+    "definition": "安全培训的参训人数，可求和或求平均。",
+    "scope": "参训人数合计排序",
+    "aliases": [
+      "参训人数",
+      "培训人数",
+      "attendee_count"
+    ],
+    "evidence": [
+      "ev_time_coverage"
+    ]
+  },
+  {
+    "id": "training_duration_hours",
+    "name": "培训时长",
+    "type": "metric",
+    "definition": "安全培训的时长（小时）。",
+    "scope": "培训总时长计算",
+    "aliases": [
+      "培训时长",
+      "时长",
+      "duration_hours"
+    ],
+    "evidence": [
+      "ev_time_coverage"
+    ]
+  },
+  {
+    "id": "env_record",
+    "name": "环境监测记录",
+    "type": "entity",
+    "definition": "环境监测记录，含监测类型、污染物、测定值、单位、限值与是否合规。",
+    "scope": "环境监测条数、合规比例与按类型或单位分组",
+    "aliases": [
+      "环境监测",
+      "环保监测",
+      "env record"
+    ],
+    "evidence": [
+      "ev_env_record_enum"
+    ]
+  },
+  {
+    "id": "env_record_type",
+    "name": "监测类型",
+    "type": "dimension",
+    "definition": "环境监测的类型，取值为「季度监测」或「月度监测」。",
+    "scope": "按监测类型筛选或分组",
+    "aliases": [
+      "监测类型",
+      "record_type",
+      "季度监测",
+      "月度监测"
+    ],
+    "evidence": [
+      "ev_env_record_enum"
+    ]
+  },
+  {
+    "id": "env_compliant",
+    "name": "合规",
+    "type": "metric",
+    "definition": "环境监测是否合规的标识（1=合规，0=超标），其均值即合规比例。",
+    "scope": "合规比例计算",
+    "aliases": [
+      "合规",
+      "达标",
+      "is_compliant"
+    ],
+    "evidence": [
+      "ev_env_record_enum"
+    ]
+  },
+  {
+    "id": "employee",
+    "name": "员工",
+    "type": "entity",
+    "definition": "员工主数据，含姓名、部门、入职日期与在职状态（active / inactive）。",
+    "scope": "业务员与讲师等人员维度的统计",
+    "aliases": [
+      "员工",
+      "业务员",
+      "人员",
+      "employee",
+      "salesperson"
+    ],
+    "evidence": [
+      "ev_department_region"
+    ]
+  },
+  {
+    "id": "dws_aggregate_mart",
+    "name": "预聚合指标层",
+    "type": "concept",
+    "definition": "DWS_* 日汇总表与 agg_metric_monthly 月汇总表构成的预聚合层，已按日期、员工、部门或车间预先算好指标，与明细事实表并存。",
+    "scope": "区分明细口径与预聚合口径",
+    "aliases": [
+      "DWS",
+      "汇总表",
+      "指标层",
+      "agg_metric_monthly",
+      "pre-aggregated"
+    ],
+    "evidence": [
+      "ev_dws_marts",
+      "ev_table_inventory"
+    ]
+  },
+  {
+    "id": "year",
+    "name": "年度",
+    "type": "dimension",
+    "definition": "业务年度，由各业务对象自身的日期列取出；数据整体覆盖 2025 年至 2026 年。",
+    "scope": "「2025年」「2026年」等年度筛选",
+    "aliases": [
+      "年",
+      "年度",
+      "year",
+      "2025",
+      "2026"
+    ],
+    "evidence": [
+      "ev_time_coverage"
+    ]
+  }
+]

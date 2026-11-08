@@ -1,0 +1,269 @@
+[
+  {
+    "id": "rel_region_department",
+    "source": "t_region",
+    "relation_type": "composition",
+    "target": "t_department",
+    "connection_condition": "dim_department.region_id 引用 dim_region.region_id;仅 6 个区域销售部有区域归属",
+    "description": "区域由多个销售部门组成,销售部门按区域归口;区域是销售业绩汇总的地理整体",
+    "evidence": [
+      "ev_dept_region_hierarchy"
+    ]
+  },
+  {
+    "id": "rel_department_sales_rep",
+    "source": "t_department",
+    "relation_type": "composition",
+    "target": "t_sales_rep",
+    "connection_condition": "dim_employee.dept_id 引用 dim_department.dept_id",
+    "description": "部门由多名业务员组成,业务员的销售业绩归属其所在部门",
+    "evidence": [
+      "ev_dept_region_hierarchy",
+      "ev_sales_reps_subset"
+    ]
+  },
+  {
+    "id": "rel_employee_sales_rep",
+    "source": "t_employee",
+    "relation_type": "hierarchy",
+    "target": "t_sales_rep",
+    "connection_condition": "t_sales_rep 的取值域是 dim_employee.emp_id 的子集(25 人 ⊆ 122 人)",
+    "description": "业务员是员工的一种职责类型;业务员集合是全体员工的真子集,销售类汇总指标仅覆盖该子集",
+    "evidence": [
+      "ev_sales_reps_subset"
+    ]
+  },
+  {
+    "id": "rel_workshop_production_line",
+    "source": "t_workshop",
+    "relation_type": "composition",
+    "target": "t_production_line",
+    "connection_condition": "dim_production_line.workshop_id 引用 dim_workshop.workshop_id",
+    "description": "车间由多条产线组成,产线的生产与安全指标向上汇入所属车间",
+    "evidence": [
+      "ev_line_workshop_join"
+    ]
+  },
+  {
+    "id": "rel_production_line_equipment",
+    "source": "t_production_line",
+    "relation_type": "composition",
+    "target": "t_equipment",
+    "connection_condition": "dim_equipment.line_id 引用 dim_production_line.line_id;每线 5 台设备",
+    "description": "产线由多台设备组成;设备的停机与告警归集到所属产线",
+    "evidence": [
+      "ev_equipment_daily_grain",
+      "ev_line_workshop_join"
+    ]
+  },
+  {
+    "id": "rel_cost_center_department",
+    "source": "t_department",
+    "relation_type": "composition",
+    "target": "t_cost_center",
+    "connection_condition": "dim_cost_center.dept_id 引用 dim_department.dept_id",
+    "description": "部门下设成本中心,费用与预算按成本中心归集后汇入部门",
+    "evidence": [
+      "ev_finance_monthly_grain"
+    ]
+  },
+  {
+    "id": "rel_customer_opportunity",
+    "source": "t_customer",
+    "relation_type": "association",
+    "target": "t_opportunity",
+    "connection_condition": "fact_opportunity.cust_id 指向 dim_customer.cust_id;converted_order_id 可继续指向销售订单",
+    "description": "商机围绕客户产生,是客户售前阶段的潜在需求",
+    "evidence": [
+      "ev_opportunity_status_enum"
+    ]
+  },
+  {
+    "id": "rel_customer_sales_order",
+    "source": "t_customer",
+    "relation_type": "association",
+    "target": "t_sales_order",
+    "connection_condition": "fact_sales_order.cust_id 指向 dim_customer.cust_id",
+    "description": "客户下达销售订单,客户的销量、金额与毛利均由订单归集",
+    "evidence": [
+      "ev_flow_additivity"
+    ]
+  },
+  {
+    "id": "rel_customer_ar",
+    "source": "t_customer",
+    "relation_type": "association",
+    "target": "t_ar_aging",
+    "connection_condition": "fact_ar_aging.cust_id 指向 dim_customer.cust_id",
+    "description": "客户信用交易形成应收账款,应收账龄反映客户的回款风险",
+    "evidence": [
+      "ev_ar_stock_balance"
+    ]
+  },
+  {
+    "id": "rel_supplier_material",
+    "source": "t_supplier",
+    "relation_type": "association",
+    "target": "t_material",
+    "connection_condition": "dim_material.supplier_id 指向 dim_supplier.supplier_id",
+    "description": "供应商供应原料物料,是采购金额与来料质量的归因主体",
+    "evidence": [
+      "ev_supplier_grade_enum"
+    ]
+  },
+  {
+    "id": "rel_product_production_line",
+    "source": "t_product",
+    "relation_type": "association",
+    "target": "t_production_line",
+    "connection_condition": "DWS_PRODUCTION_DAILY 以 dim_line_id × dim_prod_id 记录产出;产线的 product_type 与产品品类对应",
+    "description": "产品在产线上生产;同一产线可生产多种产品,同一产品也可跨产线生产",
+    "evidence": [
+      "ev_production_grain"
+    ]
+  },
+  {
+    "id": "rel_sales_rep_customer",
+    "source": "t_sales_rep",
+    "relation_type": "association",
+    "target": "t_customer",
+    "connection_condition": "fact_sales_order 与 fact_opportunity 同时携带 emp_id 与 cust_id",
+    "description": "业务员负责维护客户关系;客户归属由订单与商机中的业务员标记体现",
+    "evidence": [
+      "ev_org_performance_grain"
+    ]
+  },
+  {
+    "id": "rel_ar_aging_equiv_receivable",
+    "source": "t_ar_aging",
+    "relation_type": "equivalence",
+    "target": "t_accounts_receivable_balance",
+    "connection_condition": "fact_ar_aging.balance_amount 合计 = DWS_ORG_PERFORMANCE_DAILY.accounts_receivable 在最新日的合计",
+    "description": "账龄明细的未清余额与日汇总的应收账款余额表达同一业务概念,一为明细快照、一为按业务员的日快照",
+    "evidence": [
+      "ev_ar_stock_balance"
+    ]
+  },
+  {
+    "id": "rel_downtime_detail_equiv_summary",
+    "source": "t_downtime_duration_hours",
+    "relation_type": "equivalence",
+    "target": "t_equipment_downtime_hours",
+    "connection_condition": "fact_downtime.duration_hours 合计 10769.67 ≈ DWS_EQUIPMENT_DAILY.downtime_hours 合计 10769.23",
+    "description": "停机明细时长与设备日汇总停机小时表达同一业务概念,明细可按原因归因而汇总不可",
+    "evidence": [
+      "ev_downtime_detail_match"
+    ]
+  },
+  {
+    "id": "rel_sales_amount_gross_profit",
+    "source": "t_sales_amount",
+    "relation_type": "derivation",
+    "target": "t_gross_profit_actual",
+    "connection_condition": "gross_profit_actual = amount - actual_cost_amount(逐行验证成立)",
+    "description": "实际毛利由销售收入减去实际成本推导得出",
+    "evidence": [
+      "ev_gross_profit_derivation"
+    ]
+  },
+  {
+    "id": "rel_output_yield_rate",
+    "source": "t_actual_output_quantity",
+    "relation_type": "derivation",
+    "target": "t_yield_rate",
+    "connection_condition": "yield_rate = actual_quantity / material_input_qty × 100",
+    "description": "成材率由实际产量与投料量推导得出,衡量材料转化效率",
+    "evidence": [
+      "ev_yield_rate_derivation"
+    ]
+  },
+  {
+    "id": "rel_total_cost_unit_cost",
+    "source": "t_total_product_cost",
+    "relation_type": "derivation",
+    "target": "t_unit_product_cost",
+    "connection_condition": "unit_cost = total_cost / output_qty",
+    "description": "单位产出成本由产品总成本除以产出量推导得出",
+    "evidence": [
+      "ev_unit_cost_derivation"
+    ]
+  },
+  {
+    "id": "rel_run_hours_availability",
+    "source": "t_equipment_run_hours",
+    "relation_type": "derivation",
+    "target": "t_equipment_availability_rate",
+    "connection_condition": "设备可用率 = 运行时长 /(运行时长 + 停机时长)× 100",
+    "description": "设备可用率由运行时长与停机时长推导得出",
+    "evidence": [
+      "ev_composite_metric_config"
+    ]
+  },
+  {
+    "id": "rel_electricity_energy_efficiency",
+    "source": "t_electricity_kwh",
+    "relation_type": "derivation",
+    "target": "t_energy_efficiency",
+    "connection_condition": "能耗效率 = 累计产量 / 累计用电量",
+    "description": "能耗效率由产量与用电量推导得出,表示每度电的产出吨数",
+    "evidence": [
+      "ev_composite_metric_config"
+    ]
+  },
+  {
+    "id": "rel_sales_amount_profit_margin",
+    "source": "t_sales_amount",
+    "relation_type": "derivation",
+    "target": "t_operating_profit_margin",
+    "connection_condition": "经营利润率 =(接单金额 - 产品总成本)/ 接单金额 × 100",
+    "description": "经营利润率由接单金额与产品总成本推导得出,是近似毛利率口径",
+    "evidence": [
+      "ev_composite_metric_config"
+    ]
+  },
+  {
+    "id": "rel_sales_amount_input_output_ratio",
+    "source": "t_sales_amount",
+    "relation_type": "derivation",
+    "target": "t_input_output_ratio",
+    "connection_condition": "投入产出比 = 累计接单金额 / 累计采购额 × 100",
+    "description": "投入产出比由接单金额与采购金额推导得出,衡量收入与采购支出之比",
+    "evidence": [
+      "ev_composite_metric_config"
+    ]
+  },
+  {
+    "id": "rel_budget_variance",
+    "source": "t_budget_amount",
+    "relation_type": "derivation",
+    "target": "t_budget_variance_rate",
+    "connection_condition": "预算偏差度 =(实际支出 - 预算)/ 预算 × 100",
+    "description": "预算偏差度由预算金额与预算实际金额推导得出",
+    "evidence": [
+      "ev_composite_metric_config"
+    ]
+  },
+  {
+    "id": "rel_cost_structure",
+    "source": "t_total_product_cost",
+    "relation_type": "composition",
+    "target": "t_material_cost",
+    "connection_condition": "产品总成本 = 材料成本 + 人工成本 + 制造费用",
+    "description": "产品总成本由材料成本、人工成本与制造费用三个成本项构成;制造费用已含折旧",
+    "evidence": [
+      "ev_composite_metric_config"
+    ]
+  },
+  {
+    "id": "rel_downtime_run_hours",
+    "source": "t_equipment_run_hours",
+    "relation_type": "association",
+    "target": "t_equipment_downtime_hours",
+    "connection_condition": "两者在设备日汇总与生产日汇总中并行记录,共同构成设备时间构成",
+    "description": "运行时长与停机时长互为补充,共同描述设备的时间利用结构,但两者归属粒度不同",
+    "evidence": [
+      "ev_equipment_run_hours_repeat",
+      "ev_downtime_detail_match"
+    ]
+  }
+]

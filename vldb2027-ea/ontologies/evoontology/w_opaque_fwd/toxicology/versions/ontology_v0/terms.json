@@ -1,0 +1,318 @@
+[
+  {
+    "id": "term_molecule",
+    "name": "Molecule",
+    "type": "entity",
+    "definition": "A chemical compound in the toxicology dataset, identified by a molecule identifier of the form 'TR' plus three digits. A molecule owns its atoms and its bonds and may carry a carcinogenicity label.",
+    "scope": "Applies to all structural analysis. 444 molecules appear in the structure tables; only 343 of them appear in the molecule label table.",
+    "aliases": [
+      "molecule",
+      "compound",
+      "chemical",
+      "molecule ID",
+      "TR molecule"
+    ],
+    "evidence": [
+      "e_schema",
+      "e_row_counts",
+      "e_molecule_coverage",
+      "e_id_structure"
+    ]
+  },
+  {
+    "id": "term_atom",
+    "name": "Atom",
+    "type": "entity",
+    "definition": "A single atom occurrence inside a molecule, identified by an atom identifier that begins with its molecule identifier. Each atom carries exactly one chemical element symbol and belongs to exactly one molecule.",
+    "scope": "Atom rows are the only place where element information is stored.",
+    "aliases": [
+      "atom",
+      "atom ID",
+      "atom occurrence"
+    ],
+    "evidence": [
+      "e_schema",
+      "e_row_counts",
+      "e_id_structure"
+    ]
+  },
+  {
+    "id": "term_chemical_element",
+    "name": "Chemical Element",
+    "type": "category",
+    "definition": "The element symbol carried by an atom, stored as a lowercase chemical symbol, single-letter or two-letter (for example h, c, o, cl, br, na). Twenty-one distinct elements occur in the data.",
+    "scope": "Used whenever atoms are filtered, grouped, compared or ranked by element. Element identity is independent of molecule identity and of bonding.",
+    "aliases": [
+      "element",
+      "element type",
+      "element symbol",
+      "element name",
+      "chemical symbol"
+    ],
+    "evidence": [
+      "e_elements"
+    ]
+  },
+  {
+    "id": "term_bond",
+    "name": "Bond",
+    "type": "entity",
+    "definition": "A chemical bond inside a molecule, identified by a bond identifier. Each bond connects exactly two atoms of the same molecule and has one bond type.",
+    "scope": "Bonds are molecule-level structures; every bond belongs to exactly one molecule and appears in exactly one molecule's atom network.",
+    "aliases": [
+      "bond",
+      "bond ID",
+      "chemical bond",
+      "connection"
+    ],
+    "evidence": [
+      "e_schema",
+      "e_row_counts",
+      "e_bond_id_parts",
+      "e_bond_integrity"
+    ]
+  },
+  {
+    "id": "term_bond_type",
+    "name": "Bond Type",
+    "type": "category",
+    "definition": "The order of a bond, represented by a symbol: single, double or triple. One bond carries an empty type value, which is an unknown type rather than a fourth category.",
+    "scope": "Available for all bonds, including bonds in unlabeled molecules.",
+    "aliases": [
+      "bond type",
+      "bond order",
+      "single bond",
+      "double bond",
+      "triple bond",
+      "single",
+      "double",
+      "triple"
+    ],
+    "evidence": [
+      "e_bond_types"
+    ]
+  },
+  {
+    "id": "term_carcinogenicity_label",
+    "name": "Carcinogenicity Label",
+    "type": "category",
+    "definition": "A molecule-level binary label: the value '+' marks a carcinogenic molecule and the value '-' marks a non-carcinogenic molecule. Labels are recorded only for molecules present in the label table and are never stored on atoms or bonds.",
+    "scope": "Applies at molecule grain only. Atoms and bonds take their carcinogenic status from the molecule that owns them.",
+    "aliases": [
+      "label",
+      "carcinogenicity",
+      "carcinogenic label",
+      "toxicity label",
+      "positive label",
+      "negative label",
+      "carcinogenic",
+      "non-carcinogenic"
+    ],
+    "evidence": [
+      "e_labels",
+      "e_molecule_coverage"
+    ]
+  },
+  {
+    "id": "term_carcinogenic_molecule",
+    "name": "Carcinogenic Molecule",
+    "type": "category",
+    "definition": "A molecule whose carcinogenicity label is '+'. Such molecules form a subset of all labeled molecules.",
+    "scope": "152 of the 343 labeled molecules.",
+    "aliases": [
+      "carcinogenic",
+      "carcinogenic molecule",
+      "carcinogenic molecules",
+      "carcinogen",
+      "toxic molecule"
+    ],
+    "evidence": [
+      "e_labels"
+    ]
+  },
+  {
+    "id": "term_non_carcinogenic_molecule",
+    "name": "Non-carcinogenic Molecule",
+    "type": "category",
+    "definition": "A molecule whose carcinogenicity label is '-', meaning the molecule is recorded as not carcinogenic.",
+    "scope": "191 of the 343 labeled molecules. Molecules without a label are not non-carcinogenic molecules; their status is unknown.",
+    "aliases": [
+      "non-carcinogenic",
+      "non-carcinogenic molecule",
+      "non-carcinogenic molecules",
+      "not carcinogenic",
+      "noncarcinogenic"
+    ],
+    "evidence": [
+      "e_labels",
+      "e_molecule_coverage"
+    ]
+  },
+  {
+    "id": "term_bond_atom_incidence",
+    "name": "Bond-Atom Incidence",
+    "type": "concept",
+    "definition": "The pairing of a bond with one of its two endpoint atoms. The incidence table records every bond twice, once from each endpoint, so it is an undirected relation expressed as two mirrored rows. It is the authoritative source for which atoms a bond joins and for how many bonds an atom participates in.",
+    "scope": "Required whenever bond endpoints, bond counts per atom, or atom counts within bond-based filters are needed.",
+    "aliases": [
+      "bond endpoint",
+      "bond atoms",
+      "atoms of a bond",
+      "incidence",
+      "bond connection",
+      "endpoint atoms"
+    ],
+    "evidence": [
+      "e_incidence",
+      "e_bond_integrity"
+    ]
+  },
+  {
+    "id": "term_molecule_element_composition",
+    "name": "Molecule Element Composition",
+    "type": "metric",
+    "definition": "The number of atoms of each chemical element contained in a molecule. Composition is counted from the atoms that belong to the molecule, and the counts over all elements sum to the molecule's total atom count.",
+    "scope": "Per molecule. Aggregating the same counts over a molecule population yields element frequencies and element shares.",
+    "aliases": [
+      "element composition",
+      "element count",
+      "number of atoms of an element",
+      "element ratio",
+      "composition"
+    ],
+    "evidence": [
+      "e_presence",
+      "e_elements"
+    ]
+  },
+  {
+    "id": "term_atom_bond_count",
+    "name": "Atom Bond Count",
+    "type": "metric",
+    "definition": "The number of distinct bonds in which an atom participates, derived from bond-atom incidence. An atom with no recorded incident bond has a count of zero.",
+    "scope": "Per atom. Averaged over a set of atoms it gives the average number of bonds those atoms have.",
+    "aliases": [
+      "number of bonds",
+      "bonds per atom",
+      "average number of bonds",
+      "bond count",
+      "atom degree"
+    ],
+    "evidence": [
+      "e_incidence",
+      "e_multibond",
+      "e_unbonded"
+    ]
+  },
+  {
+    "id": "term_element_atom_count",
+    "name": "Element Atom Count",
+    "type": "metric",
+    "definition": "The total number of atoms carrying a given element symbol across a molecule population, optionally restricted by the carcinogenicity label of the owning molecules. Distinct atoms are counted once regardless of how many bonds they have.",
+    "scope": "Population-level count used for comparisons such as the most or least numerous element.",
+    "aliases": [
+      "number of atoms",
+      "how many atoms",
+      "element frequency",
+      "most numerous element",
+      "least numerous element",
+      "total atoms"
+    ],
+    "evidence": [
+      "e_elements",
+      "e_presence",
+      "e_multibond"
+    ]
+  },
+  {
+    "id": "term_percentage_share",
+    "name": "Percentage Share",
+    "type": "concept",
+    "definition": "A ratio-based metric reported as a percentage of a named population. The concept covers molecule-level shares (for example the carcinogenic share of labeled molecules), bond-level shares (for example the share of single bonds that are carcinogenic) and atom-level element shares.",
+    "scope": "The denominator is always the population named by the analytical question, never a mixture of populations.",
+    "aliases": [
+      "percentage",
+      "percent",
+      "proportion",
+      "ratio",
+      "share",
+      "rate"
+    ],
+    "evidence": [
+      "e_labels",
+      "e_bond_label_crosstab",
+      "e_molecule_coverage"
+    ]
+  },
+  {
+    "id": "term_carcinogenic_molecule_percentage",
+    "name": "Carcinogenic Molecule Percentage",
+    "type": "metric",
+    "definition": "The share of carcinogenic molecules among a molecule population, reported as a percentage: the count of molecules labeled '+' divided by the count of molecules in the population, multiplied by 100.",
+    "scope": "For the labeled population the denominator is the 343 labeled molecules. A denominator covering all 444 structurally present molecules would treat unlabeled molecules as non-carcinogenic and is a different, unsupported reading.",
+    "aliases": [
+      "percentage of molecules that are carcinogenic",
+      "proportion of molecules carcinogenic",
+      "carcinogenic rate",
+      "percentage carcinogenic"
+    ],
+    "evidence": [
+      "e_labels",
+      "e_molecule_coverage"
+    ]
+  },
+  {
+    "id": "term_element_percentage",
+    "name": "Element Percentage",
+    "type": "metric",
+    "definition": "The share attributable to a chemical element within a molecule population, reported as a percentage. Two readings occur: the number of atoms of the element relative to all atoms of the population's molecules, or the number of atoms of the element relative to the number of molecules in the population. The reading must be fixed by the question before the value is interpreted.",
+    "scope": "Applicable to element-level analysis within a labeled subset of molecules.",
+    "aliases": [
+      "percentage of element",
+      "percentage of chlorine",
+      "element proportion",
+      "element share",
+      "ratio of hydrogen"
+    ],
+    "evidence": [
+      "e_elements",
+      "e_presence"
+    ]
+  },
+  {
+    "id": "term_bond_type_percentage",
+    "name": "Bond Type Percentage",
+    "type": "metric",
+    "definition": "The share of bonds of a given bond type within a bond population, reported as a percentage. The population may be all bonds, the bonds of labeled molecules only, or the bonds of molecules with a given carcinogenicity label.",
+    "scope": "Bond-level proportions. Because carcinogenicity is a molecule property, a bond-level carcinogenic proportion is evaluated on the bonds whose owning molecule carries a label.",
+    "aliases": [
+      "proportion of single bonds",
+      "percentage of bonds",
+      "bond type share",
+      "share of single bonds"
+    ],
+    "evidence": [
+      "e_bond_types",
+      "e_bond_label_crosstab"
+    ]
+  },
+  {
+    "id": "term_element_presence",
+    "name": "Element Presence in Molecule",
+    "type": "concept",
+    "definition": "Whether a molecule contains at least one atom of a chemical element. Presence is a molecule-level boolean derived from the molecule's element composition and is true exactly when the corresponding atom count is at least one.",
+    "scope": "Used for statements such as a molecule containing hydrogen, containing fluorine, or not containing fluorine. Presence of an element is unrelated to whether atoms of that element participate in bonds.",
+    "aliases": [
+      "contains element",
+      "containing",
+      "with element",
+      "has element",
+      "does not contain",
+      "molecule with"
+    ],
+    "evidence": [
+      "e_presence",
+      "e_elements"
+    ]
+  }
+]

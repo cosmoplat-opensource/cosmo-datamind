@@ -1,0 +1,347 @@
+[
+  {
+    "connection_condition": "created_by 列的取值域与 person_code 相同,均为 U0001..U0012 形式的文本代码",
+    "description": "创建人取值来自共享的人员编码域。",
+    "evidence": [
+      "evidence_operator_codes"
+    ],
+    "id": "rel_created_by_person_code",
+    "relation_type": "association",
+    "source": "term_created_by",
+    "target": "term_person_code"
+  },
+  {
+    "connection_condition": "updated_by 列的取值域与 person_code 相同",
+    "description": "更新人取值来自共享的人员编码域。",
+    "evidence": [
+      "evidence_operator_codes"
+    ],
+    "id": "rel_updated_by_person_code",
+    "relation_type": "association",
+    "source": "term_updated_by",
+    "target": "term_person_code"
+  },
+  {
+    "connection_condition": "approved_by 列的取值域与 person_code 相同",
+    "description": "审批人取值来自共享的人员编码域。",
+    "evidence": [
+      "evidence_operator_codes"
+    ],
+    "id": "rel_approved_by_person_code",
+    "relation_type": "association",
+    "source": "term_approved_by",
+    "target": "term_person_code"
+  },
+  {
+    "connection_condition": "dim_product.prod_line_id 指向 dim_product_line.prod_line_id",
+    "description": "产品线由多个产品组成;产品必须归属一条产品线。",
+    "evidence": [
+      "evidence_product_line_join"
+    ],
+    "id": "rel_product_line_product",
+    "relation_type": "composition",
+    "source": "term_product_line",
+    "target": "term_product"
+  },
+  {
+    "connection_condition": "dim_equipment.type_id 指向 dim_equipment_type.type_id",
+    "description": "单台设备是其设备类型的一个实例。",
+    "evidence": [
+      "evidence_equipment_type_join"
+    ],
+    "id": "rel_equipment_type_equipment",
+    "relation_type": "hierarchy",
+    "source": "term_equipment_type",
+    "target": "term_equipment"
+  },
+  {
+    "connection_condition": "dim_sensor.equipment_id 指向 dim_equipment.equipment_id",
+    "description": "传感器安装在设备上,离开设备其读数没有意义。",
+    "evidence": [
+      "evidence_sensor_vibration"
+    ],
+    "id": "rel_equipment_sensor",
+    "relation_type": "composition",
+    "source": "term_equipment",
+    "target": "term_sensor"
+  },
+  {
+    "connection_condition": "dim_sensor.sensor_type 是传感器上的类型属性",
+    "description": "一个传感器属于某一个传感器类型。",
+    "evidence": [
+      "evidence_sensor_type"
+    ],
+    "id": "rel_sensor_type_sensor",
+    "relation_type": "hierarchy",
+    "source": "term_sensor_type",
+    "target": "term_sensor"
+  },
+  {
+    "connection_condition": "dim_material_category.parent_id 自引用形成类别层级",
+    "description": "物料类别自身构成上下级层级。",
+    "evidence": [
+      "evidence_material_category_join"
+    ],
+    "id": "rel_material_category_hierarchy",
+    "relation_type": "hierarchy",
+    "source": "term_material_category",
+    "target": "term_material_category"
+  },
+  {
+    "connection_condition": "dim_material.category_id 指向 dim_material_category.category_id",
+    "description": "每个原材料属于一个物料类别。",
+    "evidence": [
+      "evidence_material_category_join"
+    ],
+    "id": "rel_material_category_material",
+    "relation_type": "hierarchy",
+    "source": "term_material_category",
+    "target": "term_material"
+  },
+  {
+    "connection_condition": "dim_hazard.location 以车间名称为前缀(如 PP改性车间挤出区 对应 PP改性车间),dim_workshop.location 记录车间所在楼栋位置",
+    "description": "危险源按所在车间文本位置与车间关联,不是标识符外键。",
+    "evidence": [
+      "evidence_factory_workshop"
+    ],
+    "id": "rel_workshop_hazard",
+    "relation_type": "association",
+    "source": "term_workshop",
+    "target": "term_hazard"
+  },
+  {
+    "connection_condition": "dim_workshop 的 location 文本体现工厂+楼栋(如 青岛二厂A栋)",
+    "description": "工厂由多个车间组成。",
+    "evidence": [
+      "evidence_factory_workshop"
+    ],
+    "id": "rel_workshop_factory",
+    "relation_type": "composition",
+    "source": "term_factory",
+    "target": "term_workshop"
+  },
+  {
+    "connection_condition": "dim_customer.industry 为客户行上的文本属性,无独立行业维表",
+    "description": "客户所属行业是客户上的文本属性。",
+    "evidence": [
+      "evidence_customer_industry"
+    ],
+    "id": "rel_customer_industry",
+    "relation_type": "association",
+    "source": "term_customer",
+    "target": "term_customer_industry"
+  },
+  {
+    "connection_condition": "fact_sales_order.cust_id 指向 dim_customer.cust_id",
+    "description": "销售订单归属于客户,离开客户订单不成立。",
+    "evidence": [
+      "evidence_so_status"
+    ],
+    "id": "rel_customer_sales_order",
+    "relation_type": "composition",
+    "source": "term_customer",
+    "target": "term_sales_order"
+  },
+  {
+    "connection_condition": "fact_production_order.line_id 指向 dim_production_line.line_id",
+    "description": "生产工单在产线上执行。",
+    "evidence": [
+      "evidence_production_line_join",
+      "evidence_regular_hours_by_line"
+    ],
+    "id": "rel_production_line_production_order",
+    "relation_type": "composition",
+    "source": "term_production_line",
+    "target": "term_production_order"
+  },
+  {
+    "connection_condition": "fact_inspection_lot.order_id 指向 fact_production_order.order_id",
+    "description": "检验批由生产工单产生。",
+    "evidence": [
+      "evidence_inspection_limits"
+    ],
+    "id": "rel_production_order_inspection_lot",
+    "relation_type": "composition",
+    "source": "term_production_order",
+    "target": "term_inspection_lot"
+  },
+  {
+    "connection_condition": "fact_inspection_result.inspection_lot_id 指向 fact_inspection_lot.inspection_lot_id",
+    "description": "检验结果是一个检验批的明细行。",
+    "evidence": [
+      "evidence_column_blocks"
+    ],
+    "id": "rel_inspection_lot_inspection_result",
+    "relation_type": "composition",
+    "source": "term_inspection_lot",
+    "target": "term_inspection_result"
+  },
+  {
+    "connection_condition": "发票经发货单间接关联销售订单(fact_invoice.delivery_id → fact_delivery.order_id)",
+    "description": "已开票状态需经发货链条映射到销售订单,不是直接外键。",
+    "evidence": [
+      "evidence_column_blocks"
+    ],
+    "id": "rel_sales_order_invoice",
+    "relation_type": "association",
+    "source": "term_sales_order",
+    "target": "term_invoice"
+  },
+  {
+    "connection_condition": "事实表 currency_code 文本值与 dim_currency.code 取值域一致",
+    "description": "事实表上的 currency_code 文本与币种字典的编码列表达同一概念。",
+    "evidence": [
+      "evidence_currency_master",
+      "evidence_currency_uniform"
+    ],
+    "id": "rel_currency_code_equivalence",
+    "relation_type": "equivalence",
+    "source": "term_currency",
+    "target": "term_currency"
+  },
+  {
+    "connection_condition": "事实表 reason_code 文本值与 dim_reason_code.code 取值域一致",
+    "description": "事实表上的 reason_code 文本与原因码字典的编码列表达同一概念;中文简称需经字典取得。",
+    "evidence": [
+      "evidence_reason_code_master",
+      "evidence_reason_code_usage"
+    ],
+    "id": "rel_reason_code_equivalence",
+    "relation_type": "equivalence",
+    "source": "term_reason_code",
+    "target": "term_reason_code"
+  },
+  {
+    "connection_condition": "fact_sales_order_line / fact_sales_contract_line / fact_sales_forecast / fact_price_adjustment 的 sales_region 取值域一致,并与 dim_region.region_name 对应",
+    "description": "多张表以文本列表达同一销售区域概念。",
+    "evidence": [
+      "evidence_region_values"
+    ],
+    "id": "rel_sales_region_equivalence",
+    "relation_type": "equivalence",
+    "source": "term_sales_region",
+    "target": "term_sales_region"
+  },
+  {
+    "connection_condition": "fact_iot_data.unit 与 dim_sensor.unit、各监测表的 reading_unit/measurement_unit 取值域一致",
+    "description": "单位概念在IoT数据、传感器主数据与监测表间以相同词表表达。",
+    "evidence": [
+      "evidence_iot_unit"
+    ],
+    "id": "rel_iot_unit_equivalence",
+    "relation_type": "equivalence",
+    "source": "term_iot_unit",
+    "target": "term_iot_unit"
+  },
+  {
+    "connection_condition": "fact_inventory.warehouse_date 与观测日之差",
+    "description": "在库天数由入库日期推导得出,是记录上的预计算列。",
+    "evidence": [
+      "evidence_inventory_storage_days"
+    ],
+    "id": "rel_storage_days_derivation",
+    "relation_type": "derivation",
+    "source": "term_business_date",
+    "target": "term_storage_days"
+  },
+  {
+    "connection_condition": "风险分值由可能性与后果等级综合计算",
+    "description": "风险分值由可能性与后果等级推导。",
+    "evidence": [
+      "evidence_hazard_observation"
+    ],
+    "id": "rel_risk_score_derivation",
+    "relation_type": "derivation",
+    "source": "term_likelihood",
+    "target": "term_risk_score"
+  },
+  {
+    "connection_condition": "",
+    "description": "行版本与业务日期同属记录的治理/审计属性块。",
+    "evidence": [
+      "evidence_hazard_row_version"
+    ],
+    "id": "rel_row_version_hierarchy",
+    "relation_type": "association",
+    "source": "term_business_date",
+    "target": "term_row_version"
+  },
+  {
+    "connection_condition": "dim_calendar.calendar_date 的取值集合覆盖事实表 business_date 的取值集合",
+    "description": "日历维度按日期值覆盖事实表的业务日期,可作日期属性补齐。",
+    "evidence": [
+      "evidence_calendar_range",
+      "evidence_business_date_range"
+    ],
+    "id": "rel_calendar_business_date",
+    "relation_type": "association",
+    "source": "term_calendar",
+    "target": "term_business_date"
+  },
+  {
+    "connection_condition": "fact_condition_monitoring.sensor_id / fact_iot_data.sensor_id 指向 dim_sensor.sensor_id",
+    "description": "读数由传感器产生;传感器类型决定读数的物理含义。",
+    "evidence": [
+      "evidence_sensor_vibration"
+    ],
+    "id": "rel_sensor_reading_value",
+    "relation_type": "composition",
+    "source": "term_sensor",
+    "target": "term_reading_value"
+  },
+  {
+    "connection_condition": "fact_batch_quality_hold.prod_id 指向 dim_product.prod_id",
+    "description": "合格数量按产品归集。",
+    "evidence": [
+      "evidence_qualified_by_product"
+    ],
+    "id": "rel_eligible_product_qualified_quantity",
+    "relation_type": "composition",
+    "source": "term_product",
+    "target": "term_qualified_quantity"
+  },
+  {
+    "connection_condition": "fact_condition_monitoring.reason_code 文本映射到 dim_reason_code.code",
+    "description": "设备状态监测以原因码文本标注原因。",
+    "evidence": [
+      "evidence_reason_code_usage"
+    ],
+    "id": "rel_reason_code_condition_monitoring",
+    "relation_type": "association",
+    "source": "term_condition_monitoring",
+    "target": "term_reason_code"
+  },
+  {
+    "connection_condition": "经 dim_equipment.type_id 间接关联(fact_maintenance_plan.equipment_id → dim_equipment)",
+    "description": "维护计划按设备设置,按设备类型筛选需经设备表两跳。",
+    "evidence": [
+      "evidence_equipment_type_join"
+    ],
+    "id": "rel_equipment_type_maintenance_plan",
+    "relation_type": "association",
+    "source": "term_equipment_type",
+    "target": "term_maintenance_plan"
+  },
+  {
+    "connection_condition": "经 dim_product.prod_line_id 间接关联(fact_batch_quality_hold.prod_id → dim_product)",
+    "description": "按产品线筛选质量冻结需经产品表两跳。",
+    "evidence": [
+      "evidence_product_line_join"
+    ],
+    "id": "rel_product_line_batch_quality_hold",
+    "relation_type": "association",
+    "source": "term_product_line",
+    "target": "term_batch_quality_hold"
+  },
+  {
+    "connection_condition": "经 dim_material.category_id 间接关联(fact_po_line.material_id → dim_material)",
+    "description": "按物料类别筛选采购订单行需经物料表两跳。",
+    "evidence": [
+      "evidence_material_category_join"
+    ],
+    "id": "rel_material_category_po_line",
+    "relation_type": "association",
+    "source": "term_material_category",
+    "target": "term_po_line"
+  }
+]

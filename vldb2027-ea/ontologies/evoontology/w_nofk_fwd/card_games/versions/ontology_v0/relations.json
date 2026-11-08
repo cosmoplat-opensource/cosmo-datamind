@@ -1,0 +1,293 @@
+[
+  {
+    "id": "rel_set_printings",
+    "source": "card_set",
+    "relation_type": "composition",
+    "target": "card_printing",
+    "connection_condition": "a card printing references its set through the set's short code; set metadata is stored per code and card printings carry that code",
+    "description": "A card set is composed of its card printings; a card printing belongs to exactly one set and has no meaning outside a set.",
+    "evidence": [
+      "ev_set_code_join"
+    ]
+  },
+  {
+    "id": "rel_set_localized_names",
+    "source": "card_set",
+    "relation_type": "composition",
+    "target": "set_localized_name",
+    "connection_condition": "each localized set name is stored against the set's short code and a language",
+    "description": "A set's localized names are components of the set's identity; a localized name cannot exist without the set it translates.",
+    "evidence": [
+      "ev_set_translation_lookup",
+      "ev_set_translation_languages"
+    ]
+  },
+  {
+    "id": "rel_card_legality",
+    "source": "card_printing",
+    "relation_type": "composition",
+    "target": "format_legality",
+    "connection_condition": "a legality record references the card printing by its uuid",
+    "description": "Legality verdicts are components of a card printing's record; a verdict has no meaning without the card printing it evaluates.",
+    "evidence": [
+      "ev_uuid_join_children"
+    ]
+  },
+  {
+    "id": "rel_card_rulings",
+    "source": "card_printing",
+    "relation_type": "composition",
+    "target": "card_ruling",
+    "connection_condition": "a ruling references the card by its uuid",
+    "description": "Rulings are attached to a card identity; a ruling cannot exist independently of the card it clarifies.",
+    "evidence": [
+      "ev_rulings_link",
+      "ev_uuid_join_children"
+    ]
+  },
+  {
+    "id": "rel_card_foreign_name",
+    "source": "card_printing",
+    "relation_type": "composition",
+    "target": "foreign_card_name",
+    "connection_condition": "a foreign-language record references the card printing by its uuid and adds a language",
+    "description": "A localized card name is a component of the foreign-language representation of a card printing.",
+    "evidence": [
+      "ev_uuid_join_children",
+      "ev_foreign_text_sample"
+    ]
+  },
+  {
+    "id": "rel_card_foreign_text",
+    "source": "card_printing",
+    "relation_type": "composition",
+    "target": "foreign_card_text",
+    "connection_condition": "a foreign-language record references the card printing by its uuid and adds a language",
+    "description": "The translated rules text is a component of the foreign-language representation of a card printing.",
+    "evidence": [
+      "ev_uuid_join_children",
+      "ev_foreign_text_sample"
+    ]
+  },
+  {
+    "id": "rel_card_foreign_flavor",
+    "source": "card_printing",
+    "relation_type": "composition",
+    "target": "foreign_card_flavor_text",
+    "connection_condition": "a foreign-language record references the card printing by its uuid and adds a language",
+    "description": "The translated flavor text is a component of the foreign-language representation of a card printing.",
+    "evidence": [
+      "ev_uuid_join_children",
+      "ev_foreign_text_sample"
+    ]
+  },
+  {
+    "id": "rel_mana_cost_to_cmc",
+    "source": "mana_cost",
+    "relation_type": "derivation",
+    "target": "converted_mana_cost",
+    "connection_condition": "",
+    "description": "Converted mana cost is derived from the card's mana cost by totalling the mana symbols into a single numeric value; both representations are stored per card printing.",
+    "evidence": [
+      "ev_converted_mana_cost_values"
+    ]
+  },
+  {
+    "id": "rel_card_to_share",
+    "source": "card_printing",
+    "relation_type": "derivation",
+    "target": "share_percentage",
+    "connection_condition": "",
+    "description": "A share percentage is derived from two counts over the same population of card printings: the subset satisfying the stated condition and the reference population.",
+    "evidence": [
+      "ev_share_percentage_examples"
+    ]
+  },
+  {
+    "id": "rel_set_name_marketplace_equiv",
+    "source": "set_name",
+    "relation_type": "equivalence",
+    "target": "set_marketplace_name",
+    "connection_condition": "",
+    "description": "The canonical set name and the marketplace set name express the same business concept of a set's name from two providers; one may be populated where the other is empty.",
+    "evidence": [
+      "ev_set_name_variants"
+    ]
+  },
+  {
+    "id": "rel_set_name_localized_equiv",
+    "source": "set_name",
+    "relation_type": "equivalence",
+    "target": "set_localized_name",
+    "connection_condition": "",
+    "description": "The canonical English set name and a localized set name are the same concept of a set's name in different languages, and are linked through the set's short code rather than by text equality.",
+    "evidence": [
+      "ev_set_translation_lookup"
+    ]
+  },
+  {
+    "id": "rel_card_name_foreign_equiv",
+    "source": "card_name",
+    "relation_type": "equivalence",
+    "target": "foreign_card_name",
+    "connection_condition": "",
+    "description": "The canonical card name and the foreign card name both express the name of the same card; they differ by language and are linked through the card's uuid rather than by text equality.",
+    "evidence": [
+      "ev_foreign_text_sample"
+    ]
+  },
+  {
+    "id": "rel_set_code_name",
+    "source": "set_code",
+    "relation_type": "association",
+    "target": "set_name",
+    "connection_condition": "both are attributes of the same set record",
+    "description": "A set's short code and its canonical name are two identifiers of the same set; the code is the stable link key while the name is the human-readable label.",
+    "evidence": [
+      "ev_set_code_join"
+    ]
+  },
+  {
+    "id": "rel_set_block",
+    "source": "card_set",
+    "relation_type": "association",
+    "target": "set_block",
+    "connection_condition": "",
+    "description": "A set is grouped under a block or product line; many sets have no block value.",
+    "evidence": [
+      "ev_block_commander"
+    ]
+  },
+  {
+    "id": "rel_set_online",
+    "source": "card_set",
+    "relation_type": "association",
+    "target": "set_online_availability",
+    "connection_condition": "",
+    "description": "A set's availability on Magic: The Gathering Online is an attribute of the set, recorded by the presence of an MTGO code.",
+    "evidence": [
+      "ev_mtgo_code_presence"
+    ]
+  },
+  {
+    "id": "rel_legality_play_format",
+    "source": "format_legality",
+    "relation_type": "association",
+    "target": "play_format",
+    "connection_condition": "",
+    "description": "Every legality verdict is scoped to exactly one named play format.",
+    "evidence": [
+      "ev_play_format_values"
+    ]
+  },
+  {
+    "id": "rel_legality_status",
+    "source": "format_legality",
+    "relation_type": "association",
+    "target": "legality_status",
+    "connection_condition": "",
+    "description": "Every legality record carries exactly one verdict drawn from the status value domain.",
+    "evidence": [
+      "ev_legality_status_values"
+    ]
+  },
+  {
+    "id": "rel_foreign_text_language",
+    "source": "foreign_card_text",
+    "relation_type": "association",
+    "target": "card_language",
+    "connection_condition": "",
+    "description": "Translated card text is only meaningful together with the language it is written in; language and text are stored on the same foreign-language record.",
+    "evidence": [
+      "ev_foreign_language_values"
+    ]
+  },
+  {
+    "id": "rel_card_rarity",
+    "source": "card_printing",
+    "relation_type": "association",
+    "target": "card_rarity",
+    "connection_condition": "",
+    "description": "Rarity is an attribute of a card printing, so the same card name may carry different rarities across its printings.",
+    "evidence": [
+      "ev_rarity_values"
+    ]
+  },
+  {
+    "id": "rel_card_power",
+    "source": "card_printing",
+    "relation_type": "association",
+    "target": "card_power",
+    "connection_condition": "",
+    "description": "Power is an attribute of a creature card printing and is absent for non-creatures.",
+    "evidence": [
+      "ev_power_values"
+    ]
+  },
+  {
+    "id": "rel_card_border",
+    "source": "card_printing",
+    "relation_type": "association",
+    "target": "card_border_color",
+    "connection_condition": "",
+    "description": "Border treatment is an attribute of a card printing.",
+    "evidence": [
+      "ev_border_color_values"
+    ]
+  },
+  {
+    "id": "rel_card_artist",
+    "source": "card_printing",
+    "relation_type": "association",
+    "target": "card_artist",
+    "connection_condition": "",
+    "description": "The credited artist is an attribute of a card printing, so the same card name may credit different artists across printings.",
+    "evidence": [
+      "ev_artist_name_storage"
+    ]
+  },
+  {
+    "id": "rel_card_content_flag",
+    "source": "card_printing",
+    "relation_type": "association",
+    "target": "content_warning_flag",
+    "connection_condition": "",
+    "description": "The content warning flag qualifies the data completeness of a card printing's own properties and values.",
+    "evidence": [
+      "ev_content_warning_values"
+    ]
+  },
+  {
+    "id": "rel_card_story_flag",
+    "source": "card_printing",
+    "relation_type": "association",
+    "target": "story_spotlight_flag",
+    "connection_condition": "",
+    "description": "The story spotlight flag marks card printings belonging to a set's story sequence.",
+    "evidence": [
+      "ev_story_spotlight_values"
+    ]
+  },
+  {
+    "id": "rel_card_edhrec",
+    "source": "card_printing",
+    "relation_type": "association",
+    "target": "edhrec_rank",
+    "connection_condition": "",
+    "description": "The EDHRec popularity rank is an attribute of a card printing.",
+    "evidence": [
+      "ev_edhrec_rank_range"
+    ]
+  },
+  {
+    "id": "rel_card_original_type",
+    "source": "card_printing",
+    "relation_type": "association",
+    "target": "card_original_type",
+    "connection_condition": "",
+    "description": "The originally printed type line is an attribute of a card printing and may disagree with the modern type and subtype fields.",
+    "evidence": [
+      "ev_original_type_and_subtypes"
+    ]
+  }
+]

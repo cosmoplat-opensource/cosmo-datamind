@@ -1,0 +1,530 @@
+[
+  {
+    "id": "term_user",
+    "name": "User",
+    "type": "entity",
+    "definition": "A registered participant account in the community database, carrying identity attributes (display name, account id), reputation, age, and activity counters. Users own posts, write comments, cast votes, and receive badges.",
+    "scope": "Any analysis that resolves 'who' performed an action, or that aggregates behaviour per participant.",
+    "aliases": [
+      "user",
+      "account",
+      "member",
+      "poster",
+      "commenter",
+      "voter"
+    ],
+    "evidence": [
+      "evidence_users_schema",
+      "evidence_displayname_not_unique",
+      "evidence_community_user",
+      "evidence_denormalized_names"
+    ]
+  },
+  {
+    "id": "term_post",
+    "name": "Post",
+    "type": "entity",
+    "definition": "A contributed content record in the community, typed by PostTypeId. Question posts and answer posts are the dominant types; the remaining types are tag-wiki and moderation posts. A post carries a score, an owner, an optional last editor, an activity timestamp, and (for questions) a title, tag list and view count.",
+    "scope": "Central content entity; most workload questions aggregate or filter over posts.",
+    "aliases": [
+      "post",
+      "entry",
+      "contribution",
+      "article"
+    ],
+    "evidence": [
+      "evidence_post_type_distribution",
+      "evidence_posts_schema",
+      "evidence_score_range"
+    ]
+  },
+  {
+    "id": "term_comment",
+    "name": "Comment",
+    "type": "entity",
+    "definition": "A short annotation attached to a single post by a user, timestamped to the second. Comments are not independently scored content in the way posts are; each comment record references exactly one parent post and, where the author is known, one user.",
+    "scope": "Analyses of discussion volume, of who commented on a given post, and of comment timestamps as activity markers.",
+    "aliases": [
+      "comment",
+      "annotation",
+      "reply"
+    ],
+    "evidence": [
+      "evidence_comments_schema",
+      "evidence_denormalized_names",
+      "evidence_fk_integrity"
+    ]
+  },
+  {
+    "id": "term_badge",
+    "name": "Badge Award",
+    "type": "entity",
+    "definition": "A single award of a named achievement to a user at a specific timestamp. Each row is one award event, not one badge definition; a user accumulates many rows.",
+    "scope": "Recognition and activity analysis, badge counts per user, and earliest-award questions.",
+    "aliases": [
+      "badge",
+      "award",
+      "achievement",
+      "medal"
+    ],
+    "evidence": [
+      "evidence_badge_names",
+      "evidence_badge_count_gt5",
+      "evidence_first_badge_date_ties"
+    ]
+  },
+  {
+    "id": "term_vote",
+    "name": "Vote",
+    "type": "entity",
+    "definition": "A single vote event cast on a post, typed by VoteTypeId. Bounty-related vote records additionally carry a bounty amount. A vote row identifies the target post, the casting user (when known), and the vote date.",
+    "scope": "Reputation, scoring and bounty analysis; event-level lookups by vote identifier.",
+    "aliases": [
+      "vote",
+      "upvote",
+      "downvote",
+      "bounty record"
+    ],
+    "evidence": [
+      "evidence_votes_schema",
+      "evidence_vote_types_bounty",
+      "evidence_vote_date_granularity"
+    ]
+  },
+  {
+    "id": "term_tag",
+    "name": "Tag",
+    "type": "entity",
+    "definition": "A topical label in the community tag catalogue, with the label text, an aggregate usage count, and links to the tag's excerpt and wiki posts. A tag is a catalogue entry; the labels actually attached to a post live in the post's tag list.",
+    "scope": "Topic filtering and topical-popularity analysis; the catalogue's usage count is an aggregate over questions.",
+    "aliases": [
+      "tag",
+      "topic",
+      "label",
+      "category label"
+    ],
+    "evidence": [
+      "evidence_tags_schema",
+      "evidence_tags_post_linkage",
+      "evidence_tag_count_vs_occurrence"
+    ]
+  },
+  {
+    "id": "term_post_history",
+    "name": "Post Revision Record",
+    "type": "entity",
+    "definition": "A historical record of one change event on a post, typed by PostHistoryTypeId. It stores the revision payload text, the acting user, and the timestamp. The initial title/body/tags records and the later edit records share this table.",
+    "scope": "Reconstructing a post's editorial history and identifying which users changed a post.",
+    "aliases": [
+      "post history",
+      "revision",
+      "post revision record",
+      "edit history"
+    ],
+    "evidence": [
+      "evidence_post_history_types",
+      "evidence_post_history_schema"
+    ]
+  },
+  {
+    "id": "term_post_edit",
+    "name": "Post Edit",
+    "type": "concept",
+    "definition": "A revision event whose history type is one of the content-change types (title edit, body edit, tag edit). Editing is thus a subset of all post revision records, distinguished by PostHistoryTypeId.",
+    "scope": "Answering who edited a post, when it was edited, and how many edits it received.",
+    "aliases": [
+      "edit",
+      "edited",
+      "editing",
+      "modification",
+      "revision change"
+    ],
+    "evidence": [
+      "evidence_post_history_types",
+      "evidence_post_history_edit_texts"
+    ]
+  },
+  {
+    "id": "term_post_type",
+    "name": "Post Type",
+    "type": "category",
+    "definition": "The enumeration that classifies every post record. Question and answer types dominate; small volumes of tag-excerpt, tag-wiki, moderation and placeholder types also exist. Several post attributes are populated only for certain post types.",
+    "scope": "Any analysis that must restrict to questions, to answers, or that must explain why an attribute is empty.",
+    "aliases": [
+      "post type",
+      "type of post",
+      "question or answer"
+    ],
+    "evidence": [
+      "evidence_post_type_distribution",
+      "evidence_tags_post_linkage"
+    ]
+  },
+  {
+    "id": "term_question_post",
+    "name": "Question Post",
+    "type": "category",
+    "definition": "A post that asks a question. It is the only post type carrying a title, an attached tag list and a view count, and it is the unit that answers and comments attach to.",
+    "alias_note": "Subtype of Post.",
+    "scope": "Default population for questions about titles, tags, views and topical content.",
+    "aliases": [
+      "question",
+      "question post",
+      "thread",
+      "topic post"
+    ],
+    "evidence": [
+      "evidence_post_type_distribution",
+      "evidence_viewcount_by_posttype",
+      "evidence_tags_column_by_posttype"
+    ]
+  },
+  {
+    "id": "term_answer_post",
+    "name": "Answer Post",
+    "type": "category",
+    "definition": "A post that answers a question. Answer posts have a score and a parent link to the question, but have no title, no attached tag list and no view count.",
+    "scope": "Distinguishing answers from questions; critical whenever a metric is question-only.",
+    "aliases": [
+      "answer",
+      "answer post",
+      "response"
+    ],
+    "evidence": [
+      "evidence_post_type_distribution",
+      "evidence_viewcount_by_posttype"
+    ]
+  },
+  {
+    "id": "term_vote_type",
+    "name": "Vote Type",
+    "type": "category",
+    "definition": "The enumeration classifying each vote record. Most votes are ordinary up/down votes; bounty-related types are the only types whose records carry a bounty amount, and some types are governance actions such as closure or deletion votes.",
+    "scope": "Filtering vote records by kind, and explaining why bounty amounts are null for most votes.",
+    "aliases": [
+      "vote type",
+      "kind of vote",
+      "bounty vote"
+    ],
+    "evidence": [
+      "evidence_vote_types_bounty"
+    ]
+  },
+  {
+    "id": "term_post_history_type",
+    "name": "Post History Type",
+    "type": "category",
+    "definition": "The enumeration classifying each post revision record: initial creation records for title, body and tags versus subsequent change records. The content-change types define what counts as an edit.",
+    "scope": "Separating creation records from edit records when reconstructing or counting edits.",
+    "aliases": [
+      "history type",
+      "revision type",
+      "edit type"
+    ],
+    "evidence": [
+      "evidence_post_history_types"
+    ]
+  },
+  {
+    "id": "term_user_display_name",
+    "name": "User Display Name",
+    "type": "dimension",
+    "definition": "The public human-readable name of a user account, stored on the user record. It is the identifier used by natural-language references to a participant, and it is not guaranteed unique.",
+    "scope": "Resolving a person named in a question to an account, and labelling results.",
+    "aliases": [
+      "display name",
+      "username",
+      "user name",
+      "name of user",
+      "who"
+    ],
+    "evidence": [
+      "evidence_displayname_not_unique",
+      "evidence_users_schema"
+    ]
+  },
+  {
+    "id": "term_denormalized_user_display_name",
+    "name": "Denormalized User Display Name",
+    "type": "dimension",
+    "definition": "Copies of a user's display name stored directly on activity records (revisions, comments, and rarely posts) so that the acting user can be shown without joining the user table. These copies carry the same names as the user record where both are present, but their population is sparse and uneven across tables.",
+    "scope": "Use when an activity record must be attributed to a name without a join; verify population before relying on it.",
+    "aliases": [
+      "user display name on record",
+      "stored name",
+      "acting user name"
+    ],
+    "evidence": [
+      "evidence_denormalized_names",
+      "evidence_users_schema"
+    ]
+  },
+  {
+    "id": "term_post_title",
+    "name": "Post Title",
+    "type": "dimension",
+    "definition": "The headline text of a question post, stored exactly as authored. Titles are the natural-language handle used in questions to refer to a specific post, and the stored casing may differ from the casing used in a question.",
+    "scope": "Identifying a specific post from a title string, and matching topical keywords against a headline.",
+    "aliases": [
+      "title",
+      "post title",
+      "headline",
+      "named",
+      "titled",
+      "called"
+    ],
+    "evidence": [
+      "evidence_title_case_sensitivity",
+      "evidence_tags_column_by_posttype"
+    ]
+  },
+  {
+    "id": "term_post_tags",
+    "name": "Post Tag List",
+    "type": "dimension",
+    "definition": "The set of topical labels attached to a question post, stored as one delimited text string in which each label is wrapped in angle brackets. A label occurs in the list only if the post carries that tag, so membership is testable by exact label matching rather than substring matching.",
+    "scope": "Topical filtering of questions, including matching a named language or subject to the tags actually applied.",
+    "aliases": [
+      "tags",
+      "tag list",
+      "tagged",
+      "labels on post",
+      "uses the tag"
+    ],
+    "evidence": [
+      "evidence_tags_string_format",
+      "evidence_tags_column_by_posttype",
+      "evidence_tag_count_vs_occurrence"
+    ]
+  },
+  {
+    "id": "term_user_age",
+    "name": "User Age",
+    "type": "metric",
+    "definition": "The self-declared age of a user account, recorded as a whole number of years. It is an optional profile attribute and is absent for the large majority of accounts.",
+    "scope": "Age-conditioned cohort analysis; must be treated as a sparse attribute rather than a complete dimension.",
+    "aliases": [
+      "age",
+      "elder user",
+      "older user",
+      "elderly",
+      "years old",
+      "senior"
+    ],
+    "evidence": [
+      "evidence_age_nulls",
+      "evidence_age_range"
+    ]
+  },
+  {
+    "id": "term_user_reputation",
+    "name": "User Reputation",
+    "type": "metric",
+    "definition": "The accumulated reputation score of a user account, derived from community activity. It is a per-user point-in-time total, not an activity within a period, and it is never null.",
+    "scope": "Ranking or comparing participants by standing, and defining cohorts such as highly reputed users.",
+    "aliases": [
+      "reputation",
+      "rep",
+      "score of user",
+      "standing"
+    ],
+    "evidence": [
+      "evidence_reputation_range",
+      "evidence_users_schema"
+    ]
+  },
+  {
+    "id": "term_user_influence",
+    "name": "User Influence",
+    "type": "metric",
+    "definition": "The degree to which a participant's contributions shape the community, expressed in the workload by reputation standing: the most influential user is the one holding the highest reputation. It is a derived ranking concept rather than a stored column.",
+    "scope": "Questions that ask for the single most influential or highest-standing user before aggregating that user's content.",
+    "aliases": [
+      "influential user",
+      "most influential",
+      "most highly reputed",
+      "highest reputation"
+    ],
+    "evidence": [
+      "evidence_reputation_range"
+    ]
+  },
+  {
+    "id": "term_badge_count",
+    "name": "Badge Count",
+    "type": "metric",
+    "definition": "The number of badge awards accumulated by a user, obtained by counting that user's badge award rows. Because each row is one award event, the count is over award rows, not over distinct badge names.",
+    "scope": "Threshold questions about how many users hold more than N badges, and recognition profiling.",
+    "aliases": [
+      "number of badges",
+      "badges awarded",
+      "how many badges",
+      "more than 5 badges"
+    ],
+    "evidence": [
+      "evidence_badge_count_gt5",
+      "evidence_badge_names"
+    ]
+  },
+  {
+    "id": "term_post_score",
+    "name": "Post Score",
+    "type": "metric",
+    "definition": "The net vote standing of a post, stored on the post itself. It is an integer that may be negative for downvoted content, and it is populated for both question and answer posts.",
+    "scope": "Quality or approval thresholds over posts, and comparisons of content standing.",
+    "aliases": [
+      "score",
+      "post score",
+      "score of the post",
+      "points",
+      "score above"
+    ],
+    "evidence": [
+      "evidence_score_range"
+    ]
+  },
+  {
+    "id": "term_post_view_count",
+    "name": "Post View Count",
+    "type": "metric",
+    "definition": "The cumulative number of times a question post has been viewed. It is the measure of popularity in this database and is populated only for question posts.",
+    "scope": "Popularity comparisons between posts; not applicable to answers or non-question post types.",
+    "aliases": [
+      "views",
+      "view count",
+      "total views",
+      "popularity",
+      "popular",
+      "most viewed"
+    ],
+    "evidence": [
+      "evidence_viewcount_by_posttype"
+    ]
+  },
+  {
+    "id": "term_favorite_count",
+    "name": "Favorite Count",
+    "type": "metric",
+    "definition": "The number of users who bookmarked a post. It is an optional attribute and is absent for many posts, including answers.",
+    "scope": "Engagement measures over posts; treat missing values as unknown rather than zero when interpreting.",
+    "aliases": [
+      "favorite count",
+      "favorites",
+      "bookmarks",
+      "how many favorite"
+    ],
+    "evidence": [
+      "evidence_favorite_count_nulls"
+    ]
+  },
+  {
+    "id": "term_bounty_amount",
+    "name": "Bounty Amount",
+    "type": "metric",
+    "definition": "The number of reputation points offered as a bounty on a post, carried on bounty vote records. It is present only on records of the bounty-related vote types; all other vote records carry no bounty amount.",
+    "scope": "Identifying who placed a bounty and how large it was; requires restricting to bounty vote types.",
+    "aliases": [
+      "bounty",
+      "bounty amount",
+      "bounty of 50"
+    ],
+    "evidence": [
+      "evidence_vote_types_bounty"
+    ]
+  },
+  {
+    "id": "term_first_occurrence",
+    "name": "First Occurrence",
+    "type": "metric",
+    "definition": "The earliest timestamp at which an event of a given kind occurred for a subject, obtained as the minimum timestamp over that subject's event records. It is a derived reduction over an event table rather than a stored attribute.",
+    "scope": "Questions about a user's first vote or first badge, where the answer is an earliest timestamp or the holder of it.",
+    "aliases": [
+      "first",
+      "earliest",
+      "first time",
+      "initial",
+      "when did"
+    ],
+    "evidence": [
+      "evidence_vote_date_granularity",
+      "evidence_first_badge_date_ties"
+    ]
+  },
+  {
+    "id": "term_percentage_share",
+    "name": "Percentage Share",
+    "type": "metric",
+    "definition": "A proportion expressed as a percentage, computed as the count of records satisfying a condition divided by the count of records in the stated reference population, multiplied by one hundred. The reference population is defined by the question and changes the meaning of the result.",
+    "scope": "Any 'what percentage of X' question; the denominator must be identified explicitly from the phrasing.",
+    "aliases": [
+      "percentage",
+      "percent",
+      "share",
+      "proportion",
+      "ratio",
+      "what percentage"
+    ],
+    "evidence": [
+      "evidence_percentage_reference_populations"
+    ]
+  },
+  {
+    "id": "term_post_ownership",
+    "name": "Post Ownership",
+    "type": "concept",
+    "definition": "The relation that a post was created by a particular user, recorded as the owner identifier on the post. Ownership is distinct from later editing or community ownership, and the owner field can be absent when the author's account is unknown.",
+    "scope": "Attributing a post to its author, and filtering posts by author for aggregation.",
+    "aliases": [
+      "owner",
+      "author",
+      "owner of the post",
+      "posted by",
+      "owned by"
+    ],
+    "evidence": [
+      "evidence_fk_integrity",
+      "evidence_community_user",
+      "evidence_owner_display_name"
+    ]
+  },
+  {
+    "id": "term_post_editing",
+    "name": "Post Editing",
+    "type": "concept",
+    "definition": "The relation that a user modified a post after creation, recorded both as a convenience pointer to the most recent editor on the post and as a sequence of revision records. The two representations answer different questions: the pointer gives only the latest editor, while the revision records give every user who changed the post.",
+    "scope": "Identifying editors of a post, and distinguishing the creator from later contributors.",
+    "aliases": [
+      "editor",
+      "last editor",
+      "edited by",
+      "who edited",
+      "posted it last time",
+      "contributed"
+    ],
+    "evidence": [
+      "evidence_post_history_types",
+      "evidence_last_editor_pointer",
+      "evidence_denormalized_names"
+    ]
+  },
+  {
+    "id": "term_post_closure_status",
+    "name": "Post Closure Status",
+    "type": "concept",
+    "definition": "Whether a post has been closed by community or moderation action, expressed by the presence or absence of a closure timestamp on the post. A post with no closure timestamp has never been closed; a post with one was closed at that moment.",
+    "scope": "Questions about whether a post is still open, resolved, finished, or was shut down.",
+    "aliases": [
+      "closed",
+      "closure",
+      "closed date",
+      "well-finished",
+      "finished",
+      "resolved",
+      "still open",
+      "not finished"
+    ],
+    "evidence": [
+      "evidence_closed_date_nullability"
+    ]
+  }
+]

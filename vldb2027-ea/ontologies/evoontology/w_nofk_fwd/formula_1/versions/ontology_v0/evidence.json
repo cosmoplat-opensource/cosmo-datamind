@@ -1,0 +1,250 @@
+[
+  {
+    "id": "ev_schema_inventory",
+    "source": "formula_1 (read-only SQLite)",
+    "query": "SELECT name, sql FROM sqlite_master WHERE type='table'; plus per-table COUNT(*)",
+    "result": "16 tables: circuits, constructors, drivers, seasons, races, constructorResults, constructorStandings, driverStandings, lapTimes, pitStops, qualifying, status, results plus the sqlite_sequence helper. Row counts: races 976, results 23657, drivers 840, constructors 208, circuits 72, lapTimes 420369, qualifying 7397, constructorResults 11082, constructorStandings 11836, driverStandings 31578, pitStops 6070, status 134, seasons 68.",
+    "validation_method": "schema dump and row-count queries executed read-only",
+    "timestamp": "2026-10-10T00:00:00Z"
+  },
+  {
+    "id": "ev_race_id_semantics",
+    "source": "formula_1 (read-only SQLite)",
+    "query": "SELECT MIN(year), MAX(year) FROM races; SELECT raceId, year, round, name, date FROM races WHERE raceId=872; SELECT raceId, year, round, name, date FROM races WHERE date='1983-07-16'; SELECT year, COUNT(*) rounds, MIN(round), MAX(round) FROM races GROUP BY year LIMIT 5;",
+    "result": "Race years span 1950-2017. raceId 872 is the 2012 Italian Grand Prix (round 13). The race dated 1983-07-16 is raceId 460, the British Grand Prix. Round numbers restart at 1 each season (1950 has rounds 1-7), so round is not a global identifier.",
+    "validation_method": "direct primary-key lookups and per-season round range checks",
+    "timestamp": "2026-10-10T00:00:00Z"
+  },
+  {
+    "id": "ev_race_name_reuse",
+    "source": "formula_1 (read-only SQLite)",
+    "query": "SELECT COUNT(DISTINCT name) FROM races; SELECT name, COUNT(*) FROM races GROUP BY name ORDER BY COUNT(*) DESC;",
+    "result": "42 distinct Grand Prix titles. 'European Grand Prix' appears 23 times, 'Australian Grand Prix' 33 times, 'Italian Grand Prix' 68 times.",
+    "validation_method": "distinct-value and frequency aggregation",
+    "timestamp": "2026-10-10T00:00:00Z"
+  },
+  {
+    "id": "ev_circuit_coordinates",
+    "source": "formula_1 (read-only SQLite)",
+    "query": "SELECT circuitId, circuitRef, name, location, country, lat, lng FROM circuits WHERE country='Germany'; SELECT * FROM circuits WHERE name='Marina Bay Street Circuit';",
+    "result": "Germany has 3 circuits: hockenheimring (Hockenheim, 49.3278/8.56583), nurburgring (Nurburg, 50.3356/6.9475) and avus (Berlin, 52.4806/13.2514). Marina Bay Street Circuit: circuitRef 'marina_bay', location 'Marina Bay', country 'Singapore'. Latitude and longitude are populated for all circuits.",
+    "validation_method": "filtered selection and value inspection",
+    "timestamp": "2026-10-10T00:00:00Z"
+  },
+  {
+    "id": "ev_circuits_country_vs_race_name",
+    "source": "formula_1 (read-only SQLite)",
+    "query": "SELECT country, COUNT(*) FROM circuits GROUP BY country; SELECT r.raceId, r.year, c.name, c.country FROM races r JOIN circuits c ON c.circuitId=r.circuitId WHERE r.name='European Grand Prix' ORDER BY r.year;",
+    "result": "32 distinct circuit countries stored as country names (USA 11, France 7, Spain 6, UK 4, Japan 3, Italy 3, Germany 3, ...). The 23 European Grand Prix races were held at Brands Hatch (UK), the Nurburgring (Germany), Donington Park (UK), Jerez (Spain), Valencia Street Circuit (Spain) and Baku City Circuit (Azerbaijan).",
+    "validation_method": "join and grouping of race title against circuit country",
+    "timestamp": "2026-10-10T00:00:00Z"
+  },
+  {
+    "id": "ev_results_time_formats",
+    "source": "formula_1 (read-only SQLite)",
+    "query": "SELECT CASE WHEN time IS NULL THEN 'NULL' WHEN time LIKE '+%' THEN 'plus_offset' WHEN time GLOB '*:*:*.*' THEN 'has_two_colons' WHEN time LIKE '%:%' THEN 'one_colon' ELSE 'other' END AS fmt, COUNT(*) FROM results GROUP BY fmt;",
+    "result": "NULL 17696, plus_offset 4989, has_two_colons 970, one_colon 2. The two single-colon values 24:34.899 and 42:53.7 are absolute durations of short races. Inspecting the 2009 Australian Grand Prix shows only the winner holding '1:34:15.784' while positions 2-11 hold '+0.807' ... '+7.085'.",
+    "validation_method": "pattern classification over the whole column plus manual inspection of one race",
+    "timestamp": "2026-10-10T00:00:00Z"
+  },
+  {
+    "id": "ev_results_time_winner_only_two_colons",
+    "source": "formula_1 (read-only SQLite)",
+    "query": "SELECT COUNT(*) FROM results WHERE time GLOB '*:*:*.*' AND positionOrder<>1; SELECT COUNT(*) FROM results WHERE positionOrder=1; SELECT COUNT(*) FROM results WHERE positionOrder=1 AND time IS NULL; SELECT COUNT(*) FROM results WHERE time NOT LIKE '+%' AND time IS NOT NULL;",
+    "result": "0 entries with a duration-shaped time have positionOrder other than 1, against 973 entries with positionOrder 1. Exactly one winner entry has a null time and two winner entries use the shortened 'M:SS.mmm' form. So the non-'+' time shape identifies the winner for 972 of 973 races.",
+    "validation_method": "cross-tabulation of time shape against classification order",
+    "timestamp": "2026-10-10T00:00:00Z"
+  },
+  {
+    "id": "ev_results_milliseconds_absolute",
+    "source": "formula_1 (read-only SQLite)",
+    "query": "SELECT driverId, positionOrder, time, milliseconds, (milliseconds - (SELECT milliseconds FROM results WHERE raceId=1 AND positionOrder=1)) AS diff FROM results WHERE raceId=1 AND milliseconds IS NOT NULL ORDER BY positionOrder;",
+    "result": "Race 1: winner 5655784 (displayed '1:34:15.784'), second 5656591 with difference 807 matching the displayed '+0.807', third 5657388 with difference 1604 matching '+1.604', fourth 5660219 with difference 4435 matching '+4.435'. Race 2: winner 4252092, second 4274814, difference 22722 matching '+22.722'.",
+    "validation_method": "recomputation of the displayed gap from the millisecond column within three separate races",
+    "timestamp": "2026-10-10T00:00:00Z"
+  },
+  {
+    "id": "ev_positionText_semantics",
+    "source": "formula_1 (read-only SQLite)",
+    "query": "SELECT SUM(position IS NULL), SUM(positionText=''), SUM(positionText='R'), SUM(positionText='F'), COUNT(*) FROM results; SELECT status, COUNT(*) FROM results r JOIN status s ON s.statusId=r.statusId WHERE r.positionText='F' GROUP BY s.status; SELECT COUNT(*) FROM results WHERE positionText='R' AND time IS NOT NULL;",
+    "result": "position null 10528 of 23657, positionText 'R' 8495, positionText 'F' 1368. All 1368 'F' entries have zero laps and a null finish time; their statuses are 'Did not qualify' (1025), 'Did not prequalify' (331), '107% Rule' (9), 'Injury' (3). No 'R' entry has a finish time. positionOrder has no nulls.",
+    "validation_method": "null and value counts cross-checked against finish-time presence",
+    "timestamp": "2026-10-10T00:00:00Z"
+  },
+  {
+    "id": "ev_status_values",
+    "source": "formula_1 (read-only SQLite)",
+    "query": "SELECT * FROM status LIMIT 15; SELECT * FROM status WHERE statusId IN (1,2,3,4,5,6,11,20,23,24,25);",
+    "result": "134 status rows. statusId 1 = 'Finished'; other values include 'Disqualified' (2), 'Accident' (3), 'Collision' (4), 'Engine' (5), 'Gearbox' (6), '+1 Lap' (11), 'Spun off' (20), 'Brakes' (23), 'Differential' (24).",
+    "validation_method": "lookup-table inspection",
+    "timestamp": "2026-10-10T00:00:00Z"
+  },
+  {
+    "id": "ev_laptimes_time_ms",
+    "source": "formula_1 (read-only SQLite)",
+    "query": "SELECT time, milliseconds FROM lapTimes ORDER BY RANDOM() LIMIT 5; SELECT CASE WHEN time GLOB '*:*:*.*' THEN 'two_colon' WHEN time LIKE '%:%' THEN 'one_colon' ELSE 'other' END f, COUNT(*) FROM lapTimes GROUP BY f;",
+    "result": "420326 of 420369 records use the single-colon 'M:SS.mmm' form with a matching millisecond value ('1:52.965' = 112965, '1:20.448' = 80448, '1:31.998' = 91998). Only 43 records use a two-colon form.",
+    "validation_method": "sampling plus full-column pattern classification",
+    "timestamp": "2026-10-10T00:00:00Z"
+  },
+  {
+    "id": "ev_laptimes_outlier",
+    "source": "formula_1 (read-only SQLite)",
+    "query": "SELECT raceId, driverId, lap, time, milliseconds FROM lapTimes WHERE time GLOB '*:*:*.*' LIMIT 6;",
+    "result": "All 43 two-colon lap records belong to race 847 and hold a total race duration as a lap time, for example '2:05:07.547' = 7507547 milliseconds at lap 25, while genuine lap durations in the same column are around 60000-140000 milliseconds.",
+    "validation_method": "isolation of the anomalous records and comparison against the normal magnitude",
+    "timestamp": "2026-10-10T00:00:00Z"
+  },
+  {
+    "id": "ev_qualifying_time_format",
+    "source": "formula_1 (read-only SQLite)",
+    "query": "SELECT CASE WHEN q3 IS NULL OR q3='' THEN 'NULL' WHEN q3 LIKE '%:%' THEN 'colon' ELSE 'other' END f, COUNT(*) FROM qualifying GROUP BY f; SELECT CASE WHEN q1 IS NULL OR q1='' THEN 'NULL' WHEN q1 LIKE '%:%' THEN 'colon' ELSE 'other' END f, COUNT(*) FROM qualifying GROUP BY f;",
+    "result": "q3: 5279 empty, 2118 populated. q1: 117 empty, 7280 populated with 'M:SS.mmm' times such as '1:25.211'. No two-colon lap-time forms occur in the qualifying columns.",
+    "validation_method": "pattern classification of all three qualifying time columns",
+    "timestamp": "2026-10-10T00:00:00Z"
+  },
+  {
+    "id": "ev_qualifying_position",
+    "source": "formula_1 (read-only SQLite)",
+    "query": "SELECT position, COUNT(*) FROM qualifying GROUP BY position ORDER BY position LIMIT 5; SELECT COUNT(*) - COUNT(DISTINCT raceId||'-'||driverId) FROM qualifying; SELECT SUM(q3 IS NULL AND position<=10), SUM(q3 IS NULL) FROM qualifying;",
+    "result": "Position 1 through 5 each occur 339 times, one per race; there are no duplicate race/driver pairs. 5251 rows have no q3, of which 1264 belong to a top-ten qualifying position.",
+    "validation_method": "frequency and uniqueness checks plus comparison of q3 emptiness against qualifying position",
+    "timestamp": "2026-10-10T00:00:00Z"
+  },
+  {
+    "id": "ev_rank_fastestlap_semantics",
+    "source": "formula_1 (read-only SQLite)",
+    "query": "SELECT SUM(fastestLapTime IS NULL), SUM(fastestLap IS NULL), SUM(fastestLapSpeed IS NULL), SUM(rank IS NULL), COUNT(*) FROM results; SELECT positionOrder, driverId, fastestLap, rank, fastestLapTime, fastestLapSpeed FROM results WHERE raceId=2 AND fastestLap IS NOT NULL ORDER BY rank LIMIT 5; SELECT COUNT(DISTINCT raceId) FROM results WHERE rank=1;",
+    "result": "fastestLapTime, fastestLap and fastestLapSpeed are null together in 18389 rows and present together in 5268; rank is null in 18246 rows. In race 2 the winner has rank 1 with lap 18 and time '1:36.641', rank 2 has '1:37.484', rank 3 '1:37.591'. 256 races have a rank 1 entry.",
+    "validation_method": "co-nullity counts and an ordered inspection of one race",
+    "timestamp": "2026-10-10T00:00:00Z"
+  },
+  {
+    "id": "ev_drivers_nationality_vocabulary",
+    "source": "formula_1 (read-only SQLite)",
+    "query": "SELECT nationality, COUNT(*) FROM drivers GROUP BY nationality ORDER BY COUNT(*) DESC LIMIT 25; SELECT COUNT(*), MIN(dob), MAX(dob), SUM(dob IS NULL) FROM drivers;",
+    "result": "Values are country adjectives: British 162, American 157, Italian 99, French 72, German 49, Brazilian 31, Japanese 19, Dutch 17. No 'Netherlandic' or country-name values occur; 17 drivers are stored as 'Dutch'. Birth dates range from 1896-12-28 to 1998-10-29 with a single null.",
+    "validation_method": "distinct-value frequency listing covering the full nationality vocabulary of the table",
+    "timestamp": "2026-10-10T00:00:00Z"
+  },
+  {
+    "id": "ev_constructors_nationality_japanese",
+    "source": "formula_1 (read-only SQLite)",
+    "query": "SELECT nationality, COUNT(*) FROM constructors GROUP BY nationality ORDER BY COUNT(*) DESC; SELECT constructorId, constructorRef, name, nationality FROM constructors WHERE nationality='Japanese';",
+    "result": "The constructor table uses the same adjective vocabulary (British 85, American 39, Italian 29, French 12, German 10, Japanese 5). The 5 Japanese constructors are Toyota (7), Super Aguri (8), Honda (11), Kojima (72) and Maki (74).",
+    "validation_method": "distinct-value frequency listing and filtered selection",
+    "timestamp": "2026-10-10T00:00:00Z"
+  },
+  {
+    "id": "ev_constructorresults_grain",
+    "source": "formula_1 (read-only SQLite)",
+    "query": "SELECT COUNT(*) FROM constructorResults; SELECT points, COUNT(*) FROM constructorResults GROUP BY points ORDER BY COUNT(*) DESC LIMIT 5; SELECT constructorId, COUNT(*) AS races, SUM(points=0) AS zero_races FROM constructorResults WHERE constructorId IN (72,74) GROUP BY constructorId;",
+    "result": "11082 rows, one per constructor per race; 6458 rows hold 0.0 points. Kojima has 2 rows and both are scoreless; Maki has 8 rows and all 8 are scoreless. The table has only 2 duplicate race/constructor pairs.",
+    "validation_method": "row counts grouped by points value and per-constructor race counts",
+    "timestamp": "2026-10-10T00:00:00Z"
+  },
+  {
+    "id": "ev_points_fractional",
+    "source": "formula_1 (read-only SQLite)",
+    "query": "SELECT DISTINCT points FROM results ORDER BY points LIMIT 15; SELECT SUM(points IS NULL), COUNT(*) FROM results;",
+    "result": "Distinct per-race point values include 0.0, 0.5, 1.0, 1.33, 1.5, 2.0, 2.5, 3.0, 3.14, 3.5, 4.0, 4.14, 4.5, 5.0, 6.0. The column is never null.",
+    "validation_method": "distinct-value listing over the full column",
+    "timestamp": "2026-10-10T00:00:00Z"
+  },
+  {
+    "id": "ev_standings_cumulative",
+    "source": "formula_1 (read-only SQLite)",
+    "query": "SELECT ds.driverId, d.forename||' '||d.surname, ds.points, ds.position, ds.wins, r.year, r.round FROM driverStandings ds JOIN races r ON r.raceId=ds.raceId JOIN drivers d ON d.driverId=ds.driverId WHERE r.year=2009 ORDER BY r.round DESC, ds.position LIMIT 5; SELECT COUNT(*) - COUNT(DISTINCT raceId||'-'||driverId) FROM driverStandings;",
+    "result": "The final round of 2009 (round 17) shows Jenson Button at position 1 with 95.0 points and 6 wins, ahead of Sebastian Vettel with 84.0 points. There are no duplicate race/driver pairs in driverStandings (31578 rows) or race/constructor pairs in constructorStandings (11836 rows).",
+    "validation_method": "season-final ordering and uniqueness checks, confirming one cumulative snapshot per race",
+    "timestamp": "2026-10-10T00:00:00Z"
+  },
+  {
+    "id": "ev_wins_verification",
+    "source": "formula_1 (read-only SQLite)",
+    "query": "SELECT d.forename||' '||d.surname, MAX(ds.wins), MAX(ds.points) FROM driverStandings ds JOIN drivers d ON d.driverId=ds.driverId GROUP BY ds.driverId ORDER BY MAX(ds.wins) DESC LIMIT 5; SELECT c.name, MAX(cs.wins) FROM constructorStandings cs JOIN constructors c ON c.constructorId=cs.constructorId GROUP BY cs.constructorId ORDER BY MAX(cs.wins) DESC LIMIT 5;",
+    "result": "Maximum cumulative wins per driver: 13 (Michael Schumacher and Sebastian Vettel), then 11 (Lewis Hamilton), 9 (Nigel Mansell and Nico Rosberg). Constructor maximum: Mercedes 19, Ferrari 15, McLaren 15, Red Bull 13, Williams 12.",
+    "validation_method": "maximum of the cumulative win counter taken per competitor",
+    "timestamp": "2026-10-10T00:00:00Z"
+  },
+  {
+    "id": "ev_driver_code_era",
+    "source": "formula_1 (read-only SQLite)",
+    "query": "SELECT SUM(code IS NULL), SUM(number IS NULL), SUM(nationality IS NULL), COUNT(*) FROM drivers; SELECT CASE WHEN dob >= '1980-01-01' THEN 'born>=1980' ELSE 'born<1980' END g, SUM(code IS NOT NULL), COUNT(*) FROM drivers GROUP BY g;",
+    "result": "757 of 840 drivers have a null code and 804 have a null permanent number. Only 25 of 780 drivers born before 1980 carry a code, while 58 of the 60 drivers born from 1980 onwards do. Nationality is never null.",
+    "validation_method": "null counts split by birth era",
+    "timestamp": "2026-10-10T00:00:00Z"
+  },
+  {
+    "id": "ev_dob_range",
+    "source": "formula_1 (read-only SQLite)",
+    "query": "SELECT MIN(dob), MAX(dob), SUM(dob IS NULL) FROM drivers; SELECT driverId, driverRef, code, forename, surname, dob, nationality FROM drivers WHERE dob LIKE '1971%';",
+    "result": "Birth dates span 1896-12-28 to 1998-10-29 with exactly one null. Six drivers were born in 1971, including David Coulthard (coulthard, COU), Jacques Villeneuve (villeneuve, VIL) and Pedro de la Rosa (rosa, DLR).",
+    "validation_method": "range and null counts plus a birth-year selection",
+    "timestamp": "2026-10-10T00:00:00Z"
+  },
+  {
+    "id": "ev_laps_stats",
+    "source": "formula_1 (read-only SQLite)",
+    "query": "SELECT MIN(laps), MAX(laps), AVG(laps) FROM results; SELECT COUNT(*) FROM results WHERE laps=0;",
+    "result": "Laps range from 0 to 200 with an average of about 45.2; 2451 entries record zero laps, matching the entries that never started.",
+    "validation_method": "range and zero-count statistics",
+    "timestamp": "2026-10-10T00:00:00Z"
+  },
+  {
+    "id": "ev_grid_zero",
+    "source": "formula_1 (read-only SQLite)",
+    "query": "SELECT grid, COUNT(*) FROM results GROUP BY grid ORDER BY grid LIMIT 5;",
+    "result": "grid 0 occurs 1565 times, then grid 1 with 980, grid 2 with 972, grid 3 with 975 and grid 4 with 977. The zero bucket is the pit-lane start marker.",
+    "validation_method": "frequency listing of the grid column",
+    "timestamp": "2026-10-10T00:00:00Z"
+  },
+  {
+    "id": "ev_races_year_vs_date",
+    "source": "formula_1 (read-only SQLite)",
+    "query": "SELECT MIN(date), MAX(date), SUM(date IS NULL), SUM(date='0000-00-00'), SUM(time IS NULL) FROM races; SELECT SUM(r.year <> CAST(strftime('%Y', r.date) AS INTEGER)) FROM races r; SELECT raceId, year, round, name, date FROM races WHERE year=2005 AND date LIKE '2005-09%';",
+    "result": "Dates span 1950-05-13 to 2017-11-26 with no nulls and no zero dates. Zero races have a year that disagrees with the calendar year of the date. September 2005 races are the Italian (2005-09-04), Belgian (2005-09-11) and Brazilian (2005-09-25) Grands Prix. races.time is null for 731 of 976 races.",
+    "validation_method": "range and consistency counts plus a month-year selection",
+    "timestamp": "2026-10-10T00:00:00Z"
+  },
+  {
+    "id": "ev_referential_integrity",
+    "source": "formula_1 (read-only SQLite)",
+    "query": "Orphan counts for results.raceId/driverId/constructorId/statusId, races.circuitId, races.year against seasons, lapTimes against results, pitStops, qualifying, constructorResults, driverStandings, constructorStandings.",
+    "result": "No orphans for results.raceId, results.driverId, results.constructorId, results.statusId, races.year, pitStops, qualifying, constructorResults, driverStandings or constructorStandings. However 22 races reference a circuitId absent from circuits (all of them Australian Grand Prix entries such as raceId 1 and 18 pointing at circuitId 1) and 384 lapTimes rows have no matching result entry.",
+    "validation_method": "anti-join orphan counts for every foreign-key-like column",
+    "timestamp": "2026-10-10T00:00:00Z"
+  },
+  {
+    "id": "ev_duplicate_driver_race",
+    "source": "formula_1 (read-only SQLite)",
+    "query": "SELECT COUNT(*) - COUNT(DISTINCT raceId||'-'||driverId) FROM results; SELECT raceId, driverId, COUNT(*) FROM results GROUP BY raceId, driverId HAVING COUNT(*)>1 LIMIT 5;",
+    "result": "89 duplicate race/driver pairs, for example race 540 with driver 229 and race 733 with driver 465, each appearing twice. The result table therefore has no unique key on race and driver.",
+    "validation_method": "duplicate-key detection over the natural key",
+    "timestamp": "2026-10-10T00:00:00Z"
+  },
+  {
+    "id": "ev_reference_name_columns",
+    "source": "formula_1 (read-only SQLite)",
+    "query": "SELECT driverId, driverRef, code, number, forename, surname FROM drivers LIMIT 5; SELECT circuitId, circuitRef, name FROM circuits WHERE name='Marina Bay Street Circuit'; SELECT constructorId, constructorRef, name FROM constructors WHERE nationality='Japanese';",
+    "result": "Drivers expose driverId, driverRef ('hamilton', 'heidfeld', 'rosberg'), code ('HAM', 'HEI', 'ROS'), forename and surname. Circuits expose circuitRef ('marina_bay'). Constructors expose constructorRef ('toyota', 'super_aguri', 'honda'). Each entity table thus has a surrogate key, a reference slug and a display name.",
+    "validation_method": "column inspection across the three entity tables",
+    "timestamp": "2026-10-10T00:00:00Z"
+  },
+  {
+    "id": "ev_urls",
+    "source": "formula_1 (read-only SQLite)",
+    "query": "SELECT raceId, year, round, name, date, time, url FROM races LIMIT 3; SELECT circuitId, circuitRef, name, location, country, url FROM circuits WHERE name='Marina Bay Street Circuit';",
+    "result": "Every season, race, circuit, driver and constructor row carries a url; examples are 'http://en.wikipedia.org/wiki/2009_Australian_Grand_Prix' for race 1 and 'http://en.wikipedia.org/wiki/Marina_Bay_Street_Circuit' for the Marina Bay circuit.",
+    "validation_method": "non-null url inspection across entity tables",
+    "timestamp": "2026-10-10T00:00:00Z"
+  },
+  {
+    "id": "ev_seasons_coverage",
+    "source": "formula_1 (read-only SQLite)",
+    "query": "SELECT MIN(year), MAX(year), COUNT(*) FROM seasons; SELECT COUNT(*) FROM seasons s WHERE NOT EXISTS(SELECT 1 FROM races r WHERE r.year=s.year);",
+    "result": "68 seasons covering 1950 to 2017, and every season has at least one race.",
+    "validation_method": "range and coverage anti-join",
+    "timestamp": "2026-10-10T00:00:00Z"
+  }
+]

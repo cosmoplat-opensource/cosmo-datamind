@@ -1,0 +1,68 @@
+{
+ "db_id": "student_club",
+ "questions": [
+  {
+   "question_id": 1361,
+   "db_id": "student_club",
+   "question": "What is the total cost of the pizzas for all the events?",
+   "evidence": "total cost of the pizzas refers to SUM(fld028) where fld026 = 'Pizza'",
+   "SQL": "SELECT SUM(fld028) FROM tab06 WHERE fld026 = 'Pizza'",
+   "difficulty": "simple",
+   "SQL_original": "SELECT SUM(cost) FROM expense WHERE expense_description = 'Pizza'"
+  },
+  {
+   "question_id": 1410,
+   "db_id": "student_club",
+   "question": "List out the full name and total cost that member id \"rec4BLdZHS2Blfp4v\" incurred?",
+   "evidence": "full name refers to fld035, last name",
+   "SQL": "SELECT T1.fld035, T1.fld036, SUM(T2.fld028) FROM tab08 AS T1 INNER JOIN tab06 AS T2 ON T1.fld034 = T2.fld018 WHERE T1.fld034 = 'rec4BLdZHS2Blfp4v'",
+   "difficulty": "simple",
+   "SQL_original": "SELECT T1.first_name, T1.last_name, SUM(T2.cost) FROM member AS T1 INNER JOIN expense AS T2 ON T1.member_id = T2.link_to_member WHERE T1.member_id = 'rec4BLdZHS2Blfp4v'"
+  },
+  {
+   "question_id": 1392,
+   "db_id": "student_club",
+   "question": "Indicate the top source of funds received in September 2019 based on their amount.",
+   "evidence": "top source funds refers to MAX(fld033); September 2019 means fld032 BETWEEN '2019-09-01' and '2019-09-30'",
+   "SQL": "SELECT fld033 FROM tab07 WHERE fld032 BETWEEN '2019-09-01' AND '2019-09-30' ORDER BY fld033 DESC LIMIT 1",
+   "difficulty": "simple",
+   "SQL_original": "SELECT source FROM income WHERE date_received BETWEEN '2019-09-01' and '2019-09-30' ORDER BY source DESC LIMIT 1"
+  },
+  {
+   "question_id": 1387,
+   "db_id": "student_club",
+   "question": "Which student has been entrusted to manage the budget for the Yearly Kickoff?",
+   "evidence": "name of students means the full name; full name refers to fld035, fld036;'Yearly Kickoff' is an event name;",
+   "SQL": "SELECT T4.fld035, T4.fld036 FROM tab01 AS T1 INNER JOIN tab05 AS T2 ON T1.fld001 = T2.fld017 INNER JOIN tab06 AS T3 ON T2.fld019 = T3.fld030 INNER JOIN tab08 AS T4 ON T3.fld018 = T4.fld034 WHERE T1.fld002 = 'Yearly Kickoff'",
+   "difficulty": "moderate",
+   "SQL_original": "SELECT T4.first_name, T4.last_name FROM event AS T1 INNER JOIN budget AS T2 ON T1.event_id = T2.link_to_event INNER JOIN expense AS T3 ON T2.budget_id = T3.link_to_budget INNER JOIN member AS T4 ON T3.link_to_member = T4.member_id WHERE T1.event_name = 'Yearly Kickoff'"
+  },
+  {
+   "question_id": 1317,
+   "db_id": "student_club",
+   "question": "Among the students from the Student_Club who attended the event \"Women's Soccer\", how many of them want a T-shirt that's in medium size?",
+   "evidence": "Women's Soccer is an event name; T-shirt that is in medium size refers to fld039 = 'Medium'",
+   "SQL": "SELECT COUNT(T1.fld001) FROM tab01 AS T1 INNER JOIN tab04 AS T2 ON T1.fld001 = T2.fld017 INNER JOIN tab08 AS T3 ON T2.fld018 = T3.fld034 WHERE T1.fld002 = 'Women''s Soccer' AND T3.fld039 = 'Medium'",
+   "difficulty": "moderate",
+   "SQL_original": "SELECT COUNT(T1.event_id) FROM event AS T1 INNER JOIN attendance AS T2 ON T1.event_id = T2.link_to_event INNER JOIN member AS T3 ON T2.link_to_member = T3.member_id WHERE T1.event_name = 'Women''s Soccer' AND T3.t_shirt_size = 'Medium'"
+  },
+  {
+   "question_id": 1338,
+   "db_id": "student_club",
+   "question": "Was each expense in October Meeting on October 8, 2019 approved?",
+   "evidence": "fld002 = 'October Meeting' where fld003 = '2019-10-08'; fld029 = True means expenses was approved; fld029 = False means expenses was not approved",
+   "SQL": "SELECT T3.fld029 FROM tab01 AS T1 INNER JOIN tab05 AS T2 ON T1.fld001 = T2.fld017 INNER JOIN tab06 AS T3 ON T2.fld019 = T3.fld030 WHERE T1.fld002 = 'October Meeting' AND T1.fld003 LIKE '2019-10-08%'",
+   "difficulty": "moderate",
+   "SQL_original": "SELECT T3.approved FROM event AS T1 INNER JOIN budget AS T2 ON T1.event_id = T2.link_to_event INNER JOIN expense AS T3 ON T2.budget_id = T3.link_to_budget WHERE T1.event_name = 'October Meeting' AND T1.event_date LIKE '2019-10-08%'"
+  },
+  {
+   "question_id": 1394,
+   "db_id": "student_club",
+   "question": "How many members of the Student_Club have major in 'Physics Teaching'?",
+   "evidence": "'Physics Teaching' is the fld009;",
+   "SQL": "SELECT COUNT(T2.fld034) FROM tab02 AS T1 INNER JOIN tab08 AS T2 ON T1.fld008 = T2.fld042 WHERE T1.fld009 = 'Physics Teaching'",
+   "difficulty": "simple",
+   "SQL_original": "SELECT COUNT(T2.member_id) FROM major AS T1 INNER JOIN member AS T2 ON T1.major_id = T2.link_to_major WHERE T1.major_name = 'Physics Teaching'"
+  }
+ ]
+}

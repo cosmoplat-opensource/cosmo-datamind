@@ -1,0 +1,521 @@
+[
+  {
+    "id": "term_match",
+    "name": "Match",
+    "type": "entity",
+    "definition": "A single football fixture played between a home team and an away team in one league, one season and one round, carrying the authoritative scoreline home_team_goal and away_team_goal.",
+    "scope": "Row-level unit of the Match table; the anchor entity for scoreline, odds and event analysis.",
+    "aliases": [
+      "fixture",
+      "game",
+      "match record"
+    ],
+    "evidence": [
+      "ev_schema_tables",
+      "ev_row_counts"
+    ]
+  },
+  {
+    "id": "term_team",
+    "name": "Team",
+    "type": "entity",
+    "definition": "A football club participating in matches, identified by team_api_id and labelled by team_long_name and team_short_name.",
+    "scope": "Row-level unit of the Team table; appears in Match as either the home or the away side.",
+    "aliases": [
+      "club",
+      "side",
+      "squad"
+    ],
+    "evidence": [
+      "ev_row_counts",
+      "ev_team_id_join",
+      "ev_dup_names"
+    ]
+  },
+  {
+    "id": "term_player",
+    "name": "Player",
+    "type": "entity",
+    "definition": "A footballer registered in the Player table with his name, birthday, height and weight, and with his FIFA video-game ratings held separately in Player_Attributes.",
+    "scope": "Row-level unit of the Player table; linked to matches only through the lineup columns of Match.",
+    "aliases": [
+      "footballer",
+      "registrant"
+    ],
+    "evidence": [
+      "ev_row_counts",
+      "ev_player_profile_ranges"
+    ]
+  },
+  {
+    "id": "term_league",
+    "name": "League",
+    "type": "entity",
+    "definition": "A domestic competition, identified by League.id, named by League.name and attached to exactly one Country through League.country_id.",
+    "scope": "Row-level unit of the League table; 11 competitions, each tied to one country and to one or more seasons of matches.",
+    "aliases": [
+      "competition",
+      "division"
+    ],
+    "evidence": [
+      "ev_league_country",
+      "ev_league_id_country_id"
+    ]
+  },
+  {
+    "id": "term_country",
+    "name": "Country",
+    "type": "entity",
+    "definition": "The nation that hosts a league, identified by Country.id and named by Country.name.",
+    "scope": "Row-level unit of the Country table; referenced by League.country_id and, redundantly but consistently, by Match.country_id.",
+    "aliases": [
+      "nation"
+    ],
+    "evidence": [
+      "ev_league_country",
+      "ev_country_id_consistency"
+    ]
+  },
+  {
+    "id": "term_season",
+    "name": "Season",
+    "type": "dimension",
+    "definition": "The competition year expressed as a text range in the form 'YYYY/YYYY' in Match.season, covering 2008/2009 through 2015/2016.",
+    "scope": "Applies to matches only; used to group fixtures into yearly competitions. Attribute snapshots use dates, not season strings.",
+    "aliases": [
+      "campaign",
+      "competition year"
+    ],
+    "evidence": [
+      "ev_season_stage"
+    ]
+  },
+  {
+    "id": "term_match_stage",
+    "name": "Match Stage",
+    "type": "dimension",
+    "definition": "The integer round number within a season held in Match.stage, taking values 1 to 38 and corresponding to the matchday of the fixture.",
+    "scope": "Applies to matches only; the number of populated stages differs by league because league sizes differ.",
+    "aliases": [
+      "round",
+      "matchday",
+      "fixture round"
+    ],
+    "evidence": [
+      "ev_season_stage"
+    ]
+  },
+  {
+    "id": "term_home_away_side",
+    "name": "Home or Away Side",
+    "type": "dimension",
+    "definition": "The venue role of a team in a match, encoded by which of the two mirrored column groups holds the team: home_team_api_id with home_team_goal, or away_team_api_id with away_team_goal.",
+    "scope": "Applies to any per-team metric derived from Match; the same team can appear as the home side in one row and the away side in another.",
+    "aliases": [
+      "venue role",
+      "home team",
+      "away team"
+    ],
+    "evidence": [
+      "ev_schema_tables",
+      "ev_team_id_join"
+    ]
+  },
+  {
+    "id": "term_match_event_feed",
+    "name": "Match Event Feed",
+    "type": "concept",
+    "definition": "The XML event payload attached to a match in the eight Match columns goal, shoton, shotoff, foulcommit, card, cross, corner and possession. Each column holds a root element containing one <value> element per incident.",
+    "scope": "Present as a whole or absent as a whole: all eight columns are NULL together for 11762 matches. Availability is concentrated in England, Germany, Italy and Spain, and is partial in France, Netherlands, Switzerland, Scotland and Poland.",
+    "aliases": [
+      "event detail payload",
+      "XML feed",
+      "match events"
+    ],
+    "evidence": [
+      "ev_event_coverage_league",
+      "ev_event_coverage_season",
+      "ev_shots_cards_scale"
+    ]
+  },
+  {
+    "id": "term_match_event",
+    "name": "Match Event",
+    "type": "concept",
+    "definition": "A single timed incident inside a match, for example a goal, a card or a shot, described by the <value> elements of the event feed with elapsed minute, team and player references.",
+    "scope": "Only meaningful for matches that carry a populated event feed.",
+    "aliases": [
+      "incident",
+      "in-game event"
+    ],
+    "evidence": [
+      "ev_shots_cards_scale",
+      "ev_goal_type_enum"
+    ]
+  },
+  {
+    "id": "term_goal_event",
+    "name": "Goal Event",
+    "type": "concept",
+    "definition": "A match event of goal type recorded in Match.goal, carrying elapsed minute, scoring team, player1, optional assisting player2 and a goal_type discriminator.",
+    "scope": "Populated only where the match event feed exists; the event count does not always agree with the final scoreline.",
+    "aliases": [
+      "scoring incident",
+      "goal record"
+    ],
+    "evidence": [
+      "ev_goal_type_enum",
+      "ev_goal_xml_vs_score"
+    ]
+  },
+  {
+    "id": "term_card_event",
+    "name": "Card Event",
+    "type": "concept",
+    "definition": "A disciplinary match event recorded in Match.card, discriminated by card_type into yellow, red and second yellow.",
+    "scope": "Populated only where the match event feed exists. An empty payload is encoded as an empty root element rather than a NULL.",
+    "aliases": [
+      "booking",
+      "disciplinary incident"
+    ],
+    "evidence": [
+      "ev_card_type_enum"
+    ]
+  },
+  {
+    "id": "term_possession_snapshot",
+    "name": "Possession Snapshot",
+    "type": "concept",
+    "definition": "A cumulative in-match possession measurement recorded in Match.possession, holding homepos and awaypos at a given elapsed minute.",
+    "scope": "Populated only where the match event feed exists; roughly four snapshots per match at elapsed minutes near 25, 45, 70 and 90.",
+    "aliases": [
+      "possession reading",
+      "ball share snapshot"
+    ],
+    "evidence": [
+      "ev_possession_sum"
+    ]
+  },
+  {
+    "id": "term_player_ability_snapshot",
+    "name": "Player Ability Snapshot",
+    "type": "concept",
+    "definition": "One dated FIFA rating record for a player in Player_Attributes, holding overall_rating, potential, physical skills, work rates and preferred foot as at that date.",
+    "scope": "Grain is player crossed with snapshot date, about two snapshots per player per year. It is not a match-level or season-level record.",
+    "aliases": [
+      "FIFA rating row",
+      "player attribute row"
+    ],
+    "evidence": [
+      "ev_pa_grain"
+    ]
+  },
+  {
+    "id": "term_team_tactical_snapshot",
+    "name": "Team Tactical Snapshot",
+    "type": "concept",
+    "definition": "One dated tactical profile for a team in Team_Attributes, holding build-up, chance-creation and defence settings as numeric values plus their class labels.",
+    "scope": "Grain is team crossed with snapshot date; only six snapshot dates exist between 2010 and 2015 and only 288 of 299 teams are covered.",
+    "aliases": [
+      "team style row",
+      "tactical profile"
+    ],
+    "evidence": [
+      "ev_ta_grain"
+    ]
+  },
+  {
+    "id": "term_player_api_id",
+    "name": "Player API Identifier",
+    "type": "concept",
+    "definition": "The primary player key player_api_id, used by Player, by Player_Attributes and by the 22 lineup columns of Match.",
+    "scope": "The join key for any player-level analysis that starts from a match. Distinct from Player.id, which is an internal row counter never referenced elsewhere.",
+    "aliases": [
+      "player_api_id"
+    ],
+    "evidence": [
+      "ev_lineup_id_join"
+    ]
+  },
+  {
+    "id": "term_player_fifa_api_id",
+    "name": "Player FIFA Identifier",
+    "type": "concept",
+    "definition": "The second player key player_fifa_api_id, the identifier of the player in the FIFA video game, held on both Player and Player_Attributes.",
+    "scope": "Alternative player identity with a value domain disjoint from player_api_id; use it only when the question is framed in FIFA identifiers.",
+    "aliases": [
+      "player_fifa_api_id",
+      "FIFA player id"
+    ],
+    "evidence": [
+      "ev_fifa_id_nulls",
+      "ev_lineup_id_join"
+    ]
+  },
+  {
+    "id": "term_team_api_id",
+    "name": "Team API Identifier",
+    "type": "concept",
+    "definition": "The primary team key team_api_id, used by Team, by Team_Attributes, by Match.home_team_api_id and away_team_api_id, and by the team element inside the event feed.",
+    "scope": "The join key for any team-level analysis that starts from a match.",
+    "aliases": [
+      "team_api_id"
+    ],
+    "evidence": [
+      "ev_team_id_join"
+    ]
+  },
+  {
+    "id": "term_team_fifa_api_id",
+    "name": "Team FIFA Identifier",
+    "type": "concept",
+    "definition": "The second team key team_fifa_api_id, the identifier of the club in the FIFA video game, held on both Team and Team_Attributes.",
+    "scope": "Alternative team identity with a value domain disjoint from team_api_id; NULL for 11 of 299 teams.",
+    "aliases": [
+      "team_fifa_api_id",
+      "FIFA team id"
+    ],
+    "evidence": [
+      "ev_fifa_id_nulls"
+    ]
+  },
+  {
+    "id": "term_player_birthday",
+    "name": "Player Date of Birth",
+    "type": "concept",
+    "definition": "The player birth date stored as TEXT in Player.birthday.",
+    "scope": "One value per player; the source concept from which player age is computed.",
+    "aliases": [
+      "birthday",
+      "date of birth",
+      "DOB"
+    ],
+    "evidence": [
+      "ev_player_profile_ranges"
+    ]
+  },
+  {
+    "id": "term_goals_scored",
+    "name": "Goals Scored",
+    "type": "metric",
+    "definition": "The number of goals credited to a team in a match, held as the authoritative scoreline in Match.home_team_goal for the home side and Match.away_team_goal for the away side.",
+    "scope": "Available for every one of the 25979 matches regardless of event-feed coverage. This is the scoreline of record; it is not guaranteed to equal the number of goal events in the feed.",
+    "aliases": [
+      "goals",
+      "goals for",
+      "score"
+    ],
+    "evidence": [
+      "ev_goal_xml_vs_score",
+      "ev_event_coverage_league"
+    ]
+  },
+  {
+    "id": "term_match_outcome",
+    "name": "Match Outcome",
+    "type": "metric",
+    "definition": "The result of a match from one side's perspective, being a win, a draw or a loss, determined by comparing that side's goals scored with the opponent's.",
+    "scope": "Defined per match and per side; must be computed from home_team_goal and away_team_goal rather than derived from the event feed.",
+    "aliases": [
+      "result",
+      "win draw loss",
+      "W/D/L"
+    ],
+    "evidence": [
+      "ev_goal_xml_vs_score"
+    ]
+  },
+  {
+    "id": "term_goal_difference",
+    "name": "Goal Difference",
+    "type": "metric",
+    "definition": "Goals scored minus goals conceded by a team, aggregated over a chosen set of matches such as a season or a venue role.",
+    "scope": "Computed from home_team_goal and away_team_goal; the sign depends on which side is used as the reference team.",
+    "aliases": [
+      "goal diff",
+      "GD",
+      "goals for minus against"
+    ],
+    "evidence": [
+      "ev_goal_xml_vs_score"
+    ]
+  },
+  {
+    "id": "term_league_points",
+    "name": "League Points",
+    "type": "metric",
+    "definition": "The competition points a team accumulates over a set of matches, obtained by converting each match outcome into a points value and summing.",
+    "scope": "Requires an explicit points convention plus a scope such as one league and one season; not stored as a column anywhere in the database.",
+    "aliases": [
+      "points",
+      "table points",
+      "standing points"
+    ],
+    "evidence": [
+      "ev_goal_xml_vs_score"
+    ]
+  },
+  {
+    "id": "term_overall_rating",
+    "name": "Overall Rating",
+    "type": "metric",
+    "definition": "The FIFA overall ability score of a player at a snapshot date, held in Player_Attributes.overall_rating on a scale observed from 33 to 94.",
+    "scope": "Snapshot-level, not match-level; a player has one value per snapshot date, about twice a year.",
+    "aliases": [
+      "overall_rating",
+      "rating",
+      "overall"
+    ],
+    "evidence": [
+      "ev_player_profile_ranges",
+      "ev_pa_grain"
+    ]
+  },
+  {
+    "id": "term_player_potential",
+    "name": "Player Potential",
+    "type": "metric",
+    "definition": "The FIFA ceiling ability score of a player at a snapshot date, held in Player_Attributes.potential.",
+    "scope": "Snapshot-level; conceptually related to overall rating but not computed from it.",
+    "aliases": [
+      "potential",
+      "ceiling rating"
+    ],
+    "evidence": [
+      "ev_pa_grain"
+    ]
+  },
+  {
+    "id": "term_player_age",
+    "name": "Player Age",
+    "type": "metric",
+    "definition": "The age of a player at a reference point in time, computed from the player date of birth and that reference date.",
+    "scope": "Depends on the chosen reference date; when analysing a match or a snapshot the reference date must be stated explicitly.",
+    "aliases": [
+      "age",
+      "years old"
+    ],
+    "evidence": [
+      "ev_player_profile_ranges"
+    ]
+  },
+  {
+    "id": "term_player_work_rate",
+    "name": "Player Work Rate",
+    "type": "metric",
+    "definition": "The categorical intensity with which a player works when attacking and when defending, held in Player_Attributes.attacking_work_rate and Player_Attributes.defensive_work_rate.",
+    "scope": "Intended domain is low, medium and high, but a substantial minority of rows carry values outside that domain or are empty.",
+    "aliases": [
+      "work rate",
+      "attacking work rate",
+      "defensive work rate"
+    ],
+    "evidence": [
+      "ev_workrate_enum"
+    ]
+  },
+  {
+    "id": "term_bet365_odds",
+    "name": "Bet365 1X2 Odds",
+    "type": "metric",
+    "definition": "The Bet365 pre-match decimal odds for the three match outcomes, held in Match.B365H for the home win, Match.B365D for the draw and Match.B365A for the away win.",
+    "scope": "Available for all eight seasons; absent for every match of Switzerland Super League and Poland Ekstraklasa.",
+    "aliases": [
+      "B365 odds",
+      "Bet365 odds",
+      "home/draw/away odds"
+    ],
+    "evidence": [
+      "ev_odds_coverage_season",
+      "ev_odds_coverage_league"
+    ]
+  },
+  {
+    "id": "term_pinnacle_odds",
+    "name": "Pinnacle 1X2 Odds",
+    "type": "metric",
+    "definition": "The Pinnacle pre-match decimal odds for the three match outcomes, held in Match.PSH, Match.PSD and Match.PSA.",
+    "scope": "Available only from season 2012/2013 onward; NULL for all earlier seasons.",
+    "aliases": [
+      "PS odds",
+      "Pinnacle odds"
+    ],
+    "evidence": [
+      "ev_odds_coverage_season"
+    ]
+  },
+  {
+    "id": "term_implied_probability",
+    "name": "Implied Outcome Probability",
+    "type": "metric",
+    "definition": "The probability of a match outcome implied by a set of decimal odds, obtained by inverting the odds and normalising across the three outcomes.",
+    "scope": "Derived from a chosen bookmaker family; the choice of family determines the seasons and leagues for which the metric exists.",
+    "aliases": [
+      "implied odds",
+      "market probability"
+    ],
+    "evidence": [
+      "ev_odds_coverage_season"
+    ]
+  },
+  {
+    "id": "term_possession_share",
+    "name": "Possession Share",
+    "type": "metric",
+    "definition": "The share of ball possession held by a side, read from the homepos and awaypos values of Match.possession, which sum to 100 within each snapshot.",
+    "scope": "Available only for matches carrying the event feed; the last snapshot in elapsed order represents the match-level figure.",
+    "aliases": [
+      "possession",
+      "ball possession",
+      "possession percentage"
+    ],
+    "evidence": [
+      "ev_possession_sum",
+      "ev_event_coverage_league"
+    ]
+  },
+  {
+    "id": "term_shots_on_target",
+    "name": "Shots on Target",
+    "type": "metric",
+    "definition": "The number of shots on target recorded for a side, obtained by counting the qualifying shot events inside Match.shoton.",
+    "scope": "Available only for matches carrying the event feed; the column holds event markup rather than a scalar count, so the metric must be aggregated from the payload.",
+    "aliases": [
+      "shoton",
+      "shots on goal"
+    ],
+    "evidence": [
+      "ev_shots_cards_scale"
+    ]
+  },
+  {
+    "id": "term_card_count",
+    "name": "Card Count",
+    "type": "metric",
+    "definition": "The number of disciplinary cards shown in a match, obtained by counting the card events inside Match.card and splitting them by card_type.",
+    "scope": "Available only for matches carrying the event feed. An empty card payload means no cards, which is different from the column being NULL.",
+    "aliases": [
+      "cards",
+      "bookings",
+      "yellow cards",
+      "red cards"
+    ],
+    "evidence": [
+      "ev_card_type_enum"
+    ]
+  },
+  {
+    "id": "term_country_name",
+    "name": "Country Name",
+    "type": "concept",
+    "definition": "The human-readable country label in Country.name, unique across the 11 rows.",
+    "scope": "Use for labelling a country; do not use as a join key since League carries no country name.",
+    "aliases": [
+      "country",
+      "nation name"
+    ],
+    "evidence": [
+      "ev_league_country"
+    ]
+  }
+]

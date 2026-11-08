@@ -1,0 +1,225 @@
+[
+  {
+    "connection_condition": "a school's CDS code carries its district segment in characters 3-7, which corresponds to the district record whose school segment is '0000000'",
+    "description": "A school district is composed of the schools it operates; a school record has no meaning without the district that administers it.",
+    "evidence": [
+      "e_cds_composite_key",
+      "e_schools_district_level_rows"
+    ],
+    "id": "rel_district_composed_of_schools",
+    "relation_type": "composition",
+    "source": "term_school_district",
+    "target": "term_school"
+  },
+  {
+    "connection_condition": "the first two characters of the CDS code hold the county code, and every district label appears under exactly one county label",
+    "description": "A county contains the school districts located within it; the county is the enclosing geographic unit.",
+    "evidence": [
+      "e_cds_composite_key",
+      "e_county_and_name_consistency"
+    ],
+    "id": "rel_county_composed_of_districts",
+    "relation_type": "composition",
+    "source": "term_county",
+    "target": "term_school_district"
+  },
+  {
+    "connection_condition": "schools.CDSCode, frpm.CDSCode and satscores.cds all carry the CDS code, though the satscores copy sometimes lacks the leading zero",
+    "description": "The CDS code is the canonical identifier of a school and encodes its county, district and school segments; it is the field through which the three tables are aligned.",
+    "evidence": [
+      "e_cds_composite_key",
+      "e_satscores_cds_leading_zero"
+    ],
+    "id": "rel_cds_code_identifies_school",
+    "relation_type": "association",
+    "source": "term_school",
+    "target": "term_cds_code"
+  },
+  {
+    "connection_condition": "schools.Charter carries the school-level flag and frpm.'Charter School (Y/N)' repeats it",
+    "description": "Charter status classifies a school as charter or non-charter.",
+    "evidence": [
+      "e_charter_code_values"
+    ],
+    "id": "rel_charter_status_classifies_school",
+    "relation_type": "association",
+    "source": "term_school",
+    "target": "term_charter_status"
+  },
+  {
+    "connection_condition": "schools.Virtual carries the status code for each school record",
+    "description": "Virtual instruction status classifies how a school delivers instruction, from fully classroom-based to exclusively virtual.",
+    "evidence": [
+      "e_virtual_code_values"
+    ],
+    "id": "rel_virtual_status_classifies_school",
+    "relation_type": "association",
+    "source": "term_school",
+    "target": "term_virtual_status"
+  },
+  {
+    "connection_condition": "schools.DOC is constant down to the district segment of the CDS code and is mirrored by frpm.'District Type'",
+    "description": "The district ownership code states the administrative type of a district, such as Unified or Elementary school district.",
+    "evidence": [
+      "e_doc_codes"
+    ],
+    "id": "rel_doc_classifies_district",
+    "relation_type": "association",
+    "source": "term_district_ownership_code",
+    "target": "term_school_district"
+  },
+  {
+    "connection_condition": "schools.SOC holds the code and schools.SOCType holds its label",
+    "description": "The school ownership code states the level and ownership category of a school, such as High Schools (Public).",
+    "evidence": [
+      "e_soc_codes"
+    ],
+    "id": "rel_soc_classifies_school",
+    "relation_type": "association",
+    "source": "term_school_ownership_code",
+    "target": "term_school"
+  },
+  {
+    "connection_condition": "schools.StatusType holds the status of each school record",
+    "description": "Status type states whether a school record describes an active, closed, merged or pending school.",
+    "evidence": [
+      "e_status_type_values"
+    ],
+    "id": "rel_status_type_classifies_school",
+    "relation_type": "association",
+    "source": "term_school_status_type",
+    "target": "term_school"
+  },
+  {
+    "connection_condition": "the rate column equals the free meal count divided by K-12 enrollment for every populated row",
+    "description": "The eligible free meal rate is derived from the free meal count over the K-12 enrollment denominator.",
+    "evidence": [
+      "e_frpm_percent_columns_fraction"
+    ],
+    "id": "rel_free_meal_rate_derivation",
+    "relation_type": "derivation",
+    "source": "term_free_meal_count_k12",
+    "target": "term_free_meal_rate_k12"
+  },
+  {
+    "connection_condition": "the rate column equals the FRPM count divided by K-12 enrollment for every populated row",
+    "description": "The eligible FRPM rate is derived from the free or reduced price meal count over the K-12 enrollment denominator.",
+    "evidence": [
+      "e_frpm_percent_columns_fraction"
+    ],
+    "id": "rel_frpm_rate_derivation",
+    "relation_type": "derivation",
+    "source": "term_frpm_count_k12",
+    "target": "term_frpm_rate_k12"
+  },
+  {
+    "connection_condition": "FRPM Count (K-12) is greater than or equal to Free Meal Count (K-12) in every populated row, the difference being the reduced-price meal count",
+    "description": "The free or reduced price meal count is composed of the free meal count and the reduced price meal count.",
+    "evidence": [
+      "e_frpm_count_ge_free_meal"
+    ],
+    "id": "rel_frpm_includes_free_meal",
+    "relation_type": "composition",
+    "source": "term_frpm_count_k12",
+    "target": "term_free_meal_count_k12"
+  },
+  {
+    "connection_condition": "schools.Street and schools.MailStreet hold the same kind of street label; they coincide for most schools but are separate columns",
+    "description": "The postal street address and the mailing street address are treated as synonymous expressions of a school's street address, so a request for one should also surface the other.",
+    "evidence": [
+      "e_address_and_phone_columns"
+    ],
+    "id": "rel_postal_mailing_street_equivalence",
+    "relation_type": "equivalence",
+    "source": "term_school_postal_street",
+    "target": "term_school_mailing_street"
+  },
+  {
+    "connection_condition": "both counts live side by side in each frpm row, and K-12 enrollment is never smaller than the ages 5-17 count",
+    "description": "K-12 enrollment and ages 5-17 enrollment are two overlapping measures of the same student population, differing by grade-based versus age-based scope.",
+    "evidence": [
+      "e_enrollment_scope_relation"
+    ],
+    "id": "rel_enrollment_k12_vs_ages",
+    "relation_type": "association",
+    "source": "term_enrollment_k12",
+    "target": "term_enrollment_ages_5_17"
+  },
+  {
+    "connection_condition": "satscores rows with rtype = 'S' carry the CDS code of the school they describe",
+    "description": "The average SAT reading score is a school-level performance measure reported for individual schools.",
+    "evidence": [
+      "e_sat_rtype_semantics"
+    ],
+    "id": "rel_sat_reading_describes_school",
+    "relation_type": "association",
+    "source": "term_sat_avg_reading",
+    "target": "term_school"
+  },
+  {
+    "connection_condition": "satscores rows with rtype = 'S' carry the CDS code of the school they describe",
+    "description": "The average SAT math score is a school-level performance measure reported for individual schools.",
+    "evidence": [
+      "e_sat_rtype_semantics"
+    ],
+    "id": "rel_sat_math_describes_school",
+    "relation_type": "association",
+    "source": "term_sat_avg_math",
+    "target": "term_school"
+  },
+  {
+    "connection_condition": "satscores rows with rtype = 'S' carry the CDS code of the school they describe",
+    "description": "The average SAT writing score is a school-level performance measure reported for individual schools.",
+    "evidence": [
+      "e_sat_rtype_semantics"
+    ],
+    "id": "rel_sat_writing_describes_school",
+    "relation_type": "association",
+    "source": "term_sat_avg_writing",
+    "target": "term_school"
+  },
+  {
+    "connection_condition": "the '(K-12)' suffix on the frpm measures and the Low Grade / High Grade columns both express the same grade scope",
+    "description": "The K-12 grade range is the scope over which the K-12 enrollment and K-12 meal counts are measured.",
+    "evidence": [
+      "e_grade_span_columns"
+    ],
+    "id": "rel_k12_grade_range_defines_k12_measures",
+    "relation_type": "association",
+    "source": "term_k12_grade_range",
+    "target": "term_enrollment_k12"
+  },
+  {
+    "connection_condition": "both dates sit on the same school record and together delimit its operating period",
+    "description": "Open date and closed date together describe the period during which a school operated; a null closed date marks a school that has not closed.",
+    "evidence": [
+      "e_open_close_date_format"
+    ],
+    "id": "rel_open_close_dates_describe_period",
+    "relation_type": "association",
+    "source": "term_school_open_date",
+    "target": "term_school_closed_date"
+  },
+  {
+    "connection_condition": "schools.FundingType carries the label per school and frpm.'Charter Funding Type' repeats it for charter schools",
+    "description": "Funding type states the funding arrangement under which a school operates, such as directly funded or locally funded.",
+    "evidence": [
+      "e_funding_type_values"
+    ],
+    "id": "rel_funding_type_classifies_school",
+    "relation_type": "association",
+    "source": "term_school_funding_type",
+    "target": "term_school"
+  },
+  {
+    "connection_condition": "schools.GSoffered and schools.GSserved carry the grade range on each school record",
+    "description": "The grade span states which grades a school offers and serves, and therefore which student population its enrollment counts cover.",
+    "evidence": [
+      "e_grade_span_columns"
+    ],
+    "id": "rel_grade_span_locates_school",
+    "relation_type": "association",
+    "source": "term_grade_span",
+    "target": "term_school"
+  }
+]

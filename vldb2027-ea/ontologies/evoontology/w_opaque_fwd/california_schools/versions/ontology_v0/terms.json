@@ -1,0 +1,590 @@
+[
+  {
+    "id": "term_school",
+    "name": "School",
+    "type": "entity",
+    "definition": "A California public school or school agency listed in the statewide school directory; each row is a CDS code carrying names, location, classification and status.",
+    "scope": "School-level analysis over tab03; includes 1369 district/agency rows that have no school name.",
+    "aliases": [
+      "school record",
+      "public school",
+      "school directory",
+      "schools"
+    ],
+    "evidence": [
+      "ev_schema_overview",
+      "ev_school_id_uniqueness",
+      "ev_blank_school_names"
+    ]
+  },
+  {
+    "id": "term_school_district",
+    "name": "School District",
+    "type": "entity",
+    "definition": "The administrative district or agency that operates a school, identified by its district name, which is repeated on every school row belonging to that district.",
+    "scope": "tab03.fld045, tab02.fld033 and tab01.fld007; the database has no separate district table or district identifier.",
+    "aliases": [
+      "district",
+      "district name",
+      "unified district",
+      "school agency"
+    ],
+    "evidence": [
+      "ev_blank_school_names",
+      "ev_place_ambiguity"
+    ]
+  },
+  {
+    "id": "term_county",
+    "name": "County",
+    "type": "dimension",
+    "definition": "California county in which a school or district is located.",
+    "scope": "Text attribute on school, SAT and meal records; 58 distinct values in the school directory.",
+    "aliases": [
+      "county name",
+      "counties"
+    ],
+    "evidence": [
+      "ev_blank_school_names",
+      "ev_place_ambiguity"
+    ]
+  },
+  {
+    "id": "term_city",
+    "name": "City",
+    "type": "dimension",
+    "definition": "City of the school street address.",
+    "scope": "tab03.fld049 only; 1165 distinct values and 293 blank rows. City names also appear inside county and district names.",
+    "aliases": [
+      "city name",
+      "town",
+      "municipality"
+    ],
+    "evidence": [
+      "ev_blank_school_names",
+      "ev_place_ambiguity"
+    ]
+  },
+  {
+    "id": "term_school_cds_code",
+    "name": "CDS Code",
+    "type": "concept",
+    "definition": "Fourteen-digit California County-District-School identifier; the primary key of a school and the join key between the school directory and the meal-eligibility report.",
+    "scope": "tab03.fld001 and tab01.fld001; both are 14 characters in every row.",
+    "aliases": [
+      "CDSCode",
+      "CDS code",
+      "school code",
+      "county district school code",
+      "school id"
+    ],
+    "evidence": [
+      "ev_school_id_uniqueness",
+      "ev_id_lengths",
+      "ev_join_frpm"
+    ]
+  },
+  {
+    "id": "term_sat_cds_code",
+    "name": "SAT Report CDS Code",
+    "type": "concept",
+    "definition": "CDS code as recorded on SAT score records; it designates the same school or district but 211 rows store only 13 characters because a leading zero was dropped.",
+    "scope": "tab02.fld030; must be normalized before comparison with 14-character CDS codes.",
+    "aliases": [
+      "cds",
+      "SAT school code",
+      "satscores cds"
+    ],
+    "evidence": [
+      "ev_id_lengths",
+      "ev_join_sat"
+    ]
+  },
+  {
+    "id": "term_school_status",
+    "name": "School Status",
+    "type": "dimension",
+    "definition": "Operating status of the directory record: Active, Closed, Merged or Pending.",
+    "scope": "tab03.fld043.",
+    "aliases": [
+      "status",
+      "school status type",
+      "active school",
+      "closed school"
+    ],
+    "evidence": [
+      "ev_school_status"
+    ]
+  },
+  {
+    "id": "term_school_type",
+    "name": "School Type",
+    "type": "dimension",
+    "definition": "CDE school type classification; the numeric code in fld067 is paired with the descriptive label in fld068.",
+    "scope": "tab03.fld067 and fld068; describes the school itself, not its district.",
+    "aliases": [
+      "school type code",
+      "school type description",
+      "type of school"
+    ],
+    "evidence": [
+      "ev_school_type"
+    ]
+  },
+  {
+    "id": "term_district_type",
+    "name": "District Type",
+    "type": "dimension",
+    "definition": "CDE district type classification, such as Unified School District, Elementary School District, High School District or County Office of Education.",
+    "scope": "tab03.fld065 and fld066 (tab01.fld009 carries the description); it classifies the operating district, not the school.",
+    "aliases": [
+      "district type code",
+      "district type description",
+      "unified school",
+      "elementary school district",
+      "high school district"
+    ],
+    "evidence": [
+      "ev_district_type"
+    ]
+  },
+  {
+    "id": "term_educational_option_type",
+    "name": "Educational Option Type",
+    "type": "dimension",
+    "definition": "CDE educational option classification of a school, for example Traditional, Continuation School, Special Education School or State Special School (SSS).",
+    "scope": "tab03.fld069 (code) and fld070 (description); tab01.fld011 carries the description only.",
+    "aliases": [
+      "educational option",
+      "option type",
+      "state special school code",
+      "SSS"
+    ],
+    "evidence": [
+      "ev_educational_option"
+    ]
+  },
+  {
+    "id": "term_state_special_school",
+    "name": "State Special School",
+    "type": "category",
+    "definition": "A public school whose educational option type is SSS; three schools statewide, including the California School for the Blind and the California School for the Deaf campuses.",
+    "scope": "Subset of tab03 identified by fld069 = 'SSS'.",
+    "aliases": [
+      "SSS school",
+      "state special school (SSS)"
+    ],
+    "evidence": [
+      "ev_sss_schools",
+      "ev_educational_option"
+    ]
+  },
+  {
+    "id": "term_high_school",
+    "name": "High School",
+    "type": "category",
+    "definition": "A school whose CDE school type is High Schools (Public), code 66.",
+    "scope": "Subset of tab03 identified by fld067 = '66'; excludes continuation high schools, junior high schools, K-12 schools and High Schools In 1 School Dist.",
+    "aliases": [
+      "high schools",
+      "high school (public)"
+    ],
+    "evidence": [
+      "ev_school_type"
+    ]
+  },
+  {
+    "id": "term_grade_span",
+    "name": "Grade Span",
+    "type": "dimension",
+    "definition": "Text range of grades offered by a school, such as K-5, K-8, 6-8, 9-12 or Adult; K denotes Kindergarten.",
+    "scope": "tab03.fld073, the more complete of the two grade-span columns.",
+    "aliases": [
+      "grades offered",
+      "grade range",
+      "K-8",
+      "kindergarten to 8th grade",
+      "grade span offered"
+    ],
+    "evidence": [
+      "ev_grade_span"
+    ]
+  },
+  {
+    "id": "term_alternate_grade_span",
+    "name": "Alternate Grade Span",
+    "type": "dimension",
+    "definition": "A second grade-span field on the school directory that encodes the same concept as the primary grade span but is populated for fewer schools and disagrees for 2487 rows.",
+    "scope": "tab03.fld074; never populated when fld073 is blank.",
+    "aliases": [
+      "second grade span",
+      "grade span alternate"
+    ],
+    "evidence": [
+      "ev_grade_span"
+    ]
+  },
+  {
+    "id": "term_magnet_program",
+    "name": "Magnet Program",
+    "type": "concept",
+    "definition": "Indicator that a school offers a magnet program; 1 means it offers one and 0 means it does not.",
+    "scope": "tab03.fld076; blank for 7076 rows.",
+    "aliases": [
+      "magnet",
+      "magnet school",
+      "offers a magnet program"
+    ],
+    "evidence": [
+      "ev_magnet"
+    ]
+  },
+  {
+    "id": "term_virtual_status",
+    "name": "Virtual School Status",
+    "type": "dimension",
+    "definition": "Coded virtual-instruction status of a school; F denotes a school that is exclusively virtual.",
+    "scope": "tab03.fld075; observed values F, N, P and blank.",
+    "aliases": [
+      "virtual",
+      "exclusively virtual",
+      "virtual school",
+      "online school"
+    ],
+    "evidence": [
+      "ev_virtual"
+    ]
+  },
+  {
+    "id": "term_school_address",
+    "name": "School Address",
+    "type": "concept",
+    "definition": "Physical street address of a school, composed of street, city, state and ZIP code.",
+    "scope": "tab03.fld047, fld049, fld051 and fld050; mailing-address columns fld052-fld056 form a separate address and are not covered by this term.",
+    "aliases": [
+      "address",
+      "complete address",
+      "full communication address",
+      "street address",
+      "zip code",
+      "state"
+    ],
+    "evidence": [
+      "ev_blank_school_names"
+    ]
+  },
+  {
+    "id": "term_school_location",
+    "name": "School Location",
+    "type": "dimension",
+    "definition": "Geographic coordinates (latitude and longitude) of a school.",
+    "scope": "tab03.fld077 and fld078; blank for 4823 rows.",
+    "aliases": [
+      "latitude",
+      "longitude",
+      "coordinates",
+      "location",
+      "geolocation"
+    ],
+    "evidence": [
+      "ev_geo"
+    ]
+  },
+  {
+    "id": "term_school_administrator",
+    "name": "School Administrator",
+    "type": "entity",
+    "definition": "Administrator contact recorded on the school row: first name, last name and e-mail address.",
+    "scope": "tab03.fld079-fld081 for the primary administrator; fld082-fld087 hold a second contact for 431 schools and a third for 42.",
+    "aliases": [
+      "administrator",
+      "admin",
+      "principal",
+      "administrator email",
+      "admin email",
+      "administrator name"
+    ],
+    "evidence": [
+      "ev_admin"
+    ]
+  },
+  {
+    "id": "term_school_open_date",
+    "name": "School Open Date",
+    "type": "dimension",
+    "definition": "Date on which the school opened.",
+    "scope": "tab03.fld060, a text date from 1850-07-01 to 2017-09-22; blank for the 1369 agency rows.",
+    "aliases": [
+      "open date",
+      "date opened",
+      "opened",
+      "school opening",
+      "opening date"
+    ],
+    "evidence": [
+      "ev_open_date"
+    ]
+  },
+  {
+    "id": "term_sat_report",
+    "name": "SAT Score Report",
+    "type": "entity",
+    "definition": "One SAT performance record for a reporting unit, which may be a school or a district.",
+    "scope": "tab02; 1749 school-level and 520 district-level records.",
+    "aliases": [
+      "SAT record",
+      "SAT scores",
+      "SAT results",
+      "satscores"
+    ],
+    "evidence": [
+      "ev_sat_rtype",
+      "ev_join_sat"
+    ]
+  },
+  {
+    "id": "term_sat_record_type",
+    "name": "SAT Record Type",
+    "type": "dimension",
+    "definition": "Type of reporting unit on a SAT record: S for school and D for district.",
+    "scope": "tab02.fld031.",
+    "aliases": [
+      "record type",
+      "rtype",
+      "school level SAT record",
+      "district level SAT record"
+    ],
+    "evidence": [
+      "ev_sat_rtype"
+    ]
+  },
+  {
+    "id": "term_sat_test_taker_count",
+    "name": "SAT Test Taker Count",
+    "type": "metric",
+    "definition": "Number of students who took the SAT at the reporting unit.",
+    "scope": "tab02.fld036; 218 records have zero test takers.",
+    "aliases": [
+      "test takers",
+      "number of test takers",
+      "SAT takers",
+      "number of SAT test takers"
+    ],
+    "evidence": [
+      "ev_sat_ranges"
+    ]
+  },
+  {
+    "id": "term_sat_avg_reading_score",
+    "name": "Average SAT Reading Score",
+    "type": "metric",
+    "definition": "Average SAT reading score of the reporting unit test takers.",
+    "scope": "tab02.fld037; observed range 308-653 and null for 596 records.",
+    "aliases": [
+      "average reading score",
+      "reading score",
+      "SAT reading"
+    ],
+    "evidence": [
+      "ev_sat_ranges"
+    ]
+  },
+  {
+    "id": "term_sat_avg_math_score",
+    "name": "Average SAT Math Score",
+    "type": "metric",
+    "definition": "Average SAT mathematics score of the reporting unit test takers.",
+    "scope": "tab02.fld038; observed range 289-699 and null for 596 records.",
+    "aliases": [
+      "average math score",
+      "math score",
+      "average score in math",
+      "SAT math"
+    ],
+    "evidence": [
+      "ev_sat_ranges"
+    ]
+  },
+  {
+    "id": "term_sat_avg_writing_score",
+    "name": "Average SAT Writing Score",
+    "type": "metric",
+    "definition": "Average SAT writing score of the reporting unit test takers.",
+    "scope": "tab02.fld039; observed range 312-671 and null for 596 records.",
+    "aliases": [
+      "average writing score",
+      "writing score",
+      "SAT writing"
+    ],
+    "evidence": [
+      "ev_sat_ranges"
+    ]
+  },
+  {
+    "id": "term_sat_ge1500_count",
+    "name": "SAT Test Takers Scoring 1500 or Above",
+    "type": "metric",
+    "definition": "Number of the reporting unit SAT test takers whose total score is at least 1500.",
+    "scope": "tab02.fld040; a non-negative count, observed 0-5837.",
+    "aliases": [
+      "1500",
+      "score at least 1500",
+      "number of test takers above 1500",
+      "NumGE1500"
+    ],
+    "evidence": [
+      "ev_sat_ranges",
+      "ev_excellence_rate"
+    ]
+  },
+  {
+    "id": "term_excellence_rate",
+    "name": "Excellence Rate",
+    "type": "metric",
+    "definition": "Share of SAT test takers whose total score is at least 1500, computed as fld040 divided by fld036.",
+    "scope": "Derived per SAT record; tab02 stores no percentage column for it.",
+    "aliases": [
+      "excellence rate",
+      "college-ready rate",
+      "rate of 1500 scorers",
+      "percent above 1500"
+    ],
+    "evidence": [
+      "ev_schema_overview",
+      "ev_excellence_rate"
+    ]
+  },
+  {
+    "id": "term_frpm_report",
+    "name": "FRPM / Meal Eligibility Report",
+    "type": "entity",
+    "definition": "Annual free and reduced-price meal (FRPM) report for a school, including enrollment and meal-eligible counts.",
+    "scope": "tab01; one row per school for the 2014-2015 academic year.",
+    "aliases": [
+      "FRPM",
+      "free and reduced price meals",
+      "meal eligibility report",
+      "meal report"
+    ],
+    "evidence": [
+      "ev_frpm_year",
+      "ev_join_frpm"
+    ]
+  },
+  {
+    "id": "term_academic_year",
+    "name": "Academic Year",
+    "type": "dimension",
+    "definition": "School year to which a meal-eligibility record belongs.",
+    "scope": "tab01.fld002; only 2014-2015 is present.",
+    "aliases": [
+      "academic year",
+      "school year",
+      "2014-2015",
+      "year"
+    ],
+    "evidence": [
+      "ev_frpm_year"
+    ]
+  },
+  {
+    "id": "term_enrollment_k12",
+    "name": "Enrollment (K-12)",
+    "type": "metric",
+    "definition": "Total number of students enrolled in kindergarten through grade 12 at the school.",
+    "scope": "tab01.fld019; combines elementary and secondary enrollment.",
+    "aliases": [
+      "enrollment",
+      "enrolment",
+      "K-12 enrollment",
+      "total enrollment",
+      "students enrolled"
+    ],
+    "evidence": [
+      "ev_frpm_rate_identity",
+      "ev_enrollment_subset"
+    ]
+  },
+  {
+    "id": "term_free_meal_count_k12",
+    "name": "Free Meal Count (K-12)",
+    "type": "metric",
+    "definition": "Number of K-12 students eligible for free meals.",
+    "scope": "tab01.fld020; never exceeds the FRPM count and is null for 56 records.",
+    "aliases": [
+      "free meal count",
+      "free meals",
+      "number of free meals"
+    ],
+    "evidence": [
+      "ev_meal_subset",
+      "ev_frpm_nulls"
+    ]
+  },
+  {
+    "id": "term_eligible_free_rate_k12",
+    "name": "Eligible Free Rate (K-12)",
+    "type": "metric",
+    "definition": "Proportion of K-12 enrollment eligible for free meals, equal to fld020 divided by fld019.",
+    "scope": "tab01.fld021 stores the fraction between 0 and 1; it is not a percentage.",
+    "aliases": [
+      "eligible free rate",
+      "free rate",
+      "free meal rate",
+      "eligible free rate for K-12"
+    ],
+    "evidence": [
+      "ev_frpm_rate_identity"
+    ]
+  },
+  {
+    "id": "term_enrollment_ages_5_17",
+    "name": "Enrollment (Ages 5-17)",
+    "type": "metric",
+    "definition": "Number of students aged 5 to 17 enrolled at the school; a subgroup of K-12 enrollment.",
+    "scope": "tab01.fld024; never exceeds fld019 and is null for 14 records.",
+    "aliases": [
+      "enrollment ages 5-17",
+      "students ages 5 to 17",
+      "students aged 5-17",
+      "age 5-17 enrollment"
+    ],
+    "evidence": [
+      "ev_enrollment_subset",
+      "ev_frpm_nulls"
+    ]
+  },
+  {
+    "id": "term_frpm_count_ages_5_17",
+    "name": "FRPM Count (Ages 5-17)",
+    "type": "metric",
+    "definition": "Number of students aged 5 to 17 eligible for free or reduced-price meals.",
+    "scope": "tab01.fld027; the age-based FRPM count, distinct from the K-12 FRPM count.",
+    "aliases": [
+      "FRPM count ages 5-17",
+      "free or reduced price meals",
+      "free or reduced price meals ages 5-17",
+      "meal count ages 5-17"
+    ],
+    "evidence": [
+      "ev_frpm_rate_identity",
+      "ev_frpm_nulls"
+    ]
+  },
+  {
+    "id": "term_nslp_provision_status",
+    "name": "NSLP Provision Status",
+    "type": "dimension",
+    "definition": "National School Lunch Program provision type recorded for a school, for example Provision 2, CEP or Multiple Provision Types.",
+    "scope": "tab01.fld012; blank for 8139 of 9986 rows.",
+    "aliases": [
+      "provision type",
+      "provision status",
+      "NSLP provision",
+      "multiple provision types"
+    ],
+    "evidence": [
+      "ev_provision"
+    ]
+  }
+]

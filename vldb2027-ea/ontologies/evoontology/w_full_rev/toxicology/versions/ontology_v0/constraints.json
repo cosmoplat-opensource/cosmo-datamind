@@ -1,0 +1,253 @@
+[
+  {
+    "id": "constraint_carcinogenicity_label_enum",
+    "target": "term_molecule_label",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "carcinogenic",
+      "non-carcinogenic",
+      "carcinogenicity",
+      "cancer",
+      "cancerous",
+      "toxic",
+      "toxicity",
+      "label",
+      "positive label",
+      "negative label"
+    ],
+    "severity": "block",
+    "scope": "Any question that mentions carcinogenicity, cancer or toxicity when scoping molecules.",
+    "confidence": "high",
+    "description": "The carcinogenicity label is a single-character code. The plus code marks a molecule as carcinogenic and the minus code marks it as non-carcinogenic. These two codes are the only label values present, and no molecule record has a null label. Questions asking whether a molecule is carcinogenic are asking which of these two codes it carries, and questions about non-carcinogenic molecules refer to the minus code.",
+    "evidence": [
+      "evidence_molecule_label_domain"
+    ]
+  },
+  {
+    "id": "constraint_bond_type_enum",
+    "target": "term_bond_type",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "single bond",
+      "single-bonded",
+      "double bond",
+      "double-bonded",
+      "triple bond",
+      "triple-bonded",
+      "bond type",
+      "bond order",
+      "most bonds",
+      "bond type distribution"
+    ],
+    "severity": "block",
+    "scope": "Any question that names a bond order or filters bonds by type.",
+    "confidence": "high",
+    "description": "The bond type is a single-character code: the hyphen code means a single bond, the equals code means a double bond, and the hash code means a triple bond. Single bonds account for the large majority of bonds, double bonds are a small minority, and triple bonds are rare. A question about a bond order must be translated into the corresponding code before bonds can be filtered.",
+    "evidence": [
+      "evidence_bond_type_domain",
+      "evidence_triple_bonds"
+    ]
+  },
+  {
+    "id": "constraint_element_symbol_lowercase",
+    "target": "term_element",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "element",
+      "elements",
+      "carbon",
+      "hydrogen",
+      "oxygen",
+      "nitrogen",
+      "chlorine",
+      "bromine",
+      "sulfur",
+      "chemical symbol",
+      "element composition"
+    ],
+    "severity": "block",
+    "scope": "Any question that names a chemical element or asks for the elements of atoms or molecules.",
+    "confidence": "high",
+    "description": "Elements are stored as lower-case chemical symbol codes, not as element names and not with the conventional first-letter capitalisation. Carbon is the single letter c, hydrogen is h, oxygen is o, nitrogen is n and chlorine is cl. Matching an element by its common name or by its capitalised symbol will return no rows. Some elements use two letters.",
+    "evidence": [
+      "evidence_element_domain"
+    ]
+  },
+  {
+    "id": "constraint_connected_bidirectionality",
+    "target": "term_atom_bond_connection",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "connections",
+      "connection",
+      "how many bonds",
+      "number of bonds",
+      "bonds involving atom",
+      "bonds of atom",
+      "connected",
+      "atom connections",
+      "degree"
+    ],
+    "severity": "block",
+    "scope": "Any question that counts or lists the connections or bonds of an atom or of a set of atoms.",
+    "confidence": "high",
+    "description": "Connections are stored as a pair of directed records per bond: one record anchored on each of the two atoms joined by the bond, with the same bond reference on both. Consequently, the total number of connection records is twice the number of bonds, every bond reference occurs exactly twice, and no record links an atom to itself. Counting the bonds of one atom must therefore be done over a single atom position, or over both positions with duplicate bond references removed; adding both atom positions without removing duplicates double counts every bond. For the same three bonds of one atom, single-position counting returns three records while counting both positions returns six.",
+    "evidence": [
+      "evidence_connected_bidirectional",
+      "evidence_or_versus_single_column"
+    ]
+  },
+  {
+    "id": "constraint_molecule_bond_type_scope",
+    "target": "term_double_bond",
+    "constraint_type": "scope",
+    "trigger_keywords": [
+      "double-bond molecules",
+      "double bonded molecules",
+      "triple-bonded molecules",
+      "molecules containing",
+      "molecules with double bonds",
+      "molecules with triple bonds"
+    ],
+    "severity": "warning",
+    "scope": "Questions that qualify molecules by a bond order rather than qualifying the bonds themselves.",
+    "confidence": "medium",
+    "description": "A phrase such as double-bond molecules or triple-bonded molecules denotes molecules that contain at least one bond of that type, not the bonds themselves. The scope is the full atom or bond set of every qualifying molecule, so a percentage of an element over such molecules has all atoms of those molecules in its denominator, while a percentage of a bond type is taken over the bonds of those molecules. Most molecules containing a double bond contain many single bonds as well, so the qualifying bond set and the full bond set of the same molecules are not interchangeable.",
+    "evidence": [
+      "evidence_double_bond_molecules",
+      "evidence_atoms_in_double_bond_molecules",
+      "evidence_tr008_bond_types"
+    ]
+  },
+  {
+    "id": "constraint_share_denominator_scope",
+    "target": "term_bond_type_share",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "percentage",
+      "percent",
+      "proportion",
+      "ratio",
+      "fraction",
+      "share",
+      "average",
+      "decimal places"
+    ],
+    "severity": "warning",
+    "scope": "Questions asking for a percentage, proportion, ratio or average of atoms or bonds.",
+    "confidence": "medium",
+    "description": "Share questions are ratios of two counts taken over one consistent scope: the count of the qualifying atoms or bonds divided by the count of all atoms or bonds in that same scope, scaled to a percentage where a percentage is requested. The denominator is the size of the scope, not the number of molecules, and not the count of the qualifying items. A question that also fixes a precision, such as five decimal places, is a reporting requirement on the ratio and does not change the counts or the scope.",
+    "evidence": [
+      "evidence_tr008_bond_types",
+      "evidence_atoms_in_double_bond_molecules"
+    ]
+  },
+  {
+    "id": "constraint_unbonded_atom_definition",
+    "target": "term_unbonded_atom",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "cannot bond",
+      "can not bond",
+      "not bonded",
+      "no bonds",
+      "unbonded",
+      "isolated atom",
+      "lone atom",
+      "without bonding"
+    ],
+    "severity": "warning",
+    "scope": "Questions about atoms that do not bond with any other atom.",
+    "confidence": "high",
+    "description": "An atom participates in no bond when its identifier never appears in the connection records, in either the first or the second atom position. Such atoms are still present in the atom table with their element and owning molecule, so the atom table and the connection records must be compared rather than joined, and an inner join between them silently drops exactly these atoms.",
+    "evidence": [
+      "evidence_unbonded_atoms"
+    ]
+  },
+  {
+    "id": "constraint_atom_number_suffix_position",
+    "target": "term_atom_number",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "4th atom",
+      "nth atom",
+      "first atom",
+      "atom number",
+      "atom position",
+      "atom index",
+      "substr atom_id",
+      "which atom"
+    ],
+    "severity": "warning",
+    "scope": "Questions that select an atom by its ordinal position within a molecule.",
+    "confidence": "high",
+    "description": "An atom identifier is the owning molecule identifier, an underscore and the within-molecule atom number. Because the number is not zero-padded, the character offset of the number varies with its width: a fixed-offset character extraction returns the leading digit of the atom number rather than the whole number, so it selects the group of atoms whose number begins with that digit, not one single atom position. Extracting the suffix after the underscore, or comparing the numeric suffix value, is what identifies one specific atom position.",
+    "evidence": [
+      "evidence_atom_number_position",
+      "evidence_atom_id_format"
+    ]
+  },
+  {
+    "id": "constraint_molecule_label_coverage",
+    "target": "term_molecule_label",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "all molecules",
+      "every molecule",
+      "which molecules",
+      "labels",
+      "carcinogenic",
+      "non-carcinogenic",
+      "molecule table",
+      "join molecule"
+    ],
+    "severity": "warning",
+    "scope": "Any analysis that scopes results by carcinogenicity or that treats the molecule table as the full population of molecules.",
+    "confidence": "high",
+    "description": "The molecule table holds 343 labelled molecules, while the atom and bond tables refer to 444 distinct molecules. 101 molecules have atoms and bonds but no row in the molecule table, so they carry no carcinogenicity label. Linking structure to label with an inner join silently excludes those 101 molecules, which makes any carcinogenic or non-carcinogenic population smaller than the corresponding structural population. A query about all molecules, or about structure unqualified by label, must decide explicitly whether unlabelled molecules are in scope.",
+    "evidence": [
+      "evidence_molecule_label_coverage"
+    ]
+  },
+  {
+    "id": "constraint_bond_type_null",
+    "target": "term_bond_type",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "bond type distribution",
+      "all bonds",
+      "count of bonds",
+      "majority bond type",
+      "percentage of bonds",
+      "which bond type"
+    ],
+    "severity": "warning",
+    "scope": "Bond-type tallies, distributions and shares taken over the whole dataset or over a molecule containing this bond.",
+    "confidence": "high",
+    "description": "One bond record carries no bond type code at all. It is neither a single, double nor triple bond, so group-by tallies over bond type produce an extra empty group and bond-type shares do not sum to exactly one over the whole dataset. This unclassified bond belongs to a molecule that also carries ordinary bonds.",
+    "evidence": [
+      "evidence_bond_type_null"
+    ]
+  },
+  {
+    "id": "constraint_underscore_like_wildcard",
+    "target": "term_atom",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "atom 19",
+      "atom_id like",
+      "pattern match",
+      "similar to",
+      "ends with",
+      "TR%_",
+      "search by atom number"
+    ],
+    "severity": "warning",
+    "scope": "Pattern matching against atom identifiers or bond identifiers by textual similarity.",
+    "confidence": "high",
+    "description": "Atom and bond identifiers contain an underscore, which is also the single-character wildcard in pattern matching. An unescaped pattern that uses the underscore to mean the literal separator therefore also matches identifiers whose number merely ends with the wanted digits, and returns extra rows. Matching an atom number by pattern requires escaping the literal underscore, or matching the molecule prefix and the numeric suffix separately. For the same target the unescaped pattern returned one more connection record than the escaped pattern.",
+    "evidence": [
+      "evidence_like_wildcard_escape"
+    ]
+  }
+]

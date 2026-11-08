@@ -1,0 +1,279 @@
+[
+  {
+    "id": "constraint_budget_amount_vs_spent",
+    "target": "term_total_budgeted_amount",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "amount budgeted",
+      "budgeted",
+      "budgeted amount",
+      "amount",
+      "money spent",
+      "spent",
+      "total amount of money spent",
+      "total spent",
+      "cost",
+      "budget"
+    ],
+    "severity": "block",
+    "scope": "Applies whenever a question mentions an amount of money in the budgeting or spending context.",
+    "confidence": "high",
+    "description": "The budget table separates the allocated amount (budget.amount) from the amount actually spent (budget.spent) and the remainder (budget.remaining). A question asking how much was 'budgeted' for a category or event refers to the allocated amount, while a question asking how much was 'spent' refers to the spent column; the two are different quantities and are not interchangeable (database-wide totals are 4200 allocated versus 2086.05 spent, and for Food 2595 versus 1234.73). Separately, expense.cost records individual transaction costs; its database-wide sum reconciles exactly with budget.spent at 2086.05, so either may be used to measure money actually spent.",
+    "evidence": [
+      "evidence_012_cost_reconciliation",
+      "evidence_004_budget_category_and_amounts"
+    ]
+  },
+  {
+    "id": "constraint_event_date_year_extraction",
+    "target": "term_event",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "year",
+      "event date",
+      "date",
+      "2019",
+      "2020",
+      "date range",
+      "held from",
+      "closed from"
+    ],
+    "severity": "block",
+    "scope": "Applies when grouping or filtering events by year or by a date range.",
+    "confidence": "high",
+    "description": "event.event_date values are strings of the form YYYY-MM-DDTHH:MM:SS (for example 2019-09-01T07:00:00), not plain dates. The leading four characters give the calendar year, and any year-level grouping must take those first four characters rather than the whole value.",
+    "evidence": [
+      "evidence_009_event_date_format"
+    ]
+  },
+  {
+    "id": "constraint_member_position_semantics",
+    "target": "term_member_position",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "members",
+      "member",
+      "list all members",
+      "all the members",
+      "position",
+      "officer",
+      "inactive member",
+      "club members"
+    ],
+    "severity": "warning",
+    "scope": "Applies when a question asks for 'members' of a department, major or event.",
+    "confidence": "high",
+    "description": "member.position holds one of Member, Inactive, President, Vice President, Secretary or Treasurer. A request to list the 'members' of a department, major or event means the affiliated people as a whole and must not be narrowed to position = 'Member'; that value denotes the ordinary non-officer role and is only the correct filter when a question explicitly contrasts members with officers or scopes to ordinary members.",
+    "evidence": [
+      "evidence_002_member_distinct_values"
+    ]
+  },
+  {
+    "id": "constraint_income_source_values",
+    "target": "term_income_source",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "source",
+      "dues",
+      "fundraising",
+      "sponsorship",
+      "appropriation",
+      "school appropration",
+      "income source"
+    ],
+    "severity": "warning",
+    "scope": "Applies when filtering income by its source.",
+    "confidence": "high",
+    "description": "income.source takes exactly four stored values: Dues, Fundraising, Sponsorship and 'School Appropration'. The last value is misspelled in the stored data and is not written 'Appropriation'; filters must use the stored spelling exactly.",
+    "evidence": [
+      "evidence_003_income_source_and_amounts"
+    ]
+  },
+  {
+    "id": "constraint_dues_standard_amount",
+    "target": "term_dues_payment",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "dues",
+      "dues paid",
+      "amount 50",
+      "50",
+      "membership dues",
+      "paid his dues",
+      "paid her dues"
+    ],
+    "severity": "info",
+    "scope": "Applies when interpreting dues receipts.",
+    "confidence": "high",
+    "description": "Dues receipts are income rows whose source is Dues and carry the standard amount 50. Dues are the only income source routinely attributed to individual members: 33 of the 36 income rows are dues receipts of amount 50.",
+    "evidence": [
+      "evidence_003_income_source_and_amounts"
+    ]
+  },
+  {
+    "id": "constraint_income_member_link_optional",
+    "target": "term_income",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "fundraising",
+      "sponsorship",
+      "appropriation",
+      "funds received",
+      "who received",
+      "income by member"
+    ],
+    "severity": "warning",
+    "scope": "Applies when joining income to members or attributing receipts to people.",
+    "confidence": "high",
+    "description": "Only dues receipts carry a member link. The Fundraising, Sponsorship and School Appropration receipts have no link_to_member because they are club-level; joining income to member discards those three rows.",
+    "evidence": [
+      "evidence_008_income_member_link_optional"
+    ]
+  },
+  {
+    "id": "constraint_member_major_nullable",
+    "target": "term_member",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "major",
+      "department",
+      "college",
+      "all members",
+      "field of study",
+      "environmental engineering"
+    ],
+    "severity": "warning",
+    "scope": "Applies when joining members to majors, departments or colleges.",
+    "confidence": "high",
+    "description": "One member record (an Inactive member) has no link_to_major. An inner join from member to major therefore omits that person, so a listing intended to be complete must account for the member with no assigned major.",
+    "evidence": [
+      "evidence_013_member_identity"
+    ]
+  },
+  {
+    "id": "constraint_event_status_values",
+    "target": "term_event_status",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "status",
+      "closed",
+      "open",
+      "planning",
+      "closed event",
+      "event was closed",
+      "closed from"
+    ],
+    "severity": "info",
+    "scope": "Applies when filtering events by lifecycle state.",
+    "confidence": "high",
+    "description": "event.status takes the values Closed, Open or Planning. A phrase such as a 'closed' event between two dates constrains status to Closed and applies the date range in addition; the date range alone does not express closure.",
+    "evidence": [
+      "evidence_005_event_type_status_location"
+    ]
+  },
+  {
+    "id": "constraint_budget_category_values",
+    "target": "term_budget_category",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "category",
+      "budget category",
+      "budgeted categories",
+      "spending category",
+      "food",
+      "advertisement",
+      "parking",
+      "speaker gifts",
+      "club t-shirts"
+    ],
+    "severity": "info",
+    "scope": "Applies when a question mentions budget categories.",
+    "confidence": "high",
+    "description": "budget.category takes the values Food, Advertisement, Speaker Gifts, Parking and Club T-Shirts. 'Budgeted categories' in a question refers to these values on the budget table, not to event types.",
+    "evidence": [
+      "evidence_004_budget_category_and_amounts"
+    ]
+  },
+  {
+    "id": "constraint_event_type_is_category",
+    "target": "term_event_type",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "category of events",
+      "event category",
+      "category",
+      "type",
+      "kind of event",
+      "game",
+      "speaker",
+      "meeting",
+      "social",
+      "community service"
+    ],
+    "severity": "info",
+    "scope": "Applies when a question asks for the category of events.",
+    "confidence": "high",
+    "description": "event.type is the event's category, with values Budget, Community Service, Election, Game, Guest Speaker, Meeting, Registration and Social. A question about the 'category' of events held at a location refers to these values; the same word 'category' refers to spending categories only when the question is about budgets.",
+    "evidence": [
+      "evidence_005_event_type_status_location"
+    ]
+  },
+  {
+    "id": "constraint_t_shirt_size_values",
+    "target": "term_t_shirt_size",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "t-shirt size",
+      "tshirt",
+      "shirt size",
+      "medium",
+      "large",
+      "small",
+      "x-large"
+    ],
+    "severity": "info",
+    "scope": "Applies when filtering members by apparel size.",
+    "confidence": "high",
+    "description": "member.t_shirt_size takes the values Small, Medium, Large and X-Large; a question about 'medium' matches the stored value 'Medium'.",
+    "evidence": [
+      "evidence_002_member_distinct_values"
+    ]
+  },
+  {
+    "id": "constraint_expense_approved_flag",
+    "target": "term_expense",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "approved",
+      "expense approval",
+      "expense",
+      "unapproved"
+    ],
+    "severity": "info",
+    "scope": "Applies when qualifying expenses by approval state.",
+    "confidence": "high",
+    "description": "expense.approved is the text 'true' for 31 of the 32 expenses and an empty string for the remaining one. Absence of approval is recorded as an empty string rather than as an explicit false value.",
+    "evidence": [
+      "evidence_011_expense_details"
+    ]
+  },
+  {
+    "id": "constraint_event_location_free_text",
+    "target": "term_event_location",
+    "constraint_type": "scope",
+    "trigger_keywords": [
+      "location",
+      "venue",
+      "held at",
+      "where was",
+      "MU 215"
+    ],
+    "severity": "warning",
+    "scope": "Applies when selecting or grouping events by venue.",
+    "confidence": "high",
+    "description": "event.location is free text with no reference table behind it, and six events have an empty location. Matching a venue requires the literal stored string (for example 'MU 215'); events with an empty location are excluded from any venue-based selection.",
+    "evidence": [
+      "evidence_005_event_type_status_location"
+    ]
+  }
+]

@@ -1,0 +1,533 @@
+[
+  {
+    "aliases": [
+      "post",
+      "posts",
+      "entry"
+    ],
+    "definition": "A community post, either a question or an answer. Each post has an identifier, a numeric score, an optional owner user, and may carry view counts, favorite counts, a parent post reference (for answers) and a closed date.",
+    "evidence": [
+      "evidence_table_inventory",
+      "evidence_row_counts",
+      "evidence_post_columns"
+    ],
+    "id": "term_post",
+    "name": "Post",
+    "scope": "All post-level analysis in the community database",
+    "type": "entity"
+  },
+  {
+    "aliases": [
+      "question",
+      "questions",
+      "thread",
+      "topic"
+    ],
+    "definition": "A post whose post type code denotes a question. Questions carry a title, tags, an answer count and an accepted answer reference; answers point to them through a parent post reference.",
+    "evidence": [
+      "evidence_post_type_distribution"
+    ],
+    "id": "term_question",
+    "name": "Question Post",
+    "scope": "Post analysis restricted to question threads",
+    "type": "entity"
+  },
+  {
+    "aliases": [
+      "answer",
+      "answers",
+      "response"
+    ],
+    "definition": "A post whose post type code denotes an answer; it references the question it answers through a parent post identifier and has no title or tags of its own.",
+    "evidence": [
+      "evidence_post_type_distribution",
+      "evidence_post_columns"
+    ],
+    "id": "term_answer",
+    "name": "Answer Post",
+    "scope": "Post analysis restricted to answers",
+    "type": "entity"
+  },
+  {
+    "aliases": [
+      "user",
+      "users",
+      "member",
+      "account"
+    ],
+    "definition": "A community user account holding a display name, reputation, registration date, profile activity counters and an optional self-reported age.",
+    "evidence": [
+      "evidence_users_profile",
+      "evidence_user_name_duplicates"
+    ],
+    "id": "term_user",
+    "name": "User",
+    "scope": "All user-level analysis in the community database",
+    "type": "entity"
+  },
+  {
+    "aliases": [
+      "badge",
+      "badges",
+      "achievement",
+      "award"
+    ],
+    "definition": "A badge award: one row records that a named badge was granted to a user on a date. A user can hold many badge awards and the same badge name can be awarded many times.",
+    "evidence": [
+      "evidence_badges_profile"
+    ],
+    "id": "term_badge",
+    "name": "Badge Award",
+    "scope": "Badge and achievement analysis",
+    "type": "entity"
+  },
+  {
+    "aliases": [
+      "comment",
+      "comments"
+    ],
+    "definition": "A comment attached to a post, written by a user at a timestamp, with its own numeric score and text.",
+    "evidence": [
+      "evidence_comments_profile"
+    ],
+    "id": "term_comment",
+    "name": "Comment",
+    "scope": "Comment analysis and discussion following",
+    "type": "entity"
+  },
+  {
+    "aliases": [
+      "vote",
+      "votes",
+      "voted",
+      "cast a vote"
+    ],
+    "definition": "A vote event recorded against a post. Votes carry a vote type code and a creation date; bounty-related vote records also carry a bounty amount. Most vote records in this database have no acting user identifier.",
+    "evidence": [
+      "evidence_votes_profile"
+    ],
+    "id": "term_vote",
+    "name": "Vote",
+    "scope": "Voting and bounty analysis",
+    "type": "entity"
+  },
+  {
+    "aliases": [
+      "tag",
+      "tags",
+      "topic label"
+    ],
+    "definition": "A topical tag with a usage count and optional references to an excerpt post and a wiki post. Tags are associated with posts through tag tokens embedded in the post text rather than through a foreign key.",
+    "evidence": [
+      "evidence_tags_profile"
+    ],
+    "id": "term_tag",
+    "name": "Tag",
+    "scope": "Topic and technology analysis",
+    "type": "entity"
+  },
+  {
+    "aliases": [
+      "edit",
+      "edited",
+      "revision",
+      "post history"
+    ],
+    "definition": "A post revision event recorded in post history: which user acted, on which post, when, with what revision text and edit comment.",
+    "evidence": [
+      "evidence_post_history_profile"
+    ],
+    "id": "term_post_edit",
+    "name": "Post Revision Event",
+    "scope": "Edit history and editor attribution analysis",
+    "type": "entity"
+  },
+  {
+    "aliases": [
+      "score",
+      "post score",
+      "scored"
+    ],
+    "definition": "Net score of a post as stored on the post row, representing the accumulated vote balance.",
+    "evidence": [
+      "evidence_post_columns",
+      "evidence_posts_score_range"
+    ],
+    "id": "term_post_score",
+    "name": "Post Score",
+    "scope": "Question and answer quality ranking",
+    "type": "metric"
+  },
+  {
+    "aliases": [
+      "views",
+      "view count",
+      "total views",
+      "popularity"
+    ],
+    "definition": "Cumulative number of views recorded for a post.",
+    "evidence": [
+      "evidence_post_columns"
+    ],
+    "id": "term_post_view_count",
+    "name": "Post View Count",
+    "scope": "Popularity and reach analysis",
+    "type": "metric"
+  },
+  {
+    "aliases": [
+      "favorite count",
+      "favorites",
+      "favourite count"
+    ],
+    "definition": "Number of users who marked the post as a favorite.",
+    "evidence": [
+      "evidence_post_columns",
+      "evidence_votes_profile"
+    ],
+    "id": "term_post_favorite_count",
+    "name": "Post Favorite Count",
+    "scope": "Post bookmarking and interest analysis",
+    "type": "metric"
+  },
+  {
+    "aliases": [
+      "reputation",
+      "influence",
+      "most influential user",
+      "higher reputation"
+    ],
+    "definition": "Reputation points accumulated by a user; higher values indicate greater standing and influence in the community.",
+    "evidence": [
+      "evidence_users_profile"
+    ],
+    "id": "term_user_reputation",
+    "name": "User Reputation",
+    "scope": "User standing and influence comparisons",
+    "type": "metric"
+  },
+  {
+    "aliases": [
+      "age",
+      "user age",
+      "years old"
+    ],
+    "definition": "Self-reported age of a user in years; available only for a minority of accounts.",
+    "evidence": [
+      "evidence_users_profile"
+    ],
+    "id": "term_user_age",
+    "name": "User Age",
+    "scope": "Demographic segmentation of users",
+    "type": "metric"
+  },
+  {
+    "aliases": [
+      "badge count",
+      "number of badges",
+      "more than 5 badges"
+    ],
+    "definition": "Number of badge awards held by a user, obtained by counting badge award rows for that user.",
+    "evidence": [
+      "evidence_badges_profile"
+    ],
+    "id": "term_badge_award_count",
+    "name": "Badge Award Count",
+    "scope": "User achievement volume analysis",
+    "type": "metric"
+  },
+  {
+    "aliases": [
+      "bounty",
+      "bounty amount",
+      "bounty points"
+    ],
+    "definition": "Bounty points attached to a bounty start or bounty close vote record.",
+    "evidence": [
+      "evidence_votes_profile"
+    ],
+    "id": "term_bounty_amount",
+    "name": "Bounty Amount",
+    "scope": "Bounty and incentive analysis",
+    "type": "metric"
+  },
+  {
+    "aliases": [
+      "percentage",
+      "percent",
+      "share",
+      "proportion",
+      "ratio"
+    ],
+    "definition": "Proportion of a counted population that matches a stated condition, expressed as a percentage of the comparison population (matching count divided by population count, multiplied by one hundred).",
+    "evidence": [
+      "evidence_post_columns",
+      "evidence_row_counts"
+    ],
+    "id": "term_percentage_share",
+    "name": "Percentage Share",
+    "scope": "Share-of-population questions over posts, users, comments or votes",
+    "type": "metric"
+  },
+  {
+    "aliases": [
+      "title",
+      "post title",
+      "post titled",
+      "title mentioning"
+    ],
+    "definition": "Title text of a question post. Earlier title wording is preserved only in post revision text.",
+    "evidence": [
+      "evidence_post_columns",
+      "evidence_title_case_and_revisions"
+    ],
+    "id": "term_post_title",
+    "name": "Post Title",
+    "scope": "Locating posts by title wording",
+    "type": "concept"
+  },
+  {
+    "aliases": [
+      "tags",
+      "tag list",
+      "R language",
+      "language tag"
+    ],
+    "definition": "Set of tag names attached to a question post, stored as angle-bracket-delimited tokens in a single text field.",
+    "evidence": [
+      "evidence_post_columns",
+      "evidence_tags_profile"
+    ],
+    "id": "term_post_tags",
+    "name": "Post Tags",
+    "scope": "Topic filtering of question posts",
+    "type": "concept"
+  },
+  {
+    "aliases": [
+      "closed",
+      "well-finished",
+      "not well-finished",
+      "open",
+      "unfinished"
+    ],
+    "definition": "Closed or open state of a post: a recorded closed date indicates the post was closed, its absence indicates the post was never closed.",
+    "evidence": [
+      "evidence_closed_status"
+    ],
+    "id": "term_post_closed_status",
+    "name": "Post Closed Status",
+    "scope": "Post lifecycle and moderation analysis",
+    "type": "concept"
+  },
+  {
+    "aliases": [
+      "post type",
+      "type code",
+      "kind of post"
+    ],
+    "definition": "Coded classification of a post row distinguishing questions, answers and further site-specific post kinds.",
+    "evidence": [
+      "evidence_post_type_distribution"
+    ],
+    "id": "term_post_type",
+    "name": "Post Type",
+    "scope": "Separating questions from answers and other post kinds",
+    "type": "category"
+  },
+  {
+    "aliases": [
+      "vote type",
+      "kind of vote",
+      "upvote",
+      "downvote"
+    ],
+    "definition": "Coded classification of a vote event covering up votes, down votes, acceptance, favorites, bounty start and close, deletion and undeletion.",
+    "evidence": [
+      "evidence_votes_profile"
+    ],
+    "id": "term_vote_type",
+    "name": "Vote Type",
+    "scope": "Interpreting what a vote record represents",
+    "type": "category"
+  },
+  {
+    "aliases": [
+      "display name",
+      "name",
+      "user name",
+      "named user"
+    ],
+    "definition": "Human-readable display name chosen by a user. Display names are not guaranteed unique.",
+    "evidence": [
+      "evidence_users_profile",
+      "evidence_user_name_duplicates"
+    ],
+    "id": "term_user_display_name",
+    "name": "User Display Name",
+    "scope": "Identifying users by name",
+    "type": "concept"
+  },
+  {
+    "aliases": [
+      "comment author name",
+      "recorded user name",
+      "displayed author"
+    ],
+    "definition": "Display name captured on a comment or revision row at the time of the action; often blank or a legacy 'userN' label rather than the account's current name.",
+    "evidence": [
+      "evidence_comments_profile"
+    ],
+    "id": "term_recorded_user_name",
+    "name": "Recorded Display Name on Action",
+    "scope": "Fallback attribution when no user identifier is available",
+    "type": "concept"
+  },
+  {
+    "aliases": [
+      "elder user",
+      "elderly user",
+      "older user",
+      "age over 65"
+    ],
+    "definition": "User segment defined by age; an elder user is one whose recorded age is strictly greater than 65.",
+    "evidence": [
+      "evidence_users_profile"
+    ],
+    "id": "term_elder_user",
+    "name": "Elder User",
+    "scope": "Age-based user segmentation",
+    "type": "category"
+  },
+  {
+    "aliases": [
+      "revision text",
+      "edit text",
+      "historical title"
+    ],
+    "definition": "Text carried by a post revision event; for title-type revisions it holds the title as it read at that revision, including wording that differs from the current post title.",
+    "evidence": [
+      "evidence_post_history_profile",
+      "evidence_title_case_and_revisions"
+    ],
+    "id": "term_post_revision_text",
+    "name": "Post Revision Text",
+    "scope": "Recovering historical titles and revision content",
+    "type": "concept"
+  },
+  {
+    "aliases": [
+      "post date",
+      "created on",
+      "posted on",
+      "post creation"
+    ],
+    "definition": "Timestamp at which a post was created.",
+    "evidence": [
+      "evidence_timestamp_formats",
+      "evidence_post_dates_and_owner"
+    ],
+    "id": "term_post_creation_date",
+    "name": "Post Creation Date",
+    "scope": "Time-based analysis of posts",
+    "type": "metric"
+  },
+  {
+    "aliases": [
+      "owner",
+      "post owner",
+      "posted by",
+      "author of the post"
+    ],
+    "definition": "The user account that owns a post, recorded as an owner user identifier on the post row. The identifier is null for posts whose author account is gone; such rows may instead carry a recorded owner display name.",
+    "evidence": [
+      "evidence_post_dates_and_owner",
+      "evidence_referential_integrity"
+    ],
+    "id": "term_post_owner",
+    "name": "Post Owner",
+    "scope": "Attributing posts to their authors",
+    "type": "concept"
+  },
+  {
+    "aliases": [
+      "last editor",
+      "last edited by",
+      "posted it last time",
+      "last updated by"
+    ],
+    "definition": "The user who most recently edited a post, recorded as a last-editor user identifier; null when the post was never edited.",
+    "evidence": [
+      "evidence_post_dates_and_owner"
+    ],
+    "id": "term_post_last_editor",
+    "name": "Post Last Editor",
+    "scope": "Measuring recent contribution to a post",
+    "type": "concept"
+  },
+  {
+    "aliases": [
+      "registration date",
+      "joined",
+      "account created",
+      "user creation date"
+    ],
+    "definition": "Date and time at which a user account was created.",
+    "evidence": [
+      "evidence_user_registration_dates"
+    ],
+    "id": "term_user_registration_date",
+    "name": "User Registration Date",
+    "scope": "Cohort and time-window analysis of users",
+    "type": "metric"
+  },
+  {
+    "aliases": [
+      "badge date",
+      "awarded on",
+      "acquired the first"
+    ],
+    "definition": "Date and time on which a badge award was granted.",
+    "evidence": [
+      "evidence_badges_profile",
+      "evidence_timestamp_formats"
+    ],
+    "id": "term_badge_award_date",
+    "name": "Badge Award Date",
+    "scope": "Ordering and timing of badge awards",
+    "type": "metric"
+  },
+  {
+    "aliases": [
+      "comment time",
+      "commented at",
+      "comment date"
+    ],
+    "definition": "Timestamp at which a comment was posted.",
+    "evidence": [
+      "evidence_comments_profile",
+      "evidence_timestamp_formats"
+    ],
+    "id": "term_comment_creation_time",
+    "name": "Comment Creation Time",
+    "scope": "Time-based comment analysis",
+    "type": "metric"
+  },
+  {
+    "aliases": [
+      "vote date",
+      "voted on",
+      "first vote",
+      "when did"
+    ],
+    "definition": "Date on which a vote record was created, stored at day granularity without a time component.",
+    "evidence": [
+      "evidence_votes_profile",
+      "evidence_timestamp_formats"
+    ],
+    "id": "term_vote_creation_time",
+    "name": "Vote Creation Date",
+    "scope": "Time-based vote analysis",
+    "type": "metric"
+  }
+]

@@ -1,0 +1,202 @@
+[
+  {
+    "id": "evidence_001",
+    "source": "student_club.sqlite",
+    "query": "SELECT type, name FROM sqlite_master WHERE type IN ('table','index') ORDER BY name",
+    "result": "Eight tables: attendance, budget, event, expense, income, major, member, zip_code. No FOREIGN KEY constraints or reference indexes are declared, so link_to_* and zip columns are unenforced text references.",
+    "validation_method": "read-only sqlite_master inspection",
+    "timestamp": "2026-10-09T19:20:00Z"
+  },
+  {
+    "id": "evidence_002",
+    "source": "student_club.sqlite",
+    "query": "SELECT 'event',COUNT(*) FROM event UNION ALL SELECT 'member',COUNT(*) FROM member UNION ALL SELECT 'major',COUNT(*) FROM major UNION ALL SELECT 'zip_code',COUNT(*) FROM zip_code UNION ALL SELECT 'attendance',COUNT(*) FROM attendance UNION ALL SELECT 'budget',COUNT(*) FROM budget UNION ALL SELECT 'expense',COUNT(*) FROM expense UNION ALL SELECT 'income',COUNT(*) FROM income",
+    "result": "event 42, member 33, major 113, zip_code 41877, attendance 326, budget 52, expense 32, income 36.",
+    "validation_method": "read-only row counting",
+    "timestamp": "2026-10-09T19:20:00Z"
+  },
+  {
+    "id": "evidence_003",
+    "source": "student_club.sqlite",
+    "query": "SELECT status, COUNT(*) FROM event GROUP BY status",
+    "result": "Open, Planning, Closed. These are the only status values present.",
+    "validation_method": "distinct value inspection",
+    "timestamp": "2026-10-09T19:20:00Z"
+  },
+  {
+    "id": "evidence_004",
+    "source": "student_club.sqlite",
+    "query": "SELECT type, COUNT(*) FROM event GROUP BY type",
+    "result": "Meeting, Election, Game, Guest Speaker, Social, Registration, Community Service, Budget. No row has type 'Fundraiser'.",
+    "validation_method": "distinct value inspection",
+    "timestamp": "2026-10-09T19:20:00Z"
+  },
+  {
+    "id": "evidence_005",
+    "source": "student_club.sqlite",
+    "query": "SELECT event_name, COUNT(*) c FROM event GROUP BY event_name HAVING c > 1",
+    "result": "Community Theater (2), Football game (2), Laugh Out Loud (2). 42 events carry 39 distinct names.",
+    "validation_method": "group-by duplicate detection",
+    "timestamp": "2026-10-09T19:20:00Z"
+  },
+  {
+    "id": "evidence_006",
+    "source": "student_club.sqlite",
+    "query": "SELECT COUNT(*) AS total, SUM(CASE WHEN b.event_status = e.status THEN 1 ELSE 0 END) AS agree FROM budget b LEFT JOIN event e ON e.event_id = b.link_to_event",
+    "result": "52 budget rows, 52 agree with the linked event's status, 0 budget rows without a matching event.",
+    "validation_method": "left-join comparison of the two status representations",
+    "timestamp": "2026-10-09T19:20:00Z"
+  },
+  {
+    "id": "evidence_007",
+    "source": "student_club.sqlite",
+    "query": "SELECT budget_id, category, amount, spent, remaining FROM budget WHERE remaining < 0",
+    "result": "Five over-budget lines, all in the Food category: (20, 20.2, -0.199999999999999) three times, (150, 173.06, -23.06) and (150, 174.25, -24.25). Rounded amount-spent reproduces remaining for every row.",
+    "validation_method": "range filter plus recomputation of amount minus spent",
+    "timestamp": "2026-10-09T19:20:00Z"
+  },
+  {
+    "id": "evidence_008",
+    "source": "student_club.sqlite",
+    "query": "SELECT SUM(spent) FROM budget; SELECT SUM(cost) FROM expense; SELECT b.budget_id, b.spent, (SELECT COALESCE(SUM(e.cost),0) FROM expense e WHERE e.link_to_budget = b.budget_id) FROM budget b WHERE b.spent > 0",
+    "result": "Budget spend total 2086.05 equals expense cost total 2086.05, and the per-line spend matches the summed expense costs for all 25 budget lines with positive spend.",
+    "validation_method": "cross-table aggregate reconciliation",
+    "timestamp": "2026-10-09T19:20:00Z"
+  },
+  {
+    "id": "evidence_009",
+    "source": "student_club.sqlite",
+    "query": "SELECT COUNT(*) FROM expense e LEFT JOIN budget b ON b.budget_id = e.link_to_budget WHERE b.budget_id IS NULL; SELECT COUNT(*) FROM expense e LEFT JOIN member m ON m.member_id = e.link_to_member WHERE m.member_id IS NULL",
+    "result": "0 unresolved budget links and 0 unresolved member links across all 32 expense rows; 24 distinct budget lines carry expenses.",
+    "validation_method": "left-join orphan detection",
+    "timestamp": "2026-10-09T19:20:00Z"
+  },
+  {
+    "id": "evidence_010",
+    "source": "student_club.sqlite",
+    "query": "SELECT i.income_id, i.source, i.amount, i.link_to_member FROM income i LEFT JOIN member m ON m.member_id = i.link_to_member WHERE m.member_id IS NULL",
+    "result": "Three unresolved rows with empty member links: Fundraising 200, 'School Appropration' 3000, Sponsorship 1000.",
+    "validation_method": "left-join orphan detection",
+    "timestamp": "2026-10-09T19:20:00Z"
+  },
+  {
+    "id": "evidence_011",
+    "source": "student_club.sqlite",
+    "query": "SELECT source, COUNT(*), SUM(amount) FROM income GROUP BY source",
+    "result": "Dues, Fundraising, Sponsorship and 'School Appropration' (spelled that way in the data). 'Fundraiser' never appears as an event type.",
+    "validation_method": "distinct value inspection",
+    "timestamp": "2026-10-09T19:20:00Z"
+  },
+  {
+    "id": "evidence_012",
+    "source": "student_club.sqlite",
+    "query": "SELECT position, COUNT(*) FROM member GROUP BY position",
+    "result": "Member 26, Inactive 3, President 1, Vice President 1, Treasurer 1, Secretary 1.",
+    "validation_method": "distinct value inspection",
+    "timestamp": "2026-10-09T19:20:00Z"
+  },
+  {
+    "id": "evidence_013",
+    "source": "student_club.sqlite",
+    "query": "SELECT t_shirt_size, COUNT(*) FROM member GROUP BY t_shirt_size",
+    "result": "Medium 10, X-Large 8, Large 13, Small 2.",
+    "validation_method": "distinct value inspection",
+    "timestamp": "2026-10-09T19:20:00Z"
+  },
+  {
+    "id": "evidence_014",
+    "source": "student_club.sqlite",
+    "query": "SELECT COUNT(*) FROM member m LEFT JOIN zip_code z ON z.zip_code = m.zip WHERE z.zip_code IS NULL",
+    "result": "0 members with an unresolvable ZIP code; member.zip joins to zip_code.zip_code for all 33 members.",
+    "validation_method": "left-join orphan detection",
+    "timestamp": "2026-10-09T19:20:00Z"
+  },
+  {
+    "id": "evidence_015",
+    "source": "student_club.sqlite",
+    "query": "SELECT COUNT(*) FROM member WHERE link_to_major IS NULL OR link_to_major = ''; SELECT COUNT(*) FROM member m LEFT JOIN major j ON j.major_id = m.link_to_major WHERE m.link_to_major IS NOT NULL AND m.link_to_major <> '' AND j.major_id IS NULL; SELECT COUNT(*) FROM member WHERE first_name IS NULL OR last_name IS NULL",
+    "result": "One member has no major link; all remaining major links resolve; no member is missing either name component.",
+    "validation_method": "null search and left-join orphan detection",
+    "timestamp": "2026-10-09T19:20:00Z"
+  },
+  {
+    "id": "evidence_016",
+    "source": "student_club.sqlite",
+    "query": "SELECT COUNT(*) FROM zip_code; SELECT COUNT(*) AS rows_in_county, COUNT(DISTINCT city) AS distinct_cities FROM zip_code WHERE county = 'Orange County' AND state = 'Virginia'; SELECT DISTINCT type FROM zip_code",
+    "result": "41877 ZIP rows. Orange County, Virginia holds 7 rows naming 7 distinct cities (Burr Hill, Locust Grove, Rhoadesville, Unionville, Montpelier Station, Orange, Somerset). ZIP types are Standard, Unique and PO Box.",
+    "validation_method": "grain check by comparing row count with distinct value count",
+    "timestamp": "2026-10-09T19:20:00Z"
+  },
+  {
+    "id": "evidence_017",
+    "source": "student_club.sqlite",
+    "query": "SELECT DISTINCT type FROM zip_code",
+    "result": "Standard, Unique, PO Box.",
+    "validation_method": "distinct value inspection",
+    "timestamp": "2026-10-09T19:20:00Z"
+  },
+  {
+    "id": "evidence_018",
+    "source": "student_club.sqlite",
+    "query": "SELECT COUNT(*) FROM attendance; SELECT COUNT(*) FROM attendance a LEFT JOIN event e ON e.event_id = a.link_to_event LEFT JOIN member m ON m.member_id = a.link_to_member WHERE e.event_id IS NULL OR m.member_id IS NULL; SELECT e.event_name, COUNT(a.link_to_member) c FROM event e JOIN attendance a ON a.link_to_event = e.event_id GROUP BY e.event_id HAVING c > 20",
+    "result": "326 unique member-event pairs, 0 unresolved on either side. Eight events exceed 20 attendees (October Speaker 29, September Speaker 27, Registration 30, October Meeting 23, November Speaker 27, November Meeting 25, Yearly Kickoff 30, September Meeting 27).",
+    "validation_method": "pair uniqueness, orphan detection and grouped counting",
+    "timestamp": "2026-10-09T19:20:00Z"
+  },
+  {
+    "id": "evidence_019",
+    "source": "student_club.sqlite",
+    "query": "SELECT MIN(expense_date), MAX(expense_date), COUNT(DISTINCT LENGTH(expense_date)) FROM expense; SELECT DISTINCT expense_description FROM expense",
+    "result": "Expense dates run from 2019-08-20 to 2019-11-19 and every value is exactly 10 characters in ISO year-month-day form. Twelve distinct item descriptions occur.",
+    "validation_method": "format and range inspection",
+    "timestamp": "2026-10-09T19:20:00Z"
+  },
+  {
+    "id": "evidence_020",
+    "source": "student_club.sqlite",
+    "query": "SELECT approved, COUNT(*) FROM expense GROUP BY approved",
+    "result": "A single value, the text 'true', on all 32 expense rows.",
+    "validation_method": "distinct value inspection",
+    "timestamp": "2026-10-09T19:20:00Z"
+  },
+  {
+    "id": "evidence_021",
+    "source": "student_club.sqlite",
+    "query": "SELECT major_id, major_name, department, college FROM major WHERE major_name LIKE '%Business%' OR department LIKE '%Business%' OR college LIKE '%Business%'",
+    "result": "Business / School of Applied Sciences, Technology and Education / College of Agriculture and Applied Sciences; Agribusiness / Applied Economics Department / College of Agriculture and Applied Sciences; Business Education / School of Applied Sciences, Technology and Education / College of Agriculture and Applied Sciences; International Business / Marketing and Strategy Department / School of Business. The exact major named Business is not in the School of Business.",
+    "validation_method": "pattern search across the three academic levels",
+    "timestamp": "2026-10-09T19:20:00Z"
+  },
+  {
+    "id": "evidence_022",
+    "source": "student_club.sqlite",
+    "query": "SELECT DISTINCT substr(phone,1,1) FROM member",
+    "result": "Leading characters include '(' as well as digits, confirming mixed formatting: '(651) 928-4507' and '403-555-1310' both occur. A lookup for '809-555-3360' matches the member Dean O'Reilly exactly.",
+    "validation_method": "format inspection plus literal match test",
+    "timestamp": "2026-10-09T19:20:00Z"
+  },
+  {
+    "id": "evidence_023",
+    "source": "student_club.sqlite",
+    "query": "SELECT DISTINCT category FROM budget",
+    "result": "Advertisement, Food, Parking, Club T-Shirts, Speaker Gifts.",
+    "validation_method": "distinct value inspection",
+    "timestamp": "2026-10-09T19:20:00Z"
+  },
+  {
+    "id": "evidence_024",
+    "source": "student_club.sqlite",
+    "query": "SELECT COUNT(*) FROM budget b LEFT JOIN expense e ON e.link_to_budget = b.budget_id WHERE e.expense_id IS NULL",
+    "result": "28 of the 52 budget lines have no linked expense rows, so 24 lines carry expenses.",
+    "validation_method": "left-join absence check",
+    "timestamp": "2026-10-09T19:20:00Z"
+  },
+  {
+    "id": "evidence_025",
+    "source": "student_club.sqlite",
+    "query": "SELECT DISTINCT department, college FROM major",
+    "result": "Each major row carries its department and college directly and there is no separate department or college table; distinct departments map many-to-one onto colleges.",
+    "validation_method": "schema inspection plus distinct-level comparison",
+    "timestamp": "2026-10-09T19:20:00Z"
+  }
+]

@@ -1,0 +1,130 @@
+[
+  {
+    "id": "ev_schema_inventory",
+    "source": "european_football_2.sqlite",
+    "query": "schema listing and per-table row counts",
+    "result": "7 tables: Country 11 rows, League 11, Match 25979, Player 11060, Player_Attributes 183978, Team 299, Team_Attributes 1458. Match home_team_goal and away_team_goal are populated for all 25979 rows; goal, shoton, shotoff, foulcommit, card, cross, corner and possession are XML-style text columns.",
+    "validation_method": "read-only schema and count query",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_season_values",
+    "source": "european_football_2.sqlite",
+    "query": "SELECT season, MIN(date), MAX(date) FROM Match GROUP BY season ORDER BY season",
+    "result": "8 seasons labelled 2008/2009 through 2015/2016. Each label spans two calendar years: 2008/2009 runs 2008-07-18 to 2009-05-31 and 2015/2016 runs 2015-07-17 to 2016-05-25.",
+    "validation_method": "distinct-value and date-range verification",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_attribute_date_format",
+    "source": "european_football_2.sqlite",
+    "query": "SELECT date FROM Player_Attributes LIMIT 3; SELECT MIN(date), MAX(date), COUNT(DISTINCT date) FROM Player_Attributes; same for Team_Attributes",
+    "result": "Values are date-time strings such as 2016-02-18 00:00:00. Player_Attributes spans 2007-02-22 to 2016-07-07 over 197 distinct values. Team_Attributes uses the same format over 6 distinct values. A probe confirmed that player Francesco Migliore has a snapshot on 2015-05-01 and Aaron Mooy on 2016-02-04.",
+    "validation_method": "representative value inspection and targeted date filter",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_team_attr_snapshot_dates",
+    "source": "european_football_2.sqlite",
+    "query": "SELECT date, COUNT(*) FROM Team_Attributes GROUP BY date ORDER BY date; SELECT COUNT(DISTINCT team_api_id) FROM Team_Attributes",
+    "result": "6 snapshot dates: 2010-02-22 with 241 teams, 2011-02-22 with 244, 2012-02-22 with 242, 2013-09-20 with 242, 2014-09-19 with 244, 2015-09-10 with 245. 1458 rows cover 288 distinct teams, and 189 teams have all six snapshots.",
+    "validation_method": "grouped count verification",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_player_attr_dup_rows",
+    "source": "european_football_2.sqlite",
+    "query": "SELECT COUNT(*) FROM (SELECT player_api_id, player_fifa_api_id, date FROM Player_Attributes GROUP BY 1,2,3 HAVING COUNT(*)>1); SELECT SUM(overall_rating IS NULL), SUM(volleys IS NULL) FROM Player_Attributes",
+    "result": "751 duplicated player, fifa id and date combinations. 836 rows have a null overall_rating, 836 a null finishing, 836 a null dribbling and 2713 a null volleys. Sampling player 2907 on 2007-02-22 shows a populated row with overall_rating 54 next to a fully null placeholder row sharing the same key.",
+    "validation_method": "duplicate-key and null-count verification with sample inspection",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_work_rate_values",
+    "source": "european_football_2.sqlite",
+    "query": "SELECT attacking_work_rate, COUNT(*) FROM Player_Attributes GROUP BY 1; SELECT defensive_work_rate, COUNT(*) FROM Player_Attributes GROUP BY 1",
+    "result": "attacking_work_rate valid levels: medium 125070, high 42823, low 8569; beyond them the literal None 3639, empty 3230, norm 348, y 106, le 104 and stoc 89. defensive_work_rate valid levels: medium 130846, high 27041, low 18432; beyond them _0 2394, o 1550, empty 836 and fragments such as ormal, es, ean and tocky along with digit strings 0 to 9.",
+    "validation_method": "distinct-value distribution verification",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_work_rate_clean_fraction",
+    "source": "european_football_2.sqlite",
+    "query": "SELECT COUNT(*), SUM(CASE WHEN attacking_work_rate IN ('low','medium','high') THEN 1 ELSE 0 END), SUM(CASE WHEN defensive_work_rate IN ('low','medium','high') THEN 1 ELSE 0 END) FROM Player_Attributes",
+    "result": "Of 183978 rows, 176462 carry a valid attacking work rate and 176319 carry a valid defensive work rate; the remainder are corrupted or empty.",
+    "validation_method": "aggregate counting of valid values",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_team_id_integrity",
+    "source": "european_football_2.sqlite",
+    "query": "SELECT COUNT(*), COUNT(DISTINCT team_api_id), COUNT(DISTINCT team_fifa_api_id), SUM(team_fifa_api_id IS NULL) FROM Team; duplicate check on team_fifa_api_id; referential checks from Match and Team_Attributes",
+    "result": "299 team rows, 299 distinct team_api_id, 285 distinct team_fifa_api_id and 11 null fifa ids. Three fifa ids are each shared by two rows, for example 301 shared by two rows both named Widzew Lodz. Every Match home and away team id and all 1458 Team_Attributes team_api_id values resolve to a Team row.",
+    "validation_method": "key-integrity, duplicate and referential verification",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_name_duplicates",
+    "source": "european_football_2.sqlite",
+    "query": "SELECT COUNT(DISTINCT team_long_name), COUNT(DISTINCT team_short_name) FROM Team; SELECT COUNT(*) FROM Player WHERE player_name LIKE 'Aaron%'",
+    "result": "Team has 296 distinct long names and 259 distinct short names over 299 rows, with short names such as BEL occurring three times. 18 players have a name beginning with Aaron, for example Aaron Mooy born 1990-09-15 and Aaron Ramsey born 1990-12-26.",
+    "validation_method": "distinct-value and prefix-match verification",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_player_team_link",
+    "source": "european_football_2.sqlite",
+    "query": "schema inspection of Player and Match; SELECT COUNT(*) FROM Match WHERE home_player_1 IS NULL",
+    "result": "Player has no team column and there is no squad table; the only link is the home_player_1..11 and away_player_1..11 slots on Match, which hold player_api_id values. 1224 of 25979 matches have a null home_player_1 and 1554 have a null away_player_11.",
+    "validation_method": "schema inspection and null counting",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_metric_ranges",
+    "source": "european_football_2.sqlite",
+    "query": "SELECT MIN/MAX for overall_rating, finishing, volleys, dribbling FROM Player_Attributes; SELECT MIN/MAX for buildUpPlaySpeed, buildUpPlayPassing FROM Team_Attributes",
+    "result": "overall_rating 33-94, finishing 1-97, volleys 1-93, dribbling 1-97. buildUpPlaySpeed 20-80 and buildUpPlayPassing 20-80. All are integers on a 0-100 scale.",
+    "validation_method": "range verification",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_style_class_banding",
+    "source": "european_football_2.sqlite",
+    "query": "SELECT buildUpPlaySpeedClass, MIN(buildUpPlaySpeed), MAX(buildUpPlaySpeed), COUNT(*) FROM Team_Attributes GROUP BY 1; same for chanceCreationPassingClass against chanceCreationPassing",
+    "result": "buildUpPlaySpeedClass Slow covers 20-33 with 102 rows, Balanced 34-66 with 1184 and Fast 67-80 with 172. chanceCreationPassingClass Safe covers 21-33 with 56 rows, Normal 34-66 with 1231 and Risky 67-80 with 171. The class columns are non-overlapping deterministic bandings of the numeric columns.",
+    "validation_method": "grouped range verification",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_league_names",
+    "source": "european_football_2.sqlite",
+    "query": "SELECT l.id, l.name, c.name FROM League l LEFT JOIN Country c ON l.country_id=c.id ORDER BY l.id",
+    "result": "11 leagues, each named with a country prefix and each in a distinct country: Belgium Jupiler League, England Premier League, France Ligue 1, Germany 1. Bundesliga, Italy Serie A, Netherlands Eredivisie, Poland Ekstraklasa, Portugal Liga ZON Sagres, Scotland Premier League, Spain LIGA BBVA and Switzerland Super League.",
+    "validation_method": "join verification against Country",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_match_league_counts",
+    "source": "european_football_2.sqlite",
+    "query": "SELECT l.name, COUNT(*) FROM Match m JOIN League l ON m.league_id=l.id WHERE m.season='2008/2009' GROUP BY 1 ORDER BY 2 DESC",
+    "result": "For 2008/2009 the counts are 380 for Spain LIGA BBVA, Italy Serie A, France Ligue 1 and England Premier League, 306 for three further leagues, 240 for two, then 228 and 180. Four leagues tie at the maximum.",
+    "validation_method": "grouped count verification",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_height_range",
+    "source": "european_football_2.sqlite",
+    "query": "SELECT COUNT(*), MIN(height), MAX(height), SUM(CASE WHEN height=0 THEN 1 ELSE 0 END) FROM Player",
+    "result": "11060 players, height from 157.48 to 208.28 centimetres, with no zero and no null heights.",
+    "validation_method": "range and null verification",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_birthday_format",
+    "source": "european_football_2.sqlite",
+    "query": "SELECT birthday FROM Player LIMIT 5",
+    "result": "Birthdays are date-time strings such as 1992-02-29 00:00:00, so the birth year is available as the leading four characters. Nine players named Aaron have a birthday later than 1990.",
+    "validation_method": "representative value inspection",
+    "timestamp": "2026-10-10"
+  }
+]

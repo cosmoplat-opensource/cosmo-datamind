@@ -1,0 +1,170 @@
+[
+  {
+    "id": "evidence_001",
+    "query": "sqlite3 read-only: .tables and .schema",
+    "result": "Seven tables exist: Country, League, Match, Player, Player_Attributes, Team, Team_Attributes. Foreign-key style integer columns are declared but no SQLite indexes or constraints are enforced.",
+    "source": "european_football_2",
+    "timestamp": "2026-10-10",
+    "validation_method": "read-only schema inspection via sqlite3 .schema"
+  },
+  {
+    "id": "evidence_002",
+    "query": "SELECT 'Match',COUNT(*) FROM Match UNION ALL SELECT 'Player',COUNT(*) FROM Player UNION ALL SELECT 'Player_Attributes',COUNT(*) FROM Player_Attributes UNION ALL SELECT 'Team',COUNT(*) FROM Team UNION ALL SELECT 'Team_Attributes',COUNT(*) FROM Team_Attributes UNION ALL SELECT 'League',COUNT(*) FROM League UNION ALL SELECT 'Country',COUNT(*) FROM Country",
+    "result": "Match 25979, Player 11060, Player_Attributes 183978, Team 299, Team_Attributes 1458, League 11, Country 11",
+    "source": "european_football_2",
+    "timestamp": "2026-10-10",
+    "validation_method": "row count enumeration"
+  },
+  {
+    "id": "evidence_003",
+    "query": "SELECT season, MIN(date), MAX(date), COUNT(*) FROM Match GROUP BY season ORDER BY season",
+    "result": "Eight seasons: 2008/2009 (2008-07-18 to 2009-05-31, 3326 matches), 2009/2010 (to 2010-05-16, 3230), 2010/2011 (2010-07-17 to 2011-05-29, 3260), 2011/2012 (to 2012-05-23, 3220), 2012/2013 (2012-07-13 to 2013-06-02, 3260), 2013/2014 (to 2014-05-18, 3032), 2014/2015 (to 2015-05-31, 3325), 2015/2016 (2015-07-17 to 2016-05-25, 3326). Each season label spans the earlier to the later calendar year.",
+    "source": "european_football_2",
+    "timestamp": "2026-10-10",
+    "validation_method": "grouped aggregation over Match"
+  },
+  {
+    "id": "evidence_004",
+    "query": "SELECT COUNT(*) total, SUM(country_id=league_id) same FROM Match   /   SELECT l.name,c.name FROM League l JOIN Country c ON l.country_id=c.id",
+    "result": "25979 of 25979 matches have country_id equal to league_id. Eleven leagues, one per country, and each league name begins with its country name (Belgium Jupiler League / Belgium, Poland Ekstraklasa / Poland, Spain LIGA BBVA / Spain, and so on). League.id equals League.country_id equals Country.id for every row.",
+    "source": "european_football_2",
+    "timestamp": "2026-10-10",
+    "validation_method": "equality count and join comparison"
+  },
+  {
+    "id": "evidence_005",
+    "query": "SELECT COUNT(*) FROM Player_Attributes pa JOIN Player p ON pa.player_api_id=p.player_api_id;  SELECT COUNT(*) FROM Player_Attributes pa JOIN Player p ON pa.player_fifa_api_id=p.player_fifa_api_id;  SELECT COUNT(DISTINCT player_api_id), COUNT(DISTINCT player_fifa_api_id), COUNT(*) FROM Player_Attributes",
+    "result": "Joining attribute snapshots to players on player_api_id matches all 183978 snapshots. Joining on player_fifa_api_id matches only 183929, leaving 49 snapshots unmatched. The attribute table holds 11062 distinct FIFA API identifiers but only 11060 distinct API identifiers, matching the 11060 player rows; 9 players carry more than one FIFA API identifier across their snapshots.",
+    "source": "european_football_2",
+    "timestamp": "2026-10-10",
+    "validation_method": "join cardinality comparison across the two identifier spaces"
+  },
+  {
+    "id": "evidence_006",
+    "query": "SELECT MIN(date),MAX(date) FROM Player_Attributes;  SELECT substr(date,1,4) y, COUNT(*) FROM Player_Attributes GROUP BY y;  SELECT MIN(c),MAX(c),AVG(c) FROM (SELECT player_api_id,COUNT(*) c FROM Player_Attributes GROUP BY 1)",
+    "result": "Observation dates span 2007-02-22 to 2016-07-07. Row counts per year: 2007 16138, 2008 5798, 2009 8993, 2010 10829, 2011 11976, 2012 12632, 2013 38867, 2014 32808, 2015 31834, 2016 14103. Per player the number of snapshots ranges from 2 to 56 with a mean of 16.6. Distinct dates up to 2012 are semi-annual (22 February and 30 August), while from 2013 the dates are roughly weekly.",
+    "source": "european_football_2",
+    "timestamp": "2026-10-10",
+    "validation_method": "date range, grouped year counts and per-player row distribution"
+  },
+  {
+    "id": "evidence_007",
+    "query": "SELECT COUNT(*) FROM Team_Attributes ta JOIN Team t ON ta.team_api_id=t.team_api_id;  SELECT DISTINCT date FROM Team_Attributes ORDER BY date;  SELECT COUNT(*) FROM (SELECT team_api_id,COUNT(*) FROM Team_Attributes GROUP BY 1)",
+    "result": "All 1458 snapshot rows join to a team on team_api_id, but joining on the FIFA API identifier produces 1473 matches, so only the API identifier is a clean key. Six observation dates exist: 2010-02-22, 2011-02-22, 2012-02-22, 2013-09-20, 2014-09-19 and 2015-09-10. Only 288 distinct clubs have any tactical observation, out of 299 clubs overall; 11 clubs have none.",
+    "source": "european_football_2",
+    "timestamp": "2026-10-10",
+    "validation_method": "join cardinality, distinct date enumeration and per-team coverage count"
+  },
+  {
+    "id": "evidence_008",
+    "query": "SELECT buildUpPlaySpeedClass,COUNT(*),MIN(buildUpPlaySpeed),MAX(buildUpPlaySpeed) FROM Team_Attributes GROUP BY 1, plus the same grouping for chanceCreationPassingClass, chanceCreationCrossingClass, chanceCreationShootingClass, defencePressureClass, defenceAggressionClass and defenceTeamWidthClass",
+    "result": "Class labels map exactly onto numeric bands with shared boundaries at 33/34 and 66/67. Build-up play speed: Slow 20-33 (102 rows), Balanced 34-66 (1184), Fast 67-80 (172). Chance creation passing: Safe 21-33 (56), Normal 34-66 (1231), Risky 67-80 (171). Chance creation crossing and shooting: Little up to 33, Normal 34-66, Lots from 67. Defensive pressure: Deep up to 33, Medium 34-66, High from 67. Defensive aggression: Contain up to 33, Press 34-66, Double from 67. Defensive team width: Narrow up to 33, Normal 34-66, Wide from 67. The positioning and defender-line columns hold multi-word labels such as Organised, Free Form, Cover and Offside Trap.",
+    "source": "european_football_2",
+    "timestamp": "2026-10-10",
+    "validation_method": "grouped class-versus-score range verification"
+  },
+  {
+    "id": "evidence_009",
+    "query": "SELECT attacking_work_rate, COUNT(*) FROM Player_Attributes GROUP BY 1;  SELECT defensive_work_rate, COUNT(*) FROM Player_Attributes GROUP BY 1;  SELECT substr(date,1,4), COUNT(*) FROM Player_Attributes WHERE attacking_work_rate NOT IN ('low','medium','high','None') GROUP BY 1",
+    "result": "Legitimate levels are high (approximately 89000 rows across the pairings), medium (approximately 148000) and low (approximately 25000), plus 'None'. Corrupted values found in the attacking column: empty string 836, 'le' 104, 'norm' 348, 'stoc' 89, 'y' 106. Corrupted values found in the defensive column: empty string 836, single digits 0 to 9 (totalling roughly 1700 rows), '_0' 2394, and fragments 'ean' 104, 'es' 106, 'o' 1550, 'ormal' 348, 'tocky' 89. Corrupt attacking rows by year: 2007 203, 2008 101, 2009 129, 2010 163, 2011 51, none thereafter.",
+    "source": "european_football_2",
+    "timestamp": "2026-10-10",
+    "validation_method": "full value enumeration and corruption-by-year grouping"
+  },
+  {
+    "id": "evidence_010",
+    "query": "SELECT preferred_foot,COUNT(*) FROM Player_Attributes GROUP BY 1;  SELECT preferred_foot, attacking_work_rate, COUNT(*) FROM Player_Attributes GROUP BY 1,2",
+    "result": "preferred_foot is left on 44733 rows and right on 138409 rows, with 836 rows null. The 836 null-foot rows are exactly the rows whose attacking and defensive work rates are the empty string, so the same damaged records carry both defects. The 836 nulls are concentrated in 2007 (736), with the remainder spread thinly across 2008 to 2016.",
+    "source": "european_football_2",
+    "timestamp": "2026-10-10",
+    "validation_method": "value distribution and cross-tabulation against the damaged work-rate rows"
+  },
+  {
+    "id": "evidence_011",
+    "query": "SELECT SUM(birthday IS NULL),SUM(height IS NULL),SUM(weight IS NULL),MIN(height),MAX(height),MIN(weight),MAX(weight) FROM Player;  SELECT id,player_api_id,player_fifa_api_id,player_name FROM Player WHERE id IN (6,23);  SELECT DISTINCT substr(birthday,1,4) FROM Player ORDER BY 1",
+    "result": "The Player table has 11060 rows with no missing birthday, height or weight. Height ranges from 157.48 to 208.28 centimetres and weight from 117 to 243. Birth years run from 1967 to 1999. Player id 6 is Aaron Hunt with player_api_id 27316 and FIFA API id 158138; player id 23 is Abdelhamid El Kaoutari with player_api_id 128456 and FIFA API id 188145. Both player_api_id and player_fifa_api_id are unique across the 11060 rows.",
+    "source": "european_football_2",
+    "timestamp": "2026-10-10",
+    "validation_method": "null counts, range checks and direct key lookup"
+  },
+  {
+    "id": "evidence_012",
+    "query": "SELECT SUM(overall_rating IS NULL),SUM(potential IS NULL),SUM(crossing IS NULL),SUM(heading_accuracy IS NULL),SUM(long_shots IS NULL),SUM(sprint_speed IS NULL),SUM(finishing IS NULL),SUM(curve IS NULL),SUM(jumping IS NULL) FROM Player_Attributes;  SELECT COUNT(DISTINCT player_api_id) FROM Player_Attributes WHERE curve IS NOT NULL;  the same for jumping and heading_accuracy",
+    "result": "overall_rating, potential, crossing, heading_accuracy, long_shots, sprint_speed and finishing each have exactly 836 nulls, matching the damaged-record count, and all 11060 players retain at least one non-null heading_accuracy value. curve and jumping each have 2713 nulls, heavier than the other abilities, and only 10582 of the 11060 players have any non-null curve or jumping value at all, so 478 players cannot be averaged or ranked on those two abilities. The extra nulls appear in every year, heaviest in 2007 where curve and jumping are missing on 1532 of 16138 rows.",
+    "source": "european_football_2",
+    "timestamp": "2026-10-10",
+    "validation_method": "per-column null counts and distinct-player coverage of the sparse columns"
+  },
+  {
+    "id": "evidence_013",
+    "query": "SELECT AVG(home_team_goal), SUM(home_team_goal), COUNT(*) FROM Match m JOIN Country c ON m.country_id=c.id WHERE c.name='Poland' AND m.season='2010/2011';  the same via JOIN League l ON m.league_id=l.id WHERE l.name='Poland Ekstraklasa'",
+    "result": "Both routes return the identical result: average home team goal 1.50416666666667, from a sum of 361 home goals over 240 matches in the Poland 2010/2011 season. The country route and the league route agree exactly, confirming that the two filters are interchangeable.",
+    "source": "european_football_2",
+    "timestamp": "2026-10-10",
+    "validation_method": "independent recomputation through both the country and league paths"
+  },
+  {
+    "id": "evidence_014",
+    "query": "SELECT COUNT(*) FROM Match m JOIN League l ON m.league_id=l.id WHERE l.name='Belgium Jupiler League' AND substr(m.date,1,7)='2009-04';  SELECT DISTINCT season FROM Match WHERE substr(date,1,7)='2009-04';  SELECT season,COUNT(*) FROM Match WHERE league_id=15722 GROUP BY 1",
+    "result": "36 matches were played in the Belgium Jupiler League in the calendar month April 2009, and every match dated in April 2009 belongs to the 2008/2009 season. Each league plays a constant number of matches in every season: the Poland Ekstraklasa league contributes exactly 240 matches in each of the eight seasons.",
+    "source": "european_football_2",
+    "timestamp": "2026-10-10",
+    "validation_method": "month-scoped count, season membership check and per-season league volume check"
+  },
+  {
+    "id": "evidence_015",
+    "query": "SELECT * FROM Team WHERE team_long_name LIKE '%Ajax%';  SELECT ta.date,ta.buildUpPlaySpeed,ta.chanceCreationPassing,ta.chanceCreationPassingClass FROM Team_Attributes ta JOIN Team t ON ta.team_api_id=t.team_api_id WHERE t.team_long_name='Ajax';  SELECT t.team_long_name, MAX(ta.buildUpPlaySpeed) FROM Team_Attributes ta JOIN Team t ON ta.team_api_id=t.team_api_id GROUP BY 1 ORDER BY 2 DESC LIMIT 5",
+    "result": "Ajax has team_api_id 26552, FIFA API id 245 and short name AJA, and has six tactical snapshots. Its chance creation passing scores are 50, 67, 39, 39, 51 and 58 across 2010 to 2015, so the maximum is 67, recorded on 2011-02-22 where the paired class label is Risky. Ranking clubs by their maximum build-up play speed gives Carpi 80, Udinese 78, Hannover 96 78, West Ham United 77 and Torino 76.",
+    "source": "european_football_2",
+    "timestamp": "2026-10-10",
+    "validation_method": "name lookup, per-snapshot score listing with paired class, and grouped maximum ranking"
+  },
+  {
+    "id": "evidence_016",
+    "query": "SELECT COUNT(*) FROM Match m JOIN Team t ON m.home_team_api_id=t.team_api_id JOIN Team s ON m.away_team_api_id=s.team_api_id;  SELECT COUNT(*) FROM (SELECT DISTINCT home_team_api_id v FROM Match UNION SELECT DISTINCT away_team_api_id FROM Match) x WHERE v NOT IN (SELECT team_api_id FROM Team)",
+    "result": "All 25979 matches join to a home team and an away team on team_api_id, and every distinct team identifier appearing in Match exists in Team. Team has 299 rows with 299 distinct team_api_id values but only 285 distinct FIFA API identifiers.",
+    "source": "european_football_2",
+    "timestamp": "2026-10-10",
+    "validation_method": "join coverage and referential integrity check"
+  },
+  {
+    "id": "evidence_017",
+    "query": "SELECT MIN(overall_rating),MAX(overall_rating),MIN(potential),MAX(potential) FROM Player_Attributes;  SELECT SUM(player_fifa_api_id IS NULL), SUM(date IS NULL) FROM Player_Attributes",
+    "result": "overall_rating ranges from 33 to 94 and potential from 39 to 97, so the two scales overlap and both are plausible readings of a strength number. No snapshot row has a null observation date or a null FIFA API identifier. The same table also carries a fine-grained column named strength, which is a different concept from overall_rating and lives on the same row.",
+    "source": "european_football_2",
+    "timestamp": "2026-10-10",
+    "validation_method": "range comparison of the two headline scores and null check on key columns"
+  },
+  {
+    "id": "evidence_018",
+    "query": "SELECT MIN(date),MAX(date) FROM Match;  SELECT season, MIN(date), MAX(date) FROM Match GROUP BY season",
+    "result": "Match dates are stored as text timestamps in the form year-month-day followed by a zeroed time component, and they range from 2008-07-18 to 2016-05-25. Within every season the earliest match falls in July of the first labelled year and the latest falls in May or June of the second labelled year, confirming that a calendar month in the first half of a year belongs to the season that ends in that year. Player birthdays use the same text timestamp layout.",
+    "source": "european_football_2",
+    "timestamp": "2026-10-10",
+    "validation_method": "date format inspection and per-season date boundaries"
+  },
+  {
+    "id": "evidence_019",
+    "query": "SELECT player_api_id,player_fifa_api_id,player_name,birthday FROM Player WHERE player_name LIKE '%Gabriel Tamas%';  SELECT player_api_id,player_fifa_api_id,player_name FROM Player WHERE player_name LIKE '%Ahmed Samir%'",
+    "result": "Gabriel Tamas resolves uniquely to player_api_id 37428, FIFA API id 135537, born 1983-11-09. Ahmed Samir Farag resolves uniquely to player_api_id 174600, FIFA API id 163658. Player names in questions match the player_name column directly.",
+    "source": "european_football_2",
+    "timestamp": "2026-10-10",
+    "validation_method": "name lookup against the player table"
+  },
+  {
+    "id": "evidence_020",
+    "query": "SELECT MIN(home_team_goal),MAX(home_team_goal),MIN(away_team_goal),MAX(away_team_goal),SUM(home_team_goal IS NULL) FROM Match;  SELECT league_id,SUM(home_team_goal=away_team_goal) FROM Match WHERE season='2015/2016' GROUP BY 1 ORDER BY 2 DESC LIMIT 3",
+    "result": "Home goals range from 0 to 10 and away goals from 0 to 9, with no null goal values across 25979 matches. Counting drawn matches by the equality of the two goal counts works as expected: in the 2015/2016 season the England Premier League has 107 drawn matches (league 1729) and the Spain LIGA BBVA 95 (league 21518), giving a well-defined maximum for a most-draws comparison.",
+    "source": "european_football_2",
+    "timestamp": "2026-10-10",
+    "validation_method": "range and null check on goal columns, plus a draw-count aggregation sanity check"
+  },
+  {
+    "id": "evidence_021",
+    "query": "SELECT 'heading_accuracy', MIN(heading_accuracy),MAX(heading_accuracy),SUM(heading_accuracy IS NULL) FROM Player_Attributes UNION ALL the same for jumping, long_shots, crossing, finishing, curve, sprint_speed;  SELECT p.id,p.player_name,pa.date,pa.jumping FROM Player p JOIN Player_Attributes pa ON pa.player_api_id=p.player_api_id WHERE p.id IN (6,23) ORDER BY p.id,pa.date",
+    "result": "Named ability ranges and null counts: heading_accuracy 1 to 98 with 836 nulls; jumping 14 to 96 with 2713 nulls; long_shots 1 to 96 with 836 nulls; crossing 1 to 95 with 836 nulls; finishing 1 to 97 with 836 nulls; curve 2 to 94 with 2713 nulls; sprint_speed 12 to 97 with 836 nulls. Each ability is an integer score. Tracing the jumping score of player id 6 (Aaron Hunt) across his snapshots shows the value holding at 70 for many consecutive observations and drifting to 69 on 2014-09-18, confirming that a single player carries different ability values on different snapshot rows and that the answer depends on which snapshot is selected. The maximum jumping over each player's whole history is 70 for player id 6 and 75 for player id 23.",
+    "source": "european_football_2",
+    "timestamp": "2026-10-10",
+    "validation_method": "per-column range and null profiling plus a per-snapshot trace for two named players"
+  }
+]

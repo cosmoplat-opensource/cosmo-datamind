@@ -1,0 +1,263 @@
+[
+  {
+    "id": "rel_race_result_partof_race",
+    "source": "term_race_result",
+    "relation_type": "composition",
+    "target": "term_race",
+    "connection_condition": "results.raceId corresponds to races.raceId",
+    "description": "A race result is a component part of the race it was run in; an entry has no meaning apart from that race.",
+    "evidence": ["ev_results_grain"]
+  },
+  {
+    "id": "rel_race_partof_season",
+    "source": "term_race",
+    "relation_type": "composition",
+    "target": "term_season",
+    "connection_condition": "races.year corresponds to seasons.year",
+    "description": "A race is a component part of the championship season it belongs to; the season is the whole that the calendar composes.",
+    "evidence": ["ev_season_link"]
+  },
+  {
+    "id": "rel_lap_partof_result",
+    "source": "term_lap",
+    "relation_type": "composition",
+    "target": "term_race_result",
+    "connection_condition": "lapTimes shares raceId and driverId with results",
+    "description": "A lap is a component part of one car and driver entry in a race.",
+    "evidence": ["ev_coverage_windows", "ev_results_grain"]
+  },
+  {
+    "id": "rel_pitstop_partof_result",
+    "source": "term_pit_stop",
+    "relation_type": "composition",
+    "target": "term_race_result",
+    "connection_condition": "pitStops shares raceId and driverId with results",
+    "description": "A pit stop is a component part of one car and driver entry in a race.",
+    "evidence": ["ev_coverage_windows", "ev_results_grain"]
+  },
+  {
+    "id": "rel_qualifying_partof_race",
+    "source": "term_qualifying_entry",
+    "relation_type": "composition",
+    "target": "term_race",
+    "connection_condition": "qualifying.raceId corresponds to races.raceId",
+    "description": "A qualifying entry is a component part of the race weekend it belongs to.",
+    "evidence": ["ev_coverage_windows"]
+  },
+  {
+    "id": "rel_driverstanding_partof_race",
+    "source": "term_driver_standing",
+    "relation_type": "composition",
+    "target": "term_race",
+    "connection_condition": "driverStandings.raceId corresponds to races.raceId",
+    "description": "A driver standing snapshot is attached to the race after which it was taken and has no meaning outside that race context.",
+    "evidence": ["ev_standings_scope"]
+  },
+  {
+    "id": "rel_constructorstanding_partof_race",
+    "source": "term_constructor_standing",
+    "relation_type": "composition",
+    "target": "term_race",
+    "connection_condition": "constructorStandings.raceId corresponds to races.raceId",
+    "description": "A constructor standing snapshot is attached to the race after which it was taken and has no meaning outside that race context.",
+    "evidence": ["ev_standings_scope"]
+  },
+  {
+    "id": "rel_race_result_driver",
+    "source": "term_race_result",
+    "relation_type": "association",
+    "target": "term_driver",
+    "connection_condition": "results.driverId corresponds to drivers.driverId",
+    "description": "A race entry records the participation of one driver, who is not a component part of the entry but its subject.",
+    "evidence": ["ev_identifier_population"]
+  },
+  {
+    "id": "rel_race_result_constructor",
+    "source": "term_race_result",
+    "relation_type": "association",
+    "target": "term_constructor",
+    "connection_condition": "results.constructorId corresponds to constructors.constructorId",
+    "description": "A race entry credits the constructor whose car was raced, alongside the driver.",
+    "evidence": ["ev_tables_counts"]
+  },
+  {
+    "id": "rel_race_circuit",
+    "source": "term_race",
+    "relation_type": "association",
+    "target": "term_circuit",
+    "connection_condition": "races.circuitId corresponds to circuits.circuitId, and the reference is not always resolvable",
+    "description": "A race is held at a circuit venue. The link is a location reference rather than a type relation, and races can exist whose circuit record is absent.",
+    "evidence": ["ev_circuit_orphan"]
+  },
+  {
+    "id": "rel_race_result_status",
+    "source": "term_race_result",
+    "relation_type": "association",
+    "target": "term_race_status",
+    "connection_condition": "results.statusId corresponds to status.statusId",
+    "description": "Each race entry carries exactly one outcome status describing how the entry ended.",
+    "evidence": ["ev_status_semantics"]
+  },
+  {
+    "id": "rel_retirement_hierarchy_status",
+    "source": "term_retirement",
+    "relation_type": "hierarchy",
+    "target": "term_race_status",
+    "connection_condition": "",
+    "description": "Retirement is a kind of race entry status: the statuses that denote a retirement form a proper subset of the statuses a race entry can take.",
+    "evidence": ["ev_status_semantics"]
+  },
+  {
+    "id": "rel_win_derived_classification_order",
+    "source": "term_classification_order",
+    "relation_type": "derivation",
+    "target": "term_win",
+    "connection_condition": "classification order equals 1",
+    "description": "A win is the classification order of an entry being first in its race, derived from the classification order rather than from the raw finishing position.",
+    "evidence": ["ev_shared_wins"]
+  },
+  {
+    "id": "rel_podium_derived_win",
+    "source": "term_win",
+    "relation_type": "derivation",
+    "target": "term_podium",
+    "connection_condition": "classification order lies between 1 and 3",
+    "description": "A podium finish is a top-three classification order; a win is the special case at the top of that range.",
+    "evidence": ["ev_shared_wins"]
+  },
+  {
+    "id": "rel_pole_derived_qualifying_position",
+    "source": "term_qualifying_position",
+    "relation_type": "derivation",
+    "target": "term_pole_position",
+    "connection_condition": "qualifying position equals 1",
+    "description": "Pole position is the qualifying position of an entry being first.",
+    "evidence": ["ev_grid_vs_qualifying"]
+  },
+  {
+    "id": "rel_fastest_lap_derived_lap_time",
+    "source": "term_lap_time",
+    "relation_type": "derivation",
+    "target": "term_fastest_lap",
+    "connection_condition": "the within-race fastest-lap rank equals 1, which orders entries by their quickest lap time",
+    "description": "The fastest lap of a race is the minimum lap time among the entries of that race.",
+    "evidence": ["ev_coverage_windows"]
+  },
+  {
+    "id": "rel_constructor_race_points_derived_points",
+    "source": "term_championship_points",
+    "relation_type": "derivation",
+    "target": "term_constructor_race_points",
+    "connection_condition": "constructorResults shares raceId and constructorId with results",
+    "description": "Constructor race points are an aggregation of the points credited to that constructor's drivers in the race, subject to the scoring rules of the season in force.",
+    "evidence": ["ev_constructor_points_rule"]
+  },
+  {
+    "id": "rel_driver_full_name_derived_driver",
+    "source": "term_driver",
+    "relation_type": "derivation",
+    "target": "term_driver_full_name",
+    "connection_condition": "drivers.forename and drivers.surname",
+    "description": "A driver's full name is formed by joining the recorded given name and family name.",
+    "evidence": ["ev_identifier_population"]
+  },
+  {
+    "id": "rel_driver_reference_equiv_driver",
+    "source": "term_driver_reference",
+    "relation_type": "equivalence",
+    "target": "term_driver",
+    "connection_condition": "drivers.driverRef and drivers.code identify the same drivers as drivers.driverId",
+    "description": "The reference string and the short code express the same driver identity as the numeric surrogate key, and are alternative ways to locate the same driver.",
+    "evidence": ["ev_identifier_population"]
+  },
+  {
+    "id": "rel_shared_drive_assoc_race_result",
+    "source": "term_shared_drive",
+    "relation_type": "association",
+    "target": "term_race_result",
+    "connection_condition": "two entries of the same race share a driverId, or share a positionOrder",
+    "description": "A shared drive is a property of race entries: one car credited to more than one driver in the same race.",
+    "evidence": ["ev_results_grain", "ev_shared_wins"]
+  },
+  {
+    "id": "rel_car_number_assoc_driver",
+    "source": "term_car_number",
+    "relation_type": "association",
+    "target": "term_driver",
+    "connection_condition": "results.number and drivers.number both describe a car number for a driver",
+    "description": "The car number carried in a race is associated with a driver but is not a stable driver identity, since it is assigned per entry and differs from the driver's registered number.",
+    "evidence": ["ev_identifier_population"]
+  },
+  {
+    "id": "rel_driver_country",
+    "source": "term_driver",
+    "relation_type": "association",
+    "target": "term_country",
+    "connection_condition": "drivers.nationality",
+    "description": "A driver carries a sporting nationality recorded as a country name string rather than as a reference to a country entity.",
+    "evidence": ["ev_geography"]
+  },
+  {
+    "id": "rel_constructor_country",
+    "source": "term_constructor",
+    "relation_type": "association",
+    "target": "term_country",
+    "connection_condition": "constructors.nationality",
+    "description": "A constructor carries a sporting nationality recorded as a country name string rather than as a reference to a country entity.",
+    "evidence": ["ev_geography"]
+  },
+  {
+    "id": "rel_circuit_country",
+    "source": "term_circuit",
+    "relation_type": "association",
+    "target": "term_country",
+    "connection_condition": "circuits.country",
+    "description": "A circuit carries the country of its physical location, recorded as a name string.",
+    "evidence": ["ev_geography"]
+  },
+  {
+    "id": "rel_driverstanding_assoc_driver",
+    "source": "term_driver_standing",
+    "relation_type": "association",
+    "target": "term_driver",
+    "connection_condition": "driverStandings.driverId corresponds to drivers.driverId",
+    "description": "A driver standing describes the championship position of one driver.",
+    "evidence": ["ev_standings_scope"]
+  },
+  {
+    "id": "rel_constructorstanding_assoc_constructor",
+    "source": "term_constructor_standing",
+    "relation_type": "association",
+    "target": "term_constructor",
+    "connection_condition": "constructorStandings.constructorId corresponds to constructors.constructorId",
+    "description": "A constructor standing describes the championship position of one constructor.",
+    "evidence": ["ev_standings_scope"]
+  },
+  {
+    "id": "rel_grid_assoc_qualifying_position",
+    "source": "term_grid_position",
+    "relation_type": "association",
+    "target": "term_qualifying_position",
+    "connection_condition": "results.grid and qualifying.position for the same race and driver coincide in most but not all entries",
+    "description": "The starting grid is usually set by the qualifying position but can be altered afterwards, so the two are related rather than equivalent.",
+    "evidence": ["ev_grid_vs_qualifying"]
+  },
+  {
+    "id": "rel_finishing_position_assoc_classification_order",
+    "source": "term_finishing_position",
+    "relation_type": "association",
+    "target": "term_classification_order",
+    "connection_condition": "results.position and results.positionOrder describe the same entry, but positionOrder is defined for every entry while position is absent for non-classified ones",
+    "description": "The classified finishing position is a restricted view of the classification order, which additionally ranks the entries that were not classified.",
+    "evidence": ["ev_position_codes"]
+  },
+  {
+    "id": "rel_win_assoc_pole_position",
+    "source": "term_pole_position",
+    "relation_type": "association",
+    "target": "term_win",
+    "connection_condition": "results.grid and qualifying.position relate an entry's pole with the same entry's classification order",
+    "description": "Pole position and a win are analytically paired when studying whether front-of-grid starts convert into victories, but neither is derived from the other.",
+    "evidence": ["ev_grid_vs_qualifying"]
+  }
+]

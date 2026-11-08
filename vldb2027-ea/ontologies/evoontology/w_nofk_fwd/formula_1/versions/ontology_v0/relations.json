@@ -1,0 +1,487 @@
+[
+  {
+    "id": "rel_circuit_composed_of_races",
+    "source": "term_circuit",
+    "relation_type": "composition",
+    "target": "term_race",
+    "connection_condition": "races.circuitId refers to circuits.circuitId",
+    "description": "A circuit is the venue of a race; the race record carries no independent venue information and is meaningless without its circuit.",
+    "evidence": [
+      "ev_schema_inventory",
+      "ev_referential_integrity"
+    ]
+  },
+  {
+    "id": "rel_season_composed_of_races",
+    "source": "term_season",
+    "relation_type": "composition",
+    "target": "term_race",
+    "connection_condition": "races.year refers to seasons.year",
+    "description": "A season is composed of the races of one championship year.",
+    "evidence": [
+      "ev_seasons_coverage",
+      "ev_referential_integrity"
+    ]
+  },
+  {
+    "id": "rel_race_composed_of_results",
+    "source": "term_race",
+    "relation_type": "composition",
+    "target": "term_race_result",
+    "connection_condition": "results.raceId refers to races.raceId",
+    "description": "A race is composed of its result entries; an entry cannot exist without the race it belongs to.",
+    "evidence": [
+      "ev_schema_inventory",
+      "ev_referential_integrity"
+    ]
+  },
+  {
+    "id": "rel_driver_composed_of_results",
+    "source": "term_driver",
+    "relation_type": "composition",
+    "target": "term_race_result",
+    "connection_condition": "results.driverId refers to drivers.driverId",
+    "description": "A driver's career record is composed of result entries, one per race entered.",
+    "evidence": [
+      "ev_referential_integrity"
+    ]
+  },
+  {
+    "id": "rel_constructor_composed_of_results",
+    "source": "term_constructor",
+    "relation_type": "composition",
+    "target": "term_race_result",
+    "connection_condition": "results.constructorId refers to constructors.constructorId",
+    "description": "A constructor's record is composed of the result entries of its cars, one per driver per race.",
+    "evidence": [
+      "ev_referential_integrity"
+    ]
+  },
+  {
+    "id": "rel_race_composed_of_lap_records",
+    "source": "term_race",
+    "relation_type": "composition",
+    "target": "term_lap_time_record",
+    "connection_condition": "lapTimes.raceId refers to races.raceId",
+    "description": "A race is composed of the individual lap records set during it.",
+    "evidence": [
+      "ev_schema_inventory",
+      "ev_referential_integrity"
+    ]
+  },
+  {
+    "id": "rel_driver_composed_of_lap_records",
+    "source": "term_driver",
+    "relation_type": "composition",
+    "target": "term_lap_time_record",
+    "connection_condition": "lapTimes.driverId refers to drivers.driverId",
+    "description": "A driver's lap records are composed into their per-race pacing profile.",
+    "evidence": [
+      "ev_laptimes_time_ms"
+    ]
+  },
+  {
+    "id": "rel_race_composed_of_qualifying",
+    "source": "term_race",
+    "relation_type": "composition",
+    "target": "term_qualifying_result",
+    "connection_condition": "qualifying.raceId refers to races.raceId",
+    "description": "A race weekend is composed of its qualifying results, recorded for the drivers that took part.",
+    "evidence": [
+      "ev_qualifying_time_format",
+      "ev_referential_integrity"
+    ]
+  },
+  {
+    "id": "rel_driver_composed_of_qualifying",
+    "source": "term_driver",
+    "relation_type": "composition",
+    "target": "term_qualifying_result",
+    "connection_condition": "qualifying.driverId refers to drivers.driverId",
+    "description": "A driver's qualifying record is composed of one qualifying row per race weekend.",
+    "evidence": [
+      "ev_qualifying_position"
+    ]
+  },
+  {
+    "id": "rel_constructor_composed_of_qualifying",
+    "source": "term_constructor",
+    "relation_type": "composition",
+    "target": "term_qualifying_result",
+    "connection_condition": "qualifying.constructorId refers to constructors.constructorId",
+    "description": "A constructor's qualifying record is the collection of qualifying rows of its cars.",
+    "evidence": [
+      "ev_schema_inventory"
+    ]
+  },
+  {
+    "id": "rel_race_composed_of_constructor_results",
+    "source": "term_race",
+    "relation_type": "composition",
+    "target": "term_constructor_race_result",
+    "connection_condition": "constructorResults.raceId refers to races.raceId",
+    "description": "The constructor-level scoring of a race is composed of one row per constructor that took part.",
+    "evidence": [
+      "ev_constructorresults_grain"
+    ]
+  },
+  {
+    "id": "rel_constructor_composed_of_constructor_results",
+    "source": "term_constructor",
+    "relation_type": "composition",
+    "target": "term_constructor_race_result",
+    "connection_condition": "constructorResults.constructorId refers to constructors.constructorId",
+    "description": "A constructor's per-race scoring history is the composition of its constructor race results, including scoreless races.",
+    "evidence": [
+      "ev_constructorresults_grain"
+    ]
+  },
+  {
+    "id": "rel_driver_composed_of_standings",
+    "source": "term_driver",
+    "relation_type": "composition",
+    "target": "term_driver_standing",
+    "connection_condition": "driverStandings.driverId refers to drivers.driverId",
+    "description": "A driver's championship progression is the composition of their cumulative standing snapshots.",
+    "evidence": [
+      "ev_standings_cumulative"
+    ]
+  },
+  {
+    "id": "rel_constructor_composed_of_standings",
+    "source": "term_constructor",
+    "relation_type": "composition",
+    "target": "term_constructor_standing",
+    "connection_condition": "constructorStandings.constructorId refers to constructors.constructorId",
+    "description": "A constructor's championship progression is the composition of its cumulative standing snapshots.",
+    "evidence": [
+      "ev_standings_cumulative"
+    ]
+  },
+  {
+    "id": "rel_result_has_status",
+    "source": "term_race_result",
+    "relation_type": "association",
+    "target": "term_race_status",
+    "connection_condition": "results.statusId refers to status.statusId",
+    "description": "Every result entry carries exactly one outcome status explaining whether and why the driver completed the race.",
+    "evidence": [
+      "ev_status_values"
+    ]
+  },
+  {
+    "id": "rel_finisher_status_is_status",
+    "source": "term_race_status",
+    "relation_type": "hierarchy",
+    "target": "term_finisher_status",
+    "connection_condition": "the finisher category selects the single status value 'Finished' from the status vocabulary",
+    "description": "Finisher status is a restricted kind of race status: its value set is the subset of status values that denote a classified finish.",
+    "evidence": [
+      "ev_status_values"
+    ]
+  },
+  {
+    "id": "rel_season_champion_is_driver",
+    "source": "term_driver",
+    "relation_type": "hierarchy",
+    "target": "term_season_champion",
+    "connection_condition": "the champion is a row of the drivers table identified through the standings",
+    "description": "A season champion is a specific driver: the one who holds championship position 1 after the final round of a season.",
+    "evidence": [
+      "ev_standings_cumulative"
+    ]
+  },
+  {
+    "id": "rel_driver_nationality_assoc",
+    "source": "term_driver",
+    "relation_type": "association",
+    "target": "term_driver_nationality",
+    "connection_condition": "drivers.nationality",
+    "description": "Each driver carries exactly one sporting nationality expressed as a country adjective.",
+    "evidence": [
+      "ev_drivers_nationality_vocabulary"
+    ]
+  },
+  {
+    "id": "rel_constructor_nationality_assoc",
+    "source": "term_constructor",
+    "relation_type": "association",
+    "target": "term_constructor_nationality",
+    "connection_condition": "constructors.nationality",
+    "description": "Each constructor carries exactly one sporting nationality expressed with the same country-adjective vocabulary used for drivers.",
+    "evidence": [
+      "ev_constructors_nationality_japanese"
+    ]
+  },
+  {
+    "id": "rel_driver_constructor_assoc",
+    "source": "term_driver",
+    "relation_type": "association",
+    "target": "term_constructor",
+    "connection_condition": "results.driverId and results.constructorId appear on the same result entry; qualifying also carries both identifiers",
+    "description": "Drivers compete for constructors; the pairing is recorded per result entry rather than as a direct team membership reference.",
+    "evidence": [
+      "ev_schema_inventory"
+    ]
+  },
+  {
+    "id": "rel_circuit_country_assoc",
+    "source": "term_circuit",
+    "relation_type": "association",
+    "target": "term_circuit_country",
+    "connection_condition": "circuits.country",
+    "description": "Each circuit carries the country in which it is physically located.",
+    "evidence": [
+      "ev_circuits_country_vs_race_name"
+    ]
+  },
+  {
+    "id": "rel_circuit_coordinates_assoc",
+    "source": "term_circuit",
+    "relation_type": "association",
+    "target": "term_circuit_coordinates",
+    "connection_condition": "circuits.lat together with circuits.lng",
+    "description": "Each circuit carries a latitude and longitude pair describing its geographic position.",
+    "evidence": [
+      "ev_circuit_coordinates"
+    ]
+  },
+  {
+    "id": "rel_circuit_location_assoc",
+    "source": "term_circuit",
+    "relation_type": "association",
+    "target": "term_circuit_location",
+    "connection_condition": "circuits.location",
+    "description": "Each circuit carries the locality in which it is situated.",
+    "evidence": [
+      "ev_circuit_coordinates"
+    ]
+  },
+  {
+    "id": "rel_circuit_ref_assoc",
+    "source": "term_circuit",
+    "relation_type": "association",
+    "target": "term_circuit_reference_name",
+    "connection_condition": "circuits.circuitRef",
+    "description": "Each circuit carries a short stable reference slug alongside its full name.",
+    "evidence": [
+      "ev_reference_name_columns"
+    ]
+  },
+  {
+    "id": "rel_driver_ref_assoc",
+    "source": "term_driver",
+    "relation_type": "association",
+    "target": "term_driver_reference_name",
+    "connection_condition": "drivers.driverRef",
+    "description": "Each driver carries a short stable reference slug alongside the personal name.",
+    "evidence": [
+      "ev_reference_name_columns"
+    ]
+  },
+  {
+    "id": "rel_driver_code_assoc",
+    "source": "term_driver",
+    "relation_type": "association",
+    "target": "term_driver_code",
+    "connection_condition": "drivers.code",
+    "description": "Drivers of the modern era carry a three-letter abbreviated code in addition to the reference slug.",
+    "evidence": [
+      "ev_driver_code_era"
+    ]
+  },
+  {
+    "id": "rel_constructor_ref_assoc",
+    "source": "term_constructor",
+    "relation_type": "association",
+    "target": "term_constructor_reference_name",
+    "connection_condition": "constructors.constructorRef",
+    "description": "Each constructor carries a short stable reference slug alongside its team name.",
+    "evidence": [
+      "ev_reference_name_columns"
+    ]
+  },
+  {
+    "id": "rel_reference_url_assoc",
+    "source": "term_constructor",
+    "relation_type": "association",
+    "target": "term_reference_url",
+    "connection_condition": "constructors.url, circuits.url, races.url and seasons.url all hold reference links",
+    "description": "Entities in the schema carry an external reference link; for a constructor it is the team website reference.",
+    "evidence": [
+      "ev_urls"
+    ]
+  },
+  {
+    "id": "rel_nationality_vocabulary_equivalence",
+    "source": "term_driver_nationality",
+    "relation_type": "equivalence",
+    "target": "term_constructor_nationality",
+    "connection_condition": "drivers.nationality and constructors.nationality both store country adjectives such as 'Japanese', 'German', 'French', 'Dutch'",
+    "description": "Driver and constructor nationality are the same business concept expressed over the same value domain in two different tables, so a nationality filter learned on one side carries to the other.",
+    "evidence": [
+      "ev_drivers_nationality_vocabulary",
+      "ev_constructors_nationality_japanese"
+    ]
+  },
+  {
+    "id": "rel_points_equivalence",
+    "source": "term_points",
+    "relation_type": "equivalence",
+    "target": "term_standing_points",
+    "connection_condition": "results.points and constructorResults.points hold per-race scores; driverStandings.points and constructorStandings.points hold the running totals of the same concept",
+    "description": "Per-race points and standing points express the same business concept of championship points at two different grains; the standing value is the running total of the per-race values.",
+    "evidence": [
+      "ev_points_fractional",
+      "ev_standings_cumulative"
+    ]
+  },
+  {
+    "id": "rel_fastest_lap_time_equivalence",
+    "source": "term_fastest_lap_time",
+    "relation_type": "equivalence",
+    "target": "term_lap_time",
+    "connection_condition": "results.fastestLapTime holds the quickest lap of a driver in a race; the same value is the minimum of lapTimes.milliseconds for that driver and race",
+    "description": "The precomputed fastest lap time and the minimum of the per-lap times measure the same thing at different granularity, so either representation can ground a fastest-lap question.",
+    "evidence": [
+      "ev_rank_fastestlap_semantics",
+      "ev_laptimes_time_ms"
+    ]
+  },
+  {
+    "id": "rel_driver_full_name_derived",
+    "source": "term_driver",
+    "relation_type": "derivation",
+    "target": "term_driver_full_name",
+    "connection_condition": "drivers.forename joined with drivers.surname",
+    "description": "The driver full name is derived by joining the forename and the surname.",
+    "evidence": [
+      "ev_reference_name_columns"
+    ]
+  },
+  {
+    "id": "rel_driver_age_derived",
+    "source": "term_driver_birth_date",
+    "relation_type": "derivation",
+    "target": "term_driver_age",
+    "connection_condition": "drivers.dob compared with a reference date, or simply the year component of dob for birth-year questions",
+    "description": "Driver age is derived from the date of birth; the oldest driver is the one with the earliest birth date and the youngest the one with the latest.",
+    "evidence": [
+      "ev_dob_range"
+    ]
+  },
+  {
+    "id": "rel_race_completion_derived",
+    "source": "term_race_finish_time",
+    "relation_type": "derivation",
+    "target": "term_race_completion",
+    "connection_condition": "a result entry counts as completed exactly when its finish time is present",
+    "description": "Race completion is derived from the presence of a race finish time on the result entry.",
+    "evidence": [
+      "ev_results_time_formats",
+      "ev_positionText_semantics"
+    ]
+  },
+  {
+    "id": "rel_race_completion_rate_derived",
+    "source": "term_race_completion",
+    "relation_type": "derivation",
+    "target": "term_race_completion_rate",
+    "connection_condition": "count of completed entries divided by the count of all entries in the same population",
+    "description": "The race completion rate is derived as the share of completed entries within the population of interest.",
+    "evidence": [
+      "ev_results_time_formats"
+    ]
+  },
+  {
+    "id": "rel_race_winner_derived",
+    "source": "term_race_result",
+    "relation_type": "derivation",
+    "target": "term_race_winner",
+    "connection_condition": "the entry with classification order 1, equivalently the only entry whose finish time is an absolute race duration",
+    "description": "The race winner is derived from the result entries of the race as the entry classified first.",
+    "evidence": [
+      "ev_results_time_winner_only_two_colons",
+      "ev_positionText_semantics"
+    ]
+  },
+  {
+    "id": "rel_wins_derived",
+    "source": "term_race_winner",
+    "relation_type": "derivation",
+    "target": "term_wins",
+    "connection_condition": "count of races in which the driver or constructor is the winner, or the cumulative wins counter in the standings tables",
+    "description": "Wins are derived by counting the races won, which the standings tables also expose as a running counter.",
+    "evidence": [
+      "ev_wins_verification"
+    ]
+  },
+  {
+    "id": "rel_season_champion_derived",
+    "source": "term_driver_standing",
+    "relation_type": "derivation",
+    "target": "term_season_champion",
+    "connection_condition": "the row with championship position 1 at the highest round of the season; the constructor analogue uses constructorStandings",
+    "description": "The season champion is derived from the standings as the leader after the final round of the season.",
+    "evidence": [
+      "ev_standings_cumulative"
+    ]
+  },
+  {
+    "id": "rel_fastest_lap_time_derived",
+    "source": "term_lap_time",
+    "relation_type": "derivation",
+    "target": "term_fastest_lap_time",
+    "connection_condition": "minimum of lapTimes.milliseconds for a driver within one race",
+    "description": "A driver's fastest lap time in a race is derived as the minimum of that driver's lap times in the race.",
+    "evidence": [
+      "ev_laptimes_time_ms",
+      "ev_rank_fastestlap_semantics"
+    ]
+  },
+  {
+    "id": "rel_fastest_lap_number_derived",
+    "source": "term_fastest_lap_time",
+    "relation_type": "derivation",
+    "target": "term_fastest_lap_lap_number",
+    "connection_condition": "the lap ordinal at which the minimum lap time of the driver in the race occurs",
+    "description": "The fastest lap number is derived from the fastest lap time as the lap on which that minimum was set.",
+    "evidence": [
+      "ev_rank_fastestlap_semantics"
+    ]
+  },
+  {
+    "id": "rel_fastest_lap_rank_derived",
+    "source": "term_fastest_lap_time",
+    "relation_type": "derivation",
+    "target": "term_fastest_lap_rank",
+    "connection_condition": "ordering of the fastest lap times of all drivers within one race",
+    "description": "The fastest lap rank is derived by ordering the fastest lap times of a race; rank 1 identifies the driver with the quickest lap.",
+    "evidence": [
+      "ev_rank_fastestlap_semantics"
+    ]
+  },
+  {
+    "id": "rel_standing_points_derived",
+    "source": "term_points",
+    "relation_type": "derivation",
+    "target": "term_standing_points",
+    "connection_condition": "running total of per-race points across the races of a season up to and including the current race",
+    "description": "Standing points are derived as the cumulative sum of per-race points across a season.",
+    "evidence": [
+      "ev_standings_cumulative",
+      "ev_points_fractional"
+    ]
+  },
+  {
+    "id": "rel_championship_position_derived",
+    "source": "term_standing_points",
+    "relation_type": "derivation",
+    "target": "term_championship_position",
+    "connection_condition": "dense ranking of the cumulative standing points within a race snapshot",
+    "description": "The championship position is derived by ranking the cumulative standing points of the competitors at that point of the season.",
+    "evidence": [
+      "ev_standings_cumulative"
+    ]
+  }
+]

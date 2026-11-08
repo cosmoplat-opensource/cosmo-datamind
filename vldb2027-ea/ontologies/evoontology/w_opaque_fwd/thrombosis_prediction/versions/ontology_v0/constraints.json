@@ -1,0 +1,604 @@
+[
+  {
+    "id": "c_sex_coding",
+    "target": "term_sex",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "male",
+      "female",
+      "sex",
+      "gender",
+      "male patient",
+      "female patient",
+      "M",
+      "F"
+    ],
+    "severity": "block",
+    "scope": "Filtering or grouping patients by sex",
+    "confidence": "high",
+    "description": "Sex is coded 'M' for male and 'F' for female. Thirteen of 1238 rows are blank and mean unknown, not a third category; exclude them rather than treating them as a value.",
+    "evidence": [
+      "ev_003_sex"
+    ]
+  },
+  {
+    "id": "c_age_definition",
+    "target": "term_age",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "age",
+      "how old",
+      "years old",
+      "born",
+      "birth year",
+      "younger than",
+      "older than",
+      "average age"
+    ],
+    "severity": "block",
+    "scope": "Any question asking for patient age or filtering by age",
+    "confidence": "high",
+    "description": "Age is not stored. Compute it as the current calendar year minus the year of birth taken from the birthday column. Because it uses the current date, the same patient's computed age changes over time. Patients with a null birthday have no computable age.",
+    "evidence": [
+      "ev_028_age_derivation",
+      "ev_004_birthday"
+    ]
+  },
+  {
+    "id": "c_inpatient_coding",
+    "target": "term_inpatient_status",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "inpatient",
+      "in-patient",
+      "outpatient",
+      "hospital",
+      "admission",
+      "hospitalized"
+    ],
+    "severity": "block",
+    "scope": "Comparing inpatient and outpatient groups",
+    "confidence": "high",
+    "description": "The patient status column stores '+' for inpatient and '-' for outpatient. Blank values (34 rows) are unknown and '+(' (3 rows) is an inpatient variant; treat blank as unknown rather than as a separate group.",
+    "evidence": [
+      "ev_005_inpatient_status"
+    ]
+  },
+  {
+    "id": "c_diagnosis_multivalue",
+    "target": "term_patient_diagnosis",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "diagnosis",
+      "disease",
+      "diagnosed with",
+      "most common disease",
+      "SLE",
+      "RA",
+      "PSS",
+      "MCTD",
+      "APS",
+      "SjS",
+      "SJS",
+      "susp"
+    ],
+    "severity": "block",
+    "scope": "Filtering patients by a named disease or counting disease frequency",
+    "confidence": "high",
+    "description": "Diagnosis labels are free text. A single patient may carry several diseases in one comma-separated label (for example 'SLE, SJS'), labels may end with 'susp' for suspected disease, and case/encoding varies between tables ('SJS' in tab02 versus 'SjS' in tab01). Exact equality on one label therefore excludes combined entries; substring or label-splitting is needed when the question refers to a disease that may co-occur.",
+    "evidence": [
+      "ev_006_diagnosis_labels",
+      "ev_007_diagnosis_two_tables"
+    ]
+  },
+  {
+    "id": "c_diagnosis_grain",
+    "target": "term_patient_diagnosis",
+    "constraint_type": "scope",
+    "trigger_keywords": [
+      "patient diagnosis",
+      "diagnosed with",
+      "disease of patient",
+      "patient-level",
+      "examination diagnosis",
+      "visit diagnosis"
+    ],
+    "severity": "warning",
+    "scope": "Choosing between patient-level and examination-level diagnosis",
+    "confidence": "high",
+    "description": "tab02.fld008 holds one consolidated diagnosis per patient and covers all 1238 patients (1 blank). tab01.fld008 holds a diagnosis per examination, is null in 331 of 806 rows, and only resolves to a patient for 69 distinct patient IDs. Use the patient-level column when counting patients by disease; use the examination-level column only when the question is about a specific visit.",
+    "evidence": [
+      "ev_006_diagnosis_labels",
+      "ev_007_diagnosis_two_tables",
+      "ev_010_join_coverage"
+    ]
+  },
+  {
+    "id": "c_lab_grain_multiplicity",
+    "target": "term_laboratory_test",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "how many patients",
+      "number of patients",
+      "count patients",
+      "distinct",
+      "history",
+      "repeated test",
+      "average level"
+    ],
+    "severity": "block",
+    "scope": "Counting patients or averaging values across laboratory panels",
+    "confidence": "high",
+    "description": "tab03 stores one row per patient per test date, so a patient contributes many rows (1 to 226 panels, mean 46.1). Joining patient attributes to lab rows multiplies rows; count distinct patient identifiers when the question asks how many patients, and decide explicitly whether a value-level filter (for example any panel above a cutoff) or an aggregate is intended.",
+    "evidence": [
+      "ev_008_lab_grain"
+    ]
+  },
+  {
+    "id": "c_exam_join_coverage",
+    "target": "term_examination",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "examination",
+      "exam",
+      "coagulation",
+      "ANA",
+      "thrombosis level",
+      "symptom",
+      "examination date"
+    ],
+    "severity": "block",
+    "scope": "Any analysis that joins examination records to patients or laboratory panels",
+    "confidence": "high",
+    "description": "Only 69 of the 763 distinct patient identifiers in tab01 also exist in tab02, and only 20 exist in tab03; 70 of 806 examination rows join to a patient record. In addition, 36 examination rows have a null patient identifier and six patient/date pairs appear twice. Questions that combine examination attributes with patient or laboratory data therefore operate on a small intersection; report the intersection rather than assuming full coverage.",
+    "evidence": [
+      "ev_010_join_coverage",
+      "ev_009_exam_grain"
+    ]
+  },
+  {
+    "id": "c_date_format",
+    "target": "term_lab_test_date",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "date",
+      "between",
+      "before",
+      "after",
+      "year",
+      "examined between",
+      "test date"
+    ],
+    "severity": "info",
+    "scope": "All date columns in tab01, tab02 and tab03",
+    "confidence": "high",
+    "description": "Dates are stored as ISO 'YYYY-MM-DD' text, so range comparison works lexicographically and year filters can use the first four characters. Laboratory dates span 1981-01-27 to 1999-03-04 and examination dates 1989-04-18 to 1998-04-17.",
+    "evidence": [
+      "ev_030_date_ranges"
+    ]
+  },
+  {
+    "id": "c_glu_normal",
+    "target": "term_glucose",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "blood glucose",
+      "GLU",
+      "glucose",
+      "normal range",
+      "not within normal range",
+      "abnormal glucose",
+      "high blood sugar"
+    ],
+    "severity": "block",
+    "scope": "Interpreting glucose as normal or abnormal",
+    "confidence": "high",
+    "description": "A glucose value is treated as not within the normal range when it is at or above 180; values below 180 are within the normal range. Observed values span 62 to 499, with 129 of 1705 measurements at or above 180.",
+    "evidence": [
+      "ev_013_glucose"
+    ]
+  },
+  {
+    "id": "c_tcho_normal",
+    "target": "term_total_cholesterol",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "total cholesterol",
+      "T-CHO",
+      "cholesterol",
+      "normal range",
+      "high cholesterol",
+      "within normal range"
+    ],
+    "severity": "block",
+    "scope": "Interpreting total cholesterol as normal or high",
+    "confidence": "high",
+    "description": "Total cholesterol is high when at or above 250 and within the normal range when below 250. Observed values span 37 to 568, with 1545 of 10664 measurements at or above 250.",
+    "evidence": [
+      "ev_014_cholesterol"
+    ]
+  },
+  {
+    "id": "c_cpk_normal",
+    "target": "term_creatine_phosphokinase",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "creatinine phosphokinase",
+      "creatine phosphokinase",
+      "CPK",
+      "CK",
+      "normal range",
+      "beyond the normal range"
+    ],
+    "severity": "block",
+    "scope": "Interpreting CPK as normal or abnormal",
+    "confidence": "high",
+    "description": "CPK is within the normal range when below 250 and beyond the normal range when at or above 250. Observed values span 0 to 10835, with 288 of 5016 measurements at or above 250.",
+    "evidence": [
+      "ev_016_cpk"
+    ]
+  },
+  {
+    "id": "c_gpt_normal",
+    "target": "term_alt_gpt",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "GPT",
+      "ALT",
+      "normal range",
+      "exceed the normal range",
+      "liver enzyme",
+      "transaminase"
+    ],
+    "severity": "block",
+    "scope": "Interpreting GPT/ALT as normal or elevated",
+    "confidence": "high",
+    "description": "The upper limit used in this workload is 60 U/L: values at or above 60 exceed the normal range. A question may state its own numeric cutoff (for example greater than 30), which then replaces the general upper limit. Observed values span 1 to 4780, with 890 of 11274 measurements at or above 60.",
+    "evidence": [
+      "ev_012_gpt"
+    ]
+  },
+  {
+    "id": "c_creatinine_abnormal",
+    "target": "term_creatinine",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "creatinine",
+      "abnormal creatinine",
+      "renal",
+      "kidney",
+      "creatinine level"
+    ],
+    "severity": "block",
+    "scope": "Interpreting creatinine as normal or abnormal",
+    "confidence": "high",
+    "description": "Creatinine is abnormal when at or above 1.5. Observed values span 0.1 to 17.1, with 361 of 11253 measurements at or above 1.5.",
+    "evidence": [
+      "ev_015_creatinine"
+    ]
+  },
+  {
+    "id": "c_un_borderline",
+    "target": "term_urea_nitrogen",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "urea nitrogen",
+      "UN",
+      "BUN",
+      "borderline",
+      "passing",
+      "just within the borderline"
+    ],
+    "severity": "warning",
+    "scope": "Interpreting the urea nitrogen borderline value",
+    "confidence": "medium",
+    "description": "The workload treats the value 29 as 'just within the borderline of passing' for urea nitrogen. Observed values span 0 to 152 and 44 measurements equal exactly 29.",
+    "evidence": [
+      "ev_017_urea_nitrogen"
+    ]
+  },
+  {
+    "id": "c_albumin_low",
+    "target": "term_albumin",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "albumin",
+      "ALB",
+      "blood albumin",
+      "low albumin",
+      "albumin level"
+    ],
+    "severity": "warning",
+    "scope": "Comparing albumin values",
+    "confidence": "medium",
+    "description": "Albumin is expressed in g/dL over the observed range 1.0 to 5.8. A question may state its own cutoff (for example ALB less than 4); 3287 of 11068 measurements are below 4. Do not confuse albumin with the adjacent total protein column, which has a different range.",
+    "evidence": [
+      "ev_011_albumin"
+    ]
+  },
+  {
+    "id": "c_igg_normal",
+    "target": "term_igg",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "IgG",
+      "immunoglobulin G",
+      "normal Ig G",
+      "normal immunoglobulin",
+      "Ig G level"
+    ],
+    "severity": "block",
+    "scope": "Interpreting IgG as normal or abnormal",
+    "confidence": "high",
+    "description": "IgG is normal when strictly above 900 and strictly below 2000. Observed values span 3 to 6510, and 1764 of 2680 measurements fall inside that open interval.",
+    "evidence": [
+      "ev_019_igg"
+    ]
+  },
+  {
+    "id": "c_igm_normal",
+    "target": "term_igm",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "IgM",
+      "immunoglobulin M",
+      "abnormal Ig M",
+      "Ig M level",
+      "normal immunoglobulin"
+    ],
+    "severity": "block",
+    "scope": "Interpreting IgM as normal or abnormal",
+    "confidence": "high",
+    "description": "IgM is normal between 40 and 400 inclusive; it is abnormal when at or below 40 or at or above 400. Observed values span 0 to 1573, with 208 of 2678 measurements abnormal.",
+    "evidence": [
+      "ev_020_igm"
+    ]
+  },
+  {
+    "id": "c_antibody_encoding_scl70",
+    "target": "term_anti_scl70",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "anti-scl70",
+      "Scl-70",
+      "normal anti-scl70",
+      "negative",
+      "antibody titer"
+    ],
+    "severity": "block",
+    "scope": "Interpreting anti-Scl70 results",
+    "confidence": "high",
+    "description": "Anti-Scl70 values are text. 'negative' and '0' mean a negative (normal) result; numeric strings such as '1', '4' or '16' are positive titers. The column never contains '-' or '+-'. Null means the test was not performed.",
+    "evidence": [
+      "ev_022_antibodies"
+    ]
+  },
+  {
+    "id": "c_antibody_encoding_ssb",
+    "target": "term_anti_ssb",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "anti-SSB",
+      "SS-B",
+      "normal anti-SSB",
+      "negative",
+      "antibody titer"
+    ],
+    "severity": "block",
+    "scope": "Interpreting anti-SSB results",
+    "confidence": "high",
+    "description": "Anti-SSB values are text. 'negative' and '0' mean a negative (normal) result; numeric strings such as '1', '2', '8' or '32' are positive titers. The column never contains '-' or '+-'. Null means the test was not performed.",
+    "evidence": [
+      "ev_022_antibodies"
+    ]
+  },
+  {
+    "id": "c_antibody_encoding_centromere",
+    "target": "term_anti_centromere",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "anti-centromere",
+      "centromere antibody",
+      "normal anti-centromere",
+      "negative",
+      "antibody titer"
+    ],
+    "severity": "block",
+    "scope": "Interpreting anti-centromere results",
+    "confidence": "high",
+    "description": "Anti-centromere values are text. 'negative' and '0' mean a negative (normal) result; the column contains only these two values among 15 non-null results. The column never contains '-' or '+-', so filters written with those codes match nothing. Null means the test was not performed.",
+    "evidence": [
+      "ev_022_antibodies"
+    ]
+  },
+  {
+    "id": "c_crp_abnormal",
+    "target": "term_c_reactive_protein",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "C-reactive protein",
+      "CRP",
+      "abnormal CRP",
+      "positive CRP",
+      "inflammation"
+    ],
+    "severity": "block",
+    "scope": "Interpreting CRP as abnormal",
+    "confidence": "high",
+    "description": "CRP is abnormal when the qualitative result is '+'. Normal or negative results appear as '-' or as thresholds such as '<0.2' and '<0.3'; numeric strings such as '0.6' are quantitative values. The same column mixes all three encodings, so compare against the exact stored string used by the question.",
+    "evidence": [
+      "ev_021_crp"
+    ]
+  },
+  {
+    "id": "c_thrombosis_level_enum",
+    "target": "term_thrombosis_level",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "thrombosis level",
+      "degree of thrombosis",
+      "thrombosis grade",
+      "level 2"
+    ],
+    "severity": "block",
+    "scope": "Filtering on thrombosis level",
+    "confidence": "high",
+    "description": "Thrombosis level is an integer from 0 to 3 where 0 means no recorded thrombosis and higher values mean increasing degree. Distribution: 0=726, 1=57, 2=18, 3=5 examination records.",
+    "evidence": [
+      "ev_024_thrombosis_level"
+    ]
+  },
+  {
+    "id": "c_coagulation_flags",
+    "target": "term_coagulation_degree",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "degree of coagulation",
+      "coagulation",
+      "positive measure",
+      "positive degree of coagulation",
+      "coagulation flag"
+    ],
+    "severity": "block",
+    "scope": "Interpreting coagulation-related examination flags",
+    "confidence": "high",
+    "description": "Three adjacent examination columns (fld009, fld010, fld011) hold '+', '-' or null. '+' means the finding is present, '-' means absent, and null means not recorded. A 'positive degree of coagulation' is satisfied when any of the three columns is '+'. 75 examination rows and 74 distinct patients satisfy this.",
+    "evidence": [
+      "ev_025_coagulation_flags"
+    ]
+  },
+  {
+    "id": "c_symptom_text",
+    "target": "term_symptom_manifestation",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "symptoms",
+      "have symptoms",
+      "no symptom",
+      "does not have any symptom",
+      "manifestation"
+    ],
+    "severity": "block",
+    "scope": "Determining whether a patient has symptoms",
+    "confidence": "high",
+    "description": "Symptoms are recorded as free text in tab01.fld012. A non-null value means symptoms were recorded; a null value means no symptom was recorded. Only 80 of 806 examination rows carry a symptom text, and the column exists only at examination level, so patient-level linkage is limited by the examination join coverage.",
+    "evidence": [
+      "ev_026_symptoms",
+      "ev_010_join_coverage"
+    ]
+  },
+  {
+    "id": "c_ana_pattern_enum",
+    "target": "term_ana_pattern",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "ANA pattern",
+      "antinuclear antibody pattern",
+      "pattern S",
+      "only S",
+      "ANA"
+    ],
+    "severity": "block",
+    "scope": "Filtering examinations by ANA pattern",
+    "confidence": "high",
+    "description": "ANA pattern is a categorical string of one or more letter codes (S, P, D, N) joined by commas or dots, with occasional lowercase. 'Only S' means the stored pattern is exactly 'S', not a combination such as 'P,S' or 'S,P'. The dominant values are 'S'=252, 'P'=178 and 'P,S'=89.",
+    "evidence": [
+      "ev_023_ana"
+    ]
+  },
+  {
+    "id": "c_ana_titer_values",
+    "target": "term_ana_titer",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "ANA",
+      "antinuclear antibody",
+      "titer",
+      "ANA titer"
+    ],
+    "severity": "warning",
+    "scope": "Interpreting ANA titer values",
+    "confidence": "high",
+    "description": "ANA titer is numeric with observed values 0, 4, 16, 64, 256, 1024 and 4096; 0 means not detected. A titer can be present while the pattern is null (223 rows), but no pattern exists without a titer.",
+    "evidence": [
+      "ev_023_ana"
+    ]
+  },
+  {
+    "id": "c_anti_cardiolipin_isotypes",
+    "target": "term_anti_cardiolipin",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "anti-cardiolipin",
+      "anticardiolipin",
+      "aCL",
+      "cardiolipin antibody",
+      "IgM cardiolipin",
+      "IgG cardiolipin"
+    ],
+    "severity": "warning",
+    "scope": "Selecting the anti-cardiolipin column",
+    "confidence": "medium",
+    "description": "Two numeric examination columns hold anti-cardiolipin: fld003 (IgG isotype, range 0.0-2150.3) and fld004 (IgM isotype, range 0.0-187122.0, one extreme outlier). Workload reference text is internally inconsistent, sometimes naming the immunoglobulin M laboratory column instead, so the isotype named in the question must decide the column.",
+    "evidence": [
+      "ev_032_anti_cardiolipin"
+    ]
+  },
+  {
+    "id": "c_platelet_threshold",
+    "target": "term_platelet_count",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "PLT",
+      "platelet",
+      "platelet count",
+      "thrombocytosis",
+      "greater than 400"
+    ],
+    "severity": "warning",
+    "scope": "Comparing platelet counts",
+    "confidence": "high",
+    "description": "Platelet counts are integers from 5 to 5844. The workload uses a threshold of 400 for elevated platelets; 875 of 11287 measurements exceed 400.",
+    "evidence": [
+      "ev_018_platelet"
+    ]
+  },
+  {
+    "id": "c_missing_values",
+    "target": "term_laboratory_test",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "missing",
+      "not recorded",
+      "null",
+      "no data",
+      "no value"
+    ],
+    "severity": "warning",
+    "scope": "Interpreting laboratory panels",
+    "confidence": "high",
+    "description": "Laboratory coverage is sparse and uneven: 1012 of 13908 panels have all main analytes null, glucose is present on 1705 panels, IgG on 2680 and anti-Scl70 on only 28. Comparisons apply only to non-null values; null must not be treated as normal or as zero. One column (fld061) is empty in all 13908 rows.",
+    "evidence": [
+      "ev_027_missing_values"
+    ]
+  },
+  {
+    "id": "c_patient_record_date",
+    "target": "term_patient_record_date",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "data recorded",
+      "don't have data recorded",
+      "death date",
+      "date of death",
+      "record date"
+    ],
+    "severity": "warning",
+    "scope": "Questions referring to whether patient-level data was recorded",
+    "confidence": "medium",
+    "description": "tab02.fld016 is a patient-level date present for 1022 of 1238 patients. The workload uses a null value to mean 'data not recorded'. Its clinical meaning (death, discharge or last contact) cannot be established from the data: it is after fld017 for 870 of 882 patients with both dates, but laboratory panels fall after it for 100 of 244 patients.",
+    "evidence": [
+      "ev_031_patient_dates"
+    ]
+  }
+]

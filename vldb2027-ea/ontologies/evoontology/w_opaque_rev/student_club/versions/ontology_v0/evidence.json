@@ -1,0 +1,226 @@
+[
+  {
+    "id": "evidence_schema_overview",
+    "source": "student_club (sqlite, read-only)",
+    "query": "sqlite3 .tables; .schema; SELECT COUNT(*) for each table",
+    "result": "8 tables: tab01 (42 rows, event), tab02 (113 rows, major), tab03 (41877 rows, ZIP), tab04 (326 rows, attendance), tab05 (52 rows, budget), tab06 (32 rows, expense), tab07 (36 rows, income), tab08 (33 rows, member). Foreign keys: tab04 and tab05 reference tab01; tab06 references tab05 and tab08; tab07 references tab08; tab08 references tab02 and tab03.",
+    "validation_method": "read-only schema dump and per-table row counts",
+    "timestamp": "2026-11-06T00:00:00Z"
+  },
+  {
+    "id": "evidence_event_domains",
+    "source": "student_club (sqlite, read-only)",
+    "query": "SELECT fld004, COUNT(*) FROM tab01 GROUP BY fld004; SELECT fld007, COUNT(*) FROM tab01 GROUP BY fld007",
+    "result": "Types: Meeting 16, Guest Speaker 7, Game 6, Social 4, Community Service 4, Election 2, Budget 2, Registration 1. Statuses: Closed 18, Open 13, Planning 11.",
+    "validation_method": "full-table group-by on the event table",
+    "timestamp": "2026-11-06T00:00:00Z"
+  },
+  {
+    "id": "evidence_event_type_no_fundraiser",
+    "source": "student_club (sqlite, read-only)",
+    "query": "SELECT fld004, COUNT(*) FROM tab01 WHERE LOWER(fld004) LIKE '%fund%' GROUP BY fld004",
+    "result": "No rows. The complete event-type domain contains no value resembling Fundraiser.",
+    "validation_method": "case-insensitive pattern search over all 42 events plus full domain listing",
+    "timestamp": "2026-11-06T00:00:00Z"
+  },
+  {
+    "id": "evidence_event_name_duplicates",
+    "source": "student_club (sqlite, read-only)",
+    "query": "SELECT fld002, COUNT(*) FROM tab01 GROUP BY fld002 HAVING COUNT(*) > 1",
+    "result": "Community Theater 2, Football game 2, Laugh Out Loud 2. All other event names occur once.",
+    "validation_method": "group-by with duplicate filter on event name",
+    "timestamp": "2026-11-06T00:00:00Z"
+  },
+  {
+    "id": "evidence_event_date_range",
+    "source": "student_club (sqlite, read-only)",
+    "query": "SELECT MIN(fld003), MAX(fld003), COUNT(*) FROM tab01",
+    "result": "Minimum 2019-09-01T07:00:00, maximum 2020-05-05T12:00:00, 42 events.",
+    "validation_method": "aggregate over the full event table",
+    "timestamp": "2026-11-06T00:00:00Z"
+  },
+  {
+    "id": "evidence_event_status_counts",
+    "source": "student_club (sqlite, read-only)",
+    "query": "SELECT fld007, COUNT(*) FROM tab01 GROUP BY fld007",
+    "result": "Closed 18, Open 13, Planning 11.",
+    "validation_method": "full-table group-by",
+    "timestamp": "2026-11-06T00:00:00Z"
+  },
+  {
+    "id": "evidence_budget_structure",
+    "source": "student_club (sqlite, read-only)",
+    "query": "SELECT * FROM tab05 LIMIT 8; SELECT COUNT(*), COUNT(DISTINCT fld017) FROM tab05; SELECT fld020, COUNT(*), SUM(fld023), SUM(fld021) FROM tab05 GROUP BY fld020",
+    "result": "52 budget rows over 23 events, at most 4 lines per event. Category counts: Food 22, Advertisement 15, Parking 7, Speaker Gifts 7, Club T-Shirts 1. Category allocated sums: Food 2595, Advertisement 1060, Club T-Shirts 300, Speaker Gifts 175, Parking 70.",
+    "validation_method": "row counts and group-by aggregates over the full budget table",
+    "timestamp": "2026-11-06T00:00:00Z"
+  },
+  {
+    "id": "evidence_budget_arithmetic",
+    "source": "student_club (sqlite, read-only)",
+    "query": "SELECT COUNT(*) FROM tab05 WHERE ABS(fld021 + fld022 - fld023) > 0.011; SELECT COUNT(*) FROM tab05 WHERE fld023 = 0",
+    "result": "Zero rows violate spent + remaining = allocated. Zero budget lines have an allocated amount of zero. Negative remaining amounts exist (e.g. -0.199999999999999 and -23.06).",
+    "validation_method": "arithmetic consistency check across all 52 budget rows",
+    "timestamp": "2026-11-06T00:00:00Z"
+  },
+  {
+    "id": "evidence_budget_status_equivalence",
+    "source": "student_club (sqlite, read-only)",
+    "query": "SELECT COUNT(*) FROM tab05 b JOIN tab01 e ON b.fld017 = e.fld001 WHERE b.fld024 <> e.fld007; SELECT COUNT(*) FROM (SELECT fld017 FROM tab05 GROUP BY fld017 HAVING COUNT(DISTINCT fld024) > 1)",
+    "result": "0 mismatching rows out of 52; 0 events have inconsistent status across their budget rows.",
+    "validation_method": "join-based comparison of the two status columns",
+    "timestamp": "2026-11-06T00:00:00Z"
+  },
+  {
+    "id": "evidence_budget_coverage",
+    "source": "student_club (sqlite, read-only)",
+    "query": "SELECT COUNT(*) FROM tab01 e WHERE NOT EXISTS (SELECT 1 FROM tab05 b WHERE b.fld017 = e.fld001); SELECT COUNT(DISTINCT b.fld017) FROM tab05 b JOIN tab01 e ON b.fld017 = e.fld001 WHERE e.fld007 = 'Closed'",
+    "result": "19 events have no budget rows. 18 events are Closed, and only 10 of them have budget rows.",
+    "validation_method": "anti-join and status-conditioned distinct count",
+    "timestamp": "2026-11-06T00:00:00Z"
+  },
+  {
+    "id": "evidence_budget_categories",
+    "source": "student_club (sqlite, read-only)",
+    "query": "SELECT fld020, COUNT(*) FROM tab05 GROUP BY fld020",
+    "result": "Food 22, Advertisement 15, Parking 7, Speaker Gifts 7, Club T-Shirts 1.",
+    "validation_method": "full-table group-by",
+    "timestamp": "2026-11-06T00:00:00Z"
+  },
+  {
+    "id": "evidence_ad_budget",
+    "source": "student_club (sqlite, read-only)",
+    "query": "SELECT ev.fld002, SUM(b.fld023), SUM(b.fld021) FROM tab05 b JOIN tab01 ev ON b.fld017 = ev.fld001 WHERE b.fld020 = 'Advertisement' AND ev.fld002 IN ('Yearly Kickoff','October Meeting') GROUP BY ev.fld002",
+    "result": "Yearly Kickoff: allocated 150, spent 122.06. October Meeting: allocated 55, spent 54.25.",
+    "validation_method": "join and grouped aggregation for a specific category and event pair",
+    "timestamp": "2026-11-06T00:00:00Z"
+  },
+  {
+    "id": "evidence_expense_date_format",
+    "source": "student_club (sqlite, read-only)",
+    "query": "SELECT MIN(fld027), MAX(fld027), SUM(LENGTH(fld027) <> 10) FROM tab06",
+    "result": "Minimum 2019-08-20, maximum 2019-11-19, 0 rows with a length other than 10. All values are year-month-day dates.",
+    "validation_method": "range and format-length check over all 32 expenses",
+    "timestamp": "2026-11-06T00:00:00Z"
+  },
+  {
+    "id": "evidence_expense_descriptions",
+    "source": "student_club (sqlite, read-only)",
+    "query": "SELECT fld026, COUNT(*) FROM tab06 GROUP BY fld026",
+    "result": "12 distinct descriptions: Pizza 7, Posters 6, Water, chips, cookies 5, Parking 3, Water, Cookies 3, Travel Mug 2, Alumni Glass 1, Bakery - Donuts, muffins 1, Club shirts 1, Post Cards, Posters 1, Water, Veggie tray, supplies 1, Water, cookies, chips 1.",
+    "validation_method": "full-table group-by on the description column",
+    "timestamp": "2026-11-06T00:00:00Z"
+  },
+  {
+    "id": "evidence_expense_cost_stats",
+    "source": "student_club (sqlite, read-only)",
+    "query": "SELECT MIN(fld028), MAX(fld028), AVG(fld028), COUNT(*) FROM tab06",
+    "result": "Minimum 6.0, maximum 295.12, mean 65.1890625, 32 expense records.",
+    "validation_method": "aggregate over the full expense table",
+    "timestamp": "2026-11-06T00:00:00Z"
+  },
+  {
+    "id": "evidence_expense_approval",
+    "source": "student_club (sqlite, read-only)",
+    "query": "SELECT fld029, COUNT(*) FROM tab06 GROUP BY fld029",
+    "result": "true 31, empty 1. The single empty approval row is a Posters expense costing 54.25.",
+    "validation_method": "full-table group-by on the approval column",
+    "timestamp": "2026-11-06T00:00:00Z"
+  },
+  {
+    "id": "evidence_expense_member_coverage",
+    "source": "student_club (sqlite, read-only)",
+    "query": "SELECT e.fld018, m.fld035, m.fld036, COUNT(*), SUM(e.fld028) FROM tab06 e JOIN tab08 m ON e.fld018 = m.fld034 GROUP BY e.fld018",
+    "result": "Only 3 distinct members appear: Sacha Harrison (12 expenses, 866.25), Phillip Cullen (11 expenses, 621.18), Elijah Allen (9 expenses, 598.62).",
+    "validation_method": "group-by on expense member reference with member names",
+    "timestamp": "2026-11-06T00:00:00Z"
+  },
+  {
+    "id": "evidence_expense_budget_links",
+    "source": "student_club (sqlite, read-only)",
+    "query": "SELECT COUNT(*), SUM(b.fld019 IS NOT NULL) FROM tab06 e LEFT JOIN tab05 b ON e.fld030 = b.fld019; SELECT COUNT(*), COUNT(DISTINCT fld030), COUNT(DISTINCT fld018) FROM tab06",
+    "result": "All 32 expenses match a budget line; 24 distinct budget lines and 3 distinct members are referenced. All expenses therefore reach an event through their budget line, covering 11 distinct events.",
+    "validation_method": "join coverage check over the full expense table",
+    "timestamp": "2026-11-06T00:00:00Z"
+  },
+  {
+    "id": "evidence_postcards_trace",
+    "source": "student_club (sqlite, read-only)",
+    "query": "SELECT e.fld025, e.fld026, e.fld027, e.fld028, b.fld020, b.fld023, b.fld024, ev.fld002, ev.fld007 FROM tab06 e JOIN tab05 b ON e.fld030 = b.fld019 JOIN tab01 ev ON b.fld017 = ev.fld001 WHERE e.fld026 = 'Post Cards, Posters'",
+    "result": "One expense: Post Cards, Posters, 2019-08-20, cost 122.06, budget category Advertisement, allocated 150, status Closed, event Yearly Kickoff, event status Closed.",
+    "validation_method": "join trace from expense to budget to event",
+    "timestamp": "2026-11-06T00:00:00Z"
+  },
+  {
+    "id": "evidence_attendance_grain",
+    "source": "student_club (sqlite, read-only)",
+    "query": "SELECT COUNT(*), COUNT(DISTINCT fld017), COUNT(DISTINCT fld018) FROM tab04; SELECT COUNT(*) FROM (SELECT fld017, fld018 FROM tab04 GROUP BY 1,2 HAVING COUNT(*) > 1)",
+    "result": "326 attendance rows, 17 distinct events, 30 distinct members, 0 duplicate member-event pairs. All event and member references resolve.",
+    "validation_method": "grain and uniqueness check over the full attendance table",
+    "timestamp": "2026-11-06T00:00:00Z"
+  },
+  {
+    "id": "evidence_attendance_counts",
+    "source": "student_club (sqlite, read-only)",
+    "query": "SELECT ev.fld002, COUNT(*) FROM tab04 a JOIN tab01 ev ON a.fld017 = ev.fld001 GROUP BY ev.fld001 ORDER BY COUNT(*) DESC",
+    "result": "Registration 30, Yearly Kickoff 30, October Speaker 29, September Speaker 27, November Speaker 27, September Meeting 27, November Meeting 25, October Meeting 23. Women's Soccer 17. Eight events exceed 20 attendees.",
+    "validation_method": "grouped count of attendance rows per event",
+    "timestamp": "2026-11-06T00:00:00Z"
+  },
+  {
+    "id": "evidence_attendance_coverage",
+    "source": "student_club (sqlite, read-only)",
+    "query": "SELECT COUNT(*) FROM tab01 e WHERE NOT EXISTS (SELECT 1 FROM tab04 a WHERE a.fld017 = e.fld001)",
+    "result": "25 of 42 events have no attendance records; 17 events have attendance records.",
+    "validation_method": "anti-join between events and attendance",
+    "timestamp": "2026-11-06T00:00:00Z"
+  },
+  {
+    "id": "evidence_member_domains",
+    "source": "student_club (sqlite, read-only)",
+    "query": "SELECT fld038, COUNT(*) FROM tab08 GROUP BY fld038; SELECT fld039, COUNT(*) FROM tab08 GROUP BY fld039; SELECT COUNT(*), COUNT(DISTINCT fld037) FROM tab08",
+    "result": "Positions: Member 26, Inactive 3, President 1, Vice President 1, Secretary 1, Treasurer 1. T-shirt sizes: Large 13, Medium 10, X-Large 8, Small 2. 33 members; 33 distinct email addresses; phone values use mixed formats.",
+    "validation_method": "full-table group-by over member attributes",
+    "timestamp": "2026-11-06T00:00:00Z"
+  },
+  {
+    "id": "evidence_member_fullname_unique",
+    "source": "student_club (sqlite, read-only)",
+    "query": "SELECT COUNT(*) FROM (SELECT fld035, fld036 FROM tab08 GROUP BY 1,2 HAVING COUNT(*) > 1)",
+    "result": "0 duplicate given-name plus family-name combinations across 33 members.",
+    "validation_method": "group-by with duplicate filter on the two name columns",
+    "timestamp": "2026-11-06T00:00:00Z"
+  },
+  {
+    "id": "evidence_member_major_coverage",
+    "source": "student_club (sqlite, read-only)",
+    "query": "SELECT COUNT(*), SUM(j.fld008 IS NOT NULL) FROM tab08 m LEFT JOIN tab02 j ON m.fld042 = j.fld008; SELECT SUM(fld042 IS NULL OR TRIM(fld042) = '') FROM tab08",
+    "result": "33 members, 32 match a major record, 1 member has no major value.",
+    "validation_method": "left-join coverage and null check",
+    "timestamp": "2026-11-06T00:00:00Z"
+  },
+  {
+    "id": "evidence_member_zip_coverage",
+    "source": "student_club (sqlite, read-only)",
+    "query": "SELECT COUNT(*), SUM(z.fld012 IS NOT NULL) FROM tab08 m LEFT JOIN tab03 z ON m.fld041 = z.fld012",
+    "result": "33 members, all 33 resolve to a ZIP record.",
+    "validation_method": "left-join coverage check",
+    "timestamp": "2026-11-06T00:00:00Z"
+  },
+  {
+    "id": "evidence_zip_grain",
+    "source": "student_club (sqlite, read-only)",
+    "query": "SELECT COUNT(*), COUNT(DISTINCT fld012) FROM tab03; SELECT COUNT(DISTINCT fld015), COUNT(DISTINCT fld016) FROM tab03; SELECT fld004, COUNT(*) FROM tab03 GROUP BY fld004",
+    "result": "41877 rows and 41877 distinct ZIP codes; 52 distinct full state names and 52 distinct abbreviations. ZIP types: Standard 29973, PO Box 9438, Unique 2466.",
+    "validation_method": "uniqueness and domain checks over the full ZIP table",
+    "timestamp": "2026-11-06T00:00:00Z"
+  },
+  {
+    "id": "evidence_zip_geography_example",
+    "source": "student_club (sqlite, read-only)",
+    "query": "SELECT fld013, fld014, fld015, fld016, COUNT(*) FROM tab03 WHERE fld014 LIKE '%Orange%' AND fld015 LIKE '%Virginia%' GROUP BY fld013, fld014, fld015, fld016",
+    "result": "Seven distinct cities in Orange County, Virginia: Burr Hill, Locust Grove, Montpelier Station, Orange, Rhoadesville, Somerset, Unionville. Each ZIP row carries city, county, full state name, and abbreviation.",
+    "validation_method": "filtered group-by confirming the county/state/city structure",
+    "timestamp": "2026-11-06T00:00:00Z"
+  }
+]

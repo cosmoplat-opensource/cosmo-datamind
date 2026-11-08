@@ -1,0 +1,424 @@
+[
+  {
+    "id": "c_posts_creation_date_column_typo",
+    "target": "map_post_creation_date",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "creation date",
+      "created",
+      "posts created",
+      "year",
+      "2010",
+      "2011",
+      "in 2010",
+      "during 2010",
+      "post date",
+      "over time"
+    ],
+    "severity": "block",
+    "scope": "Applies to every query that filters, groups or sorts posts by time",
+    "confidence": "high",
+    "description": "Inside the posts table the creation timestamp column is spelled with the letters of 'Creation' transposed; the identical logical attribute is spelled normally in every other table. Referring to the conventional spelling against posts will fail, and the equivalent post-activity column carries the same defect. Before writing any temporal predicate on posts, confirm the actual column name from the table definition rather than assuming the spelling used elsewhere in the dataset.",
+    "evidence": [
+      "ev_date_column_names",
+      "ev_datetime_text_format"
+    ]
+  },
+  {
+    "id": "c_post_tags_delimiter_format",
+    "target": "map_post_tags",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "tag",
+      "tags",
+      "tagged",
+      "tagged as",
+      "humor",
+      "bayesian",
+      "tags used",
+      "post tags"
+    ],
+    "severity": "block",
+    "scope": "Applies whenever a question names a tag and the answer must be found through the posts table",
+    "confidence": "high",
+    "description": "The tag list carried by a question is not a single tag name. It is a concatenation of several tags, each wrapped in angle brackets, with no separator between them. A tag named in a question corresponds to one bracketed token inside that string, not to the whole value and not to a bare word. Comparing a bare tag name directly against this column will match nothing.",
+    "evidence": [
+      "ev_tags_format"
+    ]
+  },
+  {
+    "id": "c_tag_match_exact_boundary",
+    "target": "term_tag",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "tagged as",
+      "tag name",
+      "tags used",
+      "tag is"
+    ],
+    "severity": "warning",
+    "scope": "Applies when matching a tag name against the embedded tag list",
+    "confidence": "high",
+    "description": "Tag names overlap as substrings: a short tag name is contained inside longer compound tag names that denote different topics. Matching by bare substring therefore over-collects. The bracketed token form of the embedded tag list provides the boundary that distinguishes a whole tag from a fragment of a longer one.",
+    "evidence": [
+      "ev_tag_match_boundary",
+      "ev_tags_format"
+    ]
+  },
+  {
+    "id": "c_posttypeid_enum",
+    "target": "map_post_type",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "post type",
+      "question",
+      "answer",
+      "post",
+      "kind of post",
+      "wiki"
+    ],
+    "severity": "block",
+    "scope": "Applies whenever posts are counted or joined, since the posts table is polymorphic",
+    "confidence": "high",
+    "description": "The posts table stores every kind of authored content. The type code discriminates them: questions carry one code and answers another, while tag wiki excerpts, full tag wikis, orphaned tag wikis, moderator nominations and wiki placeholders occupy further codes and together account for a small tail of rows. A question phrased about 'posts' in general may still intend only one kind, and each kind carries a different set of meaningful attributes.",
+    "evidence": [
+      "ev_posttypeid_enum",
+      "ev_posttypeid_tail"
+    ]
+  },
+  {
+    "id": "c_tags_questions_only",
+    "target": "map_post_tags",
+    "constraint_type": "scope",
+    "trigger_keywords": [
+      "tag",
+      "tags",
+      "tagged",
+      "post tags"
+    ],
+    "severity": "warning",
+    "scope": "Applies when relating tags to posts",
+    "confidence": "high",
+    "description": "Tags exist only on question posts. The tag list is populated for exactly as many rows as there are questions and is empty for every answer and wiki post, so a tag-based filter implicitly restricts the analysis to questions.",
+    "evidence": [
+      "ev_tags_questions_only"
+    ]
+  },
+  {
+    "id": "c_viewcount_questions_only",
+    "target": "map_post_viewcount",
+    "constraint_type": "scope",
+    "trigger_keywords": [
+      "views",
+      "view count",
+      "most views",
+      "average view count",
+      "viewed"
+    ],
+    "severity": "warning",
+    "scope": "Applies to any analysis of post views",
+    "confidence": "high",
+    "description": "The view counter is populated only for question posts and is absent for answers and wiki posts. View-based filtering therefore silently restricts the result set to questions, and answers must not be treated as having zero views.",
+    "evidence": [
+      "ev_viewcount_questions_only"
+    ]
+  },
+  {
+    "id": "c_favoritecount_sparse",
+    "target": "map_post_favoritecount",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "favorite",
+      "favourites",
+      "bookmarks",
+      "valuable",
+      "most valuable"
+    ],
+    "severity": "warning",
+    "scope": "Applies to question value and bookmarking analysis",
+    "confidence": "high",
+    "description": "The favourite counter is populated for only a minority of question posts and is absent for the rest. Ordering questions by this measure therefore ranks over a subset of questions, and absent values must not be read as a count of zero.",
+    "evidence": [
+      "ev_favoritecount_sparse",
+      "ev_favorite_count_2010"
+    ]
+  },
+  {
+    "id": "c_valuable_means_favorite",
+    "target": "term_favorite_count",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "valuable",
+      "most valuable",
+      "value of a post",
+      "worth"
+    ],
+    "severity": "warning",
+    "scope": "Applies when a question describes a post as valuable without naming a metric",
+    "confidence": "medium",
+    "description": "When the workload describes a post as valuable it means the number of users who bookmarked it, not its score, its views or its answer count. This wording does not map to any column literally named for value.",
+    "evidence": [
+      "ev_favorite_count_2010"
+    ]
+  },
+  {
+    "id": "c_commentcount_denormalized",
+    "target": "map_post_commentcount",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "comments",
+      "comment count",
+      "no comments",
+      "doesn't have comments",
+      "without comments",
+      "1 comment",
+      "has comments"
+    ],
+    "severity": "info",
+    "scope": "Applies when a question filters posts by whether they have comments",
+    "confidence": "high",
+    "description": "The number of comments belonging to a post is held as a counter on the post row as well as being derivable from the comment records. The counter is consistent with the underlying comment rows except for a very small number of posts, so a statement that a post has no comments is expressed by that counter standing at zero. The equivalent answer counter is fully consistent with the answer rows.",
+    "evidence": [
+      "ev_commentcount_consistent",
+      "ev_answercount_consistent"
+    ]
+  },
+  {
+    "id": "c_comment_author_resolution",
+    "target": "map_comment_author",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "comment",
+      "commented",
+      "who commented",
+      "comment author",
+      "user that commented",
+      "name the user"
+    ],
+    "severity": "block",
+    "scope": "Applies whenever a person must be named from a comment",
+    "confidence": "high",
+    "description": "The comment table carries two author-related fields and they are mutually exclusive: the account reference is present for almost every comment while the embedded label is null, and the embedded label appears only on the few records whose account reference is missing, where it holds a placeholder rather than a real name. Naming the person who wrote a comment therefore requires resolving the account reference against the user records; reading the embedded label as though it were the person's name fails for the overwhelming majority of comments.",
+    "evidence": [
+      "ev_comment_identity_complementarity",
+      "ev_comment_thankyou_join"
+    ]
+  },
+  {
+    "id": "c_owner_displayname_fallback",
+    "target": "map_owner_displayname",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "posted by",
+      "author",
+      "owner",
+      "display name of the owner",
+      "who asked"
+    ],
+    "severity": "warning",
+    "scope": "Applies when naming the author of a post",
+    "confidence": "high",
+    "description": "The owner label stored on a post is a fallback retained for posts whose author account no longer exists; its values are placeholder handles rather than the names of registered accounts. Naming a post's author should resolve the author account reference against the user records, and the fallback label is relevant only for the small set of posts that have no author reference.",
+    "evidence": [
+      "ev_post_owner_identity"
+    ]
+  },
+  {
+    "id": "c_displayname_not_unique",
+    "target": "term_display_name",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "display name",
+      "named",
+      "user called",
+      "user with the display name",
+      "by the name of"
+    ],
+    "severity": "warning",
+    "scope": "Applies whenever a user is identified by name in a question",
+    "confidence": "high",
+    "description": "Display names are not unique: common first names are shared by dozens of accounts, and the most repeated name occurs on eighty accounts. A name-based lookup is only safe when the name is distinctive, and results should be checked for ambiguity rather than assumed to identify a single person.",
+    "evidence": [
+      "ev_displayname_not_unique",
+      "ev_named_users"
+    ]
+  },
+  {
+    "id": "c_age_sparse",
+    "target": "map_user_age",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "age",
+      "average age",
+      "user age",
+      "how old",
+      "years old"
+    ],
+    "severity": "warning",
+    "scope": "Applies to demographic analysis over users",
+    "confidence": "high",
+    "description": "Age is recorded for roughly one fifth of accounts and is absent for the rest, so any average age is computed over a small and self-selected subset. Absent values must not be treated as zero, which would depress the mean, and the limited coverage should be stated alongside any average age.",
+    "evidence": [
+      "ev_age_sparse",
+      "ev_age_distribution"
+    ]
+  },
+  {
+    "id": "c_upvotes_profile_counter",
+    "target": "term_user_upvotes",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "up votes",
+      "upvotes",
+      "up voted",
+      "average of the up votes",
+      "down votes"
+    ],
+    "severity": "block",
+    "scope": "Applies when a question refers to a user's up votes or down votes",
+    "confidence": "high",
+    "description": "A user account carries lifetime counters recording how many up votes and down votes that user has cast. These counters are a profile attribute and are entirely different from counting rows in the vote table, which records votes cast on individual posts and mostly does not identify the voter. A question about a user's up votes refers to the profile counter; a question about the votes on a post or the number of votes a user received refers to vote records.",
+    "evidence": [
+      "ev_upvotes_profile_counter",
+      "ev_votes_userid_sparse"
+    ]
+  },
+  {
+    "id": "c_votes_userid_sparse",
+    "target": "map_vote_user",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "votes",
+      "voted",
+      "vote count",
+      "user votes",
+      "how many votes"
+    ],
+    "severity": "warning",
+    "scope": "Applies whenever votes are attributed to a user",
+    "confidence": "high",
+    "description": "Only a small fraction of vote records identify the voter; the rest are anonymous. Counting votes attributed to a named user therefore captures a partial view of that user's voting behaviour, and the shortfall should be reported rather than presented as a complete total.",
+    "evidence": [
+      "ev_votes_userid_sparse"
+    ]
+  },
+  {
+    "id": "c_community_pseudo_user",
+    "target": "term_user",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "community",
+      "owner",
+      "user id -1",
+      "anonymous",
+      "system user"
+    ],
+    "severity": "info",
+    "scope": "Applies when users, post owners or badge holders are listed or ranked",
+    "confidence": "high",
+    "description": "One user account is a system placeholder rather than a person; it holds a negative identifier, carries the name of the site community, and appears as the author of a couple of hundred posts. It can dominate rankings based on counters and should be recognised rather than reported as an unusually active member.",
+    "evidence": [
+      "ev_community_user"
+    ]
+  },
+  {
+    "id": "c_datetime_text_format",
+    "target": "term_creation_date",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "year",
+      "date",
+      "after 2014",
+      "during 2010",
+      "in 2011",
+      "date range",
+      "month"
+    ],
+    "severity": "warning",
+    "scope": "Applies to all temporal comparisons across the dataset",
+    "confidence": "high",
+    "description": "Timestamps are stored as text and are not uniformly formatted: some tables carry a trailing fractional second component and some do not, and the vote records hold a date with no time component at all. Comparing timestamps as raw strings therefore behaves inconsistently across tables. Evidence for any year or period boundary should be established by inspecting representative values rather than assumed from one table's format.",
+    "evidence": [
+      "ev_datetime_text_format",
+      "ev_date_ranges"
+    ]
+  },
+  {
+    "id": "c_dataset_time_window",
+    "target": "term_creation_date",
+    "constraint_type": "scope",
+    "trigger_keywords": [
+      "time range",
+      "date range",
+      "available period",
+      "over the years",
+      "history"
+    ],
+    "severity": "info",
+    "scope": "Applies when interpreting trends or year-on-year comparisons",
+    "confidence": "high",
+    "description": "The dataset covers a bounded window of roughly five years. The earliest post content precedes the earliest user account, and the final year is truncated partway through. Annual comparisons that include the boundary years compare partial periods, and conclusions about a trend should account for the truncated edges.",
+    "evidence": [
+      "ev_date_ranges"
+    ]
+  },
+  {
+    "id": "c_tag_excerpt_wiki_post_types",
+    "target": "map_tag_excerpt",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "excerpt",
+      "excerpted",
+      "excerpt from",
+      "tag wiki",
+      "wiki",
+      "tag description"
+    ],
+    "severity": "warning",
+    "scope": "Applies when following a tag's references to post records",
+    "confidence": "high",
+    "description": "A tag holds two optional references into the posts table: one to its wiki excerpt post and one to its full wiki post. These are distinct post records of different kinds, and for a given tag they are usually adjacent but never interchangeable. The excerpt reference points at the short summary post, not at the full wiki article, and some tags lack both references entirely.",
+    "evidence": [
+      "ev_tag_excerpt_wiki_posts"
+    ]
+  },
+  {
+    "id": "c_postlink_definition",
+    "target": "term_post_link",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "links",
+      "link",
+      "links created",
+      "linked",
+      "duplicate",
+      "related post"
+    ],
+    "severity": "warning",
+    "scope": "Applies when a question uses the word link in a codebase context",
+    "confidence": "medium",
+    "description": "The dataset records explicit relationships between pairs of posts, typed as either a generic link or a duplicate marking; these records are roughly an order of magnitude fewer than the posts themselves. The word link in a question about this domain is therefore ambiguous between these relationship records and the general notion of content created on the site. The intended reading should be settled from the surrounding wording before results are produced.",
+    "evidence": [
+      "ev_postlink_linktype",
+      "ev_postlinks_resolution"
+    ]
+  },
+  {
+    "id": "c_score_context_ambiguity",
+    "target": "term_post_score",
+    "constraint_type": "scope",
+    "trigger_keywords": [
+      "score",
+      "highest score",
+      "score of",
+      "scored"
+    ],
+    "severity": "warning",
+    "scope": "Applies whenever a question refers to score without naming the entity",
+    "confidence": "high",
+    "description": "Score is recorded separately on posts and on comments, in different tables, and measures votes on the respective entity. When a question says score without naming the subject, the correct column depends on whether the question is about the post or about its comments, and choosing the wrong one silently returns plausible but incorrect values.",
+    "evidence": [
+      "ev_score_contexts"
+    ]
+  }
+]

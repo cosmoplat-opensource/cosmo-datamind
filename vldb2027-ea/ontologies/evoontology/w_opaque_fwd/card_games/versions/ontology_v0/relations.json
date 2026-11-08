@@ -1,0 +1,262 @@
+[
+  {
+    "id": "r_printing_set",
+    "source": "t_card_printing",
+    "relation_type": "composition",
+    "target": "t_card_set",
+    "connection_condition": "tab01.fld063 corresponds to tab04.fld081; every printing's set code resolves to exactly one set.",
+    "description": "A card printing is part of exactly one set; the set is the whole that its printings compose and a printing cannot exist without its set.",
+    "evidence": [
+      "evidence_set_membership_join",
+      "evidence_uuid_join_graph"
+    ]
+  },
+  {
+    "id": "r_printing_legality",
+    "source": "t_card_printing",
+    "relation_type": "composition",
+    "target": "t_format_legality",
+    "connection_condition": "tab03.fld072 corresponds to tab01.fld072 with cascade delete.",
+    "description": "Format legality records are components of a card printing and are meaningless without it; one printing has up to one legality record per format.",
+    "evidence": [
+      "evidence_uuid_join_graph",
+      "evidence_legality_grain"
+    ]
+  },
+  {
+    "id": "r_printing_ruling",
+    "source": "t_card_printing",
+    "relation_type": "composition",
+    "target": "t_card_ruling",
+    "connection_condition": "tab06.fld072 corresponds to tab01.fld072 with cascade delete.",
+    "description": "Rulings are attached to a card printing and are removed with it; a printing may have several rulings.",
+    "evidence": [
+      "evidence_uuid_join_graph",
+      "evidence_rulings"
+    ]
+  },
+  {
+    "id": "r_printing_localized",
+    "source": "t_card_printing",
+    "relation_type": "composition",
+    "target": "t_localized_card_record",
+    "connection_condition": "tab02.fld072 corresponds to tab01.fld072.",
+    "description": "Localized card records are language-specific components of a printing; each printing may have records in several languages.",
+    "evidence": [
+      "evidence_uuid_join_graph",
+      "evidence_localization_grain"
+    ]
+  },
+  {
+    "id": "r_legality_format",
+    "source": "t_format_legality",
+    "relation_type": "association",
+    "target": "t_format",
+    "connection_condition": "tab03.fld076 states the format of the legality row.",
+    "description": "Each legality record is assessed against one play format.",
+    "evidence": [
+      "evidence_format_values"
+    ]
+  },
+  {
+    "id": "r_legality_status",
+    "source": "t_format_legality",
+    "relation_type": "association",
+    "target": "t_legality_status",
+    "connection_condition": "tab03.fld077 states the status of the legality row.",
+    "description": "Each legality record carries one of the three legality statuses.",
+    "evidence": [
+      "evidence_status_values"
+    ]
+  },
+  {
+    "id": "r_localized_language",
+    "source": "t_localized_card_record",
+    "relation_type": "association",
+    "target": "t_language",
+    "connection_condition": "tab02.fld075 states the language of the localized record.",
+    "description": "Each localized card record is written in exactly one language.",
+    "evidence": [
+      "evidence_language_labels"
+    ]
+  },
+  {
+    "id": "r_localized_name",
+    "source": "t_localized_card_record",
+    "relation_type": "association",
+    "target": "t_localized_card_name",
+    "connection_condition": "tab02.fld049 holds the name on the same row as tab02.fld075.",
+    "description": "A localized card record supplies the translated card name for its language.",
+    "evidence": [
+      "evidence_localized_card_fields"
+    ]
+  },
+  {
+    "id": "r_localized_text",
+    "source": "t_localized_card_record",
+    "relation_type": "association",
+    "target": "t_localized_card_text",
+    "connection_condition": "tab02.fld068 holds the rules text on the same row as tab02.fld075.",
+    "description": "A localized card record supplies the translated rules text for its language.",
+    "evidence": [
+      "evidence_localized_card_fields"
+    ]
+  },
+  {
+    "id": "r_localized_flavor",
+    "source": "t_localized_card_record",
+    "relation_type": "association",
+    "target": "t_localized_flavor_text",
+    "connection_condition": "tab02.fld017 holds the flavor text on the same row as tab02.fld075.",
+    "description": "A localized card record supplies the translated flavor text for its language.",
+    "evidence": [
+      "evidence_localized_card_fields"
+    ]
+  },
+  {
+    "id": "r_set_localized_name",
+    "source": "t_card_set",
+    "relation_type": "association",
+    "target": "t_localized_set_name",
+    "connection_condition": "tab05.fld063 corresponds to tab04.fld081 and tab05.fld075 selects the language.",
+    "description": "A set can have translated names in several languages; only 121 of 551 sets do.",
+    "evidence": [
+      "evidence_localized_set_name",
+      "evidence_localization_grain"
+    ]
+  },
+  {
+    "id": "r_set_name",
+    "source": "t_card_set",
+    "relation_type": "association",
+    "target": "t_set_name",
+    "connection_condition": "tab04.fld049 (and the secondary form fld088) name the same set row.",
+    "description": "Each set has one English name, with fld088 as a secondary display form for a subset of sets.",
+    "evidence": [
+      "evidence_set_table",
+      "evidence_set_name_variant"
+    ]
+  },
+  {
+    "id": "r_set_block",
+    "source": "t_card_set",
+    "relation_type": "association",
+    "target": "t_set_block",
+    "connection_condition": "tab04.fld079 on the same set row.",
+    "description": "Some sets belong to a block; block membership is optional.",
+    "evidence": [
+      "evidence_set_block_and_translation_coverage"
+    ]
+  },
+  {
+    "id": "r_set_mtgo",
+    "source": "t_card_set",
+    "relation_type": "association",
+    "target": "t_mtgo_set_code",
+    "connection_condition": "tab04.fld089 on the same set row; non-null means available on MTGO.",
+    "description": "A set may be published on Magic: The Gathering Online, recorded as an MTGO product code.",
+    "evidence": [
+      "evidence_mtgo"
+    ]
+  },
+  {
+    "id": "r_card_name_localized",
+    "source": "t_card_name",
+    "relation_type": "equivalence",
+    "target": "t_localized_card_name",
+    "connection_condition": "tab01.fld049 and tab02.fld049 both identify the card; tab02 rows are restricted to one language.",
+    "description": "The English card name and a localized card name express the same business concept in different languages.",
+    "evidence": [
+      "evidence_localized_card_fields"
+    ]
+  },
+  {
+    "id": "r_card_text_localized",
+    "source": "t_card_text",
+    "relation_type": "equivalence",
+    "target": "t_localized_card_text",
+    "connection_condition": "tab01.fld068 and tab02.fld068 both hold the card's rules text, in English versus one other language.",
+    "description": "English rules text and localized rules text are the same concept expressed in different languages.",
+    "evidence": [
+      "evidence_column_name_collision",
+      "evidence_localized_card_fields"
+    ]
+  },
+  {
+    "id": "r_flavor_localized",
+    "source": "t_flavor_text",
+    "relation_type": "equivalence",
+    "target": "t_localized_flavor_text",
+    "connection_condition": "tab01.fld017 and tab02.fld017 both hold flavor text, in English versus one other language.",
+    "description": "English and localized flavor text are the same concept in different languages.",
+    "evidence": [
+      "evidence_localized_card_fields"
+    ]
+  },
+  {
+    "id": "r_set_name_localized",
+    "source": "t_set_name",
+    "relation_type": "equivalence",
+    "target": "t_localized_set_name",
+    "connection_condition": "tab04.fld049 names the set in English; tab05.fld094 names the same set in another language, joined via set code.",
+    "description": "English set name and localized set name express the same concept in different languages.",
+    "evidence": [
+      "evidence_localized_set_name"
+    ]
+  },
+  {
+    "id": "r_percentage_derivation",
+    "source": "t_card_count",
+    "relation_type": "derivation",
+    "target": "t_percentage_share",
+    "connection_condition": "",
+    "description": "Percentage share is derived from two card counts: 100 × qualifying count / population count.",
+    "evidence": [
+      "evidence_count_semantics"
+    ]
+  },
+  {
+    "id": "r_ruling_date",
+    "source": "t_card_ruling",
+    "relation_type": "association",
+    "target": "t_ruling_date",
+    "connection_condition": "tab06.fld095 holds the date on the same ruling row as tab06.fld068.",
+    "description": "Each ruling carries the date on which it was issued.",
+    "evidence": [
+      "evidence_rulings"
+    ]
+  },
+  {
+    "id": "r_original_type_subtype",
+    "source": "t_original_type",
+    "relation_type": "association",
+    "target": "t_subtype",
+    "connection_condition": "Legacy original type text such as 'Summon - Angel' embeds a subtype word after the dash; tab01.fld065 holds the modern comma-separated subtype list.",
+    "description": "Original type wording is related to but distinct from the current subtype list; the historical text may mention a subtype that the modern list represents differently or in combination.",
+    "evidence": [
+      "evidence_original_type_subtype"
+    ]
+  },
+  {
+    "id": "r_artist_printing",
+    "source": "t_artist",
+    "relation_type": "association",
+    "target": "t_card_printing",
+    "connection_condition": "tab01.fld002 and the printing attributes are on the same tab01 row.",
+    "description": "Each printing credits one artist; the artist is an attribute of the printing rather than a separate keyed entity.",
+    "evidence": [
+      "evidence_artist"
+    ]
+  },
+  {
+    "id": "r_card_name_printing",
+    "source": "t_card_name",
+    "relation_type": "association",
+    "target": "t_card_printing",
+    "connection_condition": "tab01.fld049 is repeated across the printings that share the card name.",
+    "description": "One card name maps to many printings; counting names and counting printings give different answers.",
+    "evidence": [
+      "evidence_count_semantics"
+    ]
+  }
+]

@@ -1,0 +1,301 @@
+[
+  {
+    "id": "term_molecule",
+    "name": "Molecule",
+    "type": "entity",
+    "definition": "A chemical compound recorded in the toxicology dataset, identified by a molecule identifier of the form 'TR' followed by three digits, and carrying a binary carcinogenicity label.",
+    "scope": "Molecule-level analysis: counting, filtering and classifying compounds.",
+    "aliases": [
+      "compound",
+      "substance",
+      "chemical",
+      "molecule id"
+    ],
+    "evidence": [
+      "ev_schema_tables",
+      "ev_row_counts",
+      "ev_atom_id_format"
+    ]
+  },
+  {
+    "id": "term_atom",
+    "name": "Atom",
+    "type": "entity",
+    "definition": "A single atom belonging to exactly one molecule. Identified by atom_id, which concatenates the parent molecule identifier with the atom's sequential index inside that molecule.",
+    "scope": "Atom-level analysis and every analysis that counts or filters atoms.",
+    "aliases": [
+      "atom record",
+      "atom instance",
+      "atom id"
+    ],
+    "evidence": [
+      "ev_schema_tables",
+      "ev_atom_id_format",
+      "ev_row_counts"
+    ]
+  },
+  {
+    "id": "term_bond",
+    "name": "Chemical Bond",
+    "type": "entity",
+    "definition": "A chemical bond inside a molecule joining exactly two atoms. Identified by bond_id, which concatenates the parent molecule identifier with the indices of the two joined atoms.",
+    "scope": "Bond-level analysis: bond counts, bond type distribution, bond-atom membership.",
+    "aliases": [
+      "bond",
+      "bond id",
+      "linkage"
+    ],
+    "evidence": [
+      "ev_schema_tables",
+      "ev_bond_id_format",
+      "ev_row_counts"
+    ]
+  },
+  {
+    "id": "term_connection",
+    "name": "Atom Connection",
+    "type": "concept",
+    "definition": "A directional adjacency between two atoms of the same molecule, recorded in the connected table together with the bond_id of the bond that realises the adjacency. Each bond yields two connection rows, one per direction.",
+    "scope": "Used when the analysis needs 'how many connections or bonds touch an atom', i.e. atom degree or incident-bond counting.",
+    "aliases": [
+      "connection",
+      "connections",
+      "adjacency",
+      "connectivity",
+      "degree"
+    ],
+    "evidence": [
+      "ev_connection_symmetry",
+      "ev_schema_tables",
+      "ev_bond_atom_lookup"
+    ]
+  },
+  {
+    "id": "term_element",
+    "name": "Chemical Element",
+    "type": "category",
+    "definition": "The chemical element that an atom is an instance of, stored as a lowercase element symbol on the atom row rather than as a separate entity table.",
+    "scope": "Element distribution, element composition of molecules and bonds, and element-based filtering.",
+    "aliases": [
+      "element",
+      "element symbol",
+      "chemical element",
+      "atom type"
+    ],
+    "evidence": [
+      "ev_element_values",
+      "ev_schema_tables"
+    ]
+  },
+  {
+    "id": "term_bond_type",
+    "name": "Bond Type",
+    "type": "dimension",
+    "definition": "The order, or multiplicity, of a chemical bond, encoded as a single character. It distinguishes single, double and triple bonds.",
+    "scope": "Bond order classification and bond type distribution analyses.",
+    "aliases": [
+      "bond order",
+      "bond multiplicity",
+      "bond_type",
+      "type of bond"
+    ],
+    "evidence": [
+      "ev_bond_type_values"
+    ]
+  },
+  {
+    "id": "term_single_bond",
+    "name": "Single Bond",
+    "type": "category",
+    "definition": "A chemical bond whose bond type is the single-bond symbol. It is by far the most frequent bond type in the dataset.",
+    "scope": "Analyses of 'single-bonded' atoms, molecules or bonds.",
+    "aliases": [
+      "single bond",
+      "single-bonded",
+      "single bonded"
+    ],
+    "evidence": [
+      "ev_bond_type_values"
+    ]
+  },
+  {
+    "id": "term_double_bond",
+    "name": "Double Bond",
+    "type": "category",
+    "definition": "A chemical bond whose bond type is the double-bond symbol. Double bonds are markedly rarer than single bonds and occur only in a minority of molecules.",
+    "scope": "Analyses of 'double-bonded' atoms, molecules or bonds, and of double-bond molecules.",
+    "aliases": [
+      "double bond",
+      "double-bonded",
+      "double bonded",
+      "double type bond"
+    ],
+    "evidence": [
+      "ev_bond_type_values",
+      "ev_extremum_tie"
+    ]
+  },
+  {
+    "id": "term_triple_bond",
+    "name": "Triple Bond",
+    "type": "category",
+    "definition": "A chemical bond whose bond type is the triple-bond symbol. It is the rarest bond type, realised by only a handful of bond rows.",
+    "scope": "Analyses of 'triple-bonded' molecules.",
+    "aliases": [
+      "triple bond",
+      "triple-bonded",
+      "triple bonded"
+    ],
+    "evidence": [
+      "ev_bond_type_values",
+      "ev_triple_bond_carcinogenic"
+    ]
+  },
+  {
+    "id": "term_carcinogenicity_label",
+    "name": "Carcinogenicity Label",
+    "type": "dimension",
+    "definition": "The binary carcinogenicity classification carried by a molecule record. A positive label marks the molecule as carcinogenic and a negative label marks it as non-carcinogenic.",
+    "scope": "All toxicity-oriented filtering and grouping of molecules.",
+    "aliases": [
+      "carcinogenicity",
+      "carcinogenic label",
+      "toxicity label",
+      "label"
+    ],
+    "evidence": [
+      "ev_label_values"
+    ]
+  },
+  {
+    "id": "term_carcinogenic_molecule",
+    "name": "Carcinogenic Molecule",
+    "type": "category",
+    "definition": "A molecule whose carcinogenicity label is positive.",
+    "scope": "Subset of molecules used when a question asks for carcinogenic or toxic compounds.",
+    "aliases": [
+      "carcinogenic",
+      "carcinogenic molecules",
+      "toxic molecule"
+    ],
+    "evidence": [
+      "ev_label_values",
+      "ev_triple_bond_carcinogenic"
+    ]
+  },
+  {
+    "id": "term_non_carcinogenic_molecule",
+    "name": "Non-carcinogenic Molecule",
+    "type": "category",
+    "definition": "A molecule whose carcinogenicity label is negative.",
+    "scope": "Subset of molecules used when a question asks for non-carcinogenic or non-toxic compounds.",
+    "aliases": [
+      "non-carcinogenic",
+      "non carcinogenic",
+      "not carcinogenic",
+      "non-toxic"
+    ],
+    "evidence": [
+      "ev_label_values"
+    ]
+  },
+  {
+    "id": "term_atom_index",
+    "name": "Atom Index",
+    "type": "dimension",
+    "definition": "The sequential position of an atom inside its molecule. It is not stored as a dedicated column but is encoded as the numeric suffix of atom_id after the underscore.",
+    "scope": "Questions that refer to 'the 4th atom', 'atom 12' or any ordinal atom position within a molecule.",
+    "aliases": [
+      "atom index",
+      "atom number",
+      "nth atom",
+      "atom position",
+      "atom 12",
+      "4th atom"
+    ],
+    "evidence": [
+      "ev_atom_index_digits",
+      "ev_atom_id_format",
+      "ev_atom_index19"
+    ]
+  },
+  {
+    "id": "term_molecule_atom_count",
+    "name": "Molecule Atom Count",
+    "type": "metric",
+    "definition": "The number of atoms contained in a molecule, obtained by counting the molecule's atom rows.",
+    "scope": "Molecule size analysis and size thresholds such as 'molecules with more than 5 atoms'.",
+    "aliases": [
+      "atom count",
+      "number of atoms",
+      "molecule size",
+      "how many atoms"
+    ],
+    "evidence": [
+      "ev_molecule_size"
+    ]
+  },
+  {
+    "id": "term_molecule_bond_count",
+    "name": "Molecule Bond Count",
+    "type": "metric",
+    "definition": "The number of bonds contained in a molecule, obtained by counting the molecule's bond rows.",
+    "scope": "Molecule bond density analysis.",
+    "aliases": [
+      "bond count",
+      "number of bonds",
+      "how many bonds"
+    ],
+    "evidence": [
+      "ev_molecule_size"
+    ]
+  },
+  {
+    "id": "term_element_percentage",
+    "name": "Element Percentage",
+    "type": "metric",
+    "definition": "The share of atoms of a specified element within a reference set of atoms, expressed as a percentage of the atoms in that set.",
+    "scope": "Element composition questions such as 'the percentage of carbon in double-bond molecules'.",
+    "aliases": [
+      "element percentage",
+      "percentage of carbon",
+      "element share",
+      "element proportion"
+    ],
+    "evidence": [
+      "ev_percentage_reference"
+    ]
+  },
+  {
+    "id": "term_bond_type_percentage",
+    "name": "Bond Type Percentage",
+    "type": "metric",
+    "definition": "The share of bonds of a specified bond type within a reference set of bonds, expressed as a percentage of the bonds in that set.",
+    "scope": "Bond composition questions such as 'the percentage of double bonds in molecule TR008'.",
+    "aliases": [
+      "bond percentage",
+      "percentage of double bonds",
+      "bond type share",
+      "bond proportion"
+    ],
+    "evidence": [
+      "ev_percentage_reference"
+    ]
+  },
+  {
+    "id": "term_unconnected_atom",
+    "name": "Unconnected Atom",
+    "type": "category",
+    "definition": "An atom that appears in no connection, i.e. an atom bonded to no other atom. Such atoms exist in the atom table but are absent from the connected table.",
+    "scope": "Questions about atoms that 'cannot bond with any other atoms'.",
+    "aliases": [
+      "unconnected atom",
+      "isolated atom",
+      "atom with no bonds",
+      "cannot bond"
+    ],
+    "evidence": [
+      "ev_unconnected_atoms"
+    ]
+  }
+]

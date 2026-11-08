@@ -1,0 +1,538 @@
+[
+  {
+    "id": "map_user",
+    "term_id": "term_user",
+    "database_source": "codebase_community",
+    "table": "users",
+    "column": "Id",
+    "semantic_filter": "",
+    "aggregation_semantics": "one row per participant account; count rows to count users",
+    "grain": "one row per user account",
+    "validation": "users.Id is the primary key and is referenced by posts.OwnerUserId, posts.LastEditorUserId, comments.UserId, postHistory.UserId, badges.UserId and votes.UserId",
+    "evidence": [
+      "evidence_users_schema",
+      "evidence_fk_integrity"
+    ]
+  },
+  {
+    "id": "map_post",
+    "term_id": "term_post",
+    "database_source": "codebase_community",
+    "table": "posts",
+    "column": "Id",
+    "semantic_filter": "",
+    "aggregation_semantics": "one row per post; count rows to count posts, optionally restricted by PostTypeId",
+    "grain": "one row per post",
+    "validation": "posts.Id is unique and is referenced by comments.PostId, votes.PostId, postHistory.PostId, postLinks.PostId and posts.ParentId",
+    "evidence": [
+      "evidence_posts_schema",
+      "evidence_fk_integrity"
+    ]
+  },
+  {
+    "id": "map_comment",
+    "term_id": "term_comment",
+    "database_source": "codebase_community",
+    "table": "comments",
+    "column": "Id",
+    "semantic_filter": "",
+    "aggregation_semantics": "one row per comment; count rows for comment volume",
+    "grain": "one row per comment",
+    "validation": "comments.Id is the primary key; 174285 rows observed",
+    "evidence": [
+      "evidence_comments_schema"
+    ]
+  },
+  {
+    "id": "map_badge",
+    "term_id": "term_badge",
+    "database_source": "codebase_community",
+    "table": "badges",
+    "column": "Id",
+    "semantic_filter": "",
+    "aggregation_semantics": "one row per badge award event; count rows per user to obtain that user's badge count",
+    "grain": "one row per award event",
+    "validation": "badges.Id is the primary key; 79851 rows observed across 25078 distinct users",
+    "evidence": [
+      "evidence_badge_names",
+      "evidence_badge_count_gt5"
+    ]
+  },
+  {
+    "id": "map_vote",
+    "term_id": "term_vote",
+    "database_source": "codebase_community",
+    "table": "votes",
+    "column": "Id",
+    "semantic_filter": "",
+    "aggregation_semantics": "one row per vote event; filter by VoteTypeId to isolate ordinary votes or bounty records",
+    "grain": "one row per vote event",
+    "validation": "votes.Id is the primary key; 38930 rows observed",
+    "evidence": [
+      "evidence_votes_schema",
+      "evidence_vote_types_bounty"
+    ]
+  },
+  {
+    "id": "map_tag",
+    "term_id": "term_tag",
+    "database_source": "codebase_community",
+    "table": "tags",
+    "column": "Id",
+    "semantic_filter": "",
+    "aggregation_semantics": "one row per catalogue tag entry",
+    "grain": "one row per catalogue tag",
+    "validation": "tags.Id is the primary key; 1032 rows observed",
+    "evidence": [
+      "evidence_tags_schema"
+    ]
+  },
+  {
+    "id": "map_tag_name",
+    "term_id": "term_tag",
+    "database_source": "codebase_community",
+    "table": "tags",
+    "column": "TagName",
+    "semantic_filter": "",
+    "aggregation_semantics": "distinct label text of a catalogue tag",
+    "grain": "one row per catalogue tag",
+    "validation": "TagName matches the labels embedded in question tag lists for the same tag",
+    "evidence": [
+      "evidence_tag_count_vs_occurrence"
+    ]
+  },
+  {
+    "id": "map_tag_count",
+    "term_id": "term_tag",
+    "database_source": "codebase_community",
+    "table": "tags",
+    "column": "Count",
+    "semantic_filter": "",
+    "aggregation_semantics": "maintained catalogue-wide usage count for the tag, not a per-question count",
+    "grain": "one row per catalogue tag",
+    "validation": "Compared against the number of posts whose tag list contains the label: r 7244 versus 7240, variance 766 versus 766, ggplot2 78 versus 78",
+    "evidence": [
+      "evidence_tag_count_vs_occurrence"
+    ]
+  },
+  {
+    "id": "map_post_history",
+    "term_id": "term_post_history",
+    "database_source": "codebase_community",
+    "table": "postHistory",
+    "column": "Id",
+    "semantic_filter": "",
+    "aggregation_semantics": "one row per change event on a post",
+    "grain": "one row per revision event",
+    "validation": "postHistory.Id is the primary key; 303155 rows observed",
+    "evidence": [
+      "evidence_post_history_schema",
+      "evidence_post_history_types"
+    ]
+  },
+  {
+    "id": "map_post_edit",
+    "term_id": "term_post_edit",
+    "database_source": "codebase_community",
+    "table": "postHistory",
+    "column": "PostHistoryTypeId",
+    "semantic_filter": "restricted to the content-change history types (title, body and tag edits) rather than the initial creation records",
+    "aggregation_semantics": "count of edit events per post or per acting user",
+    "grain": "one row per edit event",
+    "validation": "Content-change types carry edit payloads such as a replacement title or a replacement tag list, while creation types carry the original content",
+    "evidence": [
+      "evidence_post_history_types",
+      "evidence_post_history_edit_texts"
+    ]
+  },
+  {
+    "id": "map_post_type",
+    "term_id": "term_post_type",
+    "database_source": "codebase_community",
+    "table": "posts",
+    "column": "PostTypeId",
+    "semantic_filter": "",
+    "aggregation_semantics": "grouping dimension over posts",
+    "grain": "one value per post",
+    "validation": "Observed distribution: questions 42912, answers 47755, and small volumes of tag-excerpt, tag-wiki, moderation and placeholder records",
+    "evidence": [
+      "evidence_post_type_distribution",
+      "evidence_tags_post_linkage"
+    ]
+  },
+  {
+    "id": "map_question_post",
+    "term_id": "term_question_post",
+    "database_source": "codebase_community",
+    "table": "posts",
+    "column": "PostTypeId",
+    "semantic_filter": "only records whose post type denotes a question",
+    "aggregation_semantics": "count of question posts; the population for title, tag and view analysis",
+    "grain": "one row per question post",
+    "validation": "42912 question posts; every post carrying a tag list or a view count belongs to this type",
+    "evidence": [
+      "evidence_post_type_distribution",
+      "evidence_viewcount_by_posttype",
+      "evidence_tags_column_by_posttype"
+    ]
+  },
+  {
+    "id": "map_answer_post",
+    "term_id": "term_answer_post",
+    "database_source": "codebase_community",
+    "table": "posts",
+    "column": "PostTypeId",
+    "semantic_filter": "only records whose post type denotes an answer",
+    "aggregation_semantics": "count of answer posts",
+    "grain": "one row per answer post",
+    "validation": "47755 answer posts; none carry a title, tag list or view count",
+    "evidence": [
+      "evidence_post_type_distribution",
+      "evidence_viewcount_by_posttype"
+    ]
+  },
+  {
+    "id": "map_vote_type",
+    "term_id": "term_vote_type",
+    "database_source": "codebase_community",
+    "table": "votes",
+    "column": "VoteTypeId",
+    "semantic_filter": "",
+    "aggregation_semantics": "grouping dimension over vote records",
+    "grain": "one value per vote",
+    "validation": "Observed types: ordinary up and down votes dominate (33323 and 1451), bounty-open type 60 rows, bounty-close type 59 rows, plus small governance volumes",
+    "evidence": [
+      "evidence_vote_types_bounty"
+    ]
+  },
+  {
+    "id": "map_post_history_type",
+    "term_id": "term_post_history_type",
+    "database_source": "codebase_community",
+    "table": "postHistory",
+    "column": "PostHistoryTypeId",
+    "semantic_filter": "",
+    "aggregation_semantics": "grouping dimension over revision records",
+    "grain": "one value per revision record",
+    "validation": "Observed initial-record types carry the original title, body or tag list; the title-edit, body-edit and tag-edit types carry 16008, 69413 and 12731 rows respectively",
+    "evidence": [
+      "evidence_post_history_types"
+    ]
+  },
+  {
+    "id": "map_user_display_name",
+    "term_id": "term_user_display_name",
+    "database_source": "codebase_community",
+    "table": "users",
+    "column": "DisplayName",
+    "semantic_filter": "",
+    "aggregation_semantics": "one name per user account; a name may map to several accounts",
+    "grain": "one value per user account",
+    "validation": "40325 accounts versus 35644 distinct names; the most repeated name occurs 80 times",
+    "evidence": [
+      "evidence_displayname_not_unique"
+    ]
+  },
+  {
+    "id": "map_denorm_name_posthistory",
+    "term_id": "term_denormalized_user_display_name",
+    "database_source": "codebase_community",
+    "table": "postHistory",
+    "column": "UserDisplayName",
+    "semantic_filter": "",
+    "aggregation_semantics": "name of the user who performed the revision",
+    "grain": "one value per revision record",
+    "validation": "Populated for all 303155 revision records",
+    "evidence": [
+      "evidence_denormalized_names"
+    ]
+  },
+  {
+    "id": "map_denorm_name_comments",
+    "term_id": "term_denormalized_user_display_name",
+    "database_source": "codebase_community",
+    "table": "comments",
+    "column": "UserDisplayName",
+    "semantic_filter": "",
+    "aggregation_semantics": "name of the comment author",
+    "grain": "one value per comment",
+    "validation": "Populated for only 2831 of 174285 comments, so it is unreliable as a general commenter name source",
+    "evidence": [
+      "evidence_denormalized_names"
+    ]
+  },
+  {
+    "id": "map_denorm_name_post_owner",
+    "term_id": "term_denormalized_user_display_name",
+    "database_source": "codebase_community",
+    "table": "posts",
+    "column": "OwnerDisplayName",
+    "semantic_filter": "",
+    "aggregation_semantics": "name of the post creator when the account is not recorded",
+    "grain": "one value per post",
+    "validation": "Populated for only 2509 of 91966 posts, and 1388 of those rows carry no owner identifier",
+    "evidence": [
+      "evidence_denormalized_names",
+      "evidence_owner_display_name"
+    ]
+  },
+  {
+    "id": "map_denorm_name_last_editor",
+    "term_id": "term_denormalized_user_display_name",
+    "database_source": "codebase_community",
+    "table": "posts",
+    "column": "LastEditorDisplayName",
+    "semantic_filter": "",
+    "aggregation_semantics": "name of the most recent editor of the post",
+    "grain": "one value per post",
+    "validation": "Populated for only 465 of 91966 posts",
+    "evidence": [
+      "evidence_denormalized_names"
+    ]
+  },
+  {
+    "id": "map_post_title",
+    "term_id": "term_post_title",
+    "database_source": "codebase_community",
+    "table": "posts",
+    "column": "Title",
+    "semantic_filter": "",
+    "aggregation_semantics": "one headline per question post",
+    "grain": "one value per question post",
+    "validation": "Title is populated only for question posts; case-insensitive matching is required to locate a title quoted in a question",
+    "evidence": [
+      "evidence_tags_column_by_posttype",
+      "evidence_title_case_sensitivity"
+    ]
+  },
+  {
+    "id": "map_post_tags",
+    "term_id": "term_post_tags",
+    "database_source": "codebase_community",
+    "table": "posts",
+    "column": "Tags",
+    "semantic_filter": "populated only for question posts",
+    "aggregation_semantics": "membership of a label in the post's tag list, tested by exact label match within the delimited string",
+    "grain": "one delimited label string per question post",
+    "validation": "Labels are wrapped in angle brackets, as in the observed value for a tag question; substring tests that ignore the delimiters can match unintended labels",
+    "evidence": [
+      "evidence_tags_string_format",
+      "evidence_tags_column_by_posttype",
+      "evidence_tag_count_vs_occurrence"
+    ]
+  },
+  {
+    "id": "map_user_age",
+    "term_id": "term_user_age",
+    "database_source": "codebase_community",
+    "table": "users",
+    "column": "Age",
+    "semantic_filter": "non-null ages only",
+    "aggregation_semantics": "age in completed years at record time; recorded agerange observed 13 to 94",
+    "grain": "one value per user account",
+    "validation": "Present for 8318 of 40325 accounts; 32007 accounts have no recorded age",
+    "evidence": [
+      "evidence_age_nulls",
+      "evidence_age_range"
+    ]
+  },
+  {
+    "id": "map_user_reputation",
+    "term_id": "term_user_reputation",
+    "database_source": "codebase_community",
+    "table": "users",
+    "column": "Reputation",
+    "semantic_filter": "",
+    "aggregation_semantics": "accumulated per-account total; never null; observed range 1 to 87393",
+    "grain": "one value per user account",
+    "validation": "Populated for all 40325 accounts",
+    "evidence": [
+      "evidence_reputation_range"
+    ]
+  },
+  {
+    "id": "map_user_influence",
+    "term_id": "term_user_influence",
+    "database_source": "codebase_community",
+    "table": "users",
+    "column": "Reputation",
+    "semantic_filter": "the single account holding the highest reputation value defines the most influential user",
+    "aggregation_semantics": "maximum reputation over accounts, used as a ranking reduction",
+    "grain": "one value per user account, reduced to one account",
+    "validation": "Reputation maximum observed at 87393",
+    "evidence": [
+      "evidence_reputation_range"
+    ]
+  },
+  {
+    "id": "map_badge_count",
+    "term_id": "term_badge_count",
+    "database_source": "codebase_community",
+    "table": "badges",
+    "column": "UserId",
+    "semantic_filter": "",
+    "aggregation_semantics": "count of award rows grouped by the user the award belongs to",
+    "grain": "one value per user account",
+    "validation": "2875 users hold more than five award rows; the busiest account holds 456",
+    "evidence": [
+      "evidence_badge_count_gt5"
+    ]
+  },
+  {
+    "id": "map_post_score",
+    "term_id": "term_post_score",
+    "database_source": "codebase_community",
+    "table": "posts",
+    "column": "Score",
+    "semantic_filter": "",
+    "aggregation_semantics": "integer net standing per post; may be negative; average over a set of posts gives the mean post score",
+    "grain": "one value per post",
+    "validation": "Observed range -19 to 192, with 1020 posts below zero",
+    "evidence": [
+      "evidence_score_range"
+    ]
+  },
+  {
+    "id": "map_post_view_count",
+    "term_id": "term_post_view_count",
+    "database_source": "codebase_community",
+    "table": "posts",
+    "column": "ViewCount",
+    "semantic_filter": "populated only for question posts",
+    "aggregation_semantics": "cumulative view total per question post; sum or maximum across posts to compare popularity",
+    "grain": "one value per question post",
+    "validation": "All 42912 question posts carry a view count; all 47755 answer posts have none",
+    "evidence": [
+      "evidence_viewcount_by_posttype"
+    ]
+  },
+  {
+    "id": "map_favorite_count",
+    "term_id": "term_favorite_count",
+    "database_source": "codebase_community",
+    "table": "posts",
+    "column": "FavoriteCount",
+    "semantic_filter": "",
+    "aggregation_semantics": "count of bookmarks on the post",
+    "grain": "one value per post",
+    "validation": "Absent for 78723 of 91966 posts, concentrated in non-question post types",
+    "evidence": [
+      "evidence_favorite_count_nulls"
+    ]
+  },
+  {
+    "id": "map_bounty_amount",
+    "term_id": "term_bounty_amount",
+    "database_source": "codebase_community",
+    "table": "votes",
+    "column": "BountyAmount",
+    "semantic_filter": "restricted to bounty-related vote types; null for every other vote record",
+    "aggregation_semantics": "bounty size in reputation points carried by a single bounty vote record",
+    "grain": "one value per bounty vote record",
+    "validation": "Non-null only on vote type 8 (60 of 60 rows) and vote type 9 (41 of 59 rows); every other type carries null",
+    "evidence": [
+      "evidence_vote_types_bounty"
+    ]
+  },
+  {
+    "id": "map_first_occurrence_votes",
+    "term_id": "term_first_occurrence",
+    "database_source": "codebase_community",
+    "table": "votes",
+    "column": "CreationDate",
+    "semantic_filter": "",
+    "aggregation_semantics": "minimum vote date per casting user yields that user's first vote",
+    "grain": "one value per casting user",
+    "validation": "For the user named chl the earliest vote date resolves to 2010-08-13",
+    "evidence": [
+      "evidence_vote_date_granularity",
+      "evidence_first_vote_lookup"
+    ]
+  },
+  {
+    "id": "map_first_occurrence_badges",
+    "term_id": "term_first_occurrence",
+    "database_source": "codebase_community",
+    "table": "badges",
+    "column": "Date",
+    "semantic_filter": "",
+    "aggregation_semantics": "minimum award timestamp for a named badge yields the first holder or the first award moment",
+    "grain": "one value per badge name",
+    "validation": "The earliest Autobiographer award timestamp is 2010-07-19 19:39:09.0 and is shared by many accounts",
+    "evidence": [
+      "evidence_first_badge_date_ties"
+    ]
+  },
+  {
+    "id": "map_percentage_share",
+    "term_id": "term_percentage_share",
+    "database_source": "codebase_community",
+    "table": "posts",
+    "column": "Id",
+    "semantic_filter": "the numerator and denominator are both counts of post records, the denominator being the reference population named in the question",
+    "aggregation_semantics": "conditioned count of posts divided by the count of the stated reference population, expressed as a percentage",
+    "grain": "one ratio per reference population",
+    "validation": "Workload ratios differ only by their denominator, which is either all posts, posts in a year, or posts of one author",
+    "evidence": [
+      "evidence_percentage_reference_populations"
+    ]
+  },
+  {
+    "id": "map_post_ownership",
+    "term_id": "term_post_ownership",
+    "database_source": "codebase_community",
+    "table": "posts",
+    "column": "OwnerUserId",
+    "semantic_filter": "",
+    "aggregation_semantics": "groups posts by their creating account",
+    "grain": "one value per post",
+    "validation": "Every non-null owner identifier resolves to an existing account; 211 posts are owned by the synthetic Community account",
+    "evidence": [
+      "evidence_fk_integrity",
+      "evidence_community_user"
+    ]
+  },
+  {
+    "id": "map_post_editing_pointer",
+    "term_id": "term_post_editing",
+    "database_source": "codebase_community",
+    "table": "posts",
+    "column": "LastEditorUserId",
+    "semantic_filter": "",
+    "aggregation_semantics": "identifies only the most recent editor of a post",
+    "grain": "one value per post",
+    "validation": "Null for 47361 of 91966 posts; where present it equals the owner in 23429 of 44605 cases, so it cannot distinguish creators from later editors",
+    "evidence": [
+      "evidence_last_editor_pointer"
+    ]
+  },
+  {
+    "id": "map_post_editing_history",
+    "term_id": "term_post_editing",
+    "database_source": "codebase_community",
+    "table": "postHistory",
+    "column": "UserId",
+    "semantic_filter": "restricted to content-change revision records",
+    "aggregation_semantics": "enumerates every user who changed the post, not only the latest one",
+    "grain": "one value per edit event",
+    "validation": "The acting user is recorded for 281829 of 303155 revision records",
+    "evidence": [
+      "evidence_post_history_types",
+      "evidence_post_history_user_nulls"
+    ]
+  },
+  {
+    "id": "map_post_closure_status",
+    "term_id": "term_post_closure_status",
+    "database_source": "codebase_community",
+    "table": "posts",
+    "column": "ClosedDate",
+    "semantic_filter": "absence of a value means the post has never been closed",
+    "aggregation_semantics": "presence or absence of the closure timestamp classifies the post as closed or open",
+    "grain": "one value per post",
+    "validation": "1610 of 91966 posts carry a closure timestamp; the remaining 90356 have none",
+    "evidence": [
+      "evidence_closed_date_nullability"
+    ]
+  }
+]

@@ -1,0 +1,166 @@
+[
+  {
+    "id": "r_set_printing",
+    "source": "term_set",
+    "relation_type": "composition",
+    "target": "term_card_printing",
+    "connection_condition": "Each printing row carries the code of the set it belongs to, and that code is the unique key of the sets table.",
+    "description": "A set is composed of the printings released in it; a printing row always names the set it belongs to, while a set can exist with no printing recorded in this corpus.",
+    "evidence": [
+      "ev_setcode_link",
+      "ev_sets_empty"
+    ]
+  },
+  {
+    "id": "r_printing_ruling",
+    "source": "term_card_printing",
+    "relation_type": "composition",
+    "target": "term_ruling",
+    "connection_condition": "The ruling record carries the uuid of the card printing it clarifies.",
+    "description": "Rulings are clarifications of a specific card printing and cannot exist independently of the printing they address; one printing may accumulate many rulings over time.",
+    "evidence": [
+      "ev_rulings_dates",
+      "ev_uuid_joins"
+    ]
+  },
+  {
+    "id": "r_printing_legality",
+    "source": "term_card_printing",
+    "relation_type": "composition",
+    "target": "term_format_legality",
+    "connection_condition": "The legality record carries the uuid of the card printing whose status it states.",
+    "description": "A format legality record belongs to one card printing and one format; without the printing the record has no subject.",
+    "evidence": [
+      "ev_legality_formats",
+      "ev_uuid_joins"
+    ]
+  },
+  {
+    "id": "r_printing_foreign",
+    "source": "term_card_printing",
+    "relation_type": "composition",
+    "target": "term_foreign_printing",
+    "connection_condition": "The foreign-language record carries the uuid of the card printing it localizes.",
+    "description": "A localized rendering is a version of one specific card printing and has no meaning apart from it; a printing may have localized rows in several languages or none.",
+    "evidence": [
+      "ev_foreign_languages",
+      "ev_uuid_joins"
+    ]
+  },
+  {
+    "id": "r_cardname_printing",
+    "source": "term_card_name",
+    "relation_type": "hierarchy",
+    "target": "term_card_printing",
+    "connection_condition": "",
+    "description": "Every printing is an instance of exactly one card name, and a card name is realised by one or more printings, so the printings of a name form a subset of the printings universe.",
+    "evidence": [
+      "ev_cards_grain",
+      "ev_reprint_identity"
+    ]
+  },
+  {
+    "id": "r_printing_creature",
+    "source": "term_card_printing",
+    "relation_type": "hierarchy",
+    "target": "term_creature_card",
+    "connection_condition": "",
+    "description": "Creature cards are a subset of card printings: every creature card is a printing whose type list contains Creature, while not every printing is a creature card.",
+    "evidence": [
+      "ev_creature_cmc",
+      "ev_types_encoding"
+    ]
+  },
+  {
+    "id": "r_color_multicolor",
+    "source": "term_card_color",
+    "relation_type": "derivation",
+    "target": "term_multicolor_card",
+    "connection_condition": "",
+    "description": "Being multicolored is derived from the card colour attribute: a printing is multicolored when its colour list contains more than one colour.",
+    "evidence": [
+      "ev_colors_encoding"
+    ]
+  },
+  {
+    "id": "r_color_colorless",
+    "source": "term_card_color",
+    "relation_type": "derivation",
+    "target": "term_colorless_card",
+    "connection_condition": "",
+    "description": "Being colorless is derived from the card colour attribute: a printing is colorless when its colour list is empty.",
+    "evidence": [
+      "ev_colors_encoding"
+    ]
+  },
+  {
+    "id": "r_color_identity",
+    "source": "term_card_color",
+    "relation_type": "derivation",
+    "target": "term_color_identity",
+    "connection_condition": "",
+    "description": "Colour identity is derived from the card's colours together with colours of mana symbols appearing in its rules text; that is why identity is a superset of colours and the two attributes disagree on some printings.",
+    "evidence": [
+      "ev_color_identity_superset"
+    ]
+  },
+  {
+    "id": "r_mana_cmc",
+    "source": "term_mana_cost",
+    "relation_type": "derivation",
+    "target": "term_converted_mana_cost",
+    "connection_condition": "",
+    "description": "Converted mana cost is computed from the mana cost string as the total mana value of its symbols; a card with no mana cost has a cost of zero, and the numeric field is populated for every printing.",
+    "evidence": [
+      "ev_mana_cost_empty",
+      "ev_cmc_field"
+    ]
+  },
+  {
+    "id": "r_oracleid_name",
+    "source": "term_oracle_card_id",
+    "relation_type": "equivalence",
+    "target": "term_card_name",
+    "connection_condition": "",
+    "description": "The oracle identifier and the card name both identify the logical card across printings. They are near-synonymous for that purpose but not identical: the identifier separates a few same-named cards while the name merges the faces of a multi-face card, so the two counts differ slightly.",
+    "evidence": [
+      "ev_oracle_id",
+      "ev_cards_grain"
+    ]
+  },
+  {
+    "id": "r_set_release_date",
+    "source": "term_set",
+    "relation_type": "association",
+    "target": "term_release_date",
+    "connection_condition": "The release date is a date attribute stored on the set record itself rather than a separate entity.",
+    "description": "A release date qualifies a set and, through the printing-to-set link, places printings on the corpus-wide timeline.",
+    "evidence": [
+      "ev_sets_fields",
+      "ev_setcode_link"
+    ]
+  },
+  {
+    "id": "r_set_settype",
+    "source": "term_set",
+    "relation_type": "association",
+    "target": "term_set_type",
+    "connection_condition": "The set type is a text category stored on the set record itself.",
+    "description": "Set type classifies a set into a product category such as core, expansion or promo, without a separate identifier reference.",
+    "evidence": [
+      "ev_sets_type_values"
+    ]
+  },
+  {
+    "id": "r_keyword_type",
+    "source": "term_keyword_ability",
+    "relation_type": "association",
+    "target": "term_card_type",
+    "connection_condition": "",
+    "description": "Keyword abilities and card types are analytically related because abilities are distributed very unevenly across types, but the keyword list is free text with no structural link to the type list.",
+    "evidence": [
+      "ev_keywords_encoding",
+      "ev_types_encoding"
+    ]
+  }
+]

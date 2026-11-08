@@ -1,0 +1,498 @@
+[
+  {
+    "id": "constraint_thrombosis_scale",
+    "target": "term_thrombosis",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "thrombosis",
+      "thrombotic event",
+      "thrombotic episode",
+      "blood clot",
+      "had thrombosis",
+      "thrombosis grade",
+      "thrombosis positive"
+    ],
+    "severity": "block",
+    "scope": "Applies whenever the Thrombosis column is filtered, counted or compared.",
+    "confidence": "high",
+    "description": "The thrombosis column is a graded integer with values 0, 1, 2 and 3, distributed as 726 / 57 / 18 / 5. Zero means no thrombosis was recorded; 1, 2 and 3 form an ordered scale of increasing involvement. The column is not a binary flag, so a test for 'has thrombosis' must be written as a comparison against zero rather than an equality test against one.",
+    "evidence": [
+      "ev_thrombosis_distribution"
+    ]
+  },
+  {
+    "id": "constraint_symptoms_tied_to_thrombosis",
+    "target": "term_thrombotic_symptom",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "symptoms",
+      "clinical manifestation",
+      "presenting symptom",
+      "thrombosis symptoms",
+      "recorded symptoms"
+    ],
+    "severity": "block",
+    "scope": "Applies whenever the Symptoms column is used as an inclusion filter or as a source of case descriptions.",
+    "confidence": "high",
+    "description": "Symptoms is populated on exactly the 80 rows whose thrombosis grade is above zero and is NULL on all 726 rows whose grade is zero. Selecting rows with a non-NULL Symptoms value is therefore equivalent to selecting a grade above zero in this snapshot, and the column cannot be used to identify symptomatic patients who had no recorded thrombotic event.",
+    "evidence": [
+      "ev_thrombosis_symptoms_coupling"
+    ]
+  },
+  {
+    "id": "constraint_symptom_text_encoding",
+    "target": "term_thrombotic_symptom",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "symptoms text",
+      "manifestation name",
+      "thrombocytopenia",
+      "CNS lupus",
+      "symptom wording"
+    ],
+    "severity": "warn",
+    "scope": "Applies when symptom texts are counted, grouped or matched.",
+    "confidence": "high",
+    "description": "The symptom field is free text with 39 distinct values. Capitalisation is inconsistent ('abortion' and 'Abortion'), spellings vary ('thrombocytopenia' and 'thrombocytepenia', 'CNS lupus' and 'CMS lupus'), and several values contain byte sequences that are not valid text and render as mojibake. Exact string matching will undercount; matching should be case-insensitive and tolerant of the corrupted values, which should be reported as unreadable rather than silently dropped.",
+    "evidence": [
+      "ev_thrombosis_symptoms_coupling",
+      "ev_thrombosis_positive_diagnoses"
+    ]
+  },
+  {
+    "id": "constraint_examination_patient_linkage",
+    "target": "term_examination",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "join patient",
+      "examination coverage",
+      "patient identifier",
+      "link examination",
+      "patients with examination"
+    ],
+    "severity": "block",
+    "scope": "Applies to every analysis that joins the Examination and Patient tables.",
+    "confidence": "high",
+    "description": "Only 70 of 806 examination rows resolve to a patient row: 36 rows have a NULL identifier and 694 of the 763 distinct identifiers do not exist in Patient. An inner join silently discards about 91 percent of examinations, and an examination-only analysis will describe a largely different set of subjects than a patient-joined analysis. The join coverage must be stated whenever examination-derived figures are reported alongside patient attributes.",
+    "evidence": [
+      "ev_exam_patient_linkage"
+    ]
+  },
+  {
+    "id": "constraint_laboratory_patient_linkage",
+    "target": "term_laboratory_record",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "laboratory coverage",
+      "lab patient join",
+      "patients with lab"
+    ],
+    "severity": "info",
+    "scope": "Applies when the Laboratory table is joined to Patient.",
+    "confidence": "high",
+    "description": "All 13908 laboratory rows resolve to one of 302 patient identifiers, so the Laboratory-to-Patient join is lossless. This is the only event table in the database with complete referential coverage.",
+    "evidence": [
+      "ev_lab_patient_linkage"
+    ]
+  },
+  {
+    "id": "constraint_examination_laboratory_overlap",
+    "target": "term_examination",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "cross table",
+      "examination and laboratory",
+      "compare exams and labs",
+      "same visit",
+      "linked visit"
+    ],
+    "severity": "block",
+    "scope": "Applies to any analysis that treats examination and laboratory results as belonging to the same clinical visit.",
+    "confidence": "high",
+    "description": "Only 20 patients hold records in both tables, and only 8 examination rows share an identical patient identifier and date with a laboratory row. The two tables cannot be treated as a single per-visit record: joining them at the row level discards almost everything, and joining them at patient level yields a very small overlapping group that should be reported explicitly.",
+    "evidence": [
+      "ev_exam_lab_overlap"
+    ]
+  },
+  {
+    "id": "constraint_diagnosis_multilabel",
+    "target": "term_patient_diagnosis",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "diagnosis",
+      "disease label",
+      "patients with",
+      "diagnosed with",
+      "comorbidity",
+      "disease group"
+    ],
+    "severity": "block",
+    "scope": "Applies whenever disease labels are filtered, grouped or counted.",
+    "confidence": "high",
+    "description": "The diagnosis column is free text holding one or more disease labels per row, separated irregularly by commas, space-plus-comma, or the raw control characters 0x1d and 0x0b. Values carry uncertainty qualifiers ('susp', 'susp.'), parenthetical detail ('SLE (diffuse LE)', 'PSS(CREST)'), inconsistent spacing and case, and one empty-string value rather than NULL. Exact equality against a label matches almost nothing; matching must be done on a normalised token basis, and because labels are multi-valued the counts of different diseases do not sum to the cohort size.",
+    "evidence": [
+      "ev_diagnosis_multilabel_encoding",
+      "ev_patient_diagnosis_tokens"
+    ]
+  },
+  {
+    "id": "constraint_diagnosis_naming_convention",
+    "target": "term_examination_diagnosis",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "Sjogren",
+      "Behcet",
+      "SJS",
+      "SjS",
+      "disease name",
+      "spelling",
+      "abbreviation"
+    ],
+    "severity": "block",
+    "scope": "Applies when disease labels are compared or combined across the Patient and Examination tables.",
+    "confidence": "high",
+    "description": "The patient-level and examination-level diagnosis columns use different naming conventions for two of the leading categories. The patient column contains 'SJS' 321 times and 'BEHCET' 93 times and never the alternatives; the examination column contains 'SjS' 101 times and 'Behcet' 10 times and never the all-caps forms. SLE, RA, PSS and MCTD are spelled identically in both columns. Any cross-table disease comparison must normalise these variants, otherwise one column silently reports zero for a disease that is the most frequent label in the other.",
+    "evidence": [
+      "ev_diagnosis_naming_convention"
+    ]
+  },
+  {
+    "id": "constraint_ana_titre_encoding",
+    "target": "term_antinuclear_antibody",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "ANA",
+      "antinuclear antibody",
+      "ANA positive",
+      "titre",
+      "titer",
+      "ANA value"
+    ],
+    "severity": "block",
+    "scope": "Applies when the antinuclear antibody column is filtered or compared.",
+    "confidence": "high",
+    "description": "The column stores a reciprocal titre. Zero encodes a negative result (206 rows) and the non-zero values are the dilution steps 4, 16, 64, 256, 1024 and 4096. Because the steps are a geometric series, arithmetic means over titre values are not meaningful; comparisons should stay ordinal or be made between named titre steps. One value of 4094 appears alongside 46 values of 4096 and is treated as a transcription error. Thirty-eight rows have a NULL titre, which means the test was not recorded rather than that it was negative.",
+    "evidence": [
+      "ev_ana_titre"
+    ]
+  },
+  {
+    "id": "constraint_ana_pattern_encoding",
+    "target": "term_ana_pattern",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "ANA pattern",
+      "staining pattern",
+      "speckled",
+      "peripheral",
+      "pattern code"
+    ],
+    "severity": "warn",
+    "scope": "Applies when the pattern column is filtered, grouped or joined to another column.",
+    "confidence": "high",
+    "description": "The pattern column is multi-valued. Its values are built from the single-letter codes S, P, D and N, but the same combination is written in several ways: 'P,S' (89) and 'S,P' (11) both occur, as do 'P.S', 'P,D', 'D,P' and lower-case 'p'. Comparing raw strings therefore splits identical patterns into separate groups. Values must be split on separators, upper-cased, sorted and de-duplicated before any comparison. The column is NULL on 261 rows.",
+    "evidence": [
+      "ev_ana_pattern"
+    ]
+  },
+  {
+    "id": "constraint_acl_isotype_scales",
+    "target": "term_acl_igg",
+    "constraint_type": "unit",
+    "trigger_keywords": [
+      "anticardiolipin",
+      "aCL",
+      "cardiolipin antibody",
+      "aCL IgG",
+      "aCL IgM",
+      "aCL IgA",
+      "antiphospholipid antibody"
+    ],
+    "severity": "warn",
+    "scope": "Applies when the three anticardiolipin isotype columns are compared, combined or summarised together.",
+    "confidence": "high",
+    "description": "The three isotype columns are measured and stored on different scales and with different storage types: aCL IgA is an INTEGER while aCL IgG and aCL IgM are REAL. The body of each distribution sits below 8, but the proportion sitting exactly at zero differs sharply (IgA 409 of 806, IgG and IgM far fewer). Pooling the isotypes, or applying one cutoff derived from one isotype to another, produces a category the data does not support; each isotype must be reported on its own scale with its own stated cutoff.",
+    "evidence": [
+      "ev_acl_igg_distribution",
+      "ev_acl_igm_distribution",
+      "ev_acl_iga_distribution"
+    ]
+  },
+  {
+    "id": "constraint_acl_extreme_values",
+    "target": "term_acl_igm",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "aCL IgM outlier",
+      "extreme value",
+      "maximum aCL",
+      "suspicious value"
+    ],
+    "severity": "warn",
+    "scope": "Applies to descriptive statistics and threshold-based classification on the anticardiolipin columns.",
+    "confidence": "high",
+    "description": "The largest aCL IgM value is 187122.0, roughly three orders of magnitude above the next largest value of 478.2, and the largest aCL IgG value is 2150.3 against a body of results below 8. These values dominate any mean or standard deviation computed on the raw column. They should either be excluded from summary statistics with the exclusion reported, or reported explicitly as suspected data errors rather than silently averaged in.",
+    "evidence": [
+      "ev_acl_igm_distribution",
+      "ev_acl_igg_distribution"
+    ]
+  },
+  {
+    "id": "constraint_crp_mixed_encoding",
+    "target": "term_crp",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "CRP",
+      "C-reactive protein",
+      "inflammation",
+      "inflammatory marker",
+      "elevated CRP",
+      "positive CRP"
+    ],
+    "severity": "block",
+    "scope": "Applies whenever the C-reactive protein column is filtered, compared numerically or aggregated.",
+    "confidence": "high",
+    "description": "The column is stored as text in four different encodings over 211 distinct values: a negative marker '-', below-detection thresholds of the form '<0.3', '<0.2', '<0.1' and '<0.002', semi-quantitative positive grades '+' , '2+' and '3+', and plain decimal strings such as '0.4' and '0.5'. No numeric comparison works across all four forms. Deciding whether a record is positive requires an explicit rule covering both the graded and the threshold encodings, and threshold values must be reported as censored rather than as exact measurements. 2453 rows are NULL, which means the test was not recorded.",
+    "evidence": [
+      "ev_crp_encoding"
+    ]
+  },
+  {
+    "id": "constraint_rf_assay_threshold",
+    "target": "term_rheumatoid_factor",
+    "constraint_type": "unit",
+    "trigger_keywords": [
+      "RF",
+      "rheumatoid factor",
+      "RF positive",
+      "seropositive",
+      "seronegative"
+    ],
+    "severity": "warn",
+    "scope": "Applies when rheumatoid factor results are classified as positive or negative.",
+    "confidence": "medium",
+    "description": "Results are stored as text with 903 distinct values. Values below the assay detection limit carry a '<' prefix ('<40' 606 rows, '<20.5', '<19.5', '<20.0', '<10'), while values at or above the limit are bare numbers, with 40 the most frequently reported bare value and 160 the next. A single malformed token '7-' occurs. Classification as positive or negative must state which detection threshold it assumes, because several different thresholds appear in the '<' values and none is declared in the database. 10571 rows are NULL.",
+    "evidence": [
+      "ev_rf_threshold"
+    ]
+  },
+  {
+    "id": "constraint_urinary_protein_encoding",
+    "target": "term_urinary_protein",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "urine protein",
+      "U-PRO",
+      "proteinuria",
+      "protein in urine",
+      "renal involvement"
+    ],
+    "severity": "block",
+    "scope": "Applies whenever the urine protein column is filtered or classified.",
+    "confidence": "high",
+    "description": "The column mixes scales. It holds a negative marker '-' (4579 rows), a zero token '0' (2748 rows), a trace marker 'TR' (866 rows), an ordinal grade scale '1' to '4' (801 rows), larger tokens that look like concentration amounts '30', '100' and '300' (593 rows), and one anomalous token '-15' (37 rows). Treating the column as numeric will misread the grade tokens, and treating it as purely categorical will separate the ordinal grades from the amount tokens that represent the same direction of abnormality. The classification rule chosen must be stated explicitly. 4241 rows are NULL.",
+    "evidence": [
+      "ev_urinary_protein_categories"
+    ]
+  },
+  {
+    "id": "constraint_coagulation_missingness",
+    "target": "term_laboratory_record",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "PT",
+      "APTT",
+      "fibrinogen",
+      "FG",
+      "PIC",
+      "TAT",
+      "coagulation",
+      "coagulation panel",
+      "clotting test"
+    ],
+    "severity": "block",
+    "scope": "Applies to any analysis that requires coagulation analytes from the Laboratory table.",
+    "confidence": "high",
+    "description": "The coagulation analytes are recorded on a small minority of the 13908 laboratory rows: PT 621, APTT 51, FG 455, PIC 76, TAT 142 and TAT2 119. An analysis restricted to examinations that have a PT or an APTT result silently drops more than 95 percent of the table, and because these analytes are only requested for selected patients, the retained subset is a clinically selected group rather than a random sample. The size of the restricted subset must be reported with any conclusion drawn from it.",
+    "evidence": [
+      "ev_laboratory_missingness"
+    ]
+  },
+  {
+    "id": "constraint_dna_antibody_column_choice",
+    "target": "term_dna_antibody",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "anti-DNA",
+      "DNA antibody",
+      "anti-dsDNA",
+      "DNA-II",
+      "DNA value"
+    ],
+    "severity": "block",
+    "scope": "Applies when an anti-DNA measurement is requested from the Laboratory table.",
+    "confidence": "high",
+    "description": "Two candidate columns exist and only one carries data. Laboratory.\"DNA-II\" is NULL in all 13908 rows; the informational column is the text column DNA, which has only 69 non-NULL rows with 66 distinct decimal strings and no standardised format. An analysis of anti-DNA must therefore use the DNA column, must tolerate its text storage, and must report that it is based on 69 of 13908 rows.",
+    "evidence": [
+      "ev_dna_columns"
+    ]
+  },
+  {
+    "id": "constraint_kct_rvvt_coverage",
+    "target": "term_kct",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "KCT",
+      "RVVT",
+      "dRVVT",
+      "coagulation work-up",
+      "phospholipid dependent assay",
+      "lupus anticoagulant panel"
+    ],
+    "severity": "warn",
+    "scope": "Applies when the KCT, RVVT and LAC columns are used jointly.",
+    "confidence": "high",
+    "description": "KCT and RVVT are non-NULL on exactly the same 146 examination rows (their NULL patterns are identical, with zero rows where one is present and the other absent), whereas LAC is recorded on 222 rows. The three assays therefore do not share a common subset: requiring all three narrows the data to at most the 146 rows with a complete KCT and RVVT pair, and requiring a LAC result alongside them narrows it further. Rows with a NULL assay mean the test was not performed and must not be counted as negative.",
+    "evidence": [
+      "ev_kct_rvvt_coupling",
+      "ev_lac_values"
+    ]
+  },
+  {
+    "id": "constraint_date_coverage",
+    "target": "term_examination",
+    "constraint_type": "scope",
+    "trigger_keywords": [
+      "time range",
+      "period",
+      "date coverage",
+      "which years",
+      "when",
+      "observation window"
+    ],
+    "severity": "info",
+    "scope": "Applies to any time-bounded or trend analysis.",
+    "confidence": "high",
+    "description": "The three tables cover different observation windows. Examination dates run from 1989-04-18 to 1998-04-17; Laboratory dates from 1981-01-27 to 1999-03-04; patient birth dates from 1912-08-28 to 2007-05-28; the patient 'First Date' column spans 1972-08-02 to 1998-08-28 and the patient Description column spans 1991-06-10 to 1998-12-03. A period filter applied across tables will not select comparable sets of records, and laboratory coverage extends roughly eight years earlier than examination coverage.",
+    "evidence": [
+      "ev_date_ranges"
+    ]
+  },
+  {
+    "id": "constraint_laboratory_grain",
+    "target": "term_laboratory_record",
+    "constraint_type": "scope",
+    "trigger_keywords": [
+      "per patient",
+      "repeated measurement",
+      "longitudinal",
+      "average per patient",
+      "latest value",
+      "time series"
+    ],
+    "severity": "info",
+    "scope": "Applies when laboratory values are summarised at patient level.",
+    "confidence": "high",
+    "description": "The table is a dense longitudinal series: 13908 rows across 302 patients, an average of 46 records per patient, with the pair (patient identifier, date) forming the primary key and no duplicates. Pooling rows across patients therefore weights heavily followed patients far more than others, and any patient-level summary needs an explicit selection rule such as a named date, the first value, or the last value within a window.",
+    "evidence": [
+      "ev_laboratory_grain"
+    ]
+  },
+  {
+    "id": "constraint_examination_grain",
+    "target": "term_examination",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "one examination per patient",
+      "repeated examination",
+      "examination count",
+      "how many examinations"
+    ],
+    "severity": "warn",
+    "scope": "Applies when examinations are counted or aggregated per patient.",
+    "confidence": "high",
+    "description": "The table has 806 rows over 763 distinct identifiers, about 1.05 rows per identifier, so it is very nearly one examination per patient. No primary key is declared, and six pairs of (identifier, examination date) are exactly duplicated, so a count of rows and a count of distinct identifier-date pairs differ. The 36 rows with a NULL identifier form a single group under a grouping by identifier, which inflates the apparent number of examinations for that group.",
+    "evidence": [
+      "ev_examination_grain"
+    ]
+  },
+  {
+    "id": "constraint_sex_missing_values",
+    "target": "term_sex",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "sex",
+      "gender",
+      "male",
+      "female",
+      "by sex"
+    ],
+    "severity": "warn",
+    "scope": "Applies when the cohort is broken down by sex.",
+    "confidence": "high",
+    "description": "The sex column uses the codes F (1023 patients) and M (202), plus an empty string in 13 rows. The missing values are empty strings rather than NULLs, so a filter for a non-missing sex must exclude the empty string explicitly; otherwise the empty-string group appears as a third category in any breakdown.",
+    "evidence": [
+      "ev_sex_values"
+    ]
+  },
+  {
+    "id": "constraint_immunoglobulin_scale",
+    "target": "term_immunoglobulin",
+    "constraint_type": "unit",
+    "trigger_keywords": [
+      "IgG",
+      "IgA",
+      "IgM",
+      "immunoglobulin",
+      "gammaglobulin",
+      "hypergammaglobulinemia",
+      "elevated immunoglobulin"
+    ],
+    "severity": "warn",
+    "scope": "Applies when immunoglobulin levels are summarised, compared between groups or classified as elevated.",
+    "confidence": "high",
+    "description": "The three isotype columns are stored as integers even though the underlying quantities are continuous, so small differences are lost. Their scales differ widely: IgG spans 3 to 6510 with median 1666, IgA spans 1 to 1765 with median 343, and IgM spans 0 to 1573 with median 152. A single numeric cutoff cannot serve all three isotypes, and any grouping into normal and elevated must state the cutoff and the isotype it applies to. The three columns are populated together on 2680 of 13908 rows.",
+    "evidence": [
+      "ev_immunoglobulin_ranges"
+    ]
+  },
+  {
+    "id": "constraint_patient_date_fields",
+    "target": "term_first_visit_date",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "first visit",
+      "first date",
+      "registration",
+      "follow-up start",
+      "onset date",
+      "Description"
+    ],
+    "severity": "warn",
+    "scope": "Applies when a patient-level reference date is needed, for example to compute age at presentation or to order patients chronologically.",
+    "confidence": "medium",
+    "description": "Two patient-level date columns exist and neither is documented. 'First Date' is NULL in 251 of 1238 rows and Description is NULL in 216; 152 rows carry a Description date while 'First Date' is NULL, and in 12 rows Description is earlier than 'First Date'. Choosing one column as the patient's start date therefore changes both the eligible cohort and the resulting ages. Whichever column is used, the choice and the number of excluded patients must be stated, and the two columns must not be treated as interchangeable.",
+    "evidence": [
+      "ev_patient_date_fields",
+      "ev_date_ranges"
+    ]
+  },
+  {
+    "id": "constraint_examination_diagnosis_missingness",
+    "target": "term_examination_diagnosis",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "examination diagnosis",
+      "diagnosis missing",
+      "no diagnosis",
+      "visit diagnosis"
+    ],
+    "severity": "warn",
+    "scope": "Applies when examinations are grouped or filtered by disease.",
+    "confidence": "high",
+    "description": "The examination-level diagnosis column is NULL in 331 of 806 rows, about 41 percent. Filtering examinations by a disease name therefore selects from a minority of the table, and the excluded rows are not recorded as disease-free; they are examinations for which no label was written. Any disease-based comparison of examinations must report the number of rows with no label.",
+    "evidence": [
+      "ev_examination_diagnosis_tokens"
+    ]
+  }
+]

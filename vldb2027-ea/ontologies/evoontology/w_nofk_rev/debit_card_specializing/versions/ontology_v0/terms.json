@@ -1,0 +1,322 @@
+[
+  {
+    "id": "customer",
+    "name": "Customer",
+    "type": "entity",
+    "definition": "A party that buys fuel and other goods at gas stations and is billed in a single payment currency. Each customer is identified by a unique customers.CustomerID.",
+    "scope": "Customer-level population, segmentation and currency analysis; also the owning entity of monthly consumption records and of transaction lines.",
+    "aliases": [
+      "client",
+      "buyer",
+      "account"
+    ],
+    "evidence": [
+      "e_rowcounts",
+      "e_yearmonth_integrity"
+    ]
+  },
+  {
+    "id": "customer_segment",
+    "name": "Customer Segment",
+    "type": "dimension",
+    "definition": "Classification of a customer into one of the business segments recorded in customers.Segment. The observed value domain is KAM, LAM and SME.",
+    "scope": "Applies only to the customers table. Must not be confused with the identically named gasstations.Segment, whose value domain is disjoint from this one.",
+    "aliases": [
+      "segment",
+      "customer type",
+      "customer class",
+      "client segment"
+    ],
+    "evidence": [
+      "e_customer_segment_values"
+    ]
+  },
+  {
+    "id": "sme_customer",
+    "name": "SME Customer",
+    "type": "category",
+    "definition": "The subset of customers whose customer_segment value is 'SME'. The construction workload refers to these customers as SMEs.",
+    "scope": "Subset of the customer_segment value domain limited to the single value 'SME'; used when a question asks about small and medium enterprises.",
+    "aliases": [
+      "SME",
+      "SMEs",
+      "small and medium enterprises"
+    ],
+    "evidence": [
+      "e_customer_segment_values"
+    ]
+  },
+  {
+    "id": "customer_currency",
+    "name": "Customer Payment Currency",
+    "type": "dimension",
+    "definition": "The currency in which a customer settles payments, recorded in customers.Currency. The observed value domain is CZK (Czech koruna) and EUR (euro).",
+    "scope": "Applies only to the customers table. Describes the customer's billing currency; it is not a property of an individual transaction row or of a gas station location.",
+    "aliases": [
+      "currency",
+      "billing currency",
+      "payment currency"
+    ],
+    "evidence": [
+      "e_customer_currency_values"
+    ]
+  },
+  {
+    "id": "currency_customer_ratio",
+    "name": "Currency Customer Ratio",
+    "type": "metric",
+    "definition": "The relative size of one customer currency group against another, expressed as a count of customers in one currency divided by the count of customers in the other currency.",
+    "scope": "Customer-population comparison across the customer_currency dimension.",
+    "aliases": [
+      "EUR to CZK ratio",
+      "share of customers by currency"
+    ],
+    "evidence": [
+      "e_customer_currency_values",
+      "e_currency_ratio"
+    ]
+  },
+  {
+    "id": "gas_station",
+    "name": "Gas Station",
+    "type": "entity",
+    "definition": "A retail fuel outlet where transactions take place, identified by a unique gasstations.GasStationID. Each station belongs to a chain, is located in a country and carries a station segment.",
+    "scope": "Station-level population and location/segment analysis; also the owning entity of transaction lines.",
+    "aliases": [
+      "station",
+      "petrol station",
+      "filling station",
+      "outlet"
+    ],
+    "evidence": [
+      "e_rowcounts",
+      "e_gasstation_chain"
+    ]
+  },
+  {
+    "id": "gas_station_segment",
+    "name": "Gas Station Segment",
+    "type": "dimension",
+    "definition": "Classification of a gas station into one of the market segments recorded in gasstations.Segment. The observed value domain is Discount, Noname, Other, Premium and Value for money.",
+    "scope": "Applies only to the gasstations table. Questions mentioning 'premium' or 'discount' stations refer to this dimension, not to customer_segment.",
+    "aliases": [
+      "segment",
+      "station type",
+      "station class",
+      "premium",
+      "discount"
+    ],
+    "evidence": [
+      "e_gasstation_segment_values"
+    ]
+  },
+  {
+    "id": "gas_station_country",
+    "name": "Gas Station Country",
+    "type": "dimension",
+    "definition": "The country in which a gas station is located, recorded in gasstations.Country. The observed value domain is CZE (Czech Republic) and SVK (Slovakia).",
+    "scope": "Applies only to the gasstations table. Geographic location of the station, not of the customer; the customers table carries no country attribute.",
+    "aliases": [
+      "country",
+      "Czech Republic",
+      "Slovakia",
+      "location"
+    ],
+    "evidence": [
+      "e_gasstation_country_values"
+    ]
+  },
+  {
+    "id": "gas_station_chain",
+    "name": "Gas Station Chain",
+    "type": "dimension",
+    "definition": "The retail chain or brand grouping that a gas station belongs to, recorded as gasstations.ChainID. Chain identifiers are opaque numeric codes.",
+    "scope": "Groups stations into chains for brand-level aggregation; the database contains no separate chain name table.",
+    "aliases": [
+      "chain",
+      "brand",
+      "chain id"
+    ],
+    "evidence": [
+      "e_gasstation_chain"
+    ]
+  },
+  {
+    "id": "product",
+    "name": "Product",
+    "type": "entity",
+    "definition": "An item that can be purchased in a transaction, identified by a unique products.ProductID and named by products.Description.",
+    "scope": "Product catalogue used to label what was bought in a transaction line.",
+    "aliases": [
+      "item",
+      "article",
+      "goods",
+      "commodity"
+    ],
+    "evidence": [
+      "e_products"
+    ]
+  },
+  {
+    "id": "product_description",
+    "name": "Product Description",
+    "type": "dimension",
+    "definition": "The human-readable product name stored in products.Description, expressed mostly in Czech. 591 product records carry 529 distinct descriptions.",
+    "scope": "Use when a question asks for product names or descriptions rather than product identifiers.",
+    "aliases": [
+      "description",
+      "product name",
+      "product label"
+    ],
+    "evidence": [
+      "e_products"
+    ]
+  },
+  {
+    "id": "transaction",
+    "name": "Transaction",
+    "type": "entity",
+    "definition": "A single purchase line recorded in transactions_1k, tying one date and time, one customer, one payment card, one gas station, one product, a purchased quantity and a paid price.",
+    "scope": "Transaction-level fact table. The table is a 1000-row sample, so it does not represent the complete historical transaction activity of the business.",
+    "aliases": [
+      "purchase",
+      "sale",
+      "transaction line",
+      "payment"
+    ],
+    "evidence": [
+      "e_transaction_date_range",
+      "e_transaction_join_integrity",
+      "e_transaction_scope"
+    ]
+  },
+  {
+    "id": "transaction_date",
+    "name": "Transaction Date",
+    "type": "dimension",
+    "definition": "The calendar day on which a transaction took place, stored in transactions_1k.Date as a 'YYYY-MM-DD' text value.",
+    "scope": "Day-level time dimension of the transaction table, covering only 2012-08-23 through 2012-08-26.",
+    "aliases": [
+      "date",
+      "transaction day",
+      "purchase date"
+    ],
+    "evidence": [
+      "e_transaction_date_range"
+    ]
+  },
+  {
+    "id": "transaction_time",
+    "name": "Transaction Time",
+    "type": "dimension",
+    "definition": "The time of day at which a transaction took place, stored in transactions_1k.Time as an 'HH:MM:SS' text value.",
+    "scope": "Time-of-day filtering within a transaction day; used for hour-window questions.",
+    "aliases": [
+      "time",
+      "hour",
+      "time of day"
+    ],
+    "evidence": [
+      "e_time_format"
+    ]
+  },
+  {
+    "id": "transaction_amount",
+    "name": "Transaction Amount",
+    "type": "metric",
+    "definition": "The quantity of the product purchased in a transaction line, stored in transactions_1k.Amount. It is a quantity, not a monetary value.",
+    "scope": "Additive measure across transaction lines; must not be confused with the monetary price column.",
+    "aliases": [
+      "amount",
+      "quantity",
+      "volume purchased",
+      "litres"
+    ],
+    "evidence": [
+      "e_amount_zero"
+    ]
+  },
+  {
+    "id": "transaction_price",
+    "name": "Transaction Price",
+    "type": "metric",
+    "definition": "The total monetary value paid for a transaction line, stored in transactions_1k.Price. It is already the line total for the recorded quantity, not a unit price.",
+    "scope": "Additive monetary measure; summing it over a customer's lines gives that customer's spending.",
+    "aliases": [
+      "price",
+      "revenue",
+      "sales amount",
+      "spending"
+    ],
+    "evidence": [
+      "e_amount_zero",
+      "e_transaction_price_range"
+    ]
+  },
+  {
+    "id": "customer_total_spending",
+    "name": "Customer Total Spending",
+    "type": "metric",
+    "definition": "The total monetary value a customer has paid across their transaction lines, obtained by aggregating the transaction price measure per customer.",
+    "scope": "Customer-level monetary aggregate used to rank customers by spending.",
+    "aliases": [
+      "total spending",
+      "top spending customer",
+      "total paid",
+      "customer revenue"
+    ],
+    "evidence": [
+      "e_top_spending_customer"
+    ]
+  },
+  {
+    "id": "average_price_per_unit",
+    "name": "Average Price per Unit",
+    "type": "metric",
+    "definition": "The mean monetary value of one purchased unit for a customer, defined as the customer's total transaction price divided by the customer's total purchased amount.",
+    "scope": "Aggregate customer-level ratio; because individual lines can carry a zero quantity, the ratio is only meaningful when computed over aggregated totals rather than per row.",
+    "aliases": [
+      "average price per single item",
+      "unit price",
+      "average unit price",
+      "price per item"
+    ],
+    "evidence": [
+      "e_amount_zero",
+      "e_top_spending_customer"
+    ]
+  },
+  {
+    "id": "gas_consumption",
+    "name": "Gas Consumption",
+    "type": "metric",
+    "definition": "The volume of fuel consumed by a customer during one calendar month, stored in yearmonth.Consumption.",
+    "scope": "Monthly per-customer consumption measure sourced from the yearmonth table; it is a separate record type from the transaction table and is not derived from transactions.",
+    "aliases": [
+      "consumption",
+      "fuel consumption",
+      "gas consumed",
+      "consumed"
+    ],
+    "evidence": [
+      "e_consumption_stats"
+    ]
+  },
+  {
+    "id": "year_month",
+    "name": "Year-Month Period",
+    "type": "dimension",
+    "definition": "The calendar month to which a consumption record belongs, stored in yearmonth.Date as a six-character 'YYYYMM' text value.",
+    "scope": "Monthly time dimension for consumption analysis; the first four characters denote the year and the last two the month.",
+    "aliases": [
+      "date",
+      "month",
+      "period",
+      "yearmonth"
+    ],
+    "evidence": [
+      "e_yearmonth_date_format",
+      "e_yearmonth_scope"
+    ]
+  }
+]

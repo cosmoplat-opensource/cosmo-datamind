@@ -1,0 +1,202 @@
+[
+  {
+    "id": "evidence_table_inventory",
+    "source": "european_football_2.sqlite (read-only)",
+    "query": "SELECT 'tab01',COUNT(*) FROM tab01 UNION ALL SELECT 'tab02',COUNT(*) FROM tab02 UNION ALL SELECT 'tab03',COUNT(*) FROM tab03 UNION ALL SELECT 'tab04',COUNT(*) FROM tab04 UNION ALL SELECT 'tab05',COUNT(*) FROM tab05 UNION ALL SELECT 'tab06',COUNT(*) FROM tab06 UNION ALL SELECT 'tab07',COUNT(*) FROM tab07;",
+    "result": "tab01=183978, tab02=11060, tab03=11, tab04=11, tab05=299, tab06=1458, tab07=25979",
+    "validation_method": "full-table row counts together with DDL inspection (sqlite3 .schema)",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "evidence_schema_foreign_keys",
+    "source": "european_football_2.sqlite (read-only)",
+    "query": "sqlite3 .schema",
+    "result": "Declared foreign keys: tab01.fld002->tab02.fld002, tab01.fld003->tab02.fld003, tab03.fld047->tab04.fld001, tab06.fld049->tab05.fld049, tab06.fld050->tab05.fld050, tab07.fld047->tab04.fld001, tab07.fld074->tab03.fld001, tab07.fld078->tab05.fld049, tab07.fld079->tab05.fld049, tab07.fld126..fld147->tab02.fld003",
+    "validation_method": "DDL inspection",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "evidence_fk_join_coverage",
+    "source": "european_football_2.sqlite (read-only)",
+    "query": "SELECT COUNT(*) FROM (SELECT DISTINCT fld003 FROM tab01 WHERE fld003 IS NOT NULL AND NOT EXISTS (SELECT 1 FROM tab02 p WHERE p.fld003=tab01.fld003)); analogous NOT EXISTS anti-joins for tab07.fld074->tab03.fld001, tab07.fld047->tab04.fld001, tab07.fld126->tab02.fld003, tab07.fld147->tab02.fld003, tab03.fld047->tab04.fld001, tab06.fld049->tab05.fld049",
+    "result": "0 unmatched rows in every check; all 1458 team-attribute rows resolve to tab05.fld049; every distinct match team value resolves to tab05.fld049",
+    "validation_method": "anti-join coverage counts",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "evidence_player_roster",
+    "source": "european_football_2.sqlite (read-only)",
+    "query": "SELECT fld001,fld002,fld003,fld043,fld044,fld045,fld046 FROM tab02 LIMIT 3; SELECT MIN(substr(fld044,1,10)),MAX(substr(fld044,1,10)) FROM tab02;",
+    "result": "11060 players; example row (1, 218353, 505942, 'Aaron Appindangoye', '1992-02-29 00:00:00', 182.88, 187); fld002 and fld003 are each unique; birthdates span 1967-01-23 to 1999-04-24; 0 nulls in name, birthdate and height",
+    "validation_method": "representative rows plus uniqueness and null checks",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "evidence_player_measurements",
+    "source": "european_football_2.sqlite (read-only)",
+    "query": "SELECT MIN(fld045),MAX(fld045),MIN(fld046),MAX(fld046),SUM(fld045 IS NULL),SUM(fld044 IS NULL),SUM(fld043 IS NULL) FROM tab02;",
+    "result": "height 157.48-208.28, weight 117-243, zero nulls in height, birthdate and name",
+    "validation_method": "range and null-count inspection",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "evidence_player_attr_snapshots",
+    "source": "european_football_2.sqlite (read-only)",
+    "query": "SELECT COUNT(*),COUNT(DISTINCT fld003),COUNT(DISTINCT substr(fld004,1,10)),MIN(substr(fld004,1,10)),MAX(substr(fld004,1,10)) FROM tab01; SELECT substr(fld004,1,10),COUNT(*) FROM tab01 GROUP BY 1 ORDER BY 1;",
+    "result": "183978 rows, 11060 distinct players, 197 distinct snapshot dates, 2007-02-22 to 2016-07-07; snapshot sizes range from 1 row to 11794 rows (2007-02-22); each date stores a 'YYYY-MM-DD 00:00:00' text timestamp",
+    "validation_method": "grain, coverage and date-format inspection",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "evidence_attribute_ranges",
+    "source": "european_football_2.sqlite (read-only)",
+    "query": "SELECT MIN(fld005),MAX(fld005),MIN(fld011),MAX(fld011),MIN(fld014),MAX(fld014),MIN(fld015),MAX(fld015),SUM(fld005 IS NULL),SUM(fld011 IS NULL) FROM tab01;",
+    "result": "overall rating 33-94 (836 nulls); finishing 1-97 (836 nulls); volley 1-93; dribbling 1-97",
+    "validation_method": "range and null-count inspection",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "evidence_work_rate_values",
+    "source": "european_football_2.sqlite (read-only)",
+    "query": "SELECT quote(fld008),COUNT(*) FROM tab01 GROUP BY fld008 ORDER BY 2 DESC; SELECT quote(fld009),COUNT(*) FROM tab01 GROUP BY fld009 ORDER BY 2 DESC;",
+    "result": "fld008: 'medium' 125070, 'high' 42823, 'low' 8569, 'None' 3639, NULL 3230, 'norm' 348, 'y' 106, 'le' 104, 'stoc' 89. fld009: 'medium' 130846, 'high' 27041, 'low' 18432, NULL 836, '_0' 2394, 'o' 1550, '1' 441, 'ormal' 348, '2' 342, '3' 258, '5' 234, '7' 217, '6' 197, '0' 197, '9' 152, '4' 116, 'es' 106, 'ean' 104, 'tocky' 89, '8' 78",
+    "validation_method": "quoted value-domain distribution exposing truncated string fragments",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "evidence_work_rate_meaning",
+    "source": "construction workload evidence (minidev_rev european_football_2), validated against tab01 value domains",
+    "query": "SELECT DISTINCT fld008 FROM tab01; SELECT DISTINCT fld009 FROM tab01; SELECT fld008,fld009,COUNT(*) FROM tab01 WHERE fld008 IN ('high','medium','low') AND fld009 IN ('high','medium','low') GROUP BY fld008,fld009;",
+    "result": "The construction workload grounds 'tend to be attacking when mates attack' in fld008='high' and 'remain in his position and defense while the team attacked' in fld009='high'. Both columns share the low/medium/high domain and all nine pairwise combinations occur (for example high/high 7939 and high/low 5727), so the two work rates vary independently.",
+    "validation_method": "workload evidence cross-checked against column value domains and a cross-tabulation",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "evidence_player_name_format",
+    "source": "european_football_2.sqlite (read-only)",
+    "query": "SELECT COUNT(*) FROM tab02 WHERE fld043 LIKE 'Aaron%'; SELECT fld003,fld043,fld044 FROM tab02 WHERE fld043 LIKE 'Aaron%' LIMIT 5; PRAGMA table_info(tab02);",
+    "result": "18 players have a name beginning with 'Aaron'; names are single full-name strings embedded in tab02, and tab02 has no separate first-name or last-name columns",
+    "validation_method": "prefix-count and schema inspection",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "evidence_player_name_duplicates",
+    "source": "european_football_2.sqlite (read-only)",
+    "query": "SELECT COUNT(*) FROM (SELECT fld043 FROM tab02 GROUP BY fld043 HAVING COUNT(*)>1); SELECT COUNT(*) FROM tab02 WHERE fld043 IN (SELECT fld043 FROM tab02 GROUP BY fld043 HAVING COUNT(*)>1);",
+    "result": "163 duplicated name groups covering 375 player rows",
+    "validation_method": "duplicate-group counts",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "evidence_team_roster",
+    "source": "european_football_2.sqlite (read-only)",
+    "query": "SELECT * FROM tab05 LIMIT 3; SELECT COUNT(*) FROM tab05;",
+    "result": "299 teams; example row (1, 9987, 673, 'KRC Genk', 'GEN')",
+    "validation_method": "representative rows and row count",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "evidence_team_name_duplicates",
+    "source": "european_football_2.sqlite (read-only)",
+    "query": "SELECT fld051,COUNT(*) FROM tab05 GROUP BY fld051 HAVING COUNT(*)>1; SELECT fld052,COUNT(*) FROM tab05 GROUP BY fld052 HAVING COUNT(*)>1;",
+    "result": "3 duplicated long names (Polonia Bytom, Royal Excel Mouscron, Widzew Lodz); 34 duplicated short codes, for example AJA, AMA, BAR, BAS and BEL appearing three times",
+    "validation_method": "duplicate-group counts",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "evidence_team_id_systems",
+    "source": "european_football_2.sqlite (read-only)",
+    "query": "SELECT COUNT(*),COUNT(fld049),COUNT(fld050) FROM tab05; SELECT COUNT(*) FROM (SELECT fld049 FROM tab05 INTERSECT SELECT fld050 FROM tab05); SELECT COUNT(*) FROM tab05 WHERE fld050 IS NULL AND fld049 IN (SELECT fld049 FROM tab06); SELECT COUNT(*) FROM (SELECT DISTINCT fld078 FROM tab07 m WHERE NOT EXISTS (SELECT 1 FROM tab05 t WHERE t.fld050=m.fld078));",
+    "result": "299 team rows; fld049 has 299 non-null unique values; fld050 has 288 non-null values; the intersection of the two value sets is empty; the 11 null-fld050 teams have no team-attribute rows and do have match rows; all 299 distinct match team ids resolve to fld049 and none resolve to fld050",
+    "validation_method": "uniqueness, disjointness, null and anti-join checks",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "evidence_team_attr_snapshots",
+    "source": "european_football_2.sqlite (read-only)",
+    "query": "SELECT substr(fld004,1,10),COUNT(*) FROM tab06 GROUP BY 1 ORDER BY 1; SELECT COUNT(*),COUNT(DISTINCT fld049) FROM tab06;",
+    "result": "six snapshot dates: 2010-02-22 (241), 2011-02-22 (244), 2012-02-22 (242), 2013-09-20 (242), 2014-09-19 (244), 2015-09-10 (245); 1458 rows over 288 teams",
+    "validation_method": "date grouping and coverage counts",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "evidence_team_attr_ranges",
+    "source": "european_football_2.sqlite (read-only)",
+    "query": "SELECT MIN(fld053),MAX(fld053),MIN(fld057),MAX(fld057),MIN(fld060),MAX(fld060),MIN(fld064),MAX(fld064) FROM tab06;",
+    "result": "build-up play speed 20-80; build-up play passing 20-80; chance-creation passing 21-80; chance-creation shooting 22-80",
+    "validation_method": "range inspection",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "evidence_class_domains",
+    "source": "european_football_2.sqlite (read-only)",
+    "query": "SELECT group_concat(DISTINCT fld054), group_concat(DISTINCT fld056), group_concat(DISTINCT fld058), group_concat(DISTINCT fld059), group_concat(DISTINCT fld061), group_concat(DISTINCT fld063), group_concat(DISTINCT fld065), group_concat(DISTINCT fld066), group_concat(DISTINCT fld068), group_concat(DISTINCT fld070), group_concat(DISTINCT fld072), group_concat(DISTINCT fld073) FROM tab06; SELECT quote(fld061),COUNT(*) FROM tab06 GROUP BY fld061;",
+    "result": "fld054 Balanced/Fast/Slow; fld056 Little/Normal/Lots; fld058 Mixed/Long/Short; fld059 Organised/Free Form; fld061 Normal/Risky/Safe; fld063 Normal/Lots/Little; fld065 Normal/Lots/Little; fld066 Organised/Free Form; fld068 Medium/Deep/High; fld070 Press/Double/Contain; fld072 Normal/Wide/Narrow; fld073 Cover/Offside Trap. fld061 counts: 'Normal' 1231, 'Risky' 171, 'Safe' 56; values have no surrounding whitespace",
+    "validation_method": "distinct-domain inspection with quoting",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "evidence_class_pairs",
+    "source": "european_football_2.sqlite (read-only)",
+    "query": "SELECT fld053,fld054,fld057,fld058,fld060,fld061 FROM tab06 LIMIT 5; plus distinct-domain inspection of each numeric column and its adjacent class column",
+    "result": "numeric team-attribute columns are adjacent to a categorical class column: fld053 speed with fld054 Balanced/Fast/Slow, fld057 passing with fld058 Mixed/Long/Short, fld060 chance-creation passing with fld061 Normal/Risky/Safe; the class values are ordered bucket labels of the numeric score",
+    "validation_method": "column adjacency and value-domain correspondence",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "evidence_league_country",
+    "source": "european_football_2.sqlite (read-only)",
+    "query": "SELECT * FROM tab03; SELECT * FROM tab04;",
+    "result": "11 leagues and 11 countries; tab03.fld048 holds league names such as 'Scotland Premier League' and 'England Premier League'; tab04.fld048 holds country names such as 'Scotland' and 'England'; tab03.fld047 corresponds to tab04.fld001",
+    "validation_method": "full lookup-table inspection and join check",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "evidence_league_names",
+    "source": "european_football_2.sqlite (read-only)",
+    "query": "SELECT fld048 FROM tab03;",
+    "result": "Belgium Jupiler League, England Premier League, France Ligue 1, Germany 1. Bundesliga, Italy Serie A, Netherlands Eredivisie, Poland Ekstraklasa, Portugal Liga ZON Sagres, Scotland Premier League, Spain LIGA BBVA, Switzerland Super League",
+    "validation_method": "distinct value listing",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "evidence_seasons",
+    "source": "european_football_2.sqlite (read-only)",
+    "query": "SELECT fld075,COUNT(*),MIN(substr(fld004,1,10)),MAX(substr(fld004,1,10)) FROM tab07 GROUP BY fld075 ORDER BY fld075;",
+    "result": "8 seasons with match counts: 2008/2009 3326 (2008-07-18 to 2009-05-31), 2009/2010 3230 (2009-07-11 to 2010-05-16), 2010/2011 3260, 2011/2012 3220, 2012/2013 3260, 2013/2014 3032, 2014/2015 3325, 2015/2016 3326 (2015-07-17 to 2016-05-25)",
+    "validation_method": "season grouping with match-date spans",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "evidence_match_table",
+    "source": "european_football_2.sqlite (read-only)",
+    "query": "SELECT fld001,fld047,fld074,fld075,fld076,fld004,fld077,fld078,fld079,fld080,fld081 FROM tab07 LIMIT 2; SELECT MIN(fld076),MAX(fld076),COUNT(DISTINCT fld076) FROM tab07;",
+    "result": "25979 matches; stage ranges 1-38; each row carries country reference fld047, league reference fld074, season fld075, date fld004, home team fld078, away team fld079, home goals fld080 and away goals fld081; example row (1, 1, 1, '2008/2009', 1, '2008-08-17 00:00:00', 492473, 9987, 9993, 1, 1)",
+    "validation_method": "representative rows, stage range and row count",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "evidence_goal_ranges",
+    "source": "european_football_2.sqlite (read-only)",
+    "query": "SELECT MIN(fld080),MAX(fld080),MIN(fld081),MAX(fld081),SUM(fld080 IS NULL),SUM(fld081 IS NULL) FROM tab07; SELECT COUNT(fld082),COUNT(fld125) FROM tab07;",
+    "result": "home goals 0-10 and away goals 0-9 with zero nulls in both; the detailed match-statistic columns such as fld082 and fld125 are populated for about 24147 of 25979 matches",
+    "validation_method": "range and null-count inspection",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "evidence_null_attribute_rows",
+    "source": "european_football_2.sqlite (read-only)",
+    "query": "SELECT COUNT(*) FROM tab01 WHERE fld005 IS NULL AND fld006 IS NULL AND fld010 IS NULL AND fld042 IS NULL; SELECT substr(fld004,1,10),SUM(fld005 IS NULL) FROM tab01 GROUP BY 1 ORDER BY 1;",
+    "result": "836 rows with all ability fields null, 735 of them in the 2007-02-22 snapshot; other snapshot dates have between 0 and 30 null ratings",
+    "validation_method": "null-pattern and per-date null counts",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "evidence_player_slots",
+    "source": "european_football_2.sqlite (read-only)",
+    "query": "SELECT COUNT(fld126),COUNT(fld136),COUNT(fld137),COUNT(fld147) FROM tab07; anti-join checks from tab07.fld126 and tab07.fld147 to tab02.fld003",
+    "result": "the home and away player slots fld126 through fld147 are populated for roughly 24400 to 24755 matches each, and every non-null slot resolves to tab02.fld003 with zero unmatched rows",
+    "validation_method": "population counts and anti-join coverage",
+    "timestamp": "2026-11-06"
+  }
+]

@@ -1,0 +1,326 @@
+[
+  {
+    "id": "constraint_season_label",
+    "target": "season",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "season",
+      "2016 season",
+      "2010 season",
+      "2008/2009",
+      "in the season",
+      "season year"
+    ],
+    "severity": "block",
+    "scope": "Any filter or grouping by season on match data.",
+    "confidence": "high",
+    "description": "Season values are two-year labels naming the starting year: '2015/2016' means the season that began in 2015. A phrase such as 'the 2016 season' maps to '2015/2016', and 'the 2010 season' maps to '2009/2010'. A season spans July of the first year to May or June of the second, so it is not the same as a calendar year of the match date; filter on the season label. Eight seasons exist, 2008/2009 through 2015/2016.",
+    "evidence": "evidence_seasons"
+  },
+  {
+    "id": "constraint_date_text_format",
+    "target": "player_attribute_snapshot",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "on 2015/5/1",
+      "on 2016/2/4",
+      "on a date",
+      "from ... to ...",
+      "between dates",
+      "2013/7/12",
+      "in 2012"
+    ],
+    "severity": "block",
+    "scope": "Date-based filtering on player snapshots, team snapshots and matches.",
+    "confidence": "high",
+    "description": "Date fields are text timestamps of the form 'YYYY-MM-DD 00:00:00'. A date-only condition such as 'on 2015/5/1' must compare the day part (the first ten characters) rather than the whole timestamp string; range conditions work on the ten-character date prefix.",
+    "evidence": "evidence_player_attr_snapshots"
+  },
+  {
+    "id": "constraint_player_attr_temporal",
+    "target": "player_attribute_snapshot",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "player attributes",
+      "overall rating",
+      "on a date",
+      "average overall rating",
+      "from ... to ...",
+      "player rating history"
+    ],
+    "severity": "block",
+    "scope": "Point-in-time or period questions about player abilities.",
+    "confidence": "high",
+    "description": "Player attributes are repeated dated snapshots: 183978 rows for 11060 players across 197 snapshot dates from 2007-02-22 to 2016-07-07. A player therefore has many rows. A point-in-time question selects the snapshot at that date; an average question averages the player's snapshot values over the requested period. Treating the table as one row per player produces wrong results.",
+    "evidence": "evidence_player_attr_snapshots"
+  },
+  {
+    "id": "constraint_work_rate_values",
+    "target": "attacking_work_rate",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "work rate",
+      "attacking work rate",
+      "defensive work rate",
+      "high",
+      "medium",
+      "low",
+      "remain in position",
+      "tends to attack"
+    ],
+    "severity": "warning",
+    "scope": "Reading or filtering either work-rate column.",
+    "confidence": "high",
+    "description": "The intended domain is low, medium and high, with nulls. Some rows instead contain truncated fragments of unrelated strings ('le', 'ean', 'norm', 'ormal', 'stoc', 'tocky', 'y', '_0', 'o', and single digits). These fragments are corrupt values and must not be read as work-rate categories. Exact matching on 'high', 'medium' or 'low' is safe, but treating every non-high value as low would be wrong.",
+    "evidence": "evidence_work_rate_values"
+  },
+  {
+    "id": "constraint_work_rate_meaning",
+    "target": "attacking_work_rate",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "tend to be attacking",
+      "attack moves",
+      "attacking work rate",
+      "remain in position",
+      "defense while team attacked",
+      "defensive work rate",
+      "would remain in his position"
+    ],
+    "severity": "block",
+    "scope": "Interpreting natural-language descriptions of player work rates.",
+    "confidence": "high",
+    "description": "Attacking work rate expresses how often a player joins the attack when the team attacks; defensive work rate expresses how often the player holds position and defends while the team attacks. A high attacking work rate means the player tends to attack when mates attack; a high defensive work rate means the player tends to remain in position and defend. The two columns vary independently: all nine combinations of low, medium and high occur.",
+    "evidence": "evidence_work_rate_meaning"
+  },
+  {
+    "id": "constraint_player_name_not_unique",
+    "target": "player_name",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "player name",
+      "named",
+      "first name",
+      "who is",
+      "list down their name",
+      "how many players"
+    ],
+    "severity": "warning",
+    "scope": "Player lookup by name and counting players from a name filter.",
+    "confidence": "high",
+    "description": "Player names are stored as one full-name string, with no separate first-name or last-name field; a first-name condition must be applied to the beginning of the full name. Names are not unique: 163 names are shared, covering 375 player rows. A name filter can therefore match several players, and counting matched rows counts snapshot rows unless players are counted distinctly.",
+    "evidence": "evidence_player_name_duplicates"
+  },
+  {
+    "id": "constraint_team_name_not_unique",
+    "target": "team_short_name",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "short name",
+      "team name",
+      "long name",
+      "which team"
+    ],
+    "severity": "warning",
+    "scope": "Team identification by name or code.",
+    "confidence": "high",
+    "description": "Neither team name column is a key: 34 short codes are shared by multiple teams and three long names are each shared by two teams. Use the team FIFA-API identifier to distinguish teams; use names only for display.",
+    "evidence": "evidence_team_name_duplicates"
+  },
+  {
+    "id": "constraint_team_id_systems",
+    "target": "team",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "team_fifa_api_id",
+      "team api id",
+      "team id",
+      "join team",
+      "team attributes",
+      "home team",
+      "away team"
+    ],
+    "severity": "block",
+    "scope": "Joining team references between matches, team attributes and the team table.",
+    "confidence": "high",
+    "description": "The team table carries two disjoint identifier systems: fld049 is the team FIFA-API identifier (299 unique non-null values) and fld050 is the team API identifier (288 non-null values, value space disjoint from fld049). Match rows and team-attribute rows reference the FIFA-API identifier. The eleven teams whose team API identifier is null are exactly the eleven teams with no team-attribute snapshot. When a question asks for a team's FIFA-API identifier, return fld049.",
+    "evidence": "evidence_team_id_systems"
+  },
+  {
+    "id": "constraint_team_attr_snapshots",
+    "target": "team_attribute_snapshot",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "team attributes",
+      "in 2012",
+      "build-up play",
+      "build-up passing",
+      "chance creation",
+      "played safe",
+      "team style"
+    ],
+    "severity": "block",
+    "scope": "Year-qualified or comparative team-style questions.",
+    "confidence": "high",
+    "description": "Team attributes consist of six dated snapshots: 2010-02-22, 2011-02-22, 2012-02-22, 2013-09-20, 2014-09-19 and 2015-09-10, with one row per team per snapshot. A team has up to six rows, and 288 of the 299 teams have attributes. A year such as 'in 2012' selects the 2012-02-22 snapshot, and an above-average comparison is made across teams within that same snapshot rather than pooling all snapshots.",
+    "evidence": "evidence_team_attr_snapshots"
+  },
+  {
+    "id": "constraint_class_pairing",
+    "target": "chance_creation_passing",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "safe",
+      "played safe",
+      "risky",
+      "normal",
+      "balanced",
+      "fast",
+      "slow",
+      "class",
+      "style",
+      "build-up"
+    ],
+    "severity": "block",
+    "scope": "Interpreting team-style expressions that name a class label rather than a number.",
+    "confidence": "high",
+    "description": "Each numeric team-attribute column is paired with a categorical class column: build-up speed with Balanced/Fast/Slow, build-up passing with Mixed/Short/Long, and chance-creation passing with Safe/Normal/Risky. The class is a bucket of the numeric score, not an independent measurement. 'Played safe while creating chance of passing' refers to the chance-creation passing class 'Safe'.",
+    "evidence": "evidence_class_pairs"
+  },
+  {
+    "id": "constraint_chance_style_enum",
+    "target": "chance_creation_passing_style",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "safe",
+      "played safe",
+      "risky",
+      "normal passing",
+      "chance creation style"
+    ],
+    "severity": "block",
+    "scope": "Filtering on chance-creation passing style.",
+    "confidence": "high",
+    "description": "The chance-creation passing class takes exactly the values 'Safe', 'Risky' and 'Normal'. 'Safe' occurs for 56 team-snapshot rows, 'Risky' for 171 and 'Normal' for 1231.",
+    "evidence": "evidence_class_domains"
+  },
+  {
+    "id": "constraint_fld048_collision",
+    "target": "league",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "league name",
+      "country",
+      "name of the league",
+      "Scotland Premier League",
+      "which league"
+    ],
+    "severity": "block",
+    "scope": "Resolving a name column to a league or a country.",
+    "confidence": "high",
+    "description": "The same column identifier fld048 holds names in two different tables: league names in tab03 and country names in tab04. League values are full competition names such as 'Scotland Premier League' or 'England Premier League', while country values are bare country names such as 'Scotland' or 'England'. Always qualify the table when resolving a textual name.",
+    "evidence": "evidence_league_country"
+  },
+  {
+    "id": "constraint_match_outcome",
+    "target": "match_result",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "won",
+      "win",
+      "most wins",
+      "away team won",
+      "result",
+      "outcome",
+      "draw"
+    ],
+    "severity": "block",
+    "scope": "Counting wins, losses and draws from match rows.",
+    "confidence": "high",
+    "description": "A match outcome follows from comparing the two goal counts: the away team wins when its goal count is strictly greater than the home team's, the home team wins when the home count is strictly greater, and equal counts are a draw. 'The away team that won the most' counts matches where the away goals exceed the home goals, grouped by the away-team reference, not by the home-team reference.",
+    "evidence": "evidence_goal_ranges"
+  },
+  {
+    "id": "constraint_height_units",
+    "target": "player_height",
+    "constraint_type": "unit",
+    "trigger_keywords": [
+      "tallest",
+      "shortest",
+      "height",
+      "how tall",
+      "tallest player"
+    ],
+    "severity": "info",
+    "scope": "Height comparisons and ranking.",
+    "confidence": "high",
+    "description": "Height is stored in centimetres as a real number, observed from 157.48 to 208.28. Tallest and shortest comparisons use the stored values directly; no unit conversion is required.",
+    "evidence": "evidence_player_measurements"
+  },
+  {
+    "id": "constraint_null_attribute_rows",
+    "target": "player_attribute_snapshot",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "average overall rating",
+      "overall rating",
+      "attribute value",
+      "average rating"
+    ],
+    "severity": "warning",
+    "scope": "Aggregating player attribute values.",
+    "confidence": "high",
+    "description": "836 snapshot rows have all ability fields null, 735 of them in the earliest 2007-02-22 snapshot. Averages over non-null values remain valid, but nulls must not be treated as zero or as a rating of zero.",
+    "evidence": "evidence_null_attribute_rows"
+  },
+  {
+    "id": "constraint_rating_scale",
+    "target": "overall_rating",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "overall rating",
+      "rating",
+      "higher than",
+      "percentage higher",
+      "better rating"
+    ],
+    "severity": "warning",
+    "scope": "Comparing two players' overall ratings.",
+    "confidence": "high",
+    "description": "Overall rating is a bounded numeric score on a 1-100 scale, observed from 33 to 94, where higher is better. Relative comparisons between two players should use their ratings from the same snapshot date and express the difference as a proportion of the reference player's rating.",
+    "evidence": "evidence_attribute_ranges"
+  },
+  {
+    "id": "constraint_goal_columns",
+    "target": "home_goals",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "goals",
+      "score",
+      "goal total",
+      "won"
+    ],
+    "severity": "warning",
+    "scope": "Reading goal totals from match rows.",
+    "confidence": "high",
+    "description": "The home and away goal columns are never null and range from 0 to 10 and 0 to 9 respectively. The detailed match-statistic columns that follow the player slots are populated for only about 24147 of 25979 matches and contain many nulls, so goal totals should be taken from the two dedicated goal columns.",
+    "evidence": "evidence_goal_ranges"
+  },
+  {
+    "id": "constraint_match_competition_context",
+    "target": "match",
+    "constraint_type": "scope",
+    "trigger_keywords": [
+      "league",
+      "country",
+      "season",
+      "matches in",
+      "which league"
+    ],
+    "severity": "info",
+    "scope": "Filtering matches by competition.",
+    "confidence": "high",
+    "description": "Each match row carries both a country reference and a league reference. There are 11 leagues across 11 countries, each league belonging to exactly one country. When a question names a league, filter on the league reference; the country reference is only needed when the question names a country.",
+    "evidence": "evidence_league_country"
+  }
+]

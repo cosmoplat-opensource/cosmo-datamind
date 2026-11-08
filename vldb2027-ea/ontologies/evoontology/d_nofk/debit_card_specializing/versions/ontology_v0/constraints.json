@@ -1,0 +1,313 @@
+[
+  {
+    "id": "constraint_amounts_denominated_in_customer_currency",
+    "target": "mapping_customer_currency",
+    "constraint_type": "unit",
+    "trigger_keywords": [
+      "currency",
+      "CZK",
+      "EUR",
+      "total spending",
+      "aggregate consumption",
+      "revenue",
+      "across customers",
+      "sum of consumption",
+      "convert",
+      "exchange rate"
+    ],
+    "severity": "block",
+    "scope": "Applies to every monetary value in transactions_1k.Price and yearmonth.Consumption, and to any aggregation that spans more than one customer",
+    "confidence": "high",
+    "description": "Monetary amounts are denominated in the currency of the customer, recorded in customers.Currency, which is CZK for 30459 customers and EUR for 2002. Fuel lines imply a per-unit price of 23.273 for CZK customers against 0.918 for EUR customers, a ratio of about 25 that matches the CZK to EUR rate of that period. Adding or averaging amounts across customers of different currencies therefore adds unlike units, and any cross-currency comparison must separate the two groups or state an explicit conversion.",
+    "evidence": [
+      "evidence_currency_denomination",
+      "evidence_scale_consistency"
+    ]
+  },
+  {
+    "id": "constraint_price_is_line_total",
+    "target": "mapping_transaction_paid_amount",
+    "constraint_type": "unit",
+    "trigger_keywords": [
+      "total amount",
+      "total price",
+      "total spend",
+      "revenue",
+      "Price",
+      "Amount",
+      "unit price",
+      "per litre",
+      "how much was paid",
+      "sales value"
+    ],
+    "severity": "block",
+    "scope": "Applies whenever transactions_1k.Price is aggregated or compared with Amount",
+    "confidence": "high",
+    "description": "transactions_1k.Price is the total paid for the transaction line, not a unit price. Summing Price gives the total spend of 425576.16, whereas multiplying Amount by Price would give 17525454.02, roughly 41 times too large. A single line of 28 units of product 2 is priced 672.64, which is about 24 per unit and consistent with the currency-scaled per-unit fuel price, so the line total reading is the supported one.",
+    "evidence": [
+      "evidence_price_is_line_total"
+    ]
+  },
+  {
+    "id": "constraint_amount_units_product_dependent",
+    "target": "mapping_transaction_quantity",
+    "constraint_type": "unit",
+    "trigger_keywords": [
+      "quantity",
+      "volume",
+      "litres",
+      "amount",
+      "units",
+      "count",
+      "zero amount",
+      "Amount is 0",
+      "average quantity"
+    ],
+    "severity": "warning",
+    "scope": "Applies to reading, aggregating or averaging transactions_1k.Amount",
+    "confidence": "high",
+    "description": "transactions_1k.Amount is a quantity whose unit depends on the product. Fuel products behave as measured volume, averaging 22.38 units with a maximum of 264, while non-fuel goods and services are counted and often record 0: 89 of the 141 non-fuel lines carry Amount 0, concentrated in car washing, antifreeze, oils and toll payments. A zero Amount on such a line is a valid recorded value and not a missing measurement, so it must not be filtered out or treated as an error without stating the choice.",
+    "evidence": [
+      "evidence_amount_units"
+    ]
+  },
+  {
+    "id": "constraint_consumption_signs",
+    "target": "mapping_monthly_consumption",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "negative consumption",
+      "refund",
+      "reversal",
+      "credit",
+      "zero consumption",
+      "outlier",
+      "maximum consumption",
+      "anomaly"
+    ],
+    "severity": "warning",
+    "scope": "Applies when filtering, averaging or ranking yearmonth.Consumption",
+    "confidence": "medium",
+    "description": "yearmonth.Consumption contains 383102 positive values alongside 28 zeros and 152 negative values, with a range from -582092.86 to 2052187.11. The negative values are consistent with reversals or credits rather than corrupted figures, and the data provides no flag distinguishing them, so any interpretation of negative consumption must be stated explicitly and totals should not be silently trimmed.",
+    "evidence": [
+      "evidence_consumption_stats"
+    ]
+  },
+  {
+    "id": "constraint_yearmonth_month_gap",
+    "target": "mapping_consumption_month",
+    "constraint_type": "scope",
+    "trigger_keywords": [
+      "trend",
+      "time series",
+      "over time",
+      "monthly",
+      "seasonality",
+      "end of 2012",
+      "missing month",
+      "consecutive months",
+      "year over year"
+    ],
+    "severity": "block",
+    "scope": "Applies to any month-ordered analysis of yearmonth",
+    "confidence": "high",
+    "description": "yearmonth.Date holds 21 distinct month labels running from 201112 to 201209 and then from 201301 to 201311. The months 201210, 201211 and 201212 are entirely absent, so a period-over-period or seasonal comparison that crosses the end of 2012 steps over a three-month hole rather than a continuous series. Per-customer record counts run from 1 to 20 with an average of 12.54, and no customer covers all 21 months.",
+    "evidence": [
+      "evidence_yearmonth_months"
+    ]
+  },
+  {
+    "id": "constraint_date_format_mismatch",
+    "target": "mapping_consumption_month",
+    "constraint_type": "unit",
+    "trigger_keywords": [
+      "join on date",
+      "date format",
+      "same month",
+      "monthly comparison",
+      "YYYYMM",
+      "compare dates",
+      "link months"
+    ],
+    "severity": "block",
+    "scope": "Applies when relating yearmonth to transactions_1k or to any calendar-date source",
+    "confidence": "high",
+    "description": "The two time columns use different types and formats. yearmonth.Date is TEXT holding a six-character year and month such as 201208, while transactions_1k.Date is a DATE holding a ten-character day such as 2012-08-24. The two can only be related after deriving a common month key, and comparing them directly silently matches nothing. All 1000 transactions fall in 2012-08.",
+    "evidence": [
+      "evidence_yearmonth_months",
+      "evidence_transactions_scope"
+    ]
+  },
+  {
+    "id": "constraint_transactions_1k_is_sample",
+    "target": "mapping_transaction",
+    "constraint_type": "scope",
+    "trigger_keywords": [
+      "total sales",
+      "all transactions",
+      "complete history",
+      "full period",
+      "how many transactions",
+      "transaction volume",
+      "trend",
+      "sample"
+    ],
+    "severity": "block",
+    "scope": "Applies to any conclusion about overall activity drawn from transactions_1k",
+    "confidence": "high",
+    "description": "transactions_1k contains exactly 1000 rows covering 2012-08-23 to 2012-08-26 for 517 customers and 437 stations, distributed 10, 492, 425 and 73 across those four days. It is a sample and not the complete transaction stream: for customers present in both tables the same month's sampled spend sits at roughly one eighteenth of the reported monthly consumption in both currencies, so transaction-level totals understate activity and cannot be reconciled to yearmonth.",
+    "evidence": [
+      "evidence_transactions_scope",
+      "evidence_scale_consistency"
+    ]
+  },
+  {
+    "id": "constraint_yearmonth_customer_coverage",
+    "target": "mapping_monthly_consumption",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "all customers",
+      "every customer",
+      "coverage",
+      "missing customers",
+      "share of customers",
+      "proportion",
+      "denominator"
+    ],
+    "severity": "warning",
+    "scope": "Applies to customer-level statistics built on yearmonth",
+    "confidence": "high",
+    "description": "yearmonth covers 30566 of the 32461 customers, so 1895 customers have no monthly consumption record at all. The gap is uneven by segment: 1764 of 26763 SME customers, 84 of 2040 KAM customers and 47 of 3658 LAM customers. Customer-level rates computed from yearmonth therefore exclude about 6 percent of customers, and the excluded share is proportionally larger within SME, which biases share-of-customers style measures if the covered population is not stated.",
+    "evidence": [
+      "evidence_yearmonth_coverage"
+    ]
+  },
+  {
+    "id": "constraint_customer_segment_scale",
+    "target": "mapping_customer_segment",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "segment",
+      "KAM",
+      "LAM",
+      "SME",
+      "customer type",
+      "key account",
+      "large account",
+      "share by segment"
+    ],
+    "severity": "info",
+    "scope": "Applies to any comparison of customers by Segment",
+    "confidence": "high",
+    "description": "customers.Segment takes exactly three values: SME with 26763 customers, LAM with 3658 and KAM with 2040. Average monthly consumption follows a strict order of KAM 45243.63, LAM 17618.44 and SME 3833.30, so the segments clearly separate customer scale. The database never expands the codes, and these averages mix CZK and EUR customers, so the ordering is reliable while the absolute magnitudes are not comparable across currencies.",
+    "evidence": [
+      "evidence_segment_values",
+      "evidence_consumption_stats"
+    ]
+  },
+  {
+    "id": "constraint_station_enum_values",
+    "target": "mapping_station_segment",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "station segment",
+      "premium",
+      "discount",
+      "noname",
+      "value for money",
+      "station type",
+      "station country",
+      "CZE",
+      "SVK"
+    ],
+    "severity": "info",
+    "scope": "Applies when grouping or filtering stations by Segment or Country",
+    "confidence": "high",
+    "description": "gasstations.Segment holds five labels, ordered by station count as Other 2392, Premium 1428, Noname 1005, Value for money 597 and Discount 294. gasstations.Country holds CZE with 4836 stations and SVK with 880. These are labels on stations and are unrelated to the customer segment codes KAM, LAM and SME, even though both columns are called Segment. In the 1000 sampled transactions the positioning labels do not separate average transaction value, which is 425.89 at Premium stations against 413.91 at Discount stations, so a positioning premium is not supported by this sample.",
+    "evidence": [
+      "evidence_station_segment_values"
+    ]
+  },
+  {
+    "id": "constraint_card_not_customer_identifier",
+    "target": "mapping_payment_card",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "distinct customers",
+      "number of customers",
+      "how many cards",
+      "card",
+      "unique customers",
+      "customer count",
+      "active customers"
+    ],
+    "severity": "warning",
+    "scope": "Applies whenever CardID is used as a proxy for customer identity",
+    "confidence": "high",
+    "description": "A card is not a customer. The 1000 sampled transactions carry 902 distinct CardID values but only 517 distinct CustomerID values, and 131 customers use more than one card, while no card is shared between two customers. Counting distinct CardID therefore overstates the customer count, and counting a customer once per card dilutes per-customer averages.",
+    "evidence": [
+      "evidence_card_ownership"
+    ]
+  },
+  {
+    "id": "constraint_product_no_category",
+    "target": "mapping_product_description",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "product category",
+      "group products",
+      "product type",
+      "fuel type",
+      "product group",
+      "product hierarchy"
+    ],
+    "severity": "info",
+    "scope": "Applies to any attempt to group products by type",
+    "confidence": "high",
+    "description": "products carries only ProductID and Description. There is no category, family or fuel-type column, so product grouping must come from the label text, which is written in Czech and is not unique: 591 products share only 529 distinct descriptions, so several ProductID values carry the same label. transactions_1k references just 28 of the 591 products, and any fuel versus non-fuel split is a reading of the label rather than an attribute stored in the data.",
+    "evidence": [
+      "evidence_product_catalog"
+    ]
+  },
+  {
+    "id": "constraint_no_declared_foreign_keys",
+    "target": "mapping_transaction",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "join",
+      "foreign key",
+      "relationship",
+      "referential integrity",
+      "link tables",
+      "how are tables related"
+    ],
+    "severity": "warning",
+    "scope": "Applies when discovering how the tables relate",
+    "confidence": "high",
+    "description": "The database declares no FOREIGN KEY constraints on any of its five tables, so table relationships must be inferred from shared column names and verified by value rather than read from the schema. Referential integrity nevertheless holds on the sampled data: zero unresolved transactions_1k rows for CustomerID, GasStationID or ProductID, and zero unresolved yearmonth customers. The absence of declared keys means a join omitted by mistake will produce silently empty or attenuated results instead of an error.",
+    "evidence": [
+      "evidence_referential_integrity"
+    ]
+  },
+  {
+    "id": "constraint_chain_names_absent",
+    "target": "mapping_station_chain",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "chain",
+      "brand",
+      "chain name",
+      "which company",
+      "chain size",
+      "network operator"
+    ],
+    "severity": "info",
+    "scope": "Applies to reporting or ranking stations by chain",
+    "confidence": "high",
+    "description": "There is no chain table. gasstations.ChainID is an integer with 233 distinct values and no accompanying name, so chains can be ranked and sized, with the largest holding 1462, 853, 340, 285 and 227 stations, but they cannot be labelled. Many chains hold only one or a few stations, so a long tail of single-station chains is expected in any chain-level ranking.",
+    "evidence": [
+      "evidence_chain_names_absent",
+      "evidence_station_network"
+    ]
+  }
+]

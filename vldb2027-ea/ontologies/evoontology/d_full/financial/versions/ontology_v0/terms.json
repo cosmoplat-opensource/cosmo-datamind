@@ -1,0 +1,419 @@
+[
+  {
+    "id": "account",
+    "name": "Bank Account",
+    "type": "entity",
+    "definition": "A customer bank account maintained by the bank, identified by account_id. It carries an opening date (account.date), a statement frequency and a home district reference.",
+    "scope": "Account-level analysis spanning transactions, loans, standing orders, cards and disposition links.",
+    "aliases": [
+      "bank account",
+      "uct"
+    ],
+    "evidence": "ev_001_schema_tables, ev_014_disp_domain, ev_024_fk_integrity"
+  },
+  {
+    "id": "client",
+    "name": "Bank Client",
+    "type": "entity",
+    "definition": "A natural person who is a customer of the bank, identified by client_id, with a recorded birth date, a gender value and a district reference.",
+    "scope": "Customer-level demographic and behaviour analysis.",
+    "aliases": [
+      "customer",
+      "klient"
+    ],
+    "evidence": "ev_017_client_domain"
+  },
+  {
+    "id": "disp",
+    "name": "Account Disposition Link",
+    "type": "entity",
+    "definition": "A role record identified by disp_id that connects one client to one account and states the client's role on that account. It is the only structural path between clients and accounts.",
+    "scope": "Determining account ownership and additional authorised persons.",
+    "aliases": [
+      "disposition",
+      "account role"
+    ],
+    "evidence": "ev_014_disp_domain"
+  },
+  {
+    "id": "district",
+    "name": "District",
+    "type": "entity",
+    "definition": "One of the 77 bank service districts, identified by district_id, carrying a district label plus a region grouping and further positional coded indicators.",
+    "scope": "Geographic aggregation of accounts, clients and district-level indicators.",
+    "aliases": [
+      "okres",
+      "region unit"
+    ],
+    "evidence": "ev_022_district_domain, ev_018_district_types"
+  },
+  {
+    "id": "district_label",
+    "name": "District Label",
+    "type": "dimension",
+    "definition": "The human-readable text label of a district (column A2). It holds 77 distinct non-null values, one per district, and is the only directly interpretable district attribute besides the region grouping.",
+    "scope": "Identifying and displaying districts in results.",
+    "aliases": [
+      "district name",
+      "A2"
+    ],
+    "evidence": "ev_022_district_domain, ev_018_district_types"
+  },
+  {
+    "id": "region",
+    "name": "Region Grouping",
+    "type": "category",
+    "definition": "The text grouping in column A3 that partitions the 77 districts into 8 groups with place-name-like values.",
+    "scope": "Coarser geographic aggregation than district.",
+    "aliases": [
+      "A3",
+      "region"
+    ],
+    "evidence": "ev_022_district_domain"
+  },
+  {
+    "id": "district_indicator_code",
+    "name": "District Indicator Code (A4-A16)",
+    "type": "dimension",
+    "definition": "The positional coded indicator columns A4 through A16 of the district table: aggregate values recorded per district whose business meaning is not documented anywhere inside the database. No data dictionary, comment or lookup table for these codes exists in the schema.",
+    "scope": "Any use of district.A4-A16. Treat the business meaning of each code as unverified.",
+    "aliases": [
+      "A4",
+      "A5",
+      "A6",
+      "A7",
+      "A8",
+      "A9",
+      "A10",
+      "A11",
+      "A12",
+      "A13",
+      "A14",
+      "A15",
+      "A16"
+    ],
+    "evidence": "ev_018_district_types, ev_019_district_text_order, ev_020_district_a10_bounds, ev_021_district_null_pair"
+  },
+  {
+    "id": "transaction",
+    "name": "Account Transaction",
+    "type": "entity",
+    "definition": "A single posted movement on a bank account, identified by trans_id, with a posting date, a direction type, an execution operation, a non-negative amount and the recorded account balance attached to the row.",
+    "scope": "All transaction-level volume, value and balance analysis.",
+    "aliases": [
+      "trans",
+      "movement",
+      "payment"
+    ],
+    "evidence": "ev_002_trans_type_domain, ev_003_trans_amount_nonnegative, ev_026_date_ranges"
+  },
+  {
+    "id": "transaction_type",
+    "name": "Transaction Direction Type",
+    "type": "category",
+    "definition": "The value of trans.type, which separates posted movements into credit receipts (PRIJEM), debit payments (VYDAJ) and cash withdrawals (VYBER). It is the only field that determines whether a movement increases or decreases the account balance.",
+    "scope": "Direction classification of every transaction; required whenever inflows and outflows must be separated.",
+    "aliases": [
+      "type",
+      "PRIJEM",
+      "VYDAJ",
+      "VYBER",
+      "credit",
+      "debit"
+    ],
+    "evidence": "ev_002_trans_type_domain, ev_003_trans_amount_nonnegative, ev_029_type_vyber_signature"
+  },
+  {
+    "id": "transaction_operation",
+    "name": "Transaction Operation Mode",
+    "type": "category",
+    "definition": "The value of trans.operation, describing the mode by which the movement was executed: cash withdrawal, cash deposit, card withdrawal, transfer to an account, transfer from an account. It is null for exactly the rows whose purpose code is UROK.",
+    "scope": "Distinguishing execution channels of transactions; not interchangeable with trans.type.",
+    "aliases": [
+      "operation",
+      "VKLAD",
+      "VYBER KARTOU",
+      "PREVOD NA UCET",
+      "PREVOD Z UCTU"
+    ],
+    "evidence": "ev_004_operation_domain, ev_005_operation_null_iff_urok"
+  },
+  {
+    "id": "payment_purpose_code",
+    "name": "Payment Purpose Code",
+    "type": "category",
+    "definition": "A code labelling the purpose or service behind a movement. It is carried by trans.k_symbol for posted transactions and by order.k_symbol for registered standing orders. The two columns share several codes but do not cover the same code set.",
+    "scope": "Purpose or service classification of transactions and standing orders.",
+    "aliases": [
+      "k_symbol",
+      "UROK",
+      "SLUZBY",
+      "SIPO",
+      "DUCHOD",
+      "POJISTNE",
+      "UVER",
+      "SANKC. UROK",
+      "LEASING"
+    ],
+    "evidence": "ev_006_k_symbol_domain, ev_007_k_symbol_space_token, ev_023_order_domain"
+  },
+  {
+    "id": "loan",
+    "name": "Loan Contract",
+    "type": "entity",
+    "definition": "A loan granted on an account, identified by loan_id, with a grant date, a principal amount, a contractual duration in months, a monthly payment amount and a status code. At most one loan exists per account in this database.",
+    "scope": "Loan portfolio composition, pricing and status analysis.",
+    "aliases": [
+      "loan contract",
+      "uver"
+    ],
+    "evidence": "ev_013_loan_columns, ev_028_loan_uver_link"
+  },
+  {
+    "id": "loan_status",
+    "name": "Loan Status Code",
+    "type": "category",
+    "definition": "The value of loan.status classifying the state of a loan contract. It takes exactly four values: A, B, C and D. Codes A and B exclusively identify contracts whose scheduled maturity falls inside the observation window, while C and D exclusively identify contracts whose scheduled maturity falls after the end of the window.",
+    "scope": "Any reporting that separates finished from running loan contracts.",
+    "aliases": [
+      "status",
+      "A",
+      "B",
+      "C",
+      "D",
+      "finished loan",
+      "running loan"
+    ],
+    "evidence": "ev_011_loan_status_maturity"
+  },
+  {
+    "id": "card",
+    "name": "Payment Card",
+    "type": "entity",
+    "definition": "A payment card identified by card_id, issued for a disposition record on a given date and having a card type. At most one card exists per disposition record.",
+    "scope": "Card issuance and card product analysis.",
+    "aliases": [
+      "credit card",
+      "karta"
+    ],
+    "evidence": "ev_015_card_domain"
+  },
+  {
+    "id": "card_type",
+    "name": "Card Type",
+    "type": "category",
+    "definition": "The value of card.type: classic, junior or gold.",
+    "scope": "Card product segmentation.",
+    "aliases": [
+      "classic",
+      "junior",
+      "gold"
+    ],
+    "evidence": "ev_015_card_domain"
+  },
+  {
+    "id": "disp_role_type",
+    "name": "Disposition Role Type",
+    "type": "category",
+    "definition": "The value of disp.type: OWNER marks the account holder, DISPONENT marks an additional person authorised to dispose of the account.",
+    "scope": "Ownership versus authorised-access analysis on accounts.",
+    "aliases": [
+      "OWNER",
+      "DISPONENT",
+      "role"
+    ],
+    "evidence": "ev_014_disp_domain"
+  },
+  {
+    "id": "account_frequency",
+    "name": "Statement Frequency",
+    "type": "category",
+    "definition": "The value of account.frequency, the periodicity with which statements are produced for the account: monthly, weekly or on turnover.",
+    "scope": "Account product configuration analysis.",
+    "aliases": [
+      "frequency",
+      "POPLATEK MESICNE",
+      "POPLATEK TYDNE",
+      "POPLATEK PO OBRATU"
+    ],
+    "evidence": "ev_016_account_frequency"
+  },
+  {
+    "id": "client_gender",
+    "name": "Client Gender",
+    "type": "dimension",
+    "definition": "The value of client.gender, taking the two values F and M.",
+    "scope": "Demographic breakdowns of clients and their accounts.",
+    "aliases": [
+      "gender",
+      "F",
+      "M",
+      "sex"
+    ],
+    "evidence": "ev_017_client_domain"
+  },
+  {
+    "id": "bank_code",
+    "name": "Counterparty Bank Code",
+    "type": "dimension",
+    "definition": "A short code identifying the counterparty bank of an outbound or inbound inter-account transfer. It appears as trans.bank on transactions and as order.bank_to on standing orders, and takes 13 distinct values in both columns.",
+    "scope": "Counterparty geography of inter-bank transfers.",
+    "aliases": [
+      "bank",
+      "bank_to",
+      "counterparty bank"
+    ],
+    "evidence": "ev_010_bank_code_domain, ev_023_order_domain"
+  },
+  {
+    "id": "transaction_amount",
+    "name": "Transaction Amount",
+    "type": "metric",
+    "definition": "The magnitude of a posted movement (trans.amount). Observed to be non-negative for every one of the 1,056,320 rows, so it never encodes direction.",
+    "scope": "Value aggregation over transactions once direction has been fixed by transaction type.",
+    "aliases": [
+      "amount",
+      "value"
+    ],
+    "evidence": "ev_003_trans_amount_nonnegative"
+  },
+  {
+    "id": "account_balance",
+    "name": "Recorded Account Balance",
+    "type": "metric",
+    "definition": "The account balance recorded on a transaction row (trans.balance). It is the stored state of the account around the date of that movement and is not exactly reproducible from the surrounding rows.",
+    "scope": "Balance reporting; must be read from the stored column rather than recomputed.",
+    "aliases": [
+      "balance",
+      "zustatek"
+    ],
+    "evidence": "ev_008_balance_chain_mismatch, ev_027_balance_negative_rare"
+  },
+  {
+    "id": "signed_transaction_value",
+    "name": "Signed Transaction Value",
+    "type": "metric",
+    "definition": "The signed value of a movement: positive for credit receipts and negative for debit payments and withdrawals. No stored column carries this sign; it is derived by combining the non-negative amount with the direction type.",
+    "scope": "Net flow, turnover and balance-delta computations.",
+    "aliases": [
+      "net amount",
+      "signed amount",
+      "cash flow"
+    ],
+    "evidence": "ev_003_trans_amount_nonnegative, ev_002_trans_type_domain"
+  },
+  {
+    "id": "loan_amount",
+    "name": "Loan Principal",
+    "type": "metric",
+    "definition": "The principal amount granted for a loan (loan.amount), ranging from 4,980 to 590,820 over the 682 contracts.",
+    "scope": "Loan exposure and portfolio value analysis.",
+    "aliases": [
+      "principal",
+      "loan value"
+    ],
+    "evidence": "ev_013_loan_columns"
+  },
+  {
+    "id": "loan_payments",
+    "name": "Loan Monthly Payment",
+    "type": "metric",
+    "definition": "The monthly instalment amount of a loan (loan.payments). For every loan in the database it satisfies payments multiplied by duration equals the principal amount exactly.",
+    "scope": "Instalment and repayment analysis.",
+    "aliases": [
+      "instalment",
+      "monthly payment",
+      "payments"
+    ],
+    "evidence": "ev_012_loan_payments_identity"
+  },
+  {
+    "id": "loan_duration",
+    "name": "Loan Duration",
+    "type": "metric",
+    "definition": "The contractual duration of a loan in months (loan.duration). Only five values occur: 12, 24, 36, 48 and 60 months.",
+    "scope": "Term structure analysis of the loan portfolio.",
+    "aliases": [
+      "duration",
+      "term",
+      "months"
+    ],
+    "evidence": "ev_013_loan_columns"
+  },
+  {
+    "id": "loan_maturity",
+    "name": "Loan Maturity Date",
+    "type": "metric",
+    "definition": "The date on which a loan contract is scheduled to end, obtained by adding the contractual duration in months to the grant date. No stored column holds it, but it separates the finished status codes from the running status codes without exception.",
+    "scope": "Separating finished from running loan contracts and measuring remaining term.",
+    "aliases": [
+      "maturity",
+      "end date",
+      "due date"
+    ],
+    "evidence": "ev_011_loan_status_maturity"
+  },
+  {
+    "id": "client_age",
+    "name": "Client Age",
+    "type": "metric",
+    "definition": "The age of a client at a chosen reference date, obtained from client.birth_date. Birth dates span 1911-08-20 to 1987-09-27, so age always depends on the reference date selected.",
+    "scope": "Demographic analysis of clients; requires an explicit reference date.",
+    "aliases": [
+      "age",
+      "birth_date",
+      "date of birth"
+    ],
+    "evidence": "ev_017_client_domain"
+  },
+  {
+    "id": "standing_order",
+    "name": "Standing Order",
+    "type": "entity",
+    "definition": "A recurring outward payment instruction registered on an account, identified by order_id, carrying the owning account, an external target account, a counterparty bank code, an amount and a purpose code.",
+    "scope": "Recurring payment instruction analysis; distinct from posted transactions.",
+    "aliases": [
+      "order",
+      "permanent order",
+      "recurring payment"
+    ],
+    "evidence": "ev_023_order_domain"
+  },
+  {
+    "id": "standing_order_amount",
+    "name": "Standing Order Amount",
+    "type": "metric",
+    "definition": "The amount of a registered standing order (order.amount), ranging from 1 to 14,882 across 6,471 orders.",
+    "scope": "Recurring obligation analysis.",
+    "aliases": [
+      "order amount"
+    ],
+    "evidence": "ev_023_order_domain"
+  },
+  {
+    "id": "counterparty_account_number",
+    "name": "External Counterparty Account Number",
+    "type": "dimension",
+    "definition": "The counterparty account number recorded on an inter-account transfer (trans.account) or on a standing order (order.account_to). It belongs to a numbering domain external to the account table: virtually none of its values exist as account.account_id.",
+    "scope": "Identifying the remote side of inter-bank transfers; never a local account key.",
+    "aliases": [
+      "account_to",
+      "counterparty account",
+      "other account"
+    ],
+    "evidence": "ev_009_counterparty_domain, ev_023_order_domain"
+  },
+  {
+    "id": "account_opening_date",
+    "name": "Account Opening Date",
+    "type": "dimension",
+    "definition": "The date on which an account was opened (account.date). It precedes or equals the first transaction date of the account for every account in the database.",
+    "scope": "Account tenure and cohort analysis.",
+    "aliases": [
+      "account date",
+      "opened",
+      "date"
+    ],
+    "evidence": "ev_025_account_date_before_trans, ev_026_date_ranges"
+  }
+]

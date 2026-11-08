@@ -1,0 +1,765 @@
+[
+  {
+    "id": "term_circuit",
+    "name": "Circuit",
+    "type": "entity",
+    "definition": "A racing venue that hosts Formula 1 races, identified by an integer circuit id and described by a circuit name, a host city/location, a country, and a latitude/longitude pair.",
+    "scope": "Circuit identity and venue attributes used when a question names a circuit or asks where a race was held.",
+    "aliases": [
+      "track",
+      "racing venue",
+      "circuito"
+    ],
+    "evidence": [
+      "e_circuit_rows",
+      "e_schema"
+    ]
+  },
+  {
+    "id": "term_race",
+    "name": "Race (Grand Prix event)",
+    "type": "entity",
+    "definition": "One Formula 1 event in one season: a named Grand Prix held at a circuit on a calendar date within a championship year. Identified by raceId.",
+    "scope": "The unit of analysis whenever a question says race, Grand Prix, or race No. N.",
+    "aliases": [
+      "Grand Prix",
+      "race event",
+      "round"
+    ],
+    "evidence": [
+      "e_race_rows",
+      "e_schema"
+    ]
+  },
+  {
+    "id": "term_driver",
+    "name": "Driver",
+    "type": "entity",
+    "definition": "A person who participates in Formula 1 races; identified by driverId and described by a reference name, forename, surname, nationality, date of birth and profile URL.",
+    "scope": "Driver identity; questions may call a driver a player.",
+    "aliases": [
+      "player",
+      "racer",
+      "pilot"
+    ],
+    "evidence": [
+      "e_driver_rows"
+    ]
+  },
+  {
+    "id": "term_constructor",
+    "name": "Constructor",
+    "type": "entity",
+    "definition": "A Formula 1 team/entrant that supplies a car; identified by constructorId with a team name, nationality and profile URL.",
+    "scope": "Team-level analysis and constructor championship questions.",
+    "aliases": [
+      "team",
+      "entrant",
+      "manufacturer"
+    ],
+    "evidence": [
+      "e_constructor_rows"
+    ]
+  },
+  {
+    "id": "term_season",
+    "name": "Season",
+    "type": "entity",
+    "definition": "A championship year. Each year is listed once with its season URL, and every race belongs to exactly one season year.",
+    "scope": "Year-level filtering such as since 2010 or earliest recorded year.",
+    "aliases": [
+      "year",
+      "championship year"
+    ],
+    "evidence": [
+      "e_season_rows"
+    ]
+  },
+  {
+    "id": "term_race_result",
+    "name": "Race Result",
+    "type": "entity",
+    "definition": "One driver's classification in one race: starting grid slot, finishing position, position text, points, laps completed, finish time, fastest-lap data and result status.",
+    "scope": "Race outcome analysis at driver x race grain.",
+    "aliases": [
+      "result",
+      "classification",
+      "race entry"
+    ],
+    "evidence": [
+      "e_result_rows"
+    ]
+  },
+  {
+    "id": "term_qualifying_result",
+    "name": "Qualifying Result",
+    "type": "entity",
+    "definition": "One driver's qualifying performance in one race, recording the qualifying position and the times set in the three qualifying periods (Q1, Q2, Q3).",
+    "scope": "Qualifying questions including first/second/third period results and eliminations.",
+    "aliases": [
+      "qualifying",
+      "qualification",
+      "quali"
+    ],
+    "evidence": [
+      "e_qual_rows"
+    ]
+  },
+  {
+    "id": "term_pit_stop",
+    "name": "Pit Stop",
+    "type": "entity",
+    "definition": "One pit-stop visit by a driver in a race, identified by a stop number and recorded with its lap, clock time and duration.",
+    "scope": "Pit-stop counts, timing and duration analysis.",
+    "aliases": [
+      "pitstop",
+      "pit",
+      "stop"
+    ],
+    "evidence": [
+      "e_pit_rows"
+    ]
+  },
+  {
+    "id": "term_result_status",
+    "name": "Result Status",
+    "type": "entity",
+    "definition": "Lookup of the classified outcome of a race result: whether the car finished (status 1) or the reason it did not, e.g. accident, collision, engine failure, or a lapped classification such as +1 Lap.",
+    "scope": "Any interpretation of why a driver did or did not finish a race.",
+    "aliases": [
+      "status",
+      "finish status",
+      "retirement reason",
+      "outcome"
+    ],
+    "evidence": [
+      "e_status_rows"
+    ]
+  },
+  {
+    "id": "term_driver_standings_record",
+    "name": "Driver Standings Record",
+    "type": "entity",
+    "definition": "A driver's cumulative championship standing after a given race, with cumulative points, championship position, position text and wins to date.",
+    "scope": "Driver championship progress; one snapshot per driver per race.",
+    "aliases": [
+      "driver championship",
+      "driver standings"
+    ],
+    "evidence": [
+      "e_driver_standings_rows"
+    ]
+  },
+  {
+    "id": "term_constructor_standings_record",
+    "name": "Constructor Standings Record",
+    "type": "entity",
+    "definition": "A constructor's cumulative championship standing after a given race, with cumulative points and championship position.",
+    "scope": "Constructor championship progress; one snapshot per constructor per race.",
+    "aliases": [
+      "constructor championship",
+      "team standings"
+    ],
+    "evidence": [
+      "e_constructor_standings_rows"
+    ]
+  },
+  {
+    "id": "term_constructor_result",
+    "name": "Constructor Race Result",
+    "type": "entity",
+    "definition": "The points a constructor scored in one individual race, together with a per-race constructor status.",
+    "scope": "Constructor performance within a single race.",
+    "aliases": [
+      "team race result",
+      "constructor result"
+    ],
+    "evidence": [
+      "e_constructor_results_rows"
+    ]
+  },
+  {
+    "id": "term_race_identifier",
+    "name": "Race Identifier",
+    "type": "dimension",
+    "definition": "The surrogate integer race id that uniquely identifies a race. Phrases such as race No. N or race at N refer to this identifier, not to the season round and not to the year.",
+    "scope": "Resolving an explicit race number in a question.",
+    "aliases": [
+      "race number",
+      "race id",
+      "race No.",
+      "race at N"
+    ],
+    "evidence": [
+      "e_race_nonchronological"
+    ]
+  },
+  {
+    "id": "term_race_name",
+    "name": "Race Name",
+    "type": "dimension",
+    "definition": "The Grand Prix name of a race, such as Canadian Grand Prix. The same name recurs once per season, so a name alone does not identify a unique race.",
+    "scope": "Filtering or labelling races by their Grand Prix name.",
+    "aliases": [
+      "Grand Prix name",
+      "race title"
+    ],
+    "evidence": [
+      "e_race_name_dupes"
+    ]
+  },
+  {
+    "id": "term_race_year",
+    "name": "Race Year",
+    "type": "dimension",
+    "definition": "The championship year the race belongs to.",
+    "scope": "Year filtering on races, such as the 2008 Chinese Grand Prix or since 2010.",
+    "aliases": [
+      "season year",
+      "year"
+    ],
+    "evidence": [
+      "e_race_rows",
+      "e_season_rows"
+    ]
+  },
+  {
+    "id": "term_race_date",
+    "name": "Race Date",
+    "type": "dimension",
+    "definition": "The calendar date on which the race was held, stored as a text date in YYYY-MM-DD form.",
+    "scope": "Chronological ordering, earliest race, age-at-race and month extraction.",
+    "aliases": [
+      "date",
+      "race day",
+      "when"
+    ],
+    "evidence": [
+      "e_race_dates"
+    ]
+  },
+  {
+    "id": "term_circuit_name",
+    "name": "Circuit Name",
+    "type": "dimension",
+    "definition": "The official name of the circuit that hosted a race, such as Silverstone Circuit.",
+    "scope": "Naming or filtering circuits.",
+    "aliases": [
+      "track name",
+      "circuit"
+    ],
+    "evidence": [
+      "e_circuit_rows"
+    ]
+  },
+  {
+    "id": "term_circuit_location",
+    "name": "Circuit Location",
+    "type": "dimension",
+    "definition": "The city or town where the circuit is located.",
+    "scope": "Displaying venue location alongside coordinates.",
+    "aliases": [
+      "location",
+      "city",
+      "town"
+    ],
+    "evidence": [
+      "e_circuit_rows"
+    ]
+  },
+  {
+    "id": "term_circuit_country",
+    "name": "Circuit Country",
+    "type": "dimension",
+    "definition": "The country of the circuit, stored as a text label using short forms such as UK and USA as well as full names such as Austria.",
+    "scope": "Country-level circuit questions such as circuits in Austria.",
+    "aliases": [
+      "country",
+      "nation"
+    ],
+    "evidence": [
+      "e_circuit_country_domain"
+    ]
+  },
+  {
+    "id": "term_circuit_coordinates",
+    "name": "Circuit Coordinates",
+    "type": "dimension",
+    "definition": "The geographic position of the circuit: latitude and longitude in decimal degrees, stored as two separate real columns.",
+    "scope": "Coordinate and location questions about circuits or about the circuit of a named race.",
+    "aliases": [
+      "coordinates",
+      "coordinate position",
+      "lat",
+      "lng",
+      "location coordinates"
+    ],
+    "evidence": [
+      "e_circuit_rows",
+      "e_circuit_coverage"
+    ]
+  },
+  {
+    "id": "term_driver_full_name",
+    "name": "Driver Full Name",
+    "type": "concept",
+    "definition": "A driver's complete name, formed from the forename and surname columns. Questions that name a person, such as Lewis Hamilton or Bruno Senna, refer to this composed name.",
+    "scope": "Matching a named person to a driver record.",
+    "aliases": [
+      "full name",
+      "driver name",
+      "person name"
+    ],
+    "evidence": [
+      "e_driver_rows",
+      "e_driver_ref"
+    ]
+  },
+  {
+    "id": "term_driver_reference_name",
+    "name": "Driver Reference Name",
+    "type": "dimension",
+    "definition": "The short machine-readable driver identifier, such as hamilton or bruno_senna, which is unique per driver.",
+    "scope": "Disambiguating and displaying drivers by stable reference.",
+    "aliases": [
+      "reference name",
+      "driverRef",
+      "driver reference"
+    ],
+    "evidence": [
+      "e_driver_ref"
+    ]
+  },
+  {
+    "id": "term_driver_nationality",
+    "name": "Driver Nationality",
+    "type": "dimension",
+    "definition": "The driver's nationality expressed as a text adjective such as German or British.",
+    "scope": "Nationality filters on drivers.",
+    "aliases": [
+      "nationality",
+      "country of driver"
+    ],
+    "evidence": [
+      "e_driver_nationality"
+    ]
+  },
+  {
+    "id": "term_driver_date_of_birth",
+    "name": "Driver Date of Birth",
+    "type": "dimension",
+    "definition": "The driver's birth date stored as a YYYY-MM-DD text date; a larger value corresponds to a later birth date and therefore a younger driver.",
+    "scope": "Age, oldest/youngest and birth-year-range questions.",
+    "aliases": [
+      "date of birth",
+      "dob",
+      "birthday",
+      "born"
+    ],
+    "evidence": [
+      "e_dob_domain"
+    ]
+  },
+  {
+    "id": "term_driver_url",
+    "name": "Driver Profile URL",
+    "type": "dimension",
+    "definition": "The profile URL of the driver, used when a question asks for a driver's introduction website.",
+    "scope": "Returning a driver's web reference.",
+    "aliases": [
+      "website",
+      "url",
+      "profile",
+      "introduction website"
+    ],
+    "evidence": [
+      "e_driver_rows"
+    ]
+  },
+  {
+    "id": "term_constructor_name",
+    "name": "Constructor Name",
+    "type": "dimension",
+    "definition": "The team name, such as McLaren or Williams.",
+    "scope": "Naming and filtering constructors.",
+    "aliases": [
+      "team name",
+      "constructor"
+    ],
+    "evidence": [
+      "e_constructor_rows"
+    ]
+  },
+  {
+    "id": "term_constructor_nationality",
+    "name": "Constructor Nationality",
+    "type": "dimension",
+    "definition": "The constructor's nationality expressed as a text adjective such as British or German.",
+    "scope": "Nationality filters on constructors, such as British constructors.",
+    "aliases": [
+      "constructor country",
+      "team nationality"
+    ],
+    "evidence": [
+      "e_constructor_nationality"
+    ]
+  },
+  {
+    "id": "term_constructor_url",
+    "name": "Constructor Profile URL",
+    "type": "dimension",
+    "definition": "The profile URL of the constructor, used for an introduction website of a team.",
+    "scope": "Returning a constructor's web reference.",
+    "aliases": [
+      "constructor website",
+      "team url"
+    ],
+    "evidence": [
+      "e_constructor_rows"
+    ]
+  },
+  {
+    "id": "term_finish_position",
+    "name": "Finish Position",
+    "type": "dimension",
+    "definition": "The classified finishing position of a driver in a race. It is empty when the driver was not classified, in which case the position text is R.",
+    "scope": "Ordering race results and selecting a race winner or a specific finishing rank.",
+    "aliases": [
+      "position",
+      "rank",
+      "finished position",
+      "ranked second"
+    ],
+    "evidence": [
+      "e_result_rows",
+      "e_position_null"
+    ]
+  },
+  {
+    "id": "term_qualifying_position",
+    "name": "Qualifying Position",
+    "type": "dimension",
+    "definition": "The driver's position on the qualifying classification for a race.",
+    "scope": "Qualifying order, distinct from the period times.",
+    "aliases": [
+      "qualifying rank",
+      "qualifying order"
+    ],
+    "evidence": [
+      "e_qual_rows"
+    ]
+  },
+  {
+    "id": "term_fastest_lap_rank",
+    "name": "Fastest Lap Rank",
+    "type": "dimension",
+    "definition": "Rank of a driver's fastest lap within the race; rank 1 identifies the fastest lap of the race.",
+    "scope": "Identifying the fastest lap of a race.",
+    "aliases": [
+      "fastest lap rank",
+      "rank"
+    ],
+    "evidence": [
+      "e_fastest_lap_rows"
+    ]
+  },
+  {
+    "id": "term_lap_number",
+    "name": "Lap Number",
+    "type": "dimension",
+    "definition": "The lap number within a race, as recorded for lap times and pit stops.",
+    "scope": "Locating a lap or pit stop within a race.",
+    "aliases": [
+      "lap",
+      "lap no."
+    ],
+    "evidence": [
+      "e_lap_rows"
+    ]
+  },
+  {
+    "id": "term_race_winner",
+    "name": "Race Winner / Champion",
+    "type": "concept",
+    "definition": "The driver classified first in a race. Champion of a Grand Prix means the race winner, which is distinct from the season champion.",
+    "scope": "Questions about who won or championed a particular race.",
+    "aliases": [
+      "winner",
+      "champion",
+      "race champion",
+      "first place"
+    ],
+    "evidence": [
+      "e_winner_rows"
+    ]
+  },
+  {
+    "id": "term_finished_race",
+    "name": "Finished Race",
+    "type": "concept",
+    "definition": "Indicator that a driver was classified as finishing a race. It is authoritatively expressed by the Finished result status.",
+    "scope": "Counting finishers or non-finishers in a race.",
+    "aliases": [
+      "finished",
+      "finish",
+      "completed race",
+      "not finished",
+      "did not finish"
+    ],
+    "evidence": [
+      "e_finish_vs_time",
+      "e_status_rows"
+    ]
+  },
+  {
+    "id": "term_race_participation",
+    "name": "Race Participation",
+    "type": "concept",
+    "definition": "A driver participated in a race when the results table contains at least one row for that driver in that race; counting those rows measures participation.",
+    "scope": "Counting how many races a driver contested or checking whether a driver appeared.",
+    "aliases": [
+      "participated",
+      "took part",
+      "competed",
+      "appeared"
+    ],
+    "evidence": [
+      "e_participation"
+    ]
+  },
+  {
+    "id": "term_qualifying_elimination",
+    "name": "Qualifying Period Elimination",
+    "type": "concept",
+    "definition": "Elimination from a qualifying period: for the first period the five drivers with the slowest first-period times are eliminated and do not set a second-period time.",
+    "scope": "Questions about drivers eliminated or knocked out in a qualifying period.",
+    "aliases": [
+      "eliminated",
+      "knocked out",
+      "did not advance"
+    ],
+    "evidence": [
+      "e_qual_elim",
+      "e_qual_rows"
+    ]
+  },
+  {
+    "id": "term_accident",
+    "name": "Accident",
+    "type": "category",
+    "definition": "The Accident result status, distinct from Collision and Collision damage, which are separate outcome categories.",
+    "scope": "Counting or filtering results caused by an accident.",
+    "aliases": [
+      "accident",
+      "crashed",
+      "accidents"
+    ],
+    "evidence": [
+      "e_accident_rows",
+      "e_status_rows"
+    ]
+  },
+  {
+    "id": "term_points",
+    "name": "Race Points (Driver)",
+    "type": "metric",
+    "definition": "Championship points a driver scored in a single race.",
+    "scope": "Race-level scoring for a driver.",
+    "aliases": [
+      "points",
+      "score",
+      "points scored"
+    ],
+    "evidence": [
+      "e_result_rows",
+      "e_points_sources"
+    ]
+  },
+  {
+    "id": "term_constructor_points",
+    "name": "Race Points (Constructor)",
+    "type": "metric",
+    "definition": "Championship points a constructor scored in a single race, stored in the constructor-results table.",
+    "scope": "Race-level scoring for a team.",
+    "aliases": [
+      "constructor points",
+      "team points"
+    ],
+    "evidence": [
+      "e_constructor_results_rows",
+      "e_points_sources"
+    ]
+  },
+  {
+    "id": "term_standings_points",
+    "name": "Cumulative Standings Points",
+    "type": "metric",
+    "definition": "Cumulative championship points of a driver or constructor as of a given race, stored in the standings tables.",
+    "scope": "Championship totals; one snapshot per participant per race.",
+    "aliases": [
+      "standings points",
+      "championship points",
+      "total points"
+    ],
+    "evidence": [
+      "e_driver_standings_rows",
+      "e_constructor_standings_rows"
+    ]
+  },
+  {
+    "id": "term_laps_completed",
+    "name": "Laps Completed",
+    "type": "metric",
+    "definition": "The number of laps a driver completed in a race.",
+    "scope": "Race-distance analysis and lapped-driver detection.",
+    "aliases": [
+      "laps",
+      "laps completed"
+    ],
+    "evidence": [
+      "e_result_rows"
+    ]
+  },
+  {
+    "id": "term_finish_time",
+    "name": "Finish Time",
+    "type": "metric",
+    "definition": "The recorded race time of a driver. The winner's value is an absolute time in H:MM:SS.mmm; drivers classified behind the winner carry a relative gap beginning with a plus sign, expressed either in seconds or in M:SS.mmm. The value is empty when no classified time exists.",
+    "scope": "Race-time questions, winner's time, and any timing comparison.",
+    "aliases": [
+      "finish time",
+      "race time",
+      "time",
+      "total time"
+    ],
+    "evidence": [
+      "e_finish_time_formats"
+    ]
+  },
+  {
+    "id": "term_time_gap",
+    "name": "Time Gap to Winner",
+    "type": "metric",
+    "definition": "The difference between a driver's race time and the winner's race time, stored as a plus-prefixed string that must be combined with the winner's absolute time for absolute comparisons.",
+    "scope": "Gaps, incremental time, and percentage speed comparisons between drivers in one race.",
+    "aliases": [
+      "gap",
+      "incremental time",
+      "time behind",
+      "difference"
+    ],
+    "evidence": [
+      "e_time_gap_sample",
+      "e_finish_time_formats"
+    ]
+  },
+  {
+    "id": "term_fastest_lap_speed",
+    "name": "Fastest Lap Speed",
+    "type": "metric",
+    "definition": "Average speed in km/h of a driver's fastest lap in a race, stored as text with decimal places.",
+    "scope": "Speed comparisons and fastest-lap questions.",
+    "aliases": [
+      "fastest lap speed",
+      "lap speed",
+      "speed"
+    ],
+    "evidence": [
+      "e_fastest_lap_rows",
+      "e_speed_lexical"
+    ]
+  },
+  {
+    "id": "term_fastest_lap_time",
+    "name": "Fastest Lap Time",
+    "type": "metric",
+    "definition": "Lap time of a driver's fastest lap in a race, in M:SS.mmm form.",
+    "scope": "Fastest-lap timing analysis.",
+    "aliases": [
+      "fastest lap time",
+      "best lap time"
+    ],
+    "evidence": [
+      "e_fastest_lap_rows"
+    ]
+  },
+  {
+    "id": "term_pit_stop_duration",
+    "name": "Pit Stop Duration",
+    "type": "metric",
+    "definition": "Duration of one pit stop in seconds, stored as a decimal text value.",
+    "scope": "Pit-stop timing and duration analysis.",
+    "aliases": [
+      "pit stop duration",
+      "pit time",
+      "stop duration"
+    ],
+    "evidence": [
+      "e_pit_rows"
+    ]
+  },
+  {
+    "id": "term_average_pit_stop_duration",
+    "name": "Average Pit Stop Duration",
+    "type": "metric",
+    "definition": "Mean pit-stop duration for a driver, computed as the sum of that driver's stop durations divided by the number of stops.",
+    "scope": "Comparing drivers by pit-stop efficiency.",
+    "aliases": [
+      "average pitstop duration",
+      "average pit time",
+      "mean pit stop"
+    ],
+    "evidence": [
+      "e_pit_rows"
+    ]
+  },
+  {
+    "id": "term_lap_time",
+    "name": "Lap Time",
+    "type": "metric",
+    "definition": "Time for one lap by one driver in one race, recorded with its lap number; dominantly in M:SS.mmm form with a small number of hour-long values in H:MM:SS.mmm.",
+    "scope": "Lap-level timing and looking up a specific lap time.",
+    "aliases": [
+      "lap time",
+      "lapTime",
+      "time of lap"
+    ],
+    "evidence": [
+      "e_lap_rows",
+      "e_lap_formats"
+    ]
+  },
+  {
+    "id": "term_qualifying_period_time",
+    "name": "Qualifying Period Time",
+    "type": "metric",
+    "definition": "The best lap time a driver set in one qualifying period: first period, second period, or third period. An empty period time means the driver did not take part in that period.",
+    "scope": "Q1/Q2/Q3 questions, including first qualifying period results.",
+    "aliases": [
+      "Q1",
+      "Q2",
+      "Q3",
+      "qualifying time",
+      "first qualifying period"
+    ],
+    "evidence": [
+      "e_qual_rows"
+    ]
+  },
+  {
+    "id": "term_driver_age",
+    "name": "Driver Age at Race",
+    "type": "metric",
+    "definition": "The driver's age at the time of a race, derived from the difference between the race date and the driver's date of birth.",
+    "scope": "Oldest/youngest driver questions.",
+    "aliases": [
+      "age",
+      "oldest",
+      "youngest"
+    ],
+    "evidence": [
+      "e_dob_domain",
+      "e_race_dates"
+    ]
+  }
+]

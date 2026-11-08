@@ -1,0 +1,621 @@
+[
+  {
+    "id": "term_client",
+    "name": "Client",
+    "type": "entity",
+    "definition": "A bank customer, identified by a unique client identifier (tab03.fld009). A client is connected to accounts only through account-holder (disposition) records; there is no direct client-to-account column.",
+    "scope": "Customer demographics and account-holder analysis.",
+    "aliases": [
+      "customer",
+      "client",
+      "person",
+      "klient",
+      "account holder"
+    ],
+    "evidence": [
+      "ev_client_key",
+      "ev_disposition",
+      "ev_join_integrity"
+    ]
+  },
+  {
+    "id": "term_client_id",
+    "name": "Client Identifier",
+    "type": "dimension",
+    "definition": "Unique numeric identifier of a person (tab03.fld009). It is distinct from the account identifier (tab01.fld001) and from the disposition/account-holder record identifier (tab04.fld006).",
+    "scope": "Identifying customers in output lists such as 'account holder identification numbers'.",
+    "aliases": [
+      "client id",
+      "customer id",
+      "account holder identification number",
+      "client identification number",
+      "identification number",
+      "id of the client"
+    ],
+    "evidence": [
+      "ev_client_key",
+      "ev_disposition"
+    ]
+  },
+  {
+    "id": "term_gender",
+    "name": "Client Gender",
+    "type": "dimension",
+    "definition": "Gender of a client, encoded as a single letter: 'F' = female, 'M' = male. No other values occur.",
+    "scope": "Filtering clients by female/male and computing gender shares.",
+    "aliases": [
+      "gender",
+      "sex",
+      "female",
+      "male",
+      "woman",
+      "man"
+    ],
+    "evidence": [
+      "ev_gender"
+    ]
+  },
+  {
+    "id": "term_birth_date",
+    "name": "Birth Date",
+    "type": "dimension",
+    "definition": "Date of birth of a client, stored as an ISO date (YYYY-MM-DD) ranging from 1911-08-20 to 1987-09-27. An earlier date denotes an older person.",
+    "scope": "Age ranking, 'oldest' selection, and 'born before' filters.",
+    "aliases": [
+      "birth date",
+      "birthdate",
+      "date of birth",
+      "born before",
+      "born",
+      "oldest",
+      "youngest"
+    ],
+    "evidence": [
+      "ev_birth"
+    ]
+  },
+  {
+    "id": "term_age",
+    "name": "Client Age",
+    "type": "metric",
+    "definition": "Age of a client in years, computed from the birth date. The database contains no age column.",
+    "scope": "Questions asking for the age of a client.",
+    "aliases": [
+      "age",
+      "how old",
+      "years old",
+      "client age"
+    ],
+    "evidence": [
+      "ev_age_absence",
+      "ev_birth"
+    ]
+  },
+  {
+    "id": "term_district_residence",
+    "name": "Client District of Residence",
+    "type": "dimension",
+    "definition": "The district (okres) in which a client lives, recorded as a district identifier on the client row (tab03.fld002). It references the same 77-value district domain as the district table.",
+    "scope": "Client-scoped geography such as 'stayed in Sokolov' or district-level counts of clients. Distinct from the account's branch district.",
+    "aliases": [
+      "district of residence",
+      "client district",
+      "home district",
+      "residence",
+      "stayed in",
+      "district"
+    ],
+    "evidence": [
+      "ev_district_vs_branch",
+      "ev_district"
+    ]
+  },
+  {
+    "id": "term_account",
+    "name": "Account",
+    "type": "entity",
+    "definition": "A bank account with a unique surrogate identifier, an opening date, a statement-issuance frequency, and one branch location.",
+    "scope": "Account counts, account-level ownership, and grouping of loans and transactions.",
+    "aliases": [
+      "account",
+      "bank account",
+      "account opened",
+      "accounts"
+    ],
+    "evidence": [
+      "ev_counts",
+      "ev_account_open_years"
+    ]
+  },
+  {
+    "id": "term_account_id",
+    "name": "Account Identifier",
+    "type": "dimension",
+    "definition": "Surrogate numeric identifier of an account (tab01.fld001). The workload phrase 'account number' refers to this identifier; there is no external account-number string in the data.",
+    "scope": "Returning account numbers or counting distinct accounts.",
+    "aliases": [
+      "account number",
+      "account numbers",
+      "account id",
+      "account identifier"
+    ],
+    "evidence": [
+      "ev_client_key",
+      "ev_counts"
+    ]
+  },
+  {
+    "id": "term_account_open_date",
+    "name": "Account Opening Date",
+    "type": "dimension",
+    "definition": "Date on which an account was opened (tab01.fld004), stored as an ISO date. Observed openings run from 1993-01-01 to 1997-12-29.",
+    "scope": "Filters such as 'account opened' or 'opened starting from 1997'.",
+    "aliases": [
+      "account opened",
+      "opening date",
+      "account open date",
+      "opened in",
+      "opened starting",
+      "date account opened"
+    ],
+    "evidence": [
+      "ev_account_open_years"
+    ]
+  },
+  {
+    "id": "term_statement_frequency",
+    "name": "Statement Issuance Frequency",
+    "type": "dimension",
+    "definition": "How often statements are issued for an account: monthly ('POPLATEK MESICNE'), weekly ('POPLATEK TYDNE'), or after each transaction ('POPLATEK PO OBRATU').",
+    "scope": "Selecting accounts by statement issuance behaviour, e.g. 'statement issuance after each transaction'.",
+    "aliases": [
+      "statement issuance",
+      "statement frequency",
+      "issuance after transaction",
+      "POPLATEK PO OBRATU",
+      "POPLATEK MESICNE",
+      "POPLATEK TYDNE",
+      "frequency"
+    ],
+    "evidence": [
+      "ev_freq"
+    ]
+  },
+  {
+    "id": "term_branch_location",
+    "name": "Branch Location",
+    "type": "entity",
+    "definition": "The district in which an account's branch is located, recorded as a district identifier on the account row (tab01.fld002). Branch identifiers cover all 77 districts and resolve to district rows.",
+    "scope": "Branch-scoped geography such as 'branch located in south Bohemia' or 'branch location 1'. Distinct from a client's district of residence.",
+    "aliases": [
+      "branch",
+      "branch location",
+      "branch district",
+      "bank branch",
+      "branch in region"
+    ],
+    "evidence": [
+      "ev_branch_domain",
+      "ev_district_vs_branch"
+    ]
+  },
+  {
+    "id": "term_account_holder",
+    "name": "Account Holder Record (Disposition)",
+    "type": "entity",
+    "definition": "The link record that attaches a client to an account and states the holder's role. Each account has exactly one OWNER record; additional DISPONENT records may exist.",
+    "scope": "Reaching clients from accounts, identifying an account's owner, and interpreting 'eligible for loans' as OWNER status.",
+    "aliases": [
+      "account holder",
+      "disposition",
+      "holder record",
+      "account ownership",
+      "owner record"
+    ],
+    "evidence": [
+      "ev_disposition"
+    ]
+  },
+  {
+    "id": "term_holder_role",
+    "name": "Holder Role",
+    "type": "dimension",
+    "definition": "Role of an account holder: 'OWNER' for the primary holder or 'DISPONENT' for an additional authorized holder.",
+    "scope": "Distinguishing account owners from additional holders.",
+    "aliases": [
+      "owner",
+      "disponent",
+      "holder type",
+      "disposition type",
+      "role",
+      "eligible for loans"
+    ],
+    "evidence": [
+      "ev_disposition"
+    ]
+  },
+  {
+    "id": "term_card",
+    "name": "Payment Card",
+    "type": "entity",
+    "definition": "A card issued to an account-holder record. There is exactly one card per card-issuing disposition record and 892 cards in total.",
+    "scope": "Credit-card questions about card level and cardholders.",
+    "aliases": [
+      "card",
+      "credit card",
+      "payment card",
+      "debit card"
+    ],
+    "evidence": [
+      "ev_card"
+    ]
+  },
+  {
+    "id": "term_card_type",
+    "name": "Card Type",
+    "type": "dimension",
+    "definition": "Card product level: 'junior', 'classic' or 'gold'. Gold is the high-level card.",
+    "scope": "Selecting 'high level credit card' holders.",
+    "aliases": [
+      "card type",
+      "card level",
+      "high level credit card",
+      "gold",
+      "classic",
+      "junior"
+    ],
+    "evidence": [
+      "ev_cardtype"
+    ]
+  },
+  {
+    "id": "term_loan",
+    "name": "Loan Contract",
+    "type": "entity",
+    "definition": "A loan contract attached to exactly one account; the dataset contains 682 loans on 682 distinct accounts (no account has more than one loan).",
+    "scope": "Loan status, loan amount and loan-based account selection.",
+    "aliases": [
+      "loan",
+      "loan contract",
+      "contract",
+      "credit"
+    ],
+    "evidence": [
+      "ev_loan",
+      "ev_join_integrity"
+    ]
+  },
+  {
+    "id": "term_loan_amount",
+    "name": "Loan Amount",
+    "type": "metric",
+    "definition": "Principal amount of a loan contract, recorded in the loan table (tab06.fld028) and ranging from 4,980 to 590,820.",
+    "scope": "Averaging or comparing loan amounts. Field tab08.fld028 is a transaction amount with a different meaning.",
+    "aliases": [
+      "loan amount",
+      "amount of loan",
+      "loan principal",
+      "average amount of loan"
+    ],
+    "evidence": [
+      "ev_loan_amount",
+      "ev_txn_amount"
+    ]
+  },
+  {
+    "id": "term_loan_status",
+    "name": "Loan Status",
+    "type": "dimension",
+    "definition": "Contract status code. 'C' means a running contract that is OK so far; 'D' means a running contract in debt. 'A' and 'B' are non-running statuses; their precise meaning is not established by the available workload evidence.",
+    "scope": "Selecting running contracts and contracts in debt.",
+    "aliases": [
+      "loan status",
+      "contract status",
+      "running contract",
+      "still running",
+      "in debt",
+      "status"
+    ],
+    "evidence": [
+      "ev_loan_status"
+    ]
+  },
+  {
+    "id": "term_loan_date",
+    "name": "Loan Date",
+    "type": "dimension",
+    "definition": "Date on which the loan contract was granted, stored as an ISO date in tab06.fld004; observed from 1993-07-05 to 1998-12-08.",
+    "scope": "Time filtering of loans.",
+    "aliases": [
+      "loan date",
+      "date of loan",
+      "granted date",
+      "contract date"
+    ],
+    "evidence": [
+      "ev_loan_date"
+    ]
+  },
+  {
+    "id": "term_transaction",
+    "name": "Transaction",
+    "type": "entity",
+    "definition": "A monetary movement on an account. The transaction table holds 1,056,320 rows covering 1993-01-01 to 1998-12-31.",
+    "scope": "Transaction filtering, aggregation and credit-card withdrawal analysis.",
+    "aliases": [
+      "transaction",
+      "transactions",
+      "movement",
+      "payment"
+    ],
+    "evidence": [
+      "ev_txn",
+      "ev_txn_date"
+    ]
+  },
+  {
+    "id": "term_transaction_amount",
+    "name": "Transaction Amount",
+    "type": "metric",
+    "definition": "Monetary amount of a transaction (tab08.fld028). All observed values are non-negative, ranging from 0 to 87,400.",
+    "scope": "Thresholds such as 'amount less than the average' and amount aggregations.",
+    "aliases": [
+      "amount",
+      "transaction amount",
+      "amount of transaction",
+      "average amount"
+    ],
+    "evidence": [
+      "ev_txn_amount"
+    ]
+  },
+  {
+    "id": "term_transaction_type",
+    "name": "Transaction Type",
+    "type": "dimension",
+    "definition": "Coarse debit/credit classification of a transaction: 'PRIJEM' (credit), 'VYDAJ' (debit) or 'VYBER' (withdrawal-type code).",
+    "scope": "Broad credit/debit filtering.",
+    "aliases": [
+      "transaction type",
+      "type",
+      "PRIJEM",
+      "VYDAJ",
+      "VYBER"
+    ],
+    "evidence": [
+      "ev_txn_type",
+      "ev_type_operation_cross"
+    ]
+  },
+  {
+    "id": "term_transaction_operation",
+    "name": "Transaction Operation",
+    "type": "dimension",
+    "definition": "Detailed operation code of a transaction: 'VYBER' (cash withdrawal), 'VYBER KARTOU' (credit-card withdrawal), 'VKLAD' (deposit), 'PREVOD NA UCET' (outgoing transfer), 'PREVOD Z UCTU' (incoming transfer), or NULL.",
+    "scope": "Identifying the specific kind of transaction, including credit-card use.",
+    "aliases": [
+      "operation",
+      "transaction operation",
+      "VYBER KARTOU",
+      "credit card withdrawal",
+      "withdrawal",
+      "deposit",
+      "transfer"
+    ],
+    "evidence": [
+      "ev_txn_operation",
+      "ev_credit_card"
+    ]
+  },
+  {
+    "id": "term_transaction_date",
+    "name": "Transaction Date",
+    "type": "dimension",
+    "definition": "ISO date on which a transaction occurred (tab08.fld004), covering 1993-01-01 to 1998-12-31.",
+    "scope": "Year and date filtering of transactions.",
+    "aliases": [
+      "transaction date",
+      "date of transaction",
+      "transaction year",
+      "in 1998"
+    ],
+    "evidence": [
+      "ev_txn_date"
+    ]
+  },
+  {
+    "id": "term_district",
+    "name": "District",
+    "type": "entity",
+    "definition": "A Czech district (okres), represented by one row in the district table. The 77 districts carry name, region, population, salary, unemployment and crime statistics.",
+    "scope": "District-level geography and district statistics.",
+    "aliases": [
+      "district",
+      "okres",
+      "districts"
+    ],
+    "evidence": [
+      "ev_district"
+    ]
+  },
+  {
+    "id": "term_district_id",
+    "name": "District Identifier",
+    "type": "dimension",
+    "definition": "Numeric identifier of a district (tab05.fld002), shared as a reference by client residence and account branch attributes. All 77 values are present.",
+    "scope": "Joining or filtering by a numeric district identifier, e.g. 'branch location 1'.",
+    "aliases": [
+      "district id",
+      "district number",
+      "district identifier",
+      "branch location 1"
+    ],
+    "evidence": [
+      "ev_district",
+      "ev_branch_domain"
+    ]
+  },
+  {
+    "id": "term_district_name",
+    "name": "District Name",
+    "type": "dimension",
+    "definition": "Human-readable name of a district (tab05.fld012), unique across the 77 rows (e.g. 'Sokolov', 'Ceske Budejovice').",
+    "scope": "Filtering or listing by district name.",
+    "aliases": [
+      "district name",
+      "district",
+      "Sokolov",
+      "Ceske Budejovice",
+      "name of district"
+    ],
+    "evidence": [
+      "ev_district"
+    ]
+  },
+  {
+    "id": "term_region",
+    "name": "Region",
+    "type": "entity",
+    "definition": "A Czech region (kraj) named in tab05.fld013. There are 8 regions, each grouping between 1 and 14 districts.",
+    "scope": "Region-level geography such as 'south Bohemia'. District statistics remain per district row.",
+    "aliases": [
+      "region",
+      "kraj",
+      "state",
+      "south Bohemia",
+      "region name"
+    ],
+    "evidence": [
+      "ev_region"
+    ]
+  },
+  {
+    "id": "term_population",
+    "name": "District Population",
+    "type": "metric",
+    "definition": "Number of inhabitants of a district, stored as text in tab05.fld014 and ranging from 42,821 to 1,204,953.",
+    "scope": "Ranking districts or branches by population size.",
+    "aliases": [
+      "inhabitants",
+      "population",
+      "number of inhabitants",
+      "biggest number of inhabitants"
+    ],
+    "evidence": [
+      "ev_population"
+    ]
+  },
+  {
+    "id": "term_avg_salary",
+    "name": "District Average Salary",
+    "type": "metric",
+    "definition": "Average salary statistic of a district (tab05.fld021), an integer between 8,110 and 12,541. It is a district-level measure, not an individual client's salary.",
+    "scope": "Comparing districts by salary or attaching a salary level to a client through the client's district.",
+    "aliases": [
+      "average salary",
+      "salary",
+      "lowest average salary",
+      "highest average salary",
+      "avg salary"
+    ],
+    "evidence": [
+      "ev_salary"
+    ]
+  },
+  {
+    "id": "term_unemployment_1995",
+    "name": "Unemployment Rate 1995",
+    "type": "metric",
+    "definition": "District unemployment rate for 1995 stored in tab05.fld022, expressed in percent (observed 0.2 to 7.3).",
+    "scope": "The earlier-year unemployment measure used for 1995-to-1996 comparisons.",
+    "aliases": [
+      "unemployment rate 1995",
+      "unemployment 1995",
+      "unemployment rate",
+      "unemployment"
+    ],
+    "evidence": [
+      "ev_unemployment"
+    ]
+  },
+  {
+    "id": "term_unemployment_1996",
+    "name": "Unemployment Rate 1996",
+    "type": "metric",
+    "definition": "District unemployment rate for 1996 stored in tab05.fld023, expressed in percent (observed 0.43 to 9.4).",
+    "scope": "The later-year unemployment measure used for 1995-to-1996 comparisons.",
+    "aliases": [
+      "unemployment rate 1996",
+      "unemployment 1996",
+      "unemployment rate"
+    ],
+    "evidence": [
+      "ev_unemployment"
+    ]
+  },
+  {
+    "id": "term_unemployment_increment",
+    "name": "Unemployment Rate Increment",
+    "type": "metric",
+    "definition": "Relative percentage change of district unemployment from 1995 to 1996, computed as (rate_1996 - rate_1995) / rate_1995 * 100. It has no stored column and must be derived.",
+    "scope": "Questions asking for the percentage increment of unemployment between 1995 and 1996.",
+    "aliases": [
+      "unemployment rate increment",
+      "unemployment increment",
+      "percentage unemployment rate increment",
+      "increment rate",
+      "change in unemployment"
+    ],
+    "evidence": [
+      "ev_unemployment"
+    ]
+  },
+  {
+    "id": "term_crime_1995",
+    "name": "Crimes Committed 1995",
+    "type": "metric",
+    "definition": "Number of crimes committed in a district during 1995, stored in tab05.fld025 (observed 818 to 85,677). The 1996 counterpart is tab05.fld026.",
+    "scope": "District-level crime statistics for 1995.",
+    "aliases": [
+      "crimes committed in 1995",
+      "crimes 1995",
+      "number of crimes",
+      "crimes"
+    ],
+    "evidence": [
+      "ev_crimes"
+    ]
+  },
+  {
+    "id": "term_avg_salary_gap",
+    "name": "Average Salary Gap",
+    "type": "metric",
+    "definition": "Difference between the highest and the lowest district average salary in the compared set. It has no stored column and must be derived from district average salary.",
+    "scope": "Questions asking for the gap between the lowest and highest average salary.",
+    "aliases": [
+      "salary gap",
+      "average salary gap",
+      "gap between lowest and highest average salary",
+      "difference in average salary"
+    ],
+    "evidence": [
+      "ev_salary"
+    ]
+  },
+  {
+    "id": "term_male_client_share",
+    "name": "Male Client Percentage",
+    "type": "metric",
+    "definition": "Share of male clients within a client group, computed as the count of male clients divided by the count of clients in the group, multiplied by 100.",
+    "scope": "Questions asking for the percentage of male clients in a branch or other client group.",
+    "aliases": [
+      "percentage of male clients",
+      "male percentage",
+      "male client share",
+      "share of male clients"
+    ],
+    "evidence": [
+      "ev_gender"
+    ]
+  }
+]

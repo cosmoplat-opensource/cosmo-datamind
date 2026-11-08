@@ -1,0 +1,435 @@
+[
+  {
+    "id": "term_account",
+    "name": "Account",
+    "type": "entity",
+    "definition": "A bank account identified by fld001. An account carries a statement issuance frequency (fld003), an opening date (fld004), and a district affiliation (fld002). It is the hub that links clients, loans, and transactions.",
+    "scope": "Account-level analysis in the financial database; all account-related questions use tab01 as the account entity.",
+    "aliases": [
+      "account",
+      "accounts",
+      "account id",
+      "account number",
+      "bank account",
+      "customer account"
+    ],
+    "evidence": [
+      "ev_schema_tables",
+      "ev_row_counts"
+    ]
+  },
+  {
+    "id": "term_client",
+    "name": "Client",
+    "type": "entity",
+    "definition": "A bank customer identified by fld009, with a gender (fld010), a birth date (fld011), and a residence district (fld002).",
+    "scope": "Client-level analysis; clients relate to accounts through disposition records rather than through a direct foreign key on the account.",
+    "aliases": [
+      "client",
+      "clients",
+      "customer",
+      "customers",
+      "client id",
+      "customer id",
+      "account holder"
+    ],
+    "evidence": [
+      "ev_schema_tables",
+      "ev_client_3356"
+    ]
+  },
+  {
+    "id": "term_disposition",
+    "name": "Account Disposition",
+    "type": "entity",
+    "definition": "A disposition record linking one client to one account and assigning the client's role on that account (OWNER or DISPONENT). It is the association record between clients and accounts.",
+    "scope": "Client-to-account attribution. Each account has exactly one OWNER disposition; additional clients can hold DISPONENT dispositions.",
+    "aliases": [
+      "disposition",
+      "disp",
+      "account disposition",
+      "client account link",
+      "account holder link"
+    ],
+    "evidence": [
+      "ev_disposition",
+      "ev_schema_tables"
+    ]
+  },
+  {
+    "id": "term_district",
+    "name": "District",
+    "type": "entity",
+    "definition": "A district (administrative unit) identified by fld002, with a name (fld012), a region (fld013), and demographic and economic attributes such as average salary (fld021).",
+    "scope": "District-level reference data. Both accounts and clients reference districts, but through separate columns that carry different meanings.",
+    "aliases": [
+      "district",
+      "districts",
+      "branch district",
+      "district id"
+    ],
+    "evidence": [
+      "ev_schema_tables",
+      "ev_district_region"
+    ]
+  },
+  {
+    "id": "term_loan",
+    "name": "Loan",
+    "type": "entity",
+    "definition": "A loan facility granted against an account, with an approved amount, an approval date, a duration in months, and a contract status.",
+    "scope": "Loan-level analysis in tab06; each loan row belongs to one account.",
+    "aliases": [
+      "loan",
+      "loans",
+      "loan contract",
+      "credit"
+    ],
+    "evidence": [
+      "ev_schema_tables",
+      "ev_loan_numeric"
+    ]
+  },
+  {
+    "id": "term_transaction",
+    "name": "Transaction",
+    "type": "entity",
+    "definition": "A posting on an account with a date, a debit/credit type, an operation kind, and an amount.",
+    "scope": "Transaction-level analysis in tab08; each transaction belongs to one account.",
+    "aliases": [
+      "transaction",
+      "transactions",
+      "trans",
+      "account transaction",
+      "posting"
+    ],
+    "evidence": [
+      "ev_schema_tables",
+      "ev_row_counts"
+    ]
+  },
+  {
+    "id": "term_statement_frequency",
+    "name": "Statement Issuance Frequency",
+    "type": "category",
+    "definition": "The statement issuance schedule chosen for an account, recorded as a coded text value: monthly issuance (POPLATEK MESICNE), weekly issuance (POPLATEK TYDNE), or issuance after transaction (POPLATEK PO OBRATU).",
+    "scope": "Account-level attribute used for filters such as 'weekly issuance statement', 'monthly statement issuance', or 'issuance after transaction'.",
+    "aliases": [
+      "statement frequency",
+      "statement issuance",
+      "issuance",
+      "statement",
+      "frequency",
+      "monthly statement",
+      "weekly statement",
+      "issuance after transaction",
+      "POPLATEK",
+      "POPLATEK MESICNE",
+      "POPLATEK TYDNE",
+      "POPLATEK PO OBRATU"
+    ],
+    "evidence": [
+      "ev_frequency_values"
+    ]
+  },
+  {
+    "id": "term_account_opening_date",
+    "name": "Account Opening Date",
+    "type": "dimension",
+    "definition": "The date on which an account was opened (tab01.fld004). Its year is what questions refer to as 'accounts in 1993' or 'account opening date in 1993'.",
+    "scope": "Account-level date dimension.",
+    "aliases": [
+      "account opening date",
+      "opening date",
+      "account date",
+      "opened account",
+      "accounts in 1993",
+      "account opening year"
+    ],
+    "evidence": [
+      "ev_dates",
+      "ev_date_counts"
+    ]
+  },
+  {
+    "id": "term_client_gender",
+    "name": "Client Gender",
+    "type": "category",
+    "definition": "The client's gender, recorded as 'F' (female) or 'M' (male).",
+    "scope": "Client-level attribute; 'women' and 'female' both refer to code 'F', and 'men' and 'male' both refer to code 'M'.",
+    "aliases": [
+      "gender",
+      "female",
+      "male",
+      "woman",
+      "women",
+      "man",
+      "men",
+      "sex",
+      "F",
+      "M"
+    ],
+    "evidence": [
+      "ev_gender_values"
+    ]
+  },
+  {
+    "id": "term_client_birth_date",
+    "name": "Client Birth Date",
+    "type": "dimension",
+    "definition": "The client's date of birth (tab03.fld011), used to identify clients born on a specific date or in a specific year.",
+    "scope": "Client-level date dimension.",
+    "aliases": [
+      "birth date",
+      "date of birth",
+      "born",
+      "birthday",
+      "year of birth"
+    ],
+    "evidence": [
+      "ev_dates"
+    ]
+  },
+  {
+    "id": "term_district_name",
+    "name": "District Name",
+    "type": "dimension",
+    "definition": "The human-readable name of a district (tab05.fld012), for example Hl.m. Praha or Benesov. A request for a 'district name' refers to this column, not to the region column.",
+    "scope": "District-level attribute.",
+    "aliases": [
+      "district name",
+      "district",
+      "name of district"
+    ],
+    "evidence": [
+      "ev_district_region"
+    ]
+  },
+  {
+    "id": "term_region",
+    "name": "Region",
+    "type": "dimension",
+    "definition": "The region in which a district lies (tab05.fld013). Eight English region names are stored: Prague, central Bohemia, south Bohemia, west Bohemia, north Bohemia, east Bohemia, south Moravia, and north Moravia.",
+    "scope": "District-level attribute; region-level analysis aggregates districts and, through them, accounts and clients.",
+    "aliases": [
+      "region",
+      "district region",
+      "kraj",
+      "Bohemia",
+      "Moravia",
+      "Prague",
+      "East Bohemia",
+      "North Bohemia",
+      "central Bohemia",
+      "south Bohemia",
+      "west Bohemia",
+      "south Moravia",
+      "north Moravia"
+    ],
+    "evidence": [
+      "ev_district_region"
+    ]
+  },
+  {
+    "id": "term_average_salary",
+    "name": "District Average Salary",
+    "type": "metric",
+    "definition": "The average salary recorded for a district (tab05.fld021), stored as an integer attached to each district. It is a district-level economic attribute, not a client-level or account-level value.",
+    "scope": "District-level metric; salary-based conditions evaluate the district that the account or client is associated with.",
+    "aliases": [
+      "average salary",
+      "avg salary",
+      "salary",
+      "district salary",
+      "average pay"
+    ],
+    "evidence": [
+      "ev_salary_distribution",
+      "ev_district_region"
+    ]
+  },
+  {
+    "id": "term_loan_approval_date",
+    "name": "Loan Approval Date",
+    "type": "dimension",
+    "definition": "The date on which a loan was approved (tab06.fld004). Questions referring to an 'approved loan date in 1997' or to a loan approval window use this column.",
+    "scope": "Loan-level date dimension.",
+    "aliases": [
+      "loan approval date",
+      "approved loan date",
+      "approval date",
+      "loan date",
+      "loan approved"
+    ],
+    "evidence": [
+      "ev_dates",
+      "ev_date_counts"
+    ]
+  },
+  {
+    "id": "term_loan_duration",
+    "name": "Loan Duration",
+    "type": "metric",
+    "definition": "The loan's validity or term in months (tab06.fld029), stored as an integer per loan. 'Loan validity more than 12 months' is a numeric condition on this value.",
+    "scope": "Loan-level metric.",
+    "aliases": [
+      "loan duration",
+      "loan validity",
+      "validity",
+      "term",
+      "duration",
+      "months"
+    ],
+    "evidence": [
+      "ev_loan_numeric"
+    ]
+  },
+  {
+    "id": "term_loan_status",
+    "name": "Loan Status",
+    "type": "category",
+    "definition": "The contract status code of a loan (tab06.fld031). Observed values are A, B, C, and D. The construction workload documents 'C' as a running contract that is OK so far, which is the meaning of 'still running with no issue'.",
+    "scope": "Loan-level status. Meanings of A, B, and D are not documented by the construction workload and must not be assumed.",
+    "aliases": [
+      "loan status",
+      "status",
+      "contract status",
+      "running",
+      "running with no issue",
+      "loan condition"
+    ],
+    "evidence": [
+      "ev_loan_status_values"
+    ]
+  },
+  {
+    "id": "term_loan_amount",
+    "name": "Approved Loan Amount",
+    "type": "metric",
+    "definition": "The amount approved for a loan, recorded per loan in tab06.fld028. Questions refer to it as 'approved amount' or 'loan amount'.",
+    "scope": "Loan-level metric. The same column name, fld028, holds an order amount in tab07 and a transaction amount in tab08, so the table context must be respected.",
+    "aliases": [
+      "loan amount",
+      "approved amount",
+      "amount",
+      "loan value",
+      "amount approved"
+    ],
+    "evidence": [
+      "ev_loan_numeric",
+      "ev_amount_column_domains"
+    ]
+  },
+  {
+    "id": "term_transaction_operation",
+    "name": "Transaction Operation",
+    "type": "category",
+    "definition": "The operation kind of a transaction (tab08.fld037), for example VYBER (withdrawal in cash), VKLAD, PREVOD NA UCET, PREVOD Z UCTU, or VYBER KARTOU. The column is NULL for many credit transactions.",
+    "scope": "Transaction-level category. The workload documents fld037 = 'VYBER' as withdrawal in cash.",
+    "aliases": [
+      "operation",
+      "transaction operation",
+      "withdrawal",
+      "withdrawals",
+      "withdrawal in cash",
+      "cash withdrawal",
+      "VYBER",
+      "cash"
+    ],
+    "evidence": [
+      "ev_trans_operation",
+      "ev_blank_values"
+    ]
+  },
+  {
+    "id": "term_transaction_type",
+    "name": "Transaction Type",
+    "type": "category",
+    "definition": "The debit/credit direction of a transaction (tab08.fld007), with observed values PRIJEM, VYDAJ, and VYBER.",
+    "scope": "Transaction-level category. The column name fld007 is also used in tab04 (OWNER/DISPONENT) and tab02 (classic/gold/junior) with unrelated value domains.",
+    "aliases": [
+      "transaction type",
+      "type",
+      "debit",
+      "credit",
+      "PRIJEM",
+      "VYDAJ"
+    ],
+    "evidence": [
+      "ev_type_column_domains",
+      "ev_trans_operation"
+    ]
+  },
+  {
+    "id": "term_transaction_date",
+    "name": "Transaction Date",
+    "type": "dimension",
+    "definition": "The date on which a transaction was posted (tab08.fld004).",
+    "scope": "Transaction-level date dimension.",
+    "aliases": [
+      "transaction date",
+      "date",
+      "posted date",
+      "transaction day"
+    ],
+    "evidence": [
+      "ev_dates"
+    ]
+  },
+  {
+    "id": "term_transaction_amount",
+    "name": "Transaction Amount",
+    "type": "metric",
+    "definition": "The monetary amount of a transaction recorded in tab08.fld028.",
+    "scope": "Transaction-level metric; not to be confused with the loan amount or the permanent-order amount stored under the same column name in other tables.",
+    "aliases": [
+      "transaction amount",
+      "amount",
+      "withdrawal amount",
+      "transaction value"
+    ],
+    "evidence": [
+      "ev_trans_operation",
+      "ev_amount_column_domains"
+    ]
+  },
+  {
+    "id": "term_disposition_role",
+    "name": "Disposition Role",
+    "type": "category",
+    "definition": "The role of a client on an account, recorded in tab04.fld007 as OWNER (the account owner) or DISPONENT (a client with disposition rights).",
+    "scope": "Disposition-level category. This domain is unrelated to the transaction type domain that shares the column name fld007.",
+    "aliases": [
+      "disposition role",
+      "owner",
+      "disponent",
+      "account role",
+      "account holder type",
+      "OWNER",
+      "DISPONENT"
+    ],
+    "evidence": [
+      "ev_disposition",
+      "ev_type_column_domains"
+    ]
+  },
+  {
+    "id": "term_percentage_share",
+    "name": "Percentage Share",
+    "type": "metric",
+    "definition": "A part-to-whole ratio expressed as a percentage. It is computed from a numerator count of entities that satisfy a condition and a denominator count of the reference population.",
+    "scope": "Used by questions asking 'what percentage of ...'. The metric is a ratio and is not additive across groups.",
+    "aliases": [
+      "percentage",
+      "percent",
+      "proportion",
+      "share",
+      "ratio",
+      "percentage of accounts",
+      "percentage of clients"
+    ],
+    "evidence": [
+      "ev_percentage_semantics"
+    ]
+  }
+]

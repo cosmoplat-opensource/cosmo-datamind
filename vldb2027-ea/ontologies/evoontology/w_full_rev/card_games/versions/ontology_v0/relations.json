@@ -1,0 +1,170 @@
+[
+  {
+    "connection_condition": "cards.setCode corresponds to sets.code; every card printing resolves to exactly one set.",
+    "description": "A set is composed of its card printings. Each card printing belongs to exactly one set, and a printing removed from its set would lose its printing identity.",
+    "evidence": [
+      "ev_set_join_key"
+    ],
+    "id": "rel_card_set_composition",
+    "relation_type": "composition",
+    "source": "t_card_set",
+    "target": "t_card"
+  },
+  {
+    "connection_condition": "foreign_data.uuid corresponds to cards.uuid.",
+    "description": "A card printing's foreign-language renditions are components of that printing; a foreign_data record cannot exist without its card, other than for 16 orphan rows.",
+    "evidence": [
+      "ev_fd_join",
+      "ev_fd_orphans"
+    ],
+    "id": "rel_card_foreign_data_composition",
+    "relation_type": "composition",
+    "source": "t_card",
+    "target": "t_foreign_language_availability"
+  },
+  {
+    "connection_condition": "rulings.uuid corresponds to cards.uuid.",
+    "description": "Rulings are components attached to a card printing; every ruling row belongs to exactly one card printing.",
+    "evidence": [
+      "ev_rulings_join"
+    ],
+    "id": "rel_card_ruling_composition",
+    "relation_type": "composition",
+    "source": "t_card",
+    "target": "t_ruling"
+  },
+  {
+    "connection_condition": "set_translations.setCode corresponds to sets.code.",
+    "description": "The localized names of a set are components of that set record; a set translation cannot exist without its set.",
+    "evidence": [
+      "ev_set_translation_sample"
+    ],
+    "id": "rel_set_translation_composition",
+    "relation_type": "composition",
+    "source": "t_card_set",
+    "target": "t_set_translation"
+  },
+  {
+    "connection_condition": "legalities.uuid corresponds to cards.uuid, and legalities.format names the format; the same row carries legalities.status.",
+    "description": "A card printing stands in a per-format legality relation to each play format, at printing grain rather than at game-piece grain.",
+    "evidence": [
+      "ev_legalities_pairs"
+    ],
+    "id": "rel_card_legality_association",
+    "relation_type": "association",
+    "source": "t_card",
+    "target": "t_play_format"
+  },
+  {
+    "connection_condition": "cards.artist holds the artist name as free text; there is no artist table and no identifier to join on.",
+    "description": "A card printing is credited to an artist, but the connection is a text value rather than a structural reference.",
+    "evidence": [
+      "ev_artist_cardinality"
+    ],
+    "id": "rel_card_artist_association",
+    "relation_type": "association",
+    "source": "t_card",
+    "target": "t_artist"
+  },
+  {
+    "connection_condition": "cards.name holds the card name; printings that share a name are separate rows, often in different sets.",
+    "description": "A card name maps to one or more card printings, so a name-based question and a printing-based question do not have the same answer population.",
+    "evidence": [
+      "ev_card_name_duplication",
+      "ev_adarkar_printings"
+    ],
+    "id": "rel_card_name_association",
+    "relation_type": "association",
+    "source": "t_card_name",
+    "target": "t_card"
+  },
+  {
+    "connection_condition": "cards.isTextless = 1 selects a subset of card printings.",
+    "description": "A textless card is a kind of card printing; the 115 flagged printings are a subset of all printings and any aggregate over cards contains them.",
+    "evidence": [
+      "ev_textless_count"
+    ],
+    "id": "rel_card_textless_hierarchy",
+    "relation_type": "hierarchy",
+    "source": "t_card",
+    "target": "t_textless_card"
+  },
+  {
+    "connection_condition": "cards.isStorySpotlight = 1 selects a subset of card printings.",
+    "description": "A Story Spotlight card is a kind of card printing; the 104 flagged printings are a subset of all printings.",
+    "evidence": [
+      "ev_story_count"
+    ],
+    "id": "rel_card_story_spotlight_hierarchy",
+    "relation_type": "hierarchy",
+    "source": "t_card",
+    "target": "t_story_spotlight_card"
+  },
+  {
+    "connection_condition": "cards.isPromo = 1 selects a subset of card printings.",
+    "description": "A promotional printing is a kind of card printing; the 5588 flagged printings are a subset of all printings.",
+    "evidence": [
+      "ev_promo_count"
+    ],
+    "id": "rel_card_promo_hierarchy",
+    "relation_type": "hierarchy",
+    "source": "t_card",
+    "target": "t_promotional_printing"
+  },
+  {
+    "connection_condition": "foreign_data.language and set_translations.language draw on the same language vocabulary; Italian, German, French, Chinese Simplified and others appear in both columns.",
+    "description": "Card-level and set-level translation languages express the same business concept of a localization language. A question that names a language should be recognised against either column, while the two data sources answer different questions.",
+    "evidence": [
+      "ev_fd_languages",
+      "ev_st_languages"
+    ],
+    "id": "rel_language_equivalence",
+    "relation_type": "equivalence",
+    "source": "t_card_translation_language",
+    "target": "t_set_translation_language"
+  },
+  {
+    "connection_condition": "Derived from the pair of columns cards.cardKingdomFoilId and cards.cardKingdomId in the same row.",
+    "description": "Foil availability is a store-listing attribute of a card printing rather than a stored flag, so it must be reconstructed from the identifier pair.",
+    "evidence": [
+      "ev_card_kingdom_ids"
+    ],
+    "id": "rel_card_foil_association",
+    "relation_type": "association",
+    "source": "t_card",
+    "target": "t_card_kingdom_foil_availability"
+  },
+  {
+    "connection_condition": "cards.types and cards.originalType describe the same type line at different granularity; every printing with originalType 'Artifact' also carries Artifact in types, but 2162 further printings carry Artifact only inside a multi-type list.",
+    "description": "The normalized type list and the printed type line are alternative representations of a card's type, and a type filter written against one does not select the same population as the other.",
+    "evidence": [
+      "ev_originaltype_vs_types"
+    ],
+    "id": "rel_card_type_association",
+    "relation_type": "association",
+    "source": "t_card_type",
+    "target": "t_card_original_type"
+  },
+  {
+    "connection_condition": "",
+    "description": "A card percentage is derived by dividing the count of card printings satisfying the question's condition by the count over the question's stated population and scaling to a percentage.",
+    "evidence": [
+      "ev_borderless_percentage"
+    ],
+    "id": "rel_card_count_percentage_derivation",
+    "relation_type": "derivation",
+    "source": "t_card_count",
+    "target": "t_card_percentage"
+  },
+  {
+    "connection_condition": "",
+    "description": "Ruling count is derived as the number of ruling records sharing a card printing's uuid; the 'most ruling information' question is a maximum over this derived count.",
+    "evidence": [
+      "ev_rulings_max"
+    ],
+    "id": "rel_ruling_count_derivation",
+    "relation_type": "derivation",
+    "source": "t_ruling",
+    "target": "t_ruling_count"
+  }
+]

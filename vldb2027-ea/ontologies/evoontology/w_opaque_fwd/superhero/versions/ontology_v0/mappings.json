@@ -1,0 +1,282 @@
+[
+  {
+    "id": "map_superhero",
+    "term_id": "term_superhero",
+    "database_source": "superhero",
+    "table": "tab07",
+    "column": "fld001",
+    "semantic_filter": "",
+    "aggregation_semantics": "count of distinct hero records when counting superheroes",
+    "grain": "one row per superhero (750 rows)",
+    "validation": "fld001 is the primary key; 750 rows and 750 distinct values",
+    "evidence_refs": [
+      "ev_002"
+    ]
+  },
+  {
+    "id": "map_hero_name",
+    "term_id": "term_hero_name",
+    "database_source": "superhero",
+    "table": "tab07",
+    "column": "fld008",
+    "semantic_filter": "",
+    "aggregation_semantics": "count of hero records; names are not unique",
+    "grain": "one name per hero record",
+    "validation": "743 distinct values across 750 rows",
+    "evidence_refs": [
+      "ev_014"
+    ]
+  },
+  {
+    "id": "map_full_name",
+    "term_id": "term_full_name",
+    "database_source": "superhero",
+    "table": "tab07",
+    "column": "fld009",
+    "semantic_filter": "NULL or a literal dash denotes an unrecorded full name",
+    "aggregation_semantics": "count records whose full name is present versus absent",
+    "grain": "one value per hero record",
+    "validation": "122 NULL, 125 dash and 503 substantive values",
+    "evidence_refs": [
+      "ev_012"
+    ]
+  },
+  {
+    "id": "map_publisher_label",
+    "term_id": "term_publisher",
+    "database_source": "superhero",
+    "table": "tab05",
+    "column": "fld006",
+    "semantic_filter": "publisher label; the label for publisher id 1 is blank",
+    "aggregation_semantics": "group heroes by publisher label and count heroes per label",
+    "grain": "one row per publisher (25 rows)",
+    "validation": "25 publisher rows including DC Comics and Marvel Comics",
+    "evidence_refs": [
+      "ev_004"
+    ]
+  },
+  {
+    "id": "map_publisher_ref",
+    "term_id": "term_publisher",
+    "database_source": "superhero",
+    "table": "tab07",
+    "column": "fld015",
+    "semantic_filter": "foreign key to tab05; 3 heroes have no publisher",
+    "aggregation_semantics": "attribute each hero to at most one publisher",
+    "grain": "one publisher reference per hero",
+    "validation": "fld015 references tab05.fld001; 747 non-null values",
+    "evidence_refs": [
+      "ev_016"
+    ]
+  },
+  {
+    "id": "map_gender",
+    "term_id": "term_gender",
+    "database_source": "superhero",
+    "table": "tab04",
+    "column": "fld005",
+    "semantic_filter": "",
+    "aggregation_semantics": "group and count heroes by gender label",
+    "grain": "one row per gender category (3 rows)",
+    "validation": "Male, Female and N/A labels",
+    "evidence_refs": [
+      "ev_005"
+    ]
+  },
+  {
+    "id": "map_race",
+    "term_id": "term_race",
+    "database_source": "superhero",
+    "table": "tab06",
+    "column": "fld007",
+    "semantic_filter": "",
+    "aggregation_semantics": "group and count heroes by race label",
+    "grain": "one row per race category (61 rows)",
+    "validation": "61 race rows including Human and Mutant",
+    "evidence_refs": [
+      "ev_006"
+    ]
+  },
+  {
+    "id": "map_colour_enum",
+    "term_id": "term_colour",
+    "database_source": "superhero",
+    "table": "tab03",
+    "column": "fld004",
+    "semantic_filter": "",
+    "aggregation_semantics": "join colour identifiers to their labels; count heroes per colour label",
+    "grain": "one row per colour label (35 rows)",
+    "validation": "35 distinct colour labels including No Colour, Black, Blond and Blue",
+    "evidence_refs": [
+      "ev_007"
+    ]
+  },
+  {
+    "id": "map_eye_colour",
+    "term_id": "term_eye_colour",
+    "database_source": "superhero",
+    "table": "tab07",
+    "column": "fld011",
+    "semantic_filter": "",
+    "aggregation_semantics": "count heroes per eye colour identifier",
+    "grain": "one eye colour identifier per hero",
+    "validation": "integer foreign key to tab03.fld001",
+    "evidence_refs": [
+      "ev_013"
+    ]
+  },
+  {
+    "id": "map_hair_colour",
+    "term_id": "term_hair_colour",
+    "database_source": "superhero",
+    "table": "tab07",
+    "column": "fld012",
+    "semantic_filter": "",
+    "aggregation_semantics": "count heroes per hair colour identifier",
+    "grain": "one hair colour identifier per hero",
+    "validation": "integer foreign key to tab03.fld001",
+    "evidence_refs": [
+      "ev_013"
+    ]
+  },
+  {
+    "id": "map_skin_colour",
+    "term_id": "term_skin_colour",
+    "database_source": "superhero",
+    "table": "tab07",
+    "column": "fld013",
+    "semantic_filter": "",
+    "aggregation_semantics": "count heroes per skin colour identifier",
+    "grain": "one skin colour identifier per hero",
+    "validation": "integer foreign key to tab03.fld001",
+    "evidence_refs": [
+      "ev_013"
+    ]
+  },
+  {
+    "id": "map_eye_colour_label",
+    "term_id": "term_eye_colour",
+    "database_source": "superhero",
+    "table": "tab03",
+    "column": "fld004",
+    "semantic_filter": "labels for colour identifiers stored in tab07.fld011",
+    "aggregation_semantics": "resolve eye colour identifiers to colour labels",
+    "grain": "one label per colour identifier",
+    "validation": "tab07.fld011 references tab03.fld001",
+    "evidence_refs": [
+      "ev_007"
+    ]
+  },
+  {
+    "id": "map_hair_colour_label",
+    "term_id": "term_hair_colour",
+    "database_source": "superhero",
+    "table": "tab03",
+    "column": "fld004",
+    "semantic_filter": "labels for colour identifiers stored in tab07.fld012",
+    "aggregation_semantics": "resolve hair colour identifiers to colour labels",
+    "grain": "one label per colour identifier",
+    "validation": "tab07.fld012 references tab03.fld001",
+    "evidence_refs": [
+      "ev_007"
+    ]
+  },
+  {
+    "id": "map_skin_colour_label",
+    "term_id": "term_skin_colour",
+    "database_source": "superhero",
+    "table": "tab03",
+    "column": "fld004",
+    "semantic_filter": "labels for colour identifiers stored in tab07.fld013",
+    "aggregation_semantics": "resolve skin colour identifiers to colour labels",
+    "grain": "one label per colour identifier",
+    "validation": "tab07.fld013 references tab03.fld001",
+    "evidence_refs": [
+      "ev_007"
+    ]
+  },
+  {
+    "id": "map_hero_attribute",
+    "term_id": "term_hero_attribute",
+    "database_source": "superhero",
+    "table": "tab02",
+    "column": "fld003",
+    "semantic_filter": "",
+    "aggregation_semantics": "filter or group scores by the named attribute",
+    "grain": "one row per attribute (6 rows)",
+    "validation": "six attribute rows: Intelligence, Strength, Speed, Durability, Power, Combat",
+    "evidence_refs": [
+      "ev_003"
+    ]
+  },
+  {
+    "id": "map_attribute_score",
+    "term_id": "term_attribute_score",
+    "database_source": "superhero",
+    "table": "tab08",
+    "column": "fld021",
+    "semantic_filter": "applies only to heroes that have a score row",
+    "aggregation_semantics": "maximum gives the strongest hero and minimum the weakest for the selected attribute",
+    "grain": "one score per hero per attribute",
+    "validation": "3738 rows = 623 heroes x 6 attributes; scores range 5 to 100",
+    "evidence_refs": [
+      "ev_009"
+    ]
+  },
+  {
+    "id": "map_superpower",
+    "term_id": "term_superpower",
+    "database_source": "superhero",
+    "table": "tab09",
+    "column": "fld022",
+    "semantic_filter": "",
+    "aggregation_semantics": "distinct power names for listing or counting",
+    "grain": "one row per superpower (167 rows)",
+    "validation": "167 distinct power names",
+    "evidence_refs": [
+      "ev_008"
+    ]
+  },
+  {
+    "id": "map_hero_superpower",
+    "term_id": "term_superpower",
+    "database_source": "superhero",
+    "table": "tab10",
+    "column": "fld023",
+    "semantic_filter": "rows link one hero to one possessed power; hero-power pairs are unique",
+    "aggregation_semantics": "count distinct heroes possessing a power",
+    "grain": "one row per hero-power assignment (5825 rows)",
+    "validation": "5825 rows, 0 duplicate pairs, 652 distinct heroes",
+    "evidence_refs": [
+      "ev_008"
+    ]
+  },
+  {
+    "id": "map_height",
+    "term_id": "term_height",
+    "database_source": "superhero",
+    "table": "tab07",
+    "column": "fld017",
+    "semantic_filter": "0 or NULL denotes unrecorded height",
+    "aggregation_semantics": "filter heroes by height range in centimetres",
+    "grain": "one height value per hero",
+    "validation": "range 0 to 30480; 155 zero and 58 NULL values",
+    "evidence_refs": [
+      "ev_011"
+    ]
+  },
+  {
+    "id": "map_weight",
+    "term_id": "term_weight",
+    "database_source": "superhero",
+    "table": "tab07",
+    "column": "fld018",
+    "semantic_filter": "0 or NULL denotes unrecorded weight",
+    "aggregation_semantics": "filter heroes by weight in kilograms",
+    "grain": "one weight value per hero",
+    "validation": "172 zero and 64 NULL values; smallest positive value 14",
+    "evidence_refs": [
+      "ev_010"
+    ]
+  }
+]

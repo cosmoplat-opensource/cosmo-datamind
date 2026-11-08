@@ -1,0 +1,269 @@
+[
+  {
+    "id": "constraint_season_label_convention",
+    "target": "term_season",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "season",
+      "2010/2011",
+      "2016 season",
+      "season year",
+      "which season",
+      "in the 2016 season"
+    ],
+    "severity": "block",
+    "scope": "Applies whenever matches are filtered or grouped by season.",
+    "confidence": "high",
+    "description": "Season values are stored as YYYY/YYYY labels naming the opening and closing calendar years, so a season spans two calendar years. A bare calendar year in a question is usually a season label rather than a match date year: a reference to the '2016 season' corresponds to the stored label '2015/2016', not to a season named '2016/2016'. Calendar-year filtering applies to the match date dimension, not to this label.",
+    "evidence": [
+      "ev_003_season_values",
+      "ev_004_match_date_and_nulls"
+    ]
+  },
+  {
+    "id": "constraint_match_date_format",
+    "target": "term_match_date",
+    "constraint_type": "unit",
+    "trigger_keywords": [
+      "April 2009",
+      "in April",
+      "month",
+      "match date",
+      "year of the match",
+      "held in"
+    ],
+    "severity": "warning",
+    "scope": "Applies when matches are filtered by calendar month or calendar year.",
+    "confidence": "high",
+    "description": "Match dates are stored as datetime text in the form YYYY-MM-DD HH:MM:SS. Calendar-month and calendar-year conditions are read from the leading year and month portion of that value, and they operate independently of the season label.",
+    "evidence": [
+      "ev_004_match_date_and_nulls",
+      "ev_006_april_2009_belgium"
+    ]
+  },
+  {
+    "id": "constraint_snapshot_date_semantics",
+    "target": "term_player_attributes",
+    "constraint_type": "scope",
+    "trigger_keywords": [
+      "in year 2011",
+      "on 2016/6/23",
+      "as of",
+      "snapshot",
+      "at that date",
+      "player rating in"
+    ],
+    "severity": "warning",
+    "scope": "Applies when a question attaches a date to a player attribute or rating.",
+    "confidence": "high",
+    "description": "Player attribute dates are snapshot dates on which the attribute set was captured, not match dates and not dates of birth. A date attached to a rating or skill question selects the attribute snapshot taken at that date, and 197 distinct snapshot dates exist between 2007-02-22 and 2016-07-07.",
+    "evidence": [
+      "ev_011_player_attribute_snapshot_dates"
+    ]
+  },
+  {
+    "id": "constraint_player_attributes_duplicate_rows",
+    "target": "term_player_attributes",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "average",
+      "number of players",
+      "count of players",
+      "percentage",
+      "how many players",
+      "distinct"
+    ],
+    "severity": "block",
+    "scope": "Applies whenever players are counted or an attribute is averaged over attribute records.",
+    "confidence": "high",
+    "description": "Player attribute rows are not unique per player: 835 (player, snapshot date) pairs hold more than one row, adding 836 extra rows, and a player owns between 2 and 56 rows. Counting rows therefore overstates counts of players, while averaging over rows weights players by how many snapshots they hold. A count of players requires a distinct player identifier, and an average over attribute records must state which denominator is intended.",
+    "evidence": [
+      "ev_012_player_attribute_duplicates"
+    ]
+  },
+  {
+    "id": "constraint_player_attributes_null_attributes",
+    "target": "term_player_attributes",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "overall rating",
+      "potential",
+      "preferred foot",
+      "jumping",
+      "missing value",
+      "null",
+      "highest",
+      "lowest"
+    ],
+    "severity": "warning",
+    "scope": "Applies to comparisons, rankings and counts over player attribute columns.",
+    "confidence": "high",
+    "description": "Attribute columns are not always populated. The overall rating, potential, preferred foot, crossing, heading accuracy, finishing, curve, long shots, sprint speed and strength are simultaneously absent in 836 rows, and jumping is absent in 2713 rows. Extremes and counts computed over these columns are computed over the non-missing subset only.",
+    "evidence": [
+      "ev_013_player_attribute_nulls"
+    ]
+  },
+  {
+    "id": "constraint_player_physical_units",
+    "target": "term_height",
+    "constraint_type": "unit",
+    "trigger_keywords": [
+      "height",
+      "180",
+      "cm",
+      "centimetres",
+      "tall",
+      "weight",
+      "heaviest",
+      "pounds"
+    ],
+    "severity": "warning",
+    "scope": "Applies to player physical profile comparisons.",
+    "confidence": "high",
+    "description": "Player height is recorded in centimetres, with values such as 170.18 or 182.88, and a bare numeric height threshold in a question therefore denotes centimetres. Player weight is recorded in pounds, with values between 117 and 243, and a 'heaviest' comparison is a maximum over that pound scale.",
+    "evidence": [
+      "ev_009_player_birthday_and_units",
+      "ev_022_attribute_extremes"
+    ]
+  },
+  {
+    "id": "constraint_birthday_age_direction",
+    "target": "term_player_age",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "birthday",
+      "born",
+      "birth year",
+      "birth month",
+      "age",
+      "oldest",
+      "youngest",
+      "at present"
+    ],
+    "severity": "warning",
+    "scope": "Applies to date-of-birth filtering and to age or oldest/youngest ranking.",
+    "confidence": "high",
+    "description": "Dates of birth are stored as datetime text. Because a larger date value means a more recent birth, the oldest player has the smallest date of birth while the youngest has the largest. Age is not stored and must be derived by comparing a reference instant with the date of birth; 'at present' means the current instant, which was 2026-10-09 17:04:24 UTC at inspection time.",
+    "evidence": [
+      "ev_009_player_birthday_and_units",
+      "ev_021_reference_clock"
+    ]
+  },
+  {
+    "id": "constraint_preferred_foot_values",
+    "target": "term_preferred_foot",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "preferred foot",
+      "prefer to use the right foot",
+      "prefer left foot",
+      "left foots",
+      "right foot",
+      "footed"
+    ],
+    "severity": "info",
+    "scope": "Applies when players are filtered by attacking foot preference.",
+    "confidence": "high",
+    "description": "Preferred foot takes the two values 'right' and 'left', with 836 rows left empty. Wording such as preferring to use the right foot when attacking denotes the value 'right', and wording such as preferring the left foot denotes 'left'. Rows without a value are excluded by either filter.",
+    "evidence": [
+      "ev_010_preferred_foot"
+    ]
+  },
+  {
+    "id": "constraint_team_attribute_classes",
+    "target": "term_build_up_play_speed_class",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "classified as",
+      "class",
+      "category",
+      "what is it classified",
+      "speed class"
+    ],
+    "severity": "info",
+    "scope": "Applies when a question asks how a team style score is classified.",
+    "confidence": "high",
+    "description": "Each team style score is paired with a categorical class label in the same snapshot. Build up play speed classes are Balanced, Fast and Slow; chance creation passing classes are Normal, Risky and Safe. A classification answer is read from the paired class column of the same snapshot rather than inferred from the numeric score.",
+    "evidence": [
+      "ev_017_team_attributes_classes"
+    ]
+  },
+  {
+    "id": "constraint_average_player_attribute_semantics",
+    "target": "term_average_player_attribute",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "average",
+      "avg",
+      "mean",
+      "average heading accuracy",
+      "average number of long shot",
+      "average rating"
+    ],
+    "severity": "block",
+    "scope": "Applies when an average of a player attribute or rating is requested over attribute records.",
+    "confidence": "high",
+    "description": "For player attribute metrics, the average is interpreted as the summed attribute value across the qualifying attribute records divided by the number of those records. The denominator is the count of attribute records, not the count of distinct players, so a player holding more snapshots contributes proportionally more to the average. The same reading applies when the average is taken per player before ranking.",
+    "evidence": [
+      "ev_012_player_attribute_duplicates"
+    ]
+  },
+  {
+    "id": "constraint_overall_strength_means_overall_rating",
+    "target": "term_strength",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "overall strength",
+      "strength is the greatest",
+      "overall strength of more than",
+      "greatest overall",
+      "strongest player"
+    ],
+    "severity": "block",
+    "scope": "Applies when a question refers to a player's overall strength or overall quality.",
+    "confidence": "high",
+    "description": "The phrase 'overall strength' denotes the composite overall rating of a player, whereas a bare 'strength' denotes the separate physical strength skill score. The two are different columns with different meanings, and choosing the physical strength score when the composite rating was meant produces a different answer.",
+    "evidence": [
+      "ev_013_player_attribute_nulls",
+      "ev_022_attribute_extremes"
+    ]
+  },
+  {
+    "id": "constraint_player_id_ambiguity",
+    "target": "term_player_api_id",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "player id",
+      "players 6 and 23",
+      "id",
+      "which player",
+      "players' IDs"
+    ],
+    "severity": "warning",
+    "scope": "Applies when a question cites a bare numeric player identifier.",
+    "confidence": "high",
+    "description": "Three numeric identifiers describe player-related rows: the player API identifier, the player FIFA identifier, and the surrogate row identifier of an attribute snapshot row. They are not interchangeable, and a bare numeric identifier in a question must be matched against the column that actually holds the referenced values; for example small row identifiers that appear together with a skill score address attribute snapshot rows rather than players.",
+    "evidence": [
+      "ev_014_player_attribute_row_ids",
+      "ev_015_player_identifiers"
+    ]
+  },
+  {
+    "id": "constraint_match_country_league_redundancy",
+    "target": "term_country",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "country",
+      "Poland",
+      "country of the league",
+      "which country"
+    ],
+    "severity": "info",
+    "scope": "Applies when matches are scoped by country name.",
+    "confidence": "high",
+    "description": "The country of a match is recorded twice, once on the match and once on its league, and the two agree for every match. Scoping matches by country therefore gives the same result whether the country is reached through the match or through its league, and the two routes must not be combined in a way that double counts.",
+    "evidence": [
+      "ev_002_league_country"
+    ]
+  }
+]

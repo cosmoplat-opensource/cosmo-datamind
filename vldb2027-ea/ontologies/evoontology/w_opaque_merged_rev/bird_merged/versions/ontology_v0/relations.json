@@ -1,0 +1,486 @@
+[
+  {
+    "id": "rel_cs_county_districts",
+    "source": "term_cs_county",
+    "relation_type": "composition",
+    "target": "term_cs_district",
+    "connection_condition": "tb003.cl0045 county name groups district rows sharing the same county",
+    "description": "A county is composed of the school districts located in it.",
+    "evidence": [
+      "ev_cs_school_codes"
+    ]
+  },
+  {
+    "id": "rel_cs_district_schools",
+    "source": "term_cs_district",
+    "relation_type": "composition",
+    "target": "term_cs_school",
+    "connection_condition": "schools carry the district name cl0046 together with county cl0045",
+    "description": "A district is composed of its schools.",
+    "evidence": [
+      "ev_cs_school_codes"
+    ]
+  },
+  {
+    "id": "rel_cs_school_frpm",
+    "source": "term_cs_school",
+    "relation_type": "composition",
+    "target": "term_cs_frpm_record",
+    "connection_condition": "tb001.cl0001 references tb003.cl0001",
+    "description": "FRPM statistics are a component record of a school for an academic year.",
+    "evidence": [
+      "ev_cs_frpm_rates"
+    ]
+  },
+  {
+    "id": "rel_cs_school_sat",
+    "source": "term_cs_school",
+    "relation_type": "composition",
+    "target": "term_cs_sat_record",
+    "connection_condition": "tb002 CDS code cl0030 matches the school CDS code pattern; district rows share the same code family",
+    "description": "SAT records belong to a school or its district.",
+    "evidence": [
+      "ev_cs_sat_columns"
+    ]
+  },
+  {
+    "id": "rel_cs_free_rate_deriv",
+    "source": "term_cs_k12_free_meal_count",
+    "relation_type": "derivation",
+    "target": "term_cs_k12_free_meal_rate",
+    "connection_condition": "rate = free meal count / K-12 enrollment",
+    "description": "The free meal rate is computed from the free meal count and K-12 enrollment.",
+    "evidence": [
+      "ev_cs_frpm_rates"
+    ]
+  },
+  {
+    "id": "rel_cs_frpm_rate_deriv",
+    "source": "term_cs_k12_frpm_count",
+    "relation_type": "derivation",
+    "target": "term_cs_k12_frpm_rate",
+    "connection_condition": "rate = FRPM count / K-12 enrollment",
+    "description": "The FRPM rate is computed from the FRPM count and K-12 enrollment.",
+    "evidence": [
+      "ev_cs_frpm_rates"
+    ]
+  },
+  {
+    "id": "rel_cs_gap_deriv",
+    "source": "term_cs_k12_enrollment",
+    "relation_type": "derivation",
+    "target": "term_cs_enrollment_gap",
+    "connection_condition": "gap = K-12 enrollment minus ages 5-17 enrollment",
+    "description": "The enrollment gap is derived from the two enrollment measures.",
+    "evidence": [
+      "ev_cs_frpm_rates"
+    ]
+  },
+  {
+    "id": "rel_cs_avgavg_deriv",
+    "source": "term_cs_sat_avg_math",
+    "relation_type": "derivation",
+    "target": "term_cs_sat_avg_of_avg_math",
+    "connection_condition": "average of the per-record average math values over the selected records",
+    "description": "Average of average math aggregates the per-record math averages.",
+    "evidence": [
+      "ev_cs_sat_columns"
+    ]
+  },
+  {
+    "id": "rel_cg_set_cards",
+    "source": "term_cg_card_set",
+    "relation_type": "composition",
+    "target": "term_cg_card",
+    "connection_condition": "tb004.cl0151 set code matches tb007.cl0169",
+    "description": "A set is composed of card printings.",
+    "evidence": [
+      "ev_cg_set_columns"
+    ]
+  },
+  {
+    "id": "rel_cg_card_foreign",
+    "source": "term_cg_card",
+    "relation_type": "composition",
+    "target": "term_cg_foreign_printing",
+    "connection_condition": "tb005.cl0160 matches tb004.cl0160",
+    "description": "Foreign-language printings are components of a card record.",
+    "evidence": [
+      "ev_cg_enums"
+    ]
+  },
+  {
+    "id": "rel_cg_card_legalities",
+    "source": "term_cg_card",
+    "relation_type": "composition",
+    "target": "term_cg_card_legality",
+    "connection_condition": "tb006.cl0160 matches tb004.cl0160",
+    "description": "Format legality records are components of a card record.",
+    "evidence": [
+      "ev_cg_enums"
+    ]
+  },
+  {
+    "id": "rel_cg_card_rulings",
+    "source": "term_cg_card",
+    "relation_type": "composition",
+    "target": "term_cg_card_ruling",
+    "connection_condition": "tb009.cl0160 matches tb004.cl0160",
+    "description": "Rulings are attached to a card record.",
+    "evidence": [
+      "ev_cg_card_columns"
+    ]
+  },
+  {
+    "id": "rel_cg_set_translations",
+    "source": "term_cg_card_set",
+    "relation_type": "composition",
+    "target": "term_cg_set_translation",
+    "connection_condition": "tb008.cl0151 matches tb007.cl0169",
+    "description": "Translated set names are components of a set record.",
+    "evidence": [
+      "ev_cg_set_columns"
+    ]
+  },
+  {
+    "id": "rel_cg_artist_cards",
+    "source": "term_cg_artist",
+    "relation_type": "association",
+    "target": "term_cg_card",
+    "connection_condition": "artist is a free-text name on each card rather than a keyed entity",
+    "description": "Artists are credited on cards through a name column, with no artist table.",
+    "evidence": [
+      "ev_cg_card_columns"
+    ]
+  },
+  {
+    "id": "rel_dc_customer_consumption",
+    "source": "term_dc_customer",
+    "relation_type": "composition",
+    "target": "term_dc_monthly_consumption",
+    "connection_condition": "tb014.cl0184 references tb010.cl0184",
+    "description": "Monthly consumption records belong to a customer.",
+    "evidence": [
+      "ev_dc_enums"
+    ]
+  },
+  {
+    "id": "rel_dc_customer_transactions",
+    "source": "term_dc_customer",
+    "relation_type": "composition",
+    "target": "term_dc_transaction",
+    "connection_condition": "tb013.cl0184 references tb010.cl0184",
+    "description": "Transactions are made by a customer.",
+    "evidence": [
+      "ev_dc_enums"
+    ]
+  },
+  {
+    "id": "rel_dc_station_transactions",
+    "source": "term_dc_gas_station",
+    "relation_type": "composition",
+    "target": "term_dc_transaction",
+    "connection_condition": "tb013.cl0195 references tb011.cl0187",
+    "description": "Transactions take place at a gas station.",
+    "evidence": [
+      "ev_dc_enums"
+    ]
+  },
+  {
+    "id": "rel_dc_price_deriv",
+    "source": "term_dc_transaction_amount",
+    "relation_type": "derivation",
+    "target": "term_dc_avg_price_per_item",
+    "connection_condition": "total price divided by total item quantity",
+    "description": "Average price per item derives from transaction amount and quantity.",
+    "evidence": [
+      "ev_dc_enums"
+    ]
+  },
+  {
+    "id": "rel_fi_district_accounts",
+    "source": "term_fi_district",
+    "relation_type": "composition",
+    "target": "term_fi_account",
+    "connection_condition": "tb015.cl0200 references tb019.cl0200",
+    "description": "Accounts are opened in a district branch.",
+    "evidence": [
+      "ev_fi_district_columns"
+    ]
+  },
+  {
+    "id": "rel_fi_account_disposition",
+    "source": "term_fi_account",
+    "relation_type": "composition",
+    "target": "term_fi_disposition",
+    "connection_condition": "tb018.cl0199 references tb015.cl0199",
+    "description": "Dispositions link accounts to their holders.",
+    "evidence": [
+      "ev_fi_enums"
+    ]
+  },
+  {
+    "id": "rel_fi_client_disposition",
+    "source": "term_fi_client",
+    "relation_type": "composition",
+    "target": "term_fi_disposition",
+    "connection_condition": "tb018.cl0207 references tb017.cl0207",
+    "description": "Dispositions link clients to accounts.",
+    "evidence": [
+      "ev_fi_enums"
+    ]
+  },
+  {
+    "id": "rel_fi_account_loans",
+    "source": "term_fi_account",
+    "relation_type": "composition",
+    "target": "term_fi_loan",
+    "connection_condition": "tb020.cl0199 references tb015.cl0199",
+    "description": "Loan contracts belong to an account.",
+    "evidence": [
+      "ev_fi_enums"
+    ]
+  },
+  {
+    "id": "rel_fi_account_transactions",
+    "source": "term_fi_account",
+    "relation_type": "composition",
+    "target": "term_fi_transaction",
+    "connection_condition": "tb022.cl0199 references tb015.cl0199",
+    "description": "Transactions are movements on an account.",
+    "evidence": [
+      "ev_fi_enums"
+    ]
+  },
+  {
+    "id": "rel_fi_unemployment_deriv",
+    "source": "term_fi_unemployment_rate_1995",
+    "relation_type": "derivation",
+    "target": "term_fi_unemployment_increment_rate",
+    "connection_condition": "(rate_1996 - rate_1995) / rate_1995",
+    "description": "The unemployment increment rate derives from the two annual rates.",
+    "evidence": [
+      "ev_fi_district_columns"
+    ]
+  },
+  {
+    "id": "rel_f1_season_races",
+    "source": "term_f1_season",
+    "relation_type": "composition",
+    "target": "term_f1_race",
+    "connection_condition": "tb027.cl0258 references tb026.cl0258",
+    "description": "A season is composed of its races.",
+    "evidence": [
+      "ev_f1_columns"
+    ]
+  },
+  {
+    "id": "rel_f1_circuit_races",
+    "source": "term_f1_circuit",
+    "relation_type": "composition",
+    "target": "term_f1_race",
+    "connection_condition": "tb027.cl0239 references tb023.cl0239",
+    "description": "Races are held at a circuit.",
+    "evidence": [
+      "ev_f1_columns"
+    ]
+  },
+  {
+    "id": "rel_f1_race_results",
+    "source": "term_f1_race",
+    "relation_type": "composition",
+    "target": "term_f1_result",
+    "connection_condition": "tb035.cl0259 references tb027.cl0259",
+    "description": "Race results belong to a race.",
+    "evidence": [
+      "ev_f1_columns"
+    ]
+  },
+  {
+    "id": "rel_f1_race_pitstops",
+    "source": "term_f1_race",
+    "relation_type": "composition",
+    "target": "term_f1_pit_stop",
+    "connection_condition": "tb032.cl0259 references tb027.cl0259",
+    "description": "Pit stops occur within a race.",
+    "evidence": [
+      "ev_f1_measures"
+    ]
+  },
+  {
+    "id": "rel_f1_pitstop_deriv",
+    "source": "term_f1_pit_stop_duration",
+    "relation_type": "derivation",
+    "target": "term_f1_avg_pit_stop_duration",
+    "connection_condition": "sum of durations divided by count of stops per driver",
+    "description": "Average pit stop duration aggregates individual stop durations.",
+    "evidence": [
+      "ev_f1_measures"
+    ]
+  },
+  {
+    "id": "rel_f1_driver_age_deriv",
+    "source": "term_f1_driver",
+    "relation_type": "derivation",
+    "target": "term_f1_driver_age",
+    "connection_condition": "age from tb025.cl0257 date of birth",
+    "description": "Driver age is derived from the driver birth date.",
+    "evidence": [
+      "ev_f1_columns"
+    ]
+  },
+  {
+    "id": "rel_sc_event_budget",
+    "source": "term_sc_event",
+    "relation_type": "composition",
+    "target": "term_sc_budget",
+    "connection_condition": "tb040.cl0304 references tb036.cl0288",
+    "description": "Budget lines belong to an event.",
+    "evidence": [
+      "ev_sc_columns"
+    ]
+  },
+  {
+    "id": "rel_sc_budget_expense",
+    "source": "term_sc_budget",
+    "relation_type": "composition",
+    "target": "term_sc_expense",
+    "connection_condition": "tb041.cl0317 references tb040.cl0306",
+    "description": "Expenses are charged against a budget line.",
+    "evidence": [
+      "ev_sc_columns"
+    ]
+  },
+  {
+    "id": "rel_sc_event_attendance",
+    "source": "term_sc_event",
+    "relation_type": "composition",
+    "target": "term_sc_event_attendance",
+    "connection_condition": "tb039.cl0304 references tb036.cl0288",
+    "description": "Attendance records belong to an event.",
+    "evidence": [
+      "ev_sc_columns"
+    ]
+  },
+  {
+    "id": "rel_sc_member_attendance",
+    "source": "term_sc_member",
+    "relation_type": "composition",
+    "target": "term_sc_event_attendance",
+    "connection_condition": "tb039.cl0305 references tb043.cl0321",
+    "description": "Attendance records belong to a member.",
+    "evidence": [
+      "ev_sc_columns"
+    ]
+  },
+  {
+    "id": "rel_sc_ratio_deriv",
+    "source": "term_sc_budget_spent",
+    "relation_type": "derivation",
+    "target": "term_sc_spend_to_budget_ratio",
+    "connection_condition": "spent divided by budget amount",
+    "description": "Spend-to-budget ratio derives from spent and allocated amounts.",
+    "evidence": [
+      "ev_sc_columns"
+    ]
+  },
+  {
+    "id": "rel_sh_hero_attribute",
+    "source": "term_sh_superhero",
+    "relation_type": "composition",
+    "target": "term_sh_hero_attribute",
+    "connection_condition": "tb051.cl0348 references tb050.cl0330",
+    "description": "Attribute values are components of a superhero record.",
+    "evidence": [
+      "ev_sh_columns"
+    ]
+  },
+  {
+    "id": "rel_sh_hero_power",
+    "source": "term_sh_superhero",
+    "relation_type": "composition",
+    "target": "term_sh_hero_power",
+    "connection_condition": "tb053.cl0348 references tb050.cl0330",
+    "description": "Superpower assignments are components of a superhero record.",
+    "evidence": [
+      "ev_sh_columns"
+    ]
+  },
+  {
+    "id": "rel_sh_publisher_heroes",
+    "source": "term_sh_publisher",
+    "relation_type": "composition",
+    "target": "term_sh_superhero",
+    "connection_condition": "tb050.cl0344 references tb048.cl0330",
+    "description": "A publisher is composed of the superheroes it published.",
+    "evidence": [
+      "ev_sh_columns"
+    ]
+  },
+  {
+    "id": "rel_th_patient_exam",
+    "source": "term_th_patient",
+    "relation_type": "composition",
+    "target": "term_th_examination",
+    "connection_condition": "tb054.cl0353 references tb055.cl0353",
+    "description": "Examinations belong to a patient.",
+    "evidence": [
+      "ev_th_columns"
+    ]
+  },
+  {
+    "id": "rel_th_patient_lab",
+    "source": "term_th_patient",
+    "relation_type": "composition",
+    "target": "term_th_lab_test",
+    "connection_condition": "tb056.cl0353 references tb055.cl0353",
+    "description": "Laboratory tests belong to a patient.",
+    "evidence": [
+      "ev_th_columns"
+    ]
+  },
+  {
+    "id": "rel_th_age_deriv",
+    "source": "term_th_patient",
+    "relation_type": "derivation",
+    "target": "term_th_age",
+    "connection_condition": "age from tb055.cl0367 birth date relative to the current year",
+    "description": "Patient age is derived from the birth date.",
+    "evidence": [
+      "ev_th_columns"
+    ]
+  },
+  {
+    "id": "rel_tx_molecule_atoms",
+    "source": "term_tx_molecule",
+    "relation_type": "composition",
+    "target": "term_tx_atom",
+    "connection_condition": "tb057.cl0415 references tb060.cl0415; atom id is <molecule>_<index>",
+    "description": "A molecule is composed of its atoms.",
+    "evidence": [
+      "ev_tx_columns"
+    ]
+  },
+  {
+    "id": "rel_tx_molecule_bonds",
+    "source": "term_tx_molecule",
+    "relation_type": "composition",
+    "target": "term_tx_bond",
+    "connection_condition": "tb058.cl0415 references tb060.cl0415; bond id is <molecule>_<a>_<b>",
+    "description": "A molecule is composed of its bonds.",
+    "evidence": [
+      "ev_tx_columns"
+    ]
+  },
+  {
+    "id": "rel_tx_atom_connection",
+    "source": "term_tx_atom",
+    "relation_type": "association",
+    "target": "term_tx_connected_pair",
+    "connection_condition": "tb059.cl0414 and cl0419 both reference atom ids in tb057",
+    "description": "Atoms participate in connected atom pairs through their bonds.",
+    "evidence": [
+      "ev_tx_columns"
+    ]
+  }
+]

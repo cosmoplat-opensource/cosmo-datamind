@@ -1,0 +1,263 @@
+[
+  {
+    "id": "constraint_missing_dash",
+    "target": "term_missing_dash_sentinel",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "missing full name",
+      "real name",
+      "unknown race",
+      "unclassified",
+      "dash",
+      "placeholder"
+    ],
+    "severity": "block",
+    "scope": "Applies whenever superhero.full_name or race.race is filtered, grouped or matched as text",
+    "confidence": "high",
+    "description": "The literal '-' is a missing-value placeholder, not a value. It appears as superhero.full_name for 125 characters and as the race entry with id 1 for 295 of 750 characters. Treating '-' as a real name or a real species produces incorrect groupings and inflated category counts.",
+    "evidence": [
+      "ev_full_name_dash_sentinel",
+      "ev_race_dash_sentinel"
+    ]
+  },
+  {
+    "id": "constraint_missing_na",
+    "target": "term_missing_na_sentinel",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "N/A",
+      "not applicable",
+      "unknown gender",
+      "no colour",
+      "blank publisher",
+      "missing alignment"
+    ],
+    "severity": "block",
+    "scope": "Applies to the gender, alignment, colour and publisher vocabularies",
+    "confidence": "high",
+    "description": "Several vocabulary entries mean 'not applicable' rather than naming a category: gender 'N/A' (28 characters), colour 'No Colour' (681 skin, 246 hair, 169 eye assignments) and the empty publisher_name (17 characters). Additionally alignment contains an 'N/A' entry (id 4) that no character uses, so it must not be reported as an observed alignment.",
+    "evidence": [
+      "ev_null_breakdown",
+      "ev_publisher_blank_sentinel",
+      "ev_colour_vocabulary_shared"
+    ]
+  },
+  {
+    "id": "constraint_zero_measure_sentinel",
+    "target": "term_height",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "height",
+      "weight",
+      "zero height",
+      "zero weight",
+      "average height",
+      "average weight",
+      "size"
+    ],
+    "severity": "block",
+    "scope": "Any aggregation, average or ratio computed on character size",
+    "confidence": "high",
+    "description": "height_cm = 0 for 155 characters and weight_kg = 0 for 172 characters denote unrecorded measurements, not real zeros; NULL adds 58 and 64 further missing values. Averages and any height-to-weight ratio must exclude both 0 and NULL, otherwise the result is understated.",
+    "evidence": [
+      "ev_height_weight_zero_sentinel",
+      "ev_null_breakdown"
+    ]
+  },
+  {
+    "id": "constraint_extreme_measure_outliers",
+    "target": "term_height",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "tallest",
+      "heaviest",
+      "average height",
+      "average weight",
+      "outlier",
+      "giant"
+    ],
+    "severity": "warning",
+    "scope": "Size comparisons and averages across characters",
+    "confidence": "high",
+    "description": "A few characters are genuinely colossal rather than erroneous: height reaches 30480 cm (Surtur, Ymir) and weight reaches 90,000,000 kg (Godzilla), with 7 characters above 1000 cm and 6 above 1000 kg. These are valid values but they dominate mean height and weight, so medians or explicit exclusion are needed for typical-size questions.",
+    "evidence": [
+      "ev_height_weight_extremes"
+    ]
+  },
+  {
+    "id": "constraint_attribute_coverage",
+    "target": "term_attribute_score",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "attribute score",
+      "intelligence",
+      "strength",
+      "average power",
+      "stats",
+      "rating"
+    ],
+    "severity": "block",
+    "scope": "Any statement about character capabilities derived from hero_attribute",
+    "confidence": "high",
+    "description": "Attribute scores exist for only 623 of 750 characters. Coverage is all-or-nothing: each covered character has exactly all six attributes (3738 rows = 623 x 6) and 127 characters have none. Attribute-based conclusions therefore describe a subset of the population, and joining characters to scores silently drops 127 of them.",
+    "evidence": [
+      "ev_attribute_coverage_allornothing",
+      "ev_attribute_grain"
+    ]
+  },
+  {
+    "id": "constraint_attribute_grain",
+    "target": "term_attribute_score",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "per attribute",
+      "average attribute",
+      "attribute value",
+      "compare attributes"
+    ],
+    "severity": "block",
+    "scope": "Aggregation over hero_attribute",
+    "confidence": "high",
+    "description": "hero_attribute holds exactly one row per character-attribute pair, with no duplicate pairs and no zero values (range 5-100). Aggregating attribute_value without grouping by attribute mixes six different rating scales into one figure.",
+    "evidence": [
+      "ev_attribute_grain"
+    ]
+  },
+  {
+    "id": "constraint_intelligence_scale_shift",
+    "target": "term_attribute_score",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "intelligence",
+      "smartest",
+      "IQ",
+      "compare attributes",
+      "score scale"
+    ],
+    "severity": "warning",
+    "scope": "Comparisons of scores across different attributes",
+    "confidence": "high",
+    "description": "Intelligence sits on a higher floor than the other five attributes: its values span 35-100 with a mean of 84.3, whereas Strength, Speed, Durability, Power and Combat each span 5-100 with means near 45.8. Raw cross-attribute comparisons are therefore biased toward Intelligence and should be normalised or interpreted per attribute.",
+    "evidence": [
+      "ev_intelligence_scale_shift",
+      "ev_attribute_domain"
+    ]
+  },
+  {
+    "id": "constraint_superhero_name_not_unique",
+    "target": "term_superhero_name",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "how many heroes",
+      "distinct heroes",
+      "duplicate",
+      "count heroes",
+      "unique name"
+    ],
+    "severity": "block",
+    "scope": "Counting, deduplicating or joining characters by name",
+    "confidence": "high",
+    "description": "superhero_name is not a unique key: the table holds 750 rows but several labels repeat, including Atlas four times and Captain Marvel, Chameleon, Ares and Angel twice each. Repeats are separate characters that share a codename, frequently across publishers - Atlas appears under both DC Comics and Marvel Comics. Character identity is superhero.id, so counting characters by name undercounts.",
+    "evidence": [
+      "ev_duplicate_superhero_names",
+      "ev_superhero_rowcount"
+    ]
+  },
+  {
+    "id": "constraint_power_coverage",
+    "target": "term_superpower",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "superpower",
+      "how many powers",
+      "abilities",
+      "powerless"
+    ],
+    "severity": "warning",
+    "scope": "Power-based counts and per-character ability analysis",
+    "confidence": "high",
+    "description": "167 powers are defined and 5825 character-power links exist, covering 652 of 750 characters. The remaining 98 characters have no recorded power, which may mean they genuinely have none or that the data was not recorded; the distinction cannot be recovered from this database.",
+    "evidence": [
+      "ev_hero_power_coverage",
+      "ev_superpower_count"
+    ]
+  },
+  {
+    "id": "constraint_alignment_null",
+    "target": "term_alignment",
+    "constraint_type": "scope",
+    "trigger_keywords": [
+      "good",
+      "bad",
+      "villain",
+      "neutral",
+      "alignment",
+      "missing alignment"
+    ],
+    "severity": "warning",
+    "scope": "Alignment totals and Good-versus-Bad comparisons",
+    "confidence": "high",
+    "description": "6 of 750 characters carry no alignment_id (including Godzilla, He-Man, She-Ra, Chewbacca, James Bond (Craig) and Q). Good, Bad and Neutral therefore sum to 744, not 750, and any alignment split must state whether the 6 unclassified characters are excluded.",
+    "evidence": [
+      "ev_alignment_domain",
+      "ev_null_breakdown"
+    ]
+  },
+  {
+    "id": "constraint_race_naming_convention",
+    "target": "term_race",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "species",
+      "race",
+      "human variant",
+      "hybrid",
+      "mutant"
+    ],
+    "severity": "info",
+    "scope": "Grouping or comparing characters by species",
+    "confidence": "medium",
+    "description": "The race vocabulary encodes structure in its strings: a slash marks a variant of a base species (for example 'Human / Altered', 'Mutant / Clone') and a hyphen marks a hybrid (for example 'Human-Kree'). Grouping by exact string separates these variants from their base species, so species-level questions should state whether variants are merged.",
+    "evidence": [
+      "ev_race_naming_convention"
+    ]
+  },
+  {
+    "id": "constraint_colour_shared_vocabulary",
+    "target": "term_colour",
+    "constraint_type": "scope",
+    "trigger_keywords": [
+      "eye colour",
+      "hair colour",
+      "skin colour",
+      "No Colour"
+    ],
+    "severity": "info",
+    "scope": "Any colour-facet question",
+    "confidence": "high",
+    "description": "One 35-value colour vocabulary backs eye, hair and skin colour; the three facets are independent per character and none of them has facet-specific values. 'No Colour' is heavily used and is not a colour: it accounts for 681 skin, 246 hair and 169 eye assignments.",
+    "evidence": [
+      "ev_colour_vocabulary_shared"
+    ]
+  },
+  {
+    "id": "constraint_hero_id_join",
+    "target": "term_superhero",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "join",
+      "link",
+      "hero_id",
+      "combine powers and attributes"
+    ],
+    "severity": "block",
+    "scope": "Combining hero_attribute and hero_power with the main character table",
+    "confidence": "high",
+    "description": "The schema declares no foreign keys, but referential integrity holds: superhero.id, hero_attribute.hero_id and hero_power.hero_id all denote the same character identity and every referencing row resolves, with zero orphans across all eleven reference paths. Joining is safe, but 127 characters have no attribute rows, 98 have no power rows and 38 have neither, so inner joins shrink the population.",
+    "evidence": [
+      "ev_referential_integrity",
+      "ev_attribute_coverage_allornothing",
+      "ev_hero_power_coverage"
+    ]
+  }
+]

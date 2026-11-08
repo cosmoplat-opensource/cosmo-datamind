@@ -1,0 +1,921 @@
+[
+  {
+    "id": "con_metric_row_version__business_rule",
+    "target": "metric_row_version",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "标准单据模板",
+      "单据模板",
+      "公共列",
+      "standard document template",
+      "行版本",
+      "row_version"
+    ],
+    "severity": "warning",
+    "scope": "全部 fact_* 单据表",
+    "confidence": "high",
+    "description": "115 张 fact_* 表中有 67 张共享同一套“标准单据列模板”：business_date, event_time, posting_date, status, priority, reason_code, source_system/record_id, etl_batch_id, trace_id, tenant_code, created_at, updated_at, created_by, updated_by, approved_by, approved_at, row_version, data_quality_score, is_deleted, remarks，以及 quantity/base_quantity/planned_quantity/actual_quantity/qualified_quantity/rejected_quantity 与 currency_code/exchange_rate/unit_price/amount/local_amount/tax_amount/cost_amount。当某一业务概念在这些表上找不到专属列时，应优先按该模板的同名列理解；模板之外的 48 张表（如销售订单、报价单、收货单、生产工单、成本、安全审计）使用各自的列名。",
+    "evidence": [
+      "ev_fact_template"
+    ]
+  },
+  {
+    "id": "con_attr_document_status__enum_semantics",
+    "target": "attr_document_status",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "单据状态",
+      "status",
+      "状态",
+      "已关闭",
+      "未完成",
+      "进行中"
+    ],
+    "severity": "block",
+    "scope": "标准单据模板表（67 张）",
+    "confidence": "high",
+    "description": "标准单据模板的 status 固定取值域为 OPEN / IN_PROGRESS / APPROVED / CLOSED / CANCELLED（表级 CHECK 约束）。业务问题中的“已关闭/关闭”对应 CLOSED，“进行中”对应 IN_PROGRESS。抽样中 CANCELLED 极罕见甚至未出现，但仍在合法值域内。",
+    "evidence": [
+      "ev_status_enum"
+    ]
+  },
+  {
+    "id": "con_attr_document_status__enum_semantics_2",
+    "target": "attr_document_status",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "状态",
+      "status",
+      "已交付",
+      "won",
+      "open",
+      "closed",
+      "已完成",
+      "ordered",
+      "posted",
+      "inspected",
+      "completed"
+    ],
+    "severity": "block",
+    "scope": "使用自有状态取值域的业务表",
+    "confidence": "high",
+    "description": "多张业务表不使用标准五值域，必须按其自有取值理解：fact_sales_order delivered/returned/undelivered；fact_quotation won/lost/draft；fact_opportunity won/open/lost/stalled；fact_ap open/closed；fact_purchase_requisition ordered；fact_production_order 已完成/生产中/待生产；fact_goods_receipt posted/inspected；fact_safety_audit completed；fact_safety_action CLOSED/IN_PROGRESS；fact_employee_assignment APPROVED/CLOSED；fact_data_quality_issue CLOSED。把“已关闭”直接写成 CLOSED 到这些表上会得到错误结果。",
+    "evidence": [
+      "ev_sales_order_status",
+      "ev_quotation_status",
+      "ev_opportunity_status",
+      "ev_ap_status",
+      "ev_pr_status",
+      "ev_prod_order_status",
+      "ev_goods_receipt",
+      "ev_safety_audit",
+      "ev_assignment_status",
+      "ev_dq_issue"
+    ]
+  },
+  {
+    "id": "con_attr_is_deleted__business_rule",
+    "target": "attr_is_deleted",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "逻辑删除",
+      "软删除",
+      "is_deleted",
+      "有效记录"
+    ],
+    "severity": "warning",
+    "scope": "67 张标准单据模板表",
+    "confidence": "medium",
+    "description": "is_deleted 为软删除标记（0/1）。抽样表全部为 0，说明当前发布数据未保留已删除行；分析时按 is_deleted = 0 过滤可与治理口径一致，并可避免未来增量数据带来的偏差。",
+    "evidence": [
+      "ev_soft_delete"
+    ]
+  },
+  {
+    "id": "con_attr_business_date__scope",
+    "target": "attr_business_date",
+    "constraint_type": "scope",
+    "trigger_keywords": [
+      "年份",
+      "2025年",
+      "2026年",
+      "年度",
+      "当年",
+      "本年"
+    ],
+    "severity": "block",
+    "scope": "标准单据模板表",
+    "confidence": "high",
+    "description": "业务问题中的“某年”默认落在 business_date 上（业务日期）。但“某年过账的”指向 posting_date，“某年创建的/由某人创建的”指向 created_at 或 created_by 组合，“某年更新的”指向 updated_at/updated_by，“2026 年到期”指向 due_date，“失效日期在 2028 年”指向 expiry_date，“要求交货”指向 requested_delivery_date，“承诺的”指向 promised_date，“生产日期”指向 manufacture_date。年份必须绑定到语义匹配的日期列，不能一律使用 business_date。",
+    "evidence": [
+      "ev_fact_template",
+      "ev_date_range",
+      "ev_calendar_join"
+    ]
+  },
+  {
+    "id": "con_attr_posting_date__business_rule",
+    "target": "attr_posting_date",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "过账",
+      "已过账",
+      "posting",
+      "记账",
+      "过账日期"
+    ],
+    "severity": "block",
+    "scope": "标准单据模板表",
+    "confidence": "high",
+    "description": "“过账的”对应 posting_date（过账日期），且数据保证 posting_date >= business_date。在少数自建表上“已过账”表现为状态值（fact_goods_receipt.status = 'posted'）。两种表达不可混用。",
+    "evidence": [
+      "ev_fact_template",
+      "ev_goods_receipt"
+    ]
+  },
+  {
+    "id": "con_cat_user_code__scope",
+    "target": "cat_user_code",
+    "constraint_type": "scope",
+    "trigger_keywords": [
+      "U0001",
+      "U0007",
+      "用户编码",
+      "创建人",
+      "更新人",
+      "审批人",
+      "操作人"
+    ],
+    "severity": "block",
+    "scope": "全部业务表的 created_by/updated_by/approved_by 列",
+    "confidence": "high",
+    "description": "人员操作字段取值形如 U0001 ~ U0012 的编码字符串（不是姓名）。问题中的“由 U0007 创建/审批/更新”即用该编码等值筛选对应列。approved_by 在未审批时为 NULL。",
+    "evidence": [
+      "ev_user_codes"
+    ]
+  },
+  {
+    "id": "con_metric_amount__unit",
+    "target": "metric_amount",
+    "constraint_type": "unit",
+    "trigger_keywords": [
+      "币种",
+      "汇率",
+      "本位币",
+      "currency",
+      "折算"
+    ],
+    "severity": "warning",
+    "scope": "含金额与币种列的单据表",
+    "confidence": "high",
+    "description": "金额以 currency_code 表示的币种计价，本位币为 CNY（dim_currency 中 is_functional=1、rate_to_cny=1.0，另有 USD=7.12、EUR=7.78、JPY=0.048）。需要本位币口径时使用 local_amount，或按 金额 × 汇率 折算；跨币种求和前必须先折算到同一币种。",
+    "evidence": [
+      "ev_currency",
+      "ev_deriv_local"
+    ]
+  },
+  {
+    "id": "con_metric_amount__business_rule",
+    "target": "metric_amount",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "合计",
+      "总计",
+      "总和",
+      "汇总额",
+      "平均值",
+      "平均",
+      "多少条",
+      "多少个",
+      "多少笔",
+      "多少张",
+      "多少起",
+      "次数"
+    ],
+    "severity": "warning",
+    "scope": "全部业务问题",
+    "confidence": "high",
+    "description": "中文聚合词与聚合语义的对应关系：“合计/总计/总和”表示对度量列求和；“平均值/平均”表示对该列取算术平均；“有多少条/多少个/多少笔/多少张/多少起/有多少次/有多少个”表示对业务记录计数（行计数），而不是对数量列求和；“分别有多少”表示按分组维度计数。该约定适用于全部度量列。",
+    "evidence": [
+      "ev_fact_template"
+    ]
+  },
+  {
+    "id": "con_attr_document_status__business_rule",
+    "target": "attr_document_status",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "哪个",
+      "最高",
+      "最长",
+      "最多的",
+      "排名第一",
+      "排序",
+      "合计最高"
+    ],
+    "severity": "info",
+    "scope": "全部业务问题",
+    "confidence": "medium",
+    "description": "“哪个 X 的 Y 合计最高”这一问法表示：按 X 的取值分组，对各组求和 Y，取合计最大的一组并返回 X 的名称（“请给出简称”时返回 X 的 short_name；问“名称”时返回 name；问“哪一天”时返回该组对应的日期）。“合计最高/最低”始终是分组求和后的比较，不是单行取最大。",
+    "evidence": [
+      "ev_reason_code",
+      "ev_fact_template"
+    ]
+  },
+  {
+    "id": "con_attr_document_status__enum_semantics_3",
+    "target": "attr_document_status",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "中文取值",
+      "中文",
+      "本地化",
+      "混合取值",
+      "英文取值"
+    ],
+    "severity": "warning",
+    "scope": "全库枚举列",
+    "confidence": "high",
+    "description": "枚举取值存在中英文混合：标准模板用英文大写下划线值；而退货原因（fact_return.reason：包装破损受潮 等）、生产工单状态（已完成/生产中/待生产）、停机原因（滤网更换 等）、工艺结果码（合格/不合格）、控制措施（个体防护 等）、处置（催交/退货/返工/让步接收）、产品等级（优等品 等）、危险类型（物理性 等）、收款方式（电汇/银承）、付款方式（bank_transfer/letter_of_credit）、仓库与车间名称、原因码中文名均为中文或混合取值。筛选时必须使用数据中的实际字面值。",
+    "evidence": [
+      "ev_return_reason",
+      "ev_prod_order_status",
+      "ev_downtime_reason",
+      "ev_result_code",
+      "ev_control_measure",
+      "ev_disposition",
+      "ev_prod_grade",
+      "ev_hazard",
+      "ev_payment_type",
+      "ev_payment_method"
+    ]
+  },
+  {
+    "id": "con_doc_quotation__enum_semantics",
+    "target": "doc_quotation",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "报价单",
+      "quotation",
+      "won",
+      "报价"
+    ],
+    "severity": "block",
+    "scope": "报价单分析",
+    "confidence": "high",
+    "description": "报价单状态取值为 won / lost / draft（小写英文单词），并非标准单据状态。问题中的“状态是 won 的报价单”直接等值筛选该列。",
+    "evidence": [
+      "ev_quotation_status"
+    ]
+  },
+  {
+    "id": "con_doc_goods_receipt__business_rule",
+    "target": "doc_goods_receipt",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "收货单",
+      "检验结果",
+      "fail",
+      "pass",
+      "已过账",
+      "posted",
+      "inspected"
+    ],
+    "severity": "block",
+    "scope": "收货与检验分析",
+    "confidence": "high",
+    "description": "收货单的 inspection_result（pass/fail）与 status（posted/inspected）联动：pass 对应 posted，fail 对应 inspected。因此“已过账的收货单”与“检验结果为 pass 的收货单”在数据上等价，“检验结果为 fail 的收货单”等价于 status = 'inspected'。",
+    "evidence": [
+      "ev_goods_receipt"
+    ]
+  },
+  {
+    "id": "con_doc_payment__business_rule",
+    "target": "doc_payment",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "收款",
+      "付款",
+      "收款方式",
+      "付款方式",
+      "电汇",
+      "银承",
+      "银行转账",
+      "letter_of_credit"
+    ],
+    "severity": "block",
+    "scope": "资金收付分析",
+    "confidence": "high",
+    "description": "收款与付款是两张不同的表：fact_payment 为收款流水，方式列名为 payment_type，取值为中文的 电汇 / 银承；fact_payment_out 为付款流水，方式列名为 payment_method，取值为英文的 bank_transfer / letter_of_credit。问题中的“付款方式/通过银行转账的付款”必须落到 fact_payment_out；“收款方式为电汇的收款”必须落到 fact_payment。张冠李戴会得到完全不同（且表面看似合理）的数值。",
+    "evidence": [
+      "ev_payment_type",
+      "ev_payment_method"
+    ]
+  },
+  {
+    "id": "con_attr_promised_date__business_rule",
+    "target": "attr_promised_date",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "承诺",
+      "承诺日期",
+      "承诺的到货预告",
+      "promised"
+    ],
+    "severity": "warning",
+    "scope": "交期与到货分析",
+    "confidence": "high",
+    "description": "“承诺的”对应承诺日期列：到货预告用 promised_date，销售合同行用 promised_delivery_date；“要求交货/要求日期”对应 requested_date 或 requested_delivery_date。两者不可互换。",
+    "evidence": [
+      "ev_shipping_docs",
+      "ev_fact_template"
+    ]
+  },
+  {
+    "id": "con_dim_calendar__business_rule",
+    "target": "dim_calendar",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "节假日",
+      "国庆节",
+      "春节",
+      "当天",
+      "那一天",
+      "日历",
+      "工作日"
+    ],
+    "severity": "block",
+    "scope": "日期与节假日分析",
+    "confidence": "high",
+    "description": "dim_calendar 按天一行（calendar_date 覆盖 2025-01-01 ~ 2026-07-01），holiday_name 提供节假日名称（国庆节 5 天、春节 13 天、劳动节 4 天 等），非节假日为 NULL。业务表的 business_date 可直接与 calendar_date 对齐（实测 2025-10-01 在监测记录中有 57 行）。“国庆节当天”应先用 holiday_name 定位日期，再按该日期筛选事实表；“某一天对应的名称”取 dim_calendar.name（形如 2026年07月01日）。",
+    "evidence": [
+      "ev_calendar_holiday",
+      "ev_calendar_join"
+    ]
+  },
+  {
+    "id": "con_doc_tax_invoice_line__business_rule",
+    "target": "doc_tax_invoice_line",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "会计年度",
+      "会计期间",
+      "fiscal",
+      "税务发票",
+      "凭证号"
+    ],
+    "severity": "warning",
+    "scope": "税务与总账分析",
+    "confidence": "high",
+    "description": "税务发票行与总账凭证除 business_date 外还带有 fiscal_year / fiscal_period / voucher_no / debit_amount / credit_amount 等会计口径列。会计年度与业务日期年份可能不一致，涉及“会计年度”的问题应使用 fiscal_year，而“过账/业务发生”的问题使用 posting_date/business_date。",
+    "evidence": [
+      "ev_fact_template"
+    ]
+  },
+  {
+    "id": "con_doc_material_consumption__business_rule",
+    "target": "doc_material_consumption",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "投料",
+      "实际投料",
+      "领料",
+      "planned_qty",
+      "actual_qty",
+      "物料消耗"
+    ],
+    "severity": "block",
+    "scope": "物料消耗分析",
+    "confidence": "high",
+    "description": "fact_material_consumption 不使用标准模板的数量列名，而是 planned_qty / actual_qty / scrap_qty。“实际投料”对应 actual_qty，“计划投料”对应 planned_qty。按标准列名 planned_quantity/actual_quantity 写会报列不存在。",
+    "evidence": [
+      "ev_naming_variants"
+    ]
+  },
+  {
+    "id": "con_doc_product_cost__business_rule",
+    "target": "doc_product_cost",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "产品成本",
+      "product_id",
+      "料工费",
+      "单位成本",
+      "产品线成本"
+    ],
+    "severity": "block",
+    "scope": "产品成本分析",
+    "confidence": "high",
+    "description": "fact_product_cost 的产品外键列名为 product_id（其余表普遍用 prod_id），且成本列为一套专有列名：material_cost / labor_cost / overhead_cost / total_cost，另有 output_qty 与 unit_cost。不要在此表上寻找 cost_amount 或 prod_id。",
+    "evidence": [
+      "ev_naming_variants"
+    ]
+  },
+  {
+    "id": "con_doc_purchase_order__business_rule",
+    "target": "doc_purchase_order",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "采购订单",
+      "total_amount",
+      "订单总额",
+      "供应商付款"
+    ],
+    "severity": "warning",
+    "scope": "采购分析",
+    "confidence": "high",
+    "description": "fact_purchase_order 的金额列名为 total_amount（非 amount），币种列名为 currency（非 currency_code），日期列名为 po_date/delivery_date（非 business_date）。",
+    "evidence": [
+      "ev_naming_variants"
+    ]
+  },
+  {
+    "id": "con_doc_safety_audit__business_rule",
+    "target": "doc_safety_audit",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "安全审计",
+      "审计评分",
+      "score",
+      "评分合计"
+    ],
+    "severity": "warning",
+    "scope": "安全管理分析",
+    "confidence": "high",
+    "description": "fact_safety_audit 的评分列名为 score（不是标准模板的 score_value），审计类型列为 audit_type（月度安全审计 / 专项审计），车间列 workshop_id 可关联 dim_workshop；“哪个车间的安全审计评分合计最高”即按车间分组对 score 求和后取最大。",
+    "evidence": [
+      "ev_safety_audit"
+    ]
+  },
+  {
+    "id": "con_metric_priority__scope",
+    "target": "metric_priority",
+    "constraint_type": "scope",
+    "trigger_keywords": [
+      "优先级",
+      "priority",
+      "优先度"
+    ],
+    "severity": "warning",
+    "scope": "标准单据模板表与客户接触记录",
+    "confidence": "high",
+    "description": "priority 取值域为 1~5（表级 CHECK）。抽样中 fact_customer_contact.priority 全为 3，因此“按优先级合计最高”在该表上实际退化为按记录条数比较；解释结果时需注意该列可能缺乏区分度。",
+    "evidence": [
+      "ev_remarks_values",
+      "ev_fact_template"
+    ]
+  },
+  {
+    "id": "con_metric_data_quality_score__scope",
+    "target": "metric_data_quality_score",
+    "constraint_type": "scope",
+    "trigger_keywords": [
+      "数据质量分",
+      "质量分",
+      "DQ"
+    ],
+    "severity": "warning",
+    "scope": "67 张标准单据模板表",
+    "confidence": "high",
+    "description": "data_quality_score 取值域 0~1（表级 CHECK），是数据治理评分而非业务质量评分；对同一批数据取平均时结果很小是正常的，不应解释为百分比。",
+    "evidence": [
+      "ev_fact_template"
+    ]
+  },
+  {
+    "id": "con_attr_reason_code__business_rule",
+    "target": "attr_reason_code",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "原因码",
+      "原因",
+      "原因简称",
+      "质量原因",
+      "设备原因"
+    ],
+    "severity": "warning",
+    "scope": "标准单据模板表",
+    "confidence": "high",
+    "description": "单据上的 reason_code 存的是编码（如 QUALITY/OTHER），需关联 dim_reason_code.code 才能得到中文名称 name 与简称 short_name；dim_reason_code 另以 reason_group 分为内部/外部，以 abbreviation 提供缩写（QUA/SUP 等）。少数表的“原因”是中文自由文本（如 fact_return.reason），不经该字典。",
+    "evidence": [
+      "ev_reason_code",
+      "ev_return_reason"
+    ]
+  },
+  {
+    "id": "con_attr_short_name__enum_semantics",
+    "target": "attr_short_name",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "简称",
+      "short_name",
+      "缩写",
+      "abbreviation"
+    ],
+    "severity": "warning",
+    "scope": "全部主数据表",
+    "confidence": "high",
+    "description": "主数据表同时有 name（全称）、short_name（短名称，多为中文简称）与部分表的 abbreviation（英文缩写，如 QUA）。问题中“请给出简称”应返回 short_name；仅当目标表没有 short_name 时才考虑 abbreviation。",
+    "evidence": [
+      "ev_reason_code"
+    ]
+  },
+  {
+    "id": "con_doc_sales_order_line__business_rule",
+    "target": "doc_sales_order_line",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "外键",
+      "关联",
+      "连接",
+      "join",
+      "关联关系"
+    ],
+    "severity": "info",
+    "scope": "全库",
+    "confidence": "high",
+    "description": "数据库未声明 FOREIGN KEY 约束，但实测引用完整性成立：对 28 组关键连接（销售订单行→订单头、工单→产品/产线、产品→产品线、监测→传感器、投料/批次→物料、付款→应付账款、成本分摊→利润中心 等）做 LEFT JOIN 检查，孤儿行均为 0。因此可放心按 id 等值连接，而不会出现悬挂外键；连接失败通常意味着使用了错误的列名而非数据缺失。",
+    "evidence": [
+      "ev_fk_integrity"
+    ]
+  },
+  {
+    "id": "con_cat_sales_region__enum_semantics",
+    "target": "cat_sales_region",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "华东",
+      "华南",
+      "华北",
+      "华中",
+      "西南",
+      "西北",
+      "大区",
+      "销售区域",
+      "地区"
+    ],
+    "severity": "block",
+    "scope": "含 sales_region 列的销售类表",
+    "confidence": "high",
+    "description": "销售区域取值为中文大区名：华东、华南、华中、华北、西北、西南。问题中的“华东地区”直接等值筛选该列（不要与“城市/省份”混淆，客户与发运另有 province/city 列，取值形如 合肥/青岛/上海）。",
+    "evidence": [
+      "ev_sales_region",
+      "ev_ship_to_city"
+    ]
+  },
+  {
+    "id": "con_cat_product_grade__enum_semantics",
+    "target": "cat_product_grade",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "产品等级",
+      "优等品",
+      "一等品",
+      "合格品",
+      "返工品",
+      "grade"
+    ],
+    "severity": "block",
+    "scope": "产出记录",
+    "confidence": "high",
+    "description": "产品等级取值为 优等品 / 一等品 / 合格品 / 返工品；产出记录另有布尔列 is_first_grade 与一等品率 first_grade_rate。“各产品等级分别有多少条产出记录”即按 grade 分组计数。",
+    "evidence": [
+      "ev_prod_grade"
+    ]
+  },
+  {
+    "id": "con_cat_hazard_category__enum_semantics",
+    "target": "cat_hazard_category",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "物理性",
+      "化学性",
+      "人机工程",
+      "危险类型",
+      "危险源类别"
+    ],
+    "severity": "block",
+    "scope": "危险源观察与安全整改",
+    "confidence": "high",
+    "description": "危险类型/类别取值为 物理性 / 化学性 / 人机工程。事实表用 hazard_type 文本列（物理性=201、化学性=99、人机工程=34），主数据用 dim_hazard.hazard_category，两者同域。",
+    "evidence": [
+      "ev_hazard"
+    ]
+  },
+  {
+    "id": "con_attr_control_measure__enum_semantics",
+    "target": "attr_control_measure",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "控制措施",
+      "个体防护",
+      "工程控制",
+      "管理控制",
+      "消除替代"
+    ],
+    "severity": "block",
+    "scope": "安全整改措施与危险源观察",
+    "confidence": "high",
+    "description": "控制措施取值：安全整改措施为 管理控制 / 工程控制 / 个体防护；危险源观察在此基础上还有 消除替代。问题中的“控制措施为个体防护”直接等值筛选。",
+    "evidence": [
+      "ev_control_measure"
+    ]
+  },
+  {
+    "id": "con_attr_disposition__enum_semantics",
+    "target": "attr_disposition",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "处置",
+      "让步接收",
+      "返工",
+      "催交",
+      "退货"
+    ],
+    "severity": "block",
+    "scope": "检验结果与客户投诉",
+    "confidence": "high",
+    "description": "“处置”在两处语义不同：检验结果的 disposition 为 返工 / 让步接收；客户投诉的 disposition 为 催交 / 退货。两者不可混用；“处置为让步接收的检验结果”落到 fact_inspection_result，“处置为催交的投诉”落到 fact_customer_complaint。",
+    "evidence": [
+      "ev_disposition"
+    ]
+  },
+  {
+    "id": "con_attr_reading_unit__enum_semantics",
+    "target": "attr_reading_unit",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "读数单位",
+      "单位",
+      "℃",
+      "MPa",
+      "mm/s",
+      "rpm"
+    ],
+    "severity": "warning",
+    "scope": "设备状态监测与预测告警",
+    "confidence": "high",
+    "description": "读数单位取值为 A、℃、MPa、mm/s、rpm、kg/h、%、包/h、kg。不同单位的读数不可直接相加；“上限阈值合计”在跨单位时也应先按单位分组再解释。",
+    "evidence": [
+      "ev_reading_unit"
+    ]
+  },
+  {
+    "id": "con_dim_employee__enum_semantics",
+    "target": "dim_employee",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "在职",
+      "active",
+      "员工状态",
+      "离职"
+    ],
+    "severity": "block",
+    "scope": "人员维度分析",
+    "confidence": "high",
+    "description": "员工状态取值为 active（121 人）/ inactive（1 人）。问题中的“状态为 active 的员工”直接等值筛选 dim_employee.status。",
+    "evidence": [
+      "ev_employee_status"
+    ]
+  },
+  {
+    "id": "con_dim_customer__enum_semantics",
+    "target": "dim_customer",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "客户状态",
+      "lost",
+      "dormant",
+      "活跃客户",
+      "流失客户"
+    ],
+    "severity": "block",
+    "scope": "客户维度分析",
+    "confidence": "high",
+    "description": "客户状态取值为 active（22）/ lost（2）/ dormant（1）。“状态为 lost 的客户”指 dim_customer.status = 'lost'，与商机的 lost 状态（fact_opportunity.status）不是同一列，需按问题主语选择。",
+    "evidence": [
+      "ev_customer_status",
+      "ev_opportunity_status"
+    ]
+  },
+  {
+    "id": "con_attr_issue_warehouse__enum_semantics",
+    "target": "attr_issue_warehouse",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "领用仓库",
+      "二厂原料仓",
+      "一厂原料仓",
+      "合肥原料仓",
+      "原料仓"
+    ],
+    "severity": "warning",
+    "scope": "批次追溯分析",
+    "confidence": "high",
+    "description": "批次追溯的领用仓库为文本列，取值 二厂原料仓 / 一厂原料仓 / 合肥原料仓。仓库主数据 dim_warehouse 的名称（一厂原料仓、二厂原料仓、合肥原料仓、一厂成品仓、二厂成品仓、一厂备件仓、合肥成品仓）与之同域，但该事实列本身存的是名称文本而非 warehouse_id。",
+    "evidence": [
+      "ev_issue_warehouse"
+    ]
+  },
+  {
+    "id": "con_attr_downtime_reason__enum_semantics",
+    "target": "attr_downtime_reason",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "停机原因",
+      "滤网更换",
+      "设备故障",
+      "换产清机",
+      "能源中断"
+    ],
+    "severity": "block",
+    "scope": "设备运行分析",
+    "confidence": "high",
+    "description": "设备运行记录的停机原因取值为中文文本：换产清机、设备故障、滤网更换、质量异常、物料短缺、人员不足、能源中断（另有 3120 行为 NULL，表示未停机）。主数据 dim_downtime_reason 是编码字典，两者语义等价但字面不同，筛选事实表时必须使用中文文本。",
+    "evidence": [
+      "ev_downtime_reason"
+    ]
+  },
+  {
+    "id": "con_dim_agg_daily__business_rule",
+    "target": "dim_agg_daily",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "日汇总",
+      "DWS",
+      "每日汇总",
+      "汇总表",
+      "聚合表"
+    ],
+    "severity": "warning",
+    "scope": "汇总口径分析",
+    "confidence": "high",
+    "description": "15 张 DWS_*_DAILY 是从事实表派生的日粒度汇总（按 date + 维度 id，并把维度名称冗余为 *_name 列）。它们适合快速取“按天/按人/按部门”的汇总值，但会丢失单据行级属性（如区域、原因码、备注）；当问题要求按单据级属性筛选或精确计数时，应回到事实表。两类口径混用会产生不一致结果。",
+    "evidence": [
+      "ev_dws_family",
+      "ev_row_counts"
+    ]
+  },
+  {
+    "id": "con_doc_inspection_lot__enum_semantics",
+    "target": "doc_inspection_lot",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "检验批",
+      "检验批状态"
+    ],
+    "severity": "info",
+    "scope": "质量检验分析",
+    "confidence": "high",
+    "description": "检验批使用标准单据状态值域，抽样中仅出现 APPROVED 与 CLOSED。检验结果行的处置（返工/让步接收）在其子表 fact_inspection_result 上。",
+    "evidence": [
+      "ev_inspection_lot",
+      "ev_disposition"
+    ]
+  },
+  {
+    "id": "con_doc_purchase_requisition__enum_semantics",
+    "target": "doc_purchase_requisition",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "采购申请",
+      "ordered",
+      "申请状态"
+    ],
+    "severity": "warning",
+    "scope": "采购申请分析",
+    "confidence": "high",
+    "description": "采购申请的状态列取值为 ordered（895 行全部为该值），不遵循标准五值域。",
+    "evidence": [
+      "ev_pr_status"
+    ]
+  },
+  {
+    "id": "con_doc_employee_assignment__enum_semantics",
+    "target": "doc_employee_assignment",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "任职记录",
+      "APPROVED",
+      "任职状态"
+    ],
+    "severity": "block",
+    "scope": "人事分析",
+    "confidence": "high",
+    "description": "员工任职记录的状态取值为 APPROVED（121）/ CLOSED（1），问题中的“状态是 APPROVED 的任职记录”直接等值筛选。",
+    "evidence": [
+      "ev_assignment_status"
+    ]
+  },
+  {
+    "id": "con_attr_remarks__enum_semantics",
+    "target": "attr_remarks",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "备注",
+      "加急",
+      "补录",
+      "已电话确认",
+      "跨月处理",
+      "客户指定批次"
+    ],
+    "severity": "block",
+    "scope": "标准单据模板表",
+    "confidence": "high",
+    "description": "remarks 为可空自由文本，实际出现的高频业务标注为：已电话确认、跨月处理、补录、客户指定批次、加急（各表分布略有差异，customer_contact 中以 加急=8 为例）。大量行为 NULL。问题中的“备注为 X”直接等值筛选。",
+    "evidence": [
+      "ev_remarks_values"
+    ]
+  },
+  {
+    "id": "con_metric_tax_amount__data_quality",
+    "target": "metric_tax_amount",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "税额",
+      "原材料税额",
+      "tax_amount"
+    ],
+    "severity": "warning",
+    "scope": "税务/采购口径",
+    "confidence": "medium",
+    "description": "同时含 material_id 与 tax_amount 的表有多张（fact_supplier_contract_line、fact_asn_line、fact_supplier_claim、fact_transfer_order_line、fact_inventory_movement、fact_inventory_snapshot、fact_cycle_count_line、fact_work_order_material、fact_supplier_quality_issue）。“某原材料的税额合计”若不限定业务场景会存在多个候选口径，各表语义不同（合同额、到货额、调拨、库存、领料、索赔）。使用时需结合问题语境（如采购/到货/合同）选择，或明确记录所选口径。",
+    "evidence": [
+      "ev_naming_variants"
+    ]
+  },
+  {
+    "id": "con_metric_exchange_rate__business_rule",
+    "target": "metric_exchange_rate",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "汇率",
+      "币种",
+      "折算",
+      "by exchange rate"
+    ],
+    "severity": "warning",
+    "scope": "资本项目与币种分析",
+    "confidence": "high",
+    "description": "“按汇率合计”指对 exchange_rate 列求和（问题中的排序依据），而不是被汇率折算的金额；如需折算金额应使用 local_amount 或 金额 × 汇率。资本项目成本的币种名称需经 currency_code 关联 dim_currency.name。",
+    "evidence": [
+      "ev_currency",
+      "ev_deriv_local"
+    ]
+  },
+  {
+    "id": "con_dim_reason_code_master__business_rule",
+    "target": "dim_reason_code_master",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "原因简称",
+      "报废原因",
+      "调拨原因",
+      "原因码名称"
+    ],
+    "severity": "warning",
+    "scope": "原因码分析",
+    "confidence": "high",
+    "description": "“报废原因/调拨原因/发运原因码”等问法需先确定事实表上的原因列再经主数据翻译：调拨明细与发运明文的 reason_code 抽样值均为 OTHER（单一取值），报废事件为 QUALITY，而具体缺陷文本存放在 defect_code（如 开机料与过渡料、密度不合格、灰分不合格）。若按原因码分组后发现只有一组，应改看 defect_code。",
+    "evidence": [
+      "ev_reason_code",
+      "ev_scrap_attrs",
+      "ev_scrap_reason"
+    ]
+  },
+  {
+    "id": "con_doc_lot_trace__business_rule",
+    "target": "doc_lot_trace",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "失效日期",
+      "批次追溯",
+      "保质期"
+    ],
+    "severity": "warning",
+    "scope": "批次追溯分析",
+    "confidence": "high",
+    "description": "批次追溯记录的失效日期为 expiry_date，制造日期为 manufacture_date；两者与 business_date 不同。问题“失效日期在 2028 年的批次追溯记录”应筛选 expiry_date 的年份。",
+    "evidence": [
+      "ev_fact_template"
+    ]
+  },
+  {
+    "id": "con_doc_advance_shipping_notice__scope",
+    "target": "doc_advance_shipping_notice",
+    "constraint_type": "scope",
+    "trigger_keywords": [
+      "到货预告",
+      "ASN",
+      "到货预计"
+    ],
+    "severity": "info",
+    "scope": "采购到货分析",
+    "confidence": "high",
+    "description": "到货预告在抽样中只有 APPROVED 与 CLOSED 两种状态，明细行 1017 条全部可回溯到预告头；“按审批人统计到货预告明细”应按明细表 fact_asn_line.approved_by 分组，而不是预告头。",
+    "evidence": [
+      "ev_shipping_docs",
+      "ev_user_codes"
+    ]
+  }
+]

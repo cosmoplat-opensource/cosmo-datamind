@@ -1,0 +1,552 @@
+[
+  {
+    "id": "term_team",
+    "name": "Team",
+    "type": "entity",
+    "definition": "A football club that participates in league matches and carries FIFA playing-style attributes.",
+    "scope": "Team identity, playing-style analysis and match participation.",
+    "aliases": [
+      "club",
+      "team",
+      "squad side"
+    ],
+    "evidence": [
+      "ev_schema_inventory",
+      "ev_team_id_integrity"
+    ]
+  },
+  {
+    "id": "term_league",
+    "name": "League",
+    "type": "entity",
+    "definition": "A competition that groups the matches of one country and one season.",
+    "scope": "League-level ranking and aggregation of matches.",
+    "aliases": [
+      "competition",
+      "division"
+    ],
+    "evidence": [
+      "ev_league_names",
+      "ev_match_league_counts"
+    ]
+  },
+  {
+    "id": "term_country",
+    "name": "Country",
+    "type": "entity",
+    "definition": "The country that hosts a league.",
+    "scope": "Association between a league and its host country.",
+    "aliases": [
+      "nation"
+    ],
+    "evidence": [
+      "ev_league_names"
+    ]
+  },
+  {
+    "id": "term_match",
+    "name": "Match",
+    "type": "entity",
+    "definition": "A single played fixture between a home team and an away team inside a league and a season.",
+    "scope": "Match-level facts: participating teams, season, goals.",
+    "aliases": [
+      "fixture",
+      "game",
+      "game result"
+    ],
+    "evidence": [
+      "ev_schema_inventory",
+      "ev_match_league_counts"
+    ]
+  },
+  {
+    "id": "term_player",
+    "name": "Player",
+    "type": "entity",
+    "definition": "A footballer registered in the database with identity and physique attributes.",
+    "scope": "Player identity, physique and career-wide ability analysis.",
+    "aliases": [
+      "footballer",
+      "football player"
+    ],
+    "evidence": [
+      "ev_schema_inventory",
+      "ev_name_duplicates"
+    ]
+  },
+  {
+    "id": "term_team_playing_style_profile",
+    "name": "Team Playing Style Profile",
+    "type": "entity",
+    "definition": "A dated snapshot of a team's FIFA playing-style attributes covering build-up play, chance creation and defence.",
+    "scope": "Team playing-style analysis at a stated snapshot date.",
+    "aliases": [
+      "team attributes",
+      "team style record",
+      "team_attributes row"
+    ],
+    "evidence": [
+      "ev_team_attr_snapshot_dates",
+      "ev_style_class_banding"
+    ]
+  },
+  {
+    "id": "term_player_ability_profile",
+    "name": "Player Ability Profile",
+    "type": "entity",
+    "definition": "A dated snapshot of a player's FIFA ability attributes, including the overall rating, individual skill scores and work rates.",
+    "scope": "Player ability analysis at a stated snapshot date.",
+    "aliases": [
+      "player attributes",
+      "player rating record",
+      "player_attributes row"
+    ],
+    "evidence": [
+      "ev_metric_ranges",
+      "ev_player_attr_dup_rows"
+    ]
+  },
+  {
+    "id": "term_team_api_id",
+    "name": "Team Internal Identifier",
+    "type": "dimension",
+    "definition": "The database-internal team key that references a team from matches and from team playing-style profiles.",
+    "scope": "Joining Match and Team_Attributes to Team.",
+    "aliases": [
+      "team_api_id",
+      "team id"
+    ],
+    "evidence": [
+      "ev_team_id_integrity"
+    ]
+  },
+  {
+    "id": "term_team_fifa_api_id",
+    "name": "Team FIFA Identifier",
+    "type": "dimension",
+    "definition": "The external FIFA identifier of a team, carried on both Team and Team_Attributes.",
+    "scope": "Reporting or filtering teams by their FIFA identifier.",
+    "aliases": [
+      "team_fifa_api_id",
+      "fifa team id",
+      "fifa api id"
+    ],
+    "evidence": [
+      "ev_team_id_integrity"
+    ]
+  },
+  {
+    "id": "term_team_long_name",
+    "name": "Team Long Name",
+    "type": "dimension",
+    "definition": "The full display name of a team.",
+    "scope": "Human-readable team output.",
+    "aliases": [
+      "team name",
+      "long name"
+    ],
+    "evidence": [
+      "ev_name_duplicates"
+    ]
+  },
+  {
+    "id": "term_team_short_name",
+    "name": "Team Short Name",
+    "type": "dimension",
+    "definition": "The abbreviated three-letter display name of a team.",
+    "scope": "Abbreviated team output; not unique across teams.",
+    "aliases": [
+      "short name",
+      "abbreviation"
+    ],
+    "evidence": [
+      "ev_name_duplicates"
+    ]
+  },
+  {
+    "id": "term_player_api_id",
+    "name": "Player Internal Identifier",
+    "type": "dimension",
+    "definition": "The database-internal player key shared by Player, Player_Attributes and the player slots of Match.",
+    "scope": "Joining player identity to ability profiles and to match appearances.",
+    "aliases": [
+      "player_api_id",
+      "player id"
+    ],
+    "evidence": [
+      "ev_player_team_link",
+      "ev_player_attr_dup_rows"
+    ]
+  },
+  {
+    "id": "term_player_name",
+    "name": "Player Name",
+    "type": "dimension",
+    "definition": "The full name of a player held in a single text field that contains both given name and surname.",
+    "scope": "Identifying players in questions and output; not unique.",
+    "aliases": [
+      "player_name",
+      "name of the player",
+      "first name"
+    ],
+    "evidence": [
+      "ev_name_duplicates"
+    ]
+  },
+  {
+    "id": "term_birthday",
+    "name": "Player Birthday",
+    "type": "dimension",
+    "definition": "The recorded date of birth of a player, stored as a date-time value.",
+    "scope": "Age and birth-cohort filtering of players.",
+    "aliases": [
+      "birthday",
+      "date of birth",
+      "born"
+    ],
+    "evidence": [
+      "ev_birthday_format"
+    ]
+  },
+  {
+    "id": "term_birth_year",
+    "name": "Player Birth Year",
+    "type": "dimension",
+    "definition": "The calendar year component of a player's birthday, used for cohort statements such as being born before a given year or after a decade.",
+    "scope": "Birth-cohort filtering of players.",
+    "aliases": [
+      "birth year",
+      "year of birth",
+      "born after the 1990s"
+    ],
+    "evidence": [
+      "ev_birthday_format"
+    ]
+  },
+  {
+    "id": "term_season",
+    "name": "Season",
+    "type": "dimension",
+    "definition": "The competition season label that groups matches, written as two consecutive calendar years separated by a slash.",
+    "scope": "Temporal grouping of matches for league-level aggregation.",
+    "aliases": [
+      "season",
+      "2016 season",
+      "2010 season",
+      "season year"
+    ],
+    "evidence": [
+      "ev_season_values"
+    ]
+  },
+  {
+    "id": "term_league_name",
+    "name": "League Name",
+    "type": "dimension",
+    "definition": "The full name of a league, which already embeds the name of its host country.",
+    "scope": "Identifying a league in questions and output.",
+    "aliases": [
+      "league",
+      "league_name",
+      "Scotland Premier League"
+    ],
+    "evidence": [
+      "ev_league_names"
+    ]
+  },
+  {
+    "id": "term_team_attribute_snapshot_date",
+    "name": "Team Attribute Snapshot Date",
+    "type": "dimension",
+    "definition": "The date at which a team playing-style profile was captured.",
+    "scope": "Selecting the correct team playing-style snapshot for a stated year or date.",
+    "aliases": [
+      "team attributes date",
+      "in 2012",
+      "snapshot date"
+    ],
+    "evidence": [
+      "ev_team_attr_snapshot_dates"
+    ]
+  },
+  {
+    "id": "term_player_attribute_snapshot_date",
+    "name": "Player Attribute Snapshot Date",
+    "type": "dimension",
+    "definition": "The date at which a player ability profile was captured.",
+    "scope": "Selecting the correct player ability snapshot for a stated date or date range.",
+    "aliases": [
+      "player attributes date",
+      "on 2015/5/1",
+      "snapshot date"
+    ],
+    "evidence": [
+      "ev_attribute_date_format"
+    ]
+  },
+  {
+    "id": "term_height",
+    "name": "Player Height",
+    "type": "metric",
+    "definition": "The recorded height of a player in centimetres.",
+    "scope": "Physique comparison and tallest or shortest player questions.",
+    "aliases": [
+      "height",
+      "tallest",
+      "shortest"
+    ],
+    "evidence": [
+      "ev_height_range"
+    ]
+  },
+  {
+    "id": "term_overall_rating",
+    "name": "Overall Rating",
+    "type": "metric",
+    "definition": "A player's overall FIFA ability score on a 0-100 scale.",
+    "scope": "Player ability comparison and averaging.",
+    "aliases": [
+      "overall_rating",
+      "overall",
+      "rating"
+    ],
+    "evidence": [
+      "ev_metric_ranges"
+    ]
+  },
+  {
+    "id": "term_finishing",
+    "name": "Finishing Score",
+    "type": "metric",
+    "definition": "A player's FIFA finishing ability score on a 0-100 scale.",
+    "scope": "Attacking skill comparison between players.",
+    "aliases": [
+      "finishing",
+      "finishing rate",
+      "finishing score"
+    ],
+    "evidence": [
+      "ev_metric_ranges"
+    ]
+  },
+  {
+    "id": "term_volleys",
+    "name": "Volleys Score",
+    "type": "metric",
+    "definition": "A player's FIFA volleys ability score on a 0-100 scale, held in a column whose name is plural.",
+    "scope": "Skill filtering of players.",
+    "aliases": [
+      "volleys",
+      "volley score",
+      "volley"
+    ],
+    "evidence": [
+      "ev_metric_ranges"
+    ]
+  },
+  {
+    "id": "term_dribbling",
+    "name": "Dribbling Score",
+    "type": "metric",
+    "definition": "A player's FIFA dribbling ability score on a 0-100 scale.",
+    "scope": "Skill filtering of players.",
+    "aliases": [
+      "dribbling",
+      "dribbling score"
+    ],
+    "evidence": [
+      "ev_metric_ranges"
+    ]
+  },
+  {
+    "id": "term_buildup_play_speed",
+    "name": "Build-up Play Speed",
+    "type": "metric",
+    "definition": "A numeric rating of how quickly a team moves the ball forward during build-up play.",
+    "scope": "Team playing-style filtering and comparison.",
+    "aliases": [
+      "buildUpPlaySpeed",
+      "build-up play speed",
+      "build up play speed"
+    ],
+    "evidence": [
+      "ev_metric_ranges",
+      "ev_style_class_banding"
+    ]
+  },
+  {
+    "id": "term_buildup_play_passing",
+    "name": "Build-up Play Passing",
+    "type": "metric",
+    "definition": "A numeric rating of a team's passing style during build-up play, ranging from short to long passing.",
+    "scope": "Team playing-style filtering and comparison.",
+    "aliases": [
+      "buildUpPlayPassing",
+      "build-up play passing",
+      "build up play passing"
+    ],
+    "evidence": [
+      "ev_metric_ranges",
+      "ev_style_class_banding"
+    ]
+  },
+  {
+    "id": "term_home_team_goal",
+    "name": "Home Team Goals",
+    "type": "metric",
+    "definition": "The number of goals scored by the home team in a match.",
+    "scope": "Match outcome and goal aggregation.",
+    "aliases": [
+      "home_team_goal",
+      "home goals",
+      "goals scored by the home team"
+    ],
+    "evidence": [
+      "ev_schema_inventory"
+    ]
+  },
+  {
+    "id": "term_away_team_goal",
+    "name": "Away Team Goals",
+    "type": "metric",
+    "definition": "The number of goals scored by the away team in a match.",
+    "scope": "Match outcome and goal aggregation.",
+    "aliases": [
+      "away_team_goal",
+      "away goals",
+      "goals scored by the away team"
+    ],
+    "evidence": [
+      "ev_schema_inventory"
+    ]
+  },
+  {
+    "id": "term_total_goals",
+    "name": "Total Match Goals",
+    "type": "metric",
+    "definition": "The total number of goals scored in a match by both teams together.",
+    "scope": "Goals-per-match and league goal aggregation.",
+    "aliases": [
+      "total goals",
+      "goals in a match",
+      "most goals"
+    ],
+    "evidence": [
+      "ev_schema_inventory"
+    ]
+  },
+  {
+    "id": "term_away_win",
+    "name": "Away Team Win",
+    "type": "metric",
+    "definition": "An indicator of whether the away team won a match by scoring strictly more goals than the home team.",
+    "scope": "Counting away wins per team, league or season.",
+    "aliases": [
+      "away team won",
+      "won the most",
+      "away win"
+    ],
+    "evidence": [
+      "ev_match_league_counts"
+    ]
+  },
+  {
+    "id": "term_match_count",
+    "name": "Match Count",
+    "type": "metric",
+    "definition": "The number of matches played in a league, season or stage.",
+    "scope": "League ranking by number of matches.",
+    "aliases": [
+      "most matches",
+      "number of matches",
+      "matches played"
+    ],
+    "evidence": [
+      "ev_match_league_counts"
+    ]
+  },
+  {
+    "id": "term_work_rate_level",
+    "name": "Work Rate Level",
+    "type": "category",
+    "definition": "The shared ordinal scale of player work-rate tendency, running from low through medium to high.",
+    "scope": "Interpreting any work-rate column value.",
+    "aliases": [
+      "work rate",
+      "work_rate",
+      "low",
+      "medium",
+      "high"
+    ],
+    "evidence": [
+      "ev_work_rate_values",
+      "ev_work_rate_clean_fraction"
+    ]
+  },
+  {
+    "id": "term_attacking_work_rate",
+    "name": "Attacking Work Rate",
+    "type": "category",
+    "definition": "A player's tendency to join attacking moves, expressed on the shared work-rate scale.",
+    "scope": "Identifying attack-minded players.",
+    "aliases": [
+      "attacking_work_rate",
+      "attacking work rate",
+      "tend to be attacking"
+    ],
+    "evidence": [
+      "ev_work_rate_values",
+      "ev_work_rate_clean_fraction"
+    ]
+  },
+  {
+    "id": "term_defensive_work_rate",
+    "name": "Defensive Work Rate",
+    "type": "category",
+    "definition": "A player's tendency to hold position and defend while the team attacks, expressed on the shared work-rate scale.",
+    "scope": "Identifying defensively disciplined players.",
+    "aliases": [
+      "defensive_work_rate",
+      "defensive work rate",
+      "remain in his position and defense"
+    ],
+    "evidence": [
+      "ev_work_rate_values",
+      "ev_work_rate_clean_fraction"
+    ]
+  },
+  {
+    "id": "term_buildup_play_speed_class",
+    "name": "Build-up Play Speed Class",
+    "type": "category",
+    "definition": "The categorical banding of build-up play speed into Slow, Balanced and Fast.",
+    "scope": "Categorical team playing-style interpretation.",
+    "aliases": [
+      "buildUpPlaySpeedClass",
+      "speed class",
+      "Slow",
+      "Balanced",
+      "Fast"
+    ],
+    "evidence": [
+      "ev_style_class_banding"
+    ]
+  },
+  {
+    "id": "term_chance_creation_passing_class",
+    "name": "Chance Creation Passing Class",
+    "type": "category",
+    "definition": "The categorical banding of a team's chance-creation passing into Safe, Normal and Risky.",
+    "scope": "Categorical team playing-style interpretation.",
+    "aliases": [
+      "chanceCreationPassingClass",
+      "played safe while creating chance of passing",
+      "Safe",
+      "Risky",
+      "Normal"
+    ],
+    "evidence": [
+      "ev_style_class_banding"
+    ]
+  }
+]

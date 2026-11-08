@@ -1,0 +1,234 @@
+[
+  {
+    "id": "evidence_member_schema",
+    "source": "student_club.sqlite",
+    "query": "PRAGMA table_info(member); SELECT COUNT(*) FROM member",
+    "result": "member columns: member_id, first_name, last_name, email, position, t_shirt_size, phone, zip, link_to_major. 33 rows; link_to_major references major(major_id).",
+    "validation_method": "schema inspection and row count",
+    "timestamp": "2026-10-10T02:10:00Z"
+  },
+  {
+    "id": "evidence_full_name_parts",
+    "source": "student_club.sqlite",
+    "query": "SELECT first_name, last_name, email FROM member LIMIT 3",
+    "result": "Angela|Sanders|angela.sanders@lpu.edu; Grant|Gilmour|grant.gilmour@lpu.edu; Luisa|Guidi|luisa.guidi@lpu.edu. Names are stored as separate first_name and last_name columns; all emails use the @lpu.edu domain.",
+    "validation_method": "representative row inspection",
+    "timestamp": "2026-10-10T02:10:00Z"
+  },
+  {
+    "id": "evidence_major_units",
+    "source": "student_club.sqlite",
+    "query": "SELECT COUNT(*) FROM major; SELECT DISTINCT department, college FROM major",
+    "result": "47 majors. Each of the 47 departments appears with exactly one college, and each major row carries exactly one department and one college. Colleges include College of Engineering, College of Science, School of Business, College of Natural Resources, College of Agriculture and Applied Sciences, College of Education & Human Services, College of Humanities and Social Sciences, College of the Arts.",
+    "validation_method": "distinct-value comparison and functional dependency check",
+    "timestamp": "2026-10-10T02:10:00Z"
+  },
+  {
+    "id": "evidence_member_major_join",
+    "source": "student_club.sqlite",
+    "query": "SELECT SUM(link_to_major IS NULL), COUNT(*) FROM member",
+    "result": "1 member has no linked major out of 33 members.",
+    "validation_method": "null counting",
+    "timestamp": "2026-10-10T02:10:00Z"
+  },
+  {
+    "id": "evidence_event_schema",
+    "source": "student_club.sqlite",
+    "query": "PRAGMA table_info(event)",
+    "result": "event columns: event_id, event_name, event_date, type, notes, location, status. event_id is the primary key and is referenced by budget.link_to_event and attendance.link_to_event.",
+    "validation_method": "schema inspection",
+    "timestamp": "2026-10-10T02:10:00Z"
+  },
+  {
+    "id": "evidence_event_date_format",
+    "source": "student_club.sqlite",
+    "query": "SELECT event_date, LENGTH(event_date) FROM event LIMIT 5",
+    "result": "All sampled event_date values are 19-character ISO-8601 strings such as 2020-03-10T12:00:00, 2019-11-24T09:00:00.",
+    "validation_method": "format and length inspection",
+    "timestamp": "2026-10-10T02:10:00Z"
+  },
+  {
+    "id": "evidence_event_type_values",
+    "source": "student_club.sqlite",
+    "query": "SELECT DISTINCT type FROM event ORDER BY type",
+    "result": "Eight distinct types: Budget, Community Service, Election, Game, Guest Speaker, Meeting, Registration, Social.",
+    "validation_method": "distinct-value enumeration",
+    "timestamp": "2026-10-10T02:10:00Z"
+  },
+  {
+    "id": "evidence_event_status_values",
+    "source": "student_club.sqlite",
+    "query": "SELECT status, COUNT(*) FROM event GROUP BY status",
+    "result": "Closed 22, Open 23, Planning 7.",
+    "validation_method": "distinct-value enumeration",
+    "timestamp": "2026-10-10T02:10:00Z"
+  },
+  {
+    "id": "evidence_mu215_types",
+    "source": "student_club.sqlite",
+    "query": "SELECT DISTINCT type, location FROM event WHERE location='MU 215'",
+    "result": "Events at 'MU 215' have type Meeting, Election and Guest Speaker. 'MU 215' is the most common location (19 events); 6 events have an empty location.",
+    "validation_method": "filtered distinct-value inspection",
+    "timestamp": "2026-10-10T02:10:00Z"
+  },
+  {
+    "id": "evidence_budget_columns",
+    "source": "student_club.sqlite",
+    "query": "PRAGMA table_info(budget); SELECT COUNT(*), SUM(amount IS NULL), SUM(spent IS NULL), SUM(remaining IS NULL), SUM(link_to_event IS NULL) FROM budget",
+    "result": "budget columns: budget_id, category, spent, remaining, amount, event_status, link_to_event. 52 rows, no nulls in amount, spent, remaining or link_to_event; every budget line links to an event.",
+    "validation_method": "schema inspection, null counting",
+    "timestamp": "2026-10-10T02:10:00Z"
+  },
+  {
+    "id": "evidence_budget_category_values",
+    "source": "student_club.sqlite",
+    "query": "SELECT category, COUNT(*) FROM budget GROUP BY category",
+    "result": "Advertisement 15, Food 22, Parking 7, Speaker Gifts 7, Club T-Shirts 1.",
+    "validation_method": "distinct-value enumeration",
+    "timestamp": "2026-10-10T02:10:00Z"
+  },
+  {
+    "id": "evidence_budget_event_status_match",
+    "source": "student_club.sqlite",
+    "query": "SELECT b.event_status, e.status, COUNT(*) FROM budget b JOIN event e ON b.link_to_event=e.event_id GROUP BY 1,2",
+    "result": "For all 52 budget lines the row's event_status equals the linked event's status (Closed 22, Open 23, Planning 7). No mismatches.",
+    "validation_method": "join-based equality check",
+    "timestamp": "2026-10-10T02:10:00Z"
+  },
+  {
+    "id": "evidence_budget_spent_equals_expense_cost",
+    "source": "student_club.sqlite",
+    "query": "SELECT COUNT(*) AS budget_lines, SUM(ABS(COALESCE(x.c,0)-b.spent)>0.01) AS mismatches FROM budget b LEFT JOIN (SELECT link_to_budget, SUM(cost) c FROM expense GROUP BY link_to_budget) x ON b.budget_id=x.link_to_budget",
+    "result": "52 budget lines, 0 mismatches: for every budget line the sum of the costs of its linked expenses equals budget.spent.",
+    "validation_method": "aggregate reconciliation with tolerance 0.01",
+    "timestamp": "2026-10-10T02:10:00Z"
+  },
+  {
+    "id": "evidence_expense_columns",
+    "source": "student_club.sqlite",
+    "query": "PRAGMA table_info(expense); SELECT COUNT(*), SUM(link_to_member IS NULL), SUM(link_to_budget IS NULL) FROM expense; SELECT approved, COUNT(*) FROM expense GROUP BY approved",
+    "result": "expense columns: expense_id, expense_description, expense_date, cost, approved, link_to_member, link_to_budget. 32 rows; all have a linked member and a linked budget line. approved is 'true' for 31 rows and empty for 1 row.",
+    "validation_method": "schema inspection, null and value counting",
+    "timestamp": "2026-10-10T02:10:00Z"
+  },
+  {
+    "id": "evidence_water_veggie_tray",
+    "source": "student_club.sqlite",
+    "query": "SELECT expense_description, cost, link_to_member FROM expense WHERE expense_description='Water, Veggie tray, supplies'",
+    "result": "One expense with description 'Water, Veggie tray, supplies', cost 28.15, linked to member recro8T1MPMwRadVH.",
+    "validation_method": "exact-match filter",
+    "timestamp": "2026-10-10T02:10:00Z"
+  },
+  {
+    "id": "evidence_expense_date_2019_08_20",
+    "source": "student_club.sqlite",
+    "query": "SELECT expense_date, ROUND(SUM(cost),2) FROM expense WHERE expense_date='2019-08-20' GROUP BY expense_date",
+    "result": "2019-08-20 total expense cost 122.06 (single expense, description 'Post Cards, Posters').",
+    "validation_method": "aggregate filter",
+    "timestamp": "2026-10-10T02:10:00Z"
+  },
+  {
+    "id": "evidence_income_columns",
+    "source": "student_club.sqlite",
+    "query": "PRAGMA table_info(income)",
+    "result": "income columns: income_id, date_received, amount, source, notes, link_to_member. income_id is the primary key; link_to_member references member(member_id).",
+    "validation_method": "schema inspection",
+    "timestamp": "2026-10-10T02:10:00Z"
+  },
+  {
+    "id": "evidence_income_source_values",
+    "source": "student_club.sqlite",
+    "query": "SELECT source, COUNT(*), MIN(amount), MAX(amount) FROM income GROUP BY source",
+    "result": "Dues 33 records (amount 50 each), Fundraising 1 (200), School Appropration 1 (3000), Sponsorship 1 (1000).",
+    "validation_method": "distinct-value enumeration with ranges",
+    "timestamp": "2026-10-10T02:10:00Z"
+  },
+  {
+    "id": "evidence_income_amount_values",
+    "source": "student_club.sqlite",
+    "query": "SELECT COUNT(*) FROM income WHERE amount=50",
+    "result": "33 income records have amount exactly 50, all of them Dues records.",
+    "validation_method": "value counting",
+    "timestamp": "2026-10-10T02:10:00Z"
+  },
+  {
+    "id": "evidence_fundraising_notes",
+    "source": "student_club.sqlite",
+    "query": "SELECT income_id, date_received, amount, source, notes FROM income WHERE source='Fundraising' AND date_received='2019-09-14'",
+    "result": "One record: 2019-09-14, amount 200, source 'Fundraising', notes 'Secured donations to help pay for speaker gifts.'",
+    "validation_method": "exact-match filter",
+    "timestamp": "2026-10-10T02:10:00Z"
+  },
+  {
+    "id": "evidence_member_position_values",
+    "source": "student_club.sqlite",
+    "query": "SELECT position, COUNT(*) FROM member GROUP BY position",
+    "result": "Member 26, Inactive 3, President 1, Vice President 1, Treasurer 1, Secretary 1.",
+    "validation_method": "distinct-value enumeration",
+    "timestamp": "2026-10-10T02:10:00Z"
+  },
+  {
+    "id": "evidence_tshirt_values",
+    "source": "student_club.sqlite",
+    "query": "SELECT t_shirt_size, COUNT(*) FROM member GROUP BY t_shirt_size",
+    "result": "Large 13, Medium 10, X-Large 8, Small 2.",
+    "validation_method": "distinct-value enumeration",
+    "timestamp": "2026-10-10T02:10:00Z"
+  },
+  {
+    "id": "evidence_attendance_columns",
+    "source": "student_club.sqlite",
+    "query": "SELECT COUNT(*), COUNT(DISTINCT link_to_member), COUNT(DISTINCT link_to_event) FROM attendance",
+    "result": "326 attendance rows covering 30 distinct members and 17 distinct events; primary key is (link_to_event, link_to_member).",
+    "validation_method": "row and distinct-key counting",
+    "timestamp": "2026-10-10T02:10:00Z"
+  },
+  {
+    "id": "evidence_maya_attended_soccer",
+    "source": "student_club.sqlite",
+    "query": "SELECT COUNT(*) FROM attendance a JOIN member m ON a.link_to_member=m.member_id JOIN event e ON a.link_to_event=e.event_id WHERE m.first_name='Maya' AND m.last_name='Mclean' AND e.event_name='Women''s Soccer'",
+    "result": "1 matching attendance record exists.",
+    "validation_method": "join-based existence check",
+    "timestamp": "2026-10-10T02:10:00Z"
+  },
+  {
+    "id": "evidence_april_speaker_budget",
+    "source": "student_club.sqlite",
+    "query": "SELECT b.category, b.amount FROM budget b JOIN event e ON b.link_to_event=e.event_id WHERE e.event_name='April Speaker' ORDER BY b.amount",
+    "result": "April Speaker budget lines (amount budgeted): Parking 10, Speaker Gifts 25, Advertisement 75, Food 150.",
+    "validation_method": "join-based aggregate listing",
+    "timestamp": "2026-10-10T02:10:00Z"
+  },
+  {
+    "id": "evidence_food_total_spent",
+    "source": "student_club.sqlite",
+    "query": "SELECT category, ROUND(SUM(spent),2) FROM budget WHERE category='Food' GROUP BY category",
+    "result": "Total amount spent in the Food category is 1234.73.",
+    "validation_method": "aggregate filter",
+    "timestamp": "2026-10-10T02:10:00Z"
+  },
+  {
+    "id": "evidence_event_year_spend",
+    "source": "student_club.sqlite",
+    "query": "SELECT substr(e.event_date,1,4) yr, ROUND(SUM(b.spent),2) FROM budget b JOIN event e ON b.link_to_event=e.event_id GROUP BY yr",
+    "result": "Total amount spent grouped by event year: 2019 = 2086.05, 2020 = 0.00.",
+    "validation_method": "year extraction and aggregate grouping",
+    "timestamp": "2026-10-10T02:10:00Z"
+  },
+  {
+    "id": "evidence_yearly_kickoff_spent",
+    "source": "student_club.sqlite",
+    "query": "SELECT ROUND(SUM(b.spent),2) FROM budget b JOIN event e ON b.link_to_event=e.event_id WHERE e.event_name='Yearly Kickoff'",
+    "result": "Total spent on the 'Yearly Kickoff' event is 449.13 (identical to the sum of its linked expense costs).",
+    "validation_method": "join-based aggregate, cross-checked against expense costs",
+    "timestamp": "2026-10-10T02:10:00Z"
+  },
+  {
+    "id": "evidence_budget_category_event_type_crosstab",
+    "source": "student_club.sqlite",
+    "query": "SELECT b.category, e.type, COUNT(*) FROM budget b JOIN event e ON b.link_to_event=e.event_id GROUP BY b.category, e.type",
+    "result": "Budget categories map onto event types: Advertisement/Food/Parking/Speaker Gifts appear with Guest Speaker and Meeting events; Club T-Shirts appears with a Registration event. The two axes are different and not interchangeable.",
+    "validation_method": "cross-tabulation",
+    "timestamp": "2026-10-10T02:10:00Z"
+  }
+]

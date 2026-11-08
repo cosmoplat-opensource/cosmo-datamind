@@ -1,0 +1,150 @@
+[
+  {
+    "id": "rel_district_composes_school",
+    "source": "term_school_district",
+    "relation_type": "composition",
+    "target": "term_school",
+    "connection_condition": "The seven-character county-and-district prefix of a school's CDS code identifies the district that operates it; district records share the same prefix with a school segment of 0000000",
+    "description": "A school district is composed of the schools it operates. A school record cannot be interpreted without its district, and the district's identity is carried by the school's own identifier rather than by its name.",
+    "evidence": [
+      "evidence_08",
+      "evidence_09"
+    ]
+  },
+  {
+    "id": "rel_county_composes_district",
+    "source": "term_county",
+    "relation_type": "composition",
+    "target": "term_school_district",
+    "connection_condition": "The first two characters of a CDS code identify the county in which the district and its schools are grouped",
+    "description": "A county is composed of the school districts grouped within it. County is the top-level geographic grouping above district.",
+    "evidence": [
+      "evidence_08"
+    ]
+  },
+  {
+    "id": "rel_free_meal_is_frpm",
+    "source": "term_free_meal_eligible_count",
+    "relation_type": "hierarchy",
+    "target": "term_frpm_eligible_count",
+    "connection_condition": "Both counts are reported per school in the FRPM file; the free meal count is never greater than the FRPM count",
+    "description": "Free-meal-eligible students are a subset of free or reduced-price-meal-eligible students, so the free meal count is an is-a subpopulation of the FRPM count. In 578 of 9986 schools the two counts coincide, which happens when no student is eligible on reduced-price terms alone.",
+    "evidence": [
+      "evidence_15"
+    ]
+  },
+  {
+    "id": "rel_frpm_rate_derived",
+    "source": "term_frpm_eligible_count",
+    "relation_type": "derivation",
+    "target": "term_frpm_eligibility_rate",
+    "connection_condition": "The rate column equals the FRPM count column divided by the matching enrollment column at the same population scope",
+    "description": "The FRPM eligibility rate is derived as the FRPM eligible student count divided by enrollment, computed separately for the K-12 and Ages 5-17 population scopes.",
+    "evidence": [
+      "evidence_04"
+    ]
+  },
+  {
+    "id": "rel_free_rate_derived",
+    "source": "term_free_meal_eligible_count",
+    "relation_type": "derivation",
+    "target": "term_free_meal_eligibility_rate",
+    "connection_condition": "The rate column equals the free meal count column divided by the matching enrollment column at the same population scope",
+    "description": "The free meal eligibility rate is derived as the free-meal-eligible student count divided by enrollment, the narrower counterpart of the FRPM eligibility rate.",
+    "evidence": [
+      "evidence_04",
+      "evidence_15"
+    ]
+  },
+  {
+    "id": "rel_sat_participation_rate_derived",
+    "source": "term_sat_participation_count",
+    "relation_type": "derivation",
+    "target": "term_sat_participation_rate",
+    "connection_condition": "Test takers are reported in the SAT file and the denominator twelfth-grade enrollment is reported in the same record",
+    "description": "The SAT participation rate is derived as the SAT test taker count divided by twelfth-grade enrollment within the same record's grain.",
+    "evidence": [
+      "evidence_14"
+    ]
+  },
+  {
+    "id": "rel_college_ready_rate_derived",
+    "source": "term_college_ready_count",
+    "relation_type": "derivation",
+    "target": "term_college_ready_rate",
+    "connection_condition": "Both the count of takers at or above 1500 and the total test taker count come from the same SAT record",
+    "description": "The high-scoring SAT taker rate is derived as the count of takers scoring 1500 or above divided by the total test taker count. Records whose scores are suppressed cannot contribute.",
+    "evidence": [
+      "evidence_11",
+      "evidence_12"
+    ]
+  },
+  {
+    "id": "rel_cds_code_equivalence",
+    "source": "term_cds_code",
+    "relation_type": "equivalence",
+    "target": "term_cds_code_satscores",
+    "connection_condition": "Values agree once a leading zero is prefixed to the 13-character form; 2269 of 2269 SAT records match a directory record this way, against 2058 without normalisation",
+    "description": "The school directory and the FRPM file store the CDS code as a fixed 14-character string, while the SAT file stores it with the leading zero of county codes 01 to 09 dropped. The two representations denote the same school or district identifier and must be reconciled before any cross-file comparison.",
+    "evidence": [
+      "evidence_05",
+      "evidence_06"
+    ]
+  },
+  {
+    "id": "rel_school_type_equivalence",
+    "source": "term_school_type",
+    "relation_type": "equivalence",
+    "target": "term_school_type_soc",
+    "connection_condition": "Both columns use the same descriptive vocabulary such as Elementary Schools (Public) and Continuation High Schools; the directory vocabulary contains additional categories the FRPM file never uses",
+    "description": "School type is recorded in both the FRPM file and the school directory under different column names and with different coverage, but denotes the same categorisation of a school.",
+    "evidence": [
+      "evidence_16"
+    ]
+  },
+  {
+    "id": "rel_district_type_equivalence",
+    "source": "term_district_type",
+    "relation_type": "equivalence",
+    "target": "term_district_type_doc",
+    "connection_condition": "Both columns use the same descriptive vocabulary such as Unified School District and County Office of Education; the directory adds categories such as Regional Occupation Center/Program that the FRPM file never uses",
+    "description": "District type is recorded in both the FRPM file and the school directory under different column names and with different coverage, but denotes the same categorisation of a district.",
+    "evidence": [
+      "evidence_16"
+    ]
+  },
+  {
+    "id": "rel_grade_span_equivalence",
+    "source": "term_grade_span",
+    "relation_type": "equivalence",
+    "target": "term_grade_span_served",
+    "connection_condition": "The directory range string equals the FRPM low grade and high grade joined by a hyphen for 8381 of 9935 non-blank rows; the remainder differ in how ungraded and adult spans are written",
+    "description": "The grade span served by a school is expressed as two separate boundary columns in the FRPM file and as a single hyphenated range string in the school directory; both denote the same span.",
+    "evidence": [
+      "evidence_19"
+    ]
+  },
+  {
+    "id": "rel_charter_status_equivalence",
+    "source": "term_charter_status",
+    "relation_type": "equivalence",
+    "target": "term_charter_status_dir",
+    "connection_condition": "The two flag columns agree on 9934 of 9986 joined rows and disagree on 7",
+    "description": "Charter status is recorded in both the FRPM file and the school directory under different column names. The two sources agree almost everywhere, so disagreement marks a genuine discrepancy rather than a systematic difference in definition.",
+    "evidence": [
+      "evidence_18"
+    ]
+  },
+  {
+    "id": "rel_frpm_sat_association",
+    "source": "term_frpm_eligibility",
+    "relation_type": "association",
+    "target": "term_sat_section_average_score",
+    "connection_condition": "No direct structural link exists; the two concepts meet only through a school's identity, and only 1782 of 9986 FRPM schools have a matching SAT record",
+    "description": "Economic disadvantage and SAT performance are analysed together as the central equity comparison in this data environment, but they live in separate files with different populations and different reporting years.",
+    "evidence": [
+      "evidence_21",
+      "evidence_02"
+    ]
+  }
+]

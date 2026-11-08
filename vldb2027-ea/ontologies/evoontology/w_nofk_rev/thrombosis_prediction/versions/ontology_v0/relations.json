@@ -1,0 +1,68 @@
+[
+  {
+    "id": "rel_patient_examination",
+    "source": "patient",
+    "relation_type": "composition",
+    "target": "examination",
+    "connection_condition": "Examination.ID carries the patient identifier and corresponds to Patient.ID; an examination record has no meaning without its patient.",
+    "description": "A patient is composed of one or more clinical examination events. Linking the two tables is what allows patient demographics and diagnoses to be attached to an examination date.",
+    "evidence": [
+      "ev_patient_linkage_coverage"
+    ]
+  },
+  {
+    "id": "rel_patient_laboratory",
+    "source": "patient",
+    "relation_type": "composition",
+    "target": "laboratory_record",
+    "connection_condition": "Laboratory.ID carries the patient identifier and corresponds to Patient.ID; the Laboratory composite key is (ID, Date).",
+    "description": "A patient is composed of one or more laboratory test events. Every laboratory record in this dataset resolves to a known patient.",
+    "evidence": [
+      "ev_patient_linkage_coverage"
+    ]
+  },
+  {
+    "id": "rel_age_derived_from_birthday",
+    "source": "birthday",
+    "relation_type": "derivation",
+    "target": "age",
+    "connection_condition": "",
+    "description": "Patient age is computed from the birthday, using the current date as the reference point; age has no stored column of its own.",
+    "evidence": [
+      "ev_age_derivation"
+    ]
+  },
+  {
+    "id": "rel_patient_examination_diagnosis_equiv",
+    "source": "patient_diagnosis",
+    "relation_type": "equivalence",
+    "target": "examination_diagnosis",
+    "connection_condition": "Both columns draw on the same disease abbreviation vocabulary, but they are populated independently and use different spellings for Sjogren's syndrome (Patient.Diagnosis 'SJS' versus Examination.Diagnosis 'SjS').",
+    "description": "The patient-level diagnosis and the examination-level diagnosis express the same business concept of 'which autoimmune disease does this patient have'; they differ in grain and completeness rather than in meaning.",
+    "evidence": [
+      "ev_diagnosis_vocabulary_overlap"
+    ]
+  },
+  {
+    "id": "rel_examination_symptom_thrombosis",
+    "source": "symptom",
+    "relation_type": "association",
+    "target": "thrombosis_severity",
+    "connection_condition": "Symptoms is populated exactly for the examinations whose Thrombosis grade is non-zero.",
+    "description": "Observed symptoms and the thrombosis grade are recorded together: a non-empty Symptoms value is only present when a thrombosis grade other than 0 was assigned, so the two concepts co-occur on the same examination.",
+    "evidence": [
+      "ev_symptoms_only_for_thrombosis"
+    ]
+  },
+  {
+    "id": "rel_examination_laboratory",
+    "source": "examination",
+    "relation_type": "association",
+    "target": "laboratory_record",
+    "connection_condition": "The two tables share only the patient identifier; there is no examination-level key linking a laboratory test date to an examination date.",
+    "description": "Clinical examinations and laboratory tests are both patient-level clinical events collected on nearby but independently recorded dates. Any cross-analysis has to be made through the patient, not through a direct event key.",
+    "evidence": [
+      "ev_patient_linkage_coverage"
+    ]
+  }
+]

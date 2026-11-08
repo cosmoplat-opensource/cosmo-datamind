@@ -1,0 +1,286 @@
+[
+  {
+    "id": "rel_player_attr_snapshot",
+    "source": "player",
+    "relation_type": "composition",
+    "target": "player_attribute_snapshot",
+    "connection_condition": "player_attribute_snapshot rows reference the player through tab01.fld003 to tab02.fld003; tab01.fld002 to tab02.fld002 is an alternative identifier path",
+    "description": "A player's ability history is composed of dated attribute snapshots; a snapshot cannot exist without its player.",
+    "evidence": [
+      "evidence_fk_join_coverage",
+      "evidence_player_attr_snapshots"
+    ]
+  },
+  {
+    "id": "rel_team_attr_snapshot",
+    "source": "team",
+    "relation_type": "composition",
+    "target": "team_attribute_snapshot",
+    "connection_condition": "tab06.fld049 corresponds to tab05.fld049 (team_fifa_api_id)",
+    "description": "A team's style history is composed of dated team-attribute snapshots; a snapshot cannot exist without its team.",
+    "evidence": [
+      "evidence_fk_join_coverage",
+      "evidence_team_attr_snapshots"
+    ]
+  },
+  {
+    "id": "rel_country_league",
+    "source": "country",
+    "relation_type": "composition",
+    "target": "league",
+    "connection_condition": "tab03.fld047 corresponds to tab04.fld001",
+    "description": "A country is composed of the leagues played in it; a league cannot exist without its country.",
+    "evidence": [
+      "evidence_league_country",
+      "evidence_fk_join_coverage"
+    ]
+  },
+  {
+    "id": "rel_league_match",
+    "source": "league",
+    "relation_type": "composition",
+    "target": "match",
+    "connection_condition": "tab07.fld074 corresponds to tab03.fld001",
+    "description": "A league season is composed of its matches; a match cannot exist without a league.",
+    "evidence": [
+      "evidence_fk_join_coverage",
+      "evidence_match_table"
+    ]
+  },
+  {
+    "id": "rel_match_home_team",
+    "source": "match",
+    "relation_type": "composition",
+    "target": "home_team",
+    "connection_condition": "tab07.fld078 holds the home team FIFA-API identifier, corresponding to tab05.fld049",
+    "description": "The home side is a component of a match and exists only within that match.",
+    "evidence": [
+      "evidence_match_table",
+      "evidence_team_id_systems"
+    ]
+  },
+  {
+    "id": "rel_match_away_team",
+    "source": "match",
+    "relation_type": "composition",
+    "target": "away_team",
+    "connection_condition": "tab07.fld079 holds the away team FIFA-API identifier, corresponding to tab05.fld049",
+    "description": "The away side is a component of a match and exists only within that match.",
+    "evidence": [
+      "evidence_match_table",
+      "evidence_team_id_systems"
+    ]
+  },
+  {
+    "id": "rel_match_home_goals",
+    "source": "match",
+    "relation_type": "composition",
+    "target": "home_goals",
+    "connection_condition": "",
+    "description": "The home team's goal count is a component of the match record.",
+    "evidence": [
+      "evidence_goal_ranges"
+    ]
+  },
+  {
+    "id": "rel_match_away_goals",
+    "source": "match",
+    "relation_type": "composition",
+    "target": "away_goals",
+    "connection_condition": "",
+    "description": "The away team's goal count is a component of the match record.",
+    "evidence": [
+      "evidence_goal_ranges"
+    ]
+  },
+  {
+    "id": "rel_team_match",
+    "source": "team",
+    "relation_type": "association",
+    "target": "match",
+    "connection_condition": "a team participates in a match through either of the two team references in the match row (tab07.fld078 for home, tab07.fld079 for away), both corresponding to tab05.fld049",
+    "description": "Teams participate in matches; the participation is role-dependent, so a team is not structurally composed of match rows from one column.",
+    "evidence": [
+      "evidence_match_table",
+      "evidence_team_id_systems"
+    ]
+  },
+  {
+    "id": "rel_player_team",
+    "source": "player",
+    "relation_type": "association",
+    "target": "team",
+    "connection_condition": "no direct player-to-team column; the link is indirect through the twenty-two player slots of a match (tab07.fld126 through tab07.fld147 to tab02.fld003) and the match's team references",
+    "description": "Players and teams are associated through appearing in the same match; the database does not store a squad membership.",
+    "evidence": [
+      "evidence_player_slots",
+      "evidence_match_table"
+    ]
+  },
+  {
+    "id": "rel_snapshot_overall_rating",
+    "source": "player_attribute_snapshot",
+    "relation_type": "composition",
+    "target": "overall_rating",
+    "connection_condition": "",
+    "description": "The overall rating is a component measurement of a player attribute snapshot.",
+    "evidence": [
+      "evidence_attribute_ranges"
+    ]
+  },
+  {
+    "id": "rel_snapshot_finishing",
+    "source": "player_attribute_snapshot",
+    "relation_type": "composition",
+    "target": "finishing",
+    "connection_condition": "",
+    "description": "The finishing score is a component measurement of a player attribute snapshot.",
+    "evidence": [
+      "evidence_attribute_ranges"
+    ]
+  },
+  {
+    "id": "rel_snapshot_volley",
+    "source": "player_attribute_snapshot",
+    "relation_type": "composition",
+    "target": "volley",
+    "connection_condition": "",
+    "description": "The volley score is a component measurement of a player attribute snapshot.",
+    "evidence": [
+      "evidence_attribute_ranges"
+    ]
+  },
+  {
+    "id": "rel_snapshot_dribbling",
+    "source": "player_attribute_snapshot",
+    "relation_type": "composition",
+    "target": "dribbling",
+    "connection_condition": "",
+    "description": "The dribbling score is a component measurement of a player attribute snapshot.",
+    "evidence": [
+      "evidence_attribute_ranges"
+    ]
+  },
+  {
+    "id": "rel_snapshot_attacking_work_rate",
+    "source": "player_attribute_snapshot",
+    "relation_type": "composition",
+    "target": "attacking_work_rate",
+    "connection_condition": "",
+    "description": "The attacking work rate is a component measurement of a player attribute snapshot.",
+    "evidence": [
+      "evidence_work_rate_values"
+    ]
+  },
+  {
+    "id": "rel_snapshot_defensive_work_rate",
+    "source": "player_attribute_snapshot",
+    "relation_type": "composition",
+    "target": "defensive_work_rate",
+    "connection_condition": "",
+    "description": "The defensive work rate is a component measurement of a player attribute snapshot.",
+    "evidence": [
+      "evidence_work_rate_values"
+    ]
+  },
+  {
+    "id": "rel_team_snapshot_build_up_play_speed",
+    "source": "team_attribute_snapshot",
+    "relation_type": "composition",
+    "target": "build_up_play_speed",
+    "connection_condition": "",
+    "description": "Build-up play speed is a component measurement of a team attribute snapshot.",
+    "evidence": [
+      "evidence_class_pairs"
+    ]
+  },
+  {
+    "id": "rel_team_snapshot_build_up_play_passing",
+    "source": "team_attribute_snapshot",
+    "relation_type": "composition",
+    "target": "build_up_play_passing",
+    "connection_condition": "",
+    "description": "Build-up play passing is a component measurement of a team attribute snapshot.",
+    "evidence": [
+      "evidence_class_pairs"
+    ]
+  },
+  {
+    "id": "rel_team_snapshot_chance_creation_passing",
+    "source": "team_attribute_snapshot",
+    "relation_type": "composition",
+    "target": "chance_creation_passing",
+    "connection_condition": "",
+    "description": "Chance-creation passing is a component measurement of a team attribute snapshot.",
+    "evidence": [
+      "evidence_class_pairs"
+    ]
+  },
+  {
+    "id": "rel_team_snapshot_chance_creation_passing_style",
+    "source": "team_attribute_snapshot",
+    "relation_type": "composition",
+    "target": "chance_creation_passing_style",
+    "connection_condition": "",
+    "description": "The chance-creation passing class is a component measurement of a team attribute snapshot.",
+    "evidence": [
+      "evidence_class_domains"
+    ]
+  },
+  {
+    "id": "rel_home_goals_total",
+    "source": "home_goals",
+    "relation_type": "derivation",
+    "target": "total_goals",
+    "connection_condition": "",
+    "description": "Total goals is derived as the sum of the home team's goals and the away team's goals for the same match.",
+    "evidence": [
+      "evidence_goal_ranges"
+    ]
+  },
+  {
+    "id": "rel_away_goals_total",
+    "source": "away_goals",
+    "relation_type": "derivation",
+    "target": "total_goals",
+    "connection_condition": "",
+    "description": "Total goals is derived as the sum of the home team's goals and the away team's goals for the same match.",
+    "evidence": [
+      "evidence_goal_ranges"
+    ]
+  },
+  {
+    "id": "rel_home_goals_result",
+    "source": "home_goals",
+    "relation_type": "derivation",
+    "target": "match_result",
+    "connection_condition": "",
+    "description": "The match outcome is derived by comparing the home goal count with the away goal count.",
+    "evidence": [
+      "evidence_goal_ranges"
+    ]
+  },
+  {
+    "id": "rel_away_goals_result",
+    "source": "away_goals",
+    "relation_type": "derivation",
+    "target": "match_result",
+    "connection_condition": "",
+    "description": "The match outcome is derived by comparing the away goal count with the home goal count.",
+    "evidence": [
+      "evidence_goal_ranges"
+    ]
+  },
+  {
+    "id": "rel_chance_style_derived",
+    "source": "chance_creation_passing",
+    "relation_type": "derivation",
+    "target": "chance_creation_passing_style",
+    "connection_condition": "",
+    "description": "The Safe/Normal/Risky class is the categorical bucket derived from the numeric chance-creation passing score.",
+    "evidence": [
+      "evidence_class_pairs",
+      "evidence_class_domains"
+    ]
+  }
+]

@@ -1,0 +1,146 @@
+[
+  {
+    "id": "evidence_customer_key",
+    "source": "debit_card_specializing",
+    "query": "SELECT MIN(CustomerID), MAX(CustomerID), COUNT(*), COUNT(DISTINCT CustomerID) FROM customers",
+    "result": "3 | 53314 | 32461 | 32461. CustomerID is declared INTEGER UNIQUE NOT NULL PRIMARY KEY; the identifier range is sparse, so it must not be used as a dense row index or as a count.",
+    "validation_method": "declared schema inspection plus row and distinct-value counts on a read-only connection",
+    "timestamp": "2026-10-09T19:45:00Z"
+  },
+  {
+    "id": "evidence_segment_values",
+    "source": "debit_card_specializing",
+    "query": "SELECT c.Segment, COUNT(*) FROM customers c GROUP BY c.Segment;  SELECT c.Segment, COUNT(*) n, ROUND(AVG(y.Consumption),2) avg_c FROM yearmonth y JOIN customers c ON y.CustomerID=c.CustomerID GROUP BY c.Segment",
+    "result": "Customers: SME 26763, LAM 3658, KAM 2040. Average Consumption: KAM 45243.63, LAM 17618.44, SME 3833.30. Three non-null segment codes with a strict order of consumption scale; the codes are never expanded in the database.",
+    "validation_method": "grouped distinct-value counts and grouped averages, read-only",
+    "timestamp": "2026-10-09T19:45:00Z"
+  },
+  {
+    "id": "evidence_currency_denomination",
+    "source": "debit_card_specializing",
+    "query": "SELECT c.Currency, COUNT(*) n, ROUND(AVG(t.Price/t.Amount),3) per_unit FROM transactions_1k t JOIN customers c ON t.CustomerID=c.CustomerID WHERE t.Amount>0 AND t.ProductID IN (2,5,9,20,317,322) GROUP BY c.Currency",
+    "result": "CZK | 800 | 23.273 ; EUR | 54 | 0.918. Ratio 25.35, consistent with the CZK/EUR rate. Fuel lines therefore carry a per-unit price in the customer's own currency, and customers.Currency has CZK 30459 and EUR 2002.",
+    "validation_method": "derived per-unit price compared across customer currency groups; magnitude and ratio checked against a plausible fuel price",
+    "timestamp": "2026-10-09T19:45:00Z"
+  },
+  {
+    "id": "evidence_currency_follows_customer",
+    "source": "debit_card_specializing",
+    "query": "SELECT c.Currency, g.Country, COUNT(*) n, ROUND(AVG(t.Price/t.Amount),3) per_unit FROM transactions_1k t JOIN customers c ON t.CustomerID=c.CustomerID JOIN gasstations g ON t.GasStationID=g.GasStationID WHERE t.Amount>0 AND t.ProductID IN (2,5,9,20,317,322) GROUP BY c.Currency, g.Country",
+    "result": "CZK/CZE 23.271 (n=797); CZK/SVK 23.71 (n=3); EUR/CZE 0.917 (n=2); EUR/SVK 0.918 (n=52). The per-unit price tracks the customer's currency and is unchanged by the station's country, so currency follows the customer, not the station.",
+    "validation_method": "per-unit price cross-tabulated by customer currency and station country; the CZK and SVK cells are small and treated as supporting rather than conclusive",
+    "timestamp": "2026-10-09T19:45:00Z"
+  },
+  {
+    "id": "evidence_card_ownership",
+    "source": "debit_card_specializing",
+    "query": "SELECT COUNT(DISTINCT CardID), COUNT(DISTINCT CustomerID) FROM transactions_1k;  SELECT COUNT(*) FROM (SELECT CardID FROM transactions_1k GROUP BY CardID HAVING COUNT(DISTINCT CustomerID)>1);  SELECT COUNT(*) FROM (SELECT CustomerID FROM transactions_1k GROUP BY CustomerID HAVING COUNT(DISTINCT CardID)>1)",
+    "result": "902 distinct CardID against 517 distinct CustomerID; 0 cards span more than one customer; 131 customers hold more than one card. CardID is functionally determined by CustomerID but not the reverse.",
+    "validation_method": "distinct counts plus two functional-dependency checks, read-only",
+    "timestamp": "2026-10-09T19:45:00Z"
+  },
+  {
+    "id": "evidence_consumption_stats",
+    "source": "debit_card_specializing",
+    "query": "SELECT SUM(Consumption<0), SUM(Consumption=0), SUM(Consumption>0), COUNT(*), MIN(Consumption), MAX(Consumption) FROM yearmonth",
+    "result": "152 negative, 28 zero, 383102 positive out of 383282 rows; range -582092.86 to 2052187.11; no nulls. Average 8911.14.",
+    "validation_method": "sign and range profiling on a read-only connection",
+    "timestamp": "2026-10-09T19:45:00Z"
+  },
+  {
+    "id": "evidence_yearmonth_months",
+    "source": "debit_card_specializing",
+    "query": "SELECT group_concat(DISTINCT Date) FROM yearmonth;  SELECT MIN(n), MAX(n), ROUND(AVG(n),2) FROM (SELECT CustomerID, COUNT(*) n FROM yearmonth GROUP BY CustomerID)",
+    "result": "21 distinct labels: 201112, 201201-201209, 201301-201311. The months 201210, 201211 and 201212 are absent. Records per customer range from 1 to 20 with an average of 12.54, and the (Date, CustomerID) pair is unique.",
+    "validation_method": "distinct-value enumeration and per-customer record counts; the missing labels are verified by absence from the enumeration",
+    "timestamp": "2026-10-09T19:45:00Z"
+  },
+  {
+    "id": "evidence_yearmonth_coverage",
+    "source": "debit_card_specializing",
+    "query": "SELECT c.Segment, COUNT(*) total, SUM(CASE WHEN y.CustomerID IS NULL THEN 1 ELSE 0 END) no_ym FROM customers c LEFT JOIN (SELECT DISTINCT CustomerID FROM yearmonth) y ON c.CustomerID=y.CustomerID GROUP BY c.Segment",
+    "result": "KAM 84 of 2040 missing; LAM 47 of 3658 missing; SME 1764 of 26763 missing. In total 1895 of 32461 customers have no monthly consumption row; 30566 customers are covered.",
+    "validation_method": "left-join coverage check grouped by segment, read-only",
+    "timestamp": "2026-10-09T19:45:00Z"
+  },
+  {
+    "id": "evidence_transactions_scope",
+    "source": "debit_card_specializing",
+    "query": "SELECT COUNT(*), COUNT(DISTINCT CustomerID), COUNT(DISTINCT GasStationID), COUNT(DISTINCT ProductID) FROM transactions_1k;  SELECT Date, COUNT(*) FROM transactions_1k GROUP BY Date;  SELECT MIN(Date), MAX(Date) FROM transactions_1k",
+    "result": "1000 rows; 517 customers; 437 stations; 28 products. Dates 2012-08-23 (10), 2012-08-24 (492), 2012-08-25 (425), 2012-08-26 (73). Time values are 8-character HH:MM:SS. No nulls in any column of the table.",
+    "validation_method": "row, distinct and per-day counts plus format inspection, read-only",
+    "timestamp": "2026-10-09T19:45:00Z"
+  },
+  {
+    "id": "evidence_price_is_line_total",
+    "source": "debit_card_specializing",
+    "query": "SELECT ROUND(SUM(Price),2), ROUND(SUM(Amount*Price),2), MIN(Price), MAX(Price) FROM transactions_1k",
+    "result": "SUM(Price) = 425576.16 against SUM(Amount*Price) = 17525454.02. Price ranges 1.76 to 5762.49 with no non-positive values. A line of 28 units priced 672.64 implies about 24 per unit, matching the independently derived fuel per-unit price, so Price is the line total.",
+    "validation_method": "cross-check of two candidate aggregation semantics against the independently derived per-unit price",
+    "timestamp": "2026-10-09T19:45:00Z"
+  },
+  {
+    "id": "evidence_amount_units",
+    "source": "debit_card_specializing",
+    "query": "SELECT CASE WHEN t.ProductID IN (2,5,9,20,317,322,3,4,8) THEN 'fuel_like' ELSE 'non_fuel' END grp, COUNT(*) n, SUM(t.Amount=0) zero_amt, ROUND(AVG(t.Amount),2) avg_amt, MAX(t.Amount) max_amt FROM transactions_1k t GROUP BY grp",
+    "result": "fuel_like: 859 rows, 2 zero, average 22.38, maximum 264. non_fuel: 141 rows, 89 zero, average 3.21, maximum 43. Zero quantities cluster on services and goods such as car washing (41 rows), antifreeze (18), oils (7) and cosmetics (7).",
+    "validation_method": "quantity profiling split by a label-derived fuel grouping, read-only",
+    "timestamp": "2026-10-09T19:45:00Z"
+  },
+  {
+    "id": "evidence_fuel_unit_price",
+    "source": "debit_card_specializing",
+    "query": "SELECT c.Currency, COUNT(*) n, ROUND(AVG(t.Price/t.Amount),3) FROM transactions_1k t JOIN customers c ON t.CustomerID=c.CustomerID WHERE t.Amount>0 AND t.ProductID IN (2,5,9,20,317,322) GROUP BY c.Currency",
+    "result": "CZK 23.273 over 800 lines; EUR 0.918 over 54 lines. The most frequent product is 2 (Nafta) with 523 of 1000 rows, and the top products are diesel-type fuels, all of which give a consistent per-unit price within a currency.",
+    "validation_method": "derived ratio of paid amount to quantity, aggregated by currency and inspected for stability across fuel products",
+    "timestamp": "2026-10-09T19:45:00Z"
+  },
+  {
+    "id": "evidence_scale_consistency",
+    "source": "debit_card_specializing",
+    "query": "WITH txs AS (SELECT CustomerID, SUM(Price) spend FROM transactions_1k GROUP BY CustomerID) SELECT c.Currency, COUNT(*) n, ROUND(AVG(y.Consumption),1), ROUND(AVG(txs.spend),1), ROUND(AVG(y.Consumption)/AVG(txs.spend),2) FROM txs JOIN yearmonth y ON y.CustomerID=txs.CustomerID AND y.Date='201208' JOIN customers c ON c.CustomerID=txs.CustomerID GROUP BY c.Currency",
+    "result": "CZK: 475 customers, average Consumption 16222.7, average sampled spend 892.7, ratio 18.17. EUR: 42 customers, average Consumption 631.1, average sampled spend 36.4, ratio 17.32. The ratio is nearly identical in both currencies, showing that both tables measure the same kind of spend on one per-customer currency basis while the sample undercounts volume.",
+    "validation_method": "ratio of monthly consumption to same-month sampled transaction spend, compared across currencies to separate a currency effect from a sampling effect",
+    "timestamp": "2026-10-09T19:45:00Z"
+  },
+  {
+    "id": "evidence_station_network",
+    "source": "debit_card_specializing",
+    "query": "SELECT COUNT(*), COUNT(DISTINCT ChainID), COUNT(DISTINCT Country), COUNT(DISTINCT Segment) FROM gasstations;  SELECT ChainID, COUNT(*) n FROM gasstations GROUP BY ChainID ORDER BY n DESC LIMIT 5",
+    "result": "5716 stations, 233 distinct chains, 2 countries, 5 segment labels. Largest chains by station count: 1462, 853, 340, 285, 227. A long tail of single-station chains exists and ChainID has no nulls.",
+    "validation_method": "distinct and grouped counts on a read-only connection",
+    "timestamp": "2026-10-09T19:45:00Z"
+  },
+  {
+    "id": "evidence_chain_names_absent",
+    "source": "debit_card_specializing",
+    "query": "SELECT name FROM sqlite_master WHERE type='table';  PRAGMA table_info(gasstations)",
+    "result": "Tables are customers, gasstations, products, transactions_1k, yearmonth and the internal sqlite_sequence. gasstations exposes only GasStationID, ChainID, Country and Segment, so chain identity is numeric only and no chain name exists anywhere in the database.",
+    "validation_method": "sqlite_master enumeration and column listing",
+    "timestamp": "2026-10-09T19:45:00Z"
+  },
+  {
+    "id": "evidence_station_segment_values",
+    "source": "debit_card_specializing",
+    "query": "SELECT Segment, COUNT(*) FROM gasstations GROUP BY Segment;  SELECT Country, COUNT(*) FROM gasstations GROUP BY Country;  SELECT g.Segment, COUNT(*) n, ROUND(AVG(t.Price),2) avg_price FROM transactions_1k t JOIN gasstations g ON t.GasStationID=g.GasStationID GROUP BY g.Segment",
+    "result": "Segment: Other 2392, Premium 1428, Noname 1005, Value for money 597, Discount 294. Country: CZE 4836, SVK 880. Average transaction value in the sample: Value for money 465.39 (n=126), Premium 425.89 (n=609), Discount 413.91 (n=105), Noname 409.37 (n=135), Other 353.79 (n=25). Positioning labels do not separate transaction value, and the Other cell is very small.",
+    "validation_method": "enumeration of station labels plus a grouped average used to test a plausible positioning effect, which is not supported",
+    "timestamp": "2026-10-09T19:45:00Z"
+  },
+  {
+    "id": "evidence_product_catalog",
+    "source": "debit_card_specializing",
+    "query": "SELECT COUNT(*), COUNT(DISTINCT Description) FROM products;  PRAGMA table_info(products);  SELECT COUNT(DISTINCT ProductID) FROM transactions_1k",
+    "result": "591 products but only 529 distinct Description values, so labels repeat across ProductID values. products has exactly two columns, ProductID and Description, with no category column. Labels are Czech, for example Nafta, Natural, Myti vozidel. transactions_1k references 28 distinct ProductID values.",
+    "validation_method": "catalog counts, column listing and distinct join coverage, read-only",
+    "timestamp": "2026-10-09T19:45:00Z"
+  },
+  {
+    "id": "evidence_referential_integrity",
+    "source": "debit_card_specializing",
+    "query": "left-join unresolved counts from transactions_1k to customers, gasstations and products, and from yearmonth to customers; plus sqlite .schema for all tables",
+    "result": "0 / 0 / 0 / 0 unresolved rows for transactions_1k.CustomerID, transactions_1k.GasStationID, transactions_1k.ProductID and yearmonth.CustomerID. No table declares a FOREIGN KEY clause, so the relationships exist by value only.",
+    "validation_method": "left-join orphan counts on every inferred relationship plus schema inspection for declared constraints",
+    "timestamp": "2026-10-09T19:45:00Z"
+  }
+]

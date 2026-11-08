@@ -1,0 +1,867 @@
+[
+  {
+    "id": "rel_product_product_line",
+    "source": "term_product",
+    "relation_type": "hierarchy",
+    "target": "term_product_line",
+    "connection_condition": "dim_product.prod_line_id corresponds to dim_product_line.product_line_id",
+    "description": "A product is an instance of exactly one product line (PP-T20 belongs to PP改性系列). The product line is a category label over products, not a component of a product.",
+    "evidence": [
+      "evidence_dim_product",
+      "evidence_dim_product_line"
+    ]
+  },
+  {
+    "id": "rel_supplier_category",
+    "source": "term_supplier",
+    "relation_type": "hierarchy",
+    "target": "term_supplier_category",
+    "connection_condition": "dim_supplier.category_id corresponds to dim_supplier_category.supplier_category_id",
+    "description": "A supplier is an instance of a supplier category (树脂/助剂/包装).",
+    "evidence": [
+      "evidence_dim_supplier"
+    ]
+  },
+  {
+    "id": "rel_hazard_risk_level",
+    "source": "term_hazard",
+    "relation_type": "hierarchy",
+    "target": "term_risk_level",
+    "connection_condition": "dim_hazard.risk_level carries a value from the dim_risk_level catalogue",
+    "description": "A hazard is graded into one risk level (L1可接受/L2可容忍/...); the hazard's risk_value domain is a subset of the risk-level catalogue domain.",
+    "evidence": [
+      "evidence_dim_hazard"
+    ]
+  },
+  {
+    "id": "rel_downtime_reason_reason_code",
+    "source": "term_downtime_reason",
+    "relation_type": "hierarchy",
+    "target": "term_reason_code",
+    "connection_condition": "dim_downtime_reason is a specialised reason family alongside dim_reason_code",
+    "description": "The eight downtime reasons (D001 设备故障 ... D008 滤网更换) are a specialised subfamily of the general reason vocabulary: they play the same role of labelling why something happened, but their value domain is a subset scoped to equipment downtime.",
+    "evidence": [
+      "evidence_dim_downtime_reason",
+      "evidence_dim_reason_code"
+    ]
+  },
+  {
+    "id": "rel_factory_workshop",
+    "source": "term_factory",
+    "relation_type": "composition",
+    "target": "term_workshop",
+    "connection_condition": "dim_workshop.factory_name ties a workshop to its factory",
+    "description": "A factory is composed of workshops (青岛一厂 -> PP改性车间/PA改性车间). A workshop cannot exist without its factory.",
+    "evidence": [
+      "evidence_dim_workshop"
+    ]
+  },
+  {
+    "id": "rel_workshop_line",
+    "source": "term_workshop",
+    "relation_type": "composition",
+    "target": "term_production_line",
+    "connection_condition": "dim_production_line.workshop_id corresponds to dim_workshop.workshop_id",
+    "description": "A workshop is composed of production lines (PP改性车间 -> PP挤出1/2/3线). This is the hop that makes workshop-scoped production questions reachable from the workshop name.",
+    "evidence": [
+      "evidence_dim_workshop",
+      "evidence_dim_production_line"
+    ]
+  },
+  {
+    "id": "rel_warehouse_factory",
+    "source": "term_factory",
+    "relation_type": "composition",
+    "target": "term_warehouse",
+    "connection_condition": "dim_warehouse.factory_name ties a warehouse to its factory",
+    "description": "A factory owns the raw-material and finished-goods warehouses located on it (一厂原料仓/一厂成品仓/二厂原料仓/二厂成品仓/合肥原料仓/合肥成品仓).",
+    "evidence": [
+      "evidence_dim_warehouse"
+    ]
+  },
+  {
+    "id": "rel_equipment_sensor",
+    "source": "term_equipment",
+    "relation_type": "composition",
+    "target": "term_sensor",
+    "connection_condition": "dim_sensor.equipment_id corresponds to dim_equipment.equipment_id",
+    "description": "Sensors are mounted on equipment, so a sensor reading inherits the equipment context; the sensor code itself encodes the equipment it belongs to.",
+    "evidence": [
+      "evidence_dim_sensor"
+    ]
+  },
+  {
+    "id": "rel_business_unit_cost_center",
+    "source": "term_business_unit",
+    "relation_type": "composition",
+    "target": "term_cost_center",
+    "connection_condition": "dim_cost_center.bu_id corresponds to dim_business_unit.business_unit_id",
+    "description": "A business unit is composed of cost centers (特种材料事业部 contains CC005 特种工程塑料车间). This is the second hop needed to reach a business unit from a cost-bearing fact table.",
+    "evidence": [
+      "evidence_dim_cost_center",
+      "evidence_dim_business_unit"
+    ]
+  },
+  {
+    "id": "rel_business_unit_profit_center",
+    "source": "term_business_unit",
+    "relation_type": "composition",
+    "target": "term_profit_center",
+    "connection_condition": "dim_profit_center is attributed to a business unit",
+    "description": "A business unit is composed of profit centers; profit centers are the management-accounting counterpart of cost centers.",
+    "evidence": [
+      "evidence_dim_business_unit",
+      "evidence_fact_cost_allocation"
+    ]
+  },
+  {
+    "id": "rel_department_employee",
+    "source": "term_department",
+    "relation_type": "composition",
+    "target": "term_employee",
+    "connection_condition": "dim_employee.dept_id corresponds to dim_department.dept_id",
+    "description": "A department is composed of the employees assigned to it (dim_department has 17 departments spanning sales regions and functions).",
+    "evidence": [
+      "evidence_dim_employee"
+    ]
+  },
+  {
+    "id": "rel_department_cost_center",
+    "source": "term_department",
+    "relation_type": "composition",
+    "target": "term_cost_center",
+    "connection_condition": "dim_cost_center.dept_id corresponds to dim_department.dept_id",
+    "description": "A department operates one or more cost centers, which is where its expense is collected.",
+    "evidence": [
+      "evidence_dim_cost_center",
+      "evidence_dim_employee"
+    ]
+  },
+  {
+    "id": "rel_production_order_children",
+    "source": "term_production_order",
+    "relation_type": "composition",
+    "target": "term_production_output",
+    "connection_condition": "fact_production_output.order_id corresponds to fact_production_order.order_id",
+    "description": "Output records belong to a production order and cannot exist without it.",
+    "evidence": [
+      "evidence_fact_production_output"
+    ]
+  },
+  {
+    "id": "rel_so_so_line",
+    "source": "term_sales_order",
+    "relation_type": "composition",
+    "target": "term_sales_order_line",
+    "connection_condition": "fact_sales_order_line.order_id corresponds to fact_sales_order.order_id",
+    "description": "The header record is composed of its detail lines; a detail line has no meaning without its header. The same business event therefore has one row at header grain and several rows at line grain, so a row count must state its grain.",
+    "evidence": [
+      "evidence_fact_sales_order_line",
+      "evidence_table_catalog"
+    ]
+  },
+  {
+    "id": "rel_asn_asn_line",
+    "source": "term_advance_shipping_notice",
+    "relation_type": "composition",
+    "target": "term_asn_line",
+    "connection_condition": "fact_asn_line.advance_shipping_notice_id corresponds to fact_advance_shipping_notice.advance_shipping_notice_id",
+    "description": "The header record is composed of its detail lines; a detail line has no meaning without its header. The same business event therefore has one row at header grain and several rows at line grain, so a row count must state its grain.",
+    "evidence": [
+      "evidence_fact_asn_line",
+      "evidence_table_catalog"
+    ]
+  },
+  {
+    "id": "rel_transfer_order_line",
+    "source": "term_transfer_order",
+    "relation_type": "composition",
+    "target": "term_transfer_order_line",
+    "connection_condition": "fact_transfer_order_line.transfer_order_id corresponds to fact_transfer_order.transfer_order_id",
+    "description": "The header record is composed of its detail lines; a detail line has no meaning without its header. The same business event therefore has one row at header grain and several rows at line grain, so a row count must state its grain.",
+    "evidence": [
+      "evidence_fact_transfer_order_line",
+      "evidence_table_catalog"
+    ]
+  },
+  {
+    "id": "rel_shipment_line",
+    "source": "term_shipment",
+    "relation_type": "composition",
+    "target": "term_shipment_line",
+    "connection_condition": "fact_shipment_line.shipment_id corresponds to fact_shipment.shipment_id",
+    "description": "The header record is composed of its detail lines; a detail line has no meaning without its header. The same business event therefore has one row at header grain and several rows at line grain, so a row count must state its grain.",
+    "evidence": [
+      "evidence_fact_shipment_line",
+      "evidence_table_catalog"
+    ]
+  },
+  {
+    "id": "rel_supplier_contract_line",
+    "source": "term_supplier_contract",
+    "relation_type": "composition",
+    "target": "term_supplier_contract_line",
+    "connection_condition": "fact_supplier_contract_line.supplier_contract_id corresponds to fact_supplier_contract.supplier_contract_id",
+    "description": "The header record is composed of its detail lines; a detail line has no meaning without its header. The same business event therefore has one row at header grain and several rows at line grain, so a row count must state its grain.",
+    "evidence": [
+      "evidence_fact_supplier_contract_line",
+      "evidence_table_catalog"
+    ]
+  },
+  {
+    "id": "rel_contract_sales_contract_line",
+    "source": "term_contract",
+    "relation_type": "composition",
+    "target": "term_sales_contract_line",
+    "connection_condition": "fact_sales_contract_line.contract_id corresponds to fact_contract.contract_id",
+    "description": "The header record is composed of its detail lines; a detail line has no meaning without its header. The same business event therefore has one row at header grain and several rows at line grain, so a row count must state its grain.",
+    "evidence": [
+      "evidence_fact_sales_contract_line",
+      "evidence_table_catalog"
+    ]
+  },
+  {
+    "id": "rel_invoice_tax_invoice_line",
+    "source": "term_invoice",
+    "relation_type": "composition",
+    "target": "term_tax_invoice_line",
+    "connection_condition": "fact_tax_invoice_line.invoice_id corresponds to fact_invoice.invoice_id",
+    "description": "The header record is composed of its detail lines; a detail line has no meaning without its header. The same business event therefore has one row at header grain and several rows at line grain, so a row count must state its grain.",
+    "evidence": [
+      "evidence_fact_tax_invoice_line",
+      "evidence_table_catalog"
+    ]
+  },
+  {
+    "id": "rel_gl_entry_line",
+    "source": "term_gl_entry",
+    "relation_type": "composition",
+    "target": "term_gl_entry_line",
+    "connection_condition": "fact_gl_entry_line.gl_entry_id corresponds to fact_gl_entry.gl_entry_id",
+    "description": "The header record is composed of its detail lines; a detail line has no meaning without its header. The same business event therefore has one row at header grain and several rows at line grain, so a row count must state its grain.",
+    "evidence": [
+      "evidence_fact_gl_entry",
+      "evidence_table_catalog"
+    ]
+  },
+  {
+    "id": "rel_inspection_lot_result",
+    "source": "term_inspection_lot",
+    "relation_type": "composition",
+    "target": "term_inspection_result",
+    "connection_condition": "fact_inspection_result.inspection_lot_id corresponds to fact_inspection_lot.inspection_lot_id",
+    "description": "The header record is composed of its detail lines; a detail line has no meaning without its header. The same business event therefore has one row at header grain and several rows at line grain, so a row count must state its grain.",
+    "evidence": [
+      "evidence_fact_inspection_result",
+      "evidence_table_catalog"
+    ]
+  },
+  {
+    "id": "rel_purchase_order_po_line",
+    "source": "term_purchase_order",
+    "relation_type": "composition",
+    "target": "term_po_line",
+    "connection_condition": "fact_po_line.po_id corresponds to fact_purchase_order.po_id",
+    "description": "The header record is composed of its detail lines; a detail line has no meaning without its header. The same business event therefore has one row at header grain and several rows at line grain, so a row count must state its grain.",
+    "evidence": [
+      "evidence_fact_po_line",
+      "evidence_table_catalog"
+    ]
+  },
+  {
+    "id": "rel_cycle_count_line",
+    "source": "term_cycle_count",
+    "relation_type": "composition",
+    "target": "term_cycle_count_line",
+    "connection_condition": "fact_cycle_count_line.cycle_count_id corresponds to fact_cycle_count.cycle_count_id",
+    "description": "The header record is composed of its detail lines; a detail line has no meaning without its header. The same business event therefore has one row at header grain and several rows at line grain, so a row count must state its grain.",
+    "evidence": [
+      "evidence_table_catalog",
+      "evidence_table_catalog"
+    ]
+  },
+  {
+    "id": "rel_wo_work_order_material",
+    "source": "term_production_order",
+    "relation_type": "composition",
+    "target": "term_work_order_material",
+    "connection_condition": "fact_work_order_material.order_id corresponds to fact_production_order.order_id",
+    "description": "The header record is composed of its detail lines; a detail line has no meaning without its header. The same business event therefore has one row at header grain and several rows at line grain, so a row count must state its grain.",
+    "evidence": [
+      "evidence_fact_material_consumption",
+      "evidence_table_catalog"
+    ]
+  },
+  {
+    "id": "rel_wo_work_order_operation",
+    "source": "term_production_order",
+    "relation_type": "composition",
+    "target": "term_work_order_operation",
+    "connection_condition": "fact_work_order_operation.order_id corresponds to fact_production_order.order_id",
+    "description": "The header record is composed of its detail lines; a detail line has no meaning without its header. The same business event therefore has one row at header grain and several rows at line grain, so a row count must state its grain.",
+    "evidence": [
+      "evidence_table_catalog",
+      "evidence_table_catalog"
+    ]
+  },
+  {
+    "id": "rel_incident_incident_inv",
+    "source": "term_incident",
+    "relation_type": "composition",
+    "target": "term_incident_inv",
+    "connection_condition": "fact_incident_inv.incident_id corresponds to fact_incident.incident_id",
+    "description": "The header record is composed of its detail lines; a detail line has no meaning without its header. The same business event therefore has one row at header grain and several rows at line grain, so a row count must state its grain.",
+    "evidence": [
+      "evidence_fact_incident",
+      "evidence_table_catalog"
+    ]
+  },
+  {
+    "id": "rel_wo_production_output",
+    "source": "term_production_order",
+    "relation_type": "composition",
+    "target": "term_production_output",
+    "connection_condition": "fact_production_output.order_id corresponds to fact_production_order.order_id",
+    "description": "Production output is booked per production order.",
+    "evidence": [
+      "evidence_fact_production_output"
+    ]
+  },
+  {
+    "id": "rel_wo_material_consumption",
+    "source": "term_production_order",
+    "relation_type": "composition",
+    "target": "term_material_consumption",
+    "connection_condition": "fact_material_consumption.order_id corresponds to fact_production_order.order_id",
+    "description": "Material consumption is booked against a production order; 实际投料 is actual_qty on this table.",
+    "evidence": [
+      "evidence_fact_material_consumption"
+    ]
+  },
+  {
+    "id": "rel_wo_labor_booking",
+    "source": "term_production_order",
+    "relation_type": "composition",
+    "target": "term_labor_booking",
+    "connection_condition": "fact_labor_booking.order_id corresponds to fact_production_order.order_id",
+    "description": "Labor bookings are reported per production order.",
+    "evidence": [
+      "evidence_fact_labor_booking"
+    ]
+  },
+  {
+    "id": "rel_wo_wip_snapshot",
+    "source": "term_production_order",
+    "relation_type": "composition",
+    "target": "term_wip_snapshot",
+    "connection_condition": "fact_wip_snapshot.order_id corresponds to fact_production_order.order_id",
+    "description": "Work-in-process snapshots are taken per production order.",
+    "evidence": [
+      "evidence_fact_wip_snapshot"
+    ]
+  },
+  {
+    "id": "rel_wo_rework_order",
+    "source": "term_production_order",
+    "relation_type": "composition",
+    "target": "term_rework_order",
+    "connection_condition": "fact_rework_order.order_id corresponds to fact_production_order.order_id",
+    "description": "Rework orders reference the originating production order.",
+    "evidence": [
+      "evidence_fact_rework_order"
+    ]
+  },
+  {
+    "id": "rel_wo_scrap_event",
+    "source": "term_production_order",
+    "relation_type": "composition",
+    "target": "term_scrap_event",
+    "connection_condition": "fact_scrap_event.order_id corresponds to fact_production_order.order_id",
+    "description": "Scrap events are recorded against a production order.",
+    "evidence": [
+      "evidence_fact_scrap_event"
+    ]
+  },
+  {
+    "id": "rel_wo_tool_usage",
+    "source": "term_production_order",
+    "relation_type": "composition",
+    "target": "term_tool_usage",
+    "connection_condition": "fact_tool_usage.order_id corresponds to fact_production_order.order_id",
+    "description": "Tool usage is booked per production order.",
+    "evidence": [
+      "evidence_fact_tool_usage"
+    ]
+  },
+  {
+    "id": "rel_wo_inspection_lot",
+    "source": "term_production_order",
+    "relation_type": "composition",
+    "target": "term_inspection_lot",
+    "connection_condition": "fact_inspection_lot.order_id corresponds to fact_production_order.order_id",
+    "description": "Inspection lots are created per production order.",
+    "evidence": [
+      "evidence_fact_inspection_lot"
+    ]
+  },
+  {
+    "id": "rel_region_denormalized",
+    "source": "term_region",
+    "relation_type": "equivalence",
+    "target": "term_sales_order_line",
+    "connection_condition": "dim_region.region_name holds the same values as the denormalized fact_*.sales_region text column",
+    "description": "The region concept is materialised twice: as a proper dimension (dim_region: 华东/华南/华北/西南/华中/西北) and as a denormalized sales_region text column repeated across 8 fact tables. Both carry the same six values, so a region filter can be answered in place or through the dimension.",
+    "evidence": [
+      "evidence_dim_region",
+      "evidence_fact_sales_order_line"
+    ]
+  },
+  {
+    "id": "rel_env_record_env_measurement",
+    "source": "term_env_record",
+    "relation_type": "equivalence",
+    "target": "term_environment_measurement",
+    "connection_condition": "Both tables carry the same business meaning 'environmental monitoring' but with different column sets",
+    "description": "The environmental-monitoring concept exists as two tables: an early table without the governance envelope (record_date/measured_value/limit_value/is_compliant) and the standard env table with the full envelope (business_date/emission_value/evidence_reference). They are two groundings of one concept at different scope, not row-equivalent copies.",
+    "evidence": [
+      "evidence_env_tables"
+    ]
+  },
+  {
+    "id": "rel_sensor_reading_iot_data",
+    "source": "term_condition_monitoring",
+    "relation_type": "equivalence",
+    "target": "term_iot_data",
+    "connection_condition": "fact_condition_monitoring.reading_value and fact_iot_data.value hold the same readings for the same sensor_id",
+    "description": "The sensor measurement is exposed as reading_value on fact_condition_monitoring and as value on fact_iot_data. The two tables hold identical readings for the same 180 sensors (28758 rows, sum 5151284.7 each), so summing both double-counts the same stream.",
+    "evidence": [
+      "evidence_fact_condition_monitoring",
+      "evidence_fact_iot_data",
+      "evidence_dim_sensor"
+    ]
+  },
+  {
+    "id": "rel_sensor_reading_alert",
+    "source": "term_condition_monitoring",
+    "relation_type": "equivalence",
+    "target": "term_predictive_alert",
+    "connection_condition": "fact_predictive_alert.reading_value uses the same measure name and unit set as fact_condition_monitoring.reading_value",
+    "description": "Both tables carry reading_value together with reading_unit, so '传感器测量值/读数单位' has two candidate groundings that must be separated by question intent (continuous monitoring vs alert rows).",
+    "evidence": [
+      "evidence_fact_predictive_alert",
+      "evidence_dim_sensor"
+    ]
+  },
+  {
+    "id": "rel_downtime_reason_two_forms",
+    "source": "term_downtime",
+    "relation_type": "equivalence",
+    "target": "term_equipment_runtime",
+    "connection_condition": "fact_downtime.reason_code holds integer ids into dim_downtime_reason while fact_equipment_runtime.downtime_reason holds the Chinese name text",
+    "description": "The same downtime-reason concept is persisted two ways: an integer code on fact_downtime and a free-text Chinese name on fact_equipment_runtime. A name filter such as 滤网更换 matches the text form only.",
+    "evidence": [
+      "evidence_dim_downtime_reason",
+      "evidence_fact_equipment_runtime",
+      "evidence_fact_downtime"
+    ]
+  },
+  {
+    "id": "rel_currency_denormalized",
+    "source": "term_currency",
+    "relation_type": "equivalence",
+    "target": "term_capex_project_cost",
+    "connection_condition": "fact_*.currency_code repeats dim_currency.currency_code",
+    "description": "Currency is materialised as a dimension (dim_currency.currency_code with exchange_rate and decimals) and as a denormalized currency_code text column on ~40 fact tables, each accompanied by an exchange_rate column. Grouping by currency name needs the dimension; grouping by code can be done in place.",
+    "evidence": [
+      "evidence_dim_currency",
+      "evidence_fact_capex_project_cost"
+    ]
+  },
+  {
+    "id": "rel_employee_employee_no",
+    "source": "term_employee",
+    "relation_type": "equivalence",
+    "target": "term_labor_booking",
+    "connection_condition": "fact_labor_booking.employee_no holds E-codes (E0061, E0062, E0056) identifying the same people as dim_employee.emp_id",
+    "description": "A third person-identifier namespace: E-codes appear on the HR-domain fact tables (fact_labor_booking, fact_skill_assessment, fact_certification_record, fact_employee_assignment, fact_overtime), separate from the integer emp_id and from the U-code audit columns.",
+    "evidence": [
+      "evidence_fact_labor_booking",
+      "evidence_fact_skill_assessment",
+      "evidence_dim_employee"
+    ]
+  },
+  {
+    "id": "rel_status_approved_by_envelope",
+    "source": "term_record_status",
+    "relation_type": "equivalence",
+    "target": "term_approved_by",
+    "connection_condition": "Both columns belong to the same governance envelope on the same 92 tables",
+    "description": "status and the audit user/timestamp columns travel together as one envelope, so a question about approval state and a question about the approver touch the same table family.",
+    "evidence": [
+      "evidence_envelope_scan"
+    ]
+  },
+  {
+    "id": "rel_approved_at_updated_at",
+    "source": "term_approved_at",
+    "relation_type": "equivalence",
+    "target": "term_updated_at",
+    "connection_condition": "Both are timestamp columns of the audit envelope present on the same 92 tables",
+    "description": "The two timestamps carry distinct roles (last update vs approval) but share type, grain and nullability patterns, which is a common source of the wrong year column being selected.",
+    "evidence": [
+      "evidence_envelope_scan"
+    ]
+  },
+  {
+    "id": "rel_created_at_business_date",
+    "source": "term_created_at",
+    "relation_type": "equivalence",
+    "target": "term_business_date",
+    "connection_condition": "Both are date columns of the envelope but at different levels: created_at is the record-writing timestamp, business_date the business occurrence date",
+    "description": "A year filter phrased as 创建 references created_at while an unqualified year usually references business_date/posting_date. Choosing the wrong one changes the filtered set.",
+    "evidence": [
+      "evidence_envelope_scan",
+      "evidence_date_columns"
+    ]
+  },
+  {
+    "id": "rel_amount_local_amount",
+    "source": "term_amount",
+    "relation_type": "derivation",
+    "target": "term_local_amount",
+    "connection_condition": "local_amount is the base-currency result of converting amount at exchange_rate",
+    "description": "Base-currency amount is derived from the transaction amount and its exchange rate; a CNY row has exchange_rate 1 and local_amount equal to amount.",
+    "evidence": [
+      "evidence_measure_universality",
+      "evidence_dim_currency"
+    ]
+  },
+  {
+    "id": "rel_product_line_capex_currency",
+    "source": "term_exchange_rate",
+    "relation_type": "derivation",
+    "target": "term_currency",
+    "connection_condition": "fact_capex_project_cost rows carry both currency_code and exchange_rate",
+    "description": "Ranking currencies by summed exchange rate is a derivation over the rate column grouped by the currency column.",
+    "evidence": [
+      "evidence_fact_capex_project_cost"
+    ]
+  },
+  {
+    "id": "rel_actual_quantity_yield",
+    "source": "term_actual_quantity",
+    "relation_type": "derivation",
+    "target": "term_production_order",
+    "connection_condition": "fact_production_order carries planned_quantity, actual_quantity and yield_rate on one row",
+    "description": "成材率 is defined in the metric catalog as 实际产量/投料量x100, i.e. a derived metric over the production order's quantity columns and its material consumption.",
+    "evidence": [
+      "evidence_metric_catalog",
+      "evidence_fact_production_order"
+    ]
+  },
+  {
+    "id": "rel_planned_actual_achievement",
+    "source": "term_planned_quantity",
+    "relation_type": "derivation",
+    "target": "term_actual_quantity",
+    "connection_condition": "fact_production_plan holds planned_quantity, actual_quantity and plan_achievement at line-by-month grain",
+    "description": "计划达成率 is derived as actual over planned; the plan table expresses its period as year+month integers rather than a date.",
+    "evidence": [
+      "evidence_fact_production_plan",
+      "evidence_metric_catalog"
+    ]
+  },
+  {
+    "id": "rel_quantity_first_grade",
+    "source": "term_quantity",
+    "relation_type": "derivation",
+    "target": "term_production_output",
+    "connection_condition": "fact_production_output holds quantity, grade, is_first_grade and first_grade_rate",
+    "description": "优等品率 is the share of first-grade output in total output, a derived ratio rather than a stored count.",
+    "evidence": [
+      "evidence_fact_production_output"
+    ]
+  },
+  {
+    "id": "rel_goods_receipt_ap",
+    "source": "term_amount",
+    "relation_type": "derivation",
+    "target": "term_ap",
+    "connection_condition": "fact_ap.amount is documented over the goods-receipt quantity and the purchase unit price",
+    "description": "The documented AP rule is amount = 收货数量 x 采购单价 x 1.13, with due_date = 收货当月月末 + 账期天数; paid_amount then closes the item, giving the 已付金额 measure.",
+    "evidence": [
+      "evidence_fact_ap",
+      "evidence_fact_goods_receipt"
+    ]
+  },
+  {
+    "id": "rel_due_date_ar_aging",
+    "source": "term_due_date",
+    "relation_type": "derivation",
+    "target": "term_ar_aging",
+    "connection_condition": "fact_ar_aging derives current_month, the aging buckets and overdue_months from due_date",
+    "description": "账龄 (当前账龄(月)=current_month, aging_1m..aging_12m_plus, overdue_months) is derived from the due date relative to the reporting date, so a 当前账龄(月) question resolves to a stored derived column.",
+    "evidence": [
+      "evidence_fact_ar_aging"
+    ]
+  },
+  {
+    "id": "rel_consumption_usage_variance",
+    "source": "term_material_consumption",
+    "relation_type": "derivation",
+    "target": "term_lot_trace",
+    "connection_condition": "fact_lot_trace holds bom_qty_per_ton, standard_quantity and usage_variance_rate",
+    "description": "用量差异率 is derived from the standard BOM quantity and the actual issued quantity.",
+    "evidence": [
+      "evidence_fact_lot_trace"
+    ]
+  },
+  {
+    "id": "rel_dws_detail",
+    "source": "term_dws_summary",
+    "relation_type": "derivation",
+    "target": "term_production_order",
+    "connection_condition": "DWS_* tables are aggregations over the detail fact tables and are documented as reconcilable with them",
+    "description": "The 16 DWS summary tables re-express the detail measures at a coarser grain (person/day, day/month); they are a derived view of the same facts, not additional facts.",
+    "evidence": [
+      "evidence_dws_tables"
+    ]
+  },
+  {
+    "id": "rel_metric_catalog_dws",
+    "source": "term_metric_catalog",
+    "relation_type": "derivation",
+    "target": "term_dws_summary",
+    "connection_condition": "dim_metric_catalog.dws_table / date_column / value_column point at the DWS summary tables",
+    "description": "The metric catalog is the declared derivation contract for the DWS layer: each catalog row names the metric, its category (原子/派生/复合指标) and the table, date column and value column that realise it.",
+    "evidence": [
+      "evidence_metric_catalog"
+    ]
+  },
+  {
+    "id": "rel_system_user_employee",
+    "source": "term_system_user_code",
+    "relation_type": "association",
+    "target": "term_employee",
+    "connection_condition": "",
+    "description": "U-code system users and dim_employee staff both denote 'a person' in questions, but there is no shared identifier: no U-code appears in dim_employee and no emp_id appears in the audit columns, so the link cannot be resolved by a join.",
+    "evidence": [
+      "evidence_system_user_codes",
+      "evidence_dim_employee"
+    ]
+  },
+  {
+    "id": "rel_material_tax_amount",
+    "source": "term_material",
+    "relation_type": "association",
+    "target": "term_tax_amount",
+    "connection_condition": "",
+    "description": "Several different fact families reference material_id and also carry tax_amount (supplier quality issues, ASN lines, transfer lines, supplier contract lines), so '税额合计最高的原材料' cannot be grounded on the material concept alone; the business document family must come from the question.",
+    "evidence": [
+      "evidence_measure_universality",
+      "evidence_table_catalog"
+    ]
+  },
+  {
+    "id": "rel_lead_calendar",
+    "source": "term_lead",
+    "relation_type": "association",
+    "target": "term_calendar",
+    "connection_condition": "fact_lead.business_date falls inside dim_calendar.calendar_date",
+    "description": "Sales-lead dates are joined to the shared calendar to reach a calendar or holiday name; the lead table itself carries no calendar attribute.",
+    "evidence": [
+      "evidence_calendar",
+      "evidence_fact_lead"
+    ]
+  },
+  {
+    "id": "rel_reason_code_nominal",
+    "source": "term_reason_code",
+    "relation_type": "association",
+    "target": "term_transfer_order_line",
+    "connection_condition": "",
+    "description": "The generic reason_code column is physically present on the transfer line table (and on ~69 tables) but is constant there, so the reason dictionary is not reachable with any discriminating result. The association exists by name only.",
+    "evidence": [
+      "evidence_reason_code_constancy",
+      "evidence_fact_transfer_order_line"
+    ]
+  },
+  {
+    "id": "rel_hazard_observation_hazard",
+    "source": "term_hazard",
+    "relation_type": "association",
+    "target": "term_hazard_observation",
+    "connection_condition": "dim_hazard.hazard_category and fact_hazard_observation.hazard_type share the value domain 物理性/化学性/人机工程",
+    "description": "危险类型 is available both denormalized on the observation table and in the hazard dimension; either grounding answers the same filter, but only the dimension carries location and risk_level.",
+    "evidence": [
+      "evidence_dim_hazard",
+      "evidence_fact_hazard_observation"
+    ]
+  },
+  {
+    "id": "rel_customer_ar_aging",
+    "source": "term_customer",
+    "relation_type": "association",
+    "target": "term_ar_aging",
+    "connection_condition": "fact_ar_aging.cust_id corresponds to dim_customer.cust_id",
+    "description": "Customer status (active/dormant/lost) is an attribute of the customer dimension while the aging measures live on the AR aging fact, so a status-filtered aging question spans both.",
+    "evidence": [
+      "evidence_fact_ar_aging"
+    ]
+  },
+  {
+    "id": "rel_supplier_payment_out",
+    "source": "term_supplier",
+    "relation_type": "association",
+    "target": "term_payment_out",
+    "connection_condition": "dim_supplier.supplier_id reaches fact_payment_out only indirectly through fact_ap.supplier_id",
+    "description": "Supplier-scoped payment questions need a two-hop path (supplier -> AP item -> outgoing payment) because the payment table itself carries no supplier column.",
+    "evidence": [
+      "evidence_fact_ap",
+      "evidence_fact_payment_out"
+    ]
+  },
+  {
+    "id": "rel_goods_receipt_ap_item",
+    "source": "term_goods_receipt",
+    "relation_type": "association",
+    "target": "term_ap",
+    "connection_condition": "fact_ap.gr_id corresponds to fact_goods_receipt.gr_id",
+    "description": "AP items are created one per qualified goods receipt, so '已过账收货单对应的应付账款' traverses receipt to AP item.",
+    "evidence": [
+      "evidence_fact_ap",
+      "evidence_fact_goods_receipt"
+    ]
+  },
+  {
+    "id": "rel_workshop_safety_audit",
+    "source": "term_workshop",
+    "relation_type": "association",
+    "target": "term_safety_audit",
+    "connection_condition": "fact_safety_audit.workshop_id corresponds to dim_workshop.workshop_id",
+    "description": "Safety audits are scoped to a workshop, giving workshop-level safety rollups.",
+    "evidence": [
+      "evidence_fact_safety_audit",
+      "evidence_dim_workshop"
+    ]
+  },
+  {
+    "id": "rel_workshop_energy",
+    "source": "term_workshop",
+    "relation_type": "association",
+    "target": "term_energy_consumption",
+    "connection_condition": "fact_energy_consumption.workshop_id corresponds to dim_workshop.workshop_id",
+    "description": "Energy consumption is recorded per workshop and line, so workshop names from the production hierarchy also address the energy table.",
+    "evidence": [
+      "evidence_fact_energy_consumption",
+      "evidence_dim_workshop"
+    ]
+  },
+  {
+    "id": "rel_scrap_reason_nominal",
+    "source": "term_scrap_event",
+    "relation_type": "association",
+    "target": "term_reason_code",
+    "connection_condition": "",
+    "description": "The scrap table carries three reason-looking columns (reason_code, defect_code, root_cause_code) but all three are constant, so 报废原因 has no discriminating single-column grounding there.",
+    "evidence": [
+      "evidence_fact_scrap_event",
+      "evidence_dim_reason_code"
+    ]
+  },
+  {
+    "id": "rel_environment_emission",
+    "source": "term_environment_measurement",
+    "relation_type": "association",
+    "target": "term_emission_event",
+    "connection_condition": "Both tables carry monitoring_point and evidence-reference attributes of the same shape",
+    "description": "Environmental measurement and emission events share the monitoring-point and evidence-reference attributes but sit at different grains (routine measurement vs emission occurrence).",
+    "evidence": [
+      "evidence_fact_emission_event",
+      "evidence_env_tables"
+    ]
+  },
+  {
+    "id": "rel_lead_customer",
+    "source": "term_lead",
+    "relation_type": "association",
+    "target": "term_customer",
+    "connection_condition": "fact_lead.cust_id corresponds to dim_customer.cust_id",
+    "description": "Leads are attributed to customers and employees, so customer- or salesperson-level lead counts require these hops.",
+    "evidence": [
+      "evidence_fact_lead"
+    ]
+  },
+  {
+    "id": "rel_calendar_holiday",
+    "source": "term_calendar",
+    "relation_type": "association",
+    "target": "term_production_order",
+    "connection_condition": "A fact table's business_date joins to dim_calendar.calendar_date to obtain holiday_name",
+    "description": "Holiday-scoped questions (国庆节当天, '金额合计最高的那一天对应的节假日名称') require joining a fact table's date column to the shared calendar.",
+    "evidence": [
+      "evidence_calendar_holidays",
+      "evidence_calendar"
+    ]
+  },
+  {
+    "id": "rel_equipment_maintenance",
+    "source": "term_equipment",
+    "relation_type": "association",
+    "target": "term_maintenance_task",
+    "connection_condition": "fact_maintenance_task links to equipment through the line/equipment context",
+    "description": "Maintenance tasks, spare-part issues and downtime all describe the same equipment lifecycle from different angles, so an equipment-level question may need any of these tables.",
+    "evidence": [
+      "evidence_fact_maintenance_task",
+      "evidence_fact_spare_part_issue"
+    ]
+  },
+  {
+    "id": "rel_employee_dept_safety",
+    "source": "term_department",
+    "relation_type": "association",
+    "target": "term_safety_objective",
+    "connection_condition": "fact_safety_objective.responsible_dept_id corresponds to dim_department.dept_id",
+    "description": "Safety objectives are owned by a department (责任部门), so department-level objective totals require this hop.",
+    "evidence": [
+      "evidence_fact_safety_objective",
+      "evidence_dim_employee"
+    ]
+  },
+  {
+    "id": "rel_employee_kpi",
+    "source": "term_employee",
+    "relation_type": "association",
+    "target": "term_kpi_snapshot",
+    "connection_condition": "fact_kpi_snapshot.emp_id corresponds to dim_employee.emp_id",
+    "description": "KPI snapshots are evaluated per employee and department.",
+    "evidence": [
+      "evidence_fact_kpi_snapshot",
+      "evidence_dim_employee"
+    ]
+  },
+  {
+    "id": "rel_employee_overtime",
+    "source": "term_employee",
+    "relation_type": "association",
+    "target": "term_overtime",
+    "connection_condition": "fact_overtime.emp_id corresponds to dim_employee.emp_id",
+    "description": "Overtime records are attributed to an employee and a department.",
+    "evidence": [
+      "evidence_fact_overtime",
+      "evidence_dim_employee"
+    ]
+  },
+  {
+    "id": "rel_data_quality_issue",
+    "source": "term_data_quality_issue",
+    "relation_type": "association",
+    "target": "term_metric_catalog",
+    "connection_condition": "",
+    "description": "Data-quality issues are raised against datasets and validation cases while the metric catalog declares the metrics those datasets realise; the two are related through the dataset governance context rather than a direct key.",
+    "evidence": [
+      "evidence_fact_data_quality_issue",
+      "evidence_metric_catalog"
+    ]
+  }
+]

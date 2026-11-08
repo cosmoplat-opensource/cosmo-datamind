@@ -1,0 +1,132 @@
+[
+  {
+    "id": "rel_county_composition_district",
+    "source": "term_county",
+    "relation_type": "composition",
+    "target": "term_district",
+    "connection_condition": "The county code is the leading component of the CDS code, and the district code is embedded in the same identifier, so a district record always sits inside one county.",
+    "description": "A county is composed of the districts located in it; a district cannot exist outside a county.",
+    "evidence": [
+      "ev_cds_decomposition",
+      "ev_county_name_consistency"
+    ]
+  },
+  {
+    "id": "rel_district_composition_school",
+    "source": "term_district",
+    "relation_type": "composition",
+    "target": "term_school",
+    "connection_condition": "Each school registry row carries a district name that identifies its administering agency, and the district name is repeated on every FRPM row of the school.",
+    "description": "A district is composed of the schools it administers; a school record is always attached to one district.",
+    "evidence": [
+      "ev_doc_domain",
+      "ev_schools_district_records"
+    ]
+  },
+  {
+    "id": "rel_school_city_location",
+    "source": "term_school",
+    "relation_type": "association",
+    "target": "term_city",
+    "connection_condition": "The city is read from the city component of the school location address on the same registry row.",
+    "description": "A school is located in a city, and the city groups schools for geographic counting. The city is reached through the school's own address rather than through an identifier reference.",
+    "evidence": [
+      "ev_address_nulls"
+    ]
+  },
+  {
+    "id": "rel_cds_code_equivalence",
+    "source": "term_school_cds_code",
+    "relation_type": "equivalence",
+    "target": "term_sat_cds_code",
+    "connection_condition": "The registry stores the code as 14 zero-padded characters while the SAT file stores the same code without the leading zero for county codes below 10; text comparison matches 2058 of 2269 SAT records, whereas numeric comparison or zero-padding to 14 digits matches all 2269.",
+    "description": "The two identifier columns denote the same school or district despite their different textual representation.",
+    "evidence": [
+      "ev_cds_lengths",
+      "ev_join_satscores_string",
+      "ev_join_satscores_numeric",
+      "ev_join_satscores_zeropad"
+    ]
+  },
+  {
+    "id": "rel_education_option_vs_school_operational_type",
+    "source": "term_education_option_type",
+    "relation_type": "association",
+    "target": "term_school_operational_type",
+    "connection_condition": "Both columns live on the same registry row, and some categories appear under both vocabularies: the state special schools carry EdOpsCode 'SSS' and SOC code 31.",
+    "description": "Two overlapping school classifications coexisting on one record; a school category may be named by one taxonomy, the other, or both, so neither is a complete substitute for the other.",
+    "evidence": [
+      "ev_edopscode_domain",
+      "ev_soc_domain",
+      "ev_sss_schools"
+    ]
+  },
+  {
+    "id": "rel_school_administrator",
+    "source": "term_school",
+    "relation_type": "association",
+    "target": "term_administrator",
+    "connection_condition": "Administrator names and e-mail addresses are stored on the school registry row itself, in up to three parallel slots, rather than in a separate person table.",
+    "description": "A school is managed by one or more administrators recorded on its own registry record.",
+    "evidence": [
+      "ev_administrator_slots"
+    ]
+  },
+  {
+    "id": "rel_eligible_free_rate_derivation",
+    "source": "term_free_meal_count",
+    "relation_type": "derivation",
+    "target": "term_eligible_free_rate",
+    "connection_condition": "Numerator and denominator are carried on the same FRPM row under matching population labels.",
+    "description": "Eligible free rate is derived as the free-meal eligible count divided by the enrollment count of the same population; the stored precomputed column already implements this ratio.",
+    "evidence": [
+      "ev_percent_consistency",
+      "ev_percent_range"
+    ]
+  },
+  {
+    "id": "rel_eligible_frpm_rate_derivation",
+    "source": "term_frpm_count",
+    "relation_type": "derivation",
+    "target": "term_eligible_frpm_rate",
+    "connection_condition": "Numerator and denominator are carried on the same FRPM row under matching population labels.",
+    "description": "Eligible FRPM rate is derived as the free-or-reduced-price eligible count divided by the enrollment count of the same population.",
+    "evidence": [
+      "ev_percent_consistency"
+    ]
+  },
+  {
+    "id": "rel_excellence_rate_derivation",
+    "source": "term_sat_score_above_1500_count",
+    "relation_type": "derivation",
+    "target": "term_excellence_rate",
+    "connection_condition": "Both measures are carried on the same SAT record and refer to the same reporting unit.",
+    "description": "Excellence rate is derived as the count of test takers scoring at or above 1500 divided by the total test taker count; no column stores this ratio, and the quotient is undefined when the test taker count is zero.",
+    "evidence": [
+      "ev_sat_measure_nulls"
+    ]
+  },
+  {
+    "id": "rel_frpm_count_free_meal",
+    "source": "term_frpm_count",
+    "relation_type": "association",
+    "target": "term_free_meal_count",
+    "connection_condition": "Both measures are reported side by side on the same FRPM row under the same population label.",
+    "description": "The free-or-reduced-price eligible population contains the free-meal eligible population and additionally counts students eligible on the reduced-price scale; the reduced-price-only share is not stored separately.",
+    "evidence": [
+      "ev_percent_consistency",
+      "ev_frpm_measure_nulls"
+    ]
+  },
+  {
+    "id": "rel_nslp_provision_meal_measures",
+    "source": "term_nslp_provision_status",
+    "relation_type": "association",
+    "target": "term_free_meal_count",
+    "connection_condition": "Both are columns of the same FRPM row, so a school's meal counts are read together with the provision under which it claims them.",
+    "description": "The provision status describes how a school claims reimbursable meals and therefore frames how its meal counts should be interpreted, without being a component of those counts.",
+    "evidence": [
+      "ev_nslp_domain"
+    ]
+  }
+]

@@ -1,0 +1,221 @@
+{
+ "db_id": "codebase_community",
+ "questions": [
+  {
+   "question_id": 571,
+   "db_id": "codebase_community",
+   "question": "For the user No.24, how many times is the number of his/her posts compared to his/her votes?",
+   "evidence": "user no. 24 refers to fld002 = fld020 = '24'; times of his/her post than tab08 = Divide (fld035(post.fld001), Count(tab08.fld001))",
+   "SQL": "SELECT CAST(COUNT(DISTINCT T2.fld001) AS REAL) / COUNT(DISTINCT T1.fld001) FROM tab08 AS T1 INNER JOIN tab05 AS T2 ON T1.fld002 = T2.fld020 WHERE T1.fld002 = 24",
+   "difficulty": "moderate",
+   "SQL_original": "SELECT CAST(COUNT(DISTINCT T2.Id) AS REAL) / COUNT(DISTINCT T1.Id) FROM votes AS T1 INNER JOIN posts AS T2 ON T1.UserId = T2.OwnerUserId WHERE T1.UserId = 24"
+  },
+  {
+   "question_id": 576,
+   "db_id": "codebase_community",
+   "question": "Name the user that commented 'thank you user93!'",
+   "evidence": "\"thank you user93\" is the Text of comment; user refers to fld039",
+   "SQL": "SELECT T1.fld039 FROM tab07 AS T1 INNER JOIN tab02 AS T2 ON T1.fld001 = T2.fld002 WHERE T2.fld007 = 'thank you user93!'",
+   "difficulty": "simple",
+   "SQL_original": "SELECT T1.DisplayName FROM users AS T1 INNER JOIN comments AS T2 ON T1.Id = T2.UserId WHERE T2.Text = 'thank you user93!'"
+  },
+  {
+   "question_id": 549,
+   "db_id": "codebase_community",
+   "question": "From which post is the tag \"bayesian\" excerpted from? Please give the body of the post.",
+   "evidence": "\"bayesian\" is the fld034; excerpt from refers to fld036",
+   "SQL": "SELECT T2.fld019 FROM tab06 AS T1 INNER JOIN tab05 AS T2 ON T2.fld001 = T1.fld036 WHERE T1.fld034 = 'bayesian'",
+   "difficulty": "simple",
+   "SQL_original": "SELECT T2.Body FROM tags AS T1 INNER JOIN posts AS T2 ON T2.Id = T1.ExcerptPostId WHERE T1.TagName = 'bayesian'"
+  },
+  {
+   "question_id": 604,
+   "db_id": "codebase_community",
+   "question": "What is the average of the up votes and the average user age for users creating more than 10 posts?",
+   "evidence": "creating more than 10 post refers to Count (fld002) > 10; average of the up tab08 = Divide (Sum(fld045), Count (fld002)); average fld048 = Divide (Sum(fld048), Count(fld002))",
+   "SQL": "SELECT AVG(T1.fld045), AVG(T1.fld048) FROM tab07 AS T1 INNER JOIN (SELECT fld020, COUNT(*) AS post_count FROM tab05 GROUP BY fld020 HAVING post_count > 10) AS T2 ON T1.fld001 = T2.fld020",
+   "difficulty": "moderate",
+   "SQL_original": "SELECT AVG(T1.UpVotes), AVG(T1.Age) FROM users AS T1 INNER JOIN ( SELECT OwnerUserId, COUNT(*) AS post_count FROM posts GROUP BY OwnerUserId HAVING post_count > 10) AS T2 ON T1.Id = T2.OwnerUserId"
+  },
+  {
+   "question_id": 587,
+   "db_id": "codebase_community",
+   "question": "Calculate the average view count of each post tagged as 'humor' and list the title and the comment of each post.",
+   "evidence": "tagged as  'humor' refers to tag = '<humor>'; comment of the post refers to Text; average view fld035 = AVG(fld018)",
+   "SQL": "SELECT AVG(T2.fld018), T2.fld022, T1.fld007 FROM tab02 AS T1 INNER JOIN tab05 AS T2 ON T2.fld001 = T1.fld005 WHERE T2.fld023 = '<humor>' GROUP BY T2.fld022, T1.fld007",
+   "difficulty": "moderate",
+   "SQL_original": "SELECT AVG(T2.ViewCount), T2.Title, T1.Text FROM comments AS T1 INNER JOIN posts AS T2 ON T2.Id = T1.PostId  WHERE T2.Tags = '<humor>' GROUP BY T2.Title, T1.Text "
+  },
+  {
+   "question_id": 544,
+   "db_id": "codebase_community",
+   "question": "What is the display name of the user who last edited the post \"Examples for teaching: Correlation does not mean causation\"?",
+   "evidence": "\"Examples for teaching: Correlation does not mean causation\" is the Title of post; user who last edited refers to fld027",
+   "SQL": "SELECT T2.fld039 FROM tab05 AS T1 INNER JOIN tab07 AS T2 ON T1.fld027 = T2.fld001 WHERE T1.fld022 = 'Examples for teaching: Correlation does not mean causation'",
+   "difficulty": "moderate",
+   "SQL_original": "SELECT T2.DisplayName FROM posts AS T1 INNER JOIN users AS T2 ON T1.LastEditorUserId = T2.Id WHERE T1.Title = 'Examples for teaching: Correlation does not mean causation'"
+  },
+  {
+   "question_id": 567,
+   "db_id": "codebase_community",
+   "question": "For the user with the display name of \"Tiago Pasqualini\", how many posts did he/she own?",
+   "evidence": "\"Tiago Pasqualini\" is the fld039;",
+   "SQL": "SELECT COUNT(T1.fld001) FROM tab07 AS T1 INNER JOIN tab05 AS T2 ON T1.fld001 = T2.fld020 WHERE T1.fld039 = 'Tiago Pasqualini'",
+   "difficulty": "simple",
+   "SQL_original": "SELECT COUNT(T1.Id) FROM users AS T1 INNER JOIN posts AS T2 ON T1.Id = T2.OwnerUserId WHERE T1.DisplayName = 'Tiago Pasqualini'"
+  },
+  {
+   "question_id": 637,
+   "db_id": "codebase_community",
+   "question": "State all the tags used by Mark Meckes in his posts that doesn't have comments.",
+   "evidence": "used by Mark Meckes refers to fld039 = 'Mark Meckes'; Doen't have comments refers to fld025 = 0;",
+   "SQL": "SELECT T3.fld023 FROM tab07 AS T1 INNER JOIN tab03 AS T2 ON T1.fld001 = T2.fld002 INNER JOIN tab05 AS T3 ON T3.fld001 = T2.fld005 WHERE T1.fld039 = 'Mark Meckes' AND T3.fld025 = 0",
+   "difficulty": "moderate",
+   "SQL_original": "SELECT T3.Tags FROM users AS T1 INNER JOIN postHistory AS T2 ON T1.Id = T2.UserId INNER JOIN posts AS T3 ON T3.Id = T2.PostId WHERE T1.DisplayName = 'Mark Meckes' AND T3.CommentCount = 0"
+  },
+  {
+   "question_id": 682,
+   "db_id": "codebase_community",
+   "question": "Which is the most valuable post in 2010? Please give its id and the owner's display name.",
+   "evidence": "the most valuable post in 2010 refers to MAX(fld026) where year(fld008) = 2010;",
+   "SQL": "SELECT T2.fld020, T1.fld039 FROM tab07 AS T1 INNER JOIN tab05 AS T2 ON T1.fld001 = T2.fld020 WHERE STRFTIME('%Y', T1.fld008) = '2010' ORDER BY T2.fld026 DESC LIMIT 1",
+   "difficulty": "moderate",
+   "SQL_original": "SELECT T2.OwnerUserId, T1.DisplayName FROM users AS T1 INNER JOIN posts AS T2 ON T1.Id = T2.OwnerUserId WHERE STRFTIME('%Y', T1.CreationDate) = '2010' ORDER BY T2.FavoriteCount DESC LIMIT 1"
+  },
+  {
+   "question_id": 533,
+   "db_id": "codebase_community",
+   "question": "How many users last accessed the website after 2014/9/1?",
+   "evidence": "last accessed after 2014/9/1 refers to fld040 > '2014-09-01'",
+   "SQL": "SELECT COUNT(fld001) FROM tab07 WHERE DATE(fld040) > '2014-09-01'",
+   "difficulty": "simple",
+   "SQL_original": "SELECT COUNT(Id) FROM users WHERE date(LastAccessDate) > '2014-09-01'"
+  },
+  {
+   "question_id": 532,
+   "db_id": "codebase_community",
+   "question": "Please list the display names of all the users whose accounts were created in the year 2011.",
+   "evidence": "account created in the year 2011 refers to year(fld008) = 2011",
+   "SQL": "SELECT fld039 FROM tab07 WHERE STRFTIME('%Y', fld008) = '2011'",
+   "difficulty": "simple",
+   "SQL_original": "SELECT DisplayName FROM users WHERE STRFTIME('%Y', CreationDate) = '2011'"
+  },
+  {
+   "question_id": 707,
+   "db_id": "codebase_community",
+   "question": "Among the posts with views ranging from 100 to 150, what is the comment with the highest score?",
+   "evidence": "views ranging from 100 to 150 refers to fld018 BETWEEN 100 and 150; comment with the highest score refers to Text where MAX(fld006);",
+   "SQL": "SELECT fld007 FROM tab02 WHERE fld005 IN (SELECT fld001 FROM tab05 WHERE fld018 BETWEEN 100 AND 150) ORDER BY fld006 DESC LIMIT 1",
+   "difficulty": "moderate",
+   "SQL_original": "SELECT Text FROM comments WHERE PostId IN ( SELECT Id FROM posts WHERE ViewCount BETWEEN 100 AND 150 ) ORDER BY Score DESC LIMIT 1"
+  },
+  {
+   "question_id": 573,
+   "db_id": "codebase_community",
+   "question": "Write the contents of comments with a score of 17.",
+   "evidence": "score of 17 refers to fld006 = 17; contents of comments refers to Text",
+   "SQL": "SELECT fld007 FROM tab02 WHERE fld006 = 17",
+   "difficulty": "simple",
+   "SQL_original": "SELECT Text FROM comments WHERE Score = 17"
+  },
+  {
+   "question_id": 665,
+   "db_id": "codebase_community",
+   "question": "What is the average monthly number of links created in 2010 for posts that have no more than 2 answers?",
+   "evidence": "calculation = DIVIDE(fld035(fld001 where YEAR(fld008) = 2010 and fld024 < = 2), 12)",
+   "SQL": "SELECT CAST(COUNT(T1.fld001) AS REAL) / 12 FROM tab04 AS T1 INNER JOIN tab05 AS T2 ON T1.fld005 = T2.fld001 WHERE T2.fld024 <= 2 AND STRFTIME('%Y', T1.fld008) = '2010'",
+   "difficulty": "moderate",
+   "SQL_original": "SELECT CAST(COUNT(T1.Id) AS REAL) / 12 FROM postLinks AS T1 INNER JOIN posts AS T2 ON T1.PostId = T2.Id WHERE T2.AnswerCount <= 2 AND STRFTIME('%Y', T1.CreationDate) = '2010'"
+  },
+  {
+   "question_id": 678,
+   "db_id": "codebase_community",
+   "question": "Which post by Harvey Motulsky has the most views? Please give the id and title of this post.",
+   "evidence": "fld039 = 'Harvey Motulsky'; the most views refer to MAX(fld018);",
+   "SQL": "SELECT T2.fld001, T2.fld022 FROM tab07 AS T1 INNER JOIN tab05 AS T2 ON T1.fld001 = T2.fld020 WHERE T1.fld039 = 'Harvey Motulsky' ORDER BY T2.fld018 DESC LIMIT 1",
+   "difficulty": "simple",
+   "SQL_original": "SELECT T2.Id, T2.Title FROM users AS T1 INNER JOIN posts AS T2 ON T1.Id = T2.OwnerUserId WHERE T1.DisplayName = 'Harvey Motulsky' ORDER BY T2.ViewCount DESC LIMIT 1"
+  },
+  {
+   "question_id": 710,
+   "db_id": "codebase_community",
+   "question": "In posts with 1 comment, how many of the comments have 0 score?",
+   "evidence": "in posts with 1 comment refers to fld025 = 1;",
+   "SQL": "SELECT COUNT(T1.fld001) FROM tab02 AS T1 INNER JOIN tab05 AS T2 ON T1.fld005 = T2.fld001 WHERE T2.fld025 = 1 AND T2.fld006 = 0",
+   "difficulty": "simple",
+   "SQL_original": "SELECT COUNT(T1.id) FROM comments AS T1 INNER JOIN posts AS T2 ON T1.PostId = T2.Id WHERE T2.CommentCount = 1 AND T2.Score = 0"
+  },
+  {
+   "question_id": 598,
+   "db_id": "codebase_community",
+   "question": "What is the percentage difference of student badges given during 2010 and 2011?",
+   "evidence": "student badges refers to badge's fld003 = 'Student'; during 2010 refers to Year(fld004) = 2010; during 2011 refers to Year(fld004) = 2011; percentage difference = Subtract (Divide(fld035(fld003 where Year(fld004) = 2010), Count (fld003)) *100, Divide(fld035(fld003 where Year(fld004) = 2011), Count(fld003)) * 100)",
+   "SQL": "SELECT CAST(SUM(IIF(STRFTIME('%Y', fld004) = '2010', 1, 0)) AS REAL) * 100 / COUNT(fld001) - CAST(SUM(IIF(STRFTIME('%Y', fld004) = '2011', 1, 0)) AS REAL) * 100 / COUNT(fld001) FROM tab01 WHERE fld003 = 'Student'",
+   "difficulty": "challenging",
+   "SQL_original": "SELECT CAST(SUM(IIF(STRFTIME('%Y', Date) = '2010', 1, 0)) AS REAL) * 100 / COUNT(Id) - CAST(SUM(IIF(STRFTIME('%Y', Date) = '2011', 1, 0)) AS REAL) * 100 / COUNT(Id) FROM badges WHERE Name = 'Student'"
+  },
+  {
+   "question_id": 539,
+   "db_id": "codebase_community",
+   "question": "Who is the owner of the post \"Eliciting priors from experts\"?",
+   "evidence": "\"Eliciting priors from experts\" is the Title of post; owner refers to fld039",
+   "SQL": "SELECT T2.fld039 FROM tab05 AS T1 INNER JOIN tab07 AS T2 ON T1.fld020 = T2.fld001 WHERE T1.fld022 = 'Eliciting priors from experts'",
+   "difficulty": "simple",
+   "SQL_original": "SELECT T2.DisplayName FROM posts AS T1 INNER JOIN users AS T2 ON T1.OwnerUserId = T2.Id WHERE T1.Title = 'Eliciting priors from experts'"
+  },
+  {
+   "question_id": 633,
+   "db_id": "codebase_community",
+   "question": "Which post by slashnick has the most answers count? State the post ID.",
+   "evidence": "most answers count refers to MAX(fld024); post by slashnick refers to fld039 = 'slashnick';",
+   "SQL": "SELECT T2.fld005 FROM tab07 AS T1 INNER JOIN tab03 AS T2 ON T1.fld001 = T2.fld002 INNER JOIN tab05 AS T3 ON T2.fld005 = T3.fld001 WHERE T1.fld039 = 'slashnick' ORDER BY T3.fld024 DESC LIMIT 1",
+   "difficulty": "moderate",
+   "SQL_original": "SELECT T2.PostId FROM users AS T1 INNER JOIN postHistory AS T2 ON T1.Id = T2.UserId INNER JOIN posts AS T3 ON T2.PostId = T3.Id WHERE T1.DisplayName = 'slashnick' ORDER BY T3.AnswerCount DESC LIMIT 1"
+  },
+  {
+   "question_id": 705,
+   "db_id": "codebase_community",
+   "question": "Give the user's reputation and up vote number of the user that commented \"fine, you win :)\".",
+   "evidence": "fld007 = 'fine, you win :)';",
+   "SQL": "SELECT T2.fld038, T2.fld045 FROM tab02 AS T1 INNER JOIN tab07 AS T2 ON T1.fld002 = T2.fld001 WHERE T1.fld007 = 'fine, you win :)'",
+   "difficulty": "simple",
+   "SQL_original": "SELECT T2.Reputation, T2.UpVotes FROM comments AS T1 INNER JOIN users AS T2 ON T1.UserId = T2.Id WHERE T1.Text = 'fine, you win :)'"
+  },
+  {
+   "question_id": 572,
+   "db_id": "codebase_community",
+   "question": "How many views did the post titled 'Integration of Weka and/or RapidMiner into Informatica PowerCenter/Developer' get?",
+   "evidence": "\"Integration of Weka and/or RapidMiner into Informatica PowerCenter/Developer\" is the Title of post; views refers to fld018",
+   "SQL": "SELECT fld018 FROM tab05 WHERE fld022 = 'Integration of Weka and/or RapidMiner into Informatica PowerCenter/Developer'",
+   "difficulty": "moderate",
+   "SQL_original": "SELECT ViewCount FROM posts WHERE Title = 'Integration of Weka and/or RapidMiner into Informatica PowerCenter/Developer'"
+  },
+  {
+   "question_id": 672,
+   "db_id": "codebase_community",
+   "question": "Among the users located in United Kingdom, how many users whose post have a total favorite amount of 4 or more?",
+   "evidence": "favorite amount of 4 or more refers to fld026 > = 4; fld042 = 'United Kingdom';",
+   "SQL": "SELECT COUNT(T1.fld001) FROM tab07 AS T1 INNER JOIN tab05 AS T2 ON T1.fld001 = T2.fld020 WHERE T1.fld042 = 'United Kingdom' AND T2.fld026 >= 4",
+   "difficulty": "moderate",
+   "SQL_original": "SELECT COUNT(T1.Id) FROM users AS T1 INNER JOIN posts AS T2 ON T1.Id = T2.OwnerUserId WHERE T1.Location = 'United Kingdom' AND T2.FavoriteCount >= 4"
+  },
+  {
+   "question_id": 704,
+   "db_id": "codebase_community",
+   "question": "What is the excerpt post ID and wiki post ID of the tag named sample?",
+   "evidence": "tag named sample refers to fld034 = 'sample';",
+   "SQL": "SELECT fld036, fld037 FROM tab06 WHERE fld034 = 'sample'",
+   "difficulty": "simple",
+   "SQL_original": "SELECT ExcerptPostId, WikiPostId FROM tags WHERE TagName = 'sample'"
+  },
+  {
+   "question_id": 595,
+   "db_id": "codebase_community",
+   "question": "Which user have only one post history per post and having at least 1000 views?",
+   "evidence": "having at least 1000 view refers to fld044 > = 1000; user refers to fld002",
+   "SQL": "SELECT T2.fld002 FROM tab07 AS T1 INNER JOIN tab03 AS T2 ON T1.fld001 = T2.fld002 INNER JOIN tab05 AS T3 ON T2.fld005 = T3.fld001 WHERE T3.fld018 >= 1000 GROUP BY T2.fld002 HAVING COUNT(DISTINCT T2.fld010) = 1",
+   "difficulty": "moderate",
+   "SQL_original": "SELECT T2.UserId FROM users AS T1 INNER JOIN postHistory AS T2 ON T1.Id = T2.UserId INNER JOIN posts AS T3 ON T2.PostId = T3.Id WHERE T3.ViewCount >= 1000 GROUP BY T2.UserId HAVING COUNT(DISTINCT T2.PostHistoryTypeId) = 1"
+  }
+ ]
+}

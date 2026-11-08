@@ -1,0 +1,306 @@
+[
+  {
+    "id": "c_gender_enum",
+    "target": "t_client_gender",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "female",
+      "male",
+      "gender",
+      "women",
+      "men",
+      "sex",
+      "female clients"
+    ],
+    "severity": "block",
+    "scope": "Applies whenever a question filters or counts clients by gender.",
+    "confidence": "high",
+    "description": "Gender is recorded with two codes: F for female and M for male. Questions using 'female' or 'male' must resolve to these codes; no other gender values occur.",
+    "evidence": [
+      "e003_gender"
+    ]
+  },
+  {
+    "id": "c_loan_status_enum",
+    "target": "t_loan_status",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "running contract",
+      "running contracts",
+      "still running",
+      "in debt",
+      "debt",
+      "client in debt",
+      "status",
+      "loan status",
+      "active loan"
+    ],
+    "severity": "block",
+    "scope": "Applies whenever a question restricts loans by whether the contract is still running.",
+    "confidence": "high",
+    "description": "Status C denotes a running contract with no problems, and status D denotes a running contract where the client is in debt. These two values are the running contract states used by the workload. Values A and B also occur in the data but the available construction evidence does not define them, so they must not be assumed to be running.",
+    "evidence": [
+      "e006_loan_status"
+    ]
+  },
+  {
+    "id": "c_statement_frequency_enum",
+    "target": "t_account_statement_frequency",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "statement issuance",
+      "issuance after each transaction",
+      "statement frequency",
+      "statement",
+      "POPLATEK PO OBRATU",
+      "POPLATEK"
+    ],
+    "severity": "block",
+    "scope": "Applies when a question describes how statements are issued for an account.",
+    "confidence": "high",
+    "description": "The value POPLATEK PO OBRATU denotes statement issuance after each transaction, and it is the value the workload uses for that condition. The meanings of the other two frequency values present in the data have not been established by the available construction evidence.",
+    "evidence": [
+      "e007_account_frequency"
+    ]
+  },
+  {
+    "id": "c_operation_enum",
+    "target": "t_transaction_operation",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "credit card",
+      "card withdrawal",
+      "card transaction",
+      "operation",
+      "VYBER KARTOU",
+      "transactions on the credit card"
+    ],
+    "severity": "block",
+    "scope": "Applies when a question asks for transactions performed with a card.",
+    "confidence": "high",
+    "description": "The operation VYBER KARTOU denotes a card withdrawal and is the value behind questions about transactions 'on the credit card'. The other operation values present in the data are not defined by the available construction evidence.",
+    "evidence": [
+      "e008_operation",
+      "e021_credit_card_txn"
+    ]
+  },
+  {
+    "id": "c_high_level_card",
+    "target": "t_high_level_card",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "high level credit card",
+      "high-level card",
+      "high level",
+      "gold card",
+      "premium card"
+    ],
+    "severity": "block",
+    "scope": "Applies when a question refers to a card level above the ordinary classes.",
+    "confidence": "high",
+    "description": "A 'high level' credit card is a card whose type is gold. Gold is the highest of the three card classes present in the data.",
+    "evidence": [
+      "e004_card_type"
+    ]
+  },
+  {
+    "id": "c_disposition_role",
+    "target": "t_account_holder",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "owner",
+      "account owner",
+      "account holder",
+      "disponent",
+      "authorized user",
+      "eligible for loans",
+      "account holders"
+    ],
+    "severity": "block",
+    "scope": "Applies when a question refers to the holder, owner or eligibility of an account.",
+    "confidence": "high",
+    "description": "Only dispositions carrying the OWNER role identify the account holder of an account. Dispositions carrying the DISPONENT role are additional authorized users who are not the account holder. Workload conditions such as being eligible for loans are expressed through the owner role.",
+    "evidence": [
+      "e005_disp_type",
+      "e015_cardinality"
+    ]
+  },
+  {
+    "id": "c_district_columns",
+    "target": "t_district",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "A2",
+      "A3",
+      "A4",
+      "A11",
+      "A12",
+      "A13",
+      "A15",
+      "district column",
+      "column meaning",
+      "unemployment rate",
+      "average salary",
+      "inhabitants",
+      "crimes",
+      "crimes committed"
+    ],
+    "severity": "block",
+    "scope": "Applies whenever a question names a district statistic column or refers to district statistics by meaning.",
+    "confidence": "high",
+    "description": "District statistics are stored in unlabeled columns. A2 holds the district name, A3 the region name, A4 the number of inhabitants, A11 the average salary, A12 the unemployment rate for 1995, A13 the unemployment rate for 1996, and A15 the number of crimes committed in 1995. A12 and A13 are the two years referenced by a 1995 to 1996 increment, even though one line of workload evidence labels them with the years 2015 and 2016.",
+    "evidence": [
+      "e010_district_columns",
+      "e011_district_regions",
+      "e018_unemployment"
+    ]
+  },
+  {
+    "id": "c_age_definition",
+    "target": "t_client_age",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "age",
+      "oldest",
+      "older",
+      "younger",
+      "born before 1950",
+      "born",
+      "birth",
+      "date of birth"
+    ],
+    "severity": "warning",
+    "scope": "Applies when a question asks for age, for the oldest client, or for clients born before a date.",
+    "confidence": "high",
+    "description": "Age is not stored in the data; it is derived from the client's birth date relative to a reference date. The oldest client therefore has the earliest birth date, and a condition such as 'born before 1950' corresponds to a birth date earlier than the start of 1950.",
+    "evidence": [
+      "e017_date_ranges"
+    ]
+  },
+  {
+    "id": "c_a4_text",
+    "target": "t_district_inhabitants",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "inhabitants",
+      "A4",
+      "population",
+      "biggest number of inhabitants",
+      "most inhabitants"
+    ],
+    "severity": "warning",
+    "scope": "Applies when comparing or ranking districts by number of inhabitants.",
+    "confidence": "high",
+    "description": "The inhabitants column is declared as a text type although its values are numeric population counts. Comparisons and rankings must therefore be based on numeric value rather than on text ordering, since text ordering would give incorrect results for numbers of differing digit length.",
+    "evidence": [
+      "e012_a4_text"
+    ]
+  },
+  {
+    "id": "c_null_a12_a15",
+    "target": "t_district_unemployment_rate",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "unemployment rate",
+      "crimes",
+      "A12",
+      "A15",
+      "missing",
+      "null",
+      "no value"
+    ],
+    "severity": "warning",
+    "scope": "Applies when filtering, ranking or averaging districts on unemployment or crime figures.",
+    "confidence": "high",
+    "description": "One district, Jesenik with district identifier 69, has no value for the 1995 unemployment rate and no crime count. Filters and comparisons over these columns must not silently drop or mis-rank such districts, and must decide explicitly how to treat them.",
+    "evidence": [
+      "e013_district_null"
+    ]
+  },
+  {
+    "id": "c_null_operation_ksymbol",
+    "target": "t_transaction",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "k_symbol",
+      "operation",
+      "missing",
+      "null",
+      "blank",
+      "empty",
+      "space"
+    ],
+    "severity": "info",
+    "scope": "Applies when filtering transactions on their operation or supplementary symbol.",
+    "confidence": "high",
+    "description": "The transaction operation is empty for 183,114 rows. The supplementary symbol column is empty for 481,881 rows and additionally holds a literal single-space value on 53,433 rows. Treating all blank-looking values as one category can merge two distinct groups.",
+    "evidence": [
+      "e008_operation",
+      "e009_ksymbol"
+    ]
+  },
+  {
+    "id": "c_branch_vs_residence",
+    "target": "t_account_branch",
+    "constraint_type": "scope",
+    "trigger_keywords": [
+      "branch",
+      "branch location",
+      "district",
+      "district of the account",
+      "client district",
+      "residence",
+      "districts of account holders"
+    ],
+    "severity": "warning",
+    "scope": "Applies when a question mentions a district without stating whether it is the district of the account or the district of the client.",
+    "confidence": "high",
+    "description": "The district referenced by an account (its branch) and the district referenced by a client (their residence) are drawn from the same district master but play distinct roles. They coincide for 4,091 of 4,500 owner dispositions, about 90.9 percent, and differ for the remaining 409. Questions that speak of the districts of account holders are therefore ambiguous and the intended role must be resolved from the question's context.",
+    "evidence": [
+      "e016_district_roles"
+    ]
+  },
+  {
+    "id": "c_external_account_numbers",
+    "target": "t_transaction",
+    "constraint_type": "scope",
+    "trigger_keywords": [
+      "counterparty",
+      "recipient account",
+      "bank code",
+      "account number",
+      "account_to",
+      "bank_to",
+      "bank"
+    ],
+    "severity": "info",
+    "scope": "Applies when a question refers to the other party of a transfer or standing order.",
+    "confidence": "high",
+    "description": "The account number recorded on a transaction, and the destination account of a standing order together with the bank code, identify counterparty accounts at other banks. These are not necessarily identifiers of accounts held in this database and should not be equated with the account identifier used elsewhere.",
+    "evidence": [
+      "e002_row_counts"
+    ]
+  },
+  {
+    "id": "c_date_semantics",
+    "target": "t_account_open_date",
+    "constraint_type": "scope",
+    "trigger_keywords": [
+      "account opened",
+      "opened starting",
+      "in 1998",
+      "year",
+      "date",
+      "born before",
+      "since 1997"
+    ],
+    "severity": "info",
+    "scope": "Applies when a question applies a year or date condition without naming the entity whose date is meant.",
+    "confidence": "high",
+    "description": "The account date is the account opening date and spans 1993-01-01 to 1997-12-29. Transaction dates span 1993 to 1998 and client birth dates span 1911 to 1987. A year condition must be applied to the date belonging to the entity the question is about, and account opening years and transaction years cover different ranges.",
+    "evidence": [
+      "e017_date_ranges",
+      "e019_trans_years"
+    ]
+  }
+]

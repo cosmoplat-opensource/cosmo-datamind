@@ -1,0 +1,756 @@
+[
+  {
+    "id": "term_atomic_metric",
+    "name": "原子指标",
+    "type": "concept",
+    "definition": "指标体系中最细粒度、不可再分的基础指标，直接取自数仓汇总层(DWS)某张表的某个取值列。dim_metric_catalog 中 category='原子指标' 且 is_base_metric='Y' 的记录即为原子指标，每条记录通过 dws_table/date_column/value_column 显式指向其物理来源。",
+    "scope": "指标体系三层结构的最底层；用于回答“某指标是什么、取自哪张表哪一列、单位是什么”。",
+    "aliases": [
+      "原子指标",
+      "atomic metric",
+      "base metric",
+      "基础指标"
+    ],
+    "evidence": [
+      "ev_metric_catalog_three_tiers",
+      "ev_metric_catalog_columns",
+      "ev_dws_all_tables"
+    ]
+  },
+  {
+    "id": "term_derived_metric",
+    "name": "派生指标",
+    "type": "concept",
+    "definition": "对一个原子指标施加聚合方法(SUM/MAX/AVG)并按某个维度分组后得到的指标。dim_derived_metric_config 以 atomic_metric_names、calc_method、group_by_columns 显式给出定义。",
+    "scope": "用于把同一原子指标在不同维度（产线、业务员、供应商、设备、车间、成本中心）上汇总。",
+    "aliases": [
+      "派生指标",
+      "derived metric"
+    ],
+    "evidence": [
+      "ev_metric_catalog_three_tiers",
+      "ev_metric_formula_derived"
+    ]
+  },
+  {
+    "id": "term_composite_metric",
+    "name": "复合指标",
+    "type": "concept",
+    "definition": "由两个及以上已完成聚合的派生/原子指标按公式计算得到的比率或评分指标。dim_composite_metric_config 以 component_metric_names 与 formula 显式给出定义，例如“设备可用率 = 总运行小时/(总运行小时+总停机时长)*100”。",
+    "scope": "跨主题综合评价：投入产出比、经营利润率、设备可用率、一次合格率、安全健康度、能耗效率、维保强度、预算偏差度、单位产出成本。",
+    "aliases": [
+      "复合指标",
+      "composite metric",
+      "综合指标"
+    ],
+    "evidence": [
+      "ev_metric_catalog_three_tiers",
+      "ev_metric_formula_composite"
+    ]
+  },
+  {
+    "id": "term_dws_summary_table",
+    "name": "DWS 汇总层表",
+    "type": "concept",
+    "definition": "以 DWS_ 前缀命名的汇总层表（共 15 张），是指标体系原子指标的物理落点。每张表以 date 列加一个或多个维度列（dim_*_id）为粒度，指标值列与 dim_metric_catalog.value_column 一一对应。",
+    "scope": "指标查询的主要落点。注意表名中的 DAILY 并非一律代表日粒度：DWS_FINANCE_DAILY 实为月末粒度。",
+    "aliases": [
+      "DWS表",
+      "汇总层",
+      "daily summary table",
+      "数仓汇总层"
+    ],
+    "evidence": [
+      "ev_dws_all_tables",
+      "ev_finance_monthly_grain"
+    ]
+  },
+  {
+    "id": "term_line_run_hours",
+    "name": "产线运行时长",
+    "type": "metric",
+    "definition": "产线视角的设备运行时长（小时），按日历日、工单运行时间扣除非计划停机计算，粒度为产线-日。同时是原子指标“设备运行时长”与派生指标“总运行小时”的输入。",
+    "scope": "产线维度效率与可动率分析；是设备-日运行小时的复制来源。",
+    "aliases": [
+      "产线运行时长",
+      "设备运行时长",
+      "actual_run_hours"
+    ],
+    "evidence": [
+      "ev_metric_catalog_columns",
+      "ev_equipment_runhours_5x"
+    ]
+  },
+  {
+    "id": "term_equipment_run_hours",
+    "name": "设备运行小时",
+    "type": "metric",
+    "definition": "设备视角的运行时长：取所在产线当日运行时长，每台设备各记一份。因每条产线固定有 5 台设备，按设备汇总约为产线运行时长的 5 倍。",
+    "scope": "仅适用于单台设备层面的运行分析；跨设备求和会重复计入同一条产线的运行时长。",
+    "aliases": [
+      "设备运行小时",
+      "设备运行时长",
+      "actual_run_hours"
+    ],
+    "evidence": [
+      "ev_equipment_runhours_5x",
+      "ev_equipment_per_line_five",
+      "ev_metric_catalog_scope_notes"
+    ]
+  },
+  {
+    "id": "term_oee",
+    "name": "设备综合效率 OEE",
+    "type": "metric",
+    "definition": "设备综合效率（%）。同一名称同时存在于两个汇总层：DWS_PRODUCTION_DAILY.oee 为产线-日粒度，DWS_EQUIPMENT_DAILY.oee 为设备-日粒度。",
+    "scope": "效率分析前必须先确定使用产线口径还是设备口径，二者粒度不同，不可混用或相加。",
+    "aliases": [
+      "设备OEE",
+      "OEE",
+      "设备综合效率"
+    ],
+    "evidence": [
+      "ev_oee_two_grains",
+      "ev_metric_catalog_columns"
+    ]
+  },
+  {
+    "id": "term_downtime",
+    "name": "停机",
+    "type": "metric",
+    "definition": "停机时长与停机次数，是设备可动率的分母之一。设备-日汇总层的停机小时按设备实际记录，并非产线值的简单复制。",
+    "scope": "设备可动率、停机原因与产能损失分析。",
+    "aliases": [
+      "停机",
+      "downtime",
+      "设备停机小时",
+      "设备停机次数"
+    ],
+    "evidence": [
+      "ev_equipment_alarm_vs_downtime_reconcile",
+      "ev_downtime_reason_catalog"
+    ]
+  },
+  {
+    "id": "term_maintenance_work_order",
+    "name": "维护工单",
+    "type": "entity",
+    "definition": "设备维护工单，维护类型含 故障维修/月度检修/季度大修，状态含 created/completed，可关联维护计划与维护记录（含人工工时与成本）。",
+    "scope": "维保强度、维护成本与响应及时性分析。",
+    "aliases": [
+      "维护工单",
+      "maint_wo",
+      "维修工单"
+    ],
+    "evidence": [
+      "ev_maintenance_type_status_enum",
+      "ev_equipment_alarm_vs_downtime_reconcile"
+    ]
+  },
+  {
+    "id": "term_equipment",
+    "name": "设备",
+    "type": "entity",
+    "definition": "设备主数据（60 台），每台设备通过 line_id 归属唯一产线；每条产线固定配置 5 台设备（混合机、喂料机、挤出机、切粒机、包装机）。",
+    "scope": "设备类指标的最细维度，也是理解运行时长复制关系的关键。",
+    "aliases": [
+      "设备",
+      "equipment",
+      "设备台账"
+    ],
+    "evidence": [
+      "ev_equipment_per_line_five"
+    ]
+  },
+  {
+    "id": "term_production_line",
+    "name": "产线",
+    "type": "entity",
+    "definition": "生产产线主数据（12 条），通过 workshop_id 归属车间，具有产品类型与产能(capacity_tph)。是生产、设备、能耗类派生指标的核心分组维度 dim_line_id。",
+    "scope": "生产/设备/能耗分析的产线维度。",
+    "aliases": [
+      "产线",
+      "生产线",
+      "production line",
+      "dim_line_id"
+    ],
+    "evidence": [
+      "ev_production_line_workshop_map"
+    ]
+  },
+  {
+    "id": "term_workshop",
+    "name": "车间",
+    "type": "entity",
+    "definition": "车间主数据（5 个），是产线的上级组织单元，同时是安全类派生指标的分组维度 dim_workshop_id。",
+    "scope": "安全、环保与生产的车间维度汇总。",
+    "aliases": [
+      "车间",
+      "workshop",
+      "dim_workshop_id"
+    ],
+    "evidence": [
+      "ev_production_line_workshop_map",
+      "ev_safety_daily_reconcile"
+    ]
+  },
+  {
+    "id": "term_production_output",
+    "name": "实际产量",
+    "type": "metric",
+    "definition": "工单实际产出数量（吨），按完工日汇总。无产出的产线-产品-日记录取值为 0，且同行的各项比率列为空值（NULL）。",
+    "scope": "产量、计划达成与产线利用率分析。",
+    "aliases": [
+      "实际产量",
+      "产量",
+      "actual_quantity"
+    ],
+    "evidence": [
+      "ev_production_null_rates",
+      "ev_metric_catalog_columns"
+    ]
+  },
+  {
+    "id": "term_yield_rate",
+    "name": "成材率",
+    "type": "metric",
+    "definition": "实际产量/投料量×100 的比率指标。在无产出的行为空值，不可当作 0 参与平均，否则会系统性低估成材率。",
+    "scope": "生产投入产出效率分析。",
+    "aliases": [
+      "成材率",
+      "yield_rate"
+    ],
+    "evidence": [
+      "ev_production_null_rates",
+      "ev_metric_catalog_columns"
+    ]
+  },
+  {
+    "id": "term_first_grade_rate",
+    "name": "优等品率",
+    "type": "metric",
+    "definition": "优等品占产出的比例（%）。产出等级枚举为 优等品/一等品/合格品/返工品。",
+    "scope": "产品质量水平与等级结构分析。",
+    "aliases": [
+      "优等品率",
+      "first_grade_rate",
+      "一等品率"
+    ],
+    "evidence": [
+      "ev_production_grade_enum",
+      "ev_metric_catalog_columns"
+    ]
+  },
+  {
+    "id": "term_quality_disposition",
+    "name": "质量判定结果",
+    "type": "dimension",
+    "definition": "质量检验的结论枚举：合格、不合格、让步接收。让步接收表示未完全达标但经评审后放行，既不同于合格也不同于不合格。",
+    "scope": "质量检验结果统计与合格率计算；合格率的分母是否包含让步接收直接改变结果。",
+    "aliases": [
+      "质量判定",
+      "检验结果",
+      "合格",
+      "不合格",
+      "让步接收"
+    ],
+    "evidence": [
+      "ev_quality_disposition_enum"
+    ]
+  },
+  {
+    "id": "term_product",
+    "name": "产品",
+    "type": "entity",
+    "definition": "产品主数据（15 个），含标准成本(standard_cost)、技术成本(tech_cost)与指导价(guide_price)，通过 prod_line_id 归属产品系列。BOM 按每吨用量(qty_per_ton)描述配方。",
+    "scope": "产品结构、定价与成本分析；负毛利订单归因的基本维度。",
+    "aliases": [
+      "产品",
+      "product",
+      "prod_id"
+    ],
+    "evidence": [
+      "ev_product_cost_fields",
+      "ev_negative_margin_orders",
+      "ev_bom_qty_per_ton"
+    ]
+  },
+  {
+    "id": "term_sales_order_amount",
+    "name": "接单金额",
+    "type": "metric",
+    "definition": "按下单日汇总的销售订单金额（不含税），包含未交付与后续退货部分。与按发货或开票确认的收入口径不同。",
+    "scope": "组织/业务员接单业绩与目标达成分析；不可直接等同于已实现收入。",
+    "aliases": [
+      "接单金额",
+      "sales_amount",
+      "订单金额",
+      "销售额"
+    ],
+    "evidence": [
+      "ev_metric_catalog_scope_notes",
+      "ev_sales_order_reconcile",
+      "ev_sales_amount_basis"
+    ]
+  },
+  {
+    "id": "term_sales_quantity",
+    "name": "销量",
+    "type": "metric",
+    "definition": "销售订单数量合计（吨），按订单下单日汇总。",
+    "scope": "销量与销量目标达成分析。",
+    "aliases": [
+      "销量",
+      "sales_quantity"
+    ],
+    "evidence": [
+      "ev_sales_order_reconcile",
+      "ev_metric_catalog_columns"
+    ]
+  },
+  {
+    "id": "term_gross_profit",
+    "name": "毛利",
+    "type": "metric",
+    "definition": "销售订单毛利，同一订单同时存在实际毛利(gross_profit_actual)与标准毛利(gross_profit_standard)两套口径；当实际毛利为负时订单被标记为负毛利(is_negative_margin=1)。",
+    "scope": "盈利性分析；必须先明确使用实际口径还是标准口径。",
+    "aliases": [
+      "毛利",
+      "gross profit",
+      "实际毛利",
+      "标准毛利"
+    ],
+    "evidence": [
+      "ev_sales_order_reconcile",
+      "ev_negative_margin_orders"
+    ]
+  },
+  {
+    "id": "term_sales_target",
+    "name": "销售目标",
+    "type": "metric",
+    "definition": "按业务员+年+月设定的销量目标、毛利目标、回款目标与销售金额目标（fact_sales_target 与 DWS_ORG_TARGET_DAILY 同源）。",
+    "scope": "目标达成率分析；须与实测销量/毛利按相同 emp_id 与年月对齐。",
+    "aliases": [
+      "销售目标",
+      "销量目标",
+      "毛利目标",
+      "profit_target",
+      "sales target"
+    ],
+    "evidence": [
+      "ev_sales_target_grain",
+      "ev_metric_catalog_columns"
+    ]
+  },
+  {
+    "id": "term_customer",
+    "name": "客户",
+    "type": "entity",
+    "definition": "企业客户主数据（25 个），含行业、省市、市场容量、市场份额、首末成交日期与信用状态。",
+    "scope": "客户结构、行业与区域分布、活跃度分析。",
+    "aliases": [
+      "客户",
+      "customer",
+      "cust_id"
+    ],
+    "evidence": [
+      "ev_customer_status_enum",
+      "ev_customer_credit_enum"
+    ]
+  },
+  {
+    "id": "term_customer_status",
+    "name": "客户状态",
+    "type": "dimension",
+    "definition": "客户活跃度分类，取值 active（活跃）/dormant（休眠）/lost（流失）；另有独立的 credit_status 取值 normal/frozen 描述信用冻结状态。",
+    "scope": "存量、休眠、流失与风险客户统计。",
+    "aliases": [
+      "客户状态",
+      "活跃客户",
+      "休眠客户",
+      "流失客户",
+      "dormant",
+      "lost"
+    ],
+    "evidence": [
+      "ev_customer_status_enum",
+      "ev_customer_credit_enum"
+    ]
+  },
+  {
+    "id": "term_opportunity",
+    "name": "商机",
+    "type": "entity",
+    "definition": "售前商机记录，含预估数量与金额、重要性标记(is_important)与状态；成交后可通过 converted_order_id 关联生成的销售订单。",
+    "scope": "售前漏斗与商机转化分析。",
+    "aliases": [
+      "商机",
+      "opportunity",
+      "销售机会"
+    ],
+    "evidence": [
+      "ev_opportunity_status_enum"
+    ]
+  },
+  {
+    "id": "term_sales_return",
+    "name": "退货",
+    "type": "entity",
+    "definition": "销售退货记录，通过 order_id 关联原销售订单，含退货数量、金额与退货原因；对应订单状态会被标记为 returned。",
+    "scope": "售后质量与退货率分析。",
+    "aliases": [
+      "退货",
+      "return",
+      "退货量",
+      "退货次数"
+    ],
+    "evidence": [
+      "ev_sales_order_status_enum"
+    ]
+  },
+  {
+    "id": "term_ar_balance",
+    "name": "应收账款余额",
+    "type": "metric",
+    "definition": "某一时点的未清应收余额（含税），为时点值而非期间发生额。定义中已明确“跨日只能取期末一天，不能按日累加”。",
+    "scope": "仅在单个时点或期末日期上有意义；跨日累加会把同一笔欠款重复计入。",
+    "aliases": [
+      "应收账款余额",
+      "accounts_receivable",
+      "AR余额",
+      "应收"
+    ],
+    "evidence": [
+      "ev_metric_catalog_scope_notes",
+      "ev_ar_balance_timepoint_note",
+      "ev_ar_snapshot_daily"
+    ]
+  },
+  {
+    "id": "term_overdue_ar",
+    "name": "超期货款金额",
+    "type": "metric",
+    "definition": "每个自然日按业务员/产品快照记录的超期应收金额与笔数，为时点值。账龄分桶（current_month 与 aging_1m…aging_12m_plus）与 overdue_months 描述其逾期程度。",
+    "scope": "逾期风险监控；跨日累加会严重高估超期规模。",
+    "aliases": [
+      "超期货款金额",
+      "超期应收",
+      "overdue AR",
+      "逾期金额",
+      "账龄"
+    ],
+    "evidence": [
+      "ev_ar_snapshot_daily",
+      "ev_ar_aging_buckets",
+      "ev_ar_balance_timepoint_note"
+    ]
+  },
+  {
+    "id": "term_bank_acceptance_ratio",
+    "name": "银承比率",
+    "type": "metric",
+    "definition": "银行承兑汇票回款占回款总额的比例（%）；对应 fact_payment 的收款方式枚举 银承/电汇，其中 is_bank_accepted=1 与 payment_type='银承' 一一对应。",
+    "scope": "回款结构与现金流质量分析。",
+    "aliases": [
+      "银承比率",
+      "银行承兑",
+      "bank_acceptance_ratio"
+    ],
+    "evidence": [
+      "ev_payment_type_enum",
+      "ev_metric_catalog_columns"
+    ]
+  },
+  {
+    "id": "term_supplier",
+    "name": "供应商",
+    "type": "entity",
+    "definition": "供应商主数据（12 个），含分类、省市、信用等级与合作起始日期，是采购类派生指标的分组维度 dim_supplier_id。",
+    "scope": "采购来源结构与供应商分析。",
+    "aliases": [
+      "供应商",
+      "supplier",
+      "supplier_id"
+    ],
+    "evidence": [
+      "ev_supplier_eval_grade",
+      "ev_procurement_reconcile"
+    ]
+  },
+  {
+    "id": "term_purchase_amount",
+    "name": "采购金额",
+    "type": "metric",
+    "definition": "采购订单金额合计（按订单日期），度量采购支出规模。",
+    "scope": "采购规模与供应商集中度分析。",
+    "aliases": [
+      "采购金额",
+      "po_amount",
+      "采购额"
+    ],
+    "evidence": [
+      "ev_procurement_reconcile",
+      "ev_metric_catalog_columns"
+    ]
+  },
+  {
+    "id": "term_incoming_inspection_pass_rate",
+    "name": "来料检验合格率",
+    "type": "metric",
+    "definition": "收货来料检验合格比例（%）。在复合指标“一次合格率”中被按天简单平均，未按收货批次加权。",
+    "scope": "供应商质量评价；与按检验属性的质量检验表口径不同。",
+    "aliases": [
+      "来料检验合格率",
+      "检验合格率",
+      "inspection_pass_rate"
+    ],
+    "evidence": [
+      "ev_metric_catalog_columns",
+      "ev_metric_formula_composite"
+    ]
+  },
+  {
+    "id": "term_supplier_evaluation",
+    "name": "供应商评价得分",
+    "type": "metric",
+    "definition": "按评价周期对供应商的交付(delivery_score)、质量(quality_score)、服务(service_score)三项打分并汇总为 total_score，并给出 grade 等级（观测值为 AA/A 两级）。",
+    "scope": "供应商分级与绩效对比。",
+    "aliases": [
+      "供应商评价",
+      "供应商得分",
+      "supplier score",
+      "grade"
+    ],
+    "evidence": [
+      "ev_supplier_eval_grade"
+    ]
+  },
+  {
+    "id": "term_product_total_cost",
+    "name": "产品总成本",
+    "type": "metric",
+    "definition": "生产总成本，由材料成本、人工成本、制造费用三项构成。定义中明确“制造费用已含折旧，不再重复扣减”。",
+    "scope": "成本结构、单位成本与经营利润率分析。",
+    "aliases": [
+      "产品总成本",
+      "总成本",
+      "total_product_cost"
+    ],
+    "evidence": [
+      "ev_cost_component_relation",
+      "ev_metric_formula_composite",
+      "ev_metric_catalog_columns"
+    ]
+  },
+  {
+    "id": "term_cost_component",
+    "name": "成本构成",
+    "type": "dimension",
+    "definition": "产品总成本的三个构成项：直接材料成本(material_cost)、直接人工成本(labor_cost)、制造费用(overhead_cost)。",
+    "scope": "成本结构与降本分析；三项之外不应再另行扣减折旧。",
+    "aliases": [
+      "材料成本",
+      "人工成本",
+      "制造费用",
+      "material_cost",
+      "labor_cost",
+      "overhead_cost"
+    ],
+    "evidence": [
+      "ev_cost_component_relation",
+      "ev_metric_catalog_columns"
+    ]
+  },
+  {
+    "id": "term_cost_center",
+    "name": "成本中心",
+    "type": "entity",
+    "definition": "成本中心主数据（10 个），cc_type 含 production/quality/equipment/sales/rd，并通过 dept_id、bu_id 关联部门与事业部。是财务类派生指标的分组维度 dim_cc_id。",
+    "scope": "成本、预算、折旧等财务指标的责任中心汇总。",
+    "aliases": [
+      "成本中心",
+      "cost center",
+      "cc_id",
+      "dim_cc_id"
+    ],
+    "evidence": [
+      "ev_cost_center_types"
+    ]
+  },
+  {
+    "id": "term_budget",
+    "name": "预算与实际支出",
+    "type": "metric",
+    "definition": "预算金额(budget_amount)与预算实际发生金额(actual_amount)，用于预算执行与偏差分析；对应复合指标“预算偏差度”=(实际支出-预算)/预算×100。",
+    "scope": "预算执行与费用控制分析。",
+    "aliases": [
+      "预算",
+      "预算金额",
+      "实际支出",
+      "budget",
+      "预算偏差度"
+    ],
+    "evidence": [
+      "ev_finance_monthly_grain",
+      "ev_metric_formula_composite"
+    ]
+  },
+  {
+    "id": "term_incident",
+    "name": "安全事故/事件",
+    "type": "entity",
+    "definition": "安全事件记录，含事件类型（机械伤害、灼烫、物体打击、触电、车辆伤害、高处坠落）、严重度、伤亡人数与财产损失，归属于车间与产线。",
+    "scope": "安全绩效与事故统计分析。",
+    "aliases": [
+      "事故",
+      "事件",
+      "incident",
+      "安全事故"
+    ],
+    "evidence": [
+      "ev_incident_severity_enum",
+      "ev_safety_daily_reconcile"
+    ]
+  },
+  {
+    "id": "term_incident_severity",
+    "name": "事故严重度",
+    "type": "dimension",
+    "definition": "安全事件严重度枚举：fa（急救/轻微伤害）、mtc（医疗处理）、near_miss（未遂，无人员伤害）。全部记录中 fatality_count 均为 0。",
+    "scope": "严重度筛选与“事故”口径界定——未遂事件是否计入事故数会显著改变事故统计。",
+    "aliases": [
+      "事故严重度",
+      "严重度",
+      "severity",
+      "fa",
+      "mtc",
+      "near_miss",
+      "未遂事件"
+    ],
+    "evidence": [
+      "ev_incident_severity_enum"
+    ]
+  },
+  {
+    "id": "term_risk_assessment",
+    "name": "危害风险评估",
+    "type": "entity",
+    "definition": "危害风险评估记录，由 likelihood（可能性）× consequence（后果）得出 risk_level（L1–L4），并记录是否需要管控措施。L1=可接受、L2=可容忍、L3=不可容忍、L4=重大。",
+    "scope": "高风险辨识与整改跟踪。",
+    "aliases": [
+      "风险评估",
+      "risk assessment",
+      "风险等级",
+      "L1",
+      "L3",
+      "L4"
+    ],
+    "evidence": [
+      "ev_risk_level_dim_actions",
+      "ev_high_risk_l3l4"
+    ]
+  },
+  {
+    "id": "term_high_risk",
+    "name": "高风险项",
+    "type": "category",
+    "definition": "指风险等级为 L3（不可容忍）或 L4（重大）的风险评估项；汇总层指标“高风险数”描述为“不可容忍风险数”，其取值与 L3+L4 的笔数一致。",
+    "scope": "高风险统计与整改优先级；若仅按 L4 统计会漏计 L3。",
+    "aliases": [
+      "高风险",
+      "高风险数",
+      "high_risk_count",
+      "不可容忍风险",
+      "重大风险"
+    ],
+    "evidence": [
+      "ev_high_risk_l3l4",
+      "ev_safety_daily_reconcile",
+      "ev_risk_level_dim_actions"
+    ]
+  },
+  {
+    "id": "term_work_permit",
+    "name": "作业许可",
+    "type": "entity",
+    "definition": "特殊作业许可记录，类型含动火作业、受限空间、高处作业、临时用电、动土作业，含有效期、作业地点与所需劳保用品。",
+    "scope": "高危作业合规与许可数量统计。",
+    "aliases": [
+      "作业许可",
+      "工作许可",
+      "work permit",
+      "动火作业",
+      "受限空间"
+    ],
+    "evidence": [
+      "ev_permit_type_enum",
+      "ev_safety_daily_reconcile"
+    ]
+  },
+  {
+    "id": "term_env_compliance_rate",
+    "name": "排放合规率",
+    "type": "metric",
+    "definition": "环境排放监测合规比例（%），按月度/季度监测，监测项含 COD、氨氮、VOCs、颗粒物、噪声；结合 limit_value 与实测值判定 is_compliant。",
+    "scope": "环保合规性分析；未达标项需区分监测类型与监测项。",
+    "aliases": [
+      "排放合规率",
+      "环保合规",
+      "env_compliant_rate",
+      "环境监测"
+    ],
+    "evidence": [
+      "ev_env_record_types",
+      "ev_metric_catalog_columns"
+    ]
+  },
+  {
+    "id": "term_employee",
+    "name": "员工/业务员",
+    "type": "entity",
+    "definition": "员工主数据（122 人），通过 dept_id 归属部门。销售类指标中的业务员维度为 dim_emp_id。",
+    "scope": "人员维度汇总与业务员绩效分析。",
+    "aliases": [
+      "员工",
+      "业务员",
+      "employee",
+      "emp_id",
+      "dim_emp_id"
+    ],
+    "evidence": [
+      "ev_employee_dept_region_chain"
+    ]
+  },
+  {
+    "id": "term_department",
+    "name": "部门",
+    "type": "entity",
+    "definition": "部门主数据（17 个），销售类部门通过 region_id 关联区域，职能部门（生产、质量、设备、采购、仓储物流、财务、人力资源、安全环保、计划、研发、总经办）不关联区域。",
+    "scope": "组织维度汇总；区域维度仅对销售部门有效。",
+    "aliases": [
+      "部门",
+      "department",
+      "dept_id"
+    ],
+    "evidence": [
+      "ev_employee_dept_region_chain"
+    ]
+  },
+  {
+    "id": "term_region",
+    "name": "区域",
+    "type": "dimension",
+    "definition": "销售区域维度（华东、华南、华北、西南、华中、西北共 6 个），仅通过 dim_department.region_id 对销售类部门生效。",
+    "scope": "区域销售与组织绩效分析；对职能部门按区域汇总无业务含义。",
+    "aliases": [
+      "区域",
+      "region",
+      "region_id",
+      "大区"
+    ],
+    "evidence": [
+      "ev_employee_dept_region_chain"
+    ]
+  }
+]

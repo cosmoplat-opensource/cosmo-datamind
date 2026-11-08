@@ -1,0 +1,204 @@
+[
+  {
+    "id": "rel_set_composed_of_printings",
+    "source": "term_card_set",
+    "relation_type": "composition",
+    "target": "term_card_printing",
+    "connection_condition": "cards.setCode corresponds to sets.code; every distinct setCode in cards resolves to exactly one set",
+    "description": "A card set is composed of the printings released within it, and a printing has no meaning outside the product it was printed in.",
+    "evidence": [
+      "evidence_setcode_join"
+    ]
+  },
+  {
+    "id": "rel_set_composed_of_set_translations",
+    "source": "term_card_set",
+    "relation_type": "composition",
+    "target": "term_set_translation",
+    "connection_condition": "set_translations.setCode corresponds to sets.code; no translation row references an unknown set",
+    "description": "A set's localized names are part of the set record and cannot exist without the set.",
+    "evidence": [
+      "evidence_setcode_join",
+      "evidence_set_translation_coverage"
+    ]
+  },
+  {
+    "id": "rel_printing_composed_of_translations",
+    "source": "term_card_printing",
+    "relation_type": "composition",
+    "target": "term_card_translation",
+    "connection_condition": "foreign_data.uuid corresponds to cards.uuid; at most one translation row per card and language",
+    "description": "A printing's localized versions are part of that printing; a translation row is meaningless without the card it localizes.",
+    "evidence": [
+      "evidence_fd_grain",
+      "evidence_uuid_join"
+    ]
+  },
+  {
+    "id": "rel_printing_composed_of_legalities",
+    "source": "term_card_printing",
+    "relation_type": "composition",
+    "target": "term_legality_record",
+    "connection_condition": "legalities.uuid corresponds to cards.uuid; one legality row per card and format",
+    "description": "A printing carries one legality record per format it has been evaluated for; the record depends on the card it describes.",
+    "evidence": [
+      "evidence_uuid_join",
+      "evidence_legality_status"
+    ]
+  },
+  {
+    "id": "rel_printing_composed_of_rulings",
+    "source": "term_card_printing",
+    "relation_type": "composition",
+    "target": "term_ruling",
+    "connection_condition": "rulings.uuid corresponds to cards.uuid; every ruling resolves to a card",
+    "description": "Official rulings are attached to the card they clarify and have no independent existence.",
+    "evidence": [
+      "evidence_rulings_grain"
+    ]
+  },
+  {
+    "id": "rel_card_name_composed_of_printings",
+    "source": "term_card_name",
+    "relation_type": "composition",
+    "target": "term_card_printing",
+    "connection_condition": "printings share the card name text column rather than a separate card identity identifier",
+    "description": "A named card is realised by one or more printings; each printing exists as an instance of that named card.",
+    "evidence": [
+      "evidence_card_grain"
+    ]
+  },
+  {
+    "id": "rel_card_language_equiv_set_language",
+    "source": "term_card_language",
+    "relation_type": "equivalence",
+    "target": "term_set_language",
+    "connection_condition": "foreign_data.language and set_translations.language are different columns that draw on the same language vocabulary; all ten languages present in set_translations also occur in foreign_data",
+    "description": "Language of a card translation and language of a set-name translation denote the same business concept recorded in two different tables.",
+    "evidence": [
+      "evidence_card_languages",
+      "evidence_set_languages"
+    ]
+  },
+  {
+    "id": "rel_ruling_count_derived",
+    "source": "term_ruling",
+    "relation_type": "derivation",
+    "target": "term_ruling_count",
+    "connection_condition": "",
+    "description": "Ruling count is derived by counting ruling entries per card; the card with the most ruling information is the maximum of this derived count.",
+    "evidence": [
+      "evidence_rulings_grain"
+    ]
+  },
+  {
+    "id": "rel_printing_share_derived",
+    "source": "term_printing_count",
+    "relation_type": "derivation",
+    "target": "term_printing_share",
+    "connection_condition": "",
+    "description": "A percentage over cards is derived by dividing the count of printings satisfying a condition by a chosen printing population.",
+    "evidence": [
+      "evidence_card_grain"
+    ]
+  },
+  {
+    "id": "rel_promo_is_printing",
+    "source": "term_card_printing",
+    "relation_type": "hierarchy",
+    "target": "term_promo_printing",
+    "connection_condition": "",
+    "description": "A promotional printing is a kind of printing; promotional printings form a subset of the printing population.",
+    "evidence": [
+      "evidence_flags"
+    ]
+  },
+  {
+    "id": "rel_borderless_is_printing",
+    "source": "term_card_printing",
+    "relation_type": "hierarchy",
+    "target": "term_borderless_printing",
+    "connection_condition": "",
+    "description": "A borderless printing is a kind of printing, distinguished by its border colour value.",
+    "evidence": [
+      "evidence_border_color"
+    ]
+  },
+  {
+    "id": "rel_foreign_only_set_is_set",
+    "source": "term_card_set",
+    "relation_type": "hierarchy",
+    "target": "term_foreign_only_set",
+    "connection_condition": "",
+    "description": "A foreign-only set is a kind of set; the flagged sets form a small subset of all sets.",
+    "evidence": [
+      "evidence_isforeignonly"
+    ]
+  },
+  {
+    "id": "rel_card_subtype_refines_card_type",
+    "source": "term_card_type",
+    "relation_type": "association",
+    "target": "term_card_subtype",
+    "connection_condition": "",
+    "description": "Card subtypes refine the broader card type classification, but the two are stored as separate text columns with different value domains and different coverage.",
+    "evidence": [
+      "evidence_types_scope"
+    ]
+  },
+  {
+    "id": "rel_legality_record_in_format",
+    "source": "term_legality_record",
+    "relation_type": "association",
+    "target": "term_play_format",
+    "connection_condition": "",
+    "description": "A legality record states a card's status within one format, so the status is only meaningful relative to that format.",
+    "evidence": [
+      "evidence_legality_status"
+    ]
+  },
+  {
+    "id": "rel_card_translation_in_language",
+    "source": "term_card_translation",
+    "relation_type": "association",
+    "target": "term_card_language",
+    "connection_condition": "",
+    "description": "Each card translation is written in exactly one language, which categorises the translation record.",
+    "evidence": [
+      "evidence_card_languages"
+    ]
+  },
+  {
+    "id": "rel_set_translation_in_language",
+    "source": "term_set_translation",
+    "relation_type": "association",
+    "target": "term_set_language",
+    "connection_condition": "",
+    "description": "Each set-name translation is written in exactly one language, which categorises the translation record.",
+    "evidence": [
+      "evidence_set_languages"
+    ]
+  },
+  {
+    "id": "rel_textless_vs_rules_text",
+    "source": "term_card_text",
+    "relation_type": "association",
+    "target": "term_textless_printing",
+    "connection_condition": "",
+    "description": "The textless flag and the stored rules text describe the same text box but disagree on 1070 printings, so they are related yet not interchangeable.",
+    "evidence": [
+      "evidence_textless_text"
+    ]
+  },
+  {
+    "id": "rel_printing_foil_availability",
+    "source": "term_card_printing",
+    "relation_type": "association",
+    "target": "term_foil_purchase_availability",
+    "connection_condition": "",
+    "description": "A printing's foil availability is recorded through external purchase identifiers attached to the printing row.",
+    "evidence": [
+      "evidence_kingdom_foil"
+    ]
+  }
+]

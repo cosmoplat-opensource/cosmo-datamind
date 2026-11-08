@@ -1,0 +1,1999 @@
+[
+  {
+    "id": "map_payment_receipt",
+    "term_id": "payment_receipt",
+    "database_source": "ind108",
+    "table": "fact_payment",
+    "column": "payment_id",
+    "semantic_filter": "每行一笔收款",
+    "aggregation_semantics": "收款笔数 = 行计数（COUNT）",
+    "grain": "one row per receipt",
+    "validation": {
+      "evidence": [
+        "ev_payment_receipt_enum"
+      ]
+    }
+  },
+  {
+    "id": "map_receipt_payment_type",
+    "term_id": "receipt_payment_type",
+    "database_source": "ind108",
+    "table": "fact_payment",
+    "column": "payment_type",
+    "semantic_filter": "取值 电汇 或 银承",
+    "aggregation_semantics": "分组维度，按取值分组计数",
+    "grain": "per receipt",
+    "validation": {
+      "evidence": [
+        "ev_payment_receipt_enum"
+      ]
+    }
+  },
+  {
+    "id": "map_payment_out",
+    "term_id": "payment_out",
+    "database_source": "ind108",
+    "table": "fact_payment_out",
+    "column": "payment_id",
+    "semantic_filter": "每行一笔对外付款",
+    "aggregation_semantics": "付款笔数 = 行计数（COUNT）",
+    "grain": "one row per outgoing payment",
+    "validation": {
+      "evidence": [
+        "ev_payment_out_enum"
+      ]
+    }
+  },
+  {
+    "id": "map_outbound_payment_method",
+    "term_id": "outbound_payment_method",
+    "database_source": "ind108",
+    "table": "fact_payment_out",
+    "column": "payment_method",
+    "semantic_filter": "取值 bank_transfer 或 letter_of_credit",
+    "aggregation_semantics": "分组维度",
+    "grain": "per outgoing payment",
+    "validation": {
+      "evidence": [
+        "ev_payment_out_enum"
+      ]
+    }
+  },
+  {
+    "id": "map_bank_account",
+    "term_id": "bank_account",
+    "database_source": "ind108",
+    "table": "fact_payment_out",
+    "column": "bank_account",
+    "semantic_filter": "形如 SYN-ACCOUNT-0001",
+    "aggregation_semantics": "分组与筛选维度",
+    "grain": "per outgoing payment",
+    "validation": {
+      "evidence": [
+        "ev_payment_out_enum"
+      ]
+    }
+  },
+  {
+    "id": "map_supplier",
+    "term_id": "supplier",
+    "database_source": "ind108",
+    "table": "dim_supplier",
+    "column": "supplier_id",
+    "semantic_filter": "",
+    "aggregation_semantics": "实体主键，用于按供应商汇总业务记录",
+    "grain": "one row per supplier",
+    "validation": {
+      "evidence": [
+        "ev_fk_integrity"
+      ]
+    }
+  },
+  {
+    "id": "map_supplier_city",
+    "term_id": "supplier",
+    "database_source": "ind108",
+    "table": "dim_supplier",
+    "column": "city",
+    "semantic_filter": "供应商所在地城市，如 海城",
+    "aggregation_semantics": "筛选维度",
+    "grain": "one row per supplier",
+    "validation": {
+      "evidence": [
+        "ev_fk_integrity"
+      ]
+    }
+  },
+  {
+    "id": "map_supplier_category",
+    "term_id": "supplier_category",
+    "database_source": "ind108",
+    "table": "dim_supplier_category",
+    "column": "category_name",
+    "semantic_filter": "",
+    "aggregation_semantics": "层级分类维度，经 dim_supplier.category_id 关联",
+    "grain": "one row per category",
+    "validation": {
+      "evidence": [
+        "ev_fk_integrity"
+      ]
+    }
+  },
+  {
+    "id": "map_supplier_eval",
+    "term_id": "supplier_eval",
+    "database_source": "ind108",
+    "table": "fact_supplier_eval",
+    "column": "eval_id",
+    "semantic_filter": "每行一次供应商评估",
+    "aggregation_semantics": "评估记录条数 = 行计数；综合评分可求和",
+    "grain": "one row per supplier evaluation",
+    "validation": {
+      "evidence": [
+        "ev_supplier_eval_grade"
+      ]
+    }
+  },
+  {
+    "id": "map_supplier_grade",
+    "term_id": "supplier_grade",
+    "database_source": "ind108",
+    "table": "fact_supplier_eval",
+    "column": "grade",
+    "semantic_filter": "取值 AA 或 A",
+    "aggregation_semantics": "筛选与分组维度",
+    "grain": "per evaluation",
+    "validation": {
+      "evidence": [
+        "ev_supplier_eval_grade"
+      ]
+    }
+  },
+  {
+    "id": "map_supplier_eval_period",
+    "term_id": "supplier_eval",
+    "database_source": "ind108",
+    "table": "fact_supplier_eval",
+    "column": "eval_period",
+    "semantic_filter": "季度文本 2025-Q1..2026-Q2",
+    "aggregation_semantics": "季度筛选维度",
+    "grain": "per evaluation",
+    "validation": {
+      "evidence": [
+        "ev_supplier_eval_grade"
+      ]
+    }
+  },
+  {
+    "id": "map_purchase_order",
+    "term_id": "purchase_order",
+    "database_source": "ind108",
+    "table": "fact_purchase_order",
+    "column": "po_id",
+    "semantic_filter": "每行一张采购订单",
+    "aggregation_semantics": "订单张数 = 行计数；总金额可求和",
+    "grain": "one row per purchase order",
+    "validation": {
+      "evidence": [
+        "ev_purchase_order_enum"
+      ]
+    }
+  },
+  {
+    "id": "map_po_payment_terms",
+    "term_id": "po_payment_terms",
+    "database_source": "ind108",
+    "table": "fact_purchase_order",
+    "column": "payment_terms",
+    "semantic_filter": "取值 月结30天 / 月结45天 / 月结60天",
+    "aggregation_semantics": "筛选维度",
+    "grain": "per purchase order",
+    "validation": {
+      "evidence": [
+        "ev_purchase_order_enum"
+      ]
+    }
+  },
+  {
+    "id": "map_po_line",
+    "term_id": "po_line",
+    "database_source": "ind108",
+    "table": "fact_po_line",
+    "column": "line_id",
+    "semantic_filter": "每行一条采购订单明细",
+    "aggregation_semantics": "订单行条数 = 行计数；单价可求和",
+    "grain": "one row per purchase-order line",
+    "validation": {
+      "evidence": [
+        "ev_fk_integrity"
+      ]
+    }
+  },
+  {
+    "id": "map_po_line_received_qty",
+    "term_id": "po_line_received_qty",
+    "database_source": "ind108",
+    "table": "fact_po_line",
+    "column": "received_qty",
+    "semantic_filter": "",
+    "aggregation_semantics": "按物料汇总求和得到累计已收货数量",
+    "grain": "per purchase-order line",
+    "validation": {
+      "evidence": [
+        "ev_fk_integrity"
+      ]
+    }
+  },
+  {
+    "id": "map_purchase_requisition",
+    "term_id": "purchase_requisition",
+    "database_source": "ind108",
+    "table": "fact_purchase_requisition",
+    "column": "pr_id",
+    "semantic_filter": "每行一条采购申请",
+    "aggregation_semantics": "申请条数 = 行计数；总金额可求和与求平均",
+    "grain": "one row per requisition",
+    "validation": {
+      "evidence": [
+        "ev_time_coverage"
+      ]
+    }
+  },
+  {
+    "id": "map_goods_receipt",
+    "term_id": "goods_receipt",
+    "database_source": "ind108",
+    "table": "fact_goods_receipt",
+    "column": "gr_id",
+    "semantic_filter": "每行一张收货单",
+    "aggregation_semantics": "收货单条数 = 行计数",
+    "grain": "one row per goods receipt",
+    "validation": {
+      "evidence": [
+        "ev_goods_receipt_result"
+      ]
+    }
+  },
+  {
+    "id": "map_inspection_result",
+    "term_id": "inspection_result",
+    "database_source": "ind108",
+    "table": "fact_goods_receipt",
+    "column": "inspection_result",
+    "semantic_filter": "取值 pass 或 fail",
+    "aggregation_semantics": "筛选与分组维度",
+    "grain": "per goods receipt",
+    "validation": {
+      "evidence": [
+        "ev_goods_receipt_result"
+      ]
+    }
+  },
+  {
+    "id": "map_account_payable",
+    "term_id": "account_payable",
+    "database_source": "ind108",
+    "table": "fact_ap",
+    "column": "ap_id",
+    "semantic_filter": "每行一条应付账款",
+    "aggregation_semantics": "条数 = 行计数；金额可求和与求平均",
+    "grain": "one row per payable",
+    "validation": {
+      "evidence": [
+        "ev_ap_payment_chain"
+      ]
+    }
+  },
+  {
+    "id": "map_ap_due_date",
+    "term_id": "account_payable",
+    "database_source": "ind108",
+    "table": "fact_ap",
+    "column": "due_date",
+    "semantic_filter": "到期日期，2025-03-02..2026-08-29",
+    "aggregation_semantics": "按到期年份筛选",
+    "grain": "per payable",
+    "validation": {
+      "evidence": [
+        "ev_time_coverage"
+      ]
+    }
+  },
+  {
+    "id": "map_contract",
+    "term_id": "contract",
+    "database_source": "ind108",
+    "table": "fact_contract",
+    "column": "contract_id",
+    "semantic_filter": "每行一份合同",
+    "aggregation_semantics": "合同个数 = 行计数",
+    "grain": "one row per contract",
+    "validation": {
+      "evidence": [
+        "ev_contract_enum"
+      ]
+    }
+  },
+  {
+    "id": "map_contract_type",
+    "term_id": "contract",
+    "database_source": "ind108",
+    "table": "fact_contract",
+    "column": "contract_type",
+    "semantic_filter": "取值 purchase 或 sales",
+    "aggregation_semantics": "筛选维度",
+    "grain": "per contract",
+    "validation": {
+      "evidence": [
+        "ev_contract_enum"
+      ]
+    }
+  },
+  {
+    "id": "map_contract_end_date",
+    "term_id": "contract",
+    "database_source": "ind108",
+    "table": "fact_contract",
+    "column": "end_date",
+    "semantic_filter": "合同到期日期，最大 2026-12-31",
+    "aggregation_semantics": "按到期日期筛选",
+    "grain": "per contract",
+    "validation": {
+      "evidence": [
+        "ev_contract_enum"
+      ]
+    }
+  },
+  {
+    "id": "map_fixed_asset",
+    "term_id": "fixed_asset",
+    "database_source": "ind108",
+    "table": "dim_fixed_asset",
+    "column": "asset_id",
+    "semantic_filter": "每行一项固定资产",
+    "aggregation_semantics": "资产项数 = 行计数",
+    "grain": "one row per fixed asset",
+    "validation": {
+      "evidence": [
+        "ev_fixed_asset"
+      ]
+    }
+  },
+  {
+    "id": "map_accumulated_dep",
+    "term_id": "accumulated_dep",
+    "database_source": "ind108",
+    "table": "dim_fixed_asset",
+    "column": "accumulated_dep",
+    "semantic_filter": "",
+    "aggregation_semantics": "逐资产取值后比较，可求和",
+    "grain": "per fixed asset",
+    "validation": {
+      "evidence": [
+        "ev_fixed_asset"
+      ]
+    }
+  },
+  {
+    "id": "map_inventory",
+    "term_id": "inventory",
+    "database_source": "ind108",
+    "table": "fact_inventory",
+    "column": "inventory_id",
+    "semantic_filter": "每行一条库存记录",
+    "aggregation_semantics": "条数 = 行计数",
+    "grain": "one row per inventory record",
+    "validation": {
+      "evidence": [
+        "ev_inventory_grain"
+      ]
+    }
+  },
+  {
+    "id": "map_storage_days",
+    "term_id": "storage_days",
+    "database_source": "ind108",
+    "table": "fact_inventory",
+    "column": "storage_days",
+    "semantic_filter": "",
+    "aggregation_semantics": "平均在库天数 = 平均值",
+    "grain": "per inventory record",
+    "validation": {
+      "evidence": [
+        "ev_inventory_grain"
+      ]
+    }
+  },
+  {
+    "id": "map_inventory_warehouse_date",
+    "term_id": "inventory",
+    "database_source": "ind108",
+    "table": "fact_inventory",
+    "column": "warehouse_date",
+    "semantic_filter": "仅 2026-06-15..2026-06-30",
+    "aggregation_semantics": "按入库年份筛选",
+    "grain": "per inventory record",
+    "validation": {
+      "evidence": [
+        "ev_inventory_grain"
+      ]
+    }
+  },
+  {
+    "id": "map_product_cost",
+    "term_id": "product_cost",
+    "database_source": "ind108",
+    "table": "fact_product_cost",
+    "column": "cost_id",
+    "semantic_filter": "按期间与批次",
+    "aggregation_semantics": "按产品汇总成本项",
+    "grain": "one row per product x period x batch",
+    "validation": {
+      "evidence": [
+        "ev_fk_integrity"
+      ]
+    }
+  },
+  {
+    "id": "map_material_cost",
+    "term_id": "material_cost",
+    "database_source": "ind108",
+    "table": "fact_product_cost",
+    "column": "material_cost",
+    "semantic_filter": "",
+    "aggregation_semantics": "按产品求和得到材料成本合计",
+    "grain": "per product-period row",
+    "validation": {
+      "evidence": [
+        "ev_fk_integrity"
+      ]
+    }
+  },
+  {
+    "id": "map_expense",
+    "term_id": "expense",
+    "database_source": "ind108",
+    "table": "fact_expense",
+    "column": "expense_id",
+    "semantic_filter": "每行一笔报销",
+    "aggregation_semantics": "报销笔数 = 行计数；金额可求和",
+    "grain": "one row per expense claim",
+    "validation": {
+      "evidence": [
+        "ev_expense_type"
+      ]
+    }
+  },
+  {
+    "id": "map_expense_type",
+    "term_id": "expense_type",
+    "database_source": "ind108",
+    "table": "fact_expense",
+    "column": "expense_type",
+    "semantic_filter": "8 类费用科目",
+    "aggregation_semantics": "筛选与分组维度",
+    "grain": "per expense claim",
+    "validation": {
+      "evidence": [
+        "ev_expense_type"
+      ]
+    }
+  },
+  {
+    "id": "map_budget",
+    "term_id": "budget",
+    "database_source": "ind108",
+    "table": "fact_budget",
+    "column": "budget_amount",
+    "semantic_filter": "成本中心口径，按年与月",
+    "aggregation_semantics": "按成本中心求和得到预算金额合计",
+    "grain": "one row per cost centre x year x month",
+    "validation": {
+      "evidence": [
+        "ev_budget_dual_source"
+      ]
+    }
+  },
+  {
+    "id": "map_budget_expense",
+    "term_id": "budget_expense",
+    "database_source": "ind108",
+    "table": "fact_budget_expense",
+    "column": "budget_amount",
+    "semantic_filter": "部门口径，按年与月",
+    "aggregation_semantics": "记录条数 = 行计数",
+    "grain": "one row per department x year x month",
+    "validation": {
+      "evidence": [
+        "ev_budget_dual_source"
+      ]
+    }
+  },
+  {
+    "id": "map_cost_center",
+    "term_id": "cost_center",
+    "database_source": "ind108",
+    "table": "dim_cost_center",
+    "column": "cc_name",
+    "semantic_filter": "",
+    "aggregation_semantics": "分组维度，按 cc_id 关联预算",
+    "grain": "one row per cost centre",
+    "validation": {
+      "evidence": [
+        "ev_budget_dual_source"
+      ]
+    }
+  },
+  {
+    "id": "map_department",
+    "term_id": "department",
+    "database_source": "ind108",
+    "table": "dim_department",
+    "column": "dept_name",
+    "semantic_filter": "销售部门带 region_id，职能与生产部门为空",
+    "aggregation_semantics": "分组维度",
+    "grain": "one row per department",
+    "validation": {
+      "evidence": [
+        "ev_department_region"
+      ]
+    }
+  },
+  {
+    "id": "map_region",
+    "term_id": "region",
+    "database_source": "ind108",
+    "table": "dim_region",
+    "column": "region_name",
+    "semantic_filter": "6 个区域",
+    "aggregation_semantics": "筛选维度，经 dim_department.region_id 到达部门",
+    "grain": "one row per region",
+    "validation": {
+      "evidence": [
+        "ev_department_region"
+      ]
+    }
+  },
+  {
+    "id": "map_ar_aging",
+    "term_id": "ar_aging",
+    "database_source": "ind108",
+    "table": "fact_ar_aging",
+    "column": "ar_id",
+    "semantic_filter": "每行一条账龄余额记录",
+    "aggregation_semantics": "条数 = 行计数；各账龄列为金额，可求和",
+    "grain": "one row per AR item",
+    "validation": {
+      "evidence": [
+        "ev_ar_aging_buckets"
+      ]
+    }
+  },
+  {
+    "id": "map_aging_bucket",
+    "term_id": "aging_bucket",
+    "database_source": "ind108",
+    "table": "fact_ar_aging",
+    "column": "aging_3m",
+    "semantic_filter": "每个账龄区间一列；3-4 月对应 aging_3m 与 aging_4m",
+    "aggregation_semantics": "按区间列求和得到该区间应收账款金额",
+    "grain": "per AR item",
+    "validation": {
+      "evidence": [
+        "ev_ar_aging_buckets"
+      ]
+    }
+  },
+  {
+    "id": "map_turnover_rate_target",
+    "term_id": "turnover_rate_target",
+    "database_source": "ind108",
+    "table": "fact_payment_target",
+    "column": "turnover_rate_target",
+    "semantic_filter": "按员工与年度",
+    "aggregation_semantics": "按员工求和后排序",
+    "grain": "one row per employee x year",
+    "validation": {
+      "evidence": [
+        "ev_metric_config"
+      ]
+    }
+  },
+  {
+    "id": "map_customer",
+    "term_id": "customer",
+    "database_source": "ind108",
+    "table": "dim_customer",
+    "column": "cust_id",
+    "semantic_filter": "",
+    "aggregation_semantics": "实体主键，用于关联订单、商机与送样",
+    "grain": "one row per customer",
+    "validation": {
+      "evidence": [
+        "ev_fk_integrity"
+      ]
+    }
+  },
+  {
+    "id": "map_customer_last_deal_date",
+    "term_id": "customer_last_deal_date",
+    "database_source": "ind108",
+    "table": "dim_customer",
+    "column": "last_deal_date",
+    "semantic_filter": "客户属性，非订单日期",
+    "aggregation_semantics": "筛选维度",
+    "grain": "one row per customer",
+    "validation": {
+      "evidence": [
+        "ev_fk_integrity"
+      ]
+    }
+  },
+  {
+    "id": "map_sales_order",
+    "term_id": "sales_order",
+    "database_source": "ind108",
+    "table": "fact_sales_order",
+    "column": "order_id",
+    "semantic_filter": "每行一张销售订单",
+    "aggregation_semantics": "订单笔数 = 行计数；金额可求和",
+    "grain": "one row per sales order",
+    "validation": {
+      "evidence": [
+        "ev_sales_order_status"
+      ]
+    }
+  },
+  {
+    "id": "map_sales_order_status",
+    "term_id": "sales_order_status",
+    "database_source": "ind108",
+    "table": "fact_sales_order",
+    "column": "status",
+    "semantic_filter": "取值 delivered / undelivered / returned",
+    "aggregation_semantics": "筛选与分组维度",
+    "grain": "per sales order",
+    "validation": {
+      "evidence": [
+        "ev_sales_order_status"
+      ]
+    }
+  },
+  {
+    "id": "map_sales_order_date",
+    "term_id": "sales_order",
+    "database_source": "ind108",
+    "table": "fact_sales_order",
+    "column": "order_date",
+    "semantic_filter": "2025-01-02..2026-06-30",
+    "aggregation_semantics": "按年份筛选",
+    "grain": "per sales order",
+    "validation": {
+      "evidence": [
+        "ev_time_coverage"
+      ]
+    }
+  },
+  {
+    "id": "map_delivery",
+    "term_id": "delivery",
+    "database_source": "ind108",
+    "table": "fact_delivery",
+    "column": "delivery_id",
+    "semantic_filter": "每行一次发货",
+    "aggregation_semantics": "发货次数 = 行计数",
+    "grain": "one row per delivery",
+    "validation": {
+      "evidence": [
+        "ev_fk_integrity"
+      ]
+    }
+  },
+  {
+    "id": "map_delivery_amount",
+    "term_id": "delivery_amount",
+    "database_source": "ind108",
+    "table": "fact_delivery",
+    "column": "amount",
+    "semantic_filter": "",
+    "aggregation_semantics": "按订单状态等维度求和",
+    "grain": "per delivery",
+    "validation": {
+      "evidence": [
+        "ev_fk_integrity"
+      ]
+    }
+  },
+  {
+    "id": "map_delivery_quantity",
+    "term_id": "delivery_quantity",
+    "database_source": "ind108",
+    "table": "fact_delivery",
+    "column": "quantity",
+    "semantic_filter": "单位：吨",
+    "aggregation_semantics": "按订单状态等维度求和",
+    "grain": "per delivery",
+    "validation": {
+      "evidence": [
+        "ev_fk_integrity"
+      ]
+    }
+  },
+  {
+    "id": "map_sales_return",
+    "term_id": "sales_return",
+    "database_source": "ind108",
+    "table": "fact_return",
+    "column": "return_id",
+    "semantic_filter": "每行一笔退货",
+    "aggregation_semantics": "退货笔数 = 行计数",
+    "grain": "one row per return",
+    "validation": {
+      "evidence": [
+        "ev_return_reason"
+      ]
+    }
+  },
+  {
+    "id": "map_return_reason",
+    "term_id": "return_reason",
+    "database_source": "ind108",
+    "table": "fact_return",
+    "column": "reason",
+    "semantic_filter": "5 种自由文本取值",
+    "aggregation_semantics": "筛选与分组维度",
+    "grain": "per return",
+    "validation": {
+      "evidence": [
+        "ev_return_reason"
+      ]
+    }
+  },
+  {
+    "id": "map_quotation",
+    "term_id": "quotation",
+    "database_source": "ind108",
+    "table": "fact_quotation",
+    "column": "quotation_id",
+    "semantic_filter": "每行一张报价单",
+    "aggregation_semantics": "报价单张数 = 行计数",
+    "grain": "one row per quotation",
+    "validation": {
+      "evidence": [
+        "ev_quotation_status"
+      ]
+    }
+  },
+  {
+    "id": "map_quotation_status",
+    "term_id": "quotation_status",
+    "database_source": "ind108",
+    "table": "fact_quotation",
+    "column": "status",
+    "semantic_filter": "取值 draft / won / lost",
+    "aggregation_semantics": "筛选与分组维度",
+    "grain": "per quotation",
+    "validation": {
+      "evidence": [
+        "ev_quotation_status"
+      ]
+    }
+  },
+  {
+    "id": "map_quotation_unit_price",
+    "term_id": "quotation",
+    "database_source": "ind108",
+    "table": "fact_quotation",
+    "column": "unit_price",
+    "semantic_filter": "",
+    "aggregation_semantics": "单价平均值",
+    "grain": "per quotation",
+    "validation": {
+      "evidence": [
+        "ev_quotation_status"
+      ]
+    }
+  },
+  {
+    "id": "map_opportunity",
+    "term_id": "opportunity",
+    "database_source": "ind108",
+    "table": "fact_opportunity",
+    "column": "opp_id",
+    "semantic_filter": "每行一个商机",
+    "aggregation_semantics": "商机个数 = 行计数",
+    "grain": "one row per opportunity",
+    "validation": {
+      "evidence": [
+        "ev_opportunity_status"
+      ]
+    }
+  },
+  {
+    "id": "map_opportunity_status",
+    "term_id": "opportunity_status",
+    "database_source": "ind108",
+    "table": "fact_opportunity",
+    "column": "status",
+    "semantic_filter": "取值 open / won / lost / stalled",
+    "aggregation_semantics": "筛选与分组维度；关闭情况看 close_date",
+    "grain": "per opportunity",
+    "validation": {
+      "evidence": [
+        "ev_opportunity_status"
+      ]
+    }
+  },
+  {
+    "id": "map_estimated_amount",
+    "term_id": "estimated_amount",
+    "database_source": "ind108",
+    "table": "fact_opportunity",
+    "column": "estimated_amount",
+    "semantic_filter": "",
+    "aggregation_semantics": "按客户或业务员求和",
+    "grain": "per opportunity",
+    "validation": {
+      "evidence": [
+        "ev_opportunity_status"
+      ]
+    }
+  },
+  {
+    "id": "map_estimated_quantity",
+    "term_id": "estimated_quantity",
+    "database_source": "ind108",
+    "table": "fact_opportunity",
+    "column": "estimated_quantity",
+    "semantic_filter": "",
+    "aggregation_semantics": "按业务员求和得到预估销量合计",
+    "grain": "per opportunity",
+    "validation": {
+      "evidence": [
+        "ev_metric_config"
+      ]
+    }
+  },
+  {
+    "id": "map_sample",
+    "term_id": "sample",
+    "database_source": "ind108",
+    "table": "fact_sample",
+    "column": "sample_id",
+    "semantic_filter": "每行一次送样",
+    "aggregation_semantics": "送样条数 = 行计数",
+    "grain": "one row per sample",
+    "validation": {
+      "evidence": [
+        "ev_sample_feedback"
+      ]
+    }
+  },
+  {
+    "id": "map_sample_feedback_result",
+    "term_id": "sample_feedback_result",
+    "database_source": "ind108",
+    "table": "fact_sample",
+    "column": "feedback_result",
+    "semantic_filter": "取值 success / fail，未反馈为空",
+    "aggregation_semantics": "筛选与分组维度",
+    "grain": "per sample",
+    "validation": {
+      "evidence": [
+        "ev_sample_feedback"
+      ]
+    }
+  },
+  {
+    "id": "map_sample_success",
+    "term_id": "sample_success",
+    "database_source": "ind108",
+    "table": "fact_sample",
+    "column": "is_success",
+    "semantic_filter": "1 = 反馈 success",
+    "aggregation_semantics": "求和或计数得到送样成功合计",
+    "grain": "per sample",
+    "validation": {
+      "evidence": [
+        "ev_sample_feedback"
+      ]
+    }
+  },
+  {
+    "id": "map_sample_feedback_date",
+    "term_id": "sample",
+    "database_source": "ind108",
+    "table": "fact_sample",
+    "column": "feedback_date",
+    "semantic_filter": "2025-02-16..2026-06-20",
+    "aggregation_semantics": "按反馈年份筛选",
+    "grain": "per sample",
+    "validation": {
+      "evidence": [
+        "ev_sample_feedback"
+      ]
+    }
+  },
+  {
+    "id": "map_gross_profit_actual",
+    "term_id": "gross_profit_actual",
+    "database_source": "ind108",
+    "table": "fact_sales_order",
+    "column": "gross_profit_actual",
+    "semantic_filter": "取实际口径，而非 standard 或 tech 口径",
+    "aggregation_semantics": "合计与平均值",
+    "grain": "per sales order",
+    "validation": {
+      "evidence": [
+        "ev_fk_integrity"
+      ]
+    }
+  },
+  {
+    "id": "map_sales_target",
+    "term_id": "sales_target",
+    "database_source": "ind108",
+    "table": "fact_sales_target",
+    "column": "target_id",
+    "semantic_filter": "按员工与年月",
+    "aggregation_semantics": "按员工汇总各目标列",
+    "grain": "one row per employee x year x month",
+    "validation": {
+      "evidence": [
+        "ev_metric_config"
+      ]
+    }
+  },
+  {
+    "id": "map_target_sales_quantity",
+    "term_id": "target_sales_quantity",
+    "database_source": "ind108",
+    "table": "fact_sales_target",
+    "column": "sales_quantity_target",
+    "semantic_filter": "",
+    "aggregation_semantics": "按员工求和",
+    "grain": "per target row",
+    "validation": {
+      "evidence": [
+        "ev_metric_config"
+      ]
+    }
+  },
+  {
+    "id": "map_product",
+    "term_id": "product",
+    "database_source": "ind108",
+    "table": "dim_product",
+    "column": "prod_name",
+    "semantic_filter": "",
+    "aggregation_semantics": "分组维度与名称输出，按 prod_id 关联业务记录",
+    "grain": "one row per product",
+    "validation": {
+      "evidence": [
+        "ev_fk_integrity"
+      ]
+    }
+  },
+  {
+    "id": "map_product_line",
+    "term_id": "product_line",
+    "database_source": "ind108",
+    "table": "dim_product_line",
+    "column": "prod_line_name",
+    "semantic_filter": "4 个产品系列",
+    "aggregation_semantics": "筛选维度，经 dim_product.prod_line_id 关联产品",
+    "grain": "one row per product line",
+    "validation": {
+      "evidence": [
+        "ev_fk_integrity"
+      ]
+    }
+  },
+  {
+    "id": "map_material",
+    "term_id": "material",
+    "database_source": "ind108",
+    "table": "dim_material",
+    "column": "material_name",
+    "semantic_filter": "",
+    "aggregation_semantics": "分组维度与名称输出，按 material_id 关联业务记录",
+    "grain": "one row per material",
+    "validation": {
+      "evidence": [
+        "ev_fk_integrity"
+      ]
+    }
+  },
+  {
+    "id": "map_material_category",
+    "term_id": "material_category",
+    "database_source": "ind108",
+    "table": "dim_material_category",
+    "column": "category_name",
+    "semantic_filter": "",
+    "aggregation_semantics": "层级分类维度，经 dim_material.category_id 关联",
+    "grain": "one row per category",
+    "validation": {
+      "evidence": [
+        "ev_fk_integrity"
+      ]
+    }
+  },
+  {
+    "id": "map_iot_data",
+    "term_id": "iot_data",
+    "database_source": "ind108",
+    "table": "fact_iot_data",
+    "column": "data_id",
+    "semantic_filter": "每行一条传感器读数",
+    "aggregation_semantics": "条数 = 行计数",
+    "grain": "one row per sensor reading",
+    "validation": {
+      "evidence": [
+        "ev_iot_quality"
+      ]
+    }
+  },
+  {
+    "id": "map_iot_quality_flag",
+    "term_id": "iot_quality_flag",
+    "database_source": "ind108",
+    "table": "fact_iot_data",
+    "column": "quality_flag",
+    "semantic_filter": "取值 good 或 uncertain",
+    "aggregation_semantics": "筛选与分组维度",
+    "grain": "per sensor reading",
+    "validation": {
+      "evidence": [
+        "ev_iot_quality"
+      ]
+    }
+  },
+  {
+    "id": "map_production_order",
+    "term_id": "production_order",
+    "database_source": "ind108",
+    "table": "fact_production_order",
+    "column": "order_id",
+    "semantic_filter": "每行一个生产工单",
+    "aggregation_semantics": "工单数 = 行计数；产量可求和",
+    "grain": "one row per production order",
+    "validation": {
+      "evidence": [
+        "ev_production_order_status"
+      ]
+    }
+  },
+  {
+    "id": "map_production_order_status",
+    "term_id": "production_order_status",
+    "database_source": "ind108",
+    "table": "fact_production_order",
+    "column": "status",
+    "semantic_filter": "取值 已完成 / 待生产 / 生产中",
+    "aggregation_semantics": "筛选与分组维度",
+    "grain": "per production order",
+    "validation": {
+      "evidence": [
+        "ev_production_order_status"
+      ]
+    }
+  },
+  {
+    "id": "map_production_order_date",
+    "term_id": "production_order",
+    "database_source": "ind108",
+    "table": "fact_production_order",
+    "column": "order_date",
+    "semantic_filter": "2025-01-01..2026-06-30",
+    "aggregation_semantics": "按下单年份筛选",
+    "grain": "per production order",
+    "validation": {
+      "evidence": [
+        "ev_time_coverage"
+      ]
+    }
+  },
+  {
+    "id": "map_order_runtime_hours",
+    "term_id": "order_runtime_hours",
+    "database_source": "ind108",
+    "table": "fact_production_order",
+    "column": "runtime_hours",
+    "semantic_filter": "",
+    "aggregation_semantics": "按产线求和",
+    "grain": "per production order",
+    "validation": {
+      "evidence": [
+        "ev_production_order_status"
+      ]
+    }
+  },
+  {
+    "id": "map_actual_run_hours",
+    "term_id": "actual_run_hours",
+    "database_source": "ind108",
+    "table": "fact_equipment_runtime",
+    "column": "actual_run_hours",
+    "semantic_filter": "按产线与日期",
+    "aggregation_semantics": "按年份或产线求和",
+    "grain": "one row per line x day",
+    "validation": {
+      "evidence": [
+        "ev_downtime_volume"
+      ]
+    }
+  },
+  {
+    "id": "map_production_output",
+    "term_id": "production_output",
+    "database_source": "ind108",
+    "table": "fact_production_output",
+    "column": "output_id",
+    "semantic_filter": "每行一条产出记录",
+    "aggregation_semantics": "产出记录条数 = 行计数",
+    "grain": "one row per output record",
+    "validation": {
+      "evidence": [
+        "ev_output_grade"
+      ]
+    }
+  },
+  {
+    "id": "map_output_grade",
+    "term_id": "output_grade",
+    "database_source": "ind108",
+    "table": "fact_production_output",
+    "column": "grade",
+    "semantic_filter": "取值 一等品 / 优等品 / 合格品 / 返工品",
+    "aggregation_semantics": "筛选与分组维度",
+    "grain": "per output record",
+    "validation": {
+      "evidence": [
+        "ev_output_grade"
+      ]
+    }
+  },
+  {
+    "id": "map_output_date",
+    "term_id": "production_output",
+    "database_source": "ind108",
+    "table": "fact_production_output",
+    "column": "output_date",
+    "semantic_filter": "",
+    "aggregation_semantics": "按年份筛选",
+    "grain": "per output record",
+    "validation": {
+      "evidence": [
+        "ev_output_grade"
+      ]
+    }
+  },
+  {
+    "id": "map_production_line",
+    "term_id": "production_line",
+    "database_source": "ind108",
+    "table": "dim_production_line",
+    "column": "line_name",
+    "semantic_filter": "12 条产线",
+    "aggregation_semantics": "分组维度与名称输出，按 line_id 关联业务记录",
+    "grain": "one row per line",
+    "validation": {
+      "evidence": [
+        "ev_equipment_manufacturer"
+      ]
+    }
+  },
+  {
+    "id": "map_workshop",
+    "term_id": "workshop",
+    "database_source": "ind108",
+    "table": "dim_workshop",
+    "column": "workshop_name",
+    "semantic_filter": "5 个车间",
+    "aggregation_semantics": "分组维度与名称输出",
+    "grain": "one row per workshop",
+    "validation": {
+      "evidence": [
+        "ev_department_region"
+      ]
+    }
+  },
+  {
+    "id": "map_equipment",
+    "term_id": "equipment",
+    "database_source": "ind108",
+    "table": "dim_equipment",
+    "column": "equipment_id",
+    "semantic_filter": "60 台设备",
+    "aggregation_semantics": "实体主键，用于关联维护、告警与停机",
+    "grain": "one row per equipment",
+    "validation": {
+      "evidence": [
+        "ev_equipment_manufacturer"
+      ]
+    }
+  },
+  {
+    "id": "map_equipment_manufacturer",
+    "term_id": "equipment_manufacturer",
+    "database_source": "ind108",
+    "table": "dim_equipment",
+    "column": "manufacturer",
+    "semantic_filter": "6 家制造商 示例机械A..F",
+    "aggregation_semantics": "筛选维度",
+    "grain": "per equipment",
+    "validation": {
+      "evidence": [
+        "ev_equipment_manufacturer"
+      ]
+    }
+  },
+  {
+    "id": "map_equipment_runtime_record",
+    "term_id": "equipment_runtime_record",
+    "database_source": "ind108",
+    "table": "fact_equipment_runtime",
+    "column": "runtime_id",
+    "semantic_filter": "按产线与日期",
+    "aggregation_semantics": "运行记录条数 = 行计数",
+    "grain": "one row per line x day",
+    "validation": {
+      "evidence": [
+        "ev_downtime_volume"
+      ]
+    }
+  },
+  {
+    "id": "map_downtime",
+    "term_id": "downtime",
+    "database_source": "ind108",
+    "table": "fact_downtime",
+    "column": "downtime_id",
+    "semantic_filter": "每行一次停机事件",
+    "aggregation_semantics": "停机次数 = 行计数",
+    "grain": "one row per downtime event",
+    "validation": {
+      "evidence": [
+        "ev_downtime_reason"
+      ]
+    }
+  },
+  {
+    "id": "map_downtime_reason",
+    "term_id": "downtime_reason",
+    "database_source": "ind108",
+    "table": "dim_downtime_reason",
+    "column": "reason_name",
+    "semantic_filter": "8 项，reason_id 1..8",
+    "aggregation_semantics": "分组维度；经 fact_downtime.reason_code = reason_id 关联",
+    "grain": "one row per reason",
+    "validation": {
+      "evidence": [
+        "ev_downtime_reason"
+      ]
+    }
+  },
+  {
+    "id": "map_downtime_reason_category",
+    "term_id": "downtime_reason_category",
+    "database_source": "ind108",
+    "table": "dim_downtime_reason",
+    "column": "category",
+    "semantic_filter": "设备/工艺/计划/物料/质量/能源/人力",
+    "aggregation_semantics": "上位分组维度",
+    "grain": "per reason",
+    "validation": {
+      "evidence": [
+        "ev_downtime_reason"
+      ]
+    }
+  },
+  {
+    "id": "map_downtime_hours",
+    "term_id": "downtime_hours",
+    "database_source": "ind108",
+    "table": "fact_downtime",
+    "column": "duration_hours",
+    "semantic_filter": "事件级时长",
+    "aggregation_semantics": "按原因或产线求和与排序",
+    "grain": "per downtime event",
+    "validation": {
+      "evidence": [
+        "ev_downtime_volume"
+      ]
+    }
+  },
+  {
+    "id": "map_maintenance_plan",
+    "term_id": "maintenance_plan",
+    "database_source": "ind108",
+    "table": "fact_maintenance_plan",
+    "column": "plan_id",
+    "semantic_filter": "每行一条维护计划",
+    "aggregation_semantics": "维护计划条数 = 行计数",
+    "grain": "one row per maintenance plan",
+    "validation": {
+      "evidence": [
+        "ev_maintenance_enum"
+      ]
+    }
+  },
+  {
+    "id": "map_maint_type",
+    "term_id": "maint_type",
+    "database_source": "ind108",
+    "table": "fact_maintenance_plan",
+    "column": "maint_type",
+    "semantic_filter": "计划表取值 月度检修 / 季度大修",
+    "aggregation_semantics": "筛选与分组维度",
+    "grain": "per plan",
+    "validation": {
+      "evidence": [
+        "ev_maintenance_enum"
+      ]
+    }
+  },
+  {
+    "id": "map_next_maint_date",
+    "term_id": "next_maint_date",
+    "database_source": "ind108",
+    "table": "fact_maintenance_plan",
+    "column": "next_date",
+    "semantic_filter": "2026-07-01..2026-09-28",
+    "aggregation_semantics": "按年份筛选",
+    "grain": "per plan",
+    "validation": {
+      "evidence": [
+        "ev_maintenance_enum"
+      ]
+    }
+  },
+  {
+    "id": "map_maintenance_record",
+    "term_id": "maintenance_record",
+    "database_source": "ind108",
+    "table": "fact_maintenance_record",
+    "column": "record_id",
+    "semantic_filter": "每行一条维护执行记录",
+    "aggregation_semantics": "维护记录条数 = 行计数",
+    "grain": "one row per maintenance record",
+    "validation": {
+      "evidence": [
+        "ev_maintenance_enum",
+        "ev_equipment_manufacturer"
+      ]
+    }
+  },
+  {
+    "id": "map_maintenance_labor_hours",
+    "term_id": "maintenance_labor_hours",
+    "database_source": "ind108",
+    "table": "fact_maintenance_record",
+    "column": "labor_hours",
+    "semantic_filter": "",
+    "aggregation_semantics": "按设备或制造商求和",
+    "grain": "per maintenance record",
+    "validation": {
+      "evidence": [
+        "ev_equipment_manufacturer"
+      ]
+    }
+  },
+  {
+    "id": "map_maintenance_cost",
+    "term_id": "maintenance_cost",
+    "database_source": "ind108",
+    "table": "fact_maintenance_record",
+    "column": "cost",
+    "semantic_filter": "",
+    "aggregation_semantics": "按设备或制造商求和",
+    "grain": "per maintenance record",
+    "validation": {
+      "evidence": [
+        "ev_equipment_manufacturer"
+      ]
+    }
+  },
+  {
+    "id": "map_alarm",
+    "term_id": "alarm",
+    "database_source": "ind108",
+    "table": "fact_alarm",
+    "column": "alarm_id",
+    "semantic_filter": "每行一条告警",
+    "aggregation_semantics": "告警条数 = 行计数",
+    "grain": "one row per alarm",
+    "validation": {
+      "evidence": [
+        "ev_alarm_severity"
+      ]
+    }
+  },
+  {
+    "id": "map_alarm_severity",
+    "term_id": "alarm_severity",
+    "database_source": "ind108",
+    "table": "fact_alarm",
+    "column": "severity",
+    "semantic_filter": "取值 critical / warning",
+    "aggregation_semantics": "分组维度",
+    "grain": "per alarm",
+    "validation": {
+      "evidence": [
+        "ev_alarm_severity"
+      ]
+    }
+  },
+  {
+    "id": "map_handled_alarm",
+    "term_id": "handled_alarm",
+    "database_source": "ind108",
+    "table": "fact_alarm",
+    "column": "is_handled",
+    "semantic_filter": "1 = 已处理",
+    "aggregation_semantics": "按设备求和或计数",
+    "grain": "per alarm",
+    "validation": {
+      "evidence": [
+        "ev_alarm_severity"
+      ]
+    }
+  },
+  {
+    "id": "map_energy_consumption",
+    "term_id": "energy_consumption",
+    "database_source": "ind108",
+    "table": "fact_energy_consumption",
+    "column": "energy_id",
+    "semantic_filter": "每条产线每日一行",
+    "aggregation_semantics": "记录条数 = 行计数",
+    "grain": "one row per line x day",
+    "validation": {
+      "evidence": [
+        "ev_energy_columns"
+      ]
+    }
+  },
+  {
+    "id": "map_electricity_kwh",
+    "term_id": "electricity_kwh",
+    "database_source": "ind108",
+    "table": "fact_energy_consumption",
+    "column": "electricity_kwh",
+    "semantic_filter": "单位 kWh",
+    "aggregation_semantics": "按车间或产线求和后排序",
+    "grain": "per line x day",
+    "validation": {
+      "evidence": [
+        "ev_energy_columns"
+      ]
+    }
+  },
+  {
+    "id": "map_water_tons",
+    "term_id": "water_tons",
+    "database_source": "ind108",
+    "table": "fact_energy_consumption",
+    "column": "water_tons",
+    "semantic_filter": "单位 吨",
+    "aggregation_semantics": "按产线求和",
+    "grain": "per line x day",
+    "validation": {
+      "evidence": [
+        "ev_energy_columns"
+      ]
+    }
+  },
+  {
+    "id": "map_steam_tons",
+    "term_id": "steam_tons",
+    "database_source": "ind108",
+    "table": "fact_energy_consumption",
+    "column": "steam_tons",
+    "semantic_filter": "单位 吨",
+    "aggregation_semantics": "按产线求和后排序",
+    "grain": "per line x day",
+    "validation": {
+      "evidence": [
+        "ev_energy_columns"
+      ]
+    }
+  },
+  {
+    "id": "map_incident",
+    "term_id": "incident",
+    "database_source": "ind108",
+    "table": "fact_incident",
+    "column": "incident_id",
+    "semantic_filter": "每行一起事故",
+    "aggregation_semantics": "事故起数 = 行计数",
+    "grain": "one row per incident",
+    "validation": {
+      "evidence": [
+        "ev_incident_enum"
+      ]
+    }
+  },
+  {
+    "id": "map_incident_severity",
+    "term_id": "incident_severity",
+    "database_source": "ind108",
+    "table": "fact_incident",
+    "column": "severity",
+    "semantic_filter": "取值 fa / mtc / near_miss",
+    "aggregation_semantics": "筛选与分组维度",
+    "grain": "per incident",
+    "validation": {
+      "evidence": [
+        "ev_incident_enum"
+      ]
+    }
+  },
+  {
+    "id": "map_incident_type",
+    "term_id": "incident_type",
+    "database_source": "ind108",
+    "table": "fact_incident",
+    "column": "incident_type",
+    "semantic_filter": "6 类中文取值",
+    "aggregation_semantics": "分组维度",
+    "grain": "per incident",
+    "validation": {
+      "evidence": [
+        "ev_incident_enum"
+      ]
+    }
+  },
+  {
+    "id": "map_injury_count",
+    "term_id": "injury_count",
+    "database_source": "ind108",
+    "table": "fact_incident",
+    "column": "injury_count",
+    "semantic_filter": "",
+    "aggregation_semantics": "求和得到受伤人数合计；除以事故数得到平均受伤人数",
+    "grain": "per incident",
+    "validation": {
+      "evidence": [
+        "ev_incident_enum"
+      ]
+    }
+  },
+  {
+    "id": "map_incident_date",
+    "term_id": "incident",
+    "database_source": "ind108",
+    "table": "fact_incident",
+    "column": "incident_date",
+    "semantic_filter": "2025-03-09..2026-06-10",
+    "aggregation_semantics": "按年份筛选",
+    "grain": "per incident",
+    "validation": {
+      "evidence": [
+        "ev_incident_enum"
+      ]
+    }
+  },
+  {
+    "id": "map_risk_assessment",
+    "term_id": "risk_assessment",
+    "database_source": "ind108",
+    "table": "fact_risk_assessment",
+    "column": "assessment_id",
+    "semantic_filter": "每行一次风险评估",
+    "aggregation_semantics": "评估次数 = 行计数",
+    "grain": "one row per assessment",
+    "validation": {
+      "evidence": [
+        "ev_risk_assessment_enum"
+      ]
+    }
+  },
+  {
+    "id": "map_risk_level",
+    "term_id": "risk_level",
+    "database_source": "ind108",
+    "table": "fact_risk_assessment",
+    "column": "risk_level",
+    "semantic_filter": "取值 L1 / L2 / L3 / L4",
+    "aggregation_semantics": "筛选与分组维度",
+    "grain": "per assessment",
+    "validation": {
+      "evidence": [
+        "ev_risk_assessment_enum"
+      ]
+    }
+  },
+  {
+    "id": "map_likelihood",
+    "term_id": "likelihood",
+    "database_source": "ind108",
+    "table": "fact_risk_assessment",
+    "column": "likelihood",
+    "semantic_filter": "取值 unlikely / possible / likely",
+    "aggregation_semantics": "筛选维度",
+    "grain": "per assessment",
+    "validation": {
+      "evidence": [
+        "ev_risk_assessment_enum"
+      ]
+    }
+  },
+  {
+    "id": "map_consequence",
+    "term_id": "consequence",
+    "database_source": "ind108",
+    "table": "fact_risk_assessment",
+    "column": "consequence",
+    "semantic_filter": "取值 minor / moderate / major / catastrophic",
+    "aggregation_semantics": "筛选维度",
+    "grain": "per assessment",
+    "validation": {
+      "evidence": [
+        "ev_risk_assessment_enum"
+      ]
+    }
+  },
+  {
+    "id": "map_control_needed",
+    "term_id": "control_needed",
+    "database_source": "ind108",
+    "table": "fact_risk_assessment",
+    "column": "control_needed",
+    "semantic_filter": "1 = 需要控制，0 = 不需要",
+    "aggregation_semantics": "求和得到是否需要控制的合计",
+    "grain": "per assessment",
+    "validation": {
+      "evidence": [
+        "ev_risk_assessment_enum",
+        "ev_hazard_location"
+      ]
+    }
+  },
+  {
+    "id": "map_risk_assess_date",
+    "term_id": "risk_assessment",
+    "database_source": "ind108",
+    "table": "fact_risk_assessment",
+    "column": "assess_date",
+    "semantic_filter": "2025-01-14..2026-02-03",
+    "aggregation_semantics": "按年份筛选",
+    "grain": "per assessment",
+    "validation": {
+      "evidence": [
+        "ev_risk_assessment_enum"
+      ]
+    }
+  },
+  {
+    "id": "map_hazard",
+    "term_id": "hazard",
+    "database_source": "ind108",
+    "table": "dim_hazard",
+    "column": "hazard_id",
+    "semantic_filter": "8 个危险源",
+    "aggregation_semantics": "实体主键，用于关联风险评估",
+    "grain": "one row per hazard",
+    "validation": {
+      "evidence": [
+        "ev_hazard_location"
+      ]
+    }
+  },
+  {
+    "id": "map_hazard_location",
+    "term_id": "hazard_location",
+    "database_source": "ind108",
+    "table": "dim_hazard",
+    "column": "location",
+    "semantic_filter": "文本位置描述",
+    "aggregation_semantics": "筛选维度",
+    "grain": "per hazard",
+    "validation": {
+      "evidence": [
+        "ev_hazard_location"
+      ]
+    }
+  },
+  {
+    "id": "map_safety_plan",
+    "term_id": "safety_plan",
+    "database_source": "ind108",
+    "table": "fact_safety_plan",
+    "column": "plan_id",
+    "semantic_filter": "每行一个安全计划",
+    "aggregation_semantics": "计划条数 = 行计数",
+    "grain": "one row per safety plan",
+    "validation": {
+      "evidence": [
+        "ev_time_coverage"
+      ]
+    }
+  },
+  {
+    "id": "map_safety_plan_status",
+    "term_id": "safety_plan_status",
+    "database_source": "ind108",
+    "table": "fact_safety_plan",
+    "column": "status",
+    "semantic_filter": "取值 active / closed",
+    "aggregation_semantics": "筛选与分组维度",
+    "grain": "per safety plan",
+    "validation": {
+      "evidence": [
+        "ev_time_coverage"
+      ]
+    }
+  },
+  {
+    "id": "map_safety_plan_issued_date",
+    "term_id": "safety_plan",
+    "database_source": "ind108",
+    "table": "fact_safety_plan",
+    "column": "issued_date",
+    "semantic_filter": "2025-01-08..2026-01-06",
+    "aggregation_semantics": "按签发日期筛选",
+    "grain": "per safety plan",
+    "validation": {
+      "evidence": [
+        "ev_time_coverage"
+      ]
+    }
+  },
+  {
+    "id": "map_safety_objective",
+    "term_id": "safety_objective",
+    "database_source": "ind108",
+    "table": "fact_safety_objective",
+    "column": "obj_id",
+    "semantic_filter": "每行一个安全目标",
+    "aggregation_semantics": "目标条数 = 行计数",
+    "grain": "one row per objective",
+    "validation": {
+      "evidence": [
+        "ev_safety_objective_unit"
+      ]
+    }
+  },
+  {
+    "id": "map_objective_target_value",
+    "term_id": "objective_target_value",
+    "database_source": "ind108",
+    "table": "fact_safety_objective",
+    "column": "target_value",
+    "semantic_filter": "须结合 unit 解释",
+    "aggregation_semantics": "求和得到目标值合计",
+    "grain": "per objective",
+    "validation": {
+      "evidence": [
+        "ev_safety_objective_unit"
+      ]
+    }
+  },
+  {
+    "id": "map_objective_unit",
+    "term_id": "objective_unit",
+    "database_source": "ind108",
+    "table": "fact_safety_objective",
+    "column": "unit",
+    "semantic_filter": "取值 % / ‰ / 起",
+    "aggregation_semantics": "筛选维度",
+    "grain": "per objective",
+    "validation": {
+      "evidence": [
+        "ev_safety_objective_unit"
+      ]
+    }
+  },
+  {
+    "id": "map_safety_audit",
+    "term_id": "safety_audit",
+    "database_source": "ind108",
+    "table": "fact_safety_audit",
+    "column": "audit_id",
+    "semantic_filter": "每行一次审计",
+    "aggregation_semantics": "审计次数 = 行计数",
+    "grain": "one row per audit",
+    "validation": {
+      "evidence": [
+        "ev_time_coverage"
+      ]
+    }
+  },
+  {
+    "id": "map_audit_score",
+    "term_id": "audit_score",
+    "database_source": "ind108",
+    "table": "fact_safety_audit",
+    "column": "score",
+    "semantic_filter": "约 82.1..96.7",
+    "aggregation_semantics": "平均值",
+    "grain": "per audit",
+    "validation": {
+      "evidence": [
+        "ev_time_coverage"
+      ]
+    }
+  },
+  {
+    "id": "map_audit_finding_count",
+    "term_id": "audit_finding_count",
+    "database_source": "ind108",
+    "table": "fact_safety_audit",
+    "column": "finding_count",
+    "semantic_filter": "",
+    "aggregation_semantics": "求和得到发现项数合计",
+    "grain": "per audit",
+    "validation": {
+      "evidence": [
+        "ev_time_coverage"
+      ]
+    }
+  },
+  {
+    "id": "map_audit_date",
+    "term_id": "safety_audit",
+    "database_source": "ind108",
+    "table": "fact_safety_audit",
+    "column": "audit_date",
+    "semantic_filter": "2025-01-08..2026-06-20",
+    "aggregation_semantics": "按年份筛选",
+    "grain": "per audit",
+    "validation": {
+      "evidence": [
+        "ev_time_coverage"
+      ]
+    }
+  },
+  {
+    "id": "map_safety_training",
+    "term_id": "safety_training",
+    "database_source": "ind108",
+    "table": "fact_safety_training",
+    "column": "training_id",
+    "semantic_filter": "每行一次培训",
+    "aggregation_semantics": "培训次数 = 行计数",
+    "grain": "one row per training",
+    "validation": {
+      "evidence": [
+        "ev_time_coverage"
+      ]
+    }
+  },
+  {
+    "id": "map_training_trainer",
+    "term_id": "training_trainer",
+    "database_source": "ind108",
+    "table": "fact_safety_training",
+    "column": "trainer_id",
+    "semantic_filter": "关联 dim_employee.emp_id",
+    "aggregation_semantics": "按讲师分组汇总",
+    "grain": "per training",
+    "validation": {
+      "evidence": [
+        "ev_time_coverage"
+      ]
+    }
+  },
+  {
+    "id": "map_attendee_count",
+    "term_id": "attendee_count",
+    "database_source": "ind108",
+    "table": "fact_safety_training",
+    "column": "attendee_count",
+    "semantic_filter": "",
+    "aggregation_semantics": "求和得到参训人数合计",
+    "grain": "per training",
+    "validation": {
+      "evidence": [
+        "ev_time_coverage"
+      ]
+    }
+  },
+  {
+    "id": "map_training_duration_hours",
+    "term_id": "training_duration_hours",
+    "database_source": "ind108",
+    "table": "fact_safety_training",
+    "column": "duration_hours",
+    "semantic_filter": "单位 小时",
+    "aggregation_semantics": "求和得到培训总时长",
+    "grain": "per training",
+    "validation": {
+      "evidence": [
+        "ev_time_coverage"
+      ]
+    }
+  },
+  {
+    "id": "map_env_record",
+    "term_id": "env_record",
+    "database_source": "ind108",
+    "table": "fact_env_record",
+    "column": "record_id",
+    "semantic_filter": "每行一条监测记录",
+    "aggregation_semantics": "记录数 = 行计数",
+    "grain": "one row per measurement",
+    "validation": {
+      "evidence": [
+        "ev_env_record_enum"
+      ]
+    }
+  },
+  {
+    "id": "map_env_record_type",
+    "term_id": "env_record_type",
+    "database_source": "ind108",
+    "table": "fact_env_record",
+    "column": "record_type",
+    "semantic_filter": "取值 季度监测 / 月度监测",
+    "aggregation_semantics": "筛选与分组维度",
+    "grain": "per measurement",
+    "validation": {
+      "evidence": [
+        "ev_env_record_enum"
+      ]
+    }
+  },
+  {
+    "id": "map_env_compliant",
+    "term_id": "env_compliant",
+    "database_source": "ind108",
+    "table": "fact_env_record",
+    "column": "is_compliant",
+    "semantic_filter": "1 = 合规，0 = 超标",
+    "aggregation_semantics": "均值即合规比例",
+    "grain": "per measurement",
+    "validation": {
+      "evidence": [
+        "ev_env_record_enum"
+      ]
+    }
+  },
+  {
+    "id": "map_employee",
+    "term_id": "employee",
+    "database_source": "ind108",
+    "table": "dim_employee",
+    "column": "emp_name",
+    "semantic_filter": "status 取值 active / inactive",
+    "aggregation_semantics": "分组维度与姓名输出，按 emp_id 关联业务记录",
+    "grain": "one row per employee",
+    "validation": {
+      "evidence": [
+        "ev_department_region"
+      ]
+    }
+  },
+  {
+    "id": "map_dws_aggregate_mart",
+    "term_id": "dws_aggregate_mart",
+    "database_source": "ind108",
+    "table": "DWS_PRODUCTION_DAILY",
+    "column": "",
+    "semantic_filter": "15 张 DWS_* 日汇总表与 agg_metric_monthly",
+    "aggregation_semantics": "已预聚合的指标，与明细事实表并存",
+    "grain": "one row per date x dimension",
+    "validation": {
+      "evidence": [
+        "ev_dws_marts"
+      ]
+    }
+  },
+  {
+    "id": "map_year",
+    "term_id": "year",
+    "database_source": "ind108",
+    "table": "fact_sales_order",
+    "column": "order_date",
+    "semantic_filter": "年份自各业务对象自身的日期列取出",
+    "aggregation_semantics": "按年份分组或筛选",
+    "grain": "per business record",
+    "validation": {
+      "evidence": [
+        "ev_time_coverage"
+      ]
+    }
+  }
+]

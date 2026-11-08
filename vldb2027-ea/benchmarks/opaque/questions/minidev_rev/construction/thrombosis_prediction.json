@@ -1,0 +1,131 @@
+{
+ "db_id": "thrombosis_prediction",
+ "questions": [
+  {
+   "question_id": 1179,
+   "db_id": "thrombosis_prediction",
+   "question": "For the patient who was diagnosed with SLE on 1994/2/19, what was his/her anti-Cardiolipin antibody concentration status on 1993/11/12?",
+   "evidence": "diagnosed with SLE refers to fld008 = 'SLE'; 1994/2/19 refers to fld016 = '1994-02-19'; anti-Cardiolipin refers to aCL fld048; 1993/11/12 refers to Examination fld019 = '1993/11/12'",
+   "difficulty": "moderate"
+  },
+  {
+   "question_id": 1205,
+   "db_id": "thrombosis_prediction",
+   "question": "Was the patient with the number 57266's uric acid within a normal range?",
+   "evidence": "uric acid within a normal range refers to fld026 > 8.0 and fld014 = 'M'OR fld026 > 6.5 and fld014 = 'F'",
+   "difficulty": "moderate"
+  },
+  {
+   "question_id": 1239,
+   "db_id": "thrombosis_prediction",
+   "question": "Name the ID and age of patient with two or more laboratory examinations which show their hematoclit level exceeded the normal range.",
+   "evidence": "age = SUBTRACT(year(current_timestamp), year(fld015)); patient with two or more laboratory examinations refers to COUNT(fld001) > 2; hematoclit level exceeded the normal range refers to fld037 > = 52;",
+   "difficulty": "challenging"
+  },
+  {
+   "question_id": 1157,
+   "db_id": "thrombosis_prediction",
+   "question": "For patients with severe degree of thrombosis, list their ID, sex and disease the patient is diagnosed with.",
+   "evidence": "severe degree of thrombosis refers to fld013 = 2; disease refers to diagnosis;",
+   "difficulty": "simple"
+  },
+  {
+   "question_id": 1171,
+   "db_id": "thrombosis_prediction",
+   "question": "How many underage patients were examined during the course of the three-year period from 1990 to 1993?",
+   "evidence": "underage patients refers to year(fld015) < 18; three-year period from 1990 to 1993 refers to year(fld002) between '1990' and '1993'",
+   "difficulty": "challenging"
+  },
+  {
+   "question_id": 1267,
+   "db_id": "thrombosis_prediction",
+   "question": "Among the patients with normal anti-SM, how many of them does not have thrombosis?",
+   "evidence": "normal anti-SM refers to fld055 IN('-', '+-'); fld055 = 'negative' means '-'; fld055 = '0' means '+-'; fld055 = '1' means '+'; does not have thrombosis refers to fld013 = 0;",
+   "difficulty": "moderate"
+  },
+  {
+   "question_id": 1185,
+   "db_id": "thrombosis_prediction",
+   "question": "For the patient who was born on 1959/2/18, what is the decrease rate for his/her total cholesterol from November to December in 1981?",
+   "evidence": "born on 1959/2/18 refers to fld015 = '1959-02-18'; calculation = DIVISION(SUBTRACT(SUM(fld015 = '1959-02-18' and fld019 like '1981-11-%' THEN fld030), SUM(fld015 = '1959-02-18' and fld019 like '1981-12-%' THEN fld030)), SUM(fld015 = '1959-02-18' and fld019 like '1981-12-%' THEN fld030))",
+   "difficulty": "challenging"
+  },
+  {
+   "question_id": 1166,
+   "db_id": "thrombosis_prediction",
+   "question": "What are the symptoms observed by the youngest patient to ever did a medical examination? Identify their diagnosis.",
+   "evidence": "The larger the birthday value, the younger the person is, and vice versa; symptoms observed refers to the fld012 is not NULL",
+   "difficulty": "simple"
+  },
+  {
+   "question_id": 1235,
+   "db_id": "thrombosis_prediction",
+   "question": "What are the patient's diagnosis for those who has lower red blood blood cell? State their ID and age.",
+   "evidence": "patient's diagnosis refers to Diagnosis; lower red blood cell refers to fld035 < 3.5; age = SUBTRACT(year(current_timestamp), year(fld015)); ",
+   "difficulty": "moderate"
+  },
+  {
+   "question_id": 1201,
+   "db_id": "thrombosis_prediction",
+   "question": "What percentage of patients who were born in 1980 and were diagnosed with RA are women?",
+   "evidence": "born in 1980 refers to YEAR(fld015) = '1980'; 'RA' refers to fld008='RA' ; women refers to fld014 = 'F'; calculation = DIVIDE(SUM(fld014 = 'F'), COUNT(fld014)) * 100",
+   "difficulty": "moderate"
+  },
+  {
+   "question_id": 1169,
+   "db_id": "thrombosis_prediction",
+   "question": "What is the ratio of male to female patients among all those with abnormal uric acid counts?",
+   "evidence": "male refers to fld014 = 'M'; female refers to fld014 = 'F'; abnormal uric acid refers to fld026 < = '8.0' where fld014 = 'M', fld026 < = '6.5' where fld014 = 'F'; calculation = DIVIDE(SUM(fld026 <= '8.0' and fld014 = 'M'), SUM(fld026 <= '6.5 and fld014 = 'F'))",
+   "difficulty": "challenging"
+  },
+  {
+   "question_id": 1150,
+   "db_id": "thrombosis_prediction",
+   "question": "What is the percentage of female patient were born after 1930?",
+   "evidence": "female refers to fld014 = 'F'; patient who were born after 1930 refers to year(fld015) > '1930'; calculation = DIVIDE(COUNT(fld001) where year(fld015) > '1930' and fld014 = 'F'), (COUNT(fld001) where fld014 = 'F')",
+   "difficulty": "moderate"
+  },
+  {
+   "question_id": 1254,
+   "db_id": "thrombosis_prediction",
+   "question": "How many patients with a normal Ig A level came to the hospital after 1990/1/1?",
+   "evidence": "normal Ig A level refers to fld047 > 80 AND fld047 < 500; came to the hospital after 1990/1/1 refers to YEAR(fld017) > = 1990;",
+   "difficulty": "moderate"
+  },
+  {
+   "question_id": 1155,
+   "db_id": "thrombosis_prediction",
+   "question": "List the patient ID, sex and birthday of patient with LDH beyond normal range.",
+   "evidence": "LDH beyond normal range refers to fld022 > '500';",
+   "difficulty": "simple"
+  },
+  {
+   "question_id": 1164,
+   "db_id": "thrombosis_prediction",
+   "question": "How many of the patients with the most serious thrombosis cases examined in 1997 are women?",
+   "evidence": "the most serious thrombosis refers to fld013 = '1' (the most severe one); women refers to fld014 = 'F'",
+   "difficulty": "moderate"
+  },
+  {
+   "question_id": 1162,
+   "db_id": "thrombosis_prediction",
+   "question": "How many female patients who came at the hospital in 1997 was immediately followed at the outpatient clinic?",
+   "evidence": "female refers to fld014 = 'F'; came at the hospital in 1997 refers to year(fld016) = '1997'; immediately followed at the outpatient clinic refers to fld018 = '-'",
+   "difficulty": "moderate"
+  },
+  {
+   "question_id": 1243,
+   "db_id": "thrombosis_prediction",
+   "question": "For all patients who are older than 55 years old, what is the percentage of female who has abnormal prothrombin time (PT)?",
+   "evidence": "older than 55 years old = SUBTRACT(year(current_timestamp), year(fld015)) > 55; abnormal prothrombin time (fld039) refers to fld039 > = 14; percentage = DIVIDE(SUM(fld039 > = 14 AND fld014 = 'F'), SUM(fld039 > = 14)) * 100; female refers to fld014 = 'F'; ",
+   "difficulty": "challenging"
+  },
+  {
+   "question_id": 1198,
+   "db_id": "thrombosis_prediction",
+   "question": "How many female patients were given an APS diagnosis?",
+   "evidence": "female refers to fld014 = 'F'; APS diagnosis refers to fld008='APS'",
+   "difficulty": "simple"
+  }
+ ]
+}

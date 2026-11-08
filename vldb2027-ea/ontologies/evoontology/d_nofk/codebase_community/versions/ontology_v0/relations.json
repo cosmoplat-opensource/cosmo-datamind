@@ -1,0 +1,151 @@
+[
+  {
+    "id": "rel_question_is_a_post",
+    "source": "term_question",
+    "relation_type": "hierarchy",
+    "target": "term_post",
+    "connection_condition": "rows of posts carrying PostTypeId = 1 share the Id space of all posts and form a strict subset of it",
+    "description": "A question is a kind of post; every question attribute is drawn from the post attribute set, and the question value domain is a strict subset of the post value domain.",
+    "evidence": [
+      "evidence_post_type_distribution"
+    ]
+  },
+  {
+    "id": "rel_answer_is_a_post",
+    "source": "term_answer",
+    "relation_type": "hierarchy",
+    "target": "term_post",
+    "connection_condition": "rows of posts carrying PostTypeId = 2 share the Id space of all posts and form a strict subset of it",
+    "description": "An answer is a kind of post; it is distinguished from other posts by the PostTypeId discriminator rather than by a separate table.",
+    "evidence": [
+      "evidence_post_type_distribution"
+    ]
+  },
+  {
+    "id": "rel_question_composed_of_answers",
+    "source": "term_question",
+    "relation_type": "composition",
+    "target": "term_answer",
+    "connection_condition": "each answer post carries ParentId equal to the Id of the question it responds to",
+    "description": "A question thread is composed of the answer posts attached to it through ParentId; an answer has no meaning detached from its parent question.",
+    "evidence": [
+      "evidence_answer_parent_linkage",
+      "evidence_answer_count_faithful"
+    ]
+  },
+  {
+    "id": "rel_post_composed_of_comments",
+    "source": "term_post",
+    "relation_type": "composition",
+    "target": "term_comment",
+    "connection_condition": "comments.PostId references posts.Id",
+    "description": "A post carries comments as dependent parts; a comment row is meaningless without the post it annotates.",
+    "evidence": [
+      "evidence_comment_coverage"
+    ]
+  },
+  {
+    "id": "rel_post_composed_of_revisions",
+    "source": "term_post",
+    "relation_type": "composition",
+    "target": "term_post_revision",
+    "connection_condition": "postHistory.PostId references posts.Id",
+    "description": "The editing history of a post is composed of its revision events; the initial-body event count approximates the post count, confirming each post owns its own history.",
+    "evidence": [
+      "evidence_post_history_types",
+      "evidence_post_history_initial_types"
+    ]
+  },
+  {
+    "id": "rel_post_receives_votes",
+    "source": "term_post",
+    "relation_type": "association",
+    "target": "term_vote",
+    "connection_condition": "votes.PostId references posts.Id",
+    "description": "Voting actions are recorded against posts, linking quality signals to content, but a vote is an independent engagement event rather than a component part of the post.",
+    "evidence": [
+      "evidence_vote_type_distribution",
+      "evidence_score_not_vote_sum"
+    ]
+  },
+  {
+    "id": "rel_answer_count_derived_from_answers",
+    "source": "term_answer",
+    "relation_type": "derivation",
+    "target": "term_answer_count",
+    "connection_condition": "counting answer posts whose ParentId equals a question reproduces that question's stored AnswerCount",
+    "description": "Answer count is derived by counting the answer posts attached to a question; the stored value is a faithful denormalisation of that count.",
+    "evidence": [
+      "evidence_answer_count_faithful"
+    ]
+  },
+  {
+    "id": "rel_accepted_answer_selected_from_answers",
+    "source": "term_answer",
+    "relation_type": "derivation",
+    "target": "term_accepted_answer",
+    "connection_condition": "the question's AcceptedAnswerId resolves to an answer post whose ParentId is that same question",
+    "description": "The accepted answer is selected from among the answers of a question, so acceptance is derived from the answer set rather than being an independent entity.",
+    "evidence": [
+      "evidence_accepted_answer_targets"
+    ]
+  },
+  {
+    "id": "rel_badge_name_equivalent_tag_name",
+    "source": "term_badge",
+    "relation_type": "equivalence",
+    "target": "term_tag",
+    "connection_condition": "a subset of badges.Name values shares its value domain with tags.TagName",
+    "description": "Tag-award badges reuse the tag vocabulary, so a badge name and a tag name can denote the same subject even though they live in different tables.",
+    "evidence": [
+      "evidence_badge_name_composition"
+    ]
+  },
+  {
+    "id": "rel_user_earns_badge",
+    "source": "term_user",
+    "relation_type": "association",
+    "target": "term_badge",
+    "connection_condition": "badges.UserId references users.Id",
+    "description": "Badges are awarded to users, connecting recognition events to accounts; the link is recorded on the badge row.",
+    "evidence": [
+      "evidence_badge_distribution",
+      "evidence_orphan_references"
+    ]
+  },
+  {
+    "id": "rel_user_authors_post",
+    "source": "term_user",
+    "relation_type": "association",
+    "target": "term_post",
+    "connection_condition": "posts.OwnerUserId references users.Id",
+    "description": "A user authors posts; authorship is recorded on the post row and is the main path from accounts to content.",
+    "evidence": [
+      "evidence_orphan_references",
+      "evidence_displayname_fallback"
+    ]
+  },
+  {
+    "id": "rel_question_tagged_with_tag",
+    "source": "term_question",
+    "relation_type": "association",
+    "target": "term_tag",
+    "connection_condition": "questions carry tag names embedded as delimited text in posts.Tags; the connection to the tags table is by name, not by a key",
+    "description": "Questions are labelled with tags, but the association is textual rather than relational, so it must be resolved by parsing the delimited tag string and matching tag names.",
+    "evidence": [
+      "evidence_tags_format",
+      "evidence_tags_population"
+    ]
+  },
+  {
+    "id": "rel_post_link_relates_posts",
+    "source": "term_post_link",
+    "relation_type": "association",
+    "target": "term_post",
+    "connection_condition": "postLinks.PostId and postLinks.RelatedPostId both reference posts.Id",
+    "description": "A declared link connects two posts, expressing that one post is related to another in a way classified by the link type.",
+    "evidence": [
+      "evidence_postlinks_types"
+    ]
+  }
+]

@@ -1,0 +1,189 @@
+[
+  {
+    "id": "rel_post_question_hierarchy",
+    "source": "term_post",
+    "relation_type": "hierarchy",
+    "target": "term_question",
+    "connection_condition": "",
+    "description": "A question is a specific kind of post; question rows form a subset of the post rows distinguished by the post type discriminator.",
+    "evidence": [
+      "ev_post_type_distribution"
+    ]
+  },
+  {
+    "id": "rel_post_answer_hierarchy",
+    "source": "term_post",
+    "relation_type": "hierarchy",
+    "target": "term_answer",
+    "connection_condition": "",
+    "description": "An answer is a specific kind of post; answer rows form a subset of the post rows distinguished by the post type discriminator.",
+    "evidence": [
+      "ev_post_type_distribution"
+    ]
+  },
+  {
+    "id": "rel_question_answer_composition",
+    "source": "term_question",
+    "relation_type": "composition",
+    "target": "term_answer",
+    "connection_condition": "An answer points at the question it belongs to through the parent post reference on its own post row.",
+    "description": "Answers are component parts of the question they respond to and cannot be interpreted without their parent question.",
+    "evidence": [
+      "ev_post_scalar_nullability"
+    ]
+  },
+  {
+    "id": "rel_post_comment_composition",
+    "source": "term_post",
+    "relation_type": "composition",
+    "target": "term_comment",
+    "connection_condition": "A comment carries the identifier of the post it annotates.",
+    "description": "Comments are attached parts of a post and lose their meaning without the annotated post.",
+    "evidence": [
+      "ev_referential_gaps"
+    ]
+  },
+  {
+    "id": "rel_post_vote_composition",
+    "source": "term_post",
+    "relation_type": "composition",
+    "target": "term_vote",
+    "connection_condition": "A vote carries the identifier of the post it was cast on.",
+    "description": "Votes are attached parts of a post; every vote belongs to exactly one post.",
+    "evidence": [
+      "ev_referential_gaps"
+    ]
+  },
+  {
+    "id": "rel_post_revision_composition",
+    "source": "term_post",
+    "relation_type": "composition",
+    "target": "term_post_revision",
+    "connection_condition": "A revision carries the identifier of the post it changed.",
+    "description": "Revisions are component parts of a post's history and cannot exist without the post they document.",
+    "evidence": [
+      "ev_revision_type_distribution"
+    ]
+  },
+  {
+    "id": "rel_user_post_ownership",
+    "source": "term_user",
+    "relation_type": "association",
+    "target": "term_post",
+    "connection_condition": "A post's owner identifier refers to a user account, but may also be absent, in which case only a label remains.",
+    "description": "Users own the posts they publish. No post identifier is stored on the user side, so this is a reference from content to person rather than containment.",
+    "evidence": [
+      "ev_owner_attribution_columns"
+    ]
+  },
+  {
+    "id": "rel_user_badge_award_composition",
+    "source": "term_user",
+    "relation_type": "composition",
+    "target": "term_badge_award",
+    "connection_condition": "A badge award carries the identifier of the user who received it.",
+    "description": "Badge awards are attached to a user and have no meaning without the user who earned them.",
+    "evidence": [
+      "ev_badge_cardinality"
+    ]
+  },
+  {
+    "id": "rel_user_id_display_name_equivalence",
+    "source": "term_user_id",
+    "relation_type": "equivalence",
+    "target": "term_display_name",
+    "connection_condition": "Both attributes are stored on the same user row and describe the same account; the identifier is the key and the display name is the label recorded in the same catalogue.",
+    "description": "Analytical questions name a person by display name while activity tables reference the numeric identifier, so the two representations denote the same user and must be reconciled.",
+    "evidence": [
+      "ev_displayname_not_unique"
+    ]
+  },
+  {
+    "id": "rel_badge_award_count_derivation",
+    "source": "term_badge_award",
+    "relation_type": "derivation",
+    "target": "term_user_badge_count",
+    "connection_condition": "",
+    "description": "A user's badge count is derived by counting that user's badge award records, optionally restricted to a named badge.",
+    "evidence": [
+      "ev_badge_cardinality"
+    ]
+  },
+  {
+    "id": "rel_view_count_popularity_derivation",
+    "source": "term_view_count",
+    "relation_type": "derivation",
+    "target": "term_post_popularity",
+    "connection_condition": "",
+    "description": "Post popularity is derived from readership, which the platform records as the view count of a question; comparing popularity means comparing this measure.",
+    "evidence": [
+      "ev_post_scalar_nullability"
+    ]
+  },
+  {
+    "id": "rel_reputation_influence_derivation",
+    "source": "term_reputation",
+    "relation_type": "derivation",
+    "target": "term_user_influence",
+    "connection_condition": "",
+    "description": "A user's influence is derived from accumulated reputation, so the most influential user is the one with the greatest reputation.",
+    "evidence": [
+      "ev_reputation_extremes"
+    ]
+  },
+  {
+    "id": "rel_age_elder_user_derivation",
+    "source": "term_age",
+    "relation_type": "derivation",
+    "target": "term_elder_user",
+    "connection_condition": "",
+    "description": "The elder-user category is derived from the declared age of a user by applying a senior-age threshold.",
+    "evidence": [
+      "ev_age_coverage"
+    ]
+  },
+  {
+    "id": "rel_post_percentage_derivation",
+    "source": "term_post",
+    "relation_type": "derivation",
+    "target": "term_post_percentage",
+    "connection_condition": "",
+    "description": "A post percentage is derived from post counts: the conditional count of posts meeting a stated condition over a stated denominator population.",
+    "evidence": [
+      "ev_workload_percentage_pattern"
+    ]
+  },
+  {
+    "id": "rel_post_tags_tag_association",
+    "source": "term_post_tags",
+    "relation_type": "association",
+    "target": "term_tag",
+    "connection_condition": "Tag names embedded in a question's delimited tag list correspond to names in the tag catalogue, but the list is stored inline rather than as references.",
+    "description": "Tag membership of a question and the tag catalogue describe the same topics through different representations, one denormalised and one catalogue-based.",
+    "evidence": [
+      "ev_tag_count_comparison"
+    ]
+  },
+  {
+    "id": "rel_community_user_post_association",
+    "source": "term_community_user",
+    "relation_type": "association",
+    "target": "term_post",
+    "connection_condition": "Posts owned by the Community account are marked by a community-owned timestamp on the post row.",
+    "description": "The Community account holds ownership of community-wiki content on behalf of the platform, so content attributed to it has no human author.",
+    "evidence": [
+      "ev_community_account"
+    ]
+  },
+  {
+    "id": "rel_unregistered_author_user_association",
+    "source": "term_unregistered_author",
+    "relation_type": "association",
+    "target": "term_user",
+    "connection_condition": "The label-only author columns are populated when no user identifier is recorded; synthesised account names also exist inside the user catalogue itself.",
+    "description": "A display name recorded without a user identifier cannot be resolved to a person, yet it draws from the same textual name space as registered display names.",
+    "evidence": [
+      "ev_anon_displayname_overlap"
+    ]
+  }
+]

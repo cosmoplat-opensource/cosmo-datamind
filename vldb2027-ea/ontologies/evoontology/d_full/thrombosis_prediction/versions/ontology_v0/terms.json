@@ -1,0 +1,506 @@
+[
+  {
+    "id": "term_patient",
+    "name": "Patient",
+    "type": "entity",
+    "definition": "One individual in the cohort, described by sex, birth date and one or more patient-level disease labels, and referenced by the clinical and laboratory event tables through an integer identifier.",
+    "scope": "Cohort-level analysis of the thrombosis_prediction database, including cohort size, demographics and disease distribution.",
+    "aliases": [
+      "subject",
+      "case",
+      "individual",
+      "person"
+    ],
+    "evidence": [
+      "ev_schema_tables",
+      "ev_row_counts",
+      "ev_sex_values"
+    ]
+  },
+  {
+    "id": "term_examination",
+    "name": "Examination",
+    "type": "entity",
+    "definition": "A single clinical assessment event at which the autoantibody panel (anticardiolipin isotypes, antinuclear antibody and its pattern), the phospholipid-dependent coagulation assays KCT, RVVT and LAC, an overall thrombosis grade and an optional symptom note were recorded for one patient.",
+    "scope": "Event-level analysis of autoantibody results, coagulation assays and thrombosis status. One row per recorded assessment.",
+    "aliases": [
+      "visit",
+      "assessment",
+      "exam",
+      "encounter"
+    ],
+    "evidence": [
+      "ev_schema_tables",
+      "ev_examination_grain",
+      "ev_thrombosis_distribution"
+    ]
+  },
+  {
+    "id": "term_laboratory_record",
+    "name": "Laboratory Record",
+    "type": "entity",
+    "definition": "A single laboratory test panel performed for one patient on one date, carrying general biochemistry, haematology, immunoglobulin, inflammation and sparsely recorded coagulation and extractable-nuclear-antigen analytes.",
+    "scope": "Longitudinal laboratory monitoring. Identified by the pair (patient identifier, date); several records per patient over many years.",
+    "aliases": [
+      "lab record",
+      "lab panel",
+      "test panel",
+      "laboratory result"
+    ],
+    "evidence": [
+      "ev_schema_tables",
+      "ev_laboratory_grain",
+      "ev_laboratory_missingness"
+    ]
+  },
+  {
+    "id": "term_thrombosis",
+    "name": "Thrombosis Grade",
+    "type": "concept",
+    "definition": "An integer assessment of thrombotic involvement recorded once per examination, valued 0 to 3, where 0 indicates that no thrombosis was recorded and values 1 to 3 form an ordered scale of increasing involvement. It is a graded indicator rather than a yes/no flag.",
+    "scope": "Thrombosis status and thrombotic burden per examination; the primary outcome concept of the database.",
+    "aliases": [
+      "thrombosis",
+      "thrombotic event",
+      "thrombotic grade",
+      "blood clot",
+      "thrombus"
+    ],
+    "evidence": [
+      "ev_thrombosis_distribution"
+    ]
+  },
+  {
+    "id": "term_thrombotic_symptom",
+    "name": "Recorded Symptom",
+    "type": "concept",
+    "definition": "A free-text note of the clinical manifestation associated with an examination. It is present only on examinations whose thrombosis grade is above zero, so in this snapshot it marks the manifestation accompanying a recorded thrombotic event.",
+    "scope": "Qualitative description of what was observed when a thrombotic event was recorded; not a controlled vocabulary.",
+    "aliases": [
+      "symptoms",
+      "clinical manifestation",
+      "presenting symptom",
+      "symptom text"
+    ],
+    "evidence": [
+      "ev_thrombosis_symptoms_coupling",
+      "ev_thrombosis_positive_diagnoses"
+    ]
+  },
+  {
+    "id": "term_patient_diagnosis",
+    "name": "Patient-level Diagnosis Label",
+    "type": "concept",
+    "definition": "The disease label or comma-separated set of disease labels attached to a patient, using a short abbreviation vocabulary and optional 'susp' uncertainty qualifiers.",
+    "scope": "Patient-level disease attribution, one row per patient; suitable for cohort composition and comorbidity questions.",
+    "aliases": [
+      "diagnosis",
+      "patient diagnosis",
+      "disease label",
+      "primary diagnosis"
+    ],
+    "evidence": [
+      "ev_patient_diagnosis_tokens",
+      "ev_diagnosis_multilabel_encoding"
+    ]
+  },
+  {
+    "id": "term_examination_diagnosis",
+    "name": "Examination-level Diagnosis Label",
+    "type": "concept",
+    "definition": "The disease label or comma-separated set of disease labels attached to a specific examination, drawn from the same abbreviation vocabulary as the patient-level label column but written in a different naming convention. It is absent on a substantial minority of examinations.",
+    "scope": "Disease attribution at the level of a single assessment, used to characterise the state of the patient when the autoantibody and thrombosis results were obtained.",
+    "aliases": [
+      "examination diagnosis",
+      "visit diagnosis",
+      "diagnosis at examination"
+    ],
+    "evidence": [
+      "ev_examination_diagnosis_tokens",
+      "ev_diagnosis_naming_convention"
+    ]
+  },
+  {
+    "id": "term_disease_category",
+    "name": "Autoimmune Disease Category",
+    "type": "concept",
+    "definition": "A normalised disease category obtained by reducing a raw diagnosis label to its disease token, used to make patient-level and examination-level labels comparable across the spelling and abbreviation differences of the two columns. Leading categories observed in the data are the Sjogren label, SLE, RA, Behcet, PSS, MCTD and APS.",
+    "scope": "Grouping patients or examinations for comparison across disease categories; requires normalising case, abbreviations, separators and 'susp' qualifiers before use.",
+    "aliases": [
+      "disease category",
+      "disease group",
+      "condition",
+      "diagnostic group"
+    ],
+    "evidence": [
+      "ev_patient_diagnosis_tokens",
+      "ev_examination_diagnosis_tokens",
+      "ev_diagnosis_naming_convention"
+    ]
+  },
+  {
+    "id": "term_sex",
+    "name": "Sex",
+    "type": "dimension",
+    "definition": "The recorded sex of a patient, stored as a single letter code with a small number of empty-string placeholders.",
+    "scope": "Demographic breakdowns of the cohort.",
+    "aliases": [
+      "sex",
+      "gender",
+      "male",
+      "female"
+    ],
+    "evidence": [
+      "ev_sex_values"
+    ]
+  },
+  {
+    "id": "term_birth_date",
+    "name": "Birth Date",
+    "type": "dimension",
+    "definition": "The patient's date of birth, used together with a visit date to compute age.",
+    "scope": "Age computation and demographic description of the cohort.",
+    "aliases": [
+      "birthday",
+      "date of birth",
+      "DOB"
+    ],
+    "evidence": [
+      "ev_date_ranges",
+      "ev_patient_date_fields"
+    ]
+  },
+  {
+    "id": "term_first_visit_date",
+    "name": "First Visit Date",
+    "type": "dimension",
+    "definition": "A patient-level date stored in the column named 'First Date', interpreted here only as an early reference date for the patient's record because the database contains no documentation of its exact meaning. A second patient-level date column, Description, exists alongside it and does not always agree with it.",
+    "scope": "Patient-level reference dates for chronological framing; the exact semantics of the column are undetermined and must be stated as an assumption when used.",
+    "aliases": [
+      "first date",
+      "first visit",
+      "registration date",
+      "entry date"
+    ],
+    "evidence": [
+      "ev_date_ranges",
+      "ev_patient_date_fields"
+    ]
+  },
+  {
+    "id": "term_age_at_first_visit",
+    "name": "Age at First Visit",
+    "type": "metric",
+    "definition": "The patient's age in years at the time of the earliest recorded visit, obtained by subtracting the birth date from a patient-level reference date.",
+    "scope": "Age-related cohort description; requires an explicit choice between the candidate reference date columns.",
+    "aliases": [
+      "age",
+      "age at onset",
+      "age at presentation",
+      "onset age"
+    ],
+    "evidence": [
+      "ev_patient_date_fields"
+    ]
+  },
+  {
+    "id": "term_antinuclear_antibody",
+    "name": "Antinuclear Antibody Titre",
+    "type": "metric",
+    "definition": "The antinuclear antibody result recorded as a reciprocal titre value, where 0 encodes a negative result and non-zero values follow a dilution series. The column contains one value that breaks the series and is treated as suspect.",
+    "scope": "Autoantibody screening and titre comparison across examinations; values are ordinal titre steps, not a continuous measurement.",
+    "aliases": [
+      "ANA",
+      "antinuclear antibody",
+      "ANA titre",
+      "ANA titer",
+      "ANA positive"
+    ],
+    "evidence": [
+      "ev_ana_titre"
+    ]
+  },
+  {
+    "id": "term_ana_pattern",
+    "name": "Antinuclear Antibody Staining Pattern",
+    "type": "dimension",
+    "definition": "A multi-valued code field describing the ANA staining pattern recorded alongside the titre. Values are built from the single-letter codes S, P, D and N, joined inconsistently, so the same combination appears in several textual forms.",
+    "scope": "Pattern-level characterisation of a positive antinuclear antibody result; requires normalisation of letter order, separator and case before comparison.",
+    "aliases": [
+      "ANA pattern",
+      "staining pattern",
+      "fluorescence pattern"
+    ],
+    "evidence": [
+      "ev_ana_pattern",
+      "ev_ana_vs_pattern"
+    ]
+  },
+  {
+    "id": "term_anticardiolipin_antibody",
+    "name": "Anticardiolipin Antibody",
+    "type": "concept",
+    "definition": "The anticardiolipin antibody family recorded as three separate isotype measurements on each examination. Each isotype is stored on its own numeric scale, with the great majority of results clustered at the low end and a thin tail of raised values.",
+    "scope": "Antiphospholipid antibody assessment; the three isotypes are measured and reported independently and cannot be pooled without noting the differing scales.",
+    "aliases": [
+      "anticardiolipin",
+      "aCL",
+      "cardiolipin antibody",
+      "anticardiolipin antibody"
+    ],
+    "evidence": [
+      "ev_acl_igg_distribution",
+      "ev_acl_igm_distribution",
+      "ev_acl_iga_distribution"
+    ]
+  },
+  {
+    "id": "term_acl_igg",
+    "name": "Anticardiolipin Antibody IgG Isotype",
+    "type": "metric",
+    "definition": "The IgG isotype measurement of the anticardiolipin antibody, stored as a real number with the bulk of results at or below 7 and a sparse tail reaching into the thousands.",
+    "scope": "Isotype-specific anticardiolipin assessment.",
+    "aliases": [
+      "aCL IgG",
+      "anticardiolipin IgG",
+      "IgG cardiolipin antibody"
+    ],
+    "evidence": [
+      "ev_acl_igg_distribution"
+    ]
+  },
+  {
+    "id": "term_acl_igm",
+    "name": "Anticardiolipin Antibody IgM Isotype",
+    "type": "metric",
+    "definition": "The IgM isotype measurement of the anticardiolipin antibody, stored as a real number. Its maximum value is several orders of magnitude beyond every other observation and must be treated as suspect.",
+    "scope": "Isotype-specific anticardiolipin assessment.",
+    "aliases": [
+      "aCL IgM",
+      "anticardiolipin IgM",
+      "IgM cardiolipin antibody"
+    ],
+    "evidence": [
+      "ev_acl_igm_distribution"
+    ]
+  },
+  {
+    "id": "term_acl_iga",
+    "name": "Anticardiolipin Antibody IgA Isotype",
+    "type": "metric",
+    "definition": "The IgA isotype measurement of the anticardiolipin antibody, stored as an integer on a smaller scale than the other two isotypes, with about half of all examinations recorded as exactly zero.",
+    "scope": "Isotype-specific anticardiolipin assessment.",
+    "aliases": [
+      "aCL IgA",
+      "anticardiolipin IgA",
+      "IgA cardiolipin antibody"
+    ],
+    "evidence": [
+      "ev_acl_iga_distribution"
+    ]
+  },
+  {
+    "id": "term_lupus_anticoagulant",
+    "name": "Lupus Anticoagulant Result",
+    "type": "concept",
+    "definition": "The lupus anticoagulant assay result recorded per examination as a positive or negative token, and absent entirely on most examinations.",
+    "scope": "Antiphospholipid-related coagulation testing; recorded on roughly a quarter of examinations.",
+    "aliases": [
+      "LAC",
+      "lupus anticoagulant",
+      "LA",
+      "lupus anticoagulant positive"
+    ],
+    "evidence": [
+      "ev_lac_values"
+    ]
+  },
+  {
+    "id": "term_kct",
+    "name": "Kaolin Clotting Time Result",
+    "type": "concept",
+    "definition": "The kaolin clotting time assay result recorded per examination as a positive or negative token. It is always recorded on the same examinations as the RVVT assay, on 146 rows in total.",
+    "scope": "Phospholipid-dependent coagulation testing.",
+    "aliases": [
+      "KCT",
+      "kaolin clotting time",
+      "kaolin clotting"
+    ],
+    "evidence": [
+      "ev_kct_rvvt_coupling"
+    ]
+  },
+  {
+    "id": "term_rvvt",
+    "name": "Dilute Russell Viper Venom Time Result",
+    "type": "concept",
+    "definition": "The dilute Russell viper venom time assay result recorded per examination as a positive or negative token, always co-recorded with the KCT assay.",
+    "scope": "Phospholipid-dependent coagulation testing.",
+    "aliases": [
+      "RVVT",
+      "dRVVT",
+      "Russell viper venom time",
+      "viper venom time"
+    ],
+    "evidence": [
+      "ev_kct_rvvt_coupling"
+    ]
+  },
+  {
+    "id": "term_immunoglobulin",
+    "name": "Serum Immunoglobulin",
+    "type": "concept",
+    "definition": "The serum immunoglobulin family recorded as three separate isotype measurements on the same laboratory record.",
+    "scope": "Humoral immune response assessment in the longitudinal laboratory table.",
+    "aliases": [
+      "immunoglobulin",
+      "gammaglobulin",
+      "Ig",
+      "immunoglobulins"
+    ],
+    "evidence": [
+      "ev_immunoglobulin_ranges"
+    ]
+  },
+  {
+    "id": "term_igg",
+    "name": "Serum IgG Level",
+    "type": "metric",
+    "definition": "The IgG isotype concentration recorded on a laboratory record, stored as an integer with a wide observed range and a median in the mid-thousands.",
+    "scope": "Isotype-specific immunoglobulin assessment.",
+    "aliases": [
+      "IgG",
+      "immunoglobulin G",
+      "gammaglobulin G"
+    ],
+    "evidence": [
+      "ev_immunoglobulin_ranges"
+    ]
+  },
+  {
+    "id": "term_iga",
+    "name": "Serum IgA Level",
+    "type": "metric",
+    "definition": "The IgA isotype concentration recorded on a laboratory record, stored as an integer with a much smaller observed range than IgG.",
+    "scope": "Isotype-specific immunoglobulin assessment.",
+    "aliases": [
+      "IgA",
+      "immunoglobulin A",
+      "gammaglobulin A"
+    ],
+    "evidence": [
+      "ev_immunoglobulin_ranges"
+    ]
+  },
+  {
+    "id": "term_igm",
+    "name": "Serum IgM Level",
+    "type": "metric",
+    "definition": "The IgM isotype concentration recorded on a laboratory record, stored as an integer; the smallest of the three immunoglobulin scales.",
+    "scope": "Isotype-specific immunoglobulin assessment.",
+    "aliases": [
+      "IgM",
+      "immunoglobulin M",
+      "gammaglobulin M"
+    ],
+    "evidence": [
+      "ev_immunoglobulin_ranges"
+    ]
+  },
+  {
+    "id": "term_crp",
+    "name": "C-Reactive Protein",
+    "type": "metric",
+    "definition": "The C-reactive protein result recorded on a laboratory record. It is stored as text in several different encodings, mixing negative markers, below-detection thresholds, semi-quantitative positive grades and plain decimal numbers, and therefore has no single numeric meaning until the encoding is resolved.",
+    "scope": "Inflammatory activity monitoring in the longitudinal laboratory table.",
+    "aliases": [
+      "CRP",
+      "C-reactive protein",
+      "C reactive protein",
+      "inflammation marker"
+    ],
+    "evidence": [
+      "ev_crp_encoding"
+    ]
+  },
+  {
+    "id": "term_rheumatoid_factor",
+    "name": "Rheumatoid Factor",
+    "type": "metric",
+    "definition": "The rheumatoid factor result recorded on a laboratory record, stored as text where results below the assay detection limit carry a '<' prefix and results at or above it are bare numbers around a prominent threshold value.",
+    "scope": "Serological assessment of rheumatoid disease in the longitudinal laboratory table.",
+    "aliases": [
+      "RF",
+      "rheumatoid factor",
+      "RA factor"
+    ],
+    "evidence": [
+      "ev_rf_threshold"
+    ]
+  },
+  {
+    "id": "term_urinary_protein",
+    "name": "Urinary Protein Excretion",
+    "type": "metric",
+    "definition": "The urine protein result recorded on a laboratory record, stored as text that mixes a negative marker, a trace marker, a small ordinal grade scale and larger numeric amount tokens, so the column is not a single measurement scale.",
+    "scope": "Renal involvement monitoring in the longitudinal laboratory table.",
+    "aliases": [
+      "U-PRO",
+      "urine protein",
+      "proteinuria",
+      "urinary protein"
+    ],
+    "evidence": [
+      "ev_urinary_protein_categories"
+    ]
+  },
+  {
+    "id": "term_creatinine",
+    "name": "Serum Creatinine",
+    "type": "metric",
+    "definition": "The serum creatinine concentration recorded on a laboratory record, stored as a real number with the bulk of values near the low end and a populated upper tail.",
+    "scope": "Renal function monitoring in the longitudinal laboratory table.",
+    "aliases": [
+      "CRE",
+      "creatinine",
+      "serum creatinine"
+    ],
+    "evidence": [
+      "ev_laboratory_numeric_ranges",
+      "ev_platelet_distribution"
+    ]
+  },
+  {
+    "id": "term_platelet_count",
+    "name": "Platelet Count",
+    "type": "metric",
+    "definition": "The platelet count recorded on a laboratory record, stored as an integer over a wide range with substantial numbers of observations in both the low and the high tail.",
+    "scope": "Haematological monitoring, relevant to thrombocytopenia and thrombocytosis questions.",
+    "aliases": [
+      "PLT",
+      "platelet count",
+      "platelets",
+      "thrombocyte count"
+    ],
+    "evidence": [
+      "ev_laboratory_numeric_ranges",
+      "ev_platelet_distribution"
+    ]
+  },
+  {
+    "id": "term_dna_antibody",
+    "name": "Anti-DNA Antibody",
+    "type": "metric",
+    "definition": "The anti-DNA antibody result. The database exposes two candidate columns: a sparsely populated text column holding decimal strings and a second column that is empty in every row.",
+    "scope": "Autoantibody assessment; only one of the two candidate columns carries information.",
+    "aliases": [
+      "anti-DNA",
+      "DNA antibody",
+      "anti-dsDNA",
+      "DNA-II"
+    ],
+    "evidence": [
+      "ev_dna_columns"
+    ]
+  }
+]

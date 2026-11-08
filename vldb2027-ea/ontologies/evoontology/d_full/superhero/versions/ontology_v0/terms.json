@@ -1,0 +1,262 @@
+[
+  {
+    "id": "term_superhero",
+    "name": "Superhero",
+    "type": "entity",
+    "definition": "A single costumed character record in the superhero catalogue. Each superhero carries a code name, an optional civilian full name, and references to gender, eye/hair/skin colour, race, publisher and alignment, plus nullable physical measurements.",
+    "scope": "The superhero SQLite database; grain is one row per character in the superhero table.",
+    "aliases": [
+      "hero",
+      "character",
+      "superhero record"
+    ],
+    "evidence": [
+      "evidence_table_inventory",
+      "evidence_superhero_sample"
+    ]
+  },
+  {
+    "id": "term_superhero_code_name",
+    "name": "Superhero Code Name",
+    "type": "concept",
+    "definition": "The public alias under which a character appears, stored in superhero.superhero_name. It is the primary human-readable label of a superhero record.",
+    "scope": "Display and lookup of superheroes by their published name.",
+    "aliases": [
+      "hero name",
+      "alias",
+      "superhero_name"
+    ],
+    "evidence": [
+      "evidence_superhero_sample",
+      "evidence_name_placeholders"
+    ]
+  },
+  {
+    "id": "term_hero_full_name",
+    "name": "Hero Civilian Full Name",
+    "type": "concept",
+    "definition": "The character's in-universe civilian or full personal name, stored in superhero.full_name. Many records do not carry a civilian identity; both an explicit dash and SQL NULL are used to encode that absence.",
+    "scope": "Identity analysis of superheroes; must not be treated as a guaranteed complete attribute of every record.",
+    "aliases": [
+      "full name",
+      "real name",
+      "civilian name"
+    ],
+    "evidence": [
+      "evidence_name_placeholders",
+      "evidence_superhero_sample"
+    ]
+  },
+  {
+    "id": "term_hero_id",
+    "name": "Hero Identifier",
+    "type": "concept",
+    "definition": "The integer surrogate that denotes one superhero record. It is authoritative in superhero.id and is reused as hero_id by the child tables that attach information to a hero, so the same identifier concept appears under different column spellings across tables.",
+    "scope": "Joining superhero to its dependent records; identifier sequences are not guaranteed contiguous.",
+    "aliases": [
+      "hero_id",
+      "superhero.id",
+      "hero key"
+    ],
+    "evidence": [
+      "evidence_schema_foreign_keys",
+      "evidence_id_gaps",
+      "evidence_referential_integrity"
+    ]
+  },
+  {
+    "id": "term_publisher",
+    "name": "Publisher",
+    "type": "entity",
+    "definition": "The company or rights holder that publishes a superhero property. Publishers form an independent reference list that many superheroes point at, so roster analysis is a many-to-one aggregation from superhero to publisher.",
+    "scope": "Publisher-level roster and franchise analysis in this database.",
+    "aliases": [
+      "publisher_name",
+      "company",
+      "imprint"
+    ],
+    "evidence": [
+      "evidence_publisher_distribution",
+      "evidence_publisher_placeholders"
+    ]
+  },
+  {
+    "id": "term_alignment",
+    "name": "Alignment",
+    "type": "category",
+    "definition": "The moral stance attributed to a superhero, held in a four-value reference list (Good, Bad, Neutral, N/A). It is a classification of the character, not a measured quantity.",
+    "scope": "Grouping and comparing superheroes by moral stance.",
+    "aliases": [
+      "moral alignment",
+      "good or bad",
+      "alignment_id"
+    ],
+    "evidence": [
+      "evidence_alignment_distribution",
+      "evidence_alignment_cross"
+    ]
+  },
+  {
+    "id": "term_gender",
+    "name": "Gender",
+    "type": "category",
+    "definition": "The gender category recorded for a superhero, held in a three-value reference list (Male, Female, N/A). The N/A entry is a missing-value category rather than a substantive gender.",
+    "scope": "Demographic breakdowns of the superhero catalogue.",
+    "aliases": [
+      "gender_id",
+      "sex"
+    ],
+    "evidence": [
+      "evidence_gender_distribution",
+      "evidence_alignment_cross"
+    ]
+  },
+  {
+    "id": "term_race",
+    "name": "Race / Species",
+    "type": "category",
+    "definition": "The species or origin category of a superhero, held in a 61-value reference list whose entries mix everyday species labels (Human, Mutant, Alien) with compound origin labels (Human / Radiation, Human-Kree). A dash entry records an unspecified race.",
+    "scope": "Species and origin breakdowns; the dash entry and NULL race_id must be handled explicitly.",
+    "aliases": [
+      "race_id",
+      "species",
+      "origin"
+    ],
+    "evidence": [
+      "evidence_race_distribution",
+      "evidence_race_placeholders"
+    ]
+  },
+  {
+    "id": "term_colour_value",
+    "name": "Colour Value",
+    "type": "category",
+    "definition": "A colour name drawn from the shared 35-value colour reference list. The same list supplies the eye colour, hair colour and skin colour of a superhero, so the three appearance attributes are not independent vocabularies.",
+    "scope": "Appearance analysis of superheroes across the eye, hair and skin colour columns.",
+    "aliases": [
+      "colour",
+      "color",
+      "eye_colour",
+      "hair_colour",
+      "skin_colour"
+    ],
+    "evidence": [
+      "evidence_colour_values",
+      "evidence_colour_usage"
+    ]
+  },
+  {
+    "id": "term_attribute_dimension",
+    "name": "Attribute Dimension",
+    "type": "dimension",
+    "definition": "One of the six rated capability dimensions of a superhero: Intelligence, Strength, Speed, Durability, Power and Combat. Dimensions are held in a fixed reference list and give meaning to the numeric ratings recorded per hero.",
+    "scope": "Naming and interpretation of the six capability scores; distinct from the separately named superpower abilities.",
+    "aliases": [
+      "attribute_name",
+      "capability",
+      "stat"
+    ],
+    "evidence": [
+      "evidence_attribute_dimensions",
+      "evidence_attribute_power_overlap"
+    ]
+  },
+  {
+    "id": "term_hero_attribute_score",
+    "name": "Hero Attribute Score",
+    "type": "metric",
+    "definition": "The numeric rating a single superhero receives on a single attribute dimension, stored in hero_attribute.attribute_value. It is a per-hero, per-dimension measurement and is the base quantity for any capability comparison between heroes or groups.",
+    "scope": "Capability scoring and comparison; available only for heroes that have rating rows.",
+    "aliases": [
+      "attribute_value",
+      "capability score",
+      "stat score",
+      "power rating"
+    ],
+    "evidence": [
+      "evidence_attribute_coverage",
+      "evidence_attribute_scale",
+      "evidence_attribute_by_alignment"
+    ]
+  },
+  {
+    "id": "term_hero_height",
+    "name": "Hero Height",
+    "type": "metric",
+    "definition": "The recorded height of a superhero in centimetres, stored in superhero.height_cm. Zero is used as a placeholder for an unrecorded height and a small number of extreme values describe cosmic-scale characters.",
+    "scope": "Physical measurement analysis; zero values and extreme outliers must be excluded before averaging.",
+    "aliases": [
+      "height_cm",
+      "height",
+      "stature"
+    ],
+    "evidence": [
+      "evidence_height_sentinels",
+      "evidence_height_outliers"
+    ]
+  },
+  {
+    "id": "term_hero_weight",
+    "name": "Hero Weight",
+    "type": "metric",
+    "definition": "The recorded weight of a superhero in kilograms, stored in superhero.weight_kg. Zero is used as a placeholder for an unrecorded weight and a few extreme values describe cosmic-scale characters.",
+    "scope": "Physical measurement analysis; zero values and extreme outliers must be excluded before averaging.",
+    "aliases": [
+      "weight_kg",
+      "weight",
+      "mass"
+    ],
+    "evidence": [
+      "evidence_weight_sentinels",
+      "evidence_weight_outliers"
+    ]
+  },
+  {
+    "id": "term_superpower",
+    "name": "Superpower",
+    "type": "entity",
+    "definition": "A named ability drawn from a 167-value reference list, such as Super Strength, Flight or Telepathy. Powers are independent entities shared across many heroes, so a hero's abilities are a many-to-many set rather than a column of the hero record.",
+    "scope": "Ability analysis of superheroes; the referenced list shares some labels with attribute dimensions but describes different concepts.",
+    "aliases": [
+      "power_name",
+      "ability",
+      "power"
+    ],
+    "evidence": [
+      "evidence_superpower_catalogue",
+      "evidence_attribute_power_overlap"
+    ]
+  },
+  {
+    "id": "term_hero_power_count",
+    "name": "Hero Power Count",
+    "type": "metric",
+    "definition": "The number of distinct powers recorded for one superhero. It has no stored column and must be derived by counting the hero's rows in the hero-to-power association.",
+    "scope": "Breadth-of-ability analysis per superhero; undefined for heroes with no recorded powers.",
+    "aliases": [
+      "number of powers",
+      "power total",
+      "ability count"
+    ],
+    "evidence": [
+      "evidence_power_coverage",
+      "evidence_power_counts"
+    ]
+  },
+  {
+    "id": "term_publisher_roster_size",
+    "name": "Publisher Roster Size",
+    "type": "metric",
+    "definition": "The number of superhero records attributed to one publisher. It has no stored column and must be derived by counting superhero records per publisher.",
+    "scope": "Publisher scale comparison; the count is only as meaningful as the publisher attribution, which is incomplete for some records.",
+    "aliases": [
+      "number of heroes",
+      "hero count",
+      "roster"
+    ],
+    "evidence": [
+      "evidence_publisher_distribution",
+      "evidence_publisher_placeholders"
+    ]
+  }
+]

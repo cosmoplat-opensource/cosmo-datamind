@@ -1,0 +1,273 @@
+[
+  {
+    "id": "rel_season_race",
+    "source": "term_season",
+    "relation_type": "composition",
+    "target": "term_race",
+    "connection_condition": "races.year corresponds to seasons.year",
+    "description": "A season is composed of the races held in that year; a race cannot exist without belonging to a championship season.",
+    "evidence": [
+      "evidence_seasons_races"
+    ]
+  },
+  {
+    "id": "rel_race_result",
+    "source": "term_race",
+    "relation_type": "composition",
+    "target": "term_race_result",
+    "connection_condition": "results.raceId identifies the race each entry belongs to",
+    "description": "A race classification is composed of its entry records; a result row has no meaning apart from the race it belongs to.",
+    "evidence": [
+      "evidence_results_grain_and_counts"
+    ]
+  },
+  {
+    "id": "rel_driver_result",
+    "source": "term_driver",
+    "relation_type": "association",
+    "target": "term_race_result",
+    "connection_condition": "results.driverId references drivers.driverId",
+    "description": "A driver appears in race result entries; the same driver can occupy more than one entry in a single race where a car was shared, so the link is not one-to-one.",
+    "evidence": [
+      "evidence_results_duplicate_grain"
+    ]
+  },
+  {
+    "id": "rel_constructor_result",
+    "source": "term_constructor",
+    "relation_type": "association",
+    "target": "term_race_result",
+    "connection_condition": "results.constructorId references constructors.constructorId",
+    "description": "A constructor fields the cars recorded in race result entries.",
+    "evidence": [
+      "evidence_shared_drive_multi_entry"
+    ]
+  },
+  {
+    "id": "rel_circuit_race",
+    "source": "term_circuit",
+    "relation_type": "association",
+    "target": "term_race",
+    "connection_condition": "races.circuitId references circuits.circuitId",
+    "description": "A race is hosted at a circuit; the circuit is a venue rather than a whole composed of races, so this is a business association reinforced by a foreign key.",
+    "evidence": [
+      "evidence_circuits_domain"
+    ]
+  },
+  {
+    "id": "rel_driver_constructor",
+    "source": "term_driver",
+    "relation_type": "association",
+    "target": "term_constructor",
+    "connection_condition": "results and qualifying rows pair driverId with constructorId within the same race",
+    "description": "A driver competes for a constructor, but the pairing is not stable for a whole season or career.",
+    "evidence": [
+      "evidence_driver_constructor_mobility"
+    ]
+  },
+  {
+    "id": "rel_finish_position_win",
+    "source": "term_finish_position",
+    "relation_type": "derivation",
+    "target": "term_race_win",
+    "connection_condition": "",
+    "description": "A race win is derived from the finishing position: it holds exactly when the finishing position equals 1.",
+    "evidence": [
+      "evidence_race_win_position"
+    ]
+  },
+  {
+    "id": "rel_finish_position_podium",
+    "source": "term_finish_position",
+    "relation_type": "derivation",
+    "target": "term_podium_finish",
+    "connection_condition": "",
+    "description": "A podium finish is derived from the finishing order: it holds when the entry is among the first three by finishing order.",
+    "evidence": [
+      "evidence_race_win_position"
+    ]
+  },
+  {
+    "id": "rel_podium_win_hierarchy",
+    "source": "term_podium_finish",
+    "relation_type": "hierarchy",
+    "target": "term_race_win",
+    "connection_condition": "",
+    "description": "A race win is a specific case of a podium finish; the set of wins is a subset of the set of podium finishes.",
+    "evidence": [
+      "evidence_race_win_position"
+    ]
+  },
+  {
+    "id": "rel_lap_time_fastest_lap",
+    "source": "term_lap_time",
+    "relation_type": "derivation",
+    "target": "term_fastest_lap",
+    "connection_condition": "",
+    "description": "The race fastest lap of an entry is derived as the minimum lap time recorded by that entry in the race.",
+    "evidence": [
+      "evidence_laptimes_availability",
+      "evidence_fastest_lap_availability"
+    ]
+  },
+  {
+    "id": "rel_lap_time_race_time",
+    "source": "term_lap_time",
+    "relation_type": "derivation",
+    "target": "term_race_time",
+    "connection_condition": "",
+    "description": "Total race time is derived from the lap times accumulated over the race distance together with pit-lane time, so the two concepts are consistent in magnitude for a full race distance.",
+    "evidence": [
+      "evidence_laptimes_availability",
+      "evidence_results_milliseconds_lead_lap_only"
+    ]
+  },
+  {
+    "id": "rel_race_points_championship_points",
+    "source": "term_race_points",
+    "relation_type": "derivation",
+    "target": "term_championship_points",
+    "connection_condition": "",
+    "description": "Season-to-date championship points are derived by accumulating race points within a season under era-specific rules about which results count.",
+    "evidence": [
+      "evidence_standings_cumulative",
+      "evidence_points_system_eras"
+    ]
+  },
+  {
+    "id": "rel_championship_points_position",
+    "source": "term_championship_points",
+    "relation_type": "derivation",
+    "target": "term_championship_position",
+    "connection_condition": "",
+    "description": "Championship position is derived by ranking competitors on their season-to-date championship points.",
+    "evidence": [
+      "evidence_standings_cumulative"
+    ]
+  },
+  {
+    "id": "rel_race_points_constructor_points_equiv",
+    "source": "term_race_points",
+    "relation_type": "equivalence",
+    "target": "term_constructor_race_points",
+    "connection_condition": "results rows aggregated by race and constructor, and constructorResults rows, key the same race and constructor combination",
+    "description": "Both concepts express championship points awarded for one race, recorded once per driver entry and once per constructor entry; they agree except where era rules counted only one car per constructor.",
+    "evidence": [
+      "evidence_constructor_points_mismatch"
+    ]
+  },
+  {
+    "id": "rel_result_retirement",
+    "source": "term_race_result",
+    "relation_type": "hierarchy",
+    "target": "term_retirement",
+    "connection_condition": "",
+    "description": "A retirement is a specific outcome of a race entry; retirement entries form a subset of all result entries.",
+    "evidence": [
+      "evidence_position_text_codes"
+    ]
+  },
+  {
+    "id": "rel_result_classified",
+    "source": "term_race_result",
+    "relation_type": "hierarchy",
+    "target": "term_classified_finisher",
+    "connection_condition": "",
+    "description": "A classified finisher is a specific outcome of a race entry; classified entries form a subset of all result entries.",
+    "evidence": [
+      "evidence_position_null"
+    ]
+  },
+  {
+    "id": "rel_car_status_classification",
+    "source": "term_car_status",
+    "relation_type": "derivation",
+    "target": "term_classification_status",
+    "connection_condition": "",
+    "description": "The classification code is derived from the car status together with the classification rules: a non-finish status becomes R, disqualification becomes D, exclusion becomes E, withdrawal becomes W and failure to qualify becomes F.",
+    "evidence": [
+      "evidence_position_text_codes",
+      "evidence_status_domain"
+    ]
+  },
+  {
+    "id": "rel_car_status_result",
+    "source": "term_car_status",
+    "relation_type": "association",
+    "target": "term_race_result",
+    "connection_condition": "results.statusId references status.statusId",
+    "description": "Every race entry carries exactly one car status describing its outcome or failure reason.",
+    "evidence": [
+      "evidence_status_domain"
+    ]
+  },
+  {
+    "id": "rel_nationality_driver",
+    "source": "term_nationality",
+    "relation_type": "association",
+    "target": "term_driver",
+    "connection_condition": "",
+    "description": "A driver carries one nationality value used for demographic analysis.",
+    "evidence": [
+      "evidence_nationality_vocabulary"
+    ]
+  },
+  {
+    "id": "rel_nationality_constructor",
+    "source": "term_nationality",
+    "relation_type": "association",
+    "target": "term_constructor",
+    "connection_condition": "",
+    "description": "A constructor carries one nationality value drawn from a vocabulary that only partly overlaps the driver vocabulary.",
+    "evidence": [
+      "evidence_nationality_vocabulary"
+    ]
+  },
+  {
+    "id": "rel_country_circuit",
+    "source": "term_circuit_country",
+    "relation_type": "association",
+    "target": "term_circuit",
+    "connection_condition": "circuits.country holds the host country of the circuit",
+    "description": "A circuit is located in one country; the country vocabulary is nominal and shares no values with the adjectival nationality vocabulary.",
+    "evidence": [
+      "evidence_nationality_vocabulary",
+      "evidence_circuits_domain"
+    ]
+  },
+  {
+    "id": "rel_shared_drive_result",
+    "source": "term_shared_drive",
+    "relation_type": "association",
+    "target": "term_race_result",
+    "connection_condition": "more than one row shares a race and driver, or more than two distinct drivers share a race and constructor",
+    "description": "Shared drives make the result entry, rather than the race and driver pair, the atomic unit of participation in the affected era.",
+    "evidence": [
+      "evidence_results_duplicate_grain",
+      "evidence_shared_drive_multi_entry"
+    ]
+  },
+  {
+    "id": "rel_grid_qualifying",
+    "source": "term_grid_position",
+    "relation_type": "association",
+    "target": "term_qualifying_position",
+    "connection_condition": "results.grid and qualifying.position describe the same race weekend but diverge when penalties or pit-lane starts apply",
+    "description": "Grid slot and qualifying classification usually agree but are distinct concepts; grid slots of 0 correspond to entries without a qualifying classification.",
+    "evidence": [
+      "evidence_grid_zero",
+      "evidence_qualifying_availability"
+    ]
+  },
+  {
+    "id": "rel_car_number_driver",
+    "source": "term_car_number",
+    "relation_type": "association",
+    "target": "term_driver",
+    "connection_condition": "results.number and qualifying.number carry the number used in a race, while drivers.number holds a permanent number only from 2014",
+    "description": "Car numbers identify entries within a race but are not a stable driver identifier across seasons.",
+    "evidence": [
+      "evidence_car_number"
+    ]
+  }
+]

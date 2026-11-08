@@ -1,0 +1,125 @@
+{
+ "db_id": "california_schools",
+ "questions": [
+  {
+   "question_id": 72,
+   "db_id": "california_schools",
+   "question": "How many students from the ages of 5 to 17 are enrolled at the State Special School school in Fremont for the 2014-2015 academic year?",
+   "evidence": "State Special School means EdOpsCode = 'SSS'",
+   "SQL": "SELECT T1.`Enrollment (Ages 5-17)` FROM frpm AS T1 INNER JOIN schools AS T2 ON T1.CDSCode = T2.CDSCode WHERE T2.EdOpsCode = 'SSS' AND T2.City = 'Fremont' AND T1.`Academic Year` BETWEEN 2014 AND 2015",
+   "difficulty": "moderate"
+  },
+  {
+   "question_id": 83,
+   "db_id": "california_schools",
+   "question": "Of the schools that offers a magnet program serving a grade span of Kindergarten to 8th grade, how many offers Multiple Provision Types? List the number of cities that offers a Kindergarten to 8th grade span and indicate how many schools are there serving such grade span for each city.",
+   "evidence": "Kindergarten to 8th grade refers to K-8; 'Offers a magnet program' means Magnet = 1; Multiple Provision Types refers to `NSLP Provision Status` = 'Multiple Provision Types'",
+   "SQL": "SELECT T2.City, COUNT(T2.CDSCode) FROM frpm AS T1 INNER JOIN schools AS T2 ON T1.CDSCode = T2.CDSCode WHERE T2.Magnet = 1 AND T2.GSoffered = 'K-8' AND T1.`NSLP Provision Status` = 'Multiple Provision Types' GROUP BY T2.City",
+   "difficulty": "challenging"
+  },
+  {
+   "question_id": 26,
+   "db_id": "california_schools",
+   "question": "State the names and full communication address of high schools in Monterey which has more than 800 free or reduced price meals for ages 15-17?",
+   "evidence": "Full communication address should include Street, City, State and zip code if any.",
+   "SQL": "SELECT T1.`School Name`, T2.Street, T2.City, T2.State, T2.Zip FROM frpm AS T1 INNER JOIN schools AS T2 ON T1.CDSCode = T2.CDSCode WHERE T2.County = 'Monterey' AND T1.`Free Meal Count (Ages 5-17)` > 800 AND T1.`School Type` = 'High Schools (Public)'",
+   "difficulty": "moderate"
+  },
+  {
+   "question_id": 5,
+   "db_id": "california_schools",
+   "question": "How many schools with an average score in Math greater than 400 in the SAT test are exclusively virtual?",
+   "evidence": "Exclusively virtual refers to Virtual = 'F'",
+   "SQL": "SELECT COUNT(DISTINCT T2.School) FROM satscores AS T1 INNER JOIN schools AS T2 ON T1.cds = T2.CDSCode WHERE T2.Virtual = 'F' AND T1.AvgScrMath > 400",
+   "difficulty": "simple"
+  },
+  {
+   "question_id": 82,
+   "db_id": "california_schools",
+   "question": "What is the grade span offered in the school with the highest longitude?",
+   "evidence": "the highest longitude refers to the school with the maximum absolute longitude value.",
+   "SQL": "SELECT GSoffered FROM schools ORDER BY ABS(longitude) DESC LIMIT 1",
+   "difficulty": "simple"
+  },
+  {
+   "question_id": 87,
+   "db_id": "california_schools",
+   "question": "What are the valid e-mail addresses of the administrator of the school located in the San Bernardino county, City of San Bernardino City Unified that opened between 1/1/2009 to 12/31/2010 whose school types are public Intermediate/Middle Schools and Unified Schools?",
+   "evidence": "Intermediate/Middle Schools refers to SOC = 62; Unified School refers to DOC = 54; years between 2009 and 2010 can refer to 'between 1/1/2009 to 12/31/2010'",
+   "SQL": "SELECT T2.AdmEmail1, T2.AdmEmail2 FROM frpm AS T1 INNER JOIN schools AS T2 ON T1.CDSCode = T2.CDSCode WHERE T2.County = 'San Bernardino' AND T2.City = 'San Bernardino' AND T2.DOC = 54 AND strftime('%Y', T2.OpenDate) BETWEEN '2009' AND '2010' AND T2.SOC = 62",
+   "difficulty": "challenging"
+  },
+  {
+   "question_id": 37,
+   "db_id": "california_schools",
+   "question": "What is the complete address of the school with the lowest excellence rate? Indicate the Street, City, Zip and State.",
+   "evidence": "Execellence Rate = NumGE1500 / NumTstTakr; complete address has Street, City, State, Zip code",
+   "SQL": "SELECT T2.Street, T2.City, T2.State, T2.Zip FROM satscores AS T1 INNER JOIN schools AS T2 ON T1.cds = T2.CDSCode ORDER BY CAST(T1.NumGE1500 AS REAL) / T1.NumTstTakr ASC LIMIT 1",
+   "difficulty": "moderate"
+  },
+  {
+   "question_id": 45,
+   "db_id": "california_schools",
+   "question": "What is the average writing score of each of the schools managed by Ricci Ulrich? List the schools and the corresponding average writing scores.",
+   "evidence": "Usually, administrators manage the school stuff.",
+   "SQL": "SELECT T2.School, T1.AvgScrWrite FROM satscores AS T1 INNER JOIN schools AS T2 ON T1.cds = T2.CDSCode WHERE T2.AdmFName1 = 'Ricci' AND T2.AdmLName1 = 'Ulrich'",
+   "difficulty": "moderate"
+  },
+  {
+   "question_id": 31,
+   "db_id": "california_schools",
+   "question": "What is the eligible free rate of the 10th and 11th schools with the highest enrolment for students in grades 1 through 12?",
+   "evidence": "K-12 refers to students in grades 1 through 12; Eligible free rate for K-12 = `Free Meal Count (K-12)` / `Enrollment (K-12)`",
+   "SQL": "SELECT CAST(`Free Meal Count (K-12)` AS REAL) / `Enrollment (K-12)` FROM frpm ORDER BY `Enrollment (K-12)` DESC LIMIT 9, 2",
+   "difficulty": "moderate"
+  },
+  {
+   "question_id": 47,
+   "db_id": "california_schools",
+   "question": "What is the monthly average number of schools that opened in Alameda County under the jurisdiction of the Elementary School District in 1980?",
+   "evidence": "Elementary School District refers to DOC = 52; Monthly average number of schools that opened in 1980 = count(schools that opened in 1980) / 12",
+   "SQL": "SELECT CAST(COUNT(School) AS REAL) / 12 FROM schools WHERE DOC = 52 AND County = 'Alameda' AND strftime('%Y', OpenDate) = '1980'",
+   "difficulty": "moderate"
+  },
+  {
+   "question_id": 46,
+   "db_id": "california_schools",
+   "question": "Which state special schools have the highest number of enrollees from grades 1 through 12?",
+   "evidence": "State Special Schools refers to DOC = 31; Grades 1 through 12 means K-12",
+   "SQL": "SELECT T2.School FROM frpm AS T1 INNER JOIN schools AS T2 ON T1.CDSCode = T2.CDSCode WHERE T2.DOC = 31 ORDER BY T1.`Enrollment (K-12)` DESC LIMIT 1",
+   "difficulty": "simple"
+  },
+  {
+   "question_id": 12,
+   "db_id": "california_schools",
+   "question": "Among the schools with an SAT excellence rate of over 0.3, what is the highest eligible free rate for students aged 5-17?",
+   "evidence": "Excellence rate = NumGE1500 / NumTstTakr; Eligible free rates for students aged 5-17 = `Free Meal Count (Ages 5-17)` / `Enrollment (Ages 5-17)`",
+   "SQL": "SELECT MAX(CAST(T1.`Free Meal Count (Ages 5-17)` AS REAL) / T1.`Enrollment (Ages 5-17)`) FROM frpm AS T1 INNER JOIN satscores AS T2 ON T1.CDSCode = T2.cds WHERE CAST(T2.NumGE1500 AS REAL) / T2.NumTstTakr > 0.3",
+   "difficulty": "moderate"
+  },
+  {
+   "question_id": 39,
+   "db_id": "california_schools",
+   "question": "What is the average number of test takers from Fresno schools that opened between 1/1/1980 and 12/31/1980?",
+   "evidence": "between 1/1/1980 and 12/31/1980 means the year = 1980",
+   "SQL": "SELECT AVG(T1.NumTstTakr) FROM satscores AS T1 INNER JOIN schools AS T2 ON T1.cds = T2.CDSCode WHERE strftime('%Y', T2.OpenDate) = '1980' AND T2.County = 'Fresno'",
+   "difficulty": "simple"
+  },
+  {
+   "question_id": 85,
+   "db_id": "california_schools",
+   "question": "What is the Percent (%) Eligible Free (K-12) in the school administered by an administrator whose first name is Alusine. List the district code of the school.",
+   "evidence": "Percent (%) Eligible Free (K-12) = `Free Meal Count (K-12)` / `Enrollment (K-12)` * 100%",
+   "SQL": "SELECT T1.`Free Meal Count (K-12)` * 100 / T1.`Enrollment (K-12)`, T1.`District Code` FROM frpm AS T1 INNER JOIN schools AS T2 ON T1.CDSCode = T2.CDSCode WHERE T2.AdmFName1 = 'Alusine'",
+   "difficulty": "moderate"
+  },
+  {
+   "question_id": 17,
+   "db_id": "california_schools",
+   "question": "Rank schools by their average score in Writing where the score is greater than 499, showing their charter numbers.",
+   "evidence": "Valid charter number means the number is not null",
+   "SQL": "SELECT CharterNum, AvgScrWrite, RANK() OVER (ORDER BY AvgScrWrite DESC) AS WritingScoreRank FROM schools AS T1  INNER JOIN satscores AS T2 ON T1.CDSCode = T2.cds WHERE T2.AvgScrWrite > 499 AND CharterNum is not null",
+   "difficulty": "simple"
+  }
+ ]
+}

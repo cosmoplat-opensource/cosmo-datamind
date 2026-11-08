@@ -1,0 +1,45 @@
+{
+ "db_id": "debit_card_specializing",
+ "questions": [
+  {
+   "question_id": 1526,
+   "db_id": "debit_card_specializing",
+   "question": "For the customer who paid 634.8 in 2012/8/25, what was the consumption decrease rate from Year 2012 to 2013?",
+   "evidence": "'2012/8/24' can be represented by '2012-08-24'; Consumption decrease rate = (consumption_2012 - consumption_2013) / consumption_2012",
+   "SQL": "SELECT CAST(SUM(IIF(SUBSTRING(Date, 1, 4) = '2012', Consumption, 0)) - SUM(IIF(SUBSTRING(Date, 1, 4) = '2013', Consumption, 0)) AS FLOAT) / SUM(IIF(SUBSTRING(Date, 1, 4) = '2012', Consumption, 0)) FROM yearmonth WHERE CustomerID = ( SELECT T1.CustomerID FROM transactions_1k AS T1 INNER JOIN gasstations AS T2 ON T1.GasStationID = T2.GasStationID WHERE T1.Date = '2012-08-25' AND T1.Price  = 1513.12 )",
+   "difficulty": "challenging"
+  },
+  {
+   "question_id": 1524,
+   "db_id": "debit_card_specializing",
+   "question": "What's the nationality of the customer who spent 548.4 in 2012/8/24?",
+   "evidence": "'2012/8/24' can be represented by '2012-08-24'",
+   "SQL": "SELECT T2.Country FROM transactions_1k AS T1 INNER JOIN gasstations AS T2 ON T1.GasStationID = T2.GasStationID WHERE T1.Date = '2012-08-24' AND T1.Price  = 548.4",
+   "difficulty": "simple"
+  },
+  {
+   "question_id": 1529,
+   "db_id": "debit_card_specializing",
+   "question": "What is the amount spent by customer \"38508\" at the gas stations? How much had the customer spent in January 2012?",
+   "evidence": "January 2012 refers to the Date value = '201201'",
+   "SQL": "SELECT SUM(T1.Price ) , SUM(IIF(T3.Date = '201201', T1.Price, 0)) FROM transactions_1k AS T1 INNER JOIN gasstations AS T2 ON T1.GasStationID = T2.GasStationID INNER JOIN yearmonth AS T3 ON T1.CustomerID = T3.CustomerID WHERE T1.CustomerID = '38508'",
+   "difficulty": "moderate"
+  },
+  {
+   "question_id": 1525,
+   "db_id": "debit_card_specializing",
+   "question": "What is the percentage of the customers who used EUR in 2012/8/25?",
+   "evidence": "'2012/8/25' can be represented by '2012-08-25'",
+   "SQL": "SELECT CAST(SUM(IIF(T2.Currency = 'EUR', 1, 0)) AS FLOAT) * 100 / COUNT(T1.CustomerID) FROM transactions_1k AS T1 INNER JOIN customers AS T2 ON T1.CustomerID = T2.CustomerID WHERE T1.Date = '2012-08-25'",
+   "difficulty": "simple"
+  },
+  {
+   "question_id": 1533,
+   "db_id": "debit_card_specializing",
+   "question": "For all the people who paid more than 29.00 per unit of product id No.5. Give their consumption status in the August of 2012.",
+   "evidence": "August of 2012 refers to the Date value = '201208' ; Price per unit of product = Price / Amount;",
+   "SQL": "SELECT T2.Consumption FROM transactions_1k AS T1 INNER JOIN yearmonth AS T2 ON T1.CustomerID = T2.CustomerID WHERE T1.Price / T1.Amount > 29.00 AND T1.ProductID = 5 AND T2.Date = '201208'",
+   "difficulty": "moderate"
+  }
+ ]
+}

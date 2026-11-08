@@ -1,0 +1,194 @@
+[
+  {
+    "id": "ev_01_schema",
+    "source": "formula_1",
+    "query": ".tables and .schema over the SQLite file",
+    "result": "13 tables tab01-tab13. Foreign keys link tab05.fld021 (race), tab03.fld013 (driver), tab02.fld010 (constructor), tab01.fld001 (circuit), tab04.fld020 (season) and tab12.fld041 (status).",
+    "validation_method": "Read-only schema inspection with sqlite3",
+    "timestamp": "2026-11-06T00:00:00Z"
+  },
+  {
+    "id": "ev_02_counts",
+    "source": "formula_1",
+    "query": "SELECT COUNT(*) FROM each tabNN",
+    "result": "tab01 72; tab02 208; tab03 840; tab04 68; tab05 976; tab06 11082; tab07 11836; tab08 31578; tab09 420369; tab10 6070; tab11 7397; tab12 134; tab13 23657.",
+    "validation_method": "Row-count verification",
+    "timestamp": "2026-11-06T00:00:00Z"
+  },
+  {
+    "id": "ev_03_race_fields",
+    "source": "formula_1",
+    "query": "SELECT fld021, fld020, fld022, fld003, fld023, fld024 FROM tab05 LIMIT 3",
+    "result": "Race rows carry raceId fld021, year fld020, round fld022, name fld003, date fld023 and time fld024; e.g. (1, 2009, 1, 1, 'Australian Grand Prix', '2009-03-29', '06:00:00').",
+    "validation_method": "Schema and representative-row inspection",
+    "timestamp": "2026-11-06T00:00:00Z"
+  },
+  {
+    "id": "ev_04_driver_fields",
+    "source": "formula_1",
+    "query": "SELECT fld013, fld014, fld016, fld017, fld018, fld019, fld012 FROM tab03 WHERE fld018 IN ('Schumacher','Hamilton')",
+    "result": "Lewis Hamilton: id 1, ref hamilton, code HAM, forename Lewis, surname Hamilton, dob 1985-01-07, nationality British. Michael Schumacher: id 30, ref michael_schumacher, code MSC, dob 1969-01-03, nationality German.",
+    "validation_method": "Representative-row inspection",
+    "timestamp": "2026-11-06T00:00:00Z"
+  },
+  {
+    "id": "ev_05_birth_dates",
+    "source": "formula_1",
+    "query": "SELECT MIN(fld019), MAX(fld019) FROM tab03",
+    "result": "840 drivers; earliest birth date 1896-12-28 and latest 1998-10-29.",
+    "validation_method": "Range verification",
+    "timestamp": "2026-11-06T00:00:00Z"
+  },
+  {
+    "id": "ev_06_driver_nationality",
+    "source": "formula_1",
+    "query": "SELECT DISTINCT fld012 FROM tab03",
+    "result": "Adjective values include British, German, French, Italian, Japanese, Dutch, Austrian, Indian, Russian and Swiss. Dutch is present; Netherlandic is not a stored value.",
+    "validation_method": "Distinct-value inspection",
+    "timestamp": "2026-11-06T00:00:00Z"
+  },
+  {
+    "id": "ev_07_race_circuit",
+    "source": "formula_1",
+    "query": "SELECT r.fld021, r.fld020, r.fld022, r.fld003, r.fld023, c.fld003, c.fld004, c.fld005 FROM tab05 r JOIN tab01 c ON c.fld001 = r.fld001 WHERE c.fld005 = 'Germany'",
+    "result": "German circuits host German Grand Prix and European Grand Prix; e.g. 2009 round 9 German Grand Prix at Nurburgring, Nurburg, Germany.",
+    "validation_method": "Join and representative-row inspection",
+    "timestamp": "2026-11-06T00:00:00Z"
+  },
+  {
+    "id": "ev_08_circuit_attributes",
+    "source": "formula_1",
+    "query": "SELECT fld002, fld003, fld004, fld005, fld006, fld007 FROM tab01 WHERE fld003 = 'Marina Bay Street Circuit'",
+    "result": "marina_bay | Marina Bay Street Circuit | Marina Bay | Singapore | 1.2914 | 103.864; sepang | Sepang International Circuit | Kuala Lumpur | Malaysia | 2.76083 | 101.738.",
+    "validation_method": "Representative-row inspection",
+    "timestamp": "2026-11-06T00:00:00Z"
+  },
+  {
+    "id": "ev_09_race_name_country",
+    "source": "formula_1",
+    "query": "COUNT(*) FROM tab05 WHERE fld003 = 'European Grand Prix'; same joined to tab01 WHERE fld005 = 'Germany'",
+    "result": "976 races total; 23 European Grand Prix; 12 of those are hosted at circuits in Germany.",
+    "validation_method": "Count verification",
+    "timestamp": "2026-11-06T00:00:00Z"
+  },
+  {
+    "id": "ev_10_result_time",
+    "source": "formula_1",
+    "query": "SELECT fld024 FROM tab13; aggregate checks for '+%' and NULL",
+    "result": "23657 results, 5961 non-null times. 972 full time strings such as 1:34:50.616; 4989 gap strings beginning with '+' such as +5.478; 17696 NULL. Winners carry the full time, other classified drivers carry '+gap'.",
+    "validation_method": "Pattern and NULL-count verification",
+    "timestamp": "2026-11-06T00:00:00Z"
+  },
+  {
+    "id": "ev_11_status",
+    "source": "formula_1",
+    "query": "SELECT fld041, fld027 FROM tab12; join counts with tab13.fld041 and fld024",
+    "result": "134 statuses including Finished (fld041=1), Disqualified, Accident, Engine and Collision. 5966 results have status Finished while 5961 have a non-null time; 5 rows have a time but a non-Finished status and 10 Finished rows have no time.",
+    "validation_method": "Join and count verification",
+    "timestamp": "2026-11-06T00:00:00Z"
+  },
+  {
+    "id": "ev_12_points",
+    "source": "formula_1",
+    "query": "SELECT MIN(fld026), MAX(fld026) FROM tab06, tab07, tab08; inspect tab13.fld026",
+    "result": "tab06 per-race constructor points range 0-66; tab07 cumulative constructor points 0-765; tab08 cumulative driver points 0-397; tab13 also stores per-race driver points in fld026.",
+    "validation_method": "Range and schema inspection",
+    "timestamp": "2026-11-06T00:00:00Z"
+  },
+  {
+    "id": "ev_13_wins",
+    "source": "formula_1",
+    "query": "SELECT d.fld017, d.fld018, d.fld012, MAX(ds.fld031), MAX(ds.fld026) FROM tab08 ds JOIN tab03 d ON d.fld013 = ds.fld013 GROUP BY d.fld013 ORDER BY MAX(ds.fld031) DESC",
+    "result": "Michael Schumacher (German) 13 wins and 148 points; Sebastian Vettel (German) 13 wins and 397 points; Lewis Hamilton (British) 11 wins and 384 points.",
+    "validation_method": "Aggregation verification",
+    "timestamp": "2026-11-06T00:00:00Z"
+  },
+  {
+    "id": "ev_14_2009_champion",
+    "source": "formula_1",
+    "query": "SELECT d.fld017, d.fld018, ds.fld026, ds.fld029, ds.fld031 FROM tab08 ds JOIN tab05 r ON r.fld021 = ds.fld021 JOIN tab04 s ON s.fld020 = r.fld020 JOIN tab03 d ON d.fld013 = ds.fld013 WHERE s.fld020 = 2009 AND ds.fld029 = 1 ORDER BY r.fld022 DESC",
+    "result": "At the final 2009 race, Jenson Button has standing position 1 with 95 points and 6 wins.",
+    "validation_method": "Season-end standing verification",
+    "timestamp": "2026-11-06T00:00:00Z"
+  },
+  {
+    "id": "ev_15_fastest_lap_fields",
+    "source": "formula_1",
+    "query": "SELECT fld046, fld048, fld049 FROM tab13 WHERE fld048 IS NOT NULL ORDER BY fld046 DESC LIMIT 3",
+    "result": "fastestLap fld046 ranges 2-78; fastestLapTime fld048 is formatted M:SS.mmm such as 1:27.452; fastestLapSpeed fld049 such as 218.300; 5268 results have fld048.",
+    "validation_method": "Range, format and population verification",
+    "timestamp": "2026-11-06T00:00:00Z"
+  },
+  {
+    "id": "ev_16_fastest_lap_rank",
+    "source": "formula_1",
+    "query": "SELECT fld047, COUNT(*) FROM tab13 GROUP BY fld047 ORDER BY COUNT(*) DESC",
+    "result": "18246 NULLs; values 1-24 present at roughly 256 rows each; 143 rows have 0. fld047 is the fastest-lap rank, not the race finishing position.",
+    "validation_method": "Distribution verification",
+    "timestamp": "2026-11-06T00:00:00Z"
+  },
+  {
+    "id": "ev_17_lap_times",
+    "source": "formula_1",
+    "query": "SELECT COUNT(*), MIN(fld034), MAX(fld034) FROM tab09; SELECT fld021, fld013, fld033, fld024, fld034 FROM tab09 LIMIT 3",
+    "result": "420369 lap records; fld034 milliseconds range 67411-7507547; fld024 is a formatted lap time such as 1:49.088; fld033 is the lap number; no NULL formatted times.",
+    "validation_method": "Range and representative-row inspection",
+    "timestamp": "2026-11-06T00:00:00Z"
+  },
+  {
+    "id": "ev_18_qualifying",
+    "source": "formula_1",
+    "query": "SELECT COUNT(*), COUNT(fld040) FROM tab11; SELECT fld038, fld039, fld040 FROM tab11 WHERE fld040 IS NULL LIMIT 2",
+    "result": "7397 qualifying rows; 2146 non-null q3 fld040; 117 rows have Q1/Q2 but no Q3; q3 values such as 1:31.450.",
+    "validation_method": "Null-count and format verification",
+    "timestamp": "2026-11-06T00:00:00Z"
+  },
+  {
+    "id": "ev_19_positions",
+    "source": "formula_1",
+    "query": "SELECT COUNT(*), SUM(fld029 = fld044) FROM tab13; SELECT fld029, fld030, fld044 FROM tab13 WHERE fld029 <> fld044 LIMIT 5",
+    "result": "13129 rows have both positions populated; fld029 equals fld044 in 13116 and differs in 13 (e.g. fld029=3 with fld044=2). 10528 rows have at least one NULL.",
+    "validation_method": "Comparison verification",
+    "timestamp": "2026-11-06T00:00:00Z"
+  },
+  {
+    "id": "ev_20_laps",
+    "source": "formula_1",
+    "query": "SELECT MIN(fld045), MAX(fld045) FROM tab13",
+    "result": "Laps completed range 0-200.",
+    "validation_method": "Range verification",
+    "timestamp": "2026-11-06T00:00:00Z"
+  },
+  {
+    "id": "ev_21_japanese_constructors",
+    "source": "formula_1",
+    "query": "SELECT c.fld003, c.fld012, COUNT(cr.fld021), SUM(CASE WHEN cr.fld026 = 0 THEN 1 ELSE 0 END) FROM tab02 c JOIN tab06 cr ON cr.fld010 = c.fld010 WHERE c.fld012 = 'Japanese' GROUP BY c.fld010",
+    "result": "Toyota 141 races with 72 zero-point races; Honda 88 with 53; Super Aguri 39 with 37; Maki 8 with 8; Kojima 2 with 2.",
+    "validation_method": "Grouped aggregation verification",
+    "timestamp": "2026-11-06T00:00:00Z"
+  },
+  {
+    "id": "ev_22_constructor_ref_website",
+    "source": "formula_1",
+    "query": "SELECT fld011, fld003, fld009 FROM tab02 WHERE fld003 IN ('McLaren','Ferrari')",
+    "result": "mclaren | McLaren | http://en.wikipedia.org/wiki/McLaren; ferrari | Ferrari | http://en.wikipedia.org/wiki/Scuderia_Ferrari.",
+    "validation_method": "Representative-row inspection",
+    "timestamp": "2026-11-06T00:00:00Z"
+  },
+  {
+    "id": "ev_23_seasons",
+    "source": "formula_1",
+    "query": "SELECT * FROM tab04 LIMIT 3; SELECT COUNT(*) FROM tab04",
+    "result": "68 season-year rows covering 1950-2017; fld020 is the season year key.",
+    "validation_method": "Row and key inspection",
+    "timestamp": "2026-11-06T00:00:00Z"
+  },
+  {
+    "id": "ev_24_year_domains",
+    "source": "formula_1",
+    "query": "SELECT COUNT(DISTINCT fld020) FROM tab05; SELECT DISTINCT fld020 FROM tab05 EXCEPT SELECT fld020 FROM tab04",
+    "result": "Both tab04.fld020 and tab05.fld020 contain 68 years from 1950 to 2017, and no tab05 year is missing from tab04.",
+    "validation_method": "Domain comparison",
+    "timestamp": "2026-11-06T00:00:00Z"
+  }
+]

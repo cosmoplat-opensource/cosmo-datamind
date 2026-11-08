@@ -1,0 +1,365 @@
+[
+  {
+    "id": "constraint_statement_frequency_codes",
+    "target": "term_statement_frequency",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "weekly",
+      "monthly",
+      "issuance",
+      "statement",
+      "statements issued",
+      "issuance after transaction",
+      "POPLATEK TYDNE",
+      "POPLATEK MESICNE",
+      "POPLATEK PO OBRATU",
+      "frequency"
+    ],
+    "severity": "block",
+    "scope": "Applies whenever accounts are selected or described by their statement issuance preference.",
+    "confidence": "high",
+    "description": "The account.frequency field is a coded label, not free text. 'POPLATEK MESICNE' means monthly issuance, 'POPLATEK TYDNE' means weekly issuance, and 'POPLATEK PO OBRATU' means issuance after transaction. Wording such as 'weekly statement', 'monthly statement' or 'statement issued after transaction' must be translated into these exact codes. The distribution is POPLATEK MESICNE 4167, POPLATEK TYDNE 240, POPLATEK PO OBRATU 93.",
+    "evidence": [
+      "ev_003_account_frequency"
+    ]
+  },
+  {
+    "id": "constraint_gender_codes",
+    "target": "term_gender",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "male",
+      "female",
+      "men",
+      "women",
+      "gender",
+      "sex",
+      "woman",
+      "man"
+    ],
+    "severity": "block",
+    "scope": "Applies whenever clients are segmented or filtered by gender.",
+    "confidence": "high",
+    "description": "The client.gender field holds the single letters 'M' for male and 'F' for female. Questions referring to men, women, male clients or female clients must be resolved to these codes. The distribution is F 2645 and M 2724.",
+    "evidence": [
+      "ev_004_client_gender"
+    ]
+  },
+  {
+    "id": "constraint_loan_status_codes",
+    "target": "term_loan_status",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "running contract",
+      "still running",
+      "running with no issue",
+      "ok so far",
+      "loan status",
+      "contract status",
+      "finished"
+    ],
+    "severity": "block",
+    "scope": "Applies whenever loans are classified by their repayment status.",
+    "confidence": "high",
+    "description": "loan.status is a single-letter code with the observed values A, B, C and D. The construction evidence establishes that 'C' stands for a running contract, ok so far, which is what phrasing such as 'still running with no issue' refers to. The construction split provides no equivalent definition for the codes A, B and D, so their meaning is unresolved and must not be assumed. The distribution is A 203, B 31, C 403, D 45.",
+    "evidence": [
+      "ev_011_loan_status",
+      "ev_019_percentage_definition"
+    ]
+  },
+  {
+    "id": "constraint_transaction_operation_codes",
+    "target": "term_transaction_operation",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "withdrawal in cash",
+      "cash withdrawal",
+      "withdrawals",
+      "deposit",
+      "remittance",
+      "operation",
+      "VYBER",
+      "VKLAD",
+      "PREVOD NA UCET",
+      "PREVOD Z UCTU",
+      "VYBER KARTOU"
+    ],
+    "severity": "block",
+    "scope": "Applies whenever transactions are classified by how money moved.",
+    "confidence": "high",
+    "description": "trans.operation is a coded label. 'VYBER' is the withdrawal in cash that questions ask about. The remaining codes are grounded by the direction type they always co-occur with: 'VKLAD' and 'PREVOD Z UCTU' occur only with type PRIJEM, while 'PREVOD NA UCET' and 'VYBER KARTOU' occur only with type VYDAJ. The operation field is NULL for 183114 rows, all of which are type PRIJEM and carry the UROK characterization, so NULL is a meaningful value rather than missing data.",
+    "evidence": [
+      "ev_012_trans_crosstab"
+    ]
+  },
+  {
+    "id": "constraint_transaction_direction_not_sign",
+    "target": "term_transaction_type",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "amount",
+      "sum",
+      "total",
+      "balance",
+      "credit",
+      "debit",
+      "incoming",
+      "outgoing",
+      "PRIJEM",
+      "VYDAJ",
+      "transaction amount"
+    ],
+    "severity": "block",
+    "scope": "Applies whenever transaction amounts are summed, compared or signed.",
+    "confidence": "high",
+    "description": "Every trans.amount value is non-negative, with a minimum of 0, so the sign carries no direction information. Direction is encoded solely in trans.type: PRIJEM marks incoming amounts and VYDAJ or VYBER mark outgoing amounts. Treating the stored amount as already signed would silently invert every debit and credit total.",
+    "evidence": [
+      "ev_013_trans_amount_sign"
+    ]
+  },
+  {
+    "id": "constraint_cash_withdrawal_dual_code",
+    "target": "term_cash_withdrawal",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "withdrawal in cash",
+      "cash withdrawal",
+      "withdrawals",
+      "VYBER"
+    ],
+    "severity": "block",
+    "scope": "Applies whenever cash withdrawals are counted or summed.",
+    "confidence": "high",
+    "description": "The label 'VYBER' appears in two different columns and they do not agree. Filtering trans.type for 'VYBER' returns only 16666 rows, while the operation code 'VYBER' returns 434918 rows, of which 16666 are also coded type 'VYBER' and 418252 are coded type 'VYDAJ'. A correct cash withdrawal selection must use the operation code; restricting it to the type code as well would drop about 96 percent of the rows.",
+    "evidence": [
+      "ev_021_cash_withdrawal_encoding",
+      "ev_012_trans_crosstab"
+    ]
+  },
+  {
+    "id": "constraint_district_dual_role",
+    "target": "term_district",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "district",
+      "region",
+      "living in",
+      "staying in",
+      "residence",
+      "opened her account",
+      "opened their accounts",
+      "branch"
+    ],
+    "severity": "block",
+    "scope": "Applies whenever a district, region or average salary condition is combined with clients or accounts.",
+    "confidence": "high",
+    "description": "A district is reachable through two independent fields that are not interchangeable: client.district_id is where the client lives, and account.district_id is where the account was opened. Across the 5369 client-account links the two agree only 4875 times and differ 494 times, so choosing the wrong one changes the result set. Phrasing about where a client lives or stays points at the client field, while phrasing about the district in which an account was opened points at the account field.",
+    "evidence": [
+      "ev_017_district_role_divergence"
+    ]
+  },
+  {
+    "id": "constraint_disposition_role_codes",
+    "target": "term_disposition",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "owner",
+      "disponent",
+      "account holder",
+      "who owns",
+      "disposition",
+      "disp"
+    ],
+    "severity": "warning",
+    "scope": "Applies whenever the role a client holds on an account matters.",
+    "confidence": "high",
+    "description": "disp.type holds the codes 'OWNER' for the account owner and 'DISPONENT' for an authorized disburser. There are 4500 owner grants and 869 disponent grants. When a question asks who owns or opened an account, the owner role is the intended one.",
+    "evidence": [
+      "ev_005_disp_type"
+    ]
+  },
+  {
+    "id": "constraint_client_account_grain",
+    "target": "term_disposition",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "how many accounts",
+      "count accounts",
+      "percentage of accounts",
+      "percentage of clients",
+      "per account",
+      "number of clients"
+    ],
+    "severity": "warning",
+    "scope": "Applies whenever clients and accounts are counted together through the disposition link.",
+    "confidence": "high",
+    "description": "The disposition link is not one-to-one with accounts: 869 accounts carry two disposition rows, exactly the accounts that have a disponent in addition to their owner, while every one of the 5369 clients carries exactly one disposition row. Joining clients to accounts through this link therefore duplicates row counts when counted per account, and the counts of clients and of accounts must be kept separate. Loans do not add duplication here because the 682 loans fall on 682 distinct accounts.",
+    "evidence": [
+      "ev_015_disp_cardinality",
+      "ev_016_loan_account_1to1"
+    ]
+  },
+  {
+    "id": "constraint_region_codes",
+    "target": "term_region",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "region",
+      "Bohemia",
+      "Moravia",
+      "East Bohemia",
+      "North Bohemia",
+      "central Bohemia"
+    ],
+    "severity": "warning",
+    "scope": "Applies whenever districts are grouped or filtered by region.",
+    "confidence": "high",
+    "description": "district.A3 carries eight region labels that partition the 77 districts: Prague, central Bohemia, south Bohemia, west Bohemia, north Bohemia, east Bohemia, south Moravia and north Moravia. The labels are lower case except for the initial word of Prague, so matching must be case insensitive; for example the region asked about as 'East Bohemia' is stored as 'east Bohemia'.",
+    "evidence": [
+      "ev_006_region_values"
+    ]
+  },
+  {
+    "id": "constraint_district_attribute_coverage",
+    "target": "term_district",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "district",
+      "average salary",
+      "region",
+      "district name",
+      "A2",
+      "A3",
+      "A11"
+    ],
+    "severity": "warning",
+    "scope": "Applies whenever district attributes beyond name, region and average salary are needed.",
+    "confidence": "high",
+    "description": "Only three coded district attributes have established meaning for this construction split: A2 is the district name, A3 is the region and A11 is the average salary. The remaining attributes A4 through A10 and A12 through A16 hold numeric values whose business meaning is not established by the workload or by any documentation in the data environment, so they must not be given an assumed interpretation. This is a recorded coverage gap rather than a claim about their content.",
+    "evidence": [
+      "ev_020_attribute_ranges"
+    ]
+  },
+  {
+    "id": "constraint_average_salary_scope",
+    "target": "term_average_salary",
+    "constraint_type": "unit",
+    "trigger_keywords": [
+      "average salary",
+      "salary",
+      "income",
+      "salary greater than",
+      "salary of over",
+      "high salary"
+    ],
+    "severity": "block",
+    "scope": "Applies whenever a salary threshold is used to select districts, clients or accounts.",
+    "confidence": "high",
+    "description": "A11 is a district-level average salary with one value per district, ranging from 8110 to 12541 and taking 76 distinct values across 77 districts. It is not an individual client salary, so a condition such as average salary over 10000 selects districts and must then be propagated through the district of the client or of the account rather than applied to a client attribute.",
+    "evidence": [
+      "ev_008_average_salary"
+    ]
+  },
+  {
+    "id": "constraint_loan_duration_unit",
+    "target": "term_loan_duration",
+    "constraint_type": "unit",
+    "trigger_keywords": [
+      "loan validity",
+      "validity more than",
+      "duration",
+      "loan term",
+      "months"
+    ],
+    "severity": "block",
+    "scope": "Applies whenever loans are filtered by term length.",
+    "confidence": "high",
+    "description": "loan.duration is expressed in months and takes integer values from 12 to 60. Workload phrasing about loan validity refers to this field directly, so 'loan validity more than 12 months' is a condition on duration greater than 12 in the stored unit.",
+    "evidence": [
+      "ev_010_loan_profile",
+      "ev_022_workload_units"
+    ]
+  },
+  {
+    "id": "constraint_temporal_coverage",
+    "target": "term_account_opening_date",
+    "constraint_type": "scope",
+    "trigger_keywords": [
+      "in 1993",
+      "in 1997",
+      "between",
+      "opening date",
+      "approved loan date",
+      "date range",
+      "year"
+    ],
+    "severity": "info",
+    "scope": "Applies whenever questions constrain a year or a date range.",
+    "confidence": "high",
+    "description": "The three date fields cover different windows. Account opening dates run from 1993-01-01 to 1997-12-29 with yearly counts of 1139, 439, 661, 1363 and 898. Loan approval dates run from 1993-07-05 to 1998-12-08 and therefore extend beyond the account opening window. Transaction dates run from 1993-01-01 to 1998-12-31. A year condition must be attached to the date field the question actually means, because loans were still being approved in 1998 while no account was opened after 1997.",
+    "evidence": [
+      "ev_009_account_dates",
+      "ev_010_loan_profile"
+    ]
+  },
+  {
+    "id": "constraint_counterparty_account_not_reference",
+    "target": "term_transaction",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "account number",
+      "counterparty",
+      "bank",
+      "other account",
+      "transfer to"
+    ],
+    "severity": "warning",
+    "scope": "Applies whenever the bank or account fields on a transaction are interpreted as references to internal accounts.",
+    "confidence": "medium",
+    "description": "The trans.bank and trans.account fields describe the counterparty bank and account number of a transfer, not the internal account the transaction was recorded on, which is trans.account_id. Only 30 of the 7665 distinct counterparty account numbers coincide with an identifier present in the account table, so these fields must not be joined to the account entity.",
+    "evidence": [
+      "ev_018_counterparty_overlap"
+    ]
+  },
+  {
+    "id": "constraint_amount_range_bounds",
+    "target": "term_loan_amount",
+    "constraint_type": "scope",
+    "trigger_keywords": [
+      "100,000",
+      "250,000",
+      "less than",
+      "at least",
+      "minimum amount",
+      "maximum amount"
+    ],
+    "severity": "warning",
+    "scope": "Applies whenever a monetary threshold is compared against loan or transaction amounts.",
+    "confidence": "medium",
+    "description": "Numeric thresholds stated in the workload are compared directly against the stored integer amounts, and the database holds no currency table and no exchange rate, so no conversion is available. Approved loan amounts range from 4980 to 590820 and transaction amounts from 0 to 87400, in a single stored unit.",
+    "evidence": [
+      "ev_010_loan_profile",
+      "ev_013_trans_amount_sign"
+    ]
+  },
+  {
+    "id": "constraint_client_identity_minimal",
+    "target": "term_client",
+    "constraint_type": "scope",
+    "trigger_keywords": [
+      "client with the id",
+      "born in",
+      "female client",
+      "male client",
+      "identify client"
+    ],
+    "severity": "info",
+    "scope": "Applies when a question identifies a client by an attribute rather than by identifier.",
+    "confidence": "high",
+    "description": "The client record carries only a gender, a birth date and a residence district, so clients can only be identified by those attributes or by client_id. Requests phrased as a client who was born on a given date or who has a given gender must be answered from these fields, and a birth date condition must match the stored date exactly.",
+    "evidence": [
+      "ev_001_schema",
+      "ev_004_client_gender"
+    ]
+  }
+]

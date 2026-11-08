@@ -1,0 +1,189 @@
+[
+  {
+    "id": "m_customer",
+    "term_id": "customer",
+    "database_source": "debit_card_specializing",
+    "table": "customers",
+    "column": "CustomerID",
+    "semantic_filter": "Every customer record in the database; there is no active/inactive flag to restrict the population.",
+    "aggregation_semantics": "Distinct CustomerID count gives the number of customers",
+    "grain": "one row per customer",
+    "validation": "32461 rows, CustomerID is the declared primary key and is unique and non-null"
+  },
+  {
+    "id": "m_customer_segment",
+    "term_id": "customer_segment",
+    "database_source": "debit_card_specializing",
+    "table": "customers",
+    "column": "Segment",
+    "semantic_filter": "Applies to customer records only",
+    "aggregation_semantics": "Group customer counts by segment value",
+    "grain": "one value per customer",
+    "validation": "32461 non-null values; three distinct values observed"
+  },
+  {
+    "id": "m_sme_customer",
+    "term_id": "sme_customer",
+    "database_source": "debit_card_specializing",
+    "table": "customers",
+    "column": "Segment",
+    "semantic_filter": "Restricted to customers whose Segment value is 'SME'",
+    "aggregation_semantics": "Count of distinct CustomerID whose segment is 'SME'",
+    "grain": "one row per SME customer",
+    "validation": "26763 customer records carry the value 'SME'"
+  },
+  {
+    "id": "m_customer_currency",
+    "term_id": "customer_currency",
+    "database_source": "debit_card_specializing",
+    "table": "customers",
+    "column": "Currency",
+    "semantic_filter": "Applies to customer records only",
+    "aggregation_semantics": "Group customer counts by currency value",
+    "grain": "one value per customer",
+    "validation": "32461 non-null values; two distinct values observed (CZK 30459, EUR 2002)"
+  },
+  {
+    "id": "m_gas_station",
+    "term_id": "gas_station",
+    "database_source": "debit_card_specializing",
+    "table": "gasstations",
+    "column": "GasStationID",
+    "semantic_filter": "All stations recorded in the database",
+    "aggregation_semantics": "Distinct GasStationID count gives the number of gas stations",
+    "grain": "one row per gas station",
+    "validation": "5716 rows, GasStationID is the declared primary key, unique and non-null"
+  },
+  {
+    "id": "m_gas_station_segment",
+    "term_id": "gas_station_segment",
+    "database_source": "debit_card_specializing",
+    "table": "gasstations",
+    "column": "Segment",
+    "semantic_filter": "Applies to gas station records only",
+    "aggregation_semantics": "Group station counts by segment value",
+    "grain": "one value per gas station",
+    "validation": "5716 non-null values; five distinct values observed"
+  },
+  {
+    "id": "m_gas_station_country",
+    "term_id": "gas_station_country",
+    "database_source": "debit_card_specializing",
+    "table": "gasstations",
+    "column": "Country",
+    "semantic_filter": "Applies to gas station records only",
+    "aggregation_semantics": "Group station counts by country value",
+    "grain": "one value per gas station",
+    "validation": "5716 non-null values; two distinct values observed (CZE 4836, SVK 880)"
+  },
+  {
+    "id": "m_gas_station_chain",
+    "term_id": "gas_station_chain",
+    "database_source": "debit_card_specializing",
+    "table": "gasstations",
+    "column": "ChainID",
+    "semantic_filter": "All stations; no station lacks a chain identifier",
+    "aggregation_semantics": "Group station counts by chain identifier",
+    "grain": "one value per gas station",
+    "validation": "5716 non-null values; 233 distinct chain identifiers observed"
+  },
+  {
+    "id": "m_product",
+    "term_id": "product",
+    "database_source": "debit_card_specializing",
+    "table": "products",
+    "column": "ProductID",
+    "semantic_filter": "All products in the catalogue",
+    "aggregation_semantics": "Distinct ProductID count gives the number of products",
+    "grain": "one row per product",
+    "validation": "591 rows, ProductID is the declared primary key, unique and non-null"
+  },
+  {
+    "id": "m_product_description",
+    "term_id": "product_description",
+    "database_source": "debit_card_specializing",
+    "table": "products",
+    "column": "Description",
+    "semantic_filter": "All products; a textual label rather than a controlled enumeration",
+    "aggregation_semantics": "Group or list product names; distinct description count is not identical to product count",
+    "grain": "one value per product",
+    "validation": "591 non-null values but only 529 distinct descriptions, so descriptions are not unique identifiers"
+  },
+  {
+    "id": "m_transaction",
+    "term_id": "transaction",
+    "database_source": "debit_card_specializing",
+    "table": "transactions_1k",
+    "column": "TransactionID",
+    "semantic_filter": "All recorded transaction lines; the table is a 1000-row sample of transaction activity",
+    "aggregation_semantics": "Count of transaction lines",
+    "grain": "one row per transaction line",
+    "validation": "1000 rows, TransactionID is the declared primary key; no nulls in any column"
+  },
+  {
+    "id": "m_transaction_date",
+    "term_id": "transaction_date",
+    "database_source": "debit_card_specializing",
+    "table": "transactions_1k",
+    "column": "Date",
+    "semantic_filter": "All transaction lines",
+    "aggregation_semantics": "Group or filter transaction lines by calendar day",
+    "grain": "one value per transaction line",
+    "validation": "1000 non-null values; range 2012-08-23 to 2012-08-26"
+  },
+  {
+    "id": "m_transaction_time",
+    "term_id": "transaction_time",
+    "database_source": "debit_card_specializing",
+    "table": "transactions_1k",
+    "column": "Time",
+    "semantic_filter": "All transaction lines",
+    "aggregation_semantics": "Group or filter transaction lines by time of day",
+    "grain": "one value per transaction line",
+    "validation": "1000 non-null values; range 00:07:00 to 23:20:00"
+  },
+  {
+    "id": "m_transaction_amount",
+    "term_id": "transaction_amount",
+    "database_source": "debit_card_specializing",
+    "table": "transactions_1k",
+    "column": "Amount",
+    "semantic_filter": "All transaction lines; a zero quantity may occur",
+    "aggregation_semantics": "Sum of purchased quantities across selected lines; the divisor when computing average price per unit",
+    "grain": "one value per transaction line",
+    "validation": "1000 non-null values from 0 to 264; 91 lines carry a zero quantity"
+  },
+  {
+    "id": "m_transaction_price",
+    "term_id": "transaction_price",
+    "database_source": "debit_card_specializing",
+    "table": "transactions_1k",
+    "column": "Price",
+    "semantic_filter": "All transaction lines",
+    "aggregation_semantics": "Sum of line totals across selected lines gives monetary totals such as customer spending",
+    "grain": "one value per transaction line",
+    "validation": "1000 non-null values from 1.76 to 5762.49; no zero prices"
+  },
+  {
+    "id": "m_gas_consumption",
+    "term_id": "gas_consumption",
+    "database_source": "debit_card_specializing",
+    "table": "yearmonth",
+    "column": "Consumption",
+    "semantic_filter": "All monthly consumption records",
+    "aggregation_semantics": "Sum of monthly consumption values across customers or across months; compare directly against a threshold when a question asks how much a customer consumed",
+    "grain": "one value per customer per month",
+    "validation": "383282 non-null values from -582092.86 to 2052187.11; 152 records are negative"
+  },
+  {
+    "id": "m_year_month",
+    "term_id": "year_month",
+    "database_source": "debit_card_specializing",
+    "table": "yearmonth",
+    "column": "Date",
+    "semantic_filter": "All consumption records",
+    "aggregation_semantics": "Group consumption by year-month period; a calendar year is the set of periods beginning with that four-digit year",
+    "grain": "one value per customer per month",
+    "validation": "383282 non-null values; six-character 'YYYYMM' strings spanning 201112 to 201311 with 21 distinct months"
+  }
+]

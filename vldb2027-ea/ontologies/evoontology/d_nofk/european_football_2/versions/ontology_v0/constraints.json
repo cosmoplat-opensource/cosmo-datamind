@@ -1,0 +1,395 @@
+[
+  {
+    "id": "c_event_feed_availability",
+    "target": "term_match_event_feed",
+    "constraint_type": "scope",
+    "trigger_keywords": [
+      "possession",
+      "shots",
+      "shots on target",
+      "cards",
+      "fouls",
+      "corners",
+      "crosses",
+      "goal events",
+      "match events",
+      "detailed statistics"
+    ],
+    "severity": "block",
+    "scope": "Applies to any question that needs shot, card, foul, corner, cross, possession or goal-event detail.",
+    "confidence": "high",
+    "description": "The eight XML payload columns are NULL together for 11762 of 25979 matches, so a NULL means the detailed feed was never captured and not that the count is zero. Coverage is not uniform: England Premier League, Germany 1. Bundesliga, Italy Serie A and Spain LIGA BBVA are fully covered, France Ligue 1 only from 2012/2013 onward, Netherlands Eredivisie 530 of 2448, Switzerland Super League 100 of 1422, Scotland Premier League 13 of 1824, Poland Ekstraklasa 7 of 1920, and Portugal Liga ZON Sagres and Belgium Jupiler League have no feed at all. Any event-based answer must state the covered subset.",
+    "evidence": [
+      "ev_event_coverage_league",
+      "ev_event_coverage_season",
+      "ev_shots_cards_scale"
+    ]
+  },
+  {
+    "id": "c_goal_events_vs_scoreline",
+    "target": "term_goal_event",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "final score",
+      "scoreline",
+      "number of goals",
+      "goals scored",
+      "match result",
+      "how many goals"
+    ],
+    "severity": "block",
+    "scope": "Applies whenever a goal count is taken from the event feed rather than from the scoreline columns.",
+    "confidence": "high",
+    "description": "The number of goal events in Match.goal disagrees with home_team_goal plus away_team_goal in 1267 of the 14217 matches that carry a feed; only 87 of those are explained by own goals. In 1180 matches there are more goal events than goals in the final score. The scoreline columns home_team_goal and away_team_goal are authoritative for scores and goal counts; the event feed is suitable for timing, scorer and goal_type detail only.",
+    "evidence": [
+      "ev_goal_xml_vs_score"
+    ]
+  },
+  {
+    "id": "c_player_id_join_rule",
+    "target": "term_player_api_id",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "lineup",
+      "starting eleven",
+      "players who played",
+      "appearances",
+      "player in match",
+      "who played"
+    ],
+    "severity": "block",
+    "scope": "Applies to every join between a match and its players.",
+    "confidence": "high",
+    "description": "The 22 columns home_player_1..11 and away_player_1..11 hold player_api_id values, not Player.id values. Joining them to Player.id leaves 24460 unmatched values, while joining to Player.player_api_id leaves none. The same rule holds for the player1 and player2 elements inside the event feed.",
+    "evidence": [
+      "ev_lineup_id_join"
+    ]
+  },
+  {
+    "id": "c_team_id_join_rule",
+    "target": "term_team_api_id",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "home team",
+      "away team",
+      "team in match",
+      "team name",
+      "club"
+    ],
+    "severity": "block",
+    "scope": "Applies to every join between a match and a team, and to the team element inside the event feed.",
+    "confidence": "high",
+    "description": "Match.home_team_api_id and Match.away_team_api_id hold team_api_id values, not Team.id values, and Team_Attributes.team_api_id does the same. All team references resolve against Team.team_api_id with zero failures. A team appears in a match in exactly one of the two venue-role columns, so both columns must be unioned for a complete per-team view.",
+    "evidence": [
+      "ev_team_id_join"
+    ]
+  },
+  {
+    "id": "c_odds_availability",
+    "target": "term_bet365_odds",
+    "constraint_type": "scope",
+    "trigger_keywords": [
+      "odds",
+      "betting",
+      "bookmaker",
+      "1X2",
+      "home win odds",
+      "implied probability",
+      "market price"
+    ],
+    "severity": "block",
+    "scope": "Applies to every odds or implied-probability question.",
+    "confidence": "high",
+    "description": "The ten bookmaker families do not share a coverage window. B365, BW, IW, LB, WH, SJ and VC span all eight seasons; the PS family exists only from 2012/2013 onward and is NULL in 14811 matches; the GB and BS families exist only through 2012/2013 and are NULL from 2013/2014. Independently of season, Switzerland Super League and Poland Ekstraklasa have no B365 odds at all. A season-spanning odds comparison must therefore either pick one family with full coverage or state which seasons are comparable.",
+    "evidence": [
+      "ev_odds_coverage_season",
+      "ev_odds_coverage_league"
+    ]
+  },
+  {
+    "id": "c_player_snapshot_grain",
+    "target": "term_player_ability_snapshot",
+    "constraint_type": "scope",
+    "trigger_keywords": [
+      "player rating",
+      "overall_rating",
+      "potential",
+      "player attributes",
+      "FIFA rating",
+      "improvement",
+      "development"
+    ],
+    "severity": "block",
+    "scope": "Applies to any question about player ability or its change over time.",
+    "confidence": "high",
+    "description": "Player_Attributes is not match-level. It holds 183978 rows for 11060 players on about two snapshot dates per year, clustered on 22 February and 30/31 August, spanning 2007-02-22 to 2016-07-07. A player's rating in a match cannot be read directly; the snapshot nearest the reference date must be selected explicitly, and a player may have as few as 2 snapshots or as many as 13.",
+    "evidence": [
+      "ev_pa_grain",
+      "ev_date_ranges"
+    ]
+  },
+  {
+    "id": "c_team_snapshot_grain",
+    "target": "term_team_tactical_snapshot",
+    "constraint_type": "scope",
+    "trigger_keywords": [
+      "team tactics",
+      "build up play",
+      "defence pressure",
+      "team attributes",
+      "playing style"
+    ],
+    "severity": "warning",
+    "scope": "Applies to any question about team style or tactics.",
+    "confidence": "high",
+    "description": "Team_Attributes holds only six snapshot dates between 2010-02-22 and 2015-09-10, enough for at most a coarse per-season alignment, and covers 288 of the 299 teams. Seasons 2008/2009 and 2009/2010 have no team tactical data at all.",
+    "evidence": [
+      "ev_ta_grain",
+      "ev_date_ranges"
+    ]
+  },
+  {
+    "id": "c_work_rate_values",
+    "target": "term_player_work_rate",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "work rate",
+      "attacking work rate",
+      "defensive work rate"
+    ],
+    "severity": "warning",
+    "scope": "Applies whenever work rate is filtered, grouped or counted.",
+    "confidence": "high",
+    "description": "The intended domain of attacking_work_rate and defensive_work_rate is low, medium and high, but many rows fall outside it: values such as norm, y, le, stoc, _0, o, ormal and the digits 0 to 9, plus empty strings and NULLs. Only low, medium and high are valid categories; any other value should be treated as unusable rather than as a distinct category, otherwise group-by results will contain spurious levels.",
+    "evidence": [
+      "ev_workrate_enum"
+    ]
+  },
+  {
+    "id": "c_name_not_identifier",
+    "target": "term_player",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "player name",
+      "top player",
+      "best player",
+      "team name",
+      "group by name",
+      "by name"
+    ],
+    "severity": "block",
+    "scope": "Applies to any grouping or ranking expressed by name.",
+    "confidence": "high",
+    "description": "Names are not unique. 163 player_name values are shared by more than one distinct player row, for example Danilo on 7 rows and Paulinho on 6, and team_long_name is duplicated for Polonia Bytom, Royal Excel Mouscron and Widzew Lodz. Ranking or grouping by name merges distinct entities; the identifier columns must be used instead and the name only used for display.",
+    "evidence": [
+      "ev_dup_names"
+    ]
+  },
+  {
+    "id": "c_league_id_is_country_id",
+    "target": "term_league",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "league id",
+      "country id",
+      "league identifier"
+    ],
+    "severity": "info",
+    "scope": "Applies when reading or comparing the numeric League and Country keys.",
+    "confidence": "high",
+    "description": "League.id equals League.country_id for all 11 rows, so the two keys are numerically identical throughout. A coincidence of this dataset should not be read as a general rule, and a query that accidentally uses one in place of the other will still appear to work.",
+    "evidence": [
+      "ev_league_id_country_id"
+    ]
+  },
+  {
+    "id": "c_season_stage_semantics",
+    "target": "term_season",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "season",
+      "round",
+      "stage",
+      "matchday",
+      "year"
+    ],
+    "severity": "info",
+    "scope": "Applies to any time-based grouping of matches.",
+    "confidence": "high",
+    "description": "Season is a text range of the form YYYY/YYYY with exactly 8 values from 2008/2009 to 2015/2016, so it sorts correctly as text but must not be parsed as a number. Stage is an integer round number, 1 to 38, whose populated range differs by league because league sizes differ, so stage N is not comparable across leagues. Match dates run from 2008-07-18 to 2016-05-25 and straddle two calendar years within one season.",
+    "evidence": [
+      "ev_season_stage",
+      "ev_date_ranges"
+    ]
+  },
+  {
+    "id": "c_goal_and_card_enums",
+    "target": "term_goal_event",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "own goal",
+      "penalty",
+      "type of goal",
+      "red card",
+      "yellow card",
+      "second yellow",
+      "booking",
+      "sending off"
+    ],
+    "severity": "info",
+    "scope": "Applies when filtering events by type.",
+    "confidence": "high",
+    "description": "goal_type takes the values n for a normal goal, p for a penalty, o for an own goal, plus dg, npm, rp and psm, and a few events carry no goal_type element at all. card_type takes the values y for yellow, r for red and y2 for a second yellow, which is a distinct category rather than a red card. An own goal is credited to the opposing side's score while being attributed to the player of the other team, so a scorer-level goal count will not reproduce the scoreline unless own goals are handled explicitly.",
+    "evidence": [
+      "ev_goal_type_enum",
+      "ev_card_type_enum"
+    ]
+  },
+  {
+    "id": "c_possession_snapshot_semantics",
+    "target": "term_possession_snapshot",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "possession",
+      "ball possession",
+      "possession percentage"
+    ],
+    "severity": "info",
+    "scope": "Applies whenever possession is read from the event feed.",
+    "confidence": "high",
+    "description": "Possession is stored as several cumulative snapshots per match, roughly at elapsed minutes 25, 45, 70 and 90, each holding homepos and awaypos which always sum to exactly 100. Averaging all snapshots and taking the final snapshot give different values, so a match-level possession figure must be defined as the last snapshot in elapsed order rather than an average over the payload.",
+    "evidence": [
+      "ev_possession_sum"
+    ]
+  },
+  {
+    "id": "c_fifa_id_nullability",
+    "target": "term_team_fifa_api_id",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "fifa id",
+      "team_fifa_api_id",
+      "player_fifa_api_id"
+    ],
+    "severity": "warning",
+    "scope": "Applies when the FIFA identifier is used as a join or grouping key.",
+    "confidence": "high",
+    "description": "Team.team_fifa_api_id is NULL for 11 of the 299 teams, so a join or grouping on it silently drops those clubs. The player side is complete: Player.player_fifa_api_id and Player_Attributes.player_fifa_api_id are never NULL.",
+    "evidence": [
+      "ev_fifa_id_nulls"
+    ]
+  },
+  {
+    "id": "c_formation_slot_not_coordinates",
+    "target": "term_home_away_side",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "player position",
+      "formation",
+      "X",
+      "Y",
+      "pitch coordinates",
+      "tactical position"
+    ],
+    "severity": "info",
+    "scope": "Applies to any interpretation of the home_player_X and home_player_Y column groups.",
+    "confidence": "high",
+    "description": "The X and Y column groups hold small integer formation-slot codes, not pitch coordinates in metres: values observed range from 0 to 7 on X and 0 to 11 on Y, with home_player_X1 and home_player_Y1 taking the value 1 for essentially every populated match. The suffix N of home_player_X<N> and home_player_Y<N> refers to the same shirt slot as home_player_<N>, allowing a slot's player and its formation position to be paired. These columns are NULL for about 1821 to 1832 matches.",
+    "evidence": [
+      "ev_position_slots"
+    ]
+  },
+  {
+    "id": "c_points_convention",
+    "target": "term_league_points",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "points",
+      "table",
+      "standing",
+      "league position",
+      "ranking",
+      "champion"
+    ],
+    "severity": "warning",
+    "scope": "Applies to any standings, table position or champion question.",
+    "confidence": "medium",
+    "description": "No points column exists anywhere in the database, so league points must be computed from the scoreline. Under the standard football convention a win is worth 3 points, a draw 1 and a loss 0; this convention is external domain knowledge rather than something the data can confirm, and it must be stated in the answer. A standings answer additionally needs an explicit tie-break rule, for which goal difference is the customary first criterion.",
+    "evidence": [
+      "ev_goal_xml_vs_score"
+    ]
+  },
+  {
+    "id": "c_goals_aggregation_scope",
+    "target": "term_goals_scored",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "total goals",
+      "goals per season",
+      "top scoring team",
+      "most goals",
+      "goals conceded"
+    ],
+    "severity": "warning",
+    "scope": "Applies to any aggregation of goals over more than one match.",
+    "confidence": "high",
+    "description": "A per-team goal total over a set of matches must union the home and the away rows, taking home_team_goal when the team is the home side and away_team_goal when it is the away side. Aggregating only one venue role produces roughly half the true total. Because a team plays each opponent at both venues, a season total also depends on the chosen league filter, since the same club can appear in more than one competition.",
+    "evidence": [
+      "ev_goal_xml_vs_score",
+      "ev_team_id_join"
+    ]
+  },
+  {
+    "id": "c_lineup_completeness",
+    "target": "term_player",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "appearances",
+      "matches played",
+      "starting lineup",
+      "squad"
+    ],
+    "severity": "warning",
+    "scope": "Applies to appearance counts built from the lineup columns.",
+    "confidence": "high",
+    "description": "23952 of 25979 matches have all 22 lineup slots populated, but 2347 matches are missing at least one slot, so appearance counts built from the lineup columns systematically undercount for matches whose lineup was not captured. The completeness of the lineup capture is also not uniform across leagues and seasons, so appearance totals are comparable within a competition only if the same coverage holds.",
+    "evidence": [
+      "ev_lineup_completeness"
+    ]
+  },
+  {
+    "id": "c_country_id_consistency",
+    "target": "term_country",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "country of match",
+      "country of league",
+      "country filter"
+    ],
+    "severity": "info",
+    "scope": "Applies when filtering matches by country.",
+    "confidence": "high",
+    "description": "Match.country_id agrees with the country of the match's league in all 25979 matches, so filtering by Match.country_id and by the joined League.country_id give identical result sets. Either path is safe; combining both adds no restriction.",
+    "evidence": [
+      "ev_country_id_consistency"
+    ]
+  },
+  {
+    "id": "c_rating_scale",
+    "target": "term_overall_rating",
+    "constraint_type": "unit",
+    "trigger_keywords": [
+      "rating scale",
+      "overall rating range",
+      "good rating",
+      "high rating"
+    ],
+    "severity": "info",
+    "scope": "Applies when interpreting or thresholding a rating value.",
+    "confidence": "high",
+    "description": "overall_rating is an integer on an observed range of 33 to 94 with a mean of 68.60, so a threshold such as above 80 selects a small elite group rather than the upper half of the scale. Height is recorded in centimetres, ranging from 157.48 to 208.28 with a mean of 181.87, and weight in pounds, ranging from 117 to 243 with a mean of 168.38; the two must not be assumed to share a unit system.",
+    "evidence": [
+      "ev_player_profile_ranges"
+    ]
+  }
+]

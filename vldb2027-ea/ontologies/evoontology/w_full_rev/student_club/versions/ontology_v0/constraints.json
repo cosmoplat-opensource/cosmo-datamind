@@ -1,0 +1,525 @@
+[
+  {
+    "id": "constraint_event_status_enum",
+    "target": "term_event_status",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "status",
+      "event status",
+      "closed event",
+      "open event",
+      "planning",
+      "cancelled"
+    ],
+    "severity": "block",
+    "scope": "Applies whenever events are filtered or reported by status",
+    "confidence": "high",
+    "description": "An event status is exactly one of Closed (18 events), Open (13 events) or Planning (11 events). No cancelled or other status value exists in the data, so a question about closed events matches only the literal Closed value.",
+    "evidence": [
+      "evidence_event_status_values"
+    ]
+  },
+  {
+    "id": "constraint_budget_status_mirror",
+    "target": "term_budget_status",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "status",
+      "event_status",
+      "budget status",
+      "closed event",
+      "open event"
+    ],
+    "severity": "warning",
+    "scope": "Applies when only budget data is available or joined",
+    "confidence": "high",
+    "description": "The status stored on a budget line is always the status of the event it belongs to; the two agree in all 52 budget lines. Either representation may be used, but they must not be combined as if they were independent filters.",
+    "evidence": [
+      "evidence_budget_status_mirror"
+    ]
+  },
+  {
+    "id": "constraint_event_type_enum",
+    "target": "term_event_type",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "type",
+      "event type",
+      "kind of event",
+      "meeting",
+      "game",
+      "guest speaker",
+      "social",
+      "community service",
+      "election",
+      "registration",
+      "budget review"
+    ],
+    "severity": "block",
+    "scope": "Applies when events are classified or filtered by type",
+    "confidence": "high",
+    "description": "Event type takes one of eight values: Meeting, Guest Speaker, Game, Community Service, Social, Budget, Election, Registration. Note that Budget is a value of the event type, unrelated to the budget table.",
+    "evidence": [
+      "evidence_event_type_values"
+    ]
+  },
+  {
+    "id": "constraint_no_fundraiser_event_type",
+    "target": "term_fundraising",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "fundraiser",
+      "fundraisers",
+      "fundraising",
+      "not fundraisers",
+      "donation",
+      "dues"
+    ],
+    "severity": "block",
+    "scope": "Applies when a question excludes or identifies fundraising activity among events",
+    "confidence": "high",
+    "description": "No event carries a Fundraiser type and no event name or note mentions fundraising, so no event can be excluded as a fundraiser on event evidence. Fundraising occurs only as one income source value with a single receipt of 200.",
+    "evidence": [
+      "evidence_event_type_values",
+      "evidence_event_notes_check",
+      "evidence_income_source_values"
+    ]
+  },
+  {
+    "id": "constraint_t_shirt_size_enum",
+    "target": "term_t_shirt_size",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "t-shirt",
+      "t shirt",
+      "shirt size",
+      "size",
+      "medium",
+      "large",
+      "small",
+      "x-large"
+    ],
+    "severity": "block",
+    "scope": "Applies when members are filtered by apparel size",
+    "confidence": "high",
+    "description": "Shirt size is stored as Small, Medium, Large or X-Large. The medium size is stored as the literal value Medium and the largest size uses the hyphenated spelling X-Large.",
+    "evidence": [
+      "evidence_t_shirt_size_values"
+    ]
+  },
+  {
+    "id": "constraint_member_position_enum",
+    "target": "term_member_position",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "president",
+      "vice president",
+      "treasurer",
+      "secretary",
+      "officer",
+      "inactive",
+      "position",
+      "role"
+    ],
+    "severity": "warning",
+    "scope": "Applies when members are filtered by club office or standing",
+    "confidence": "high",
+    "description": "Position values are Member (26), Inactive (3), Vice President (1), Treasurer (1), Secretary (1) and President (1). Only one member holds each elected office, and Inactive members are members who are no longer active.",
+    "evidence": [
+      "evidence_member_position_values"
+    ]
+  },
+  {
+    "id": "constraint_major_name_exact_match",
+    "target": "term_major_name",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "business major",
+      "business",
+      "major",
+      "agribusiness",
+      "business education",
+      "international business",
+      "program"
+    ],
+    "severity": "block",
+    "scope": "Applies when a named field of study is matched to a member's major",
+    "confidence": "high",
+    "description": "Major names are full literal values. Business is one program; Agribusiness, Business Education and International Business are different programs that merely contain the same word, so a keyword match on 'Business' would over-count.",
+    "evidence": [
+      "evidence_member_major_business"
+    ]
+  },
+  {
+    "id": "constraint_department_reached_via_major",
+    "target": "term_department",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "department",
+      "which department",
+      "major",
+      "school of",
+      "college"
+    ],
+    "severity": "warning",
+    "scope": "Applies when a department is requested for a member",
+    "confidence": "high",
+    "description": "Department is an attribute of a major, not of a member. A member's department is obtained by following the member's major reference into the major table; the department is not stored on the member.",
+    "evidence": [
+      "evidence_president_department"
+    ]
+  },
+  {
+    "id": "constraint_member_major_optional",
+    "target": "term_member",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "all members",
+      "major",
+      "missing major",
+      "every member"
+    ],
+    "severity": "warning",
+    "scope": "Applies when members are joined to their major",
+    "confidence": "high",
+    "description": "One of the 33 members has no major reference, so an inner join to the major table silently drops that member. A request for all members must not rely on an inner join.",
+    "evidence": [
+      "evidence_member_major_null"
+    ]
+  },
+  {
+    "id": "constraint_event_name_not_unique",
+    "target": "term_event_name",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "event name",
+      "yearly kickoff",
+      "october meeting",
+      "women's soccer",
+      "name of event",
+      "the event"
+    ],
+    "severity": "block",
+    "scope": "Applies when an event is identified by name",
+    "confidence": "high",
+    "description": "Event names are not unique: 42 event rows carry 39 distinct names. Community Theater, Football game and Laugh Out Loud each occur twice on different dates, so an event identified only by name may match more than one event row. Event names that occur once, such as Yearly Kickoff and October Meeting, identify a single event.",
+    "evidence": [
+      "evidence_event_name_duplicates"
+    ]
+  },
+  {
+    "id": "constraint_budget_remaining_formula",
+    "target": "term_budget_remaining",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "remaining",
+      "budget left",
+      "balance",
+      "left over",
+      "amount",
+      "spent"
+    ],
+    "severity": "block",
+    "scope": "Applies whenever remaining budget is used or recomputed",
+    "confidence": "high",
+    "description": "For every budget line, the remaining value equals the allocated amount minus the spent amount. The stored value may carry floating point noise, so comparisons should tolerate small rounding differences.",
+    "evidence": [
+      "evidence_budget_remaining_formula"
+    ]
+  },
+  {
+    "id": "constraint_negative_remaining_overrun",
+    "target": "term_budget_overrun",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "exceeded the budget",
+      "over budget",
+      "overspent",
+      "exceeded the budget the most",
+      "remaining",
+      "overrun"
+    ],
+    "severity": "block",
+    "scope": "Applies when identifying budget overruns",
+    "confidence": "high",
+    "description": "A budget line is over budget exactly when its remaining value is negative; five lines qualify. The item or event that exceeded the budget the most is the one with the smallest remaining value, not the one with the largest spending. These lines belong to September Speaker, November Meeting and three Officers meetings.",
+    "evidence": [
+      "evidence_negative_remaining_events"
+    ]
+  },
+  {
+    "id": "constraint_budget_category_enum",
+    "target": "term_budget_category",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "category",
+      "advertisement",
+      "food",
+      "speaker gifts",
+      "parking",
+      "club t-shirts",
+      "budget in advertisement"
+    ],
+    "severity": "warning",
+    "scope": "Applies when budget lines are filtered or grouped by category",
+    "confidence": "high",
+    "description": "Budget categories are Food (22), Advertisement (15), Speaker Gifts (7), Parking (7) and Club T-Shirts (1). Advertisement is stored as the full word, and a single event usually holds one line per category.",
+    "evidence": [
+      "evidence_budget_category_values"
+    ]
+  },
+  {
+    "id": "constraint_budget_line_grain",
+    "target": "term_budget",
+    "constraint_type": "scope",
+    "trigger_keywords": [
+      "budget",
+      "amount",
+      "spent",
+      "advertisement budget",
+      "per category",
+      "total budget"
+    ],
+    "severity": "block",
+    "scope": "Applies when budget amounts or spending are aggregated",
+    "confidence": "high",
+    "description": "Each budget line covers exactly one event and one category. Comparing or summing budget figures across events or across categories therefore requires aggregating the lines, and the 52 lines cover only 23 of the 42 events.",
+    "evidence": [
+      "evidence_budget_grain"
+    ]
+  },
+  {
+    "id": "constraint_expense_approved_flag",
+    "target": "term_expense_approval",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "approved",
+      "approval",
+      "approved amount",
+      "total value approved",
+      "unapproved"
+    ],
+    "severity": "warning",
+    "scope": "Applies when expenses are restricted to approved ones",
+    "confidence": "high",
+    "description": "The approved field holds the literal string true on 31 expenses and is empty on one; no explicit false value exists. An empty value means no approval was recorded rather than a recorded rejection, so filtering on approval either matches the true value or excludes the one expense with no record.",
+    "evidence": [
+      "evidence_expense_approved_values"
+    ]
+  },
+  {
+    "id": "constraint_expense_date_format",
+    "target": "term_expense_date",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "month",
+      "september",
+      "october",
+      "expense date",
+      "date of expense",
+      "in the events on"
+    ],
+    "severity": "block",
+    "scope": "Applies when expenses are filtered by month or period",
+    "confidence": "high",
+    "description": "Expense dates are stored as YYYY-MM-DD, so the month is the fifth and sixth characters of the value. The observed range covers 2019-08-20 to 2019-11-19, therefore only August, September, October and November occur, and a question naming several months is a disjunction of those months.",
+    "evidence": [
+      "evidence_expense_date_format"
+    ]
+  },
+  {
+    "id": "constraint_expense_reaches_event_via_budget",
+    "target": "term_event_total_cost",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "event cost",
+      "cost of event",
+      "lowest cost",
+      "total cost",
+      "the event which bought",
+      "spent on the event"
+    ],
+    "severity": "block",
+    "scope": "Applies when spending is attributed to an event",
+    "confidence": "high",
+    "description": "There is no direct link between an expense and an event. Every expense is charged to a budget line, and the budget line belongs to an event, so event cost must be assembled through the budget line. All 32 expenses resolve to exactly one event this way.",
+    "evidence": [
+      "evidence_expense_to_event_path"
+    ]
+  },
+  {
+    "id": "constraint_expense_links_complete",
+    "target": "term_expense",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "member expenses",
+      "who spent",
+      "incurred",
+      "spent by"
+    ],
+    "severity": "info",
+    "scope": "Applies when attributing expenses to members or budget lines",
+    "confidence": "high",
+    "description": "Every expense carries both a member reference and a budget line reference, so no expense is unattributed and an inner join loses no expense rows.",
+    "evidence": [
+      "evidence_expense_links_complete"
+    ]
+  },
+  {
+    "id": "constraint_attendance_coverage",
+    "target": "term_attendance_count",
+    "constraint_type": "scope",
+    "trigger_keywords": [
+      "attendance",
+      "attended",
+      "how many attended",
+      "attendance of over",
+      "students attended",
+      "attendees"
+    ],
+    "severity": "block",
+    "scope": "Applies when attendance is counted for an event",
+    "confidence": "high",
+    "description": "Attendance records exist for only 17 of the 42 events; the remaining 25 events have none. An event without attendance rows therefore reports a count of zero from the attendance data, and 30 of the 33 members appear in attendance at least once. Attendance counts observed range up to 30.",
+    "evidence": [
+      "evidence_attendance_coverage"
+    ]
+  },
+  {
+    "id": "constraint_attendance_pair_grain",
+    "target": "term_attendance",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "attendance",
+      "attendees",
+      "count attendance",
+      "how many members attended"
+    ],
+    "severity": "warning",
+    "scope": "Applies when attendance is counted or listed",
+    "confidence": "high",
+    "description": "Attendance is stored one row per event and member pair, and the pair is unique. Counting rows for an event therefore counts members once each, and the same member may attend many events.",
+    "evidence": [
+      "evidence_attendance_coverage"
+    ]
+  },
+  {
+    "id": "constraint_phone_format_inconsistent",
+    "target": "term_member_phone",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "phone",
+      "phone number",
+      "contact number",
+      "telephone",
+      "cell"
+    ],
+    "severity": "warning",
+    "scope": "Applies when a member is looked up by phone number",
+    "confidence": "high",
+    "description": "Phone formats are inconsistent: 31 of 33 values are plain digits and dashes such as 809-555-3360, while 2 wrap the area code in parentheses such as (651) 928-4507. A literal lookup works for the plain form; the parenthesised form needs a looser match.",
+    "evidence": [
+      "evidence_member_phone_formats"
+    ]
+  },
+  {
+    "id": "constraint_city_county_state_grain",
+    "target": "term_city",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "cities",
+      "county",
+      "state",
+      "how many cities",
+      "orange county",
+      "virginia"
+    ],
+    "severity": "block",
+    "scope": "Applies when places are counted within a county or state",
+    "confidence": "high",
+    "description": "City, county and state are attributes of postal rows rather than separate entities, and a city name can recur in different counties. Counting cities for a county and state therefore means counting the distinct city values on the rows matching both, as Orange County in Virginia yields 7 cities.",
+    "evidence": [
+      "evidence_zip_geography_orange_county"
+    ]
+  },
+  {
+    "id": "constraint_zip_reference_scope",
+    "target": "term_zip_code",
+    "constraint_type": "scope",
+    "trigger_keywords": [
+      "zip",
+      "zip code",
+      "postal code",
+      "city",
+      "state",
+      "county"
+    ],
+    "severity": "info",
+    "scope": "Applies when the postal reference is filtered or joined",
+    "confidence": "high",
+    "description": "The postal reference holds 41877 rows covering the whole United States, far larger than the club data. Only 33 member rows reference it, and the county value is empty for some rows, so a county filter excludes those rows.",
+    "evidence": [
+      "evidence_zip_reference_scope"
+    ]
+  },
+  {
+    "id": "constraint_income_source_enum",
+    "target": "term_income_source",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "income",
+      "dues",
+      "sponsorship",
+      "fundraising",
+      "school appropriation",
+      "revenue"
+    ],
+    "severity": "warning",
+    "scope": "Applies when club revenue is grouped or filtered by source",
+    "confidence": "high",
+    "description": "Income sources are Dues (33 receipts), Fundraising (1), Sponsorship (1) and School Appropration (1, spelled without the second t in the data). Dues dominate both the count and the pattern of receipts.",
+    "evidence": [
+      "evidence_income_source_values"
+    ]
+  },
+  {
+    "id": "constraint_member_full_name_concat",
+    "target": "term_member_full_name",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "full name",
+      "name of member",
+      "member name",
+      "elijah allen",
+      "sacha harrison"
+    ],
+    "severity": "block",
+    "scope": "Applies when a person named in a question is matched to a member",
+    "confidence": "high",
+    "description": "No full-name column exists; a member name is stored as separate first and last name parts. Matching a name such as Elijah Allen or Sacha Harrison requires both parts, and reporting a full name requires joining them.",
+    "evidence": [
+      "evidence_member_full_name_parts"
+    ]
+  },
+  {
+    "id": "constraint_expense_description_literal",
+    "target": "term_expense_description",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "kind of expense",
+      "type of expense",
+      "expense description",
+      "post cards",
+      "posters",
+      "pizza",
+      "what kind"
+    ],
+    "severity": "info",
+    "scope": "Applies when expenses are identified by what was purchased",
+    "confidence": "high",
+    "description": "Expense descriptions are literal free text with 12 distinct values, several containing commas such as Post Cards, Posters or Water, Cookies, and some overlapping in wording such as Posters against Post Cards, Posters. Matching should be literal rather than by substring alone.",
+    "evidence": [
+      "evidence_expense_description_values"
+    ]
+  }
+]

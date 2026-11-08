@@ -1,0 +1,310 @@
+[
+  {
+    "id": "term_customer",
+    "name": "Customer",
+    "type": "entity",
+    "definition": "A customer of the specialising debit card business, identified by a unique integer customer ID and described by a customer segment and a billing currency.",
+    "scope": "Customer-level analysis across the customer table; the same customer identifier links consumption records and transactions.",
+    "aliases": [
+      "customer",
+      "client",
+      "cardholder",
+      "SME customer",
+      "LAM customer",
+      "KAM customer"
+    ],
+    "evidence": [
+      "evidence_customer_table",
+      "evidence_customer_coverage"
+    ]
+  },
+  {
+    "id": "term_customer_segment",
+    "name": "Customer Segment",
+    "type": "dimension",
+    "definition": "The market segment to which a customer belongs. Observed values are SME (small and medium enterprises), LAM and KAM.",
+    "scope": "Customer-level grouping and filtering only. Distinct from the gas-station segment, whose value domain is disjoint.",
+    "aliases": [
+      "segment",
+      "customer segment",
+      "SME",
+      "LAM",
+      "KAM"
+    ],
+    "evidence": [
+      "evidence_customer_segment_values",
+      "evidence_segment_domain_disjoint"
+    ]
+  },
+  {
+    "id": "term_billing_currency",
+    "name": "Billing Currency",
+    "type": "dimension",
+    "definition": "The currency in which a customer settles consumption. Observed values are CZK and EUR.",
+    "scope": "Customer attribute used to select customers who paid in euro or in CZK. It is not a property of individual transactions.",
+    "aliases": [
+      "currency",
+      "paid in euro",
+      "paid in EUR",
+      "paid in CZK",
+      "EUR",
+      "CZK"
+    ],
+    "evidence": [
+      "evidence_currency_values"
+    ]
+  },
+  {
+    "id": "term_monthly_consumption",
+    "name": "Monthly Consumption",
+    "type": "metric",
+    "definition": "Customer consumption recorded for one calendar month in the year-month consumption table. It is a pre-aggregated monthly amount per customer, not the sum of transaction prices.",
+    "scope": "Customer-month level; the primary measure for consumption questions over months and years.",
+    "aliases": [
+      "consumption",
+      "monthly consumption",
+      "gas consumption",
+      "total consumption",
+      "fld015"
+    ],
+    "evidence": [
+      "evidence_yearmonth_profile",
+      "evidence_consumption_scale_vs_transactions"
+    ]
+  },
+  {
+    "id": "term_year_month",
+    "name": "Year-Month Period",
+    "type": "dimension",
+    "definition": "The calendar month of a consumption record, stored as a six-character YYYYMM string whose first four characters are the year and whose last two characters are the month.",
+    "scope": "Time dimension of the consumption table; month-level granularity, not a full date.",
+    "aliases": [
+      "yearmonth",
+      "year month",
+      "date",
+      "month",
+      "period",
+      "2013",
+      "2012"
+    ],
+    "evidence": [
+      "evidence_yearmonth_date_format",
+      "evidence_consumption_coverage"
+    ]
+  },
+  {
+    "id": "term_gas_station",
+    "name": "Gas Station",
+    "type": "entity",
+    "definition": "A gas station where card transactions take place, identified by a unique gas station ID and described by chain, country and station segment.",
+    "scope": "Station-level analysis and the station-side dimensions of transactions.",
+    "aliases": [
+      "gas station",
+      "station",
+      "petrol station"
+    ],
+    "evidence": [
+      "evidence_gasstation_table"
+    ]
+  },
+  {
+    "id": "term_gas_station_chain",
+    "name": "Gas Station Chain",
+    "type": "dimension",
+    "definition": "The chain number to which a gas station belongs; an integer value shared by many stations.",
+    "scope": "Grouping and filtering stations and their transactions by chain, including references such as chain no. 11.",
+    "aliases": [
+      "chain",
+      "chain no",
+      "chain number",
+      "chain no. 11"
+    ],
+    "evidence": [
+      "evidence_chain_values"
+    ]
+  },
+  {
+    "id": "term_gas_station_country",
+    "name": "Gas Station Country",
+    "type": "dimension",
+    "definition": "The country in which a gas station is located, stored as a three-letter code. Observed values are CZE and SVK.",
+    "scope": "Geographic filtering of stations and of the transactions that occur at them.",
+    "aliases": [
+      "country",
+      "Czech Republic",
+      "CZE",
+      "Slovakia",
+      "SVK"
+    ],
+    "evidence": [
+      "evidence_country_values"
+    ]
+  },
+  {
+    "id": "term_gas_station_segment",
+    "name": "Gas Station Segment",
+    "type": "dimension",
+    "definition": "The commercial segment of a gas station: Other, Premium, Noname, Value for money, or Discount.",
+    "scope": "Station-level classification only. Its values never occur as customer segments.",
+    "aliases": [
+      "station segment",
+      "gas station segment",
+      "Premium",
+      "Discount",
+      "Value for money",
+      "Noname",
+      "Other"
+    ],
+    "evidence": [
+      "evidence_station_segment_values",
+      "evidence_segment_domain_disjoint"
+    ]
+  },
+  {
+    "id": "term_product",
+    "name": "Product",
+    "type": "entity",
+    "definition": "A product sold at gas stations (fuels, lubricants, car care, goods), identified by a unique product ID and described by a short description.",
+    "scope": "Product-level analysis of transactions.",
+    "aliases": [
+      "product",
+      "fuel",
+      "goods",
+      "item"
+    ],
+    "evidence": [
+      "evidence_product_table"
+    ]
+  },
+  {
+    "id": "term_product_description",
+    "name": "Product Description",
+    "type": "dimension",
+    "definition": "The short textual name of a product, for example Nafta, Natural, Diesel, or Oleje,tuky.",
+    "scope": "Display and grouping of products.",
+    "aliases": [
+      "description",
+      "product description",
+      "product name"
+    ],
+    "evidence": [
+      "evidence_product_table"
+    ]
+  },
+  {
+    "id": "term_transaction",
+    "name": "Transaction",
+    "type": "entity",
+    "definition": "A single card purchase at a gas station, carrying date, time, customer, gas station, product, quantity and price.",
+    "scope": "Event-level analysis. The stored table is a 1000-row sample covering only 2012-08-23 through 2012-08-26.",
+    "aliases": [
+      "transaction",
+      "purchase",
+      "payment",
+      "sale"
+    ],
+    "evidence": [
+      "evidence_transaction_profile"
+    ]
+  },
+  {
+    "id": "term_transaction_date",
+    "name": "Transaction Date",
+    "type": "dimension",
+    "definition": "The calendar date on which a transaction took place, stored as a YYYY-MM-DD text value.",
+    "scope": "Date filtering and day-level grouping of transactions.",
+    "aliases": [
+      "date",
+      "transaction date",
+      "2012/8/23",
+      "2012-08-23"
+    ],
+    "evidence": [
+      "evidence_transaction_date_format"
+    ]
+  },
+  {
+    "id": "term_transaction_time",
+    "name": "Transaction Time",
+    "type": "dimension",
+    "definition": "The clock time at which a transaction took place, stored as HH:MM:SS text.",
+    "scope": "Time-of-day filtering and distinct-time listing for transactions.",
+    "aliases": [
+      "time",
+      "transaction time",
+      "hour",
+      "21:20:00"
+    ],
+    "evidence": [
+      "evidence_transaction_time_format"
+    ]
+  },
+  {
+    "id": "term_transaction_qty",
+    "name": "Transaction Quantity",
+    "type": "metric",
+    "definition": "The number of product units purchased in one transaction. Price divided by quantity yields a stable per-unit price for fuel products.",
+    "scope": "Transaction-level quantity; applies to the transaction table only.",
+    "aliases": [
+      "amount",
+      "quantity",
+      "amount of product",
+      "fld013"
+    ],
+    "evidence": [
+      "evidence_unit_price_ratio",
+      "evidence_transaction_price_range"
+    ]
+  },
+  {
+    "id": "term_transaction_price",
+    "name": "Transaction Price",
+    "type": "metric",
+    "definition": "The total price paid for one transaction, in the transaction's currency units.",
+    "scope": "Transaction-level monetary value; it is not comparable to pre-aggregated monthly consumption over many purchases.",
+    "aliases": [
+      "price",
+      "total price",
+      "paid amount",
+      "fld014"
+    ],
+    "evidence": [
+      "evidence_transaction_price_range",
+      "evidence_consumption_scale_vs_transactions"
+    ]
+  },
+  {
+    "id": "term_annual_consumption",
+    "name": "Annual Consumption",
+    "type": "metric",
+    "definition": "The total consumption of a customer or customer group over a calendar year, formed by summing that year's monthly consumption records. Average monthly consumption for the year is the annual total divided by twelve months.",
+    "scope": "Derived metric for yearly comparisons; its value depends on which months are present in the consumption table.",
+    "aliases": [
+      "annual consumption",
+      "yearly consumption",
+      "annual average consumption",
+      "average monthly consumption"
+    ],
+    "evidence": [
+      "evidence_consumption_coverage",
+      "evidence_yearmonth_profile"
+    ]
+  },
+  {
+    "id": "term_consumption_growth",
+    "name": "Consumption Growth",
+    "type": "metric",
+    "definition": "The year-over-year change in annual consumption, expressed either as an absolute difference or as a percentage of a base year's consumption.",
+    "scope": "Derived comparison metric between two calendar years for a customer group.",
+    "aliases": [
+      "growth",
+      "increase",
+      "percentage increase",
+      "year over year",
+      "2012 to 2013"
+    ],
+    "evidence": [
+      "evidence_consumption_coverage"
+    ]
+  }
+]

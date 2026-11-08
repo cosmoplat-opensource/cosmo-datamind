@@ -1,0 +1,290 @@
+[
+  {
+    "id": "evidence_posts_schema",
+    "source": "codebase_community.sqlite (read-only)",
+    "query": "SELECT name FROM pragma_table_info('posts');",
+    "result": "Id, PostTypeId, AcceptedAnswerId, CreaionDate, Score, ViewCount, Body, OwnerUserId, LasActivityDate, Title, Tags, AnswerCount, CommentCount, FavoriteCount, LastEditorUserId, LastEditDate, CommunityOwnedDate, ParentId, ClosedDate, OwnerDisplayName, LastEditorDisplayName. The creation and activity timestamps are stored under the misspelled names CreaionDate and LasActivityDate.",
+    "validation_method": "read-only schema introspection",
+    "timestamp": "2026-10-10T00:00:00Z"
+  },
+  {
+    "id": "evidence_users_schema",
+    "source": "codebase_community.sqlite (read-only)",
+    "query": "SELECT name FROM pragma_table_info('users');",
+    "result": "Id, Reputation, CreationDate, DisplayName, LastAccessDate, WebsiteUrl, Location, AboutMe, Views, UpVotes, DownVotes, AccountId, Age, ProfileImageUrl. 40325 rows.",
+    "validation_method": "read-only schema introspection and row count",
+    "timestamp": "2026-10-10T00:00:00Z"
+  },
+  {
+    "id": "evidence_comments_schema",
+    "source": "codebase_community.sqlite (read-only)",
+    "query": "SELECT name FROM pragma_table_info('comments'); SELECT COUNT(*) FROM comments;",
+    "result": "Id, PostId, Score, Text, CreationDate, UserId, UserDisplayName. 174285 rows. CreationDate stores a full timestamp.",
+    "validation_method": "read-only schema introspection and row count",
+    "timestamp": "2026-10-10T00:00:00Z"
+  },
+  {
+    "id": "evidence_votes_schema",
+    "source": "codebase_community.sqlite (read-only)",
+    "query": "SELECT name FROM pragma_table_info('votes'); SELECT COUNT(*) FROM votes;",
+    "result": "Id, PostId, VoteTypeId, CreationDate, UserId, BountyAmount. 38930 rows. CreationDate stores a calendar date with no time component.",
+    "validation_method": "read-only schema introspection and row count",
+    "timestamp": "2026-10-10T00:00:00Z"
+  },
+  {
+    "id": "evidence_tags_schema",
+    "source": "codebase_community.sqlite (read-only)",
+    "query": "SELECT COUNT(*), SUM(ExcerptPostId IS NULL), SUM(WikiPostId IS NULL) FROM tags;",
+    "result": "1032 catalogue tags; 436 have no excerpt post and 436 have no wiki post. Tags 1-2 link excerpt post 20258 and wiki post 20257.",
+    "validation_method": "read-only row counts and null counts",
+    "timestamp": "2026-10-10T00:00:00Z"
+  },
+  {
+    "id": "evidence_post_history_schema",
+    "source": "codebase_community.sqlite (read-only)",
+    "query": "SELECT COUNT(*), SUM(UserDisplayName IS NULL), SUM(UserId IS NULL) FROM postHistory;",
+    "result": "303155 revision records; the acting display name is populated for all of them while the acting user identifier is absent in 21326.",
+    "validation_method": "read-only schema introspection and null counts",
+    "timestamp": "2026-10-10T00:00:00Z"
+  },
+  {
+    "id": "evidence_post_type_distribution",
+    "source": "codebase_community.sqlite (read-only)",
+    "query": "SELECT PostTypeId, COUNT(*) FROM posts GROUP BY 1 ORDER BY 1;",
+    "result": "1=42912, 2=47755, 3=6, 4=639, 5=640, 6=9, 7=5.",
+    "validation_method": "read-only aggregate query",
+    "timestamp": "2026-10-10T00:00:00Z"
+  },
+  {
+    "id": "evidence_tags_post_linkage",
+    "source": "codebase_community.sqlite (read-only)",
+    "query": "SELECT p.PostTypeId, COUNT(*) FROM tags t JOIN posts p ON p.Id=t.ExcerptPostId GROUP BY 1; SELECT p.PostTypeId, COUNT(*) FROM tags t JOIN posts p ON p.Id=t.WikiPostId GROUP BY 1;",
+    "result": "Every resolvable excerpt link points to a post of type 4 and every resolvable wiki link points to a post of type 5, establishing those two post types as the tag-excerpt and tag-wiki records.",
+    "validation_method": "read-only join and grouping check",
+    "timestamp": "2026-10-10T00:00:00Z"
+  },
+  {
+    "id": "evidence_viewcount_by_posttype",
+    "source": "codebase_community.sqlite (read-only)",
+    "query": "SELECT PostTypeId, COUNT(*), SUM(ViewCount IS NULL) FROM posts GROUP BY 1 ORDER BY 1;",
+    "result": "Type 1: 42912 rows, 0 with a null view count. Type 2: 47755 rows, all 47755 null. Every other type is null as well. View count is therefore populated exactly for question posts.",
+    "validation_method": "read-only null-distribution check",
+    "timestamp": "2026-10-10T00:00:00Z"
+  },
+  {
+    "id": "evidence_tags_column_by_posttype",
+    "source": "codebase_community.sqlite (read-only)",
+    "query": "SELECT PostTypeId, COUNT(*), SUM(Tags IS NOT NULL) FROM posts GROUP BY 1 ORDER BY 1;",
+    "result": "Only type 1 has tags: 42912 of 42912 rows. All other post types have zero rows with a tag list. Titles behave the same way.",
+    "validation_method": "read-only null-distribution check",
+    "timestamp": "2026-10-10T00:00:00Z"
+  },
+  {
+    "id": "evidence_tags_string_format",
+    "source": "codebase_community.sqlite (read-only)",
+    "query": "SELECT Id, Title, Tags FROM posts WHERE PostTypeId=1 AND Tags IS NOT NULL LIMIT 4;",
+    "result": "Tag lists appear as adjacent angle-bracket labels with no separator, for example '<bayesian><prior><elicitation>' and '<distributions><statistical-significance>'.",
+    "validation_method": "read-only sample inspection",
+    "timestamp": "2026-10-10T00:00:00Z"
+  },
+  {
+    "id": "evidence_post_history_types",
+    "source": "codebase_community.sqlite (read-only)",
+    "query": "SELECT PostHistoryTypeId, COUNT(*) FROM postHistory GROUP BY 1 ORDER BY 1;",
+    "result": "Type 1: 42909 initial title records. Type 2: 91974 initial body records. Type 3: 42921 initial tag records. Type 4: 16008 title edits. Type 5: 69413 body edits. Type 6: 12731 tag edits. Smaller volumes of further types exist (for example 24 with 7017, 25 with 10320).",
+    "validation_method": "read-only aggregate query",
+    "timestamp": "2026-10-10T00:00:00Z"
+  },
+  {
+    "id": "evidence_post_history_edit_texts",
+    "source": "codebase_community.sqlite (read-only)",
+    "query": "SELECT PostHistoryTypeId, substr(Text,1,50) FROM postHistory WHERE PostHistoryTypeId IN (4,5,6) LIMIT 5;",
+    "result": "Type 6 records carry a replacement tag list such as '<lightbulb><verboten>'; type 5 records carry replacement body text; type 4 records carry a replacement title. This confirms that types 4-6 are content-change (edit) records while types 1-3 carry the original content.",
+    "validation_method": "read-only payload inspection",
+    "timestamp": "2026-10-10T00:00:00Z"
+  },
+  {
+    "id": "evidence_age_nulls",
+    "source": "codebase_community.sqlite (read-only)",
+    "query": "SELECT COUNT(*), SUM(Age IS NULL) FROM users;",
+    "result": "40325 accounts, of which 32007 have no recorded age.",
+    "validation_method": "read-only null count",
+    "timestamp": "2026-10-10T00:00:00Z"
+  },
+  {
+    "id": "evidence_age_range",
+    "source": "codebase_community.sqlite (read-only)",
+    "query": "SELECT MIN(Age), MAX(Age), COUNT(*) FROM users WHERE Age IS NOT NULL; SELECT COUNT(*) FROM users WHERE Age > 65;",
+    "result": "Recorded ages span 13 to 94 across 8318 accounts; 87 accounts exceed age 65.",
+    "validation_method": "read-only aggregate query",
+    "timestamp": "2026-10-10T00:00:00Z"
+  },
+  {
+    "id": "evidence_closed_date_nullability",
+    "source": "codebase_community.sqlite (read-only)",
+    "query": "SELECT COUNT(*), SUM(ClosedDate IS NULL), SUM(ClosedDate IS NOT NULL) FROM posts;",
+    "result": "91966 posts, of which 90356 have no closure timestamp and 1610 have one. Closure is represented by the presence of a timestamp rather than by a boolean flag.",
+    "validation_method": "read-only null-distribution check",
+    "timestamp": "2026-10-10T00:00:00Z"
+  },
+  {
+    "id": "evidence_vote_types_bounty",
+    "source": "codebase_community.sqlite (read-only)",
+    "query": "SELECT VoteTypeId, COUNT(*), SUM(BountyAmount IS NOT NULL) FROM votes GROUP BY 1 ORDER BY 1;",
+    "result": "Type 1: 1451 rows, none with a bounty. Type 2: 33323 rows, none. Type 3: 444 rows, none. Type 5: 3365 rows, none. Type 8: 60 rows, all 60 with a bounty. Type 9: 59 rows, 41 with a bounty. Types 10, 11, 15, 16: 1, 44, 72, 111 rows, none with a bounty.",
+    "validation_method": "read-only aggregate query",
+    "timestamp": "2026-10-10T00:00:00Z"
+  },
+  {
+    "id": "evidence_vote_date_granularity",
+    "source": "codebase_community.sqlite (read-only)",
+    "query": "SELECT Id, CreationDate FROM votes LIMIT 4; SELECT Id, CreationDate FROM comments LIMIT 3; SELECT Id, Date FROM badges LIMIT 3;",
+    "result": "Votes store '2010-07-19' with no time component, while comments store '2010-07-19 19:15:52.0' and badges store '2010-07-19 19:39:07.0', both with a time and a trailing fractional part.",
+    "validation_method": "read-only sample inspection across tables",
+    "timestamp": "2026-10-10T00:00:00Z"
+  },
+  {
+    "id": "evidence_badge_names",
+    "source": "codebase_community.sqlite (read-only)",
+    "query": "SELECT Name, COUNT(*) FROM badges GROUP BY 1 ORDER BY 2 DESC LIMIT 15; SELECT COUNT(DISTINCT UserId) FROM badges;",
+    "result": "Awards span many named achievements: Student 14847, Supporter 8828, Editor 8453, Scholar 6523, Teacher 4679, Popular Question 4536, Autobiographer 4480, and a long tail. 79851 award rows belong to 25078 distinct users.",
+    "validation_method": "read-only aggregate query",
+    "timestamp": "2026-10-10T00:00:00Z"
+  },
+  {
+    "id": "evidence_badge_count_gt5",
+    "source": "codebase_community.sqlite (read-only)",
+    "query": "SELECT COUNT(*) FROM (SELECT UserId FROM badges GROUP BY UserId HAVING COUNT(*) > 5); SELECT UserId, COUNT(*) FROM badges GROUP BY 1 ORDER BY 2 DESC LIMIT 3;",
+    "result": "2875 users hold more than five award rows; the largest holders have 456, 318 and 282 award rows.",
+    "validation_method": "read-only grouped count",
+    "timestamp": "2026-10-10T00:00:00Z"
+  },
+  {
+    "id": "evidence_first_badge_date_ties",
+    "source": "codebase_community.sqlite (read-only)",
+    "query": "SELECT MIN(Date), COUNT(*) FROM badges WHERE Name='Autobiographer'; SELECT UserId, Date FROM badges WHERE Name='Autobiographer' ORDER BY Date LIMIT 5;",
+    "result": "The earliest Autobiographer timestamp is 2010-07-19 19:39:09.0, shared by many different accounts (the first five listed holders all carry exactly this timestamp). The timestamp alone does not identify a unique first holder.",
+    "validation_method": "read-only ordered inspection of the earliest rows",
+    "timestamp": "2026-10-10T00:00:00Z"
+  },
+  {
+    "id": "evidence_first_vote_lookup",
+    "source": "codebase_community.sqlite (read-only)",
+    "query": "SELECT UserId, MIN(CreationDate) FROM votes WHERE UserId=(SELECT Id FROM users WHERE DisplayName='chl') GROUP BY 1; SELECT v.Id, v.UserId, u.DisplayName FROM votes v LEFT JOIN users u ON u.Id=v.UserId WHERE v.Id=6347;",
+    "result": "The user named chl holds account 930 and its earliest vote date is 2010-08-13. Vote 6347 resolves to user 339, whose display name is George Dontas.",
+    "validation_method": "read-only lookup and minimum reduction",
+    "timestamp": "2026-10-10T00:00:00Z"
+  },
+  {
+    "id": "evidence_displayname_not_unique",
+    "source": "codebase_community.sqlite (read-only)",
+    "query": "SELECT COUNT(*), COUNT(DISTINCT DisplayName) FROM users; SELECT DisplayName, COUNT(*) FROM users GROUP BY 1 HAVING COUNT(*) > 1 ORDER BY 2 DESC LIMIT 5;",
+    "result": "40325 accounts carry only 35644 distinct display names. The most repeated names are Chris 80, John 64, Alex 63, Tom 57 and Michael 52.",
+    "validation_method": "read-only distinct-value and duplication check",
+    "timestamp": "2026-10-10T00:00:00Z"
+  },
+  {
+    "id": "evidence_denormalized_names",
+    "source": "codebase_community.sqlite (read-only)",
+    "query": "SELECT 'comments', COUNT(*), SUM(UserDisplayName IS NOT NULL) FROM comments UNION ALL SELECT 'postHistory', COUNT(*), SUM(UserDisplayName IS NOT NULL) FROM postHistory UNION ALL SELECT 'posts.OwnerDisplayName', COUNT(*), SUM(OwnerDisplayName IS NOT NULL) FROM posts UNION ALL SELECT 'posts.LastEditorDisplayName', COUNT(*), SUM(LastEditorDisplayName IS NOT NULL) FROM posts; SELECT COUNT(*) FROM comments c JOIN users u ON u.Id=c.UserId WHERE c.UserDisplayName IS NOT NULL AND c.UserDisplayName <> u.DisplayName;",
+    "result": "Revision records: 303155 of 303155 carry a name. Comments: only 2831 of 174285. Posts owner name: only 2509 of 91966. Posts last-editor name: only 465 of 91966. No mismatches with the account name were found among the records where both are present.",
+    "validation_method": "read-only population counts and consistency check",
+    "timestamp": "2026-10-10T00:00:00Z"
+  },
+  {
+    "id": "evidence_title_case_sensitivity",
+    "source": "codebase_community.sqlite (read-only)",
+    "query": "SELECT Id, Title FROM posts WHERE Title LIKE 'Computer Game Datasets%'; SELECT Id, Title FROM posts WHERE lower(Title) LIKE '%computer game datasets%';",
+    "result": "A case-sensitive prefix match on the title as quoted in a question returns no rows; a case-insensitive match returns post 8222 with the stored title 'Computer game datasets'.",
+    "validation_method": "read-only comparison of case-sensitive and case-insensitive matching",
+    "timestamp": "2026-10-10T00:00:00Z"
+  },
+  {
+    "id": "evidence_tag_count_vs_occurrence",
+    "source": "codebase_community.sqlite (read-only)",
+    "query": "SELECT t.TagName, t.Count, (SELECT COUNT(*) FROM posts p WHERE p.Tags LIKE '%<'||t.TagName||'>%') FROM tags t WHERE t.TagName IN ('r','variance','ggplot2');",
+    "result": "r: catalogue 7244 versus 7240 posts containing the label. variance: 766 versus 766. ggplot2: 78 versus 78. The catalogue count is close to, but not always identical with, a recount over question tag lists.",
+    "validation_method": "read-only comparison of catalogue count against recount",
+    "timestamp": "2026-10-10T00:00:00Z"
+  },
+  {
+    "id": "evidence_score_range",
+    "source": "codebase_community.sqlite (read-only)",
+    "query": "SELECT MIN(Score), MAX(Score) FROM posts; SELECT COUNT(*) FROM posts WHERE Score < 0;",
+    "result": "Scores span -19 to 192 and 1020 posts have a negative score, so score is a signed net standing rather than a non-negative count.",
+    "validation_method": "read-only aggregate query",
+    "timestamp": "2026-10-10T00:00:00Z"
+  },
+  {
+    "id": "evidence_reputation_range",
+    "source": "codebase_community.sqlite (read-only)",
+    "query": "SELECT MIN(Reputation), MAX(Reputation), AVG(Reputation) FROM users;",
+    "result": "Reputation spans 1 to 87393 with a mean of about 84.08, and is populated for every account.",
+    "validation_method": "read-only aggregate query",
+    "timestamp": "2026-10-10T00:00:00Z"
+  },
+  {
+    "id": "evidence_community_user",
+    "source": "codebase_community.sqlite (read-only)",
+    "query": "SELECT Id, DisplayName, Reputation FROM users WHERE DisplayName='Community'; SELECT COUNT(*) FROM posts WHERE OwnerUserId=-1;",
+    "result": "A synthetic account with Id -1, display name 'Community' and reputation 1 owns 211 posts.",
+    "validation_method": "read-only lookup and count",
+    "timestamp": "2026-10-10T00:00:00Z"
+  },
+  {
+    "id": "evidence_owner_display_name",
+    "source": "codebase_community.sqlite (read-only)",
+    "query": "SELECT COUNT(*) FROM posts WHERE OwnerDisplayName IS NOT NULL AND OwnerUserId IS NULL; SELECT COUNT(*), SUM(OwnerDisplayName IS NOT NULL) FROM posts;",
+    "result": "2509 posts carry a stored owner name, and 1388 of those carry no owner identifier, so the name is the only attribution available for them.",
+    "validation_method": "read-only null and population counts",
+    "timestamp": "2026-10-10T00:00:00Z"
+  },
+  {
+    "id": "evidence_last_editor_pointer",
+    "source": "codebase_community.sqlite (read-only)",
+    "query": "SELECT COUNT(*), SUM(LastEditorUserId IS NULL) FROM posts; SELECT SUM(LastEditorUserId=OwnerUserId), COUNT(*) FROM posts WHERE LastEditorUserId IS NOT NULL;",
+    "result": "47361 of 91966 posts have no last-editor identifier; among the 44605 that do, 23429 equal the owner, so the pointer frequently names the creator rather than a distinct editor.",
+    "validation_method": "read-only null and equality counts",
+    "timestamp": "2026-10-10T00:00:00Z"
+  },
+  {
+    "id": "evidence_post_history_user_nulls",
+    "source": "codebase_community.sqlite (read-only)",
+    "query": "SELECT SUM(UserId IS NULL), COUNT(*) FROM postHistory;",
+    "result": "21326 of 303155 revision records carry no acting user identifier, so an editor enumeration from revision records also loses rows.",
+    "validation_method": "read-only null count",
+    "timestamp": "2026-10-10T00:00:00Z"
+  },
+  {
+    "id": "evidence_post_creation_date_non_null",
+    "source": "codebase_community.sqlite (read-only)",
+    "query": "SELECT COUNT(*), SUM(CreaionDate IS NULL) FROM posts; SELECT Id, CreaionDate, LasActivityDate FROM posts LIMIT 4;",
+    "result": "All 91966 posts carry a creation timestamp under the misspelled column name, for example '2010-07-19 19:12:12.0'.",
+    "validation_method": "read-only null count and sample inspection",
+    "timestamp": "2026-10-10T00:00:00Z"
+  },
+  {
+    "id": "evidence_favorite_count_nulls",
+    "source": "codebase_community.sqlite (read-only)",
+    "query": "SELECT SUM(FavoriteCount IS NULL), SUM(ViewCount IS NULL), COUNT(*) FROM posts;",
+    "result": "Favorite count is absent for 78723 of 91966 posts and view count for 49054, so both engagement measures are sparse and concentrated in question posts.",
+    "validation_method": "read-only null-distribution check",
+    "timestamp": "2026-10-10T00:00:00Z"
+  },
+  {
+    "id": "evidence_fk_integrity",
+    "source": "codebase_community.sqlite (read-only)",
+    "query": "SELECT COUNT(*) FROM posts p LEFT JOIN users u ON u.Id=p.OwnerUserId WHERE p.OwnerUserId IS NOT NULL AND u.Id IS NULL; SELECT COUNT(*) FROM badges b LEFT JOIN users u ON u.Id=b.UserId WHERE b.UserId IS NOT NULL AND u.Id IS NULL; SELECT COUNT(*) FROM comments c LEFT JOIN posts p ON p.Id=c.PostId WHERE c.PostId IS NOT NULL AND p.Id IS NULL;",
+    "result": "Post owner references: 0 dangling. Badge user references: 0 dangling. Comment post references: 36 dangling, so those comments cannot be joined to a post.",
+    "validation_method": "read-only anti-join checks against the declared foreign keys",
+    "timestamp": "2026-10-10T00:00:00Z"
+  },
+  {
+    "id": "evidence_percentage_reference_populations",
+    "source": "minidev_rev construction workload for codebase_community",
+    "query": "Review of the percentage-phrased items in the permitted construction workload.",
+    "result": "The percentage items differ in their stated denominator: a share of all posts whose owners meet a reputation condition, a share of posts of one author that carry a given tag, a share of posts of the most reputed user that exceed a score, and a share of posts scoring above a threshold whose owner is in an age cohort. The numerator condition and the reference population must both be taken from the question.",
+    "validation_method": "workload phrase analysis against available data structures",
+    "timestamp": "2026-10-10T00:00:00Z"
+  }
+]

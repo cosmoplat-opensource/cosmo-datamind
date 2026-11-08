@@ -1,0 +1,833 @@
+[
+  {
+    "id": "mapping_circuit_id",
+    "term_id": "term_circuit",
+    "database_source": "formula_1",
+    "table": "tab01",
+    "column": "fld001",
+    "semantic_filter": "",
+    "aggregation_semantics": "identifier; not aggregated",
+    "grain": "one row per circuit",
+    "validation": "fld001 is the primary key of tab01 and is referenced by tab05.fld001; 72 distinct circuits",
+    "evidence_refs": [
+      "e_schema",
+      "e_circuit_rows"
+    ]
+  },
+  {
+    "id": "mapping_circuit_name",
+    "term_id": "term_circuit_name",
+    "database_source": "formula_1",
+    "table": "tab01",
+    "column": "fld003",
+    "semantic_filter": "",
+    "aggregation_semantics": "not aggregated; used for filtering and display",
+    "grain": "one row per circuit",
+    "validation": "fld003 holds names such as Silverstone Circuit, A1-Ring and Yas Marina Circuit",
+    "evidence_refs": [
+      "e_circuit_rows"
+    ]
+  },
+  {
+    "id": "mapping_circuit_location",
+    "term_id": "term_circuit_location",
+    "database_source": "formula_1",
+    "table": "tab01",
+    "column": "fld004",
+    "semantic_filter": "",
+    "aggregation_semantics": "not aggregated; displayed per circuit",
+    "grain": "one row per circuit",
+    "validation": "fld004 holds host cities such as Silverstone, Spielburg and Abu Dhabi",
+    "evidence_refs": [
+      "e_circuit_rows"
+    ]
+  },
+  {
+    "id": "mapping_circuit_country",
+    "term_id": "term_circuit_country",
+    "database_source": "formula_1",
+    "table": "tab01",
+    "column": "fld005",
+    "semantic_filter": "",
+    "aggregation_semantics": "not aggregated; exact text equality for country filters",
+    "grain": "one row per circuit",
+    "validation": "72 circuits carry 32 distinct country labels including UK, USA, Austria",
+    "evidence_refs": [
+      "e_circuit_country_domain"
+    ]
+  },
+  {
+    "id": "mapping_circuit_latitude",
+    "term_id": "term_circuit_coordinates",
+    "database_source": "formula_1",
+    "table": "tab01",
+    "column": "fld006",
+    "semantic_filter": "",
+    "aggregation_semantics": "paired with fld007 to form one coordinate; not aggregated",
+    "grain": "one row per circuit",
+    "validation": "All 72 circuits have a latitude; Silverstone 52.0786, Yas Marina 24.4672",
+    "evidence_refs": [
+      "e_circuit_rows",
+      "e_circuit_coverage"
+    ]
+  },
+  {
+    "id": "mapping_circuit_longitude",
+    "term_id": "term_circuit_coordinates",
+    "database_source": "formula_1",
+    "table": "tab01",
+    "column": "fld007",
+    "semantic_filter": "",
+    "aggregation_semantics": "paired with fld006 to form one coordinate; not aggregated",
+    "grain": "one row per circuit",
+    "validation": "All 72 circuits have a longitude; Silverstone -1.01694, Yas Marina 54.6031",
+    "evidence_refs": [
+      "e_circuit_rows",
+      "e_circuit_coverage"
+    ]
+  },
+  {
+    "id": "mapping_race_record",
+    "term_id": "term_race",
+    "database_source": "formula_1",
+    "table": "tab05",
+    "column": "fld021",
+    "semantic_filter": "",
+    "aggregation_semantics": "one race per row; counts are counts of race ids",
+    "grain": "one row per race",
+    "validation": "976 races; fld021 is the primary key",
+    "evidence_refs": [
+      "e_race_rows"
+    ]
+  },
+  {
+    "id": "mapping_race_identifier",
+    "term_id": "term_race_identifier",
+    "database_source": "formula_1",
+    "table": "tab05",
+    "column": "fld021",
+    "semantic_filter": "",
+    "aggregation_semantics": "identifier; never summed",
+    "grain": "one row per race",
+    "validation": "Values 1..976; race 24 is the 2008 Canadian Grand Prix and race 833 the 1950 British Grand Prix",
+    "evidence_refs": [
+      "e_race_nonchronological"
+    ]
+  },
+  {
+    "id": "mapping_race_name",
+    "term_id": "term_race_name",
+    "database_source": "formula_1",
+    "table": "tab05",
+    "column": "fld003",
+    "semantic_filter": "",
+    "aggregation_semantics": "not aggregated; used for filtering and display",
+    "grain": "one row per race",
+    "validation": "Names repeat across seasons; Canadian Grand Prix appears 48 times",
+    "evidence_refs": [
+      "e_race_name_dupes"
+    ]
+  },
+  {
+    "id": "mapping_race_year",
+    "term_id": "term_race_year",
+    "database_source": "formula_1",
+    "table": "tab05",
+    "column": "fld020",
+    "semantic_filter": "",
+    "aggregation_semantics": "not aggregated; used for year filters and grouping",
+    "grain": "one row per race",
+    "validation": "Values 1950..2017 over 976 races",
+    "evidence_refs": [
+      "e_race_rows",
+      "e_race_dates"
+    ]
+  },
+  {
+    "id": "mapping_race_date",
+    "term_id": "term_race_date",
+    "database_source": "formula_1",
+    "table": "tab05",
+    "column": "fld023",
+    "semantic_filter": "",
+    "aggregation_semantics": "not aggregated; ordered chronologically",
+    "grain": "one row per race",
+    "validation": "Text dates YYYY-MM-DD from 1950-05-13 to 2017-11-26",
+    "evidence_refs": [
+      "e_race_dates"
+    ]
+  },
+  {
+    "id": "mapping_season_year",
+    "term_id": "term_season",
+    "database_source": "formula_1",
+    "table": "tab04",
+    "column": "fld020",
+    "semantic_filter": "",
+    "aggregation_semantics": "one row per season year",
+    "grain": "one row per season",
+    "validation": "68 seasons; the year is the primary key of tab04",
+    "evidence_refs": [
+      "e_season_rows"
+    ]
+  },
+  {
+    "id": "mapping_season_year_in_races",
+    "term_id": "term_season",
+    "database_source": "formula_1",
+    "table": "tab05",
+    "column": "fld020",
+    "semantic_filter": "",
+    "aggregation_semantics": "season year carried by each race row",
+    "grain": "one row per race",
+    "validation": "tab05.fld020 is a foreign key to tab04.fld020 and shares the same year domain",
+    "evidence_refs": [
+      "e_schema",
+      "e_race_rows"
+    ]
+  },
+  {
+    "id": "mapping_driver_record",
+    "term_id": "term_driver",
+    "database_source": "formula_1",
+    "table": "tab03",
+    "column": "fld013",
+    "semantic_filter": "",
+    "aggregation_semantics": "identifier; counts are distinct driver ids",
+    "grain": "one row per driver",
+    "validation": "840 drivers; fld013 is the primary key",
+    "evidence_refs": [
+      "e_driver_rows"
+    ]
+  },
+  {
+    "id": "mapping_driver_reference_name",
+    "term_id": "term_driver_reference_name",
+    "database_source": "formula_1",
+    "table": "tab03",
+    "column": "fld014",
+    "semantic_filter": "",
+    "aggregation_semantics": "not aggregated; unique per driver",
+    "grain": "one row per driver",
+    "validation": "840 rows and 840 distinct values; e.g. senna and bruno_senna are different drivers",
+    "evidence_refs": [
+      "e_driver_ref"
+    ]
+  },
+  {
+    "id": "mapping_driver_forename",
+    "term_id": "term_driver_full_name",
+    "database_source": "formula_1",
+    "table": "tab03",
+    "column": "fld017",
+    "semantic_filter": "",
+    "aggregation_semantics": "first component of the full name",
+    "grain": "one row per driver",
+    "validation": "fld017 holds given names such as Lewis and Bruno",
+    "evidence_refs": [
+      "e_driver_rows"
+    ]
+  },
+  {
+    "id": "mapping_driver_surname",
+    "term_id": "term_driver_full_name",
+    "database_source": "formula_1",
+    "table": "tab03",
+    "column": "fld018",
+    "semantic_filter": "",
+    "aggregation_semantics": "second component of the full name",
+    "grain": "one row per driver",
+    "validation": "fld018 holds family names such as Hamilton and Senna; surnames are not unique",
+    "evidence_refs": [
+      "e_driver_ref"
+    ]
+  },
+  {
+    "id": "mapping_driver_nationality",
+    "term_id": "term_driver_nationality",
+    "database_source": "formula_1",
+    "table": "tab03",
+    "column": "fld012",
+    "semantic_filter": "",
+    "aggregation_semantics": "not aggregated; exact text matching",
+    "grain": "one row per driver",
+    "validation": "41 distinct adjectives, e.g. German, British, Finnish",
+    "evidence_refs": [
+      "e_driver_nationality"
+    ]
+  },
+  {
+    "id": "mapping_driver_dob",
+    "term_id": "term_driver_date_of_birth",
+    "database_source": "formula_1",
+    "table": "tab03",
+    "column": "fld019",
+    "semantic_filter": "",
+    "aggregation_semantics": "not aggregated; ordered as a date",
+    "grain": "one row per driver",
+    "validation": "YYYY-MM-DD dates, e.g. 1985-01-07 for Lewis Hamilton",
+    "evidence_refs": [
+      "e_dob_domain"
+    ]
+  },
+  {
+    "id": "mapping_driver_url",
+    "term_id": "term_driver_url",
+    "database_source": "formula_1",
+    "table": "tab03",
+    "column": "fld009",
+    "semantic_filter": "",
+    "aggregation_semantics": "not aggregated; one URL per driver",
+    "grain": "one row per driver",
+    "validation": "Profile URLs such as http://en.wikipedia.org/wiki/Lewis_Hamilton",
+    "evidence_refs": [
+      "e_driver_rows"
+    ]
+  },
+  {
+    "id": "mapping_constructor_record",
+    "term_id": "term_constructor",
+    "database_source": "formula_1",
+    "table": "tab02",
+    "column": "fld010",
+    "semantic_filter": "",
+    "aggregation_semantics": "identifier; counts are distinct constructor ids",
+    "grain": "one row per constructor",
+    "validation": "208 constructors; fld010 is the primary key",
+    "evidence_refs": [
+      "e_constructor_rows"
+    ]
+  },
+  {
+    "id": "mapping_constructor_name",
+    "term_id": "term_constructor_name",
+    "database_source": "formula_1",
+    "table": "tab02",
+    "column": "fld003",
+    "semantic_filter": "",
+    "aggregation_semantics": "not aggregated; used for filtering and display",
+    "grain": "one row per constructor",
+    "validation": "Names such as McLaren, BMW Sauber, Williams",
+    "evidence_refs": [
+      "e_constructor_rows"
+    ]
+  },
+  {
+    "id": "mapping_constructor_nationality",
+    "term_id": "term_constructor_nationality",
+    "database_source": "formula_1",
+    "table": "tab02",
+    "column": "fld012",
+    "semantic_filter": "",
+    "aggregation_semantics": "not aggregated; exact text matching",
+    "grain": "one row per constructor",
+    "validation": "24 distinct adjectives, e.g. British, German",
+    "evidence_refs": [
+      "e_constructor_nationality"
+    ]
+  },
+  {
+    "id": "mapping_constructor_url",
+    "term_id": "term_constructor_url",
+    "database_source": "formula_1",
+    "table": "tab02",
+    "column": "fld009",
+    "semantic_filter": "",
+    "aggregation_semantics": "not aggregated; one URL per constructor",
+    "grain": "one row per constructor",
+    "validation": "Profile URLs such as http://en.wikipedia.org/wiki/McLaren",
+    "evidence_refs": [
+      "e_constructor_rows"
+    ]
+  },
+  {
+    "id": "mapping_race_result_record",
+    "term_id": "term_race_result",
+    "database_source": "formula_1",
+    "table": "tab13",
+    "column": "fld042",
+    "semantic_filter": "",
+    "aggregation_semantics": "one row per driver per race; count rows for participation",
+    "grain": "one row per driver per race",
+    "validation": "23657 result rows over 976 races; fld042 is the primary key",
+    "evidence_refs": [
+      "e_result_rows",
+      "e_row_counts"
+    ]
+  },
+  {
+    "id": "mapping_finish_position",
+    "term_id": "term_finish_position",
+    "database_source": "formula_1",
+    "table": "tab13",
+    "column": "fld029",
+    "semantic_filter": "",
+    "aggregation_semantics": "not aggregated; used for ordering and rank selection",
+    "grain": "one row per driver per race",
+    "validation": "Holds 1..N for classified drivers and is empty for unclassified drivers (position text R)",
+    "evidence_refs": [
+      "e_result_rows",
+      "e_position_null"
+    ]
+  },
+  {
+    "id": "mapping_laps_completed",
+    "term_id": "term_laps_completed",
+    "database_source": "formula_1",
+    "table": "tab13",
+    "column": "fld045",
+    "semantic_filter": "",
+    "aggregation_semantics": "per-driver value; comparable within a race",
+    "grain": "one row per driver per race",
+    "validation": "Integers such as 58 laps in the 2008 Australian Grand Prix",
+    "evidence_refs": [
+      "e_result_rows"
+    ]
+  },
+  {
+    "id": "mapping_race_points",
+    "term_id": "term_points",
+    "database_source": "formula_1",
+    "table": "tab13",
+    "column": "fld026",
+    "semantic_filter": "",
+    "aggregation_semantics": "sum within a race to obtain a driver's race points",
+    "grain": "one row per driver per race",
+    "validation": "Real values such as 10.0, 8.0, 6.0 for the 2008 Australian Grand Prix",
+    "evidence_refs": [
+      "e_result_rows",
+      "e_points_sources"
+    ]
+  },
+  {
+    "id": "mapping_finish_time",
+    "term_id": "term_finish_time",
+    "database_source": "formula_1",
+    "table": "tab13",
+    "column": "fld024",
+    "semantic_filter": "",
+    "aggregation_semantics": "not aggregated; mixed absolute and relative representation",
+    "grain": "one row per driver per race",
+    "validation": "5961 non-empty values: 970 absolute H:MM:SS.mmm and 4989 plus-prefixed gaps; 17696 empty",
+    "evidence_refs": [
+      "e_finish_time_formats"
+    ]
+  },
+  {
+    "id": "mapping_time_gap",
+    "term_id": "term_time_gap",
+    "database_source": "formula_1",
+    "table": "tab13",
+    "column": "fld024",
+    "semantic_filter": "only values beginning with a plus sign are gaps to the winner",
+    "aggregation_semantics": "relative gap; add the winner's absolute time to obtain an absolute time",
+    "grain": "one row per driver per race",
+    "validation": "4989 plus-prefixed values, e.g. +5.478 or +1:07.540 in the 2008 Canadian Grand Prix",
+    "evidence_refs": [
+      "e_time_gap_sample",
+      "e_finish_time_formats"
+    ]
+  },
+  {
+    "id": "mapping_fastest_lap_speed",
+    "term_id": "term_fastest_lap_speed",
+    "database_source": "formula_1",
+    "table": "tab13",
+    "column": "fld049",
+    "semantic_filter": "",
+    "aggregation_semantics": "maximum across a race identifies the fastest lap by speed; must be compared numerically",
+    "grain": "one row per driver per race where fastest-lap data exists",
+    "validation": "Text values such as 218.300; numeric range 89.54 to 257.32 km/h over 5268 rows",
+    "evidence_refs": [
+      "e_fastest_lap_rows",
+      "e_speed_lexical"
+    ]
+  },
+  {
+    "id": "mapping_fastest_lap_time",
+    "term_id": "term_fastest_lap_time",
+    "database_source": "formula_1",
+    "table": "tab13",
+    "column": "fld048",
+    "semantic_filter": "",
+    "aggregation_semantics": "per-driver fastest lap time",
+    "grain": "one row per driver per race where fastest-lap data exists",
+    "validation": "M:SS.mmm values such as 1:27.452",
+    "evidence_refs": [
+      "e_fastest_lap_rows"
+    ]
+  },
+  {
+    "id": "mapping_fastest_lap_rank",
+    "term_id": "term_fastest_lap_rank",
+    "database_source": "formula_1",
+    "table": "tab13",
+    "column": "fld047",
+    "semantic_filter": "",
+    "aggregation_semantics": "rank within the race; rank 1 is the fastest lap",
+    "grain": "one row per driver per race where fastest-lap data exists",
+    "validation": "Exactly one rank-1 row per race across the 256 races with fastest-lap data",
+    "evidence_refs": [
+      "e_fastest_lap_rows"
+    ]
+  },
+  {
+    "id": "mapping_result_status_ref",
+    "term_id": "term_result_status",
+    "database_source": "formula_1",
+    "table": "tab13",
+    "column": "fld041",
+    "semantic_filter": "",
+    "aggregation_semantics": "join key to the status lookup; counts group by status id",
+    "grain": "one row per driver per race",
+    "validation": "Foreign key to tab12.fld041; 5966 rows have status 1 (Finished)",
+    "evidence_refs": [
+      "e_schema",
+      "e_status_rows"
+    ]
+  },
+  {
+    "id": "mapping_status_id",
+    "term_id": "term_result_status",
+    "database_source": "formula_1",
+    "table": "tab12",
+    "column": "fld041",
+    "semantic_filter": "",
+    "aggregation_semantics": "identifier for a status label",
+    "grain": "one row per status",
+    "validation": "134 status rows; 1 Finished, 2 Disqualified, 3 Accident, 4 Collision, 11 +1 Lap",
+    "evidence_refs": [
+      "e_status_rows"
+    ]
+  },
+  {
+    "id": "mapping_status_label",
+    "term_id": "term_result_status",
+    "database_source": "formula_1",
+    "table": "tab12",
+    "column": "fld027",
+    "semantic_filter": "",
+    "aggregation_semantics": "not aggregated; used for display and exact-label matching",
+    "grain": "one row per status",
+    "validation": "Labels such as Finished, Accident, Collision, +1 Lap, Engine",
+    "evidence_refs": [
+      "e_status_rows"
+    ]
+  },
+  {
+    "id": "mapping_finished_status",
+    "term_id": "term_finished_race",
+    "database_source": "formula_1",
+    "table": "tab12",
+    "column": "fld027",
+    "semantic_filter": "status label is exactly Finished, i.e. status id 1",
+    "aggregation_semantics": "count result rows whose status is Finished",
+    "grain": "status label",
+    "validation": "Status id 1 = Finished; 5966 result rows carry it",
+    "evidence_refs": [
+      "e_status_rows",
+      "e_finish_vs_time"
+    ]
+  },
+  {
+    "id": "mapping_accident_status",
+    "term_id": "term_accident",
+    "database_source": "formula_1",
+    "table": "tab12",
+    "column": "fld027",
+    "semantic_filter": "status label is exactly Accident, i.e. status id 3",
+    "aggregation_semantics": "count result rows whose status is Accident",
+    "grain": "status label",
+    "validation": "Status id 3 = Accident; 1007 result rows carry it",
+    "evidence_refs": [
+      "e_accident_rows",
+      "e_status_rows"
+    ]
+  },
+  {
+    "id": "mapping_race_participation",
+    "term_id": "term_race_participation",
+    "database_source": "formula_1",
+    "table": "tab13",
+    "column": "fld013",
+    "semantic_filter": "",
+    "aggregation_semantics": "count distinct race ids per driver to measure participation",
+    "grain": "one row per driver per race",
+    "validation": "All 840 drivers have at least one result row; driver 1 has 202 result rows",
+    "evidence_refs": [
+      "e_participation"
+    ]
+  },
+  {
+    "id": "mapping_race_winner",
+    "term_id": "term_race_winner",
+    "database_source": "formula_1",
+    "table": "tab13",
+    "column": "fld029",
+    "semantic_filter": "finishing position equals 1",
+    "aggregation_semantics": "select the row with finishing position 1 per race",
+    "grain": "one row per driver per race",
+    "validation": "973 result rows have finishing position 1 across 976 races",
+    "evidence_refs": [
+      "e_winner_rows"
+    ]
+  },
+  {
+    "id": "mapping_qualifying_record",
+    "term_id": "term_qualifying_result",
+    "database_source": "formula_1",
+    "table": "tab11",
+    "column": "fld037",
+    "semantic_filter": "",
+    "aggregation_semantics": "one row per driver per race; counts are counts of qualifying rows",
+    "grain": "one row per driver per race",
+    "validation": "7397 qualifying rows; fld037 is the primary key",
+    "evidence_refs": [
+      "e_qual_rows"
+    ]
+  },
+  {
+    "id": "mapping_qualifying_position",
+    "term_id": "term_qualifying_position",
+    "database_source": "formula_1",
+    "table": "tab11",
+    "column": "fld029",
+    "semantic_filter": "",
+    "aggregation_semantics": "not aggregated; ordering of the qualifying classification",
+    "grain": "one row per driver per race",
+    "validation": "Positions 1..22 in race 20",
+    "evidence_refs": [
+      "e_qual_rows"
+    ]
+  },
+  {
+    "id": "mapping_q1_time",
+    "term_id": "term_qualifying_period_time",
+    "database_source": "formula_1",
+    "table": "tab11",
+    "column": "fld038",
+    "semantic_filter": "first qualifying period (Q1)",
+    "aggregation_semantics": "per-driver best time in the period; not aggregated",
+    "grain": "one row per driver per race",
+    "validation": "M:SS.mmm values such as 1:32.893; 117 rows are empty",
+    "evidence_refs": [
+      "e_qual_rows"
+    ]
+  },
+  {
+    "id": "mapping_q2_time",
+    "term_id": "term_qualifying_period_time",
+    "database_source": "formula_1",
+    "table": "tab11",
+    "column": "fld039",
+    "semantic_filter": "second qualifying period (Q2)",
+    "aggregation_semantics": "per-driver best time in the period; empty when not participating",
+    "grain": "one row per driver per race",
+    "validation": "Empty for six drivers in race 20",
+    "evidence_refs": [
+      "e_qual_elim"
+    ]
+  },
+  {
+    "id": "mapping_q3_time",
+    "term_id": "term_qualifying_period_time",
+    "database_source": "formula_1",
+    "table": "tab11",
+    "column": "fld040",
+    "semantic_filter": "third qualifying period (Q3)",
+    "aggregation_semantics": "per-driver best time in the period; empty when not participating",
+    "grain": "one row per driver per race",
+    "validation": "Empty for eleven of 22 drivers in race 20",
+    "evidence_refs": [
+      "e_qual_rows"
+    ]
+  },
+  {
+    "id": "mapping_qualifying_elimination",
+    "term_id": "term_qualifying_elimination",
+    "database_source": "formula_1",
+    "table": "tab11",
+    "column": "fld038",
+    "semantic_filter": "the Q1 time is one of the five slowest Q1 times in the race",
+    "aggregation_semantics": "select the five largest Q1 times within a race",
+    "grain": "one row per driver per race",
+    "validation": "Race 20 has six drivers without Q2 but only five slowest Q1 times",
+    "evidence_refs": [
+      "e_qual_elim"
+    ]
+  },
+  {
+    "id": "mapping_pit_stop_record",
+    "term_id": "term_pit_stop",
+    "database_source": "formula_1",
+    "table": "tab10",
+    "column": "fld035",
+    "semantic_filter": "",
+    "aggregation_semantics": "one row per stop; count rows per driver for stop counts",
+    "grain": "one row per driver per stop",
+    "validation": "6070 pit stops; fld035 is the stop number within the race",
+    "evidence_refs": [
+      "e_pit_rows"
+    ]
+  },
+  {
+    "id": "mapping_pit_stop_duration",
+    "term_id": "term_pit_stop_duration",
+    "database_source": "formula_1",
+    "table": "tab10",
+    "column": "fld036",
+    "semantic_filter": "",
+    "aggregation_semantics": "per-stop duration; sum and count per driver to average",
+    "grain": "one row per driver per stop",
+    "validation": "Decimal text from 12.897 to 59.555 seconds; no empty values",
+    "evidence_refs": [
+      "e_pit_rows"
+    ]
+  },
+  {
+    "id": "mapping_average_pit_stop_duration",
+    "term_id": "term_average_pit_stop_duration",
+    "database_source": "formula_1",
+    "table": "tab10",
+    "column": "fld036",
+    "semantic_filter": "",
+    "aggregation_semantics": "average of a driver's stop durations, i.e. sum of durations divided by number of stops",
+    "grain": "aggregated per driver",
+    "validation": "6070 stops; durations numeric 12.897-59.555 seconds",
+    "evidence_refs": [
+      "e_pit_rows"
+    ]
+  },
+  {
+    "id": "mapping_lap_time",
+    "term_id": "term_lap_time",
+    "database_source": "formula_1",
+    "table": "tab09",
+    "column": "fld024",
+    "semantic_filter": "",
+    "aggregation_semantics": "per-lap time; minimum per driver is the fastest lap",
+    "grain": "one row per driver per lap",
+    "validation": "420369 lap times, mostly M:SS.mmm; 43 hour-long H:MM:SS.mmm values",
+    "evidence_refs": [
+      "e_lap_rows",
+      "e_lap_formats"
+    ]
+  },
+  {
+    "id": "mapping_lap_number",
+    "term_id": "term_lap_number",
+    "database_source": "formula_1",
+    "table": "tab09",
+    "column": "fld033",
+    "semantic_filter": "",
+    "aggregation_semantics": "not aggregated; orders laps within a driver's race",
+    "grain": "one row per driver per lap",
+    "validation": "Lap numbers start at 1 within each driver-race",
+    "evidence_refs": [
+      "e_lap_rows"
+    ]
+  },
+  {
+    "id": "mapping_constructor_result_record",
+    "term_id": "term_constructor_result",
+    "database_source": "formula_1",
+    "table": "tab06",
+    "column": "fld025",
+    "semantic_filter": "",
+    "aggregation_semantics": "one row per constructor per race",
+    "grain": "one row per constructor per race",
+    "validation": "11082 rows; fld025 is the primary key",
+    "evidence_refs": [
+      "e_constructor_results_rows",
+      "e_row_counts"
+    ]
+  },
+  {
+    "id": "mapping_constructor_points",
+    "term_id": "term_constructor_points",
+    "database_source": "formula_1",
+    "table": "tab06",
+    "column": "fld026",
+    "semantic_filter": "",
+    "aggregation_semantics": "points earned in that single race; sum within a race or across a season's races",
+    "grain": "one row per constructor per race",
+    "validation": "Race 24: constructor 2 scored 18.0 and constructor 6 scored 4.0 in that race",
+    "evidence_refs": [
+      "e_points_sources",
+      "e_constructor_results_rows"
+    ]
+  },
+  {
+    "id": "mapping_constructor_standings_record",
+    "term_id": "term_constructor_standings_record",
+    "database_source": "formula_1",
+    "table": "tab07",
+    "column": "fld028",
+    "semantic_filter": "",
+    "aggregation_semantics": "one cumulative snapshot per constructor per race",
+    "grain": "one row per constructor per race",
+    "validation": "11836 rows; between 3 and 22 constructors per race",
+    "evidence_refs": [
+      "e_constructor_standings_rows"
+    ]
+  },
+  {
+    "id": "mapping_constructor_standings_points",
+    "term_id": "term_standings_points",
+    "database_source": "formula_1",
+    "table": "tab07",
+    "column": "fld026",
+    "semantic_filter": "",
+    "aggregation_semantics": "cumulative points as of that race; do not sum across snapshots",
+    "grain": "one row per constructor per race",
+    "validation": "Race 24: constructor 6 has 73.0 cumulative points while scoring 4.0 in that race",
+    "evidence_refs": [
+      "e_points_sources",
+      "e_constructor_standings_rows"
+    ]
+  },
+  {
+    "id": "mapping_driver_standings_record",
+    "term_id": "term_driver_standings_record",
+    "database_source": "formula_1",
+    "table": "tab08",
+    "column": "fld032",
+    "semantic_filter": "",
+    "aggregation_semantics": "one cumulative snapshot per driver per race",
+    "grain": "one row per driver per race",
+    "validation": "31578 rows; between 7 and 108 drivers per race",
+    "evidence_refs": [
+      "e_driver_standings_rows"
+    ]
+  },
+  {
+    "id": "mapping_driver_standings_points",
+    "term_id": "term_standings_points",
+    "database_source": "formula_1",
+    "table": "tab08",
+    "column": "fld026",
+    "semantic_filter": "",
+    "aggregation_semantics": "cumulative points as of that race; do not sum across snapshots",
+    "grain": "one row per driver per race",
+    "validation": "Race 24: driver 9 has 42.0 cumulative points",
+    "evidence_refs": [
+      "e_driver_standings_rows",
+      "e_points_sources"
+    ]
+  },
+  {
+    "id": "mapping_driver_age",
+    "term_id": "term_driver_age",
+    "database_source": "formula_1",
+    "table": "tab03",
+    "column": "fld019",
+    "semantic_filter": "",
+    "aggregation_semantics": "difference between the race date and this birth date",
+    "grain": "one row per driver",
+    "validation": "Birth dates such as 1985-01-07; 5 German drivers born 1980-1985",
+    "evidence_refs": [
+      "e_dob_domain",
+      "e_race_dates"
+    ]
+  }
+]

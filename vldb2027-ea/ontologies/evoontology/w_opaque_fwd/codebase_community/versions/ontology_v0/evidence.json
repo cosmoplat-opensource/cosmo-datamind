@@ -1,0 +1,194 @@
+[
+  {
+    "id": "ev_01_schema_inventory",
+    "source": "codebase_community SQLite database (read-only)",
+    "query": "SELECT name FROM sqlite_master WHERE type='table' ORDER BY name; PRAGMA table_info(<each table>); SELECT COUNT(*) FROM <each table>",
+    "result": "8 tables with opaque names: tab01=79851 rows, tab02=174285, tab03=303155, tab04=11102, tab05=91966, tab06=1032, tab07=40325, tab08=38930. All column names are opaque identifiers (fld001..fld051). Declared foreign keys link tab01/tab02/tab03/tab04/tab05/tab08 to tab07 (user identifiers) and to tab05 (post identifiers).",
+    "validation_method": "read-only sqlite3 inspection of sqlite_master, PRAGMA table_info and per-table row counts",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "ev_02_post_type_enum",
+    "source": "codebase_community SQLite database (read-only)",
+    "query": "SELECT fld015, COUNT(*) FROM tab05 GROUP BY fld015 ORDER BY 2 DESC",
+    "result": "2=47755, 1=42912, 5=640, 4=639, 6=9, 3=6, 7=5. Value 1 rows carry titles, tags, view counts and answer counts; value 2 rows carry a non-null parent post identifier pointing at a question.",
+    "validation_method": "grouped counts plus null-pattern comparison across post kinds",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "ev_03_vote_type_enum",
+    "source": "codebase_community SQLite database (read-only)",
+    "query": "SELECT fld050, COUNT(*) FROM tab08 GROUP BY fld050 ORDER BY fld050",
+    "result": "1=1451, 2=33323, 3=444, 5=3365, 8=60, 9=59, 10=1, 11=44, 15=72, 16=111. Total 38930 vote records.",
+    "validation_method": "grouped counts",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "ev_04_vote_user_attribution",
+    "source": "codebase_community SQLite database (read-only)",
+    "query": "SELECT fld050, COUNT(*), SUM(fld002 IS NOT NULL) FROM tab08 GROUP BY fld050; SELECT SUM(fld002 IS NULL), COUNT(DISTINCT fld002) FROM tab08",
+    "result": "Non-null caster identifier only for vote type 5 (3365 of 3365) and vote type 8 (60 of 60). Vote types 1, 2, 3, 9, 10, 11, 15 and 16 have zero non-null casters. Overall 35505 of 38930 rows have a null caster; only 509 distinct users are attributed. A left join from these values to the user table produced 0 orphans.",
+    "validation_method": "grouped null counts and foreign-key orphan check",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "ev_05_user24_profile_activity",
+    "source": "codebase_community SQLite database (read-only)",
+    "query": "SELECT fld001, fld039, fld045, fld046 FROM tab07 WHERE fld001=24; SELECT COUNT(*) FROM tab05 WHERE fld020=24; SELECT fld050, COUNT(*) FROM tab08 WHERE fld002=24 GROUP BY fld050",
+    "result": "User 24 exists with display name 'A Lion', up-vote counter 36, down-vote counter 1. Owns 3 posts. Has 8 attributed vote records, all of vote type 5 (favourite).",
+    "validation_method": "direct row lookup then grouped counts",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "ev_06_comment_author_display",
+    "source": "codebase_community SQLite database (read-only)",
+    "query": "SELECT COUNT(*) FROM tab02 c JOIN tab07 u ON c.fld002=u.fld001 WHERE c.fld009<>u.fld039; SELECT SUM(fld002 IS NULL), SUM(fld009 IS NULL) FROM tab02",
+    "result": "0 mismatches: wherever the comment-level display name is non-null it equals the joined user account display name. The comment-level display name is null for 171454 of 174285 comments; the author identifier is null for 2835. Sample: the comment 'thank you user93!' has author id 58 and joined display name 'Preets'.",
+    "validation_method": "join comparison of denormalized name against user table, plus null counts",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "ev_07_tag_token_format",
+    "source": "codebase_community SQLite database (read-only)",
+    "query": "SELECT fld023 FROM tab05 WHERE fld023 LIKE '%<humor>%' LIMIT 5; SELECT fld034 FROM tab06 WHERE fld034 LIKE '%bayes%'",
+    "result": "Post tag lists are concatenated angle-bracket tokens: '<humor>', '<big-list><humor>', '<teaching><humor>'. The tag vocabulary stores bare names: 'bayesian', 'naive-bayes', 'bayes-network', 'hierarchical-bayesian'.",
+    "validation_method": "string inspection of representative values in both encodings",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "ev_08_tag_count_match",
+    "source": "codebase_community SQLite database (read-only)",
+    "query": "SELECT fld034, fld035 FROM tab06 WHERE fld034 IN ('humor','bayesian'); SELECT COUNT(*) FROM tab05 WHERE fld023 LIKE '%<humor>%'; SELECT COUNT(*) FROM tab05 WHERE fld023 LIKE '%<bayesian>%'",
+    "result": "humor: stored tag count 4, observed question posts carrying it 4. bayesian: stored tag count 1342, observed question posts carrying it 1342. Excerpt post for bayesian is post 20258 whose body begins 'Bayesian inference is a method of statistical inference...'.",
+    "validation_method": "cross-check of the denormalized tag count against post tag tokens",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "ev_09_title_lookup",
+    "source": "codebase_community SQLite database (read-only)",
+    "query": "SELECT fld001, fld022 FROM tab05 WHERE fld022 LIKE '%Correlation does not mean causation%'",
+    "result": "Exactly one row: post 36 with title 'Examples for teaching: Correlation does not mean causation'.",
+    "validation_method": "substring lookup and uniqueness check",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "ev_10_display_name_duplicates",
+    "source": "codebase_community SQLite database (read-only)",
+    "query": "SELECT COUNT(*) FROM (SELECT fld039 FROM tab07 GROUP BY fld039 HAVING COUNT(*)>1); SELECT fld039, COUNT(*) FROM tab07 WHERE fld039 IN (...) GROUP BY fld039",
+    "result": "1563 display names are used by more than one account; 40325 accounts have 35644 distinct names. The workload names Harvey Motulsky, Mark Meckes, Tiago Pasqualini and A Lion each occur exactly once.",
+    "validation_method": "grouped duplicate count",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "ev_11_age_coverage",
+    "source": "codebase_community SQLite database (read-only)",
+    "query": "SELECT COUNT(*), SUM(fld048 IS NOT NULL), MIN(fld048), MAX(fld048), AVG(fld048) FROM tab07",
+    "result": "40325 accounts, 8318 with non-null age, range 13 to 94, mean approximately 31.64.",
+    "validation_method": "null count and range aggregation",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "ev_12_question_metric_coverage",
+    "source": "codebase_community SQLite database (read-only)",
+    "query": "SELECT fld015, COUNT(*), SUM(fld023 IS NOT NULL) FROM tab05 GROUP BY fld015; SELECT SUM(fld018 IS NOT NULL), SUM(fld026 IS NOT NULL), SUM(fld024 IS NOT NULL), SUM(fld025 IS NOT NULL) FROM tab05 WHERE fld015=1",
+    "result": "Tags are non-null for all 42912 questions and for zero rows of every other post type. Among questions: view count non-null 42912, favourite count non-null 13243, answer count non-null 42912, comment count non-null 42912. Title has 49054 nulls, exactly the non-question post count.",
+    "validation_method": "grouped null-pattern comparison",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "ev_13_comment_count_mismatch",
+    "source": "codebase_community SQLite database (read-only)",
+    "query": "SELECT COUNT(*) FROM tab05 p LEFT JOIN (SELECT fld005 AS pid, COUNT(*) AS c FROM tab02 GROUP BY fld005) x ON x.pid=p.fld001 WHERE p.fld015=1 AND p.fld025 <> COALESCE(x.c,0)",
+    "result": "15 questions have a stored comment count different from the actual number of comment rows. All other questions agree.",
+    "validation_method": "join aggregation comparing stored count with observed count",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "ev_14_answer_count_consistency",
+    "source": "codebase_community SQLite database (read-only)",
+    "query": "SELECT COUNT(*) FROM tab05 p LEFT JOIN (SELECT fld030 AS pid, COUNT(*) AS c FROM tab05 WHERE fld015=2 GROUP BY fld030) x ON x.pid=p.fld001 WHERE p.fld015=1 AND COALESCE(p.fld024,-1) <> COALESCE(x.c,0); SELECT SUM(fld030 IS NULL) FROM tab05 WHERE fld015 IN (1,2)",
+    "result": "0 mismatches between stored answer count and observed answer posts. All 47755 answers have a non-null parent post; no question has a parent post.",
+    "validation_method": "join aggregation plus parent-null check",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "ev_15_tag_excerpt_nullable",
+    "source": "codebase_community SQLite database (read-only)",
+    "query": "SELECT COUNT(*) FROM tab06 t LEFT JOIN tab05 p ON t.fld036=p.fld001 WHERE p.fld001 IS NULL; same with t.fld037",
+    "result": "437 of 1032 tags have no excerpt post; 436 have no wiki post. The tag 'humor' has neither.",
+    "validation_method": "anti-join count",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "ev_16_post_owner_null",
+    "source": "codebase_community SQLite database (read-only)",
+    "query": "SELECT COUNT(*) FROM tab05 WHERE fld020 IS NULL; SELECT COUNT(*) FROM tab05 p LEFT JOIN tab07 u ON p.fld020=u.fld001 WHERE p.fld020 IS NOT NULL AND u.fld001 IS NULL",
+    "result": "1392 posts have no owner identifier. Among non-null owners there are 0 orphans against the user table.",
+    "validation_method": "null count and foreign-key orphan check",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "ev_17_link_type_enum",
+    "source": "codebase_community SQLite database (read-only)",
+    "query": "SELECT fld014, COUNT(*) FROM tab04 GROUP BY fld014",
+    "result": "11102 post links with two type values: 10186 of value 1 and 916 of value 3.",
+    "validation_method": "grouped counts",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "ev_18_date_columns",
+    "source": "codebase_community SQLite database (read-only)",
+    "query": "SELECT MIN/MAX of tab05.fld017, tab07.fld008, tab07.fld040, tab01.fld004, tab02.fld008, tab04.fld008, tab08.fld008",
+    "result": "Post creation spans 2009-02-02 to 2014-09-14. Account creation spans 2010-07-19 to 2014-09-14 with yearly counts 2010=1678, 2011=4430, 2012=7544, 2013=12231, 2014=14442. Last access spans 2010-07-19 to 2014-09-14. Comment creation spans 2009-02-02 to 2014-09-14. Post-link creation spans 2010-07-21 to 2014-09-13 (yearly 2010=255, 2011=1059, 2012=2255, 2013=3622, 2014=3911). Vote dates are stored as date only. Post creation uses a different field than the shared creation-date field used by the other tables.",
+    "validation_method": "min/max and grouped year counts per table",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "ev_19_badge_names",
+    "source": "codebase_community SQLite database (read-only)",
+    "query": "SELECT fld003, COUNT(*) FROM tab01 GROUP BY fld003 ORDER BY 2 DESC LIMIT 15",
+    "result": "153 distinct badge names over 79851 awards. Top names: Student=14847, Supporter=8828, Editor=8453, Scholar=6523, Teacher=4679, Popular Question=4536, Autobiographer=4480, Tumbleweed=3268, Nice Answer=2570, Yearling=2293, Commentator=2047, Notable Question=1725, Nice Question=1654, Informed=1537, Revival=1018. Student awards by year: 2010=542, 2011=1959, 2012=3349, 2013=4725, 2014=4272.",
+    "validation_method": "grouped counts",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "ev_20_tag_universe",
+    "source": "codebase_community SQLite database (read-only)",
+    "query": "SELECT COUNT(*), COUNT(DISTINCT fld034) FROM tab06",
+    "result": "1032 tag rows and 1032 distinct tag names; no duplicate names.",
+    "validation_method": "distinct-count check",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "ev_21_post_score_range",
+    "source": "codebase_community SQLite database (read-only)",
+    "query": "SELECT MIN(fld006), MAX(fld006), AVG(fld006) FROM tab05 WHERE fld015=1",
+    "result": "Question scores range from -19 to 192 with mean approximately 2.49.",
+    "validation_method": "range aggregation",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "ev_22_comment_score",
+    "source": "codebase_community SQLite database (read-only)",
+    "query": "SELECT MIN(fld006), MAX(fld006), COUNT(*), SUM(fld007=''), SUM(fld007 IS NULL) FROM tab02",
+    "result": "Comment scores range from 0 to 90 over 174285 comments. Comment text has no nulls and no empty strings.",
+    "validation_method": "range aggregation and null/empty checks",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "ev_23_user_activity_columns",
+    "source": "codebase_community SQLite database (read-only)",
+    "query": "SELECT MIN/MAX of fld044, fld045, fld046, fld047, and COUNT(DISTINCT fld047) FROM tab07; SELECT fld045, fld046 FROM tab07 WHERE fld001=24",
+    "result": "Profile views range 0 to 20932; up-vote counter ranges 0 to 11442; down-vote counter ranges 0 to 1920; account identifier ranges -1 to 5027354 with 40325 distinct values. User 24: up-vote counter 36, down-vote counter 1.",
+    "validation_method": "range and distinct-count aggregation",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "ev_24_vote_coverage",
+    "source": "codebase_community SQLite database (read-only)",
+    "query": "SELECT COUNT(DISTINCT fld002), COUNT(DISTINCT fld005) FROM tab08",
+    "result": "38930 vote records span 8584 distinct posts and only 509 distinct attributed users.",
+    "validation_method": "distinct-count aggregation",
+    "timestamp": "2026-11-06"
+  }
+]

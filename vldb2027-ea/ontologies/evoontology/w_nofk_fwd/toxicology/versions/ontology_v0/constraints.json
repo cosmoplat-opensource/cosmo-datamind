@@ -1,0 +1,184 @@
+[
+  {
+    "id": "constraint_label_enum",
+    "target": "term_carcinogenicity_label",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "carcinogenic",
+      "non-carcinogenic",
+      "not carcinogenic",
+      "label",
+      "toxicity",
+      "positive",
+      "negative"
+    ],
+    "severity": "block",
+    "scope": "Any filter, grouping or count of molecules by carcinogenicity",
+    "confidence": "high",
+    "description": "The molecule label is a one-character classification symbol: the symbol '+' marks molecules that are carcinogenic and the symbol '-' marks molecules that are non-carcinogenic. These symbols are the only two values present. Filters and groupings on carcinogenicity must compare against these symbols; they are not booleans and carry no other meaning.",
+    "evidence": [
+      "ev_molecule_label_enum"
+    ]
+  },
+  {
+    "id": "constraint_bond_type_enum",
+    "target": "term_bond_type",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "single bond",
+      "single type bond",
+      "double bond",
+      "triple bond",
+      "triple-bond",
+      "bond type",
+      "most common bond type"
+    ],
+    "severity": "block",
+    "scope": "Any filter, grouping or count of bonds by bond type",
+    "confidence": "high",
+    "description": "Bond type is recorded as a one-character symbol: '-' denotes a single bond and is by far the most frequent, '=' denotes a double bond, and '#' denotes a triple bond. One bond record carries no bond type at all, so it belongs to none of the three categories and must not be silently counted as any of them.",
+    "evidence": [
+      "ev_bond_type_enum"
+    ]
+  },
+  {
+    "id": "constraint_element_symbol_case",
+    "target": "term_element",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "hydrogen",
+      "chlorine",
+      "iodine",
+      "sulfur",
+      "bromine",
+      "phosphorus",
+      "fluorine",
+      "element",
+      "chemical symbol"
+    ],
+    "severity": "block",
+    "scope": "Any condition that names a chemical element",
+    "confidence": "high",
+    "description": "Elements are stored as lowercase chemical symbols, and every stored value is lowercase. A question naming an element by its English name must be translated to its symbol before use; comparisons against the element name, or against an upper-case symbol, match no atom and silently return empty or zero results.",
+    "evidence": [
+      "ev_element_domain"
+    ]
+  },
+  {
+    "id": "constraint_connected_is_bidirectional",
+    "target": "term_atom_bond_adjacency",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "count bonds",
+      "number of bonds",
+      "distinct",
+      "average number of bonds",
+      "connectivity",
+      "atoms in a bond"
+    ],
+    "severity": "block",
+    "scope": "Any aggregation over the connectivity relation",
+    "confidence": "high",
+    "description": "The connectivity relation stores every bond twice, once for each direction of the atom pair, so its row count is exactly twice the number of bonds. Aggregating raw rows therefore double-counts bonds, and any count of bonds or of bond incidences must be reduced to distinct bonds or distinct atoms.",
+    "evidence": [
+      "ev_connected_direction",
+      "ev_connected_pair_bond"
+    ]
+  },
+  {
+    "id": "constraint_molecule_label_coverage",
+    "target": "term_molecule",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "percentage of molecules",
+      "number of molecules",
+      "carcinogenic molecules",
+      "non-carcinogenic molecules",
+      "molecule count",
+      "label"
+    ],
+    "severity": "warning",
+    "scope": "Any molecule population defined through the carcinogenicity label, especially as a denominator",
+    "confidence": "high",
+    "description": "Four hundred and forty-four distinct molecules carry atoms and bonds, but only three hundred and forty-three of them have a molecule record and therefore a carcinogenicity label. A molecule population defined through the label is smaller than one defined through atoms or bonds, so the two universes must not be used interchangeably as a base for shares and percentages.",
+    "evidence": [
+      "ev_molecule_universe"
+    ]
+  },
+  {
+    "id": "constraint_distinct_atoms_when_counting",
+    "target": "term_atom",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "how many atoms",
+      "total atoms",
+      "number of atoms",
+      "distinct atoms",
+      "count atoms"
+    ],
+    "severity": "block",
+    "scope": "Any count of atoms reached through bond-level or connectivity-level rows",
+    "confidence": "high",
+    "description": "An atom appears once for each bond it participates in, so a single atom can occupy many bond-level rows. Elemental identity is a property of the atom, not of the bond, so the number of atoms satisfying an element condition is the number of distinct atoms, not the number of matching rows.",
+    "evidence": [
+      "ev_distinct_atoms"
+    ]
+  },
+  {
+    "id": "constraint_percentage_unit",
+    "target": "term_element_occurrence_share",
+    "constraint_type": "unit",
+    "trigger_keywords": [
+      "percentage",
+      "percent",
+      "proportion",
+      "ratio",
+      "share"
+    ],
+    "severity": "warning",
+    "scope": "Answers to proportion, percentage and ratio questions",
+    "confidence": "high",
+    "description": "When a question asks for a percentage, proportion or ratio, the answer is expressed on a percentage scale measured out of one hundred, not as a fraction between zero and one, and it is presented with the number of decimal places the question requests.",
+    "evidence": [
+      "ev_percentage_requests"
+    ]
+  },
+  {
+    "id": "constraint_identifier_encoding",
+    "target": "term_bond",
+    "constraint_type": "scope",
+    "trigger_keywords": [
+      "bond id",
+      "atom id",
+      "identifier",
+      "which atoms",
+      "elements of bond",
+      "molecule id"
+    ],
+    "severity": "info",
+    "scope": "Questions that name a specific molecule, atom or bond by its identifier",
+    "confidence": "high",
+    "description": "Identifiers are composite strings built from the molecule prefix: a molecule identifier has the form TR followed by a number, an atom identifier extends it with the position of the atom inside the molecule, and a bond identifier extends it with the two positions of the atoms the bond connects. The prefix of a bond identifier therefore names its molecule and the trailing segments name its two atoms, which is a second way to reach a bond's atoms beyond the connectivity relation.",
+    "evidence": [
+      "ev_identifier_format"
+    ]
+  },
+  {
+    "id": "constraint_element_share_base",
+    "target": "term_element_occurrence_share",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "ratio of elements",
+      "percentage of element",
+      "share of hydrogen",
+      "composition"
+    ],
+    "severity": "warning",
+    "scope": "Composition shares within a single molecule or within a restricted molecule population",
+    "confidence": "medium",
+    "description": "The element occurrence share is a within-population proportion: its base is the total number of atoms belonging to the molecules under consideration, not the total number of atoms in the dataset and not the number of molecules, so the same element share differs depending on the molecule population it is evaluated over.",
+    "evidence": [
+      "ev_tr006_hydrogen_ratio"
+    ]
+  }
+]

@@ -1,0 +1,122 @@
+[
+  {
+    "id": "ev_001",
+    "source": "superhero.sqlite",
+    "query": "SELECT 'tab01',COUNT(*) FROM tab01 UNION ALL SELECT 'tab02',COUNT(*) FROM tab02 UNION ALL SELECT 'tab03',COUNT(*) FROM tab03 UNION ALL SELECT 'tab04',COUNT(*) FROM tab04 UNION ALL SELECT 'tab05',COUNT(*) FROM tab05 UNION ALL SELECT 'tab06',COUNT(*) FROM tab06 UNION ALL SELECT 'tab07',COUNT(*) FROM tab07 UNION ALL SELECT 'tab08',COUNT(*) FROM tab08 UNION ALL SELECT 'tab09',COUNT(*) FROM tab09 UNION ALL SELECT 'tab10',COUNT(*) FROM tab10",
+    "result": "tab01=4, tab02=6, tab03=35, tab04=3, tab05=25, tab06=61, tab07=750, tab08=3738, tab09=167, tab10=5825",
+    "validation_method": "read-only row-count inventory via sqlite3",
+    "timestamp": "2026-11-06T02:00:00Z"
+  },
+  {
+    "id": "ev_002",
+    "source": "superhero.sqlite",
+    "query": "SELECT * FROM tab01; SELECT * FROM tab02; SELECT * FROM tab04; SELECT fld001,fld006 FROM tab05 WHERE fld006 IN ('Marvel Comics','DC Comics','Dark Horse Comics','Star Trek')",
+    "result": "tab01 (alignment): 1=Good, 2=Bad, 3=Neutral, 4=N/A; tab02 (attribute): 1=Intelligence, 2=Strength, 3=Speed, 4=Durability, 5=Power, 6=Combat; tab04 (gender): 1=Male, 2=Female, 3=N/A; publisher ids: Dark Horse Comics=3, DC Comics=4, Marvel Comics=13, Star Trek=20",
+    "validation_method": "direct dump of the small dimension tables",
+    "timestamp": "2026-11-06T02:00:00Z"
+  },
+  {
+    "id": "ev_003",
+    "source": "superhero.sqlite",
+    "query": "SELECT s.fld001, s.fld008, s.fld009, g.fld005, r.fld007, p.fld006, a.fld002, s.fld017, s.fld018 FROM tab07 s LEFT JOIN tab04 g ON g.fld001=s.fld010 LEFT JOIN tab06 r ON r.fld001=s.fld014 LEFT JOIN tab05 p ON p.fld001=s.fld015 LEFT JOIN tab01 a ON a.fld001=s.fld016 WHERE s.fld008 IN ('3-D Man','Copycat','Abomination')",
+    "result": "id 1: 3-D Man / Charles Chandler / Male / '-' / Marvel Comics / Good / 188 cm / 90 kg; id 5: Abomination / Emil Blonsky / Male / 'Human / Radiation' / Marvel Comics / Bad / 203 cm / 441 kg; id 192: Copycat / Vanessa Carlysle / Female / Mutant / Marvel Comics / Neutral / 183 cm / 67 kg",
+    "validation_method": "joined sample rows whose labels come from the independently dumped dimension tables",
+    "timestamp": "2026-11-06T02:00:00Z"
+  },
+  {
+    "id": "ev_004",
+    "source": "superhero.sqlite",
+    "query": "SELECT c.fld001, c.fld004, (SELECT COUNT(*) FROM tab07 s WHERE s.fld011=c.fld001) AS as_eye, (SELECT COUNT(*) FROM tab07 s WHERE s.fld012=c.fld001) AS as_hair, (SELECT COUNT(*) FROM tab07 s WHERE s.fld013=c.fld001) AS as_skin FROM tab03 c ORDER BY c.fld001; plus SELECT SUM(fld011=1), SUM(fld012=1), SUM(fld013=1) FROM tab07",
+    "result": "fld011 behaves as eye colour (Blue=234, Brown=131, Green=76, Hazel=6; 21 distinct ids); fld012 as hair colour (Black=166, Blond=105, Brown=90, Auburn=13; 26 distinct ids, with Blond/Auburn/Strawberry Blond appearing only here); fld013 as skin colour (Green=21, Blue=9, Red=9; 16 distinct ids). 'No Colour' counts: fld011=169, fld012=246, fld013=681",
+    "validation_method": "cross-role frequency comparison of every colour id across the three reference columns",
+    "timestamp": "2026-11-06T02:00:00Z"
+  },
+  {
+    "id": "ev_005",
+    "source": "superhero.sqlite",
+    "query": "SELECT a.fld001, a.fld003, COUNT(sa.fld020), MIN(sa.fld021), MAX(sa.fld021), AVG(sa.fld021) FROM tab02 a LEFT JOIN tab08 sa ON sa.fld020=a.fld001 GROUP BY a.fld001; SELECT MIN(fld021), MAX(fld021), COUNT(*), COUNT(DISTINCT fld019) FROM tab08",
+    "result": "Intelligence: n=623, min=35, max=100, avg=84.3; Strength: n=623, min=5, max=100, avg=47.2; Speed, Durability, Power, Combat: each n=623, min=5, max=100, avg=45.7. Overall 3738 rows over 623 distinct superheroes and 6 attributes",
+    "validation_method": "per-attribute aggregation over the rating table",
+    "timestamp": "2026-11-06T02:00:00Z"
+  },
+  {
+    "id": "ev_006",
+    "source": "superhero.sqlite",
+    "query": "SELECT SUM(a3.fld021=a4.fld021), COUNT(*) FROM tab08 a3 JOIN tab08 a4 ON a3.fld019=a4.fld019 AND a3.fld020=3 AND a4.fld020=4; and the equivalent joins for attributes 2 vs 3, 3 vs 5, 5 vs 6",
+    "result": "Speed=Durability 623/623, Speed=Power 623/623, Power=Combat 623/623 (100%), Strength=Speed only 72/623",
+    "validation_method": "pairwise equality counts of ratings per superhero",
+    "timestamp": "2026-11-06T02:00:00Z"
+  },
+  {
+    "id": "ev_007",
+    "source": "superhero.sqlite",
+    "query": "SELECT fld010, COUNT(*) FROM tab07 GROUP BY fld010; SELECT fld016, COUNT(*) FROM tab07 GROUP BY fld016; SELECT COUNT(*) FROM tab07 WHERE fld010 IS NULL OR fld014 IS NULL OR fld015 IS NULL",
+    "result": "gender: code 1=519, code 2=203, code 3=28, NULL=0; alignment: code 1=504, code 2=212, code 3=28, code 4=0, NULL=6; race NULL=4; publisher NULL=3",
+    "validation_method": "grouped frequency counts with explicit NULL tally",
+    "timestamp": "2026-11-06T02:00:00Z"
+  },
+  {
+    "id": "ev_008",
+    "source": "superhero.sqlite",
+    "query": "SELECT COUNT(*), SUM(fld017 IS NULL), SUM(fld018 IS NULL), SUM(fld017=0), SUM(fld018=0), MIN(fld017), MAX(fld017), MIN(fld018), MAX(fld018) FROM tab07",
+    "result": "750 rows; height NULL=58, zero=155, min=0, max=30480 (Surtur and Ymir); weight NULL=64, zero=172, min=0, max=90000000 (Godzilla), with King Kong 9000000 and Utgard-Loki 58000 next",
+    "validation_method": "null/zero census plus min-max range and top-value review",
+    "timestamp": "2026-11-06T02:00:00Z"
+  },
+  {
+    "id": "ev_009",
+    "source": "superhero.sqlite",
+    "query": "SELECT COUNT(*), COUNT(DISTINCT fld008), COUNT(DISTINCT fld009) FROM tab07; SELECT fld008, COUNT(*) FROM tab07 GROUP BY fld008 HAVING COUNT(*)>1; SELECT SUM(fld009='-'), SUM(fld009 IS NULL OR TRIM(fld009)='') FROM tab07",
+    "result": "750 rows, 743 distinct superhero names (Atlas=4; Chameleon, Captain Marvel, Ares, Angel=2 each), 483 distinct full names; full name '-'=125, NULL/empty=122",
+    "validation_method": "uniqueness and sentinel counts on the name columns",
+    "timestamp": "2026-11-06T02:00:00Z"
+  },
+  {
+    "id": "ev_010",
+    "source": "superhero.sqlite",
+    "query": "SELECT CASE WHEN r.fld007='-' THEN 'dash' WHEN r.fld007='' THEN 'empty' ELSE 'named' END k, COUNT(*) FROM tab07 s LEFT JOIN tab06 r ON r.fld001=s.fld014 GROUP BY k",
+    "result": "295 superheroes reference race '-'; 451 have a named race; 4 have a NULL race reference (labelled na in this grouping)",
+    "validation_method": "race sentinel classification over all superhero rows",
+    "timestamp": "2026-11-06T02:00:00Z"
+  },
+  {
+    "id": "ev_011",
+    "source": "superhero.sqlite",
+    "query": "SELECT fld001, quote(fld006) FROM tab05 WHERE fld001=1; SELECT p.fld001, p.fld006, COUNT(s.fld001) FROM tab05 p LEFT JOIN tab07 s ON s.fld015=p.fld001 GROUP BY p.fld001 ORDER BY 3 DESC",
+    "result": "25 publishers; publisher id 1 has an empty-string name and 17 superheroes; largest groups: Marvel Comics 387, DC Comics 224, Dark Horse Comics 19, NBC - Heroes 19",
+    "validation_method": "publisher table dump plus per-publisher superhero counts",
+    "timestamp": "2026-11-06T02:00:00Z"
+  },
+  {
+    "id": "ev_012",
+    "source": "superhero.sqlite",
+    "query": "SELECT COUNT(DISTINCT fld019), COUNT(*) FROM tab08; SELECT n, COUNT(*) FROM (SELECT fld019, COUNT(*) n FROM tab08 GROUP BY fld019) GROUP BY n; SELECT COUNT(*) FROM tab07 s WHERE NOT EXISTS (SELECT 1 FROM tab08 a WHERE a.fld019=s.fld001); SELECT COUNT(*) FROM tab07 s WHERE NOT EXISTS (SELECT 1 FROM tab10 p WHERE p.fld019=s.fld001); SELECT COUNT(*) FROM (SELECT fld019,fld023,COUNT(*) c FROM tab10 GROUP BY fld019,fld023 HAVING c>1)",
+    "result": "tab08 covers 623 superheroes with exactly 6 ratings each (3738 rows); 127 superheroes have no ratings; 652 superheroes appear in tab10 across 5825 power assignments with 0 duplicate pairs; 98 superheroes have no power assignment",
+    "validation_method": "coverage census over the two link tables",
+    "timestamp": "2026-11-06T02:00:00Z"
+  },
+  {
+    "id": "ev_013",
+    "source": "superhero.sqlite",
+    "query": "SELECT (SELECT COUNT(*) FROM tab08 WHERE fld019 NOT IN (SELECT fld001 FROM tab07)), (SELECT COUNT(*) FROM tab10 WHERE fld019 NOT IN (SELECT fld001 FROM tab07)), (SELECT COUNT(*) FROM tab10 WHERE fld023 NOT IN (SELECT fld001 FROM tab09)), (SELECT COUNT(*) FROM tab07 WHERE fld015 NOT IN (SELECT fld001 FROM tab05)), (SELECT COUNT(*) FROM tab07 WHERE fld014 NOT IN (SELECT fld001 FROM tab06))",
+    "result": "0 orphan references in every checked foreign-key relationship",
+    "validation_method": "referential-integrity check on all declared foreign keys",
+    "timestamp": "2026-11-06T02:00:00Z"
+  },
+  {
+    "id": "ev_014",
+    "source": "superhero.sqlite",
+    "query": "SELECT COUNT(*) FROM tab09; SELECT sp.fld022, COUNT(*) FROM tab10 p JOIN tab09 sp ON sp.fld001=p.fld023 GROUP BY sp.fld001 ORDER BY 2 DESC LIMIT 8; SELECT fld001,fld022 FROM tab09 WHERE fld022 LIKE '%Strength%' OR fld022 LIKE '%Durab%'",
+    "result": "167 distinct superpowers; most common Super Strength 358, Stamina 288, Durability 257, Super Speed 249, Agility 239, Flight 208; 'Strength' and 'Durability' also exist as attribute names, while 'Super Strength' exists only as a superpower",
+    "validation_method": "superpower catalogue dump plus assignment frequency",
+    "timestamp": "2026-11-06T02:00:00Z"
+  },
+  {
+    "id": "ev_015",
+    "source": "superhero.sqlite",
+    "query": "SELECT p.fld001, p.fld006, COUNT(s.fld001) FROM tab05 p LEFT JOIN tab07 s ON s.fld015=p.fld001 GROUP BY p.fld001 ORDER BY 3 DESC LIMIT 7",
+    "result": "Marvel Comics 387, DC Comics 224, Dark Horse Comics 19, NBC - Heroes 19, blank name 17, George Lucas 15, Image Comics 14",
+    "validation_method": "per-publisher aggregation for the full publisher list",
+    "timestamp": "2026-11-06T02:00:00Z"
+  }
+]

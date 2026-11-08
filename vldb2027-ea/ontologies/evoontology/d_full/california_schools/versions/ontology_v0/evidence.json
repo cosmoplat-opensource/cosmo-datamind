@@ -1,0 +1,178 @@
+[
+  {
+    "id": "evidence_schools_row_counts",
+    "source": "california_schools",
+    "query": "SELECT COUNT(*) FROM schools; SELECT COUNT(*) FROM frpm; SELECT COUNT(*) FROM satscores;",
+    "result": "schools=17686 rows, frpm=9986 rows, satscores=2269 rows",
+    "validation_method": "direct row count on read-only connection",
+    "timestamp": "2026-10-10T00:00:00Z"
+  },
+  {
+    "id": "evidence_cdscode_composition",
+    "source": "california_schools",
+    "query": "SELECT SUM(CDSCode = `County Code`||`District Code`||`School Code`), SUM(CDSCode <> `County Code`||`District Code`||`School Code`), COUNT(*) FROM frpm;",
+    "result": "9986 rows compose exactly, 0 differ, 9986 total. Example: County Code 01 || District Code 10017 || School Code 0109835 = 01100170109835 = CDSCode",
+    "validation_method": "string concatenation identity checked on every frpm row",
+    "timestamp": "2026-10-10T00:00:00Z"
+  },
+  {
+    "id": "evidence_cdscode_join_coverage",
+    "source": "california_schools",
+    "query": "SELECT COUNT(DISTINCT CDSCode) FROM frpm f WHERE EXISTS(SELECT 1 FROM schools s WHERE s.CDSCode=f.CDSCode); SELECT COUNT(*) FROM satscores t WHERE EXISTS(SELECT 1 FROM schools s WHERE s.CDSCode='0'||t.cds);",
+    "result": "frpm: 9986 of 9986 CDS codes match schools exactly. satscores: 2058 of 2269 rows join on the raw 14-character value and the remaining 211 join only after left-padding with '0'; 2058+211=2269 so all rows are covered.",
+    "validation_method": "join coverage counted both raw and zero-padded",
+    "timestamp": "2026-10-10T00:00:00Z"
+  },
+  {
+    "id": "evidence_satscores_cds_length",
+    "source": "california_schools",
+    "query": "SELECT rtype, LENGTH(cds), COUNT(*), SUM(EXISTS(SELECT 1 FROM schools s WHERE s.CDSCode=t.cds)) direct_match, SUM(EXISTS(SELECT 1 FROM schools s WHERE s.CDSCode='0'||t.cds)) pad_match FROM satscores t GROUP BY rtype, LENGTH(cds);",
+    "result": "rtype D: 13-char 53 rows (direct_match 0, pad_match 53), 14-char 467 rows (direct 467). rtype S: 13-char 158 rows (direct 0, pad 158), 14-char 1591 rows (direct 1591). No 13-char code collides with an existing 14-char code (collision count 0). 13-character codes all begin with county 01-09.",
+    "validation_method": "length partition crossed with direct and padded join counts",
+    "timestamp": "2026-10-10T00:00:00Z"
+  },
+  {
+    "id": "evidence_satscores_rtype_level",
+    "source": "california_schools",
+    "query": "SELECT t.rtype, SUM(EXISTS(SELECT 1 FROM schools s WHERE s.CDSCode=(CASE WHEN LENGTH(t.cds)=13 THEN '0'||t.cds ELSE t.cds END))), SUM(EXISTS(SELECT 1 FROM schools s WHERE s.CDSCode=(CASE WHEN LENGTH(t.cds)=13 THEN '0'||t.cds ELSE t.cds END) AND (s.School IS NULL OR s.School=''))), COUNT(*) FROM satscores t GROUP BY t.rtype;",
+    "result": "rtype D: 520 rows, 520 matched, 520 of them to agency rows with a blank School name, 0 to named schools; sname is blank in all 520. rtype S: 1749 rows, 1749 matched, 0 to agency rows, all to named schools; sname populated in all 1749.",
+    "validation_method": "every satscores row classified by the shape of its matched schools row",
+    "timestamp": "2026-10-10T00:00:00Z"
+  },
+  {
+    "id": "evidence_schools_agency_rows",
+    "source": "california_schools",
+    "query": "SELECT (School IS NULL OR School=''), (Charter IS NULL), COUNT(*) FROM schools GROUP BY 1,2;",
+    "result": "16317 rows have a school name and a populated Charter flag; 1369 rows have a blank School and a blank Charter. The two columns are blank together in exactly the same 1369 rows.",
+    "validation_method": "cross-tabulation of the School and Charter blankness",
+    "timestamp": "2026-10-10T00:00:00Z"
+  },
+  {
+    "id": "evidence_schools_status_type",
+    "source": "california_schools",
+    "query": "SELECT StatusType, COUNT(*) FROM schools GROUP BY StatusType;",
+    "result": "Active 11708, Closed 4518, Merged 1448, Pending 12",
+    "validation_method": "value distribution of StatusType",
+    "timestamp": "2026-10-10T00:00:00Z"
+  },
+  {
+    "id": "evidence_frpm_percent_fraction",
+    "source": "california_schools",
+    "query": "SELECT MIN(`Percent (%) Eligible Free (K-12)`), MAX(`Percent (%) Eligible Free (K-12)`), SUM(`Percent (%) Eligible Free (K-12)`>1), SUM(`Percent (%) Eligible Free (K-12)`<=1) FROM frpm;",
+    "result": "minimum 0.00176056338028169, maximum 1.0, 0 rows above 1, 9930 rows at or below 1 (50 null)",
+    "validation_method": "range check across every frpm row",
+    "timestamp": "2026-10-10T00:00:00Z"
+  },
+  {
+    "id": "evidence_frpm_percent_derivation",
+    "source": "california_schools",
+    "query": "SELECT SUM(ABS(`Percent (%) Eligible FRPM (K-12)` - `FRPM Count (K-12)`/`Enrollment (K-12)`) < 1e-9), SUM(ABS(`Percent (%) Eligible FRPM (K-12)` - `FRPM Count (K-12)`/`Enrollment (K-12)`) >= 1e-9), SUM(`Enrollment (K-12)`=0) FROM frpm;",
+    "result": "9936 rows reproduce the stored percent exactly from count/enrollment, 0 rows differ, 0 rows have zero enrollment",
+    "validation_method": "arithmetic identity recomputed per row at 1e-9 tolerance",
+    "timestamp": "2026-10-10T00:00:00Z"
+  },
+  {
+    "id": "evidence_frpm_free_subset",
+    "source": "california_schools",
+    "query": "SELECT SUM(`FRPM Count (K-12)` >= `Free Meal Count (K-12)`), SUM(`FRPM Count (K-12)` < `Free Meal Count (K-12)`), SUM(`FRPM Count (K-12)` IS NULL) FROM frpm;",
+    "result": "9930 rows satisfy FRPM count >= free-meal count, 0 violations, 50 rows null",
+    "validation_method": "ordering constraint checked on every non-null row",
+    "timestamp": "2026-10-10T00:00:00Z"
+  },
+  {
+    "id": "evidence_enrollment_universes",
+    "source": "california_schools",
+    "query": "SELECT SUM(`Enrollment (Ages 5-17)`=`Enrollment (K-12)`), SUM(`Enrollment (Ages 5-17)`<`Enrollment (K-12)`), COUNT(*) FROM frpm;",
+    "result": "3512 rows have identical values, 6460 rows have a strictly smaller ages 5-17 count, 9986 total; the ages 5-17 count never exceeds the K-12 count",
+    "validation_method": "paired column comparison across all rows",
+    "timestamp": "2026-10-10T00:00:00Z"
+  },
+  {
+    "id": "evidence_frpm_grade_domain",
+    "source": "california_schools",
+    "query": "SELECT `Low Grade`, COUNT(*) FROM frpm GROUP BY 1 ORDER BY 2 DESC; SELECT `High Grade`, COUNT(*) FROM frpm GROUP BY 1 ORDER BY 2 DESC;",
+    "result": "Low Grade: K 6057, 9 1733, 6 1024, 7 651, P 181, 5 99, 4 68, 10 44. High Grade: 12 2641, 5 2534, 8 2401, 6 2091, 3 68, 4 65, 2 40, Adult 35.",
+    "validation_method": "value distribution of both grade bound columns",
+    "timestamp": "2026-10-10T00:00:00Z"
+  },
+  {
+    "id": "evidence_frpm_school_type_domain",
+    "source": "california_schools",
+    "query": "SELECT `School Type`, COUNT(*) FROM frpm GROUP BY 1; SELECT `Educational Option Type`, COUNT(*) FROM frpm GROUP BY 1;",
+    "result": "School Type has 17 populated values plus 45 blank (largest: Elementary Schools (Public) 5584, High Schools (Public) 1331, Intermediate/Middle Schools (Public) 1299). Educational Option Type has 13 populated values plus the same 45 blank rows (largest: Traditional 8696, Continuation School 459, Alternative School of Choice 259). The two vocabularies name related but different categories.",
+    "validation_method": "value distribution comparison of the two classification columns",
+    "timestamp": "2026-10-10T00:00:00Z"
+  },
+  {
+    "id": "evidence_frpm_district_office_rows",
+    "source": "california_schools",
+    "query": "SELECT f.CDSCode, f.`School Name`, f.`District Name`, f.`School Type`, f.`Enrollment (K-12)`, s.School FROM frpm f JOIN schools s ON s.CDSCode=f.CDSCode WHERE s.School IS NULL OR s.School='';",
+    "result": "45 frpm rows join to agency rows in schools. All 45 carry the School Name value 'District Office', have a blank School Type, blank Educational Option Type and blank Charter School (Y/N), and a CDS code ending in 0000000. Examples: 01751010000000 Pleasanton Unified enrollment 24; 06616220000000 Williams Unified enrollment 2; 10623720000000 Pine Ridge Elementary enrollment 7.",
+    "validation_method": "join of frpm to agency-shaped schools rows with column inspection",
+    "timestamp": "2026-10-10T00:00:00Z"
+  },
+  {
+    "id": "evidence_academic_year_single",
+    "source": "california_schools",
+    "query": "SELECT `Academic Year`, COUNT(*) FROM frpm GROUP BY 1;",
+    "result": "a single value, 2014-2015, covering all 9986 rows",
+    "validation_method": "distinct value enumeration of the year column",
+    "timestamp": "2026-10-10T00:00:00Z"
+  },
+  {
+    "id": "evidence_sat_null_scores",
+    "source": "california_schools",
+    "query": "SELECT rtype, SUM(AvgScrRead IS NULL), COUNT(*) FROM satscores GROUP BY rtype; SELECT SUM(NumTstTakr=0), SUM(enroll12=0), COUNT(*) FROM satscores;",
+    "result": "596 rows have null subject scores (98 district-level, 498 school-level) out of 2269. NumTstTakr is 0 for 218 rows and enroll12 is 0 for 5 rows.",
+    "validation_method": "null and zero counts partitioned by record level",
+    "timestamp": "2026-10-10T00:00:00Z"
+  },
+  {
+    "id": "evidence_sat_ge1500_bounds",
+    "source": "california_schools",
+    "query": "SELECT SUM(NumGE1500 <= NumTstTakr), SUM(NumGE1500 > NumTstTakr), MIN(AvgScrRead), MAX(AvgScrRead), MIN(AvgScrMath), MAX(AvgScrMath), MIN(AvgScrWrite), MAX(AvgScrWrite) FROM satscores;",
+    "result": "1673 non-null rows satisfy NumGE1500 <= NumTstTakr with 0 violations. Score ranges: reading 308-653, mathematics 289-699, writing 312-671.",
+    "validation_method": "ordering constraint and observed range of every score column",
+    "timestamp": "2026-10-10T00:00:00Z"
+  },
+  {
+    "id": "evidence_schools_charter_blank",
+    "source": "california_schools",
+    "query": "SELECT Charter, COUNT(*) FROM schools GROUP BY Charter;",
+    "result": "Charter = 1 for 1729 rows, Charter = 0 for 14588 rows, Charter blank for 1369 rows (the same 1369 rows that have no school name)",
+    "validation_method": "value distribution and cross-check against the agency-row partition",
+    "timestamp": "2026-10-10T00:00:00Z"
+  },
+  {
+    "id": "evidence_charter_discrepancy",
+    "source": "california_schools",
+    "query": "SELECT s.Charter, f.`Charter School (Y/N)`, COUNT(*) FROM schools s JOIN frpm f ON f.CDSCode=s.CDSCode GROUP BY 1,2;",
+    "result": "9934 joined rows agree: 8771 are 0/0 and 1163 are 1/1. 7 rows disagree: 4 are 0 in schools but 1 in frpm, 3 are 1 in schools but 0 in frpm. The other 45 joined rows are the district-level rows where frpm leaves the field blank.",
+    "validation_method": "cross-tabulation of the two charter flags on the join key",
+    "timestamp": "2026-10-10T00:00:00Z"
+  },
+  {
+    "id": "evidence_nslp_domain",
+    "source": "california_schools",
+    "query": "SELECT `NSLP Provision Status`, COUNT(*) FROM frpm GROUP BY 1;",
+    "result": "blank 8139, Provision 2 1365, Breakfast Provision 2 285, CEP 172, Multiple Provision Types 11, Provision 1 7, Lunch Provision 2 5, Provision 3 2",
+    "validation_method": "value distribution including the blank category",
+    "timestamp": "2026-10-10T00:00:00Z"
+  },
+  {
+    "id": "evidence_satscores_enroll12_grain",
+    "source": "california_schools",
+    "query": "SELECT SUM(NumTstTakr<=enroll12), SUM(NumTstTakr>enroll12), MIN(enroll12), MAX(enroll12) FROM satscores;",
+    "result": "2234 rows have test takers at or below grade-12 enrollment, 35 rows exceed it. enroll12 ranges from 0 to 43324.",
+    "validation_method": "ordering constraint between test takers and grade-12 enrollment with observed range",
+    "timestamp": "2026-10-10T00:00:00Z"
+  },
+  {
+    "id": "evidence_schools_name_columns",
+    "source": "california_schools",
+    "query": "SELECT SUM(s.County=f.`County Name`), SUM(s.District=f.`District Name`), COUNT(*) FROM schools s JOIN frpm f ON f.CDSCode=s.CDSCode; SELECT SUM(t.dname=(SELECT s.District FROM schools s WHERE s.CDSCode=(CASE WHEN LENGTH(t.cds)=13 THEN '0'||t.cds ELSE t.cds END))), SUM(t.cname=(SELECT s.County FROM schools s WHERE s.CDSCode=(CASE WHEN LENGTH(t.cds)=13 THEN '0'||t.cds ELSE t.cds END))), COUNT(*) FROM satscores t;",
+    "result": "County names agree for 9986 of 9986 joined rows and district names agree for 9986 of 9986. In satscores, cname agrees with the schools county for 2269 of 2269 rows and dname agrees with the schools district for 2264 of 2269 rows.",
+    "validation_method": "text equality of shared naming columns across the three tables",
+    "timestamp": "2026-10-10T00:00:00Z"
+  }
+]

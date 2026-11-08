@@ -1,0 +1,154 @@
+[
+  {
+    "id": "ev_schema_tables",
+    "source": "financial.sqlite",
+    "query": ".tables; .schema",
+    "result": "Eight tables tab01-tab08. Foreign keys: tab01.fld002->tab05.fld002; tab02.fld006->tab04.fld006; tab03.fld002->tab05.fld002; tab04.fld009->tab03.fld009 and tab04.fld001->tab01.fld001; tab06.fld001->tab01.fld001; tab07.fld001->tab01.fld001; tab08.fld001->tab01.fld001. tab01.fld001, tab03.fld009, tab04.fld006, tab05.fld002, tab06.fld027, tab07.fld032, tab08.fld036 are primary keys.",
+    "validation_method": "Read-only sqlite schema inspection",
+    "timestamp": "2026-11-06T01:15:00Z"
+  },
+  {
+    "id": "ev_row_counts",
+    "source": "financial.sqlite",
+    "query": "SELECT count(*) FROM tab01 ... tab08",
+    "result": "tab01 4500; tab02 892; tab03 5369; tab04 5369; tab05 77; tab06 682; tab07 6471; tab08 1056320.",
+    "validation_method": "Row-count aggregation",
+    "timestamp": "2026-11-06T01:15:00Z"
+  },
+  {
+    "id": "ev_fk_integrity",
+    "source": "financial.sqlite",
+    "query": "LEFT JOIN checks for account->district, client->district, disposition->client, disposition->account, loan->account, transaction->account",
+    "result": "All orphan counts are 0: account->district 0, client->district 0, disposition->client 0, disposition->account 0, loan->account 0, transaction->account 0.",
+    "validation_method": "Anti-join referential integrity check",
+    "timestamp": "2026-11-06T01:15:00Z"
+  },
+  {
+    "id": "ev_frequency_values",
+    "source": "financial.sqlite",
+    "query": "SELECT fld003, count(*) FROM tab01 GROUP BY fld003",
+    "result": "POPLATEK MESICNE 4167; POPLATEK PO OBRATU 93; POPLATEK TYDNE 240.",
+    "validation_method": "Distinct value profiling",
+    "timestamp": "2026-11-06T01:15:00Z"
+  },
+  {
+    "id": "ev_gender_values",
+    "source": "financial.sqlite",
+    "query": "SELECT fld010, count(*) FROM tab03 GROUP BY fld010",
+    "result": "F 2645; M 2724.",
+    "validation_method": "Distinct value profiling",
+    "timestamp": "2026-11-06T01:15:00Z"
+  },
+  {
+    "id": "ev_loan_status_values",
+    "source": "financial.sqlite",
+    "query": "SELECT fld031, count(*) FROM tab06 GROUP BY fld031",
+    "result": "A 203; B 31; C 403; D 45. Workload evidence for question 118 states that fld031 = 'C' stands for a running contract that is OK so far.",
+    "validation_method": "Distinct value profiling cross-checked with construction workload evidence",
+    "timestamp": "2026-11-06T01:15:00Z"
+  },
+  {
+    "id": "ev_loan_numeric",
+    "source": "financial.sqlite",
+    "query": "SELECT min(fld028), max(fld028), avg(fld028), min(fld029), max(fld029) FROM tab06",
+    "result": "Loan amount fld028: min 4980, max 590820, mean 151410.18. Loan duration fld029: min 12, max 60.",
+    "validation_method": "Range and distribution profiling",
+    "timestamp": "2026-11-06T01:15:00Z"
+  },
+  {
+    "id": "ev_dates",
+    "source": "financial.sqlite",
+    "query": "SELECT min(fld004), max(fld004) per date column",
+    "result": "tab01 account date 1993-01-01 to 1997-12-29; tab02 card issue date 1993-11-07 to 1998-12-29; tab03 birth date 1911-08-20 to 1987-09-27; tab06 loan date 1993-07-05 to 1998-12-08; tab08 transaction date 1993-01-01 to 1998-12-31. Values are ISO YYYY-MM-DD text.",
+    "validation_method": "Range profiling",
+    "timestamp": "2026-11-06T01:15:00Z"
+  },
+  {
+    "id": "ev_date_counts",
+    "source": "financial.sqlite",
+    "query": "SELECT substr(fld004,1,4) AS y, count(*) FROM tab01 GROUP BY y; SELECT count(*) FROM tab06 WHERE fld004 BETWEEN '1995-01-01' AND '1997-12-31'; SELECT count(*) FROM tab06 WHERE fld028 >= 250000 AND fld001 IN (SELECT fld001 FROM tab01 WHERE fld003='POPLATEK MESICNE')",
+    "result": "Accounts by opening year: 1993: 1139, 1994: 439, 1995: 661, 1996: 1363, 1997: 898. Loans approved 1995-01-01 to 1997-12-31: 403. Loans of at least 250000 on monthly-statement accounts: 101.",
+    "validation_method": "Grouped count aggregation",
+    "timestamp": "2026-11-06T01:15:00Z"
+  },
+  {
+    "id": "ev_district_region",
+    "source": "financial.sqlite",
+    "query": "SELECT fld013, count(*) FROM tab05 GROUP BY fld013; SELECT fld002, fld012, fld013 FROM tab05; SELECT count(DISTINCT fld002) FROM tab01; SELECT count(DISTINCT fld002) FROM tab03",
+    "result": "77 districts and 8 regions: Prague 1, central Bohemia 12, south Bohemia 8, west Bohemia 10, north Bohemia 10, east Bohemia 11, south Moravia 14, north Moravia 11. District names include Hl.m. Praha, Benesov, Beroun, Pisek, Kolin. Both tab01 and tab03 reference all 77 districts.",
+    "validation_method": "Distinct value and join profiling",
+    "timestamp": "2026-11-06T01:15:00Z"
+  },
+  {
+    "id": "ev_salary_distribution",
+    "source": "financial.sqlite",
+    "query": "SELECT min(fld021), max(fld021), avg(fld021) FROM tab05; SELECT count(*) FROM tab05 WHERE fld021 > 8000; SELECT count(*) FROM tab05 WHERE fld021 > 10000",
+    "result": "Average salary fld021: min 8110, max 12541, mean 9031.68. Districts above 8000: 77 of 77. Districts above 10000: 8 (Hl.m. Praha, Mlada Boleslav, Praha - vychod, Ceske Budejovice, Plzen - mesto, Most, Karvina, Ostrava - mesto).",
+    "validation_method": "Range and threshold count profiling",
+    "timestamp": "2026-11-06T01:15:00Z"
+  },
+  {
+    "id": "ev_disposition",
+    "source": "financial.sqlite",
+    "query": "SELECT count(*), count(DISTINCT fld001), count(DISTINCT fld009) FROM tab04; SELECT fld007, count(*) FROM tab04 GROUP BY fld007; SELECT max(c) FROM (SELECT count(*) c FROM tab04 WHERE fld007='OWNER' GROUP BY fld001)",
+    "result": "5369 disposition rows covering 4500 distinct accounts and 5369 distinct clients. Roles: OWNER 4500, DISPONENT 869. Maximum OWNER count per account is 1.",
+    "validation_method": "Cardinality and role profiling",
+    "timestamp": "2026-11-06T01:15:00Z"
+  },
+  {
+    "id": "ev_trans_operation",
+    "source": "financial.sqlite",
+    "query": "SELECT fld007, fld037, count(*) FROM tab08 GROUP BY fld007, fld037",
+    "result": "VYDAJ/VYBER 418252; VYDAJ/PREVOD NA UCET 208283; PRIJEM/NULL 183114; PRIJEM/VKLAD 156743; PRIJEM/PREVOD Z UCTU 65226; VYBER/VYBER 16666; VYDAJ/VYBER KARTOU 8036. Operation totals: VYBER 434918, PREVOD NA UCET 208283, VKLAD 156743, PREVOD Z UCTU 65226, VYBER KARTOU 8036, NULL 183114.",
+    "validation_method": "Crosstab aggregation",
+    "timestamp": "2026-11-06T01:15:00Z"
+  },
+  {
+    "id": "ev_type_column_domains",
+    "source": "financial.sqlite",
+    "query": "SELECT 'tab04', fld007, count(*) FROM tab04 GROUP BY 2 UNION ALL SELECT 'tab02', fld007, count(*) FROM tab02 GROUP BY 2 UNION ALL SELECT 'tab08', fld007, count(*) FROM tab08 GROUP BY 2",
+    "result": "tab02 card type: classic 659, gold 88, junior 145. tab04 disposition role: OWNER 4500, DISPONENT 869. tab08 transaction type: PRIJEM 405083, VYDAJ 634571, VYBER 16666.",
+    "validation_method": "Per-table distinct value profiling",
+    "timestamp": "2026-11-06T01:15:00Z"
+  },
+  {
+    "id": "ev_amount_column_domains",
+    "source": "financial.sqlite",
+    "query": "SELECT min(fld028), max(fld028), avg(fld028) FROM tab06; same for tab07 and tab08",
+    "result": "tab06 loan amount 4980 to 590820, mean 151410.18; tab07 order amount 1.0 to 14882.0, mean 3280.64; tab08 transaction amount 0 to 87400, mean 5924.21.",
+    "validation_method": "Per-table range profiling of the shared column name",
+    "timestamp": "2026-11-06T01:15:00Z"
+  },
+  {
+    "id": "ev_blank_values",
+    "source": "financial.sqlite",
+    "query": "SELECT quote(fld035), count(*) FROM tab08 GROUP BY 1; SELECT quote(fld037), count(*) FROM tab08 GROUP BY 1",
+    "result": "fld035: NULL 481881, ' ' 53433, DUCHOD 30338, POJISTNE 18500, SANKC. UROK 1577, SIPO 118065, SLUZBY 155832, UROK 183114, UVER 13580. fld037: NULL 183114 plus the six named operations.",
+    "validation_method": "Quoted-value profiling to distinguish NULL from blank strings",
+    "timestamp": "2026-11-06T01:15:00Z"
+  },
+  {
+    "id": "ev_client_3356",
+    "source": "financial.sqlite",
+    "query": "SELECT * FROM tab03 WHERE fld009=3356; SELECT d.fld001, d.fld007, a.fld003, a.fld004 FROM tab04 d JOIN tab01 a ON a.fld001=d.fld001 WHERE d.fld009=3356",
+    "result": "Client 3356 exists: gender M, birth date 1974-04-23, district 73. This client has one account, account 2779, with role OWNER, frequency POPLATEK MESICNE, opened 1993-06-15.",
+    "validation_method": "Point lookup and join",
+    "timestamp": "2026-11-06T01:15:00Z"
+  },
+  {
+    "id": "ev_two_district_links",
+    "source": "financial.sqlite",
+    "query": "SELECT count(*) FROM tab04 d JOIN tab01 a ON a.fld001=d.fld001 JOIN tab03 c ON c.fld009=d.fld009 WHERE d.fld007='OWNER' AND a.fld002 <> c.fld002",
+    "result": "409 OWNER client-account pairs have an account district different from the client district. Example: client 12 owns account 9; account district 70 (Karvina, north Moravia) while client district 40 (Teplice, north Bohemia). This confirms that tab01.fld002 and tab03.fld002 are independent affiliations, not two copies of one value.",
+    "validation_method": "Divergence count with joined example",
+    "timestamp": "2026-11-06T01:15:00Z"
+  },
+  {
+    "id": "ev_percentage_semantics",
+    "source": "construction workload financial.json (questions 118 and 186 evidence text)",
+    "query": "Provided evidence text for question 118 and question 186",
+    "result": "Question 118 evidence defines 'Percentage of accounts by condition = [(total(fld028) & condition) / (total fld028)] * 100'. Question 186 evidence defines 'Percentage of male clients = [count(male clients who requested weekly statements) / count(clients who requested weekly statements)] * 100%'. Both express a part-to-whole ratio over a stated reference population.",
+    "validation_method": "Construction workload evidence review (no answers read)",
+    "timestamp": "2026-11-06T01:15:00Z"
+  }
+]

@@ -1,0 +1,434 @@
+[
+  {
+    "aliases": [
+      "card",
+      "cards",
+      "card record",
+      "printing"
+    ],
+    "definition": "A single printed card record, one row of the cards table. The workload's word 'card' refers to this row, not to an abstract game piece. Each printing is uniquely identified by uuid and numbered by the integer column id; the same game piece is usually printed many times.",
+    "evidence": [
+      "ev_cards_grain",
+      "ev_card_name_duplication"
+    ],
+    "id": "t_card",
+    "name": "Card Printing",
+    "scope": "Any question that asks for a card's attributes, a card id, or a count of cards.",
+    "type": "entity"
+  },
+  {
+    "aliases": [
+      "card name",
+      "name of card",
+      "card title",
+      "named"
+    ],
+    "definition": "The printed name of a card, held in cards.name. A name denotes a game piece, not a unique row: 11170 distinct names occur on more than one printing, and one name can span several sets.",
+    "evidence": [
+      "ev_card_name_duplication",
+      "ev_adarkar_printings"
+    ],
+    "id": "t_card_name",
+    "name": "Card Name",
+    "scope": "Identifying a card from a natural-language name, and listing card names within a set.",
+    "type": "concept"
+  },
+  {
+    "aliases": [
+      "set",
+      "card set",
+      "expansion",
+      "in the set"
+    ],
+    "definition": "A Magic expansion or set, one row of the sets table. It is identified by the short code in sets.code and named in sets.name; cards rows reference it through cards.setCode.",
+    "evidence": [
+      "ev_set_join_key",
+      "ev_set_samples"
+    ],
+    "id": "t_card_set",
+    "name": "Card Set",
+    "scope": "Questions that restrict cards to a named set, or that ask for set-level attributes such as set size or foreign-only availability.",
+    "type": "entity"
+  },
+  {
+    "aliases": [
+      "translation of the name of the set",
+      "set name translation",
+      "translated set name"
+    ],
+    "definition": "The localized rendering of a set's name in a given language, held in set_translations.translation and keyed to the set through set_translations.setCode.",
+    "evidence": [
+      "ev_set_translation_sample",
+      "ev_set_translation_nulls"
+    ],
+    "id": "t_set_translation",
+    "name": "Set Name Translation",
+    "scope": "Questions asking for the name of a set in a specific language, or asking which sets have a translation in a language.",
+    "type": "concept"
+  },
+  {
+    "aliases": [
+      "artist",
+      "illustrator",
+      "designed by",
+      "card artist"
+    ],
+    "definition": "The illustrator credited for a card printing, stored as free text in cards.artist. There is no artist table and no artist identifier; artists are matched by their exact name string.",
+    "evidence": [
+      "ev_artist_cardinality"
+    ],
+    "id": "t_artist",
+    "name": "Artist",
+    "scope": "Questions that filter cards by who illustrated them, or that report the artist alongside another card attribute.",
+    "type": "entity"
+  },
+  {
+    "aliases": [
+      "format",
+      "play format",
+      "commander",
+      "legality format"
+    ],
+    "definition": "A constructed play format in which card legality is defined, held in legalities.format (brawl, commander, duel, future, gladiator, historic, legacy, modern, oldschool, pauper, penny, pioneer, premodern, standard, vintage).",
+    "evidence": [
+      "ev_legalities_pairs"
+    ],
+    "id": "t_play_format",
+    "name": "Play Format",
+    "scope": "Questions about whether a card may be played in a given format, and questions listing the formats a card is legal in.",
+    "type": "entity"
+  },
+  {
+    "aliases": [
+      "legal",
+      "banned",
+      "restricted",
+      "status",
+      "not legal"
+    ],
+    "definition": "The status a card holds in a format, held in legalities.status. Its value domain is the closed set Legal, Banned, Restricted.",
+    "evidence": [
+      "ev_legalities_pairs"
+    ],
+    "id": "t_legality_status",
+    "name": "Legality Status",
+    "scope": "Interpreting qualifiers such as 'legal for', 'banned', or 'restricted' in a format-specific question.",
+    "type": "category"
+  },
+  {
+    "aliases": [
+      "ruling",
+      "rulings",
+      "ruling information"
+    ],
+    "definition": "An official ruling record about a card printing, held in rulings and keyed to the card through rulings.uuid. A card can have many rulings, and rulings of different printings of the same game piece are separate records.",
+    "evidence": [
+      "ev_rulings_join",
+      "ev_rulings_max"
+    ],
+    "id": "t_ruling",
+    "name": "Card Ruling",
+    "scope": "Questions that count or rank cards by how much ruling information exists for them.",
+    "type": "entity"
+  },
+  {
+    "aliases": [
+      "border color",
+      "border",
+      "borderless",
+      "borderless card"
+    ],
+    "definition": "The colour of a card printing's border, held in cards.borderColor. The closed value domain is black, borderless, gold, silver, white; 'borderless' is a stored literal, not the absence of a value.",
+    "evidence": [
+      "ev_border_color_dist"
+    ],
+    "id": "t_border_color",
+    "name": "Border Color",
+    "scope": "Questions filtering or measuring cards by their border type.",
+    "type": "dimension"
+  },
+  {
+    "aliases": [
+      "power",
+      "infinite power",
+      "unknown power",
+      "powerless"
+    ],
+    "definition": "The power value of a creature card printing, held as text in cards.power. It is numeric for ordinary creatures but also carries the non-numeric markers '*' (429 printings) and NULL (30624 printings, mostly non-creatures).",
+    "evidence": [
+      "ev_power_dist"
+    ],
+    "id": "t_card_power",
+    "name": "Card Power",
+    "scope": "Questions about a card's power, including the qualifiers 'unknown power' and 'infinite power'.",
+    "type": "dimension"
+  },
+  {
+    "aliases": [
+      "color",
+      "colour",
+      "black",
+      "black color",
+      "colors"
+    ],
+    "definition": "The colour of a card printing, held in cards.colors as a comma-separated list of the letters W, U, B, R, G; an empty value means colourless or land-only. 'black' corresponds to the letter 'B'.",
+    "evidence": [
+      "ev_colors_dist"
+    ],
+    "id": "t_card_color",
+    "name": "Card Color",
+    "scope": "Questions that filter cards by colour name.",
+    "type": "dimension"
+  },
+  {
+    "aliases": [
+      "types",
+      "card type",
+      "subtypes",
+      "supertypes",
+      "artifact card"
+    ],
+    "definition": "The normalized type of a card printing, held in cards.types as a comma-separated list of card types, with the related columns cards.supertypes and cards.subtypes carrying the rest of the type line. A multi-type printing such as 'Artifact,Creature' carries several types at once.",
+    "evidence": [
+      "ev_types_dist",
+      "ev_originaltype_vs_types"
+    ],
+    "id": "t_card_type",
+    "name": "Card Type",
+    "scope": "Questions filtering or listing cards by type, subtype or supertype.",
+    "type": "dimension"
+  },
+  {
+    "aliases": [
+      "original type",
+      "type line",
+      "originalType",
+      "artifact card"
+    ],
+    "definition": "The printed type line of a card printing, held verbatim in cards.originalType. It is a narrower and differently shaped representation than cards.types: exact equality on originalType matches only single-type printings.",
+    "evidence": [
+      "ev_originaltype_vs_types"
+    ],
+    "id": "t_card_original_type",
+    "name": "Card Original Type",
+    "scope": "Questions whose wording mirrors the printed type line, such as 'Artifact cards'.",
+    "type": "dimension"
+  },
+  {
+    "aliases": [
+      "frame style",
+      "frame styles",
+      "frame",
+      "frameVersion"
+    ],
+    "definition": "The printing frame style of a card, held in cards.frameVersion. The value domain is 1993, 1997, 2003, 2015 and future. It is distinct from cards.frameEffects, which is a separate comma-separated list of frame embellishments such as legendary or showcase.",
+    "evidence": [
+      "ev_frame_version_dist",
+      "ev_frame_effects_dist"
+    ],
+    "id": "t_frame_version",
+    "name": "Frame Version",
+    "scope": "Questions about a card's frame or frame style.",
+    "type": "dimension"
+  },
+  {
+    "aliases": [
+      "text",
+      "text box",
+      "card text",
+      "rules text",
+      "triggered ability"
+    ],
+    "definition": "The rules text box content of a card printing, held as free text in cards.text. It is NULL for printings without a text box and is matched by substring rather than by any controlled vocabulary.",
+    "evidence": [
+      "ev_text_triggered"
+    ],
+    "id": "t_card_text",
+    "name": "Card Text",
+    "scope": "Questions that search rules text for a phrase, such as 'triggered ability'.",
+    "type": "concept"
+  },
+  {
+    "aliases": [
+      "language",
+      "German",
+      "Chinese Simplified",
+      "Italian",
+      "foreign language"
+    ],
+    "definition": "The language in which a card printing has localized name and text, held in foreign_data.language for each matching card uuid. The vocabulary is the 16 observed language names.",
+    "evidence": [
+      "ev_fd_languages"
+    ],
+    "id": "t_card_translation_language",
+    "name": "Card Translation Language",
+    "scope": "Questions tying a card to a language, such as 'available in Chinese Simplified' or 'German'.",
+    "type": "dimension"
+  },
+  {
+    "aliases": [
+      "language",
+      "language of the set translation",
+      "Italian translation of a set"
+    ],
+    "definition": "The language in which a set has a translated name, held in set_translations.language. The vocabulary is the 10 observed language names.",
+    "evidence": [
+      "ev_st_languages"
+    ],
+    "id": "t_set_translation_language",
+    "name": "Set Translation Language",
+    "scope": "Questions tying a set to a language, such as the Simplified Chinese translation of a set name.",
+    "type": "dimension"
+  },
+  {
+    "aliases": [
+      "has a translation",
+      "available in a language",
+      "foreign language translation",
+      "translation"
+    ],
+    "definition": "Whether a card printing has a foreign-language record at all, i.e. whether a row exists in foreign_data whose uuid matches the printing. A printing with no such row exists only in its original language.",
+    "evidence": [
+      "ev_fd_join",
+      "ev_fd_orphans"
+    ],
+    "id": "t_foreign_language_availability",
+    "name": "Foreign Language Availability",
+    "scope": "Questions asking how many or which cards are available in, or have a translation in, some language.",
+    "type": "concept"
+  },
+  {
+    "aliases": [
+      "promo",
+      "promotional printing",
+      "isPromo"
+    ],
+    "definition": "A card printing distributed as a promotion rather than through normal set distribution, flagged by cards.isPromo = 1 (5588 printings).",
+    "evidence": [
+      "ev_promo_count"
+    ],
+    "id": "t_promotional_printing",
+    "name": "Promotional Printing",
+    "scope": "Questions asking whether a card printing is a promotional printing.",
+    "type": "concept"
+  },
+  {
+    "aliases": [
+      "textless",
+      "does not have a text box",
+      "no text box",
+      "without a text box"
+    ],
+    "definition": "A card printing whose rules text box is absent, flagged by cards.isTextless = 1 (115 printings).",
+    "evidence": [
+      "ev_textless_count",
+      "ev_story_spotlight_vs_textless"
+    ],
+    "id": "t_textless_card",
+    "name": "Textless Card",
+    "scope": "Questions about cards that do not have a text box.",
+    "type": "concept"
+  },
+  {
+    "aliases": [
+      "story spotlight",
+      "Story Spotlight cards",
+      "isStorylight",
+      "isStorySpotlight"
+    ],
+    "definition": "A card printing marked as part of the set's story spotlight programme, flagged by cards.isStorySpotlight = 1 (104 printings).",
+    "evidence": [
+      "ev_story_count",
+      "ev_story_spotlight_vs_textless"
+    ],
+    "id": "t_story_spotlight_card",
+    "name": "Story Spotlight Card",
+    "scope": "Questions about Story Spotlight cards.",
+    "type": "concept"
+  },
+  {
+    "aliases": [
+      "powerful foil",
+      "powerful foils",
+      "incredibly powerful",
+      "foil availability",
+      "cardKingdomFoilId",
+      "foil"
+    ],
+    "definition": "Whether a card printing is listed as a foil by the Card Kingdom store, recorded through the pair of columns cards.cardKingdomFoilId and cards.cardKingdomId. The workload uses the wording 'powerful foil' and 'incredibly powerful' for printings where both identifiers are present.",
+    "evidence": [
+      "ev_card_kingdom_ids",
+      "ev_coldsnap_foil"
+    ],
+    "id": "t_card_kingdom_foil_availability",
+    "name": "Card Kingdom Foil Availability",
+    "scope": "Questions about foil availability or about cards described as powerful/incredibly powerful foils.",
+    "type": "concept"
+  },
+  {
+    "aliases": [
+      "only available outside the United States",
+      "foreign only",
+      "isForeignOnly",
+      "outside the United States"
+    ],
+    "definition": "Whether a set was released only outside the United States, flagged by sets.isForeignOnly = 1 (16 of 551 sets).",
+    "evidence": [
+      "ev_set_foreign_only"
+    ],
+    "id": "t_set_foreign_only",
+    "name": "Set Foreign-Only Availability",
+    "scope": "Questions about whether a set or a card's set is available only outside the United States.",
+    "type": "concept"
+  },
+  {
+    "aliases": [
+      "how many cards",
+      "count of cards",
+      "number of cards",
+      "sum of cards"
+    ],
+    "definition": "The number of card printings satisfying a stated condition, counted over the cards table at printing grain.",
+    "evidence": [
+      "ev_cards_grain",
+      "ev_border_color_dist",
+      "ev_power_dist"
+    ],
+    "id": "t_card_count",
+    "name": "Card Count",
+    "scope": "Questions asking how many cards satisfy a condition, and the numerator and denominator of workload percentage questions.",
+    "type": "metric"
+  },
+  {
+    "aliases": [
+      "percentage",
+      "percent",
+      "percentage of the cards",
+      "ratio"
+    ],
+    "definition": "The share of card printings satisfying a condition, expressed as a percentage. It is a ratio whose denominator is the population named by the question, which is not always all 56822 printings: for a set-scoped question the denominator is that set's printings.",
+    "evidence": [
+      "ev_borderless_percentage",
+      "ev_coldsnap_foil"
+    ],
+    "id": "t_card_percentage",
+    "name": "Card Percentage",
+    "scope": "Questions asking for the percentage of a described category of cards.",
+    "type": "metric"
+  },
+  {
+    "aliases": [
+      "most ruling information",
+      "number of rulings",
+      "count of rulings"
+    ],
+    "definition": "The number of ruling records attached to a card, obtained by counting rows of rulings that share the card's uuid. Because printings of one game piece have separate uuids, the count is per printing.",
+    "evidence": [
+      "ev_rulings_max"
+    ],
+    "id": "t_ruling_count",
+    "name": "Ruling Count",
+    "scope": "Questions ranking or selecting cards by how much ruling information they have.",
+    "type": "metric"
+  }
+]

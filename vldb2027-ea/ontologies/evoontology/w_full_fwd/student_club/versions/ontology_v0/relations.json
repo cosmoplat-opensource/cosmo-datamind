@@ -1,0 +1,178 @@
+[
+  {
+    "id": "rel_member_major",
+    "source": "term_member",
+    "relation_type": "association",
+    "target": "term_major",
+    "connection_condition": "member.link_to_major corresponds to major.major_id; one of the 33 members has no linked major",
+    "description": "A member is enrolled in at most one major. This is a reference from member to major, not a type-of or part-of relation.",
+    "evidence": [
+      "evidence_member_major_join"
+    ]
+  },
+  {
+    "id": "rel_college_department",
+    "source": "term_college",
+    "relation_type": "composition",
+    "target": "term_department",
+    "connection_condition": "major.department and major.college co-occur on the same major row; every department maps to exactly one college",
+    "description": "A college is composed of departments; every academic department belongs to exactly one college.",
+    "evidence": [
+      "evidence_major_units"
+    ]
+  },
+  {
+    "id": "rel_department_major",
+    "source": "term_department",
+    "relation_type": "composition",
+    "target": "term_major",
+    "connection_condition": "each major row carries the department that offers it; a major belongs to exactly one department",
+    "description": "A department is composed of the majors it offers; each major belongs to exactly one department.",
+    "evidence": [
+      "evidence_major_units"
+    ]
+  },
+  {
+    "id": "rel_event_budget",
+    "source": "term_event",
+    "relation_type": "composition",
+    "target": "term_budget_line",
+    "connection_condition": "budget.link_to_event corresponds to event.event_id",
+    "description": "An event is composed of its budget lines; a budget line cannot exist without an event, and every budget line links to exactly one event.",
+    "evidence": [
+      "evidence_budget_columns"
+    ]
+  },
+  {
+    "id": "rel_budget_expense",
+    "source": "term_budget_line",
+    "relation_type": "composition",
+    "target": "term_expense",
+    "connection_condition": "expense.link_to_budget corresponds to budget.budget_id",
+    "description": "A budget line is composed of the expense records charged against it; every expense links to exactly one budget line.",
+    "evidence": [
+      "evidence_expense_columns"
+    ]
+  },
+  {
+    "id": "rel_member_expense",
+    "source": "term_member",
+    "relation_type": "composition",
+    "target": "term_expense",
+    "connection_condition": "expense.link_to_member corresponds to member.member_id",
+    "description": "An expense is attributed to the member who incurred it; the expense record identifies its member.",
+    "evidence": [
+      "evidence_expense_columns"
+    ]
+  },
+  {
+    "id": "rel_member_income",
+    "source": "term_member",
+    "relation_type": "composition",
+    "target": "term_income",
+    "connection_condition": "income.link_to_member corresponds to member.member_id",
+    "description": "Income records such as dues are attributed to the member they were received from.",
+    "evidence": [
+      "evidence_income_columns"
+    ]
+  },
+  {
+    "id": "rel_member_attendance",
+    "source": "term_member",
+    "relation_type": "composition",
+    "target": "term_attendance",
+    "connection_condition": "attendance.link_to_member corresponds to member.member_id",
+    "description": "An attendance record belongs to one member; it cannot exist without that member.",
+    "evidence": [
+      "evidence_attendance_columns"
+    ]
+  },
+  {
+    "id": "rel_event_attendance",
+    "source": "term_event",
+    "relation_type": "composition",
+    "target": "term_attendance",
+    "connection_condition": "attendance.link_to_event corresponds to event.event_id",
+    "description": "An attendance record belongs to one event; it cannot exist without that event.",
+    "evidence": [
+      "evidence_attendance_columns"
+    ]
+  },
+  {
+    "id": "rel_full_name_derivation",
+    "source": "term_member",
+    "relation_type": "derivation",
+    "target": "term_member_full_name",
+    "connection_condition": "member.first_name and member.last_name",
+    "description": "A member's full name is derived by joining the member's first name and last name with a single space.",
+    "evidence": [
+      "evidence_full_name_parts"
+    ]
+  },
+  {
+    "id": "rel_event_year_derivation",
+    "source": "term_event_date",
+    "relation_type": "derivation",
+    "target": "term_event_year",
+    "connection_condition": "the leading four characters of event.event_date",
+    "description": "The event year is derived from the year portion of the event date string.",
+    "evidence": [
+      "evidence_event_date_format"
+    ]
+  },
+  {
+    "id": "rel_spent_derivation",
+    "source": "term_expense_cost",
+    "relation_type": "derivation",
+    "target": "term_amount_spent",
+    "connection_condition": "sum of expense.cost grouped by expense.link_to_budget equals budget.spent for the same budget line",
+    "description": "The amount spent on a budget line is derived as the total cost of the expenses charged against that budget line; the two agree for all 52 budget lines with no mismatch.",
+    "evidence": [
+      "evidence_budget_spent_equals_expense_cost"
+    ]
+  },
+  {
+    "id": "rel_event_status_equivalence",
+    "source": "term_event_status",
+    "relation_type": "equivalence",
+    "target": "term_budget_event_status",
+    "connection_condition": "budget.event_status equals event.status for all 52 budget lines joined to their event",
+    "description": "The status carried on a budget line expresses the same business concept as the event's own status, so either column can represent event status.",
+    "evidence": [
+      "evidence_budget_event_status_match"
+    ]
+  },
+  {
+    "id": "rel_budget_category_event_type",
+    "source": "term_budget_category",
+    "relation_type": "association",
+    "target": "term_event_type",
+    "description": "Budget categories (Food, Parking, Speaker Gifts, ...) and event types (Meeting, Guest Speaker, ...) are two different classification axes that both describe club activity and frequently co-occur, but no direct structural link exists between them.",
+    "connection_condition": "",
+    "evidence": [
+      "evidence_budget_category_event_type_crosstab"
+    ]
+  },
+  {
+    "id": "rel_budgeted_spent",
+    "source": "term_amount_budgeted",
+    "relation_type": "association",
+    "target": "term_amount_spent",
+    "connection_condition": "both are monetary columns of the same budget row (budget.amount and budget.spent)",
+    "description": "Budgeted amount and amount spent are two monetary measures of the same budget line. They are related but distinct measures and must not be treated as equivalent.",
+    "evidence": [
+      "evidence_budget_columns"
+    ]
+  },
+  {
+    "id": "rel_income_source_member",
+    "source": "term_income_source",
+    "relation_type": "association",
+    "target": "term_member",
+    "connection_condition": "income.link_to_member corresponds to member.member_id, so per-member income can be traced to its source",
+    "description": "Income sources such as dues are recorded against individual members, linking the source of funds to the member who provided them.",
+    "evidence": [
+      "evidence_income_source_values"
+    ]
+  }
+]

@@ -1,0 +1,441 @@
+[
+  {
+    "id": "m_client",
+    "term_id": "client",
+    "database_source": "financial",
+    "table": "client",
+    "column": "",
+    "aggregation_semantics": "",
+    "grain": "one row per client",
+    "validation": "client.client_id is the primary key; 5,369 rows.",
+    "evidence_refs": [
+      "ev_row_counts",
+      "ev_schema_financial"
+    ]
+  },
+  {
+    "id": "m_account",
+    "term_id": "account",
+    "database_source": "financial",
+    "table": "account",
+    "column": "",
+    "aggregation_semantics": "",
+    "grain": "one row per account",
+    "validation": "account.account_id is the primary key; 4,500 rows.",
+    "evidence_refs": [
+      "ev_row_counts",
+      "ev_schema_financial"
+    ]
+  },
+  {
+    "id": "m_district",
+    "term_id": "district",
+    "database_source": "financial",
+    "table": "district",
+    "column": "",
+    "aggregation_semantics": "",
+    "grain": "one row per district",
+    "validation": "district.district_id is the primary key; 77 rows.",
+    "evidence_refs": [
+      "ev_row_counts",
+      "ev_district_sample"
+    ]
+  },
+  {
+    "id": "m_disposition",
+    "term_id": "disposition",
+    "database_source": "financial",
+    "table": "disp",
+    "column": "",
+    "aggregation_semantics": "",
+    "grain": "one row per client-account role assignment",
+    "validation": "disp.disp_id is the primary key; 5,369 rows.",
+    "evidence_refs": [
+      "ev_row_counts",
+      "ev_disp_type"
+    ]
+  },
+  {
+    "id": "m_loan",
+    "term_id": "loan",
+    "database_source": "financial",
+    "table": "loan",
+    "column": "",
+    "aggregation_semantics": "",
+    "grain": "one row per loan contract",
+    "validation": "loan.loan_id is the primary key; 682 rows across 682 distinct accounts.",
+    "evidence_refs": [
+      "ev_row_counts",
+      "ev_loans_per_account"
+    ]
+  },
+  {
+    "id": "m_transaction",
+    "term_id": "transaction",
+    "database_source": "financial",
+    "table": "trans",
+    "column": "",
+    "aggregation_semantics": "",
+    "grain": "one row per transaction",
+    "validation": "trans.trans_id is the primary key; 1,056,320 rows.",
+    "evidence_refs": [
+      "ev_row_counts",
+      "ev_schema_financial"
+    ]
+  },
+  {
+    "id": "m_card",
+    "term_id": "card",
+    "database_source": "financial",
+    "table": "card",
+    "column": "",
+    "aggregation_semantics": "",
+    "grain": "one row per issued card",
+    "validation": "card.card_id is the primary key; 892 rows.",
+    "evidence_refs": [
+      "ev_row_counts",
+      "ev_card_types"
+    ]
+  },
+  {
+    "id": "m_standing_order",
+    "term_id": "standing_order",
+    "database_source": "financial",
+    "table": "order",
+    "column": "",
+    "aggregation_semantics": "",
+    "grain": "one row per recurring order",
+    "validation": "order.order_id is the primary key; 6,471 rows.",
+    "evidence_refs": [
+      "ev_row_counts",
+      "ev_order_k_symbol"
+    ]
+  },
+  {
+    "id": "m_statement_frequency",
+    "term_id": "statement_frequency",
+    "database_source": "financial",
+    "table": "account",
+    "column": "frequency",
+    "semantic_filter": "no filter needed; every account carries exactly one issuance cadence",
+    "aggregation_semantics": "categorical attribute of an account; counts are taken over accounts",
+    "grain": "one value per account",
+    "validation": "Three distinct values observed; column is NOT NULL.",
+    "evidence_refs": [
+      "ev_account_frequency"
+    ]
+  },
+  {
+    "id": "m_loan_status",
+    "term_id": "loan_status",
+    "database_source": "financial",
+    "table": "loan",
+    "column": "status",
+    "aggregation_semantics": "categorical attribute of a loan contract; counts are taken over contracts",
+    "grain": "one value per loan contract",
+    "validation": "Four distinct single-letter values observed; column is NOT NULL.",
+    "evidence_refs": [
+      "ev_loan_status"
+    ]
+  },
+  {
+    "id": "m_transaction_direction",
+    "term_id": "transaction_direction",
+    "database_source": "financial",
+    "table": "trans",
+    "column": "type",
+    "aggregation_semantics": "categorical attribute of a transaction",
+    "grain": "one value per transaction",
+    "validation": "Three distinct values observed.",
+    "evidence_refs": [
+      "ev_trans_type"
+    ]
+  },
+  {
+    "id": "m_transaction_operation",
+    "term_id": "transaction_operation",
+    "database_source": "financial",
+    "table": "trans",
+    "column": "operation",
+    "semantic_filter": "NULL operation means no operation mode was recorded",
+    "aggregation_semantics": "categorical attribute of a transaction",
+    "grain": "one value per transaction",
+    "validation": "Five non-null distinct values plus NULL observed.",
+    "evidence_refs": [
+      "ev_trans_operation"
+    ]
+  },
+  {
+    "id": "m_cash_withdrawal",
+    "term_id": "cash_withdrawal",
+    "database_source": "financial",
+    "table": "trans",
+    "column": "operation",
+    "semantic_filter": "only rows whose operation code is VYBER",
+    "aggregation_semantics": "count or sum over the rows selected by the operation code",
+    "grain": "one row per cash withdrawal",
+    "validation": "434,918 rows with operation code VYBER, spanning both VYDAJ and VYBER direction values.",
+    "evidence_refs": [
+      "ev_vyber_cross",
+      "ev_trans_operation"
+    ]
+  },
+  {
+    "id": "m_transaction_purpose_code",
+    "term_id": "transaction_purpose_code",
+    "database_source": "financial",
+    "table": "trans",
+    "column": "k_symbol",
+    "semantic_filter": "NULL and the single-space string both mean no purpose recorded",
+    "aggregation_semantics": "categorical attribute of a transaction",
+    "grain": "one value per transaction",
+    "validation": "Eight non-null distinct values including a single-space placeholder.",
+    "evidence_refs": [
+      "ev_trans_k_symbol",
+      "ev_trans_null_profile"
+    ]
+  },
+  {
+    "id": "m_standing_order_purpose_code",
+    "term_id": "standing_order_purpose_code",
+    "database_source": "financial",
+    "table": "order",
+    "column": "k_symbol",
+    "semantic_filter": "the empty string means no purpose recorded",
+    "aggregation_semantics": "categorical attribute of a recurring order",
+    "grain": "one value per recurring order",
+    "validation": "Four non-null distinct values plus empty string.",
+    "evidence_refs": [
+      "ev_order_k_symbol"
+    ]
+  },
+  {
+    "id": "m_disposition_role",
+    "term_id": "disposition_role",
+    "database_source": "financial",
+    "table": "disp",
+    "column": "type",
+    "aggregation_semantics": "categorical attribute of a disposition record",
+    "grain": "one value per disposition record",
+    "validation": "Two distinct values observed; every account has exactly one OWNER disposition.",
+    "evidence_refs": [
+      "ev_disp_type",
+      "ev_owner_per_account"
+    ]
+  },
+  {
+    "id": "m_client_gender",
+    "term_id": "client_gender",
+    "database_source": "financial",
+    "table": "client",
+    "column": "gender",
+    "aggregation_semantics": "categorical attribute of a client; counts are taken over clients",
+    "grain": "one value per client",
+    "validation": "Two distinct values observed.",
+    "evidence_refs": [
+      "ev_client_gender"
+    ]
+  },
+  {
+    "id": "m_district_name",
+    "term_id": "district_name",
+    "database_source": "financial",
+    "table": "district",
+    "column": "A2",
+    "aggregation_semantics": "categorical attribute of a district",
+    "grain": "one value per district",
+    "validation": "77 distinct values, one per district row, e.g. 'Hl.m. Praha', 'Benesov'.",
+    "evidence_refs": [
+      "ev_district_sample"
+    ]
+  },
+  {
+    "id": "m_district_region",
+    "term_id": "district_region",
+    "database_source": "financial",
+    "table": "district",
+    "column": "A3",
+    "aggregation_semantics": "categorical attribute of a district",
+    "grain": "one value per district",
+    "validation": "8 distinct values over 77 districts.",
+    "evidence_refs": [
+      "ev_district_regions"
+    ]
+  },
+  {
+    "id": "m_account_opening_district",
+    "term_id": "account_opening_district",
+    "database_source": "financial",
+    "table": "account",
+    "column": "district_id",
+    "semantic_filter": "the district of the branch where the account was opened",
+    "aggregation_semantics": "reference to a district record; not additive",
+    "grain": "one district per account",
+    "validation": "Foreign key to district; differs from the client's residence district for 494 accounts.",
+    "evidence_refs": [
+      "ev_fk_integrity",
+      "ev_district_id_divergence"
+    ]
+  },
+  {
+    "id": "m_client_residence_district",
+    "term_id": "client_residence_district",
+    "database_source": "financial",
+    "table": "client",
+    "column": "district_id",
+    "semantic_filter": "the district in which the client resides",
+    "aggregation_semantics": "reference to a district record; not additive",
+    "grain": "one district per client",
+    "validation": "Foreign key to district; differs from the account branch district for 494 accounts when joined through disp.",
+    "evidence_refs": [
+      "ev_fk_integrity",
+      "ev_district_id_divergence"
+    ]
+  },
+  {
+    "id": "m_account_opening_date",
+    "term_id": "account_opening_date",
+    "database_source": "financial",
+    "table": "account",
+    "column": "date",
+    "aggregation_semantics": "temporal attribute; compare or group over time",
+    "grain": "one date per account",
+    "validation": "ISO YYYY-MM-DD text; range 1993-01-01 to 1997-12-29.",
+    "evidence_refs": [
+      "ev_date_ranges",
+      "ev_accounts_per_year"
+    ]
+  },
+  {
+    "id": "m_loan_approval_date",
+    "term_id": "loan_approval_date",
+    "database_source": "financial",
+    "table": "loan",
+    "column": "date",
+    "aggregation_semantics": "temporal attribute; compare or group over time",
+    "grain": "one date per loan contract",
+    "validation": "ISO YYYY-MM-DD text; range 1993-07-05 to 1998-12-08.",
+    "evidence_refs": [
+      "ev_date_ranges"
+    ]
+  },
+  {
+    "id": "m_client_birth_date",
+    "term_id": "client_birth_date",
+    "database_source": "financial",
+    "table": "client",
+    "column": "birth_date",
+    "aggregation_semantics": "temporal attribute; compare or group over time",
+    "grain": "one date per client",
+    "validation": "ISO YYYY-MM-DD text; range 1911-08-20 to 1987-09-27.",
+    "evidence_refs": [
+      "ev_date_ranges"
+    ]
+  },
+  {
+    "id": "m_district_average_salary",
+    "term_id": "district_average_salary",
+    "database_source": "financial",
+    "table": "district",
+    "column": "A11",
+    "aggregation_semantics": "precomputed district-level mean; not additive across districts",
+    "grain": "one value per district",
+    "validation": "Integer range 8,110 to 12,541; maximum is 'Hl.m. Praha' at 12,541.",
+    "evidence_refs": [
+      "ev_district_a11"
+    ]
+  },
+  {
+    "id": "m_loan_amount",
+    "term_id": "loan_amount",
+    "database_source": "financial",
+    "table": "loan",
+    "column": "amount",
+    "aggregation_semantics": "sum of individual contract amounts",
+    "grain": "one amount per loan contract",
+    "validation": "Integer range 4,980 to 590,820.",
+    "evidence_refs": [
+      "ev_loan_amounts"
+    ]
+  },
+  {
+    "id": "m_loan_duration",
+    "term_id": "loan_duration",
+    "database_source": "financial",
+    "table": "loan",
+    "column": "duration",
+    "aggregation_semantics": "expressed in months; not additive across contracts",
+    "grain": "one duration per loan contract",
+    "validation": "Only the values 12, 24, 36, 48 and 60 occur, confirming a monthly unit.",
+    "evidence_refs": [
+      "ev_loan_duration"
+    ]
+  },
+  {
+    "id": "m_loan_payment",
+    "term_id": "loan_payment",
+    "database_source": "financial",
+    "table": "loan",
+    "column": "payments",
+    "aggregation_semantics": "sum of periodic instalments when total repayment is required",
+    "grain": "one instalment amount per loan contract",
+    "validation": "Real-valued range 319 to 9,910.",
+    "evidence_refs": [
+      "ev_loan_amounts"
+    ]
+  },
+  {
+    "id": "m_transaction_amount",
+    "term_id": "transaction_amount",
+    "database_source": "financial",
+    "table": "trans",
+    "column": "amount",
+    "aggregation_semantics": "sum of individual transaction amounts",
+    "grain": "one amount per transaction",
+    "validation": "Integer range 0 to 87,400.",
+    "evidence_refs": [
+      "ev_trans_amount_range"
+    ]
+  },
+  {
+    "id": "m_transaction_balance",
+    "term_id": "transaction_balance",
+    "database_source": "financial",
+    "table": "trans",
+    "column": "balance",
+    "aggregation_semantics": "point-in-time balance; take the value at a chosen time rather than summing",
+    "grain": "one balance per transaction",
+    "validation": "Integer range -41,126 to 209,637.",
+    "evidence_refs": [
+      "ev_trans_amount_range"
+    ]
+  },
+  {
+    "id": "m_account_loan_total_amount",
+    "term_id": "account_loan_total_amount",
+    "database_source": "financial",
+    "table": "loan",
+    "column": "amount",
+    "semantic_filter": "aggregated over the loan contracts of one account",
+    "aggregation_semantics": "sum of the contract amounts grouped by account",
+    "grain": "one total per account",
+    "validation": "Every account holds at most one contract, so the total equals that contract's amount for the 682 accounts that have a loan.",
+    "evidence_refs": [
+      "ev_loans_per_account"
+    ]
+  },
+  {
+    "id": "m_conditional_share_percentage",
+    "term_id": "conditional_share_percentage",
+    "database_source": "financial",
+    "table": "",
+    "column": "",
+    "semantic_filter": "a subgroup defined by the question and a base population defined by the question",
+    "aggregation_semantics": "conditioned measure divided by the base measure, multiplied by 100; the measure is a record count or a summed amount",
+    "grain": "one percentage per question-defined population",
+    "validation": "Two measure variants are defined by the construction workload: count-based and amount-based.",
+    "evidence_refs": [
+      "ev_workload_enum_hints"
+    ]
+  }
+]

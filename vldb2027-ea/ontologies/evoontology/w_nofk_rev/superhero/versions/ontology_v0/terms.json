@@ -1,0 +1,253 @@
+[
+  {
+    "id": "superhero",
+    "name": "Superhero",
+    "type": "entity",
+    "definition": "An individual comic-book character record in the superhero universe. It is the central entity to which publishers, named powers, capability attributes, appearance dimensions and physical measurements all attach.",
+    "scope": "Covers all 750 character records. The table name does not restrict the rows to heroic characters: villainous, neutral and unclassified characters are stored the same way.",
+    "aliases": [
+      "hero",
+      "super hero",
+      "character",
+      "superheroes",
+      "heroes"
+    ],
+    "evidence": [
+      "ev_superhero_counts",
+      "ev_superhero_profile_shape"
+    ]
+  },
+  {
+    "id": "superhero_name",
+    "name": "Superhero Name (Codename)",
+    "type": "concept",
+    "definition": "The public codename by which a character is known, stored as free text. It is the name analytical questions most often use to address a specific character.",
+    "scope": "Populated for all 750 records, but not unique: several codenames are shared by more than one character record.",
+    "aliases": [
+      "super hero name",
+      "hero name",
+      "name of superhero",
+      "superhero_name"
+    ],
+    "evidence": [
+      "ev_superhero_name_duplicates",
+      "ev_hero_identity_example"
+    ]
+  },
+  {
+    "id": "hero_full_name",
+    "name": "Hero Full Name (Civilian Identity)",
+    "type": "concept",
+    "definition": "The in-universe personal name of a character, recorded separately from the public codename. Questions address the same character through either field.",
+    "scope": "Populated for 628 of 750 records; for 52 of those it repeats the codename. Not unique: 20 personal names are shared, and one shared value is the empty string.",
+    "aliases": [
+      "real name",
+      "civilian name",
+      "full name",
+      "personal name"
+    ],
+    "evidence": [
+      "ev_name_fields_relationship",
+      "ev_full_name_duplicates"
+    ]
+  },
+  {
+    "id": "hero_id",
+    "name": "Hero Identifier",
+    "type": "concept",
+    "definition": "The numeric identifier of a character record. It is the primary key of the character table and the reference key used by the power-assignment and attribute-score tables, so it is the only unambiguous way to address one character.",
+    "scope": "Unique per character; the same numeric value denotes the character across the character, power-assignment and attribute-score tables.",
+    "aliases": [
+      "hero_id",
+      "hero id",
+      "character id",
+      "superhero id"
+    ],
+    "evidence": [
+      "ev_superhero_counts",
+      "ev_hero_identity_example"
+    ]
+  },
+  {
+    "id": "publisher",
+    "name": "Publisher",
+    "type": "entity",
+    "definition": "A credited publishing entity or rights-holder for a character. The vocabulary mixes comic-book publishers with studios, broadcasters, authors and franchise titles.",
+    "scope": "25 credited values, each character being credited to at most one publisher.",
+    "aliases": [
+      "publisher_name",
+      "published by",
+      "publishing company"
+    ],
+    "evidence": [
+      "ev_publisher_values",
+      "ev_publisher_distribution"
+    ]
+  },
+  {
+    "id": "gender",
+    "name": "Gender",
+    "type": "dimension",
+    "definition": "The categorical gender of a character, held in a small lookup table in which every code has an explicit human-readable label, including a distinct code for unspecified.",
+    "scope": "Three codes, applied to all 750 characters with no missing references.",
+    "aliases": [
+      "gender",
+      "gender_id",
+      "male",
+      "female"
+    ],
+    "evidence": [
+      "ev_gender_values_and_distribution"
+    ]
+  },
+  {
+    "id": "alignment",
+    "name": "Alignment (Moral Alignment)",
+    "type": "dimension",
+    "definition": "The moral alignment of a character. This is the dimension that separates heroic from villainous characters in analytical questions.",
+    "scope": "Four codes; three are used by character records and one, plus NULL, marks characters with no stated alignment.",
+    "aliases": [
+      "alignment_id",
+      "hero or villain",
+      "good",
+      "bad",
+      "villain"
+    ],
+    "evidence": [
+      "ev_alignment_values_and_distribution"
+    ]
+  },
+  {
+    "id": "attribute",
+    "name": "Capability Attribute",
+    "type": "category",
+    "definition": "One of the named capability dimensions on which a character is scored: Intelligence, Strength, Speed, Durability, Power and Combat.",
+    "scope": "Exactly six named attributes, each recorded for the same set of characters.",
+    "aliases": [
+      "attribute_name",
+      "attribute name",
+      "capability",
+      "stat"
+    ],
+    "evidence": [
+      "ev_attribute_names",
+      "ev_hero_attribute_shape"
+    ]
+  },
+  {
+    "id": "attribute_value",
+    "name": "Attribute Value (Capability Score)",
+    "type": "metric",
+    "definition": "The integer score a character receives on one named capability attribute. A score is interpretable only together with the attribute it was recorded for; the same number means different things under different attributes.",
+    "scope": "Integer scores between 5 and 100, recorded per character per attribute. Absence of a score means the attribute was not recorded for that character.",
+    "aliases": [
+      "attribute_value",
+      "score",
+      "strength value",
+      "durability value",
+      "stat value"
+    ],
+    "evidence": [
+      "ev_hero_attribute_shape",
+      "ev_attribute_value_scale"
+    ]
+  },
+  {
+    "id": "peak_attribute_score",
+    "name": "Peak Attribute Score",
+    "type": "metric",
+    "definition": "The highest capability score observed for one named attribute across the characters that have that attribute recorded. It is the quantity behind questions asking for the strongest or most durable character, and the symmetric minimum behind questions asking for the weakest or slowest.",
+    "scope": "Derived within a single named attribute; not meaningful across attributes because the six scales are not comparable.",
+    "aliases": [
+      "most strength",
+      "highest strength",
+      "best attribute",
+      "most durable",
+      "slowest"
+    ],
+    "evidence": [
+      "ev_peak_attribute_value"
+    ]
+  },
+  {
+    "id": "superpower",
+    "name": "Superpower",
+    "type": "entity",
+    "definition": "A named special ability drawn from a controlled catalogue of distinct powers. A character may hold several abilities and an ability may be held by many characters.",
+    "scope": "167 distinct named abilities; every catalogue entry is held by at least one character.",
+    "aliases": [
+      "power",
+      "power_name",
+      "super power",
+      "superpowers",
+      "ability"
+    ],
+    "evidence": [
+      "ev_superpower_references",
+      "ev_power_attribute_name_collision"
+    ]
+  },
+  {
+    "id": "height_cm",
+    "name": "Height",
+    "type": "metric",
+    "definition": "The height of a character expressed in centimetres.",
+    "scope": "Unit is centimetres. The value 0 and NULL both mean the height was not recorded, and non-human characters produce values far outside human ranges.",
+    "aliases": [
+      "height",
+      "height_cm",
+      "tall"
+    ],
+    "evidence": [
+      "ev_height_sentinel_zero"
+    ]
+  },
+  {
+    "id": "weight_kg",
+    "name": "Weight",
+    "type": "metric",
+    "definition": "The weight of a character expressed in kilograms.",
+    "scope": "Unit is kilograms. The value 0 and NULL both mean the weight was not recorded, and non-human characters produce values far outside human ranges.",
+    "aliases": [
+      "weight",
+      "weight_kg",
+      "heavy"
+    ],
+    "evidence": [
+      "ev_weight_sentinel_zero"
+    ]
+  },
+  {
+    "id": "colour",
+    "name": "Colour",
+    "type": "dimension",
+    "definition": "A colour vocabulary used for a character's appearance. The same set of colour values underlies eye colour, hair colour and skin colour, so one concept grounds three separate appearance dimensions.",
+    "scope": "35 colour values, one of which explicitly encodes the absence of a colour. Used by the eye, hair and skin colour references.",
+    "aliases": [
+      "color",
+      "eye color",
+      "hair color",
+      "skin color",
+      "eyecolour",
+      "skin colour"
+    ],
+    "evidence": [
+      "ev_colour_values",
+      "ev_no_colour_usage"
+    ]
+  },
+  {
+    "id": "race",
+    "name": "Race (Species)",
+    "type": "dimension",
+    "definition": "The species or origin category of a character.",
+    "scope": "61 records; one of them stores a placeholder rather than a real species.",
+    "aliases": [
+      "race_id",
+      "species"
+    ],
+    "evidence": [
+      "ev_race_values_placeholder"
+    ]
+  }
+]

@@ -1,0 +1,354 @@
+[
+  {
+    "connection_condition": "League.country_id references Country.id",
+    "description": "A country is composed of the leagues played in it. In this database the correspondence is one-to-one, so each country holds exactly one league.",
+    "evidence": [
+      "evidence_004"
+    ],
+    "id": "rel_country_composes_league",
+    "relation_type": "composition",
+    "source": "term_country",
+    "target": "term_league"
+  },
+  {
+    "connection_condition": "Match.league_id references League.id",
+    "description": "A league is composed of the matches played in it; a match cannot be interpreted without the league it belongs to.",
+    "evidence": [
+      "evidence_004"
+    ],
+    "id": "rel_league_composes_match",
+    "relation_type": "composition",
+    "source": "term_league",
+    "target": "term_match"
+  },
+  {
+    "connection_condition": "Match.season labels the season of the match",
+    "description": "A season is composed of the matches played within it; every match belongs to exactly one season.",
+    "evidence": [
+      "evidence_003"
+    ],
+    "id": "rel_season_composes_match",
+    "relation_type": "composition",
+    "source": "term_season",
+    "target": "term_match"
+  },
+  {
+    "connection_condition": "Match.home_team_api_id and Match.away_team_api_id reference Team.team_api_id",
+    "description": "A team's campaign is composed of the matches it played; every match is contributed by exactly two teams, one as home team and one as away team.",
+    "evidence": [
+      "evidence_016"
+    ],
+    "id": "rel_team_composes_match",
+    "relation_type": "composition",
+    "source": "term_team",
+    "target": "term_match"
+  },
+  {
+    "connection_condition": "Match.home_team_goal holds the home score of that row",
+    "description": "The home team goal count is a component of the match result; it has no meaning apart from its match.",
+    "evidence": [
+      "evidence_020"
+    ],
+    "id": "rel_match_composes_home_goal",
+    "relation_type": "composition",
+    "source": "term_match",
+    "target": "term_home_team_goal"
+  },
+  {
+    "connection_condition": "Match.away_team_goal holds the away score of that row",
+    "description": "The away team goal count is a component of the match result; it has no meaning apart from its match.",
+    "evidence": [
+      "evidence_020"
+    ],
+    "id": "rel_match_composes_away_goal",
+    "relation_type": "composition",
+    "source": "term_match",
+    "target": "term_away_team_goal"
+  },
+  {
+    "connection_condition": "",
+    "description": "A draw is a specific kind of match outcome, so the set of drawn matches is a subset of all matches.",
+    "evidence": [
+      "evidence_020"
+    ],
+    "id": "rel_match_to_draw",
+    "relation_type": "hierarchy",
+    "source": "term_match",
+    "target": "term_draw_result"
+  },
+  {
+    "connection_condition": "A match is a draw when its home team goal count equals its away team goal count",
+    "description": "The draw outcome is derived by comparing the two goal counts of the match rather than being stored as a flag; counting draws means counting matches whose two goal counts are equal.",
+    "evidence": [
+      "evidence_020"
+    ],
+    "id": "rel_draw_derivation",
+    "relation_type": "derivation",
+    "source": "term_home_team_goal",
+    "target": "term_draw_result"
+  },
+  {
+    "connection_condition": "Player_Attributes.player_api_id references Player.player_api_id",
+    "description": "A player is described by a series of dated attribute snapshots; a snapshot has no meaning without the player it rates.",
+    "evidence": [
+      "evidence_005"
+    ],
+    "id": "rel_player_composes_attribute_snapshot",
+    "relation_type": "composition",
+    "source": "term_player",
+    "target": "term_player_attribute_snapshot"
+  },
+  {
+    "connection_condition": "Player.height holds the measurement on the player row",
+    "description": "Height is a component measurement of the player record.",
+    "evidence": [
+      "evidence_011"
+    ],
+    "id": "rel_player_composes_height",
+    "relation_type": "composition",
+    "source": "term_player",
+    "target": "term_player_height"
+  },
+  {
+    "connection_condition": "Player.weight holds the measurement on the player row",
+    "description": "Weight is a component measurement of the player record.",
+    "evidence": [
+      "evidence_011"
+    ],
+    "id": "rel_player_composes_weight",
+    "relation_type": "composition",
+    "source": "term_player",
+    "target": "term_player_weight"
+  },
+  {
+    "connection_condition": "Player.birthday holds the date of birth on the player row",
+    "description": "The date of birth is a component attribute of the player record and is the basis for the player's age.",
+    "evidence": [
+      "evidence_011"
+    ],
+    "id": "rel_player_composes_birthday",
+    "relation_type": "composition",
+    "source": "term_player",
+    "target": "term_player_birthday"
+  },
+  {
+    "connection_condition": "Age is the difference between the current date and the player's date of birth",
+    "description": "The player's age is not stored; it is derived from the date of birth relative to the present date.",
+    "evidence": [
+      "evidence_011"
+    ],
+    "id": "rel_player_age_derivation",
+    "relation_type": "derivation",
+    "source": "term_player_birthday",
+    "target": "term_player_age"
+  },
+  {
+    "connection_condition": "Both identifier spaces are carried on the player record and repeated on each attribute snapshot",
+    "description": "The two identifier spaces name the same players under different naming conventions, so either can identify a player. They are not fully interchangeable as join keys: the API identifier covers every attribute snapshot while the FIFA API identifier leaves a small number of snapshots unmatched.",
+    "evidence": [
+      "evidence_005"
+    ],
+    "id": "rel_player_id_equivalence",
+    "relation_type": "equivalence",
+    "source": "term_player_api_id",
+    "target": "term_player_fifa_api_id"
+  },
+  {
+    "connection_condition": "",
+    "description": "The database-local primary key and the external API identifier both denote the same player, but they are separate numbering systems with no shared values.",
+    "evidence": [
+      "evidence_011"
+    ],
+    "id": "rel_player_surrogate_to_api_id",
+    "relation_type": "association",
+    "source": "term_player_surrogate_id",
+    "target": "term_player_api_id"
+  },
+  {
+    "connection_condition": "Player_Attributes.overall_rating belongs to the snapshot row",
+    "description": "The overall rating is a component score of a player attribute snapshot.",
+    "evidence": [
+      "evidence_017"
+    ],
+    "id": "rel_player_attribute_snapshot_composes_rating",
+    "relation_type": "composition",
+    "source": "term_player_attribute_snapshot",
+    "target": "term_overall_rating"
+  },
+  {
+    "connection_condition": "Player_Attributes.potential belongs to the snapshot row",
+    "description": "The potential score is a component score of a player attribute snapshot.",
+    "evidence": [
+      "evidence_017"
+    ],
+    "id": "rel_player_attribute_snapshot_composes_potential",
+    "relation_type": "composition",
+    "source": "term_player_attribute_snapshot",
+    "target": "term_potential"
+  },
+  {
+    "connection_condition": "The ability columns belong to the snapshot row",
+    "description": "The fine-grained ability scores are component measurements of a player attribute snapshot. This is the parent relation for the ability family; the individually named abilities the workload uses are also attached directly to the snapshot.",
+    "evidence": [
+      "evidence_012"
+    ],
+    "id": "rel_player_attribute_snapshot_composes_skill",
+    "relation_type": "composition",
+    "source": "term_player_attribute_snapshot",
+    "target": "term_player_skill_attribute"
+  },
+  {
+    "connection_condition": "Player_Attributes.heading_accuracy belongs to the snapshot row",
+    "description": "Heading accuracy is a component ability score of a player attribute snapshot.",
+    "evidence": [
+      "evidence_021"
+    ],
+    "id": "rel_player_attribute_snapshot_composes_heading_accuracy",
+    "relation_type": "composition",
+    "source": "term_player_attribute_snapshot",
+    "target": "term_heading_accuracy"
+  },
+  {
+    "connection_condition": "Player_Attributes.jumping belongs to the snapshot row",
+    "description": "Jumping is a component ability score of a player attribute snapshot.",
+    "evidence": [
+      "evidence_021"
+    ],
+    "id": "rel_player_attribute_snapshot_composes_jumping",
+    "relation_type": "composition",
+    "source": "term_player_attribute_snapshot",
+    "target": "term_jumping"
+  },
+  {
+    "connection_condition": "Player_Attributes.long_shots belongs to the snapshot row",
+    "description": "Long shots is a component ability score of a player attribute snapshot.",
+    "evidence": [
+      "evidence_021"
+    ],
+    "id": "rel_player_attribute_snapshot_composes_long_shots",
+    "relation_type": "composition",
+    "source": "term_player_attribute_snapshot",
+    "target": "term_long_shots"
+  },
+  {
+    "connection_condition": "Player_Attributes.crossing belongs to the snapshot row",
+    "description": "Crossing is a component ability score of a player attribute snapshot.",
+    "evidence": [
+      "evidence_021"
+    ],
+    "id": "rel_player_attribute_snapshot_composes_crossing",
+    "relation_type": "composition",
+    "source": "term_player_attribute_snapshot",
+    "target": "term_crossing"
+  },
+  {
+    "connection_condition": "Player_Attributes.finishing belongs to the snapshot row",
+    "description": "Finishing is a component ability score of a player attribute snapshot.",
+    "evidence": [
+      "evidence_021"
+    ],
+    "id": "rel_player_attribute_snapshot_composes_finishing",
+    "relation_type": "composition",
+    "source": "term_player_attribute_snapshot",
+    "target": "term_finishing"
+  },
+  {
+    "connection_condition": "Player_Attributes.curve belongs to the snapshot row",
+    "description": "Curve is a component ability score of a player attribute snapshot.",
+    "evidence": [
+      "evidence_021"
+    ],
+    "id": "rel_player_attribute_snapshot_composes_curve",
+    "relation_type": "composition",
+    "source": "term_player_attribute_snapshot",
+    "target": "term_curve"
+  },
+  {
+    "connection_condition": "Player_Attributes.sprint_speed belongs to the snapshot row",
+    "description": "Sprint speed is a component ability score of a player attribute snapshot.",
+    "evidence": [
+      "evidence_021"
+    ],
+    "id": "rel_player_attribute_snapshot_composes_sprint_speed",
+    "relation_type": "composition",
+    "source": "term_player_attribute_snapshot",
+    "target": "term_sprint_speed"
+  },
+  {
+    "connection_condition": "Player_Attributes.preferred_foot belongs to the snapshot row",
+    "description": "The preferred foot is recorded on the attribute snapshot rather than on the biographical player record, so foot preference is observed at snapshot dates.",
+    "evidence": [
+      "evidence_010"
+    ],
+    "id": "rel_player_attribute_snapshot_composes_foot",
+    "relation_type": "composition",
+    "source": "term_player_attribute_snapshot",
+    "target": "term_preferred_foot"
+  },
+  {
+    "connection_condition": "Team_Attributes.team_api_id references Team.team_api_id",
+    "description": "A team is described by a series of dated tactical snapshots; a snapshot has no meaning without its team.",
+    "evidence": [
+      "evidence_007"
+    ],
+    "id": "rel_team_composes_attribute_snapshot",
+    "relation_type": "composition",
+    "source": "term_team",
+    "target": "term_team_attribute_snapshot"
+  },
+  {
+    "connection_condition": "Team_Attributes.buildUpPlaySpeed belongs to the snapshot row",
+    "description": "The build-up play speed score is a component of a team tactical snapshot.",
+    "evidence": [
+      "evidence_008"
+    ],
+    "id": "rel_team_attribute_snapshot_composes_buildup",
+    "relation_type": "composition",
+    "source": "term_team_attribute_snapshot",
+    "target": "term_buildup_play_speed"
+  },
+  {
+    "connection_condition": "Team_Attributes.chanceCreationPassing belongs to the snapshot row",
+    "description": "The chance creation passing score is a component of a team tactical snapshot.",
+    "evidence": [
+      "evidence_008"
+    ],
+    "id": "rel_team_attribute_snapshot_composes_chance_creation",
+    "relation_type": "composition",
+    "source": "term_team_attribute_snapshot",
+    "target": "term_chance_creation_passing"
+  },
+  {
+    "connection_condition": "Each class column is paired with the numeric score of the same snapshot row",
+    "description": "The class label is the categorical reading of a numeric style score and is a component of the same team tactical snapshot.",
+    "evidence": [
+      "evidence_008"
+    ],
+    "id": "rel_team_attribute_snapshot_composes_class",
+    "relation_type": "composition",
+    "source": "term_team_attribute_snapshot",
+    "target": "term_team_attribute_class"
+  },
+  {
+    "connection_condition": "",
+    "description": "Both are team tactical style scores measured on the same snapshot and sharing the same numeric scale and class-band boundaries, but they describe different aspects of play: tempo versus chance creation by passing. They frequently appear together because both are quoted to characterise a team's style.",
+    "evidence": [
+      "evidence_008"
+    ],
+    "id": "rel_buildup_speed_association_chance_creation",
+    "relation_type": "association",
+    "source": "term_buildup_play_speed",
+    "target": "term_chance_creation_passing"
+  },
+  {
+    "connection_condition": "",
+    "description": "Current strength and expected ceiling are quoted together on a player snapshot and share the same scale, but they answer different questions: observed level now versus projected maximum.",
+    "evidence": [
+      "evidence_017"
+    ],
+    "id": "rel_overall_rating_association_potential",
+    "relation_type": "association",
+    "source": "term_overall_rating",
+    "target": "term_potential"
+  }
+]

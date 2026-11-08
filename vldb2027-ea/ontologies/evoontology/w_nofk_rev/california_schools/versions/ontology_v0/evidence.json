@@ -1,0 +1,314 @@
+[
+  {
+    "id": "evidence_schema_schools",
+    "source": "california_schools (SQLite, read-only)",
+    "query": "sqlite3 -readonly california_schools.sqlite '.schema'",
+    "result": "Table schools with CDSCode as primary key and columns NCESDist, NCESSchool, StatusType, County, District, School, Street, StreetAbr, City, Zip, State, MailStreet, MailStrAbr, MailCity, MailZip, MailState, Phone, Ext, Website, OpenDate, ClosedDate, Charter, CharterNum, FundingType, DOC, DOCType, SOC, SOCType, EdOpsCode, EdOpsName, EILCode, EILName, GSoffered, GSserved, Virtual, Magnet, Latitude, Longitude and administrator/email columns.",
+    "validation_method": "schema inspection of the read-only database",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_schema_frpm",
+    "source": "california_schools (SQLite, read-only)",
+    "query": "sqlite3 -readonly california_schools.sqlite '.schema'",
+    "result": "Table frpm with CDSCode as primary key and columns Academic Year, County Code, District Code, School Code, County Name, District Name, School Name, District Type, School Type, Educational Option Type, NSLP Provision Status, Charter School (Y/N), Charter School Number, Charter Funding Type, IRC, Low Grade, High Grade, and the K-12 and ages 5-17 enrollment, free meal count, FRPM count and percent-eligible columns.",
+    "validation_method": "schema inspection of the read-only database",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_schema_satscores",
+    "source": "california_schools (SQLite, read-only)",
+    "query": "sqlite3 -readonly california_schools.sqlite '.schema'",
+    "result": "Table satscores with cds as primary key and columns rtype, sname, dname, cname, enroll12, NumTstTakr, AvgScrRead, AvgScrMath, AvgScrWrite, NumGE1500, all declared NOT NULL except the score columns.",
+    "validation_method": "schema inspection of the read-only database",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_row_counts",
+    "source": "california_schools (SQLite, read-only)",
+    "query": "SELECT COUNT(*) FROM schools; SELECT COUNT(*) FROM frpm; SELECT COUNT(*) FROM satscores;",
+    "result": "schools 17686 rows, 58 distinct counties, 1411 distinct districts; frpm 9986 rows with 9986 distinct CDS codes; satscores 2269 rows with 2269 distinct cds values.",
+    "validation_method": "row count and distinct-count queries",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_cds_format",
+    "source": "california_schools (SQLite, read-only)",
+    "query": "SELECT LENGTH(CDSCode), COUNT(*) FROM schools GROUP BY LENGTH(CDSCode); SELECT LENGTH(CDSCode), COUNT(*) FROM frpm GROUP BY LENGTH(CDSCode); SELECT LENGTH(cds), COUNT(*) FROM satscores GROUP BY LENGTH(cds);",
+    "result": "schools: 17686 values of length 14. frpm: 9986 values of length 14. satscores: 2058 values of length 14 and 211 values of length 13.",
+    "validation_method": "length distribution comparison across tables",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_cds_join",
+    "source": "california_schools (SQLite, read-only)",
+    "query": "SELECT COUNT(*) FROM satscores s WHERE LENGTH(s.cds)=13 AND EXISTS (SELECT 1 FROM schools sc WHERE sc.CDSCode = '0'||s.cds); SELECT COUNT(*) FROM satscores s WHERE LENGTH(s.cds)=14 AND EXISTS (SELECT 1 FROM schools sc WHERE sc.CDSCode = s.cds);",
+    "result": "All 211 short (13-character) codes match a schools record after a leading '0' is prepended, and all 2058 full-length codes match directly, so all 2269 SAT rows correspond to a school-directory record once lengths are normalized.",
+    "validation_method": "join-coverage comparison with and without length normalization",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_county_domain",
+    "source": "california_schools (SQLite, read-only)",
+    "query": "SELECT COUNT(DISTINCT County) FROM schools; SELECT COUNT(DISTINCT cname) FROM satscores;",
+    "result": "58 distinct county names in schools (including San Diego, Santa Barbara, Los Angeles, Orange, Riverside and Fresno) and 57 distinct county names in satscores.",
+    "validation_method": "distinct-value count",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_district_rows",
+    "source": "california_schools (SQLite, read-only)",
+    "query": "SELECT COUNT(*) FROM schools WHERE School IS NULL OR TRIM(School)=''; SELECT COUNT(*) FROM schools WHERE SUBSTR(CDSCode,8)='0000000';",
+    "result": "1369 rows have no school name and exactly 1369 rows have a CDS code whose last seven digits are zeros; examples include 01100170000000 for the Alameda County Office of Education and 01611190000000 for Alameda Unified. These are district-level administrative records rather than schools.",
+    "validation_method": "pattern comparison between missing school names and zero-padded school code suffix",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_name_linkage",
+    "source": "california_schools (SQLite, read-only)",
+    "query": "SELECT COUNT(*) FROM satscores s WHERE EXISTS (SELECT 1 FROM schools sc WHERE sc.District = s.dname); SELECT COUNT(*) FROM schools WHERE District LIKE '%Fresno Unified%'; SELECT * FROM satscores LIMIT 5;",
+    "result": "2264 of 2269 satscores.dname values also occur as schools.District; 'Fresno Unified' appears as a district on 151 school records; satscores rows for a district carry an empty school name with the district name in dname and the county name in cname.",
+    "validation_method": "join-coverage check on district names plus row inspection",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_doc_codes",
+    "source": "california_schools (SQLite, read-only)",
+    "query": "SELECT DISTINCT DOC, DOCType FROM schools ORDER BY DOC; SELECT DISTINCT \"District Type\" FROM frpm;",
+    "result": "DOC/DOCType pairs observed: 00 County Office of Education (COE), 02 State Board of Education, 03 Statewide Benefit Charter, 31 State Special Schools, 34 Non-School Locations, 42 Joint Powers Authority (JPA), 52 Elementary School District, 54 Unified School District, 56 High School District, 58 Community College District, 98 Regional Occupation Center/Program (ROC/P), 99 Administration Only. frpm.District Type stores the same labels as text (Elementary School District 2356, Unified School District 6744, County Office of Education (COE) 334, High School District 529, and others).",
+    "validation_method": "distinct code/label pairs and label distributions",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_charter_codes",
+    "source": "california_schools (SQLite, read-only)",
+    "query": "SELECT Charter, COUNT(*) FROM schools GROUP BY Charter; SELECT \"Charter School (Y/N)\", COUNT(*) FROM frpm GROUP BY \"Charter School (Y/N)\";",
+    "result": "schools.Charter takes the values 1 (charter) and 0 (non-charter) and is NULL on 1369 district-level records. frpm's flag takes 0 (8774 rows), 1 (1167 rows) and blank (45 rows).",
+    "validation_method": "value-domain enumeration on both tables",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_charter_agreement",
+    "source": "california_schools (SQLite, read-only)",
+    "query": "SELECT SUM(CASE WHEN sc.Charter = f.\"Charter School (Y/N)\" THEN 1 ELSE 0 END), COUNT(*) FROM schools sc JOIN frpm f ON f.CDSCode=sc.CDSCode;",
+    "result": "The two charter flags agree on 9934 of the 9986 joinable records, leaving 52 records where they differ.",
+    "validation_method": "cross-table agreement count on the join key",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_funding_type_values",
+    "source": "california_schools (SQLite, read-only)",
+    "query": "SELECT FundingType, COUNT(*) FROM schools GROUP BY FundingType; SELECT \"Charter Funding Type\", COUNT(*) FROM frpm GROUP BY \"Charter Funding Type\";",
+    "result": "schools.FundingType: blank 16044, Directly funded 1176, Locally funded 460, Not in CS funding model 6. frpm.Charter Funding Type: blank 8819, Provision-independent values Directly funded 838, Locally funded 328, Not in CS funding model 1.",
+    "validation_method": "value-domain enumeration on both tables",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_funding_type_mismatch",
+    "source": "california_schools (SQLite, read-only)",
+    "query": "SELECT SUM(CASE WHEN IFNULL(sc.FundingType,'') <> IFNULL(f.\"Charter Funding Type\",'') THEN 1 ELSE 0 END), COUNT(*) FROM schools sc JOIN frpm f ON f.CDSCode=sc.CDSCode; SELECT SUM(CASE WHEN sc.FundingType <> f.\"Charter Funding Type\" THEN 1 ELSE 0 END), COUNT(*) FROM schools sc JOIN frpm f ON f.CDSCode=sc.CDSCode WHERE TRIM(IFNULL(sc.FundingType,''))<>'' AND TRIM(IFNULL(f.\"Charter Funding Type\",''))<>'';",
+    "result": "53 of 9986 joinable records differ when blanks are treated as a distinct value; restricting to records where both columns are filled, 19 of 1167 differ (for example 'Directly funded' against 'Locally funded').",
+    "validation_method": "cross-table disagreement count",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_soc_codes",
+    "source": "california_schools (SQLite, read-only)",
+    "query": "SELECT SOC, SOCType, COUNT(*) FROM schools GROUP BY SOC, SOCType ORDER BY 3 DESC;",
+    "result": "SOC/SOCType pairs observed with counts: 60 Elementary Schools (Public) 7591, 66 High Schools (Public) 1776, 62 Intermediate/Middle Schools (Public) 1652, 68 Continuation High Schools 754, 09 Special Education Schools (Public) 750, 69 District Community Day Schools 615, 70 Adult Education Centers 551, 10 County Community 500, 63 Alternative Schools of Choice 500, 65 K-12 Schools (Public) 438, 61 Elemen Schools In 1 School Dist. (Public) 273, 08 Preschool 272, 14 Juvenile Court Schools 254, 64 Junior High Schools (Public) 122, and NULL on the 1369 district-level records. Each code maps to exactly one label. A search for a 66 value in other coded columns (DOC, county code) found none.",
+    "validation_method": "code/label pair enumeration and one-to-one mapping check",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_status_type",
+    "source": "california_schools (SQLite, read-only)",
+    "query": "SELECT StatusType, COUNT(*) FROM schools GROUP BY StatusType;",
+    "result": "Active 11708, Closed 4518, Merged 1448, Pending 12.",
+    "validation_method": "value-domain enumeration",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_virtual_codes",
+    "source": "california_schools (SQLite, read-only)",
+    "query": "SELECT Virtual, COUNT(*) FROM schools GROUP BY Virtual; SELECT StatusType, Virtual, COUNT(*) FROM schools GROUP BY StatusType, Virtual ORDER BY StatusType;",
+    "result": "Virtual values: F 69, P 1046, N 9703, NULL 6868, with no empty-string values. Cross-tabulated with status, the 69 F records are almost all Active (60) with 9 Closed; the NULL value is concentrated on Closed (4249) and Merged (1448) records, and 1169 Active records also have no value.",
+    "validation_method": "value-domain enumeration and cross-tabulation with record status",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_virtual_f_rows",
+    "source": "california_schools (SQLite, read-only)",
+    "query": "SELECT COUNT(*) FROM schools WHERE Virtual='F' AND School IS NOT NULL AND TRIM(School)<>''; SELECT sc.County, COUNT(*) FROM schools sc WHERE sc.Virtual='F' AND sc.County IN ('San Diego','Santa Barbara') GROUP BY sc.County; SELECT sc.County, s.sname, s.AvgScrRead FROM schools sc JOIN satscores s ON s.cds=sc.CDSCode WHERE sc.Virtual='F' AND s.AvgScrRead IS NOT NULL ORDER BY s.AvgScrRead DESC LIMIT 5;",
+    "result": "All 69 exclusively virtual records are named school records. By county, San Diego has 8 and Santa Barbara has 1. Joined to the SAT table, only 4 of the 69 have a reading score; ordered by reading they are California Virtual Academy @ Los Angeles 549 (Los Angeles), California Connections Academy @ Ripon 542 (San Joaquin), Capistrano Connections Academy 537 (Orange) and Insight @ Los Angeles 453 (Los Angeles).",
+    "validation_method": "conditional counts plus a joined ranking check",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_enrollment_k12",
+    "source": "california_schools (SQLite, read-only)",
+    "query": "SELECT * FROM frpm LIMIT 3;",
+    "result": "Sample values on school rows: 1087.0, 395.0, 244.0, alongside the matching meal counts and stored rate columns.",
+    "validation_method": "representative row inspection",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_enrollment_517",
+    "source": "california_schools (SQLite, read-only)",
+    "query": "SELECT \"Enrollment (K-12)\", \"Enrollment (Ages 5-17)\" FROM frpm LIMIT 3; SELECT COUNT(*) FROM frpm f JOIN schools sc ON sc.CDSCode=f.CDSCode WHERE (f.\"Enrollment (K-12)\" - f.\"Enrollment (Ages 5-17)\") > 30;",
+    "result": "The ages 5-17 column is reported on the same records as the K-12 column and carries smaller values (for example 1070 against 1087). Applying a difference greater than 30 selects 1239 records, confirming both columns are populated and comparable per record.",
+    "validation_method": "paired column inspection plus a difference-condition count",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_enrollment_quality",
+    "source": "california_schools (SQLite, read-only)",
+    "query": "SELECT SUM(CASE WHEN \"Enrollment (K-12)\" IS NULL THEN 1 ELSE 0 END), SUM(CASE WHEN \"Enrollment (K-12)\"=0 THEN 1 ELSE 0 END) FROM frpm;",
+    "result": "No NULL enrollment values and no zero enrollment values among the 9986 frpm records, so division by enrollment is safe on this table.",
+    "validation_method": "null and zero-value counts on the denominator column",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_k12_universe",
+    "source": "california_schools (SQLite, read-only)",
+    "query": "SELECT \"Low Grade\", \"High Grade\", COUNT(*) FROM frpm GROUP BY \"Low Grade\", \"High Grade\" ORDER BY 3 DESC LIMIT 6; SELECT COUNT(*) FROM frpm WHERE \"Low Grade\"='K' AND \"High Grade\"='5' AND \"Enrollment (K-12)\" IS NOT NULL;",
+    "result": "The most frequent grade spans are K-5 (2465), K-6 (1958), 9-12 (1726), K-8 (979), K-12 (417). All 2465 K-5 records carry a non-null Enrollment (K-12) value, showing the K-12 columns measure a common enrollment universe rather than being restricted to schools spanning kindergarten to grade 12.",
+    "validation_method": "grade-span distribution compared with K-12 column population",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_enrollment_diff",
+    "source": "california_schools (SQLite, read-only)",
+    "query": "SELECT COUNT(*) FROM frpm f JOIN schools sc ON sc.CDSCode=f.CDSCode WHERE (f.\"Enrollment (K-12)\" - f.\"Enrollment (Ages 5-17)\") > 30;",
+    "result": "1239 school records satisfy a K-12 minus ages 5-17 enrollment difference greater than 30, and no column stores that difference, so it is computed from the two enrollment columns on the same frpm record.",
+    "validation_method": "derived-expression count plus schema inspection for a stored difference column",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_meal_counts",
+    "source": "california_schools (SQLite, read-only)",
+    "query": "SELECT \"School Name\", \"FRPM Count (K-12)\", \"Enrollment (K-12)\", \"Percent (%) Eligible FRPM (K-12)\" FROM frpm f JOIN schools sc ON sc.CDSCode=f.CDSCode WHERE sc.SOC='66' ORDER BY f.\"FRPM Count (K-12)\" DESC LIMIT 5;",
+    "result": "Largest FRPM counts among SOC=66 schools: Paramount High 4419 of 4814 enrolled (stored rate 0.9179), Calexico High 2979 of 2981 (0.9993), Bell Senior High 2919 of 3256, Anaheim High 2872 of 3206, Bell Gardens High 2727 of 2983.",
+    "validation_method": "ordered join between the meal table and the ownership-coded school records",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_meal_count_exception",
+    "source": "california_schools (SQLite, read-only)",
+    "query": "SELECT SUM(CASE WHEN \"Free Meal Count (K-12)\" <= \"FRPM Count (K-12)\" THEN 1 ELSE 0 END), COUNT(*) FROM frpm;",
+    "result": "The free meal count is less than or equal to the FRPM count on 9930 of 9986 records; 56 records violate that ordering.",
+    "validation_method": "ordering-condition count across all meal records",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_rate_is_fraction",
+    "source": "california_schools (SQLite, read-only)",
+    "query": "SELECT \"Percent (%) Eligible Free (K-12)\", \"Free Meal Count (K-12)\"/\"Enrollment (K-12)\" AS ratio, \"Free Meal Count (K-12)\"*100/\"Enrollment (K-12)\" AS x100 FROM frpm WHERE \"Enrollment (K-12)\">0 LIMIT 5;",
+    "result": "The stored value equals the meal count divided by enrollment exactly (0.519779208831647 = 565/1087, 0.0544747081712062 = 5/91.8-style ratios on the sampled rows), not the same ratio multiplied by 100 (51.9779208831647). The column therefore holds a proportion despite being named 'Percent (%)'.",
+    "validation_method": "row-level comparison of the stored column against both derived expressions",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_rate_range",
+    "source": "california_schools (SQLite, read-only)",
+    "query": "SELECT MAX(\"Percent (%) Eligible Free (K-12)\"), MAX(\"Percent (%) Eligible FRPM (K-12)\") FROM frpm;",
+    "result": "Both stored rate columns reach a maximum of 1.0, confirming the 0-to-1 proportion range rather than a 0-to-100 percentage scale.",
+    "validation_method": "maximum-value check on both rate columns",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_rate_scale_impact",
+    "source": "california_schools (SQLite, read-only)",
+    "query": "SELECT SUM(CASE WHEN f.\"Percent (%) Eligible Free (K-12)\" < 0.18 THEN 1 ELSE 0 END), SUM(CASE WHEN f.\"Free Meal Count (K-12)\"*100/f.\"Enrollment (K-12)\" < 0.18 THEN 1 ELSE 0 END) FROM frpm f JOIN schools sc ON sc.CDSCode=f.CDSCode WHERE sc.County='Los Angeles' AND sc.Charter=0;",
+    "result": "Within Los Angeles non-chartered records, comparing the stored proportion directly against 0.18 selects 201 records, while interpreting the threshold as a percentage and comparing the count-derived percentage selects 1 record. The choice of scale changes the qualifying population by two orders of magnitude.",
+    "validation_method": "side-by-side evaluation of the same threshold on both scales",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_sat_columns",
+    "source": "california_schools (SQLite, read-only)",
+    "query": "SELECT * FROM satscores LIMIT 5;",
+    "result": "Each row carries cds, rtype, sname (NULL on district rows), dname, cname, enroll12, NumTstTakr and the three average score columns; a row with NumTstTakr 0 has NULL average scores.",
+    "validation_method": "representative row inspection",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_sat_range",
+    "source": "california_schools (SQLite, read-only)",
+    "query": "SELECT MIN(AvgScrRead), MAX(AvgScrRead), MIN(AvgScrMath), MAX(AvgScrMath), MIN(AvgScrWrite), MAX(AvgScrWrite) FROM satscores;",
+    "result": "Observed ranges: reading 308 to 653, math 289 to 699, writing 312 to 671, consistent with the SAT scale of roughly 200 to 800.",
+    "validation_method": "minimum and maximum checks on the three average score columns",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_satscores_levels",
+    "source": "california_schools (SQLite, read-only)",
+    "query": "SELECT rtype, COUNT(*), SUM(CASE WHEN sname IS NULL THEN 1 ELSE 0 END), SUM(CASE WHEN AvgScrRead IS NULL THEN 1 ELSE 0 END) FROM satscores GROUP BY rtype; SELECT s.sname, s.AvgScrMath, sc.Street, sc.MailStreet FROM satscores s JOIN schools sc ON sc.CDSCode=s.cds WHERE s.AvgScrMath IS NOT NULL ORDER BY s.AvgScrMath DESC LIMIT 8;",
+    "result": "rtype 'D' has 520 rows, all with a NULL school name and 98 with missing scores; rtype 'S' has 1749 rows, all named, with 498 missing reading, math and writing values. Ordered by math average the top values are Lynbrook High 698, Monta Vista High 691, Whitney (Gretchen) High 687, Henry M. Gunn High 686, Saratoga High 674, an unnamed district row 671, Oxford Academy 669 and University High 666, showing a district aggregate row appearing inside a school ranking.",
+    "validation_method": "reporting-type cross-tabulation plus an ordered join against the school directory",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_sat_takers",
+    "source": "california_schools (SQLite, read-only)",
+    "query": "SELECT COUNT(*) FROM satscores WHERE NumTstTakr=0; SELECT SUM(CASE WHEN AvgScrRead IS NULL THEN 1 ELSE 0 END) FROM satscores WHERE rtype='S';",
+    "result": "218 rows report zero test takers; of the school-level rows, 498 have a missing reading average, and the same 498 have missing math and writing averages.",
+    "validation_method": "zero-count and null-score counts by reporting type",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_sat_coverage",
+    "source": "california_schools (SQLite, read-only)",
+    "query": "SELECT COUNT(*) FROM satscores; SELECT COUNT(*) FROM satscores s WHERE EXISTS (SELECT 1 FROM frpm f WHERE f.CDSCode = s.cds); SELECT sc.SOC, sc.SOCType, COUNT(*) FROM satscores s JOIN schools sc ON sc.CDSCode=s.cds WHERE s.rtype='S' GROUP BY sc.SOC, sc.SOCType ORDER BY 3 DESC LIMIT 8;",
+    "result": "2269 SAT rows for 2269 distinct CDS codes, of which 1620 also appear in frpm. By ownership code the school rows are dominated by SOC 66 High Schools (1132), followed by 65 K-12 Schools (207), 63 Alternative Schools of Choice (156), 68 Continuation High Schools (75), with a handful of other levels.",
+    "validation_method": "cross-table coverage count and ownership-code breakdown of scored rows",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_district_avg_math",
+    "source": "california_schools (SQLite, read-only)",
+    "query": "SELECT s.dname, ROUND(AVG(s.AvgScrMath),2), COUNT(*) FROM satscores s WHERE s.cname='Riverside' AND s.rtype='S' AND s.AvgScrMath IS NOT NULL GROUP BY s.dname ORDER BY 2 DESC; (same query with rtype='D' rows also included)",
+    "result": "For Riverside county, school-level math averages grouped by district give unweighted means such as Temecula Valley Unified 507.5 over 4 schools, Menifee Union Elementary 506.0 over 1 school, Murrieta Valley Unified 503.67 over 3, Corona-Norco Unified 498.5 over 6, down to Coachella Valley Unified 411.0 over 4 and Banning Unified 407.0 over 1; 22 districts are represented. Including the district aggregate rows as if they were schools shifts each mean (for example Temecula Valley Unified 507.0 over 5 rows, Corona-Norco Unified 498.71 over 7), confirming that the district-level definition is an unweighted mean of school averages and that the row level must be chosen deliberately.",
+    "validation_method": "grouped unweighted means at the school level compared with the same grouping that also includes district rows",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_address_columns",
+    "source": "california_schools (SQLite, read-only)",
+    "query": "SELECT School, Street, StreetAbr, MailStreet, MailStrAbr, City, Zip, Phone, Ext FROM schools WHERE School LIKE '%Fresno%' LIMIT 3; SELECT COUNT(*) , SUM(CASE WHEN Street IS NOT NULL AND Street=MailStreet THEN 1 ELSE 0 END) FROM schools;",
+    "result": "The full and abbreviated pairs hold the same address in different forms (for example '1111 Van Ness Avenue' / '1111 Van Ness Ave.' in both the street and mailing columns). Street equals MailStreet on 14403 of 17686 records, so the two columns usually coincide but remain distinct.",
+    "validation_method": "paired column inspection plus an equality count across the directory",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_phone_format",
+    "source": "california_schools (SQLite, read-only)",
+    "query": "SELECT Phone, Ext FROM schools WHERE Phone IS NOT NULL LIMIT 5; SELECT DISTINCT SUBSTR(Phone,1,5) FROM schools;",
+    "result": "Phone values follow the pattern '(NNN) NNN-NNNN' with parentheses around the area code, for example '(559) 248-5100'; the Ext column is usually empty.",
+    "validation_method": "format inspection on representative values",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_date_columns",
+    "source": "california_schools (SQLite, read-only)",
+    "query": "SELECT OpenDate, ClosedDate, StatusType FROM schools WHERE OpenDate IS NOT NULL AND ClosedDate IS NOT NULL LIMIT 5; SELECT MIN(OpenDate), MAX(OpenDate) FROM schools;",
+    "result": "Dates are ISO 'YYYY-MM-DD' text (for example OpenDate 2005-08-29 with ClosedDate 2015-07-31 on a Closed record) and OpenDate ranges from 1850-07-01 to 2017-09-22.",
+    "validation_method": "format inspection and range check on the date columns",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_grade_span",
+    "source": "california_schools (SQLite, read-only)",
+    "query": "SELECT \"Low Grade\", \"High Grade\", COUNT(*) FROM frpm GROUP BY \"Low Grade\", \"High Grade\" ORDER BY 3 DESC LIMIT 6; SELECT GSoffered, COUNT(*) FROM schools GROUP BY GSoffered ORDER BY 2 DESC LIMIT 10; SELECT GSserved, COUNT(*) FROM schools GROUP BY GSserved ORDER BY 2 DESC LIMIT 10;",
+    "result": "frpm grade spans (Low/High): K-5 2465, K-6 1958, 9-12 1726, K-8 979, 6-8 899, K-12 417, with Low Grade 'K' on 6057 records. schools.GSoffered holds range strings (blank 3882, K-5 2724, 9-12 2368, K-6 2362, K-8 1292, K-12 674) and GSserved holds the same style with more blanks (5743).",
+    "validation_method": "grade-span and range-string distributions across both tables",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_frpm_year",
+    "source": "california_schools (SQLite, read-only)",
+    "query": "SELECT DISTINCT \"Academic Year\" FROM frpm;",
+    "result": "A single value, 2014-2015, appears on all 9986 records.",
+    "validation_method": "distinct-value check on the academic year column",
+    "timestamp": "2026-10-10"
+  }
+]

@@ -1,0 +1,202 @@
+[
+  {
+    "id": "evidence_cards_counts",
+    "source": "card_games sqlite (read-only)",
+    "query": "SELECT COUNT(*) FROM cards; SELECT COUNT(DISTINCT uuid), COUNT(DISTINCT scryfallOracleId), COUNT(DISTINCT name), COUNT(DISTINCT setCode) FROM cards;",
+    "result": "56822 rows; 56822 distinct uuid; 21769 distinct scryfallOracleId; 21738 distinct name; 536 distinct setCode",
+    "validation_method": "direct aggregate query on the target database",
+    "timestamp": "2026-10-10T00:00:00+00:00"
+  },
+  {
+    "id": "evidence_name_multi_oracle",
+    "source": "card_games sqlite (read-only)",
+    "query": "SELECT COUNT(*) FROM (SELECT name FROM cards GROUP BY name HAVING COUNT(DISTINCT COALESCE(scryfallOracleId,''))>1); SELECT COUNT(*) FROM (SELECT uuid FROM cards WHERE scryfallOracleId IS NULL OR name IS NULL);",
+    "result": "7 names map to more than one scryfallOracleId; scryfallOracleId and name are never null",
+    "validation_method": "grouped aggregate query",
+    "timestamp": "2026-10-10T00:00:00+00:00"
+  },
+  {
+    "id": "evidence_sets_counts",
+    "source": "card_games sqlite (read-only)",
+    "query": "SELECT COUNT(*), COUNT(DISTINCT code) FROM sets; SELECT COUNT(*) FROM (SELECT DISTINCT setCode FROM cards EXCEPT SELECT code FROM sets); SELECT COUNT(*) FROM (SELECT code FROM sets EXCEPT SELECT DISTINCT setCode FROM cards);",
+    "result": "551 sets, 551 distinct codes; 0 cards.setCode values missing from sets; 15 sets without any printing",
+    "validation_method": "set difference over distinct values",
+    "timestamp": "2026-10-10T00:00:00+00:00"
+  },
+  {
+    "id": "evidence_set_type",
+    "source": "card_games sqlite (read-only)",
+    "query": "SELECT type, COUNT(*) FROM sets GROUP BY type ORDER BY 2 DESC;",
+    "result": "20 distinct types: promo 234, expansion 87, memorabilia 34, box 27, duel_deck 27, core 24, masters 23, starter 16, commander 14, from_the_vault 11, funny 11, token 10, draft_innovation 6, masterpiece 6, planechase 6, archenemy 5, premium_deck 3, spellbook 3, treasure_chest 2, vanguard 2",
+    "validation_method": "grouped aggregate query",
+    "timestamp": "2026-10-10T00:00:00+00:00"
+  },
+  {
+    "id": "evidence_cards_per_set",
+    "source": "card_games sqlite (read-only)",
+    "query": "SELECT setCode, COUNT(*) FROM cards GROUP BY setCode ORDER BY 2 DESC LIMIT 8;",
+    "result": "MB1 1700, PRM 1362, PSAL 725, CMR 720, 10E 508, JMP 496, 5ED 459, ELD 457",
+    "validation_method": "grouped aggregate query",
+    "timestamp": "2026-10-10T00:00:00+00:00"
+  },
+  {
+    "id": "evidence_release_dates",
+    "source": "card_games sqlite (read-only)",
+    "query": "SELECT MIN(releaseDate), MAX(releaseDate), SUM(releaseDate IS NULL), SUM(block IS NULL), SUM(parentCode IS NULL) FROM sets;",
+    "result": "min 1993-08-05, max 2021-03-19, releaseDate never null; block null for 279 sets; parentCode null for 397 sets",
+    "validation_method": "aggregate query over sets",
+    "timestamp": "2026-10-10T00:00:00+00:00"
+  },
+  {
+    "id": "evidence_rarity",
+    "source": "card_games sqlite (read-only)",
+    "query": "SELECT rarity, COUNT(*) FROM cards GROUP BY rarity ORDER BY 2 DESC;",
+    "result": "common 20745, rare 17626, uncommon 15251, mythic 3200; no other value and no null",
+    "validation_method": "grouped aggregate query",
+    "timestamp": "2026-10-10T00:00:00+00:00"
+  },
+  {
+    "id": "evidence_colors",
+    "source": "card_games sqlite (read-only)",
+    "query": "SELECT colors, COUNT(*) FROM cards GROUP BY colors ORDER BY 2 DESC; SELECT SUM(colorIdentity IS NULL), COUNT(*) FROM cards WHERE colorIdentity LIKE '%,%'; SELECT COUNT(DISTINCT colorIdentity) FROM cards;",
+    "result": "colors null for 12540 rows; colorIdentity null for 6224 rows; 5305 colors values and 8044 colorIdentity values contain a comma; 31 distinct colorIdentity values",
+    "validation_method": "grouped aggregate and null-count queries",
+    "timestamp": "2026-10-10T00:00:00+00:00"
+  },
+  {
+    "id": "evidence_color_letters",
+    "source": "card_games sqlite (read-only)",
+    "query": "SELECT COUNT(*) FROM cards WHERE colors IS NOT NULL AND colors GLOB '*[^WUBRG,]*'; SELECT COUNT(*) FROM cards WHERE colorIdentity IS NOT NULL AND colorIdentity GLOB '*[^WUBRG,]*';",
+    "result": "0 rows in both columns contain any character outside W, U, B, R, G and the comma; no colorless letter C exists",
+    "validation_method": "character-class scan over all non-null values",
+    "timestamp": "2026-10-10T00:00:00+00:00"
+  },
+  {
+    "id": "evidence_cmc",
+    "source": "card_games sqlite (read-only)",
+    "query": "SELECT MIN(convertedManaCost), MAX(convertedManaCost), SUM(convertedManaCost IS NULL), SUM(faceConvertedManaCost IS NULL), SUM(manaCost IS NULL) FROM cards; SELECT name, setCode, convertedManaCost, layout FROM cards WHERE faceConvertedManaCost IS NOT NULL GROUP BY layout;",
+    "result": "convertedManaCost range 0.0 to 1000000.0; never null; manaCost null for 7323 rows; faceConvertedManaCost null for 55867 rows and non-null only for layouts transform, split, aftermath and adventure; outlier Gleemax in set UNH with cost 1000000",
+    "validation_method": "aggregate query plus targeted outlier inspection",
+    "timestamp": "2026-10-10T00:00:00+00:00"
+  },
+  {
+    "id": "evidence_power_toughness",
+    "source": "card_games sqlite (read-only)",
+    "query": "SELECT DISTINCT power FROM cards ORDER BY power LIMIT 30; SELECT types, COUNT(*) FROM cards WHERE power IS NOT NULL GROUP BY types ORDER BY 2 DESC LIMIT 10; SELECT SUM(loyalty IS NOT NULL), SUM(hand IS NOT NULL), SUM(life IS NOT NULL) FROM cards;",
+    "result": "power values include 0, 0.5, -1, 1+*, 2+*, *, *2, ?, infinity, 99; 90 rows with power are not typed Creature and are mostly Vehicles with type Artifact; 26109 rows have types containing Creature; loyalty is non-null for 830 Planeswalker rows; hand and life are non-null for 118 vanguard rows",
+    "validation_method": "distinct-value listing plus grouped aggregates",
+    "timestamp": "2026-10-10T00:00:00+00:00"
+  },
+  {
+    "id": "evidence_type_encoding",
+    "source": "card_games sqlite (read-only)",
+    "query": "SELECT COUNT(*) FROM cards WHERE types LIKE '%, %'; SELECT subtypes, COUNT(*) FROM cards WHERE subtypes LIKE '%,%' GROUP BY subtypes ORDER BY 2 DESC LIMIT 5; SELECT COUNT(*) FROM cards WHERE type LIKE '%—%'; SELECT COUNT(*) FROM cards WHERE types LIKE 'Summon%';",
+    "result": "0 rows have a comma followed by a space in types; subtypes combine as Human,Wizard and Human,Soldier; 34594 rows contain an em dash in the type line and 0 rows use a plain hyphen separator; 13 rows use Summon in types instead of Creature",
+    "validation_method": "pattern-scan queries on the target database",
+    "timestamp": "2026-10-10T00:00:00+00:00"
+  },
+  {
+    "id": "evidence_joke_type",
+    "source": "card_games sqlite (read-only)",
+    "query": "SELECT COUNT(*) FROM cards WHERE types LIKE '%Scariest%';",
+    "result": "1 row whose types value contains commas inside a single type name, so a naive comma split mis-parses that card's types",
+    "validation_method": "targeted pattern scan",
+    "timestamp": "2026-10-10T00:00:00+00:00"
+  },
+  {
+    "id": "evidence_legalities_formats",
+    "source": "card_games sqlite (read-only)",
+    "query": "SELECT format, status, COUNT(*) FROM legalities GROUP BY format, status ORDER BY format, 3 DESC;",
+    "result": "15 lowercase formats; exactly three capitalized statuses. For example vintage Legal 55059, Restricted 413, Banned 104; legacy Banned 546; modern Banned 199; commander Banned 332; pauper has 22784 rows and standard 7698",
+    "validation_method": "grouped aggregate query",
+    "timestamp": "2026-10-10T00:00:00+00:00"
+  },
+  {
+    "id": "evidence_legalities_coverage",
+    "source": "card_games sqlite (read-only)",
+    "query": "SELECT COUNT(*), COUNT(DISTINCT uuid) FROM legalities; SELECT n, COUNT(*) FROM (SELECT uuid, COUNT(*) n FROM legalities GROUP BY uuid) GROUP BY n ORDER BY 2 DESC LIMIT 10;",
+    "result": "427907 rows over 55608 distinct uuid values, compared with 56822 printings in cards; no status value Not Legal exists; printings carry rows for between 4 and 14 of the 15 formats",
+    "validation_method": "distinct-count and distribution queries",
+    "timestamp": "2026-10-10T00:00:00+00:00"
+  },
+  {
+    "id": "evidence_rulings",
+    "source": "card_games sqlite (read-only)",
+    "query": "SELECT COUNT(*), COUNT(DISTINCT text), COUNT(DISTINCT uuid) FROM rulings; SELECT MIN(date), MAX(date) FROM rulings; SELECT COUNT(*) FROM (SELECT text FROM rulings GROUP BY text HAVING COUNT(DISTINCT uuid)>1);",
+    "result": "87769 rows, 19593 distinct texts, 26141 distinct uuid; dates 2004-10-04 to 2021-02-05; 12681 ruling texts appear under more than one printing uuid; the busiest printing carries 27 rulings",
+    "validation_method": "aggregate and group-having queries",
+    "timestamp": "2026-10-10T00:00:00+00:00"
+  },
+  {
+    "id": "evidence_foreign_data",
+    "source": "card_games sqlite (read-only)",
+    "query": "SELECT COUNT(*), COUNT(DISTINCT uuid), COUNT(DISTINCT language) FROM foreign_data; SELECT language, COUNT(*) FROM foreign_data GROUP BY language ORDER BY 2 DESC;",
+    "result": "229186 rows over 34056 distinct printing uuid values and 15 languages; Japanese 31226, French 29301, German 28891, Italian 28698, Spanish 28639, Portuguese (Brazil) 25641, Chinese Simplified 20106, Russian 15878, Chinese Traditional 11106, Korean 9692, then single-digit counts for Phyrexian, Sanskrit, Latin, Hebrew, Arabic and Ancient Greek; at most 10 language rows per printing",
+    "validation_method": "aggregate and grouped queries",
+    "timestamp": "2026-10-10T00:00:00+00:00"
+  },
+  {
+    "id": "evidence_set_translations",
+    "source": "card_games sqlite (read-only)",
+    "query": "SELECT COUNT(*), COUNT(DISTINCT setCode), COUNT(DISTINCT language) FROM set_translations; SELECT language, COUNT(*) FROM set_translations GROUP BY language;",
+    "result": "1210 rows, 121 distinct setCode values and exactly 10 languages with 121 rows each; sets contains 551 rows, so 430 sets have no translated name",
+    "validation_method": "aggregate and grouped queries",
+    "timestamp": "2026-10-10T00:00:00+00:00"
+  },
+  {
+    "id": "evidence_number_text",
+    "source": "card_games sqlite (read-only)",
+    "query": "SELECT number FROM cards WHERE number GLOB '*[A-Za-z*★]' LIMIT 10;",
+    "result": "values such as 11, 132 and 139 followed by a star character occur; number is a text column and contains no null",
+    "validation_method": "pattern scan on the number column",
+    "timestamp": "2026-10-10T00:00:00+00:00"
+  },
+  {
+    "id": "evidence_layout_side",
+    "source": "card_games sqlite (read-only)",
+    "query": "SELECT layout, COUNT(*) FROM cards GROUP BY layout ORDER BY 2 DESC; SELECT side, COUNT(*) FROM cards GROUP BY side;",
+    "result": "normal 54906, transform 360, modal_dfc 322, adventure 228, split 221, planar 178, aftermath 146, vanguard 118, saga 92, flip 72, scheme 70, leveler 47, host 28, meld 18, augment 16; side null for 55455 rows and a/b/c/d/e for 683/677/3/2/2 rows",
+    "validation_method": "grouped aggregate queries",
+    "timestamp": "2026-10-10T00:00:00+00:00"
+  },
+  {
+    "id": "evidence_face_rows",
+    "source": "card_games sqlite (read-only)",
+    "query": "SELECT layout, COUNT(*) FROM cards WHERE faceConvertedManaCost IS NOT NULL GROUP BY layout; SELECT side, COUNT(*) FROM cards WHERE faceConvertedManaCost IS NOT NULL GROUP BY side; SELECT layout, COUNT(*) FROM cards WHERE text IS NULL GROUP BY layout;",
+    "result": "955 rows carry a face-specific converted mana cost, split across both faces (a 474, b 474, c 3, d 2, e 2) and confined to transform, split, aftermath and adventure layouts; 931 rows with null text are single-face and 955 rows with null text are typed Creature",
+    "validation_method": "grouped aggregate queries",
+    "timestamp": "2026-10-10T00:00:00+00:00"
+  },
+  {
+    "id": "evidence_reprint_flags",
+    "source": "card_games sqlite (read-only)",
+    "query": "SELECT SUM(isReprint), SUM(isPromo), SUM(hasFoil), SUM(hasNonFoil) FROM cards; SELECT printings FROM cards WHERE printings LIKE '%,%,%' LIMIT 3;",
+    "result": "isReprint is an integer 0/1 flag; printings holds comma-separated set codes for the card identity, for example 10E,8ED,9ED,DDC,DVD,IMA,INV,JMP,MB1,P02,PS11,PSAL,S99, identical across the printings of one card",
+    "validation_method": "flag aggregation and list inspection",
+    "timestamp": "2026-10-10T00:00:00+00:00"
+  },
+  {
+    "id": "evidence_printings_list",
+    "source": "card_games sqlite (read-only)",
+    "query": "SELECT printings FROM cards WHERE printings LIKE '%,%,%' LIMIT 3;",
+    "result": "printings is a comma-separated set code list covering the whole card identity, e.g. 10E,JUD,UMA for a card with three printings",
+    "validation_method": "representative value inspection",
+    "timestamp": "2026-10-10T00:00:00+00:00"
+  },
+  {
+    "id": "evidence_null_discipline",
+    "source": "card_games sqlite (read-only)",
+    "query": "SELECT SUM(text=''), SUM(flavorText=''), SUM(artist=''), SUM(subtypes=''), SUM(types='') FROM cards;",
+    "result": "0 empty-string values in all five columns; absence is always represented as NULL",
+    "validation_method": "empty-string scan across text columns",
+    "timestamp": "2026-10-10T00:00:00+00:00"
+  },
+  {
+    "id": "evidence_setcode_subset",
+    "source": "card_games sqlite (read-only)",
+    "query": "SELECT COUNT(*) FROM (SELECT DISTINCT setCode FROM cards EXCEPT SELECT code FROM sets);",
+    "result": "0, so every cards.setCode resolves to a set row, while 15 sets.code values have no printings",
+    "validation_method": "set difference over distinct values",
+    "timestamp": "2026-10-10T00:00:00+00:00"
+  }
+]

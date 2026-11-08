@@ -1,0 +1,160 @@
+[
+  {
+    "id": "rel_customer_transaction",
+    "source": "term_customer",
+    "relation_type": "composition",
+    "target": "term_transaction",
+    "connection_condition": "transactions_1k.CustomerID corresponds to customers.CustomerID; every transaction line resolves to exactly one known customer.",
+    "description": "A customer's purchase activity is composed of transaction lines; each line belongs to one customer and is meaningless without the customer that incurred it.",
+    "evidence": [
+      "evidence_join_integrity"
+    ]
+  },
+  {
+    "id": "rel_gas_station_transaction",
+    "source": "term_gas_station",
+    "relation_type": "composition",
+    "target": "term_transaction",
+    "connection_condition": "transactions_1k.GasStationID corresponds to gasstations.GasStationID; every transaction line resolves to exactly one known outlet.",
+    "description": "The transaction log is composed of purchases made at gas stations; each line records one outlet and cannot be interpreted without it.",
+    "evidence": [
+      "evidence_join_integrity"
+    ]
+  },
+  {
+    "id": "rel_product_transaction",
+    "source": "term_product",
+    "relation_type": "composition",
+    "target": "term_transaction",
+    "connection_condition": "transactions_1k.ProductID corresponds to products.ProductID; every transaction line resolves to exactly one known product.",
+    "description": "A transaction line is composed of a purchased product together with its quantity and price; the line has no meaning without the product it refers to.",
+    "evidence": [
+      "evidence_join_integrity"
+    ]
+  },
+  {
+    "id": "rel_customer_consumption",
+    "source": "term_customer",
+    "relation_type": "composition",
+    "target": "term_gas_consumption",
+    "connection_condition": "yearmonth.CustomerID corresponds to customers.CustomerID; each consumption record belongs to exactly one customer and one month.",
+    "description": "The monthly consumption series is composed of per-customer records; a consumption value is only interpretable as the volume of a specific customer in a specific month.",
+    "evidence": [
+      "evidence_join_integrity",
+      "evidence_yearmonth_scope"
+    ]
+  },
+  {
+    "id": "rel_price_to_unit_price",
+    "source": "term_transaction_price",
+    "relation_type": "derivation",
+    "target": "term_unit_price",
+    "connection_condition": "",
+    "description": "Average price per single item is derived from transaction price: the summed line totals form the numerator of the per-item ratio.",
+    "evidence": [
+      "evidence_amount_price_ranges"
+    ]
+  },
+  {
+    "id": "rel_amount_to_unit_price",
+    "source": "term_transaction_amount",
+    "relation_type": "derivation",
+    "target": "term_unit_price",
+    "connection_condition": "",
+    "description": "Average price per single item is derived from transaction quantity: the summed item quantities form the denominator of the per-item ratio, so a set of lines whose quantities total zero is undefined.",
+    "evidence": [
+      "evidence_amount_price_ranges"
+    ]
+  },
+  {
+    "id": "rel_price_to_customer_spending",
+    "source": "term_transaction_price",
+    "relation_type": "derivation",
+    "target": "term_customer_spending",
+    "connection_condition": "",
+    "description": "Customer total spending is derived by summing transaction price over the lines belonging to that customer.",
+    "evidence": [
+      "evidence_amount_price_ranges",
+      "evidence_join_integrity"
+    ]
+  },
+  {
+    "id": "rel_transaction_date_to_year",
+    "source": "term_transaction_date",
+    "relation_type": "derivation",
+    "target": "term_calendar_year",
+    "connection_condition": "",
+    "description": "The transaction year is derived from the leading four characters of the transaction date text.",
+    "evidence": [
+      "evidence_transaction_scope"
+    ]
+  },
+  {
+    "id": "rel_transaction_date_to_month",
+    "source": "term_transaction_date",
+    "relation_type": "derivation",
+    "target": "term_calendar_month",
+    "connection_condition": "",
+    "description": "The transaction month is derived from the month section of the transaction date text.",
+    "evidence": [
+      "evidence_transaction_scope"
+    ]
+  },
+  {
+    "id": "rel_consumption_period_to_year",
+    "source": "term_consumption_period",
+    "relation_type": "derivation",
+    "target": "term_calendar_year",
+    "connection_condition": "",
+    "description": "The consumption year is derived from the leading four characters of the consumption period text.",
+    "evidence": [
+      "evidence_yearmonth_scope"
+    ]
+  },
+  {
+    "id": "rel_consumption_period_to_month",
+    "source": "term_consumption_period",
+    "relation_type": "derivation",
+    "target": "term_calendar_month",
+    "connection_condition": "",
+    "description": "The consumption month is derived from the last two characters of the consumption period text.",
+    "evidence": [
+      "evidence_yearmonth_scope"
+    ]
+  },
+  {
+    "id": "rel_currency_consumption",
+    "source": "term_customer_currency",
+    "relation_type": "association",
+    "target": "term_gas_consumption",
+    "connection_condition": "Indirect: the currency is an attribute of the customer, and consumption records are linked to customers through the shared CustomerID; no consumption column carries a currency.",
+    "description": "Comparing consumption between CZK-paying and EUR-paying customers requires splitting customers by settlement currency and then aggregating their consumption records; the two concepts are connected only through the customer.",
+    "evidence": [
+      "evidence_consumption_by_currency_2012"
+    ]
+  },
+  {
+    "id": "rel_currency_spending",
+    "source": "term_customer_currency",
+    "relation_type": "association",
+    "target": "term_customer_spending",
+    "connection_condition": "Indirect: the currency is an attribute of the customer whose transaction lines are summed; transactions themselves record no currency.",
+    "description": "Spending can only be attributed to a currency by identifying the currency of the customer who generated it.",
+    "evidence": [
+      "evidence_customer_domains",
+      "evidence_join_integrity"
+    ]
+  },
+  {
+    "id": "rel_country_transaction",
+    "source": "term_gas_station_country",
+    "relation_type": "association",
+    "target": "term_transaction",
+    "connection_condition": "Indirect: a transaction records GasStationID, and the country is an attribute of that gas station; no transaction column carries a country.",
+    "description": "Counting transactions that took place in a given country requires resolving each transaction to its outlet and then to the outlet's country.",
+    "evidence": [
+      "evidence_gasstation_domains",
+      "evidence_join_integrity"
+    ]
+  }
+]

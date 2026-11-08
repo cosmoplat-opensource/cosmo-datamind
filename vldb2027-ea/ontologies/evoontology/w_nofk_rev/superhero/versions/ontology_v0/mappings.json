@@ -1,0 +1,197 @@
+[
+  {
+    "id": "map_superhero_record",
+    "term_id": "superhero",
+    "database_source": "superhero",
+    "table": "superhero",
+    "column": "",
+    "semantic_filter": "the whole character record; no filtering implied by the table name",
+    "aggregation_semantics": "count of character records",
+    "grain": "one row per character",
+    "validation": "750 rows observed"
+  },
+  {
+    "id": "map_superhero_name",
+    "term_id": "superhero_name",
+    "database_source": "superhero",
+    "table": "superhero",
+    "column": "superhero_name",
+    "aggregation_semantics": "not aggregatable; identifies a character",
+    "grain": "one value per character record",
+    "validation": "non-null for all 750 rows; 5 values repeat"
+  },
+  {
+    "id": "map_hero_full_name",
+    "term_id": "hero_full_name",
+    "database_source": "superhero",
+    "table": "superhero",
+    "column": "full_name",
+    "semantic_filter": "only populated for 628 of 750 characters; the empty string occurs on 125 of those",
+    "aggregation_semantics": "not aggregatable; identifies a character",
+    "grain": "one value per character record",
+    "validation": "122 NULL rows observed"
+  },
+  {
+    "id": "map_hero_id_primary",
+    "term_id": "hero_id",
+    "database_source": "superhero",
+    "table": "superhero",
+    "column": "id",
+    "aggregation_semantics": "not aggregatable; identifies a character",
+    "grain": "unique per character",
+    "validation": "primary key, 750 distinct values"
+  },
+  {
+    "id": "map_hero_id_power",
+    "term_id": "hero_id",
+    "database_source": "superhero",
+    "table": "hero_power",
+    "column": "hero_id",
+    "semantic_filter": "identifies the character the power assignment belongs to; matches the character table key",
+    "aggregation_semantics": "count of assigned powers per character",
+    "grain": "one row per character per assigned power",
+    "validation": "0 values outside the character table; 652 distinct characters referenced"
+  },
+  {
+    "id": "map_hero_id_attribute",
+    "term_id": "hero_id",
+    "database_source": "superhero",
+    "table": "hero_attribute",
+    "column": "hero_id",
+    "semantic_filter": "identifies the character the capability score belongs to; matches the character table key",
+    "aggregation_semantics": "count of recorded scores per character",
+    "grain": "one row per character per attribute",
+    "validation": "0 values outside the character table; 623 distinct characters referenced"
+  },
+  {
+    "id": "map_publisher_name",
+    "term_id": "publisher",
+    "database_source": "superhero",
+    "table": "publisher",
+    "column": "publisher_name",
+    "semantic_filter": "one credited value is the empty string and acts as a placeholder",
+    "aggregation_semantics": "count of characters credited to a publisher",
+    "grain": "one row per credited publisher or rights-holder",
+    "validation": "25 rows observed"
+  },
+  {
+    "id": "map_publisher_id",
+    "term_id": "publisher",
+    "database_source": "superhero",
+    "table": "publisher",
+    "column": "id",
+    "aggregation_semantics": "not aggregatable; identifies a publisher",
+    "grain": "unique per publisher record",
+    "validation": "25 distinct values; every character publisher reference resolves here"
+  },
+  {
+    "id": "map_gender",
+    "term_id": "gender",
+    "database_source": "superhero",
+    "table": "gender",
+    "column": "gender",
+    "semantic_filter": "the label column is authoritative; the numeric code is not self-describing",
+    "aggregation_semantics": "count of characters per gender label",
+    "grain": "one row per gender code",
+    "validation": "3 rows: Male, Female, N/A"
+  },
+  {
+    "id": "map_alignment",
+    "term_id": "alignment",
+    "database_source": "superhero",
+    "table": "alignment",
+    "column": "alignment",
+    "semantic_filter": "the label column is authoritative; one code is unused by characters",
+    "aggregation_semantics": "count of characters per alignment label",
+    "grain": "one row per alignment code",
+    "validation": "4 rows: Good, Bad, Neutral, N/A"
+  },
+  {
+    "id": "map_attribute",
+    "term_id": "attribute",
+    "database_source": "superhero",
+    "table": "attribute",
+    "column": "attribute_name",
+    "semantic_filter": "values are stored capitalised, one word each",
+    "aggregation_semantics": "not aggregatable; selects which capability scale is meant",
+    "grain": "one row per capability attribute",
+    "validation": "6 rows observed"
+  },
+  {
+    "id": "map_attribute_value",
+    "term_id": "attribute_value",
+    "database_source": "superhero",
+    "table": "hero_attribute",
+    "column": "attribute_value",
+    "semantic_filter": "only interpretable together with the attribute it was recorded for; a missing row means the attribute was not recorded, not a score of zero",
+    "aggregation_semantics": "read per character per attribute; comparable only within one attribute",
+    "grain": "one row per character per attribute",
+    "validation": "3738 rows, 0 NULL values, 20 distinct values between 5 and 100"
+  },
+  {
+    "id": "map_peak_attribute_score",
+    "term_id": "peak_attribute_score",
+    "database_source": "superhero",
+    "table": "hero_attribute",
+    "column": "attribute_value",
+    "semantic_filter": "must be restricted to a single named attribute before the extremum is taken",
+    "aggregation_semantics": "maximum (or minimum) of attribute_value within one named attribute",
+    "grain": "one value per named attribute",
+    "validation": "global maximum over all attributes observed as 100"
+  },
+  {
+    "id": "map_superpower",
+    "term_id": "superpower",
+    "database_source": "superhero",
+    "table": "superpower",
+    "column": "power_name",
+    "semantic_filter": "a controlled catalogue; two entries share their label with capability attribute names but are different concepts",
+    "aggregation_semantics": "count of characters holding an ability",
+    "grain": "one row per distinct named ability",
+    "validation": "167 rows, no duplicate labels, all referenced by at least one character"
+  },
+  {
+    "id": "map_height_cm",
+    "term_id": "height_cm",
+    "database_source": "superhero",
+    "table": "superhero",
+    "column": "height_cm",
+    "semantic_filter": "0 means not recorded; NULL also means not recorded",
+    "aggregation_semantics": "average or filter over characters, after deciding how 0 and outliers are treated",
+    "grain": "one value per character record",
+    "validation": "692 non-null rows of which 155 are 0; maximum 30480"
+  },
+  {
+    "id": "map_weight_kg",
+    "term_id": "weight_kg",
+    "database_source": "superhero",
+    "table": "superhero",
+    "column": "weight_kg",
+    "semantic_filter": "0 means not recorded; NULL also means not recorded",
+    "aggregation_semantics": "average or filter over characters, after deciding how 0 and outliers are treated",
+    "grain": "one value per character record",
+    "validation": "686 non-null rows of which 172 are 0; maximum 90000000"
+  },
+  {
+    "id": "map_colour",
+    "term_id": "colour",
+    "database_source": "superhero",
+    "table": "colour",
+    "column": "colour",
+    "semantic_filter": "one value explicitly encodes absence of colour",
+    "aggregation_semantics": "count of characters per colour value",
+    "grain": "one row per colour value",
+    "validation": "35 rows; shared vocabulary for eye, hair and skin colour"
+  },
+  {
+    "id": "map_race",
+    "term_id": "race",
+    "database_source": "superhero",
+    "table": "race",
+    "column": "race",
+    "semantic_filter": "the lowest-numbered row holds a placeholder rather than a species",
+    "aggregation_semantics": "count of characters per race",
+    "grain": "one row per race value",
+    "validation": "61 rows; the placeholder row is used by 295 characters"
+  }
+]

@@ -1,0 +1,432 @@
+[
+  {
+    "id": "constraint_post_type_enum",
+    "target": "term_post_type",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "question",
+      "questions",
+      "answer",
+      "answers",
+      "post type",
+      "PostTypeId",
+      "post kind",
+      "thread",
+      "wiki post",
+      "nomination"
+    ],
+    "severity": "block",
+    "scope": "Any analysis over the posts table that needs questions, answers or both.",
+    "confidence": "high",
+    "description": "PostTypeId separates the post kinds: value 1 (42912 rows) is the question kind, carrying Title, Tags, ViewCount, AnswerCount and FavoriteCount and never a ParentId; value 2 (47755 rows) is the answer kind, carrying ParentId and never a Title or Tags; values 3 to 7 are small auxiliary kinds (6, 639, 640, 9 and 5 rows) that also carry a Title and no ParentId. Counting posts without filtering PostTypeId mixes questions with answers and with wiki and nomination posts.",
+    "evidence": [
+      "ev_post_type_distribution",
+      "ev_question_only_columns"
+    ]
+  },
+  {
+    "id": "constraint_question_only_columns",
+    "target": "term_question",
+    "constraint_type": "scope",
+    "trigger_keywords": [
+      "view count",
+      "views",
+      "favorite count",
+      "tags",
+      "answer count",
+      "question columns",
+      "null columns",
+      "which posts have tags"
+    ],
+    "severity": "block",
+    "scope": "Column-level aggregation over posts.",
+    "confidence": "high",
+    "description": "ViewCount, Tags, AnswerCount and FavoriteCount each have exactly 42912 non-null values, equal to the number of questions, and are null for all 47755 answers and for post types 3 to 7. Averages or counts over these columns therefore only ever describe questions, so the PostTypeId filter must be stated explicitly rather than assumed.",
+    "evidence": [
+      "ev_question_only_columns"
+    ]
+  },
+  {
+    "id": "constraint_creaiondate_spelling",
+    "target": "map_post_creation_time",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "creation date",
+      "created",
+      "CreaionDate",
+      "CreationDate",
+      "post date",
+      "when was the post created",
+      "last activity",
+      "LasActivityDate"
+    ],
+    "severity": "block",
+    "scope": "Any reference to a post timestamp.",
+    "confidence": "high",
+    "description": "The creation timestamp of a post is stored under the column name CreaionDate, which omits the letter t; the analogous misspelling LasActivityDate omits the t in Last. Every other table in this database uses the correctly spelled CreationDate. Referring to posts.CreationDate fails, and the misspelled columns must be used verbatim.",
+    "evidence": [
+      "ev_schema_column_spelling"
+    ]
+  },
+  {
+    "id": "constraint_votes_partial_snapshot",
+    "target": "term_vote",
+    "constraint_type": "scope",
+    "trigger_keywords": [
+      "votes",
+      "voting",
+      "upvote",
+      "downvote",
+      "vote history",
+      "voting time range",
+      "how many votes",
+      "vote coverage"
+    ],
+    "severity": "block",
+    "scope": "Any question about voting behaviour or about reproducing score aggregates.",
+    "confidence": "high",
+    "description": "The votes table holds 38930 rows and is a partial snapshot rather than a complete voting history. Its date range is 2010-07-19 to 2011-05-01 and its values carry date precision only, whereas posts span 2009-02-02 to 2014-09-14. Only 8584 of 91966 posts and only 509 of 40325 users appear in it. Any statement about all votes, all voters or the share of posts receiving votes describes this snapshot, not the full site history.",
+    "evidence": [
+      "ev_votes_distribution_and_span",
+      "ev_date_ranges",
+      "ev_score_vs_votes"
+    ]
+  },
+  {
+    "id": "constraint_score_not_recomputable_from_votes",
+    "target": "term_post_score",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "score",
+      "net score",
+      "upvotes minus downvotes",
+      "recompute score",
+      "score from votes",
+      "post score"
+    ],
+    "severity": "block",
+    "scope": "Popularity and quality ranking over posts.",
+    "confidence": "high",
+    "description": "posts.Score must be read directly. Only 8584 of 91966 posts have any vote row, and among those only 3224 have a stored score equal to up-votes minus down-votes computed from votes. Recomputing a score from the votes table therefore produces values that contradict the stored column for most posts that have votes at all, and produces no value at all for the other 83382 posts.",
+    "evidence": [
+      "ev_score_vs_votes",
+      "ev_votes_distribution_and_span"
+    ]
+  },
+  {
+    "id": "constraint_acceptance_two_representations",
+    "target": "term_accepted_answer",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "accepted answer",
+      "accepted",
+      "accept rate",
+      "acceptance rate",
+      "best answer",
+      "VoteTypeId 1",
+      "resolution"
+    ],
+    "severity": "block",
+    "scope": "Acceptance-rate and best-answer analysis.",
+    "confidence": "high",
+    "description": "Acceptance is recorded in two places with very different coverage. The question-side column posts.AcceptedAnswerId is non-null for 14697 of 42912 questions. The vote-side representation is a votes row with VoteTypeId = 1, of which there are 1451 rows, all targeting answer posts and all matching an existing AcceptedAnswerId. Acceptance questions must be answered from AcceptedAnswerId; using the vote rows understates acceptance by roughly a factor of ten.",
+    "evidence": [
+      "ev_accepted_answer_linkage",
+      "ev_votes_distribution_and_span"
+    ]
+  },
+  {
+    "id": "constraint_accepted_answer_integrity",
+    "target": "term_accepted_answer",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "accepted answer",
+      "accepted answer id",
+      "answer linkage",
+      "parent id",
+      "orphan answer"
+    ],
+    "severity": "warning",
+    "scope": "Joins between a question and its accepted answer.",
+    "confidence": "high",
+    "description": "Of the 14697 questions carrying an AcceptedAnswerId, 14696 point to a post whose ParentId equals the question Id. One question, post Id 8689, has AcceptedAnswerId 8713, which is not one of its child answers. A join from question to accepted answer therefore silently loses that row, and 6 further answers have a ParentId that matches no existing post.",
+    "evidence": [
+      "ev_accepted_answer_linkage",
+      "ev_orphan_rows"
+    ]
+  },
+  {
+    "id": "constraint_answer_count_reliable",
+    "target": "term_answer_count",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "answer count",
+      "number of answers",
+      "answers per question",
+      "unanswered",
+      "no answers",
+      "answered questions"
+    ],
+    "severity": "info",
+    "scope": "Answer-volume analysis per question.",
+    "confidence": "high",
+    "description": "posts.AnswerCount is populated for every question and agrees exactly with the number of PostTypeId = 2 posts whose ParentId equals the question Id, for all 42912 questions. It can be used directly without recounting, and a count of zero identifies an unanswered question.",
+    "evidence": [
+      "ev_answer_count_verification"
+    ]
+  },
+  {
+    "id": "constraint_comment_count_minor_drift",
+    "target": "term_post",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "comment count",
+      "comments per post",
+      "number of comments",
+      "discussion volume"
+    ],
+    "severity": "warning",
+    "scope": "Comparing the denormalized comment count with actual comment rows.",
+    "confidence": "medium",
+    "description": "posts.CommentCount disagrees with a direct count of comments rows grouped by PostId for 20 of 91966 posts. The column is a good approximation but is not an exact mirror, and 36 comment rows additionally reference a PostId that no longer exists, so an inner join drops them.",
+    "evidence": [
+      "ev_comment_count_drift",
+      "ev_orphan_rows"
+    ]
+  },
+  {
+    "id": "constraint_tags_denormalized_text",
+    "target": "term_tag",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "tags",
+      "tag list",
+      "tagged",
+      "TagName",
+      "questions with tag",
+      "tag count",
+      "top tags"
+    ],
+    "severity": "warning",
+    "scope": "Tag-based filtering and ranking.",
+    "confidence": "high",
+    "description": "Tags are stored denormalized on questions: posts.Tags concatenates the tag names as tokens wrapped in angle brackets, such as the three tokens bayesian, prior and elicitation in one value. The tags table holds one row per distinct tag (1032 rows) and is the authoritative tag list, but it has no foreign key to posts, so a question is matched to a tag by searching its Tags text. The precomputed tags.Count approximates the resulting question count and drifts slightly from a recount, for example r 7244 against 7240 and time-series 2737 against 2736.",
+    "evidence": [
+      "ev_tags_overview"
+    ]
+  },
+  {
+    "id": "constraint_closure_only_on_questions",
+    "target": "term_closure_time",
+    "constraint_type": "scope",
+    "trigger_keywords": [
+      "closed",
+      "closure",
+      "closed questions",
+      "ClosedDate",
+      "moderation",
+      "on hold"
+    ],
+    "severity": "info",
+    "scope": "Moderation and question-lifecycle analysis.",
+    "confidence": "high",
+    "description": "ClosedDate is non-null for exactly 1610 posts and every one of them is a question. Closure is therefore a question-only attribute, and the closed share of the site is measured against 42912 questions, not against all 91966 posts.",
+    "evidence": [
+      "ev_link_types",
+      "ev_post_type_distribution"
+    ]
+  },
+  {
+    "id": "constraint_community_owned_vs_system_user",
+    "target": "term_community_owned_time",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "community wiki",
+      "community owned",
+      "CommunityOwnedDate",
+      "system user",
+      "Community account",
+      "anonymous owner"
+    ],
+    "severity": "warning",
+    "scope": "Ownership and collective-authorship analysis.",
+    "confidence": "high",
+    "description": "Community ownership and ownership by the system account are different things. 2467 posts carry a CommunityOwnedDate and none of them has OwnerUserId = -1. Separately, the users row with Id -1 is a sentinel account named Community with a reputation of 1 and the location on the server farm, and it owns 211 posts. Treating either signal as the other produces incorrect ownership counts.",
+    "evidence": [
+      "ev_community_owned_and_system_user"
+    ]
+  },
+  {
+    "id": "constraint_vote_type_enum",
+    "target": "term_vote_type",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "vote type",
+      "VoteTypeId",
+      "upvote",
+      "downvote",
+      "favorite",
+      "accepted vote",
+      "moderator review",
+      "bounty vote"
+    ],
+    "severity": "block",
+    "scope": "Any breakdown or filter of the votes table.",
+    "confidence": "high",
+    "description": "Ten VoteTypeId values occur: 2 with 33323 rows, 5 with 3365, 1 with 1451, 3 with 444, 16 with 111, 15 with 72, 8 with 60, 9 with 59, 11 with 44 and 10 with 1. Value 1 is the acceptance vote and always targets an answer post. Values 8 and 9 are the only ones that carry a BountyAmount. Values 15 and 16 form a moderator-review and approval pair, and value 5 is the second most frequent type even though it never carries a bounty amount.",
+    "evidence": [
+      "ev_votes_distribution_and_span",
+      "ev_bounty_amount"
+    ]
+  },
+  {
+    "id": "constraint_bounty_lifecycle",
+    "target": "term_bounty",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "bounty",
+      "bounties",
+      "BountyAmount",
+      "bounty amount",
+      "offered reputation"
+    ],
+    "severity": "info",
+    "scope": "Bounty analysis.",
+    "confidence": "high",
+    "description": "Bounties appear only as vote rows carrying a BountyAmount: 60 rows of type 8 and 41 of the 59 rows of type 9, 101 rows in total. The type 8 and type 9 rows form a start and close pair, and the close side is not always populated with an amount, so counting bounty events and counting bounty amounts give different answers.",
+    "evidence": [
+      "ev_bounty_amount"
+    ]
+  },
+  {
+    "id": "constraint_post_link_type_enum",
+    "target": "term_post_link_type",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "link",
+      "linked",
+      "post link",
+      "duplicate",
+      "LinkTypeId",
+      "related post",
+      "duplicate question"
+    ],
+    "severity": "block",
+    "scope": "Post-to-post relationship analysis.",
+    "confidence": "high",
+    "description": "Only two LinkTypeId values exist: 1 with 10186 rows and 3 with 916 rows. Links point almost exclusively from question to question; only five rows link to an answer. The source post of a type 3 link is closed in 915 of 915 joinable rows, so type 3 marks a duplicate relationship, whereas only 1099 of 10185 joinable type 1 sources are closed.",
+    "evidence": [
+      "ev_link_types",
+      "ev_orphan_rows"
+    ]
+  },
+  {
+    "id": "constraint_post_history_type_enum",
+    "target": "term_post_history_type",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "history",
+      "revision",
+      "edit",
+      "PostHistoryTypeId",
+      "edit history",
+      "who edited",
+      "rollback",
+      "lock"
+    ],
+    "severity": "block",
+    "scope": "Revision-history interpretation.",
+    "confidence": "high",
+    "description": "postHistory carries 25 distinct PostHistoryTypeId values; the largest are 2 with 91974 rows, 5 with 69413, 3 with 42921, 1 with 42909, 4 with 16008, 6 with 12731, 25 with 10320 and 24 with 7017. The text payload is a revision snapshot, not the current content: for type 1 the payload equals the current posts.Title in 29351 of 42909 rows, for type 3 it equals the current posts.Tags in 32167 of 42921 rows, and for type 2 it equals the current posts.Body in only 76 of 91974 rows. Types 10 and 13 carry a JSON array of voters such as {\"Voters\":[{\"Id\":60,...}]} and types 36 and 38 carry a JSON array of editors, while types 16, 24, 25, 33 and 34 carry an empty text payload.",
+    "evidence": [
+      "ev_history_types_and_revision_match"
+    ]
+  },
+  {
+    "id": "constraint_reputation_is_lifetime_aggregate",
+    "target": "term_reputation",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "reputation",
+      "rep",
+      "highest reputation",
+      "upvotes given",
+      "downvotes given",
+      "user score"
+    ],
+    "severity": "warning",
+    "scope": "User ranking and contribution analysis.",
+    "confidence": "high",
+    "description": "users.Reputation is a maintained lifetime value ranging from 1 to 87393, and 15090 users sit at 1 or below. The companion columns UpVotes and DownVotes are likewise lifetime counters: recomputing them from the votes table matches for only 31529 and 39578 of 40325 users respectively, because only 509 users appear in votes at all. These user-level aggregates must be read directly rather than derived.",
+    "evidence": [
+      "ev_user_aggregates",
+      "ev_votes_distribution_and_span"
+    ]
+  },
+  {
+    "id": "constraint_temporal_coverage",
+    "target": "term_post_creation_time",
+    "constraint_type": "scope",
+    "trigger_keywords": [
+      "date range",
+      "time period",
+      "year",
+      "coverage",
+      "temporal",
+      "trend over time",
+      "when",
+      "history of the site"
+    ],
+    "severity": "block",
+    "scope": "Any trend or period comparison across tables.",
+    "confidence": "high",
+    "description": "The tables do not share a common time window. posts, comments and postHistory start at 2009-02-02; users, badges and votes start at 2010-07-19; postLinks starts at 2010-07-21. All except votes end between 2014-09-13 and 2014-09-14. votes ends at 2011-05-01, so any per-year comparison that spans votes and posts is truncated after 2011 for the vote side, and the 2009 year exists only for posts, comments and history.",
+    "evidence": [
+      "ev_date_ranges",
+      "ev_votes_distribution_and_span"
+    ]
+  },
+  {
+    "id": "constraint_null_owner_and_editor",
+    "target": "term_post",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "owner",
+      "author",
+      "unowned",
+      "anonymous",
+      "who wrote",
+      "editor",
+      "LastEditorUserId"
+    ],
+    "severity": "warning",
+    "scope": "Author attribution over posts.",
+    "confidence": "high",
+    "description": "1392 of 91966 posts have a null OwnerUserId, so a join from posts to users on ownership silently drops them, and 47361 posts have a null LastEditorUserId. Every non-null OwnerUserId resolves to a users row, so the gap is missing attribution rather than a broken reference.",
+    "evidence": [
+      "ev_orphan_rows",
+      "ev_post_type_distribution"
+    ]
+  },
+  {
+    "id": "constraint_declared_fks_not_enforced",
+    "target": "term_post_link",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "join",
+      "orphan",
+      "missing row",
+      "referential integrity",
+      "foreign key",
+      "inner join",
+      "dangling reference"
+    ],
+    "severity": "warning",
+    "scope": "Any join from a child table to posts or users.",
+    "confidence": "high",
+    "description": "Foreign keys are declared in the schema but are not fully enforced in the data. postLinks has 1 orphan PostId and 3 orphan RelatedPostId, comments has 36 orphan PostId rows, postHistory has 41 orphan PostId rows, tags has 1 orphan ExcerptPostId, and 6 answers have a ParentId that matches no post. Every UserId reference in badges, comments and votes resolves correctly. Inner joins therefore lose a small but nonzero number of rows across most child tables.",
+    "evidence": [
+      "ev_orphan_rows"
+    ]
+  }
+]

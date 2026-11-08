@@ -1,0 +1,194 @@
+[
+  {
+    "id": "evidence_schema_tables",
+    "source": "student_club.sqlite",
+    "query": "SELECT type, name, sql FROM sqlite_master WHERE type IN ('table','view') ORDER BY name",
+    "result": "Eight tables: attendance, budget, event, expense, income, major, member, zip_code. No views. Declared foreign keys: attendance(link_to_event->event.event_id, link_to_member->member.member_id), budget(link_to_event->event.event_id), expense(link_to_budget->budget.budget_id, link_to_member->member.member_id), income(link_to_member->member.member_id), member(link_to_major->major.major_id, zip->zip_code.zip_code).",
+    "validation_method": "read-only schema inspection of the SQLite file",
+    "timestamp": "2026-10-10T00:00:00Z"
+  },
+  {
+    "id": "evidence_row_counts",
+    "source": "student_club.sqlite",
+    "query": "SELECT COUNT(*) FROM each of attendance, budget, event, expense, income, major, member, zip_code",
+    "result": "attendance 326, budget 52, event 42, expense 32, income 36, major 113, member 33, zip_code 41877.",
+    "validation_method": "row counts per table",
+    "timestamp": "2026-10-10T00:00:00Z"
+  },
+  {
+    "id": "evidence_member_position_values",
+    "source": "student_club.sqlite",
+    "query": "SELECT position, COUNT(*) FROM member GROUP BY position ORDER BY COUNT(*) DESC",
+    "result": "Member 26, Inactive 3, Vice President 1, Treasurer 1, Secretary 1, President 1. Six distinct values; Member and Inactive are participation states while the remaining four are office titles.",
+    "validation_method": "distinct value enumeration",
+    "timestamp": "2026-10-10T00:00:00Z"
+  },
+  {
+    "id": "evidence_event_type_status_values",
+    "source": "student_club.sqlite",
+    "query": "SELECT type, status, COUNT(*) FROM event GROUP BY type, status",
+    "result": "Types: Meeting 16, Guest Speaker 7, Game 6, Social 4, Community Service 4, Election 2, Budget 2, Registration 1. Statuses: Closed 18, Open 13, Planning 11. Every type except Registration appears with more than one status.",
+    "validation_method": "grouped distinct value enumeration",
+    "timestamp": "2026-10-10T00:00:00Z"
+  },
+  {
+    "id": "evidence_event_status_temporal",
+    "source": "student_club.sqlite",
+    "query": "SELECT status, SUM(event_date < '2020-01-01'), COUNT(*) FROM event GROUP BY status",
+    "result": "Closed: 18 of 18 events dated before 2020. Open: 2 of 13 before 2020. Planning: 0 of 11 before 2020. All Closed events are 2019 events and all Planning events are 2020 events.",
+    "validation_method": "cross-tabulation of status against date",
+    "timestamp": "2026-10-10T00:00:00Z"
+  },
+  {
+    "id": "evidence_attendance_grain",
+    "source": "student_club.sqlite",
+    "query": "SELECT COUNT(*) FROM (SELECT link_to_event, link_to_member FROM attendance GROUP BY 1,2 HAVING COUNT(*) > 1)",
+    "result": "0 duplicate pairs, confirming the pair of event and member identifies an attendance record. 30 distinct members and 17 distinct events appear; attendance per event ranges from 4 to 30 with mean 19.18.",
+    "validation_method": "primary key uniqueness check and grouped counts",
+    "timestamp": "2026-10-10T00:00:00Z"
+  },
+  {
+    "id": "evidence_attendance_coverage",
+    "source": "student_club.sqlite",
+    "query": "SELECT COUNT(*) FROM event e WHERE NOT EXISTS (SELECT 1 FROM attendance a WHERE a.link_to_event = e.event_id) and the member analogue",
+    "result": "25 of 42 events have no attendance record, and 3 of 33 members never appear in attendance. Attendance therefore covers 17 events and 30 members.",
+    "validation_method": "anti-join coverage check",
+    "timestamp": "2026-10-10T00:00:00Z"
+  },
+  {
+    "id": "evidence_budget_grain_multirow",
+    "source": "student_club.sqlite",
+    "query": "SELECT link_to_event, COUNT(*) FROM budget GROUP BY link_to_event HAVING COUNT(*) > 1; SELECT MAX(c) FROM (SELECT COUNT(*) c FROM budget GROUP BY link_to_event)",
+    "result": "15 events hold more than one budget line, with a maximum of 4 lines on a single event. 52 budget lines map to 23 distinct events.",
+    "validation_method": "grouped cardinality check",
+    "timestamp": "2026-10-10T00:00:00Z"
+  },
+  {
+    "id": "evidence_budget_arithmetic",
+    "source": "student_club.sqlite",
+    "query": "SELECT COUNT(*) FROM budget WHERE ABS(COALESCE(spent,0)+COALESCE(remaining,0)-COALESCE(amount,0)) > 0.01",
+    "result": "0 mismatches out of 52 rows: spent + remaining equals amount on every budget line. No nulls in spent, remaining or amount. Amounts range 10 to 350 (total 4200); one remaining value is negative (-0.199999999999999).",
+    "validation_method": "arithmetic identity check across all rows",
+    "timestamp": "2026-10-10T00:00:00Z"
+  },
+  {
+    "id": "evidence_budget_spent_equals_expense_sum",
+    "source": "student_club.sqlite",
+    "query": "SELECT b.budget_id, b.category, b.spent, (SELECT COALESCE(SUM(x.cost),0) FROM expense x WHERE x.link_to_budget = b.budget_id) FROM budget b",
+    "result": "The spent amount of each budget line equals the sum of the costs of the expenses charged to that line, verified across all 52 lines. Budget lines with no expenses carry a spent amount of 0.",
+    "validation_method": "per-row cross-table aggregation comparison",
+    "timestamp": "2026-10-10T00:00:00Z"
+  },
+  {
+    "id": "evidence_budget_event_status_agreement",
+    "source": "student_club.sqlite",
+    "query": "SELECT COUNT(*) FROM budget b JOIN event e ON b.link_to_event = e.event_id WHERE b.event_status <> e.status",
+    "result": "0 disagreements: the status recorded on each budget line matches the status of its event on every joined row. budget.event_status holds the same three values as event.status.",
+    "validation_method": "cross-table value agreement check",
+    "timestamp": "2026-10-10T00:00:00Z"
+  },
+  {
+    "id": "evidence_budget_category_values",
+    "source": "student_club.sqlite",
+    "query": "SELECT category, COUNT(*) FROM budget GROUP BY category ORDER BY COUNT(*) DESC",
+    "result": "Food 22, Advertisement 15, Speaker Gifts 7, Parking 7, Club T-Shirts 1. Five distinct categories across 52 lines.",
+    "validation_method": "distinct value enumeration",
+    "timestamp": "2026-10-10T00:00:00Z"
+  },
+  {
+    "id": "evidence_expense_approved_values",
+    "source": "student_club.sqlite",
+    "query": "SELECT approved, COUNT(*) FROM expense GROUP BY approved",
+    "result": "The only non-null value is the text true, on 31 rows; 1 row is null. No false value and no numeric encoding are present.",
+    "validation_method": "distinct value enumeration",
+    "timestamp": "2026-10-10T00:00:00Z"
+  },
+  {
+    "id": "evidence_expense_amounts",
+    "source": "student_club.sqlite",
+    "query": "SELECT MIN(cost), MAX(cost), ROUND(SUM(cost),2) FROM expense",
+    "result": "Costs range from 6.0 to 295.12 with a total of 2086.05 across 32 expenses, stored as real values with fractional precision.",
+    "validation_method": "aggregate range and total check",
+    "timestamp": "2026-10-10T00:00:00Z"
+  },
+  {
+    "id": "evidence_income_source_values",
+    "source": "student_club.sqlite",
+    "query": "SELECT source, COUNT(*) FROM income GROUP BY source ORDER BY COUNT(*) DESC",
+    "result": "Dues 33, Sponsorship 1, School Appropration 1, Fundraising 1. Four distinct values; the appropriation label is stored with the literal spelling School Appropration.",
+    "validation_method": "distinct value enumeration",
+    "timestamp": "2026-10-10T00:00:00Z"
+  },
+  {
+    "id": "evidence_income_missing_member",
+    "source": "student_club.sqlite",
+    "query": "SELECT income_id, link_to_member, source FROM income i WHERE NOT EXISTS (SELECT 1 FROM member m WHERE m.member_id = i.link_to_member)",
+    "result": "3 receipts have a null member link: recN3WFwGR0c17xe2 (Fundraising), recenMwUQktMpDTQc (School Appropration), recphAFPbyclQY63d (Sponsorship). All three are non-dues sources; every dues receipt carries a member link.",
+    "validation_method": "anti-join over the member link",
+    "timestamp": "2026-10-10T00:00:00Z"
+  },
+  {
+    "id": "evidence_income_amount_integers",
+    "source": "student_club.sqlite",
+    "query": "SELECT MIN(amount), MAX(amount), SUM(amount) FROM income",
+    "result": "Amounts are whole numbers from 50 to 3000 with a total of 5850 across 36 receipts. The column affinity is integer, unlike the fractional expense and spent columns.",
+    "validation_method": "aggregate range, total and value type check",
+    "timestamp": "2026-10-10T00:00:00Z"
+  },
+  {
+    "id": "evidence_financial_totals",
+    "source": "student_club.sqlite",
+    "query": "SELECT SUM(amount) FROM income; SELECT ROUND(SUM(cost),2) FROM expense; SELECT SUM(amount) FROM budget; date ranges per table",
+    "result": "Total income 5850 against total expense 2086.05, giving a net balance of 3763.95; total budgeted allocation 4200. Receipt dates run 2019-09-01 to 2019-10-31 and expense dates 2019-08-20 to 2019-11-19, while event dates run 2019-09-01 to 2020-05-05.",
+    "validation_method": "aggregate totals and per-table date range extraction",
+    "timestamp": "2026-10-10T00:00:00Z"
+  },
+  {
+    "id": "evidence_date_formats",
+    "source": "student_club.sqlite",
+    "query": "SELECT event_date FROM event ORDER BY event_date LIMIT 3 / DESC; the analogous queries on expense.expense_date and income.date_received",
+    "result": "event.event_date values are ISO-8601 date-times with a T separator, e.g. 2019-09-01T07:00:00 and 2020-05-05T12:00:00. expense.expense_date and income.date_received are date-only strings, e.g. 2019-08-20 and 2019-10-31.",
+    "validation_method": "representative value sampling per date column",
+    "timestamp": "2026-10-10T00:00:00Z"
+  },
+  {
+    "id": "evidence_zip_reference_scale",
+    "source": "student_club.sqlite",
+    "query": "SELECT COUNT(DISTINCT city) FROM zip_code; SELECT type, COUNT(*) FROM zip_code GROUP BY type",
+    "result": "41877 postal codes covering 18729 distinct cities. Type values: Standard 29973, PO Box 9438, Unique 2466. City names repeat across postal codes, for example Abbeville holds 6 codes and Abilene 11.",
+    "validation_method": "cardinality and distinct value check",
+    "timestamp": "2026-10-10T00:00:00Z"
+  },
+  {
+    "id": "evidence_member_zip_join",
+    "source": "student_club.sqlite",
+    "query": "SELECT COUNT(*) FROM member m LEFT JOIN zip_code z ON m.zip = z.zip_code WHERE z.zip_code IS NULL; and the state distribution",
+    "result": "0 orphan references and no null member zips: every member resolves to exactly one postal record. Members span 18 states, led by NY 5, NJ 4, MD 3, IN 3, IL 3.",
+    "validation_method": "left-join integrity check and grouped distribution",
+    "timestamp": "2026-10-10T00:00:00Z"
+  },
+  {
+    "id": "evidence_member_major_join",
+    "source": "student_club.sqlite",
+    "query": "SELECT COUNT(DISTINCT department), COUNT(DISTINCT college) FROM major; member LEFT JOIN major on link_to_major",
+    "result": "113 majors across 47 departments and 8 colleges. 32 of 33 members resolve to a major with 0 orphan references; 1 member has a null major link. College counts among members: College of Education & Human Services 8, College of Humanities and Social Sciences 7, College of Engineering 6, College of Agriculture and Applied Sciences 6, College of Natural Resources 2, School of Business 1.",
+    "validation_method": "left-join integrity check and grouped distribution",
+    "timestamp": "2026-10-10T00:00:00Z"
+  },
+  {
+    "id": "evidence_event_budget_coverage",
+    "source": "student_club.sqlite",
+    "query": "SELECT COUNT(*) FROM event e LEFT JOIN budget b ON b.link_to_event = e.event_id WHERE b.budget_id IS NULL",
+    "result": "19 of 42 events have no budget row; 23 distinct events are covered by the 52 budget lines. No budget line has a null event link.",
+    "validation_method": "anti-join coverage check",
+    "timestamp": "2026-10-10T00:00:00Z"
+  },
+  {
+    "id": "evidence_referential_integrity",
+    "source": "student_club.sqlite",
+    "query": "Left-join orphan checks from attendance, budget, expense and income to their referenced tables",
+    "result": "attendance->event 0 orphans, attendance->member 0 orphans, budget->event 0 orphans, expense->budget 0 orphans, expense->member 0 orphans. expense.link_to_member and expense.link_to_budget are never null. income->member has 3 rows with a null link, which are excluded from this orphan count by the null test.",
+    "validation_method": "left-join referential integrity audit",
+    "timestamp": "2026-10-10T00:00:00Z"
+  }
+]

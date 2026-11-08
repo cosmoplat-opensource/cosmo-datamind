@@ -1,0 +1,357 @@
+[
+  {
+    "id": "rel_patient_lab",
+    "source": "term_patient",
+    "relation_type": "composition",
+    "target": "term_laboratory_examination",
+    "connection_condition": "tab03.fld001 references tab02.fld001; each laboratory record belongs to exactly one patient.",
+    "description": "A patient has zero or more laboratory examination records; a laboratory record cannot exist without its patient.",
+    "evidence": [
+      "evidence_010"
+    ]
+  },
+  {
+    "id": "rel_patient_dxrecord",
+    "source": "term_patient",
+    "relation_type": "composition",
+    "target": "term_diagnosis_record",
+    "connection_condition": "tab01.fld001 is declared as a foreign key to tab02.fld001.",
+    "description": "A patient can have multiple diagnosis records; each diagnosis record belongs to a patient. Observed identifier overlap between tab01 and tab02 is limited (see constraint_tab01_patient_linkage).",
+    "evidence": [
+      "evidence_009"
+    ]
+  },
+  {
+    "id": "rel_dxrecord_label",
+    "source": "term_diagnosis_record",
+    "relation_type": "composition",
+    "target": "term_diagnosis_record_label",
+    "connection_condition": "tab01.fld008 is stored on the same diagnosis record row.",
+    "description": "The diagnosis label is a component of a diagnosis record.",
+    "evidence": [
+      "evidence_007"
+    ]
+  },
+  {
+    "id": "rel_dxrecord_symptom",
+    "source": "term_diagnosis_record",
+    "relation_type": "composition",
+    "target": "term_symptom",
+    "connection_condition": "tab01.fld012 is stored on the same diagnosis record row.",
+    "description": "Symptoms are a component of a diagnosis record; they are populated only for records with a non-zero thrombosis-related status.",
+    "evidence": [
+      "evidence_008"
+    ]
+  },
+  {
+    "id": "rel_dxrecord_thrombosis",
+    "source": "term_diagnosis_record",
+    "relation_type": "composition",
+    "target": "term_thrombosis_status",
+    "connection_condition": "tab01.fld013 is stored on the same diagnosis record row.",
+    "description": "Thrombosis-related status is a component of a diagnosis record.",
+    "evidence": [
+      "evidence_008"
+    ]
+  },
+  {
+    "id": "rel_patient_pdx",
+    "source": "term_patient",
+    "relation_type": "association",
+    "target": "term_patient_diagnosis",
+    "connection_condition": "tab02.fld008 is stored on the patient row.",
+    "description": "The patient record carries a patient-level diagnosis label.",
+    "evidence": [
+      "evidence_006"
+    ]
+  },
+  {
+    "id": "rel_patient_sex",
+    "source": "term_patient",
+    "relation_type": "association",
+    "target": "term_sex",
+    "connection_condition": "tab02.fld014 is stored on the patient row.",
+    "description": "Sex is a patient-level attribute.",
+    "evidence": [
+      "evidence_003"
+    ]
+  },
+  {
+    "id": "rel_patient_birthday",
+    "source": "term_patient",
+    "relation_type": "association",
+    "target": "term_birthday",
+    "connection_condition": "tab02.fld015 is stored on the patient row.",
+    "description": "Birthday is a patient-level attribute.",
+    "evidence": [
+      "evidence_004"
+    ]
+  },
+  {
+    "id": "rel_patient_first_visit",
+    "source": "term_patient",
+    "relation_type": "association",
+    "target": "term_first_visit_date",
+    "connection_condition": "tab02.fld017 is stored on the patient row.",
+    "description": "The first visit date is a patient-level attribute.",
+    "evidence": [
+      "evidence_004"
+    ]
+  },
+  {
+    "id": "rel_patient_dxdate",
+    "source": "term_patient",
+    "relation_type": "association",
+    "target": "term_diagnosis_date",
+    "connection_condition": "tab02.fld016 is stored on the patient row.",
+    "description": "The patient-level diagnosis date is a patient attribute.",
+    "evidence": [
+      "evidence_004"
+    ]
+  },
+  {
+    "id": "rel_patient_followup",
+    "source": "term_patient",
+    "relation_type": "association",
+    "target": "term_follow_up_status",
+    "connection_condition": "tab02.fld018 is stored on the patient row.",
+    "description": "Follow-up status is a patient-level attribute.",
+    "evidence": [
+      "evidence_005"
+    ]
+  },
+  {
+    "id": "rel_lab_examdate",
+    "source": "term_laboratory_examination",
+    "relation_type": "association",
+    "target": "term_examination_date",
+    "connection_condition": "tab03.fld019 is stored on the laboratory record row.",
+    "description": "Each laboratory record is dated by its examination date.",
+    "evidence": [
+      "evidence_010"
+    ]
+  },
+  {
+    "id": "rel_lab_uric",
+    "source": "term_laboratory_examination",
+    "relation_type": "association",
+    "target": "term_uric_acid",
+    "connection_condition": "tab03.fld026 is stored on the laboratory record row.",
+    "description": "Uric acid is a measurement carried by a laboratory examination.",
+    "evidence": [
+      "evidence_011"
+    ]
+  },
+  {
+    "id": "rel_lab_hct",
+    "source": "term_laboratory_examination",
+    "relation_type": "association",
+    "target": "term_hematocrit",
+    "connection_condition": "tab03.fld037 is stored on the laboratory record row.",
+    "description": "Hematocrit is a measurement carried by a laboratory examination.",
+    "evidence": [
+      "evidence_012"
+    ]
+  },
+  {
+    "id": "rel_lab_rbc",
+    "source": "term_laboratory_examination",
+    "relation_type": "association",
+    "target": "term_red_blood_cell_count",
+    "connection_condition": "tab03.fld035 is stored on the laboratory record row.",
+    "description": "Red blood cell count is a measurement carried by a laboratory examination.",
+    "evidence": [
+      "evidence_013"
+    ]
+  },
+  {
+    "id": "rel_lab_ldh",
+    "source": "term_laboratory_examination",
+    "relation_type": "association",
+    "target": "term_ldh",
+    "connection_condition": "tab03.fld022 is stored on the laboratory record row.",
+    "description": "LDH is a measurement carried by a laboratory examination.",
+    "evidence": [
+      "evidence_014"
+    ]
+  },
+  {
+    "id": "rel_lab_chol",
+    "source": "term_laboratory_examination",
+    "relation_type": "association",
+    "target": "term_total_cholesterol",
+    "connection_condition": "tab03.fld030 is stored on the laboratory record row.",
+    "description": "Total cholesterol is a measurement carried by a laboratory examination.",
+    "evidence": [
+      "evidence_018"
+    ]
+  },
+  {
+    "id": "rel_lab_pt",
+    "source": "term_laboratory_examination",
+    "relation_type": "association",
+    "target": "term_prothrombin_time",
+    "connection_condition": "tab03.fld039 is stored on the laboratory record row.",
+    "description": "Prothrombin time is a measurement carried by a laboratory examination.",
+    "evidence": [
+      "evidence_016"
+    ]
+  },
+  {
+    "id": "rel_lab_iga",
+    "source": "term_laboratory_examination",
+    "relation_type": "association",
+    "target": "term_immunoglobulin_a",
+    "connection_condition": "tab03.fld047 is stored on the laboratory record row.",
+    "description": "IgA is a measurement carried by a laboratory examination.",
+    "evidence": [
+      "evidence_015"
+    ]
+  },
+  {
+    "id": "rel_lab_acl",
+    "source": "term_laboratory_examination",
+    "relation_type": "association",
+    "target": "term_anti_cardiolipin_antibody",
+    "connection_condition": "tab03.fld048 is stored on the laboratory record row.",
+    "description": "Anti-cardiolipin antibody is a measurement carried by a laboratory examination.",
+    "evidence": [
+      "evidence_017"
+    ]
+  },
+  {
+    "id": "rel_lab_antism",
+    "source": "term_laboratory_examination",
+    "relation_type": "association",
+    "target": "term_anti_sm_antibody",
+    "connection_condition": "tab03.fld055 is stored on the laboratory record row.",
+    "description": "Anti-Sm antibody is a result carried by a laboratory examination.",
+    "evidence": [
+      "evidence_019"
+    ]
+  },
+  {
+    "id": "rel_pdx_equiv_dxlabel",
+    "source": "term_patient_diagnosis",
+    "relation_type": "equivalence",
+    "target": "term_diagnosis_record_label",
+    "connection_condition": "tab02.fld008 and tab01.fld008 share the same disease vocabulary; tab02 spells Sjogren syndrome as 'SJS' while tab01 spells it as 'SjS', and BEHCET/Behcet case varies.",
+    "description": "Both fields represent a rheumatic disease diagnosis label; they differ in grain (patient-level versus event-level) and in spelling variants.",
+    "evidence": [
+      "evidence_006",
+      "evidence_007",
+      "evidence_012"
+    ]
+  },
+  {
+    "id": "rel_pdx_sle",
+    "source": "term_patient_diagnosis",
+    "relation_type": "hierarchy",
+    "target": "term_sle_diagnosis",
+    "connection_condition": "",
+    "description": "SLE diagnosis is a specific category of patient diagnosis; its value domain is a subset of diagnosis labels.",
+    "evidence": [
+      "evidence_006"
+    ]
+  },
+  {
+    "id": "rel_pdx_ra",
+    "source": "term_patient_diagnosis",
+    "relation_type": "hierarchy",
+    "target": "term_ra_diagnosis",
+    "connection_condition": "",
+    "description": "RA diagnosis is a specific category of patient diagnosis; its value domain is a subset of diagnosis labels.",
+    "evidence": [
+      "evidence_006"
+    ]
+  },
+  {
+    "id": "rel_pdx_aps",
+    "source": "term_patient_diagnosis",
+    "relation_type": "hierarchy",
+    "target": "term_aps_diagnosis",
+    "connection_condition": "",
+    "description": "APS diagnosis is a specific category of patient diagnosis; its value domain is a subset of diagnosis labels.",
+    "evidence": [
+      "evidence_006"
+    ]
+  },
+  {
+    "id": "rel_birthday_age",
+    "source": "term_birthday",
+    "relation_type": "derivation",
+    "target": "term_age",
+    "connection_condition": "Age uses tab02.fld015 as its only input.",
+    "description": "Age is derived as the current calendar year minus the year of the birthday.",
+    "evidence": [
+      "evidence_004"
+    ]
+  },
+  {
+    "id": "rel_patient_percentage",
+    "source": "term_patient",
+    "relation_type": "derivation",
+    "target": "term_percentage",
+    "connection_condition": "",
+    "description": "A percentage is derived from a part count and a whole count of patients or patient records; the whole count is the denominator and the result is multiplied by 100.",
+    "evidence": [
+      "evidence_003"
+    ]
+  },
+  {
+    "id": "rel_sex_ratio",
+    "source": "term_sex",
+    "relation_type": "derivation",
+    "target": "term_sex_ratio",
+    "connection_condition": "",
+    "description": "The male-to-female ratio is derived from counts of patients by sex.",
+    "evidence": [
+      "evidence_003"
+    ]
+  },
+  {
+    "id": "rel_chol_decrease",
+    "source": "term_total_cholesterol",
+    "relation_type": "derivation",
+    "target": "term_decrease_rate",
+    "connection_condition": "",
+    "description": "The decrease rate compares an earlier and a later total cholesterol measurement, using the later value as the denominator.",
+    "evidence": [
+      "evidence_018"
+    ]
+  },
+  {
+    "id": "rel_sex_uric",
+    "source": "term_sex",
+    "relation_type": "association",
+    "target": "term_uric_acid",
+    "connection_condition": "tab02.fld014 identifies the patient sex for each laboratory record through tab03.fld001.",
+    "description": "Uric acid reference limits are sex-specific (higher upper limit for males); sex must be considered when judging normality.",
+    "evidence": [
+      "evidence_003",
+      "evidence_011"
+    ]
+  },
+  {
+    "id": "rel_lab_count",
+    "source": "term_laboratory_examination",
+    "relation_type": "derivation",
+    "target": "term_laboratory_examination_count",
+    "connection_condition": "",
+    "description": "The examination count is derived by counting the laboratory records that belong to a patient.",
+    "evidence": [
+      "evidence_010"
+    ]
+  },
+  {
+    "id": "rel_dxrecord_date",
+    "source": "term_diagnosis_record",
+    "relation_type": "association",
+    "target": "term_diagnosis_record_date",
+    "connection_condition": "tab01.fld002 is stored on the diagnosis record row.",
+    "description": "Each diagnosis record carries a diagnosis record date.",
+    "evidence": [
+      "evidence_009"
+    ]
+  }
+]

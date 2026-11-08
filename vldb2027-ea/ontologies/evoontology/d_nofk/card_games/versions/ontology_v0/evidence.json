@@ -1,0 +1,242 @@
+[
+  {
+    "id": "ev_schema_inventory",
+    "source": "card_games (SQLite, read-only)",
+    "query": "sqlite3 \"file:card_games.sqlite?mode=ro\" \".tables\"",
+    "result": "6 tables: cards, foreign_data, legalities, rulings, sets, set_translations. No declared FOREIGN KEY constraints; relationships are expressed by uuid text columns and by cards.setCode / sets.code.",
+    "validation_method": "read-only schema listing",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_cards_rowcount",
+    "source": "card_games.cards",
+    "query": "SELECT COUNT(*) FROM cards",
+    "result": "56822",
+    "validation_method": "read-only aggregate",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_cards_grain",
+    "source": "card_games.cards",
+    "query": "SELECT COUNT(*) AS rows, COUNT(DISTINCT uuid) AS uuids, COUNT(DISTINCT name) AS names FROM cards",
+    "result": "56822 rows | 56822 distinct uuid | 21738 distinct name",
+    "validation_method": "cardinality comparison of candidate identity columns",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_multi_face",
+    "source": "card_games.cards",
+    "query": "SELECT id,name,faceName,uuid,otherFaceIds,side FROM cards WHERE otherFaceIds <> '' LIMIT 6; SELECT COUNT(*) FROM cards WHERE otherFaceIds <> ''",
+    "result": "1367 rows carry a non-empty faceName together with otherFaceIds. Example: name='Dusk // Dawn' is stored as two separate rows (faceName 'Dusk' side 'a' and faceName 'Dawn' side 'b'), each with its own uuid and its own otherFaceIds pointing at the sibling. otherFaceIds resolves to another cards.uuid in 1348 of 1367 rows. 684 rows have side other than 'a'. Multi-face layouts affected: transform 360, modal_dfc 322, adventure 228, split 221, aftermath 146, flip 72, meld 18.",
+    "validation_method": "value inspection of face columns and self-reference resolution",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_uuid_joins",
+    "source": "card_games (cards / legalities / rulings / foreign_data)",
+    "query": "SELECT COUNT(*) FROM legalities l LEFT JOIN cards c ON c.uuid=l.uuid WHERE c.uuid IS NULL; (same for rulings, foreign_data); SELECT COUNT(*) FROM cards c LEFT JOIN legalities l ON l.uuid=c.uuid WHERE l.uuid IS NULL; SELECT COUNT(DISTINCT uuid) FROM legalities",
+    "result": "rulings: 0 orphan rows. legalities: 72 orphan rows covering 9 distinct uuid; legalities references 55608 distinct card uuid. foreign_data: 16 orphan rows. cards with no legalities row: 1223.",
+    "validation_method": "left-join orphan counting on both sides of each reference",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_setcode_link",
+    "source": "card_games (cards / sets)",
+    "query": "SELECT COUNT(DISTINCT setCode) FROM cards; SELECT COUNT(*) FROM cards c LEFT JOIN sets s ON s.code=c.setCode WHERE s.code IS NULL; SELECT COUNT(*) FROM sets s LEFT JOIN cards c ON c.setCode=s.code WHERE c.uuid IS NULL",
+    "result": "536 distinct setCode values in cards; 0 cards lack a matching sets.code; 551 sets in total; 15 sets have no cards row.",
+    "validation_method": "bidirectional referential integrity check",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_sets_fields",
+    "source": "card_games.sets",
+    "query": "SELECT COUNT(*), MIN(releaseDate), MAX(releaseDate), SUM(releaseDate IS NULL) FROM sets; SELECT SUM(block IS NOT NULL AND block<>''), SUM(parentCode IS NOT NULL AND parentCode<>''), COUNT(DISTINCT block) FROM sets",
+    "result": "551 sets; releaseDate spans 1993-08-05 to 2021-03-19 with 0 nulls; block populated for 272 sets over 33 distinct block names; parentCode populated for 154 sets; code is unique.",
+    "validation_method": "range, null and uniqueness checks",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_sets_type_values",
+    "source": "card_games.sets",
+    "query": "SELECT type, COUNT(*) FROM sets GROUP BY type ORDER BY 2 DESC",
+    "result": "20 distinct set types: promo 234, expansion 87, memorabilia 34, duel_deck 27, box 27, core 24, masters 23, starter 16, commander 14, funny 11, from_the_vault 11, token 10, planechase 6, masterpiece 6, draft_innovation 6, archenemy 5, spellbook 3, premium_deck 3, vanguard 2, treasure_chest 2.",
+    "validation_method": "categorical value distribution",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_sets_empty",
+    "source": "card_games (sets / cards)",
+    "query": "SELECT s.code, s.name, s.type FROM sets s LEFT JOIN cards c ON c.setCode = s.code WHERE c.uuid IS NULL",
+    "result": "15 sets have no printing in cards: AMH1, AZNR, F18, FJMP, L12, L13, L14, L15, L16, L17, MZNR, PKHC, PLNY, PR2, SZNR. Their types are memorabilia, token, funny and promo (art series, league tokens, substitute cards).",
+    "validation_method": "left-join inspection of unmatched set rows",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_legality_formats",
+    "source": "card_games.legalities",
+    "query": "SELECT format, COUNT(*) FROM legalities GROUP BY format ORDER BY 2 DESC",
+    "result": "15 formats: vintage 55576, legacy 55576, commander 55576, duel 55544, modern 40774, penny 38159, pauper 22784, pioneer 22346, premodern 20721, historic 16568, gladiator 16568, standard 7698, future 7698, brawl 7698, oldschool 4621.",
+    "validation_method": "categorical value distribution",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_legality_statuses",
+    "source": "card_games.legalities",
+    "query": "SELECT status, COUNT(*) FROM legalities GROUP BY status; SELECT format, SUM(status='Legal'), SUM(status='Banned'), SUM(status='Restricted') FROM legalities GROUP BY format",
+    "result": "Only three statuses exist: Legal 424958, Banned 2313, Restricted 636. No row stores a 'Not Legal' status. Restricted appears only in vintage (413) and oldschool (136); duel has 87. Banned counts by format include legacy 546, duel 488, commander 332, premodern 232, modern 199.",
+    "validation_method": "enumeration value inspection and per-format pivot",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_rarity_values",
+    "source": "card_games.cards",
+    "query": "SELECT rarity, COUNT(*) FROM cards GROUP BY rarity ORDER BY 2 DESC",
+    "result": "common 20745, rare 17626, uncommon 15251, mythic 3200. Four distinct values.",
+    "validation_method": "categorical value distribution",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_colors_encoding",
+    "source": "card_games.cards",
+    "query": "SELECT colors, COUNT(*) FROM cards GROUP BY colors ORDER BY 2 DESC LIMIT 20",
+    "result": "Empty string 12540; single letters G 8066, B 7807, R 7793, W 7681, U 7630; two-colour values 'G,W' 505, 'G,R' 492, 'U,W' 471, 'B,R' 468, 'B,U' 458, 'B,G' 424, 'G,U' 387, 'R,U' 374, 'B,W' 360, 'R,W' 357; three-colour values 'B,R,U' 120, 'G,R,W' 92, 'B,U,W' 87, ...; no 'C' token appears anywhere, so colour tokens are limited to W, U, B, R, G.",
+    "validation_method": "value distribution and token inspection",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_color_identity_superset",
+    "source": "card_games.cards",
+    "query": "SELECT SUM(colorIdentity <> colors) FROM cards; SELECT colorIdentity, COUNT(*) FROM cards GROUP BY colorIdentity ORDER BY 2 DESC LIMIT 20",
+    "result": "1018 rows have colorIdentity different from colors. Identity counts exceed colour counts for the same token, e.g. G 8802 vs 8066, B 8565 vs 7807, R 8485 vs 7793, U 8375 vs 7630, W 8327 vs 7681. Empty identity 6224 rows versus 12540 empty colours. Identity also contains five-token values such as 'B,G,R,U,W' 162.",
+    "validation_method": "cross-column comparison of the two colour attributes",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_cmc_field",
+    "source": "card_games.cards",
+    "query": "SELECT COUNT(*), SUM(convertedManaCost IS NULL), MIN(convertedManaCost), MAX(convertedManaCost) FROM cards; SELECT name,setCode,manaCost,convertedManaCost FROM cards WHERE convertedManaCost > 20 ORDER BY convertedManaCost DESC",
+    "result": "56822 rows, 0 nulls, min 0.0, max 1000000.0. The single extreme value belongs to Gleemax (set UNH) with manaCost '{1000000}'; the next values below it are ordinary (16.0 and lower).",
+    "validation_method": "range check plus inspection of extreme rows",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_mana_cost_empty",
+    "source": "card_games.cards",
+    "query": "SELECT CASE WHEN manaCost IS NULL OR manaCost='' THEN 'empty' ELSE 'present' END AS g, COUNT(*), SUM(convertedManaCost=0), MIN(convertedManaCost), MAX(convertedManaCost) FROM cards GROUP BY g",
+    "result": "7323 rows have empty or NULL manaCost (7042 of them with convertedManaCost = 0, range 0.0 to 11.0). 49499 rows carry a mana cost string, of which 285 have convertedManaCost = 0 (for example Black Lotus with '{0}' and Sol Ring with '{1}'... Sol Ring is 1).",
+    "validation_method": "grouped null/empty analysis with cross-check on the numeric cost",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_creature_cmc",
+    "source": "card_games.cards",
+    "query": "SELECT COUNT(*), SUM(convertedManaCost=0), MIN(convertedManaCost), MAX(convertedManaCost), AVG(convertedManaCost) FROM cards WHERE types LIKE '%Creature%'; SELECT convertedManaCost, COUNT(*) FROM cards WHERE types LIKE '%Creature%' GROUP BY convertedManaCost ORDER BY convertedManaCost",
+    "result": "26108 rows whose types list contains Creature; cmc 0 -> 81, 0.5 -> 1, 1 -> 2068, 2 -> 4930, 3 -> 6217, 4 -> 5194, 5 -> 3620, 6 -> 2326, 7 -> 1063, 8 -> 380, 9 -> 115, 10 -> 51; mean 3.685; maximum 16.0.",
+    "validation_method": "filtered aggregate and histogram",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_power_toughness_encoding",
+    "source": "card_games.cards",
+    "query": "SELECT COUNT(*) FROM cards WHERE power IS NULL OR power=''; SELECT DISTINCT power FROM cards WHERE power IS NOT NULL AND power<>'' AND power NOT GLOB '[0-9]*'",
+    "result": "30624 rows have an empty power value. Non-numeric power values observed include '*', '-1', '?', and the unicode values '∞' and '*²'. Power and toughness are stored as TEXT, not as numbers.",
+    "validation_method": "declared-type inspection plus non-numeric value listing",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_types_encoding",
+    "source": "card_games.cards",
+    "query": "SELECT types, COUNT(*) FROM cards GROUP BY types ORDER BY 2 DESC LIMIT 20; SELECT supertypes, COUNT(*) FROM cards GROUP BY supertypes; SELECT DISTINCT type FROM cards LIMIT 8; SELECT typeof(types), COUNT(*) FROM cards GROUP BY 1",
+    "result": "types is TEXT holding a comma-joined list: Creature 24229, Instant 6739, Land 6573, Sorcery 6328, Enchantment 5652, Artifact 3986, 'Artifact,Creature' 1617, Planeswalker 835, 'Enchantment,Creature' 256, Plane 162, Vanguard 118, Scheme 70, 'Tribal,Instant' 45. supertypes: empty 48982, Legendary 4286, Basic 3269, Snow 142, World 47, 'Basic,Snow' 35, 'Legendary,Snow' 21, Ongoing 12. The separate cards.type column holds the printed type line, for example 'Creature — Human Cleric', 'Enchantment — Aura', 'Legendary Creature — Human Rebel'.",
+    "validation_method": "encoding inspection across the three type columns",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_keywords_encoding",
+    "source": "card_games.cards",
+    "query": "SELECT COUNT(*) FROM cards WHERE keywords IS NOT NULL AND keywords<>''; SELECT keywords, COUNT(*) FROM cards WHERE keywords<>'' GROUP BY keywords ORDER BY 2 DESC LIMIT 8",
+    "result": "20639 rows carry a non-empty keywords value; the field is a comma-joined list of ability names. Most frequent values: Flying 3088, Enchant 2193, Trample 610, Equip 581, Cycling 512, Scry 406, Defender 396, Mill 393. 36183 rows are empty.",
+    "validation_method": "populated-row count and value distribution",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_promo_foil_flags",
+    "source": "card_games.cards",
+    "query": "SELECT SUM(isReprint), SUM(hasFoil), SUM(hasNonFoil), SUM(isPromo), SUM(isOnlineOnly), SUM(isReserved), SUM(isFullArt), SUM(isAlternative), SUM(isTextless), SUM(isTimeshifted) FROM cards",
+    "result": "isReprint 33657, hasFoil 34618 (60.92%), hasNonFoil 51413 (90.48%), isPromo 5588 (9.83%), isOnlineOnly 4733 (8.33%), isReserved 1333, isFullArt 486, isAlternative 288, isTextless 115, isTimeshifted 215. All of these are declared INTEGER NOT NULL DEFAULT 0 except isFullArt and isAlternative families.",
+    "validation_method": "flag totals over the full printing set",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_promo_types",
+    "source": "card_games.cards",
+    "query": "SELECT promoTypes, COUNT(*) FROM cards WHERE promoTypes IS NOT NULL AND promoTypes<>'' GROUP BY promoTypes ORDER BY 2 DESC LIMIT 5",
+    "result": "Mediainsert 1075; 'setpromo,prerelease,datestamped' 1059; boosterfun 810; 'prerelease,datestamped' 550; 'promostamped,promopack,planeswalkerstamped' 511. promoTypes is a comma-joined list of promo categories and is populated only for promotional printings.",
+    "validation_method": "value distribution of the promo category list",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_availability_encoding",
+    "source": "card_games.cards",
+    "query": "SELECT availability, COUNT(*) FROM cards GROUP BY availability ORDER BY 2 DESC LIMIT 15; SELECT SUM(availability LIKE '%paper%'), SUM(availability LIKE '%mtgo%'), SUM(availability LIKE '%arena%') FROM cards",
+    "result": "Comma-joined platform lists: 'mtgo,paper' 25459, 'paper' 21531, 'arena,mtgo,paper' 4609, 'mtgo' 3697, 'arena' 999, 'arena,paper' 490, 'arena,mtgo' 14, 'shandalar' 12, 'dreamcast' 10, and 1 empty value. Substring counts: paper 52089, mtgo 33779, arena 6112.",
+    "validation_method": "value distribution plus substring counting of platform tokens",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_rulings_dates",
+    "source": "card_games.rulings",
+    "query": "SELECT COUNT(*), COUNT(DISTINCT uuid), MIN(date), MAX(date), SUM(date IS NULL) FROM rulings",
+    "result": "87769 ruling rows spanning 26141 distinct card uuid; date range 2004-10-04 to 2021-02-05; 0 null dates; date is stored as a DATE-typed text value.",
+    "validation_method": "cardinality, distinct-key and range checks",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_foreign_languages",
+    "source": "card_games.foreign_data",
+    "query": "SELECT COUNT(*), COUNT(DISTINCT uuid), SUM(multiverseid IS NULL) FROM foreign_data; SELECT language, COUNT(*) FROM foreign_data GROUP BY language ORDER BY 2 DESC",
+    "result": "229186 rows over 34056 distinct card uuid; 17 languages: Japanese 31226, French 29301, German 28891, Italian 28698, Spanish 28639, Portuguese (Brazil) 25641, Chinese Simplified 20106, Russian 15878, Chinese Traditional 11106, Korean 9692, Phyrexian 3, and six single-row languages (Sanskrit, Latin, Hebrew, Arabic, Ancient Greek). multiverseid is NULL in 38418 rows. A single uuid can carry up to 10 language rows.",
+    "validation_method": "cardinality, null and categorical distribution checks",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_set_translations",
+    "source": "card_games.set_translations",
+    "query": "SELECT language, COUNT(*) FROM set_translations GROUP BY language ORDER BY 2 DESC",
+    "result": "1210 rows across 11 languages (Chinese Simplified, Chinese Traditional, French, German, Italian, Japanese, Korean, Portuguese (Brazil), Russian, Spanish), each with exactly 121 set codes.",
+    "validation_method": "categorical distribution check",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_basic_lands",
+    "source": "card_games.cards",
+    "query": "SELECT name, COUNT(*) FROM cards WHERE supertypes='Basic' GROUP BY name ORDER BY 2 DESC",
+    "result": "Basic supertype is used by Forest 693, Swamp 659, Island 649, Mountain 639, Plains 623, Wastes 5 and 'Barry's Land' 1 printing rows.",
+    "validation_method": "filtered value distribution",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_reprint_identity",
+    "source": "card_games.cards",
+    "query": "SELECT SUM(isReprint), COUNT(*) FROM cards; SELECT name, COUNT(*) AS n, COUNT(DISTINCT setCode) AS sets FROM cards GROUP BY name ORDER BY n DESC LIMIT 5",
+    "result": "isReprint = 1 for 33657 of 56822 printing rows. Most-printed names: Forest 693 rows across 178 sets, Swamp 659 across 174, Island 649 across 175, Mountain 639 across 179, Plains 623 across 174.",
+    "validation_method": "flag total plus per-name printing multiplicity",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_oracle_id",
+    "source": "card_games.cards",
+    "query": "SELECT COUNT(DISTINCT name), COUNT(DISTINCT scryfallOracleId), SUM(scryfallOracleId IS NULL OR scryfallOracleId='') FROM cards; SELECT name,faceName,scryfallOracleId,mtgjsonV4Id,side FROM cards WHERE name='Dusk // Dawn'",
+    "result": "21738 distinct name values versus 21769 distinct scryfallOracleId values, with 0 null or empty oracle identifiers. 7 names map to more than one oracle id. For 'Dusk // Dawn' both face rows share one scryfallOracleId while mtgjsonV4Id differs per face, so oracle id groups faces together and printings of a multi-face card share it.",
+    "validation_method": "cardinality comparison of candidate logical-card identity columns",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_number_column",
+    "source": "card_games.cards",
+    "query": "SELECT SUM(number IS NULL OR number=''), COUNT(*) FROM cards; SELECT DISTINCT number FROM cards WHERE number NOT GLOB '[0-9]*' LIMIT 10",
+    "result": "cards.number is populated for all 56822 rows and is TEXT: values mix plain numerals such as '1' with prefixed forms such as 'S1' to 'S10', so it is not numerically ordered across a whole set.",
+    "validation_method": "null check and value-format inspection",
+    "timestamp": "2026-10-10"
+  }
+]

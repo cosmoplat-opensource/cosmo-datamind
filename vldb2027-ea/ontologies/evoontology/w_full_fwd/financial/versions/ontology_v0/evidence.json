@@ -1,0 +1,234 @@
+[
+  {
+    "id": "ev_workload_enum_hints",
+    "source": "construction workload file (financial.json)",
+    "query": "read of the permitted construction workload questions and their evidence fields",
+    "result": "11 questions whose evidence fields define: POPLATEK TYDNE = weekly issuance; POPLATEK MESICNE = monthly issuance; POPLATEK PO OBRATU = issuance after transaction; operation = VYBER refers to withdrawal in cash; status = C stands for running contract, ok so far; A2 = district names; A3 = regions; A11 = average salary; female = gender F; male = gender M; loan validity more than 12 months means duration > 12; percentage of accounts by condition = (total(amount) meeting condition / total amount) * 100; percentage of male clients = count(male clients with weekly statements) / count(clients with weekly statements) * 100.",
+    "validation_method": "direct reading of the permitted construction split only; no answers, validation or held-out material read",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_schema_financial",
+    "source": "financial.sqlite (read-only)",
+    "query": ".schema / table_info over the whole file",
+    "result": "8 tables: account(account_id, district_id, frequency, date), card(card_id, disp_id, type, issued), client(client_id, gender, birth_date, district_id), disp(disp_id, client_id, account_id, type), district(district_id, A2..A16), loan(loan_id, account_id, date, amount, duration, payments, status), order(order_id, account_id, bank_to, account_to, amount, k_symbol), trans(trans_id, account_id, date, type, operation, amount, balance, k_symbol, bank, account). Declared foreign keys: account.district_id to district, client.district_id to district, disp.account_id to account, disp.client_id to client, card.disp_id to disp, loan.account_id to account, order.account_id to account, trans.account_id to account.",
+    "validation_method": "schema inspection",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_row_counts",
+    "source": "financial.sqlite (read-only)",
+    "query": "COUNT(*) per table",
+    "result": "account 4,500; card 892; client 5,369; disp 5,369; district 77; loan 682; order 6,471; trans 1,056,320.",
+    "validation_method": "row counting",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_account_frequency",
+    "source": "financial.sqlite (read-only)",
+    "query": "GROUP BY account.frequency",
+    "result": "POPLATEK MESICNE 4,167; POPLATEK TYDNE 240; POPLATEK PO OBRATU 93. Exactly three values; column is NOT NULL.",
+    "validation_method": "value-domain enumeration",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_loan_status",
+    "source": "financial.sqlite (read-only)",
+    "query": "GROUP BY loan.status; MIN/MAX loan.payments per status",
+    "result": "C 403; A 203; D 45; B 31. Instalments range from 304 to 9,910 across codes, so the code does not merely echo the payment size.",
+    "validation_method": "value-domain enumeration",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_trans_type",
+    "source": "financial.sqlite (read-only)",
+    "query": "GROUP BY trans.type",
+    "result": "VYDAJ 634,571; PRIJEM 405,083; VYBER 16,666.",
+    "validation_method": "value-domain enumeration",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_trans_operation",
+    "source": "financial.sqlite (read-only)",
+    "query": "GROUP BY trans.operation",
+    "result": "VYBER 434,918; PREVOD NA UCET 208,283; NULL 183,114; VKLAD 156,743; PREVOD Z UCTU 65,226; VYBER KARTOU 8,036.",
+    "validation_method": "value-domain enumeration",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_vyber_cross",
+    "source": "financial.sqlite (read-only)",
+    "query": "GROUP BY trans.type, trans.operation; and COUNT where type='VYBER' vs operation='VYBER'",
+    "result": "VYDAJ|VYBER 418,252; VYDAJ|PREVOD NA UCET 208,283; PRIJEM|NULL 183,114; PRIJEM|VKLAD 156,743; PRIJEM|PREVOD Z UCTU 65,226; VYBER|VYBER 16,666; VYDAJ|VYBER KARTOU 8,036. type='VYBER' returns 16,666 rows while operation='VYBER' returns 434,918, and the 16,666 are entirely contained in the 434,918.",
+    "validation_method": "cross-tabulation of two coded columns",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_client_gender",
+    "source": "financial.sqlite (read-only)",
+    "query": "GROUP BY client.gender",
+    "result": "M 2,724; F 2,645.",
+    "validation_method": "value-domain enumeration",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_disp_type",
+    "source": "financial.sqlite (read-only)",
+    "query": "GROUP BY disp.type with COUNT(*) and COUNT(DISTINCT account_id)",
+    "result": "OWNER 4,500 rows over 4,500 distinct accounts; DISPONENT 869 rows over 869 distinct accounts.",
+    "validation_method": "value-domain enumeration with cardinality check",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_owner_per_account",
+    "source": "financial.sqlite (read-only)",
+    "query": "count of disp rows and accounts; OWNER rows versus account count",
+    "result": "disp holds 5,369 rows for 4,500 accounts; OWNER rows equal 4,500, so each account has exactly one owner disposition and the remaining 869 rows are disponents.",
+    "validation_method": "cardinality comparison across tables",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_district_regions",
+    "source": "financial.sqlite (read-only)",
+    "query": "GROUP BY district.A3; COUNT(DISTINCT A3); COUNT(DISTINCT A2)",
+    "result": "8 distinct regions over 77 districts and 77 distinct district names. Distribution: south Moravia 14; central Bohemia 12; north Moravia 11; east Bohemia 11; west Bohemia 10; north Bohemia 10; south Bohemia 8; Prague 1.",
+    "validation_method": "value-domain enumeration and key uniqueness check",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_district_sample",
+    "source": "financial.sqlite (read-only)",
+    "query": "SELECT * FROM district LIMIT 4",
+    "result": "1|Hl.m. Praha|Prague|1204953|0|0|0|1|1|100.0|12541|0.2|0.43|167|85677|99107 ; 2|Benesov|central Bohemia|88884|80|26|6|2|5|46.7|8507|1.6|1.85|132|2159|2674 ; 3|Beroun|central Bohemia|75232|55|26|4|1|5|41.7|8980|1.9|2.21|111|2824|2813 ; 4|Kladno|central Bohemia|149893|63|29|6|2|6|67.4|9753|4.6|5.05|109|5244|5892. Column 2 holds district names and column 3 holds region names.",
+    "validation_method": "representative row inspection",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_district_a11",
+    "source": "financial.sqlite (read-only)",
+    "query": "MIN/MAX/AVG of district.A11; top five districts by A11",
+    "result": "Minimum 8,110; maximum 12,541; mean 9,031.7. Highest values: Hl.m. Praha 12,541; Mlada Boleslav 11,277; Plzen - mesto 10,787; Ostrava - mesto 10,673; Most 10,446. Integer salary scale consistent with the workload statement that A11 pertains to average salary.",
+    "validation_method": "range inspection and ranking",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_district_col_ranges",
+    "source": "financial.sqlite (read-only)",
+    "query": "MIN/MAX of district.A4, A10, A12, A13, A14, A15, A16",
+    "result": "A4 4,000 to 1,204,953; A10 33.9 to 100.0; A12 0.2 to 7.3; A13 0.43 to 9.4; A14 81 to 167; A15 818 to 85,677; A16 888 to 99,107.",
+    "validation_method": "range inspection",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_district_id_divergence",
+    "source": "financial.sqlite (read-only)",
+    "query": "COUNT(*) FROM disp JOIN account JOIN client WHERE account.district_id <> client.district_id",
+    "result": "494 dispositions where the account's district differs from the client's district, out of 5,369. The two district references are therefore genuinely distinct and must not be treated as interchangeable.",
+    "validation_method": "join-based divergence measurement",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_fk_integrity",
+    "source": "financial.sqlite (read-only)",
+    "query": "LEFT JOIN orphan checks: loan->account, trans->account, order->account, card->disp",
+    "result": "0 orphan rows in every checked relationship.",
+    "validation_method": "referential integrity check",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_loans_per_account",
+    "source": "financial.sqlite (read-only)",
+    "query": "GROUP BY account_id over loan; comparison of loan count with distinct account count",
+    "result": "682 loan rows across 682 distinct accounts; the distribution of loans per account is {1: 682}. No account holds more than one contract.",
+    "validation_method": "cardinality distribution check",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_trans_k_symbol",
+    "source": "financial.sqlite (read-only)",
+    "query": "GROUP BY trans.k_symbol with quote() to expose blank values",
+    "result": "NULL 481,881; UROK 183,114; SLUZBY 155,832; SIPO 118,065; ' ' (single space) 53,433; DUCHOD 30,338; POJISTNE 18,500; UVER 13,580; SANKC. UROK 1,577.",
+    "validation_method": "value-domain enumeration with literal inspection",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_order_k_symbol",
+    "source": "financial.sqlite (read-only)",
+    "query": "GROUP BY order.k_symbol with quote()",
+    "result": "SIPO 3,502; '' (empty string) 1,379; UVER 717; POJISTNE 532; LEASING 341.",
+    "validation_method": "value-domain enumeration with literal inspection",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_k_symbol_overlap",
+    "source": "financial.sqlite (read-only)",
+    "query": "comparison of DISTINCT trans.k_symbol and DISTINCT order.k_symbol",
+    "result": "Shared codes: SIPO, UVER, POJISTNE. Only in order.k_symbol: LEASING, plus the empty string. Only in trans.k_symbol: SLUZBY, DUCHOD, UROK, SANKC. UROK, plus NULL and the single space. The two columns share the same coded vocabulary.",
+    "validation_method": "value-domain overlap comparison",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_date_ranges",
+    "source": "financial.sqlite (read-only)",
+    "query": "MIN/MAX of account.date, trans.date, loan.date and client.birth_date",
+    "result": "account.date 1993-01-01 to 1997-12-29; trans.date 1993-01-01 to 1998-12-31; loan.date 1993-07-05 to 1998-12-08; client.birth_date 1911-08-20 to 1987-09-27. All are ISO YYYY-MM-DD text values.",
+    "validation_method": "range inspection",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_accounts_per_year",
+    "source": "financial.sqlite (read-only)",
+    "query": "GROUP BY year of account.date",
+    "result": "1993: 1,139; 1994: 439; 1995: 661; 1996: 1,363; 1997: 898.",
+    "validation_method": "temporal distribution inspection",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_loan_amounts",
+    "source": "financial.sqlite (read-only)",
+    "query": "MIN/MAX of loan.amount and loan.payments; sample loan rows",
+    "result": "loan.amount ranges 4,980 to 590,820; loan.payments ranges 319.0 to 9,910.0. Sample rows: loan 4959 on account 2 dated 1994-01-05 for 80,952 over 24 months; loan 4961 on account 19 dated 1996-04-29 for 30,276 over 12 months.",
+    "validation_method": "range inspection with representative rows",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_loan_duration",
+    "source": "financial.sqlite (read-only)",
+    "query": "GROUP BY loan.duration; COUNT(DISTINCT duration)",
+    "result": "Five distinct values: 12 (131 contracts), 24 (138), 36 (130), 48 (138), 60 (145). The regular multiples of twelve confirm a monthly unit.",
+    "validation_method": "value-domain enumeration",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_trans_amount_range",
+    "source": "financial.sqlite (read-only)",
+    "query": "MIN/MAX of trans.amount and trans.balance; sample rows",
+    "result": "trans.amount ranges 0 to 87,400; trans.balance ranges -41,126 to 209,637.",
+    "validation_method": "range inspection",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_card_types",
+    "source": "financial.sqlite (read-only)",
+    "query": "GROUP BY card.type; sample card rows",
+    "result": "classic 659; junior 145; gold 88. Sample rows: card 1 against disp 9 type gold issued 1998-10-16.",
+    "validation_method": "value-domain enumeration",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_trans_null_profile",
+    "source": "financial.sqlite (read-only)",
+    "query": "COUNT of NULL per column in trans",
+    "result": "operation NULL 183,114; k_symbol NULL 481,881; bank NULL 782,812; account NULL 760,931. trans_id, account_id, date, type and amount have no NULLs.",
+    "validation_method": "null profiling",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_order_sample",
+    "source": "financial.sqlite (read-only)",
+    "query": "SELECT * FROM order LIMIT 3; GROUP BY order.bank_to",
+    "result": "29401|1|YZ|87144583|2452.0|SIPO ; 29402|2|ST|89597016|3372.7|UVER ; 29403|2|QR|13943797|7266.0|SIPO. Counterparty bank codes are two-letter values drawn from the same vocabulary seen in trans.bank (AB, GH, KL, QR, ST, WX, YZ).",
+    "validation_method": "representative row inspection",
+    "timestamp": "2026-10-10"
+  }
+]

@@ -1,0 +1,178 @@
+[
+  {
+    "id": "e_schema",
+    "source": "debit_card_specializing.sqlite (read-only)",
+    "query": "SELECT name, type FROM sqlite_master WHERE type IN ('table','view'); .schema",
+    "result": "Five application tables: customers(CustomerID, Segment, Currency), gasstations(GasStationID, ChainID, Country, Segment), products(ProductID, Description), transactions_1k(TransactionID, Date, Time, CustomerID, CardID, GasStationID, ProductID, Amount, Price), yearmonth(CustomerID, Date, Consumption). No foreign key constraints are declared in this build, so referential relationships must be verified by value.",
+    "validation_method": "schema inspection",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "e_rowcounts",
+    "source": "debit_card_specializing.sqlite (read-only)",
+    "query": "SELECT COUNT(*) FROM customers / gasstations / products / transactions_1k / yearmonth",
+    "result": "customers 32461, gasstations 5716, products 591, transactions_1k 1000, yearmonth 383282",
+    "validation_method": "row count",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "e_customer_segment_values",
+    "source": "debit_card_specializing.sqlite (read-only)",
+    "query": "SELECT Segment, COUNT(*) FROM customers GROUP BY Segment",
+    "result": "KAM 2040, LAM 3658, SME 26763; three distinct values, no nulls",
+    "validation_method": "distinct value enumeration",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "e_customer_currency_values",
+    "source": "debit_card_specializing.sqlite (read-only)",
+    "query": "SELECT Currency, COUNT(*) FROM customers GROUP BY Currency",
+    "result": "CZK 30459, EUR 2002; two distinct values, no nulls",
+    "validation_method": "distinct value enumeration",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "e_currency_ratio",
+    "source": "debit_card_specializing.sqlite (read-only)",
+    "query": "SELECT SUM(Currency='EUR')/SUM(Currency='CZK') FROM customers",
+    "result": "0.065728, i.e. 2002 EUR customers against 30459 CZK customers; among SME customers the split is 1629 EUR against 25134 CZK, a difference of 23505",
+    "validation_method": "aggregate computation",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "e_gasstation_country_values",
+    "source": "debit_card_specializing.sqlite (read-only)",
+    "query": "SELECT Country, COUNT(*) FROM gasstations GROUP BY Country",
+    "result": "CZE 4836, SVK 880; two distinct values, no nulls",
+    "validation_method": "distinct value enumeration",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "e_gasstation_segment_values",
+    "source": "debit_card_specializing.sqlite (read-only)",
+    "query": "SELECT Segment, COUNT(*) FROM gasstations GROUP BY Segment",
+    "result": "Other 2392, Premium 1428, Noname 1005, Value for money 597, Discount 294; five distinct values, no nulls",
+    "validation_method": "distinct value enumeration",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "e_gasstation_segment_by_country",
+    "source": "debit_card_specializing.sqlite (read-only)",
+    "query": "SELECT Country, Segment, COUNT(*) FROM gasstations GROUP BY Country, Segment",
+    "result": "Within SVK (880 stations) the Premium segment holds 314 stations, 35.68 percent of that country's stations; within CZE the Discount segment holds 235 stations against 59 in SVK, a difference of 176",
+    "validation_method": "grouped aggregate computation",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "e_gasstation_chain",
+    "source": "debit_card_specializing.sqlite (read-only)",
+    "query": "SELECT COUNT(*), COUNT(DISTINCT ChainID), SUM(ChainID IS NULL) FROM gasstations",
+    "result": "5716 stations, 233 distinct ChainID values, no nulls",
+    "validation_method": "distinct value enumeration",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "e_transaction_date_range",
+    "source": "debit_card_specializing.sqlite (read-only)",
+    "query": "SELECT MIN(Date), MAX(Date), COUNT(*) FROM transactions_1k; SELECT Date, COUNT(*) FROM transactions_1k GROUP BY Date",
+    "result": "Range 2012-08-23 to 2012-08-26 across 1000 rows: 2012-08-23 has 10 lines, 2012-08-24 492, 2012-08-25 425, 2012-08-26 73",
+    "validation_method": "range and distribution check",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "e_transaction_scope",
+    "source": "debit_card_specializing.sqlite (read-only)",
+    "query": "SELECT COUNT(*) FROM transactions_1k WHERE Date LIKE '2013%'",
+    "result": "0 rows; no transaction falls in 2013, so a question about June 2013 transactions has an empty rather than erroneous result",
+    "validation_method": "period coverage check",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "e_transaction_join_integrity",
+    "source": "debit_card_specializing.sqlite (read-only)",
+    "query": "SELECT COUNT(*), SUM(c.CustomerID IS NULL), SUM(gs.GasStationID IS NULL), SUM(p.ProductID IS NULL) FROM transactions_1k t LEFT JOIN customers c ON t.CustomerID=c.CustomerID LEFT JOIN gasstations gs ON t.GasStationID=gs.GasStationID LEFT JOIN products p ON t.ProductID=p.ProductID",
+    "result": "1000 rows, 0 unmatched customers, 0 unmatched gas stations, 0 unmatched products; the table also has no null values in any column. Distinct values touched: 902 cards, 517 customers, 437 stations, 28 products",
+    "validation_method": "left-join orphan check despite absent declared foreign keys",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "e_card_grain",
+    "source": "debit_card_specializing.sqlite (read-only)",
+    "query": "SELECT MAX(n), SUM(n>1) FROM (SELECT CardID, COUNT(DISTINCT CustomerID) n FROM transactions_1k GROUP BY CardID); SELECT MAX(n) FROM (SELECT CustomerID, COUNT(DISTINCT CardID) n FROM transactions_1k GROUP BY CustomerID)",
+    "result": "Every CardID maps to exactly one customer (0 cards with more than one customer), while a single customer can hold up to 17 distinct cards",
+    "validation_method": "grouped cardinality check",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "e_time_format",
+    "source": "debit_card_specializing.sqlite (read-only)",
+    "query": "SELECT MIN(Time), MAX(Time) FROM transactions_1k",
+    "result": "00:07:00 to 23:20:00, fixed-width 'HH:MM:SS' text",
+    "validation_method": "format and range check",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "e_amount_zero",
+    "source": "debit_card_specializing.sqlite (read-only)",
+    "query": "SELECT SUM(Amount=0), SUM(Price=0), MIN(Amount), MAX(Amount), MIN(Price), MAX(Price) FROM transactions_1k",
+    "result": "91 lines with Amount 0 and 0 lines with Price 0; Amount ranges 0 to 264 and Price ranges 1.76 to 5762.49",
+    "validation_method": "value distribution check",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "e_transaction_price_range",
+    "source": "debit_card_specializing.sqlite (read-only)",
+    "query": "SELECT SUM(Price), COUNT(*) FROM transactions_1k",
+    "result": "Price is a positive monetary value per transaction line; no zero or null prices occur, so it can be summed directly",
+    "validation_method": "value range check",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "e_top_spending_customer",
+    "source": "debit_card_specializing.sqlite (read-only)",
+    "query": "SELECT t.CustomerID, c.Currency, SUM(t.Price), SUM(t.Amount), SUM(t.Price)/SUM(t.Amount) FROM transactions_1k t JOIN customers c ON t.CustomerID=c.CustomerID GROUP BY t.CustomerID ORDER BY SUM(t.Price) DESC LIMIT 5",
+    "result": "The highest spending customer within the sampled transactions is CustomerID 19182 with total price 8618.54 over 355 units, an average of 24.2776 per unit, paying in CZK; the next ranked customers also pay in CZK with averages between 22.5 and 24.3",
+    "validation_method": "grouped aggregate computation",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "e_yearmonth_date_format",
+    "source": "debit_card_specializing.sqlite (read-only)",
+    "query": "SELECT MIN(Date), MAX(Date), COUNT(DISTINCT Date), LENGTH(MIN(Date)) FROM yearmonth",
+    "result": "Minimum 201112, maximum 201311, 21 distinct six-character values",
+    "validation_method": "format and range check",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "e_yearmonth_scope",
+    "source": "debit_card_specializing.sqlite (read-only)",
+    "query": "SELECT Date, COUNT(*) FROM yearmonth GROUP BY Date ORDER BY Date",
+    "result": "Every month of 2012 is present with roughly 17640 to 18866 records, while 201112 holds only 8 and 201301 only 139; the periods 201302 and 201303 hold 2415 and 25054, and 201303 onward stabilise near 25000",
+    "validation_method": "period coverage check",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "e_yearmonth_integrity",
+    "source": "debit_card_specializing.sqlite (read-only)",
+    "query": "SELECT COUNT(*), SUM(c.CustomerID IS NULL) FROM yearmonth y LEFT JOIN customers c ON y.CustomerID=c.CustomerID; SELECT COUNT(DISTINCT CustomerID) FROM yearmonth",
+    "result": "383282 rows with 0 unmatched customers; the table covers 30566 distinct customers, all of which exist in the customer table",
+    "validation_method": "left-join orphan check",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "e_consumption_stats",
+    "source": "debit_card_specializing.sqlite (read-only)",
+    "query": "SELECT MIN(Consumption), MAX(Consumption), AVG(Consumption), SUM(Consumption IS NULL), SUM(Consumption<0) FROM yearmonth",
+    "result": "Minimum -582092.86, maximum 2052187.11, average 8911.1415, no nulls, 152 negative records including one extreme low value",
+    "validation_method": "value distribution check",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "e_products",
+    "source": "debit_card_specializing.sqlite (read-only)",
+    "query": "SELECT COUNT(*), COUNT(DISTINCT Description) FROM products; SELECT ProductID, Description FROM products LIMIT 15",
+    "result": "591 products but only 529 distinct descriptions; descriptions are Czech-language product names such as Nafta, Natural, Diesel +, Oleje,tuky, plus generic entries such as a manual-entry label",
+    "validation_method": "distinct value check",
+    "timestamp": "2026-10-10"
+  }
+]

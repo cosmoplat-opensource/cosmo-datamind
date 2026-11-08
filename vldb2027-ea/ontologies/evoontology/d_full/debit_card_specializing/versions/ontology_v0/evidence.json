@@ -1,0 +1,130 @@
+[
+  {
+    "id": "evidence_schema_tables",
+    "source": "debit_card_specializing.sqlite (read-only)",
+    "query": ".schema",
+    "result": "Five tables. customers(CustomerID INTEGER UNIQUE PRIMARY KEY, Segment TEXT, Currency TEXT); gasstations(GasStationID INTEGER UNIQUE PRIMARY KEY, ChainID INTEGER, Country TEXT, Segment TEXT); products(ProductID INTEGER UNIQUE PRIMARY KEY, Description TEXT); transactions_1k(TransactionID INTEGER PRIMARY KEY AUTOINCREMENT, Date DATE, Time TEXT, CustomerID INTEGER, CardID INTEGER, GasStationID INTEGER, ProductID INTEGER, Amount INTEGER, Price REAL); yearmonth(CustomerID INTEGER NOT NULL REFERENCES customers, Date TEXT NOT NULL, Consumption REAL, PRIMARY KEY (Date, CustomerID)). Only yearmonth declares a foreign key; transactions_1k declares none.",
+    "validation_method": "SQLite schema inspection via read-only connection",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_customer_columns",
+    "source": "debit_card_specializing.sqlite (read-only)",
+    "query": "SELECT COUNT(*) FROM customers;",
+    "result": "32461 rows.",
+    "validation_method": "Row count and header inspection",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_customer_segment_values",
+    "source": "debit_card_specializing.sqlite (read-only)",
+    "query": "SELECT Segment, COUNT(*) FROM customers GROUP BY Segment;",
+    "result": "KAM 2040; LAM 3658; SME 26763. Three values, summing to 32461, with no null group.",
+    "validation_method": "Group-by count over the full table",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_customer_currency_values",
+    "source": "debit_card_specializing.sqlite (read-only)",
+    "query": "SELECT Currency, COUNT(*) FROM customers GROUP BY Currency; SELECT Segment, Currency, COUNT(*) FROM customers GROUP BY 1,2;",
+    "result": "CZK 30459; EUR 2002. All six Segment and Currency combinations occur: KAM/CZK 1969, KAM/EUR 71, LAM/CZK 3356, LAM/EUR 302, SME/CZK 25134, SME/EUR 1629.",
+    "validation_method": "Group-by counts over the full table",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_gasstation_values",
+    "source": "debit_card_specializing.sqlite (read-only)",
+    "query": "SELECT Country, COUNT(*) FROM gasstations GROUP BY Country; SELECT Segment, COUNT(*) FROM gasstations GROUP BY Segment; SELECT Country, Segment, COUNT(*) FROM gasstations GROUP BY 1,2;",
+    "result": "5716 stations. Country: CZE 4836, SVK 880. Segment: Other 2392, Premium 1428, Noname 1005, Value for money 597, Discount 294. All five segment values occur in both countries, for example CZE/Premium 1114 and SVK/Premium 314.",
+    "validation_method": "Group-by counts over the full table",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_chain_counts",
+    "source": "debit_card_specializing.sqlite (read-only)",
+    "query": "SELECT ChainID, COUNT(*) FROM gasstations GROUP BY ChainID ORDER BY 2 DESC LIMIT 20; SELECT Country, Segment, COUNT(*) FROM gasstations WHERE ChainID=3 GROUP BY 1,2;",
+    "result": "Largest chains: ChainID 3 with 1462 stations, 2 with 853, 33 with 340, 1 with 285, 4 with 227, 6 with 212, 9 with 196, 51 with 146, 13 with 132, 16 with 130. ChainID 3 consists entirely of CZE stations in the Other segment.",
+    "validation_method": "Group-by count over the full table",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_product_catalog",
+    "source": "debit_card_specializing.sqlite (read-only)",
+    "query": "SELECT MIN(ProductID), MAX(ProductID), COUNT(*) FROM products; SELECT Description, COUNT(*) FROM products GROUP BY Description HAVING COUNT(*)>1 ORDER BY 2 DESC LIMIT 12;",
+    "result": "591 rows, ProductID from 1 to 630, so identifiers are non-contiguous. Duplicate descriptions: Servisni poplatek x4, Ostatni zbozi x4, Vratne obaly x3, Tisk reportu x3, Service charge x3, Provozni poplatek x3, Potraviny x3, Ostatne sl. x3, Katalyzator x3, Zakaznicka sleva (manual) x2, Umysanie voz x2, Transport accompaniment x2. Descriptions below ProductID 100 are Czech, while entries at 300 and above include English (for example Tyres/Breakdown, Replacement vehicle, Transport Insurance).",
+    "validation_method": "Aggregate counts over the full table plus inspection of representative rows",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_product_band_chain",
+    "source": "debit_card_specializing.sqlite (read-only)",
+    "query": "SELECT CASE WHEN t.ProductID<100 THEN 'lt100' WHEN t.ProductID<200 THEN '100-199' WHEN t.ProductID<300 THEN '200-299' ELSE 'ge300' END band, g.ChainID, COUNT(*) FROM transactions_1k t JOIN gasstations g USING(GasStationID) GROUP BY 1,2;",
+    "result": "Lines with ProductID at or above 300 occur only at ChainID 77 (30 lines), 130 (23), 61 (6), 70 (4), 246 (1), 219 (1), 98 (1) and 76 (1). Lines with ProductID below 100 occur at ChainID 4 (254), 2 (124), 1 (112), 33 (90), 6 (86), 9 (52), 35 (50), 13 (25), 8 (25), 24 (24), 25 (17), 19 (14), 21 (11) and others. No line falls in the 100-199 or 200-299 ranges.",
+    "validation_method": "Join of transactions_1k to gasstations with banded grouping",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_transaction_scope",
+    "source": "debit_card_specializing.sqlite (read-only)",
+    "query": "SELECT MIN(Date), MAX(Date), COUNT(DISTINCT Date) FROM transactions_1k; SELECT SUM(CustomerID IS NULL), SUM(CardID IS NULL), SUM(GasStationID IS NULL), SUM(ProductID IS NULL), SUM(Amount IS NULL), SUM(Price IS NULL) FROM transactions_1k; SELECT MIN(Time), MAX(Time) FROM transactions_1k;",
+    "result": "1000 rows spanning Date 2012-08-23 to 2012-08-26 with 4 distinct dates. Time ranges from 00:07:00 to 23:20:00. Every one of the six nullable-looking columns contains zero nulls.",
+    "validation_method": "Range, distinct-count and null counts over the full table",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_transaction_fk_resolution",
+    "source": "debit_card_specializing.sqlite (read-only)",
+    "query": "SELECT COUNT(DISTINCT CustomerID), COUNT(DISTINCT GasStationID), COUNT(DISTINCT ProductID) FROM transactions_1k; plus orphan checks against customers, gasstations and products",
+    "result": "517 distinct CustomerID, 437 distinct GasStationID and 28 distinct ProductID. Orphan counts are zero against customers, gasstations and products, so every reference resolves even though no foreign keys are declared on transactions_1k.",
+    "validation_method": "Distinct counts and anti-join orphan checks",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_card_ownership",
+    "source": "debit_card_specializing.sqlite (read-only)",
+    "query": "SELECT COUNT(DISTINCT CardID), COUNT(DISTINCT CustomerID) FROM transactions_1k; SELECT ncards, COUNT(*) FROM (SELECT CustomerID, COUNT(DISTINCT CardID) ncards FROM transactions_1k GROUP BY CustomerID) GROUP BY ncards; SELECT COUNT(*) FROM (SELECT CardID FROM transactions_1k GROUP BY CardID HAVING COUNT(DISTINCT CustomerID)>1);",
+    "result": "902 distinct CardID against 517 distinct CustomerID. Cards per customer: 1 card for 386 customers, then 2 for 60, 3 for 20, 4 for 15, 5 for 9, 6 for 6, 7 for 4, 8 for 8, 9 for 3, 10 for 2, 11 for 1, 14 for 2 and 17 for 1. Zero CardID values are shared between customers.",
+    "validation_method": "Distinct counts and card-level grouping in the transaction sample",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_price_amount_relation",
+    "source": "debit_card_specializing.sqlite (read-only)",
+    "query": "SELECT MIN(Amount), MAX(Amount), MIN(Price), MAX(Price), AVG(Price) FROM transactions_1k; SELECT COUNT(*) FROM transactions_1k WHERE Amount=0; SELECT ProductID, Amount, Price, Price/Amount FROM transactions_1k WHERE ProductID=2 AND Amount>0 LIMIT 8;",
+    "result": "Amount ranges 0 to 264 and Price ranges 1.76 to 5762.49 with mean 425.58 and total 425576.16. 91 rows have Amount equal to 0. For ProductID 2 with positive Amount, Price/Amount values are 24.023, 23.929, 23.037, 22.678, 22.747, 22.641, 22.788 and 22.788.",
+    "validation_method": "Range and count aggregates plus inspection of representative fuel lines",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_yearmonth_structure",
+    "source": "debit_card_specializing.sqlite (read-only)",
+    "query": "SELECT COUNT(*), COUNT(DISTINCT CustomerID), COUNT(DISTINCT Date) FROM yearmonth; SELECT typeof(Date), LENGTH(Date) FROM yearmonth LIMIT 3; SELECT SUM(CustomerID NOT IN (SELECT CustomerID FROM customers)) FROM yearmonth;",
+    "result": "383282 rows, 30566 distinct CustomerID, 21 distinct Date values. Date is stored as text of length 6. Zero rows reference a CustomerID missing from customers.",
+    "validation_method": "Counts, type inspection and orphan check over the full table",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_yearmonth_months_coverage",
+    "source": "debit_card_specializing.sqlite (read-only)",
+    "query": "SELECT Date, COUNT(*) FROM yearmonth GROUP BY Date ORDER BY Date;",
+    "result": "201112 8; 201201 17848; 201202 18324; 201203 18866; 201204 18253; 201205 18347; 201206 18588; 201207 17640; 201208 18048; 201209 12894; 201301 139; 201302 2415; 201303 25054; 201304 25487; 201305 25506; 201306 25378; 201307 25239; 201308 25052; 201309 24985; 201310 24488; 201311 20723. Months 201210, 201211 and 201212 are absent.",
+    "validation_method": "Per-month group-by count; the primary key (Date, CustomerID) makes the row count equal to the distinct customer count",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_yearmonth_negative",
+    "source": "debit_card_specializing.sqlite (read-only)",
+    "query": "SELECT MIN(Consumption), MAX(Consumption), SUM(Consumption IS NULL) FROM yearmonth; SELECT COUNT(*) FROM yearmonth WHERE Consumption<0; SELECT * FROM yearmonth WHERE Consumption<0 LIMIT 5;",
+    "result": "Consumption ranges from -582092.86 to 2052187.11 with no nulls. 152 rows are negative, including CustomerID 263 at 201307 with -110.91, CustomerID 893 at 201310 with -99.09, CustomerID 1080 at 201308 with -3829.46, CustomerID 1282 at 201310 with -146.21 and CustomerID 1459 at 201305 with -799.37.",
+    "validation_method": "Range and count aggregates plus inspection of negative rows",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_scope_overlap",
+    "source": "debit_card_specializing.sqlite (read-only)",
+    "query": "SELECT COUNT(*) FROM (SELECT DISTINCT CustomerID FROM transactions_1k) WHERE CustomerID NOT IN (SELECT CustomerID FROM yearmonth); SELECT COUNT(DISTINCT CustomerID) FROM yearmonth;",
+    "result": "Zero transaction customers are missing from yearmonth, so all 517 transaction customers are inside the 30566-customer monthly panel. The four-day transaction view covers about 1.7 percent of the customers seen in the monthly panel.",
+    "validation_method": "Anti-join between the two customer identifier sets",
+    "timestamp": "2026-10-10"
+  }
+]

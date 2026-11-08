@@ -1,0 +1,320 @@
+[
+  {
+    "id": "constraint_carcinogenicity_label_enum",
+    "target": "term_carcinogenicity_label",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "carcinogenic",
+      "non-carcinogenic",
+      "carcinogen",
+      "label",
+      "toxicity label",
+      "positive label",
+      "negative label",
+      "most numerous label",
+      "type of label",
+      "carcinogenic type"
+    ],
+    "severity": "block",
+    "scope": "Any question that filters, counts or compares molecules by carcinogenicity.",
+    "confidence": "high",
+    "description": "The label value '+' means the molecule is carcinogenic and '-' means it is non-carcinogenic. All 343 labeled molecules carry exactly one of these two values; there are no null or empty labels. Labels are never stored on atoms or bonds.",
+    "evidence": [
+      "e_labels"
+    ]
+  },
+  {
+    "id": "constraint_label_coverage_gap",
+    "target": "term_carcinogenicity_label",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "molecule",
+      "molecules",
+      "all molecules",
+      "percentage of molecules",
+      "proportion of molecules",
+      "how many molecules",
+      "carcinogenic molecules",
+      "non-carcinogenic molecules",
+      "molecule count"
+    ],
+    "severity": "block",
+    "scope": "Any molecule-level percentage, ranking or listing, and any comparison between a molecule count and an atom or bond count.",
+    "confidence": "high",
+    "description": "The structure tables contain 444 molecules, but only 343 carry a carcinogenicity label; 101 molecules, comprising 3,222 atoms and 3,223 bonds, are unlabeled. Label-based percentages and rankings are computed over the 343 labeled molecules, while atom and bond counts read directly from the structure tables include the unlabeled molecules. Atoms and bonds of unlabeled molecules have unknown carcinogenic status and must not be treated as non-carcinogenic.",
+    "evidence": [
+      "e_molecule_coverage",
+      "e_row_counts"
+    ]
+  },
+  {
+    "id": "constraint_bond_type_enum",
+    "target": "term_bond_type",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "bond type",
+      "single bond",
+      "double bond",
+      "triple bond",
+      "most common bond type",
+      "single bonds",
+      "bond order",
+      "type of bond"
+    ],
+    "severity": "warning",
+    "scope": "Any question that filters, counts or ranks bonds by bond type.",
+    "confidence": "high",
+    "description": "Bond type values are '-' for single bonds, '=' for double bonds and '#' for triple bonds. One bond, in the unlabeled molecule TR345, stores an empty string, which is an unknown bond type rather than a fourth category. Across all bonds the distribution is 10,528 single, 1,844 double, 6 triple and 1 empty.",
+    "evidence": [
+      "e_bond_types"
+    ]
+  },
+  {
+    "id": "constraint_bond_atom_incidence_symmetry",
+    "target": "term_bond_atom_incidence",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "bond atoms",
+      "atoms of a bond",
+      "bond endpoint",
+      "number of bonds",
+      "how many bonds",
+      "bonds between two atoms",
+      "single bond molecules",
+      "average number of bonds"
+    ],
+    "severity": "block",
+    "scope": "Any analysis that reads the incidence table or derives bond counts and atom counts from it.",
+    "confidence": "high",
+    "description": "The incidence table stores each bond twice, once from each endpoint. Its 24,758 rows describe 12,379 distinct bonds and every bond has exactly two rows. Counting incidence rows double-counts bonds, and the two endpoint columns are mirror images, so a bond's atom pair must be treated as one unordered pair.",
+    "evidence": [
+      "e_incidence",
+      "e_bond_integrity"
+    ]
+  },
+  {
+    "id": "constraint_unbonded_atoms",
+    "target": "term_atom_bond_count",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "average number of bonds",
+      "bonds per atom",
+      "number of bonds an atom has",
+      "atoms with element iodine",
+      "unbonded atom",
+      "sodium",
+      "atom bond count"
+    ],
+    "severity": "warning",
+    "scope": "Averages or sums of bonds per atom, and element-level questions about atoms of a given element.",
+    "confidence": "high",
+    "description": "49 atoms have no row in the incidence table, including 38 atoms inside labeled molecules and all 35 sodium atoms. These atoms have zero recorded bonds. Averages of bonds per atom therefore depend on whether such atoms are included in the denominator, and an element that occurs only as an unbonded counter-ion would otherwise appear to have missing rather than zero bonds.",
+    "evidence": [
+      "e_unbonded"
+    ]
+  },
+  {
+    "id": "constraint_element_symbol_normalization",
+    "target": "term_chemical_element",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "element",
+      "hydrogen",
+      "chlorine",
+      "fluorine",
+      "iodine",
+      "sulfur",
+      "phosphorus",
+      "bromine",
+      "sodium",
+      "lead",
+      "carbon",
+      "oxygen",
+      "nitrogen",
+      "element symbol"
+    ],
+    "severity": "block",
+    "scope": "Every element filter, grouping and comparison.",
+    "confidence": "high",
+    "description": "Element symbols are stored in lowercase with no capitalization, and two-letter symbols are single lowercase tokens such as 'cl', 'br', 'si', 'sn', 'cu', 'zn', 'na', 'ca', 'pb' and 'te'. Element filters and comparisons must use this lowercase form; capitalized symbols or element names match nothing. Twenty-one distinct elements occur.",
+    "evidence": [
+      "e_elements"
+    ]
+  },
+  {
+    "id": "constraint_element_presence_definition",
+    "target": "term_element_presence",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "contains",
+      "containing",
+      "with hydrogen",
+      "with chlorine",
+      "does not contain fluorine",
+      "has element",
+      "molecules with",
+      "contain fluorine"
+    ],
+    "severity": "block",
+    "scope": "Statements that a molecule contains or does not contain an element.",
+    "confidence": "high",
+    "description": "A molecule contains an element when at least one of its atoms carries that element symbol. Presence is a molecule-level property evaluated from the molecule's atom composition, not from bond participation. 'Does not contain X' means the molecule has zero atoms of X, which is a genuine zero for every labeled molecule because all labeled molecules have atoms.",
+    "evidence": [
+      "e_presence"
+    ]
+  },
+  {
+    "id": "constraint_molecule_identifier_format",
+    "target": "term_molecule",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "molecule ID",
+      "TR006",
+      "TR001",
+      "molecule identifier",
+      "compound id",
+      "specific molecule"
+    ],
+    "severity": "info",
+    "scope": "Lookup or filtering of an individual molecule by identifier.",
+    "confidence": "high",
+    "description": "Molecule identifiers are the string 'TR' followed by three digits, ranging from TR000 to TR501. The same identifier appears in the molecule label table and as the molecule reference of atoms and bonds; atom and bond identifiers begin with their molecule identifier followed by an underscore.",
+    "evidence": [
+      "e_id_structure"
+    ]
+  },
+  {
+    "id": "constraint_bond_identifier_composition",
+    "target": "term_bond",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "bond ID",
+      "TR001_6_9",
+      "TR001_10_11",
+      "bond identifier",
+      "atoms of the bond",
+      "elements for bond",
+      "bond lookup"
+    ],
+    "severity": "info",
+    "scope": "Lookup of an individual bond or interpretation of a bond identifier.",
+    "confidence": "high",
+    "description": "A bond identifier is the molecule identifier, an underscore, and the sequence numbers of its two atoms, for example TR001_6_9 joins atoms TR001_6 and TR001_9. This composition holds for all 12,379 bonds, so the identifier itself names the endpoints; the incidence table remains the authoritative record of the pairing and provides the bond type from the bond table.",
+    "evidence": [
+      "e_bond_id_parts",
+      "e_incidence"
+    ]
+  },
+  {
+    "id": "constraint_percentage_expression",
+    "target": "term_percentage_share",
+    "constraint_type": "unit",
+    "trigger_keywords": [
+      "percentage",
+      "percent",
+      "proportion",
+      "ratio",
+      "decimal places",
+      "share",
+      "average",
+      "how many"
+    ],
+    "severity": "warning",
+    "scope": "All percentage, proportion and ratio metrics.",
+    "confidence": "high",
+    "description": "Percentage metrics are reported as percentages, that is the ratio multiplied by 100, at the decimal precision requested by the question. The denominator is always the population named by the question: labeled molecules for molecule-level shares, the relevant bond population for bond-type proportions, and the atoms of that population for element shares. A ratio of an element count to the molecule count and a ratio of the same count to the atom count are different readings and must not be mixed.",
+    "evidence": [
+      "e_labels",
+      "e_molecule_coverage"
+    ]
+  },
+  {
+    "id": "constraint_distinct_atom_counting",
+    "target": "term_element_atom_count",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "how many atoms",
+      "total atoms",
+      "count atoms",
+      "distinct atoms",
+      "atoms with iodine and sulfur",
+      "atoms in single bond molecules",
+      "atoms in triple bond molecules",
+      "total number of atoms"
+    ],
+    "severity": "block",
+    "scope": "Atom counts taken inside bond-based or multi-condition filters.",
+    "confidence": "high",
+    "description": "5,745 atoms participate in more than one bond, with a maximum of four bonds per atom, so a bond-anchored join reproduces the same atom once per incident bond. Counts of atoms under bond-based or combined element conditions must count distinct atom identifiers; otherwise atoms that satisfy several conditions or share several bonds are counted repeatedly.",
+    "evidence": [
+      "e_multibond",
+      "e_incidence"
+    ]
+  },
+  {
+    "id": "constraint_carcinogenicity_inheritance",
+    "target": "term_carcinogenicity_label",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "carcinogenic bond",
+      "carcinogenic atom",
+      "proportion of single bonds are carcinogenic",
+      "carcinogenic molecules",
+      "label of the molecule",
+      "bonds that are carcinogenic"
+    ],
+    "severity": "block",
+    "scope": "Any question that attributes carcinogenicity to atoms or bonds rather than to molecules.",
+    "confidence": "high",
+    "description": "Carcinogenicity is recorded only for molecules. An atom or bond inherits the status of the molecule that owns it: a bond is carcinogenic when its molecule is labeled '+' and non-carcinogenic when its molecule is labeled '-'. Bonds and atoms of the 101 unlabeled molecules have unknown status and are excluded from label-based proportions rather than treated as non-carcinogenic.",
+    "evidence": [
+      "e_bond_label_crosstab",
+      "e_molecule_coverage"
+    ]
+  },
+  {
+    "id": "constraint_bond_type_presence",
+    "target": "term_bond_type",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "single bond molecules",
+      "molecules with single bonds",
+      "molecules that have single bonds",
+      "triple-bond molecules",
+      "single bonds between two atoms",
+      "molecules with triple bonds"
+    ],
+    "severity": "info",
+    "scope": "Statements that a molecule is of a given bond-type family.",
+    "confidence": "high",
+    "description": "A molecule is described by a bond type when at least one of its bonds has that type. 'Single bond molecules' therefore means molecules owning at least one single bond, which is 341 of the 343 labeled molecules, and 'triple-bond molecules' means molecules owning at least one triple bond; only 6 triple bonds exist, in 4 molecules.",
+    "evidence": [
+      "e_bond_label_crosstab",
+      "e_bond_types"
+    ]
+  },
+  {
+    "id": "constraint_rare_element_skew",
+    "target": "term_chemical_element",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "least numerous element",
+      "most numerous element",
+      "rare element",
+      "fluorine",
+      "iodine",
+      "lead",
+      "tellurium",
+      "yttrium",
+      "element ranking"
+    ],
+    "severity": "info",
+    "scope": "Rankings and percentages involving sparse elements.",
+    "confidence": "high",
+    "description": "Element frequencies are highly skewed. Hydrogen and carbon dominate with 5,518 and 4,605 atoms, while lead, tellurium, yttrium, boron, calcium, potassium, zinc and copper occur in a single atom each, and fluorine occurs in only 4 molecules, 3 of them labeled. Rankings and percentages for these sparse elements are sensitive to the molecule population chosen and can produce ties or zero values.",
+    "evidence": [
+      "e_elements",
+      "e_presence"
+    ]
+  }
+]

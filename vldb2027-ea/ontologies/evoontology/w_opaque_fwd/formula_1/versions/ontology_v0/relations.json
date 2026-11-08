@@ -1,0 +1,278 @@
+[
+  {
+    "id": "r_circuit_race",
+    "source": "t_circuit",
+    "relation_type": "composition",
+    "target": "t_race",
+    "connection_condition": "tab05.fld001 references tab01.fld001",
+    "description": "A circuit hosts multiple races and a race cannot exist without a circuit venue.",
+    "evidence": [
+      "ev_07_race_circuit"
+    ]
+  },
+  {
+    "id": "r_season_race",
+    "source": "t_season",
+    "relation_type": "composition",
+    "target": "t_race",
+    "connection_condition": "tab05.fld020 corresponds to tab04.fld020",
+    "description": "A season is composed of races; each race belongs to exactly one championship year.",
+    "evidence": [
+      "ev_24_year_domains"
+    ]
+  },
+  {
+    "id": "r_race_result",
+    "source": "t_race",
+    "relation_type": "composition",
+    "target": "t_race_result",
+    "connection_condition": "tab13.fld021 references tab05.fld021",
+    "description": "Race results are part of a race; a result cannot exist without its race.",
+    "evidence": [
+      "ev_02_counts"
+    ]
+  },
+  {
+    "id": "r_race_laptime",
+    "source": "t_race",
+    "relation_type": "composition",
+    "target": "t_lap_time_record",
+    "connection_condition": "tab09.fld021 references tab05.fld021",
+    "description": "Lap time records are part of a race and carry its race identifier.",
+    "evidence": [
+      "ev_17_lap_times"
+    ]
+  },
+  {
+    "id": "r_race_qualifying",
+    "source": "t_race",
+    "relation_type": "composition",
+    "target": "t_qualifying_result",
+    "connection_condition": "tab11.fld021 references tab05.fld021",
+    "description": "Qualifying results belong to a race weekend and reference the race.",
+    "evidence": [
+      "ev_18_qualifying"
+    ]
+  },
+  {
+    "id": "r_race_standing",
+    "source": "t_race",
+    "relation_type": "composition",
+    "target": "t_driver_standing",
+    "connection_condition": "tab08.fld021 references tab05.fld021",
+    "description": "Driver standings are recorded after each race and are part of the race sequence.",
+    "evidence": [
+      "ev_13_wins"
+    ]
+  },
+  {
+    "id": "r_race_constructor_result",
+    "source": "t_race",
+    "relation_type": "composition",
+    "target": "t_constructor_result",
+    "connection_condition": "tab06.fld021 references tab05.fld021",
+    "description": "Constructor race results are part of a race and cannot exist independently.",
+    "evidence": [
+      "ev_21_japanese_constructors"
+    ]
+  },
+  {
+    "id": "r_result_driver",
+    "source": "t_race_result",
+    "relation_type": "association",
+    "target": "t_driver",
+    "connection_condition": "tab13.fld013 references tab03.fld013",
+    "description": "A race result is attributed to a driver who participates independently of that race.",
+    "evidence": [
+      "ev_04_driver_fields"
+    ]
+  },
+  {
+    "id": "r_result_constructor",
+    "source": "t_race_result",
+    "relation_type": "association",
+    "target": "t_constructor",
+    "connection_condition": "tab13.fld010 references tab02.fld010",
+    "description": "A race result is attributed to the constructor the driver raced for.",
+    "evidence": [
+      "ev_22_constructor_ref_website"
+    ]
+  },
+  {
+    "id": "r_qualifying_driver",
+    "source": "t_qualifying_result",
+    "relation_type": "association",
+    "target": "t_driver",
+    "connection_condition": "tab11.fld013 references tab03.fld013",
+    "description": "A qualifying result is attributed to a driver.",
+    "evidence": [
+      "ev_18_qualifying"
+    ]
+  },
+  {
+    "id": "r_qualifying_constructor",
+    "source": "t_qualifying_result",
+    "relation_type": "association",
+    "target": "t_constructor",
+    "connection_condition": "tab11.fld010 references tab02.fld010",
+    "description": "A qualifying result is attributed to the constructor the driver raced for.",
+    "evidence": [
+      "ev_18_qualifying"
+    ]
+  },
+  {
+    "id": "r_laptime_driver",
+    "source": "t_lap_time_record",
+    "relation_type": "association",
+    "target": "t_driver",
+    "connection_condition": "tab09.fld013 references tab03.fld013",
+    "description": "A lap record is attributed to the driver who drove the lap.",
+    "evidence": [
+      "ev_17_lap_times"
+    ]
+  },
+  {
+    "id": "r_standing_driver",
+    "source": "t_driver_standing",
+    "relation_type": "association",
+    "target": "t_driver",
+    "connection_condition": "tab08.fld013 references tab03.fld013",
+    "description": "A driver standing row belongs to one driver.",
+    "evidence": [
+      "ev_13_wins"
+    ]
+  },
+  {
+    "id": "r_constructor_result_constructor",
+    "source": "t_constructor_result",
+    "relation_type": "association",
+    "target": "t_constructor",
+    "connection_condition": "tab06.fld010 references tab02.fld010",
+    "description": "A constructor race result belongs to one constructor.",
+    "evidence": [
+      "ev_21_japanese_constructors"
+    ]
+  },
+  {
+    "id": "r_status_result",
+    "source": "t_status",
+    "relation_type": "association",
+    "target": "t_race_result",
+    "connection_condition": "tab13.fld041 references tab12.fld041",
+    "description": "A result carries a status label explaining its classification or retirement reason.",
+    "evidence": [
+      "ev_11_status"
+    ]
+  },
+  {
+    "id": "r_full_name",
+    "source": "t_driver",
+    "relation_type": "derivation",
+    "target": "t_driver_full_name",
+    "connection_condition": "forename fld017 and surname fld018 are concatenated; fld016 is the separate short code",
+    "description": "A driver's full name is derived from the forename and surname fields.",
+    "evidence": [
+      "ev_04_driver_fields"
+    ]
+  },
+  {
+    "id": "r_age",
+    "source": "t_driver_birth_date",
+    "relation_type": "derivation",
+    "target": "t_driver_age",
+    "connection_condition": "age ordering derives from birth date fld019; youngest is the maximum birth date",
+    "description": "Driver age and youngest/oldest ordering are derived from the birth date.",
+    "evidence": [
+      "ev_05_birth_dates"
+    ]
+  },
+  {
+    "id": "r_completion",
+    "source": "t_race_result",
+    "relation_type": "derivation",
+    "target": "t_race_completion_rate",
+    "connection_condition": "ratio of results with non-null time fld024 to all results in scope",
+    "description": "Race completion rate is derived from the count of results with a non-null race time relative to all results in scope.",
+    "evidence": [
+      "ev_10_result_time"
+    ]
+  },
+  {
+    "id": "r_fastest_lap",
+    "source": "t_lap_time_milliseconds",
+    "relation_type": "derivation",
+    "target": "t_fastest_lap_time",
+    "connection_condition": "minimum lap milliseconds fld034 per driver per race; a precomputed value is also stored in tab13.fld048",
+    "description": "Fastest lap time is derived as the minimum lap duration for a driver in a race.",
+    "evidence": [
+      "ev_15_fastest_lap_fields",
+      "ev_17_lap_times"
+    ]
+  },
+  {
+    "id": "r_average_lap",
+    "source": "t_lap_time_milliseconds",
+    "relation_type": "derivation",
+    "target": "t_average_lap_time",
+    "connection_condition": "mean lap milliseconds per driver per race",
+    "description": "Average lap time is derived by averaging lap durations for a driver in a race.",
+    "evidence": [
+      "ev_17_lap_times"
+    ]
+  },
+  {
+    "id": "r_wins",
+    "source": "t_race_result",
+    "relation_type": "derivation",
+    "target": "t_driver_wins",
+    "connection_condition": "count of first-place race results; cumulative wins are also stored in tab08.fld031",
+    "description": "Driver wins can be derived by counting race results with finishing position 1.",
+    "evidence": [
+      "ev_13_wins"
+    ]
+  },
+  {
+    "id": "r_percentage",
+    "source": "t_race",
+    "relation_type": "derivation",
+    "target": "t_percentage_share",
+    "connection_condition": "ratio of a counted race subset to the counted total, multiplied by 100",
+    "description": "Percentage share is derived from counted subsets of races or results relative to their corresponding total.",
+    "evidence": [
+      "ev_09_race_name_country"
+    ]
+  },
+  {
+    "id": "r_year_equivalence",
+    "source": "t_race_year",
+    "relation_type": "equivalence",
+    "target": "t_season_year",
+    "connection_condition": "tab05.fld020 and tab04.fld020 share the same 68-value year domain from 1950 to 2017",
+    "description": "Race year and season year express the same championship year concept in different tables.",
+    "evidence": [
+      "ev_24_year_domains"
+    ]
+  },
+  {
+    "id": "r_winner_hierarchy",
+    "source": "t_race_winner",
+    "relation_type": "hierarchy",
+    "target": "t_race_result",
+    "connection_condition": "",
+    "description": "A race winner is a race result whose finishing position is 1; the winner value domain is a subset of race results.",
+    "evidence": [
+      "ev_10_result_time"
+    ]
+  },
+  {
+    "id": "r_champion_hierarchy",
+    "source": "t_season_champion",
+    "relation_type": "hierarchy",
+    "target": "t_driver_standing",
+    "connection_condition": "",
+    "description": "A season champion is the driver standing with position 1 at the final race of the season.",
+    "evidence": [
+      "ev_14_2009_champion"
+    ]
+  }
+]

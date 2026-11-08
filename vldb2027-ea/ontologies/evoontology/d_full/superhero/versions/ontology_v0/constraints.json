@@ -1,0 +1,269 @@
+[
+  {
+    "id": "constraint_height_zero_placeholder",
+    "target": "term_hero_height",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "height",
+      "height_cm",
+      "average height",
+      "tallest",
+      "shortest",
+      "missing height",
+      "zero height",
+      "physical measurements"
+    ],
+    "severity": "block",
+    "scope": "Applies whenever superhero.height_cm is aggregated, compared or filtered.",
+    "confidence": "high",
+    "description": "A height_cm value of 0 is a placeholder for an unrecorded height, not a measurement. 155 of 750 records carry 0 and a further 58 are NULL, so 213 records have no usable height. Averaging or ranking without excluding zero silently understates every result. Positive values are recorded in centimetres over the range 61 to 30480, and the extreme end of that range describes cosmic-scale characters rather than ordinary heroes.",
+    "evidence": [
+      "evidence_height_sentinels",
+      "evidence_height_outliers"
+    ]
+  },
+  {
+    "id": "constraint_weight_zero_placeholder",
+    "target": "term_hero_weight",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "weight",
+      "weight_kg",
+      "average weight",
+      "heaviest",
+      "lightest",
+      "missing weight",
+      "zero weight",
+      "physical measurements"
+    ],
+    "severity": "block",
+    "scope": "Applies whenever superhero.weight_kg is aggregated, compared or filtered.",
+    "confidence": "high",
+    "description": "A weight_kg value of 0 is a placeholder for an unrecorded weight, not a measurement. 172 of 750 records carry 0 and a further 64 are NULL, so 236 records have no usable weight. Positive values are recorded in kilograms over the range 14 to 90000000, and values in the extreme tail describe cosmic-scale characters; they dominate any mean computed over unclipped data.",
+    "evidence": [
+      "evidence_weight_sentinels",
+      "evidence_weight_outliers"
+    ]
+  },
+  {
+    "id": "constraint_full_name_placeholders",
+    "target": "term_hero_full_name",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "full name",
+      "real name",
+      "civilian name",
+      "missing name",
+      "unnamed hero",
+      "identity"
+    ],
+    "severity": "warning",
+    "scope": "Applies when selecting, counting or grouping superheroes by full_name.",
+    "confidence": "high",
+    "description": "An unrecorded civilian name is encoded in two different ways: the single-character dash and SQL NULL. 125 records hold the dash and 122 hold NULL, so only 503 of 750 records carry an actual name. Both forms must be treated as absence together, otherwise the two spellings split into separate misleading groups.",
+    "evidence": [
+      "evidence_name_placeholders"
+    ]
+  },
+  {
+    "id": "constraint_race_unspecified",
+    "target": "term_race",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "race",
+      "species",
+      "unspecified race",
+      "unknown race",
+      "human",
+      "mutant",
+      "origin"
+    ],
+    "severity": "block",
+    "scope": "Applies when grouping, counting or filtering superheroes by race.",
+    "confidence": "high",
+    "description": "The dash entry is the most frequent race value, covering 295 of 750 heroes, and marks an unspecified race rather than a species called '-'. A further 4 heroes carry no race reference at all. Compound labels such as 'Human / Radiation' and 'Human-Kree' are stored as separate categories, so counting 'Human' does not automatically include those heroes.",
+    "evidence": [
+      "evidence_race_placeholders",
+      "evidence_race_distribution"
+    ]
+  },
+  {
+    "id": "constraint_colour_placeholder_and_combinations",
+    "target": "term_colour_value",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "colour",
+      "color",
+      "eye colour",
+      "hair colour",
+      "skin colour",
+      "no colour",
+      "appearance",
+      "most common colour"
+    ],
+    "severity": "warning",
+    "scope": "Applies whenever a colour column is counted, grouped or compared.",
+    "confidence": "high",
+    "description": "The value 'No Colour' is a placeholder for an absent colour record, not a visible colour, and it is dominant in every appearance attribute: 681 of 750 heroes for skin, 246 for hair and 169 for eyes. Reporting the most common colour without excluding it reports the placeholder. In addition, 13 of the 35 colour values are compound labels combining two colours with a slash, and each compound label is a distinct category rather than a member of either single colour.",
+    "evidence": [
+      "evidence_colour_usage",
+      "evidence_colour_values"
+    ]
+  },
+  {
+    "id": "constraint_publisher_attribution_gaps",
+    "target": "term_publisher",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "publisher",
+      "roster",
+      "hero count",
+      "marvel",
+      "dc comics",
+      "unnamed publisher",
+      "publisher missing"
+    ],
+    "severity": "warning",
+    "scope": "Applies when counting heroes per publisher or comparing publisher rosters.",
+    "confidence": "high",
+    "description": "Publisher attribution is incomplete in two distinct ways. Three heroes carry no publisher reference at all, and 17 heroes point at a publisher row whose name is an empty string rather than a real publisher. Grouping by publisher name merges the unnamed group with any other empty label and drops the three unattributed heroes from inner joins, so roster totals depend on how these two groups are handled and should be stated explicitly.",
+    "evidence": [
+      "evidence_publisher_placeholders",
+      "evidence_publisher_distribution"
+    ]
+  },
+  {
+    "id": "constraint_alignment_na_category",
+    "target": "term_alignment",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "alignment",
+      "good",
+      "bad",
+      "neutral",
+      "hero or villain",
+      "n/a alignment",
+      "moral"
+    ],
+    "severity": "warning",
+    "scope": "Applies when grouping or comparing superheroes by alignment.",
+    "confidence": "high",
+    "description": "The alignment list has four closed values. In addition to Good (504 heroes), Bad (212) and Neutral (28), the value N/A covers 28 heroes and marks an unclassified character rather than a fourth moral stance. The same N/A placeholder appears in the gender list, where it also covers 28 heroes, so the two are not interchangeable.",
+    "evidence": [
+      "evidence_alignment_distribution",
+      "evidence_gender_distribution"
+    ]
+  },
+  {
+    "id": "constraint_attribute_coverage_and_scale",
+    "target": "term_hero_attribute_score",
+    "constraint_type": "scope",
+    "trigger_keywords": [
+      "attribute",
+      "capability",
+      "score",
+      "intelligence",
+      "strength",
+      "speed",
+      "durability",
+      "power",
+      "combat",
+      "average score",
+      "strongest"
+    ],
+    "severity": "block",
+    "scope": "Applies whenever capability ratings are averaged, compared or joined to heroes.",
+    "confidence": "high",
+    "description": "Only 623 of 750 heroes have ratings, and every rated hero has exactly one row for each of the six dimensions, so a hero is either rated on all six dimensions or on none. Comparisons between groups therefore rest on a subset of the catalogue, and any group count taken alongside an average describes rated heroes rather than all heroes. Ratings lie on a 0 to 100 scale with observed values from 5 to 100, and the six dimensions are separate scales that should not be summed into one combined score unless that composite is explicitly defined.",
+    "evidence": [
+      "evidence_attribute_coverage",
+      "evidence_attribute_scale"
+    ]
+  },
+  {
+    "id": "constraint_attribute_vs_superpower_names",
+    "target": "term_attribute_dimension",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "intelligence",
+      "durability",
+      "power",
+      "ability",
+      "attribute",
+      "superpower",
+      "same name"
+    ],
+    "severity": "block",
+    "scope": "Applies when interpreting a label that appears in both the attribute list and the superpower list.",
+    "confidence": "high",
+    "description": "The labels Intelligence and Durability appear both as attribute dimensions and as superpower names, and the attribute dimension Power is distinct from superpower entries such as Super Strength. They are different concepts with different shapes of data: an attribute dimension carries a numeric rating per hero, while a superpower is a named ability recorded as presence or absence per hero. Questioning about one must not be answered by joining the other.",
+    "evidence": [
+      "evidence_attribute_power_overlap",
+      "evidence_attribute_dimensions"
+    ]
+  },
+  {
+    "id": "constraint_power_coverage_gap",
+    "target": "term_hero_power_count",
+    "constraint_type": "scope",
+    "trigger_keywords": [
+      "power count",
+      "number of powers",
+      "average powers",
+      "most powers",
+      "no powers",
+      "abilities"
+    ],
+    "severity": "warning",
+    "scope": "Applies whenever the number of powers per hero is counted, averaged or ranked.",
+    "confidence": "high",
+    "description": "98 of 750 heroes have no power rows at all, so their power count is undefined rather than zero and they are absent from the association entirely. Additionally, 127 heroes have no attribute ratings and only 563 heroes carry both ratings and powers, so breadth of ability and rated capability are each recorded for different subsets of the catalogue.",
+    "evidence": [
+      "evidence_power_coverage",
+      "evidence_attribute_coverage"
+    ]
+  },
+  {
+    "id": "constraint_hero_id_noncontiguous",
+    "target": "term_hero_id",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "id",
+      "identifier",
+      "missing id",
+      "gap",
+      "sequence",
+      "count",
+      "row number"
+    ],
+    "severity": "warning",
+    "scope": "Applies whenever the hero identifier is used as a count, a range bound or an ordering key.",
+    "confidence": "high",
+    "description": "Identifiers span 1 to 756 but only 750 records exist: the values 143, 513, 606, 640, 646 and 719 are absent. The identifiers are therefore not a dense sequence, and computing catalogue size from the identifier range overstates the number of heroes by six. Identifier order is also not a meaningful chronological or alphabetical ordering.",
+    "evidence": [
+      "evidence_id_gaps",
+      "evidence_referential_integrity"
+    ]
+  },
+  {
+    "id": "constraint_colour_shared_vocabulary",
+    "target": "term_colour_value",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "eye colour",
+      "hair colour",
+      "skin colour",
+      "colour list",
+      "same colour",
+      "appearance"
+    ],
+    "severity": "info",
+    "scope": "Applies when comparing colours across the eye, hair and skin attributes.",
+    "confidence": "high",
+    "description": "Eye, hair and skin colour all resolve against the same 35-value colour list, so frequencies from the three attributes are directly comparable in vocabulary but describe different attributes of the hero. A colour counted for hair says nothing about the same hero's eyes, and the three columns must be kept distinct when they are combined in one result.",
+    "evidence": [
+      "evidence_colour_values",
+      "evidence_colour_usage"
+    ]
+  }
+]

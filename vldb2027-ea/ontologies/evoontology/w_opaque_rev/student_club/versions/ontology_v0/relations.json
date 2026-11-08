@@ -1,0 +1,258 @@
+[
+  {
+    "id": "rel_event_budget_composition",
+    "source": "term_event",
+    "relation_type": "composition",
+    "target": "term_budget",
+    "connection_condition": "budget rows carry an event identifier corresponding to the event record identifier",
+    "description": "A budget line is part of exactly one event; an event may have several budget lines, one per expense category, and budget rows cannot exist without their event.",
+    "evidence": [
+      "evidence_budget_structure",
+      "evidence_budget_coverage"
+    ]
+  },
+  {
+    "id": "rel_event_attendance_composition",
+    "source": "term_event",
+    "relation_type": "composition",
+    "target": "term_attendance",
+    "connection_condition": "attendance rows carry an event identifier corresponding to the event record identifier",
+    "description": "An attendance record is part of an event and has no meaning without it; each attendance record pairs one member with one event.",
+    "evidence": [
+      "evidence_attendance_grain"
+    ]
+  },
+  {
+    "id": "rel_budget_expense_composition",
+    "source": "term_budget",
+    "relation_type": "composition",
+    "target": "term_expense",
+    "connection_condition": "expense rows carry a budget identifier corresponding to the budget-line identifier",
+    "description": "An expense is charged to one budget line; removing the budget line would leave the expense without an allocation context.",
+    "evidence": [
+      "evidence_expense_budget_links"
+    ]
+  },
+  {
+    "id": "rel_member_attendance_composition",
+    "source": "term_member",
+    "relation_type": "composition",
+    "target": "term_attendance",
+    "connection_condition": "attendance rows carry a member identifier corresponding to the member record identifier",
+    "description": "An attendance record belongs to one member and cannot exist without that member.",
+    "evidence": [
+      "evidence_attendance_grain"
+    ]
+  },
+  {
+    "id": "rel_member_expense_composition",
+    "source": "term_member",
+    "relation_type": "composition",
+    "target": "term_expense",
+    "connection_condition": "expense rows carry a member identifier corresponding to the member record identifier",
+    "description": "An expense is incurred by one member and cannot exist without that member.",
+    "evidence": [
+      "evidence_expense_member_coverage"
+    ]
+  },
+  {
+    "id": "rel_member_major_association",
+    "source": "term_member",
+    "relation_type": "association",
+    "target": "term_major",
+    "connection_condition": "member records carry a major identifier corresponding to the major record identifier; one member has no value",
+    "description": "A member declares an academic major, giving access to the major name and its department. This is a reference relationship, not a type hierarchy.",
+    "evidence": [
+      "evidence_member_major_coverage"
+    ]
+  },
+  {
+    "id": "rel_member_zip_association",
+    "source": "term_member",
+    "relation_type": "association",
+    "target": "term_zip_code",
+    "connection_condition": "member records carry a ZIP code corresponding to the ZIP record identifier",
+    "description": "A member's home location is expressed through a ZIP code area, which provides city, county, and state attributes.",
+    "evidence": [
+      "evidence_member_zip_coverage"
+    ]
+  },
+  {
+    "id": "rel_zip_city_association",
+    "source": "term_zip_code",
+    "relation_type": "association",
+    "target": "term_city",
+    "connection_condition": "each ZIP row carries a city or place name",
+    "description": "Each ZIP code area is labeled with one city or place name.",
+    "evidence": [
+      "evidence_zip_geography_example"
+    ]
+  },
+  {
+    "id": "rel_zip_county_association",
+    "source": "term_zip_code",
+    "relation_type": "association",
+    "target": "term_county",
+    "connection_condition": "each ZIP row carries a county name",
+    "description": "Each ZIP code area is labeled with one county or municipio name.",
+    "evidence": [
+      "evidence_zip_geography_example"
+    ]
+  },
+  {
+    "id": "rel_zip_state_association",
+    "source": "term_zip_code",
+    "relation_type": "association",
+    "target": "term_state",
+    "connection_condition": "each ZIP row carries a full state name and a two-letter state abbreviation",
+    "description": "Each ZIP code area belongs to one state or territory, recorded both as a full name and as a two-letter abbreviation.",
+    "evidence": [
+      "evidence_zip_geography_example",
+      "evidence_zip_grain"
+    ]
+  },
+  {
+    "id": "rel_major_name_association",
+    "source": "term_major",
+    "relation_type": "association",
+    "target": "term_major_name",
+    "connection_condition": "each major row carries its name",
+    "description": "A major is identified by its academic program name.",
+    "evidence": [
+      "evidence_schema_overview"
+    ]
+  },
+  {
+    "id": "rel_major_department_association",
+    "source": "term_major",
+    "relation_type": "association",
+    "target": "term_major_department",
+    "connection_condition": "each major row carries its offering department",
+    "description": "A major is offered by one department or school, which answers department-level questions about a member's study.",
+    "evidence": [
+      "evidence_schema_overview"
+    ]
+  },
+  {
+    "id": "rel_event_status_equivalence",
+    "source": "term_event_status",
+    "relation_type": "equivalence",
+    "target": "term_budget_event_status",
+    "connection_condition": "the event status column and the budget event status column carry identical values for every event that has budget rows",
+    "description": "The lifecycle status of an event is represented twice: on the event record and repeated on each budget row. They express the same business concept and agree on all observed budget rows.",
+    "evidence": [
+      "evidence_budget_status_equivalence"
+    ]
+  },
+  {
+    "id": "rel_fullname_from_first",
+    "source": "term_member_first_name",
+    "relation_type": "derivation",
+    "target": "term_member_full_name",
+    "connection_condition": "given-name column of the member record",
+    "description": "The full name is derived by combining the member's given name with the family name.",
+    "evidence": [
+      "evidence_member_fullname_unique"
+    ]
+  },
+  {
+    "id": "rel_fullname_from_last",
+    "source": "term_member_last_name",
+    "relation_type": "derivation",
+    "target": "term_member_full_name",
+    "connection_condition": "family-name column of the member record",
+    "description": "The full name is derived by combining the member's given name with the family name.",
+    "evidence": [
+      "evidence_member_fullname_unique"
+    ]
+  },
+  {
+    "id": "rel_ratio_from_spent",
+    "source": "term_budget_spent",
+    "relation_type": "derivation",
+    "target": "term_spend_to_budget_ratio",
+    "connection_condition": "spent amount is the numerator of the ratio",
+    "description": "The spend-to-budget ratio is derived from the spent amount and the allocated amount.",
+    "evidence": [
+      "evidence_budget_arithmetic"
+    ]
+  },
+  {
+    "id": "rel_ratio_from_amount",
+    "source": "term_budget_amount",
+    "relation_type": "derivation",
+    "target": "term_spend_to_budget_ratio",
+    "connection_condition": "allocated amount is the denominator of the ratio",
+    "description": "The spend-to-budget ratio is derived from the spent amount and the allocated amount.",
+    "evidence": [
+      "evidence_budget_arithmetic"
+    ]
+  },
+  {
+    "id": "rel_overrun_from_spent",
+    "source": "term_budget_spent",
+    "relation_type": "derivation",
+    "target": "term_budget_overrun",
+    "connection_condition": "spent amount is the amount actually consumed",
+    "description": "Budget overrun is derived from the spent amount and the allocated amount; it is positive when spending exceeds the allocation.",
+    "evidence": [
+      "evidence_budget_arithmetic"
+    ]
+  },
+  {
+    "id": "rel_overrun_from_amount",
+    "source": "term_budget_amount",
+    "relation_type": "derivation",
+    "target": "term_budget_overrun",
+    "connection_condition": "allocated amount is the amount available",
+    "description": "Budget overrun is derived from the spent amount and the allocated amount; it is zero or negative when spending is within budget.",
+    "evidence": [
+      "evidence_budget_arithmetic"
+    ]
+  },
+  {
+    "id": "rel_attendance_count_from_records",
+    "source": "term_attendance",
+    "relation_type": "derivation",
+    "target": "term_attendance_count",
+    "connection_condition": "counting attendance records grouped by event",
+    "description": "Attendance count is derived from the number of attendance records for an event.",
+    "evidence": [
+      "evidence_attendance_counts"
+    ]
+  },
+  {
+    "id": "rel_total_cost_from_expense_cost",
+    "source": "term_expense_cost",
+    "relation_type": "derivation",
+    "target": "term_total_expense_cost",
+    "connection_condition": "summing individual expense costs within a group",
+    "description": "Total expense cost is derived by summing individual expense costs over a selected set of expense records.",
+    "evidence": [
+      "evidence_expense_cost_stats"
+    ]
+  },
+  {
+    "id": "rel_average_cost_from_expense_cost",
+    "source": "term_expense_cost",
+    "relation_type": "derivation",
+    "target": "term_average_expense_cost",
+    "connection_condition": "averaging individual expense costs within a group",
+    "description": "Average expense cost is derived by computing the arithmetic mean of individual expense costs over a selected set of expense records.",
+    "evidence": [
+      "evidence_expense_cost_stats"
+    ]
+  },
+  {
+    "id": "rel_event_expense_association",
+    "source": "term_event",
+    "relation_type": "association",
+    "target": "term_expense",
+    "connection_condition": "indirect: expenses reference budget lines, and budget lines reference events",
+    "description": "Event-level spending is reached indirectly through budget lines; an event's expenses are those charged to any of its budget lines.",
+    "evidence": [
+      "evidence_expense_budget_links",
+      "evidence_postcards_trace"
+    ]
+  }
+]

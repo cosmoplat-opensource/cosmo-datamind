@@ -1,0 +1,349 @@
+{
+ "db_id": "ind108",
+ "questions": [
+  {
+   "question_id": 100088,
+   "db_id": "ind108",
+   "question": "制造商为“示例机械C”的设备，其停机总时长是多少小时？",
+   "evidence": "",
+   "SQL": "SELECT SUM(f.\"duration_hours\") FROM \"fact_downtime\" f JOIN \"dim_equipment\" p ON f.\"equipment_id\" = p.\"equipment_id\" WHERE p.\"manufacturer\" = '示例机械C'",
+   "difficulty": "agg_by_parent_attr"
+  },
+  {
+   "question_id": 100198,
+   "db_id": "ind108",
+   "question": "月度安全审计的安全审计次数是多少？",
+   "evidence": "",
+   "SQL": "SELECT COUNT(*) FROM \"fact_safety_audit\" WHERE \"audit_type\" = '月度安全审计'",
+   "difficulty": "count_filter"
+  },
+  {
+   "question_id": 100230,
+   "db_id": "ind108",
+   "question": "有多少条培训类型为新员工三级安全教育的安全培训记录？",
+   "evidence": "",
+   "SQL": "SELECT COUNT(*) FROM \"fact_safety_training\" WHERE \"training_type\" = '新员工三级安全教育'",
+   "difficulty": "count_filter"
+  },
+  {
+   "question_id": 100283,
+   "db_id": "ind108",
+   "question": "哪个部门的费用报销总金额最高？",
+   "evidence": "",
+   "SQL": "SELECT p.\"dept_name\" FROM \"fact_expense\" f JOIN \"dim_department\" p ON f.\"dept_id\" = p.\"dept_id\" GROUP BY p.\"dept_id\", p.\"dept_name\" ORDER BY SUM(f.\"amount\") DESC LIMIT 1",
+   "difficulty": "top_parent"
+  },
+  {
+   "question_id": 100189,
+   "db_id": "ind108",
+   "question": "2025年发生的所有事故的平均财产损失是多少元？",
+   "evidence": "",
+   "SQL": "SELECT AVG(\"property_loss\") FROM \"fact_incident\" WHERE substr(\"incident_date\",1,4) = '2025'",
+   "difficulty": "agg_filter_year"
+  },
+  {
+   "question_id": 100053,
+   "db_id": "ind108",
+   "question": "2025年退货数量（吨）的平均值是多少？",
+   "evidence": "",
+   "SQL": "SELECT AVG(\"quantity\") FROM \"fact_return\" WHERE substr(\"return_date\",1,4) = '2025'",
+   "difficulty": "agg_filter_year"
+  },
+  {
+   "question_id": 100125,
+   "db_id": "ind108",
+   "question": "制造商为“示例机械D”的设备，其固定资产的折旧记录一共有多少条？",
+   "evidence": "",
+   "SQL": "SELECT COUNT(*) FROM \"fact_depreciation\" f JOIN \"dim_fixed_asset\" p ON f.\"asset_id\" = p.\"asset_id\" JOIN \"dim_equipment\" q ON p.\"equipment_id\" = q.\"equipment_id\" WHERE q.\"manufacturer\" = '示例机械D'",
+   "difficulty": "two_hop"
+  },
+  {
+   "question_id": 100167,
+   "db_id": "ind108",
+   "question": "2025年的收款金额合计是多少？",
+   "evidence": "",
+   "SQL": "SELECT SUM(\"amount\") FROM \"fact_payment\" WHERE substr(\"payment_date\",1,4) = '2025'",
+   "difficulty": "agg_filter_year"
+  },
+  {
+   "question_id": 100173,
+   "db_id": "ind108",
+   "question": "按退货原因统计各自的退货单数是多少？",
+   "evidence": "",
+   "SQL": "SELECT \"reason\", COUNT(*) FROM \"fact_return\" GROUP BY \"reason\"",
+   "difficulty": "group_count"
+  },
+  {
+   "question_id": 100268,
+   "db_id": "ind108",
+   "question": "特种工程塑料车间发生了多少起事故？",
+   "evidence": "",
+   "SQL": "SELECT COUNT(*) FROM \"fact_incident\" f JOIN \"dim_production_line\" p ON f.\"line_id\" = p.\"line_id\" JOIN \"dim_workshop\" q ON p.\"workshop_id\" = q.\"workshop_id\" WHERE q.\"workshop_name\" = '特种工程塑料车间'",
+   "difficulty": "two_hop"
+  },
+  {
+   "question_id": 100250,
+   "db_id": "ind108",
+   "question": "哪台设备累计的维护工时（小时）最高？",
+   "evidence": "",
+   "SQL": "SELECT p.\"equipment_name\" FROM \"fact_maintenance_record\" f JOIN \"dim_equipment\" p ON f.\"equipment_id\" = p.\"equipment_id\" GROUP BY p.\"equipment_id\", p.\"equipment_name\" ORDER BY SUM(f.\"labor_hours\") DESC LIMIT 1",
+   "difficulty": "top_parent"
+  },
+  {
+   "question_id": 100188,
+   "db_id": "ind108",
+   "question": "哪条产线的OEE合计最高？",
+   "evidence": "",
+   "SQL": "SELECT p.\"line_name\" FROM \"fact_equipment_runtime\" f JOIN \"dim_production_line\" p ON f.\"line_id\" = p.\"line_id\" GROUP BY p.\"line_id\", p.\"line_name\" ORDER BY SUM(f.\"oee\") DESC LIMIT 1",
+   "difficulty": "top_parent"
+  },
+  {
+   "question_id": 100180,
+   "db_id": "ind108",
+   "question": "订单状态为“delivered”的销售订单，对应有多少张发票？",
+   "evidence": "",
+   "SQL": "SELECT COUNT(*) FROM \"fact_invoice\" f JOIN \"fact_delivery\" p ON f.\"delivery_id\" = p.\"delivery_id\" JOIN \"fact_sales_order\" q ON p.\"order_id\" = q.\"order_id\" WHERE q.\"status\" = 'delivered'",
+   "difficulty": "two_hop"
+  },
+  {
+   "question_id": 100022,
+   "db_id": "ind108",
+   "question": "2025年评估日期中，需要控制的风险评估合计是多少？",
+   "evidence": "",
+   "SQL": "SELECT SUM(\"control_needed\") FROM \"fact_risk_assessment\" WHERE substr(\"assess_date\",1,4) = '2025'",
+   "difficulty": "agg_filter_year"
+  },
+  {
+   "question_id": 100274,
+   "db_id": "ind108",
+   "question": "合金挤出2线的计划达成率合计是多少？",
+   "evidence": "",
+   "SQL": "SELECT SUM(f.\"plan_achievement\") FROM \"fact_production_plan\" f JOIN \"dim_production_line\" p ON f.\"line_id\" = p.\"line_id\" WHERE p.\"line_name\" = '合金挤出2线'",
+   "difficulty": "agg_by_parent_attr"
+  },
+  {
+   "question_id": 100128,
+   "db_id": "ind108",
+   "question": "制造商为“示例机械D”的设备所采集的物联网数据条数是多少？",
+   "evidence": "",
+   "SQL": "SELECT COUNT(*) FROM \"fact_iot_data\" f JOIN \"dim_sensor\" p ON f.\"sensor_id\" = p.\"sensor_id\" JOIN \"dim_equipment\" q ON p.\"equipment_id\" = q.\"equipment_id\" WHERE q.\"manufacturer\" = '示例机械D'",
+   "difficulty": "two_hop"
+  },
+  {
+   "question_id": 100009,
+   "db_id": "ind108",
+   "question": "2026年的维护计划中，下次维护日期的间隔天数合计是多少？",
+   "evidence": "",
+   "SQL": "SELECT SUM(\"interval_days\") FROM \"fact_maintenance_plan\" WHERE substr(\"next_date\",1,4) = '2026'",
+   "difficulty": "agg_filter_year"
+  },
+  {
+   "question_id": 100285,
+   "db_id": "ind108",
+   "question": "传感器类型为“温度”的告警中，已处理的告警合计有多少条？",
+   "evidence": "",
+   "SQL": "SELECT SUM(f.\"is_handled\") FROM \"fact_alarm\" f JOIN \"dim_sensor\" p ON f.\"sensor_id\" = p.\"sensor_id\" WHERE p.\"sensor_type\" = '温度'",
+   "difficulty": "agg_by_parent_attr"
+  },
+  {
+   "question_id": 100217,
+   "db_id": "ind108",
+   "question": "费用类型为“市场推广费”的报销单有多少笔？",
+   "evidence": "",
+   "SQL": "SELECT COUNT(*) FROM \"fact_expense\" WHERE \"expense_type\" = '市场推广费'",
+   "difficulty": "count_filter"
+  },
+  {
+   "question_id": 100046,
+   "db_id": "ind108",
+   "question": "制造商为“示例机械E”的设备所对应的传感器，一共产生了多少条IoT数据？",
+   "evidence": "",
+   "SQL": "SELECT COUNT(*) FROM \"fact_iot_data\" f JOIN \"dim_sensor\" p ON f.\"sensor_id\" = p.\"sensor_id\" JOIN \"dim_equipment\" q ON p.\"equipment_id\" = q.\"equipment_id\" WHERE q.\"manufacturer\" = '示例机械E'",
+   "difficulty": "two_hop"
+  },
+  {
+   "question_id": 100085,
+   "db_id": "ind108",
+   "question": "状态为“open”的应付账款有多少笔？",
+   "evidence": "",
+   "SQL": "SELECT COUNT(*) FROM \"fact_ap\" WHERE \"status\" = 'open'",
+   "difficulty": "count_filter"
+  },
+  {
+   "question_id": 100178,
+   "db_id": "ind108",
+   "question": "哪个传感器的测量值合计最高？",
+   "evidence": "",
+   "SQL": "SELECT p.\"sensor_name\" FROM \"fact_iot_data\" f JOIN \"dim_sensor\" p ON f.\"sensor_id\" = p.\"sensor_id\" GROUP BY p.\"sensor_id\", p.\"sensor_name\" ORDER BY SUM(f.\"value\") DESC LIMIT 1",
+   "difficulty": "top_parent"
+  },
+  {
+   "question_id": 100016,
+   "db_id": "ind108",
+   "question": "合作起始日期为2015-02-01的供应商，其采购订单行一共有多少条？",
+   "evidence": "",
+   "SQL": "SELECT COUNT(*) FROM \"fact_po_line\" f JOIN \"fact_purchase_order\" p ON f.\"po_id\" = p.\"po_id\" JOIN \"dim_supplier\" q ON p.\"supplier_id\" = q.\"supplier_id\" WHERE q.\"cooperation_since\" = '2015-02-01'",
+   "difficulty": "two_hop"
+  },
+  {
+   "question_id": 100213,
+   "db_id": "ind108",
+   "question": "测量单位为 kg 的传感器所对应的告警中，已处理的告警合计有多少条？",
+   "evidence": "",
+   "SQL": "SELECT SUM(f.\"is_handled\") FROM \"fact_alarm\" f JOIN \"dim_sensor\" p ON f.\"sensor_id\" = p.\"sensor_id\" WHERE p.\"unit\" = 'kg'",
+   "difficulty": "agg_by_parent_attr"
+  },
+  {
+   "question_id": 100193,
+   "db_id": "ind108",
+   "question": "IoT数据中，按数据质量分组，各有多少条？",
+   "evidence": "",
+   "SQL": "SELECT \"quality_flag\", COUNT(*) FROM \"fact_iot_data\" GROUP BY \"quality_flag\"",
+   "difficulty": "group_count"
+  },
+  {
+   "question_id": 100148,
+   "db_id": "ind108",
+   "question": "应付金额合计最高的供应商名称是什么？",
+   "evidence": "",
+   "SQL": "SELECT p.\"supplier_name\" FROM \"fact_ap\" f JOIN \"dim_supplier\" p ON f.\"supplier_id\" = p.\"supplier_id\" GROUP BY p.\"supplier_id\", p.\"supplier_name\" ORDER BY SUM(f.\"amount\") DESC LIMIT 1",
+   "difficulty": "top_parent"
+  },
+  {
+   "question_id": 100130,
+   "db_id": "ind108",
+   "question": "2026年，银行账号为 SYN-ACCOUNT-0003 的付款笔数是多少？",
+   "evidence": "",
+   "SQL": "SELECT COUNT(*) FROM \"fact_payment_out\" WHERE substr(\"payment_date\",1,4) = '2026' AND \"bank_account\" = 'SYN-ACCOUNT-0003'",
+   "difficulty": "year_count"
+  },
+  {
+   "question_id": 100166,
+   "db_id": "ind108",
+   "question": "最近交易日期为2025年7月4日的客户，其销售订单的指导价合计是多少？",
+   "evidence": "",
+   "SQL": "SELECT SUM(f.\"guide_price\") FROM \"fact_sales_order\" f JOIN \"dim_customer\" p ON f.\"cust_id\" = p.\"cust_id\" WHERE p.\"last_deal_date\" = '2025-07-04'",
+   "difficulty": "agg_by_parent_attr"
+  },
+  {
+   "question_id": 100116,
+   "db_id": "ind108",
+   "question": "哪个车间的用水量合计最高？",
+   "evidence": "",
+   "SQL": "SELECT p.\"workshop_name\" FROM \"fact_energy_consumption\" f JOIN \"dim_workshop\" p ON f.\"workshop_id\" = p.\"workshop_id\" GROUP BY p.\"workshop_id\", p.\"workshop_name\" ORDER BY SUM(f.\"water_tons\") DESC LIMIT 1",
+   "difficulty": "top_parent"
+  },
+  {
+   "question_id": 100251,
+   "db_id": "ind108",
+   "question": "产品线名称为“ABS/PC合金系列”的库存记录数是多少？",
+   "evidence": "",
+   "SQL": "SELECT COUNT(*) FROM \"fact_inventory\" f JOIN \"dim_product\" p ON f.\"prod_id\" = p.\"prod_id\" JOIN \"dim_product_line\" q ON p.\"prod_line_id\" = q.\"prod_line_id\" WHERE q.\"prod_line_name\" = 'ABS/PC合金系列'",
+   "difficulty": "two_hop"
+  },
+  {
+   "question_id": 100150,
+   "db_id": "ind108",
+   "question": "2025年的退货数量合计是多少吨？",
+   "evidence": "",
+   "SQL": "SELECT SUM(\"quantity\") FROM \"fact_return\" WHERE substr(\"return_date\",1,4) = '2025'",
+   "difficulty": "agg_filter_year"
+  },
+  {
+   "question_id": 100077,
+   "db_id": "ind108",
+   "question": "2025年的平均报销金额是多少？",
+   "evidence": "",
+   "SQL": "SELECT AVG(\"amount\") FROM \"fact_expense\" WHERE substr(\"expense_date\",1,4) = '2025'",
+   "difficulty": "agg_filter_year"
+  },
+  {
+   "question_id": 100206,
+   "db_id": "ind108",
+   "question": "2026年发生且状态为“closed”的事故有多少起？",
+   "evidence": "",
+   "SQL": "SELECT COUNT(*) FROM \"fact_incident\" WHERE substr(\"incident_date\",1,4) = '2026' AND \"status\" = 'closed'",
+   "difficulty": "year_count"
+  },
+  {
+   "question_id": 100179,
+   "db_id": "ind108",
+   "question": "原因类别为“工艺”的停机总时长是多少小时？",
+   "evidence": "",
+   "SQL": "SELECT SUM(f.\"duration_hours\") FROM \"fact_downtime\" f JOIN \"dim_downtime_reason\" p ON f.\"reason_code\" = p.\"reason_id\" WHERE p.\"category\" = '工艺'",
+   "difficulty": "agg_by_parent_attr"
+  },
+  {
+   "question_id": 100212,
+   "db_id": "ind108",
+   "question": "哪个成本中心的实际金额合计最高？",
+   "evidence": "",
+   "SQL": "SELECT p.\"cc_name\" FROM \"fact_budget\" f JOIN \"dim_cost_center\" p ON f.\"cc_id\" = p.\"cc_id\" GROUP BY p.\"cc_id\", p.\"cc_name\" ORDER BY SUM(f.\"actual_amount\") DESC LIMIT 1",
+   "difficulty": "top_parent"
+  },
+  {
+   "question_id": 100041,
+   "db_id": "ind108",
+   "question": "销量目标合计最高的员工姓名是什么？",
+   "evidence": "",
+   "SQL": "SELECT p.\"emp_name\" FROM \"fact_sales_target\" f JOIN \"dim_employee\" p ON f.\"emp_id\" = p.\"emp_id\" GROUP BY p.\"emp_id\", p.\"emp_name\" ORDER BY SUM(f.\"sales_quantity_target\") DESC LIMIT 1",
+   "difficulty": "top_parent"
+  },
+  {
+   "question_id": 100091,
+   "db_id": "ind108",
+   "question": "联系电话为“072-4973785”的供应商，其采购订单的总金额合计是多少？",
+   "evidence": "",
+   "SQL": "SELECT SUM(f.\"total_amount\") FROM \"fact_purchase_order\" f JOIN \"dim_supplier\" p ON f.\"supplier_id\" = p.\"supplier_id\" WHERE p.\"contact_phone\" = '072-4973785'",
+   "difficulty": "agg_by_parent_attr"
+  },
+  {
+   "question_id": 100157,
+   "db_id": "ind108",
+   "question": "制造商为“示例机械E”的设备产生的告警中，已处理的告警合计有多少条？",
+   "evidence": "",
+   "SQL": "SELECT SUM(f.\"is_handled\") FROM \"fact_alarm\" f JOIN \"dim_equipment\" p ON f.\"equipment_id\" = p.\"equipment_id\" WHERE p.\"manufacturer\" = '示例机械E'",
+   "difficulty": "agg_by_parent_attr"
+  },
+  {
+   "question_id": 100184,
+   "db_id": "ind108",
+   "question": "银行账号为 SYN-ACCOUNT-0004 的付款笔数是多少？",
+   "evidence": "",
+   "SQL": "SELECT COUNT(*) FROM \"fact_payment_out\" WHERE \"bank_account\" = 'SYN-ACCOUNT-0004'",
+   "difficulty": "count_filter"
+  },
+  {
+   "question_id": 100071,
+   "db_id": "ind108",
+   "question": "2025年的天然气总用量是多少？",
+   "evidence": "",
+   "SQL": "SELECT SUM(\"gas_m3\") FROM \"fact_energy_consumption\" WHERE substr(\"record_date\",1,4) = '2025'",
+   "difficulty": "agg_filter_year"
+  },
+  {
+   "question_id": 100275,
+   "db_id": "ind108",
+   "question": "有多少个采购订单的状态是“closed”？",
+   "evidence": "",
+   "SQL": "SELECT COUNT(*) FROM \"fact_purchase_order\" WHERE \"status\" = 'closed'",
+   "difficulty": "count_filter"
+  },
+  {
+   "question_id": 100260,
+   "db_id": "ind108",
+   "question": "产品线名称为“特种工程塑料系列”的销售订单数是多少？",
+   "evidence": "",
+   "SQL": "SELECT COUNT(*) FROM \"fact_sales_order\" f JOIN \"dim_product\" p ON f.\"prod_id\" = p.\"prod_id\" JOIN \"dim_product_line\" q ON p.\"prod_line_id\" = q.\"prod_line_id\" WHERE q.\"prod_line_name\" = '特种工程塑料系列'",
+   "difficulty": "two_hop"
+  },
+  {
+   "question_id": 100010,
+   "db_id": "ind108",
+   "question": "位置描述为“青岛一厂B栋”的车间里，事故一共发生了多少次？",
+   "evidence": "",
+   "SQL": "SELECT COUNT(*) FROM \"fact_incident\" f JOIN \"dim_production_line\" p ON f.\"line_id\" = p.\"line_id\" JOIN \"dim_workshop\" q ON p.\"workshop_id\" = q.\"workshop_id\" WHERE q.\"location\" = '青岛一厂B栋'",
+   "difficulty": "two_hop"
+  }
+ ]
+}

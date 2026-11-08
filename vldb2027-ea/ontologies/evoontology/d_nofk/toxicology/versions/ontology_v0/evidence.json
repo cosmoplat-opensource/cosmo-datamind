@@ -1,0 +1,162 @@
+[
+  {
+    "id": "ev_schema_tables",
+    "source": "sqlite schema of toxicology.sqlite",
+    "query": "SELECT sql FROM sqlite_master WHERE type='table'",
+    "result": "Four tables, all columns declared TEXT: molecule(molecule_id PRIMARY KEY, label), atom(atom_id PRIMARY KEY, molecule_id, element), bond(bond_id PRIMARY KEY, molecule_id, bond_type), connected(atom_id, atom_id2, bond_id, PRIMARY KEY(atom_id, atom_id2)).",
+    "validation_method": "read-only schema inspection",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_molecule_rows",
+    "source": "toxicology.sqlite table molecule",
+    "query": "SELECT COUNT(*) FROM molecule",
+    "result": "343",
+    "validation_method": "read-only count",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_molecule_id_format",
+    "source": "toxicology.sqlite table molecule",
+    "query": "SELECT MIN(molecule_id), MAX(molecule_id), SUM(molecule_id GLOB 'TR[0-9][0-9][0-9]') FROM molecule",
+    "result": "min TR000, max TR501, 343 of 343 rows match the pattern TR followed by three digits.",
+    "validation_method": "read-only pattern check",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_label_values",
+    "source": "toxicology.sqlite table molecule",
+    "query": "SELECT label, COUNT(*) FROM molecule GROUP BY label",
+    "result": "'+' 152, '-' 191; 343 rows total, no NULL, no third value.",
+    "validation_method": "read-only value distribution",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_atom_rows",
+    "source": "toxicology.sqlite table atom",
+    "query": "SELECT COUNT(*), COUNT(DISTINCT atom_id) FROM atom",
+    "result": "12333 rows, 12333 distinct atom_id.",
+    "validation_method": "read-only count",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_element_values",
+    "source": "toxicology.sqlite table atom",
+    "query": "SELECT element, COUNT(*) FROM atom GROUP BY element ORDER BY 2 DESC",
+    "result": "21 distinct lowercase symbols: h 5518, c 4605, o 1043, n 480, cl 429, s 113, br 47, na 35, p 31, f 11, i 6, si 4, sn 2, cu 2, zn 1, y 1, te 1, pb 1, k 1, ca 1, b 1; no NULL.",
+    "validation_method": "read-only value distribution",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_bond_rows",
+    "source": "toxicology.sqlite table bond",
+    "query": "SELECT COUNT(*), COUNT(DISTINCT bond_id) FROM bond",
+    "result": "12379 rows, 12379 distinct bond_id.",
+    "validation_method": "read-only count",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_bond_type_values",
+    "source": "toxicology.sqlite table bond",
+    "query": "SELECT bond_type, COUNT(*) FROM bond GROUP BY bond_type",
+    "result": "'-' 10528, '=' 1844, '#' 6, NULL 1.",
+    "validation_method": "read-only value distribution",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_bond_type_null",
+    "source": "toxicology.sqlite table bond",
+    "query": "SELECT bond_id, molecule_id FROM bond WHERE bond_type IS NULL",
+    "result": "One row: bond_id TR345_7_10, molecule_id TR345.",
+    "validation_method": "read-only null check",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_connected_symmetry",
+    "source": "toxicology.sqlite table connected",
+    "query": "SELECT COUNT(*), COUNT(DISTINCT bond_id) FROM connected; and a self-join checking that every (atom_id, atom_id2) pair has its reverse",
+    "result": "24758 rows for 12379 distinct bond_id; 0 rows are missing their reverse counterpart.",
+    "validation_method": "read-only symmetry check",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_connected_join_bond",
+    "source": "toxicology.sqlite tables connected and bond",
+    "query": "left join connected to bond on bond_id, and check that every bond appears in connected",
+    "result": "0 adjacency rows fail to resolve to a bond row; 0 bond rows are absent from the adjacency table.",
+    "validation_method": "read-only referential check",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_connected_same_molecule",
+    "source": "toxicology.sqlite tables connected and atom",
+    "query": "join connected to atom on both endpoints and check that both atoms share a molecule_id",
+    "result": "0 adjacency rows link atoms of different molecules.",
+    "validation_method": "read-only integrity check",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_orphan_molecules",
+    "source": "toxicology.sqlite tables molecule, atom and bond",
+    "query": "compare COUNT(*) FROM molecule with COUNT(DISTINCT molecule_id) FROM atom and FROM bond, and left join to find unreferenced molecule identifiers",
+    "result": "molecule has 343 rows; atom references 444 distinct molecule_id and bond references 444; 101 molecule identifiers (for example TR003, TR005, TR013) appear only in atom and bond and have no label.",
+    "validation_method": "read-only referential check",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_label_graph_coverage",
+    "source": "toxicology.sqlite tables molecule and atom",
+    "query": "SELECT m.label, COUNT(DISTINCT m.molecule_id), COUNT(DISTINCT a.atom_id) FROM molecule m LEFT JOIN atom a ON a.molecule_id=m.molecule_id GROUP BY m.label",
+    "result": "'+' 152 molecules with 3692 atoms; '-' 191 molecules with 5419 atoms; every molecule row has atoms.",
+    "validation_method": "read-only join check",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_atoms_per_molecule",
+    "source": "toxicology.sqlite table atom",
+    "query": "SELECT MIN(n), MAX(n), AVG(n) FROM (SELECT molecule_id, COUNT(*) n FROM atom GROUP BY molecule_id)",
+    "result": "min 4, max 174, mean 27.8, over 444 molecules.",
+    "validation_method": "read-only aggregate",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_bonds_per_molecule",
+    "source": "toxicology.sqlite table bond",
+    "query": "SELECT MIN(n), MAX(n), AVG(n) FROM (SELECT molecule_id, COUNT(*) n FROM bond GROUP BY molecule_id)",
+    "result": "min 2, max 175, mean 27.9, over 444 molecules; the set of molecules with bonds equals the set with atoms.",
+    "validation_method": "read-only aggregate",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_id_prefix_molecule",
+    "source": "toxicology.sqlite tables atom and bond",
+    "query": "SELECT COUNT(*) FROM atom WHERE atom_id NOT LIKE molecule_id || '_%'; and the same for bond_id",
+    "result": "0 atoms and 0 bonds violate the prefix rule.",
+    "validation_method": "read-only format check",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_degree_distribution",
+    "source": "toxicology.sqlite table connected",
+    "query": "SELECT deg, COUNT(*) FROM (SELECT atom_id, COUNT(*) deg FROM connected GROUP BY atom_id) GROUP BY deg",
+    "result": "degree 1: 6539 atoms, 2: 707, 3: 3347, 4: 1691; no atom has degree greater than 4.",
+    "validation_method": "read-only aggregate",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_unconnected_atoms",
+    "source": "toxicology.sqlite tables atom and connected",
+    "query": "SELECT element, COUNT(*) FROM atom a LEFT JOIN connected c ON a.atom_id=c.atom_id WHERE c.atom_id IS NULL GROUP BY element",
+    "result": "49 atoms with no adjacency row: cl 5, h 7, k 1, na 35, zn 1.",
+    "validation_method": "read-only left join check",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_no_numeric_columns",
+    "source": "sqlite schema of toxicology.sqlite",
+    "query": "inspect declared column types in sqlite_master",
+    "result": "All columns in all four tables are declared TEXT; no INTEGER, REAL or NUMERIC column exists.",
+    "validation_method": "read-only schema inspection",
+    "timestamp": "2026-10-10"
+  }
+]

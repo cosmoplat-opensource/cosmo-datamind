@@ -1,0 +1,322 @@
+[
+  {
+    "id": "r_patient_has_id",
+    "source": "term_patient",
+    "relation_type": "composition",
+    "target": "term_patient_id",
+    "connection_condition": "The identifier column of the patient table carries the identity of the patient row.",
+    "description": "A patient record is identified by its patient identifier; the identifier is a component of the patient record and has no meaning without it.",
+    "evidence": [
+      "ev_table_sizes"
+    ]
+  },
+  {
+    "id": "r_patient_has_lab",
+    "source": "term_patient",
+    "relation_type": "composition",
+    "target": "term_laboratory_measurement",
+    "connection_condition": "The identifier column of the laboratory table corresponds to the identifier column of the patient table.",
+    "description": "A patient is composed of the laboratory measurements taken for that patient; a laboratory panel cannot exist without the patient it belongs to. Every laboratory identifier resolves to a patient record.",
+    "evidence": [
+      "ev_lab_linkage"
+    ]
+  },
+  {
+    "id": "r_patient_has_examination",
+    "source": "term_patient",
+    "relation_type": "composition",
+    "target": "term_examination_visit",
+    "connection_condition": "The identifier column of the examination table corresponds to the identifier column of the patient table, but the overlap between the two identifier sets is small.",
+    "description": "An examination belongs to a patient, yet the identifier linkage is sparsely populated: only a small minority of examination identifiers resolve to a patient record, so examination-based cohorts and patient demographics cannot generally be combined.",
+    "evidence": [
+      "ev_exam_linkage"
+    ]
+  },
+  {
+    "id": "r_birthday_to_age",
+    "source": "term_birthday",
+    "relation_type": "derivation",
+    "target": "term_age",
+    "connection_condition": "",
+    "description": "Age is derived per patient from the birthday by subtracting the year of birth from the year of the reference date; no age value is stored.",
+    "evidence": [
+      "ev_age_anomaly"
+    ]
+  },
+  {
+    "id": "r_lab_result_normal_range",
+    "source": "term_lab_result",
+    "relation_type": "association",
+    "target": "term_analyte_normal_range",
+    "connection_condition": "",
+    "description": "Every laboratory result is interpreted against the reference interval of its own analyte, so a result and a reference interval are always considered together even though no column stores the interval.",
+    "evidence": [
+      "ev_normal_ranges"
+    ]
+  },
+  {
+    "id": "r_normal_range_to_abnormality",
+    "source": "term_analyte_normal_range",
+    "relation_type": "derivation",
+    "target": "term_analyte_abnormality",
+    "connection_condition": "",
+    "description": "The abnormal status of a laboratory result is derived by comparing the measured value with the reference interval of its analyte.",
+    "evidence": [
+      "ev_normal_ranges"
+    ]
+  },
+  {
+    "id": "r_coag_assay_to_positivity",
+    "source": "term_coagulation_assay",
+    "relation_type": "derivation",
+    "target": "term_coagulation_positivity",
+    "connection_condition": "",
+    "description": "The positive coagulation status of an examination is derived from the three panel assays: it holds when any one of them records a positive code.",
+    "evidence": [
+      "ev_coagulation_values"
+    ]
+  },
+  {
+    "id": "r_symptoms_thrombosis",
+    "source": "term_symptoms",
+    "relation_type": "association",
+    "target": "term_thrombosis_grade",
+    "connection_condition": "Recorded symptoms are present on exactly those examinations whose thrombosis grade is greater than zero.",
+    "description": "Recorded symptoms and the thrombosis grade describe the same clinical event from two angles: a narrative of the event and an ordinal severity, and their presence patterns coincide exactly in the observed data.",
+    "evidence": [
+      "ev_symptoms_thrombosis"
+    ]
+  },
+  {
+    "id": "r_ana_titer_pattern",
+    "source": "term_ana_titer",
+    "relation_type": "association",
+    "target": "term_ana_pattern",
+    "connection_condition": "Both values are recorded on the same examination record, but neither is derivable from the other.",
+    "description": "The antinuclear antibody titre and the antinuclear antibody pattern are companion findings on one examination; they are recorded side by side yet carry independent values, including records where one is populated and the other is blank.",
+    "evidence": [
+      "ev_ana_columns"
+    ]
+  },
+  {
+    "id": "r_lab_date_equiv_exam_date",
+    "source": "term_lab_test_date",
+    "relation_type": "equivalence",
+    "target": "term_examination_date",
+    "connection_condition": "Both columns hold the date of a data-collection encounter for a patient and share the same date value domain, but they live in different tables.",
+    "description": "The laboratory test date and the examination date both express the date on which a patient encounter produced data. A date window applied to a laboratory-defined cohort uses the laboratory date, while a window applied to an examination-defined cohort uses the examination date.",
+    "evidence": [
+      "ev_lab_dates"
+    ]
+  },
+  {
+    "id": "r_sle_is_diagnosis",
+    "source": "term_disease_sle",
+    "relation_type": "hierarchy",
+    "target": "term_diagnosis",
+    "connection_condition": "",
+    "description": "Systemic lupus erythematosus is one of the disease designations that can appear in the diagnosis field.",
+    "evidence": [
+      "ev_diagnosis_patient_vocab"
+    ]
+  },
+  {
+    "id": "r_sjs_is_diagnosis",
+    "source": "term_disease_sjs",
+    "relation_type": "hierarchy",
+    "target": "term_diagnosis",
+    "connection_condition": "",
+    "description": "Sjogren's syndrome is one of the disease designations that can appear in the diagnosis field.",
+    "evidence": [
+      "ev_diagnosis_patient_vocab"
+    ]
+  },
+  {
+    "id": "r_sle_sjs_cooccur",
+    "source": "term_disease_sle",
+    "relation_type": "association",
+    "target": "term_disease_sjs",
+    "connection_condition": "",
+    "description": "The two diseases frequently appear as co-listed designations inside a single diagnosis string, so selecting patients for one of them also captures patients who carry both.",
+    "evidence": [
+      "ev_diagnosis_multivalue"
+    ]
+  },
+  {
+    "id": "r_acl_igm_thrombosis",
+    "source": "term_acl_igm",
+    "relation_type": "association",
+    "target": "term_thrombosis_grade",
+    "connection_condition": "The antibody level and the thrombosis grade are recorded on the same examination record.",
+    "description": "Anti-cardiolipin antibody of the IgM isotype is an antiphospholipid marker assessed alongside the degree of thrombosis recorded for the same examination.",
+    "evidence": [
+      "ev_acl_igm",
+      "ev_symptoms_thrombosis"
+    ]
+  },
+  {
+    "id": "r_albumin_is_lab_result",
+    "source": "term_albumin",
+    "relation_type": "hierarchy",
+    "target": "term_lab_result",
+    "connection_condition": "",
+    "description": "Blood albumin is a specific laboratory quantity of the generic laboratory result concept.",
+    "evidence": [
+      "ev_normal_ranges"
+    ]
+  },
+  {
+    "id": "r_plt_is_lab_result",
+    "source": "term_platelet_count",
+    "relation_type": "hierarchy",
+    "target": "term_lab_result",
+    "connection_condition": "",
+    "description": "The platelet count is a specific laboratory quantity of the generic laboratory result concept.",
+    "evidence": [
+      "ev_normal_ranges"
+    ]
+  },
+  {
+    "id": "r_gpt_is_lab_result",
+    "source": "term_gpt",
+    "relation_type": "hierarchy",
+    "target": "term_lab_result",
+    "connection_condition": "",
+    "description": "The liver enzyme GPT is a specific laboratory quantity of the generic laboratory result concept.",
+    "evidence": [
+      "ev_normal_ranges"
+    ]
+  },
+  {
+    "id": "r_glu_is_lab_result",
+    "source": "term_glucose",
+    "relation_type": "hierarchy",
+    "target": "term_lab_result",
+    "connection_condition": "",
+    "description": "Blood glucose is a specific laboratory quantity of the generic laboratory result concept.",
+    "evidence": [
+      "ev_normal_ranges"
+    ]
+  },
+  {
+    "id": "r_tcho_is_lab_result",
+    "source": "term_total_cholesterol",
+    "relation_type": "hierarchy",
+    "target": "term_lab_result",
+    "connection_condition": "",
+    "description": "Total cholesterol is a specific laboratory quantity of the generic laboratory result concept.",
+    "evidence": [
+      "ev_normal_ranges"
+    ]
+  },
+  {
+    "id": "r_cpk_is_lab_result",
+    "source": "term_creatinine_phosphokinase",
+    "relation_type": "hierarchy",
+    "target": "term_lab_result",
+    "connection_condition": "",
+    "description": "Creatinine phosphokinase is a specific laboratory quantity of the generic laboratory result concept.",
+    "evidence": [
+      "ev_normal_ranges"
+    ]
+  },
+  {
+    "id": "r_cre_is_lab_result",
+    "source": "term_creatinine",
+    "relation_type": "hierarchy",
+    "target": "term_lab_result",
+    "connection_condition": "",
+    "description": "Creatinine is a specific laboratory quantity of the generic laboratory result concept.",
+    "evidence": [
+      "ev_normal_ranges"
+    ]
+  },
+  {
+    "id": "r_un_is_lab_result",
+    "source": "term_urea_nitrogen",
+    "relation_type": "hierarchy",
+    "target": "term_lab_result",
+    "connection_condition": "",
+    "description": "Urea nitrogen is a specific laboratory quantity of the generic laboratory result concept.",
+    "evidence": [
+      "ev_normal_ranges"
+    ]
+  },
+  {
+    "id": "r_igg_is_lab_result",
+    "source": "term_igg",
+    "relation_type": "hierarchy",
+    "target": "term_lab_result",
+    "connection_condition": "",
+    "description": "Immunoglobulin G is a specific laboratory quantity of the generic laboratory result concept.",
+    "evidence": [
+      "ev_normal_ranges"
+    ]
+  },
+  {
+    "id": "r_igm_is_lab_result",
+    "source": "term_igm",
+    "relation_type": "hierarchy",
+    "target": "term_lab_result",
+    "connection_condition": "",
+    "description": "Immunoglobulin M is a specific laboratory quantity of the generic laboratory result concept.",
+    "evidence": [
+      "ev_normal_ranges"
+    ]
+  },
+  {
+    "id": "r_acl_igm_is_lab_result",
+    "source": "term_acl_igm",
+    "relation_type": "hierarchy",
+    "target": "term_lab_result",
+    "connection_condition": "",
+    "description": "Anti-cardiolipin antibody of the IgM isotype is a specific laboratory quantity of the generic laboratory result concept.",
+    "evidence": [
+      "ev_acl_igm"
+    ]
+  },
+  {
+    "id": "r_crp_is_lab_result",
+    "source": "term_crp",
+    "relation_type": "hierarchy",
+    "target": "term_lab_result",
+    "connection_condition": "",
+    "description": "C-reactive protein is a laboratory result whose values are recorded as semi-quantitative codes.",
+    "evidence": [
+      "ev_crp_values"
+    ]
+  },
+  {
+    "id": "r_sc170_is_autoantibody",
+    "source": "term_sc170",
+    "relation_type": "hierarchy",
+    "target": "term_autoantibody_marker",
+    "connection_condition": "",
+    "description": "Anti-Scl-70 is one of the autoantibody markers recorded in the panel.",
+    "evidence": [
+      "ev_antibody_sentinels"
+    ]
+  },
+  {
+    "id": "r_centromere_is_autoantibody",
+    "source": "term_centromere",
+    "relation_type": "hierarchy",
+    "target": "term_autoantibody_marker",
+    "connection_condition": "",
+    "description": "Anti-centromere is one of the autoantibody markers recorded in the panel.",
+    "evidence": [
+      "ev_antibody_sentinels"
+    ]
+  },
+  {
+    "id": "r_ssb_is_autoantibody",
+    "source": "term_ssb",
+    "relation_type": "hierarchy",
+    "target": "term_autoantibody_marker",
+    "connection_condition": "",
+    "description": "Anti-SSB is one of the autoantibody markers recorded in the panel.",
+    "evidence": [
+      "ev_antibody_sentinels"
+    ]
+  }
+]

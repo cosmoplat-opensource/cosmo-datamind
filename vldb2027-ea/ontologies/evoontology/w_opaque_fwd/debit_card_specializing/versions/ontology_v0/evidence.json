@@ -1,0 +1,162 @@
+[
+  {
+    "id": "evidence_customer_table",
+    "source": "debit_card_specializing.sqlite (read-only sqlite3)",
+    "query": "SELECT COUNT(*) FROM tab01; SELECT fld001,fld002,fld003 FROM tab01 LIMIT 5;",
+    "result": "32461 rows; fld001 integer primary key; sample rows (3,SME,EUR), (5,LAM,EUR), (6,SME,EUR), (7,LAM,EUR), (9,SME,EUR).",
+    "validation_method": "Row count, schema inspection, primary-key inspection and representative row sampling",
+    "timestamp": "2026-11-06T01:10:00Z"
+  },
+  {
+    "id": "evidence_customer_segment_values",
+    "source": "debit_card_specializing.sqlite (read-only sqlite3)",
+    "query": "SELECT fld002, COUNT(*) FROM tab01 GROUP BY 1 ORDER BY 2 DESC;",
+    "result": "SME 26763; LAM 3658; KAM 2040; no nulls.",
+    "validation_method": "Distinct-value frequency profile",
+    "timestamp": "2026-11-06T01:10:00Z"
+  },
+  {
+    "id": "evidence_currency_values",
+    "source": "debit_card_specializing.sqlite (read-only sqlite3)",
+    "query": "SELECT fld003, COUNT(*) FROM tab01 GROUP BY 1 ORDER BY 2 DESC;",
+    "result": "CZK 30459; EUR 2002; no nulls.",
+    "validation_method": "Distinct-value frequency profile",
+    "timestamp": "2026-11-06T01:10:00Z"
+  },
+  {
+    "id": "evidence_segment_domain_disjoint",
+    "source": "debit_card_specializing.sqlite (read-only sqlite3)",
+    "query": "SELECT COUNT(*) FROM tab01 a JOIN tab02 b ON a.fld002 = b.fld002; SELECT DISTINCT fld002 FROM tab01; SELECT DISTINCT fld002 FROM tab02;",
+    "result": "0 matching rows. Customer segments: SME, LAM, KAM. Gas-station segments: Other, Premium, Noname, Value for money, Discount. The shared opaque column name fld002 has disjoint value domains.",
+    "validation_method": "Value-domain comparison across tables",
+    "timestamp": "2026-11-06T01:10:00Z"
+  },
+  {
+    "id": "evidence_gasstation_table",
+    "source": "debit_card_specializing.sqlite (read-only sqlite3)",
+    "query": "SELECT COUNT(*) FROM tab02; SELECT * FROM tab02 LIMIT 8;",
+    "result": "5716 rows; fld004 integer primary key; sample rows (44,13,CZE,Value for money), (45,6,CZE,Premium), (46,23,CZE,Other).",
+    "validation_method": "Row count, schema inspection and representative row sampling",
+    "timestamp": "2026-11-06T01:10:00Z"
+  },
+  {
+    "id": "evidence_chain_values",
+    "source": "debit_card_specializing.sqlite (read-only sqlite3)",
+    "query": "SELECT MIN(fld005),MAX(fld005),COUNT(DISTINCT fld005) FROM tab02; SELECT COUNT(*) FROM tab04 t JOIN tab02 g ON t.fld004=g.fld004 WHERE g.fld005=11;",
+    "result": "Chain values range 1 to 290 with 233 distinct values; chain 11 covers 3 sampled transactions.",
+    "validation_method": "Range and distinct-count profile",
+    "timestamp": "2026-11-06T01:10:00Z"
+  },
+  {
+    "id": "evidence_country_values",
+    "source": "debit_card_specializing.sqlite (read-only sqlite3)",
+    "query": "SELECT fld006, COUNT(*) FROM tab02 GROUP BY 1 ORDER BY 2 DESC;",
+    "result": "CZE 4836; SVK 880.",
+    "validation_method": "Distinct-value frequency profile",
+    "timestamp": "2026-11-06T01:10:00Z"
+  },
+  {
+    "id": "evidence_station_segment_values",
+    "source": "debit_card_specializing.sqlite (read-only sqlite3)",
+    "query": "SELECT fld002, COUNT(*) FROM tab02 GROUP BY 1 ORDER BY 2 DESC;",
+    "result": "Other 2392; Premium 1428; Noname 1005; Value for money 597; Discount 294.",
+    "validation_method": "Distinct-value frequency profile",
+    "timestamp": "2026-11-06T01:10:00Z"
+  },
+  {
+    "id": "evidence_product_table",
+    "source": "debit_card_specializing.sqlite (read-only sqlite3)",
+    "query": "SELECT COUNT(*) FROM tab03; SELECT * FROM tab03 LIMIT 10; SELECT COUNT(*) FROM tab03 p WHERE p.fld007 NOT IN (SELECT fld007 FROM tab04);",
+    "result": "591 rows; fld007 integer primary key; sample descriptions Rucni zadani, Nafta, Special, Super, Natural, Mix, Oleje,tuky, Natural +, Diesel +, Mazadla/Tuky; 563 products have no sampled transaction.",
+    "validation_method": "Row count and representative row sampling",
+    "timestamp": "2026-11-06T01:10:00Z"
+  },
+  {
+    "id": "evidence_transaction_profile",
+    "source": "debit_card_specializing.sqlite (read-only sqlite3)",
+    "query": "SELECT COUNT(*) FROM tab04; SELECT MIN(fld010),MAX(fld010),COUNT(DISTINCT fld010) FROM tab04; SELECT COUNT(DISTINCT fld004) FROM tab04; SELECT SUM(fld010 IS NULL),SUM(fld011 IS NULL),SUM(fld001 IS NULL),SUM(fld012 IS NULL),SUM(fld004 IS NULL),SUM(fld007 IS NULL),SUM(fld013 IS NULL),SUM(fld014 IS NULL) FROM tab04;",
+    "result": "1000 rows; dates 2012-08-23 to 2012-08-26 with 4 distinct dates; 437 distinct gas stations; zero nulls in all nine columns.",
+    "validation_method": "Row count, range profile and null audit",
+    "timestamp": "2026-11-06T01:10:00Z"
+  },
+  {
+    "id": "evidence_transaction_date_format",
+    "source": "debit_card_specializing.sqlite (read-only sqlite3)",
+    "query": "SELECT DISTINCT fld010 FROM tab04 ORDER BY 1;",
+    "result": "2012-08-23, 2012-08-24, 2012-08-25, 2012-08-26; YYYY-MM-DD text format.",
+    "validation_method": "Distinct-value inspection",
+    "timestamp": "2026-11-06T01:10:00Z"
+  },
+  {
+    "id": "evidence_transaction_time_format",
+    "source": "debit_card_specializing.sqlite (read-only sqlite3)",
+    "query": "SELECT MIN(fld011),MAX(fld011),COUNT(DISTINCT fld011) FROM tab04;",
+    "result": "00:07:00 to 23:20:00; 599 distinct HH:MM:SS values.",
+    "validation_method": "Range and distinct-count profile",
+    "timestamp": "2026-11-06T01:10:00Z"
+  },
+  {
+    "id": "evidence_transaction_price_range",
+    "source": "debit_card_specializing.sqlite (read-only sqlite3)",
+    "query": "SELECT MIN(fld013),MAX(fld013),MIN(fld014),MAX(fld014),SUM(fld013=0) FROM tab04;",
+    "result": "Quantity fld013 ranges 0 to 264 with 91 zero values; price fld014 ranges 1.76 to 5762.49.",
+    "validation_method": "Numeric range profile",
+    "timestamp": "2026-11-06T01:10:00Z"
+  },
+  {
+    "id": "evidence_unit_price_ratio",
+    "source": "debit_card_specializing.sqlite (read-only sqlite3)",
+    "query": "SELECT fld013, fld014, ROUND(fld014/NULLIF(fld013,0),2) AS unit FROM tab04 WHERE fld007=2 LIMIT 8;",
+    "result": "For product 2 (Nafta), price divided by quantity is stable at about 22.64 to 24.02 per unit across rows.",
+    "validation_method": "Derived ratio consistency check",
+    "timestamp": "2026-11-06T01:10:00Z"
+  },
+  {
+    "id": "evidence_yearmonth_profile",
+    "source": "debit_card_specializing.sqlite (read-only sqlite3)",
+    "query": "SELECT COUNT(*) FROM tab05; SELECT MIN(fld015),MAX(fld015),AVG(fld015),SUM(fld015<0),SUM(fld015=0) FROM tab05; SELECT COUNT(*) FROM (SELECT fld001,fld010,COUNT(*) c FROM tab05 GROUP BY 1,2 HAVING c>1);",
+    "result": "383282 rows; consumption minimum -582092.86, maximum 2052187.11, average 8911.14; 152 negative and 28 zero values; 0 duplicate customer-month pairs.",
+    "validation_method": "Row count, numeric profile and uniqueness check",
+    "timestamp": "2026-11-06T01:10:00Z"
+  },
+  {
+    "id": "evidence_yearmonth_date_format",
+    "source": "debit_card_specializing.sqlite (read-only sqlite3)",
+    "query": "SELECT MIN(fld010),MAX(fld010),COUNT(DISTINCT fld010) FROM tab05; SELECT LENGTH(fld010),COUNT(*) FROM tab05 GROUP BY 1; SELECT DISTINCT fld010 FROM tab05 ORDER BY 1;",
+    "result": "Values from 201112 to 201311; 21 distinct values, all six characters; 201112, 201201-201209, 201301-201311.",
+    "validation_method": "Format length and distinct-value inspection",
+    "timestamp": "2026-11-06T01:10:00Z"
+  },
+  {
+    "id": "evidence_consumption_coverage",
+    "source": "debit_card_specializing.sqlite (read-only sqlite3)",
+    "query": "SELECT fld010, COUNT(*) FROM tab05 GROUP BY 1 ORDER BY 1;",
+    "result": "201112: 8; 201201-201209: 17848, 18324, 18866, 18253, 18347, 18588, 17640, 18048, 12894; 201301: 139; 201302: 2415; 201303-201311: 25054, 25487, 25506, 25378, 25239, 25052, 24985, 24488, 20723.",
+    "validation_method": "Per-period row-count profile",
+    "timestamp": "2026-11-06T01:10:00Z"
+  },
+  {
+    "id": "evidence_consumption_scale_vs_transactions",
+    "source": "debit_card_specializing.sqlite (read-only sqlite3)",
+    "query": "SELECT t.fld001, COUNT(*) txns, SUM(t.fld014) sum_price, SUM(t.fld013) sum_qty, (SELECT fld015 FROM tab05 y WHERE y.fld001=t.fld001 AND y.fld010='201208') ym_consumption FROM tab04 t WHERE t.fld010 LIKE '2012-08%' GROUP BY t.fld001 ORDER BY txns DESC LIMIT 6;",
+    "result": "Customer 19182: 19 transactions, price sum 8618.54, quantity sum 355, monthly consumption 158233.78. Customer 31543: 18 transactions, price sum 6161.50, monthly consumption 142991.10. Customer 7626: 14 transactions, price sum 1872.43, monthly consumption 45937.22.",
+    "validation_method": "Cross-source magnitude comparison at customer-month granularity",
+    "timestamp": "2026-11-06T01:10:00Z"
+  },
+  {
+    "id": "evidence_customer_coverage",
+    "source": "debit_card_specializing.sqlite (read-only sqlite3)",
+    "query": "SELECT COUNT(DISTINCT fld001) FROM tab01; SELECT COUNT(DISTINCT fld001) FROM tab05; SELECT COUNT(*) FROM tab05 y LEFT JOIN tab01 c ON y.fld001=c.fld001 WHERE c.fld001 IS NULL;",
+    "result": "32461 distinct customers in the customer table; 30566 distinct customers in the consumption table; 0 orphan consumption rows; 1895 customers have no consumption record.",
+    "validation_method": "Distinct-count and referential-integrity check",
+    "timestamp": "2026-11-06T01:10:00Z"
+  },
+  {
+    "id": "evidence_referential_integrity",
+    "source": "debit_card_specializing.sqlite (read-only sqlite3)",
+    "query": "SELECT COUNT(*) FROM tab04 t LEFT JOIN tab01 c ON t.fld001=c.fld001 WHERE c.fld001 IS NULL; SELECT COUNT(*) FROM tab04 t LEFT JOIN tab02 g ON t.fld004=g.fld004 WHERE g.fld004 IS NULL; SELECT COUNT(*) FROM tab04 t LEFT JOIN tab03 p ON t.fld007=p.fld007 WHERE p.fld007 IS NULL;",
+    "result": "0 orphan transactions for customer, gas station and product references.",
+    "validation_method": "Referential-integrity check across foreign-key-like columns",
+    "timestamp": "2026-11-06T01:10:00Z"
+  }
+]

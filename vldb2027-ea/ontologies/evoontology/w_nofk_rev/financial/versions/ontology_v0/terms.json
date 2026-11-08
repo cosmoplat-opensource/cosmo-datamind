@@ -1,0 +1,519 @@
+[
+  {
+    "id": "t_client",
+    "name": "Client",
+    "type": "entity",
+    "definition": "A person who is a customer of the bank, identified by a unique client identifier.",
+    "scope": "Customer-centric analysis over the financial database; the workload's phrase 'customers' refers to clients.",
+    "aliases": [
+      "customer",
+      "customers",
+      "clients",
+      "client"
+    ],
+    "evidence": [
+      "e001_tables",
+      "e002_row_counts",
+      "e014_fk_integrity"
+    ]
+  },
+  {
+    "id": "t_account",
+    "name": "Account",
+    "type": "entity",
+    "definition": "A bank account held by the bank, identified by a unique account identifier, held at a branch district and related to exactly one owning client.",
+    "scope": "Central entity linking clients, loans, transactions and cards.",
+    "aliases": [
+      "account number",
+      "accounts",
+      "acct"
+    ],
+    "evidence": [
+      "e002_row_counts",
+      "e015_cardinality",
+      "e017_date_ranges"
+    ]
+  },
+  {
+    "id": "t_disposition",
+    "name": "Disposition",
+    "type": "entity",
+    "definition": "A record that links one client to one account together with the role that client holds on that account.",
+    "scope": "The only relationship record connecting clients to accounts in this database.",
+    "aliases": [
+      "disp",
+      "account relationship",
+      "client-account link"
+    ],
+    "evidence": [
+      "e015_cardinality",
+      "e014_fk_integrity"
+    ]
+  },
+  {
+    "id": "t_disposition_type",
+    "name": "Disposition Role Type",
+    "type": "category",
+    "definition": "The role a client holds on an account, recorded as OWNER or DISPONENT.",
+    "scope": "Used to distinguish the registered account owner from additional authorized users.",
+    "aliases": [
+      "disp type",
+      "role",
+      "disposition role"
+    ],
+    "evidence": [
+      "e005_disp_type"
+    ]
+  },
+  {
+    "id": "t_account_holder",
+    "name": "Account Holder",
+    "type": "concept",
+    "definition": "A client who is the registered owner of an account, i.e. a client linked to an account through an OWNER-role disposition.",
+    "scope": "Used when questions ask for 'account holders' or for clients eligible for loans.",
+    "aliases": [
+      "account owner",
+      "owner",
+      "account holder identification number"
+    ],
+    "evidence": [
+      "e005_disp_type",
+      "e015_cardinality"
+    ]
+  },
+  {
+    "id": "t_district",
+    "name": "District",
+    "type": "entity",
+    "definition": "A Czech district master record, carrying the district name, its region, and district-level socio-economic statistics.",
+    "scope": "Geographic and socio-economic reference entity used both for a client's residence and for an account's branch.",
+    "aliases": [
+      "okres",
+      "district master",
+      "A2"
+    ],
+    "evidence": [
+      "e010_district_columns",
+      "e011_district_regions"
+    ]
+  },
+  {
+    "id": "t_account_branch",
+    "name": "Account Branch",
+    "type": "entity",
+    "definition": "The district/branch at which a bank account is held, referenced by the account's district identifier.",
+    "scope": "Used when questions group or filter accounts by 'branch' or 'branch location'.",
+    "aliases": [
+      "branch",
+      "branch location",
+      "account district"
+    ],
+    "evidence": [
+      "e016_district_roles",
+      "e014_fk_integrity"
+    ]
+  },
+  {
+    "id": "t_region",
+    "name": "Region",
+    "type": "dimension",
+    "definition": "The higher-level administrative region that groups several districts within the same district master.",
+    "scope": "Used for region-level filtering and aggregation, e.g. 'south Bohemia'.",
+    "aliases": [
+      "state",
+      "region name",
+      "A3"
+    ],
+    "evidence": [
+      "e011_district_regions"
+    ]
+  },
+  {
+    "id": "t_district_name",
+    "name": "District Name",
+    "type": "dimension",
+    "definition": "The human-readable name of a district, used when a question refers to a district by name.",
+    "scope": "Used for name-based district selection such as 'Sokolov'.",
+    "aliases": [
+      "A2",
+      "district label"
+    ],
+    "evidence": [
+      "e011_district_regions"
+    ]
+  },
+  {
+    "id": "t_client_gender",
+    "name": "Client Gender",
+    "type": "dimension",
+    "definition": "The recorded gender of a client.",
+    "scope": "Used for gender-based filtering and for gender-share metrics.",
+    "aliases": [
+      "gender",
+      "sex",
+      "female",
+      "male"
+    ],
+    "evidence": [
+      "e003_gender"
+    ]
+  },
+  {
+    "id": "t_client_birth_date",
+    "name": "Client Birth Date",
+    "type": "dimension",
+    "definition": "The date of birth of a client.",
+    "scope": "Used for age-related selection such as 'born before 1950' and for ordering clients by age.",
+    "aliases": [
+      "birth_date",
+      "date of birth",
+      "born"
+    ],
+    "evidence": [
+      "e017_date_ranges"
+    ]
+  },
+  {
+    "id": "t_client_age",
+    "name": "Client Age",
+    "type": "metric",
+    "definition": "The age of a client, computed from the client's birth date relative to a reference date.",
+    "scope": "Not stored in the database; always derived when a question asks for 'age' or 'oldest'.",
+    "aliases": [
+      "age",
+      "years old",
+      "oldest",
+      "youngest"
+    ],
+    "evidence": [
+      "e017_date_ranges"
+    ]
+  },
+  {
+    "id": "t_account_open_date",
+    "name": "Account Opening Date",
+    "type": "dimension",
+    "definition": "The date on which an account was opened.",
+    "scope": "Used for time-based account selection such as 'accounts opened starting from 1997'.",
+    "aliases": [
+      "account date",
+      "opened",
+      "account creation date"
+    ],
+    "evidence": [
+      "e017_date_ranges"
+    ]
+  },
+  {
+    "id": "t_account_statement_frequency",
+    "name": "Account Statement Frequency",
+    "type": "category",
+    "definition": "The statement-issuance regime configured for an account.",
+    "scope": "Used when a question references how statements are issued for an account.",
+    "aliases": [
+      "frequency",
+      "statement issuance",
+      "POPLATEK"
+    ],
+    "evidence": [
+      "e007_account_frequency"
+    ]
+  },
+  {
+    "id": "t_card",
+    "name": "Card",
+    "type": "entity",
+    "definition": "A payment card issued against a client-account disposition.",
+    "scope": "Used for card-related analysis; every card belongs to exactly one disposition.",
+    "aliases": [
+      "payment card",
+      "credit card",
+      "cards"
+    ],
+    "evidence": [
+      "e004_card_type",
+      "e015_cardinality"
+    ]
+  },
+  {
+    "id": "t_card_type",
+    "name": "Card Type",
+    "type": "category",
+    "definition": "The class of a payment card, recorded as classic, junior or gold.",
+    "scope": "Used when a question distinguishes card levels.",
+    "aliases": [
+      "card class",
+      "card level"
+    ],
+    "evidence": [
+      "e004_card_type"
+    ]
+  },
+  {
+    "id": "t_high_level_card",
+    "name": "High-Level Card",
+    "type": "category",
+    "definition": "A card of the highest issued class, i.e. a card whose type is gold.",
+    "scope": "Used when a question refers to a 'high level credit card'.",
+    "aliases": [
+      "high level credit card",
+      "high-level card",
+      "gold card",
+      "premium card"
+    ],
+    "evidence": [
+      "e004_card_type"
+    ]
+  },
+  {
+    "id": "t_loan",
+    "name": "Loan",
+    "type": "entity",
+    "definition": "A loan contract granted against an account, with a principal amount, duration, payment instalment and status.",
+    "scope": "Used for all lending analysis.",
+    "aliases": [
+      "loan contract",
+      "loan contracts",
+      "credit"
+    ],
+    "evidence": [
+      "e006_loan_status",
+      "e020_loan_ranges"
+    ]
+  },
+  {
+    "id": "t_loan_status",
+    "name": "Loan Status",
+    "type": "category",
+    "definition": "The state of a loan contract, recorded as A, B, C or D.",
+    "scope": "Used when a question distinguishes running from terminated contracts.",
+    "aliases": [
+      "status",
+      "contract status",
+      "loan contract status"
+    ],
+    "evidence": [
+      "e006_loan_status"
+    ]
+  },
+  {
+    "id": "t_running_loan_contract",
+    "name": "Running Loan Contract",
+    "type": "concept",
+    "definition": "A loan contract that is still running, i.e. a contract whose status denotes a running contract (C for running with no problems, D for running with the client in debt).",
+    "scope": "Used for conditions such as 'still running', 'running contracts' and 'client in debt'.",
+    "aliases": [
+      "running contract",
+      "running contracts",
+      "still running",
+      "active loan",
+      "running loan"
+    ],
+    "evidence": [
+      "e006_loan_status",
+      "e020_loan_ranges"
+    ]
+  },
+  {
+    "id": "t_loan_amount",
+    "name": "Loan Amount",
+    "type": "metric",
+    "definition": "The principal amount granted for a loan contract.",
+    "scope": "Used for loan volume and for average-amount questions.",
+    "aliases": [
+      "amount of loan",
+      "loan principal",
+      "loan size"
+    ],
+    "evidence": [
+      "e020_loan_ranges"
+    ]
+  },
+  {
+    "id": "t_transaction",
+    "name": "Transaction",
+    "type": "entity",
+    "definition": "A movement of funds recorded on a bank account, with a date, a type, an operation mode, an amount and the resulting balance.",
+    "scope": "The account activity ledger covering 1993-1998.",
+    "aliases": [
+      "trans",
+      "transaction",
+      "account transaction",
+      "bank transaction"
+    ],
+    "evidence": [
+      "e002_row_counts",
+      "e008_operation",
+      "e019_trans_years"
+    ]
+  },
+  {
+    "id": "t_transaction_operation",
+    "name": "Transaction Operation",
+    "type": "category",
+    "definition": "The detailed operation mode of a transaction, covering cash withdrawal, transfers, deposits and card withdrawals.",
+    "scope": "Used to identify how a transaction was performed.",
+    "aliases": [
+      "operation",
+      "transaction mode"
+    ],
+    "evidence": [
+      "e008_operation"
+    ]
+  },
+  {
+    "id": "t_credit_card_transaction",
+    "name": "Credit Card Transaction",
+    "type": "concept",
+    "definition": "A transaction performed with a payment card, recorded as the operation VYBER KARTOU.",
+    "scope": "Used when a question asks for transactions 'on the credit card'.",
+    "aliases": [
+      "card transaction",
+      "credit card withdrawal",
+      "VYBER KARTOU"
+    ],
+    "evidence": [
+      "e021_credit_card_txn"
+    ]
+  },
+  {
+    "id": "t_transaction_amount",
+    "name": "Transaction Amount",
+    "type": "metric",
+    "definition": "The monetary value moved by a transaction.",
+    "scope": "Used for amount-based filters and aggregates such as 'amount less than the average'.",
+    "aliases": [
+      "amount",
+      "transaction value"
+    ],
+    "evidence": [
+      "e022_amount_range"
+    ]
+  },
+  {
+    "id": "t_transaction_date",
+    "name": "Transaction Date",
+    "type": "dimension",
+    "definition": "The date on which a transaction was recorded.",
+    "scope": "Used for time filtering such as 'in 1998'.",
+    "aliases": [
+      "trans date",
+      "transaction year",
+      "in 1998"
+    ],
+    "evidence": [
+      "e019_trans_years",
+      "e017_date_ranges"
+    ]
+  },
+  {
+    "id": "t_district_average_salary",
+    "name": "District Average Salary",
+    "type": "metric",
+    "definition": "The average salary recorded for a district.",
+    "scope": "Used when a question references the 'average salary' associated with a client's or an account's district.",
+    "aliases": [
+      "A11",
+      "average salary",
+      "avg salary"
+    ],
+    "evidence": [
+      "e010_district_columns"
+    ]
+  },
+  {
+    "id": "t_district_unemployment_rate",
+    "name": "District Unemployment Rate",
+    "type": "metric",
+    "definition": "The unemployment rate recorded for a district for a given year; the district master carries the 1995 and the 1996 rate.",
+    "scope": "Used for unemployment comparison and increment between 1995 and 1996.",
+    "aliases": [
+      "A12",
+      "A13",
+      "unemployment rate",
+      "unemployment"
+    ],
+    "evidence": [
+      "e010_district_columns",
+      "e018_unemployment",
+      "e013_district_null"
+    ]
+  },
+  {
+    "id": "t_district_crime_count",
+    "name": "District Crime Count",
+    "type": "metric",
+    "definition": "The number of crimes committed in a district in 1995.",
+    "scope": "Used for crime-based filtering such as 'the number exceeds 4000'.",
+    "aliases": [
+      "A15",
+      "crimes",
+      "number of crimes",
+      "crimes committed"
+    ],
+    "evidence": [
+      "e010_district_columns",
+      "e013_district_null"
+    ]
+  },
+  {
+    "id": "t_district_inhabitants",
+    "name": "District Inhabitants",
+    "type": "metric",
+    "definition": "The number of inhabitants of a district.",
+    "scope": "Used for population-based selection such as 'biggest number of inhabitants'.",
+    "aliases": [
+      "A4",
+      "population",
+      "inhabitants"
+    ],
+    "evidence": [
+      "e012_a4_text"
+    ]
+  },
+  {
+    "id": "t_unemployment_increment_rate",
+    "name": "Unemployment Increment Rate",
+    "type": "metric",
+    "definition": "The percentage change of a district's unemployment rate between 1995 and 1996, computed from the district's two available unemployment rates.",
+    "scope": "Not stored; derived when a question asks for the 'percentage unemployment rate increment'.",
+    "aliases": [
+      "unemployment increment",
+      "unemployment rate increment",
+      "percentage unemployment increment"
+    ],
+    "evidence": [
+      "e018_unemployment"
+    ]
+  },
+  {
+    "id": "t_client_gender_share",
+    "name": "Client Gender Share",
+    "type": "metric",
+    "definition": "The proportion of clients of a given gender within a client population such as the clients associated with one district.",
+    "scope": "Not stored; derived when a question asks for a 'percentage of male clients'.",
+    "aliases": [
+      "percentage of male clients",
+      "male percentage",
+      "gender percentage",
+      "gender ratio"
+    ],
+    "evidence": [
+      "e003_gender"
+    ]
+  },
+  {
+    "id": "t_average_salary_gap",
+    "name": "Average Salary Gap",
+    "type": "metric",
+    "definition": "The difference between the highest and the lowest district average salary among a selected set of districts.",
+    "scope": "Not stored; derived when a question asks for the gap between the lowest and the highest average salary.",
+    "aliases": [
+      "salary gap",
+      "gap between lowest and highest average salary"
+    ],
+    "evidence": [
+      "e010_district_columns"
+    ]
+  }
+]

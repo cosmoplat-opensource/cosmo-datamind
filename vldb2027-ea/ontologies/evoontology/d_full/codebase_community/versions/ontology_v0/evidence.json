@@ -1,0 +1,146 @@
+[
+  {
+    "id": "ev_schema_column_spelling",
+    "source": "codebase_community",
+    "query": "sqlite3 -readonly codebase_community.sqlite \".schema\"",
+    "result": "posts declares the timestamp columns CreaionDate and LasActivityDate, both missing the letter t, while badges, comments, postHistory, postLinks, users and votes all declare CreationDate. No posts.CreationDate column exists.",
+    "validation_method": "schema inspection",
+    "timestamp": "2026-10-10T02:40:00Z"
+  },
+  {
+    "id": "ev_post_type_distribution",
+    "source": "codebase_community",
+    "query": "SELECT PostTypeId, COUNT(*) FROM posts GROUP BY PostTypeId",
+    "result": "PostTypeId 1 = 42912, 2 = 47755, 5 = 640, 4 = 639, 6 = 9, 3 = 6, 7 = 5; total 91966. Grouped null counts show ParentId null exactly for types 1, 3, 4, 5, 6, 7 and Title null exactly for type 2.",
+    "validation_method": "value distribution and null-pattern verification",
+    "timestamp": "2026-10-10T02:40:00Z"
+  },
+  {
+    "id": "ev_question_only_columns",
+    "source": "codebase_community",
+    "query": "SELECT sum(ViewCount IS NULL), sum(AnswerCount IS NULL), sum(Tags IS NULL), sum(FavoriteCount IS NULL) FROM posts",
+    "result": "Each of ViewCount, AnswerCount, Tags and FavoriteCount has exactly 49054 nulls out of 91966 rows, leaving 42912 non-null values, equal to the number of PostTypeId = 1 rows.",
+    "validation_method": "null-count arithmetic against the question count",
+    "timestamp": "2026-10-10T02:40:00Z"
+  },
+  {
+    "id": "ev_accepted_answer_linkage",
+    "source": "codebase_community",
+    "query": "SELECT COUNT(*) FROM posts WHERE AcceptedAnswerId IS NOT NULL; SELECT COUNT(*) FROM posts p JOIN posts a ON a.Id = p.AcceptedAnswerId WHERE a.ParentId = p.Id",
+    "result": "14697 questions carry an AcceptedAnswerId; 14696 of those referenced posts have ParentId equal to the question Id. All 14696 targets have PostTypeId = 2. The single exception is question Id 8689 with AcceptedAnswerId 8713.",
+    "validation_method": "join cardinality and target-type verification",
+    "timestamp": "2026-10-10T02:40:00Z"
+  },
+  {
+    "id": "ev_answer_count_verification",
+    "source": "codebase_community",
+    "query": "SELECT COUNT(*) FROM posts p LEFT JOIN (SELECT ParentId, COUNT(*) c FROM posts WHERE PostTypeId=2 GROUP BY ParentId) a ON a.ParentId=p.Id WHERE p.PostTypeId=1 AND p.AnswerCount <> COALESCE(a.c,0)",
+    "result": "0 mismatches. posts.AnswerCount equals the number of PostTypeId = 2 posts whose ParentId is the question Id for all 42912 questions. 47749 of 47755 answers join to a parent question post.",
+    "validation_method": "whole-table aggregate comparison",
+    "timestamp": "2026-10-10T02:40:00Z"
+  },
+  {
+    "id": "ev_comments_post_type",
+    "source": "codebase_community",
+    "query": "SELECT p.PostTypeId, COUNT(*) FROM comments c JOIN posts p ON p.Id=c.PostId GROUP BY 1; SELECT COUNT(*) FROM comments WHERE UserId IS NULL",
+    "result": "Comments by parent post type: 90626 on questions, 83581 on answers, 42 on type 6 posts. 36 comment rows reference a PostId absent from posts. 2835 comments have a null UserId.",
+    "validation_method": "grouped join counts and null checks",
+    "timestamp": "2026-10-10T02:40:00Z"
+  },
+  {
+    "id": "ev_comment_count_drift",
+    "source": "codebase_community",
+    "query": "SELECT COUNT(*) FROM posts p LEFT JOIN (SELECT PostId, COUNT(*) c FROM comments GROUP BY PostId) c ON c.PostId=p.Id WHERE COALESCE(p.CommentCount,0) <> COALESCE(c.c,0)",
+    "result": "20 of 91966 posts disagree between the stored CommentCount and the actual number of comment rows.",
+    "validation_method": "whole-table aggregate comparison",
+    "timestamp": "2026-10-10T02:40:00Z"
+  },
+  {
+    "id": "ev_votes_distribution_and_span",
+    "source": "codebase_community",
+    "query": "SELECT VoteTypeId, COUNT(*) FROM votes GROUP BY 1; SELECT MIN(CreationDate), MAX(CreationDate) FROM votes; SELECT COUNT(DISTINCT PostId), COUNT(DISTINCT UserId), COUNT(*) FROM votes; SELECT COUNT(*) FROM votes WHERE CreationDate NOT LIKE '____-__-__'",
+    "result": "38930 rows across ten VoteTypeId values: 2 = 33323, 5 = 3365, 1 = 1451, 3 = 444, 16 = 111, 15 = 72, 8 = 60, 9 = 59, 11 = 44, 10 = 1. CreationDate spans 2010-07-19 to 2011-05-01 with 0 rows carrying a time component. 8584 distinct PostId and 509 distinct UserId values.",
+    "validation_method": "distribution, range and cardinality verification",
+    "timestamp": "2026-10-10T02:40:00Z"
+  },
+  {
+    "id": "ev_score_vs_votes",
+    "source": "codebase_community",
+    "query": "SELECT COUNT(*), SUM(v.net IS NOT NULL), SUM(p.Score = v.net) FROM posts p LEFT JOIN (SELECT PostId, SUM(CASE VoteTypeId WHEN 2 THEN 1 WHEN 3 THEN -1 ELSE 0 END) net FROM votes GROUP BY PostId) v ON v.PostId=p.Id",
+    "result": "91966 posts, 8584 with any vote row, 3224 where the stored Score equals the vote-derived net score. 83382 posts have no vote row at all.",
+    "validation_method": "whole-table derived-value comparison",
+    "timestamp": "2026-10-10T02:40:00Z"
+  },
+  {
+    "id": "ev_bounty_amount",
+    "source": "codebase_community",
+    "query": "SELECT VoteTypeId, COUNT(*), SUM(BountyAmount IS NOT NULL) FROM votes GROUP BY 1",
+    "result": "BountyAmount is non-null only for VoteTypeId 8 (60 of 60 rows) and VoteTypeId 9 (41 of 59 rows); every other vote type has 0 non-null amounts. 101 rows in total.",
+    "validation_method": "grouped non-null count",
+    "timestamp": "2026-10-10T02:40:00Z"
+  },
+  {
+    "id": "ev_tags_overview",
+    "source": "codebase_community",
+    "query": "SELECT COUNT(*), COUNT(DISTINCT TagName) FROM tags; SELECT t.TagName, t.Count, (SELECT COUNT(*) FROM posts p WHERE p.PostTypeId=1 AND instr(p.Tags,'<'||t.TagName||'>')>0) FROM tags t ORDER BY t.Count DESC LIMIT 6; SELECT Tags FROM posts WHERE PostTypeId=1 LIMIT 5",
+    "result": "1032 tag rows with 1032 distinct names. Top tags: r 7244 stored against 7240 recounted, regression 5413 against 5413, time-series 2737 against 2736, machine-learning 2564 against 2563, probability 2081 against 2081. Question Tags values concatenate angle-bracket tokens, for example <bayesian><prior><elicitation>. 436 tags have a null ExcerptPostId and WikiPostId.",
+    "validation_method": "stored-versus-recounted comparison and value-format sampling",
+    "timestamp": "2026-10-10T02:40:00Z"
+  },
+  {
+    "id": "ev_history_types_and_revision_match",
+    "source": "codebase_community",
+    "query": "SELECT PostHistoryTypeId, COUNT(*) FROM postHistory GROUP BY 1; SELECT COUNT(*) FROM postHistory h JOIN posts p ON p.Id=h.PostId WHERE h.PostHistoryTypeId=1 AND h.Text=p.Title; SELECT PostHistoryTypeId, substr(Text,1,70) FROM postHistory GROUP BY 1",
+    "result": "25 distinct PostHistoryTypeId values, largest 2 = 91974, 5 = 69413, 3 = 42921, 1 = 42909, 4 = 16008, 6 = 12731, 25 = 10320, 24 = 7017. Payload equality with the current post value holds for 29351 of 42909 type 1 rows against posts.Title, 32167 of 42921 type 3 rows against posts.Tags, and only 76 of 91974 type 2 rows against posts.Body. Types 10 and 13 sample as voters JSON such as {\"Voters\":[{\"Id\":60,\"DisplayName\":\"Jason Punyon\"}]}; type 38 samples as {\"Id\":8,\"DisplayName\":\"csgillespie\"}-style editor JSON; types 16, 24, 25, 33 and 34 sample as empty text.",
+    "validation_method": "distribution plus payload-equality comparison and content sampling",
+    "timestamp": "2026-10-10T02:40:00Z"
+  },
+  {
+    "id": "ev_link_types",
+    "source": "codebase_community",
+    "query": "SELECT LinkTypeId, COUNT(*) FROM postLinks GROUP BY 1; SELECT l.LinkTypeId, p.PostTypeId, r.PostTypeId, COUNT(*) FROM postLinks l JOIN posts p ON p.Id=l.PostId JOIN posts r ON r.Id=l.RelatedPostId GROUP BY 1,2,3; SELECT SUM(p.ClosedDate IS NOT NULL), COUNT(*) FROM postLinks l JOIN posts p ON p.Id=l.PostId WHERE l.LinkTypeId=3",
+    "result": "LinkTypeId 1 = 10186 and 3 = 916. Joinable rows are 10178 question-to-question plus 5 question-to-answer for type 1, and 915 question-to-question for type 3. Of 915 joinable type 3 source posts, 915 have a ClosedDate; only 1099 of 10185 joinable type 1 sources are closed. 1610 posts are closed in total and all are questions.",
+    "validation_method": "distribution, endpoint-type and closure cross-check",
+    "timestamp": "2026-10-10T02:40:00Z"
+  },
+  {
+    "id": "ev_orphan_rows",
+    "source": "codebase_community",
+    "query": "LEFT JOIN each child table to posts/users and count rows where the referenced Id is absent",
+    "result": "postLinks: 1 orphan PostId and 3 orphan RelatedPostId. comments: 36 orphan PostId. postHistory: 41 orphan PostId. tags: 1 orphan ExcerptPostId. posts: 6 rows with a ParentId matching no post. badges, comments and votes all have 0 orphan UserId. 1392 posts have a null OwnerUserId and every non-null one resolves.",
+    "validation_method": "left-join orphan detection across all declared references",
+    "timestamp": "2026-10-10T02:40:00Z"
+  },
+  {
+    "id": "ev_date_ranges",
+    "source": "codebase_community",
+    "query": "SELECT MIN(c), MAX(c) FROM each date column of posts, users, badges, comments, postHistory, postLinks, votes",
+    "result": "posts.CreaionDate 2009-02-02 14:21:12 to 2014-09-14 02:09:23; comments.CreationDate 2009-02-02 14:45:19 to 2014-09-14 02:04:27; postHistory.CreationDate 2009-02-02 14:21:12 to 2014-09-14 02:54:13; users.CreationDate 2010-07-19 06:55:26 to 2014-09-14 01:01:44; badges.Date 2010-07-19 19:39:07 to 2014-09-14 02:31:28; postLinks.CreationDate 2010-07-21 14:47:33 to 2014-09-13 20:54:31; votes.CreationDate 2010-07-19 to 2011-05-01.",
+    "validation_method": "min and max range extraction per table",
+    "timestamp": "2026-10-10T02:40:00Z"
+  },
+  {
+    "id": "ev_user_aggregates",
+    "source": "codebase_community",
+    "query": "SELECT MIN(Reputation), MAX(Reputation), MIN(Age), MAX(Age). SUM(Reputation<=1) FROM users; SELECT SUM(u.UpVotes = COALESCE(v.c,0)), SUM(u.DownVotes = COALESCE(d.c,0)), COUNT(*) FROM users u LEFT JOIN (per-user up-vote counts) v ...",
+    "result": "40325 users. Reputation ranges 1 to 87393 and 15090 users have a value of 1 or below. Age ranges 13 to 94 with 32007 nulls. UpVotes recomputed from votes matches for 31529 users and DownVotes for 39578 of 40325. Only 509 users appear in the votes table.",
+    "validation_method": "range extraction and stored-versus-derived comparison",
+    "timestamp": "2026-10-10T02:40:00Z"
+  },
+  {
+    "id": "ev_badges_overview",
+    "source": "codebase_community",
+    "query": "SELECT COUNT(*), COUNT(DISTINCT Name), COUNT(DISTINCT UserId) FROM badges; SELECT Name, COUNT(*) FROM badges GROUP BY 1 ORDER BY 2 DESC LIMIT 12",
+    "result": "79851 badge awards, 153 distinct names, 25078 distinct users, all resolving to users rows. Largest names: Student 14847, Supporter 8828, Editor 8453, Scholar 6523, Teacher 4679, Popular Question 4536, Autobiographer 4480, Tumbleweed 3268, Nice Answer 2570, Yearling 2293. Date range 2010-07-19 to 2014-09-14.",
+    "validation_method": "count, cardinality and top-value verification",
+    "timestamp": "2026-10-10T02:40:00Z"
+  },
+  {
+    "id": "ev_community_owned_and_system_user",
+    "source": "codebase_community",
+    "query": "SELECT Id, DisplayName, Reputation FROM users WHERE Id < 0; SELECT COUNT(*) FROM posts WHERE OwnerUserId=-1; SELECT COUNT(*) FROM posts WHERE CommunityOwnedDate IS NOT NULL AND OwnerUserId=-1",
+    "result": "A single negative-Id user, Id -1 named Community with Reputation 1 and location on the server farm. It owns 211 posts. 2467 posts have a non-null CommunityOwnedDate and 0 of them are owned by user -1.",
+    "validation_method": "sentinel-value and overlap check",
+    "timestamp": "2026-10-10T02:40:00Z"
+  }
+]

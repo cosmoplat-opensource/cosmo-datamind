@@ -1,0 +1,326 @@
+[
+  {
+    "id": "term_superhero",
+    "name": "Superhero",
+    "type": "entity",
+    "definition": "An individual character record in the comic-book character database, identified by the surrogate integer key superhero.id.",
+    "scope": "Character-level analysis across publishers, powers, rated attributes and physical measurements.",
+    "aliases": [
+      "hero",
+      "character",
+      "superhero record"
+    ],
+    "evidence": [
+      "ev_superhero_rowcount",
+      "ev_duplicate_superhero_names",
+      "ev_referential_integrity"
+    ]
+  },
+  {
+    "id": "term_superhero_name",
+    "name": "Superhero Name",
+    "type": "dimension",
+    "definition": "The published codename or alias of a character, stored as free text in superhero.superhero_name. It is always populated but is not unique across characters.",
+    "scope": "Identifying and grouping characters by their published alias.",
+    "aliases": [
+      "codename",
+      "alias",
+      "hero name"
+    ],
+    "evidence": [
+      "ev_duplicate_superhero_names"
+    ]
+  },
+  {
+    "id": "term_full_name",
+    "name": "Full Name (civil identity)",
+    "type": "dimension",
+    "definition": "The civil or real name of a character when known. The literal string '-' is a placeholder for characters whose real name is not recorded, and NULL means the same.",
+    "scope": "Questions about a character's real-world identity or secret identity.",
+    "aliases": [
+      "real name",
+      "civil name",
+      "secret identity"
+    ],
+    "evidence": [
+      "ev_full_name_dash_sentinel"
+    ]
+  },
+  {
+    "id": "term_publisher",
+    "name": "Publisher",
+    "type": "entity",
+    "definition": "The comic-book or media company that owns a character, held in the publisher lookup table.",
+    "scope": "Grouping and comparing characters by their publishing company.",
+    "aliases": [
+      "publisher name",
+      "imprint",
+      "company"
+    ],
+    "evidence": [
+      "ev_publisher_distribution",
+      "ev_publisher_blank_sentinel"
+    ]
+  },
+  {
+    "id": "term_attribute",
+    "name": "Rated Attribute",
+    "type": "entity",
+    "definition": "One of six named capability dimensions - Intelligence, Strength, Speed, Durability, Power and Combat - used to rate characters.",
+    "scope": "Attribute-level analysis of character capability.",
+    "aliases": [
+      "stat",
+      "capability",
+      "attribute name"
+    ],
+    "evidence": [
+      "ev_attribute_domain"
+    ]
+  },
+  {
+    "id": "term_attribute_score",
+    "name": "Attribute Score",
+    "type": "metric",
+    "definition": "The integer rating assigned to one character on one attribute, stored in hero_attribute.attribute_value.",
+    "scope": "Available only for characters that have rows in hero_attribute; each covered character has all six attributes.",
+    "aliases": [
+      "attribute value",
+      "stat score",
+      "rating"
+    ],
+    "evidence": [
+      "ev_attribute_domain",
+      "ev_attribute_grain",
+      "ev_attribute_coverage_allornothing"
+    ]
+  },
+  {
+    "id": "term_superpower",
+    "name": "Superpower",
+    "type": "entity",
+    "definition": "A named ability drawn from the superpower vocabulary that a character may possess.",
+    "scope": "Ability-level analysis; powers are a shared vocabulary reusable across many characters.",
+    "aliases": [
+      "power",
+      "ability",
+      "power name"
+    ],
+    "evidence": [
+      "ev_superpower_count",
+      "ev_hero_power_coverage"
+    ]
+  },
+  {
+    "id": "term_power_count",
+    "name": "Superpower Count",
+    "type": "metric",
+    "definition": "The number of distinct superpowers associated with a character. No stored column exists; it must be derived from the character-power association.",
+    "scope": "Comparing characters by breadth of abilities.",
+    "aliases": [
+      "number of powers",
+      "power total"
+    ],
+    "evidence": [
+      "ev_hero_power_coverage"
+    ]
+  },
+  {
+    "id": "term_overall_attribute_score",
+    "name": "Overall Attribute Score",
+    "type": "metric",
+    "definition": "An aggregate of a character's six attribute scores, used to summarise general capability. No such total is stored and it must be derived per character.",
+    "scope": "Only meaningful for the 623 characters that carry attribute scores.",
+    "aliases": [
+      "total score",
+      "average score",
+      "overall power"
+    ],
+    "evidence": [
+      "ev_attribute_grain",
+      "ev_attribute_coverage_allornothing"
+    ]
+  },
+  {
+    "id": "term_race",
+    "name": "Race / Species",
+    "type": "dimension",
+    "definition": "The species or origin classification of a character. The value '-' denotes an unclassified race rather than a species named '-'.",
+    "scope": "Species-based grouping and comparison of characters.",
+    "aliases": [
+      "species",
+      "origin",
+      "race name"
+    ],
+    "evidence": [
+      "ev_race_dash_sentinel",
+      "ev_race_naming_convention"
+    ]
+  },
+  {
+    "id": "term_alignment",
+    "name": "Alignment",
+    "type": "category",
+    "definition": "The moral alignment of a character: Good, Bad or Neutral.",
+    "scope": "Comparing heroic and villainous populations; 6 characters carry no alignment at all.",
+    "aliases": [
+      "morality",
+      "hero or villain",
+      "side",
+      "good bad neutral"
+    ],
+    "evidence": [
+      "ev_alignment_domain"
+    ]
+  },
+  {
+    "id": "term_gender",
+    "name": "Gender",
+    "type": "dimension",
+    "definition": "The gender category of a character: Male, Female, or the sentinel value 'N/A' for unspecified.",
+    "scope": "Gender-based grouping and comparison.",
+    "aliases": [
+      "sex",
+      "gender category"
+    ],
+    "evidence": [
+      "ev_gender_distribution"
+    ]
+  },
+  {
+    "id": "term_colour",
+    "name": "Colour Vocabulary",
+    "type": "dimension",
+    "definition": "The shared colour vocabulary used for eye, hair and skin colour. The value 'No Colour' denotes an absent or not-applicable colour rather than an actual colour.",
+    "scope": "Any colour-facet analysis of characters.",
+    "aliases": [
+      "color",
+      "colour name",
+      "colour value"
+    ],
+    "evidence": [
+      "ev_colour_vocabulary_shared"
+    ]
+  },
+  {
+    "id": "term_eye_colour",
+    "name": "Eye Colour",
+    "type": "dimension",
+    "definition": "The eye colour of a character, drawn from the shared colour vocabulary through superhero.eye_colour_id.",
+    "scope": "Eye-colour facet of a character.",
+    "aliases": [
+      "eye color"
+    ],
+    "evidence": [
+      "ev_colour_vocabulary_shared"
+    ]
+  },
+  {
+    "id": "term_hair_colour",
+    "name": "Hair Colour",
+    "type": "dimension",
+    "definition": "The hair colour of a character, drawn from the shared colour vocabulary through superhero.hair_colour_id.",
+    "scope": "Hair-colour facet of a character.",
+    "aliases": [
+      "hair color"
+    ],
+    "evidence": [
+      "ev_colour_vocabulary_shared"
+    ]
+  },
+  {
+    "id": "term_skin_colour",
+    "name": "Skin Colour",
+    "type": "dimension",
+    "definition": "The skin colour of a character, drawn from the shared colour vocabulary through superhero.skin_colour_id.",
+    "scope": "Skin-colour facet of a character; 'No Colour' dominates this facet.",
+    "aliases": [
+      "skin color"
+    ],
+    "evidence": [
+      "ev_colour_vocabulary_shared"
+    ]
+  },
+  {
+    "id": "term_height",
+    "name": "Height",
+    "type": "metric",
+    "definition": "The height of a character expressed in centimetres. A stored value of 0 and a NULL both denote an unrecorded height rather than a real measurement.",
+    "scope": "Character size analysis; must be filtered for missing and extreme values.",
+    "aliases": [
+      "height_cm",
+      "tall",
+      "stature"
+    ],
+    "evidence": [
+      "ev_height_weight_zero_sentinel",
+      "ev_height_weight_extremes"
+    ]
+  },
+  {
+    "id": "term_weight",
+    "name": "Weight",
+    "type": "metric",
+    "definition": "The weight of a character expressed in kilograms. A stored value of 0 and a NULL both denote an unrecorded weight rather than a real measurement.",
+    "scope": "Character size analysis; must be filtered for missing and extreme values.",
+    "aliases": [
+      "weight_kg",
+      "mass",
+      "heavy"
+    ],
+    "evidence": [
+      "ev_height_weight_zero_sentinel",
+      "ev_height_weight_extremes"
+    ]
+  },
+  {
+    "id": "term_hero_count",
+    "name": "Hero Count",
+    "type": "metric",
+    "definition": "The number of distinct character records held in the main superhero table.",
+    "scope": "Population sizing; counted on the surrogate key, not on names.",
+    "aliases": [
+      "number of heroes",
+      "how many superheroes",
+      "population"
+    ],
+    "evidence": [
+      "ev_superhero_rowcount",
+      "ev_duplicate_superhero_names"
+    ]
+  },
+  {
+    "id": "term_missing_dash_sentinel",
+    "name": "Dash Placeholder",
+    "type": "concept",
+    "definition": "The literal '-' string used throughout text columns as a placeholder meaning 'value unknown or not applicable'.",
+    "scope": "Applies to superhero.full_name and race.race; must be excluded from literal string matching.",
+    "aliases": [
+      "dash",
+      "-",
+      "placeholder"
+    ],
+    "evidence": [
+      "ev_full_name_dash_sentinel",
+      "ev_race_dash_sentinel"
+    ]
+  },
+  {
+    "id": "term_missing_na_sentinel",
+    "name": "Not-Applicable Placeholder",
+    "type": "concept",
+    "definition": "The 'N/A', 'No Colour' and empty-string vocabulary entries that mean 'value unknown or not applicable' rather than a real category.",
+    "scope": "Applies to gender.gender, alignment.alignment, colour.colour and publisher.publisher_name.",
+    "aliases": [
+      "N/A",
+      "NA",
+      "No Colour",
+      "not applicable",
+      "blank"
+    ],
+    "evidence": [
+      "ev_null_breakdown",
+      "ev_publisher_blank_sentinel",
+      "ev_colour_vocabulary_shared"
+    ]
+  }
+]

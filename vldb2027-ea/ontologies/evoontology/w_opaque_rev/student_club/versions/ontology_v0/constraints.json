@@ -1,0 +1,329 @@
+[
+  {
+    "id": "constraint_event_status_enum",
+    "target": "term_event_status",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "closed event",
+      "closed events",
+      "open event",
+      "planning",
+      "status of the event",
+      "event status"
+    ],
+    "severity": "block",
+    "scope": "Filtering or interpreting event lifecycle status",
+    "confidence": "high",
+    "description": "Event lifecycle status takes exactly three values: Closed, Open, and Planning. A closed event is one whose status is Closed. The status appears on the event record and is mirrored on each budget row.",
+    "evidence": [
+      "evidence_event_domains",
+      "evidence_event_status_counts"
+    ]
+  },
+  {
+    "id": "constraint_budget_status_mirror",
+    "target": "term_budget_event_status",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "budget status",
+      "event status",
+      "closed events",
+      "status in budget"
+    ],
+    "severity": "block",
+    "scope": "Any analysis combining budget rows with event lifecycle status",
+    "confidence": "high",
+    "description": "Every budget row repeats the lifecycle status of the event it belongs to. The two status representations agree on all 52 budget rows, so either can be used to identify closed events.",
+    "evidence": [
+      "evidence_budget_status_equivalence"
+    ]
+  },
+  {
+    "id": "constraint_budget_arithmetic",
+    "target": "term_budget_amount",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "remaining",
+      "exceeded the budget",
+      "exceed budget",
+      "over budget",
+      "spend-to-budget ratio",
+      "budget"
+    ],
+    "severity": "block",
+    "scope": "Budget-line and event-level budget analysis",
+    "confidence": "high",
+    "description": "For every budget row, the spent amount plus the remaining amount equals the allocated amount. A negative remaining amount means spending exceeded the allocation, and the overrun magnitude is the absolute value of that negative remaining amount. The spend-to-budget ratio is the spent amount divided by the allocated amount.",
+    "evidence": [
+      "evidence_budget_arithmetic"
+    ]
+  },
+  {
+    "id": "constraint_budget_spent_vs_amount",
+    "target": "term_budget_spent",
+    "constraint_type": "scope",
+    "trigger_keywords": [
+      "budget spend",
+      "amount of budget spend",
+      "spent",
+      "allocated amount",
+      "budget amount",
+      "budget"
+    ],
+    "severity": "block",
+    "scope": "Interpreting phrases about budget spending",
+    "confidence": "high",
+    "description": "Two distinct monetary quantities exist per budget line: the amount already spent and the total amount allocated. A phrase such as 'amount of budget spend' refers to the spent amount, not the allocated amount.",
+    "evidence": [
+      "evidence_budget_structure",
+      "evidence_budget_arithmetic"
+    ]
+  },
+  {
+    "id": "constraint_budget_event_coverage",
+    "target": "term_event",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "event budget",
+      "budget for event",
+      "budget coverage",
+      "closed events"
+    ],
+    "severity": "warning",
+    "scope": "Event-level budget analysis",
+    "confidence": "high",
+    "description": "Only 23 of the 42 events have budget rows, across 52 budget lines and at most four lines per event. Nineteen events have no budget record; 18 events are Closed but only 10 of those have budget rows.",
+    "evidence": [
+      "evidence_budget_coverage",
+      "evidence_budget_structure"
+    ]
+  },
+  {
+    "id": "constraint_expense_date_format",
+    "target": "term_expense_date",
+    "constraint_type": "scope",
+    "trigger_keywords": [
+      "month",
+      "September",
+      "October",
+      "expense date",
+      "date of expense"
+    ],
+    "severity": "block",
+    "scope": "Month-based filtering of expenses",
+    "confidence": "high",
+    "description": "Expense dates are stored as ten-character calendar dates in year-month-day order. The month is given by the 5th and 6th characters of the stored date. All 32 expenses fall between 2019-08-20 and 2019-11-19.",
+    "evidence": [
+      "evidence_expense_date_format"
+    ]
+  },
+  {
+    "id": "constraint_expense_approval",
+    "target": "term_expense_approved",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "approved",
+      "total value approved",
+      "approval"
+    ],
+    "severity": "warning",
+    "scope": "Interpreting approval of expenses",
+    "confidence": "high",
+    "description": "Approval is recorded per expense record. The observed value true denotes an approved expense; 31 of 32 rows are true and one row has no value. Approval is not recorded at budget-line level.",
+    "evidence": [
+      "evidence_expense_approval"
+    ]
+  },
+  {
+    "id": "constraint_attendance_grain",
+    "target": "term_attendance",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "attended",
+      "attendance",
+      "how many members attended",
+      "number of students",
+      "attendance of over 20 students"
+    ],
+    "severity": "block",
+    "scope": "Counting event attendance",
+    "confidence": "high",
+    "description": "Each attendance record links exactly one member to exactly one event, and there are no duplicate member-event pairs. The number of attendees for an event is the count of its attendance records. Seventeen of 42 events have attendance records; the other 25 have no recorded attendees, reaching at most 30 attendees for any event.",
+    "evidence": [
+      "evidence_attendance_grain",
+      "evidence_attendance_coverage",
+      "evidence_attendance_counts"
+    ]
+  },
+  {
+    "id": "constraint_member_fullname_construction",
+    "target": "term_member_full_name",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "full name",
+      "name of member",
+      "member name",
+      "person named"
+    ],
+    "severity": "block",
+    "scope": "Referring to members by personal name",
+    "confidence": "high",
+    "description": "A member's full name is composed from a given-name column and a family-name column stored separately. The combination is unique across all 33 members, so a full name identifies at most one member.",
+    "evidence": [
+      "evidence_member_fullname_unique"
+    ]
+  },
+  {
+    "id": "constraint_member_major_missing",
+    "target": "term_member_major",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "major",
+      "department",
+      "majors",
+      "studying"
+    ],
+    "severity": "warning",
+    "scope": "Member-to-major analysis",
+    "confidence": "high",
+    "description": "Thirty-two of the 33 members reference an academic major; one member has no major value. Analyses restricted to members with a major exclude that member.",
+    "evidence": [
+      "evidence_member_major_coverage"
+    ]
+  },
+  {
+    "id": "constraint_zip_geography_structure",
+    "target": "term_county",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "county",
+      "state",
+      "city",
+      "Orange County",
+      "Virginia",
+      "grew up in"
+    ],
+    "severity": "block",
+    "scope": "Geographic filtering on member home location",
+    "confidence": "high",
+    "description": "Each ZIP record carries a city, a county, a full state name, and a two-letter state abbreviation as separate attributes on the same row. A phrase such as 'Orange County, Virginia' combines a county value with a full state name; the corresponding cities are the distinct city values on ZIP rows with that county and state.",
+    "evidence": [
+      "evidence_zip_geography_example"
+    ]
+  },
+  {
+    "id": "constraint_zip_geography_coverage",
+    "target": "term_member_zip",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "state",
+      "county",
+      "city",
+      "home state",
+      "grew up in"
+    ],
+    "severity": "info",
+    "scope": "Member geographic analysis",
+    "confidence": "high",
+    "description": "All 33 members have a home ZIP code, and every member ZIP resolves to a ZIP record, so geographic attributes are available for every member. The ZIP table has 41,877 unique ZIP codes covering 52 state and territory names.",
+    "evidence": [
+      "evidence_member_zip_coverage",
+      "evidence_zip_grain"
+    ]
+  },
+  {
+    "id": "constraint_event_name_duplicates",
+    "target": "term_event_name",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "event name",
+      "which event",
+      "event called",
+      "events named"
+    ],
+    "severity": "warning",
+    "scope": "Identifying events by name",
+    "confidence": "high",
+    "description": "Three event names are each shared by two distinct events: Community Theater, Football game, and Laugh Out Loud. Matching on name alone can return more than one event, so the event identifier disambiguates.",
+    "evidence": [
+      "evidence_event_name_duplicates"
+    ]
+  },
+  {
+    "id": "constraint_expense_member_coverage",
+    "target": "term_expense",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "members who spent",
+      "member expense",
+      "expenses of member",
+      "spent more than average"
+    ],
+    "severity": "warning",
+    "scope": "Member-level expense analysis",
+    "confidence": "high",
+    "description": "Expense records reference only 3 of the 33 members, across 32 expenses. Member-level spending questions are answerable only for those three members; the other members have no expense records rather than zero recorded cost.",
+    "evidence": [
+      "evidence_expense_member_coverage"
+    ]
+  },
+  {
+    "id": "constraint_event_type_no_fundraiser",
+    "target": "term_event_type",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "fundraiser",
+      "fundraisers",
+      "not fundraisers",
+      "event type",
+      "types of events"
+    ],
+    "severity": "warning",
+    "scope": "Classifying events by type",
+    "confidence": "high",
+    "description": "Event type has eight observed values: Meeting, Guest Speaker, Game, Social, Community Service, Election, Registration, and Budget. No value named Fundraiser occurs, so a 'not fundraisers' condition has no matching event-type value in this data environment.",
+    "evidence": [
+      "evidence_event_type_no_fundraiser"
+    ]
+  },
+  {
+    "id": "constraint_member_position_enum",
+    "target": "term_member_position",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "President",
+      "Vice President",
+      "Secretary",
+      "Treasurer",
+      "position of",
+      "club officer"
+    ],
+    "severity": "info",
+    "scope": "Club officer and role analysis",
+    "confidence": "high",
+    "description": "Position values are Member (26), Inactive (3), President (1), Vice President (1), Secretary (1), and Treasurer (1). 'President of the club' refers to the single member whose position is President.",
+    "evidence": [
+      "evidence_member_domains"
+    ]
+  },
+  {
+    "id": "constraint_tshirt_size_enum",
+    "target": "term_tshirt_size",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "t-shirt size",
+      "shirt size",
+      "medium",
+      "large",
+      "x-large",
+      "small"
+    ],
+    "severity": "info",
+    "scope": "T-shirt size filtering",
+    "confidence": "high",
+    "description": "T-shirt sizes are Small (2), Medium (10), Large (13), and X-Large (8). 'Medium size' means the value Medium; size matching is exact and case-sensitive as stored.",
+    "evidence": [
+      "evidence_member_domains"
+    ]
+  }
+]

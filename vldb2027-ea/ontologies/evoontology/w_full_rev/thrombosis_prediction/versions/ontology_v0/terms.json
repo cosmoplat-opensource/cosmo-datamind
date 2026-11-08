@@ -1,0 +1,455 @@
+[
+  {
+    "id": "term_patient",
+    "name": "Patient",
+    "type": "entity",
+    "definition": "An individual person registered in the cohort, uniquely identified by an integer patient identifier and carrying the demographic attributes that describe that person.",
+    "scope": "Any analysis whose grain is one person, or that needs demographic attributes of a person named by a patient identifier.",
+    "aliases": [
+      "patient",
+      "subject",
+      "case",
+      "patient ID",
+      "ID"
+    ],
+    "evidence": [
+      "ev_patient_grain"
+    ]
+  },
+  {
+    "id": "term_patient_sex",
+    "name": "Patient sex",
+    "type": "dimension",
+    "definition": "Recorded sex of a patient, stored as a single-letter code: 'M' for male and 'F' for female.",
+    "scope": "Demographic stratification and any clinical threshold that differs between male and female patients.",
+    "aliases": [
+      "sex",
+      "SEX",
+      "gender",
+      "male",
+      "female",
+      "men",
+      "women"
+    ],
+    "evidence": [
+      "ev_patient_domain"
+    ]
+  },
+  {
+    "id": "term_birthday",
+    "name": "Date of birth",
+    "type": "dimension",
+    "definition": "Calendar date on which the patient was born, stored as a date string in 'YYYY-MM-DD' form.",
+    "scope": "Birth-cohort filters and any age computation.",
+    "aliases": [
+      "Birthday",
+      "birth date",
+      "date of birth",
+      "born on",
+      "born in",
+      "born after"
+    ],
+    "evidence": [
+      "ev_date_formats",
+      "ev_patient_domain"
+    ]
+  },
+  {
+    "id": "term_age",
+    "name": "Patient age",
+    "type": "metric",
+    "definition": "Age of a patient in whole calendar years, which is not stored as a column and must be derived from the date of birth relative to a reference date.",
+    "scope": "Filters phrased as underage, years old, or older than a given age.",
+    "aliases": [
+      "age",
+      "underage",
+      "older than",
+      "years old"
+    ],
+    "evidence": [
+      "ev_age_derivation"
+    ]
+  },
+  {
+    "id": "term_patient_diagnosis",
+    "name": "Patient-level diagnosis",
+    "type": "concept",
+    "definition": "Disease or syndrome assigned to a patient in the patient master record. The field is a text value that may pack several comma-separated diagnosis codes and may qualify a code as suspected.",
+    "scope": "Cohort-level identification of the disease a patient has or was referred for.",
+    "aliases": [
+      "diagnosis",
+      "diagnosed with",
+      "disease",
+      "Patient.Diagnosis"
+    ],
+    "evidence": [
+      "ev_patient_diagnosis_vocab",
+      "ev_diagnosis_multivalue"
+    ]
+  },
+  {
+    "id": "term_examination_diagnosis",
+    "name": "Examination-level diagnosis",
+    "type": "concept",
+    "definition": "Disease or condition recorded on a specific clinical examination date. It shares the comma-separated multi-code text form of the patient-level diagnosis but is drawn from a wider vocabulary that also admits non-disease findings.",
+    "scope": "Disease attribution at the granularity of a single examination event.",
+    "aliases": [
+      "diagnosis at examination",
+      "Examination.Diagnosis",
+      "disease at examination"
+    ],
+    "evidence": [
+      "ev_examination_diagnosis_vocab",
+      "ev_diagnosis_spelling_variance"
+    ]
+  },
+  {
+    "id": "term_suspected_diagnosis",
+    "name": "Suspected diagnosis",
+    "type": "category",
+    "definition": "A diagnosis entry whose text carries the qualifier 'susp', marking it as suspected rather than confirmed.",
+    "scope": "Distinguishing confirmed from provisional disease assignments.",
+    "aliases": [
+      "susp",
+      "suspected",
+      "suspected diagnosis"
+    ],
+    "evidence": [
+      "ev_susp_counts"
+    ]
+  },
+  {
+    "id": "term_diagnosis_date",
+    "name": "Diagnosis and visit date",
+    "type": "dimension",
+    "definition": "Encounter date attached to the patient record, held in the column named Description even though its content is a calendar date rather than prose. The workload uses it both as the date a diagnosis was made and as the date the patient came to the hospital.",
+    "scope": "Year and date filtering of diagnoses and hospital visits at patient granularity.",
+    "aliases": [
+      "Description",
+      "diagnosed on",
+      "came at the hospital in",
+      "visit date"
+    ],
+    "evidence": [
+      "ev_description_is_date"
+    ]
+  },
+  {
+    "id": "term_first_visit_date",
+    "name": "First visit date",
+    "type": "dimension",
+    "definition": "Earliest recorded contact date of a patient with the hospital.",
+    "scope": "Filters phrased as coming to the hospital after or before a given date.",
+    "aliases": [
+      "First Date",
+      "first visit",
+      "came to the hospital"
+    ],
+    "evidence": [
+      "ev_first_date_range"
+    ]
+  },
+  {
+    "id": "term_admission_status",
+    "name": "Admission status",
+    "type": "dimension",
+    "definition": "Indicator of whether a patient was admitted as an inpatient or was instead followed at the outpatient clinic, stored as a short symbolic flag.",
+    "scope": "Distinguishing inpatient admission from outpatient follow-up.",
+    "aliases": [
+      "Admission",
+      "admitted",
+      "outpatient clinic",
+      "immediately followed at the outpatient clinic",
+      "inpatient"
+    ],
+    "evidence": [
+      "ev_admission_domain"
+    ]
+  },
+  {
+    "id": "term_examination",
+    "name": "Clinical examination record",
+    "type": "entity",
+    "definition": "One clinical examination event of a patient on a given examination date, carrying the coagulation findings, autoantibody concentrations, observed symptoms and thrombosis severity recorded at that event.",
+    "scope": "Any analysis at the grain of a single examination event.",
+    "aliases": [
+      "Examination",
+      "examination",
+      "medical examination",
+      "exam"
+    ],
+    "evidence": [
+      "ev_examination_grain",
+      "ev_exam_coverage"
+    ]
+  },
+  {
+    "id": "term_examination_date",
+    "name": "Examination date",
+    "type": "dimension",
+    "definition": "Calendar date on which a clinical examination was performed.",
+    "scope": "Year and period filters over examination events.",
+    "aliases": [
+      "Examination Date",
+      "examined in",
+      "examination year"
+    ],
+    "evidence": [
+      "ev_time_coverage"
+    ]
+  },
+  {
+    "id": "term_thrombosis_severity",
+    "name": "Thrombosis severity score",
+    "type": "dimension",
+    "definition": "Ordinal code describing the presence and severity of thrombosis recorded at an examination. The code 0 denotes absence of thrombosis; the non-zero codes denote progressively more severe thrombosis.",
+    "scope": "Selecting patients by thrombosis severity, and the complement question of patients who do not have thrombosis.",
+    "aliases": [
+      "Thrombosis",
+      "thrombosis",
+      "severe degree of thrombosis",
+      "most serious thrombosis",
+      "does not have thrombosis"
+    ],
+    "evidence": [
+      "ev_thrombosis_domain"
+    ]
+  },
+  {
+    "id": "term_symptom",
+    "name": "Observed symptom",
+    "type": "concept",
+    "definition": "Free-text description of the symptoms observed at an examination; recorded only for examinations at which symptoms were noted.",
+    "scope": "Retrieving the symptoms of a selected examination.",
+    "aliases": [
+      "Symptoms",
+      "symptoms",
+      "symptom"
+    ],
+    "evidence": [
+      "ev_symptom_content"
+    ]
+  },
+  {
+    "id": "term_laboratory_record",
+    "name": "Laboratory test record",
+    "type": "entity",
+    "definition": "One laboratory panel of a patient on a given test date, holding the biochemical, haematological, immunological and coagulation measurements collected together on that date.",
+    "scope": "Any analysis at the grain of one laboratory panel, and counting of laboratory examinations per patient.",
+    "aliases": [
+      "Laboratory",
+      "laboratory examination",
+      "lab test",
+      "lab result"
+    ],
+    "evidence": [
+      "ev_lab_grain"
+    ]
+  },
+  {
+    "id": "term_lab_test_date",
+    "name": "Laboratory test date",
+    "type": "dimension",
+    "definition": "Calendar date on which a laboratory panel was performed; a patient may have many panels on different dates.",
+    "scope": "Selecting laboratory measurements by date, month or year, and ordering repeated measurements of one patient in time.",
+    "aliases": [
+      "Laboratory.Date",
+      "lab date",
+      "test date"
+    ],
+    "evidence": [
+      "ev_time_coverage",
+      "ev_lab_grain"
+    ]
+  },
+  {
+    "id": "term_uric_acid",
+    "name": "Uric acid",
+    "type": "metric",
+    "definition": "Serum uric acid concentration measured in a laboratory panel. Its normal band is sex-dependent.",
+    "scope": "Questions that ask whether uric acid is within a normal range or is abnormal, and counts of patients by uric acid status.",
+    "aliases": [
+      "uric acid",
+      "UA",
+      "serum uric acid"
+    ],
+    "evidence": [
+      "ev_ua_thresholds"
+    ]
+  },
+  {
+    "id": "term_hematocrit",
+    "name": "Hematocrit",
+    "type": "metric",
+    "definition": "Hematocrit level measured in a laboratory panel; values above the normal band indicate an elevated hematocrit.",
+    "scope": "Questions about hematocrit exceeding the normal range and counts of such examinations.",
+    "aliases": [
+      "hematocrit",
+      "hematoclit",
+      "HCT"
+    ],
+    "evidence": [
+      "ev_lab_threshold_counts"
+    ]
+  },
+  {
+    "id": "term_red_blood_cell_count",
+    "name": "Red blood cell count",
+    "type": "metric",
+    "definition": "Red blood cell count measured in a laboratory panel; low values indicate a reduced red cell count.",
+    "scope": "Questions about patients with a lower red blood cell count.",
+    "aliases": [
+      "red blood cell",
+      "red blood cells",
+      "RBC"
+    ],
+    "evidence": [
+      "ev_lab_threshold_counts"
+    ]
+  },
+  {
+    "id": "term_lactate_dehydrogenase",
+    "name": "Lactate dehydrogenase",
+    "type": "metric",
+    "definition": "Lactate dehydrogenase enzyme level measured in a laboratory panel; elevated values lie beyond the normal range.",
+    "scope": "Questions about LDH beyond the normal range.",
+    "aliases": [
+      "LDH",
+      "lactate dehydrogenase"
+    ],
+    "evidence": [
+      "ev_lab_threshold_counts"
+    ]
+  },
+  {
+    "id": "term_prothrombin_time",
+    "name": "Prothrombin time",
+    "type": "metric",
+    "definition": "Prothrombin time coagulation measurement in a laboratory panel; prolonged values are abnormal. The measurement is present in only a small fraction of panels.",
+    "scope": "Questions about abnormal prothrombin time.",
+    "aliases": [
+      "prothrombin time",
+      "PT"
+    ],
+    "evidence": [
+      "ev_lab_threshold_counts",
+      "ev_lab_sparsity"
+    ]
+  },
+  {
+    "id": "term_immunoglobulin_a",
+    "name": "Immunoglobulin A",
+    "type": "metric",
+    "definition": "Serum immunoglobulin A concentration measured in a laboratory panel, with a two-sided normal band.",
+    "scope": "Questions about a normal IgA level.",
+    "aliases": [
+      "Ig A",
+      "IGA",
+      "immunoglobulin A",
+      "IgA level"
+    ],
+    "evidence": [
+      "ev_lab_threshold_counts"
+    ]
+  },
+  {
+    "id": "term_total_cholesterol",
+    "name": "Total cholesterol",
+    "type": "metric",
+    "definition": "Total cholesterol concentration measured in a laboratory panel.",
+    "scope": "Questions about the level or the change over time of total cholesterol for a patient.",
+    "aliases": [
+      "total cholesterol",
+      "T-CHO",
+      "cholesterol"
+    ],
+    "evidence": [
+      "ev_cholesterol_series"
+    ]
+  },
+  {
+    "id": "term_anti_sm_antibody",
+    "name": "Anti-SM antibody",
+    "type": "metric",
+    "definition": "Anti-Smith autoantibody result from a laboratory panel, recorded as a text value that mixes qualitative words with numeric codes rather than as a plain negative/positive flag.",
+    "scope": "Questions about a normal or non-positive anti-SM result.",
+    "aliases": [
+      "anti-SM",
+      "SM",
+      "anti-Smith",
+      "normal anti-SM"
+    ],
+    "evidence": [
+      "ev_sm_domain"
+    ]
+  },
+  {
+    "id": "term_anticardiolipin_igm",
+    "name": "Anti-cardiolipin IgM antibody",
+    "type": "metric",
+    "definition": "Anti-cardiolipin IgM antibody concentration measured at a clinical examination, expressed as a numeric concentration on a wide scale.",
+    "scope": "Questions about the anti-cardiolipin antibody concentration status of a patient on an examination date.",
+    "aliases": [
+      "anti-Cardiolipin",
+      "aCL IgM",
+      "aCL",
+      "anticardiolipin antibody"
+    ],
+    "evidence": [
+      "ev_acl_igm_domain"
+    ]
+  },
+  {
+    "id": "term_lab_normal_range",
+    "name": "Normal range of a laboratory measurement",
+    "type": "concept",
+    "definition": "The band of values of a laboratory measurement that is considered clinically normal. No normal-range column exists in the data; the applicable band is measurement-specific and, for uric acid, sex-specific.",
+    "scope": "Interpreting the words normal, abnormal, within a normal range, or beyond the normal range in a question about a laboratory measurement.",
+    "aliases": [
+      "normal range",
+      "within a normal range",
+      "normal level",
+      "abnormal",
+      "beyond normal range",
+      "exceeded the normal range"
+    ],
+    "evidence": [
+      "ev_lab_threshold_counts",
+      "ev_ua_thresholds",
+      "ev_sm_domain"
+    ]
+  },
+  {
+    "id": "term_lab_abnormal_result",
+    "name": "Abnormal laboratory result",
+    "type": "concept",
+    "definition": "A laboratory measurement lying outside the normal band for that measurement and for the sex of the patient, defined as the complement of the normal band.",
+    "scope": "Selecting or counting measurements described as abnormal rather than normal.",
+    "aliases": [
+      "abnormal",
+      "outside normal range",
+      "abnormal result",
+      "abnormal level"
+    ],
+    "evidence": [
+      "ev_lab_threshold_counts",
+      "ev_ua_thresholds"
+    ]
+  },
+  {
+    "id": "term_lab_value_change_rate",
+    "name": "Laboratory value change rate",
+    "type": "metric",
+    "definition": "Relative change of a laboratory measurement of one patient between two dates, defined as the difference of the two measurements divided by the later measurement.",
+    "scope": "Questions asking for the decrease rate or change rate of a measurement between two months or dates.",
+    "aliases": [
+      "decrease rate",
+      "change rate",
+      "percentage change",
+      "rate of change"
+    ],
+    "evidence": [
+      "ev_cholesterol_series"
+    ]
+  }
+]

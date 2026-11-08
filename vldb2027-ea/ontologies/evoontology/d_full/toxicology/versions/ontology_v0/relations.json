@@ -1,0 +1,120 @@
+[
+  {
+    "id": "rel_molecule_atoms",
+    "source": "term_molecule",
+    "relation_type": "composition",
+    "target": "term_atom",
+    "connection_condition": "atom.molecule_id identifies the molecule that owns each atom row; an atom row cannot be interpreted without its molecule.",
+    "description": "A molecule is composed of its atoms; the atom table is the part-of decomposition of the molecule into atomic sites.",
+    "evidence": [
+      "ev_006",
+      "ev_014"
+    ]
+  },
+  {
+    "id": "rel_molecule_bonds",
+    "source": "term_molecule",
+    "relation_type": "composition",
+    "target": "term_bond",
+    "connection_condition": "bond.molecule_id identifies the molecule that owns each bond row; bond rows are recorded per molecule.",
+    "description": "A molecule is composed of its bonds; the bond table is the part-of decomposition of the molecule into chemical bonds.",
+    "evidence": [
+      "ev_006",
+      "ev_014"
+    ]
+  },
+  {
+    "id": "rel_atom_hydrogen",
+    "source": "term_atom",
+    "relation_type": "hierarchy",
+    "target": "term_hydrogen_atom",
+    "connection_condition": "",
+    "description": "A hydrogen atom is a specific kind of atom: the 5518 rows with element 'h' form a subset of the 12333 atom rows.",
+    "evidence": [
+      "ev_003"
+    ]
+  },
+  {
+    "id": "rel_atom_heavy",
+    "source": "term_atom",
+    "relation_type": "hierarchy",
+    "target": "term_heavy_atom",
+    "connection_condition": "",
+    "description": "A heavy atom is a specific kind of atom: the 6815 rows whose element is not 'h' form a subset of the 12333 atom rows and are disjoint from hydrogen atoms.",
+    "evidence": [
+      "ev_015"
+    ]
+  },
+  {
+    "id": "rel_atom_element",
+    "source": "term_atom",
+    "relation_type": "association",
+    "target": "term_chemical_element",
+    "connection_condition": "atom.element carries the element symbol inline; there is no element table and no element identifier to join through.",
+    "description": "Every atom realises exactly one chemical element, but element identity is stored as an inline symbol on the atom row rather than as a referenced dimension record.",
+    "evidence": [
+      "ev_003",
+      "ev_006"
+    ]
+  },
+  {
+    "id": "rel_bond_bond_type",
+    "source": "term_bond",
+    "relation_type": "association",
+    "target": "term_bond_type",
+    "connection_condition": "bond.bond_type carries the bond-order symbol inline on each bond row; no bond-type table or code column exists.",
+    "description": "The bond-type category classifies every bond, but the classification is stored as an inline symbol on the bond rather than as a referenced category record.",
+    "evidence": [
+      "ev_004",
+      "ev_006"
+    ]
+  },
+  {
+    "id": "rel_bond_connectivity",
+    "source": "term_bond",
+    "relation_type": "composition",
+    "target": "term_atom_connectivity",
+    "connection_condition": "connected.bond_id references bond.bond_id, and connected.atom_id / connected.atom_id2 are the two atoms of that bond; each bond_id appears exactly twice in connected.",
+    "description": "Each bond is decomposed into exactly two directed adjacency entries, one per direction; a connectivity entry has no meaning without the bond it came from.",
+    "evidence": [
+      "ev_009",
+      "ev_010"
+    ]
+  },
+  {
+    "id": "rel_connectivity_degree",
+    "source": "term_atom_connectivity",
+    "relation_type": "derivation",
+    "target": "term_atom_degree",
+    "connection_condition": "",
+    "description": "Atom degree is derived from the connectivity relation by counting the distinct bonded neighbours of each atom; no degree column exists in the database.",
+    "evidence": [
+      "ev_009",
+      "ev_011"
+    ]
+  },
+  {
+    "id": "rel_atom_atom_count",
+    "source": "term_atom",
+    "relation_type": "derivation",
+    "target": "term_molecule_atom_count",
+    "connection_condition": "",
+    "description": "Molecule atom count is derived by counting atom rows per molecule; it is not stored as a column.",
+    "evidence": [
+      "ev_013",
+      "ev_014"
+    ]
+  },
+  {
+    "id": "rel_bond_bond_count",
+    "source": "term_bond",
+    "relation_type": "derivation",
+    "target": "term_molecule_bond_count",
+    "connection_condition": "",
+    "description": "Molecule bond count is derived by counting bond rows per molecule; it must be derived from the bond table, since counting connectivity entries would double the value.",
+    "evidence": [
+      "ev_013",
+      "ev_009"
+    ]
+  }
+]

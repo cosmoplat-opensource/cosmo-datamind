@@ -1,0 +1,790 @@
+[
+  {
+    "id": "map_race",
+    "term_id": "term_race",
+    "database_source": "formula_1",
+    "table": "races",
+    "column": "raceId",
+    "semantic_filter": "",
+    "aggregation_semantics": "count of distinct race identifiers",
+    "grain": "one row per Grand Prix event",
+    "validation": "976 rows, 1950-2017, primary key raceId",
+    "evidence_refs": [
+      "ev_schema_inventory",
+      "ev_race_id_semantics"
+    ]
+  },
+  {
+    "id": "map_race_year",
+    "term_id": "term_season_year",
+    "database_source": "formula_1",
+    "table": "races",
+    "column": "year",
+    "semantic_filter": "",
+    "aggregation_semantics": "grouping key for season-level aggregation",
+    "grain": "one value per race",
+    "validation": "range 1950-2017, always equal to the calendar year of races.date",
+    "evidence_refs": [
+      "ev_races_year_vs_date"
+    ]
+  },
+  {
+    "id": "map_race_year_seasons",
+    "term_id": "term_season",
+    "database_source": "formula_1",
+    "table": "seasons",
+    "column": "year",
+    "semantic_filter": "",
+    "aggregation_semantics": "one row per championship year",
+    "grain": "annual",
+    "validation": "68 seasons, 1950-2017, primary key year",
+    "evidence_refs": [
+      "ev_seasons_coverage"
+    ]
+  },
+  {
+    "id": "map_race_round",
+    "term_id": "term_race_round",
+    "database_source": "formula_1",
+    "table": "races",
+    "column": "round",
+    "semantic_filter": "",
+    "aggregation_semantics": "ordinal position of the race inside its season",
+    "grain": "one value per race",
+    "validation": "restarts at 1 for each season",
+    "evidence_refs": [
+      "ev_race_id_semantics"
+    ]
+  },
+  {
+    "id": "map_race_name",
+    "term_id": "term_race_name",
+    "database_source": "formula_1",
+    "table": "races",
+    "column": "name",
+    "semantic_filter": "",
+    "aggregation_semantics": "count of races sharing the same Grand Prix title",
+    "grain": "one title per race",
+    "validation": "42 distinct titles such as 'European Grand Prix' (23 races) and 'Australian Grand Prix' (33 races)",
+    "evidence_refs": [
+      "ev_race_name_reuse",
+      "ev_circuits_country_vs_race_name"
+    ]
+  },
+  {
+    "id": "map_race_date",
+    "term_id": "term_race_date",
+    "database_source": "formula_1",
+    "table": "races",
+    "column": "date",
+    "semantic_filter": "",
+    "aggregation_semantics": "supports year, month and exact-day restriction of races",
+    "grain": "one date per race",
+    "validation": "ISO dates from 1950-05-13 to 2017-11-26, no nulls",
+    "evidence_refs": [
+      "ev_races_year_vs_date"
+    ]
+  },
+  {
+    "id": "map_circuit",
+    "term_id": "term_circuit",
+    "database_source": "formula_1",
+    "table": "circuits",
+    "column": "circuitId",
+    "semantic_filter": "",
+    "aggregation_semantics": "count of distinct circuits",
+    "grain": "one row per venue",
+    "validation": "72 venues",
+    "evidence_refs": [
+      "ev_schema_inventory"
+    ]
+  },
+  {
+    "id": "map_circuit_name",
+    "term_id": "term_circuit_name",
+    "database_source": "formula_1",
+    "table": "circuits",
+    "column": "name",
+    "semantic_filter": "",
+    "aggregation_semantics": "lookup by official venue name",
+    "grain": "one name per circuit",
+    "validation": "e.g. 'Marina Bay Street Circuit', 'Hockenheimring'",
+    "evidence_refs": [
+      "ev_circuit_coordinates"
+    ]
+  },
+  {
+    "id": "map_circuit_ref",
+    "term_id": "term_circuit_reference_name",
+    "database_source": "formula_1",
+    "table": "circuits",
+    "column": "circuitRef",
+    "semantic_filter": "",
+    "aggregation_semantics": "lookup by short reference slug",
+    "grain": "one reference per circuit",
+    "validation": "e.g. 'marina_bay', 'hockenheimring'",
+    "evidence_refs": [
+      "ev_reference_name_columns"
+    ]
+  },
+  {
+    "id": "map_circuit_location",
+    "term_id": "term_circuit_location",
+    "database_source": "formula_1",
+    "table": "circuits",
+    "column": "location",
+    "semantic_filter": "",
+    "aggregation_semantics": "locality grouping of circuits",
+    "grain": "one locality per circuit",
+    "validation": "e.g. 'Hockenheim', 'Marina Bay', 'Adelaide'",
+    "evidence_refs": [
+      "ev_circuit_coordinates"
+    ]
+  },
+  {
+    "id": "map_circuit_country",
+    "term_id": "term_circuit_country",
+    "database_source": "formula_1",
+    "table": "circuits",
+    "column": "country",
+    "semantic_filter": "",
+    "aggregation_semantics": "count of circuits or races per host country",
+    "grain": "one country per circuit",
+    "validation": "32 distinct countries, e.g. Germany has 3 circuits",
+    "evidence_refs": [
+      "ev_circuits_country_vs_race_name"
+    ]
+  },
+  {
+    "id": "map_circuit_lat",
+    "term_id": "term_circuit_coordinates",
+    "database_source": "formula_1",
+    "table": "circuits",
+    "column": "lat",
+    "semantic_filter": "",
+    "aggregation_semantics": "latitude component of the venue position",
+    "grain": "one value per circuit",
+    "validation": "numeric; Germany: lat 49.3278, 50.3356, 52.4806",
+    "evidence_refs": [
+      "ev_circuit_coordinates"
+    ]
+  },
+  {
+    "id": "map_circuit_lng",
+    "term_id": "term_circuit_coordinates",
+    "database_source": "formula_1",
+    "table": "circuits",
+    "column": "lng",
+    "semantic_filter": "",
+    "aggregation_semantics": "longitude component of the venue position",
+    "grain": "one value per circuit",
+    "validation": "numeric; Germany: lng 8.56583, 6.9475, 13.2514",
+    "evidence_refs": [
+      "ev_circuit_coordinates"
+    ]
+  },
+  {
+    "id": "map_driver",
+    "term_id": "term_driver",
+    "database_source": "formula_1",
+    "table": "drivers",
+    "column": "driverId",
+    "semantic_filter": "",
+    "aggregation_semantics": "count of distinct drivers",
+    "grain": "one row per driver",
+    "validation": "840 drivers",
+    "evidence_refs": [
+      "ev_schema_inventory"
+    ]
+  },
+  {
+    "id": "map_driver_forename",
+    "term_id": "term_driver_full_name",
+    "database_source": "formula_1",
+    "table": "drivers",
+    "column": "forename",
+    "semantic_filter": "",
+    "aggregation_semantics": "given-name component of the driver full name",
+    "grain": "one value per driver",
+    "validation": "non-null for all 840 drivers",
+    "evidence_refs": [
+      "ev_reference_name_columns"
+    ]
+  },
+  {
+    "id": "map_driver_surname",
+    "term_id": "term_driver_full_name",
+    "database_source": "formula_1",
+    "table": "drivers",
+    "column": "surname",
+    "semantic_filter": "",
+    "aggregation_semantics": "family-name component of the driver full name",
+    "grain": "one value per driver",
+    "validation": "non-null for all 840 drivers",
+    "evidence_refs": [
+      "ev_reference_name_columns"
+    ]
+  },
+  {
+    "id": "map_driver_ref",
+    "term_id": "term_driver_reference_name",
+    "database_source": "formula_1",
+    "table": "drivers",
+    "column": "driverRef",
+    "semantic_filter": "",
+    "aggregation_semantics": "lookup by short reference slug",
+    "grain": "one reference per driver",
+    "validation": "e.g. 'hamilton', 'max_verstappen', 'alonso'",
+    "evidence_refs": [
+      "ev_reference_name_columns"
+    ]
+  },
+  {
+    "id": "map_driver_code",
+    "term_id": "term_driver_code",
+    "database_source": "formula_1",
+    "table": "drivers",
+    "column": "code",
+    "semantic_filter": "only defined for drivers who carry a modern three-letter code",
+    "aggregation_semantics": "lookup by abbreviated three-letter code",
+    "grain": "one code per driver",
+    "validation": "757 of 840 drivers have no code; 58 of 60 drivers born from 1980 onwards do have one",
+    "evidence_refs": [
+      "ev_driver_code_era"
+    ]
+  },
+  {
+    "id": "map_driver_dob",
+    "term_id": "term_driver_birth_date",
+    "database_source": "formula_1",
+    "table": "drivers",
+    "column": "dob",
+    "semantic_filter": "",
+    "aggregation_semantics": "ordering key for oldest and youngest driver selection",
+    "grain": "one birth date per driver",
+    "validation": "ISO dates from 1896-12-28 to 1998-10-29, one null",
+    "evidence_refs": [
+      "ev_dob_range"
+    ]
+  },
+  {
+    "id": "map_driver_nationality",
+    "term_id": "term_driver_nationality",
+    "database_source": "formula_1",
+    "table": "drivers",
+    "column": "nationality",
+    "semantic_filter": "",
+    "aggregation_semantics": "count of drivers per nationality",
+    "grain": "one nationality per driver",
+    "validation": "adjectives such as 'British' (162), 'Japanese' (19), 'German' (49), 'French' (72), 'Dutch' (17)",
+    "evidence_refs": [
+      "ev_drivers_nationality_vocabulary"
+    ]
+  },
+  {
+    "id": "map_constructor",
+    "term_id": "term_constructor",
+    "database_source": "formula_1",
+    "table": "constructors",
+    "column": "constructorId",
+    "semantic_filter": "",
+    "aggregation_semantics": "count of distinct constructors",
+    "grain": "one row per constructor",
+    "validation": "208 constructors",
+    "evidence_refs": [
+      "ev_schema_inventory"
+    ]
+  },
+  {
+    "id": "map_constructor_ref",
+    "term_id": "term_constructor_reference_name",
+    "database_source": "formula_1",
+    "table": "constructors",
+    "column": "constructorRef",
+    "semantic_filter": "",
+    "aggregation_semantics": "lookup by short reference slug",
+    "grain": "one reference per constructor",
+    "validation": "e.g. 'toyota', 'super_aguri', 'ferrari'",
+    "evidence_refs": [
+      "ev_reference_name_columns"
+    ]
+  },
+  {
+    "id": "map_constructor_nationality",
+    "term_id": "term_constructor_nationality",
+    "database_source": "formula_1",
+    "table": "constructors",
+    "column": "nationality",
+    "semantic_filter": "",
+    "aggregation_semantics": "count of constructors per nationality",
+    "grain": "one nationality per constructor",
+    "validation": "5 Japanese constructors: Toyota, Super Aguri, Honda, Kojima, Maki",
+    "evidence_refs": [
+      "ev_constructors_nationality_japanese"
+    ]
+  },
+  {
+    "id": "map_race_result",
+    "term_id": "term_race_result",
+    "database_source": "formula_1",
+    "table": "results",
+    "column": "resultId",
+    "semantic_filter": "",
+    "aggregation_semantics": "count of result entries",
+    "grain": "one driver with one constructor in one race",
+    "validation": "23657 rows; 89 race/driver pairs are duplicated because of shared drives",
+    "evidence_refs": [
+      "ev_duplicate_driver_race"
+    ]
+  },
+  {
+    "id": "map_result_points",
+    "term_id": "term_points",
+    "database_source": "formula_1",
+    "table": "results",
+    "column": "points",
+    "semantic_filter": "",
+    "aggregation_semantics": "sum of points scored by the selected entries",
+    "grain": "points for one driver at one race",
+    "validation": "fractional values present (0.5, 1.5, 1.33, 3.14)",
+    "evidence_refs": [
+      "ev_points_fractional"
+    ]
+  },
+  {
+    "id": "map_constructor_results_points",
+    "term_id": "term_points",
+    "database_source": "formula_1",
+    "table": "constructorResults",
+    "column": "points",
+    "semantic_filter": "",
+    "aggregation_semantics": "sum of points over the selected constructor race entries",
+    "grain": "points for one constructor at one race",
+    "validation": "6458 of 11082 entries hold zero points",
+    "evidence_refs": [
+      "ev_constructorresults_grain"
+    ]
+  },
+  {
+    "id": "map_standing_points_driver",
+    "term_id": "term_standing_points",
+    "database_source": "formula_1",
+    "table": "driverStandings",
+    "column": "points",
+    "semantic_filter": "",
+    "aggregation_semantics": "cumulative total; take the row of the latest race of the season for a season total",
+    "grain": "cumulative after one race for one driver",
+    "validation": "2009 final leader Jenson Button with 95.0 points",
+    "evidence_refs": [
+      "ev_standings_cumulative"
+    ]
+  },
+  {
+    "id": "map_standing_points_constructor",
+    "term_id": "term_standing_points",
+    "database_source": "formula_1",
+    "table": "constructorStandings",
+    "column": "points",
+    "semantic_filter": "",
+    "aggregation_semantics": "cumulative total; take the row of the latest race of the season for a season total",
+    "grain": "cumulative after one race for one constructor",
+    "validation": "11836 rows",
+    "evidence_refs": [
+      "ev_standings_cumulative"
+    ]
+  },
+  {
+    "id": "map_standing_position",
+    "term_id": "term_championship_position",
+    "database_source": "formula_1",
+    "table": "driverStandings",
+    "column": "position",
+    "semantic_filter": "",
+    "aggregation_semantics": "rank of the cumulative points total",
+    "grain": "one position per driver per race",
+    "validation": "position 1 at the last round of 2009 is Jenson Button",
+    "evidence_refs": [
+      "ev_standings_cumulative"
+    ]
+  },
+  {
+    "id": "map_standing_wins_driver",
+    "term_id": "term_wins",
+    "database_source": "formula_1",
+    "table": "driverStandings",
+    "column": "wins",
+    "semantic_filter": "",
+    "aggregation_semantics": "cumulative count of wins; the maximum over a driver is that driver's total wins",
+    "grain": "cumulative wins after one race for one driver",
+    "validation": "maximum 13, held by Michael Schumacher and Sebastian Vettel",
+    "evidence_refs": [
+      "ev_wins_verification"
+    ]
+  },
+  {
+    "id": "map_result_position",
+    "term_id": "term_finish_position",
+    "database_source": "formula_1",
+    "table": "results",
+    "column": "positionText",
+    "semantic_filter": "",
+    "aggregation_semantics": "text classification of the entry: a number when classified, 'R' when retired, 'F' when the driver did not qualify or start",
+    "grain": "one value per result entry",
+    "validation": "'R' 8495 rows, 'F' 1368 rows",
+    "evidence_refs": [
+      "ev_positionText_semantics"
+    ]
+  },
+  {
+    "id": "map_result_position_num",
+    "term_id": "term_finish_position",
+    "database_source": "formula_1",
+    "table": "results",
+    "column": "position",
+    "semantic_filter": "only classified entries have a numeric position",
+    "aggregation_semantics": "numeric finishing position, null when the entry was not classified",
+    "grain": "one value per result entry",
+    "validation": "null for 10528 of 23657 entries",
+    "evidence_refs": [
+      "ev_positionText_semantics"
+    ]
+  },
+  {
+    "id": "map_result_position_order",
+    "term_id": "term_classification_order",
+    "database_source": "formula_1",
+    "table": "results",
+    "column": "positionOrder",
+    "semantic_filter": "",
+    "aggregation_semantics": "ordering key; the smallest value is the winner of the race",
+    "grain": "one value per result entry",
+    "validation": "never null, 973 entries with value 1",
+    "evidence_refs": [
+      "ev_positionText_semantics"
+    ]
+  },
+  {
+    "id": "map_result_grid",
+    "term_id": "term_grid_position",
+    "database_source": "formula_1",
+    "table": "results",
+    "column": "grid",
+    "semantic_filter": "the value 0 marks a pit-lane start rather than a numbered grid slot",
+    "aggregation_semantics": "starting slot of the entry",
+    "grain": "one value per result entry",
+    "validation": "1565 entries with grid 0",
+    "evidence_refs": [
+      "ev_grid_zero"
+    ]
+  },
+  {
+    "id": "map_result_laps",
+    "term_id": "term_laps_completed",
+    "database_source": "formula_1",
+    "table": "results",
+    "column": "laps",
+    "semantic_filter": "",
+    "aggregation_semantics": "count or sum of laps completed",
+    "grain": "one value per result entry",
+    "validation": "range 0-200, average about 45; 2451 entries with 0 laps",
+    "evidence_refs": [
+      "ev_laps_stats"
+    ]
+  },
+  {
+    "id": "map_result_time",
+    "term_id": "term_race_finish_time",
+    "database_source": "formula_1",
+    "table": "results",
+    "column": "time",
+    "semantic_filter": "a value is present only for classified finishers",
+    "aggregation_semantics": "display form of the finish time; an absolute duration for the race winner and a '+gap' offset for the remaining classified finishers",
+    "grain": "one value per result entry",
+    "validation": "970 entries shaped as duration, 4989 as '+gap' offsets, 2 shortened durations, 17696 null",
+    "evidence_refs": [
+      "ev_results_time_formats",
+      "ev_results_time_winner_only_two_colons"
+    ]
+  },
+  {
+    "id": "map_result_milliseconds",
+    "term_id": "term_race_finish_time",
+    "database_source": "formula_1",
+    "table": "results",
+    "column": "milliseconds",
+    "semantic_filter": "a value is present only for classified finishers",
+    "aggregation_semantics": "numeric finish time measured from the race start; subtracting the race winner's value yields the gap in milliseconds",
+    "grain": "one value per result entry",
+    "validation": "race 1: winner 5655784, second 5656591, difference 807 matches the displayed '+0.807'",
+    "evidence_refs": [
+      "ev_results_milliseconds_absolute"
+    ]
+  },
+  {
+    "id": "map_result_status",
+    "term_id": "term_race_status",
+    "database_source": "formula_1",
+    "table": "status",
+    "column": "status",
+    "semantic_filter": "",
+    "aggregation_semantics": "count of entries per outcome category",
+    "grain": "one status per result entry",
+    "validation": "134 statuses, statusId 1 is 'Finished'",
+    "evidence_refs": [
+      "ev_status_values"
+    ]
+  },
+  {
+    "id": "map_finisher_status",
+    "term_id": "term_finisher_status",
+    "database_source": "formula_1",
+    "table": "status",
+    "column": "status",
+    "semantic_filter": "restricted to the status text 'Finished' (statusId = 1)",
+    "aggregation_semantics": "count of classified finishers",
+    "grain": "one status per result entry",
+    "validation": "statusId 1 is the only status meaning the driver finished the race",
+    "evidence_refs": [
+      "ev_status_values"
+    ]
+  },
+  {
+    "id": "map_result_rank",
+    "term_id": "term_fastest_lap_rank",
+    "database_source": "formula_1",
+    "table": "results",
+    "column": "rank",
+    "semantic_filter": "only entries with a recorded fastest lap have a rank",
+    "aggregation_semantics": "ordering key; rank 1 denotes the fastest lap of the race",
+    "grain": "one value per result entry",
+    "validation": "18246 nulls, one rank 1 per race among 256 races with lap data",
+    "evidence_refs": [
+      "ev_rank_fastestlap_semantics"
+    ]
+  },
+  {
+    "id": "map_result_fastestlap_number",
+    "term_id": "term_fastest_lap_lap_number",
+    "database_source": "formula_1",
+    "table": "results",
+    "column": "fastestLap",
+    "semantic_filter": "only entries with a recorded fastest lap have a value",
+    "aggregation_semantics": "the lap index on which the entry's best lap was set",
+    "grain": "one value per result entry",
+    "validation": "race 2 winner set it on lap 18, matching fastestLapTime '1:36.641'",
+    "evidence_refs": [
+      "ev_rank_fastestlap_semantics"
+    ]
+  },
+  {
+    "id": "map_result_fastestlaptime",
+    "term_id": "term_fastest_lap_time",
+    "database_source": "formula_1",
+    "table": "results",
+    "column": "fastestLapTime",
+    "semantic_filter": "only entries with a recorded fastest lap have a value",
+    "aggregation_semantics": "precomputed best lap of the entry in that race",
+    "grain": "one value per result entry",
+    "validation": "5268 non-null values in 'minutes:seconds.milliseconds' form",
+    "evidence_refs": [
+      "ev_rank_fastestlap_semantics"
+    ]
+  },
+  {
+    "id": "map_result_fastestlapspeed",
+    "term_id": "term_fastest_lap_speed",
+    "database_source": "formula_1",
+    "table": "results",
+    "column": "fastestLapSpeed",
+    "semantic_filter": "only entries with a recorded fastest lap have a value",
+    "aggregation_semantics": "average speed on the best lap, in kilometres per hour",
+    "grain": "one value per result entry",
+    "validation": "race 2 winner 206.483",
+    "evidence_refs": [
+      "ev_rank_fastestlap_semantics"
+    ]
+  },
+  {
+    "id": "map_laptime_ms",
+    "term_id": "term_lap_time",
+    "database_source": "formula_1",
+    "table": "lapTimes",
+    "column": "milliseconds",
+    "semantic_filter": "excludes the anomalous records where the stored value is a total race duration",
+    "aggregation_semantics": "average, minimum or threshold comparison over individual laps",
+    "grain": "one lap of one driver in one race",
+    "validation": "420326 of 420369 rows are individual lap durations of the form 'M:SS.mmm'",
+    "evidence_refs": [
+      "ev_laptimes_time_ms",
+      "ev_laptimes_outlier"
+    ]
+  },
+  {
+    "id": "map_laptime_time",
+    "term_id": "term_lap_time",
+    "database_source": "formula_1",
+    "table": "lapTimes",
+    "column": "time",
+    "semantic_filter": "",
+    "aggregation_semantics": "display form of the lap duration in 'minutes:seconds.milliseconds'",
+    "grain": "one lap of one driver in one race",
+    "validation": "'1:52.965' corresponds to 112965 milliseconds",
+    "evidence_refs": [
+      "ev_laptimes_time_ms"
+    ]
+  },
+  {
+    "id": "map_laptime_lap",
+    "term_id": "term_lap_time_record",
+    "database_source": "formula_1",
+    "table": "lapTimes",
+    "column": "lap",
+    "semantic_filter": "",
+    "aggregation_semantics": "lap ordinal within a race, part of the record key with race and driver",
+    "grain": "one lap ordinal per record",
+    "validation": "primary key (raceId, driverId, lap)",
+    "evidence_refs": [
+      "ev_schema_inventory"
+    ]
+  },
+  {
+    "id": "map_qualifying_position",
+    "term_id": "term_qualifying_position",
+    "database_source": "formula_1",
+    "table": "qualifying",
+    "column": "position",
+    "semantic_filter": "",
+    "aggregation_semantics": "qualifying classification rank within the race",
+    "grain": "one row per driver per race",
+    "validation": "positions 1 to 339, one entry per position per race",
+    "evidence_refs": [
+      "ev_qualifying_position"
+    ]
+  },
+  {
+    "id": "map_qualifying_q1",
+    "term_id": "term_qualifying_lap_time",
+    "database_source": "formula_1",
+    "table": "qualifying",
+    "column": "q1",
+    "semantic_filter": "",
+    "aggregation_semantics": "best lap of the first qualifying segment",
+    "grain": "one row per driver per race",
+    "validation": "7280 of 7397 rows populated with 'M:SS.mmm' times",
+    "evidence_refs": [
+      "ev_qualifying_time_format"
+    ]
+  },
+  {
+    "id": "map_qualifying_q2",
+    "term_id": "term_qualifying_lap_time",
+    "database_source": "formula_1",
+    "table": "qualifying",
+    "column": "q2",
+    "semantic_filter": "empty when the driver did not reach the second segment",
+    "aggregation_semantics": "best lap of the second qualifying segment",
+    "grain": "one row per driver per race",
+    "validation": "'M:SS.mmm' times",
+    "evidence_refs": [
+      "ev_qualifying_time_format"
+    ]
+  },
+  {
+    "id": "map_qualifying_q3",
+    "term_id": "term_qualifying_lap_time",
+    "database_source": "formula_1",
+    "table": "qualifying",
+    "column": "q3",
+    "semantic_filter": "empty when the driver did not reach the final qualifying segment or when the session format had no third segment",
+    "aggregation_semantics": "best lap of the final qualifying segment; the minimum value is the pole lap of the session",
+    "grain": "one row per driver per race",
+    "validation": "2118 populated and 5279 empty of 7397 rows",
+    "evidence_refs": [
+      "ev_qualifying_time_format"
+    ]
+  },
+  {
+    "id": "map_constructor_results_constructor",
+    "term_id": "term_constructor_race_result",
+    "database_source": "formula_1",
+    "table": "constructorResults",
+    "column": "constructorId",
+    "semantic_filter": "",
+    "aggregation_semantics": "count of races entered by a constructor",
+    "grain": "one row per constructor per race",
+    "validation": "Kojima has 2 rows, Maki has 8 rows",
+    "evidence_refs": [
+      "ev_constructorresults_grain"
+    ]
+  },
+  {
+    "id": "map_driver_standings",
+    "term_id": "term_driver_standing",
+    "database_source": "formula_1",
+    "table": "driverStandings",
+    "column": "driverStandingsId",
+    "semantic_filter": "",
+    "aggregation_semantics": "cumulative standing snapshot after one race",
+    "grain": "one row per driver per race",
+    "validation": "31578 rows, no duplicate race/driver pair",
+    "evidence_refs": [
+      "ev_standings_cumulative"
+    ]
+  },
+  {
+    "id": "map_constructor_standings",
+    "term_id": "term_constructor_standing",
+    "database_source": "formula_1",
+    "table": "constructorStandings",
+    "column": "constructorStandingsId",
+    "semantic_filter": "",
+    "aggregation_semantics": "cumulative standing snapshot after one race",
+    "grain": "one row per constructor per race",
+    "validation": "11836 rows",
+    "evidence_refs": [
+      "ev_standings_cumulative"
+    ]
+  },
+  {
+    "id": "map_race_url",
+    "term_id": "term_reference_url",
+    "database_source": "formula_1",
+    "table": "races",
+    "column": "url",
+    "semantic_filter": "",
+    "aggregation_semantics": "direct reference link",
+    "grain": "one link per race",
+    "validation": "e.g. http://en.wikipedia.org/wiki/2009_Australian_Grand_Prix",
+    "evidence_refs": [
+      "ev_urls"
+    ]
+  },
+  {
+    "id": "map_constructor_url",
+    "term_id": "term_reference_url",
+    "database_source": "formula_1",
+    "table": "constructors",
+    "column": "url",
+    "semantic_filter": "",
+    "aggregation_semantics": "direct reference link",
+    "grain": "one link per constructor",
+    "validation": "url is unique per constructor",
+    "evidence_refs": [
+      "ev_urls"
+    ]
+  },
+  {
+    "id": "map_circuit_url",
+    "term_id": "term_reference_url",
+    "database_source": "formula_1",
+    "table": "circuits",
+    "column": "url",
+    "semantic_filter": "",
+    "aggregation_semantics": "direct reference link",
+    "grain": "one link per circuit",
+    "validation": "e.g. http://en.wikipedia.org/wiki/Marina_Bay_Street_Circuit",
+    "evidence_refs": [
+      "ev_urls"
+    ]
+  }
+]

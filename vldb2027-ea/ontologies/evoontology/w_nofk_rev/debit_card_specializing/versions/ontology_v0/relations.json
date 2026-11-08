@@ -1,0 +1,214 @@
+[
+  {
+    "id": "rel_transaction_customer",
+    "source": "transaction",
+    "relation_type": "composition",
+    "target": "customer",
+    "connection_condition": "transactions_1k.CustomerID corresponds to customers.CustomerID; every transaction line resolves to exactly one customer and no transaction line lacks a customer",
+    "description": "A transaction is a component of a customer's purchase activity; a transaction line cannot exist without an owning customer.",
+    "evidence": [
+      "e_transaction_join_integrity"
+    ]
+  },
+  {
+    "id": "rel_transaction_gas_station",
+    "source": "transaction",
+    "relation_type": "composition",
+    "target": "gas_station",
+    "connection_condition": "transactions_1k.GasStationID corresponds to gasstations.GasStationID",
+    "description": "A transaction is a component of the activity of the gas station where it took place; the station determines the transaction's country.",
+    "evidence": [
+      "e_transaction_join_integrity"
+    ]
+  },
+  {
+    "id": "rel_transaction_product",
+    "source": "transaction",
+    "relation_type": "composition",
+    "target": "product",
+    "connection_condition": "transactions_1k.ProductID corresponds to products.ProductID",
+    "description": "A transaction line records the purchase of a component product from the catalogue.",
+    "evidence": [
+      "e_transaction_join_integrity"
+    ]
+  },
+  {
+    "id": "rel_product_description",
+    "source": "product",
+    "relation_type": "equivalence",
+    "target": "product_description",
+    "connection_condition": "products.ProductID and products.Description are two representations of the same product record",
+    "description": "A product and its description denote the same catalogue entry; analytical needs phrased with product names must be resolved through the description column because names are not unique.",
+    "evidence": [
+      "e_products"
+    ]
+  },
+  {
+    "id": "rel_gas_station_chain",
+    "source": "gas_station",
+    "relation_type": "composition",
+    "target": "gas_station_chain",
+    "connection_condition": "gasstations.ChainID groups gas station records",
+    "description": "A station is a component of a chain; every station carries a chain identifier, while the chain has no independent table.",
+    "evidence": [
+      "e_gasstation_chain"
+    ]
+  },
+  {
+    "id": "rel_gas_station_country",
+    "source": "gas_station",
+    "relation_type": "association",
+    "target": "gas_station_country",
+    "connection_condition": "",
+    "description": "A station is located in a country, recorded as a plain text attribute on the station rather than a reference to a country table.",
+    "evidence": [
+      "e_gasstation_country_values"
+    ]
+  },
+  {
+    "id": "rel_gas_station_segment",
+    "source": "gas_station",
+    "relation_type": "association",
+    "target": "gas_station_segment",
+    "connection_condition": "",
+    "description": "A station carries a market segment attribute taken from the station-specific segment value domain.",
+    "evidence": [
+      "e_gasstation_segment_values"
+    ]
+  },
+  {
+    "id": "rel_customer_segment",
+    "source": "customer",
+    "relation_type": "association",
+    "target": "customer_segment",
+    "connection_condition": "",
+    "description": "A customer is classified into a business segment recorded as a plain text attribute on the customer.",
+    "evidence": [
+      "e_customer_segment_values"
+    ]
+  },
+  {
+    "id": "rel_customer_currency",
+    "source": "customer",
+    "relation_type": "association",
+    "target": "customer_currency",
+    "connection_condition": "",
+    "description": "A customer settles payments in one currency recorded as a plain text attribute on the customer.",
+    "evidence": [
+      "e_customer_currency_values"
+    ]
+  },
+  {
+    "id": "rel_sme_segment",
+    "source": "sme_customer",
+    "relation_type": "hierarchy",
+    "target": "customer_segment",
+    "connection_condition": "The SME subset is the set of customers whose customer_segment value equals 'SME', a subset of the three customer segment values",
+    "description": "SME customers are an instance-level subset of the customer segment dimension; the SME value domain is contained in the customer segment value domain.",
+    "evidence": [
+      "e_customer_segment_values"
+    ]
+  },
+  {
+    "id": "rel_gas_consumption_customer",
+    "source": "gas_consumption",
+    "relation_type": "composition",
+    "target": "customer",
+    "connection_condition": "yearmonth.CustomerID corresponds to customers.CustomerID; every consumption record resolves to exactly one customer",
+    "description": "A monthly consumption record is a component of a customer's consumption history and has no meaning without its customer.",
+    "evidence": [
+      "e_yearmonth_integrity"
+    ]
+  },
+  {
+    "id": "rel_gas_consumption_period",
+    "source": "gas_consumption",
+    "relation_type": "association",
+    "target": "year_month",
+    "connection_condition": "",
+    "description": "Each consumption value is attributed to the year-month period recorded alongside it; period is a plain text attribute of the record rather than a reference to a calendar table.",
+    "evidence": [
+      "e_yearmonth_date_format"
+    ]
+  },
+  {
+    "id": "rel_transaction_date_year_month",
+    "source": "transaction_date",
+    "relation_type": "association",
+    "target": "year_month",
+    "connection_condition": "Both dimensions express calendar time but in different granularity and text format: transaction dates are day-level 'YYYY-MM-DD' values while period values are month-level 'YYYYMM' values",
+    "description": "Transaction dates and consumption periods describe time over the same business calendar but are stored independently and cannot be joined directly.",
+    "evidence": [
+      "e_transaction_date_range",
+      "e_yearmonth_date_format"
+    ]
+  },
+  {
+    "id": "rel_currency_country",
+    "source": "customer_currency",
+    "relation_type": "association",
+    "target": "gas_station_country",
+    "connection_condition": "",
+    "description": "Payment currency and gas station country are parallel geographic groupings over the same business, but no structural connection exists between them: currency is an attribute of customers while country is an attribute of stations, and the customer table carries no country.",
+    "evidence": [
+      "e_customer_currency_values",
+      "e_gasstation_country_values"
+    ]
+  },
+  {
+    "id": "rel_segment_ambiguity",
+    "source": "customer_segment",
+    "relation_type": "association",
+    "target": "gas_station_segment",
+    "connection_condition": "",
+    "description": "Two unrelated segmentation dimensions share the column name Segment in different tables with disjoint value domains; they must be distinguished by their owning table rather than by the name alone.",
+    "evidence": [
+      "e_customer_segment_values",
+      "e_gasstation_segment_values"
+    ]
+  },
+  {
+    "id": "rel_average_price_price",
+    "source": "transaction_price",
+    "relation_type": "derivation",
+    "target": "average_price_per_unit",
+    "connection_condition": "",
+    "description": "Average price per unit is derived using the customer's total transaction price as its numerator.",
+    "evidence": [
+      "e_top_spending_customer"
+    ]
+  },
+  {
+    "id": "rel_average_price_amount",
+    "source": "transaction_amount",
+    "relation_type": "derivation",
+    "target": "average_price_per_unit",
+    "connection_condition": "",
+    "description": "Average price per unit is derived using the customer's total purchased amount as its denominator, so the ratio must be formed from aggregated totals rather than per-line values.",
+    "evidence": [
+      "e_amount_zero"
+    ]
+  },
+  {
+    "id": "rel_customer_total_spending",
+    "source": "transaction_price",
+    "relation_type": "derivation",
+    "target": "customer_total_spending",
+    "connection_condition": "",
+    "description": "Customer total spending is the aggregation of the transaction price measure over all transaction lines belonging to that customer.",
+    "evidence": [
+      "e_top_spending_customer"
+    ]
+  },
+  {
+    "id": "rel_currency_customer_ratio",
+    "source": "customer_currency",
+    "relation_type": "derivation",
+    "target": "currency_customer_ratio",
+    "connection_condition": "",
+    "description": "The currency customer ratio is computed from the counts of customers in each currency group, or equivalently as a difference between those counts when a question asks how many more customers use one currency.",
+    "evidence": [
+      "e_currency_ratio"
+    ]
+  }
+]

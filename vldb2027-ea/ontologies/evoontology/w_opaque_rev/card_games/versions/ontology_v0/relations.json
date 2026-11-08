@@ -1,0 +1,156 @@
+[
+  {
+    "id": "rel_set_composed_of_cards",
+    "source": "t_card_set",
+    "relation_type": "composition",
+    "target": "t_card",
+    "connection_condition": "tab01.fld063 (the set code of a printing) resolves to tab04.fld081 (the set identifier); every card printing belongs to exactly one set.",
+    "description": "A card set is composed of its card printings. A printing cannot exist without the set it was printed in.",
+    "evidence": [
+      "ev_set_code_linkage"
+    ]
+  },
+  {
+    "id": "rel_card_has_translations",
+    "source": "t_card",
+    "relation_type": "composition",
+    "target": "t_card_translation",
+    "connection_condition": "tab02.fld072 references tab01.fld072 (the unique card printing identifier).",
+    "description": "A card printing is composed of its foreign-language records; a translation record is meaningless without the card it translates.",
+    "evidence": [
+      "ev_card_translations"
+    ]
+  },
+  {
+    "id": "rel_set_has_translations",
+    "source": "t_card_set",
+    "relation_type": "composition",
+    "target": "t_set_translation",
+    "connection_condition": "tab05.fld063 references tab04.fld081.",
+    "description": "A card set is composed of its localisation records, one per language.",
+    "evidence": [
+      "ev_set_translations"
+    ]
+  },
+  {
+    "id": "rel_card_has_rulings",
+    "source": "t_card",
+    "relation_type": "composition",
+    "target": "t_ruling",
+    "connection_condition": "tab06.fld072 references tab01.fld072 (the unique card printing identifier).",
+    "description": "A card printing is composed of its rulings; a ruling cannot exist without the card it explains.",
+    "evidence": [
+      "ev_rulings_table"
+    ]
+  },
+  {
+    "id": "rel_card_has_legality",
+    "source": "t_card",
+    "relation_type": "composition",
+    "target": "t_format_legality",
+    "connection_condition": "tab03.fld072 references tab01.fld072 (the unique card printing identifier).",
+    "description": "A card printing is composed of its per-format legality records.",
+    "evidence": [
+      "ev_legality_table"
+    ]
+  },
+  {
+    "id": "rel_legality_record_format",
+    "source": "t_format_legality",
+    "relation_type": "association",
+    "target": "t_format",
+    "connection_condition": "tab03.fld076 identifies the play format of the legality record.",
+    "description": "Each legality record belongs to exactly one play format; the format value is a label rather than a reference to a separate format table.",
+    "evidence": [
+      "ev_legality_table"
+    ]
+  },
+  {
+    "id": "rel_legality_record_status",
+    "source": "t_format_legality",
+    "relation_type": "association",
+    "target": "t_legality_status",
+    "connection_condition": "tab03.fld077 carries the status of the record.",
+    "description": "Each legality record expresses one status: Legal, Banned or Restricted.",
+    "evidence": [
+      "ev_legality_table"
+    ]
+  },
+  {
+    "id": "rel_translation_language",
+    "source": "t_card_translation",
+    "relation_type": "association",
+    "target": "t_language",
+    "connection_condition": "tab02.fld075 names the language of the translation record.",
+    "description": "A card translation record is expressed in exactly one language.",
+    "evidence": [
+      "ev_card_translations"
+    ]
+  },
+  {
+    "id": "rel_set_translation_language",
+    "source": "t_set_translation",
+    "relation_type": "association",
+    "target": "t_language",
+    "connection_condition": "tab05.fld075 names the language of the set localisation record.",
+    "description": "A set translation record is expressed in exactly one language.",
+    "evidence": [
+      "ev_set_translations"
+    ]
+  },
+  {
+    "id": "rel_type_line_composed_types",
+    "source": "t_card_type_line",
+    "relation_type": "composition",
+    "target": "t_card_type",
+    "connection_condition": "tab01.fld071 carries the primary types that also appear inside the full type line in tab01.fld070.",
+    "description": "The full type line is composed of the primary card types together with supertypes and subtypes.",
+    "evidence": [
+      "ev_type_columns"
+    ]
+  },
+  {
+    "id": "rel_type_line_composed_subtypes",
+    "source": "t_card_type_line",
+    "relation_type": "composition",
+    "target": "t_card_subtype",
+    "connection_condition": "tab01.fld065 carries the subtypes that also appear after the dash inside the full type line in tab01.fld070.",
+    "description": "The full type line is composed of the card subtypes as one of its parts.",
+    "evidence": [
+      "ev_type_columns"
+    ]
+  },
+  {
+    "id": "rel_type_line_composed_supertypes",
+    "source": "t_card_type_line",
+    "relation_type": "composition",
+    "target": "t_card_supertype",
+    "connection_condition": "tab01.fld066 carries the supertypes that also appear before the primary types inside the full type line in tab01.fld070.",
+    "description": "The full type line is composed of the card supertypes as one of its parts.",
+    "evidence": [
+      "ev_type_columns"
+    ]
+  },
+  {
+    "id": "rel_original_type_line_of",
+    "source": "t_original_type_line",
+    "relation_type": "association",
+    "target": "t_card_type_line",
+    "connection_condition": "Both columns describe the same cards but use different wording conventions (hyphen versus em dash).",
+    "description": "The original type line and the current type line describe the same aspect of a card in different printed wording; they are related but not interchangeable values.",
+    "evidence": [
+      "ev_type_columns"
+    ]
+  },
+  {
+    "id": "rel_card_share_derived",
+    "source": "t_card_count",
+    "relation_type": "derivation",
+    "target": "t_card_share",
+    "connection_condition": "",
+    "description": "The percentage share is derived from card counts: the count of printings satisfying a condition divided by the count of printings in the reference population, multiplied by 100.",
+    "evidence": [
+      "ev_ratio_population"
+    ]
+  }
+]

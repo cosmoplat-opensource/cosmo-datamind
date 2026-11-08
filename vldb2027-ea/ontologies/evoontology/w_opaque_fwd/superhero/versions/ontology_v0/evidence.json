@@ -1,0 +1,130 @@
+[
+  {
+    "id": "ev_001",
+    "source": "superhero.sqlite (read-only)",
+    "query": ".schema",
+    "result": "Ten tables tab01-tab10. tab01(fld001,fld002), tab02(fld001,fld003), tab03(fld001,fld004), tab04(fld001,fld005), tab05(fld001,fld006), tab06(fld001,fld007), tab07(fld001-fld018) with foreign keys to tab01, tab03, tab04, tab05 and tab06, tab08(fld019,fld020,fld021) referencing tab07 and tab02, tab09(fld001,fld022), tab10(fld019,fld023) referencing tab07 and tab09.",
+    "validation_method": "read-only schema inspection",
+    "timestamp": "2026-11-06T02:20:00+00:00"
+  },
+  {
+    "id": "ev_002",
+    "source": "superhero.sqlite (read-only)",
+    "query": "SELECT COUNT(*) FROM each table",
+    "result": "tab01=4, tab02=6, tab03=35, tab04=3, tab05=25, tab06=61, tab07=750, tab08=3738, tab09=167, tab10=5825.",
+    "validation_method": "row counts on all tables",
+    "timestamp": "2026-11-06T02:20:00+00:00"
+  },
+  {
+    "id": "ev_003",
+    "source": "superhero.sqlite (read-only)",
+    "query": "SELECT fld001, fld003 FROM tab02 ORDER BY fld001",
+    "result": "1 Intelligence, 2 Strength, 3 Speed, 4 Durability, 5 Power, 6 Combat.",
+    "validation_method": "full lookup table read",
+    "timestamp": "2026-11-06T02:20:00+00:00"
+  },
+  {
+    "id": "ev_004",
+    "source": "superhero.sqlite (read-only)",
+    "query": "SELECT fld001, fld006, COUNT(*) FROM tab05 LEFT JOIN tab07 ON tab07.fld015=tab05.fld001 GROUP BY fld001",
+    "result": "25 publisher rows. id 1 has a blank label (17 heroes), 3 Dark Horse Comics, 4 DC Comics (224 heroes), 13 Marvel Comics (387 heroes), plus 21 other labels. No standalone DC or Marvel labels exist.",
+    "validation_method": "lookup read plus hero counts per publisher",
+    "timestamp": "2026-11-06T02:20:00+00:00"
+  },
+  {
+    "id": "ev_005",
+    "source": "superhero.sqlite (read-only)",
+    "query": "SELECT fld001, fld005, COUNT(tab07.fld001) FROM tab04 LEFT JOIN tab07 ON tab07.fld010=tab04.fld001 GROUP BY fld001",
+    "result": "1 Male (519 heroes), 2 Female (203), 3 N/A (28).",
+    "validation_method": "lookup read plus hero counts per gender",
+    "timestamp": "2026-11-06T02:20:00+00:00"
+  },
+  {
+    "id": "ev_006",
+    "source": "superhero.sqlite (read-only)",
+    "query": "SELECT fld001, fld007, COUNT(tab07.fld001) FROM tab06 LEFT JOIN tab07 ON tab07.fld014=tab06.fld001 GROUP BY fld001 ORDER BY 3 DESC",
+    "result": "61 race rows. id 1 dash covers 295 heroes (unrecorded), id 24 Human covers 219, id 42 Mutant covers 63, followed by Kryptonian, God / Eternal and other species.",
+    "validation_method": "lookup read plus hero counts per race",
+    "timestamp": "2026-11-06T02:20:00+00:00"
+  },
+  {
+    "id": "ev_007",
+    "source": "superhero.sqlite (read-only)",
+    "query": "SELECT fld001, fld004 FROM tab03 ORDER BY fld001",
+    "result": "35 colour labels. id 1 No Colour, id 4 Black, id 6 Blond, id 7 Blue, plus 31 more labels such as Amber, Brown, Green and Grey.",
+    "validation_method": "full lookup table read",
+    "timestamp": "2026-11-06T02:20:00+00:00"
+  },
+  {
+    "id": "ev_008",
+    "source": "superhero.sqlite (read-only)",
+    "query": "SELECT COUNT(*) FROM tab09; SELECT COUNT(*), COUNT(DISTINCT fld019) FROM tab10; SELECT COUNT(*) FROM (SELECT fld019,fld023 FROM tab10 GROUP BY 1,2 HAVING COUNT(*)>1); SELECT COUNT(*) FROM tab07 t WHERE NOT EXISTS (SELECT 1 FROM tab10 x WHERE x.fld019=t.fld001)",
+    "result": "tab09 has 167 distinct powers. tab10 has 5825 assignments covering 652 distinct heroes with 0 duplicate hero-power pairs. 98 heroes have no power assignment.",
+    "validation_method": "counts, duplicate check and anti-join",
+    "timestamp": "2026-11-06T02:20:00+00:00"
+  },
+  {
+    "id": "ev_009",
+    "source": "superhero.sqlite (read-only)",
+    "query": "SELECT MIN(fld021), MAX(fld021), COUNT(*) FROM tab08; SELECT fld020, COUNT(*) FROM tab08 GROUP BY fld020; SELECT COUNT(*) FROM tab07 t WHERE NOT EXISTS (SELECT 1 FROM tab08 s WHERE s.fld019=t.fld001)",
+    "result": "Scores range from 5 to 100 with 3738 rows, exactly 623 rows for each of the six attributes. No score is 0. 127 heroes have no score row. Per-attribute minima are 5 except Intelligence (35); maxima 100.",
+    "validation_method": "range, per-attribute counts and anti-join",
+    "timestamp": "2026-11-06T02:20:00+00:00"
+  },
+  {
+    "id": "ev_010",
+    "source": "superhero.sqlite (read-only)",
+    "query": "SELECT COUNT(*) total, SUM(fld018=0) zero_w, SUM(fld018 IS NULL) null_w, MIN(CASE WHEN fld018>0 THEN fld018 END) min_positive FROM tab07",
+    "result": "750 heroes: 172 have weight 0, 64 have NULL, so 236 have no recorded weight. Smallest positive weight 14 kg; largest 90000000 kg for Godzilla.",
+    "validation_method": "null/zero counts and range check",
+    "timestamp": "2026-11-06T02:20:00+00:00"
+  },
+  {
+    "id": "ev_011",
+    "source": "superhero.sqlite (read-only)",
+    "query": "SELECT MIN(fld017), MAX(fld017), SUM(fld017=0), SUM(fld017 IS NULL) FROM tab07",
+    "result": "750 heroes: 155 have height 0, 58 have NULL, so 213 have no recorded height. Range 0 to 30480 cm; extreme values belong to giant characters such as Godzilla (10800), Giganta (6250) and King Kong (3050).",
+    "validation_method": "null/zero counts and range check",
+    "timestamp": "2026-11-06T02:20:00+00:00"
+  },
+  {
+    "id": "ev_012",
+    "source": "superhero.sqlite (read-only)",
+    "query": "SELECT COUNT(*), SUM(fld009 IS NULL), SUM(fld009='-'), SUM(fld009 IS NOT NULL AND fld009<>'-') FROM tab07",
+    "result": "750 heroes: 122 have a NULL full name, 125 have the literal dash, and 503 have a substantive full name. Examples of NULL: Absorbing Man, Ajax. Examples of dash: Abin Sur, Adam Monroe.",
+    "validation_method": "null/placeholder counts and sample inspection",
+    "timestamp": "2026-11-06T02:20:00+00:00"
+  },
+  {
+    "id": "ev_013",
+    "source": "superhero.sqlite (read-only)",
+    "query": "SELECT SUM(fld011=1), SUM(fld012=1), SUM(fld013=1) FROM tab07",
+    "result": "No Colour (tab03 id 1) is used 169 times for eye colour, 246 times for hair colour and 681 times for skin colour, out of 750 heroes.",
+    "validation_method": "counts of the No Colour identifier per appearance column",
+    "timestamp": "2026-11-06T02:20:00+00:00"
+  },
+  {
+    "id": "ev_014",
+    "source": "superhero.sqlite (read-only)",
+    "query": "SELECT COUNT(DISTINCT fld008), COUNT(*) FROM tab07; SELECT fld008, COUNT(*) FROM tab07 GROUP BY fld008 HAVING COUNT(*)>1",
+    "result": "743 distinct names across 750 hero rows. Atlas occurs 4 times; Chameleon, Captain Marvel, Ares and Angel occur twice each.",
+    "validation_method": "distinct count and duplicate grouping",
+    "timestamp": "2026-11-06T02:20:00+00:00"
+  },
+  {
+    "id": "ev_015",
+    "source": "superhero.sqlite (read-only)",
+    "query": "Join tab08 to itself for attributes 3,4,5,6 and compare scores per hero; SELECT fld020, SUM(fld021) FROM tab08 GROUP BY fld020",
+    "result": "For all 623 heroes, the Speed (3), Durability (4), Power (5) and Combat (6) scores are equal. Their sums are all 28500. Intelligence sums to 52540 and Strength to 29430.",
+    "validation_method": "per-hero self-join equality check and per-attribute sums",
+    "timestamp": "2026-11-06T02:20:00+00:00"
+  },
+  {
+    "id": "ev_016",
+    "source": "superhero.sqlite (read-only)",
+    "query": "SELECT SUM(fld015 IS NULL), SUM(fld015=1) FROM tab07",
+    "result": "3 heroes have no publisher (NULL) and 17 heroes reference publisher id 1, whose label is an empty string.",
+    "validation_method": "null and blank-publisher counts",
+    "timestamp": "2026-11-06T02:20:00+00:00"
+  }
+]

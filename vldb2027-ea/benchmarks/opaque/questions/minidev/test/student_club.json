@@ -1,0 +1,221 @@
+{
+ "db_id": "student_club",
+ "questions": [
+  {
+   "question_id": 1350,
+   "db_id": "student_club",
+   "question": "What is the status of the event which bought \"Post Cards, Posters\" on 2019/8/20?",
+   "evidence": "'Post Cards, Posters' is an expense description; on 2019/8/20 refers to fld027 = '2019-8-20'; status of event refers to fld024",
+   "SQL": "SELECT T1.fld024 FROM tab05 AS T1 INNER JOIN tab06 AS T2 ON T1.fld019 = T2.fld030 WHERE T2.fld026 = 'Post Cards, Posters' AND T2.fld027 = '2019-08-20'",
+   "difficulty": "moderate",
+   "SQL_original": "SELECT T1.event_status FROM budget AS T1 INNER JOIN expense AS T2 ON T1.budget_id = T2.link_to_budget WHERE T2.expense_description = 'Post Cards, Posters' AND T2.expense_date = '2019-08-20'"
+  },
+  {
+   "question_id": 1356,
+   "db_id": "student_club",
+   "question": "Which department was the President of the club in?",
+   "evidence": "'President' is a position of Student Club",
+   "SQL": "SELECT T2.fld010 FROM tab08 AS T1 INNER JOIN tab02 AS T2 ON T1.fld042 = T2.fld008 WHERE T1.fld038 = 'President'",
+   "difficulty": "simple",
+   "SQL_original": "SELECT T2.department FROM member AS T1 INNER JOIN major AS T2 ON T1.link_to_major = T2.major_id WHERE T1.position = 'President'"
+  },
+  {
+   "question_id": 1352,
+   "db_id": "student_club",
+   "question": "For all the club members from \"Business\" major, how many of them wear medium size t-shirt?",
+   "evidence": "'Business' is a major name; wear medium size t-shirt refers to fld039 = 'Medium'",
+   "SQL": "SELECT COUNT(T1.fld034) FROM tab08 AS T1 INNER JOIN tab02 AS T2 ON T1.fld042 = T2.fld008 WHERE T2.fld009 = 'Business' AND T1.fld039 = 'Medium'",
+   "difficulty": "moderate",
+   "SQL_original": "SELECT COUNT(T1.member_id) FROM member AS T1 INNER JOIN major AS T2 ON T1.link_to_major = T2.major_id WHERE T2.major_name = 'Business' AND T1.t_shirt_size = 'Medium'"
+  },
+  {
+   "question_id": 1339,
+   "db_id": "student_club",
+   "question": "Calculate the total average cost that Elijah Allen spent in the events on September and October.",
+   "evidence": "Elijah Allen is the full name; full name refers to fld035, fld036; The 5th and 6th string of the fld027 in the expense table can refer to month; events in September and October refers to month(fld027) = 9 OR month(fld027) = 10",
+   "SQL": "SELECT AVG(T2.fld028) FROM tab08 AS T1 INNER JOIN tab06 AS T2 ON T1.fld034 = T2.fld018 WHERE T1.fld036 = 'Allen' AND T1.fld035 = 'Elijah' AND (SUBSTRING(T2.fld027, 6, 2) = '09' OR SUBSTRING(T2.fld027, 6, 2) = '10')",
+   "difficulty": "challenging",
+   "SQL_original": "SELECT AVG(T2.cost) FROM member AS T1 INNER JOIN expense AS T2 ON T1.member_id = T2.link_to_member WHERE T1.last_name = 'Allen' AND T1.first_name = 'Elijah' AND (SUBSTR(T2.expense_date, 6, 2) = '09' OR SUBSTR(T2.expense_date, 6, 2) = '10')"
+  },
+  {
+   "question_id": 1389,
+   "db_id": "student_club",
+   "question": "Which event has the lowest cost?",
+   "evidence": "event refers to fld002; lowest cost means MIN(fld028)",
+   "SQL": "SELECT T1.fld002 FROM tab01 AS T1 INNER JOIN tab05 AS T2 ON T1.fld001 = T2.fld017 INNER JOIN tab06 AS T3 ON T2.fld019 = T3.fld030 ORDER BY T3.fld028 LIMIT 1",
+   "difficulty": "simple",
+   "SQL_original": "SELECT T1.event_name FROM event AS T1 INNER JOIN budget AS T2 ON T1.event_id = T2.link_to_event INNER JOIN expense AS T3 ON T2.budget_id = T3.link_to_budget ORDER BY T3.cost LIMIT 1"
+  },
+  {
+   "question_id": 1334,
+   "db_id": "student_club",
+   "question": "List the full name of the Student_Club members that grew up in Illinois state.",
+   "evidence": "full name of member refers to fld035, fld036",
+   "SQL": "SELECT T1.fld035, T1.fld036 FROM tab08 AS T1 INNER JOIN tab03 AS T2 ON T1.fld041 = T2.fld012 WHERE T2.fld015 = 'Illinois'",
+   "difficulty": "simple",
+   "SQL_original": "SELECT T1.first_name, T1.last_name FROM member AS T1 INNER JOIN zip_code AS T2 ON T1.zip = T2.zip_code WHERE T2.state = 'Illinois'"
+  },
+  {
+   "question_id": 1411,
+   "db_id": "student_club",
+   "question": "State what kind of expenses that Sacha Harrison incurred?",
+   "evidence": "kind of expenses refers to fld026; Sacha Harrison is the full name; full name refers to fld035, fld036;",
+   "SQL": "SELECT T2.fld026 FROM tab08 AS T1 INNER JOIN tab06 AS T2 ON T1.fld034 = T2.fld018 WHERE T1.fld035 = 'Sacha' AND T1.fld036 = 'Harrison'",
+   "difficulty": "simple",
+   "SQL_original": "SELECT T2.expense_description FROM member AS T1 INNER JOIN expense AS T2 ON T1.member_id = T2.link_to_member WHERE T1.first_name = 'Sacha' AND T1.last_name = 'Harrison'"
+  },
+  {
+   "question_id": 1359,
+   "db_id": "student_club",
+   "question": "How many times was the budget in Advertisement for \"Yearly Kickoff\" meeting more than \"October Meeting\"?",
+   "evidence": "tab05 in Advertisement refer to fld020 = 'Advertisement' in the budget table; DIVIDE(SUM(fld023 when fld002 = 'Yearly Kickoff'), SUM(fld023 when fld002 = 'October Meeting'))",
+   "SQL": "SELECT CAST(SUM(CASE WHEN T2.fld002 = 'Yearly Kickoff' THEN T1.fld023 ELSE 0 END) AS REAL) / SUM(CASE WHEN T2.fld002 = 'October Meeting' THEN T1.fld023 ELSE 0 END) FROM tab05 AS T1 INNER JOIN tab01 AS T2 ON T1.fld017 = T2.fld001 WHERE T1.fld020 = 'Advertisement' AND T2.fld004 = 'Meeting'",
+   "difficulty": "challenging",
+   "SQL_original": "SELECT CAST(SUM(CASE WHEN T2.event_name = 'Yearly Kickoff' THEN T1.amount ELSE 0 END) AS REAL) / SUM(CASE WHEN T2.event_name = 'October Meeting' THEN T1.amount ELSE 0 END) FROM budget AS T1 INNER JOIN event AS T2 ON T1.link_to_event = T2.event_id WHERE T1.category = 'Advertisement' AND T2.type = 'Meeting'"
+  },
+  {
+   "question_id": 1404,
+   "db_id": "student_club",
+   "question": "Identify the type of expenses and their total value approved for 'October Meeting' event.",
+   "evidence": "total value refers to SUM(fld028); 'October Meeting' is an event name;",
+   "SQL": "SELECT T1.fld004, SUM(T3.fld028) FROM tab01 AS T1 INNER JOIN tab05 AS T2 ON T1.fld001 = T2.fld017 INNER JOIN tab06 AS T3 ON T2.fld019 = T3.fld030 WHERE T1.fld002 = 'October Meeting'",
+   "difficulty": "moderate",
+   "SQL_original": "SELECT T1.type, SUM(T3.cost) FROM event AS T1 INNER JOIN budget AS T2 ON T1.event_id = T2.link_to_event INNER JOIN expense AS T3 ON T2.budget_id = T3.link_to_budget WHERE T1.event_name = 'October Meeting'"
+  },
+  {
+   "question_id": 1371,
+   "db_id": "student_club",
+   "question": "How many members attended the \"Women's Soccer\" event?",
+   "evidence": "'Women's Soccer' is the event name;",
+   "SQL": "SELECT COUNT(T2.fld018) FROM tab01 AS T1 INNER JOIN tab04 AS T2 ON T1.fld001 = T2.fld017 WHERE T1.fld002 = 'Women''s Soccer'",
+   "difficulty": "simple",
+   "SQL_original": "SELECT COUNT(T2.link_to_member) FROM event AS T1 INNER JOIN attendance AS T2 ON T1.event_id = T2.link_to_event WHERE T1.event_name = 'Women''s Soccer'"
+  },
+  {
+   "question_id": 1378,
+   "db_id": "student_club",
+   "question": "What is the highest amount of budget spend for an event?",
+   "evidence": "highest amount of budget spend refers to MAX(fld021)",
+   "SQL": "SELECT MAX(fld021) FROM tab05",
+   "difficulty": "simple",
+   "SQL_original": "SELECT MAX(spent) FROM budget"
+  },
+  {
+   "question_id": 1457,
+   "db_id": "student_club",
+   "question": "Give the full name and contact number of members who had to spend more than average on each expense.",
+   "evidence": "full name refers to fld035, fld036; contact number refers to phone; had spent more than average on each expense refers to fld028 > AVG(fld028)",
+   "SQL": "SELECT DISTINCT T3.fld035, T3.fld036, T3.fld040 FROM tab06 AS T1 INNER JOIN tab05 AS T2 ON T1.fld030 = T2.fld019 INNER JOIN tab08 AS T3 ON T3.fld034 = T1.fld018 WHERE T1.fld028 > (SELECT AVG(T1.fld028) FROM tab06 AS T1 INNER JOIN tab05 AS T2 ON T1.fld030 = T2.fld019 INNER JOIN tab08 AS T3 ON T3.fld034 = T1.fld018)",
+   "difficulty": "challenging",
+   "SQL_original": "SELECT DISTINCT T3.first_name, T3.last_name, T3.phone FROM expense AS T1 INNER JOIN budget AS T2 ON T1.link_to_budget = T2.budget_id INNER JOIN member AS T3 ON T3.member_id = T1.link_to_member WHERE T1.cost > ( SELECT AVG(T1.cost) FROM expense AS T1 INNER JOIN budget AS T2 ON T1.link_to_budget = T2.budget_id INNER JOIN member AS T3 ON T3.member_id = T1.link_to_member )"
+  },
+  {
+   "question_id": 1376,
+   "db_id": "student_club",
+   "question": "Among all the closed events, which event has the highest spend-to-budget ratio?",
+   "evidence": "closed events refers to fld002 where fld007 = 'Closed'; highest spend-to budget ratio refers to MAX(DIVIDE(fld021, fld023))",
+   "SQL": "SELECT T2.fld002 FROM tab05 AS T1 INNER JOIN tab01 AS T2 ON T1.fld017 = T2.fld001 WHERE T2.fld007 = 'Closed' ORDER BY T1.fld021 / T1.fld023 DESC LIMIT 1",
+   "difficulty": "moderate",
+   "SQL_original": "SELECT T2.event_name FROM budget AS T1 INNER JOIN event AS T2 ON T1.link_to_event = T2.event_id WHERE T2.status = 'Closed' ORDER BY T1.spent / T1.amount DESC LIMIT 1"
+  },
+  {
+   "question_id": 1403,
+   "db_id": "student_club",
+   "question": "Indicate the name of the closed event whose cost has exceeded the budget the most.",
+   "evidence": "closed events refers to fld002 where fld007 = 'Closed'; exceed the budget the most refers to MIN(fld022) where fld022 < 0",
+   "SQL": "SELECT T2.fld002 FROM tab05 AS T1 INNER JOIN tab01 AS T2 ON T2.fld001 = T1.fld017 WHERE T1.fld024 = 'Closed' AND T1.fld022 < 0 ORDER BY T1.fld022 LIMIT 1",
+   "difficulty": "moderate",
+   "SQL_original": "SELECT T2.event_name FROM budget AS T1 INNER JOIN event AS T2 ON T2.event_id = T1.link_to_event WHERE T1.event_status = 'Closed' AND T1.remaining < 0 ORDER BY T1.remaining LIMIT 1"
+  },
+  {
+   "question_id": 1368,
+   "db_id": "student_club",
+   "question": "What does the person with the phone number \"809-555-3360\" major in?",
+   "evidence": "tab02 in refers to fld009",
+   "SQL": "SELECT T2.fld009 FROM tab08 AS T1 INNER JOIN tab02 AS T2 ON T1.fld042 = T2.fld008 WHERE T1.fld040 = '809-555-3360'",
+   "difficulty": "simple",
+   "SQL_original": "SELECT T2.major_name FROM member AS T1 INNER JOIN major AS T2 ON T1.link_to_major = T2.major_id WHERE T1.phone = '809-555-3360'"
+  },
+  {
+   "question_id": 1362,
+   "db_id": "student_club",
+   "question": "How many cities are there in Orange County, Virginia?",
+   "evidence": "Orange fld014 is the county name, Virginia is the state name",
+   "SQL": "SELECT COUNT(fld013) FROM tab03 WHERE fld014 = 'Orange County' AND fld015 = 'Virginia'",
+   "difficulty": "simple",
+   "SQL_original": "SELECT COUNT(city) FROM zip_code WHERE county = 'Orange County' AND state = 'Virginia'"
+  },
+  {
+   "question_id": 1323,
+   "db_id": "student_club",
+   "question": "List all the names of events that had an attendance of over 20 students but were not fundraisers.",
+   "evidence": "name of events refers to fld002; attendance of over 20 students COUNT(fld001) > 20.",
+   "SQL": "SELECT T1.fld002 FROM tab01 AS T1 INNER JOIN tab04 AS T2 ON T1.fld001 = T2.fld017 GROUP BY T1.fld001 HAVING COUNT(T2.fld017) > 20 EXCEPT SELECT T1.fld002 FROM tab01 AS T1 WHERE T1.fld004 = 'Fundraiser'",
+   "difficulty": "moderate",
+   "SQL_original": "SELECT T1.event_name FROM event AS T1 INNER JOIN attendance AS T2 ON T1.event_id = T2.link_to_event GROUP BY T1.event_id HAVING COUNT(T2.link_to_event) > 20 EXCEPT SELECT T1.event_name FROM event AS T1  WHERE T1.type = 'Fundraiser'"
+  },
+  {
+   "question_id": 1361,
+   "db_id": "student_club",
+   "question": "What is the total cost of the pizzas for all the events?",
+   "evidence": "total cost of the pizzas refers to SUM(fld028) where fld026 = 'Pizza'",
+   "SQL": "SELECT SUM(fld028) FROM tab06 WHERE fld026 = 'Pizza'",
+   "difficulty": "simple",
+   "SQL_original": "SELECT SUM(cost) FROM expense WHERE expense_description = 'Pizza'"
+  },
+  {
+   "question_id": 1410,
+   "db_id": "student_club",
+   "question": "List out the full name and total cost that member id \"rec4BLdZHS2Blfp4v\" incurred?",
+   "evidence": "full name refers to fld035, last name",
+   "SQL": "SELECT T1.fld035, T1.fld036, SUM(T2.fld028) FROM tab08 AS T1 INNER JOIN tab06 AS T2 ON T1.fld034 = T2.fld018 WHERE T1.fld034 = 'rec4BLdZHS2Blfp4v'",
+   "difficulty": "simple",
+   "SQL_original": "SELECT T1.first_name, T1.last_name, SUM(T2.cost) FROM member AS T1 INNER JOIN expense AS T2 ON T1.member_id = T2.link_to_member WHERE T1.member_id = 'rec4BLdZHS2Blfp4v'"
+  },
+  {
+   "question_id": 1392,
+   "db_id": "student_club",
+   "question": "Indicate the top source of funds received in September 2019 based on their amount.",
+   "evidence": "top source funds refers to MAX(fld033); September 2019 means fld032 BETWEEN '2019-09-01' and '2019-09-30'",
+   "SQL": "SELECT fld033 FROM tab07 WHERE fld032 BETWEEN '2019-09-01' AND '2019-09-30' ORDER BY fld033 DESC LIMIT 1",
+   "difficulty": "simple",
+   "SQL_original": "SELECT source FROM income WHERE date_received BETWEEN '2019-09-01' and '2019-09-30' ORDER BY source DESC LIMIT 1"
+  },
+  {
+   "question_id": 1387,
+   "db_id": "student_club",
+   "question": "Which student has been entrusted to manage the budget for the Yearly Kickoff?",
+   "evidence": "name of students means the full name; full name refers to fld035, fld036;'Yearly Kickoff' is an event name;",
+   "SQL": "SELECT T4.fld035, T4.fld036 FROM tab01 AS T1 INNER JOIN tab05 AS T2 ON T1.fld001 = T2.fld017 INNER JOIN tab06 AS T3 ON T2.fld019 = T3.fld030 INNER JOIN tab08 AS T4 ON T3.fld018 = T4.fld034 WHERE T1.fld002 = 'Yearly Kickoff'",
+   "difficulty": "moderate",
+   "SQL_original": "SELECT T4.first_name, T4.last_name FROM event AS T1 INNER JOIN budget AS T2 ON T1.event_id = T2.link_to_event INNER JOIN expense AS T3 ON T2.budget_id = T3.link_to_budget INNER JOIN member AS T4 ON T3.link_to_member = T4.member_id WHERE T1.event_name = 'Yearly Kickoff'"
+  },
+  {
+   "question_id": 1317,
+   "db_id": "student_club",
+   "question": "Among the students from the Student_Club who attended the event \"Women's Soccer\", how many of them want a T-shirt that's in medium size?",
+   "evidence": "Women's Soccer is an event name; T-shirt that is in medium size refers to fld039 = 'Medium'",
+   "SQL": "SELECT COUNT(T1.fld001) FROM tab01 AS T1 INNER JOIN tab04 AS T2 ON T1.fld001 = T2.fld017 INNER JOIN tab08 AS T3 ON T2.fld018 = T3.fld034 WHERE T1.fld002 = 'Women''s Soccer' AND T3.fld039 = 'Medium'",
+   "difficulty": "moderate",
+   "SQL_original": "SELECT COUNT(T1.event_id) FROM event AS T1 INNER JOIN attendance AS T2 ON T1.event_id = T2.link_to_event INNER JOIN member AS T3 ON T2.link_to_member = T3.member_id WHERE T1.event_name = 'Women''s Soccer' AND T3.t_shirt_size = 'Medium'"
+  },
+  {
+   "question_id": 1338,
+   "db_id": "student_club",
+   "question": "Was each expense in October Meeting on October 8, 2019 approved?",
+   "evidence": "fld002 = 'October Meeting' where fld003 = '2019-10-08'; fld029 = True means expenses was approved; fld029 = False means expenses was not approved",
+   "SQL": "SELECT T3.fld029 FROM tab01 AS T1 INNER JOIN tab05 AS T2 ON T1.fld001 = T2.fld017 INNER JOIN tab06 AS T3 ON T2.fld019 = T3.fld030 WHERE T1.fld002 = 'October Meeting' AND T1.fld003 LIKE '2019-10-08%'",
+   "difficulty": "moderate",
+   "SQL_original": "SELECT T3.approved FROM event AS T1 INNER JOIN budget AS T2 ON T1.event_id = T2.link_to_event INNER JOIN expense AS T3 ON T2.budget_id = T3.link_to_budget WHERE T1.event_name = 'October Meeting' AND T1.event_date LIKE '2019-10-08%'"
+  },
+  {
+   "question_id": 1394,
+   "db_id": "student_club",
+   "question": "How many members of the Student_Club have major in 'Physics Teaching'?",
+   "evidence": "'Physics Teaching' is the fld009;",
+   "SQL": "SELECT COUNT(T2.fld034) FROM tab02 AS T1 INNER JOIN tab08 AS T2 ON T1.fld008 = T2.fld042 WHERE T1.fld009 = 'Physics Teaching'",
+   "difficulty": "simple",
+   "SQL_original": "SELECT COUNT(T2.member_id) FROM major AS T1 INNER JOIN member AS T2 ON T1.major_id = T2.link_to_major WHERE T1.major_name = 'Physics Teaching'"
+  }
+ ]
+}

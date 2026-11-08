@@ -1,0 +1,346 @@
+[
+  {
+    "id": "ev_metric_catalog_three_tiers",
+    "source": "ind108.sqlite / dim_metric_catalog",
+    "query": "SELECT category, COUNT(*) FROM dim_metric_catalog GROUP BY category",
+    "result": "指标目录含三类：原子指标（category='原子指标' 且 is_base_metric='Y'）、派生指标、复合指标（后两类 is_base_metric='N'）。三类分别由 dim_metric_catalog、dim_derived_metric_config、dim_composite_metric_config 定义。",
+    "validation_method": "对指标目录按 category/is_base_metric 分组计数并抽样核对记录内容",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_metric_catalog_columns",
+    "source": "ind108.sqlite / dim_metric_catalog",
+    "query": "SELECT metric_id, metric_name, category, metric_type, perspective, dws_table, date_column, value_column, unit_code, description FROM dim_metric_catalog ORDER BY category, metric_id",
+    "result": "67 条原子指标记录，每条给出 dws_table/date_column/value_column/unit_code，例如 计划产量→DWS_PRODUCTION_DAILY.planned_quantity(吨)、接单金额→DWS_ORG_PERFORMANCE_DAILY.sales_amount(元)、应收账款余额→DWS_ORG_PERFORMANCE_DAILY.accounts_receivable(元)。",
+    "validation_method": "完整导出指标目录并逐条比对目标表实际存在的列名",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_metric_formula_derived",
+    "source": "ind108.sqlite / dim_derived_metric_config",
+    "query": "SELECT derived_metric_name, atomic_metric_names, calc_method, group_by_columns, formula FROM dim_derived_metric_config",
+    "result": "23 条派生指标，均由单一原子指标加 SUM/AVG/MAX 与一个分组维度构成，例如 累计产量=SUM(实际产量) GROUP BY dim_line_id；日均接单金额=AVG(接单金额) GROUP BY dim_emp_id。",
+    "validation_method": "导出全部派生指标配置并核对分组维度取值域",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_metric_formula_composite",
+    "source": "ind108.sqlite / dim_composite_metric_config",
+    "query": "SELECT composite_metric_name, component_metric_names, formula FROM dim_composite_metric_config",
+    "result": "9 条复合指标及公式，例如 设备可用率=总运行小时/NULLIF(总运行小时+总停机时长,0)*100；预算偏差度=(累计实际支出-累计预算)/NULLIF(累计预算,0)*100；经营利润率=(累计接单金额-总成本)/NULLIF(累计接单金额,0)*100，并注明制造费用已含折旧、未扣期间费用。",
+    "validation_method": "导出全部复合指标公式并核对构成指标可解析到派生指标",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_dws_all_tables",
+    "source": "ind108.sqlite / sqlite_master + dim_metric_catalog",
+    "query": "SELECT DISTINCT dws_table FROM dim_metric_catalog WHERE dws_table IS NOT NULL AND dws_table<>'' ORDER BY 1",
+    "result": "去重得到 15 张 DWS 表：DWS_AFTER_SALES_DAILY、DWS_CASH_DAILY、DWS_EQUIPMENT_DAILY、DWS_FINANCE_DAILY、DWS_IN_SALES_DAILY、DWS_KPI_DAILY、DWS_MARKET_DAILY、DWS_ORG_EXPENSE_DAILY、DWS_ORG_PERFORMANCE_DAILY、DWS_ORG_TARGET_DAILY、DWS_PRE_SALES_DAILY、DWS_PROCUREMENT_DAILY、DWS_PRODUCTION_DAILY、DWS_RISK_DAILY、DWS_SAFETY_DAILY，与数据库中实际存在的 DWS_ 表集合完全一致。",
+    "validation_method": "指标目录登记的汇总表与实际表清单求差集，结果为空",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_metric_catalog_scope_notes",
+    "source": "ind108.sqlite / dim_metric_catalog.description",
+    "query": "SELECT metric_id, metric_name, description FROM dim_metric_catalog WHERE metric_id IN (8,45,50,81,83,94)",
+    "result": "目录描述中已写明关键口径：设备运行小时“取所在产线当日运行时长，每台设备各记一份；按设备汇总约为产线运行时长的 5 倍”；接单金额“含未交付与后续退货部分；与按发货或开票确认的收入不同”；应收账款余额“当日末未清应收余额（含税），时点值；跨日只能取期末一天，不能按日累加”；新增应付账款“期末未付余额 = 应付金额 − 已付金额”。",
+    "validation_method": "导出目录描述字段并逐条与数据核对",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_equipment_runhours_5x",
+    "source": "ind108.sqlite / DWS_EQUIPMENT_DAILY 与 fact_equipment_runtime",
+    "query": "SELECT SUM(actual_run_hours) FROM DWS_EQUIPMENT_DAILY; SELECT SUM(actual_run_hours) FROM fact_equipment_runtime",
+    "result": "设备-日汇总层合计 647698.0 小时，产线-日明细合计 129540.0 小时，比值为 5.00。单日核对：2026-06-15 DWS_EQUIPMENT_DAILY 合计 1294.4 小时（60 台设备），同日 fact_equipment_runtime 合计 258.88 小时，亦为 5.00 倍。",
+    "validation_method": "全表求和与单日交叉求和双重核对",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_equipment_per_line_five",
+    "source": "ind108.sqlite / dim_equipment",
+    "query": "SELECT line_id, COUNT(*) FROM dim_equipment GROUP BY line_id ORDER BY line_id",
+    "result": "12 条产线每条恰好 5 台设备（共 60 台），设备类型为高速混合机、失重式喂料机、双螺杆挤出机、切粒机、自动包装机。",
+    "validation_method": "按 line_id 分组计数",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_equipment_alarm_vs_downtime_reconcile",
+    "source": "ind108.sqlite / DWS_EQUIPMENT_DAILY 与 fact_alarm、fact_maintenance_wo、fact_equipment_runtime",
+    "query": "SELECT SUM(alarm_count), SUM(maint_wo_count), SUM(downtime_hours) FROM DWS_EQUIPMENT_DAILY; 与 SELECT COUNT(*) FROM fact_alarm; SELECT COUNT(*) FROM fact_maintenance_wo; SELECT SUM(downtime_hours) FROM fact_equipment_runtime",
+    "result": "告警数 3109 与 fact_alarm 3109 完全一致；维护工单数 1700 与 fact_maintenance_wo 1700 完全一致；但停机小时合计 10769 是产线级 7317 的 1.47 倍——说明运行时长按产线复制 5 倍，而停机时长按设备实际记录，二者复制规则不同。",
+    "validation_method": "四个指标分别与明细表求和比对",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_oee_two_grains",
+    "source": "ind108.sqlite / dim_metric_catalog",
+    "query": "SELECT metric_id, metric_name, dws_table, value_column FROM dim_metric_catalog WHERE value_column='oee'",
+    "result": "同名列 oee 出现在两张汇总表：metric_id=9 设备OEE（DWS_PRODUCTION_DAILY，产线-日）与 metric_id=56 设备OEE-资产（DWS_EQUIPMENT_DAILY，设备-日），两者为不同粒度。",
+    "validation_method": "在指标目录中按 value_column 检索定位同名指标",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_downtime_reason_catalog",
+    "source": "ind108.sqlite / dim_downtime_reason 与 fact_downtime",
+    "query": "SELECT reason_code, reason_name, category FROM dim_downtime_reason; SELECT COUNT(*), SUM(duration_hours) FROM fact_downtime",
+    "result": "8 类停机原因，分属 设备/工艺/计划/物料/质量/能源/人力 七类（含换产清机、滤网更换等工艺项）；fact_downtime 共 3741 条、停机合计 10769.67 小时。",
+    "validation_method": "导出停机原因维表并与停机明细计数核对",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_production_line_workshop_map",
+    "source": "ind108.sqlite / dim_production_line、dim_workshop",
+    "query": "SELECT line_id, line_name, workshop_id, product_type, capacity_tph, status FROM dim_production_line",
+    "result": "12 条产线分别归属 5 个车间（PP 改性 3 条、PA 改性 3 条、ABS/PC 合金 2 条、阻燃 2 条、特种工程塑料 2 条），status 全部为“运行”；capacity_tph 在 0.55–1.65 之间。",
+    "validation_method": "核对产线-车间归属关系与车间主数据取值域",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_production_null_rates",
+    "source": "ind108.sqlite / DWS_PRODUCTION_DAILY",
+    "query": "SELECT COUNT(*), SUM(CASE WHEN yield_rate IS NULL THEN 1 ELSE 0 END), SUM(CASE WHEN actual_quantity=0 THEN 1 ELSE 0 END) FROM DWS_PRODUCTION_DAILY",
+    "result": "共 7974 行，其中 5089 行的 yield_rate 为空且 actual_quantity=0（同一批行），即有产出才有比率值。",
+    "validation_method": "统计比率列空值行与零产量行的重合度",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_production_grade_enum",
+    "source": "ind108.sqlite / fact_production_output",
+    "query": "SELECT grade, COUNT(*) FROM fact_production_output GROUP BY grade",
+    "result": "grade 取值四档：优等品 2721、一等品 2721、合格品 93、返工品 116；is_first_grade 标记其是否为一等品及以上。",
+    "validation_method": "对 grade 列做取值域统计",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_quality_disposition_enum",
+    "source": "ind108.sqlite / fact_quality_inspection",
+    "query": "SELECT result, COUNT(*) FROM fact_quality_inspection GROUP BY result",
+    "result": "result 取值为 合格 13494、不合格 117、让步接收 93；检验属性含 密度、拉伸强度、灰分、熔体流动速率、缺口冲击强度、阻燃等级(1.6mm)。",
+    "validation_method": "对检验结论列做取值域统计并按属性交叉核对",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_sales_order_reconcile",
+    "source": "ind108.sqlite / fact_sales_order 与 DWS_ORG_PERFORMANCE_DAILY",
+    "query": "SELECT SUM(quantity), SUM(amount), SUM(gross_profit_actual), SUM(gross_profit_standard) FROM fact_sales_order WHERE emp_id=1 AND order_date='2026-06-15'；对照 SELECT sales_quantity, sales_amount, gross_profit_actual, gross_profit_standard FROM DWS_ORG_PERFORMANCE_DAILY WHERE dim_emp_id=1 AND date='2026-06-15'",
+    "result": "明细侧 19.87 / 383570.88 / 134761.85 / 140584.23 与汇总侧完全一致，确认 DWS_ORG_PERFORMANCE_DAILY 的粒度为业务员-部门-区域-日且由销售订单聚合而来。",
+    "validation_method": "按 emp_id+日期逐字段对账",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_sales_amount_basis",
+    "source": "ind108.sqlite / dim_metric_catalog",
+    "query": "SELECT description FROM dim_metric_catalog WHERE metric_name='接单金额'",
+    "result": "描述明确：接单金额为“按下单日汇总的订单金额(不含税)，含未交付与后续退货部分；与按发货或开票确认的收入不同”。",
+    "validation_method": "读取指标目录描述并与 fact_sales_order.status 分布核对（delivered 4576、undelivered 152、returned 3）",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_negative_margin_orders",
+    "source": "ind108.sqlite / fact_sales_order",
+    "query": "SELECT COUNT(*) FROM fact_sales_order WHERE is_negative_margin=1; SELECT order_id, amount, actual_cost_amount, gross_profit_actual FROM fact_sales_order WHERE is_negative_margin=1 LIMIT 5",
+    "result": "4731 张订单中 41 张为负毛利（is_negative_margin=1），其特征为 actual_cost_amount 大于 amount，gross_profit_actual 为负（如订单 14：金额 168394.69、实际成本 177470.94、毛利 -9076.25）。",
+    "validation_method": "按标记计数并与毛利列符号交叉验证",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_sales_order_status_enum",
+    "source": "ind108.sqlite / fact_sales_order 与 fact_return",
+    "query": "SELECT status, COUNT(*) FROM fact_sales_order GROUP BY status",
+    "result": "订单状态取值为 delivered 4576、undelivered 152、returned 3；退货记录通过 order_id 关联原订单。",
+    "validation_method": "对订单状态列做取值域统计并关联退货表",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_sales_target_grain",
+    "source": "ind108.sqlite / fact_sales_target 与 DWS_ORG_TARGET_DAILY",
+    "query": "SELECT COUNT(*), MIN(year||'-'||substr('0'||month,-2)), MAX(year||'-'||substr('0'||month,-2)) FROM fact_sales_target",
+    "result": "288 条目标记录，覆盖 2025-01 至 2026-06，粒度为业务员-年-月，含 sales_quantity_target/profit_target/payment_target/sales_amount_target 四个目标值。",
+    "validation_method": "统计记录数与期间范围，核对粒度为 emp+year+month",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_customer_status_enum",
+    "source": "ind108.sqlite / dim_customer",
+    "query": "SELECT status, COUNT(*) FROM dim_customer GROUP BY status",
+    "result": "status 取值 active 22、dormant 1、lost 2，共 25 个客户，含 industry/province/city/market_capacity/market_share/first_deal_date/last_deal_date 等属性。",
+    "validation_method": "对客户状态列做取值域统计",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_customer_credit_enum",
+    "source": "ind108.sqlite / dim_customer 与 dim_customer_credit",
+    "query": "SELECT credit_status, COUNT(*) FROM dim_customer GROUP BY credit_status",
+    "result": "credit_status 取值 normal 24、frozen 1；另有独立的 dim_customer_credit 表按客户记录 credit_limit/used_credit/credit_score/credit_level/days_overdue_max。",
+    "validation_method": "对信用状态列做取值域统计并核对信用维表",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_opportunity_status_enum",
+    "source": "ind108.sqlite / fact_opportunity",
+    "query": "SELECT status, COUNT(*) FROM fact_opportunity GROUP BY status",
+    "result": "状态取值为 won 36、open 22、lost 20、stalled 6，共 84 条商机；另有 is_important 标记与 converted_order_id 关联成交订单。",
+    "validation_method": "对商机状态列做取值域统计",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_ar_snapshot_daily",
+    "source": "ind108.sqlite / DWS_RISK_DAILY 与 fact_ar_aging",
+    "query": "SELECT date, SUM(overdue_ar_amt), SUM(overdue_ar_count) FROM DWS_RISK_DAILY WHERE date>'2026-06-01' GROUP BY date; 与 SELECT SUM(balance_amount), SUM(CASE WHEN is_overdue=1 THEN balance_amount ELSE 0 END) FROM fact_ar_aging",
+    "result": "DWS_RISK_DAILY 单日超期金额在 3.6–5.6 千万元之间、笔数 113–124；fact_ar_aging 的逾期余额合计 42728977.91 元、逾期笔数 119，与单日快照量级一致。该表共 506 个日期，全表累加 overdue_ar_amt 得约 187.7 亿元，说明其为每日时点快照而非期间发生额。",
+    "validation_method": "按日期分别求和并与明细逾期余额比对，确认快照性质",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_ar_aging_buckets",
+    "source": "ind108.sqlite / fact_ar_aging",
+    "query": "SELECT SUM(CASE WHEN aging_1m+aging_2m+aging_3m+aging_4m+aging_5m+aging_6m+aging_6_12m+aging_12m_plus>0 THEN 1 ELSE 0 END), COUNT(*) FROM fact_ar_aging",
+    "result": "5162 行中仅 671 行的账龄分桶金额之和大于 0，其余行的分桶列全为 0 而 balance_amount 仍可能非零（如 balance_amount 74910.22 的行分桶均为 0、overdue_months=2、is_overdue=1）。因此账龄分桶与余额不是同一种度量，逾期程度主要靠 is_overdue/overdue_months 表达。",
+    "validation_method": "统计分桶非零行数并与同余额行的分桶值逐条核对",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_ar_balance_timepoint_note",
+    "source": "ind108.sqlite / dim_metric_catalog",
+    "query": "SELECT description FROM dim_metric_catalog WHERE metric_name='应收账款余额'",
+    "result": "描述明确：应收账款余额为“当日末未清应收余额(含税)，时点值；跨日只能取期末一天，不能按日累加”。",
+    "validation_method": "读取指标目录描述并与 DWS_ORG_PERFORMANCE_DAILY 按日期分组的取值分布核对",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_payment_type_enum",
+    "source": "ind108.sqlite / fact_payment",
+    "query": "SELECT payment_type, COUNT(*), SUM(amount) FROM fact_payment GROUP BY payment_type; SELECT is_bank_accepted, COUNT(*) FROM fact_payment GROUP BY 1",
+    "result": "收款方式为 银承 1705 笔（金额 693758158.07）与 电汇 3239 笔（金额 1326061874.22）；is_bank_accepted=1 的 1705 笔与 银承 完全对应，=0 的 3239 笔与 电汇 完全对应。",
+    "validation_method": "对收款方式列计数并与其标志列交叉核对",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_procurement_reconcile",
+    "source": "ind108.sqlite / DWS_PROCUREMENT_DAILY 与 fact_purchase_order、fact_ap",
+    "query": "SELECT SUM(po_amount), SUM(payment_amount) FROM DWS_PROCUREMENT_DAILY; 与 SELECT SUM(total_amount) FROM fact_purchase_order; SELECT status, SUM(amount), SUM(paid_amount) FROM fact_ap GROUP BY status",
+    "result": "采购金额 1591586601 与采购订单合计 1591586600.82 一致；付款金额 1541601886 与 fact_ap 已付合计 1541601885.66 一致；fact_ap 中 open 122 条金额 226730165.12 且已付为 0，closed 879 条已全额付清，印证“期末未付余额 = 应付金额 − 已付金额”。",
+    "validation_method": "汇总层与明细表按供应商/状态双向对账",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_incoming_inspection",
+    "source": "ind108.sqlite / fact_goods_receipt 与 DWS_PROCUREMENT_DAILY",
+    "query": "SELECT COUNT(*), COUNT(DISTINCT po_id), SUM(quantity) FROM fact_goods_receipt; SELECT AVG(inspection_pass_rate) FROM DWS_PROCUREMENT_DAILY",
+    "result": "1017 条收货记录覆盖 885 张采购订单，货量合计 116035；收货检验结果取值全部为 pass。汇总层来料检验合格率均值 98.67%。",
+    "validation_method": "核对收货明细与汇总层合格率的量级与取值域",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_supplier_eval_grade",
+    "source": "ind108.sqlite / fact_supplier_eval 与 dim_supplier",
+    "query": "SELECT grade, COUNT(*) FROM fact_supplier_eval GROUP BY grade; SELECT status, COUNT(*) FROM dim_supplier GROUP BY status",
+    "result": "66 条供应商评价记录，grade 取值 AA 54、A 12；分项为 delivery_score/quality_score/service_score，示例供应商 1 在 2025-Q1 为 84.35/98.26/85.93 合计 90.23(A)，Q2 升至 93.56(AA)。dim_supplier 共 12 个供应商且全部为 active。",
+    "validation_method": "导出评价记录核对分项与总分的构成关系",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_cost_component_relation",
+    "source": "ind108.sqlite / DWS_FINANCE_DAILY 与 dim_metric_catalog",
+    "query": "SELECT date, dim_cc_id, material_cost, labor_cost, overhead_cost, total_product_cost, dep_amount FROM DWS_FINANCE_DAILY LIMIT 4",
+    "result": "示例（2025-01-31，成本中心 1）：材料成本 11656965.21、人工成本 478442.13、制造费用 888535.39，三项之和 13023942.73 恰等于 total_product_cost；折旧额 514582.80 单列且未被计入三项之和，印证制造费用已含折旧。",
+    "validation_method": "逐行验证三项之和等于总成本，并核对折旧未被重复计入",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_finance_monthly_grain",
+    "source": "ind108.sqlite / DWS_FINANCE_DAILY 与 fact_budget",
+    "query": "SELECT DISTINCT date FROM DWS_FINANCE_DAILY ORDER BY date",
+    "result": "DWS_FINANCE_DAILY 仅有 18 个日期，全部为月末日（2025-01-31 至 2026-06-30 的每月最后一天），共 180 行，即 10 个成本中心 × 18 个月；尽管表名含 _DAILY，实际粒度为成本中心-月。fact_budget 亦为 180 条月度预算记录。",
+    "validation_method": "导出全部日期核对是否均为月末，并按成本中心数验证行数结构",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_cost_center_types",
+    "source": "ind108.sqlite / dim_cost_center",
+    "query": "SELECT cc_id, cc_code, cc_name, dept_id, bu_id, cc_type FROM dim_cost_center",
+    "result": "10 个成本中心，cc_type 分布为 production 5、sales 2、quality 1、equipment 1、rd 1；生产类成本中心与 PP/PA/ABS-PC/阻燃/特塑车间一一对应。",
+    "validation_method": "导出成本中心主数据并核对类型分布与车间对应关系",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_incident_severity_enum",
+    "source": "ind108.sqlite / fact_incident",
+    "query": "SELECT severity, COUNT(*), SUM(injury_count), SUM(fatality_count), SUM(property_loss) FROM fact_incident GROUP BY severity",
+    "result": "fa 14 起（受伤人数合计 14、财产损失 273823.39）、mtc 7 起（受伤 7、损失 124721.01）、near_miss 11 起（受伤 0、损失 0）；三类的 fatality_count 合计均为 0，说明 fa 表示急救而非死亡。事件类型含机械伤害、灼烫、物体打击、触电、车辆伤害、高处坠落。",
+    "validation_method": "按严重度分组统计伤亡与损失字段，核对 fa 与 fatality 的区别",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_safety_daily_reconcile",
+    "source": "ind108.sqlite / DWS_SAFETY_DAILY 与 fact_incident、fact_risk_assessment、fact_work_permit、fact_safety_training",
+    "query": "SELECT SUM(incident_count), SUM(near_miss_count), SUM(risk_assessment_count), SUM(high_risk_count), SUM(permit_count), SUM(training_count) FROM DWS_SAFETY_DAILY",
+    "result": "汇总层合计为 事故 21、未遂 11、风险评估 30、高风险 16、许可 132、培训 27；与明细表逐项完全一致（事故=非未遂事件 21、未遂 11、评估 30、L3+L4=16、许可 132、培训 27）。表粒度为车间-日（546 个日期 × 5 个车间 × 参与车间数），覆盖 2025-01-01 至 2026-06-30。",
+    "validation_method": "六个指标分别与对应明细表计数对账，全部一致",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_high_risk_l3l4",
+    "source": "ind108.sqlite / fact_risk_assessment 与 DWS_SAFETY_DAILY",
+    "query": "SELECT risk_level, COUNT(*) FROM fact_risk_assessment GROUP BY risk_level; SELECT SUM(high_risk_count) FROM DWS_SAFETY_DAILY",
+    "result": "风险评估 30 条：L1 1、L2 13、L3 9、L4 7；高风险数全表求和 16 = L3(9)+L4(7)，确认“高风险”口径包含 L3 与 L4。",
+    "validation_method": "按等级计数并与高风险指标求和比对",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_risk_level_dim_actions",
+    "source": "ind108.sqlite / dim_risk_level 与 fact_risk_assessment",
+    "query": "SELECT level_code, level_name, action_required FROM dim_risk_level; SELECT likelihood, consequence, risk_level, COUNT(*) FROM fact_risk_assessment GROUP BY 1,2,3",
+    "result": "等级定义：L1 可接受（保持现有控制，定期复查）、L2 可容忍（制定改进措施，三个月内落实）、L3 不可容忍（立即制定整改计划，一个月内完成）、L4 重大（立即停止作业，整改验证后方可恢复）。风险等级由 likelihood（unlikely/possible/likely）与 consequence（minor/moderate/major/catastrophic）组合判定。",
+    "validation_method": "导出风险等级维表并与评估记录的等级分布交叉核对",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_permit_type_enum",
+    "source": "ind108.sqlite / fact_work_permit",
+    "query": "SELECT permit_type, COUNT(*) FROM fact_work_permit GROUP BY permit_type; SELECT status, COUNT(*) FROM fact_work_permit GROUP BY status",
+    "result": "132 张作业许可，类型分布为 动土作业 30、受限空间 28、动火作业 27、临时用电 24、高处作业 23；状态全部为 closed；记录含有效期(valid_from/valid_to)、作业地点与所需劳保用品。",
+    "validation_method": "对许可类型与状态列做取值域统计",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_env_record_types",
+    "source": "ind108.sqlite / fact_env_record 与 DWS_SAFETY_DAILY",
+    "query": "SELECT record_type, emission_type, unit, COUNT(*), SUM(is_compliant) FROM fact_env_record GROUP BY 1,2,3",
+    "result": "90 条环境监测记录，分月度监测与季度监测；监测项含 COD、氨氮(mg/L)、VOCs、颗粒物(mg/m³)、噪声(dB(A))，各项 6–12 条；其中 5 条 is_compliant=0，集中在噪声(3 条)与 VOCs(1 条)等项。记录含 limit_value 与实测值用于合规判定。",
+    "validation_method": "按监测类型与监测项分组统计合规情况",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_employee_dept_region_chain",
+    "source": "ind108.sqlite / dim_employee、dim_department、dim_region",
+    "query": "SELECT dept_id, dept_name, region_id FROM dim_department ORDER BY dept_id",
+    "result": "122 名员工（active 121、inactive 1）归属 17 个部门；其中 6 个销售部门分别关联 6 个区域（华东、华南、华北、西南、华中、西北），其余 11 个职能部门 region_id 为空。",
+    "validation_method": "导出部门与区域关联关系，核对销售部门与职能部门在 region_id 上的分布差异",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_product_cost_fields",
+    "source": "ind108.sqlite / dim_product 与 dim_product_line",
+    "query": "SELECT prod_id, prod_name, prod_line_id, standard_cost, tech_cost, guide_price FROM dim_product",
+    "result": "15 个产品归属 4 个产品系列（PP 改性、PA 改性、ABS/PC 合金、特种工程塑料），每个产品同时具有标准成本、技术成本与指导价（如 PP-T20：7582.91 / 7413.67 / 9800.0）。",
+    "validation_method": "导出产品主数据核对成本三列与系列归属",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_bom_qty_per_ton",
+    "source": "ind108.sqlite / dim_bom 与 dim_bom_line",
+    "query": "SELECT bom_id, COUNT(*), SUM(qty_per_ton) FROM dim_bom_line GROUP BY bom_id LIMIT 4; SELECT bom_no, product_id, yield_rate FROM dim_bom LIMIT 3",
+    "result": "15 张 BOM 对应 53 条 BOM 行；qty_per_ton 观测值以 1000 为基准（如 BOM 1 的 3 行各 1000.0，BOM 4 的 5 行各 1000.0），即以千克每吨表达单耗；dim_bom 另给出 yield_rate（示例 98.81）。",
+    "validation_method": "按 BOM 汇总用量并核对量纲基准",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_maintenance_type_status_enum",
+    "source": "ind108.sqlite / fact_maintenance_wo",
+    "query": "SELECT maint_type, COUNT(*) FROM fact_maintenance_wo GROUP BY maint_type; SELECT status, COUNT(*) FROM fact_maintenance_wo GROUP BY status",
+    "result": "1700 张维护工单：月度检修 993、故障维修 639、季度大修 68；状态 completed 1694、created 6。",
+    "validation_method": "对维护类型与状态列做取值域统计",
+    "timestamp": "2026-10-10"
+  }
+]

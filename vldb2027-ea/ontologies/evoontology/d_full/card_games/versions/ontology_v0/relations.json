@@ -1,0 +1,146 @@
+[
+  {
+    "id": "rel_set_composed_of_printings",
+    "source": "card_set",
+    "relation_type": "composition",
+    "target": "card_printing",
+    "connection_condition": "cards.setCode corresponds to sets.code",
+    "description": "A set is composed of the printings that belong to it; a printing belongs to exactly one set and loses its release context without it.",
+    "evidence": [
+      "evidence_setcode_subset"
+    ]
+  },
+  {
+    "id": "rel_identity_composed_of_printings",
+    "source": "card_identity",
+    "relation_type": "composition",
+    "target": "card_printing",
+    "connection_condition": "cards.scryfallOracleId identifies the card identity that all its printings share",
+    "description": "A card identity is composed of its printings across sets and years; each printing is one concrete realization of the identity.",
+    "evidence": [
+      "evidence_cards_counts"
+    ]
+  },
+  {
+    "id": "rel_printing_composed_of_faces",
+    "source": "card_printing",
+    "relation_type": "composition",
+    "target": "card_face",
+    "connection_condition": "faces share the printing uuid and are distinguished by cards.side and linked by cards.otherFaceIds",
+    "description": "A multi-face printing is composed of its faces; a face has no independent printing record.",
+    "evidence": [
+      "evidence_layout_side"
+    ]
+  },
+  {
+    "id": "rel_printing_subsumes_reprint",
+    "source": "card_printing",
+    "relation_type": "hierarchy",
+    "target": "reprint",
+    "connection_condition": "",
+    "description": "A reprint is a specific kind of printing, namely one that is not the first appearance of its card identity; reprint rows are a subset of all printing rows.",
+    "evidence": [
+      "evidence_reprint_flags"
+    ]
+  },
+  {
+    "id": "rel_mana_cost_derives_cmc",
+    "source": "mana_cost",
+    "relation_type": "derivation",
+    "target": "converted_mana_cost",
+    "connection_condition": "",
+    "description": "Converted mana cost is derived from mana cost by summing the amount of mana the symbols represent.",
+    "evidence": [
+      "evidence_cmc"
+    ]
+  },
+  {
+    "id": "rel_printing_composed_of_rulings",
+    "source": "card_printing",
+    "relation_type": "composition",
+    "target": "ruling",
+    "connection_condition": "rulings.uuid references cards.uuid",
+    "description": "Rulings are attached to a printing; a ruling row has no meaning detached from the card printing it clarifies.",
+    "evidence": [
+      "evidence_rulings"
+    ]
+  },
+  {
+    "id": "rel_identity_associated_with_rulings",
+    "source": "card_identity",
+    "relation_type": "association",
+    "target": "ruling",
+    "connection_condition": "indirect: a card identity is reached from rulings only by grouping all printings that share scryfallOracleId, and identical ruling text repeats across those printings",
+    "description": "Rulings describe how a card works, so they are conceptually about the card identity, but they are stored per printing and must be deduplicated before being attributed to a card.",
+    "evidence": [
+      "evidence_rulings"
+    ]
+  },
+  {
+    "id": "rel_identity_associated_with_localization",
+    "source": "card_identity",
+    "relation_type": "association",
+    "target": "card_localization",
+    "connection_condition": "indirect: localized rows are keyed by printing uuid, so a card identity must be reassembled from its printings and repeated translations deduplicated",
+    "description": "Localized card text belongs to a card identity but is stored once per printing per language.",
+    "evidence": [
+      "evidence_foreign_data"
+    ]
+  },
+  {
+    "id": "rel_format_associated_with_sets",
+    "source": "tournament_format",
+    "relation_type": "association",
+    "target": "card_set",
+    "connection_condition": "no structural link: legalities stores no set reference, so the format card pool can only be related to sets through set release dates",
+    "description": "A format's card pool follows which sets are within its window, which is why the same cards differ in legality across formats.",
+    "evidence": [
+      "evidence_legalities_formats",
+      "evidence_release_dates"
+    ]
+  },
+  {
+    "id": "rel_format_associated_with_status",
+    "source": "tournament_format",
+    "relation_type": "association",
+    "target": "legality_status",
+    "connection_condition": "each legalities row pairs one format value with one status value",
+    "description": "Every format assigns a legality status to the printings it covers; absence of a row is itself meaningful because no explicit not-legal value exists.",
+    "evidence": [
+      "evidence_legalities_formats"
+    ]
+  },
+  {
+    "id": "rel_set_composed_of_localizations",
+    "source": "card_set",
+    "relation_type": "composition",
+    "target": "set_localization",
+    "connection_condition": "set_translations.setCode references sets.code",
+    "description": "Translated set names are components of the set record; a translation cannot exist without its set.",
+    "evidence": [
+      "evidence_set_translations"
+    ]
+  },
+  {
+    "id": "rel_set_associated_with_release_date",
+    "source": "card_set",
+    "relation_type": "association",
+    "target": "set_release_date",
+    "connection_condition": "",
+    "description": "A release date is a defining property of a set rather than an independent entity; it orders sets in time and bounds format card pools.",
+    "evidence": [
+      "evidence_release_dates"
+    ]
+  },
+  {
+    "id": "rel_color_associated_with_color_identity",
+    "source": "card_color",
+    "relation_type": "association",
+    "target": "color_identity",
+    "connection_condition": "both are comma-separated color lists on the same printing row and coincide for most printings",
+    "description": "Card color and color identity are closely related but not equivalent: color identity also includes colors of mana symbols that appear in rules text, so the two differ for cards with off-color abilities.",
+    "evidence": [
+      "evidence_colors"
+    ]
+  }
+]

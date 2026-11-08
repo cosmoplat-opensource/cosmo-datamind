@@ -1,0 +1,272 @@
+[
+  {
+    "id": "term_race",
+    "name": "Race",
+    "type": "entity",
+    "definition": "A single Grand Prix event in a championship season, identified by its season year and its round number within that season.",
+    "scope": "Race-level analysis: calendars, race counts per season, per-race results.",
+    "aliases": ["Grand Prix", "race event", "round"],
+    "evidence": ["ev_tables_counts", "ev_race_span"]
+  },
+  {
+    "id": "term_season",
+    "name": "Season",
+    "type": "entity",
+    "definition": "A championship year that groups every race held in that year.",
+    "scope": "Season-level aggregation and season-over-season comparison.",
+    "aliases": ["championship year", "season year"],
+    "evidence": ["ev_season_link"]
+  },
+  {
+    "id": "term_driver",
+    "name": "Driver",
+    "type": "entity",
+    "definition": "A person who competes in races and is the subject of driver-level performance analysis.",
+    "scope": "Driver identity and career-level aggregation.",
+    "aliases": ["competitor", "pilot"],
+    "evidence": ["ev_identifier_population"]
+  },
+  {
+    "id": "term_constructor",
+    "name": "Constructor",
+    "type": "entity",
+    "definition": "The team or entrant that supplies the car a driver races for.",
+    "scope": "Team-level aggregation and constructor championship analysis.",
+    "aliases": ["team", "entrant"],
+    "evidence": ["ev_tables_counts"]
+  },
+  {
+    "id": "term_circuit",
+    "name": "Circuit",
+    "type": "entity",
+    "definition": "The permanent racing venue at which a race is held, with its location and geographic coordinates.",
+    "scope": "Venue-level analysis and geographic grouping of races.",
+    "aliases": ["track", "venue"],
+    "evidence": ["ev_circuit_orphan", "ev_geography"]
+  },
+  {
+    "id": "term_race_result",
+    "name": "Race Result",
+    "type": "entity",
+    "definition": "One entry in a race: the record of a single car and driver entry taking part in one race, carrying its grid slot, classification, points and completion status. A driver may hold more than one entry in the same race when a car was shared.",
+    "scope": "Entry-level analysis of a race; the fact table for results, points and classification.",
+    "aliases": ["result row", "entry", "classification record"],
+    "evidence": ["ev_results_grain", "ev_tables_counts"]
+  },
+  {
+    "id": "term_race_status",
+    "name": "Race Entry Status",
+    "type": "category",
+    "definition": "The categorised outcome of a race entry, ranging from a normal finish through lapped classifications to specific mechanical or sporting failures.",
+    "scope": "Grouping and filtering race entries by how the entry ended.",
+    "aliases": ["status", "outcome", "finish reason"],
+    "evidence": ["ev_status_semantics"]
+  },
+  {
+    "id": "term_lap",
+    "name": "Lap",
+    "type": "entity",
+    "definition": "One completed lap by one driver in one race, carrying its elapsed time and the driver's position on that lap.",
+    "scope": "Lap-by-lap analysis such as pace evolution and position changes within a race.",
+    "aliases": ["lap record", "lap row"],
+    "evidence": ["ev_coverage_windows"]
+  },
+  {
+    "id": "term_pit_stop",
+    "name": "Pit Stop",
+    "type": "entity",
+    "definition": "One pit stop made by one driver in one race, numbered in sequence within that race.",
+    "scope": "Pit strategy and pit crew performance analysis.",
+    "aliases": ["stop", "pit visit"],
+    "evidence": ["ev_coverage_windows"]
+  },
+  {
+    "id": "term_qualifying_entry",
+    "name": "Qualifying Entry",
+    "type": "entity",
+    "definition": "One driver's participation in the qualifying session of a race, carrying the qualifying position and the times set in each qualifying segment.",
+    "scope": "Qualifying performance and starting-order analysis.",
+    "aliases": ["qualifying record", "qualifying result"],
+    "evidence": ["ev_coverage_windows"]
+  },
+  {
+    "id": "term_driver_standing",
+    "name": "Driver Standing",
+    "type": "entity",
+    "definition": "A driver's cumulative championship position, points and win total as they stood immediately after a given race.",
+    "scope": "Championship-progress analysis; each row is a snapshot after one race.",
+    "aliases": ["driver championship position"],
+    "evidence": ["ev_standings_scope"]
+  },
+  {
+    "id": "term_constructor_standing",
+    "name": "Constructor Standing",
+    "type": "entity",
+    "definition": "A constructor's cumulative championship position, points and win total as they stood immediately after a given race.",
+    "scope": "Constructor championship-progress analysis; each row is a snapshot after one race.",
+    "aliases": ["constructor championship position"],
+    "evidence": ["ev_standings_scope"]
+  },
+  {
+    "id": "term_constructor_race_points",
+    "name": "Constructor Race Points",
+    "type": "metric",
+    "definition": "The championship points credited to a constructor for a single race.",
+    "scope": "Constructor scoring; not always equal to the constructor's drivers' combined points.",
+    "aliases": ["team race points"],
+    "evidence": ["ev_constructor_points_rule", "ev_constructorresults_status"]
+  },
+  {
+    "id": "term_championship_points",
+    "name": "Championship Points",
+    "type": "metric",
+    "definition": "The points credited to a driver for one race entry under the scoring system in force in that season.",
+    "scope": "Driver scoring and season totals; unaffected entries score zero.",
+    "aliases": ["points", "score"],
+    "evidence": ["ev_tables_counts", "ev_identifier_population"]
+  },
+  {
+    "id": "term_finishing_position",
+    "name": "Finishing Position",
+    "type": "metric",
+    "definition": "The official classified finishing position of a race entry, carried only by entries that were classified.",
+    "scope": "Ranking and counting classified finishers; absent for non-classified entries.",
+    "aliases": ["position", "class", "finishing place"],
+    "evidence": ["ev_position_codes"]
+  },
+  {
+    "id": "term_classification_order",
+    "name": "Classification Order",
+    "type": "dimension",
+    "definition": "The order in which every race entry is ranked for a race, placing classified finishers first and non-classified entries after them.",
+    "scope": "Ordering and counting entries of any kind, including retirements.",
+    "aliases": ["positionOrder", "official order", "result order"],
+    "evidence": ["ev_results_grain", "ev_position_codes"]
+  },
+  {
+    "id": "term_grid_position",
+    "name": "Grid Position",
+    "type": "dimension",
+    "definition": "The starting position of a race entry on the starting grid, where zero denotes a start from the pit lane.",
+    "scope": "Starting-order analysis and grid-to-finish comparisons.",
+    "aliases": ["grid", "starting slot"],
+    "evidence": ["ev_grid_vs_qualifying"]
+  },
+  {
+    "id": "term_qualifying_position",
+    "name": "Qualifying Position",
+    "type": "metric",
+    "definition": "The position a driver achieved in the qualifying session that sets the provisional starting order.",
+    "scope": "Qualifying performance analysis and pole determination.",
+    "aliases": ["qualifying rank", "quali position"],
+    "evidence": ["ev_grid_vs_qualifying", "ev_coverage_windows"]
+  },
+  {
+    "id": "term_win",
+    "name": "Race Win",
+    "type": "metric",
+    "definition": "A race entry placed first in the official classification order of its race.",
+    "scope": "Victory counting; a shared car credits the same win to each of its drivers.",
+    "aliases": ["victory", "first place", "P1"],
+    "evidence": ["ev_shared_wins"]
+  },
+  {
+    "id": "term_podium",
+    "name": "Podium Finish",
+    "type": "metric",
+    "definition": "A race entry placed within the top three of the official classification order of its race.",
+    "scope": "Top-three finish counting and podium rate analysis.",
+    "aliases": ["top three", "top-3 finish"],
+    "evidence": ["ev_shared_wins"]
+  },
+  {
+    "id": "term_pole_position",
+    "name": "Pole Position",
+    "type": "metric",
+    "definition": "The first position on the provisional starting order, earned by the fastest driver in qualifying.",
+    "scope": "Qualifying-success analysis; defined only where qualifying data exists.",
+    "aliases": ["pole", "first on the grid"],
+    "evidence": ["ev_grid_vs_qualifying"]
+  },
+  {
+    "id": "term_fastest_lap",
+    "name": "Fastest Lap",
+    "type": "metric",
+    "definition": "The quickest single lap recorded by any driver during a race, ranked first among that race's recorded lap times.",
+    "scope": "Single-lap pace analysis; available only for seasons with recorded lap-time fields.",
+    "aliases": ["fastest lap of the race", "FL"],
+    "evidence": ["ev_coverage_windows"]
+  },
+  {
+    "id": "term_lap_time",
+    "name": "Lap Time",
+    "type": "metric",
+    "definition": "The elapsed time taken to complete one lap, recorded as a duration in milliseconds.",
+    "scope": "Pace comparison within a race; comparable across races only with care for circuit and era.",
+    "aliases": ["lap duration"],
+    "evidence": ["ev_coverage_windows"]
+  },
+  {
+    "id": "term_pit_stop_duration",
+    "name": "Pit Stop Duration",
+    "type": "metric",
+    "definition": "The elapsed stationary time of a pit stop, recorded as a duration in milliseconds.",
+    "scope": "Pit crew performance analysis; available only for seasons with pit stop records.",
+    "aliases": ["stop duration", "pit time"],
+    "evidence": ["ev_coverage_windows"]
+  },
+  {
+    "id": "term_retirement",
+    "name": "Retirement",
+    "type": "category",
+    "definition": "A race entry that ended before the finish because of a mechanical failure, accident or other non-classification outcome.",
+    "scope": "Reliability and attrition analysis; excludes normal and lapped finishes.",
+    "aliases": ["DNF", "did not finish", "retired"],
+    "evidence": ["ev_status_semantics"]
+  },
+  {
+    "id": "term_shared_drive",
+    "name": "Shared Drive",
+    "type": "concept",
+    "definition": "A single car raced by more than one driver in the same race, so that the same finishing result is credited to each of them.",
+    "scope": "Historical entry counting; affects win and podium counts before 1979.",
+    "aliases": ["shared car", "driver swap", "relief driver"],
+    "evidence": ["ev_results_grain", "ev_shared_wins"]
+  },
+  {
+    "id": "term_car_number",
+    "name": "Car Number",
+    "type": "dimension",
+    "definition": "The number carried on the car in a race entry, which need not equal the driver's registered career number.",
+    "scope": "Entry identification; not a stable identifier of a driver.",
+    "aliases": ["race number", "number"],
+    "evidence": ["ev_identifier_population"]
+  },
+  {
+    "id": "term_driver_reference",
+    "name": "Driver Reference",
+    "type": "dimension",
+    "definition": "A stable human-readable identifier for a driver, used alongside the numeric surrogate key and a short driver code.",
+    "scope": "Identity resolution when joining driver data across tables.",
+    "aliases": ["driverRef", "driver code"],
+    "evidence": ["ev_identifier_population"]
+  },
+  {
+    "id": "term_driver_full_name",
+    "name": "Driver Full Name",
+    "type": "metric",
+    "definition": "The complete display name of a driver, assembled from the recorded given name and family name.",
+    "scope": "Presentation and name-based lookup of drivers.",
+    "aliases": ["driver name"],
+    "evidence": ["ev_identifier_population"]
+  },
+  {
+    "id": "term_country",
+    "name": "Country",
+    "type": "dimension",
+    "definition": "The country associated with a driver or constructor as a sporting nationality, or with a circuit as its physical location.",
+    "scope": "Geographic grouping of drivers, constructors and venues.",
+    "aliases": ["nationality", "country name"],
+    "evidence": ["ev_geography"]
+  }
+]

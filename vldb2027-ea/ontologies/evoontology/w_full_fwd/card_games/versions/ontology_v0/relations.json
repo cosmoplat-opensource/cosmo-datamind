@@ -1,0 +1,165 @@
+[
+  {
+    "id": "rel_printing_is_a_card",
+    "source": "card_printing",
+    "relation_type": "hierarchy",
+    "target": "card",
+    "connection_condition": "cards.scryfallOracleId is shared by every printing of the same card",
+    "description": "A card printing is an instance of a card: every attribute of a printing also characterises the card, while one card has many printings.",
+    "evidence": [
+      "evidence_card_identity",
+      "evidence_card_table_grain"
+    ]
+  },
+  {
+    "id": "rel_printing_part_of_set",
+    "source": "card_printing",
+    "relation_type": "composition",
+    "target": "card_set",
+    "connection_condition": "cards.setCode corresponds to sets.code",
+    "description": "A printing belongs to exactly one card set; a printing cannot exist without the set that released it.",
+    "evidence": [
+      "evidence_set_code_join"
+    ]
+  },
+  {
+    "id": "rel_legality_part_of_printing",
+    "source": "legality",
+    "relation_type": "composition",
+    "target": "card_printing",
+    "connection_condition": "legalities.uuid corresponds to cards.uuid",
+    "description": "A legality verdict is a component record of one printing; without the printing the verdict is meaningless.",
+    "evidence": [
+      "evidence_gladiator_mythic_banned",
+      "evidence_legality_orphans"
+    ]
+  },
+  {
+    "id": "rel_localized_card_part_of_printing",
+    "source": "localized_card",
+    "relation_type": "composition",
+    "target": "card_printing",
+    "connection_condition": "foreign_data.uuid corresponds to cards.uuid",
+    "description": "A localized card record is a language-specific component of one printing, carrying that printing's translated name, rules text and flavor text.",
+    "evidence": [
+      "evidence_uuid_foreign_join",
+      "evidence_foreign_join_orphans"
+    ]
+  },
+  {
+    "id": "rel_set_translation_part_of_set",
+    "source": "set_translation",
+    "relation_type": "composition",
+    "target": "card_set",
+    "connection_condition": "set_translations.setCode corresponds to sets.code",
+    "description": "A localized set name is a component record of one set and depends on that set's existence.",
+    "evidence": [
+      "evidence_set_translation_coverage"
+    ]
+  },
+  {
+    "id": "rel_ruling_part_of_printing",
+    "source": "ruling",
+    "relation_type": "composition",
+    "target": "card_printing",
+    "connection_condition": "rulings.uuid corresponds to cards.uuid",
+    "description": "An official ruling is a component record attached to one printing; it has no meaning without that printing.",
+    "evidence": [
+      "evidence_rulings_join"
+    ]
+  },
+  {
+    "id": "rel_block_groups_sets",
+    "source": "block",
+    "relation_type": "association",
+    "target": "card_set",
+    "connection_condition": "sets.block groups set rows by a free-text label rather than by an identifier reference",
+    "description": "A block groups several sets that belong to the same release cycle, but no structural identifier links them, so the connection is a weak semantic association.",
+    "evidence": [
+      "evidence_block_sets"
+    ]
+  },
+  {
+    "id": "rel_card_name_equivalent_localized",
+    "source": "card_name",
+    "relation_type": "equivalence",
+    "target": "localized_card_name",
+    "connection_condition": "both name forms attach to the same printing through uuid; cards.name holds the English form and foreign_data.name the localized form",
+    "description": "The English card name and the localized card name express the same concept, so a name lookup in one form should lead to the other representation of the same card.",
+    "evidence": [
+      "evidence_uuid_foreign_join",
+      "evidence_ancestors_chosen_languages"
+    ]
+  },
+  {
+    "id": "rel_set_name_equivalent_localized",
+    "source": "set_name",
+    "relation_type": "equivalence",
+    "target": "localized_set_name",
+    "connection_condition": "sets.name and set_translations.translation name the same set and are linked through the set code",
+    "description": "An official or marketplace set name and a localized set name express the same concept and denote the same set.",
+    "evidence": [
+      "evidence_set_name_variants",
+      "evidence_hauptset"
+    ]
+  },
+  {
+    "id": "rel_language_domain_equivalent",
+    "source": "card_language",
+    "relation_type": "equivalence",
+    "target": "set_name_language",
+    "connection_condition": "foreign_data.language and set_translations.language draw on the same set of language labels, including 'Portuguese (Brazil)'",
+    "description": "The language of a card's text and the language of a set's localized name share one value domain and one label vocabulary, even though they describe different objects and have very different coverage.",
+    "evidence": [
+      "evidence_foreign_languages",
+      "evidence_set_translation_languages",
+      "evidence_portuguese_brasil_absent"
+    ]
+  },
+  {
+    "id": "rel_cmc_derived_from_mana_cost",
+    "source": "mana_cost",
+    "relation_type": "derivation",
+    "target": "converted_mana_cost",
+    "connection_condition": "",
+    "description": "Converted mana cost is derived from mana cost as the total number of mana symbols in the cost, with absent costs treated as zero.",
+    "evidence": [
+      "evidence_converted_mana_cost",
+      "evidence_cmc_zero"
+    ]
+  },
+  {
+    "id": "rel_percentage_derived_from_population",
+    "source": "card_printing",
+    "relation_type": "derivation",
+    "target": "percentage",
+    "connection_condition": "",
+    "description": "A percentage share is derived from a population of card printings as the count satisfying a stated condition divided by the count of the declared base population.",
+    "evidence": [
+      "evidence_commander_legal",
+      "evidence_story_spotlight"
+    ]
+  },
+  {
+    "id": "rel_legality_has_format",
+    "source": "legality",
+    "relation_type": "association",
+    "target": "format",
+    "connection_condition": "legalities.format labels each legality record",
+    "description": "Every legality verdict is scoped to exactly one play format; the format is a categorical label of the verdict rather than a referenced entity.",
+    "evidence": [
+      "evidence_legality_formats"
+    ]
+  },
+  {
+    "id": "rel_legality_has_status",
+    "source": "legality",
+    "relation_type": "association",
+    "target": "legality_status",
+    "connection_condition": "legalities.status labels each legality record",
+    "description": "Every legality verdict carries exactly one status value expressing the verdict on the card in that format.",
+    "evidence": [
+      "evidence_legality_status"
+    ]
+  }
+]

@@ -1,0 +1,156 @@
+[
+  {
+    "id": "mapping_molecule_id",
+    "term_id": "term_molecule",
+    "database_source": "toxicology",
+    "table": "molecule",
+    "column": "molecule_id",
+    "semantic_filter": "",
+    "aggregation_semantics": "not aggregable; one identifier per molecule",
+    "grain": "one row per labelled molecule",
+    "validation": "molecule.molecule_id is the primary key; 343 rows, no NULLs, no duplicates (ev_001, ev_005). Distinct values observed from TR000 to TR501 with gaps."
+  },
+  {
+    "id": "mapping_molecule_label",
+    "term_id": "term_molecule_activity_label",
+    "database_source": "toxicology",
+    "table": "molecule",
+    "column": "label",
+    "semantic_filter": "Only molecules that have a row in the molecule table carry a label; the 101 molecule identifiers present only in atom and bond have no label.",
+    "aggregation_semantics": "categorical; aggregate by counting molecules per label value rather than by arithmetic on the symbol",
+    "grain": "one label per labelled molecule",
+    "validation": "343 rows, 0 NULL, exactly two distinct values '+' (152) and '-' (191) (ev_002, ev_005)."
+  },
+  {
+    "id": "mapping_atom_id",
+    "term_id": "term_atom",
+    "database_source": "toxicology",
+    "table": "atom",
+    "column": "atom_id",
+    "semantic_filter": "",
+    "aggregation_semantics": "count of atom rows; sum of element-presence flags per atom",
+    "grain": "one row per atom occurrence",
+    "validation": "atom.atom_id is the primary key; 12333 rows, no NULLs, no duplicate rows, and no duplicate (atom_id, molecule_id, element) triples (ev_001, ev_005, ev_014)."
+  },
+  {
+    "id": "mapping_atom_molecule_ref",
+    "term_id": "term_molecule",
+    "database_source": "toxicology",
+    "table": "atom",
+    "column": "molecule_id",
+    "semantic_filter": "",
+    "aggregation_semantics": "grouping key: groups atom rows into their owning molecule",
+    "grain": "one row per atom occurrence, referencing one molecule",
+    "validation": "12333 rows, 0 NULL, 444 distinct values. Its value domain is wider than molecule.molecule_id (343 values): 101 identifiers exist only here (ev_008, ev_014)."
+  },
+  {
+    "id": "mapping_bond_molecule_ref",
+    "term_id": "term_molecule",
+    "database_source": "toxicology",
+    "table": "bond",
+    "column": "molecule_id",
+    "semantic_filter": "",
+    "aggregation_semantics": "grouping key: groups bond rows into their owning molecule",
+    "grain": "one row per bond, referencing one molecule",
+    "validation": "12379 rows, 0 NULL, 444 distinct values, the same 444-value domain as atom.molecule_id (ev_008, ev_010)."
+  },
+  {
+    "id": "mapping_atom_element",
+    "term_id": "term_chemical_element",
+    "database_source": "toxicology",
+    "table": "atom",
+    "column": "element",
+    "semantic_filter": "",
+    "aggregation_semantics": "count of atoms per element symbol; count of distinct molecules per element symbol",
+    "grain": "one element symbol per atom occurrence",
+    "validation": "12333 rows, 0 NULL, 21 distinct lower-case symbols (h, c, o, n, cl, s, br, na, p, f, i, si, sn, cu, zn, y, te, pb, k, ca, b) (ev_003, ev_005)."
+  },
+  {
+    "id": "mapping_hydrogen_atom",
+    "term_id": "term_hydrogen_atom",
+    "database_source": "toxicology",
+    "table": "atom",
+    "column": "element",
+    "semantic_filter": "element symbol equals 'h'",
+    "aggregation_semantics": "count of hydrogen atom occurrences",
+    "grain": "one row per hydrogen atom occurrence",
+    "validation": "5518 atom rows across 426 distinct molecules carry element 'h' (ev_003)."
+  },
+  {
+    "id": "mapping_heavy_atom",
+    "term_id": "term_heavy_atom",
+    "database_source": "toxicology",
+    "table": "atom",
+    "column": "element",
+    "semantic_filter": "element symbol is not 'h'",
+    "aggregation_semantics": "count of non-hydrogen atom occurrences",
+    "grain": "one row per heavy atom occurrence",
+    "validation": "6815 of 12333 atom rows are non-hydrogen; 2123 of them belong to '+'-labelled molecules and 2954 to '-'-labelled molecules (ev_015, ev_012)."
+  },
+  {
+    "id": "mapping_bond_id",
+    "term_id": "term_bond",
+    "database_source": "toxicology",
+    "table": "bond",
+    "column": "bond_id",
+    "semantic_filter": "",
+    "aggregation_semantics": "count of bond rows; count of bonds per bond type",
+    "grain": "one row per bond",
+    "validation": "bond.bond_id is the primary key; 12379 rows, no NULLs, no duplicate rows (ev_001, ev_005, ev_014)."
+  },
+  {
+    "id": "mapping_bond_type",
+    "term_id": "term_bond_type",
+    "database_source": "toxicology",
+    "table": "bond",
+    "column": "bond_type",
+    "semantic_filter": "",
+    "aggregation_semantics": "count of bonds per symbol",
+    "grain": "one bond-type symbol per bond",
+    "validation": "12379 rows: '-' 10528, '=' 1844, '#' 6, and 1 row with NULL bond_type (bond_id TR345_7_10) (ev_004, ev_005)."
+  },
+  {
+    "id": "mapping_connectivity",
+    "term_id": "term_atom_connectivity",
+    "database_source": "toxicology",
+    "table": "connected",
+    "column": "atom_id + atom_id2",
+    "semantic_filter": "",
+    "aggregation_semantics": "counting adjacency entries counts each bond twice because both directions are stored; each bond_id occurs exactly twice",
+    "grain": "one row per directed adjacency entry; exactly two rows per bond",
+    "validation": "24758 rows for 12379 bonds = exactly 2 per bond; both atom_id and atom_id2 resolve to atom rows; no self-pairs where atom_id equals atom_id2 (ev_009, ev_010)."
+  },
+  {
+    "id": "mapping_atom_degree",
+    "term_id": "term_atom_degree",
+    "database_source": "toxicology",
+    "table": "connected",
+    "column": "atom_id",
+    "semantic_filter": "",
+    "aggregation_semantics": "count of distinct neighbours of each atom across the adjacency entries; the count is per atom and is not stored anywhere as a column",
+    "grain": "one value per atom occurrence",
+    "validation": "derivable from connected; 49 atoms have no adjacency entry at all and therefore degree zero (ev_009, ev_011)."
+  },
+  {
+    "id": "mapping_molecule_atom_count",
+    "term_id": "term_molecule_atom_count",
+    "database_source": "toxicology",
+    "table": "atom",
+    "column": "atom_id",
+    "semantic_filter": "",
+    "aggregation_semantics": "count of atom rows grouped by molecule",
+    "grain": "one value per molecule (per distinct atom.molecule_id)",
+    "validation": "per-molecule atom counts range from 4 to 174 with mean 27.78; TR338 has the maximum of 174 (ev_013)."
+  },
+  {
+    "id": "mapping_molecule_bond_count",
+    "term_id": "term_molecule_bond_count",
+    "database_source": "toxicology",
+    "table": "bond",
+    "column": "bond_id",
+    "semantic_filter": "",
+    "aggregation_semantics": "count of bond rows grouped by molecule",
+    "grain": "one value per molecule (per distinct bond.molecule_id)",
+    "validation": "per-molecule bond counts range from 2 to 175 with mean 27.88; every molecule has at least one bond (ev_013)."
+  }
+]

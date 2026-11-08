@@ -1,0 +1,170 @@
+[
+  {
+    "id": "evidence_001",
+    "source": "thrombosis_prediction.sqlite",
+    "query": "sqlite3 .tables; .schema",
+    "result": "Three tables: tab01 (13 columns, diagnosis events), tab02 (7 columns, patients), tab03 (61 columns, laboratory examinations). tab01.fld001 and tab03.fld001 are declared foreign keys to tab02.fld001.",
+    "validation_method": "Schema inspection with PRAGMA/schema output.",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "evidence_002",
+    "source": "thrombosis_prediction.sqlite",
+    "query": "SELECT COUNT(*), COUNT(DISTINCT fld001) FROM tab02; SELECT COUNT(*) FROM tab02 WHERE fld014 IS NULL;",
+    "result": "1238 rows and 1238 distinct patient identifiers; fld001 is the primary key. 13 rows have no sex value.",
+    "validation_method": "Row count and key uniqueness verification.",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "evidence_003",
+    "source": "thrombosis_prediction.sqlite",
+    "query": "SELECT fld014, COUNT(*) FROM tab02 GROUP BY fld014;",
+    "result": "F = 1023, M = 202, NULL = 13.",
+    "validation_method": "Grouped value counts.",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "evidence_004",
+    "source": "thrombosis_prediction.sqlite",
+    "query": "SELECT COUNT(fld015), COUNT(fld016), COUNT(fld017), MIN(fld015), MAX(fld015), MIN(fld016), MAX(fld016), MIN(fld017), MAX(fld017) FROM tab02;",
+    "result": "Birthday (fld015): 1237 non-null, range 1912-08-28 to 2007-05-28. Diagnosis date (fld016): 1022 non-null, range 1991-06-10 to 1998-12-03. First visit date (fld017): 987 non-null, range 1972-08-02 to 1998-08-28. Values are ISO text.",
+    "validation_method": "Non-null counts and range checks.",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "evidence_005",
+    "source": "thrombosis_prediction.sqlite",
+    "query": "SELECT fld018, COUNT(*) FROM tab02 GROUP BY fld018;",
+    "result": "'-' = 713, '+' = 488, '+(' = 3, NULL = 34.",
+    "validation_method": "Grouped value counts.",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "evidence_006",
+    "source": "thrombosis_prediction.sqlite",
+    "query": "SELECT fld008, COUNT(*) FROM tab02 GROUP BY fld008 ORDER BY 2 DESC; SELECT SUM(fld008 LIKE '%,%'), SUM(fld008 LIKE '%+%'), SUM(fld008 LIKE '%/%'), COUNT(*) FROM tab02; SELECT COUNT(*) FROM tab02 WHERE fld008 GLOB '*SJS*'; SELECT COUNT(*) FROM tab02 WHERE fld008 GLOB '*SjS*'; SELECT COUNT(*) FROM tab02 WHERE fld008 GLOB '*BEHCET*'; SELECT COUNT(*) FROM tab02 WHERE fld008 GLOB '*Behcet*';",
+    "result": "Top labels: SLE 195, SJS 160, RA 152, BEHCET 90, PSS 45, 'SLE, SJS' 35, MCTD 35, 'RA, SJS' 25, 'SLE susp' 19, 'RA susp' 19, APS 18. 244 labels contain a comma, 1 contains '+', 11 contain '/'. Case-sensitive variants: 'SJS' 366 occurrences, 'SjS' 0; 'BEHCET' 104, 'Behcet' 1.",
+    "validation_method": "Grouped counts and pattern counts.",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "evidence_007",
+    "source": "thrombosis_prediction.sqlite",
+    "query": "SELECT fld008, COUNT(*) FROM tab01 GROUP BY fld008 ORDER BY 2 DESC; SELECT SUM(fld008 LIKE '%,%'), SUM(fld008 LIKE '%+%'), SUM(fld008 LIKE '%/%'), COUNT(*) FROM tab01; SELECT COUNT(*) FROM tab01 WHERE fld008 GLOB '*SjS*'; SELECT COUNT(*) FROM tab01 WHERE fld008 GLOB '*SJS*'; SELECT COUNT(*) FROM tab01 WHERE fld008 GLOB '*Behcet*'; SELECT COUNT(*) FROM tab01 WHERE fld008 GLOB '*BEHCET*';",
+    "result": "Top labels: NULL 331, SLE 95, SjS 41, RA 29, 'SLE, SjS' 18, MCTD 15, PSS 10, APS 10, Behcet 9. 145 labels contain a comma, 14 contain '+'. Case-sensitive variants: 'SjS' 116 occurrences, 'SJS' 0; 'Behcet' 11, 'BEHCET' 0.",
+    "validation_method": "Grouped counts and pattern counts.",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "evidence_008",
+    "source": "thrombosis_prediction.sqlite",
+    "query": "SELECT fld013, COUNT(*), SUM(CASE WHEN fld012 IS NOT NULL AND fld012<>'' THEN 1 ELSE 0 END) FROM tab01 GROUP BY fld013; SELECT fld013, fld012, fld008 FROM tab01 WHERE fld013 IN (1,2,3) LIMIT 40;",
+    "result": "Status 0: 726 records, 0 with symptoms. Status 1: 57 records, all with symptoms (AMI, Apo, AP, abortion, thrombophlebitis, brain infarction, CVA, DVT). Status 2: 18 records, all with symptoms, predominantly 'CNS lupus'. Status 3: 5 records, all with symptoms, 'thrombocytopenia'.",
+    "validation_method": "Grouped counts and representative row inspection.",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "evidence_009",
+    "source": "thrombosis_prediction.sqlite",
+    "query": "SELECT COUNT(*), SUM(fld001 IS NULL), COUNT(DISTINCT fld001) FROM tab01; SELECT COUNT(*) FROM tab01 d JOIN tab02 p ON p.fld001=d.fld001; SELECT COUNT(*) FROM (SELECT DISTINCT fld001 FROM tab01 INTERSECT SELECT DISTINCT fld001 FROM tab02); SELECT COUNT(*) FROM tab01 d JOIN tab03 e ON e.fld001=d.fld001 AND e.fld019=d.fld002; SELECT COUNT(*) FROM (SELECT fld001,fld002,COUNT(*) c FROM tab01 GROUP BY fld001,fld002 HAVING c>1);",
+    "result": "tab01 has 806 rows, 36 NULL identifiers, 763 distinct identifiers. Join to tab02 yields 70 rows; 69 distinct identifiers intersect. Only 8 (patient, date) pairs match a laboratory examination. 6 (patient, date) pairs occur more than once.",
+    "validation_method": "Counts, join cardinalities and duplicate checks.",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "evidence_010",
+    "source": "thrombosis_prediction.sqlite",
+    "query": "SELECT COUNT(*), COUNT(DISTINCT fld001), COUNT(DISTINCT fld019) FROM tab03; SELECT COUNT(*) FROM tab03 e WHERE NOT EXISTS(SELECT 1 FROM tab02 p WHERE p.fld001=e.fld001); SELECT COUNT(*) FROM (SELECT fld001,fld019,COUNT(*) c FROM tab03 GROUP BY fld001,fld019 HAVING c>1); SELECT MIN(fld019), MAX(fld019) FROM tab03;",
+    "result": "13908 laboratory records for 302 distinct patients across 3723 distinct examination dates; examination dates range 1981-01-27 to 1999-03-04. No laboratory patient is missing from tab02; no duplicate (patient, date) pairs exist.",
+    "validation_method": "Grain, referential and duplicate checks.",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "evidence_011",
+    "source": "thrombosis_prediction.sqlite",
+    "query": "SELECT MIN(fld026), MAX(fld026), AVG(fld026), COUNT(fld026) FROM tab03;",
+    "result": "Uric acid: min 0.4, max 17.3, mean 4.40, 11103 non-null values.",
+    "validation_method": "Range and completeness statistics.",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "evidence_012",
+    "source": "thrombosis_prediction.sqlite",
+    "query": "SELECT MIN(fld037), MAX(fld037), AVG(fld037), COUNT(fld037) FROM tab03;",
+    "result": "Hematocrit: min 3.0, max 56.0, mean 37.93, 12081 non-null values.",
+    "validation_method": "Range and completeness statistics.",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "evidence_013",
+    "source": "thrombosis_prediction.sqlite",
+    "query": "SELECT MIN(fld035), MAX(fld035), AVG(fld035), COUNT(fld035) FROM tab03;",
+    "result": "Red blood cell count: min 0.4, max 6.6, mean 4.32, 12081 non-null values.",
+    "validation_method": "Range and completeness statistics.",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "evidence_014",
+    "source": "thrombosis_prediction.sqlite",
+    "query": "SELECT MIN(fld022), MAX(fld022), AVG(fld022), COUNT(fld022) FROM tab03;",
+    "result": "LDH: min 25, max 67080, mean 322.27, 11305 non-null values.",
+    "validation_method": "Range and completeness statistics.",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "evidence_015",
+    "source": "thrombosis_prediction.sqlite",
+    "query": "SELECT MIN(fld047), MAX(fld047), AVG(fld047), COUNT(fld047) FROM tab03;",
+    "result": "IgA: min 1, max 1765, mean 368.80, 2680 non-null values.",
+    "validation_method": "Range and completeness statistics.",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "evidence_016",
+    "source": "thrombosis_prediction.sqlite",
+    "query": "SELECT MIN(fld039), MAX(fld039), AVG(fld039), COUNT(fld039) FROM tab03;",
+    "result": "Prothrombin time: min 10.1, max 27.0, mean 13.27, 621 non-null values.",
+    "validation_method": "Range and completeness statistics.",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "evidence_017",
+    "source": "thrombosis_prediction.sqlite",
+    "query": "SELECT MIN(fld048), MAX(fld048), AVG(fld048), COUNT(fld048) FROM tab03;",
+    "result": "Anti-cardiolipin: min 0, max 1573, mean 190.23, 2678 non-null values.",
+    "validation_method": "Range and completeness statistics.",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "evidence_018",
+    "source": "thrombosis_prediction.sqlite",
+    "query": "SELECT MIN(fld030), MAX(fld030), AVG(fld030), COUNT(fld030) FROM tab03;",
+    "result": "Total cholesterol: min 37, max 568, mean 203.06, 10664 non-null values.",
+    "validation_method": "Range and completeness statistics.",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "evidence_019",
+    "source": "thrombosis_prediction.sqlite",
+    "query": "SELECT fld055, COUNT(*) FROM tab03 GROUP BY fld055;",
+    "result": "NULL = 13780, '0' = 102, '1' = 4, '2' = 1, '8' = 1, 'negative' = 20.",
+    "validation_method": "Grouped value counts.",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "evidence_020",
+    "source": "thrombosis_prediction.sqlite",
+    "query": "SELECT fld008, COUNT(*) FROM tab02 WHERE UPPER(fld008) LIKE '%RA%' GROUP BY fld008 ORDER BY 2 DESC;",
+    "result": "RA 152, 'RA, SJS' 25, 'RA susp' 19, Raynaud 9, MRA 9, 'SJS, RA' 8, 'RA (seronegative)' 5, JRA 3, plus labels such as 'generalized morphea', 'arthralgia', 'SLE, RA', 'APS, RA susp'. Substring matching for RA therefore also captures unrelated diagnoses.",
+    "validation_method": "Pattern-based label enumeration.",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "evidence_021",
+    "source": "thrombosis_prediction.sqlite",
+    "query": "SELECT fld002 FROM tab01 LIMIT 3; SELECT fld015,fld016,fld017 FROM tab02 LIMIT 3; SELECT fld019 FROM tab03 LIMIT 3;",
+    "result": "All sampled date values use ISO 'YYYY-MM-DD' text (for example 1997-05-27, 1934-02-13, 1991-09-11), while workload question text may use slash notation such as 1994/2/19 or 1993/11/12.",
+    "validation_method": "Representative value inspection.",
+    "timestamp": "2026-11-06"
+  }
+]

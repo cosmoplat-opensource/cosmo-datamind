@@ -1,0 +1,336 @@
+[
+  {
+    "id": "term_customer",
+    "name": "Customer",
+    "type": "entity",
+    "definition": "A distinct customer account, identified by CustomerID, that may hold payment cards and may have monthly consumption recorded.",
+    "scope": "Customer-level analysis across the customers, transactions_1k and yearmonth tables.",
+    "aliases": [
+      "customer account",
+      "client"
+    ],
+    "evidence": [
+      "evidence_customer_columns",
+      "evidence_yearmonth_structure"
+    ]
+  },
+  {
+    "id": "term_customer_segment",
+    "name": "Customer Segment",
+    "type": "dimension",
+    "definition": "Categorical grouping recorded per customer in customers.Segment. Three distinct values occur: KAM (2040 customers), LAM (3658), SME (26763). The values are disjoint and together cover all 32461 customers. The schema declares no business definition for these codes.",
+    "scope": "Applies when grouping or filtering customers by their recorded segment code.",
+    "aliases": [
+      "segment",
+      "customer type",
+      "KAM",
+      "LAM",
+      "SME"
+    ],
+    "evidence": [
+      "evidence_customer_segment_values"
+    ]
+  },
+  {
+    "id": "term_customer_currency",
+    "name": "Customer Currency",
+    "type": "dimension",
+    "definition": "Currency code recorded per customer in customers.Currency. Two values occur: CZK (30459 customers) and EUR (2002 customers). No currency column exists on yearmonth.Consumption or on transactions_1k.Price, so the currency of a measured amount is not recorded at row level.",
+    "scope": "Applies when comparing customer groups by recorded currency code.",
+    "aliases": [
+      "currency",
+      "CZK",
+      "EUR"
+    ],
+    "evidence": [
+      "evidence_customer_currency_values"
+    ]
+  },
+  {
+    "id": "term_payment_card",
+    "name": "Payment Card",
+    "type": "entity",
+    "definition": "A payment card identified by a CardID value on a transaction line. In the observed transactions, every CardID maps to exactly one CustomerID, and one customer may use between 1 and 17 distinct cards.",
+    "scope": "Card-level analysis within the transaction data only; no dedicated card table exists in the schema.",
+    "aliases": [
+      "card",
+      "CardID"
+    ],
+    "evidence": [
+      "evidence_card_ownership"
+    ]
+  },
+  {
+    "id": "term_gas_station",
+    "name": "Gas Station",
+    "type": "entity",
+    "definition": "A fuel retail site identified by GasStationID and described by ChainID, Country and Segment.",
+    "scope": "Site-level analysis across gasstations and transactions_1k.",
+    "aliases": [
+      "station",
+      "fuel station",
+      "site"
+    ],
+    "evidence": [
+      "evidence_gasstation_values"
+    ]
+  },
+  {
+    "id": "term_station_chain",
+    "name": "Station Chain",
+    "type": "dimension",
+    "definition": "Numeric chain grouping recorded in gasstations.ChainID. No chain dimension table exists in the schema; ChainID is a bare integer whose largest group covers 1462 of 5716 stations.",
+    "scope": "Applies when grouping stations by their recorded chain number.",
+    "aliases": [
+      "chain",
+      "ChainID",
+      "brand"
+    ],
+    "evidence": [
+      "evidence_chain_counts"
+    ]
+  },
+  {
+    "id": "term_station_country",
+    "name": "Station Country",
+    "type": "dimension",
+    "definition": "Country recorded per gas station in gasstations.Country. Two values occur: CZE (4836 stations) and SVK (880 stations).",
+    "scope": "Applies when grouping or filtering stations by country.",
+    "aliases": [
+      "country",
+      "CZE",
+      "SVK"
+    ],
+    "evidence": [
+      "evidence_gasstation_values"
+    ]
+  },
+  {
+    "id": "term_station_segment",
+    "name": "Station Segment",
+    "type": "dimension",
+    "definition": "Site category recorded per gas station in gasstations.Segment. Five values occur: Other (2392 stations), Premium (1428), Noname (1005), Value for money (597), Discount (294). All five values occur in both CZE and SVK.",
+    "scope": "Applies when grouping or filtering stations by recorded site category.",
+    "aliases": [
+      "station segment",
+      "Premium",
+      "Discount",
+      "Noname",
+      "Value for money"
+    ],
+    "evidence": [
+      "evidence_gasstation_values"
+    ]
+  },
+  {
+    "id": "term_product",
+    "name": "Product",
+    "type": "entity",
+    "definition": "A product or service item identified by ProductID and described by a free-text Description. The catalog holds 591 rows with ProductID values from 1 to 630, so identifiers are not contiguous and Description is not unique.",
+    "scope": "Product-level analysis across products and transactions_1k.",
+    "aliases": [
+      "article",
+      "item",
+      "ProductID"
+    ],
+    "evidence": [
+      "evidence_product_catalog"
+    ]
+  },
+  {
+    "id": "term_product_catalog_band",
+    "name": "Product Catalog Band",
+    "type": "category",
+    "definition": "Observed partition of products.ProductID into a low band (below 100) and a high band (300 and above). Descriptions in the low band are Czech, and the low band accounts for 28 products observed in transactions_1k at ChainID 1, 2, 4, 6, 9, 13, 19, 21, 24, 25, 26, 29, 30, 31, 33 and 35; descriptions in the high band include English entries and the high band is observed at ChainID 61, 70, 76, 77, 98, 130, 219 and 246. This partition is derived from observed identifier ranges and is not declared in the schema.",
+    "scope": "Applies when separating products by identifier band; it is an observed regularity, not a declared catalog category.",
+    "aliases": [
+      "catalog band",
+      "product group",
+      "product range"
+    ],
+    "evidence": [
+      "evidence_product_catalog",
+      "evidence_product_band_chain"
+    ]
+  },
+  {
+    "id": "term_transaction",
+    "name": "Transaction Line",
+    "type": "entity",
+    "definition": "One row of transactions_1k, recording a single product purchased at a single gas station by a single customer on a date and time. The table holds 1000 rows covering only 2012-08-23 through 2012-08-26.",
+    "scope": "Line-level transaction analysis within the four observed days only.",
+    "aliases": [
+      "transaction",
+      "purchase",
+      "sale"
+    ],
+    "evidence": [
+      "evidence_schema_tables",
+      "evidence_transaction_scope"
+    ]
+  },
+  {
+    "id": "term_transaction_day",
+    "name": "Transaction Day",
+    "type": "dimension",
+    "definition": "Calendar day recorded in transactions_1k.Date. Four distinct days are present: 2012-08-23, 2012-08-24, 2012-08-25 and 2012-08-26.",
+    "scope": "Applies only within the four-day scope of transactions_1k.",
+    "aliases": [
+      "date",
+      "day",
+      "transaction date"
+    ],
+    "evidence": [
+      "evidence_transaction_scope"
+    ]
+  },
+  {
+    "id": "term_consumption_month",
+    "name": "Consumption Month",
+    "type": "dimension",
+    "definition": "Reporting month recorded in yearmonth.Date as a six-character text value in YYYYMM form. Twenty-one months occur, from 201112 to 201311, with no rows for 201210, 201211 or 201212.",
+    "scope": "Applies to yearmonth reporting periods only; the value carries no day component.",
+    "aliases": [
+      "month",
+      "yearmonth",
+      "reporting month"
+    ],
+    "evidence": [
+      "evidence_yearmonth_structure",
+      "evidence_yearmonth_months_coverage"
+    ]
+  },
+  {
+    "id": "term_customer_month_consumption_record",
+    "name": "Customer-Month Consumption Record",
+    "type": "entity",
+    "definition": "One row of yearmonth, uniquely identified by the pair (Date, CustomerID), holding the consumption recorded for that customer in that month. The table holds 383282 rows for 30566 distinct customers.",
+    "scope": "Monthly panel analysis; one record per customer per reporting month.",
+    "aliases": [
+      "monthly record",
+      "yearmonth row"
+    ],
+    "evidence": [
+      "evidence_yearmonth_structure"
+    ]
+  },
+  {
+    "id": "term_monthly_consumption",
+    "name": "Monthly Consumption",
+    "type": "metric",
+    "definition": "Consumption amount recorded per customer-month in yearmonth.Consumption. Observed values range from -582092.86 to 2052187.11, and 152 rows are negative.",
+    "scope": "Monthly panel metric; comparable across customers and months within yearmonth.",
+    "aliases": [
+      "consumption",
+      "monthly consumption",
+      "monthly spend"
+    ],
+    "evidence": [
+      "evidence_yearmonth_negative"
+    ]
+  },
+  {
+    "id": "term_month_customer_coverage",
+    "name": "Month Customer Coverage",
+    "type": "metric",
+    "definition": "Number of distinct customers with a yearmonth record in a given reporting month. Because the primary key is (Date, CustomerID), this equals the row count per month, which ranges from 8 in 201112 to 25506 in 201305.",
+    "scope": "Used to judge how comparable two reporting months are before aggregating or trending consumption.",
+    "aliases": [
+      "coverage",
+      "customers per month",
+      "active customers"
+    ],
+    "evidence": [
+      "evidence_yearmonth_months_coverage"
+    ]
+  },
+  {
+    "id": "term_line_quantity",
+    "name": "Transaction Line Quantity",
+    "type": "metric",
+    "definition": "Integer quantity recorded per transaction line in transactions_1k.Amount, observed between 0 and 264. The value is 0 on 91 of the 1000 rows, so it is not always a usable quantity.",
+    "scope": "Line-level quantity; must be checked for zero before use as a divisor.",
+    "aliases": [
+      "amount",
+      "quantity",
+      "volume",
+      "liters"
+    ],
+    "evidence": [
+      "evidence_price_amount_relation"
+    ]
+  },
+  {
+    "id": "term_line_value",
+    "name": "Transaction Line Value",
+    "type": "metric",
+    "definition": "Real value recorded per transaction line in transactions_1k.Price, observed between 1.76 and 5762.49 with a mean of 425.58. For fuel lines with a positive quantity, this value divided by the quantity is stable near 22.6 to 24.0, which indicates the recorded value is a line total rather than a per-unit rate.",
+    "scope": "Line-level monetary value within the four-day transaction scope.",
+    "aliases": [
+      "price",
+      "line value",
+      "transaction value",
+      "amount paid"
+    ],
+    "evidence": [
+      "evidence_price_amount_relation"
+    ]
+  },
+  {
+    "id": "term_implied_unit_price",
+    "name": "Implied Unit Value",
+    "type": "metric",
+    "definition": "Unit value of a transaction line obtained by dividing the line value by the line quantity. It is defined only when the line quantity is greater than zero; 91 of 1000 lines have a zero quantity and therefore no defined unit value.",
+    "scope": "Comparable only across lines with a positive quantity.",
+    "aliases": [
+      "unit price",
+      "price per unit",
+      "price per liter"
+    ],
+    "evidence": [
+      "evidence_price_amount_relation"
+    ]
+  },
+  {
+    "id": "term_avg_consumption_per_customer",
+    "name": "Average Consumption per Customer",
+    "type": "metric",
+    "definition": "Average monthly consumption attributed to a customer in a reporting month, derived from monthly consumption and month customer coverage. It can be computed either as the mean over customer-month records or as the month total divided by the distinct customer count; the two differ whenever a customer has more than one record in a month.",
+    "scope": "Used for comparing months and customer groups within yearmonth.",
+    "aliases": [
+      "average consumption",
+      "consumption per customer",
+      "mean monthly consumption"
+    ],
+    "evidence": [
+      "evidence_yearmonth_months_coverage",
+      "evidence_yearmonth_negative"
+    ]
+  },
+  {
+    "id": "term_transaction_customer_reference",
+    "name": "Transaction Customer Reference",
+    "type": "concept",
+    "definition": "The CustomerID value recorded on a transaction line in transactions_1k.CustomerID. All 517 distinct values resolve to rows in customers.",
+    "scope": "Links transaction lines to customer accounts.",
+    "aliases": [
+      "transactions_1k.CustomerID"
+    ],
+    "evidence": [
+      "evidence_transaction_fk_resolution"
+    ]
+  },
+  {
+    "id": "term_consumption_customer_reference",
+    "name": "Consumption Customer Reference",
+    "type": "concept",
+    "definition": "The CustomerID value recorded on a monthly consumption record in yearmonth.CustomerID. All 30566 distinct values resolve to rows in customers.",
+    "scope": "Links monthly consumption records to customer accounts.",
+    "aliases": [
+      "yearmonth.CustomerID"
+    ],
+    "evidence": [
+      "evidence_yearmonth_structure"
+    ]
+  }
+]

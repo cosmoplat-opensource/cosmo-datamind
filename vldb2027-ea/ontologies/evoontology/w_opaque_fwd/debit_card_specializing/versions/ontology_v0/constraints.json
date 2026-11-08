@@ -1,0 +1,265 @@
+[
+  {
+    "id": "constraint_customer_segment_enum",
+    "target": "term_customer_segment",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "segment",
+      "customer segment",
+      "SME",
+      "LAM",
+      "KAM",
+      "segment of the customer"
+    ],
+    "severity": "block",
+    "scope": "Any filtering or grouping by customer segment",
+    "confidence": "high",
+    "description": "Customer segment values are SME (26763 customers), LAM (3658) and KAM (2040). The gas-station table has a column with the same opaque name that holds a different, disjoint set of values; customer segment must be taken from the customer table.",
+    "evidence": [
+      "evidence_customer_segment_values",
+      "evidence_segment_domain_disjoint"
+    ]
+  },
+  {
+    "id": "constraint_gas_station_segment_enum",
+    "target": "term_gas_station_segment",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "gas station segment",
+      "station segment",
+      "Premium",
+      "Value for money",
+      "Noname",
+      "Discount",
+      "Other"
+    ],
+    "severity": "block",
+    "scope": "Filtering or grouping by gas-station segment",
+    "confidence": "high",
+    "description": "Gas station segment values are Other (2392), Premium (1428), Noname (1005), Value for money (597) and Discount (294). None of these values occurs among customer segments (zero matching rows on the shared opaque column name), so the two segment concepts must not be mixed.",
+    "evidence": [
+      "evidence_station_segment_values",
+      "evidence_segment_domain_disjoint"
+    ]
+  },
+  {
+    "id": "constraint_year_month_format",
+    "target": "term_year_month",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "year",
+      "month",
+      "yearmonth",
+      "date",
+      "2013",
+      "2012",
+      "September 2013",
+      "peak month",
+      "annual"
+    ],
+    "severity": "block",
+    "scope": "Reading or filtering consumption periods",
+    "confidence": "high",
+    "description": "Consumption periods are six-character YYYYMM strings ranging from 201112 to 201311. The first four characters are the calendar year and characters five and six are the month, so September 2013 appears as 201309 and the whole of 2013 is the range 201301 through 201312. The values are month codes, not full dates.",
+    "evidence": [
+      "evidence_yearmonth_date_format"
+    ]
+  },
+  {
+    "id": "constraint_transaction_date_format",
+    "target": "term_transaction_date",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "2012/8/23",
+      "2012-08-23",
+      "date",
+      "after 2012/1/1",
+      "transaction date"
+    ],
+    "severity": "block",
+    "scope": "Reading or filtering transaction dates",
+    "confidence": "high",
+    "description": "Transaction dates are stored as YYYY-MM-DD text and cover 2012-08-23 through 2012-08-26. Workload dates written as 2012/8/23 correspond to the stored value 2012-08-23, and 2012/1/1 corresponds to 2012-01-01.",
+    "evidence": [
+      "evidence_transaction_date_format"
+    ]
+  },
+  {
+    "id": "constraint_transaction_time_format",
+    "target": "term_transaction_time",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "time",
+      "transaction time",
+      "21:20:00",
+      "distinct time",
+      "hour"
+    ],
+    "severity": "block",
+    "scope": "Reading or filtering transaction times",
+    "confidence": "high",
+    "description": "Transaction times are HH:MM:SS text from 00:07:00 to 23:20:00, with 599 distinct values. A full timestamp such as 2012/8/23 21:20:00 combines the transaction date value 2012-08-23 with the transaction time value 21:20:00 from the same transaction row.",
+    "evidence": [
+      "evidence_transaction_time_format"
+    ]
+  },
+  {
+    "id": "constraint_consumption_vs_transaction",
+    "target": "term_monthly_consumption",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "consumption",
+      "monthly consumption",
+      "total consumption",
+      "gas consumption",
+      "price",
+      "transaction amount"
+    ],
+    "severity": "block",
+    "scope": "Choosing a source for any consumption or spending question",
+    "confidence": "high",
+    "description": "Monthly consumption is a pre-aggregated monthly amount per customer and is much larger than the price of the sampled transactions: for August 2012, a customer with 19 sampled transactions totalling 8618.54 in price had a recorded monthly consumption of 158233.78. Consumption must not be reconstructed by summing transaction prices; the transaction table holds only a 1000-row sample of individual purchases.",
+    "evidence": [
+      "evidence_consumption_scale_vs_transactions",
+      "evidence_transaction_profile"
+    ]
+  },
+  {
+    "id": "constraint_currency_enum",
+    "target": "term_billing_currency",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "euro",
+      "EUR",
+      "CZK",
+      "paid in",
+      "pays in",
+      "currency",
+      "paying in"
+    ],
+    "severity": "block",
+    "scope": "Interpreting currency phrases in consumption and customer questions",
+    "confidence": "high",
+    "description": "Customer currency values are CZK (30459 customers) and EUR (2002 customers). Phrases such as pays in euro, paid in EUR or paid in euro mean the customer currency is EUR, and paid in CZK means the customer currency is CZK. This is a customer-level attribute, not a per-transaction currency.",
+    "evidence": [
+      "evidence_currency_values"
+    ]
+  },
+  {
+    "id": "constraint_country_enum",
+    "target": "term_gas_station_country",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "Czech Republic",
+      "CZE",
+      "Slovakia",
+      "SVK",
+      "country"
+    ],
+    "severity": "block",
+    "scope": "Interpreting country names for gas stations",
+    "confidence": "high",
+    "description": "Gas station country codes are CZE for the Czech Republic (4836 stations) and SVK for Slovakia (880 stations).",
+    "evidence": [
+      "evidence_country_values"
+    ]
+  },
+  {
+    "id": "constraint_transaction_scope",
+    "target": "term_transaction",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "transaction",
+      "transactions",
+      "purchase",
+      "September 2013",
+      "transactions in 2013",
+      "after 2012/1/1"
+    ],
+    "severity": "warning",
+    "scope": "Any question that relies on the transaction table",
+    "confidence": "high",
+    "description": "The transaction table contains 1000 rows covering only 2012-08-23 through 2012-08-26 (4 distinct dates), while consumption records span 201112 to 201311. Questions about transactions in any other period have no matching rows; an empty result then reflects sampling coverage rather than absence of business activity.",
+    "evidence": [
+      "evidence_transaction_profile"
+    ]
+  },
+  {
+    "id": "constraint_consumption_coverage",
+    "target": "term_year_month",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "2012",
+      "2013",
+      "year",
+      "annual",
+      "year over year",
+      "percentage increase",
+      "coverage"
+    ],
+    "severity": "warning",
+    "scope": "Annual totals and year-over-year comparisons of consumption",
+    "confidence": "high",
+    "description": "Consumption coverage is partial. 201112 has only 8 rows; 2012 covers January through September with 12894 to 18866 rows per month; 2013 covers January through November, where January (139 rows) and February (2415 rows) are far sparser than the 20723 to 25506 rows of March through November. Annual totals and year-over-year comparisons necessarily reflect these incomplete periods.",
+    "evidence": [
+      "evidence_consumption_coverage"
+    ]
+  },
+  {
+    "id": "constraint_annual_average_definition",
+    "target": "term_annual_consumption",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "average monthly consumption",
+      "annual average consumption",
+      "annual consumption",
+      "per year",
+      "year 2013",
+      "average monthly"
+    ],
+    "severity": "block",
+    "scope": "Computing an average monthly or annual average consumption level for a calendar year",
+    "confidence": "high",
+    "description": "Annual average consumption is the annual total consumption divided by twelve months, and average monthly consumption for a year uses the same twelve-month denominator. Months without a consumption record contribute zero rather than being omitted.",
+    "evidence": [
+      "evidence_consumption_coverage"
+    ]
+  },
+  {
+    "id": "constraint_negative_consumption",
+    "target": "term_monthly_consumption",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "negative",
+      "highest consumption",
+      "lowest consumption",
+      "peak",
+      "consumption value"
+    ],
+    "severity": "info",
+    "scope": "Aggregating or ranking monthly consumption values",
+    "confidence": "high",
+    "description": "Monthly consumption values range from -582092.86 to 2052187.11 and include 152 negative and 28 zero values. Negative values are retained in the data without an invalid flag and should not be silently discarded.",
+    "evidence": [
+      "evidence_yearmonth_profile"
+    ]
+  },
+  {
+    "id": "constraint_customer_coverage",
+    "target": "term_customer",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "customer count",
+      "how many customers",
+      "all customers",
+      "customers who"
+    ],
+    "severity": "info",
+    "scope": "Counting customers together with consumption",
+    "confidence": "high",
+    "description": "There are 32461 customers in the customer table but only 30566 distinct customers appear in the consumption table, so 1895 customers have no consumption record. Customer counts that require consumption differ from the total customer population.",
+    "evidence": [
+      "evidence_customer_coverage"
+    ]
+  }
+]

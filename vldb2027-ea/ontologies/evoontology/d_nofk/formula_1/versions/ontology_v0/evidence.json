@@ -1,0 +1,130 @@
+[
+  {
+    "id": "ev_tables_counts",
+    "source": "formula_1",
+    "query": "SELECT name FROM sqlite_master WHERE type IN ('table','index'); SELECT COUNT(*) per table",
+    "result": "14 tables: circuits, constructors, constructorResults, constructorStandings, drivers, driverStandings, lapTimes, pitStops, qualifying, races, results, seasons, status, sqlite_sequence. The DDL declares no FOREIGN KEY constraints. Row counts: circuits 72, constructors 208, drivers 840, races 976, results 23657, lapTimes 420369, pitStops 6070, qualifying 7397, seasons 68, status 134, driverStandings 31578, constructorStandings 11836, constructorResults 11082.",
+    "validation_method": "schema and row-count inspection",
+    "timestamp": "2026-10-10T00:00:00Z"
+  },
+  {
+    "id": "ev_race_span",
+    "source": "formula_1",
+    "query": "SELECT MIN(year), MAX(year), COUNT(DISTINCT year), MIN(date), MAX(date) FROM races; SELECT COUNT(*) FROM (SELECT year,round FROM races GROUP BY year,round HAVING COUNT(*)>1)",
+    "result": "Years 1950-2017 (68 distinct). Race dates 1950-05-13 to 2017-11-26. 0 duplicate (year, round) pairs, so (year, round) uniquely identifies a race. 2017 has 20 races, max round 20.",
+    "validation_method": "value range and uniqueness check",
+    "timestamp": "2026-10-10T00:00:00Z"
+  },
+  {
+    "id": "ev_season_link",
+    "source": "formula_1",
+    "query": "SELECT COUNT(*) FROM races r LEFT JOIN seasons s ON s.year=r.year WHERE s.year IS NULL; SELECT COUNT(*) FROM seasons WHERE NOT EXISTS(SELECT 1 FROM races WHERE races.year=seasons.year)",
+    "result": "0 and 0: the races-to-seasons relationship is complete in both directions. seasons holds 68 rows covering 1950-2017.",
+    "validation_method": "referential completeness check",
+    "timestamp": "2026-10-10T00:00:00Z"
+  },
+  {
+    "id": "ev_results_grain",
+    "source": "formula_1",
+    "query": "SELECT COUNT(*) FROM (SELECT raceId,driverId FROM results GROUP BY raceId,driverId HAVING COUNT(*)>1); SELECT MIN(year),MAX(year) FROM results r JOIN races ra USING(raceId) WHERE (raceId,driverId) IN (SELECT raceId,driverId FROM results GROUP BY raceId,driverId HAVING COUNT(*)>1); SELECT COUNT(*) FROM (SELECT raceId,positionOrder FROM results GROUP BY raceId,positionOrder HAVING COUNT(*)>1)",
+    "result": "resultId is the sole key: 23657 rows. 83 (raceId, driverId) pairs repeat across 40 races, all between 1950 and 1978, because one car could be shared by more than one driver. 103 (raceId, positionOrder) pairs also repeat, i.e. two entries can hold the same classification order.",
+    "validation_method": "grain uniqueness check",
+    "timestamp": "2026-10-10T00:00:00Z"
+  },
+  {
+    "id": "ev_shared_wins",
+    "source": "formula_1",
+    "query": "SELECT r.raceId, ra.year, COUNT(*) c FROM results r JOIN races ra ON ra.raceId=r.raceId WHERE r.positionOrder=1 GROUP BY r.raceId HAVING c>1; SELECT * FROM results WHERE raceId=828 AND positionOrder<=2",
+    "result": "973 entries sit at classification order 1 across 976 races. Three races hold two such entries: raceId 828 (1951 French GP, Fagioli and Fangio, both grid 7, 77 laps), 784 (1956 Argentine GP) and 780 (1957 British GP). A row count of classification order 1 therefore exceeds the number of winning cars.",
+    "validation_method": "value comparison across entries",
+    "timestamp": "2026-10-10T00:00:00Z"
+  },
+  {
+    "id": "ev_position_codes",
+    "source": "formula_1",
+    "query": "SELECT positionText, COUNT(*) FROM results WHERE positionText NOT GLOB '[0-9]*' GROUP BY positionText; SELECT COUNT(*) FROM results WHERE position IS NULL; SELECT r.positionText, s.status, COUNT(*) FROM results r JOIN status s ON s.statusId=r.statusId WHERE r.positionText IN ('F','W') GROUP BY 1,2 LIMIT 10",
+    "result": "Non-numeric codes: R 8495, F 1368, W 323, N 190, D 141, E 9. All 10528 rows with a non-numeric code have position NULL, and 0 rows with a numeric code have position NULL. F corresponds to status 'Did not qualify' or '107% Rule' (failed to qualify), W to 'Withdrew', N to 'Not classified' or lapped classifications, D to 'Disqualified', E to 'Excluded', R to retirements.",
+    "validation_method": "categorical value inspection and cross-check against status",
+    "timestamp": "2026-10-10T00:00:00Z"
+  },
+  {
+    "id": "ev_status_semantics",
+    "source": "formula_1",
+    "query": "SELECT s.statusId, s.status, COUNT(*) c FROM results r JOIN status s ON s.statusId=r.statusId GROUP BY s.statusId ORDER BY c DESC LIMIT 25; SELECT COUNT(*) FROM status WHERE status GLOB '+[0-9]* Lap*'",
+    "result": "status holds 134 labels. Most frequent: 1 Finished 5966, 11 +1 Lap 3265, 5 Engine 1971, 12 +2 Laps 1486, 81 Did not qualify 1025, 3 Accident 1007, 6 Gearbox 790, 20 Spun off 788, 4 Collision 755. 33 distinct '+N Lap' labels exist, and 'Not classified' (62) holds 172 entries. 'Finished' always carries a classification order; mechanical and accident labels usually do not.",
+    "validation_method": "category frequency and cross-tabulation",
+    "timestamp": "2026-10-10T00:00:00Z"
+  },
+  {
+    "id": "ev_circuit_orphan",
+    "source": "formula_1",
+    "query": "SELECT DISTINCT r.circuitId FROM races r LEFT JOIN circuits c ON c.circuitId=r.circuitId WHERE c.circuitId IS NULL; SELECT MIN(circuitId), MAX(circuitId), COUNT(*) FROM circuits",
+    "result": "Exactly one referenced circuit identifier is absent: circuitId = 1. The circuits table contains ids 2 through 73 only (72 rows). 22 races reference circuitId 1, and all of them are the Australian Grand Prix, from 1996 through 2017. Joining races to circuits therefore silently drops those 22 races.",
+    "validation_method": "referential completeness check",
+    "timestamp": "2026-10-10T00:00:00Z"
+  },
+  {
+    "id": "ev_schedule_no_results",
+    "source": "formula_1",
+    "query": "SELECT raceId, year, round, name, date FROM races r WHERE NOT EXISTS(SELECT 1 FROM results x WHERE x.raceId=r.raceId)",
+    "result": "Six races have zero result entries: raceId 983-988, the 2017 rounds 15-20 (Malaysian GP 2017-10-01 through Abu Dhabi GP 2017-11-26). Rounds 1-14 of 2017 each have 20 entries. The calendar is complete for 2017 while the results are not.",
+    "validation_method": "existence check per race",
+    "timestamp": "2026-10-10T00:00:00Z"
+  },
+  {
+    "id": "ev_coverage_windows",
+    "source": "formula_1",
+    "query": "SELECT MIN(ra.year), MAX(ra.year), COUNT(DISTINCT l.raceId) FROM lapTimes l JOIN races ra ON ra.raceId=l.raceId; same for pitStops, qualifying; SELECT MIN(ra.year), MAX(ra.year), COUNT(DISTINCT r.raceId) FROM results r JOIN races ra ON ra.raceId=r.raceId WHERE r.fastestLap IS NOT NULL",
+    "result": "Fastest-lap fields (fastestLap, rank, fastestLapTime, fastestLapSpeed) are populated only for 2004-2017: 5268 rows and 256 races, of which 256 have a rank-1 entry. lapTimes covers 1996-2017 with 389 races. pitStops covers 2011-2017 with 131 races. qualifying covers 1994-2017 with 339 races. Each detail table is far narrower than the 976-race calendar.",
+    "validation_method": "per-table temporal coverage check",
+    "timestamp": "2026-10-10T00:00:00Z"
+  },
+  {
+    "id": "ev_constructor_points_rule",
+    "source": "formula_1",
+    "query": "SELECT COUNT(*) FROM constructorResults cr JOIN (SELECT raceId,constructorId,SUM(points) s FROM results GROUP BY raceId,constructorId) a ON a.raceId=cr.raceId AND a.constructorId=cr.constructorId WHERE ABS(cr.points-a.s)>0.001; SELECT MIN(ra.year),MAX(ra.year) for the same predicate",
+    "result": "302 (race, constructor) pairs disagree between constructorResults.points and the sum of the constructor's driver points in results. Every disagreement falls in 1958-1978, and in each case the constructor value is lower than or equal to the driver sum (e.g. 1958: 6.0 against 10.0). From 1979 onward the two agree. A further 7 constructorResults rows have no matching results row at all (e.g. Marussia 2015 races 937/941/943/945, BMW Sauber 2002 race 124, Brabham 1979 races 514/522).",
+    "validation_method": "cross-table aggregate comparison by season",
+    "timestamp": "2026-10-10T00:00:00Z"
+  },
+  {
+    "id": "ev_constructorresults_status",
+    "source": "formula_1",
+    "query": "SELECT status, COUNT(*) FROM constructorResults GROUP BY status; SELECT cr.raceId, ra.year, c.name FROM constructorResults cr JOIN races ra ON ra.raceId=cr.raceId JOIN constructors c ON c.constructorId=cr.constructorId WHERE cr.status='D' LIMIT 5",
+    "result": "constructorResults.status is NULL for 11065 rows and 'D' for 17 rows. All 17 'D' rows are McLaren (constructorId 1) in the 2007 season. The column is otherwise unused.",
+    "validation_method": "category frequency inspection",
+    "timestamp": "2026-10-10T00:00:00Z"
+  },
+  {
+    "id": "ev_identifier_population",
+    "source": "formula_1",
+    "query": "SELECT SUM(number IS NULL), SUM(code IS NULL), COUNT(*) FROM drivers; SELECT COUNT(*) FROM results r JOIN drivers d ON d.driverId=r.driverId WHERE r.number<>d.number; SELECT * FROM driverStandings WHERE positionText='D'; SELECT COUNT(*) FROM (SELECT raceId,driverId,SUM(points) s FROM results GROUP BY raceId,driverId) a JOIN driverStandings st USING(raceId,driverId) WHERE a.s>st.points",
+    "result": "drivers: 840 rows; driverRef is never null; number is NULL in 804 rows and code is NULL in 757 rows (both only populated for recent drivers). results.number differs from drivers.number in 1741 entries, so the race car number is not the driver's registered number. driverStandings points match the summed result points in all but one pair: raceId 784 (1956 Argentine GP), driverId 577, 5.0 summed against 4.0 recorded.",
+    "validation_method": "null-population and cross-table comparison",
+    "timestamp": "2026-10-10T00:00:00Z"
+  },
+  {
+    "id": "ev_standings_scope",
+    "source": "formula_1",
+    "query": "SELECT COUNT(DISTINCT raceId) FROM driverStandings; SELECT COUNT(DISTINCT raceId) FROM constructorStandings; SELECT COUNT(*) FROM (SELECT raceId,driverId FROM driverStandings GROUP BY raceId,driverId HAVING COUNT(*)>1); SELECT positionText, COUNT(*) FROM driverStandings WHERE positionText NOT GLOB '[0-9]*' GROUP BY 1; same for constructorStandings",
+    "result": "driverStandings covers 970 of 976 races and constructorStandings 906. (raceId, driverId) and (raceId, constructorId) are unique. points and wins accumulate within a season (driver 1 in 2017: 18, 43, 61, 73, 98, 104 across rounds 1-6). Non-numeric positionText: one 'D' row in driverStandings (raceId 223, 1997 European GP, driverId 30, position 26 with 78 points retained) and 17 'E' rows in constructorStandings, all constructorId 1 in the 2007 season.",
+    "validation_method": "grain, monotonicity and category check",
+    "timestamp": "2026-10-10T00:00:00Z"
+  },
+  {
+    "id": "ev_grid_vs_qualifying",
+    "source": "formula_1",
+    "query": "SELECT COUNT(*), SUM(r.grid=q.position) FROM results r JOIN qualifying q ON q.raceId=r.raceId AND q.driverId=r.driverId WHERE r.grid>0; SELECT grid, COUNT(*) FROM results WHERE positionOrder=1 GROUP BY grid ORDER BY COUNT(*) DESC LIMIT 6; SELECT COUNT(*) FROM results WHERE grid=0",
+    "result": "Among 7382 joined entries with a non-zero grid, the grid slot equals the qualifying position in 5840 cases, so the two agree in most but not all entries. 404 of 973 winning entries started from grid 1, and 230 from grid 2. 1565 entries have grid = 0.",
+    "validation_method": "join comparison and distribution check",
+    "timestamp": "2026-10-10T00:00:00Z"
+  },
+  {
+    "id": "ev_geography",
+    "source": "formula_1",
+    "query": "SELECT SUM(lat IS NULL), SUM(lng IS NULL), SUM(alt IS NULL), COUNT(*), COUNT(DISTINCT country) FROM circuits; SELECT COUNT(DISTINCT nationality) FROM drivers; from constructors",
+    "result": "circuits: 72 rows, lat and lng present for all, alt NULL for all 72, 32 distinct countries. drivers: 41 distinct nationalities, none null. constructors: 24 distinct nationalities, none null. Country is stored as a name string in every case; there is no country key table.",
+    "validation_method": "null and cardinality check",
+    "timestamp": "2026-10-10T00:00:00Z"
+  }
+]

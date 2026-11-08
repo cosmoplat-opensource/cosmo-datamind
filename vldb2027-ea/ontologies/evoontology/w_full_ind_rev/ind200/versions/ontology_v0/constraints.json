@@ -1,0 +1,847 @@
+[
+  {
+    "id": "con_year_date_column",
+    "target": "term_business_date",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "2025年",
+      "2026年",
+      "年",
+      "过账",
+      "承诺",
+      "要求交货",
+      "生产日期",
+      "创建",
+      "更新",
+      "审批",
+      "到期",
+      "整改期限",
+      "关闭",
+      "年度",
+      "year"
+    ],
+    "severity": "block",
+    "scope": "Applies whenever a question restricts records to a year or an unqualified date range",
+    "confidence": "high",
+    "description": "Fact tables carry several date columns of different roles (business_date/posting_date/event_time on 67 tables; created_at/updated_at/approved_at on 92; plus due_date 15 tables, expiry_date 11, closed_date 10, manufacture_date 8, requested_date/promised_date/received_date 4 each, requested_delivery_date/promised_delivery_date 3 each, action_due_date 3). The Chinese qualifier in a question selects which one is meant: 过账 -> posting_date, 承诺 -> promised_date, 要求交货 -> requested_delivery_date, 生产日期 -> manufacture_date, 创建 -> created_at/create_date, 更新 -> updated_at, 审批 -> approved_at, 到期 -> due_date, 整改期限 -> action_due_date, 关闭 -> closed_date/close_date. An unqualified 年份 on a question such as '2025年的平均成本金额' refers to the table's primary business date, not to the record-writing timestamp.",
+    "evidence": [
+      "evidence_date_columns",
+      "evidence_envelope_scan"
+    ]
+  },
+  {
+    "id": "con_audit_user_namespace",
+    "target": "term_system_user_code",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "创建人",
+      "更新人",
+      "审批人",
+      "由U0001创建",
+      "由U0004创建",
+      "U0002更新",
+      "U0007审批",
+      "员工",
+      "人员"
+    ],
+    "severity": "block",
+    "scope": "Applies to every question naming a person through a created_by/updated_by/approved_by column",
+    "confidence": "high",
+    "description": "created_by/updated_by/approved_by hold U-codes U0001..U0012, a namespace of twelve system accounts. No U-code appears in dim_employee (which holds integer emp_id 1..122 with names like 合成员工0086), so these columns identify a system user rather than a member of staff and must be filtered as text on the audit column itself.",
+    "evidence": [
+      "evidence_system_user_codes",
+      "evidence_dim_employee"
+    ]
+  },
+  {
+    "id": "con_person_namespaces",
+    "target": "term_employee",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "员工",
+      "员工姓名",
+      "业务员",
+      "申请人",
+      "讲师",
+      "责任人",
+      "emp_id",
+      "employee_no",
+      "工号"
+    ],
+    "severity": "block",
+    "scope": "Applies whenever a question asks for a person or a person-scoped aggregate",
+    "confidence": "high",
+    "description": "The database uses three distinct person identifiers: (1) U-codes in the audit columns of every fact table; (2) integer emp_id referencing dim_employee, used by requisitions, KPI snapshots, overtime, maintenance tasks and sales targets; (3) E-codes in employee_no on the HR fact tables (labor booking, skill assessment, certification, employee assignment, overtime). They are not interchangeable and dim_employee does not contain the U- or E-codes.",
+    "evidence": [
+      "evidence_system_user_codes",
+      "evidence_dim_employee",
+      "evidence_fact_labor_booking",
+      "evidence_fact_skill_assessment"
+    ]
+  },
+  {
+    "id": "con_status_enum_domains",
+    "target": "term_record_status",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "状态",
+      "status",
+      "won",
+      "lost",
+      "draft",
+      "open",
+      "closed",
+      "CLOSED",
+      "APPROVED",
+      "active",
+      "delivered",
+      "undelivered",
+      "returned",
+      "stalled",
+      "dormant",
+      "inactive",
+      "is_deleted"
+    ],
+    "severity": "block",
+    "scope": "Applies when filtering or grouping by a status column",
+    "confidence": "high",
+    "description": "The status value domain is specific to each table family and is mostly an upper-case workflow state or a lower-case business state: quotation won 357 / lost 113 / draft 6; tax_invoice_line CLOSED 4768 / APPROVED 311; transfer_order CLOSED 819 / APPROVED 48; advance_shipping_notice line CLOSED 947 / APPROVED 70; sales_order delivered 4576 / undelivered 152 / returned 3; opportunity won 36 / open 22 / lost 20 / stalled 6; employee_assignment APPROVED 121 / CLOSED 1; ap closed 879 / open 122; dim_employee active 121 / inactive 1; dim_customer active 22 / dormant 1 / lost 2; dim_supplier active 12. A status value from one family must not be reused on another.",
+    "evidence": [
+      "evidence_status_enums",
+      "evidence_fact_quotation",
+      "evidence_fact_sales_order",
+      "evidence_fact_opportunity",
+      "evidence_fact_ap",
+      "evidence_fact_transfer_order"
+    ]
+  },
+  {
+    "id": "con_closed_ambiguity",
+    "target": "term_closed_date",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "关闭",
+      "已关闭",
+      "关闭的",
+      "closed",
+      "CLOSED",
+      "close_date",
+      "closed_date"
+    ],
+    "severity": "block",
+    "scope": "Applies to questions using 关闭 on any table",
+    "confidence": "high",
+    "description": "关闭 is ambiguous in this schema: some tables express it as the status value CLOSED/closed, others as a non-null closed_date/close_date column, and some carry both. The failure mode changes which rows are returned (a status filter ignores date, a date filter ignores status). The status form is used by tax_invoice_line, transfer_order, asn_line and ap; the date form appears on customer_complaint (closed_date), opportunity (close_date) and hazard_observation (closed_date).",
+    "evidence": [
+      "evidence_status_enums",
+      "evidence_date_columns",
+      "evidence_fact_customer_complaint",
+      "evidence_fact_opportunity"
+    ]
+  },
+  {
+    "id": "con_is_deleted",
+    "target": "term_is_deleted",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "有效",
+      "未删除",
+      "是否删除",
+      "is_deleted",
+      "全部",
+      "合计",
+      "总",
+      "记录数"
+    ],
+    "severity": "block",
+    "scope": "Applies to every count or aggregate over a table carrying is_deleted",
+    "confidence": "high",
+    "description": "is_deleted is a logical-delete flag present on the 92 tables that share the governance envelope. Deleted rows remain physically present, so any count or aggregate that does not explicitly ask about deleted records must exclude them.",
+    "evidence": [
+      "evidence_envelope_scan"
+    ]
+  },
+  {
+    "id": "con_dws_grain",
+    "target": "term_dws_summary",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "汇总表",
+      "DWS",
+      "日汇总",
+      "月汇总",
+      "合计",
+      "汇总",
+      "总产量",
+      "综合"
+    ],
+    "severity": "block",
+    "scope": "Applies when a question's wording could match either a DWS summary table or a detail fact table",
+    "confidence": "high",
+    "description": "The 16 DWS_* summary tables are aggregated views of the detail fact tables and are documented as reconcilable with them at a coarser grain (person/day, day/month). Adding a DWS total to a detail-table total, or counting rows across both, double-counts the same underlying facts; a question must be answered from one grain only.",
+    "evidence": [
+      "evidence_dws_tables",
+      "evidence_metric_catalog"
+    ]
+  },
+  {
+    "id": "con_detail_line_grain",
+    "target": "term_detail_line",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "明细",
+      "明细行",
+      "有多少条",
+      "条数",
+      "记录数",
+      "行数",
+      "张",
+      "笔",
+      "单量"
+    ],
+    "severity": "warning",
+    "scope": "Applies to row counts over any document family split into a header table and a *_line table",
+    "confidence": "high",
+    "description": "Document families expose one row per document at header grain and one row per item at line grain, and both are common question targets (e.g. 发运明细 vs 发运单, 库存调拨单 vs 库存调拨明细, 到货预告 vs 到货预告明细). The noun used in the question determines the grain; counting the header when the question asks for 明细 understates the result and vice versa.",
+    "evidence": [
+      "evidence_table_catalog",
+      "evidence_fact_transfer_order_line",
+      "evidence_fact_shipment_line"
+    ]
+  },
+  {
+    "id": "con_reason_code_constancy",
+    "target": "term_reason_code",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "原因",
+      "原因码",
+      "原因名称",
+      "报废原因",
+      "调拨原因",
+      "退货原因",
+      "停机原因",
+      "不合格原因"
+    ],
+    "severity": "warning",
+    "scope": "Applies when a question asks for a reason or groups by a reason",
+    "confidence": "high",
+    "description": "The generic reason_code column is physically present on about 69 tables but is constant in all but three of them (dim_downtime_reason, fact_downtime, fact_equipment_event): for example fact_scrap_event is pinned to QUALITY, fact_transfer_order and fact_transfer_order_line to OTHER. A question about 原因 therefore cannot be satisfied by filtering reason_code on those tables; the discriminating columns are the domain-specific ones such as defect_code, downtime_reason, hazard_type, control_measure, disposition, claim_type, return reason or inspection characteristic.",
+    "evidence": [
+      "evidence_reason_code_constancy",
+      "evidence_fact_scrap_event",
+      "evidence_fact_transfer_order_line",
+      "evidence_dim_reason_code"
+    ]
+  },
+  {
+    "id": "con_remarks_vocabulary",
+    "target": "term_remarks",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "备注",
+      "remarks",
+      "加急",
+      "补录",
+      "已电话确认",
+      "客户指定批次",
+      "跨月处理"
+    ],
+    "severity": "warning",
+    "scope": "Applies when filtering on the remarks column",
+    "confidence": "high",
+    "description": "remarks is drawn from a small closed vocabulary repeated across families: empty (dominant), 已电话确认, 客户指定批次, 加急, 跨月处理, 补录. The listed literals are the only values that can appear, and blank is by far the most common, so a remarks filter must match the exact literal and tolerate blanks.",
+    "evidence": [
+      "evidence_remarks_vocab",
+      "evidence_fact_customer_contact",
+      "evidence_fact_labor_booking"
+    ]
+  },
+  {
+    "id": "con_two_env_tables",
+    "target": "term_env_record",
+    "constraint_type": "scope",
+    "trigger_keywords": [
+      "环境监测",
+      "环境监测记录",
+      "监测点",
+      "排放",
+      "measured_value",
+      "emission_value",
+      "环境"
+    ],
+    "severity": "warning",
+    "scope": "Applies to any environmental-monitoring question",
+    "confidence": "high",
+    "description": "Two tables express the environmental-monitoring concept: an early table (record_date/emission_type/measured_value/limit_value/is_compliant, no governance envelope) and the standard env table (full envelope plus monitoring_point/emission_value/evidence_reference). They hold different scopes and column names, so a 环境监测 question must state which structure it matches rather than assuming the two are interchangeable.",
+    "evidence": [
+      "evidence_env_tables"
+    ]
+  },
+  {
+    "id": "con_downtime_reason_forms",
+    "target": "term_downtime_reason",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "停机原因",
+      "停机",
+      "滤网更换",
+      "换产清机",
+      "设备故障",
+      "物料短缺",
+      "能源中断",
+      "人员不足"
+    ],
+    "severity": "warning",
+    "scope": "Applies to equipment-downtime questions",
+    "confidence": "high",
+    "description": "dim_downtime_reason defines exactly eight reasons (D001 设备故障, D002 换产清机, D003 计划保养, D004 物料短缺, D005 质量异常, D006 能源中断, D007 人员不足, D008 滤网更换). fact_equipment_runtime stores the Chinese name as free text in downtime_reason, while fact_downtime stores the integer id in reason_code. A name such as 滤网更换 matches the text form only.",
+    "evidence": [
+      "evidence_dim_downtime_reason",
+      "evidence_fact_equipment_runtime",
+      "evidence_fact_downtime"
+    ]
+  },
+  {
+    "id": "con_sensor_reading_columns",
+    "target": "term_condition_monitoring",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "传感器",
+      "测量值",
+      "读数",
+      "读数单位",
+      "reading_value",
+      "阈值",
+      "上限阈值",
+      "设备状态监测"
+    ],
+    "severity": "warning",
+    "scope": "Applies to sensor-measurement and threshold questions",
+    "confidence": "high",
+    "description": "The sensor measurement is named reading_value on fact_condition_monitoring and fact_predictive_alert and value on fact_iot_data; the unit is reading_unit on the fact tables and unit on dim_sensor. fact_condition_monitoring and fact_iot_data hold identical readings for the same 180 sensors (28758 rows each, sum 5151284.7 each), so summing the measure over both double-counts the stream, whereas fact_predictive_alert (354 rows, sum 84147.1) is a disjoint alert set.",
+    "evidence": [
+      "evidence_fact_condition_monitoring",
+      "evidence_fact_iot_data",
+      "evidence_fact_predictive_alert",
+      "evidence_dim_sensor"
+    ]
+  },
+  {
+    "id": "con_region_denormalized",
+    "target": "term_region",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "地区",
+      "区域",
+      "华东",
+      "华南",
+      "华北",
+      "西南",
+      "华中",
+      "西北",
+      "sales_region"
+    ],
+    "severity": "info",
+    "scope": "Applies to region-filtered or region-grouped questions",
+    "confidence": "high",
+    "description": "The six regions (华东/华南/华北/西南/华中/西北) exist both as dim_region.region_name and as a denormalized sales_region text column covering 8 fact tables (sales_order_line, lead, customer_contact, sales_forecast, shipment, sales_contract_line and others), with the same value domain in both. A region filter can therefore be answered without the dimension, and joining both must not be treated as producing new rows.",
+    "evidence": [
+      "evidence_dim_region",
+      "evidence_fact_sales_order_line"
+    ]
+  },
+  {
+    "id": "con_currency_denormalized",
+    "target": "term_currency",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "币种",
+      "币种名称",
+      "currency_code",
+      "汇率",
+      "exchange_rate",
+      "本位币"
+    ],
+    "severity": "info",
+    "scope": "Applies to currency grouping and exchange-rate questions",
+    "confidence": "high",
+    "description": "Currency appears as dim_currency.currency_code (CNY/USD/EUR/JPY with exchange_rate and decimal digits) and as a denormalized currency_code text column on about 40 fact tables, each accompanied by its own exchange_rate column. Grouping by currency code or summing exchange rate can be done in place; resolving the currency name needs the dimension.",
+    "evidence": [
+      "evidence_dim_currency",
+      "evidence_measure_universality"
+    ]
+  },
+  {
+    "id": "con_row_version_metric",
+    "target": "term_row_version",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "行版本",
+      "row_version",
+      "行版本合计",
+      "行版本平均值"
+    ],
+    "severity": "info",
+    "scope": "Applies to questions that aggregate row_version",
+    "confidence": "high",
+    "description": "row_version is an integer 1..3 concurrency counter that the workload also uses as an aggregatable measure (行版本合计, 行版本平均值). It carries no quantity or amount meaning, so its sum or average is a governance statistic about how often the record was revised, not a business quantity.",
+    "evidence": [
+      "evidence_row_version_usage"
+    ]
+  },
+  {
+    "id": "con_priority_metric",
+    "target": "term_priority",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "优先级",
+      "priority",
+      "优先级合计"
+    ],
+    "severity": "info",
+    "scope": "Applies to questions that aggregate priority",
+    "confidence": "high",
+    "description": "priority is a small integer governance score (present on 68 tables) that the workload sums as a measure (优先级合计). It ranks records within their own table and carries no absolute business quantity; summing it across heterogeneous tables mixes incomparable scales.",
+    "evidence": [
+      "evidence_measure_universality",
+      "evidence_envelope_scan"
+    ]
+  },
+  {
+    "id": "con_data_quality_score_metric",
+    "target": "term_data_quality_score",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "数据质量分",
+      "data_quality_score",
+      "质量分",
+      "数据质量分合计",
+      "数据质量分的平均值"
+    ],
+    "severity": "info",
+    "scope": "Applies to questions that aggregate the data-quality score",
+    "confidence": "high",
+    "description": "data_quality_score is a governance score carried by the 92 envelope tables and used by the workload as an additive/average measure. It describes the record's governance quality, not a business fact.",
+    "evidence": [
+      "evidence_envelope_scan"
+    ]
+  },
+  {
+    "id": "con_local_amount_rule",
+    "target": "term_local_amount",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "本位币",
+      "本位币金额",
+      "local_amount",
+      "折算",
+      "汇率",
+      "本位币金额合计"
+    ],
+    "severity": "block",
+    "scope": "Applies when a question asks for a base-currency amount",
+    "confidence": "high",
+    "description": "local_amount is the base-currency value derived from amount and exchange_rate; a CNY row has exchange_rate 1 and local_amount equal to amount. 本位币金额 questions resolve to local_amount where the table carries it, and must not be answered by summing the transaction-currency amount column instead.",
+    "evidence": [
+      "evidence_measure_universality",
+      "evidence_dim_currency"
+    ]
+  },
+  {
+    "id": "con_measure_vocabulary",
+    "target": "term_amount",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "金额",
+      "数量",
+      "单价",
+      "税额",
+      "成本金额",
+      "预算金额",
+      "基本单位数量",
+      "计划数量",
+      "实际数量"
+    ],
+    "severity": "warning",
+    "scope": "Applies when a question names a measure without naming a table",
+    "confidence": "high",
+    "description": "A uniform measure vocabulary is reused across dozens of tables: amount 48, quantity 47, unit_price 46, tax_amount 41, local_amount 40, cost_amount 40, exchange_rate 40, base_quantity 38, planned_quantity 42, actual_quantity 41, qualified_quantity 38, rejected_quantity 38, budget_amount 22, rate_value 25, score_value 25, duration_minutes 19. A measure name alone therefore does not identify the table; the business document named in the question does.",
+    "evidence": [
+      "evidence_measure_universality"
+    ]
+  },
+  {
+    "id": "con_material_measure_ambiguity",
+    "target": "term_material",
+    "constraint_type": "scope",
+    "trigger_keywords": [
+      "原材料",
+      "物料",
+      "物料名称",
+      "税额合计最高的原材料",
+      "实际投料合计最多",
+      "单价合计最高的物料"
+    ],
+    "severity": "warning",
+    "scope": "Applies to questions that rank materials by a measure",
+    "confidence": "high",
+    "description": "Multiple fact families reference material_id and also carry tax_amount / quantity / unit_price (supplier quality issues, ASN lines, transfer lines, supplier contract lines, purchase order lines, material consumption, lot trace). '税额合计最高的原材料' or '实际投料合计最多的原材料' therefore depends on the document family implied by the question; the material concept alone does not select a table.",
+    "evidence": [
+      "evidence_measure_universality",
+      "evidence_table_catalog",
+      "evidence_fact_material_consumption",
+      "evidence_fact_po_line"
+    ]
+  },
+  {
+    "id": "con_ap_amount_rule",
+    "target": "term_ap",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "应付账款",
+      "已付金额",
+      "账期",
+      "到期",
+      "尚未付款",
+      "open",
+      "closed"
+    ],
+    "severity": "warning",
+    "scope": "Applies to accounts-payable questions",
+    "confidence": "high",
+    "description": "An AP item is created one per qualified goods receipt with the documented rule amount = 收货数量 x 采购单价 x 1.13 and due_date = 收货当月月末 + 账期天数; paid_amount closes the item (closed 879 / open 122). 已付金额 is the stored paid_amount, and 到期 is expressed through the derived due_date rather than a status.",
+    "evidence": [
+      "evidence_fact_ap",
+      "evidence_fact_goods_receipt"
+    ]
+  },
+  {
+    "id": "con_ar_aging_derived",
+    "target": "term_ar_aging",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "账龄",
+      "当前账龄",
+      "账龄月数",
+      "逾期",
+      "overdue",
+      "应收账款"
+    ],
+    "severity": "warning",
+    "scope": "Applies to receivable-aging questions",
+    "confidence": "high",
+    "description": "fact_ar_aging stores the derived aging attributes directly: current_month (当前账龄(月)), the buckets aging_1m..aging_12m_plus, is_overdue and overdue_months, all computed from due_date and balance_amount. Questions asking for a customer's current aging month resolve to current_month rather than a recomputation.",
+    "evidence": [
+      "evidence_fact_ar_aging"
+    ]
+  },
+  {
+    "id": "con_holiday_name_location",
+    "target": "term_holiday_name",
+    "constraint_type": "scope",
+    "trigger_keywords": [
+      "节假日",
+      "节假日名称",
+      "国庆节",
+      "法定节假日",
+      "春节",
+      "当天"
+    ],
+    "severity": "warning",
+    "scope": "Applies to questions that filter or return a holiday name",
+    "confidence": "high",
+    "description": "holiday_name exists only on dim_calendar, which is a single day-grained table covering 2025-01-01..2026-07-01 with 40 named holidays (元旦/春节/清明节/劳动节/端午节/中秋节/国庆节/法定节假日). To reach a holiday name from a fact table, its date column must be matched to calendar_date.",
+    "evidence": [
+      "evidence_calendar_holidays",
+      "evidence_calendar"
+    ]
+  },
+  {
+    "id": "con_calendar_shared",
+    "target": "term_calendar",
+    "constraint_type": "scope",
+    "trigger_keywords": [
+      "日历",
+      "日期",
+      "星期",
+      "工作日",
+      "节假日",
+      "一个月",
+      "那一天"
+    ],
+    "severity": "info",
+    "scope": "Applies to calendar-attribute questions",
+    "confidence": "high",
+    "description": "dim_calendar is a single shared calendar (547 rows, one row per day, with year/quarter/month/week, is_workday, is_holiday, holiday_name, fiscal_year, fiscal_period). All fact-table business_date ranges fall inside it, so a fact date can always be joined to it without loss.",
+    "evidence": [
+      "evidence_calendar"
+    ]
+  },
+  {
+    "id": "con_hazard_type_two_groundings",
+    "target": "term_hazard",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "危险类型",
+      "危险源",
+      "危险源观察",
+      "物理性",
+      "化学性",
+      "人机工程"
+    ],
+    "severity": "warning",
+    "scope": "Applies to hazard-type questions",
+    "confidence": "high",
+    "description": "危险类型 is available in two interchangeable groundings: dim_hazard.hazard_category and the denormalized fact_hazard_observation.hazard_type, both carrying 物理性/化学性/人机工程 (201/99/34 on the observation table). Only the dimension additionally carries location and risk_level.",
+    "evidence": [
+      "evidence_dim_hazard",
+      "evidence_fact_hazard_observation"
+    ]
+  },
+  {
+    "id": "con_disposition_enums",
+    "target": "term_inspection_result",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "处置",
+      "disposition",
+      "让步接收",
+      "返工",
+      "报废",
+      "退货",
+      "催交",
+      "不合格处置"
+    ],
+    "severity": "warning",
+    "scope": "Applies to questions filtering on a disposition",
+    "confidence": "high",
+    "description": "disposition carries a different domain per family: inspection_lot and inspection_result use 报废/让步接收/返工/退货 (with a large blank bucket on inspection_result: 93 让步接收, 47 返工, 52 报废, 55 退货 against 2721 blanks), while customer_complaint uses 催交/退货. A disposition literal must be matched against the right family, and a bare filter must tolerate blanks.",
+    "evidence": [
+      "evidence_fact_inspection_result",
+      "evidence_fact_customer_complaint",
+      "evidence_fact_supplier_quality_issue"
+    ]
+  },
+  {
+    "id": "con_control_measure_enum",
+    "target": "term_safety_action",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "控制措施",
+      "个体防护",
+      "工程控制",
+      "管理控制",
+      "安全整改措施"
+    ],
+    "severity": "warning",
+    "scope": "Applies to safety-action questions",
+    "confidence": "high",
+    "description": "control_measure on the safety-action table takes exactly three values: 管理控制 72 / 工程控制 55 / 个体防护 49. A safety-corrective-action question filtered on 个体防护 matches this column.",
+    "evidence": [
+      "evidence_fact_safety_action"
+    ]
+  },
+  {
+    "id": "con_audit_type_enum",
+    "target": "term_safety_audit",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "审计类型",
+      "月度安全审计",
+      "专项审计",
+      "安全审计"
+    ],
+    "severity": "info",
+    "scope": "Applies to safety-audit questions",
+    "confidence": "high",
+    "description": "audit_type on the safety-audit table takes two values, 专项审计 18 and 月度安全审计 18, so an audit-type filter is a two-way split rather than over the general reason vocabulary.",
+    "evidence": [
+      "evidence_fact_safety_audit"
+    ]
+  },
+  {
+    "id": "con_return_reason_enum",
+    "target": "term_return",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "退货原因",
+      "退货",
+      "包装破损受潮",
+      "颜色与样板不符",
+      "冲击强度偏低",
+      "规格型号发错",
+      "客户订单变更取消"
+    ],
+    "severity": "warning",
+    "scope": "Applies to sales-return questions",
+    "confidence": "high",
+    "description": "The return table's reason column draws from a fixed list of business reasons such as 冲击强度偏低 31 / 颜色与样板不符 22 / 客户订单变更取消 12 / 包装破损受潮 9 / 规格型号发错 9; these are return reasons, distinct from the generic reason_code values.",
+    "evidence": [
+      "evidence_fact_return"
+    ]
+  },
+  {
+    "id": "con_payment_method_enum",
+    "target": "term_payment_out",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "付款方式",
+      "收款方式",
+      "letter_of_credit",
+      "bank_transfer",
+      "电汇",
+      "银承",
+      "银行转账"
+    ],
+    "severity": "warning",
+    "scope": "Applies to payment-method questions",
+    "confidence": "high",
+    "description": "The payment method is exposed under two different column names with two different domains: the outgoing table uses payment_method with bank_transfer 599 / letter_of_credit 280, while the receipt table uses payment_type with 电汇 3239 / 银承 1705. '银行转账' corresponds to bank_transfer and 电汇 is the receipt-side analogue, so the direction of the cash flow selects both the table and the literal.",
+    "evidence": [
+      "evidence_fact_payment",
+      "evidence_fact_payment_out"
+    ]
+  },
+  {
+    "id": "con_grade_enum",
+    "target": "term_production_output",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "产品等级",
+      "grade",
+      "优等品",
+      "一等品",
+      "合格品",
+      "返工品",
+      "等级"
+    ],
+    "severity": "info",
+    "scope": "Applies to production-output questions grouped by grade",
+    "confidence": "high",
+    "description": "The production-output grade domain is 一等品 2721 / 优等品 2721 / 合格品 93 / 返工品 116, accompanied by is_first_grade and first_grade_rate. Note that 一等品 and 优等品 are separate values despite their similar wording.",
+    "evidence": [
+      "evidence_fact_production_output"
+    ]
+  },
+  {
+    "id": "con_equipment_runtime_grain",
+    "target": "term_equipment_runtime",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "设备运行记录",
+      "运行时长",
+      "停机原因",
+      "设备状态监测",
+      "累计运行时长"
+    ],
+    "severity": "warning",
+    "scope": "Applies to equipment-runtime questions",
+    "confidence": "high",
+    "description": "fact_equipment_runtime is keyed by line and record date rather than by equipment_id, and its downtime_reason column is blank for 3120 of 3935 rows. Equipment attribution therefore runs through the line/equipment hierarchy, and a downtime-reason filter returns the non-blank subset only.",
+    "evidence": [
+      "evidence_fact_equipment_runtime"
+    ]
+  },
+  {
+    "id": "con_inspection_result_domain",
+    "target": "term_goods_receipt",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "检验结果",
+      "inspection_result",
+      "pass",
+      "fail",
+      "conditional",
+      "pending",
+      "收货单"
+    ],
+    "severity": "info",
+    "scope": "Applies to goods-receipt inspection questions",
+    "confidence": "high",
+    "description": "fact_goods_receipt.inspection_result is documented with the domain pass/fail/conditional/pending, and the workload filters the literal 'fail'; this domain is separate from the *_line status domain (CLOSED/APPROVED).",
+    "evidence": [
+      "evidence_fact_goods_receipt"
+    ]
+  },
+  {
+    "id": "con_cost_allocation_scope",
+    "target": "term_cost_allocation",
+    "constraint_type": "scope",
+    "trigger_keywords": [
+      "成本分摊",
+      "分摊记录",
+      "管理会计",
+      "CO-",
+      "source_cc",
+      "target_pc"
+    ],
+    "severity": "warning",
+    "scope": "Applies to cost-allocation questions",
+    "confidence": "high",
+    "description": "fact_cost_allocation is a management-accounting table: it links a source cost center to a target profit center with voucher numbers prefixed CO- that never reach the general ledger, so cost-allocation rows are not double counted with fact_gl_entry.",
+    "evidence": [
+      "evidence_fact_cost_allocation"
+    ]
+  },
+  {
+    "id": "con_gl_entry_grain",
+    "target": "term_gl_entry",
+    "constraint_type": "scope",
+    "trigger_keywords": [
+      "总账凭证",
+      "凭证",
+      "借贷",
+      "会计分录",
+      "gl_entry"
+    ],
+    "severity": "info",
+    "scope": "Applies to general-ledger questions",
+    "confidence": "high",
+    "description": "fact_gl_entry holds one summary voucher per business type per day (balanced, including a 2025-01-01 opening-balance voucher) with debit_amount/credit_amount, so voucher counts are day-by-business-type counts rather than transaction counts.",
+    "evidence": [
+      "evidence_fact_gl_entry"
+    ]
+  },
+  {
+    "id": "con_emission_evidence_reference",
+    "target": "term_emission_event",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "证据参考",
+      "evidence_reference",
+      "排放事件",
+      "排放"
+    ],
+    "severity": "info",
+    "scope": "Applies to emission-event questions",
+    "confidence": "high",
+    "description": "fact_emission_event.evidence_reference holds report identifiers of the form 月度监测报告-YYYYMM, one row per report, so grouping by 证据参考 groups emissions by monthly monitoring report.",
+    "evidence": [
+      "evidence_fact_emission_event"
+    ]
+  },
+  {
+    "id": "con_workshop_name_hierarchy",
+    "target": "term_workshop",
+    "constraint_type": "scope",
+    "trigger_keywords": [
+      "车间",
+      "特种工程塑料车间",
+      "阻燃材料车间",
+      "PP改性车间",
+      "PA改性车间",
+      "ABS-PC合金车间"
+    ],
+    "severity": "info",
+    "scope": "Applies to questions naming a workshop",
+    "confidence": "high",
+    "description": "The five workshops (PP改性车间, PA改性车间, ABS-PC合金车间, 阻燃材料车间, 特种工程塑料车间) are addressable from production orders through dim_production_line.workshop_id, from safety audits and energy records through their own workshop_id, but the workshop name never appears as a denormalized column on the fact tables.",
+    "evidence": [
+      "evidence_dim_workshop",
+      "evidence_dim_production_line",
+      "evidence_fact_safety_audit",
+      "evidence_fact_energy_consumption"
+    ]
+  }
+]

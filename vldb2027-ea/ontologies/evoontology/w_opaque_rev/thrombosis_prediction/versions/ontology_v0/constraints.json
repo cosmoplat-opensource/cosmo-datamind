@@ -1,0 +1,521 @@
+[
+  {
+    "id": "constraint_sex_codes",
+    "target": "term_sex",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "male",
+      "female",
+      "women",
+      "woman",
+      "men",
+      "sex",
+      "gender",
+      "M",
+      "F"
+    ],
+    "severity": "block",
+    "scope": "Any cohort filter or grouping by patient sex.",
+    "confidence": "high",
+    "description": "Patient sex is coded as 'F' for female and 'M' for male. Questions using 'women' or 'female' refer to 'F'; 'men' or 'male' refer to 'M'. Thirteen patients have no recorded sex.",
+    "evidence": [
+      "evidence_003"
+    ]
+  },
+  {
+    "id": "constraint_uric_acid_reference_range",
+    "target": "term_uric_acid",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "uric acid",
+      "normal range",
+      "abnormal uric acid",
+      "within normal",
+      "high uric acid"
+    ],
+    "severity": "block",
+    "scope": "Interpreting whether a uric acid measurement is normal or abnormal.",
+    "confidence": "high",
+    "description": "The workload uses sex-specific upper reference limits for uric acid: 8.0 for males and 6.5 for females. Treat these values as upper bounds of the normal range; whether a question asks for within-normal or abnormal measurements determines which side of the bound is selected.",
+    "evidence": [
+      "evidence_011",
+      "evidence_003"
+    ]
+  },
+  {
+    "id": "constraint_hematocrit_threshold",
+    "target": "term_hematocrit",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "hematocrit",
+      "hematoclit",
+      "HCT",
+      "exceeded normal range",
+      "above normal"
+    ],
+    "severity": "block",
+    "scope": "Judging hematocrit against the normal range.",
+    "confidence": "high",
+    "description": "A hematocrit value of 52 or more is treated as exceeding the normal range in this workload. Observed hematocrit values span 3.0 to 56.0.",
+    "evidence": [
+      "evidence_012"
+    ]
+  },
+  {
+    "id": "constraint_rbc_lower_threshold",
+    "target": "term_red_blood_cell_count",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "red blood cell",
+      "RBC",
+      "lower red blood cell",
+      "below normal",
+      "anemia"
+    ],
+    "severity": "block",
+    "scope": "Judging red blood cell count against the normal range.",
+    "confidence": "high",
+    "description": "A red blood cell count below 3.5 is treated as lower than normal in this workload.",
+    "evidence": [
+      "evidence_013"
+    ]
+  },
+  {
+    "id": "constraint_ldh_threshold",
+    "target": "term_ldh",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "LDH",
+      "lactate dehydrogenase",
+      "beyond normal range",
+      "high LDH"
+    ],
+    "severity": "block",
+    "scope": "Judging LDH against the normal range.",
+    "confidence": "high",
+    "description": "An LDH value above 500 is treated as beyond the normal range in this workload. Observed values reach 67080, so the threshold is not a maximum of the data.",
+    "evidence": [
+      "evidence_014"
+    ]
+  },
+  {
+    "id": "constraint_iga_reference_range",
+    "target": "term_immunoglobulin_a",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "IgA",
+      "immunoglobulin A",
+      "normal Ig A",
+      "normal IgA"
+    ],
+    "severity": "block",
+    "scope": "Judging IgA against the normal range.",
+    "confidence": "high",
+    "description": "A normal IgA level is treated as strictly greater than 80 and strictly less than 500 in this workload.",
+    "evidence": [
+      "evidence_015"
+    ]
+  },
+  {
+    "id": "constraint_pt_threshold",
+    "target": "term_prothrombin_time",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "prothrombin time",
+      "PT",
+      "abnormal PT",
+      "prolonged PT"
+    ],
+    "severity": "block",
+    "scope": "Judging prothrombin time as abnormal.",
+    "confidence": "high",
+    "description": "A prothrombin time of 14 or more is treated as abnormal in this workload. PT is recorded for only 621 of 13908 laboratory records.",
+    "evidence": [
+      "evidence_016"
+    ]
+  },
+  {
+    "id": "constraint_anti_sm_coding",
+    "target": "term_anti_sm_antibody",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "anti-SM",
+      "anti-Sm",
+      "anti Smith",
+      "normal anti-SM",
+      "anti-SM positive",
+      "anti-SM negative"
+    ],
+    "severity": "block",
+    "scope": "Interpreting anti-Sm results and selecting normal anti-Sm records.",
+    "confidence": "high",
+    "description": "Anti-Sm values are stored as text codes, not as the notation used in questions: 'negative' corresponds to negative ('-'), '0' corresponds to weakly positive ('+-'), and '1' corresponds to positive ('+'). Normal anti-Sm in the workload means codes 'negative' or '0'. Additional observed codes are '2' and '8'; the column is null for most laboratory records.",
+    "evidence": [
+      "evidence_019"
+    ]
+  },
+  {
+    "id": "constraint_thrombosis_status_codes",
+    "target": "term_thrombosis_status",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "thrombosis",
+      "thrombosis degree",
+      "severe thrombosis",
+      "most serious thrombosis",
+      "no thrombosis",
+      "CNS lupus",
+      "thrombocytopenia",
+      "does not have thrombosis"
+    ],
+    "severity": "warning",
+    "scope": "Interpreting thrombosis-related status codes.",
+    "confidence": "high",
+    "description": "Thrombosis-related status is categorical, not ordinal: 0 = no thrombosis, 1 = thrombotic event (for example AMI, brain infarction, DVT, thrombophlebitis, abortion), 2 = CNS lupus, 3 = thrombocytopenia. No single code represents an ordinal severity; a phrase such as 'severe' or 'most serious' must be mapped to the specific complication category intended rather than assumed to be code 1 or 2.",
+    "evidence": [
+      "evidence_008"
+    ]
+  },
+  {
+    "id": "constraint_diagnosis_multilabel",
+    "target": "term_patient_diagnosis",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "diagnosis",
+      "diagnosed with",
+      "disease",
+      "SLE",
+      "RA",
+      "APS",
+      "combination diagnosis"
+    ],
+    "severity": "warning",
+    "scope": "Filtering patients by a named disease.",
+    "confidence": "high",
+    "description": "Diagnosis values are free text and frequently multi-label, separated by commas, plus signs or slashes (for example 'SLE, SJS', 'SLE+ABN+AP', 'SLE/APS'). Qualifiers such as 'susp' also occur. Exact-label equality captures only single-label records; a question asking whether a patient was diagnosed with a disease may refer to a component of a combination label.",
+    "evidence": [
+      "evidence_006",
+      "evidence_007"
+    ]
+  },
+  {
+    "id": "constraint_ra_substring_ambiguity",
+    "target": "term_ra_diagnosis",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "RA",
+      "rheumatoid arthritis",
+      "MRA",
+      "Raynaud",
+      "JRA"
+    ],
+    "severity": "warning",
+    "scope": "Matching rheumatoid arthritis in diagnosis labels.",
+    "confidence": "high",
+    "description": "Case-insensitive substring matching for 'RA' is unsafe: the vocabulary also contains MRA, JRA, Raynaud, arthralgia and purpura, all of which contain the letters 'ra'. RA diagnosis matching must be token-aware and must not treat MRA or Raynaud as rheumatoid arthritis.",
+    "evidence": [
+      "evidence_020"
+    ]
+  },
+  {
+    "id": "constraint_diagnosis_label_variants",
+    "target": "term_patient_diagnosis",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "Sjogren",
+      "Sjögren",
+      "SJS",
+      "SjS",
+      "Behcet",
+      "BEHCET",
+      "spelling"
+    ],
+    "severity": "warning",
+    "scope": "Matching diagnosis labels across the two diagnosis fields.",
+    "confidence": "high",
+    "description": "Spelling and case vary between the two diagnosis fields: tab02 uses 'SJS' and 'BEHCET' (with one 'Behcet'), while tab01 uses 'SjS' and 'Behcet'. Case-sensitive equality will miss variants; SQLite's LIKE is case-insensitive for ASCII letters but '=' is not.",
+    "evidence": [
+      "evidence_006",
+      "evidence_007",
+      "evidence_012"
+    ]
+  },
+  {
+    "id": "constraint_diagnosis_date_role",
+    "target": "term_diagnosis_date",
+    "constraint_type": "scope",
+    "trigger_keywords": [
+      "came at the hospital",
+      "came to hospital in",
+      "diagnosis date",
+      "diagnosed on",
+      "year 1997"
+    ],
+    "severity": "warning",
+    "scope": "Resolving which date field a question means.",
+    "confidence": "high",
+    "description": "The patient-level diagnosis date is stored in tab02.fld016. Workload wording such as 'came at the hospital in 1997' is mapped to this field, even though the field's primary role is the diagnosis date. Do not confuse it with the first visit date.",
+    "evidence": [
+      "evidence_004"
+    ]
+  },
+  {
+    "id": "constraint_first_visit_date_role",
+    "target": "term_first_visit_date",
+    "constraint_type": "scope",
+    "trigger_keywords": [
+      "first visit",
+      "came to the hospital after",
+      "came to hospital",
+      "visited the hospital",
+      "after 1990"
+    ],
+    "severity": "warning",
+    "scope": "Resolving which date field a question means.",
+    "confidence": "high",
+    "description": "The first visit date is stored in tab02.fld017 and is generally earlier than the diagnosis date. Workload wording such as 'came to the hospital after 1990/1/1' is mapped to this field.",
+    "evidence": [
+      "evidence_004"
+    ]
+  },
+  {
+    "id": "constraint_diagnosis_record_date_role",
+    "target": "term_diagnosis_record_date",
+    "constraint_type": "scope",
+    "trigger_keywords": [
+      "examined during",
+      "examined in",
+      "diagnosis record date",
+      "period from 1990 to 1993"
+    ],
+    "severity": "warning",
+    "scope": "Resolving which date field a question means.",
+    "confidence": "high",
+    "description": "Diagnosis event records carry their own date in tab01.fld002. Workload wording such as 'examined during 1990 to 1993' can refer to this field when the analysis uses the diagnosis table.",
+    "evidence": [
+      "evidence_009"
+    ]
+  },
+  {
+    "id": "constraint_examination_date_role",
+    "target": "term_examination_date",
+    "constraint_type": "scope",
+    "trigger_keywords": [
+      "examination date",
+      "examined on",
+      "lab date",
+      "monthly",
+      "November",
+      "December"
+    ],
+    "severity": "warning",
+    "scope": "Resolving which date field a question means.",
+    "confidence": "high",
+    "description": "Laboratory values are tied to the examination date in tab03.fld019. Month- or year-specific laboratory trends (for example November versus December 1981) are matched against this date.",
+    "evidence": [
+      "evidence_010"
+    ]
+  },
+  {
+    "id": "constraint_date_literal_format",
+    "target": "term_examination_date",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "date format",
+      "1994/2/19",
+      "1993/11/12",
+      "1981-11",
+      "year()",
+      "birthday"
+    ],
+    "severity": "warning",
+    "scope": "Comparing workload date literals with stored date values.",
+    "confidence": "high",
+    "description": "All date columns store ISO text in 'YYYY-MM-DD' form, whereas workload questions may write dates with slashes (for example '1994/2/19') or use month prefixes. Date literals must be normalized to the stored ISO form before comparison.",
+    "evidence": [
+      "evidence_004",
+      "evidence_010"
+    ]
+  },
+  {
+    "id": "constraint_birthday_youngest",
+    "target": "term_birthday",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "youngest",
+      "oldest",
+      "younger",
+      "older",
+      "birthday",
+      "born on",
+      "born in",
+      "born after"
+    ],
+    "severity": "warning",
+    "scope": "Resolving age-related superlatives and birth-year filters.",
+    "confidence": "high",
+    "description": "A later birthday date means a younger patient. The youngest patient has the maximum birthday; the oldest has the minimum. 'Born in 1980' and 'born after 1930' filter the year part of this date.",
+    "evidence": [
+      "evidence_004"
+    ]
+  },
+  {
+    "id": "constraint_age_year_granularity",
+    "target": "term_age",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "age",
+      "underage",
+      "older than",
+      "years old",
+      "how old"
+    ],
+    "severity": "warning",
+    "scope": "Interpreting age thresholds.",
+    "confidence": "high",
+    "description": "Age is approximated at year granularity as the current calendar year minus the birth year, not as a day-exact age. 'Underage' means age below 18; 'older than 55' means the year-difference exceeds 55.",
+    "evidence": [
+      "evidence_004"
+    ]
+  },
+  {
+    "id": "constraint_follow_up_codes",
+    "target": "term_follow_up_status",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "follow-up",
+      "followed",
+      "outpatient clinic",
+      "immediately followed",
+      "FU"
+    ],
+    "severity": "warning",
+    "scope": "Interpreting follow-up status codes.",
+    "confidence": "medium",
+    "description": "Follow-up status is coded as '-' (treated in the workload as immediately followed at the outpatient clinic), '+' (other follow-up state), '+(' (a rare variant) or blank. The code semantics are workload-derived and should be treated with medium confidence.",
+    "evidence": [
+      "evidence_005"
+    ]
+  },
+  {
+    "id": "constraint_lab_long_grain",
+    "target": "term_laboratory_examination",
+    "constraint_type": "scope",
+    "trigger_keywords": [
+      "laboratory examination",
+      "lab test",
+      "examination count",
+      "multiple examinations",
+      "per patient"
+    ],
+    "severity": "warning",
+    "scope": "Aggregating laboratory data.",
+    "confidence": "high",
+    "description": "tab03 is long-format: one row per patient per examination date, with different laboratory measures in separate columns. Multiple rows per patient are normal (13908 rows for 302 patients). Aggregations such as counting examinations or averaging a measure must account for this grain.",
+    "evidence": [
+      "evidence_010"
+    ]
+  },
+  {
+    "id": "constraint_lab_value_missingness",
+    "target": "term_laboratory_examination",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "null",
+      "missing",
+      "not recorded",
+      "no value",
+      "laboratory value"
+    ],
+    "severity": "info",
+    "scope": "Filtering or aggregating specific laboratory measurements.",
+    "confidence": "high",
+    "description": "Laboratory columns are sparsely populated: PT has 621 non-null values, IgA 2680, aCL 2678, total cholesterol 10664, LDH 11305, uric acid 11103, hematocrit and RBC 12081 each, out of 13908 records. A test-specific filter implicitly requires a non-null value for that test.",
+    "evidence": [
+      "evidence_011",
+      "evidence_012",
+      "evidence_013",
+      "evidence_014",
+      "evidence_015",
+      "evidence_016",
+      "evidence_017",
+      "evidence_018"
+    ]
+  },
+  {
+    "id": "constraint_tab01_patient_linkage",
+    "target": "term_diagnosis_record",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "diagnosis record",
+      "join",
+      "patient with thrombosis",
+      "sex of patient with thrombosis",
+      "diagnosis and sex",
+      "diagnosis and labs"
+    ],
+    "severity": "warning",
+    "scope": "Joining diagnosis records to patient attributes or laboratory values.",
+    "confidence": "high",
+    "description": "tab01 declares fld001 as a foreign key to tab02.fld001, but only 69 distinct identifiers (70 joined rows out of 806) match the patient table; 36 diagnosis rows have no identifier, and only 8 (patient, date) pairs match a laboratory examination. Analyses that join diagnosis records to patient attributes or laboratory values may therefore retain only a small subset. This is a property of the stored data, not of the join syntax.",
+    "evidence": [
+      "evidence_009",
+      "evidence_010"
+    ]
+  },
+  {
+    "id": "constraint_symptom_population",
+    "target": "term_symptom",
+    "constraint_type": "scope",
+    "trigger_keywords": [
+      "symptoms",
+      "symptom",
+      "observed symptoms",
+      "manifestations"
+    ],
+    "severity": "warning",
+    "scope": "Interpreting symptom observations.",
+    "confidence": "high",
+    "description": "Symptoms are recorded only on diagnosis records whose thrombosis-related status is non-zero (80 of 806 records). Records with status 0 have an empty symptom field. A question about 'symptoms observed' should therefore treat a non-empty symptom field as the observation condition.",
+    "evidence": [
+      "evidence_008"
+    ]
+  },
+  {
+    "id": "constraint_acl_value_semantics",
+    "target": "term_anti_cardiolipin_antibody",
+    "constraint_type": "scope",
+    "trigger_keywords": [
+      "anti-Cardiolipin",
+      "aCL",
+      "concentration",
+      "status"
+    ],
+    "severity": "info",
+    "scope": "Interpreting anti-cardiolipin results.",
+    "confidence": "medium",
+    "description": "Anti-cardiolipin is recorded as a numeric measurement spanning 0 to 1573 (2678 non-null records). The workload asks for the recorded concentration or status rather than a derived positive/negative classification; no reference cutoff is supplied.",
+    "evidence": [
+      "evidence_017"
+    ]
+  },
+  {
+    "id": "constraint_total_cholesterol_trend",
+    "target": "term_total_cholesterol",
+    "constraint_type": "scope",
+    "trigger_keywords": [
+      "total cholesterol",
+      "cholesterol",
+      "decrease rate",
+      "November",
+      "December"
+    ],
+    "severity": "info",
+    "scope": "Interpreting total cholesterol results.",
+    "confidence": "high",
+    "description": "Total cholesterol is used in the workload as a numeric longitudinal measure (for example, comparing November and December 1981); no normal-range cutoff is applied to it.",
+    "evidence": [
+      "evidence_018"
+    ]
+  }
+]

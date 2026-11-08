@@ -1,0 +1,177 @@
+[
+  {
+    "id": "rel_publisher_heroes",
+    "source": "term_publisher",
+    "relation_type": "composition",
+    "target": "term_superhero",
+    "connection_condition": "superhero.publisher_id corresponds to publisher.id",
+    "description": "A publisher groups the character records attributed to it; a character's publishing context is meaningless without its publisher entry.",
+    "evidence": [
+      "ev_publisher_distribution",
+      "ev_referential_integrity"
+    ]
+  },
+  {
+    "id": "rel_race_heroes",
+    "source": "term_race",
+    "relation_type": "composition",
+    "target": "term_superhero",
+    "connection_condition": "superhero.race_id corresponds to race.id",
+    "description": "A race entry groups the characters classified under it; the classification is part of the character record.",
+    "evidence": [
+      "ev_race_dash_sentinel",
+      "ev_referential_integrity"
+    ]
+  },
+  {
+    "id": "rel_alignment_heroes",
+    "source": "term_alignment",
+    "relation_type": "composition",
+    "target": "term_superhero",
+    "connection_condition": "superhero.alignment_id corresponds to alignment.id",
+    "description": "An alignment entry groups the characters classified under it; the classification is part of the character record.",
+    "evidence": [
+      "ev_alignment_domain",
+      "ev_referential_integrity"
+    ]
+  },
+  {
+    "id": "rel_gender_heroes",
+    "source": "term_gender",
+    "relation_type": "composition",
+    "target": "term_superhero",
+    "connection_condition": "superhero.gender_id corresponds to gender.id",
+    "description": "A gender entry groups the characters classified under it; the classification is part of the character record.",
+    "evidence": [
+      "ev_gender_distribution",
+      "ev_referential_integrity"
+    ]
+  },
+  {
+    "id": "rel_attribute_scores",
+    "source": "term_attribute",
+    "relation_type": "composition",
+    "target": "term_attribute_score",
+    "connection_condition": "hero_attribute.attribute_id corresponds to attribute.id",
+    "description": "A score is a reading of one named attribute; without its attribute entry a score has no meaning.",
+    "evidence": [
+      "ev_attribute_grain",
+      "ev_referential_integrity"
+    ]
+  },
+  {
+    "id": "rel_hero_attribute_scores",
+    "source": "term_superhero",
+    "relation_type": "composition",
+    "target": "term_attribute_score",
+    "connection_condition": "hero_attribute.hero_id corresponds to superhero.id",
+    "description": "A score belongs to exactly one character profile and is meaningless without that character.",
+    "evidence": [
+      "ev_attribute_grain",
+      "ev_referential_integrity"
+    ]
+  },
+  {
+    "id": "rel_colour_eye",
+    "source": "term_colour",
+    "relation_type": "hierarchy",
+    "target": "term_eye_colour",
+    "connection_condition": "superhero.eye_colour_id resolves against colour.id, so eye-colour values are a subset of the colour vocabulary",
+    "description": "Eye colour is a specific kind of colour: every eye-colour value is drawn from the shared colour vocabulary, with no eye-specific values of its own.",
+    "evidence": [
+      "ev_colour_vocabulary_shared"
+    ]
+  },
+  {
+    "id": "rel_colour_hair",
+    "source": "term_colour",
+    "relation_type": "hierarchy",
+    "target": "term_hair_colour",
+    "connection_condition": "superhero.hair_colour_id resolves against colour.id, so hair-colour values are a subset of the colour vocabulary",
+    "description": "Hair colour is a specific kind of colour: every hair-colour value is drawn from the shared colour vocabulary, with no hair-specific values of its own.",
+    "evidence": [
+      "ev_colour_vocabulary_shared"
+    ]
+  },
+  {
+    "id": "rel_colour_skin",
+    "source": "term_colour",
+    "relation_type": "hierarchy",
+    "target": "term_skin_colour",
+    "connection_condition": "superhero.skin_colour_id resolves against colour.id, so skin-colour values are a subset of the colour vocabulary",
+    "description": "Skin colour is a specific kind of colour: every skin-colour value is drawn from the shared colour vocabulary, with no skin-specific values of its own.",
+    "evidence": [
+      "ev_colour_vocabulary_shared"
+    ]
+  },
+  {
+    "id": "rel_hero_colour",
+    "source": "term_superhero",
+    "relation_type": "association",
+    "target": "term_colour",
+    "connection_condition": "superhero.eye_colour_id, superhero.hair_colour_id and superhero.skin_colour_id each resolve against colour.id",
+    "description": "Each character carries up to three independent colour facets - eye, hair and skin - that all draw on one shared colour vocabulary; the facets are not interchangeable.",
+    "evidence": [
+      "ev_colour_vocabulary_shared"
+    ]
+  },
+  {
+    "id": "rel_hero_superpower",
+    "source": "term_superhero",
+    "relation_type": "association",
+    "target": "term_superpower",
+    "connection_condition": "hero_power.hero_id corresponds to superhero.id and hero_power.power_id corresponds to superpower.id",
+    "description": "Characters possess superpowers through a many-to-many association; a power is an independent vocabulary entry shared by many characters rather than a component of one.",
+    "evidence": [
+      "ev_hero_power_coverage",
+      "ev_referential_integrity"
+    ]
+  },
+  {
+    "id": "rel_superpower_power_count",
+    "source": "term_superpower",
+    "relation_type": "derivation",
+    "target": "term_power_count",
+    "connection_condition": "",
+    "description": "Superpower count is derived by counting the distinct powers associated with a character; no stored column holds it.",
+    "evidence": [
+      "ev_hero_power_coverage"
+    ]
+  },
+  {
+    "id": "rel_attribute_score_overall",
+    "source": "term_attribute_score",
+    "relation_type": "derivation",
+    "target": "term_overall_attribute_score",
+    "connection_condition": "",
+    "description": "The overall attribute score is derived by aggregating a character's six attribute scores; no stored total exists.",
+    "evidence": [
+      "ev_attribute_grain"
+    ]
+  },
+  {
+    "id": "rel_hero_hero_count",
+    "source": "term_superhero",
+    "relation_type": "derivation",
+    "target": "term_hero_count",
+    "connection_condition": "",
+    "description": "Hero count is derived by counting distinct character records; repeated superhero_name values do not reduce the count.",
+    "evidence": [
+      "ev_superhero_rowcount",
+      "ev_duplicate_superhero_names"
+    ]
+  },
+  {
+    "id": "rel_dash_na_equivalence",
+    "source": "term_missing_dash_sentinel",
+    "relation_type": "equivalence",
+    "target": "term_missing_na_sentinel",
+    "connection_condition": "superhero.full_name and race.race use '-' whereas gender.gender, alignment.alignment, colour.colour and publisher.publisher_name use 'N/A', 'No Colour' or an empty string",
+    "description": "Both placeholders express the same business concept - 'value unknown or not applicable' - in different physical vocabularies, so excluding one implies excluding the other.",
+    "evidence": [
+      "ev_full_name_dash_sentinel",
+      "ev_race_dash_sentinel",
+      "ev_null_breakdown"
+    ]
+  }
+]

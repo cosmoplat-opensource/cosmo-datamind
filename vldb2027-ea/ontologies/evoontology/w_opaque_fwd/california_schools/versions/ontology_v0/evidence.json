@@ -1,0 +1,226 @@
+[
+  {
+    "id": "ev_schema_overview",
+    "source": "california_schools.sqlite (read-only)",
+    "query": "sqlite3 -readonly california_schools.sqlite '.tables'; .schema",
+    "result": "Three tables: tab01 (29 columns), tab02 (11 columns), tab03 (88 columns). tab01.fld001 and tab02.fld030 reference tab03.fld001. In tab02 the PctGE1500 field is commented out of the schema, so the college-ready percentage has to be derived from fld040/fld036.",
+    "validation_method": "schema inspection",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "ev_row_counts",
+    "source": "california_schools.sqlite (read-only)",
+    "query": "SELECT 'tab01',count(*) FROM tab01 UNION ALL SELECT 'tab02',count(*) FROM tab02 UNION ALL SELECT 'tab03',count(*) FROM tab03",
+    "result": "tab01=9986, tab02=2269, tab03=17686",
+    "validation_method": "aggregate count",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "ev_school_id_uniqueness",
+    "source": "california_schools.sqlite (read-only)",
+    "query": "SELECT count(*), count(DISTINCT fld001) FROM tab03",
+    "result": "17686 rows and 17686 distinct CDS codes, all 14 characters",
+    "validation_method": "key uniqueness check",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "ev_blank_school_names",
+    "source": "california_schools.sqlite (read-only)",
+    "query": "SELECT sum(fld046 IS NULL OR fld046=''), sum(fld049 IS NULL OR fld049=''), count(DISTINCT fld044), count(DISTINCT fld045), count(DISTINCT fld049) FROM tab03",
+    "result": "1369 blank school names, 293 blank cities, 58 counties, 1411 district names, 1165 cities. Blank-name rows are district/agency records such as Alameda Unified and Alameda County Office of Education.",
+    "validation_method": "null scan and distinct counts",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "ev_school_status",
+    "source": "california_schools.sqlite (read-only)",
+    "query": "SELECT fld043, count(*) FROM tab03 GROUP BY 1",
+    "result": "Active=11708, Closed=4518, Merged=1448, Pending=12",
+    "validation_method": "value distribution",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "ev_school_type",
+    "source": "california_schools.sqlite (read-only)",
+    "query": "SELECT fld067, fld068, count(*) FROM tab03 GROUP BY 1,2 ORDER BY 3 DESC",
+    "result": "60 Elementary Schools (Public)=7591; 66 High Schools (Public)=1776; 62 Intermediate/Middle Schools (Public)=1652; blank=1369; 68 Continuation High Schools=754; 09 Special Education Schools (Public)=750; 69 District Community Day Schools=615; 70 Adult Education Centers=551; 10 County Community=500; 63 Alternative Schools of Choice=500; 65 K-12 Schools (Public)=438; 61 Elemen Schools In 1 School Dist.=273; 08 Preschool=272; 14 Juvenile Court Schools=254; 64 Junior High Schools (Public)=122; 13 Opportunity Schools=120; 98 ROC/ROP=86; 11 Youth Authority Facilities=43; 15 Other County Or District Programs=11; 67 High Schools In 1 School Dist.=6; 31 State Special Schools=3",
+    "validation_method": "code and label cross-tabulation",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "ev_district_type",
+    "source": "california_schools.sqlite (read-only)",
+    "query": "SELECT fld065, fld066, count(*) FROM tab03 GROUP BY 1,2",
+    "result": "54 Unified School District=10190; 52 Elementary School District=4378; 00 County Office of Education (COE)=1703; 56 High School District=1079; 98 Regional Occupation Center/Program=156; 02 State Board of Education=69; 34 Non-School Locations=49; 58 Community College District=33; 03 Statewide Benefit Charter=11; 99 Administration Only=10; 31 State Special Schools=6; 42 Joint Powers Authority=2",
+    "validation_method": "code and label cross-tabulation",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "ev_educational_option",
+    "source": "california_schools.sqlite (read-only)",
+    "query": "SELECT fld069, fld070, count(*) FROM tab03 GROUP BY 1,2",
+    "result": "TRAD Traditional=10103; blank=5711; CON Continuation School=539; COMMDAY Community Day School=486; ALTSOC Alternative School of Choice=320; SPEC Special Education School=228; COMM County Community School=133; JUV Juvenile Court School=94; OPP Opportunity School=47; ROP=6; YTH=6; HOMHOS=5; SPECON=5; SSS State Special School=3",
+    "validation_method": "code and label cross-tabulation",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "ev_sss_schools",
+    "source": "california_schools.sqlite (read-only)",
+    "query": "SELECT fld001, fld046, fld049, fld044 FROM tab03 WHERE fld069='SSS'",
+    "result": "3 State Special Schools: California School for the Blind (Fremont, Alameda), California School for the Deaf-Fremont (Fremont, Alameda), California School for the Deaf-Riverside (Riverside, Riverside)",
+    "validation_method": "filtered row inspection",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "ev_virtual",
+    "source": "california_schools.sqlite (read-only)",
+    "query": "SELECT fld075, count(*) FROM tab03 GROUP BY 1",
+    "result": "N=9703, blank=6868, P=1046, F=69",
+    "validation_method": "value distribution",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "ev_magnet",
+    "source": "california_schools.sqlite (read-only)",
+    "query": "SELECT fld076, count(*) FROM tab03 GROUP BY 1",
+    "result": "blank=7076, 0=10091, 1=519",
+    "validation_method": "value distribution",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "ev_grade_span",
+    "source": "california_schools.sqlite (read-only)",
+    "query": "SELECT fld073, count(*) FROM tab03 GROUP BY 1; SELECT fld074, count(*) FROM tab03 GROUP BY 1; SELECT sum(fld073 IS NOT NULL AND fld073<>''), sum(fld074 IS NOT NULL AND fld074<>''), sum(fld073<>fld074), sum(fld073 IS NOT NULL AND fld073<>'' AND (fld074 IS NULL OR fld074='')) FROM tab03",
+    "result": "fld073 non-blank=13804 (K-5=2724, 9-12=2368, K-6=2362, K-8=1292, 6-8=1123, K-12=674, 7-12=570, 7-8=432, Adult=380, rest other spans); fld074 non-blank=11943; both non-blank and different=2487; fld073-only=1861; fld074-only=0",
+    "validation_method": "value distribution and divergence count",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "ev_provision",
+    "source": "california_schools.sqlite (read-only)",
+    "query": "SELECT fld012, count(*) FROM tab01 GROUP BY 1",
+    "result": "blank=8139; Provision 2=1365; Breakfast Provision 2=285; CEP=172; Multiple Provision Types=11; Provision 1=7; Lunch Provision 2=5; Provision 3=2",
+    "validation_method": "value distribution",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "ev_frpm_year",
+    "source": "california_schools.sqlite (read-only)",
+    "query": "SELECT fld002, count(*), count(DISTINCT fld001) FROM tab01 GROUP BY 1",
+    "result": "2014-2015: 9986 rows and 9986 distinct CDS codes",
+    "validation_method": "year and key check",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "ev_frpm_rate_identity",
+    "source": "california_schools.sqlite (read-only)",
+    "query": "SELECT count(*), sum(abs(fld021-fld020/fld019)<1e-9) FROM tab01 WHERE fld019>0; SELECT count(*), sum(abs(fld026-fld025/fld024)<1e-9), sum(abs(fld028-fld027/fld024)<1e-9) FROM tab01 WHERE fld024>0",
+    "result": "9986 rows with enrollment>0: 9930 satisfy fld021 = fld020/fld019. Age block: 9972 rows, 9908 satisfy fld026 = fld025/fld024 and 9914 satisfy fld028 = fld027/fld024.",
+    "validation_method": "arithmetic identity check",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "ev_frpm_nulls",
+    "source": "california_schools.sqlite (read-only)",
+    "query": "SELECT sum(fld019 IS NULL), sum(fld020 IS NULL), sum(fld024 IS NULL), sum(fld027 IS NULL) FROM tab01",
+    "result": "fld019 nulls=0, fld020 nulls=56, fld024 nulls=14, fld027 nulls=72",
+    "validation_method": "null scan",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "ev_enrollment_subset",
+    "source": "california_schools.sqlite (read-only)",
+    "query": "SELECT sum(fld024>fld019), sum(fld024=fld019), sum(fld024<fld019), count(*) FROM tab01 WHERE fld019 IS NOT NULL AND fld024 IS NOT NULL",
+    "result": "0 rows where ages 5-17 enrollment exceeds K-12 enrollment; 3512 equal, 6460 lower, 9972 comparable rows",
+    "validation_method": "subset comparison",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "ev_meal_subset",
+    "source": "california_schools.sqlite (read-only)",
+    "query": "SELECT sum(fld020>fld022), sum(fld025>fld027), count(*) FROM tab01 WHERE fld020 IS NOT NULL AND fld022 IS NOT NULL AND fld025 IS NOT NULL AND fld027 IS NOT NULL",
+    "result": "0 and 0 violations over 9908 rows: free meal counts never exceed FRPM counts in either the K-12 or the ages 5-17 block",
+    "validation_method": "subset comparison",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "ev_sat_rtype",
+    "source": "california_schools.sqlite (read-only)",
+    "query": "SELECT fld031, count(*), sum(fld032 IS NULL OR fld032='') FROM tab02 GROUP BY 1",
+    "result": "D: 520 records, all with blank school name; S: 1749 records, none blank",
+    "validation_method": "record-type cross-tabulation",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "ev_sat_ranges",
+    "source": "california_schools.sqlite (read-only)",
+    "query": "SELECT min(fld036), max(fld036), min(fld037), max(fld037), min(fld038), max(fld038), min(fld039), max(fld039), min(fld040), max(fld040), sum(fld037 IS NULL), sum(fld036=0) FROM tab02",
+    "result": "Test takers 0-24305 with 218 zero-taker records; reading 308-653; math 289-699; writing 312-671; ge1500 count 0-5837; 596 records have null score fields, comprising all 218 zero-taker rows and 378 rows with positive test takers",
+    "validation_method": "range and null scan",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "ev_excellence_rate",
+    "source": "california_schools.sqlite (read-only)",
+    "query": "SELECT min(1.0*fld040/fld036), max(1.0*fld040/fld036) FROM tab02 WHERE fld036>0",
+    "result": "Derived excellence rate ranges from 0.0 to 0.982; no stored percentage column exists because PctGE1500 is commented out in the table definition",
+    "validation_method": "derived ratio range check",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "ev_join_sat",
+    "source": "california_schools.sqlite (read-only)",
+    "query": "SELECT count(*) FROM tab02 s JOIN tab03 t ON ltrim(t.fld001,'0')=ltrim(s.fld030,'0'); SELECT count(*), sum(t.fld046=s.fld032) FROM tab02 s JOIN tab03 t ON ltrim(t.fld001,'0')=ltrim(s.fld030,'0') WHERE s.fld031='S'",
+    "result": "All 2269 SAT records match a directory CDS after leading-zero normalization; of the 1749 school-level records, 1647 have a school name identical to the directory name and 102 differ",
+    "validation_method": "join integrity check",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "ev_id_lengths",
+    "source": "california_schools.sqlite (read-only)",
+    "query": "SELECT length(fld030), count(*) FROM tab02 GROUP BY 1; SELECT length(fld001), count(*) FROM tab03 GROUP BY 1; SELECT length(fld001), count(*) FROM tab01 GROUP BY 1",
+    "result": "tab02: 13 characters=211, 14 characters=2058; tab03 and tab01: 14 characters in all rows (17686 and 9986)",
+    "validation_method": "identifier length check",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "ev_join_frpm",
+    "source": "california_schools.sqlite (read-only)",
+    "query": "SELECT count(*), count(DISTINCT fld001), sum(exists(SELECT 1 FROM tab03 t WHERE t.fld001=f.fld001)) FROM tab01 f; SELECT count(*) FROM tab01 f WHERE NOT EXISTS (SELECT 1 FROM tab02 s WHERE ltrim(s.fld030,'0')=ltrim(f.fld001,'0'))",
+    "result": "9986 meal rows with 9986 distinct CDS codes, all matching a directory CDS; 8204 meal-report schools have no SAT record",
+    "validation_method": "join integrity check",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "ev_geo",
+    "source": "california_schools.sqlite (read-only)",
+    "query": "SELECT min(fld077), max(fld077), min(fld078), max(fld078), sum(fld077 IS NULL OR fld077=''), sum(fld078 IS NULL OR fld078=''), sum(fld078>-114 OR fld078<-125), sum(fld077<32 OR fld077>43) FROM tab03",
+    "result": "Latitude 32.547737-44.219305; longitude -124.28481 to -83.781133; 4823 rows with null coordinates; 6 longitudes and 2 latitudes fall outside California bounds",
+    "validation_method": "range and null scan",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "ev_admin",
+    "source": "california_schools.sqlite (read-only)",
+    "query": "SELECT sum(fld079 IS NOT NULL AND fld079<>''), sum(fld080 IS NOT NULL AND fld080<>''), sum(fld081 IS NOT NULL AND fld081<>''), sum(fld082 IS NOT NULL AND fld082<>''), sum(fld084 IS NOT NULL AND fld084<>''), sum(fld087 IS NOT NULL AND fld087<>'') FROM tab03",
+    "result": "Primary administrator first and last name present for 11700 rows and e-mail for 11674; a second contact is present for 431 rows and a third for 42",
+    "validation_method": "fill-rate scan",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "ev_open_date",
+    "source": "california_schools.sqlite (read-only)",
+    "query": "SELECT sum(fld060 IS NULL OR fld060=''), count(*), min(fld060), max(fld060) FROM tab03",
+    "result": "1369 blank open dates out of 17686; text dates from 1850-07-01 to 2017-09-22",
+    "validation_method": "range and null scan",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "ev_place_ambiguity",
+    "source": "california_schools.sqlite (read-only)",
+    "query": "SELECT 'city Monterey', count(*) FROM tab03 WHERE fld049='Monterey' UNION ALL SELECT 'county Monterey', count(*) FROM tab03 WHERE fld044='Monterey' UNION ALL SELECT 'city Fremont', count(*) FROM tab03 WHERE fld049='Fremont' UNION ALL SELECT 'county San Bernardino', count(*) FROM tab03 WHERE fld044='San Bernardino' UNION ALL SELECT 'district San Bernardino City Unified', count(*) FROM tab03 WHERE fld045='San Bernardino City Unified' UNION ALL SELECT 'city San Bernardino', count(*) FROM tab03 WHERE fld049='San Bernardino'",
+    "result": "city Monterey=16, county Monterey=247, city Fremont=67, county San Bernardino=861, district San Bernardino City Unified=117, city San Bernardino=119",
+    "validation_method": "name-level count comparison",
+    "timestamp": "2026-11-06"
+  }
+]

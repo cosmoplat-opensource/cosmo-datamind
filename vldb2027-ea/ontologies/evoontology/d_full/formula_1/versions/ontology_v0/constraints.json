@@ -1,0 +1,377 @@
+[
+  {
+    "id": "constraint_points_system_by_era",
+    "target": "term_race_points",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "points",
+      "scoring",
+      "championship points",
+      "25 points",
+      "10 points",
+      "9 points",
+      "8 points",
+      "bonus point",
+      "double points"
+    ],
+    "severity": "block",
+    "scope": "Any aggregation or comparison of race points across seasons.",
+    "confidence": "high",
+    "description": "The points awarded for a finishing position depend on the scoring system in force that season. The winner received 8 points in 1950-1960 with an additional point for fastest lap, 9 points in 1961-1990, 10 points in 1991-2002, 10 points with 8 for second in 2003-2009, and 25 points in 2010-2017. The 2014 season awarded double points at the final round, so a winner that year can score 50. Points totals are only directly comparable within one scoring system.",
+    "evidence": [
+      "evidence_points_system_eras"
+    ]
+  },
+  {
+    "id": "constraint_points_not_equal_to_position",
+    "target": "term_race_points",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "scored points",
+      "points finish",
+      "top ten",
+      "point scoring position",
+      "finished in the points"
+    ],
+    "severity": "block",
+    "scope": "Filters that treat scoring as equivalent to finishing near the front.",
+    "confidence": "high",
+    "description": "Scoring a point is not equivalent to a high finishing position and not equivalent to finishing at all. Entries classified one or more laps down still scored: 1094 of the 3265 entries with the +1 Lap status and 223 of the 1486 with +2 Laps have non-zero points. Points-based filters must use the points column rather than inferring scoring from position or from finishing status.",
+    "evidence": [
+      "evidence_points_nonfinishers_scored"
+    ]
+  },
+  {
+    "id": "constraint_constructor_points_best_car_only",
+    "target": "term_constructor_race_points",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "constructor points",
+      "team points",
+      "sum of driver points",
+      "best car",
+      "only one car scored"
+    ],
+    "severity": "block",
+    "scope": "Reconstructing constructor points from driver results, especially before 1979.",
+    "confidence": "high",
+    "description": "Before 1979 only the best-placed car of a constructor contributed to the constructor points total, so the constructor value is not the sum of its drivers' points. 302 constructor-race rows in 1958-1978 differ from the sum of the corresponding result points, for example the 1978 Belgian Grand Prix where the recorded constructor value is 9.0 against a driver sum of 15.0.",
+    "evidence": [
+      "evidence_constructor_points_mismatch"
+    ]
+  },
+  {
+    "id": "constraint_standings_are_cumulative_snapshots",
+    "target": "term_championship_points",
+    "constraint_type": "semantics",
+    "trigger_keywords": [
+      "standings",
+      "championship position",
+      "points after round",
+      "season total",
+      "cumulative points",
+      "driver standings"
+    ],
+    "severity": "block",
+    "scope": "Any question about standings, championship position or season totals.",
+    "confidence": "high",
+    "description": "Rows in driverStandings and constructorStandings are season-to-date snapshots taken after each race, not per-race values. The points column accumulates across rounds, position and positionText give the championship ranking at that moment, and wins is a cumulative win count. The season total for a driver or constructor is the row from that season's final covered race, and per-race points must come from the results or constructorResults tables instead.",
+    "evidence": [
+      "evidence_standings_cumulative"
+    ]
+  },
+  {
+    "id": "constraint_standings_coverage_gaps",
+    "target": "term_championship_position",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "championship",
+      "standings coverage",
+      "missing races",
+      "final standings",
+      "2017 champion",
+      "constructors championship"
+    ],
+    "severity": "warning",
+    "scope": "Cross-season standings analysis and season-end championship questions.",
+    "confidence": "high",
+    "description": "Standings coverage is incomplete. driverStandings covers 970 of the 976 races and stops at round 14 of 2017, so the 2017 drivers' title cannot be read from this table. constructorStandings covers 906 races and begins only in 1958 because the constructors' championship did not exist before then, so 1950-1957 has no constructor standings at all. The last available standings row in a season is not always the season's final race.",
+    "evidence": [
+      "evidence_standings_coverage"
+    ]
+  },
+  {
+    "id": "constraint_race_time_lead_lap_only",
+    "target": "term_race_time",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "race time",
+      "gap to winner",
+      "finishing time",
+      "race duration",
+      "time behind",
+      "elapsed time"
+    ],
+    "severity": "block",
+    "scope": "Any use of the results time or milliseconds columns.",
+    "confidence": "high",
+    "description": "The results time and milliseconds columns are populated only for entries that completed the winner's lap count. For the winner the value is the absolute race duration; for other lead-lap entries it is a cumulative elapsed time from which the gap can be derived. Entries that were lapped, retired, disqualified or failed to qualify carry NULL in both columns, so average race time and gap statistics computed over all entries silently exclude every lapped car. In total 17696 of 23657 result rows have no time value.",
+    "evidence": [
+      "evidence_results_milliseconds_lead_lap_only",
+      "evidence_lapped_finishers_time_null"
+    ]
+  },
+  {
+    "id": "constraint_classification_text_codes",
+    "target": "term_classification_status",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "retired",
+      "DNF",
+      "disqualified",
+      "withdrawn",
+      "did not qualify",
+      "not classified",
+      "excluded",
+      "R",
+      "classification"
+    ],
+    "severity": "block",
+    "scope": "Interpreting or filtering the results positionText column.",
+    "confidence": "high",
+    "description": "In results.positionText, numeric values are finishing places while letters are non-finish classifications: R means retired, D disqualified, E excluded, W withdrawn, F failed to qualify (including did not qualify, did not prequalify and the 107 percent rule) and N not classified. R is by far the largest group at 8495 rows, followed by F at 1368 and W at 323. Counting non-finishes by filtering on a single letter, or treating F as a race start, gives incorrect participation and reliability figures.",
+    "evidence": [
+      "evidence_position_text_codes"
+    ]
+  },
+  {
+    "id": "constraint_position_null_means_unclassified",
+    "target": "term_finish_position",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "finishing position",
+      "classified",
+      "unclassified",
+      "average position",
+      "finished"
+    ],
+    "severity": "block",
+    "scope": "Any analysis using the results position column.",
+    "confidence": "high",
+    "description": "A NULL position marks an entry that was not classified. 10528 result rows have no position, and 10526 of them also carry a non-numeric classification code, so filtering on position reduces the data to classified finishers only. Average finishing position and position distributions are therefore classifiable-entry statistics, not entry-statistics.",
+    "evidence": [
+      "evidence_position_null"
+    ]
+  },
+  {
+    "id": "constraint_grid_zero_means_no_grid_slot",
+    "target": "term_grid_position",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "pole position",
+      "grid",
+      "starting position",
+      "front row",
+      "pit lane start",
+      "pole sitter"
+    ],
+    "severity": "block",
+    "scope": "Starting-position and pole-position analysis.",
+    "confidence": "high",
+    "description": "A grid value of 0 does not mean pole position; it means no grid slot was assigned. 1565 entries have grid 0, of which 1348 failed to qualify, 199 withdrew and a small number were classified anyway, including one entry classified tenth from a pit-lane start. Pole position is grid 1.",
+    "evidence": [
+      "evidence_grid_zero"
+    ]
+  },
+  {
+    "id": "constraint_status_reference_incomplete",
+    "target": "term_car_status",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "status",
+      "failure reason",
+      "reliability categories"
+    ],
+    "severity": "info",
+    "scope": "Joining results to the status reference table.",
+    "confidence": "high",
+    "description": "The status table holds 134 categories but results only references 132 of them. Status categories +49 Laps and +38 Laps exist in the reference table without any matching result row, so a left join from status to results produces categories with zero entries.",
+    "evidence": [
+      "evidence_status_domain"
+    ]
+  },
+  {
+    "id": "constraint_constructor_results_status_is_flag",
+    "target": "term_constructor_race_points",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "constructorResults status",
+      "constructor disqualified",
+      "team status"
+    ],
+    "severity": "warning",
+    "scope": "Interpreting the constructorResults status column.",
+    "confidence": "high",
+    "description": "The status column in constructorResults is a text flag, not a status identifier and not a foreign key into the status table. It is empty for 11065 rows and holds the value D for 17 rows, where D marks a disqualified constructor entry. Joining it to status.statusId yields no matches.",
+    "evidence": [
+      "evidence_status_table_flags"
+    ]
+  },
+  {
+    "id": "constraint_nationality_vocabulary_adjectival",
+    "target": "term_nationality",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "nationality",
+      "country",
+      "British",
+      "Italian",
+      "UK",
+      "USA",
+      "nation"
+    ],
+    "severity": "block",
+    "scope": "Comparing or joining nationality and country values.",
+    "confidence": "high",
+    "description": "Driver and constructor nationality values are adjectival forms such as British, American, Italian and French, while the circuit country column uses nominal forms such as UK and USA. The two vocabularies share no values at all, so a driver cannot be matched to a circuit country by comparing strings. The driver and constructor nationality vocabularies overlap in 21 values but each holds values the other lacks, for example Belgium, Hong Kong and New Zealand appear only for constructors.",
+    "evidence": [
+      "evidence_nationality_vocabulary"
+    ]
+  },
+  {
+    "id": "constraint_laptimes_availability",
+    "target": "term_lap_time",
+    "constraint_type": "scope",
+    "trigger_keywords": [
+      "lap time",
+      "fastest lap time",
+      "lap by lap",
+      "pace",
+      "lap chart"
+    ],
+    "severity": "warning",
+    "scope": "Lap-level pace analysis.",
+    "confidence": "high",
+    "description": "Lap-by-lap times exist only for 1996-2017 and only for 389 of the 976 races. Lap times, lap charts and lap-position analysis cannot be produced for the earlier seasons. Both the textual time and the milliseconds value are always present within the covered races, and the milliseconds value is the authoritative numeric form.",
+    "evidence": [
+      "evidence_laptimes_availability"
+    ]
+  },
+  {
+    "id": "constraint_pitstops_availability",
+    "target": "term_pit_stop_duration",
+    "constraint_type": "scope",
+    "trigger_keywords": [
+      "pit stop",
+      "pit lane",
+      "stop duration",
+      "pit crew",
+      "fastest stop"
+    ],
+    "severity": "warning",
+    "scope": "Pit-lane performance analysis.",
+    "confidence": "high",
+    "description": "Pit stop records exist only for 2011-2017 and only for 131 of the 976 races. Stop durations never fall below about 12.9 seconds within the covered data, but the largest values run to more than 2000 seconds and represent repair stops or red-flag interruptions rather than routine service, so averages over all stops are heavily skewed and a median or an explicit upper bound is more representative.",
+    "evidence": [
+      "evidence_pitstops_availability"
+    ]
+  },
+  {
+    "id": "constraint_fastest_lap_availability",
+    "target": "term_fastest_lap",
+    "constraint_type": "scope",
+    "trigger_keywords": [
+      "fastest lap",
+      "quickest lap",
+      "fastest lap speed",
+      "FL"
+    ],
+    "severity": "warning",
+    "scope": "Fastest-lap counting and comparison.",
+    "confidence": "high",
+    "description": "The fastest lap fields in results are populated only from 2004 onward. Before 2004 the fastest lap must be derived from the lapTimes table, which itself begins in 1996, so fastest-lap questions spanning the full 1950-2017 range have no complete source. Where the fields exist, a rank of 1 identifies the race fastest lap and a rank of 0 appears only together with a missing fastest lap time.",
+    "evidence": [
+      "evidence_fastest_lap_availability",
+      "evidence_laptimes_availability"
+    ]
+  },
+  {
+    "id": "constraint_qualifying_session_availability",
+    "target": "term_qualifying_position",
+    "constraint_type": "scope",
+    "trigger_keywords": [
+      "qualifying",
+      "Q1",
+      "Q2",
+      "Q3",
+      "knockout",
+      "qualifying session",
+      "pole"
+    ],
+    "severity": "warning",
+    "scope": "Qualifying analysis across seasons.",
+    "confidence": "high",
+    "description": "Qualifying records run from 1994 to 2017. The three-session knockout format is a later development: q2 and q3 are empty for essentially every entry before 2005 and become standard from 2006, so questions about elimination in Q1, Q2 or Q3 only apply to the knockout era. A single qualifying classification position exists throughout the covered period.",
+    "evidence": [
+      "evidence_qualifying_availability"
+    ]
+  },
+  {
+    "id": "constraint_results_grain_shared_drives",
+    "target": "term_race_result",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "entry",
+      "grain",
+      "per race",
+      "count of results",
+      "shared car",
+      "number of drivers per race"
+    ],
+    "severity": "block",
+    "scope": "Counting entries, drivers or starts from the results table.",
+    "confidence": "high",
+    "description": "The results table is not unique on race and driver. 83 race and driver combinations hold two rows each, covering 172 rows between 1950 and 1978, where a driver took over a second car or shared a drive. Additionally 1042 race and constructor combinations field more than two distinct drivers. Counting rows therefore overstates races entered, and a distinct pair count understates starts; the choice must follow the question being asked.",
+    "evidence": [
+      "evidence_results_duplicate_grain",
+      "evidence_shared_drive_multi_entry"
+    ]
+  },
+  {
+    "id": "constraint_car_number_semantics",
+    "target": "term_car_number",
+    "constraint_type": "scope",
+    "trigger_keywords": [
+      "car number",
+      "driver number",
+      "number",
+      "permanent number"
+    ],
+    "severity": "warning",
+    "scope": "Using car numbers as an identifier.",
+    "confidence": "high",
+    "description": "The number column in results and qualifying is the number carried by the car in that specific race and changes from season to season. The number column in drivers holds a permanent driver number and is populated only from 2014, being NULL for 804 of the 840 drivers. Car numbers must not be used as a stable driver identifier.",
+    "evidence": [
+      "evidence_car_number"
+    ]
+  },
+  {
+    "id": "constraint_indianapolis_500_era",
+    "target": "term_race",
+    "constraint_type": "scope",
+    "trigger_keywords": [
+      "1950s",
+      "Indianapolis",
+      "Indy 500",
+      "early seasons",
+      "era comparison"
+    ],
+    "severity": "info",
+    "scope": "Cross-era comparison of early seasons.",
+    "confidence": "high",
+    "description": "The 1950-1960 seasons include the Indianapolis 500 as a championship round, 11 races in total, run to different regulations and with a largely separate entry list from the European Grands Prix. Including it distorts cross-era comparisons of entrants, nationalities and finishing patterns for those seasons.",
+    "evidence": [
+      "evidence_indianapolis"
+    ]
+  }
+]

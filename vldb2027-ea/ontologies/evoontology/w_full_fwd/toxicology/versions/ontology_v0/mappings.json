@@ -1,0 +1,344 @@
+[
+  {
+    "aggregation_semantics": "one row per molecule",
+    "column": "",
+    "database_source": "toxicology.sqlite",
+    "evidence_refs": [
+      "evidence_001",
+      "evidence_002",
+      "evidence_016"
+    ],
+    "grain": "molecule",
+    "id": "map_molecule",
+    "semantic_filter": "",
+    "table": "molecule",
+    "term_id": "term_molecule",
+    "validation": "table holds 343 molecules, each with a label and at least one atom and bond"
+  },
+  {
+    "aggregation_semantics": "identifier; used for grouping, never summed",
+    "column": "molecule_id",
+    "database_source": "toxicology.sqlite",
+    "evidence_refs": [
+      "evidence_001",
+      "evidence_011"
+    ],
+    "grain": "molecule",
+    "id": "map_molecule_key",
+    "semantic_filter": "",
+    "table": "molecule",
+    "term_id": "term_molecule_identifier",
+    "validation": "primary key of molecule; 343 distinct values from TR000 to TR501"
+  },
+  {
+    "aggregation_semantics": "classification; counted per molecule, never summed numerically",
+    "column": "label",
+    "database_source": "toxicology.sqlite",
+    "evidence_refs": [
+      "evidence_003"
+    ],
+    "grain": "molecule",
+    "id": "map_molecule_label",
+    "semantic_filter": "single-character carcinogenicity code, present on every molecule",
+    "table": "molecule",
+    "term_id": "term_carcinogenicity_label",
+    "validation": "two codes only: '+' 152 molecules, '-' 191 molecules, no NULLs"
+  },
+  {
+    "aggregation_semantics": "one row per atom occurrence",
+    "column": "",
+    "database_source": "toxicology.sqlite",
+    "evidence_refs": [
+      "evidence_001",
+      "evidence_002"
+    ],
+    "grain": "atom",
+    "id": "map_atom",
+    "semantic_filter": "",
+    "table": "atom",
+    "term_id": "term_atom",
+    "validation": "12333 atom rows, all with a non-null molecule_id and element"
+  },
+  {
+    "aggregation_semantics": "identifier; countable with DISTINCT when joined",
+    "column": "atom_id",
+    "database_source": "toxicology.sqlite",
+    "evidence_refs": [
+      "evidence_007"
+    ],
+    "grain": "atom",
+    "id": "map_atom_key",
+    "semantic_filter": "",
+    "table": "atom",
+    "term_id": "term_atom_identifier",
+    "validation": "primary key; every atom_id begins with its molecule_id and an underscore"
+  },
+  {
+    "aggregation_semantics": "grouping key linking the atom to its molecule",
+    "column": "molecule_id",
+    "database_source": "toxicology.sqlite",
+    "evidence_refs": [
+      "evidence_001",
+      "evidence_007"
+    ],
+    "grain": "atom",
+    "id": "map_atom_molecule_ref",
+    "semantic_filter": "",
+    "table": "atom",
+    "term_id": "term_molecule_reference",
+    "validation": "no NULLs; all values resolve to molecule.molecule_id"
+  },
+  {
+    "aggregation_semantics": "grouping key linking the bond to its molecule",
+    "column": "molecule_id",
+    "database_source": "toxicology.sqlite",
+    "evidence_refs": [
+      "evidence_001",
+      "evidence_007",
+      "evidence_015"
+    ],
+    "grain": "bond",
+    "id": "map_bond_molecule_ref",
+    "semantic_filter": "",
+    "table": "bond",
+    "term_id": "term_molecule_reference",
+    "validation": "no NULLs; all values resolve to molecule.molecule_id"
+  },
+  {
+    "aggregation_semantics": "identifier of one endpoint of the bond",
+    "column": "atom_id",
+    "database_source": "toxicology.sqlite",
+    "evidence_refs": [
+      "evidence_006",
+      "evidence_010"
+    ],
+    "grain": "one row per ordered atom pair per bond",
+    "id": "map_connected_atom1",
+    "semantic_filter": "",
+    "table": "connected",
+    "term_id": "term_bond_endpoint_atom",
+    "validation": "all values resolve to atom.atom_id"
+  },
+  {
+    "aggregation_semantics": "identifier of the other endpoint of the same bond",
+    "column": "atom_id2",
+    "database_source": "toxicology.sqlite",
+    "evidence_refs": [
+      "evidence_006",
+      "evidence_009"
+    ],
+    "grain": "one row per ordered atom pair per bond",
+    "id": "map_connected_atom2",
+    "semantic_filter": "",
+    "table": "connected",
+    "term_id": "term_bond_endpoint_atom",
+    "validation": "all values resolve to atom.atom_id"
+  },
+  {
+    "aggregation_semantics": "categorical attribute; counted over distinct atoms",
+    "column": "element",
+    "database_source": "toxicology.sqlite",
+    "evidence_refs": [
+      "evidence_004"
+    ],
+    "grain": "atom",
+    "id": "map_atom_element",
+    "semantic_filter": "lowercase chemical symbol",
+    "table": "atom",
+    "term_id": "term_element",
+    "validation": "21 distinct lowercase symbols, no NULLs"
+  },
+  {
+    "aggregation_semantics": "one row per bond",
+    "column": "",
+    "database_source": "toxicology.sqlite",
+    "evidence_refs": [
+      "evidence_001",
+      "evidence_002"
+    ],
+    "grain": "bond",
+    "id": "map_bond",
+    "semantic_filter": "",
+    "table": "bond",
+    "term_id": "term_bond",
+    "validation": "12379 bond rows, all with a resolvable molecule_id"
+  },
+  {
+    "aggregation_semantics": "identifier; encodes the molecule and the two endpoint atoms",
+    "column": "bond_id",
+    "database_source": "toxicology.sqlite",
+    "evidence_refs": [
+      "evidence_007",
+      "evidence_008"
+    ],
+    "grain": "bond",
+    "id": "map_bond_key",
+    "semantic_filter": "",
+    "table": "bond",
+    "term_id": "term_bond_identifier",
+    "validation": "primary key; every bond_id begins with its molecule_id and encodes two atom serial numbers"
+  },
+  {
+    "aggregation_semantics": "key that links an adjacency row to the bond record and thus to the bond type",
+    "column": "bond_id",
+    "database_source": "toxicology.sqlite",
+    "evidence_refs": [
+      "evidence_006",
+      "evidence_009"
+    ],
+    "grain": "one row per ordered atom pair per bond",
+    "id": "map_connected_bond_ref",
+    "semantic_filter": "",
+    "table": "connected",
+    "term_id": "term_bond_reference",
+    "validation": "all values resolve to bond.bond_id; every bond appears twice"
+  },
+  {
+    "aggregation_semantics": "categorical attribute; counted over bonds",
+    "column": "bond_type",
+    "database_source": "toxicology.sqlite",
+    "evidence_refs": [
+      "evidence_005",
+      "evidence_012"
+    ],
+    "grain": "bond",
+    "id": "map_bond_type",
+    "semantic_filter": "single-character bond order code; one row is missing this value",
+    "table": "bond",
+    "term_id": "term_bond_type",
+    "validation": "'-' 10528, '=' 1844, '#' 6, NULL 1"
+  },
+  {
+    "aggregation_semantics": "count of bonds that carry the single-bond code",
+    "column": "bond_type",
+    "database_source": "toxicology.sqlite",
+    "evidence_refs": [
+      "evidence_005",
+      "evidence_008"
+    ],
+    "grain": "bond",
+    "id": "map_single_bond",
+    "semantic_filter": "restricted to the single-bond code",
+    "table": "bond",
+    "term_id": "term_single_bond",
+    "validation": "10528 bonds carry the single-bond code"
+  },
+  {
+    "aggregation_semantics": "count of bonds that carry the double-bond code",
+    "column": "bond_type",
+    "database_source": "toxicology.sqlite",
+    "evidence_refs": [
+      "evidence_005",
+      "evidence_009"
+    ],
+    "grain": "bond",
+    "id": "map_double_bond",
+    "semantic_filter": "restricted to the double-bond code",
+    "table": "bond",
+    "term_id": "term_double_bond",
+    "validation": "1844 bonds carry the double-bond code"
+  },
+  {
+    "aggregation_semantics": "count of bonds that carry the triple-bond code",
+    "column": "bond_type",
+    "database_source": "toxicology.sqlite",
+    "evidence_refs": [
+      "evidence_005",
+      "evidence_015"
+    ],
+    "grain": "bond",
+    "id": "map_triple_bond",
+    "semantic_filter": "restricted to the triple-bond code",
+    "table": "bond",
+    "term_id": "term_triple_bond",
+    "validation": "6 bonds carry the triple-bond code"
+  },
+  {
+    "aggregation_semantics": "each bond contributes two rows, so distinct bonds or distinct atoms must be derived before counting",
+    "column": "atom_id, atom_id2",
+    "database_source": "toxicology.sqlite",
+    "evidence_refs": [
+      "evidence_006",
+      "evidence_010"
+    ],
+    "grain": "one row per ordered atom pair per bond",
+    "id": "map_connectivity_pair",
+    "semantic_filter": "ordered pair; each bond is stored in both directions",
+    "table": "connected",
+    "term_id": "term_atom_connectivity",
+    "validation": "24758 rows covering all 12379 bonds exactly twice"
+  },
+  {
+    "aggregation_semantics": "count of carcinogenic-labelled molecules divided by the count of all molecules in scope, expressed on a percentage scale",
+    "column": "label",
+    "database_source": "toxicology.sqlite",
+    "evidence_refs": [
+      "evidence_003"
+    ],
+    "grain": "molecule",
+    "id": "map_molecule_carcinogenic_ratio",
+    "semantic_filter": "restricted to the molecule scope stated by the question",
+    "table": "molecule",
+    "term_id": "term_molecule_carcinogenic_ratio",
+    "validation": "152 carcinogenic of 343 molecules"
+  },
+  {
+    "aggregation_semantics": "count of distinct atoms per element symbol; the scope may be all molecules or one carcinogenicity class",
+    "column": "element",
+    "database_source": "toxicology.sqlite",
+    "evidence_refs": [
+      "evidence_004",
+      "evidence_010"
+    ],
+    "grain": "atom",
+    "id": "map_element_atom_count",
+    "semantic_filter": "restricted to the molecule scope stated by the question",
+    "table": "atom",
+    "term_id": "term_element_atom_count",
+    "validation": "element counts range from 5518 (h) to 1 (zn, y, te, pb, k, ca, b)"
+  },
+  {
+    "aggregation_semantics": "count of bonds per bond type code",
+    "column": "bond_type",
+    "database_source": "toxicology.sqlite",
+    "evidence_refs": [
+      "evidence_005",
+      "evidence_015"
+    ],
+    "grain": "bond",
+    "id": "map_bond_type_frequency",
+    "semantic_filter": "restricted to the molecule scope stated by the question",
+    "table": "bond",
+    "term_id": "term_bond_type_frequency",
+    "validation": "single 10528, double 1844, triple 6"
+  },
+  {
+    "aggregation_semantics": "count of atoms of the element within the molecule divided by the molecule's total atom count",
+    "column": "element",
+    "database_source": "toxicology.sqlite",
+    "evidence_refs": [
+      "evidence_013"
+    ],
+    "grain": "molecule x element",
+    "id": "map_element_ratio_in_molecule",
+    "semantic_filter": "restricted to one molecule identifier",
+    "table": "atom",
+    "term_id": "term_element_ratio_in_molecule",
+    "validation": "TR006 contains 17 h atoms out of 47 atoms"
+  },
+  {
+    "aggregation_semantics": "number of bond incidences divided by the number of distinct atoms in that set",
+    "column": "atom_id, bond_id",
+    "database_source": "toxicology.sqlite",
+    "evidence_refs": [
+      "evidence_006",
+      "evidence_010"
+    ],
+    "grain": "atom",
+    "id": "map_average_bonds_per_atom",
+    "semantic_filter": "restricted to the atom set stated by the question",
+    "table": "connected",
+    "term_id": "term_average_bonds_per_atom",
+    "validation": "bond incidences are available per atom through the connectivity relation"
+  }
+]

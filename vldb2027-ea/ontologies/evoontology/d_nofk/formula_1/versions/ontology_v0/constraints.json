@@ -1,0 +1,222 @@
+[
+  {
+    "id": "constraint_results_grain_entry_not_driver_race",
+    "target": "term_race_result",
+    "constraint_type": "business_rule",
+    "trigger_keywords": ["how many entries", "one row per driver", "driver appeared twice", "same driver same race", "count rows", "group by driver and race", "distinct races"],
+    "severity": "block",
+    "scope": "Applies whenever results is counted, grouped or joined to drivers.",
+    "confidence": "high",
+    "description": "The results grain is one row per car and driver entry, not one row per race and driver. 83 (raceId, driverId) pairs repeat across 40 races, all between 1950 and 1978, because one car could be driven by more than one driver in the same race. Counting rows or grouping by driver without deduplication inflates entry counts and can double-count a single car's result.",
+    "evidence": ["ev_results_grain"]
+  },
+  {
+    "id": "constraint_shared_drive_win_counting",
+    "target": "term_win",
+    "constraint_type": "business_rule",
+    "trigger_keywords": ["most wins", "win count", "number of victories", "shared win", "shared car", "tied winner"],
+    "severity": "block",
+    "scope": "Applies when counting wins, podiums or distinct races won.",
+    "confidence": "high",
+    "description": "973 entries sit at classification order 1 but only 973 minus the duplicates correspond to winning cars, because three races (1951 French GP, 1956 Argentine GP, 1957 British GP) credit the same position to two drivers in a shared car. Counting entries at order 1 overstates victories, and counting distinct races won requires deduplicating the shared entries.",
+    "evidence": ["ev_shared_wins", "ev_results_grain"]
+  },
+  {
+    "id": "constraint_position_text_codes",
+    "target": "term_finishing_position",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": ["positionText", "R", "E", "F", "W", "N", "D", "retired", "not classified", "disqualified", "withdrew", "did not qualify", "failed to qualify", "excluded"],
+    "severity": "block",
+    "scope": "Applies when filtering race entries by how they finished.",
+    "confidence": "high",
+    "description": "positionText carries non-numeric outcome codes alongside numeric positions: R retirement (8495 entries), F failed to qualify or outside the 107 percent rule (1368), W withdrew (323), N not classified (190), D disqualified (141), E excluded (9). A filter that keeps only numeric positionText silently removes non-classified entries, and a filter that treats every row as a finisher overstates finishes.",
+    "evidence": ["ev_position_codes"]
+  },
+  {
+    "id": "constraint_position_null_means_not_classified",
+    "target": "term_finishing_position",
+    "constraint_type": "data_quality",
+    "trigger_keywords": ["null position", "missing position", "no finishing position", "not classified", "finished the race", "did not finish"],
+    "severity": "warn",
+    "scope": "Applies when interpreting or filtering on results.position.",
+    "confidence": "high",
+    "description": "10528 entries have a null position, and every one of them carries a non-numeric positionText. A null position therefore means the entry was not classified, not that the value is unknown. Questions about finishing require an explicit decision about whether non-classified entries count as finishes.",
+    "evidence": ["ev_position_codes"]
+  },
+  {
+    "id": "constraint_classification_order_covers_all_entries",
+    "target": "term_classification_order",
+    "constraint_type": "business_rule",
+    "trigger_keywords": ["order all entries", "rank every entry", "positionOrder", "non-finishers in order", "who finished last", "result order"],
+    "severity": "warn",
+    "scope": "Applies when ranking entries of a race, including non-classified ones.",
+    "confidence": "high",
+    "description": "positionOrder ranks every entry of a race, placing non-classified entries after the classified ones, while position is present only for classified entries. Ranking that must include retirements has to use the classification order, and the classification order is not unique within a race in 103 cases where two entries share an order.",
+    "evidence": ["ev_results_grain", "ev_position_codes"]
+  },
+  {
+    "id": "constraint_fastest_lap_window",
+    "target": "term_fastest_lap",
+    "constraint_type": "scope",
+    "trigger_keywords": ["fastest lap", "fastest lap time", "lap record", "rank", "quickest lap of the race", "fastestLapSpeed"],
+    "severity": "block",
+    "scope": "Applies to any question about the fastest lap of a race or season.",
+    "confidence": "high",
+    "description": "The fastest-lap fields are populated only for 2004 through 2017: 5268 entries and 256 races. Questions about fastest laps before 2004 have no data in this database, and a count of fastest laps can never exceed 256 races. The within-race rank orders entries by their quickest lap, so rank 1 identifies the fastest lap of that race.",
+    "evidence": ["ev_coverage_windows"]
+  },
+  {
+    "id": "constraint_lap_times_window",
+    "target": "term_lap",
+    "constraint_type": "scope",
+    "trigger_keywords": ["lap times", "lap by lap", "lap chart", "lap data", "pace", "lapTimes"],
+    "severity": "block",
+    "scope": "Applies to any lap-level analysis.",
+    "confidence": "high",
+    "description": "lapTimes covers only 1996 through 2017 and 389 races, not the full 976-race calendar. Lap-level questions about earlier seasons have no data, and the number of races with lap data is far smaller than the number of races.",
+    "evidence": ["ev_coverage_windows"]
+  },
+  {
+    "id": "constraint_pit_stops_window",
+    "target": "term_pit_stop",
+    "constraint_type": "scope",
+    "trigger_keywords": ["pit stop", "pit stops", "stop duration", "pit crew", "pitStops", "fastest pit stop"],
+    "severity": "block",
+    "scope": "Applies to any pit stop analysis.",
+    "confidence": "high",
+    "description": "pitStops covers only 2011 through 2017 and 131 races. Questions about pit stops in earlier seasons are unanswerable from this database, and absence of a pit stop row does not mean a car never stopped.",
+    "evidence": ["ev_coverage_windows"]
+  },
+  {
+    "id": "constraint_qualifying_window",
+    "target": "term_qualifying_entry",
+    "constraint_type": "scope",
+    "trigger_keywords": ["qualifying", "pole position", "q1", "q2", "q3", "qualifying session", "qualifying position"],
+    "severity": "block",
+    "scope": "Applies to any qualifying or pole analysis.",
+    "confidence": "high",
+    "description": "qualifying covers only 1994 through 2017 and 339 races. Pole position can therefore only be established for those seasons, and qualifying-based starting-order analysis is unavailable for earlier races.",
+    "evidence": ["ev_coverage_windows"]
+  },
+  {
+    "id": "constraint_qualifying_segment_nulls",
+    "target": "term_qualifying_entry",
+    "constraint_type": "data_quality",
+    "trigger_keywords": ["q1", "q2", "q3", "knocked out", "segment time", "qualifying segment", "null q2", "null q3"],
+    "severity": "info",
+    "scope": "Applies when interpreting qualifying segment times.",
+    "confidence": "high",
+    "description": "Qualifying segment times are absent for entrants that did not reach that segment: q1 is null in 117 entries, q2 in 3807 and q3 in 5251. A null segment time means the driver did not take part in that segment, so comparisons across segments must account for the shrinking field.",
+    "evidence": ["ev_coverage_windows"]
+  },
+  {
+    "id": "constraint_constructor_race_points_pre_1979",
+    "target": "term_constructor_race_points",
+    "constraint_type": "business_rule",
+    "trigger_keywords": ["constructor points", "team points", "sum of driver points", "constructor championship", "combined driver points", "team score"],
+    "severity": "block",
+    "scope": "Applies when reconciling constructor points with driver points, especially before 1979.",
+    "confidence": "high",
+    "description": "In 302 (race, constructor) pairs the constructor's race points are lower than the sum of its drivers' points in the same race, and every such pair falls in 1958 through 1978, when not all of a constructor's results counted towards its own score. From 1979 onward the two agree. Deriving constructor points by summing driver points is therefore incorrect for early seasons.",
+    "evidence": ["ev_constructor_points_rule"]
+  },
+  {
+    "id": "constraint_constructor_results_status_column",
+    "target": "term_constructor_race_points",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": ["constructorResults status", "disqualified constructor", "McLaren 2007", "team disqualified", "status column"],
+    "severity": "warn",
+    "scope": "Applies when reading constructorResults.status.",
+    "confidence": "high",
+    "description": "constructorResults.status is null for 11065 rows and 'D' for 17 rows, and all 17 are McLaren in the 2007 season, denoting exclusion from the constructors' championship. A null value means no special status, not missing data.",
+    "evidence": ["ev_constructorresults_status"]
+  },
+  {
+    "id": "constraint_circuit_reference_incomplete",
+    "target": "term_circuit",
+    "constraint_type": "data_quality",
+    "trigger_keywords": ["join races to circuits", "Australian Grand Prix", "Albert Park", "circuitId", "circuit missing", "venue", "race by country"],
+    "severity": "block",
+    "scope": "Applies whenever races are joined to circuits, for example to group races by country.",
+    "confidence": "high",
+    "description": "circuitId 1 is referenced by 22 races but has no row in circuits, and those 22 races are every Australian Grand Prix from 1996 to 2017. An inner join from races to circuits silently drops those 22 races, and any grouping of races by circuit or country is incomplete unless this is handled explicitly.",
+    "evidence": ["ev_circuit_orphan"]
+  },
+  {
+    "id": "constraint_scheduled_races_without_results",
+    "target": "term_race",
+    "constraint_type": "data_quality",
+    "trigger_keywords": ["2017 season", "races without results", "scheduled race", "calendar", "race count", "last race", "season complete"],
+    "severity": "block",
+    "scope": "Applies to race counts, season completeness and any per-race aggregation.",
+    "confidence": "high",
+    "description": "Six races on the 2017 calendar have no result entries at all: the Malaysian, Japanese, United States, Mexican, Brazilian and Abu Dhabi Grands Prix (rounds 15 to 20). The calendar is complete while the results are not, so a race count taken from races and a race count taken from results disagree, and per-race analysis of the 2017 season covers only rounds 1 to 14.",
+    "evidence": ["ev_schedule_no_results"]
+  },
+  {
+    "id": "constraint_standings_are_cumulative",
+    "target": "term_driver_standing",
+    "constraint_type": "business_rule",
+    "trigger_keywords": ["championship points", "standings", "cumulative points", "final standings", "season total", "title winner", "champion"],
+    "severity": "block",
+    "scope": "Applies to championship standing analysis for both drivers and constructors.",
+    "confidence": "high",
+    "description": "Each standing row is a running total as of that race, so summing rows within a season multiplies the points. A season total is the row at the final race of the season for which a standing exists, and driverStandings covers 970 of 976 races while constructorStandings covers only 906, so the final race of a season may have no standing row at all.",
+    "evidence": ["ev_standings_scope"]
+  },
+  {
+    "id": "constraint_standings_position_text_codes",
+    "target": "term_driver_standing",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": ["standings positionText", "excluded", "disqualified from championship", "E", "D", "championship exclusion"],
+    "severity": "warn",
+    "scope": "Applies when reading the position and positionText of a standing.",
+    "confidence": "high",
+    "description": "Non-numeric positionText in the standings marks exclusion rather than a place: driverStandings holds one 'D' row (1997 European Grand Prix, driverId 30, recorded at position 26 while retaining 78 points), and constructorStandings holds 17 'E' rows, all constructorId 1 in 2007. Treating such a row as an ordinary numeric position misreports the championship order.",
+    "evidence": ["ev_standings_scope"]
+  },
+  {
+    "id": "constraint_grid_zero_is_pit_lane",
+    "target": "term_grid_position",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": ["grid", "pit lane start", "grid 0", "zero grid", "starting position", "average grid"],
+    "severity": "warn",
+    "scope": "Applies when aggregating or filtering on the grid slot.",
+    "confidence": "high",
+    "description": "A grid value of 0 appears in 1565 entries and denotes a start from the pit lane rather than the first grid slot. Averaging or sorting grid values without excluding zero treats those entries as better-placed than pole, and filtering on grid greater than zero removes them entirely.",
+    "evidence": ["ev_grid_vs_qualifying"]
+  },
+  {
+    "id": "constraint_grid_not_equal_qualifying_position",
+    "target": "term_grid_position",
+    "constraint_type": "business_rule",
+    "trigger_keywords": ["starting grid", "grid penalty", "grid vs qualifying", "started where", "qualifying position", "front row"],
+    "severity": "warn",
+    "scope": "Applies when relating qualifying results to starting positions.",
+    "confidence": "high",
+    "description": "The starting grid differs from the qualifying position in a substantial minority of entries: among 7382 joined entries with a non-zero grid, 5840 agree. Using the qualifying position as a stand-in for the starting position misstates the grid for the remaining entries, which were moved by penalties or other adjustments.",
+    "evidence": ["ev_grid_vs_qualifying"]
+  },
+  {
+    "id": "constraint_car_number_not_driver_identity",
+    "target": "term_car_number",
+    "constraint_type": "data_quality",
+    "trigger_keywords": ["car number", "driver number", "number column", "number 44", "registered number"],
+    "severity": "warn",
+    "scope": "Applies when using a number to identify a driver or entry.",
+    "confidence": "high",
+    "description": "results.number is the number carried in that race and differs from drivers.number in 1741 entries. In addition drivers.number is null for 804 of 840 drivers and drivers.code is null for 757, so neither is a reliable driver identity. Driver identity should be resolved through driverId or driverRef instead.",
+    "evidence": ["ev_identifier_population"]
+  },
+  {
+    "id": "constraint_no_declared_foreign_keys",
+    "target": "map_race_result",
+    "constraint_type": "data_quality",
+    "trigger_keywords": ["foreign key", "join", "referential integrity", "relationship", "orphan", "constraint"],
+    "severity": "info",
+    "scope": "Applies to every join across tables in this database.",
+    "confidence": "high",
+    "description": "The schema declares no foreign keys, so no relationship is enforced by the database and joins must be justified from the data itself. Referential checks confirm that most references resolve, the notable exception being the 22 races whose circuitId has no matching circuit row.",
+    "evidence": ["ev_tables_counts", "ev_circuit_orphan"]
+  }
+]

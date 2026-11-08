@@ -1,0 +1,39 @@
+condition: semantic_gate
+
+agent:
+  model: "deepseek-flash"
+  temperature: 0.0
+  max_turns: 30
+  provider: "openai"
+  base_url: "https://api.deepseek.com"
+  api_key_env: "BIRD_AGENT_API_KEY"
+
+semantic:
+  enabled: true
+  store_path: ""
+
+mcp_servers:
+  - name: sqlite
+    module: "tool_server.sqlite_mcp"
+    description: "SQLite database exploration tools"
+    args:
+      - "--db-path"
+      - ""
+
+  - name: semantic
+    module: "tool_server.semantic_mcp"
+    description: "EvoOntology semantic tools"
+    args:
+      - "--store"
+      - ""
+      - "--db-id"
+      - ""
+
+  - name: datamind_gate
+    module: "tool_server.datamind_gate_mcp"
+    description: "DataMind data-verified ontology constraint check"
+    args:
+      - "--db-id"
+      - ""
+      - "--db-path"
+      - ""

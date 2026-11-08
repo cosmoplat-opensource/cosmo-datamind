@@ -1,0 +1,225 @@
+[
+  {
+    "id": "constraint_label_enum_values",
+    "target": "term_toxicity_label",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "label",
+      "positive",
+      "negative",
+      "+",
+      "-",
+      "toxic",
+      "carcinogenic",
+      "mutagenic",
+      "active",
+      "inactive",
+      "class",
+      "classification"
+    ],
+    "severity": "block",
+    "scope": "Applies whenever molecule labels are filtered, grouped or compared.",
+    "confidence": "high",
+    "description": "molecule.label takes exactly two observed values across all 343 labelled molecules: '+' (152 molecules) and '-' (191 molecules). No other value and no NULL occurs. Any filter on label must use these two literal single-character values.",
+    "evidence": [
+      "ev_label_values"
+    ]
+  },
+  {
+    "id": "constraint_label_polarity_undocumented",
+    "target": "term_toxicity_label",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "meaning of +",
+      "meaning of -",
+      "which label is toxic",
+      "positive means",
+      "negative means",
+      "polarity",
+      "interpret label",
+      "is plus toxic"
+    ],
+    "severity": "warning",
+    "scope": "Applies when an analysis must state what a label value signifies rather than merely count it.",
+    "confidence": "high",
+    "description": "The database contains no data dictionary, comment or lookup table that states whether '+' denotes an active/toxic outcome and '-' an inactive one. The polarity must therefore be reported as an assumption, not as a fact established by this data.",
+    "evidence": [
+      "ev_schema_tables",
+      "ev_label_values"
+    ]
+  },
+  {
+    "id": "constraint_molecule_table_is_partial",
+    "target": "term_molecule",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "all molecules",
+      "total molecules",
+      "every molecule",
+      "number of molecules",
+      "join",
+      "label coverage",
+      "labeled molecules",
+      "how many molecules"
+    ],
+    "severity": "block",
+    "scope": "Applies to every question that counts molecules or joins structural data to labels.",
+    "confidence": "high",
+    "description": "The molecule table holds 343 rows, but atom and bond each reference 444 distinct molecule identifiers. 101 molecules (for example TR003, TR005, TR013) have atoms and bonds but no molecule row and therefore no label. Structural counts and labeled counts over 343 and 444 respectively are different populations and must not be mixed in one figure.",
+    "evidence": [
+      "ev_orphan_molecules",
+      "ev_label_graph_coverage"
+    ]
+  },
+  {
+    "id": "constraint_adjacency_is_symmetric",
+    "target": "term_atomic_adjacency",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "neighbour",
+      "neighbor",
+      "adjacent",
+      "connected",
+      "degree",
+      "count bonds",
+      "double count",
+      "number of edges"
+    ],
+    "severity": "warning",
+    "scope": "Applies when counting rows of the adjacency table or deriving degrees and neighbour lists.",
+    "confidence": "high",
+    "description": "The adjacency table stores every bond twice, once per direction: 24758 rows correspond to 12379 distinct bond_id values, and every row has its reverse counterpart. Row counts over this table are twice the number of bonds. Counting distinct bond_id values or distinct atom neighbours avoids the double count.",
+    "evidence": [
+      "ev_connected_symmetry"
+    ]
+  },
+  {
+    "id": "constraint_unconnected_atoms",
+    "target": "term_atom",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "isolated atom",
+      "unconnected atom",
+      "no bonds",
+      "degree zero",
+      "counter ion",
+      "salt",
+      "missing neighbour"
+    ],
+    "severity": "warning",
+    "scope": "Applies when computing degrees, neighbour counts or connected components.",
+    "confidence": "high",
+    "description": "49 of the 12333 atoms have no row in the adjacency table and therefore no neighbour and no degree value. They occur as elements cl (5), h (7), k (1), na (35) and zn (1), which is consistent with unattached counter-ions. An inner join between atom and the adjacency table silently drops these atoms, so left joins are needed to keep the full atom population.",
+    "evidence": [
+      "ev_unconnected_atoms"
+    ]
+  },
+  {
+    "id": "constraint_bond_type_enum_values",
+    "target": "term_bond_type",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "bond type",
+      "bond order",
+      "single bond",
+      "double bond",
+      "triple bond",
+      "triple",
+      "=",
+      "#",
+      "multiple bond"
+    ],
+    "severity": "block",
+    "scope": "Applies whenever bonds are filtered or grouped by bond type.",
+    "confidence": "high",
+    "description": "bond.bond_type takes three literal string values: '-' for a single bond (10528 rows), '=' for a double bond (1844 rows) and '#' for a triple bond (6 rows). Rows without a bond type exist and are excluded by any filter on these three values.",
+    "evidence": [
+      "ev_bond_type_values",
+      "ev_bond_type_null"
+    ]
+  },
+  {
+    "id": "constraint_bond_type_missing",
+    "target": "term_bond_type",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "null bond type",
+      "missing bond type",
+      "unknown bond",
+      "bond without type"
+    ],
+    "severity": "warning",
+    "scope": "Applies to completeness checks and to any filter that assumes bond_type is always populated.",
+    "confidence": "high",
+    "description": "Exactly one bond, TR345_7_10 in molecule TR345, has a NULL bond_type. Filters on specific bond type values exclude it, and percentage shares computed over a filtered subset will not sum to the whole bond population.",
+    "evidence": [
+      "ev_bond_type_null"
+    ]
+  },
+  {
+    "id": "constraint_element_symbols_lowercase",
+    "target": "term_element",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "element",
+      "atom type",
+      "chemical symbol",
+      "carbon",
+      "chlorine",
+      "hydrogen",
+      "oxygen",
+      "nitrogen",
+      "bromine"
+    ],
+    "severity": "info",
+    "scope": "Applies whenever atoms are filtered or grouped by element.",
+    "confidence": "high",
+    "description": "atom.element stores 21 distinct lowercase element symbols (h, c, o, n, cl, s, br, na, p, f, i, si, sn, cu, zn, y, te, pb, k, ca, b) with no NULL. Value comparisons must use the lowercase spelling, and multi-letter symbols appear as a single value rather than as separate characters.",
+    "evidence": [
+      "ev_element_values"
+    ]
+  },
+  {
+    "id": "constraint_no_numeric_properties",
+    "target": "term_molecule",
+    "constraint_type": "scope",
+    "trigger_keywords": [
+      "molecular weight",
+      "mass",
+      "dose",
+      "concentration",
+      "toxicity score",
+      "property value",
+      "numeric",
+      "measurement",
+      "potency"
+    ],
+    "severity": "block",
+    "scope": "Applies to any request for a numeric chemical or toxicological property.",
+    "confidence": "high",
+    "description": "Every column in all four tables is declared TEXT. The database stores identifiers, element symbols, bond orders and the binary label only; it holds no numeric property such as mass, molecular weight, dose, concentration or potency score. No such quantity can be produced from this data.",
+    "evidence": [
+      "ev_schema_tables",
+      "ev_no_numeric_columns"
+    ]
+  },
+  {
+    "id": "constraint_identifier_encodes_molecule",
+    "target": "term_atom",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "atom id",
+      "bond id",
+      "identifier format",
+      "parse identifier",
+      "prefix of id"
+    ],
+    "severity": "info",
+    "scope": "Applies when identifiers are parsed, joined or used to derive molecule membership.",
+    "confidence": "high",
+    "description": "atom_id and bond_id are composite: the substring before the first underscore always equals the molecule_id of the owning molecule, and no atom or bond identifier violates this. The atom_id and bond_id text therefore duplicates molecule membership that is also present in the molecule_id columns, and both representations agree.",
+    "evidence": [
+      "ev_id_prefix_molecule"
+    ]
+  }
+]

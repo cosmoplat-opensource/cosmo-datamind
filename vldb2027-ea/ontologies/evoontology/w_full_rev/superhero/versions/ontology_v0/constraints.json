@@ -1,0 +1,253 @@
+[
+  {
+    "id": "constraint_gender_enum",
+    "target": "gender",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "male",
+      "female",
+      "men",
+      "women",
+      "man",
+      "woman",
+      "gender",
+      "male superheroes",
+      "female superheroes",
+      "ratio between male and female"
+    ],
+    "severity": "block",
+    "scope": "Applies whenever filtering superheroes by gender or counting them per gender.",
+    "confidence": "high",
+    "description": "The gender vocabulary stores exactly three values: gender_id 1 = 'Male', 2 = 'Female', 3 = 'N/A'. A question about 'male superheroes' selects gender_id 1 and a question about 'female superheroes' selects gender_id 2. Any instruction that maps 'male' to the Female category contradicts the stored data and must not be followed.",
+    "evidence": [
+      "ev_gender_domain",
+      "ev_gender_distribution"
+    ]
+  },
+  {
+    "id": "constraint_alignment_enum",
+    "target": "alignment",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "villain",
+      "villains",
+      "hero",
+      "heroes",
+      "good",
+      "bad",
+      "evil",
+      "neutral",
+      "alignment",
+      "green-skinned villains"
+    ],
+    "severity": "block",
+    "scope": "Applies whenever filtering superheroes by moral alignment.",
+    "confidence": "high",
+    "description": "The alignment vocabulary stores exactly four values: 1 = 'Good', 2 = 'Bad', 3 = 'Neutral', 4 = 'N/A'. A 'villain' corresponds to alignment 'Bad' and a 'hero' (in the moral sense) to 'Good'. Neutral and N/A characters are neither heroes nor villains.",
+    "evidence": [
+      "ev_alignment_domain",
+      "ev_skin_colour_green_alignment"
+    ]
+  },
+  {
+    "id": "constraint_colour_no_colour",
+    "target": "colour",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "no eye color",
+      "no eye colour",
+      "no colour",
+      "no color",
+      "colourless",
+      "eye colour",
+      "skin colour",
+      "green-skinned"
+    ],
+    "severity": "block",
+    "scope": "Applies when interpreting eye, hair or skin colour values.",
+    "confidence": "high",
+    "description": "'No Colour' (colour id 1) is a recorded category meaning the feature is colourless, not a missing value. Colour references on the superhero table are never NULL, so 'no eye colour' must be matched as the recorded value 'No Colour' and never as an absent value. Colour values such as 'Green' are matched against the colour vocabulary, which is shared by the eye, hair and skin colour roles.",
+    "evidence": [
+      "ev_colour_vocabulary",
+      "ev_eye_colour_usage",
+      "ev_colour_fk_usage"
+    ]
+  },
+  {
+    "id": "constraint_attribute_value_scale",
+    "target": "attribute_value",
+    "constraint_type": "scope",
+    "trigger_keywords": [
+      "attribute value",
+      "value of",
+      "strength value",
+      "durability",
+      "speed",
+      "intelligence",
+      "rating",
+      "score",
+      "highest attribute value",
+      "less than 50"
+    ],
+    "severity": "info",
+    "scope": "Applies whenever attribute values are filtered, compared or aggregated.",
+    "confidence": "high",
+    "description": "Attribute values are on a bounded scale from 5 to 100 (Intelligence starts at 35) and are comparable only within the same named attribute. Each superhero has at most one value per attribute, so a per-attribute maximum or minimum requires restricting to that attribute before aggregating; otherwise values belonging to different attributes are mixed.",
+    "evidence": [
+      "ev_attribute_value_range",
+      "ev_attribute_pair_uniqueness",
+      "ev_strength_max"
+    ]
+  },
+  {
+    "id": "constraint_partial_coverage",
+    "target": "superhero",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "all superheroes",
+      "every superhero",
+      "how many superheroes",
+      "number of superheroes",
+      "count of heroes",
+      "most durability"
+    ],
+    "severity": "warning",
+    "scope": "Applies whenever counting superheroes or searching for extremes across all superheroes.",
+    "confidence": "high",
+    "description": "Only 623 of the 750 superheroes have attribute ratings and only 652 have superpowers. Counting superheroes from the rating or power link tables therefore yields an undercount. Counting the superhero table itself gives the full population; when a question asks how many superheroes satisfy a capability condition, only superheroes with recorded ratings can qualify, which is the intended scope of 'superheroes with attribute X'.",
+    "evidence": [
+      "ev_hero_coverage",
+      "ev_row_counts"
+    ]
+  },
+  {
+    "id": "constraint_height_weight_outliers",
+    "target": "weight",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "average weight",
+      "average height",
+      "mean weight",
+      "heaviest",
+      "tallest",
+      "weight",
+      "height",
+      "greater than the average weight",
+      "79% average weight"
+    ],
+    "severity": "warning",
+    "scope": "Applies to any average, comparison or ranking over height_cm and weight_kg.",
+    "confidence": "high",
+    "description": "height_cm contains unrecorded zeros (155 rows) and extreme outliers up to 30480, and weight_kg contains zeros and outliers up to 90000000 (for example Godzilla at 90000000 kg and King Kong at 9000000 kg). Averages over these columns are dominated by the outliers, and 'greater than the average weight' thresholds should be computed over the same population the question names rather than over an arbitrarily filtered set. The values are nonetheless the stored data and must not be silently discarded.",
+    "evidence": [
+      "ev_height_weight_extremes",
+      "ev_gender_distribution"
+    ]
+  },
+  {
+    "id": "constraint_missing_physical_values",
+    "target": "height",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "height",
+      "weight",
+      "height from 170 to 190",
+      "over 200cm",
+      "height_cm",
+      "weight_kg"
+    ],
+    "severity": "warning",
+    "scope": "Applies when filtering superheroes by height or weight ranges.",
+    "confidence": "high",
+    "description": "58 superheroes have no recorded height and 64 no recorded weight; a further 155 store height 0, which means unrecorded rather than zero tall. Range filters such as 'height from 170 to 190' naturally exclude these rows, but 0 must not be treated as a real measurement when computing minimum heights.",
+    "evidence": [
+      "ev_height_weight_extremes",
+      "ev_height_weight_null"
+    ]
+  },
+  {
+    "id": "constraint_publisher_blank_name",
+    "target": "publisher",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "publisher",
+      "published by",
+      "Marvel",
+      "DC",
+      "Dark Horse",
+      "Star Trek",
+      "publisher id"
+    ],
+    "severity": "warning",
+    "scope": "Applies when filtering or grouping superheroes by publisher.",
+    "confidence": "high",
+    "description": "Publisher id 1 exists but stores an empty publisher_name, and 17 superheroes are linked to it; a further 3 superheroes have no publisher at all. Grouping superheroes by publisher_name therefore produces a blank bucket that must not be reported as a named publisher. Note also that the publisher list mixes comics imprints with individual and franchise owners (for example 'Star Trek', 'George Lucas', 'Microsoft'), so a publisher name may also be a franchise rather than a comics line.",
+    "evidence": [
+      "ev_publisher_vocabulary",
+      "ev_publisher_distribution"
+    ]
+  },
+  {
+    "id": "constraint_publisher_name_variants",
+    "target": "publisher",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "Marvel",
+      "DC",
+      "Marvel Comics",
+      "DC Comics",
+      "Dark Horse Comics",
+      "Star Trek",
+      "published more superheroes"
+    ],
+    "severity": "info",
+    "scope": "Applies when a question names a publisher in shorthand.",
+    "confidence": "high",
+    "description": "Publisher names are stored in full, so the shorthand 'Marvel' corresponds to the stored name 'Marvel Comics' and 'DC' to 'DC Comics'. Matching must use the stored names, since the publisher list contains other entries beginning with similar words.",
+    "evidence": [
+      "ev_publisher_vocabulary",
+      "ev_publisher_distribution"
+    ]
+  },
+  {
+    "id": "constraint_name_fields",
+    "target": "full_name",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "full name",
+      "superhero name",
+      "real name",
+      "named",
+      "called",
+      "Emil Blonsky",
+      "Charles Chandler"
+    ],
+    "severity": "warning",
+    "scope": "Applies when a question names a superhero by a personal name rather than a codename.",
+    "confidence": "high",
+    "description": "superhero_name and full_name are different labels for the same superhero: a person's real name belongs in full_name (for example 'Emil Blonsky' for Abomination, 'Charles Chandler' for 3-D Man), while codenames belong in superhero_name. 125 superheroes store '-' and 122 store NULL as full_name, meaning the real name is unknown; those placeholders must not be treated as names.",
+    "evidence": [
+      "ev_name_fields",
+      "ev_identity_sample"
+    ]
+  },
+  {
+    "id": "constraint_duplicate_superhero_names",
+    "target": "superhero_name",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "superhero name",
+      "which superhero",
+      "list the superheroes",
+      "names of the superheroes"
+    ],
+    "severity": "warning",
+    "scope": "Applies when matching a superhero by codename.",
+    "confidence": "high",
+    "description": "Five superhero_name values are shared by more than one superhero row. Matching by codename alone may therefore return several rows, and a query that expects a unique character should not assume the codename is a unique key.",
+    "evidence": [
+      "ev_name_fields",
+      "ev_identity_sample"
+    ]
+  }
+]

@@ -1,0 +1,272 @@
+[
+  {
+    "id": "constraint_event_date_datetime",
+    "target": "term_event",
+    "constraint_type": "unit",
+    "trigger_keywords": [
+      "event date",
+      "date range",
+      "time period",
+      "year",
+      "month",
+      "compare dates",
+      "over time",
+      "before",
+      "after",
+      "when did"
+    ],
+    "severity": "block",
+    "scope": "Applies whenever the event timestamp is compared with, or combined with, the expense date or the income date.",
+    "confidence": "high",
+    "description": "event.event_date stores a full timestamp text of the form YYYY-MM-DDTHH:MM:SS (19 characters, for example 2020-03-10T12:00:00), while expense.expense_date and income.date_received store date-only text of the form YYYY-MM-DD (10 characters). Any comparison or combination of these columns across tables requires normalising the event timestamp to its date part first; comparing a bare date string directly against event_date matches nothing. Normalising to date-only also collapses same-day events recorded at different times, which is correct for daily aggregates but loses ordering within a day.",
+    "evidence": [
+      "evidence_event_date_format"
+    ]
+  },
+  {
+    "id": "constraint_zip_leading_zero_loss",
+    "target": "term_member_zip",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "zip",
+      "zip code",
+      "postal code",
+      "leading zero",
+      "state",
+      "geography",
+      "residence",
+      "address"
+    ],
+    "severity": "warning",
+    "scope": "Applies when member ZIP codes are displayed, exported or matched against any postal code source outside this database.",
+    "confidence": "high",
+    "description": "member.zip and zip_code.zip_code are stored as integers, so ZIP codes that begin with zero lose that leading zero: member zip 1020 is postal code 01020 (Chicopee, MA), 7002 is 07002 (Bayonne, NJ) and 8021 is 08021 (Clementon, NJ). ZIP codes in the north-eastern United States, Puerto Rico and other zero-prefixed ranges are affected. Displaying or exporting a ZIP code must restore the leading zero for five-digit codes below 10000. Because both columns lose the zero in the same way, joins between them still match correctly and need no repair.",
+    "evidence": [
+      "evidence_zip_leading_zero"
+    ]
+  },
+  {
+    "id": "constraint_expense_approved_representation",
+    "target": "term_expense",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "approved",
+      "approval",
+      "not approved",
+      "unapproved",
+      "pending expense",
+      "expense flag"
+    ],
+    "severity": "block",
+    "scope": "Applies when filtering, grouping or counting expenses by approval state.",
+    "confidence": "high",
+    "description": "expense.approved is a text column whose only observed value is the lowercase string true, present in 31 of 32 records; one record stores no value at all (NULL). There is no explicit negative value such as false or no. Filtering for approved expenses must test for the text value true, and the single NULL record is best treated as not approved rather than as an error. Treating the column as a boolean or numeric flag matches no rows.",
+    "evidence": [
+      "evidence_expense_approved_values"
+    ]
+  },
+  {
+    "id": "constraint_budget_remaining_negative_overspend",
+    "target": "term_budget_remaining",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "over budget",
+      "overspend",
+      "remaining",
+      "balance",
+      "negative",
+      "budget exceeded",
+      "under budget"
+    ],
+    "severity": "block",
+    "scope": "Applies when computing or filtering budget balances and when summarising spending against allocation.",
+    "confidence": "high",
+    "description": "A budget line item is overspent when its remaining amount is negative, and five of the 52 line items are in that state. Remaining amount is exactly the allocated amount minus the spent amount, so it must never be floored at zero; the largest observed overspend is -23.06 on a Food line item. Filtering for a remaining amount greater than zero silently hides overspent line items and makes the club look fully within budget.",
+    "evidence": [
+      "evidence_budget_over_budget",
+      "evidence_budget_expense_reconciliation"
+    ]
+  },
+  {
+    "id": "constraint_budget_spent_reconciles_with_expenses",
+    "target": "term_budget_spent",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "spent",
+      "actual spend",
+      "reconcile",
+      "expense total",
+      "budget consumption",
+      "total spending"
+    ],
+    "severity": "warning",
+    "scope": "Applies when measuring total spending from either the budget or the expense side.",
+    "confidence": "high",
+    "description": "For every budget line item that has linked expenses, the recorded spent amount equals the sum of the costs of those expenses: 24 of the 52 line items have expenses, and the club-wide totals agree exactly at 2086.05. The other 28 line items have no linked expenses and all record a spent amount of zero. Spending may therefore be measured either from recorded spent amounts or by summing expense costs, but the two must never be added together in the same total.",
+    "evidence": [
+      "evidence_budget_expense_reconciliation"
+    ]
+  },
+  {
+    "id": "constraint_attendance_incomplete_coverage",
+    "target": "term_attendance",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "attendance",
+      "attendees",
+      "participation",
+      "who attended",
+      "how many attended",
+      "absent",
+      "turnout"
+    ],
+    "severity": "block",
+    "scope": "Applies to any comparison of participation across events, event types or members.",
+    "confidence": "high",
+    "description": "Attendance records exist for only 17 of the 42 events and 30 of the 33 members. No Election event has any attendance record, and several event types have more events than events with attendance (for example only 5 of 16 Meetings, 3 of 7 Guest Speaker events and 3 of 6 Games). A missing attendance row therefore does not reliably mean that nobody attended or that a member was absent; it may simply mean attendance was never recorded. Comparisons of participation are only meaningful over the events that actually have attendance data, and ranking all events by attendance would wrongly place uncovered events at zero.",
+    "evidence": [
+      "evidence_attendance_coverage"
+    ]
+  },
+  {
+    "id": "constraint_event_status_lifecycle",
+    "target": "term_event_status",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "event status",
+      "closed",
+      "open",
+      "planning",
+      "upcoming",
+      "past event",
+      "completed event",
+      "cancelled"
+    ],
+    "severity": "warning",
+    "scope": "Applies when filtering events by lifecycle state or when interpreting status as completion.",
+    "confidence": "high",
+    "description": "Event status takes the values Closed (18 events), Open (13) and Planning (11). Closed events are all dated on or before 2019-11-21 and represent completed events, while Open and Planning events are dated from 2019-11-05 onwards and represent scheduled or prospective events, with one Open event dated earlier. Status is thus a strong but not exact proxy for whether an event has already taken place, and it is not a cancellation, attendance or approval indicator.",
+    "evidence": [
+      "evidence_event_status_date_relation"
+    ]
+  },
+  {
+    "id": "constraint_budget_event_status_mirrors_event_status",
+    "target": "term_budget_event_status",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "event status",
+      "budget status",
+      "event_status",
+      "closed budget",
+      "open budget"
+    ],
+    "severity": "info",
+    "scope": "Applies when filtering budget line items by event lifecycle state.",
+    "confidence": "high",
+    "description": "The event status carried on each budget line item always equals the status of the event it links to: 22 Closed, 23 Open and 7 Planning line items agree exactly with their event. The two columns are interchangeable for filtering, and any disagreement should be treated as a data problem rather than as a meaningful distinction.",
+    "evidence": [
+      "evidence_budget_event_status_match"
+    ]
+  },
+  {
+    "id": "constraint_income_dues_uniform_amount",
+    "target": "term_dues_income",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "dues",
+      "membership fee",
+      "dues income",
+      "who paid dues",
+      "dues per member"
+    ],
+    "severity": "info",
+    "scope": "Applies when interpreting dues payments or inferring membership from dues records.",
+    "confidence": "high",
+    "description": "All 33 dues income records carry an amount of exactly 50, giving 1650 of dues income, and each is attributed to a distinct member. Dues are therefore a uniform per-member fee rather than a variable amount, so a dues total can be read both as money received and as the number of paying members.",
+    "evidence": [
+      "evidence_income_source_totals"
+    ]
+  },
+  {
+    "id": "constraint_income_nondues_unattributed",
+    "target": "term_income",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "income source",
+      "fundraising",
+      "sponsorship",
+      "school appropriation",
+      "donation",
+      "unattributed income",
+      "revenue by member"
+    ],
+    "severity": "warning",
+    "scope": "Applies when joining income to members or when attributing revenue to individuals.",
+    "confidence": "high",
+    "description": "Three of the 36 income records carry no member reference at all: the Fundraising receipt (200), the School Appropration receipt (3000) and the Sponsorship receipt (1000), together 4200. These are organisational receipts rather than member payments. Any analysis that joins income to members, or that reports income per member, will silently drop those 4200 unless an outer join or an explicit unattributed category is used.",
+    "evidence": [
+      "evidence_income_member_orphans"
+    ]
+  },
+  {
+    "id": "constraint_member_position_inactive",
+    "target": "term_member_position",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "position",
+      "officer",
+      "member role",
+      "inactive",
+      "active member",
+      "current member",
+      "membership count"
+    ],
+    "severity": "warning",
+    "scope": "Applies when counting members or segmenting the roster by role.",
+    "confidence": "high",
+    "description": "The member position column mixes current club roles (President, Vice President, Treasurer, Secretary), ordinary membership (Member, 26 records) and former membership (Inactive, 3 records). Inactive members remain in the member table and still appear in attendance records, so counting rows in the member table overstates current active membership unless Inactive is excluded. Only the four officer positions appear as the member of record on expenses.",
+    "evidence": [
+      "evidence_member_position_values",
+      "evidence_expense_member_positions"
+    ]
+  },
+  {
+    "id": "constraint_college_naming_inconsistency",
+    "target": "term_college",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "college",
+      "school",
+      "faculty",
+      "department",
+      "academic unit"
+    ],
+    "severity": "warning",
+    "scope": "Applies when grouping, filtering or presenting academic units.",
+    "confidence": "high",
+    "description": "The eight college values in the major table are not uniformly named: seven use the form College of ... (for example College of Engineering, College of the Arts) while one is named School of Business. In addition, the department column holds values beginning with School of (for example School of Applied Sciences, Technology and Education) as well as values ending in Department. Grouping must not assume that School and College denote different levels of the academic hierarchy.",
+    "evidence": [
+      "evidence_major_college_values"
+    ]
+  },
+  {
+    "id": "constraint_member_major_optional",
+    "target": "term_major",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "major",
+      "declared major",
+      "field of study",
+      "no major",
+      "missing major"
+    ],
+    "severity": "info",
+    "scope": "Applies when aggregating members by major, department or college.",
+    "confidence": "high",
+    "description": "One of the 33 members has no declared major, and every member that does declare one links to an existing major record. Analyses of academic composition should expect 32 members with a declared major and treat the single unlinked member as undeclared rather than as a broken reference; inner-joining members to majors therefore loses one member.",
+    "evidence": [
+      "evidence_member_major_join"
+    ]
+  }
+]

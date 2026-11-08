@@ -1,0 +1,862 @@
+[
+  {
+    "id": "constraint_receipt_type_semantics",
+    "target": "receipt_payment_type",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "收款方式",
+      "电汇",
+      "银承",
+      "收款笔数",
+      "结算方式"
+    ],
+    "severity": "warning",
+    "scope": "筛选或分组收款记录时",
+    "confidence": "high",
+    "description": "收款方式只有两个取值：电汇与银承；is_bank_accepted=1 当且仅当收款方式为银承。「收款方式为电汇/银承」的笔数需按 payment_type 筛选后计数。",
+    "evidence": [
+      "ev_payment_receipt_enum"
+    ]
+  },
+  {
+    "id": "constraint_receipt_vs_payment_out",
+    "target": "payment_out",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "收款",
+      "付款",
+      "付款笔数",
+      "收款笔数",
+      "银行账号",
+      "付款方式"
+    ],
+    "severity": "block",
+    "scope": "出现「收款」「付款」字样时选择数据来源",
+    "confidence": "high",
+    "description": "收款与付款是两个不同的业务对象：客户收款在 fact_payment（收款方式、收款笔数、按收款日期筛选），对供应商付款在 fact_payment_out（付款方式、银行账号、付款笔数）。把「银行账号」或 bank_transfer 用于收款、或把「银承」用于付款都会取不到数据。",
+    "evidence": [
+      "ev_payment_receipt_enum",
+      "ev_payment_out_enum"
+    ]
+  },
+  {
+    "id": "constraint_payment_terms_values",
+    "target": "po_payment_terms",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "付款条件",
+      "月结",
+      "月结45天",
+      "账期",
+      "采购订单"
+    ],
+    "severity": "block",
+    "scope": "按付款条件筛选采购订单时",
+    "confidence": "high",
+    "description": "付款条件为中文文本，仅三个取值：月结30天、月结45天、月结60天，且数字前后无空格。筛选「月结45天」须匹配完整字符串。采购订单总金额为 fact_purchase_order.total_amount。",
+    "evidence": [
+      "ev_purchase_order_enum"
+    ]
+  },
+  {
+    "id": "constraint_purchase_order_status_values",
+    "target": "purchase_order",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "采购订单",
+      "订单状态",
+      "received",
+      "closed"
+    ],
+    "severity": "warning",
+    "scope": "按状态统计采购订单或关联订单行时",
+    "confidence": "high",
+    "description": "采购订单状态取值为 closed、confirmed、received。「状态为 received 的采购订单」指 fact_purchase_order.status='received'，其订单行单价在 fact_po_line 中，两表按 po_id 连接。",
+    "evidence": [
+      "ev_purchase_order_enum"
+    ]
+  },
+  {
+    "id": "constraint_supplier_grade_values",
+    "target": "supplier_grade",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "评级",
+      "供应商评估",
+      "等级",
+      "AA",
+      "A"
+    ],
+    "severity": "block",
+    "scope": "按评级筛选供应商评估时",
+    "confidence": "high",
+    "description": "供应商评估评级只有 AA 与 A 两个取值，需精确匹配大写字母；综合评分合计为 fact_supplier_eval.total_score 的求和。",
+    "evidence": [
+      "ev_supplier_eval_grade"
+    ]
+  },
+  {
+    "id": "constraint_goods_receipt_result_alignment",
+    "target": "inspection_result",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "检验结果",
+      "pass",
+      "fail",
+      "收货单",
+      "来料检验"
+    ],
+    "severity": "block",
+    "scope": "按检验结果筛选收货单并沿链路统计付款时",
+    "confidence": "high",
+    "description": "收货单检验结果只有 pass 与 fail，且与状态一一对应（pass=posted、fail=inspected）。收货单经 po_id 关联采购订单、再经 fact_ap.gr_id 关联应付账款、最后经 fact_payment_out.ap_id 关联付款，形成「检验结果 -> 付款笔数」的链路。",
+    "evidence": [
+      "ev_goods_receipt_result",
+      "ev_ap_payment_chain"
+    ]
+  },
+  {
+    "id": "constraint_ap_status_and_due",
+    "target": "account_payable",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "应付账款",
+      "已关闭",
+      "到期",
+      "closed",
+      "open"
+    ],
+    "severity": "block",
+    "scope": "筛选应付账款时",
+    "confidence": "high",
+    "description": "应付账款状态只有 closed 与 open，「已关闭」即 status='closed'；「到期」指 due_date 落在目标年份。closed 与 open 的行数分别为 879 与 122。",
+    "evidence": [
+      "ev_ap_payment_chain",
+      "ev_time_coverage"
+    ]
+  },
+  {
+    "id": "constraint_contract_type_and_end_date",
+    "target": "contract",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "合同",
+      "合同类型",
+      "到期日期",
+      "purchase",
+      "sales"
+    ],
+    "severity": "warning",
+    "scope": "筛选或统计合同时",
+    "confidence": "high",
+    "description": "合同类型只有 purchase 与 sales；合同中不存在 due_date 列，「到期日期」对应 end_date（取值范围 2026-03-12 至 2026-12-31）。",
+    "evidence": [
+      "ev_contract_enum"
+    ]
+  },
+  {
+    "id": "constraint_fixed_asset_accumulated_source",
+    "target": "accumulated_dep",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "固定资产",
+      "累计折旧",
+      "折旧金额",
+      "资产名称"
+    ],
+    "severity": "warning",
+    "scope": "固定资产折旧分析时",
+    "confidence": "high",
+    "description": "「累计折旧金额最高的固定资产」取 dim_fixed_asset.accumulated_dep（资产台账上的累计值），并输出 asset_name；fact_depreciation 是按期折旧流水，两者口径不同，不要混用。",
+    "evidence": [
+      "ev_fixed_asset"
+    ]
+  },
+  {
+    "id": "constraint_inventory_single_intake_window",
+    "target": "inventory",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "库存",
+      "入库",
+      "在库天数",
+      "2026年"
+    ],
+    "severity": "info",
+    "scope": "库存与在库天数分析时",
+    "confidence": "high",
+    "description": "fact_inventory 只有 37 行且入库日期集中在 2026-06-15 至 2026-06-30，因此「2026年入库」实际只有一个入库窗口，平均在库天数在该窗口内计算。",
+    "evidence": [
+      "ev_inventory_grain"
+    ]
+  },
+  {
+    "id": "constraint_ar_aging_buckets_are_amounts",
+    "target": "aging_bucket",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "账龄",
+      "3-4月",
+      "应收账款",
+      "账龄区间",
+      "业务员"
+    ],
+    "severity": "block",
+    "scope": "按账龄区间统计应收账款时",
+    "confidence": "high",
+    "description": "aging_1m..aging_12m_plus 是各账龄区间的金额列而非月数，「账龄在 3-4 月」对应 aging_3m 与 aging_4m 两列，需按其金额统计后再按业务员排序；balances 为 NULL 的情况不存在。",
+    "evidence": [
+      "ev_ar_aging_buckets"
+    ]
+  },
+  {
+    "id": "constraint_budget_dual_grain",
+    "target": "budget",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "预算",
+      "预算金额",
+      "成本中心",
+      "费用预算",
+      "区域"
+    ],
+    "severity": "block",
+    "scope": "预算类分析选择数据来源时",
+    "confidence": "high",
+    "description": "两套预算口径并存：成本中心口径在 fact_budget（cc_id + budget_amount），部门口径费用预算在 fact_budget_expense（dept_id + budget_amount）。按成本中心统计预算金额用前者，按区域统计费用预算记录数须经 dim_department.region_id 用后者。",
+    "evidence": [
+      "ev_budget_dual_source",
+      "ev_department_region"
+    ]
+  },
+  {
+    "id": "constraint_expense_type_values",
+    "target": "expense_type",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "费用类型",
+      "报销",
+      "渠道佣金",
+      "差旅费"
+    ],
+    "severity": "info",
+    "scope": "按费用类型筛选或分组报销时",
+    "confidence": "high",
+    "description": "费用类型共 8 个中文取值（业务招待费、办公费、小车费、差旅费、市场推广费、渠道佣金、运输费、通讯费），需完整匹配；报销金额列为 fact_expense.amount。",
+    "evidence": [
+      "ev_expense_type"
+    ]
+  },
+  {
+    "id": "constraint_sales_order_status_values",
+    "target": "sales_order_status",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "销售订单",
+      "订单状态",
+      "已交付",
+      "delivered",
+      "undelivered"
+    ],
+    "severity": "warning",
+    "scope": "按状态筛选或分组销售订单时",
+    "confidence": "high",
+    "description": "销售订单状态只有 delivered、undelivered、returned；「已交付」即 delivered。注意「undelivered 的订单对应的发货金额」仍需连接 fact_delivery 取其金额。",
+    "evidence": [
+      "ev_sales_order_status"
+    ]
+  },
+  {
+    "id": "constraint_return_reason_free_text",
+    "target": "return_reason",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "退货原因",
+      "客户订单变更取消",
+      "退货单"
+    ],
+    "severity": "warning",
+    "scope": "按退货原因筛选退货单时",
+    "confidence": "high",
+    "description": "退货原因是自由文本（5 种取值），部分取值内部含冒号与说明（如「产品质量问题:冲击强度偏低」），筛选时必须整体或前缀匹配，不可按简单关键词拆分。",
+    "evidence": [
+      "ev_return_reason"
+    ]
+  },
+  {
+    "id": "constraint_quotation_status_values",
+    "target": "quotation_status",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "报价单",
+      "草稿",
+      "draft",
+      "won",
+      "报价单状态"
+    ],
+    "severity": "warning",
+    "scope": "按状态筛选或分组报价单时",
+    "confidence": "high",
+    "description": "报价单状态只有 draft、won、lost；「草稿报价单」即 draft。报价单单价平均用 fact_quotation.unit_price。",
+    "evidence": [
+      "ev_quotation_status"
+    ]
+  },
+  {
+    "id": "constraint_opportunity_status_and_close",
+    "target": "opportunity_status",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "商机",
+      "商机状态",
+      "lost",
+      "关闭",
+      "2026年"
+    ],
+    "severity": "warning",
+    "scope": "商机状态与时间筛选时",
+    "confidence": "high",
+    "description": "商机状态取值为 open、won、lost、stalled。「关闭的商机」不等于某个状态，需按 close_date 落在目标年份判断，再叠加状态条件。",
+    "evidence": [
+      "ev_opportunity_status"
+    ]
+  },
+  {
+    "id": "constraint_estimated_quantity_source",
+    "target": "estimated_quantity",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "预估销量",
+      "预估金额",
+      "商机",
+      "业务员"
+    ],
+    "severity": "block",
+    "scope": "出现「预估销量」时选择度量列",
+    "confidence": "high",
+    "description": "「预估销量」对应商机的预估数量 fact_opportunity.estimated_quantity（数据库指标目录把「商机预估销量」定义在此），不要误用销售目标表的销量目标列；「预估金额」则用 fact_opportunity.estimated_amount。",
+    "evidence": [
+      "ev_metric_config",
+      "ev_opportunity_status"
+    ]
+  },
+  {
+    "id": "constraint_sample_feedback_null_semantics",
+    "target": "sample_feedback_result",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "送样",
+      "反馈结果",
+      "success",
+      "未反馈",
+      "送样成功"
+    ],
+    "severity": "block",
+    "scope": "统计送样反馈时",
+    "confidence": "high",
+    "description": "feedback_result 有三态：success、fail 与空值（8 条表示尚未反馈）。「反馈的送样」应限制为已反馈（is_feedback=1 或 feedback_date 非空），否则空值样本会污染分母；「送样成功合计」可用 is_success 求和或按 success 计数。",
+    "evidence": [
+      "ev_sample_feedback"
+    ]
+  },
+  {
+    "id": "constraint_gross_profit_actual_column",
+    "target": "gross_profit_actual",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "毛利",
+      "实际毛利",
+      "销售订单"
+    ],
+    "severity": "warning",
+    "scope": "毛利指标取值时",
+    "confidence": "high",
+    "description": "fact_sales_order 同时存在 gross_profit_actual、gross_profit_standard 与多种成本列，「实际毛利」必须取 gross_profit_actual，按订单日期年份筛选后求平均即为「实际毛利平均」。",
+    "evidence": [
+      "ev_fk_integrity"
+    ]
+  },
+  {
+    "id": "constraint_turnover_rate_target_source",
+    "target": "turnover_rate_target",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "周转率目标",
+      "周转率",
+      "业务员"
+    ],
+    "severity": "block",
+    "scope": "周转率目标统计时",
+    "confidence": "high",
+    "description": "周转率目标单独存放在 fact_payment_target.turnover_rate_target（按员工与年度），不在 fact_sales_target 中；按业务员求和后排序即得目标合计最高者。",
+    "evidence": [
+      "ev_metric_config"
+    ]
+  },
+  {
+    "id": "constraint_production_order_status_values",
+    "target": "production_order_status",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "生产工单",
+      "工单状态",
+      "已完成",
+      "待生产"
+    ],
+    "severity": "block",
+    "scope": "按状态筛选或分组生产工单时",
+    "confidence": "high",
+    "description": "生产工单状态为中文字符串：已完成、待生产、生产中，与销售订单的英文状态不同，不要混用取值的语言。",
+    "evidence": [
+      "ev_production_order_status"
+    ]
+  },
+  {
+    "id": "constraint_output_grade_vs_first_grade_flag",
+    "target": "output_grade",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "产品等级",
+      "一等品",
+      "优等品",
+      "is_first_grade",
+      "产出记录"
+    ],
+    "severity": "block",
+    "scope": "按产品等级筛选产出记录时",
+    "confidence": "high",
+    "description": "产品等级取值为一等品、优等品、合格品、返工品，但 is_first_grade=1 只对应优等品，「一等品」的 is_first_grade 为 0。筛选一等品必须使用 grade 列，不能用 is_first_grade。",
+    "evidence": [
+      "ev_output_grade"
+    ]
+  },
+  {
+    "id": "constraint_downtime_reason_code_is_integer_id",
+    "target": "downtime_reason",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "停机原因",
+      "reason_code",
+      "D001",
+      "停机"
+    ],
+    "severity": "block",
+    "scope": "按停机原因关联停机记录时",
+    "confidence": "high",
+    "description": "fact_downtime.reason_code 存的是 dim_downtime_reason.reason_id 的整数（1..8），不是 D001..D008 文本编码。输出原因名称需按 reason_id 连接 dim_downtime_reason.reason_name。",
+    "evidence": [
+      "ev_downtime_reason"
+    ]
+  },
+  {
+    "id": "constraint_downtime_hours_source",
+    "target": "downtime_hours",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "停机时长",
+      "停机时间",
+      "停机原因",
+      "产线"
+    ],
+    "severity": "warning",
+    "scope": "停机时长统计时",
+    "confidence": "high",
+    "description": "事件级停机时长在 fact_downtime.duration_hours，适合按停机原因或产线求和排序；预聚合与运行记录中的 downtime_hours 是日汇总，按原因分析时不要使用。",
+    "evidence": [
+      "ev_downtime_volume",
+      "ev_downtime_reason"
+    ]
+  },
+  {
+    "id": "constraint_maint_type_by_table",
+    "target": "maint_type",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "维护类型",
+      "维护计划",
+      "季度大修",
+      "月度检修",
+      "故障维修"
+    ],
+    "severity": "block",
+    "scope": "按维护类型筛选维护计划或工单时",
+    "confidence": "high",
+    "description": "维护计划表 fact_maintenance_plan 的维护类型只有月度检修与季度大修；故障维修只出现在维护工单表 fact_maintenance_wo。「维护计划数量」须使用 fact_maintenance_plan。",
+    "evidence": [
+      "ev_maintenance_enum"
+    ]
+  },
+  {
+    "id": "constraint_next_maint_date_range",
+    "target": "next_maint_date",
+    "constraint_type": "scope",
+    "trigger_keywords": [
+      "下次维护日期",
+      "2026年",
+      "维护计划"
+    ],
+    "severity": "info",
+    "scope": "按下次维护日期筛选维护计划时",
+    "confidence": "high",
+    "description": "维护计划的 next_date 全部落在 2026-07-01 至 2026-09-28，因此按年份筛选时「2026年」会命中全部维护计划。",
+    "evidence": [
+      "ev_maintenance_enum"
+    ]
+  },
+  {
+    "id": "constraint_alarm_all_handled",
+    "target": "handled_alarm",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "告警",
+      "已处理",
+      "is_handled",
+      "设备"
+    ],
+    "severity": "warning",
+    "scope": "已处理告警统计时",
+    "confidence": "high",
+    "description": "本数据集全部 3109 条告警的 is_handled 均为 1 且都带处理时间，因此「已处理告警数量最多」等价于告警总数最多；该字段在当前数据上没有区分度。",
+    "evidence": [
+      "ev_alarm_severity"
+    ]
+  },
+  {
+    "id": "constraint_energy_measure_selection",
+    "target": "energy_consumption",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "用电量",
+      "用水量",
+      "蒸汽",
+      "能耗",
+      "车间",
+      "产线"
+    ],
+    "severity": "warning",
+    "scope": "能耗指标统计时",
+    "confidence": "high",
+    "description": "用电量、用水量与蒸汽量是同一行 fact_energy_consumption 上的三个不同列，单位分别为 kWh 与吨；按车间汇总须使用 workshop_id，按产线汇总须使用 line_id，不要把三者混为同一度量。",
+    "evidence": [
+      "ev_energy_columns"
+    ]
+  },
+  {
+    "id": "constraint_incident_severity_codes",
+    "target": "incident_severity",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "严重度",
+      "事故",
+      "near_miss",
+      "fa",
+      "mtc",
+      "未遂"
+    ],
+    "severity": "block",
+    "scope": "按严重度筛选事故时",
+    "confidence": "high",
+    "description": "事故严重度使用英文缩写：fa（死亡事故）、mtc（医疗处理事故）、near_miss（未遂事件），大小写与下划线须精确匹配；事故起数按行计数，单位为「起」。",
+    "evidence": [
+      "ev_incident_enum"
+    ]
+  },
+  {
+    "id": "constraint_injury_count_source",
+    "target": "injury_count",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "受伤人数",
+      "伤员",
+      "事故",
+      "平均受伤"
+    ],
+    "severity": "block",
+    "scope": "受伤人数统计时",
+    "confidence": "high",
+    "description": "受伤人数在 fact_incident.injury_count 上；fact_incident_inv 是事故调查表（调查人、根因），不含受伤人数。「受伤人数合计」为求和，「每次事故平均受伤人数」为受伤人数合计除以事故起数。",
+    "evidence": [
+      "ev_incident_enum"
+    ]
+  },
+  {
+    "id": "constraint_risk_level_scale",
+    "target": "risk_level",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "风险等级",
+      "L3",
+      "风险评估",
+      "不可容忍"
+    ],
+    "severity": "warning",
+    "scope": "按风险等级筛选风险评估时",
+    "confidence": "high",
+    "description": "风险等级取值为 L1 可接受、L2 可容忍、L3 不可容忍、L4 重大；等级由可能性与后果共同决定，维度字典在 dim_risk_level。",
+    "evidence": [
+      "ev_risk_level_dim",
+      "ev_risk_assessment_enum"
+    ]
+  },
+  {
+    "id": "constraint_likelihood_values",
+    "target": "likelihood",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "可能性",
+      "unlikely",
+      "possible",
+      "likely",
+      "风险评估"
+    ],
+    "severity": "warning",
+    "scope": "按可能性筛选风险评估时",
+    "confidence": "high",
+    "description": "可能性只有 unlikely、possible、likely 三个英文取值，需精确匹配。",
+    "evidence": [
+      "ev_risk_assessment_enum"
+    ]
+  },
+  {
+    "id": "constraint_hazard_location_exact_text",
+    "target": "hazard_location",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "危险源",
+      "位置",
+      "PP改性车间挤出区",
+      "是否需要控制"
+    ],
+    "severity": "warning",
+    "scope": "按位置筛选危险源并关联风险评估时",
+    "confidence": "high",
+    "description": "危险源位置是精确的文本描述（如「PP改性车间挤出区」，共 2 个危险源、6 条评估，control_needed 合计为 6）。需经 dim_hazard.location 筛选后再连接 fact_risk_assessment。",
+    "evidence": [
+      "ev_hazard_location"
+    ]
+  },
+  {
+    "id": "constraint_safety_plan_status_values",
+    "target": "safety_plan_status",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "安全计划",
+      "状态",
+      "active",
+      "closed",
+      "签发"
+    ],
+    "severity": "warning",
+    "scope": "按状态筛选安全计划时",
+    "confidence": "high",
+    "description": "安全计划状态只有 active 与 closed；「签发的」按 issued_date 筛选（2025-01-08 至 2026-01-06 仅两个计划）。",
+    "evidence": [
+      "ev_time_coverage"
+    ]
+  },
+  {
+    "id": "constraint_objective_unit_values",
+    "target": "objective_unit",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "安全目标",
+      "单位",
+      "起",
+      "目标值",
+      "%",
+      "‰"
+    ],
+    "severity": "block",
+    "scope": "按单位筛选或汇总安全目标时",
+    "confidence": "high",
+    "description": "安全目标单位只有 %、‰、起 三种，每种 2 条记录。「单位为起」须按 unit 列筛选；该组的目标值合计为 0，因此不能用数值过滤代替单位过滤。",
+    "evidence": [
+      "ev_safety_objective_unit"
+    ]
+  },
+  {
+    "id": "constraint_audit_score_range",
+    "target": "audit_score",
+    "constraint_type": "scope",
+    "trigger_keywords": [
+      "安全审计",
+      "评分",
+      "平均评分",
+      "发现项"
+    ],
+    "severity": "info",
+    "scope": "安全审计评分统计时",
+    "confidence": "high",
+    "description": "审计评分取值区间为 82.1 至 96.7（36 次审计），适合直接求平均；发现项数为 fact_safety_audit.finding_count，可求和。",
+    "evidence": [
+      "ev_time_coverage"
+    ]
+  },
+  {
+    "id": "constraint_env_record_values_and_unit",
+    "target": "env_record_type",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "环境监测",
+      "监测类型",
+      "季度监测",
+      "月度监测",
+      "合规",
+      "单位"
+    ],
+    "severity": "block",
+    "scope": "环境监测筛选、分组与合规比例计算时",
+    "confidence": "high",
+    "description": "监测类型只有季度监测与月度监测；「按单位分组」指的是污染物的计量单位 unit（mg/L、mg/m³、dB(A)），不是组织单位；合规比例为 is_compliant 的平均值（无空值）。",
+    "evidence": [
+      "ev_env_record_enum"
+    ]
+  },
+  {
+    "id": "constraint_iot_quality_values",
+    "target": "iot_quality_flag",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "IoT数据",
+      "数据质量",
+      "good",
+      "uncertain"
+    ],
+    "severity": "info",
+    "scope": "按质量筛选 IoT 数据时",
+    "confidence": "high",
+    "description": "IoT 数据质量标志只有 good 与 uncertain 两种取值。",
+    "evidence": [
+      "ev_iot_quality"
+    ]
+  },
+  {
+    "id": "constraint_year_filter_uses_own_date_column",
+    "target": "year",
+    "constraint_type": "scope",
+    "trigger_keywords": [
+      "2025年",
+      "2026年",
+      "年度",
+      "year"
+    ],
+    "severity": "block",
+    "scope": "按年份筛选任何业务问题时",
+    "confidence": "high",
+    "description": "年度筛选必须使用该业务对象自身的日期列，例如销售订单用 order_date、送样反馈用 feedback_date、事故用 incident_date、停机用 start_time、应付账款到期用 due_date、合同到期用 end_date、下次维护用 next_date；数据整体覆盖 2025 至 2026 年，不存在 2024 年及更早的数据。",
+    "evidence": [
+      "ev_time_coverage"
+    ]
+  },
+  {
+    "id": "constraint_customer_last_deal_date_is_attribute",
+    "target": "customer_last_deal_date",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "最近交易日期",
+      "客户",
+      "退货",
+      "last_deal_date"
+    ],
+    "severity": "block",
+    "scope": "按最近交易日期筛选客户并统计其业务时",
+    "confidence": "high",
+    "description": "最近交易日期是客户主数据上的属性，不是订单或退货日期。「最近交易日期为某日的客户产生了多少退货」需要先按 last_deal_date 选出客户，再经 fact_sales_order 将客户接到 fact_return（无直接外键）。",
+    "evidence": [
+      "ev_fk_integrity",
+      "ev_return_reason"
+    ]
+  },
+  {
+    "id": "constraint_department_region_link",
+    "target": "region",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "区域",
+      "华中",
+      "华南",
+      "部门",
+      "费用预算"
+    ],
+    "severity": "block",
+    "scope": "按区域筛选部门相关记录时",
+    "confidence": "high",
+    "description": "区域只能通过销售部门的 dim_department.region_id 到达；生产部、质量部等职能部门的 region_id 为空，因此按区域统计费用预算只会覆盖六个销售部门。",
+    "evidence": [
+      "ev_department_region"
+    ]
+  },
+  {
+    "id": "constraint_dws_vs_detail_grain",
+    "target": "dws_aggregate_mart",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "DWS",
+      "汇总表",
+      "指标",
+      "agg_metric_monthly"
+    ],
+    "severity": "warning",
+    "scope": "选择明细事实表还是预聚合表时",
+    "confidence": "high",
+    "description": "DWS_* 日汇总表与 agg_metric_monthly 已按日期或组织维度预聚合指标，粒度粗于 fact_* 明细表；按具体条件（状态、原因、制造商等）筛选应使用明细事实表，直接取预聚合表会丢失维度条件。",
+    "evidence": [
+      "ev_dws_marts",
+      "ev_table_inventory"
+    ]
+  },
+  {
+    "id": "constraint_purchase_requisition_status",
+    "target": "purchase_requisition",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "采购申请",
+      "状态",
+      "金额",
+      "平均"
+    ],
+    "severity": "info",
+    "scope": "采购申请统计时",
+    "confidence": "high",
+    "description": "全部 895 条采购申请的状态均为 ordered，状态字段在当前数据上没有区分度；总金额列为 fact_purchase_requisition.total_amount，可直接求和或求平均。",
+    "evidence": [
+      "ev_time_coverage"
+    ]
+  },
+  {
+    "id": "constraint_po_total_amount_column",
+    "target": "purchase_order",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "采购订单",
+      "总金额",
+      "采购金额",
+      "单价"
+    ],
+    "severity": "warning",
+    "scope": "采购订单金额统计时",
+    "confidence": "high",
+    "description": "采购订单层面的「总金额」用 fact_purchase_order.total_amount；采购订单行的「单价」用 fact_po_line.unit_price。按付款条件筛选后求和总额应使用订单表。",
+    "evidence": [
+      "ev_purchase_order_enum"
+    ]
+  },
+  {
+    "id": "constraint_material_received_qty_aggregation",
+    "target": "po_line_received_qty",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "物料",
+      "原材料",
+      "累计已收货数量",
+      "采购金额"
+    ],
+    "severity": "warning",
+    "scope": "物料级汇总时",
+    "confidence": "high",
+    "description": "「累计已收货数量最高的物料」按 fact_po_line.received_qty 按 material_id 求和后取最大，再经 dim_material 输出物料名称；「采购金额合计最高的原材料」则按订单行金额汇总。两者都是物料维度上经订单行到达。",
+    "evidence": [
+      "ev_fk_integrity"
+    ]
+  }
+]

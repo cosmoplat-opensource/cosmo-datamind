@@ -1,0 +1,229 @@
+[
+  {
+    "id": "constraint_bond_type_enum",
+    "target": "term_bond_type",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "single bond",
+      "single-bonded",
+      "single bonded",
+      "double bond",
+      "double-bonded",
+      "double bonded",
+      "double type bond",
+      "triple bond",
+      "triple-bonded",
+      "triple bonded",
+      "bond type",
+      "bond order",
+      "bond multiplicity"
+    ],
+    "severity": "block",
+    "scope": "Applies whenever a question classifies or filters bonds by bond order.",
+    "confidence": "high",
+    "description": "bond_type encodes bond order as a single character: the single-bond symbol means a single bond, the double-bond symbol means a double bond and the triple-bond symbol means a triple bond. Wording such as 'single bonded', 'double type bond' or 'triple-bonded' must be translated into the corresponding symbol comparison. One bond row instead has a NULL bond_type, which no symbol comparison will match, so that row is silently excluded by any bond type filter.",
+    "evidence": [
+      "ev_bond_type_values"
+    ]
+  },
+  {
+    "id": "constraint_carcinogenicity_label",
+    "target": "term_carcinogenicity_label",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "carcinogenic",
+      "non-carcinogenic",
+      "non carcinogenic",
+      "not carcinogenic",
+      "cancer",
+      "toxicity",
+      "toxic",
+      "label",
+      "positive",
+      "negative"
+    ],
+    "severity": "block",
+    "scope": "Applies whenever a question classifies, filters or groups molecules by toxicity.",
+    "confidence": "high",
+    "description": "The label column is a two-value carcinogenicity classification: the positive symbol means the molecule is carcinogenic and the negative symbol means it is non-carcinogenic. No other value and no NULL value exists. Toxicity wording in questions, including the phrase 'the toxicology element', maps to this label rather than to a separate toxicity table.",
+    "evidence": [
+      "ev_label_values"
+    ]
+  },
+  {
+    "id": "constraint_connection_directionality",
+    "target": "term_connection",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "connections",
+      "connected",
+      "number of connections",
+      "how many connections",
+      "degree",
+      "incident bonds",
+      "bonds involving",
+      "bonds which involved"
+    ],
+    "severity": "block",
+    "scope": "Applies whenever connections or incident bonds of an atom are counted.",
+    "confidence": "high",
+    "description": "The connected table stores every bond twice, once per direction, and is fully symmetric. Counting the rows in which a given atom appears as the first endpoint yields exactly that atom's number of connections. Counting all rows instead double-counts: the 24758 rows represent 12379 bonds. So 'how many connections does an atom have' and 'how many bonds does a molecule have' draw on the same underlying population but with different multiplicities.",
+    "evidence": [
+      "ev_connection_symmetry",
+      "ev_row_counts"
+    ]
+  },
+  {
+    "id": "constraint_atom_id_structure",
+    "target": "term_atom",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "atom id",
+      "atom 12",
+      "atom 19",
+      "4th atom",
+      "nth atom",
+      "atom index",
+      "first atom",
+      "last atom",
+      "atom number"
+    ],
+    "severity": "block",
+    "scope": "Applies whenever an atom is identified by an ordinal position or an atom_id literal.",
+    "confidence": "high",
+    "description": "atom_id is composed of the five-character molecule identifier, an underscore, and the atom's one-based index inside that molecule. The molecule identifier prefix equals molecule_id for all 12333 atom rows. A question phrase such as 'atom 12' therefore denotes the atom of a molecule whose index within that molecule is 12, not a globally unique identifier.",
+    "evidence": [
+      "ev_atom_id_format",
+      "ev_atom_index19"
+    ]
+  },
+  {
+    "id": "constraint_bond_id_structure",
+    "target": "term_bond",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "bond id",
+      "bond atoms",
+      "bonded atoms",
+      "bond identifier",
+      "TR004_8_9"
+    ],
+    "severity": "block",
+    "scope": "Applies whenever a bond is identified by a bond_id literal or when the atoms of a bond are needed.",
+    "confidence": "high",
+    "description": "bond_id is composed of the five-character molecule identifier followed by the indices of the two atoms the bond joins, separated by underscores. The prefix equals molecule_id for all 12379 bond rows, and the two trailing numbers are exactly the atom pair recorded for that bond_id in the connected table. A bond literal of the form TR004_8_9 therefore names molecule TR004 and the two atoms whose indices are 8 and 9, and the elements of those atoms are read from the atom table rather than from the bond table.",
+    "evidence": [
+      "ev_bond_id_format",
+      "ev_bond_atom_lookup"
+    ]
+  },
+  {
+    "id": "constraint_atom_index_ambiguity",
+    "target": "term_atom_index",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "4th atom",
+      "first atom",
+      "second atom",
+      "nth atom",
+      "substr atom",
+      "atom position",
+      "starting with",
+      "atom index"
+    ],
+    "severity": "warning",
+    "scope": "Applies when an ordinal atom position is extracted textually from atom_id.",
+    "confidence": "high",
+    "description": "Atom indices start at 1 and are not zero padded, so a single-character extraction of the index is only unambiguous for atoms 1 to 9. 8441 of 12333 atoms have an index of 10 or more, whose leading character is a digit of a multi-digit index. A filter that keeps the character at the index position equal to a given digit therefore also captures indices that merely begin with that digit, for example the '4th atom' pattern also matches indices 40 to 49. Whether such a filter is meant as the exact position or as the leading digit must be settled from the question.",
+    "evidence": [
+      "ev_atom_index_digits",
+      "ev_atom_id_format"
+    ]
+  },
+  {
+    "id": "constraint_molecule_label_coverage",
+    "target": "term_molecule",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "all molecules",
+      "molecule count",
+      "number of molecules",
+      "carcinogenic molecules",
+      "molecules without label",
+      "every molecule"
+    ],
+    "severity": "warning",
+    "scope": "Applies whenever molecules are counted or joined against their carcinogenicity label.",
+    "confidence": "high",
+    "description": "The atom and bond tables reference 444 distinct molecule identifiers, but the molecule table contains only 343 labelled molecules. The remaining 101 molecules, covering 3222 atom rows, have no carcinogenicity label. Consequently a join from atoms or bonds to the molecule table silently drops unlabelled molecules, and the total number of molecules depends on whether the molecule table or the atom and bond tables are used as the base of the count.",
+    "evidence": [
+      "ev_molecule_coverage"
+    ]
+  },
+  {
+    "id": "constraint_percentage_reference_set",
+    "target": "term_element_percentage",
+    "constraint_type": "unit",
+    "trigger_keywords": [
+      "percentage",
+      "percent",
+      "ratio",
+      "share",
+      "proportion",
+      "fraction",
+      "average"
+    ],
+    "severity": "warning",
+    "scope": "Applies to all percentage, share and ratio questions over atoms or bonds.",
+    "confidence": "high",
+    "description": "A percentage answer is the count of the part divided by the count of the total in the same reference set, scaled to a percent value. The part and the total must be drawn from the same reference set: the molecule named in the question, the group of molecules selected by a bond type condition, or the whole selected atom or bond population. Mixing a part from one reference set with a total from another produces a ratio out of range for the intended answer.",
+    "evidence": [
+      "ev_percentage_reference"
+    ]
+  },
+  {
+    "id": "constraint_element_symbols",
+    "target": "term_element",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "carbon",
+      "hydrogen",
+      "oxygen",
+      "nitrogen",
+      "chlorine",
+      "sulfur",
+      "element",
+      "atom type",
+      "which elements",
+      "element of the atom"
+    ],
+    "severity": "info",
+    "scope": "Applies whenever an element name or symbol appears in a question.",
+    "confidence": "high",
+    "description": "The element column holds 21 distinct lowercase chemical symbols: cl, c, h, o, s, n, p, na, br, f, i, sn, pb, te, ca, zn, si, b, k, cu, y. Element names in questions map to these symbols, for example carbon to 'c', hydrogen to 'h', oxygen to 'o', nitrogen to 'n' and chlorine to 'cl'. Because the symbols are lowercase, symbol comparisons must not assume the conventional uppercase element notation.",
+    "evidence": [
+      "ev_element_values"
+    ]
+  },
+  {
+    "id": "constraint_extremum_ties",
+    "target": "term_double_bond",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "most",
+      "maximum",
+      "largest",
+      "majority",
+      "highest",
+      "top",
+      "the molecule with"
+    ],
+    "severity": "info",
+    "scope": "Applies to superlative questions over counts of bonds, atoms or elements.",
+    "confidence": "medium",
+    "description": "Superlative questions can have non-unique answers: the maximum of 26 double bonds in one molecule is shared by two molecules, TR430 and TR397, both labelled carcinogenic. The next highest count is 25. A single-row answer therefore rests on an arbitrary tie-break, and the full tied set should be inspected before the answer is fixed.",
+    "evidence": [
+      "ev_extremum_tie"
+    ]
+  }
+]

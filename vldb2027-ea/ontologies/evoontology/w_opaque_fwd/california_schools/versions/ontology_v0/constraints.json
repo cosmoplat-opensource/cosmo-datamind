@@ -1,0 +1,365 @@
+[
+  {
+    "id": "constraint_virtual_status_enum",
+    "target": "term_virtual_status",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "exclusively virtual",
+      "virtual school",
+      "fully virtual",
+      "virtual",
+      "online school"
+    ],
+    "severity": "block",
+    "scope": "Interpreting or filtering tab03.fld075.",
+    "confidence": "high",
+    "description": "fld075 is a coded virtual-instruction status. Only F is established as meaning an exclusively virtual school. Observed values are N (9703 rows), P (1046), F (69) and blank (6868); P, N and blank must not be counted as exclusively virtual.",
+    "evidence": [
+      "ev_virtual"
+    ]
+  },
+  {
+    "id": "constraint_magnet_flag",
+    "target": "term_magnet_program",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "magnet",
+      "magnet program",
+      "offers a magnet program",
+      "magnet school"
+    ],
+    "severity": "block",
+    "scope": "Interpreting or filtering tab03.fld076.",
+    "confidence": "high",
+    "description": "fld076 = 1 means the school offers a magnet program (519 schools); 0 means it does not (10091); blank means the item was not reported (7076) and must not be treated as offering a magnet program.",
+    "evidence": [
+      "ev_magnet"
+    ]
+  },
+  {
+    "id": "constraint_educational_option_enum",
+    "target": "term_educational_option_type",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "State Special School",
+      "SSS",
+      "educational option",
+      "Traditional",
+      "Continuation School"
+    ],
+    "severity": "block",
+    "scope": "Interpreting or filtering tab03.fld069/fld070.",
+    "confidence": "high",
+    "description": "fld069 holds the code and fld070 its description. State Special School is SSS (3 schools). Other frequent codes: TRAD Traditional (10103), CON Continuation School (539), COMMDAY Community Day School (486), ALTSOC Alternative School of Choice (320), SPEC Special Education School (228). 5711 rows are blank.",
+    "evidence": [
+      "ev_educational_option",
+      "ev_sss_schools"
+    ]
+  },
+  {
+    "id": "constraint_school_type_codes",
+    "target": "term_school_type",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "school type",
+      "high school",
+      "Intermediate/Middle Schools",
+      "elementary school",
+      "public school type"
+    ],
+    "severity": "block",
+    "scope": "Interpreting or filtering tab03.fld067/fld068.",
+    "confidence": "high",
+    "description": "fld067 is the numeric school-type code and fld068 its label. Workload-relevant codes: 66 = High Schools (Public), 62 = Intermediate/Middle Schools (Public), 60 = Elementary Schools (Public), 65 = K-12 Schools (Public). A request for high schools does not automatically include 68 Continuation High Schools (754), 64 Junior High Schools (122), 67 High Schools In 1 School Dist. (6) or 65 K-12 Schools (438); the intended code must be chosen explicitly.",
+    "evidence": [
+      "ev_school_type"
+    ]
+  },
+  {
+    "id": "constraint_district_type_codes",
+    "target": "term_district_type",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "Unified School",
+      "Unified School District",
+      "Elementary School District",
+      "High School District",
+      "district type"
+    ],
+    "severity": "block",
+    "scope": "Interpreting or filtering tab03.fld065/fld066.",
+    "confidence": "high",
+    "description": "fld065/fld066 classify the operating district, not the school. 54 = Unified School District (10190 school rows), 52 = Elementary School District (4378), 56 = High School District (1079), 00 = County Office of Education (1703). A request for Unified Schools is grounded in the district type field fld065 = 54, while the school own type is fld067.",
+    "evidence": [
+      "ev_district_type"
+    ]
+  },
+  {
+    "id": "constraint_provision_status",
+    "target": "term_nslp_provision_status",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "Multiple Provision Types",
+      "provision type",
+      "provision status",
+      "NSLP",
+      "provision"
+    ],
+    "severity": "block",
+    "scope": "Interpreting or filtering tab01.fld012.",
+    "confidence": "high",
+    "description": "fld012 holds the NSLP provision type as text; Multiple Provision Types is one of its 11 non-blank rows. 8139 of 9986 meal records leave the field blank, which means no provision type was recorded, not that the school offers multiple provision types.",
+    "evidence": [
+      "ev_provision"
+    ]
+  },
+  {
+    "id": "constraint_sat_record_type",
+    "target": "term_sat_record_type",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "SAT",
+      "average score",
+      "school level",
+      "district level",
+      "reporting unit"
+    ],
+    "severity": "block",
+    "scope": "All per-school SAT analysis on tab02.",
+    "confidence": "high",
+    "description": "tab02 mixes 1749 school-level records (fld031 = S) with 520 district-level records (fld031 = D). District records always have a blank school name and aggregate several schools; per-school SAT analysis must restrict to S or metric values will mix aggregation levels.",
+    "evidence": [
+      "ev_sat_rtype"
+    ]
+  },
+  {
+    "id": "constraint_sat_cds_padding",
+    "target": "term_sat_cds_code",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "CDS code",
+      "school code",
+      "join",
+      "match SAT to school",
+      "school identifier"
+    ],
+    "severity": "block",
+    "scope": "Joining tab02 to tab03 or tab01.",
+    "confidence": "high",
+    "description": "211 of 2269 SAT CDS codes contain 13 characters because the leading zero was dropped, while school-directory and meal-report codes always contain 14. Normalize (zero-pad or compare numerically) before matching; direct string equality loses those records.",
+    "evidence": [
+      "ev_id_lengths",
+      "ev_join_sat"
+    ]
+  },
+  {
+    "id": "constraint_academic_year_scope",
+    "target": "term_academic_year",
+    "constraint_type": "scope",
+    "trigger_keywords": [
+      "academic year",
+      "school year",
+      "2014-2015",
+      "2013-2014",
+      "year"
+    ],
+    "severity": "warning",
+    "scope": "Any enrollment or meal-eligibility question.",
+    "confidence": "high",
+    "description": "The meal-eligibility table holds a single year: all 9986 rows have fld002 = 2014-2015. No other academic year can be answered from tab01.",
+    "evidence": [
+      "ev_frpm_year"
+    ]
+  },
+  {
+    "id": "constraint_excellence_rate_definition",
+    "target": "term_excellence_rate",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "excellence rate",
+      "college ready",
+      "1500",
+      "percent above 1500",
+      "SAT rate"
+    ],
+    "severity": "block",
+    "scope": "Computing or ranking excellence rate from tab02.",
+    "confidence": "high",
+    "description": "Excellence rate means the number of SAT test takers scoring at least 1500 (fld040) divided by the number of test takers (fld036). No percentage column is stored in tab02 (the schema PctGE1500 field is commented out). 218 records have zero test takers and must be excluded to avoid division by zero.",
+    "evidence": [
+      "ev_schema_overview",
+      "ev_excellence_rate"
+    ]
+  },
+  {
+    "id": "constraint_eligible_free_rate_definition",
+    "target": "term_eligible_free_rate_k12",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "eligible free rate",
+      "free rate",
+      "free meal rate",
+      "eligible free",
+      "percent eligible free"
+    ],
+    "severity": "block",
+    "scope": "Interpreting or computing eligible free rate from tab01.",
+    "confidence": "high",
+    "description": "Eligible free rate for K-12 equals the free meal count fld020 divided by K-12 enrollment fld019. fld021 stores this fraction directly (for example 565/1087 = 0.5198); it is a 0-1 fraction, not a percentage, and must not be summed across schools.",
+    "evidence": [
+      "ev_frpm_rate_identity"
+    ]
+  },
+  {
+    "id": "constraint_school_location_quality",
+    "target": "term_school_location",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "longitude",
+      "latitude",
+      "highest longitude",
+      "location",
+      "coordinates"
+    ],
+    "severity": "warning",
+    "scope": "Coordinate filters and extrema on tab03.fld077/fld078.",
+    "confidence": "high",
+    "description": "Coordinate fields are blank for 4823 of 17686 directory rows. Six longitudes and two latitudes fall outside California geographic bounds and are likely data errors. For highest longitude the workload evidence means the maximum absolute longitude value.",
+    "evidence": [
+      "ev_geo"
+    ]
+  },
+  {
+    "id": "constraint_grade_span_duplicate",
+    "target": "term_grade_span",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "grade span",
+      "K-8",
+      "Kindergarten to 8th grade",
+      "grades offered",
+      "grade range"
+    ],
+    "severity": "warning",
+    "scope": "Grade-span filters and groupings on tab03.",
+    "confidence": "high",
+    "description": "Two directory columns encode grade span: fld073 (13804 non-blank rows) and fld074 (11943 non-blank). They disagree for 2487 schools and no row has fld074 populated while fld073 is blank, so fld073 is the primary field; state which column was used when the span matters.",
+    "evidence": [
+      "ev_grade_span"
+    ]
+  },
+  {
+    "id": "constraint_place_name_ambiguity",
+    "target": "term_city",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "Monterey",
+      "San Bernardino",
+      "city",
+      "county",
+      "district name"
+    ],
+    "severity": "warning",
+    "scope": "Resolving place words in questions to a directory column.",
+    "confidence": "high",
+    "description": "City, county and district names overlap. The city Monterey covers 16 schools while the county Monterey covers 247; San Bernardino City Unified is a district name covering 117 schools, not a city. Resolve place words to the correct level: fld049 city, fld044 county, fld045 district.",
+    "evidence": [
+      "ev_place_ambiguity"
+    ]
+  },
+  {
+    "id": "constraint_school_count_scope",
+    "target": "term_school_status",
+    "constraint_type": "scope",
+    "trigger_keywords": [
+      "active",
+      "closed",
+      "merged",
+      "schools that opened",
+      "count schools",
+      "how many schools"
+    ],
+    "severity": "warning",
+    "scope": "Any count of schools from tab03.",
+    "confidence": "high",
+    "description": "The directory is not a list of currently operating schools: Active 11708, Closed 4518, Merged 1448, Pending 12, and 1369 rows are district/agency records without a school name. A school count changes materially depending on whether closed/merged and agency rows are excluded, so state the inclusion rule.",
+    "evidence": [
+      "ev_school_status",
+      "ev_blank_school_names"
+    ]
+  },
+  {
+    "id": "constraint_sat_name_match",
+    "target": "term_sat_report",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "school name",
+      "SAT school name",
+      "match",
+      "join"
+    ],
+    "severity": "warning",
+    "scope": "Matching SAT records to directory schools.",
+    "confidence": "high",
+    "description": "School names on SAT records do not always equal directory names: only 1647 of 1749 school-level records match exactly. Join on the CDS code rather than the name.",
+    "evidence": [
+      "ev_join_sat"
+    ]
+  },
+  {
+    "id": "constraint_frpm_age_block",
+    "target": "term_enrollment_ages_5_17",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "ages 5 to 17",
+      "ages 15-17",
+      "age group",
+      "students ages",
+      "enrollment ages"
+    ],
+    "severity": "warning",
+    "scope": "Age-based enrollment and meal questions on tab01.",
+    "confidence": "medium",
+    "description": "The second enrollment and meal block in tab01 is an age 5-17 subgroup: its enrollment never exceeds K-12 enrollment (0 of 9972 comparable rows) and its counts pair with fld025/fld027 through the same rate identity. No separate 15-17 field exists, so a question phrased as ages 15-17 has to use this 5-17 block.",
+    "evidence": [
+      "ev_enrollment_subset",
+      "ev_frpm_rate_identity"
+    ]
+  },
+  {
+    "id": "constraint_sat_metric_nulls",
+    "target": "term_sat_avg_math_score",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "average score",
+      "math score",
+      "SAT score",
+      "missing",
+      "null"
+    ],
+    "severity": "warning",
+    "scope": "Averaging or comparing SAT score columns.",
+    "confidence": "high",
+    "description": "596 of 2269 SAT records have null score fields: all 218 zero-test-taker records and 378 records with positive test takers. Averages over score columns silently drop these rows; report the denominator used.",
+    "evidence": [
+      "ev_sat_ranges"
+    ]
+  },
+  {
+    "id": "constraint_meal_count_subset",
+    "target": "term_frpm_report",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "free meal count",
+      "FRPM count",
+      "free or reduced price meals"
+    ],
+    "severity": "info",
+    "scope": "Comparing meal eligibility counts in tab01.",
+    "confidence": "high",
+    "description": "In every one of 9908 comparable records the free meal count is less than or equal to the FRPM count, in both the K-12 and the ages 5-17 blocks; the free-meal figure is a subset of the free-or-reduced-price figure.",
+    "evidence": [
+      "ev_meal_subset"
+    ]
+  }
+]

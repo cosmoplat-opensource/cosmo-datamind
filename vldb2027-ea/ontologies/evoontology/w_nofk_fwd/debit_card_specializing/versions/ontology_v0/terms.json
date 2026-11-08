@@ -1,0 +1,281 @@
+[
+  {
+    "id": "term_customer",
+    "name": "Customer",
+    "type": "entity",
+    "definition": "An account holder of the company whose identity is carried by a CustomerID integer. Both the metered gas-consumption ledger and the card transaction ledger are keyed by this identifier, so a customer is the shared subject of two independently recorded activity streams.",
+    "scope": "All consumption, segment, currency and transaction analyses in this database.",
+    "aliases": [
+      "customer",
+      "client",
+      "account holder",
+      "CustomerID",
+      "customer id"
+    ],
+    "evidence": [
+      "ev_customer_columns",
+      "ev_customer_key_overlap",
+      "ev_yearmonth_key_coverage",
+      "ev_transactions_fk_coverage"
+    ]
+  },
+  {
+    "id": "term_customer_segment",
+    "name": "Customer Segment",
+    "type": "dimension",
+    "definition": "A classification label carried on the customer record that partitions the customer base into three groups. The observed value domain is exactly {KAM, LAM, SME}. Comparable analyses repeatedly group consumption and customer counts by this label.",
+    "scope": "Customer-level grouping. Only customers.Segment; the identically named column on gasstations is a different classification.",
+    "aliases": [
+      "segment",
+      "customer segment",
+      "SME",
+      "LAM",
+      "KAM",
+      "customer type",
+      "customer class"
+    ],
+    "evidence": [
+      "ev_customer_segment_values",
+      "ev_sme_2013_monthly"
+    ]
+  },
+  {
+    "id": "term_payment_currency",
+    "name": "Payment Currency",
+    "type": "dimension",
+    "definition": "The currency in which a customer settles, carried on the customer record. The observed value domain is exactly {CZK, EUR}. Analytical questions express this as the customer 'paying in' a given currency.",
+    "scope": "Customer-level settlement currency, used to restrict consumption analyses to one currency group.",
+    "aliases": [
+      "currency",
+      "paid in euro",
+      "pays in euro",
+      "paid in CZK",
+      "EUR",
+      "CZK",
+      "settlement currency"
+    ],
+    "evidence": [
+      "ev_customer_currency_values",
+      "ev_yearmonth_currency_split"
+    ]
+  },
+  {
+    "id": "term_gas_consumption",
+    "name": "Monthly Gas Consumption",
+    "type": "metric",
+    "definition": "A quantity of gas consumed by one customer during one calendar month, recorded as a single numeric value in the consumption ledger. The ledger is the only source of consumption quantities in this database; it is independent of the card transaction ledger.",
+    "scope": "Monthly consumption measurement per customer. Aggregated over months, customers or segments for annual, monthly-average and peak analyses.",
+    "aliases": [
+      "consumption",
+      "gas consumption",
+      "monthly consumption",
+      "Consumption",
+      "energy consumption",
+      "usage"
+    ],
+    "evidence": [
+      "ev_yearmonth_columns",
+      "ev_yearmonth_consumption_stats",
+      "ev_yearmonth_sparse_coverage"
+    ]
+  },
+  {
+    "id": "term_year_month_period",
+    "name": "Year-Month Period",
+    "type": "dimension",
+    "definition": "The calendar month to which one consumption record belongs, stored as a compact six-character text period. The leading four characters denote the year and the trailing two characters denote the month; the values are not calendar dates and carry no day component.",
+    "scope": "Temporal dimension of the consumption ledger. Used to restrict analyses to a year, a range of months, or a single month.",
+    "aliases": [
+      "date",
+      "month",
+      "year",
+      "yearmonth",
+      "period",
+      "2013",
+      "201309",
+      "September 2013"
+    ],
+    "evidence": [
+      "ev_yearmonth_date_format",
+      "ev_yearmonth_date_range"
+    ]
+  },
+  {
+    "id": "term_average_monthly_consumption",
+    "name": "Average Monthly Consumption",
+    "type": "metric",
+    "definition": "A derived summary of consumption intensity within a year window. The workload defines it as the mean of the monthly consumption values recorded in the year for the analysed scope, taken over twelve months of the year rather than over the number of months actually recorded for each customer.",
+    "scope": "Year-scoped consumption intensity, typically computed for one customer segment.",
+    "aliases": [
+      "average monthly consumption",
+      "average consumption",
+      "mean consumption",
+      "per month"
+    ],
+    "evidence": [
+      "ev_yearmonth_sparse_coverage",
+      "ev_sme_2013_monthly"
+    ]
+  },
+  {
+    "id": "term_annual_average_consumption",
+    "name": "Annual Average Consumption",
+    "type": "metric",
+    "definition": "A derived per-customer summary. For a defined set of customers, it is the total consumption of that set during the year divided by the number of customers in the set, so it measures the typical annual consumption of one member of the set.",
+    "scope": "Comparing the typical annual consumption of a set of customers, such as the lowest-consuming customer of each segment.",
+    "aliases": [
+      "annual average consumption",
+      "average annual consumption",
+      "consumption per customer"
+    ],
+    "evidence": [
+      "ev_yearmonth_consumption_stats",
+      "ev_sme_2013_monthly"
+    ]
+  },
+  {
+    "id": "term_consumption_growth_rate",
+    "name": "Consumption Percentage Increase",
+    "type": "metric",
+    "definition": "A derived period-over-period change between two consecutive years of total consumption for a scope. The workload defines the percentage of increase as the year-on-year difference divided by the consumption of the later year, multiplied by one hundred.",
+    "scope": "Year-on-year change analysis, typically per customer segment and currency.",
+    "aliases": [
+      "percentage increase",
+      "percentage of increase",
+      "increase",
+      "growth",
+      "change between years",
+      "biggest increase"
+    ],
+    "evidence": [
+      "ev_sme_2013_monthly",
+      "ev_yearmonth_date_range"
+    ]
+  },
+  {
+    "id": "term_peak_consumption_month",
+    "name": "Peak Consumption Month",
+    "type": "metric",
+    "definition": "The single month within a stated period and scope whose total consumption is the greatest, together with that maximum value. It is an extremum over the monthly aggregation of consumption.",
+    "scope": "Extremum analysis over months, typically restricted to one year and one customer segment.",
+    "aliases": [
+      "peak month",
+      "highest month",
+      "maximum monthly consumption",
+      "highest monthly consumption",
+      "gas consumption peak month"
+    ],
+    "evidence": [
+      "ev_sme_2013_monthly"
+    ]
+  },
+  {
+    "id": "term_transaction",
+    "name": "Card Transaction",
+    "type": "entity",
+    "definition": "One purchase event recorded at a gas station, identified by a TransactionID. Each transaction records the moment it occurred, the customer and card that paid, the station where it happened, the product purchased, a purchased quantity and the value paid.",
+    "scope": "Station-level purchase activity. This ledger is a small sample and is not the same population as the metered consumption ledger.",
+    "aliases": [
+      "transaction",
+      "purchase",
+      "payment",
+      "card transaction",
+      "sale"
+    ],
+    "evidence": [
+      "ev_transactions_columns",
+      "ev_transactions_time_window",
+      "ev_transactions_fk_coverage"
+    ]
+  },
+  {
+    "id": "term_transaction_timestamp",
+    "name": "Transaction Time",
+    "type": "dimension",
+    "definition": "The moment at which a card transaction occurred. It is not stored as a single value: the calendar day and the clock time are held in two separate attributes of the transaction, and a full point in time is obtained by reading both together.",
+    "scope": "Point-in-time and time-of-day analysis of transactions.",
+    "aliases": [
+      "time",
+      "timestamp",
+      "transaction time",
+      "transaction date",
+      "moment",
+      "when"
+    ],
+    "evidence": [
+      "ev_transactions_time_window",
+      "ev_transactions_time_format"
+    ]
+  },
+  {
+    "id": "term_gas_station",
+    "name": "Gas Station",
+    "type": "entity",
+    "definition": "A retail fuel outlet where card transactions take place, identified by a GasStationID. Each station belongs to a chain, is located in a country, and carries a station category label.",
+    "scope": "Station-level analysis and the location dimension of transactions.",
+    "aliases": [
+      "gas station",
+      "station",
+      "petrol station",
+      "GasStationID",
+      "outlet"
+    ],
+    "evidence": [
+      "ev_gasstation_columns",
+      "ev_gasstation_values"
+    ]
+  },
+  {
+    "id": "term_gas_station_chain",
+    "name": "Gas Station Chain",
+    "type": "dimension",
+    "definition": "The retail chain to which a gas station belongs, held as a numeric chain identifier on the station record. Questions refer to it as a chain number, and many stations share one chain.",
+    "scope": "Grouping gas stations by operating chain.",
+    "aliases": [
+      "chain",
+      "chain no",
+      "chain number",
+      "ChainID"
+    ],
+    "evidence": [
+      "ev_gasstation_values",
+      "ev_chain11_stations"
+    ]
+  },
+  {
+    "id": "term_gas_station_country",
+    "name": "Gas Station Country",
+    "type": "dimension",
+    "definition": "The country in which a gas station is located, stored as a three-letter country code on the station record. The observed value domain is exactly {CZE, SVK}, so country is available only at this coarse granularity.",
+    "scope": "Country-level restriction of transaction analyses.",
+    "aliases": [
+      "country",
+      "Czech Republic",
+      "CZE",
+      "SVK",
+      "Slovakia"
+    ],
+    "evidence": [
+      "ev_gasstation_values",
+      "ev_country_transaction_split"
+    ]
+  },
+  {
+    "id": "term_product",
+    "name": "Product",
+    "type": "entity",
+    "definition": "An item offered for sale at gas stations, identified by a ProductID and described by a free-text label held in Czech. The product dimension supplies the human-readable description of what was consumed in a transaction.",
+    "scope": "Product identification and description for purchased items.",
+    "aliases": [
+      "product",
+      "product description",
+      "item",
+      "fuel type",
+      "ProductID"
+    ],
+    "evidence": [
+      "ev_products_columns",
+      "ev_products_descriptions"
+    ]
+  }
+]

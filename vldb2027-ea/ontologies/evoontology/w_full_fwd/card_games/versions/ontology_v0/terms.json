@@ -1,0 +1,484 @@
+[
+  {
+    "id": "card",
+    "name": "Card",
+    "type": "entity",
+    "definition": "An abstract Magic: The Gathering game card, identified by its card name and by the oracle identifier that is shared by all printings of that card.",
+    "scope": "Use when the analysis is about the card itself rather than about a specific physical or digital printing, for example when counting distinct cards.",
+    "aliases": [
+      "oracle card",
+      "card identity"
+    ],
+    "evidence": [
+      "evidence_card_identity",
+      "evidence_card_table_grain"
+    ]
+  },
+  {
+    "id": "card_printing",
+    "name": "Card Printing",
+    "type": "entity",
+    "definition": "One printing of a card: a single row of the cards table, uniquely identified by its uuid. The same card is printed many times across sets, promos and reprints, so one card name can correspond to many printings.",
+    "scope": "Row-level card analysis and any attribute that can differ between printings, such as rarity, border colour, artist and set membership.",
+    "aliases": [
+      "printing",
+      "card record",
+      "cards row"
+    ],
+    "evidence": [
+      "evidence_card_table_grain",
+      "evidence_card_identity"
+    ]
+  },
+  {
+    "id": "card_set",
+    "name": "Card Set",
+    "type": "entity",
+    "definition": "A released collection of cards, such as an expansion, core set or promo series, identified by a short set code.",
+    "scope": "Set-level analysis: set names, blocks, release information and set membership of printings.",
+    "aliases": [
+      "set",
+      "expansion"
+    ],
+    "evidence": [
+      "evidence_set_code_join",
+      "evidence_block_sets"
+    ]
+  },
+  {
+    "id": "ruling",
+    "name": "Card Ruling",
+    "type": "entity",
+    "definition": "An official rules clarification attached to a specific card printing, carrying a publication date and English rules text.",
+    "scope": "Questions about official rules interpretations of a card. Note that not every card printing has rulings.",
+    "aliases": [
+      "official ruling",
+      "rules clarification"
+    ],
+    "evidence": [
+      "evidence_rulings_join"
+    ]
+  },
+  {
+    "id": "legality",
+    "name": "Format Legality Record",
+    "type": "entity",
+    "definition": "The legality verdict of one card printing in one play format, carrying a format label and a status value.",
+    "scope": "Any question about whether a card is legal, banned or restricted in a format.",
+    "aliases": [
+      "legality entry",
+      "format verdict"
+    ],
+    "evidence": [
+      "evidence_legality_formats",
+      "evidence_legality_status",
+      "evidence_legality_orphans"
+    ]
+  },
+  {
+    "id": "localized_card",
+    "name": "Localized Card Record",
+    "type": "entity",
+    "definition": "A language-specific record of a card printing that holds the card's translated name together with its translated rules text and flavor text.",
+    "scope": "Any analysis that needs a non-English representation of a card's name or text.",
+    "aliases": [
+      "foreign card record",
+      "translated card"
+    ],
+    "evidence": [
+      "evidence_uuid_foreign_join",
+      "evidence_foreign_languages"
+    ]
+  },
+  {
+    "id": "set_translation",
+    "name": "Localized Set Name Record",
+    "type": "entity",
+    "definition": "A language-specific name of a card set, linking a set code to a translated set name.",
+    "scope": "Questions that identify a set by its name in a non-English language.",
+    "aliases": [
+      "translated set name record"
+    ],
+    "evidence": [
+      "evidence_set_translation_languages",
+      "evidence_set_translation_coverage"
+    ]
+  },
+  {
+    "id": "card_name",
+    "name": "Card Name",
+    "type": "dimension",
+    "definition": "The English name of a card as printed, shared by all printings of that card.",
+    "scope": "Identifying or filtering cards by name; this is the English form, not a localized form.",
+    "aliases": [
+      "name",
+      "card title"
+    ],
+    "evidence": [
+      "evidence_uuid_foreign_join",
+      "evidence_card_table_grain"
+    ]
+  },
+  {
+    "id": "localized_card_name",
+    "name": "Localized Card Name",
+    "type": "dimension",
+    "definition": "The name of a card in a specific non-English language, stored on the localized card record rather than on the printing.",
+    "scope": "When a card is referred to by a non-English name, or when checking whether a language version of a card exists.",
+    "aliases": [
+      "translated card name",
+      "foreign card name"
+    ],
+    "evidence": [
+      "evidence_uuid_foreign_join",
+      "evidence_ancestors_chosen_languages"
+    ]
+  },
+  {
+    "id": "card_language",
+    "name": "Card Language",
+    "type": "dimension",
+    "definition": "The language of a localized card record, describing the language in which that card's text is written.",
+    "scope": "Language-of-card-text analysis. This is distinct from the language of a set name.",
+    "aliases": [
+      "language",
+      "printed language"
+    ],
+    "evidence": [
+      "evidence_foreign_languages"
+    ]
+  },
+  {
+    "id": "set_name",
+    "name": "Set Name",
+    "type": "dimension",
+    "definition": "A name that identifies a card set. The official English name and the marketplace-facing name are both stored forms of this concept and usually coincide.",
+    "scope": "Looking up a set by the name a user or a marketplace uses. Alias list covers both the official and the marketplace form.",
+    "aliases": [
+      "set name",
+      "expansion name",
+      "mcmName",
+      "set title"
+    ],
+    "evidence": [
+      "evidence_set_name_lookup",
+      "evidence_set_name_variants"
+    ]
+  },
+  {
+    "id": "localized_set_name",
+    "name": "Localized Set Name",
+    "type": "dimension",
+    "definition": "The name of a card set in a specific non-English language.",
+    "scope": "When a set is referred to by a translated name, which must be resolved back to a set code before it can be joined to cards.",
+    "aliases": [
+      "translated set name",
+      "set translation"
+    ],
+    "evidence": [
+      "evidence_set_name_variants",
+      "evidence_hauptset"
+    ]
+  },
+  {
+    "id": "set_name_language",
+    "name": "Set Name Language",
+    "type": "dimension",
+    "definition": "The language in which a set's localized name is expressed.",
+    "scope": "Language-of-set-name analysis, and the basis for counting how many translated sets exist for a language. Distinct from the language of card text.",
+    "aliases": [
+      "set translation language",
+      "language"
+    ],
+    "evidence": [
+      "evidence_set_translation_languages",
+      "evidence_commander_block_portuguese"
+    ]
+  },
+  {
+    "id": "set_code",
+    "name": "Set Code",
+    "type": "dimension",
+    "definition": "The short alphanumeric identifier of a card set, which is the join key between printings and set metadata.",
+    "scope": "Any analysis that moves between printing-level and set-level information.",
+    "aliases": [
+      "code",
+      "setCode",
+      "set identifier"
+    ],
+    "evidence": [
+      "evidence_set_code_join"
+    ]
+  },
+  {
+    "id": "block",
+    "name": "Block",
+    "type": "dimension",
+    "definition": "A grouping label that associates several card sets with the same story or release cycle.",
+    "scope": "Grouping sets into blocks; the label is free text and is absent for many sets.",
+    "aliases": [
+      "set block"
+    ],
+    "evidence": [
+      "evidence_block_sets",
+      "evidence_commander_block_portuguese"
+    ]
+  },
+  {
+    "id": "format",
+    "name": "Play Format",
+    "type": "dimension",
+    "definition": "A named way of playing the game, such as commander, gladiator or legacy, against which card legality is recorded.",
+    "scope": "Format-scoped legality analysis. Format labels are stored in lower case.",
+    "aliases": [
+      "game format",
+      "play format",
+      "format"
+    ],
+    "evidence": [
+      "evidence_legality_formats"
+    ]
+  },
+  {
+    "id": "legality_status",
+    "name": "Legality Status",
+    "type": "category",
+    "definition": "The verdict of a card in a format: legal, banned or restricted.",
+    "scope": "Filtering cards by whether they may be played in a format.",
+    "aliases": [
+      "status",
+      "banned",
+      "legal",
+      "restricted"
+    ],
+    "evidence": [
+      "evidence_legality_status"
+    ]
+  },
+  {
+    "id": "rarity",
+    "name": "Rarity",
+    "type": "dimension",
+    "definition": "The print rarity of a card printing, describing how frequently the card was distributed in its set.",
+    "scope": "Rarity-scoped card analysis at printing level.",
+    "aliases": [
+      "rarity class"
+    ],
+    "evidence": [
+      "evidence_rarity"
+    ]
+  },
+  {
+    "id": "border_color",
+    "name": "Border Color",
+    "type": "dimension",
+    "definition": "The border colour of a card printing, which distinguishes print runs such as white-bordered reprint editions.",
+    "scope": "Printing-level visual attribute analysis.",
+    "aliases": [
+      "border",
+      "borderColor",
+      "white border"
+    ],
+    "evidence": [
+      "evidence_border_color"
+    ]
+  },
+  {
+    "id": "artist",
+    "name": "Artist",
+    "type": "dimension",
+    "definition": "The illustrator credited on a card printing. The same card usually has different artists across printings.",
+    "scope": "Artist-scoped analysis; values are exact strings and must be matched exactly.",
+    "aliases": [
+      "illustrator",
+      "designed by",
+      "illustrated by"
+    ],
+    "evidence": [
+      "evidence_artist_values",
+      "evidence_adam_rex"
+    ]
+  },
+  {
+    "id": "card_rules_text",
+    "name": "Card Rules Text",
+    "type": "concept",
+    "definition": "The rules text printed on a card, describing what the card does. The English form sits on the printing; localized forms sit on the localized card record.",
+    "scope": "Any request for the text of a card, especially when a language is named. Not the same concept as an official ruling on the card.",
+    "aliases": [
+      "card text",
+      "rules text",
+      "text of the rule"
+    ],
+    "evidence": [
+      "evidence_uuid_foreign_join",
+      "evidence_coldsnap_italian_text"
+    ]
+  },
+  {
+    "id": "flavor_text",
+    "name": "Flavor Text",
+    "type": "concept",
+    "definition": "The italicised narrative text printed on a card, separate from its rules text and available in localized languages.",
+    "scope": "Requests for the flavor text of a card, typically in a named language.",
+    "aliases": [
+      "flavour text",
+      "flavorText"
+    ],
+    "evidence": [
+      "evidence_uuid_foreign_join"
+    ]
+  },
+  {
+    "id": "mana_cost",
+    "name": "Mana Cost",
+    "type": "concept",
+    "definition": "The symbolic cost printed on a card, expressed as a sequence of mana symbols.",
+    "scope": "Mana-cost analysis and the source of converted mana cost.",
+    "aliases": [
+      "manaCost",
+      "casting cost"
+    ],
+    "evidence": [
+      "evidence_converted_mana_cost"
+    ]
+  },
+  {
+    "id": "converted_mana_cost",
+    "name": "Converted Mana Cost",
+    "type": "metric",
+    "definition": "The total number of mana symbols in a card's mana cost, used to compare how expensive cards are to cast.",
+    "scope": "Comparing card cost; it is a numeric printing-level attribute and cards with no mana cost have a value of zero.",
+    "aliases": [
+      "mana value",
+      "CMC",
+      "convertedManaCost"
+    ],
+    "evidence": [
+      "evidence_converted_mana_cost",
+      "evidence_cmc_zero",
+      "evidence_serra_shrine"
+    ]
+  },
+  {
+    "id": "edhrec_rank",
+    "name": "EDHRec Rank",
+    "type": "metric",
+    "definition": "A popularity ranking of a card on the EDHRec community site, where a lower number means the card is played more.",
+    "scope": "Popularity-based card selection. Rank is an integer and is null for cards that are not ranked.",
+    "aliases": [
+      "edhrecRank",
+      "EDHRec popularity"
+    ],
+    "evidence": [
+      "evidence_edhrec_rank",
+      "evidence_edhrec1_banned"
+    ]
+  },
+  {
+    "id": "content_warning",
+    "name": "Content Warning",
+    "type": "concept",
+    "definition": "A flag marking a card printing whose properties or values are missing or degraded, so that it carries a content warning.",
+    "scope": "Identifying printings flagged as having missing or degraded properties and values.",
+    "aliases": [
+      "hasContentWarning",
+      "missing or degraded properties and values"
+    ],
+    "evidence": [
+      "evidence_content_warning"
+    ]
+  },
+  {
+    "id": "story_spotlight",
+    "name": "Story Spotlight Card",
+    "type": "concept",
+    "definition": "A flag marking a card printing that was designated as a story spotlight card for its set's narrative.",
+    "scope": "Selecting the subset of printings flagged as story spotlight cards, commonly as a percentage denominator.",
+    "aliases": [
+      "isStorySpotlight",
+      "story spotlight"
+    ],
+    "evidence": [
+      "evidence_story_spotlight"
+    ]
+  },
+  {
+    "id": "power",
+    "name": "Power",
+    "type": "concept",
+    "definition": "The power value printed on a creature card. It is a text attribute that is absent for most non-creature printings and may also be the special symbol '*'.",
+    "scope": "Power-based analysis and the definition of cards that have no power.",
+    "aliases": [
+      "power",
+      "creature power"
+    ],
+    "evidence": [
+      "evidence_power_missing"
+    ]
+  },
+  {
+    "id": "mtgo_availability",
+    "name": "MTGO Availability",
+    "type": "concept",
+    "definition": "Whether a card set appeared on Magic: The Gathering Online, indicated by the presence of an MTGO code on the set.",
+    "scope": "Questions about digital release of a set or of any card printed in it.",
+    "aliases": [
+      "Magic: The Gathering Online",
+      "MTGO",
+      "online version",
+      "mtgoCode"
+    ],
+    "evidence": [
+      "evidence_mtgo_sets",
+      "evidence_angel_of_mercy"
+    ]
+  },
+  {
+    "id": "original_type",
+    "name": "Original Card Type Line",
+    "type": "concept",
+    "definition": "The original printed type line of a card, preserved from the era before type-line rewording, and therefore using historic wording such as 'Summon - Angel'.",
+    "scope": "Matching cards by their historic type wording; it is null for printings that never carried an original type line.",
+    "aliases": [
+      "originalType",
+      "original type",
+      "card type"
+    ],
+    "evidence": [
+      "evidence_original_type_angel"
+    ]
+  },
+  {
+    "id": "subtype",
+    "name": "Card Subtype",
+    "type": "concept",
+    "definition": "The creature or card subtypes of a printing, stored together as a single comma-separated string rather than as individual values.",
+    "scope": "Subtype filtering and comparison; because values are aggregated in one string, substring reasoning is required for a single subtype.",
+    "aliases": [
+      "subtypes",
+      "creature type"
+    ],
+    "evidence": [
+      "evidence_original_type_angel"
+    ]
+  },
+  {
+    "id": "percentage",
+    "name": "Percentage Share",
+    "type": "metric",
+    "definition": "The share of a base population of card printings that satisfies a stated condition, expressed on a 0 to 100 scale.",
+    "scope": "Proportion questions over cards or printings. The base population must be defined explicitly because the denominator determines the result.",
+    "aliases": [
+      "percent",
+      "proportion",
+      "ratio",
+      "share"
+    ],
+    "evidence": [
+      "evidence_commander_legal",
+      "evidence_story_spotlight",
+      "evidence_content_warning"
+    ]
+  }
+]

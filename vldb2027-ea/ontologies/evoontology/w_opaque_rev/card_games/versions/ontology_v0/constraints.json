@@ -1,0 +1,397 @@
+[
+  {
+    "id": "c_power_unknown",
+    "target": "t_power",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "power",
+      "unknown power",
+      "infinite power",
+      "no power",
+      "*",
+      "null power",
+      "creature power"
+    ],
+    "severity": "block",
+    "scope": "Any question filtering or comparing card power.",
+    "confidence": "high",
+    "description": "Power is stored as text, not as a number. A missing value (30624 rows) means the card has no power, typically because it is not a creature. The special marker '*' means unbounded or infinite power (429 rows). Other special markers occur: '1+*', '2+*', '3+*', '∞', '?', '-1' and fractional values such as '3.5'. 'Unknown power' is expressed as either '*' or a missing value. Numeric filtering must exclude or translate these markers before comparing.",
+    "evidence": [
+      "ev_power_values"
+    ]
+  },
+  {
+    "id": "c_border_color_values",
+    "target": "t_border_color",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "border color",
+      "border colour",
+      "borderless",
+      "black border",
+      "white border",
+      "silver border",
+      "gold border"
+    ],
+    "severity": "warning",
+    "scope": "Filtering cards by border appearance.",
+    "confidence": "high",
+    "description": "The border colour has exactly five values: black (49729 printings), white (5017), gold (1244), silver (591) and borderless (241). 'Borderless' is a value of this column, not the absence of a border value.",
+    "evidence": [
+      "ev_border_color_values"
+    ]
+  },
+  {
+    "id": "c_color_values",
+    "target": "t_card_color",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "color",
+      "colour",
+      "black",
+      "white",
+      "blue",
+      "red",
+      "green",
+      "colorless",
+      "multicolor",
+      "mono"
+    ],
+    "severity": "warning",
+    "scope": "Filtering cards by colour.",
+    "confidence": "high",
+    "description": "Colours are encoded as the letters W, U, B, R and G, combined with commas for multicolour cards (for example 'G,W'). A missing value (12540 rows) means colourless or not applicable, so colourless cards are not stored as a separate literal. Colour here is the card's colour; a separate column holds colour identity, which additionally considers mana symbols in rules text and is not the same concept.",
+    "evidence": [
+      "ev_color_values"
+    ]
+  },
+  {
+    "id": "c_promo_flag",
+    "target": "t_is_promo",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "promotional printing",
+      "promo",
+      "is promo",
+      "promotional card"
+    ],
+    "severity": "warning",
+    "scope": "Classifying a printing as promotional.",
+    "confidence": "high",
+    "description": "The promotional flag is binary: 1 means the printing is a promotional printing, 0 means it is not. 5588 printings are flagged and they concentrate in promo sets such as PRM, PKHM, PZNR, PWAR and PELD.",
+    "evidence": [
+      "ev_promo_flag"
+    ]
+  },
+  {
+    "id": "c_story_spotlight_flag",
+    "target": "t_is_story_spotlight",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "story spotlight",
+      "storylight",
+      "isStorylight",
+      "story spotlight card"
+    ],
+    "severity": "warning",
+    "scope": "Classifying a printing as a Story Spotlight card.",
+    "confidence": "high",
+    "description": "The Story Spotlight flag is binary: 1 means the printing is a Story Spotlight card. 104 printings are flagged, appearing in sets such as WAR, KHM, ZNR, XLN, KLD, IKO, HOU, AKH, AER and THB. The workload phrase 'Storylight' refers to this flag.",
+    "evidence": [
+      "ev_story_spotlight_flag"
+    ]
+  },
+  {
+    "id": "c_textless_flag",
+    "target": "t_is_textless",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "textless",
+      "no text box",
+      "without a text box",
+      "text box",
+      "textless printing"
+    ],
+    "severity": "warning",
+    "scope": "Classifying a printing by whether it shows a text box.",
+    "confidence": "high",
+    "description": "The flag is binary: 1 means the printing has no text box (a textless printing). 115 printings are flagged, concentrated in the Magic Player Rewards promo sets P05 to P11 plus PRM, UST and UND. A textless printing still records its rules text in the card text column, and its original printed text is missing, so text presence cannot be used to detect textlessness. Note that none of the 104 Story Spotlight printings is marked textless, so a condition on this flag combined with the Story Spotlight flag selects either all or none of them.",
+    "evidence": [
+      "ev_textless_flag",
+      "ev_story_spotlight_flag"
+    ]
+  },
+  {
+    "id": "c_foil_identifiers",
+    "target": "t_foil_printing",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "foil",
+      "foil version",
+      "powerful foils",
+      "incredibly powerful",
+      "non-foil",
+      "nonfoil",
+      "both versions"
+    ],
+    "severity": "warning",
+    "scope": "Questions about foil or non-foil availability of a printing.",
+    "confidence": "high",
+    "description": "Foil and non-foil availability are recorded as external market product identifiers rather than as booleans. The foil column is populated exactly for printings whose set released a foil version (3837 of 5409 foil-only printings, 25075 of 29209 printings released in both versions); the non-foil column is populated exactly for printings with a non-foil version. Only the presence or absence of the identifier is meaningful; the identifier values must not be summed, averaged or compared numerically. 'Both versions available' is expressed by both columns being populated.",
+    "evidence": [
+      "ev_foil_identifiers"
+    ]
+  },
+  {
+    "id": "c_legality_status_values",
+    "target": "t_legality_status",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "legal",
+      "banned",
+      "restricted",
+      "legality",
+      "legal for",
+      "play format"
+    ],
+    "severity": "block",
+    "scope": "Any legality question or filter.",
+    "confidence": "high",
+    "description": "Legality status has exactly three values: Legal, Banned and Restricted. Values are capitalised. 'Legal for commander' means a legality record for format 'commander' with status 'Legal'. Formats available in the data are vintage, legacy, commander, duel, modern, penny, pauper, pioneer, premodern, historic, gladiator, standard, future, brawl and oldschool.",
+    "evidence": [
+      "ev_legality_table"
+    ]
+  },
+  {
+    "id": "c_set_translation_presence",
+    "target": "t_translated_set_name",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "translation",
+      "translated name",
+      "has a translation",
+      "Chinese Simplified",
+      "Italian",
+      "set name translation"
+    ],
+    "severity": "warning",
+    "scope": "Counting or retrieving set translations.",
+    "confidence": "high",
+    "description": "The set translation table holds 1210 records: 121 sets times 10 languages. The translated name is missing in 231 of those records, so the existence of a translation record does not by itself prove that a translation is available; 'has a translation' requires the translated name to be present. For example, Eighth Edition has a Chinese Simplified record whose translated name is 核心系列第八版.",
+    "evidence": [
+      "ev_set_translations"
+    ]
+  },
+  {
+    "id": "c_card_translation_scope",
+    "target": "t_card_translation",
+    "constraint_type": "scope",
+    "trigger_keywords": [
+      "available in",
+      "translation",
+      "language",
+      "German",
+      "Italian",
+      "foreign language",
+      "Chinese Simplified",
+      "percentage of cards available in"
+    ],
+    "severity": "warning",
+    "scope": "Questions about card availability in a language.",
+    "confidence": "high",
+    "description": "The card translation table contains non-English languages only; there are no English rows. It holds 229186 records covering 34056 of the 56822 card printings. A card is 'available in' a language when at least one translation record exists for it in that language. Because the translation table is a subset, a percentage of cards available in a language must be computed against the full card printing population, not against the translation table.",
+    "evidence": [
+      "ev_card_translations"
+    ]
+  },
+  {
+    "id": "c_column_fld049_dual",
+    "target": "t_card_name",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "name",
+      "card name",
+      "set name",
+      "title"
+    ],
+    "severity": "block",
+    "scope": "Any question referring to a 'name'.",
+    "confidence": "high",
+    "description": "The column identifier fld049 carries different concepts in different tables: in the card table it is the card name, while in the set table it is the set name. The workload therefore refers to both card names and set names through the same column identifier. The meaning must always be resolved together with the table: card names such as 'Adarkar Valkyrie' and 'Ancestor's Chosen' live in the card table, while set names such as 'Coldsnap' and 'Hour of Devastation' live in the set table.",
+    "evidence": [
+      "ev_column_fld049_dual"
+    ]
+  },
+  {
+    "id": "c_column_fld068_dual",
+    "target": "t_card_text",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "text",
+      "rules text",
+      "card text",
+      "ruling text",
+      "contains"
+    ],
+    "severity": "warning",
+    "scope": "Any question referring to text content.",
+    "confidence": "high",
+    "description": "The column identifier fld068 means card rules text in the card and card-translation tables, but means ruling text in the rulings table. The same identifier also appears as translated rules text. Text search must be grounded in the table that carries the intended concept.",
+    "evidence": [
+      "ev_card_text_columns"
+    ]
+  },
+  {
+    "id": "c_column_fld063_set_code",
+    "target": "t_set_code",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "set code",
+      "set",
+      "expansion",
+      "edition",
+      "which set"
+    ],
+    "severity": "info",
+    "scope": "Joining card printings to set metadata.",
+    "confidence": "high",
+    "description": "A card printing carries the code of its set in the card table, and every one of the 536 distinct codes used there exists in the set table's unique set code. The set translation table also references the set table through the same code. This is the reliable path from a card to set-level metadata such as base set size and foreign-only availability.",
+    "evidence": [
+      "ev_set_code_linkage"
+    ]
+  },
+  {
+    "id": "c_base_set_size",
+    "target": "t_base_set_size",
+    "constraint_type": "unit",
+    "trigger_keywords": [
+      "base set number",
+      "base set size",
+      "set size",
+      "number of cards in the set",
+      "under 100"
+    ],
+    "severity": "warning",
+    "scope": "Set size comparisons.",
+    "confidence": "high",
+    "description": "The base set number counts the cards in the base set and excludes bonus and special cards; it is not the total set size, which is a separate column with larger values. Both are stored per set. 356 sets have a base set number below 100, so a threshold comparison on this column is meaningful and shares are not concentrated at the boundary.",
+    "evidence": [
+      "ev_set_table"
+    ]
+  },
+  {
+    "id": "c_foreign_only_flag",
+    "target": "t_foreign_only",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "only available outside the United States",
+      "foreign only",
+      "outside the US",
+      "not available in the US"
+    ],
+    "severity": "warning",
+    "scope": "Set availability questions.",
+    "confidence": "high",
+    "description": "The foreign-only flag is binary and belongs to the set, not to the card: 1 means the set was released only outside the United States. Only 5 sets are flagged: 4BB, FBB, PHJ, PJJT and PMPS. All other sets, including the sets in which Adarkar Valkyrie was printed, have the flag set to 0.",
+    "evidence": [
+      "ev_foreign_only_sets"
+    ]
+  },
+  {
+    "id": "c_type_columns",
+    "target": "t_card_type",
+    "constraint_type": "scope",
+    "trigger_keywords": [
+      "type",
+      "types",
+      "card type",
+      "Artifact",
+      "Creature",
+      "supertype",
+      "subtype",
+      "type line"
+    ],
+    "severity": "warning",
+    "scope": "Any question about card types.",
+    "confidence": "high",
+    "description": "Type information is spread over several columns with different granularity: the primary card types, the full type line, the original printed type line, the comma-separated subtype list and the comma-separated supertype list. The full type line combines supertypes, primary types and subtypes. A card that is purely an artifact carries the single primary type Artifact, whereas an artifact creature carries both Artifact and Creature; the original type line uses a hyphen instead of an em dash. Supertype values are absent for most cards rather than stored as an empty string. Questions that ask to list 'types' may intend the subtype and supertype breakdown rather than the primary type alone.",
+    "evidence": [
+      "ev_type_columns"
+    ]
+  },
+  {
+    "id": "c_frame_version_values",
+    "target": "t_frame_version",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "frame",
+      "frame style",
+      "frame styles",
+      "frame version"
+    ],
+    "severity": "info",
+    "scope": "Grouping or filtering by frame style.",
+    "confidence": "high",
+    "description": "The frame version has exactly five values: 1993, 1997, 2003, 2015 and future. They are stored as text and identify the frame design era of the printing.",
+    "evidence": [
+      "ev_frame_version_values"
+    ]
+  },
+  {
+    "id": "c_ruling_scope",
+    "target": "t_ruling",
+    "constraint_type": "scope",
+    "trigger_keywords": [
+      "ruling",
+      "rulings",
+      "ruling information",
+      "most rulings"
+    ],
+    "severity": "info",
+    "scope": "Counting or ranking cards by rulings.",
+    "confidence": "high",
+    "description": "The rulings table holds 87769 rulings covering 26141 distinct cards, so most cards have no ruling at all. Ranking by 'most ruling information' means ordering cards by their number of ruling records; the maximum observed is 27 rulings for a single card. A card absent from the rulings table has zero rulings rather than null.",
+    "evidence": [
+      "ev_rulings_table"
+    ]
+  },
+  {
+    "id": "c_share_denominator",
+    "target": "t_card_share",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "percentage",
+      "percent",
+      "ratio",
+      "proportion",
+      "share",
+      "percentage of cards"
+    ],
+    "severity": "warning",
+    "scope": "Any percentage question.",
+    "confidence": "high",
+    "description": "A percentage is a share of a reference population of card printings. The numerator counts printings satisfying the stated condition and the denominator counts all printings in the population named by the question; when the question names no population, the whole card table (56822 printings) is the population. The result is expressed as a percentage, not as a fraction between 0 and 1, and must not be multiplied or divided twice.",
+    "evidence": [
+      "ev_ratio_population"
+    ]
+  },
+  {
+    "id": "c_translation_join_path",
+    "target": "t_card_translation",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "translation",
+      "language",
+      "join",
+      "card available in language"
+    ],
+    "severity": "info",
+    "scope": "Relating translations to cards.",
+    "confidence": "high",
+    "description": "Card translation records reference the card printing through the card's unique identifier rather than through the numeric card id, so the join must use that identifier. The translation table contains 16 records whose card reference is not present in the card table, and the legality table contains 72 such records; these are orphan records and should not be counted as cards.",
+    "evidence": [
+      "ev_card_translations",
+      "ev_legality_table"
+    ]
+  }
+]

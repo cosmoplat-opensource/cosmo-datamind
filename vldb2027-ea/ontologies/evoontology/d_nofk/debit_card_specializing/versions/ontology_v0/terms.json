@@ -1,0 +1,254 @@
+[
+  {
+    "id": "customer",
+    "name": "Customer",
+    "type": "entity",
+    "definition": "A fuel-card account holder that buys fuel and other goods at gas stations, identified by customers.CustomerID.",
+    "scope": "Applies to all customer-level analysis of debit_card_specializing; the customer is the unit that owns cards, monthly consumption and transactions.",
+    "aliases": [
+      "account",
+      "card holder",
+      "CustomerID"
+    ],
+    "evidence": [
+      "evidence_customer_key"
+    ]
+  },
+  {
+    "id": "customer_segment",
+    "name": "Customer Segment",
+    "type": "dimension",
+    "definition": "The commercial grouping of a customer recorded in customers.Segment, taking the values KAM, LAM and SME.",
+    "scope": "Customer-level comparative analysis. The database provides no definition of the codes; only their observed ordering by consumption scale is evidenced.",
+    "aliases": [
+      "Segment",
+      "customer type",
+      "customer class"
+    ],
+    "evidence": [
+      "evidence_segment_values"
+    ]
+  },
+  {
+    "id": "customer_currency",
+    "name": "Customer Currency",
+    "type": "dimension",
+    "definition": "The currency in which a customer's monetary amounts are denominated, recorded in customers.Currency as CZK or EUR.",
+    "scope": "Governs the interpretation of every monetary value reachable through that customer, in both yearmonth and transactions_1k.",
+    "aliases": [
+      "Currency",
+      "billing currency",
+      "denomination"
+    ],
+    "evidence": [
+      "evidence_currency_denomination",
+      "evidence_currency_follows_customer"
+    ]
+  },
+  {
+    "id": "payment_card",
+    "name": "Payment Card",
+    "type": "entity",
+    "definition": "A physical fuel card used to pay for a purchase, recorded as transactions_1k.CardID. Each card resolves to exactly one customer, while a customer may hold several cards.",
+    "scope": "Transaction-level payment-instrument analysis. A card is an instrument of a customer, not an identifier of one.",
+    "aliases": [
+      "CardID",
+      "fuel card",
+      "card"
+    ],
+    "evidence": [
+      "evidence_card_ownership"
+    ]
+  },
+  {
+    "id": "monthly_consumption",
+    "name": "Monthly Consumption",
+    "type": "metric",
+    "definition": "The total monetary value of a customer's purchases in one calendar month, recorded in yearmonth.Consumption.",
+    "scope": "Customer-month grain, denominated in the customer's currency. Covers 201112 to 201311 with a three-month gap at the end of 2012.",
+    "aliases": [
+      "Consumption",
+      "monthly spend",
+      "monthly fuel spend"
+    ],
+    "evidence": [
+      "evidence_consumption_stats",
+      "evidence_yearmonth_months"
+    ]
+  },
+  {
+    "id": "consumption_month",
+    "name": "Consumption Month",
+    "type": "dimension",
+    "definition": "The calendar month a monthly consumption record belongs to, recorded in yearmonth.Date as a six-character year-and-month text value in YYYYMM form.",
+    "scope": "Time bucketing for monthly consumption only; it is a month label, not a calendar date.",
+    "aliases": [
+      "yearmonth.Date",
+      "month bucket",
+      "year-month"
+    ],
+    "evidence": [
+      "evidence_yearmonth_months"
+    ]
+  },
+  {
+    "id": "transaction",
+    "name": "Transaction",
+    "type": "entity",
+    "definition": "A single purchase event recorded in transactions_1k and identified by TransactionID, made by one customer with one card at one gas station for one product at one timestamp.",
+    "scope": "Line-level purchase analysis. transactions_1k holds a 1000-row sample spanning four days, not the complete transaction history.",
+    "aliases": [
+      "TransactionID",
+      "purchase",
+      "sale",
+      "transaction line"
+    ],
+    "evidence": [
+      "evidence_transactions_scope"
+    ]
+  },
+  {
+    "id": "transaction_paid_amount",
+    "name": "Transaction Paid Amount",
+    "type": "metric",
+    "definition": "The total monetary amount paid for a transaction line, recorded in transactions_1k.Price. It is the line total, not a per-unit price.",
+    "scope": "Additive only within a single customer currency; summing across CZK and EUR customers mixes units.",
+    "aliases": [
+      "Price",
+      "line total",
+      "amount paid",
+      "spend"
+    ],
+    "evidence": [
+      "evidence_price_is_line_total",
+      "evidence_currency_denomination"
+    ]
+  },
+  {
+    "id": "transaction_quantity",
+    "name": "Transaction Quantity",
+    "type": "metric",
+    "definition": "The quantity of product on a transaction line, recorded in transactions_1k.Amount, expressed in units that depend on the product.",
+    "scope": "Fuel products record measured volume; goods and services record a count, and zero is a valid recorded value for services.",
+    "aliases": [
+      "Amount",
+      "volume",
+      "litres",
+      "quantity sold"
+    ],
+    "evidence": [
+      "evidence_amount_units"
+    ]
+  },
+  {
+    "id": "transaction_datetime",
+    "name": "Transaction Date and Time",
+    "type": "dimension",
+    "definition": "The calendar date and clock time at which a transaction occurred, recorded as transactions_1k.Date in YYYY-MM-DD form together with transactions_1k.Time in HH:MM:SS form.",
+    "scope": "Within-day and within-month transaction analysis. Only 2012-08-23 to 2012-08-26 is present in the sample.",
+    "aliases": [
+      "Date",
+      "Time",
+      "transaction timestamp"
+    ],
+    "evidence": [
+      "evidence_transactions_scope"
+    ]
+  },
+  {
+    "id": "implied_unit_price",
+    "name": "Implied Unit Price",
+    "type": "metric",
+    "definition": "The price paid per unit of quantity on a transaction line, obtained by dividing the line's paid amount by its quantity.",
+    "scope": "Defined only where the quantity is greater than zero and the unit of that quantity is known, such as litres of fuel.",
+    "aliases": [
+      "unit price",
+      "price per litre",
+      "per unit price",
+      "rate"
+    ],
+    "evidence": [
+      "evidence_fuel_unit_price"
+    ]
+  },
+  {
+    "id": "gas_station",
+    "name": "Gas Station",
+    "type": "entity",
+    "definition": "A retail fuel outlet where transactions take place, identified by gasstations.GasStationID and described by its chain, country and market positioning.",
+    "scope": "Station-level and network-level analysis of the 5716 stations.",
+    "aliases": [
+      "GasStationID",
+      "station",
+      "outlet",
+      "filling station"
+    ],
+    "evidence": [
+      "evidence_station_network"
+    ]
+  },
+  {
+    "id": "station_chain",
+    "name": "Station Chain",
+    "type": "dimension",
+    "definition": "The commercial chain a gas station belongs to, recorded in gasstations.ChainID. The 5716 stations fall into 233 distinct chains.",
+    "scope": "Chain-level aggregation of stations. The database stores chain identity as a number only and provides no chain names.",
+    "aliases": [
+      "ChainID",
+      "chain",
+      "brand",
+      "network"
+    ],
+    "evidence": [
+      "evidence_station_network",
+      "evidence_chain_names_absent"
+    ]
+  },
+  {
+    "id": "station_segment",
+    "name": "Station Segment",
+    "type": "dimension",
+    "definition": "The market positioning of a gas station recorded in gasstations.Segment, taking the values Discount, Noname, Other, Premium and Value for money.",
+    "scope": "Station-level positioning comparisons. It applies to stations, not customers, and is a different concept from customer_segment.",
+    "aliases": [
+      "station segment",
+      "positioning",
+      "station type"
+    ],
+    "evidence": [
+      "evidence_station_segment_values"
+    ]
+  },
+  {
+    "id": "station_country",
+    "name": "Station Country",
+    "type": "dimension",
+    "definition": "The country a gas station is located in, recorded in gasstations.Country as CZE or SVK.",
+    "scope": "Geographic segmentation of the station network. It does not determine the currency of the amounts paid there.",
+    "aliases": [
+      "Country",
+      "station location",
+      "station geography"
+    ],
+    "evidence": [
+      "evidence_station_segment_values",
+      "evidence_currency_follows_customer"
+    ]
+  },
+  {
+    "id": "product",
+    "name": "Product",
+    "type": "entity",
+    "definition": "An item or service sold at a gas station, identified by products.ProductID and labelled by products.Description.",
+    "scope": "Product-mix analysis. Description is the only descriptive attribute and no category column exists, so grouping beyond the label text is not available.",
+    "aliases": [
+      "ProductID",
+      "article",
+      "item",
+      "goods"
+    ],
+    "evidence": [
+      "evidence_product_catalog"
+    ]
+  }
+]

@@ -1,0 +1,269 @@
+[
+  {
+    "id": "rel_customer_transaction",
+    "source": "term_customer",
+    "relation_type": "composition",
+    "target": "term_transaction",
+    "connection_condition": "transactions_1k.CustomerID corresponds to customers.CustomerID",
+    "description": "A transaction is part of a customer's purchase history; the transaction record cannot be interpreted without the customer it belongs to.",
+    "evidence": [
+      "ev_fk_integrity"
+    ]
+  },
+  {
+    "id": "rel_gas_station_transaction",
+    "source": "term_gas_station",
+    "relation_type": "composition",
+    "target": "term_transaction",
+    "connection_condition": "transactions_1k.GasStationID corresponds to gasstations.GasStationID",
+    "description": "A transaction takes place at exactly one gas station and is meaningless without that station context.",
+    "evidence": [
+      "ev_fk_integrity"
+    ]
+  },
+  {
+    "id": "rel_product_transaction",
+    "source": "term_product",
+    "relation_type": "composition",
+    "target": "term_transaction",
+    "connection_condition": "transactions_1k.ProductID corresponds to products.ProductID",
+    "description": "The product purchased is a component of the transaction event.",
+    "evidence": [
+      "ev_fk_integrity"
+    ]
+  },
+  {
+    "id": "rel_chain_station",
+    "source": "term_gas_station_chain",
+    "relation_type": "composition",
+    "target": "term_gas_station",
+    "connection_condition": "gasstations.ChainID groups the stations sharing that chain identifier",
+    "description": "A chain is composed of its member stations; station-level records are the members through which a chain is observed.",
+    "evidence": [
+      "ev_station_chain_structure"
+    ]
+  },
+  {
+    "id": "rel_customer_monthly_consumption",
+    "source": "term_customer",
+    "relation_type": "composition",
+    "target": "term_customer_monthly_consumption",
+    "connection_condition": "yearmonth.CustomerID corresponds to customers.CustomerID",
+    "description": "A monthly consumption value belongs to exactly one customer and cannot exist without that customer.",
+    "evidence": [
+      "ev_fk_integrity"
+    ]
+  },
+  {
+    "id": "rel_period_monthly_consumption",
+    "source": "term_year_month_period",
+    "relation_type": "composition",
+    "target": "term_customer_monthly_consumption",
+    "connection_condition": "yearmonth.Date stamps each consumption value with its calendar month",
+    "description": "A consumption value is stamped by exactly one year-month period; the period is part of the identity of the measurement.",
+    "evidence": [
+      "ev_yearmonth_date_codes"
+    ]
+  },
+  {
+    "id": "rel_customer_segment",
+    "source": "term_customer",
+    "relation_type": "hierarchy",
+    "target": "term_customer_segment",
+    "connection_condition": "customers.Segment assigns each customer to one of the categories SME, LAM, KAM",
+    "description": "Customers classified as SME, LAM or KAM form subsets of the customer population; each category is a specific class of customer.",
+    "evidence": [
+      "ev_customer_segment_values"
+    ]
+  },
+  {
+    "id": "rel_customer_currency",
+    "source": "term_customer",
+    "relation_type": "association",
+    "target": "term_payment_currency",
+    "connection_condition": "customers.Currency is the settlement currency of the customer",
+    "description": "The settlement currency is a property carried by the customer profile and applies to all of that customer's consumption and transactions.",
+    "evidence": [
+      "ev_customer_currency_values"
+    ]
+  },
+  {
+    "id": "rel_station_country",
+    "source": "term_gas_station",
+    "relation_type": "association",
+    "target": "term_gas_station_country",
+    "connection_condition": "gasstations.Country records the country of the station",
+    "description": "The country is an attribute of the station and scopes which stations count as, for example, Czech Republic stations.",
+    "evidence": [
+      "ev_station_country_values"
+    ]
+  },
+  {
+    "id": "rel_station_segment",
+    "source": "term_gas_station",
+    "relation_type": "association",
+    "target": "term_gas_station_segment",
+    "connection_condition": "gasstations.Segment records the station type",
+    "description": "The station type is an attribute of the station; it shares the column name Segment with the customer classification but denotes a different concept.",
+    "evidence": [
+      "ev_station_segment_values"
+    ]
+  },
+  {
+    "id": "rel_product_description",
+    "source": "term_product",
+    "relation_type": "association",
+    "target": "term_product_description",
+    "connection_condition": "products.Description labels the product",
+    "description": "Each product carries exactly one human-readable description used when products are listed.",
+    "evidence": [
+      "ev_schema_tables"
+    ]
+  },
+  {
+    "id": "rel_transaction_date",
+    "source": "term_transaction",
+    "relation_type": "association",
+    "target": "term_transaction_date",
+    "connection_condition": "transactions_1k.Date stamps the transaction with its calendar day",
+    "description": "The transaction date is the day-level time attribute of the event.",
+    "evidence": [
+      "ev_transaction_date_coverage"
+    ]
+  },
+  {
+    "id": "rel_transaction_time",
+    "source": "term_transaction",
+    "relation_type": "association",
+    "target": "term_transaction_time",
+    "connection_condition": "transactions_1k.Time stamps the transaction with its clock time",
+    "description": "The transaction time is the time-of-day attribute of the event.",
+    "evidence": [
+      "ev_transaction_date_coverage"
+    ]
+  },
+  {
+    "id": "rel_transaction_amount",
+    "source": "term_transaction",
+    "relation_type": "association",
+    "target": "term_transaction_amount",
+    "connection_condition": "transactions_1k.Amount is the quantity of the transaction",
+    "description": "The amount is an event-level measure attached to the transaction record.",
+    "evidence": [
+      "ev_transaction_amount_range"
+    ]
+  },
+  {
+    "id": "rel_transaction_price",
+    "source": "term_transaction",
+    "relation_type": "association",
+    "target": "term_transaction_price",
+    "connection_condition": "transactions_1k.Price is the monetary value of the transaction",
+    "description": "The price is an event-level monetary measure attached to the transaction record.",
+    "evidence": [
+      "ev_transaction_price_range"
+    ]
+  },
+  {
+    "id": "rel_monthly_to_annual",
+    "source": "term_customer_monthly_consumption",
+    "relation_type": "derivation",
+    "target": "term_annual_consumption",
+    "connection_condition": "the year prefix of the period code selects the months to combine",
+    "description": "Annual consumption is derived by combining the monthly consumption values that share a calendar year.",
+    "evidence": [
+      "ev_yearmonth_coverage"
+    ]
+  },
+  {
+    "id": "rel_annual_to_avg_monthly",
+    "source": "term_annual_consumption",
+    "relation_type": "derivation",
+    "target": "term_avg_monthly_consumption",
+    "connection_condition": "the year's consumption is expressed per month following the workload definition",
+    "description": "Average monthly consumption is derived from the year's consumption figures rather than stored directly.",
+    "evidence": [
+      "ev_workload_definitions"
+    ]
+  },
+  {
+    "id": "rel_annual_to_growth",
+    "source": "term_annual_consumption",
+    "relation_type": "derivation",
+    "target": "term_consumption_growth_rate",
+    "connection_condition": "two consecutive years' annual consumption values for the same group",
+    "description": "The growth rate is derived from the annual consumption of two consecutive years.",
+    "evidence": [
+      "ev_workload_definitions"
+    ]
+  },
+  {
+    "id": "rel_monthly_to_peak",
+    "source": "term_customer_monthly_consumption",
+    "relation_type": "derivation",
+    "target": "term_peak_consumption_month",
+    "connection_condition": "monthly values are combined per month within one year and customer group",
+    "description": "The peak consumption month is derived from the month-level consumption values of a year.",
+    "evidence": [
+      "ev_segment_consumption_join"
+    ]
+  },
+  {
+    "id": "rel_monthly_to_least_customer",
+    "source": "term_customer_monthly_consumption",
+    "relation_type": "derivation",
+    "target": "term_least_consuming_customer",
+    "connection_condition": "customer-level consumption totals within a segment and year are compared",
+    "description": "The least consuming customer is derived by comparing customers' consumption totals within a segment.",
+    "evidence": [
+      "ev_consumption_value_range"
+    ]
+  },
+  {
+    "id": "rel_period_date",
+    "source": "term_year_month_period",
+    "relation_type": "association",
+    "target": "term_transaction_date",
+    "connection_condition": "both express calendar time, but the month period uses a six-character year-month code while the transaction date uses a day-level ISO date",
+    "description": "The two time dimensions are related but not interchangeable: they differ in granularity and in covered window, so a month of consumption cannot be directly compared with a transaction day without aligning granularity.",
+    "evidence": [
+      "ev_yearmonth_date_codes",
+      "ev_transaction_date_coverage"
+    ]
+  },
+  {
+    "id": "rel_amount_vs_consumption",
+    "source": "term_transaction_amount",
+    "relation_type": "association",
+    "target": "term_customer_monthly_consumption",
+    "connection_condition": "",
+    "description": "Both describe the magnitude of fuel purchased, but at different grains: the transaction amount is a single purchase event, whereas monthly consumption is an aggregated customer-month figure. They are not interchangeable.",
+    "evidence": [
+      "ev_transaction_amount_range",
+      "ev_product_attribution_gap"
+    ]
+  },
+  {
+    "id": "rel_currency_consumption",
+    "source": "term_payment_currency",
+    "relation_type": "association",
+    "target": "term_customer_monthly_consumption",
+    "connection_condition": "currency is attached to the customer that owns the consumption records",
+    "description": "Consumption values are only comparable within one currency, because the currency is a property of the customer rather than of the consumption record.",
+    "evidence": [
+      "ev_segment_consumption_join"
+    ]
+  },
+  {
+    "id": "rel_segment_homonym",
+    "source": "term_customer_segment",
+    "relation_type": "association",
+    "target": "term_gas_station_segment",
+    "connection_condition": "",
+    "description": "The two segment concepts share a column name but have disjoint value domains and different meanings: customer size categories versus station types.",
+    "evidence": [
+      "ev_customer_segment_values",
+      "ev_station_segment_values"
+    ]
+  }
+]

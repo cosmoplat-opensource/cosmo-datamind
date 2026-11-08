@@ -1,0 +1,306 @@
+[
+  {
+    "id": "evidence_card_table_grain",
+    "source": "card_games.sqlite / cards",
+    "query": "SELECT COUNT(*) AS rows_, COUNT(DISTINCT uuid) AS uuids, COUNT(DISTINCT scryfallId) AS scryfall_ids, COUNT(DISTINCT name) AS names FROM cards",
+    "result": "rows_=56822, uuids=56822, scryfall_ids=56144, names=21738. Every row is a distinct printing identified by uuid; 21738 distinct card names are spread over 56822 rows.",
+    "validation_method": "row counts and key cardinality comparison",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_card_identity",
+    "source": "card_games.sqlite / cards",
+    "query": "SELECT scryfallOracleId, COUNT(*) AS n, COUNT(DISTINCT name) AS names FROM cards GROUP BY 1 ORDER BY n DESC LIMIT 5",
+    "result": "b34bb2dc-c1af-4d77-b0b3-a0fb342a5fc6 -> 693 rows, 1 name; 56719f6a-... -> 659 rows, 1 name; b2c6aa39-... -> 649 rows, 1 name; a3fb7228-... -> 639 rows, 1 name; bc71ebf6-... -> 623 rows, 1 name. A single scryfallOracleId groups many printings of one card.",
+    "validation_method": "grouping cardinality check",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_foreign_languages",
+    "source": "card_games.sqlite / foreign_data",
+    "query": "SELECT language, COUNT(*) FROM foreign_data GROUP BY 1 ORDER BY 2 DESC",
+    "result": "Japanese 31226, French 29301, German 28891, Italian 28698, Spanish 28639, Portuguese (Brazil) 25641, Chinese Simplified 20106, Russian 15878, Chinese Traditional 11106, Korean 9692, Phyrexian 3, Sanskrit 1, Latin 1, Hebrew 1, Arabic 1, Ancient Greek 1",
+    "validation_method": "distinct value enumeration",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_set_translation_languages",
+    "source": "card_games.sqlite / set_translations",
+    "query": "SELECT language, COUNT(*) FROM set_translations GROUP BY 1 ORDER BY 2 DESC",
+    "result": "10 languages with 121 rows each: Spanish, Russian, Portuguese (Brazil), Korean, Japanese, Italian, German, French, Chinese Traditional, Chinese Simplified. English is not represented.",
+    "validation_method": "distinct value enumeration",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_portuguese_brasil_absent",
+    "source": "card_games.sqlite / foreign_data, set_translations",
+    "query": "SELECT 'foreign_data' AS src, COUNT(*) FROM foreign_data WHERE language LIKE '%rasil%' UNION ALL SELECT 'set_translations', COUNT(*) FROM set_translations WHERE language LIKE '%rasil%'",
+    "result": "foreign_data 0; set_translations 0. The literal label 'Portuguese (Brasil)' never occurs; the stored value is 'Portuguese (Brazil)'.",
+    "validation_method": "literal value search across both language columns",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_legality_formats",
+    "source": "card_games.sqlite / legalities",
+    "query": "SELECT format, COUNT(*) FROM legalities GROUP BY 1 ORDER BY 2 DESC",
+    "result": "15 distinct lowercase formats: vintage/legacy/commander 55576 each, duel 55544, modern 40774, penny 38159, pauper 22784, pioneer 22346, premodern 20721, historic 16568, gladiator 16568, standard/future/brawl 7698 each, oldschool 4621",
+    "validation_method": "distinct value enumeration with counts",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_legality_status",
+    "source": "card_games.sqlite / legalities",
+    "query": "SELECT status, COUNT(*) FROM legalities GROUP BY 1 ORDER BY 2 DESC",
+    "result": "Legal 424958, Banned 2313, Restricted 636. Values are stored capitalised (first letter upper case).",
+    "validation_method": "distinct value enumeration with counts",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_legality_orphans",
+    "source": "card_games.sqlite / legalities",
+    "query": "SELECT COUNT(*) FROM legalities l LEFT JOIN cards c ON l.uuid = c.uuid WHERE c.uuid IS NULL",
+    "result": "72 legalities rows carry a uuid that is absent from cards; joining legalities to cards drops these rows.",
+    "validation_method": "left-join orphan count",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_content_warning",
+    "source": "card_games.sqlite / cards",
+    "query": "SELECT hasContentWarning, COUNT(*) FROM cards GROUP BY 1",
+    "result": "hasContentWarning = 0 -> 56793 rows; hasContentWarning = 1 -> 29 rows",
+    "validation_method": "flag value enumeration",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_story_spotlight",
+    "source": "card_games.sqlite / cards",
+    "query": "SELECT isStorySpotlight, COUNT(*) FROM cards GROUP BY 1",
+    "result": "isStorySpotlight = 0 -> 56718 rows; isStorySpotlight = 1 -> 104 rows",
+    "validation_method": "flag value enumeration",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_edhrec_rank",
+    "source": "card_games.sqlite / cards",
+    "query": "SELECT COUNT(edhrecRank) AS non_null, MIN(edhrecRank), MAX(edhrecRank), SUM(edhrecRank = 1) FROM cards",
+    "result": "non_null=52061, min=1, max=20900, rows with edhrecRank = 1 -> 33",
+    "validation_method": "null count, range and value count",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_power_missing",
+    "source": "card_games.sqlite / cards",
+    "query": "SELECT COUNT(*) AS total, SUM(power IS NULL) AS n_null, SUM(power = '*') AS star, SUM(power IS NULL OR power = '*') AS without_power, COUNT(power) AS non_null FROM cards; SELECT typeof(power), COUNT(*) FROM cards GROUP BY 1",
+    "result": "total=56822, non_null=26198, n_null=30624, star=429, without_power=31053. typeof(power) is 'null' for 30624 rows and 'text' for 26198 rows; no empty-string powers exist.",
+    "validation_method": "null/flag counting and typeof check",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_border_color",
+    "source": "card_games.sqlite / cards",
+    "query": "SELECT borderColor, COUNT(*) FROM cards GROUP BY 1 ORDER BY 2 DESC",
+    "result": "black 49729, white 5017, gold 1244, silver 591, borderless 241",
+    "validation_method": "distinct value enumeration with counts",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_rarity",
+    "source": "card_games.sqlite / cards",
+    "query": "SELECT rarity, COUNT(*) FROM cards GROUP BY 1 ORDER BY 2 DESC",
+    "result": "common 20745, rare 17626, uncommon 15251, mythic 3200",
+    "validation_method": "distinct value enumeration with counts",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_mtgo_sets",
+    "source": "card_games.sqlite / sets",
+    "query": "SELECT SUM(mtgoCode IS NOT NULL) FROM sets",
+    "result": "160 of the 551 sets carry a non-null mtgoCode; the remaining sets were never released on Magic: The Gathering Online.",
+    "validation_method": "null count over flag-like code column",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_set_translation_coverage",
+    "source": "card_games.sqlite / sets, set_translations, cards",
+    "query": "SELECT (SELECT COUNT(*) FROM sets) AS sets_total, (SELECT COUNT(DISTINCT setCode) FROM set_translations) AS translated_sets, (SELECT COUNT(DISTINCT setCode) FROM cards) AS card_setcodes",
+    "result": "sets_total=551, translated_sets=121, card_setcodes=536. Only 121 sets have localized names; cards reference 536 distinct set codes.",
+    "validation_method": "cross-table coverage comparison",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_set_code_join",
+    "source": "card_games.sqlite / cards, sets",
+    "query": "SELECT COUNT(*) FROM cards c LEFT JOIN sets s ON c.setCode = s.code WHERE s.code IS NULL",
+    "result": "0 orphan rows; every cards.setCode resolves to a sets.code.",
+    "validation_method": "left-join orphan count",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_uuid_foreign_join",
+    "source": "card_games.sqlite / cards, foreign_data",
+    "query": "SELECT c.name, c.setCode, fd.language, fd.name FROM cards c JOIN foreign_data fd ON c.uuid = fd.uuid WHERE c.name = 'Ancestor''s Chosen' AND fd.language = 'Italian'",
+    "result": "10E / Italian / 'Prescelto dell''Antenata'; JUD / Italian / 'Prescelto dell''Antenata'. foreign_data.uuid references cards.uuid, so cards.name holds the English name and foreign_data.name the localized name of the same printing.",
+    "validation_method": "join verification on a workload example",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_foreign_join_orphans",
+    "source": "card_games.sqlite / foreign_data, cards",
+    "query": "SELECT COUNT(*) FROM foreign_data fd LEFT JOIN cards c ON fd.uuid = c.uuid WHERE c.uuid IS NULL",
+    "result": "16 foreign_data rows have no matching cards.uuid.",
+    "validation_method": "left-join orphan count",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_ancestors_chosen_languages",
+    "source": "card_games.sqlite / cards, foreign_data",
+    "query": "SELECT DISTINCT fd.language FROM cards c JOIN foreign_data fd ON c.uuid = fd.uuid WHERE c.name = 'Ancestor''s Chosen'",
+    "result": "German, Spanish, French, Italian, Japanese, Portuguese (Brazil), Russian, Chinese Simplified. No Korean localised record exists for this card.",
+    "validation_method": "distinct value enumeration on a workload example",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_set_name_variants",
+    "source": "card_games.sqlite / cards, sets, set_translations",
+    "query": "SELECT c.setCode, s.name, st.language, st.translation FROM cards c JOIN sets s ON c.setCode = s.code LEFT JOIN set_translations st ON st.setCode = s.code WHERE c.name = 'Ancestor''s Chosen'",
+    "result": "10E -> sets.name 'Tenth Edition' with translations German 'Hauptset Zehnte Edition', French 'Dixième édition', Italian 'Set Base Decima Edizione', Japanese '第10版基本セット', etc.; JUD -> 'Judgment' with its own translations; UMA -> 'Ultimate Masters' with no translation row at all.",
+    "validation_method": "joined enumeration showing official, market and localized name forms",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_set_name_lookup",
+    "source": "card_games.sqlite / sets",
+    "query": "SELECT code, name, block, mcmName, mtgoCode FROM sets WHERE name = 'Coldsnap'; SELECT code, name, block, mcmName, mtgoCode FROM sets WHERE mcmName = 'Archenemy'",
+    "result": "'Coldsnap' -> CSP, block 'Ice Age', mcmName 'Coldsnap', mtgoCode 'CSP'. 'Archenemy' -> ARC, block NULL, mcmName 'Archenemy', mtgoCode NULL; the string 'Archenemy' matches both sets.name and sets.mcmName.",
+    "validation_method": "targeted lookup on workload set names",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_block_sets",
+    "source": "card_games.sqlite / sets",
+    "query": "SELECT COUNT(*) FROM sets WHERE block = 'Commander'; SELECT DISTINCT block FROM sets WHERE block IS NOT NULL ORDER BY 1",
+    "result": "block='Commander' -> 23 sets. 33 distinct non-null block labels exist (Alara, Amonkhet, Commander, Core Set, Ice Age, Innistrad, Mirrodin, Ravnica, ...); 272 of 551 sets have a non-null block.",
+    "validation_method": "grouping and distinct enumeration",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_commander_block_portuguese",
+    "source": "card_games.sqlite / set_translations, sets",
+    "query": "SELECT st.setCode, st.language, st.translation FROM set_translations st JOIN sets s ON st.setCode = s.code WHERE s.block = 'Commander' AND st.language LIKE 'Portuguese%'",
+    "result": "6 rows: C13, C14, C15, C16, C17, CM1, each with language 'Portuguese (Brazil)'.",
+    "validation_method": "joined filter on a workload example",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_hauptset",
+    "source": "card_games.sqlite / set_translations",
+    "query": "SELECT setCode, language, translation FROM set_translations WHERE translation = 'Hauptset Zehnte Edition'",
+    "result": "setCode=10E, language=German. The localised set name resolves to set code 10E.",
+    "validation_method": "reverse lookup from localized name to set code",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_adam_rex",
+    "source": "card_games.sqlite / cards, set_translations",
+    "query": "SELECT c.id, c.name, c.setCode, c.artist FROM cards c JOIN set_translations st ON c.setCode = st.setCode WHERE st.translation = 'Hauptset Zehnte Edition' AND c.artist = 'Adam Rex'",
+    "result": "12 rows, all in set 10E, including 'Fear', 'Agonizing Memories', 'Remove Soul', 'Peek', 'Seedborn Muse', 'Mind Stone', 'Windborn Muse', 'Terror'.",
+    "validation_method": "joined count on a workload example",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_converted_mana_cost",
+    "source": "card_games.sqlite / cards",
+    "query": "SELECT manaCost, convertedManaCost, COUNT(*) FROM cards WHERE manaCost IS NOT NULL AND convertedManaCost IS NOT NULL GROUP BY 1,2 ORDER BY 3 DESC LIMIT 8",
+    "result": "{1}{W} -> 2.0 (1630 rows), {1}{G} -> 2.0 (1492), {1}{U} -> 2.0 (1417), {2}{G} -> 3.0 (1392), {2}{R} -> 3.0 (1372), {1}{R} -> 2.0 (1331), {2}{U} -> 3.0 (1312), {2}{B} -> 3.0 (1286). convertedManaCost equals the count of mana symbols in manaCost.",
+    "validation_method": "value pairing comparison",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_cmc_zero",
+    "source": "card_games.sqlite / cards",
+    "query": "SELECT SUM(manaCost IS NULL) AS no_mana_cost, SUM(convertedManaCost = 0) AS cmc_zero FROM cards",
+    "result": "7323 rows have no manaCost; 7327 rows have convertedManaCost = 0.",
+    "validation_method": "null and zero counting",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_serra_shrine",
+    "source": "card_games.sqlite / cards",
+    "query": "SELECT DISTINCT name, convertedManaCost FROM cards WHERE name IN ('Serra Angel','Shrine Keeper')",
+    "result": "Serra Angel 5.0; Shrine Keeper 2.0. Each name has a single converted mana cost across all its printings.",
+    "validation_method": "targeted value comparison",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_gladiator_mythic_banned",
+    "source": "card_games.sqlite / cards, legalities",
+    "query": "SELECT c.rarity, COUNT(*) FROM cards c JOIN legalities l ON c.uuid = l.uuid WHERE l.format = 'gladiator' AND l.status = 'Banned' GROUP BY 1",
+    "result": "mythic 5, rare 19. Banned status and rarity are stored in different tables and must be joined through uuid.",
+    "validation_method": "joined enumeration on a workload example",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_commander_legal",
+    "source": "card_games.sqlite / legalities",
+    "query": "SELECT COUNT(*) FROM legalities WHERE format = 'commander' AND status = 'Legal'",
+    "result": "55244 legality rows are commander/Legal.",
+    "validation_method": "filtered count defining a percentage denominator",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_edhrec1_banned",
+    "source": "card_games.sqlite / cards, legalities",
+    "query": "SELECT c.name, c.edhrecRank, l.format, l.status FROM cards c JOIN legalities l ON c.uuid = l.uuid WHERE c.edhrecRank = 1 AND l.status = 'Banned' LIMIT 10",
+    "result": "'Sol Ring' (edhrecRank = 1) is Banned in duel and legacy. The join repeats rows because several printings of the same card share edhrecRank = 1 and the same legality records.",
+    "validation_method": "joined enumeration on a workload example",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_angel_of_mercy",
+    "source": "card_games.sqlite / cards, sets",
+    "query": "SELECT c.name, c.setCode, s.name, s.mtgoCode FROM cards c JOIN sets s ON c.setCode = s.code WHERE c.name = 'Angel of Mercy'",
+    "result": "15 printings. Sets with a non-empty mtgoCode include 10E (10E), 8ED (8ED), 9ED (9ED), DDC (DDC), IMA (IMA), INV (IN); printings in DVD, JMP, MB1, P02, PS11, PSAL and S99 have a NULL mtgoCode.",
+    "validation_method": "joined enumeration on a workload example",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_original_type_angel",
+    "source": "card_games.sqlite / cards",
+    "query": "SELECT COUNT(*) FROM cards WHERE originalType = 'Summon - Angel'; SELECT DISTINCT subtypes FROM cards WHERE originalType = 'Summon - Angel'",
+    "result": "20 rows. subtypes values observed: 'Angel', 'Angel,Spirit', 'Angel,Warrior'. Subtypes are stored as a comma-separated string, so a stored value is not equal to a single subtype token.",
+    "validation_method": "filtered count and distinct value inspection",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_artist_values",
+    "source": "card_games.sqlite / cards",
+    "query": "SELECT DISTINCT artist FROM cards WHERE artist LIKE '%Daniele%'",
+    "result": "One value: 'Stephen Daniele'. No row matches the spelling 'Stephen Daniel' used in the workload question.",
+    "validation_method": "pattern search for name variants",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_rulings_join",
+    "source": "card_games.sqlite / rulings, cards",
+    "query": "SELECT COUNT(*) FROM rulings r LEFT JOIN cards c ON r.uuid = c.uuid WHERE c.uuid IS NULL; SELECT COUNT(*) FROM rulings WHERE uuid = (SELECT uuid FROM cards WHERE name = 'Benalish Knight' LIMIT 1)",
+    "result": "0 orphan rulings; 0 rulings rows for the sampled uuid of 'Benalish Knight'. Rulings are joined by uuid and coverage per card is not guaranteed.",
+    "validation_method": "left-join orphan count plus per-card coverage probe",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_coldsnap_italian_text",
+    "source": "card_games.sqlite / cards, foreign_data, sets",
+    "query": "SELECT COUNT(*) FROM cards c JOIN foreign_data fd ON c.uuid = fd.uuid JOIN sets s ON c.setCode = s.code WHERE s.name = 'Coldsnap' AND fd.language = 'Italian'",
+    "result": "155 rows, e.g. 'Adarkar Valkyrie' -> 'Volare, cautela...'. Italian card rules text for a set is reached through cards.setCode -> sets.code and cards.uuid -> foreign_data.uuid.",
+    "validation_method": "three-table joined count on a workload example",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_set_optional_fields",
+    "source": "card_games.sqlite / sets",
+    "query": "SELECT COUNT(*) FROM sets WHERE mcmName IS NOT NULL; SELECT COUNT(*) FROM sets WHERE block IS NOT NULL",
+    "result": "201 of 551 sets have a non-null mcmName; 272 of 551 sets have a non-null block. Both are optional.",
+    "validation_method": "null counting on optional columns",
+    "timestamp": "2026-10-10"
+  }
+]

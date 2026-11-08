@@ -1,0 +1,77 @@
+{
+ "db_id": "card_games",
+ "questions": [
+  {
+   "question_id": 472,
+   "db_id": "card_games",
+   "question": "Among the sets in the block \"Ice Age\", how many of them have an Italian translation?",
+   "evidence": "tab04 in the block \"Ice Age\" refers to fld079 = 'Ice Age'; Italian translation refers to fld075 = 'Italian' and fld094 is not null",
+   "SQL": "SELECT COUNT(DISTINCT T1.fld001) FROM tab04 AS T1 INNER JOIN tab05 AS T2 ON T2.fld063 = T1.fld081 WHERE T1.fld079 = 'Ice Age' AND T2.fld075 = 'Italian' AND NOT T2.fld094 IS NULL",
+   "difficulty": "moderate",
+   "SQL_original": "SELECT COUNT(DISTINCT T1.id) FROM sets AS T1 INNER JOIN set_translations AS T2 ON T2.setCode = T1.code WHERE T1.block = 'Ice Age' AND T2.language = 'Italian' AND T2.translation IS NOT NULL"
+  },
+  {
+   "question_id": 440,
+   "db_id": "card_games",
+   "question": "Which foreign language used by \"A Pedra Fellwar\"?",
+   "evidence": "\"A Pedra Fellwar\" refers to fld049 = 'A Pedra Fellwar'",
+   "SQL": "SELECT DISTINCT fld075 FROM tab02 WHERE fld049 = 'A Pedra Fellwar'",
+   "difficulty": "simple",
+   "SQL_original": "SELECT DISTINCT language FROM foreign_data WHERE name = 'A Pedra Fellwar'"
+  },
+  {
+   "question_id": 340,
+   "db_id": "card_games",
+   "question": "Which are the cards that have incredibly powerful foils.",
+   "evidence": "incredibly poweful foils refers to fld006 is not null AND fld007 is not null",
+   "SQL": "SELECT fld001 FROM tab01 WHERE NOT fld006 IS NULL AND NOT fld007 IS NULL",
+   "difficulty": "simple",
+   "SQL_original": "SELECT id FROM cards WHERE cardKingdomFoilId IS NOT NULL AND cardKingdomId IS NOT NULL"
+  },
+  {
+   "question_id": 424,
+   "db_id": "card_games",
+   "question": "What proportion of cards do not have a text box with a normal layout?",
+   "evidence": "do not have a text box refers to fld034 = 1; proportion refers to DIVIDE(COUNT(Textless = 1 and fld037 = 'normal'),COUNT(Textless))*100",
+   "SQL": "SELECT CAST(SUM(CASE WHEN fld034 = 1 AND fld037 = 'normal' THEN 1 ELSE 0 END) AS REAL) * 100 / COUNT(*) FROM tab01",
+   "difficulty": "simple",
+   "SQL_original": "SELECT CAST(SUM(CASE WHEN isTextless = 1 AND layout = 'normal' THEN 1 ELSE 0 END) AS REAL) * 100 / COUNT(*) FROM cards"
+  },
+  {
+   "question_id": 486,
+   "db_id": "card_games",
+   "question": "What is the percentage of the cards with a converted mana cost of 7 in the set Coldsnap?",
+   "evidence": "converted mana cost of 7 refers to fld011 = 7; card set Coldsnap refers to fld049 = 'Coldsnap'; percentage = DIVIDE(SUM(fld011 = 7), SUM(fld011))*100",
+   "SQL": "SELECT CAST(SUM(CASE WHEN T1.fld011 = 7 THEN 1 ELSE 0 END) AS REAL) * 100 / COUNT(T1.fld001) FROM tab01 AS T1 INNER JOIN tab04 AS T2 ON T2.fld081 = T1.fld063 WHERE T2.fld049 = 'Coldsnap'",
+   "difficulty": "moderate",
+   "SQL_original": "SELECT CAST(SUM(CASE WHEN T1.convertedManaCost = 7 THEN 1 ELSE 0 END) AS REAL) * 100 / COUNT(T1.id) FROM cards AS T1 INNER JOIN sets AS T2 ON T2.code = T1.setCode WHERE T2.name = 'Coldsnap'"
+  },
+  {
+   "question_id": 479,
+   "db_id": "card_games",
+   "question": "Among the cards with converted mana cost higher than 5 in the set Coldsnap, how many of them have unknown power?",
+   "evidence": "card set Coldsnap refers to fld049 = 'Coldsnap'; converted mana cost higher than 5 refers to fld011 > 5; unknown power refers to fld055 = '*' or T1.fld055 is null",
+   "SQL": "SELECT SUM(CASE WHEN T1.fld055 = '*' OR T1.fld055 IS NULL THEN 1 ELSE 0 END) FROM tab01 AS T1 INNER JOIN tab04 AS T2 ON T2.fld081 = T1.fld063 WHERE T2.fld049 = 'Coldsnap' AND T1.fld011 > 5",
+   "difficulty": "moderate",
+   "SQL_original": "SELECT SUM(CASE WHEN T1.power = '*' OR T1.power IS NULL THEN 1 ELSE 0 END) FROM cards AS T1 INNER JOIN sets AS T2 ON T2.code = T1.setCode WHERE T2.name = 'Coldsnap' AND T1.convertedManaCost > 5"
+  },
+  {
+   "question_id": 409,
+   "db_id": "card_games",
+   "question": "Indicates the number of cards with pre-modern format, ruling text \"This is a triggered mana ability.\" that do not have multiple faces.",
+   "evidence": "pre-modern format refers to fld076 = 'premodern' ;do not have multiple faces refers to fld064 IS NULL",
+   "SQL": "SELECT COUNT(T1.fld001) FROM tab01 AS T1 INNER JOIN tab03 AS T2 ON T1.fld072 = T2.fld072 INNER JOIN tab06 AS T3 ON T1.fld072 = T3.fld072 WHERE T2.fld076 = 'premodern' AND T3.fld068 = 'This is a triggered mana ability.' AND T1.fld064 IS NULL",
+   "difficulty": "moderate",
+   "SQL_original": "SELECT COUNT(T1.id) FROM cards AS T1 INNER JOIN legalities AS T2 ON T1.uuid = T2.uuid INNER JOIN rulings AS T3 ON T1.uuid = T3.uuid WHERE T2.format = 'premodern' AND T3.text = 'This is a triggered mana ability.' AND T1.Side IS NULL"
+  },
+  {
+   "question_id": 518,
+   "db_id": "card_games",
+   "question": "Which of the play format has the highest number of banned status? Indicate the play format and the names of all the card meet the condition.",
+   "evidence": "play format refers to format; banned status refers to fld077 = 'Banned'; the highest number of banned status refers to MAX(COUNT(fld077 = 'Banned'))",
+   "SQL": "WITH MaxBanned AS (SELECT fld076, COUNT(*) AS count_banned FROM tab03 WHERE fld077 = 'Banned' GROUP BY fld076 ORDER BY COUNT(*) DESC LIMIT 1) SELECT T2.fld076, T1.fld049 FROM tab01 AS T1 INNER JOIN tab03 AS T2 ON T2.fld072 = T1.fld072 INNER JOIN MaxBanned AS MB ON MB.fld076 = T2.fld076 WHERE T2.fld077 = 'Banned'",
+   "difficulty": "moderate",
+   "SQL_original": "WITH MaxBanned AS (SELECT format, COUNT(*) AS count_banned FROM legalities WHERE status = 'Banned' GROUP BY format ORDER BY COUNT(*) DESC LIMIT 1) SELECT T2.format, T1.name FROM cards AS T1 INNER JOIN legalities AS T2 ON T2.uuid = T1.uuid INNER JOIN MaxBanned MB ON MB.format = T2.format WHERE T2.status = 'Banned'"
+  }
+ ]
+}

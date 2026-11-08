@@ -1,0 +1,445 @@
+[
+  {
+    "id": "rel_so_line_composition",
+    "source": "term_so",
+    "target": "term_so_line",
+    "relation_type": "composition",
+    "connection_condition": "fact_sales_order_line.order_id 指向 fact_sales_order.order_id；行项目不能脱离订单存在",
+    "description": "销售订单由其行项目组成；订单明细按订单标识归属订单表头。",
+    "evidence": [
+      "ev_023_order_chain"
+    ]
+  },
+  {
+    "id": "rel_po_line_composition",
+    "source": "term_po",
+    "target": "term_po_line",
+    "relation_type": "composition",
+    "connection_condition": "fact_po_line.po_id 指向 fact_purchase_order.po_id",
+    "description": "采购订单由其行项目组成。",
+    "evidence": [
+      "ev_002_no_declared_fk"
+    ]
+  },
+  {
+    "id": "rel_cycle_count_line_composition",
+    "source": "term_cycle_count",
+    "target": "term_cycle_count_line",
+    "relation_type": "composition",
+    "connection_condition": "fact_cycle_count_line.cycle_count_id 指向 fact_cycle_count.cycle_count_id",
+    "description": "循环盘点单由其明细行组成。",
+    "evidence": [
+      "ev_006_status_styles"
+    ]
+  },
+  {
+    "id": "rel_sc_line_composition",
+    "source": "term_supplier_contract",
+    "target": "term_supplier_contract_line",
+    "relation_type": "composition",
+    "connection_condition": "fact_supplier_contract_line.supplier_contract_id 指向 fact_supplier_contract.supplier_contract_id",
+    "description": "供应商合同由其明细行组成，两者都带过账日期与状态。",
+    "evidence": [
+      "ev_003_governed_template"
+    ]
+  },
+  {
+    "id": "rel_prod_order_association",
+    "source": "term_prod_order",
+    "target": "term_prod_output",
+    "relation_type": "composition",
+    "connection_condition": "fact_production_output.order_id 指向 fact_production_order.order_id",
+    "description": "工单产出记录是工单的执行结果，按产出日期逐条登记。",
+    "evidence": [
+      "ev_025_prod_order_inspection"
+    ]
+  },
+  {
+    "id": "rel_prod_order_wo_material",
+    "source": "term_prod_order",
+    "target": "term_wo_material",
+    "relation_type": "composition",
+    "connection_condition": "fact_work_order_material.order_id 指向 fact_production_order.order_id",
+    "description": "工单物料投用是工单的组成部分，记录每张工单的物料配比与实际投用量。",
+    "evidence": [
+      "ev_031_bom_ratio"
+    ]
+  },
+  {
+    "id": "rel_prod_order_wo_operation",
+    "source": "term_prod_order",
+    "target": "term_wo_operation",
+    "relation_type": "composition",
+    "connection_condition": "fact_work_order_operation.order_id 指向 fact_production_order.order_id",
+    "description": "工单工序执行是工单的组成部分，记录工单在各工序上的执行数量与工时。",
+    "evidence": [
+      "ev_043_year_scoped_measures"
+    ]
+  },
+  {
+    "id": "rel_prod_order_wip",
+    "source": "term_prod_order",
+    "target": "term_wip_snapshot",
+    "relation_type": "composition",
+    "connection_condition": "fact_wip_snapshot.order_id 指向 fact_production_order.order_id",
+    "description": "在制品快照记录工单与产线上的在制数量，是工单执行过程的组成部分。",
+    "evidence": [
+      "ev_006_status_styles"
+    ]
+  },
+  {
+    "id": "rel_inspection_lot_composition",
+    "source": "term_inspection_lot",
+    "target": "term_inspection_result_fact",
+    "relation_type": "composition",
+    "connection_condition": "fact_inspection_result.inspection_lot_id 指向 fact_inspection_lot.inspection_lot_id",
+    "description": "检验批由多条检验结果明细组成，明细记录每个质量特性的实测值与结论。",
+    "evidence": [
+      "ev_036_persona_distribution"
+    ]
+  },
+  {
+    "id": "rel_prod_order_inspection_lot",
+    "source": "term_prod_order",
+    "target": "term_inspection_lot",
+    "relation_type": "association",
+    "connection_condition": "fact_inspection_lot.order_id 指向 fact_production_order.order_id（2930 个已完成工单全部可连接）",
+    "description": "生产工单与其检验批一一关联，工单状态决定其检验批的统计口径。",
+    "evidence": [
+      "ev_025_prod_order_inspection"
+    ]
+  },
+  {
+    "id": "rel_goods_receipt_ap",
+    "source": "term_goods_receipt",
+    "target": "term_ap",
+    "relation_type": "association",
+    "connection_condition": "fact_ap.gr_id 指向 fact_goods_receipt.gr_id",
+    "description": "收货单与应付账款通过收货单标识关联，用于把收货检验结果与付款金额联系起来。",
+    "evidence": [
+      "ev_022_gr_inspection"
+    ]
+  },
+  {
+    "id": "rel_so_delivery_invoice",
+    "source": "term_so",
+    "target": "term_invoice",
+    "relation_type": "association",
+    "connection_condition": "fact_delivery.order_id 指向 fact_sales_order.order_id；fact_invoice.delivery_id 指向 fact_delivery.delivery_id",
+    "description": "销售订单经发货记录再经发票逐级关联，形成订单→发货→发票的三段链路。",
+    "evidence": [
+      "ev_023_order_chain"
+    ]
+  },
+  {
+    "id": "rel_delivery_composition",
+    "source": "term_so",
+    "target": "term_shipment",
+    "relation_type": "association",
+    "connection_condition": "fact_shipment.delivery_id 指向 fact_delivery.delivery_id",
+    "description": "发运单围绕发货记录登记运输信息，两者共同描述同一批发货。",
+    "evidence": [
+      "ev_036_persona_distribution"
+    ]
+  },
+  {
+    "id": "rel_pr_po",
+    "source": "term_pr",
+    "target": "term_po",
+    "relation_type": "association",
+    "connection_condition": "fact_purchase_order.requisition_no 与采购申请编号同域（文本关联）",
+    "description": "采购申请与采购订单通过申请编号文本关联，用于按申请部门归集采购金额。",
+    "evidence": [
+      "ev_026_population_top"
+    ]
+  },
+  {
+    "id": "rel_qualified_quantity_equivalence",
+    "source": "term_qualified_quantity",
+    "target": "term_quantity",
+    "relation_type": "equivalence",
+    "connection_condition": "fact_inspection_lot.qualified_quantity 合计 110105.09 与 fact_production_output 中非返工品等级的 quantity 合计完全一致",
+    "description": "合格数量与非返工品产出数量是同一业务量的两种表示：检验批侧按结论登记，产出侧按等级登记。",
+    "evidence": [
+      "ev_012_qualified_equivalence"
+    ]
+  },
+  {
+    "id": "rel_inventory_equivalence",
+    "source": "term_inventory",
+    "target": "term_inventory_snapshot",
+    "relation_type": "equivalence",
+    "connection_condition": "两表分别以 prod_id（37 行）与 material_id（540 行）记录库存",
+    "description": "产品级库存表与物料级库存快照表达同一业务概念（库存结存），但粒度与列集合不同，须按问题口径选择。",
+    "evidence": [
+      "ev_018_inventory_grains"
+    ]
+  },
+  {
+    "id": "rel_emission_reading_equivalence",
+    "source": "term_emission_quantity",
+    "target": "term_emission_value",
+    "relation_type": "equivalence",
+    "connection_condition": "fact_emission_event 中 actual_quantity 恒为 0，而 emission_value 合计 342.99",
+    "description": "排放事件中的数量列与测量值列表达同一排放事实的不同口径，本版本只有测量值可用。",
+    "evidence": [
+      "ev_015_emission_zero"
+    ]
+  },
+  {
+    "id": "rel_amount_derivation",
+    "source": "term_unit_price",
+    "target": "term_amount",
+    "relation_type": "derivation",
+    "connection_condition": "金额 = 单价 × 数量（同一单据行内）",
+    "description": "行金额由单价与数量相乘得到，因此没有预置金额列时可由这两个度量推导。",
+    "evidence": [
+      "ev_003_governed_template"
+    ]
+  },
+  {
+    "id": "rel_total_amount_derivation",
+    "source": "term_amount",
+    "target": "term_total_amount",
+    "relation_type": "derivation",
+    "connection_condition": "单据总金额 = 该单据各明细行金额之和",
+    "description": "单据级总金额由行级金额汇总得到，两者是不同粒度的同一金额口径。",
+    "evidence": [
+      "ev_003_governed_template"
+    ]
+  },
+  {
+    "id": "rel_risk_score_derivation",
+    "source": "term_likelihood",
+    "target": "term_risk_score",
+    "relation_type": "derivation",
+    "connection_condition": "风险分值 = 可能性 × 严重度（表中已物化存储）",
+    "description": "危险源观察的风险分值由可能性和严重度相乘派生，在表中已物化，可直接聚合。",
+    "evidence": [
+      "ev_032_hazard_location"
+    ]
+  },
+  {
+    "id": "rel_reason_group_hierarchy",
+    "source": "term_reason_group",
+    "target": "term_reason_code",
+    "relation_type": "hierarchy",
+    "connection_condition": "dim_reason_code.reason_group 把 12 个原因码划分为 内部(9) 与 外部(3) 两个分组",
+    "description": "内部/外部是原因码的分类，每个原因码都是某个分组的实例。",
+    "evidence": [
+      "ev_039_reason_group"
+    ]
+  },
+  {
+    "id": "rel_equipment_type_hierarchy",
+    "source": "term_equipment_type",
+    "target": "term_equipment",
+    "relation_type": "hierarchy",
+    "connection_condition": "dim_equipment.type_id 的取值域是 dim_equipment_type.type_id 的子集（60 台设备分属 6 个类型）",
+    "description": "具体设备是设备类型的实例，可按类型归并设备相关的告警、监测与维护记录。",
+    "evidence": [
+      "ev_028_dimension_values",
+      "ev_041_entity_links"
+    ]
+  },
+  {
+    "id": "rel_product_line_composition",
+    "source": "term_product_line",
+    "target": "term_product",
+    "relation_type": "composition",
+    "connection_condition": "dim_product.prod_line_id 指向 dim_product_line.prod_line_id（15 个产品全部归属产品线）",
+    "description": "产品线由产品组成；按产品线筛选产品是两跳关联（产品线→产品→业务记录）。",
+    "evidence": [
+      "ev_041_entity_links",
+      "ev_028_dimension_values"
+    ]
+  },
+  {
+    "id": "rel_material_category_composition",
+    "source": "term_material_category",
+    "target": "term_material",
+    "relation_type": "composition",
+    "connection_condition": "dim_material.category_id 指向 dim_material_category.category_id，类别自身还有 parent_id 分层",
+    "description": "物料类别是物料的上级归类，物料按类别分组时经两跳关联。",
+    "evidence": [
+      "ev_028_dimension_values"
+    ]
+  },
+  {
+    "id": "rel_department_composition",
+    "source": "term_department",
+    "target": "term_employee",
+    "relation_type": "composition",
+    "connection_condition": "dim_employee.dept_id 指向 dim_department.dept_id",
+    "description": "部门由员工组成，员工归属唯一部门。",
+    "evidence": [
+      "ev_026_population_top"
+    ]
+  },
+  {
+    "id": "rel_production_line_composition",
+    "source": "term_workshop",
+    "target": "term_production_line",
+    "relation_type": "composition",
+    "connection_condition": "dim_production_line.workshop_id 指向 dim_workshop.workshop_id",
+    "description": "车间由产线组成，产线是车间内的生产单元。",
+    "evidence": [
+      "ev_028_dimension_values"
+    ]
+  },
+  {
+    "id": "rel_equipment_line_composition",
+    "source": "term_production_line",
+    "target": "term_equipment",
+    "relation_type": "composition",
+    "connection_condition": "dim_equipment.line_id 指向 dim_production_line.line_id（60 台设备全部有产线）",
+    "description": "产线由设备组成，设备归属产线。",
+    "evidence": [
+      "ev_041_entity_links"
+    ]
+  },
+  {
+    "id": "rel_sensor_equipment_composition",
+    "source": "term_equipment",
+    "target": "term_sensor",
+    "relation_type": "composition",
+    "connection_condition": "dim_sensor.equipment_id 指向 dim_equipment.equipment_id",
+    "description": "设备上安装传感器，传感器的告警与监测数据通过设备归属产线与车间。",
+    "evidence": [
+      "ev_042_toplevel_by_attr"
+    ]
+  },
+  {
+    "id": "rel_factory_warehouse_composition",
+    "source": "term_factory",
+    "target": "term_warehouse",
+    "relation_type": "composition",
+    "connection_condition": "dim_warehouse.factory_id 指向 dim_factory.factory_id（7 个仓库全部有工厂）",
+    "description": "工厂由仓库组成，仓库归属工厂。",
+    "evidence": [
+      "ev_041_entity_links"
+    ]
+  },
+  {
+    "id": "rel_workshop_factory_association",
+    "source": "term_workshop",
+    "target": "term_factory",
+    "relation_type": "association",
+    "connection_condition": "dim_workshop 没有工厂标识，只有 location 文本（合肥工厂A栋、青岛一厂A栋等）",
+    "description": "车间与工厂的相关性只能通过位置文本表达，没有可用的标识符关联；厂区口径应按位置文本匹配。",
+    "evidence": [
+      "ev_032_hazard_location",
+      "ev_028_dimension_values"
+    ]
+  },
+  {
+    "id": "rel_warehouse_inventory_association",
+    "source": "term_warehouse",
+    "target": "term_inventory",
+    "relation_type": "association",
+    "connection_condition": "fact_inventory 没有仓库列（仅有入库日期），fact_inventory_snapshot 通过 warehouse_id 关联仓库",
+    "description": "产品级库存记录不含仓库，只有物料级快照可按仓库分析；两者语义相关但连接路径不同。",
+    "evidence": [
+      "ev_018_inventory_grains"
+    ]
+  },
+  {
+    "id": "rel_canonical_region_association",
+    "source": "term_sales_region",
+    "target": "term_customer",
+    "relation_type": "association",
+    "connection_condition": "销售订单明细的销售区域与客户的省市/行业是不同维度的文本列，无标识符关联",
+    "description": "销售区域与客户信息共同描述销售归属，但两者之间没有结构性关联键。",
+    "evidence": [
+      "ev_029_sales_region"
+    ]
+  },
+  {
+    "id": "rel_calendar_business_date_association",
+    "source": "term_calendar",
+    "target": "term_business_date",
+    "relation_type": "association",
+    "connection_condition": "dim_calendar.calendar_date 与规范单据表的 business_date 同日期间可关联（含日历自带的创建人条件）",
+    "description": "企业日历为业务日期提供年/季/月/周与工作日属性，可通过日期相等关联。",
+    "evidence": [
+      "ev_024_calendar_link"
+    ]
+  },
+  {
+    "id": "rel_operator_account_association",
+    "source": "term_operator_account",
+    "target": "term_employee",
+    "relation_type": "association",
+    "connection_condition": "U#### 账号与 dim_employee.emp_id、employee_no 均无标识符关联",
+    "description": "治理人账号与员工主数据在业务上相关，但取值域不同，不能直接关联，只能按账号本身分组统计。",
+    "evidence": [
+      "ev_008_persona_domains"
+    ]
+  },
+  {
+    "id": "rel_legacy_material_mat_ref",
+    "source": "term_legacy_material_issue",
+    "target": "term_material",
+    "relation_type": "association",
+    "connection_condition": "mat_ref 与 dim_material.material_code 文本匹配率 703/740",
+    "description": "遗留系统领料记录通过文本物料引用关联物料主数据，关联不完整，需先校验覆盖率。",
+    "evidence": [
+      "ev_013_mat_ref"
+    ]
+  },
+  {
+    "id": "rel_governed_legacy_association",
+    "source": "term_governed_document_table",
+    "target": "term_legacy_transaction_table",
+    "relation_type": "association",
+    "connection_condition": "两类表同时存在于同一库中，列集合不同，部分表（如采购订单与采购订单行）描述同一业务域",
+    "description": "规范单据表与遗留交易表是两族并列的事实表，分析同一业务域时可能需要跨族关联。",
+    "evidence": [
+      "ev_004_legacy_family"
+    ]
+  },
+  {
+    "id": "rel_alarm_predictive_association",
+    "source": "term_alarm",
+    "target": "term_predictive_alert",
+    "relation_type": "association",
+    "connection_condition": "两表均通过 sensor_id/equipment_id 关联同一传感器与设备，但告警触发机制不同",
+    "description": "设备告警与预测性维护告警语义相近但口径不同：前者记录是否处理，后者带读数单位、阈值与剩余寿命。",
+    "evidence": [
+      "ev_042_toplevel_by_attr"
+    ]
+  },
+  {
+    "id": "rel_iot_condition_association",
+    "source": "term_iot_data",
+    "target": "term_condition_monitoring",
+    "relation_type": "association",
+    "connection_condition": "两表均通过 sensor_id 关联传感器（fact_iot_data.value 与 fact_condition_monitoring.reading_value）",
+    "description": "IoT 时序数据与设备状态监测按传感器同源，但前者是原始时序、后者是带阈值的监测记录。",
+    "evidence": [
+      "ev_021_iot_unit"
+    ]
+  },
+  {
+    "id": "rel_hazard_risk_assessment_association",
+    "source": "term_hazard_observation",
+    "target": "term_risk_assessment",
+    "relation_type": "association",
+    "connection_condition": "两表均通过 hazard_id 关联危险源主数据",
+    "description": "危险源观察与风险评估围绕同一危险源，前者按现场观察登记可能性与风险分值，后者按评估给出后果等级。",
+    "evidence": [
+      "ev_032_hazard_location"
+    ]
+  },
+  {
+    "id": "rel_inventory_movement_snapshot",
+    "source": "term_inventory_movement",
+    "target": "term_inventory_snapshot",
+    "relation_type": "association",
+    "connection_condition": "两表均通过 material_id 与 warehouse_id 关联物料与仓库，但前者是流水、后者是结存",
+    "description": "库存移动记录流水，库存快照记录结存，是同一库存事实的两种时间口径。",
+    "evidence": [
+      "ev_018_inventory_grains"
+    ]
+  }
+]

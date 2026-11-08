@@ -1,0 +1,106 @@
+[
+  {
+    "id": "ev_molecule_label_enum",
+    "source": "toxicology",
+    "query": "SELECT label, COUNT(*) FROM molecule GROUP BY label",
+    "result": "symbol '+' occurs on 152 molecules and symbol '-' occurs on 191 molecules; 343 labelled molecules in total, no other label value and no null label",
+    "validation_method": "value-domain enumeration over the molecule relation",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_element_domain",
+    "source": "toxicology",
+    "query": "SELECT DISTINCT element FROM atom; SELECT COUNT(*) FROM atom WHERE element <> lower(element)",
+    "result": "21 distinct lowercase chemical symbols: b, br, c, ca, cl, cu, f, h, i, k, n, na, o, p, pb, s, si, sn, te, y, zn; zero rows store a non-lowercase value",
+    "validation_method": "distinct-value enumeration plus case check over the atom relation",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_bond_type_enum",
+    "source": "toxicology",
+    "query": "SELECT bond_type, COUNT(*) FROM bond GROUP BY bond_type ORDER BY COUNT(*) DESC",
+    "result": "'-' 10528 bonds, '=' 1844 bonds, '#' 6 bonds, and one bond (TR345_7_10) with no bond type recorded",
+    "validation_method": "value-domain enumeration over the bond relation",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_molecule_universe",
+    "source": "toxicology",
+    "query": "SELECT COUNT(DISTINCT molecule_id) FROM atom; SELECT COUNT(*) FROM molecule; SELECT COUNT(DISTINCT molecule_id) FROM atom WHERE molecule_id NOT IN (SELECT molecule_id FROM molecule)",
+    "result": "444 distinct molecules carry atoms, while the molecule relation holds 343 rows; 101 molecules that carry atoms and bonds have no molecule record and therefore no label; no molecule record lacks atoms",
+    "validation_method": "set comparison between the molecule relation and the molecules referenced by atoms and bonds",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_connected_direction",
+    "source": "toxicology",
+    "query": "SELECT COUNT(*), COUNT(DISTINCT bond_id) FROM connected; SELECT COUNT(*) FROM connected c WHERE EXISTS (SELECT 1 FROM connected c2 WHERE c2.atom_id = c.atom_id2 AND c2.atom_id2 = c.atom_id AND c2.bond_id = c.bond_id)",
+    "result": "24758 rows over 12379 distinct bonds, exactly two rows per bond, and every row has its mirror row in the opposite direction",
+    "validation_method": "cardinality and mirror-row check over the connectivity relation",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_connected_pair_bond",
+    "source": "toxicology",
+    "query": "SELECT COUNT(*) FROM (SELECT DISTINCT MIN(atom_id, atom_id2), MAX(atom_id, atom_id2), bond_id FROM connected)",
+    "result": "12379 distinct undirected atom pairs, exactly one pair per bond, so the connectivity relation resolves each bond into its two constituent atoms",
+    "validation_method": "distinct unordered pair count compared with the bond count",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_distinct_atoms",
+    "source": "toxicology",
+    "query": "SELECT COUNT(*), COUNT(DISTINCT c.atom_id) FROM connected c JOIN atom a ON a.atom_id = c.atom_id WHERE a.element IN ('i','s'); SELECT COUNT(*) FROM (SELECT atom_id FROM connected GROUP BY atom_id HAVING COUNT(*) > 1)",
+    "result": "293 connectivity rows versus 119 distinct atoms for the iodine and sulfur populations, and 5745 atoms occupy more than one connectivity row, so row counts exceed atom counts",
+    "validation_method": "row count compared with distinct atom count over a filtered connectivity join",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_atom_presence",
+    "source": "toxicology",
+    "query": "SELECT COUNT(*), COUNT(DISTINCT molecule_id) FROM atom",
+    "result": "12333 atom rows spanning 444 molecules, with no null element and no null molecule reference",
+    "validation_method": "cardinality and null check over the atom relation",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_identifier_format",
+    "source": "toxicology",
+    "query": "SELECT bond_id, molecule_id FROM bond WHERE bond_id IN ('TR001_6_9','TR001_10_11'); SELECT atom_id, element FROM atom WHERE atom_id IN ('TR001_6','TR001_9','TR001_10','TR001_11')",
+    "result": "bond TR001_6_9 belongs to molecule TR001 and bond TR001_10_11 belongs to molecule TR001; atoms TR001_6, TR001_9, TR001_10 and TR001_11 all exist, confirming that a bond identifier composes its molecule prefix with the positions of the two atoms it links",
+    "validation_method": "identifier decomposition checked against existing atom and molecule identifiers",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_tr006_hydrogen_ratio",
+    "source": "toxicology",
+    "query": "SELECT SUM(element = 'h'), COUNT(*) FROM atom WHERE molecule_id = 'TR006'",
+    "result": "molecule TR006 holds 17 hydrogen atoms out of 47 atoms, a share of 0.3617 of its atoms",
+    "validation_method": "within-molecule element count compared with the molecule atom total",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_iodine_adjacency",
+    "source": "toxicology",
+    "query": "SELECT COUNT(*) FROM atom WHERE element = 'i'; SELECT COUNT(*) FROM connected WHERE atom_id IN (SELECT atom_id FROM atom WHERE element = 'i')",
+    "result": "6 iodine atoms, which account for 6 connectivity rows anchored on them, so the mean bond incidences per iodine atom is 1",
+    "validation_method": "population count compared with its connectivity rows",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_label_by_element_join",
+    "source": "toxicology",
+    "query": "SELECT m.label, COUNT(*) FROM atom a JOIN molecule m ON m.molecule_id = a.molecule_id WHERE a.element = 'h' GROUP BY m.label",
+    "result": "hydrogen atoms resolve to 1569 atoms in carcinogenic molecules and 2465 atoms in non-carcinogenic molecules, showing that an element population is partitioned by the label of its molecule",
+    "validation_method": "join between atom element population and molecule classification",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_percentage_requests",
+    "source": "construction workload for toxicology",
+    "query": "shared evidence strings of the construction questions that ask for a percentage, proportion or ratio",
+    "result": "these questions define the metric as a division of a condition-restricted count by a base count and request an explicit number of decimal places on a percentage scale",
+    "validation_method": "review of the permitted construction workload statements",
+    "timestamp": "2026-10-10"
+  }
+]

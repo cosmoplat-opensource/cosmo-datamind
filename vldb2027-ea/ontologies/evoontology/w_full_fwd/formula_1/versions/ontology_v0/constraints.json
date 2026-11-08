@@ -1,0 +1,331 @@
+[
+  {
+    "id": "constraint_race_completion_time",
+    "target": "term_race_completion",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "race completion",
+      "completion percentage",
+      "completed the race",
+      "finished the race",
+      "finish rate",
+      "time is not null",
+      "DNF"
+    ],
+    "severity": "block",
+    "scope": "Any question about how many or what proportion of drivers completed a race or a set of races",
+    "confidence": "high",
+    "description": "A race entry counts as completed when results.time is populated; entries with a null time did not complete. Race completion questions must divide the number of entries with a non-null results.time by the total number of entries in scope. The status table agrees for almost all rows because statusId 1 is 'Finished', but 10 of the 5966 'Finished' entries still have a null time, so completion must be evaluated on results.time.",
+    "evidence": [
+      "ev_result_time_null",
+      "ev_status_domain"
+    ]
+  },
+  {
+    "id": "constraint_position_text_enum",
+    "target": "term_result_status",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "positionText",
+      "retired",
+      "did not qualify",
+      "did not prequalify",
+      "finished",
+      "position",
+      "R",
+      "F",
+      "classification"
+    ],
+    "severity": "block",
+    "scope": "Interpreting or filtering results by finishing position",
+    "confidence": "high",
+    "description": "results.positionText carries the finishing position as text for classified entries, 'R' for retired entries and 'F' for entries that failed to qualify. The F rows resolve to the statuses 'Did not qualify', 'Did not prequalify', '107% Rule' and 'Injury', so 'F' does not stand for finished and must not be used as a finished flag.",
+    "evidence": [
+      "ev_position_text"
+    ]
+  },
+  {
+    "id": "constraint_status_enum",
+    "target": "term_result_status",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "status",
+      "statusId",
+      "finishing status",
+      "engine",
+      "accident",
+      "collision",
+      "disqualified"
+    ],
+    "severity": "warning",
+    "scope": "Interpreting why an entry did or did not finish",
+    "confidence": "high",
+    "description": "status.statusId is a surrogate key resolved through the status table: statusId 1 means 'Finished' and every other id names a retirement cause or a non-start, such as 2 'Disqualified', 3 'Accident' and 5 'Engine'. Retirements can equivalently be identified by positionText 'R'.",
+    "evidence": [
+      "ev_status_domain"
+    ]
+  },
+  {
+    "id": "constraint_winner_time_format",
+    "target": "term_race_total_time",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "champion",
+      "winner",
+      "time format",
+      "hour:minutes:seconds",
+      "total race time",
+      "Max(time)",
+      "fastest lap of the champion"
+    ],
+    "severity": "warning",
+    "scope": "Identifying or reading the recorded time of a race winner",
+    "confidence": "high",
+    "description": "Only the race winner, the entry with results.position 1, carries a total race duration in results.time, rendered as H:MM:SS.mmm. Every other classified entry carries a gap such as '+4.507' or a lap deficit instead. Consequently a winner can be recognised by the hour:minute:second.millisecond form of the time, and the maximum text value of results.time within a race also isolates the winner. 970 of the 973 winning entries follow this pattern; 2 have a single-colon value and 1 has no time.",
+    "evidence": [
+      "ev_winner_time_format"
+    ]
+  },
+  {
+    "id": "constraint_lap_time_unit",
+    "target": "term_lap_time",
+    "constraint_type": "unit",
+    "trigger_keywords": [
+      "lap time",
+      "laptime",
+      "average lap time",
+      "less than",
+      "02:00",
+      "seconds",
+      "milliseconds"
+    ],
+    "severity": "block",
+    "scope": "Comparing or thresholding lap durations",
+    "confidence": "high",
+    "description": "lapTimes.milliseconds is the canonical numeric lap duration in whole milliseconds and is never null, while lapTimes.time is only a M:SS.mmm text rendering. A threshold such as 'lap time less than 02:00.00' must be evaluated on milliseconds, where two minutes is 120000, or on a normalised duration rather than on raw text. 43 of the 420369 lap rows instead store an H:MM:SS.mmm value that is a cumulative elapsed race time rather than a lap duration and should be treated as anomalous.",
+    "evidence": [
+      "ev_lap_time_ms"
+    ]
+  },
+  {
+    "id": "constraint_qualifying_time_format",
+    "target": "term_qualifying_time",
+    "constraint_type": "unit",
+    "trigger_keywords": [
+      "qualifying",
+      "q1",
+      "q2",
+      "q3",
+      "Q3 time",
+      "qualifying time",
+      "fastest in qualifying"
+    ],
+    "severity": "warning",
+    "scope": "Reading or comparing qualifying segment times",
+    "confidence": "high",
+    "description": "qualifying.q1, q2 and q3 hold M:SS.mmm text and are absent, null or empty when the driver did not reach that segment; 28 q3 values are the empty string. A driver's fastest time in a segment is the minimum time within that segment, and a value such as '0:01:33' denotes a time whose minute and second prefix is 1:33.",
+    "evidence": [
+      "ev_qualifying_time_format"
+    ]
+  },
+  {
+    "id": "constraint_qualifying_position",
+    "target": "term_qualifying_position",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "qualifying position",
+      "ranked 1st in qualifying",
+      "pole position",
+      "grid position",
+      "fastest qualifier"
+    ],
+    "severity": "warning",
+    "scope": "Deciding which driver qualifies or starts first",
+    "confidence": "medium",
+    "description": "qualifying.position is the driver's overall qualifying classification for the race with 1 meaning pole position, and it is the field to use for a question phrased as 'ranked 1st in qualifying'. The segment times q1, q2 and q3 describe individual sessions, so the minimum q3 value identifies the fastest third-segment time rather than the overall qualifying classification.",
+    "evidence": [
+      "ev_qualifying_time_format"
+    ]
+  },
+  {
+    "id": "constraint_driver_age_direction",
+    "target": "term_driver_age",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "youngest",
+      "oldest",
+      "age",
+      "born before",
+      "born in",
+      "dob",
+      "date of birth"
+    ],
+    "severity": "block",
+    "scope": "Any age, youngest or oldest driver question",
+    "confidence": "high",
+    "description": "Age is not stored and must be derived from drivers.dob. The youngest driver has the maximum date of birth and the oldest driver has the minimum. 'born in 1971' is a filter on the year of the date of birth and 'born before 1985' is a filter on years strictly below 1985. One of the 840 driver rows has a null date of birth and must be excluded from age derivations.",
+    "evidence": [
+      "ev_dob"
+    ]
+  },
+  {
+    "id": "constraint_nationality_vocabulary",
+    "target": "term_driver_nationality",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "nationality",
+      "Netherlandic",
+      "Dutch",
+      "Japanese",
+      "German",
+      "French",
+      "British",
+      "country"
+    ],
+    "severity": "warning",
+    "scope": "Filtering drivers, constructors or circuits by country of origin",
+    "confidence": "high",
+    "description": "Nationality is stored as a demonym string, not a country code: drivers.nationality and constructors.nationality hold values such as 'British', 'German', 'Japanese', 'French' and 'Dutch'. The wording 'Netherlandic' or 'Netherlands' corresponds to the stored value 'Dutch'. Circuit host countries are stored differently, as plain country names in circuits.country such as 'Germany' or 'Singapore', so the correct column must be chosen for the entity in question.",
+    "evidence": [
+      "ev_nationality_values",
+      "ev_circuit_coords"
+    ]
+  },
+  {
+    "id": "constraint_points_grain",
+    "target": "term_points",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "points",
+      "0 points",
+      "point scores",
+      "maximum points",
+      "scored",
+      "standing"
+    ],
+    "severity": "block",
+    "scope": "Any points question about a driver or a constructor",
+    "confidence": "high",
+    "description": "Points exist at two distinct grains. Per-race points live in results.points for a driver entry and constructorResults.points for a constructor entry, and default to 0 for entries that scored nothing, which is why 17037 of the 23657 result rows are 0. Cumulative championship points live in driverStandings.points and constructorStandings.points and are the running season totals after each race. A 'maximum point score' refers to the cumulative standings value, whereas counting zero-point races refers to the per-race grain.",
+    "evidence": [
+      "ev_points_grain"
+    ]
+  },
+  {
+    "id": "constraint_standings_coverage",
+    "target": "term_championship_position",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "standings",
+      "championship position",
+      "standing after",
+      "season champion",
+      "final standings"
+    ],
+    "severity": "warning",
+    "scope": "Championship standings and season champion questions",
+    "confidence": "medium",
+    "description": "driverStandings covers 970 of the 976 races and constructorStandings only 906 of them, so standings are not available for every race. Standings rows accumulate within a season, so a season total or a season champion must be read at that season's final race rather than aggregated across all rows.",
+    "evidence": [
+      "ev_standings_grain"
+    ]
+  },
+  {
+    "id": "constraint_wins_grain",
+    "target": "term_wins",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "wins",
+      "most winning",
+      "victories",
+      "winner",
+      "number of wins"
+    ],
+    "severity": "warning",
+    "scope": "Win-count questions about a driver or a constructor",
+    "confidence": "high",
+    "description": "Wins are available as cumulative in-season counts in driverStandings.wins and constructorStandings.wins, which restart each season and reach 13 in this dataset, or as a count of results rows whose position is 1. The most-winning driver is the maximum cumulative in-season win count, or equivalently the driver with the most first-place finishes.",
+    "evidence": [
+      "ev_standings_grain",
+      "ev_points_grain"
+    ]
+  },
+  {
+    "id": "constraint_race_number_semantics",
+    "target": "term_race",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "race number",
+      "race No.",
+      "raceId",
+      "race 45",
+      "race 872",
+      "2 races"
+    ],
+    "severity": "warning",
+    "scope": "Questions that identify a race by number, or that count races",
+    "confidence": "high",
+    "description": "A race number in a question denotes races.raceId, the surrogate identifier of a single Grand Prix event, and is unique per race. Its ordering does not follow chronology: the 2009 season occupies raceIds 1 to 17, 1950 occupies 833 to 839, 2010 sits at 337 to 355 and 2017 occupies 969 to 988. raceId must therefore be used only as an identifier and never as a time or round ordinal; races.round is the ordinal of a race within its season, and counting races for a driver or constructor means counting distinct raceId values.",
+    "evidence": [
+      "ev_raceid_scheme"
+    ]
+  },
+  {
+    "id": "constraint_constructor_name_unique",
+    "target": "term_constructor",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "constructor",
+      "team",
+      "constructor name",
+      "constructor points"
+    ],
+    "severity": "info",
+    "scope": "Selecting or grouping constructors",
+    "confidence": "medium",
+    "description": "constructors.name is declared unique and constructors.nationality is a demonym string. Constructor points and wins in constructorResults and constructorStandings are keyed by constructorId, so constructor questions must join on the identifier rather than on the name.",
+    "evidence": [
+      "ev_schema_tables",
+      "ev_nationality_values"
+    ]
+  },
+  {
+    "id": "constraint_no_gender_attribute",
+    "target": "term_driver",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "her",
+      "his",
+      "gender",
+      "female",
+      "male"
+    ],
+    "severity": "info",
+    "scope": "Questions whose wording assumes a driver's gender",
+    "confidence": "high",
+    "description": "The drivers table stores no gender attribute. Pronouns in a question, such as 'her nationality', cannot be grounded in this dataset and must not be turned into a filter or allowed to restrict the candidate set.",
+    "evidence": [
+      "ev_driver_identifiers"
+    ]
+  },
+  {
+    "id": "constraint_lap_source_choice",
+    "target": "term_race_lap_count",
+    "constraint_type": "scope",
+    "trigger_keywords": [
+      "lap number",
+      "laps",
+      "over 50 laps",
+      "number of laps",
+      "fastest lap number"
+    ],
+    "severity": "info",
+    "scope": "Any question that mentions laps",
+    "confidence": "medium",
+    "description": "Two different lap quantities exist. results.laps is the number of laps an entry completed in a race and is the right field for thresholds such as 'lap numbers over 50'. lapTimes.lap is the ordinal of a single timed lap and is the right field for locating the lap on which a fastest lap was set. lapTimes only covers races for which lap timing was recorded, 420369 rows running from lap 1 to lap 78.",
+    "evidence": [
+      "ev_lap_time_ms",
+      "ev_fastest_lap"
+    ]
+  }
+]

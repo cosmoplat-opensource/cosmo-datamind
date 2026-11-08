@@ -1,0 +1,61 @@
+{
+ "db_id": "codebase_community",
+ "questions": [
+  {
+   "question_id": 578,
+   "db_id": "codebase_community",
+   "question": "Which user made a post titled 'Understanding what Dassault iSight is doing?' and how much is the reputation of the user?",
+   "evidence": "\"Understanding what Dassault iSight is doing?\" is the Title of post; user refers to DisplayName;",
+   "SQL": "SELECT T1.DisplayName, T1.Reputation FROM users AS T1 INNER JOIN posts AS T2 ON T1.Id = T2.OwnerUserId WHERE T2.Title = 'Understanding what Dassault iSight is doing?'",
+   "difficulty": "moderate"
+  },
+  {
+   "question_id": 716,
+   "db_id": "codebase_community",
+   "question": "Among the comments with scores between 5 to 10, what is the percentage of the users with 0 up votes?",
+   "evidence": "percentage = DIVIDE(COUNT(UserId where UpVotes = 0 and Score BETWEEN 5 and 10))*100, (COUNT(UserId where Score BETWEEN 5 and 10));",
+   "SQL": "SELECT CAST(SUM(IIF(T1.UpVotes = 0, 1, 0)) AS REAL) * 100/ COUNT(T1.Id) AS per FROM users AS T1 INNER JOIN comments AS T2 ON T1.Id = T2.UserId WHERE T2.Score BETWEEN 5 AND 10",
+   "difficulty": "moderate"
+  },
+  {
+   "question_id": 629,
+   "db_id": "codebase_community",
+   "question": "Calculate the ratio of votes in 2010 and 2011.",
+   "evidence": "DIVIDE(COUNT(Id where YEAR(CreationDate) = 2010), COUNT(Id where YEAR(CreationDate) = 2011)) FROM votes;",
+   "SQL": "SELECT CAST(SUM(IIF(STRFTIME('%Y', CreationDate) = '2010', 1, 0)) AS REAL) / SUM(IIF(STRFTIME('%Y', CreationDate) = '2011', 1, 0)) FROM votes",
+   "difficulty": "simple"
+  },
+  {
+   "question_id": 687,
+   "db_id": "codebase_community",
+   "question": "How many comments were added to the post with the highest score?",
+   "evidence": "the highest score refers to MAX(Score);",
+   "SQL": "SELECT COUNT(T2.Id) FROM posts AS T1 INNER JOIN comments AS T2 ON T1.Id = T2.PostId GROUP BY T1.Id ORDER BY T1.Score DESC LIMIT 1",
+   "difficulty": "simple"
+  },
+  {
+   "question_id": 694,
+   "db_id": "codebase_community",
+   "question": "Provide the text of the latest 10 comments to the post with the title 'Analysing wind data with R' and the display name of the user who left it.",
+   "evidence": "the latest comment refers to MAX(CreationDate);",
+   "SQL": "SELECT T3.Text, T1.DisplayName FROM users AS T1 INNER JOIN posts AS T2 ON T1.Id = T2.OwnerUserId INNER JOIN comments AS T3 ON T2.Id = T3.PostId WHERE T2.Title = 'Analysing wind data with R' ORDER BY T1.CreationDate DESC LIMIT 10",
+   "difficulty": "moderate"
+  },
+  {
+   "question_id": 537,
+   "db_id": "codebase_community",
+   "question": "How many posts does the user csgillespie own?",
+   "evidence": "\"csgillespie\" is the DisplayName of user",
+   "SQL": "SELECT COUNT(T1.id) FROM posts AS T1 INNER JOIN users AS T2 ON T1.OwnerUserId = T2.Id WHERE T2.DisplayName = 'csgillespie'",
+   "difficulty": "simple"
+  },
+  {
+   "question_id": 640,
+   "db_id": "codebase_community",
+   "question": "Calculate the difference in view count from post posted by Mornington and view count from posts posted by Amos.",
+   "evidence": "calculation = SUBTRACT(SUM(ViewCount where DisplayName = 'Mornington'), SUM(ViewCount where DisplayName = 'Amos'));",
+   "SQL": "SELECT SUM(IIF(T1.DisplayName = 'Mornington', T3.ViewCount, 0)) - SUM(IIF(T1.DisplayName = 'Amos', T3.ViewCount, 0)) AS diff FROM users AS T1 INNER JOIN postHistory AS T2 ON T1.Id = T2.UserId INNER JOIN posts AS T3 ON T3.Id = T2.PostId",
+   "difficulty": "moderate"
+  }
+ ]
+}

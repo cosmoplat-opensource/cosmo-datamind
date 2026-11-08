@@ -1,0 +1,61 @@
+{
+ "db_id": "student_club",
+ "questions": [
+  {
+   "question_id": 1361,
+   "db_id": "student_club",
+   "question": "What is the total cost of the pizzas for all the events?",
+   "evidence": "total cost of the pizzas refers to SUM(cost) where expense_description = 'Pizza'",
+   "SQL": "SELECT SUM(cost) FROM expense WHERE expense_description = 'Pizza'",
+   "difficulty": "simple"
+  },
+  {
+   "question_id": 1410,
+   "db_id": "student_club",
+   "question": "List out the full name and total cost that member id \"rec4BLdZHS2Blfp4v\" incurred?",
+   "evidence": "full name refers to first_name, last name",
+   "SQL": "SELECT T1.first_name, T1.last_name, SUM(T2.cost) FROM member AS T1 INNER JOIN expense AS T2 ON T1.member_id = T2.link_to_member WHERE T1.member_id = 'rec4BLdZHS2Blfp4v'",
+   "difficulty": "simple"
+  },
+  {
+   "question_id": 1392,
+   "db_id": "student_club",
+   "question": "Indicate the top source of funds received in September 2019 based on their amount.",
+   "evidence": "top source funds refers to MAX(source); September 2019 means date_received BETWEEN '2019-09-01' and '2019-09-30'",
+   "SQL": "SELECT source FROM income WHERE date_received BETWEEN '2019-09-01' and '2019-09-30' ORDER BY source DESC LIMIT 1",
+   "difficulty": "simple"
+  },
+  {
+   "question_id": 1387,
+   "db_id": "student_club",
+   "question": "Which student has been entrusted to manage the budget for the Yearly Kickoff?",
+   "evidence": "name of students means the full name; full name refers to first_name, last_name;'Yearly Kickoff' is an event name;",
+   "SQL": "SELECT T4.first_name, T4.last_name FROM event AS T1 INNER JOIN budget AS T2 ON T1.event_id = T2.link_to_event INNER JOIN expense AS T3 ON T2.budget_id = T3.link_to_budget INNER JOIN member AS T4 ON T3.link_to_member = T4.member_id WHERE T1.event_name = 'Yearly Kickoff'",
+   "difficulty": "moderate"
+  },
+  {
+   "question_id": 1317,
+   "db_id": "student_club",
+   "question": "Among the students from the Student_Club who attended the event \"Women's Soccer\", how many of them want a T-shirt that's in medium size?",
+   "evidence": "Women's Soccer is an event name; T-shirt that is in medium size refers to t_shirt_size = 'Medium'",
+   "SQL": "SELECT COUNT(T1.event_id) FROM event AS T1 INNER JOIN attendance AS T2 ON T1.event_id = T2.link_to_event INNER JOIN member AS T3 ON T2.link_to_member = T3.member_id WHERE T1.event_name = 'Women''s Soccer' AND T3.t_shirt_size = 'Medium'",
+   "difficulty": "moderate"
+  },
+  {
+   "question_id": 1338,
+   "db_id": "student_club",
+   "question": "Was each expense in October Meeting on October 8, 2019 approved?",
+   "evidence": "event_name = 'October Meeting' where event_date = '2019-10-08'; approved = True means expenses was approved; approved = False means expenses was not approved",
+   "SQL": "SELECT T3.approved FROM event AS T1 INNER JOIN budget AS T2 ON T1.event_id = T2.link_to_event INNER JOIN expense AS T3 ON T2.budget_id = T3.link_to_budget WHERE T1.event_name = 'October Meeting' AND T1.event_date LIKE '2019-10-08%'",
+   "difficulty": "moderate"
+  },
+  {
+   "question_id": 1394,
+   "db_id": "student_club",
+   "question": "How many members of the Student_Club have major in 'Physics Teaching'?",
+   "evidence": "'Physics Teaching' is the major_name;",
+   "SQL": "SELECT COUNT(T2.member_id) FROM major AS T1 INNER JOIN member AS T2 ON T1.major_id = T2.link_to_major WHERE T1.major_name = 'Physics Teaching'",
+   "difficulty": "simple"
+  }
+ ]
+}

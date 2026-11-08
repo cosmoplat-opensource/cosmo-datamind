@@ -1,0 +1,170 @@
+[
+  {
+    "id": "ev_schema_tab01",
+    "source": "california_schools sqlite (tab01)",
+    "query": "PRAGMA table_info(tab01); SELECT * FROM tab01 LIMIT 2;",
+    "result": "tab01 has 9,986 rows and 29 columns fld001-fld029; one row per CDS code for academic year 2014-2015. Sample: fld001=01100170109835, fld006=Alameda, fld007=Alameda County Office of Education, fld008=FAME Public Charter, fld019=1087, fld020=565, fld021=0.5198, fld022=715, fld023=0.6578, fld024=1070.",
+    "validation_method": "read-only schema and representative-row inspection",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "ev_schema_tab02",
+    "source": "california_schools sqlite (tab02)",
+    "query": "PRAGMA table_info(tab02); SELECT * FROM tab02 LIMIT 3;",
+    "result": "tab02 has 2,269 rows and 11 columns fld030-fld040. Sample: fld030=1100170109835, fld031=S, fld032=FAME Public Charter, fld033=Alameda County Office of Education, fld034=Alameda, fld035=62, fld036=17, fld037=503, fld038=546, fld039=505, fld040=9.",
+    "validation_method": "read-only schema and representative-row inspection",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "ev_schema_tab03",
+    "source": "california_schools sqlite (tab03)",
+    "query": "PRAGMA table_info(tab03); SELECT * FROM tab03 LIMIT 2;",
+    "result": "tab03 has 17,686 rows and 49 columns: fld001 plus fld041-fld088. Sample: fld001=01100170109835, fld043=Closed, fld044=Alameda, fld045=Alameda County Office of Education, fld046=FAME Public Charter, fld047=39899 Balentine Drive, Suite 335, fld052=39899 Balentine Drive, Suite 335, fld057=NULL, fld060=2005-08-29, fld061=2015-07-31, fld062=1, fld075=P, fld088=2015-09-01.",
+    "validation_method": "read-only schema and representative-row inspection",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "ev_formula_percent",
+    "source": "california_schools sqlite (tab01)",
+    "query": "SELECT COUNT(*) FROM tab01 WHERE ABS(fld021 - fld020*1.0/fld019) > 0.0005; SELECT COUNT(*) FROM tab01 WHERE ABS(fld023 - fld022*1.0/fld019) > 0.0005; SELECT COUNT(*) FROM tab01 WHERE ABS(fld026 - fld025*1.0/fld024) > 0.0005; SELECT COUNT(*) FROM tab01 WHERE ABS(fld028 - fld027*1.0/fld024) > 0.0005; SELECT COUNT(*) FROM tab01 WHERE fld022 < fld020; SELECT COUNT(*) FROM tab01 WHERE fld019 < fld020;",
+    "result": "0 violations for all four percentage identities. fld021 = fld020/fld019, fld023 = fld022/fld019, fld026 = fld025/fld024, fld028 = fld027/fld024. Percent columns are fractions in [0,1] with min 0.00176 and max 1.0. fld022 >= fld020 and fld019 >= fld020 for every row.",
+    "validation_method": "arithmetic recomputation over all rows",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "ev_cds_join",
+    "source": "california_schools sqlite (tab02, tab03)",
+    "query": "SELECT LENGTH(fld030), COUNT(*) FROM tab02 GROUP BY 1; SELECT COUNT(*) FROM tab02 t2 JOIN tab03 t3 ON t2.fld030=t3.fld001; SELECT COUNT(*) FROM tab02 t2 JOIN tab03 t3 ON t2.fld030=LTRIM(t3.fld001,'0');",
+    "result": "tab02.fld030 lengths: 13 characters for 211 rows and 14 characters for 2,058 rows. Exact join to tab03.fld001 matches 2,058 rows; leading-zero-normalized join matches all 2,269 rows. tab01.fld001 and tab03.fld001 are always 14 characters.",
+    "validation_method": "join-cardinality comparison",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "ev_thematic_join",
+    "source": "california_schools sqlite (tab01, tab03)",
+    "query": "SELECT COUNT(*) FROM tab01 t1 JOIN tab03 t3 ON t1.fld001=t3.fld001; SELECT COUNT(*) FROM tab01; SELECT COUNT(*) FROM tab03;",
+    "result": "All 9,986 tab01 rows match tab03 exactly on the 14-character CDS code. tab01 has one row per school for 2014-2015; tab03 has one row per school directory record (17,686) including Closed, Merged and Pending.",
+    "validation_method": "referential-integrity check",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "ev_district_type",
+    "source": "california_schools sqlite (tab03, tab01)",
+    "query": "SELECT fld065, fld066, COUNT(*) FROM tab03 GROUP BY 1,2 ORDER BY 1; SELECT fld009, COUNT(*) FROM tab01 GROUP BY 1;",
+    "result": "12 district-type codes in tab03: 00 County Office of Education (COE) 1,703; 02 State Board of Education 69; 03 Statewide Benefit Charter 11; 31 State Special Schools 6; 34 Non-School Locations 49; 42 Joint Powers Authority (JPA) 2; 52 Elementary School District 4,378; 54 Unified School District 10,190; 56 High School District 1,079; 58 Community College District 33; 98 Regional Occupation Center/Program 156; 99 Administration Only 10. Code-label pairs are one-to-one. tab01.fld009 has 8 distinct text labels.",
+    "validation_method": "grouped value distribution",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "ev_school_type",
+    "source": "california_schools sqlite (tab03)",
+    "query": "SELECT fld067, fld068, COUNT(*) FROM tab03 GROUP BY 1,2 ORDER BY 3 DESC;",
+    "result": "20 school-type codes. Largest: 60 Elementary Schools (Public) 7,591; 66 High Schools (Public) 1,776; 62 Intermediate/Middle Schools (Public) 1,652; 68 Continuation High Schools 754; 09 Special Education Schools (Public) 750; 65 K-12 Schools (Public) 438; NULL 1,369. Code-label pairs are one-to-one. fld067 is the only categorical column containing the value 66.",
+    "validation_method": "grouped value distribution",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "ev_virtual",
+    "source": "california_schools sqlite (tab03)",
+    "query": "SELECT fld075, COUNT(*) FROM tab03 GROUP BY 1 ORDER BY 2 DESC; SELECT fld075, fld043, COUNT(*) FROM tab03 GROUP BY 1,2;",
+    "result": "N 9,703; P 1,046; F 69; NULL 6,868. F records: 60 Active, 9 Closed. All 1,448 Merged records have NULL virtual status; Closed records also include 4,249 NULL values.",
+    "validation_method": "value distribution and cross-tabulation",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "ev_charter",
+    "source": "california_schools sqlite (tab01, tab03)",
+    "query": "SELECT fld062, COUNT(*) FROM tab03 GROUP BY 1; SELECT fld013, COUNT(*) FROM tab01 GROUP BY 1;",
+    "result": "tab03: 1 = 1,729; 0 = 14,588; NULL = 1,369. tab01: 1 = 1,167; 0 = 8,774; NULL = 45.",
+    "validation_method": "value distribution",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "ev_status",
+    "source": "california_schools sqlite (tab03)",
+    "query": "SELECT fld043, COUNT(*) FROM tab03 GROUP BY 1; SELECT fld043, fld065, COUNT(*), SUM(fld046 IS NULL), SUM(fld062 IS NULL), SUM(fld060 IS NULL) FROM tab03 GROUP BY 1,2 ORDER BY 3 DESC;",
+    "result": "Status: Active 11,708; Closed 4,518; Merged 1,448; Pending 12. Records with NULL school name: 1,369 in total (1,095 Active, 121 Closed, 151 Merged, 2 Pending); all have NULL school type, charter flag and open date. The largest administrative groups are 525 Active Elementary School District rows and 344 Active Unified School District rows.",
+    "validation_method": "grouped value distribution and null analysis",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "ev_sat_rtype",
+    "source": "california_schools sqlite (tab02)",
+    "query": "SELECT fld031, COUNT(*), SUM(fld032 IS NULL), SUM(fld037 IS NULL), MIN(fld035), MAX(fld035), MIN(fld036), MAX(fld036) FROM tab02 GROUP BY 1;",
+    "result": "S: 1,749 records, 0 NULL school names, 498 NULL scores. D: 520 records, 520 NULL school names, 98 NULL scores. fld035 ranges 0-1,587 for S and 5-43,324 for D; fld036 ranges 0-748 for S and 0-24,305 for D. In total 1,673 records have score values and 596 do not.",
+    "validation_method": "grouped null and range analysis",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "ev_sat_columns",
+    "source": "california_schools sqlite (tab02)",
+    "query": "SELECT MIN(fld037),MAX(fld037),MIN(fld038),MAX(fld038),MIN(fld039),MAX(fld039),COUNT(fld037),COUNT(fld038),COUNT(fld039) FROM tab02;",
+    "result": "fld037 308-653; fld038 289-699; fld039 312-671; each populated for 1,673 records. These are the only three score-valued columns in tab02 and they carry no in-database label; the reading/math/writing assignment follows the canonical CDE SAT column order used by this dataset.",
+    "validation_method": "range and column-count comparison; assignment is an inference from canonical column order",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "ev_address",
+    "source": "california_schools sqlite (tab03)",
+    "query": "SELECT COUNT(*), SUM(fld047 IS NOT NULL AND fld052 IS NOT NULL), SUM(fld047 <> fld052), SUM(fld047 IS NULL AND fld052 IS NOT NULL), SUM(fld047 IS NOT NULL AND fld052 IS NULL) FROM tab03;",
+    "result": "17,686 total; 17,392 have both a physical and a mailing street; 2,989 differ; 2 have mailing only; 0 have physical only. fld047 and fld052 are the full forms; fld048 and fld053 are the abbreviated forms.",
+    "validation_method": "null and inequality counts",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "ev_county_city",
+    "source": "california_schools sqlite (tab03)",
+    "query": "SELECT COUNT(DISTINCT fld044), COUNT(DISTINCT fld049), SUM(fld044='Riverside'), SUM(fld049='Riverside') FROM tab03;",
+    "result": "58 distinct counties and 1,165 distinct cities. Riverside County: 743 school records; Riverside city: 122 school records.",
+    "validation_method": "distinct counts and place-name comparison",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "ev_year",
+    "source": "california_schools sqlite (tab01)",
+    "query": "SELECT fld002, COUNT(*) FROM tab01 GROUP BY 1;",
+    "result": "2014-2015: 9,986 rows; no other academic year is present.",
+    "validation_method": "value distribution",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "ev_funding",
+    "source": "california_schools sqlite (tab01, tab03)",
+    "query": "SELECT COUNT(fld064), COUNT(fld015) FROM tab03, tab01 LIMIT 1; SELECT COUNT(*), SUM(t1.fld015 = t3.fld064) FROM tab01 t1 JOIN tab03 t3 ON t1.fld001=t3.fld001 WHERE t1.fld015 IS NOT NULL AND t3.fld064 IS NOT NULL;",
+    "result": "fld064 non-null for 1,642 tab03 records; fld015 non-null for 1,167 tab01 records. For the 1,167 records where both are non-null, 1,148 agree. Values: Directly funded, Locally funded, Not in CS funding model.",
+    "validation_method": "coverage and cross-source agreement",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "ev_enrollment",
+    "source": "california_schools sqlite (tab01)",
+    "query": "SELECT SUM(ABS(fld019-fld024)>30), SUM(fld019>fld024), SUM(fld019<fld024) FROM tab01;",
+    "result": "1,239 rows have an absolute difference greater than 30; 6,460 rows have K-12 enrollment greater than ages 5-17 enrollment; 0 rows have K-12 enrollment less than ages 5-17 enrollment.",
+    "validation_method": "computed comparison over all rows",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "ev_phone",
+    "source": "california_schools sqlite (tab03)",
+    "query": "SELECT COUNT(*), COUNT(fld057) FROM tab03;",
+    "result": "17,686 total records; 11,717 have a non-null fld057 telephone number.",
+    "validation_method": "null count",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "ev_dates",
+    "source": "california_schools sqlite (tab03)",
+    "query": "SELECT SUM(fld060 IS NULL), SUM(fld061 IS NULL), SUM(fld060 > '1991-12-31'), SUM(fld061 < '2000-01-01') FROM tab03;",
+    "result": "Open date NULL for 1,369 records; close date NULL for 11,992 records; 5,083 records opened after 1991; 3,600 records closed before 2000.",
+    "validation_method": "null counts and date-range counts",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "ev_district_ambiguity",
+    "source": "california_schools sqlite (tab03)",
+    "query": "SELECT COUNT(DISTINCT fld045) FROM tab03; SELECT fld045, COUNT(DISTINCT fld044) FROM tab03 GROUP BY fld045 HAVING COUNT(DISTINCT fld044) > 1;",
+    "result": "1,411 distinct district names; 15 names appear under more than one county, including Pioneer Union Elementary (Butte and El Dorado), Central Union High (Fresno and Imperial), Pacific Union Elementary (Fresno and Humboldt), and Lake Elementary (Glenn and another county).",
+    "validation_method": "distinct-count and multi-county group analysis",
+    "timestamp": "2026-11-06"
+  }
+]

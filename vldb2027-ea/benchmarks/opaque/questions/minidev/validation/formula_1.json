@@ -1,0 +1,95 @@
+{
+ "db_id": "formula_1",
+ "questions": [
+  {
+   "question_id": 960,
+   "db_id": "formula_1",
+   "question": "What is the average of fastest lap speed in the 2009 Spanish Grand Prix race?",
+   "evidence": "Spanish Grand Prix is the name of race refers to fld003 = 'Spanish Grand Prix'; average fastest lap speed refers to avg(fld049);",
+   "SQL": "SELECT AVG(T1.fld049) FROM tab13 AS T1 INNER JOIN tab05 AS T2 ON T1.fld021 = T2.fld021 WHERE T2.fld020 = 2009 AND T2.fld003 = 'Spanish Grand Prix'",
+   "difficulty": "moderate",
+   "SQL_original": "SELECT AVG(T1.fastestLapSpeed) FROM results AS T1 INNER JOIN races AS T2 on T1.raceId = T2.raceId WHERE T2.year = 2009 AND T2.name = 'Spanish Grand Prix'"
+  },
+  {
+   "question_id": 928,
+   "db_id": "formula_1",
+   "question": "Which driver ranked the first in the Canadian Grand Prix in 2007? Please give his reference name.",
+   "evidence": "reference name refers to fld014; Canadian Grand Prix refers to tab05.fld003 = 'Canadian Grand Prix';",
+   "SQL": "SELECT T3.fld017, T3.fld018, T3.fld014 FROM tab05 AS T1 INNER JOIN tab13 AS T2 ON T2.fld021 = T1.fld021 INNER JOIN tab03 AS T3 ON T3.fld013 = T2.fld013 WHERE T1.fld003 = 'Canadian Grand Prix' AND T2.fld047 = 1 AND T1.fld020 = 2007",
+   "difficulty": "moderate",
+   "SQL_original": "SELECT T3.forename, T3.surname, T3.driverRef FROM races AS T1 INNER JOIN results AS T2 ON T2.raceId = T1.raceId INNER JOIN drivers AS T3 ON T3.driverId = T2.driverId WHERE T1.name = 'Canadian Grand Prix' AND T2.rank = 1 AND T1.year = 2007"
+  },
+  {
+   "question_id": 861,
+   "db_id": "formula_1",
+   "question": "What is his number of the driver who finished 0:01:54 in the Q3 of qualifying race No.903?",
+   "evidence": "race number refers to fld021; finished 0:0M:SS in the fld040 refers to fld040 LIKE 'M:SS%'",
+   "SQL": "SELECT T2.fld015 FROM tab11 AS T1 INNER JOIN tab03 AS T2 ON T2.fld013 = T1.fld013 WHERE T1.fld021 = 903 AND T1.fld040 LIKE '1:54%'",
+   "difficulty": "simple",
+   "SQL_original": "SELECT T2.number FROM qualifying AS T1 INNER JOIN drivers AS T2 ON T2.driverId = T1.driverId WHERE T1.raceId = 903 AND T1.q3 LIKE '1:54%'"
+  },
+  {
+   "question_id": 868,
+   "db_id": "formula_1",
+   "question": "Where is Malaysian Grand Prix held? Give the location coordinates.",
+   "evidence": "location coordinates refers to (fld006, fld007); Malaysian Grand Prix refers to tab05.fld003 = 'Malaysian Grand Prix'",
+   "SQL": "SELECT DISTINCT T1.fld006, T1.fld007 FROM tab01 AS T1 INNER JOIN tab05 AS T2 ON T2.fld001 = T1.fld001 WHERE T2.fld003 = 'Malaysian Grand Prix'",
+   "difficulty": "simple",
+   "SQL_original": "SELECT DISTINCT T1.lat, T1.lng FROM circuits AS T1 INNER JOIN races AS T2 ON T2.circuitID = T1.circuitId WHERE T2.name = 'Malaysian Grand Prix'"
+  },
+  {
+   "question_id": 898,
+   "db_id": "formula_1",
+   "question": "How old is the youngest Japanese driver? What is his name?",
+   "evidence": "date of birth refers to tab03.fld019; The larger the birthday value, the younger the person is, and vice versa; Japanese refers to fld012 = 'Japanese'; age = YEAR(CURRENT_TIMESTAMP) - YEAR(fld019);",
+   "SQL": "SELECT STRFTIME('%Y', CURRENT_TIMESTAMP) - STRFTIME('%Y', fld019), fld017, fld018 FROM tab03 WHERE fld012 = 'Japanese' ORDER BY fld019 DESC LIMIT 1",
+   "difficulty": "simple",
+   "SQL_original": "SELECT STRFTIME('%Y', CURRENT_TIMESTAMP) - STRFTIME('%Y', dob), forename , surname FROM drivers WHERE nationality = 'Japanese' ORDER BY dob DESC LIMIT 1"
+  },
+  {
+   "question_id": 981,
+   "db_id": "formula_1",
+   "question": "On what year did the youngest driver had his first qualifying race? Also state the name, date and time of the race.",
+   "evidence": "date of birth refers to tab03.fld019; The larger the birthday value, the younger the person is, and vice versa; first qualifying race refers to MIN(tab05.fld023);",
+   "SQL": "SELECT T3.fld020, T3.fld003, T3.fld023, T3.fld024 FROM tab11 AS T1 INNER JOIN tab03 AS T2 ON T1.fld013 = T2.fld013 INNER JOIN tab05 AS T3 ON T1.fld021 = T3.fld021 WHERE T1.fld013 = (SELECT fld013 FROM tab03 ORDER BY fld019 DESC LIMIT 1) ORDER BY T3.fld023 ASC LIMIT 1",
+   "difficulty": "moderate",
+   "SQL_original": "SELECT T3.year, T3.name, T3.date, T3.time FROM qualifying AS T1 INNER JOIN drivers AS T2 on T1.driverId = T2.driverId INNER JOIN races AS T3 on T1.raceId = T3.raceId WHERE T1.driverId = ( SELECT driverId FROM drivers ORDER BY dob DESC LIMIT 1 ) ORDER BY T3.date ASC LIMIT 1"
+  },
+  {
+   "question_id": 915,
+   "db_id": "formula_1",
+   "question": "Which country is the oldest driver from?",
+   "evidence": "date of birth refers to tab03.fld019; The larger the birthday value, the younger the person is, and vice versa;",
+   "SQL": "SELECT fld012 FROM tab03 WHERE NOT fld019 IS NULL ORDER BY fld019 ASC LIMIT 1",
+   "difficulty": "simple",
+   "SQL_original": "SELECT nationality FROM drivers WHERE dob IS NOT NULL ORDER BY dob ASC LIMIT 1"
+  },
+  {
+   "question_id": 875,
+   "db_id": "formula_1",
+   "question": "Show me the season page of year when the race No. 901 took place.",
+   "evidence": "the season page refers to url; race number refers to fld021;",
+   "SQL": "SELECT T2.fld009 FROM tab05 AS T1 INNER JOIN tab04 AS T2 ON T2.fld020 = T1.fld020 WHERE T1.fld021 = 901",
+   "difficulty": "simple",
+   "SQL_original": "SELECT T2.url FROM races AS T1 INNER JOIN seasons AS T2 ON T2.year = T1.year WHERE T1.raceId = 901"
+  },
+  {
+   "question_id": 894,
+   "db_id": "formula_1",
+   "question": "What is the best lap time recorded? List the driver and race with such recorded lap time.",
+   "evidence": "the best lap time refers to min(fld034); List the driver refers to tab03.fld017 and tab03.fld018; List the race refers to tab05.fld003",
+   "SQL": "SELECT T2.fld034, T1.fld017, T1.fld018, T3.fld003 FROM tab03 AS T1 INNER JOIN tab09 AS T2 ON T1.fld013 = T2.fld013 INNER JOIN tab05 AS T3 ON T2.fld021 = T3.fld021 ORDER BY T2.fld034 ASC LIMIT 1",
+   "difficulty": "moderate",
+   "SQL_original": "SELECT T2.milliseconds, T1.forename, T1.surname, T3.name FROM drivers AS T1 INNER JOIN lapTimes AS T2 ON T1.driverId = T2.driverId INNER JOIN races AS T3 ON T2.raceId = T3.raceId ORDER BY T2.milliseconds ASC LIMIT 1"
+  },
+  {
+   "question_id": 933,
+   "db_id": "formula_1",
+   "question": "What was Lewis Hamilton's final rank in the 2008 Chinese Grand Prix?",
+   "evidence": "Lewis Hamilton refers to the full name of the driver; Full name of the driver refers to tab03.fld017 and tab03.fld018; final rank refers to fld044; Chinese Grand Prix refers to tab05.fld003 = 'Chinese Grand Prix';",
+   "SQL": "SELECT T2.fld044 FROM tab05 AS T1 INNER JOIN tab13 AS T2 ON T2.fld021 = T1.fld021 INNER JOIN tab03 AS T3 ON T3.fld013 = T2.fld013 WHERE T3.fld017 = 'Lewis' AND T3.fld018 = 'Hamilton' AND T1.fld003 = 'Chinese Grand Prix' AND T1.fld020 = 2008",
+   "difficulty": "moderate",
+   "SQL_original": "SELECT T2.positionOrder FROM races AS T1 INNER JOIN results AS T2 ON T2.raceId = T1.raceId INNER JOIN drivers AS T3 ON T3.driverId = T2.driverId WHERE T3.forename = 'Lewis' AND T3.surname = 'Hamilton' AND T1.name = 'Chinese Grand Prix' AND T1.year = 2008"
+  }
+ ]
+}

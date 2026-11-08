@@ -1,0 +1,178 @@
+[
+  {
+    "id": "ev_tab01_structure",
+    "source": "card_games.sqlite / tab01",
+    "query": "SELECT count(*) FROM tab01; PRAGMA table_info('tab01');",
+    "result": "56822 rows, 74 columns. fld001 is an integer primary key with 56822 distinct non-null values. fld072 is a unique uuid with 56822 distinct values.",
+    "validation_method": "schema inspection and distinct-count verification",
+    "timestamp": "2026-11-06T00:00:00Z"
+  },
+  {
+    "id": "ev_column_fld049_dual",
+    "source": "card_games.sqlite / tab01, tab04",
+    "query": "SELECT count(distinct fld049) FROM tab01; SELECT fld049 FROM tab01 WHERE fld049 IN ('Forest','Swamp','Ancestor''s Chosen'); SELECT count(distinct fld049) FROM tab04; SELECT fld081,fld049 FROM tab04 WHERE fld049 IN ('Eighth Edition','Coldsnap','Hour of Devastation');",
+    "result": "tab01.fld049 has 21738 distinct values that are card names ('Forest', 'Swamp', 'Ancestor's Chosen'). tab04.fld049 has 551 distinct values that are set names ('Eighth Edition' = 8ED, 'Coldsnap' = CSP, 'Hour of Devastation' = HOU). Same column identifier, different concept per table.",
+    "validation_method": "distinct value and content inspection",
+    "timestamp": "2026-11-06T00:00:00Z"
+  },
+  {
+    "id": "ev_border_color_values",
+    "source": "card_games.sqlite / tab01",
+    "query": "SELECT fld005, count(*) FROM tab01 GROUP BY fld005;",
+    "result": "black 49729, white 5017, gold 1244, silver 591, borderless 241",
+    "validation_method": "enumeration of distinct values",
+    "timestamp": "2026-11-06T00:00:00Z"
+  },
+  {
+    "id": "ev_color_values",
+    "source": "card_games.sqlite / tab01",
+    "query": "SELECT fld010, count(*) FROM tab01 GROUP BY fld010; SELECT sum(CASE WHEN fld010 IS NULL THEN 1 ELSE 0 END) FROM tab01;",
+    "result": "39 distinct values using letters G, B, R, U, W and comma combinations such as 'G,W'. 12540 rows are null. A separate column fld008 holds colour identity with different values.",
+    "validation_method": "distinct value inspection",
+    "timestamp": "2026-11-06T00:00:00Z"
+  },
+  {
+    "id": "ev_artist_values",
+    "source": "card_games.sqlite / tab01",
+    "query": "SELECT count(distinct fld002) FROM tab01; SELECT fld002, count(*) FROM tab01 GROUP BY fld002 ORDER BY 2 DESC LIMIT 6;",
+    "result": "991 distinct artist names; top values John Avon, Kev Walker, Dan Frazier, Mark Tedin, Greg Staples, Mark Poole; 3 nulls.",
+    "validation_method": "distinct value inspection",
+    "timestamp": "2026-11-06T00:00:00Z"
+  },
+  {
+    "id": "ev_power_values",
+    "source": "card_games.sqlite / tab01",
+    "query": "SELECT fld055, count(*) FROM tab01 GROUP BY fld055 ORDER BY 2 DESC;",
+    "result": "30624 rows have no power. Numeric values 0-16 dominate. Special markers: '*' 429, '1+*' 16, '2+*' 8, '3+*' 1, '∞' 2, '?' 2, '-1' 4, '3.5' 4, '2.5' 3, '1.5' 2, '0.5' 1, '99' 1, '*²' 1.",
+    "validation_method": "full enumeration of distinct values",
+    "timestamp": "2026-11-06T00:00:00Z"
+  },
+  {
+    "id": "ev_frame_version_values",
+    "source": "card_games.sqlite / tab01",
+    "query": "SELECT fld019, count(*) FROM tab01 GROUP BY fld019;",
+    "result": "5 distinct values: 1993, 1997, 2003, 2015, future",
+    "validation_method": "enumeration of distinct values",
+    "timestamp": "2026-11-06T00:00:00Z"
+  },
+  {
+    "id": "ev_promo_flag",
+    "source": "card_games.sqlite / tab01",
+    "query": "SELECT sum(fld029) FROM tab01; SELECT fld063, count(*) FROM tab01 WHERE fld029=1 GROUP BY fld063 ORDER BY 2 DESC LIMIT 10;",
+    "result": "5588 printings flagged. Top sets: PRM 1362, PKHM 201, PZNR 200, PWAR 175, PELD 150, PM20 143 — all promo set codes.",
+    "validation_method": "flag count and concentration analysis",
+    "timestamp": "2026-11-06T00:00:00Z"
+  },
+  {
+    "id": "ev_story_spotlight_flag",
+    "source": "card_games.sqlite / tab01",
+    "query": "SELECT sum(fld033) FROM tab01; SELECT fld063, count(*) FROM tab01 WHERE fld033=1 GROUP BY fld063 ORDER BY 2 DESC;",
+    "result": "104 printings flagged, spread over WAR 27, KHM 14, ZNR 6, XLN 6, KLD 5, IKO 5, HOU 5, AKH 5, AER 5, THB 4 and others.",
+    "validation_method": "flag count and per-set distribution",
+    "timestamp": "2026-11-06T00:00:00Z"
+  },
+  {
+    "id": "ev_textless_flag",
+    "source": "card_games.sqlite / tab01",
+    "query": "SELECT fld063, count(*), sum(fld034), sum(fld052 IS NOT NULL) FROM tab01 WHERE fld063 IN ('P05','P06','P07','P08','P09','P10','P11') GROUP BY fld063; SELECT fld063, count(*) FROM tab01 WHERE fld034=1 GROUP BY fld063 ORDER BY 2 DESC;",
+    "result": "115 printings flagged. Magic Player Rewards textless promo sets are almost entirely flagged (P05 5/6, P06 6/7, P07 7/7, P08 7/7, P09 9/9, P10 9/9, P11 5/5). Others: PRM 48, PLIST 7, UST 5, UND 5. Flagged printings have null original text while retaining rules text.",
+    "validation_method": "per-set flag completeness and text-null cross-check",
+    "timestamp": "2026-11-06T00:00:00Z"
+  },
+  {
+    "id": "ev_foil_identifiers",
+    "source": "card_games.sqlite / tab01",
+    "query": "SELECT fld023 AS hasFoil, fld024 AS hasNonFoil, count(*), count(fld006), count(fld007) FROM tab01 GROUP BY fld023, fld024;",
+    "result": "(0,1): 22204 rows, 0 foil ids, 17764 non-foil ids; (1,0): 5409 rows, 3837 foil ids, 0 non-foil ids; (1,1): 29209 rows, 25075 foil ids, 25436 non-foil ids.",
+    "validation_method": "cross-tabulation against the foil and non-foil availability flags",
+    "timestamp": "2026-11-06T00:00:00Z"
+  },
+  {
+    "id": "ev_set_table",
+    "source": "card_games.sqlite / tab04",
+    "query": "SELECT count(*) FROM tab04; SELECT min(fld078), max(fld078) FROM tab04; SELECT count(*) FROM tab04 WHERE fld078 < 100; SELECT fld070, count(*) FROM tab04 GROUP BY fld070;",
+    "result": "551 sets. Set code fld081 is unique for all 551 rows. Base set size fld078 ranges upward from 0 with 166 distinct values; 356 sets have a base set number below 100. Set types include promo 234, expansion 87, memorabilia 34, duel_deck 27.",
+    "validation_method": "row count, uniqueness and range checks",
+    "timestamp": "2026-11-06T00:00:00Z"
+  },
+  {
+    "id": "ev_foreign_only_sets",
+    "source": "card_games.sqlite / tab04",
+    "query": "SELECT fld081, fld049 FROM tab04 WHERE fld083 = 1;",
+    "result": "5 sets flagged: 4BB (Fourth Edition Foreign Black Border), FBB (Foreign Black Border), PHJ (Hobby Japan Promos), PJJT (Japan Junior Tournament), PMPS (Magic Premiere Shop 2005).",
+    "validation_method": "flag enumeration with set identification",
+    "timestamp": "2026-11-06T00:00:00Z"
+  },
+  {
+    "id": "ev_set_translations",
+    "source": "card_games.sqlite / tab05",
+    "query": "SELECT count(*) FROM tab05; SELECT fld075, count(*) FROM tab05 GROUP BY fld075; SELECT count(*) FROM tab05 WHERE fld094 IS NULL; SELECT fld075,fld094 FROM tab05 WHERE fld063='8ED' AND fld075='Chinese Simplified';",
+    "result": "1210 rows = 121 sets x 10 languages. 231 rows have a null translated name. Eighth Edition in Chinese Simplified is 核心系列第八版. All fld063 values exist in tab04.fld081.",
+    "validation_method": "row counts, language completeness and referential check",
+    "timestamp": "2026-11-06T00:00:00Z"
+  },
+  {
+    "id": "ev_card_translations",
+    "source": "card_games.sqlite / tab02",
+    "query": "SELECT count(*) FROM tab02; SELECT fld075, count(*) FROM tab02 GROUP BY fld075; SELECT count(distinct fld072) FROM tab02; SELECT count(*) FROM tab02 WHERE fld072 NOT IN (SELECT fld072 FROM tab01);",
+    "result": "229186 rows over 34056 distinct cards. 16 languages, no English: Japanese 31226, French 29301, German 28891, Italian 28698, Spanish 28639, Portuguese (Brazil) 25641, Chinese Simplified 20106, Russian 15878, Chinese Traditional 11106, Korean 9692, plus 6 single-record languages. 16 orphan card references.",
+    "validation_method": "row, distinct and referential checks",
+    "timestamp": "2026-11-06T00:00:00Z"
+  },
+  {
+    "id": "ev_legality_table",
+    "source": "card_games.sqlite / tab03",
+    "query": "SELECT count(*) FROM tab03; SELECT fld076, count(*) FROM tab03 GROUP BY fld076; SELECT fld077, count(*) FROM tab03 GROUP BY fld077; SELECT count(distinct fld072) FROM tab03;",
+    "result": "427907 records over 55608 distinct cards. 15 formats; the largest are vintage, legacy and commander at 55576 each. 3 statuses: Legal, Banned, Restricted. 72 orphan card references. Commander Legal records: 55244.",
+    "validation_method": "row, distinct and enum checks",
+    "timestamp": "2026-11-06T00:00:00Z"
+  },
+  {
+    "id": "ev_rulings_table",
+    "source": "card_games.sqlite / tab06",
+    "query": "SELECT count(*) FROM tab06; SELECT count(distinct fld072) FROM tab06; SELECT fld072, count(*) FROM tab06 GROUP BY fld072 ORDER BY 2 DESC LIMIT 3;",
+    "result": "87769 ruling records over 26141 distinct cards; maximum 27 rulings on a single card. Zero orphan card references.",
+    "validation_method": "row count, distinct-card count and maximum-per-card check",
+    "timestamp": "2026-11-06T00:00:00Z"
+  },
+  {
+    "id": "ev_type_columns",
+    "source": "card_games.sqlite / tab01",
+    "query": "SELECT count(distinct fld053),count(distinct fld065),count(distinct fld066),count(distinct fld070),count(distinct fld071) FROM tab01; SELECT fld066,count(*) FROM tab01 GROUP BY fld066; SELECT count(*) FROM tab01 WHERE fld053='Artifact'; SELECT count(*) FROM tab01 WHERE fld071='Artifact'; SELECT count(*) FROM tab01 WHERE fld070='Artifact';",
+    "result": "fld053 2992 distinct (original type line, hyphen wording, 14766 null); fld065 1505 distinct (subtype lists such as 'Human,Cleric', 22228 null); fld066 8 distinct (Legendary, Basic, Snow, World, Host, Ongoing and combinations, 48982 null); fld070 2022 distinct (full type line with em dash); fld071 37 distinct (primary types). Pure-artifact counts: fld053='Artifact' 2093, fld071='Artifact' 3986, fld070='Artifact' 3046.",
+    "validation_method": "distinct counts and equality-count comparison",
+    "timestamp": "2026-11-06T00:00:00Z"
+  },
+  {
+    "id": "ev_set_code_linkage",
+    "source": "card_games.sqlite / tab01, tab04, tab05",
+    "query": "SELECT count(distinct fld063) FROM tab01 WHERE fld063 NOT IN (SELECT fld081 FROM tab04); SELECT count(*) FROM tab01 WHERE fld063 NOT IN (SELECT fld081 FROM tab04); SELECT count(*) FROM tab05 WHERE fld063 NOT IN (SELECT fld081 FROM tab04);",
+    "result": "0 distinct card set codes and 0 card rows fall outside the set table; 0 set translation rows fall outside the set table. tab01 uses 536 distinct set codes; tab04 has 551 distinct codes.",
+    "validation_method": "referential integrity checks",
+    "timestamp": "2026-11-06T00:00:00Z"
+  },
+  {
+    "id": "ev_card_text_columns",
+    "source": "card_games.sqlite / tab01",
+    "query": "SELECT count(*) FROM tab01 WHERE lower(fld068) LIKE '%triggered ability%'; SELECT count(*) FROM tab01 WHERE lower(fld052) LIKE '%triggered ability%'; SELECT fld052,fld068 FROM tab01 WHERE fld001=1;",
+    "result": "53 card rows contain 'triggered ability' in the current rules text; 26 contain it in the original printed text. For Ancestor's Chosen, the original text uses old wording ('comes into play') while the current text uses 'enters the battlefield'.",
+    "validation_method": "full-text counts on both text columns plus row inspection",
+    "timestamp": "2026-11-06T00:00:00Z"
+  },
+  {
+    "id": "ev_ratio_population",
+    "source": "card_games.sqlite / tab01",
+    "query": "SELECT count(*) FROM tab01; SELECT fld005,count(*) FROM tab01 GROUP BY fld005; SELECT count(*) FROM tab01 WHERE fld033=1;",
+    "result": "56822 card printings form the denominator population. Worked checks: 241 borderless printings (0.42 percent of all printings); 104 Story Spotlight printings.",
+    "validation_method": "population count and worked percentage sanity checks",
+    "timestamp": "2026-11-06T00:00:00Z"
+  },
+  {
+    "id": "ev_italian_base_size",
+    "source": "card_games.sqlite / tab05, tab04",
+    "query": "SELECT count(*), count(fld094) FROM tab05 WHERE fld075='Italian'; SELECT count(*) FROM tab05 t JOIN tab04 s ON t.fld063=s.fld081 WHERE t.fld075='Italian' AND s.fld078<100;",
+    "result": "121 Italian set records, 95 with a translated name present. 30 Italian-translated sets have a base set size below 100. All 30 of those also have a translated name present.",
+    "validation_method": "join-based count verification for a representative workload case",
+    "timestamp": "2026-11-06T00:00:00Z"
+  }
+]

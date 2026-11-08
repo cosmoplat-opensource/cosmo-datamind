@@ -1,0 +1,186 @@
+[
+  {
+    "id": "e_referential_integrity",
+    "source": "financial (SQLite, 只读)",
+    "query": "LEFT JOIN 孤儿检查：disp→account, disp→client, account→district, client→district, trans→account, loan→account, order→account, card→disp",
+    "result": "8 组关联的未匹配行数全部为 0，无孤儿记录",
+    "validation_method": "对每组标识列关系执行左连接并统计未匹配行数",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "e_schema_no_fk",
+    "source": "financial (SQLite, 只读)",
+    "query": "PRAGMA foreign_key_list(account / trans / disp); SELECT name, tbl_name FROM sqlite_master WHERE type='index'",
+    "result": "PRAGMA 未返回任何外键定义；sqlite_master 中没有任何索引对象",
+    "validation_method": "读取 sqlite_master 与 PRAGMA 输出",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "e_trans_type_distribution",
+    "source": "financial (SQLite, 只读)",
+    "query": "SELECT type, COUNT(*) FROM trans GROUP BY 1",
+    "result": "PRIJEM=405083, VYDAJ=634571, VYBER=16666；合计 1056320",
+    "validation_method": "分组计数",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "e_trans_amount_sign",
+    "source": "financial (SQLite, 只读)",
+    "query": "SELECT type, MIN(amount), MAX(amount), SUM(CASE WHEN amount<0 THEN 1 ELSE 0 END) FROM trans GROUP BY type",
+    "result": "PRIJEM 0..74812 负值 0；VYDAJ 0..87400 负值 0；VYBER 2001..24997 负值 0。全局 MIN(amount)=0，MAX(amount)=87400",
+    "validation_method": "分组极值与负值计数",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "e_balance_reconciliation",
+    "source": "financial (SQLite, 只读)",
+    "query": "WITH o AS (SELECT account_id,date,trans_id,type,amount,balance, LAG(balance) OVER (PARTITION BY account_id ORDER BY date,trans_id) pb FROM trans) SELECT SUM(CASE WHEN pb IS NOT NULL AND balance = pb + (CASE WHEN type='PRIJEM' THEN amount ELSE -amount END) THEN 1 ELSE 0 END), COUNT(*) FROM o",
+    "result": "非首笔记录 1051820 条中仅 519531 条(49.4%)满足余额可由上一笔余额加减金额还原；按 trans_id 排序时不符合数为 1035382。余额范围 -41126 至 209637，其中 2999 行为负",
+    "validation_method": "窗口函数 LAG 前向还原并逐行比对",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "e_balance_direction",
+    "source": "financial (SQLite, 只读)",
+    "query": "SELECT type, COUNT(*), SUM(balance>pb), SUM(balance<pb), SUM(balance=pb) FROM (窗口函数按 account_id ORDER BY date,trans_id 取 LAG(balance) AS pb) WHERE pb IS NOT NULL GROUP BY type",
+    "result": "PRIJEM: n=400583, 上升 391784, 下降 8767, 持平 32；VYDAJ: n=634571, 上升 166636, 下降 467840, 持平 95；VYBER: n=16666, 上升 847, 下降 15819, 持平 0",
+    "validation_method": "按账户按日期排序比较相邻余额的方向",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "e_trans_id_not_temporal",
+    "source": "financial (SQLite, 只读)",
+    "query": "SELECT substr(date,1,4) yr, MIN(trans_id), MAX(trans_id), COUNT(*) FROM trans GROUP BY 1; SELECT trans_id,date,balance FROM trans WHERE account_id=1 ORDER BY date,trans_id LIMIT 8",
+    "result": "1993..1998 每一年的 trans_id 都横跨约 1..3682987(如 1993: 276..3682923；1996: 14..3682959)。account_id=1 中 trans_id=6 的日期为 1995-05-13，晚于 trans_id=3530438 的 1995-04-30",
+    "validation_method": "按年份统计 trans_id 极值并与按日期排序的实际顺序对照",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "e_operation_type_crosstab",
+    "source": "financial (SQLite, 只读)",
+    "query": "SELECT type, operation, COUNT(*) FROM trans GROUP BY 1,2; SELECT type,operation,COUNT(*),ROUND(AVG(amount),0),SUM(k_symbol IS NOT NULL) FROM trans WHERE operation='VYBER' GROUP BY 1,2",
+    "result": "VYBER/VYBER=16666(均值 12517，k_symbol 全空)；VYDAJ/VYBER=418252(均值 5095，160859 条有 k_symbol)；VYDAJ/VYBER KARTOU=8036；VYDAJ/PREVOD NA UCET=208283；PRIJEM/VKLAD=156743；PRIJEM/PREVOD Z UCTU=65226；PRIJEM/(空)=183114",
+    "validation_method": "两列交叉分组计数",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "e_ksymbol_encoding",
+    "source": "financial (SQLite, 只读)",
+    "query": "SELECT DISTINCT k_symbol, COUNT(*) FROM trans GROUP BY 1; SELECT SUM(k_symbol IS NULL), SUM(k_symbol=''), SUM(k_symbol=' ') FROM trans; 同样统计 order 表; 比对两表取值域",
+    "result": "trans: NULL=481881、单空格 ' '=53433、空字符串=0；命名取值 DUCHOD=30338、POJISTNE=18500、SANKC. UROK=1577、SIPO=118065、SLUZBY=155832、UROK=183114、UVER=13580。order: 空字符串 ''=1379、SIPO=3502、UVER=717、POJISTNE=532、LEASING=341，无 NULL。LEASING 只出现在 order 侧",
+    "validation_method": "分组计数与跨表取值域比对",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "e_disp_cardinality",
+    "source": "financial (SQLite, 只读)",
+    "query": "SELECT type, COUNT(*), COUNT(DISTINCT client_id), COUNT(DISTINCT account_id) FROM disp GROUP BY 1; SELECT n_owner,n_disponent,COUNT(*) FROM (SELECT account_id, SUM(type='OWNER') n_owner, SUM(type='DISPONENT') n_disponent FROM disp GROUP BY 1) GROUP BY 1,2; SELECT MAX(n) FROM (SELECT client_id, COUNT(DISTINCT account_id) n FROM disp GROUP BY 1)",
+    "result": "OWNER=4500 行/4500 账户，DISPONENT=869 行/869 账户。账户维度：1 OWNER + 0 DISPONENT = 3631 个账户，1 OWNER + 1 DISPONENT = 869 个账户，无其他组合。每客户账户数最大值 = 1",
+    "validation_method": "按账户分组统计角色组合并核验客户侧基数",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "e_card_owner_only",
+    "source": "financial (SQLite, 只读)",
+    "query": "SELECT d.type, c.type, COUNT(*) FROM card c JOIN disp d ON c.disp_id=d.disp_id GROUP BY 1,2",
+    "result": "892 张卡全部挂靠在 OWNER 权属上：classic=659、gold=88、junior=145；DISPONENT 侧为 0",
+    "validation_method": "card 与 disp 关联后的角色交叉计数",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "e_loan_status_identity",
+    "source": "financial (SQLite, 只读)",
+    "query": "SELECT status, COUNT(*), ROUND(AVG(amount),0), ROUND(AVG(payments),0), ROUND(AVG(duration),0) FROM loan GROUP BY 1; SELECT ROUND(AVG(ABS(payments*duration-amount)/amount*100),1), SUM(CASE WHEN ABS(payments*duration-amount)<=amount*0.05 THEN 1 ELSE 0 END), COUNT(*) FROM loan",
+    "result": "A=203(均额 91641/期限 22)、B=31(140721/26)、C=403(171410/43)、D=45(249285/46)；payments×duration 与 amount 的平均相对偏差 0.0%，682/682 在 5% 容差内；payments 无空值；duration 范围 12..60",
+    "validation_method": "分组统计与恒等式逐行验证",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "e_loan_uver_link",
+    "source": "financial (SQLite, 只读)",
+    "query": "SELECT COUNT(DISTINCT account_id) FROM loan; ... FROM trans WHERE k_symbol='UVER'; ... FROM \"order\" WHERE k_symbol='UVER'; 以及两者的交集计数",
+    "result": "有贷款的账户 682 个；有 trans 侧 k_symbol='UVER' 的账户 682 个，与贷款账户交集 682；有 order 侧 k_symbol='UVER' 的账户 717 个，其中 682 个有贷款",
+    "validation_method": "三个集合的基数与交集计算",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "e_order_distribution",
+    "source": "financial (SQLite, 只读)",
+    "query": "SELECT k_symbol, COUNT(*), COUNT(DISTINCT account_id), ROUND(AVG(amount),0) FROM \"order\" GROUP BY 1; SELECT COUNT(*) FROM \"order\" o LEFT JOIN account a ON o.account_id=a.account_id WHERE a.account_id IS NULL",
+    "result": "SIPO=3502(3365 账户, 均额 3988)、UVER=717(717, 4233)、POJISTNE=532(532, 1291)、LEASING=341(341, 2227)、''=1379(1198, 2017)；共 6471 条/3758 账户；账户侧孤儿记录 0",
+    "validation_method": "分组计数与关联完整性检查",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "e_district_ranges",
+    "source": "financial (SQLite, 只读)",
+    "query": "SELECT MIN/MAX(A8..A16), COUNT(DISTINCT A2/A3), SUM(A12 IS NULL), SUM(A15 IS NULL) FROM district",
+    "result": "77 个地区，A2 名称 77 个、A3 分组 8 个。范围：A8 0-5、A9 1-11、A10 33.9-100.0、A11 8110-12541、A12 0.2-7.3(1 个空值)、A13 0.43-9.4、A14 81-167、A15 818-85677(1 个空值)、A16 888-99107",
+    "validation_method": "各列极值与不同值计数",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "e_district_typing",
+    "source": "financial (SQLite, 只读)",
+    "query": "SELECT typeof(A4), typeof(A5), typeof(A6), typeof(A7) FROM district LIMIT 1; SELECT MIN(A4), MAX(A4) FROM district; SELECT MIN(CAST(A4 AS INTEGER)), MAX(CAST(A4 AS INTEGER)), SUM(CAST(A4 AS INTEGER) IS NULL) FROM district",
+    "result": "A4-A7 存储类型均为 text，不可转数值的行数均为 0。A4 的文本序极值为 102609/95907，而 CAST 后为 42821/1204953，证明文本序与数值序不一致",
+    "validation_method": "typeof 检查、文本序与数值序极值对比",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "e_account_frequency_enum",
+    "source": "financial (SQLite, 只读)",
+    "query": "SELECT frequency, COUNT(*) FROM account GROUP BY 1",
+    "result": "POPLATEK MESICNE=4167、POPLATEK TYDNE=240、POPLATEK PO OBRATU=93；合计 4500，无空值",
+    "validation_method": "分组计数",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "e_client_demographics_card_type",
+    "source": "financial (SQLite, 只读)",
+    "query": "SELECT gender, COUNT(*) FROM client GROUP BY 1; SELECT MIN(birth_date), MAX(birth_date) FROM client; SELECT c.type, COUNT(*), ROUND(AVG((julianday('1998-12-31')-julianday(cl.birth_date))/365.25),1) FROM card c JOIN disp d ON c.disp_id=d.disp_id JOIN client cl ON d.client_id=cl.client_id GROUP BY 1",
+    "result": "gender: F=2645, M=2724(共 5369)。birth_date 1911-08-20 至 1987-09-27。卡种平均年龄：classic 43.3 岁(659 张)、gold 44.0 岁(88 张)、junior 19.7 岁(145 张)",
+    "validation_method": "分组计数与按参考日的年龄均值计算",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "e_counterparty_external",
+    "source": "financial (SQLite, 只读)",
+    "query": "SELECT COUNT(*) FROM trans t LEFT JOIN account a ON t.account=a.account_id WHERE a.account_id IS NOT NULL; SELECT COUNT(*) FROM \"order\" o LEFT JOIN account a ON o.account_to=a.account_id WHERE a.account_id IS NOT NULL; 以及 order.account_to 与 trans.account 的取值域交集",
+    "result": "trans.account 有值 295389 条，其中仅 30 条匹配本库账户；order.account_to 共 6471 条，仅 2 条匹配本库账户。取值域：trans.account 不同值 7665 个，order.account_to 不同值 6446 个，交集 6064 个。trans.bank 为空的行数：PRIJEM 339857/405083、VYDAJ 426289/634571、VYBER 16666/16666",
+    "validation_method": "左连接匹配计数与取值域交集计算",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "e_bank_code_domains",
+    "source": "financial (SQLite, 只读)",
+    "query": "SELECT DISTINCT bank FROM trans WHERE bank IS NOT NULL; SELECT DISTINCT bank_to FROM \"order\"; 以及双向差集检查",
+    "result": "两列均为 13 个取值 AB/CD/EF/GH/IJ/KL/MN/OP/QR/ST/UV/WX/YZ，交集 13，双向差集为空。trans 侧各代码约 2 万条，order 侧各约 460-531 条",
+    "validation_method": "取值域比对与双向差集检查",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "e_account_scope",
+    "source": "financial (SQLite, 只读)",
+    "query": "SELECT COUNT(*) FROM account; SELECT COUNT(*), AVG(n), MAX(n) FROM (SELECT COUNT(*) n FROM trans GROUP BY account_id); SELECT COUNT(*) FROM account a WHERE NOT EXISTS(SELECT 1 FROM trans t WHERE t.account_id=a.account_id); SELECT COUNT(*) FROM (SELECT a.account_id FROM account a JOIN (SELECT account_id, MIN(date) fd FROM trans GROUP BY 1) t ON a.account_id=t.account_id WHERE t.fd < a.date); SELECT AVG(julianday(t.last)-julianday(a.date)) FROM account a JOIN (SELECT account_id, MAX(date) last FROM trans GROUP BY 1) t ON a.account_id=t.account_id",
+    "result": "account 共 4500 行；有交易的账户 4500 个，平均 234.7 条/账户，最多 675 条；无交易的账户 0 个；首笔交易早于开户日期的账户 0 个；从开户日起算的平均跨度 1238 天",
+    "validation_method": "计数、存在性检查与日期跨度均值计算",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "e_date_ranges",
+    "source": "financial (SQLite, 只读)",
+    "query": "SELECT 'account',MIN(date),MAX(date) FROM account UNION ALL SELECT 'trans',... UNION ALL SELECT 'loan',... UNION ALL SELECT 'card',MIN(issued),MAX(issued) FROM card UNION ALL SELECT 'client',MIN(birth_date),MAX(birth_date) FROM client",
+    "result": "account.date 1993-01-01..1997-12-29；trans.date 1993-01-01..1998-12-31；loan.date 1993-07-05..1998-12-08；card.issued 1993-11-07..1998-12-29；client.birth_date 1911-08-20..1987-09-27。全部为文本 'YYYY-MM-DD'",
+    "validation_method": "逐表极值查询与日期字符串格式确认",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "e_reference_date",
+    "source": "financial (SQLite, 只读)",
+    "query": "SELECT MIN((julianday('1998-12-31')-julianday(birth_date))/365.25), MAX(...) FROM client",
+    "result": "以库内最晚交易日期 1998-12-31 为参考，客户年龄约 11.26 至 87.36 岁",
+    "validation_method": "以显式参考日期计算年龄跨度",
+    "timestamp": "2026-10-10"
+  }
+]

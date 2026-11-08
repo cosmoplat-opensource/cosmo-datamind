@@ -1,0 +1,543 @@
+[
+  {
+    "id": "rel_receipt_disbursement",
+    "source": "term_receipt",
+    "relation_type": "association",
+    "target": "term_disbursement",
+    "connection_condition": "两者无共享标识符:收款经 ar_id 关联 fact_ar_aging,付款经 ap_id 关联 fact_ap;命名(均含 payment_id/payment_date/amount)相近但方向相反",
+    "description": "收款与付款是企业资金流的一对镜像概念,在同一分析问题中常被混用,需要显式区分",
+    "evidence": [
+      "ev_payment_tables"
+    ]
+  },
+  {
+    "id": "rel_receipt_ar_aging",
+    "source": "term_receipt",
+    "relation_type": "association",
+    "target": "term_ar_aging",
+    "connection_condition": "fact_payment.ar_id 对应 fact_ar_aging.ar_id",
+    "description": "一笔收款用于冲销一条应收账款账龄记录",
+    "evidence": [
+      "ev_payment_tables"
+    ]
+  },
+  {
+    "id": "rel_disbursement_ap",
+    "source": "term_disbursement",
+    "relation_type": "association",
+    "target": "term_accounts_payable",
+    "connection_condition": "fact_payment_out.ap_id 对应 fact_ap.ap_id",
+    "description": "一笔付款用于结清一笔应付账款",
+    "evidence": [
+      "ev_procurement_chain"
+    ]
+  },
+  {
+    "id": "rel_ap_goods_receipt",
+    "source": "term_accounts_payable",
+    "relation_type": "association",
+    "target": "term_goods_receipt",
+    "connection_condition": "fact_ap.gr_id 对应 fact_goods_receipt.gr_id;采购链为 采购订单-采购订单行/收货单-应付账款-付款",
+    "description": "应付账款由采购收货单触发形成,付款链自收货单逐级下推",
+    "evidence": [
+      "ev_procurement_chain",
+      "ev_gr_inspection"
+    ]
+  },
+  {
+    "id": "rel_po_supplier",
+    "source": "term_purchase_order",
+    "relation_type": "association",
+    "target": "term_supplier",
+    "connection_condition": "fact_purchase_order.supplier_id 对应 dim_supplier.supplier_id;fact_ap.supplier_id 亦指向 dim_supplier",
+    "description": "采购订单与应付账款均由同一供应商维度归集",
+    "evidence": [
+      "ev_supplier"
+    ]
+  },
+  {
+    "id": "rel_poline_po",
+    "source": "term_po_line",
+    "relation_type": "composition",
+    "target": "term_purchase_order",
+    "connection_condition": "fact_po_line.po_id 对应 fact_purchase_order.po_id",
+    "description": "采购订单由多条订单行构成,订单行不能脱离订单存在",
+    "evidence": [
+      "ev_po_line"
+    ]
+  },
+  {
+    "id": "rel_poline_material",
+    "source": "term_po_line",
+    "relation_type": "association",
+    "target": "term_material",
+    "connection_condition": "fact_po_line.material_id 对应 dim_material.material_id",
+    "description": "订单行按物料归集采购金额与累计收货数量",
+    "evidence": [
+      "ev_material"
+    ]
+  },
+  {
+    "id": "rel_ar_aging_employee",
+    "source": "term_ar_aging",
+    "relation_type": "association",
+    "target": "term_employee",
+    "connection_condition": "fact_ar_aging.emp_id 对应 dim_employee.emp_id",
+    "description": "应收账款账龄按业务员归集,用于账龄结构的业务员排名",
+    "evidence": [
+      "ev_ar_aging"
+    ]
+  },
+  {
+    "id": "rel_expense_employee",
+    "source": "term_expense_reimbursement",
+    "relation_type": "association",
+    "target": "term_employee",
+    "connection_condition": "fact_expense.emp_id 对应 dim_employee.emp_id",
+    "description": "报销费用按业务员归集",
+    "evidence": [
+      "ev_expense_type"
+    ]
+  },
+  {
+    "id": "rel_budgetcc_costcenter",
+    "source": "term_budget_cost_center",
+    "relation_type": "association",
+    "target": "term_cost_center",
+    "connection_condition": "fact_budget.cc_id 对应 dim_cost_center.cc_id",
+    "description": "成本中心预算按成本中心归集并以成本中心名称呈现",
+    "evidence": [
+      "ev_budget_tables"
+    ]
+  },
+  {
+    "id": "rel_budgetdept_department",
+    "source": "term_budget_department",
+    "relation_type": "association",
+    "target": "term_department",
+    "connection_condition": "fact_budget_expense.dept_id 对应 dim_department.dept_id",
+    "description": "部门费用预算按部门归集",
+    "evidence": [
+      "ev_budget_tables"
+    ]
+  },
+  {
+    "id": "rel_department_region",
+    "source": "term_department",
+    "relation_type": "association",
+    "target": "term_region",
+    "connection_condition": "dim_department.region_id 对应 dim_region.region_id;仅销售部门(1-6)有区域",
+    "description": "销售部门隶属销售区域,区域口径的部门预算问题需要经部门上卷到区域",
+    "evidence": [
+      "ev_dept_region"
+    ]
+  },
+  {
+    "id": "rel_accumdep_depreciation",
+    "source": "term_accumulated_depreciation",
+    "relation_type": "equivalence",
+    "target": "term_depreciation_record",
+    "connection_condition": "dim_fixed_asset.accumulated_dep 等于 fact_depreciation 同一资产最新期间的 accumulated_dep",
+    "description": "固定资产卡片上的累计折旧与折旧明细期末累计折旧表达同一业务概念,仅粒度不同",
+    "evidence": [
+      "ev_dep_equivalent"
+    ]
+  },
+  {
+    "id": "rel_fixedasset_equipment",
+    "source": "term_fixed_asset",
+    "relation_type": "association",
+    "target": "term_equipment",
+    "connection_condition": "dim_fixed_asset.equipment_id 对应 dim_equipment.equipment_id(60 台生产设备),另有房屋与公用工程类资产无设备关联",
+    "description": "生产设备类固定资产与设备台账一一对应",
+    "evidence": [
+      "ev_fixed_asset"
+    ]
+  },
+  {
+    "id": "rel_fixedasset_depreciation_derivation",
+    "source": "term_fixed_asset",
+    "relation_type": "derivation",
+    "target": "term_depreciation_record",
+    "connection_condition": "",
+    "description": "按期折旧记录由资产原值、使用年限与已提期间推导得出,资产净值等于原值减累计折旧",
+    "evidence": [
+      "ev_dep_equivalent"
+    ]
+  },
+  {
+    "id": "rel_delivery_order",
+    "source": "term_delivery",
+    "relation_type": "composition",
+    "target": "term_sales_order",
+    "connection_condition": "fact_delivery.order_id 对应 fact_sales_order.order_id",
+    "description": "订单由发货单履行,发货金额与数量必须经订单口径汇总",
+    "evidence": [
+      "ev_delivery_link"
+    ]
+  },
+  {
+    "id": "rel_return_order",
+    "source": "term_return_goods",
+    "relation_type": "association",
+    "target": "term_sales_order",
+    "connection_condition": "fact_return.order_id 指向原销售订单 fact_sales_order.order_id,退货金额计入原订单客户",
+    "description": "退货单归属于原销售订单,是客户口径退货归集的必经路径",
+    "evidence": [
+      "ev_return_reason",
+      "ev_customer"
+    ]
+  },
+  {
+    "id": "rel_salesorder_customer",
+    "source": "term_sales_order",
+    "relation_type": "association",
+    "target": "term_customer",
+    "connection_condition": "fact_sales_order.cust_id 对应 dim_customer.cust_id",
+    "description": "销售订单按客户归集",
+    "evidence": [
+      "ev_customer"
+    ]
+  },
+  {
+    "id": "rel_salesorder_product",
+    "source": "term_sales_order",
+    "relation_type": "association",
+    "target": "term_product",
+    "connection_condition": "fact_sales_order.prod_id 对应 dim_product.prod_id;dim_product.prod_line_id 对应 dim_product_line.prod_line_id",
+    "description": "销售订单按产品归集,经产品可上卷到产品线",
+    "evidence": [
+      "ev_product_line"
+    ]
+  },
+  {
+    "id": "rel_opportunity_customer",
+    "source": "term_opportunity",
+    "relation_type": "association",
+    "target": "term_customer",
+    "connection_condition": "fact_opportunity.cust_id 对应 dim_customer.cust_id",
+    "description": "商机预估金额/销量按客户归集",
+    "evidence": [
+      "ev_opportunity_status"
+    ]
+  },
+  {
+    "id": "rel_opportunity_employee",
+    "source": "term_opportunity",
+    "relation_type": "association",
+    "target": "term_employee",
+    "connection_condition": "fact_opportunity.emp_id 对应 dim_employee.emp_id",
+    "description": "商机按负责业务员归集,可结合员工在职状态筛选",
+    "evidence": [
+      "ev_opportunity_status",
+      "ev_employee"
+    ]
+  },
+  {
+    "id": "rel_opportunity_customer_funnel",
+    "source": "term_opportunity",
+    "relation_type": "association",
+    "target": "term_quotation",
+    "connection_condition": "fact_opportunity.converted_order_id 与 fact_quotation.converted 关系不唯一;两者均按 cust_id/emp_id 共用客户与业务员维度",
+    "description": "商机、报价单与销售订单构成售前到成交的漏斗,状态值域各自独立",
+    "evidence": [
+      "ev_opportunity_status",
+      "ev_quotation_status"
+    ]
+  },
+  {
+    "id": "rel_sample_customer_employee",
+    "source": "term_sample",
+    "relation_type": "association",
+    "target": "term_customer",
+    "connection_condition": "fact_sample.cust_id 对应 dim_customer.cust_id;fact_sample.emp_id 对应 dim_employee.emp_id",
+    "description": "送样同时按客户与业务员归集,送样成功标记可经业务员在职状态筛选",
+    "evidence": [
+      "ev_sample_flags",
+      "ev_employee"
+    ]
+  },
+  {
+    "id": "rel_productcost_product",
+    "source": "term_product_cost",
+    "relation_type": "association",
+    "target": "term_product",
+    "connection_condition": "fact_product_cost.product_id 对应 dim_product.prod_id",
+    "description": "产品成本按产品归集,用于材料成本等成本项的产品排名",
+    "evidence": [
+      "ev_product_cost",
+      "ev_product"
+    ]
+  },
+  {
+    "id": "rel_supplier_eval_supplier",
+    "source": "term_supplier_eval",
+    "relation_type": "association",
+    "target": "term_supplier",
+    "connection_condition": "fact_supplier_eval.supplier_id 对应 dim_supplier.supplier_id",
+    "description": "供应商评估按供应商归集综合评分",
+    "evidence": [
+      "ev_supplier_eval"
+    ]
+  },
+  {
+    "id": "rel_supplier_category",
+    "source": "term_supplier",
+    "relation_type": "association",
+    "target": "term_supplier_category",
+    "connection_condition": "dim_supplier.category_id 对应 dim_supplier_category.category_id",
+    "description": "供应商隶属一个供应商类别,类别是筛选供应商评估的中间维度",
+    "evidence": [
+      "ev_supplier_cat"
+    ]
+  },
+  {
+    "id": "rel_supplier_category_hierarchy",
+    "source": "term_supplier_category",
+    "relation_type": "hierarchy",
+    "target": "term_supplier_category",
+    "connection_condition": "dim_supplier_category.parent_id 指向同表 category_id",
+    "description": "供应商类别是两级分类,子类(如工程塑料树脂)是父类(树脂供应商)的下级类别,取值域为父类取值域的子集",
+    "evidence": [
+      "ev_supplier_cat"
+    ]
+  },
+  {
+    "id": "rel_production_order_line",
+    "source": "term_production_order",
+    "relation_type": "association",
+    "target": "term_production_line",
+    "connection_condition": "fact_production_order.line_id 对应 dim_production_line.line_id",
+    "description": "生产工单按产线归集,用于产线运行时长排名",
+    "evidence": [
+      "ev_line"
+    ]
+  },
+  {
+    "id": "rel_output_order",
+    "source": "term_production_output",
+    "relation_type": "composition",
+    "target": "term_production_order",
+    "connection_condition": "fact_production_output.order_id 对应 fact_production_order.order_id",
+    "description": "产出记录由生产工单产生,不能脱离工单存在",
+    "evidence": [
+      "ev_output_grade"
+    ]
+  },
+  {
+    "id": "rel_equipment_line",
+    "source": "term_equipment",
+    "relation_type": "association",
+    "target": "term_production_line",
+    "connection_condition": "dim_equipment.line_id 对应 dim_production_line.line_id;dim_production_line.workshop_id 对应 dim_workshop.workshop_id",
+    "description": "设备隶属产线,产线隶属车间,产线口径的设备类事实需经产线上卷",
+    "evidence": [
+      "ev_line_equipment",
+      "ev_workshop"
+    ]
+  },
+  {
+    "id": "rel_maintenance_record_equipment",
+    "source": "term_maintenance_record",
+    "relation_type": "association",
+    "target": "term_equipment",
+    "connection_condition": "fact_maintenance_record.equipment_id 对应 dim_equipment.equipment_id",
+    "description": "维护记录按设备归集,可经设备上卷到产线与制造商",
+    "evidence": [
+      "ev_maint_rec_wo",
+      "ev_line_equipment"
+    ]
+  },
+  {
+    "id": "rel_maintenance_plan_equipment",
+    "source": "term_maintenance_plan",
+    "relation_type": "association",
+    "target": "term_equipment",
+    "connection_condition": "fact_maintenance_plan.equipment_id 对应 dim_equipment.equipment_id",
+    "description": "维护计划按设备归集,产线口径需经设备关联",
+    "evidence": [
+      "ev_maint_plan"
+    ]
+  },
+  {
+    "id": "rel_maintenance_record_plan",
+    "source": "term_maintenance_record",
+    "relation_type": "association",
+    "target": "term_maintenance_plan",
+    "connection_condition": "fact_maintenance_wo 同时关联 equipment_id 与 plan_id,是维护计划与维护执行记录之间的桥接事实",
+    "description": "维护计划与维护执行记录经维护工单桥接,两者按设备的计数结果一致",
+    "evidence": [
+      "ev_maint_rec_wo"
+    ]
+  },
+  {
+    "id": "rel_downtime_reason",
+    "source": "term_downtime",
+    "relation_type": "association",
+    "target": "term_downtime_reason",
+    "connection_condition": "fact_downtime.reason_code 为整数 1-8,对应 dim_downtime_reason.reason_id;dim_downtime_reason.reason_code 为文本编码 D001-D008",
+    "description": "停机记录按停机原因归因,用于原因维度的次数与时长统计",
+    "evidence": [
+      "ev_downtime_reason"
+    ]
+  },
+  {
+    "id": "rel_downtime_equipment_line",
+    "source": "term_downtime",
+    "relation_type": "association",
+    "target": "term_production_line",
+    "connection_condition": "fact_downtime.line_id 对应 dim_production_line.line_id;fact_downtime.equipment_id 对应 dim_equipment.equipment_id",
+    "description": "停机事件同时登记设备与产线,产线口径的停机时长需按 line_id 归集",
+    "evidence": [
+      "ev_downtime_reason"
+    ]
+  },
+  {
+    "id": "rel_alarm_equipment",
+    "source": "term_alarm",
+    "relation_type": "association",
+    "target": "term_equipment",
+    "connection_condition": "fact_alarm.equipment_id 对应 dim_equipment.equipment_id;fact_alarm.sensor_id 对应 dim_sensor.sensor_id",
+    "description": "告警按设备归集,用于设备维度告警数量排名",
+    "evidence": [
+      "ev_alarm"
+    ]
+  },
+  {
+    "id": "rel_energy_line_workshop",
+    "source": "term_energy_consumption",
+    "relation_type": "association",
+    "target": "term_production_line",
+    "connection_condition": "fact_energy_consumption.line_id 对应 dim_production_line.line_id;workshop_id 对应 dim_workshop.workshop_id",
+    "description": "能耗记录同时登记产线与车间,蒸汽/用水按产线归集、用电量可按车间归集",
+    "evidence": [
+      "ev_energy",
+      "ev_workshop"
+    ]
+  },
+  {
+    "id": "rel_incident_workshop",
+    "source": "term_incident",
+    "relation_type": "association",
+    "target": "term_workshop",
+    "connection_condition": "fact_incident.workshop_id 对应 dim_workshop.workshop_id;line_id 对应 dim_production_line.line_id",
+    "description": "事故按车间归集,受伤人数等指标经车间口径汇总",
+    "evidence": [
+      "ev_incident_enum",
+      "ev_workshop"
+    ]
+  },
+  {
+    "id": "rel_riskassessment_hazard",
+    "source": "term_risk_assessment",
+    "relation_type": "association",
+    "target": "term_hazard",
+    "connection_condition": "fact_risk_assessment.hazard_id 对应 dim_hazard.hazard_id",
+    "description": "风险评估针对危险源开展,按危险源位置筛选后归集控制需求",
+    "evidence": [
+      "ev_risk_enum"
+    ]
+  },
+  {
+    "id": "rel_safetyobjective_plan",
+    "source": "term_safety_objective",
+    "relation_type": "composition",
+    "target": "term_safety_plan",
+    "connection_condition": "fact_safety_objective.plan_id 对应 fact_safety_plan.plan_id",
+    "description": "安全目标隶属于安全计划,目标值合计须经计划口径归集",
+    "evidence": [
+      "ev_safety_objective"
+    ]
+  },
+  {
+    "id": "rel_safetyaudit_workshop",
+    "source": "term_safety_audit",
+    "relation_type": "association",
+    "target": "term_workshop",
+    "connection_condition": "fact_safety_audit.workshop_id 对应 dim_workshop.workshop_id",
+    "description": "安全审计按车间归集评分与发现项数",
+    "evidence": [
+      "ev_audit",
+      "ev_workshop"
+    ]
+  },
+  {
+    "id": "rel_training_employee",
+    "source": "term_safety_training",
+    "relation_type": "association",
+    "target": "term_employee",
+    "connection_condition": "fact_safety_training.trainer_id 对应 dim_employee.emp_id",
+    "description": "安全培训按讲师(员工)归集时长与参训人数,可结合在职状态筛选",
+    "evidence": [
+      "ev_training",
+      "ev_employee"
+    ]
+  },
+  {
+    "id": "rel_receipt_method_derivation",
+    "source": "term_receipt",
+    "relation_type": "derivation",
+    "target": "term_receipt_method",
+    "connection_condition": "",
+    "description": "银承比重等比率指标由收款方式标记推导得出,is_bank_accepted 是 payment_type 的等价二值表达",
+    "evidence": [
+      "ev_payment_enum"
+    ]
+  },
+  {
+    "id": "rel_metric_layer_sales_order",
+    "source": "term_aggregate_metric_layer",
+    "relation_type": "equivalence",
+    "target": "term_sales_order",
+    "connection_condition": "DWS_ORG_PERFORMANCE_DAILY.sales_amount 按人×日汇总,合计等于 fact_sales_order.amount 合计;agg_metric_monthly 同理",
+    "description": "汇总指标层与销售订单明细表达同一收入概念,粒度分别为人×日与人×月",
+    "evidence": [
+      "ev_dws_reconcile"
+    ]
+  },
+  {
+    "id": "rel_metric_layer_audit",
+    "source": "term_aggregate_metric_layer",
+    "relation_type": "equivalence",
+    "target": "term_safety_audit",
+    "connection_condition": "DWS_SAFETY_DAILY.audit_score 的均值等于 fact_safety_audit.score 的均值",
+    "description": "日汇总层的审计评分与安全审计明细表达同一评分概念",
+    "evidence": [
+      "ev_dws_reconcile"
+    ]
+  },
+  {
+    "id": "rel_metric_layer_opportunity",
+    "source": "term_aggregate_metric_layer",
+    "relation_type": "equivalence",
+    "target": "term_opportunity",
+    "connection_condition": "DWS_PRE_SALES_DAILY.opp_estimated_quantity 按人合计等于 fact_opportunity.estimated_quantity 按人合计;agg_metric_monthly.opp_quantity 同理",
+    "description": "售前汇总层的商机预估销量与商机明细表达同一概念",
+    "evidence": [
+      "ev_dws_reconcile"
+    ]
+  },
+  {
+    "id": "rel_metric_layer_maintenance",
+    "source": "term_aggregate_metric_layer",
+    "relation_type": "equivalence",
+    "target": "term_maintenance_record",
+    "connection_condition": "DWS_EQUIPMENT_DAILY.maint_wo_count 为设备×日维护工单数,与 fact_maintenance_wo 按设备计数一致",
+    "description": "设备日汇总层的维护工单计数与维护记录明细表达同一维护事件",
+    "evidence": [
+      "ev_dws_reconcile",
+      "ev_maint_rec_wo"
+    ]
+  },
+  {
+    "id": "rel_agg_metric_catalog",
+    "source": "term_aggregate_metric_layer",
+    "relation_type": "association",
+    "target": "term_region",
+    "connection_condition": "dim_metric_catalog 登记原子指标及其 dws_table/date_column/value_column,是汇总层的元数据目录",
+    "description": "指标目录描述汇总层指标的来源表与取值列,与区域维度无直接关系,仅作为汇总层的元数据入口",
+    "evidence": [
+      "ev_metric_catalog"
+    ]
+  }
+]

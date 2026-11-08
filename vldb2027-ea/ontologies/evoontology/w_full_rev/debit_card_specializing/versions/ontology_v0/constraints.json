@@ -1,0 +1,350 @@
+[
+  {
+    "id": "constraint_segment_column_ambiguity",
+    "target": "term_customer_segment",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "segment",
+      "customer segment",
+      "gas station segment",
+      "SME",
+      "SMEs",
+      "KAM",
+      "LAM",
+      "premium",
+      "discount",
+      "value for money",
+      "noname"
+    ],
+    "severity": "block",
+    "scope": "Any question that mentions 'segment' or one of the segment values without naming the entity.",
+    "confidence": "high",
+    "description": "Two different tables expose a column literally named Segment with disjoint value domains: customers.Segment holds customer size classes (KAM, LAM, SME) while gasstations.Segment holds outlet positioning classes (Discount, Noname, Other, Premium, Value for money). The value sets do not overlap. A question mentioning 'segment' must first be resolved to the intended entity; reading the wrong table returns a plausible-looking but incorrect result.",
+    "evidence": [
+      "evidence_segment_name_collision",
+      "evidence_customer_domains",
+      "evidence_gasstation_domains"
+    ]
+  },
+  {
+    "id": "constraint_customer_segment_values",
+    "target": "term_customer_segment",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "SME",
+      "SMEs",
+      "KAM",
+      "LAM",
+      "customer segment",
+      "small and medium"
+    ],
+    "severity": "warning",
+    "scope": "Filtering or grouping customers by size class.",
+    "confidence": "high",
+    "description": "customers.Segment takes exactly three values: KAM (2040 customers), LAM (3658) and SME (26763). A question referring to 'SMEs' selects Segment = 'SME' literally; the values are uppercase and must be matched exactly.",
+    "evidence": [
+      "evidence_customer_domains"
+    ]
+  },
+  {
+    "id": "constraint_gas_station_segment_values",
+    "target": "term_gas_station_segment",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "premium",
+      "discount",
+      "noname",
+      "other",
+      "value for money",
+      "station segment",
+      "gas station type"
+    ],
+    "severity": "warning",
+    "scope": "Filtering or grouping gas stations by market segment.",
+    "confidence": "high",
+    "description": "gasstations.Segment takes exactly five values: Discount (294 stations), Noname (1005), Other (2392), Premium (1428) and Value for money (597). Words such as 'premium' and 'discount' in a question map to these values and must be matched with their capitalization.",
+    "evidence": [
+      "evidence_gasstation_domains"
+    ]
+  },
+  {
+    "id": "constraint_country_code_values",
+    "target": "term_gas_station_country",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "country",
+      "CZE",
+      "SVK",
+      "Czech Republic",
+      "Slovakia"
+    ],
+    "severity": "warning",
+    "scope": "Filtering or grouping gas stations and their transactions by country.",
+    "confidence": "high",
+    "description": "gasstations.Country uses three-letter codes rather than country names: 'CZE' denotes the Czech Republic (4836 stations) and 'SVK' denotes Slovakia (880 stations). A question naming a country in words must be translated to its code before filtering.",
+    "evidence": [
+      "evidence_gasstation_domains"
+    ]
+  },
+  {
+    "id": "constraint_currency_code_values",
+    "target": "term_customer_currency",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "currency",
+      "CZK",
+      "EUR",
+      "Czech koruna",
+      "koruna",
+      "euro",
+      "euros",
+      "pay in",
+      "paying"
+    ],
+    "severity": "warning",
+    "scope": "Splitting or filtering customers, and any measure joined onto them, by payment currency.",
+    "confidence": "high",
+    "description": "customers.Currency takes exactly two values, 'CZK' (30459 customers) and 'EUR' (2002). 'Czech koruna' and 'koruna' denote CZK; 'euro' and 'euros' denote EUR. The currency is a customer attribute, so classifying transactions or consumption by currency always goes through the customer.",
+    "evidence": [
+      "evidence_customer_domains",
+      "evidence_join_integrity"
+    ]
+  },
+  {
+    "id": "constraint_consumption_period_format",
+    "target": "term_consumption_period",
+    "constraint_type": "unit",
+    "trigger_keywords": [
+      "yearmonth",
+      "period",
+      "February 2012",
+      "June 2013",
+      "month",
+      "billing month",
+      "201202",
+      "201306"
+    ],
+    "severity": "block",
+    "scope": "Filtering or grouping yearmonth records by period.",
+    "confidence": "high",
+    "description": "yearmonth.Date is a six-character text 'YYYYMM': the first four characters are the year and the last two are the zero-padded month. A named month must be expressed in this form before comparison, for example February 2012 as '201202' and June 2013 as '201306'. Comparing against any other date formatting yields no rows rather than an error.",
+    "evidence": [
+      "evidence_yearmonth_scope"
+    ]
+  },
+  {
+    "id": "constraint_transaction_date_format",
+    "target": "term_transaction_date",
+    "constraint_type": "unit",
+    "trigger_keywords": [
+      "date",
+      "2012/8/26",
+      "2012-08-26",
+      "day",
+      "transaction date"
+    ],
+    "severity": "block",
+    "scope": "Filtering transactions by date.",
+    "confidence": "high",
+    "description": "transactions_1k.Date is a ten-character text 'YYYY-MM-DD' with zero-padded month and day, and the year is the leading four characters. A date written as 2012/8/26 corresponds to the stored form '2012-08-26'; a differently formatted comparison matches nothing.",
+    "evidence": [
+      "evidence_transaction_scope"
+    ]
+  },
+  {
+    "id": "constraint_transaction_time_format",
+    "target": "term_transaction_time",
+    "constraint_type": "unit",
+    "trigger_keywords": [
+      "time",
+      "8:00",
+      "9:00",
+      "08:00:00",
+      "hour",
+      "during",
+      "between hours"
+    ],
+    "severity": "block",
+    "scope": "Filtering transactions by time of day.",
+    "confidence": "high",
+    "description": "transactions_1k.Time is zero-padded 'HH:MM:SS' text and is ordered correctly only when compared in the same padded form. The window 8:00-9:00 is expressed as '08:00:00' to '09:00:00'; the unpadded forms '8:00' or '9:00' would sort and compare incorrectly as text.",
+    "evidence": [
+      "evidence_transaction_scope"
+    ]
+  },
+  {
+    "id": "constraint_transactions_temporal_scope",
+    "target": "term_transaction",
+    "constraint_type": "scope",
+    "trigger_keywords": [
+      "transactions in 2013",
+      "June 2013",
+      "date range",
+      "how many transactions",
+      "transactions taken place"
+    ],
+    "severity": "block",
+    "scope": "Any transaction question that constrains the time period.",
+    "confidence": "high",
+    "description": "The transaction table contains only four dates, 2012-08-23 through 2012-08-26, and every row falls in August 2012. A period outside that window, for example June 2013, has no matching rows at all, so the correct outcome is an empty result rather than an error or a substitution of consumption data.",
+    "evidence": [
+      "evidence_transaction_scope"
+    ]
+  },
+  {
+    "id": "constraint_yearmonth_temporal_scope",
+    "target": "term_consumption_period",
+    "constraint_type": "scope",
+    "trigger_keywords": [
+      "consumption",
+      "2012",
+      "2013",
+      "period coverage",
+      "yearmonth"
+    ],
+    "severity": "warning",
+    "scope": "Consumption questions that constrain the period.",
+    "confidence": "high",
+    "description": "yearmonth covers 21 consecutive months from 201112 through 201311, with 158808 of its 383282 rows in 2012. Consumption is therefore available for the whole of 2012 and 2013 up to November, unlike transactions which exist for a single four-day window.",
+    "evidence": [
+      "evidence_yearmonth_scope"
+    ]
+  },
+  {
+    "id": "constraint_unit_price_definition",
+    "target": "term_unit_price",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "average price per single item",
+      "price per item",
+      "unit price",
+      "average price",
+      "per item"
+    ],
+    "severity": "block",
+    "scope": "Computing or interpreting a per-item price.",
+    "confidence": "high",
+    "description": "Average price per single item is the ratio of the summed Price to the summed Amount over the selected set of transaction lines. It is not the mean of per-line Price values and not the per-line Price/Amount ratio averaged afterwards. Amount is the number of item units in a line and Price is that line's total charge, so the two measures act as numerator and denominator of the same ratio.",
+    "evidence": [
+      "evidence_amount_price_ranges"
+    ]
+  },
+  {
+    "id": "constraint_zero_amount_lines",
+    "target": "term_transaction_amount",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "amount",
+      "quantity",
+      "zero",
+      "price per item",
+      "divide"
+    ],
+    "severity": "warning",
+    "scope": "Any ratio measure whose denominator is a sum of quantities.",
+    "confidence": "high",
+    "description": "91 of the 1000 transaction lines have Amount = 0 while still carrying a positive Price (Price ranges 1.76 to 5762.49 overall). These lines add to the price numerator without adding to the quantity denominator, so price-per-item results depend on whether such lines are included.",
+    "evidence": [
+      "evidence_amount_price_ranges"
+    ]
+  },
+  {
+    "id": "constraint_product_description_not_unique",
+    "target": "term_product_description",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "product description",
+      "distinct products",
+      "description",
+      "how many products"
+    ],
+    "severity": "warning",
+    "scope": "Counting or listing products by their textual label.",
+    "confidence": "high",
+    "description": "The product catalogue has 591 rows but only 529 distinct descriptions, and 51 descriptions are shared by several ProductIDs (for example 'Servisni poplatek' appears four times). Counting distinct descriptions under-counts products, and listing descriptions returns duplicates that are separate catalogue entries.",
+    "evidence": [
+      "evidence_product_description_duplicates"
+    ]
+  },
+  {
+    "id": "constraint_transaction_sample_size",
+    "target": "term_transaction",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "transactions",
+      "sample",
+      "how many transactions",
+      "count of transactions"
+    ],
+    "severity": "warning",
+    "scope": "Interpreting any count, total or average computed from the transaction table.",
+    "confidence": "high",
+    "description": "The transaction table holds exactly 1000 rows, covering 517 distinct customers, 437 distinct gas stations and 28 distinct products, against a master of 5716 gas stations and 32461 customers. Counts derived from it describe this sample rather than the full cardholder population, and every other customer appears only in the consumption table.",
+    "evidence": [
+      "evidence_transaction_cardinality",
+      "evidence_customer_coverage",
+      "evidence_row_counts"
+    ]
+  },
+  {
+    "id": "constraint_customer_population_coverage",
+    "target": "term_customer",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "customers",
+      "how many customers",
+      "population",
+      "coverage",
+      "all customers"
+    ],
+    "severity": "info",
+    "scope": "Denominators that count customers, such as the share of customers paying in a currency.",
+    "confidence": "high",
+    "description": "The customer master contains 32461 distinct customers, each with a non-null Segment and Currency. Consumption records cover 30566 of them, so 1895 customers have no consumption at all, and only 517 appear in the transaction sample. A share of customers computed over consumption or transactions therefore uses a different denominator than one computed over the customer master.",
+    "evidence": [
+      "evidence_customer_coverage",
+      "evidence_row_counts"
+    ]
+  },
+  {
+    "id": "constraint_consumption_unit_unknown",
+    "target": "term_gas_consumption",
+    "constraint_type": "unit",
+    "trigger_keywords": [
+      "consumption",
+      "unit",
+      "litres",
+      "volume",
+      "difference in consumption",
+      "compare consumption"
+    ],
+    "severity": "warning",
+    "scope": "Interpreting or comparing consumption magnitudes, especially across customer groups.",
+    "confidence": "medium",
+    "description": "Consumption is a per-customer monthly aggregate and neither the database nor the workload documents its measurement unit or any currency linkage. The magnitudes behave accordingly: 2012 consumption sums to 404716983.98 for CZK customers against 2192413.81 for EUR customers, a ratio near 185, while the customer counts behind them are 25134 versus 1629, a ratio near 15. Raw cross-group sums should therefore be reported as recorded values rather than treated as directly comparable physical quantities without unit interpretation.",
+    "evidence": [
+      "evidence_consumption_by_currency_2012",
+      "evidence_yearmonth_scope"
+    ]
+  },
+  {
+    "id": "constraint_customer_id_join_key",
+    "target": "term_customer",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "join",
+      "link",
+      "customer id",
+      "across tables",
+      "relate transactions to customers"
+    ],
+    "severity": "warning",
+    "scope": "Combining customer attributes with transaction or consumption records.",
+    "confidence": "high",
+    "description": "CustomerID is the shared key connecting the customers master to both transactions_1k and yearmonth, and it is the only path between them: transactions and consumption records share no other column. Attachment of customer attributes such as Segment and Currency to transactions or consumption must go through this key, and every row in both tables resolves to a customers row, so the join never loses or duplicates records.",
+    "evidence": [
+      "evidence_join_integrity",
+      "evidence_customer_coverage"
+    ]
+  }
+]

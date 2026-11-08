@@ -1,0 +1,400 @@
+[
+  {
+    "id": "c_thrombosis_grade_semantics",
+    "target": "thrombosis_severity",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "thrombosis",
+      "degree of thrombosis",
+      "severe thrombosis",
+      "most serious thrombosis",
+      "does not have thrombosis",
+      "thrombosis cases",
+      "thrombosis = 1",
+      "thrombosis = 2"
+    ],
+    "severity": "block",
+    "scope": "Applies whenever thrombosis presence or severity is filtered or compared.",
+    "confidence": "high",
+    "description": "Thrombosis is an ordinal severity grade, not a boolean. 0 means no thrombosis and is the value used for 'does not have thrombosis'. Non-zero values encode clinical severity grades where the workload treats 1 as the most serious and 2 as severe; grade 3 also exists with only 5 records. Never treat 'severe' and 'most serious' as the same numeric value.",
+    "evidence": [
+      "ev_thrombosis_distribution",
+      "ev_symptoms_only_for_thrombosis"
+    ]
+  },
+  {
+    "id": "c_symptoms_thrombosis_coupling",
+    "target": "symptom",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "symptoms",
+      "symptoms observed",
+      "symptoms is not NULL",
+      "clinical symptoms"
+    ],
+    "severity": "warning",
+    "scope": "Applies when symptoms are used as a filter or as evidence of a clinical event.",
+    "confidence": "high",
+    "description": "Symptoms is populated for exactly the 80 examinations whose Thrombosis grade is non-zero and is NULL for all 726 grade-0 examinations. A non-NULL Symptoms filter therefore also selects thrombosis cases, and filtering on symptoms can never return a patient without recorded thrombosis.",
+    "evidence": [
+      "ev_symptoms_only_for_thrombosis"
+    ]
+  },
+  {
+    "id": "c_sex_encoding",
+    "target": "sex",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "sex",
+      "gender",
+      "male",
+      "female",
+      "men",
+      "women",
+      "SEX = 'F'"
+    ],
+    "severity": "warning",
+    "scope": "Applies to every patient-level filter on sex.",
+    "confidence": "high",
+    "description": "Sex is encoded as the single characters 'M' and 'F'. 13 rows carry an empty string; these are neither male nor female and must not be silently folded into either category when percentages over all patients are computed.",
+    "evidence": [
+      "ev_sex_values"
+    ]
+  },
+  {
+    "id": "c_admission_encoding",
+    "target": "admission_status",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "outpatient clinic",
+      "immediately followed at the outpatient clinic",
+      "admission",
+      "admitted",
+      "inpatient",
+      "hospitalized",
+      "followed up"
+    ],
+    "severity": "block",
+    "scope": "Applies when outpatient versus inpatient status is filtered.",
+    "confidence": "high",
+    "description": "'-' means the patient was followed as an outpatient and '+' means the patient was admitted as an inpatient. The workload phrase 'immediately followed at the outpatient clinic' corresponds to '-'. Empty strings (34 rows) and a stray '+(' variant (3 rows) are not valid statuses.",
+    "evidence": [
+      "ev_admission_values"
+    ]
+  },
+  {
+    "id": "c_uric_acid_sex_specific_range",
+    "target": "uric_acid",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "uric acid",
+      "UA",
+      "normal range",
+      "within a normal range",
+      "abnormal uric acid",
+      "uric acid count"
+    ],
+    "severity": "block",
+    "scope": "Applies when uric acid is compared with a reference range; the patient's sex is required for the comparison.",
+    "confidence": "medium",
+    "description": "The uric acid reference bound is sex-specific: a value is within the normal range when it is at or below 8.0 for a male patient and at or below 6.5 for a female patient; values above the bound are the abnormal (elevated) ones. Because the bound depends on sex, a comparison against a single threshold for all patients is wrong. Workload questions phrased as 'abnormal uric acid counts' mean records above the sex-specific upper bound.",
+    "evidence": [
+      "ev_ua_distribution",
+      "ev_sex_values"
+    ]
+  },
+  {
+    "id": "c_hematocrit_upper_bound",
+    "target": "hematocrit",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "hematocrit",
+      "HCT",
+      "hematoclit",
+      "exceeded the normal range",
+      "beyond normal range"
+    ],
+    "severity": "block",
+    "scope": "Applies when hematocrit is compared with its reference range.",
+    "confidence": "high",
+    "description": "For hematocrit, the abnormal direction used by this workload is the upper one: a level at or above 52 exceeds the normal range. Lower values are not treated as the abnormal condition here.",
+    "evidence": [
+      "ev_hematocrit_distribution"
+    ]
+  },
+  {
+    "id": "c_rbc_lower_bound",
+    "target": "red_blood_cell_count",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "red blood cell",
+      "RBC",
+      "lower red blood cell",
+      "low red blood cell",
+      "anemia"
+    ],
+    "severity": "block",
+    "scope": "Applies when red blood cell count is compared with its reference range.",
+    "confidence": "high",
+    "description": "For red blood cell count the abnormal direction used by this workload is the lower one: a count below 3.5 counts as 'lower red blood cell'.",
+    "evidence": [
+      "ev_rbc_distribution"
+    ]
+  },
+  {
+    "id": "c_ldh_upper_bound",
+    "target": "lactate_dehydrogenase",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "LDH",
+      "lactate dehydrogenase",
+      "beyond normal range",
+      "elevated LDH"
+    ],
+    "severity": "block",
+    "scope": "Applies when LDH is compared with its reference range.",
+    "confidence": "high",
+    "description": "For lactate dehydrogenase the abnormal direction used by this workload is the upper one: values above 500 are 'beyond the normal range'.",
+    "evidence": [
+      "ev_ldh_distribution"
+    ]
+  },
+  {
+    "id": "c_pt_upper_bound",
+    "target": "prothrombin_time",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "PT",
+      "prothrombin time",
+      "abnormal prothrombin time",
+      "coagulation"
+    ],
+    "severity": "block",
+    "scope": "Applies when prothrombin time is compared with its reference range.",
+    "confidence": "high",
+    "description": "For prothrombin time the abnormal direction used by this workload is the upper one: values at or above 14 count as an abnormal prothrombin time. Records with a NULL PT are missing measurements, not normal results.",
+    "evidence": [
+      "ev_pt_distribution"
+    ]
+  },
+  {
+    "id": "c_iga_reference_interval",
+    "target": "immunoglobulin_a",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "IgA",
+      "Ig A",
+      "immunoglobulin A",
+      "normal Ig A level",
+      "IGA level"
+    ],
+    "severity": "block",
+    "scope": "Applies when immunoglobulin A is compared with its reference range.",
+    "confidence": "high",
+    "description": "Immunoglobulin A uses a two-sided reference interval: a level is normal when it is strictly greater than 80 and strictly less than 500. Both lower and higher values are abnormal, so a single-sided comparison is wrong.",
+    "evidence": [
+      "ev_iga_distribution"
+    ]
+  },
+  {
+    "id": "c_age_definition",
+    "target": "age",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "age",
+      "years old",
+      "older than",
+      "underage",
+      "youngest",
+      "oldest",
+      "age of patient"
+    ],
+    "severity": "warning",
+    "scope": "Applies whenever age is computed, filtered or compared.",
+    "confidence": "medium",
+    "description": "Age is not stored; it is derived from Birthday against the current date, typically as current year minus birth year. 'Underage' means below 18 years of age, and because the youngest recorded birthday is 2007 while the study period ends in 1999, an age-below-18 filter must be applied to a birth date relative to the period of the question rather than to a literal birth-year comparison. The 'youngest' patient is the one with the largest birthday value and the 'oldest' the smallest, but only among the patients that satisfy the rest of the question.",
+    "evidence": [
+      "ev_age_derivation",
+      "ev_birthday_range"
+    ]
+  },
+  {
+    "id": "c_diagnosis_vocabulary",
+    "target": "patient_diagnosis",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "diagnosis",
+      "disease",
+      "diagnosed with",
+      "SLE",
+      "RA",
+      "APS",
+      "Sjogren",
+      "PSS",
+      "MCTD",
+      "BEHCET",
+      "susp"
+    ],
+    "severity": "block",
+    "scope": "Applies to every disease-based cohort filter in either the Patient or the Examination table.",
+    "confidence": "high",
+    "description": "Diagnoses are stored as free-text disease abbreviations, not as a coded key. Common single codes are SLE (systemic lupus erythematosus), RA (rheumatoid arthritis), APS (antiphospholipid syndrome), PSS (progressive systemic sclerosis), MCTD, PM, DM, BEHCET and Sjogren's syndrome. A cell may hold several codes separated by commas, and 154 patient rows append 'susp' to mark a suspected rather than confirmed diagnosis; a substring match on a code therefore also matches combinations such as 'SLE, APS' and matches suspected cases. Disease abbreviations must always be matched as text, never treated as numeric or enumerated keys.",
+    "evidence": [
+      "ev_patient_diagnosis_codes",
+      "ev_examination_diagnosis_codes",
+      "ev_diagnosis_vocabulary_overlap"
+    ]
+  },
+  {
+    "id": "c_diagnosis_string_matching",
+    "target": "examination_diagnosis",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "diagnosis match",
+      "SLE",
+      "Sjogren",
+      "SJS",
+      "SjS",
+      "case sensitive",
+      "diagnosis equals"
+    ],
+    "severity": "warning",
+    "scope": "Applies when diagnosis values are compared with literal strings.",
+    "confidence": "high",
+    "description": "The two diagnosis columns spell Sjogren's syndrome differently: the Patient table uses 'SJS' while the Examination table uses 'SjS'. Equality comparison on text is case sensitive in this database, so 'sle' does not equal 'SLE' and 'SJS' does not equal 'SjS', whereas a substring comparison is case insensitive and matches both spellings. A question that names one spelling will silently miss rows stored with the other unless the comparison accounts for both.",
+    "evidence": [
+      "ev_diagnosis_vocabulary_overlap"
+    ]
+  },
+  {
+    "id": "c_examination_patient_linkage_gap",
+    "target": "examination",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "examination",
+      "patient",
+      "join",
+      "ID",
+      "examined",
+      "examination record"
+    ],
+    "severity": "warning",
+    "scope": "Applies whenever the Examination table is combined with the Patient table.",
+    "confidence": "high",
+    "description": "Only 70 of the 806 examination rows carry an ID that exists in the Patient table (69 distinct patients); the remaining 736 rows reference patient IDs that are absent from Patient, and their ID range extends well beyond the maximum Patient ID. An inner join between Examination and Patient therefore discards most examination rows. Laboratory records do not have this problem: all 13908 rows resolve to a Patient row. Decide deliberately whether a question about examinations also requires patient attributes before joining.",
+    "evidence": [
+      "ev_patient_linkage_coverage"
+    ]
+  },
+  {
+    "id": "c_lab_wide_format_nulls",
+    "target": "laboratory_record",
+    "constraint_type": "scope",
+    "trigger_keywords": [
+      "laboratory examination",
+      "lab test count",
+      "COUNT(ID)",
+      "laboratory test",
+      "test records"
+    ],
+    "severity": "warning",
+    "scope": "Applies to every count or aggregation over the Laboratory table.",
+    "confidence": "high",
+    "description": "The Laboratory table is wide: each analyte has its own column and a row usually carries only a few measured analytes, with every other column NULL. Counting rows therefore counts test events, not measurements; counting 'abnormal' results must exclude NULL so that missing measurements are not silently treated as normal.",
+    "evidence": [
+      "ev_lab_wide_format_and_nulls",
+      "ev_laboratory_table"
+    ]
+  },
+  {
+    "id": "c_lab_serology_encodings",
+    "target": "anti_sm_antibody",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "anti-SM",
+      "normal anti-SM",
+      "SM",
+      "negative",
+      "positive",
+      "titer",
+      "serology"
+    ],
+    "severity": "block",
+    "scope": "Applies to the textual serology columns of Laboratory, such as SM, SSA, SSB, RNP, SC170, CENTROMEA, DNA, CRP, RA and RF.",
+    "confidence": "high",
+    "description": "These columns mix encodings. A negative result can appear as '-', as the word 'negative', as the character '0', or as an empty string, and a positive result can appear as '+', as '2+', as '+-' for weak positive, or as a numeric titre. For anti-SM specifically, 'normal' means negative, which covers both the '0' and 'negative' spellings, while '1' means '+' (positive). Any filter on these columns must cover every spelling of the intended class instead of a single literal.",
+    "evidence": [
+      "ev_sm_encodings",
+      "ev_serology_text_encodings"
+    ]
+  },
+  {
+    "id": "c_date_field_roles",
+    "target": "record_date",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "date",
+      "came to the hospital",
+      "came at the hospital",
+      "first visit",
+      "examined",
+      "diagnosed on",
+      "born on",
+      "in 1997",
+      "after 1990"
+    ],
+    "severity": "warning",
+    "scope": "Applies whenever a question constrains a date without naming a column.",
+    "confidence": "medium",
+    "description": "Four distinct dates exist and they are not interchangeable. Patient.Description is the record date used for 'the patient came to the hospital in <year>' and for the date of diagnosis; Patient.'First Date' is the patient's first visit and is the column behind 'came to the hospital after <date>'; Examination.'Examination Date' is when a clinical examination happened and is the column behind 'was examined in <year>'; Laboratory.Date is when a laboratory test was run and is the only date that can order repeated measurements of one analyte. A time condition must be applied to the column that matches the question's intent, and 'First Date' is empty for 251 patients.",
+    "evidence": [
+      "ev_record_date_semantics",
+      "ev_first_visit_date_range",
+      "ev_examination_date_range",
+      "ev_lab_test_date_range"
+    ]
+  },
+  {
+    "id": "c_lab_data_quality_outliers",
+    "target": "hematocrit",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "outlier",
+      "implausible value",
+      "hematocrit",
+      "HCT",
+      "data quality",
+      "aCL IgA"
+    ],
+    "severity": "warning",
+    "scope": "Applies when laboratory values are aggregated, averaged or compared against reference bounds.",
+    "confidence": "medium",
+    "description": "The laboratory data contains implausible extremes: 11 hematocrit records are below 10 percent while the observed maximum is 56, and anticardiolipin concentrations reach values such as 48547 for aCL IgA and 187122 for aCL IgM against a median near zero. These extremes shift averages and can dominate ordering or comparison questions; results based on a single extreme record should be reported as such.",
+    "evidence": [
+      "ev_hematocrit_distribution",
+      "ev_acl_columns",
+      "ev_lab_wide_format_and_nulls"
+    ]
+  },
+  {
+    "id": "c_derived_metrics_not_stored",
+    "target": "age",
+    "constraint_type": "scope",
+    "trigger_keywords": [
+      "percentage",
+      "ratio",
+      "rate",
+      "proportion",
+      "decrease rate",
+      "how many",
+      "average"
+    ],
+    "severity": "info",
+    "scope": "Applies to every workload metric expressed as a percentage, ratio or rate, and to all counting questions.",
+    "confidence": "high",
+    "description": "The database stores raw patient attributes and measurements only. Counts, percentages, ratios, rates and ages are not persisted anywhere and must be derived from the stored values at query time. This means the denominator of a percentage question must be chosen explicitly, since several questions compare a subgroup against a larger population.",
+    "evidence": [
+      "ev_schema_no_derived_metrics"
+    ]
+  }
+]

@@ -1,0 +1,140 @@
+{
+ "db_id": "california_schools",
+ "questions": [
+  {
+   "question_id": 62,
+   "db_id": "california_schools",
+   "question": "What is the total number of non-chartered schools in the county of Los Angeles with a percent (%) of eligible free meals for grades 1 through 12 that is less than 0.18%?",
+   "evidence": "non-chartered schools refer to schools whose fld062 = 0; K-12 means grades 1 through 12; percent of eligible free rate for K-12 = fld020 * 100 / fld019",
+   "SQL": "SELECT COUNT(T2.fld046) FROM tab01 AS T1 INNER JOIN tab03 AS T2 ON T1.fld001 = T2.fld001 WHERE T2.fld044 = 'Los Angeles' AND T2.fld062 = 0 AND CAST(T1.fld020 AS REAL) * 100 / T1.fld019 < 0.18",
+   "difficulty": "challenging",
+   "SQL_original": "SELECT COUNT(T2.School) FROM frpm AS T1 INNER JOIN schools AS T2 ON T1.CDSCode = T2.CDSCode WHERE T2.County = 'Los Angeles' AND T2.Charter = 0 AND CAST(T1.`Free Meal Count (K-12)` AS REAL) * 100 / T1.`Enrollment (K-12)` < 0.18"
+  },
+  {
+   "question_id": 32,
+   "db_id": "california_schools",
+   "question": "What is the eligible free or reduced price meal rate for the top 5 schools in grades 1-12 with the highest free or reduced price meal count of the schools with the ownership code 66?",
+   "evidence": "grades 1-12 means K-12; Eligible free or reduced price meal rate for K-12 = fld022 / fld019",
+   "SQL": "SELECT CAST(T1.fld022 AS REAL) / T1.fld019 FROM tab01 AS T1 INNER JOIN tab03 AS T2 ON T1.fld001 = T2.fld001 WHERE T2.fld067 = 66 ORDER BY T1.fld022 DESC LIMIT 5",
+   "difficulty": "moderate",
+   "SQL_original": "SELECT CAST(T1.`FRPM Count (K-12)` AS REAL) / T1.`Enrollment (K-12)` FROM frpm AS T1 INNER JOIN schools AS T2 ON T1.CDSCode = T2.CDSCode WHERE T2.SOC = 66 ORDER BY T1.`FRPM Count (K-12)` DESC LIMIT 5"
+  },
+  {
+   "question_id": 79,
+   "db_id": "california_schools",
+   "question": "Between San Diego and Santa Barbara, which county offers the most number of schools that does not offer physical building? Indicate the amount.",
+   "evidence": "'Does not offer physical building' means fld075 = F in the database.",
+   "SQL": "SELECT fld044, COUNT(fld075) FROM tab03 WHERE (fld044 = 'San Diego' OR fld044 = 'Santa Barbara') AND fld075 = 'F' GROUP BY fld044 ORDER BY COUNT(fld075) DESC LIMIT 1",
+   "difficulty": "moderate",
+   "SQL_original": "SELECT County, COUNT(Virtual) FROM schools WHERE (County = 'San Diego' OR County = 'Santa Barbara') AND Virtual = 'F' GROUP BY County ORDER BY COUNT(Virtual) DESC LIMIT 1"
+  },
+  {
+   "question_id": 48,
+   "db_id": "california_schools",
+   "question": "What is the ratio of merged Unified School District schools in Orange County to merged Elementary School District schools?",
+   "evidence": "Elementary School District refers to fld065 = 52; Unified School District refers to fld065 = 54.",
+   "SQL": "SELECT CAST(SUM(CASE WHEN fld065 = 54 THEN 1 ELSE 0 END) AS REAL) / SUM(CASE WHEN fld065 = 52 THEN 1 ELSE 0 END) FROM tab03 WHERE fld043 = 'Merged' AND fld044 = 'Orange'",
+   "difficulty": "moderate",
+   "SQL_original": "SELECT CAST(SUM(CASE WHEN DOC = 54 THEN 1 ELSE 0 END) AS REAL) / SUM(CASE WHEN DOC = 52 THEN 1 ELSE 0 END) FROM schools WHERE StatusType = 'Merged' AND County = 'Orange'"
+  },
+  {
+   "question_id": 40,
+   "db_id": "california_schools",
+   "question": "What is the telephone number for the school with the lowest average score in reading in Fresno Unified?",
+   "evidence": "Fresno Unified is a name of district;",
+   "SQL": "SELECT T2.fld057 FROM tab02 AS T1 INNER JOIN tab03 AS T2 ON T1.fld030 = T2.fld001 WHERE T2.fld045 = 'Fresno Unified' AND NOT T1.fld037 IS NULL ORDER BY T1.fld037 ASC LIMIT 1",
+   "difficulty": "moderate",
+   "SQL_original": "SELECT T2.Phone FROM satscores AS T1 INNER JOIN schools AS T2 ON T1.cds = T2.CDSCode WHERE T2.District = 'Fresno Unified' AND T1.AvgScrRead IS NOT NULL ORDER BY T1.AvgScrRead ASC LIMIT 1"
+  },
+  {
+   "question_id": 23,
+   "db_id": "california_schools",
+   "question": "List the names of schools with more than 30 difference in enrollements between K-12 and ages 5-17? Please also give the full street adress of the schools.",
+   "evidence": "Diffrence in enrollement = fld019 - fld024",
+   "SQL": "SELECT T1.fld046, T1.fld047 FROM tab03 AS T1 INNER JOIN tab01 AS T2 ON T1.fld001 = T2.fld001 WHERE T2.fld019 - T2.fld024 > 30",
+   "difficulty": "moderate",
+   "SQL_original": "SELECT T1.School, T1.Street FROM schools AS T1 INNER JOIN frpm AS T2 ON T1.CDSCode = T2.CDSCode WHERE T2.`Enrollment (K-12)` - T2.`Enrollment (Ages 5-17)` > 30"
+  },
+  {
+   "question_id": 50,
+   "db_id": "california_schools",
+   "question": "What is the postal street address for the school with the 7th highest Math average? Indicate the school's name.",
+   "evidence": "Postal street and mailing street are synonyms.",
+   "SQL": "SELECT T2.fld052, T2.fld046 FROM tab02 AS T1 INNER JOIN tab03 AS T2 ON T1.fld030 = T2.fld001 ORDER BY T1.fld038 DESC LIMIT 1 OFFSET 6",
+   "difficulty": "simple",
+   "SQL_original": "SELECT T2.MailStreet, T2.School FROM satscores AS T1 INNER JOIN schools AS T2 ON T1.cds = T2.CDSCode ORDER BY T1.AvgScrMath DESC LIMIT 6, 1"
+  },
+  {
+   "question_id": 25,
+   "db_id": "california_schools",
+   "question": "Name schools in Riverside which the average of average math score for SAT is grater than 400, what is the funding type of these schools?",
+   "evidence": "Average of average math = sum(average math scores) / count(tab03).",
+   "SQL": "SELECT T1.fld032, T2.fld015 FROM tab02 AS T1 INNER JOIN tab01 AS T2 ON T1.fld030 = T2.fld001 WHERE T2.fld007 LIKE 'Riverside%' GROUP BY T1.fld032, T2.fld015 HAVING CAST(SUM(T1.fld038) AS REAL) / COUNT(T1.fld030) > 400",
+   "difficulty": "moderate",
+   "SQL_original": "SELECT T1.sname, T2.`Charter Funding Type` FROM satscores AS T1 INNER JOIN frpm AS T2 ON T1.cds = T2.CDSCode WHERE T2.`District Name` LIKE 'Riverside%' GROUP BY T1.sname, T2.`Charter Funding Type` HAVING CAST(SUM(T1.AvgScrMath) AS REAL) / COUNT(T1.cds) > 400"
+  },
+  {
+   "question_id": 41,
+   "db_id": "california_schools",
+   "question": "List the names of virtual schools that are among the top 5 in their respective counties based on average reading scores.",
+   "evidence": "Exclusively virtual refers to fld075 = 'F'; respective counties means PARTITION BY County",
+   "SQL": "SELECT fld046 FROM (SELECT T2.fld046, T1.fld037, RANK() OVER (PARTITION BY T2.fld044 ORDER BY T1.fld037 DESC) AS rnk FROM tab02 AS T1 INNER JOIN tab03 AS T2 ON T1.fld030 = T2.fld001 WHERE T2.fld075 = 'F') AS ranked_schools WHERE rnk <= 5",
+   "difficulty": "simple",
+   "SQL_original": "SELECT School FROM (SELECT T2.School,T1.AvgScrRead, RANK() OVER (PARTITION BY T2.County ORDER BY T1.AvgScrRead DESC) AS rnk FROM satscores AS T1 INNER JOIN schools AS T2 ON T1.cds = T2.CDSCode WHERE T2.Virtual = 'F' ) ranked_schools WHERE rnk <= 5"
+  },
+  {
+   "question_id": 27,
+   "db_id": "california_schools",
+   "question": "What is the average score in writing for the schools that were opened after 1991 or closed before 2000? List the school names along with the score. Also, list the communication number of the schools if there is any.",
+   "evidence": "Communication number refers to phone number.",
+   "SQL": "SELECT T2.fld046, T1.fld039, T2.fld057 FROM tab03 AS T2 LEFT JOIN tab02 AS T1 ON T2.fld001 = T1.fld030 WHERE STRFTIME('%Y', T2.fld060) > '1991' OR STRFTIME('%Y', T2.fld061) < '2000'",
+   "difficulty": "moderate",
+   "SQL_original": "SELECT T2.School, T1.AvgScrWrite, T2.Phone FROM schools AS T2 LEFT JOIN satscores AS T1 ON T2.CDSCode = T1.cds WHERE strftime('%Y', T2.OpenDate) > '1991' OR strftime('%Y', T2.ClosedDate) < '2000'"
+  },
+  {
+   "question_id": 36,
+   "db_id": "california_schools",
+   "question": "Under whose administration is the school with the highest number of students scoring 1500 or more on the SAT? Indicate their full names.",
+   "evidence": "full name means first name, last name; There are at most 3 administrators for each school; SAT Scores are greater or equal to 1500 refers to fld040",
+   "SQL": "SELECT T2.fld079, T2.fld080, T2.fld082, T2.fld083, T2.fld085, T2.fld086 FROM tab02 AS T1 INNER JOIN tab03 AS T2 ON T1.fld030 = T2.fld001 ORDER BY T1.fld040 DESC LIMIT 1",
+   "difficulty": "challenging",
+   "SQL_original": "SELECT T2.AdmFName1, T2.AdmLName1, T2.AdmFName2, T2.AdmLName2, T2.AdmFName3, T2.AdmLName3 FROM satscores AS T1 INNER JOIN schools AS T2 ON T1.cds = T2.CDSCode ORDER BY T1.NumGE1500 DESC LIMIT 1"
+  },
+  {
+   "question_id": 28,
+   "db_id": "california_schools",
+   "question": "Consider the average difference between K-12 enrollment and 15-17 enrollment of schools that are locally funded, list the names and DOC type of schools which has a difference above this average.",
+   "evidence": "Difference between K-12 enrollment and 15-17 enrollment can be computed by fld019 - fld024",
+   "SQL": "SELECT T2.fld046, T2.fld065 FROM tab01 AS T1 INNER JOIN tab03 AS T2 ON T1.fld001 = T2.fld001 WHERE T2.fld064 = 'Locally funded' AND (T1.fld019 - T1.fld024) > (SELECT AVG(T3.fld019 - T3.fld024) FROM tab01 AS T3 INNER JOIN tab03 AS T4 ON T3.fld001 = T4.fld001 WHERE T4.fld064 = 'Locally funded')",
+   "difficulty": "challenging",
+   "SQL_original": "SELECT T2.School, T2.DOC FROM frpm AS T1 INNER JOIN schools AS T2 ON T1.CDSCode = T2.CDSCode WHERE T2.FundingType = 'Locally funded' AND (T1.`Enrollment (K-12)` - T1.`Enrollment (Ages 5-17)`) > (SELECT AVG(T3.`Enrollment (K-12)` - T3.`Enrollment (Ages 5-17)`) FROM frpm AS T3 INNER JOIN schools AS T4 ON T3.CDSCode = T4.CDSCode WHERE T4.FundingType = 'Locally funded')"
+  },
+  {
+   "question_id": 77,
+   "db_id": "california_schools",
+   "question": "Which schools served a grade span of Kindergarten to 9th grade in the county of Los Angeles and what is its Percent (%) Eligible FRPM (Ages 5-17)?",
+   "evidence": "Percent (%) Eligible FRPM (Ages 5-17) can be acquired by fld027 / fld024 * 100",
+   "SQL": "SELECT T2.fld046, T1.fld027 * 100 / T1.fld024 FROM tab01 AS T1 INNER JOIN tab03 AS T2 ON T1.fld001 = T2.fld001 WHERE T2.fld044 = 'Los Angeles' AND T2.fld074 = 'K-9'",
+   "difficulty": "moderate",
+   "SQL_original": "SELECT T2.School, T1.`FRPM Count (Ages 5-17)` * 100 / T1.`Enrollment (Ages 5-17)` FROM frpm AS T1 INNER JOIN schools AS T2 ON T1.CDSCode = T2.CDSCode WHERE T2.County = 'Los Angeles' AND T2.GSserved = 'K-9'"
+  },
+  {
+   "question_id": 11,
+   "db_id": "california_schools",
+   "question": "Please list the codes of the schools with a total enrollment of over 500.",
+   "evidence": "Total enrollment can be represented by fld019 + fld024",
+   "SQL": "SELECT T2.fld001 FROM tab03 AS T1 INNER JOIN tab01 AS T2 ON T1.fld001 = T2.fld001 WHERE T2.fld019 + T2.fld024 > 500",
+   "difficulty": "simple",
+   "SQL_original": "SELECT T2.CDSCode FROM schools AS T1 INNER JOIN frpm AS T2 ON T1.CDSCode = T2.CDSCode WHERE T2.`Enrollment (K-12)` + T2.`Enrollment (Ages 5-17)` > 500"
+  },
+  {
+   "question_id": 24,
+   "db_id": "california_schools",
+   "question": "Give the names of the schools with the percent eligible for free meals in K-12 is more than 0.1 and test takers whose test score is greater than or equal to 1500?",
+   "evidence": "Percent eligible for free meals = Free Meal Count (K-12) / Total (Enrollment (K-12)",
+   "SQL": "SELECT T2.fld008 FROM tab02 AS T1 INNER JOIN tab01 AS T2 ON T1.fld030 = T2.fld001 WHERE CAST(T2.fld020 AS REAL) / T2.fld019 > 0.1 AND T1.fld040 > 0",
+   "difficulty": "moderate",
+   "SQL_original": "SELECT T2.`School Name` FROM satscores AS T1 INNER JOIN frpm AS T2 ON T1.cds = T2.CDSCode WHERE CAST(T2.`Free Meal Count (K-12)` AS REAL) / T2.`Enrollment (K-12)` > 0.1 AND T1.NumGE1500 > 0"
+  }
+ ]
+}

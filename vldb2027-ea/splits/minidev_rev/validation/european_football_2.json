@@ -1,0 +1,69 @@
+{
+ "db_id": "european_football_2",
+ "questions": [
+  {
+   "question_id": 1068,
+   "db_id": "european_football_2",
+   "question": "From 2010 to 2015, what was the average overall rating of players who are higher than 170?",
+   "evidence": "from 2010 to 2015 refers to strftime('%Y', date) >= '2010' AND <= '2015'; average overall rating = SUM(t2.overall_rating)/ COUNT(t2.id); higher than 170 refers to Player.height > 170;",
+   "SQL": "SELECT CAST(SUM(t2.overall_rating) AS REAL) / COUNT(t2.id) FROM Player AS t1 INNER JOIN Player_Attributes AS t2 ON t1.player_api_id = t2.player_api_id WHERE t1.height > 170 AND STRFTIME('%Y',t2.`date`) >= '2010' AND STRFTIME('%Y',t2.`date`) <= '2015'",
+   "difficulty": "moderate"
+  },
+  {
+   "question_id": 1110,
+   "db_id": "european_football_2",
+   "question": "Tell the build Up play passing class for \"FC Lorient\" on 2010/2/22.",
+   "evidence": "\"FC Lorient\" refers to team_long_name = 'FC Lorient'; on 2010/2/22 refers to date LIKE '2010-02-22%';",
+   "SQL": "SELECT t2.buildUpPlayPassingClass FROM Team AS t1 INNER JOIN Team_Attributes AS t2 ON t1.team_api_id = t2.team_api_id WHERE t1.team_long_name = 'FC Lorient' AND t2.`date` LIKE '2010-02-22%'",
+   "difficulty": "moderate"
+  },
+  {
+   "question_id": 1076,
+   "db_id": "european_football_2",
+   "question": "What is the difference of the average ball control score between Abdou Diallo and Aaron Appindangoye\n?",
+   "evidence": "difference of the average ball control = SUBTRACT(AVG(ball_control WHERE player_name = 'Abdou Diallo'), AVG(ball_control WHERE player_name = 'Aaron Appindangoye')); AVG(ball_control WHERE player_name = 'XX XX') = SUM(CASE WHEN player_name = 'XX XX' THEN ball_control ELSE 0 END) / COUNT(CASE WHEN player_name = 'XX XX' THEN id ELSE NULL END)",
+   "SQL": "SELECT CAST(SUM(CASE WHEN t1.player_name = 'Abdou Diallo' THEN t2.ball_control ELSE 0 END) AS REAL) / COUNT(CASE WHEN t1.player_name = 'Abdou Diallo' THEN t2.id ELSE NULL END) - CAST(SUM(CASE WHEN t1.player_name = 'Aaron Appindangoye' THEN t2.ball_control ELSE 0 END) AS REAL) / COUNT(CASE WHEN t1.player_name = 'Aaron Appindangoye' THEN t2.id ELSE NULL END) FROM Player AS t1 INNER JOIN Player_Attributes AS t2 ON t1.player_api_id = t2.player_api_id",
+   "difficulty": "challenging"
+  },
+  {
+   "question_id": 1146,
+   "db_id": "european_football_2",
+   "question": "Please provide the full name of the away team that scored the most goals.",
+   "evidence": "full name refers to team_long_name; away team refers to away_team_api_id; scored the most goals refers to MAX(away_team_goal)",
+   "SQL": "SELECT t2.team_long_name FROM Match AS t1 INNER JOIN Team AS t2 ON t1.away_team_api_id = t2.team_api_id ORDER BY t1.away_team_goal DESC LIMIT 1",
+   "difficulty": "moderate"
+  },
+  {
+   "question_id": 1078,
+   "db_id": "european_football_2",
+   "question": "Which player is older, Aaron Lennon or Abdelaziz Barrada?",
+   "evidence": "The larger the birthday value, the younger the person is, and vice versa;",
+   "SQL": "SELECT player_name FROM Player WHERE player_name IN ('Aaron Lennon', 'Abdelaziz Barrada') ORDER BY birthday ASC LIMIT 1",
+   "difficulty": "simple"
+  },
+  {
+   "question_id": 1139,
+   "db_id": "european_football_2",
+   "question": "What was the final score for the match on September 24, 2008, in the Belgian Jupiler League between the home team and the away team?",
+   "evidence": "September 24, 2008 refers to date like '2008-09-24%'; in the Belgian Jupiler League refers to League.name = 'Belgium Jupiler League'; final score for home team refers to home_team_goal; final score for away team refers to away_team_goal",
+   "SQL": "SELECT t2.home_team_goal, t2.away_team_goal FROM League AS t1 INNER JOIN Match AS t2 ON t1.id = t2.league_id WHERE t1.name = 'Belgium Jupiler League' AND t2.`date` LIKE '2008-09-24%'",
+   "difficulty": "challenging"
+  },
+  {
+   "question_id": 1107,
+   "db_id": "european_football_2",
+   "question": "When was the first time did Kevin Constant have his highest crossing score? Give the date.",
+   "evidence": "Kevin Constant refers to player_name = 'Kevin Constant'; highest crossing score refers to MAX(crossing)",
+   "SQL": "SELECT `date` FROM ( SELECT t2.crossing, t2.`date` FROM Player AS t1 INNER JOIN Player_Attributes AS t2 ON t1.player_fifa_api_id = t2.player_fifa_api_id WHERE t1.player_name = 'Kevin Constant' ORDER BY t2.crossing DESC) ORDER BY date DESC LIMIT 1",
+   "difficulty": "moderate"
+  },
+  {
+   "question_id": 1141,
+   "db_id": "european_football_2",
+   "question": "Does the KSV Cercle Brugge team have a slow, balanced or fast speed class?",
+   "evidence": "KSV Cercle Brugge refers to team_long_name = 'KSV Cercle Brugge'; speed class refers to buildUpPlaySpeedClass",
+   "SQL": "SELECT DISTINCT t1.buildUpPlaySpeedClass FROM Team_Attributes AS t1 INNER JOIN Team AS t2 ON t1.team_api_id = t2.team_api_id WHERE t2.team_long_name = 'KSV Cercle Brugge'",
+   "difficulty": "moderate"
+  }
+ ]
+}

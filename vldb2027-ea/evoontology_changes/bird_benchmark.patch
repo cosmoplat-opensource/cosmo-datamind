@@ -1,0 +1,101 @@
+diff --git a/benchmarks/bird/agent/data_agent.py b/benchmarks/bird/agent/data_agent.py
+index bfaea74..d25acc8 100644
+--- a/benchmarks/bird/agent/data_agent.py
++++ b/benchmarks/bird/agent/data_agent.py
+@@ -88,6 +88,10 @@ class BIRDReActAgent:
+ 
+             if agent_response.get("finish"):
+                 sql = self._extract_sql(agent_response.get("content", ""))
++                feedback = self._ontology_check(sql)
++                if feedback:                     # 本文方法:提交前按本体检查一次,不通过则把原因反馈给智能体继续
++                    self.session.messages.append(AgentMessage(role="environment", content=feedback))
++                    continue
+                 self.session.pred_sql = sql
+                 self.session.completed = True
+                 self._vprint(f"  [FINISH] {sql[:120]}{'...' if len(sql) > 120 else ''}")
+@@ -264,6 +268,25 @@ class BIRDReActAgent:
+     # Trace Export (for self-evolution)
+     # =========================================================================
+ 
++    def _ontology_check(self, sql: str) -> str:
++        """EVO_DM_CHECK=1: check the final SQL once against the DataMind ontology (/api/ont/check); returns feedback
++        text when it fails, otherwise an empty string. Only the first finish of a session is checked."""
++        import os
++        if os.environ.get("EVO_DM_CHECK") != "1" or getattr(self, "_checked", False) or not sql:
++            return ""
++        self._checked = True
++        try:
++            import static_context
++            g = static_context.dm_graph(self.session.db_id)
++            r = static_context.dm_post("/api/ont/check", {"sql": sql, "graphs": [g]}) if g else {"ok": True}
++        except Exception:  # noqa: BLE001
++            return ""
++        self.ontology_check = {"ok": bool(r.get("ok")), "reason": r.get("reason", "")}
++        if r.get("ok"):
++            return ""
++        return ("The ontology check rejected this SQL: " + str(r.get("reason", ""))[:300]
++                + ". Revise the query (for example use the verified join keys) and finish again.")
++
+     def export_trace(self) -> dict:
+         """Implement export trace."""
+         if not self.session:
+diff --git a/benchmarks/bird/agent/llm_providers.py b/benchmarks/bird/agent/llm_providers.py
+index b1d826d..6f674b8 100644
+--- a/benchmarks/bird/agent/llm_providers.py
++++ b/benchmarks/bird/agent/llm_providers.py
+@@ -65,12 +65,16 @@ class OpenAIProvider(LLMProvider):
+         last_error = None
+         for attempt in range(3):
+             try:
++                # 本地对比实验补丁:与 DataMind 部署相同的 extra_body(DeepSeek 关闭 thinking)
++                import json as _json, os as _os
++                _extra = _json.loads(_os.environ.get("BIRD_AGENT_EXTRA_BODY") or "null")
+                 response = await self.client.chat.completions.create(
+                     model=self.model,
+                     messages=messages,
+                     tools=openai_tools or None,
+                     temperature=self.temperature,
+                     timeout=120,
++                    **({"extra_body": _extra} if _extra else {}),
+                 )
+ 
+                 choice = response.choices[0]
+diff --git a/benchmarks/bird/config.py b/benchmarks/bird/config.py
+index b482b0e..f5155c7 100644
+--- a/benchmarks/bird/config.py
++++ b/benchmarks/bird/config.py
+@@ -72,8 +72,8 @@ class ExperimentConfig:
+ BIRD_DIR = Path(__file__).resolve().parent
+ DATA_DIR = BIRD_DIR / "data"
+ MINI_DEV_DATA = DATA_DIR / "mini_dev_data"
+-DB_DIR = MINI_DEV_DATA / "dev_databases"
+-SEMANTIC_LAYER_DIR = BIRD_DIR / ".evoontology"
++DB_DIR = Path(os.environ["EVO_DB_ROOT"]) if os.environ.get("EVO_DB_ROOT") else MINI_DEV_DATA / "dev_databases"  # 本地对比实验补丁(v2):可指定模式变体库根目录
++SEMANTIC_LAYER_DIR = Path(os.environ["EVO_SEMANTIC_ROOT"]) if os.environ.get("EVO_SEMANTIC_ROOT") else BIRD_DIR / ".evoontology"  # 本地对比实验补丁:可指定本体根目录
+ RESULTS_DIR = BIRD_DIR / "results"
+ CONFIGS_DIR = BIRD_DIR / "configs"
+ 
+diff --git a/benchmarks/bird/run_evaluation.py b/benchmarks/bird/run_evaluation.py
+index a08fec6..0e773c4 100644
+--- a/benchmarks/bird/run_evaluation.py
++++ b/benchmarks/bird/run_evaluation.py
+@@ -126,6 +126,8 @@ async def run_single_question(question_data: dict, config: ExperimentConfig,
+     """Run single question."""
+     question_id = question_data["question_id"]
+     question = question_data["question"]
++    if os.environ.get("EVO_USE_EVIDENCE") == "1" and question_data.get("evidence"):   # 本地对比实验补丁:按论文的 oracle knowledge 设置附上 evidence
++        question = f"{question}\nEvidence: {question_data['evidence']}"
+     difficulty = question_data.get("difficulty", "unknown")
+     gold_sql = question_data.get("SQL", "")
+ 
+@@ -186,6 +188,10 @@ async def run_single_question(question_data: dict, config: ExperimentConfig,
+                 pass
+ 
+ 
++    if os.environ.get("EVO_CONTEXT_MODE"):                 # 本地对比实验补丁:SL / Memory 基线(static_context.py)
++        from static_context import extra_context
++        semantic_manifest = (semantic_manifest + "\n" if semantic_manifest else "") + extra_context(db_id, question)
++
+     from agent.llm_providers import create_llm_provider
+     llm = create_llm_provider(**llm_kwargs)
+ 

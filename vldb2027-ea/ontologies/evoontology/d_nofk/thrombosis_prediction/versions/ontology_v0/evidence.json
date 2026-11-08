@@ -1,0 +1,218 @@
+[
+  {
+    "id": "evidence_row_counts",
+    "source": "thrombosis_prediction.sqlite, read-only connection",
+    "query": "SELECT COUNT(*) FROM Patient; SELECT COUNT(DISTINCT ID) FROM Patient; SELECT COUNT(*) FROM Examination; SELECT COUNT(DISTINCT ID) FROM Examination; SELECT COUNT(*) FROM Laboratory; SELECT COUNT(DISTINCT ID) FROM Laboratory;",
+    "result": "Patient has 1238 rows and 1238 distinct ID values. Examination has 806 rows and 763 distinct ID values. Laboratory has 13908 rows and 302 distinct ID values.",
+    "validation_method": "read-only SQLite query against the source database; schema read with .schema confirmed Patient.ID is the declared primary key and Laboratory has a primary key over ID and Date while Examination declares no primary key",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_id_overlap",
+    "source": "thrombosis_prediction.sqlite, read-only connection",
+    "query": "SELECT COUNT(DISTINCT ID) FROM Examination WHERE ID IN (SELECT ID FROM Patient); SELECT COUNT(DISTINCT ID) FROM Laboratory WHERE ID IN (SELECT ID FROM Patient); SELECT COUNT(*) FROM (SELECT DISTINCT ID FROM Examination INTERSECT SELECT DISTINCT ID FROM Laboratory); SELECT COUNT(DISTINCT ID) FROM Examination WHERE Thrombosis>0 AND ID IN (SELECT ID FROM Patient); SELECT COUNT(DISTINCT ID) FROM Examination WHERE Thrombosis>0 AND ID IN (SELECT ID FROM Laboratory);",
+    "result": "Of 763 distinct Examination identifiers only 69 occur in Patient, leaving 700 examination rows unattached. All 302 distinct Laboratory identifiers occur in Patient. Only 20 identifiers are shared between Examination and Laboratory. Of the 75 patients with a thrombosis code greater than zero, 7 resolve to a Patient row and only 2 have any Laboratory rows.",
+    "validation_method": "read-only SQLite set intersection between the ID columns of the three tables",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_lab_patient_counts",
+    "source": "thrombosis_prediction.sqlite, read-only connection",
+    "query": "SELECT MAX(c) FROM (SELECT COUNT(*) c FROM Laboratory GROUP BY ID); SELECT COUNT(*) FROM Laboratory l JOIN (SELECT DISTINCT ID FROM Examination WHERE Thrombosis>0) t ON l.ID=t.ID;",
+    "result": "The Laboratory table covers 302 distinct patients across 13908 rows, with a maximum of 226 rows for a single patient. Only 51 laboratory rows belong to patients with a thrombosis code greater than zero.",
+    "validation_method": "read-only SQLite aggregation of row counts per identifier",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_thrombosis_distribution",
+    "source": "thrombosis_prediction.sqlite, read-only connection",
+    "query": "SELECT Thrombosis, COUNT(*) FROM Examination GROUP BY Thrombosis; SELECT COUNT(DISTINCT ID) FROM Examination WHERE Thrombosis>0;",
+    "result": "Thrombosis equals 0 in 726 records, 1 in 57, 2 in 18 and 3 in 5, with no null values. 80 records carry a code greater than zero and they belong to 75 distinct patient identifiers.",
+    "validation_method": "read-only SQLite value distribution and distinct-count check",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_symptoms_thrombosis_crosstab",
+    "source": "thrombosis_prediction.sqlite, read-only connection",
+    "query": "SELECT COUNT(*) FROM Examination WHERE (Symptoms IS NULL OR Symptoms='') AND Thrombosis=0; SELECT COUNT(*) FROM Examination WHERE (Symptoms IS NULL OR Symptoms='') AND Thrombosis>0; SELECT COUNT(*) FROM Examination WHERE Symptoms IS NOT NULL AND Symptoms<>'' AND Thrombosis=0; SELECT COUNT(*) FROM Examination WHERE Symptoms IS NOT NULL AND Symptoms<>'' AND Thrombosis>0;",
+    "result": "726 records have a blank Symptoms value and a thrombosis code of zero; 80 have a populated Symptoms value and a code greater than zero; the two discordant cells are both empty, so Symptoms is populated exactly when the thrombosis code is greater than zero.",
+    "validation_method": "read-only SQLite contingency table between the two fields with all four cells enumerated",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_kct_rvvt_lac_domain",
+    "source": "thrombosis_prediction.sqlite, read-only connection",
+    "query": "SELECT LAC, COUNT(*) FROM Examination GROUP BY LAC; SELECT KCT, COUNT(*) FROM Examination GROUP BY KCT; SELECT RVVT, COUNT(*) FROM Examination GROUP BY RVVT;",
+    "result": "LAC is blank in 584 records, '+' in 75 and '-' in 147. KCT is blank in 660, '+' in 41 and '-' in 105. RVVT is blank in 660, '+' in 47 and '-' in 99. No other values occur.",
+    "validation_method": "read-only SQLite value distribution over the full examination table",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_lac_kct_rvvt_crosstab",
+    "source": "thrombosis_prediction.sqlite, read-only connection",
+    "query": "SELECT LAC, KCT, RVVT, COUNT(*) FROM Examination GROUP BY LAC,KCT,RVVT; SELECT COUNT(*) FROM Examination WHERE KCT='+' OR RVVT='+'; SELECT COUNT(*) FROM Examination WHERE LAC='+' AND KCT='-' AND RVVT='-';",
+    "result": "The largest groups are 584 records with all three blank and 88 with all three negative. 32 records are positive on all three. 17 records are LAC-positive with both assays blank, 15 are LAC-positive with KCT positive and RVVT blank, 9 are LAC-positive with KCT blank and RVVT positive and 2 are LAC-positive with both assays negative. 56 records have a positive KCT or RVVT while 75 are LAC-positive.",
+    "validation_method": "read-only SQLite three-way contingency table over the full examination table",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_acl_ranges",
+    "source": "thrombosis_prediction.sqlite, read-only connection",
+    "query": "SELECT MIN(\"aCL IgG\"), MAX(\"aCL IgG\"), COUNT(*)-COUNT(\"aCL IgG\") FROM Examination; SELECT MIN(\"aCL IgM\"), MAX(\"aCL IgM\"), COUNT(*)-COUNT(\"aCL IgM\") FROM Examination; SELECT MIN(\"aCL IgA\"), MAX(\"aCL IgA\"), COUNT(*)-COUNT(\"aCL IgA\") FROM Examination;",
+    "result": "aCL IgG ranges from 0.0 to 2150.3 with no nulls, aCL IgM from 0.0 to 187122.0 with no nulls, aCL IgA from 0 to 48547 with no nulls, all across 806 examination records.",
+    "validation_method": "read-only SQLite range and null-count check over the full examination table",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_apl_crosstab",
+    "source": "thrombosis_prediction.sqlite, read-only connection",
+    "query": "SELECT COUNT(*) FROM Examination WHERE LAC='+' AND Thrombosis>0; SELECT COUNT(*) FROM Examination WHERE LAC='+' AND Thrombosis=0; SELECT COUNT(*) FROM Examination WHERE KCT='+' AND Thrombosis>0; SELECT COUNT(*) FROM Examination WHERE RVVT='+' AND Thrombosis>0;",
+    "result": "36 records are both LAC-positive and thrombosis-positive while 39 are LAC-positive with a thrombosis code of zero, so a positive lupus anticoagulant result is almost evenly split between the two outcome groups. 21 records are KCT-positive and thrombosis-positive and 26 are RVVT-positive and thrombosis-positive, against 56 records that are positive on either assay overall.",
+    "validation_method": "read-only SQLite contingency counts between the antibody fields and the thrombosis code",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_ana_domain",
+    "source": "thrombosis_prediction.sqlite, read-only connection",
+    "query": "SELECT ANA, COUNT(*) FROM Examination GROUP BY ANA ORDER BY ANA;",
+    "result": "ANA equals 0 in 206 records, 4 in 108, 16 in 155, 64 in 112, 256 in 82, 1024 in 58, 4094 in 1 and 4096 in 46, with 38 null values, across 806 examination records.",
+    "validation_method": "read-only SQLite value distribution over the full examination table; the series 4, 16, 64, 256, 1024 and 4096 is a four-fold serial dilution and 4094 is a single-record deviation from 4096",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_ana_pattern_domain",
+    "source": "thrombosis_prediction.sqlite, read-only connection",
+    "query": "SELECT \"ANA Pattern\", COUNT(*) FROM Examination GROUP BY \"ANA Pattern\";",
+    "result": "The field is blank in 261 records. Single patterns are P in 178, S in 252, N in 1, D in 1 and lower-case p in 2. Combined values appear as P,S in 89, S,P in 11, D,P in 2, D,S in 1, P,D in 1, D,P,S in 2, P,S with a period in 1, P.D in 1, S,D in 2, S,N in 1 and P, S in 1, so both the delimiter and the case vary between records.",
+    "validation_method": "read-only SQLite value distribution over the full examination table, listing every distinct raw string",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_diagnosis_tokens_patient",
+    "source": "thrombosis_prediction.sqlite, read-only connection",
+    "query": "SELECT MAX(length(Diagnosis)-length(replace(Diagnosis,',',''))) FROM Patient; SELECT DISTINCT trim(value) FROM Patient, json_each('[\"'||replace(Diagnosis,', ','\",\"')||'\"]') WHERE Diagnosis IS NOT NULL ORDER BY 1;",
+    "result": "The Patient table records up to three commas in one diagnosis value, so a row can hold up to four labels. Separators observed in the raw values include a comma, a caret-bracket sequence seen as RA followed by caret-bracket followed by SJS, and plain spaces as in the two-label forms joined by spaces. Distinct labels include SLE, SJS, RA, BEHCET, PSS, MCTD, APS and many uncertainty-suffixed variants such as SLE susp, RA susp. and MCTD susp, and spacing variants such as the same label written with one space and with two.",
+    "validation_method": "read-only SQLite tokenisation of the comma-separated field plus raw value inspection",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_diagnosis_tokens_examination",
+    "source": "thrombosis_prediction.sqlite, read-only connection",
+    "query": "SELECT COUNT(*) FROM Examination WHERE Diagnosis IS NULL OR Diagnosis=''; SELECT DISTINCT trim(value) FROM Examination, json_each('[\"'||replace(Diagnosis,', ','\",\"')||'\"]') WHERE Diagnosis IS NOT NULL ORDER BY 1;",
+    "result": "The field is blank in 331 of 806 records and holds up to three commas in one value. Separators include a comma and a plus sign, as in SLE+pulmonary emboli+HLP. Distinct labels include SLE, SjS, RA, MCTD, PSS, APS, Behcet, brain infarction, thrombosis, DVT, pulmonary emboli and multiple thrombosis, alongside many uncertainty-suffixed and spacing variants.",
+    "validation_method": "read-only SQLite tokenisation of the comma-separated field plus raw value inspection",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_sjs_spelling",
+    "source": "thrombosis_prediction.sqlite, read-only connection",
+    "query": "SELECT COUNT(*) FROM Patient WHERE Diagnosis GLOB '*SJS*'; SELECT COUNT(*) FROM Patient WHERE Diagnosis GLOB '*SjS*'; SELECT COUNT(*) FROM Examination WHERE Diagnosis GLOB '*SjS*'; SELECT COUNT(*) FROM Examination WHERE Diagnosis GLOB '*SJS*';",
+    "result": "The Patient table contains the upper-case form SJS in 366 rows and the mixed-case form SjS in 0 rows. The Examination table contains SjS in 116 rows and SJS in 0 rows. The two tables therefore never share a spelling of this disease name, and the case-insensitive default of the LIKE operator conceals the divergence.",
+    "validation_method": "read-only SQLite case-sensitive GLOB matching to separate the two spellings from the case-insensitive default",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_thrombotic_text_labels",
+    "source": "thrombosis_prediction.sqlite, read-only connection",
+    "query": "SELECT Diagnosis, COUNT(*) FROM Examination WHERE Diagnosis LIKE '%thrombos%' OR Diagnosis LIKE '%emboli%' OR Diagnosis LIKE '%infarct%' OR Diagnosis LIKE '%DVT%' GROUP BY Diagnosis;",
+    "result": "Thrombotic manifestations also appear inside the free-text diagnosis labels, including brain infarction on its own and combined with SjS, SLE and APS, thrombosis on its own, pulmonary emboli together with DVT, multiple thrombosis combined with SjS, spleen infarction combined with SLE, and the plus-joined form of SLE with pulmonary emboli and HLP.",
+    "validation_method": "read-only SQLite free-text matching over the diagnosis label field",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_coag_lab_domain",
+    "source": "thrombosis_prediction.sqlite, read-only connection",
+    "query": "SELECT MIN(PT), MAX(PT) FROM Laboratory; SELECT MIN(APTT), MAX(APTT) FROM Laboratory; SELECT MIN(FG), MAX(FG) FROM Laboratory; SELECT COUNT(*) FROM Laboratory WHERE PIC IS NOT NULL; SELECT COUNT(*) FROM Laboratory WHERE TAT IS NOT NULL; SELECT COUNT(*) FROM Laboratory WHERE TAT2 IS NOT NULL; SELECT MIN(PLT), MAX(PLT) FROM Laboratory;",
+    "result": "PT, APTT, FG and PLT are numeric columns present in the Laboratory table. PLT has 11287 non-null values out of 13908 rows and ranges from 5 to 5844. The molecular markers are sparse: PIC has 76 non-null values, TAT2 has 119 and TAT has 142.",
+    "validation_method": "read-only SQLite range and non-null counting over the full laboratory table",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_null_counts",
+    "source": "thrombosis_prediction.sqlite, read-only connection",
+    "query": "SELECT COUNT(*) FROM Laboratory WHERE CRE IS NULL; SELECT COUNT(*) FROM Laboratory WHERE PLT IS NULL; SELECT COUNT(*) FROM Laboratory WHERE WBC IS NULL;",
+    "result": "Out of 13908 laboratory rows, CRE is null in 2655 rows, PLT in 2621 and WBC in 1827, so even the routine haematology and chemistry columns are incomplete. The C3 and C4 complement columns are present as integer columns in the same table.",
+    "validation_method": "read-only SQLite null counting over the full laboratory table",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_crp_text_domain",
+    "source": "thrombosis_prediction.sqlite, read-only connection",
+    "query": "SELECT CRP, COUNT(*) FROM Laboratory GROUP BY CRP ORDER BY 2 DESC;",
+    "result": "CRP is a text column. Its most frequent values are the censoring forms <0.3 with 2355 rows, <0.2 with 1224, <0.1 with 216 and <0.002 with 277, followed by plain numeric values such as 9.9, 9.8 and 8.8. The bound forms >6 and >7.0 also occur, as does a hyphen used as a non-numeric marker, which appears in at least five rows.",
+    "validation_method": "read-only SQLite value distribution over the full laboratory table, inspecting the raw text values rather than casting them",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_upro_domain",
+    "source": "thrombosis_prediction.sqlite, read-only connection",
+    "query": "SELECT \"U-PRO\", COUNT(*) FROM Laboratory GROUP BY \"U-PRO\";",
+    "result": "U-PRO is a text column whose observed values mix categorical and numeric forms: the negative marker in 4579 rows, 0 in 2748, TR in 866, the bare values 1 in 319, 2 in 313, 3 in 148, 4 in 21, 10 in 138, 30 in 398, 100 in 138 and 300 in 57, the compound grades +1(30) in 18 and +2(100) in 4, the bounds >=300 in 6 and >=1000 in 11, the form -15 in 37, the token %% in 4 and a blank in 4241 rows.",
+    "validation_method": "read-only SQLite value distribution over the full laboratory table",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_autoantibody_text_domain",
+    "source": "thrombosis_prediction.sqlite, read-only connection",
+    "query": "SELECT RNP, COUNT(*) FROM Laboratory GROUP BY RNP; SELECT SM, COUNT(*) FROM Laboratory GROUP BY SM; SELECT SSA, COUNT(*) FROM Laboratory GROUP BY SSA; SELECT SSB, COUNT(*) FROM Laboratory GROUP BY SSB; SELECT SC170, COUNT(*) FROM Laboratory GROUP BY SC170; SELECT CENTROMEA, COUNT(*) FROM Laboratory GROUP BY CENTROMEA;",
+    "result": "All six columns are text and mix negative markers with numeric titres. RNP has 143 non-null rows with values including 0, 1, 4, 16, 64, 256 and the literal negative. SM has 128 non-null rows with values including 0, 1, 2, 8 and the literal negative. SSA has 99 non-null rows with values up to 256. SSB has 93 non-null rows with values up to 32. SC170 has only 28 non-null rows. CENTROMEA has 11 rows equal to 0 and 4 rows holding the literal negative, with every remaining row null.",
+    "validation_method": "read-only SQLite value distribution and non-null counting over the full laboratory table",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_dna_fields",
+    "source": "thrombosis_prediction.sqlite, read-only connection",
+    "query": "SELECT COUNT(*) FROM Laboratory WHERE DNA IS NULL; SELECT DNA, COUNT(*) FROM Laboratory GROUP BY DNA LIMIT 12;",
+    "result": "The DNA column has only 69 non-null values out of 13908 rows, holding numeric values such as 0.56, 0.58, 10.1, 10.2, 11, 100, 110, 117, 119 and 12.9, and it is 13839 rows null.",
+    "validation_method": "read-only SQLite null counting and value sampling over the full laboratory table",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_dna_ii_all_null",
+    "source": "thrombosis_prediction.sqlite, read-only connection",
+    "query": "SELECT COUNT(*) FROM Laboratory WHERE \"DNA-II\" IS NOT NULL; SELECT COUNT(*) FROM Laboratory WHERE \"DNA-II\" IS NULL;",
+    "result": "The DNA-II column holds no values at all: 0 non-null rows and 13908 null rows.",
+    "validation_method": "read-only SQLite null counting over the full laboratory table",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_rf_ra_domain",
+    "source": "thrombosis_prediction.sqlite, read-only connection",
+    "query": "SELECT RA, COUNT(*) FROM Laboratory GROUP BY RA; SELECT RF, COUNT(*) FROM Laboratory GROUP BY RF ORDER BY 2 DESC LIMIT 25;",
+    "result": "The RA column has 11053 null rows and 2855 non-null rows, whose values are the negative marker in 1684 rows, a plus sign in 658, plus-minus in 189 and the grade 2+ in 323, with 7- appearing once. The RF column has 10571 null rows and 3337 non-null rows holding numeric text such as 100.2, 100.3, 101, 1017.6, 102.3, 1026.1 and 103.3.",
+    "validation_method": "read-only SQLite value distribution over the full laboratory table",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_date_ranges",
+    "source": "thrombosis_prediction.sqlite, read-only connection",
+    "query": "SELECT MIN(Birthday), MAX(Birthday) FROM Patient; SELECT MIN(Description), MAX(Description) FROM Patient; SELECT MIN(\"First Date\"), MAX(\"First Date\") FROM Patient; SELECT MIN(\"Examination Date\"), MAX(\"Examination Date\") FROM Examination; SELECT MIN(Date), MAX(Date) FROM Laboratory; SELECT COUNT(*) FROM Examination WHERE \"Examination Date\" IS NULL;",
+    "result": "Patient.Birthday spans 1912-08-28 to 2007-05-28 with 1 null. Patient.Description spans 1991-06-10 to 1998-12-03 with 216 nulls. Patient.'First Date' spans 1972-08-02 to 1998-08-28 with 251 nulls. Examination.'Examination Date' spans 1989-04-18 to 1998-04-17 with 10 nulls. Laboratory.Date spans 1981-01-27 to 1999-03-04 with no nulls and no rows at the declared default value.",
+    "validation_method": "read-only SQLite min and max with null counting over all three tables",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_date_consistency",
+    "source": "thrombosis_prediction.sqlite, read-only connection",
+    "query": "SELECT COUNT(*) FROM Patient WHERE Description>=\"First Date\"; SELECT COUNT(*) FROM Patient WHERE Description<\"First Date\"; SELECT MIN(CAST((julianday(\"First Date\")-julianday(Birthday))/365.25 AS INT)) FROM Patient; SELECT COUNT(*) FROM Laboratory l JOIN Patient p ON l.ID=p.ID WHERE l.Date < p.\"First Date\";",
+    "result": "The description date falls on or after the first visit date in 858 patients and before it in 12. The minimum computed age at first visit is about minus nine years and the maximum is about 77 years, so at least one patient has a birth date later than the first visit date. 1909 of 13908 laboratory rows carry a date earlier than the patient first visit date.",
+    "validation_method": "read-only SQLite comparison of date columns after joining the laboratory table to the patient table on the identifier",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_admission_domain",
+    "source": "thrombosis_prediction.sqlite, read-only connection",
+    "query": "SELECT quote(Admission), length(Admission), COUNT(*) FROM Patient GROUP BY Admission;",
+    "result": "The Admission field has four observed forms: the hyphen in 713 patients, the plus sign in 488, a two-character value consisting of a plus followed by an opening parenthesis in 3, and an empty string in 34. No legend for these forms is present in the environment.",
+    "validation_method": "read-only SQLite value distribution with quoted raw values to expose exact characters",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_sex_domain",
+    "source": "thrombosis_prediction.sqlite, read-only connection",
+    "query": "SELECT SEX, COUNT(*) FROM Patient GROUP BY SEX;",
+    "result": "SEX equals F for 1023 patients, M for 202 patients and is null for 13 patients, with no other values.",
+    "validation_method": "read-only SQLite value distribution over the full patient table",
+    "timestamp": "2026-10-10"
+  }
+]

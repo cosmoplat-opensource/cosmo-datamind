@@ -1,0 +1,385 @@
+[
+  {
+    "id": "map_user_id",
+    "term_id": "term_user_id",
+    "database_source": "codebase_community",
+    "table": "users",
+    "column": "Id",
+    "semantic_filter": "Includes the synthetic Community account, whose identifier is negative.",
+    "grain": "one row per registered account",
+    "validation": "Primary key of users; every user reference in posts, comments, votes, badges and postHistory resolves to it."
+  },
+  {
+    "id": "map_user_display_name",
+    "term_id": "term_display_name",
+    "database_source": "codebase_community",
+    "table": "users",
+    "column": "DisplayName",
+    "semantic_filter": "Never null; includes platform-synthesised names for accounts that never chose one.",
+    "grain": "one value per account",
+    "validation": "Repeated values exist across accounts, so this column is not a key."
+  },
+  {
+    "id": "map_user_age",
+    "term_id": "term_age",
+    "database_source": "codebase_community",
+    "table": "users",
+    "column": "Age",
+    "semantic_filter": "Self-declared and often absent; a large majority of accounts carry no age.",
+    "grain": "one value per account",
+    "validation": "Distinct count and null share verified against the account population."
+  },
+  {
+    "id": "map_user_reputation",
+    "term_id": "term_reputation",
+    "database_source": "codebase_community",
+    "table": "users",
+    "column": "Reputation",
+    "grain": "one value per account",
+    "validation": "Non-null for all accounts; range verified."
+  },
+  {
+    "id": "map_post_owner_user_id",
+    "term_id": "term_user_id",
+    "database_source": "codebase_community",
+    "table": "posts",
+    "column": "OwnerUserId",
+    "semantic_filter": "Null when the post has no attributable account; the Community account appears here for community-wiki posts.",
+    "grain": "one owner per post",
+    "validation": "All non-null values resolve to users.Id."
+  },
+  {
+    "id": "map_post_owner_display_name",
+    "term_id": "term_display_name",
+    "database_source": "codebase_community",
+    "table": "posts",
+    "column": "OwnerDisplayName",
+    "semantic_filter": "A denormalised cache that is only populated for a small minority of posts and is the sole attribution when the owner identifier is absent.",
+    "grain": "one value per post",
+    "validation": "Where both the identifier and this column are present the values agree in the large majority of rows; differences were counted."
+  },
+  {
+    "id": "map_post_last_editor_user_id",
+    "term_id": "term_user_id",
+    "database_source": "codebase_community",
+    "table": "posts",
+    "column": "LastEditorUserId",
+    "semantic_filter": "Populated for roughly half of posts.",
+    "grain": "one last editor per post",
+    "validation": "Non-null share verified across the post population."
+  },
+  {
+    "id": "map_post_last_editor_display_name",
+    "term_id": "term_display_name",
+    "database_source": "codebase_community",
+    "table": "posts",
+    "column": "LastEditorDisplayName",
+    "semantic_filter": "Fallback label used mainly when the last editor has no account; rarely co-populated with the identifier.",
+    "grain": "one value per post",
+    "validation": "Co-population with LastEditorUserId verified."
+  },
+  {
+    "id": "map_comment_user_id",
+    "term_id": "term_user_id",
+    "database_source": "codebase_community",
+    "table": "comments",
+    "column": "UserId",
+    "semantic_filter": "Null for comments left without an attributable account, in which case the display name column carries the label instead.",
+    "grain": "one author per comment",
+    "validation": "All non-null values resolve to users.Id; null and label columns are complementary."
+  },
+  {
+    "id": "map_comment_user_display_name",
+    "term_id": "term_display_name",
+    "database_source": "codebase_community",
+    "table": "comments",
+    "column": "UserDisplayName",
+    "semantic_filter": "Populated exactly when the author identifier is absent.",
+    "grain": "one value per comment",
+    "validation": "Complementarity with the identifier column verified."
+  },
+  {
+    "id": "map_comment_post_id",
+    "term_id": "term_post",
+    "database_source": "codebase_community",
+    "table": "comments",
+    "column": "PostId",
+    "semantic_filter": "A small number of comment rows point at posts that are not present in the posts table.",
+    "grain": "one target post per comment",
+    "validation": "Orphan count measured."
+  },
+  {
+    "id": "map_comment_creation_date",
+    "term_id": "term_creation_date",
+    "database_source": "codebase_community",
+    "table": "comments",
+    "column": "CreationDate",
+    "grain": "second-level timestamp",
+    "validation": "Format sampled; carries a full time component."
+  },
+  {
+    "id": "map_vote_user_id",
+    "term_id": "term_user_id",
+    "database_source": "codebase_community",
+    "table": "votes",
+    "column": "UserId",
+    "semantic_filter": "Null on bounty-close rows where the original offerer is no longer recorded.",
+    "grain": "one voter per vote",
+    "validation": "All non-null values resolve to users.Id."
+  },
+  {
+    "id": "map_vote_post_id",
+    "term_id": "term_post",
+    "database_source": "codebase_community",
+    "table": "votes",
+    "column": "PostId",
+    "grain": "one voted post per vote",
+    "validation": "All values resolve to posts.Id."
+  },
+  {
+    "id": "map_vote_type_id",
+    "term_id": "term_vote_type",
+    "database_source": "codebase_community",
+    "table": "votes",
+    "column": "VoteTypeId",
+    "semantic_filter": "Small integer code; only a subset of codes is observed in this database.",
+    "grain": "one code per vote",
+    "validation": "Observed code distribution measured."
+  },
+  {
+    "id": "map_vote_bounty_amount",
+    "term_id": "term_bounty_amount",
+    "database_source": "codebase_community",
+    "table": "votes",
+    "column": "BountyAmount",
+    "semantic_filter": "Only defined on bounty votes; null on every other vote row.",
+    "grain": "one amount per bounty vote",
+    "validation": "Non-null row count measured."
+  },
+  {
+    "id": "map_vote_creation_date",
+    "term_id": "term_creation_date",
+    "database_source": "codebase_community",
+    "table": "votes",
+    "column": "CreationDate",
+    "semantic_filter": "Stored at day precision only, unlike the second-level timestamps used elsewhere.",
+    "grain": "day-level date",
+    "validation": "No rows carry a time component."
+  },
+  {
+    "id": "map_badge_user_id",
+    "term_id": "term_user_id",
+    "database_source": "codebase_community",
+    "table": "badges",
+    "column": "UserId",
+    "grain": "one recipient per award",
+    "validation": "All values resolve to users.Id."
+  },
+  {
+    "id": "map_badge_name",
+    "term_id": "term_badge_award",
+    "database_source": "codebase_community",
+    "table": "badges",
+    "column": "Name",
+    "semantic_filter": "Free-text badge name labelling the award; the set of names is finite and small, and the same name recurs across many awards.",
+    "aggregation_semantics": "count of awards carrying the name, per user when tallied per recipient",
+    "grain": "one badge name per award",
+    "validation": "Distinct name count measured."
+  },
+  {
+    "id": "map_badge_date",
+    "term_id": "term_creation_date",
+    "database_source": "codebase_community",
+    "table": "badges",
+    "column": "Date",
+    "semantic_filter": "Second-level timestamp used to identify the earliest award of a named badge.",
+    "grain": "one award timestamp per award",
+    "validation": "Range and format sampled."
+  },
+  {
+    "id": "map_revision_post_id",
+    "term_id": "term_post",
+    "database_source": "codebase_community",
+    "table": "postHistory",
+    "column": "PostId",
+    "semantic_filter": "A small number of revision rows point at posts that are not present in the posts table.",
+    "grain": "one revised post per revision",
+    "validation": "Orphan count measured."
+  },
+  {
+    "id": "map_revision_user_id",
+    "term_id": "term_user_id",
+    "database_source": "codebase_community",
+    "table": "postHistory",
+    "column": "UserId",
+    "semantic_filter": "Null when the revision has no attributable account, in which case the display name column carries the label instead.",
+    "grain": "one acting user per revision",
+    "validation": "Complementarity with the display name column verified."
+  },
+  {
+    "id": "map_revision_display_name",
+    "term_id": "term_display_name",
+    "database_source": "codebase_community",
+    "table": "postHistory",
+    "column": "UserDisplayName",
+    "semantic_filter": "Populated exactly when the acting user identifier is absent.",
+    "grain": "one value per revision",
+    "validation": "Complementarity with the identifier column verified."
+  },
+  {
+    "id": "map_revision_type_id",
+    "term_id": "term_post_type",
+    "database_source": "codebase_community",
+    "table": "postHistory",
+    "column": "PostHistoryTypeId",
+    "semantic_filter": "Integer code distinguishing creation of a field from later edits of the same field; several codes are observed.",
+    "grain": "one code per revision",
+    "validation": "Observed code distribution and field agreement measured."
+  },
+  {
+    "id": "map_post_type_id",
+    "term_id": "term_post_type",
+    "database_source": "codebase_community",
+    "table": "posts",
+    "column": "PostTypeId",
+    "semantic_filter": "Determines which scalar columns of a post row are populated.",
+    "grain": "one code per post",
+    "validation": "Observed code distribution measured."
+  },
+  {
+    "id": "map_post_title",
+    "term_id": "term_post_title",
+    "database_source": "codebase_community",
+    "table": "posts",
+    "column": "Title",
+    "semantic_filter": "Null for every non-question post.",
+    "grain": "one title per question",
+    "validation": "Nullability verified against post type."
+  },
+  {
+    "id": "map_post_tags",
+    "term_id": "term_post_tags",
+    "database_source": "codebase_community",
+    "table": "posts",
+    "column": "Tags",
+    "semantic_filter": "A single delimited string holding all tags of a question; null for every non-question post.",
+    "grain": "one list per question",
+    "validation": "Format and nullability verified."
+  },
+  {
+    "id": "map_post_creation_date",
+    "term_id": "term_creation_date",
+    "database_source": "codebase_community",
+    "table": "posts",
+    "column": "CreaionDate",
+    "semantic_filter": "Misspelled column name; it is the post creation timestamp.",
+    "grain": "second-level timestamp per post",
+    "validation": "Column list inspected; no correctly spelled creation column exists on this table."
+  },
+  {
+    "id": "map_post_score",
+    "term_id": "term_post_score",
+    "database_source": "codebase_community",
+    "table": "posts",
+    "column": "Score",
+    "semantic_filter": "May be negative; non-null for every post row.",
+    "aggregation_semantics": "average or sum of post scores over the selected posts",
+    "grain": "one score per post",
+    "validation": "Range verified."
+  },
+  {
+    "id": "map_post_view_count",
+    "term_id": "term_view_count",
+    "database_source": "codebase_community",
+    "table": "posts",
+    "column": "ViewCount",
+    "semantic_filter": "Populated only for questions.",
+    "aggregation_semantics": "sum of views across a user's posts",
+    "grain": "one count per question",
+    "validation": "Nullability verified against post type."
+  },
+  {
+    "id": "map_post_favorite_count",
+    "term_id": "term_favorite_count",
+    "database_source": "codebase_community",
+    "table": "posts",
+    "column": "FavoriteCount",
+    "semantic_filter": "Null for posts that have never been favourited, which includes every answer.",
+    "aggregation_semantics": "the counter value stored on the post",
+    "grain": "one count per post",
+    "validation": "Divergence from the vote table measured."
+  },
+  {
+    "id": "map_post_comment_count",
+    "term_id": "term_comment_count",
+    "database_source": "codebase_community",
+    "table": "posts",
+    "column": "CommentCount",
+    "semantic_filter": "Non-null for every post row.",
+    "aggregation_semantics": "the counter value stored on the post",
+    "grain": "one count per post",
+    "validation": "Nullability verified."
+  },
+  {
+    "id": "map_post_answer_count",
+    "term_id": "term_answer_count",
+    "database_source": "codebase_community",
+    "table": "posts",
+    "column": "AnswerCount",
+    "semantic_filter": "Populated only for questions.",
+    "aggregation_semantics": "the counter value stored on the post",
+    "grain": "one count per question",
+    "validation": "Nullability verified against post type."
+  },
+  {
+    "id": "map_post_closed_date",
+    "term_id": "term_closed_post",
+    "database_source": "codebase_community",
+    "table": "posts",
+    "column": "ClosedDate",
+    "semantic_filter": "Populated only for posts that were closed; null otherwise.",
+    "grain": "one timestamp per closed post",
+    "validation": "Non-null share verified across the post population."
+  },
+  {
+    "id": "map_post_parent_id",
+    "term_id": "term_post",
+    "database_source": "codebase_community",
+    "table": "posts",
+    "column": "ParentId",
+    "semantic_filter": "Set on answers to point at the question being answered; null on questions.",
+    "grain": "one parent question per answer",
+    "validation": "Every answer row carries a parent; no answer is orphaned."
+  },
+  {
+    "id": "map_post_community_owned_date",
+    "term_id": "term_community_user",
+    "database_source": "codebase_community",
+    "table": "posts",
+    "column": "CommunityOwnedDate",
+    "semantic_filter": "Populated when the post was taken over by the Community account.",
+    "grain": "one timestamp per community-owned post",
+    "validation": "Coincidence with ownership by the Community account verified."
+  },
+  {
+    "id": "map_tag_name",
+    "term_id": "term_tag",
+    "database_source": "codebase_community",
+    "table": "tags",
+    "column": "TagName",
+    "semantic_filter": "Single scalar tag name in the catalogue, in contrast to the delimited list stored on posts.",
+    "grain": "one name per tag",
+    "validation": "Values correspond to names embedded in the post tag list."
+  },
+  {
+    "id": "map_tag_count",
+    "term_id": "term_tag",
+    "database_source": "codebase_community",
+    "table": "tags",
+    "column": "Count",
+    "semantic_filter": "A maintained counter of posts carrying the tag, close to but not exactly the observed post count.",
+    "aggregation_semantics": "the counter value stored on the tag",
+    "grain": "one count per tag",
+    "validation": "Compared against the number of posts whose tag list contains the tag."
+  }
+]

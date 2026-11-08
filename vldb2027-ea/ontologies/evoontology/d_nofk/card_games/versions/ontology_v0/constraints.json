@@ -1,0 +1,360 @@
+[
+  {
+    "id": "c_colors_encoding",
+    "target": "term_card_color",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "colorless",
+      "colourless",
+      "color",
+      "colour",
+      "colors",
+      "multicolor",
+      "multicolour",
+      "monocolor"
+    ],
+    "severity": "block",
+    "scope": "Any analysis that reads or filters the colour of a card.",
+    "confidence": "high",
+    "description": "Colour values are comma-joined lists of the single-letter codes W, U, B, R, G. The token C never appears. An empty value means the card has no colour, i.e. it is colorless, and must not be read as missing data. Counting a colour therefore requires splitting the list rather than counting distinct strings.",
+    "evidence": [
+      "ev_colors_encoding"
+    ]
+  },
+  {
+    "id": "c_color_identity_superset",
+    "target": "term_color_identity",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "color identity",
+      "colour identity",
+      "identity",
+      "commander"
+    ],
+    "severity": "block",
+    "scope": "Any question that asks about colour identity or treats colour and identity as interchangeable.",
+    "confidence": "high",
+    "description": "Colour identity is a superset of card colour: it additionally accounts for colours of mana symbols in the rules text. The two attributes differ on 1018 rows, and identity token counts are consistently higher, so substituting one for the other produces incorrect per-colour counts.",
+    "evidence": [
+      "ev_color_identity_superset"
+    ]
+  },
+  {
+    "id": "c_printing_grain",
+    "target": "term_card_printing",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "how many cards",
+      "number of cards",
+      "count cards",
+      "distinct cards",
+      "unique cards",
+      "double-faced",
+      "multi-face",
+      "face"
+    ],
+    "severity": "block",
+    "scope": "Any counting question about cards, and any question mentioning double-faced or multi-face cards.",
+    "confidence": "high",
+    "description": "One row of cards is one card face printing, not necessarily one card. Multi-face layouts (transform, modal_dfc, adventure, split, aftermath, flip, meld) are stored as one row per face sharing a combined name of the form 'A // B'. Counting rows therefore over-counts the number of cards for those layouts; de-duplicate by name or by the oracle identifier when the question asks for cards rather than printings.",
+    "evidence": [
+      "ev_multi_face",
+      "ev_cards_grain"
+    ]
+  },
+  {
+    "id": "c_types_encoding",
+    "target": "term_card_type",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "card type",
+      "type",
+      "type line",
+      "creature",
+      "instant",
+      "sorcery",
+      "land",
+      "artifact",
+      "enchantment",
+      "planeswalker"
+    ],
+    "severity": "block",
+    "scope": "Any filtering or grouping by the type of a card.",
+    "confidence": "high",
+    "description": "The types, supertypes and subtypes attributes are comma-joined lists, because one card can carry several of each (for example 'Artifact,Creature'). Matching on a type requires matching list elements rather than whole strings. The separate printed type line column holds the whole line including supertypes and subtypes and is not interchangeable with the type list.",
+    "evidence": [
+      "ev_types_encoding"
+    ]
+  },
+  {
+    "id": "c_availability_encoding",
+    "target": "term_card_availability",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "availability",
+      "paper",
+      "digital",
+      "mtgo",
+      "arena",
+      "online only"
+    ],
+    "severity": "warn",
+    "scope": "Any question about where a card is playable or about digital-only printings.",
+    "confidence": "high",
+    "description": "Availability is a comma-joined list of platform tokens, so a printing can be available on several platforms simultaneously and grouping by the raw string fragments the analysis. Beyond the common paper, mtgo and arena tokens there are rare platform tokens such as shandalar and dreamcast, and one empty value. The separate online-only flag is a different concept from availability and the two should not be conflated.",
+    "evidence": [
+      "ev_availability_encoding",
+      "ev_promo_foil_flags"
+    ]
+  },
+  {
+    "id": "c_mana_cost_empty",
+    "target": "term_mana_cost",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "mana cost",
+      "mana value",
+      "no mana cost",
+      "cmc",
+      "cost of zero",
+      "land"
+    ],
+    "severity": "warn",
+    "scope": "Any analysis of mana cost or of cards with a cost of zero.",
+    "confidence": "high",
+    "description": "An empty mana cost is typical of lands but is not equivalent to being a land, and a cost of zero is not equivalent to having no mana cost: 285 printings carry a cost string that evaluates to zero, such as a cost of a single zero symbol. Zero is also the recorded value for every printing that has no mana cost at all.",
+    "evidence": [
+      "ev_mana_cost_empty",
+      "ev_cmc_field"
+    ]
+  },
+  {
+    "id": "c_cmc_range_guard",
+    "target": "term_converted_mana_cost",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "average converted mana cost",
+      "average cmc",
+      "mana curve",
+      "maximum cmc",
+      "highest mana value",
+      "outlier"
+    ],
+    "severity": "warn",
+    "scope": "Any aggregate over the converted mana cost field.",
+    "confidence": "high",
+    "description": "The numeric field spans 0 to 1000000 because a single joke printing carries a cost of one million; ordinary cards stay at 16 or below. Averages, ranges and top-value lists must exclude or explicitly flag this value, otherwise means and extremes are meaningless.",
+    "evidence": [
+      "ev_cmc_field"
+    ]
+  },
+  {
+    "id": "c_power_toughness_encoding",
+    "target": "term_power",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "power",
+      "toughness",
+      "average power",
+      "average toughness",
+      "creature stats",
+      "strongest",
+      "toughest"
+    ],
+    "severity": "block",
+    "scope": "Any numeric analysis of creature power or toughness.",
+    "confidence": "high",
+    "description": "Power and toughness are text, not numbers. Besides ordinary integers they contain variable and symbolic values including star, a question mark, the infinity symbol, a starred square and a negative one, and they are empty for every non-creature printing (30624 rows). Numeric aggregation requires converting only parseable values and deciding explicitly how symbolic values are treated.",
+    "evidence": [
+      "ev_power_toughness_encoding"
+    ]
+  },
+  {
+    "id": "c_legality_status_enum",
+    "target": "term_legality_status",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "legal",
+      "banned",
+      "restricted",
+      "not legal",
+      "format legality",
+      "playable"
+    ],
+    "severity": "block",
+    "scope": "Any question about format legality or card bans.",
+    "confidence": "high",
+    "description": "Only three status values occur: Legal, Banned and Restricted. There is no stored negative status, so a card that is not playable in a format simply has no record for that format; treating an absent record as a distinct status value, or assuming every card has one row per format, changes the meaning of any count. Restricted occurs only in the vintage and oldschool formats.",
+    "evidence": [
+      "ev_legality_statuses",
+      "ev_legality_formats"
+    ]
+  },
+  {
+    "id": "c_legality_coverage",
+    "target": "term_format_legality",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "format legality",
+      "legality join",
+      "cards without legality",
+      "orphan",
+      "all formats"
+    ],
+    "severity": "warn",
+    "scope": "Any join between card printings and legality records.",
+    "confidence": "high",
+    "description": "Legality records reference 55608 card uuids, so 1223 card printings have no legality row at all, and 72 legality rows covering 9 uuids reference printings absent from the cards table. Inner joins silently drop both groups; the choice of join and the treatment of unmatched printings must be explicit.",
+    "evidence": [
+      "ev_uuid_joins"
+    ]
+  },
+  {
+    "id": "c_date_representation",
+    "target": "term_release_date",
+    "constraint_type": "unit",
+    "trigger_keywords": [
+      "release date",
+      "per year",
+      "per month",
+      "timeline",
+      "date range",
+      "ruling date",
+      "over time"
+    ],
+    "severity": "warn",
+    "scope": "Any time-based grouping, ordering or range filter.",
+    "confidence": "high",
+    "description": "Release dates and ruling dates are stored as ISO-order text dates (year-month-day) with no nulls: set releases span 1993-08-05 to 2021-03-19 and rulings span 2004-10-04 to 2021-02-05. Calendar grouping must therefore be applied to the date text itself, and the corpus is a snapshot ending in March 2021, so later releases are absent rather than zero.",
+    "evidence": [
+      "ev_sets_fields",
+      "ev_rulings_dates"
+    ]
+  },
+  {
+    "id": "c_promo_flags",
+    "target": "term_promo_card",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "promo",
+      "promotional",
+      "prerelease",
+      "booster fun",
+      "special printing"
+    ],
+    "severity": "warn",
+    "scope": "Any question that includes or excludes promotional printings.",
+    "confidence": "high",
+    "description": "Promotional status is a per-printing flag covering 5588 printings (9.83 percent), separate from rarity and from foil availability; promotional printings also appear at ordinary rarities. Richer promotion categories are available as a comma-joined list that is populated only for promotional printings, so filtering on a specific promotion kind must parse that list.",
+    "evidence": [
+      "ev_promo_foil_flags",
+      "ev_promo_types"
+    ]
+  },
+  {
+    "id": "c_foreign_coverage",
+    "target": "term_foreign_printing",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "language",
+      "foreign",
+      "translation",
+      "localized",
+      "non-English",
+      "Japanese",
+      "German",
+      "coverage"
+    ],
+    "severity": "warn",
+    "scope": "Any question about localizations or language coverage.",
+    "confidence": "high",
+    "description": "Foreign-language data covers 34056 of 56822 card printings across 17 languages, and a printing can carry up to 10 language rows. A missing row means no localized printing is recorded in this corpus, not that the card was never translated, so absence-based percentages measure this dataset rather than the game. The legacy multiverse identifier inside these rows is null for 38418 rows and must not be relied upon as a join key.",
+    "evidence": [
+      "ev_foreign_languages"
+    ]
+  },
+  {
+    "id": "c_reprint_semantics",
+    "target": "term_reprint",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "reprint",
+      "first printing",
+      "original printing",
+      "reissued",
+      "how many times printed"
+    ],
+    "severity": "warn",
+    "scope": "Any question about reprints or about how often a card has been printed.",
+    "confidence": "high",
+    "description": "The reprint flag marks 33657 of 56822 printings as reprints, meaning that an earlier printing of the same logical card already existed. To answer how often a card was printed, count printings per name or per oracle identifier rather than relying on the flag, because the flag is per printing and does not express how many previous printings exist.",
+    "evidence": [
+      "ev_reprint_identity",
+      "ev_oracle_id"
+    ]
+  },
+  {
+    "id": "c_set_coverage",
+    "target": "term_set",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "set",
+      "all sets",
+      "set count",
+      "sets without cards",
+      "join set"
+    ],
+    "severity": "warn",
+    "scope": "Any analysis at set level, and any join from sets to printings.",
+    "confidence": "high",
+    "description": "The sets table holds 551 sets while printings reference 536 of them; 15 sets (art series, league tokens, some promos) contain no printing row in this corpus. Set counts, averages per set and set-level joins must state whether these empty sets are included, otherwise counts differ depending on the direction of the join.",
+    "evidence": [
+      "ev_sets_empty",
+      "ev_setcode_link"
+    ]
+  },
+  {
+    "id": "c_keywords_encoding",
+    "target": "term_keyword_ability",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "keyword",
+      "ability",
+      "flying",
+      "trample",
+      "evergreen",
+      "keyword ability"
+    ],
+    "severity": "warn",
+    "scope": "Any analysis of abilities or keywords.",
+    "confidence": "high",
+    "description": "Keywords are a comma-joined list of ability names populated for only 20639 of 56822 printings, because only keyworded abilities are recorded there. An ability that is spelled out in rules text without a keyword does not appear, so a low or zero count is not evidence that an effect is absent from the card pool, and matching a single keyword requires matching list elements.",
+    "evidence": [
+      "ev_keywords_encoding"
+    ]
+  },
+  {
+    "id": "c_basic_supertype",
+    "target": "term_supertype",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "basic",
+      "basic land",
+      "supertype",
+      "land",
+      "plains",
+      "island",
+      "swamp",
+      "mountain",
+      "forest"
+    ],
+    "severity": "info",
+    "scope": "Any question about basic lands or supertypes.",
+    "confidence": "medium",
+    "description": "The Basic supertype is carried by the five familiar basic land names in very high printing counts, plus a small number of unusual entries (Wastes with 5 and one single land). Treating the basic supertype as exactly the five classic land names is a reasonable simplification but should be stated, and basic lands dominate the most-reprinted list.",
+    "evidence": [
+      "ev_basic_lands",
+      "ev_reprint_identity"
+    ]
+  }
+]

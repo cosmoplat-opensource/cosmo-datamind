@@ -1,0 +1,140 @@
+{
+ "db_id": "debit_card_specializing",
+ "questions": [
+  {
+   "question_id": 1506,
+   "db_id": "debit_card_specializing",
+   "question": "Please list the product descriptions of the transactions taken place in the gas stations in the Czech Republic.",
+   "evidence": "Czech Republic can be represented as the Country value in the gasstations table is 'CZE'; ",
+   "SQL": "SELECT DISTINCT T3.fld008 FROM tab04 AS T1 INNER JOIN tab02 AS T2 ON T1.fld004 = T2.fld004 INNER JOIN tab03 AS T3 ON T1.fld007 = T3.fld007 WHERE T2.fld006 = 'CZE'",
+   "difficulty": "moderate",
+   "SQL_original": "SELECT DISTINCT T3.Description FROM transactions_1k AS T1 INNER JOIN gasstations AS T2 ON T1.GasStationID = T2.GasStationID INNER JOIN products AS T3 ON T1.ProductID = T3.ProductID WHERE T2.Country = 'CZE'"
+  },
+  {
+   "question_id": 1471,
+   "db_id": "debit_card_specializing",
+   "question": "What is the ratio of customers who pay in EUR against customers who pay in CZK?",
+   "evidence": "ratio of customers who pay in EUR against customers who pay in CZK = count(fld003 = 'EUR') / count(fld003 = 'CZK').",
+   "SQL": "SELECT CAST(SUM(IIF(fld003 = 'EUR', 1, 0)) AS REAL) / SUM(IIF(fld003 = 'CZK', 1, 0)) AS ratio FROM tab01",
+   "difficulty": "simple",
+   "SQL_original": "SELECT CAST(SUM(IIF(Currency = 'EUR', 1, 0)) AS FLOAT) / SUM(IIF(Currency = 'CZK', 1, 0)) AS ratio FROM customers"
+  },
+  {
+   "question_id": 1486,
+   "db_id": "debit_card_specializing",
+   "question": "Is it true that more SMEs pay in Czech koruna than in euros? If so, how many more?",
+   "evidence": "Amount of more SMEs = Total of SMEs pay using Currency CZK - Total of SMEs pay using Currency EUR",
+   "SQL": "SELECT SUM(fld003 = 'CZK') - SUM(fld003 = 'EUR') FROM tab01 WHERE fld002 = 'SME'",
+   "difficulty": "simple",
+   "SQL_original": "SELECT SUM(Currency = 'CZK') - SUM(Currency = 'EUR') FROM customers WHERE Segment = 'SME'"
+  },
+  {
+   "question_id": 1476,
+   "db_id": "debit_card_specializing",
+   "question": "What was the difference in gas consumption between CZK-paying customers and EUR-paying customers in 2012?",
+   "evidence": "Year 2012 can be presented as Between 201201 And 201212; The first 4 strings of the Date values in the yearmonth table can represent year; Difference in fld015 = CZK customers fld015 in 2012 - EUR customers fld015 in 2012",
+   "SQL": "SELECT SUM(IIF(T1.fld003 = 'CZK', T2.fld015, 0)) - SUM(IIF(T1.fld003 = 'EUR', T2.fld015, 0)) FROM tab01 AS T1 INNER JOIN tab05 AS T2 ON T1.fld001 = T2.fld001 WHERE SUBSTRING(T2.fld010, 1, 4) = '2012'",
+   "difficulty": "challenging",
+   "SQL_original": "SELECT SUM(IIF(T1.Currency = 'CZK', T2.Consumption, 0)) - SUM(IIF(T1.Currency = 'EUR', T2.Consumption, 0)) FROM customers AS T1 INNER JOIN yearmonth AS T2 ON T1.CustomerID = T2.CustomerID WHERE SUBSTR(T2.Date, 1, 4) = '2012'"
+  },
+  {
+   "question_id": 1528,
+   "db_id": "debit_card_specializing",
+   "question": "What is the percentage of \"premium\" against the overall segment in Country = \"SVK\"?",
+   "evidence": "",
+   "SQL": "SELECT CAST(SUM(IIF(fld006 = 'SVK' AND fld002 = 'Premium', 1, 0)) AS REAL) * 100 / SUM(IIF(fld006 = 'SVK', 1, 0)) FROM tab02",
+   "difficulty": "simple",
+   "SQL_original": "SELECT CAST(SUM(IIF(Country = 'SVK' AND Segment = 'Premium', 1, 0)) AS FLOAT) * 100 / SUM(IIF(Country = 'SVK', 1, 0)) FROM gasstations"
+  },
+  {
+   "question_id": 1484,
+   "db_id": "debit_card_specializing",
+   "question": "How many more \"discount\" gas stations does the Czech Republic have compared to Slovakia?",
+   "evidence": "Czech Republic can be represented as the Country value in gasstations table is 'CZE'; Slovakia can be represented as the Country value in the gasstations table is 'SVK';  Computation of more \"discount\" gas stations= Total no. of discount gas stations in Czech Republic - Total no. of discount gas stations in Slovakia",
+   "SQL": "SELECT SUM(IIF(fld006 = 'CZE', 1, 0)) - SUM(IIF(fld006 = 'SVK', 1, 0)) FROM tab02 WHERE fld002 = 'Discount'",
+   "difficulty": "simple",
+   "SQL_original": "SELECT SUM(IIF(Country = 'CZE', 1, 0)) - SUM(IIF(Country = 'SVK', 1, 0)) FROM gasstations WHERE Segment = 'Discount'"
+  },
+  {
+   "question_id": 1521,
+   "db_id": "debit_card_specializing",
+   "question": "For all the transactions happened during 8:00-9:00 in 2012/8/26, how many happened in CZE?",
+   "evidence": "Czech Republic can be represented as the Country value in the gasstations table is 'CZE'; '2012/8/26' can be represented by '2012-08-26'; during 8:00-9:00 can be represented as fld011 BETWEEN '08:00:00' AND '09:00:00'",
+   "SQL": "SELECT COUNT(T1.fld009) FROM tab04 AS T1 INNER JOIN tab02 AS T2 ON T1.fld004 = T2.fld004 WHERE T1.fld010 = '2012-08-26' AND T1.fld011 BETWEEN '08:00:00' AND '09:00:00' AND T2.fld006 = 'CZE'",
+   "difficulty": "moderate",
+   "SQL_original": "SELECT COUNT(T1.TransactionID) FROM transactions_1k AS T1 INNER JOIN gasstations AS T2 ON T1.GasStationID = T2.GasStationID WHERE T1.Date = '2012-08-26' AND T1.Time BETWEEN '08:00:00' AND '09:00:00' AND T2.Country = 'CZE'"
+  },
+  {
+   "question_id": 1531,
+   "db_id": "debit_card_specializing",
+   "question": "Who is the top spending customer and how much is the average price per single item purchased by this customer? What currency was being used?",
+   "evidence": "average price per single item = Total(fld014) / Total(fld013)",
+   "SQL": "SELECT T2.fld001, SUM(T2.fld014 / T2.fld013), T1.fld003 FROM tab01 AS T1 INNER JOIN tab04 AS T2 ON T1.fld001 = T2.fld001 WHERE T2.fld001 = (SELECT fld001 FROM tab05 ORDER BY fld015 DESC LIMIT 1) GROUP BY T2.fld001, T1.fld003",
+   "difficulty": "moderate",
+   "SQL_original": "SELECT T2.CustomerID, SUM(T2.Price / T2.Amount), T1.Currency FROM customers AS T1 INNER JOIN transactions_1k AS T2 ON T1.CustomerID = T2.CustomerID WHERE T2.CustomerID = ( SELECT CustomerID FROM yearmonth ORDER BY Consumption DESC LIMIT 1 ) GROUP BY T2.CustomerID, T1.Currency"
+  },
+  {
+   "question_id": 1501,
+   "db_id": "debit_card_specializing",
+   "question": "Please list the countries of the gas stations with transactions taken place in June, 2013.",
+   "evidence": "June 2013 refers to '201306'; The first 4 strings of the Date values in the yearmonth table can represent year; The 5th and 6th string of the date can refer to month;",
+   "SQL": "SELECT DISTINCT T2.fld006 FROM tab04 AS T1 INNER JOIN tab02 AS T2 ON T1.fld004 = T2.fld004 INNER JOIN tab05 AS T3 ON T1.fld001 = T3.fld001 WHERE T3.fld010 = '201306'",
+   "difficulty": "moderate",
+   "SQL_original": "SELECT DISTINCT T2.Country FROM transactions_1k AS T1 INNER JOIN gasstations AS T2 ON T1.GasStationID = T2.GasStationID INNER JOIN yearmonth AS T3 ON T1.CustomerID = T3.CustomerID WHERE T3.Date = '201306'"
+  },
+  {
+   "question_id": 1493,
+   "db_id": "debit_card_specializing",
+   "question": "In February 2012, what percentage of customers consumed more than 528.3?",
+   "evidence": "February 2012 refers to '201202' in tab05.fld010; The first 4 strings of the Date values in the yearmonth table can represent year; The 5th and 6th string of the date can refer to month.",
+   "SQL": "SELECT CAST(SUM(IIF(fld015 > 528.3, 1, 0)) AS REAL) * 100 / COUNT(fld001) FROM tab05 WHERE fld010 = '201202'",
+   "difficulty": "simple",
+   "SQL_original": "SELECT CAST(SUM(IIF(Consumption > 528.3, 1, 0)) AS FLOAT) * 100 / COUNT(CustomerID) FROM yearmonth WHERE Date = '201202'"
+  },
+  {
+   "question_id": 1514,
+   "db_id": "debit_card_specializing",
+   "question": "What kind of currency did the customer paid at 16:25:00 in 2012/8/24?",
+   "evidence": "'2012/8/24' can be represented by '2012-08-24'; ",
+   "SQL": "SELECT DISTINCT T3.fld003 FROM tab04 AS T1 INNER JOIN tab02 AS T2 ON T1.fld004 = T2.fld004 INNER JOIN tab01 AS T3 ON T1.fld001 = T3.fld001 WHERE T1.fld010 = '2012-08-24' AND T1.fld011 = '16:25:00'",
+   "difficulty": "simple",
+   "SQL_original": "SELECT DISTINCT T3.Currency FROM transactions_1k AS T1 INNER JOIN gasstations AS T2 ON T1.GasStationID = T2.GasStationID INNER JOIN customers AS T3 ON T1.CustomerID = T3.CustomerID WHERE T1.Date = '2012-08-24' AND T1.Time = '16:25:00'"
+  },
+  {
+   "question_id": 1483,
+   "db_id": "debit_card_specializing",
+   "question": "How much did customer 6 consume in total between August and November 2013?",
+   "evidence": "Between August And November 2013 refers to Between 201308 And 201311; The first 4 strings of the Date values in the yearmonth table can represent year; The 5th and 6th string of the date can refer to month.",
+   "SQL": "SELECT SUM(fld015) FROM tab05 WHERE fld001 = 6 AND fld010 BETWEEN '201308' AND '201311'",
+   "difficulty": "simple",
+   "SQL_original": "SELECT SUM(Consumption) FROM yearmonth WHERE CustomerID = 6 AND Date BETWEEN '201308' AND '201311'"
+  },
+  {
+   "question_id": 1472,
+   "db_id": "debit_card_specializing",
+   "question": "In 2012, who had the least consumption in LAM?",
+   "evidence": "Year 2012 can be presented as Between 201201 And 201212; The first 4 strings of the Date values in the yearmonth table can represent year.",
+   "SQL": "SELECT T1.fld001 FROM tab01 AS T1 INNER JOIN tab05 AS T2 ON T1.fld001 = T2.fld001 WHERE T1.fld002 = 'LAM' AND SUBSTRING(T2.fld010, 1, 4) = '2012' GROUP BY T1.fld001 ORDER BY SUM(T2.fld015) ASC LIMIT 1",
+   "difficulty": "moderate",
+   "SQL_original": "SELECT T1.CustomerID FROM customers AS T1 INNER JOIN yearmonth AS T2 ON T1.CustomerID = T2.CustomerID WHERE T1.Segment = 'LAM' AND SUBSTR(T2.Date, 1, 4) = '2012' GROUP BY T1.CustomerID ORDER BY SUM(T2.Consumption) ASC LIMIT 1"
+  },
+  {
+   "question_id": 1479,
+   "db_id": "debit_card_specializing",
+   "question": "Which year recorded the most consumption of gas paid in CZK?",
+   "evidence": "The first 4 strings of the Date values in the yearmonth table can represent year.",
+   "SQL": "SELECT SUBSTRING(T2.fld010, 1, 4) FROM tab01 AS T1 INNER JOIN tab05 AS T2 ON T1.fld001 = T2.fld001 WHERE T1.fld003 = 'CZK' GROUP BY SUBSTRING(T2.fld010, 1, 4) ORDER BY SUM(T2.fld015) DESC LIMIT 1",
+   "difficulty": "moderate",
+   "SQL_original": "SELECT SUBSTR(T2.Date, 1, 4) FROM customers AS T1 INNER JOIN yearmonth AS T2 ON T1.CustomerID = T2.CustomerID WHERE T1.Currency = 'CZK' GROUP BY SUBSTR(T2.Date, 1, 4) ORDER BY SUM(T2.Consumption) DESC LIMIT 1"
+  },
+  {
+   "question_id": 1490,
+   "db_id": "debit_card_specializing",
+   "question": "How many percent of LAM customer consumed more than 46.73?",
+   "evidence": "Percentage of LAM customer consumed more than 46.73 = (Total no. of LAM customers who consumed more than 46.73 / Total no. of LAM tab01) * 100.",
+   "SQL": "SELECT CAST(SUM(IIF(T2.fld015 > 46.73, 1, 0)) AS REAL) * 100 / COUNT(T1.fld001) FROM tab01 AS T1 INNER JOIN tab05 AS T2 ON T1.fld001 = T2.fld001 WHERE T1.fld002 = 'LAM'",
+   "difficulty": "moderate",
+   "SQL_original": "SELECT CAST(SUM(IIF(T2.Consumption > 46.73, 1, 0)) AS FLOAT) * 100 / COUNT(T1.CustomerID) FROM customers AS T1 INNER JOIN yearmonth AS T2 ON T1.CustomerID = T2.CustomerID WHERE T1.Segment = 'LAM'"
+  }
+ ]
+}

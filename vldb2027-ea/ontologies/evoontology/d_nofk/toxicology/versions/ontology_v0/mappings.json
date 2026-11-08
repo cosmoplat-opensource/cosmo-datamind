@@ -1,0 +1,177 @@
+[
+  {
+    "id": "map_molecule",
+    "term_id": "term_molecule",
+    "database_source": "toxicology",
+    "table": "molecule",
+    "column": "molecule_id",
+    "semantic_filter": "",
+    "aggregation_semantics": "count of distinct molecule identifiers",
+    "grain": "one row per molecule",
+    "validation": "343 rows; molecule_id is the primary key; values match the pattern TR followed by three digits.",
+    "evidence": [
+      "ev_molecule_rows",
+      "ev_molecule_id_format"
+    ]
+  },
+  {
+    "id": "map_toxicity_label",
+    "term_id": "term_toxicity_label",
+    "database_source": "toxicology",
+    "table": "molecule",
+    "column": "label",
+    "semantic_filter": "applies only to molecules that have a row in the molecule table",
+    "aggregation_semantics": "distribution of molecules across the two label values, i.e. count of molecules per label value",
+    "grain": "one label value per molecule",
+    "validation": "152 molecules labelled '+', 191 labelled '-'; no other value and no NULL observed.",
+    "evidence": [
+      "ev_label_values"
+    ]
+  },
+  {
+    "id": "map_atom",
+    "term_id": "term_atom",
+    "database_source": "toxicology",
+    "table": "atom",
+    "column": "atom_id",
+    "semantic_filter": "",
+    "aggregation_semantics": "count of atom records",
+    "grain": "one row per atom",
+    "validation": "12333 rows; atom_id is the primary key and is unique.",
+    "evidence": [
+      "ev_atom_rows"
+    ]
+  },
+  {
+    "id": "map_atom_element",
+    "term_id": "term_element",
+    "database_source": "toxicology",
+    "table": "atom",
+    "column": "element",
+    "semantic_filter": "",
+    "aggregation_semantics": "count of atoms per element value",
+    "grain": "one element value per atom",
+    "validation": "21 distinct lowercase element symbols; no NULL observed in 12333 rows.",
+    "evidence": [
+      "ev_element_values"
+    ]
+  },
+  {
+    "id": "map_atom_molecule_membership",
+    "term_id": "term_molecule",
+    "database_source": "toxicology",
+    "table": "atom",
+    "column": "molecule_id",
+    "semantic_filter": "each atom belongs to exactly one molecule",
+    "aggregation_semantics": "count of atoms grouped by the owning molecule",
+    "grain": "one molecule reference per atom row",
+    "validation": "444 distinct molecule_id values appear in atom, against 343 rows in the molecule table.",
+    "evidence": [
+      "ev_orphan_molecules",
+      "ev_atoms_per_molecule"
+    ]
+  },
+  {
+    "id": "map_bond",
+    "term_id": "term_bond",
+    "database_source": "toxicology",
+    "table": "bond",
+    "column": "bond_id",
+    "semantic_filter": "",
+    "aggregation_semantics": "count of bond records",
+    "grain": "one row per bond",
+    "validation": "12379 rows; bond_id is the primary key and is unique.",
+    "evidence": [
+      "ev_bond_rows"
+    ]
+  },
+  {
+    "id": "map_bond_type",
+    "term_id": "term_bond_type",
+    "database_source": "toxicology",
+    "table": "bond",
+    "column": "bond_type",
+    "semantic_filter": "one bond row (TR345_7_10) has no bond type",
+    "aggregation_semantics": "count of bonds per bond type value",
+    "grain": "one bond type value per bond",
+    "validation": "'-' 10528 rows, '=' 1844 rows, '#' 6 rows, NULL 1 row.",
+    "evidence": [
+      "ev_bond_type_values",
+      "ev_bond_type_null"
+    ]
+  },
+  {
+    "id": "map_bond_molecule_membership",
+    "term_id": "term_molecule",
+    "database_source": "toxicology",
+    "table": "bond",
+    "column": "molecule_id",
+    "semantic_filter": "each bond belongs to exactly one molecule",
+    "aggregation_semantics": "count of bonds grouped by the owning molecule",
+    "grain": "one molecule reference per bond row",
+    "validation": "444 distinct molecule_id values appear in bond; every molecule that has atoms also has bonds.",
+    "evidence": [
+      "ev_orphan_molecules",
+      "ev_bonds_per_molecule"
+    ]
+  },
+  {
+    "id": "map_atomic_adjacency",
+    "term_id": "term_atomic_adjacency",
+    "database_source": "toxicology",
+    "table": "connected",
+    "column": "atom_id and atom_id2, together with bond_id",
+    "semantic_filter": "the pair (atom_id, atom_id2) is directed; the reverse pair is stored as a separate row",
+    "aggregation_semantics": "count of adjacency rows, or count of distinct neighbours per atom",
+    "grain": "one directed atom-to-atom adjacency per row",
+    "validation": "24758 rows for 12379 distinct bond_id values; 0 rows lack their reverse counterpart; every bond_id resolves to a bond row.",
+    "evidence": [
+      "ev_connected_symmetry",
+      "ev_connected_join_bond",
+      "ev_connected_same_molecule"
+    ]
+  },
+  {
+    "id": "map_molecular_size",
+    "term_id": "term_molecular_size",
+    "database_source": "toxicology",
+    "table": "atom",
+    "column": "molecule_id",
+    "semantic_filter": "",
+    "aggregation_semantics": "count of atom records grouped by molecule",
+    "grain": "one value per molecule",
+    "validation": "min 4, max 174, mean 27.8 over the 444 molecules that have atoms.",
+    "evidence": [
+      "ev_atoms_per_molecule"
+    ]
+  },
+  {
+    "id": "map_bond_count",
+    "term_id": "term_bond_count",
+    "database_source": "toxicology",
+    "table": "bond",
+    "column": "molecule_id",
+    "semantic_filter": "",
+    "aggregation_semantics": "count of bond records grouped by molecule",
+    "grain": "one value per molecule",
+    "validation": "min 2, max 175, mean 27.9 over the 444 molecules that have bonds.",
+    "evidence": [
+      "ev_bonds_per_molecule"
+    ]
+  },
+  {
+    "id": "map_atom_degree",
+    "term_id": "term_atom_degree",
+    "database_source": "toxicology",
+    "table": "connected",
+    "column": "atom_id",
+    "semantic_filter": "",
+    "aggregation_semantics": "count of distinct neighbours recorded per atom",
+    "grain": "one value per atom that appears in the adjacency table",
+    "validation": "degree values 1 (6539 atoms), 2 (707), 3 (3347) and 4 (1691); 49 atoms of the atom table never appear here.",
+    "evidence": [
+      "ev_degree_distribution",
+      "ev_unconnected_atoms"
+    ]
+  }
+]

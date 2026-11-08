@@ -1,0 +1,250 @@
+[
+  {
+    "id": "ev_schema_tables",
+    "source": "european_football_2",
+    "query": "sqlite3 'file:.../european_football_2.sqlite?mode=ro' '.tables' and '.schema'",
+    "result": "Seven tables: Country, League, Match, Player, Player_Attributes, Team, Team_Attributes. Match carries 115 columns including the two side-by-side block families for home and away player slots and coordinates, eight XML-like event text columns, and 33 home/draw/away betting price columns.",
+    "validation_method": "read-only schema dump",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_row_counts",
+    "source": "european_football_2",
+    "query": "SELECT COUNT(*) FROM each of Country, League, Match, Player, Player_Attributes, Team, Team_Attributes",
+    "result": "Country 11, League 11, Match 25979, Player 11060, Player_Attributes 183978, Team 299, Team_Attributes 1458. Match holds 25979 distinct match_api_id values, so the fixture key is unique.",
+    "validation_method": "row count comparison",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_season_range",
+    "source": "european_football_2",
+    "query": "SELECT DISTINCT season FROM Match ORDER BY season; SELECT season, MIN(date), MAX(date) FROM Match GROUP BY season",
+    "result": "Eight seasons from 2008/2009 to 2015/2016. Each maps to a coherent calendar window, for example 2008/2009 runs from 2008-07-18 to 2009-05-31 and 2015/2016 from 2015-07-17 to 2016-05-25. Match.date spans 2008-07-18 to 2016-05-25.",
+    "validation_method": "distinct value and range check",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_league_country_link",
+    "source": "european_football_2",
+    "query": "SELECT id, country_id, name FROM League; SELECT COUNT(*) FROM Match WHERE country_id != league_id",
+    "result": "Eleven leagues, each with a country reference. The League identifiers equal the Country identifiers exactly as sets. On every one of the 25979 matches the country reference equals the league reference, with zero exceptions.",
+    "validation_method": "distinct value comparison and mismatch count",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_match_team_fk",
+    "source": "european_football_2",
+    "query": "SELECT COUNT(*) FROM Match m WHERE m.home_team_api_id NOT IN (SELECT team_api_id FROM Team); same for away_team_api_id",
+    "result": "Zero unmatched home references and zero unmatched away references. Team holds 299 rows with 299 distinct team_api_id values.",
+    "validation_method": "referential integrity check",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_player_player_fk",
+    "source": "european_football_2",
+    "query": "SELECT COUNT(*) FROM Match WHERE home_player_1 NOT IN (SELECT player_api_id FROM Player); SELECT COUNT(*) FROM Player_Attributes WHERE player_api_id NOT IN (SELECT player_api_id FROM Player); SELECT COUNT(DISTINCT player_fifa_api_id) FROM Player; SELECT COUNT(DISTINCT player_fifa_api_id) FROM Player_Attributes",
+    "result": "Zero unmatched lineup references and zero unmatched snapshot references. Player holds 11060 distinct player_api_id and 11060 distinct player_fifa_api_id values. Player_Attributes holds 11062 distinct player_fifa_api_id values, two more than the player table accounts for.",
+    "validation_method": "referential integrity and distinct key counts",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_lineup_completeness",
+    "source": "european_football_2",
+    "query": "SELECT COUNT(*) FROM Match WHERE home_player_1 IS NOT NULL AND home_player_11 IS NOT NULL AND away_player_1 IS NOT NULL AND away_player_11 IS NOT NULL; SELECT SUM(home_player_1 IS NULL) FROM Match",
+    "result": "23632 of 25979 matches have all 22 lineup slots populated, leaving 2347 with at least one empty slot. The single slot home_player_1 is null on 1224 matches.",
+    "validation_method": "null count",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_event_column_nulls",
+    "source": "european_football_2",
+    "query": "SELECT SUM(goal IS NULL OR goal=''), SUM(shoton IS NULL OR shoton=''), SUM(shotoff IS NULL OR shotoff=''), SUM(foulcommit IS NULL OR foulcommit=''), SUM(card IS NULL OR card=''), SUM(\"cross\" IS NULL OR \"cross\"=''), SUM(corner IS NULL OR corner=''), SUM(possession IS NULL OR possession='') FROM Match",
+    "result": "Every one of the eight event columns reports exactly 11762 matches that are null or empty, against 25979 matches in total. The eight columns are therefore missing as a single block for about 45 percent of fixtures.",
+    "validation_method": "null count per column",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_goal_xml_team_scope",
+    "source": "european_football_2",
+    "query": "for each match with a non-empty goal column, collect the set of team elements and test whether it is a subset of the match's own home and away team identifiers",
+    "result": "Across all 14217 matches carrying goal events, no team element ever referenced an identifier other than that match's own two sides. The goal event feed therefore attributes events to one of the two participants of the same fixture.",
+    "validation_method": "full scan subset test",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_goal_xml_vs_scoreline",
+    "source": "european_football_2",
+    "query": "for each match with a non-empty goal column, count goal-typed value elements per team element and compare with home_team_goal and away_team_goal",
+    "result": "Of 14217 matches carrying goal events, 9111 agree with the scoreline and 5106 disagree, a 35.9 percent disagreement rate. Counting all value elements rather than only goal-typed ones gives 51058 events of which 28902 are typed as goals, against a total of 70287 goals implied by the scoreline columns across the whole table. 1089 matches recorded as 0-0 nevertheless carry non-empty goal events.",
+    "validation_method": "per-team event count compared with stored scoreline",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_goal_type_values",
+    "source": "european_football_2",
+    "query": "parse every goal value element and tally the goal_type element contents",
+    "result": "Seven distinct codes: n 25104, p 2149, o 781, npm 482, dg 342, rp 9, psm 1. No lookup table or code list exists anywhere in the schema, so the codes are not documented by the data.",
+    "validation_method": "full enumeration of XML element values",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_card_type_values",
+    "source": "european_football_2",
+    "query": "parse every card value element and tally the card_type element contents",
+    "result": "Three distinct codes: y 58045, y2 1708, r 1756. A further 605 card value elements contain no card_type element at all, so 62114 card value elements in total are reduced to 61509 typed ones.",
+    "validation_method": "full enumeration of XML element values",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_work_rate_values",
+    "source": "european_football_2",
+    "query": "SELECT attacking_work_rate, COUNT(*) FROM Player_Attributes GROUP BY 1; SELECT defensive_work_rate, COUNT(*) FROM Player_Attributes GROUP BY 1",
+    "result": "Attacking column: high 42823, medium 125070, low 8569, plus 'None' 3639, empty 3230, le 104, norm 348, stoc 89, y 106. Defensive column: high 27041, medium 130846, low 18432, plus empty 836, _0 2394, o 1550, ean 104, es 106, ormal 348, tocky 89, and the digit strings 0 to 9 totalling 2232. Both columns therefore carry values outside the intended three-level vocabulary.",
+    "validation_method": "full distinct value tally",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_preferred_foot_values",
+    "source": "european_football_2",
+    "query": "SELECT preferred_foot, COUNT(*) FROM Player_Attributes GROUP BY 1",
+    "result": "right 138409, left 44733, empty 836. The 836 empty rows coincide with the 836 rows whose skill columns are also null.",
+    "validation_method": "distinct value tally",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_player_snapshot_dates",
+    "source": "european_football_2",
+    "query": "SELECT date, COUNT(*) FROM Player_Attributes GROUP BY date ORDER BY date; SELECT MIN(date), MAX(date), COUNT(DISTINCT date) FROM Player_Attributes; SELECT birthday FROM Player LIMIT 3",
+    "result": "197 distinct snapshot dates from 2007-02-22 to 2016-07-07. The earliest date alone carries 11794 rows while the latest three carry 9, 46 and 52 rows, so snapshot density falls away sharply after 2016. Birth dates are stored as text of the form YYYY-MM-DD 00:00:00, including leap-day values such as 1992-02-29. Height spans 157.48 to 208.28 and weight 117 to 243 across all 11060 players.",
+    "validation_method": "distinct date tally and format inspection",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_player_attr_dupes",
+    "source": "european_football_2",
+    "query": "SELECT COUNT(*) FROM (SELECT player_api_id, date, COUNT(*) c FROM Player_Attributes GROUP BY 1,2 HAVING c>1)",
+    "result": "835 player-and-date combinations occur more than once, for example player 2907 on 2007-02-22. Player plus date is therefore not a unique key on Player_Attributes. The table holds 183978 rows covering 11060 players.",
+    "validation_method": "group-by duplicate detection",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_team_attr_coverage",
+    "source": "european_football_2",
+    "query": "SELECT date, COUNT(DISTINCT team_api_id) FROM Team_Attributes GROUP BY date; SELECT COUNT(DISTINCT team_api_id), COUNT(DISTINCT team_fifa_api_id) FROM Team_Attributes; SELECT team_api_id, date, COUNT(*) FROM Team_Attributes GROUP BY 1,2 HAVING COUNT(*)>1",
+    "result": "Six snapshot dates only: 2010-02-22 with 241 clubs, 2011-02-22 with 244, 2012-02-22 with 242, 2013-09-20 with 242, 2014-09-19 with 244 and 2015-09-10 with 245. The table covers 288 distinct team_api_id and 285 distinct team_fifa_api_id across 1458 rows. One club-and-date combination, club 9996 on 2015-09-10, appears twice.",
+    "validation_method": "distinct key tally per snapshot date",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_team_fifa_nulls",
+    "source": "european_football_2",
+    "query": "SELECT COUNT(*) total, SUM(team_fifa_api_id IS NULL) FROM Team",
+    "result": "299 clubs in total with 11 rows carrying a null FIFA identifier. Team_Attributes carries 285 distinct FIFA identifiers against 288 distinct API identifiers, so the FIFA key is the less complete of the two join keys on both tables.",
+    "validation_method": "null count and distinct key comparison",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_odds_coverage",
+    "source": "european_football_2",
+    "query": "SELECT COUNT(B365H), COUNT(BWH), COUNT(IWH), COUNT(LBH), COUNT(PSH), COUNT(WHH), COUNT(SJH), COUNT(VCH), COUNT(GBH), COUNT(BSH) FROM Match; SELECT COUNT(*) FROM Match WHERE all eleven H columns are non-null",
+    "result": "Eleven operators expressed as column prefixes: B365 22592, BW 22575, IW 22520, LB 22556, PS 11168, WH 22571, SJ 17097, VC 22568, GB 14162, BS 14161 matches with prices, against 25979 matches in total. Only 2756 matches carry all eleven operators at once. No bookmaker name or identifier table exists in the schema.",
+    "validation_method": "non-null count per operator",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_odds_triple_nullability",
+    "source": "european_football_2",
+    "query": "SELECT SUM(B365H IS NULL AND B365D IS NULL AND B365A IS NULL), SUM(B365H IS NULL AND (B365D IS NOT NULL OR B365A IS NOT NULL)) FROM Match",
+    "result": "3387 matches have all three B365 columns null and zero matches have a partially populated triple. Within an operator the three outcome prices are always jointly present or jointly absent.",
+    "validation_method": "partial-null detection",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_odds_overround",
+    "source": "european_football_2",
+    "query": "SELECT B365H, B365D, B365A FROM Match WHERE B365H IS NOT NULL LIMIT 5, then sum of reciprocals",
+    "result": "Sampled triples such as 1.73/3.4/5.0, 1.95/3.2/3.6, 2.38/3.3/2.75, 1.44/3.75/7.5 and 5.0/3.5/1.65 give reciprocal sums of 1.072, 1.103, 1.087, 1.094 and 1.092 respectively. Every sampled triple sums above one, so the reciprocals are margin-inflated implied probabilities.",
+    "validation_method": "reciprocal sum computed on sampled rows",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_possession_sums_100",
+    "source": "european_football_2",
+    "query": "parse homepos and awaypos from each possession value element and test whether they sum to 100",
+    "result": "2876 parsed reading pairs, zero of which deviate from a sum of 100. The two figures are exact complements, so each possession event yields one independent number rather than two.",
+    "validation_method": "arithmetic consistency check on parsed pairs",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_formation_grid",
+    "source": "european_football_2",
+    "query": "SELECT DISTINCT home_player_X1 FROM Match; tally all home_player_X1..X11 and home_player_Y1..Y11 values",
+    "result": "X takes integer values 0 to 9 with 0 appearing 22 times, and Y takes integer values 0 to 11. 20130 of the 285769 coordinate slots are null. For a sample 4-4-2 side the goalkeeper sits at X=1, Y=1, the back four at Y=3, the midfield four at Y=7 and the two forwards at Y=10, with the away side mirroring the same grid, so X is the lateral axis and Y the depth axis. 1821 matches have null home coordinates.",
+    "validation_method": "distinct value tally and inspection of a full lineup",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_height_inches_conversion",
+    "source": "european_football_2",
+    "query": "SELECT height FROM Player; test whether height / 2.54 is a whole number",
+    "result": "All 11060 height values satisfy height = whole_inches * 2.54 exactly. The observed range is 157.48 to 208.28 with a mean of 181.87. The stored centimetre values are therefore exact conversions of whole-inch measurements rather than independently measured centimetre heights.",
+    "validation_method": "exact unit-conversion test over all values",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_weight_units",
+    "source": "european_football_2",
+    "query": "SELECT MIN(weight), MAX(weight), AVG(weight) FROM Player",
+    "result": "Integers from 117 to 243 with a mean of 168.38, no nulls. Read as pounds these span 53 to 110 kilograms with a mean of about 76 kilograms, which matches an adult footballer population; read as kilograms they would imply a mean body mass of 168 kilograms, which is impossible. The column carries no unit label.",
+    "validation_method": "magnitude plausibility check",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_skill_column_range",
+    "source": "european_football_2",
+    "query": "SELECT MIN(col), MAX(col) FROM Player_Attributes for each of the 33 ability columns; SELECT MIN(overall_rating), MAX(overall_rating), MIN(potential), MAX(potential) FROM Player_Attributes",
+    "result": "Across the 33 ability columns the minimum observed is 1 and the maximum is 98. Overall rating spans 33 to 94 and potential spans 39 to 97. No column is null on any row except the 836 rows where all of them are null together, which are the same 836 rows that also lack a preferred foot.",
+    "validation_method": "per-column range and joint null pattern",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_team_class_bounds",
+    "source": "european_football_2",
+    "query": "SELECT buildUpPlaySpeedClass, MIN(buildUpPlaySpeed), MAX(buildUpPlaySpeed), COUNT(*) FROM Team_Attributes GROUP BY 1; same for defencePressureClass; SELECT DISTINCT for the remaining class columns",
+    "result": "Build-up play speed bands: Slow 20 to 33 with 102 rows, Balanced 34 to 66 with 1184 and Fast 67 to 80 with 172. Defensive pressure bands: Deep 23 to 33 with 154 rows, Medium 34 to 66 with 1243 and High 67 to 72 with 61. The bands are contiguous and non-overlapping. Other observed class values include defenceAggressionClass Press, Double and Contain, chanceCreationPositioningClass Organised and Free Form, and defenceDefenderLineClass Cover with 1362 rows and Offside Trap with 96. The nine numeric style columns span 20 to 80 and none of the twelve class columns is null.",
+    "validation_method": "band boundary comparison against the numeric partner column",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_league_season_coverage",
+    "source": "european_football_2",
+    "query": "SELECT league_id, season, COUNT(*) c, COUNT(DISTINCT stage) st, COUNT(DISTINCT home_team_api_id) teams FROM Match GROUP BY 1,2",
+    "result": "Matches per league season range from 162 to 380 for the larger competitions, with most sitting at 180, 228, 240, 306 or 380. One league season is severely incomplete: league 1 in 2013/2014 holds only 12 matches across 6 stages and 4 clubs, against 210 to 306 for the same league in other seasons. Season totals vary from 3032 to 3326 matches.",
+    "validation_method": "per league-season aggregation",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_stage_count",
+    "source": "european_football_2",
+    "query": "SELECT DISTINCT stage FROM Match ORDER BY stage; SELECT league_id, season, COUNT(*), COUNT(DISTINCT stage), COUNT(DISTINCT home_team_api_id) FROM Match GROUP BY 1,2",
+    "result": "Stage takes integer values 1 to 38. Within a league season the number of distinct stages tracks the fixture list produced by the number of participating clubs: league 1 in 2008/2009 has 18 clubs, 34 stages and 306 matches, while the same league in later seasons has 16 clubs, 30 stages and 240 matches.",
+    "validation_method": "distinct stage values compared with club count and match count",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_home_away_role_required",
+    "source": "european_football_2",
+    "query": "SELECT SUM(home_team_goal IS NULL), SUM(away_team_goal IS NULL) FROM Match; SELECT COUNT(*) FROM Match WHERE home_team_goal=0 AND away_team_goal=0",
+    "result": "Both scoreline columns are non-null on all 25979 matches and 1978 matches are recorded as 0-0. There is no outcome column and no role column: the venue role only exists as the home_ and away_ column prefixes, so any per-team aggregate has to read the side-appropriate column.",
+    "validation_method": "null count and schema inspection",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_league_points_absent",
+    "source": "european_football_2",
+    "query": "SELECT name FROM sqlite_master WHERE type='table'; inspect every table for a points or standings column",
+    "result": "The schema contains only Country, League, Match, Player, Player_Attributes, Team and Team_Attributes. No points column, no standings table and no point-award rule exists anywhere in the database.",
+    "validation_method": "schema inventory for points-related structures",
+    "timestamp": "2026-10-10"
+  }
+]

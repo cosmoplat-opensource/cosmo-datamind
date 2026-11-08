@@ -1,0 +1,77 @@
+{
+ "db_id": "card_games",
+ "questions": [
+  {
+   "question_id": 484,
+   "db_id": "card_games",
+   "question": "Please list the Italian names of the cards in the set Coldsnap with the highest converted mana cost.",
+   "evidence": "card set Coldsnap refers to fld049 = 'Coldsnap'; Italian refers to fld075 = 'Italian'; highest converted mana cost refers to MAX(fld011)",
+   "SQL": "SELECT T2.fld049 FROM tab02 AS T1 INNER JOIN tab01 AS T2 ON T2.fld072 = T1.fld072 INNER JOIN tab04 AS T3 ON T3.fld081 = T2.fld063 WHERE T3.fld049 = 'Coldsnap' AND T1.fld075 = 'Italian' ORDER BY T2.fld011 DESC",
+   "difficulty": "moderate",
+   "SQL_original": "SELECT T2.name FROM foreign_data AS T1 INNER JOIN cards AS T2 ON T2.uuid = T1.uuid INNER JOIN sets AS T3 ON T3.code = T2.setCode WHERE T3.name = 'Coldsnap' AND T1.language = 'Italian' ORDER BY T2.convertedManaCost DESC"
+  },
+  {
+   "question_id": 414,
+   "db_id": "card_games",
+   "question": "What language is the set of 180 cards that belongs to the Ravnica block translated into?",
+   "evidence": "set of 180 cards refers to fld078 = 180",
+   "SQL": "SELECT T2.fld075 FROM tab04 AS T1 INNER JOIN tab05 AS T2 ON T1.fld081 = T2.fld063 WHERE T1.fld079 = 'Ravnica' AND T1.fld078 = 180",
+   "difficulty": "simple",
+   "SQL_original": "SELECT T2.language FROM sets AS T1 INNER JOIN set_translations AS T2 ON T1.code = T2.setCode WHERE T1.block = 'Ravnica' AND T1.baseSetSize = 180"
+  },
+  {
+   "question_id": 397,
+   "db_id": "card_games",
+   "question": "What is the mana cost of cards with a normal layout, a 2003 frame version, with a black border color, and available in paper and mtgo?",
+   "evidence": "available in paper and mtgo refers to fld004 = 'mtgo,paper'; fld019 = 2003;fld005 = 'black'",
+   "SQL": "SELECT fld041 FROM tab01 WHERE fld004 = 'mtgo,paper' AND fld005 = 'black' AND fld019 = 2003 AND fld037 = 'normal'",
+   "difficulty": "moderate",
+   "SQL_original": "SELECT manaCost FROM cards WHERE availability = 'mtgo,paper' AND borderColor = 'black' AND frameVersion = 2003 AND layout = 'normal'"
+  },
+  {
+   "question_id": 529,
+   "db_id": "card_games",
+   "question": "Find and list the names of sets which doesn't have Japanese translation but have Korean translation.",
+   "evidence": "names of sets refers to name; doesn't have Japanese translation refers to language not like '%Japanese%'; have Korean translation refers to fld075 = 'Korean'",
+   "SQL": "SELECT fld049 FROM tab04 WHERE fld081 IN (SELECT fld063 FROM tab05 WHERE fld075 = 'Korean' AND fld075 NOT LIKE '%Japanese%')",
+   "difficulty": "moderate",
+   "SQL_original": "SELECT name FROM sets WHERE code IN ( SELECT setCode FROM set_translations WHERE language = 'Korean' AND language NOT LIKE '%Japanese%' )"
+  },
+  {
+   "question_id": 345,
+   "db_id": "card_games",
+   "question": "For artifact type of cards that do not have multiple faces on the same card, state its legalities status for vintage play format.",
+   "evidence": "Artifact type of cards refers to fld071 = 'Artifact'; card does not have multiple faces on the same card refers to fld064 is NULL'; vintage play format refers to fld076 = 'vintage';",
+   "SQL": "SELECT DISTINCT T2.fld077 FROM tab01 AS T1 INNER JOIN tab03 AS T2 ON T1.fld072 = T2.fld072 WHERE T1.fld070 = 'Artifact' AND T2.fld076 = 'vintage' AND T1.fld064 IS NULL",
+   "difficulty": "moderate",
+   "SQL_original": "SELECT DISTINCT T2.status FROM cards AS T1 INNER JOIN legalities AS T2 ON T1.uuid = T2.uuid WHERE T1.type = 'Artifact' AND T2.format = 'vintage' AND T1.side IS NULL"
+  },
+  {
+   "question_id": 412,
+   "db_id": "card_games",
+   "question": "What is the foreign name of the card in French of type Creature, normal layout and black border color, by artist Matthew D. Wilson?",
+   "evidence": "in French refers to fld075 = 'French'; black border color refers to fld005 = 'black'",
+   "SQL": "SELECT fld049 FROM tab02 WHERE fld072 IN (SELECT fld072 FROM tab01 WHERE fld071 = 'Creature' AND fld037 = 'normal' AND fld005 = 'black' AND fld002 = 'Matthew D. Wilson') AND fld075 = 'French'",
+   "difficulty": "moderate",
+   "SQL_original": "SELECT name FROM foreign_data WHERE uuid IN ( SELECT uuid FROM cards WHERE types = 'Creature' AND layout = 'normal' AND borderColor = 'black' AND artist = 'Matthew D. Wilson' ) AND language = 'French'"
+  },
+  {
+   "question_id": 379,
+   "db_id": "card_games",
+   "question": "What are the cards belong to duel deck a? List the ID.",
+   "evidence": "duel deck a refers to fld012 = a;",
+   "SQL": "SELECT fld001 FROM tab01 WHERE fld012 = 'a'",
+   "difficulty": "simple",
+   "SQL_original": "SELECT id FROM cards WHERE duelDeck = 'a'"
+  },
+  {
+   "question_id": 422,
+   "db_id": "card_games",
+   "question": "What is the language of the card with the multiverse number 149934?",
+   "evidence": "multiverse number 149934 refers to fld048 = 149934;",
+   "SQL": "SELECT fld075 FROM tab02 WHERE fld048 = 149934",
+   "difficulty": "simple",
+   "SQL_original": "SELECT language FROM foreign_data WHERE multiverseid = 149934"
+  }
+ ]
+}

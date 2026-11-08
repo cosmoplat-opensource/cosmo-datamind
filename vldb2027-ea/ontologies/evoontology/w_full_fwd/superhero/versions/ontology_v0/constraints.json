@@ -1,0 +1,329 @@
+[
+  {
+    "id": "constraint_colour_no_colour_placeholder",
+    "target": "term_colour",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "no colour",
+      "no color",
+      "no eye colour",
+      "no eye color",
+      "without colour",
+      "missing colour",
+      "colour id 1",
+      "colour = 1"
+    ],
+    "severity": "block",
+    "scope": "Applies whenever colour values are filtered, compared, ranked or reported for eye, hair or skin colour.",
+    "confidence": "high",
+    "description": "The colour value with id 1 is the literal text 'No Colour'. It is a placeholder meaning that no colour was recorded, not a real colour category. It is very common: 681 of 750 heroes carry it as skin colour, 246 as hair colour and 169 as eye colour. Analytical questions that contrast a real colour with 'no eye color' refer to this placeholder value.",
+    "evidence": [
+      "evidence_colour_no_colour_usage",
+      "evidence_colour_vocabulary"
+    ]
+  },
+  {
+    "id": "constraint_colour_shared_vocabulary",
+    "target": "term_colour",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "same colour",
+      "same color",
+      "eyes and hair",
+      "both black",
+      "matching colour",
+      "colour comparison"
+    ],
+    "severity": "block",
+    "scope": "Applies when comparing a hero's eye, hair and skin colour with each other.",
+    "confidence": "high",
+    "description": "Eye, hair and skin colour are three separate references into one shared colour vocabulary. Comparing them means comparing the resolved colour values, not the three columns' raw ids in isolation: a hero whose eye colour and hair colour resolve to the same colour value genuinely has matching colours. Colour names are capitalized in storage, for example 'Blue', 'Blond', 'Black'.",
+    "evidence": [
+      "evidence_colour_vocabulary",
+      "evidence_colour_enums_for_questions"
+    ]
+  },
+  {
+    "id": "constraint_text_values_case_sensitive",
+    "target": "term_race",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "human",
+      "race",
+      "species",
+      "case",
+      "capitalization",
+      "human superhero"
+    ],
+    "severity": "block",
+    "scope": "Applies to all stored text classifications: race, gender, alignment, publisher name, attribute name, colour name and power name.",
+    "confidence": "high",
+    "description": "Stored text values are capitalized and text equality in this database is case-sensitive: matching race against 'human' returns no heroes, while 'Human' returns 219. The same applies to 'Marvel Comics', 'DC Comics', 'Dark Horse Comics', 'Female', 'Male', 'Blue', 'Blond', 'Black', 'Intelligence' and 'Strength'. Filters must use the stored capitalization exactly.",
+    "evidence": [
+      "evidence_race_case_sensitivity",
+      "evidence_race_vocabulary",
+      "evidence_publisher_vocabulary"
+    ]
+  },
+  {
+    "id": "constraint_attribute_trait_set",
+    "target": "term_hero_attribute",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "strength",
+      "intelligence",
+      "speed",
+      "durability",
+      "power",
+      "combat",
+      "attribute",
+      "stat",
+      "strongest",
+      "dumbest",
+      "fastest"
+    ],
+    "severity": "block",
+    "scope": "Applies when selecting or comparing heroes on a scored trait.",
+    "confidence": "high",
+    "description": "There are exactly six scored traits, named 'Intelligence', 'Strength', 'Speed', 'Durability', 'Power' and 'Combat'. A trait is selected by its name, never by its numeric id assumed from position. Ratings are per hero per trait, so a superlative over one trait is taken over that trait's ratings only, not over all ratings.",
+    "evidence": [
+      "evidence_attribute_vocabulary",
+      "evidence_attribute_value_range"
+    ]
+  },
+  {
+    "id": "constraint_attribute_value_scale",
+    "target": "term_attribute_value",
+    "constraint_type": "scope",
+    "trigger_keywords": [
+      "highest attribute",
+      "maximum",
+      "minimum",
+      "score",
+      "rating",
+      "dumbest",
+      "strongest"
+    ],
+    "severity": "warning",
+    "scope": "Applies when ranking or thresholding heroes on a scored trait.",
+    "confidence": "high",
+    "description": "Ratings are integers on a 5 to 100 scale with no zero or null values. Individual traits do not all use the full scale: Intelligence ratings start at 35, so a hero scoring 35 on Intelligence is the least intelligent recorded rather than an absolutly zero intelligence. Ties are possible at the extreme values, so a single 'top hero' question can legitimately return several heroes.",
+    "evidence": [
+      "evidence_attribute_value_range"
+    ]
+  },
+  {
+    "id": "constraint_attribute_coverage_partial",
+    "target": "term_hero_attribute",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "all superheroes",
+      "every hero",
+      "average attribute",
+      "heroes without attributes",
+      "coverage"
+    ],
+    "severity": "warning",
+    "scope": "Applies to any count or average expressed 'per hero' or over all heroes using scored traits.",
+    "confidence": "high",
+    "description": "Only 623 of the 750 heroes have scored attributes; the remaining 127 have no ratings at all. Averages, rankings and 'percent of heroes' computed from hero attributes therefore cover a smaller population than the full hero table.",
+    "evidence": [
+      "evidence_hero_attribute_cardinality"
+    ]
+  },
+  {
+    "id": "constraint_superpower_free_text_vocabulary",
+    "target": "term_superpower",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "superpower",
+      "power",
+      "ability",
+      "powers of",
+      "stealth",
+      "agility"
+    ],
+    "severity": "info",
+    "scope": "Applies when filtering heroes by ability or listing a hero's abilities.",
+    "confidence": "high",
+    "description": "Abilities are free-text names drawn from a vocabulary of 167 distinct values, ranging from generic names such as 'Super Strength', 'Stamina' and 'Agility' to hero-specific ones. Abilities have no numeric rating and no ordering; they are matched by name or by membership. A hero may have anywhere from one to forty-nine abilities, and 98 of the 750 heroes have none.",
+    "evidence": [
+      "evidence_superpower_vocabulary",
+      "evidence_hero_power_cardinality"
+    ]
+  },
+  {
+    "id": "constraint_attribute_power_ambiguity",
+    "target": "term_superpower",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "fastest",
+      "strongest",
+      "dumbest",
+      "smartest",
+      "toughest",
+      "speed",
+      "strength",
+      "intelligence",
+      "durability",
+      "power"
+    ],
+    "severity": "block",
+    "scope": "Applies when a question uses a capability word such as fast, strong, smart or tough without stating which trait system is meant.",
+    "confidence": "high",
+    "description": "Capability words map onto two different, independent trait systems. 'Intelligence' and 'Durability' exist both as a scored attribute name and as an ability name, and the ability names 'Super Speed' and 'Super Strength' echo the scored attributes 'Speed' and 'Strength'. An ability is a yes/no membership fact with no numeric rating, whereas an attribute yields a numeric score that can be maximised or minimised. A question asking which hero is fastest is answered by ranking the scored Speed attribute, not by testing membership of the 'Super Speed' ability; the two produce different hero sets. The intended measure must be resolved before choosing a source.",
+    "evidence": [
+      "evidence_attribute_power_name_overlap",
+      "evidence_attribute_vocabulary",
+      "evidence_superpower_vocabulary"
+    ]
+  },
+  {
+    "id": "constraint_missing_numeric_encoded_as_zero_or_null",
+    "target": "term_missing_value",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "missing",
+      "unknown",
+      "no data",
+      "null",
+      "zero",
+      "without weight",
+      "missing weight",
+      "missing height",
+      "not recorded"
+    ],
+    "severity": "block",
+    "scope": "Applies to height_cm and weight_kg whenever a filter, range or comparison is applied.",
+    "confidence": "high",
+    "description": "Height and weight encode an unrecorded value two different ways: the numeric value 0 and SQL NULL. 155 heroes have height 0 and 58 have NULL height; 172 have weight 0 and 64 have NULL weight. A range filter such as height between 150 and 180 excludes these rows incidentally, but a question that explicitly targets heroes with missing weight or height must include both encodings, since checking only one undercounts the group. A recorded 0 is never a real measurement.",
+    "evidence": [
+      "evidence_height_missing_and_range",
+      "evidence_weight_missing_and_range"
+    ]
+  },
+  {
+    "id": "constraint_full_name_placeholder_values",
+    "target": "term_hero_full_name",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "full name",
+      "without full name",
+      "no full name",
+      "real name",
+      "civilian name"
+    ],
+    "severity": "warning",
+    "scope": "Applies when counting or listing heroes by whether their full name is recorded.",
+    "confidence": "high",
+    "description": "The full name column holds two distinct encodings of 'not recorded': a true NULL for 122 heroes and the text placeholder '-' for 125 heroes. A question asking for the total number of superheroes without a full name maps to the NULL case, giving 122; counting both encodings gives 247. Either way the two encodings must be distinguished consciously rather than lumped together implicitly.",
+    "evidence": [
+      "evidence_full_name_missing"
+    ]
+  },
+  {
+    "id": "constraint_body_metric_extremes",
+    "target": "term_height",
+    "constraint_type": "scope",
+    "trigger_keywords": [
+      "average height",
+      "tallest",
+      "average weight",
+      "heaviest",
+      "height range",
+      "body size"
+    ],
+    "severity": "warning",
+    "scope": "Applies to averages, extremes and distributions of height_cm and weight_kg.",
+    "confidence": "high",
+    "description": "Height and weight include giant and cosmic characters far outside the human range: recorded heights reach 30480 cm and weights reach 90000000 kg, while ordinary heroes sit between roughly 100 and 250 cm. Averages and extremes over the whole table are dominated by these outliers, so a question about 'tall' or 'heavy' heroes must be read together with its stated numeric range or population filter rather than assumed to be human-scaled.",
+    "evidence": [
+      "evidence_height_missing_and_range",
+      "evidence_weight_missing_and_range"
+    ]
+  },
+  {
+    "id": "constraint_hero_name_not_unique",
+    "target": "term_superhero_name",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "which hero",
+      "hero name",
+      "count heroes",
+      "distinct heroes",
+      "how many heroes"
+    ],
+    "severity": "warning",
+    "scope": "Applies when identifying a hero by name or when counting heroes.",
+    "confidence": "high",
+    "description": "The hero name is not a unique key: 750 rows hold only 743 distinct names, because some names are reused across publishers or continuities, for example 'Atlas' appears four times. Counting distinct names therefore undercounts heroes, and a name-only lookup can match more than one hero, so a publisher or identifier may be needed to disambiguate.",
+    "evidence": [
+      "evidence_superhero_name_duplicates"
+    ]
+  },
+  {
+    "id": "constraint_publisher_incomplete_values",
+    "target": "term_publisher",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "publisher",
+      "marvel",
+      "dc",
+      "dark horse",
+      "which publisher",
+      "published by"
+    ],
+    "severity": "warning",
+    "scope": "Applies when filtering, grouping or counting heroes by publisher.",
+    "confidence": "high",
+    "description": "Publisher names are not fully populated: one publisher row has an empty name and accounts for 17 heroes, and a further 3 heroes have no publisher reference at all. A group-by over publishers therefore includes a blank publisher group, and the union of all named publishers accounts for fewer than 750 heroes. Publisher names are stored in full, for example 'Marvel Comics' rather than 'Marvel' and 'DC Comics' rather than 'DC'.",
+    "evidence": [
+      "evidence_publisher_vocabulary"
+    ]
+  },
+  {
+    "id": "constraint_hero_count_basis",
+    "target": "term_hero_count",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "how many",
+      "number of superheroes",
+      "count",
+      "percent",
+      "percentage",
+      "difference"
+    ],
+    "severity": "info",
+    "scope": "Applies to every count, percentage or difference over heroes.",
+    "confidence": "high",
+    "description": "Hero counts are counts of hero records. Percentages and differences must be computed on the same population and the same filter basis as their components; a percentage of heroes within a height range divides by the number of heroes in that range, not by the whole table. Heroes that lack the attribute being filtered on are absent from both numerator and denominator.",
+    "evidence": [
+      "evidence_hero_count_total",
+      "evidence_height_missing_and_range"
+    ]
+  },
+  {
+    "id": "constraint_classification_lookup_completeness",
+    "target": "term_alignment",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "alignment",
+      "good",
+      "bad",
+      "neutral",
+      "villain",
+      "gender",
+      "male",
+      "female"
+    ],
+    "severity": "info",
+    "scope": "Applies when grouping or filtering heroes by alignment, gender or race.",
+    "confidence": "high",
+    "description": "Alignment has four recorded values, 'Good', 'Bad', 'Neutral' and 'N/A', and six heroes have no alignment reference at all. Gender has three values, 'Male', 'Female' and 'N/A', and is recorded for every hero. Race has 61 values including a '-' placeholder. Classification groups may therefore contain placeholder or absent categories that should not be reported as genuine members.",
+    "evidence": [
+      "evidence_alignment_vocabulary",
+      "evidence_gender_vocabulary",
+      "evidence_race_vocabulary"
+    ]
+  }
+]

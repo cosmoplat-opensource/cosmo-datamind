@@ -1,0 +1,326 @@
+[
+  {
+    "id": "constraint_gender_enum",
+    "target": "term_gender",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "female",
+      "male",
+      "female superheroes",
+      "male superheroes",
+      "gender",
+      "women",
+      "men",
+      "ratio male female",
+      "sex"
+    ],
+    "severity": "block",
+    "scope": "Any filter, grouping or ratio involving superhero gender.",
+    "confidence": "high",
+    "description": "Gender codes are 1 = Male, 2 = Female, 3 = N/A (labelled in the gender list and stored as a code on each superhero). Observed counts are 519 male, 203 female and 28 N/A. The N/A code is neither male nor female and must not be folded into either group; a male-to-female ratio therefore compares the Male and Female populations only.",
+    "evidence": [
+      "ev_002",
+      "ev_007"
+    ]
+  },
+  {
+    "id": "constraint_alignment_enum",
+    "target": "term_alignment",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "villain",
+      "villains",
+      "hero",
+      "heroes",
+      "good",
+      "bad",
+      "neutral",
+      "alignment",
+      "evil",
+      "how many heroes"
+    ],
+    "severity": "block",
+    "scope": "Classifying characters as heroes or villains, and counting superheroes.",
+    "confidence": "high",
+    "description": "Alignment codes are 1 = Good (504 superheroes), 2 = Bad (212), 3 = Neutral (28) and 4 = N/A (unused); 6 superheroes have no alignment. 'Villains' means alignment 'Bad'. In most questions 'heroes' or 'superheroes' refers to all superhero records rather than to alignment 'Good', so the Good filter applies only when the question speaks about moral alignment.",
+    "evidence": [
+      "ev_002",
+      "ev_007"
+    ]
+  },
+  {
+    "id": "constraint_attribute_names",
+    "target": "term_attribute",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "strength",
+      "speed",
+      "durability",
+      "power",
+      "combat",
+      "intelligence",
+      "attribute",
+      "attributes",
+      "stat",
+      "ability score"
+    ],
+    "severity": "block",
+    "scope": "Filtering attribute ratings by attribute name.",
+    "confidence": "high",
+    "description": "Attribute names are stored capitalised as 'Intelligence', 'Strength', 'Speed', 'Durability', 'Power' and 'Combat'. Text matching on these names is case-sensitive in the database, so question wording such as 'strength' or 'durability' must be matched against the capitalised stored label.",
+    "evidence": [
+      "ev_002",
+      "ev_005"
+    ]
+  },
+  {
+    "id": "constraint_attribute_vs_superpower",
+    "target": "term_attribute_rating",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "super power",
+      "superpower",
+      "superpowers",
+      "Super Strength",
+      "super speed",
+      "named ability",
+      "attribute",
+      "attribute value",
+      "strength value",
+      "durability value"
+    ],
+    "severity": "block",
+    "scope": "Deciding whether a question targets numeric attribute ratings or named superpowers.",
+    "confidence": "high",
+    "description": "Attribute ratings and superpowers are distinct concepts with overlapping words. Intelligence, Strength, Speed, Durability, Power and Combat are attributes carrying numeric ratings; Super Strength, Super Speed, Durability, Flight and Telepathy are named superpowers in a separate catalogue. A 'super power' question refers to the named-ability catalogue, while an 'attribute value' or 'strength value' question refers to the numeric rating. 'Durability' exists in both lists with different meanings, and 'Power' is both an attribute name and a component of several superpower names.",
+    "evidence": [
+      "ev_002",
+      "ev_005",
+      "ev_014"
+    ]
+  },
+  {
+    "id": "constraint_no_colour_sentinel",
+    "target": "term_colour",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "no colour",
+      "no color",
+      "no eye colour",
+      "no eye color",
+      "no hair colour",
+      "no skin colour",
+      "colourless",
+      "eye colour",
+      "hair colour",
+      "skin colour"
+    ],
+    "severity": "warning",
+    "scope": "Interpreting colour values, especially questions about missing or absent colour.",
+    "confidence": "high",
+    "description": "Colour id 1 is labelled 'No Colour' and denotes an unspecified or absent colour, not white. The sentinel appears in all three roles: 169 superheroes have 'No Colour' eyes, 246 have no recorded hair colour and 681 have no recorded skin colour. 'No eye colour', 'no hair colour' and 'no skin colour' each mean the corresponding role equals colour id 1.",
+    "evidence": [
+      "ev_002",
+      "ev_004"
+    ]
+  },
+  {
+    "id": "constraint_race_unknown_sentinel",
+    "target": "term_race",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "race",
+      "species",
+      "unknown race",
+      "mutant",
+      "kryptonian",
+      "alien"
+    ],
+    "severity": "warning",
+    "scope": "Filtering or reporting race.",
+    "confidence": "high",
+    "description": "Race names are free text such as 'Mutant', 'Human / Radiation' and 'Alien'. 295 of 750 superheroes reference the race value '-' (unspecified), 4 have no race at all, and only 451 have a named race. The '-' value is a sentinel and must not be reported as an actual species name.",
+    "evidence": [
+      "ev_003",
+      "ev_010"
+    ]
+  },
+  {
+    "id": "constraint_superhero_name_not_unique",
+    "target": "term_superhero_name",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "superhero name",
+      "name",
+      "which superhero",
+      "named",
+      "called after",
+      "list the superhero names"
+    ],
+    "severity": "warning",
+    "scope": "Resolving a superhero by their popular name.",
+    "confidence": "high",
+    "description": "Superhero names are not unique: the 750 records contain 743 distinct names. 'Atlas' appears 4 times and 'Chameleon', 'Captain Marvel', 'Ares' and 'Angel' appear twice. A name-based filter can therefore return several different superheroes, and disambiguation by superhero id or full name may be required.",
+    "evidence": [
+      "ev_009"
+    ]
+  },
+  {
+    "id": "constraint_full_name_sentinels",
+    "target": "term_full_name",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "full name",
+      "real name",
+      "civilian name",
+      "secret identity",
+      "Emil Blonsky",
+      "Charles Chandler",
+      "given name"
+    ],
+    "severity": "info",
+    "scope": "Matching superheroes by their civilian full name.",
+    "confidence": "high",
+    "description": "Only 483 distinct full names exist. 122 superheroes have a NULL or empty full name and 125 store '-' as the full name, which means unknown rather than a literal name. Characters are more reliably unique by full name than by superhero name, but 3-D Man and Abomination both illustrate that the full name is the civilian identity.",
+    "evidence": [
+      "ev_003",
+      "ev_009"
+    ]
+  },
+  {
+    "id": "constraint_height_units",
+    "target": "term_height",
+    "constraint_type": "unit",
+    "trigger_keywords": [
+      "height",
+      "height in cm",
+      "centimetres",
+      "tall",
+      "over 200cm",
+      "height from 170 to 190",
+      "how tall"
+    ],
+    "severity": "warning",
+    "scope": "Height comparisons and ranges.",
+    "confidence": "high",
+    "description": "Height is stored directly in centimetres with no conversion needed, for example 188 for 3-D Man and 203 for Abomination. 58 superheroes have NULL height and 155 store 0, so missing measurements can appear as zeros. Observed values reach 30480 centimetres for giant characters such as Surtur and Ymir. Centimetre thresholds in questions, such as 'over 200 cm' or 'between 170 and 190', apply directly to this column.",
+    "evidence": [
+      "ev_008"
+    ]
+  },
+  {
+    "id": "constraint_weight_units",
+    "target": "term_weight",
+    "constraint_type": "unit",
+    "trigger_keywords": [
+      "weight",
+      "weight in kg",
+      "kilograms",
+      "heavy",
+      "average weight",
+      "weigh",
+      "difference in weight"
+    ],
+    "severity": "warning",
+    "scope": "Weight comparisons and averages.",
+    "confidence": "high",
+    "description": "Weight is stored directly in kilograms with no conversion needed, for example 90 for 3-D Man and 441 for Abomination. 64 superheroes have NULL weight and 172 store 0, so missing measurements can appear as zeros. The distribution includes extreme outliers: Godzilla 90,000,000 kg, King Kong 9,000,000 kg and Utgard-Loki 58,000 kg. Averages over all superheroes are dominated by these values, and whether zero placeholders are included changes the average.",
+    "evidence": [
+      "ev_008"
+    ]
+  },
+  {
+    "id": "constraint_attribute_coverage",
+    "target": "term_attribute_rating",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "all superheroes",
+      "attribute",
+      "rating",
+      "superpower",
+      "missing",
+      "without powers",
+      "how many have",
+      "coalition"
+    ],
+    "severity": "warning",
+    "scope": "Counting superheroes through attribute or superpower conditions.",
+    "confidence": "high",
+    "description": "Ratings exist for only 623 of the 750 superheroes, each with exactly six ratings (3738 rows); 127 superheroes have no ratings at all. Superpower assignments cover 652 superheroes across 5825 rows with no duplicate hero-power pairs; 98 superheroes have no recorded superpower. Counts and filters that traverse ratings or powers therefore exclude superheroes lacking those records, while counts over the superhero table itself include them.",
+    "evidence": [
+      "ev_005",
+      "ev_012"
+    ]
+  },
+  {
+    "id": "constraint_attribute_scale",
+    "target": "term_attribute_rating",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "highest",
+      "maximum",
+      "most",
+      "strength value of 100",
+      "rating",
+      "score",
+      "100",
+      "top value"
+    ],
+    "severity": "info",
+    "scope": "Interpreting and comparing attribute rating values.",
+    "confidence": "high",
+    "description": "Attribute ratings are integer scores on a 0-100 scale. Observed values span 5 to 100, and the maximum observed value of every attribute is 100. Phrasing such as 'highest attribute value in strength' means the maximum strength rating (100), and 'strength value of 100' refers to the top of the scale.",
+    "evidence": [
+      "ev_005"
+    ]
+  },
+  {
+    "id": "constraint_duplicate_attribute_values",
+    "target": "term_attribute_rating",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "speed",
+      "durability",
+      "power",
+      "combat",
+      "slowest",
+      "fastest",
+      "most durability",
+      "least",
+      "minimum",
+      "maximum"
+    ],
+    "severity": "warning",
+    "scope": "Comparisons across the Speed, Durability, Power and Combat attributes.",
+    "confidence": "high",
+    "description": "In this data snapshot the Speed, Durability, Power and Combat rating arrays are identical for all 623 rated superheroes (623 of 623 equal in every pair), whereas Strength equals Speed for only 72 superheroes. Consequently 'slowest' (minimum Speed), 'most durability' (maximum Durability) and the equivalent Power or Combat comparisons select the same superhero population; such results should be interpreted with this duplication in mind.",
+    "evidence": [
+      "ev_005",
+      "ev_006"
+    ]
+  },
+  {
+    "id": "constraint_publisher_blank_name",
+    "target": "term_publisher",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "publisher",
+      "publishers",
+      "publishing company",
+      "publisher id",
+      "Star Trek",
+      "Marvel",
+      "DC",
+      "Dark Horse",
+      "blank publisher"
+    ],
+    "severity": "info",
+    "scope": "Publisher lookups, grouping and comparison.",
+    "confidence": "high",
+    "description": "There are 25 publisher records. Publisher id 1 has an empty-string name and is used by 17 superheroes; 3 superheroes have no publisher reference. Publisher names are stored verbatim, so 'Marvel Comics', 'DC Comics', 'Dark Horse Comics' and 'Star Trek' must be matched exactly; 'Star Trek' is a publisher record (id 20), not a series title, and 'Marvel Comics' publishes 387 superheroes against 224 for 'DC Comics'.",
+    "evidence": [
+      "ev_011",
+      "ev_015"
+    ]
+  }
+]

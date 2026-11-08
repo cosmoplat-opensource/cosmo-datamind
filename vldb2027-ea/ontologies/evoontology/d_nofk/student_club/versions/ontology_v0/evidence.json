@@ -1,0 +1,170 @@
+[
+  {
+    "id": "evidence_schema_tables",
+    "source": "student_club.sqlite",
+    "query": "SELECT name FROM sqlite_master WHERE type='table'; then SELECT COUNT(*) FROM each table",
+    "result": "Eight tables exist: event (42 rows), major (113), zip_code (41877), attendance (326), budget (52), expense (32), income (36), member (33). Reference tables major and zip_code are much larger than the transactional tables.",
+    "validation_method": "sqlite_master schema inspection plus per-table row counts on a read-only connection",
+    "timestamp": "2026-10-10T00:00:00+00:00"
+  },
+  {
+    "id": "evidence_member_position_values",
+    "source": "student_club.sqlite",
+    "query": "SELECT position, COUNT(*) FROM member GROUP BY position",
+    "result": "Inactive 3, Member 26, President 1, Secretary 1, Treasurer 1, Vice President 1. Total 33 members, so 30 are current (26 ordinary members plus 4 officers).",
+    "validation_method": "GROUP BY value distribution on the member table",
+    "timestamp": "2026-10-10T00:00:00+00:00"
+  },
+  {
+    "id": "evidence_event_type_status",
+    "source": "student_club.sqlite",
+    "query": "SELECT type, COUNT(*) FROM event GROUP BY type; SELECT status, COUNT(*) FROM event GROUP BY status",
+    "result": "Type: Meeting 16, Guest Speaker 7, Game 6, Community Service 4, Social 4, Budget 2, Election 2, Registration 1. Status: Closed 18, Open 13, Planning 11.",
+    "validation_method": "GROUP BY value distribution on the event table",
+    "timestamp": "2026-10-10T00:00:00+00:00"
+  },
+  {
+    "id": "evidence_event_date_format",
+    "source": "student_club.sqlite",
+    "query": "SELECT DISTINCT LENGTH(event_date) FROM event; SELECT DISTINCT LENGTH(expense_date) FROM expense; SELECT DISTINCT LENGTH(date_received) FROM income",
+    "result": "event.event_date has length 19 with a 'T' separator (for example 2020-03-10T12:00:00). expense.expense_date and income.date_received both have length 10 (for example 2019-08-20). The three date columns use different text formats.",
+    "validation_method": "Distinct string-length and value inspection of the three date columns",
+    "timestamp": "2026-10-10T00:00:00+00:00"
+  },
+  {
+    "id": "evidence_event_status_date_relation",
+    "source": "student_club.sqlite",
+    "query": "SELECT status, MIN(event_date), MAX(event_date) FROM event GROUP BY status and a split at 2019-11-24",
+    "result": "Closed spans 2019-09-01 to 2019-11-21 with all 18 rows before 2019-11-24 and none after. Open spans 2019-11-05 to 2020-04-07 with 1 row before and 12 after. Planning spans 2020-02-11 to 2020-05-05 with 0 before and 11 after.",
+    "validation_method": "Min/max and date-threshold counts per status value",
+    "timestamp": "2026-10-10T00:00:00+00:00"
+  },
+  {
+    "id": "evidence_attendance_links",
+    "source": "student_club.sqlite",
+    "query": "SELECT COUNT(*) FROM attendance; SELECT COUNT(DISTINCT link_to_event), COUNT(DISTINCT link_to_member) FROM attendance; orphan checks against event and member",
+    "result": "326 attendance rows over 17 distinct events and 30 distinct members. Zero rows fail to match an event_id or a member_id, and the (link_to_event, link_to_member) pair is the composite primary key so no duplicate pairs exist.",
+    "validation_method": "Row counts, distinct-reference counts and left-join orphan checks",
+    "timestamp": "2026-10-10T00:00:00+00:00"
+  },
+  {
+    "id": "evidence_attendance_coverage",
+    "source": "student_club.sqlite",
+    "query": "SELECT e.type, COUNT(DISTINCT e.event_id), COUNT(DISTINCT a.link_to_event) FROM event e LEFT JOIN attendance a ON a.link_to_event=e.event_id GROUP BY e.type",
+    "result": "Only 17 of 42 events have any attendance. By type: Meeting 5 of 16, Guest Speaker 3 of 7, Game 3 of 6, Community Service 2 of 4, Social 2 of 4, Budget 1 of 2, Registration 1 of 1, Election 0 of 2. Membership coverage is 30 of 33. Largest attendance is 30 (Registration and Yearly Kickoff), smallest is 4 (Officers meeting - April).",
+    "validation_method": "Left-join coverage counts per event type and per-event attendance counts",
+    "timestamp": "2026-10-10T00:00:00+00:00"
+  },
+  {
+    "id": "evidence_budget_totals",
+    "source": "student_club.sqlite",
+    "query": "SELECT SUM(amount), SUM(spent), SUM(remaining) FROM budget; SELECT SUM(cost) FROM expense",
+    "result": "Allocated 4200, spent 2086.05, remaining 2113.95 across 52 budget line items. Total expense cost is also 2086.05.",
+    "validation_method": "Aggregate sums over the whole budget and expense tables",
+    "timestamp": "2026-10-10T00:00:00+00:00"
+  },
+  {
+    "id": "evidence_budget_category_totals",
+    "source": "student_club.sqlite",
+    "query": "SELECT category, COUNT(*), SUM(amount), SUM(spent), SUM(remaining) FROM budget GROUP BY category",
+    "result": "Advertisement 15 lines amount 1060 spent 495.02 remaining 564.98; Club T-Shirts 1 line amount 300 spent 295.12 remaining 4.88; Food 22 lines amount 2595 spent 1234.73 remaining 1360.27; Parking 7 lines amount 70 spent 18.0 remaining 52.0; Speaker Gifts 7 lines amount 175 spent 43.18 remaining 131.82.",
+    "validation_method": "Grouped aggregation by category over the budget table",
+    "timestamp": "2026-10-10T00:00:00+00:00"
+  },
+  {
+    "id": "evidence_budget_expense_reconciliation",
+    "source": "student_club.sqlite",
+    "query": "Group budget by budget_id with SUM(expense.cost) and test ABS(spent - sum) > 0.01; separately count budgets with no expense rows and their spent values",
+    "result": "No budget line item fails the reconciliation test. 24 of 52 line items have linked expenses and their spent amount equals the sum of those costs; the club-wide totals agree exactly at 2086.05. The other 28 line items have no expenses at all and every one records spent = 0.",
+    "validation_method": "Per-budget reconciliation with a 0.01 tolerance, plus a left-join count of unspent line items",
+    "timestamp": "2026-10-10T00:00:00+00:00"
+  },
+  {
+    "id": "evidence_budget_over_budget",
+    "source": "student_club.sqlite",
+    "query": "SELECT COUNT(*) FROM budget WHERE remaining < 0; and inspection of the overspent rows",
+    "result": "Five of the 52 budget line items have a negative remaining amount. Example: a Food item with amount 150, spent 173.06 and remaining -23.06. Remaining equals amount minus spent for all 52 rows with no flooring at zero.",
+    "validation_method": "Filter on negative remaining plus arithmetic consistency check ABS(spent+remaining-amount) <= 0.01",
+    "timestamp": "2026-10-10T00:00:00+00:00"
+  },
+  {
+    "id": "evidence_budget_event_status_match",
+    "source": "student_club.sqlite",
+    "query": "SELECT b.event_status, e.status, COUNT(*) FROM budget b JOIN event e ON b.link_to_event=e.event_id GROUP BY 1,2",
+    "result": "Every budget line item joins to an existing event and the two status columns agree in all 52 cases: Closed 22, Open 23, Planning 7. No mismatched pair exists.",
+    "validation_method": "Joint grouping of budget.event_status against event.status with an orphan check",
+    "timestamp": "2026-10-10T00:00:00+00:00"
+  },
+  {
+    "id": "evidence_expense_approved_values",
+    "source": "student_club.sqlite",
+    "query": "SELECT quote(approved), COUNT(*) FROM expense GROUP BY approved; SELECT approved, COUNT(*), SUM(cost) FROM expense GROUP BY approved",
+    "result": "The column holds the text value 'true' in 31 rows and NULL in 1 row. No 'false' or numeric value exists. Cost totals are 2031.8 for 'true' and 54.25 for the NULL row.",
+    "validation_method": "Quoted-value distribution and grouped cost aggregation on the approved column",
+    "timestamp": "2026-10-10T00:00:00+00:00"
+  },
+  {
+    "id": "evidence_income_source_totals",
+    "source": "student_club.sqlite",
+    "query": "SELECT source, COUNT(*), MIN(amount), MAX(amount), SUM(amount) FROM income GROUP BY source",
+    "result": "Dues 33 records, min 50, max 50, total 1650. Fundraising 1 record of 200. School Appropration 1 record of 3000. Sponsorship 1 record of 1000. Overall income is 5850.",
+    "validation_method": "Grouped aggregation with min/max to detect variable amounts per source",
+    "timestamp": "2026-10-10T00:00:00+00:00"
+  },
+  {
+    "id": "evidence_income_member_orphans",
+    "source": "student_club.sqlite",
+    "query": "SELECT i.link_to_member, COUNT(*), GROUP_CONCAT(i.source) FROM income i LEFT JOIN member m ON i.link_to_member=m.member_id WHERE m.member_id IS NULL GROUP BY 1",
+    "result": "Three income rows have an empty member reference: Fundraising (200), School Appropration (3000) and Sponsorship (1000), together 4200. All 33 dues rows are each attributed to a distinct member and all member references that are present resolve correctly.",
+    "validation_method": "Left-join orphan detection on income.link_to_member with source attribution",
+    "timestamp": "2026-10-10T00:00:00+00:00"
+  },
+  {
+    "id": "evidence_member_zip_state_join",
+    "source": "student_club.sqlite",
+    "query": "SELECT z.short_state, COUNT(*) FROM member m JOIN zip_code z ON m.zip=z.zip_code GROUP BY 1",
+    "result": "All 33 members match a zip_code reference row, covering 18 states. New York has the most members (5), followed by New Jersey (4), Maryland (3), Indiana (3) and Illinois (3); the remaining 13 states have 1 or 2 members each.",
+    "validation_method": "Inner join of member.zip to zip_code.zip_code with grouped state counts and an unmatched-row check",
+    "timestamp": "2026-10-10T00:00:00+00:00"
+  },
+  {
+    "id": "evidence_zip_leading_zero",
+    "source": "student_club.sqlite",
+    "query": "SELECT m.member_id, m.zip, z.city, z.short_state FROM member m JOIN zip_code z ON m.zip=z.zip_code ORDER BY m.zip LIMIT 12",
+    "result": "Member zip 1020 resolves to Chicopee, MA, 7002 to Bayonne, NJ, 7080 to South Plainfield, NJ and 8021 to Clementon, NJ. These are the postal codes 01020, 07002, 07080 and 08021 stored without the leading zero, because member.zip is an INTEGER column. Member zip values range from 1020 to 98290.",
+    "validation_method": "Join of member zip values to the zip_code reference table and reading of the resulting city and state",
+    "timestamp": "2026-10-10T00:00:00+00:00"
+  },
+  {
+    "id": "evidence_member_major_join",
+    "source": "student_club.sqlite",
+    "query": "SELECT COUNT(*) FROM member WHERE link_to_major IS NULL OR link_to_major=''; and an orphan check joining member to major",
+    "result": "Exactly one member has no declared major. Zero member rows reference a major_id that does not exist, so 32 of 33 members resolve to a valid major record.",
+    "validation_method": "Null/empty count plus left-join orphan check between member.link_to_major and major.major_id",
+    "timestamp": "2026-10-10T00:00:00+00:00"
+  },
+  {
+    "id": "evidence_major_college_values",
+    "source": "student_club.sqlite",
+    "query": "SELECT college, COUNT(*) FROM major GROUP BY college; SELECT department, COUNT(*) FROM major GROUP BY department",
+    "result": "113 majors span 47 departments and 8 colleges. College counts: College of Agriculture and Applied Sciences 36, College of Humanities and Social Sciences 24, College of Education & Human Services 13, College of Science 12, College of Natural Resources 9, College of Engineering 6, College of the Arts 6, School of Business 7. Department values include both 'School of ...' names (for example School of Applied Sciences, Technology and Education with 21 majors) and '... Department' names (for example Wildland Resources Department).",
+    "validation_method": "Distinct-value counts for the college and department columns of the major table",
+    "timestamp": "2026-10-10T00:00:00+00:00"
+  },
+  {
+    "id": "evidence_expense_member_positions",
+    "source": "student_club.sqlite",
+    "query": "SELECT COUNT(DISTINCT link_to_member) FROM expense; and grouping linked members by member.position",
+    "result": "32 expense records reference only 3 distinct members. By the linked member's position: President 12 expenses, Treasurer 9 and Vice President 11. Members whose position is Member, Secretary or Inactive record no expenses. All 32 expense rows resolve to an existing member and an existing budget line item.",
+    "validation_method": "Distinct-reference count, orphan checks and grouping of expense links by the member position of the referenced member",
+    "timestamp": "2026-10-10T00:00:00+00:00"
+  },
+  {
+    "id": "evidence_fk_integrity",
+    "source": "student_club.sqlite",
+    "query": "Left-join orphan checks for member->major, member->zip_code, budget->event, expense->budget, expense->member, attendance->event, attendance->member and income->member",
+    "result": "Zero orphans for every relationship except income.link_to_member, which has 3 unmatched rows that are empty strings rather than dangling identifiers. The schema declares no FOREIGN KEY constraints, so these relations are enforced by data convention only.",
+    "validation_method": "Systematic left-join orphan detection across all reference columns",
+    "timestamp": "2026-10-10T00:00:00+00:00"
+  }
+]

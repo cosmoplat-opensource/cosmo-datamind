@@ -1,0 +1,185 @@
+{
+ "db_id": "toxicology",
+ "questions": [
+  {
+   "question_id": 208,
+   "db_id": "toxicology",
+   "question": "Which type of label is the most numerous in atoms with hydrogen?",
+   "evidence": "with hydrogen refers to fld003 = 'h'; label most numerous in atoms refers to MAX(COUNT(fld007)); ",
+   "SQL": "SELECT T.fld007 FROM (SELECT T2.fld007, COUNT(T2.fld002) FROM tab01 AS T1 INNER JOIN tab04 AS T2 ON T1.fld002 = T2.fld002 WHERE T1.fld003 = 'h' GROUP BY T2.fld007 ORDER BY COUNT(T2.fld002) DESC LIMIT 1) AS t",
+   "difficulty": "moderate",
+   "SQL_original": "SELECT T.label FROM ( SELECT T2.label, COUNT(T2.molecule_id) FROM atom AS T1 INNER JOIN molecule AS T2 ON T1.molecule_id = T2.molecule_id WHERE T1.element = 'h' GROUP BY T2.label ORDER BY COUNT(T2.molecule_id) DESC LIMIT 1 ) t"
+  },
+  {
+   "question_id": 273,
+   "db_id": "toxicology",
+   "question": "What is the percentage of element chlorine in carcinogenic molecules?",
+   "evidence": "chlorine refers to fld003 = 'cl'; fld007 = '+' mean molecules are carcinogenic; percentage = DIVIDE(SUM(fld003 = 'pb'); COUNT(fld002)) as percentage where fld007 = '+'",
+   "SQL": "SELECT CAST(COUNT(CASE WHEN T1.fld003 = 'cl' THEN T1.fld003 ELSE NULL END) AS REAL) * 100 / COUNT(T1.fld003) FROM tab01 AS T1 INNER JOIN tab04 AS T2 ON T1.fld002 = T2.fld002 WHERE T2.fld007 = '+'",
+   "difficulty": "moderate",
+   "SQL_original": "SELECT CAST(COUNT( CASE WHEN T1.element = 'cl' THEN T1.element ELSE NULL END) AS REAL) * 100 / COUNT(T1.element) FROM atom AS T1 INNER JOIN molecule AS T2 ON T1.molecule_id = T2.molecule_id WHERE T2.label = '+'"
+  },
+  {
+   "question_id": 195,
+   "db_id": "toxicology",
+   "question": "What is the most common bond type?",
+   "evidence": "most common bond type refers MAX(COUNT(fld005))",
+   "SQL": "SELECT T.fld005 FROM (SELECT fld005, COUNT(fld004) FROM tab02 GROUP BY fld005 ORDER BY COUNT(fld004) DESC LIMIT 1) AS T",
+   "difficulty": "simple",
+   "SQL_original": "SELECT T.bond_type FROM ( SELECT bond_type, COUNT(bond_id) FROM bond GROUP BY bond_type ORDER BY COUNT(bond_id) DESC LIMIT 1 ) AS T"
+  },
+  {
+   "question_id": 212,
+   "db_id": "toxicology",
+   "question": "Which element is the least numerous in non-carcinogenic molecules?",
+   "evidence": "fld007 = '-' means molecules are non-carcinogenic; least numerous refers to MIN(COUNT(fld003));",
+   "SQL": "SELECT T.fld003 FROM (SELECT T1.fld003, COUNT(DISTINCT T1.fld002) FROM tab01 AS T1 INNER JOIN tab04 AS T2 ON T1.fld002 = T2.fld002 WHERE T2.fld007 = '-' GROUP BY T1.fld003 ORDER BY COUNT(DISTINCT T1.fld002) ASC LIMIT 1) AS t",
+   "difficulty": "challenging",
+   "SQL_original": "SELECT T.element FROM (SELECT T1.element, COUNT(DISTINCT T1.molecule_id) FROM atom AS T1 INNER JOIN molecule AS T2 ON T1.molecule_id = T2.molecule_id WHERE T2.label = '-' GROUP BY T1.element ORDER BY COUNT(DISTINCT T1.molecule_id) ASC LIMIT 1) t"
+  },
+  {
+   "question_id": 215,
+   "db_id": "toxicology",
+   "question": "How many atoms with iodine and with sulfur type elements are there in single bond molecules?",
+   "evidence": "with iodine element refer to fld003 = 'i'; with sulfur element refers to fld003 = 's'; single type bond refers to fld005 = '-'; Should consider the distinct atoms when counting;",
+   "SQL": "SELECT COUNT(DISTINCT CASE WHEN T1.fld003 = 'i' THEN T1.fld001 ELSE NULL END) AS iodine_nums, COUNT(DISTINCT CASE WHEN T1.fld003 = 's' THEN T1.fld001 ELSE NULL END) AS sulfur_nums FROM tab01 AS T1 INNER JOIN tab03 AS T2 ON T1.fld001 = T2.fld001 INNER JOIN tab02 AS T3 ON T2.fld004 = T3.fld004 WHERE T3.fld005 = '-'",
+   "difficulty": "challenging",
+   "SQL_original": "SELECT COUNT(DISTINCT CASE WHEN T1.element = 'i' THEN T1.atom_id ELSE NULL END) AS iodine_nums , COUNT(DISTINCT CASE WHEN T1.element = 's' THEN T1.atom_id ELSE NULL END) AS sulfur_nums FROM atom AS T1 INNER JOIN connected AS T2 ON T1.atom_id = T2.atom_id INNER JOIN bond AS T3 ON T2.bond_id = T3.bond_id WHERE T3.bond_type = '-'"
+  },
+  {
+   "question_id": 255,
+   "db_id": "toxicology",
+   "question": "What proportion of single bonds are carcinogenic? Please provide your answer as a percentage with five decimal places.",
+   "evidence": "single bond refers to fld005 = '-'; fld007 = '+' mean molecules are carcinogenic; proportion = DIVIDE(SUM(fld007 = '+') * 100, COUNT(fld004)) where fld005 = '-'",
+   "SQL": "SELECT ROUND(CAST(COUNT(CASE WHEN T2.fld007 = '+' THEN T1.fld004 ELSE NULL END) AS REAL) * 100 / COUNT(T1.fld004), 5) FROM tab02 AS T1 INNER JOIN tab04 AS T2 ON T1.fld002 = T2.fld002 WHERE T1.fld005 = '-'",
+   "difficulty": "moderate",
+   "SQL_original": "SELECT ROUND(CAST(COUNT(CASE WHEN T2.label = '+' THEN T1.bond_id ELSE NULL END) AS REAL) * 100 / COUNT(T1.bond_id),5) FROM bond AS T1 INNER JOIN molecule AS T2 ON T1.molecule_id = T2.molecule_id WHERE T1.bond_type = '-'"
+  },
+  {
+   "question_id": 245,
+   "db_id": "toxicology",
+   "question": "What is the average number of bonds the atoms with the element iodine have?",
+   "evidence": "atoms with the element iodine refers to fld003 = 'i'; average = DIVIDE(COUND(fld004), COUNT(fld001)) where fld003 = 'i'",
+   "SQL": "SELECT CAST(COUNT(T2.fld004) AS REAL) / COUNT(T1.fld001) FROM tab01 AS T1 INNER JOIN tab03 AS T2 ON T1.fld001 = T2.fld001 WHERE T1.fld003 = 'i'",
+   "difficulty": "moderate",
+   "SQL_original": "SELECT CAST(COUNT(T2.bond_id) AS REAL) / COUNT(T1.atom_id) FROM atom AS T1 INNER JOIN connected AS T2 ON T1.atom_id = T2.atom_id WHERE T1.element = 'i'"
+  },
+  {
+   "question_id": 236,
+   "db_id": "toxicology",
+   "question": "What are the bond type and the atoms of the bond ID of TR001_6_9?",
+   "evidence": "atoms refer to fld001 or fld006",
+   "SQL": "SELECT T1.fld005, T2.fld001, T2.fld006 FROM tab02 AS T1 INNER JOIN tab03 AS T2 ON T1.fld004 = T2.fld004 WHERE T2.fld004 = 'TR001_6_9'",
+   "difficulty": "moderate",
+   "SQL_original": "SELECT T1.bond_type, T2.atom_id, T2.atom_id2 FROM bond AS T1 INNER JOIN connected AS T2 ON T1.bond_id = T2.bond_id WHERE T2.bond_id = 'TR001_6_9'"
+  },
+  {
+   "question_id": 282,
+   "db_id": "toxicology",
+   "question": "What is the ratio of Hydrogen elements in molecule ID TR006? List the ratio with its label.",
+   "evidence": "hydrogen refers to fld003 = 'h'; ratio = DIVIDE(SUM(fld003 = 'h'), count(fld003)) where fld002 = 'TR006' ; fld007 = '+' mean molecules are carcinogenic; fld007 = '-' means molecules are non-carcinogenic",
+   "SQL": "WITH SubQuery AS (SELECT DISTINCT T1.fld001, T1.fld003, T1.fld002, T2.fld007 FROM tab01 AS T1 INNER JOIN tab04 AS T2 ON T1.fld002 = T2.fld002 WHERE T2.fld002 = 'TR006') SELECT CAST(COUNT(CASE WHEN fld003 = 'h' THEN fld001 ELSE NULL END) AS REAL) / (CASE WHEN COUNT(fld001) = 0 THEN NULL ELSE COUNT(fld001) END) AS ratio, fld007 FROM SubQuery GROUP BY fld007",
+   "difficulty": "challenging",
+   "SQL_original": "WITH SubQuery AS (SELECT DISTINCT T1.atom_id, T1.element, T1.molecule_id, T2.label FROM atom AS T1 INNER JOIN molecule AS T2 ON T1.molecule_id = T2.molecule_id WHERE T2.molecule_id = 'TR006') SELECT CAST(COUNT(CASE WHEN element = 'h' THEN atom_id ELSE NULL END) AS REAL) / (CASE WHEN COUNT(atom_id) = 0 THEN NULL ELSE COUNT(atom_id) END) AS ratio, label FROM SubQuery GROUP BY label"
+  },
+  {
+   "question_id": 232,
+   "db_id": "toxicology",
+   "question": "Please list top three molecules that have single bonds between two atoms and are not carcinogenic in alphabetical order.",
+   "evidence": "fld007 = '-' means molecules are not carcinogenic; single type bond refers to fld005 = '-'; list top three molecules refers to return fld002 and order by fld002;",
+   "SQL": "SELECT DISTINCT T2.fld002 FROM tab02 AS T1 INNER JOIN tab04 AS T2 ON T1.fld002 = T2.fld002 WHERE T1.fld005 = '-' AND T2.fld007 = '-' ORDER BY T2.fld002 LIMIT 3",
+   "difficulty": "moderate",
+   "SQL_original": "SELECT DISTINCT T2.molecule_id FROM bond AS T1 INNER JOIN molecule AS T2 ON T1.molecule_id = T2.molecule_id WHERE T1.bond_type = '-' AND T2.label = '-' ORDER BY T2.molecule_id LIMIT 3"
+  },
+  {
+   "question_id": 227,
+   "db_id": "toxicology",
+   "question": "What is the percentage of molecules that are carcinogenic? Please provide your answer as a percentage with three decimal places.",
+   "evidence": "fld007 = '+' mean molecules are carcinogenic; percentage = DIVIDE(SUM(fld007 = '+'), COUNT(fld002)) as percent",
+   "SQL": "SELECT ROUND(CAST(COUNT(CASE WHEN T.fld007 = '+' THEN T.fld002 ELSE NULL END) AS REAL) * 100 / COUNT(T.fld002), 3) FROM tab04 AS t",
+   "difficulty": "simple",
+   "SQL_original": "SELECT ROUND(CAST(COUNT(CASE WHEN T.label = '+' THEN T.molecule_id ELSE NULL END) AS REAL) * 100 / COUNT(T.molecule_id),3) FROM molecule t"
+  },
+  {
+   "question_id": 260,
+   "db_id": "toxicology",
+   "question": "Calculate the total atoms with triple-bond molecules containing the element phosphorus or bromine.",
+   "evidence": "triple bond refers to fld005 = '#'; phosphorus refers to fld003 = 'p'; bromine refers to fld003 = 'br'",
+   "SQL": "SELECT COUNT(T1.fld001) FROM tab01 AS T1 INNER JOIN tab04 AS T2 ON T1.fld002 = T2.fld002 INNER JOIN tab02 AS T3 ON T2.fld002 = T3.fld002 WHERE T3.fld005 = '#' AND T1.fld003 IN ('p', 'br')",
+   "difficulty": "moderate",
+   "SQL_original": "SELECT COUNT(T1.atom_id) FROM atom AS T1 INNER JOIN molecule AS T2 ON T1.molecule_id = T2.molecule_id INNER JOIN bond AS T3 ON T2.molecule_id = T3.molecule_id WHERE T3.bond_type = '#' AND T1.element IN ('p', 'br')"
+  },
+  {
+   "question_id": 218,
+   "db_id": "toxicology",
+   "question": "What percentage of carcinogenic-type molecules does not contain fluorine?",
+   "evidence": "fld007 = '+' mean molecules are carcinogenic; contain fluorine refers to fld003 = 'f'; percentage = DIVIDE(SUM(fld003 = 'f') * 100, COUNT(fld002)) where fld007 = '+'; Should consider the distinct atoms when counting;",
+   "SQL": "SELECT CAST(COUNT(DISTINCT CASE WHEN T1.fld003 <> 'f' THEN T2.fld002 ELSE NULL END) AS REAL) * 100 / COUNT(DISTINCT T2.fld002) FROM tab01 AS T1 INNER JOIN tab04 AS T2 ON T1.fld002 = T2.fld002 WHERE T2.fld007 = '+'",
+   "difficulty": "challenging",
+   "SQL_original": "SELECT CAST(COUNT(DISTINCT CASE WHEN T1.element <> 'f' THEN T2.molecule_id ELSE NULL END) AS REAL) * 100 / COUNT(DISTINCT T2.molecule_id) FROM atom AS T1 INNER JOIN molecule AS T2 ON T1.molecule_id = T2.molecule_id WHERE T2.label = '+'"
+  },
+  {
+   "question_id": 268,
+   "db_id": "toxicology",
+   "question": "What are the elements for bond id TR001_10_11?",
+   "evidence": "TR001_10_11 is the bond id;",
+   "SQL": "SELECT T2.fld003 FROM tab03 AS T1 INNER JOIN tab01 AS T2 ON T1.fld001 = T2.fld001 WHERE T1.fld004 = 'TR001_10_11'",
+   "difficulty": "challenging",
+   "SQL_original": "SELECT T2.element FROM connected AS T1 INNER JOIN atom AS T2 ON T1.atom_id = T2.atom_id WHERE T1.bond_id = 'TR001_10_11'"
+  },
+  {
+   "question_id": 243,
+   "db_id": "toxicology",
+   "question": "What are the bonds that have phosphorus and nitrogen as their atom elements?",
+   "evidence": "have phosphorus as atom elements refers to fld003 = 'p'; have nitrogen as atom elements refers to fld003 = 'n'",
+   "SQL": "SELECT T2.fld004 FROM tab01 AS T1 INNER JOIN tab03 AS T2 ON T1.fld001 = T2.fld001 WHERE T2.fld004 IN (SELECT T3.fld004 FROM tab03 AS T3 INNER JOIN tab01 AS T4 ON T3.fld001 = T4.fld001 WHERE T4.fld003 = 'p') AND T1.fld003 = 'n'",
+   "difficulty": "moderate",
+   "SQL_original": "SELECT T2.bond_id FROM atom AS T1 INNER JOIN connected AS T2 ON T1.atom_id = T2.atom_id WHERE T2.bond_id IN ( SELECT T3.bond_id FROM connected AS T3 INNER JOIN atom AS T4 ON T3.atom_id = T4.atom_id WHERE T4.element = 'p' ) AND T1.element = 'n'"
+  },
+  {
+   "question_id": 213,
+   "db_id": "toxicology",
+   "question": "What type of bond is there between the atoms TR004_8 and TR004_20?",
+   "evidence": "type of bond refers to fld005; between the atoms TR004_8 and TR004_20 refers to fld001 = 'TR004_8' AND fld006 = 'TR004_20' OR another way around",
+   "SQL": "SELECT T1.fld005 FROM tab02 AS T1 INNER JOIN tab03 AS T2 ON T1.fld004 = T2.fld004 WHERE T2.fld001 = 'TR004_8' AND T2.fld006 = 'TR004_20' OR T2.fld006 = 'TR004_8' AND T2.fld001 = 'TR004_20'",
+   "difficulty": "moderate",
+   "SQL_original": "SELECT T1.bond_type FROM bond AS T1 INNER JOIN connected AS T2 ON T1.bond_id = T2.bond_id WHERE T2.atom_id = 'TR004_8' AND T2.atom_id2 = 'TR004_20' OR T2.atom_id2 = 'TR004_8' AND T2.atom_id = 'TR004_20'"
+  },
+  {
+   "question_id": 220,
+   "db_id": "toxicology",
+   "question": "Please list top three elements of the toxicology of the molecule TR000 in alphabetical order.",
+   "evidence": "TR000 is the molecule id;",
+   "SQL": "SELECT DISTINCT T.fld003 FROM tab01 AS T WHERE T.fld002 = 'TR000' ORDER BY T.fld003 LIMIT 3",
+   "difficulty": "challenging",
+   "SQL_original": "SELECT DISTINCT T.element FROM atom AS T WHERE T.molecule_id = 'TR000' ORDER BY T.element LIMIT 3"
+  },
+  {
+   "question_id": 240,
+   "db_id": "toxicology",
+   "question": "List all the elements of the toxicology of the molecule \"TR004\".",
+   "evidence": "TR004 is the molecule id;",
+   "SQL": "SELECT DISTINCT T.fld003 FROM tab01 AS T WHERE T.fld002 = 'TR004'",
+   "difficulty": "challenging",
+   "SQL_original": "SELECT DISTINCT T.element FROM atom AS T WHERE T.molecule_id = 'TR004'"
+  },
+  {
+   "question_id": 219,
+   "db_id": "toxicology",
+   "question": "What is the percentage of carcinogenic molecules in triple type bonds?",
+   "evidence": "fld007 = '+' mean molecules are carcinogenic; triple bond refers to fld005 = '#'; percentage = DIVIDE(SUM(fld005 = '#') * 100, COUNT(fld004)) as percent where fld007 = '+'",
+   "SQL": "SELECT CAST(COUNT(DISTINCT CASE WHEN T2.fld007 = '+' THEN T2.fld002 ELSE NULL END) AS REAL) * 100 / COUNT(DISTINCT T2.fld002) FROM tab01 AS T1 INNER JOIN tab04 AS T2 ON T1.fld002 = T2.fld002 INNER JOIN tab02 AS T3 ON T2.fld002 = T3.fld002 WHERE T3.fld005 = '#'",
+   "difficulty": "challenging",
+   "SQL_original": "SELECT CAST(COUNT(DISTINCT CASE WHEN T2.label = '+' THEN T2.molecule_id ELSE NULL END) AS REAL) * 100 / COUNT(DISTINCT T2.molecule_id) FROM atom AS T1 INNER JOIN molecule AS T2 ON T1.molecule_id = T2.molecule_id INNER JOIN bond AS T3 ON T2.molecule_id = T3.molecule_id WHERE T3.bond_type = '#'"
+  },
+  {
+   "question_id": 249,
+   "db_id": "toxicology",
+   "question": "What are the elements of the atoms of TR144_8_19?",
+   "evidence": "TR144_8_19 is the bond id; ",
+   "SQL": "SELECT T2.fld003 FROM tab03 AS T1 INNER JOIN tab01 AS T2 ON T1.fld001 = T2.fld001 WHERE T1.fld004 = 'TR144_8_19'",
+   "difficulty": "challenging",
+   "SQL_original": "SELECT T2.element FROM connected AS T1 INNER JOIN atom AS T2 ON T1.atom_id = T2.atom_id WHERE T1.bond_id = 'TR144_8_19'"
+  }
+ ]
+}

@@ -1,0 +1,178 @@
+[
+  {
+    "id": "e001_tables",
+    "source": "financial.sqlite (read-only)",
+    "query": "SELECT name FROM sqlite_master WHERE type='table' ORDER BY name",
+    "result": "8 tables: account, card, client, disp, district, loan, order, trans",
+    "validation_method": "schema listing",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "e002_row_counts",
+    "source": "financial.sqlite (read-only)",
+    "query": "SELECT COUNT(*) FROM each of the eight tables",
+    "result": "account 4500, card 892, client 5369, disp 5369, district 77, loan 682, order 6471, trans 1056320",
+    "validation_method": "row count verification",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "e003_gender",
+    "source": "financial.sqlite (read-only)",
+    "query": "SELECT gender, COUNT(*) FROM client GROUP BY gender",
+    "result": "F 2645, M 2724; these are the only two values present",
+    "validation_method": "distinct value enumeration",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "e004_card_type",
+    "source": "financial.sqlite (read-only)",
+    "query": "SELECT type, COUNT(*) FROM card GROUP BY type",
+    "result": "classic 659, junior 145, gold 88",
+    "validation_method": "distinct value enumeration",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "e005_disp_type",
+    "source": "financial.sqlite (read-only)",
+    "query": "SELECT type, COUNT(*) FROM disp GROUP BY type",
+    "result": "OWNER 4500, DISPONENT 869",
+    "validation_method": "distinct value enumeration",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "e006_loan_status",
+    "source": "financial.sqlite (read-only)",
+    "query": "SELECT status, COUNT(*) FROM loan GROUP BY status",
+    "result": "C 403, A 203, D 45, B 31",
+    "validation_method": "distinct value enumeration",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "e007_account_frequency",
+    "source": "financial.sqlite (read-only)",
+    "query": "SELECT frequency, COUNT(*) FROM account GROUP BY frequency",
+    "result": "POPLATEK MESICNE 4167, POPLATEK TYDNE 240, POPLATEK PO OBRATU 93",
+    "validation_method": "distinct value enumeration",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "e008_operation",
+    "source": "financial.sqlite (read-only)",
+    "query": "SELECT quote(operation), COUNT(*) FROM trans GROUP BY operation ORDER BY 2 DESC",
+    "result": "VYBER 434918, PREVOD NA UCET 208283, NULL 183114, VKLAD 156743, PREVOD Z UCTU 65226, VYBER KARTOU 8036",
+    "validation_method": "distinct value enumeration with null accounting",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "e009_ksymbol",
+    "source": "financial.sqlite (read-only)",
+    "query": "SELECT quote(k_symbol), COUNT(*) FROM trans GROUP BY k_symbol ORDER BY 2 DESC",
+    "result": "NULL 481881, UROK 183114, SLUZBY 155832, SIPO 118065, literal single space 53433, DUCHOD 30338, POJISTNE 18500, UVER 13580, SANKC. UROK 1577",
+    "validation_method": "distinct value enumeration with null and whitespace accounting",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "e010_district_columns",
+    "source": "financial.sqlite (read-only)",
+    "query": "SELECT district_id, A2, A3, A4, A11, A12, A13, A15 FROM district LIMIT 8",
+    "result": "1 Hl.m. Praha / Prague / 1204953 / 12541 / 0.2 / 0.43 / 85677; 2 Benesov / central Bohemia / 88884 / 8507 / 1.6 / 1.85 / 2159; A11 in 8110-12541, A4 in 42821-1204953, A12 in 0.2-7.3, A13 in 0.43-9.4, A15 in 818-85677",
+    "validation_method": "sample inspection plus column range profiling",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "e011_district_regions",
+    "source": "financial.sqlite (read-only)",
+    "query": "SELECT A3, COUNT(*) FROM district GROUP BY A3; and SELECT district_id, A2, A3 FROM district WHERE A2 LIKE '%okolov%'",
+    "result": "south Moravia 14, central Bohemia 12, north Moravia 11, east Bohemia 11, west Bohemia 10, north Bohemia 10, south Bohemia 8, Prague 1; district 30 is named Sokolov and lies in west Bohemia",
+    "validation_method": "grouping and targeted lookup",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "e012_a4_text",
+    "source": "financial.sqlite (read-only)",
+    "query": "SELECT DISTINCT typeof(A4) FROM district; and SELECT CAST(A4 AS INTEGER) ranges",
+    "result": "declared type is text; values are plain numeric strings ranging from 42,821 to 1,204,953",
+    "validation_method": "type inspection plus numeric range check",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "e013_district_null",
+    "source": "financial.sqlite (read-only)",
+    "query": "SELECT district_id, A2, A3, A12, A15 FROM district WHERE A12 IS NULL OR A15 IS NULL",
+    "result": "one row: district_id 69, Jesenik, north Moravia, with no 1995 unemployment rate and no crime count",
+    "validation_method": "null detection",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "e014_fk_integrity",
+    "source": "financial.sqlite (read-only)",
+    "query": "For each child identifier column, count rows whose value has no matching parent row",
+    "result": "0 orphans for disp to client, disp to account, loan to account, trans to account and card to disp; likewise 0 parents without a matching child in those directions",
+    "validation_method": "referential integrity check",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "e015_cardinality",
+    "source": "financial.sqlite (read-only)",
+    "query": "SELECT account_id, SUM(CASE WHEN type='OWNER' THEN 1 ELSE 0 END) FROM disp GROUP BY account_id; and GROUP BY client_id",
+    "result": "every one of the 4500 accounts has exactly one OWNER disposition; every one of the 5369 clients has exactly one disposition row; cards equal dispositions with cards at 892 of 5369",
+    "validation_method": "cardinality verification",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "e016_district_roles",
+    "source": "financial.sqlite (read-only)",
+    "query": "Join disp, client and account for OWNER dispositions and compare client.district_id with account.district_id",
+    "result": "4091 of 4500 own dispositions, 90.9 percent, have the client district equal to the account district; 409 differ",
+    "validation_method": "cross-column comparison",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "e017_date_ranges",
+    "source": "financial.sqlite (read-only)",
+    "query": "MIN and MAX of account.date, trans.date, client.birth_date and card.issued",
+    "result": "account 1993-01-01 to 1997-12-29; trans 1993-01-01 to 1998-12-31; client birth dates 1911-08-20 to 1987-09-27; earliest card issue 1993-11-07",
+    "validation_method": "range profiling",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "e018_unemployment",
+    "source": "financial.sqlite (read-only)",
+    "query": "Compare A13 with A12 across districts having a non-null A12",
+    "result": "75 districts have a higher 1996 rate than 1995 rate and 1 district is lower; A12 spans 0.2 to 7.3 and A13 spans 0.43 to 9.4",
+    "validation_method": "paired column comparison",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "e019_trans_years",
+    "source": "financial.sqlite (read-only)",
+    "query": "SELECT substr(date,1,4), COUNT(*) FROM trans GROUP BY 1 ORDER BY 1",
+    "result": "1993 28205, 1994 91628, 1995 133022, 1996 196779, 1997 284409, 1998 322277",
+    "validation_method": "year distribution",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "e020_loan_ranges",
+    "source": "financial.sqlite (read-only)",
+    "query": "MIN and MAX of loan.amount, loan.duration and loan.payments; COUNT of loans whose status is a running state",
+    "result": "amount 4980 to 590820; duration 12 to 60; payments 304 to 9910; 448 of 682 contracts are running",
+    "validation_method": "range profiling and filtered count",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "e021_credit_card_txn",
+    "source": "financial.sqlite (read-only)",
+    "query": "SELECT type, operation, COUNT(*) FROM trans WHERE operation='VYBER KARTOU' GROUP BY 1,2; and the 1998 subset",
+    "result": "8036 card-withdrawal rows, all with transaction type VYDAJ; 4560 of them fall in 1998 with an average amount of 2270.94",
+    "validation_method": "filtered enumeration",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "e022_amount_range",
+    "source": "financial.sqlite (read-only)",
+    "query": "SELECT MIN(amount), MAX(amount), AVG(amount) FROM trans",
+    "result": "minimum 0, maximum 87400, average 5924.21",
+    "validation_method": "range profiling",
+    "timestamp": "2026-10-10"
+  }
+]

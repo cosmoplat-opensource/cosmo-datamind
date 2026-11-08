@@ -1,0 +1,551 @@
+[
+  {
+    "aliases": [
+      "match",
+      "matches",
+      "game",
+      "fixture",
+      "number of matches",
+      "matches held"
+    ],
+    "definition": "A single football match played between a home team and an away team within one league and one season, with a final score expressed as home team goals and away team goals.",
+    "evidence": [
+      "evidence_001",
+      "evidence_002",
+      "evidence_016"
+    ],
+    "id": "term_match",
+    "name": "Match",
+    "scope": "Match-level analysis of results, goals, draws and scheduling in the European football database.",
+    "type": "entity"
+  },
+  {
+    "aliases": [
+      "season",
+      "2010/2011",
+      "2016 season",
+      "2015/2016 season"
+    ],
+    "definition": "The competition season a match belongs to, labelled as a two-year span written 'YYYY/YYYY' (e.g. '2010/2011'). The label names the calendar year in which the season starts and the year in which it ends.",
+    "evidence": [
+      "evidence_003"
+    ],
+    "id": "term_season",
+    "name": "Season",
+    "scope": "All season-scoped match analysis.",
+    "type": "dimension"
+  },
+  {
+    "aliases": [
+      "league",
+      "competition",
+      "Belgium Jupiler League",
+      "Poland Ekstraklasa",
+      "Premier League"
+    ],
+    "definition": "A national football competition that a match belongs to, such as 'Belgium Jupiler League' or 'Poland Ekstraklasa'. Each league is associated with exactly one country.",
+    "evidence": [
+      "evidence_001",
+      "evidence_004"
+    ],
+    "id": "term_league",
+    "name": "League",
+    "scope": "League-level rankings and filtering of matches.",
+    "type": "entity"
+  },
+  {
+    "aliases": [
+      "country",
+      "Poland",
+      "country of Poland",
+      "nation"
+    ],
+    "definition": "The country a league and its matches belong to, e.g. 'Poland', 'Belgium'. In this database each country corresponds to exactly one league.",
+    "evidence": [
+      "evidence_004"
+    ],
+    "id": "term_country",
+    "name": "Country",
+    "scope": "Country-level filtering of matches.",
+    "type": "entity"
+  },
+  {
+    "aliases": [
+      "team",
+      "club",
+      "team_long_name",
+      "team name",
+      "Ajax",
+      "top teams",
+      "highest build Up Play Speed teams"
+    ],
+    "definition": "A football club that plays matches, identified by a full display name (team_long_name, e.g. 'Ajax') and a short name (team_short_name, e.g. 'AJA').",
+    "evidence": [
+      "evidence_001",
+      "evidence_015",
+      "evidence_016"
+    ],
+    "id": "term_team",
+    "name": "Team",
+    "scope": "Team identity, team tactical attributes and team-level ranking.",
+    "type": "entity"
+  },
+  {
+    "aliases": [
+      "home team goal",
+      "home_team_goal",
+      "home goals",
+      "average home team goal",
+      "goals scored at home"
+    ],
+    "definition": "Number of goals scored by the home team in a match. A non-negative integer per match.",
+    "evidence": [
+      "evidence_013",
+      "evidence_020"
+    ],
+    "id": "term_home_team_goal",
+    "name": "Home Team Goal",
+    "scope": "Match result and goal-scoring analysis.",
+    "type": "metric"
+  },
+  {
+    "aliases": [
+      "away team goal",
+      "away_team_goal",
+      "away goals",
+      "goals conceded away"
+    ],
+    "definition": "Number of goals scored by the away team in a match. A non-negative integer per match.",
+    "evidence": [
+      "evidence_020"
+    ],
+    "id": "term_away_team_goal",
+    "name": "Away Team Goal",
+    "scope": "Match result and goal-scoring analysis.",
+    "type": "metric"
+  },
+  {
+    "aliases": [
+      "draw",
+      "ended as draw",
+      "most matches end as draw",
+      "tie",
+      "matches ended in a draw"
+    ],
+    "definition": "A match outcome in which both teams score the same number of goals. A draw is a particular kind of match result, and its truth value is determined by comparing the two goal counts of the match.",
+    "evidence": [
+      "evidence_020"
+    ],
+    "id": "term_draw_result",
+    "name": "Draw Result",
+    "scope": "Match-outcome counting and league-level draw statistics.",
+    "type": "concept"
+  },
+  {
+    "aliases": [
+      "player",
+      "football player",
+      "players",
+      "player_name",
+      "who was the oldest"
+    ],
+    "definition": "A registered football player, identified by a display name and by two external identifier spaces (player_api_id and player_fifa_api_id), and carrying unchanging biographical and physical measurements.",
+    "evidence": [
+      "evidence_005",
+      "evidence_011",
+      "evidence_019"
+    ],
+    "id": "term_player",
+    "name": "Player",
+    "scope": "Player identity, name lookup, physical profiling and player-level ranking.",
+    "type": "entity"
+  },
+  {
+    "aliases": [
+      "height",
+      "tall",
+      "heights are above 180",
+      "under 180 cm",
+      "player height"
+    ],
+    "definition": "The player's body height, recorded in centimetres. Observed values range from about 157 cm to about 208 cm.",
+    "evidence": [
+      "evidence_011"
+    ],
+    "id": "term_player_height",
+    "name": "Player Height",
+    "scope": "Physical screening of players, e.g. players taller than 180 or shorter than 180.",
+    "type": "metric"
+  },
+  {
+    "aliases": [
+      "weight",
+      "heaviest weight",
+      "player weight",
+      "heaviest"
+    ],
+    "definition": "The player's body weight, stored as a numeric measurement in the Player record. Observed values range from 117 to 243.",
+    "evidence": [
+      "evidence_011"
+    ],
+    "id": "term_player_weight",
+    "name": "Player Weight",
+    "scope": "Physical screening and heaviest/lightest player questions.",
+    "type": "metric"
+  },
+  {
+    "aliases": [
+      "birthday",
+      "date of birth",
+      "born between 1987 and 1992",
+      "birthyear of 1970",
+      "birthmonth of October",
+      "born"
+    ],
+    "definition": "The player's date of birth stored as a text timestamp. Because it is a date of birth, a smaller value means an older person and a larger value means a younger person.",
+    "evidence": [
+      "evidence_011",
+      "evidence_018"
+    ],
+    "id": "term_player_birthday",
+    "name": "Player Birthday",
+    "scope": "Age, birth-year and birth-month filtering of players.",
+    "type": "dimension"
+  },
+  {
+    "aliases": [
+      "age",
+      "player's age",
+      "at present",
+      "oldest",
+      "youngest"
+    ],
+    "definition": "The player's age, obtained by comparing the current date with the player's date of birth. It is not stored as a column and must be derived from the birthday.",
+    "evidence": [
+      "evidence_011"
+    ],
+    "id": "term_player_age",
+    "name": "Player Age",
+    "scope": "Questions asking for the player's age at present or for the oldest/youngest player.",
+    "type": "metric"
+  },
+  {
+    "aliases": [
+      "preferred foot",
+      "preferred_foot",
+      "prefer to use the right foot when attacking",
+      "left foots",
+      "right foot",
+      "prefer left foot"
+    ],
+    "definition": "The foot a player prefers when attacking, recorded on the player's rating snapshot as 'left' or 'right'. It is part of the time-stamped attribute record rather than the biographical player record.",
+    "evidence": [
+      "evidence_010"
+    ],
+    "id": "term_preferred_foot",
+    "name": "Preferred Foot",
+    "scope": "Foot-preference filtering of players within attribute snapshots.",
+    "type": "dimension"
+  },
+  {
+    "aliases": [
+      "player attributes",
+      "Player_Attributes",
+      "player rating",
+      "attributes on a date",
+      "player attribute history"
+    ],
+    "definition": "A dated rating record for one player, holding the FIFA-style skill ratings and the overall rating and potential observed on that date. Each player has many snapshots over time, and each snapshot is a separate record.",
+    "evidence": [
+      "evidence_005",
+      "evidence_006"
+    ],
+    "id": "term_player_attribute_snapshot",
+    "name": "Player Attribute Snapshot",
+    "scope": "Any question about skill scores, overall rating, potential or foot preference of a player, especially when a year or date is mentioned.",
+    "type": "concept"
+  },
+  {
+    "aliases": [
+      "overall rating",
+      "overall_rating",
+      "overall strength",
+      "strength rating",
+      "77 points overall rating",
+      "greatest overall strength"
+    ],
+    "definition": "The single headline strength score of a player on a given snapshot date, ranging from 33 to 94 in this database. Natural-language phrasings such as 'overall strength' or 'overall strength is the greatest' refer to this score.",
+    "evidence": [
+      "evidence_017"
+    ],
+    "id": "term_overall_rating",
+    "name": "Overall Rating",
+    "scope": "Player strength ranking, strength thresholds, and snapshot-specific rating lookup.",
+    "type": "metric"
+  },
+  {
+    "aliases": [
+      "potential",
+      "lowest potential players",
+      "highest potential",
+      "player potential"
+    ],
+    "definition": "The highest overall rating a player is expected to reach on a given snapshot date, ranging from 39 to 97 in this database. It is a forward-looking ceiling, distinct from the current overall rating.",
+    "evidence": [
+      "evidence_017"
+    ],
+    "id": "term_potential",
+    "name": "Player Potential",
+    "scope": "Questions about the lowest or highest potential players.",
+    "type": "metric"
+  },
+  {
+    "aliases": [
+      "skill attribute",
+      "ability score",
+      "ability",
+      "player ability",
+      "scores"
+    ],
+    "definition": "The family of fine-grained ability scores recorded on a player attribute snapshot, including crossing, finishing, heading accuracy, short passing, volleys, dribbling, curve, free kick accuracy, long passing, ball control, acceleration, sprint speed, agility, reactions, balance, shot power, jumping, stamina, strength, long shots, aggression, interceptions, positioning, vision, penalties, marking and the tackling and goalkeeper scores.",
+    "evidence": [
+      "evidence_012",
+      "evidence_021"
+    ],
+    "id": "term_player_skill_attribute",
+    "name": "Player Skill Attribute",
+    "scope": "Any question naming a player ability, whether or not the specific ability is listed separately in this layer.",
+    "type": "concept"
+  },
+  {
+    "aliases": [
+      "heading accuracy",
+      "heading_accuracy",
+      "average heading accuracy",
+      "heading score"
+    ],
+    "definition": "A player's ability to direct the ball with the head, scored as an integer between 1 and 98 on each attribute snapshot.",
+    "evidence": [
+      "evidence_021"
+    ],
+    "id": "term_heading_accuracy",
+    "name": "Heading Accuracy",
+    "scope": "Questions that rank or filter players by heading ability.",
+    "type": "metric"
+  },
+  {
+    "aliases": [
+      "jumping",
+      "jumping score",
+      "jumping scores",
+      "jump"
+    ],
+    "definition": "A player's jumping ability, scored as an integer between 14 and 96 on each attribute snapshot. This ability is more sparsely recorded than most others.",
+    "evidence": [
+      "evidence_021"
+    ],
+    "id": "term_jumping",
+    "name": "Jumping",
+    "scope": "Questions that compare or rank players by jumping ability.",
+    "type": "metric"
+  },
+  {
+    "aliases": [
+      "long shots",
+      "long_shots",
+      "long-shot",
+      "average number of long-shot",
+      "long shot"
+    ],
+    "definition": "A player's ability to score from distance, scored as an integer between 1 and 96 on each attribute snapshot.",
+    "evidence": [
+      "evidence_021"
+    ],
+    "id": "term_long_shots",
+    "name": "Long Shots",
+    "scope": "Questions that average or rank long-shot ability for a player.",
+    "type": "metric"
+  },
+  {
+    "aliases": [
+      "crossing",
+      "crossing score",
+      "potential score for crossing",
+      "cross"
+    ],
+    "definition": "A player's ability to deliver the ball from wide positions, scored as an integer between 1 and 95 on each attribute snapshot.",
+    "evidence": [
+      "evidence_021"
+    ],
+    "id": "term_crossing",
+    "name": "Crossing",
+    "scope": "Questions that rank or filter players by crossing ability.",
+    "type": "metric"
+  },
+  {
+    "aliases": [
+      "finishing",
+      "finishing rate",
+      "finishing score"
+    ],
+    "definition": "A player's ability to convert chances into goals, scored as an integer between 1 and 97 on each attribute snapshot.",
+    "evidence": [
+      "evidence_021"
+    ],
+    "id": "term_finishing",
+    "name": "Finishing",
+    "scope": "Questions that report or compare a player's finishing ability.",
+    "type": "metric"
+  },
+  {
+    "aliases": [
+      "curve",
+      "curve score",
+      "curl"
+    ],
+    "definition": "A player's ability to bend the ball, scored as an integer between 2 and 94 on each attribute snapshot. This ability is more sparsely recorded than most others.",
+    "evidence": [
+      "evidence_021"
+    ],
+    "id": "term_curve",
+    "name": "Curve",
+    "scope": "Questions that report or compare a player's curve ability.",
+    "type": "metric"
+  },
+  {
+    "aliases": [
+      "sprint speed",
+      "sprint_speed",
+      "no less than 97",
+      "pace"
+    ],
+    "definition": "A player's top running speed, scored as an integer between 12 and 97 on each attribute snapshot.",
+    "evidence": [
+      "evidence_021"
+    ],
+    "id": "term_sprint_speed",
+    "name": "Sprint Speed",
+    "scope": "Questions that filter or rank players by sprint speed.",
+    "type": "metric"
+  },
+  {
+    "aliases": [
+      "team attributes",
+      "Team_Attributes",
+      "team tactics",
+      "team style",
+      "playing style"
+    ],
+    "definition": "A dated tactical profile of a team, holding the numeric style scores (build-up play speed, build-up play dribbling, build-up play passing, chance creation passing, chance creation crossing, chance creation shooting, defensive pressure, defensive aggression, defensive team width) together with a categorical class label for each score.",
+    "evidence": [
+      "evidence_007"
+    ],
+    "id": "term_team_attribute_snapshot",
+    "name": "Team Attribute Snapshot",
+    "scope": "Team playing-style questions, team-level ranking by a tactical score, and interpretation of a team's style class.",
+    "type": "concept"
+  },
+  {
+    "aliases": [
+      "build up play speed",
+      "buildUpPlaySpeed",
+      "speed in which attacks are put together",
+      "highest build Up Play Speed",
+      "tempo"
+    ],
+    "definition": "A team's tactical tempo score describing how quickly the team moves the ball forward. The natural-language phrase 'the speed in which attacks are put together' refers to this same score.",
+    "evidence": [
+      "evidence_008",
+      "evidence_015"
+    ],
+    "id": "term_buildup_play_speed",
+    "name": "Build-up Play Speed",
+    "scope": "Ranking and comparing teams by tempo.",
+    "type": "metric"
+  },
+  {
+    "aliases": [
+      "chance creation passing",
+      "chanceCreationPassing",
+      "chance creation passing score"
+    ],
+    "definition": "A team's tactical score describing how much the team relies on passing to create scoring chances.",
+    "evidence": [
+      "evidence_008",
+      "evidence_015"
+    ],
+    "id": "term_chance_creation_passing",
+    "name": "Chance Creation Passing",
+    "scope": "Team chance-creation comparison and style classification.",
+    "type": "metric"
+  },
+  {
+    "aliases": [
+      "classified as",
+      "class",
+      "buildUpPlaySpeedClass",
+      "chanceCreationPassingClass",
+      "style class",
+      "Balanced",
+      "Fast",
+      "Slow",
+      "Risky",
+      "Safe"
+    ],
+    "definition": "The categorical label paired with a team's numeric style score, naming the band the score falls into (for example the build-up play speed class names Slow, Balanced or Fast, and the chance creation passing class names Safe, Normal or Risky).",
+    "evidence": [
+      "evidence_008"
+    ],
+    "id": "term_team_attribute_class",
+    "name": "Team Attribute Class",
+    "scope": "Questions that ask what a team's style score 'is classified as'.",
+    "type": "dimension"
+  },
+  {
+    "aliases": [
+      "player_api_id",
+      "player id",
+      "players' IDs",
+      "player identifier"
+    ],
+    "definition": "One of two external identifier spaces for a player. This identifier is carried consistently on both the player record and every player attribute snapshot, so it is the reliable key for linking a player to their attribute history.",
+    "evidence": [
+      "evidence_005"
+    ],
+    "id": "term_player_api_id",
+    "name": "Player API Identifier",
+    "scope": "Joining players to player attribute snapshots and listing players by numeric ID.",
+    "type": "concept"
+  },
+  {
+    "aliases": [
+      "player_fifa_api_id",
+      "fifa api id",
+      "FIFA player id"
+    ],
+    "definition": "The second external identifier space for a player, present on both the player record and the attribute snapshots. It is mostly aligned with the other identifier space but is not a complete key for the attribute history.",
+    "evidence": [
+      "evidence_005"
+    ],
+    "id": "term_player_fifa_api_id",
+    "name": "Player FIFA API Identifier",
+    "scope": "Alternative player identification when the FIFA-style identifier is referenced.",
+    "type": "concept"
+  },
+  {
+    "aliases": [
+      "Player.id",
+      "id",
+      "players 6 and 23",
+      "player number"
+    ],
+    "definition": "The auto-incrementing integer primary key of the player record. It is a database-local key with no external meaning, and question phrasing such as 'players 6 and 23' refers to this key.",
+    "evidence": [
+      "evidence_011"
+    ],
+    "id": "term_player_surrogate_id",
+    "name": "Player Surrogate Key",
+    "scope": "Questions that identify players by a small bare integer without naming them.",
+    "type": "concept"
+  }
+]

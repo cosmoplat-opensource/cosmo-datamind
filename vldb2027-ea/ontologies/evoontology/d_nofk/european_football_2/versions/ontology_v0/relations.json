@@ -1,0 +1,293 @@
+[
+  {
+    "id": "rel_country_league",
+    "source": "term_country",
+    "relation_type": "composition",
+    "target": "term_league",
+    "connection_condition": "League.country_id references Country.id",
+    "description": "A country hosts one or more leagues and a league cannot exist without its host country. Country is the whole, League the component.",
+    "evidence": [
+      "ev_league_country"
+    ]
+  },
+  {
+    "id": "rel_league_match",
+    "source": "term_league",
+    "relation_type": "composition",
+    "target": "term_match",
+    "connection_condition": "Match.league_id references League.id",
+    "description": "A league is composed of the matches played in it; a match cannot exist outside a league. 11 leagues hold between 1422 and 3040 matches each.",
+    "evidence": [
+      "ev_league_country"
+    ]
+  },
+  {
+    "id": "rel_season_match",
+    "source": "term_season",
+    "relation_type": "composition",
+    "target": "term_match",
+    "connection_condition": "Match.season carries the season text for the match",
+    "description": "A season is composed of the matches played in it; the eight season values partition the whole Match table.",
+    "evidence": [
+      "ev_season_stage"
+    ]
+  },
+  {
+    "id": "rel_stage_match",
+    "source": "term_match_stage",
+    "relation_type": "composition",
+    "target": "term_match",
+    "connection_condition": "Match.stage carries the round number of the match within its season",
+    "description": "A round is composed of the matches played in that round; rounds run from 1 to 38 within a season.",
+    "evidence": [
+      "ev_season_stage"
+    ]
+  },
+  {
+    "id": "rel_match_team",
+    "source": "term_match",
+    "relation_type": "composition",
+    "target": "term_team",
+    "connection_condition": "Match.home_team_api_id and Match.away_team_api_id reference Team.team_api_id",
+    "description": "A match is composed of exactly two team participations, one per venue role; a match cannot exist without both sides.",
+    "evidence": [
+      "ev_team_id_join"
+    ]
+  },
+  {
+    "id": "rel_team_player",
+    "source": "term_team",
+    "relation_type": "association",
+    "target": "term_player",
+    "connection_condition": "indirect: a player is linked to a team only through the 22 lineup columns of the matches he appeared in, since no roster or contract table exists",
+    "description": "A team fields players, but the database records the association only per match rather than as a persistent squad membership. Aggregating a player's team must go through the lineup columns.",
+    "evidence": [
+      "ev_lineup_id_join",
+      "ev_lineup_completeness"
+    ]
+  },
+  {
+    "id": "rel_eventfeed_event",
+    "source": "term_match_event_feed",
+    "relation_type": "composition",
+    "target": "term_match_event",
+    "connection_condition": "each payload column root holds one <value> element per incident",
+    "description": "The event feed is composed of individual match events; removing the feed removes the events. The feed exists as a whole or not at all for a match.",
+    "evidence": [
+      "ev_shots_cards_scale"
+    ]
+  },
+  {
+    "id": "rel_event_goal",
+    "source": "term_match_event",
+    "relation_type": "hierarchy",
+    "target": "term_goal_event",
+    "connection_condition": "",
+    "description": "A goal event is a kind of match event, discriminated by the payload root being the goal column and by the goal_type element.",
+    "evidence": [
+      "ev_goal_type_enum"
+    ]
+  },
+  {
+    "id": "rel_event_card",
+    "source": "term_match_event",
+    "relation_type": "hierarchy",
+    "target": "term_card_event",
+    "connection_condition": "",
+    "description": "A card event is a kind of match event, discriminated by the payload root being the card column and by the card_type element.",
+    "evidence": [
+      "ev_card_type_enum"
+    ]
+  },
+  {
+    "id": "rel_event_possession",
+    "source": "term_match_event",
+    "relation_type": "hierarchy",
+    "target": "term_possession_snapshot",
+    "connection_condition": "",
+    "description": "A possession snapshot is a kind of match event, discriminated by the payload root being the possession column and by the subtype element.",
+    "evidence": [
+      "ev_possession_sum"
+    ]
+  },
+  {
+    "id": "rel_goals_outcome",
+    "source": "term_goals_scored",
+    "relation_type": "derivation",
+    "target": "term_match_outcome",
+    "connection_condition": "",
+    "description": "The match outcome is derived by comparing the goals scored by one side with the goals scored by the other; the two scoreline columns are the only inputs.",
+    "evidence": [
+      "ev_goal_xml_vs_score"
+    ]
+  },
+  {
+    "id": "rel_goals_goaldiff",
+    "source": "term_goals_scored",
+    "relation_type": "derivation",
+    "target": "term_goal_difference",
+    "connection_condition": "",
+    "description": "Goal difference is derived as goals scored minus goals conceded over a chosen match set for a reference team.",
+    "evidence": [
+      "ev_goal_xml_vs_score"
+    ]
+  },
+  {
+    "id": "rel_outcome_points",
+    "source": "term_match_outcome",
+    "relation_type": "derivation",
+    "target": "term_league_points",
+    "connection_condition": "",
+    "description": "League points are derived by mapping each per-match outcome to a points value under the competition convention and summing within a league and season.",
+    "evidence": [
+      "ev_goal_xml_vs_score"
+    ]
+  },
+  {
+    "id": "rel_birthday_age",
+    "source": "term_player_birthday",
+    "relation_type": "derivation",
+    "target": "term_player_age",
+    "connection_condition": "",
+    "description": "Player age is derived from the date of birth together with an explicit reference date.",
+    "evidence": [
+      "ev_player_profile_ranges"
+    ]
+  },
+  {
+    "id": "rel_potential_rating",
+    "source": "term_player_potential",
+    "relation_type": "association",
+    "target": "term_overall_rating",
+    "connection_condition": "",
+    "description": "Potential and overall rating are two FIFA ability scores carried on the same snapshot row. Potential is a ceiling forecast and is not computed from the current rating.",
+    "evidence": [
+      "ev_pa_grain",
+      "ev_player_profile_ranges"
+    ]
+  },
+  {
+    "id": "rel_workrate_rating",
+    "source": "term_player_work_rate",
+    "relation_type": "association",
+    "target": "term_overall_rating",
+    "connection_condition": "",
+    "description": "Work rate and overall rating are attributes of the same player snapshot row and are frequently analysed together when profiling players.",
+    "evidence": [
+      "ev_workrate_enum"
+    ]
+  },
+  {
+    "id": "rel_odds_equivalence",
+    "source": "term_bet365_odds",
+    "relation_type": "equivalence",
+    "target": "term_pinnacle_odds",
+    "connection_condition": "both are H/D/A decimal price triples for the same match row",
+    "description": "Bet365 and Pinnacle prices express the same business concept, the pre-match 1X2 market price of a match, from two different providers. Their availability windows differ, so either can substitute for the other but not everywhere.",
+    "evidence": [
+      "ev_odds_coverage_season",
+      "ev_odds_coverage_league"
+    ]
+  },
+  {
+    "id": "rel_odds_implied",
+    "source": "term_bet365_odds",
+    "relation_type": "derivation",
+    "target": "term_implied_probability",
+    "connection_condition": "",
+    "description": "The implied outcome probabilities are derived by inverting each decimal price of a bookmaker family and normalising the three across the match.",
+    "evidence": [
+      "ev_odds_coverage_season"
+    ]
+  },
+  {
+    "id": "rel_feed_shots",
+    "source": "term_match_event_feed",
+    "relation_type": "derivation",
+    "target": "term_shots_on_target",
+    "connection_condition": "",
+    "description": "Shots on target are derived by counting the qualifying shot events inside the shoton payload; the feed is the only source.",
+    "evidence": [
+      "ev_shots_cards_scale"
+    ]
+  },
+  {
+    "id": "rel_card_count",
+    "source": "term_card_event",
+    "relation_type": "derivation",
+    "target": "term_card_count",
+    "connection_condition": "",
+    "description": "The card count is derived by counting card events and splitting them by card_type.",
+    "evidence": [
+      "ev_card_type_enum"
+    ]
+  },
+  {
+    "id": "rel_possession_share",
+    "source": "term_possession_snapshot",
+    "relation_type": "derivation",
+    "target": "term_possession_share",
+    "connection_condition": "",
+    "description": "Possession share is derived from the homepos and awaypos values of the possession snapshots, taking the final snapshot for a match-level figure.",
+    "evidence": [
+      "ev_possession_sum"
+    ]
+  },
+  {
+    "id": "rel_player_snapshot",
+    "source": "term_player",
+    "relation_type": "composition",
+    "target": "term_player_ability_snapshot",
+    "connection_condition": "Player_Attributes.player_api_id references Player.player_api_id",
+    "description": "A player is composed of his dated ability snapshots; a snapshot cannot exist without its player. 183978 snapshots cover 11060 players.",
+    "evidence": [
+      "ev_pa_grain"
+    ]
+  },
+  {
+    "id": "rel_team_snapshot",
+    "source": "term_team",
+    "relation_type": "composition",
+    "target": "term_team_tactical_snapshot",
+    "connection_condition": "Team_Attributes.team_api_id references Team.team_api_id",
+    "description": "A team is composed of its dated tactical snapshots; a snapshot cannot exist without its team. Only 288 of 299 teams have any snapshot.",
+    "evidence": [
+      "ev_ta_grain"
+    ]
+  },
+  {
+    "id": "rel_player_id_families",
+    "source": "term_player_api_id",
+    "relation_type": "association",
+    "target": "term_player_fifa_api_id",
+    "connection_condition": "both keys are carried on the same Player row and on the same Player_Attributes row",
+    "description": "The two player keys identify the same real people but have disjoint value domains, so one cannot be substituted for the other. Only player_api_id is referenced by the match lineup columns.",
+    "evidence": [
+      "ev_lineup_id_join",
+      "ev_fifa_id_nulls"
+    ]
+  },
+  {
+    "id": "rel_team_id_families",
+    "source": "term_team_api_id",
+    "relation_type": "association",
+    "target": "term_team_fifa_api_id",
+    "connection_condition": "both keys are carried on the same Team row and on the same Team_Attributes row",
+    "description": "The two team keys identify the same clubs but have disjoint value domains. Only team_api_id is referenced by the match columns.",
+    "evidence": [
+      "ev_team_id_join",
+      "ev_fifa_id_nulls"
+    ]
+  },
+  {
+    "id": "rel_country_name_league",
+    "source": "term_country_name",
+    "relation_type": "association",
+    "target": "term_league",
+    "connection_condition": "indirect: the country label is reached from a league only by joining League.country_id to Country.id",
+    "description": "A country label is attached to every league, but League stores no country name of its own, so the label must be resolved through the Country table.",
+    "evidence": [
+      "ev_league_country"
+    ]
+  }
+]

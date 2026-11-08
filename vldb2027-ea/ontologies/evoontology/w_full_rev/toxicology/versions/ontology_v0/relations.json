@@ -1,0 +1,189 @@
+[
+  {
+    "id": "rel_molecule_composed_of_atom",
+    "source": "term_molecule",
+    "relation_type": "composition",
+    "target": "term_atom",
+    "connection_condition": "atom.molecule_id corresponds to molecule.molecule_id; the molecule prefix of atom_id corresponds to the same value.",
+    "description": "A molecule is composed of its atoms. An atom cannot exist without its owning molecule, and every atom in the dataset refers to a molecule.",
+    "evidence": [
+      "evidence_schema_tables",
+      "evidence_atom_id_format"
+    ]
+  },
+  {
+    "id": "rel_molecule_composed_of_bond",
+    "source": "term_molecule",
+    "relation_type": "composition",
+    "target": "term_bond",
+    "connection_condition": "bond.molecule_id corresponds to molecule.molecule_id; the molecule prefix of bond_id corresponds to the same value.",
+    "description": "A molecule is composed of its bonds. A bond cannot exist without its owning molecule.",
+    "evidence": [
+      "evidence_schema_tables",
+      "evidence_connected_prefix_consistency"
+    ]
+  },
+  {
+    "id": "rel_bond_composed_of_connection",
+    "source": "term_bond",
+    "relation_type": "composition",
+    "target": "term_atom_bond_connection",
+    "connection_condition": "connected.bond_id corresponds to bond.bond_id.",
+    "description": "A bond is composed of its two atom-end connections; a connection record has no meaning without the bond it belongs to, and every bond yields exactly two connection records.",
+    "evidence": [
+      "evidence_connected_bidirectional"
+    ]
+  },
+  {
+    "id": "rel_atom_composed_of_connection",
+    "source": "term_atom",
+    "relation_type": "composition",
+    "target": "term_atom_bond_connection",
+    "connection_condition": "connected.atom_id and connected.atom_id2 correspond to atom.atom_id.",
+    "description": "An atom participates in zero or more connections; each connection is an atom end of a bond and is meaningless without the atom it anchors.",
+    "evidence": [
+      "evidence_connected_bidirectional",
+      "evidence_unbonded_atoms"
+    ]
+  },
+  {
+    "id": "rel_carcinogenic_is_molecule",
+    "source": "term_carcinogenic_molecule",
+    "relation_type": "hierarchy",
+    "target": "term_molecule",
+    "connection_condition": "",
+    "description": "A carcinogenic molecule is a molecule whose label marks it carcinogenic; the carcinogenic molecules are a proper subset of the molecule records that carry a label.",
+    "evidence": [
+      "evidence_molecule_label_domain",
+      "evidence_molecule_label_coverage"
+    ]
+  },
+  {
+    "id": "rel_non_carcinogenic_is_molecule",
+    "source": "term_non_carcinogenic_molecule",
+    "relation_type": "hierarchy",
+    "target": "term_molecule",
+    "connection_condition": "",
+    "description": "A non-carcinogenic molecule is a molecule whose label marks it as not carcinogenic; these form the complementary labelled subset.",
+    "evidence": [
+      "evidence_molecule_label_domain",
+      "evidence_molecule_label_coverage"
+    ]
+  },
+  {
+    "id": "rel_unbonded_is_atom",
+    "source": "term_unbonded_atom",
+    "relation_type": "hierarchy",
+    "target": "term_atom",
+    "connection_condition": "",
+    "description": "An unbonded atom is a specific kind of atom: one whose atom identifier never appears in a connection record. It is a proper subset of all atoms.",
+    "evidence": [
+      "evidence_unbonded_atoms"
+    ]
+  },
+  {
+    "id": "rel_single_bond_is_bond",
+    "source": "term_single_bond",
+    "relation_type": "hierarchy",
+    "target": "term_bond",
+    "connection_condition": "",
+    "description": "A single bond is a specific kind of bond, distinguished by its bond type code; its value domain is a subset of all bonds.",
+    "evidence": [
+      "evidence_bond_type_domain"
+    ]
+  },
+  {
+    "id": "rel_double_bond_is_bond",
+    "source": "term_double_bond",
+    "relation_type": "hierarchy",
+    "target": "term_bond",
+    "connection_condition": "",
+    "description": "A double bond is a specific kind of bond, distinguished by its bond type code; its value domain is a subset of all bonds.",
+    "evidence": [
+      "evidence_bond_type_domain"
+    ]
+  },
+  {
+    "id": "rel_triple_bond_is_bond",
+    "source": "term_triple_bond",
+    "relation_type": "hierarchy",
+    "target": "term_bond",
+    "connection_condition": "",
+    "description": "A triple bond is a specific kind of bond, distinguished by its bond type code; it is the smallest bond-type subset in the dataset.",
+    "evidence": [
+      "evidence_bond_type_domain",
+      "evidence_triple_bonds"
+    ]
+  },
+  {
+    "id": "rel_molecule_identifier_equivalence",
+    "source": "term_molecule_identifier",
+    "relation_type": "equivalence",
+    "target": "term_molecule",
+    "connection_condition": "molecule.molecule_id, atom.molecule_id, bond.molecule_id and the TRnnn prefix of atom_id and bond_id all carry the same molecule key values.",
+    "description": "The molecule key stored on the molecule record and the molecule key repeated on or embedded in structural records denote the same molecule; a molecule can therefore be reached from any structural record without joining through another identifier.",
+    "evidence": [
+      "evidence_connected_prefix_consistency",
+      "evidence_molecule_id_format"
+    ]
+  },
+  {
+    "id": "rel_molecule_atom_count_derivation",
+    "source": "term_atom",
+    "relation_type": "derivation",
+    "target": "term_molecule_atom_count",
+    "connection_condition": "",
+    "description": "The atom count of a molecule is derived by counting its atoms, that is the number of atom records attributed to the molecule.",
+    "evidence": [
+      "evidence_atoms_per_molecule"
+    ]
+  },
+  {
+    "id": "rel_atom_number_derivation",
+    "source": "term_atom",
+    "relation_type": "derivation",
+    "target": "term_atom_number",
+    "connection_condition": "",
+    "description": "The atom number of an atom within its molecule is derived from its atom identifier by removing the molecule prefix, leaving the within-molecule position.",
+    "evidence": [
+      "evidence_atom_number_position",
+      "evidence_atom_id_format"
+    ]
+  },
+  {
+    "id": "rel_bond_type_share_derivation",
+    "source": "term_bond",
+    "relation_type": "derivation",
+    "target": "term_bond_type_share",
+    "connection_condition": "",
+    "description": "A bond type share is derived from bonds: it is the count of bonds of one bond type in a scope divided by the count of all bonds in the same scope.",
+    "evidence": [
+      "evidence_tr008_bond_types",
+      "evidence_tr010_bond_types"
+    ]
+  },
+  {
+    "id": "rel_element_share_derivation",
+    "source": "term_atom",
+    "relation_type": "derivation",
+    "target": "term_element_share",
+    "connection_condition": "",
+    "description": "An element share is derived from atoms: it is the count of atoms of one element in a scope divided by the count of all atoms in the same scope.",
+    "evidence": [
+      "evidence_atoms_in_double_bond_molecules",
+      "evidence_element_domain"
+    ]
+  },
+  {
+    "id": "rel_majority_bond_type_derivation",
+    "source": "term_bond",
+    "relation_type": "derivation",
+    "target": "term_majority_bond_type",
+    "connection_condition": "",
+    "description": "The majority bond type of a scope is derived from bonds by comparing how many bonds of each bond type the scope contains and selecting the largest group.",
+    "evidence": [
+      "evidence_tr010_bond_types",
+      "evidence_bond_type_domain"
+    ]
+  }
+]

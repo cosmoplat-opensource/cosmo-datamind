@@ -1,0 +1,398 @@
+[
+  {
+    "id": "term_post",
+    "name": "Post",
+    "type": "entity",
+    "definition": "A content record in the posts table. Every row is one post; the PostTypeId value determines whether it is a question, an answer, or one of the auxiliary post types (tag wiki, tag excerpt, moderator nomination and similar).",
+    "scope": "All analysis over the posts table; the parent entity of questions, answers, comments, votes and revisions.",
+    "aliases": [
+      "posts",
+      "post record"
+    ],
+    "evidence": [
+      "ev_post_type_distribution"
+    ]
+  },
+  {
+    "id": "term_question",
+    "name": "Question",
+    "type": "entity",
+    "definition": "A post with PostTypeId = 1. It is the only post type that carries Title, Tags, ViewCount, AnswerCount and FavoriteCount, has no ParentId, and is the only post type that can carry AcceptedAnswerId or ClosedDate.",
+    "scope": "Question-level analysis: topical coverage, acceptance, closure, viewership.",
+    "aliases": [
+      "questions",
+      "question post",
+      "thread root"
+    ],
+    "evidence": [
+      "ev_post_type_distribution",
+      "ev_question_only_columns"
+    ]
+  },
+  {
+    "id": "term_answer",
+    "name": "Answer",
+    "type": "entity",
+    "definition": "A post with PostTypeId = 2. It has no Title and no Tags, and it points at the question it replies to through ParentId.",
+    "scope": "Answer-level analysis: answer volume, answer score, accepted-answer identification.",
+    "aliases": [
+      "answers",
+      "answer post",
+      "reply"
+    ],
+    "evidence": [
+      "ev_post_type_distribution",
+      "ev_answer_count_verification"
+    ]
+  },
+  {
+    "id": "term_accepted_answer",
+    "name": "Accepted Answer",
+    "type": "concept",
+    "definition": "The answer designated as accepted for a question. It is recorded on the question row in posts.AcceptedAnswerId, whose value is the Id of one of that question's answers. It can additionally appear as a vote row with VoteTypeId = 1, but that second representation covers only a small subset.",
+    "scope": "Acceptance-rate, best-answer and question-resolution analysis.",
+    "aliases": [
+      "accepted answer id",
+      "accepted",
+      "best answer",
+      "AcceptedAnswerId"
+    ],
+    "evidence": [
+      "ev_accepted_answer_linkage",
+      "ev_votes_distribution_and_span"
+    ]
+  },
+  {
+    "id": "term_tag",
+    "name": "Tag",
+    "type": "entity",
+    "definition": "A topical label. Each tag has one row in the tags table, and the same tag name is also embedded in the denormalized posts.Tags text of every question that carries it.",
+    "scope": "Topical grouping and comparison of questions.",
+    "aliases": [
+      "tags",
+      "TagName",
+      "topic label"
+    ],
+    "evidence": [
+      "ev_tags_overview"
+    ]
+  },
+  {
+    "id": "term_user",
+    "name": "User",
+    "type": "entity",
+    "definition": "A registered account in the users table, identified by Id. Users own posts, author comments and votes, and receive badge awards.",
+    "scope": "Author, reputation and contribution analysis.",
+    "aliases": [
+      "users",
+      "account",
+      "member"
+    ],
+    "evidence": [
+      "ev_user_aggregates",
+      "ev_community_owned_and_system_user"
+    ]
+  },
+  {
+    "id": "term_comment",
+    "name": "Comment",
+    "type": "entity",
+    "definition": "A comment record in the comments table. Each comment is attached to exactly one post through PostId and may itself carry a score and an author.",
+    "scope": "Discussion-volume and clarification analysis around posts.",
+    "aliases": [
+      "comments",
+      "comment record"
+    ],
+    "evidence": [
+      "ev_comments_post_type"
+    ]
+  },
+  {
+    "id": "term_vote",
+    "name": "Vote",
+    "type": "entity",
+    "definition": "A single vote event recorded in the votes table, characterised by VoteTypeId and optionally carrying a BountyAmount. Vote rows are the only per-event record of voting behaviour in this database.",
+    "scope": "Voting-behaviour and bounty analysis; note the table is only a partial snapshot of the site's voting history.",
+    "aliases": [
+      "votes",
+      "vote record",
+      "vote event"
+    ],
+    "evidence": [
+      "ev_votes_distribution_and_span"
+    ]
+  },
+  {
+    "id": "term_badge",
+    "name": "Badge Award",
+    "type": "entity",
+    "definition": "One row in the badges table: the award of a named badge to one user at one point in time.",
+    "scope": "User recognition and achievement analysis.",
+    "aliases": [
+      "badges",
+      "badge"
+    ],
+    "evidence": [
+      "ev_badges_overview"
+    ]
+  },
+  {
+    "id": "term_post_link",
+    "name": "Post Link",
+    "type": "entity",
+    "definition": "A directed link record in the postLinks table connecting a source post (PostId) to a related post (RelatedPostId), classified by LinkTypeId.",
+    "scope": "Relationship analysis between posts, including duplication.",
+    "aliases": [
+      "postLinks",
+      "link",
+      "linked post"
+    ],
+    "evidence": [
+      "ev_link_types"
+    ]
+  },
+  {
+    "id": "term_post_revision",
+    "name": "Post Revision",
+    "type": "entity",
+    "definition": "One row in the postHistory table: a recorded change to a post (creation of a field, edit, rollback, closure, lock, or similar), carrying the affected post, a type, a timestamp and a text payload for some types.",
+    "scope": "Edit-history, revision-count and moderation-timeline analysis.",
+    "aliases": [
+      "postHistory",
+      "history entry",
+      "revision",
+      "edit record"
+    ],
+    "evidence": [
+      "ev_history_types_and_revision_match"
+    ]
+  },
+  {
+    "id": "term_bounty",
+    "name": "Bounty",
+    "type": "concept",
+    "definition": "A reputation bounty placed on a post, represented as vote rows that carry a non-null BountyAmount. It forms a start/close pair within the votes table.",
+    "scope": "Bounty-offering analysis; only available inside the narrow votes snapshot.",
+    "aliases": [
+      "bounties",
+      "BountyAmount",
+      "bounty offer"
+    ],
+    "evidence": [
+      "ev_bounty_amount"
+    ]
+  },
+  {
+    "id": "term_reputation",
+    "name": "Reputation",
+    "type": "metric",
+    "definition": "The lifetime reputation score stored on a user row, ranging from 1 to 87393 in this database. It is a maintained aggregate, not a quantity that can be recomputed from the votes table.",
+    "scope": "User ranking and expertise-proxy analysis.",
+    "aliases": [
+      "users.Reputation",
+      "rep score",
+      "user reputation"
+    ],
+    "evidence": [
+      "ev_user_aggregates"
+    ]
+  },
+  {
+    "id": "term_post_score",
+    "name": "Post Score",
+    "type": "metric",
+    "definition": "The net score denormalized on a post row. It is a maintained value covering the full site history and is not reproducible from the votes table.",
+    "scope": "Popularity and quality ranking of questions and answers.",
+    "aliases": [
+      "posts.Score",
+      "score",
+      "net votes"
+    ],
+    "evidence": [
+      "ev_score_vs_votes"
+    ]
+  },
+  {
+    "id": "term_view_count",
+    "name": "View Count",
+    "type": "metric",
+    "definition": "The number of times a question has been viewed, stored only on question rows. It is null for every answer and for the auxiliary post types.",
+    "scope": "Reach and attention analysis of questions.",
+    "aliases": [
+      "posts.ViewCount",
+      "views",
+      "viewcount"
+    ],
+    "evidence": [
+      "ev_question_only_columns"
+    ]
+  },
+  {
+    "id": "term_answer_count",
+    "name": "Answer Count",
+    "type": "metric",
+    "definition": "The number of answers a question has, denormalized on the question row. It was verified to agree exactly with the number of PostTypeId = 2 posts whose ParentId equals the question Id, for all questions in the database.",
+    "scope": "Answer-volume analysis per question; not defined for answers.",
+    "aliases": [
+      "posts.AnswerCount",
+      "number of answers",
+      "answers per question"
+    ],
+    "evidence": [
+      "ev_answer_count_verification",
+      "ev_question_only_columns"
+    ]
+  },
+  {
+    "id": "term_tag_usage_count",
+    "name": "Tag Usage Count",
+    "type": "metric",
+    "definition": "The number of questions a tag labels, precomputed on the tag row. It approximates, but does not exactly equal, a recount over the denormalized posts.Tags text.",
+    "scope": "Tag popularity ranking.",
+    "aliases": [
+      "tags.Count",
+      "tag count",
+      "tag frequency"
+    ],
+    "evidence": [
+      "ev_tags_overview"
+    ]
+  },
+  {
+    "id": "term_comment_score",
+    "name": "Comment Score",
+    "type": "metric",
+    "definition": "The score stored on a comment row.",
+    "scope": "Comment-quality analysis.",
+    "aliases": [
+      "comments.Score",
+      "comment score"
+    ],
+    "evidence": [
+      "ev_comments_post_type"
+    ]
+  },
+  {
+    "id": "term_post_type",
+    "name": "Post Type",
+    "type": "dimension",
+    "definition": "The posts.PostTypeId discriminator that separates questions (1), answers (2) and the auxiliary post types (3, 4, 5, 6, 7). The value governs which columns of posts are populated.",
+    "scope": "Any analysis that must separate questions from answers or exclude wiki/nomination posts.",
+    "aliases": [
+      "PostTypeId",
+      "post kind",
+      "post class"
+    ],
+    "evidence": [
+      "ev_post_type_distribution",
+      "ev_question_only_columns"
+    ]
+  },
+  {
+    "id": "term_vote_type",
+    "name": "Vote Type",
+    "type": "dimension",
+    "definition": "The votes.VoteTypeId discriminator that distinguishes accepted, up, down, favourite, moderator-review, approval and bounty vote events.",
+    "scope": "Vote-behaviour breakdowns.",
+    "aliases": [
+      "VoteTypeId",
+      "vote kind"
+    ],
+    "evidence": [
+      "ev_votes_distribution_and_span",
+      "ev_bounty_amount"
+    ]
+  },
+  {
+    "id": "term_post_history_type",
+    "name": "Post History Type",
+    "type": "dimension",
+    "definition": "The postHistory.PostHistoryTypeId discriminator classifying each recorded change to a post; 25 distinct values are present, the largest being the body- and tags-related creation and edit types.",
+    "scope": "Revision and moderation timeline analysis.",
+    "aliases": [
+      "PostHistoryTypeId",
+      "history kind",
+      "revision type"
+    ],
+    "evidence": [
+      "ev_history_types_and_revision_match"
+    ]
+  },
+  {
+    "id": "term_post_link_type",
+    "name": "Post Link Type",
+    "type": "dimension",
+    "definition": "The postLinks.LinkTypeId discriminator; value 1 marks a general link between two posts and value 3 marks a duplicate relationship whose source post is almost always closed.",
+    "scope": "Post-to-post relationship and duplication analysis.",
+    "aliases": [
+      "LinkTypeId",
+      "link kind"
+    ],
+    "evidence": [
+      "ev_link_types"
+    ]
+  },
+  {
+    "id": "term_post_creation_time",
+    "name": "Post Creation Time",
+    "type": "dimension",
+    "definition": "The timestamp at which a post was created. It is exposed under the column name CreaionDate on posts; the spelling omits the 't' and differs from the CreationDate column used by the other tables.",
+    "scope": "Time-bucketing and trend analysis of posts.",
+    "aliases": [
+      "CreaionDate",
+      "posts creation date",
+      "created at"
+    ],
+    "evidence": [
+      "ev_schema_column_spelling",
+      "ev_date_ranges"
+    ]
+  },
+  {
+    "id": "term_post_last_activity_time",
+    "name": "Post Last Activity Time",
+    "type": "dimension",
+    "definition": "The timestamp of the last activity on a post, exposed under the column name LasActivityDate on posts.",
+    "scope": "Recency and staleness analysis of posts.",
+    "aliases": [
+      "LasActivityDate",
+      "last activity",
+      "last active"
+    ],
+    "evidence": [
+      "ev_schema_column_spelling",
+      "ev_date_ranges"
+    ]
+  },
+  {
+    "id": "term_closure_time",
+    "name": "Question Closure Time",
+    "type": "dimension",
+    "definition": "The timestamp at which a post was closed, stored in posts.ClosedDate. It is populated for closed questions only.",
+    "scope": "Moderation and question-lifecycle analysis.",
+    "aliases": [
+      "ClosedDate",
+      "closed at",
+      "closure"
+    ],
+    "evidence": [
+      "ev_link_types",
+      "ev_post_type_distribution"
+    ]
+  },
+  {
+    "id": "term_community_owned_time",
+    "name": "Community Owned Time",
+    "type": "dimension",
+    "definition": "The timestamp at which a post became community-owned (wiki-style collective ownership), stored in posts.CommunityOwnedDate. It is independent of ownership by the system 'Community' account.",
+    "scope": "Collective-ownership analysis.",
+    "aliases": [
+      "CommunityOwnedDate",
+      "community wiki",
+      "community owned"
+    ],
+    "evidence": [
+      "ev_community_owned_and_system_user"
+    ]
+  }
+]

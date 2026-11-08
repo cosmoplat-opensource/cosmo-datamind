@@ -1,0 +1,432 @@
+[
+  {
+    "id": "map_patient_row",
+    "term_id": "term_patient",
+    "database_source": "thrombosis_prediction",
+    "table": "Patient",
+    "column": "ID",
+    "semantic_filter": "",
+    "aggregation_semantics": "count of distinct patient identifiers for cohort size; one row represents one individual",
+    "grain": "one row per patient",
+    "validation": "Patient declares ID as its primary key and holds 1238 rows with 1238 distinct identifiers.",
+    "evidence_refs": [
+      "ev_schema_tables",
+      "ev_row_counts"
+    ]
+  },
+  {
+    "id": "map_examination_row",
+    "term_id": "term_examination",
+    "database_source": "thrombosis_prediction",
+    "table": "Examination",
+    "column": "ID",
+    "semantic_filter": "the pair (ID, `Examination Date`) identifies an assessment event",
+    "aggregation_semantics": "count of rows for the number of assessment events; several rows may share one identifier",
+    "grain": "one row per assessment event; approximately one event per patient",
+    "validation": "806 rows over 763 distinct identifiers with six duplicated (ID, 'Examination Date') pairs and 36 rows whose identifier is NULL.",
+    "evidence_refs": [
+      "ev_examination_grain",
+      "ev_schema_tables"
+    ]
+  },
+  {
+    "id": "map_laboratory_row",
+    "term_id": "term_laboratory_record",
+    "database_source": "thrombosis_prediction",
+    "table": "Laboratory",
+    "column": "ID",
+    "semantic_filter": "the declared primary key is the pair (ID, Date)",
+    "aggregation_semantics": "count of rows for the number of test panels; group by identifier for per-patient series",
+    "grain": "one row per patient per date; several rows per patient over time",
+    "validation": "13908 rows over 302 patients with no duplicate (ID, Date) pairs.",
+    "evidence_refs": [
+      "ev_laboratory_grain",
+      "ev_row_counts"
+    ]
+  },
+  {
+    "id": "map_thrombosis_grade",
+    "term_id": "term_thrombosis",
+    "database_source": "thrombosis_prediction",
+    "table": "Examination",
+    "column": "Thrombosis",
+    "semantic_filter": "",
+    "aggregation_semantics": "compare grades individually or count rows above zero; do not sum grades as if they were quantities and do not average them without stating that the scale is ordinal",
+    "grain": "one grade per examination",
+    "validation": "Values restricted to 0, 1, 2 and 3 with no NULLs.",
+    "evidence_refs": [
+      "ev_thrombosis_distribution"
+    ]
+  },
+  {
+    "id": "map_recorded_symptom",
+    "term_id": "term_thrombotic_symptom",
+    "database_source": "thrombosis_prediction",
+    "table": "Examination",
+    "column": "Symptoms",
+    "semantic_filter": "only present on rows whose thrombosis grade is above zero",
+    "aggregation_semantics": "list or count the distinct manifestation texts; not a controlled vocabulary so counting must normalise spelling and case",
+    "grain": "one free-text note per examination in which an event was recorded",
+    "validation": "726 of 806 rows are NULL and every non-NULL row has a thrombosis grade above zero.",
+    "evidence_refs": [
+      "ev_thrombosis_symptoms_coupling"
+    ]
+  },
+  {
+    "id": "map_patient_diagnosis",
+    "term_id": "term_patient_diagnosis",
+    "database_source": "thrombosis_prediction",
+    "table": "Patient",
+    "column": "Diagnosis",
+    "semantic_filter": "the label may hold several diseases separated by commas or control characters",
+    "aggregation_semantics": "count patients whose label contains a given disease token; multi-label values mean the counts of different tokens do not sum to the cohort size",
+    "grain": "one multi-label text value per patient",
+    "validation": "155 distinct values; leading tokens SJS 321, SLE 279, RA 213, BEHCET 93, PSS 87.",
+    "evidence_refs": [
+      "ev_patient_diagnosis_tokens",
+      "ev_diagnosis_multilabel_encoding"
+    ]
+  },
+  {
+    "id": "map_examination_diagnosis",
+    "term_id": "term_examination_diagnosis",
+    "database_source": "thrombosis_prediction",
+    "table": "Examination",
+    "column": "Diagnosis",
+    "semantic_filter": "the label may hold several diseases and is absent on a substantial minority of rows",
+    "aggregation_semantics": "count examinations whose label contains a given disease token; NULL rows are examinations with no recorded disease attribution",
+    "grain": "one multi-label text value per examination",
+    "validation": "181 distinct non-NULL values; 331 of 806 rows are NULL; leading tokens SLE 170, SjS 101, RA 48.",
+    "evidence_refs": [
+      "ev_examination_diagnosis_tokens"
+    ]
+  },
+  {
+    "id": "map_sex",
+    "term_id": "term_sex",
+    "database_source": "thrombosis_prediction",
+    "table": "Patient",
+    "column": "SEX",
+    "semantic_filter": "the empty string encodes an unrecorded value and is not NULL",
+    "aggregation_semantics": "count patients per code with the empty-string group reported separately",
+    "grain": "one code per patient",
+    "validation": "F 1023, M 202, empty string 13, no NULLs.",
+    "evidence_refs": [
+      "ev_sex_values"
+    ]
+  },
+  {
+    "id": "map_birth_date",
+    "term_id": "term_birth_date",
+    "database_source": "thrombosis_prediction",
+    "table": "Patient",
+    "column": "Birthday",
+    "semantic_filter": "",
+    "aggregation_semantics": "use as the subtrahend when computing age from a visit date",
+    "grain": "one date per patient",
+    "validation": "One NULL; observed range 1912-08-28 to 2007-05-28.",
+    "evidence_refs": [
+      "ev_date_ranges",
+      "ev_patient_date_fields"
+    ]
+  },
+  {
+    "id": "map_first_visit_date",
+    "term_id": "term_first_visit_date",
+    "database_source": "thrombosis_prediction",
+    "table": "Patient",
+    "column": "First Date",
+    "semantic_filter": "the column is undocumented, so its use as a start-of-record date is an assumption to state",
+    "aggregation_semantics": "use as a per-patient reference point for chronological framing",
+    "grain": "one date per patient when present",
+    "validation": "251 of 1238 rows are NULL; observed range 1972-08-02 to 1998-08-28.",
+    "evidence_refs": [
+      "ev_patient_date_fields",
+      "ev_date_ranges"
+    ]
+  },
+  {
+    "id": "map_ana_titre",
+    "term_id": "term_antinuclear_antibody",
+    "database_source": "thrombosis_prediction",
+    "table": "Examination",
+    "column": "ANA",
+    "semantic_filter": "0 encodes a negative result rather than an absence of testing",
+    "aggregation_semantics": "compare titre steps ordinally; a mean over titre values is not meaningful because the series is a doubling dilution ladder",
+    "grain": "one titre step per examination",
+    "validation": "Values are 0, 4, 16, 64, 256, 1024, 4096 with a single 4094 outlier and 38 NULLs.",
+    "evidence_refs": [
+      "ev_ana_titre"
+    ]
+  },
+  {
+    "id": "map_ana_pattern",
+    "term_id": "term_ana_pattern",
+    "database_source": "thrombosis_prediction",
+    "table": "Examination",
+    "column": "ANA Pattern",
+    "semantic_filter": "values are letter combinations that must be normalised before comparison",
+    "aggregation_semantics": "count occurrences of a letter code after splitting the combination and upper-casing it",
+    "grain": "one pattern code string per examination",
+    "validation": "15 distinct values; the letters S, P, D and N appear; 261 NULLs.",
+    "evidence_refs": [
+      "ev_ana_pattern"
+    ]
+  },
+  {
+    "id": "map_acl_igg",
+    "term_id": "term_acl_igg",
+    "database_source": "thrombosis_prediction",
+    "table": "Examination",
+    "column": "aCL IgG",
+    "semantic_filter": "",
+    "aggregation_semantics": "report the distribution and extreme values separately from the body of low results",
+    "grain": "one measurement per examination",
+    "validation": "Range 0.0 to 2150.3 with 753 of 806 values below 8.",
+    "evidence_refs": [
+      "ev_acl_igg_distribution"
+    ]
+  },
+  {
+    "id": "map_acl_igm",
+    "term_id": "term_acl_igm",
+    "database_source": "thrombosis_prediction",
+    "table": "Examination",
+    "column": "aCL IgM",
+    "semantic_filter": "the maximum value is a suspected data error and should be excluded from descriptive statistics or reported explicitly",
+    "aggregation_semantics": "report the distribution and extreme values separately from the body of low results",
+    "grain": "one measurement per examination",
+    "validation": "Range 0.0 to 187122.0 with 730 of 806 values below 8.",
+    "evidence_refs": [
+      "ev_acl_igm_distribution"
+    ]
+  },
+  {
+    "id": "map_acl_iga",
+    "term_id": "term_acl_iga",
+    "database_source": "thrombosis_prediction",
+    "table": "Examination",
+    "column": "aCL IgA",
+    "semantic_filter": "",
+    "aggregation_semantics": "report the distribution on its own integer scale, not jointly with the IgG and IgM isotypes",
+    "grain": "one measurement per examination",
+    "validation": "52 distinct integral values; 409 of 806 are exactly zero.",
+    "evidence_refs": [
+      "ev_acl_iga_distribution"
+    ]
+  },
+  {
+    "id": "map_lupus_anticoagulant",
+    "term_id": "term_lupus_anticoagulant",
+    "database_source": "thrombosis_prediction",
+    "table": "Examination",
+    "column": "LAC",
+    "semantic_filter": "NULL means the assay was not performed and must not be treated as negative",
+    "aggregation_semantics": "count positives among rows where the assay was performed, reporting the untested rows separately",
+    "grain": "one result per examination",
+    "validation": "Positive 75, negative 147, NULL 584.",
+    "evidence_refs": [
+      "ev_lac_values"
+    ]
+  },
+  {
+    "id": "map_kct",
+    "term_id": "term_kct",
+    "database_source": "thrombosis_prediction",
+    "table": "Examination",
+    "column": "KCT",
+    "semantic_filter": "NULL means the assay was not performed",
+    "aggregation_semantics": "count positives among rows where the assay was performed",
+    "grain": "one result per examination",
+    "validation": "The column is non-NULL on exactly 146 rows, all of which also carry an RVVT result.",
+    "evidence_refs": [
+      "ev_kct_rvvt_coupling"
+    ]
+  },
+  {
+    "id": "map_rvvt",
+    "term_id": "term_rvvt",
+    "database_source": "thrombosis_prediction",
+    "table": "Examination",
+    "column": "RVVT",
+    "semantic_filter": "NULL means the assay was not performed",
+    "aggregation_semantics": "count positives among rows where the assay was performed",
+    "grain": "one result per examination",
+    "validation": "The column is non-NULL on exactly 146 rows, all of which also carry a KCT result.",
+    "evidence_refs": [
+      "ev_kct_rvvt_coupling"
+    ]
+  },
+  {
+    "id": "map_igg",
+    "term_id": "term_igg",
+    "database_source": "thrombosis_prediction",
+    "table": "Laboratory",
+    "column": "IGG",
+    "semantic_filter": "",
+    "aggregation_semantics": "report per-patient summary statistics over time rather than a single pooled mean, because patients contribute many records",
+    "grain": "one measurement per laboratory record",
+    "validation": "2680 non-NULL of 13908; range 3 to 6510; median 1666.",
+    "evidence_refs": [
+      "ev_immunoglobulin_ranges"
+    ]
+  },
+  {
+    "id": "map_iga",
+    "term_id": "term_iga",
+    "database_source": "thrombosis_prediction",
+    "table": "Laboratory",
+    "column": "IGA",
+    "semantic_filter": "",
+    "aggregation_semantics": "report per-patient summary statistics over time rather than a single pooled mean",
+    "grain": "one measurement per laboratory record",
+    "validation": "2680 non-NULL of 13908; range 1 to 1765; median 343.",
+    "evidence_refs": [
+      "ev_immunoglobulin_ranges"
+    ]
+  },
+  {
+    "id": "map_igm",
+    "term_id": "term_igm",
+    "database_source": "thrombosis_prediction",
+    "table": "Laboratory",
+    "column": "IGM",
+    "semantic_filter": "",
+    "aggregation_semantics": "report per-patient summary statistics over time rather than a single pooled mean",
+    "grain": "one measurement per laboratory record",
+    "validation": "2678 non-NULL of 13908; range 0 to 1573; median 152.",
+    "evidence_refs": [
+      "ev_immunoglobulin_ranges"
+    ]
+  },
+  {
+    "id": "map_crp",
+    "term_id": "term_crp",
+    "database_source": "thrombosis_prediction",
+    "table": "Laboratory",
+    "column": "CRP",
+    "semantic_filter": "the column is text and mixes negative, threshold, semi-quantitative and decimal encodings, so it must be parsed before any comparison",
+    "aggregation_semantics": "report counts by encoding class first; only the decimal-encoded subset supports numeric aggregation, and threshold values must be reported as censored rather than as exact numbers",
+    "grain": "one result per laboratory record",
+    "validation": "211 distinct values across four encodings; 2453 NULLs.",
+    "evidence_refs": [
+      "ev_crp_encoding"
+    ]
+  },
+  {
+    "id": "map_rheumatoid_factor",
+    "term_id": "term_rheumatoid_factor",
+    "database_source": "thrombosis_prediction",
+    "table": "Laboratory",
+    "column": "RF",
+    "semantic_filter": "values prefixed with '<' are below the assay detection limit and are censored rather than exact",
+    "aggregation_semantics": "separate censored from uncensored values before summarising; report the detection threshold used",
+    "grain": "one result per laboratory record",
+    "validation": "903 distinct text values; '<40' is the single most frequent with 606 occurrences.",
+    "evidence_refs": [
+      "ev_rf_threshold"
+    ]
+  },
+  {
+    "id": "map_urinary_protein",
+    "term_id": "term_urinary_protein",
+    "database_source": "thrombosis_prediction",
+    "table": "Laboratory",
+    "column": "U-PRO",
+    "semantic_filter": "the value space is not a single scale: it mixes a negative marker, a trace marker, an ordinal grade and larger amount tokens",
+    "aggregation_semantics": "count records per token class and state explicitly which tokens are treated as positive",
+    "grain": "one result per laboratory record",
+    "validation": "16 distinct values; '-' 4579, '0' 2748, 'TR' 866, then graded and amount-like tokens; 4241 NULLs.",
+    "evidence_refs": [
+      "ev_urinary_protein_categories"
+    ]
+  },
+  {
+    "id": "map_creatinine",
+    "term_id": "term_creatinine",
+    "database_source": "thrombosis_prediction",
+    "table": "Laboratory",
+    "column": "CRE",
+    "semantic_filter": "",
+    "aggregation_semantics": "per-patient summary statistics over time; the upper tail is well populated so an explicit cutoff must accompany any high or low grouping",
+    "grain": "one measurement per laboratory record",
+    "validation": "11253 non-NULL; range 0.1 to 17.1; median 0.7; 577 rows above 1.2.",
+    "evidence_refs": [
+      "ev_laboratory_numeric_ranges",
+      "ev_platelet_distribution"
+    ]
+  },
+  {
+    "id": "map_platelet_count",
+    "term_id": "term_platelet_count",
+    "database_source": "thrombosis_prediction",
+    "table": "Laboratory",
+    "column": "PLT",
+    "semantic_filter": "",
+    "aggregation_semantics": "per-patient summary statistics over time, reporting the cutoff used for any low or high grouping",
+    "grain": "one measurement per laboratory record",
+    "validation": "11287 non-NULL; range 5 to 5844; median 248; 975 rows below 150 and 875 above 400.",
+    "evidence_refs": [
+      "ev_laboratory_numeric_ranges",
+      "ev_platelet_distribution"
+    ]
+  },
+  {
+    "id": "map_dna_antibody",
+    "term_id": "term_dna_antibody",
+    "database_source": "thrombosis_prediction",
+    "table": "Laboratory",
+    "column": "DNA",
+    "semantic_filter": "the companion column DNA-II is empty in every row and must not be used",
+    "aggregation_semantics": "count or compare only the small set of populated text values; the column is too sparse for distributional claims",
+    "grain": "one result per laboratory record when present",
+    "validation": "69 non-NULL of 13908 with 66 distinct values; Laboratory.\"DNA-II\" is NULL in all 13908 rows.",
+    "evidence_refs": [
+      "ev_dna_columns"
+    ]
+  },
+  {
+    "id": "map_dna_ii_empty",
+    "term_id": "term_dna_antibody",
+    "database_source": "thrombosis_prediction",
+    "table": "Laboratory",
+    "column": "DNA-II",
+    "semantic_filter": "excluded from use because the column carries no information",
+    "aggregation_semantics": "none; the column is uniformly NULL",
+    "grain": "one column value per laboratory record, all NULL",
+    "validation": "SELECT COUNT(\"DNA-II\") FROM Laboratory returns 0.",
+    "evidence_refs": [
+      "ev_dna_columns"
+    ]
+  },
+  {
+    "id": "map_examination_date",
+    "term_id": "term_examination",
+    "database_source": "thrombosis_prediction",
+    "table": "Examination",
+    "column": "Examination Date",
+    "semantic_filter": "36 rows have a NULL date alongside a NULL identifier",
+    "aggregation_semantics": "order and bucket assessment events chronologically within the 1989 to 1998 window",
+    "grain": "one date per examination row",
+    "validation": "Range 1989-04-18 to 1998-04-17.",
+    "evidence_refs": [
+      "ev_date_ranges",
+      "ev_examination_grain"
+    ]
+  },
+  {
+    "id": "map_laboratory_date",
+    "term_id": "term_laboratory_record",
+    "database_source": "thrombosis_prediction",
+    "table": "Laboratory",
+    "column": "Date",
+    "semantic_filter": "the date is part of the declared primary key and is never NULL",
+    "aggregation_semantics": "order laboratory records chronologically and derive intervals between consecutive records per patient",
+    "grain": "one date per laboratory record",
+    "validation": "Range 1981-01-27 to 1999-03-04; no duplicate (ID, Date) pairs.",
+    "evidence_refs": [
+      "ev_date_ranges",
+      "ev_laboratory_grain"
+    ]
+  }
+]

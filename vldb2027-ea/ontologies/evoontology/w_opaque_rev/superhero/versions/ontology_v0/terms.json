@@ -1,0 +1,337 @@
+[
+  {
+    "id": "term_superhero",
+    "name": "Superhero",
+    "type": "entity",
+    "definition": "A comic-book character record. Each row of the superhero table describes one superhero through a display name, full name, gender, eye/hair/skin colours, race, publisher, moral alignment, height and weight.",
+    "scope": "Character-level analysis of the superhero universe.",
+    "aliases": [
+      "superhero",
+      "superheroes",
+      "hero",
+      "heroes",
+      "character",
+      "superhero record"
+    ],
+    "evidence": [
+      "ev_001",
+      "ev_003",
+      "ev_013"
+    ]
+  },
+  {
+    "id": "term_superhero_name",
+    "name": "Superhero Name",
+    "type": "dimension",
+    "definition": "The popular display name of a superhero, e.g. '3-D Man' or 'Copycat'. It is the name normally used when a question asks 'which superhero' or asks to list superhero names.",
+    "scope": "Identifying or listing superheroes by their popular name.",
+    "aliases": [
+      "superhero name",
+      "super hero name",
+      "hero name",
+      "name",
+      "which superhero"
+    ],
+    "evidence": [
+      "ev_003",
+      "ev_009"
+    ]
+  },
+  {
+    "id": "term_full_name",
+    "name": "Full Name",
+    "type": "dimension",
+    "definition": "The civilian identity or real full name of a superhero, e.g. 'Charles Chandler' for 3-D Man and 'Emil Blonsky' for Abomination. It is not the same concept as the superhero name.",
+    "scope": "Identifying superheroes by their real name; disambiguating duplicated superhero names.",
+    "aliases": [
+      "full name",
+      "real name",
+      "civilian name",
+      "secret identity",
+      "person name"
+    ],
+    "evidence": [
+      "ev_003",
+      "ev_009"
+    ]
+  },
+  {
+    "id": "term_gender",
+    "name": "Gender",
+    "type": "category",
+    "definition": "The gender category of a superhero, stored as a numeric code in the superhero record and labelled in the gender table: 1 = Male, 2 = Female, 3 = N/A.",
+    "scope": "Gender-based filtering, grouping and counting of superheroes.",
+    "aliases": [
+      "gender",
+      "sex",
+      "male",
+      "female",
+      "male superheroes",
+      "female superheroes"
+    ],
+    "evidence": [
+      "ev_002",
+      "ev_007"
+    ]
+  },
+  {
+    "id": "term_publisher",
+    "name": "Publisher",
+    "type": "entity",
+    "definition": "The publishing company that publishes a superhero (e.g. Marvel Comics, DC Comics, Dark Horse Comics, Star Trek). A publisher has an identifier and a verbatim company name and is referenced from each superhero record.",
+    "scope": "Publisher-level grouping, filtering and comparison.",
+    "aliases": [
+      "publisher",
+      "publishers",
+      "publishing company",
+      "publisher name",
+      "publisher id",
+      "comics publisher"
+    ],
+    "evidence": [
+      "ev_002",
+      "ev_011",
+      "ev_015"
+    ]
+  },
+  {
+    "id": "term_race",
+    "name": "Race",
+    "type": "category",
+    "definition": "The fictional species or race of a superhero, stored as free-text names such as 'Mutant', 'Human / Radiation' or 'Alien', referenced by code from the superhero record. The value '-' marks an unspecified race.",
+    "scope": "Race-based filtering and reporting.",
+    "aliases": [
+      "race",
+      "species",
+      "origin",
+      "race name",
+      "unknown race"
+    ],
+    "evidence": [
+      "ev_003",
+      "ev_010"
+    ]
+  },
+  {
+    "id": "term_alignment",
+    "name": "Alignment",
+    "type": "category",
+    "definition": "The moral alignment of a superhero: 1 = Good, 2 = Bad, 3 = Neutral, 4 = N/A. It distinguishes heroes and villains at the moral level.",
+    "scope": "Hero/villain classification and alignment-based counting.",
+    "aliases": [
+      "alignment",
+      "good",
+      "bad",
+      "neutral",
+      "evil",
+      "morality"
+    ],
+    "evidence": [
+      "ev_002",
+      "ev_007"
+    ]
+  },
+  {
+    "id": "term_villain",
+    "name": "Villain",
+    "type": "category",
+    "definition": "A character of the superhero universe whose alignment value is 'Bad'. It is a subset of the alignment value domain, not a separate entity with its own table.",
+    "scope": "Counting or filtering villains.",
+    "aliases": [
+      "villain",
+      "villains",
+      "bad guy",
+      "super villain",
+      "supervillain",
+      "evil character"
+    ],
+    "evidence": [
+      "ev_002",
+      "ev_007"
+    ]
+  },
+  {
+    "id": "term_colour",
+    "name": "Colour",
+    "type": "category",
+    "definition": "A shared colour value list referenced by three distinct role columns: eye colour, hair colour and skin colour. Colour id 1 is the sentinel 'No Colour', meaning an unspecified colour rather than white.",
+    "scope": "Interpreting colour labels and the 'No Colour' sentinel across the three colour roles.",
+    "aliases": [
+      "colour",
+      "color",
+      "colours",
+      "colors",
+      "colour code",
+      "colour list"
+    ],
+    "evidence": [
+      "ev_002",
+      "ev_004"
+    ]
+  },
+  {
+    "id": "term_eye_colour",
+    "name": "Eye Colour",
+    "type": "dimension",
+    "definition": "The eye colour of a superhero, referencing the shared colour list. A value of 'No Colour' means the eye colour is unspecified or absent.",
+    "scope": "Eye-colour filtering, including questions about superheroes with no eye colour.",
+    "aliases": [
+      "eye colour",
+      "eye color",
+      "eyes",
+      "eye colour value"
+    ],
+    "evidence": [
+      "ev_004"
+    ]
+  },
+  {
+    "id": "term_hair_colour",
+    "name": "Hair Colour",
+    "type": "dimension",
+    "definition": "The hair colour of a superhero, referencing the shared colour list. A value of 'No Colour' means the hair colour is unspecified (e.g. bald or unrecorded).",
+    "scope": "Hair-colour filtering.",
+    "aliases": [
+      "hair colour",
+      "hair color",
+      "hair"
+    ],
+    "evidence": [
+      "ev_004"
+    ]
+  },
+  {
+    "id": "term_skin_colour",
+    "name": "Skin Colour",
+    "type": "dimension",
+    "definition": "The skin colour of a superhero, referencing the shared colour list. It carries values such as Green, Blue or Red used to describe non-human characters.",
+    "scope": "Skin-colour filtering, including 'green-skinned' style questions.",
+    "aliases": [
+      "skin colour",
+      "skin color",
+      "skin",
+      "green-skinned",
+      "green skinned"
+    ],
+    "evidence": [
+      "ev_003",
+      "ev_004"
+    ]
+  },
+  {
+    "id": "term_attribute",
+    "name": "Attribute",
+    "type": "category",
+    "definition": "One of six rated ability categories a superhero can be scored on: Intelligence, Strength, Speed, Durability, Power and Combat. An attribute is a rating dimension and is a different concept from a named superpower.",
+    "scope": "Attribute-rating analysis and attribute-name filtering.",
+    "aliases": [
+      "attribute",
+      "attributes",
+      "ability",
+      "stats",
+      "strength",
+      "speed",
+      "durability",
+      "power",
+      "combat",
+      "intelligence"
+    ],
+    "evidence": [
+      "ev_002",
+      "ev_005"
+    ]
+  },
+  {
+    "id": "term_attribute_rating",
+    "name": "Attribute Rating",
+    "type": "metric",
+    "definition": "The numeric score of a superhero on one attribute, on a 0-100 scale (observed values 5 to 100). There is at most one rating per superhero per attribute.",
+    "scope": "Comparing, filtering and aggregating superhero ability scores.",
+    "aliases": [
+      "attribute value",
+      "attribute level",
+      "rating",
+      "score",
+      "strength value",
+      "durability value",
+      "combat value",
+      "power value",
+      "speed value"
+    ],
+    "evidence": [
+      "ev_005",
+      "ev_006",
+      "ev_012"
+    ]
+  },
+  {
+    "id": "term_superpower",
+    "name": "Superpower",
+    "type": "concept",
+    "definition": "A named superhuman ability from the superpower catalogue, such as 'Super Strength', 'Flight', 'Telepathy' or 'Super Speed'. Superpowers are assigned to superheroes through a many-to-many link and are distinct from numeric attribute ratings.",
+    "scope": "Superpower filtering, listing and counting.",
+    "aliases": [
+      "superpower",
+      "super power",
+      "superpowers",
+      "super powers",
+      "named ability",
+      "special ability",
+      "power set"
+    ],
+    "evidence": [
+      "ev_014"
+    ]
+  },
+  {
+    "id": "term_height",
+    "name": "Height",
+    "type": "metric",
+    "definition": "The height of a superhero expressed directly in centimetres, with no unit conversion required.",
+    "scope": "Height filtering and comparison, e.g. height over 200 cm or within a centimetre range.",
+    "aliases": [
+      "height",
+      "height in cm",
+      "centimetres",
+      "tall"
+    ],
+    "evidence": [
+      "ev_008"
+    ]
+  },
+  {
+    "id": "term_weight",
+    "name": "Weight",
+    "type": "metric",
+    "definition": "The weight of a superhero expressed directly in kilograms, with no unit conversion required.",
+    "scope": "Weight filtering, comparison and averaging.",
+    "aliases": [
+      "weight",
+      "weight in kg",
+      "kilograms",
+      "heavy",
+      "weigh"
+    ],
+    "evidence": [
+      "ev_008"
+    ]
+  },
+  {
+    "id": "term_superhero_count",
+    "name": "Superhero Count",
+    "type": "metric",
+    "definition": "The number of superhero records within a scope, either overall or within a group defined by publisher, gender, alignment, attribute rating, superpower or any other filter condition.",
+    "scope": "Counting superheroes for any filtered or grouped population.",
+    "aliases": [
+      "number of superheroes",
+      "how many superheroes",
+      "count of heroes",
+      "superheroes published",
+      "number of heroes"
+    ],
+    "evidence": [
+      "ev_001",
+      "ev_015"
+    ]
+  }
+]

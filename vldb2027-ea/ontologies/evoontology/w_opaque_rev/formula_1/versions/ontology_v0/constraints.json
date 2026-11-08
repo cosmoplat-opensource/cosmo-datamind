@@ -1,0 +1,474 @@
+[
+  {
+    "id": "constraint_status_enum",
+    "target": "term_result_status",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "accident",
+      "accidents",
+      "collision",
+      "finished",
+      "retired",
+      "status",
+      "did not finish",
+      "not finished",
+      "disqualified",
+      "lapped",
+      "+1 lap",
+      "retirement"
+    ],
+    "severity": "block",
+    "scope": "Any question that filters race results by outcome or reason.",
+    "confidence": "high",
+    "description": "Status ids are decoded through tab12. Id 1 = Finished, 2 = Disqualified, 3 = Accident, 4 = Collision, 11 = +1 Lap, 12 = +2 Laps, and similar lapped labels; the remaining ids are mechanical or other retirement reasons. Result status ids in tab13.fld041 must always be translated through tab12. Accident means exactly id 3 (1007 result rows) and does not include Collision (id 4) or Collision damage (id 130), which together add 773 rows.",
+    "evidence": [
+      "e_status_rows",
+      "e_accident_rows"
+    ]
+  },
+  {
+    "id": "constraint_finish_time_format",
+    "target": "term_finish_time",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "finish time",
+      "race time",
+      "time",
+      "champion time",
+      "percentage faster",
+      "gap",
+      "incremental time",
+      "total time"
+    ],
+    "severity": "block",
+    "scope": "Any use of the race finish time column, especially comparisons.",
+    "confidence": "high",
+    "description": "In tab13.fld024 only the winner's value is an absolute race time in H:MM:SS.mmm (970 values, one per race with a recorded winning time). Drivers classified behind the winner store a relative gap beginning with a plus sign (4989 values; +M:SS.mmm when the gap exceeds a minute). 17696 values are empty. Comparing, subtracting or dividing these strings without converting them to a common unit produces wrong results.",
+    "evidence": [
+      "e_finish_time_formats"
+    ]
+  },
+  {
+    "id": "constraint_finished_definition",
+    "target": "term_finished_race",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "finished the race",
+      "finished",
+      "not finished",
+      "did not finish",
+      "non-finishers",
+      "completed the race"
+    ],
+    "severity": "block",
+    "scope": "Counting finishers or non-finishers in one race.",
+    "confidence": "high",
+    "description": "Result status id 1 (Finished) is the authoritative finishing indicator and covers 5966 result rows. Using finish time IS NOT NULL as a proxy agrees in the vast majority of rows but misses 10 status-1 rows with an empty time (9 of them in race 940, the 2015 Japanese Grand Prix, and 1 in race 839, the 1950 Italian Grand Prix) while wrongly including 5 rows whose status is Disqualified, +1 Lap or Power Unit. The definition used should be stated when counting.",
+    "evidence": [
+      "e_finish_vs_time"
+    ]
+  },
+  {
+    "id": "constraint_speed_text",
+    "target": "term_fastest_lap_speed",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "fastest lap speed",
+      "lap speed",
+      "maximum speed",
+      "max speed",
+      "speed",
+      "fastest lap"
+    ],
+    "severity": "block",
+    "scope": "Ordering, filtering or comparing fastest lap speeds.",
+    "confidence": "high",
+    "description": "The speed column is text. SQLite MAX and MIN compare it lexicographically: MAX returns 91.610 while the true numeric maximum is 257.320 km/h, and MIN returns 100.615 while the true minimum is 89.540. Cast the value to a number before ordering, filtering or comparing.",
+    "evidence": [
+      "e_speed_lexical"
+    ]
+  },
+  {
+    "id": "constraint_pit_duration_numeric",
+    "target": "term_pit_stop_duration",
+    "constraint_type": "unit",
+    "trigger_keywords": [
+      "pit stop duration",
+      "average pitstop duration",
+      "average pit stop",
+      "pit time",
+      "stop duration",
+      "pitstop"
+    ],
+    "severity": "block",
+    "scope": "Pit-stop duration aggregation.",
+    "confidence": "high",
+    "description": "tab10.fld036 stores each stop duration as decimal text in seconds. All 6070 stops have a value in the range 12.897 to 59.555 seconds. Sum and count must use numeric values. A driver's average pit-stop duration is the mean over that driver's own stops, not over all stops in a race.",
+    "evidence": [
+      "e_pit_rows"
+    ]
+  },
+  {
+    "id": "constraint_lap_time_format",
+    "target": "term_lap_time",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "lap time",
+      "lapTime",
+      "time of lap",
+      "0:01:27",
+      "1:27",
+      "lap"
+    ],
+    "severity": "warning",
+    "scope": "Matching or comparing individual lap times.",
+    "confidence": "high",
+    "description": "The lap-time column is M:SS.mmm for 420326 of 420369 rows; 43 rows are hour-long H:MM:SS.mmm values. A prefix match such as 1:27 percent matches M:SS values starting at 1:27 and would also match an hour-long string beginning with the same digits. The parallel millisecond column is the reliable numeric key for comparison.",
+    "evidence": [
+      "e_lap_formats"
+    ]
+  },
+  {
+    "id": "constraint_qualifying_period_order",
+    "target": "term_qualifying_period_time",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "Q1",
+      "Q2",
+      "Q3",
+      "first qualifying period",
+      "second qualifying period",
+      "third qualifying period",
+      "qualifying period",
+      "qualifying"
+    ],
+    "severity": "block",
+    "scope": "Selecting a specific qualifying period.",
+    "confidence": "high",
+    "description": "In tab11 the first period (Q1) is fld038, the second (Q2) is fld039 and the third (Q3) is fld040. An empty period time means the driver did not take part in that period. A first qualifying period result is therefore the fld038 time, not the qualifying position fld029.",
+    "evidence": [
+      "e_qual_rows"
+    ]
+  },
+  {
+    "id": "constraint_qualifying_elimination",
+    "target": "term_qualifying_elimination",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "eliminated",
+      "knocked out",
+      "first period",
+      "Q1 eliminated",
+      "did not advance",
+      "out in Q1"
+    ],
+    "severity": "block",
+    "scope": "Determining who was eliminated in the first qualifying period.",
+    "confidence": "high",
+    "description": "In race 20 six drivers have no Q2 time, but only the five slowest Q1 times are the Q1 eliminations: 1:35.725, 1:34.140, 1:34.127, 1:33.562 and 1:33.501. The sixth driver without a Q2 time (1:33.433) stopped after the first period for another reason. Elimination in the first period should be derived from the ranking of Q1 times (the five largest), not from an empty-Q2 test.",
+    "evidence": [
+      "e_qual_elim"
+    ]
+  },
+  {
+    "id": "constraint_race_identifier",
+    "target": "term_race_identifier",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "race number",
+      "race No.",
+      "race at",
+      "race 291",
+      "race 20",
+      "race id"
+    ],
+    "severity": "block",
+    "scope": "Resolving explicit race numbers.",
+    "confidence": "high",
+    "description": "The race id spans 1 to 976 and is neither the season round nor the year. Questions saying race number N or race at N refer to this id. Race ids are not chronological: race 1 is the 2009 Australian Grand Prix, race 24 the 2008 Canadian Grand Prix, race 291 the 1992 Brazilian Grand Prix, race 592 the 1974 South African Grand Prix and race 833 the 1950 British Grand Prix.",
+    "evidence": [
+      "e_race_nonchronological"
+    ]
+  },
+  {
+    "id": "constraint_race_name_not_unique",
+    "target": "term_race_name",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "Grand Prix",
+      "Canadian Grand Prix",
+      "Bahrain Grand Prix",
+      "Chinese Grand Prix",
+      "which race",
+      "name of race"
+    ],
+    "severity": "block",
+    "scope": "Identifying a race from its Grand Prix name.",
+    "confidence": "high",
+    "description": "Race names repeat once per season: Canadian Grand Prix 48 times, Italian Grand Prix 68 times, British Grand Prix 68 times, Monaco Grand Prix 64 times. A question that names a Grand Prix without a year is ambiguous at race level and must be combined with the race year or the race date when a single race is intended.",
+    "evidence": [
+      "e_race_name_dupes"
+    ]
+  },
+  {
+    "id": "constraint_points_sources",
+    "target": "term_points",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "points",
+      "maximum points",
+      "0 points",
+      "highest point",
+      "scored points",
+      "constructor points"
+    ],
+    "severity": "block",
+    "scope": "Choosing the correct points column.",
+    "confidence": "high",
+    "description": "Three different point columns exist. The results table holds the points a driver scored in that race. The constructor-results table holds the points a constructor scored in that race (race 24: constructor 2 scored 18.0 while constructor 6 scored 4.0). The constructor-standings and driver-standings tables hold cumulative championship points as of that race (race 24: constructor 6 has 73.0 cumulative while scoring 4.0 in that race). Points of a constructor in a race and maximum points of British constructors therefore select different tables and yield different numbers.",
+    "evidence": [
+      "e_points_sources"
+    ]
+  },
+  {
+    "id": "constraint_position_null",
+    "target": "term_finish_position",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "position",
+      "ranked second",
+      "finished position",
+      "first place",
+      "last",
+      "finishing position"
+    ],
+    "severity": "warning",
+    "scope": "Ordering or filtering by finishing position.",
+    "confidence": "high",
+    "description": "Finishing position is empty for every driver who was not classified; the same 17696 result rows have an empty finish time and carry position text R. Ordering by position silently drops retirements. Use the finished indicator or the status when retirements must be included or excluded explicitly.",
+    "evidence": [
+      "e_position_null"
+    ]
+  },
+  {
+    "id": "constraint_full_name_concat",
+    "target": "term_driver_full_name",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "Lewis Hamilton",
+      "Bruno Senna",
+      "Alex Yoong",
+      "full name",
+      "driver name",
+      "who is the driver",
+      "player"
+    ],
+    "severity": "block",
+    "scope": "Matching a person name to a driver record.",
+    "confidence": "high",
+    "description": "Driver names are split into a forename column and a surname column; there is no single name column. The displayed name is the forename followed by the surname. Matching only a surname is ambiguous: senna matches both Ayrton Senna and Bruno Senna, while the reference name disambiguates them as senna and bruno_senna.",
+    "evidence": [
+      "e_driver_ref"
+    ]
+  },
+  {
+    "id": "constraint_nationality_vocabulary",
+    "target": "term_driver_nationality",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "German",
+      "British",
+      "nationality",
+      "country",
+      "Austrian",
+      "Italian"
+    ],
+    "severity": "info",
+    "scope": "Nationality filters on drivers, constructors or circuits.",
+    "confidence": "high",
+    "description": "Nationality is a free-text adjective, not a country code or foreign key. Driver nationality has 41 distinct values and constructor nationality 24, sharing vocabulary such as British, German and Italian. Circuit country uses different short forms such as UK and USA alongside Austria. Compare exact labels and do not assume a shared country table.",
+    "evidence": [
+      "e_driver_nationality",
+      "e_constructor_nationality",
+      "e_circuit_country_domain"
+    ]
+  },
+  {
+    "id": "constraint_dob_order",
+    "target": "term_driver_date_of_birth",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "oldest",
+      "youngest",
+      "born between",
+      "date of birth",
+      "birthday",
+      "age"
+    ],
+    "severity": "block",
+    "scope": "Age and birth-date comparisons.",
+    "confidence": "high",
+    "description": "Birth dates are YYYY-MM-DD text that sorts correctly as strings. A larger value is a later birth date and therefore a younger driver: oldest is the minimum birth date and youngest the maximum. Born between 1980 and 1985 is a range on this column and matches 5 German drivers.",
+    "evidence": [
+      "e_dob_domain"
+    ]
+  },
+  {
+    "id": "constraint_time_gap_relative",
+    "target": "term_time_gap",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "how much faster",
+      "percentage faster",
+      "gap",
+      "incremental time",
+      "time behind",
+      "finish time difference",
+      "faster in percentage"
+    ],
+    "severity": "block",
+    "scope": "Comparing two drivers' race times in the same race.",
+    "confidence": "high",
+    "description": "A plus-prefixed value is a gap to the winner, not an absolute time. To compare the winner with the last classified driver, add the last driver's gap to the winner's absolute H:MM:SS.mmm time before computing a difference or percentage. The gap values use mixed units: plain seconds or M:SS.mmm.",
+    "evidence": [
+      "e_time_gap_sample",
+      "e_finish_time_formats"
+    ]
+  },
+  {
+    "id": "constraint_standings_cumulative",
+    "target": "term_standings_points",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "standings",
+      "championship",
+      "total points",
+      "maximum points",
+      "cumulative"
+    ],
+    "severity": "warning",
+    "scope": "Using driver or constructor standings tables.",
+    "confidence": "high",
+    "description": "The standings tables hold one cumulative snapshot per participant per race, so a season total is the value at the last race, not a sum over snapshots. Summing snapshots multiplies the true total: summing per-race constructor points for constructor 1 over all seasons gives 5232.5 while its final standings value at the last recorded race is 17.0.",
+    "evidence": [
+      "e_points_sources",
+      "e_constructor_standings_rows"
+    ]
+  },
+  {
+    "id": "constraint_race_participation",
+    "target": "term_race_participation",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "participated",
+      "took part",
+      "appeared",
+      "how many races",
+      "races contested",
+      "raced in"
+    ],
+    "severity": "info",
+    "scope": "Counting a driver's race participation.",
+    "confidence": "high",
+    "description": "Presence in the results table means the driver took part in that race; a per-driver participation count is the count of distinct race ids for that driver in the results table. All 840 drivers have at least one result row, and driver 1 has 202 result rows.",
+    "evidence": [
+      "e_participation"
+    ]
+  },
+  {
+    "id": "constraint_race_date_format",
+    "target": "term_race_date",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "earliest year",
+      "earliest month",
+      "earliest recorded",
+      "date",
+      "when",
+      "since 2010"
+    ],
+    "severity": "warning",
+    "scope": "Chronological and calendar questions.",
+    "confidence": "high",
+    "description": "The race date is a YYYY-MM-DD text date; year and month must be extracted from it for earliest recorded year and month. The earliest date in the data is 1950-05-13, so the earliest recorded year and month is 1950-05. The season year is also stored separately and can be used for year filters such as since 2010.",
+    "evidence": [
+      "e_race_dates"
+    ]
+  },
+  {
+    "id": "constraint_circuit_country_values",
+    "target": "term_circuit_country",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "Austria",
+      "country of circuit",
+      "circuits in",
+      "held in"
+    ],
+    "severity": "info",
+    "scope": "Country-level circuit questions.",
+    "confidence": "high",
+    "description": "Circuit country is text using short forms such as UK and USA as well as full names. Austria has three circuit records: A1-Ring with 25 races, Red Bull Ring with 4 and Zeltweg with 1, holding 30 race appearances in total. Counting circuits in Austria gives 3 while counting how many times those circuits were used gives 30.",
+    "evidence": [
+      "e_austria_runs",
+      "e_circuit_country_domain"
+    ]
+  },
+  {
+    "id": "constraint_accident_scope",
+    "target": "term_accident",
+    "constraint_type": "scope",
+    "trigger_keywords": [
+      "accident",
+      "accidents",
+      "crash",
+      "crashed"
+    ],
+    "severity": "warning",
+    "scope": "Interpreting accident-related results.",
+    "confidence": "high",
+    "description": "Accident is status id 3 only and covers 1007 result rows. Collision (id 4) and Collision damage (id 130) are separate outcomes covering 773 rows and must not be silently folded into accidents.",
+    "evidence": [
+      "e_accident_rows"
+    ]
+  },
+  {
+    "id": "constraint_fastest_lap_identity",
+    "target": "term_fastest_lap_speed",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "fastest lap",
+      "set the fastest lap",
+      "fastest lap speed",
+      "quickest lap",
+      "who set the fastest lap"
+    ],
+    "severity": "warning",
+    "scope": "Identifying the fastest lap or the driver who set it.",
+    "confidence": "high",
+    "description": "The fastest lap of a race is the row with fastest-lap rank 1, which is equivalent to the numeric maximum fastest-lap speed within that race. Fastest-lap data exists for only 256 of the 976 races and 5268 result rows; 18389 rows have no fastest-lap data, so a maximum over an unfiltered column can silently span multiple races.",
+    "evidence": [
+      "e_fastest_lap_rows"
+    ]
+  },
+  {
+    "id": "constraint_first_race_ordering",
+    "target": "term_race_date",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "first race",
+      "earliest race",
+      "debut",
+      "last race",
+      "first event"
+    ],
+    "severity": "warning",
+    "scope": "Ordering a driver's races chronologically.",
+    "confidence": "high",
+    "description": "Race order must be derived from the calendar date or from year combined with round, not from the race id, whose numeric order does not follow chronology. For example race 1 is a 2009 event while race 833 is a 1950 event. The earliest race date in the database is 1950-05-13.",
+    "evidence": [
+      "e_race_nonchronological",
+      "e_race_dates"
+    ]
+  }
+]

@@ -1,0 +1,112 @@
+[
+  {
+    "id": "r_district_school",
+    "source": "term_school_district",
+    "relation_type": "composition",
+    "target": "term_school",
+    "connection_condition": "School records carry the district name in tab03.fld045 and tab01.fld007; the district code is embedded in the CDS code. Each school belongs to one district.",
+    "description": "A school district is composed of schools; a school record exists within the district that operates it.",
+    "evidence": [
+      "ev_district_ambiguity"
+    ]
+  },
+  {
+    "id": "r_county_school",
+    "source": "term_county",
+    "relation_type": "composition",
+    "target": "term_school",
+    "connection_condition": "School records carry the county name in tab03.fld044 and tab01.fld006; tab01 additionally carries a county code in fld003. Each school is located in one county.",
+    "description": "A county contains its schools as a geographic administrative whole; every school belongs to exactly one county.",
+    "evidence": [
+      "ev_county_city"
+    ]
+  },
+  {
+    "id": "r_county_district",
+    "source": "term_county",
+    "relation_type": "composition",
+    "target": "term_school_district",
+    "connection_condition": "Each school record pairs a county name (fld044) with a district name (fld045); a district entity is identified within its county.",
+    "description": "School districts are contained within a county; because district names repeat across counties, the county is part of district identity.",
+    "evidence": [
+      "ev_district_ambiguity"
+    ]
+  },
+  {
+    "id": "r_cds_equivalence",
+    "source": "term_school_cds_code",
+    "relation_type": "equivalence",
+    "target": "term_sat_cds_code",
+    "connection_condition": "tab02.fld030 matches tab01.fld001 and tab03.fld001 after restoring a leading zero omitted in 211 SAT records.",
+    "description": "The directory/FRPM CDS code and the SAT record CDS code refer to the same schools; only the stored formatting differs.",
+    "evidence": [
+      "ev_cds_join"
+    ]
+  },
+  {
+    "id": "r_free_to_pct_free",
+    "source": "term_free_meal_count_k12",
+    "relation_type": "derivation",
+    "target": "term_percent_eligible_free_k12",
+    "connection_condition": "The percent eligible free rate is the free meal count divided by K-12 enrollment (fld021 = fld020 / fld019).",
+    "description": "The free-meal eligibility rate is derived from the free meal count and K-12 enrollment.",
+    "evidence": [
+      "ev_formula_percent"
+    ]
+  },
+  {
+    "id": "r_enroll_to_pct_free",
+    "source": "term_enrollment_k12",
+    "relation_type": "derivation",
+    "target": "term_percent_eligible_free_k12",
+    "connection_condition": "K-12 enrollment (fld019) is the denominator of the free-meal eligibility rate (fld021).",
+    "description": "K-12 enrollment is an input to the free-meal eligibility rate.",
+    "evidence": [
+      "ev_formula_percent"
+    ]
+  },
+  {
+    "id": "r_frpm_to_pct_frpm",
+    "source": "term_frpm_count_k12",
+    "relation_type": "derivation",
+    "target": "term_percent_eligible_frpm_k12",
+    "connection_condition": "The percent eligible FRPM rate is the FRPM count divided by K-12 enrollment (fld023 = fld022 / fld019).",
+    "description": "The FRPM eligibility rate is derived from the free or reduced-price meal count and K-12 enrollment.",
+    "evidence": [
+      "ev_formula_percent"
+    ]
+  },
+  {
+    "id": "r_enroll_to_pct_frpm",
+    "source": "term_enrollment_k12",
+    "relation_type": "derivation",
+    "target": "term_percent_eligible_frpm_k12",
+    "connection_condition": "K-12 enrollment (fld019) is the denominator of the FRPM rate (fld023), not ages 5-17 enrollment.",
+    "description": "K-12 enrollment is an input to the FRPM eligibility rate.",
+    "evidence": [
+      "ev_formula_percent"
+    ]
+  },
+  {
+    "id": "r_enroll_k12_to_diff",
+    "source": "term_enrollment_k12",
+    "relation_type": "derivation",
+    "target": "term_enrollment_difference_k12_ages_5_17",
+    "connection_condition": "K-12 enrollment (fld019) is the minuend of the difference.",
+    "description": "The enrollment difference is derived by subtracting ages 5-17 enrollment from K-12 enrollment.",
+    "evidence": [
+      "ev_enrollment"
+    ]
+  },
+  {
+    "id": "r_enroll_ages_to_diff",
+    "source": "term_enrollment_ages_5_17",
+    "relation_type": "derivation",
+    "target": "term_enrollment_difference_k12_ages_5_17",
+    "connection_condition": "Ages 5-17 enrollment (fld024) is the subtrahend of the difference.",
+    "description": "Ages 5-17 enrollment is an input to the enrollment difference.",
+    "evidence": [
+      "ev_enrollment"
+    ]
+  }
+]

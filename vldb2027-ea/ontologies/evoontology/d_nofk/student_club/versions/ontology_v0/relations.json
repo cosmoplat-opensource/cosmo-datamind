@@ -1,0 +1,203 @@
+[
+  {
+    "id": "rel_event_attendance",
+    "source": "term_event",
+    "relation_type": "composition",
+    "target": "term_attendance",
+    "connection_condition": "attendance.link_to_event corresponds to event.event_id",
+    "description": "An attendance record exists only as evidence of a member attending a particular event; without the event the record has no meaning.",
+    "evidence": [
+      "evidence_attendance_links"
+    ]
+  },
+  {
+    "id": "rel_member_attendance",
+    "source": "term_member",
+    "relation_type": "association",
+    "target": "term_attendance",
+    "connection_condition": "attendance.link_to_member corresponds to member.member_id",
+    "description": "A member is linked to attendance records, but the link is weak in the sense that most members have no attendance rows recorded at all.",
+    "evidence": [
+      "evidence_attendance_coverage"
+    ]
+  },
+  {
+    "id": "rel_event_budget",
+    "source": "term_event",
+    "relation_type": "composition",
+    "target": "term_budget",
+    "connection_condition": "budget.link_to_event corresponds to event.event_id",
+    "description": "Budget line items are allocated to a club event, and each line item is meaningless without its event.",
+    "evidence": [
+      "evidence_budget_event_status_match"
+    ]
+  },
+  {
+    "id": "rel_budget_expense",
+    "source": "term_budget",
+    "relation_type": "composition",
+    "target": "term_expense",
+    "connection_condition": "expense.link_to_budget corresponds to budget.budget_id",
+    "description": "Individual expenses are the component parts of a budget line item's spending; every expense belongs to exactly one line item.",
+    "evidence": [
+      "evidence_budget_expense_reconciliation"
+    ]
+  },
+  {
+    "id": "rel_member_expense",
+    "source": "term_member",
+    "relation_type": "association",
+    "target": "term_expense",
+    "connection_condition": "expense.link_to_member corresponds to member.member_id",
+    "description": "An expense is attributed to the member who incurred it, but only a small number of members appear as the member of record on expenses.",
+    "evidence": [
+      "evidence_expense_member_positions"
+    ]
+  },
+  {
+    "id": "rel_member_income",
+    "source": "term_member",
+    "relation_type": "association",
+    "target": "term_income",
+    "connection_condition": "income.link_to_member corresponds to member.member_id, which is empty for organisational receipts",
+    "description": "Income from dues is attributed to the paying member, whereas fundraising, sponsorship and school appropriation are not attributed to any member.",
+    "evidence": [
+      "evidence_income_member_orphans"
+    ]
+  },
+  {
+    "id": "rel_member_major",
+    "source": "term_member",
+    "relation_type": "association",
+    "target": "term_major",
+    "connection_condition": "member.link_to_major corresponds to major.major_id",
+    "description": "A member declares one academic major, which supplies the member's department and college; the link is optional.",
+    "evidence": [
+      "evidence_member_major_join"
+    ]
+  },
+  {
+    "id": "rel_member_zip",
+    "source": "term_member",
+    "relation_type": "association",
+    "target": "term_member_zip",
+    "connection_condition": "member.zip holds the member's residential ZIP code",
+    "description": "A member has exactly one residential ZIP code recorded directly on the member record.",
+    "evidence": [
+      "evidence_member_zip_state_join"
+    ]
+  },
+  {
+    "id": "rel_member_zip_equivalence",
+    "source": "term_member_zip",
+    "relation_type": "equivalence",
+    "target": "term_zip_code",
+    "connection_condition": "member.zip and zip_code.zip_code share the same value domain and match for all 33 members",
+    "description": "The member ZIP code and the ZIP code reference key express the same postal geography, both stored as integers and therefore both losing leading zeros.",
+    "evidence": [
+      "evidence_member_zip_state_join",
+      "evidence_zip_leading_zero"
+    ]
+  },
+  {
+    "id": "rel_zip_state_derivation",
+    "source": "term_zip_code",
+    "relation_type": "derivation",
+    "target": "term_member_state",
+    "connection_condition": "zip_code.short_state is an attribute of the ZIP code referenced by the member",
+    "description": "A member's state is derived from the member's ZIP code through the ZIP code reference table; no state column exists on the member record.",
+    "evidence": [
+      "evidence_member_zip_state_join"
+    ]
+  },
+  {
+    "id": "rel_college_major",
+    "source": "term_college",
+    "relation_type": "composition",
+    "target": "term_major",
+    "connection_condition": "major.college names the college that hosts the major",
+    "description": "A college is composed of its majors and departments; each major belongs to exactly one college.",
+    "evidence": [
+      "evidence_major_college_values"
+    ]
+  },
+  {
+    "id": "rel_budget_spent_derivation",
+    "source": "term_expense_cost",
+    "relation_type": "derivation",
+    "target": "term_budget_spent",
+    "connection_condition": "budget.spent equals the sum of expense.cost over expenses charged to that budget line item",
+    "description": "The spent amount of a budget line item is the accumulated cost of the expenses linked to it, and the two agree exactly wherever expenses exist.",
+    "evidence": [
+      "evidence_budget_expense_reconciliation"
+    ]
+  },
+  {
+    "id": "rel_budget_remaining_derivation",
+    "source": "term_budget_amount",
+    "relation_type": "derivation",
+    "target": "term_budget_remaining",
+    "connection_condition": "budget.remaining equals budget.amount minus budget.spent on the same row",
+    "description": "The remaining balance is computed from the allocated amount and the spent amount and is not floored at zero.",
+    "evidence": [
+      "evidence_budget_over_budget"
+    ]
+  },
+  {
+    "id": "rel_budget_utilization_derivation",
+    "source": "term_budget_spent",
+    "relation_type": "derivation",
+    "target": "term_budget_utilization",
+    "connection_condition": "budget.spent divided by budget.amount on the same row",
+    "description": "The utilisation rate is computed from the spent amount and the allocated amount; no utilisation column is stored.",
+    "evidence": [
+      "evidence_budget_totals",
+      "evidence_budget_category_totals"
+    ]
+  },
+  {
+    "id": "rel_attendance_count_derivation",
+    "source": "term_attendance",
+    "relation_type": "derivation",
+    "target": "term_attendance_count",
+    "connection_condition": "counting distinct attendance rows per event or per member",
+    "description": "The attendance count is produced by counting attendance records, since the table stores no numeric attendance field.",
+    "evidence": [
+      "evidence_attendance_links",
+      "evidence_attendance_coverage"
+    ]
+  },
+  {
+    "id": "rel_member_count_derivation",
+    "source": "term_member",
+    "relation_type": "derivation",
+    "target": "term_member_count",
+    "connection_condition": "counting member records, optionally restricted by position or by declared major",
+    "description": "The member count is produced by counting member records; no stored aggregate exists.",
+    "evidence": [
+      "evidence_member_position_values"
+    ]
+  },
+  {
+    "id": "rel_dues_income_derivation",
+    "source": "term_income_amount",
+    "relation_type": "derivation",
+    "target": "term_dues_income",
+    "connection_condition": "summing income.amount over rows whose source is Dues",
+    "description": "Dues income is the accumulated amount of the dues receipts, each of which is a uniform per-member payment.",
+    "evidence": [
+      "evidence_income_source_totals"
+    ]
+  },
+  {
+    "id": "rel_event_status_budget_status_equivalence",
+    "source": "term_event_status",
+    "relation_type": "equivalence",
+    "target": "term_budget_event_status",
+    "connection_condition": "budget.event_status equals event.status for all 52 budget rows",
+    "description": "The event status recorded on a budget line item and the status on the linked event express the same lifecycle state, so either column may ground the concept.",
+    "evidence": [
+      "evidence_budget_event_status_match"
+    ]
+  }
+]

@@ -1,0 +1,69 @@
+{
+ "db_id": "superhero",
+ "questions": [
+  {
+   "question_id": 800,
+   "db_id": "superhero",
+   "question": "Calculate the percentage of superheroes with blue eyes.",
+   "evidence": "percentage = MULTIPLY(DIVIDE(SUM(superhero_name WHERE color = 'Blue'), COUNT(superhero_name)), 100.0); blue eyes refers to color = 'Blue' and color.id =  eye_colour_id = 7;",
+   "SQL": "SELECT CAST(COUNT(CASE WHEN T2.colour = 'Blue' THEN 1 ELSE NULL END) AS REAL) * 100 / COUNT(T1.id) FROM superhero AS T1 INNER JOIN colour AS T2 ON T1.eye_colour_id = T2.id",
+   "difficulty": "moderate"
+  },
+  {
+   "question_id": 781,
+   "db_id": "superhero",
+   "question": "Provide the heights of the heroes whose eye colours are amber.",
+   "evidence": "heights of the heroes refers to height_cm; eye colours are amber refers to colour.colour = 'Amber' WHERE eye_colour_id = colour.id;",
+   "SQL": "SELECT T1.height_cm FROM superhero AS T1 INNER JOIN colour AS T2 ON T1.eye_colour_id = T2.id WHERE T2.colour = 'Amber'",
+   "difficulty": "simple"
+  },
+  {
+   "question_id": 824,
+   "db_id": "superhero",
+   "question": "Identify superheroes who can control wind and list their names in alphabetical order.",
+   "evidence": "superheroes refers to superhero_name; can control wind refers to power_name = 'Wind Control';",
+   "SQL": "SELECT T1.superhero_name FROM superhero AS T1 INNER JOIN hero_power AS T2 ON T1.id = T2.hero_id INNER JOIN superpower AS T3 ON T2.power_id = T3.id WHERE T3.power_name = 'Wind Control' ORDER BY T1.superhero_name",
+   "difficulty": "moderate"
+  },
+  {
+   "question_id": 775,
+   "db_id": "superhero",
+   "question": "What is the percentage of blue female superheroes among all female superheroes?",
+   "evidence": "percentage = MULTIPLY(DIVIDE(SUM(colour = 'Blue' WHERE gender = 'Female'), COUNT(gender = 'Female')), 100); blue refers to the color = 'Blue' WHERE skin_colour_id = colour.id; female refers to gender = 'Female';",
+   "SQL": "SELECT CAST(COUNT(CASE WHEN T3.colour = 'Blue' THEN T1.id ELSE NULL END) AS REAL) * 100 / COUNT(T1.id) FROM superhero AS T1 INNER JOIN gender AS T2 ON T1.gender_id = T2.id INNER JOIN colour AS T3 ON T1.skin_colour_id = T3.id WHERE T2.gender = 'Female'",
+   "difficulty": "challenging"
+  },
+  {
+   "question_id": 825,
+   "db_id": "superhero",
+   "question": "Identify the gender of the superhero who has the ability of Phoenix Force.",
+   "evidence": "ability of Phoenix Force refers to power_name = 'Phoenix Force';",
+   "SQL": "SELECT T4.gender FROM superhero AS T1 INNER JOIN hero_power AS T2 ON T1.id = T2.hero_id INNER JOIN superpower AS T3 ON T2.power_id = T3.id INNER JOIN gender AS T4 ON T1.gender_id = T4.id WHERE T3.power_name = 'Phoenix Force'",
+   "difficulty": "moderate"
+  },
+  {
+   "question_id": 743,
+   "db_id": "superhero",
+   "question": "What is the percentage of superheroes who act in their own self-interest or make decisions based on their own moral code? Indicate how many of the said superheroes were published by Marvel Comics.",
+   "evidence": "published by Marvel Comics refers to publisher_name = 'Marvel Comics'; superheroes who act in their own self-interest or make decisions based on their own moral code refers to alignment = 'Bad'; calculation = MULTIPLY(DIVIDE(SUM(alignment = 'Bad); count(id)), 100)",
+   "SQL": "SELECT (CAST(COUNT(*) AS REAL) * 100 / (SELECT COUNT(*) FROM superhero)), CAST(SUM(CASE WHEN T2.publisher_name = 'Marvel Comics' THEN 1 ELSE 0 END) AS REAL) FROM superhero AS T1 INNER JOIN publisher AS T2 ON T1.publisher_id = T2.id INNER JOIN alignment AS T3 ON T3.id = T1.alignment_id WHERE T3.alignment = 'Bad'",
+   "difficulty": "challenging"
+  },
+  {
+   "question_id": 788,
+   "db_id": "superhero",
+   "question": "How many percent of female heroes were published by Marvel Comics?",
+   "evidence": "percent = MULTIPLY(DIVIDE(SUM(gender = 'Female' WHERE publisher_name = 'Marvel Comics'), COUNT(publisher_name = 'Marvel Comics')), 100); female heroes refers to gender = 'Female'; Marvel Comics refers to publisher_name = 'Marvel Comics';",
+   "SQL": "SELECT CAST(COUNT(CASE WHEN T3.gender = 'Female' AND T2.publisher_name = 'Marvel Comics' THEN 1 ELSE NULL END) AS REAL) / COUNT(CASE WHEN T2.publisher_name = 'Marvel Comics' THEN 1 ELSE NULL END) * 100 FROM superhero AS T1 INNER JOIN publisher AS T2 ON T1.publisher_id = T2.id INNER JOIN gender AS T3 ON T1.gender_id = T3.id",
+   "difficulty": "challenging"
+  },
+  {
+   "question_id": 792,
+   "db_id": "superhero",
+   "question": "What is Abomination's superpower?",
+   "evidence": "Abomination refers to superhero_name = 'Abomination'; superpower refers to power_name;",
+   "SQL": "SELECT T3.power_name FROM superhero AS T1 INNER JOIN hero_power AS T2 ON T1.id = T2.hero_id INNER JOIN superpower AS T3 ON T2.power_id = T3.id WHERE T1.superhero_name = 'Abomination'",
+   "difficulty": "simple"
+  }
+ ]
+}

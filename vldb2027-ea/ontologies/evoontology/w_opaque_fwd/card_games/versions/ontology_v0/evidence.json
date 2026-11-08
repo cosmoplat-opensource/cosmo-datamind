@@ -1,0 +1,202 @@
+[
+  {
+    "id": "evidence_schema_inventory",
+    "source": "card_games.sqlite",
+    "query": "SELECT name, type FROM sqlite_master ORDER BY type, name; PRAGMA table_info(tab01..tab06); SELECT COUNT(*) FROM each table;",
+    "result": "Six tables tab01-tab06 with opaque column ids fld001-fld095. Row counts: tab01=56822, tab02=229186, tab03=427907, tab04=551, tab05=1210, tab06=87769.",
+    "validation_method": "read-only SQLite metadata and row counts",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "evidence_table_roles",
+    "source": "card_games.sqlite",
+    "query": "SELECT COUNT(DISTINCT fld049), COUNT(*) FROM tab01; SELECT fld001,fld049,fld063,fld072 FROM tab01 LIMIT 5;",
+    "result": "21738 distinct values of fld049 over 56822 rows; values are Magic card names (Forest, Swamp, Island; Serra Angel, Angel of Mercy). tab01 is the card-printing table with fld072 as the unique card uuid.",
+    "validation_method": "column profiling and representative rows",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "evidence_uuid_join_graph",
+    "source": "card_games.sqlite",
+    "query": "SELECT COUNT(*) FROM tab02 WHERE fld072 IN (SELECT fld072 FROM tab01); repeated for tab03 and tab06; SELECT sql FROM sqlite_master WHERE name IN ('tab02','tab03','tab06');",
+    "result": "tab02/tab03/tab06 reference tab01.fld072. Declared foreign keys: tab02.fld072 and tab03.fld072 reference tab01.fld072, tab06.fld072 references tab01.fld072 with cascade delete, tab05.fld063 references tab04.fld081. Resolved rows: tab02=229170, tab03=427835, tab06=87769.",
+    "validation_method": "foreign-key declarations plus join resolution counts",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "evidence_set_table",
+    "source": "card_games.sqlite",
+    "query": "SELECT COUNT(*), COUNT(DISTINCT fld081) FROM tab04; SELECT fld081,fld049,fld079,fld089,fld090,fld091 FROM tab04 WHERE fld081 IN ('ARC','CSP','10E','LEA');",
+    "result": "551 sets with 551 unique codes. ARC=Archenemy, CSP=Coldsnap (block Ice Age), 10E=Tenth Edition, LEA=Limited Edition Alpha (release 1993-08-05).",
+    "validation_method": "profiling and direct lookups",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "evidence_set_membership_join",
+    "source": "card_games.sqlite",
+    "query": "SELECT COUNT(*) FROM (SELECT DISTINCT fld063 FROM tab01 WHERE fld063 NOT IN (SELECT fld081 FROM tab04));",
+    "result": "0 - every card set code resolves to exactly one tab04 set.",
+    "validation_method": "referential coverage check",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "evidence_language_labels",
+    "source": "card_games.sqlite",
+    "query": "SELECT fld075, COUNT(*) FROM tab02 GROUP BY fld075; SELECT fld075, COUNT(*) FROM tab05 GROUP BY fld075;",
+    "result": "tab02 has 12 labels: Japanese 31226, French 29301, German 28891, Italian 28698, Spanish 28639, Portuguese (Brazil) 25641, Chinese Simplified 20106, Russian 15878, Chinese Traditional 11106, Korean 9692, Phyrexian 3, Sanskrit 1. tab05 has the same 10 main labels, 121 rows each. No 'Portuguese (Brasil)' or 'Brazilian Portuguese' value exists.",
+    "validation_method": "distinct value profiling",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "evidence_localization_grain",
+    "source": "card_games.sqlite",
+    "query": "SELECT COUNT(*) FROM (SELECT fld072,fld075,COUNT(*) c FROM tab02 GROUP BY fld072,fld075 HAVING c>1); same for tab05 on (fld063,fld075); SELECT COUNT(DISTINCT fld063) FROM tab05;",
+    "result": "0 duplicates: tab02 is one row per card printing and language; tab05 is one row per set and language. 121 of 551 sets have translations.",
+    "validation_method": "grain uniqueness check",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "evidence_localized_card_fields",
+    "source": "card_games.sqlite",
+    "query": "SELECT fld075,fld049,fld017,fld068 FROM tab02 WHERE fld072='5f8287b1-5bb6-5f4c-ad17-316a40d5bb0c';",
+    "result": "Ancestor's Chosen has 8 localized rows. Italian: name 'Prescelto dell'Antenata', flavor text 'La volontà di tutti, eseguita per mano mia.'. German 'Ausgewählter der Ahnfrau', French 'Élu de l'Ancêtre', Japanese '祖神に選ばれし者'. Each row supplies name (fld049), flavor text (fld017), rules text (fld068).",
+    "validation_method": "representative row inspection",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "evidence_localized_set_name",
+    "source": "card_games.sqlite",
+    "query": "SELECT * FROM tab05 WHERE fld094='Hauptset Zehnte Edition'; SELECT fld075,fld063,fld094 FROM tab05 WHERE fld063='ARC';",
+    "result": "('German','10E','Hauptset Zehnte Edition'). Set ARC has 10 translated names, all 'Archenemy'. tab05.fld094 is null for 231 of 1210 rows.",
+    "validation_method": "direct lookups",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "evidence_format_values",
+    "source": "card_games.sqlite",
+    "query": "SELECT fld076, COUNT(*) FROM tab03 GROUP BY fld076 ORDER BY 2 DESC;",
+    "result": "15 lowercase formats: vintage 55576, legacy 55576, commander 55576, duel 55544, modern 40774, penny 38159, pauper 22784, pioneer 22346, premodern 20721, historic 16568, gladiator 16568, standard 7698, and three more.",
+    "validation_method": "distinct value profiling",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "evidence_status_values",
+    "source": "card_games.sqlite",
+    "query": "SELECT fld077, COUNT(*) FROM tab03 GROUP BY fld077;",
+    "result": "Legal 424958, Banned 2313, Restricted 636. Labels are capitalised exact strings.",
+    "validation_method": "distinct value profiling",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "evidence_legality_grain",
+    "source": "card_games.sqlite",
+    "query": "SELECT COUNT(*), COUNT(DISTINCT fld072) FROM tab03; SELECT COUNT(*) FROM (SELECT fld072,fld076,COUNT(*) c FROM tab03 GROUP BY fld072,fld076 HAVING c>1);",
+    "result": "427907 rows, 55608 distinct printings, 0 duplicate printing-format pairs; 1214 printings have no legality row.",
+    "validation_method": "grain uniqueness and coverage check",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "evidence_rarity_border",
+    "source": "card_games.sqlite",
+    "query": "SELECT fld059, COUNT(*) FROM tab01 GROUP BY fld059; SELECT fld005, COUNT(*) FROM tab01 GROUP BY fld005;",
+    "result": "Rarity: common 20745, rare 17626, uncommon 15251, mythic 3200 (lowercase). Border: black 49729, white 5017, gold 1244, silver 591, borderless 241.",
+    "validation_method": "distinct value profiling",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "evidence_flags",
+    "source": "card_games.sqlite",
+    "query": "SELECT SUM(fld022), COUNT(DISTINCT fld049) FROM tab01 WHERE fld022=1; SELECT SUM(fld033), COUNT(DISTINCT fld049) FROM tab01 WHERE fld033=1;",
+    "result": "fld022=1 on 29 printings (7 distinct names, e.g. Crusade, Pradesh Gypsies); fld033=1 on 104 printings (100 distinct names, e.g. Consulate Crackdown, Disallow). Both are 0/1 flags where 0 means false.",
+    "validation_method": "flag profiling with named examples",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "evidence_power",
+    "source": "card_games.sqlite",
+    "query": "SELECT fld055, COUNT(*) FROM tab01 WHERE fld055 IS NULL OR fld055 NOT GLOB '[0-9]*' GROUP BY fld055; SELECT fld049,fld055,fld069 FROM tab01 WHERE fld055 IS NOT NULL LIMIT 8;",
+    "result": "30624 NULL, 429 '*', 1 '*²', 4 '-1', 2 '?', 2 '∞'; other values are numeric text ('1'..'20'). fld069 (toughness) shares the same 30624 NULLs.",
+    "validation_method": "value-domain profiling",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "evidence_cmc_edhrec",
+    "source": "card_games.sqlite",
+    "query": "SELECT fld011, COUNT(*) FROM tab01 GROUP BY fld011; SELECT MIN(fld013), MAX(fld013), COUNT(fld013) FROM tab01; SELECT fld049,fld013 FROM tab01 WHERE fld013=1;",
+    "result": "fld011 has 19 distinct REAL values starting at 0.0 (7327 rows) and including 0.5; non-null for all printings. fld013 ranges 1..20900 with 4761 NULL; rank 1 belongs to Sol Ring printings.",
+    "validation_method": "value-domain profiling",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "evidence_original_type_subtype",
+    "source": "card_games.sqlite",
+    "query": "SELECT fld053,fld065,COUNT(*) FROM tab01 WHERE fld053='Summon - Angel' GROUP BY fld065; SELECT DISTINCT fld053 FROM tab01 WHERE fld053 LIKE 'Summon%' LIMIT 8;",
+    "result": "'Summon - Angel' occurs on 20 printings: subtype exactly 'Angel' 17, 'Angel,Spirit' 2, 'Angel,Warrior' 1. Subtype values are comma-separated lists; original type wording uses legacy forms such as 'Summon - Hero' and 'Enchant Creature'.",
+    "validation_method": "conditional breakdown",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "evidence_artist",
+    "source": "card_games.sqlite",
+    "query": "SELECT DISTINCT fld002 FROM tab01 WHERE fld002 LIKE 'Stephen%'; SELECT COUNT(*) FROM tab01 WHERE fld002='Stephen Daniele'; SELECT COUNT(*) FROM tab01 WHERE fld063='10E' AND fld002='Adam Rex';",
+    "result": "Stephen-prefixed artists: 'Stephen Tappin', 'Stephen Daniele', 'Stephen L. Walsh'; no 'Stephen Daniel'. 'Stephen Daniele' has 74 printings; Adam Rex has 12 printings in set 10E and 256 overall.",
+    "validation_method": "name search and counting",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "evidence_rulings",
+    "source": "card_games.sqlite",
+    "query": "SELECT * FROM tab06 LIMIT 3; SELECT COUNT(DISTINCT fld072) FROM tab06;",
+    "result": "Rows are (date, English ruling prose, card uuid), e.g. 2007-07-15 'You draw the card when Bandage resolves, not when the damage is actually prevented.'. 87769 rulings cover 26141 printings; 30681 printings have none.",
+    "validation_method": "representative rows and coverage",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "evidence_column_name_collision",
+    "source": "card_games.sqlite",
+    "query": "Cross-table profiling of fld049, fld068, fld070, fld075, fld063 across tab01-tab06.",
+    "result": "fld049 = card name in tab01/tab02 but set name in tab04; fld068 = English card text (tab01), localized card text (tab02) and ruling text (tab06); fld070 = full type line (tab01) and set type (tab04); fld075 = language only in tab02/tab05; fld063 = set code in tab01/tab05.",
+    "validation_method": "cross-table value comparison",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "evidence_set_name_variant",
+    "source": "card_games.sqlite",
+    "query": "SELECT SUM(fld088=fld049), SUM(fld088 IS NOT NULL), SUM(fld088 IS NULL) FROM tab04; SELECT fld081,fld049,fld088 FROM tab04 WHERE fld088<>fld049;",
+    "result": "fld088 non-null for 201 sets; 197 equal fld049; 4 differ (M19 'Core Set 2019' vs 'Core 2019', M20, M21, DDE); 350 sets have no fld088 value.",
+    "validation_method": "cross-column comparison",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "evidence_mtgo",
+    "source": "card_games.sqlite",
+    "query": "SELECT COUNT(*) FROM tab04 WHERE fld089 IS NOT NULL; SELECT DISTINCT t4.fld081,t4.fld049,t4.fld089 FROM tab01 c JOIN tab04 t4 ON t4.fld081=c.fld063 WHERE c.fld049='Angel of Mercy';",
+    "result": "fld089 non-null for 160 of 551 sets. Angel of Mercy appears in 13 sets; 6 have a non-null MTGO code (10E, 8ED, 9ED, DDC, IMA, INV). Separately, tab01.fld004 mentions mtgo for 36570 printings.",
+    "validation_method": "null coverage plus join lookup",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "evidence_count_semantics",
+    "source": "card_games.sqlite",
+    "query": "SELECT COUNT(*), COUNT(DISTINCT c.fld072), COUNT(DISTINCT c.fld049) FROM tab01 c JOIN tab03 k ON k.fld072=c.fld072 WHERE k.fld077='Banned' AND c.fld005='white'; SELECT MAX(c) FROM (SELECT fld049,COUNT(*) c FROM tab01 GROUP BY fld049);",
+    "result": "Banned and white border: 258 joined rows, 89 distinct printings, 46 distinct card names. Mythic, banned and gladiator: 5 rows, 5 printings, 2 names. The most-printed card name has 693 printings.",
+    "validation_method": "row versus distinct-entity comparison",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "evidence_card_text",
+    "source": "card_games.sqlite",
+    "query": "SELECT fld049, substr(fld068,1,80) FROM tab01 WHERE fld068 IS NOT NULL LIMIT 3;",
+    "result": "fld068 holds English rules text, e.g. Angel of Mercy 'Flying ... When Angel of Mercy enters the battlefield, you gain 3 life.'. fld017 holds English flavor text when present (17295 distinct, 26020 null).",
+    "validation_method": "representative rows",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "evidence_set_block_and_translation_coverage",
+    "source": "card_games.sqlite",
+    "query": "SELECT fld079, COUNT(*) FROM tab04 GROUP BY fld079 ORDER BY 2 DESC; SELECT t5.fld075,t5.fld063,t5.fld094 FROM tab05 t5 JOIN tab04 t4 ON t4.fld081=t5.fld063 WHERE t4.fld079='Commander' AND t5.fld075='Portuguese (Brazil)';",
+    "result": "33 block labels, 279 sets with null block; 'Commander' covers 23 sets. Seven Commander-block sets have Portuguese (Brazil) translated names (C13, C14, C15, C16, C17, CM1, CMD).",
+    "validation_method": "grouping and join check",
+    "timestamp": "2026-11-06"
+  }
+]

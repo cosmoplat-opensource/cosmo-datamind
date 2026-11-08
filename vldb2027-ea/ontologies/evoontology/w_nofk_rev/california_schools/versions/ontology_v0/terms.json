@@ -1,0 +1,484 @@
+[
+  {
+    "id": "term_school",
+    "name": "School",
+    "type": "entity",
+    "definition": "An individual California public school as recorded in the CDE school directory. A school record is identified by a 14-character CDS code and described by county, district, school name, address, contact details, operational status, charter flag, grade span, ownership/level code and virtual status.",
+    "scope": "Any analysis that counts, lists, ranks or filters individual schools in the california_schools database.",
+    "aliases": [
+      "school record",
+      "school entity",
+      "schools table row"
+    ],
+    "evidence": [
+      "evidence_schema_schools",
+      "evidence_row_counts",
+      "evidence_district_rows"
+    ]
+  },
+  {
+    "id": "term_cds_code",
+    "name": "CDS Code",
+    "type": "entity",
+    "definition": "The California county-district-school (CDS) code that uniquely identifies a school or a district-level administrative record. It is composed of a 2-digit county code, a 5-digit district code and a 7-digit school code; the school portion is all zeros for district-level records.",
+    "scope": "Primary key of schools and frpm, and the linking key to satscores. Cross-table matching requires length normalization because satscores omits the leading zero in part of its rows.",
+    "aliases": [
+      "CDSCode",
+      "cds",
+      "CDS",
+      "county-district-school code"
+    ],
+    "evidence": [
+      "evidence_cds_format",
+      "evidence_cds_join"
+    ]
+  },
+  {
+    "id": "term_county",
+    "name": "County",
+    "type": "dimension",
+    "definition": "The California county in which a school or district is located. 58 counties appear in the schools table and 57 distinct county names appear in satscores.",
+    "scope": "Geographic filtering and grouping, including 'top N per county' rankings that partition schools by their respective county.",
+    "aliases": [
+      "County",
+      "County Name",
+      "cname",
+      "county name"
+    ],
+    "evidence": [
+      "evidence_county_domain"
+    ]
+  },
+  {
+    "id": "term_district",
+    "name": "District",
+    "type": "dimension",
+    "definition": "A school district or county office of education that operates one or more schools. A district is identified by its name and by the county+district prefix of the CDS code, and it also has its own administrative record in the schools table.",
+    "scope": "Grouping and filtering schools by the district that operates them, and district-level aggregation of school measures.",
+    "aliases": [
+      "District",
+      "District Name",
+      "dname"
+    ],
+    "evidence": [
+      "evidence_district_rows",
+      "evidence_name_linkage"
+    ]
+  },
+  {
+    "id": "term_district_type",
+    "name": "District Type (District Organization Code)",
+    "type": "category",
+    "definition": "The 2-digit District Organization Code (DOC) classifying the administrative unit recorded on a row, together with its text label DOCType. Observed pairs include 52 = Elementary School District, 54 = Unified School District, 56 = High School District, 00 = County Office of Education, 31 = State Special Schools and 34 = Non-School Locations.",
+    "scope": "Used when a question refers to a category of district (for example 'Unified School District' or 'Elementary School District') rather than to a named district.",
+    "aliases": [
+      "DOC",
+      "DOCType",
+      "district organization code",
+      "district type code",
+      "unified school district",
+      "elementary school district"
+    ],
+    "evidence": [
+      "evidence_doc_codes"
+    ]
+  },
+  {
+    "id": "term_charter_status",
+    "name": "Charter Status",
+    "type": "dimension",
+    "definition": "Whether a school is a charter school. schools.Charter carries 1 for charter schools and 0 for non-charter (non-chartered) schools; frpm carries the same flag as `Charter School (Y/N)`. District-level records in both tables have no value.",
+    "scope": "Filtering to charter or non-chartered schools.",
+    "aliases": [
+      "Charter",
+      "charter school",
+      "chartered",
+      "non-chartered",
+      "non-charter",
+      "Charter School (Y/N)"
+    ],
+    "evidence": [
+      "evidence_charter_codes",
+      "evidence_charter_agreement"
+    ]
+  },
+  {
+    "id": "term_funding_type",
+    "name": "Funding Type",
+    "type": "dimension",
+    "definition": "The charter funding model of a school. It is recorded as schools.FundingType and, for the same schools, as frpm.`Charter Funding Type`; observed values are 'Directly funded', 'Locally funded', 'Not in CS funding model' and blank.",
+    "scope": "Questions about the funding type of a school or group of schools; meaningful mainly for charter schools.",
+    "aliases": [
+      "FundingType",
+      "Charter Funding Type",
+      "funding model",
+      "directly funded",
+      "locally funded"
+    ],
+    "evidence": [
+      "evidence_funding_type_values",
+      "evidence_funding_type_mismatch"
+    ]
+  },
+  {
+    "id": "term_school_level_code",
+    "name": "School Ownership Code (SOC)",
+    "type": "category",
+    "definition": "The 2-digit School Ownership Code (SOC) recorded for a school row, together with its text label SOCType that describes the school's level/ownership class. Observed pairs include 60 = Elementary Schools (Public), 62 = Intermediate/Middle Schools (Public), 63 = Alternative Schools of Choice, 65 = K-12 Schools (Public), 66 = High Schools (Public), 68 = Continuation High Schools, 69 = District Community Day Schools and 70 = Adult Education Centers.",
+    "scope": "Used when a question refers to an 'ownership code' or to a coded school level, in contrast to the district-level DOC code. Distinct from DOC, which classifies the district, not the school.",
+    "aliases": [
+      "SOC",
+      "SOCType",
+      "ownership code",
+      "school ownership code",
+      "ownership"
+    ],
+    "evidence": [
+      "evidence_soc_codes"
+    ]
+  },
+  {
+    "id": "term_school_status",
+    "name": "School Status",
+    "type": "dimension",
+    "definition": "The operational status of a school record: Active, Closed, Merged or Pending. A Merged record marks a school that was merged into another school and therefore no longer operates independently.",
+    "scope": "Filtering by operating status, including questions about merged schools, closed schools or currently operating schools.",
+    "aliases": [
+      "StatusType",
+      "merged",
+      "merged schools",
+      "closed",
+      "active",
+      "pending",
+      "school status"
+    ],
+    "evidence": [
+      "evidence_status_type"
+    ]
+  },
+  {
+    "id": "term_virtual_status",
+    "name": "Virtual / Physical Building Status",
+    "type": "dimension",
+    "definition": "Whether a school operates without a physical building, codified in schools.Virtual. F marks a school that is exclusively virtual, i.e. it does not offer a physical building; P marks a partially virtual school; N is the prevailing label for schools that are not virtual; NULL means the code was not reported for the record.",
+    "scope": "Questions about virtual schools, exclusively virtual schools, or schools that do not offer a physical building.",
+    "aliases": [
+      "Virtual",
+      "virtual school",
+      "exclusively virtual",
+      "does not offer physical building",
+      "virtual status"
+    ],
+    "evidence": [
+      "evidence_virtual_codes",
+      "evidence_virtual_f_rows"
+    ]
+  },
+  {
+    "id": "term_enrollment_k12",
+    "name": "Enrollment (K-12)",
+    "type": "metric",
+    "definition": "The number of students enrolled in kindergarten through grade 12 at a school for the reported academic year. It is reported for every frpm record regardless of the school's own grade span, so the '(K-12)' suffix names the counting universe rather than a filter on the school's grades.",
+    "scope": "Denominator of the meal-eligibility rates, and one operand of the K-12 versus ages 5-17 enrollment comparison.",
+    "aliases": [
+      "Enrollment (K-12)",
+      "K-12 enrollment",
+      "enrollment"
+    ],
+    "evidence": [
+      "evidence_enrollment_k12",
+      "evidence_enrollment_quality",
+      "evidence_k12_universe"
+    ]
+  },
+  {
+    "id": "term_enrollment_ages_5_17",
+    "name": "Enrollment (Ages 5-17)",
+    "type": "metric",
+    "definition": "The number of students aged 5 to 17 enrolled at a school. It is a narrower, age-based count than the grade-based K-12 enrollment over the same school records.",
+    "scope": "Used when a question compares or differentiates enrollment counts by age universe rather than grade universe.",
+    "aliases": [
+      "Enrollment (Ages 5-17)",
+      "ages 5-17 enrollment",
+      "enrollment ages 5 to 17"
+    ],
+    "evidence": [
+      "evidence_enrollment_517",
+      "evidence_enrollment_diff"
+    ]
+  },
+  {
+    "id": "term_enrollment_difference",
+    "name": "K-12 vs Ages 5-17 Enrollment Difference",
+    "type": "metric",
+    "definition": "The difference between the two enrollment universes reported for a school: K-12 enrollment minus ages 5-17 enrollment. No column stores this metric; it is computed from the two enrollment measures on the same frpm record.",
+    "scope": "Questions that ask for the 'difference in enrollment' between the two count universes of a school.",
+    "aliases": [
+      "difference in enrollment",
+      "enrollment difference",
+      "enrollment gap"
+    ],
+    "evidence": [
+      "evidence_enrollment_diff"
+    ]
+  },
+  {
+    "id": "term_free_meal_count",
+    "name": "Free Meal Count (K-12)",
+    "type": "metric",
+    "definition": "The number of students eligible for free (not reduced-price) school meals in the K-12 counting universe at a school. frpm reports it separately for the K-12 universe and for the ages 5-17 universe.",
+    "scope": "Meal-need analysis and the numerator of the eligible free meal rate.",
+    "aliases": [
+      "Free Meal Count (K-12)",
+      "free meal count",
+      "eligible free meal count"
+    ],
+    "evidence": [
+      "evidence_meal_counts",
+      "evidence_meal_count_exception"
+    ]
+  },
+  {
+    "id": "term_frpm_count",
+    "name": "Free or Reduced Price Meal (FRPM) Count (K-12)",
+    "type": "metric",
+    "definition": "The number of students eligible for free or reduced-price school meals in the K-12 counting universe at a school. It covers a broader population than the free-meal-only count, so it is normally greater than or equal to the free meal count on the same record.",
+    "scope": "Meal-need analysis, including selecting or ranking the schools with the largest meal-eligible populations.",
+    "aliases": [
+      "FRPM Count (K-12)",
+      "free or reduced price meal count",
+      "FRPM count"
+    ],
+    "evidence": [
+      "evidence_meal_counts",
+      "evidence_meal_count_exception"
+    ]
+  },
+  {
+    "id": "term_eligible_free_meal_rate",
+    "name": "Eligible Free Meal Rate",
+    "type": "metric",
+    "definition": "The share of enrolled students eligible for free meals, computed as the free meal count divided by K-12 enrollment. frpm additionally stores pre-computed values of this rate for the K-12 and the ages 5-17 universes; those stored values are proportions in the range 0 to 1.",
+    "scope": "Meal-need analysis and rate-threshold selection of schools.",
+    "aliases": [
+      "free meal rate",
+      "percent eligible free",
+      "eligible free rate",
+      "free meal percentage",
+      "Percent (%) Eligible Free (K-12)"
+    ],
+    "evidence": [
+      "evidence_rate_is_fraction",
+      "evidence_rate_range"
+    ]
+  },
+  {
+    "id": "term_eligible_frpm_rate",
+    "name": "Eligible FRPM Rate",
+    "type": "metric",
+    "definition": "The share of enrolled students eligible for free or reduced-price meals, computed as the FRPM count divided by K-12 enrollment. frpm also stores pre-computed values of this rate for the K-12 and the ages 5-17 universes; those stored values are proportions in the range 0 to 1.",
+    "scope": "Meal-need analysis and rate-based description or selection of schools.",
+    "aliases": [
+      "FRPM rate",
+      "eligible free or reduced price meal rate",
+      "percent eligible FRPM",
+      "Percent (%) Eligible FRPM (K-12)"
+    ],
+    "evidence": [
+      "evidence_rate_is_fraction",
+      "evidence_rate_range"
+    ]
+  },
+  {
+    "id": "term_sat_reading_score",
+    "name": "SAT Average Reading Score",
+    "type": "metric",
+    "definition": "The average SAT reading score of the test takers reported on a satscores row, on the SAT scale of approximately 200 to 800. Rows that represent a district aggregate also carry a value.",
+    "scope": "Reading-performance comparison, minimum/maximum selection, and per-county rankings of schools.",
+    "aliases": [
+      "AvgScrRead",
+      "average reading score",
+      "average score in reading",
+      "reading average"
+    ],
+    "evidence": [
+      "evidence_sat_columns",
+      "evidence_sat_range",
+      "evidence_satscores_levels"
+    ]
+  },
+  {
+    "id": "term_sat_math_score",
+    "name": "SAT Average Math Score",
+    "type": "metric",
+    "definition": "The average SAT math score of the test takers reported on a satscores row, on the SAT scale of approximately 200 to 800. Rows that represent a district aggregate also carry a value.",
+    "scope": "Math-performance comparison, ranking and district-level aggregation of school averages.",
+    "aliases": [
+      "AvgScrMath",
+      "average math score",
+      "average of average math",
+      "math average"
+    ],
+    "evidence": [
+      "evidence_sat_columns",
+      "evidence_sat_range",
+      "evidence_satscores_levels"
+    ]
+  },
+  {
+    "id": "term_sat_writing_score",
+    "name": "SAT Average Writing Score",
+    "type": "metric",
+    "definition": "The average SAT writing score of the test takers reported on a satscores row, on the SAT scale of approximately 200 to 800.",
+    "scope": "Writing-performance comparison and averaging over selected schools.",
+    "aliases": [
+      "AvgScrWrite",
+      "average writing score",
+      "average score in writing",
+      "writing average"
+    ],
+    "evidence": [
+      "evidence_sat_columns",
+      "evidence_sat_range",
+      "evidence_satscores_levels"
+    ]
+  },
+  {
+    "id": "term_sat_test_taker_count",
+    "name": "SAT Test Taker Count",
+    "type": "metric",
+    "definition": "The number of students who took the SAT as reported on the satscores row. Rows with a count of zero carry no average scores, and the average scores on a row are means over exactly this many test takers.",
+    "scope": "Assessing the weight/reliability of an average score and judging how much of the school population the SAT data covers.",
+    "aliases": [
+      "NumTstTakr",
+      "number of test takers",
+      "test takers",
+      "test taker count"
+    ],
+    "evidence": [
+      "evidence_sat_takers",
+      "evidence_sat_coverage"
+    ]
+  },
+  {
+    "id": "term_district_sat_math_average",
+    "name": "District Average of School Math Averages",
+    "type": "metric",
+    "definition": "The unweighted mean of the school-level average SAT math scores of the schools belonging to one district: the sum of the school averages divided by the number of schools in that district. It is an average of averages and is not weighted by enrollment or by test taker count. No column stores it; it is derived from the school-level SAT rows grouped by district.",
+    "scope": "District-level performance questions, including 'the average of average math score' within a county, and comparisons of districts.",
+    "aliases": [
+      "average of average math",
+      "average of averages",
+      "district average math",
+      "district mean score"
+    ],
+    "evidence": [
+      "evidence_district_avg_math"
+    ]
+  },
+  {
+    "id": "term_school_street_address",
+    "name": "School Street Address",
+    "type": "concept",
+    "definition": "The physical street address of a school, stored in schools in both a full form and an abbreviated form.",
+    "scope": "Listing or looking up a school's address, including questions that phrase it as the postal street address.",
+    "aliases": [
+      "Street",
+      "StreetAbr",
+      "full street address",
+      "postal street address",
+      "street address"
+    ],
+    "evidence": [
+      "evidence_address_columns"
+    ]
+  },
+  {
+    "id": "term_school_mailing_address",
+    "name": "School Mailing Address",
+    "type": "concept",
+    "definition": "The mailing street address of a school, stored in schools in both a full form and an abbreviated form. It is a separate column from the street address but holds the same value on the large majority of records.",
+    "scope": "Used interchangeably with the physical street address when a question asks for a school's postal or mailing address.",
+    "aliases": [
+      "MailStreet",
+      "MailStrAbr",
+      "mailing street",
+      "mailing address"
+    ],
+    "evidence": [
+      "evidence_address_columns"
+    ]
+  },
+  {
+    "id": "term_school_phone",
+    "name": "School Telephone Number",
+    "type": "concept",
+    "definition": "The contact telephone number of a school, stored in a single column in the format '(NNN) NNN-NNNN', with an optional extension held in a separate column. Many records have no value.",
+    "scope": "Contact-information questions, including ones phrased as communication number, and results that list a number only when one exists.",
+    "aliases": [
+      "Phone",
+      "Ext",
+      "telephone number",
+      "phone number",
+      "communication number"
+    ],
+    "evidence": [
+      "evidence_phone_format"
+    ]
+  },
+  {
+    "id": "term_school_name",
+    "name": "School Name",
+    "type": "concept",
+    "definition": "The name of a school. It appears as schools.School, frpm.`School Name` and satscores.sname. Administrative records that represent a district rather than a school have no school name in any of the three tables.",
+    "scope": "Naming and listing schools in results, and matching a school across tables by name when a code-based link is unavailable.",
+    "aliases": [
+      "School",
+      "sname",
+      "School Name",
+      "school name"
+    ],
+    "evidence": [
+      "evidence_name_linkage",
+      "evidence_district_rows"
+    ]
+  },
+  {
+    "id": "term_school_open_close_date",
+    "name": "School Open and Close Dates",
+    "type": "concept",
+    "definition": "The date on which a school opened and, for closed schools, the date on which it closed. Both are stored as ISO 'YYYY-MM-DD' text; a school may have an open date, a close date, both, or neither.",
+    "scope": "Time-based selection of schools such as schools opened after a year or closed before a year.",
+    "aliases": [
+      "OpenDate",
+      "ClosedDate",
+      "opened after",
+      "closed before",
+      "opening date",
+      "closing date"
+    ],
+    "evidence": [
+      "evidence_date_columns"
+    ]
+  },
+  {
+    "id": "term_grade_span",
+    "name": "Grade Span",
+    "type": "dimension",
+    "definition": "The grades that a school offers and serves. schools.GSoffered and schools.GSserved hold range strings such as 'K-5', '9-12' or 'K-12'; frpm expresses the same information as separate Low Grade and High Grade codes.",
+    "scope": "Determining whether a school covers a stated grade range such as grades 1 through 12 (K-12), and grouping schools by level.",
+    "aliases": [
+      "GSoffered",
+      "GSserved",
+      "Low Grade",
+      "High Grade",
+      "grades served",
+      "grades offered",
+      "K-12",
+      "grades 1 through 12"
+    ],
+    "evidence": [
+      "evidence_grade_span"
+    ]
+  }
+]

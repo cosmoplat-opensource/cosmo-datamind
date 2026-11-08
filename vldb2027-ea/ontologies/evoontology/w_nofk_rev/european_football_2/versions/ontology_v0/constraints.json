@@ -1,0 +1,447 @@
+[
+  {
+    "id": "constraint_attacking_work_rate_enum",
+    "target": "attacking_work_rate",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "work rate",
+      "attacking work rate",
+      "tend to be attacking",
+      "attack moves",
+      "attacking when",
+      "high",
+      "low",
+      "medium"
+    ],
+    "severity": "block",
+    "scope": "Applies whenever a player role is filtered or interpreted through attacking work rate.",
+    "confidence": "high",
+    "description": "Attacking work rate is a text category, never a number. The canonical categories are high, medium, low and None. A high attacking work rate means the player regularly pushes forward and joins attacking moves. Filters such as 'players who tend to be attacking' match the high category.",
+    "evidence": [
+      "evidence_work_rate_value_domain"
+    ]
+  },
+  {
+    "id": "constraint_defensive_work_rate_enum",
+    "target": "defensive_work_rate",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "defensive work rate",
+      "remain in his position",
+      "defense while the team attacked",
+      "stay back",
+      "defends",
+      "high",
+      "low",
+      "medium"
+    ],
+    "severity": "block",
+    "scope": "Applies whenever a player role is filtered or interpreted through defensive work rate.",
+    "confidence": "high",
+    "description": "Defensive work rate is a text category, never a number, with the canonical categories high, medium, low and None. A high defensive work rate means the player holds position and defends while the team attacks, which is the reading used for players who stay back during attacking moves.",
+    "evidence": [
+      "evidence_work_rate_value_domain"
+    ]
+  },
+  {
+    "id": "constraint_work_rate_dirty_values",
+    "target": "player_attribute_record",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "work rate",
+      "distinct players",
+      "count players",
+      "how many players",
+      "attribute values",
+      "unusual values"
+    ],
+    "severity": "warning",
+    "scope": "Applies to attacking_work_rate and defensive_work_rate on every player attribute record.",
+    "confidence": "high",
+    "description": "Both work rate columns contain values beyond the canonical categories: 3230 empty strings, 3639 literal 'None' entries, and short corrupted fragments such as 'le', 'norm', 'stoc', 'y', 'ean', 'es', 'o', '_0', 'ormal', 'tocky' together with bare digits 0 to 9. These fragments are parse artefacts, not additional work rate levels. Filters and counts on work rate should target the canonical categories and treat the remaining records as unknown rather than as extra categories.",
+    "evidence": [
+      "evidence_work_rate_value_domain"
+    ]
+  },
+  {
+    "id": "constraint_player_attribute_snapshot_date",
+    "target": "player_attribute_record",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "on 2015/5/1",
+      "on 2013/7/12",
+      "on 2016/2/4",
+      "on this date",
+      "as of",
+      "on that day",
+      "snapshot"
+    ],
+    "severity": "block",
+    "scope": "Applies to any question pinning a player measure to a stated day.",
+    "confidence": "high",
+    "description": "A player attribute snapshot is stamped with a date carrying a zero time component. A question naming a single day refers to the snapshot whose date matches that day, and the requested measure is read from that snapshot alone rather than aggregated. The slash-separated year/month/day spelling used in questions corresponds to the dash-separated stored date.",
+    "evidence": [
+      "evidence_player_attribute_dates"
+    ]
+  },
+  {
+    "id": "constraint_player_attribute_snapshot_coverage",
+    "target": "player_attribute_record",
+    "constraint_type": "scope",
+    "trigger_keywords": [
+      "date range",
+      "from",
+      "to",
+      "between",
+      "average overall rating from",
+      "over the period"
+    ],
+    "severity": "warning",
+    "scope": "Applies to any player measure restricted to a period.",
+    "confidence": "high",
+    "description": "Player attribute snapshots are unevenly spaced: twice per year from 2007 to 2012 and roughly weekly from 2013 onwards, across 197 distinct dates between 2007-02-22 and 2016-07-07. A period-restricted average therefore averages only the snapshots that exist inside the period, and its weight depends on how densely that period was sampled.",
+    "evidence": [
+      "evidence_player_attribute_dates"
+    ]
+  },
+  {
+    "id": "constraint_player_attribute_grain",
+    "target": "player_attribute_record",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "average overall rating",
+      "count players",
+      "how many players",
+      "distinct",
+      "per player"
+    ],
+    "severity": "block",
+    "scope": "Applies to every aggregate over player measures.",
+    "confidence": "high",
+    "description": "The attribute table holds a time series, not one row per player: a player carries between 2 and 56 snapshots, so a raw row count overstates the number of players by more than an order of magnitude. Player-level questions must aggregate within a player or count distinct players, and a measure asked without a date must be averaged across that player's snapshots.",
+    "evidence": [
+      "evidence_player_attribute_dates",
+      "evidence_player_attribute_duplicates"
+    ]
+  },
+  {
+    "id": "constraint_player_attribute_duplicates",
+    "target": "player_attribute_record",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "duplicate",
+      "distinct players",
+      "count players",
+      "how many players"
+    ],
+    "severity": "warning",
+    "scope": "Applies to counting and averaging over player attribute records.",
+    "confidence": "medium",
+    "description": "835 player and snapshot-date pairs appear more than once. The duplicated rows carry the same overall rating, so they inflate row counts without adding a new observation and should be collapsed before counting.",
+    "evidence": [
+      "evidence_player_attribute_duplicates"
+    ]
+  },
+  {
+    "id": "constraint_team_attribute_snapshot_date",
+    "target": "team_attribute_record",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "in 2012",
+      "in the year",
+      "that season",
+      "team build-up play",
+      "team tactics",
+      "snapshot"
+    ],
+    "severity": "block",
+    "scope": "Applies to any team tactical measure pinned to a year or period.",
+    "confidence": "high",
+    "description": "Team tactical profiles exist at only six snapshot dates, one per year from 2010 to 2015, each falling in February or September. A question naming a single year refers to the one snapshot whose date falls inside that year; the profiles are not continuously observed, so a year phrase selects a single profile per team rather than an average.",
+    "evidence": [
+      "evidence_team_attribute_dates"
+    ]
+  },
+  {
+    "id": "constraint_team_attribute_duplicates",
+    "target": "team_attribute_record",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "team tactics",
+      "distinct teams",
+      "count teams",
+      "in 2015"
+    ],
+    "severity": "info",
+    "scope": "Applies to counting or averaging over team tactical profiles.",
+    "confidence": "high",
+    "description": "One team and snapshot-date pair appears twice, in the 2015-09-10 snapshot. Counts of distinct teams are unaffected, but row-level counts over that snapshot can be off by one.",
+    "evidence": [
+      "evidence_team_attribute_duplicate"
+    ]
+  },
+  {
+    "id": "constraint_team_attribute_class_bands",
+    "target": "team_attribute_class",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "played safe",
+      "Safe",
+      "Risky",
+      "class",
+      "build-up play speed class",
+      "chance creation passing class",
+      "Slow",
+      "Fast",
+      "Long",
+      "Short",
+      "Wide",
+      "Narrow"
+    ],
+    "severity": "block",
+    "scope": "Applies to every categorical team tactic filter.",
+    "confidence": "high",
+    "description": "Each tactical class label is derived from its numeric companion by splitting the shared value range into three bands: the low band 20 to 33, the middle band 34 to 66 and the high band 67 to 80. Only the band words change between dimensions: build-up play speed uses Slow, Balanced and Fast; build-up play passing uses Short, Mixed and Long; chance creation passing uses Safe, Normal and Risky; defence width uses Narrow, Normal and Wide. The low band is therefore the one labelled Safe and the high band is the one labelled Risky, so 'played safe while creating chance of passing' selects the low band of chance creation passing, not a high value.",
+    "evidence": [
+      "evidence_team_class_tertile_ranges",
+      "evidence_team_class_value_domains"
+    ]
+  },
+  {
+    "id": "constraint_team_class_vs_numeric",
+    "target": "team_attribute_class",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "build-up play speed greater than",
+      "more than 50 but less than 60",
+      "above average passing",
+      "numeric tactic",
+      "speed value"
+    ],
+    "severity": "warning",
+    "scope": "Applies when a question mixes a numeric tactic threshold with the categorical companion.",
+    "confidence": "high",
+    "description": "Numeric tactical thresholds and class labels are different concepts over the same dimension. A numeric phrase such as a build-up play speed between 50 and 60 is a plain comparison on the numeric column and spans two class bands; it must not be translated into a class label. Conversely a class phrase selects a whole band and not a single value.",
+    "evidence": [
+      "evidence_team_class_tertile_ranges",
+      "evidence_team_numeric_ranges"
+    ]
+  },
+  {
+    "id": "constraint_team_fifa_api_id_completeness",
+    "target": "team_fifa_api_id",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "team_fifa_api_id",
+      "fifa id",
+      "fifa team id",
+      "missing team id"
+    ],
+    "severity": "warning",
+    "scope": "Applies whenever the FIFA team identifier is selected or joined.",
+    "confidence": "high",
+    "description": "The FIFA team identifier is not complete: 11 of 299 teams have no value, and among the 288 non-null values only 285 are distinct, so it cannot be treated as a unique key. It is also a different identifier system from the database-native team identifier and the two must never be substituted for one another.",
+    "evidence": [
+      "evidence_team_fifa_api_id_completeness"
+    ]
+  },
+  {
+    "id": "constraint_season_format",
+    "target": "season",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "season",
+      "the 2016 season",
+      "the 2010 season",
+      "in 2008/2009",
+      "that year",
+      "campaign"
+    ],
+    "severity": "block",
+    "scope": "Applies to every season-based filter.",
+    "confidence": "high",
+    "description": "Seasons are written as two slash-separated years covering a European football year, from 2008/2009 through 2015/2016, and there are exactly eight of them. An ordinary year phrase names the season that ends in that year: the 2016 season is 2015/2016 and the 2010 season is 2009/2010. A phrase already written as a pair of years is used verbatim.",
+    "evidence": [
+      "evidence_match_season_values"
+    ]
+  },
+  {
+    "id": "constraint_league_name_matching",
+    "target": "league",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "league",
+      "premier league",
+      "Scotland Premier League",
+      "which league",
+      "name of the league"
+    ],
+    "severity": "info",
+    "scope": "Applies to every league filter or league name lookup.",
+    "confidence": "high",
+    "description": "League names embed the country as a prefix, for example Scotland Premier League or England Premier League, and the same country name also exists as a standalone country entity. A league must be matched by its full stored name, and the country entity must not be mistaken for the competition.",
+    "evidence": [
+      "evidence_league_country"
+    ]
+  },
+  {
+    "id": "constraint_match_goals_source",
+    "target": "team_goals",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "goals",
+      "most goals",
+      "score",
+      "goal difference",
+      "won",
+      "high scoring"
+    ],
+    "severity": "block",
+    "scope": "Applies to every goal total, goal aggregate or goal-based comparison.",
+    "confidence": "high",
+    "description": "The authoritative goal counts are the two integer goal columns on the fixture, one from each side's perspective. The separate goal column holds an XML event log that is populated for only 14217 of 25979 fixtures and is missing for 10873 fixtures in which goals were actually scored, so it must not be used as the source of goal totals.",
+    "evidence": [
+      "evidence_match_goals_and_xml"
+    ]
+  },
+  {
+    "id": "constraint_match_event_columns",
+    "target": "match",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "goal events",
+      "shots",
+      "possession",
+      "cards",
+      "fouls",
+      "corners",
+      "player position",
+      "line-up position"
+    ],
+    "severity": "warning",
+    "scope": "Applies to the event and positional columns of the fixture table.",
+    "confidence": "high",
+    "description": "The goal, shots, cards, fouls, crosses, corners and possession columns are XML event logs populated for only about 55 percent of fixtures, and the goal log is present even in 1089 fixtures that ended goalless. The per-player position columns are entirely empty. Aggregate match level facts such as score, teams, league and season are the reliable ones.",
+    "evidence": [
+      "evidence_match_goals_and_xml",
+      "evidence_match_position_columns_empty"
+    ]
+  },
+  {
+    "id": "constraint_match_win_definition",
+    "target": "match_result",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "won the most",
+      "away team won",
+      "wins",
+      "victories",
+      "lost the most",
+      "undefeated"
+    ],
+    "severity": "block",
+    "scope": "Applies to every win, loss or draw count.",
+    "confidence": "high",
+    "description": "A team won a fixture when its own goal total was strictly greater than the opponent's. For a question about away teams, the away side's total is the one compared against the home side's, and the team named in the result is the team holding that role in the fixture.",
+    "evidence": [
+      "evidence_match_goals_and_xml",
+      "evidence_league_ties_2008_2009"
+    ]
+  },
+  {
+    "id": "constraint_ranking_ties",
+    "target": "match_count",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "most matches",
+      "most goals",
+      "highest",
+      "top",
+      "ranked",
+      "the league with the most"
+    ],
+    "severity": "warning",
+    "scope": "Applies to every maximum or ranking question over leagues, teams or seasons.",
+    "confidence": "high",
+    "description": "Extremes over this database are frequently tied. In the 2008/2009 season four leagues each played exactly 380 fixtures, so a question asking for the league with the most matches has several equally correct answers. Rankings must therefore be computed on the aggregate rather than assumed to yield a single row, and tied candidates should be reported rather than arbitrarily narrowed.",
+    "evidence": [
+      "evidence_league_ties_2008_2009"
+    ]
+  },
+  {
+    "id": "constraint_player_name_matching",
+    "target": "player_name",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "first name",
+      "named Aaron",
+      "player name",
+      "whose name",
+      "called"
+    ],
+    "severity": "warning",
+    "scope": "Applies to player identity filters.",
+    "confidence": "high",
+    "description": "A player name is stored as a single field holding given and family name together, and names are not unique across the 11060 players. A full name phrase is matched as an exact value, while a first-name phrase matches as a prefix of the stored field. Because a player has many attribute rows, counting matching players requires counting distinct players.",
+    "evidence": [
+      "evidence_player_name_prefix"
+    ]
+  },
+  {
+    "id": "constraint_birthday_year_comparison",
+    "target": "player_birthday",
+    "constraint_type": "unit",
+    "trigger_keywords": [
+      "born after",
+      "born before",
+      "born in",
+      "1990s",
+      "year 1986",
+      "age"
+    ],
+    "severity": "warning",
+    "scope": "Applies to birth-date cohort filters.",
+    "confidence": "high",
+    "description": "Birth dates are stored as timestamps with a zero time component, so a year phrase is a comparison on the year part of the value rather than on the whole date. 'Born after the 1990s' keeps players whose birth year is later than 1990 and 'born before the year 1986' keeps players whose birth year is earlier than 1986.",
+    "evidence": [
+      "evidence_player_demographics"
+    ]
+  },
+  {
+    "id": "constraint_height_units",
+    "target": "player_height",
+    "constraint_type": "unit",
+    "trigger_keywords": [
+      "tallest",
+      "shortest",
+      "height",
+      "taller than"
+    ],
+    "severity": "warning",
+    "scope": "Applies to physical comparisons between players.",
+    "confidence": "high",
+    "description": "Height is recorded in centimetres, from 157.48 to 208.28, and weight in pounds. Tallest and shortest refer to the maximum and minimum of the height column directly, without conversion or rounding.",
+    "evidence": [
+      "evidence_player_demographics"
+    ]
+  },
+  {
+    "id": "constraint_player_count_distinctness",
+    "target": "player",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "how many players",
+      "number of players",
+      "count of players",
+      "distinct players"
+    ],
+    "severity": "warning",
+    "scope": "Applies to every count over players or over player attributes.",
+    "confidence": "high",
+    "description": "Counting players is not counting rows. A player appears once in the player table, but many times in the attribute table and twice in a fixture through the home and away line-up slots, so any count of players reached through attributes or fixtures must be a count of distinct players.",
+    "evidence": [
+      "evidence_join_integrity",
+      "evidence_player_attribute_dates"
+    ]
+  }
+]

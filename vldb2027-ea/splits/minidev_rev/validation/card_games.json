@@ -1,0 +1,69 @@
+{
+ "db_id": "card_games",
+ "questions": [
+  {
+   "question_id": 484,
+   "db_id": "card_games",
+   "question": "Please list the Italian names of the cards in the set Coldsnap with the highest converted mana cost.",
+   "evidence": "card set Coldsnap refers to name = 'Coldsnap'; Italian refers to language = 'Italian'; highest converted mana cost refers to MAX(convertedManaCost)",
+   "SQL": "SELECT T2.name FROM foreign_data AS T1 INNER JOIN cards AS T2 ON T2.uuid = T1.uuid INNER JOIN sets AS T3 ON T3.code = T2.setCode WHERE T3.name = 'Coldsnap' AND T1.language = 'Italian' ORDER BY T2.convertedManaCost DESC",
+   "difficulty": "moderate"
+  },
+  {
+   "question_id": 414,
+   "db_id": "card_games",
+   "question": "What language is the set of 180 cards that belongs to the Ravnica block translated into?",
+   "evidence": "set of 180 cards refers to baseSetSize = 180",
+   "SQL": "SELECT T2.language FROM sets AS T1 INNER JOIN set_translations AS T2 ON T1.code = T2.setCode WHERE T1.block = 'Ravnica' AND T1.baseSetSize = 180",
+   "difficulty": "simple"
+  },
+  {
+   "question_id": 397,
+   "db_id": "card_games",
+   "question": "What is the mana cost of cards with a normal layout, a 2003 frame version, with a black border color, and available in paper and mtgo?",
+   "evidence": "available in paper and mtgo refers to availability = 'mtgo,paper'; frameVersion = 2003;borderColor = 'black'",
+   "SQL": "SELECT manaCost FROM cards WHERE availability = 'mtgo,paper' AND borderColor = 'black' AND frameVersion = 2003 AND layout = 'normal'",
+   "difficulty": "moderate"
+  },
+  {
+   "question_id": 529,
+   "db_id": "card_games",
+   "question": "Find and list the names of sets which doesn't have Japanese translation but have Korean translation.",
+   "evidence": "names of sets refers to name; doesn't have Japanese translation refers to language not like '%Japanese%'; have Korean translation refers to language = 'Korean'",
+   "SQL": "SELECT name FROM sets WHERE code IN ( SELECT setCode FROM set_translations WHERE language = 'Korean' AND language NOT LIKE '%Japanese%' )",
+   "difficulty": "moderate"
+  },
+  {
+   "question_id": 345,
+   "db_id": "card_games",
+   "question": "For artifact type of cards that do not have multiple faces on the same card, state its legalities status for vintage play format.",
+   "evidence": "Artifact type of cards refers to types = 'Artifact'; card does not have multiple faces on the same card refers to side is NULL'; vintage play format refers to format = 'vintage';",
+   "SQL": "SELECT DISTINCT T2.status FROM cards AS T1 INNER JOIN legalities AS T2 ON T1.uuid = T2.uuid WHERE T1.type = 'Artifact' AND T2.format = 'vintage' AND T1.side IS NULL",
+   "difficulty": "moderate"
+  },
+  {
+   "question_id": 412,
+   "db_id": "card_games",
+   "question": "What is the foreign name of the card in French of type Creature, normal layout and black border color, by artist Matthew D. Wilson?",
+   "evidence": "in French refers to language = 'French'; black border color refers to borderColor = 'black'",
+   "SQL": "SELECT name FROM foreign_data WHERE uuid IN ( SELECT uuid FROM cards WHERE types = 'Creature' AND layout = 'normal' AND borderColor = 'black' AND artist = 'Matthew D. Wilson' ) AND language = 'French'",
+   "difficulty": "moderate"
+  },
+  {
+   "question_id": 379,
+   "db_id": "card_games",
+   "question": "What are the cards belong to duel deck a? List the ID.",
+   "evidence": "duel deck a refers to duelDeck = a;",
+   "SQL": "SELECT id FROM cards WHERE duelDeck = 'a'",
+   "difficulty": "simple"
+  },
+  {
+   "question_id": 422,
+   "db_id": "card_games",
+   "question": "What is the language of the card with the multiverse number 149934?",
+   "evidence": "multiverse number 149934 refers to multiverseid = 149934;",
+   "SQL": "SELECT language FROM foreign_data WHERE multiverseid = 149934",
+   "difficulty": "simple"
+  }
+ ]
+}

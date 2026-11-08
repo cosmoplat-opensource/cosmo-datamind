@@ -1,0 +1,245 @@
+[
+  {
+    "id": "rel_account_transactions",
+    "source": "account",
+    "relation_type": "composition",
+    "target": "transaction",
+    "connection_condition": "each transaction row carries the account_id of the account it is posted on",
+    "description": "An account is composed of the transactions posted on it; a transaction cannot exist without its account. All 4,500 accounts have at least one transaction.",
+    "evidence": "ev_024_fk_integrity, ev_002_trans_type_domain"
+  },
+  {
+    "id": "rel_account_loans",
+    "source": "account",
+    "relation_type": "composition",
+    "target": "loan",
+    "connection_condition": "loan.account_id references account.account_id",
+    "description": "A loan contract belongs to exactly one account, and at most one loan exists per account in this database.",
+    "evidence": "ev_013_loan_columns, ev_028_loan_uver_link"
+  },
+  {
+    "id": "rel_account_standing_orders",
+    "source": "account",
+    "relation_type": "composition",
+    "target": "standing_order",
+    "connection_condition": "order.account_id references account.account_id",
+    "description": "Standing orders are registered on an account and have no meaning without it; 6,471 orders are distributed over 3,758 accounts.",
+    "evidence": "ev_023_order_domain"
+  },
+  {
+    "id": "rel_account_disps",
+    "source": "account",
+    "relation_type": "composition",
+    "target": "disp",
+    "connection_condition": "disp.account_id references account.account_id",
+    "description": "An account is described by its disposition records: exactly one OWNER record and at most one DISPONENT record per account.",
+    "evidence": "ev_014_disp_domain"
+  },
+  {
+    "id": "rel_client_disps",
+    "source": "client",
+    "relation_type": "composition",
+    "target": "disp",
+    "connection_condition": "disp.client_id references client.client_id",
+    "description": "A disposition record exists only in the context of a client; each client has exactly one disposition record.",
+    "evidence": "ev_014_disp_domain"
+  },
+  {
+    "id": "rel_client_account",
+    "source": "client",
+    "relation_type": "association",
+    "target": "account",
+    "connection_condition": "there is no direct client-to-account column; the link is established indirectly through disp, where client_id and account_id meet on the same row",
+    "description": "A client holds an account through a disposition record. In this database the link is effectively one-to-one: each client has exactly one disposition row and each account has exactly one owner.",
+    "evidence": "ev_014_disp_domain"
+  },
+  {
+    "id": "rel_account_cards",
+    "source": "account",
+    "relation_type": "association",
+    "target": "card",
+    "connection_condition": "no direct link exists; cards are reached from an account through its disp rows, and all 892 cards are attached to OWNER dispositions",
+    "description": "Cards are issued against an account's ownership record rather than against the account directly.",
+    "evidence": "ev_015_card_domain"
+  },
+  {
+    "id": "rel_district_accounts",
+    "source": "district",
+    "relation_type": "association",
+    "target": "account",
+    "connection_condition": "account.district_id references district.district_id",
+    "description": "Each account carries one district reference locating the account, with no orphan references across 4,500 accounts.",
+    "evidence": "ev_024_fk_integrity, ev_022_district_domain"
+  },
+  {
+    "id": "rel_district_clients",
+    "source": "district",
+    "relation_type": "association",
+    "target": "client",
+    "connection_condition": "client.district_id references district.district_id",
+    "description": "Each client carries a district reference that is independent of the district of the client's account: the two disagree for 409 of 4,500 ownership pairs.",
+    "evidence": "ev_024_fk_integrity, ev_017_client_domain"
+  },
+  {
+    "id": "rel_region_districts",
+    "source": "region",
+    "relation_type": "composition",
+    "target": "district",
+    "connection_condition": "all districts sharing the same A3 value belong to the same region group",
+    "description": "A region group is composed of the districts that carry its A3 value; the 8 groups partition the 77 districts.",
+    "evidence": "ev_022_district_domain"
+  },
+  {
+    "id": "rel_district_indicators",
+    "source": "district",
+    "relation_type": "association",
+    "target": "district_indicator_code",
+    "connection_condition": "columns A4 through A16 sit on the same district row as district_id",
+    "description": "Each district carries 13 coded aggregate indicator values; on account-level rows these cannot be combined with per-account measures without an aggregation step.",
+    "evidence": "ev_018_district_types, ev_020_district_a10_bounds"
+  },
+  {
+    "id": "rel_district_label",
+    "source": "district",
+    "relation_type": "association",
+    "target": "district_label",
+    "connection_condition": "column A2 sits on the same district row as district_id",
+    "description": "Each district has exactly one text label, which is the only human-readable district attribute in the database.",
+    "evidence": "ev_022_district_domain"
+  },
+  {
+    "id": "rel_transaction_type",
+    "source": "transaction",
+    "relation_type": "association",
+    "target": "transaction_type",
+    "connection_condition": "trans.type sits on the same row as trans_id",
+    "description": "Every posted movement carries exactly one direction type, and that type is what determines whether the movement is an inflow or an outflow.",
+    "evidence": "ev_002_trans_type_domain, ev_003_trans_amount_nonnegative"
+  },
+  {
+    "id": "rel_transaction_operation",
+    "source": "transaction",
+    "relation_type": "association",
+    "target": "transaction_operation",
+    "connection_condition": "trans.operation sits on the same row as trans_id",
+    "description": "Every posted movement carries an execution mode, which is recorded as null precisely for the monthly interest postings.",
+    "evidence": "ev_004_operation_domain, ev_005_operation_null_iff_urok"
+  },
+  {
+    "id": "rel_transaction_purpose",
+    "source": "transaction",
+    "relation_type": "association",
+    "target": "payment_purpose_code",
+    "connection_condition": "trans.k_symbol sits on the same row as trans_id",
+    "description": "A transaction may carry a purpose code, but 481,881 of 1,056,320 rows have none and a further 53,433 carry a single-space placeholder.",
+    "evidence": "ev_006_k_symbol_domain, ev_007_k_symbol_space_token"
+  },
+  {
+    "id": "rel_standing_order_purpose",
+    "source": "standing_order",
+    "relation_type": "association",
+    "target": "payment_purpose_code",
+    "connection_condition": "order.k_symbol sits on the same row as order_id",
+    "description": "Standing orders share the purpose code system with transactions, but the order column additionally uses a leasing code that never appears on transactions.",
+    "evidence": "ev_023_order_domain, ev_006_k_symbol_domain"
+  },
+  {
+    "id": "rel_transaction_bank_code",
+    "source": "transaction",
+    "relation_type": "association",
+    "target": "bank_code",
+    "connection_condition": "trans.bank is populated only when the movement is an inter-account transfer",
+    "description": "Only inter-account transfers carry a counterparty bank code; cash deposits, cash withdrawals and card withdrawals never do.",
+    "evidence": "ev_010_bank_code_domain, ev_009_counterparty_domain"
+  },
+  {
+    "id": "rel_standing_order_bank",
+    "source": "standing_order",
+    "relation_type": "association",
+    "target": "bank_code",
+    "connection_condition": "order.bank_to identifies the bank holding the target account",
+    "description": "Every standing order names a counterparty bank, using the same 13-code bank domain as inter-account transfers.",
+    "evidence": "ev_023_order_domain, ev_010_bank_code_domain"
+  },
+  {
+    "id": "rel_transaction_counterparty_account",
+    "source": "transaction",
+    "relation_type": "association",
+    "target": "counterparty_account_number",
+    "connection_condition": "trans.account carries the remote account number of an inter-account transfer and never equals the row's own account_id",
+    "description": "The counterparty account number belongs to a different numbering domain from account.account_id, so it identifies the remote side without enabling a join to local accounts.",
+    "evidence": "ev_009_counterparty_domain"
+  },
+  {
+    "id": "rel_standing_order_counterparty_account",
+    "source": "standing_order",
+    "relation_type": "association",
+    "target": "counterparty_account_number",
+    "connection_condition": "order.account_to carries the remote account number and resolves to a local account only twice in 6,471 rows",
+    "description": "As with transactions, the standing-order target account is an external number rather than a local account key.",
+    "evidence": "ev_023_order_domain"
+  },
+  {
+    "id": "rel_loan_status",
+    "source": "loan",
+    "relation_type": "association",
+    "target": "loan_status",
+    "connection_condition": "loan.status sits on the same row as loan_id",
+    "description": "Each loan contract carries one status code that separates finished contracts (A, B) from running contracts (C, D) without exception.",
+    "evidence": "ev_011_loan_status_maturity"
+  },
+  {
+    "id": "rel_loan_amount_term_payments",
+    "source": "loan_amount",
+    "relation_type": "derivation",
+    "target": "loan_payments",
+    "connection_condition": "payments multiplied by duration reproduces amount exactly for all 682 contracts",
+    "description": "The monthly payment is fully determined by the principal and the contractual duration; the portfolio therefore contains no interest loading in the stored payment figure.",
+    "evidence": "ev_012_loan_payments_identity"
+  },
+  {
+    "id": "rel_loan_maturity",
+    "source": "loan",
+    "relation_type": "derivation",
+    "target": "loan_maturity",
+    "connection_condition": "add the number of months in loan.duration to loan.date",
+    "description": "The maturity date is derived from the grant date and the contractual duration, and it is what separates the finished status codes from the running ones.",
+    "evidence": "ev_011_loan_status_maturity, ev_013_loan_columns"
+  },
+  {
+    "id": "rel_signed_transaction_value",
+    "source": "transaction_amount",
+    "relation_type": "derivation",
+    "target": "signed_transaction_value",
+    "connection_condition": "the mount is taken as positive for credit receipts and as negative for debit payments and withdrawals",
+    "description": "The signed value is derived from the non-negative amount together with the direction type, because the stored amount never carries a sign.",
+    "evidence": "ev_003_trans_amount_nonnegative, ev_002_trans_type_domain"
+  },
+  {
+    "id": "rel_client_age",
+    "source": "client",
+    "relation_type": "derivation",
+    "target": "client_age",
+    "connection_condition": "subtract client.birth_date from a chosen reference date",
+    "description": "Client age is derived from the stored birth date and depends on the reference date chosen for the analysis.",
+    "evidence": "ev_017_client_domain"
+  },
+  {
+    "id": "rel_account_opening_date",
+    "source": "account",
+    "relation_type": "association",
+    "target": "account_opening_date",
+    "connection_condition": "account.date sits on the same row as account_id and precedes the account's first transaction",
+    "description": "Each account has an opening date that bounds the start of its transaction history.",
+    "evidence": "ev_025_account_date_before_trans"
+  },
+  {
+    "id": "rel_disp_role",
+    "source": "disp",
+    "relation_type": "association",
+    "target": "disp_role_type",
+    "connection_condition": "disp.type sits on the same row as disp_id",
+    "description": "Each disposition record states one role on one account, and the OWNER role occurs exactly once per account.",
+    "evidence": "ev_014_disp_domain"
+  }
+]

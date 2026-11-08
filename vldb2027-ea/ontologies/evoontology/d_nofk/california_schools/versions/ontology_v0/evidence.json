@@ -1,0 +1,194 @@
+[
+  {
+    "id": "evidence_01",
+    "source": "california_schools sqlite, table row counts",
+    "query": "SELECT 'frpm' t, COUNT(*) n FROM frpm UNION ALL SELECT 'satscores', COUNT(*) FROM satscores UNION ALL SELECT 'schools', COUNT(*) FROM schools;",
+    "result": "frpm 9986 rows, satscores 2269 rows, schools 17686 rows. Three tables only; no declared foreign keys in the schema.",
+    "validation_method": "read-only connection, row count enumeration",
+    "timestamp": "2026-10-09T19:30:00+00:00"
+  },
+  {
+    "id": "evidence_02",
+    "source": "california_schools sqlite, frpm.Academic Year",
+    "query": "SELECT \"Academic Year\", COUNT(*) n FROM frpm GROUP BY 1;",
+    "result": "A single value, 2014-2015, on all 9986 rows. The SAT file has no year column.",
+    "validation_method": "distinct value enumeration",
+    "timestamp": "2026-10-09T19:30:00+00:00"
+  },
+  {
+    "id": "evidence_03",
+    "source": "california_schools sqlite, frpm percent columns",
+    "query": "SELECT MIN(\"Percent (%) Eligible Free (K-12)\"), MAX(\"Percent (%) Eligible Free (K-12)\"), MIN(\"Percent (%) Eligible FRPM (K-12)\"), MAX(\"Percent (%) Eligible FRPM (K-12)\"), SUM(CASE WHEN \"Percent (%) Eligible Free (K-12)\">1 THEN 1 ELSE 0 END) FROM frpm;",
+    "result": "Free rate ranges 0.00176056338028169 to 1.0; FRPM rate ranges 0.00220507166482911 to 1.0; 0 rows above 1.0. Values are fractions, not 0-100 percentages.",
+    "validation_method": "min/max and out-of-range count",
+    "timestamp": "2026-10-09T19:30:00+00:00"
+  },
+  {
+    "id": "evidence_04",
+    "source": "california_schools sqlite, frpm rate derivation",
+    "query": "SELECT SUM(ABS(\"Percent (%) Eligible Free (K-12)\" - \"Free Meal Count (K-12)\"/\"Enrollment (K-12)\") > 0.0000001), SUM(ABS(\"Percent (%) Eligible FRPM (K-12)\" - \"FRPM Count (K-12)\"/\"Enrollment (K-12)\") > 0.0000001), SUM(\"Enrollment (K-12)\"=0) FROM frpm;",
+    "result": "0 mismatches for the free-meal rate, 0 mismatches for the FRPM rate, 0 rows with zero enrollment. The same test on the Ages 5-17 scope also returned 0 mismatches and 0 zero enrollments.",
+    "validation_method": "tolerance-based recomputation of each rate from its count and enrollment columns",
+    "timestamp": "2026-10-09T19:30:00+00:00"
+  },
+  {
+    "id": "evidence_05",
+    "source": "california_schools sqlite, identifier length distribution",
+    "query": "SELECT t, L, COUNT(*) FROM (SELECT 'frpm' t, LENGTH(CDSCode) L FROM frpm UNION ALL SELECT 'schools', LENGTH(CDSCode) FROM schools UNION ALL SELECT 'satscores', LENGTH(cds) FROM satscores) GROUP BY t, L;",
+    "result": "frpm 14 characters on all 9986 rows; schools 14 characters on all 17686 rows; satscores 13 characters on 211 rows and 14 characters on 2058 rows.",
+    "validation_method": "length distribution per table",
+    "timestamp": "2026-10-09T19:30:00+00:00"
+  },
+  {
+    "id": "evidence_06",
+    "source": "california_schools sqlite, identifier reconciliation",
+    "query": "SELECT COUNT(*) FROM satscores s JOIN schools sc ON sc.CDSCode = s.cds; and the same join with CASE WHEN LENGTH(s.cds)=13 THEN '0'||s.cds ELSE s.cds END",
+    "result": "Direct equality matches 2058 of 2269 records. Prefixing a zero to the 13-character values matches 2269 of 2269. The 211 unmatched records are exactly the rows whose shortened identifier begins with a county code in the 01 to 09 range.",
+    "validation_method": "join cardinality comparison under two reconciliation rules",
+    "timestamp": "2026-10-09T19:30:00+00:00"
+  },
+  {
+    "id": "evidence_07",
+    "source": "california_schools sqlite, district-level records",
+    "query": "SELECT COUNT(*) FROM frpm WHERE SUBSTR(CDSCode,8,7)='0000000'; SELECT COUNT(*) FROM schools WHERE SUBSTR(CDSCode,8,7)='0000000';",
+    "result": "FRPM has 45 such rows and the school directory has 1369. All 45 FRPM rows join to a directory row, and all of them have blank School Type, blank Educational Option Type and blank Charter School (Y/N). All 1369 directory rows have a null School column. 16317 of 17686 directory rows are school level.",
+    "validation_method": "row identification by identifier segment, joined attribute inspection",
+    "timestamp": "2026-10-09T19:30:00+00:00"
+  },
+  {
+    "id": "evidence_08",
+    "source": "california_schools sqlite, CDS segment semantics",
+    "query": "SELECT COUNT(*) FROM (SELECT SUBSTR(CDSCode,1,2) seg, COUNT(DISTINCT County) dc FROM schools GROUP BY seg HAVING COUNT(DISTINCT County)>1); and the same grouped on SUBSTR(CDSCode,1,7) with COUNT(DISTINCT District).",
+    "result": "No two-character county segment maps to more than one County name and no seven-character county-district segment maps to more than one District name; both violation counts are 0. There are 1430 distinct seven-character district prefixes and 58 distinct two-character county prefixes.",
+    "validation_method": "functional dependency check on identifier segments",
+    "timestamp": "2026-10-09T19:30:00+00:00"
+  },
+  {
+    "id": "evidence_09",
+    "source": "california_schools sqlite, district label collisions",
+    "query": "SELECT District, COUNT(DISTINCT County) c FROM schools GROUP BY District HAVING c>1;",
+    "result": "District labels repeat across counties: Jefferson Elementary appears in 3 counties, and Central Union High, Fairfax Elementary, Hope Elementary, Junction Elementary, Lake Elementary, Lakeside Union Elementary, Liberty Elementary, Mountain View Elementary and Ocean View each appear in 2.",
+    "validation_method": "group-by collision detection",
+    "timestamp": "2026-10-09T19:30:00+00:00"
+  },
+  {
+    "id": "evidence_10",
+    "source": "california_schools sqlite, score suppression boundary",
+    "query": "SELECT CASE WHEN NumTstTakr=0 THEN '0' WHEN NumTstTakr<=10 THEN '1-10' ELSE '>10' END band, COUNT(*), SUM(AvgScrRead IS NULL), SUM(NumGE1500 IS NULL) FROM satscores GROUP BY band;",
+    "result": "Band 0: 218 rows, all 218 with null reading score and null 1500-count. Band 1-10: 378 rows, all with null scores. Band above 10: 1673 rows, none null. Maximum test taker count with a null score is 10; minimum with a reported score is 11.",
+    "validation_method": "banded null-rate enumeration and boundary search",
+    "timestamp": "2026-10-09T19:30:00+00:00"
+  },
+  {
+    "id": "evidence_11",
+    "source": "california_schools sqlite, suppression coupling",
+    "query": "SELECT SUM((AvgScrRead IS NULL)<>(NumGE1500 IS NULL)) FROM satscores;",
+    "result": "0 mismatches: the 1500-or-above count is null exactly when the section average scores are null, so the two are suppressed together.",
+    "validation_method": "exclusive-or count across the two nullability patterns",
+    "timestamp": "2026-10-09T19:30:00+00:00"
+  },
+  {
+    "id": "evidence_12",
+    "source": "california_schools sqlite, SAT score ranges",
+    "query": "SELECT MIN(AvgScrRead),MAX(AvgScrRead),MIN(AvgScrMath),MAX(AvgScrMath),MIN(AvgScrWrite),MAX(AvgScrWrite), SUM(NumGE1500>NumTstTakr), MAX(NumGE1500) FROM satscores;",
+    "result": "Reading 308 to 653, mathematics 289 to 699, writing 312 to 671; all within the 200 to 800 per-section scale. 0 records where the 1500-or-above count exceeds the test taker count. Maximum 1500-or-above count is 5837.",
+    "validation_method": "range check against the documented SAT scale and denominator consistency check",
+    "timestamp": "2026-10-09T19:30:00+00:00"
+  },
+  {
+    "id": "evidence_13",
+    "source": "california_schools sqlite, SAT record grain",
+    "query": "SELECT rtype, COUNT(*), SUM(AvgScrRead IS NULL), SUM(NumTstTakr=0) FROM satscores GROUP BY rtype; plus a join to the directory checking which grain each record matches.",
+    "result": "rtype D has 520 rows and rtype S has 1749. All 520 D records join only to directory rows whose school segment is 0000000, and all 1749 S records join to school-level rows; 0 records disagree between the record type and the directory grain.",
+    "validation_method": "grain cross-check between record type and the identifier's school segment",
+    "timestamp": "2026-10-09T19:30:00+00:00"
+  },
+  {
+    "id": "evidence_14",
+    "source": "california_schools sqlite, enroll12 versus K-12 enrollment",
+    "query": "SELECT s.cds, s.enroll12, f.\"Enrollment (K-12)\" FROM satscores s JOIN frpm f ON f.CDSCode = CASE WHEN LENGTH(s.cds)=13 THEN '0'||s.cds ELSE s.cds END LIMIT 5; plus SUM(NumTstTakr>enroll12) and the mean ratio.",
+    "result": "For CDS 01100170109835 the SAT file reports 62 enrolled against 1087 in the FRPM file; other pairs show the same order of magnitude gap. 30 records report more test takers than twelfth-grade enrollment, 5 report zero enrollment, and the mean ratio of test takers to twelfth-grade enrollment is approximately 0.395.",
+    "validation_method": "paired value inspection and ratio distribution",
+    "timestamp": "2026-10-09T19:30:00+00:00"
+  },
+  {
+    "id": "evidence_15",
+    "source": "california_schools sqlite, eligibility subset relation",
+    "query": "SELECT SUM(\"FRPM Count (K-12)\" < \"Free Meal Count (K-12)\"), SUM(\"FRPM Count (K-12)\" = \"Free Meal Count (K-12)\"), COUNT(*) FROM frpm;",
+    "result": "0 rows where the FRPM count is smaller than the free meal count; 578 rows where the two counts are equal out of 9986.",
+    "validation_method": "subset violation count and equality count",
+    "timestamp": "2026-10-09T19:30:00+00:00"
+  },
+  {
+    "id": "evidence_16",
+    "source": "california_schools sqlite, category vocabularies",
+    "query": "Group-by enumerations of frpm.'School Type' against schools.SOCType and frpm.'District Type' against schools.DOCType.",
+    "result": "FRPM School Type has 18 distinct values against 21 for the directory SOC type; FRPM District Type has 8 against 12 for the directory DOC type. Shared values such as Elementary Schools (Public) and Unified School District match exactly; the directory adds categories the FRPM file never uses, such as Adult Education Centers, ROC/ROP and Community College District.",
+    "validation_method": "value-domain comparison across tables",
+    "timestamp": "2026-10-09T19:30:00+00:00"
+  },
+  {
+    "id": "evidence_17",
+    "source": "california_schools sqlite, name agreement",
+    "query": "SELECT COUNT(*) FROM frpm f JOIN schools sc ON sc.CDSCode=f.CDSCode WHERE f.\"County Name\"<>sc.County OR f.\"District Name\"<>sc.District;",
+    "result": "0 mismatches across all 9986 joined rows, so the county and district labels are identical in both tables wherever a CDS code is shared.",
+    "validation_method": "join-based mismatch count",
+    "timestamp": "2026-10-09T19:30:00+00:00"
+  },
+  {
+    "id": "evidence_18",
+    "source": "california_schools sqlite, charter flag agreement",
+    "query": "SELECT f.\"Charter School (Y/N)\", sc.Charter, COUNT(*) FROM frpm f JOIN schools sc ON sc.CDSCode=f.CDSCode GROUP BY 1,2;",
+    "result": "Both blank 45, both 0 in 8771 rows, both 1 in 1163 rows, FRPM 0 against directory 1 in 3 rows, FRPM 1 against directory 0 in 4 rows. Agreement on 9934 of 9986 joined rows.",
+    "validation_method": "cross-tabulation of the two flags on the shared key",
+    "timestamp": "2026-10-09T19:30:00+00:00"
+  },
+  {
+    "id": "evidence_19",
+    "source": "california_schools sqlite, grade span representation",
+    "query": "SELECT SUM(CASE WHEN sc.GSserved = f.\"Low Grade\"||'-'||f.\"High Grade\" THEN 1 ELSE 0 END), COUNT(*) FROM schools sc JOIN frpm f ON f.CDSCode=sc.CDSCode WHERE sc.GSserved IS NOT NULL AND sc.GSserved<>'';",
+    "result": "8381 exact matches out of 9935 comparable rows. The most common spans are K-5 (2465), K-6 (1958), 9-12 (1726) and K-8 (979).",
+    "validation_method": "reconstruction of the directory range string from the FRPM boundary columns",
+    "timestamp": "2026-10-09T19:30:00+00:00"
+  },
+  {
+    "id": "evidence_20",
+    "source": "california_schools sqlite, operational status",
+    "query": "SELECT StatusType, COUNT(*) FROM schools GROUP BY 1; and the same joined to frpm.",
+    "result": "Active 11708, Closed 4518, Merged 1448, Pending 12 in the directory. FRPM-joined rows are Active 9846 and Closed 140; no Merged or Pending rows appear in the FRPM file. ClosedDate is populated on 5694 directory rows.",
+    "validation_method": "status distribution and join coverage by status",
+    "timestamp": "2026-10-09T19:30:00+00:00"
+  },
+  {
+    "id": "evidence_21",
+    "source": "california_schools sqlite, cross-file coverage",
+    "query": "SELECT SUM(EXISTS(SELECT 1 FROM frpm f WHERE f.CDSCode=CASE WHEN LENGTH(s.cds)=13 THEN '0'||s.cds ELSE s.cds END)), COUNT(*) FROM satscores s; and the reverse direction from frpm.",
+    "result": "1782 of 2269 SAT records match an FRPM row, and 1782 of 9986 FRPM rows have a matching SAT record. 9941 of 9986 FRPM rows match a school-level directory row.",
+    "validation_method": "bidirectional join coverage counts",
+    "timestamp": "2026-10-09T19:30:00+00:00"
+  },
+  {
+    "id": "evidence_22",
+    "source": "california_schools sqlite, FRPM nullness",
+    "query": "SELECT SUM(\"Percent (%) Eligible Free (K-12)\" IS NULL), SUM(\"Percent (%) Eligible FRPM (K-12)\" IS NULL), SUM(\"Enrollment (K-12)\" IS NULL), SUM(\"Free Meal Count (K-12)\" IS NULL) FROM frpm;",
+    "result": "56 null free-meal rates, 50 null FRPM rates, 0 null enrollments, 56 null free meal counts.",
+    "validation_method": "null count enumeration",
+    "timestamp": "2026-10-09T19:30:00+00:00"
+  },
+  {
+    "id": "evidence_23",
+    "source": "california_schools sqlite, constant column",
+    "query": "SELECT \"2013-14 CALPADS Fall 1 Certification Status\", COUNT(*) FROM frpm GROUP BY 1;",
+    "result": "A single value, 1, on all 9986 rows. The column carries no discriminating information in this snapshot.",
+    "validation_method": "distinct value enumeration",
+    "timestamp": "2026-10-09T19:30:00+00:00"
+  },
+  {
+    "id": "evidence_24",
+    "source": "california_schools sqlite, enrollment distribution",
+    "query": "SELECT MIN(\"Enrollment (K-12)\"), MAX(\"Enrollment (K-12)\"), AVG(\"Enrollment (K-12)\") FROM frpm;",
+    "result": "Minimum 1, maximum 5333, mean approximately 620.83, with no null values. The separate Ages 5-17 enrollment column is populated for the same rows at a different scope.",
+    "validation_method": "range and mean enumeration with null check",
+    "timestamp": "2026-10-09T19:30:00+00:00"
+  }
+]

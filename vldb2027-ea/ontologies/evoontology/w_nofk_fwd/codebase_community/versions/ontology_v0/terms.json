@@ -1,0 +1,476 @@
+[
+  {
+    "id": "term_user",
+    "name": "User",
+    "type": "entity",
+    "definition": "A registered account on the statistics Q&A site, represented by one row in the users table. Users own posts, write comments, cast votes and earn badges.",
+    "scope": "Identity, activity and reputation analysis across the codebase_community dataset",
+    "aliases": [
+      "member",
+      "account",
+      "contributor",
+      "person",
+      "user account"
+    ],
+    "evidence": [
+      "ev_schema_tables",
+      "ev_row_counts"
+    ]
+  },
+  {
+    "id": "term_post",
+    "name": "Post",
+    "type": "entity",
+    "definition": "Any authored entry in the posts table. The table is polymorphic: it holds questions, answers, tag wikis and several auxiliary post kinds distinguished by PostTypeId.",
+    "scope": "Content and engagement analysis; the parent entity of tags, answers, comments in aggregate and votes",
+    "aliases": [
+      "entry",
+      "content",
+      "submission"
+    ],
+    "evidence": [
+      "ev_schema_tables",
+      "ev_posttypeid_enum"
+    ]
+  },
+  {
+    "id": "term_question",
+    "name": "Question",
+    "type": "entity",
+    "definition": "A post of type Question (PostTypeId = 1). Questions carry a title, a body, a tag list and the engagement counters ViewCount, AnswerCount, CommentCount and FavoriteCount.",
+    "scope": "Question-level analysis; the only post kind that carries tags and view/favourite counters",
+    "aliases": [
+      "question post",
+      "asked post",
+      "thread"
+    ],
+    "evidence": [
+      "ev_posttypeid_enum",
+      "ev_tags_questions_only",
+      "ev_viewcount_questions_only"
+    ]
+  },
+  {
+    "id": "term_answer",
+    "name": "Answer",
+    "type": "entity",
+    "definition": "A post of type Answer (PostTypeId = 2) that responds to a question and references its parent question through posts.ParentId.",
+    "scope": "Answer-level analysis and question answer-count reconciliation",
+    "aliases": [
+      "answer post",
+      "response",
+      "reply"
+    ],
+    "evidence": [
+      "ev_posttypeid_enum",
+      "ev_parentid_answers"
+    ]
+  },
+  {
+    "id": "term_tag",
+    "name": "Tag",
+    "type": "entity",
+    "definition": "A topical label used to categorise questions, represented in the tags table by a bare lower-case name. Each tag optionally points to a tag wiki page and to a tag wiki excerpt post.",
+    "scope": "Topic-based filtering and grouping of questions",
+    "aliases": [
+      "topic",
+      "label",
+      "keyword"
+    ],
+    "evidence": [
+      "ev_tags_format",
+      "ev_tag_excerpt_wiki_posts"
+    ]
+  },
+  {
+    "id": "term_post_tag",
+    "name": "Post Tag Assignment",
+    "type": "concept",
+    "definition": "The association between a question and the tags it carries, physically stored as a delimited token list embedded in the question row rather than as separate rows.",
+    "scope": "Discovering which tags a given post uses, and which posts carry a given tag",
+    "aliases": [
+      "tags of a post",
+      "post tags",
+      "tag list",
+      "tagged as"
+    ],
+    "evidence": [
+      "ev_tags_format",
+      "ev_tags_questions_only"
+    ]
+  },
+  {
+    "id": "term_comment",
+    "name": "Comment",
+    "type": "entity",
+    "definition": "A short remark attached to a post, carrying its own score, body text, creation date and author.",
+    "scope": "Comment-level text and score analysis, and comment-count reconciliation",
+    "aliases": [
+      "remark",
+      "note",
+      "reply comment"
+    ],
+    "evidence": [
+      "ev_schema_tables",
+      "ev_comment_identity_complementarity"
+    ]
+  },
+  {
+    "id": "term_vote",
+    "name": "Vote",
+    "type": "entity",
+    "definition": "A single vote record cast on a post, identified by a vote type. Vote records are distinct from the denormalised lifetime vote counters stored on the user profile.",
+    "scope": "Vote-row counting and vote-type analysis",
+    "aliases": [
+      "ballot",
+      "vote record",
+      "up vote row",
+      "down vote row"
+    ],
+    "evidence": [
+      "ev_votetypeid_enum",
+      "ev_votes_userid_sparse"
+    ]
+  },
+  {
+    "id": "term_badge",
+    "name": "Badge",
+    "type": "entity",
+    "definition": "An award granted to a user at a point in time, carrying the badge name and the award date.",
+    "scope": "Achievement, gamification and badge-award analysis",
+    "aliases": [
+      "award",
+      "achievement",
+      "medal"
+    ],
+    "evidence": [
+      "ev_badge_names",
+      "ev_badge_student_by_year"
+    ]
+  },
+  {
+    "id": "term_post_link",
+    "name": "Post Link",
+    "type": "entity",
+    "definition": "An explicit relationship recorded between two posts, typed as either a generic link or a duplicate marking.",
+    "scope": "Cross-post relationship analysis; distinct from the general creation of posts",
+    "aliases": [
+      "link between posts",
+      "related post",
+      "duplicate link"
+    ],
+    "evidence": [
+      "ev_postlink_linktype",
+      "ev_postlinks_resolution"
+    ]
+  },
+  {
+    "id": "term_creation_date",
+    "name": "Creation Date",
+    "type": "dimension",
+    "definition": "The timestamp at which a record was created, used as the primary time dimension. The physical column name differs per table and is not always spelled the same way.",
+    "scope": "All temporal filtering, grouping and year extraction",
+    "aliases": [
+      "created at",
+      "created",
+      "date created",
+      "post date",
+      "account creation"
+    ],
+    "evidence": [
+      "ev_date_column_names",
+      "ev_date_ranges",
+      "ev_datetime_text_format"
+    ]
+  },
+  {
+    "id": "term_last_access_date",
+    "name": "Last Access Date",
+    "type": "dimension",
+    "definition": "The timestamp at which a user most recently accessed the site, stored on the user account.",
+    "scope": "User recency and activity-window analysis",
+    "aliases": [
+      "last seen",
+      "last login",
+      "last visited",
+      "last accessed"
+    ],
+    "evidence": [
+      "ev_date_ranges",
+      "ev_last_access_filter"
+    ]
+  },
+  {
+    "id": "term_calendar_year",
+    "name": "Calendar Year",
+    "type": "dimension",
+    "definition": "The year component extracted from a timestamp, used to bucket events such as account creation, post creation, badge awards and site access.",
+    "scope": "Annual and seasonal aggregation and year-over-year comparison",
+    "aliases": [
+      "year",
+      "annual",
+      "year of"
+    ],
+    "evidence": [
+      "ev_datetime_text_format",
+      "ev_creation_year_filter"
+    ]
+  },
+  {
+    "id": "term_display_name",
+    "name": "Display Name",
+    "type": "concept",
+    "definition": "The human-readable label under which a user appears in the site content and by which analytical questions refer to a person. It is an attribute of the account and is not guaranteed to be unique.",
+    "scope": "Resolving people named in natural-language questions to user accounts",
+    "aliases": [
+      "display name",
+      "username",
+      "name",
+      "user name"
+    ],
+    "evidence": [
+      "ev_named_users",
+      "ev_displayname_not_unique"
+    ]
+  },
+  {
+    "id": "term_view_count",
+    "name": "View Count",
+    "type": "metric",
+    "definition": "The number of times a question post has been viewed.",
+    "scope": "Popularity analysis of questions only",
+    "aliases": [
+      "views",
+      "view count",
+      "times viewed",
+      "most views"
+    ],
+    "evidence": [
+      "ev_viewcount_questions_only"
+    ]
+  },
+  {
+    "id": "term_post_score",
+    "name": "Post Score",
+    "type": "metric",
+    "definition": "The net score of a post, reflecting the accumulated up and down votes recorded against the post itself.",
+    "scope": "Post quality and ranking analysis; not interchangeable with comment score",
+    "aliases": [
+      "post score",
+      "score of post"
+    ],
+    "evidence": [
+      "ev_schema_tables",
+      "ev_score_contexts"
+    ]
+  },
+  {
+    "id": "term_comment_score",
+    "name": "Comment Score",
+    "type": "metric",
+    "definition": "The net score of a comment, reflecting votes recorded against that comment.",
+    "scope": "Comment quality and ranking analysis; not interchangeable with post score",
+    "aliases": [
+      "comment score",
+      "score of comment"
+    ],
+    "evidence": [
+      "ev_schema_tables",
+      "ev_score_contexts"
+    ]
+  },
+  {
+    "id": "term_favorite_count",
+    "name": "Favorite Count",
+    "type": "metric",
+    "definition": "The number of times users have bookmarked a question. This is the measure the workload uses when a question asks for the most valuable post.",
+    "scope": "Question value and bookmarking analysis",
+    "aliases": [
+      "favorites",
+      "favourite count",
+      "bookmarks",
+      "valuable",
+      "most valuable",
+      "value of a post"
+    ],
+    "evidence": [
+      "ev_favoritecount_sparse",
+      "ev_favorite_count_2010"
+    ]
+  },
+  {
+    "id": "term_answer_count",
+    "name": "Answer Count",
+    "type": "metric",
+    "definition": "The number of answers a question has received, stored as a denormalised counter on the question row and consistent with the answer rows present in the posts table.",
+    "scope": "Question responsiveness and answer-volume filtering",
+    "aliases": [
+      "answers",
+      "number of answers",
+      "answer count",
+      "no answers"
+    ],
+    "evidence": [
+      "ev_answercount_consistent"
+    ]
+  },
+  {
+    "id": "term_comment_count",
+    "name": "Comment Count",
+    "type": "metric",
+    "definition": "The number of comments a post has received, stored as a denormalised counter on the post row and consistent with the comment rows present in the comments table.",
+    "scope": "Comment-volume filtering, including identifying posts without comments",
+    "aliases": [
+      "comments",
+      "number of comments",
+      "comment count",
+      "no comments",
+      "doesn't have comments"
+    ],
+    "evidence": [
+      "ev_commentcount_consistent"
+    ]
+  },
+  {
+    "id": "term_user_age",
+    "name": "User Age",
+    "type": "metric",
+    "definition": "The self-declared age of a user, recorded on the account and available only for a minority of users.",
+    "scope": "Demographic analysis of users where the value is present",
+    "aliases": [
+      "age",
+      "user age",
+      "how old"
+    ],
+    "evidence": [
+      "ev_age_sparse",
+      "ev_age_distribution"
+    ]
+  },
+  {
+    "id": "term_user_upvotes",
+    "name": "User Up Vote Counter",
+    "type": "metric",
+    "definition": "A denormalised lifetime counter on the user account recording how many up votes the user has cast. It is a profile attribute, not a count of rows in the votes table.",
+    "scope": "Per-user voting activity derived from the account record",
+    "aliases": [
+      "up votes",
+      "upvotes",
+      "up voted",
+      "average of the up votes"
+    ],
+    "evidence": [
+      "ev_upvotes_profile_counter",
+      "ev_votes_userid_sparse"
+    ]
+  },
+  {
+    "id": "term_post_count",
+    "name": "Post Count",
+    "type": "metric",
+    "definition": "The number of post records attributable to a given scope, such as a user or a time window.",
+    "scope": "Measuring how much a user or a period contributed to the site",
+    "aliases": [
+      "number of posts",
+      "posts",
+      "how many posts",
+      "created more than 10 posts"
+    ],
+    "evidence": [
+      "ev_row_counts"
+    ]
+  },
+  {
+    "id": "term_vote_count",
+    "name": "Vote Count",
+    "type": "metric",
+    "definition": "The number of vote records attributable to a given scope, such as a user or a post.",
+    "scope": "Measuring voting activity from vote records rather than profile counters",
+    "aliases": [
+      "number of votes",
+      "votes",
+      "how many votes"
+    ],
+    "evidence": [
+      "ev_row_counts",
+      "ev_votes_userid_sparse"
+    ]
+  },
+  {
+    "id": "term_badge_count",
+    "name": "Badge Count",
+    "type": "metric",
+    "definition": "The number of badge awards recorded for a given scope, such as a badge name or a period.",
+    "scope": "Badge award volume analysis",
+    "aliases": [
+      "number of badges",
+      "badges given",
+      "badges awarded"
+    ],
+    "evidence": [
+      "ev_badge_names",
+      "ev_badge_student_by_year"
+    ]
+  },
+  {
+    "id": "term_avg_user_age",
+    "name": "Average User Age",
+    "type": "metric",
+    "definition": "The arithmetic mean of the age values present for a set of users. Users without a recorded age do not contribute a value.",
+    "scope": "Demographic summary over a filtered user set",
+    "aliases": [
+      "average age",
+      "mean age",
+      "average user age"
+    ],
+    "evidence": [
+      "ev_age_distribution"
+    ]
+  },
+  {
+    "id": "term_avg_view_count",
+    "name": "Average View Count",
+    "type": "metric",
+    "definition": "The arithmetic mean of the view counts of a set of question posts.",
+    "scope": "Comparing popularity across topic groups or time windows",
+    "aliases": [
+      "average view count",
+      "mean views",
+      "average views"
+    ],
+    "evidence": [
+      "ev_viewcount_questions_only"
+    ]
+  },
+  {
+    "id": "term_post_vote_ratio",
+    "name": "Post-to-Vote Ratio",
+    "type": "metric",
+    "definition": "A comparative measure expressing how many posts a user produced relative to the number of votes cast by, or recorded for, that user. Expressed as a quotient of two counts.",
+    "scope": "Relative contribution analysis comparing two activity counts for the same user",
+    "aliases": [
+      "times of posts than votes",
+      "posts compared to votes",
+      "posts per vote",
+      "ratio"
+    ],
+    "evidence": [
+      "ev_user24_posts_votes"
+    ]
+  },
+  {
+    "id": "term_badge_year_share",
+    "name": "Badge Year Share",
+    "type": "metric",
+    "definition": "The proportion of badge awards of a given kind that fall within one calendar year, comparable across years as a percentage.",
+    "scope": "Year-over-year comparison of badge award distribution",
+    "aliases": [
+      "percentage difference",
+      "share of badges",
+      "proportion during year"
+    ],
+    "evidence": [
+      "ev_badge_student_by_year"
+    ]
+  }
+]

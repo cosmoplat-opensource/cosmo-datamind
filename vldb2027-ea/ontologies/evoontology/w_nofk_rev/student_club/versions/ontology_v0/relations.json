@@ -1,0 +1,226 @@
+[
+  {
+    "id": "rel_event_attendance",
+    "source": "term_event",
+    "relation_type": "composition",
+    "target": "term_attendance",
+    "connection_condition": "attendance.link_to_event corresponds to event.event_id",
+    "description": "An event is composed of its attendance records: a record of who attended exists only as part of that event and is meaningless without it.",
+    "evidence": [
+      "evidence_018"
+    ]
+  },
+  {
+    "id": "rel_member_attendance",
+    "source": "term_member",
+    "relation_type": "composition",
+    "target": "term_attendance",
+    "connection_condition": "attendance.link_to_member corresponds to member.member_id",
+    "description": "A member's participation is composed of attendance records; each attendance record belongs to exactly one member and one event.",
+    "evidence": [
+      "evidence_018"
+    ]
+  },
+  {
+    "id": "rel_event_budget",
+    "source": "term_event",
+    "relation_type": "composition",
+    "target": "term_budget",
+    "connection_condition": "budget.link_to_event corresponds to event.event_id",
+    "description": "An event is composed of budget lines; each allocation exists for exactly one event and loses its meaning without that event.",
+    "evidence": [
+      "evidence_006"
+    ]
+  },
+  {
+    "id": "rel_budget_expense",
+    "source": "term_budget",
+    "relation_type": "composition",
+    "target": "term_expense",
+    "connection_condition": "expense.link_to_budget corresponds to budget.budget_id",
+    "description": "A budget line is composed of the expenses charged to it; the line's realized spend is the total of those expense costs.",
+    "evidence": [
+      "evidence_008",
+      "evidence_009"
+    ]
+  },
+  {
+    "id": "rel_county_city",
+    "source": "term_geo_county",
+    "relation_type": "composition",
+    "target": "term_geo_city",
+    "connection_condition": "zip_code.city and zip_code.county are carried on the same ZIP code row",
+    "description": "A county is composed of the cities whose ZIP codes fall inside it; a city's record is placed within its county.",
+    "evidence": [
+      "evidence_016"
+    ]
+  },
+  {
+    "id": "rel_state_county",
+    "source": "term_geo_state",
+    "relation_type": "composition",
+    "target": "term_geo_county",
+    "connection_condition": "zip_code.state and zip_code.county are carried on the same ZIP code row",
+    "description": "A state is composed of its counties; each county belongs to one state.",
+    "evidence": [
+      "evidence_016"
+    ]
+  },
+  {
+    "id": "rel_expense_member",
+    "source": "term_expense",
+    "relation_type": "association",
+    "target": "term_member",
+    "connection_condition": "expense.link_to_member corresponds to member.member_id",
+    "description": "An expense is attributed to the member who incurred it, allowing spending to be reported per person; the expense tracks spending rather than being a part of the member.",
+    "evidence": [
+      "evidence_009"
+    ]
+  },
+  {
+    "id": "rel_income_member",
+    "source": "term_income",
+    "relation_type": "association",
+    "target": "term_member",
+    "connection_condition": "income.link_to_member corresponds to member.member_id, optionally for non-member funding sources",
+    "description": "An income receipt may be attributed to the member who paid it; some receipts, such as institutional funding, carry no member attribution.",
+    "evidence": [
+      "evidence_010"
+    ]
+  },
+  {
+    "id": "rel_member_major",
+    "source": "term_member",
+    "relation_type": "association",
+    "target": "term_major",
+    "connection_condition": "member.link_to_major corresponds to major.major_id",
+    "description": "A member studies one major, which places the member within a department and college; the major is an attribute of the member rather than a part of it.",
+    "evidence": [
+      "evidence_015",
+      "evidence_025"
+    ]
+  },
+  {
+    "id": "rel_member_zip",
+    "source": "term_member",
+    "relation_type": "association",
+    "target": "term_zip_code",
+    "connection_condition": "member.zip corresponds to zip_code.zip_code",
+    "description": "A member's address is recorded as a ZIP code, through which the member relates to a city, county and state.",
+    "evidence": [
+      "evidence_014"
+    ]
+  },
+  {
+    "id": "rel_event_status_equivalence",
+    "source": "term_event_status",
+    "relation_type": "equivalence",
+    "target": "term_budget_event_status",
+    "connection_condition": "event.status and budget.event_status denote the same lifecycle stage of the same event",
+    "description": "The event's own status and the status denormalized onto its budget rows express the same concept; either representation yields the same event status.",
+    "evidence": [
+      "evidence_006"
+    ]
+  },
+  {
+    "id": "rel_full_name_derived",
+    "source": "term_member",
+    "relation_type": "derivation",
+    "target": "term_member_full_name",
+    "connection_condition": "the member's given name and family name are combined into a single label",
+    "description": "A member's full name is derived from the member's given name and family name together, not from either component alone.",
+    "evidence": [
+      "evidence_015"
+    ]
+  },
+  {
+    "id": "rel_expense_month_derived",
+    "source": "term_expense_date",
+    "relation_type": "derivation",
+    "target": "term_expense_month",
+    "connection_condition": "the month component of the ISO expense date",
+    "description": "The expense month is derived from the expense date; a month filter is applied to the month component of that date rather than to a stored month field.",
+    "evidence": [
+      "evidence_019"
+    ]
+  },
+  {
+    "id": "rel_budget_spend_derived",
+    "source": "term_expense_cost",
+    "relation_type": "derivation",
+    "target": "term_budget_spend",
+    "connection_condition": "the total of the costs of the expenses charged to the budget line",
+    "description": "A budget line's realized spend equals the sum of the costs of the expense items charged to it.",
+    "evidence": [
+      "evidence_008"
+    ]
+  },
+  {
+    "id": "rel_budget_remaining_derived",
+    "source": "term_budget_amount",
+    "relation_type": "derivation",
+    "target": "term_budget_remaining",
+    "connection_condition": "the allocation minus the realized spend of the same budget line",
+    "description": "The remaining balance is derived from the allocated amount and the realized spend of the same budget line.",
+    "evidence": [
+      "evidence_007"
+    ]
+  },
+  {
+    "id": "rel_ratio_derived",
+    "source": "term_budget_spend",
+    "relation_type": "derivation",
+    "target": "term_spend_to_budget_ratio",
+    "connection_condition": "the realized spend divided by the allocated amount of the same budget line",
+    "description": "The spend-to-budget ratio is computed from a budget line's realized spend and its allocated amount.",
+    "evidence": [
+      "evidence_007",
+      "evidence_008"
+    ]
+  },
+  {
+    "id": "rel_overrun_derived",
+    "source": "term_budget_remaining",
+    "relation_type": "derivation",
+    "target": "term_budget_overrun",
+    "connection_condition": "the magnitude by which the remaining balance falls below zero",
+    "description": "The budget overrun is derived from the remaining balance: it is the amount by which that balance is negative.",
+    "evidence": [
+      "evidence_007"
+    ]
+  },
+  {
+    "id": "rel_avg_cost_derived",
+    "source": "term_expense_cost",
+    "relation_type": "derivation",
+    "target": "term_average_expense_cost",
+    "connection_condition": "the mean of the individual expense costs in the grouping",
+    "description": "The average expense cost is derived from individual expense costs, aggregated over the relevant set of expenses.",
+    "evidence": [
+      "evidence_019"
+    ]
+  },
+  {
+    "id": "rel_attendance_count_derived",
+    "source": "term_attendance",
+    "relation_type": "derivation",
+    "target": "term_attendance_count",
+    "connection_condition": "the number of attendance records belonging to the event",
+    "description": "An event's attendance count is derived from the number of attendance records linked to that event.",
+    "evidence": [
+      "evidence_018"
+    ]
+  },
+  {
+    "id": "rel_income_source_fundraising_expense",
+    "source": "term_income_source",
+    "relation_type": "association",
+    "target": "term_event_type",
+    "connection_condition": "",
+    "description": "Fundraising is recorded as an income source rather than as an event type, so excluding fundraising activity cannot be expressed through the event type dimension alone.",
+    "evidence": [
+      "evidence_004",
+      "evidence_011"
+    ]
+  }
+]

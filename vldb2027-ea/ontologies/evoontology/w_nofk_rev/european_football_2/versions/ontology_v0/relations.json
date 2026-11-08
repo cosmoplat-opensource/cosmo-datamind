@@ -1,0 +1,174 @@
+[
+  {
+    "id": "rel_player_attribute_composition",
+    "source": "player",
+    "relation_type": "composition",
+    "target": "player_attribute_record",
+    "connection_condition": "each Player_Attributes record carries the player_api_id of the player it describes",
+    "description": "A player is composed of a series of dated attribute snapshots. An attribute snapshot has no meaning without the player it describes, and one player owns between 2 and 56 of them.",
+    "evidence": [
+      "evidence_join_integrity",
+      "evidence_player_attribute_dates"
+    ]
+  },
+  {
+    "id": "rel_team_attribute_composition",
+    "source": "team",
+    "relation_type": "composition",
+    "target": "team_attribute_record",
+    "connection_condition": "each Team_Attributes record carries the team_api_id of the team it describes",
+    "description": "A team is composed of a series of dated tactical profiles. A tactical profile has no meaning without the team it describes.",
+    "evidence": [
+      "evidence_join_integrity",
+      "evidence_team_attribute_dates"
+    ]
+  },
+  {
+    "id": "rel_league_match_composition",
+    "source": "league",
+    "relation_type": "composition",
+    "target": "match",
+    "connection_condition": "Match.league_id corresponds to League.id, and a fixture carries a season label within that league",
+    "description": "A league is composed of the fixtures played in it. A fixture cannot exist outside a league, and grouping fixtures by league is the basis of every league-level measure.",
+    "evidence": [
+      "evidence_league_country",
+      "evidence_league_match_volumes"
+    ]
+  },
+  {
+    "id": "rel_country_league_composition",
+    "source": "country",
+    "relation_type": "composition",
+    "target": "league",
+    "connection_condition": "League.country_id corresponds to Country.id",
+    "description": "A country is composed of the leagues it hosts. Every league belongs to exactly one country, and the league name repeats its country's name.",
+    "evidence": [
+      "evidence_league_country"
+    ]
+  },
+  {
+    "id": "rel_player_team_association",
+    "source": "player",
+    "relation_type": "association",
+    "target": "team",
+    "connection_condition": "indirect: a player appears in a fixture through the Match slots home_player_1 to home_player_11 and away_player_1 to away_player_11, which hold player_api_id values",
+    "description": "Players are linked to teams only through the line-ups recorded on fixtures, so team membership is indirect and carries no direct squad or contract table.",
+    "evidence": [
+      "evidence_join_integrity",
+      "evidence_match_position_columns_empty"
+    ]
+  },
+  {
+    "id": "rel_match_team_association",
+    "source": "match",
+    "relation_type": "association",
+    "target": "team",
+    "connection_condition": "Match.home_team_api_id and Match.away_team_api_id correspond to Team.team_api_id",
+    "description": "Every fixture associates two teams, one in the home role and one in the away role. The association is recorded by identifier on the fixture rather than by a separate participation record.",
+    "evidence": [
+      "evidence_match_team_refs"
+    ]
+  },
+  {
+    "id": "rel_player_ref_equivalence",
+    "source": "player_ref_in_attributes",
+    "relation_type": "equivalence",
+    "target": "player_api_id",
+    "connection_condition": "Player_Attributes.player_api_id carries the same value domain as Player.player_api_id",
+    "description": "The player identifier stored on attribute records denotes the same player as the identifier stored on the player record; the concept is one identifier reused across two tables.",
+    "evidence": [
+      "evidence_join_integrity"
+    ]
+  },
+  {
+    "id": "rel_team_ref_equivalence",
+    "source": "team_ref_in_attributes",
+    "relation_type": "equivalence",
+    "target": "team_api_id",
+    "connection_condition": "Team_Attributes.team_api_id carries the same value domain as Team.team_api_id",
+    "description": "The team identifier stored on tactical attribute records denotes the same team as the identifier stored on the team record.",
+    "evidence": [
+      "evidence_join_integrity"
+    ]
+  },
+  {
+    "id": "rel_fifa_team_ref_equivalence",
+    "source": "fifa_team_ref_in_attributes",
+    "relation_type": "equivalence",
+    "target": "team_fifa_api_id",
+    "connection_condition": "Team_Attributes.team_fifa_api_id agrees with Team.team_fifa_api_id on every joined record",
+    "description": "The FIFA team identifier is available both on the team record and on the tactical attribute records, so a question asking for it can be answered without leaving the attribute table.",
+    "evidence": [
+      "evidence_join_integrity",
+      "evidence_team_fifa_api_id_completeness"
+    ]
+  },
+  {
+    "id": "rel_home_team_hierarchy",
+    "source": "home_team",
+    "relation_type": "hierarchy",
+    "target": "team",
+    "connection_condition": "every value of Match.home_team_api_id exists in Team.team_api_id",
+    "description": "A home team is a team restricted to the home role in a fixture; its identifier domain is a subset of the team identifier domain.",
+    "evidence": [
+      "evidence_match_team_refs"
+    ]
+  },
+  {
+    "id": "rel_away_team_hierarchy",
+    "source": "away_team",
+    "relation_type": "hierarchy",
+    "target": "team",
+    "connection_condition": "every value of Match.away_team_api_id exists in Team.team_api_id",
+    "description": "An away team is a team restricted to the away role in a fixture; its identifier domain is a subset of the team identifier domain.",
+    "evidence": [
+      "evidence_match_team_refs"
+    ]
+  },
+  {
+    "id": "rel_match_result_derivation",
+    "source": "team_goals",
+    "relation_type": "derivation",
+    "target": "match_result",
+    "connection_condition": "the outcome is decided by comparing the goals of the two sides in the same fixture",
+    "description": "A match result is derived by comparing one side's goal total with the other side's: the side with more goals won, equal totals mean a draw. Counting a team's wins means counting the fixtures in which its own total was the larger one.",
+    "evidence": [
+      "evidence_match_goals_and_xml",
+      "evidence_league_ties_2008_2009"
+    ]
+  },
+  {
+    "id": "rel_team_attribute_class_derivation",
+    "source": "build_up_play_speed",
+    "relation_type": "derivation",
+    "target": "team_attribute_class",
+    "connection_condition": "the class label is determined by the band the numeric tactical value falls into",
+    "description": "Every team tactical class label is derived from its numeric companion by banding the shared value range: the low band, the middle band and the high band. Only the band words differ between tactical dimensions, so the same band boundaries produce labels as different as Slow and Fast, or Safe and Risky.",
+    "evidence": [
+      "evidence_team_class_tertile_ranges"
+    ]
+  },
+  {
+    "id": "rel_match_count_derivation",
+    "source": "match",
+    "relation_type": "derivation",
+    "target": "match_count",
+    "connection_condition": "counting fixture records inside a league and season grouping",
+    "description": "A match count is derived by counting the fixtures that fall inside a grouping such as a league and season.",
+    "evidence": [
+      "evidence_league_match_volumes",
+      "evidence_league_ties_2008_2009"
+    ]
+  },
+  {
+    "id": "rel_overall_rating_association",
+    "source": "overall_rating",
+    "relation_type": "association",
+    "target": "player_skill_attribute",
+    "connection_condition": "indirect: both measures are read from the same attribute snapshot of the same player",
+    "description": "Overall rating summarises the same underlying skill profile as the individual skill scores, but it is a supplied composite rather than a value computed from the stored skill columns.",
+    "evidence": [
+      "evidence_player_attribute_columns_and_ranges"
+    ]
+  }
+]

@@ -1,0 +1,154 @@
+[
+  {
+    "id": "ev_schema_inventory",
+    "source": "european_football_2.sqlite (read-only)",
+    "query": "SELECT name FROM sqlite_master WHERE type='table'; and .schema for each table",
+    "result": "Seven user tables tab01-tab07 with 42, 7, 3, 2, 5, 25 and 185 columns respectively; all column names are opaque fldNNN identifiers and all table names opaque tabNN identifiers.",
+    "validation_method": "schema introspection via sqlite3 read-only connection",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "ev_tab02_profile",
+    "source": "european_football_2.sqlite (read-only)",
+    "query": "SELECT * FROM tab02 LIMIT 5; per-column COUNT(DISTINCT), MIN, MAX and distinct samples",
+    "result": "11,060 rows. fld001 1-11075 surrogate key; fld002 unique 2-234141; fld003 unique 2625-750584; fld043 player names 10,848 distinct (163 duplicated); fld044 birthdays 1967-01-23 to 1999-04-24 with no nulls; fld045 height 157.48-208.28 with 20 distinct values; fld046 weight 117-243 with 50 distinct values.",
+    "validation_method": "column profiling and value sampling",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "ev_tab01_profile",
+    "source": "european_football_2.sqlite (read-only)",
+    "query": "SELECT * FROM tab01 LIMIT 3; per-column COUNT(DISTINCT), MIN, MAX; SELECT fld007, COUNT(*) FROM tab01 GROUP BY 1",
+    "result": "183,978 rows, 197 distinct dates 2007-02-22 to 2016-07-07. fld005 overall 33-94 (mean 68.6); fld006 potential 39-97; fld007 exactly 'left'/'right'/null; fld010 crossing 1-95; fld011 finishing 1-97; fld012 heading 1-98; fld016 curve 2-94; fld021 sprint speed 12-97; fld026 jumping 14-96; fld028 strength 10-96; fld029 long shots 1-96; remaining fld030-fld037 follow the same 0-100 style and fld038-fld042 are small goalkeeper scores.",
+    "validation_method": "column profiling, value sampling and cross-check against workload evidence references",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "ev_tab05_profile",
+    "source": "european_football_2.sqlite (read-only)",
+    "query": "SELECT * FROM tab05 LIMIT 8; counts and distinct profiles",
+    "result": "299 rows. fld049 team API id 1601-274581, 299 distinct; fld050 FIFA id 1-112513, 285 distinct; fld051 long names 296 distinct (e.g. 'KRC Genk', 'Ajax'); fld052 short codes 259 distinct (e.g. 'GEN', 'AJA').",
+    "validation_method": "column profiling and value sampling",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "ev_tab06_profile",
+    "source": "european_football_2.sqlite (read-only)",
+    "query": "SELECT * FROM tab06 LIMIT 5; per-column distinct/range; SELECT fld004, COUNT(*) FROM tab06 GROUP BY 1",
+    "result": "1,458 rows, 288 distinct teams, six observation dates (2010-02-22, 2011-02-22, 2012-02-22, 2013-09-20, 2014-09-19, 2015-09-10). Numeric tactical scores: fld053 20-80, fld055 24-77, fld057 20-80, fld060 21-80, fld062 20-80, fld064 22-80, fld067 23-72, fld069 24-72, fld071 29-73. Class columns: fld054 Balanced/Fast/Slow, fld056 Little/Normal/Lots, fld058 Mixed/Long/Short, fld059 Organised/Free Form, fld061 Normal/Risky/Safe, fld063 and fld065 Little/Normal/Lots, fld066 Organised/Free Form, fld068 Deep/Medium/High, fld070 Contain/Press/Double, fld072 Narrow/Normal/Wide, fld073 Cover/Offside Trap.",
+    "validation_method": "column profiling and distinct-value inspection",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "ev_tab03_tab04_profile",
+    "source": "european_football_2.sqlite (read-only)",
+    "query": "SELECT * FROM tab03; SELECT * FROM tab04;",
+    "result": "tab03 has 11 leagues: 'Belgium Jupiler League', 'England Premier League', 'France Ligue 1', 'Germany 1. Bundesliga', 'Italy Serie A', 'Netherlands Eredivisie', 'Poland Ekstraklasa', 'Portugal Liga ZON Sagres', 'Scotland Premier League', 'Spain LIGA BBVA', 'Switzerland Super League'. tab04 has the matching 11 country names without the competition suffix. League fld047 carries the country reference.",
+    "validation_method": "full table dump",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "ev_tab07_profile",
+    "source": "european_football_2.sqlite (read-only)",
+    "query": "SELECT * FROM tab07 LIMIT 2; per-column COUNT(DISTINCT)/MIN/MAX; null-coverage counts per column",
+    "result": "25,979 rows. fld001 surrogate match key; fld047 and fld074 each 11 distinct values; fld075 eight season labels; fld076 stage 1-38; fld004 dates 2008-07-18 to 2016-05-25; fld077 unique match API id; fld078/fld079 299 distinct team ids each; fld080 home goals 0-10; fld081 away goals 0-9; fld126-fld147 22 player references; fld148-fld155 eight text XML event columns; fld156-fld185 30 real odds columns.",
+    "validation_method": "column profiling and null-coverage analysis",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "ev_join_integrity",
+    "source": "european_football_2.sqlite (read-only)",
+    "query": "JOIN counts between tab07 and tab05 on home/away ids, tab07 and tab03/tab04 on fld047/fld074, tab06 and tab05 on fld049/fld050, tab01 and tab02 on fld002/fld003; SELECT COUNT(*) FROM tab07 WHERE fld047<>fld074",
+    "result": "All 25,979 matches resolve to a home team, an away team, a league and a country through either identifier column; zero matches have fld047 different from fld074. Team attribute rows resolve fully through fld049 (1,458) but produce 1,473 rows through fld050. Player attribute rows resolve fully through fld003 (183,978) and to 183,929 through fld002.",
+    "validation_method": "referential join-count verification",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "ev_season_calendar",
+    "source": "european_football_2.sqlite (read-only)",
+    "query": "SELECT fld075, COUNT(*), MIN(fld004), MAX(fld004) FROM tab07 GROUP BY 1 ORDER BY 1",
+    "result": "'2008/2009' 3,326 matches (2008-07-18 to 2009-05-31); '2009/2010' 3,230 (to 2010-05-16); '2010/2011' 3,260 (2010-07-17 to 2011-05-29); '2011/2012' 3,220; '2012/2013' 3,260; '2013/2014' 3,032; '2014/2015' 3,325; '2015/2016' 3,326 (2015-07-17 to 2016-05-25).",
+    "validation_method": "season grouping with date-range check",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "ev_poland_home_goals",
+    "source": "european_football_2.sqlite (read-only)",
+    "query": "SELECT ROUND(AVG(m.fld080),4), COUNT(*) FROM tab07 m JOIN tab04 c ON c.fld001=m.fld047 WHERE c.fld048='Poland' AND m.fld075='2010/2011'",
+    "result": "Average home goals 1.5042 over 240 matches; country filter through the country table and season filter through the season label both resolve.",
+    "validation_method": "reproduction of a workload-shaped aggregation",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "ev_height_weight_distribution",
+    "source": "european_football_2.sqlite (read-only)",
+    "query": "SELECT fld045, COUNT(*) FROM tab02 GROUP BY 1 ORDER BY 1 LIMIT 8; SELECT MIN(fld046), MAX(fld046) FROM tab02",
+    "result": "Height values are discrete centimetre values (157.48, 160.02, 162.56, 165.1, 167.64, 170.18, 172.72, 175.26 ...) up to 208.28, consistent with inch-based measurements converted to centimetres. Weight spans 117-243 as integers.",
+    "validation_method": "distribution inspection",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "ev_preferred_foot_counts",
+    "source": "european_football_2.sqlite (read-only)",
+    "query": "SELECT fld007, COUNT(*) FROM tab01 GROUP BY 1",
+    "result": "'right' 138,409; 'left' 44,733; null 836. No other values exist.",
+    "validation_method": "value-domain verification",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "ev_work_rate_values",
+    "source": "european_football_2.sqlite (read-only)",
+    "query": "SELECT fld008, fld009, COUNT(*) FROM tab01 GROUP BY 1,2 ORDER BY 3 DESC LIMIT 6",
+    "result": "Dominant combinations low/medium/high, e.g. ('medium','medium') 97,154; ('high','medium') 29,085; ('medium','high') 15,714. The distinct-value profile of both columns also contains the literal strings 'None' and '0' as separate values.",
+    "validation_method": "value-domain and frequency inspection",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "ev_team_class_labels",
+    "source": "european_football_2.sqlite (read-only)",
+    "query": "Per-column distinct values for fld053-fld073 of tab06; SELECT ta.fld004, ta.fld053, ta.fld060, ta.fld061 FROM tab06 ta JOIN tab05 t ON t.fld049=ta.fld049 WHERE t.fld051='Ajax'",
+    "result": "Every numeric tactical column is immediately followed by a class column with a closed label set (fld054 Balanced/Fast/Slow; fld056, fld063, fld065 Little/Normal/Lots; fld058 Mixed/Long/Short; fld059, fld066 Organised/Free Form; fld061 Normal/Risky/Safe; fld068 Deep/Medium/High; fld070 Contain/Press/Double; fld072 Narrow/Normal/Wide; fld073 Cover/Offside Trap). Ajax has six snapshots, e.g. build-up speed 30 with chance creation passing 50 classified Normal in 2010, and 35 with 58 classified Normal in 2015.",
+    "validation_method": "paired-column verification against a named team",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "ev_player_rows_per_player",
+    "source": "european_football_2.sqlite (read-only)",
+    "query": "SELECT MIN(c), MAX(c), AVG(c) FROM (SELECT fld003, COUNT(*) c FROM tab01 GROUP BY 1)",
+    "result": "Attributes per player range from 2 to 56, averaging 16.63 across 183,978 rows and 11,060 players.",
+    "validation_method": "grouped row-count analysis",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "ev_placeholder_columns",
+    "source": "european_football_2.sqlite (read-only)",
+    "query": "SELECT fld001, fld082, ..., fld125 FROM tab07 WHERE fld082 IS NOT NULL LIMIT 6; SELECT fld082, COUNT(*) FROM tab07 GROUP BY 1",
+    "result": "The 44 integer columns fld082-fld125 are populated for about 24,147 matches but hold only patterned small values (for example 1,2,4,6,8,2,4,6,8,4,6,1) that vary between adjacent matches without any observable football semantics. fld082 takes only the values 1 (24,146 rows), 0 (11 rows) and 2 (1 row).",
+    "validation_method": "value-pattern inspection across consecutive matches",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "ev_event_xml_tags",
+    "source": "european_football_2.sqlite (read-only)",
+    "query": "SELECT fld148 ... fld155 FROM tab07 WHERE <col> IS NOT NULL LIMIT 1 for each column, extracting the XML root element",
+    "result": "Root elements in column order: goal, shoton, shotoff, foulcommit, card, cross, corner, possession. Fragments contain per-event player, team, elapsed minute and subtype nodes. Each column is non-null for 14,217 matches.",
+    "validation_method": "XML root-element inspection per column",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "ev_draw_by_league",
+    "source": "european_football_2.sqlite (read-only)",
+    "query": "SELECT l.fld048, COUNT(*) FROM tab07 m JOIN tab03 l ON l.fld001=m.fld074 WHERE m.fld075='2015/2016' AND m.fld080=m.fld081 GROUP BY 1 ORDER BY 2 DESC LIMIT 5",
+    "result": "France Ligue 1 108 draws, England Premier League 107, Italy Serie A 95, Spain LIGA BBVA 92, Portugal Liga ZON Sagres 76 in season '2015/2016'.",
+    "validation_method": "reproduction of a workload-shaped draw aggregation",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "ev_odds_coverage",
+    "source": "european_football_2.sqlite (read-only)",
+    "query": "Per-column non-null counts for fld156-fld185 of tab07",
+    "result": "Non-null coverage varies from 11,168 to 22,592 of 25,979 matches across the 30 odds columns; all columns are REAL.",
+    "validation_method": "null-coverage analysis",
+    "timestamp": "2026-11-06"
+  }
+]

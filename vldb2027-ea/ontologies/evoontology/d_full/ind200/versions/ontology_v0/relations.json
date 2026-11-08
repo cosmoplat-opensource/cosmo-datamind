@@ -1,0 +1,254 @@
+[
+  {
+    "id": "rel_detail_to_dws",
+    "source": "detail_fact_layer",
+    "relation_type": "derivation",
+    "target": "dws_summary_layer",
+    "connection_condition": "汇总表由明细事实表按维度组合汇总生成,并以日期列对齐;table_desc 声明可与明细对账",
+    "description": "汇总层的指标值由明细层聚合派生,明细层是汇总层的计算来源",
+    "evidence": [
+      "ev_05",
+      "ev_02"
+    ]
+  },
+  {
+    "id": "rel_dws_to_monthly",
+    "source": "dws_summary_layer",
+    "relation_type": "derivation",
+    "target": "monthly_performance_agg",
+    "connection_condition": "agg_metric_monthly 由业务员×日的日汇总按月累计而来",
+    "description": "月度绩效聚合是日汇总在员工×月维度上的进一步派生",
+    "evidence": [
+      "ev_08",
+      "ev_21"
+    ]
+  },
+  {
+    "id": "rel_metric_system_atomic",
+    "source": "metric_system",
+    "relation_type": "composition",
+    "target": "atomic_metric",
+    "connection_condition": "dim_metric_catalog 中以 category='原子指标' 标记的记录",
+    "description": "指标体系由原子指标构成,原子指标是其基础组成",
+    "evidence": [
+      "ev_09"
+    ]
+  },
+  {
+    "id": "rel_atomic_to_derived",
+    "source": "atomic_metric",
+    "relation_type": "hierarchy",
+    "target": "derived_metric",
+    "connection_condition": "dim_derived_metric_config.atomic_metric_names 引用原子指标名",
+    "description": "派生指标是原子指标在指定维度上聚合后的指标类型,取值域是原子指标的聚合结果",
+    "evidence": [
+      "ev_11"
+    ]
+  },
+  {
+    "id": "rel_derived_to_composite",
+    "source": "derived_metric",
+    "relation_type": "hierarchy",
+    "target": "composite_metric",
+    "connection_condition": "dim_composite_metric_config.component_metric_names 引用派生指标名",
+    "description": "复合指标由派生指标按公式组合,是更上层的指标类型",
+    "evidence": [
+      "ev_12"
+    ]
+  },
+  {
+    "id": "rel_workshop_lines",
+    "source": "workshop",
+    "relation_type": "composition",
+    "target": "production_line",
+    "connection_condition": "dim_production_line.workshop_id 指向 dim_workshop.workshop_id",
+    "description": "车间由多条产线组成,产线依附于车间存在",
+    "evidence": [
+      "ev_25"
+    ]
+  },
+  {
+    "id": "rel_line_equipment",
+    "source": "production_line",
+    "relation_type": "composition",
+    "target": "equipment",
+    "connection_condition": "dim_equipment.line_id 指向 dim_production_line.line_id",
+    "description": "产线由多台设备组成,设备归属于具体产线",
+    "evidence": [
+      "ev_25"
+    ]
+  },
+  {
+    "id": "rel_department_employee",
+    "source": "department",
+    "relation_type": "composition",
+    "target": "employee",
+    "connection_condition": "dim_employee.dept_id 指向 dim_department.dept_id",
+    "description": "部门由业务员组成,业务员归属于部门",
+    "evidence": [
+      "ev_25"
+    ]
+  },
+  {
+    "id": "rel_costcenter_workshop",
+    "source": "cost_center",
+    "relation_type": "equivalence",
+    "target": "workshop",
+    "connection_condition": "cc_type='production' 的 5 个成本中心名称与 5 个车间名称逐一同名,但主键体系不同(cc_id 与 workshop_id 各自独立)",
+    "description": "生产型成本中心与生产车间表达同一物理单元的生产责任归属,是同一业务概念的财务口径与生产口径两种表示",
+    "evidence": [
+      "ev_22"
+    ]
+  },
+  {
+    "id": "rel_customer_status_flag",
+    "source": "customer_status",
+    "relation_type": "equivalence",
+    "target": "customer_lifecycle_flag",
+    "connection_condition": "DWS_MARKET_DAILY 的 existing/dormant/lost 标记列与 dim_customer.status 的 active/dormant/lost 一一对应",
+    "description": "客户生命周期状态既以 dim_customer.status 的枚举值表示,也以市场日汇总中的 0/1 标记列表示,两者语义等价",
+    "evidence": [
+      "ev_16",
+      "ev_17"
+    ]
+  },
+  {
+    "id": "rel_customer_sales_order",
+    "source": "customer",
+    "relation_type": "association",
+    "target": "sales_order",
+    "connection_condition": "fact_sales_order.cust_id 指向 dim_customer.cust_id",
+    "description": "销售订单归属于客户,是客户维度的销售事实",
+    "evidence": [
+      "ev_23"
+    ]
+  },
+  {
+    "id": "rel_employee_sales_order",
+    "source": "employee",
+    "relation_type": "association",
+    "target": "sales_order",
+    "connection_condition": "fact_sales_order.emp_id 指向 dim_employee.emp_id",
+    "description": "销售订单归属业务员,是业绩归属的依据",
+    "evidence": [
+      "ev_23"
+    ]
+  },
+  {
+    "id": "rel_product_sales_order",
+    "source": "product",
+    "relation_type": "association",
+    "target": "sales_order",
+    "connection_condition": "fact_sales_order.prod_id 指向 dim_product.prod_id",
+    "description": "销售订单针对具体产品,产品维度决定品类结构分析",
+    "evidence": [
+      "ev_23"
+    ]
+  },
+  {
+    "id": "rel_product_product_line",
+    "source": "product",
+    "relation_type": "composition",
+    "target": "product_line",
+    "connection_condition": "dim_product.prod_line_id 指向 dim_product_line.prod_line_id",
+    "description": "产品归属于产品线,产品线是产品的上层分组",
+    "evidence": [
+      "ev_25"
+    ]
+  },
+  {
+    "id": "rel_output_yield_rate",
+    "source": "production_actual_quantity",
+    "relation_type": "derivation",
+    "target": "yield_rate",
+    "connection_condition": "成材率 = 实际产量 / 投料量 × 100,两者在同一产线×日×产品粒度上配套",
+    "description": "成材率由实际产量与投料量派生的比率指标",
+    "evidence": [
+      "ev_09",
+      "ev_02"
+    ]
+  },
+  {
+    "id": "rel_sales_amount_gross_profit",
+    "source": "sales_amount",
+    "relation_type": "derivation",
+    "target": "gross_profit",
+    "connection_condition": "毛利 = 订单金额 - 成本金额,订单级金额与成本列在同一事实行上",
+    "description": "毛利由销售金额与成本派生,是销售盈利能力的核心派生指标",
+    "evidence": [
+      "ev_23"
+    ]
+  },
+  {
+    "id": "rel_ar_balance_overdue_ar",
+    "source": "ar_balance",
+    "relation_type": "derivation",
+    "target": "overdue_ar",
+    "connection_condition": "超期应收是按到期日与账龄从应收余额中划分出的超期部分,两者共享同一余额来源",
+    "description": "超期应收是应收余额的风险子集,由余额与账龄共同界定",
+    "evidence": [
+      "ev_18",
+      "ev_19"
+    ]
+  },
+  {
+    "id": "rel_oee_downtime",
+    "source": "equipment_oee",
+    "relation_type": "derivation",
+    "target": "downtime_hours",
+    "connection_condition": "设备可用率 = 总运行小时/(总运行小时+总停机时长)×100,停机时长是其分母分量",
+    "description": "停机时长是设备效率指标的构成分量,停机越长时间效率越低",
+    "evidence": [
+      "ev_12",
+      "ev_11"
+    ]
+  },
+  {
+    "id": "rel_incident_near_miss",
+    "source": "safety_incident_count",
+    "relation_type": "association",
+    "target": "near_miss_count",
+    "connection_condition": "两者取自同一 fact_incident 表并按 severity 互斥划分(severity='near_miss' 计为未遂,其余计为事故)",
+    "description": "事故数与未遂数共同构成安全事件金字塔的两端,互为互斥口径",
+    "evidence": [
+      "ev_13",
+      "ev_28"
+    ]
+  },
+  {
+    "id": "rel_budget_cost_center",
+    "source": "budget_amount",
+    "relation_type": "association",
+    "target": "cost_center",
+    "connection_condition": "DWS_FINANCE_DAILY.dim_cc_id 对应 dim_cost_center.cc_id",
+    "description": "预算按成本中心归集,成本中心是预算与成本分析的核算单元",
+    "evidence": [
+      "ev_06",
+      "ev_22"
+    ]
+  },
+  {
+    "id": "rel_downtime_production",
+    "source": "downtime_hours",
+    "relation_type": "association",
+    "target": "production_actual_quantity",
+    "connection_condition": "两者在同一产线×日粒度上并存于生产日汇总表",
+    "description": "停机时长与实际产量在生产效率上相互关联,停机直接压缩可用产出时间",
+    "evidence": [
+      "ev_02",
+      "ev_29"
+    ]
+  },
+  {
+    "id": "rel_pass_rate_supplier",
+    "source": "incoming_inspection_pass_rate",
+    "relation_type": "association",
+    "target": "supplier",
+    "connection_condition": "来料检验合格率按供应商×日汇总,派生指标 平均合格率 以 dim_supplier_id 分组",
+    "description": "来料检验合格率是供应商质量的主要度量",
+    "evidence": [
+      "ev_11",
+      "ev_20"
+    ]
+  }
+]

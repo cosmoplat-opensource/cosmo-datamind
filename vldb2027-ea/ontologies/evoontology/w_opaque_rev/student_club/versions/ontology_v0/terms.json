@@ -1,0 +1,600 @@
+[
+  {
+    "id": "term_event",
+    "name": "Event",
+    "type": "entity",
+    "definition": "A scheduled activity organized by the student club, such as a meeting, game, speaker event, election, social, registration, or community-service activity.",
+    "scope": "Event-centric analysis of club activity.",
+    "aliases": [
+      "club event",
+      "activity",
+      "meeting"
+    ],
+    "evidence": [
+      "evidence_schema_overview",
+      "evidence_event_domains"
+    ]
+  },
+  {
+    "id": "term_member",
+    "name": "Member",
+    "type": "entity",
+    "definition": "An individual recorded as a member of the student club, including officers and members marked inactive.",
+    "scope": "Member-centric analysis of the club roster.",
+    "aliases": [
+      "student",
+      "student club member",
+      "club member"
+    ],
+    "evidence": [
+      "evidence_schema_overview",
+      "evidence_member_domains"
+    ]
+  },
+  {
+    "id": "term_major",
+    "name": "Academic Major",
+    "type": "entity",
+    "definition": "An academic degree program offered by a university department within a college.",
+    "scope": "Academic affiliation analysis of members.",
+    "aliases": [
+      "major",
+      "degree program",
+      "study program"
+    ],
+    "evidence": [
+      "evidence_schema_overview",
+      "evidence_member_major_coverage"
+    ]
+  },
+  {
+    "id": "term_zip_code",
+    "name": "ZIP Code Area",
+    "type": "entity",
+    "definition": "A postal ZIP code area carrying associated place, county, and state attributes.",
+    "scope": "Geographic analysis of member home locations.",
+    "aliases": [
+      "zip",
+      "postal code"
+    ],
+    "evidence": [
+      "evidence_zip_grain",
+      "evidence_zip_geography_example"
+    ]
+  },
+  {
+    "id": "term_budget",
+    "name": "Budget Line",
+    "type": "entity",
+    "definition": "A budgeted allocation for one expense category of one event, recording allocated amount, amount spent, remaining amount, and the event lifecycle status.",
+    "scope": "Event budgeting and spending analysis.",
+    "aliases": [
+      "budget",
+      "event budget",
+      "budget entry"
+    ],
+    "evidence": [
+      "evidence_budget_structure",
+      "evidence_budget_arithmetic"
+    ]
+  },
+  {
+    "id": "term_expense",
+    "name": "Expense",
+    "type": "entity",
+    "definition": "A recorded expenditure incurred by a member against a budget line, with a description, date, cost, and approval flag.",
+    "scope": "Expense-level spending analysis.",
+    "aliases": [
+      "expenditure",
+      "purchase",
+      "cost record"
+    ],
+    "evidence": [
+      "evidence_schema_overview",
+      "evidence_expense_budget_links"
+    ]
+  },
+  {
+    "id": "term_attendance",
+    "name": "Attendance Record",
+    "type": "entity",
+    "definition": "A record that one member attended one event.",
+    "scope": "Event attendance analysis.",
+    "aliases": [
+      "attendance",
+      "event attendance"
+    ],
+    "evidence": [
+      "evidence_attendance_grain"
+    ]
+  },
+  {
+    "id": "term_event_name",
+    "name": "Event Name",
+    "type": "dimension",
+    "definition": "The human-readable name of an event, such as Yearly Kickoff, October Meeting, or Women's Soccer.",
+    "scope": "Identifying and grouping events.",
+    "aliases": [
+      "name of event",
+      "event"
+    ],
+    "evidence": [
+      "evidence_event_name_duplicates"
+    ]
+  },
+  {
+    "id": "term_event_date",
+    "name": "Event Date",
+    "type": "dimension",
+    "definition": "The scheduled date and time of an event.",
+    "scope": "Temporal analysis of events.",
+    "aliases": [
+      "date of event",
+      "when the event happened"
+    ],
+    "evidence": [
+      "evidence_event_date_range"
+    ]
+  },
+  {
+    "id": "term_event_type",
+    "name": "Event Type",
+    "type": "category",
+    "definition": "The category of club activity an event represents, such as Meeting, Game, Guest Speaker, Election, Social, Community Service, Registration, or Budget.",
+    "scope": "Classifying events by activity kind.",
+    "aliases": [
+      "type of event",
+      "kind of event",
+      "event category"
+    ],
+    "evidence": [
+      "evidence_event_domains",
+      "evidence_event_type_no_fundraiser"
+    ]
+  },
+  {
+    "id": "term_event_status",
+    "name": "Event Lifecycle Status",
+    "type": "dimension",
+    "definition": "The lifecycle status recorded on the event itself: Closed, Open, or Planning. A closed event is one whose status is Closed.",
+    "scope": "Filtering events by lifecycle stage, especially identifying closed events.",
+    "aliases": [
+      "status of event",
+      "event status",
+      "closed event",
+      "open event"
+    ],
+    "evidence": [
+      "evidence_event_domains",
+      "evidence_event_status_counts"
+    ]
+  },
+  {
+    "id": "term_budget_event_status",
+    "name": "Budget Event Status",
+    "type": "dimension",
+    "definition": "The lifecycle status of an event repeated on each of that event's budget rows: Closed, Open, or Planning.",
+    "scope": "Filtering budget rows by the lifecycle status of the owning event.",
+    "aliases": [
+      "budget status",
+      "event status in budget"
+    ],
+    "evidence": [
+      "evidence_budget_status_equivalence"
+    ]
+  },
+  {
+    "id": "term_member_first_name",
+    "name": "Member Given Name",
+    "type": "dimension",
+    "definition": "The given (first) name of a member.",
+    "scope": "Member identification and name composition.",
+    "aliases": [
+      "first name",
+      "given name"
+    ],
+    "evidence": [
+      "evidence_member_fullname_unique"
+    ]
+  },
+  {
+    "id": "term_member_last_name",
+    "name": "Member Family Name",
+    "type": "dimension",
+    "definition": "The family (last) name of a member.",
+    "scope": "Member identification and name composition.",
+    "aliases": [
+      "last name",
+      "surname",
+      "family name"
+    ],
+    "evidence": [
+      "evidence_member_fullname_unique"
+    ]
+  },
+  {
+    "id": "term_member_full_name",
+    "name": "Member Full Name",
+    "type": "concept",
+    "definition": "The complete personal name of a member, formed by combining the given-name component and the family-name component.",
+    "scope": "Referring to members by personal name in questions and reports.",
+    "aliases": [
+      "full name",
+      "member name",
+      "person name"
+    ],
+    "evidence": [
+      "evidence_member_fullname_unique"
+    ]
+  },
+  {
+    "id": "term_member_position",
+    "name": "Member Position",
+    "type": "dimension",
+    "definition": "The role held by a member within the club, such as President, Vice President, Secretary, Treasurer, Member, or Inactive.",
+    "scope": "Club governance and officer analysis.",
+    "aliases": [
+      "position",
+      "role",
+      "officer title",
+      "club office"
+    ],
+    "evidence": [
+      "evidence_member_domains"
+    ]
+  },
+  {
+    "id": "term_member_phone",
+    "name": "Member Phone Number",
+    "type": "dimension",
+    "definition": "The contact telephone number of a member.",
+    "scope": "Contacting or identifying members.",
+    "aliases": [
+      "phone",
+      "phone number",
+      "contact number",
+      "telephone"
+    ],
+    "evidence": [
+      "evidence_member_domains"
+    ]
+  },
+  {
+    "id": "term_tshirt_size",
+    "name": "T-Shirt Size",
+    "type": "dimension",
+    "definition": "The apparel size of the club t-shirt worn by a member: Small, Medium, Large, or X-Large.",
+    "scope": "Club apparel planning and member attribute analysis.",
+    "aliases": [
+      "t-shirt size",
+      "shirt size",
+      "size"
+    ],
+    "evidence": [
+      "evidence_member_domains"
+    ]
+  },
+  {
+    "id": "term_member_major",
+    "name": "Member Major Reference",
+    "type": "dimension",
+    "definition": "The reference from a member to that member's declared academic major. A member may have no declared major.",
+    "scope": "Linking members to academic programs.",
+    "aliases": [
+      "major of member",
+      "member major",
+      "declared major"
+    ],
+    "evidence": [
+      "evidence_member_major_coverage"
+    ]
+  },
+  {
+    "id": "term_member_zip",
+    "name": "Member Home ZIP Reference",
+    "type": "dimension",
+    "definition": "The reference from a member to the ZIP code area of the member's home location.",
+    "scope": "Linking members to geographic areas.",
+    "aliases": [
+      "member zip",
+      "home zip",
+      "zip of member"
+    ],
+    "evidence": [
+      "evidence_member_zip_coverage"
+    ]
+  },
+  {
+    "id": "term_major_name",
+    "name": "Major Name",
+    "type": "dimension",
+    "definition": "The name of an academic major, such as Finance or Business.",
+    "scope": "Grouping members by academic program.",
+    "aliases": [
+      "major name",
+      "name of major"
+    ],
+    "evidence": [
+      "evidence_schema_overview"
+    ]
+  },
+  {
+    "id": "term_major_department",
+    "name": "Major Department",
+    "type": "dimension",
+    "definition": "The department or school that offers an academic major.",
+    "scope": "Reporting the department associated with a member's major.",
+    "aliases": [
+      "department",
+      "school",
+      "department of major"
+    ],
+    "evidence": [
+      "evidence_schema_overview"
+    ]
+  },
+  {
+    "id": "term_city",
+    "name": "City",
+    "type": "dimension",
+    "definition": "The city or place name associated with a ZIP code area.",
+    "scope": "Geographic aggregation and filtering.",
+    "aliases": [
+      "city",
+      "place",
+      "town"
+    ],
+    "evidence": [
+      "evidence_zip_geography_example"
+    ]
+  },
+  {
+    "id": "term_county",
+    "name": "County",
+    "type": "dimension",
+    "definition": "The county or municipio name associated with a ZIP code area.",
+    "scope": "Geographic aggregation and filtering.",
+    "aliases": [
+      "county",
+      "municipio"
+    ],
+    "evidence": [
+      "evidence_zip_geography_example"
+    ]
+  },
+  {
+    "id": "term_state",
+    "name": "State",
+    "type": "dimension",
+    "definition": "The full name of the state or territory associated with a ZIP code area.",
+    "scope": "Geographic aggregation and filtering.",
+    "aliases": [
+      "state",
+      "state name",
+      "province"
+    ],
+    "evidence": [
+      "evidence_zip_geography_example",
+      "evidence_zip_grain"
+    ]
+  },
+  {
+    "id": "term_state_abbreviation",
+    "name": "State Abbreviation",
+    "type": "dimension",
+    "definition": "The two-letter postal abbreviation of the state associated with a ZIP code area.",
+    "scope": "Geographic filtering using state codes.",
+    "aliases": [
+      "state abbreviation",
+      "state code",
+      "short state"
+    ],
+    "evidence": [
+      "evidence_zip_grain"
+    ]
+  },
+  {
+    "id": "term_budget_category",
+    "name": "Budget Category",
+    "type": "dimension",
+    "definition": "The expense category to which a budget line is allocated, such as Advertisement, Food, Parking, Speaker Gifts, or Club T-Shirts.",
+    "scope": "Category-level budget analysis.",
+    "aliases": [
+      "budget category",
+      "category",
+      "expense category"
+    ],
+    "evidence": [
+      "evidence_budget_categories"
+    ]
+  },
+  {
+    "id": "term_expense_description",
+    "name": "Expense Description",
+    "type": "dimension",
+    "definition": "The free-text description of what an expense purchased, used as the kind or type of expense, such as Pizza, Posters, or Water, Cookies.",
+    "scope": "Classifying and grouping expenses by purchased item.",
+    "aliases": [
+      "expense description",
+      "kind of expense",
+      "type of expense",
+      "expense type"
+    ],
+    "evidence": [
+      "evidence_expense_descriptions"
+    ]
+  },
+  {
+    "id": "term_expense_date",
+    "name": "Expense Date",
+    "type": "dimension",
+    "definition": "The calendar date on which an expense was incurred, stored as a ten-character calendar date in year-month-day order.",
+    "scope": "Temporal analysis of expenses, including month-based filtering.",
+    "aliases": [
+      "expense date",
+      "date of expense",
+      "date incurred"
+    ],
+    "evidence": [
+      "evidence_expense_date_format"
+    ]
+  },
+  {
+    "id": "term_expense_approved",
+    "name": "Expense Approval Flag",
+    "type": "dimension",
+    "definition": "The approval marker on an expense record; the observed value true indicates an approved expense.",
+    "scope": "Filtering expenses by approval state.",
+    "aliases": [
+      "approved",
+      "approval",
+      "approved expense"
+    ],
+    "evidence": [
+      "evidence_expense_approval"
+    ]
+  },
+  {
+    "id": "term_expense_cost",
+    "name": "Expense Cost",
+    "type": "metric",
+    "definition": "The monetary amount of a single expense record.",
+    "scope": "Monetary aggregation of expenses.",
+    "aliases": [
+      "cost",
+      "expense cost",
+      "amount spent on an expense"
+    ],
+    "evidence": [
+      "evidence_expense_cost_stats"
+    ]
+  },
+  {
+    "id": "term_budget_spent",
+    "name": "Budget Spent Amount",
+    "type": "metric",
+    "definition": "The amount already spent against a budget line.",
+    "scope": "Spending analysis at budget-line or event level.",
+    "aliases": [
+      "spent",
+      "budget spend",
+      "amount of budget spend",
+      "amount spent"
+    ],
+    "evidence": [
+      "evidence_budget_arithmetic",
+      "evidence_budget_structure"
+    ]
+  },
+  {
+    "id": "term_budget_amount",
+    "name": "Budget Allocated Amount",
+    "type": "metric",
+    "definition": "The total amount allocated to a budget line before spending.",
+    "scope": "Budget sizing and ratio analysis.",
+    "aliases": [
+      "allocated amount",
+      "budget amount",
+      "budget allocation",
+      "amount budgeted"
+    ],
+    "evidence": [
+      "evidence_budget_arithmetic",
+      "evidence_budget_structure"
+    ]
+  },
+  {
+    "id": "term_budget_remaining",
+    "name": "Budget Remaining Amount",
+    "type": "metric",
+    "definition": "The unspent portion of a budget line, equal to the allocated amount minus the spent amount. A negative value indicates spending beyond the allocation.",
+    "scope": "Budget utilization and overrun analysis.",
+    "aliases": [
+      "remaining",
+      "budget remaining",
+      "unspent amount"
+    ],
+    "evidence": [
+      "evidence_budget_arithmetic"
+    ]
+  },
+  {
+    "id": "term_spend_to_budget_ratio",
+    "name": "Spend-to-Budget Ratio",
+    "type": "metric",
+    "definition": "The ratio of amount spent to amount allocated for a budget line, or for an event's aggregate budget when summed across its budget lines.",
+    "scope": "Comparing spending intensity across events or categories.",
+    "aliases": [
+      "spend-to-budget ratio",
+      "spending ratio",
+      "budget utilization ratio"
+    ],
+    "evidence": [
+      "evidence_budget_arithmetic",
+      "evidence_ad_budget"
+    ]
+  },
+  {
+    "id": "term_budget_overrun",
+    "name": "Budget Overrun",
+    "type": "metric",
+    "definition": "The amount by which spending exceeds the allocated budget for a budget line or event; positive when over budget and equal to the magnitude of a negative remaining amount.",
+    "scope": "Identifying events or categories that exceeded their budget.",
+    "aliases": [
+      "overrun",
+      "exceeded the budget",
+      "over budget amount"
+    ],
+    "evidence": [
+      "evidence_budget_arithmetic"
+    ]
+  },
+  {
+    "id": "term_attendance_count",
+    "name": "Attendance Count",
+    "type": "metric",
+    "definition": "The number of members recorded as attending an event, equal to the number of attendance records for that event.",
+    "scope": "Event popularity and attendance analysis.",
+    "aliases": [
+      "attendance",
+      "number of attendees",
+      "how many members attended",
+      "attendance of over 20 students"
+    ],
+    "evidence": [
+      "evidence_attendance_counts",
+      "evidence_attendance_grain"
+    ]
+  },
+  {
+    "id": "term_total_expense_cost",
+    "name": "Total Expense Cost",
+    "type": "metric",
+    "definition": "The sum of expense costs across a set of expense records, such as all expenses of an event or of a member.",
+    "scope": "Aggregate spending by event, member, or description.",
+    "aliases": [
+      "total cost",
+      "total value",
+      "total expense",
+      "sum of costs"
+    ],
+    "evidence": [
+      "evidence_expense_cost_stats"
+    ]
+  },
+  {
+    "id": "term_average_expense_cost",
+    "name": "Average Expense Cost",
+    "type": "metric",
+    "definition": "The arithmetic mean of expense costs across a set of expense records.",
+    "scope": "Comparing individual expense records against typical spending.",
+    "aliases": [
+      "average cost",
+      "average expense",
+      "mean cost"
+    ],
+    "evidence": [
+      "evidence_expense_cost_stats"
+    ]
+  }
+]

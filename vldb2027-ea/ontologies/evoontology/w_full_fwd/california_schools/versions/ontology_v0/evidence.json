@@ -1,0 +1,410 @@
+[
+  {
+    "id": "ev_schools_rowcount",
+    "source": "california_schools.sqlite / schools",
+    "query": "SELECT COUNT(*) FROM schools;",
+    "result": "17686 rows.",
+    "validation_method": "direct row count via read-only sqlite3",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_frpm_rowcount",
+    "source": "california_schools.sqlite / frpm",
+    "query": "SELECT COUNT(*) FROM frpm;",
+    "result": "9986 rows.",
+    "validation_method": "direct row count via read-only sqlite3",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_satscores_rowcount",
+    "source": "california_schools.sqlite / satscores",
+    "query": "SELECT COUNT(*) FROM satscores;",
+    "result": "2269 rows.",
+    "validation_method": "direct row count via read-only sqlite3",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_schools_district_records",
+    "source": "california_schools.sqlite / schools",
+    "query": "SELECT COUNT(*) FROM schools WHERE CDSCode LIKE '%0000000';",
+    "result": "1369 rows whose CDS code ends in seven zeros; these are the agency-level administrative records.",
+    "validation_method": "pattern count on the primary key",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_school_name_nulls",
+    "source": "california_schools.sqlite / schools",
+    "query": "SELECT SUM(School IS NULL), SUM(Street IS NULL), SUM(City IS NULL), SUM(Zip IS NULL), SUM(State IS NULL) FROM schools;",
+    "result": "School name empty for 1369 rows; Street 294, City 293, Zip 293 and State 293 empty. The two null counts coincide, so the records without a school name are the same records without an address.",
+    "validation_method": "null counts per column",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_join_frpm_schools",
+    "source": "california_schools.sqlite / frpm + schools",
+    "query": "SELECT (SELECT COUNT(*) FROM frpm), (SELECT COUNT(*) FROM frpm f JOIN schools s ON f.CDSCode=s.CDSCode);",
+    "result": "9986 FRPM rows, 9986 matched. Every meal record links to a registry row by direct text equality of the CDS code.",
+    "validation_method": "join coverage check",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_cds_lengths",
+    "source": "california_schools.sqlite / schools + satscores",
+    "query": "SELECT DISTINCT length(CDSCode) FROM schools; SELECT DISTINCT rtype, length(cds) FROM satscores;",
+    "result": "schools.CDSCode is always 14 characters. satscores.cds is 13 characters for part of the records and 14 for the rest, because the leading zero of county codes below 10 is dropped.",
+    "validation_method": "length distribution comparison",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_join_satscores_string",
+    "source": "california_schools.sqlite / satscores + schools",
+    "query": "SELECT COUNT(*) FROM satscores t JOIN schools s ON t.cds=s.CDSCode;",
+    "result": "2058 of 2269 SAT records match by direct text equality; 211 records fail to match (53 district-level and 158 school-level).",
+    "validation_method": "join coverage check",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_join_satscores_numeric",
+    "source": "california_schools.sqlite / satscores + schools",
+    "query": "SELECT COUNT(*) FROM satscores t JOIN schools s ON CAST(s.CDSCode AS INTEGER)=CAST(t.cds AS INTEGER);",
+    "result": "2269 of 2269 SAT records match when the identifiers are compared numerically.",
+    "validation_method": "join coverage check",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_join_satscores_zeropad",
+    "source": "california_schools.sqlite / satscores + schools",
+    "query": "SELECT COUNT(*) FROM satscores t JOIN schools s ON printf('%014d',CAST(t.cds AS INTEGER))=s.CDSCode;",
+    "result": "2269 of 2269 SAT records match after zero-padding the SAT identifier to 14 characters.",
+    "validation_method": "join coverage check",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_cds_decomposition",
+    "source": "california_schools.sqlite / frpm + schools",
+    "query": "SELECT CDSCode, substr(CDSCode,1,2), substr(CDSCode,3,5), substr(CDSCode,8,7), `County Code`, `District Code`, `School Code` FROM frpm LIMIT 3;",
+    "result": "The 14-character code decomposes exactly into a 2-digit county code, a 5-digit district code and a 7-digit school code, matching the separate county, district and school code columns of the meal table.",
+    "validation_method": "substring comparison against the component columns",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_satscores_rtype",
+    "source": "california_schools.sqlite / satscores",
+    "query": "SELECT rtype, COUNT(*) FROM satscores GROUP BY 1;",
+    "result": "S = 1749 school-level records, D = 520 district-level records.",
+    "validation_method": "value distribution",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_satscores_district_rows",
+    "source": "california_schools.sqlite / satscores + schools",
+    "query": "SELECT COUNT(*) FROM satscores t JOIN schools s ON CAST(s.CDSCode AS INTEGER)=CAST(t.cds AS INTEGER) WHERE t.rtype='D' AND s.CDSCode LIKE '%0000000';",
+    "result": "All 520 district-level SAT records join to registry rows whose CDS code ends in seven zeros, confirming that they aggregate agencies rather than school sites.",
+    "validation_method": "join and pattern verification",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_frpm_academic_year",
+    "source": "california_schools.sqlite / frpm",
+    "query": "SELECT DISTINCT `Academic Year` FROM frpm; SELECT `Academic Year`, COUNT(*) FROM frpm GROUP BY 1;",
+    "result": "A single value, '2014-2015', across all 9986 rows.",
+    "validation_method": "distinct value inspection",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_virtual_domain",
+    "source": "california_schools.sqlite / schools",
+    "query": "SELECT Virtual, COUNT(*) FROM schools GROUP BY 1;",
+    "result": "F = 69, N = 9703, P = 1046, empty = 6868.",
+    "validation_method": "value distribution",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_magnet_domain",
+    "source": "california_schools.sqlite / schools",
+    "query": "SELECT Magnet, COUNT(*) FROM schools GROUP BY 1;",
+    "result": "1 = 519, 0 = 10091, empty = 7076.",
+    "validation_method": "value distribution",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_magnet_k8_multiple_provision",
+    "source": "california_schools.sqlite / schools + frpm",
+    "query": "SELECT COUNT(*) FROM schools s JOIN frpm f ON f.CDSCode=s.CDSCode WHERE s.GSoffered='K-8' AND s.Magnet=1 AND f.`NSLP Provision Status`='Multiple Provision Types';",
+    "result": "1 school satisfies all three conditions simultaneously.",
+    "validation_method": "multi-condition join count",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_status_domain",
+    "source": "california_schools.sqlite / schools",
+    "query": "SELECT StatusType, COUNT(*) FROM schools GROUP BY 1;",
+    "result": "Active 11708, Closed 4518, Merged 1448, Pending 12.",
+    "validation_method": "value distribution",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_charter_domain",
+    "source": "california_schools.sqlite / schools",
+    "query": "SELECT Charter, COUNT(*) FROM schools GROUP BY 1;",
+    "result": "1 = 1729, 0 = 14588, empty = 1369.",
+    "validation_method": "value distribution",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_charter_funding_domain",
+    "source": "california_schools.sqlite / schools + frpm",
+    "query": "SELECT DISTINCT FundingType FROM schools; SELECT DISTINCT `Charter Funding Type` FROM frpm;",
+    "result": "Both columns hold the same three labels: Directly funded, Locally funded, Not in CS funding model.",
+    "validation_method": "distinct value comparison",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_edopscode_domain",
+    "source": "california_schools.sqlite / schools",
+    "query": "SELECT DISTINCT EdOpsCode, EdOpsName FROM schools ORDER BY EdOpsCode;",
+    "result": "13 pairs, including SSS = State Special School, TRAD = Traditional, CON = Continuation School, SPEC = Special Education School and OPP = Opportunity School.",
+    "validation_method": "code-to-label mapping inspection",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_frpm_education_option_domain",
+    "source": "california_schools.sqlite / frpm",
+    "query": "SELECT DISTINCT `Educational Option Type`, COUNT(*) FROM frpm GROUP BY 1;",
+    "result": "13 labels matching the registry vocabulary; Traditional 8696, Continuation School 459, Alternative School of Choice 259, State Special School 3, and 45 rows empty.",
+    "validation_method": "value distribution",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_doc_domain",
+    "source": "california_schools.sqlite / schools",
+    "query": "SELECT DISTINCT DOC, DOCType FROM schools ORDER BY DOC;",
+    "result": "12 pairs including 52 = Elementary School District, 54 = Unified School District, 00 = County Office of Education (COE) and 31 = State Special Schools.",
+    "validation_method": "code-to-label mapping inspection",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_frpm_district_type_domain",
+    "source": "california_schools.sqlite / frpm",
+    "query": "SELECT DISTINCT `District Type`, COUNT(*) FROM frpm GROUP BY 1;",
+    "result": "8 labels: Unified School District 6744, Elementary School District 2356, High School District 529, County Office of Education (COE) 334, and four smaller groups.",
+    "validation_method": "value distribution",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_soc_domain",
+    "source": "california_schools.sqlite / schools",
+    "query": "SELECT DISTINCT SOC, SOCType FROM schools ORDER BY SOC;",
+    "result": "19 pairs including 62 = Intermediate/Middle Schools (Public), 65 = K-12 Schools (Public), 66 = High Schools (Public), 60 = Elementary Schools (Public) and 31 = State Special Schools.",
+    "validation_method": "code-to-label mapping inspection",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_frpm_school_type_domain",
+    "source": "california_schools.sqlite / frpm",
+    "query": "SELECT DISTINCT `School Type`, COUNT(*) FROM frpm GROUP BY 1;",
+    "result": "18 labels including Elementary Schools (Public) 5584, Intermediate/Middle Schools (Public) 1299, High Schools (Public) 1331, K-12 Schools (Public) 240, State Special Schools 3, and 45 rows empty.",
+    "validation_method": "value distribution",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_grade_span_domain",
+    "source": "california_schools.sqlite / schools",
+    "query": "SELECT DISTINCT GSoffered FROM schools; SELECT DISTINCT GSserved FROM schools;",
+    "result": "Spans are compact boundary labels such as K-8, K-12, 9-12, P-5, 1-Adult and K; the served column uses the same vocabulary, with more single-grade values such as 12 and 1.",
+    "validation_method": "distinct value inspection",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_grade_span_offered_served_diff",
+    "source": "california_schools.sqlite / schools",
+    "query": "SELECT COUNT(*) FROM schools WHERE GSoffered<>GSserved;",
+    "result": "2487 rows have an offered span different from the served span.",
+    "validation_method": "comparison count between the two columns",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_grade_span_nulls",
+    "source": "california_schools.sqlite / schools",
+    "query": "SELECT SUM(GSoffered IS NULL), SUM(GSserved IS NULL), COUNT(*) FROM schools;",
+    "result": "GSoffered empty for 3882 rows and GSserved empty for 5743 of 17686 rows.",
+    "validation_method": "null counts per column",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_k8_counts",
+    "source": "california_schools.sqlite / schools + frpm",
+    "query": "SELECT COUNT(*) FROM schools WHERE GSoffered='K-8'; SELECT COUNT(DISTINCT s.City) FROM schools s JOIN frpm f ON f.CDSCode=s.CDSCode WHERE s.GSoffered='K-8';",
+    "result": "1292 registry rows offer the span K-8, spread over 457 distinct cities among the schools that also appear in the meal table.",
+    "validation_method": "count and distinct-count",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_nslp_domain",
+    "source": "california_schools.sqlite / frpm",
+    "query": "SELECT DISTINCT `NSLP Provision Status`, COUNT(*) FROM frpm GROUP BY 1;",
+    "result": "Provision 2 1365, Breakfast Provision 2 285, CEP 172, Multiple Provision Types 11, Provision 1 7, Lunch Provision 2 5, Provision 3 2, and 8139 rows empty.",
+    "validation_method": "value distribution",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_open_date_null",
+    "source": "california_schools.sqlite / schools",
+    "query": "SELECT COUNT(*) FROM schools WHERE OpenDate IS NULL;",
+    "result": "1369 rows have no open date; these coincide with the agency-level records.",
+    "validation_method": "null count",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_open_date_sentinel",
+    "source": "california_schools.sqlite / schools",
+    "query": "SELECT OpenDate, COUNT(*) FROM schools WHERE OpenDate LIKE '1980%' GROUP BY 1 ORDER BY COUNT(*) DESC;",
+    "result": "10679 rows share the date 1980-07-01, one row has 1980-09-01 and one has 1980-05-01. All other years have at most a few hundred records, so 1980-07-01 is a filler value.",
+    "validation_method": "value distribution within the year",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_closed_date_sample",
+    "source": "california_schools.sqlite / schools",
+    "query": "SELECT ClosedDate FROM schools WHERE ClosedDate IS NOT NULL LIMIT 3;",
+    "result": "Example values 2015-07-31, 2015-06-30 and 1989-06-30, in ISO date form.",
+    "validation_method": "sample inspection",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_percent_consistency",
+    "source": "california_schools.sqlite / frpm",
+    "query": "SELECT COUNT(*), SUM(ABS(`Percent (%) Eligible Free (K-12)` - `Free Meal Count (K-12)`/`Enrollment (K-12)`) > 0.001) FROM frpm WHERE `Enrollment (K-12)` > 0;",
+    "result": "9972 comparable rows and 0 mismatches: the stored rate is exactly the free-meal count divided by the enrollment count of the same population label.",
+    "validation_method": "recomputation and comparison",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_percent_range",
+    "source": "california_schools.sqlite / frpm",
+    "query": "SELECT MIN(`Percent (%) Eligible Free (K-12)`), MAX(`Percent (%) Eligible Free (K-12)`) FROM frpm;",
+    "result": "Minimum about 0.00176 and maximum 1.0, confirming that the stored rates are fractions rather than values out of 100.",
+    "validation_method": "range inspection",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_frpm_measure_nulls",
+    "source": "california_schools.sqlite / frpm",
+    "query": "SELECT SUM(`Enrollment (K-12)` IS NULL), SUM(`Free Meal Count (K-12)` IS NULL), SUM(`Enrollment (Ages 5-17)` IS NULL), SUM(`Free Meal Count (Ages 5-17)` IS NULL) FROM frpm;",
+    "result": "Enrollment (K-12) empty for 0 rows, Free Meal Count (K-12) for 56, Enrollment (Ages 5-17) for 14 and Free Meal Count (Ages 5-17) for 78 of 9986 rows.",
+    "validation_method": "null counts per column",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_enrollment_population_diff",
+    "source": "california_schools.sqlite / frpm",
+    "query": "SELECT COUNT(*), SUM(`Enrollment (K-12)`<>`Enrollment (Ages 5-17)`), SUM(`Enrollment (K-12)`>`Enrollment (Ages 5-17)`) FROM frpm WHERE `Enrollment (K-12)` IS NOT NULL AND `Enrollment (Ages 5-17)` IS NOT NULL;",
+    "result": "9972 comparable rows; the two figures differ in 6460 rows, always with the K-12 figure larger. The two population labels are therefore genuinely distinct.",
+    "validation_method": "paired comparison",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_address_nulls",
+    "source": "california_schools.sqlite / schools",
+    "query": "SELECT SUM(School IS NULL), SUM(Street IS NULL), SUM(City IS NULL), SUM(Zip IS NULL), SUM(State IS NULL), SUM(MailStreet IS NULL), SUM(MailCity IS NULL) FROM schools;",
+    "result": "Street 294, City 293, Zip 293, State 293, MailStreet 292 and MailCity 292 empty rows out of 17686.",
+    "validation_method": "null counts per column",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_state_domain",
+    "source": "california_schools.sqlite / schools",
+    "query": "SELECT DISTINCT State FROM schools;",
+    "result": "The only value is 'CA'.",
+    "validation_method": "distinct value inspection",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_zip_format",
+    "source": "california_schools.sqlite / schools",
+    "query": "SELECT DISTINCT Zip FROM schools LIMIT 8;",
+    "result": "Values appear both as five digits (94541) and in ZIP+4 form (94544-1136, 94612-3355).",
+    "validation_method": "sample inspection",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_mailing_vs_location_diff",
+    "source": "california_schools.sqlite / schools",
+    "query": "SELECT COUNT(*) FROM schools WHERE Street<>MailStreet AND MailStreet IS NOT NULL;",
+    "result": "2989 rows have a mailing street different from the location street.",
+    "validation_method": "comparison count",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_coordinates_range",
+    "source": "california_schools.sqlite / schools",
+    "query": "SELECT MIN(Latitude), MAX(Latitude), MIN(Longitude), MAX(Longitude) FROM schools;",
+    "result": "Latitude 32.547737 to 44.219305; Longitude -124.28481 to -83.781133, negative for every record because California lies in the western hemisphere.",
+    "validation_method": "range inspection",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_coordinates_nulls",
+    "source": "california_schools.sqlite / schools",
+    "query": "SELECT COUNT(*) FROM schools WHERE Latitude IS NULL;",
+    "result": "4823 of 17686 rows have no coordinates.",
+    "validation_method": "null count",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_administrator_slots",
+    "source": "california_schools.sqlite / schools",
+    "query": "SELECT COUNT(*) FROM schools WHERE AdmEmail1 LIKE '%_@_%.__%';",
+    "result": "11674 rows carry an e-mail-like value in the first administrator slot; 6012 rows have no value there, which includes the 1369 agency records and many school-site records.",
+    "validation_method": "pattern count and null count",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_administrator_email",
+    "source": "california_schools.sqlite / schools",
+    "query": "SELECT DISTINCT AdmEmail1 FROM schools WHERE AdmEmail1 LIKE '%@%' LIMIT 5;",
+    "result": "Example addresses such as lkmonroe@acoe.org and laura@envisionacademy.org; the column is free text, so it can also hold strings that are not well-formed addresses.",
+    "validation_method": "sample inspection",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_sat_measure_nulls",
+    "source": "california_schools.sqlite / satscores",
+    "query": "SELECT SUM(NumTstTakr IS NULL), SUM(NumGE1500 IS NULL), SUM(AvgScrMath IS NULL), SUM(enroll12 IS NULL), COUNT(*) FROM satscores;",
+    "result": "Out of 2269 records, NumTstTakr is never empty, enroll12 is never empty, while NumGE1500 and the three average score columns are empty for 596 records.",
+    "validation_method": "null counts per column",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_sat_coverage",
+    "source": "california_schools.sqlite / satscores + schools",
+    "query": "SELECT s.SOCType, COUNT(*) FROM satscores t JOIN schools s ON CAST(s.CDSCode AS INTEGER)=CAST(t.cds AS INTEGER) WHERE t.rtype='S' GROUP BY 1 ORDER BY 2 DESC;",
+    "result": "School-level SAT coverage is concentrated: High Schools (Public) 1234, K-12 Schools (Public) 228, Alternative Schools of Choice 177, Continuation High Schools 87, with the remaining categories in single digits.",
+    "validation_method": "grouped join count",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_county_name_consistency",
+    "source": "california_schools.sqlite / schools + frpm",
+    "query": "SELECT DISTINCT s.County, f.`County Name` FROM schools s JOIN frpm f ON f.CDSCode=s.CDSCode WHERE s.County LIKE '%Monterey%';",
+    "result": "The county name is identical in both tables ('Monterey'), confirming that county and district are stored as plain shared labels.",
+    "validation_method": "paired distinct comparison",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_county_monterey",
+    "source": "california_schools.sqlite / schools",
+    "query": "SELECT COUNT(*) FROM schools WHERE City='Monterey';",
+    "result": "16 registry rows are located in a city named Monterey, so the city label alone does not determine the county.",
+    "validation_method": "count by label",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_sss_schools",
+    "source": "california_schools.sqlite / schools",
+    "query": "SELECT CDSCode, School, City, EdOpsCode, EdOpsName, SOC, SOCType, GSoffered FROM schools WHERE EdOpsCode='SSS';",
+    "result": "Three schools: California School for the Blind (Fremont), California School for the Deaf-Fremont and California School for the Deaf-Riverside. All three carry SOC code 31.",
+    "validation_method": "filtered record inspection",
+    "timestamp": "2026-10-10"
+  }
+]

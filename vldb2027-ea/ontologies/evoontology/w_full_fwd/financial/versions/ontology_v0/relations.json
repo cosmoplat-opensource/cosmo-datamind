@@ -1,0 +1,179 @@
+[
+  {
+    "id": "rel_account_disposition",
+    "source": "account",
+    "relation_type": "composition",
+    "target": "disposition",
+    "connection_condition": "disp.account_id corresponds to account.account_id; no disposition row exists without its account (0 orphans observed)",
+    "description": "An account is composed of one or more disposition records. Those records exist only to attach clients to the account and cannot exist without it.",
+    "evidence": [
+      "ev_fk_integrity",
+      "ev_disp_type"
+    ]
+  },
+  {
+    "id": "rel_client_disposition",
+    "source": "client",
+    "relation_type": "composition",
+    "target": "disposition",
+    "connection_condition": "disp.client_id corresponds to client.client_id",
+    "description": "A client is composed of the disposition records that name them; a disposition record has no meaning without its client.",
+    "evidence": [
+      "ev_fk_integrity",
+      "ev_disp_type"
+    ]
+  },
+  {
+    "id": "rel_account_loan",
+    "source": "account",
+    "relation_type": "composition",
+    "target": "loan",
+    "connection_condition": "loan.account_id corresponds to account.account_id; 0 orphan loan rows",
+    "description": "An account is composed of the loan contracts granted on it; a loan contract cannot exist without its account.",
+    "evidence": [
+      "ev_fk_integrity",
+      "ev_loans_per_account"
+    ]
+  },
+  {
+    "id": "rel_account_transaction",
+    "source": "account",
+    "relation_type": "composition",
+    "target": "transaction",
+    "connection_condition": "trans.account_id corresponds to account.account_id; 0 orphan transaction rows",
+    "description": "An account is composed of the transactions recorded on it; a transaction cannot exist without its account.",
+    "evidence": [
+      "ev_fk_integrity",
+      "ev_trans_type"
+    ]
+  },
+  {
+    "id": "rel_account_standing_order",
+    "source": "account",
+    "relation_type": "composition",
+    "target": "standing_order",
+    "connection_condition": "order.account_id corresponds to account.account_id; 0 orphan order rows",
+    "description": "An account is composed of the recurring bank orders defined on it.",
+    "evidence": [
+      "ev_fk_integrity",
+      "ev_order_k_symbol"
+    ]
+  },
+  {
+    "id": "rel_disposition_card",
+    "source": "disposition",
+    "relation_type": "composition",
+    "target": "card",
+    "connection_condition": "card.disp_id corresponds to disp.disp_id; 0 orphan card rows",
+    "description": "A disposition is composed of the payment cards issued against it; a card cannot exist without the disposition that authorises it.",
+    "evidence": [
+      "ev_fk_integrity",
+      "ev_card_types"
+    ]
+  },
+  {
+    "id": "rel_client_residence_district",
+    "source": "client",
+    "relation_type": "association",
+    "target": "district",
+    "connection_condition": "client.district_id corresponds to district.district_id and denotes the district in which the client lives",
+    "description": "A client is associated with a district of residence. This is the district reference implied by wording such as clients living in a given region.",
+    "evidence": [
+      "ev_district_id_divergence"
+    ]
+  },
+  {
+    "id": "rel_account_opening_district",
+    "source": "account",
+    "relation_type": "association",
+    "target": "district",
+    "connection_condition": "account.district_id corresponds to district.district_id and denotes the branch district where the account was opened",
+    "description": "An account is associated with the district where it was opened. This is a different district reference from the client's residence and the two disagree for 494 accounts.",
+    "evidence": [
+      "ev_district_id_divergence"
+    ]
+  },
+  {
+    "id": "rel_district_region",
+    "source": "district",
+    "relation_type": "association",
+    "target": "district_region",
+    "connection_condition": "district.A3 holds the region label of each district row; a region groups several districts (8 regions over 77 districts)",
+    "description": "Each district belongs to exactly one larger region, and the region aggregates several districts geographically.",
+    "evidence": [
+      "ev_district_regions"
+    ]
+  },
+  {
+    "id": "rel_purpose_code_equivalence",
+    "source": "transaction_purpose_code",
+    "relation_type": "equivalence",
+    "target": "standing_order_purpose_code",
+    "connection_condition": "trans.k_symbol and order.k_symbol draw on the same coded vocabulary: SIPO, UVER and POJISTNE occur in both columns, while LEASING occurs only in order.k_symbol and SLUZBY, DUCHOD, UROK and SANKC. UROK only in trans.k_symbol",
+    "description": "Transaction purpose codes and standing-order purpose codes are two physical expressions of one payment-purpose vocabulary, applied to a one-off movement versus a recurring order. Searching for a purpose such as SIPO should consider both columns.",
+    "evidence": [
+      "ev_k_symbol_overlap",
+      "ev_trans_k_symbol",
+      "ev_order_k_symbol"
+    ]
+  },
+  {
+    "id": "rel_cash_withdrawal_specialization",
+    "source": "transaction_operation",
+    "relation_type": "hierarchy",
+    "target": "cash_withdrawal",
+    "connection_condition": "cash_withdrawal is grounded on the single operation code VYBER, which is one of the values of trans.operation",
+    "description": "A cash withdrawal is one specific kind of transaction operation; its instances are a proper subset of the operation value domain.",
+    "evidence": [
+      "ev_vyber_cross",
+      "ev_trans_operation"
+    ]
+  },
+  {
+    "id": "rel_transaction_operation_direction",
+    "source": "transaction_operation",
+    "relation_type": "association",
+    "target": "transaction_direction",
+    "connection_condition": "trans.operation and trans.type are recorded on the same transaction row; each observed operation corresponds to one or two direction codes",
+    "description": "Operation refines direction: direction classifies money credited versus money debited, while operation states how the movement was made. The code VYBER occurs in both columns with different populations, so the two concepts are related but not interchangeable.",
+    "evidence": [
+      "ev_vyber_cross"
+    ]
+  },
+  {
+    "id": "rel_account_loan_total_derivation",
+    "source": "loan_amount",
+    "relation_type": "derivation",
+    "target": "account_loan_total_amount",
+    "connection_condition": "sum of loan.amount over the loan contracts of one account",
+    "description": "The total approved loan amount of an account is derived by summing the amounts of the contracts held on it; because an account holds at most one contract in this data, the total equals that single amount.",
+    "evidence": [
+      "ev_loans_per_account",
+      "ev_loan_amounts"
+    ]
+  },
+  {
+    "id": "rel_share_from_amount_derivation",
+    "source": "loan_amount",
+    "relation_type": "derivation",
+    "target": "conditional_share_percentage",
+    "connection_condition": "amount-based variant: sum of the conditioned amounts divided by the sum of the base amounts, multiplied by 100",
+    "description": "A conditional share percentage is derived from loan amounts when the question defines both the subgroup and the base population by approved amount.",
+    "evidence": [
+      "ev_workload_enum_hints",
+      "ev_loan_amounts"
+    ]
+  },
+  {
+    "id": "rel_share_from_client_derivation",
+    "source": "client",
+    "relation_type": "derivation",
+    "target": "conditional_share_percentage",
+    "connection_condition": "count-based variant: number of clients satisfying the condition divided by the number of clients in the base population, multiplied by 100",
+    "description": "A conditional share percentage is derived from client counts when the question defines both the subgroup and the base population by client population.",
+    "evidence": [
+      "ev_workload_enum_hints",
+      "ev_client_gender"
+    ]
+  }
+]

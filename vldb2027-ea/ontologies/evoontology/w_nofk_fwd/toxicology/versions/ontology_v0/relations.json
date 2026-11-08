@@ -1,0 +1,171 @@
+[
+  {
+    "id": "rel_molecule_composed_of_atoms",
+    "source": "term_molecule",
+    "relation_type": "composition",
+    "target": "term_atom",
+    "connection_condition": "atom.molecule_id names the molecule that the atom belongs to; an atom cannot exist without its molecule",
+    "description": "A molecule is composed of the atoms recorded against it.",
+    "evidence": [
+      "ev_molecule_universe"
+    ]
+  },
+  {
+    "id": "rel_molecule_composed_of_bonds",
+    "source": "term_molecule",
+    "relation_type": "composition",
+    "target": "term_bond",
+    "connection_condition": "bond.molecule_id names the molecule that the bond belongs to; a bond cannot exist without its molecule",
+    "description": "A molecule is composed of the bonds recorded against it.",
+    "evidence": [
+      "ev_molecule_universe"
+    ]
+  },
+  {
+    "id": "rel_bond_composed_of_atoms",
+    "source": "term_bond",
+    "relation_type": "composition",
+    "target": "term_atom",
+    "connection_condition": "the two atoms recorded for a bond in the connectivity relation are the atoms the bond connects",
+    "description": "A bond is composed of the two atoms it links; the pair of atoms is what defines the bond.",
+    "evidence": [
+      "ev_connected_pair_bond"
+    ]
+  },
+  {
+    "id": "rel_carcinogenic_is_molecule",
+    "source": "term_carcinogenic_molecule",
+    "relation_type": "hierarchy",
+    "target": "term_molecule",
+    "connection_condition": "",
+    "description": "Carcinogenic molecules are a subclass of molecules: every carcinogenic molecule is a molecule, and its identifier set is a subset of the molecule identifier domain.",
+    "evidence": [
+      "ev_molecule_label_enum"
+    ]
+  },
+  {
+    "id": "rel_non_carcinogenic_is_molecule",
+    "source": "term_non_carcinogenic_molecule",
+    "relation_type": "hierarchy",
+    "target": "term_molecule",
+    "connection_condition": "",
+    "description": "Non-carcinogenic molecules are a subclass of molecules: every non-carcinogenic molecule is a molecule, and its identifier set is a subset of the molecule identifier domain.",
+    "evidence": [
+      "ev_molecule_label_enum"
+    ]
+  },
+  {
+    "id": "rel_single_bond_is_bond_type",
+    "source": "term_single_bond",
+    "relation_type": "hierarchy",
+    "target": "term_bond_type",
+    "connection_condition": "",
+    "description": "A single bond is one of the three bond types; the single-bond population is a subset of all bonds.",
+    "evidence": [
+      "ev_bond_type_enum"
+    ]
+  },
+  {
+    "id": "rel_double_bond_is_bond_type",
+    "source": "term_double_bond",
+    "relation_type": "hierarchy",
+    "target": "term_bond_type",
+    "connection_condition": "",
+    "description": "A double bond is one of the three bond types; the double-bond population is a subset of all bonds.",
+    "evidence": [
+      "ev_bond_type_enum"
+    ]
+  },
+  {
+    "id": "rel_triple_bond_is_bond_type",
+    "source": "term_triple_bond",
+    "relation_type": "hierarchy",
+    "target": "term_bond_type",
+    "connection_condition": "",
+    "description": "A triple bond is one of the three bond types; the triple-bond population is a subset of all bonds.",
+    "evidence": [
+      "ev_bond_type_enum"
+    ]
+  },
+  {
+    "id": "rel_molecule_reference_equivalence",
+    "source": "term_molecule_reference",
+    "relation_type": "equivalence",
+    "target": "term_molecule",
+    "connection_condition": "the referencing values recorded on atom and bond records belong to the same identifier space as the molecule identifiers",
+    "description": "The molecule identifier used as a reference on atoms and bonds and the molecule identifier of the molecule itself denote the same compounds; a molecule can be reached from its atoms and bonds through this shared identifier.",
+    "evidence": [
+      "ev_molecule_universe"
+    ]
+  },
+  {
+    "id": "rel_atom_has_element",
+    "source": "term_atom",
+    "relation_type": "association",
+    "target": "term_element",
+    "connection_condition": "each atom carries exactly one element value",
+    "description": "An atom is characterized by its chemical element; the element is a property of the atom rather than a separate entity, and there is no element dimension table.",
+    "evidence": [
+      "ev_element_domain",
+      "ev_atom_presence"
+    ]
+  },
+  {
+    "id": "rel_bond_has_bond_type",
+    "source": "term_bond",
+    "relation_type": "association",
+    "target": "term_bond_type",
+    "connection_condition": "each bond records one bond type symbol, except one bond that records none",
+    "description": "A bond is characterized by its bond type; the type is a property of the bond rather than a separate entity.",
+    "evidence": [
+      "ev_bond_type_enum"
+    ]
+  },
+  {
+    "id": "rel_molecule_has_label",
+    "source": "term_molecule",
+    "relation_type": "association",
+    "target": "term_carcinogenicity_label",
+    "connection_condition": "each molecule that is classified records one label symbol",
+    "description": "A molecule carries a carcinogenicity classification used to partition molecules into carcinogenic and non-carcinogenic populations.",
+    "evidence": [
+      "ev_molecule_label_enum",
+      "ev_molecule_universe"
+    ]
+  },
+  {
+    "id": "rel_adjacency_connects_atom",
+    "source": "term_atom_bond_adjacency",
+    "relation_type": "association",
+    "target": "term_atom",
+    "connection_condition": "both atom roles of a connectivity row reference atoms of the same molecule",
+    "description": "The connectivity fact relates an atom to a partner atom through a shared bond; it is the only path from a bond to the atoms it connects.",
+    "evidence": [
+      "ev_connected_pair_bond",
+      "ev_identifier_format"
+    ]
+  },
+  {
+    "id": "rel_element_share_derivation",
+    "source": "term_element_occurrence_share",
+    "relation_type": "derivation",
+    "target": "term_element",
+    "connection_condition": "",
+    "description": "The element occurrence share is derived from the count of atoms carrying the specified element and the total atom count of the same molecule population.",
+    "evidence": [
+      "ev_tr006_hydrogen_ratio"
+    ]
+  },
+  {
+    "id": "rel_average_bonds_derivation",
+    "source": "term_average_bonds_per_atom",
+    "relation_type": "derivation",
+    "target": "term_atom_bond_adjacency",
+    "connection_condition": "",
+    "description": "The average number of bonds per atom is derived from the bond incidences recorded for a population of atoms and the number of distinct atoms in that population.",
+    "evidence": [
+      "ev_iodine_adjacency",
+      "ev_distinct_atoms"
+    ]
+  }
+]

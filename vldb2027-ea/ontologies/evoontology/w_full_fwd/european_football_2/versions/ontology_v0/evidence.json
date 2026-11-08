@@ -1,0 +1,186 @@
+[
+  {
+    "id": "ev_001_source_schema",
+    "source": "european_football_2.sqlite",
+    "query": "SELECT name FROM sqlite_master WHERE type='table'; SELECT COUNT(*) FROM each table",
+    "result": "Tables: Country, League, Team, Player, Match, Player_Attributes, Team_Attributes. Row counts: Country=11, League=11, Team=299, Player=11060, Match=25979, Player_Attributes=183978, Team_Attributes=1458.",
+    "validation_method": "read-only schema listing and per-table row counts",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_002_league_country",
+    "source": "european_football_2.sqlite",
+    "query": "SELECT COUNT(DISTINCT country_id), COUNT(*) FROM League; SELECT COUNT(*) FROM Match m JOIN League l ON m.league_id=l.id WHERE m.country_id<>l.country_id",
+    "result": "11 distinct country_id across 11 leagues, so each league belongs to exactly one country; 0 matches whose country_id differs from their league's country_id.",
+    "validation_method": "distinct-value count and join consistency check",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_003_season_values",
+    "source": "european_football_2.sqlite",
+    "query": "SELECT DISTINCT season FROM Match ORDER BY season",
+    "result": "2008/2009, 2009/2010, 2010/2011, 2011/2012, 2012/2013, 2013/2014, 2014/2015, 2015/2016; 8 labels, each naming two calendar years.",
+    "validation_method": "distinct value enumeration",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_004_match_date_and_nulls",
+    "source": "european_football_2.sqlite",
+    "query": "SELECT id,date,season FROM Match LIMIT 3; SELECT SUM(country_id IS NULL),SUM(league_id IS NULL),SUM(home_team_goal IS NULL),SUM(away_team_goal IS NULL),SUM(date IS NULL),SUM(season IS NULL) FROM Match",
+    "result": "date stored as 'YYYY-MM-DD HH:MM:SS' (example 2008-08-17 00:00:00 alongside season 2008/2009); 0 nulls in country_id, league_id, home_team_goal, away_team_goal, date and season.",
+    "validation_method": "representative row sampling and null counting",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_005_poland_2010_2011",
+    "source": "european_football_2.sqlite",
+    "query": "SELECT l.name, COUNT(*), AVG(m.home_team_goal) FROM Match m JOIN League l ON m.league_id=l.id JOIN Country c ON l.country_id=c.id WHERE c.name='Poland' AND m.season='2010/2011' GROUP BY 1",
+    "result": "Poland Ekstraklasa: 240 matches and an average home team goal count of 1.50416666666667.",
+    "validation_method": "country-scoped season aggregation",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_006_april_2009_belgium",
+    "source": "european_football_2.sqlite",
+    "query": "SELECT COUNT(*) FROM Match m JOIN League l ON m.league_id=l.id WHERE l.name='Belgium Jupiler League' AND substr(m.date,1,7)='2009-04'",
+    "result": "36 matches of the Belgium Jupiler League are dated April 2009.",
+    "validation_method": "league and calendar-month filter",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_007_draw_by_league_2015_2016",
+    "source": "european_football_2.sqlite",
+    "query": "SELECT l.name, SUM(m.home_team_goal=m.away_team_goal) FROM Match m JOIN League l ON m.league_id=l.id WHERE m.season='2015/2016' GROUP BY 1 ORDER BY 2 DESC LIMIT 3",
+    "result": "France Ligue 1 = 108 drawn matches, England Premier League = 107, Italy Serie A = 95; the draw condition is equality of home and away goal counts.",
+    "validation_method": "league-grouped draw counting",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_008_country_league_values",
+    "source": "european_football_2.sqlite",
+    "query": "SELECT id,name FROM Country; SELECT id,country_id,name FROM League",
+    "result": "Countries: Belgium, England, France, Germany, Italy, Netherlands, Poland, Portugal, Scotland, Spain, Switzerland. Leagues: Belgium Jupiler League, England Premier League, France Ligue 1, Germany 1. Bundesliga, Italy Serie A, Netherlands Eredivisie, Poland Ekstraklasa, Portugal Liga ZON Sagres, Scotland Premier League, Spain LIGA BBVA, Switzerland Super League.",
+    "validation_method": "dimension value enumeration",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_009_player_birthday_and_units",
+    "source": "european_football_2.sqlite",
+    "query": "SELECT player_name,birthday,height,weight FROM Player LIMIT 5; SELECT MIN(height),MAX(height),AVG(height),MIN(weight),MAX(weight) FROM Player",
+    "result": "birthday stored as 'YYYY-MM-DD 00:00:00'; height spans 157.48 to 208.28 with mean 181.87, i.e. centimetres; weight spans 117 to 243, i.e. pounds. Sample row: Aaron Appindangoye born 1992-02-29, height 182.88, weight 187.",
+    "validation_method": "range inspection and representative row sampling",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_010_preferred_foot",
+    "source": "european_football_2.sqlite",
+    "query": "SELECT preferred_foot, COUNT(*) FROM Player_Attributes GROUP BY 1",
+    "result": "right = 138409 rows, left = 44733 rows, empty = 836 rows.",
+    "validation_method": "enumeration value distribution",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_011_player_attribute_snapshot_dates",
+    "source": "european_football_2.sqlite",
+    "query": "SELECT DISTINCT date FROM Player_Attributes ORDER BY date LIMIT 5; SELECT DISTINCT date FROM Player_Attributes ORDER BY date DESC LIMIT 5; SELECT substr(date,1,4), COUNT(*) FROM Player_Attributes GROUP BY 1",
+    "result": "197 distinct snapshot dates spanning 2007-02-22 to 2016-07-07; yearly row counts 2007=16138, 2008=5798, 2009=8993, 2010=10829, 2011=11976, 2012=12632, 2013=38867, 2014=32808, 2015=31834, 2016=14103.",
+    "validation_method": "distinct date enumeration and year distribution",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_012_player_attribute_duplicates",
+    "source": "european_football_2.sqlite",
+    "query": "SELECT COUNT(*) FROM (SELECT player_api_id,date FROM Player_Attributes GROUP BY 1,2 HAVING COUNT(*)>1); SELECT MIN(c),MAX(c),AVG(c) FROM (SELECT player_api_id,COUNT(*) c FROM Player_Attributes GROUP BY 1)",
+    "result": "835 (player_api_id,date) pairs hold more than one row, creating 836 additional rows; rows per player range from 2 to 56 with a mean of 16.63 across 11060 players.",
+    "validation_method": "grouped duplicate counting and per-player row distribution",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_013_player_attribute_nulls",
+    "source": "european_football_2.sqlite",
+    "query": "SELECT SUM(overall_rating IS NULL),SUM(potential IS NULL),SUM(heading_accuracy IS NULL),SUM(jumping IS NULL),SUM(sprint_speed IS NULL) FROM Player_Attributes",
+    "result": "overall_rating, potential, heading_accuracy, crossing, long_shots, finishing, curve, sprint_speed, strength and preferred_foot are empty in the same 836 rows; jumping is empty in 2713 rows.",
+    "validation_method": "per-column null counting",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_014_player_attribute_row_ids",
+    "source": "european_football_2.sqlite",
+    "query": "SELECT id,player_fifa_api_id,player_api_id,jumping,date FROM Player_Attributes WHERE id IN (6,23); SELECT MIN(id),MAX(id) FROM Player_Attributes",
+    "result": "Player_Attributes.id spans 1 to 183978 as a surrogate row key. Row id=6 records jumping 85 at snapshot date 2016-04-21 and row id=23 records jumping 84 at 2013-10-04; both rows belong to the same player (player_api_id 155782, player_fifa_api_id 189615).",
+    "validation_method": "direct row inspection of the cited identifiers",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_015_player_identifiers",
+    "source": "european_football_2.sqlite",
+    "query": "SELECT COUNT(*), COUNT(DISTINCT player_api_id), COUNT(DISTINCT player_fifa_api_id) FROM Player; SELECT player_api_id, player_fifa_api_id FROM Player WHERE player_name='Gabriel Tamas'",
+    "result": "11060 players with 11060 distinct player_api_id and 11060 distinct player_fifa_api_id, a one-to-one pairing of two identifier systems; both columns are declared unique. Gabriel Tamas has player_api_id 37428 and player_fifa_api_id 135537.",
+    "validation_method": "uniqueness and cardinality verification",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_016_player_attributes_join",
+    "source": "european_football_2.sqlite",
+    "query": "SELECT COUNT(*) FROM Player_Attributes pa LEFT JOIN Player p ON pa.player_api_id=p.player_api_id WHERE p.player_api_id IS NULL; SELECT COUNT(*) FROM Player p WHERE NOT EXISTS(SELECT 1 FROM Player_Attributes pa WHERE pa.player_api_id=p.player_api_id); SELECT COUNT(*) FROM Player_Attributes WHERE player_fifa_api_id IS NULL",
+    "result": "0 attribute rows lack a matching player, 0 players lack attribute rows, and player_fifa_api_id is never empty in Player_Attributes.",
+    "validation_method": "referential integrity check in both directions",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_017_team_attributes_classes",
+    "source": "european_football_2.sqlite",
+    "query": "SELECT buildUpPlaySpeedClass,COUNT(*) FROM Team_Attributes GROUP BY 1; SELECT chanceCreationPassingClass,COUNT(*) FROM Team_Attributes GROUP BY 1; SELECT MIN(buildUpPlaySpeed),MAX(buildUpPlaySpeed),MIN(chanceCreationPassing),MAX(chanceCreationPassing) FROM Team_Attributes",
+    "result": "buildUpPlaySpeedClass: Balanced=1184, Fast=172, Slow=102. chanceCreationPassingClass: Normal=1231, Risky=171, Safe=56. buildUpPlaySpeed spans 20 to 80 and chanceCreationPassing spans 21 to 80; neither the scores nor the class labels contain empty values.",
+    "validation_method": "class distribution and numeric range inspection",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_018_team_attributes_snapshots",
+    "source": "european_football_2.sqlite",
+    "query": "SELECT date,COUNT(*) FROM Team_Attributes GROUP BY 1 ORDER BY 1; SELECT MIN(c),MAX(c) FROM (SELECT team_api_id,COUNT(*) c FROM Team_Attributes GROUP BY 1); SELECT COUNT(*) FROM (SELECT team_api_id,date FROM Team_Attributes GROUP BY 1,2 HAVING COUNT(*)>1)",
+    "result": "Six snapshot dates: 2010-02-22, 2011-02-22, 2012-02-22, 2013-09-20, 2014-09-19, 2015-09-10. 288 distinct teams are covered with 1 to 6 snapshots each; 1 (team_api_id,date) pair holds duplicate rows.",
+    "validation_method": "snapshot date enumeration, per-team counts and duplicate detection",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_019_team_lookup",
+    "source": "european_football_2.sqlite",
+    "query": "SELECT id,team_api_id,team_long_name,team_short_name FROM Team WHERE team_long_name LIKE '%Ajax%'; SELECT COUNT(*) FROM Match m LEFT JOIN Team t ON m.home_team_api_id=t.team_api_id WHERE t.team_api_id IS NULL; SELECT COUNT(*) FROM Team WHERE team_fifa_api_id IS NULL",
+    "result": "Ajax has team_api_id 8593 and short name 'AJA'. 0 matches reference a missing team. 11 of 299 teams have no team_fifa_api_id.",
+    "validation_method": "named lookup and referential integrity check",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_020_team_attributes_join",
+    "source": "european_football_2.sqlite",
+    "query": "SELECT COUNT(*) FROM Team_Attributes ta LEFT JOIN Team t ON ta.team_api_id=t.team_api_id WHERE t.team_api_id IS NULL",
+    "result": "0 team attribute rows reference a missing team; Team_Attributes covers 288 of the 299 teams.",
+    "validation_method": "referential integrity check",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_021_reference_clock",
+    "source": "european_football_2.sqlite",
+    "query": "SELECT DATETIME()",
+    "result": "2026-10-09 17:04:24, taken as the reference instant for age-style derivations that are phrased as 'at present'.",
+    "validation_method": "database clock read at inspection time",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_022_attribute_extremes",
+    "source": "european_football_2.sqlite",
+    "query": "SELECT MAX(overall_rating) FROM Player_Attributes; SELECT MIN(potential) FROM Player_Attributes; SELECT MAX(crossing) FROM Player_Attributes; SELECT MAX(weight) FROM Player; SELECT COUNT(*) FROM Player WHERE weight=(SELECT MAX(weight) FROM Player); SELECT COUNT(*) FROM Player_Attributes WHERE sprint_speed>=97 AND substr(date,1,4) BETWEEN '2013' AND '2015'; SELECT COUNT(*) FROM Player_Attributes WHERE overall_rating=77 AND date LIKE '2016-06-23%'",
+    "result": "MAX(overall_rating)=94, MIN(potential)=39, MAX(crossing)=95; MAX(weight)=243 held by 2 players; 23 attribute rows reach sprint_speed>=97 within 2013-2015; 4 attribute rows carry overall_rating=77 on 2016-06-23.",
+    "validation_method": "extremum and threshold counting over the cited columns",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_023_player_lookup",
+    "source": "european_football_2.sqlite",
+    "query": "SELECT id,player_name FROM Player WHERE player_name='Gabriel Tamas' OR player_name LIKE '%Ahmed Samir%'",
+    "result": "Player 'Gabriel Tamas' exists and 'Ahmed Samir Farag' exists with Player.id 222; both named players can be resolved by display name.",
+    "validation_method": "named lookup",
+    "timestamp": "2026-10-10"
+  }
+]

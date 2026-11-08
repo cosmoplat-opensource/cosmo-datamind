@@ -1,0 +1,82 @@
+[
+  {
+    "id": "rel_patient_lab_test",
+    "source": "term_patient",
+    "relation_type": "composition",
+    "target": "term_laboratory_test",
+    "connection_condition": "tab03.fld001 references tab02.fld001",
+    "description": "A patient is composed of one or more laboratory panels; a panel cannot exist without its patient record.",
+    "evidence": [
+      "ev_008_lab_grain",
+      "ev_001_database_structure"
+    ]
+  },
+  {
+    "id": "rel_patient_examination",
+    "source": "term_patient",
+    "relation_type": "composition",
+    "target": "term_examination",
+    "connection_condition": "tab01.fld001 references tab02.fld001 (declared foreign key)",
+    "description": "A patient is composed of one or more examination records; an examination cannot exist without its patient record. Only part of the examination identifiers resolve in practice.",
+    "evidence": [
+      "ev_009_exam_grain",
+      "ev_010_join_coverage"
+    ]
+  },
+  {
+    "id": "rel_birthday_age",
+    "source": "term_birthday",
+    "relation_type": "derivation",
+    "target": "term_age",
+    "connection_condition": "age is computed from the birth year in tab02.fld015",
+    "description": "Age is derived as the current calendar year minus the year of birth; no stored age column exists.",
+    "evidence": [
+      "ev_028_age_derivation"
+    ]
+  },
+  {
+    "id": "rel_patient_exam_diagnosis",
+    "source": "term_patient_diagnosis",
+    "relation_type": "association",
+    "target": "term_examination_diagnosis",
+    "connection_condition": "tab02.fld008 and tab01.fld008 hold comparable diagnosis labels for the same patient, with different grain",
+    "description": "The patient-level diagnosis is a consolidated label while the examination-level diagnosis describes a single visit; labels agree modulo case and encoding for shared patients, and the examination label may add visit-specific findings.",
+    "evidence": [
+      "ev_007_diagnosis_two_tables"
+    ]
+  },
+  {
+    "id": "rel_examination_diagnosis_record",
+    "source": "term_examination",
+    "relation_type": "association",
+    "target": "term_examination_diagnosis",
+    "connection_condition": "tab01.fld008 belongs to the same row as the examination",
+    "description": "Each examination record may carry its own visit-level diagnosis alongside the ANA, thrombosis and symptom fields.",
+    "evidence": [
+      "ev_009_exam_grain"
+    ]
+  },
+  {
+    "id": "rel_ana_components",
+    "source": "term_ana_titer",
+    "relation_type": "association",
+    "target": "term_ana_pattern",
+    "connection_condition": "both recorded in the same examination row (tab01.fld005 and tab01.fld006)",
+    "description": "ANA titer and ANA pattern are two components of the same antinuclear antibody result; a titer can be present without a pattern but never the reverse.",
+    "evidence": [
+      "ev_023_ana"
+    ]
+  },
+  {
+    "id": "rel_thrombosis_coagulation",
+    "source": "term_thrombosis_level",
+    "relation_type": "association",
+    "target": "term_coagulation_degree",
+    "connection_condition": "both recorded in the same examination row (tab01.fld013 and tab01.fld009-fld011)",
+    "description": "Thrombosis level and the coagulation flags both describe thrombotic/coagulation status of the same examination, with the level being an ordinal summary.",
+    "evidence": [
+      "ev_024_thrombosis_level",
+      "ev_025_coagulation_flags"
+    ]
+  }
+]

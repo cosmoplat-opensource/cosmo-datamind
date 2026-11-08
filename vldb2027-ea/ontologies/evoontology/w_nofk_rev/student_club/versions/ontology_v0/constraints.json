@@ -1,0 +1,535 @@
+[
+  {
+    "id": "constraint_event_status_domain",
+    "target": "term_event_status",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "event status",
+      "status of event",
+      "status of the event",
+      "closed events",
+      "closed event",
+      "open event",
+      "planning",
+      "which event has the status"
+    ],
+    "severity": "block",
+    "scope": "Any filter or report that refers to the status of an event",
+    "confidence": "high",
+    "description": "The status of an event takes one of three values: Open, Planning or Closed. A reference to 'closed events' restricts to status Closed and excludes Open and Planning events.",
+    "evidence": [
+      "evidence_003"
+    ]
+  },
+  {
+    "id": "constraint_event_status_two_representations",
+    "target": "term_budget_event_status",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "event_status",
+      "event status",
+      "status of the event which bought",
+      "status of the event",
+      "closed events"
+    ],
+    "severity": "info",
+    "scope": "Queries that reach event status through a budget or expense record",
+    "confidence": "high",
+    "description": "Event status is available both on the event itself and denormalized onto each budget line as event_status. The two agree for all 52 budget rows, so either may be used to answer questions that ask for the status of the event behind a purchase or budget line.",
+    "evidence": [
+      "evidence_006"
+    ]
+  },
+  {
+    "id": "constraint_event_name_not_unique",
+    "target": "term_event_name",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "event name",
+      "name of event",
+      "event named",
+      "which event",
+      "identify the event"
+    ],
+    "severity": "warning",
+    "scope": "Filtering or joining events by their name",
+    "confidence": "high",
+    "description": "Event names are not unique: three names are each shared by two different event rows (Community Theater, Football game, Laugh Out Loud). A name matching more than one event can multiply joined rows, and a question naming an event may refer to more than one record. The event identifier remains the unique key.",
+    "evidence": [
+      "evidence_005"
+    ]
+  },
+  {
+    "id": "constraint_event_type_domain",
+    "target": "term_event_type",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "event type",
+      "type of event",
+      "fundraiser",
+      "fundraisers",
+      "not a fundraiser",
+      "kind of event"
+    ],
+    "severity": "warning",
+    "scope": "Grouping or excluding events by kind of activity",
+    "confidence": "high",
+    "description": "Observed event types are Meeting, Election, Game, Guest Speaker, Social, Registration, Community Service and Budget. No event row carries the type 'Fundraiser'; fundraising appears in the data as an income source instead. An exclusion of fundraising activity therefore cannot be satisfied by filtering the event type field alone.",
+    "evidence": [
+      "evidence_004",
+      "evidence_011"
+    ]
+  },
+  {
+    "id": "constraint_budget_remaining_sign",
+    "target": "term_budget_remaining",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "remaining",
+      "remaining budget",
+      "exceeded the budget",
+      "over budget",
+      "budget balance",
+      "leftover"
+    ],
+    "severity": "block",
+    "scope": "Interpreting the remaining balance of a budget line",
+    "confidence": "high",
+    "description": "The remaining balance is the allocation minus the realized spend. A negative remaining balance means the line exceeded its allocation, and the most negative value identifies the largest overrun. Remaining must not be confused with the allocated amount or with the realized spend.",
+    "evidence": [
+      "evidence_007"
+    ]
+  },
+  {
+    "id": "constraint_remaining_float_artifact",
+    "target": "term_budget_remaining",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "remaining",
+      "exceeded the budget",
+      "-0.2",
+      "negative remaining",
+      "over budget"
+    ],
+    "severity": "warning",
+    "scope": "Comparing or ranking remaining balances, especially small negative values",
+    "confidence": "high",
+    "description": "Remaining balances show floating-point subtraction artifacts: an exact overrun of 0.2 is stored as -0.199999999999999. Small negative values represent real, small overruns and should be compared on rounded values rather than treated as distinct magnitudes.",
+    "evidence": [
+      "evidence_007"
+    ]
+  },
+  {
+    "id": "constraint_budget_amount_vs_spent",
+    "target": "term_budget_spend",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "budget",
+      "spent",
+      "amount",
+      "allocated",
+      "budget spend",
+      "highest amount of budget spend"
+    ],
+    "severity": "block",
+    "scope": "Any measurement of budget or spending at the event or category level",
+    "confidence": "high",
+    "description": "A budget line carries two distinct monetary concepts: the allocated amount and the realized spend. Questions about money actually spent use the spend of the budget line, which equals the total cost of the expenses charged to it; questions about planned or allocated money use the amount.",
+    "evidence": [
+      "evidence_008"
+    ]
+  },
+  {
+    "id": "constraint_budget_is_per_category_per_event",
+    "target": "term_budget",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "budget",
+      "budget for an event",
+      "advertisement budget",
+      "category",
+      "budget category"
+    ],
+    "severity": "block",
+    "scope": "Comparing or aggregating budgets across events",
+    "confidence": "high",
+    "description": "A budget is allocated per spending category per event, so one event holds several budget lines and one category is repeated across events. A budget figure for an event must be taken from the line that matches both the event and the intended category, and totals for 'an event' depend on whether all categories or one category are meant.",
+    "evidence": [
+      "evidence_023",
+      "evidence_006"
+    ]
+  },
+  {
+    "id": "constraint_expense_category_via_budget",
+    "target": "term_budget_category",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "category",
+      "expense category",
+      "type of expenses",
+      "advertisement",
+      "food",
+      "parking"
+    ],
+    "severity": "block",
+    "scope": "Classifying expenses by spending category",
+    "confidence": "high",
+    "description": "The spending category is not stored on the expense record; it is held on the budget line the expense is charged against. An expense's category and its event are both obtained through its budget line.",
+    "evidence": [
+      "evidence_009",
+      "evidence_023"
+    ]
+  },
+  {
+    "id": "constraint_budget_coverage_of_expenses",
+    "target": "term_budget",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "expense",
+      "spent",
+      "budget line",
+      "no expenses"
+    ],
+    "severity": "info",
+    "scope": "Aggregating expenses up to a budget line or event",
+    "confidence": "high",
+    "description": "Only 24 of the 52 budget lines have expense records; 28 lines have recorded spend of zero and no linked expenses. Reaching an event's spending through its expenses therefore returns fewer lines than reaching it through the budget table, and lines with no expenses contribute nothing.",
+    "evidence": [
+      "evidence_024",
+      "evidence_008"
+    ]
+  },
+  {
+    "id": "constraint_expense_date_month_extraction",
+    "target": "term_expense_month",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "September",
+      "October",
+      "month",
+      "monthly",
+      "expense date",
+      "in the events on"
+    ],
+    "severity": "block",
+    "scope": "Filtering or grouping spending by calendar month",
+    "confidence": "high",
+    "description": "The expense date is stored as an ISO date string with the year, month and day as its first, second and third components. A month reference such as September or October must be resolved against the month component of that date; there is no separate month field.",
+    "evidence": [
+      "evidence_019"
+    ]
+  },
+  {
+    "id": "constraint_expense_approved_flag",
+    "target": "term_expense_approved",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "approved",
+      "approval",
+      "total value approved",
+      "approved expenses"
+    ],
+    "severity": "warning",
+    "scope": "Filtering or totalling approved expenditures",
+    "confidence": "high",
+    "description": "The approval flag is stored as text, and every expense row currently carries the value 'true'. An approval filter therefore does not narrow the set of expenses in this data snapshot.",
+    "evidence": [
+      "evidence_020"
+    ]
+  },
+  {
+    "id": "constraint_expense_scope",
+    "target": "term_expense",
+    "constraint_type": "scope",
+    "trigger_keywords": [
+      "expense",
+      "cost",
+      "spending",
+      "events on September and October",
+      "over all expense"
+    ],
+    "severity": "warning",
+    "scope": "Reasoning about the time span and completeness of the expense records",
+    "confidence": "high",
+    "description": "The expense records span 2019-08-20 to 2019-11-19 only, while the event calendar extends well beyond that range. Expense-based results describe this narrow window and must not be read as the club's full financial history.",
+    "evidence": [
+      "evidence_019",
+      "evidence_002"
+    ]
+  },
+  {
+    "id": "constraint_member_full_name_composition",
+    "target": "term_member_full_name",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "full name",
+      "name of member",
+      "member name",
+      "who is",
+      "Elijah Allen",
+      "Sacha Harrison"
+    ],
+    "severity": "block",
+    "scope": "Identifying or reporting a member by personal name",
+    "confidence": "high",
+    "description": "Member names are stored as separate given-name and family-name components. Any request for a full name or a name written as two words must combine both components; a personal name appearing in a question is matched against both components together rather than against one component.",
+    "evidence": [
+      "evidence_015"
+    ]
+  },
+  {
+    "id": "constraint_member_phone_format",
+    "target": "term_member_phone",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "phone",
+      "phone number",
+      "contact number",
+      "telephone",
+      "the person with the phone number"
+    ],
+    "severity": "warning",
+    "scope": "Looking up a member by phone number",
+    "confidence": "high",
+    "description": "Phone numbers are stored as formatted text using more than one layout, some with parentheses around the area code and some without. A phone number quoted in a question must be matched against the stored text as written rather than by numeric comparison.",
+    "evidence": [
+      "evidence_022"
+    ]
+  },
+  {
+    "id": "constraint_member_position_domain",
+    "target": "term_member_position",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "position",
+      "president",
+      "vice president",
+      "treasurer",
+      "secretary",
+      "officer",
+      "inactive member"
+    ],
+    "severity": "block",
+    "scope": "Identifying club officers or membership standing",
+    "confidence": "high",
+    "description": "Positions take the values Member, Inactive, President, Vice President, Treasurer and Secretary. Exactly one member holds each officer position, and ordinary membership is itself a position value, so a filter for ordinary members and a filter excluding officers are different operations.",
+    "evidence": [
+      "evidence_012"
+    ]
+  },
+  {
+    "id": "constraint_t_shirt_size_domain",
+    "target": "term_t_shirt_size",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "t-shirt size",
+      "t_shirt_size",
+      "size",
+      "medium size t-shirt",
+      "wear medium"
+    ],
+    "severity": "warning",
+    "scope": "Sizing club merchandise or reporting sizes per member",
+    "confidence": "high",
+    "description": "T-shirt sizes take the values Small, Medium, Large and X-Large. A request for a medium size refers to the value Medium.",
+    "evidence": [
+      "evidence_013"
+    ]
+  },
+  {
+    "id": "constraint_major_department_college_levels",
+    "target": "term_major_name",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "major",
+      "department",
+      "college",
+      "school of business",
+      "which department",
+      "major in"
+    ],
+    "severity": "block",
+    "scope": "Interpreting academic affiliation of a member",
+    "confidence": "high",
+    "description": "Academic affiliation has three nested levels held on the major record: major name, department and college. A question about what a member majors in refers to the major name, while a question about the department a member belongs to refers to the department level; the levels are not interchangeable and the containing college is not implied by the department wording.",
+    "evidence": [
+      "evidence_025"
+    ]
+  },
+  {
+    "id": "constraint_business_ambiguity",
+    "target": "term_major_name",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "Business",
+      "business major",
+      "school of business",
+      "business department",
+      "from Business major"
+    ],
+    "severity": "block",
+    "scope": "Any filter using the word Business over academic affiliation",
+    "confidence": "high",
+    "description": "The term Business is ambiguous across the three academic levels: it is an exact major name, it appears inside other major names such as Agribusiness, Business Education and International Business, and it appears in the college name School of Business. Notably the major named Business sits in the School of Applied Sciences, Technology and Education within the College of Agriculture and Applied Sciences, not in the School of Business. A Business filter must be applied at the intended level using exact matching.",
+    "evidence": [
+      "evidence_021"
+    ]
+  },
+  {
+    "id": "constraint_member_major_missing",
+    "target": "term_member",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "major",
+      "all members",
+      "member count",
+      "how many members"
+    ],
+    "severity": "warning",
+    "scope": "Joining members to their academic major",
+    "confidence": "high",
+    "description": "One of the 33 members has no major link recorded, so joining members to majors discards that member. Counts of members by major or department cover 32 members.",
+    "evidence": [
+      "evidence_015"
+    ]
+  },
+  {
+    "id": "constraint_member_zip_geography",
+    "target": "term_zip_code",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "Illinois",
+      "state",
+      "grew up in",
+      "location",
+      "zip",
+      "which state"
+    ],
+    "severity": "block",
+    "scope": "Deriving a member's geography from the stored ZIP code",
+    "confidence": "high",
+    "description": "A member's location is stored only as a ZIP code. State, county and city are obtained by resolving that ZIP code in the reference data, where state names are written in full. Every member ZIP code resolves successfully.",
+    "evidence": [
+      "evidence_014"
+    ]
+  },
+  {
+    "id": "constraint_zip_code_grain",
+    "target": "term_geo_city",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "how many cities",
+      "cities in",
+      "county",
+      "state",
+      "number of cities"
+    ],
+    "severity": "block",
+    "scope": "Counting places within a county or state",
+    "confidence": "high",
+    "description": "The reference data holds one row per ZIP code, not one row per city, so a county contains several rows and the city name repeats across ZIP codes in the same place. Counting places within a county or state therefore requires counting distinct city names rather than counting rows.",
+    "evidence": [
+      "evidence_016"
+    ]
+  },
+  {
+    "id": "constraint_attendance_grain",
+    "target": "term_attendance_count",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "attendance",
+      "attended",
+      "how many members attended",
+      "attendance of over",
+      "turnout"
+    ],
+    "severity": "block",
+    "scope": "Measuring how many members attended an event",
+    "confidence": "high",
+    "description": "Attendance is a pair table holding one row per member per event, and each pair is unique. The number of members who attended an event is the number of attendance records linked to it, so a threshold on attendance is a threshold on that record count.",
+    "evidence": [
+      "evidence_018"
+    ]
+  },
+  {
+    "id": "constraint_link_columns_unenforced",
+    "target": "term_member",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "join",
+      "link",
+      "related",
+      "which member",
+      "which event",
+      "reference"
+    ],
+    "severity": "warning",
+    "scope": "Any traversal between records through link columns",
+    "confidence": "high",
+    "description": "The link columns that connect records (expense to member and budget, budget to event, attendance to event and member, income to member, member to major, member to ZIP) are plain text columns with no enforced referential integrity in this database. Values that look like references may not resolve, and unmatched values must be treated as missing rather than as errors.",
+    "evidence": [
+      "evidence_001",
+      "evidence_010",
+      "evidence_015"
+    ]
+  },
+  {
+    "id": "constraint_income_member_orphans",
+    "target": "term_income",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "income",
+      "revenue",
+      "dues",
+      "fundraising",
+      "sponsorship",
+      "school appropriation"
+    ],
+    "severity": "warning",
+    "scope": "Attributing income to members",
+    "confidence": "high",
+    "description": "Three of the 36 income records carry no member attribution, covering fundraising, sponsorship and school appropriation receipts. Joining income to members omits these institutional and unassigned receipts, and their amounts are large relative to dues.",
+    "evidence": [
+      "evidence_010"
+    ]
+  },
+  {
+    "id": "constraint_income_source_domain",
+    "target": "term_income_source",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "income source",
+      "source",
+      "fundraising",
+      "dues",
+      "sponsorship",
+      "school appropriation"
+    ],
+    "severity": "info",
+    "scope": "Breaking down club revenue by origin",
+    "confidence": "high",
+    "description": "Income sources are Dues, Fundraising, Sponsorship and School Appropration, the last stored with that spelling in the data. Source values are matched literally.",
+    "evidence": [
+      "evidence_011"
+    ]
+  },
+  {
+    "id": "constraint_budget_category_of_expense_not_on_expense",
+    "target": "term_expense",
+    "constraint_type": "scope",
+    "trigger_keywords": [
+      "kind of expenses",
+      "type of expenses",
+      "expense description",
+      "what did they buy"
+    ],
+    "severity": "warning",
+    "scope": "Describing what an expense was for",
+    "confidence": "high",
+    "description": "An expense carries two different descriptors: its own free-text description of the item purchased, and the spending category of the budget line it is charged against. A request for the kind of expense refers to the item description, while a request for the category refers to the budget category.",
+    "evidence": [
+      "evidence_019",
+      "evidence_023"
+    ]
+  }
+]

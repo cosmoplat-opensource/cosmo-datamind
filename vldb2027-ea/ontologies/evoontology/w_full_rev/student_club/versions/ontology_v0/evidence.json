@@ -1,0 +1,258 @@
+[
+  {
+    "id": "evidence_schema_overview",
+    "source": "student_club sqlite database",
+    "query": "Read the database schema and enumerate tables",
+    "result": "8 tables: event, member, major, budget, expense, income, attendance, zip_code. Declared foreign keys: attendance to event and member; budget to event; expense to budget and member; income to member; member to major and zip_code",
+    "validation_method": "schema inspection of the read-only database file",
+    "timestamp": "2026-10-10T00:00:00Z"
+  },
+  {
+    "id": "evidence_row_counts",
+    "source": "student_club sqlite database",
+    "query": "Count rows in every table",
+    "result": "event 42, budget 52, expense 32, income 36, member 33, major 113, attendance 326, zip_code 41877",
+    "validation_method": "row count aggregation",
+    "timestamp": "2026-10-10T00:00:00Z"
+  },
+  {
+    "id": "evidence_event_status_values",
+    "source": "student_club sqlite database",
+    "query": "Group events by status",
+    "result": "Closed 18, Open 13, Planning 11; no other status value exists",
+    "validation_method": "distinct value enumeration",
+    "timestamp": "2026-10-10T00:00:00Z"
+  },
+  {
+    "id": "evidence_budget_status_mirror",
+    "source": "student_club sqlite database",
+    "query": "Compare each budget line's event_status with the status of its linked event",
+    "result": "52 rows compared, 52 agreements, 0 mismatches; no budget line exists without a linked event",
+    "validation_method": "join and value comparison",
+    "timestamp": "2026-10-10T00:00:00Z"
+  },
+  {
+    "id": "evidence_event_type_values",
+    "source": "student_club sqlite database",
+    "query": "Group events by type and search for a fundraiser type",
+    "result": "Meeting 16, Guest Speaker 7, Game 6, Community Service 4, Social 4, Budget 2, Election 2, Registration 1; zero rows where type matches a fundraising pattern",
+    "validation_method": "distinct value enumeration plus pattern search",
+    "timestamp": "2026-10-10T00:00:00Z"
+  },
+  {
+    "id": "evidence_event_name_duplicates",
+    "source": "student_club sqlite database",
+    "query": "Group events by name and count rows, then check whether name and date together are unique",
+    "result": "42 event rows hold 39 distinct names; Community Theater, Football game and Laugh Out Loud each appear twice with different dates and statuses; no event name and date pair repeats",
+    "validation_method": "grouping and duplicate detection",
+    "timestamp": "2026-10-10T00:00:00Z"
+  },
+  {
+    "id": "evidence_event_notes_check",
+    "source": "student_club sqlite database",
+    "query": "Search event names and notes for a fundraising marker",
+    "result": "No event name or note mentions fundraising or a fundraiser; observed notes describe elections, games, socials, service projects, budget reviews and meetings only",
+    "validation_method": "free-text pattern search over the notes column",
+    "timestamp": "2026-10-10T00:00:00Z"
+  },
+  {
+    "id": "evidence_budget_category_values",
+    "source": "student_club sqlite database",
+    "query": "Group budget lines by category",
+    "result": "Food 22, Advertisement 15, Speaker Gifts 7, Parking 7, Club T-Shirts 1",
+    "validation_method": "distinct value enumeration",
+    "timestamp": "2026-10-10T00:00:00Z"
+  },
+  {
+    "id": "evidence_budget_grain",
+    "source": "student_club sqlite database",
+    "query": "Count distinct events referenced by budget lines and inspect sample lines",
+    "result": "52 budget lines reference 23 distinct events; each line carries one category, one amount, one spent value and one remaining value",
+    "validation_method": "distinct count and row inspection",
+    "timestamp": "2026-10-10T00:00:00Z"
+  },
+  {
+    "id": "evidence_budget_remaining_formula",
+    "source": "student_club sqlite database",
+    "query": "Compare the stored remaining value with the result of amount minus spent for every budget line",
+    "result": "The identity holds for the sampled and overall comparison; stored remaining sometimes carries floating point noise such as 22.9299999999999 and -0.199999999999999; 5 budget lines hold a negative remaining value",
+    "validation_method": "arithmetic identity check across budget lines",
+    "timestamp": "2026-10-10T00:00:00Z"
+  },
+  {
+    "id": "evidence_budget_spent_from_expense",
+    "source": "student_club sqlite database",
+    "query": "Left join each budget line to the sum of the costs of the expenses charged to it and compare with the stored spent value",
+    "result": "52 budget lines compared, 52 agree within a half-cent tolerance, 0 disagree",
+    "validation_method": "aggregate join with tolerance comparison",
+    "timestamp": "2026-10-10T00:00:00Z"
+  },
+  {
+    "id": "evidence_expense_approved_values",
+    "source": "student_club sqlite database",
+    "query": "Group expenses by the approved value",
+    "result": "Literal 'true' on 31 rows, empty string on 1 row; no false value",
+    "validation_method": "distinct value enumeration",
+    "timestamp": "2026-10-10T00:00:00Z"
+  },
+  {
+    "id": "evidence_expense_date_format",
+    "source": "student_club sqlite database",
+    "query": "Inspect expense dates and their minimum and maximum",
+    "result": "Values follow YYYY-MM-DD, for example 2019-08-20; range 2019-08-20 to 2019-11-19; the month occupies characters 5 and 6",
+    "validation_method": "format inspection and range aggregation",
+    "timestamp": "2026-10-10T00:00:00Z"
+  },
+  {
+    "id": "evidence_expense_links_complete",
+    "source": "student_club sqlite database",
+    "query": "Count expenses with a missing member reference or a missing budget reference",
+    "result": "0 of 32 expenses have a missing member reference and 0 of 32 have a missing budget reference",
+    "validation_method": "null count",
+    "timestamp": "2026-10-10T00:00:00Z"
+  },
+  {
+    "id": "evidence_expense_to_event_path",
+    "source": "student_club sqlite database",
+    "query": "Join every expense to its budget line and then to the event, and count the resolved rows",
+    "result": "32 of 32 expenses resolve to exactly one event through their budget line; for example the October Meeting event gathers Pizza 51.81, Posters 54.25 and Water, chips, cookies 69.33",
+    "validation_method": "multi-table join with row count",
+    "timestamp": "2026-10-10T00:00:00Z"
+  },
+  {
+    "id": "evidence_expense_description_values",
+    "source": "student_club sqlite database",
+    "query": "List the distinct expense descriptions",
+    "result": "12 distinct values: Alumni Glass, Bakery - Donuts, muffins, Club shirts, Parking, Pizza, Post Cards, Posters, Posters, Travel Mug, Water, Cookies, Water, Veggie tray, supplies, Water, chips, cookies, Water, cookies, chips",
+    "validation_method": "distinct value enumeration",
+    "timestamp": "2026-10-10T00:00:00Z"
+  },
+  {
+    "id": "evidence_member_major_business",
+    "source": "student_club sqlite database",
+    "query": "Search major names for the word Business and join members to the exact Business major",
+    "result": "Four programs contain the word: Business, Agribusiness, Business Education and International Business. The exact Business program is held by one member, Angela Sanders, whose shirt size is Medium",
+    "validation_method": "pattern search plus exact-match join",
+    "timestamp": "2026-10-10T00:00:00Z"
+  },
+  {
+    "id": "evidence_member_major_null",
+    "source": "student_club sqlite database",
+    "query": "Left join members to majors and count rows with no matching major",
+    "result": "1 of 33 members has no major reference",
+    "validation_method": "left join null count",
+    "timestamp": "2026-10-10T00:00:00Z"
+  },
+  {
+    "id": "evidence_member_position_values",
+    "source": "student_club sqlite database",
+    "query": "Group members by position and inspect the President's academic record",
+    "result": "Member 26, Inactive 3, Vice President 1, Treasurer 1, Secretary 1, President 1. The President is Sacha Harrison, major Liberal Arts, department Liberal Arts Program",
+    "validation_method": "distinct value enumeration and join",
+    "timestamp": "2026-10-10T00:00:00Z"
+  },
+  {
+    "id": "evidence_t_shirt_size_values",
+    "source": "student_club sqlite database",
+    "query": "Group members by shirt size",
+    "result": "Large 13, Medium 10, X-Large 8, Small 2",
+    "validation_method": "distinct value enumeration",
+    "timestamp": "2026-10-10T00:00:00Z"
+  },
+  {
+    "id": "evidence_member_phone_formats",
+    "source": "student_club sqlite database",
+    "query": "Count how many phone values start with a parenthesis and look up the plain value 809-555-3360",
+    "result": "2 values wrap the area code in parentheses; 31 use the plain digits-and-dashes form. The plain value 809-555-3360 belongs to Dean O'Reilly",
+    "validation_method": "pattern count and literal lookup",
+    "timestamp": "2026-10-10T00:00:00Z"
+  },
+  {
+    "id": "evidence_member_full_name_parts",
+    "source": "student_club sqlite database",
+    "query": "Inspect the member table columns used to identify a person",
+    "result": "Members are stored with separate first_name and last_name columns and no full-name column; the names Sacha Harrison and Elijah Allen each resolve to a single member",
+    "validation_method": "column inspection and literal lookup",
+    "timestamp": "2026-10-10T00:00:00Z"
+  },
+  {
+    "id": "evidence_member_state_distribution",
+    "source": "student_club sqlite database",
+    "query": "Join members to the postal reference and group by state",
+    "result": "Every member zip resolves to a postal row, giving 18 states; Illinois holds 3 members, New York 5 and New Jersey 4",
+    "validation_method": "join and grouping",
+    "timestamp": "2026-10-10T00:00:00Z"
+  },
+  {
+    "id": "evidence_attendance_coverage",
+    "source": "student_club sqlite database",
+    "query": "Count attendance rows per event, count distinct members in attendance and count events with no attendance",
+    "result": "326 attendance rows across 17 distinct events; 25 of 42 events have no attendance rows; 30 distinct members appear, leaving 3 members with none. Highest counts: Registration 30, Yearly Kickoff 30, October Speaker 29, September Speaker 27, November Speaker 27, September Meeting 27, November Meeting 25, October Meeting 23, Laugh Out Loud 20",
+    "validation_method": "grouped counts and distinct counts",
+    "timestamp": "2026-10-10T00:00:00Z"
+  },
+  {
+    "id": "evidence_zip_geography_orange_county",
+    "source": "student_club sqlite database",
+    "query": "List postal rows for Orange County in Virginia and count their distinct cities",
+    "result": "7 rows, 7 distinct cities: Burr Hill, Locust Grove, Rhoadesville, Unionville, Montpelier Station, Orange, Somerset; one row is of PO Box type",
+    "validation_method": "filtered row listing and distinct count",
+    "timestamp": "2026-10-10T00:00:00Z"
+  },
+  {
+    "id": "evidence_zip_reference_scope",
+    "source": "student_club sqlite database",
+    "query": "Count postal rows by area type and count rows with an empty county",
+    "result": "41877 rows: Standard 29973, PO Box 9438, Unique 2466. County is empty on 34 PO Box, 17 Standard and 37 Unique rows",
+    "validation_method": "grouped counts",
+    "timestamp": "2026-10-10T00:00:00Z"
+  },
+  {
+    "id": "evidence_income_source_values",
+    "source": "student_club sqlite database",
+    "query": "Group income records by source",
+    "result": "Dues 33, Fundraising 1, School Appropration 1, Sponsorship 1",
+    "validation_method": "distinct value enumeration",
+    "timestamp": "2026-10-10T00:00:00Z"
+  },
+  {
+    "id": "evidence_income_dues_pattern",
+    "source": "student_club sqlite database",
+    "query": "Group income records by member and inspect the fundraising receipt",
+    "result": "Most members hold one or two dues receipts of 50 each; the single fundraising receipt is 200 received on 2019-09-14 with the note about securing donations for speaker gifts",
+    "validation_method": "grouped aggregation and row inspection",
+    "timestamp": "2026-10-10T00:00:00Z"
+  },
+  {
+    "id": "evidence_president_department",
+    "source": "student_club sqlite database",
+    "query": "Join the member holding the President position to the major table",
+    "result": "Sacha Harrison, position President, major Liberal Arts, department Liberal Arts Program, College of Humanities and Social Sciences",
+    "validation_method": "two-table join",
+    "timestamp": "2026-10-10T00:00:00Z"
+  },
+  {
+    "id": "evidence_negative_remaining_events",
+    "source": "student_club sqlite database",
+    "query": "List budget lines with a negative remaining value together with their events",
+    "result": "5 lines: September Speaker Food -23.06 of 150, November Meeting Food -24.25 of 150, and Officers meeting - September, Officers meeting - October and Officers meeting - November Food lines all at -0.20 of 20",
+    "validation_method": "filtered join",
+    "timestamp": "2026-10-10T00:00:00Z"
+  },
+  {
+    "id": "evidence_closed_spend_ratio",
+    "source": "student_club sqlite database",
+    "query": "Compute spent divided by amount for budget lines of closed events and order by the ratio",
+    "result": "Highest ratios belong to September Speaker Food 173.06 of 150 (1.154), the officers-meeting Food lines at 20.2 of 20 (1.01) and October Speaker Food 154.34 of 155 (0.996). For the Advertisement category the Yearly Kickoff line holds 122.06 spent of 150 and 54.25 spent of 55 for October Meeting, while the allocated amounts are 150 and 55",
+    "validation_method": "computed ratio with ordering",
+    "timestamp": "2026-10-10T00:00:00Z"
+  },
+  {
+    "id": "evidence_avg_expense_cost",
+    "source": "student_club sqlite database",
+    "query": "Compute the mean expense cost overall and for one member",
+    "result": "Overall mean 65.19 over 32 expenses; Elijah Allen holds 9 expenses totalling 598.62 with a mean of 66.51",
+    "validation_method": "aggregate mean",
+    "timestamp": "2026-10-10T00:00:00Z"
+  }
+]

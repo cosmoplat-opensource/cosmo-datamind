@@ -1,0 +1,69 @@
+{
+ "db_id": "card_games",
+ "questions": [
+  {
+   "question_id": 472,
+   "db_id": "card_games",
+   "question": "Among the sets in the block \"Ice Age\", how many of them have an Italian translation?",
+   "evidence": "sets in the block \"Ice Age\" refers to block = 'Ice Age'; Italian translation refers to language = 'Italian' and translation is not null",
+   "SQL": "SELECT COUNT(DISTINCT T1.id) FROM sets AS T1 INNER JOIN set_translations AS T2 ON T2.setCode = T1.code WHERE T1.block = 'Ice Age' AND T2.language = 'Italian' AND T2.translation IS NOT NULL",
+   "difficulty": "moderate"
+  },
+  {
+   "question_id": 440,
+   "db_id": "card_games",
+   "question": "Which foreign language used by \"A Pedra Fellwar\"?",
+   "evidence": "\"A Pedra Fellwar\" refers to name = 'A Pedra Fellwar'",
+   "SQL": "SELECT DISTINCT language FROM foreign_data WHERE name = 'A Pedra Fellwar'",
+   "difficulty": "simple"
+  },
+  {
+   "question_id": 340,
+   "db_id": "card_games",
+   "question": "Which are the cards that have incredibly powerful foils.",
+   "evidence": "incredibly poweful foils refers to cardKingdomFoilId is not null AND cardKingdomId is not null",
+   "SQL": "SELECT id FROM cards WHERE cardKingdomFoilId IS NOT NULL AND cardKingdomId IS NOT NULL",
+   "difficulty": "simple"
+  },
+  {
+   "question_id": 424,
+   "db_id": "card_games",
+   "question": "What proportion of cards do not have a text box with a normal layout?",
+   "evidence": "do not have a text box refers to isTextless = 1; proportion refers to DIVIDE(COUNT(Textless = 1 and layout = 'normal'),COUNT(Textless))*100",
+   "SQL": "SELECT CAST(SUM(CASE WHEN isTextless = 1 AND layout = 'normal' THEN 1 ELSE 0 END) AS REAL) * 100 / COUNT(*) FROM cards",
+   "difficulty": "simple"
+  },
+  {
+   "question_id": 486,
+   "db_id": "card_games",
+   "question": "What is the percentage of the cards with a converted mana cost of 7 in the set Coldsnap?",
+   "evidence": "converted mana cost of 7 refers to convertedManaCost = 7; card set Coldsnap refers to name = 'Coldsnap'; percentage = DIVIDE(SUM(convertedManaCost = 7), SUM(convertedManaCost))*100",
+   "SQL": "SELECT CAST(SUM(CASE WHEN T1.convertedManaCost = 7 THEN 1 ELSE 0 END) AS REAL) * 100 / COUNT(T1.id) FROM cards AS T1 INNER JOIN sets AS T2 ON T2.code = T1.setCode WHERE T2.name = 'Coldsnap'",
+   "difficulty": "moderate"
+  },
+  {
+   "question_id": 479,
+   "db_id": "card_games",
+   "question": "Among the cards with converted mana cost higher than 5 in the set Coldsnap, how many of them have unknown power?",
+   "evidence": "card set Coldsnap refers to name = 'Coldsnap'; converted mana cost higher than 5 refers to convertedManaCost > 5; unknown power refers to power = '*' or T1.power is null",
+   "SQL": "SELECT SUM(CASE WHEN T1.power = '*' OR T1.power IS NULL THEN 1 ELSE 0 END) FROM cards AS T1 INNER JOIN sets AS T2 ON T2.code = T1.setCode WHERE T2.name = 'Coldsnap' AND T1.convertedManaCost > 5",
+   "difficulty": "moderate"
+  },
+  {
+   "question_id": 409,
+   "db_id": "card_games",
+   "question": "Indicates the number of cards with pre-modern format, ruling text \"This is a triggered mana ability.\" that do not have multiple faces.",
+   "evidence": "pre-modern format refers to format = 'premodern' ;do not have multiple faces refers to side IS NULL",
+   "SQL": "SELECT COUNT(T1.id) FROM cards AS T1 INNER JOIN legalities AS T2 ON T1.uuid = T2.uuid INNER JOIN rulings AS T3 ON T1.uuid = T3.uuid WHERE T2.format = 'premodern' AND T3.text = 'This is a triggered mana ability.' AND T1.Side IS NULL",
+   "difficulty": "moderate"
+  },
+  {
+   "question_id": 518,
+   "db_id": "card_games",
+   "question": "Which of the play format has the highest number of banned status? Indicate the play format and the names of all the card meet the condition.",
+   "evidence": "play format refers to format; banned status refers to status = 'Banned'; the highest number of banned status refers to MAX(COUNT(status = 'Banned'))",
+   "SQL": "WITH MaxBanned AS (SELECT format, COUNT(*) AS count_banned FROM legalities WHERE status = 'Banned' GROUP BY format ORDER BY COUNT(*) DESC LIMIT 1) SELECT T2.format, T1.name FROM cards AS T1 INNER JOIN legalities AS T2 ON T2.uuid = T1.uuid INNER JOIN MaxBanned MB ON MB.format = T2.format WHERE T2.status = 'Banned'",
+   "difficulty": "moderate"
+  }
+ ]
+}

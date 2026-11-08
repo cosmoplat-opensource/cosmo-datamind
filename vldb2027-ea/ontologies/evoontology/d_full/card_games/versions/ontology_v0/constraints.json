@@ -1,0 +1,386 @@
+[
+  {
+    "id": "constraint_count_cards_needs_identity",
+    "target": "card_identity",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "how many cards",
+      "number of cards",
+      "distinct cards",
+      "unique cards",
+      "count of cards",
+      "total cards",
+      "different cards"
+    ],
+    "severity": "block",
+    "scope": "Applies to any question that counts cards in this database",
+    "confidence": "high",
+    "description": "The cards table holds one row per printing, so counting rows counts printings (56822), not distinct cards (21769 by scryfallOracleId). Any card count must first be reduced to card identity. Name is an imperfect substitute: 21738 names map to 21769 oracle ids because 7 names carry more than one oracle id.",
+    "evidence": [
+      "evidence_cards_counts",
+      "evidence_name_multi_oracle"
+    ]
+  },
+  {
+    "id": "constraint_absent_legality_row",
+    "target": "legality_status",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "not legal",
+      "illegal",
+      "legal in",
+      "is it legal",
+      "format legality",
+      "legality",
+      "playable in"
+    ],
+    "severity": "block",
+    "scope": "Applies when filtering or interpreting the legalities table",
+    "confidence": "high",
+    "description": "Only Legal, Banned and Restricted are stored. There is no Not Legal value. A printing that has no legalities row for a format is not legal in that format, so absence must be treated as a verdict rather than as missing data. Legalities cover 55608 of 56822 printings, and each printing has rows for between 4 and 14 of the 15 formats.",
+    "evidence": [
+      "evidence_legalities_formats",
+      "evidence_legalities_coverage"
+    ]
+  },
+  {
+    "id": "constraint_status_and_format_case",
+    "target": "legality_status",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "legal",
+      "banned",
+      "restricted",
+      "status",
+      "format",
+      "standard",
+      "commander",
+      "vintage"
+    ],
+    "severity": "block",
+    "scope": "Applies to all legalities filtering",
+    "confidence": "high",
+    "description": "Case differs between the two columns: format values are lowercase (standard, commander, vintage) while status values are capitalized (Legal, Banned, Restricted). Comparing either with the wrong capitalization silently returns no rows.",
+    "evidence": [
+      "evidence_legalities_formats"
+    ]
+  },
+  {
+    "id": "constraint_colorless_is_null",
+    "target": "card_color",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "colorless",
+      "no color",
+      "has no color",
+      "artifact",
+      "color",
+      "colors",
+      "color identity"
+    ],
+    "severity": "block",
+    "scope": "Applies when filtering or grouping cards by color",
+    "confidence": "high",
+    "description": "A card with no mana color has NULL in colors and colorIdentity. There is no colorless letter and no empty string: all 12540 colorless printings in colors and 6224 in colorIdentity store NULL. Colorless cards must be selected by testing for NULL.",
+    "evidence": [
+      "evidence_colors"
+    ]
+  },
+  {
+    "id": "constraint_color_list_encoding",
+    "target": "card_color",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "multicolor",
+      "multi color",
+      "mono",
+      "monocolor",
+      "blue",
+      "white",
+      "red",
+      "green",
+      "black",
+      "contains color",
+      "which colors"
+    ],
+    "severity": "block",
+    "scope": "Applies to colors, colorIdentity and similar list-valued columns",
+    "confidence": "high",
+    "description": "colors and colorIdentity are comma-separated letter lists drawn only from W, U, B, R, G, for example W, U,W or B,G,R,U,W. Monocolor means the value contains no comma. Matching that a card includes a color is a substring test, whereas matching a specific mono-color card is an exact equality test; a plain equality test on the whole value therefore undercounts multicolor cards.",
+    "evidence": [
+      "evidence_colors",
+      "evidence_color_letters"
+    ]
+  },
+  {
+    "id": "constraint_color_versus_color_identity",
+    "target": "color_identity",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "color identity",
+      "commander",
+      "deck color",
+      "identity",
+      "color"
+    ],
+    "severity": "warning",
+    "scope": "Applies when color-based legality or deck-building rules matter",
+    "confidence": "high",
+    "description": "colors is the card's mana color; colorIdentity additionally includes colors of mana symbols appearing in rules text and is the attribute Commander deck rules use. The two columns are populated differently (12540 versus 6224 NULL values) and must not be treated as interchangeable.",
+    "evidence": [
+      "evidence_colors"
+    ]
+  },
+  {
+    "id": "constraint_type_column_parsing",
+    "target": "card_type",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "card type",
+      "creature",
+      "instant",
+      "sorcery",
+      "land",
+      "artifact",
+      "enchantment",
+      "planeswalker",
+      "type line",
+      "subtype"
+    ],
+    "severity": "block",
+    "scope": "Applies to types, supertypes, subtypes and type",
+    "confidence": "high",
+    "description": "types, supertypes and subtypes are comma-separated lists with no space after the comma (Human,Wizard), whereas the type line separates types from subtypes with an em dash. Type filtering should use the list columns. Two further traps: old printings use Summon instead of Creature in types, and one joke printing embeds commas inside its type name, so naive splitting can mis-parse card types.",
+    "evidence": [
+      "evidence_type_encoding",
+      "evidence_joke_type"
+    ]
+  },
+  {
+    "id": "constraint_power_toughness_not_numeric",
+    "target": "creature_power",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "power",
+      "toughness",
+      "strongest",
+      "biggest",
+      "highest power",
+      "P/T",
+      "best creature"
+    ],
+    "severity": "block",
+    "scope": "Applies to creature strength comparison",
+    "confidence": "high",
+    "description": "power and toughness are text columns whose values include stars, star expressions, question mark, infinity, negative values and half values. Numeric comparison only works after restricting to values that parse as numbers. In addition, 90 rows with power are artifacts such as Vehicles and are not typed Creature, while 13 old printings are typed Summon but are creatures; planeswalkers instead carry loyalty and vanguard printings carry hand and life.",
+    "evidence": [
+      "evidence_power_toughness"
+    ]
+  },
+  {
+    "id": "constraint_cmc_joke_outlier",
+    "target": "converted_mana_cost",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "average mana cost",
+      "average converted mana cost",
+      "cmc",
+      "highest mana cost",
+      "mana value",
+      "most expensive"
+    ],
+    "severity": "warning",
+    "scope": "Applies to any aggregation over convertedManaCost",
+    "confidence": "high",
+    "description": "convertedManaCost is never null but spans 0 to 1000000 because of joke printings from the funny set UNH, for example Gleemax with a cost of one million. Whole-table averages and maxima are dominated by such printings and should be reported with an explicit range restriction. faceConvertedManaCost is only populated for the 955 multi-face printings, so mixing it into a table-wide average changes the sample.",
+    "evidence": [
+      "evidence_cmc"
+    ]
+  },
+  {
+    "id": "constraint_missing_mana_cost_scope",
+    "target": "mana_cost",
+    "constraint_type": "scope",
+    "trigger_keywords": [
+      "mana cost",
+      "cost",
+      "lands",
+      "no mana cost",
+      "zero cost"
+    ],
+    "severity": "info",
+    "scope": "Applies to cost analysis",
+    "confidence": "high",
+    "description": "7323 printings have no manaCost, predominantly lands and similar cards with no cost. They still have a convertedManaCost of 0, so cost distributions should state whether costless printings are included.",
+    "evidence": [
+      "evidence_cmc"
+    ]
+  },
+  {
+    "id": "constraint_face_row_duplication",
+    "target": "card_face",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "double faced",
+      "double-faced",
+      "two faced",
+      "split card",
+      "adventure",
+      "transform",
+      "modal",
+      "both sides",
+      "face"
+    ],
+    "severity": "warning",
+    "scope": "Applies to counting and aggregating printings of multi-face layouts",
+    "confidence": "high",
+    "description": "Multi-face printings occupy one row per face distinguished by side, so row counts double count these cards and per-face columns such as faceConvertedManaCost repeat. Layouts affected are transform, modal_dfc, split, adventure, aftermath, flip and meld. Cards without faces have a null side value.",
+    "evidence": [
+      "evidence_face_rows",
+      "evidence_layout_side"
+    ]
+  },
+  {
+    "id": "constraint_ruling_repeats_per_printing",
+    "target": "ruling",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "rulings",
+      "most rulings",
+      "card rulings",
+      "how many rulings"
+    ],
+    "severity": "warning",
+    "scope": "Applies when counting or listing rulings",
+    "confidence": "high",
+    "description": "Rulings are keyed to printing uuids, so the same clarification text repeats across printings of the same card: 87769 rows carry only 19593 distinct texts, and 12681 texts appear under more than one printing. Counting rulings per card without deduplicating inflates counts for heavily reprinted cards. Rulings cover 26141 of 56822 printings and span 2004-10-04 to 2021-02-05.",
+    "evidence": [
+      "evidence_rulings"
+    ]
+  },
+  {
+    "id": "constraint_localization_per_printing",
+    "target": "card_localization",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "translation",
+      "language",
+      "localized",
+      "foreign",
+      "foreign language",
+      "translated",
+      "how many languages"
+    ],
+    "severity": "warning",
+    "scope": "Applies to language and translation coverage analysis",
+    "confidence": "high",
+    "description": "Localized card rows are stored per printing per language, so the same card repeats its translations once for every printing: 229186 rows cover 34056 printings with about 6.7 languages each. Coverage must be stated in printing or card-identity terms explicitly. Set name translations are much narrower than card translations: set_translations covers only 121 of 551 sets and exactly 10 languages.",
+    "evidence": [
+      "evidence_foreign_data",
+      "evidence_set_translations"
+    ]
+  },
+  {
+    "id": "constraint_collector_number_is_text",
+    "target": "card_printing",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "card number",
+      "collector number",
+      "number in set",
+      "ordered by number",
+      "number"
+    ],
+    "severity": "warning",
+    "scope": "Applies to ordering or filtering by the printing's number within its set",
+    "confidence": "high",
+    "description": "cards.number is text and includes non-numeric values such as 11 followed by a star character to mark premium printings. Numeric casting fails or silently reorders such values, and ordering by the raw text gives lexicographic rather than numeric order.",
+    "evidence": [
+      "evidence_number_text"
+    ]
+  },
+  {
+    "id": "constraint_set_coverage_gap",
+    "target": "card_set",
+    "constraint_type": "scope",
+    "trigger_keywords": [
+      "how many sets",
+      "all sets",
+      "set list",
+      "number of sets",
+      "every set"
+    ],
+    "severity": "info",
+    "scope": "Applies to set-level counts and joins",
+    "confidence": "high",
+    "description": "sets contains 551 sets but only 536 set codes appear in cards; 15 sets hold no printings in this snapshot, mostly art series, league tokens and promo products. A count of sets and a count of sets that contain cards are therefore different answers. Reported sizes are attributes: baseSetSize counts the set's own numbered cards while totalSetSize also includes related cards.",
+    "evidence": [
+      "evidence_sets_counts"
+    ]
+  },
+  {
+    "id": "constraint_release_window_snapshot",
+    "target": "set_release_date",
+    "constraint_type": "scope",
+    "trigger_keywords": [
+      "recent sets",
+      "after 2015",
+      "newest",
+      "newest set",
+      "latest",
+      "release date",
+      "when was it released"
+    ],
+    "severity": "info",
+    "scope": "Applies to time-based set analysis",
+    "confidence": "high",
+    "description": "Set release dates span 1993-08-05 to 2021-03-19, so this snapshot stops in March 2021: recent means within that window, not the present day. Formats with narrow pools reflect that window directly, for example standard covers only 7698 printings. Some sets have no block or parent set recorded, so hierarchy-based grouping loses those sets.",
+    "evidence": [
+      "evidence_release_dates"
+    ]
+  },
+  {
+    "id": "constraint_set_type_semantics",
+    "target": "set_type",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "set type",
+      "expansion",
+      "core set",
+      "promo",
+      "memorabilia",
+      "masters",
+      "funny",
+      "product type"
+    ],
+    "severity": "info",
+    "scope": "Applies when comparing card counts across sets",
+    "confidence": "high",
+    "description": "sets.type enumerates 20 product categories. Promotional, memorabilia and token products contain printings that are not part of the normal booster card pool and can dominate raw card counts, for example the promo set PRM with 1362 printings. Comparisons of set sizes are only meaningful within comparable product categories.",
+    "evidence": [
+      "evidence_set_type",
+      "evidence_cards_per_set"
+    ]
+  },
+  {
+    "id": "constraint_null_is_the_only_absence_marker",
+    "target": "card_printing",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "missing",
+      "null",
+      "empty",
+      "not available",
+      "no rules text",
+      "vanilla"
+    ],
+    "severity": "info",
+    "scope": "Applies to all null handling in this database",
+    "confidence": "high",
+    "description": "The database marks absence with NULL only; no empty strings were observed in text, flavorText, artist, types or subtypes. A null text therefore means the card has no rules text at all, as for vanilla creatures, rather than that the value is unknown. Filters that test for empty string instead of NULL will return nothing.",
+    "evidence": [
+      "evidence_null_discipline",
+      "evidence_power_toughness"
+    ]
+  }
+]

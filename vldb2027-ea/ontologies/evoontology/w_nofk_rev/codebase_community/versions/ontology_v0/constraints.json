@@ -1,0 +1,474 @@
+[
+  {
+    "id": "con_post_creation_column_spelling",
+    "target": "map_post_creation_date",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "CreationDate",
+      "creation date",
+      "posted on",
+      "posted date",
+      "created",
+      "year of post",
+      "when was the post"
+    ],
+    "severity": "block",
+    "scope": "Any time filtering or ordering on posts.",
+    "confidence": "high",
+    "description": "The posts table stores its creation timestamp in a misspelled column and contains no correctly spelled creation column; the last-activity column is misspelled in the same way. Analysts must use the misspelled names, and a plausible-looking correctly spelled name will fail.",
+    "evidence": [
+      "ev_posts_column_spelling"
+    ]
+  },
+  {
+    "id": "con_display_name_not_unique",
+    "target": "term_display_name",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "user name",
+      "display name",
+      "the user",
+      "which user",
+      "csgillespie",
+      "by name",
+      "named"
+    ],
+    "severity": "warning",
+    "scope": "Resolving a person named in a question to a single account.",
+    "confidence": "high",
+    "description": "Display names are not unique across accounts: many names are shared by dozens of accounts. A name mentioned in a question is only a reliable person reference when it happens to be unique in the catalogue; otherwise the identifier must be established another way.",
+    "evidence": [
+      "ev_displayname_not_unique"
+    ]
+  },
+  {
+    "id": "con_owner_display_name_fallback",
+    "target": "map_post_owner_display_name",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "post owner",
+      "owner of the post",
+      "who posted",
+      "posted by",
+      "author of the post"
+    ],
+    "severity": "warning",
+    "scope": "Attributing a post to a person.",
+    "confidence": "high",
+    "description": "The owner display name stored on a post is a sparse denormalised cache, not the primary attribution. The authoritative route from a post to a person runs through the owner identifier into the user catalogue; the cached label should be used only for the posts that have no owner identifier, and it is absent from most posts altogether.",
+    "evidence": [
+      "ev_owner_attribution_columns"
+    ]
+  },
+  {
+    "id": "con_comment_revision_display_name_fallback",
+    "target": "map_comment_user_display_name",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "comment author",
+      "who commented",
+      "user who edited",
+      "editor",
+      "revision author"
+    ],
+    "severity": "warning",
+    "scope": "Attributing comments and revisions to a person.",
+    "confidence": "high",
+    "description": "In the comment and revision tables the identifier and the display name are complementary: the label is populated exactly when no identifier was recorded. An author name found there therefore identifies no account, and the registered-name route is unavailable for those rows.",
+    "evidence": [
+      "ev_comment_attribution_columns",
+      "ev_revision_attribution_columns"
+    ]
+  },
+  {
+    "id": "con_display_name_namespace_overlap",
+    "target": "term_unregistered_author",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "anonymous",
+      "unregistered",
+      "deleted user",
+      "user28",
+      "no user id"
+    ],
+    "severity": "warning",
+    "scope": "Distinguishing registered from label-only authorship.",
+    "confidence": "high",
+    "description": "Label-only author names are not a closed namespace: a substantial share of the names recorded without an identifier also occur as display names of registered accounts, and the platform synthesises account-style names for accounts that never chose one. A name match alone therefore does not prove that the author is a registered user.",
+    "evidence": [
+      "ev_anon_displayname_overlap",
+      "ev_displayname_synthesized"
+    ]
+  },
+  {
+    "id": "con_community_account",
+    "target": "term_community_user",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "Community",
+      "posted by Community",
+      "community user",
+      "community owned"
+    ],
+    "severity": "block",
+    "scope": "Interpreting content or profiles attributed to the Community account.",
+    "confidence": "high",
+    "description": "One catalogue row with a negative identifier carries the display name Community and acts as the platform's background account. Every post it owns also carries a community-owned timestamp. It is not a person: profile measures such as age are absent for it while its vote counters are large, so any demographic or influence comparison must exclude it explicitly when the intent is human users.",
+    "evidence": [
+      "ev_community_account"
+    ]
+  },
+  {
+    "id": "con_age_sparse",
+    "target": "term_age",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "elder",
+      "age",
+      "older user",
+      "aged",
+      "demographic"
+    ],
+    "severity": "block",
+    "scope": "Any analysis segmenting users by age.",
+    "confidence": "high",
+    "description": "Declared age exists for only about one fifth of accounts and is entirely absent for the rest, and the declared values are bounded well within a plausible adult range. Age-based segments therefore describe only the disclosing subpopulation, and users without a declared age can never satisfy an age threshold.",
+    "evidence": [
+      "ev_age_coverage"
+    ]
+  },
+  {
+    "id": "con_elder_user_definition",
+    "target": "term_elder_user",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "elder user",
+      "elder users",
+      "elder",
+      "older user",
+      "senior"
+    ],
+    "severity": "block",
+    "scope": "Demographic segment used by the target workload.",
+    "confidence": "high",
+    "description": "The workload uses 'elder user' for a user whose declared age exceeds 65. Users without a declared age are not elder users.",
+    "evidence": [
+      "ev_age_coverage"
+    ]
+  },
+  {
+    "id": "con_post_type_semantics",
+    "target": "term_post_type",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "post type",
+      "question",
+      "answer",
+      "PostTypeId",
+      "kind of post",
+      "wiki post"
+    ],
+    "severity": "block",
+    "scope": "Selecting the right subset of post rows.",
+    "confidence": "high",
+    "description": "The post type code separates questions and answers, which together account for almost all rows, from a thin tail of wiki and moderation entries. Only questions carry a title, a tag list, a view count and an answer count; answers are identified only by being of the answer type and having a parent. Analyses of 'posts' in general span both major kinds, while analyses of titles or tags are question-only.",
+    "evidence": [
+      "ev_post_type_distribution",
+      "ev_post_scalar_nullability"
+    ]
+  },
+  {
+    "id": "con_question_only_scalars",
+    "target": "map_post_view_count",
+    "constraint_type": "scope",
+    "trigger_keywords": [
+      "views",
+      "total views",
+      "ViewCount",
+      "popularity",
+      "answers",
+      "AnswerCount",
+      "favorite"
+    ],
+    "severity": "block",
+    "scope": "Using post-level counters.",
+    "confidence": "high",
+    "description": "Several post counters are populated only for questions: the view count, the answer count, the tag list and the title are all null on every answer. Aggregating views or filtering on tags over all posts silently ignores answers, and the answer count is not a usable field for non-questions.",
+    "evidence": [
+      "ev_post_scalar_nullability"
+    ]
+  },
+  {
+    "id": "con_answer_parent_link",
+    "target": "term_answer",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "answer",
+      "answers to",
+      "responded",
+      "reply",
+      "parent"
+    ],
+    "severity": "warning",
+    "scope": "Relating answers to the questions they belong to.",
+    "confidence": "high",
+    "description": "An answer identifies its question through a parent reference on its own post row, and every answer row carries one. Questions have no parent. An accepted answer, by contrast, is recorded from the question side through an accepted-answer reference, and at least one such reference does not resolve to a post row.",
+    "evidence": [
+      "ev_referential_gaps"
+    ]
+  },
+  {
+    "id": "con_closed_date_semantics",
+    "target": "term_closed_post",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "closed",
+      "well-finished",
+      "finished",
+      "open",
+      "still open",
+      "unanswered"
+    ],
+    "severity": "warning",
+    "scope": "Post lifecycle status questions.",
+    "confidence": "medium",
+    "description": "A closed date is present on a small minority of posts and marks them as closed; absence of the date means the post was not closed. A question asking whether a post is finished or closed therefore turns on whether this timestamp is absent, and the phrase should not be read as a quality judgement.",
+    "evidence": [
+      "ev_closed_posts"
+    ]
+  },
+  {
+    "id": "con_vote_type_semantics",
+    "target": "term_vote_type",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "vote",
+      "upvote",
+      "downvote",
+      "accepted",
+      "favorite vote",
+      "bounty",
+      "vote type",
+      "votes cast"
+    ],
+    "severity": "block",
+    "scope": "Any analysis restricted to a class of votes.",
+    "confidence": "medium",
+    "description": "Vote rows all live in one table and are only distinguished by the vote type code. Upvotes dominate the table; acceptance, downvotes, favourites and the bounty codes each account for a small share, and the remaining codes cover moderation actions. Counting 'votes' without restricting the code mixes upvotes, favourites and bounty bookkeeping together.",
+    "evidence": [
+      "ev_vote_type_distribution"
+    ]
+  },
+  {
+    "id": "con_bounty_amount_semantics",
+    "target": "term_bounty_amount",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "bounty",
+      "bounty amount",
+      "amount of 50",
+      "reward",
+      "offered"
+    ],
+    "severity": "info",
+    "scope": "Bounty analysis.",
+    "confidence": "medium",
+    "description": "A bounty amount is present only on bounty votes and is null on every other vote row, so the amount column itself is a filter for bounty activity. The offering and the closing of a bounty are recorded as separate vote rows, and the closing row may have no voter recorded, so identifying who offered a bounty requires the offering row rather than any row carrying the amount.",
+    "evidence": [
+      "ev_bounty_rows"
+    ]
+  },
+  {
+    "id": "con_favorite_count_vs_votes",
+    "target": "term_favorite_count",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "favorite",
+      "favourite",
+      "favorite count",
+      "bookmark",
+      "saved"
+    ],
+    "severity": "warning",
+    "scope": "Choosing a source for favourite counts.",
+    "confidence": "high",
+    "description": "Two representations of favourites coexist and disagree: a counter maintained on the post row and the individual favourite vote rows. The counter is generally larger than the number of vote rows, so the two are not interchangeable and the intended source must be chosen deliberately. The counter is also null for posts never favourited.",
+    "evidence": [
+      "ev_favorite_count_divergence"
+    ]
+  },
+  {
+    "id": "con_tag_string_format",
+    "target": "term_post_tags",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "tag",
+      "tags",
+      "language",
+      "R language",
+      "tagged",
+      "topic of post"
+    ],
+    "severity": "block",
+    "scope": "Testing whether a question carries a given tag.",
+    "confidence": "high",
+    "description": "Tags are stored on the question as a single delimited string in which each name is wrapped in angle brackets. Tag membership must therefore be tested against the delimited list rather than by equality, and a tag whose name is a prefix or substring of another tag requires delimiters to avoid false matches.",
+    "evidence": [
+      "ev_tag_string_format"
+    ]
+  },
+  {
+    "id": "con_tag_count_column",
+    "target": "map_tag_count",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "tag count",
+      "how many posts use",
+      "number of questions tagged",
+      "tag popularity"
+    ],
+    "severity": "info",
+    "scope": "Using the tag catalogue for volume measures.",
+    "confidence": "medium",
+    "description": "The count stored on the tag catalogue tracks how many posts carry the tag but does not exactly reproduce the number obtained by counting questions whose tag list contains it; the maintained counter is slightly higher. Counts computed from the post rows and counts taken from the catalogue should not be mixed within one comparison.",
+    "evidence": [
+      "ev_tag_count_comparison"
+    ]
+  },
+  {
+    "id": "con_revision_type_semantics",
+    "target": "term_post_revision",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "edited",
+      "edit",
+      "revision",
+      "history",
+      "last edited",
+      "who changed"
+    ],
+    "severity": "warning",
+    "scope": "Post editing history analysis.",
+    "confidence": "medium",
+    "description": "Revision rows are typed by an integer code that separates the initial creation of a field from later edits of that same field. The creation codes occur about once per question for title and tags, while body creation occurs once per post of any kind, which matches the fact that only questions have titles and tags. Identifying 'users who edited a post' therefore means consulting the acting user recorded on revision rows for that post rather than the post's own last-editor fields, which are sparse and populated for only about half of posts.",
+    "evidence": [
+      "ev_revision_type_distribution"
+    ]
+  },
+  {
+    "id": "con_referential_gaps",
+    "target": "term_post",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "comments on a post",
+      "votes on a post",
+      "revisions",
+      "history of a post",
+      "join posts"
+    ],
+    "severity": "warning",
+    "scope": "Relating event tables to posts.",
+    "confidence": "high",
+    "description": "Referential integrity is not total. A small number of comment rows and revision rows point at post identifiers that are absent from the posts table, and one accepted-answer reference does not resolve either. Event counts obtained by joining to posts will therefore fall slightly below the raw event counts, and the difference is caused by missing content rather than by a filtering mistake.",
+    "evidence": [
+      "ev_referential_gaps"
+    ]
+  },
+  {
+    "id": "con_user_id_reference_integrity",
+    "target": "term_user_id",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "join users",
+      "user of a post",
+      "author",
+      "voter",
+      "badge owner"
+    ],
+    "severity": "info",
+    "scope": "Joining activity tables to the user catalogue.",
+    "confidence": "high",
+    "description": "Every non-null user identifier in the post, comment, vote, badge and revision tables resolves to a row in the user catalogue, so an inner join to users loses no attributable activity. Missing attribution is expressed as a null identifier, not as a dangling reference.",
+    "evidence": [
+      "ev_user_id_reference_integrity"
+    ]
+  },
+  {
+    "id": "con_badge_count_definition",
+    "target": "term_user_badge_count",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "badges",
+      "more than 5 badges",
+      "number of badges",
+      "awarded",
+      "achievement count"
+    ],
+    "severity": "warning",
+    "scope": "Counting badges per user.",
+    "confidence": "high",
+    "description": "Badge tallies are counts of award records per user rather than distinct badge kinds, because the same badge name is awarded to a user repeatedly as it is earned at successive levels. The badge catalogue is small, so tallies are dominated by repeat awards of a few names.",
+    "evidence": [
+      "ev_badge_cardinality"
+    ]
+  },
+  {
+    "id": "con_timestamp_formats",
+    "target": "term_creation_date",
+    "constraint_type": "unit",
+    "trigger_keywords": [
+      "date",
+      "time",
+      "at 9:08:18",
+      "on 2013/7/12",
+      "year",
+      "when did"
+    ],
+    "severity": "warning",
+    "scope": "Matching or truncating timestamps.",
+    "confidence": "high",
+    "description": "Timestamp precision differs by table: posts, comments, badges and revisions store a full date and time, whereas votes store a date only with no time component. A question quoting a precise time of day can therefore only be matched against the tables that carry a time, and date-only comparisons must not assume a zero time.",
+    "evidence": [
+      "ev_date_ranges_and_formats"
+    ]
+  },
+  {
+    "id": "con_percentage_denominator",
+    "target": "term_post_percentage",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "percentage",
+      "percent",
+      "proportion",
+      "share",
+      "what fraction"
+    ],
+    "severity": "warning",
+    "scope": "Share-type questions over posts.",
+    "confidence": "high",
+    "description": "A post percentage compares two counts drawn from the same stated population: the posts meeting the stated condition over the posts the question names as its base. The base population must be taken from the question rather than from all posts, and the result is expressed on a 0-100 scale.",
+    "evidence": [
+      "ev_workload_percentage_pattern"
+    ]
+  },
+  {
+    "id": "con_first_occurrence",
+    "target": "term_first_occurrence",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "first",
+      "earliest",
+      "when did",
+      "acquired the first",
+      "first vote",
+      "first badge"
+    ],
+    "severity": "info",
+    "scope": "Selecting the earliest event of a kind.",
+    "confidence": "high",
+    "description": "Earliest-event questions are answered by the minimum event timestamp for the entity, and ties are common because the platform seeded many accounts and badges at the same instant on its first day. A tie means several entities share the earliest event, so the answer may legitimately be more than one entity.",
+    "evidence": [
+      "ev_badge_earliest_tie"
+    ]
+  }
+]

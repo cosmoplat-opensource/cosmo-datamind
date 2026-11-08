@@ -1,0 +1,201 @@
+[
+  {
+    "connection_condition": "question posts are the subset of post rows whose post type code is 1",
+    "description": "A question is a specific kind of post; its value domain is a subset of the post value domain.",
+    "evidence": [
+      "evidence_post_type_distribution"
+    ],
+    "id": "rel_question_post",
+    "relation_type": "hierarchy",
+    "source": "term_question",
+    "target": "term_post"
+  },
+  {
+    "connection_condition": "answer posts are the subset of post rows whose post type code is 2",
+    "description": "An answer is a specific kind of post; its value domain is a subset of the post value domain.",
+    "evidence": [
+      "evidence_post_type_distribution"
+    ],
+    "id": "rel_answer_post",
+    "relation_type": "hierarchy",
+    "source": "term_answer",
+    "target": "term_post"
+  },
+  {
+    "connection_condition": "post rows carry an owner user identifier that corresponds to a user identifier in the user table; the owner identifier is null for some posts",
+    "description": "A post is owned by a user, but a post is not a component of a user and a user is not a kind of post, so the connection is a general business association.",
+    "evidence": [
+      "evidence_referential_integrity",
+      "evidence_users_profile"
+    ],
+    "id": "rel_post_owner_user",
+    "relation_type": "association",
+    "source": "term_post",
+    "target": "term_user"
+  },
+  {
+    "connection_condition": "comment rows carry the identifier of the post they are attached to",
+    "description": "A comment is a component part of a post discussion and cannot meaningfully exist without its post.",
+    "evidence": [
+      "evidence_referential_integrity"
+    ],
+    "id": "rel_comment_post",
+    "relation_type": "composition",
+    "source": "term_comment",
+    "target": "term_post"
+  },
+  {
+    "connection_condition": "comment rows carry an author user identifier corresponding to a user identifier",
+    "description": "A comment is written by a user; the comment is not part of the user record.",
+    "evidence": [
+      "evidence_comments_profile"
+    ],
+    "id": "rel_comment_author_user",
+    "relation_type": "association",
+    "source": "term_comment",
+    "target": "term_user"
+  },
+  {
+    "connection_condition": "vote rows carry the identifier of the post they apply to",
+    "description": "A vote is an event attached to a post and has no meaning without that post.",
+    "evidence": [
+      "evidence_referential_integrity"
+    ],
+    "id": "rel_vote_post",
+    "relation_type": "composition",
+    "source": "term_vote",
+    "target": "term_post"
+  },
+  {
+    "connection_condition": "some vote rows carry an acting user identifier; most do not",
+    "description": "A vote may be cast by a user, recorded as a general association because the acting user is frequently anonymous.",
+    "evidence": [
+      "evidence_votes_profile"
+    ],
+    "id": "rel_vote_caster_user",
+    "relation_type": "association",
+    "source": "term_vote",
+    "target": "term_user"
+  },
+  {
+    "connection_condition": "badge award rows carry the awarded user identifier",
+    "description": "A badge award belongs to a user and is meaningless without the awarded account.",
+    "evidence": [
+      "evidence_badges_profile"
+    ],
+    "id": "rel_badge_user",
+    "relation_type": "composition",
+    "source": "term_badge",
+    "target": "term_user"
+  },
+  {
+    "connection_condition": "revision rows carry the identifier of the post they revise",
+    "description": "A revision event is a component part of a post's history and cannot exist without the post.",
+    "evidence": [
+      "evidence_post_history_profile"
+    ],
+    "id": "rel_post_edit_post",
+    "relation_type": "composition",
+    "source": "term_post_edit",
+    "target": "term_post"
+  },
+  {
+    "connection_condition": "revision rows carry the identifier of the user who performed the revision",
+    "description": "A revision event is performed by a user; the event is not part of the user record.",
+    "evidence": [
+      "evidence_post_history_profile"
+    ],
+    "id": "rel_post_edit_author_user",
+    "relation_type": "association",
+    "source": "term_post_edit",
+    "target": "term_user"
+  },
+  {
+    "connection_condition": "tag names appear as angle-bracket-delimited tokens inside the post tag text rather than through a foreign key",
+    "description": "Tags label posts topically; because no identifier link exists between the tag catalogue and posts, this is a general association.",
+    "evidence": [
+      "evidence_tags_profile"
+    ],
+    "id": "rel_tag_post",
+    "relation_type": "association",
+    "source": "term_tag",
+    "target": "term_post"
+  },
+  {
+    "connection_condition": "badge award rows are counted per awarded user",
+    "description": "Badge award count is derived by counting badge award records for each user.",
+    "evidence": [
+      "evidence_badges_profile"
+    ],
+    "id": "rel_badge_count_derivation",
+    "relation_type": "derivation",
+    "source": "term_badge",
+    "target": "term_badge_award_count"
+  },
+  {
+    "connection_condition": "matching post rows are counted against the comparison post population",
+    "description": "Percentage share is derived from counts of the rows that form the population and its matching subset.",
+    "evidence": [
+      "evidence_row_counts"
+    ],
+    "id": "rel_percentage_derivation",
+    "relation_type": "derivation",
+    "source": "term_post",
+    "target": "term_percentage_share"
+  },
+  {
+    "connection_condition": "the recorded action name repeats the user display name but is frequently blank",
+    "description": "Both concepts express a user's display name; one is a point-in-time snapshot stored on the action row, the other is the account's current name.",
+    "evidence": [
+      "evidence_comments_profile"
+    ],
+    "id": "rel_recorded_name_equivalence",
+    "relation_type": "equivalence",
+    "source": "term_recorded_user_name",
+    "target": "term_user_display_name"
+  },
+  {
+    "connection_condition": "elder users are the subset of user rows whose recorded age exceeds 65",
+    "description": "An elder user is a specific user segment; its value domain is a subset of the user value domain.",
+    "evidence": [
+      "evidence_users_profile"
+    ],
+    "id": "rel_elder_user_user",
+    "relation_type": "hierarchy",
+    "source": "term_elder_user",
+    "target": "term_user"
+  },
+  {
+    "connection_condition": "title-kind revision rows repeat the title of the post at that revision, including wording that differs from the current title",
+    "description": "Revision text is an alternative record of a post's title over time rather than the current title value.",
+    "evidence": [
+      "evidence_title_case_and_revisions"
+    ],
+    "id": "rel_revision_text_post",
+    "relation_type": "association",
+    "source": "term_post_revision_text",
+    "target": "term_post_title"
+  },
+  {
+    "connection_condition": "the owner concept is grounded in an owner user identifier on post rows that corresponds to a user identifier; absent when the account is not linked",
+    "description": "The post owner role resolves to a user account, but the owner is a role played by a user rather than a kind of user or a part of the post.",
+    "evidence": [
+      "evidence_post_dates_and_owner"
+    ],
+    "id": "rel_post_owner_account",
+    "relation_type": "association",
+    "source": "term_post_owner",
+    "target": "term_user"
+  },
+  {
+    "connection_condition": "last-editor user identifiers on post rows correspond to user identifiers",
+    "description": "The last editor is a user account credited with the most recent edit of a post.",
+    "evidence": [
+      "evidence_post_dates_and_owner"
+    ],
+    "id": "rel_post_last_editor_user",
+    "relation_type": "association",
+    "source": "term_post_last_editor",
+    "target": "term_user"
+  }
+]

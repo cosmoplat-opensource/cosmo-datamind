@@ -1,0 +1,274 @@
+[
+  {
+    "id": "ev_schema_tables",
+    "source": "thrombosis_prediction",
+    "query": "SELECT name, sql FROM sqlite_master WHERE type='table' ORDER BY name",
+    "result": "Exactly three base tables. Patient(ID INTEGER PRIMARY KEY, SEX TEXT, Birthday DATE, Description DATE, `First Date` DATE, Admission TEXT, Diagnosis TEXT). Examination(ID INTEGER, `Examination Date` DATE, `aCL IgG` REAL, `aCL IgM` REAL, ANA INTEGER, `ANA Pattern` TEXT, `aCL IgA` INTEGER, Diagnosis TEXT, KCT TEXT, RVVT TEXT, LAC TEXT, Symptoms TEXT, Thrombosis INTEGER) with FOREIGN KEY (ID) REFERENCES Patient(ID). Laboratory(ID INTEGER NOT NULL, Date DATE NOT NULL, then 44 analyte columns) with PRIMARY KEY (ID, Date) and FOREIGN KEY (ID) REFERENCES Patient(ID). Column names use spaces, mixed case and hyphens, so they must be quoted in SQL.",
+    "validation_method": "Full sqlite_master DDL dump, executed read-only",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_row_counts",
+    "source": "thrombosis_prediction",
+    "query": "SELECT COUNT(*) FROM Patient; SELECT COUNT(*) FROM Examination; SELECT COUNT(*) FROM Laboratory",
+    "result": "Patient = 1238 rows; Examination = 806 rows; Laboratory = 13908 rows.",
+    "validation_method": "COUNT(*) per table",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_exam_patient_linkage",
+    "source": "thrombosis_prediction",
+    "query": "SELECT COUNT(*) FROM Examination e LEFT JOIN Patient p ON e.ID = p.ID WHERE p.ID IS NULL",
+    "result": "736 of 806 Examination rows do not resolve to a Patient row. 36 rows have ID IS NULL. Distinct Examination ids = 763; only 69 of them exist in Patient; 694 do not. Inner-joining Examination to Patient therefore retains only 70 rows.",
+    "validation_method": "LEFT JOIN orphan count plus Python set intersection over both key columns",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_lab_patient_linkage",
+    "source": "thrombosis_prediction",
+    "query": "SELECT COUNT(*) FROM Laboratory l LEFT JOIN Patient p ON l.ID = p.ID WHERE p.ID IS NULL",
+    "result": "0 of 13908 Laboratory rows are orphaned. Laboratory has 302 distinct patient ids and all 302 exist in Patient. No Laboratory.ID is NULL.",
+    "validation_method": "LEFT JOIN orphan count plus set intersection of keys",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_exam_lab_overlap",
+    "source": "thrombosis_prediction",
+    "query": "SELECT COUNT(DISTINCT ID) FROM Examination WHERE ID IN (SELECT ID FROM Laboratory); SELECT COUNT(*) FROM Examination e JOIN Laboratory l ON e.ID = l.ID AND e.`Examination Date` = l.Date",
+    "result": "20 patient ids carry both Examination and Laboratory records. Only 8 rows match on the exact pair (id, date). The two event tables are therefore almost disjoint at the patient level and effectively never align at the same date.",
+    "validation_method": "Set intersection on patient id and equality join on (id, date)",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_thrombosis_distribution",
+    "source": "thrombosis_prediction",
+    "query": "SELECT Thrombosis, COUNT(*) FROM Examination GROUP BY Thrombosis ORDER BY Thrombosis",
+    "result": "Thrombosis = 0 -> 726 rows; 1 -> 57 rows; 2 -> 18 rows; 3 -> 5 rows. No NULL. Minimum 0, maximum 3. The column is a graded integer, not a 0/1 flag.",
+    "validation_method": "Value frequency distribution",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_thrombosis_symptoms_coupling",
+    "source": "thrombosis_prediction",
+    "query": "SELECT Thrombosis, COUNT(*), SUM(CASE WHEN Symptoms IS NOT NULL THEN 1 ELSE 0 END) FROM Examination GROUP BY Thrombosis",
+    "result": "Grade 0: 726 rows, 0 with non-null Symptoms. Grade 1: 57 rows, 57 non-null. Grade 2: 18 rows, 18 non-null. Grade 3: 5 rows, 5 non-null. Symptoms is populated on exactly the rows where the thrombosis grade is above zero, and nowhere else (overall 726 of 806 rows have NULL Symptoms).",
+    "validation_method": "Cross-tabulation of grade against Symptoms population",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_lac_values",
+    "source": "thrombosis_prediction",
+    "query": "SELECT LAC, COUNT(*) FROM Examination GROUP BY LAC",
+    "result": "LAC IS NULL -> 584; '-' -> 147; '+' -> 75. 222 of 806 examinations carry a recorded LAC result. No other value occurs.",
+    "validation_method": "Value frequency distribution",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_kct_rvvt_coupling",
+    "source": "thrombosis_prediction",
+    "query": "SELECT KCT, RVVT, COUNT(*) FROM Examination GROUP BY KCT, RVVT; SELECT COUNT(*) FROM Examination WHERE (KCT IS NULL) <> (RVVT IS NULL)",
+    "result": "All four combinations of present values occur: ('+','+') 32, ('+','-') 9, ('-','+') 15, ('-','-') 90; both NULL on 660 rows. The symmetric-difference count is 0, so KCT and RVVT are non-null on exactly the same 146 rows. Both columns use only the tokens '+' and '-' when present.",
+    "validation_method": "Cross-tabulation plus NULL-pattern XOR count",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_acl_igg_distribution",
+    "source": "thrombosis_prediction",
+    "query": "SELECT MIN(`aCL IgG`), MAX(`aCL IgG`) FROM Examination; SELECT CASE WHEN `aCL IgG`<8 THEN '<8' WHEN `aCL IgG`<15 THEN '8-14' WHEN `aCL IgG`<20 THEN '15-19' ELSE '20+' END b, COUNT(*) FROM Examination GROUP BY 1",
+    "result": "Range 0.0 to 2150.3. Buckets: below 8 -> 753 rows; 8-14 -> 11; 15-19 -> 7; 20 and above -> 35. The bulk sits at or below 7 with a thin right tail; the largest values are 2150.3, 1502.4, 1150.7, 977.5, 802.4.",
+    "validation_method": "MIN/MAX plus bucketed frequency distribution",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_acl_igm_distribution",
+    "source": "thrombosis_prediction",
+    "query": "SELECT MIN(`aCL IgM`), MAX(`aCL IgM`) FROM Examination; SELECT CASE WHEN `aCL IgM`<8 THEN '<8' WHEN `aCL IgM`<15 THEN '8-14' WHEN `aCL IgM`<20 THEN '15-19' ELSE '20+' END b, COUNT(*) FROM Examination GROUP BY 1",
+    "result": "Range 0.0 to 187122.0. Buckets: below 8 -> 730 rows; 8-14 -> 36; 15-19 -> 6; 20 and above -> 34. The single value 187122.0 (patient 3380560, examination date 1998-03-24) is roughly three orders of magnitude above the next largest, 478.2.",
+    "validation_method": "MIN/MAX, bucketed distribution, and ordered top-value inspection",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_acl_iga_distribution",
+    "source": "thrombosis_prediction",
+    "query": "SELECT `aCL IgA`, COUNT(*) FROM Examination GROUP BY 1 ORDER BY 2 DESC LIMIT 15",
+    "result": "52 distinct values, all integral. 409 rows are exactly 0; then 3 -> 64, 2 -> 61, 5 -> 37, 7 -> 33, 4 -> 30, 6 -> 23, 9 -> 22, 8 -> 18, 10 -> 14, 1 -> 13, 13 -> 9, 12 -> 9, 11 -> 7, continuing into the twenties and forties. Unlike the IgG and IgM columns the storage type is INTEGER.",
+    "validation_method": "Value frequency distribution and declared column type from sqlite_master",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_ana_titre",
+    "source": "thrombosis_prediction",
+    "query": "SELECT ANA, COUNT(*) FROM Examination GROUP BY ANA ORDER BY 2 DESC",
+    "result": "8 distinct values plus NULL: 0 -> 206, 16 -> 155, 64 -> 112, 4 -> 108, 256 -> 82, 1024 -> 58, 4096 -> 46, NULL -> 38, 4094 -> 1. Apart from the single 4094 entry the non-zero values are exact powers of 4 (4, 16, 64, 256, 1024, 4096), which is the doubling-dilution series of a reciprocal titre.",
+    "validation_method": "Value frequency distribution and inspection of the numeric series",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_ana_pattern",
+    "source": "thrombosis_prediction",
+    "query": "SELECT `ANA Pattern`, COUNT(*) FROM Examination GROUP BY 1 ORDER BY 2 DESC",
+    "result": "15 distinct values plus NULL (261 rows). Most frequent: 'S' 252, 'P' 178, 'P,S' 89, 'S,P' 11. Rarer combinations repeat the same letters in different orders, with different separators and different case: 'p' 2, 'P.S' 1, 'D,P,S' 2, 'D,P' 2, 'D,S' 1, 'S,D' 2, 'P,D' 1, 'S,N' 1, 'N' 1, 'D' 1. The letters observed are S, P, D and N.",
+    "validation_method": "Value frequency distribution and normalisation of separators and case",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_ana_vs_pattern",
+    "source": "thrombosis_prediction",
+    "query": "SELECT COUNT(*) FROM Examination WHERE ANA = 0 AND `ANA Pattern` IS NOT NULL; SELECT COUNT(*) FROM Examination WHERE ANA > 0 AND `ANA Pattern` IS NULL; SELECT COUNT(*) FROM Examination WHERE ANA IS NULL AND `ANA Pattern` IS NOT NULL",
+    "result": "ANA = 0 with a non-null pattern: 3 rows. ANA above 0 with a NULL pattern: 20 rows. ANA NULL with a non-null pattern: 0 rows. There are 38 rows with NULL ANA, so the pattern field is populated on every row where the titre is recorded and the two columns essentially travel together.",
+    "validation_method": "Conditional counts across the two columns",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_patient_diagnosis_tokens",
+    "source": "thrombosis_prediction",
+    "query": "SELECT Diagnosis FROM Patient WHERE Diagnosis IS NOT NULL, then split each value on comma, semicolon, slash, 0x1d and 0x0b and count tokens",
+    "result": "155 distinct raw values. After splitting, the leading tokens are SJS 321, SLE 279, RA 213, BEHCET 93, PSS 87, MCTD 57, PM 49, APS 46, 'SJS susp' 45, DM 31, 'SLE susp' 28, 'RA susp' 27, FUO 19, AORTITIS 14, PN 12, MRA 11. The column is multi-label: values such as 'SLE, APS, SJS susp' and 'PSS, PM, SJS, RA' carry several diseases at once.",
+    "validation_method": "Tokenisation of all non-null values followed by frequency counting",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_examination_diagnosis_tokens",
+    "source": "thrombosis_prediction",
+    "query": "SELECT Diagnosis FROM Examination WHERE Diagnosis IS NOT NULL, then split each value on comma, semicolon, slash, 0x1d and 0x0b and count tokens",
+    "result": "181 distinct raw values; 331 of 806 rows have NULL Diagnosis. Leading tokens: SLE 170, SjS 101, RA 48, APS 31, MCTD 26, PSS 19, PM 16, 'SjS susp' 13, IP 13, Behcet 10, 'RA susp' 9, Raynaud 7, DM 7, preg 6, ITP 5, 'brain infarction' 5.",
+    "validation_method": "Tokenisation of all non-null values followed by frequency counting",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_diagnosis_naming_convention",
+    "source": "thrombosis_prediction",
+    "query": "Compare the token sets of Patient.Diagnosis and Examination.Diagnosis, including per-token counts",
+    "result": "The two columns draw on the same disease vocabulary but differ in naming convention. Patient uses the all-caps abbreviation 'SJS' 321 times and never 'SjS'; Examination uses 'SjS' 101 times and never 'SJS'. Patient uses 'BEHCET' 93 times where Examination uses the mixed-case 'Behcet'. For the other leading categories the spelling is identical in both columns: SLE 279 vs 170, RA 213 vs 48, PSS 87 vs 19, MCTD 57 vs 26.",
+    "validation_method": "Set difference and per-token count comparison between the two normalised token sets",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_diagnosis_multilabel_encoding",
+    "source": "thrombosis_prediction",
+    "query": "SELECT DISTINCT Diagnosis FROM Patient; SELECT DISTINCT Diagnosis FROM Examination; SELECT COUNT(*) FROM Patient WHERE Diagnosis LIKE '%' || char(29) || '%'",
+    "result": "Column is free text with irregular multi-label encoding. Separators observed include comma, space-plus-comma, and the raw control characters 0x1d and 0x0b, e.g. 'MCTD susp, PSS susp' ++ char(29) ++ 'PSS', 'PSS, PM, SJS, RA' ++ char(29) ++ 'SJS' ++ char(29) ++ 'PM' and 'SJS' ++ char(11) ++ 'MCTD'. Values also carry qualifiers such as 'susp', 'susp.' and parenthetical detail ('SLE (diffuse LE)', 'PSS(CREST)'), vary in case ('SLE' vs 'SLE susp' vs 'SLEsusp'), and one Patient value ('') is an empty string rather than NULL.",
+    "validation_method": "Distinct-value listing plus explicit control-character scan",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_laboratory_numeric_ranges",
+    "source": "thrombosis_prediction",
+    "query": "For each analyte column: SELECT COUNT(col), MIN(col), MAX(col), AVG(col) FROM Laboratory and the median of the non-null values",
+    "result": "GOT n=11278 min 3 max 21480 median 20; GPT n=11274 min 1 max 4780 median 18; LDH n=11305 min 25 max 67080 median 295; ALP n=11151 min 11 max 1308 median 101; TP n=11118 min 0.0 max 9.9 median 7.1; ALB n=11068 min 1.0 max 5.8 median 4.2; UA n=11103 min 0.4 max 17.3 median 4.3; UN n=11238 min 0 max 152 median 14; CRE n=11253 min 0.1 max 17.1 median 0.7; T-BIL n=9621 min 0.1 max 7.9 median 0.5; T-CHO n=10664 min 37 max 568 median 198; TG n=6437 min 1 max 867 median 108; CPK n=5016 min 0 max 10835 median 35.5; GLU n=1705 min 62 max 499 median 102; WBC n=12081 min 0.9 max 35.2 median 7.0; RBC n=12081 min 0.4 max 6.6 median 4.3; HGB n=12081 min 1.3 max 18.9 median 12.5; HCT n=12081 min 3.0 max 56.0 median 38.1; PLT n=11287 min 5 max 5844 median 248; C3 n=5461 min 15 max 196 median 69; C4 n=5461 min 3 max 80 median 21.",
+    "validation_method": "Per-column count, extremes, mean and median over non-null values",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_laboratory_missingness",
+    "source": "thrombosis_prediction",
+    "query": "SELECT COUNT(col) FROM Laboratory for each sparsely populated analyte",
+    "result": "Of 13908 Laboratory rows, non-null coverage is: PT 621, APTT 51, FG 455, PIC 76, TAT 142, TAT2 119, RNP 143, SM 128, SC170 28, SSA 99, SSB 93, CENTROMEA 15, DNA 69, RA 2855, U-PRO 9667, CRP 11455. The coagulation analytes PT, APTT, FG, PIC, TAT and TAT2 together with the extractable nuclear antigen panel (RNP, SM, SC170, SSA, SSB, CENTROMEA, DNA) are recorded on a small minority of rows.",
+    "validation_method": "Per-column non-null counts across the full table",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_crp_encoding",
+    "source": "thrombosis_prediction",
+    "query": "SELECT CRP, COUNT(*) FROM Laboratory GROUP BY 1 ORDER BY 2 DESC LIMIT 20; SELECT COUNT(DISTINCT CRP) FROM Laboratory",
+    "result": "CRP is declared TEXT and holds 211 distinct values in four different encodings. Negative: '-' 2991. Threshold forms: '<0.3' 2355, '<0.2' 1224, '<0.002' 277, '<0.1' 216. Semi-quantitative positive: '+' 693, '2+' 476, '3+' 184. Plain decimal strings such as '0.4' 231, '0.3' 226, '0.5' 162. 2453 rows are NULL. A numeric comparison on this column is only meaningful after parsing all four forms.",
+    "validation_method": "Distinct-value frequency distribution and manual classification of encodings",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_rf_threshold",
+    "source": "thrombosis_prediction",
+    "query": "SELECT RF, COUNT(*) FROM Laboratory GROUP BY 1 ORDER BY 2 DESC LIMIT 12; SELECT COUNT(DISTINCT RF) FROM Laboratory",
+    "result": "RF is declared TEXT with 903 distinct values. Most frequent: '<40' 606, '<20.5' 187, '<19.5' 163, '<20.0' 144, '<10' 103, '<21.3' 102, '<19.3' 87, '40' 87, '160' 76, '<20.8' 72, '<22.0' 67. Values below the assay detection limit are written with a '<' prefix; values at or above it are bare numbers, with 40 prominent as the reported cutoff. One malformed token '7-' occurs. 10571 rows are NULL.",
+    "validation_method": "Distinct-value frequency distribution and prefix analysis",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_urinary_protein_categories",
+    "source": "thrombosis_prediction",
+    "query": "SELECT `U-PRO`, COUNT(*) FROM Laboratory GROUP BY 1 ORDER BY 2 DESC",
+    "result": "16 distinct values plus NULL (4241 rows). '-' 4579 (negative), '0' 2748, 'TR' 866 (trace), then graded values '1' 319, '2' 313, '3' 148, '4' 21 that look like ordinal grades, and larger numeric tokens '30' 398, '100' 138, '300' 57 that look like concentration amounts. One anomalous token '-15' occurs 37 times. The column mixes an ordinal scale with quantitative values.",
+    "validation_method": "Distinct-value frequency distribution and shape analysis of the tokens",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_sex_values",
+    "source": "thrombosis_prediction",
+    "query": "SELECT SEX, COUNT(*) FROM Patient GROUP BY SEX",
+    "result": "F 1023, M 202, empty string '' 13. There are no NULLs, so the 13 missing values are empty strings that survive an IS NULL test and must be excluded explicitly.",
+    "validation_method": "Value frequency distribution",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_admission_values",
+    "source": "thrombosis_prediction",
+    "query": "SELECT Admission, COUNT(*) FROM Patient GROUP BY Admission",
+    "result": "Four values: '-' 713, '+' 488, empty string '' 34, and the malformed token '+(' 3. No NULLs. The database contains no documentation of what the plus and minus signs denote.",
+    "validation_method": "Value frequency distribution",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_date_ranges",
+    "source": "thrombosis_prediction",
+    "query": "SELECT MIN(col), MAX(col) for each date column",
+    "result": "Examination.'Examination Date' spans 1989-04-18 to 1998-04-17. Laboratory.Date spans 1981-01-27 to 1999-03-04. Patient.Birthday spans 1912-08-28 to 2007-05-28. Patient.'First Date' spans 1972-08-02 to 1998-08-28. Patient.Description spans 1991-06-10 to 1998-12-03. The three tables therefore cover different, only partly overlapping observation windows.",
+    "validation_method": "MIN/MAX over each date column",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_patient_date_fields",
+    "source": "thrombosis_prediction",
+    "query": "SELECT COUNT(*) FROM Patient WHERE Birthday IS NULL; ... WHERE Description IS NULL; ... WHERE `First Date` IS NULL; ... WHERE `First Date` IS NULL AND Description IS NOT NULL; ... WHERE Description < `First Date`",
+    "result": "Birthday NULL in 1 row; Description NULL in 216 rows; 'First Date' NULL in 251 rows. 152 rows carry a Description date while 'First Date' is NULL. 12 rows have Description earlier than 'First Date'. The two patient-level date fields are not interchangeable and neither is a complete registration date.",
+    "validation_method": "Conditional NULL and ordering counts across the patient date fields",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_immunoglobulin_ranges",
+    "source": "thrombosis_prediction",
+    "query": "SELECT COUNT(col), MIN(col), MAX(col), AVG(col), median(col) FROM Laboratory for IGG, IGA, IGM",
+    "result": "IGG n=2680, range 3 to 6510, mean 1800.4, median 1666. IGA n=2680, range 1 to 1765, mean 368.8, median 343. IGM n=2678, range 0 to 1573, mean 190.2, median 152. All three columns are declared INTEGER although their clinically meaningful scale is continuous; 2680 rows of 13908 record them, so the three are drawn together on the same laboratory records.",
+    "validation_method": "Per-column count, extremes, mean and median plus declared column types",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_laboratory_grain",
+    "source": "thrombosis_prediction",
+    "query": "SELECT COUNT(*) FROM (SELECT ID, Date, COUNT(*) c FROM Laboratory GROUP BY 1,2 HAVING c > 1); SELECT AVG(c) FROM (SELECT COUNT(*) c FROM Laboratory GROUP BY ID)",
+    "result": "Zero duplicate (ID, Date) pairs, consistent with the declared PRIMARY KEY (ID, Date). 13908 rows spread over 302 patients, an average of 46.05 records per patient, so the table is a dense longitudinal series and any per-patient result requires an explicit selection rule over time.",
+    "validation_method": "Duplicate-key check against the declared primary key plus per-patient row-count statistics",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_examination_grain",
+    "source": "thrombosis_prediction",
+    "query": "SELECT COUNT(*), COUNT(DISTINCT ID) FROM Examination; SELECT COUNT(*) FROM (SELECT ID, `Examination Date`, COUNT(*) c FROM Examination GROUP BY 1,2 HAVING c > 1)",
+    "result": "806 rows over 763 distinct ids, an average of about 1.05 examinations per id. No primary key is declared. Six (ID, Examination Date) pairs are duplicated, and 36 rows have a NULL id, which form their own group in a GROUP BY ID.",
+    "validation_method": "Distinct-key count and duplicate-pair check",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_platelet_distribution",
+    "source": "thrombosis_prediction",
+    "query": "SELECT COUNT(*) FROM Laboratory WHERE PLT < 150; SELECT COUNT(*) FROM Laboratory WHERE PLT > 400; SELECT COUNT(*) FROM Laboratory WHERE CRE > 1.2",
+    "result": "PLT below 150 in 975 rows, above 400 in 875 rows, overall range 5 to 5844 with median 248. CRE above 1.2 in 577 rows, range 0.1 to 17.1. Both tails are well populated, so any 'normal range' framing of these analytes must state its cutoff explicitly.",
+    "validation_method": "Conditional counts around candidate cutoffs plus overall distribution",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_dna_columns",
+    "source": "thrombosis_prediction",
+    "query": "SELECT COUNT(DNA), COUNT(DISTINCT DNA) FROM Laboratory; SELECT COUNT(`DNA-II`) FROM Laboratory",
+    "result": "Laboratory.DNA is TEXT with 69 non-null rows and 66 distinct values, mostly decimal strings, with no standardised format. Laboratory.\"DNA-II\" is NULL in all 13908 rows, so the column is present but carries no information at all.",
+    "validation_method": "Non-null and distinct counts on both anti-DNA columns",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_thrombosis_positive_diagnoses",
+    "source": "thrombosis_prediction",
+    "query": "SELECT ID, `Examination Date`, Diagnosis, Thrombosis, Symptoms FROM Examination WHERE Thrombosis >= 2 ORDER BY Thrombosis DESC LIMIT 25",
+    "result": "Among the 23 examinations with a thrombosis grade of 2 or 3, the examination diagnosis text mentions SLE in 20 of them (as a sole label or inside a multi-label string such as 'ITP, APS', 'SLE, SjS', 'SLE+Psy'), SjS or SjS(CNS) in 3, and is NULL in 1. Recorded symptoms on these rows are dominated by neurological entries ('CNS lupus' and its variant spellings) followed by thrombocytopenia variants.",
+    "validation_method": "Ordered listing of all high-grade rows with their diagnosis text",
+    "timestamp": "2026-10-10"
+  }
+]

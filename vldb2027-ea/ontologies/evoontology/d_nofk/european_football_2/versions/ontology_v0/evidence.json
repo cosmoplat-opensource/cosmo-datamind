@@ -1,0 +1,210 @@
+[
+  {
+    "id": "ev_schema_tables",
+    "source": "european_football_2",
+    "query": "sqlite3 <db> '.schema'",
+    "result": "7 tables: Country, League, Match, Player, Player_Attributes, Team, Team_Attributes. Match carries 115 columns: keys and scoreline (id, country_id, league_id, season, stage, date, match_api_id, home_team_api_id, away_team_api_id, home_team_goal, away_team_goal), 22 lineup id columns (home_player_1..11, away_player_1..11), 22 formation-slot X columns, 22 formation-slot Y columns, 8 XML event payload columns (goal, shoton, shotoff, foulcommit, card, cross, corner, possession) and 30 bookmaker odds columns in 10 H/D/A families (B365, BW, IW, LB, PS, WH, SJ, VC, GB, BS).",
+    "validation_method": "schema dump read-only",
+    "timestamp": "2026-10-09T19:40:00Z"
+  },
+  {
+    "id": "ev_row_counts",
+    "source": "european_football_2",
+    "query": "SELECT COUNT(*) FROM Country/League/Match/Player/Player_Attributes/Team/Team_Attributes",
+    "result": "Country=11, League=11, Match=25979, Player=11060, Player_Attributes=183978, Team=299, Team_Attributes=1458.",
+    "validation_method": "row count",
+    "timestamp": "2026-10-09T19:40:00Z"
+  },
+  {
+    "id": "ev_league_country",
+    "source": "european_football_2",
+    "query": "SELECT l.id,l.name,c.id,c.name,COUNT(m.id) FROM League l JOIN Country c ON l.country_id=c.id LEFT JOIN Match m ON m.league_id=l.id GROUP BY l.id",
+    "result": "11 leagues, each joined to exactly one country. Match counts per league: England Premier League 3040, Spain LIGA BBVA 3040, France Ligue 1 3040, Italy Serie A 3017, Germany 1. Bundesliga 2448, Netherlands Eredivisie 2448, Portugal Liga ZON Sagres 2052, Poland Ekstraklasa 1920, Scotland Premier League 1824, Belgium Jupiler League 1728, Switzerland Super League 1422.",
+    "validation_method": "join and group-by",
+    "timestamp": "2026-10-09T19:40:00Z"
+  },
+  {
+    "id": "ev_season_stage",
+    "source": "european_football_2",
+    "query": "SELECT DISTINCT season FROM Match ORDER BY season; SELECT stage,COUNT(*) FROM Match GROUP BY stage",
+    "result": "8 distinct season strings: 2008/2009, 2009/2010, 2010/2011, 2011/2012, 2012/2013, 2013/2014, 2014/2015, 2015/2016. stage takes integer values 1..38; counts fall from 740 at stage 1 to 367 at stage 38.",
+    "validation_method": "distinct value scan",
+    "timestamp": "2026-10-09T19:40:00Z"
+  },
+  {
+    "id": "ev_event_coverage_league",
+    "source": "european_football_2",
+    "query": "SELECT l.name,COUNT(*),SUM(m.goal IS NOT NULL) FROM Match m JOIN League l ON m.league_id=l.id GROUP BY 1",
+    "result": "XML event feed present (goal column non-NULL) per league: England Premier League 3040/3040, Spain LIGA BBVA 3039/3040, Italy Serie A 3014/3017, Germany 1. Bundesliga 2448/2448, France Ligue 1 2026/3040, Netherlands Eredivisie 530/2448, Switzerland Super League 100/1422, Scotland Premier League 13/1824, Poland Ekstraklasa 7/1920, Portugal Liga ZON Sagres 0/2052, Belgium Jupiler League 0/1728. Overall 14217 of 25979 matches carry the feed.",
+    "validation_method": "NULL coverage count grouped by league",
+    "timestamp": "2026-10-09T19:40:00Z"
+  },
+  {
+    "id": "ev_event_coverage_season",
+    "source": "european_football_2",
+    "query": "SELECT season,COUNT(*),SUM(goal IS NOT NULL),SUM(possession IS NOT NULL),SUM(card IS NOT NULL) FROM Match GROUP BY season",
+    "result": "Every match carrying the feed has the same set of payload columns non-NULL: goal, possession, card, cross and shoton counts are identical within each season. Per season feed coverage: 2008/2009 1451/3326, 2009/2010 1453/3230, 2010/2011 1685/3260, 2011/2012 1713/3220, 2012/2013 1825/3260, 2013/2014 1826/3032, 2014/2015 2032/3325, 2015/2016 2232/3326.",
+    "validation_method": "NULL coverage count grouped by season",
+    "timestamp": "2026-10-09T19:40:00Z"
+  },
+  {
+    "id": "ev_goal_xml_vs_score",
+    "source": "european_football_2",
+    "query": "python xml parse: compare len(<goal>/<value>) with home_team_goal+away_team_goal over all 14217 matches with a feed",
+    "result": "1267 of 14217 matches disagree. Only 87 of those are explained by own goals (goal_type='o'). 1180 matches have more goal events than the final scoreline, e.g. match id 1788 has 1 goal event and 0-0 scoreline, match id 1790 has 6 events and 5 goals.",
+    "validation_method": "XML parse compared against scoreline columns",
+    "timestamp": "2026-10-09T19:40:00Z"
+  },
+  {
+    "id": "ev_goal_type_enum",
+    "source": "european_football_2",
+    "query": "python xml parse of Match.goal <value>/<goal_type> over 4000 fed matches",
+    "result": "goal_type distribution: n=9441 (normal), p=763 (penalty), o=401 (own goal), dg=217, npm=163, rp=5, psm=1, plus 8 values with no goal_type element.",
+    "validation_method": "XML parse value distribution",
+    "timestamp": "2026-10-09T19:40:00Z"
+  },
+  {
+    "id": "ev_card_type_enum",
+    "source": "european_football_2",
+    "query": "python xml parse of Match.card <value>/<card_type> over 4000 fed matches",
+    "result": "card_type distribution: y=13009 (yellow), r=454 (red), y2=298 (second yellow), 166 values with no card_type element. An empty payload is encoded as an empty element <card />, not NULL.",
+    "validation_method": "XML parse value distribution",
+    "timestamp": "2026-10-09T19:40:00Z"
+  },
+  {
+    "id": "ev_possession_sum",
+    "source": "european_football_2",
+    "query": "python xml parse of Match.possession, test homepos+awaypos per <value>",
+    "result": "13588 possession snapshots parsed; homepos+awaypos equals exactly 100 in 13588 of 13588 snapshots. Mean homepos 51.93, mean awaypos 48.07. Each match holds about 4 cumulative snapshots at elapsed 25/45/70/90.",
+    "validation_method": "XML parse arithmetic check",
+    "timestamp": "2026-10-09T19:40:00Z"
+  },
+  {
+    "id": "ev_odds_coverage_league",
+    "source": "european_football_2",
+    "query": "SELECT l.name,COUNT(*),SUM(m.B365H IS NOT NULL) FROM Match m JOIN League l ON m.league_id=l.id GROUP BY 1",
+    "result": "B365 odds present per league: England 3040/3040, Spain 3039/3040, France 3036/3040, Italy 3011/3017, Germany 2447/2448, Netherlands 2445/2448, Portugal 2044/2052, Scotland 1824/1824, Belgium 1706/1728, Switzerland 0/1422, Poland 0/1920.",
+    "validation_method": "NULL coverage count grouped by league",
+    "timestamp": "2026-10-09T19:40:00Z"
+  },
+  {
+    "id": "ev_odds_coverage_season",
+    "source": "european_football_2",
+    "query": "SELECT season,COUNT(*),SUM(B365H IS NOT NULL),SUM(PSH IS NOT NULL),SUM(GBH IS NOT NULL),SUM(BSH IS NOT NULL) FROM Match GROUP BY season",
+    "result": "B365H present in all 8 seasons (2599-2905 per season). PSH present only from 2012/2013 (2790, 2590, 2890, 2898) and 0 in 2008/2009-2011/2012. GBH and BSH present only through 2012/2013 (2896/2895, 2803/2804, 2832/2821, 2813/2811, 2818/2830) and 0 from 2013/2014 onward. Overall B365H NULL in 3387 matches, PSH NULL in 14811, GBH NULL in 11817.",
+    "validation_method": "NULL coverage count grouped by season",
+    "timestamp": "2026-10-09T19:40:00Z"
+  },
+  {
+    "id": "ev_lineup_id_join",
+    "source": "european_football_2",
+    "query": "SELECT COUNT(*) FROM Match WHERE home_player_1 NOT IN (SELECT player_api_id FROM Player); SELECT COUNT(*) FROM Match WHERE home_player_1 NOT IN (SELECT id FROM Player)",
+    "result": "0 values of home_player_1 fail to match Player.player_api_id. 24460 values fail to match Player.id. The 22 lineup columns hold player_api_id values.",
+    "validation_method": "anti-join test against both candidate key columns",
+    "timestamp": "2026-10-09T19:40:00Z"
+  },
+  {
+    "id": "ev_team_id_join",
+    "source": "european_football_2",
+    "query": "SELECT COUNT(*) FROM Match WHERE home_team_api_id NOT IN (SELECT team_api_id FROM Team)",
+    "result": "0 failures. Match.home_team_api_id and Match.away_team_api_id hold team_api_id values; Team_Attributes.team_api_id also has 0 failures against Team.team_api_id. Match.country_id disagrees with League.country_id in 0 of 25979 matches.",
+    "validation_method": "anti-join test and consistency count",
+    "timestamp": "2026-10-09T19:40:00Z"
+  },
+  {
+    "id": "ev_pa_grain",
+    "source": "european_football_2",
+    "query": "SELECT MIN(date),MAX(date),COUNT(DISTINCT player_api_id),COUNT(*) FROM Player_Attributes; SELECT DISTINCT date FROM Player_Attributes ORDER BY date",
+    "result": "183978 rows for 11060 distinct player_api_id, dates 2007-02-22 to 2016-07-07. Distinct dates cluster on 22 February and 30/31 August of each year, i.e. about two FIFA snapshots per player per year. Rows per player: 158 players with 2 rows, 331 with 3, 393 with 4, rising to 340+ with 12-13 rows. No match-level grain exists.",
+    "validation_method": "grain inspection of date and player key",
+    "timestamp": "2026-10-09T19:40:00Z"
+  },
+  {
+    "id": "ev_ta_grain",
+    "source": "european_football_2",
+    "query": "SELECT DISTINCT date FROM Team_Attributes ORDER BY date; SELECT COUNT(DISTINCT team_api_id),COUNT(*) FROM Team_Attributes",
+    "result": "Exactly 6 distinct dates: 2010-02-22, 2011-02-22, 2012-02-22, 2013-09-20, 2014-09-19, 2015-09-10. 1458 rows covering 288 of the 299 teams in Team.",
+    "validation_method": "grain inspection of date and team key",
+    "timestamp": "2026-10-09T19:40:00Z"
+  },
+  {
+    "id": "ev_workrate_enum",
+    "source": "european_football_2",
+    "query": "SELECT attacking_work_rate,COUNT(*) FROM Player_Attributes GROUP BY 1; same for defensive_work_rate",
+    "result": "attacking_work_rate: medium 125070, high 42823, low 8569, NULL 3639, then malformed values '' 3230, 'norm' 348, 'y' 106, 'le' 104, 'stoc' 89. defensive_work_rate: medium 130846, high 27041, low 18432, then malformed '_0' 2394, 'o' 1550, '' 836, '1' 441, 'ormal' 348, '2' 342, '3' 258, '5' 234, '7' 217, '6' 197, '0' 197, '9' 152. The intended domain low/medium/high holds for 176462 of 183978 attacking rows and 176319 of 183978 defensive rows.",
+    "validation_method": "distinct value distribution",
+    "timestamp": "2026-10-09T19:40:00Z"
+  },
+  {
+    "id": "ev_dup_names",
+    "source": "european_football_2",
+    "query": "SELECT player_name,COUNT(*) FROM Player GROUP BY 1 HAVING COUNT(*)>1; same for Team.team_long_name",
+    "result": "163 player_name values are shared by more than one distinct player row (Danilo x7, Paulinho x6, Ricardo x5, Roberto x4, Rafael x4). team_long_name is duplicated for 3 names: Polonia Bytom, Royal Excel Mouscron, Widzew Lodz. Neither name column is an identifier.",
+    "validation_method": "duplicate count on candidate label columns",
+    "timestamp": "2026-10-09T19:40:00Z"
+  },
+  {
+    "id": "ev_league_id_country_id",
+    "source": "european_football_2",
+    "query": "SELECT COUNT(*) FROM League WHERE id=country_id; SELECT COUNT(*) FROM League",
+    "result": "11 of 11 League rows satisfy id = country_id (league ids 1, 1729, 4769, 7809, 10257, 13274, 15722, 17642, 19694, 21518, 24558 equal their country_id). The two keys are numerically identical throughout.",
+    "validation_method": "equality count across all rows",
+    "timestamp": "2026-10-09T19:40:00Z"
+  },
+  {
+    "id": "ev_country_id_consistency",
+    "source": "european_football_2",
+    "query": "SELECT COUNT(*) FROM Match m JOIN League l ON m.league_id=l.id WHERE m.country_id<>l.country_id",
+    "result": "0 of 25979 matches. Match.country_id always equals the country of the league the match belongs to.",
+    "validation_method": "consistency count",
+    "timestamp": "2026-10-09T19:40:00Z"
+  },
+  {
+    "id": "ev_position_slots",
+    "source": "european_football_2",
+    "query": "SELECT home_player_X1,COUNT(*) FROM Match GROUP BY 1; SELECT home_player_X11,COUNT(*) ...; same for Y",
+    "result": "X/Y columns hold small integer formation-slot codes, not pitch coordinates. home_player_X1 is 1 for 24146 matches and home_player_Y1 is 1 for 24146; home_player_X11 spans 1..7 (mostly 5 and 6) and home_player_Y11 is 10 or 11 (13567 and 10577). The suffix N of home_player_X<N>/Y<N> corresponds to the same shirt slot as home_player_<N>.",
+    "validation_method": "value distribution of slot columns",
+    "timestamp": "2026-10-09T19:40:00Z"
+  },
+  {
+    "id": "ev_player_profile_ranges",
+    "source": "european_football_2",
+    "query": "SELECT MIN/MAX/AVG of Player.height, Player.weight, Player_Attributes.overall_rating, Player.birthday",
+    "result": "height 157.48-208.28 cm (mean 181.87), weight 117-243 lb (mean 168.38), overall_rating 33-94 (mean 68.60), birthday 1967-01-23 to 1999-04-24. No NULL height or weight among the 11060 players.",
+    "validation_method": "range and mean statistics",
+    "timestamp": "2026-10-09T19:40:00Z"
+  },
+  {
+    "id": "ev_date_ranges",
+    "source": "european_football_2",
+    "query": "SELECT MIN(date),MAX(date) FROM Match; same for Player_Attributes and Team_Attributes",
+    "result": "Match.date 2008-07-18 to 2016-05-25 stored as TEXT 'YYYY-MM-DD 00:00:00'. Player_Attributes.date 2007-02-22 to 2016-07-07, i.e. it extends before the first match and after the last. Team_Attributes.date 2010-02-22 to 2015-09-10.",
+    "validation_method": "min/max scan",
+    "timestamp": "2026-10-09T19:40:00Z"
+  },
+  {
+    "id": "ev_fifa_id_nulls",
+    "source": "european_football_2",
+    "query": "SELECT SUM(team_fifa_api_id IS NULL) FROM Team; SELECT SUM(player_fifa_api_id IS NULL) FROM Player; SELECT SUM(player_fifa_api_id IS NULL) FROM Player_Attributes",
+    "result": "Team.team_fifa_api_id is NULL for 11 of 299 teams. Player.player_fifa_api_id is NULL for 0 of 11060 players. Player_Attributes.player_fifa_api_id is NULL for 0 of 183978 rows.",
+    "validation_method": "NULL count",
+    "timestamp": "2026-10-09T19:40:00Z"
+  },
+  {
+    "id": "ev_lineup_completeness",
+    "source": "european_football_2",
+    "query": "SELECT COUNT(*) FROM Match WHERE home_player_11 IS NOT NULL AND away_player_11 IS NOT NULL; SELECT COUNT(*) FROM Match WHERE home_player_1 IS NULL OR away_player_1 IS NULL OR home_player_11 IS NULL OR away_player_11 IS NULL",
+    "result": "23952 matches have all 22 lineup slots populated; 2347 matches are missing at least one of the sampled lineup slots. The X/Y slot columns are NULL for 1821-1832 matches.",
+    "validation_method": "NULL coverage count",
+    "timestamp": "2026-10-09T19:40:00Z"
+  },
+  {
+    "id": "ev_shots_cards_scale",
+    "source": "european_football_2",
+    "query": "SELECT SUM(goal IS NULL),SUM(shoton IS NULL),SUM(shotoff IS NULL),SUM(foulcommit IS NULL),SUM(card IS NULL),SUM(cross IS NULL),SUM(corner IS NULL),SUM(possession IS NULL) FROM Match",
+    "result": "All eight XML payload columns are NULL together for exactly 11762 of 25979 matches, so the feed is present as a whole row set or absent as a whole. shoton is present for 14217 matches and holds one <value> per shot event, so shot counts must be aggregated from XML, not read from a scalar column.",
+    "validation_method": "NULL coverage comparison across payload columns",
+    "timestamp": "2026-10-09T19:40:00Z"
+  }
+]

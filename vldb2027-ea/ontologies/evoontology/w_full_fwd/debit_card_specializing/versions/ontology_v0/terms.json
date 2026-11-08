@@ -1,0 +1,372 @@
+[
+  {
+    "id": "term_customer",
+    "name": "Customer",
+    "type": "entity",
+    "definition": "A registered fuel-card customer of the programme, identified by a unique numeric customer identifier. Each customer carries exactly one segment classification and exactly one settlement currency.",
+    "scope": "Customer-level analysis of consumption and card transactions in the debit_card_specializing database",
+    "aliases": [
+      "customer",
+      "client",
+      "CustomerID",
+      "card holder"
+    ],
+    "evidence": [
+      "ev_schema_tables",
+      "ev_row_counts",
+      "ev_customer_segment_values",
+      "ev_customer_currency_values"
+    ]
+  },
+  {
+    "id": "term_gas_station",
+    "name": "Gas Station",
+    "type": "entity",
+    "definition": "A fuel station where card transactions take place, identified by a unique numeric station identifier and classified by chain, country and station type.",
+    "scope": "Station-level location and classification analysis of transactions",
+    "aliases": [
+      "gas station",
+      "station",
+      "GasStationID",
+      "petrol station"
+    ],
+    "evidence": [
+      "ev_schema_tables",
+      "ev_row_counts",
+      "ev_station_country_values",
+      "ev_station_segment_values"
+    ]
+  },
+  {
+    "id": "term_product",
+    "name": "Product",
+    "type": "entity",
+    "definition": "A fuel or lubricant article that can be purchased at a station, identified by a unique numeric product identifier and labelled by a text description.",
+    "scope": "Product-level purchase analysis in the debit_card_specializing database",
+    "aliases": [
+      "product",
+      "ProductID",
+      "article",
+      "fuel type"
+    ],
+    "evidence": [
+      "ev_schema_tables",
+      "ev_row_counts"
+    ]
+  },
+  {
+    "id": "term_transaction",
+    "name": "Transaction",
+    "type": "entity",
+    "definition": "A single card purchase event recorded at a gas station, stamped with a calendar date and clock time and linked to a customer, a station, a product, a purchased amount and a price.",
+    "scope": "Event-level analysis of individual fuel purchases",
+    "aliases": [
+      "transaction",
+      "purchase",
+      "card transaction",
+      "TransactionID"
+    ],
+    "evidence": [
+      "ev_schema_tables",
+      "ev_row_counts",
+      "ev_fk_integrity",
+      "ev_transaction_date_coverage"
+    ]
+  },
+  {
+    "id": "term_customer_segment",
+    "name": "Customer Segment",
+    "type": "dimension",
+    "definition": "The classification of customers into the mutually exclusive categories SME, LAM and KAM. Each customer belongs to exactly one category, and the category is a static attribute of the customer record with no history.",
+    "scope": "Grouping of customers for consumption comparison, e.g. the three segments SME, LAM and KAM",
+    "aliases": [
+      "segment",
+      "customer segment",
+      "SME",
+      "LAM",
+      "KAM",
+      "customer category"
+    ],
+    "evidence": [
+      "ev_customer_segment_values",
+      "ev_segment_consumption_join"
+    ]
+  },
+  {
+    "id": "term_payment_currency",
+    "name": "Payment Currency",
+    "type": "dimension",
+    "definition": "The currency in which a customer settles fuel payments, recorded as CZK (Czech koruna) or EUR (euro). Currency is attached to the customer, not to individual transactions or monthly consumption records.",
+    "scope": "Currency-scoped consumption and transaction analysis; used to interpret expressions such as 'paid in CZK', 'paid in EUR' and 'pays in euro'",
+    "aliases": [
+      "currency",
+      "Currency",
+      "paid in",
+      "pays in",
+      "euro",
+      "EUR",
+      "CZK",
+      "koruna"
+    ],
+    "evidence": [
+      "ev_customer_currency_values",
+      "ev_segment_consumption_join"
+    ]
+  },
+  {
+    "id": "term_year_month_period",
+    "name": "Year-Month Period",
+    "type": "dimension",
+    "definition": "A calendar month of consumption. Month periods are stored as six-character codes in the form YYYYMM: the first four characters are the four-digit year and the last two characters are the two-digit month. Only the yearmonth table carries this encoding.",
+    "scope": "Month-level and year-level consumption analysis such as peak month, monthly average and year-over-year comparison",
+    "aliases": [
+      "yearmonth",
+      "Date",
+      "month",
+      "period",
+      "year",
+      "month code"
+    ],
+    "evidence": [
+      "ev_yearmonth_date_codes",
+      "ev_yearmonth_coverage",
+      "ev_row_counts"
+    ]
+  },
+  {
+    "id": "term_transaction_date",
+    "name": "Transaction Date",
+    "type": "dimension",
+    "definition": "The calendar day on which a transaction took place, stored in ISO form (YYYY-MM-DD) on the transaction record. Distinct from the year-month code used for consumption.",
+    "scope": "Day-level transaction filtering such as 'after 2012/1/1' or 'on 2012/8/23'",
+    "aliases": [
+      "Date",
+      "transaction date",
+      "day",
+      "purchase date"
+    ],
+    "evidence": [
+      "ev_transaction_date_coverage",
+      "ev_schema_tables"
+    ]
+  },
+  {
+    "id": "term_transaction_time",
+    "name": "Transaction Time",
+    "type": "dimension",
+    "definition": "The clock time of day at which a transaction took place, stored as eight-character HH:MM:SS text on the transaction record.",
+    "scope": "Time-of-day analysis of transactions, e.g. listing the distinct times of transactions at a given station chain",
+    "aliases": [
+      "Time",
+      "transaction time",
+      "time of day"
+    ],
+    "evidence": [
+      "ev_transaction_date_coverage",
+      "ev_schema_tables"
+    ]
+  },
+  {
+    "id": "term_gas_station_chain",
+    "name": "Gas Station Chain",
+    "type": "dimension",
+    "definition": "A grouping of gas stations that share the same numeric chain identifier. A chain identifier is a number, so expressions such as 'chain no. 11' denote the chain whose identifier is 11. A chain groups several stations; a station belongs to one chain.",
+    "scope": "Chain-level restriction of stations and their transactions",
+    "aliases": [
+      "chain",
+      "ChainID",
+      "chain no.",
+      "chain number",
+      "chain 11"
+    ],
+    "evidence": [
+      "ev_station_chain_structure"
+    ]
+  },
+  {
+    "id": "term_gas_station_country",
+    "name": "Gas Station Country",
+    "type": "dimension",
+    "definition": "The country where a gas station is located, coded as CZE for the Czech Republic and SVK for Slovakia.",
+    "scope": "Country-scoped station and transaction analysis, e.g. transactions made at gas stations in the Czech Republic",
+    "aliases": [
+      "Country",
+      "country",
+      "Czech Republic",
+      "CZE",
+      "Slovakia",
+      "SVK"
+    ],
+    "evidence": [
+      "ev_station_country_values"
+    ]
+  },
+  {
+    "id": "term_gas_station_segment",
+    "name": "Gas Station Segment",
+    "type": "dimension",
+    "definition": "The station-type classification of a gas station, with the value domain Discount, Noname, Other, Premium and Value for money. This is a station property and is a different concept from the customer segment, even though both are stored in a column named Segment.",
+    "scope": "Station-type scoped analysis; must not be confused with customer segments SME/LAM/KAM",
+    "aliases": [
+      "station segment",
+      "station type",
+      "gas station Segment",
+      "Premium",
+      "Discount",
+      "Value for money"
+    ],
+    "evidence": [
+      "ev_station_segment_values"
+    ]
+  },
+  {
+    "id": "term_product_description",
+    "name": "Product Description",
+    "type": "dimension",
+    "definition": "The human-readable name of a product, such as 'Diesel' or 'Natural', used to identify a product in output listings.",
+    "scope": "Labelling products in purchase listings; the product identifier alone is not human readable",
+    "aliases": [
+      "Description",
+      "product description",
+      "product name"
+    ],
+    "evidence": [
+      "ev_schema_tables",
+      "ev_product_attribution_gap"
+    ]
+  },
+  {
+    "id": "term_customer_monthly_consumption",
+    "name": "Customer Monthly Consumption",
+    "type": "metric",
+    "definition": "The quantity of fuel consumed by one customer in one calendar month. It is recorded as a signed real number at customer-month grain, so there is at most one consumption value per customer per month.",
+    "scope": "Month-level consumption analysis per customer, and the base quantity for any segment- or year-level consumption aggregate",
+    "aliases": [
+      "consumption",
+      "Consumption",
+      "monthly consumption",
+      "gas consumption",
+      "fuel consumption"
+    ],
+    "evidence": [
+      "ev_row_counts",
+      "ev_consumption_value_range",
+      "ev_fk_integrity",
+      "ev_segment_consumption_join"
+    ]
+  },
+  {
+    "id": "term_annual_consumption",
+    "name": "Annual Consumption",
+    "type": "metric",
+    "definition": "Total consumption of a customer, segment or currency group over one calendar year, formed by combining that year's monthly consumption values. It has no stored column and must be constructed from month-level records.",
+    "scope": "Year-over-year comparison and per-segment annual totals",
+    "aliases": [
+      "annual consumption",
+      "total consumption per year",
+      "yearly consumption",
+      "consumption for 2013"
+    ],
+    "evidence": [
+      "ev_yearmonth_coverage",
+      "ev_segment_consumption_join"
+    ]
+  },
+  {
+    "id": "term_avg_monthly_consumption",
+    "name": "Average Monthly Consumption",
+    "type": "metric",
+    "definition": "The average monthly consumption for a year. In this workload it is defined as the mean of the monthly consumption values observed for the year divided by 12, i.e. the year's consumption expressed as a per-month figure spread over twelve months.",
+    "scope": "Average-consumption comparison across customers and segments for a given year",
+    "aliases": [
+      "average monthly consumption",
+      "monthly average",
+      "average consumption"
+    ],
+    "evidence": [
+      "ev_segment_consumption_join",
+      "ev_workload_definitions"
+    ]
+  },
+  {
+    "id": "term_consumption_growth_rate",
+    "name": "Consumption Growth Rate",
+    "type": "metric",
+    "definition": "The percentage change in consumption for a group between two consecutive years. In this workload it is defined as the increase or decrease between the two years expressed as a percentage of the later year's consumption.",
+    "scope": "Year-over-year growth comparison across the three customer segments",
+    "aliases": [
+      "percentage increase",
+      "growth",
+      "increase or decrease",
+      "percentage of increase"
+    ],
+    "evidence": [
+      "ev_workload_definitions",
+      "ev_yearmonth_coverage"
+    ]
+  },
+  {
+    "id": "term_peak_consumption_month",
+    "name": "Peak Consumption Month",
+    "type": "metric",
+    "definition": "The calendar month that shows the highest aggregate consumption for a given customer group and year, identified by its month code.",
+    "scope": "Peak-month identification within a year for a segment or the whole customer base",
+    "aliases": [
+      "peak month",
+      "highest month",
+      "maximum monthly consumption",
+      "peak consumption"
+    ],
+    "evidence": [
+      "ev_yearmonth_coverage",
+      "ev_segment_consumption_join"
+    ]
+  },
+  {
+    "id": "term_least_consuming_customer",
+    "name": "Least Consuming Customer",
+    "type": "concept",
+    "definition": "The customer holding the smallest total consumption within a given segment and year. It serves as a selection base when a comparison is restricted to the least consuming customers of each segment.",
+    "scope": "Ranking-based restriction of customers before forming per-segment averages",
+    "aliases": [
+      "least amount of consumption",
+      "lowest consumption",
+      "smallest consumption"
+    ],
+    "evidence": [
+      "ev_consumption_value_range",
+      "ev_workload_definitions"
+    ]
+  },
+  {
+    "id": "term_transaction_amount",
+    "name": "Transaction Amount",
+    "type": "metric",
+    "definition": "The quantity purchased in a single transaction, recorded as an integer on the transaction record. Values observed range from 0 to 264, and 91 transactions have amount 0.",
+    "scope": "Per-event purchase quantity; distinct from monthly consumption, because it is not aggregated to a customer-month figure",
+    "aliases": [
+      "Amount",
+      "amount",
+      "quantity purchased"
+    ],
+    "evidence": [
+      "ev_transaction_amount_range"
+    ]
+  },
+  {
+    "id": "term_transaction_price",
+    "name": "Transaction Price",
+    "type": "metric",
+    "definition": "The monetary amount recorded for a single transaction, observed in the range 1.76 to 5762.49. No currency column is attached to the transaction record, so the currency of a price follows the currency of the paying customer.",
+    "scope": "Per-event monetary value analysis",
+    "aliases": [
+      "Price",
+      "price",
+      "transaction value"
+    ],
+    "evidence": [
+      "ev_transaction_price_range",
+      "ev_customer_currency_values"
+    ]
+  }
+]

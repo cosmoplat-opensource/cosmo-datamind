@@ -1,0 +1,472 @@
+[
+  {
+    "id": "constraint_race_number_identifier",
+    "target": "term_race",
+    "constraint_type": "scope",
+    "trigger_keywords": [
+      "race number",
+      "race no",
+      "race at",
+      "race 291",
+      "raceId",
+      "round number",
+      "event number"
+    ],
+    "severity": "block",
+    "scope": "Applies whenever a question identifies a race by a numeric value.",
+    "confidence": "high",
+    "description": "A race number in a question denotes the surrogate race identifier, which is not a chronological index and not a round number. Race identifier values are assigned in an order unrelated to the calendar, so a larger race number does not mean a later race.",
+    "evidence": [
+      "evidence_014"
+    ]
+  },
+  {
+    "id": "constraint_race_title_ambiguity",
+    "target": "term_race_name",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "Bahrain Grand Prix",
+      "Canadian Grand Prix",
+      "Chinese Grand Prix",
+      "Spanish Grand Prix",
+      "Australian Grand Prix",
+      "Abu Dhabi Grand Prix",
+      "grand prix"
+    ],
+    "severity": "block",
+    "scope": "Applies whenever a race is referenced by its event title.",
+    "confidence": "high",
+    "description": "An event title recurs across seasons: only 42 distinct titles exist across 976 races, and a title such as Bahrain Grand Prix occurs once per season. A race is only uniquely identified when the title is combined with its season or date.",
+    "evidence": [
+      "evidence_014",
+      "evidence_023"
+    ]
+  },
+  {
+    "id": "constraint_finished_race_definition",
+    "target": "term_race_classification",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "finished the race",
+      "finished the game",
+      "not finished",
+      "did not finish",
+      "completed the race",
+      "drivers who finished"
+    ],
+    "severity": "block",
+    "scope": "Applies whenever a question distinguishes drivers who finished from those who did not.",
+    "confidence": "high",
+    "description": "A driver is recorded as having finished only when the entry carries a non-empty absolute elapsed time; this covers drivers that completed the race distance on the lead lap. Entries classified while laps down, and all retirements, carry no such time. Separately, the classification field records a numeric position only for entries that received a classification, and single-letter codes for retirement, failure to qualify, withdrawal, exclusion and disqualification.",
+    "evidence": [
+      "evidence_004",
+      "evidence_006",
+      "evidence_007"
+    ]
+  },
+  {
+    "id": "constraint_winner_time_format",
+    "target": "term_race_finish_time",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "finish time",
+      "champion time",
+      "time of the champion",
+      "winner time",
+      "indicate his finish time",
+      "recorded time"
+    ],
+    "severity": "block",
+    "scope": "Applies whenever a finish time is requested for a driver.",
+    "confidence": "high",
+    "description": "Only the race winner's time is stored as an absolute elapsed time with two colon separators. Every other entry stores an incremental gap prefixed with a plus sign. A driver's actual elapsed total is therefore the winner's elapsed total plus that driver's gap.",
+    "evidence": [
+      "evidence_004",
+      "evidence_005"
+    ]
+  },
+  {
+    "id": "constraint_gap_needs_elapsed_totals",
+    "target": "term_time_gap",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "how much faster",
+      "percentage faster",
+      "incremental time",
+      "last driver finished time",
+      "gap",
+      "time difference",
+      "slower"
+    ],
+    "severity": "block",
+    "scope": "Applies to any comparison of pace between the winner and another classified driver.",
+    "confidence": "high",
+    "description": "Gap values are relative to the winner, so they cannot be compared directly with the winner's absolute elapsed time. A meaningful ratio or percentage difference requires both drivers' absolute elapsed totals; the winner's total is the winner's stored time and the other driver's total is the winner's stored time plus that driver's gap.",
+    "evidence": [
+      "evidence_004",
+      "evidence_016"
+    ]
+  },
+  {
+    "id": "constraint_point_of_comparison_dates",
+    "target": "term_elapsed_race_time",
+    "constraint_type": "scope",
+    "trigger_keywords": [
+      "since 2010",
+      "before 2010",
+      "year",
+      "season range",
+      "earliest recorded year"
+    ],
+    "severity": "warning",
+    "scope": "Applies when results are restricted to a season or year range.",
+    "confidence": "high",
+    "description": "Season membership is expressed through the race's championship year, which ranges from 1950 to 2017. A boundary such as 'since 2010' is inclusive of the stated year.",
+    "evidence": [
+      "evidence_019"
+    ]
+  },
+  {
+    "id": "constraint_position_column_semantics",
+    "target": "term_finish_position",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "position",
+      "ranked second",
+      "finished last",
+      "last driver",
+      "track number",
+      "rank",
+      "1st position",
+      "not at the 1st track"
+    ],
+    "severity": "block",
+    "scope": "Applies whenever a driver's placing in a race is referenced.",
+    "confidence": "high",
+    "description": "Several distinct positional quantities exist for the same race entry. The final classification position is numeric only for entries that received a classification and is absent for all other entries. A separate ordering field ranks every entrant including unclassified ones. The starting position is recorded separately and uses zero to denote a pit-lane start. The qualifying classification position is a different quantity again. A question about where a driver started must not be answered with the finishing position, and vice versa.",
+    "evidence": [
+      "evidence_004",
+      "evidence_006"
+    ]
+  },
+  {
+    "id": "constraint_points_scope_race_vs_standings",
+    "target": "term_race_points",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "points",
+      "highest point",
+      "0 points",
+      "maximum points",
+      "championship points",
+      "standings",
+      "scored"
+    ],
+    "severity": "block",
+    "scope": "Applies whenever points are counted, compared or filtered.",
+    "confidence": "high",
+    "description": "Two different quantities are both named points. One is the points scored by a driver or a constructor in a single race. The other is the running championship total at a point in the season, which already includes all earlier races of that season. Values of the two families are on completely different scales and summing running totals across races of one season inflates the result. Points in a single race can be zero, so a request for participants with zero points in a race targets the per-race quantity rather than absence of a row.",
+    "evidence": [
+      "evidence_015",
+      "evidence_016"
+    ]
+  },
+  {
+    "id": "constraint_standings_snapshot",
+    "target": "term_standing_points",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "standings",
+      "championship position",
+      "points after",
+      "championship table",
+      "leader"
+    ],
+    "severity": "warning",
+    "scope": "Applies when the standings tables are used.",
+    "confidence": "high",
+    "description": "A standings row records the championship state after the referenced race of a season, not the points earned in that race. Reading a standings row as a per-race result, or summing it across a season, produces incorrect totals.",
+    "evidence": [
+      "evidence_015"
+    ]
+  },
+  {
+    "id": "constraint_accident_status_category",
+    "target": "term_accident",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "accident",
+      "accidents",
+      "number of accidents",
+      "crash",
+      "highest number accidents"
+    ],
+    "severity": "block",
+    "scope": "Applies when race entries are counted or filtered by accident involvement.",
+    "confidence": "high",
+    "description": "Accidents are one specific outcome category, recorded under a distinct identifier from collision, fatal accident, collision damage, mechanical failure and disqualification. Counting entries by the accident category alone therefore excludes collisions and fatal accidents, which are separate categories.",
+    "evidence": [
+      "evidence_003"
+    ]
+  },
+  {
+    "id": "constraint_status_category_enumeration",
+    "target": "term_race_status",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "status",
+      "statusId",
+      "did not qualify",
+      "disqualified",
+      "laps down",
+      "retired",
+      "reason"
+    ],
+    "severity": "info",
+    "scope": "Applies when outcome categories are referenced directly or interpreted.",
+    "confidence": "high",
+    "description": "The outcome categories include a completion category, a disqualification category, an accident category, a collision category, a family of categories denoting finishing a number of laps behind the leader, and a category denoting failure to qualify. The category denoting finishing a number of laps behind the leader is recorded for drivers that are still classified at the end of the race but did not complete the full distance on the lead lap.",
+    "evidence": [
+      "evidence_003",
+      "evidence_004"
+    ]
+  },
+  {
+    "id": "constraint_driver_full_name_composition",
+    "target": "term_driver_full_name",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "full name",
+      "Lewis Hamilton",
+      "Bruno Senna",
+      "Alex Yoong",
+      "name of the driver",
+      "surname",
+      "forename",
+      "player"
+    ],
+    "severity": "block",
+    "scope": "Applies when a question names a driver by a personal name.",
+    "confidence": "high",
+    "description": "A driver's full name is stored as separate given-name and family-name components, so a personal name in a question must be matched against both components together. Family names are not unique: several drivers share the surname Hamilton and several share the surname Senna. Additionally, the dataset is about drivers, and workload language that refers to a player is referring to a driver.",
+    "evidence": [
+      "evidence_013"
+    ]
+  },
+  {
+    "id": "constraint_dob_age_direction",
+    "target": "term_driver_date_of_birth",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "oldest",
+      "youngest",
+      "born between",
+      "date of birth",
+      "dob",
+      "birthday",
+      "age"
+    ],
+    "severity": "block",
+    "scope": "Applies to age, seniority and birth-year questions.",
+    "confidence": "high",
+    "description": "The stored birth date is a calendar date whose numeric value increases with recency, so a larger value denotes a younger driver. The oldest driver is therefore the one with the earliest birth date. A birth-year range such as 1980 to 1985 is inclusive at both ends and is evaluated on the year part of the birth date.",
+    "evidence": [
+      "evidence_013"
+    ]
+  },
+  {
+    "id": "constraint_qualifying_period_progression",
+    "target": "term_qualifying_elimination",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "q1",
+      "q2",
+      "q3",
+      "qualifying period",
+      "first qualifying period",
+      "eliminated",
+      "knocked out",
+      "did not progress"
+    ],
+    "severity": "block",
+    "scope": "Applies when qualifying periods or eliminations are referenced.",
+    "confidence": "high",
+    "description": "Qualifying periods are successive: a driver who progresses records a time in a later period as well. The absence of a later-period time is therefore the structural indicator that the driver stopped at the earlier period. The number of drivers eliminated at the first stage varies by race, following the size of the entry list. The workload convention describes drivers eliminated in the first qualifying period as those holding the slowest first-period times, so both the absence indicator and the relative standing of first-period times express the same set.",
+    "evidence": [
+      "evidence_009",
+      "evidence_010"
+    ]
+  },
+  {
+    "id": "constraint_lap_time_units",
+    "target": "term_lap_time",
+    "constraint_type": "unit",
+    "trigger_keywords": [
+      "lap time",
+      "lap",
+      "0:01:27",
+      "1:27",
+      "lap duration"
+    ],
+    "severity": "warning",
+    "scope": "Applies to per-lap durations.",
+    "confidence": "high",
+    "description": "A lap duration is written with a single colon separating minutes from seconds, followed by the fractional part in thousandths; a duration exceeding one hour additionally carries a leading hours component. The numeric millisecond field is the reliable quantity for comparison because it is always populated and avoids text-shape ambiguity.",
+    "evidence": [
+      "evidence_021"
+    ]
+  },
+  {
+    "id": "constraint_fastest_lap_speed_text_units",
+    "target": "term_fastest_lap_speed",
+    "constraint_type": "unit",
+    "trigger_keywords": [
+      "fastest lap speed",
+      "lap speed",
+      "speed",
+      "max speed",
+      "fastest speed"
+    ],
+    "severity": "warning",
+    "scope": "Applies whenever fastest-lap speeds are filtered, compared or aggregated.",
+    "confidence": "high",
+    "description": "Fastest-lap speed is recorded as kilometres per hour but stored in a text data type, so a plain text comparison would order values lexically rather than numerically. The value must be interpreted as a number before any comparison or maximum is taken. The attribute is populated only for a subset of race entries, concentrated in later seasons, and must not be treated as covering the entire history.",
+    "evidence": [
+      "evidence_008"
+    ]
+  },
+  {
+    "id": "constraint_fastest_lap_identification",
+    "target": "term_fastest_lap",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "fastest lap",
+      "set the fastest lap",
+      "quickest lap",
+      "best lap",
+      "rank"
+    ],
+    "severity": "warning",
+    "scope": "Applies when the driver who set the fastest lap of a race is sought.",
+    "confidence": "high",
+    "description": "Within a race, the driver who set the fastest lap is the one whose fastest-lap ranking equals one. That ranking field also retains a residual zero value in a small number of older entries, so a search for the fastest lap must not treat zero as the top rank. Fastest-lap attributes are absent for a large share of entries, corresponding to seasons before the attributes were recorded.",
+    "evidence": [
+      "evidence_008",
+      "evidence_020"
+    ]
+  },
+  {
+    "id": "constraint_circuit_country_means_host_nation",
+    "target": "term_circuit_country",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "held in",
+      "Austria",
+      "country",
+      "host",
+      "circuits were held",
+      "location"
+    ],
+    "severity": "warning",
+    "scope": "Applies to questions about events held in a country.",
+    "confidence": "high",
+    "description": "A circuit's country is the host nation of the events staged there, and a single country can host several distinct circuits. Counting events held in a country therefore requires linking races to the circuits at which they were held rather than counting circuits. The country attribute is recorded per circuit, so the same country may appear across several circuit records.",
+    "evidence": [
+      "evidence_017"
+    ]
+  },
+  {
+    "id": "constraint_pit_stop_duration_units",
+    "target": "term_pit_stop_duration",
+    "constraint_type": "unit",
+    "trigger_keywords": [
+      "pit stop",
+      "pitstop",
+      "average pit stop duration",
+      "duration",
+      "shortest average"
+    ],
+    "severity": "warning",
+    "scope": "Applies whenever pit stop durations are averaged or compared.",
+    "confidence": "high",
+    "description": "A pit stop's stationary time is stored as a seconds value in text form, paired with the same quantity in milliseconds. The duration covers only the time the car was stationary and not the time spent in the pit lane. Averaging a driver's stops means dividing the total of that driver's stop durations by the number of stops, which requires both a sum and a count of the same stops.",
+    "evidence": [
+      "evidence_018"
+    ]
+  },
+  {
+    "id": "constraint_pit_stop_coverage",
+    "target": "term_pit_stop",
+    "constraint_type": "scope",
+    "trigger_keywords": [
+      "pit stop",
+      "pitstop",
+      "stops",
+      "average pit stop duration"
+    ],
+    "severity": "info",
+    "scope": "Applies when pit stop data is used to characterise drivers or races.",
+    "confidence": "high",
+    "description": "Pit stop records exist for only a minority of the race events in the dataset, so pit-stop-derived comparisons are only meaningful for the events in which stops were recorded and do not reflect a driver's career as a whole.",
+    "evidence": [
+      "evidence_018"
+    ]
+  },
+  {
+    "id": "constraint_reference_url_meaning",
+    "target": "term_reference_url",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "website",
+      "url",
+      "introduction website",
+      "reference link",
+      "profile"
+    ],
+    "severity": "info",
+    "scope": "Applies when a driver, constructor or circuit introduction website is requested.",
+    "confidence": "high",
+    "description": "The reference web address published for a driver, constructor or circuit is the stored link attribute for that entity and serves as its introduction page. Each such link is unique within its table.",
+    "evidence": [
+      "evidence_022"
+    ]
+  },
+  {
+    "id": "constraint_elapsed_time_availability",
+    "target": "term_elapsed_race_time",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "milliseconds",
+      "elapsed time",
+      "total time",
+      "finish time",
+      "gap"
+    ],
+    "severity": "warning",
+    "scope": "Applies when finish times are converted or arithmetically combined.",
+    "confidence": "high",
+    "description": "The millisecond elapsed-time attribute is absent for entries without a recorded elapsed race time, and the two attributes are otherwise consistent. One historical entry carries a gap value with no corresponding millisecond total, so arithmetic that assumes the two attributes are always populated together should tolerate a missing elapsed total.",
+    "evidence": [
+      "evidence_007"
+    ]
+  },
+  {
+    "id": "constraint_partial_race_coverage",
+    "target": "term_race_result",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "participation",
+      "participated",
+      "took part",
+      "entered",
+      "started"
+    ],
+    "severity": "info",
+    "scope": "Applies when participation in races is counted.",
+    "confidence": "high",
+    "description": "The number of race entry records for one event varies substantially, reflecting different entry-list sizes across eras. Some per-lap records also reference drivers that have no corresponding entry record for the same race, so lap-level counts and entry-level counts need not agree.",
+    "evidence": [
+      "evidence_021"
+    ]
+  }
+]

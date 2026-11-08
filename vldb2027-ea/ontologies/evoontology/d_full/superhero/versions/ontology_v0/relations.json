@@ -1,0 +1,135 @@
+[
+  {
+    "id": "rel_superhero_publisher",
+    "source": "term_superhero",
+    "relation_type": "association",
+    "target": "term_publisher",
+    "connection_condition": "superhero.publisher_id corresponds to publisher.id; a publisher is an independent entity that exists without any hero, so the link is a reference rather than a whole-part structure.",
+    "description": "Each superhero record carries at most one publisher attribution, while a publisher holds many heroes. Roster analysis aggregates from heroes up to the publisher, and the attribution is incomplete for some records.",
+    "evidence": [
+      "evidence_publisher_distribution",
+      "evidence_publisher_placeholders"
+    ]
+  },
+  {
+    "id": "rel_superhero_alignment",
+    "source": "term_superhero",
+    "relation_type": "association",
+    "target": "term_alignment",
+    "connection_condition": "superhero.alignment_id corresponds to alignment.id.",
+    "description": "A superhero is classified into one alignment category. Alignment is a shared classification list, not a component of the hero record.",
+    "evidence": [
+      "evidence_alignment_distribution",
+      "evidence_alignment_cross"
+    ]
+  },
+  {
+    "id": "rel_superhero_gender",
+    "source": "term_superhero",
+    "relation_type": "association",
+    "target": "term_gender",
+    "connection_condition": "superhero.gender_id corresponds to gender.id.",
+    "description": "A superhero is classified into one gender category from a shared list that also contains an unrecorded category.",
+    "evidence": [
+      "evidence_gender_distribution",
+      "evidence_alignment_cross"
+    ]
+  },
+  {
+    "id": "rel_superhero_race",
+    "source": "term_superhero",
+    "relation_type": "association",
+    "target": "term_race",
+    "connection_condition": "superhero.race_id corresponds to race.id.",
+    "description": "A superhero is assigned one species or origin category from a shared list that includes an explicit unspecified entry and may be absent entirely.",
+    "evidence": [
+      "evidence_race_distribution",
+      "evidence_race_placeholders"
+    ]
+  },
+  {
+    "id": "rel_superhero_colour",
+    "source": "term_superhero",
+    "relation_type": "association",
+    "target": "term_colour_value",
+    "connection_condition": "superhero.eye_colour_id, superhero.hair_colour_id and superhero.skin_colour_id each correspond to colour.id, so three distinct appearance attributes of the same hero resolve against one shared colour list.",
+    "description": "Appearance colours of a superhero are drawn from a single shared colour vocabulary. Because one vocabulary serves three attributes, a colour label alone does not identify which appearance attribute it describes.",
+    "evidence": [
+      "evidence_colour_values",
+      "evidence_colour_usage"
+    ]
+  },
+  {
+    "id": "rel_superhero_superpower",
+    "source": "term_superhero",
+    "relation_type": "association",
+    "target": "term_superpower",
+    "connection_condition": "hero_power associates superhero.id with superpower.id; both sides of the association are independent entities and no ownership exists in either direction.",
+    "description": "A superhero possesses many named abilities and a named ability is shared by many superheroes, giving a many-to-many association that cannot be expressed as a column of the hero record.",
+    "evidence": [
+      "evidence_superpower_catalogue",
+      "evidence_power_coverage"
+    ]
+  },
+  {
+    "id": "rel_superhero_attribute_score",
+    "source": "term_superhero",
+    "relation_type": "composition",
+    "target": "term_hero_attribute_score",
+    "connection_condition": "hero_attribute.hero_id corresponds to superhero.id; a rating row has no meaning without the hero it rates.",
+    "description": "The capability ratings of a superhero are components of that hero's profile: removing the hero record leaves its ratings meaningless, and each hero carries exactly one rating per dimension.",
+    "evidence": [
+      "evidence_attribute_coverage",
+      "evidence_referential_integrity"
+    ]
+  },
+  {
+    "id": "rel_score_attribute_dimension",
+    "source": "term_attribute_dimension",
+    "relation_type": "association",
+    "target": "term_hero_attribute_score",
+    "connection_condition": "hero_attribute.attribute_id corresponds to attribute.id, selecting which of the six dimensions a rating expresses.",
+    "description": "Each rating is expressed on exactly one attribute dimension, and a dimension is realised through the ratings of many heroes. The dimension supplies the meaning of the numeric value rather than being a part or a supertype of it.",
+    "evidence": [
+      "evidence_attribute_dimensions",
+      "evidence_attribute_scale"
+    ]
+  },
+  {
+    "id": "rel_power_count_derived",
+    "source": "term_superpower",
+    "relation_type": "derivation",
+    "target": "term_hero_power_count",
+    "connection_condition": "Derived by counting the distinct powers associated with one hero in hero_power; no stored column holds the result.",
+    "description": "The breadth of a hero's abilities is derived from the set of powers associated with that hero rather than being stored directly.",
+    "evidence": [
+      "evidence_power_counts",
+      "evidence_power_coverage"
+    ]
+  },
+  {
+    "id": "rel_roster_size_derived",
+    "source": "term_superhero",
+    "relation_type": "derivation",
+    "target": "term_publisher_roster_size",
+    "connection_condition": "Derived by counting superhero records grouped by their publisher reference; no stored column holds the result.",
+    "description": "The size of a publisher's roster is derived from the number of superhero records attributed to that publisher, so it changes whenever the attribution of a hero changes.",
+    "evidence": [
+      "evidence_publisher_distribution",
+      "evidence_publisher_placeholders"
+    ]
+  },
+  {
+    "id": "rel_superhero_identifier",
+    "source": "term_superhero",
+    "relation_type": "association",
+    "target": "term_hero_id",
+    "connection_condition": "superhero.id is the authoritative value of the identifier, and hero_attribute.hero_id and hero_power.hero_id reuse the same value domain to reference a hero.",
+    "description": "The hero identifier denotes a superhero record and is the value through which dependent records attach to it. Its representations differ only by column naming convention across tables.",
+    "evidence": [
+      "evidence_schema_foreign_keys",
+      "evidence_referential_integrity",
+      "evidence_id_gaps"
+    ]
+  }
+]

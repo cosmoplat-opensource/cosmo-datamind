@@ -1,0 +1,77 @@
+{
+ "db_id": "european_football_2",
+ "questions": [
+  {
+   "question_id": 1068,
+   "db_id": "european_football_2",
+   "question": "From 2010 to 2015, what was the average overall rating of players who are higher than 170?",
+   "evidence": "from 2010 to 2015 refers to strftime('%Y', fld004) >= '2010' AND <= '2015'; average overall rating = SUM(t2.fld005)/ COUNT(t2.fld001); higher than 170 refers to tab02.fld045 > 170;",
+   "SQL": "SELECT CAST(SUM(t2.fld005) AS REAL) / COUNT(t2.fld001) FROM tab02 AS t1 INNER JOIN tab01 AS t2 ON t1.fld003 = t2.fld003 WHERE t1.fld045 > 170 AND STRFTIME('%Y', t2.fld004) >= '2010' AND STRFTIME('%Y', t2.fld004) <= '2015'",
+   "difficulty": "moderate",
+   "SQL_original": "SELECT CAST(SUM(t2.overall_rating) AS REAL) / COUNT(t2.id) FROM Player AS t1 INNER JOIN Player_Attributes AS t2 ON t1.player_api_id = t2.player_api_id WHERE t1.height > 170 AND STRFTIME('%Y',t2.`date`) >= '2010' AND STRFTIME('%Y',t2.`date`) <= '2015'"
+  },
+  {
+   "question_id": 1110,
+   "db_id": "european_football_2",
+   "question": "Tell the build Up play passing class for \"FC Lorient\" on 2010/2/22.",
+   "evidence": "\"FC Lorient\" refers to fld051 = 'FC Lorient'; on 2010/2/22 refers to fld004 LIKE '2010-02-22%';",
+   "SQL": "SELECT t2.fld058 FROM tab05 AS t1 INNER JOIN tab06 AS t2 ON t1.fld049 = t2.fld049 WHERE t1.fld051 = 'FC Lorient' AND t2.fld004 LIKE '2010-02-22%'",
+   "difficulty": "moderate",
+   "SQL_original": "SELECT t2.buildUpPlayPassingClass FROM Team AS t1 INNER JOIN Team_Attributes AS t2 ON t1.team_api_id = t2.team_api_id WHERE t1.team_long_name = 'FC Lorient' AND t2.`date` LIKE '2010-02-22%'"
+  },
+  {
+   "question_id": 1076,
+   "db_id": "european_football_2",
+   "question": "What is the difference of the average ball control score between Abdou Diallo and Aaron Appindangoye\n?",
+   "evidence": "difference of the average ball control = SUBTRACT(AVG(fld019 WHERE fld043 = 'Abdou Diallo'), AVG(fld019 WHERE fld043 = 'Aaron Appindangoye')); AVG(fld019 WHERE fld043 = 'XX XX') = SUM(CASE WHEN fld043 = 'XX XX' THEN fld019 ELSE 0 END) / COUNT(CASE WHEN fld043 = 'XX XX' THEN id ELSE NULL END)",
+   "SQL": "SELECT CAST(SUM(CASE WHEN t1.fld043 = 'Abdou Diallo' THEN t2.fld019 ELSE 0 END) AS REAL) / COUNT(CASE WHEN t1.fld043 = 'Abdou Diallo' THEN t2.fld001 ELSE NULL END) - CAST(SUM(CASE WHEN t1.fld043 = 'Aaron Appindangoye' THEN t2.fld019 ELSE 0 END) AS REAL) / COUNT(CASE WHEN t1.fld043 = 'Aaron Appindangoye' THEN t2.fld001 ELSE NULL END) FROM tab02 AS t1 INNER JOIN tab01 AS t2 ON t1.fld003 = t2.fld003",
+   "difficulty": "challenging",
+   "SQL_original": "SELECT CAST(SUM(CASE WHEN t1.player_name = 'Abdou Diallo' THEN t2.ball_control ELSE 0 END) AS REAL) / COUNT(CASE WHEN t1.player_name = 'Abdou Diallo' THEN t2.id ELSE NULL END) - CAST(SUM(CASE WHEN t1.player_name = 'Aaron Appindangoye' THEN t2.ball_control ELSE 0 END) AS REAL) / COUNT(CASE WHEN t1.player_name = 'Aaron Appindangoye' THEN t2.id ELSE NULL END) FROM Player AS t1 INNER JOIN Player_Attributes AS t2 ON t1.player_api_id = t2.player_api_id"
+  },
+  {
+   "question_id": 1146,
+   "db_id": "european_football_2",
+   "question": "Please provide the full name of the away team that scored the most goals.",
+   "evidence": "full name refers to fld051; away team refers to fld079; scored the most goals refers to MAX(fld081)",
+   "SQL": "SELECT t2.fld051 FROM tab07 AS t1 INNER JOIN tab05 AS t2 ON t1.fld079 = t2.fld049 ORDER BY t1.fld081 DESC LIMIT 1",
+   "difficulty": "moderate",
+   "SQL_original": "SELECT t2.team_long_name FROM Match AS t1 INNER JOIN Team AS t2 ON t1.away_team_api_id = t2.team_api_id ORDER BY t1.away_team_goal DESC LIMIT 1"
+  },
+  {
+   "question_id": 1078,
+   "db_id": "european_football_2",
+   "question": "Which player is older, Aaron Lennon or Abdelaziz Barrada?",
+   "evidence": "The larger the birthday value, the younger the person is, and vice versa;",
+   "SQL": "SELECT fld043 FROM tab02 WHERE fld043 IN ('Aaron Lennon', 'Abdelaziz Barrada') ORDER BY fld044 ASC LIMIT 1",
+   "difficulty": "simple",
+   "SQL_original": "SELECT player_name FROM Player WHERE player_name IN ('Aaron Lennon', 'Abdelaziz Barrada') ORDER BY birthday ASC LIMIT 1"
+  },
+  {
+   "question_id": 1139,
+   "db_id": "european_football_2",
+   "question": "What was the final score for the match on September 24, 2008, in the Belgian Jupiler League between the home team and the away team?",
+   "evidence": "September 24, 2008 refers to fld004 like '2008-09-24%'; in the Belgian Jupiler League refers to tab03.fld048 = 'Belgium Jupiler League'; final score for home team refers to fld080; final score for away team refers to fld081",
+   "SQL": "SELECT t2.fld080, t2.fld081 FROM tab03 AS t1 INNER JOIN tab07 AS t2 ON t1.fld001 = t2.fld074 WHERE t1.fld048 = 'Belgium Jupiler League' AND t2.fld004 LIKE '2008-09-24%'",
+   "difficulty": "challenging",
+   "SQL_original": "SELECT t2.home_team_goal, t2.away_team_goal FROM League AS t1 INNER JOIN Match AS t2 ON t1.id = t2.league_id WHERE t1.name = 'Belgium Jupiler League' AND t2.`date` LIKE '2008-09-24%'"
+  },
+  {
+   "question_id": 1107,
+   "db_id": "european_football_2",
+   "question": "When was the first time did Kevin Constant have his highest crossing score? Give the date.",
+   "evidence": "Kevin Constant refers to fld043 = 'Kevin Constant'; highest crossing score refers to MAX(fld010)",
+   "SQL": "SELECT fld004 FROM (SELECT t2.fld010, t2.fld004 FROM tab02 AS t1 INNER JOIN tab01 AS t2 ON t1.fld002 = t2.fld002 WHERE t1.fld043 = 'Kevin Constant' ORDER BY t2.fld010 DESC) ORDER BY fld004 DESC LIMIT 1",
+   "difficulty": "moderate",
+   "SQL_original": "SELECT `date` FROM ( SELECT t2.crossing, t2.`date` FROM Player AS t1 INNER JOIN Player_Attributes AS t2 ON t1.player_fifa_api_id = t2.player_fifa_api_id WHERE t1.player_name = 'Kevin Constant' ORDER BY t2.crossing DESC) ORDER BY date DESC LIMIT 1"
+  },
+  {
+   "question_id": 1141,
+   "db_id": "european_football_2",
+   "question": "Does the KSV Cercle Brugge team have a slow, balanced or fast speed class?",
+   "evidence": "KSV Cercle Brugge refers to fld051 = 'KSV Cercle Brugge'; speed class refers to fld054",
+   "SQL": "SELECT DISTINCT t1.fld054 FROM tab06 AS t1 INNER JOIN tab05 AS t2 ON t1.fld049 = t2.fld049 WHERE t2.fld051 = 'KSV Cercle Brugge'",
+   "difficulty": "moderate",
+   "SQL_original": "SELECT DISTINCT t1.buildUpPlaySpeedClass FROM Team_Attributes AS t1 INNER JOIN Team AS t2 ON t1.team_api_id = t2.team_api_id WHERE t2.team_long_name = 'KSV Cercle Brugge'"
+  }
+ ]
+}

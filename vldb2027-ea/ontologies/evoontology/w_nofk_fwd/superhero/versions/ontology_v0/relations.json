@@ -1,0 +1,169 @@
+[
+  {
+    "id": "r_publisher_superhero",
+    "source": "publisher",
+    "relation_type": "composition",
+    "target": "superhero",
+    "connection_condition": "superhero records reference their publisher through a publisher identifier; three superhero records carry no publisher reference",
+    "description": "A publisher's catalogue is composed of the superheroes published under it, and a hero's publication context is meaningless without its publisher.",
+    "evidence": [
+      "ev_publisher_values"
+    ]
+  },
+  {
+    "id": "r_superhero_superpower",
+    "source": "superhero",
+    "relation_type": "composition",
+    "target": "superpower",
+    "connection_condition": "hero-to-power association records link a hero identifier to a power identifier, one record per assignment; 98 of 750 heroes have no linked power",
+    "description": "A hero's ability set is composed of the superpowers assigned to that hero.",
+    "evidence": [
+      "ev_power_vocab"
+    ]
+  },
+  {
+    "id": "r_superhero_attribute_value",
+    "source": "superhero",
+    "relation_type": "composition",
+    "target": "attribute_value",
+    "connection_condition": "hero-to-attribute rating records link a hero identifier, an attribute identifier and a rating value; 127 of 750 heroes have no rating records",
+    "description": "A hero's rated capability profile is composed of that hero's attribute rating records.",
+    "evidence": [
+      "ev_attr_range"
+    ]
+  },
+  {
+    "id": "r_attribute_dimension_value",
+    "source": "attribute_dimension",
+    "relation_type": "composition",
+    "target": "attribute_value",
+    "connection_condition": "each rating record references exactly one attribute identifier, so ratings are grouped by the dimension they score",
+    "description": "A rated attribute dimension is composed of the per-hero ratings recorded against that dimension.",
+    "evidence": [
+      "ev_attribute_vocab"
+    ]
+  },
+  {
+    "id": "r_attribute_value_extremum",
+    "source": "attribute_value",
+    "relation_type": "derivation",
+    "target": "attribute_extremum_hero",
+    "connection_condition": "the extremum hero is obtained by comparing rating values within one attribute dimension and resolving the hero that owns the extreme rating",
+    "description": "The extremum hero by attribute is derived from attribute ratings: the hero holding the maximum rating on the selected dimension for superlatives such as fastest or strongest, or the minimum rating for superlatives such as dumbest.",
+    "evidence": [
+      "ev_extremum_ties"
+    ]
+  },
+  {
+    "id": "r_eye_hair_equiv",
+    "source": "eye_colour",
+    "relation_type": "equivalence",
+    "target": "hair_colour",
+    "connection_condition": "both appearance dimensions resolve against the same colour vocabulary record through their own colour identifier columns; sampled values such as 'Black', 'Blue', 'Blond' and 'No Colour' are valid in both",
+    "description": "Eye colour and hair colour are drawn from one shared colour vocabulary, so their values are directly comparable and colour equality can be tested across the two dimensions.",
+    "evidence": [
+      "ev_colour_usage",
+      "ev_colour_same_triple"
+    ]
+  },
+  {
+    "id": "r_hair_skin_equiv",
+    "source": "hair_colour",
+    "relation_type": "equivalence",
+    "target": "skin_colour",
+    "connection_condition": "hair colour and skin colour resolve against the same colour vocabulary record; overlapping values include 'Black', 'Brown' and 'No Colour'",
+    "description": "Hair colour and skin colour share one colour vocabulary, so their values are directly comparable.",
+    "evidence": [
+      "ev_colour_usage",
+      "ev_colour_same_triple"
+    ]
+  },
+  {
+    "id": "r_eye_skin_equiv",
+    "source": "eye_colour",
+    "relation_type": "equivalence",
+    "target": "skin_colour",
+    "connection_condition": "eye colour and skin colour resolve against the same colour vocabulary record",
+    "description": "Eye colour and skin colour share one colour vocabulary, so their values are directly comparable.",
+    "evidence": [
+      "ev_colour_same_triple"
+    ]
+  },
+  {
+    "id": "r_superhero_eye_colour",
+    "source": "superhero",
+    "relation_type": "association",
+    "target": "eye_colour",
+    "connection_condition": "superhero records carry an eye colour identifier referencing the colour vocabulary",
+    "description": "Each superhero has a recorded eye colour.",
+    "evidence": [
+      "ev_colour_usage"
+    ]
+  },
+  {
+    "id": "r_superhero_hair_colour",
+    "source": "superhero",
+    "relation_type": "association",
+    "target": "hair_colour",
+    "connection_condition": "superhero records carry a hair colour identifier referencing the colour vocabulary",
+    "description": "Each superhero has a recorded hair colour.",
+    "evidence": [
+      "ev_colour_usage"
+    ]
+  },
+  {
+    "id": "r_superhero_skin_colour",
+    "source": "superhero",
+    "relation_type": "association",
+    "target": "skin_colour",
+    "connection_condition": "superhero records carry a skin colour identifier referencing the colour vocabulary",
+    "description": "Each superhero has a recorded skin colour.",
+    "evidence": [
+      "ev_colour_usage"
+    ]
+  },
+  {
+    "id": "r_superhero_gender",
+    "source": "superhero",
+    "relation_type": "association",
+    "target": "gender",
+    "connection_condition": "superhero records reference a gender identifier",
+    "description": "Gender classifies a superhero.",
+    "evidence": [
+      "ev_gender_values"
+    ]
+  },
+  {
+    "id": "r_superhero_race",
+    "source": "superhero",
+    "relation_type": "association",
+    "target": "race",
+    "connection_condition": "superhero records reference a race identifier; four records carry no race reference",
+    "description": "Race classifies the species or origin of a superhero.",
+    "evidence": [
+      "ev_race_values"
+    ]
+  },
+  {
+    "id": "r_superhero_alignment",
+    "source": "superhero",
+    "relation_type": "association",
+    "target": "alignment",
+    "connection_condition": "superhero records reference an alignment identifier; six records carry no alignment reference",
+    "description": "Alignment classifies the moral stance of a superhero.",
+    "evidence": [
+      "ev_alignment_values"
+    ]
+  },
+  {
+    "id": "r_superhero_count",
+    "source": "superhero",
+    "relation_type": "derivation",
+    "target": "superhero_count",
+    "connection_condition": "the count is computed over the superhero records that satisfy a filter or belong to a group",
+    "description": "The superhero count is derived from superhero records by counting the distinct heroes matching a filter or grouping, which also yields percentage shares when compared with a filtered total.",
+    "evidence": [
+      "ev_counts"
+    ]
+  }
+]

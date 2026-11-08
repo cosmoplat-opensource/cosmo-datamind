@@ -1,0 +1,505 @@
+[
+  {
+    "id": "term_patient",
+    "name": "Patient",
+    "type": "entity",
+    "definition": "A person receiving care, recorded once in the Patient table with demographic attributes (sex, birth date, admission type), a first visit date, a free-text disease diagnosis and an optional record description date.",
+    "scope": "Root entity for patient-level counting, filtering and demographic reporting in this database.",
+    "aliases": [
+      "patient",
+      "person",
+      "case"
+    ],
+    "evidence": [
+      "evidence_table_scale",
+      "evidence_patient_identifier_linkage"
+    ]
+  },
+  {
+    "id": "term_patient_id",
+    "name": "Patient Identifier",
+    "type": "dimension",
+    "definition": "The numeric identifier that uniquely identifies a patient. The same identifier value is reused as the linking key on the Examination and Laboratory tables.",
+    "scope": "Linking Patient, Examination and Laboratory records; also the identifier returned when a question asks to list patients by their ID.",
+    "aliases": [
+      "ID",
+      "patient ID",
+      "patient number"
+    ],
+    "evidence": [
+      "evidence_patient_identifier_linkage",
+      "evidence_table_scale"
+    ]
+  },
+  {
+    "id": "term_sex",
+    "name": "Sex",
+    "type": "dimension",
+    "definition": "The recorded sex of the patient, stored as a single-letter code on the patient record.",
+    "scope": "Demographic grouping and filtering when a question says female or male.",
+    "aliases": [
+      "SEX",
+      "gender",
+      "female",
+      "male"
+    ],
+    "evidence": [
+      "evidence_sex_and_admission_distribution"
+    ]
+  },
+  {
+    "id": "term_birth_date",
+    "name": "Birth Date",
+    "type": "dimension",
+    "definition": "The patient's date of birth, stored as a calendar date on the patient record.",
+    "scope": "Source for age computation and for birth-year cohort filters.",
+    "aliases": [
+      "Birthday",
+      "date of birth",
+      "DOB",
+      "born"
+    ],
+    "evidence": [
+      "evidence_date_ranges"
+    ]
+  },
+  {
+    "id": "term_age",
+    "name": "Age",
+    "type": "metric",
+    "definition": "The patient's age. It is not stored as a column; it is derived from the birth date relative to the current date at year granularity.",
+    "scope": "Age-based filtering such as patients who are not yet 70, and age averaging.",
+    "aliases": [
+      "age",
+      "years old",
+      "how old"
+    ],
+    "evidence": [
+      "evidence_date_ranges",
+      "evidence_threshold_counts"
+    ]
+  },
+  {
+    "id": "term_admission_type",
+    "name": "Admission Type",
+    "type": "dimension",
+    "definition": "Whether the patient was an inpatient or an outpatient, stored as a single-character code on the patient record.",
+    "scope": "Inpatient versus outpatient comparisons and their proportion within a sex subgroup.",
+    "aliases": [
+      "Admission",
+      "in-patient",
+      "inpatient",
+      "out-patient",
+      "outpatient"
+    ],
+    "evidence": [
+      "evidence_sex_and_admission_distribution"
+    ]
+  },
+  {
+    "id": "term_first_visit_date",
+    "name": "First Visit Date",
+    "type": "dimension",
+    "definition": "The date on which the patient first attended the facility, stored on the patient record.",
+    "scope": "Patient-level date information and a candidate referent for loosely phrased temporal filters, distinct from examination dates and laboratory test dates.",
+    "aliases": [
+      "First Date",
+      "first visit",
+      "initial visit"
+    ],
+    "evidence": [
+      "evidence_date_ranges"
+    ]
+  },
+  {
+    "id": "term_diagnosis",
+    "name": "Disease Diagnosis",
+    "type": "concept",
+    "definition": "The free-text disease label or labels recorded for a patient at the patient level. A record may hold several disease labels at once and may qualify a label as suspected.",
+    "scope": "Answering what disease a patient is diagnosed with, and grouping or filtering patients by a disease label.",
+    "aliases": [
+      "Diagnosis",
+      "disease",
+      "diagnosed with",
+      "condition"
+    ],
+    "evidence": [
+      "evidence_diagnosis_vocabulary"
+    ]
+  },
+  {
+    "id": "term_examination_diagnosis",
+    "name": "Examination-Stage Diagnosis",
+    "type": "concept",
+    "definition": "The disease label recorded on an individual examination, representing the disease assessment at the time of that examination rather than the patient-level diagnosis.",
+    "scope": "Examination-level disease assessment, which is frequently unrecorded.",
+    "aliases": [
+      "Examination Diagnosis",
+      "diagnosis at examination"
+    ],
+    "evidence": [
+      "evidence_examination_diagnosis_coverage"
+    ]
+  },
+  {
+    "id": "term_sle",
+    "name": "Systemic Lupus Erythematosus (SLE)",
+    "type": "category",
+    "definition": "One of the disease labels occurring in the diagnosis vocabulary; a specific autoimmune disease category that is not given its own entity in the schema.",
+    "scope": "Disease-specific patient selection, for example patients diagnosed with SLE.",
+    "aliases": [
+      "SLE",
+      "systemic lupus erythematosus",
+      "lupus"
+    ],
+    "evidence": [
+      "evidence_diagnosis_vocabulary"
+    ]
+  },
+  {
+    "id": "term_examination",
+    "name": "Examination",
+    "type": "entity",
+    "definition": "An examination event for a patient, holding the examination date together with serological, coagulation and thrombosis findings.",
+    "scope": "Source of coagulation, antiphospholipid, antinuclear antibody, thrombosis and symptom observations.",
+    "aliases": [
+      "Examination",
+      "exam",
+      "visit"
+    ],
+    "evidence": [
+      "evidence_table_scale",
+      "evidence_patient_identifier_linkage"
+    ]
+  },
+  {
+    "id": "term_examination_date",
+    "name": "Examination Date",
+    "type": "dimension",
+    "definition": "The calendar date on which an examination was performed.",
+    "scope": "Temporal filtering of examination-level findings.",
+    "aliases": [
+      "Examination Date",
+      "date of examination",
+      "examined"
+    ],
+    "evidence": [
+      "evidence_date_ranges"
+    ]
+  },
+  {
+    "id": "term_laboratory_test",
+    "name": "Laboratory Test",
+    "type": "entity",
+    "definition": "A laboratory test record for a patient on a given date, holding the measured biochemical, haematological, immunological and inflammatory analyte values of that panel.",
+    "scope": "Source of all measured laboratory analytes and their values.",
+    "aliases": [
+      "Laboratory",
+      "lab test",
+      "blood test",
+      "test result"
+    ],
+    "evidence": [
+      "evidence_table_scale",
+      "evidence_analyte_coverage_and_ranges"
+    ]
+  },
+  {
+    "id": "term_laboratory_test_date",
+    "name": "Laboratory Test Date",
+    "type": "dimension",
+    "definition": "The calendar date on which a laboratory test panel was performed.",
+    "scope": "Temporal filtering of laboratory results and listing of the dates of a patient's laboratory tests.",
+    "aliases": [
+      "Date",
+      "test date",
+      "laboratory date",
+      "dates of laboratory tests"
+    ],
+    "evidence": [
+      "evidence_date_ranges"
+    ]
+  },
+  {
+    "id": "term_symptom",
+    "name": "Clinical Symptom",
+    "type": "concept",
+    "definition": "Free-text description of the symptoms recorded for a patient at an examination. Presence of a value indicates recorded symptoms; absence of a value indicates that no symptom was recorded.",
+    "scope": "Presence or absence of symptoms at examination level.",
+    "aliases": [
+      "Symptoms",
+      "symptom",
+      "complaint"
+    ],
+    "evidence": [
+      "evidence_symptoms_coverage"
+    ]
+  },
+  {
+    "id": "term_serum_albumin",
+    "name": "Serum Albumin",
+    "type": "metric",
+    "definition": "Blood albumin concentration measured within a laboratory test panel; a nutritional and hepatic synthetic marker.",
+    "scope": "Filtering and averaging of blood albumin level.",
+    "aliases": [
+      "ALB",
+      "albumin",
+      "blood albumin level"
+    ],
+    "evidence": [
+      "evidence_analyte_coverage_and_ranges",
+      "evidence_threshold_counts"
+    ]
+  },
+  {
+    "id": "term_platelet_count",
+    "name": "Platelet Count",
+    "type": "metric",
+    "definition": "Platelet count measured within a laboratory test panel; a haematological marker relevant to coagulopathy.",
+    "scope": "Platelet-based filtering of patients.",
+    "aliases": [
+      "PLT",
+      "platelet",
+      "platelets"
+    ],
+    "evidence": [
+      "evidence_analyte_coverage_and_ranges",
+      "evidence_threshold_counts"
+    ]
+  },
+  {
+    "id": "term_gpt_level",
+    "name": "GPT (ALT) Transaminase Level",
+    "type": "metric",
+    "definition": "Glutamic pyruvic transaminase, also called alanine aminotransferase (ALT), measured within a laboratory test panel; a hepatic marker.",
+    "scope": "Liver enzyme filtering and history-of-elevation reasoning.",
+    "aliases": [
+      "GPT",
+      "ALT",
+      "glutamic pylvic transaminase",
+      "ALT glutamic pylvic transaminase"
+    ],
+    "evidence": [
+      "evidence_analyte_coverage_and_ranges",
+      "evidence_threshold_counts"
+    ]
+  },
+  {
+    "id": "term_blood_glucose",
+    "name": "Blood Glucose",
+    "type": "metric",
+    "definition": "Blood glucose concentration measured within a laboratory test panel.",
+    "scope": "Glucose range filtering.",
+    "aliases": [
+      "GLU",
+      "glucose",
+      "blood glucose"
+    ],
+    "evidence": [
+      "evidence_analyte_coverage_and_ranges",
+      "evidence_threshold_counts"
+    ]
+  },
+  {
+    "id": "term_total_cholesterol",
+    "name": "Total Cholesterol",
+    "type": "metric",
+    "definition": "Total serum cholesterol measured within a laboratory test panel.",
+    "scope": "Cholesterol range filtering.",
+    "aliases": [
+      "T-CHO",
+      "cholesterol",
+      "total cholesterol"
+    ],
+    "evidence": [
+      "evidence_analyte_coverage_and_ranges",
+      "evidence_threshold_counts"
+    ]
+  },
+  {
+    "id": "term_creatinine",
+    "name": "Creatinine",
+    "type": "metric",
+    "definition": "Serum creatinine concentration measured within a laboratory test panel; a renal function marker.",
+    "scope": "Renal function filtering.",
+    "aliases": [
+      "CRE",
+      "creatinine",
+      "creatinine level"
+    ],
+    "evidence": [
+      "evidence_analyte_coverage_and_ranges",
+      "evidence_threshold_counts"
+    ]
+  },
+  {
+    "id": "term_urea_nitrogen",
+    "name": "Urea Nitrogen",
+    "type": "metric",
+    "definition": "Blood urea nitrogen measured within a laboratory test panel; a renal function marker.",
+    "scope": "Urea nitrogen boundary-value filtering.",
+    "aliases": [
+      "UN",
+      "urea nitrogen",
+      "BUN"
+    ],
+    "evidence": [
+      "evidence_analyte_coverage_and_ranges",
+      "evidence_threshold_counts"
+    ]
+  },
+  {
+    "id": "term_creatinine_phosphokinase",
+    "name": "Creatinine Phosphokinase",
+    "type": "metric",
+    "definition": "Creatine (creatinine) phosphokinase activity measured within a laboratory test panel; a muscle damage marker.",
+    "scope": "Muscle enzyme range filtering.",
+    "aliases": [
+      "CPK",
+      "creatinine phosphokinase",
+      "creatine kinase",
+      "CK"
+    ],
+    "evidence": [
+      "evidence_analyte_coverage_and_ranges",
+      "evidence_threshold_counts"
+    ]
+  },
+  {
+    "id": "term_immunoglobulin_level",
+    "name": "Immunoglobulin Level",
+    "type": "metric",
+    "definition": "Serum immunoglobulin concentration measured per isotype (IgG, IgA, IgM) within a laboratory test panel, each isotype carrying its own reference interval.",
+    "scope": "Immunoglobulin range filtering per isotype.",
+    "aliases": [
+      "IGG",
+      "IGA",
+      "IGM",
+      "Ig G",
+      "Ig A",
+      "Ig M",
+      "immunoglobulin"
+    ],
+    "evidence": [
+      "evidence_analyte_coverage_and_ranges",
+      "evidence_threshold_counts"
+    ]
+  },
+  {
+    "id": "term_c_reactive_protein",
+    "name": "C-Reactive Protein",
+    "type": "metric",
+    "definition": "C-reactive protein measurement recorded within a laboratory test panel; an acute-phase inflammation marker. Negative and positive results are recorded as text qualifiers alongside numeric measurements.",
+    "scope": "Inflammation status filtering.",
+    "aliases": [
+      "CRP",
+      "C-reactive protein",
+      "abnormal C-reactive protein"
+    ],
+    "evidence": [
+      "evidence_crp_values"
+    ]
+  },
+  {
+    "id": "term_ana_titer",
+    "name": "Antinuclear Antibody Titer",
+    "type": "metric",
+    "definition": "The numeric dilution titer of antinuclear antibodies recorded on an examination, expressed on a power-of-four scale.",
+    "scope": "Quantifying antinuclear antibody positivity; distinct from the reported staining pattern.",
+    "aliases": [
+      "ANA",
+      "antinuclear antibody",
+      "ANA titer"
+    ],
+    "evidence": [
+      "evidence_ana_columns"
+    ]
+  },
+  {
+    "id": "term_ana_pattern",
+    "name": "ANA Staining Pattern",
+    "type": "dimension",
+    "definition": "The fluorescent staining pattern code reported for the antinuclear antibody assay on an examination, such as S, P, D or N and their combinations.",
+    "scope": "Selecting examinations by antinuclear antibody pattern.",
+    "aliases": [
+      "ANA Pattern",
+      "ANA pattern",
+      "pattern of only S",
+      "nuclear pattern"
+    ],
+    "evidence": [
+      "evidence_ana_columns"
+    ]
+  },
+  {
+    "id": "term_antiphospholipid_antibody",
+    "name": "Anti-Cardiolipin Antibody",
+    "type": "metric",
+    "definition": "Anti-cardiolipin antibody concentration recorded per isotype (IgG, IgM, IgA) on an examination; an antiphospholipid antibody relevant to thrombosis.",
+    "scope": "Antiphospholipid antibody level filtering, averaging and comparison against an average.",
+    "aliases": [
+      "aCL IgG",
+      "aCL IgM",
+      "aCL IgA",
+      "anti-Cardiolip in antibody",
+      "anticardiolipin"
+    ],
+    "evidence": [
+      "evidence_acl_antibody_values"
+    ]
+  },
+  {
+    "id": "term_coagulation_inhibitor_test",
+    "name": "Coagulation Inhibitor Test",
+    "type": "concept",
+    "definition": "A panel of lupus-anticoagulant related coagulation screening tests (KCT, RVVT, LAC) recorded on an examination, each as a positive or negative result.",
+    "scope": "Determining whether a patient has a positive degree of coagulation.",
+    "aliases": [
+      "KCT",
+      "RVVT",
+      "LAC",
+      "degree of coagulation",
+      "positive degree of coagulation",
+      "lupus anticoagulant"
+    ],
+    "evidence": [
+      "evidence_coagulation_values"
+    ]
+  },
+  {
+    "id": "term_thrombosis_degree",
+    "name": "Degree of Thrombosis",
+    "type": "metric",
+    "definition": "An ordinal severity grade of thrombosis recorded on an examination.",
+    "scope": "Thrombotic severity filtering such as thrombosis level 2.",
+    "aliases": [
+      "Thrombosis",
+      "degree of thrombosis",
+      "thrombosis level"
+    ],
+    "evidence": [
+      "evidence_thrombosis_distribution"
+    ]
+  },
+  {
+    "id": "term_ena_antibody",
+    "name": "Extractable Nuclear Antigen Antibody",
+    "type": "concept",
+    "definition": "A family of specific antinuclear autoantibody tests (anti-Scl70, anti-SSA, anti-SSB, anti-centromere, anti-RNP, anti-Sm) recorded in a laboratory panel, each reported either as a numeric titer or as the literal value negative.",
+    "scope": "Filtering patients by a normal or abnormal specific autoantibody result.",
+    "aliases": [
+      "SC170",
+      "anti-scl70",
+      "SSA",
+      "SSB",
+      "RNP",
+      "SM",
+      "CENTROMEA",
+      "anti-centromere",
+      "anti-SSB"
+    ],
+    "evidence": [
+      "evidence_ena_antibody_values"
+    ]
+  }
+]

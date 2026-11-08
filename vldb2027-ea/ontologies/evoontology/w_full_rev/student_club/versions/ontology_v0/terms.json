@@ -1,0 +1,611 @@
+[
+  {
+    "id": "term_event",
+    "name": "Event",
+    "type": "entity",
+    "definition": "A student club activity such as a meeting, speaker, game, social, election, registration, community service activity or budget review. Each event carries a name, a date, a type, an optional location, free-text notes and a lifecycle status.",
+    "scope": "Identifies the club activity that attendance, budget lines and (indirectly) expenses belong to.",
+    "aliases": [
+      "activity",
+      "club event",
+      "meeting",
+      "event record"
+    ],
+    "evidence": [
+      "evidence_schema_overview",
+      "evidence_row_counts"
+    ]
+  },
+  {
+    "id": "term_member",
+    "name": "Member",
+    "type": "entity",
+    "definition": "A person registered with the student club, holding a first name, last name, email, club position, t-shirt size, phone number, home zip code and a reference to an academic major.",
+    "scope": "The person dimension for attendance, expenses attributed to a member, income paid by a member, and club office holding.",
+    "aliases": [
+      "student",
+      "club member",
+      "person",
+      "Student_Club members"
+    ],
+    "evidence": [
+      "evidence_schema_overview",
+      "evidence_row_counts"
+    ]
+  },
+  {
+    "id": "term_major",
+    "name": "Major",
+    "type": "entity",
+    "definition": "An academic degree program offered by the university, described by a program name, the hosting department, and the college it sits in.",
+    "scope": "Academic background of a member; the anchor for major name, department and college analysis.",
+    "aliases": [
+      "degree program",
+      "field of study",
+      "program"
+    ],
+    "evidence": [
+      "evidence_schema_overview",
+      "evidence_member_major_business"
+    ]
+  },
+  {
+    "id": "term_budget",
+    "name": "Budget Line",
+    "type": "entity",
+    "definition": "A budget allocation for one spending category of one event, recording the amount allotted, the amount spent against it, the amount remaining and a snapshot of the event status.",
+    "scope": "Event-level financial planning and budget-versus-actual comparison.",
+    "aliases": [
+      "budget item",
+      "budget allocation",
+      "budget record",
+      "budget line"
+    ],
+    "evidence": [
+      "evidence_budget_grain",
+      "evidence_budget_remaining_formula"
+    ]
+  },
+  {
+    "id": "term_expense",
+    "name": "Expense",
+    "type": "entity",
+    "definition": "A single spending record: what was bought, on which date, at what cost, whether it was approved, which member incurred it and which budget line it is charged to.",
+    "scope": "Itemized spending analysis, including per-member spending and per-event cost.",
+    "aliases": [
+      "cost record",
+      "spending",
+      "purchase",
+      "expense record"
+    ],
+    "evidence": [
+      "evidence_schema_overview",
+      "evidence_expense_links_complete"
+    ]
+  },
+  {
+    "id": "term_income",
+    "name": "Income",
+    "type": "entity",
+    "definition": "Money received by the club on a given date from a source such as dues, fundraising, sponsorship or a school appropriation, optionally attributed to a member.",
+    "scope": "Club revenue analysis by source and by paying member.",
+    "aliases": [
+      "revenue",
+      "receipts",
+      "money received"
+    ],
+    "evidence": [
+      "evidence_income_source_values",
+      "evidence_income_dues_pattern"
+    ]
+  },
+  {
+    "id": "term_attendance",
+    "name": "Attendance Record",
+    "type": "entity",
+    "definition": "A link between one member and one event, recording that the member attended that event. The pair (event, member) is unique.",
+    "scope": "Event participation and head-count analysis; the only source of event attendance.",
+    "aliases": [
+      "attendance",
+      "attendance link",
+      "participation record"
+    ],
+    "evidence": [
+      "evidence_attendance_coverage"
+    ]
+  },
+  {
+    "id": "term_zip_code",
+    "name": "Zip Code Reference",
+    "type": "entity",
+    "definition": "A postal geography lookup that maps a zip code to an area type, city, county, state and short state.",
+    "scope": "Geographic enrichment of a member's home location and standalone geography questions.",
+    "aliases": [
+      "postal code",
+      "zip",
+      "geo reference"
+    ],
+    "evidence": [
+      "evidence_zip_reference_scope"
+    ]
+  },
+  {
+    "id": "term_event_status",
+    "name": "Event Status",
+    "type": "dimension",
+    "definition": "The lifecycle state of an event as recorded on the event itself: Closed, Open or Planning.",
+    "scope": "Filtering and reporting on event lifecycle state, including questions about closed or open events.",
+    "aliases": [
+      "status",
+      "event status",
+      "event state",
+      "closed event",
+      "open event"
+    ],
+    "evidence": [
+      "evidence_event_status_values"
+    ]
+  },
+  {
+    "id": "term_budget_status",
+    "name": "Budget Line Event Status",
+    "type": "dimension",
+    "definition": "A copy of the linked event's lifecycle status stored on each budget line, so budget analysis can be filtered by event status without joining the event table.",
+    "scope": "Used when budget data is analysed on its own; the value always coincides with the linked event's status.",
+    "aliases": [
+      "event_status",
+      "budget status",
+      "status on budget"
+    ],
+    "evidence": [
+      "evidence_budget_status_mirror"
+    ]
+  },
+  {
+    "id": "term_event_type",
+    "name": "Event Type",
+    "type": "dimension",
+    "definition": "The category of a club event: Meeting, Election, Game, Guest Speaker, Social, Registration, Community Service or Budget.",
+    "scope": "Classifying events when a question refers to a kind of activity.",
+    "aliases": [
+      "type",
+      "event category",
+      "kind of event",
+      "activity type"
+    ],
+    "evidence": [
+      "evidence_event_type_values"
+    ]
+  },
+  {
+    "id": "term_event_name",
+    "name": "Event Name",
+    "type": "dimension",
+    "definition": "The human-readable label of an event, used to identify an event in questions and as the join point for budget and expense analysis at event level.",
+    "scope": "Resolving a named meeting or activity mentioned in a question to its event record.",
+    "aliases": [
+      "event",
+      "name of event",
+      "meeting name",
+      "event title"
+    ],
+    "evidence": [
+      "evidence_event_name_duplicates"
+    ]
+  },
+  {
+    "id": "term_budget_category",
+    "name": "Budget Category",
+    "type": "dimension",
+    "definition": "The spending category a budget line is allocated to: Food, Advertisement, Speaker Gifts, Parking or Club T-Shirts.",
+    "scope": "Budget breakdowns by purpose of spending.",
+    "aliases": [
+      "category",
+      "budget type",
+      "spending category",
+      "advertisement budget"
+    ],
+    "evidence": [
+      "evidence_budget_category_values"
+    ]
+  },
+  {
+    "id": "term_expense_description",
+    "name": "Expense Description",
+    "type": "dimension",
+    "definition": "Free-text description of what an expense purchased, such as Pizza, Posters, Parking or Water, Cookies. Values are literal strings rather than a controlled vocabulary.",
+    "scope": "Identifying the kind or type of an expense.",
+    "aliases": [
+      "kind of expense",
+      "type of expense",
+      "expense item",
+      "what was bought"
+    ],
+    "evidence": [
+      "evidence_expense_description_values"
+    ]
+  },
+  {
+    "id": "term_expense_date",
+    "name": "Expense Date",
+    "type": "dimension",
+    "definition": "The calendar date on which an expense was incurred, recorded as an ISO date (YYYY-MM-DD). The month of an expense is read from this value.",
+    "scope": "Time-based spending analysis such as month or period filtering.",
+    "aliases": [
+      "date of expense",
+      "expense date",
+      "month of expense",
+      "when bought"
+    ],
+    "evidence": [
+      "evidence_expense_date_format"
+    ]
+  },
+  {
+    "id": "term_member_position",
+    "name": "Member Position",
+    "type": "dimension",
+    "definition": "The club standing or office held by a member: President, Vice President, Treasurer, Secretary, Member, or Inactive.",
+    "scope": "Distinguishing officers, ordinary members and inactive members.",
+    "aliases": [
+      "position",
+      "office",
+      "role",
+      "officer position"
+    ],
+    "evidence": [
+      "evidence_member_position_values"
+    ]
+  },
+  {
+    "id": "term_officer",
+    "name": "Club Officer",
+    "type": "category",
+    "definition": "A member holding an elected club office: President, Vice President, Treasurer or Secretary. This is a subset of the member position domain, distinct from the ordinary Member and Inactive standings.",
+    "scope": "Questions about club leadership rather than the general membership.",
+    "aliases": [
+      "officer",
+      "executive",
+      "club leadership",
+      "elected position"
+    ],
+    "evidence": [
+      "evidence_member_position_values"
+    ]
+  },
+  {
+    "id": "term_t_shirt_size",
+    "name": "T-Shirt Size",
+    "type": "dimension",
+    "definition": "The apparel size recorded for a member: Small, Medium, Large or X-Large.",
+    "scope": "Member apparel and merchandise sizing analysis.",
+    "aliases": [
+      "shirt size",
+      "t shirt size",
+      "size",
+      "medium size"
+    ],
+    "evidence": [
+      "evidence_t_shirt_size_values"
+    ]
+  },
+  {
+    "id": "term_member_phone",
+    "name": "Member Phone Number",
+    "type": "dimension",
+    "definition": "The contact telephone number stored for a member. Values are not consistently formatted: most are plain digit-and-dash strings, a few are wrapped in parentheses around the area code.",
+    "scope": "Contacting or identifying a member by phone number.",
+    "aliases": [
+      "phone",
+      "contact number",
+      "telephone",
+      "phone number"
+    ],
+    "evidence": [
+      "evidence_member_phone_formats"
+    ]
+  },
+  {
+    "id": "term_major_name",
+    "name": "Major Name",
+    "type": "dimension",
+    "definition": "The name of a degree program, for example Business, Finance or International Business. A major name is a full literal value, not a keyword fragment.",
+    "scope": "Matching a member's field of study to a named program.",
+    "aliases": [
+      "major",
+      "program name",
+      "field of study",
+      "degree name"
+    ],
+    "evidence": [
+      "evidence_member_major_business"
+    ]
+  },
+  {
+    "id": "term_department",
+    "name": "Department",
+    "type": "dimension",
+    "definition": "The academic department, school or program that hosts a major, such as Economics and Finance Department, School of Business or Liberal Arts Program.",
+    "scope": "Organisational home of a member's major, reached through the major rather than directly from the member.",
+    "aliases": [
+      "dept",
+      "academic department",
+      "school",
+      "academic unit"
+    ],
+    "evidence": [
+      "evidence_president_department"
+    ]
+  },
+  {
+    "id": "term_city",
+    "name": "City",
+    "type": "dimension",
+    "definition": "The city or place name associated with a zip code in the postal reference table.",
+    "scope": "Geographic counting and grouping of places within a county and state.",
+    "aliases": [
+      "town",
+      "place",
+      "city name"
+    ],
+    "evidence": [
+      "evidence_zip_geography_orange_county"
+    ]
+  },
+  {
+    "id": "term_county",
+    "name": "County",
+    "type": "dimension",
+    "definition": "The county or municipio name associated with a zip code, such as Orange County. Some postal rows carry no county value.",
+    "scope": "Sub-state geographic grouping; used together with state to scope a set of cities.",
+    "aliases": [
+      "county name",
+      "municipio"
+    ],
+    "evidence": [
+      "evidence_zip_geography_orange_county"
+    ]
+  },
+  {
+    "id": "term_geographic_state",
+    "name": "State",
+    "type": "dimension",
+    "definition": "The US state name associated with a zip code, such as Illinois or Virginia. A member's home state is reached through the member's zip code.",
+    "scope": "State-level geography for members and for postal reference lookups.",
+    "aliases": [
+      "state",
+      "state name",
+      "grew up in",
+      "home state"
+    ],
+    "evidence": [
+      "evidence_member_state_distribution"
+    ]
+  },
+  {
+    "id": "term_income_source",
+    "name": "Income Source",
+    "type": "dimension",
+    "definition": "The origin of a club income receipt: Dues, Fundraising, Sponsorship or School Appropration.",
+    "scope": "Classifying club revenue by how it was obtained.",
+    "aliases": [
+      "source",
+      "revenue source",
+      "where money came from"
+    ],
+    "evidence": [
+      "evidence_income_source_values"
+    ]
+  },
+  {
+    "id": "term_fundraising",
+    "name": "Fundraising Activity",
+    "type": "concept",
+    "definition": "Club activity that raises money beyond membership dues, such as soliciting donations. It is observable only as an income source, not as a kind of event.",
+    "scope": "Deciding whether an event or an activity counts as a fundraiser.",
+    "aliases": [
+      "fundraiser",
+      "fundraising",
+      "donation drive",
+      "not fundraisers"
+    ],
+    "evidence": [
+      "evidence_income_source_values",
+      "evidence_event_notes_check"
+    ]
+  },
+  {
+    "id": "term_expense_approval",
+    "name": "Expense Approval Status",
+    "type": "dimension",
+    "definition": "Whether an expense was approved, recorded as the literal string 'true' or left empty when no approval was recorded.",
+    "scope": "Filtering expenses by approval when a question asks about approved amounts.",
+    "aliases": [
+      "approved",
+      "approval",
+      "approved expense",
+      "unapproved"
+    ],
+    "evidence": [
+      "evidence_expense_approved_values"
+    ]
+  },
+  {
+    "id": "term_expense_cost",
+    "name": "Expense Cost",
+    "type": "metric",
+    "definition": "The monetary value of a single expense record.",
+    "scope": "Base measure for all spending analysis, both per expense and aggregated per member, per budget line or per event.",
+    "aliases": [
+      "cost",
+      "expense amount",
+      "spending amount",
+      "amount spent"
+    ],
+    "evidence": [
+      "evidence_avg_expense_cost"
+    ]
+  },
+  {
+    "id": "term_budget_amount",
+    "name": "Budget Amount",
+    "type": "metric",
+    "definition": "The total money allocated to a budget line before any spending.",
+    "scope": "Denominator of budget utilisation and input to the remaining-balance calculation.",
+    "aliases": [
+      "amount",
+      "budget",
+      "allocated amount",
+      "budgeted amount"
+    ],
+    "evidence": [
+      "evidence_budget_remaining_formula"
+    ]
+  },
+  {
+    "id": "term_budget_spent",
+    "name": "Budget Spent",
+    "type": "metric",
+    "definition": "The money actually spent against a budget line. It equals the sum of the costs of the expenses charged to that line.",
+    "scope": "Measuring actual spending against an allocation.",
+    "aliases": [
+      "spent",
+      "spend",
+      "actual spend",
+      "budget spend"
+    ],
+    "evidence": [
+      "evidence_budget_spent_from_expense"
+    ]
+  },
+  {
+    "id": "term_budget_remaining",
+    "name": "Budget Remaining",
+    "type": "metric",
+    "definition": "The money left in a budget line after spending, computed as the allocated amount minus the spent amount. A negative value means the line was overspent.",
+    "scope": "Checking whether spending stayed within an allocation.",
+    "aliases": [
+      "remaining",
+      "budget left",
+      "balance",
+      "left over"
+    ],
+    "evidence": [
+      "evidence_budget_remaining_formula",
+      "evidence_negative_remaining_events"
+    ]
+  },
+  {
+    "id": "term_budget_overrun",
+    "name": "Budget Overrun",
+    "type": "metric",
+    "definition": "The magnitude by which a budget line exceeded its allocation, i.e. the amount by which spending surpassed the budget.",
+    "scope": "Identifying the most over-budget item or event.",
+    "aliases": [
+      "exceeded the budget",
+      "over budget",
+      "overspent",
+      "overrun",
+      "exceeded the budget the most"
+    ],
+    "evidence": [
+      "evidence_negative_remaining_events"
+    ]
+  },
+  {
+    "id": "term_event_total_cost",
+    "name": "Event Total Cost",
+    "type": "metric",
+    "definition": "The total amount spent on one event, obtained by summing the costs of the expenses charged to that event's budget lines.",
+    "scope": "Comparing how expensive events were and finding the cheapest or most expensive event.",
+    "aliases": [
+      "event cost",
+      "cost of event",
+      "total cost of event",
+      "event spending"
+    ],
+    "evidence": [
+      "evidence_expense_to_event_path"
+    ]
+  },
+  {
+    "id": "term_attendance_count",
+    "name": "Attendance Count",
+    "type": "metric",
+    "definition": "The number of members recorded as attending an event, counted from attendance records for that event.",
+    "scope": "Head-count analysis of event participation and attendance thresholds.",
+    "aliases": [
+      "attendance",
+      "number of attendees",
+      "how many attended",
+      "attendance of"
+    ],
+    "evidence": [
+      "evidence_attendance_coverage"
+    ]
+  },
+  {
+    "id": "term_income_amount",
+    "name": "Income Amount",
+    "type": "metric",
+    "definition": "The monetary value received in a single income record.",
+    "scope": "Summing club revenue by source, period or member.",
+    "aliases": [
+      "income",
+      "amount received",
+      "revenue amount",
+      "money taken in"
+    ],
+    "evidence": [
+      "evidence_income_source_values"
+    ]
+  },
+  {
+    "id": "term_member_full_name",
+    "name": "Member Full Name",
+    "type": "metric",
+    "definition": "A member's displayed name, formed by combining the stored first name and last name. There is no single stored full-name column.",
+    "scope": "Identifying or listing members by the name used in natural language.",
+    "aliases": [
+      "full name",
+      "name of member",
+      "member name",
+      "name"
+    ],
+    "evidence": [
+      "evidence_member_major_business"
+    ]
+  },
+  {
+    "id": "term_average_expense_cost",
+    "name": "Average Expense Cost",
+    "type": "metric",
+    "definition": "The mean value of expense cost across the expenses under consideration, used as a comparator such as spending more than average.",
+    "scope": "Threshold comparisons against typical spending.",
+    "aliases": [
+      "average cost",
+      "mean cost",
+      "average spending",
+      "more than average"
+    ],
+    "evidence": [
+      "evidence_avg_expense_cost"
+    ]
+  },
+  {
+    "id": "term_spend_to_budget_ratio",
+    "name": "Spend to Budget Ratio",
+    "type": "metric",
+    "definition": "The ratio of the amount spent to the amount allocated for a budget line or for an event's combined budgets, expressing budget utilisation.",
+    "scope": "Ranking how fully a budget was used, including cases above the allocation.",
+    "aliases": [
+      "spend-to-budget ratio",
+      "spent to amount",
+      "budget utilisation",
+      "how many times more"
+    ],
+    "evidence": [
+      "evidence_closed_spend_ratio"
+    ]
+  }
+]

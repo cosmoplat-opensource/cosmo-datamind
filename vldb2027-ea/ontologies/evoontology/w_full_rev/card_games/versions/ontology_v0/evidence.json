@@ -1,0 +1,258 @@
+[
+  {
+    "id": "ev_cards_grain",
+    "query": "SELECT count(*) FROM cards; and SELECT count(*) FROM (SELECT uuid FROM cards GROUP BY uuid HAVING count(*) > 1);",
+    "result": "56822 card printing rows; 0 duplicate uuid values. cards.id is an integer primary key and cards.uuid carries a unique constraint.",
+    "source": "card_games sqlite, read-only",
+    "timestamp": "2026-10-10",
+    "validation_method": "row count plus uniqueness check on both identifier columns"
+  },
+  {
+    "id": "ev_card_name_duplication",
+    "query": "SELECT count(*) FROM (SELECT name FROM cards GROUP BY name HAVING count(*) > 1);",
+    "result": "11170 distinct names occur on more than one printing.",
+    "source": "card_games sqlite, read-only",
+    "timestamp": "2026-10-10",
+    "validation_method": "group-by cardinality check"
+  },
+  {
+    "id": "ev_adarkar_printings",
+    "query": "SELECT name, setCode FROM cards WHERE name = 'Adarkar Valkyrie';",
+    "result": "The name resolves to printings in sets C14, C18, CSP, MMA and PLIST, five rows in total.",
+    "source": "card_games sqlite, read-only",
+    "timestamp": "2026-10-10",
+    "validation_method": "value inspection for a name used in the workload"
+  },
+  {
+    "id": "ev_set_join_key",
+    "query": "SELECT count(*) FROM cards c LEFT JOIN sets s ON c.setCode = s.code WHERE s.code IS NULL;",
+    "result": "0 unmatched rows. cards holds 536 distinct setCode values against 551 sets rows.",
+    "source": "card_games sqlite, read-only",
+    "timestamp": "2026-10-10",
+    "validation_method": "left-join orphan check"
+  },
+  {
+    "id": "ev_set_samples",
+    "query": "SELECT name, code, baseSetSize, isForeignOnly FROM sets WHERE name IN ('Coldsnap','Eighth Edition','Hour of Devastation');",
+    "result": "Coldsnap|CSP|155|0; Eighth Edition|8ED|354|0; Hour of Devastation|HOU|199|0. Coldsnap holds 155 card printings and Hour of Devastation 219 printings.",
+    "source": "card_games sqlite, read-only",
+    "timestamp": "2026-10-10",
+    "validation_method": "value inspection for sets named in the workload"
+  },
+  {
+    "id": "ev_set_translation_sample",
+    "query": "SELECT language, translation FROM set_translations WHERE setCode = '8ED';",
+    "result": "Ten language rows for Eighth Edition, including Italian 'Set Base Ottava Edizione' and Chinese Simplified '核心系列第八版'.",
+    "source": "card_games sqlite, read-only",
+    "timestamp": "2026-10-10",
+    "validation_method": "value inspection"
+  },
+  {
+    "id": "ev_set_translation_nulls",
+    "query": "SELECT count(*), count(DISTINCT setCode), count(DISTINCT language), sum(translation IS NULL OR translation = '') FROM set_translations;",
+    "result": "1210 rows covering 121 sets and 10 languages, of which 231 rows carry a NULL or empty translation. There are no duplicate (setCode, language) pairs.",
+    "source": "card_games sqlite, read-only",
+    "timestamp": "2026-10-10",
+    "validation_method": "null counting and key uniqueness check"
+  },
+  {
+    "id": "ev_artist_cardinality",
+    "query": "SELECT count(DISTINCT artist), sum(artist IS NULL) FROM cards;",
+    "result": "991 distinct artist name strings across 56822 printings, with 3 rows having a NULL artist. No artist table or artist identifier exists in the schema.",
+    "source": "card_games sqlite, read-only",
+    "timestamp": "2026-10-10",
+    "validation_method": "distinct-value and null counting plus schema inspection"
+  },
+  {
+    "id": "ev_legalities_pairs",
+    "query": "SELECT format, status, count(*) FROM legalities GROUP BY format, status ORDER BY format, status;",
+    "result": "427907 rows over 15 formats. status takes only the values Legal, Banned and Restricted. commander has 55244 Legal and 332 Banned rows; Restricted appears only for duel (87), oldschool (136) and vintage (413). No duplicate (uuid, format) pairs.",
+    "source": "card_games sqlite, read-only",
+    "timestamp": "2026-10-10",
+    "validation_method": "value-domain enumeration and key uniqueness check"
+  },
+  {
+    "id": "ev_rulings_join",
+    "query": "SELECT count(*) FROM rulings r LEFT JOIN cards c ON r.uuid = c.uuid WHERE c.uuid IS NULL;",
+    "result": "87769 rulings rows and 0 rows whose uuid is absent from cards.",
+    "source": "card_games sqlite, read-only",
+    "timestamp": "2026-10-10",
+    "validation_method": "left-join orphan check"
+  },
+  {
+    "id": "ev_rulings_max",
+    "query": "SELECT c.name, count(*) n FROM rulings r JOIN cards c ON r.uuid = c.uuid GROUP BY c.uuid ORDER BY n DESC LIMIT 5;",
+    "result": "The highest ruling count per card uuid is 27, reached by a printing of 'Teferi's Protection'; 'Rowan Kenrith' reaches 25.",
+    "source": "card_games sqlite, read-only",
+    "timestamp": "2026-10-10",
+    "validation_method": "aggregate ranking check"
+  },
+  {
+    "id": "ev_border_color_dist",
+    "query": "SELECT borderColor, count(*) FROM cards GROUP BY borderColor;",
+    "result": "black 49729, white 5017, gold 1244, silver 591, borderless 241. The column is fully populated with these five values.",
+    "source": "card_games sqlite, read-only",
+    "timestamp": "2026-10-10",
+    "validation_method": "value-domain enumeration"
+  },
+  {
+    "id": "ev_power_dist",
+    "query": "SELECT power, count(*) FROM cards GROUP BY power ORDER BY count(*) DESC LIMIT 20; and SELECT sum(power IS NULL), sum(power = '*') FROM cards;",
+    "result": "30624 rows have NULL power and 429 rows have power '*'. The remaining values are numeric strings led by '2' (7815), '1' (5579), '3' (4414), '4' (2855), '5' (1744), '0' (1442), plus composite values such as '1+*' (16) and '3.5' (4).",
+    "source": "card_games sqlite, read-only",
+    "timestamp": "2026-10-10",
+    "validation_method": "value-domain enumeration and marker counting"
+  },
+  {
+    "id": "ev_colors_dist",
+    "query": "SELECT colors, count(*) FROM cards GROUP BY colors ORDER BY count(*) DESC LIMIT 15;",
+    "result": "12540 rows have empty colors. Single-colour values are G 8066, B 7807, R 7793, W 7681, U 7630; multi-colour values are comma-separated pairs such as 'G,W' 505 and 'B,R' 468.",
+    "source": "card_games sqlite, read-only",
+    "timestamp": "2026-10-10",
+    "validation_method": "value-domain enumeration"
+  },
+  {
+    "id": "ev_types_dist",
+    "query": "SELECT types, count(*) FROM cards GROUP BY types ORDER BY count(*) DESC LIMIT 15;",
+    "result": "Creature 24229, Instant 6739, Land 6573, Sorcery 6328, Enchantment 5652, Artifact 3986, then multi-type lists led by 'Artifact,Creature' 1617 and 'Enchantment,Creature' 256.",
+    "source": "card_games sqlite, read-only",
+    "timestamp": "2026-10-10",
+    "validation_method": "value-domain enumeration"
+  },
+  {
+    "id": "ev_originaltype_vs_types",
+    "query": "SELECT count(*) FROM cards WHERE originalType = 'Artifact'; SELECT count(*) FROM cards WHERE ','||types||',' LIKE '%,Artifact,%'; SELECT sum((originalType='Artifact') AND (','||types||',' LIKE '%,Artifact,%')), sum((originalType='Artifact') AND NOT (','||types||',' LIKE '%,Artifact,%')), sum((originalType<>'Artifact') AND (','||types||',' LIKE '%,Artifact,%')) FROM cards;",
+    "result": "originalType = 'Artifact' selects 2093 printings; types containing Artifact selects 5670. 2093 printings satisfy both, 0 satisfy only originalType, and 2162 carry Artifact solely within a multi-type list.",
+    "source": "card_games sqlite, read-only",
+    "timestamp": "2026-10-10",
+    "validation_method": "cross-tabulation of the two type representations"
+  },
+  {
+    "id": "ev_frame_version_dist",
+    "query": "SELECT frameVersion, count(*) FROM cards GROUP BY frameVersion;",
+    "result": "2015 25500, 2003 16462, 1997 9257, 1993 5510, future 93.",
+    "source": "card_games sqlite, read-only",
+    "timestamp": "2026-10-10",
+    "validation_method": "value-domain enumeration"
+  },
+  {
+    "id": "ev_frame_effects_dist",
+    "query": "SELECT frameEffects, count(*) FROM cards GROUP BY frameEffects ORDER BY count(*) DESC LIMIT 25;",
+    "result": "53864 rows have NULL frameEffects. The remaining values are comma-separated lists led by legendary 1102, extendedart 383, nyxtouched 193, sunmoondfc 188 and showcase 154.",
+    "source": "card_games sqlite, read-only",
+    "timestamp": "2026-10-10",
+    "validation_method": "value-domain enumeration"
+  },
+  {
+    "id": "ev_text_triggered",
+    "query": "SELECT count(*) FROM cards WHERE text LIKE '%triggered ability%'; and SELECT count(*) FROM cards WHERE (power IS NULL OR power = '*') AND text LIKE '%triggered ability%';",
+    "result": "53 printings contain the phrase 'triggered ability'; 35 of them also have unknown power.",
+    "source": "card_games sqlite, read-only",
+    "timestamp": "2026-10-10",
+    "validation_method": "substring match counting"
+  },
+  {
+    "id": "ev_fd_languages",
+    "query": "SELECT language, count(*) FROM foreign_data GROUP BY language ORDER BY count(*) DESC;",
+    "result": "16 languages: Japanese 31226, French 29301, German 28891, Italian 28698, Spanish 28639, Portuguese (Brazil) 25641, Chinese Simplified 20106, Russian 15878, Chinese Traditional 11106, Korean 9692, then Phyrexian 3 and one row each for Sanskrit, Latin, Hebrew, Arabic and Ancient Greek.",
+    "source": "card_games sqlite, read-only",
+    "timestamp": "2026-10-10",
+    "validation_method": "value-domain enumeration"
+  },
+  {
+    "id": "ev_st_languages",
+    "query": "SELECT language, count(*) FROM set_translations GROUP BY language;",
+    "result": "10 languages, each present on 121 sets: Spanish, Russian, Portuguese (Brazil), Korean, Japanese, Italian, German, French, Chinese Traditional and Chinese Simplified.",
+    "source": "card_games sqlite, read-only",
+    "timestamp": "2026-10-10",
+    "validation_method": "value-domain enumeration"
+  },
+  {
+    "id": "ev_fd_join",
+    "query": "SELECT count(*) FROM foreign_data; and SELECT count(*) FROM foreign_data f LEFT JOIN cards c ON f.uuid = c.uuid WHERE c.uuid IS NULL;",
+    "result": "229186 foreign_data rows; 16 rows reference a uuid that is absent from cards.",
+    "source": "card_games sqlite, read-only",
+    "timestamp": "2026-10-10",
+    "validation_method": "row count and left-join orphan check"
+  },
+  {
+    "id": "ev_fd_orphans",
+    "query": "SELECT count(*) FROM foreign_data f LEFT JOIN cards c ON f.uuid = c.uuid WHERE c.uuid IS NULL;",
+    "result": "16 orphan foreign_data rows out of 229186, none of which can be attributed to a card printing.",
+    "source": "card_games sqlite, read-only",
+    "timestamp": "2026-10-10",
+    "validation_method": "left-join orphan check"
+  },
+  {
+    "id": "ev_promo_count",
+    "query": "SELECT isPromo, count(*) FROM cards GROUP BY isPromo;",
+    "result": "5588 printings flagged isPromo = 1 out of 56822.",
+    "source": "card_games sqlite, read-only",
+    "timestamp": "2026-10-10",
+    "validation_method": "flag counting"
+  },
+  {
+    "id": "ev_textless_count",
+    "query": "SELECT isTextless, count(*) FROM cards GROUP BY isTextless;",
+    "result": "115 printings flagged isTextless = 1 out of 56822.",
+    "source": "card_games sqlite, read-only",
+    "timestamp": "2026-10-10",
+    "validation_method": "flag counting"
+  },
+  {
+    "id": "ev_story_count",
+    "query": "SELECT isStorySpotlight, count(*) FROM cards GROUP BY isStorySpotlight;",
+    "result": "104 printings flagged isStorySpotlight = 1 out of 56822.",
+    "source": "card_games sqlite, read-only",
+    "timestamp": "2026-10-10",
+    "validation_method": "flag counting"
+  },
+  {
+    "id": "ev_story_spotlight_vs_textless",
+    "query": "SELECT sum(isStorySpotlight = 1 AND isTextless = 1), sum(isStorySpotlight = 1 AND isTextless = 0) FROM cards;",
+    "result": "0 printings are both Story Spotlight and flagged textless; 104 are Story Spotlight and not flagged textless. The workload's stated definition (isStorySpotlight = 1 AND isTextless = 0) therefore matches all 104 Story Spotlight printings, while the literal reading of an absent text box matches none.",
+    "source": "card_games sqlite, read-only",
+    "timestamp": "2026-10-10",
+    "validation_method": "cross-tabulation of the two flags against the workload's stated definition"
+  },
+  {
+    "id": "ev_card_kingdom_ids",
+    "query": "SELECT sum(cardKingdomId IS NULL), sum(cardKingdomId IS NOT NULL), sum(cardKingdomFoilId IS NULL), sum(cardKingdomFoilId IS NOT NULL), sum(cardKingdomId IS NOT NULL AND cardKingdomFoilId IS NOT NULL) FROM cards;",
+    "result": "cardKingdomId is NULL on 13622 rows and present on 43200; cardKingdomFoilId is NULL on 27910 and present on 28912; both identifiers are present on 25061 printings.",
+    "source": "card_games sqlite, read-only",
+    "timestamp": "2026-10-10",
+    "validation_method": "null counting and pairwise conjunction over the two identifier columns"
+  },
+  {
+    "id": "ev_coldsnap_foil",
+    "query": "SELECT count(*), sum(cardKingdomFoilId IS NOT NULL AND cardKingdomId IS NOT NULL) FROM cards WHERE setCode = 'CSP';",
+    "result": "Coldsnap holds 155 printings and all 155 have both Card Kingdom identifiers present.",
+    "source": "card_games sqlite, read-only",
+    "timestamp": "2026-10-10",
+    "validation_method": "set-scoped aggregate for a set named in the workload"
+  },
+  {
+    "id": "ev_set_foreign_only",
+    "query": "SELECT isForeignOnly, count(*) FROM sets GROUP BY isForeignOnly;",
+    "result": "16 sets flagged isForeignOnly = 1 and 535 sets flagged 0.",
+    "source": "card_games sqlite, read-only",
+    "timestamp": "2026-10-10",
+    "validation_method": "flag counting over the sets table"
+  },
+  {
+    "id": "ev_set_base_set_size",
+    "query": "SELECT min(baseSetSize), max(baseSetSize), sum(baseSetSize = 0) FROM sets;",
+    "result": "baseSetSize ranges from 0 to 1694 across 551 sets, with 1 set at 0.",
+    "source": "card_games sqlite, read-only",
+    "timestamp": "2026-10-10",
+    "validation_method": "range and boundary-value check"
+  },
+  {
+    "id": "ev_borderless_percentage",
+    "query": "SELECT round(100.0 * sum(borderColor = 'borderless') / count(*), 4) FROM cards;",
+    "result": "0.4241 percent of the 56822 printings are borderless, consistent with the 241 borderless rows counted directly.",
+    "source": "card_games sqlite, read-only",
+    "timestamp": "2026-10-10",
+    "validation_method": "ratio computed over the whole table and reconciled with the direct count"
+  }
+]

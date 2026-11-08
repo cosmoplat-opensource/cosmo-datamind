@@ -1,0 +1,332 @@
+[
+  {
+    "id": "term_post",
+    "name": "Post",
+    "type": "entity",
+    "definition": "A single piece of community content addressed by one identifier in posts.Id, discriminating questions, answers and wiki or administrative contributions through the PostTypeId discriminator.",
+    "scope": "Whole content model of codebase_community",
+    "aliases": [
+      "post record",
+      "contribution",
+      "posting"
+    ],
+    "evidence": [
+      "evidence_post_row_counts",
+      "evidence_orphan_references"
+    ]
+  },
+  {
+    "id": "term_question",
+    "name": "Question",
+    "type": "entity",
+    "definition": "A post that asks the community for help, marked by PostTypeId = 1. A question is the only post category carrying a Title, a ViewCount, an AnswerCount, a CommentCount and FavoriteCount, and the only category carrying tags.",
+    "scope": "Content analysis scoped to question posts",
+    "aliases": [
+      "question post",
+      "asked question"
+    ],
+    "evidence": [
+      "evidence_post_type_field_population",
+      "evidence_title_only_on_questions",
+      "evidence_viewcount_scope"
+    ]
+  },
+  {
+    "id": "term_answer",
+    "name": "Answer",
+    "type": "entity",
+    "definition": "A post that responds to a question, marked by PostTypeId = 2 and attached to its question through ParentId.",
+    "scope": "Content analysis scoped to answer posts",
+    "aliases": [
+      "answer post",
+      "response"
+    ],
+    "evidence": [
+      "evidence_post_type_field_population",
+      "evidence_answer_parent_linkage"
+    ]
+  },
+  {
+    "id": "term_user",
+    "name": "User",
+    "type": "entity",
+    "definition": "A registered account identified by users.Id that participates by owning posts, comments and votes and by receiving badges.",
+    "scope": "Community participation analysis",
+    "aliases": [
+      "account",
+      "member",
+      "author"
+    ],
+    "evidence": [
+      "evidence_user_population",
+      "evidence_orphan_references"
+    ]
+  },
+  {
+    "id": "term_tag",
+    "name": "Tag",
+    "type": "entity",
+    "definition": "A topical label naming the subject matter of a question. Tags exist as rows in the tags table and are referenced by questions as delimited text inside the single posts.Tags column.",
+    "scope": "Topical coverage and subject analysis",
+    "aliases": [
+      "topic label",
+      "subject tag"
+    ],
+    "evidence": [
+      "evidence_tags_format",
+      "evidence_tags_population"
+    ]
+  },
+  {
+    "id": "term_badge",
+    "name": "Badge",
+    "type": "entity",
+    "definition": "An achievement awarded to a user, recorded as one row in badges with a Name and an award Date.",
+    "scope": "Recognition and contribution milestone analysis",
+    "aliases": [
+      "award",
+      "achievement"
+    ],
+    "evidence": [
+      "evidence_badge_distribution",
+      "evidence_badge_name_composition"
+    ]
+  },
+  {
+    "id": "term_comment",
+    "name": "Comment",
+    "type": "entity",
+    "definition": "A short remark attached to a post through comments.PostId.",
+    "scope": "Discussion and clarification activity on posts",
+    "aliases": [
+      "remark",
+      "note"
+    ],
+    "evidence": [
+      "evidence_comment_coverage"
+    ]
+  },
+  {
+    "id": "term_vote",
+    "name": "Vote",
+    "type": "entity",
+    "definition": "A single voting action applied to a post, recorded in votes with a VoteTypeId and a date.",
+    "scope": "Engagement and quality signalling",
+    "aliases": [
+      "voting action",
+      "ballot"
+    ],
+    "evidence": [
+      "evidence_vote_type_distribution",
+      "evidence_votes_date_coverage"
+    ]
+  },
+  {
+    "id": "term_post_link",
+    "name": "Post Link",
+    "type": "entity",
+    "definition": "A directed relationship declared between two posts, recorded in postLinks and classified by LinkTypeId.",
+    "scope": "Cross-post relationship analysis",
+    "aliases": [
+      "link",
+      "related post reference"
+    ],
+    "evidence": [
+      "evidence_postlinks_types"
+    ]
+  },
+  {
+    "id": "term_post_revision",
+    "name": "Post Revision",
+    "type": "entity",
+    "definition": "A revision event in the editing history of a post, recorded in postHistory with a PostHistoryTypeId.",
+    "scope": "Content lifecycle and editing analysis",
+    "aliases": [
+      "revision",
+      "history event",
+      "edit event"
+    ],
+    "evidence": [
+      "evidence_post_history_types",
+      "evidence_post_history_initial_types"
+    ]
+  },
+  {
+    "id": "term_post_score",
+    "name": "Post Score",
+    "type": "metric",
+    "definition": "The net quality score stored on a post in posts.Score, expressing accumulated community voting on that post.",
+    "scope": "Quality and ranking analysis over posts",
+    "aliases": [
+      "score",
+      "net votes",
+      "points"
+    ],
+    "evidence": [
+      "evidence_score_not_vote_sum"
+    ]
+  },
+  {
+    "id": "term_question_view_count",
+    "name": "Question View Count",
+    "type": "metric",
+    "definition": "The number of times a question has been viewed, stored in posts.ViewCount.",
+    "scope": "Reach and attention analysis over questions",
+    "aliases": [
+      "views",
+      "view count",
+      "page views"
+    ],
+    "evidence": [
+      "evidence_viewcount_scope"
+    ]
+  },
+  {
+    "id": "term_answer_count",
+    "name": "Answer Count",
+    "type": "metric",
+    "definition": "The number of answers a question has received, stored denormalised on the question in posts.AnswerCount.",
+    "scope": "Responsiveness analysis over questions",
+    "aliases": [
+      "answers received",
+      "number of answers"
+    ],
+    "evidence": [
+      "evidence_answer_count_faithful"
+    ]
+  },
+  {
+    "id": "term_user_reputation",
+    "name": "User Reputation",
+    "type": "metric",
+    "definition": "The accumulated reputation points of a user, stored in users.Reputation.",
+    "scope": "Expertise and standing analysis over users",
+    "aliases": [
+      "reputation",
+      "rep",
+      "points"
+    ],
+    "evidence": [
+      "evidence_user_population",
+      "evidence_user_reputation_skew"
+    ]
+  },
+  {
+    "id": "term_accepted_answer",
+    "name": "Accepted Answer",
+    "type": "concept",
+    "definition": "The answer a question asker marked as resolving the question, referenced from the question's AcceptedAnswerId and therefore always pointing at an answer post attached to that same question.",
+    "scope": "Answer resolution analysis",
+    "aliases": [
+      "accepted solution",
+      "chosen answer",
+      "accepted reply"
+    ],
+    "evidence": [
+      "evidence_accepted_answer_targets"
+    ]
+  },
+  {
+    "id": "term_bounty_amount",
+    "name": "Bounty Amount",
+    "type": "metric",
+    "definition": "Points offered or transferred through a bounty-related voting action, stored in votes.BountyAmount.",
+    "scope": "Bounty analysis; populated only on bounty vote rows",
+    "aliases": [
+      "bounty",
+      "bounty points"
+    ],
+    "evidence": [
+      "evidence_vote_type_distribution",
+      "evidence_votes_date_coverage"
+    ]
+  },
+  {
+    "id": "term_badge_count",
+    "name": "Badge Count",
+    "type": "metric",
+    "definition": "The number of badges a user has been awarded, obtained by counting that user's rows in badges.",
+    "scope": "Recognition analysis per user",
+    "aliases": [
+      "number of badges",
+      "badges earned"
+    ],
+    "evidence": [
+      "evidence_badge_distribution"
+    ]
+  },
+  {
+    "id": "term_post_type",
+    "name": "Post Type",
+    "type": "dimension",
+    "definition": "The category of a post encoded in posts.PostTypeId.",
+    "scope": "Separating questions, answers and wiki or administrative posts",
+    "aliases": [
+      "post kind",
+      "contribution type"
+    ],
+    "evidence": [
+      "evidence_post_type_distribution",
+      "evidence_post_type_field_population"
+    ]
+  },
+  {
+    "id": "term_vote_type",
+    "name": "Vote Type",
+    "type": "dimension",
+    "definition": "The category of a voting action encoded in votes.VoteTypeId.",
+    "scope": "Distinguishing upvotes, downvotes, favourites, bounties and moderation votes",
+    "aliases": [
+      "vote kind",
+      "voting category"
+    ],
+    "evidence": [
+      "evidence_vote_type_distribution"
+    ]
+  },
+  {
+    "id": "term_link_type",
+    "name": "Link Type",
+    "type": "dimension",
+    "definition": "The category of a post-to-post link encoded in postLinks.LinkTypeId.",
+    "scope": "Distinguishing duplicate markings from general links",
+    "aliases": [
+      "link kind"
+    ],
+    "evidence": [
+      "evidence_postlinks_types"
+    ]
+  },
+  {
+    "id": "term_post_history_type",
+    "name": "Post History Type",
+    "type": "dimension",
+    "definition": "The category of a post revision event encoded in postHistory.PostHistoryTypeId.",
+    "scope": "Classifying creation, edit, rollback, closure and notice events",
+    "aliases": [
+      "revision type",
+      "history event type"
+    ],
+    "evidence": [
+      "evidence_post_history_types",
+      "evidence_post_history_initial_types"
+    ]
+  },
+  {
+    "id": "term_activity_date",
+    "name": "Activity Date",
+    "type": "dimension",
+    "definition": "The point in time at which content or an engagement event occurred, available across tables under differing column names and with differing granularity.",
+    "scope": "Time-series analysis; granularity and coverage differ per table",
+    "aliases": [
+      "creation date",
+      "event date",
+      "timestamp"
+    ],
+    "evidence": [
+      "evidence_post_dates",
+      "evidence_votes_date_coverage",
+      "evidence_user_dates"
+    ]
+  }
+]

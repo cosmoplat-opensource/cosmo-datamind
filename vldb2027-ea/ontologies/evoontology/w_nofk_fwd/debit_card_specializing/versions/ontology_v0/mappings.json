@@ -1,0 +1,265 @@
+[
+  {
+    "id": "map_customer_registry",
+    "term_id": "term_customer",
+    "database_source": "debit_card_specializing",
+    "table": "customers",
+    "column": "CustomerID",
+    "semantic_filter": "Master registry of customers; one row per customer identity.",
+    "aggregation_semantics": "Count of distinct customers.",
+    "grain": "one row per customer",
+    "validation": {
+      "description": "32461 rows and 32461 distinct values, so the column is a clean unique customer key.",
+      "confidence": "high"
+    },
+    "evidence_refs": [
+      "ev_customer_columns",
+      "ev_customer_segment_values"
+    ]
+  },
+  {
+    "id": "map_customer_consumption_ref",
+    "term_id": "term_customer",
+    "database_source": "debit_card_specializing",
+    "table": "yearmonth",
+    "column": "CustomerID",
+    "semantic_filter": "Reference to the customer whose monthly consumption the row records. Some registered customers never appear here.",
+    "aggregation_semantics": "Count of distinct customers with recorded consumption.",
+    "grain": "one row per customer and month",
+    "validation": {
+      "description": "30566 distinct customers appear; every one of them resolves to a row in customers, with zero unmatched rows.",
+      "confidence": "high"
+    },
+    "evidence_refs": [
+      "ev_yearmonth_key_coverage",
+      "ev_customer_key_overlap"
+    ]
+  },
+  {
+    "id": "map_customer_transaction_ref",
+    "term_id": "term_customer",
+    "database_source": "debit_card_specializing",
+    "table": "transactions_1k",
+    "column": "CustomerID",
+    "semantic_filter": "Reference to the customer who paid in the transaction.",
+    "aggregation_semantics": "Count of distinct paying customers.",
+    "grain": "one row per transaction",
+    "validation": {
+      "description": "517 distinct customers appear and all of them also appear in the consumption ledger; no unmatched rows.",
+      "confidence": "high"
+    },
+    "evidence_refs": [
+      "ev_transactions_fk_coverage",
+      "ev_customer_key_overlap"
+    ]
+  },
+  {
+    "id": "map_customer_segment",
+    "term_id": "term_customer_segment",
+    "database_source": "debit_card_specializing",
+    "table": "customers",
+    "column": "Segment",
+    "semantic_filter": "Null-free on all customer rows.",
+    "aggregation_semantics": "Grouping label for aggregating consumption and counting customers.",
+    "grain": "one value per customer",
+    "validation": {
+      "description": "Only three values are present: SME 26763, LAM 3658, KAM 2040.",
+      "confidence": "high"
+    },
+    "evidence_refs": [
+      "ev_customer_segment_values"
+    ]
+  },
+  {
+    "id": "map_payment_currency",
+    "term_id": "term_payment_currency",
+    "database_source": "debit_card_specializing",
+    "table": "customers",
+    "column": "Currency",
+    "semantic_filter": "Null-free on all customer rows.",
+    "aggregation_semantics": "Grouping label for restricting analyses to one settlement currency.",
+    "grain": "one value per customer",
+    "validation": {
+      "description": "Only two values are present: CZK 30459, EUR 2002.",
+      "confidence": "high"
+    },
+    "evidence_refs": [
+      "ev_customer_currency_values"
+    ]
+  },
+  {
+    "id": "map_gas_consumption",
+    "term_id": "term_gas_consumption",
+    "database_source": "debit_card_specializing",
+    "table": "yearmonth",
+    "column": "Consumption",
+    "semantic_filter": "One recorded quantity per customer and month; a row exists only for months that were recorded, so the series is sparse and a few values are negative.",
+    "aggregation_semantics": "Summed over months, customers or segments to obtain totals; averaged over months to obtain an average monthly level; compared across months to obtain an extremum.",
+    "grain": "one row per customer and month",
+    "validation": {
+      "description": "383282 rows, no null values, range -582092.86 to 2052187.11 with mean 8911.14.",
+      "confidence": "high"
+    },
+    "evidence_refs": [
+      "ev_yearmonth_consumption_stats",
+      "ev_yearmonth_sparse_coverage"
+    ]
+  },
+  {
+    "id": "map_year_month_period",
+    "term_id": "term_year_month_period",
+    "database_source": "debit_card_specializing",
+    "table": "yearmonth",
+    "column": "Date",
+    "semantic_filter": "Six-character text period, not a calendar date; year and month must be read from its character positions.",
+    "aggregation_semantics": "Grouping key for monthly aggregation and for restricting a query to a year or a month.",
+    "grain": "one value per recorded customer-month",
+    "validation": {
+      "description": "All values are six characters long and span 201112 to 201311 across 21 distinct months.",
+      "confidence": "high"
+    },
+    "evidence_refs": [
+      "ev_yearmonth_date_format",
+      "ev_yearmonth_date_range"
+    ]
+  },
+  {
+    "id": "map_transaction",
+    "term_id": "term_transaction",
+    "database_source": "debit_card_specializing",
+    "table": "transactions_1k",
+    "column": "TransactionID",
+    "semantic_filter": "Each row is one purchase event.",
+    "aggregation_semantics": "Count of purchase events.",
+    "grain": "one row per transaction",
+    "validation": {
+      "description": "1000 rows in the sample ledger.",
+      "confidence": "high"
+    },
+    "evidence_refs": [
+      "ev_transactions_columns"
+    ]
+  },
+  {
+    "id": "map_transaction_date",
+    "term_id": "term_transaction_timestamp",
+    "database_source": "debit_card_specializing",
+    "table": "transactions_1k",
+    "column": "Date",
+    "semantic_filter": "Calendar day only; carries no clock time.",
+    "aggregation_semantics": "Day-level grouping and range restriction of transactions.",
+    "grain": "one value per transaction",
+    "validation": {
+      "description": "Values are calendar days from 2012-08-23 to 2012-08-26.",
+      "confidence": "high"
+    },
+    "evidence_refs": [
+      "ev_transactions_time_window"
+    ]
+  },
+  {
+    "id": "map_transaction_time",
+    "term_id": "term_transaction_timestamp",
+    "database_source": "debit_card_specializing",
+    "table": "transactions_1k",
+    "column": "Time",
+    "semantic_filter": "Clock time only, stored as text; meaningless without the day held in the separate date column.",
+    "aggregation_semantics": "Distinct time-of-day enumeration and ordering within a day.",
+    "grain": "one value per transaction",
+    "validation": {
+      "description": "Values are text clock times such as 09:41:00 and 21:20:00.",
+      "confidence": "high"
+    },
+    "evidence_refs": [
+      "ev_transactions_time_format"
+    ]
+  },
+  {
+    "id": "map_gas_station",
+    "term_id": "term_gas_station",
+    "database_source": "debit_card_specializing",
+    "table": "gasstations",
+    "column": "GasStationID",
+    "semantic_filter": "Master registry of stations.",
+    "aggregation_semantics": "Count of distinct stations.",
+    "grain": "one row per gas station",
+    "validation": {
+      "description": "5716 rows in the station registry.",
+      "confidence": "high"
+    },
+    "evidence_refs": [
+      "ev_gasstation_columns"
+    ]
+  },
+  {
+    "id": "map_gas_station_chain",
+    "term_id": "term_gas_station_chain",
+    "database_source": "debit_card_specializing",
+    "table": "gasstations",
+    "column": "ChainID",
+    "semantic_filter": "Numeric chain identifier; the same chain is shared by many stations.",
+    "aggregation_semantics": "Grouping of stations and their transactions by chain.",
+    "grain": "one value per gas station",
+    "validation": {
+      "description": "Chain identifiers are present as integers; chain 11 covers 25 stations.",
+      "confidence": "high"
+    },
+    "evidence_refs": [
+      "ev_chain11_stations",
+      "ev_gasstation_values"
+    ]
+  },
+  {
+    "id": "map_gas_station_country",
+    "term_id": "term_gas_station_country",
+    "database_source": "debit_card_specializing",
+    "table": "gasstations",
+    "column": "Country",
+    "semantic_filter": "Three-letter country code; only two countries are present.",
+    "aggregation_semantics": "Grouping of stations and their transactions by country.",
+    "grain": "one value per gas station",
+    "validation": {
+      "description": "CZE 4836 stations and SVK 880 stations.",
+      "confidence": "high"
+    },
+    "evidence_refs": [
+      "ev_gasstation_values",
+      "ev_country_transaction_split"
+    ]
+  },
+  {
+    "id": "map_product",
+    "term_id": "term_product",
+    "database_source": "debit_card_specializing",
+    "table": "products",
+    "column": "ProductID",
+    "semantic_filter": "Master registry of products referenced by transactions.",
+    "aggregation_semantics": "Count of distinct products.",
+    "grain": "one row per product",
+    "validation": {
+      "description": "591 products; all product identifiers used by the transaction ledger resolve here.",
+      "confidence": "high"
+    },
+    "evidence_refs": [
+      "ev_products_columns",
+      "ev_transactions_fk_coverage"
+    ]
+  },
+  {
+    "id": "map_product_description",
+    "term_id": "term_product",
+    "database_source": "debit_card_specializing",
+    "table": "products",
+    "column": "Description",
+    "semantic_filter": "Free-text label written in Czech, e.g. Nafta, Natural, Diesel +.",
+    "aggregation_semantics": "Distinct label enumeration for the products of interest.",
+    "grain": "one value per product",
+    "validation": {
+      "description": "Description strings are present for the sampled products.",
+      "confidence": "high"
+    },
+    "evidence_refs": [
+      "ev_products_descriptions"
+    ]
+  }
+]

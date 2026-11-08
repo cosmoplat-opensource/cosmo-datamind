@@ -1,0 +1,415 @@
+[
+  {
+    "id": "term_race",
+    "name": "Race",
+    "type": "entity",
+    "definition": "A single Grand Prix event held on a specific date at a specific circuit within a championship season, identified by raceId and ordered within the season by round.",
+    "scope": "Race-level analysis of the Formula 1 World Championship, seasons 1950-2017.",
+    "aliases": [
+      "Grand Prix",
+      "race event"
+    ],
+    "evidence": [
+      "evidence_seasons_races"
+    ]
+  },
+  {
+    "id": "term_driver",
+    "name": "Driver",
+    "type": "entity",
+    "definition": "A person who competed in a championship race, identified by driverId with a stable driverRef plus forename, surname, date of birth and nationality.",
+    "scope": "Driver-level career, performance and championship analysis.",
+    "aliases": [
+      "racer",
+      "driver entry"
+    ],
+    "evidence": [
+      "evidence_results_grain_and_counts",
+      "evidence_nationality_vocabulary"
+    ]
+  },
+  {
+    "id": "term_constructor",
+    "name": "Constructor",
+    "type": "entity",
+    "definition": "An entrant organisation (team or chassis constructor) that fielded cars in championship races, identified by constructorId with a name and nationality.",
+    "scope": "Constructor-level performance, entry and championship analysis.",
+    "aliases": [
+      "team",
+      "entrant"
+    ],
+    "evidence": [
+      "evidence_results_grain_and_counts",
+      "evidence_constructor_points_mismatch"
+    ]
+  },
+  {
+    "id": "term_circuit",
+    "name": "Circuit",
+    "type": "entity",
+    "definition": "A racing venue at a geographic location, identified by circuitId with circuitRef, name, location, country and coordinates.",
+    "scope": "Venue and geographic analysis of championship races.",
+    "aliases": [
+      "track",
+      "venue"
+    ],
+    "evidence": [
+      "evidence_circuits_domain"
+    ]
+  },
+  {
+    "id": "term_season",
+    "name": "Season",
+    "type": "entity",
+    "definition": "A championship year, identified by the seasons.year primary key; each season is a series of races numbered by round.",
+    "scope": "Season-level and cross-era analysis.",
+    "aliases": [
+      "championship year",
+      "season year"
+    ],
+    "evidence": [
+      "evidence_seasons_races"
+    ]
+  },
+  {
+    "id": "term_race_result",
+    "name": "Race Result Entry",
+    "type": "entity",
+    "definition": "One entry record in a race classification: the outcome of a single car, driver and constructor combination in a single race, carrying grid slot, finishing position, laps completed, points and status.",
+    "scope": "The atomic unit of race outcome analysis.",
+    "aliases": [
+      "race entry",
+      "result row",
+      "classification entry"
+    ],
+    "evidence": [
+      "evidence_results_grain_and_counts",
+      "evidence_results_duplicate_grain"
+    ]
+  },
+  {
+    "id": "term_finish_position",
+    "name": "Finishing Position",
+    "type": "metric",
+    "definition": "The official finishing position of an entry in a race classification, recorded as a number, and NULL for entries that were not classified.",
+    "scope": "Finish-order analysis; distinct from championship standings position and from grid position.",
+    "aliases": [
+      "finishing position",
+      "race position",
+      "position"
+    ],
+    "evidence": [
+      "evidence_race_win_position",
+      "evidence_position_null"
+    ]
+  },
+  {
+    "id": "term_race_points",
+    "name": "Race Points",
+    "type": "metric",
+    "definition": "Championship points awarded to a driver entry for a single race, determined by the scoring system in force in that season.",
+    "scope": "Per-race points for a driver entry; comparable within a scoring era, not across eras without normalisation.",
+    "aliases": [
+      "points",
+      "driver points"
+    ],
+    "evidence": [
+      "evidence_points_system_eras",
+      "evidence_points_nonfinishers_scored"
+    ]
+  },
+  {
+    "id": "term_constructor_race_points",
+    "name": "Constructor Race Points",
+    "type": "metric",
+    "definition": "Championship points credited to a constructor for a single race, recorded separately from driver points.",
+    "scope": "Per-race constructor points; subject to era-specific counting rules for multi-car entries.",
+    "aliases": [
+      "constructor points",
+      "team points"
+    ],
+    "evidence": [
+      "evidence_constructor_points_mismatch"
+    ]
+  },
+  {
+    "id": "term_championship_points",
+    "name": "Championship Points",
+    "type": "metric",
+    "definition": "Season-to-date cumulative championship points for a driver or constructor as of a given race, recorded in the standings tables.",
+    "scope": "Championship progression analysis within one season.",
+    "aliases": [
+      "standings points",
+      "cumulative points"
+    ],
+    "evidence": [
+      "evidence_standings_cumulative"
+    ]
+  },
+  {
+    "id": "term_championship_position",
+    "name": "Championship Position",
+    "type": "metric",
+    "definition": "The championship ranking of a driver or constructor as of a given race in a season, where 1 is the leader.",
+    "scope": "Championship ranking analysis; distinct from race finishing position.",
+    "aliases": [
+      "standings position",
+      "championship rank"
+    ],
+    "evidence": [
+      "evidence_standings_cumulative",
+      "evidence_standings_coverage"
+    ]
+  },
+  {
+    "id": "term_race_win",
+    "name": "Race Win",
+    "type": "metric",
+    "definition": "A race outcome in which an entry is classified first, that is its finishing position equals 1.",
+    "scope": "Win counting for drivers and constructors.",
+    "aliases": [
+      "win",
+      "victory",
+      "first place"
+    ],
+    "evidence": [
+      "evidence_race_win_position"
+    ]
+  },
+  {
+    "id": "term_podium_finish",
+    "name": "Podium Finish",
+    "type": "metric",
+    "definition": "A race outcome in which an entry is classified in one of the first three finishing places.",
+    "scope": "Podium counting for drivers and constructors.",
+    "aliases": [
+      "podium",
+      "top three",
+      "top-3 finish"
+    ],
+    "evidence": [
+      "evidence_race_win_position"
+    ]
+  },
+  {
+    "id": "term_grid_position",
+    "name": "Grid Position",
+    "type": "metric",
+    "definition": "The starting grid slot of an entry for a race; a value of 0 means the entry was given no grid slot, for example a pit-lane start or a failure to qualify.",
+    "scope": "Starting-position analysis; not identical to qualifying classification because of penalties and pit-lane starts.",
+    "aliases": [
+      "grid slot",
+      "starting position",
+      "grid"
+    ],
+    "evidence": [
+      "evidence_grid_zero"
+    ]
+  },
+  {
+    "id": "term_qualifying_position",
+    "name": "Qualifying Position",
+    "type": "metric",
+    "definition": "The classification position achieved in the qualifying session of a race weekend.",
+    "scope": "Qualifying performance analysis, available for 1994-2017.",
+    "aliases": [
+      "qualifying position",
+      "qualifying classification"
+    ],
+    "evidence": [
+      "evidence_qualifying_availability"
+    ]
+  },
+  {
+    "id": "term_lap_time",
+    "name": "Lap Time",
+    "type": "metric",
+    "definition": "The elapsed time of one completed lap by one driver in one race, recorded in milliseconds with a textual equivalent.",
+    "scope": "Lap-level pace analysis, available for 1996-2017 races only.",
+    "aliases": [
+      "lap time",
+      "lap duration"
+    ],
+    "evidence": [
+      "evidence_laptimes_availability"
+    ]
+  },
+  {
+    "id": "term_pit_stop_duration",
+    "name": "Pit Stop Duration",
+    "type": "metric",
+    "definition": "The elapsed time of a single pit stop by one driver in one race, recorded in milliseconds with a textual equivalent.",
+    "scope": "Pit-lane performance analysis, available for 2011-2017 races only.",
+    "aliases": [
+      "pit stop time",
+      "stop duration"
+    ],
+    "evidence": [
+      "evidence_pitstops_availability"
+    ]
+  },
+  {
+    "id": "term_race_time",
+    "name": "Race Time",
+    "type": "metric",
+    "definition": "The elapsed race time of an entry; for the winner it is the absolute race duration and for other entries a cumulative value from which the gap to the winner can be derived.",
+    "scope": "Race duration and gap analysis; recorded only for entries that completed the winner's lap count.",
+    "aliases": [
+      "race duration",
+      "elapsed time",
+      "gap to winner"
+    ],
+    "evidence": [
+      "evidence_results_milliseconds_lead_lap_only",
+      "evidence_lapped_finishers_time_null"
+    ]
+  },
+  {
+    "id": "term_fastest_lap",
+    "name": "Fastest Lap",
+    "type": "metric",
+    "definition": "The quickest single lap recorded by an entry in a race; an entry holds the race fastest lap when its fastest-lap rank equals 1.",
+    "scope": "Fastest-lap analysis; rank and speed fields are populated only from 2004 onward.",
+    "aliases": [
+      "fastest lap",
+      "quickest lap"
+    ],
+    "evidence": [
+      "evidence_fastest_lap_availability"
+    ]
+  },
+  {
+    "id": "term_laps_completed",
+    "name": "Laps Completed",
+    "type": "metric",
+    "definition": "The number of race laps an entry completed before finishing or retiring.",
+    "scope": "Distance and classification analysis; entries that did not start record 0 laps.",
+    "aliases": [
+      "laps",
+      "laps completed"
+    ],
+    "evidence": [
+      "evidence_race_laps"
+    ]
+  },
+  {
+    "id": "term_car_status",
+    "name": "Car Status",
+    "type": "dimension",
+    "definition": "The categorised outcome or failure reason recorded for an entry in a race, held in the status reference table and referenced by results.statusId.",
+    "scope": "Reliability and outcome-category analysis across all seasons.",
+    "aliases": [
+      "status",
+      "car status",
+      "result status"
+    ],
+    "evidence": [
+      "evidence_status_domain"
+    ]
+  },
+  {
+    "id": "term_classification_status",
+    "name": "Classification Status",
+    "type": "dimension",
+    "definition": "The single-character code in positionText that states how an entry was classified: a numeric finishing place for classified cars, or R, D, E, W, F, N for retired, disqualified, excluded, withdrawn, failed-to-qualify or not-classified entries.",
+    "scope": "Classification and non-finish analysis.",
+    "aliases": [
+      "position text",
+      "classification code"
+    ],
+    "evidence": [
+      "evidence_position_text_codes",
+      "evidence_position_null"
+    ]
+  },
+  {
+    "id": "term_retirement",
+    "name": "Retirement",
+    "type": "category",
+    "definition": "A race entry that did not finish and was not classified, recorded with a non-numeric classification code and a NULL finishing position, together with a car status giving the reason.",
+    "scope": "Reliability analysis; excludes disqualified and excluded entries, which are separate outcomes.",
+    "aliases": [
+      "DNF",
+      "did not finish",
+      "retired"
+    ],
+    "evidence": [
+      "evidence_position_text_codes",
+      "evidence_status_domain"
+    ]
+  },
+  {
+    "id": "term_classified_finisher",
+    "name": "Classified Finisher",
+    "type": "category",
+    "definition": "A race entry that received an official numeric finishing position, whether or not it completed the winner's full lap count.",
+    "scope": "Classification analysis; a classified entry may still be several laps down.",
+    "aliases": [
+      "classified",
+      "finisher"
+    ],
+    "evidence": [
+      "evidence_position_null",
+      "evidence_lapped_finishers_time_null"
+    ]
+  },
+  {
+    "id": "term_nationality",
+    "name": "Nationality",
+    "type": "dimension",
+    "definition": "The nationality attribute of a driver or constructor, stored as an adjectival country form such as British or Italian.",
+    "scope": "Driver and constructor demographic analysis; not comparable with the nominal country vocabulary used for circuits.",
+    "aliases": [
+      "driver nationality",
+      "constructor nationality"
+    ],
+    "evidence": [
+      "evidence_nationality_vocabulary"
+    ]
+  },
+  {
+    "id": "term_circuit_country",
+    "name": "Circuit Country",
+    "type": "dimension",
+    "definition": "The country in which a circuit is located, stored as a nominal country form such as UK or USA.",
+    "scope": "Geographic analysis of race venues.",
+    "aliases": [
+      "country",
+      "host country"
+    ],
+    "evidence": [
+      "evidence_nationality_vocabulary",
+      "evidence_circuits_domain"
+    ]
+  },
+  {
+    "id": "term_car_number",
+    "name": "Car Number",
+    "type": "dimension",
+    "definition": "The car number carried by an entry in a race, recorded per race in results and qualifying.",
+    "scope": "Car-number identification; distinct from the permanent driver number that appears in drivers.number only from 2014.",
+    "aliases": [
+      "car number",
+      "race number"
+    ],
+    "evidence": [
+      "evidence_car_number"
+    ]
+  },
+  {
+    "id": "term_shared_drive",
+    "name": "Shared Drive",
+    "type": "category",
+    "definition": "A race situation in which more than one driver entry corresponds to the same car and race, so that one race can hold several result rows for one driver or more than two drivers for one constructor.",
+    "scope": "Grain and participation analysis; observed in 1950-1978.",
+    "aliases": [
+      "shared drive",
+      "car sharing",
+      "relief driver"
+    ],
+    "evidence": [
+      "evidence_results_duplicate_grain",
+      "evidence_shared_drive_multi_entry"
+    ]
+  }
+]

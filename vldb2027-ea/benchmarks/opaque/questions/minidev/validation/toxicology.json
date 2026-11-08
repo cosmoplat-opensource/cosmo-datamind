@@ -1,0 +1,59 @@
+{
+ "db_id": "toxicology",
+ "questions": [
+  {
+   "question_id": 243,
+   "db_id": "toxicology",
+   "question": "What are the bonds that have phosphorus and nitrogen as their atom elements?",
+   "evidence": "have phosphorus as atom elements refers to fld003 = 'p'; have nitrogen as atom elements refers to fld003 = 'n'",
+   "SQL": "SELECT T2.fld004 FROM tab01 AS T1 INNER JOIN tab03 AS T2 ON T1.fld001 = T2.fld001 WHERE T2.fld004 IN (SELECT T3.fld004 FROM tab03 AS T3 INNER JOIN tab01 AS T4 ON T3.fld001 = T4.fld001 WHERE T4.fld003 = 'p') AND T1.fld003 = 'n'",
+   "difficulty": "moderate",
+   "SQL_original": "SELECT T2.bond_id FROM atom AS T1 INNER JOIN connected AS T2 ON T1.atom_id = T2.atom_id WHERE T2.bond_id IN ( SELECT T3.bond_id FROM connected AS T3 INNER JOIN atom AS T4 ON T3.atom_id = T4.atom_id WHERE T4.element = 'p' ) AND T1.element = 'n'"
+  },
+  {
+   "question_id": 213,
+   "db_id": "toxicology",
+   "question": "What type of bond is there between the atoms TR004_8 and TR004_20?",
+   "evidence": "type of bond refers to fld005; between the atoms TR004_8 and TR004_20 refers to fld001 = 'TR004_8' AND fld006 = 'TR004_20' OR another way around",
+   "SQL": "SELECT T1.fld005 FROM tab02 AS T1 INNER JOIN tab03 AS T2 ON T1.fld004 = T2.fld004 WHERE T2.fld001 = 'TR004_8' AND T2.fld006 = 'TR004_20' OR T2.fld006 = 'TR004_8' AND T2.fld001 = 'TR004_20'",
+   "difficulty": "moderate",
+   "SQL_original": "SELECT T1.bond_type FROM bond AS T1 INNER JOIN connected AS T2 ON T1.bond_id = T2.bond_id WHERE T2.atom_id = 'TR004_8' AND T2.atom_id2 = 'TR004_20' OR T2.atom_id2 = 'TR004_8' AND T2.atom_id = 'TR004_20'"
+  },
+  {
+   "question_id": 220,
+   "db_id": "toxicology",
+   "question": "Please list top three elements of the toxicology of the molecule TR000 in alphabetical order.",
+   "evidence": "TR000 is the molecule id;",
+   "SQL": "SELECT DISTINCT T.fld003 FROM tab01 AS T WHERE T.fld002 = 'TR000' ORDER BY T.fld003 LIMIT 3",
+   "difficulty": "challenging",
+   "SQL_original": "SELECT DISTINCT T.element FROM atom AS T WHERE T.molecule_id = 'TR000' ORDER BY T.element LIMIT 3"
+  },
+  {
+   "question_id": 240,
+   "db_id": "toxicology",
+   "question": "List all the elements of the toxicology of the molecule \"TR004\".",
+   "evidence": "TR004 is the molecule id;",
+   "SQL": "SELECT DISTINCT T.fld003 FROM tab01 AS T WHERE T.fld002 = 'TR004'",
+   "difficulty": "challenging",
+   "SQL_original": "SELECT DISTINCT T.element FROM atom AS T WHERE T.molecule_id = 'TR004'"
+  },
+  {
+   "question_id": 219,
+   "db_id": "toxicology",
+   "question": "What is the percentage of carcinogenic molecules in triple type bonds?",
+   "evidence": "fld007 = '+' mean molecules are carcinogenic; triple bond refers to fld005 = '#'; percentage = DIVIDE(SUM(fld005 = '#') * 100, COUNT(fld004)) as percent where fld007 = '+'",
+   "SQL": "SELECT CAST(COUNT(DISTINCT CASE WHEN T2.fld007 = '+' THEN T2.fld002 ELSE NULL END) AS REAL) * 100 / COUNT(DISTINCT T2.fld002) FROM tab01 AS T1 INNER JOIN tab04 AS T2 ON T1.fld002 = T2.fld002 INNER JOIN tab02 AS T3 ON T2.fld002 = T3.fld002 WHERE T3.fld005 = '#'",
+   "difficulty": "challenging",
+   "SQL_original": "SELECT CAST(COUNT(DISTINCT CASE WHEN T2.label = '+' THEN T2.molecule_id ELSE NULL END) AS REAL) * 100 / COUNT(DISTINCT T2.molecule_id) FROM atom AS T1 INNER JOIN molecule AS T2 ON T1.molecule_id = T2.molecule_id INNER JOIN bond AS T3 ON T2.molecule_id = T3.molecule_id WHERE T3.bond_type = '#'"
+  },
+  {
+   "question_id": 249,
+   "db_id": "toxicology",
+   "question": "What are the elements of the atoms of TR144_8_19?",
+   "evidence": "TR144_8_19 is the bond id; ",
+   "SQL": "SELECT T2.fld003 FROM tab03 AS T1 INNER JOIN tab01 AS T2 ON T1.fld001 = T2.fld001 WHERE T1.fld004 = 'TR144_8_19'",
+   "difficulty": "challenging",
+   "SQL_original": "SELECT T2.element FROM connected AS T1 INNER JOIN atom AS T2 ON T1.atom_id = T2.atom_id WHERE T1.bond_id = 'TR144_8_19'"
+  }
+ ]
+}

@@ -1,0 +1,89 @@
+{
+ "db_id": "toxicology",
+ "questions": [
+  {
+   "question_id": 208,
+   "question": "Which type of label is the most numerous in atoms with hydrogen?",
+   "evidence": "with hydrogen refers to element = 'h'; label most numerous in atoms refers to MAX(COUNT(label)); ",
+   "difficulty": "moderate"
+  },
+  {
+   "question_id": 273,
+   "question": "What is the percentage of element chlorine in carcinogenic molecules?",
+   "evidence": "chlorine refers to element = 'cl'; label = '+' mean molecules are carcinogenic; percentage = DIVIDE(SUM(element = 'pb'); COUNT(molecule_id)) as percentage where label = '+'",
+   "difficulty": "moderate"
+  },
+  {
+   "question_id": 195,
+   "question": "What is the most common bond type?",
+   "evidence": "most common bond type refers MAX(COUNT(bond_type))",
+   "difficulty": "simple"
+  },
+  {
+   "question_id": 212,
+   "question": "Which element is the least numerous in non-carcinogenic molecules?",
+   "evidence": "label = '-' means molecules are non-carcinogenic; least numerous refers to MIN(COUNT(element));",
+   "difficulty": "challenging"
+  },
+  {
+   "question_id": 215,
+   "question": "How many atoms with iodine and with sulfur type elements are there in single bond molecules?",
+   "evidence": "with iodine element refer to element = 'i'; with sulfur element refers to element = 's'; single type bond refers to bond_type = '-'; Should consider the distinct atoms when counting;",
+   "difficulty": "challenging"
+  },
+  {
+   "question_id": 255,
+   "question": "What proportion of single bonds are carcinogenic? Please provide your answer as a percentage with five decimal places.",
+   "evidence": "single bond refers to bond_type = '-'; label = '+' mean molecules are carcinogenic; proportion = DIVIDE(SUM(label = '+') * 100, COUNT(bond_id)) where bond_type = '-'",
+   "difficulty": "moderate"
+  },
+  {
+   "question_id": 245,
+   "question": "What is the average number of bonds the atoms with the element iodine have?",
+   "evidence": "atoms with the element iodine refers to element = 'i'; average = DIVIDE(COUND(bond_id), COUNT(atom_id)) where element = 'i'",
+   "difficulty": "moderate"
+  },
+  {
+   "question_id": 236,
+   "question": "What are the bond type and the atoms of the bond ID of TR001_6_9?",
+   "evidence": "atoms refer to atom_id or atom_id2",
+   "difficulty": "moderate"
+  },
+  {
+   "question_id": 282,
+   "question": "What is the ratio of Hydrogen elements in molecule ID TR006? List the ratio with its label.",
+   "evidence": "hydrogen refers to element = 'h'; ratio = DIVIDE(SUM(element = 'h'), count(element)) where molecule_id = 'TR006' ; label = '+' mean molecules are carcinogenic; label = '-' means molecules are non-carcinogenic",
+   "difficulty": "challenging"
+  },
+  {
+   "question_id": 232,
+   "question": "Please list top three molecules that have single bonds between two atoms and are not carcinogenic in alphabetical order.",
+   "evidence": "label = '-' means molecules are not carcinogenic; single type bond refers to bond_type = '-'; list top three molecules refers to return molecule_id and order by molecule_id;",
+   "difficulty": "moderate"
+  },
+  {
+   "question_id": 227,
+   "question": "What is the percentage of molecules that are carcinogenic? Please provide your answer as a percentage with three decimal places.",
+   "evidence": "label = '+' mean molecules are carcinogenic; percentage = DIVIDE(SUM(label = '+'), COUNT(molecule_id)) as percent",
+   "difficulty": "simple"
+  },
+  {
+   "question_id": 260,
+   "question": "Calculate the total atoms with triple-bond molecules containing the element phosphorus or bromine.",
+   "evidence": "triple bond refers to bond_type = '#'; phosphorus refers to element = 'p'; bromine refers to element = 'br'",
+   "difficulty": "moderate"
+  },
+  {
+   "question_id": 218,
+   "question": "What percentage of carcinogenic-type molecules does not contain fluorine?",
+   "evidence": "label = '+' mean molecules are carcinogenic; contain fluorine refers to element = 'f'; percentage = DIVIDE(SUM(element = 'f') * 100, COUNT(molecule_id)) where label = '+'; Should consider the distinct atoms when counting;",
+   "difficulty": "challenging"
+  },
+  {
+   "question_id": 268,
+   "question": "What are the elements for bond id TR001_10_11?",
+   "evidence": "TR001_10_11 is the bond id;",
+   "difficulty": "challenging"
+  }
+ ]
+}

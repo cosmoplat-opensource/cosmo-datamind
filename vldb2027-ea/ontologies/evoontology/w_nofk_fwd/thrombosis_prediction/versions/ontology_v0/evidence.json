@@ -1,0 +1,162 @@
+[
+  {
+    "id": "ev_table_sizes",
+    "source": "thrombosis_prediction.sqlite (read-only)",
+    "query": "SELECT 'Patient' AS t, COUNT(*) AS n, COUNT(DISTINCT ID) AS ids FROM Patient UNION ALL SELECT 'Laboratory', COUNT(*), COUNT(DISTINCT ID) FROM Laboratory UNION ALL SELECT 'Examination', COUNT(*), COUNT(DISTINCT ID) FROM Examination",
+    "result": "Patient: 1238 rows / 1238 distinct ID. Laboratory: 13908 rows / 302 distinct ID. Examination: 806 rows / 763 distinct ID, with 36 rows having a NULL ID.",
+    "validation_method": "read-only row and distinct-key counts",
+    "timestamp": "2026-10-10T00:00:00Z"
+  },
+  {
+    "id": "ev_lab_linkage",
+    "source": "thrombosis_prediction.sqlite (read-only)",
+    "query": "SELECT (SELECT COUNT(*) FROM Patient) AS patients, (SELECT COUNT(*) FROM Laboratory WHERE ID NOT IN (SELECT ID FROM Patient)) AS lab_orphans, (SELECT COUNT(DISTINCT ID) FROM Laboratory) AS lab_patients; SELECT MAX(c) FROM (SELECT COUNT(*) c FROM Laboratory GROUP BY ID)",
+    "result": "lab_orphans = 0, so every laboratory identifier resolves to a patient record. Only 302 of the 1238 patients have any laboratory row. The busiest patient has 226 laboratory rows; the mean is about 46 per patient.",
+    "validation_method": "identifiers compared against the patient identifier set",
+    "timestamp": "2026-10-10T00:00:00Z"
+  },
+  {
+    "id": "ev_exam_linkage",
+    "source": "thrombosis_prediction.sqlite (read-only)",
+    "query": "SELECT COUNT(DISTINCT ID) AS exam_ids, (SELECT COUNT(DISTINCT ID) FROM Examination WHERE ID IN (SELECT ID FROM Patient)) AS in_patient FROM Examination; SELECT COUNT(*) FROM Examination WHERE RVVT='+' AND ID IN (SELECT ID FROM Patient)",
+    "result": "763 distinct examination identifiers, of which only 69 also exist in the patient table; 694 examination identifiers have no patient record. Of the 47 examinations with a positive RVVT assay, only 7 belong to a patient present in the patient table (and only 2 to a patient with laboratory data).",
+    "validation_method": "identifier set intersection between the examination and patient tables",
+    "timestamp": "2026-10-10T00:00:00Z"
+  },
+  {
+    "id": "ev_diagnosis_patient_vocab",
+    "source": "thrombosis_prediction.sqlite (read-only)",
+    "query": "SELECT Diagnosis, COUNT(*) FROM Patient GROUP BY 1 ORDER BY 2 DESC LIMIT 20; SELECT COUNT(*) FROM Patient WHERE Diagnosis LIKE '%SLE%'",
+    "result": "Top patient values: SLE 195, SJS 160, RA 152, BEHCET 90, PSS 45, 'SLE, SJS' 35, MCTD 35, 'SJS susp' 26, 'RA, SJS' 25, 'SLE susp' 19, 'RA susp' 19, APS 18, FUO 17, DM 17, 'SLE, APS' 15, AORTITIS 13. Sjogren is spelled 'SJS' and Behcet 'BEHCET' in upper case. Exact 'SLE' is 195 patients while 309 patient rows contain the SLE designator.",
+    "validation_method": "value-frequency listing and containment count",
+    "timestamp": "2026-10-10T00:00:00Z"
+  },
+  {
+    "id": "ev_diagnosis_exam_vocab",
+    "source": "thrombosis_prediction.sqlite (read-only)",
+    "query": "SELECT Diagnosis, COUNT(*) FROM Examination GROUP BY 1 ORDER BY 2 DESC LIMIT 20; SELECT SUM(Diagnosis IS NULL) FROM Examination",
+    "result": "Top examination values: SLE 95, SjS 41, RA 29, 'SLE, SjS' 18, MCTD 15, PSS 10, APS 10, Behcet 9, 'SLE, APS' 8, 'RA, SjS' 8, 'RA susp' 8, 'SjS susp' 7. Sjogren appears as 'SjS' and Behcet as 'Behcet' here, unlike the upper-case spellings in the patient table; the SLE designator is identical in both tables. 331 of 806 examination rows have a NULL diagnosis.",
+    "validation_method": "value-frequency listing per table and cross-table spelling comparison",
+    "timestamp": "2026-10-10T00:00:00Z"
+  },
+  {
+    "id": "ev_diagnosis_multivalue",
+    "source": "thrombosis_prediction.sqlite (read-only)",
+    "query": "SELECT (LENGTH(Diagnosis)-LENGTH(REPLACE(Diagnosis,',',''))+1) AS parts, COUNT(*) FROM Patient WHERE Diagnosis IS NOT NULL AND Diagnosis<>'' GROUP BY 1 ORDER BY 1",
+    "result": "1 component 993 patients, 2 components 214, 3 components 25, 4 components 5. Examples of multi-valued values: 'SLE, SJS' 35, 'RA, SJS' 25, 'SLE, APS' 15, 'PSS, SJS' 12, 'SJS, RA' 8, 'SLE, SJS, APS' 4.",
+    "validation_method": "comma count per diagnosis string",
+    "timestamp": "2026-10-10T00:00:00Z"
+  },
+  {
+    "id": "ev_symptoms_thrombosis",
+    "source": "thrombosis_prediction.sqlite (read-only)",
+    "query": "SELECT Thrombosis, COUNT(*), SUM(Symptoms IS NOT NULL) FROM Examination GROUP BY 1; SELECT SUM((Symptoms IS NOT NULL) <> (Thrombosis>0)) FROM Examination",
+    "result": "Grade 0: 726 examinations with 0 populated symptom fields. Grade 1: 57 / 57. Grade 2: 18 / 18. Grade 3: 5 / 5. The count of examinations where symptom presence disagrees with a non-zero grade is 0, so symptoms are populated on exactly the examinations with a non-zero thrombosis grade.",
+    "validation_method": "crosstab of thrombosis grade against symptom presence plus an exact-mismatch count",
+    "timestamp": "2026-10-10T00:00:00Z"
+  },
+  {
+    "id": "ev_coagulation_values",
+    "source": "thrombosis_prediction.sqlite (read-only)",
+    "query": "SELECT KCT, COUNT(*) FROM Examination GROUP BY 1; (same for RVVT and LAC); SELECT SUM(KCT='+' OR RVVT='+' OR LAC='+') AS any_pos, SUM(KCT='+' AND RVVT='+' AND LAC='+') AS all_pos FROM Examination",
+    "result": "KCT: NULL 660, '-' 105, '+' 41. RVVT: NULL 660, '-' 99, '+' 47. LAC: NULL 584, '-' 147, '+' 75. Examinations with at least one positive assay: 75. Examinations with all three positive: 32. Only 32 examinations have all three assays populated and positive, while 584 examinations carry no LAC value at all.",
+    "validation_method": "per-column value frequencies and disjunction/conjunction counts",
+    "timestamp": "2026-10-10T00:00:00Z"
+  },
+  {
+    "id": "ev_admission_values",
+    "source": "thrombosis_prediction.sqlite (read-only)",
+    "query": "SELECT '['||Admission||']' AS code, COUNT(*) FROM Patient GROUP BY 1 ORDER BY 2 DESC",
+    "result": "'-' 713, '+' 488, blank 34, '+(' 3. The malformed '+(' code is a truncated variant of the in-patient code.",
+    "validation_method": "raw value listing with delimiters to expose blanks and malformed codes",
+    "timestamp": "2026-10-10T00:00:00Z"
+  },
+  {
+    "id": "ev_sex_values",
+    "source": "thrombosis_prediction.sqlite (read-only)",
+    "query": "SELECT SEX, COUNT(*) FROM Patient GROUP BY 1",
+    "result": "F 1023, M 202, blank 13. Male and female do not sum to 1238 because of the blank values.",
+    "validation_method": "value frequency listing",
+    "timestamp": "2026-10-10T00:00:00Z"
+  },
+  {
+    "id": "ev_ana_columns",
+    "source": "thrombosis_prediction.sqlite (read-only)",
+    "query": "SELECT typeof(ANA), COUNT(*) FROM Examination GROUP BY 1; SELECT ANA, COUNT(*) FROM Examination GROUP BY 1 ORDER BY 2 DESC; SELECT \"ANA Pattern\", COUNT(*) FROM Examination GROUP BY 1 ORDER BY 2 DESC; SELECT ANA, \"ANA Pattern\", COUNT(*) FROM Examination WHERE ANA IS NOT NULL GROUP BY 1,2",
+    "result": "The ANA column is integer-typed with values 0 (206), 16 (155), 64 (112), 4 (108), 256 (82), 1024 (58), 4096 (46), 4094 (1) and 38 NULL. The pattern column is text with values blank (261), S (252), P (178), 'P,S' (89), 'S,P' (11), p (2), 'S,D' (2), 'D,P,S' (2), 'D,P' (2), 'S,N' (1), 'P.S' (1), 'P.D' (1), 'P,D' (1), N (1), 'D,S' (1), D (1). Letters never occur in the numeric column. The joint listing shows the two columns vary independently: records with a zero titre can still carry a letter pattern, and records with a positive titre can have a blank pattern.",
+    "validation_method": "column type inspection, value frequencies and joint value listing",
+    "timestamp": "2026-10-10T00:00:00Z"
+  },
+  {
+    "id": "ev_antibody_sentinels",
+    "source": "thrombosis_prediction.sqlite (read-only)",
+    "query": "SELECT \"SC170\", COUNT(*) FROM Laboratory GROUP BY 1 ORDER BY 2 DESC LIMIT 8; (same for CENTROMEA, SSB, RNP, SM, SSA)",
+    "result": "SC170: NULL 13880, 'negative' 12, '0' 12, plus titres 4, 16, 1. CENTROMEA: NULL 13893, '0' 11, 'negative' 4. SSB: NULL 13815, '0' 58, 'negative' 30, plus titres 32, 8, 2, 1. RNP: NULL 13765, '0' 72, 'negative' 22, plus titres. SM: NULL 13880, '0' 102, 'negative' 20, plus titres. SSA: NULL 13809, '0' 41, 'negative' 27, plus titres. The word value and the zero code coexist in the same columns. Neither the single-letter negative code nor the plus-minus code occurs in SC170, CENTROMEA or SSB.",
+    "validation_method": "per-column value frequency listing",
+    "timestamp": "2026-10-10T00:00:00Z"
+  },
+  {
+    "id": "ev_normal_ranges",
+    "source": "thrombosis_prediction.sqlite (read-only)",
+    "query": "SELECT MIN(ALB),MAX(ALB),SUM(ALB<4),COUNT(ALB) FROM Laboratory; (similar for PLT>400, GPT>=60, GPT>30, GLU>=180, \"T-CHO\">=250, \"T-CHO\"<250, CPK>=250, CPK<250, CRE>=1.5, UN=29, IGG>900 AND IGG<2000, IGM<=40 OR IGM>=400)",
+    "result": "ALB range 1.0-5.8 with 11068 populated and 3287 rows below 4. PLT range 5-5844 with 875 rows above 400. GPT range 1-4780 with 890 rows at or above 60 and 2599 rows above 30 (2634 NULL). GLU range 62-499 with 129 rows at or above 180 (12203 NULL). T-CHO range 37-568 with 1545 rows at or above 250 and 3244 NULL. CPK range 0-10835 with 288 rows at or above 250 and 4728 rows below 250. CRE range 0.1-17.1 with 361 rows at or above 1.5. UN range 0-152 with 44 rows exactly 29. IGG range 3-6510 with 1764 rows strictly between 900 and 2000. IGM range 0-1573 with 208 rows at or below 40 or at or above 400.",
+    "validation_method": "threshold counts computed on the read-only database for every cut-off used by the workload",
+    "timestamp": "2026-10-10T00:00:00Z"
+  },
+  {
+    "id": "ev_acl_igm",
+    "source": "thrombosis_prediction.sqlite (read-only)",
+    "query": "SELECT COUNT(*), MIN(\"aCL IgM\"), MAX(\"aCL IgM\"), AVG(\"aCL IgM\"), SUM(\"aCL IgM\">1000) FROM Examination; SELECT ID, \"aCL IgM\" FROM Examination ORDER BY \"aCL IgM\" DESC LIMIT 5",
+    "result": "806 values, all populated, ranging from 0 to 187122 with a mean of about 238 and exactly one value above 1000. The next largest values are about 478, 293, 200 and 180, separated from the maximum by three orders of magnitude.",
+    "validation_method": "distribution summary and top-value listing",
+    "timestamp": "2026-10-10T00:00:00Z"
+  },
+  {
+    "id": "ev_crp_values",
+    "source": "thrombosis_prediction.sqlite (read-only)",
+    "query": "SELECT CRP, COUNT(*) FROM Laboratory GROUP BY 1 ORDER BY 2 DESC LIMIT 10; SELECT COUNT(DISTINCT CRP) FROM Laboratory",
+    "result": "211 distinct codes. Most frequent: '-' 2991, blank 2453, '<0.3' 2355, '<0.2' 1224, '+' 693, '2+' 476, '<0.002' 277, '0.4' 231, '0.3' 226, '<0.1' 216. Values mix negative codes, plus-style positive codes and less-than numeric strings.",
+    "validation_method": "distinct-code count and value frequency listing",
+    "timestamp": "2026-10-10T00:00:00Z"
+  },
+  {
+    "id": "ev_lab_nulls",
+    "source": "thrombosis_prediction.sqlite (read-only)",
+    "query": "SELECT COUNT(*), COUNT(IGG), COUNT(ALB), COUNT(GLU), COUNT(\"T-CHO\") FROM Laboratory",
+    "result": "Of 13908 laboratory rows: IGG is populated on only 2680 rows (11228 NULL), ALB on 11068, GLU on 1705 and T-CHO on 10664. Immunoglobulin G is the sparsest of the analytes used by the workload.",
+    "validation_method": "null counts per analyte column",
+    "timestamp": "2026-10-10T00:00:00Z"
+  },
+  {
+    "id": "ev_lab_dates",
+    "source": "thrombosis_prediction.sqlite (read-only)",
+    "query": "SELECT MIN(Date), MAX(Date), SUM(Date IS NULL OR Date='0000-00-00') FROM Laboratory; SELECT MIN(\"Examination Date\"), MAX(\"Examination Date\"), SUM(\"Examination Date\" IS NULL) FROM Examination",
+    "result": "Laboratory dates run from 1981-01-27 to 1999-03-04 with no NULL and no placeholder dates. Examination dates run from 1989-04-18 to 1998-04-17 with 10 NULL. The workload's windows (for example 1987-07-06 to 1996-01-31) sit inside the laboratory date span.",
+    "validation_method": "date-range and invalid-date counts",
+    "timestamp": "2026-10-10T00:00:00Z"
+  },
+  {
+    "id": "ev_age_anomaly",
+    "source": "thrombosis_prediction.sqlite (read-only)",
+    "query": "SELECT MIN(Birthday), MAX(Birthday), SUM(Birthday IS NULL) FROM Patient; SELECT ID, Birthday FROM Patient WHERE Birthday > '2000-01-01'",
+    "result": "Birthdays run from 1912-08-28 to 2007-05-28 with exactly 1 NULL. A single patient row carries a birthday in 2007, far outside the era of the cohort's other data, so an unrestricted age average is affected by that record as well as by the missing birthday.",
+    "validation_method": "date-range, null count and outlier listing",
+    "timestamp": "2026-10-10T00:00:00Z"
+  },
+  {
+    "id": "ev_description",
+    "source": "thrombosis_prediction.sqlite (read-only)",
+    "query": "SELECT typeof(Description), COUNT(*), COUNT(Description) FROM Patient GROUP BY 1; SELECT COUNT(*) FROM Patient WHERE Description IS NOT NULL AND \"First Date\" IS NOT NULL AND Description < \"First Date\"; SELECT COUNT(*) FROM Patient WHERE \"First Date\" IS NULL",
+    "result": "The description field is stored as text and is populated on 1022 of 1238 patient rows, so 216 patients have no recorded description date. 12 patients carry a description date earlier than their first recorded date, and 251 patients have no first recorded date at all.",
+    "validation_method": "storage-type inspection, presence counts and ordering comparison against the other patient date field",
+    "timestamp": "2026-10-10T00:00:00Z"
+  },
+  {
+    "id": "ev_exam_nulls",
+    "source": "thrombosis_prediction.sqlite (read-only)",
+    "query": "SELECT COUNT(*), SUM(Diagnosis IS NULL), SUM(\"Examination Date\" IS NULL), SUM(Symptoms IS NULL) FROM Examination",
+    "result": "Of 806 examination rows: 331 carry no diagnosis, 10 carry no examination date and 726 carry no symptom text. Disease frequency computed from this table therefore reflects only the 475 examinations with a recorded diagnosis, whereas the patient table carries a diagnosis on every one of its 1238 rows.",
+    "validation_method": "null counts per examination column, compared with the patient table's diagnosis coverage",
+    "timestamp": "2026-10-10T00:00:00Z"
+  }
+]

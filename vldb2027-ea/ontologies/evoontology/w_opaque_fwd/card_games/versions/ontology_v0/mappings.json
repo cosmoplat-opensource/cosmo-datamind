@@ -1,0 +1,514 @@
+[
+  {
+    "id": "m_card_printing",
+    "term_id": "t_card_printing",
+    "database_source": "card_games",
+    "table": "tab01",
+    "column": "fld072",
+    "semantic_filter": "One row per physical card printing; fld072 is unique.",
+    "aggregation_semantics": "Count rows to count printings; count distinct fld049 to count card names.",
+    "grain": "one row per card printing",
+    "validation": "fld072 has 56822 distinct values for 56822 rows; referenced by tab02/tab03/tab06.",
+    "evidence_refs": [
+      "evidence_table_roles",
+      "evidence_uuid_join_graph"
+    ]
+  },
+  {
+    "id": "m_card_name",
+    "term_id": "t_card_name",
+    "database_source": "card_games",
+    "table": "tab01",
+    "column": "fld049",
+    "semantic_filter": "English card name of the printing; non-null for every row.",
+    "aggregation_semantics": "Group by fld049 to collapse printings of the same card; a name can have up to 693 printings.",
+    "grain": "one row per card printing",
+    "validation": "21738 distinct names over 56822 printings; values are recognizable card names.",
+    "evidence_refs": [
+      "evidence_table_roles",
+      "evidence_count_semantics"
+    ]
+  },
+  {
+    "id": "m_card_set",
+    "term_id": "t_card_set",
+    "database_source": "card_games",
+    "table": "tab04",
+    "column": "fld081",
+    "semantic_filter": "One row per set; fld081 is unique.",
+    "aggregation_semantics": "Count distinct fld081 to count sets.",
+    "grain": "one row per set",
+    "validation": "551 rows and 551 distinct codes.",
+    "evidence_refs": [
+      "evidence_set_table"
+    ]
+  },
+  {
+    "id": "m_set_code_on_printing",
+    "term_id": "t_set_code",
+    "database_source": "card_games",
+    "table": "tab01",
+    "column": "fld063",
+    "semantic_filter": "Set code of the printing; resolves to tab04.fld081 for every row.",
+    "aggregation_semantics": "Group printings by set code to count cards or printings per set.",
+    "grain": "one row per card printing",
+    "validation": "0 distinct set codes in tab01 are missing from tab04.fld081.",
+    "evidence_refs": [
+      "evidence_set_membership_join"
+    ]
+  },
+  {
+    "id": "m_set_code_on_set",
+    "term_id": "t_set_code",
+    "database_source": "card_games",
+    "table": "tab04",
+    "column": "fld081",
+    "semantic_filter": "Unique set code identifying a set.",
+    "aggregation_semantics": "Join key for printings and set-name translations.",
+    "grain": "one row per set",
+    "validation": "551 distinct values; joined by tab05.fld063 with 0 unresolved codes.",
+    "evidence_refs": [
+      "evidence_set_table",
+      "evidence_localization_grain"
+    ]
+  },
+  {
+    "id": "m_set_code_on_translation",
+    "term_id": "t_set_code",
+    "database_source": "card_games",
+    "table": "tab05",
+    "column": "fld063",
+    "semantic_filter": "Set code of a set-name translation row; every value resolves to tab04.fld081.",
+    "aggregation_semantics": "Combine with fld075 to select a translated set name.",
+    "grain": "one row per set and language",
+    "validation": "121 distinct codes, all present in tab04.",
+    "evidence_refs": [
+      "evidence_localization_grain",
+      "evidence_localized_set_name"
+    ]
+  },
+  {
+    "id": "m_set_name",
+    "term_id": "t_set_name",
+    "database_source": "card_games",
+    "table": "tab04",
+    "column": "fld049",
+    "semantic_filter": "Official English set name; populated for all 551 sets.",
+    "aggregation_semantics": "Group by set name for set-level reporting.",
+    "grain": "one row per set",
+    "validation": "551 distinct names; Coldsnap=CSP, Archenemy=ARC, Tenth Edition=10E.",
+    "evidence_refs": [
+      "evidence_set_table"
+    ]
+  },
+  {
+    "id": "m_set_name_display",
+    "term_id": "t_set_name",
+    "database_source": "card_games",
+    "table": "tab04",
+    "column": "fld088",
+    "semantic_filter": "Alternative display name; non-null for only 201 sets.",
+    "aggregation_semantics": "Same grouping semantics as fld049, but narrower coverage.",
+    "grain": "one row per set",
+    "validation": "197 of 201 non-null values equal fld049; 4 differ (M19/M20/M21/DDE); 350 null.",
+    "evidence_refs": [
+      "evidence_set_name_variant"
+    ]
+  },
+  {
+    "id": "m_set_block",
+    "term_id": "t_set_block",
+    "database_source": "card_games",
+    "table": "tab04",
+    "column": "fld079",
+    "semantic_filter": "Block label; null for sets without a block.",
+    "aggregation_semantics": "Group sets by block to count sets or translations within a block.",
+    "grain": "one row per set",
+    "validation": "33 block labels; 279 nulls; Commander covers 23 sets.",
+    "evidence_refs": [
+      "evidence_set_block_and_translation_coverage"
+    ]
+  },
+  {
+    "id": "m_mtgo_set_code",
+    "term_id": "t_mtgo_set_code",
+    "database_source": "card_games",
+    "table": "tab04",
+    "column": "fld089",
+    "semantic_filter": "Non-null means the set is available as an MTGO product.",
+    "aggregation_semantics": "Existence/non-null check per set.",
+    "grain": "one row per set",
+    "validation": "160 of 551 sets have a non-null MTGO code.",
+    "evidence_refs": [
+      "evidence_mtgo"
+    ]
+  },
+  {
+    "id": "m_language_card_translation",
+    "term_id": "t_language",
+    "database_source": "card_games",
+    "table": "tab02",
+    "column": "fld075",
+    "semantic_filter": "Language of the localized card record.",
+    "aggregation_semantics": "Group by language to count translated printings.",
+    "grain": "one row per card printing and language",
+    "validation": "12 labels, including 'Portuguese (Brazil)', 'Phyrexian', 'Sanskrit'.",
+    "evidence_refs": [
+      "evidence_language_labels"
+    ]
+  },
+  {
+    "id": "m_language_set_translation",
+    "term_id": "t_language",
+    "database_source": "card_games",
+    "table": "tab05",
+    "column": "fld075",
+    "semantic_filter": "Language of the localized set-name record.",
+    "aggregation_semantics": "Group by language to count translated sets.",
+    "grain": "one row per set and language",
+    "validation": "10 labels, 121 rows each; same labels as tab02 minus Phyrexian and Sanskrit.",
+    "evidence_refs": [
+      "evidence_language_labels"
+    ]
+  },
+  {
+    "id": "m_localized_card_record",
+    "term_id": "t_localized_card_record",
+    "database_source": "card_games",
+    "table": "tab02",
+    "column": "fld001",
+    "semantic_filter": "One row per card printing and language.",
+    "aggregation_semantics": "Join to tab01 on fld072 to attach translations to a printing.",
+    "grain": "one row per card printing and language",
+    "validation": "229186 rows; 0 duplicate (fld072,fld075) pairs.",
+    "evidence_refs": [
+      "evidence_localization_grain"
+    ]
+  },
+  {
+    "id": "m_localized_card_name",
+    "term_id": "t_localized_card_name",
+    "database_source": "card_games",
+    "table": "tab02",
+    "column": "fld049",
+    "semantic_filter": "Translated card name for the row's language.",
+    "aggregation_semantics": "Select the row matching the requested language before reading the name.",
+    "grain": "one row per card printing and language",
+    "validation": "Italian Ancestor's Chosen = 'Prescelto dell'Antenata' for uuid 5f8287b1-...",
+    "evidence_refs": [
+      "evidence_localized_card_fields"
+    ]
+  },
+  {
+    "id": "m_localized_card_text",
+    "term_id": "t_localized_card_text",
+    "database_source": "card_games",
+    "table": "tab02",
+    "column": "fld068",
+    "semantic_filter": "Translated rules text; empty string when the translation has no rules text.",
+    "aggregation_semantics": "Read per printing and language; 36674 rows have an empty string.",
+    "grain": "one row per card printing and language",
+    "validation": "Distinct from tab01.fld068 (English text) and tab06.fld068 (rulings).",
+    "evidence_refs": [
+      "evidence_localized_card_fields",
+      "evidence_column_name_collision"
+    ]
+  },
+  {
+    "id": "m_localized_flavor_text",
+    "term_id": "t_localized_flavor_text",
+    "database_source": "card_games",
+    "table": "tab02",
+    "column": "fld017",
+    "semantic_filter": "Translated flavor text for the row's language; may be empty.",
+    "aggregation_semantics": "Read per printing and language.",
+    "grain": "one row per card printing and language",
+    "validation": "Italian Ancestor's Chosen flavor text present in tab02.fld017.",
+    "evidence_refs": [
+      "evidence_localized_card_fields"
+    ]
+  },
+  {
+    "id": "m_localized_set_name",
+    "term_id": "t_localized_set_name",
+    "database_source": "card_games",
+    "table": "tab05",
+    "column": "fld094",
+    "semantic_filter": "Translated set name; null for 231 of 1210 rows.",
+    "aggregation_semantics": "Select the row matching the requested set code and language.",
+    "grain": "one row per set and language",
+    "validation": "German 10E = 'Hauptset Zehnte Edition'; ARC has 10 language rows.",
+    "evidence_refs": [
+      "evidence_localized_set_name"
+    ]
+  },
+  {
+    "id": "m_card_text",
+    "term_id": "t_card_text",
+    "database_source": "card_games",
+    "table": "tab01",
+    "column": "fld068",
+    "semantic_filter": "English rules text of the printing; null when the card has no rules text.",
+    "aggregation_semantics": "Read per printing; do not aggregate.",
+    "grain": "one row per card printing",
+    "validation": "Sample text matches known English card text.",
+    "evidence_refs": [
+      "evidence_card_text",
+      "evidence_column_name_collision"
+    ]
+  },
+  {
+    "id": "m_flavor_text",
+    "term_id": "t_flavor_text",
+    "database_source": "card_games",
+    "table": "tab01",
+    "column": "fld017",
+    "semantic_filter": "English flavor text; null for many printings.",
+    "aggregation_semantics": "Read per printing.",
+    "grain": "one row per card printing",
+    "validation": "17295 distinct flavor texts, 26020 nulls.",
+    "evidence_refs": [
+      "evidence_card_text"
+    ]
+  },
+  {
+    "id": "m_card_ruling",
+    "term_id": "t_card_ruling",
+    "database_source": "card_games",
+    "table": "tab06",
+    "column": "fld068",
+    "semantic_filter": "English ruling prose; one row per ruling.",
+    "aggregation_semantics": "Collect rulings per printing; multiple rulings per card are possible.",
+    "grain": "one row per ruling",
+    "validation": "87769 rulings covering 26141 printings; text is English prose.",
+    "evidence_refs": [
+      "evidence_rulings",
+      "evidence_column_name_collision"
+    ]
+  },
+  {
+    "id": "m_ruling_date",
+    "term_id": "t_ruling_date",
+    "database_source": "card_games",
+    "table": "tab06",
+    "column": "fld095",
+    "semantic_filter": "Date the ruling was issued.",
+    "aggregation_semantics": "Order rulings by date within a printing.",
+    "grain": "one row per ruling",
+    "validation": "109 distinct dates in YYYY-MM-DD form.",
+    "evidence_refs": [
+      "evidence_rulings"
+    ]
+  },
+  {
+    "id": "m_format",
+    "term_id": "t_format",
+    "database_source": "card_games",
+    "table": "tab03",
+    "column": "fld076",
+    "semantic_filter": "Format label; all values lowercase.",
+    "aggregation_semantics": "Group legality rows by format.",
+    "grain": "one row per card printing and format",
+    "validation": "15 lowercase format labels.",
+    "evidence_refs": [
+      "evidence_format_values"
+    ]
+  },
+  {
+    "id": "m_legality_status",
+    "term_id": "t_legality_status",
+    "database_source": "card_games",
+    "table": "tab03",
+    "column": "fld077",
+    "semantic_filter": "Status label; exactly Legal, Banned or Restricted.",
+    "aggregation_semantics": "Filter or group by status within a format.",
+    "grain": "one row per card printing and format",
+    "validation": "424958 Legal, 2313 Banned, 636 Restricted.",
+    "evidence_refs": [
+      "evidence_status_values"
+    ]
+  },
+  {
+    "id": "m_format_legality",
+    "term_id": "t_format_legality",
+    "database_source": "card_games",
+    "table": "tab03",
+    "column": "fld001",
+    "semantic_filter": "One row per card printing and format; at most one row per pair.",
+    "aggregation_semantics": "Join to tab01 on fld072; count distinct printings for card counts.",
+    "grain": "one row per card printing and format",
+    "validation": "427907 rows, 55608 printings, 0 duplicate (fld072,fld076) pairs.",
+    "evidence_refs": [
+      "evidence_legality_grain",
+      "evidence_uuid_join_graph"
+    ]
+  },
+  {
+    "id": "m_rarity",
+    "term_id": "t_rarity",
+    "database_source": "card_games",
+    "table": "tab01",
+    "column": "fld059",
+    "semantic_filter": "Rarity label; lowercase.",
+    "aggregation_semantics": "Filter or group printings by rarity.",
+    "grain": "one row per card printing",
+    "validation": "4 lowercase values.",
+    "evidence_refs": [
+      "evidence_rarity_border"
+    ]
+  },
+  {
+    "id": "m_border_color",
+    "term_id": "t_border_color",
+    "database_source": "card_games",
+    "table": "tab01",
+    "column": "fld005",
+    "semantic_filter": "Border colour label; lowercase.",
+    "aggregation_semantics": "Filter or group printings by border colour.",
+    "grain": "one row per card printing",
+    "validation": "5 values: black, white, gold, silver, borderless.",
+    "evidence_refs": [
+      "evidence_rarity_border"
+    ]
+  },
+  {
+    "id": "m_artist",
+    "term_id": "t_artist",
+    "database_source": "card_games",
+    "table": "tab01",
+    "column": "fld002",
+    "semantic_filter": "Artist name as exact text; 3 printings have a null artist.",
+    "aggregation_semantics": "Filter by exact artist name; group to count printings per artist.",
+    "grain": "one row per card printing",
+    "validation": "'Stephen Daniele' exists (74 printings); 'Stephen Daniel' does not.",
+    "evidence_refs": [
+      "evidence_artist"
+    ]
+  },
+  {
+    "id": "m_converted_mana_cost",
+    "term_id": "t_converted_mana_cost",
+    "database_source": "card_games",
+    "table": "tab01",
+    "column": "fld011",
+    "semantic_filter": "Numeric mana value; non-null for all printings.",
+    "aggregation_semantics": "Compare numeric values; do not treat as text.",
+    "grain": "one row per card printing",
+    "validation": "19 distinct REAL values including 0.0 and 0.5.",
+    "evidence_refs": [
+      "evidence_cmc_edhrec"
+    ]
+  },
+  {
+    "id": "m_edhrec_rank",
+    "term_id": "t_edhrec_rank",
+    "database_source": "card_games",
+    "table": "tab01",
+    "column": "fld013",
+    "semantic_filter": "Integer rank; lower is more popular; null for unranked printings.",
+    "aggregation_semantics": "Compare ranks numerically; rank 1 is the top rank.",
+    "grain": "one row per card printing",
+    "validation": "1..20900, 4761 nulls; rank 1 = Sol Ring printings.",
+    "evidence_refs": [
+      "evidence_cmc_edhrec"
+    ]
+  },
+  {
+    "id": "m_story_spotlight",
+    "term_id": "t_story_spotlight",
+    "database_source": "card_games",
+    "table": "tab01",
+    "column": "fld033",
+    "semantic_filter": "1 marks a Story Spotlight card; 0 otherwise.",
+    "aggregation_semantics": "Filter on fld033 = 1.",
+    "grain": "one row per card printing",
+    "validation": "104 printings (100 distinct names) flagged.",
+    "evidence_refs": [
+      "evidence_flags"
+    ]
+  },
+  {
+    "id": "m_content_warning",
+    "term_id": "t_content_warning",
+    "database_source": "card_games",
+    "table": "tab01",
+    "column": "fld022",
+    "semantic_filter": "1 marks a content warning; 0 means no content warning.",
+    "aggregation_semantics": "Filter on fld022 = 1 or = 0 as required.",
+    "grain": "one row per card printing",
+    "validation": "29 printings (7 distinct names) flagged.",
+    "evidence_refs": [
+      "evidence_flags"
+    ]
+  },
+  {
+    "id": "m_power",
+    "term_id": "t_power",
+    "database_source": "card_games",
+    "table": "tab01",
+    "column": "fld055",
+    "semantic_filter": "Text value; null when the card has no power; special values '*', '?', '∞', '-1' occur.",
+    "aggregation_semantics": "Compare numerically only for numeric values; treat special values separately.",
+    "grain": "one row per card printing",
+    "validation": "30624 nulls, 429 '*', plus '?', '∞', '-1', '*²'.",
+    "evidence_refs": [
+      "evidence_power"
+    ]
+  },
+  {
+    "id": "m_original_type",
+    "term_id": "t_original_type",
+    "database_source": "card_games",
+    "table": "tab01",
+    "column": "fld053",
+    "semantic_filter": "Historical printed type wording; null for 14766 printings.",
+    "aggregation_semantics": "Filter by exact original type text such as 'Summon - Angel'.",
+    "grain": "one row per card printing",
+    "validation": "'Summon - Angel' appears on 20 printings.",
+    "evidence_refs": [
+      "evidence_original_type_subtype"
+    ]
+  },
+  {
+    "id": "m_subtype",
+    "term_id": "t_subtype",
+    "database_source": "card_games",
+    "table": "tab01",
+    "column": "fld065",
+    "semantic_filter": "Comma-separated subtype list; null for 22228 printings.",
+    "aggregation_semantics": "Exact equality on the whole list differs from membership of one subtype.",
+    "grain": "one row per card printing",
+    "validation": "1505 distinct values; 'Angel', 'Angel,Spirit', 'Angel,Warrior' all occur.",
+    "evidence_refs": [
+      "evidence_original_type_subtype"
+    ]
+  },
+  {
+    "id": "m_card_count",
+    "term_id": "t_card_count",
+    "database_source": "card_games",
+    "table": "tab01",
+    "column": "fld072",
+    "semantic_filter": "Counting over a filtered population; state whether rows (printings) or distinct fld049 (names) are counted.",
+    "aggregation_semantics": "COUNT rows = printings; COUNT(DISTINCT fld049) = card names.",
+    "grain": "one row per card printing",
+    "validation": "56822 printings vs 21738 names.",
+    "evidence_refs": [
+      "evidence_count_semantics"
+    ]
+  },
+  {
+    "id": "m_percentage_share",
+    "term_id": "t_percentage_share",
+    "database_source": "card_games",
+    "table": "",
+    "column": "",
+    "semantic_filter": "Derived metric with no stored column; computed from two filtered counts.",
+    "aggregation_semantics": "100 × qualifying count / total count over the stated population.",
+    "grain": "derived over any filtered population",
+    "validation": "Workload evidence defines percentage as DIVIDE(qualifying count, population count)*100.",
+    "evidence_refs": [
+      "evidence_count_semantics"
+    ]
+  }
+]

@@ -1,0 +1,2240 @@
+[
+  {
+    "id": "term_business_date",
+    "name": "业务日期",
+    "type": "dimension",
+    "definition": "规范单据表中记录所属的业务日期，是年份筛选、按日筛选与日历关联的主时间列。",
+    "scope": "适用于共享规范单据列模板的 67 张事实表；48 张遗留交易表没有该列，须改用各自的业务日期列。",
+    "aliases": [
+      "business_date",
+      "业务发生日期",
+      "业务时间",
+      "业务日期字段",
+      "年份筛选"
+    ],
+    "evidence": [
+      "ev_003_governed_template",
+      "ev_004_legacy_family"
+    ]
+  },
+  {
+    "id": "term_posting_date",
+    "name": "过账日期",
+    "type": "dimension",
+    "definition": "财务或仓储过账日期，与业务日期可能不同，用于按过账口径统计与筛选。",
+    "scope": "共享规范单据模板的事实表，以及循环盘点单、供应商合同明细、预测性维护告警等以过账日期归档的单据。",
+    "aliases": [
+      "posting_date",
+      "过账时间",
+      "过账日期字段"
+    ],
+    "evidence": [
+      "ev_003_governed_template"
+    ]
+  },
+  {
+    "id": "term_event_time",
+    "name": "发生时间",
+    "type": "dimension",
+    "definition": "记录的事件发生时间戳（精确到秒），用于精确到时刻的筛选。",
+    "scope": "共享规范单据模板的事实表；与业务日期、过账日期是三个不同口径的时间列。",
+    "aliases": [
+      "event_time",
+      "发生时刻",
+      "事件时间",
+      "发生时间字段"
+    ],
+    "evidence": [
+      "ev_003_governed_template"
+    ]
+  },
+  {
+    "id": "term_record_status",
+    "name": "记录状态",
+    "type": "dimension",
+    "definition": "单据或记录的生命周期状态。同一语义在库中存在大写英文、小写英文与中文三套书写风格，取值域因表而异。",
+    "scope": "118 张表含有状态列；筛选与分组前必须按目标表核对该表实际使用的取值风格。",
+    "aliases": [
+      "status",
+      "状态",
+      "单据状态",
+      "记录状态字段",
+      "状态分组",
+      "状态筛选"
+    ],
+    "evidence": [
+      "ev_006_status_styles"
+    ]
+  },
+  {
+    "id": "term_document_priority",
+    "name": "单据优先级",
+    "type": "metric",
+    "definition": "单据优先级，在规范单据模板表中为整数，可求和或求平均。",
+    "scope": "用于循环盘点单、遗留系统领料记录等单据的优先级聚合；fact_maintenance_wo.priority 是文本枚举，不能聚合。",
+    "aliases": [
+      "priority",
+      "优先级字段",
+      "优先级别",
+      "单据优先级"
+    ],
+    "evidence": [
+      "ev_003_governed_template"
+    ]
+  },
+  {
+    "id": "term_reason_code",
+    "name": "原因码",
+    "type": "dimension",
+    "definition": "统一原因码，取值为大写分类代码（QUALITY、EQUIPMENT、PROCESS、MATERIAL、ENVIRONMENT、CUSTOMER、SUPPLIER、OTHER 等），可关联原因码字典的 code 列取得中文名称与简称。",
+    "scope": "设备事件、状态监测、在线仪表校准、危险源等记录的原因归类；部分表的所有行都取值为 OTHER。",
+    "aliases": [
+      "reason_code",
+      "原因代码",
+      "原因码字段",
+      "原因"
+    ],
+    "evidence": [
+      "ev_014_reason_code"
+    ]
+  },
+  {
+    "id": "term_reason_group",
+    "name": "原因码分组",
+    "type": "category",
+    "definition": "原因码的上层分组，取值只有 内部 与 外部 两类，用于把具体原因码归并为内因/外因。",
+    "scope": "原因码字典的 reason_group 列；是原因码的类型/实例层次。",
+    "aliases": [
+      "reason_group",
+      "原因分组",
+      "内部原因",
+      "外部原因"
+    ],
+    "evidence": [
+      "ev_039_reason_group"
+    ]
+  },
+  {
+    "id": "term_record_remarks",
+    "name": "备注",
+    "type": "dimension",
+    "definition": "记录备注。虽然是文本列，但取值是封闭的五类词表：加急、客户指定批次、已电话确认、补录、跨月处理。",
+    "scope": "共享规范单据模板的事实表；按备注筛选时应使用完整词条而不是模糊匹配。",
+    "aliases": [
+      "remarks",
+      "备注字段",
+      "备注说明",
+      "备注内容"
+    ],
+    "evidence": [
+      "ev_007_remarks_vocab"
+    ]
+  },
+  {
+    "id": "term_created_by",
+    "name": "创建人",
+    "type": "dimension",
+    "definition": "创建记录的操作用户账号，取值域为 U0001–U0012 共 12 个账号。",
+    "scope": "规范单据模板表；该取值域与员工主键、员工编号都不同，不能直接关联员工主数据。",
+    "aliases": [
+      "created_by",
+      "创建人字段",
+      "创建用户",
+      "创建者"
+    ],
+    "evidence": [
+      "ev_008_persona_domains",
+      "ev_036_persona_distribution"
+    ]
+  },
+  {
+    "id": "term_updated_by",
+    "name": "更新人",
+    "type": "dimension",
+    "definition": "最后更新记录的操作用户账号，取值域为 U0001–U0012。",
+    "scope": "规范单据模板表；与创建人、审批人共用同一账号取值域。",
+    "aliases": [
+      "updated_by",
+      "更新人字段",
+      "更新用户",
+      "修改人"
+    ],
+    "evidence": [
+      "ev_008_persona_domains",
+      "ev_036_persona_distribution"
+    ]
+  },
+  {
+    "id": "term_approved_by",
+    "name": "审批人",
+    "type": "dimension",
+    "definition": "审批记录的操作用户账号，取值域为 U0001–U0012。",
+    "scope": "规范单据模板表；审批人列在多数表中均匀分布，不存在单一审批人占多数的情况。",
+    "aliases": [
+      "approved_by",
+      "审批人字段",
+      "审批用户",
+      "审核人"
+    ],
+    "evidence": [
+      "ev_008_persona_domains",
+      "ev_036_persona_distribution"
+    ]
+  },
+  {
+    "id": "term_is_deleted",
+    "name": "逻辑删除标记",
+    "type": "metric",
+    "definition": "逻辑删除标记。当前数据版本中该列在所有规范化单据表中恒为 0，其合计值恒为 0。",
+    "scope": "共享规范单据模板的事实表；不要把 is_deleted 当作有效过滤条件，也不要用它解释结果为空。",
+    "aliases": [
+      "is_deleted",
+      "删除标记",
+      "逻辑删除",
+      "删除标志"
+    ],
+    "evidence": [
+      "ev_009_flags"
+    ]
+  },
+  {
+    "id": "term_row_version",
+    "name": "行版本",
+    "type": "metric",
+    "definition": "记录版本号，取值域为 1–3，可作为数值度量求和或求平均。",
+    "scope": "共享规范单据模板的事实表与销售线索等表；平均值通常在 1.4 左右。",
+    "aliases": [
+      "row_version",
+      "版本号",
+      "行版本号",
+      "记录版本"
+    ],
+    "evidence": [
+      "ev_010_row_version"
+    ]
+  },
+  {
+    "id": "term_data_quality_score",
+    "name": "数据质量分",
+    "type": "metric",
+    "definition": "记录级数据质量评分，取值约 0.90–0.999，可按记录求和或求平均得到质量度量。",
+    "scope": "共享规范单据模板的事实表与验证案例执行结果等表；按年筛选后再聚合。",
+    "aliases": [
+      "data_quality_score",
+      "质量分",
+      "数据质量得分",
+      "数据质量分字段"
+    ],
+    "evidence": [
+      "ev_011_dqs",
+      "ev_043_year_scoped_measures"
+    ]
+  },
+  {
+    "id": "term_document_no",
+    "name": "单据编号",
+    "type": "dimension",
+    "definition": "单据编号或来源单据编号，是同一单据表头与行项目、前后序单据之间的文本关联键。",
+    "scope": "共享规范单据模板的事实表；表头行与行项目表通常同时保留父标识与单据编号两套关联键。",
+    "aliases": [
+      "document_no",
+      "source_document_no",
+      "单据号",
+      "单据编号字段",
+      "订单号"
+    ],
+    "evidence": [
+      "ev_003_governed_template",
+      "ev_023_order_chain"
+    ]
+  },
+  {
+    "id": "term_governed_document_table",
+    "name": "规范单据表",
+    "type": "concept",
+    "definition": "采用统一治理列模板的一类事实表：同时具备业务日期、过账日期、发生时间、状态、优先级、原因码、备注、创建/更新/审批人、行版本、数据质量分与逻辑删除标记等列。",
+    "scope": "共 67 张事实表，是库中数据量最大、维度最完整的一族；年份筛选与治理人筛选主要落在这一族。",
+    "aliases": [
+      "规范单据表",
+      "治理列模板",
+      "业务单据表",
+      "统一模板表"
+    ],
+    "evidence": [
+      "ev_003_governed_template",
+      "ev_004_legacy_family",
+      "ev_044_governed_scale"
+    ]
+  },
+  {
+    "id": "term_legacy_transaction_table",
+    "name": "遗留交易表",
+    "type": "concept",
+    "definition": "没有统一治理列模板的一类事实表：没有业务日期、过账日期、状态、备注与治理人列，改用各自的业务时间列与专用列。",
+    "scope": "共 48 张事实表，如采购订单、销售订单、生产工单、库存、收货单、维护计划、供应商评估等；年份筛选必须改用其自身的时间列。",
+    "aliases": [
+      "遗留交易表",
+      "非模板表",
+      "简单事务表",
+      "遗留表"
+    ],
+    "evidence": [
+      "ev_004_legacy_family"
+    ]
+  },
+  {
+    "id": "term_operator_account",
+    "name": "操作人账号",
+    "type": "entity",
+    "definition": "系统操作用户账号 U0001–U0012，出现在创建人、更新人、审批人三列中。",
+    "scope": "与 dim_employee.emp_id（整数）和事实表中的 employee_no（E####）是不同的取值域，三者不可直接等值关联。",
+    "aliases": [
+      "操作人账号",
+      "用户账号",
+      "U账号",
+      "系统账号"
+    ],
+    "evidence": [
+      "ev_008_persona_domains"
+    ]
+  },
+  {
+    "id": "term_quantity",
+    "name": "数量",
+    "type": "metric",
+    "definition": "单据或记录的主数量，是数量类问题的通用度量列，分布在规范单据表与部分遗留交易表中。",
+    "scope": "规范单据模板表的 quantity 列最通用；遗留表使用 quantity/planned_qty/actual_qty 等专用列名。",
+    "aliases": [
+      "quantity",
+      "数量字段",
+      "主数量"
+    ],
+    "evidence": [
+      "ev_003_governed_template"
+    ]
+  },
+  {
+    "id": "term_planned_quantity",
+    "name": "计划数量",
+    "type": "metric",
+    "definition": "计划或预留口径的数量，与数量列并列存在于规范单据模板表。",
+    "scope": "用于计划与实际的对比口径；计划数量常与 actual_quantity 成对出现。",
+    "aliases": [
+      "planned_quantity",
+      "计划量",
+      "计划数"
+    ],
+    "evidence": [
+      "ev_003_governed_template"
+    ]
+  },
+  {
+    "id": "term_actual_quantity",
+    "name": "实际数量",
+    "type": "metric",
+    "definition": "实际发生的数量，是“实际数量合计”类问题的度量列。",
+    "scope": "规范单据模板表，以及工单物料投用、排放事件等表；须注意某些表的实际数量列可能整列为 0。",
+    "aliases": [
+      "actual_quantity",
+      "实际量",
+      "实际完成数量"
+    ],
+    "evidence": [
+      "ev_003_governed_template",
+      "ev_015_emission_zero"
+    ]
+  },
+  {
+    "id": "term_qualified_quantity",
+    "name": "合格数量",
+    "type": "metric",
+    "definition": "合格品数量，与不合格数量并列，是“合格数量合计”类问题的度量列。",
+    "scope": "检验批、成品批次质量冻结、报废事件等质量表；检验批的合格数量与产出表中非返工品数量合计一致。",
+    "aliases": [
+      "qualified_quantity",
+      "合格量",
+      "合格品数量"
+    ],
+    "evidence": [
+      "ev_012_qualified_equivalence",
+      "ev_027_top_product"
+    ]
+  },
+  {
+    "id": "term_unit_price",
+    "name": "单价",
+    "type": "metric",
+    "definition": "单位价格，用于单价合计或与数量相乘得到金额。",
+    "scope": "规范单据模板表、报价单、采购订单行、销售订单等。",
+    "aliases": [
+      "unit_price",
+      "价格",
+      "单价字段"
+    ],
+    "evidence": [
+      "ev_003_governed_template"
+    ]
+  },
+  {
+    "id": "term_amount",
+    "name": "金额",
+    "type": "metric",
+    "definition": "行级金额，通常等于数量与单价的乘积，是金额类度量最通用的列。",
+    "scope": "规范单据模板表与采购申请、退货、应付账款等表；文档级汇总金额在总金额列。",
+    "aliases": [
+      "amount",
+      "金额字段",
+      "行金额"
+    ],
+    "evidence": [
+      "ev_003_governed_template"
+    ]
+  },
+  {
+    "id": "term_cost_amount",
+    "name": "成本金额",
+    "type": "metric",
+    "definition": "成本口径的金额，用于报废、库存移动等成本类问题。",
+    "scope": "规范单据模板表；常与金额、税额并列，须按问题口径选择。",
+    "aliases": [
+      "cost_amount",
+      "成本金额字段",
+      "成本额"
+    ],
+    "evidence": [
+      "ev_003_governed_template",
+      "ev_017_currency"
+    ]
+  },
+  {
+    "id": "term_tax_amount",
+    "name": "税额",
+    "type": "metric",
+    "definition": "税额，与不含税金额、总金额并列；部分表的税额列在本版本中整列为 0。",
+    "scope": "规范单据模板表与固定资产调拨等表。",
+    "aliases": [
+      "tax_amount",
+      "税金",
+      "税额字段"
+    ],
+    "evidence": [
+      "ev_003_governed_template",
+      "ev_016_fat_zero_tax"
+    ]
+  },
+  {
+    "id": "term_total_amount",
+    "name": "总金额",
+    "type": "metric",
+    "definition": "单据级汇总金额，是遗留交易表中“总金额”类问题的度量列。",
+    "scope": "采购订单、报价单、采购申请、合同、发票等表；与行级金额列是两个不同粒度。",
+    "aliases": [
+      "total_amount",
+      "合计金额",
+      "单据总金额",
+      "总金额字段"
+    ],
+    "evidence": [
+      "ev_004_legacy_family"
+    ]
+  },
+  {
+    "id": "term_available_quantity",
+    "name": "可用数量",
+    "type": "metric",
+    "definition": "库存可用数量，与预留数量并列，用于库存调拨等可用性口径。",
+    "scope": "库存快照、库存移动、调拨单等含可用量列的规范单据表。",
+    "aliases": [
+      "available_quantity",
+      "可用量",
+      "可用库存"
+    ],
+    "evidence": [
+      "ev_003_governed_template",
+      "ev_017_currency"
+    ]
+  },
+  {
+    "id": "term_reserved_quantity",
+    "name": "预留数量",
+    "type": "metric",
+    "definition": "已预留数量，与可用数量并列；到货预告明细的平均预留数量属于该口径。",
+    "scope": "库存快照、库存移动、到货预告明细等表。",
+    "aliases": [
+      "reserved_quantity",
+      "预留量",
+      "已预留数量"
+    ],
+    "evidence": [
+      "ev_043_year_scoped_measures"
+    ]
+  },
+  {
+    "id": "term_currency_code",
+    "name": "币种编码",
+    "type": "dimension",
+    "definition": "事实表上的币种代码，如 CNY；币种简称需经币种主数据取得。",
+    "scope": "规范单据模板表以 currency_code 命名，采购订单等遗留表以 currency 命名；在多数表中该列为单一取值。",
+    "aliases": [
+      "currency_code",
+      "currency",
+      "币种",
+      "货币",
+      "币种代码"
+    ],
+    "evidence": [
+      "ev_017_currency"
+    ]
+  },
+  {
+    "id": "term_storage_days",
+    "name": "在库天数",
+    "type": "metric",
+    "definition": "库存在库天数，是“平均在库天数/在库天数合计”类问题的度量列。",
+    "scope": "仅存在于产品级库存表；入库年份取其入库日期列。",
+    "aliases": [
+      "storage_days",
+      "在库时长",
+      "库存天数",
+      "在库天数字段"
+    ],
+    "evidence": [
+      "ev_019_storage_days",
+      "ev_018_inventory_grains"
+    ]
+  },
+  {
+    "id": "term_product_grade",
+    "name": "产品等级",
+    "type": "category",
+    "definition": "产出产品的等级，取值 一等品、优等品、合格品、返工品。",
+    "scope": "产出记录表；返工品与检验结论中的不合格相对应，合格品与让步接收相对应。",
+    "aliases": [
+      "grade",
+      "产品等级",
+      "产出等级",
+      "等级"
+    ],
+    "evidence": [
+      "ev_033_prod_grade_hold",
+      "ev_012_qualified_equivalence"
+    ]
+  },
+  {
+    "id": "term_severity",
+    "name": "严重度",
+    "type": "metric",
+    "definition": "问题的严重度等级或分值，用于质量、安全、数据质量类记录。",
+    "scope": "成品批次质量冻结、报废事件、客户投诉、数据质量问题、危险源观察等表的 severity 列；注意既有整数型也有文本型。",
+    "aliases": [
+      "severity",
+      "严重程度",
+      "严重级别",
+      "严重度字段"
+    ],
+    "evidence": [
+      "ev_003_governed_template"
+    ]
+  },
+  {
+    "id": "term_maintenance_interval",
+    "name": "维护间隔",
+    "type": "metric",
+    "definition": "维护计划中约定的维护周期，以天数与小时两种口径同时给出。",
+    "scope": "维护计划表；两个口径的合计/平均是不同问题（间隔天数、间隔小时）。",
+    "aliases": [
+      "interval_days",
+      "interval_hours",
+      "维护周期",
+      "维护间隔天数",
+      "维护间隔小时"
+    ],
+    "evidence": [
+      "ev_020_maintenance_plan"
+    ]
+  },
+  {
+    "id": "term_next_maintenance_date",
+    "name": "下次维护日期",
+    "type": "dimension",
+    "definition": "维护计划的下次维护日期，是维护计划表唯一的时间列，用于判定该计划所属年度。",
+    "scope": "维护计划表没有业务日期列；按年份筛选维护计划时使用该列。",
+    "aliases": [
+      "next_date",
+      "下次维护日期字段",
+      "下次保养日期"
+    ],
+    "evidence": [
+      "ev_020_maintenance_plan"
+    ]
+  },
+  {
+    "id": "term_inspection_limit",
+    "name": "检验界限",
+    "type": "metric",
+    "definition": "检验或监测的规格界限，含下限与上限，也用于环境监测的限值口径。",
+    "scope": "检验批、检验结果、环境监测等表；下限、上限是不同列，须按问题口径选择。",
+    "aliases": [
+      "lower_limit",
+      "upper_limit",
+      "limit_value",
+      "下限",
+      "上限",
+      "限值"
+    ],
+    "evidence": [
+      "ev_025_prod_order_inspection",
+      "ev_043_year_scoped_measures"
+    ]
+  },
+  {
+    "id": "term_inspection_result",
+    "name": "检验结果",
+    "type": "category",
+    "definition": "检验或收货的结论值，如收货单的 pass/fail 与检验批的中文结论。",
+    "scope": "收货单、检验批、检验结果表；不同表的结论取值风格不同（英文小写与中文）。",
+    "aliases": [
+      "inspection_result",
+      "result_code",
+      "result",
+      "检验结论",
+      "反馈结果",
+      "检验结果字段"
+    ],
+    "evidence": [
+      "ev_022_gr_inspection",
+      "ev_006_status_styles"
+    ]
+  },
+  {
+    "id": "term_monitoring_reading",
+    "name": "监测读数",
+    "type": "metric",
+    "definition": "设备状态监测的读数，含读数单位与上下阈值，是“测量值合计/读数合计”类问题的度量列。",
+    "scope": "设备状态监测、预测性维护告警、在线仪表校准等表；口径可能是读数、实测值或标准值。",
+    "aliases": [
+      "reading_value",
+      "measured_value",
+      "读数",
+      "测量值",
+      "监测值"
+    ],
+    "evidence": [
+      "ev_042_toplevel_by_attr"
+    ]
+  },
+  {
+    "id": "term_emission_quantity",
+    "name": "实际排放数量",
+    "type": "metric",
+    "definition": "排放事件的实际排放数量列，在本数据版本中整列为 0。",
+    "scope": "排放事件表；排放问题的有效度量应改用排放测量值列。",
+    "aliases": [
+      "actual_quantity",
+      "排放数量",
+      "实际排放量"
+    ],
+    "evidence": [
+      "ev_015_emission_zero"
+    ]
+  },
+  {
+    "id": "term_emission_value",
+    "name": "排放测量值",
+    "type": "metric",
+    "definition": "排放或环境监测的实测值（浓度口径），与限值并列。",
+    "scope": "排放事件与环境监测表；是排放类问题可用的度量口径。",
+    "aliases": [
+      "emission_value",
+      "measured_value",
+      "排放测量值",
+      "排放浓度",
+      "监测值"
+    ],
+    "evidence": [
+      "ev_015_emission_zero",
+      "ev_011_dqs"
+    ]
+  },
+  {
+    "id": "term_regular_hours",
+    "name": "正常工时",
+    "type": "metric",
+    "definition": "正常（非加班）工时，用于“正常工时合计最高”类问题。",
+    "scope": "班次生产报告表的正常工时列按产线聚合；考勤表也有同名列但口径不同。",
+    "aliases": [
+      "regular_hours",
+      "正常出勤工时",
+      "正常工时字段"
+    ],
+    "evidence": [
+      "ev_026_population_top",
+      "ev_043_year_scoped_measures"
+    ]
+  },
+  {
+    "id": "term_risk_score",
+    "name": "风险分值",
+    "type": "metric",
+    "definition": "危险源观察的风险分值，由严重度与可能性派生并物化存储。",
+    "scope": "危险源观察表；按车间位置筛选需经车间主数据关联。",
+    "aliases": [
+      "risk_score",
+      "风险值",
+      "风险分值字段"
+    ],
+    "evidence": [
+      "ev_032_hazard_location"
+    ]
+  },
+  {
+    "id": "term_likelihood",
+    "name": "可能性",
+    "type": "metric",
+    "definition": "危险源观察的可能性等级值，是风险分值的派生来源之一。",
+    "scope": "危险源观察表；与严重度成对出现。",
+    "aliases": [
+      "likelihood",
+      "可能性等级",
+      "发生可能性"
+    ],
+    "evidence": [
+      "ev_032_hazard_location"
+    ]
+  },
+  {
+    "id": "term_is_handled",
+    "name": "是否处理",
+    "type": "metric",
+    "definition": "告警是否已处理的标记列，在本数据版本中恒为 1。",
+    "scope": "设备告警表；其合计值等于记录数，因此“合计最高”实际退化为按传感器计数。",
+    "aliases": [
+      "is_handled",
+      "是否处理标记",
+      "处理标志"
+    ],
+    "evidence": [
+      "ev_009_flags",
+      "ev_042_toplevel_by_attr"
+    ]
+  },
+  {
+    "id": "term_bom_qty_per_ton",
+    "name": "BOM吨耗",
+    "type": "metric",
+    "definition": "每吨产品对应的物料配比（吨耗），是“BOM 吨耗合计”类问题的度量列。",
+    "scope": "工单物料投用、遗留系统领料、批次追溯等表；与 BOM 主数据行的每吨用量口径不同，不可直接比较。",
+    "aliases": [
+      "bom_qty_per_ton",
+      "qty_per_ton",
+      "吨耗",
+      "BOM吨耗字段",
+      "单耗"
+    ],
+    "evidence": [
+      "ev_031_bom_ratio"
+    ]
+  },
+  {
+    "id": "term_exception_count",
+    "name": "异常数",
+    "type": "metric",
+    "definition": "数据质量问题的异常记录数，是“异常数合计”类问题的度量列。",
+    "scope": "数据质量问题与验证案例执行结果表；每行代表一条规则检查结果，合计远大于行数。",
+    "aliases": [
+      "exception_count",
+      "异常数量",
+      "异常条数"
+    ],
+    "evidence": [
+      "ev_043_year_scoped_measures"
+    ]
+  },
+  {
+    "id": "term_disposition",
+    "name": "处置方式",
+    "type": "category",
+    "definition": "不合格品或受控批次的处置方式，取值 返工、让步接收。",
+    "scope": "成品批次质量冻结、不合格品等表；与产出等级列存在对应关系。",
+    "aliases": [
+      "disposition",
+      "处置",
+      "处理方式",
+      "处置类型"
+    ],
+    "evidence": [
+      "ev_033_prod_grade_hold"
+    ]
+  },
+  {
+    "id": "term_measurement_unit",
+    "name": "计量单位",
+    "type": "dimension",
+    "definition": "计量单位，如 kg/h、℃、MPa、包/h；用于按单位分组或按单位筛选。",
+    "scope": "IoT 数据、状态监测、预测性维护告警、能源计量读数等表；同一度量在不同表的单位列名不同。",
+    "aliases": [
+      "unit",
+      "reading_unit",
+      "measurement_unit",
+      "单位",
+      "计量单位",
+      "读数单位"
+    ],
+    "evidence": [
+      "ev_021_iot_unit"
+    ]
+  },
+  {
+    "id": "term_iot_measurement",
+    "name": "IoT测量值",
+    "type": "metric",
+    "definition": "IoT 传感器时序数据的测量值与单位，是传感器数据的原始口径。",
+    "scope": "IoT 数据表；与其他设备监测表的读数口径不同（后者带阈值与健康指数）。",
+    "aliases": [
+      "value",
+      "IoT数据值",
+      "传感器测量值",
+      "物联网测量值"
+    ],
+    "evidence": [
+      "ev_021_iot_unit"
+    ]
+  },
+  {
+    "id": "term_product",
+    "name": "产品",
+    "type": "entity",
+    "definition": "产品主数据，含产品名称、所属产品线、规格、单位、标准成本、技术成本与指导价。",
+    "scope": "维度/实体主数据，用于与事实表按标识列关联后再分组或筛选。",
+    "aliases": [
+      "prod_name",
+      "产品名称",
+      "产品主数据",
+      "产品维度"
+    ],
+    "evidence": [
+      "ev_041_entity_links"
+    ]
+  },
+  {
+    "id": "term_product_line",
+    "name": "产品线",
+    "type": "entity",
+    "definition": "产品线主数据，含 PP改性系列、PA改性系列、ABS/PC合金系列、特种工程塑料系列；产品通过产品线标识归属产品线。",
+    "scope": "维度/实体主数据，用于与事实表按标识列关联后再分组或筛选。",
+    "aliases": [
+      "prod_line_name",
+      "产品线名称",
+      "产品系列",
+      "产品线维度"
+    ],
+    "evidence": [
+      "ev_028_dimension_values"
+    ]
+  },
+  {
+    "id": "term_material",
+    "name": "物料",
+    "type": "entity",
+    "definition": "物料主数据，含物料编码、名称、类别、单位、单价、安全库存、提前期与默认供应商。",
+    "scope": "维度/实体主数据，用于与事实表按标识列关联后再分组或筛选。",
+    "aliases": [
+      "material_code",
+      "物料编码",
+      "物料主数据",
+      "物料维度"
+    ],
+    "evidence": [
+      "ev_013_mat_ref"
+    ]
+  },
+  {
+    "id": "term_material_category",
+    "name": "物料类别",
+    "type": "entity",
+    "definition": "物料类别主数据，含树脂、通用树脂、工程塑料树脂、特种工程塑料树脂、增强与填充、助剂，并通过 parent_id 分层。",
+    "scope": "维度/实体主数据，用于与事实表按标识列关联后再分组或筛选。",
+    "aliases": [
+      "category_name",
+      "物料类别名称",
+      "物料分类",
+      "物料大类"
+    ],
+    "evidence": [
+      "ev_028_dimension_values"
+    ]
+  },
+  {
+    "id": "term_customer",
+    "name": "客户",
+    "type": "entity",
+    "definition": "客户主数据，含客户名称、所属行业、省市、市场容量、状态、首次与最近交易日期、信用状态。",
+    "scope": "维度/实体主数据，用于与事实表按标识列关联后再分组或筛选。",
+    "aliases": [
+      "cust_name",
+      "客户名称",
+      "客户主数据",
+      "客户维度"
+    ],
+    "evidence": [
+      "ev_030_customer_last_deal",
+      "ev_028_dimension_values"
+    ]
+  },
+  {
+    "id": "term_customer_industry",
+    "name": "客户所属行业",
+    "type": "dimension",
+    "definition": "客户所属行业取值：家电、建材、汽车、电动工具、电子电气；用于按行业筛选客户后再关联业务记录。",
+    "scope": "维度/实体主数据，用于与事实表按标识列关联后再分组或筛选。",
+    "aliases": [
+      "industry",
+      "所属行业",
+      "行业",
+      "客户行业"
+    ],
+    "evidence": [
+      "ev_028_dimension_values"
+    ]
+  },
+  {
+    "id": "term_supplier",
+    "name": "供应商",
+    "type": "entity",
+    "definition": "供应商主数据，含供应商编码（形如 SUP001）、名称（形如 合成供应商0007）、类别、省市、信用等级与状态。",
+    "scope": "维度/实体主数据，用于与事实表按标识列关联后再分组或筛选。",
+    "aliases": [
+      "supplier_name",
+      "供应商名称",
+      "供应商主数据",
+      "供应商维度"
+    ],
+    "evidence": [
+      "ev_026_population_top"
+    ]
+  },
+  {
+    "id": "term_employee",
+    "name": "员工",
+    "type": "entity",
+    "definition": "员工主数据，含整数主键、姓名、部门、入职日期与在职状态（active/inactive）。",
+    "scope": "维度/实体主数据，用于与事实表按标识列关联后再分组或筛选。",
+    "aliases": [
+      "emp_name",
+      "emp_id",
+      "员工姓名",
+      "员工主数据",
+      "员工维度"
+    ],
+    "evidence": [
+      "ev_008_persona_domains"
+    ]
+  },
+  {
+    "id": "term_department",
+    "name": "部门",
+    "type": "entity",
+    "definition": "部门主数据，含部门名称与所属区域，用于按部门聚合采购申请等单据。",
+    "scope": "维度/实体主数据，用于与事实表按标识列关联后再分组或筛选。",
+    "aliases": [
+      "dept_name",
+      "部门名称",
+      "部门主数据",
+      "部门维度"
+    ],
+    "evidence": [
+      "ev_026_population_top"
+    ]
+  },
+  {
+    "id": "term_factory",
+    "name": "工厂",
+    "type": "entity",
+    "definition": "工厂主数据，含青岛一厂、青岛二厂、合肥工厂，以及所属业务单元、位置与面积。",
+    "scope": "维度/实体主数据，用于与事实表按标识列关联后再分组或筛选。",
+    "aliases": [
+      "factory_name",
+      "工厂名称",
+      "工厂主数据"
+    ],
+    "evidence": [
+      "ev_028_dimension_values"
+    ]
+  },
+  {
+    "id": "term_workshop",
+    "name": "车间",
+    "type": "entity",
+    "definition": "车间主数据，以位置文本标识厂区（合肥工厂A栋、青岛一厂A栋/B栋、青岛二厂A栋/B栋）；危险源观察按车间关联后可获得厂区口径。",
+    "scope": "维度/实体主数据，用于与事实表按标识列关联后再分组或筛选。",
+    "aliases": [
+      "location",
+      "车间名称",
+      "车间位置",
+      "车间主数据",
+      "车间维度"
+    ],
+    "evidence": [
+      "ev_028_dimension_values",
+      "ev_032_hazard_location"
+    ]
+  },
+  {
+    "id": "term_production_line",
+    "name": "产线",
+    "type": "entity",
+    "definition": "产线主数据，含 PP/PA/合金/阻燃/特塑 各 1–2 线共 12 条，以及所属车间、产品类型、产能与状态。",
+    "scope": "维度/实体主数据，用于与事实表按标识列关联后再分组或筛选。",
+    "aliases": [
+      "line_name",
+      "产线名称",
+      "产线主数据",
+      "产线维度"
+    ],
+    "evidence": [
+      "ev_028_dimension_values"
+    ]
+  },
+  {
+    "id": "term_warehouse",
+    "name": "仓库",
+    "type": "entity",
+    "definition": "仓库主数据，含仓库名称（如一厂原料仓）、所属工厂、类型、位置与容量。",
+    "scope": "维度/实体主数据，用于与事实表按标识列关联后再分组或筛选。",
+    "aliases": [
+      "warehouse_name",
+      "仓库名称",
+      "仓库主数据",
+      "仓库维度"
+    ],
+    "evidence": [
+      "ev_026_population_top",
+      "ev_041_entity_links"
+    ]
+  },
+  {
+    "id": "term_equipment",
+    "name": "设备",
+    "type": "entity",
+    "definition": "设备主数据，含设备编码、名称、设备类型、所属产线、厂商、投运日期、设计寿命与状态。",
+    "scope": "维度/实体主数据，用于与事实表按标识列关联后再分组或筛选。",
+    "aliases": [
+      "equipment_name",
+      "设备名称",
+      "设备主数据",
+      "设备维度"
+    ],
+    "evidence": [
+      "ev_041_entity_links"
+    ]
+  },
+  {
+    "id": "term_equipment_type",
+    "name": "设备类型",
+    "type": "entity",
+    "definition": "设备类型主数据，含双螺杆挤出机、高速混合机、失重式喂料机、切粒机、除湿干燥机、自动包装机，并带 生产设备/辅助设备 大类。",
+    "scope": "维度/实体主数据，用于与事实表按标识列关联后再分组或筛选。",
+    "aliases": [
+      "type_name",
+      "设备类型名称",
+      "设备类型维度",
+      "设备类别"
+    ],
+    "evidence": [
+      "ev_020_maintenance_plan",
+      "ev_028_dimension_values"
+    ]
+  },
+  {
+    "id": "term_sensor",
+    "name": "传感器",
+    "type": "entity",
+    "definition": "传感器主数据，含传感器编码、名称（形如 电机电流-PP挤出1线）、所属设备、传感器类型（压力/振动/料位/流量/温度/电流/转速/速度/重量）与精度。",
+    "scope": "维度/实体主数据，用于与事实表按标识列关联后再分组或筛选。",
+    "aliases": [
+      "sensor_name",
+      "sensor_type",
+      "传感器名称",
+      "传感器类型",
+      "传感器主数据"
+    ],
+    "evidence": [
+      "ev_028_dimension_values",
+      "ev_042_toplevel_by_attr"
+    ]
+  },
+  {
+    "id": "term_calendar",
+    "name": "企业日历",
+    "type": "entity",
+    "definition": "企业日历维度，含日历日期、年/季/月/周、工作日与节假日标记、会计年月，并自带创建人等治理列；可与事实表业务日期按日关联。",
+    "scope": "维度/实体主数据，用于与事实表按标识列关联后再分组或筛选。",
+    "aliases": [
+      "calendar_date",
+      "日历",
+      "企业日历",
+      "日期维度"
+    ],
+    "evidence": [
+      "ev_024_calendar_link",
+      "ev_005_calendar_year_domain"
+    ]
+  },
+  {
+    "id": "term_shift",
+    "name": "班次",
+    "type": "entity",
+    "definition": "班次主数据，含 1–5 号车间的白班/中班/夜班共 15 个班次、上下班时间、付费工时与是否跨零点。",
+    "scope": "维度/实体主数据，用于与事实表按标识列关联后再分组或筛选。",
+    "aliases": [
+      "shift_code",
+      "班次名称",
+      "班次主数据",
+      "班次维度"
+    ],
+    "evidence": [
+      "ev_040_shift_domain"
+    ]
+  },
+  {
+    "id": "term_sales_region",
+    "name": "销售区域",
+    "type": "dimension",
+    "definition": "销售侧事实表的区域列，用于按销售区域分组或筛选销售类单据。",
+    "scope": "维度/实体主数据，用于与事实表按标识列关联后再分组或筛选。",
+    "aliases": [
+      "sales_region",
+      "region_name",
+      "区域",
+      "销售大区",
+      "销售区域字段"
+    ],
+    "evidence": [
+      "ev_029_sales_region"
+    ]
+  },
+  {
+    "id": "term_currency",
+    "name": "币种",
+    "type": "entity",
+    "definition": "币种主数据，含代码（CNY/USD/EUR/JPY）、简称（人民币/美元/欧元/日元）、符号与对人民币汇率。",
+    "scope": "维度/实体主数据，用于与事实表按标识列关联后再分组或筛选。",
+    "aliases": [
+      "short_name",
+      "currency_code",
+      "币种名称",
+      "币种简称",
+      "币种主数据"
+    ],
+    "evidence": [
+      "ev_017_currency"
+    ]
+  },
+  {
+    "id": "term_reason_code_catalog",
+    "name": "原因码字典",
+    "type": "entity",
+    "definition": "原因码字典，含 12 个原因代码及其中文名称、简称（QUALITY/QUA … OTHER/OTH）与原因码分组（内部/外部）。",
+    "scope": "维度/实体主数据，用于与事实表按标识列关联后再分组或筛选。",
+    "aliases": [
+      "abbreviation",
+      "原因码简称",
+      "原因码主数据",
+      "原因码字典",
+      "原因分类"
+    ],
+    "evidence": [
+      "ev_014_reason_code",
+      "ev_039_reason_group"
+    ]
+  },
+  {
+    "id": "term_po",
+    "name": "采购订单",
+    "type": "entity",
+    "definition": "采购订单表头，含供应商、下单日期、交付日期、总金额、币种、付款条件与订单状态（英文小写）。",
+    "scope": "业务记录/单据对象；具体表与列见其映射。",
+    "aliases": [
+      "采购单",
+      "采购订单表头",
+      "PO",
+      "订单"
+    ],
+    "evidence": [
+      "ev_006_status_styles",
+      "ev_004_legacy_family"
+    ]
+  },
+  {
+    "id": "term_po_line",
+    "name": "采购订单行",
+    "type": "entity",
+    "definition": "采购订单的行项目，按物料记录数量、单价、金额与已收货数量。",
+    "scope": "业务记录/单据对象；具体表与列见其映射。",
+    "aliases": [
+      "采购订单明细",
+      "订单行",
+      "采购行项目"
+    ],
+    "evidence": [
+      "ev_004_legacy_family"
+    ]
+  },
+  {
+    "id": "term_pr",
+    "name": "采购申请",
+    "type": "entity",
+    "definition": "采购申请单，含申请部门、申请人、需求日期、申请日期与申请总金额。",
+    "scope": "业务记录/单据对象；具体表与列见其映射。",
+    "aliases": [
+      "请购单",
+      "采购申请单",
+      "采购需求申请"
+    ],
+    "evidence": [
+      "ev_026_population_top",
+      "ev_004_legacy_family"
+    ]
+  },
+  {
+    "id": "term_so",
+    "name": "销售订单",
+    "type": "entity",
+    "definition": "销售订单表头，含客户、业务员、产品、数量、单价、金额、成本与毛利相关金额，以及订单状态（delivered/undelivered/returned）。",
+    "scope": "业务记录/单据对象；具体表与列见其映射。",
+    "aliases": [
+      "销售单",
+      "销售订单表头",
+      "订单状态",
+      "销售订单"
+    ],
+    "evidence": [
+      "ev_006_status_styles",
+      "ev_023_order_chain",
+      "ev_004_legacy_family"
+    ]
+  },
+  {
+    "id": "term_so_line",
+    "name": "销售订单明细",
+    "type": "entity",
+    "definition": "销售订单的行项目，含产品、数量、单价、金额、销售区域、交期与客户订单号。",
+    "scope": "业务记录/单据对象；具体表与列见其映射。",
+    "aliases": [
+      "订单明细",
+      "销售明细",
+      "销售订单行",
+      "销售订单明细行"
+    ],
+    "evidence": [
+      "ev_029_sales_region",
+      "ev_006_status_styles"
+    ]
+  },
+  {
+    "id": "term_sc_line",
+    "name": "销售合同明细",
+    "type": "entity",
+    "definition": "销售合同的行项目，含产品、数量、金额、销售区域与交付条款。",
+    "scope": "业务记录/单据对象；具体表与列见其映射。",
+    "aliases": [
+      "销售合同行",
+      "合同明细",
+      "销售合同明细行"
+    ],
+    "evidence": [
+      "ev_029_sales_region"
+    ]
+  },
+  {
+    "id": "term_sales_forecast",
+    "name": "销售预测",
+    "type": "entity",
+    "definition": "销售预测记录，按客户、产品与销售区域记录预测数量、金额与预测方法。",
+    "scope": "业务记录/单据对象；具体表与列见其映射。",
+    "aliases": [
+      "销售预测记录",
+      "预测单",
+      "销售预测明细"
+    ],
+    "evidence": [
+      "ev_029_sales_region"
+    ]
+  },
+  {
+    "id": "term_demand_plan",
+    "name": "需求计划",
+    "type": "entity",
+    "definition": "需求计划，含客户、产品、计划数量、需求量、供应量、安全库存与预测准确率。",
+    "scope": "业务记录/单据对象；具体表与列见其映射。",
+    "aliases": [
+      "需求计划记录",
+      "需求预测计划"
+    ],
+    "evidence": [
+      "ev_030_customer_last_deal"
+    ]
+  },
+  {
+    "id": "term_quotation",
+    "name": "报价单",
+    "type": "entity",
+    "definition": "报价单，含客户、业务员、产品、数量、单价、总金额与报价状态（draft/won/lost）。",
+    "scope": "业务记录/单据对象；具体表与列见其映射。",
+    "aliases": [
+      "报价",
+      "报价单状态",
+      "报价记录"
+    ],
+    "evidence": [
+      "ev_006_status_styles",
+      "ev_004_legacy_family"
+    ]
+  },
+  {
+    "id": "term_price_adjustment",
+    "name": "价格调整",
+    "type": "entity",
+    "definition": "价格调整记录，含客户、产品、调价前后单价、调价比例、生效日期与销售区域。",
+    "scope": "业务记录/单据对象；具体表与列见其映射。",
+    "aliases": [
+      "调价记录",
+      "价格变更",
+      "价格调整记录"
+    ],
+    "evidence": [
+      "ev_029_sales_region"
+    ]
+  },
+  {
+    "id": "term_lead",
+    "name": "销售线索",
+    "type": "entity",
+    "definition": "销售线索，含客户、业务员、线索来源、商机阶段、概率、销售区域与行版本。",
+    "scope": "业务记录/单据对象；具体表与列见其映射。",
+    "aliases": [
+      "线索",
+      "销售线索记录",
+      "商机"
+    ],
+    "evidence": [
+      "ev_010_row_version"
+    ]
+  },
+  {
+    "id": "term_sample",
+    "name": "送样",
+    "type": "entity",
+    "definition": "送样记录，含客户、业务员、送样日期、数量、反馈日期与反馈结果（success/fail）。",
+    "scope": "业务记录/单据对象；具体表与列见其映射。",
+    "aliases": [
+      "样品",
+      "送样反馈",
+      "送样记录"
+    ],
+    "evidence": [
+      "ev_037_absences_sample"
+    ]
+  },
+  {
+    "id": "term_return",
+    "name": "退货",
+    "type": "entity",
+    "definition": "退货记录，含订单、退货日期、数量、金额与退货原因（5 类业务原因）。",
+    "scope": "业务记录/单据对象；具体表与列见其映射。",
+    "aliases": [
+      "退货单",
+      "退货记录",
+      "退货明细"
+    ],
+    "evidence": [
+      "ev_038_return_reasons"
+    ]
+  },
+  {
+    "id": "term_complaint",
+    "name": "客户投诉",
+    "type": "entity",
+    "definition": "客户投诉记录，含客户、产品、投诉渠道、投诉类型、严重度、赔偿金额与投诉状态（CLOSED/APPROVED）。",
+    "scope": "业务记录/单据对象；具体表与列见其映射。",
+    "aliases": [
+      "投诉",
+      "客诉",
+      "投诉状态",
+      "客户投诉记录"
+    ],
+    "evidence": [
+      "ev_006_status_styles"
+    ]
+  },
+  {
+    "id": "term_prod_order",
+    "name": "生产工单",
+    "type": "entity",
+    "definition": "生产工单，含产线、产品、批次、计划数量、实际数量、良率、运行小时与工单状态（中文：已完成/待生产/生产中）。",
+    "scope": "业务记录/单据对象；具体表与列见其映射。",
+    "aliases": [
+      "工单",
+      "生产订单",
+      "工单状态",
+      "生产工单记录"
+    ],
+    "evidence": [
+      "ev_025_prod_order_inspection",
+      "ev_006_status_styles"
+    ]
+  },
+  {
+    "id": "term_prod_output",
+    "name": "产出记录",
+    "type": "entity",
+    "definition": "按工单与产出日期记录的产出，含产出数量、产品等级与是否一等品。",
+    "scope": "业务记录/单据对象；具体表与列见其映射。",
+    "aliases": [
+      "产出",
+      "生产产出",
+      "产出等级",
+      "产出记录"
+    ],
+    "evidence": [
+      "ev_033_prod_grade_hold",
+      "ev_012_qualified_equivalence"
+    ]
+  },
+  {
+    "id": "term_wo_material",
+    "name": "工单物料投用",
+    "type": "entity",
+    "definition": "工单的物料投用记录，含物料、投用数量、BOM 吨耗、标准用量与用量差异率。",
+    "scope": "业务记录/单据对象；具体表与列见其映射。",
+    "aliases": [
+      "工单物料",
+      "物料投用",
+      "BOM吨耗",
+      "工单物料投用记录"
+    ],
+    "evidence": [
+      "ev_031_bom_ratio",
+      "ev_043_year_scoped_measures"
+    ]
+  },
+  {
+    "id": "term_wo_operation",
+    "name": "工单工序执行",
+    "type": "entity",
+    "definition": "工单的工序执行记录，含工序序号、工作中心、执行数量、工时、节拍与废品数量。",
+    "scope": "业务记录/单据对象；具体表与列见其映射。",
+    "aliases": [
+      "工序执行",
+      "工单工序",
+      "工序执行记录"
+    ],
+    "evidence": [
+      "ev_043_year_scoped_measures"
+    ]
+  },
+  {
+    "id": "term_material_consumption",
+    "name": "投料记录",
+    "type": "entity",
+    "definition": "工单的投料记录，含物料、批次、计划用量、实际用量与废料量。",
+    "scope": "业务记录/单据对象；具体表与列见其映射。",
+    "aliases": [
+      "投料单",
+      "物料消耗",
+      "投料记录数"
+    ],
+    "evidence": [
+      "ev_004_legacy_family"
+    ]
+  },
+  {
+    "id": "term_wip_snapshot",
+    "name": "在制品快照",
+    "type": "entity",
+    "definition": "在制品（WIP）快照，按工单与产线记录在制数量、良率与状态。",
+    "scope": "业务记录/单据对象；具体表与列见其映射。",
+    "aliases": [
+      "在制品",
+      "WIP",
+      "在制品快照记录"
+    ],
+    "evidence": [
+      "ev_006_status_styles"
+    ]
+  },
+  {
+    "id": "term_shift_report",
+    "name": "班次生产报告",
+    "type": "entity",
+    "definition": "班次生产报告，含产线、班次、产出数量、正常/加班工时、良率、废品数量、数据质量分与状态。",
+    "scope": "业务记录/单据对象；具体表与列见其映射。",
+    "aliases": [
+      "班次报告",
+      "生产班报",
+      "班次生产报告记录"
+    ],
+    "evidence": [
+      "ev_006_status_styles",
+      "ev_026_population_top",
+      "ev_043_year_scoped_measures"
+    ]
+  },
+  {
+    "id": "term_capacity_plan",
+    "name": "产能计划",
+    "type": "entity",
+    "definition": "产能计划，含产线、班次、计划产能小时、利用率、需求与供应数量、计划版本。",
+    "scope": "业务记录/单据对象；具体表与列见其映射。",
+    "aliases": [
+      "产能规划",
+      "产能计划记录"
+    ],
+    "evidence": [
+      "ev_003_governed_template"
+    ]
+  },
+  {
+    "id": "term_rework_order",
+    "name": "返工单",
+    "type": "entity",
+    "definition": "返工单，含工单、产品、返工数量、良率、处置信息与创建人/更新人。",
+    "scope": "业务记录/单据对象；具体表与列见其映射。",
+    "aliases": [
+      "返工记录",
+      "返工单记录"
+    ],
+    "evidence": [
+      "ev_036_persona_distribution"
+    ]
+  },
+  {
+    "id": "term_scrap_event",
+    "name": "报废事件",
+    "type": "entity",
+    "definition": "报废事件，含工单、产品、报废数量、成本金额、币种与废品信息。",
+    "scope": "业务记录/单据对象；具体表与列见其映射。",
+    "aliases": [
+      "报废",
+      "报废记录",
+      "报废事件记录"
+    ],
+    "evidence": [
+      "ev_017_currency",
+      "ev_027_top_product"
+    ]
+  },
+  {
+    "id": "term_batch_hold",
+    "name": "成品批次质量冻结",
+    "type": "entity",
+    "definition": "成品批次质量冻结记录，含产品、批次、冻结数量、合格数量、处置方式、失效日期、缺陷代码与备注。",
+    "scope": "业务记录/单据对象；具体表与列见其映射。",
+    "aliases": [
+      "批次冻结",
+      "质量冻结",
+      "成品冻结",
+      "成品批次质量冻结"
+    ],
+    "evidence": [
+      "ev_033_prod_grade_hold",
+      "ev_007_remarks_vocab"
+    ]
+  },
+  {
+    "id": "term_inspection_lot",
+    "name": "检验批",
+    "type": "entity",
+    "definition": "检验批（按工单与产品），含抽样数、实测值、上下限、检验结论（合格/不合格/让步接收）、合格与不合格数量、处置方式。",
+    "scope": "业务记录/单据对象；具体表与列见其映射。",
+    "aliases": [
+      "检验批记录",
+      "批次检验",
+      "检验批表"
+    ],
+    "evidence": [
+      "ev_012_qualified_equivalence",
+      "ev_025_prod_order_inspection"
+    ]
+  },
+  {
+    "id": "term_inspection_result_fact",
+    "name": "检验结果明细",
+    "type": "entity",
+    "definition": "检验结果明细，含质量特性、检验方法、实测值、上下限、结论、缺陷代码与审批人。",
+    "scope": "业务记录/单据对象；具体表与列见其映射。",
+    "aliases": [
+      "检验结果记录",
+      "检验明细",
+      "检验结果表"
+    ],
+    "evidence": [
+      "ev_036_persona_distribution"
+    ]
+  },
+  {
+    "id": "term_goods_receipt",
+    "name": "收货单",
+    "type": "entity",
+    "definition": "收货单，含采购订单、收货日期、收货数量、检验员与检验结果（pass/fail）；状态与检验结果一一对应。",
+    "scope": "业务记录/单据对象；具体表与列见其映射。",
+    "aliases": [
+      "收货记录",
+      "入库检验",
+      "收货单记录"
+    ],
+    "evidence": [
+      "ev_022_gr_inspection",
+      "ev_043_year_scoped_measures"
+    ]
+  },
+  {
+    "id": "term_asn_line",
+    "name": "到货预告明细",
+    "type": "entity",
+    "definition": "到货预告（ASN）明细，含物料、采购订单行、数量、预留数量、批次与库存状态。",
+    "scope": "业务记录/单据对象；具体表与列见其映射。",
+    "aliases": [
+      "ASN明细",
+      "到货预告",
+      "到货预告明细"
+    ],
+    "evidence": [
+      "ev_043_year_scoped_measures"
+    ]
+  },
+  {
+    "id": "term_ap",
+    "name": "应付账款",
+    "type": "entity",
+    "definition": "应付账款，含供应商、发票号、关联收货单、应付金额、已付金额与状态（open/closed）。",
+    "scope": "业务记录/单据对象；具体表与列见其映射。",
+    "aliases": [
+      "应付",
+      "应付款",
+      "应付金额",
+      "应付账款记录"
+    ],
+    "evidence": [
+      "ev_026_population_top",
+      "ev_006_status_styles"
+    ]
+  },
+  {
+    "id": "term_inventory",
+    "name": "库存",
+    "type": "entity",
+    "definition": "产品级库存，含产品、批次、入库日期、库存数量、单位成本、总成本与在库天数（无状态列）。",
+    "scope": "业务记录/单据对象；具体表与列见其映射。",
+    "aliases": [
+      "库存数量",
+      "库存记录",
+      "库存表"
+    ],
+    "evidence": [
+      "ev_018_inventory_grains",
+      "ev_019_storage_days"
+    ]
+  },
+  {
+    "id": "term_inventory_snapshot",
+    "name": "库存快照",
+    "type": "entity",
+    "definition": "物料级库存快照，含物料、仓库、库存数量、可用与预留数量、批次、移动类型与快照状态（CLOSED/APPROVED）。",
+    "scope": "业务记录/单据对象；具体表与列见其映射。",
+    "aliases": [
+      "库存快照记录",
+      "库存台账",
+      "库存快照表"
+    ],
+    "evidence": [
+      "ev_018_inventory_grains",
+      "ev_006_status_styles"
+    ]
+  },
+  {
+    "id": "term_inventory_movement",
+    "name": "库存移动",
+    "type": "entity",
+    "definition": "库存移动记录，含物料、仓库、库位、移动类型、数量、成本金额与币种。",
+    "scope": "业务记录/单据对象；具体表与列见其映射。",
+    "aliases": [
+      "库存异动",
+      "出入库记录",
+      "库存移动记录"
+    ],
+    "evidence": [
+      "ev_017_currency"
+    ]
+  },
+  {
+    "id": "term_transfer_order",
+    "name": "库存调拨",
+    "type": "entity",
+    "definition": "库存调拨单，含源仓库、目标仓库、调拨数量、可用数量、运费与库存状态。",
+    "scope": "业务记录/单据对象；具体表与列见其映射。",
+    "aliases": [
+      "调拨单",
+      "库存调拨单",
+      "调拨记录"
+    ],
+    "evidence": [
+      "ev_017_currency"
+    ]
+  },
+  {
+    "id": "term_cycle_count",
+    "name": "循环盘点单",
+    "type": "entity",
+    "definition": "循环盘点单表头，含仓库、盘点人、账面数量、实盘数量、差异数量、优先级、过账日期与状态。",
+    "scope": "业务记录/单据对象；具体表与列见其映射。",
+    "aliases": [
+      "盘点单",
+      "循环盘点",
+      "盘点单优先级",
+      "循环盘点单表"
+    ],
+    "evidence": [
+      "ev_006_status_styles",
+      "ev_026_population_top"
+    ]
+  },
+  {
+    "id": "term_cycle_count_line",
+    "name": "循环盘点明细",
+    "type": "entity",
+    "definition": "循环盘点的行项目，含物料、账面/实盘/差异数量、库位与状态。",
+    "scope": "业务记录/单据对象；具体表与列见其映射。",
+    "aliases": [
+      "盘点明细",
+      "盘点行",
+      "循环盘点明细行"
+    ],
+    "evidence": [
+      "ev_006_status_styles"
+    ]
+  },
+  {
+    "id": "term_spare_part_issue",
+    "name": "备件领用",
+    "type": "entity",
+    "definition": "备件领用记录，含设备、备件、领用数量、合格数量、领用前后库存与维护类型。",
+    "scope": "业务记录/单据对象；具体表与列见其映射。",
+    "aliases": [
+      "备件出库",
+      "备件领用记录"
+    ],
+    "evidence": [
+      "ev_043_year_scoped_measures"
+    ]
+  },
+  {
+    "id": "term_supplier_contract",
+    "name": "供应商合同",
+    "type": "entity",
+    "definition": "供应商合同，含供应商、合同类型、数量、金额、采购条款与过账日期。",
+    "scope": "业务记录/单据对象；具体表与列见其映射。",
+    "aliases": [
+      "采购合同",
+      "供应商合同记录"
+    ],
+    "evidence": [
+      "ev_003_governed_template"
+    ]
+  },
+  {
+    "id": "term_supplier_contract_line",
+    "name": "供应商合同明细",
+    "type": "entity",
+    "definition": "供应商合同的行项目，含物料、数量、单价、金额、过账日期与采购条款。",
+    "scope": "业务记录/单据对象；具体表与列见其映射。",
+    "aliases": [
+      "合同明细",
+      "采购合同明细",
+      "供应商合同明细行"
+    ],
+    "evidence": [
+      "ev_043_year_scoped_measures"
+    ]
+  },
+  {
+    "id": "term_supplier_eval",
+    "name": "供应商评估",
+    "type": "entity",
+    "definition": "供应商评估记录，含评估日期、评估周期、交付/质量/服务评分、总分与等级。",
+    "scope": "业务记录/单据对象；具体表与列见其映射。",
+    "aliases": [
+      "供应商评价",
+      "评估记录",
+      "供应商评估记录"
+    ],
+    "evidence": [
+      "ev_034_supplier_eval"
+    ]
+  },
+  {
+    "id": "term_legacy_material_issue",
+    "name": "遗留系统领料记录",
+    "type": "entity",
+    "definition": "遗留系统的领料记录，含工单、物料文本引用（mat_ref）、领用数量、BOM 吨耗、领料仓库与优先级。",
+    "scope": "业务记录/单据对象；具体表与列见其映射。",
+    "aliases": [
+      "领料记录",
+      "遗留领料",
+      "领料",
+      "遗留系统领料"
+    ],
+    "evidence": [
+      "ev_013_mat_ref",
+      "ev_024_calendar_link"
+    ]
+  },
+  {
+    "id": "term_lot_trace",
+    "name": "批次追溯记录",
+    "type": "entity",
+    "definition": "批次追溯记录，含物料、工单、批次、数量与物料引用，用于批次正反向追溯。",
+    "scope": "业务记录/单据对象；具体表与列见其映射。",
+    "aliases": [
+      "批次追溯",
+      "追溯记录",
+      "批次追溯记录"
+    ],
+    "evidence": [
+      "ev_036_persona_distribution"
+    ]
+  },
+  {
+    "id": "term_maintenance_plan",
+    "name": "维护计划",
+    "type": "entity",
+    "definition": "设备维护计划，含设备、维护类型（月度检修/季度大修）、维护间隔天数与小时、下次维护日期；没有业务日期列。",
+    "scope": "业务记录/单据对象；具体表与列见其映射。",
+    "aliases": [
+      "保养计划",
+      "维护计划记录",
+      "下次维护日期",
+      "维护计划表"
+    ],
+    "evidence": [
+      "ev_020_maintenance_plan"
+    ]
+  },
+  {
+    "id": "term_equipment_event",
+    "name": "设备事件",
+    "type": "entity",
+    "definition": "设备事件记录，含设备、事件代码、故障模式、停机分钟数、健康指数、备注与创建/更新人，遵循规范单据列模板。",
+    "scope": "业务记录/单据对象；具体表与列见其映射。",
+    "aliases": [
+      "设备事件记录",
+      "设备故障事件",
+      "设备事件表"
+    ],
+    "evidence": [
+      "ev_007_remarks_vocab",
+      "ev_036_persona_distribution"
+    ]
+  },
+  {
+    "id": "term_alarm",
+    "name": "设备告警",
+    "type": "entity",
+    "definition": "设备告警，含传感器、设备、告警类型、严重度、发生时间、是否处理标记（恒为 1）与处理时间。",
+    "scope": "业务记录/单据对象；具体表与列见其映射。",
+    "aliases": [
+      "告警记录",
+      "报警",
+      "设备告警记录"
+    ],
+    "evidence": [
+      "ev_009_flags",
+      "ev_042_toplevel_by_attr"
+    ]
+  },
+  {
+    "id": "term_predictive_alert",
+    "name": "预测性维护告警",
+    "type": "entity",
+    "definition": "预测性维护告警，含设备、传感器、读数与读数单位、上下阈值、健康指数与剩余寿命。",
+    "scope": "业务记录/单据对象；具体表与列见其映射。",
+    "aliases": [
+      "预测性告警",
+      "预测维护告警",
+      "预测性维护告警记录"
+    ],
+    "evidence": [
+      "ev_043_year_scoped_measures"
+    ]
+  },
+  {
+    "id": "term_condition_monitoring",
+    "name": "设备状态监测",
+    "type": "entity",
+    "definition": "设备状态监测记录，含设备、传感器、读数与读数单位、上下阈值、健康指数与原因码（本表全部为 OTHER）。",
+    "scope": "业务记录/单据对象；具体表与列见其映射。",
+    "aliases": [
+      "状态监测",
+      "设备监测",
+      "监测读数",
+      "设备状态监测记录"
+    ],
+    "evidence": [
+      "ev_014_reason_code",
+      "ev_042_toplevel_by_attr"
+    ]
+  },
+  {
+    "id": "term_gauge_calibration",
+    "name": "在线仪表校准",
+    "type": "entity",
+    "definition": "在线仪表校准记录，含仪表编码、校准类型、标准值、实测值、误差、容差、结论、下次到期日与原因码。",
+    "scope": "业务记录/单据对象；具体表与列见其映射。",
+    "aliases": [
+      "仪表校准",
+      "校准记录",
+      "在线仪表校准记录"
+    ],
+    "evidence": [
+      "ev_014_reason_code",
+      "ev_009_flags"
+    ]
+  },
+  {
+    "id": "term_energy_meter_reading",
+    "name": "能源计量读数",
+    "type": "entity",
+    "definition": "能源计量读数，含设备、能源类型、表计起止读数、读数单位、采集方式与碳排放量。",
+    "scope": "业务记录/单据对象；具体表与列见其映射。",
+    "aliases": [
+      "能耗读数",
+      "计量读数",
+      "能源读数",
+      "能源计量读数记录"
+    ],
+    "evidence": [
+      "ev_003_governed_template"
+    ]
+  },
+  {
+    "id": "term_env_measurement",
+    "name": "环境监测",
+    "type": "entity",
+    "definition": "环境监测记录，含工厂、排放类型、监测点、测量值、限值、超标标记、采样方式与数据质量分。",
+    "scope": "业务记录/单据对象；具体表与列见其映射。",
+    "aliases": [
+      "环保监测",
+      "环境监测记录",
+      "环境监测表"
+    ],
+    "evidence": [
+      "ev_011_dqs",
+      "ev_043_year_scoped_measures"
+    ]
+  },
+  {
+    "id": "term_emission_event",
+    "name": "排放事件",
+    "type": "entity",
+    "definition": "排放事件，含工厂、排放类型、监测点、排放测量值与限值；实际排放数量列在本数据版本中恒为 0。",
+    "scope": "业务记录/单据对象；具体表与列见其映射。",
+    "aliases": [
+      "排放记录",
+      "排污事件",
+      "排放事件记录"
+    ],
+    "evidence": [
+      "ev_015_emission_zero"
+    ]
+  },
+  {
+    "id": "term_hazard_observation",
+    "name": "危险源观察",
+    "type": "entity",
+    "definition": "危险源观察记录，含危险源、车间、观察位置编码、严重度、可能性、风险分值、控制措施、整改期限（action_due_date）、关闭日期与状态。",
+    "scope": "业务记录/单据对象；具体表与列见其映射。",
+    "aliases": [
+      "危险源观察记录",
+      "隐患观察",
+      "危险源",
+      "危险源观察表"
+    ],
+    "evidence": [
+      "ev_032_hazard_location",
+      "ev_010_row_version"
+    ]
+  },
+  {
+    "id": "term_risk_assessment",
+    "name": "风险评估",
+    "type": "entity",
+    "definition": "风险评估，含危险源、评估人、评估日期、可能性、后果等级（catastrophic/major/moderate/minor）与风险等级。",
+    "scope": "业务记录/单据对象；具体表与列见其映射。",
+    "aliases": [
+      "风险评价",
+      "风险评估记录",
+      "风险评估表"
+    ],
+    "evidence": [
+      "ev_037_absences_sample"
+    ]
+  },
+  {
+    "id": "term_safety_action",
+    "name": "安全整改措施",
+    "type": "entity",
+    "definition": "安全整改措施，含危险源、责任人、风险分值、控制措施、措施期限与措施状态（CLOSED/IN_PROGRESS）。",
+    "scope": "业务记录/单据对象；具体表与列见其映射。",
+    "aliases": [
+      "整改措施",
+      "安全措施",
+      "安全整改措施记录"
+    ],
+    "evidence": [
+      "ev_006_status_styles"
+    ]
+  },
+  {
+    "id": "term_safety_audit",
+    "name": "安全审计",
+    "type": "entity",
+    "definition": "安全审计记录，含审计类型（专项审计/月度安全审计）、车间、审计人、审计日期、得分与发现项数量。",
+    "scope": "业务记录/单据对象；具体表与列见其映射。",
+    "aliases": [
+      "安全审计记录",
+      "审计记录",
+      "安全审计表"
+    ],
+    "evidence": [
+      "ev_037_absences_sample"
+    ]
+  },
+  {
+    "id": "term_safety_plan",
+    "name": "安全计划",
+    "type": "entity",
+    "definition": "安全计划，含年度、计划类型（annual）、签发日期、签发人与状态（active/closed）。",
+    "scope": "业务记录/单据对象；具体表与列见其映射。",
+    "aliases": [
+      "安全工作计划",
+      "安全计划记录"
+    ],
+    "evidence": [
+      "ev_006_status_styles"
+    ]
+  },
+  {
+    "id": "term_safety_objective",
+    "name": "安全目标",
+    "type": "entity",
+    "definition": "安全目标，含目标描述、目标值、单位、期限（deadline）与责任部门。",
+    "scope": "业务记录/单据对象；具体表与列见其映射。",
+    "aliases": [
+      "安全目标记录",
+      "安全指标",
+      "安全目标表"
+    ],
+    "evidence": [
+      "ev_035_safety_objective"
+    ]
+  },
+  {
+    "id": "term_training_attendance",
+    "name": "安全培训签到记录",
+    "type": "entity",
+    "definition": "安全培训签到记录，含培训编号、员工、签到时间、出勤结果、考试分数、是否通过与审批人。",
+    "scope": "业务记录/单据对象；具体表与列见其映射。",
+    "aliases": [
+      "培训签到",
+      "安全培训记录",
+      "安全培训签到记录"
+    ],
+    "evidence": [
+      "ev_036_persona_distribution"
+    ]
+  },
+  {
+    "id": "term_certification_record",
+    "name": "员工资质记录",
+    "type": "entity",
+    "definition": "员工资质记录，含员工、资质、技能等级、评定分数、评定人、有效期与证书编号。",
+    "scope": "业务记录/单据对象；具体表与列见其映射。",
+    "aliases": [
+      "资质记录",
+      "员工证书",
+      "员工资质记录"
+    ],
+    "evidence": [
+      "ev_043_year_scoped_measures"
+    ]
+  },
+  {
+    "id": "term_attendance",
+    "name": "考勤记录",
+    "type": "entity",
+    "definition": "考勤记录，含员工、班次、出勤日期、正常与加班工时、缺勤类型（事假/年假/病假）、出勤结果与备注。",
+    "scope": "业务记录/单据对象；具体表与列见其映射。",
+    "aliases": [
+      "考勤",
+      "出勤记录",
+      "考勤备注",
+      "考勤记录表"
+    ],
+    "evidence": [
+      "ev_037_absences_sample",
+      "ev_007_remarks_vocab"
+    ]
+  },
+  {
+    "id": "term_gl_entry",
+    "name": "总账凭证",
+    "type": "entity",
+    "definition": "总账凭证，含会计科目、成本中心、借贷方金额、会计年度与期间、凭证号与凭证状态（CLOSED/APPROVED）。",
+    "scope": "业务记录/单据对象；具体表与列见其映射。",
+    "aliases": [
+      "凭证",
+      "总账分录",
+      "凭证状态",
+      "总账凭证记录"
+    ],
+    "evidence": [
+      "ev_006_status_styles"
+    ]
+  },
+  {
+    "id": "term_cash_flow",
+    "name": "现金流记录",
+    "type": "entity",
+    "definition": "现金流记录，含客户/供应商、金额、借贷方金额、会计期间、凭证号与审批人。",
+    "scope": "业务记录/单据对象；具体表与列见其映射。",
+    "aliases": [
+      "现金流量记录",
+      "资金流",
+      "现金流记录表"
+    ],
+    "evidence": [
+      "ev_036_persona_distribution"
+    ]
+  },
+  {
+    "id": "term_capex_cost",
+    "name": "资本项目成本记录",
+    "type": "entity",
+    "definition": "资本项目成本记录，含项目、资产、成本要素、金额、资本化标记、会计期间与状态。",
+    "scope": "业务记录/单据对象；具体表与列见其映射。",
+    "aliases": [
+      "资本支出",
+      "项目成本记录",
+      "资本项目成本"
+    ],
+    "evidence": [
+      "ev_006_status_styles"
+    ]
+  },
+  {
+    "id": "term_fixed_asset_transfer",
+    "name": "固定资产调拨",
+    "type": "entity",
+    "definition": "固定资产调拨单，含资产、源工厂、目标工厂、净额与税额；税额列在本数据版本中恒为 0。",
+    "scope": "业务记录/单据对象；具体表与列见其映射。",
+    "aliases": [
+      "资产调拨",
+      "固定资产转移",
+      "固定资产调拨单"
+    ],
+    "evidence": [
+      "ev_016_fat_zero_tax"
+    ]
+  },
+  {
+    "id": "term_data_quality_issue",
+    "name": "数据质量问题",
+    "type": "entity",
+    "definition": "数据质量问题记录，含规则代码、检查名称、严重度、发生时间、期望值/实际值、异常数、解决状态与更新人。",
+    "scope": "业务记录/单据对象；具体表与列见其映射。",
+    "aliases": [
+      "数据质量问题记录",
+      "质量问题",
+      "数据质量问题表"
+    ],
+    "evidence": [
+      "ev_043_year_scoped_measures",
+      "ev_003_governed_template"
+    ]
+  },
+  {
+    "id": "term_validation_case_result",
+    "name": "验证案例执行结果",
+    "type": "entity",
+    "definition": "验证案例执行结果，含规则代码、检查名称、异常数、数据质量分、生成器版本与解决状态。",
+    "scope": "业务记录/单据对象；具体表与列见其映射。",
+    "aliases": [
+      "验证案例结果",
+      "案例执行结果",
+      "验证案例执行结果表"
+    ],
+    "evidence": [
+      "ev_043_year_scoped_measures"
+    ]
+  },
+  {
+    "id": "term_iot_data",
+    "name": "IoT数据",
+    "type": "entity",
+    "definition": "IoT 传感器时序数据，含传感器、时间戳、测量值、单位与质量标记。",
+    "scope": "业务记录/单据对象；具体表与列见其映射。",
+    "aliases": [
+      "物联网数据",
+      "IoT数据记录",
+      "IoT",
+      "IoT数据表"
+    ],
+    "evidence": [
+      "ev_021_iot_unit"
+    ]
+  },
+  {
+    "id": "term_delivery",
+    "name": "发货记录",
+    "type": "entity",
+    "definition": "销售发货记录，含订单、发货日期、数量与金额，是订单→发货→发票链路的一环。",
+    "scope": "业务记录/单据对象；具体表与列见其映射。",
+    "aliases": [
+      "发货",
+      "发货单",
+      "发货记录表"
+    ],
+    "evidence": [
+      "ev_023_order_chain"
+    ]
+  },
+  {
+    "id": "term_invoice",
+    "name": "发票",
+    "type": "entity",
+    "definition": "销售发票，含发货记录、开票日期、不含税金额、税额、总金额与开票天数。",
+    "scope": "业务记录/单据对象；具体表与列见其映射。",
+    "aliases": [
+      "销售发票",
+      "开票记录",
+      "发票表"
+    ],
+    "evidence": [
+      "ev_023_order_chain"
+    ]
+  },
+  {
+    "id": "term_shipment",
+    "name": "发运单",
+    "type": "entity",
+    "definition": "发运单，含发货记录、客户、仓库、承运商、运单号、车辆号、数量与创建人。",
+    "scope": "业务记录/单据对象；具体表与列见其映射。",
+    "aliases": [
+      "发运记录",
+      "发运单记录"
+    ],
+    "evidence": [
+      "ev_036_persona_distribution"
+    ]
+  }
+]

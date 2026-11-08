@@ -1,0 +1,268 @@
+[
+  {
+    "id": "rel_event_budget",
+    "source": "term_event",
+    "relation_type": "composition",
+    "target": "term_budget",
+    "connection_condition": "budget.link_to_event corresponds to event.event_id",
+    "description": "An event is composed of one or more budget lines, each covering a single spending category. A budget line has no meaning without its event.",
+    "evidence": [
+      "evidence_budget_grain"
+    ]
+  },
+  {
+    "id": "rel_budget_expense",
+    "source": "term_budget",
+    "relation_type": "composition",
+    "target": "term_expense",
+    "connection_condition": "expense.link_to_budget corresponds to budget.budget_id",
+    "description": "Each expense is charged to exactly one budget line; the line is the whole of which the expense is a part, and removing the line leaves the expense uninterpretable.",
+    "evidence": [
+      "evidence_expense_links_complete"
+    ]
+  },
+  {
+    "id": "rel_event_attendance",
+    "source": "term_event",
+    "relation_type": "composition",
+    "target": "term_attendance",
+    "connection_condition": "attendance.link_to_event corresponds to event.event_id",
+    "description": "An event's participation is composed of its attendance records, one per attending member.",
+    "evidence": [
+      "evidence_attendance_coverage"
+    ]
+  },
+  {
+    "id": "rel_member_attendance",
+    "source": "term_member",
+    "relation_type": "composition",
+    "target": "term_attendance",
+    "connection_condition": "attendance.link_to_member corresponds to member.member_id",
+    "description": "A member's event participation is composed of that member's attendance records.",
+    "evidence": [
+      "evidence_attendance_coverage"
+    ]
+  },
+  {
+    "id": "rel_member_major",
+    "source": "term_member",
+    "relation_type": "association",
+    "target": "term_major",
+    "connection_condition": "member.link_to_major corresponds to major.major_id",
+    "description": "A member's academic home is recorded as a reference to one degree program. The reference is optional, so the connection is not a structural requirement of the member record.",
+    "evidence": [
+      "evidence_member_major_null"
+    ]
+  },
+  {
+    "id": "rel_member_expense",
+    "source": "term_member",
+    "relation_type": "association",
+    "target": "term_expense",
+    "connection_condition": "expense.link_to_member corresponds to member.member_id",
+    "description": "Each expense is attributed to the member who incurred it, allowing spending to be analysed per member.",
+    "evidence": [
+      "evidence_expense_links_complete"
+    ]
+  },
+  {
+    "id": "rel_member_income",
+    "source": "term_member",
+    "relation_type": "association",
+    "target": "term_income",
+    "connection_condition": "income.link_to_member corresponds to member.member_id",
+    "description": "Income receipts are attributed to the member who paid them, most visibly for dues.",
+    "evidence": [
+      "evidence_income_dues_pattern"
+    ]
+  },
+  {
+    "id": "rel_member_zip_code",
+    "source": "term_member",
+    "relation_type": "association",
+    "target": "term_zip_code",
+    "connection_condition": "member.zip corresponds to zip_code.zip_code",
+    "description": "A member's home geography is obtained through the postal reference table; it is an attribute reference rather than a compositional part.",
+    "evidence": [
+      "evidence_member_state_distribution"
+    ]
+  },
+  {
+    "id": "rel_department_major",
+    "source": "term_department",
+    "relation_type": "composition",
+    "target": "term_major",
+    "connection_condition": "major.department names the department that hosts the major",
+    "description": "A department is composed of the degree programs it offers; a major's department is an attribute of the major rather than of the member.",
+    "evidence": [
+      "evidence_president_department"
+    ]
+  },
+  {
+    "id": "rel_state_county",
+    "source": "term_geographic_state",
+    "relation_type": "composition",
+    "target": "term_county",
+    "connection_condition": "zip_code.state and zip_code.county are read from the same postal reference row",
+    "description": "A state is composed of its counties in the postal reference table.",
+    "evidence": [
+      "evidence_zip_geography_orange_county"
+    ]
+  },
+  {
+    "id": "rel_county_city",
+    "source": "term_county",
+    "relation_type": "composition",
+    "target": "term_city",
+    "connection_condition": "zip_code.county and zip_code.city are read from the same postal reference row",
+    "description": "A county is composed of the cities that appear in its postal rows; counting cities within a county and state means counting the distinct city values those rows carry.",
+    "evidence": [
+      "evidence_zip_geography_orange_county"
+    ]
+  },
+  {
+    "id": "rel_event_expense",
+    "source": "term_event",
+    "relation_type": "association",
+    "target": "term_expense",
+    "connection_condition": "Indirect: there is no direct key between expense and event. The path goes from the expense to its budget line and from that budget line to the event.",
+    "description": "Expenses belong to an event only through the event's budget lines, so event-level questions about a purchase must traverse the budget line.",
+    "evidence": [
+      "evidence_expense_to_event_path"
+    ]
+  },
+  {
+    "id": "rel_budget_category_expense_description",
+    "source": "term_budget_category",
+    "relation_type": "association",
+    "target": "term_expense_description",
+    "connection_condition": "No stored key; the correspondence is observable because expenses charged to a category's budget line describe purchases of that kind.",
+    "description": "Expense descriptions such as Pizza or Posters correspond in meaning to budget categories such as Food or Advertisement, but the correspondence is not stored and must be inferred from the budget line the expense is charged to.",
+    "evidence": [
+      "evidence_budget_category_values",
+      "evidence_expense_description_values"
+    ]
+  },
+  {
+    "id": "rel_event_fundraising",
+    "source": "term_event",
+    "relation_type": "association",
+    "target": "term_fundraising",
+    "connection_condition": "Indirect and unverified: no event column, event name or event note distinguishes fundraising activity, and the income table holds no event reference.",
+    "description": "Events and fundraising activity cannot be linked structurally in this data. Fundraising is observable only as an income source, so an event cannot be classified as a fundraiser from event data.",
+    "evidence": [
+      "evidence_event_notes_check",
+      "evidence_income_source_values"
+    ]
+  },
+  {
+    "id": "rel_event_status_budget_status",
+    "source": "term_event_status",
+    "relation_type": "equivalence",
+    "target": "term_budget_status",
+    "connection_condition": "budget.event_status carries the same value as the status of the event referenced by budget.link_to_event",
+    "description": "The status recorded on the event and the status snapshot stored on each budget line express the same business concept; the budget copy is a denormalized duplicate that lets budget-only analysis filter by status.",
+    "evidence": [
+      "evidence_budget_status_mirror"
+    ]
+  },
+  {
+    "id": "rel_member_position_officer",
+    "source": "term_member_position",
+    "relation_type": "hierarchy",
+    "target": "term_officer",
+    "connection_condition": "",
+    "description": "Holding a club office is a specific case of holding a member position; the officer value domain (President, Vice President, Treasurer, Secretary) is a subset of the full position domain, which also contains the ordinary Member and Inactive values.",
+    "evidence": [
+      "evidence_member_position_values"
+    ]
+  },
+  {
+    "id": "rel_budget_spent_derived",
+    "source": "term_expense_cost",
+    "relation_type": "derivation",
+    "target": "term_budget_spent",
+    "connection_condition": "The expenses are the ones whose link_to_budget points at the budget line",
+    "description": "The spent amount of a budget line is derived as the sum of the costs of the expenses charged to that line.",
+    "evidence": [
+      "evidence_budget_spent_from_expense"
+    ]
+  },
+  {
+    "id": "rel_budget_remaining_derived",
+    "source": "term_budget_amount",
+    "relation_type": "derivation",
+    "target": "term_budget_remaining",
+    "connection_condition": "",
+    "description": "The remaining balance of a budget line is derived by subtracting the spent amount from the allocated amount.",
+    "evidence": [
+      "evidence_budget_remaining_formula"
+    ]
+  },
+  {
+    "id": "rel_budget_overrun_derived",
+    "source": "term_budget_remaining",
+    "relation_type": "derivation",
+    "target": "term_budget_overrun",
+    "connection_condition": "",
+    "description": "The overrun of a budget line is derived from a negative remaining balance: it is the magnitude by which spending surpassed the allocation.",
+    "evidence": [
+      "evidence_negative_remaining_events"
+    ]
+  },
+  {
+    "id": "rel_event_total_cost_derived",
+    "source": "term_expense_cost",
+    "relation_type": "derivation",
+    "target": "term_event_total_cost",
+    "connection_condition": "",
+    "description": "The total cost of an event is derived by summing the costs of the expenses charged to the event's budget lines.",
+    "evidence": [
+      "evidence_expense_to_event_path"
+    ]
+  },
+  {
+    "id": "rel_attendance_count_derived",
+    "source": "term_attendance",
+    "relation_type": "derivation",
+    "target": "term_attendance_count",
+    "connection_condition": "",
+    "description": "The attendance count of an event is derived by counting that event's attendance records.",
+    "evidence": [
+      "evidence_attendance_coverage"
+    ]
+  },
+  {
+    "id": "rel_average_expense_cost_derived",
+    "source": "term_expense_cost",
+    "relation_type": "derivation",
+    "target": "term_average_expense_cost",
+    "connection_condition": "",
+    "description": "The average expense cost is derived as the arithmetic mean of the costs in the expense set under consideration.",
+    "evidence": [
+      "evidence_avg_expense_cost"
+    ]
+  },
+  {
+    "id": "rel_member_full_name_derived",
+    "source": "term_member",
+    "relation_type": "derivation",
+    "target": "term_member_full_name",
+    "connection_condition": "",
+    "description": "A member's full name is derived by joining the stored first name and last name parts.",
+    "evidence": [
+      "evidence_member_full_name_parts"
+    ]
+  },
+  {
+    "id": "rel_spend_to_budget_ratio_derived",
+    "source": "term_budget_spent",
+    "relation_type": "derivation",
+    "target": "term_spend_to_budget_ratio",
+    "connection_condition": "The comparison uses the allocated amount of the same budget line or of the same event's combined lines",
+    "description": "The spend-to-budget ratio is derived by dividing the spent amount by the allocated amount.",
+    "evidence": [
+      "evidence_closed_spend_ratio"
+    ]
+  }
+]

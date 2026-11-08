@@ -1,0 +1,68 @@
+{
+ "db_id": "codebase_community",
+ "questions": [
+  {
+   "question_id": 578,
+   "db_id": "codebase_community",
+   "question": "Which user made a post titled 'Understanding what Dassault iSight is doing?' and how much is the reputation of the user?",
+   "evidence": "\"Understanding what Dassault iSight is doing?\" is the Title of post; user refers to fld039;",
+   "SQL": "SELECT T1.fld039, T1.fld038 FROM tab07 AS T1 INNER JOIN tab05 AS T2 ON T1.fld001 = T2.fld020 WHERE T2.fld022 = 'Understanding what Dassault iSight is doing?'",
+   "difficulty": "moderate",
+   "SQL_original": "SELECT T1.DisplayName, T1.Reputation FROM users AS T1 INNER JOIN posts AS T2 ON T1.Id = T2.OwnerUserId WHERE T2.Title = 'Understanding what Dassault iSight is doing?'"
+  },
+  {
+   "question_id": 716,
+   "db_id": "codebase_community",
+   "question": "Among the comments with scores between 5 to 10, what is the percentage of the users with 0 up votes?",
+   "evidence": "percentage = DIVIDE(fld035(fld002 where fld045 = 0 and fld006 BETWEEN 5 and 10))*100, (fld035(fld002 where fld006 BETWEEN 5 and 10));",
+   "SQL": "SELECT CAST(SUM(IIF(T1.fld045 = 0, 1, 0)) AS REAL) * 100 / COUNT(T1.fld001) AS per FROM tab07 AS T1 INNER JOIN tab02 AS T2 ON T1.fld001 = T2.fld002 WHERE T2.fld006 BETWEEN 5 AND 10",
+   "difficulty": "moderate",
+   "SQL_original": "SELECT CAST(SUM(IIF(T1.UpVotes = 0, 1, 0)) AS REAL) * 100/ COUNT(T1.Id) AS per FROM users AS T1 INNER JOIN comments AS T2 ON T1.Id = T2.UserId WHERE T2.Score BETWEEN 5 AND 10"
+  },
+  {
+   "question_id": 629,
+   "db_id": "codebase_community",
+   "question": "Calculate the ratio of votes in 2010 and 2011.",
+   "evidence": "DIVIDE(fld035(fld001 where YEAR(fld008) = 2010), COUNT(fld001 where YEAR(fld008) = 2011)) FROM votes;",
+   "SQL": "SELECT CAST(SUM(IIF(STRFTIME('%Y', fld008) = '2010', 1, 0)) AS REAL) / SUM(IIF(STRFTIME('%Y', fld008) = '2011', 1, 0)) FROM tab08",
+   "difficulty": "simple",
+   "SQL_original": "SELECT CAST(SUM(IIF(STRFTIME('%Y', CreationDate) = '2010', 1, 0)) AS REAL) / SUM(IIF(STRFTIME('%Y', CreationDate) = '2011', 1, 0)) FROM votes"
+  },
+  {
+   "question_id": 687,
+   "db_id": "codebase_community",
+   "question": "How many comments were added to the post with the highest score?",
+   "evidence": "the highest score refers to MAX(fld006);",
+   "SQL": "SELECT COUNT(T2.fld001) FROM tab05 AS T1 INNER JOIN tab02 AS T2 ON T1.fld001 = T2.fld005 GROUP BY T1.fld001 ORDER BY T1.fld006 DESC LIMIT 1",
+   "difficulty": "simple",
+   "SQL_original": "SELECT COUNT(T2.Id) FROM posts AS T1 INNER JOIN comments AS T2 ON T1.Id = T2.PostId GROUP BY T1.Id ORDER BY T1.Score DESC LIMIT 1"
+  },
+  {
+   "question_id": 694,
+   "db_id": "codebase_community",
+   "question": "Provide the text of the latest 10 comments to the post with the title 'Analysing wind data with R' and the display name of the user who left it.",
+   "evidence": "the latest comment refers to MAX(fld008);",
+   "SQL": "SELECT T3.fld007, T1.fld039 FROM tab07 AS T1 INNER JOIN tab05 AS T2 ON T1.fld001 = T2.fld020 INNER JOIN tab02 AS T3 ON T2.fld001 = T3.fld005 WHERE T2.fld022 = 'Analysing wind data with R' ORDER BY T1.fld008 DESC LIMIT 10",
+   "difficulty": "moderate",
+   "SQL_original": "SELECT T3.Text, T1.DisplayName FROM users AS T1 INNER JOIN posts AS T2 ON T1.Id = T2.OwnerUserId INNER JOIN comments AS T3 ON T2.Id = T3.PostId WHERE T2.Title = 'Analysing wind data with R' ORDER BY T1.CreationDate DESC LIMIT 10"
+  },
+  {
+   "question_id": 537,
+   "db_id": "codebase_community",
+   "question": "How many posts does the user csgillespie own?",
+   "evidence": "\"csgillespie\" is the fld039 of user",
+   "SQL": "SELECT COUNT(T1.fld001) FROM tab05 AS T1 INNER JOIN tab07 AS T2 ON T1.fld020 = T2.fld001 WHERE T2.fld039 = 'csgillespie'",
+   "difficulty": "simple",
+   "SQL_original": "SELECT COUNT(T1.id) FROM posts AS T1 INNER JOIN users AS T2 ON T1.OwnerUserId = T2.Id WHERE T2.DisplayName = 'csgillespie'"
+  },
+  {
+   "question_id": 640,
+   "db_id": "codebase_community",
+   "question": "Calculate the difference in view count from post posted by Mornington and view count from posts posted by Amos.",
+   "evidence": "calculation = SUBTRACT(SUM(fld018 where fld039 = 'Mornington'), SUM(fld018 where fld039 = 'Amos'));",
+   "SQL": "SELECT SUM(IIF(T1.fld039 = 'Mornington', T3.fld018, 0)) - SUM(IIF(T1.fld039 = 'Amos', T3.fld018, 0)) AS diff FROM tab07 AS T1 INNER JOIN tab03 AS T2 ON T1.fld001 = T2.fld002 INNER JOIN tab05 AS T3 ON T3.fld001 = T2.fld005",
+   "difficulty": "moderate",
+   "SQL_original": "SELECT SUM(IIF(T1.DisplayName = 'Mornington', T3.ViewCount, 0)) - SUM(IIF(T1.DisplayName = 'Amos', T3.ViewCount, 0)) AS diff FROM users AS T1 INNER JOIN postHistory AS T2 ON T1.Id = T2.UserId INNER JOIN posts AS T3 ON T3.Id = T2.PostId"
+  }
+ ]
+}

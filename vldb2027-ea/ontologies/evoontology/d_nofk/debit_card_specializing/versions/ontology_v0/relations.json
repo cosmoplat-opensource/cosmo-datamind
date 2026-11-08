@@ -1,0 +1,138 @@
+[
+  {
+    "id": "rel_customer_holds_card",
+    "source": "customer",
+    "relation_type": "composition",
+    "target": "payment_card",
+    "connection_condition": "transactions_1k.CardID resolves to exactly one customers.CustomerID: 902 cards across 517 customers, and no card is shared between two customers",
+    "description": "A payment card is issued to and belongs to one customer; a card has no meaning independently of the customer who holds it.",
+    "evidence": [
+      "evidence_card_ownership"
+    ]
+  },
+  {
+    "id": "rel_customer_has_consumption",
+    "source": "customer",
+    "relation_type": "composition",
+    "target": "monthly_consumption",
+    "connection_condition": "yearmonth.CustomerID references customers.CustomerID; all 30566 distinct yearmonth customers resolve to a customers row",
+    "description": "A monthly consumption record is a component of one customer's history and cannot exist without that customer.",
+    "evidence": [
+      "evidence_yearmonth_months",
+      "evidence_referential_integrity"
+    ]
+  },
+  {
+    "id": "rel_customer_makes_transaction",
+    "source": "customer",
+    "relation_type": "composition",
+    "target": "transaction",
+    "connection_condition": "transactions_1k.CustomerID references customers.CustomerID; all 1000 rows resolve",
+    "description": "A transaction line is a purchase made by one customer and is meaningless without that customer.",
+    "evidence": [
+      "evidence_referential_integrity"
+    ]
+  },
+  {
+    "id": "rel_station_hosts_transaction",
+    "source": "gas_station",
+    "relation_type": "composition",
+    "target": "transaction",
+    "connection_condition": "transactions_1k.GasStationID references gasstations.GasStationID; all 1000 rows resolve, covering 437 distinct stations",
+    "description": "A transaction line records a purchase made at exactly one station, so it is a component part of that station's activity.",
+    "evidence": [
+      "evidence_referential_integrity"
+    ]
+  },
+  {
+    "id": "rel_product_sold_in_transaction",
+    "source": "product",
+    "relation_type": "composition",
+    "target": "transaction",
+    "connection_condition": "transactions_1k.ProductID references products.ProductID; all 1000 rows resolve, covering 28 of the 591 catalogue products",
+    "description": "A transaction line is a sale of exactly one product, and the line has no meaning without that product.",
+    "evidence": [
+      "evidence_referential_integrity",
+      "evidence_product_catalog"
+    ]
+  },
+  {
+    "id": "rel_chain_groups_station",
+    "source": "station_chain",
+    "relation_type": "composition",
+    "target": "gas_station",
+    "connection_condition": "gasstations.ChainID groups stations; the 5716 stations fall into 233 chains, the largest holding 1462 stations and many holding one",
+    "description": "A chain is a commercial grouping made up of stations; a station belongs to one chain.",
+    "evidence": [
+      "evidence_station_network"
+    ]
+  },
+  {
+    "id": "rel_segment_consumption",
+    "source": "customer_segment",
+    "relation_type": "association",
+    "target": "monthly_consumption",
+    "connection_condition": "average monthly consumption differs sharply by segment in a strict order: KAM 45243.63, LAM 17618.44, SME 3833.30. These averages mix CZK and EUR customers and are therefore not directly comparable in magnitude",
+    "description": "The customer segment is strongly associated with the scale of monthly consumption. The database assigns no business meaning to the segment codes beyond this observed ordering.",
+    "evidence": [
+      "evidence_segment_values",
+      "evidence_consumption_stats"
+    ]
+  },
+  {
+    "id": "rel_currency_denominates_paid_amount",
+    "source": "customer_currency",
+    "relation_type": "association",
+    "target": "transaction_paid_amount",
+    "connection_condition": "fuel lines imply a per-unit price of 23.273 for CZK customers (n=800) against 0.918 for EUR customers (n=54), a ratio of about 25",
+    "description": "Every paid amount is denominated in the currency of the customer who made the purchase, so amounts from customers of different currencies are not additive.",
+    "evidence": [
+      "evidence_currency_denomination"
+    ]
+  },
+  {
+    "id": "rel_currency_denominates_consumption",
+    "source": "customer_currency",
+    "relation_type": "association",
+    "target": "monthly_consumption",
+    "connection_condition": "for the 517 customers present in both tables, the ratio of average Consumption to average monthly transaction spend is 18.17 for CZK customers (n=475) and 17.32 for EUR customers (n=42), so both tables share one per-customer currency basis",
+    "description": "Monthly consumption is denominated in the customer's currency on the same monetary basis as transaction paid amounts.",
+    "evidence": [
+      "evidence_scale_consistency"
+    ]
+  },
+  {
+    "id": "rel_station_country_not_currency",
+    "source": "station_country",
+    "relation_type": "association",
+    "target": "customer_currency",
+    "connection_condition": "CZK customers pay 23.271 per fuel unit at CZE stations (n=797) and 23.71 at SVK stations (n=3), while EUR customers pay 0.917 at CZE stations (n=2) and 0.918 at SVK stations (n=52)",
+    "description": "The country of the station where a purchase is made does not determine the currency of the amount paid; the customer's currency does, so cross-border purchasing does not by itself change the monetary unit.",
+    "evidence": [
+      "evidence_currency_follows_customer"
+    ]
+  },
+  {
+    "id": "rel_quantity_derives_unit_price",
+    "source": "transaction_quantity",
+    "relation_type": "derivation",
+    "target": "implied_unit_price",
+    "connection_condition": "the implied unit price equals the same line's paid amount divided by its quantity; for fuel products this yields 23.273 for CZK customers and 0.918 for EUR customers",
+    "description": "The per-unit price is derived by dividing a line's paid amount by its quantity, and is defined only where the quantity is greater than zero.",
+    "evidence": [
+      "evidence_fuel_unit_price"
+    ]
+  },
+  {
+    "id": "rel_paid_amount_to_consumption",
+    "source": "transaction_paid_amount",
+    "relation_type": "association",
+    "target": "monthly_consumption",
+    "connection_condition": "monthly consumption and sampled transaction spend for the same customers and month sit on the same per-customer scale, at a stable ratio of about 18 in both currencies. transactions_1k holds only 1000 sampled rows over four days and cannot reproduce the monthly totals",
+    "description": "Monthly consumption and transaction paid amounts measure the same kind of customer spend at different grains: the monthly value is the coarser, complete measure and the transaction value is a finer sampled observation.",
+    "evidence": [
+      "evidence_scale_consistency",
+      "evidence_transactions_scope"
+    ]
+  }
+]

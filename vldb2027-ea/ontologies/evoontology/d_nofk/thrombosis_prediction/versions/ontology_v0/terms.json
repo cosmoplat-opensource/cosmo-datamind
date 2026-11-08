@@ -1,0 +1,355 @@
+[
+  {
+    "id": "term_patient",
+    "name": "Patient",
+    "type": "entity",
+    "definition": "An individual person registered in the database, carrying demographic attributes (sex, birthday), a first visit date, an admission flag and a recorded diagnosis.",
+    "scope": "Patient-level analysis of the autoimmune / collagen-vascular cohort in thrombosis_prediction",
+    "aliases": [
+      "subject",
+      "case",
+      "individual"
+    ],
+    "evidence": "evidence_row_counts"
+  },
+  {
+    "id": "term_examination_record",
+    "name": "Examination Record",
+    "type": "entity",
+    "definition": "A single clinical examination event for a patient, dated by Examination Date and recording thrombotic status, symptoms, diagnosis and antiphospholipid-related serology.",
+    "scope": "Event-level analysis of thrombosis status and its serological correlates",
+    "aliases": [
+      "exam",
+      "visit record",
+      "examination event"
+    ],
+    "evidence": "evidence_row_counts"
+  },
+  {
+    "id": "term_laboratory_record",
+    "name": "Laboratory Record",
+    "type": "entity",
+    "definition": "A single dated laboratory panel for a patient, holding general chemistry, haematology, coagulation, complement and autoantibody results.",
+    "scope": "Longitudinal laboratory analysis per patient and per date",
+    "aliases": [
+      "lab record",
+      "lab panel",
+      "test result row"
+    ],
+    "evidence": "evidence_row_counts"
+  },
+  {
+    "id": "term_patient_identifier",
+    "name": "Patient Identifier",
+    "type": "dimension",
+    "definition": "The integer value carried by the ID column of Patient, Examination and Laboratory, intended to identify the patient to whom a record belongs.",
+    "scope": "Cross-table linkage of examination and laboratory records to a patient",
+    "aliases": [
+      "ID",
+      "patient id",
+      "case id"
+    ],
+    "evidence": "evidence_id_overlap"
+  },
+  {
+    "id": "term_thrombosis_grade",
+    "name": "Thrombosis Grade",
+    "type": "metric",
+    "definition": "The ordinal, never-null integer code stored in Examination.Thrombosis, taking the values 0, 1, 2 and 3.",
+    "scope": "Examination-level characterisation of thrombotic status in thrombosis_prediction",
+    "aliases": [
+      "Thrombosis",
+      "thrombosis code",
+      "thrombosis value"
+    ],
+    "evidence": "evidence_thrombosis_distribution"
+  },
+  {
+    "id": "term_thrombotic_event",
+    "name": "Thrombotic Event",
+    "type": "concept",
+    "definition": "The presence of clinically recorded thrombosis for an examination record, operationally represented by a Thrombosis grade greater than zero.",
+    "scope": "Binary thrombosis outcome analysis; 0 versus non-zero only, because no value legend is published in the environment",
+    "aliases": [
+      "thrombosis present",
+      "positive thrombosis",
+      "thrombotic complication"
+    ],
+    "evidence": "evidence_thrombosis_distribution"
+  },
+  {
+    "id": "term_thrombosis_symptom",
+    "name": "Thrombosis Symptom Description",
+    "type": "concept",
+    "definition": "The free-text Symptoms field of an examination record, describing the clinical manifestation when a thrombotic event is present.",
+    "scope": "Interpretation and categorisation of recorded thrombotic manifestations",
+    "aliases": [
+      "Symptoms",
+      "symptom text",
+      "clinical manifestation"
+    ],
+    "evidence": "evidence_symptoms_thrombosis_crosstab"
+  },
+  {
+    "id": "term_textual_thrombotic_manifestation",
+    "name": "Textual Thrombotic Manifestation",
+    "type": "concept",
+    "definition": "A thrombotic event expressed as free text rather than as an ordinal code, appearing in the Symptoms field and in the Diagnosis field of the examination and patient tables (for example brain infarction, pulmonary emboli, DVT, thrombosis, spleen infarction).",
+    "scope": "Free-text discovery of thrombotic events that are not captured by the ordinal grade alone",
+    "aliases": [
+      "thrombotic free text",
+      "manifestation text",
+      "thrombosis mention"
+    ],
+    "evidence": "evidence_thrombotic_text_labels"
+  },
+  {
+    "id": "term_antiphospholipid_antibody",
+    "name": "Antiphospholipid Antibody",
+    "type": "concept",
+    "definition": "The family of antiphospholipid-related laboratory determinations recorded on an examination record, comprising lupus anticoagulant and anticardiolipin antibody measurements.",
+    "scope": "Antiphospholipid serology analysis in the thrombosis_prediction examination table",
+    "aliases": [
+      "APL",
+      "antiphospholipid antibodies",
+      "APLA"
+    ],
+    "evidence": "evidence_kct_rvvt_lac_domain"
+  },
+  {
+    "id": "term_lupus_anticoagulant",
+    "name": "Lupus Anticoagulant",
+    "type": "metric",
+    "definition": "The lupus anticoagulant determination recorded in Examination, based on phospholipid-dependent clotting tests and stored in the LAC field as a qualitative result.",
+    "scope": "Coagulation-based antiphospholipid assessment per examination record",
+    "aliases": [
+      "LAC",
+      "LA",
+      "lupus anticoagulant test"
+    ],
+    "evidence": "evidence_lac_kct_rvvt_crosstab"
+  },
+  {
+    "id": "term_anticardiolipin_antibody",
+    "name": "Anticardiolipin Antibody",
+    "type": "metric",
+    "definition": "Anticardiolipin antibody measurements recorded on an examination record in three isotype-specific fields, aCL IgG, aCL IgM and aCL IgA, each stored as a numeric value.",
+    "scope": "Isotype-resolved anticardiolipin serology per examination record",
+    "aliases": [
+      "aCL",
+      "anticardiolipin",
+      "cardiolipin antibody"
+    ],
+    "evidence": "evidence_acl_ranges"
+  },
+  {
+    "id": "term_coagulation_panel",
+    "name": "Coagulation and Fibrinolysis Panel",
+    "type": "metric",
+    "definition": "The coagulation and fibrinolysis measurements recorded in the Laboratory table, comprising prothrombin time, activated partial thromboplastin time, fibrinogen and the molecular haemostatic markers PIC, TAT and TAT2.",
+    "scope": "Laboratory-level haemostatic activity analysis",
+    "aliases": [
+      "coagulation markers",
+      "PT",
+      "APTT",
+      "fibrinogen",
+      "TAT",
+      "PIC"
+    ],
+    "evidence": "evidence_coag_lab_domain"
+  },
+  {
+    "id": "term_platelet_count",
+    "name": "Platelet Count",
+    "type": "metric",
+    "definition": "The platelet count recorded in the Laboratory table as PLT.",
+    "scope": "Laboratory-level thrombocytopenia assessment",
+    "aliases": [
+      "PLT",
+      "platelets",
+      "thrombocyte count"
+    ],
+    "evidence": "evidence_coag_lab_domain"
+  },
+  {
+    "id": "term_antinuclear_antibody_titer",
+    "name": "Antinuclear Antibody Titer",
+    "type": "metric",
+    "definition": "The antinuclear antibody titre recorded on an examination record in the ANA field as an integer.",
+    "scope": "Examination-level autoreactivity assessment",
+    "aliases": [
+      "ANA",
+      "antinuclear antibody",
+      "ANA titre"
+    ],
+    "evidence": "evidence_ana_domain"
+  },
+  {
+    "id": "term_ana_staining_pattern",
+    "name": "ANA Staining Pattern",
+    "type": "dimension",
+    "definition": "The immunofluorescence staining pattern recorded alongside the ANA titre in the ANA Pattern field of an examination record.",
+    "scope": "Examination-level interpretation of antinuclear antibody staining",
+    "aliases": [
+      "ANA Pattern",
+      "staining pattern",
+      "fluorescence pattern"
+    ],
+    "evidence": "evidence_ana_pattern_domain"
+  },
+  {
+    "id": "term_autoantibody_panel",
+    "name": "Autoantibody Panel",
+    "type": "concept",
+    "definition": "The extractable nuclear antigen autoantibody determinations recorded in the Laboratory table across the RNP, SM, SC170, SSA, SSB and CENTROMEA fields.",
+    "scope": "Laboratory-level autoantibody specificity analysis",
+    "aliases": [
+      "ENA panel",
+      "extractable nuclear antigen antibodies",
+      "autoantibodies"
+    ],
+    "evidence": "evidence_autoantibody_text_domain"
+  },
+  {
+    "id": "term_anti_dsdna_antibody",
+    "name": "Anti-dsDNA Antibody",
+    "type": "metric",
+    "definition": "The anti-double-stranded-DNA antibody measurement recorded in the Laboratory table; the environment provides the DNA field and an additional DNA-II field.",
+    "scope": "Laboratory-level analysis of double-stranded DNA antibody reactivity",
+    "aliases": [
+      "anti-DNA",
+      "DNA antibody",
+      "anti-dsDNA"
+    ],
+    "evidence": "evidence_dna_fields"
+  },
+  {
+    "id": "term_rheumatoid_factor",
+    "name": "Rheumatoid Factor",
+    "type": "metric",
+    "definition": "The rheumatoid factor determination recorded in the Laboratory table, present in the environment under two distinct fields with different encodings, RA and RF.",
+    "scope": "Laboratory-level rheumatoid factor analysis",
+    "aliases": [
+      "RF",
+      "RA test",
+      "rheumatoid factor assay"
+    ],
+    "evidence": "evidence_rf_ra_domain"
+  },
+  {
+    "id": "term_complement_component",
+    "name": "Complement Component",
+    "type": "metric",
+    "definition": "The complement components recorded in the Laboratory table as C3 and C4.",
+    "scope": "Laboratory-level complement consumption analysis",
+    "aliases": [
+      "C3",
+      "C4",
+      "complement"
+    ],
+    "evidence": "evidence_null_counts"
+  },
+  {
+    "id": "term_inflammatory_marker_crp",
+    "name": "C-Reactive Protein",
+    "type": "metric",
+    "definition": "The C-reactive protein measurement recorded in the Laboratory table as CRP, stored as text that may hold a censored rather than an exact value.",
+    "scope": "Laboratory-level acute-phase and inflammatory activity analysis",
+    "aliases": [
+      "CRP",
+      "C-reactive protein",
+      "acute phase marker"
+    ],
+    "evidence": "evidence_crp_text_domain"
+  },
+  {
+    "id": "term_urinary_protein",
+    "name": "Urinary Protein",
+    "type": "metric",
+    "definition": "The urinary protein determination recorded in the Laboratory table as U-PRO, stored as text that mixes categorical and numeric expressions.",
+    "scope": "Laboratory-level renal involvement assessment",
+    "aliases": [
+      "U-PRO",
+      "proteinuria",
+      "urine protein"
+    ],
+    "evidence": "evidence_upro_domain"
+  },
+  {
+    "id": "term_autoimmune_diagnosis",
+    "name": "Autoimmune Disease Diagnosis",
+    "type": "dimension",
+    "definition": "The disease label recorded for a patient on the patient record and, independently, on each examination record, drawn from the collagen-vascular and autoimmune disease vocabulary of this cohort.",
+    "scope": "Cohort definition and disease subgroup analysis",
+    "aliases": [
+      "Diagnosis",
+      "disease label",
+      "disease group"
+    ],
+    "evidence": "evidence_diagnosis_tokens_patient"
+  },
+  {
+    "id": "term_sex",
+    "name": "Sex",
+    "type": "dimension",
+    "definition": "The recorded sex of the patient, stored in Patient.SEX as a single-letter code.",
+    "scope": "Demographic stratification of the cohort",
+    "aliases": [
+      "SEX",
+      "gender"
+    ],
+    "evidence": "evidence_sex_domain"
+  },
+  {
+    "id": "term_age_at_first_visit",
+    "name": "Age at First Visit",
+    "type": "metric",
+    "definition": "The patient's age in years on the first visit date, computed from the recorded birthday and the first visit date.",
+    "scope": "Age-standardised cohort description; requires both birthday and first visit date to be present",
+    "aliases": [
+      "age",
+      "age at baseline",
+      "baseline age"
+    ],
+    "evidence": "evidence_date_consistency"
+  },
+  {
+    "id": "term_first_visit_date",
+    "name": "First Visit Date",
+    "type": "dimension",
+    "definition": "The patient-level date recorded in Patient.'First Date', representing the patient's earliest recorded contact in the cohort.",
+    "scope": "Index date for patient-level follow-up and interval computation",
+    "aliases": [
+      "First Date",
+      "index date",
+      "baseline date"
+    ],
+    "evidence": "evidence_date_ranges"
+  },
+  {
+    "id": "term_observation_date",
+    "name": "Observation Date",
+    "type": "dimension",
+    "definition": "The date on which a measurement event occurred, recorded as Examination.'Examination Date' for examination records and as Laboratory.Date for laboratory records.",
+    "scope": "Event-time ordering and longitudinal alignment of records",
+    "aliases": [
+      "Examination Date",
+      "lab date",
+      "event date",
+      "measurement date"
+    ],
+    "evidence": "evidence_date_ranges"
+  },
+  {
+    "id": "term_admission_flag",
+    "name": "Admission Flag",
+    "type": "dimension",
+    "definition": "The coarse flag recorded in Patient.Admission summarising the patient's admission status.",
+    "scope": "Inpatient versus outpatient stratification; the meaning of each coded form is not documented in the environment",
+    "aliases": [
+      "Admission",
+      "inpatient flag"
+    ],
+    "evidence": "evidence_admission_domain"
+  }
+]

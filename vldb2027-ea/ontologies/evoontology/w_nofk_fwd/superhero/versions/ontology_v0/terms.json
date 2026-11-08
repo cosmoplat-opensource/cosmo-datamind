@@ -1,0 +1,314 @@
+[
+  {
+    "id": "superhero",
+    "name": "Superhero",
+    "type": "entity",
+    "definition": "A catalogued super-powered character. It is the central entity of the database: every hero is identified by a display name and described by physical measurements, categorical classifications (gender, race, alignment, publisher) and rated capabilities.",
+    "scope": "Superhero catalogue analysis; the anchor entity for hero-level filtering, aggregation and ranking",
+    "aliases": [
+      "hero",
+      "heroes",
+      "superheroes",
+      "character",
+      "superhero record"
+    ],
+    "evidence": [
+      "ev_schema_superhero",
+      "ev_counts"
+    ]
+  },
+  {
+    "id": "superhero_name",
+    "name": "Superhero Name",
+    "type": "concept",
+    "definition": "The display name that identifies a superhero in the catalogue (for example '3-D Man', 'Hawkman', 'Speedy'). It is the label a question asks for when it asks who or which hero.",
+    "scope": "Hero identification, name-based lookup and name-based filtering",
+    "aliases": [
+      "hero name",
+      "character name",
+      "superhero_name",
+      "hero's name",
+      "which hero",
+      "who is"
+    ],
+    "evidence": [
+      "ev_dup_names"
+    ]
+  },
+  {
+    "id": "full_name",
+    "name": "Full Name",
+    "type": "concept",
+    "definition": "The civilian or real full name recorded for a superhero. It is very frequently unrecorded, so absence of a full name is a normal catalogue state rather than an anomaly.",
+    "scope": "Hero identity detail; used when a question asks for the full name of a hero rather than the hero name",
+    "aliases": [
+      "real name",
+      "civilian name",
+      "full_name",
+      "full name of the hero"
+    ],
+    "evidence": [
+      "ev_fullname_missing"
+    ]
+  },
+  {
+    "id": "publisher",
+    "name": "Publisher",
+    "type": "entity",
+    "definition": "A company that publishes superheroes. Each superhero record may reference exactly one publisher, and a publisher is associated with many superheroes.",
+    "scope": "Publisher-level aggregation, comparison and filtering (for example DC versus Marvel)",
+    "aliases": [
+      "publishing company",
+      "imprint",
+      "published by",
+      "comic publisher"
+    ],
+    "evidence": [
+      "ev_publisher_values"
+    ]
+  },
+  {
+    "id": "superpower",
+    "name": "Superpower",
+    "type": "entity",
+    "definition": "A named ability in the controlled power vocabulary (for example 'Agility', 'Stealth', 'Super Strength'). Superpowers are linked to heroes through hero-to-power association records, and a hero may have several powers.",
+    "scope": "Ability coverage, ability-based filtering and per-hero ability listing",
+    "aliases": [
+      "power",
+      "powers",
+      "ability",
+      "abilities",
+      "superpowers",
+      "skill"
+    ],
+    "evidence": [
+      "ev_power_vocab"
+    ]
+  },
+  {
+    "id": "attribute_dimension",
+    "name": "Rated Attribute Dimension",
+    "type": "dimension",
+    "definition": "One of the six rated capability dimensions on which a hero may be scored: Intelligence, Strength, Speed, Durability, Power and Combat.",
+    "scope": "Capability rating analysis; selects which rating column a superlative question refers to",
+    "aliases": [
+      "attribute",
+      "attribute name",
+      "capability",
+      "stat",
+      "dimension"
+    ],
+    "evidence": [
+      "ev_attribute_vocab"
+    ]
+  },
+  {
+    "id": "attribute_value",
+    "name": "Attribute Rating Value",
+    "type": "metric",
+    "definition": "The numeric score that a hero receives on one rated attribute dimension. All dimensions share a single 0-100 scale on which a higher value means a greater capability. Not every hero has rating records, so the rating population is smaller than the hero population.",
+    "scope": "Capability comparison, ranking and extremum analysis over rated attributes",
+    "aliases": [
+      "attribute value",
+      "rating",
+      "score",
+      "stat value",
+      "capability score"
+    ],
+    "evidence": [
+      "ev_attr_range"
+    ]
+  },
+  {
+    "id": "attribute_extremum_hero",
+    "name": "Extremum Hero by Attribute",
+    "type": "metric",
+    "definition": "The superhero that holds the highest or the lowest rating on a selected attribute dimension. It is the semantic target behind superlative questions such as fastest, strongest, smartest or dumbest. The concept is not stored as a column: it is identified by comparing attribute ratings within one dimension and then resolving the owning hero.",
+    "scope": "Superlative and ranking questions over rated attributes",
+    "aliases": [
+      "fastest",
+      "strongest",
+      "smartest",
+      "dumbest",
+      "best",
+      "worst",
+      "highest attribute",
+      "lowest attribute",
+      "most powerful"
+    ],
+    "evidence": [
+      "ev_extremum_ties"
+    ]
+  },
+  {
+    "id": "colour_vocabulary",
+    "name": "Colour Vocabulary",
+    "type": "category",
+    "definition": "The shared controlled colour vocabulary from which appearance colour labels are drawn. It contains 35 exact, capitalised labels including simple colours ('Blue', 'Black', 'Blond'), compound labels ('Black/Blue', 'Brown/White') and the sentinel label 'No Colour' that marks an unrecorded colour.",
+    "scope": "Appearance colour labelling for eyes, hair and skin",
+    "aliases": [
+      "colour",
+      "color",
+      "colours",
+      "appearance colour",
+      "colour list"
+    ],
+    "evidence": [
+      "ev_colour_vocab"
+    ]
+  },
+  {
+    "id": "eye_colour",
+    "name": "Eye Colour",
+    "type": "dimension",
+    "definition": "The eye colour recorded for a superhero, expressed as a value of the shared colour vocabulary.",
+    "scope": "Appearance filtering, colour popularity and colour comparisons",
+    "aliases": [
+      "eyes",
+      "eye color",
+      "eye colour",
+      "blue eyes",
+      "no eye color"
+    ],
+    "evidence": [
+      "ev_colour_usage"
+    ]
+  },
+  {
+    "id": "hair_colour",
+    "name": "Hair Colour",
+    "type": "dimension",
+    "definition": "The hair colour recorded for a superhero, expressed as a value of the shared colour vocabulary.",
+    "scope": "Appearance filtering and colour comparisons",
+    "aliases": [
+      "hair",
+      "hair color",
+      "hair colour",
+      "blond hair",
+      "black hair"
+    ],
+    "evidence": [
+      "ev_colour_usage"
+    ]
+  },
+  {
+    "id": "skin_colour",
+    "name": "Skin Colour",
+    "type": "dimension",
+    "definition": "The skin colour recorded for a superhero, expressed as a value of the shared colour vocabulary.",
+    "scope": "Appearance filtering and colour comparisons",
+    "aliases": [
+      "skin",
+      "skin color",
+      "skin colour",
+      "complexion"
+    ],
+    "evidence": [
+      "ev_colour_usage"
+    ]
+  },
+  {
+    "id": "gender",
+    "name": "Gender",
+    "type": "dimension",
+    "definition": "The gender classification recorded for a superhero. Values are the exact labels 'Male', 'Female' and 'N/A', where 'N/A' marks an unknown gender.",
+    "scope": "Gender-based filtering, counting and per-gender grouping",
+    "aliases": [
+      "male",
+      "female",
+      "men",
+      "women",
+      "sex"
+    ],
+    "evidence": [
+      "ev_gender_values"
+    ]
+  },
+  {
+    "id": "race",
+    "name": "Race",
+    "type": "dimension",
+    "definition": "The species or origin label recorded for a superhero. There are 61 distinct values (for example 'Human', 'Mutant', 'Kryptonian'). Values are atomic discriminating labels, so origin families are recorded as separate values rather than as one value with sub-types.",
+    "scope": "Species and origin based filtering",
+    "aliases": [
+      "species",
+      "origin",
+      "human",
+      "human superhero",
+      "alien",
+      "mutant"
+    ],
+    "evidence": [
+      "ev_race_values"
+    ]
+  },
+  {
+    "id": "alignment",
+    "name": "Alignment",
+    "type": "dimension",
+    "definition": "The moral alignment recorded for a superhero. Values are the exact labels 'Good', 'Bad', 'Neutral' and 'N/A', where 'N/A' marks an unknown alignment.",
+    "scope": "Alignment-based filtering and grouping",
+    "aliases": [
+      "good",
+      "bad",
+      "neutral",
+      "villain",
+      "moral alignment",
+      "hero alignment"
+    ],
+    "evidence": [
+      "ev_alignment_values"
+    ]
+  },
+  {
+    "id": "height",
+    "name": "Height",
+    "type": "metric",
+    "definition": "The recorded height of a superhero, expressed in centimetres. Height is recorded for most heroes but is missing for a substantial minority, in which case the value is encoded rather than genuinely zero.",
+    "scope": "Physical measurement filtering, ranges and percentage-of-total analysis",
+    "aliases": [
+      "height",
+      "tall",
+      "cm",
+      "height_cm",
+      "height between"
+    ],
+    "evidence": [
+      "ev_height_missing"
+    ]
+  },
+  {
+    "id": "weight",
+    "name": "Weight",
+    "type": "metric",
+    "definition": "The recorded weight of a superhero, expressed in kilograms. Weight is missing for a large minority of heroes, in which case the value is encoded rather than genuinely zero.",
+    "scope": "Physical measurement filtering and missing-data analysis",
+    "aliases": [
+      "weight",
+      "kg",
+      "weight_kg",
+      "heavy"
+    ],
+    "evidence": [
+      "ev_weight_missing"
+    ]
+  },
+  {
+    "id": "superhero_count",
+    "name": "Superhero Count",
+    "type": "metric",
+    "definition": "The number of distinct superheroes that satisfy a given filter or grouping. It is the semantic basis for how-many questions, publisher comparisons, colour popularity ranking and percentage shares of a filtered total.",
+    "scope": "Counting, publisher/colour comparison and share-of-total analysis",
+    "aliases": [
+      "how many",
+      "number of heroes",
+      "count",
+      "total superheroes",
+      "popularity",
+      "percentage"
+    ],
+    "evidence": [
+      "ev_counts"
+    ]
+  }
+]

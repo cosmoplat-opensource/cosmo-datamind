@@ -1,0 +1,182 @@
+[
+  {
+    "id": "rel_question_is_post",
+    "source": "term_question",
+    "relation_type": "hierarchy",
+    "target": "term_post",
+    "connection_condition": "question rows are the posts rows whose PostTypeId equals 1",
+    "description": "A question is a specific kind of post; its value domain is a subset of the post domain (42912 of 91966 rows).",
+    "evidence": [
+      "ev_post_type_distribution"
+    ]
+  },
+  {
+    "id": "rel_answer_is_post",
+    "source": "term_answer",
+    "relation_type": "hierarchy",
+    "target": "term_post",
+    "connection_condition": "answer rows are the posts rows whose PostTypeId equals 2",
+    "description": "An answer is a specific kind of post; its value domain is a subset of the post domain (47755 of 91966 rows).",
+    "evidence": [
+      "ev_post_type_distribution"
+    ]
+  },
+  {
+    "id": "rel_accepted_answer_is_answer",
+    "source": "term_accepted_answer",
+    "relation_type": "hierarchy",
+    "target": "term_answer",
+    "connection_condition": "every AcceptedAnswerId references a post whose PostTypeId equals 2",
+    "description": "An accepted answer is a specific kind of answer: the whole accepted-answer domain is drawn from answer posts, never from questions or auxiliary post types.",
+    "evidence": [
+      "ev_accepted_answer_linkage"
+    ]
+  },
+  {
+    "id": "rel_bounty_is_vote",
+    "source": "term_bounty",
+    "relation_type": "hierarchy",
+    "target": "term_vote",
+    "connection_condition": "bounty events are the votes rows whose VoteTypeId is 8 or 9",
+    "description": "A bounty event is a specific kind of vote row; bounty amounts appear only on the start and close vote types, never on other vote types.",
+    "evidence": [
+      "ev_bounty_amount"
+    ]
+  },
+  {
+    "id": "rel_question_has_answers",
+    "source": "term_question",
+    "relation_type": "composition",
+    "target": "term_answer",
+    "connection_condition": "an answer's ParentId equals the Id of the question it replies to",
+    "description": "A question is a whole composed of its answers; an answer cannot exist without the question it belongs to. 47749 of 47755 answers resolve to an existing question parent.",
+    "evidence": [
+      "ev_answer_count_verification",
+      "ev_orphan_rows"
+    ]
+  },
+  {
+    "id": "rel_post_has_comments",
+    "source": "term_post",
+    "relation_type": "composition",
+    "target": "term_comment",
+    "connection_condition": "a comment's PostId equals the Id of the post it belongs to",
+    "description": "A post is a whole composed of its comments; a comment has no meaning without its post. Comments attach mainly to questions and answers and only rarely to other post types.",
+    "evidence": [
+      "ev_comments_post_type"
+    ]
+  },
+  {
+    "id": "rel_post_has_revisions",
+    "source": "term_post",
+    "relation_type": "composition",
+    "target": "term_post_revision",
+    "connection_condition": "a revision's PostId equals the Id of the post it records a change to",
+    "description": "A post is a whole composed of its recorded revisions; a revision row has no meaning detached from its post.",
+    "evidence": [
+      "ev_history_types_and_revision_match"
+    ]
+  },
+  {
+    "id": "rel_post_has_votes",
+    "source": "term_post",
+    "relation_type": "composition",
+    "target": "term_vote",
+    "connection_condition": "a vote's PostId equals the Id of the post it was cast on",
+    "description": "A post is a whole composed of the votes cast on it; every vote row resolves to an existing post, though only a minority of posts appear in the votes table at all.",
+    "evidence": [
+      "ev_votes_distribution_and_span"
+    ]
+  },
+  {
+    "id": "rel_user_earns_badges",
+    "source": "term_user",
+    "relation_type": "composition",
+    "target": "term_badge",
+    "connection_condition": "a badge award's UserId equals the Id of the user receiving it",
+    "description": "A user's record is composed of their badge awards; an award row is meaningless without the user it was granted to, and every UserId in badges resolves to a users row.",
+    "evidence": [
+      "ev_badges_overview"
+    ]
+  },
+  {
+    "id": "rel_tag_labels_question",
+    "source": "term_tag",
+    "relation_type": "association",
+    "target": "term_question",
+    "connection_condition": "a question carries a tag when the tag name appears in its Tags text as a token wrapped in angle brackets; there is no junction table between tags and posts",
+    "description": "Tags label questions through the denormalized Tags text rather than through a foreign key, so the connection is real but structurally indirect.",
+    "evidence": [
+      "ev_tags_overview"
+    ]
+  },
+  {
+    "id": "rel_tag_usage_count_derivation",
+    "source": "term_tag",
+    "relation_type": "derivation",
+    "target": "term_tag_usage_count",
+    "connection_condition": "",
+    "description": "The usage count of a tag is derived from the number of questions that carry that tag; the stored value approximates a recount over the Tags text with small discrepancies.",
+    "evidence": [
+      "ev_tags_overview"
+    ]
+  },
+  {
+    "id": "rel_answer_count_derivation",
+    "source": "term_answer",
+    "relation_type": "derivation",
+    "target": "term_answer_count",
+    "connection_condition": "",
+    "description": "A question's answer count is derived as the number of answers whose ParentId is that question; the stored value agreed exactly with this derivation for every question.",
+    "evidence": [
+      "ev_answer_count_verification"
+    ]
+  },
+  {
+    "id": "rel_post_score_derivation",
+    "source": "term_vote",
+    "relation_type": "derivation",
+    "target": "term_post_score",
+    "connection_condition": "",
+    "description": "A post's score is conceptually derived from the votes cast on it (up-votes minus down-votes), but the votes table in this database is a partial snapshot, so the stored score cannot be reproduced from it in most cases.",
+    "evidence": [
+      "ev_score_vs_votes"
+    ]
+  },
+  {
+    "id": "rel_post_link_connects_posts",
+    "source": "term_post_link",
+    "relation_type": "association",
+    "target": "term_post",
+    "connection_condition": "a link's PostId is the source post and RelatedPostId is the related post; both are intended to reference posts rows",
+    "description": "A post link connects two posts; the endpoints are overwhelmingly questions, with only five rows linking to an answer, and four rows point at posts that do not exist.",
+    "evidence": [
+      "ev_link_types",
+      "ev_orphan_rows"
+    ]
+  },
+  {
+    "id": "rel_accepted_answer_has_acceptance_vote",
+    "source": "term_accepted_answer",
+    "relation_type": "association",
+    "target": "term_vote",
+    "connection_condition": "an acceptance is additionally recorded as a vote row whose VoteTypeId equals 1 and whose PostId is the accepted answer",
+    "description": "Acceptance is represented twice, but with very different coverage: the question-side AcceptedAnswerId covers 14697 questions whereas the vote-side representation covers only 1451 accepted answers, because the votes table spans a narrow time window.",
+    "evidence": [
+      "ev_accepted_answer_linkage",
+      "ev_votes_distribution_and_span"
+    ]
+  },
+  {
+    "id": "rel_user_owns_post",
+    "source": "term_user",
+    "relation_type": "association",
+    "target": "term_post",
+    "connection_condition": "posts.OwnerUserId references users.Id",
+    "description": "A user owns posts as their author, but the connection is optional: 1392 posts have no owner, and the sentinel account with Id -1 owns 211 posts.",
+    "evidence": [
+      "ev_orphan_rows",
+      "ev_community_owned_and_system_user"
+    ]
+  }
+]

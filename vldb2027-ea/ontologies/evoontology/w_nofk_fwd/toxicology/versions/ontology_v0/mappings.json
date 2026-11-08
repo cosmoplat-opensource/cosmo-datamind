@@ -1,0 +1,211 @@
+[
+  {
+    "id": "map_molecule_id",
+    "term_id": "term_molecule",
+    "database_source": "toxicology",
+    "table": "molecule",
+    "column": "molecule_id",
+    "semantic_filter": "",
+    "aggregation_semantics": "count of distinct molecule identifiers",
+    "grain": "one row per molecule",
+    "validation": "343 rows, all identifiers unique and non-null"
+  },
+  {
+    "id": "map_molecule_id_in_atom",
+    "term_id": "term_molecule_reference",
+    "database_source": "toxicology",
+    "table": "atom",
+    "column": "molecule_id",
+    "semantic_filter": "identifies the molecule each atom belongs to",
+    "aggregation_semantics": "count of distinct referencing values yields the molecules that own atoms",
+    "grain": "one value per atom",
+    "validation": "444 distinct values, none null"
+  },
+  {
+    "id": "map_molecule_id_in_bond",
+    "term_id": "term_molecule_reference",
+    "database_source": "toxicology",
+    "table": "bond",
+    "column": "molecule_id",
+    "semantic_filter": "identifies the molecule each bond belongs to",
+    "aggregation_semantics": "count of distinct referencing values",
+    "grain": "one value per bond",
+    "validation": "444 distinct values, none null"
+  },
+  {
+    "id": "map_atom_id",
+    "term_id": "term_atom",
+    "database_source": "toxicology",
+    "table": "atom",
+    "column": "atom_id",
+    "semantic_filter": "",
+    "aggregation_semantics": "count of distinct atom identifiers",
+    "grain": "one row per atom",
+    "validation": "12333 rows, all identifiers unique and non-null"
+  },
+  {
+    "id": "map_bond_id",
+    "term_id": "term_bond",
+    "database_source": "toxicology",
+    "table": "bond",
+    "column": "bond_id",
+    "semantic_filter": "",
+    "aggregation_semantics": "count of distinct bond identifiers",
+    "grain": "one row per bond",
+    "validation": "12379 rows, all identifiers unique and non-null"
+  },
+  {
+    "id": "map_bond_id_in_connected",
+    "term_id": "term_bond",
+    "database_source": "toxicology",
+    "table": "connected",
+    "column": "bond_id",
+    "semantic_filter": "references the bond that the connectivity fact belongs to",
+    "aggregation_semantics": "count of distinct referencing values yields the number of bonds",
+    "grain": "one value per connectivity row",
+    "validation": "24758 rows over 12379 distinct values, all matching bond identifiers"
+  },
+  {
+    "id": "map_element",
+    "term_id": "term_element",
+    "database_source": "toxicology",
+    "table": "atom",
+    "column": "element",
+    "semantic_filter": "",
+    "aggregation_semantics": "counting atoms of an element aggregates over atom rows carrying that element symbol",
+    "grain": "one value per atom",
+    "validation": "12333 rows, 21 distinct lowercase symbols, none null"
+  },
+  {
+    "id": "map_bond_type",
+    "term_id": "term_bond_type",
+    "database_source": "toxicology",
+    "table": "bond",
+    "column": "bond_type",
+    "semantic_filter": "",
+    "aggregation_semantics": "counting bonds of a type aggregates over bond rows carrying that type symbol",
+    "grain": "one value per bond",
+    "validation": "4 distinct states among 12379 bonds: single 10528, double 1844, triple 6, unrecorded 1"
+  },
+  {
+    "id": "map_carcinogenicity_label",
+    "term_id": "term_carcinogenicity_label",
+    "database_source": "toxicology",
+    "table": "molecule",
+    "column": "label",
+    "semantic_filter": "",
+    "aggregation_semantics": "counting molecules by class aggregates over molecule rows carrying that label symbol",
+    "grain": "one value per molecule",
+    "validation": "343 rows, 2 distinct symbols, none null"
+  },
+  {
+    "id": "map_carcinogenic_molecules",
+    "term_id": "term_carcinogenic_molecule",
+    "database_source": "toxicology",
+    "table": "molecule",
+    "column": "molecule_id",
+    "semantic_filter": "restricted to molecules whose carcinogenicity label marks them carcinogenic",
+    "aggregation_semantics": "count of distinct molecule identifiers in the restricted population",
+    "grain": "one row per labelled molecule",
+    "validation": "152 molecules carry the carcinogenic classification"
+  },
+  {
+    "id": "map_non_carcinogenic_molecules",
+    "term_id": "term_non_carcinogenic_molecule",
+    "database_source": "toxicology",
+    "table": "molecule",
+    "column": "molecule_id",
+    "semantic_filter": "restricted to molecules whose carcinogenicity label marks them non-carcinogenic",
+    "aggregation_semantics": "count of distinct molecule identifiers in the restricted population",
+    "grain": "one row per labelled molecule",
+    "validation": "191 molecules carry the non-carcinogenic classification"
+  },
+  {
+    "id": "map_single_bond",
+    "term_id": "term_single_bond",
+    "database_source": "toxicology",
+    "table": "bond",
+    "column": "bond_type",
+    "semantic_filter": "restricted to bonds whose type symbol denotes a single link",
+    "aggregation_semantics": "count of bonds in the restricted population",
+    "grain": "one value per bond",
+    "validation": "10528 bonds"
+  },
+  {
+    "id": "map_double_bond",
+    "term_id": "term_double_bond",
+    "database_source": "toxicology",
+    "table": "bond",
+    "column": "bond_type",
+    "semantic_filter": "restricted to bonds whose type symbol denotes a double link",
+    "aggregation_semantics": "count of bonds in the restricted population",
+    "grain": "one value per bond",
+    "validation": "1844 bonds"
+  },
+  {
+    "id": "map_triple_bond",
+    "term_id": "term_triple_bond",
+    "database_source": "toxicology",
+    "table": "bond",
+    "column": "bond_type",
+    "semantic_filter": "restricted to bonds whose type symbol denotes a triple link",
+    "aggregation_semantics": "count of bonds in the restricted population",
+    "grain": "one value per bond",
+    "validation": "6 bonds"
+  },
+  {
+    "id": "map_adjacency_atom_a",
+    "term_id": "term_atom_bond_adjacency",
+    "database_source": "toxicology",
+    "table": "connected",
+    "column": "atom_id",
+    "semantic_filter": "the atom that the connectivity row is anchored on",
+    "aggregation_semantics": "count of distinct anchored atoms",
+    "grain": "one row per atom per incident bond",
+    "validation": "24758 rows, all values present in the atom table"
+  },
+  {
+    "id": "map_adjacency_atom_b",
+    "term_id": "term_atom_bond_adjacency",
+    "database_source": "toxicology",
+    "table": "connected",
+    "column": "atom_id2",
+    "semantic_filter": "the partner atom that the anchored atom is bonded to",
+    "aggregation_semantics": "count of distinct partner atoms",
+    "grain": "one row per partner per incident bond",
+    "validation": "24758 rows, all values present in the atom table"
+  },
+  {
+    "id": "map_adjacency_bond",
+    "term_id": "term_atom_bond_adjacency",
+    "database_source": "toxicology",
+    "table": "connected",
+    "column": "bond_id",
+    "semantic_filter": "the bond realized by the adjacency",
+    "aggregation_semantics": "count of distinct bonds realized by adjacency rows",
+    "grain": "one value per connectivity row",
+    "validation": "12379 distinct values for 12379 bonds"
+  },
+  {
+    "id": "map_element_occurrence_share",
+    "term_id": "term_element_occurrence_share",
+    "database_source": "toxicology",
+    "table": "atom",
+    "column": "element",
+    "semantic_filter": "",
+    "aggregation_semantics": "number of atoms carrying the specified element divided by the total number of atoms in the same molecule population",
+    "grain": "one value per atom",
+    "validation": "TR006 holds 17 hydrogen atoms out of 47 atoms"
+  },
+  {
+    "id": "map_average_bonds_per_atom",
+    "term_id": "term_average_bonds_per_atom",
+    "database_source": "toxicology",
+    "table": "connected",
+    "column": "atom_id",
+    "semantic_filter": "counted over the atoms of the specified population",
+    "aggregation_semantics": "number of bond incidences recorded for the population divided by the number of distinct atoms in that population",
+    "grain": "one row per atom per incident bond",
+    "validation": "6 iodine atoms carry 6 connectivity rows anchored on them"
+  }
+]

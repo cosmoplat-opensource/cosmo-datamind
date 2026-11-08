@@ -1,0 +1,421 @@
+[
+  {
+    "id": "rel_country_composes_league",
+    "source": "term_country",
+    "relation_type": "composition",
+    "target": "term_league",
+    "connection_condition": "League.country_id references Country.id; each league sits under exactly one country",
+    "description": "A country's league structure contains its top-division competition; a league record is meaningless without the country it belongs to.",
+    "evidence": [
+      "ev_league_country_link"
+    ]
+  },
+  {
+    "id": "rel_league_composes_match",
+    "source": "term_league",
+    "relation_type": "composition",
+    "target": "term_match",
+    "connection_condition": "Match.league_id references League.id and is never null",
+    "description": "A league campaign is composed of its fixtures; a match cannot exist without the competition it belongs to.",
+    "evidence": [
+      "ev_league_season_coverage"
+    ]
+  },
+  {
+    "id": "rel_season_composes_match",
+    "source": "term_season",
+    "relation_type": "composition",
+    "target": "term_match",
+    "connection_condition": "Match.season groups matches into one campaign per league",
+    "description": "A season is the set of matches played within one competition year; the season label has no meaning apart from the fixtures it groups.",
+    "evidence": [
+      "ev_season_range"
+    ]
+  },
+  {
+    "id": "rel_stage_composes_match",
+    "source": "term_match_stage",
+    "relation_type": "composition",
+    "target": "term_match",
+    "connection_condition": "Match.stage groups fixtures into matchdays within a league season",
+    "description": "A matchday is composed of the fixtures played in that round; the stage index exists only as a grouping of matches.",
+    "evidence": [
+      "ev_stage_count"
+    ]
+  },
+  {
+    "id": "rel_match_associates_team",
+    "source": "term_match",
+    "relation_type": "association",
+    "target": "term_team",
+    "connection_condition": "Match.home_team_api_id and Match.away_team_api_id both reference Team.team_api_id, so each match is linked to exactly two of the many teams that persist independently",
+    "description": "Matches are contested by teams, but a team's identity and record exist independently of any single fixture, so this is relatedness rather than containment.",
+    "evidence": [
+      "ev_match_team_fk"
+    ]
+  },
+  {
+    "id": "rel_match_composes_lineup",
+    "source": "term_match",
+    "relation_type": "composition",
+    "target": "term_starting_lineup",
+    "connection_condition": "the eleven lineup slots are columns on the match row itself",
+    "description": "A line-up is a component of the match it was fielded in; the selection has no meaning detached from that fixture.",
+    "evidence": [
+      "ev_lineup_completeness"
+    ]
+  },
+  {
+    "id": "rel_lineup_composes_coordinate",
+    "source": "term_starting_lineup",
+    "relation_type": "composition",
+    "target": "term_player_position_coordinate",
+    "connection_condition": "the coordinate column index matches the lineup slot index for the same side",
+    "description": "The position coordinates are a component of the line-up: each slot contributes one coordinate pair describing where that selected player stood.",
+    "evidence": [
+      "ev_formation_grid"
+    ]
+  },
+  {
+    "id": "rel_coordinate_derives_formation",
+    "source": "term_player_position_coordinate",
+    "relation_type": "derivation",
+    "target": "term_formation",
+    "connection_condition": "grouping the eleven slots of one side by their depth coordinate yields the shape",
+    "description": "Formation is computed from the line-up position coordinates by grouping players into depth lines and counting them; no formation value is stored anywhere.",
+    "evidence": [
+      "ev_formation_grid"
+    ]
+  },
+  {
+    "id": "rel_match_associates_season",
+    "source": "term_match",
+    "relation_type": "association",
+    "target": "term_season",
+    "connection_condition": "Match.season labels the campaign",
+    "description": "Every match belongs to a season, and the season label is the usual scoping device for any time-bounded performance analysis.",
+    "evidence": [
+      "ev_season_range"
+    ]
+  },
+  {
+    "id": "rel_team_associates_league",
+    "source": "term_team",
+    "relation_type": "association",
+    "target": "term_league",
+    "connection_condition": "a team's league can only be observed indirectly through the league identifiers of the matches it played",
+    "description": "Teams compete in leagues, but the database stores no team-to-league membership; a club's competition must be inferred from its fixtures.",
+    "evidence": [
+      "ev_league_season_coverage"
+    ]
+  },
+  {
+    "id": "rel_role_associates_outcome",
+    "source": "term_home_away_role",
+    "relation_type": "association",
+    "target": "term_match_outcome",
+    "connection_condition": "the home and away scoreline columns are read against the corresponding team role",
+    "description": "An outcome is only interpretable relative to whose perspective it is read from, and that perspective is the home or away role.",
+    "evidence": [
+      "ev_home_away_role_required"
+    ]
+  },
+  {
+    "id": "rel_outcome_derives_points",
+    "source": "term_match_outcome",
+    "relation_type": "derivation",
+    "target": "term_league_points",
+    "connection_condition": "points are awarded per outcome under a convention the analyst supplies",
+    "description": "League points are derived from match outcomes; because the database stores neither a points column nor the award rule, any points metric depends on an explicitly stated convention.",
+    "evidence": [
+      "ev_league_points_absent"
+    ]
+  },
+  {
+    "id": "rel_goal_derives_goals_for",
+    "source": "term_goal",
+    "relation_type": "derivation",
+    "target": "term_team_goals_for",
+    "connection_condition": "a team's scoreline column sums the goals attributed to that team",
+    "description": "Goals scored by a team are the sum of the individual goals credited to it; the scoreline is the stored aggregate of that sum.",
+    "evidence": [
+      "ev_goal_xml_vs_scoreline",
+      "ev_home_away_role_required"
+    ]
+  },
+  {
+    "id": "rel_goal_derives_goals_against",
+    "source": "term_goal",
+    "relation_type": "derivation",
+    "target": "term_team_goals_against",
+    "connection_condition": "a team's conceded column sums the goals attributed to its opponent",
+    "description": "Goals conceded by a team are the opponent's goals in the same matches, so the same goal events feed both goals-for and goals-against.",
+    "evidence": [
+      "ev_home_away_role_required"
+    ]
+  },
+  {
+    "id": "rel_goals_for_derives_gd",
+    "source": "term_team_goals_for",
+    "relation_type": "derivation",
+    "target": "term_goal_difference",
+    "connection_condition": "goals for contributes positively over an identical match set",
+    "description": "Goal difference takes a positive contribution from goals scored over the same scope of matches.",
+    "evidence": [
+      "ev_home_away_role_required"
+    ]
+  },
+  {
+    "id": "rel_goals_against_derives_gd",
+    "source": "term_team_goals_against",
+    "relation_type": "derivation",
+    "target": "term_goal_difference",
+    "connection_condition": "goals against contributes negatively over an identical match set",
+    "description": "Goal difference takes a negative contribution from goals conceded; comparing the two contributions requires the match set to be identical.",
+    "evidence": [
+      "ev_home_away_role_required"
+    ]
+  },
+  {
+    "id": "rel_goal_derives_outcome",
+    "source": "term_goal",
+    "relation_type": "derivation",
+    "target": "term_match_outcome",
+    "connection_condition": "comparing a side's scoreline value with its opponent's yields win, draw or loss",
+    "description": "The match outcome is derived by comparing the goals each side scored in that fixture.",
+    "evidence": [
+      "ev_home_away_role_required"
+    ]
+  },
+  {
+    "id": "rel_outcome_associates_home_advantage",
+    "source": "term_match_outcome",
+    "relation_type": "association",
+    "target": "term_home_advantage",
+    "connection_condition": "comparing outcome rates between the home and away roles reveals the effect",
+    "description": "Home advantage is expressed through a systematic difference in outcomes and goals between the two venue roles.",
+    "evidence": [
+      "ev_home_away_role_required"
+    ]
+  },
+  {
+    "id": "rel_gk_skill_hierarchy",
+    "source": "term_goalkeeper_skill_attribute",
+    "relation_type": "hierarchy",
+    "target": "term_player_skill_attribute",
+    "connection_condition": "the goalkeeping score columns are five of the same 33 bounded score columns",
+    "description": "A goalkeeping skill attribute is a kind of player skill attribute: its value domain is drawn from the same bounded rating scale and sits inside the wider set of player ability scores.",
+    "evidence": [
+      "ev_skill_column_range"
+    ]
+  },
+  {
+    "id": "rel_skill_associates_rating",
+    "source": "term_player_skill_attribute",
+    "relation_type": "association",
+    "target": "term_player_overall_rating",
+    "connection_condition": "both are columns on the same snapshot row, but no stored formula links them",
+    "description": "The granular skill scores and the single overall rating describe the same player at the same moment, yet the data records no rule deriving one from the other.",
+    "evidence": [
+      "ev_skill_column_range"
+    ]
+  },
+  {
+    "id": "rel_potential_associates_rating",
+    "source": "term_player_potential",
+    "relation_type": "association",
+    "target": "term_player_overall_rating",
+    "connection_condition": "both are read from the same snapshot row",
+    "description": "Potential and overall rating are both judgement scores recorded together for a player, with potential describing the upper bound the player is expected to reach.",
+    "evidence": [
+      "ev_skill_column_range"
+    ]
+  },
+  {
+    "id": "rel_player_composes_physical",
+    "source": "term_player",
+    "relation_type": "composition",
+    "target": "term_player_physical_profile",
+    "connection_condition": "height and weight are columns on the player row",
+    "description": "A player's body measurements are a component of the player record and cannot be interpreted apart from the player they describe.",
+    "evidence": [
+      "ev_height_inches_conversion"
+    ]
+  },
+  {
+    "id": "rel_player_derives_age",
+    "source": "term_player",
+    "relation_type": "derivation",
+    "target": "term_player_age",
+    "connection_condition": "Player.birthday combined with the observation date yields completed years",
+    "description": "Age is computed from the recorded birth date and the date at which the player is being observed; the choice of observation date changes the result.",
+    "evidence": [
+      "ev_player_snapshot_dates"
+    ]
+  },
+  {
+    "id": "rel_player_composes_snapshot",
+    "source": "term_player",
+    "relation_type": "composition",
+    "target": "term_player_attribute_snapshot",
+    "connection_condition": "Player_Attributes.player_api_id references Player.player_api_id",
+    "description": "Each dated attribute measurement belongs to one player and is meaningless without that player.",
+    "evidence": [
+      "ev_player_player_fk"
+    ]
+  },
+  {
+    "id": "rel_team_composes_snapshot",
+    "source": "term_team",
+    "relation_type": "composition",
+    "target": "term_team_attribute_snapshot",
+    "connection_condition": "Team_Attributes.team_api_id references Team.team_api_id",
+    "description": "Each dated tactical measurement belongs to one club and is meaningless without it.",
+    "evidence": [
+      "ev_team_attr_coverage"
+    ]
+  },
+  {
+    "id": "rel_style_metric_derives_class",
+    "source": "term_team_style_metric",
+    "relation_type": "derivation",
+    "target": "term_team_style_class",
+    "connection_condition": "each class column bands the numeric metric of the same name on the same row",
+    "description": "The categorical style class is a discretisation of its numeric counterpart: the observed bands partition the metric range into contiguous levels.",
+    "evidence": [
+      "ev_team_class_bounds"
+    ]
+  },
+  {
+    "id": "rel_style_metric_composes_profile",
+    "source": "term_team_style_metric",
+    "relation_type": "composition",
+    "target": "term_team_playing_style_profile",
+    "connection_condition": "the nine numeric columns on one snapshot row jointly constitute that row's profile",
+    "description": "A team's playing-style profile is composed of its individual tactical facet scores, taken together as one dated description.",
+    "evidence": [
+      "ev_team_class_bounds"
+    ]
+  },
+  {
+    "id": "rel_bookmaker_associates_odds",
+    "source": "term_bookmaker",
+    "relation_type": "association",
+    "target": "term_betting_odds",
+    "connection_condition": "the operator is identified only by the column-name prefix of its three price columns",
+    "description": "Each price belongs to exactly one operator, and comparing prices across operators is only meaningful once the operator is identified.",
+    "evidence": [
+      "ev_odds_coverage"
+    ]
+  },
+  {
+    "id": "rel_odds_derives_implied_probability",
+    "source": "term_betting_odds",
+    "relation_type": "derivation",
+    "target": "term_implied_probability",
+    "connection_condition": "the decimal price is inverted to obtain the probability it implies",
+    "description": "Implied probability is computed as the reciprocal of a decimal price; because the three reciprocals of a match exceed one, they are margin-inflated rather than true probabilities.",
+    "evidence": [
+      "ev_odds_overround"
+    ]
+  },
+  {
+    "id": "rel_eventlog_associates_goal",
+    "source": "term_match_event_log",
+    "relation_type": "association",
+    "target": "term_goal",
+    "connection_condition": "goal events inside the log carry a team element but the log is present for only part of the matches",
+    "description": "The event feed describes goals at event level, while the scoreline columns hold the authoritative aggregate; the two representations of the same goals do not always agree.",
+    "evidence": [
+      "ev_goal_xml_vs_scoreline"
+    ]
+  },
+  {
+    "id": "rel_goaltype_associates_goal",
+    "source": "term_goal_type",
+    "relation_type": "association",
+    "target": "term_goal",
+    "connection_condition": "read from the goal_type element of a goal event",
+    "description": "The goal type classifies how an individual goal came about.",
+    "evidence": [
+      "ev_goal_type_values"
+    ]
+  },
+  {
+    "id": "rel_cardtype_associates_eventlog",
+    "source": "term_card_type",
+    "relation_type": "association",
+    "target": "term_match_event_log",
+    "connection_condition": "read from the card_type element of a card event",
+    "description": "The card type classifies the disciplinary sanction recorded in the event feed.",
+    "evidence": [
+      "ev_card_type_values"
+    ]
+  },
+  {
+    "id": "rel_eventlog_associates_possession",
+    "source": "term_match_event_log",
+    "relation_type": "association",
+    "target": "term_possession",
+    "connection_condition": "possession readings are value elements inside the log rather than match columns",
+    "description": "Ball possession is recorded as repeated readings inside the event feed, so a match-level possession figure has to be chosen from those readings.",
+    "evidence": [
+      "ev_possession_sums_100"
+    ]
+  },
+  {
+    "id": "rel_team_api_equiv_fifa",
+    "source": "term_team_api_identifier",
+    "relation_type": "equivalence",
+    "target": "term_team_fifa_identifier",
+    "connection_condition": "Team.team_api_id and Team.team_fifa_api_id are two columns on the same club row, and Team_Attributes carries both",
+    "description": "The two team identifiers denote the same club under different numbering schemes; either can be used to reach the club, but only the API identifier is complete.",
+    "evidence": [
+      "ev_team_fifa_nulls"
+    ]
+  },
+  {
+    "id": "rel_player_api_equiv_fifa",
+    "source": "term_player_api_identifier",
+    "relation_type": "equivalence",
+    "target": "term_player_fifa_identifier",
+    "connection_condition": "Player.player_api_id and Player.player_fifa_api_id are two columns on the same player row, and Player_Attributes carries both",
+    "description": "The two player identifiers denote the same footballer under different numbering schemes; both are complete on the player table, but the snapshot table references two more FIFA identifiers than the player table holds.",
+    "evidence": [
+      "ev_player_player_fk"
+    ]
+  },
+  {
+    "id": "rel_player_associates_workrate",
+    "source": "term_player",
+    "relation_type": "association",
+    "target": "term_work_rate",
+    "connection_condition": "the work rate columns are read per snapshot row",
+    "description": "Work rate is an attribute observed about a player at a snapshot date, not a property of the player entity itself.",
+    "evidence": [
+      "ev_work_rate_values"
+    ]
+  },
+  {
+    "id": "rel_player_associates_foot",
+    "source": "term_player",
+    "relation_type": "association",
+    "target": "term_preferred_foot",
+    "connection_condition": "the preferred foot column is read per snapshot row",
+    "description": "Preferred foot is an attribute recorded about a player at a snapshot date and is expected to be stable but is stored repeatedly.",
+    "evidence": [
+      "ev_preferred_foot_values"
+    ]
+  },
+  {
+    "id": "rel_team_associates_style_profile",
+    "source": "term_team",
+    "relation_type": "association",
+    "target": "term_team_playing_style_profile",
+    "connection_condition": "Team_Attributes.team_api_id links a profile to its club, available for only six dates",
+    "description": "A club has a playing style, but the database records it only on a handful of measurement dates, so the style of a club in an arbitrary season is often unobserved.",
+    "evidence": [
+      "ev_team_attr_coverage"
+    ]
+  }
+]

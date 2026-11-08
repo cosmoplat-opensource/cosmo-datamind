@@ -1,0 +1,472 @@
+[
+  {
+    "id": "term_school",
+    "name": "School",
+    "type": "entity",
+    "definition": "A California public school-level educational unit recorded in the California School Directory, uniquely identified by a 14-character County-District-School code.",
+    "scope": "School-level analysis of California public schools (K-12 and related public school settings). Excludes rows whose school segment is 0000000, which describe a district rather than a school.",
+    "aliases": [
+      "school",
+      "public school",
+      "California public school",
+      "school site"
+    ],
+    "evidence": [
+      "evidence_01",
+      "evidence_05",
+      "evidence_07"
+    ]
+  },
+  {
+    "id": "term_school_district",
+    "name": "School District",
+    "type": "entity",
+    "definition": "A California local educational agency that operates one or more schools. Its identity is the seven-character county-plus-district prefix of the CDS code, not its display name.",
+    "scope": "District-level grouping of schools and district-level SAT records. District names repeat across counties, so the seven-character prefix is the reliable identity.",
+    "aliases": [
+      "district",
+      "school district",
+      "LEA",
+      "local educational agency"
+    ],
+    "evidence": [
+      "evidence_08",
+      "evidence_09"
+    ]
+  },
+  {
+    "id": "term_county",
+    "name": "County",
+    "type": "entity",
+    "definition": "A California county, used as the top-level geographic grouping of schools and districts. Identified by the first two characters of the CDS code.",
+    "scope": "Geographic comparison across the 58 California counties represented in the data.",
+    "aliases": [
+      "county",
+      "county name"
+    ],
+    "evidence": [
+      "evidence_08",
+      "evidence_17"
+    ]
+  },
+  {
+    "id": "term_cds_code",
+    "name": "CDS Code",
+    "type": "concept",
+    "definition": "The 14-character County-District-School identifier: two characters of county code, five characters of district code and seven characters of school code. It is the shared key across the school directory and the FRPM file.",
+    "scope": "Identifier used to link schools and FRPM records. Both tables store it as a fixed 14-character string with the leading zero of county codes 01 to 09 preserved.",
+    "aliases": [
+      "CDSCode",
+      "CDS",
+      "county district school code",
+      "school identifier"
+    ],
+    "evidence": [
+      "evidence_05",
+      "evidence_08"
+    ]
+  },
+  {
+    "id": "term_cds_code_satscores",
+    "name": "SAT File CDS Identifier",
+    "type": "concept",
+    "definition": "The CDS identifier as stored in the SAT file, which drops the leading zero of county codes 01 to 09 and is therefore 13 characters for those 211 records and 14 characters elsewhere.",
+    "scope": "Identifier used to link SAT records to the school directory and the FRPM file. Requires normalisation before comparison with the 14-character CDS code.",
+    "aliases": [
+      "cds",
+      "satscores cds",
+      "compact CDS code",
+      "SAT file school code"
+    ],
+    "evidence": [
+      "evidence_05",
+      "evidence_06"
+    ]
+  },
+  {
+    "id": "term_frpm_eligibility",
+    "name": "Free or Reduced-Price Meal Eligibility",
+    "type": "concept",
+    "definition": "Student eligibility for the federally funded free or reduced-price meal programme, used as the standard proxy for economic disadvantage in California school reporting.",
+    "scope": "School and district level socio-economic context in the 2014-2015 FRPM file. Measured at two population scopes, K-12 and Ages 5-17.",
+    "aliases": [
+      "FRPM",
+      "FRPM eligibility",
+      "free or reduced-price meal eligible",
+      "economically disadvantaged proxy",
+      "poverty proxy"
+    ],
+    "evidence": [
+      "evidence_03",
+      "evidence_04",
+      "evidence_15"
+    ]
+  },
+  {
+    "id": "term_frpm_eligible_count",
+    "name": "FRPM Eligible Student Count",
+    "type": "metric",
+    "definition": "Number of students eligible for free or reduced-price meals in a school, covering both free-meal-eligible and reduced-price-meal-eligible students.",
+    "scope": "Counts within the K-12 or Ages 5-17 population scope of the FRPM file; the two scopes must not be mixed.",
+    "aliases": [
+      "FRPM Count",
+      "FRPM count",
+      "eligible FRPM students"
+    ],
+    "evidence": [
+      "evidence_04",
+      "evidence_15"
+    ]
+  },
+  {
+    "id": "term_free_meal_eligible_count",
+    "name": "Free Meal Eligible Student Count",
+    "type": "metric",
+    "definition": "Number of students eligible only for free meals, a subset of the broader free or reduced-price meal eligible population.",
+    "scope": "Counts within the K-12 or Ages 5-17 population scope of the FRPM file.",
+    "aliases": [
+      "Free Meal Count",
+      "free meal count",
+      "free eligible students"
+    ],
+    "evidence": [
+      "evidence_15",
+      "evidence_04"
+    ]
+  },
+  {
+    "id": "term_enrollment",
+    "name": "Student Enrollment",
+    "type": "metric",
+    "definition": "Number of students enrolled in a school, reported in the FRPM file at two alternative population scopes, K-12 and Ages 5-17.",
+    "scope": "School-level enrollment in the 2014-2015 FRPM file. This is not the twelfth-grade enrollment held in the SAT file.",
+    "aliases": [
+      "enrollment",
+      "Enrollment (K-12)",
+      "Enrollment (Ages 5-17)",
+      "student count"
+    ],
+    "evidence": [
+      "evidence_24",
+      "evidence_04",
+      "evidence_14"
+    ]
+  },
+  {
+    "id": "term_frpm_eligibility_rate",
+    "name": "FRPM Eligibility Rate",
+    "type": "metric",
+    "definition": "Share of enrolled students eligible for free or reduced-price meals, equal to the FRPM eligible student count divided by enrollment.",
+    "scope": "School-level rate in the FRPM file; the two population scopes K-12 and Ages 5-17 produce two different rate columns.",
+    "aliases": [
+      "Percent (%) Eligible FRPM (K-12)",
+      "FRPM rate",
+      "FRPM percentage",
+      "share eligible for FRPM",
+      "poverty rate"
+    ],
+    "evidence": [
+      "evidence_03",
+      "evidence_04",
+      "evidence_22"
+    ]
+  },
+  {
+    "id": "term_free_meal_eligibility_rate",
+    "name": "Free Meal Eligibility Rate",
+    "type": "metric",
+    "definition": "Share of enrolled students eligible for free meals only, equal to the free meal eligible student count divided by enrollment. It is a narrower measure than the FRPM eligibility rate.",
+    "scope": "School-level rate in the FRPM file; the two population scopes K-12 and Ages 5-17 produce two different rate columns.",
+    "aliases": [
+      "Percent (%) Eligible Free (K-12)",
+      "free meal rate",
+      "free meal percentage",
+      "share eligible for free meals"
+    ],
+    "evidence": [
+      "evidence_03",
+      "evidence_04",
+      "evidence_15"
+    ]
+  },
+  {
+    "id": "term_sat_participation_count",
+    "name": "SAT Test Taker Count",
+    "type": "metric",
+    "definition": "Number of students who took the SAT at a school or within a district in the reporting year.",
+    "scope": "SAT file records only. A value of zero means the school or district reported no test takers.",
+    "aliases": [
+      "NumTstTakr",
+      "number of test takers",
+      "SAT takers",
+      "test takers"
+    ],
+    "evidence": [
+      "evidence_10",
+      "evidence_13"
+    ]
+  },
+  {
+    "id": "term_twelfth_grade_enrollment",
+    "name": "Twelfth-Grade Enrollment",
+    "type": "metric",
+    "definition": "Number of twelfth-grade students enrolled, used as the denominator population for SAT participation at a school or district.",
+    "scope": "SAT file records only. It is a single-grade enrollment and is much smaller than the K-12 enrollment in the FRPM file for the same school.",
+    "aliases": [
+      "enroll12",
+      "grade 12 enrollment",
+      "twelfth grade enrollment",
+      "senior enrollment"
+    ],
+    "evidence": [
+      "evidence_14"
+    ]
+  },
+  {
+    "id": "term_sat_participation_rate",
+    "name": "SAT Participation Rate",
+    "type": "metric",
+    "definition": "Share of the twelfth-grade enrollment that took the SAT, equal to the SAT test taker count divided by twelfth-grade enrollment.",
+    "scope": "Available only for records present in the SAT file, which covers schools that reported SAT results and its district roll-ups.",
+    "aliases": [
+      "SAT participation rate",
+      "participation rate",
+      "share taking the SAT",
+      "test taking rate"
+    ],
+    "evidence": [
+      "evidence_14",
+      "evidence_10"
+    ]
+  },
+  {
+    "id": "term_sat_section_average_score",
+    "name": "SAT Section Average Score",
+    "type": "metric",
+    "definition": "Mean SAT score of a school's or district's test takers on one of the three reported sections: critical reading, mathematics and writing.",
+    "scope": "Reported on the pre-2016 SAT scale of 200 to 800 per section. Suppressed when the test taker count is at or below the reporting threshold.",
+    "aliases": [
+      "AvgScrRead",
+      "AvgScrMath",
+      "AvgScrWrite",
+      "average SAT score",
+      "mean SAT score",
+      "SAT score"
+    ],
+    "evidence": [
+      "evidence_12",
+      "evidence_10",
+      "evidence_11"
+    ]
+  },
+  {
+    "id": "term_college_ready_count",
+    "name": "SAT Takers Scoring 1500 Or Above",
+    "type": "metric",
+    "definition": "Number of SAT test takers whose combined score across the three sections reached 1500 or above.",
+    "scope": "SAT file records only. The threshold applies to the total of the three sections, not to a single section. Suppressed when the test taker count is at or below the reporting threshold.",
+    "aliases": [
+      "NumGE1500",
+      "takers above 1500",
+      "high scoring takers",
+      "1500 threshold count"
+    ],
+    "evidence": [
+      "evidence_11",
+      "evidence_12",
+      "evidence_10"
+    ]
+  },
+  {
+    "id": "term_college_ready_rate",
+    "name": "High-Scoring SAT Taker Rate",
+    "type": "metric",
+    "definition": "Share of a school's or district's SAT test takers who scored 1500 or above, equal to the count of takers at or above 1500 divided by the total test taker count.",
+    "scope": "SAT file records only, and only where the test taker count exceeds the suppression threshold.",
+    "aliases": [
+      "high score rate",
+      "share scoring 1500",
+      "college readiness rate",
+      "top score ratio"
+    ],
+    "evidence": [
+      "evidence_11",
+      "evidence_12"
+    ]
+  },
+  {
+    "id": "term_sat_record_type",
+    "name": "SAT Record Type",
+    "type": "dimension",
+    "definition": "Grain indicator distinguishing a district roll-up record from a school-level record within the SAT file.",
+    "scope": "Used to restrict SAT analysis to school level or to district level; the two grains must not be pooled.",
+    "aliases": [
+      "rtype",
+      "record type",
+      "district record",
+      "school record"
+    ],
+    "evidence": [
+      "evidence_13",
+      "evidence_07"
+    ]
+  },
+  {
+    "id": "term_school_type",
+    "name": "School Type",
+    "type": "dimension",
+    "definition": "Categorical description of a school's instructional level and programme setting, as recorded in the FRPM file.",
+    "scope": "FRPM file coverage. Blank for the 45 FRPM rows that describe a district rather than a school.",
+    "aliases": [
+      "School Type",
+      "school category",
+      "school level"
+    ],
+    "evidence": [
+      "evidence_16",
+      "evidence_07"
+    ]
+  },
+  {
+    "id": "term_school_type_soc",
+    "name": "School Ownership Category",
+    "type": "dimension",
+    "definition": "School category recorded in the California School Directory in the SOC code and its descriptive label, covering the same vocabulary as the FRPM school type with additional categories.",
+    "scope": "School directory coverage across all 17686 directory rows; blank for district-level rows.",
+    "aliases": [
+      "SOCType",
+      "SOC",
+      "school ownership category",
+      "school category"
+    ],
+    "evidence": [
+      "evidence_16",
+      "evidence_07"
+    ]
+  },
+  {
+    "id": "term_district_type",
+    "name": "District Type",
+    "type": "dimension",
+    "definition": "Categorical description of the administrative type of the district that operates a school, as recorded in the FRPM file.",
+    "scope": "FRPM file coverage, restricted to districts that reported FRPM counts.",
+    "aliases": [
+      "District Type",
+      "district category"
+    ],
+    "evidence": [
+      "evidence_16"
+    ]
+  },
+  {
+    "id": "term_district_type_doc",
+    "name": "District Ownership Category",
+    "type": "dimension",
+    "definition": "District category recorded in the California School Directory in the DOC code and its descriptive label, covering the same vocabulary as the FRPM district type with additional categories.",
+    "scope": "School directory coverage across all 17686 directory rows.",
+    "aliases": [
+      "DOCType",
+      "DOC",
+      "district ownership category",
+      "district category"
+    ],
+    "evidence": [
+      "evidence_16"
+    ]
+  },
+  {
+    "id": "term_grade_span",
+    "name": "Grade Span",
+    "type": "dimension",
+    "definition": "Range of grade levels served by a school, expressed in the FRPM file as a low grade and a high grade pair.",
+    "scope": "FRPM file coverage; blank for the 45 district-level FRPM rows.",
+    "aliases": [
+      "Low Grade",
+      "High Grade",
+      "grade range",
+      "grades served"
+    ],
+    "evidence": [
+      "evidence_19"
+    ]
+  },
+  {
+    "id": "term_grade_span_served",
+    "name": "Grade Span Served",
+    "type": "dimension",
+    "definition": "Range of grade levels served by a school as a single hyphenated string in the California School Directory, with a companion field for grades offered.",
+    "scope": "School directory coverage; blank for district-level rows and for schools with no reported grade span.",
+    "aliases": [
+      "GSserved",
+      "GSoffered",
+      "grades served",
+      "grade range"
+    ],
+    "evidence": [
+      "evidence_19"
+    ]
+  },
+  {
+    "id": "term_charter_status",
+    "name": "Charter Status",
+    "type": "dimension",
+    "definition": "Indicator of whether a school operates as a charter school, as recorded in the FRPM file.",
+    "scope": "FRPM file coverage. A blank value marks the 45 district-level rows rather than a non-charter school.",
+    "aliases": [
+      "Charter School (Y/N)",
+      "charter",
+      "charter school flag"
+    ],
+    "evidence": [
+      "evidence_18"
+    ]
+  },
+  {
+    "id": "term_charter_status_dir",
+    "name": "Directory Charter Status",
+    "type": "dimension",
+    "definition": "Indicator of whether a school operates as a charter school, as recorded in the California School Directory on the corresponding charter column.",
+    "scope": "School directory coverage. A blank value marks district-level rows and schools of other non-charter entity types.",
+    "aliases": [
+      "Charter",
+      "directory charter flag",
+      "charter indicator"
+    ],
+    "evidence": [
+      "evidence_18"
+    ]
+  },
+  {
+    "id": "term_school_operational_status",
+    "name": "School Operational Status",
+    "type": "dimension",
+    "definition": "Lifecycle state of a school record in the California School Directory: Active, Closed, Merged or Pending, with open and closed dates recorded where applicable.",
+    "scope": "School directory coverage. The FRPM and SAT files are not restricted to Active schools, so status must be applied explicitly when a current-school population is intended.",
+    "aliases": [
+      "StatusType",
+      "status",
+      "active school",
+      "closed school",
+      "merged school"
+    ],
+    "evidence": [
+      "evidence_20"
+    ]
+  },
+  {
+    "id": "term_academic_year",
+    "name": "Academic Year",
+    "type": "dimension",
+    "definition": "Reporting year of the FRPM counts. In this data environment the FRPM file contains a single academic year.",
+    "scope": "FRPM file only; the school directory is a point-in-time snapshot and the SAT file carries no explicit year column.",
+    "aliases": [
+      "Academic Year",
+      "year",
+      "reporting year",
+      "school year"
+    ],
+    "evidence": [
+      "evidence_02"
+    ]
+  }
+]

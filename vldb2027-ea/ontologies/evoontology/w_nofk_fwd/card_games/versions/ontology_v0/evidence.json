@@ -1,0 +1,226 @@
+[
+  {
+    "id": "ev_table_inventory",
+    "source": "card_games (read-only)",
+    "query": "SELECT name FROM sqlite_master WHERE type='table' ORDER BY name",
+    "result": "Six tables exist: cards, foreign_data, legalities, rulings, set_translations, sets. Row counts: cards 56822, foreign_data 229186, legalities 427907, sets 551, set_translations 1210, rulings 87769.",
+    "validation_method": "read-only schema and row-count inspection",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_uuid_join_children",
+    "source": "card_games (read-only)",
+    "query": "SELECT (SELECT COUNT(*) FROM foreign_data f JOIN cards c ON f.uuid=c.uuid), (SELECT COUNT(*) FROM legalities l JOIN cards c ON l.uuid=c.uuid), (SELECT COUNT(*) FROM rulings r JOIN cards c ON r.uuid=c.uuid); SELECT COUNT(*), COUNT(DISTINCT uuid) FROM cards;",
+    "result": "foreign_data joins to cards on uuid for 229170 of 229186 rows; legalities for 427835 of 427907; rulings for 87769 of 87769. cards.uuid is unique: 56822 rows, 56822 distinct values.",
+    "validation_method": "referential join verification",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_set_code_join",
+    "source": "card_games (read-only)",
+    "query": "SELECT COUNT(*) FROM cards c JOIN sets s ON c.setCode=s.code; SELECT COUNT(*), COUNT(DISTINCT code) FROM sets; SELECT COUNT(*) FROM set_translations st LEFT JOIN sets s ON st.setCode=s.code WHERE s.code IS NULL;",
+    "result": "All 56822 card printings join to a set through setCode = sets.code; sets.code is unique across 551 sets; no set translation references an unknown set code.",
+    "validation_method": "referential join verification",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_printing_grain",
+    "source": "card_games (read-only)",
+    "query": "SELECT name, setCode FROM cards WHERE name='Ancestor''s Chosen' GROUP BY setCode; SELECT setCode FROM cards WHERE name='Angel of Mercy' GROUP BY setCode;",
+    "result": "'Ancestor's Chosen' is printed in 3 sets (10E, JUD, UMA). 'Angel of Mercy' is printed in 14 sets (10E, 8ED, 9ED, DDC, DVD, IMA, INV, JMP, MB1, P02, PS11, PSAL, S99 and others).",
+    "validation_method": "grouped distinct-value inspection",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_angel_of_mercy_sets",
+    "source": "card_games (read-only)",
+    "query": "SELECT setCode FROM cards WHERE name='Angel of Mercy' GROUP BY setCode",
+    "result": "14 distinct sets contain a printing named 'Angel of Mercy', confirming that a card name does not determine a single set.",
+    "validation_method": "grouped distinct-value inspection",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_legality_status_values",
+    "source": "card_games (read-only)",
+    "query": "SELECT status, COUNT(*) FROM legalities GROUP BY status",
+    "result": "Three stored values only: 'Legal' 424958, 'Banned' 2313, 'Restricted' 636. Lowercase spellings are not stored.",
+    "validation_method": "grouped distinct-value inspection",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_play_format_values",
+    "source": "card_games (read-only)",
+    "query": "SELECT format, COUNT(*) FROM legalities GROUP BY format ORDER BY format",
+    "result": "15 lowercase format tokens: brawl 7698, commander 55576, duel 55544, future 7698, gladiator 16568, historic 16568, legacy 55576, modern 40774, oldschool 4621, pauper 22784, penny 38159, pioneer 22346, premodern 20721, standard 7698, vintage 55576.",
+    "validation_method": "grouped distinct-value inspection",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_foreign_language_values",
+    "source": "card_games (read-only)",
+    "query": "SELECT language, COUNT(*) FROM foreign_data GROUP BY language ORDER BY COUNT(*) DESC; SELECT COUNT(*) FROM foreign_data WHERE language LIKE '%Brasil%';",
+    "result": "16 distinct labels: Japanese 31226, French 29301, German 28891, Italian 28698, Spanish 28639, Portuguese (Brazil) 25641, Chinese Simplified 20106, Russian 15878, Chinese Traditional 11106, Korean 9692, plus 6 rare languages with 1 to 3 rows. 0 rows match the spelled-out spelling 'Brasil'. English is absent as a language value.",
+    "validation_method": "grouped distinct-value inspection",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_set_translation_languages",
+    "source": "card_games (read-only)",
+    "query": "SELECT language, COUNT(*) FROM set_translations GROUP BY language; SELECT COUNT(DISTINCT setCode) FROM set_translations;",
+    "result": "Exactly 10 languages appear, each covering the same 121 sets: Chinese Simplified, Chinese Traditional, French, German, Italian, Japanese, Korean, Portuguese (Brazil), Russian, Spanish. 1210 translation rows total.",
+    "validation_method": "grouped distinct-value inspection",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_set_translation_coverage",
+    "source": "card_games (read-only)",
+    "query": "SELECT * FROM set_translations WHERE setCode='ARC'",
+    "result": "Set ARC (Archenemy) carries set translations in all 10 languages, including Korean; the translated name is 'Archenemy' in each of them. This shows set-name translation coverage is independent of whether the set's cards were localized.",
+    "validation_method": "keyed lookup",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_foreign_language_coverage",
+    "source": "card_games (read-only)",
+    "query": "SELECT COUNT(*) FROM foreign_data f JOIN cards c ON f.uuid=c.uuid WHERE c.setCode='ARC'; SELECT f.language, COUNT(*) FROM foreign_data f JOIN cards c ON f.uuid=c.uuid WHERE c.setCode='CSP' GROUP BY f.language;",
+    "result": "Set ARC has 151 card printings but 0 foreign-language records. Set CSP (Coldsnap) has 155 foreign-language records for each of 8 languages (Chinese Simplified, French, German, Italian, Japanese, Portuguese (Brazil), Russian, Spanish) and no Korean records.",
+    "validation_method": "set-scoped join count",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_ancestors_chosen_languages",
+    "source": "card_games (read-only)",
+    "query": "SELECT c.setCode, f.language FROM foreign_data f JOIN cards c ON f.uuid=c.uuid WHERE c.name='Ancestor''s Chosen' GROUP BY c.setCode, f.language ORDER BY c.setCode; SELECT COUNT(DISTINCT c.id) FROM cards c JOIN foreign_data f ON c.uuid=f.uuid WHERE c.setCode='10E';",
+    "result": "Printings of 'Ancestor's Chosen': the 10E printing has 8 foreign languages (Chinese Simplified, French, German, Italian, Japanese, Portuguese (Brazil), Russian, Spanish) and no Korean record; JUD has 6 languages; UMA has only Japanese. The 10E set overall has 363 foreign-language records per language.",
+    "validation_method": "keyed lookup and per-language count",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_set_name_variants",
+    "source": "card_games (read-only)",
+    "query": "SELECT code,name,block,mcmName,mtgoCode FROM sets WHERE name LIKE '%Coldsnap%'; SELECT code,name,mcmName FROM sets WHERE mcmName LIKE '%Archenemy%' OR name LIKE '%Archenemy%';",
+    "result": "Coldsnap matches three sets: CSP 'Coldsnap', CST 'Coldsnap Theme Decks', PCSP 'Coldsnap Promos', all in block Ice Age. Archenemy matches ARC 'Archenemy' (mcmName 'Archenemy'), E01 'Archenemy: Nicol Bolas', and the schemes sets OARC and OE01.",
+    "validation_method": "pattern-search inspection",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_rarity_values",
+    "source": "card_games (read-only)",
+    "query": "SELECT rarity, COUNT(*) FROM cards GROUP BY rarity ORDER BY COUNT(*) DESC",
+    "result": "Four lowercase values: common 20745, rare 17626, uncommon 15251, mythic 3200.",
+    "validation_method": "grouped distinct-value inspection",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_border_color_values",
+    "source": "card_games (read-only)",
+    "query": "SELECT borderColor, COUNT(*) FROM cards GROUP BY borderColor ORDER BY COUNT(*) DESC",
+    "result": "Five lowercase values: black 49729, white 5017, gold 1244, silver 591, borderless 241.",
+    "validation_method": "grouped distinct-value inspection",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_power_values",
+    "source": "card_games (read-only)",
+    "query": "SELECT power, COUNT(*) FROM cards WHERE power IS NULL OR power='*' GROUP BY power",
+    "result": "30624 rows have NULL power (non-creature cards) and 429 rows have the variable value '*'.",
+    "validation_method": "grouped distinct-value inspection",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_content_warning_values",
+    "source": "card_games (read-only)",
+    "query": "SELECT hasContentWarning, COUNT(*) FROM cards GROUP BY hasContentWarning",
+    "result": "0 -> 56793 rows, 1 -> 29 rows. The flag is an integer with default 0.",
+    "validation_method": "grouped distinct-value inspection",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_story_spotlight_values",
+    "source": "card_games (read-only)",
+    "query": "SELECT isStorySpotlight, COUNT(*) FROM cards GROUP BY isStorySpotlight",
+    "result": "0 -> 56718 rows, 1 -> 104 rows.",
+    "validation_method": "grouped distinct-value inspection",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_edhrec_rank_range",
+    "source": "card_games (read-only)",
+    "query": "SELECT MIN(edhrecRank), MAX(edhrecRank), SUM(edhrecRank IS NULL) FROM cards; SELECT COUNT(*) FROM cards WHERE edhrecRank=1;",
+    "result": "Rank range 1 to 20900; 4761 rows have no rank (NULL). 33 card printings hold rank 1.",
+    "validation_method": "aggregate and filtered count",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_mtgo_code_presence",
+    "source": "card_games (read-only)",
+    "query": "SELECT COUNT(*), SUM(mtgoCode IS NOT NULL AND mtgoCode<>'') FROM sets; SELECT code,name,mtgoCode FROM sets LIMIT 3;",
+    "result": "160 of 551 sets carry a non-empty mtgoCode. 10E has mtgoCode '10E'; 2ED 'Unlimited Edition' has none.",
+    "validation_method": "aggregate and sample inspection",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_artist_name_storage",
+    "source": "card_games (read-only)",
+    "query": "SELECT artist, COUNT(*) FROM cards WHERE artist LIKE 'Stephen Dan%' GROUP BY artist; SELECT COUNT(*) FROM cards WHERE artist='Adam Rex';",
+    "result": "The only stored spelling is 'Stephen Daniele' with 74 card printings; no row matches 'Stephen Daniel'. 'Adam Rex' matches 256 card printings.",
+    "validation_method": "pattern-search and count",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_converted_mana_cost_values",
+    "source": "card_games (read-only)",
+    "query": "SELECT name, convertedManaCost, manaCost, setCode FROM cards WHERE name IN ('Serra Angel','Shrine Keeper') LIMIT 6",
+    "result": "convertedManaCost is a numeric REAL value (Serra Angel 5.0 across its printings) stored alongside the symbolic manaCost string.",
+    "validation_method": "value inspection",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_original_type_and_subtypes",
+    "source": "card_games (read-only)",
+    "query": "SELECT originalType, types, subtypes FROM cards WHERE originalType='Summon - Angel' LIMIT 3; SELECT originalType, COUNT(*) FROM cards WHERE originalType LIKE 'Summon%' GROUP BY originalType ORDER BY COUNT(*) DESC LIMIT 5;",
+    "result": "Rows with originalType 'Summon - Angel' have types 'Creature' and subtypes 'Angel'. Other summon-style original types include 'Summon - Legend' 116, 'Summon - Wall' 104, 'Summon - Creature' 103, 'Summon - Cleric' 57.",
+    "validation_method": "value inspection",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_block_commander",
+    "source": "card_games (read-only)",
+    "query": "SELECT COUNT(*) FROM sets WHERE block='Commander'; SELECT COUNT(DISTINCT s.code) FROM sets s JOIN set_translations st ON s.code=st.setCode WHERE s.block='Commander' AND st.language='Portuguese (Brazil)';",
+    "result": "23 sets carry block 'Commander' (for example C13 through C20, CM1, CM2, CMA, CMD). 7 of them have a Brazilian Portuguese set translation.",
+    "validation_method": "filtered count",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_set_translation_lookup",
+    "source": "card_games (read-only)",
+    "query": "SELECT * FROM set_translations WHERE setCode='CSP' AND language='Italian'; SELECT * FROM set_translations WHERE translation LIKE '%Hauptset Zehnte%';",
+    "result": "CSP Italian translation is 'Ondata Glaciale'. 'Hauptset Zehnte Edition' is the German translation of set code 10E.",
+    "validation_method": "keyed lookup",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_foreign_text_sample",
+    "source": "card_games (read-only)",
+    "query": "SELECT f.language, f.name, f.text, f.flavorText FROM foreign_data f WHERE f.language='Italian' AND f.name LIKE 'Prescelto%' LIMIT 1",
+    "result": "The Italian record for 'Ancestor's Chosen' has name 'Prescelto dell'Antenata', translated rules text including reminder text, and flavorText 'La volontà di tutti, eseguita per mano mia.'.",
+    "validation_method": "row inspection",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_rulings_link",
+    "source": "card_games (read-only)",
+    "query": "SELECT * FROM rulings LIMIT 3; SELECT COUNT(DISTINCT c.id) FROM cards c JOIN rulings r ON c.uuid=r.uuid WHERE c.artist='Stephen Daniele';",
+    "result": "Rulings carry a date and a text and reference a card by uuid. 21 distinct card printings by 'Stephen Daniele' have at least one ruling.",
+    "validation_method": "row inspection and join count",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_share_percentage_examples",
+    "source": "card_games (read-only)",
+    "query": "SELECT COUNT(*) FROM cards c JOIN legalities l ON c.uuid=l.uuid WHERE l.format='gladiator' AND l.status='Banned' AND c.rarity='mythic'; SELECT COUNT(*) FROM cards WHERE edhrecRank=1;",
+    "result": "No percentage column exists anywhere in the schema; the sampled counts (5 printings that are mythic, gladiator and banned; 33 printings at EDHRec rank 1) can only be turned into percentages by dividing two counts over a stated population.",
+    "validation_method": "schema inspection plus representative counts",
+    "timestamp": "2026-10-10"
+  }
+]

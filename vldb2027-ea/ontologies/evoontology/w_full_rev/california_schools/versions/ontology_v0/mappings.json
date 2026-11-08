@@ -1,0 +1,450 @@
+[
+  {
+    "aggregation_semantics": "one row per school",
+    "column": "CDSCode",
+    "database_source": "california_schools",
+    "grain": "one record per school",
+    "id": "mapping_school_cds",
+    "semantic_filter": "school-level records only, i.e. the 7-digit school segment of the CDS code is not '0000000'",
+    "table": "schools",
+    "term_id": "term_school",
+    "validation": "verified by e_cds_composite_key and e_schools_district_level_rows"
+  },
+  {
+    "column": "School",
+    "database_source": "california_schools",
+    "grain": "one label per school",
+    "id": "mapping_school_name_schools",
+    "semantic_filter": "non-null school name; null marks district-level rows",
+    "table": "schools",
+    "term_id": "term_school",
+    "validation": "verified by e_schools_district_level_rows"
+  },
+  {
+    "column": "School Name",
+    "database_source": "california_schools",
+    "grain": "one label per meal-program school row",
+    "id": "mapping_school_name_frpm",
+    "semantic_filter": "excludes the 45 rows labelled 'District Office' that describe a district rather than a school",
+    "table": "frpm",
+    "term_id": "term_school",
+    "validation": "verified by e_schools_district_level_rows"
+  },
+  {
+    "column": "sname",
+    "database_source": "california_schools",
+    "grain": "one label per school-level SAT row",
+    "id": "mapping_school_name_satscores",
+    "semantic_filter": "only populated on school-level rows where rtype = 'S'",
+    "table": "satscores",
+    "term_id": "term_school",
+    "validation": "verified by e_sat_rtype_semantics"
+  },
+  {
+    "aggregation_semantics": "one label per school record; the district label is repeated for each of its schools",
+    "column": "District",
+    "database_source": "california_schools",
+    "grain": "district label attached to each school record",
+    "id": "mapping_district_schools",
+    "table": "schools",
+    "term_id": "term_school_district",
+    "validation": "verified by e_county_and_name_consistency"
+  },
+  {
+    "column": "District Name",
+    "database_source": "california_schools",
+    "grain": "district label attached to each meal-program row",
+    "id": "mapping_district_frpm",
+    "table": "frpm",
+    "term_id": "term_school_district",
+    "validation": "verified by e_county_and_name_consistency"
+  },
+  {
+    "column": "dname",
+    "database_source": "california_schools",
+    "grain": "district label attached to each SAT row",
+    "id": "mapping_district_satscores",
+    "table": "satscores",
+    "term_id": "term_school_district",
+    "validation": "verified by e_sat_rtype_semantics"
+  },
+  {
+    "aggregation_semantics": "group by county to partition schools geographically",
+    "column": "County",
+    "database_source": "california_schools",
+    "grain": "county label attached to each school record",
+    "id": "mapping_county_schools",
+    "table": "schools",
+    "term_id": "term_county",
+    "validation": "verified by e_county_and_name_consistency"
+  },
+  {
+    "column": "County Name",
+    "database_source": "california_schools",
+    "grain": "county label attached to each meal-program row",
+    "id": "mapping_county_frpm",
+    "table": "frpm",
+    "term_id": "term_county",
+    "validation": "verified by e_county_and_name_consistency"
+  },
+  {
+    "column": "cname",
+    "database_source": "california_schools",
+    "grain": "county label attached to each SAT row",
+    "id": "mapping_county_satscores",
+    "table": "satscores",
+    "term_id": "term_county",
+    "validation": "verified by e_county_and_name_consistency"
+  },
+  {
+    "column": "CDSCode",
+    "database_source": "california_schools",
+    "grain": "one code per school or district record",
+    "id": "mapping_cds_schools",
+    "semantic_filter": "always stored as 14 characters including any leading zero",
+    "table": "schools",
+    "term_id": "term_cds_code",
+    "validation": "verified by e_cds_composite_key"
+  },
+  {
+    "column": "CDSCode",
+    "database_source": "california_schools",
+    "grain": "one code per meal-program row",
+    "id": "mapping_cds_frpm",
+    "semantic_filter": "always stored as 14 characters including any leading zero",
+    "table": "frpm",
+    "term_id": "term_cds_code",
+    "validation": "verified by e_join_coverage"
+  },
+  {
+    "column": "cds",
+    "database_source": "california_schools",
+    "grain": "one code per SAT row",
+    "id": "mapping_cds_satscores",
+    "semantic_filter": "211 of 2269 values are stored with the leading zero stripped, so the code must be zero-padded or compared numerically before joining to schools.CDSCode",
+    "table": "satscores",
+    "term_id": "term_cds_code",
+    "validation": "verified by e_satscores_cds_leading_zero"
+  },
+  {
+    "column": "Charter",
+    "database_source": "california_schools",
+    "grain": "one status per school record",
+    "id": "mapping_charter_schools",
+    "semantic_filter": "0 = non-charter school, 1 = charter school; blank for district-level records",
+    "table": "schools",
+    "term_id": "term_charter_status",
+    "validation": "verified by e_charter_code_values"
+  },
+  {
+    "column": "Charter School (Y/N)",
+    "database_source": "california_schools",
+    "grain": "one status per meal-program row",
+    "id": "mapping_charter_frpm",
+    "semantic_filter": "0 = non-charter, 1 = charter; agrees with schools.Charter on 9979 of 9986 joined rows",
+    "table": "frpm",
+    "term_id": "term_charter_status",
+    "validation": "verified by e_charter_code_values"
+  },
+  {
+    "column": "Virtual",
+    "database_source": "california_schools",
+    "grain": "one status per school record",
+    "id": "mapping_virtual_schools",
+    "semantic_filter": "'F' = exclusively virtual and therefore no physical building; 'N' = not virtual; 'P' = undocumented third state; blank for district-level records",
+    "table": "schools",
+    "term_id": "term_virtual_status",
+    "validation": "verified by e_virtual_code_values"
+  },
+  {
+    "column": "DOC",
+    "database_source": "california_schools",
+    "grain": "one code per school record, constant within a district",
+    "id": "mapping_doc_schools",
+    "semantic_filter": "stored as two-character text, e.g. '54' for Unified School District",
+    "table": "schools",
+    "term_id": "term_district_ownership_code",
+    "validation": "verified by e_doc_codes"
+  },
+  {
+    "column": "District Type",
+    "database_source": "california_schools",
+    "grain": "one label per meal-program row",
+    "id": "mapping_doc_frpm",
+    "semantic_filter": "descriptive label equivalent to the numeric DOC code",
+    "table": "frpm",
+    "term_id": "term_district_ownership_code",
+    "validation": "verified by e_doc_codes"
+  },
+  {
+    "column": "SOC",
+    "database_source": "california_schools",
+    "grain": "one code per school record",
+    "id": "mapping_soc_schools",
+    "semantic_filter": "stored as two-character text, e.g. '66' for High Schools (Public)",
+    "table": "schools",
+    "term_id": "term_school_ownership_code",
+    "validation": "verified by e_soc_codes"
+  },
+  {
+    "column": "School Type",
+    "database_source": "california_schools",
+    "grain": "one label per meal-program row",
+    "id": "mapping_soc_frpm",
+    "semantic_filter": "descriptive label equivalent to schools.SOCType",
+    "table": "frpm",
+    "term_id": "term_school_ownership_code",
+    "validation": "verified by e_soc_codes"
+  },
+  {
+    "column": "StatusType",
+    "database_source": "california_schools",
+    "grain": "one status per school record",
+    "id": "mapping_status_schools",
+    "semantic_filter": "never null; Active, Closed, Merged or Pending",
+    "table": "schools",
+    "term_id": "term_school_status_type",
+    "validation": "verified by e_status_type_values"
+  },
+  {
+    "column": "OpenDate",
+    "database_source": "california_schools",
+    "grain": "one date per school record",
+    "id": "mapping_opendate_schools",
+    "table": "schools",
+    "term_id": "term_school_open_date",
+    "validation": "verified by e_open_close_date_format"
+  },
+  {
+    "column": "ClosedDate",
+    "database_source": "california_schools",
+    "grain": "one date per school record",
+    "id": "mapping_closeddate_schools",
+    "semantic_filter": "null when the school has not closed",
+    "table": "schools",
+    "term_id": "term_school_closed_date",
+    "validation": "verified by e_open_close_date_format"
+  },
+  {
+    "column": "GSoffered",
+    "database_source": "california_schools",
+    "grain": "one span string per school record",
+    "id": "mapping_gsoffered_schools",
+    "table": "schools",
+    "term_id": "term_grade_span",
+    "validation": "verified by e_grade_span_columns"
+  },
+  {
+    "column": "GSserved",
+    "database_source": "california_schools",
+    "grain": "one span string per school record",
+    "id": "mapping_gsserved_schools",
+    "table": "schools",
+    "term_id": "term_grade_span",
+    "validation": "verified by e_grade_span_columns"
+  },
+  {
+    "column": "Low Grade",
+    "database_source": "california_schools",
+    "grain": "one bound per meal-program row",
+    "id": "mapping_lowgrade_frpm",
+    "semantic_filter": "lower bound of the grade span to which the row's K-12 measures apply",
+    "table": "frpm",
+    "term_id": "term_k12_grade_range",
+    "validation": "verified by e_grade_span_columns"
+  },
+  {
+    "column": "High Grade",
+    "database_source": "california_schools",
+    "grain": "one bound per meal-program row",
+    "id": "mapping_highgrade_frpm",
+    "semantic_filter": "upper bound of the grade span to which the row's K-12 measures apply",
+    "table": "frpm",
+    "term_id": "term_k12_grade_range",
+    "validation": "verified by e_grade_span_columns"
+  },
+  {
+    "aggregation_semantics": "additive across schools when a total number of enrolled students is required",
+    "column": "Enrollment (K-12)",
+    "database_source": "california_schools",
+    "grain": "one count per school per academic year",
+    "id": "mapping_enrollment_k12",
+    "table": "frpm",
+    "term_id": "term_enrollment_k12",
+    "validation": "never null and never zero across 9986 rows, verified by e_frpm_nulls"
+  },
+  {
+    "aggregation_semantics": "additive across schools",
+    "column": "Enrollment (Ages 5-17)",
+    "database_source": "california_schools",
+    "grain": "one count per school per academic year",
+    "id": "mapping_enrollment_ages",
+    "table": "frpm",
+    "term_id": "term_enrollment_ages_5_17",
+    "validation": "14 nulls across 9986 rows, verified by e_frpm_nulls"
+  },
+  {
+    "aggregation_semantics": "additive numerator; the eligible free meal rate must be recomputed from summed numerator and denominator",
+    "column": "Free Meal Count (K-12)",
+    "database_source": "california_schools",
+    "grain": "one count per school per academic year",
+    "id": "mapping_free_meal_count",
+    "table": "frpm",
+    "term_id": "term_free_meal_count_k12",
+    "validation": "56 nulls across 9986 rows, verified by e_frpm_nulls"
+  },
+  {
+    "aggregation_semantics": "additive numerator; the eligible FRPM rate must be recomputed from summed numerator and denominator",
+    "column": "FRPM Count (K-12)",
+    "database_source": "california_schools",
+    "grain": "one count per school per academic year",
+    "id": "mapping_frpm_count",
+    "table": "frpm",
+    "term_id": "term_frpm_count_k12",
+    "validation": "50 nulls across 9986 rows, verified by e_frpm_nulls"
+  },
+  {
+    "aggregation_semantics": "a rate, not additive; recompute as summed free meal count divided by summed K-12 enrollment rather than averaging per-school rates",
+    "column": "Percent (%) Eligible Free (K-12)",
+    "database_source": "california_schools",
+    "grain": "one rate per school per academic year",
+    "id": "mapping_free_meal_rate",
+    "semantic_filter": "stored as a ratio in [0, 1] even though the column name says Percent",
+    "table": "frpm",
+    "term_id": "term_free_meal_rate_k12",
+    "validation": "observed range 0.0018-1.0 and equality with free meal count divided by K-12 enrollment, verified by e_frpm_percent_columns_fraction"
+  },
+  {
+    "aggregation_semantics": "a rate, not additive; recompute as summed FRPM count divided by summed K-12 enrollment",
+    "column": "Percent (%) Eligible FRPM (K-12)",
+    "database_source": "california_schools",
+    "grain": "one rate per school per academic year",
+    "id": "mapping_frpm_rate",
+    "semantic_filter": "stored as a ratio in [0, 1] even though the column name says Percent",
+    "table": "frpm",
+    "term_id": "term_frpm_rate_k12",
+    "validation": "observed range 0.0022-1.0 and equality with FRPM count divided by K-12 enrollment, verified by e_frpm_percent_columns_fraction"
+  },
+  {
+    "aggregation_semantics": "an average over test takers; a mean of averages is unweighted unless test-taker counts are used",
+    "column": "AvgScrRead",
+    "database_source": "california_schools",
+    "grain": "one average per school SAT row",
+    "id": "mapping_sat_reading",
+    "semantic_filter": "school-level rows only where rtype = 'S'; null where the school reported no test takers",
+    "table": "satscores",
+    "term_id": "term_sat_avg_reading",
+    "validation": "596 nulls across 2269 rows, verified by e_sat_score_scale_and_nulls"
+  },
+  {
+    "aggregation_semantics": "an average over test takers; a mean of averages is unweighted unless test-taker counts are used",
+    "column": "AvgScrMath",
+    "database_source": "california_schools",
+    "grain": "one average per school SAT row",
+    "id": "mapping_sat_math",
+    "semantic_filter": "school-level rows only where rtype = 'S'; null where the school reported no test takers",
+    "table": "satscores",
+    "term_id": "term_sat_avg_math",
+    "validation": "596 nulls across 2269 rows, verified by e_sat_score_scale_and_nulls"
+  },
+  {
+    "aggregation_semantics": "an average over test takers",
+    "column": "AvgScrWrite",
+    "database_source": "california_schools",
+    "grain": "one average per school SAT row",
+    "id": "mapping_sat_writing",
+    "semantic_filter": "school-level rows only where rtype = 'S'; null where the school reported no test takers",
+    "table": "satscores",
+    "term_id": "term_sat_avg_writing",
+    "validation": "596 nulls across 2269 rows, verified by e_sat_score_scale_and_nulls"
+  },
+  {
+    "aggregation_semantics": "additive across schools",
+    "column": "NumTstTakr",
+    "database_source": "california_schools",
+    "grain": "one count per SAT row",
+    "id": "mapping_sat_testtakers",
+    "semantic_filter": "never null; may be zero when no student took the SAT",
+    "table": "satscores",
+    "term_id": "term_sat_num_test_takers",
+    "validation": "verified by e_sat_score_scale_and_nulls"
+  },
+  {
+    "column": "rtype",
+    "database_source": "california_schools",
+    "grain": "one code per SAT row",
+    "id": "mapping_sat_rtype",
+    "semantic_filter": "'S' = school-level row, 'D' = district-level aggregate row",
+    "table": "satscores",
+    "term_id": "term_sat_record_type",
+    "validation": "verified by e_sat_rtype_semantics"
+  },
+  {
+    "column": "Phone",
+    "database_source": "california_schools",
+    "grain": "one number per school record",
+    "id": "mapping_phone_schools",
+    "semantic_filter": "formatted text such as '(510) 887-0152'; may be null",
+    "table": "schools",
+    "term_id": "term_school_phone",
+    "validation": "verified by e_address_and_phone_columns"
+  },
+  {
+    "column": "Street",
+    "database_source": "california_schools",
+    "grain": "one address per school record",
+    "id": "mapping_postal_street_schools",
+    "table": "schools",
+    "term_id": "term_school_postal_street",
+    "validation": "verified by e_address_and_phone_columns"
+  },
+  {
+    "column": "StreetAbr",
+    "database_source": "california_schools",
+    "grain": "one address per school record",
+    "id": "mapping_postal_streetabr_schools",
+    "semantic_filter": "abbreviated form of the same street address",
+    "table": "schools",
+    "term_id": "term_school_postal_street",
+    "validation": "verified by e_address_and_phone_columns"
+  },
+  {
+    "column": "MailStreet",
+    "database_source": "california_schools",
+    "grain": "one address per school record",
+    "id": "mapping_mailing_street_schools",
+    "table": "schools",
+    "term_id": "term_school_mailing_street",
+    "validation": "verified by e_address_and_phone_columns"
+  },
+  {
+    "column": "MailStrAbr",
+    "database_source": "california_schools",
+    "grain": "one address per school record",
+    "id": "mapping_mailing_streetabr_schools",
+    "semantic_filter": "abbreviated form of the same mailing address",
+    "table": "schools",
+    "term_id": "term_school_mailing_street",
+    "validation": "verified by e_address_and_phone_columns"
+  },
+  {
+    "column": "FundingType",
+    "database_source": "california_schools",
+    "grain": "one funding label per school record",
+    "id": "mapping_fundingtype_schools",
+    "semantic_filter": "populated for 1642 of 17686 rows; null otherwise",
+    "table": "schools",
+    "term_id": "term_school_funding_type",
+    "validation": "verified by e_funding_type_values"
+  },
+  {
+    "column": "Charter Funding Type",
+    "database_source": "california_schools",
+    "grain": "one funding label per charter meal-program row",
+    "id": "mapping_fundingtype_frpm",
+    "semantic_filter": "populated for charter rows; null otherwise",
+    "table": "frpm",
+    "term_id": "term_school_funding_type",
+    "validation": "verified by e_funding_type_values"
+  }
+]

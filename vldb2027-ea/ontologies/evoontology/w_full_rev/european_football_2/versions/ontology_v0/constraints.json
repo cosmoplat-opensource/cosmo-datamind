@@ -1,0 +1,337 @@
+[
+  {
+    "id": "constraint_season_cross_year_label",
+    "target": "term_season",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "season",
+      "2016 season",
+      "2010 season",
+      "2008/2009",
+      "in the season",
+      "the season"
+    ],
+    "severity": "block",
+    "scope": "Any question that names a single year or a season when aggregating matches",
+    "confidence": "high",
+    "description": "The season value is a two-year label of the form YYYY/YYYY that spans two calendar years, and its matches run from July of the first year to May of the second year. A question that names one year, such as the 2016 season or the 2010 season, refers to the season whose second year equals that year: 2016 means 2015/2016 and 2010 means 2009/2010. Only the season label is available on matches; there is no per-year match column.",
+    "evidence": [
+      "ev_season_values"
+    ]
+  },
+  {
+    "id": "constraint_attribute_snapshot_date_is_datetime",
+    "target": "term_player_attribute_snapshot_date",
+    "constraint_type": "unit",
+    "trigger_keywords": [
+      "on 2015/5/1",
+      "on 2016/2/4",
+      "on 2013/7/12",
+      "date",
+      "snapshot date",
+      "from 2007/2/22 to 2016/4/21"
+    ],
+    "severity": "block",
+    "scope": "Filtering player or team attribute profiles by a stated date or date range",
+    "confidence": "high",
+    "description": "Player_Attributes.date and Team_Attributes.date are stored as date-time strings of the form YYYY-MM-DD 00:00:00, not as plain dates. A date written as d/m/Y in a question matches only when the stored value is compared on its leading YYYY-MM-DD part, for example 2015-05-01. A range stated as from d1/m1/Y1 to d2/m2/Y2 selects attribute rows whose date part falls between the two dates inclusive. Player ability snapshots exist only on the recorded snapshot dates, so a stated date must coincide with an existing snapshot value.",
+    "evidence": [
+      "ev_attribute_date_format"
+    ]
+  },
+  {
+    "id": "constraint_team_attribute_multiple_snapshots",
+    "target": "term_team_playing_style_profile",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "build-up play speed",
+      "build-up play passing",
+      "team attributes",
+      "in 2012",
+      "played safe while creating chance of passing",
+      "team playing style"
+    ],
+    "severity": "block",
+    "scope": "Any question that reads team playing-style attributes",
+    "confidence": "high",
+    "description": "Team_Attributes stores one row per team per snapshot date, and a team appears in up to six snapshots (2010-02-22, 2011-02-22, 2012-02-22, 2013-09-20, 2014-09-19, 2015-09-10), each covering about 240 teams. Without a snapshot-date restriction a team contributes several rows and aggregations silently mix snapshots. A year stated in a question, for example in 2012, restricts the profiles to the snapshot taken in that year.",
+    "evidence": [
+      "ev_team_attr_snapshot_dates"
+    ]
+  },
+  {
+    "id": "constraint_player_attribute_duplicate_and_null_rows",
+    "target": "term_player_ability_profile",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "overall rating",
+      "volley score",
+      "dribbling score",
+      "finishing rate",
+      "work rate",
+      "player attributes",
+      "average rating"
+    ],
+    "severity": "warning",
+    "scope": "Any question that averages or filters player ability attributes",
+    "confidence": "high",
+    "description": "Player_Attributes contains 751 duplicated player, fifa id and date key combinations, and 836 rows whose overall_rating is null. Those null rows are mostly all-null placeholder duplicates sitting beside a populated row for the same player and date. Ability metrics therefore need rows with a null metric excluded, and a player-level average needs duplicate rows for the same player and date removed so that a snapshot is not counted twice. Comparable null counts exist for finishing and dribbling (836 each) and for volleys (2713).",
+    "evidence": [
+      "ev_player_attr_dup_rows"
+    ]
+  },
+  {
+    "id": "constraint_work_rate_valid_domain",
+    "target": "term_attacking_work_rate",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "work rate",
+      "attacking work rate",
+      "defensive work rate",
+      "high",
+      "medium",
+      "low",
+      "tend to be attacking",
+      "remain in his position and defense"
+    ],
+    "severity": "block",
+    "scope": "Any question that filters or compares player work rates",
+    "confidence": "high",
+    "description": "The work-rate columns are polluted. Besides the three valid levels low, medium and high, attacking_work_rate contains the literal string None, empty values, and truncated fragments such as norm, y, le, stoc, tocky, ean, es, ormal, _0 and o; defensive_work_rate contains the same kind of fragments along with digit strings from 0 to 9. A comparison for a work-rate level must be restricted to the three valid levels, because only 176462 of 183978 attacking rows and 176319 of 183978 defensive rows carry a valid level.",
+    "evidence": [
+      "ev_work_rate_values",
+      "ev_work_rate_clean_fraction"
+    ]
+  },
+  {
+    "id": "constraint_work_rate_natural_language_mapping",
+    "target": "term_defensive_work_rate",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "remain in his position and defense",
+      "while the team attacked",
+      "tend to be attacking",
+      "attacking when their mates",
+      "work rate"
+    ],
+    "severity": "warning",
+    "scope": "Questions that phrase work-rate behaviour in natural language instead of naming the column",
+    "confidence": "high",
+    "description": "Work-rate behaviour is phrased descriptively rather than by column name. Staying in position and defending while the team attacks is expressed by a defensive work rate of high, while tending to be attacking when team-mates attack is expressed by an attacking work rate of high. The two columns are independent, so a statement about defending maps to defensive_work_rate and a statement about attacking maps to attacking_work_rate.",
+    "evidence": [
+      "ev_work_rate_values"
+    ]
+  },
+  {
+    "id": "constraint_team_identifier_selection",
+    "target": "term_team_fifa_api_id",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "team_fifa_api_id",
+      "fifa api id",
+      "fifa team id",
+      "team id",
+      "team_api_id"
+    ],
+    "severity": "block",
+    "scope": "Questions that request a team identifier or join team-level data",
+    "confidence": "high",
+    "description": "Two team identifiers coexist with different roles. Joins between Match, Team_Attributes and Team use team_api_id, which is unique across all 299 teams. team_fifa_api_id is a separate external identifier space: it is null for 11 teams, has only 285 distinct values, and three of its values are each shared by two team rows. A question that asks for a team's FIFA identifier must read that column from Team even when the filtering condition comes from Match or Team_Attributes, and the FIFA identifier must not be used as a join key.",
+    "evidence": [
+      "ev_team_id_integrity"
+    ]
+  },
+  {
+    "id": "constraint_team_name_not_unique",
+    "target": "term_team_long_name",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "team name",
+      "long name",
+      "short name",
+      "which team",
+      "name of the team"
+    ],
+    "severity": "warning",
+    "scope": "Questions that return or group by team names",
+    "confidence": "medium",
+    "description": "Team holds 299 rows but only 296 distinct team_long_name values and 259 distinct team_short_name values, so a human-readable team name does not uniquely identify a team; some clubs appear under the same name and short names repeat across clubs. Name output should be read together with the team identifier when a question requires a unique team.",
+    "evidence": [
+      "ev_name_duplicates"
+    ]
+  },
+  {
+    "id": "constraint_player_name_not_unique",
+    "target": "term_player_name",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "player name",
+      "name of the player",
+      "who are the players",
+      "list down their name",
+      "first name"
+    ],
+    "severity": "warning",
+    "scope": "Questions that filter or return players by name",
+    "confidence": "high",
+    "description": "Player.player_name is a single text field holding given name and surname and is not unique; 18 different players, for example, have a name beginning with Aaron. A question that groups players by first name, such as players whose first name is Aaron, is satisfied by a leading-prefix match on player_name, while a question naming one person may still match more than one player row.",
+    "evidence": [
+      "ev_name_duplicates"
+    ]
+  },
+  {
+    "id": "constraint_player_team_membership_indirect",
+    "target": "term_player",
+    "constraint_type": "scope",
+    "trigger_keywords": [
+      "player team",
+      "which team does the player play for",
+      "squad",
+      "players of a team"
+    ],
+    "severity": "warning",
+    "scope": "Any question that associates a player with a team",
+    "confidence": "high",
+    "description": "No column links a player directly to a team. Squad membership is recorded only as the home_player_1..11 and away_player_1..11 slots on Match records, and those slots are null for some matches, with 1224 matches having no home_player_1 value. Team-membership questions therefore have to be answered through match appearances rather than a direct reference.",
+    "evidence": [
+      "ev_player_team_link"
+    ]
+  },
+  {
+    "id": "constraint_player_height_units",
+    "target": "term_height",
+    "constraint_type": "unit",
+    "trigger_keywords": [
+      "tallest",
+      "shortest",
+      "height",
+      "most tallest players"
+    ],
+    "severity": "block",
+    "scope": "Physique comparisons between players",
+    "confidence": "high",
+    "description": "Player.height is recorded in centimetres with values from 157.48 to 208.28 and is never null and never zero, so tallest and shortest mean the maximum and the minimum of this column and require no unit conversion. The tallest players are all players whose height equals that maximum, which can be more than one player.",
+    "evidence": [
+      "ev_height_range"
+    ]
+  },
+  {
+    "id": "constraint_player_ability_score_scale",
+    "target": "term_overall_rating",
+    "constraint_type": "unit",
+    "trigger_keywords": [
+      "overall rating",
+      "volley score",
+      "dribbling score",
+      "finishing rate",
+      "over 70",
+      "score"
+    ],
+    "severity": "info",
+    "scope": "Filtering or comparing FIFA ability scores",
+    "confidence": "high",
+    "description": "The FIFA ability scores are integers on a 0-100 scale. Observed ranges are overall_rating 33-94, finishing 1-97, volleys 1-93 and dribbling 1-97, so thresholds such as over 70 or over 50 are applied directly to the stored integer without rescaling.",
+    "evidence": [
+      "ev_metric_ranges"
+    ]
+  },
+  {
+    "id": "constraint_team_style_class_banding",
+    "target": "term_chance_creation_passing_class",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "played safe while creating chance of passing",
+      "chance creation passing",
+      "build-up play speed class",
+      "slow",
+      "balanced",
+      "fast",
+      "safe",
+      "risky",
+      "normal"
+    ],
+    "severity": "block",
+    "scope": "Categorical team playing-style questions",
+    "confidence": "high",
+    "description": "Playing-style classes are fixed bandings of the corresponding numeric rating on the same profile row, not independent facts. Build-up play speed bands into Slow for values 20 to 33, Balanced for 34 to 66 and Fast for 67 to 80. Chance-creation passing bands into Safe for 21 to 33, Normal for 34 to 66 and Risky for 67 to 80. A descriptive phrase such as played safe while creating chance of passing names the Safe band of chance-creation passing.",
+    "evidence": [
+      "ev_style_class_banding"
+    ]
+  },
+  {
+    "id": "constraint_league_name_embeds_country",
+    "target": "term_league_name",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "Scotland Premier League",
+      "league",
+      "in Scotland",
+      "which league",
+      "league name"
+    ],
+    "severity": "info",
+    "scope": "Questions that name a league together with its country",
+    "confidence": "high",
+    "description": "League.name already embeds the host country as a prefix, for example Scotland Premier League, England Premier League and Italy Serie A, and there are exactly 11 leagues for 11 countries. A phrase that names a country together with a league therefore matches a single league name rather than requiring a country join.",
+    "evidence": [
+      "ev_league_names"
+    ]
+  },
+  {
+    "id": "constraint_aggregate_top_result_ties",
+    "target": "term_match_count",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "most matches",
+      "most goals",
+      "won the most",
+      "which league",
+      "highest"
+    ],
+    "severity": "warning",
+    "scope": "Superlative aggregation questions",
+    "confidence": "medium",
+    "description": "Superlative aggregations over leagues or teams can produce ties. In season 2008/2009 four leagues each staged 380 matches, so the league with the most matches has more than one valid answer in the data and the returned row depends on the tie-breaking of the aggregation. Aggregations should be computed over the exact grouping stated in the question before the top value is taken.",
+    "evidence": [
+      "ev_match_league_counts"
+    ]
+  },
+  {
+    "id": "constraint_buildup_passing_comparison_population",
+    "target": "term_buildup_play_passing",
+    "constraint_type": "scope",
+    "trigger_keywords": [
+      "above-average build-up play passing",
+      "in 2012",
+      "average build-up play passing",
+      "above average"
+    ],
+    "severity": "warning",
+    "scope": "Comparing a team attribute against an average",
+    "confidence": "high",
+    "description": "When a team attribute is compared against an average, the average is taken over the same population the team is drawn from, namely the teams present in the same snapshot date. In the 2012-02-22 snapshot 242 teams are present with an average build-up play passing of about 49.3, so an above-average comparison is made within that snapshot and not across all snapshots.",
+    "evidence": [
+      "ev_team_attr_snapshot_dates",
+      "ev_style_class_banding"
+    ]
+  },
+  {
+    "id": "constraint_goals_columns_complete",
+    "target": "term_home_team_goal",
+    "constraint_type": "scope",
+    "trigger_keywords": [
+      "goals",
+      "win",
+      "draw",
+      "away team won",
+      "most goals"
+    ],
+    "severity": "info",
+    "scope": "Match outcome and goal aggregation",
+    "confidence": "high",
+    "description": "home_team_goal and away_team_goal are populated for all 25979 matches, so goal aggregation and win determination need no null handling. The two goal columns are plain integers and are the only per-match goal totals available; the XML-style goal, shoton, shotoff, card and possession columns hold event detail rather than match totals.",
+    "evidence": [
+      "ev_schema_inventory"
+    ]
+  }
+]

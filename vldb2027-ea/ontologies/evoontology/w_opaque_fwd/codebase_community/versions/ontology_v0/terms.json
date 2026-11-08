@@ -1,0 +1,707 @@
+[
+  {
+    "id": "user_account",
+    "name": "User Account",
+    "type": "entity",
+    "definition": "A registered community member account, carrying profile attributes (display name, age, creation date, last access date), reputation and lifetime vote counters.",
+    "scope": "Community user-level analysis across posts, comments, votes, badges and post links.",
+    "aliases": [
+      "user",
+      "member",
+      "account",
+      "asker",
+      "answerer"
+    ],
+    "evidence": [
+      "ev_01_schema_inventory",
+      "ev_11_age_coverage",
+      "ev_23_user_activity_columns"
+    ]
+  },
+  {
+    "id": "post",
+    "name": "Post",
+    "type": "entity",
+    "definition": "A content record in the community. The same table holds questions, answers, tag wiki entries and moderator-election records, distinguished by the post type value.",
+    "scope": "Any question/answer/tag-wiki analysis; subtype must be selected through post_type.",
+    "aliases": [
+      "post",
+      "thread",
+      "entry"
+    ],
+    "evidence": [
+      "ev_01_schema_inventory",
+      "ev_02_post_type_enum"
+    ]
+  },
+  {
+    "id": "question",
+    "name": "Question",
+    "type": "entity",
+    "definition": "A post whose post type value is 1. Questions are the only post kind that carry tags, view counts, answer counts, comment counts and favourite counts.",
+    "scope": "Use whenever an analysis means 'questions' or 'posts that were asked'; excludes answers and wiki posts.",
+    "aliases": [
+      "question",
+      "asked post",
+      "thread starter"
+    ],
+    "evidence": [
+      "ev_02_post_type_enum",
+      "ev_12_question_metric_coverage"
+    ]
+  },
+  {
+    "id": "answer",
+    "name": "Answer",
+    "type": "entity",
+    "definition": "A post whose post type value is 2; it always carries a parent post identifier that points to the question it answers.",
+    "scope": "Answer-level analysis and derivation of answer counts.",
+    "aliases": [
+      "answer",
+      "reply",
+      "response"
+    ],
+    "evidence": [
+      "ev_02_post_type_enum",
+      "ev_14_answer_count_consistency"
+    ]
+  },
+  {
+    "id": "comment",
+    "name": "Comment",
+    "type": "entity",
+    "definition": "A short textual remark attached to a post, authored by a user and carrying its own score.",
+    "scope": "Comment text search, comment score analysis, comment counting.",
+    "aliases": [
+      "comment",
+      "remark",
+      "note"
+    ],
+    "evidence": [
+      "ev_01_schema_inventory",
+      "ev_22_comment_score"
+    ]
+  },
+  {
+    "id": "vote",
+    "name": "Vote",
+    "type": "entity",
+    "definition": "A recorded vote action on a post. The vote type distinguishes accepted answers, up-votes, down-votes, favourites, bounty events, deletions and review actions.",
+    "scope": "Vote-record counting. Per-user up/down vote attribution is not available in this data (see constraint_vote_user_attribution).",
+    "aliases": [
+      "vote",
+      "vote record",
+      "ballot"
+    ],
+    "evidence": [
+      "ev_03_vote_type_enum",
+      "ev_04_vote_user_attribution"
+    ]
+  },
+  {
+    "id": "badge",
+    "name": "Badge Award",
+    "type": "entity",
+    "definition": "An award of a named badge to a user at a specific date.",
+    "scope": "Badge volume, badge-name and badge-award-time analysis.",
+    "aliases": [
+      "badge",
+      "award",
+      "achievement"
+    ],
+    "evidence": [
+      "ev_19_badge_names"
+    ]
+  },
+  {
+    "id": "tag",
+    "name": "Tag",
+    "type": "entity",
+    "definition": "A topical label in the community tag vocabulary, with a usage count and optional excerpt/wiki post links.",
+    "scope": "Tag vocabulary lookup and tag-level aggregation.",
+    "aliases": [
+      "tag",
+      "topic",
+      "label"
+    ],
+    "evidence": [
+      "ev_20_tag_universe",
+      "ev_08_tag_count_match"
+    ]
+  },
+  {
+    "id": "post_link",
+    "name": "Post Link",
+    "type": "entity",
+    "definition": "A directed link recorded between two posts, for example a duplicate marking or a related-link insertion.",
+    "scope": "Link-volume analysis across posts and time.",
+    "aliases": [
+      "link",
+      "post link",
+      "related link"
+    ],
+    "evidence": [
+      "ev_17_link_type_enum"
+    ]
+  },
+  {
+    "id": "user_display_name",
+    "name": "User Display Name",
+    "type": "dimension",
+    "definition": "The public display name of a user account. Names are not unique across accounts.",
+    "scope": "Locating users by name. Must be treated as a non-unique attribute.",
+    "aliases": [
+      "display name",
+      "user name",
+      "name",
+      "username"
+    ],
+    "evidence": [
+      "ev_10_display_name_duplicates"
+    ]
+  },
+  {
+    "id": "user_age",
+    "name": "User Age",
+    "type": "dimension",
+    "definition": "Self-declared age of a user account, in years.",
+    "scope": "Age-based user analysis; sparsely populated.",
+    "aliases": [
+      "age",
+      "user age"
+    ],
+    "evidence": [
+      "ev_11_age_coverage"
+    ]
+  },
+  {
+    "id": "user_account_creation_date",
+    "name": "Account Creation Date",
+    "type": "dimension",
+    "definition": "Timestamp at which the user account was created.",
+    "scope": "Cohort analysis of registration period, e.g. accounts created in a given year.",
+    "aliases": [
+      "account created",
+      "registration date",
+      "joined",
+      "created"
+    ],
+    "evidence": [
+      "ev_18_date_columns"
+    ]
+  },
+  {
+    "id": "user_last_access_date",
+    "name": "Last Access Date",
+    "type": "dimension",
+    "definition": "Timestamp of the user's most recent access of the site.",
+    "scope": "Activity-recency analysis, e.g. users active after a cutoff date.",
+    "aliases": [
+      "last access",
+      "last seen",
+      "last visited",
+      "last accessed"
+    ],
+    "evidence": [
+      "ev_18_date_columns"
+    ]
+  },
+  {
+    "id": "post_owner",
+    "name": "Post Owner",
+    "type": "dimension",
+    "definition": "Identifier of the user who authored the post. Null for posts without a registered owner.",
+    "scope": "Attributing posts to users and counting posts per user.",
+    "aliases": [
+      "owner",
+      "owner user id",
+      "author",
+      "poster",
+      "posted by"
+    ],
+    "evidence": [
+      "ev_16_post_owner_null"
+    ]
+  },
+  {
+    "id": "post_title",
+    "name": "Post Title",
+    "type": "dimension",
+    "definition": "Human-readable title of a post. Populated for questions; absent for answers and other post kinds.",
+    "scope": "Title lookup and title display.",
+    "aliases": [
+      "title",
+      "headline",
+      "question title"
+    ],
+    "evidence": [
+      "ev_09_title_lookup",
+      "ev_12_question_metric_coverage"
+    ]
+  },
+  {
+    "id": "post_body",
+    "name": "Post Body",
+    "type": "dimension",
+    "definition": "The full rendered body text of a post, including markup.",
+    "scope": "Body retrieval and body text search.",
+    "aliases": [
+      "body",
+      "content",
+      "text of the post",
+      "post content"
+    ],
+    "evidence": [
+      "ev_01_schema_inventory"
+    ]
+  },
+  {
+    "id": "post_creation_date",
+    "name": "Post Creation Date",
+    "type": "dimension",
+    "definition": "Timestamp at which the post was created. For posts this is a distinct column from the creation-date column used by users, badges, votes, comments and post links.",
+    "scope": "Time-window filtering of posts, e.g. posts created in a given year.",
+    "aliases": [
+      "created",
+      "posted on",
+      "creation date",
+      "year of the post"
+    ],
+    "evidence": [
+      "ev_18_date_columns",
+      "ev_02_post_type_enum"
+    ]
+  },
+  {
+    "id": "post_type",
+    "name": "Post Type",
+    "type": "category",
+    "definition": "Categorical discriminator of what kind of record a post row is: question, answer, tag wiki excerpt, tag wiki, moderator nomination or moderator election.",
+    "scope": "Always apply when a question says 'post' but means questions or answers.",
+    "aliases": [
+      "post type",
+      "type of post",
+      "question",
+      "answer"
+    ],
+    "evidence": [
+      "ev_02_post_type_enum"
+    ]
+  },
+  {
+    "id": "post_tags",
+    "name": "Post Tags",
+    "type": "dimension",
+    "definition": "The set of tags attached to a question post, stored as concatenated angle-bracket tokens within a single field.",
+    "scope": "Tag filtering and tag extraction from questions.",
+    "aliases": [
+      "tags",
+      "tagged",
+      "tagged as",
+      "labels of the post"
+    ],
+    "evidence": [
+      "ev_07_tag_token_format",
+      "ev_08_tag_count_match"
+    ]
+  },
+  {
+    "id": "post_last_editor",
+    "name": "Post Last Editor",
+    "type": "dimension",
+    "definition": "Identifier of the user who most recently edited the post; null when the post was never edited.",
+    "scope": "Editor attribution, including 'who last edited' phrasing.",
+    "aliases": [
+      "last edited by",
+      "last editor",
+      "editor",
+      "edited by"
+    ],
+    "evidence": [
+      "ev_01_schema_inventory"
+    ]
+  },
+  {
+    "id": "comment_text",
+    "name": "Comment Text",
+    "type": "dimension",
+    "definition": "The body text of a comment.",
+    "scope": "Comment content lookup and text matching.",
+    "aliases": [
+      "comment",
+      "comment text",
+      "contents of comments",
+      "text"
+    ],
+    "evidence": [
+      "ev_01_schema_inventory",
+      "ev_22_comment_score"
+    ]
+  },
+  {
+    "id": "comment_author",
+    "name": "Comment Author",
+    "type": "dimension",
+    "definition": "Identifier of the user who wrote a comment.",
+    "scope": "Attributing comments to users.",
+    "aliases": [
+      "commenter",
+      "author of the comment",
+      "who commented"
+    ],
+    "evidence": [
+      "ev_06_comment_author_display"
+    ]
+  },
+  {
+    "id": "comment_author_display_name",
+    "name": "Comment Author Display Name",
+    "type": "dimension",
+    "definition": "Denormalized display name stored alongside a comment. It is equal to the user's display name whenever it is populated, but it is present for only a small minority of comments.",
+    "scope": "Convenience attribute only; prefer the user account display name for reliable attribution.",
+    "aliases": [
+      "comment author name",
+      "comment display name"
+    ],
+    "evidence": [
+      "ev_06_comment_author_display"
+    ]
+  },
+  {
+    "id": "vote_type",
+    "name": "Vote Type",
+    "type": "category",
+    "definition": "Categorical discriminator of the vote action: accepted answer, up-vote, down-vote, favourite, bounty start, bounty close, deletion, undeletion, moderator review or edit-suggestion approval.",
+    "scope": "Interpreting any vote record; required before counting 'votes'.",
+    "aliases": [
+      "vote type",
+      "kind of vote",
+      "up vote",
+      "down vote",
+      "favourite",
+      "accepted"
+    ],
+    "evidence": [
+      "ev_03_vote_type_enum"
+    ]
+  },
+  {
+    "id": "vote_caster",
+    "name": "Vote Caster",
+    "type": "dimension",
+    "definition": "Identifier of the user who cast the vote. Populated only for favourite votes and bounty-start votes; null for essentially all other vote types.",
+    "scope": "User-level vote attribution. Not usable alone for per-user up/down vote counts.",
+    "aliases": [
+      "voter",
+      "who voted",
+      "votes by user",
+      "user votes"
+    ],
+    "evidence": [
+      "ev_04_vote_user_attribution"
+    ]
+  },
+  {
+    "id": "badge_name",
+    "name": "Badge Name",
+    "type": "category",
+    "definition": "The name of the awarded badge, for example Student, Supporter, Editor, Scholar or Teacher.",
+    "scope": "Badge-type filtering and per-badge aggregation.",
+    "aliases": [
+      "badge",
+      "badge name",
+      "student badge",
+      "award name"
+    ],
+    "evidence": [
+      "ev_19_badge_names"
+    ]
+  },
+  {
+    "id": "badge_award_date",
+    "name": "Badge Award Date",
+    "type": "dimension",
+    "definition": "Timestamp at which the badge was awarded to the user.",
+    "scope": "Time-windowed badge analysis.",
+    "aliases": [
+      "badge date",
+      "given",
+      "awarded",
+      "badge year"
+    ],
+    "evidence": [
+      "ev_18_date_columns",
+      "ev_19_badge_names"
+    ]
+  },
+  {
+    "id": "tag_name",
+    "name": "Tag Name",
+    "type": "dimension",
+    "definition": "The bare name of a tag in the tag vocabulary, without the angle-bracket encoding used inside post tag lists.",
+    "scope": "Tag vocabulary lookup and joining tag metadata to questions.",
+    "aliases": [
+      "tag",
+      "tag name",
+      "topic name"
+    ],
+    "evidence": [
+      "ev_07_tag_token_format",
+      "ev_20_tag_universe"
+    ]
+  },
+  {
+    "id": "tag_post_count",
+    "name": "Tag Post Count",
+    "type": "metric",
+    "definition": "Denormalized count of question posts that carry this tag.",
+    "scope": "Tag popularity measures.",
+    "aliases": [
+      "tag count",
+      "number of posts with the tag",
+      "tag usage"
+    ],
+    "evidence": [
+      "ev_08_tag_count_match"
+    ]
+  },
+  {
+    "id": "tag_excerpt_post",
+    "name": "Tag Excerpt Post",
+    "type": "dimension",
+    "definition": "Identifier of the post that holds the tag's short excerpt (tag wiki excerpt). Null for tags that have no excerpt.",
+    "scope": "Retrieving the excerpt text of a tag.",
+    "aliases": [
+      "excerpt",
+      "excerpted from",
+      "tag excerpt",
+      "tag wiki excerpt"
+    ],
+    "evidence": [
+      "ev_15_tag_excerpt_nullable"
+    ]
+  },
+  {
+    "id": "tag_wiki_post",
+    "name": "Tag Wiki Post",
+    "type": "dimension",
+    "definition": "Identifier of the post that holds the tag's full wiki description. Null for tags that have no wiki.",
+    "scope": "Retrieving the full description of a tag.",
+    "aliases": [
+      "tag wiki",
+      "wiki post",
+      "tag description"
+    ],
+    "evidence": [
+      "ev_15_tag_excerpt_nullable"
+    ]
+  },
+  {
+    "id": "post_link_source_post",
+    "name": "Post Link Source Post",
+    "type": "dimension",
+    "definition": "Identifier of the post from which a post link originates.",
+    "scope": "Linking analysis anchored on the source post.",
+    "aliases": [
+      "source post",
+      "linking post",
+      "post of the link"
+    ],
+    "evidence": [
+      "ev_17_link_type_enum"
+    ]
+  },
+  {
+    "id": "post_link_related_post",
+    "name": "Post Link Related Post",
+    "type": "dimension",
+    "definition": "Identifier of the post that a post link points to.",
+    "scope": "Linking analysis anchored on the target post.",
+    "aliases": [
+      "related post",
+      "linked post",
+      "target post"
+    ],
+    "evidence": [
+      "ev_17_link_type_enum"
+    ]
+  },
+  {
+    "id": "post_link_type",
+    "name": "Post Link Type",
+    "type": "category",
+    "definition": "Categorical discriminator of the link relationship: a general linked-post relation or a duplicate marking.",
+    "scope": "Distinguishing ordinary links from duplicate links.",
+    "aliases": [
+      "link type",
+      "linked",
+      "duplicate",
+      "links"
+    ],
+    "evidence": [
+      "ev_17_link_type_enum"
+    ]
+  },
+  {
+    "id": "post_link_creation_date",
+    "name": "Post Link Creation Date",
+    "type": "dimension",
+    "definition": "Timestamp at which the post link was recorded.",
+    "scope": "Time-windowed link-volume analysis.",
+    "aliases": [
+      "link created",
+      "links created",
+      "link date"
+    ],
+    "evidence": [
+      "ev_18_date_columns"
+    ]
+  },
+  {
+    "id": "post_score",
+    "name": "Post Score",
+    "type": "metric",
+    "definition": "Net score of a post as maintained by the platform. It is a stored field, not recomputable from the vote records in this database.",
+    "scope": "Ranking posts by score. Distinct from comment score even though both use the same physical field identifier in different tables.",
+    "aliases": [
+      "score",
+      "post score",
+      "votes of a post",
+      "highest score"
+    ],
+    "evidence": [
+      "ev_21_post_score_range",
+      "ev_03_vote_type_enum"
+    ]
+  },
+  {
+    "id": "post_view_count",
+    "name": "Post View Count",
+    "type": "metric",
+    "definition": "Number of times a question post has been viewed. Populated for questions only.",
+    "scope": "Popularity analysis of questions.",
+    "aliases": [
+      "views",
+      "view count",
+      "viewed",
+      "average view"
+    ],
+    "evidence": [
+      "ev_12_question_metric_coverage"
+    ]
+  },
+  {
+    "id": "post_answer_count",
+    "name": "Post Answer Count",
+    "type": "metric",
+    "definition": "Denormalized number of answers attached to a question. It agrees with the count of answer posts whose parent is that question.",
+    "scope": "Filtering questions by answer volume. Populated for questions only.",
+    "aliases": [
+      "answers",
+      "answer count",
+      "number of answers",
+      "no more than N answers"
+    ],
+    "evidence": [
+      "ev_14_answer_count_consistency",
+      "ev_12_question_metric_coverage"
+    ]
+  },
+  {
+    "id": "post_comment_count",
+    "name": "Post Comment Count",
+    "type": "metric",
+    "definition": "Denormalized number of comments attached to a post. It almost always matches the count of comment rows, with a small number of exceptions.",
+    "scope": "Filtering posts by comment volume, e.g. posts with zero or one comment.",
+    "aliases": [
+      "comments",
+      "comment count",
+      "number of comments",
+      "doesn't have comments",
+      "no comments"
+    ],
+    "evidence": [
+      "ev_13_comment_count_mismatch"
+    ]
+  },
+  {
+    "id": "post_favorite_count",
+    "name": "Post Favorite Count",
+    "type": "metric",
+    "definition": "Number of users who marked a question as a favourite. Represents the post's valued/saved popularity. Populated for a subset of questions.",
+    "scope": "Measuring how valued a post is; used for 'most valuable post' phrasing.",
+    "aliases": [
+      "favorites",
+      "favourite count",
+      "most valuable",
+      "bookmarked",
+      "stars"
+    ],
+    "evidence": [
+      "ev_12_question_metric_coverage",
+      "ev_03_vote_type_enum"
+    ]
+  },
+  {
+    "id": "comment_score",
+    "name": "Comment Score",
+    "type": "metric",
+    "definition": "Net score of a comment. It shares the same physical field identifier as post score but lives in the comment table and applies to comments only.",
+    "scope": "Ranking or filtering comments by score.",
+    "aliases": [
+      "comment score",
+      "score of comment",
+      "score"
+    ],
+    "evidence": [
+      "ev_22_comment_score"
+    ]
+  },
+  {
+    "id": "user_up_votes",
+    "name": "User Up Votes",
+    "type": "metric",
+    "definition": "Lifetime count of up-votes cast by the user, maintained as a stored counter on the user account.",
+    "scope": "Per-user up-vote analysis. This is the authoritative source because individual up-vote records lack user attribution.",
+    "aliases": [
+      "up votes",
+      "upvotes",
+      "up-votes",
+      "average up votes"
+    ],
+    "evidence": [
+      "ev_23_user_activity_columns",
+      "ev_04_vote_user_attribution"
+    ]
+  },
+  {
+    "id": "user_down_votes",
+    "name": "User Down Votes",
+    "type": "metric",
+    "definition": "Lifetime count of down-votes cast by the user, maintained as a stored counter on the user account.",
+    "scope": "Per-user down-vote analysis.",
+    "aliases": [
+      "down votes",
+      "downvotes",
+      "down-votes"
+    ],
+    "evidence": [
+      "ev_23_user_activity_columns"
+    ]
+  },
+  {
+    "id": "user_reputation",
+    "name": "User Reputation",
+    "type": "metric",
+    "definition": "Accumulated reputation score of the user account.",
+    "scope": "User ranking and 'valuable user' phrasing; distinct from the value of a single post.",
+    "aliases": [
+      "reputation",
+      "score of user",
+      "user value"
+    ],
+    "evidence": [
+      "ev_23_user_activity_columns"
+    ]
+  }
+]

@@ -1,0 +1,273 @@
+[
+  {
+    "id": "con_yearmonth_date_format",
+    "target": "term_year_month_period",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "date",
+      "year",
+      "month",
+      "2013",
+      "2012",
+      "September 2013",
+      "201309",
+      "yearmonth",
+      "between 201301 and 201312",
+      "monthly"
+    ],
+    "severity": "block",
+    "scope": "Applies whenever the consumption ledger is restricted or grouped by time.",
+    "confidence": "high",
+    "description": "The period attribute of the consumption ledger is a six-character text value, not a calendar date: the first four characters are the year and the fifth and sixth characters are the month. A single month such as September 2013 is therefore written as 201309, and a whole year is expressed by the range of periods whose first four characters equal that year. Sorting these values as text also sorts them chronologically, because the encoding is fixed width and year-first.",
+    "evidence": [
+      "ev_yearmonth_date_format",
+      "ev_yearmonth_date_range"
+    ]
+  },
+  {
+    "id": "con_yearmonth_coverage",
+    "target": "term_year_month_period",
+    "constraint_type": "scope",
+    "trigger_keywords": [
+      "2012",
+      "2013",
+      "year",
+      "annual",
+      "full year",
+      "twelve months",
+      "between 201301 and 201312"
+    ],
+    "severity": "warn",
+    "scope": "Applies to any annual comparison over the consumption ledger.",
+    "confidence": "high",
+    "description": "Recorded months span 201112 to 201311 only: 2011 contributes a single month, 2012 contributes nine months from January to September, and 2013 contributes eleven months from January to November. Restricting to a whole year is still the correct way to express the workload's annual windows, but the underlying records do not cover twelve months in either 2012 or 2013, so annual totals for those years are not comparable with a full calendar year of metered activity.",
+    "evidence": [
+      "ev_yearmonth_date_range"
+    ]
+  },
+  {
+    "id": "con_consumption_sparse_coverage",
+    "target": "term_gas_consumption",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "average monthly",
+      "per month",
+      "monthly consumption",
+      "number of months",
+      "sparse",
+      "missing months"
+    ],
+    "severity": "warn",
+    "scope": "Applies when counting or averaging recorded months per customer.",
+    "confidence": "high",
+    "description": "The consumption ledger holds one row per customer and month only for months that were recorded, so the series is sparse rather than a complete panel: the 30566 customers with consumption share 383282 rows across 21 possible months, and individual customers can hold as few as four months or as many as thirteen. A customer therefore does not have one row for every month in a year, and counting rows is not the same as counting customers.",
+    "evidence": [
+      "ev_yearmonth_sparse_coverage"
+    ]
+  },
+  {
+    "id": "con_consumption_negative_values",
+    "target": "term_gas_consumption",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "consumption",
+      "negative",
+      "below zero",
+      "minimum consumption",
+      "lowest consumption"
+    ],
+    "severity": "warn",
+    "scope": "Applies to any min, sum or average over consumption values.",
+    "confidence": "high",
+    "description": "Consumption values are not restricted to positive quantities: 152 of 383282 rows are negative, with a minimum of -582092.86, while the maximum is 2052187.11. Negative values are consistent with metering corrections or reversals and should not be silently discarded, but they do mean a smallest or lowest consumption figure can be negative and that a sum over a scope may be reduced by them.",
+    "evidence": [
+      "ev_yearmonth_consumption_stats"
+    ]
+  },
+  {
+    "id": "con_average_monthly_def",
+    "target": "term_average_monthly_consumption",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "average monthly consumption",
+      "average consumption",
+      "mean consumption",
+      "per month",
+      "average monthly"
+    ],
+    "severity": "block",
+    "scope": "Applies when an average monthly consumption figure is requested for a scope and year.",
+    "confidence": "high",
+    "description": "The workload defines average monthly consumption for a year as the average of the monthly consumption values recorded in the analysed scope, divided by the twelve months of the year. The denominator is fixed at twelve rather than the number of months actually recorded for each customer, which matters because the ledger is sparse. Averaging the recorded monthly values alone yields a different, larger number.",
+    "evidence": [
+      "ev_yearmonth_sparse_coverage"
+    ]
+  },
+  {
+    "id": "con_annual_average_def",
+    "target": "term_annual_average_consumption",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "annual average consumption",
+      "average annual consumption",
+      "least amount of consumption",
+      "lowest consumption",
+      "consumption per customer"
+    ],
+    "severity": "block",
+    "scope": "Applies when an average annual consumption is requested for a set of customers.",
+    "confidence": "high",
+    "description": "Annual average consumption of a set of customers equals the total consumption of that set during the year divided by the number of customers in the set, so the denominator is the size of the customer set and not the number of months or rows. When the question asks for the customer with the least consumption in each segment, the set is first narrowed to the minimum-consumption customer of the segment, and the divisor is the count of such minimum customers.",
+    "evidence": [
+      "ev_yearmonth_consumption_stats"
+    ]
+  },
+  {
+    "id": "con_growth_rate_denominator",
+    "target": "term_consumption_growth_rate",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "percentage increase",
+      "percentage of increase",
+      "biggest increase",
+      "lowest increase",
+      "growth",
+      "change between 2012 and 2013"
+    ],
+    "severity": "block",
+    "scope": "Applies to year-on-year percentage change in consumption.",
+    "confidence": "high",
+    "description": "The workload defines the percentage of increase in consumption as the year-on-year difference divided by the consumption of the later year, multiplied by one hundred, so the later year is the denominator. This differs from the everyday convention of dividing by the earlier year, and mixing the two conventions can reverse which segment appears to grow fastest when the difference is negative.",
+    "evidence": [
+      "ev_sme_2013_monthly"
+    ]
+  },
+  {
+    "id": "con_customer_segment_values",
+    "target": "term_customer_segment",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "segment",
+      "SME",
+      "LAM",
+      "KAM",
+      "customer segment",
+      "segment of customer"
+    ],
+    "severity": "warn",
+    "scope": "Applies when reading or filtering the customer segment label.",
+    "confidence": "high",
+    "description": "The customer segment label carries exactly three values, SME with 26763 customers, LAM with 3658 and KAM with 2040, and is never null. The database stores only these short codes and does not record what the abbreviations stand for, so their expansion is not derivable from the data itself.",
+    "evidence": [
+      "ev_customer_segment_values"
+    ]
+  },
+  {
+    "id": "con_segment_column_collision",
+    "target": "term_customer_segment",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "segment",
+      "station segment",
+      "customer segment",
+      "premium",
+      "discount",
+      "value for money",
+      "noname"
+    ],
+    "severity": "block",
+    "scope": "Applies whenever a question mentions segments without naming a table.",
+    "confidence": "high",
+    "description": "The name Segment appears on two unrelated tables with disjoint value domains. On customers it holds the customer grouping SME, LAM and KAM; on gasstations it holds a station marketing category with the values Discount, Noname, Other, Premium and Value for money. The two columns share no values and must never be used for each other: a question about customer segments such as SME, LAM or KAM concerns customers only, and the station column is a different concept with the same name.",
+    "evidence": [
+      "ev_customer_segment_values",
+      "ev_gasstation_values"
+    ]
+  },
+  {
+    "id": "con_payment_currency_values",
+    "target": "term_payment_currency",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "paid in euro",
+      "pays in euro",
+      "euro",
+      "EUR",
+      "CZK",
+      "currency",
+      "koruna"
+    ],
+    "severity": "warn",
+    "scope": "Applies when restricting an analysis by settlement currency.",
+    "confidence": "high",
+    "description": "The currency attribute carries exactly two values, CZK for 30459 customers and EUR for 2002, and is never null. Paying in euro is expressed as the currency value EUR and paying in the Czech koruna as CZK, so a question about customers who paid in euro selects the EUR group.",
+    "evidence": [
+      "ev_customer_currency_values"
+    ]
+  },
+  {
+    "id": "con_country_code_values",
+    "target": "term_gas_station_country",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "Czech Republic",
+      "country",
+      "CZE",
+      "SVK",
+      "Slovakia",
+      "made in",
+      "located in"
+    ],
+    "severity": "warn",
+    "scope": "Applies when restricting station activity by country.",
+    "confidence": "high",
+    "description": "The country attribute of a station holds a three-letter country code, and only two codes occur: CZE for 4836 stations and SVK for 880. The Czech Republic corresponds to the code CZE, so a question phrased with the country name must be translated into that code. Country is recorded per station, not per transaction or per customer.",
+    "evidence": [
+      "ev_gasstation_values",
+      "ev_country_transaction_split"
+    ]
+  },
+  {
+    "id": "con_transaction_timestamp_split",
+    "target": "term_transaction_timestamp",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "time",
+      "timestamp",
+      "transaction time",
+      "2012/8/23 21:20:00",
+      "when",
+      "disparate time",
+      "point in time"
+    ],
+    "severity": "block",
+    "scope": "Applies to any point-in-time or time-of-day question about transactions.",
+    "confidence": "high",
+    "description": "A transaction's moment is split across two attributes: one holds the calendar day and the other holds the clock time as text. A question that names a full moment such as 2012/8/23 21:20:00 therefore constrains both attributes together, and comparing against the day attribute alone will match every transaction of that day. The clock time is meaningful only in combination with its day, since the ledger spans more than one day.",
+    "evidence": [
+      "ev_transactions_time_format",
+      "ev_transactions_time_window"
+    ]
+  },
+  {
+    "id": "con_transactions_time_window",
+    "target": "term_transaction",
+    "constraint_type": "scope",
+    "trigger_keywords": [
+      "transaction",
+      "transactions",
+      "purchase",
+      "sample",
+      "time range",
+      "after 2012/1/1"
+    ],
+    "severity": "warn",
+    "scope": "Applies to every analysis over the transaction ledger.",
+    "confidence": "high",
+    "description": "The transaction ledger is a small sample of 1000 purchases confined to four consecutive days, 2012-08-23 to 2012-08-26, with 10, 492, 425 and 73 purchases on those days. It is not a continuous history: a date restriction wider than those four days still returns only those transactions, and 933 of the sample occurred at stations in the Czech Republic against 67 in Slovakia. Conclusions drawn from it describe the sample window, not a full period.",
+    "evidence": [
+      "ev_transactions_time_window",
+      "ev_country_transaction_split"
+    ]
+  }
+]

@@ -1,0 +1,295 @@
+[
+  {
+    "confidence": "high",
+    "constraint_type": "enum_semantics",
+    "description": "The carcinogenicity label uses exactly two codes: '+' means the molecule is carcinogenic and '-' means the molecule is not carcinogenic. Every molecule has a label; there are no missing labels. A question about 'carcinogenic' molecules therefore means label '+'.",
+    "evidence": [
+      "evidence_003"
+    ],
+    "id": "constraint_label_enum",
+    "scope": "Interpreting the molecule carcinogenicity label in any molecule-level or molecule-scoped question",
+    "severity": "block",
+    "target": "term_carcinogenicity_label",
+    "trigger_keywords": [
+      "carcinogenic",
+      "non-carcinogenic",
+      "not carcinogenic",
+      "label",
+      "toxicity",
+      "cancer",
+      "positive label",
+      "negative label"
+    ]
+  },
+  {
+    "confidence": "high",
+    "constraint_type": "enum_semantics",
+    "description": "Element values are lowercase chemical symbols. The 21 symbols present are: h, c, o, n, cl, s, br, na, p, f, i, si, sn, cu, zn, y, te, pb, k, ca, b. Named elements in questions map to these symbols, for example hydrogen='h', chlorine='cl', iodine='i', sulfur='s', phosphorus='p', bromine='br', fluorine='f', sodium='na'. Comparisons against any other capitalisation will not match.",
+    "evidence": [
+      "evidence_004"
+    ],
+    "id": "constraint_element_symbol_case",
+    "scope": "Filtering or grouping atoms by chemical element anywhere in the database",
+    "severity": "block",
+    "target": "term_element",
+    "trigger_keywords": [
+      "element",
+      "hydrogen",
+      "chlorine",
+      "iodine",
+      "sulfur",
+      "phosphorus",
+      "bromine",
+      "fluorine",
+      "sodium",
+      "element symbol",
+      "lowercase"
+    ]
+  },
+  {
+    "confidence": "high",
+    "constraint_type": "enum_semantics",
+    "description": "Bond type codes are '-' for a single bond, '=' for a double bond, and '#' for a triple bond. One bond record has a missing bond type, so the three named bond types do not cover every bond.",
+    "evidence": [
+      "evidence_005",
+      "evidence_012"
+    ],
+    "id": "constraint_bond_type_enum",
+    "scope": "Filtering or grouping bonds by bond type",
+    "severity": "block",
+    "target": "term_bond_type",
+    "trigger_keywords": [
+      "single bond",
+      "double bond",
+      "triple bond",
+      "bond type",
+      "bond order",
+      "single-bond",
+      "triple-bond"
+    ]
+  },
+  {
+    "confidence": "high",
+    "constraint_type": "data_quality",
+    "description": "Atom connectivity is stored symmetrically: every bond appears as two rows, one for each direction of the atom pair. Counting adjacency rows therefore counts each bond twice, and it also lists each bonded atom once per incident bond. Distinct bonds or distinct atoms must be established before any count or average is taken.",
+    "evidence": [
+      "evidence_006",
+      "evidence_010"
+    ],
+    "id": "constraint_connectivity_symmetry",
+    "scope": "Any question that counts bonds, atom pairs, or adjacency through the connectivity relation",
+    "severity": "block",
+    "target": "term_atom_connectivity",
+    "trigger_keywords": [
+      "connected",
+      "atom pair",
+      "bonds between two atoms",
+      "distinct",
+      "double count",
+      "duplicate",
+      "count bonds"
+    ]
+  },
+  {
+    "confidence": "high",
+    "constraint_type": "business_rule",
+    "description": "Atoms are unique records in the atom table, but the same atom reappears once per incident bond when atoms are reached through the connectivity relation. Counting atoms for an element, a molecule, or a bond-filtered molecule set must be done over distinct atom identifiers.",
+    "evidence": [
+      "evidence_010",
+      "evidence_006"
+    ],
+    "id": "constraint_atom_distinct_counting",
+    "scope": "Counting atoms, including atoms of a given element and atoms inside molecules filtered by bond type",
+    "severity": "block",
+    "target": "term_element_atom_count",
+    "trigger_keywords": [
+      "distinct atoms",
+      "number of atoms",
+      "count atoms",
+      "how many atoms",
+      "consider the distinct atoms",
+      "total atoms"
+    ]
+  },
+  {
+    "confidence": "high",
+    "constraint_type": "business_rule",
+    "description": "Carcinogenicity is stored only at molecule level. When a question speaks of carcinogenic bonds, atoms, or elements, the molecule label must be carried down to the child records through the owning molecule identifier; the denominator stays at the grain the question names (bonds, atoms, or molecules), so a molecule is never counted once per child record.",
+    "evidence": [
+      "evidence_015",
+      "evidence_003",
+      "evidence_006"
+    ],
+    "id": "constraint_molecule_grain_label",
+    "scope": "Questions that apply carcinogenicity to bonds, atoms, or elements rather than to molecules directly",
+    "severity": "warning",
+    "target": "term_carcinogenicity_label",
+    "trigger_keywords": [
+      "carcinogenic bond",
+      "carcinogenic atom",
+      "proportion of bonds",
+      "carcinogenic molecules",
+      "percentage of carcinogenic",
+      "label",
+      "non-carcinogenic molecules"
+    ]
+  },
+  {
+    "confidence": "high",
+    "constraint_type": "data_quality",
+    "description": "49 atoms appear in the atom table but participate in no bond, so the number of atoms and the number of bonded atoms differ and an average number of bonds per atom is undefined for those atoms.",
+    "evidence": [
+      "evidence_010"
+    ],
+    "id": "constraint_isolated_atoms",
+    "scope": "Comparing total atom counts with bonded-atom counts",
+    "severity": "warning",
+    "target": "term_atom_connectivity",
+    "trigger_keywords": [
+      "atoms without bonds",
+      "isolated atoms",
+      "no bonds",
+      "connected",
+      "all atoms"
+    ]
+  },
+  {
+    "confidence": "high",
+    "constraint_type": "scope",
+    "description": "Element frequencies are highly skewed. Hydrogen (5518), carbon (4605), and oxygen (1043) dominate, while eleven elements occur fewer than ten times each (f 11, i 6, si 4, sn 2, cu 2, and zn, y, te, pb, k, ca, b with one atom each). Most-numerous and least-numerous element questions are decided by these rare categories, and ties are possible among the single-occurrence elements.",
+    "evidence": [
+      "evidence_004"
+    ],
+    "id": "constraint_element_skew",
+    "scope": "Ranking elements by how numerous their atoms are",
+    "severity": "info",
+    "target": "term_element_atom_count",
+    "trigger_keywords": [
+      "least numerous",
+      "most numerous",
+      "most common element",
+      "rare element",
+      "minimum",
+      "maximum",
+      "fewest"
+    ]
+  },
+  {
+    "confidence": "high",
+    "constraint_type": "scope",
+    "description": "Bond type frequencies are strongly skewed: 10528 single bonds, 1844 double bonds, and only 6 triple bonds. Triple-bond questions therefore involve a very small set of molecules and are sensitive to any filtering applied to them.",
+    "evidence": [
+      "evidence_005",
+      "evidence_015"
+    ],
+    "id": "constraint_bond_type_skew",
+    "scope": "Ranking or comparing bond types",
+    "severity": "info",
+    "target": "term_bond_type_frequency",
+    "trigger_keywords": [
+      "most common bond type",
+      "least common bond",
+      "rare bond",
+      "single bond",
+      "double bond",
+      "triple bond",
+      "bond proportion"
+    ]
+  },
+  {
+    "confidence": "high",
+    "constraint_type": "unit",
+    "description": "Percentage questions expect a value on a 0-100 scale and are reported to the number of decimal places the question requests. A ratio or proportion of a feature is the count of qualifying units divided by the count of all units at the same grain (molecules, bonds, or atoms) within the stated scope.",
+    "evidence": [
+      "evidence_003"
+    ],
+    "id": "constraint_percentage_scale",
+    "scope": "Any question asking for a percentage, proportion, ratio, or share",
+    "severity": "warning",
+    "target": "term_molecule_carcinogenic_ratio",
+    "trigger_keywords": [
+      "percentage",
+      "proportion",
+      "percent",
+      "ratio",
+      "decimal places",
+      "share"
+    ]
+  },
+  {
+    "confidence": "high",
+    "constraint_type": "enum_semantics",
+    "description": "A bond identifier is built from the molecule identifier followed by the serial numbers of the two atoms the bond joins, so the molecule and both endpoint atoms can be read from the identifier itself (for example TR001_6_9 joins atoms TR001_6 and TR001_9 of molecule TR001). The atoms named in this way correspond to rows in the atom table and carry the element information.",
+    "evidence": [
+      "evidence_008",
+      "evidence_009"
+    ],
+    "id": "constraint_bond_identifier_composition",
+    "scope": "Questions that name a specific bond by its identifier",
+    "severity": "warning",
+    "target": "term_bond_identifier",
+    "trigger_keywords": [
+      "bond id",
+      "TR001_6_9",
+      "TR001_10_11",
+      "bond identifier",
+      "bond of"
+    ]
+  },
+  {
+    "confidence": "high",
+    "constraint_type": "scope",
+    "description": "Molecule identifiers follow a 'TR' plus zero-padded numeric pattern. The 343 molecules range from TR000 to TR501 and are sparse, so the identifiers are not dense serial numbers and an identifier's numeric part does not indicate how many molecules precede it.",
+    "evidence": [
+      "evidence_011"
+    ],
+    "id": "constraint_molecule_id_sparsity",
+    "scope": "Reading, sorting, or listing molecule identifiers",
+    "severity": "info",
+    "target": "term_molecule_identifier",
+    "trigger_keywords": [
+      "molecule id",
+      "molecule identifier",
+      "TR006",
+      "molecule list",
+      "list molecules"
+    ]
+  },
+  {
+    "confidence": "high",
+    "constraint_type": "data_quality",
+    "description": "Some molecules contain more bonds than atoms because of cyclic structures (for example TR338 has 174 atoms and 175 bonds), so atom counts and bond counts within a molecule are not interchangeable.",
+    "evidence": [
+      "evidence_014"
+    ],
+    "id": "constraint_ring_structures",
+    "scope": "Comparing atom counts and bond counts inside a molecule",
+    "severity": "info",
+    "target": "term_molecule",
+    "trigger_keywords": [
+      "bonds per molecule",
+      "more bonds than atoms",
+      "ring",
+      "cyclic",
+      "average bonds"
+    ]
+  },
+  {
+    "confidence": "high",
+    "constraint_type": "data_quality",
+    "description": "Every molecule has at least one atom and at least one bond, so a molecule-scoped filter never silently drops molecules that lack structure data.",
+    "evidence": [
+      "evidence_016"
+    ],
+    "id": "constraint_molecule_coverage",
+    "scope": "Assuming molecule-scoped filters reach the intended set of molecules",
+    "severity": "info",
+    "target": "term_molecule",
+    "trigger_keywords": [
+      "molecule without atoms",
+      "empty molecule",
+      "every molecule",
+      "orphan"
+    ]
+  }
+]

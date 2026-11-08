@@ -1,0 +1,460 @@
+[
+  {
+    "id": "c_trans_amount_unsigned",
+    "target": "term_transaction_amount",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "amount",
+      "amount sign",
+      "positive",
+      "negative",
+      "debit",
+      "credit",
+      "transaction amount",
+      "金额",
+      "交易金额",
+      "正负",
+      "符号",
+      "收入",
+      "支出"
+    ],
+    "severity": "block",
+    "scope": "适用范围：对 trans.amount 做任何求和、比较或符号判断时",
+    "confidence": "high",
+    "description": "trans.amount 恒为非负整数(观测最小值 0，最大值 87400，负值 0 条)。金额本身不携带资金方向；方向完全由 trans.type 编码：PRIJEM 为流入，VYDAJ/VYBER 为流出。对 '净流入' 之类的指标必须按 type 分别加减，不能直接对 amount 求和。",
+    "evidence": [
+      "e_trans_amount_sign"
+    ]
+  },
+  {
+    "id": "c_trans_type_direction",
+    "target": "term_transaction_type",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "PRIJEM",
+      "VYDAJ",
+      "VYBER",
+      "type",
+      "transaction type",
+      "credit",
+      "debit",
+      "inflow",
+      "outflow",
+      "交易类型",
+      "入账",
+      "出账",
+      "取现"
+    ],
+    "severity": "block",
+    "scope": "适用范围：解释交易方向、计算净额或判断余额变动方向时",
+    "confidence": "high",
+    "description": "trans.type 的三个取值表达资金方向：PRIJEM 为入账(405083 条，在可比较的 400583 条中有 391784 条即 97.8% 使交易后余额上升)；VYDAJ 为出账(634571 条，467840 条即 73.7% 使余额下降)；VYBER 为现金提取(16666 条，15819 条即 94.9% 使余额下降)。方向性并非 100% 一致(存在同日多笔、冲正等情形)，需要严格方向判断时应逐笔核对而非默认。",
+    "evidence": [
+      "e_balance_direction",
+      "e_trans_type_distribution"
+    ]
+  },
+  {
+    "id": "c_trans_balance_not_reconstructable",
+    "target": "term_account_balance",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "balance",
+      "running balance",
+      "cumulative",
+      "reconcile",
+      "running total",
+      "余额",
+      "累计",
+      "对账",
+      "还原",
+      "期初",
+      "期末"
+    ],
+    "severity": "warning",
+    "scope": "适用范围：使用 trans.balance 做校验、推导或时序还原时",
+    "confidence": "high",
+    "description": "不要假定 trans.balance 是可由交易金额按时间累加还原的连续余额。按 (account_id, date, trans_id) 排序后，1051820 条非首笔记录中只有 519531 条(49.4%)满足 balance = 前一笔 balance ± 当前 amount。因此：不能用 amount 求和反推 balance，也不应把 balance 作为 amount 正确性的校验依据。若需要余额水平，应直接读取 balance 列并按 date 排序取时点值。",
+    "evidence": [
+      "e_balance_reconciliation"
+    ]
+  },
+  {
+    "id": "c_trans_id_not_temporal",
+    "target": "term_transaction",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "trans_id",
+      "order by",
+      "sort",
+      "chronological",
+      "time series",
+      "排序",
+      "时间顺序",
+      "时序",
+      "先后"
+    ],
+    "severity": "block",
+    "scope": "适用范围：任何交易时间序列、期初期末、累计指标计算",
+    "confidence": "high",
+    "description": "trans_id 是代理主键而非时间顺序。每一个年份(1993-1998)的 trans_id 都横跨约 1 至 3682987，且存在 trans_id 远小于另一条记录但日期更晚的情况(如 account_id=1 下 trans_id=6 的日期 1995-05-13 晚于 trans_id=3530438 的 1995-04-30)。所有时间序列必须按 (date, trans_id) 排序。",
+    "evidence": [
+      "e_trans_id_not_temporal"
+    ]
+  },
+  {
+    "id": "c_trans_operation_not_1to1",
+    "target": "term_transaction_operation",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "operation",
+      "VYBER",
+      "VKLAD",
+      "PREVOD",
+      "VYBER KARTOU",
+      "withdrawal",
+      "cash",
+      "transfer",
+      "操作",
+      "渠道",
+      "取现",
+      "转账"
+    ],
+    "severity": "warning",
+    "scope": "适用范围：按操作方式筛选交易时",
+    "confidence": "high",
+    "description": "trans.operation 与 trans.type 不是一一对应。最典型的是 operation='VYBER'：它同时出现在 type='VYBER'(16666 条，平均金额 12517，k_symbol 全为空)与 type='VYDAJ'(418252 条，平均金额 5095，其中 160859 条带 k_symbol)之下。因此只按 operation 或只按 type 过滤都会得到不同口径；'取现' 类分析必须明确选择哪一个口径并说明。另注意 PRIJEM 有 183114 条 operation 为空。",
+    "evidence": [
+      "e_operation_type_crosstab"
+    ]
+  },
+  {
+    "id": "c_trans_counterparty_external",
+    "target": "term_transaction_counterparty_account",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "counterparty",
+      "bank",
+      "account",
+      "trans account",
+      "transfer",
+      "external",
+      "对手方",
+      "对方账号",
+      "跨行",
+      "转账",
+      "外部账号"
+    ],
+    "severity": "block",
+    "scope": "适用范围：解读 trans.bank / trans.account，或尝试与 account 表连接时",
+    "confidence": "high",
+    "description": "trans.account 是外部对手方账号，不是本库账户。295389 条有值记录中仅 30 条能匹配 account.account_id(约 0.01%)，因此不得把 trans.account 当作 account.account_id 使用，也不应据此做账户级关联。trans.bank 与 trans.account 也只在转账类操作上有值：PRIJEM 有 339857/405083、VYDAJ 有 426289/634571、VYBER 有 16666/16666 条为空。",
+    "evidence": [
+      "e_counterparty_external"
+    ]
+  },
+  {
+    "id": "c_ksymbol_missing_encoding",
+    "target": "term_k_symbol",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "k_symbol",
+      "symbol",
+      "missing",
+      "null",
+      "empty",
+      "purpose",
+      "用途",
+      "缺失",
+      "空值",
+      "符号"
+    ],
+    "severity": "warning",
+    "scope": "适用范围：按用途符号分组或过滤缺失值时",
+    "confidence": "high",
+    "description": "用途符号的缺失值编码不统一：trans.k_symbol 有 481881 条为 NULL、53433 条为单个空格字符 ' '(非 NULL)；order.k_symbol 的缺失则用空字符串 ''(1379 条)。做 '无用途符号' 的过滤时必须同时覆盖 NULL、' '、'' 三种写法；分组统计时也不应把 ' ' 当作一个真实用途类别。",
+    "evidence": [
+      "e_ksymbol_encoding"
+    ]
+  },
+  {
+    "id": "c_loan_payment_identity",
+    "target": "term_loan_amount",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "loan",
+      "payments",
+      "duration",
+      "amount",
+      "installment",
+      "loan amount",
+      "贷款",
+      "还款额",
+      "期限",
+      "月供",
+      "本金"
+    ],
+    "severity": "block",
+    "scope": "适用范围：贷款金额、期限、还款额之间的换算或缺失值推导",
+    "confidence": "high",
+    "description": "贷款金额恒等于每期还款额与期数(期限)的乘积：682/682 笔贷款满足 |payments × duration − amount| ≤ 5% × amount，平均相对偏差为 0%。因此三者中任一缺失都可由另外两者导出；同时该恒等式可用于校验贷款行的一致性。注意 duration 的单位是月(观测 12 至 60)。",
+    "evidence": [
+      "e_loan_status_identity"
+    ]
+  },
+  {
+    "id": "c_loan_uver_symbol_link",
+    "target": "term_loan",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "loan",
+      "UVER",
+      "k_symbol",
+      "credit",
+      "贷款",
+      "用途",
+      "信贷"
+    ],
+    "severity": "info",
+    "scope": "适用范围：需要在没有 loan 表的情况下定位贷款相关账户时",
+    "confidence": "medium",
+    "description": "用途符号 'UVER' 与贷款高度相关：682 个有贷款的账户全部同时存在 k_symbol='UVER' 的交易和常设委托；但反向不成立——717 个 order 侧 UVER 账户中仅 682 个有贷款记录。因此 k_symbol='UVER' 可作为识别贷款相关活动的补充线索，但不能替代 loan 表作为贷款事实来源。",
+    "evidence": [
+      "e_loan_uver_link"
+    ]
+  },
+  {
+    "id": "c_disp_ownership_cardinality",
+    "target": "term_disposition",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "disp",
+      "owner",
+      "disponent",
+      "owner",
+      "ownership",
+      "holder",
+      "权属",
+      "所有者",
+      "代理人",
+      "持有人"
+    ],
+    "severity": "info",
+    "scope": "适用范围：客户-账户权属关系与客户数/账户数口径定义",
+    "confidence": "high",
+    "description": "权属基数规则(全库无例外)：每个账户恰有 1 条 OWNER 记录；869 个账户另有 1 条 DISPONENT 记录，其余 3631 个账户只有 OWNER。每个客户恰有 1 条权属记录(即观测上每客户 1 个账户)。因此：账户数 = 4500 = client 数 = OWNER 记录数；'客户数' 与 '账户数' 在本库中恰好相等，与 '权属记录数'(5369) 不同。",
+    "evidence": [
+      "e_disp_cardinality"
+    ]
+  },
+  {
+    "id": "c_card_owner_only",
+    "target": "term_card",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "card",
+      "owner",
+      "disponent",
+      "credit card",
+      "card holder",
+      "银行卡",
+      "持卡",
+      "卡主"
+    ],
+    "severity": "warning",
+    "scope": "适用范围：由账户或客户关联到银行卡时",
+    "confidence": "high",
+    "description": "银行卡只发放给 OWNER 类型的权属记录：892 张卡全部挂靠在 OWNER 上，DISPONENT 记录下没有卡。因此 '有卡客户' 等价于对应的 OWNER 客户，而不能通过 DISPONENT 记录关联到卡。",
+    "evidence": [
+      "e_card_owner_only"
+    ]
+  },
+  {
+    "id": "c_loan_status_enum",
+    "target": "term_loan_status",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "loan status",
+      "status A",
+      "status B",
+      "status C",
+      "status D",
+      "default",
+      "running",
+      "贷款状态",
+      "违约",
+      "状态码"
+    ],
+    "severity": "warning",
+    "scope": "适用范围：按 loan.status 分组、筛选或解释时",
+    "confidence": "medium",
+    "description": "loan.status 有 A(203)、B(31)、C(403)、D(45) 四个取值，且各组在规模上系统性不同：平均贷款金额 A≈91641 / B≈140721 / C≈171410 / D≈249285，平均期限 A≈22 / B≈26 / C≈43 / D≈46 月。字母本身(如是否代表违约、结清、展期)无法仅由库内数据验证，因此不应对 A-D 赋予未经证实的业务标签；可以使用该列分组，但应在结论中声明其含义未被数据确认。",
+    "evidence": [
+      "e_loan_status_identity"
+    ]
+  },
+  {
+    "id": "c_trans_type_enum",
+    "target": "term_transaction_type",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "PRIJEM",
+      "VYDAJ",
+      "VYBER",
+      "type distribution",
+      "transaction type",
+      "交易类型",
+      "分布"
+    ],
+    "severity": "info",
+    "scope": "适用范围：按交易类型统计或抽样时",
+    "confidence": "high",
+    "description": "trans.type 只有三个取值，分布极不均衡：VYDAJ 634571、PRIJEM 405083、VYBER 16666(合计 1056320)。默认的平均/占比口径会被 VYDAJ 主导；按账户或按客户计算时应注意每类是否都有观测。",
+    "evidence": [
+      "e_trans_type_distribution"
+    ]
+  },
+  {
+    "id": "c_account_frequency_enum",
+    "target": "term_account_frequency",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "frequency",
+      "POPLATEK",
+      "statement",
+      "account frequency",
+      "对账单",
+      "频率",
+      "计费"
+    ],
+    "severity": "info",
+    "scope": "适用范围：按 account.frequency 分组或解读时",
+    "confidence": "medium",
+    "description": "account.frequency 观测到 POPLATEK MESICNE(4167)、POPLATEK TYDNE(240)、POPLATEK PO OBRATU(93) 三个取值，分布极不均衡。这些是捷克语代码，其对应的具体对账/计费周期无法仅由库内数据验证，不应断言其时间周期；可在分析中作为名义分组使用。",
+    "evidence": [
+      "e_account_frequency_enum"
+    ]
+  },
+  {
+    "id": "c_bank_code_enum",
+    "target": "term_transaction_counterparty_bank",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "bank",
+      "bank_to",
+      "bank code",
+      "counterparty bank",
+      "银行",
+      "银行代码",
+      "跨行"
+    ],
+    "severity": "info",
+    "scope": "适用范围：按银行代码分组或跨行分析时",
+    "confidence": "high",
+    "description": "银行代码是 13 个两字母值(AB、CD、EF、GH、IJ、KL、MN、OP、QR、ST、UV、WX、YZ)，在 trans.bank 与 order.bank_to 中完全一致，无任一侧独有值。trans.bank 侧各代码约 2 万条，分布均衡；这 13 个代码所对应的具体银行实体在库内无对照表，无法从数据中还原机构名称。",
+    "evidence": [
+      "e_bank_code_domains"
+    ]
+  },
+  {
+    "id": "c_district_text_numeric",
+    "target": "term_district_socioeconomic_attribute",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "district",
+      "A4",
+      "A5",
+      "A6",
+      "A7",
+      "text",
+      "cast",
+      "sort",
+      "population",
+      "地区",
+      "文本",
+      "排序",
+      "转换"
+    ],
+    "severity": "block",
+    "scope": "适用范围：对 district 的 A4-A7 列做排序、比较或数值聚合时",
+    "confidence": "high",
+    "description": "district 的 A4、A5、A6、A7 四列声明与存储类型均为 TEXT，但取值全部是可解析的数值字符串(A4 取值 42821 至 1204953)。直接对这些列使用 MIN/MAX/ORDER BY 会得到字典序结果而非数值序(A4 的文本序极值为 102609/95907，数值序极值才是 42821/1204953)，进而给出错误的 '最大/最小' 地区。必须显式数值转换后再排序与聚合。",
+    "evidence": [
+      "e_district_typing"
+    ]
+  },
+  {
+    "id": "c_district_attribute_opacity",
+    "target": "term_district_socioeconomic_attribute",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "A8",
+      "A9",
+      "A10",
+      "A11",
+      "A12",
+      "A13",
+      "A14",
+      "A15",
+      "A16",
+      "district attribute",
+      "region attribute",
+      "地区属性",
+      "社会经济"
+    ],
+    "severity": "warning",
+    "scope": "适用范围：使用 district 的 A 编码属性做业务解释或命名时",
+    "confidence": "high",
+    "description": "district 中 A8-A16 的列名不携带语义，库内也没有列说明表或字典表可供对照。可核验的只有取值形态与范围：A8(0-5)、A9(1-11) 为小整数分级；A10(33.9-100.0) 处于比例/百分比尺度；A11(8110-12541)、A14(81-167) 为量级稳定的正整数；A12(0.2-7.3) 与 A13(0.43-9.4) 是一对小量级实数，且 A13 普遍大于 A12；A15(818-85677) 与 A16(888-99107) 是一对正整数，且 A16 在每个地区都不小于 A15。任何超出上述形态的业务命名(例如断言某列是工资或失业率)均属外部推测，不应写入分析结论。这些列是地区级属性，不可跨地区求和。",
+    "evidence": [
+      "e_district_ranges"
+    ]
+  },
+  {
+    "id": "c_schema_no_declared_fk",
+    "target": "term_transaction",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "foreign key",
+      "fk",
+      "join",
+      "referential integrity",
+      "relationship",
+      "外键",
+      "关联",
+      "连接",
+      "完整性"
+    ],
+    "severity": "info",
+    "scope": "适用范围：编写跨表关联或判断能否安全 JOIN 时",
+    "confidence": "high",
+    "description": "本库的 CREATE TABLE 语句没有声明任何 FOREIGN KEY 约束，也没有二级索引，因此不能依赖数据库自动保证关联完整性。实测关联均无孤儿记录：disp→account、disp→client、account→district、client→district、trans→account、loan→account、order→account、card→disp 八组左连接的未匹配行数均为 0。可以按这些标识列安全关联；但仍应在每个新查询中自行处理可能的未匹配情况，不要假设约束存在。",
+    "evidence": [
+      "e_referential_integrity",
+      "e_schema_no_fk"
+    ]
+  },
+  {
+    "id": "c_reference_date_scope",
+    "target": "term_client_age",
+    "constraint_type": "scope",
+    "trigger_keywords": [
+      "age",
+      "reference date",
+      "as of",
+      "year",
+      "年龄",
+      "参考日期",
+      "截止",
+      "口径"
+    ],
+    "severity": "warning",
+    "scope": "适用范围：计算年龄或做任何随时间变化的口径时",
+    "confidence": "high",
+    "description": "库内没有 '当前日期' 语义的时刻列，各表时间范围不同：account.date 1993-01-01 至 1997-12-29、trans.date 1993-01-01 至 1998-12-31、loan.date 1993-07-05 至 1998-12-08、card.issued 1993-11-07 至 1998-12-29、client.birth_date 1911-08-20 至 1987-09-27。计算年龄等相对时间指标时必须显式声明参考日期并在结论中给出；使用全库最晚日期 1998-12-31 得到约 11.3 至 87.4 岁的范围，换用其他参考日期会系统性地改变所有年龄。",
+    "evidence": [
+      "e_date_ranges",
+      "e_reference_date"
+    ]
+  }
+]

@@ -1,0 +1,149 @@
+{
+ "db_id": "codebase_community",
+ "questions": [
+  {
+   "question_id": 547,
+   "db_id": "codebase_community",
+   "question": "Among the posts owned by an elder user, how many of them have a score of over 19?",
+   "evidence": "elder users refers to Age > 65; Score of over 19 refers to Score > = 20",
+   "SQL": "SELECT COUNT(T1.Id) FROM posts AS T1 INNER JOIN users AS T2 ON T1.OwnerUserId = T2.Id WHERE T1.Score >= 20 AND T2.Age > 65",
+   "difficulty": "simple"
+  },
+  {
+   "question_id": 592,
+   "db_id": "codebase_community",
+   "question": "How many users are awarded with more than 5 badges?",
+   "evidence": "more than 5 badges refers to Count (Name) > 5; user refers to UserId",
+   "SQL": "SELECT COUNT(UserId) FROM ( SELECT UserId, COUNT(Name) AS num FROM badges GROUP BY UserId ) T WHERE T.num > 5",
+   "difficulty": "simple"
+  },
+  {
+   "question_id": 555,
+   "db_id": "codebase_community",
+   "question": "What is the average score of the posts owned by the user csgillespie?",
+   "evidence": "\"csgillespie\" is the DisplayName of user; average score refers to AVG(Score)",
+   "SQL": "SELECT AVG(T1.Score) FROM posts AS T1 INNER JOIN users AS T2 ON T1.OwnerUserId = T2.Id WHERE T2.DisplayName = 'csgillespie'",
+   "difficulty": "simple"
+  },
+  {
+   "question_id": 683,
+   "db_id": "codebase_community",
+   "question": "What is the percentage of posts whose owners had a reputation of over 1000 in 2011?",
+   "evidence": "percentage = DIVIDE(COUNT(Id where YEAR(CreationDate) = 2011 and Reputation > 1000), COUNT(Id) ) * 100;",
+   "SQL": "SELECT CAST(SUM(IIF(STRFTIME('%Y', T2.CreaionDate) = '2011' AND T1.Reputation > 1000, 1, 0)) AS REAL) * 100 / COUNT(T1.Id) FROM users AS T1 INNER JOIN posts AS T2 ON T1.Id = T2.OwnerUserId",
+   "difficulty": "moderate"
+  },
+  {
+   "question_id": 639,
+   "db_id": "codebase_community",
+   "question": "Based on posts posted by Community, calculate the percentage of posts that use the R language.",
+   "evidence": "DIVIDE(COUNT(PostId WHERE TagName = 'r')), (COUNT(PostId WHERE DisplayName = 'Community')) as percentage; R language refers to tagname = 'r'",
+   "SQL": "SELECT CAST(SUM(IIF(T3.TagName = 'r', 1, 0)) AS REAL) * 100 / COUNT(T1.Id) FROM users AS T1 INNER JOIN postHistory AS T2 ON T1.Id = T2.UserId INNER JOIN tags AS T3 ON T3.ExcerptPostId = T2.PostId WHERE T1.DisplayName = 'Community'",
+   "difficulty": "challenging"
+  },
+  {
+   "question_id": 568,
+   "db_id": "codebase_community",
+   "question": "Provide the display name of the user who made the vote No.6347.",
+   "evidence": "vote no. 6347 refers to Id = '6347'",
+   "SQL": "SELECT T1.DisplayName FROM users AS T1 INNER JOIN votes AS T2 ON T1.Id = T2.UserId WHERE T2.Id = 6347",
+   "difficulty": "simple"
+  },
+  {
+   "question_id": 565,
+   "db_id": "codebase_community",
+   "question": "User No.23853 gave a comment to a post at 9:08:18 on 2013/7/12, was that post well-finished?",
+   "evidence": "user no. 23853 refers to UserId = '23853'; at 9:08:18 on 2013/7/12 refers to CreationDate = '2013-07-12 09:08:18.0'; not well-finished refers to ClosedDate IS NULL and vice versa",
+   "SQL": "SELECT IIF(T2.ClosedDate IS NULL, 'NOT well-finished', 'well-finished') AS resylt FROM comments AS T1 INNER JOIN posts AS T2 ON T1.PostId = T2.Id WHERE T1.UserId = 23853 AND T1.CreationDate = '2013-07-12 09:08:18.0'",
+   "difficulty": "moderate"
+  },
+  {
+   "question_id": 584,
+   "db_id": "codebase_community",
+   "question": "Write all the comments left by users who edited the post titled 'Why square the difference instead of taking the absolute value in standard deviation?'",
+   "evidence": "\"Why square the difference instead of taking the absolute value in standard deviation?\" is the Title of post;",
+   "SQL": "SELECT T2.Comment FROM posts AS T1 INNER JOIN postHistory AS T2 ON T1.Id = T2.PostId WHERE T1.Title = 'Why square the difference instead of taking the absolute value in standard deviation?'",
+   "difficulty": "moderate"
+  },
+  {
+   "question_id": 685,
+   "db_id": "codebase_community",
+   "question": "Identify the total views on the post 'Computer Game Datasets'. Name the user who posted it last time.",
+   "evidence": "total views refer to ViewCount; Name the user refers to DisplayName; post 'Computer Game Datasets' refers to Text = 'Computer Game Datasets';",
+   "SQL": "SELECT T2.ViewCount, T3.DisplayName FROM postHistory AS T1 INNER JOIN posts AS T2 ON T1.PostId = T2.Id INNER JOIN users AS T3 ON T2.LastEditorUserId = T3.Id WHERE T1.Text = 'Computer Game Datasets'",
+   "difficulty": "moderate"
+  },
+  {
+   "question_id": 669,
+   "db_id": "codebase_community",
+   "question": "When did 'chl' cast its first vote in a post?",
+   "evidence": "DisplayName = 'chl'; cast its first vote refers to MIN(CreationDate);",
+   "SQL": "SELECT T2.CreationDate FROM users AS T1 INNER JOIN votes AS T2 ON T1.Id = T2.UserId WHERE T1.DisplayName = 'chl' ORDER BY T2.CreationDate LIMIT 1",
+   "difficulty": "simple"
+  },
+  {
+   "question_id": 701,
+   "db_id": "codebase_community",
+   "question": "Among all the posts posted by the most influential user, identify the percentage with a score above 50.",
+   "evidence": "The higher reputation the user has the more influence; percentage = DIVIDE(COUNT(stats_posts.Id where Score > 50 and MAX(Reputation))), COUNT(stats_posts.Id where MAX(Reputation));",
+   "SQL": "SELECT CAST(SUM(CASE WHEN T2.Score > 50 THEN 1 ELSE 0 END) AS REAL) * 100 / COUNT(T1.Id) FROM users T1 INNER JOIN posts T2 ON T1.Id = T2.OwnerUserId INNER JOIN ( SELECT MAX(Reputation) AS max_reputation FROM users ) T3 ON T1.Reputation = T3.max_reputation",
+   "difficulty": "challenging"
+  },
+  {
+   "question_id": 586,
+   "db_id": "codebase_community",
+   "question": "Which user added a bounty amount of 50 to the post title mentioning variance?",
+   "evidence": "bounty amount of 50 refers to BountyAmount = 50; user refers to DisplayName; title mentioning variance refers to Title include 'variance'",
+   "SQL": "SELECT T3.DisplayName, T1.Title FROM posts AS T1 INNER JOIN votes AS T2 ON T1.Id = T2.PostId INNER JOIN users AS T3 ON T3.Id = T2.UserId WHERE T2.BountyAmount = 50 AND T1.Title LIKE '%variance%'",
+   "difficulty": "challenging"
+  },
+  {
+   "question_id": 557,
+   "db_id": "codebase_community",
+   "question": "Among the posts with a score of over 5, what is the percentage of them being owned by an elder user?",
+   "evidence": "score of over 5 refers to Score > 5; elder user refers to Age > 65; percentage = Divide (Count(Id where Age>65), Count(Id)) * 100",
+   "SQL": "SELECT CAST(SUM(IIF(T2.Age > 65, 1, 0)) AS REAL) * 100 / COUNT(T1.Id) FROM posts AS T1 INNER JOIN users AS T2 ON T1.OwnerUserId = T2.Id WHERE T1.Score > 5",
+   "difficulty": "moderate"
+  },
+  {
+   "question_id": 563,
+   "db_id": "codebase_community",
+   "question": "User No.3025 gave a comment at 20:29:39 on 2014/4/23 to a post, how many favorite counts did that post get?",
+   "evidence": "user no. 3025 refers to UserId = '3025'; comment at 20:29:39 on 2014/4/23 refers to CreationDate = '2014/4/23 20:29:39.0'",
+   "SQL": "SELECT T1.FavoriteCount FROM posts AS T1 INNER JOIN comments AS T2 ON T1.Id = T2.PostId WHERE T2.CreationDate = '2014-04-23 20:29:39.0' AND T2.UserId = 3025",
+   "difficulty": "moderate"
+  },
+  {
+   "question_id": 531,
+   "db_id": "codebase_community",
+   "question": "Which user has a higher reputation, Harlan or Jarrod Dixon?",
+   "evidence": "\"Harlan\" and \"Jarrod Dixon\" are both DisplayName; highest reputation refers to Max(Reputation)",
+   "SQL": "SELECT DisplayName FROM users WHERE DisplayName IN ('Harlan', 'Jarrod Dixon') AND Reputation = ( SELECT MAX(Reputation) FROM users WHERE DisplayName IN ('Harlan', 'Jarrod Dixon') )",
+   "difficulty": "simple"
+  },
+  {
+   "question_id": 671,
+   "db_id": "codebase_community",
+   "question": "What is the display name of the user who acquired the first Autobiographer badge?",
+   "evidence": "Autobiographer is the name of the badge; acquired the first refers to MIN(Date);",
+   "SQL": "SELECT T1.DisplayName FROM users AS T1 INNER JOIN badges AS T2 ON T1.Id = T2.UserId WHERE T2.`Name` = 'Autobiographer' ORDER BY T2.Date LIMIT 1",
+   "difficulty": "simple"
+  },
+  {
+   "question_id": 581,
+   "db_id": "codebase_community",
+   "question": "Who is the owner of the post titled 'Open source tools for visualizing multi-dimensional data?'",
+   "evidence": "'Open source tools for visualizing multi-dimensional data' is the Title of Post; owner refers to DisplayName;",
+   "SQL": "SELECT T2.DisplayName FROM posts AS T1 INNER JOIN users AS T2 ON T1.OwnerUserId = T2.Id WHERE T1.Title = 'Open source tools for visualizing multi-dimensional data?'",
+   "difficulty": "moderate"
+  },
+  {
+   "question_id": 634,
+   "db_id": "codebase_community",
+   "question": "Among posts by Harvey Motulsky and Noah Snyder, which one has higher popularity?",
+   "evidence": "Has higher popularity means the post has higher view count ; calculation = MAX(SUM(ViewCount)) where DisplayName = 'Harvey Motulsky' OR DisplayName = 'Noah Snyder';",
+   "SQL": "SELECT T1.DisplayName FROM users AS T1 INNER JOIN postHistory AS T2 ON T1.Id = T2.UserId INNER JOIN posts AS T3 ON T2.PostId = T3.Id WHERE T1.DisplayName = 'Harvey Motulsky' OR T1.DisplayName = 'Noah Snyder' GROUP BY T1.DisplayName ORDER BY SUM(T3.ViewCount) DESC LIMIT 1",
+   "difficulty": "challenging"
+  }
+ ]
+}

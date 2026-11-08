@@ -1,0 +1,655 @@
+[
+  {
+    "id": "rel_po_line_po",
+    "source": "term_purchase_order_line",
+    "relation_type": "composition",
+    "target": "term_purchase_order",
+    "connection_condition": "fact_po_line.po_id references fact_purchase_order.po_id",
+    "description": "采购订单行是采购订单的组成部分，离开采购订单头无独立意义。",
+    "evidence": [
+      "ev_po_line_join"
+    ]
+  },
+  {
+    "id": "rel_gr_po",
+    "source": "term_goods_receipt",
+    "relation_type": "composition",
+    "target": "term_purchase_order",
+    "connection_condition": "fact_goods_receipt.po_id references fact_purchase_order.po_id",
+    "description": "收货单引用其对应的采购订单。",
+    "evidence": [
+      "ev_goods_receipt"
+    ]
+  },
+  {
+    "id": "rel_ap_gr",
+    "source": "term_accounts_payable",
+    "relation_type": "composition",
+    "target": "term_goods_receipt",
+    "connection_condition": "fact_ap.gr_id references fact_goods_receipt.gr_id",
+    "description": "应付账款由收货单触发建立。",
+    "evidence": [
+      "ev_ap"
+    ]
+  },
+  {
+    "id": "rel_payment_out_ap",
+    "source": "term_outbound_payment",
+    "relation_type": "composition",
+    "target": "term_accounts_payable",
+    "connection_condition": "fact_payment_out.ap_id references fact_ap.ap_id",
+    "description": "对外付款单用于核销应付账款。",
+    "evidence": [
+      "ev_payment_out"
+    ]
+  },
+  {
+    "id": "rel_delivery_so",
+    "source": "term_delivery",
+    "relation_type": "composition",
+    "target": "term_sales_order",
+    "connection_condition": "fact_delivery.order_id references fact_sales_order.order_id",
+    "description": "发货单是销售订单的履约组成部分。",
+    "evidence": [
+      "ev_delivery"
+    ]
+  },
+  {
+    "id": "rel_return_so",
+    "source": "term_return_order",
+    "relation_type": "composition",
+    "target": "term_sales_order",
+    "connection_condition": "fact_return.order_id references fact_sales_order.order_id",
+    "description": "退货单基于原销售订单产生。",
+    "evidence": [
+      "ev_return"
+    ]
+  },
+  {
+    "id": "rel_invoice_delivery",
+    "source": "term_invoice",
+    "relation_type": "composition",
+    "target": "term_delivery",
+    "connection_condition": "fact_invoice.delivery_id references fact_delivery.delivery_id",
+    "description": "发票以发货单为开票依据。",
+    "evidence": [
+      "ev_invoice"
+    ]
+  },
+  {
+    "id": "rel_ar_invoice",
+    "source": "term_ar_aging",
+    "relation_type": "composition",
+    "target": "term_invoice",
+    "connection_condition": "fact_ar_aging.invoice_id references fact_invoice.invoice_id",
+    "description": "应收账龄记录基于发票产生。",
+    "evidence": [
+      "ev_ar_aging"
+    ]
+  },
+  {
+    "id": "rel_receipt_ar",
+    "source": "term_receipt_payment",
+    "relation_type": "composition",
+    "target": "term_ar_aging",
+    "connection_condition": "fact_payment.ar_id references fact_ar_aging.ar_id",
+    "description": "回款记录用于核销应收账款。",
+    "evidence": [
+      "ev_receipt_payment"
+    ]
+  },
+  {
+    "id": "rel_output_order",
+    "source": "term_production_output",
+    "relation_type": "composition",
+    "target": "term_production_order",
+    "connection_condition": "fact_production_output.order_id references fact_production_order.order_id",
+    "description": "产出记录是生产工单的产出部分。",
+    "evidence": [
+      "ev_production_output_grade"
+    ]
+  },
+  {
+    "id": "rel_line_workshop",
+    "source": "term_production_line",
+    "relation_type": "composition",
+    "target": "term_workshop",
+    "connection_condition": "dim_production_line.workshop_id references dim_workshop.workshop_id",
+    "description": "产线隶属于车间。",
+    "evidence": [
+      "ev_workshop_line"
+    ]
+  },
+  {
+    "id": "rel_equipment_line",
+    "source": "term_equipment",
+    "relation_type": "composition",
+    "target": "term_production_line",
+    "connection_condition": "dim_equipment.line_id references dim_production_line.line_id",
+    "description": "设备安装于产线上。",
+    "evidence": [
+      "ev_equipment_manufacturer"
+    ]
+  },
+  {
+    "id": "rel_sensor_equipment",
+    "source": "term_sensor",
+    "relation_type": "composition",
+    "target": "term_equipment",
+    "connection_condition": "dim_sensor.equipment_id references dim_equipment.equipment_id",
+    "description": "传感器安装在设备上。",
+    "evidence": [
+      "ev_sensor_unit"
+    ]
+  },
+  {
+    "id": "rel_iot_sensor",
+    "source": "term_iot_data",
+    "relation_type": "composition",
+    "target": "term_sensor",
+    "connection_condition": "fact_iot_data.sensor_id references dim_sensor.sensor_id",
+    "description": "IoT 数据点由其传感器产生。",
+    "evidence": [
+      "ev_iot"
+    ]
+  },
+  {
+    "id": "rel_alarm_sensor",
+    "source": "term_alarm",
+    "relation_type": "composition",
+    "target": "term_sensor",
+    "connection_condition": "fact_alarm.sensor_id references dim_sensor.sensor_id",
+    "description": "告警由传感器触发。",
+    "evidence": [
+      "ev_alarm"
+    ]
+  },
+  {
+    "id": "rel_runtime_line",
+    "source": "term_equipment_runtime_record",
+    "relation_type": "composition",
+    "target": "term_production_line",
+    "connection_condition": "fact_equipment_runtime.line_id references dim_production_line.line_id",
+    "description": "设备运行记录按产线记录。",
+    "evidence": [
+      "ev_equipment_runtime"
+    ]
+  },
+  {
+    "id": "rel_downtime_line",
+    "source": "term_downtime_record",
+    "relation_type": "composition",
+    "target": "term_production_line",
+    "connection_condition": "fact_downtime.line_id references dim_production_line.line_id",
+    "description": "停机事件记录所属产线。",
+    "evidence": [
+      "ev_downtime"
+    ]
+  },
+  {
+    "id": "rel_maintplan_equipment",
+    "source": "term_maintenance_plan",
+    "relation_type": "composition",
+    "target": "term_equipment",
+    "connection_condition": "fact_maintenance_plan.equipment_id references dim_equipment.equipment_id",
+    "description": "维护计划针对具体设备。",
+    "evidence": [
+      "ev_maintenance"
+    ]
+  },
+  {
+    "id": "rel_maintrec_equipment",
+    "source": "term_maintenance_record",
+    "relation_type": "composition",
+    "target": "term_equipment",
+    "connection_condition": "fact_maintenance_record.equipment_id references dim_equipment.equipment_id",
+    "description": "维护记录针对具体设备。",
+    "evidence": [
+      "ev_maintenance"
+    ]
+  },
+  {
+    "id": "rel_prodplan_line",
+    "source": "term_production_plan",
+    "relation_type": "composition",
+    "target": "term_production_line",
+    "connection_condition": "fact_production_plan.line_id references dim_production_line.line_id",
+    "description": "生产计划按产线编制。",
+    "evidence": [
+      "ev_production_plan"
+    ]
+  },
+  {
+    "id": "rel_po_supplier",
+    "source": "term_purchase_order",
+    "relation_type": "association",
+    "target": "term_supplier",
+    "connection_condition": "fact_purchase_order.supplier_id corresponds to dim_supplier.supplier_id",
+    "description": "采购订单指向供应商，是业务对手方关联而非组成关系。",
+    "evidence": [
+      "ev_po_status"
+    ]
+  },
+  {
+    "id": "rel_suppliereval_supplier",
+    "source": "term_supplier_evaluation",
+    "relation_type": "association",
+    "target": "term_supplier",
+    "connection_condition": "fact_supplier_eval.supplier_id corresponds to dim_supplier.supplier_id",
+    "description": "供应商评估记录针对某个供应商。",
+    "evidence": [
+      "ev_supplier_eval_scores"
+    ]
+  },
+  {
+    "id": "rel_material_supplier",
+    "source": "term_material",
+    "relation_type": "association",
+    "target": "term_supplier",
+    "connection_condition": "dim_material.supplier_id corresponds to dim_supplier.supplier_id",
+    "description": "原材料标注其默认供应供应商。",
+    "evidence": [
+      "ev_material"
+    ]
+  },
+  {
+    "id": "rel_supplier_suppliercategory",
+    "source": "term_supplier",
+    "relation_type": "association",
+    "target": "term_supplier_category",
+    "connection_condition": "dim_supplier.category_id corresponds to dim_supplier_category.category_id",
+    "description": "供应商归属某一供应类别。",
+    "evidence": [
+      "ev_supplier_category_taxonomy"
+    ]
+  },
+  {
+    "id": "rel_hier_supplier_category",
+    "source": "term_supplier_category",
+    "relation_type": "hierarchy",
+    "target": "term_supplier_category_group",
+    "connection_condition": "dim_supplier_category.parent_id of the detail node equals the category_id of the group node",
+    "description": "供应商类别明细是大类的下级类别（is-a）：通用树脂/工程塑料树脂同属树脂供应商等。",
+    "evidence": [
+      "ev_supplier_category_taxonomy"
+    ]
+  },
+  {
+    "id": "rel_product_productline",
+    "source": "term_product",
+    "relation_type": "association",
+    "target": "term_product_line",
+    "connection_condition": "dim_product.prod_line_id corresponds to dim_product_line.prod_line_id",
+    "description": "产品归属某一产品线。",
+    "evidence": [
+      "ev_product_line"
+    ]
+  },
+  {
+    "id": "rel_so_customer",
+    "source": "term_sales_order",
+    "relation_type": "association",
+    "target": "term_customer",
+    "connection_condition": "fact_sales_order.cust_id corresponds to dim_customer.cust_id",
+    "description": "销售订单归属于客户。",
+    "evidence": [
+      "ev_sales_order"
+    ]
+  },
+  {
+    "id": "rel_so_employee",
+    "source": "term_sales_order",
+    "relation_type": "association",
+    "target": "term_employee",
+    "connection_condition": "fact_sales_order.emp_id corresponds to dim_employee.emp_id",
+    "description": "销售订单由业务员负责。",
+    "evidence": [
+      "ev_sales_order"
+    ]
+  },
+  {
+    "id": "rel_so_product",
+    "source": "term_sales_order",
+    "relation_type": "association",
+    "target": "term_product",
+    "connection_condition": "fact_sales_order.prod_id corresponds to dim_product.prod_id",
+    "description": "销售订单指定产品。",
+    "evidence": [
+      "ev_sales_order"
+    ]
+  },
+  {
+    "id": "rel_quotation_customer",
+    "source": "term_quotation",
+    "relation_type": "association",
+    "target": "term_customer",
+    "connection_condition": "fact_quotation.cust_id corresponds to dim_customer.cust_id",
+    "description": "报价单面向客户。",
+    "evidence": [
+      "ev_quotation_join"
+    ]
+  },
+  {
+    "id": "rel_quotation_product",
+    "source": "term_quotation",
+    "relation_type": "association",
+    "target": "term_product",
+    "connection_condition": "fact_quotation.product_id corresponds to dim_product.prod_id (naming differs: product_id vs prod_id)",
+    "description": "报价单针对具体产品；据此可经产品线维度筛选报价单。",
+    "evidence": [
+      "ev_quotation_join"
+    ]
+  },
+  {
+    "id": "rel_quotation_employee",
+    "source": "term_quotation",
+    "relation_type": "association",
+    "target": "term_employee",
+    "connection_condition": "fact_quotation.emp_id corresponds to dim_employee.emp_id",
+    "description": "报价单由业务员发起。",
+    "evidence": [
+      "ev_quotation_join"
+    ]
+  },
+  {
+    "id": "rel_opportunity_customer",
+    "source": "term_opportunity",
+    "relation_type": "association",
+    "target": "term_customer",
+    "connection_condition": "fact_opportunity.cust_id corresponds to dim_customer.cust_id",
+    "description": "商机归属于客户。",
+    "evidence": [
+      "ev_opportunity"
+    ]
+  },
+  {
+    "id": "rel_opportunity_employee",
+    "source": "term_opportunity",
+    "relation_type": "association",
+    "target": "term_employee",
+    "connection_condition": "fact_opportunity.emp_id corresponds to dim_employee.emp_id",
+    "description": "商机由业务员跟进。",
+    "evidence": [
+      "ev_opportunity"
+    ]
+  },
+  {
+    "id": "rel_sample_customer",
+    "source": "term_sample",
+    "relation_type": "association",
+    "target": "term_customer",
+    "connection_condition": "fact_sample.cust_id corresponds to dim_customer.cust_id",
+    "description": "送样记录面向客户。",
+    "evidence": [
+      "ev_sample"
+    ]
+  },
+  {
+    "id": "rel_sample_employee",
+    "source": "term_sample",
+    "relation_type": "association",
+    "target": "term_employee",
+    "connection_condition": "fact_sample.emp_id corresponds to dim_employee.emp_id",
+    "description": "送样由业务员发起。",
+    "evidence": [
+      "ev_sample"
+    ]
+  },
+  {
+    "id": "rel_ar_customer",
+    "source": "term_ar_aging",
+    "relation_type": "association",
+    "target": "term_customer",
+    "connection_condition": "fact_ar_aging.cust_id corresponds to dim_customer.cust_id",
+    "description": "应收账款归属客户。",
+    "evidence": [
+      "ev_ar_aging"
+    ]
+  },
+  {
+    "id": "rel_ar_employee",
+    "source": "term_ar_aging",
+    "relation_type": "association",
+    "target": "term_employee",
+    "connection_condition": "fact_ar_aging.emp_id corresponds to dim_employee.emp_id",
+    "description": "应收账款归属业务员。",
+    "evidence": [
+      "ev_ar_aging"
+    ]
+  },
+  {
+    "id": "rel_contract_party",
+    "source": "term_contract",
+    "relation_type": "association",
+    "target": "term_supplier",
+    "connection_condition": "fact_contract.party_id is a polymorphic counterparty identifier (supplier or customer); all current rows resolve to suppliers",
+    "description": "合同相对方标识；当前数据均为采购类合同，指向供应商。",
+    "evidence": [
+      "ev_contract"
+    ]
+  },
+  {
+    "id": "rel_prodorder_line",
+    "source": "term_production_order",
+    "relation_type": "association",
+    "target": "term_production_line",
+    "connection_condition": "fact_production_order.line_id corresponds to dim_production_line.line_id",
+    "description": "生产工单在指定产线上执行。",
+    "evidence": [
+      "ev_production_order"
+    ]
+  },
+  {
+    "id": "rel_prodorder_product",
+    "source": "term_production_order",
+    "relation_type": "association",
+    "target": "term_product",
+    "connection_condition": "fact_production_order.prod_id corresponds to dim_product.prod_id",
+    "description": "生产工单生产指定产品。",
+    "evidence": [
+      "ev_production_order"
+    ]
+  },
+  {
+    "id": "rel_inventory_product",
+    "source": "term_inventory",
+    "relation_type": "association",
+    "target": "term_product",
+    "connection_condition": "fact_inventory.prod_id corresponds to dim_product.prod_id",
+    "description": "库存记录对应产品。",
+    "evidence": [
+      "ev_inventory"
+    ]
+  },
+  {
+    "id": "rel_productcost_product",
+    "source": "term_product_cost",
+    "relation_type": "association",
+    "target": "term_product",
+    "connection_condition": "fact_product_cost.product_id corresponds to dim_product.prod_id (naming differs: product_id vs prod_id)",
+    "description": "产品成本记录对应产品。",
+    "evidence": [
+      "ev_product_cost"
+    ]
+  },
+  {
+    "id": "rel_incident_workshop",
+    "source": "term_incident",
+    "relation_type": "association",
+    "target": "term_workshop",
+    "connection_condition": "fact_incident.workshop_id corresponds to dim_workshop.workshop_id",
+    "description": "事故发生在某车间。",
+    "evidence": [
+      "ev_incident"
+    ]
+  },
+  {
+    "id": "rel_incident_line",
+    "source": "term_incident",
+    "relation_type": "association",
+    "target": "term_production_line",
+    "connection_condition": "fact_incident.line_id corresponds to dim_production_line.line_id",
+    "description": "事故发生在某产线。",
+    "evidence": [
+      "ev_incident"
+    ]
+  },
+  {
+    "id": "rel_audit_workshop",
+    "source": "term_safety_audit",
+    "relation_type": "association",
+    "target": "term_workshop",
+    "connection_condition": "fact_safety_audit.workshop_id corresponds to dim_workshop.workshop_id",
+    "description": "安全审计针对某车间。",
+    "evidence": [
+      "ev_safety_audit"
+    ]
+  },
+  {
+    "id": "rel_audit_employee",
+    "source": "term_safety_audit",
+    "relation_type": "association",
+    "target": "term_employee",
+    "connection_condition": "fact_safety_audit.auditor_id corresponds to dim_employee.emp_id",
+    "description": "安全审计由审计人执行。",
+    "evidence": [
+      "ev_safety_audit"
+    ]
+  },
+  {
+    "id": "rel_training_employee",
+    "source": "term_safety_training",
+    "relation_type": "association",
+    "target": "term_employee",
+    "connection_condition": "fact_safety_training.trainer_id corresponds to dim_employee.emp_id",
+    "description": "安全培训由讲师承担。",
+    "evidence": [
+      "ev_safety_training"
+    ]
+  },
+  {
+    "id": "rel_risk_employee",
+    "source": "term_risk_assessment",
+    "relation_type": "association",
+    "target": "term_employee",
+    "connection_condition": "fact_risk_assessment.assessor_id corresponds to dim_employee.emp_id",
+    "description": "风险评估由评估人执行。",
+    "evidence": [
+      "ev_risk"
+    ]
+  },
+  {
+    "id": "rel_energy_line",
+    "source": "term_energy_consumption",
+    "relation_type": "association",
+    "target": "term_production_line",
+    "connection_condition": "fact_energy_consumption.line_id corresponds to dim_production_line.line_id",
+    "description": "能耗记录归属产线。",
+    "evidence": [
+      "ev_energy"
+    ]
+  },
+  {
+    "id": "rel_downtime_equipment",
+    "source": "term_downtime_record",
+    "relation_type": "association",
+    "target": "term_equipment",
+    "connection_condition": "fact_downtime.equipment_id corresponds to dim_equipment.equipment_id",
+    "description": "停机事件关联具体设备。",
+    "evidence": [
+      "ev_downtime"
+    ]
+  },
+  {
+    "id": "rel_alarm_equipment",
+    "source": "term_alarm",
+    "relation_type": "association",
+    "target": "term_equipment",
+    "connection_condition": "fact_alarm.equipment_id corresponds to dim_equipment.equipment_id",
+    "description": "告警关联具体设备。",
+    "evidence": [
+      "ev_alarm"
+    ]
+  },
+  {
+    "id": "rel_equiv_supplier_rating",
+    "source": "term_supplier_credit_level",
+    "relation_type": "equivalence",
+    "target": "term_supplier_eval_grade",
+    "connection_condition": "Both encode a supplier rating with values A/AA drawn from the same coding convention; dim_supplier.credit_level is static while fact_supplier_eval.grade is per evaluation period",
+    "description": "“评级/信用等级”在供应商主数据与评估记录中是同一评级概念的不同载体，需按语境区分。",
+    "evidence": [
+      "ev_supplier_master",
+      "ev_supplier_eval_grade"
+    ]
+  },
+  {
+    "id": "rel_equiv_paid_amounts",
+    "source": "term_outbound_payment_amount",
+    "relation_type": "equivalence",
+    "target": "term_accounts_payable_paid_amount",
+    "connection_condition": "fact_payment_out.amount (per payment) and fact_ap.paid_amount (accumulated per AP record) express the same concept of amount actually paid to suppliers",
+    "description": "付款金额与已付金额是同一“已支付给供应商的金额”概念在两个粒度上的表达。",
+    "evidence": [
+      "ev_payment_out",
+      "ev_ap"
+    ]
+  },
+  {
+    "id": "rel_equiv_run_hours",
+    "source": "term_equipment_actual_run_hours",
+    "relation_type": "equivalence",
+    "target": "term_production_runtime_hours",
+    "connection_condition": "fact_equipment_runtime.actual_run_hours (line-day) and fact_production_order.runtime_hours (work-order) both express production line running time at different grains",
+    "description": "实际运行小时与工单运行时长表达同一“产线运行时长”概念，但数据粒度不同。",
+    "evidence": [
+      "ev_equipment_runtime",
+      "ev_production_order",
+      "ev_metric_catalog_rules"
+    ]
+  },
+  {
+    "id": "rel_deriv_total_score",
+    "source": "term_supplier_delivery_score",
+    "relation_type": "derivation",
+    "target": "term_supplier_total_score",
+    "connection_condition": "fact_supplier_eval.total_score equals 0.4*delivery_score + 0.4*quality_score + 0.2*service_score on all 66 rows",
+    "description": "综合评分由交付、质量、服务三项评分按固定权重加权推导；质量与服务评分为并列输入。",
+    "evidence": [
+      "ev_supplier_eval_scores"
+    ]
+  },
+  {
+    "id": "rel_deriv_gp_standard",
+    "source": "term_sales_order",
+    "relation_type": "derivation",
+    "target": "term_gross_profit_standard",
+    "connection_condition": "gross_profit_standard = amount - standard_cost_amount",
+    "description": "标准毛利由销售订单金额减标准成本金额推导。",
+    "evidence": [
+      "ev_sales_order"
+    ]
+  },
+  {
+    "id": "rel_deriv_gp_actual",
+    "source": "term_sales_order_actual_cost",
+    "relation_type": "derivation",
+    "target": "term_gross_profit_actual",
+    "connection_condition": "gross_profit_actual = amount - actual_cost_amount",
+    "description": "实际毛利由销售订单金额减实际成本金额推导。",
+    "evidence": [
+      "ev_sales_order"
+    ]
+  },
+  {
+    "id": "rel_deriv_days_to_invoice",
+    "source": "term_delivery",
+    "relation_type": "derivation",
+    "target": "term_days_to_invoice",
+    "connection_condition": "fact_invoice.days_to_invoice equals invoice_date minus delivery_date on all 5162 rows",
+    "description": "开票天数由发货日期与开票日期之差推导。",
+    "evidence": [
+      "ev_invoice_days"
+    ]
+  }
+]

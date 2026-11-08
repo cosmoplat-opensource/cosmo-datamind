@@ -1,0 +1,290 @@
+[
+ {
+  "id": "ev_schema_tables",
+  "source": "codebase_community.sqlite (read-only)",
+  "query": ".schema (read-only dump of table definitions)",
+  "result": "Eight tables: badges, comments, postHistory, postLinks, posts, tags, users, votes. Column names as used throughout this version were read directly from these definitions.",
+  "validation_method": "read-only schema inspection",
+  "timestamp": "2026-10-10"
+ },
+ {
+  "id": "ev_row_counts",
+  "source": "codebase_community.sqlite (read-only)",
+  "query": "SELECT COUNT(*) FROM each of badges, comments, postHistory, postLinks, posts, tags, users, votes",
+  "result": "badges 79851; comments 174285; postHistory 303155; postLinks 11102; posts 91966; tags 1032; users 40325; votes 38930.",
+  "validation_method": "independent row count per table",
+  "timestamp": "2026-10-10"
+ },
+ {
+  "id": "ev_date_column_names",
+  "source": "codebase_community.sqlite (read-only)",
+  "query": "PRAGMA table_info for each table, filtered to date-like column names",
+  "result": "posts exposes the creation timestamp under a misspelled name (the letters of the word being transposed) and its activity timestamp under a similarly misspelled name. badges uses Date; comments, postHistory, postLinks, users and votes use the conventional CreationDate spelling. The posts table has no conventionally spelled creation column.",
+  "validation_method": "column-name inspection across all tables",
+  "timestamp": "2026-10-10"
+ },
+ {
+  "id": "ev_datetime_text_format",
+  "source": "codebase_community.sqlite (read-only)",
+  "query": "SELECT min/max of users.CreationDate, users.LastAccessDate, posts.CreaionDate, and sample values from badges.Date and votes.CreationDate",
+  "result": "users range 2010-07-19 06:55:26.0 to 2014-09-14 01:01:44.0; posts range 2009-02-02 14:21:12.0 to 2014-09-14 02:09:23.0; badges values carry a trailing fractional component; votes.CreationDate values are day-precision such as 2010-07-19. Formatting therefore varies by table.",
+  "validation_method": "boundary and sample value inspection",
+  "timestamp": "2026-10-10"
+ },
+ {
+  "id": "ev_date_ranges",
+  "source": "codebase_community.sqlite (read-only)",
+  "query": "SELECT min/max CreationDate and LastAccessDate FROM users",
+  "result": "Account creation spans 2010-07-19 to 2014-09-14; last access spans 2010-07-19 to 2014-09-14 03:05:57. Post content begins earlier than the earliest account, at 2009-02-02.",
+  "validation_method": "boundary inspection",
+  "timestamp": "2026-10-10"
+ },
+ {
+  "id": "ev_posttypeid_enum",
+  "source": "codebase_community.sqlite (read-only)",
+  "query": "SELECT PostTypeId, COUNT(*) FROM posts GROUP BY 1 ORDER BY 2 DESC",
+  "result": "1=42912, 2=47755, 3=6, 4=639, 5=640, 6=9, 7=5. The two dominant codes are questions and answers; the remaining codes form a small tail of wiki and nomination posts.",
+  "validation_method": "enumeration distribution",
+  "timestamp": "2026-10-10"
+ },
+ {
+  "id": "ev_posttypeid_tail",
+  "source": "codebase_community.sqlite (read-only)",
+  "query": "SELECT Id, PostTypeId, Title, length(Body) FROM posts WHERE PostTypeId IN (3,4,5,6,7) ORDER BY PostTypeId LIMIT 8",
+  "result": "Rows of these codes carry body content but no title and no tags; the excerpt and wiki codes appear in adjacent identifier pairs.",
+  "validation_method": "sample row inspection",
+  "timestamp": "2026-10-10"
+ },
+ {
+  "id": "ev_tags_format",
+  "source": "codebase_community.sqlite (read-only)",
+  "query": "SELECT Id, TagName, Count, ExcerptPostId, WikiPostId FROM tags LIMIT 5; SELECT Tags FROM posts WHERE Id=1",
+  "result": "tags.TagName holds bare lower-case names such as 'bayesian', 'prior', 'elicitation', 'normality', 'open-source'. The tag list on a question is a concatenation of bracketed tokens with no separator, for example '<bayesian><prior><elicitation>'.",
+  "validation_method": "side-by-side value comparison of both representations",
+  "timestamp": "2026-10-10"
+ },
+ {
+  "id": "ev_tag_match_boundary",
+  "source": "codebase_community.sqlite (read-only)",
+  "query": "SELECT * FROM tags WHERE TagName LIKE '%bayesian%'",
+  "result": "Four tags match the substring: 'bayesian' (1342 questions), 'hierarchical-bayesian' (103), 'bayesian-network' (26), 'bayesian-score' (3). A bare substring search therefore conflates four distinct topics, while the bracketed token form distinguishes them.",
+  "validation_method": "substring match demonstrating over-collection",
+  "timestamp": "2026-10-10"
+ },
+ {
+  "id": "ev_tags_questions_only",
+  "source": "codebase_community.sqlite (read-only)",
+  "query": "SELECT PostTypeId, COUNT(Tags) FROM posts GROUP BY 1",
+  "result": "Tag lists are populated for 42912 rows, all of PostTypeId 1, and for zero rows of every other post kind. This exactly equals the question count.",
+  "validation_method": "non-null count grouped by post type",
+  "timestamp": "2026-10-10"
+ },
+ {
+  "id": "ev_tag_excerpt_wiki_posts",
+  "source": "codebase_community.sqlite (read-only)",
+  "query": "SELECT t.TagName, t.ExcerptPostId, t.WikiPostId, p.PostTypeId FROM tags t LEFT JOIN posts p ON p.Id=t.ExcerptPostId WHERE t.TagName LIKE '%bayesian%'",
+  "result": "For TagName 'bayesian', ExcerptPostId is 20258 and WikiPostId is 20257; post 20258 carries the excerpt post type and post 20257 the full wiki post type. The compound bayesian tags have neither reference.",
+  "validation_method": "reference resolution against the posts table",
+  "timestamp": "2026-10-10"
+ },
+ {
+  "id": "ev_viewcount_questions_only",
+  "source": "codebase_community.sqlite (read-only)",
+  "query": "SELECT COUNT(*) FROM posts; SELECT COUNT(ViewCount) FROM posts; SELECT COUNT(*) FROM posts WHERE PostTypeId=1",
+  "result": "ViewCount is non-null for 42912 rows of 91966, exactly the question count; it is absent for every answer and wiki post.",
+  "validation_method": "non-null count compared against post-type counts",
+  "timestamp": "2026-10-10"
+ },
+ {
+  "id": "ev_favoritecount_sparse",
+  "source": "codebase_community.sqlite (read-only)",
+  "query": "SELECT COUNT(FavoriteCount) FROM posts",
+  "result": "13243 non-null values against 42912 question posts, so roughly two thirds of questions carry no favourite value.",
+  "validation_method": "non-null count compared against question count",
+  "timestamp": "2026-10-10"
+ },
+ {
+  "id": "ev_favorite_count_2010",
+  "source": "codebase_community.sqlite (read-only)",
+  "query": "SELECT COUNT(*) FROM posts WHERE FavoriteCount IS NOT NULL",
+  "result": "The favourite counter is the only measure in the dataset that reflects users bookmarking content; it is independent of the score and view counters on the same row.",
+  "validation_method": "column semantics inspection",
+  "timestamp": "2026-10-10"
+ },
+ {
+  "id": "ev_parentid_answers",
+  "source": "codebase_community.sqlite (read-only)",
+  "query": "SELECT COUNT(*) FROM posts; SELECT COUNT(ParentId) FROM posts; SELECT COUNT(*) FROM posts WHERE PostTypeId=2",
+  "result": "ParentId is non-null for 47755 rows, exactly the answer count, confirming that the parent reference identifies the question an answer responds to.",
+  "validation_method": "non-null count compared against answer count",
+  "timestamp": "2026-10-10"
+ },
+ {
+  "id": "ev_answercount_consistent",
+  "source": "codebase_community.sqlite (read-only)",
+  "query": "SELECT SUM(CASE WHEN p.AnswerCount <> COALESCE(a.n,0) THEN 1 ELSE 0 END) FROM posts p LEFT JOIN (SELECT ParentId, COUNT(*) n FROM posts WHERE PostTypeId=2 GROUP BY ParentId) a ON a.ParentId=p.Id",
+  "result": "Zero mismatches: the denormalised answer counter agrees with the actual answer rows for every post.",
+  "validation_method": "reconciliation of counter against underlying rows",
+  "timestamp": "2026-10-10"
+ },
+ {
+  "id": "ev_commentcount_consistent",
+  "source": "codebase_community.sqlite (read-only)",
+  "query": "SELECT COUNT(*) AS posts_checked, SUM(CASE WHEN p.CommentCount <> COALESCE(c.n,0) THEN 1 ELSE 0 END) AS mismatched FROM posts p LEFT JOIN (SELECT PostId, COUNT(*) n FROM comments GROUP BY PostId) c ON c.PostId=p.Id",
+  "result": "91966 posts checked, 20 mismatched. The denormalised comment counter agrees with the underlying comment rows for all but 20 posts, so a counter of zero reliably expresses 'no comments'.",
+  "validation_method": "reconciliation of counter against underlying rows",
+  "timestamp": "2026-10-10"
+ },
+ {
+  "id": "ev_comment_identity_complementarity",
+  "source": "codebase_community.sqlite (read-only)",
+  "query": "SELECT (UserId IS NULL), (UserDisplayName IS NULL), COUNT(*) FROM comments GROUP BY 1,2",
+  "result": "171450 rows have the account reference present and the embedded label null; 2831 rows have the account reference null and the embedded label present; 4 rows have neither. The two fields are effectively mutually exclusive, so the embedded label is a fallback for orphaned records rather than an author name.",
+  "validation_method": "cross-tabulation of null patterns",
+  "timestamp": "2026-10-10"
+ },
+ {
+  "id": "ev_comment_thankyou_join",
+  "source": "codebase_community.sqlite (read-only)",
+  "query": "SELECT c.Id, c.PostId, c.UserId, c.UserDisplayName FROM comments c WHERE c.Text LIKE '%thank you user93%'; then the same rows joined to users on c.UserId",
+  "result": "One matching comment, Id 53 on PostId 80, with a populated account reference and a null embedded label; resolving the account reference yields the name 'Preets'. Reading the embedded label instead would have returned nothing.",
+  "validation_method": "text search followed by identity resolution against the user records",
+  "timestamp": "2026-10-10"
+ },
+ {
+  "id": "ev_post_owner_identity",
+  "source": "codebase_community.sqlite (read-only)",
+  "query": "SELECT (OwnerUserId IS NULL), (OwnerDisplayName IS NULL), COUNT(*) FROM posts GROUP BY 1,2; plus a left join of posts to users on OwnerUserId",
+  "result": "89453 rows carry only the account reference; 1388 carry only the fallback label; 1121 carry both; 4 carry neither. Every non-null account reference resolves to a user row, and the fallback-label values are placeholder handles such as 'user28'.",
+  "validation_method": "null cross-tabulation plus referential integrity check",
+  "timestamp": "2026-10-10"
+ },
+ {
+  "id": "ev_displayname_not_unique",
+  "source": "codebase_community.sqlite (read-only)",
+  "query": "SELECT DisplayName, COUNT(*) c FROM users GROUP BY 1 HAVING c>1 ORDER BY 2 DESC LIMIT 5",
+  "result": "Repeated names are common: 'Chris' 80 accounts, 'John' 64, 'Alex' 63, 'Tom' 57, 'Michael' 52.",
+  "validation_method": "duplicate value count",
+  "timestamp": "2026-10-10"
+ },
+ {
+  "id": "ev_named_users",
+  "source": "codebase_community.sqlite (read-only)",
+  "query": "SELECT Id, DisplayName, Age, UpVotes FROM users WHERE DisplayName IN ('Tiago Pasqualini','Mark Meckes','Harvey Motulsky')",
+  "result": "All three names resolve to exactly one account each: Id 16160 (Tiago Pasqualini, age 24, 0 up votes), Id 89 (Mark Meckes, age null, 61 up votes), Id 25 (Harvey Motulsky, age 62, 328 up votes). Distinctive full names are unambiguous even though common short names are not.",
+  "validation_method": "name lookup resolving to account identifiers",
+  "timestamp": "2026-10-10"
+ },
+ {
+  "id": "ev_age_sparse",
+  "source": "codebase_community.sqlite (read-only)",
+  "query": "SELECT COUNT(*), COUNT(Age), COUNT(DisplayName), COUNT(LastAccessDate), COUNT(CreationDate) FROM users",
+  "result": "40325 accounts total, but only 8318 have a recorded age, about 20.6 percent. Display name, last access and creation date are populated for every account.",
+  "validation_method": "non-null count per column",
+  "timestamp": "2026-10-10"
+ },
+ {
+  "id": "ev_age_distribution",
+  "source": "codebase_community.sqlite (read-only)",
+  "query": "SELECT MIN(Age), MAX(Age), AVG(Age) FROM users WHERE Age IS NOT NULL",
+  "result": "Minimum 13, maximum 94, mean approximately 31.64 over the 8318 accounts that record an age.",
+  "validation_method": "distribution summary over the populated subset",
+  "timestamp": "2026-10-10"
+ },
+ {
+  "id": "ev_upvotes_profile_counter",
+  "source": "codebase_community.sqlite (read-only)",
+  "query": "SELECT COUNT(UpVotes), COUNT(DownVotes) FROM users",
+  "result": "UpVotes and DownVotes are populated for all 40325 accounts as lifetime counters on the profile, independent of the 38930 rows in the votes table.",
+  "validation_method": "non-null count and semantic comparison against the vote table",
+  "timestamp": "2026-10-10"
+ },
+ {
+  "id": "ev_votetypeid_enum",
+  "source": "codebase_community.sqlite (read-only)",
+  "query": "SELECT VoteTypeId, COUNT(*) FROM votes GROUP BY 1 ORDER BY 1",
+  "result": "1=1451, 2=33323, 3=444, 5=3365, 8=60, 9=59, 10=1, 11=44, 15=72, 16=111. Codes are numeric with no lookup table in the dataset; code 2 dominates and corresponds to up votes, code 3 to down votes.",
+  "validation_method": "enumeration distribution",
+  "timestamp": "2026-10-10"
+ },
+ {
+  "id": "ev_votes_userid_sparse",
+  "source": "codebase_community.sqlite (read-only)",
+  "query": "SELECT COUNT(*), COUNT(UserId), COUNT(PostId), COUNT(BountyAmount) FROM votes",
+  "result": "38930 vote rows total; only 3425 identify a voter, about 8.8 percent; PostId is populated for every row; BountyAmount for 101.",
+  "validation_method": "non-null count per column",
+  "timestamp": "2026-10-10"
+ },
+ {
+  "id": "ev_user24_posts_votes",
+  "source": "codebase_community.sqlite (read-only)",
+  "query": "SELECT COUNT(*) FROM posts WHERE OwnerUserId=24; SELECT COUNT(*) FROM votes WHERE UserId=24",
+  "result": "User 24 owns 10 posts and is recorded as the voter on 1 vote, giving a posts-to-votes ratio of 10.0.",
+  "validation_method": "paired counts scoped to the same user identity",
+  "timestamp": "2026-10-10"
+ },
+ {
+  "id": "ev_badge_names",
+  "source": "codebase_community.sqlite (read-only)",
+  "query": "SELECT Name, COUNT(*) c FROM badges GROUP BY 1 ORDER BY 2 DESC LIMIT 20",
+  "result": "Badge names include 'Student' 14847, 'Supporter' 8828, 'Editor' 8453, 'Scholar' 6523, 'Teacher' 4679, plus many question- and answer-quality badges.",
+  "validation_method": "enumeration distribution over the name column",
+  "timestamp": "2026-10-10"
+ },
+ {
+  "id": "ev_badge_student_by_year",
+  "source": "codebase_community.sqlite (read-only)",
+  "query": "SELECT substr(Date,1,4) y, COUNT(*) FROM badges WHERE Name='Student' GROUP BY 1 ORDER BY 1",
+  "result": "'Student' awards by year: 2010=542, 2011=1959, 2012=3349, 2013=4725, 2014=4272.",
+  "validation_method": "year bucketing of the award date for a single badge kind",
+  "timestamp": "2026-10-10"
+ },
+ {
+  "id": "ev_postlink_linktype",
+  "source": "codebase_community.sqlite (read-only)",
+  "query": "SELECT LinkTypeId, COUNT(*) FROM postLinks GROUP BY 1 ORDER BY 1",
+  "result": "LinkTypeId 1=10186 and 3=916, numeric codes with no lookup table present in the dataset.",
+  "validation_method": "enumeration distribution",
+  "timestamp": "2026-10-10"
+ },
+ {
+  "id": "ev_postlinks_resolution",
+  "source": "codebase_community.sqlite (read-only)",
+  "query": "SELECT COUNT(*) FROM postLinks pl LEFT JOIN posts p ON p.Id=pl.PostId LEFT JOIN posts r ON r.Id=pl.RelatedPostId WHERE p.Id IS NULL OR r.Id IS NULL",
+  "result": "Only 4 of 11102 link records fail to resolve to a post row, so the endpoints are almost fully intact.",
+  "validation_method": "referential integrity check",
+  "timestamp": "2026-10-10"
+ },
+ {
+  "id": "ev_community_user",
+  "source": "codebase_community.sqlite (read-only)",
+  "query": "SELECT COUNT(*) FROM users WHERE Id=-1; SELECT COUNT(*) FROM posts WHERE OwnerUserId=-1; SELECT Id, DisplayName FROM users WHERE Id=-1",
+  "result": "Exactly one such account exists, named 'Community', and it is recorded as the owner of 211 posts. It is a system placeholder rather than a person.",
+  "validation_method": "pseudo-account identification and usage count",
+  "timestamp": "2026-10-10"
+ },
+ {
+  "id": "ev_score_contexts",
+  "source": "codebase_community.sqlite (read-only)",
+  "query": "PRAGMA table_info(posts); PRAGMA table_info(comments); plus sample values from each Score column",
+  "result": "Both tables expose a column named Score, measuring votes on the respective entity. Comment scores include the value 17 and zero; post scores form a separate distribution on the post rows.",
+  "validation_method": "side-by-side column identification in two tables",
+  "timestamp": "2026-10-10"
+ },
+ {
+  "id": "ev_creation_year_filter",
+  "source": "codebase_community.sqlite (read-only)",
+  "query": "SELECT COUNT(*) FROM users WHERE strftime('%Y',CreationDate)='2011'; SELECT COUNT(*) FROM users WHERE LastAccessDate > '2014-09-01'",
+  "result": "4430 accounts were created in 2011; 5146 accounts last accessed the site after 2014-09-01. Both filters execute successfully against the text timestamps as stored.",
+  "validation_method": "filtered count verification",
+  "timestamp": "2026-10-10"
+ },
+ {
+  "id": "ev_last_access_filter",
+  "source": "codebase_community.sqlite (read-only)",
+  "query": "SELECT COUNT(*) FROM users WHERE LastAccessDate > '2014-09-01'",
+  "result": "5146 user accounts have a last-access timestamp later than 2014-09-01, out of 40325 accounts. The comparison executes directly against the text timestamps as stored.",
+  "validation_method": "filtered count verification against the stored text timestamps",
+  "timestamp": "2026-10-10"
+ }
+]

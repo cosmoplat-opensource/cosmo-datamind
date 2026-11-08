@@ -1,0 +1,379 @@
+[
+  {
+    "id": "term_client",
+    "name": "Client",
+    "type": "entity",
+    "definition": "A bank customer of the institution, identified by client_id and characterized by gender, birth date, and a residence district.",
+    "scope": "Analyses about customers, their demographics and their holdings.",
+    "aliases": [
+      "customer",
+      "client",
+      "male client",
+      "female client",
+      "male customer",
+      "female customer"
+    ],
+    "evidence": [
+      "ev_001_schema",
+      "ev_004_client_gender",
+      "ev_014_fk_integrity"
+    ]
+  },
+  {
+    "id": "term_account",
+    "name": "Account",
+    "type": "entity",
+    "definition": "A bank account held at a branch, identified by account_id and characterized by statement issuance frequency, opening date, and the district of the branch where it was opened.",
+    "scope": "Analyses of accounts, statement issuance and account holdings.",
+    "aliases": [
+      "account",
+      "bank account",
+      "account opening"
+    ],
+    "evidence": [
+      "ev_001_schema",
+      "ev_003_account_frequency",
+      "ev_009_account_dates"
+    ]
+  },
+  {
+    "id": "term_district",
+    "name": "District",
+    "type": "entity",
+    "definition": "A geographic district served by a branch, identified by district_id. Districts are grouped into regions and carry district-level statistics, including an average salary. The same district table is referenced from two different roles: a client's residence and an account's branch.",
+    "scope": "Geographic grouping and location filtering of accounts and clients.",
+    "aliases": [
+      "district",
+      "branch district",
+      "residence district"
+    ],
+    "evidence": [
+      "ev_001_schema",
+      "ev_006_region_values",
+      "ev_017_district_role_divergence"
+    ]
+  },
+  {
+    "id": "term_loan",
+    "name": "Loan",
+    "type": "entity",
+    "definition": "A credit contract granted on exactly one account, identified by loan_id and characterized by approval date, approved amount, validity duration and contract status.",
+    "scope": "Analyses of lending, approved amounts and loan performance.",
+    "aliases": [
+      "loan",
+      "credit",
+      "credit contract",
+      "approved loan"
+    ],
+    "evidence": [
+      "ev_001_schema",
+      "ev_010_loan_profile",
+      "ev_016_loan_account_1to1"
+    ]
+  },
+  {
+    "id": "term_transaction",
+    "name": "Transaction",
+    "type": "entity",
+    "definition": "A financial movement recorded against an account, identified by trans_id and characterized by date, direction type, operation, amount and resulting balance.",
+    "scope": "Analyses of account activity, cash flows and withdrawals.",
+    "aliases": [
+      "transaction",
+      "movement",
+      "financial transaction"
+    ],
+    "evidence": [
+      "ev_001_schema",
+      "ev_012_trans_crosstab"
+    ]
+  },
+  {
+    "id": "term_disposition",
+    "name": "Disposition",
+    "type": "entity",
+    "definition": "The record that grants a client a role on an account (owner or disponent). It is the only link between clients and accounts.",
+    "scope": "Resolving which client is related to which account and in which role.",
+    "aliases": [
+      "disp",
+      "disposition",
+      "client account link",
+      "account holder relationship"
+    ],
+    "evidence": [
+      "ev_005_disp_type",
+      "ev_015_disp_cardinality"
+    ]
+  },
+  {
+    "id": "term_statement_frequency",
+    "name": "Statement Issuance Frequency",
+    "type": "dimension",
+    "definition": "The frequency with which account statements are issued, stored on the account as a coded label.",
+    "scope": "Selecting accounts by their statement issuance preference.",
+    "aliases": [
+      "frequency",
+      "statement frequency",
+      "issuance",
+      "issuance statement",
+      "statement issued",
+      "weekly issuance",
+      "monthly issuance",
+      "issuance after transaction",
+      "POPLATEK TYDNE",
+      "POPLATEK MESICNE",
+      "POPLATEK PO OBRATU"
+    ],
+    "evidence": [
+      "ev_003_account_frequency"
+    ]
+  },
+  {
+    "id": "term_gender",
+    "name": "Client Gender",
+    "type": "dimension",
+    "definition": "The recorded gender of a client, coded as a single letter.",
+    "scope": "Demographic segmentation of clients.",
+    "aliases": [
+      "gender",
+      "sex",
+      "male",
+      "female",
+      "men",
+      "women"
+    ],
+    "evidence": [
+      "ev_004_client_gender"
+    ]
+  },
+  {
+    "id": "term_region",
+    "name": "Region",
+    "type": "dimension",
+    "definition": "A coarse geographic region that groups the districts into 8 units; carried as the A3 attribute of district.",
+    "scope": "Geographic aggregation above district level.",
+    "aliases": [
+      "region",
+      "A3",
+      "Bohemia",
+      "Moravia",
+      "East Bohemia",
+      "North Bohemia"
+    ],
+    "evidence": [
+      "ev_006_region_values"
+    ]
+  },
+  {
+    "id": "term_district_name",
+    "name": "District Name",
+    "type": "dimension",
+    "definition": "The human-readable name of a district; carried as the A2 attribute of district.",
+    "scope": "Presenting or filtering districts by name.",
+    "aliases": [
+      "district name",
+      "A2",
+      "name of district"
+    ],
+    "evidence": [
+      "ev_007_district_name_values"
+    ]
+  },
+  {
+    "id": "term_average_salary",
+    "name": "District Average Salary",
+    "type": "metric",
+    "definition": "A district-level average salary statistic carried as the A11 attribute of district. It is a precomputed property of the district, not an aggregation over individual client records.",
+    "scope": "Filtering or ranking districts by economic level.",
+    "aliases": [
+      "average salary",
+      "A11",
+      "salary",
+      "income"
+    ],
+    "evidence": [
+      "ev_008_average_salary"
+    ]
+  },
+  {
+    "id": "term_account_opening_date",
+    "name": "Account Opening Date",
+    "type": "dimension",
+    "definition": "The date on which an account was opened, stored as account.date.",
+    "scope": "Time-based selection of accounts.",
+    "aliases": [
+      "account opening date",
+      "account date",
+      "opened account",
+      "account opening"
+    ],
+    "evidence": [
+      "ev_009_account_dates"
+    ]
+  },
+  {
+    "id": "term_client_birth_date",
+    "name": "Client Birth Date",
+    "type": "dimension",
+    "definition": "The recorded date of birth of a client.",
+    "scope": "Identifying or segmenting clients by birth date or age.",
+    "aliases": [
+      "birth date",
+      "date of birth",
+      "born"
+    ],
+    "evidence": [
+      "ev_001_schema"
+    ]
+  },
+  {
+    "id": "term_loan_approval_date",
+    "name": "Loan Approval Date",
+    "type": "dimension",
+    "definition": "The date on which a loan was approved, stored as loan.date.",
+    "scope": "Time-based selection of loans.",
+    "aliases": [
+      "approved loan date",
+      "loan date",
+      "loan approved",
+      "date of approval"
+    ],
+    "evidence": [
+      "ev_010_loan_profile"
+    ]
+  },
+  {
+    "id": "term_loan_amount",
+    "name": "Approved Loan Amount",
+    "type": "metric",
+    "definition": "The principal amount approved for a loan, stored as loan.amount.",
+    "scope": "Loan size comparisons and amount thresholds.",
+    "aliases": [
+      "approved amount",
+      "loan amount",
+      "amount approved"
+    ],
+    "evidence": [
+      "ev_010_loan_profile"
+    ]
+  },
+  {
+    "id": "term_loan_duration",
+    "name": "Loan Validity Duration",
+    "type": "metric",
+    "definition": "The contractual length of a loan, stored as loan.duration and expressed in months. Workload phrasing such as 'loan validity' refers to this field.",
+    "scope": "Selecting loans by term length.",
+    "aliases": [
+      "loan validity",
+      "duration",
+      "loan duration",
+      "loan term"
+    ],
+    "evidence": [
+      "ev_010_loan_profile",
+      "ev_022_workload_units"
+    ]
+  },
+  {
+    "id": "term_loan_status",
+    "name": "Loan Contract Status",
+    "type": "category",
+    "definition": "The coded repayment status of a loan contract, stored as loan.status with the single-letter values A, B, C and D.",
+    "scope": "Classifying loans as running or finished and by repayment outcome.",
+    "aliases": [
+      "status",
+      "loan status",
+      "running contract",
+      "still running",
+      "running with no issue",
+      "ok so far"
+    ],
+    "evidence": [
+      "ev_011_loan_status"
+    ]
+  },
+  {
+    "id": "term_transaction_type",
+    "name": "Transaction Direction Type",
+    "type": "category",
+    "definition": "The coded direction of a transaction, stored as trans.type with the values PRIJEM, VYDAJ and VYBER.",
+    "scope": "Separating incoming from outgoing movements.",
+    "aliases": [
+      "type",
+      "transaction type",
+      "PRIJEM",
+      "VYDAJ",
+      "credit",
+      "debit"
+    ],
+    "evidence": [
+      "ev_012_trans_crosstab",
+      "ev_013_trans_amount_sign"
+    ]
+  },
+  {
+    "id": "term_transaction_operation",
+    "name": "Transaction Operation",
+    "type": "category",
+    "definition": "The mode of a transaction, stored as trans.operation, distinguishing cash withdrawal, cash deposit, card withdrawal and account-to-account remittances.",
+    "scope": "Classifying how money moved on an account.",
+    "aliases": [
+      "operation",
+      "VYBER",
+      "VKLAD",
+      "PREVOD NA UCET",
+      "PREVOD Z UCTU",
+      "VYBER KARTOU"
+    ],
+    "evidence": [
+      "ev_012_trans_crosstab"
+    ]
+  },
+  {
+    "id": "term_cash_withdrawal",
+    "name": "Cash Withdrawal",
+    "type": "concept",
+    "definition": "A transaction in which the client withdraws cash. In this data it is identified by the operation code 'VYBER'.",
+    "scope": "Analyses of cash withdrawals.",
+    "aliases": [
+      "withdrawal in cash",
+      "cash withdrawal",
+      "withdrawals",
+      "VYBER"
+    ],
+    "evidence": [
+      "ev_021_cash_withdrawal_encoding"
+    ]
+  },
+  {
+    "id": "term_transaction_amount",
+    "name": "Transaction Amount",
+    "type": "metric",
+    "definition": "The magnitude of a transaction, stored as trans.amount. Values are non-negative; direction is carried by the transaction direction type rather than by the sign.",
+    "scope": "Summing or comparing transaction magnitudes.",
+    "aliases": [
+      "transaction amount",
+      "amount of transaction"
+    ],
+    "evidence": [
+      "ev_013_trans_amount_sign"
+    ]
+  },
+  {
+    "id": "term_percentage_metric",
+    "name": "Percentage of a Population Subset",
+    "type": "metric",
+    "definition": "A share expressed as a percentage, computed as the count or total satisfying a condition divided by the count or total of the whole population, multiplied by 100.",
+    "scope": "Questions asking what percentage of clients or of accounts satisfy a condition.",
+    "aliases": [
+      "percentage",
+      "percent",
+      "share",
+      "proportion",
+      "percentage of accounts",
+      "percentage of clients"
+    ],
+    "evidence": [
+      "ev_019_percentage_definition"
+    ]
+  }
+]

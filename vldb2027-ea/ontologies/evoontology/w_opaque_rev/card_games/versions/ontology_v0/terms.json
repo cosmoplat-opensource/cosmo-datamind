@@ -1,0 +1,609 @@
+[
+  {
+    "id": "t_card",
+    "name": "Card Printing",
+    "type": "entity",
+    "definition": "A single printing of a Magic: The Gathering card in a specific set. Each row of tab01 is one printing and carries its own attributes such as name, artist, border colour, power and flags.",
+    "scope": "Card-level analysis over the card table.",
+    "aliases": [
+      "card",
+      "card id",
+      "card printing",
+      "printing",
+      "id"
+    ],
+    "evidence": [
+      "ev_tab01_structure"
+    ]
+  },
+  {
+    "id": "t_card_name",
+    "name": "Card Name",
+    "type": "dimension",
+    "definition": "The printed name of a card printing. The same card name can occur in several sets and printings, so a name identifies a card concept while a row identifies one printing.",
+    "scope": "Card identification and filtering by title.",
+    "aliases": [
+      "card name",
+      "name",
+      "card title",
+      "title of the card"
+    ],
+    "evidence": [
+      "ev_column_fld049_dual",
+      "ev_tab01_structure"
+    ]
+  },
+  {
+    "id": "t_artist",
+    "name": "Artist",
+    "type": "dimension",
+    "definition": "Name of the illustrator credited on a card printing.",
+    "scope": "Artist-based grouping and filtering over card printings.",
+    "aliases": [
+      "artist",
+      "illustrator",
+      "worked on",
+      "designed"
+    ],
+    "evidence": [
+      "ev_artist_values"
+    ]
+  },
+  {
+    "id": "t_border_color",
+    "name": "Border Colour",
+    "type": "dimension",
+    "definition": "The colour of the border of a card printing: black, white, gold, silver or borderless.",
+    "scope": "Card appearance analysis; applies to every card printing.",
+    "aliases": [
+      "border color",
+      "border colour",
+      "borderless",
+      "black border",
+      "white border",
+      "silver border",
+      "gold border"
+    ],
+    "evidence": [
+      "ev_border_color_values"
+    ]
+  },
+  {
+    "id": "t_card_color",
+    "name": "Card Colour",
+    "type": "dimension",
+    "definition": "The mana colour identity expressed by the card's colour indicator (the colours the card actually is), encoded as single letters W, U, B, R, G and combined with commas for multicolour cards.",
+    "scope": "Colour-based filtering of card printings. Distinct from colour identity, which also includes colours of mana symbols in rules text.",
+    "aliases": [
+      "color",
+      "colour",
+      "black",
+      "white",
+      "blue",
+      "red",
+      "green",
+      "colorless",
+      "multicolor"
+    ],
+    "evidence": [
+      "ev_color_values"
+    ]
+  },
+  {
+    "id": "t_frame_version",
+    "name": "Frame Version",
+    "type": "dimension",
+    "definition": "The frame version (frame style era) of a card printing, expressed as the year the frame design was introduced, or 'future' for future-shifted frames.",
+    "scope": "Card appearance analysis and grouping by frame style.",
+    "aliases": [
+      "frame",
+      "frame style",
+      "frame styles",
+      "frame version",
+      "frameType"
+    ],
+    "evidence": [
+      "ev_frame_version_values"
+    ]
+  },
+  {
+    "id": "t_power",
+    "name": "Power",
+    "type": "dimension",
+    "definition": "The power characteristic printed on a creature card, stored as text because it can be numeric, starred, or absent.",
+    "scope": "Creature statistics; applies only to cards that have a power value.",
+    "aliases": [
+      "power",
+      "unknown power",
+      "infinite power",
+      "inc incredibly powerful",
+      "strength"
+    ],
+    "evidence": [
+      "ev_power_values"
+    ]
+  },
+  {
+    "id": "t_card_type",
+    "name": "Card Type",
+    "type": "dimension",
+    "definition": "The primary card type(s) of a card, such as Artifact, Creature, Enchantment, Instant, Land, Planeswalker or Sorcery.",
+    "scope": "Type-based filtering; a card may carry more than one primary type.",
+    "aliases": [
+      "type",
+      "types",
+      "card type",
+      "Artifact",
+      "Creature",
+      "Land",
+      "Instant",
+      "Sorcery",
+      "Enchantment"
+    ],
+    "evidence": [
+      "ev_type_columns"
+    ]
+  },
+  {
+    "id": "t_card_type_line",
+    "name": "Card Type Line",
+    "type": "dimension",
+    "definition": "The complete type line of a card, combining supertypes, primary types and subtypes, as printed in the current wording.",
+    "scope": "Full textual type information for a printing.",
+    "aliases": [
+      "type line",
+      "types line",
+      "full type",
+      "card type line"
+    ],
+    "evidence": [
+      "ev_type_columns"
+    ]
+  },
+  {
+    "id": "t_original_type_line",
+    "name": "Original Type Line",
+    "type": "dimension",
+    "definition": "The type line as originally printed, using the older hyphenated wording (for example 'Creature - Human Cleric') instead of the modern em-dash wording.",
+    "scope": "Historic printed wording of the type line; values differ from the current type line only in punctuation and wording.",
+    "aliases": [
+      "original type",
+      "original type line",
+      "printed type"
+    ],
+    "evidence": [
+      "ev_type_columns"
+    ]
+  },
+  {
+    "id": "t_card_subtype",
+    "name": "Card Subtype",
+    "type": "dimension",
+    "definition": "The subtype(s) of a card, such as Human, Cleric, Aura or Forest, stored as a comma-separated list.",
+    "scope": "Subtype-based filtering and listing.",
+    "aliases": [
+      "subtype",
+      "subtypes",
+      "creature type",
+      "types"
+    ],
+    "evidence": [
+      "ev_type_columns"
+    ]
+  },
+  {
+    "id": "t_card_supertype",
+    "name": "Card Supertype",
+    "type": "dimension",
+    "definition": "The supertype(s) of a card: Legendary, Basic, Snow, World, Host or Ongoing. Absent when the card has no supertype.",
+    "scope": "Supertype-based filtering and listing.",
+    "aliases": [
+      "supertype",
+      "supertypes",
+      "Legendary",
+      "Basic",
+      "Snow"
+    ],
+    "evidence": [
+      "ev_type_columns"
+    ]
+  },
+  {
+    "id": "t_card_text",
+    "name": "Card Text",
+    "type": "dimension",
+    "definition": "The current rules text (oracle text) of a card, including keyword reminders and ability wording.",
+    "scope": "Full-text search over card abilities.",
+    "aliases": [
+      "text",
+      "rules text",
+      "card text",
+      "oracle text",
+      "ability text",
+      "triggered ability"
+    ],
+    "evidence": [
+      "ev_card_text_columns"
+    ]
+  },
+  {
+    "id": "t_original_text",
+    "name": "Original Card Text",
+    "type": "dimension",
+    "definition": "The rules text as originally printed for that edition, which may use older terminology than the current oracle wording. Absent for textless printings.",
+    "scope": "Historic printed wording; not equivalent to the current rules text.",
+    "aliases": [
+      "original text",
+      "printed text",
+      "old wording"
+    ],
+    "evidence": [
+      "ev_card_text_columns",
+      "ev_textless_flag"
+    ]
+  },
+  {
+    "id": "t_card_set",
+    "name": "Card Set",
+    "type": "entity",
+    "definition": "A card set (expansion, core set, promo set, commander set and so on) that groups card printings and owns set-level metadata such as release date, base set size and availability restrictions.",
+    "scope": "Set-level analysis and joins between card printings and set metadata.",
+    "aliases": [
+      "set",
+      "card set",
+      "expansion",
+      "edition",
+      "set of cards"
+    ],
+    "evidence": [
+      "ev_set_table"
+    ]
+  },
+  {
+    "id": "t_set_name",
+    "name": "Set Name",
+    "type": "dimension",
+    "definition": "The full English name of a card set, for example 'Eighth Edition', 'Coldsnap' or 'Hour of Devastation'.",
+    "scope": "Set identification and filtering by set name.",
+    "aliases": [
+      "set name",
+      "name of the set",
+      "set",
+      "edition name"
+    ],
+    "evidence": [
+      "ev_column_fld049_dual",
+      "ev_set_table"
+    ]
+  },
+  {
+    "id": "t_set_code",
+    "name": "Set Code",
+    "type": "dimension",
+    "definition": "The short alphanumeric code that identifies a card set, such as 10E, CSP or HOU. Card printings carry the code of the set they were printed in, and the set table carries the same code as its identifier.",
+    "scope": "Reliable join key between card printings and set metadata.",
+    "aliases": [
+      "set code",
+      "set",
+      "expansion code",
+      "edition code"
+    ],
+    "evidence": [
+      "ev_set_code_linkage"
+    ]
+  },
+  {
+    "id": "t_base_set_size",
+    "name": "Base Set Size",
+    "type": "metric",
+    "definition": "The number of cards in the base set of a set, excluding bonus and special cards. This is the set's 'base set number'.",
+    "scope": "Set size analysis; distinct from the total set size.",
+    "aliases": [
+      "base set number",
+      "base set size",
+      "set size",
+      "number of cards in the set"
+    ],
+    "evidence": [
+      "ev_set_table"
+    ]
+  },
+  {
+    "id": "t_foreign_only",
+    "name": "Foreign-Only Set",
+    "type": "dimension",
+    "definition": "Flag indicating that a card set was released only outside the United States.",
+    "scope": "Set availability analysis.",
+    "aliases": [
+      "only available outside the United States",
+      "foreign only",
+      "outside the US",
+      "not available in the US"
+    ],
+    "evidence": [
+      "ev_foreign_only_sets"
+    ]
+  },
+  {
+    "id": "t_is_promo",
+    "name": "Promotional Printing",
+    "type": "dimension",
+    "definition": "Flag indicating that a card printing is a promotional printing rather than a regular set printing.",
+    "scope": "Card printing classification.",
+    "aliases": [
+      "promotional printing",
+      "promo",
+      "promotional",
+      "is promo"
+    ],
+    "evidence": [
+      "ev_promo_flag"
+    ]
+  },
+  {
+    "id": "t_is_story_spotlight",
+    "name": "Story Spotlight Card",
+    "type": "dimension",
+    "definition": "Flag indicating that a card is a Story Spotlight card, a card that advances the set's narrative.",
+    "scope": "Card printing classification.",
+    "aliases": [
+      "story spotlight",
+      "storylight",
+      "isStorylight",
+      "story spotlight card"
+    ],
+    "evidence": [
+      "ev_story_spotlight_flag"
+    ]
+  },
+  {
+    "id": "t_is_textless",
+    "name": "Textless Printing",
+    "type": "dimension",
+    "definition": "Flag indicating that a card printing has no text box and shows only artwork, even though its rules text may still be recorded in the text columns.",
+    "scope": "Card printing appearance classification.",
+    "aliases": [
+      "textless",
+      "no text box",
+      "without a text box",
+      "text box"
+    ],
+    "evidence": [
+      "ev_textless_flag"
+    ]
+  },
+  {
+    "id": "t_foil_printing",
+    "name": "Foil Version Availability",
+    "type": "dimension",
+    "definition": "Presence of a commercial foil product identifier for the card printing. The column holds an external market product id whose presence indicates that the set released a foil version of the card.",
+    "scope": "Foil availability analysis; only the presence or absence of the identifier is meaningful.",
+    "aliases": [
+      "foil",
+      "foil version",
+      "powerful foils",
+      "incredibly powerful",
+      "foil printing"
+    ],
+    "evidence": [
+      "ev_foil_identifiers"
+    ]
+  },
+  {
+    "id": "t_nonfoil_printing",
+    "name": "Non-Foil Version Availability",
+    "type": "dimension",
+    "definition": "Presence of a commercial non-foil product identifier for the card printing. The column holds an external market product id whose presence indicates that the set released a non-foil version of the card.",
+    "scope": "Non-foil availability analysis; only the presence or absence of the identifier is meaningful.",
+    "aliases": [
+      "non-foil",
+      "nonfoil",
+      "non foil version",
+      "normal version"
+    ],
+    "evidence": [
+      "ev_foil_identifiers"
+    ]
+  },
+  {
+    "id": "t_language",
+    "name": "Language",
+    "type": "category",
+    "definition": "A language in which a card or set has localised data. Observed values include Japanese, French, German, Italian, Spanish, Portuguese (Brazil), Chinese Simplified, Chinese Traditional, Russian and Korean.",
+    "scope": "Language filtering for card and set translations.",
+    "aliases": [
+      "language",
+      "translation language",
+      "German",
+      "Italian",
+      "Chinese Simplified",
+      "Chinese Traditional",
+      "Japanese",
+      "French",
+      "Spanish",
+      "Russian",
+      "Korean",
+      "Portuguese"
+    ],
+    "evidence": [
+      "ev_card_translations",
+      "ev_set_translations"
+    ]
+  },
+  {
+    "id": "t_card_translation",
+    "name": "Card Translation",
+    "type": "entity",
+    "definition": "A foreign-language data record for a card printing. One row exists per card and language and holds the localised name, rules text, type and flavour text.",
+    "scope": "Existence of a card in a given language.",
+    "aliases": [
+      "translation",
+      "card translation",
+      "foreign language",
+      "foreign language translation",
+      "available in"
+    ],
+    "evidence": [
+      "ev_card_translations"
+    ]
+  },
+  {
+    "id": "t_translated_card_name",
+    "name": "Translated Card Name",
+    "type": "dimension",
+    "definition": "The name of a card in a specific non-English language.",
+    "scope": "Localised card naming; only populated on translation records.",
+    "aliases": [
+      "translated name",
+      "name in language",
+      "localised card name"
+    ],
+    "evidence": [
+      "ev_card_translations"
+    ]
+  },
+  {
+    "id": "t_set_translation",
+    "name": "Set Translation",
+    "type": "entity",
+    "definition": "A localisation record for a card set. One row exists per set and language.",
+    "scope": "Existence and content of set-name translations.",
+    "aliases": [
+      "set translation",
+      "translated set",
+      "set language data"
+    ],
+    "evidence": [
+      "ev_set_translations"
+    ]
+  },
+  {
+    "id": "t_translated_set_name",
+    "name": "Translated Set Name",
+    "type": "dimension",
+    "definition": "The name of a card set in a specific language. The value is absent when the localisation record carries no translated name.",
+    "scope": "Localised set naming; 'has a translation' means this value is present.",
+    "aliases": [
+      "translated set name",
+      "set name translation",
+      "translation of the name of the set"
+    ],
+    "evidence": [
+      "ev_set_translations",
+      "ev_italian_base_size"
+    ]
+  },
+  {
+    "id": "t_ruling",
+    "name": "Ruling",
+    "type": "entity",
+    "definition": "An official ruling record about a card, consisting of ruling text and the date the ruling was issued.",
+    "scope": "Ruling counts and ruling text for a card.",
+    "aliases": [
+      "ruling",
+      "rulings",
+      "ruling information",
+      "official ruling"
+    ],
+    "evidence": [
+      "ev_rulings_table"
+    ]
+  },
+  {
+    "id": "t_ruling_text",
+    "name": "Ruling Text",
+    "type": "dimension",
+    "definition": "The explanatory text of an official ruling.",
+    "scope": "Full-text search over rulings.",
+    "aliases": [
+      "ruling text",
+      "ruling explanation"
+    ],
+    "evidence": [
+      "ev_rulings_table"
+    ]
+  },
+  {
+    "id": "t_format",
+    "name": "Play Format",
+    "type": "entity",
+    "definition": "A tournament or casual play format, such as commander, modern, legacy, vintage, standard or pioneer.",
+    "scope": "Format-based legality analysis.",
+    "aliases": [
+      "format",
+      "play format",
+      "formats",
+      "commander play format",
+      "commander"
+    ],
+    "evidence": [
+      "ev_legality_table"
+    ]
+  },
+  {
+    "id": "t_legality_status",
+    "name": "Legality Status",
+    "type": "category",
+    "definition": "The status of a card in a play format: Legal, Banned or Restricted.",
+    "scope": "Interpretation of legality records.",
+    "aliases": [
+      "legality",
+      "legal",
+      "banned",
+      "restricted",
+      "legal for"
+    ],
+    "evidence": [
+      "ev_legality_table"
+    ]
+  },
+  {
+    "id": "t_format_legality",
+    "name": "Format Legality Record",
+    "type": "entity",
+    "definition": "One record stating the legality status of one card in one play format.",
+    "scope": "Per-card per-format legality.",
+    "aliases": [
+      "legality record",
+      "format legality",
+      "card legality"
+    ],
+    "evidence": [
+      "ev_legality_table"
+    ]
+  },
+  {
+    "id": "t_card_count",
+    "name": "Card Count",
+    "type": "metric",
+    "definition": "The number of card printings selected by a set of conditions.",
+    "scope": "Counting questions over any population of card printings.",
+    "aliases": [
+      "number of cards",
+      "how many cards",
+      "count of cards",
+      "card count"
+    ],
+    "evidence": [
+      "ev_ratio_population"
+    ]
+  },
+  {
+    "id": "t_card_share",
+    "name": "Card Share (Percentage)",
+    "type": "metric",
+    "definition": "A percentage metric expressing the number of card printings that satisfy a condition divided by the number of card printings in the reference population, multiplied by one hundred.",
+    "scope": "Percentage questions about card printings; the denominator is the card population in scope, not the filtered subset.",
+    "aliases": [
+      "percentage",
+      "percent",
+      "ratio",
+      "proportion",
+      "share",
+      "percentage of cards"
+    ],
+    "evidence": [
+      "ev_ratio_population"
+    ]
+  }
+]

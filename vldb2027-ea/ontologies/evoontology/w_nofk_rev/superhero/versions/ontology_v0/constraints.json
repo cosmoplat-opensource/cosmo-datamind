@@ -1,0 +1,287 @@
+[
+  {
+    "id": "constraint_gender_enum_semantics",
+    "target": "gender",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "male superheroes",
+      "female superheroes",
+      "male",
+      "female",
+      "gender",
+      "gender_id",
+      "ratio between male and female"
+    ],
+    "severity": "block",
+    "scope": "Applies whenever characters are filtered, counted or divided by gender",
+    "confidence": "high",
+    "description": "gender.id 1 is labelled 'Male', gender.id 2 is labelled 'Female' and gender.id 3 is labelled 'N/A'. The codes are not self-describing and their order does not follow the alphabetical order of the labels, so filtering or dividing by the raw numeric code without reading the label column can invert a male-versus-female result. The label column is the authoritative form and should be used to select the intended group.",
+    "evidence": [
+      "ev_gender_values_and_distribution"
+    ]
+  },
+  {
+    "id": "constraint_alignment_enum_semantics",
+    "target": "alignment",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "villain",
+      "villains",
+      "hero",
+      "heroes",
+      "good",
+      "bad",
+      "neutral",
+      "alignment",
+      "evil",
+      "green-skinned villains"
+    ],
+    "severity": "block",
+    "scope": "Applies whenever characters are filtered by heroic or villainous status",
+    "confidence": "high",
+    "description": "alignment.alignment holds 'Good' for heroic characters, 'Bad' for villainous characters, 'Neutral', and an 'N/A' code that no character uses. Six characters additionally carry a NULL alignment reference and belong to no alignment group. Questions about villains correspond to 'Bad' and questions about heroes to 'Good'; only 'Good' or 'Bad' should be treated as an explicit moral stance, because 'Neutral' and an absent alignment are neither.",
+    "evidence": [
+      "ev_alignment_values_and_distribution"
+    ]
+  },
+  {
+    "id": "constraint_attribute_name_case",
+    "target": "attribute",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "durability",
+      "strength",
+      "speed",
+      "intelligence",
+      "combat",
+      "power",
+      "attribute_name",
+      "attribute name",
+      "most durability",
+      "highest strength",
+      "slowest"
+    ],
+    "severity": "block",
+    "scope": "Applies whenever a capability attribute is selected by its name",
+    "confidence": "high",
+    "description": "The six capability attributes are stored capitalised: 'Intelligence', 'Strength', 'Speed', 'Durability', 'Power' and 'Combat'. Analytical questions routinely name them in lower case, for example 'durability' or 'strength'. Comparison against the stored column is case-sensitive, so a lower-case literal selects no rows at all and silently returns an empty result rather than an error. The canonical capitalisation must be used when selecting an attribute by name.",
+    "evidence": [
+      "ev_attribute_names",
+      "ev_attribute_name_case_sensitivity"
+    ]
+  },
+  {
+    "id": "constraint_no_colour_semantics",
+    "target": "colour",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "no eye color",
+      "no eye colour",
+      "no colour",
+      "no color",
+      "missing colour",
+      "eye colour",
+      "hair colour",
+      "skin colour"
+    ],
+    "severity": "warning",
+    "scope": "Applies whenever an appearance colour is filtered or interpreted as absent",
+    "confidence": "high",
+    "description": "The absence of an appearance colour is recorded as the colour value 'No Colour', not as a NULL reference: the eye, hair and skin colour references contain no NULL values at all and use 'No Colour' for a large share of characters. A question asking for characters with no eye colour therefore selects the 'No Colour' value rather than an unset reference, and 'No Colour' should be read as 'no colour recorded' rather than as a literal colour.",
+    "evidence": [
+      "ev_colour_values",
+      "ev_no_colour_usage"
+    ]
+  },
+  {
+    "id": "constraint_weight_sentinel_zero",
+    "target": "weight_kg",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "average weight",
+      "avg weight",
+      "mean weight",
+      "weight difference",
+      "weight greater than",
+      "weight of all",
+      "heavy"
+    ],
+    "severity": "block",
+    "scope": "Applies to every average, comparison or threshold over character weight",
+    "confidence": "high",
+    "description": "The value 0 is used on the weight column as a sentinel meaning the weight was not recorded, and it accounts for a large minority of the non-null rows. The column also carries genuine but extreme values for non-human and cosmic characters that lie orders of magnitude outside any human range. Treating 0 as a physical weight, or averaging the column without deciding how these extremes are handled, materially distorts any average or threshold comparison; the treatment must be stated explicitly rather than left implicit.",
+    "evidence": [
+      "ev_weight_sentinel_zero"
+    ]
+  },
+  {
+    "id": "constraint_height_sentinel_zero",
+    "target": "height_cm",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "average height",
+      "height of over",
+      "height from",
+      "height between",
+      "tall",
+      "height greater than"
+    ],
+    "severity": "block",
+    "scope": "Applies to every average, range filter or comparison over character height",
+    "confidence": "high",
+    "description": "The value 0 is used on the height column as a sentinel meaning the height was not recorded, in addition to a set of NULL rows. The column also carries extreme values for non-human characters far outside human ranges. Any average or range filter over height must state how 0, NULL and these outliers are handled; treating 0 as a real height both lowers averages and fails range filters that are meant to select tall characters.",
+    "evidence": [
+      "ev_height_sentinel_zero"
+    ]
+  },
+  {
+    "id": "constraint_duplicate_hero_names",
+    "target": "superhero_name",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "3-D Man",
+      "Copycat",
+      "name of superhero",
+      "superhero_name",
+      "which superhero",
+      "list the superheroes",
+      "full name"
+    ],
+    "severity": "warning",
+    "scope": "Applies whenever a character is looked up by name",
+    "confidence": "high",
+    "description": "Neither name field is a key. Five codenames are carried by more than one character record, one of them by four records, and twenty personal names are shared by two or more records. The personal-name column additionally stores the empty string on many rows, so a lookup on an unmatched personal name can return a large block of unrelated characters. A name lookup may therefore legitimately return several distinct characters, and the intended one usually has to be narrowed by an additional attribute of the question.",
+    "evidence": [
+      "ev_superhero_name_duplicates",
+      "ev_full_name_duplicates"
+    ]
+  },
+  {
+    "id": "constraint_name_vs_full_name",
+    "target": "hero_full_name",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "full name",
+      "real name",
+      "civilian name",
+      "Emil Blonsky",
+      "Charles Chandler",
+      "3-D Man",
+      "Copycat",
+      "superhero_name"
+    ],
+    "severity": "block",
+    "scope": "Applies whenever a question names a character",
+    "confidence": "high",
+    "description": "A character carries two independent name fields. The codename field holds the public name and the personal-name field holds the in-universe civil identity. The two coincide for only a small minority of records and both are used by questions to address the same character, so a name found in one field must not be searched in the other by assumption; the question's own wording decides which field applies, and a name that matches nothing in the field implied by the wording should be re-checked against the other.",
+    "evidence": [
+      "ev_name_fields_relationship",
+      "ev_hero_identity_example"
+    ]
+  },
+  {
+    "id": "constraint_attribute_vs_power_name_collision",
+    "target": "superpower",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "durability",
+      "intelligence",
+      "power",
+      "super power",
+      "ability",
+      "attribute"
+    ],
+    "severity": "warning",
+    "scope": "Applies when a question mentions durability, intelligence or power without saying which kind of concept is meant",
+    "confidence": "high",
+    "description": "The labels 'Durability' and 'Intelligence' appear both in the capability-attribute table as scored dimensions and in the ability catalogue as named powers. They are different concepts stored in different tables and attached to characters through different association tables, so a question mentioning one of these labels may intend either the capability score or the named ability, and the intended one has to be resolved from how the question frames it.",
+    "evidence": [
+      "ev_power_attribute_name_collision",
+      "ev_attribute_names",
+      "ev_superpower_references"
+    ]
+  },
+  {
+    "id": "constraint_race_placeholder_dash",
+    "target": "race",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "race",
+      "species",
+      "what is the race",
+      "Copycat"
+    ],
+    "severity": "warning",
+    "scope": "Applies whenever a race value is returned or filtered",
+    "confidence": "high",
+    "description": "The lowest-numbered race row stores a single dash character rather than a species name, and it is used by a large share of characters. A dash returned in answer to a race question means no race is recorded for that character, not that the character's species is literally a dash; it should be reported as unspecified rather than as a value.",
+    "evidence": [
+      "ev_race_values_placeholder"
+    ]
+  },
+  {
+    "id": "constraint_publisher_special_values",
+    "target": "publisher",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "publisher",
+      "published by",
+      "which publisher",
+      "Dark Horse Comics",
+      "Marvel Comics",
+      "DC Comics",
+      "Star Trek"
+    ],
+    "severity": "warning",
+    "scope": "Applies whenever characters are grouped or filtered by publisher",
+    "confidence": "high",
+    "description": "The credited-publisher vocabulary mixes several kinds of credit: large comic-book publishers account for most characters, but the column also holds studios, broadcasters, individual author names and franchise titles used as publisher labels. One credited value is the empty string and is a placeholder rather than a named publisher, applying to a small group of characters. A question about 'the publisher' therefore has to decide whether it means a comics company or any credited rights-holder, and an empty publisher value should not be reported as a publisher name.",
+    "evidence": [
+      "ev_publisher_values",
+      "ev_publisher_distribution"
+    ]
+  },
+  {
+    "id": "constraint_missing_links_drop_heroes",
+    "target": "superhero",
+    "constraint_type": "scope",
+    "trigger_keywords": [
+      "how many superheroes",
+      "how many heroes",
+      "all superheroes",
+      "every superhero",
+      "count",
+      "superheroes with"
+    ],
+    "severity": "warning",
+    "scope": "Applies to every count or population comparison over characters",
+    "confidence": "high",
+    "description": "The character table is larger than any of its association tables. A substantial minority of characters have no recorded capability scores at all, a smaller group have no recorded ability, and the race, publisher, alignment, height and weight references each have their own count of missing values. Any join to those tables therefore reduces the character population, so a count expressed over 'all superheroes' and a count over 'superheroes having a score' are not the same denominator and the intended one must be chosen deliberately rather than left to the join.",
+    "evidence": [
+      "ev_association_coverage_gaps",
+      "ev_superhero_profile_shape"
+    ]
+  },
+  {
+    "id": "constraint_attribute_value_scale",
+    "target": "attribute_value",
+    "constraint_type": "unit",
+    "trigger_keywords": [
+      "attribute value",
+      "value of 100",
+      "strength value",
+      "durability value",
+      "score",
+      "less than 50",
+      "highest attribute value"
+    ],
+    "severity": "info",
+    "scope": "Applies when a numeric capability threshold is quoted or compared",
+    "confidence": "high",
+    "description": "Capability scores are integers on a bounded scale running from 5 to 100, with a small number of distinct values in use. Numeric thresholds quoted in questions refer to this scale. A character's absence of a score for an attribute is represented by the absence of a row, never by a zero score, so a filter such as 'less than 50' selects characters that do have a recorded score below the threshold and does not include characters with no record at all.",
+    "evidence": [
+      "ev_attribute_value_scale",
+      "ev_hero_attribute_shape"
+    ]
+  }
+]

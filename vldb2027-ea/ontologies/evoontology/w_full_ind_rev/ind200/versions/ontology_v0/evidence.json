@@ -1,0 +1,786 @@
+[
+  {
+    "id": "evidence_envelope_scan",
+    "source": "ind200.sqlite (read-only)",
+    "query": "SELECT column_name, COUNT(*) FROM dim_column_metadata WHERE column_name IN ('created_by','updated_by','approved_by','created_at','updated_at','approved_at','status','priority','reason_code','row_version','data_quality_score','is_deleted','remarks','document_no','business_date','posting_date','event_time') GROUP BY 1",
+    "result": "created_at/updated_at/approved_at/status/data_quality_score/is_deleted/remarks present on 92 tables; created_by/updated_by on 92; approved_by on 67; business_date/posting_date/event_time on 67; priority on 68; reason_code on 69; row_version on 67; document_no on 67. Confirms one uniform audit/governance envelope reused across the middle-tier fact tables.",
+    "validation_method": "schema metadata aggregation over dim_column_metadata",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_system_user_codes",
+    "source": "ind200.sqlite (read-only)",
+    "query": "SELECT DISTINCT created_by FROM fact_lead ORDER BY 1; SELECT DISTINCT approved_by FROM fact_kpi_snapshot ORDER BY 1; SELECT emp_id,emp_name FROM dim_employee LIMIT 3;",
+    "result": "created_by/updated_by/approved_by values are U0001..U0012 (text user codes). dim_employee.emp_id is INTEGER (1..122) and emp_name is '合成员工0086'-style. No U-code appears in dim_employee. So audit '人' columns are a separate system-user namespace, not dim_employee.",
+    "validation_method": "value-domain sampling on two tables plus dim_employee cross-check",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_measure_universality",
+    "source": "ind200.sqlite (read-only)",
+    "query": "SELECT column_name, COUNT(*) FROM dim_column_metadata WHERE column_name IN ('base_quantity','tax_amount','local_amount','amount','quantity','unit_price','exchange_rate','cost_amount','budget_amount','planned_quantity','actual_quantity','qualified_quantity','rejected_quantity','rate_value','score_value','duration_minutes','priority','currency_code') GROUP BY 1",
+    "result": "base_quantity 38, tax_amount 41, local_amount 40, amount 48, quantity 47, unit_price 46, exchange_rate 40, cost_amount 40, budget_amount 22, planned_quantity 42, actual_quantity 41, qualified_quantity 38, rejected_quantity 38, rate_value 25, score_value 25, duration_minutes 19, priority 68, currency_code 40. The same measure columns are reused verbatim across dozens of fact tables, so measure vocabulary is cross-table.",
+    "validation_method": "schema metadata aggregation over dim_column_metadata",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_row_version_usage",
+    "source": "ind200.sqlite (read-only)",
+    "query": "SELECT MIN(row_version),MAX(row_version),COUNT(*) FROM fact_lead;",
+    "result": "row_version ranges 1..3 over 168 fact_lead rows. The workload sums/averages this column ('按销售线索的行版本合计排序','生产工时报工的行版本平均值','质量问题行版本合计'), so it functions as an aggregatable metric, not only as a concurrency token.",
+    "validation_method": "value-range sampling",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_remarks_vocab",
+    "source": "ind200.sqlite (read-only)",
+    "query": "SELECT remarks,COUNT(*) FROM fact_labor_booking GROUP BY 1 ORDER BY 2 DESC LIMIT 6; SELECT remarks,COUNT(*) FROM fact_customer_contact GROUP BY 1 ORDER BY 2 DESC LIMIT 6; SELECT remarks,COUNT(*) FROM fact_skill_assessment GROUP BY 1 ORDER BY 2 DESC LIMIT 6;",
+    "result": "remarks draws from a small closed vocabulary: '' (dominant), 已电话确认, 客户指定批次, 加急, 跨月处理, 补录. Same vocabulary on fact_labor_booking (156/154/152/150/168 among 19487 rows), fact_customer_contact (14/9/8/7/6 among 879), fact_skill_assessment (2/2/1/1).",
+    "validation_method": "distinct-value profiling on three tables",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_status_enums",
+    "source": "ind200.sqlite (read-only)",
+    "query": "SELECT status,COUNT(*) FROM fact_quotation|fact_tax_invoice_line|fact_transfer_order|fact_sales_order|fact_opportunity|fact_employee_assignment|fact_ap|fact_asn_line|dim_employee|dim_customer GROUP BY 1",
+    "result": "fact_quotation: won 357 / lost 113 / draft 6. fact_tax_invoice_line: CLOSED 4768 / APPROVED 311. fact_transfer_order: CLOSED 819 / APPROVED 48. fact_sales_order: delivered 4576 / undelivered 152 / returned 3. fact_opportunity: won 36 / open 22 / lost 20 / stalled 6. fact_employee_assignment: APPROVED 121 / CLOSED 1. fact_ap: closed 879 / open 122. fact_asn_line: CLOSED 947 / APPROVED 70. dim_employee: active 121 / inactive 1. dim_customer: active 22 / lost 2 / dormant 1. Status domains differ by business family.",
+    "validation_method": "enumeration of status value domains across 10 tables",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_date_columns",
+    "source": "ind200.sqlite (read-only)",
+    "query": "SELECT column_name, COUNT(*) FROM dim_column_metadata WHERE column_name LIKE '%date%' OR column_name IN ('event_time','created_at','updated_at','approved_at','start_time','end_time','deadline') GROUP BY 1 ORDER BY 2 DESC",
+    "result": "Envelope dates business_date/posting_date/event_time on 67 tables; created_at/updated_at/approved_at on 92; due_date 15; expiry_date 11; closed_date 10; manufacture_date 8; requested_date/promised_date/received_date 4 each; requested_delivery_date/promised_delivery_date 3 each; action_due_date 3; also single-table dates (audit_date, quotation_date, payment_date, return_date, receipt_date, incident_date, sample_date, output_date, close_date, create_date, deadline, pr_date, feedback_date, valid_until).",
+    "validation_method": "schema metadata aggregation over dim_column_metadata",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_calendar",
+    "source": "ind200.sqlite (read-only)",
+    "query": "SELECT MIN(calendar_date),MAX(calendar_date),COUNT(*) FROM dim_calendar;",
+    "result": "dim_calendar spans 2025-01-01..2026-07-01 with 547 rows, one row per day. Fact-table business_date ranges fall inside it (e.g. fact_lead 2025-01-01..2026-06-19), so date-to-calendar joins are lossless.",
+    "validation_method": "range comparison between dim_calendar and fact_lead",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_calendar_holidays",
+    "source": "ind200.sqlite (read-only)",
+    "query": "SELECT DISTINCT holiday_name FROM dim_calendar WHERE holiday_name<>''; SELECT COUNT(*) FROM dim_calendar WHERE holiday_name IS NOT NULL AND holiday_name<>'';",
+    "result": "40 non-empty rows with holiday_name in {元旦,春节,清明节,劳动节,端午节,中秋节,国庆节,法定节假日}. '国庆节' is present (国定节假日 window), supporting '国庆节当天' and '对应的节假日名称' style questions.",
+    "validation_method": "distinct-value profiling on dim_calendar",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_dim_region",
+    "source": "ind200.sqlite (read-only)",
+    "query": "SELECT * FROM dim_region; SELECT sales_region,COUNT(*) FROM fact_sales_order_line GROUP BY 1;",
+    "result": "dim_region holds 华东/华南/华北/西南/华中/西北. fact_sales_order_line.sales_region carries the same six values (华东 1730, 华南 1461, 华中 666, 西北 571, 华北 503, 西南 442) as a denormalized text column covering 8 tables.",
+    "validation_method": "cross-source value-domain comparison",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_dim_employee",
+    "source": "ind200.sqlite (read-only)",
+    "query": "SELECT emp_id,emp_name,dept_id,status FROM dim_employee LIMIT 14; SELECT * FROM dim_department LIMIT 20;",
+    "result": "dim_employee has 122 rows (emp_id integer, emp_name '合成员工NNNN', dept_id, hire_date, status active 121 / inactive 1). dim_department has 17 rows (华东/华南/华北/西南/华中/西北销售部 + 生产部/质量部/设备部/采购部/仓储物流部/财务部/人力资源部/安全环保部/计划部/研发中心/总经办).",
+    "validation_method": "schema + row sampling",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_dim_skill",
+    "source": "ind200.sqlite (read-only)",
+    "query": "SELECT * FROM dim_skill;",
+    "result": "20 rows with code SKILL-001..020, name and short_name both populated (e.g. 挤出操作, 螺杆组合配置, 配色, 设备点检), plus skill_group/assessment_method/duration_hours.",
+    "validation_method": "schema + row sampling",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_dim_product",
+    "source": "ind200.sqlite (read-only)",
+    "query": "SELECT * FROM dim_product LIMIT 5;",
+    "result": "dim_product: prod_id/prod_name (PP-T20, PP-GF30, PA6-GF30 ...)/prod_line_id/spec/unit/standard_cost/tech_cost/guide_price. prod_line_id is the product-to-product-line link.",
+    "validation_method": "schema + row sampling",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_dim_product_line",
+    "source": "ind200.sqlite (read-only)",
+    "query": "SELECT * FROM dim_product_line;",
+    "result": "4 rows: PP改性系列 / PA改性系列 / ABS-PC合金系列 / 特种工程塑料系列. Matches the product-line names used in the workload.",
+    "validation_method": "schema + row sampling",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_dim_workshop",
+    "source": "ind200.sqlite (read-only)",
+    "query": "SELECT * FROM dim_workshop;",
+    "result": "5 rows: PP改性车间(青岛一厂A栋) / PA改性车间(青岛一厂B栋) / ABS-PC合金车间(青岛二厂A栋) / 阻燃材料车间(青岛二厂B栋) / 特种工程塑料车间(合肥工厂A栋). Covers '特种工程塑料车间' and '阻燃材料车间' from the workload.",
+    "validation_method": "schema + row sampling",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_dim_production_line",
+    "source": "ind200.sqlite (read-only)",
+    "query": "SELECT * FROM dim_production_line LIMIT 8;",
+    "result": "line_id/line_name (PP挤出1线..)/workshop_id/product_type/capacity_tph/status. workshop_id is the line-to-workshop link used by '车间->生产工单' two-hop questions.",
+    "validation_method": "schema + row sampling",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_dim_warehouse",
+    "source": "ind200.sqlite (read-only)",
+    "query": "SELECT * FROM dim_warehouse;",
+    "result": "7 rows: 一厂原料仓/一厂成品仓/一厂备件仓/二厂原料仓/二厂成品仓/合肥原料仓/合肥成品仓, with warehouse_type, factory_name, capacity_tons. '二厂原料仓' present.",
+    "validation_method": "schema + row sampling",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_dim_supplier",
+    "source": "ind200.sqlite (read-only)",
+    "query": "SELECT * FROM dim_supplier LIMIT 4;",
+    "result": "dim_supplier columns: supplier_id/supplier_code/supplier_name/category_id/province/city/contact_person/contact_phone/credit_level/cooperation_since/status. 合作起始日期 is stored as cooperation_since (note: not cooperate_start_date).",
+    "validation_method": "schema + row sampling",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_dim_currency",
+    "source": "ind200.sqlite (read-only)",
+    "query": "SELECT * FROM dim_currency LIMIT 15;",
+    "result": "CNY/USD/EUR/JPY with exchange_rate (7.12/7.78/0.048) and decimal digits. Fact tables carry currency_code as a text column matching these codes.",
+    "validation_method": "schema + row sampling",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_dim_cost_center",
+    "source": "ind200.sqlite (read-only)",
+    "query": "SELECT * FROM dim_cost_center LIMIT 12;",
+    "result": "cc_id/cc_code (CC001..)/cc_name/dept_id/bu_id/cc_type. bu_id links cost centers to business units; e.g. CC005 特种工程塑料车间 has bu_id=3.",
+    "validation_method": "schema + row sampling",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_dim_business_unit",
+    "source": "ind200.sqlite (read-only)",
+    "query": "SELECT * FROM dim_business_unit;",
+    "result": "3 rows: 通用改性事业部(1) / 工程塑料事业部(2) / 特种材料事业部(3). '特种材料事业部' present, reachable from fact_cost_allocation via dim_cost_center.bu_id.",
+    "validation_method": "schema + row sampling",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_dim_hazard",
+    "source": "ind200.sqlite (read-only)",
+    "query": "SELECT * FROM dim_hazard; SELECT hazard_type,COUNT(*) FROM fact_hazard_observation GROUP BY 1;",
+    "result": "dim_hazard: hazard_id/hazard_code/hazard_name/hazard_category(物理性/化学性/人机工程)/location/risk_level. fact_hazard_observation.hazard_type carries the same three values (物理性 201 / 化学性 99 / 人机工程 34). Two interchangeable groundings for 危险类型.",
+    "validation_method": "cross-source value-domain comparison",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_dim_reason_code",
+    "source": "ind200.sqlite (read-only)",
+    "query": "SELECT code,name,short_name,reason_group,abbreviation,display_value FROM dim_reason_code;",
+    "result": "12 rows: QUALITY/DELIVERY/COST/EQUIPMENT/SAFETY/ENVIRONMENT/CUSTOMER/SUPPLIER/PROCESS/MATERIAL/SYSTEM/OTHER, each with name, short_name and abbreviation (e.g. QUALITY -> 质量原因 / QUA). usage_scope is 全业务.",
+    "validation_method": "schema + row sampling",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_reason_code_constancy",
+    "source": "ind200.sqlite (read-only)",
+    "query": "for every table having a reason_code column: SELECT COUNT(DISTINCT reason_code) ...",
+    "result": "Only 3 tables have a non-constant reason_code: dim_downtime_reason (8), fact_downtime (8 integer ids), fact_equipment_event (6). All other tables (including fact_transfer_order and fact_transfer_order_line, both pinned to 'OTHER') have a single constant value despite the column name. So a question phrased as '原因' is not reliably grounded on the generic reason_code column.",
+    "validation_method": "distinct-count scan of reason_code over all 200 tables",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_dim_downtime_reason",
+    "source": "ind200.sqlite (read-only)",
+    "query": "SELECT * FROM dim_downtime_reason; SELECT downtime_reason,COUNT(*) FROM fact_equipment_runtime GROUP BY 1;",
+    "result": "dim_downtime_reason: 8 rows D001 设备故障 / D002 换产清机 / D003 计划保养 / D004 物料短缺 / D005 质量异常 / D006 能源中断 / D007 人员不足 / D008 滤网更换. fact_equipment_runtime.downtime_reason stores the Chinese NAME as free text (换产清机 1698 / 设备故障 523 / 滤网更换 340 / 质量异常 223 / 物料短缺 148 / 人员不足 84 / 能源中断 79 / empty 3120) rather than the code. '滤网更换' present.",
+    "validation_method": "cross-source representation comparison",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_metadata_tables",
+    "source": "ind200.sqlite (read-only)",
+    "query": "SELECT COUNT(*) FROM dim_table_metadata; SELECT COUNT(*) FROM dim_column_metadata; SELECT table_category,COUNT(*) FROM dim_table_metadata GROUP BY 1;",
+    "result": "dim_table_metadata has 200 rows (事实表 115 / 维度表 69 / 汇总表 16; table_level core 108, contract_validation 92). dim_column_metadata has 5002 rows with Chinese column names and descriptions. These are in-database documentation tables.",
+    "validation_method": "row counts + grouping",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_metric_catalog",
+    "source": "ind200.sqlite (read-only)",
+    "query": "SELECT COUNT(*) FROM dim_metric_catalog; SELECT * FROM dim_metric_catalog LIMIT 3;",
+    "result": "107 metric rows with metric_name/category(原子指标/派生指标/复合指标)/metric_type/description/table_source/dws_table/date_column/value_column/unit_code. e.g. 计划产量 -> DWS_PRODUCTION_DAILY.planned_quantity (吨); 成材率 = 实际产量/投料量x100.",
+    "validation_method": "row count + row sampling",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_dws_tables",
+    "source": "ind200.sqlite (read-only)",
+    "query": "SELECT table_name,table_name_cn,table_desc FROM dim_table_metadata WHERE table_category='汇总表';",
+    "result": "16 DWS_* summary tables (售后/变现/设备/财务/售中/KPI/市场/费用预算/组织业绩/组织目标/售前/采购/生产/风险/安全 日汇总 + agg_metric_monthly). Their documented contract is '由明细表汇总生成，可与明细对账', i.e. they are derived aggregates coexisting with the detail fact tables.",
+    "validation_method": "metadata inspection of summary tables",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_env_tables",
+    "source": "ind200.sqlite (read-only)",
+    "query": "compare column lists of fact_env_record and fact_environment_measurement; SELECT COUNT(*) FROM fact_env_record; SELECT COUNT(*) FROM fact_environment_measurement;",
+    "result": "fact_env_record ('环境监测', early table) has only record_id/record_date/record_type/emission_type/measured_value/unit/limit_value/is_compliant and no audit envelope. fact_environment_measurement ('环境监测记录', standard env table) has the full audit envelope plus monitoring_point/emission_value/evidence_reference/sampling_method. Two tables share the '环境监测' concept with different structure.",
+    "validation_method": "column-set comparison + row counts",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_fact_sales_order",
+    "source": "ind200.sqlite (read-only)",
+    "query": "SELECT status,COUNT(*) FROM fact_sales_order GROUP BY 1;",
+    "result": "status delivered 4576 / undelivered 152 / returned 3. Columns include tech_cost_amount, standard_cost_amount, actual_cost_amount, gross_profit_actual, gross_profit_standard, is_negative_margin.",
+    "validation_method": "enumeration + schema",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_fact_sales_order_line",
+    "source": "ind200.sqlite (read-only)",
+    "query": "SELECT sales_region,COUNT(*) FROM fact_sales_order_line GROUP BY 1;",
+    "result": "sales_region text column with 6 region values; also carries requested_delivery_date/promised_delivery_date/margin_rate.",
+    "validation_method": "enumeration + schema",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_fact_quotation",
+    "source": "ind200.sqlite (read-only)",
+    "query": "SELECT status,COUNT(*) FROM fact_quotation GROUP BY 1;",
+    "result": "won 357 / lost 113 / draft 6, matching the described 'draft/sent/won/lost' domain.",
+    "validation_method": "enumeration",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_fact_opportunity",
+    "source": "ind200.sqlite (read-only)",
+    "query": "SELECT status,COUNT(*) FROM fact_opportunity GROUP BY 1;",
+    "result": "won 36 / open 22 / lost 20 / stalled 6. Contains create_date and close_date as two distinct date roles.",
+    "validation_method": "enumeration + schema",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_fact_lead",
+    "source": "ind200.sqlite (read-only)",
+    "query": "SELECT MIN(row_version),MAX(row_version),COUNT(*) FROM fact_lead; SELECT MIN(business_date),MAX(business_date) FROM fact_lead;",
+    "result": "168 rows, row_version 1-3, business_date 2025-01-01..2026-06-19. Contains sales_region and opportunity_stage.",
+    "validation_method": "sampling",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_fact_customer_contact",
+    "source": "ind200.sqlite (read-only)",
+    "query": "SELECT remarks,COUNT(*) FROM fact_customer_contact GROUP BY 1 ORDER BY 2 DESC LIMIT 6;",
+    "result": "879 rows; remarks vocabulary {空 834, 已电话确认 14, 跨月处理 9, 加急 8, 客户指定批次 7, 补录 6}. '加急' present.",
+    "validation_method": "enumeration",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_fact_sample",
+    "source": "ind200.sqlite (read-only)",
+    "query": "SELECT group_concat(name,', ') FROM pragma_table_info('fact_sample');",
+    "result": "sample_id/cust_id/emp_id/sample_date/quantity/feedback_date/feedback_result/is_feedback/is_success. Success indicator is is_success (and feedback_result success/fail).",
+    "validation_method": "schema",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_fact_sales_forecast",
+    "source": "ind200.sqlite (read-only)",
+    "query": "SELECT updated_by,COUNT(*) FROM fact_sales_forecast GROUP BY 1 ORDER BY 2 DESC LIMIT 6;",
+    "result": "updated_by U-codes 77-88 across users. Carries priority, forecast_bucket, sales_region, planner_code.",
+    "validation_method": "enumeration + schema",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_fact_payment_target",
+    "source": "ind200.sqlite (read-only)",
+    "query": "SELECT group_concat(name,', ') FROM pragma_table_info('fact_payment_target');",
+    "result": "target_id/emp_id/year/turnover_rate_target. 周转率目标 is turnover_rate_target, keyed by 业务员 emp_id and 年度 year.",
+    "validation_method": "schema",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_fact_sales_contract_line",
+    "source": "ind200.sqlite (read-only)",
+    "query": "SELECT group_concat(name,', ') FROM pragma_table_info('fact_sales_contract_line');",
+    "result": "Has requested_delivery_date, promised_delivery_date, sales_region, margin_rate plus the generic measure subset and the audit envelope.",
+    "validation_method": "schema",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_fact_shipment",
+    "source": "ind200.sqlite (read-only)",
+    "query": "SELECT group_concat(name,', ') FROM pragma_table_info('fact_shipment');",
+    "result": "One-to-one with fact_delivery; carries ship_to_city, freight_amount, customer_po_no, contract_no, requested/promised_delivery_date, sales_region.",
+    "validation_method": "schema",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_fact_shipment_line",
+    "source": "ind200.sqlite (read-only)",
+    "query": "SELECT group_concat(name,', ') FROM pragma_table_info('fact_shipment_line');",
+    "result": "shipment_line_id/shipment_id/sales_order_line_id/prod_id plus lot_no/batch_no/base_quantity/... and the audit envelope (so reason_code + row_version are available for the '原因码名称/行版本' question).",
+    "validation_method": "schema",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_fact_tax_invoice_line",
+    "source": "ind200.sqlite (read-only)",
+    "query": "SELECT status,COUNT(*) FROM fact_tax_invoice_line GROUP BY 1;",
+    "result": "CLOSED 4768 / APPROVED 311. Carries fiscal_year/fiscal_period/debit_amount/credit_amount/account_code/tax_rate/due_date. Documented as blue-invoice lines only (red offsets live in fact_invoice as negatives).",
+    "validation_method": "enumeration + schema",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_fact_return",
+    "source": "ind200.sqlite (read-only)",
+    "query": "SELECT reason,COUNT(*) FROM fact_return GROUP BY 1 ORDER BY 2 DESC LIMIT 6;",
+    "result": "reason values 产品质量问题:冲击强度偏低 31 / 颜色与样板不符 22 / 客户订单变更取消 12 / 包装破损受潮 9 / 规格型号发错 9. '包装破损受潮' present.",
+    "validation_method": "enumeration",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_fact_payment",
+    "source": "ind200.sqlite (read-only)",
+    "query": "SELECT payment_type,COUNT(*) FROM fact_payment GROUP BY 1;",
+    "result": "电汇 3239 / 银承 1705. 收款方式 is payment_type on the RECEIPT table; the outgoing table uses payment_method.",
+    "validation_method": "enumeration",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_fact_payment_out",
+    "source": "ind200.sqlite (read-only)",
+    "query": "SELECT payment_method,COUNT(*) FROM fact_payment_out GROUP BY 1;",
+    "result": "bank_transfer 599 / letter_of_credit 280. 'letter_of_credit' and bank transfer both present.",
+    "validation_method": "enumeration",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_fact_ap",
+    "source": "ind200.sqlite (read-only)",
+    "query": "SELECT status,COUNT(*) FROM fact_ap GROUP BY 1;",
+    "result": "closed 879 / open 122. Documented rule: amount = 收货数量 x 采购单价 x 1.13; due_date = 收货当月月末 + 账期天数.",
+    "validation_method": "enumeration + metadata",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_fact_ar_aging",
+    "source": "ind200.sqlite (read-only)",
+    "query": "SELECT group_concat(name,', ') FROM pragma_table_info('fact_ar_aging');",
+    "result": "cust_id/emp_id/invoice_id/due_date/balance_amount/current_month (当前账龄(月))/aging_1m..aging_12m_plus/is_overdue/overdue_months. 当前账龄(月) is current_month.",
+    "validation_method": "schema",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_fact_cash_flow",
+    "source": "ind200.sqlite (read-only)",
+    "query": "SELECT group_concat(name,', ') FROM pragma_table_info('fact_cash_flow');",
+    "result": "References both cust_id and supplier_id plus account_id; carries fiscal_year/fiscal_period/debit_amount/credit_amount and the audit envelope with created_by.",
+    "validation_method": "schema",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_fact_gl_entry",
+    "source": "ind200.sqlite (read-only)",
+    "query": "SELECT group_concat(name,', ') FROM pragma_table_info('fact_gl_entry');",
+    "result": "account_id/cc_id/coa_id/voucher_no/fiscal_year/fiscal_period/debit_amount/credit_amount plus the audit envelope. Documented: one summary voucher per business type per day, balanced, incl. a 2025-01-01 opening balance voucher.",
+    "validation_method": "schema + metadata",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_fact_cost_allocation",
+    "source": "ind200.sqlite (read-only)",
+    "query": "SELECT group_concat(name,', ') FROM pragma_table_info('fact_cost_allocation');",
+    "result": "source_cc_id / target_pc_id; documented as management-accounting allocation with voucher numbers prefixed CO- that never reach the general ledger.",
+    "validation_method": "schema + metadata",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_fact_capex_project_cost",
+    "source": "ind200.sqlite (read-only)",
+    "query": "SELECT group_concat(name,', ') FROM pragma_table_info('fact_capex_project_cost');",
+    "result": "project_id/asset_id/asset_class_id/currency_code/exchange_rate/capitalized_flag/asset_value_added. Questions grouping by currency_code and summing exchange_rate are grounded here.",
+    "validation_method": "schema",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_fact_purchase_requisition",
+    "source": "ind200.sqlite (read-only)",
+    "query": "SELECT group_concat(name,', ') FROM pragma_table_info('fact_purchase_requisition');",
+    "result": "pr_no/dept_id/requester_id/required_date/pr_date/total_amount. 申请人 is requester_id (-> dim_employee).",
+    "validation_method": "schema",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_fact_po_line",
+    "source": "ind200.sqlite (read-only)",
+    "query": "SELECT group_concat(name,', ') FROM pragma_table_info('fact_po_line');",
+    "result": "line_id/po_id/material_id/quantity(吨)/unit_price(元/吨)/amount(元)/received_qty. 单价 is unit_price.",
+    "validation_method": "schema",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_fact_goods_receipt",
+    "source": "ind200.sqlite (read-only)",
+    "query": "SELECT group_concat(name,', ') FROM pragma_table_info('fact_goods_receipt');",
+    "result": "gr_no/po_id/receipt_date/quantity/inspector_id/inspection_result. Documented inspection_result domain pass/fail/conditional/pending.",
+    "validation_method": "schema + metadata",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_fact_advance_shipping_notice",
+    "source": "ind200.sqlite (read-only)",
+    "query": "SELECT group_concat(name,', ') FROM pragma_table_info('fact_advance_shipping_notice');",
+    "result": "supplier_id/po_id/warehouse_id/supplier_site_id/buyer_code/requested_date/promised_date/received_date/lead_time_days plus the generic measure subset. Three distinct date roles in one table.",
+    "validation_method": "schema",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_fact_asn_line",
+    "source": "ind200.sqlite (read-only)",
+    "query": "SELECT status,COUNT(*) FROM fact_asn_line GROUP BY 1;",
+    "result": "CLOSED 947 / APPROVED 70. Line table of the advance shipping notice, carries approved_by and material_id.",
+    "validation_method": "enumeration + schema",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_fact_supplier_contract_line",
+    "source": "ind200.sqlite (read-only)",
+    "query": "SELECT group_concat(name,', ') FROM pragma_table_info('fact_supplier_contract_line');",
+    "result": "supplier_contract_id/material_id/currency_code/planned_quantity plus the audit envelope with updated_by.",
+    "validation_method": "schema",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_fact_supplier_quality_issue",
+    "source": "ind200.sqlite (read-only)",
+    "query": "SELECT group_concat(name,', ') FROM pragma_table_info('fact_supplier_quality_issue');",
+    "result": "supplier_id/material_id/defect_code/severity/disposition/claim_type/claim_resolution plus the audit envelope with created_by and row_version.",
+    "validation_method": "schema",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_fact_supply_plan",
+    "source": "ind200.sqlite (read-only)",
+    "query": "SELECT COUNT(*) FROM fact_supply_plan;",
+    "result": "245 rows; prod_id/factory_id/plan_version/planning_period/scenario_code/demand_quantity/supply_quantity/backlog_quantity/safety_stock_quantity/review_status/planner_code plus the audit envelope with updated_by/updated_at.",
+    "validation_method": "row count + schema",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_fact_production_order",
+    "source": "ind200.sqlite (read-only)",
+    "query": "SELECT group_concat(name,', ') FROM pragma_table_info('fact_production_order');",
+    "result": "order_no/order_date/line_id/prod_id/batch_no/planned_quantity(吨)/actual_quantity(吨)/yield_rate/start_time/end_time/runtime_hours. Both prod_id (-> product line) and line_id (-> workshop) hops start here.",
+    "validation_method": "schema",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_fact_production_plan",
+    "source": "ind200.sqlite (read-only)",
+    "query": "SELECT group_concat(name,', ') FROM pragma_table_info('fact_production_plan');",
+    "result": "plan_id/line_id/year/month/planned_quantity/actual_quantity/plan_achievement. Period is expressed as year+month integers, not a date column.",
+    "validation_method": "schema",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_fact_production_output",
+    "source": "ind200.sqlite (read-only)",
+    "query": "SELECT grade,COUNT(*) FROM fact_production_output GROUP BY 1;",
+    "result": "grade 一等品 2721 / 优等品 2721 / 合格品 93 / 返工品 116, with is_first_grade and first_grade_rate.",
+    "validation_method": "enumeration",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_fact_material_consumption",
+    "source": "ind200.sqlite (read-only)",
+    "query": "SELECT group_concat(name,', ') FROM pragma_table_info('fact_material_consumption');",
+    "result": "consumption_id/order_id/material_id/batch_no/planned_qty(配方用量)/actual_qty(实际投料 吨)/scrap_qty(工艺损耗)/unit. 实际投料 is actual_qty (not the generic actual_quantity).",
+    "validation_method": "schema",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_fact_rework_order",
+    "source": "ind200.sqlite (read-only)",
+    "query": "SELECT group_concat(name,', ') FROM pragma_table_info('fact_rework_order');",
+    "result": "Reuses the generic measure subset (incl. local_amount) plus process_stage/shift_code/yield_rate/scrap_quantity/defect_code/disposition. So 本位币金额 is local_amount here.",
+    "validation_method": "schema",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_fact_scrap_event",
+    "source": "ind200.sqlite (read-only)",
+    "query": "SELECT reason_code,COUNT(*),defect_code,COUNT(*) FROM fact_scrap_event; SELECT root_cause_code,COUNT(*) FROM fact_scrap_event GROUP BY 1;",
+    "result": "2930 rows; reason_code constant 'QUALITY', defect_code constant '开机料与过渡料', root_cause_code constant '法'. None of the three 'reason-looking' columns discriminates, so '报废原因' has no single-column grounding in this table.",
+    "validation_method": "distinct-value scan on three columns",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_fact_labor_booking",
+    "source": "ind200.sqlite (read-only)",
+    "query": "SELECT remarks,COUNT(*) FROM fact_labor_booking GROUP BY 1 ORDER BY 2 DESC LIMIT 6; SELECT employee_no,COUNT(*) FROM fact_labor_booking GROUP BY 1 ORDER BY 2 DESC LIMIT 3;",
+    "result": "19487 rows. remarks vocabulary includes 已电话确认 156. employee_no values are E-codes (E0061 463, E0062 459, E0056 447) - a third person-identifier namespace alongside emp_id (integer) and U-codes.",
+    "validation_method": "enumeration",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_fact_tool_usage",
+    "source": "ind200.sqlite (read-only)",
+    "query": "SELECT group_concat(name,', ') FROM pragma_table_info('fact_tool_usage');",
+    "result": "order_id/tool_id/tool_code/used_cycles/remaining_life/wear_rate/operator_code plus unit_code/quantity/base_quantity. 基本单位数量 is base_quantity.",
+    "validation_method": "schema",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_fact_wip_snapshot",
+    "source": "ind200.sqlite (read-only)",
+    "query": "SELECT group_concat(name,', ') FROM pragma_table_info('fact_wip_snapshot');",
+    "result": "order_id/line_id/process_stage/batch_no/manufacture_date/expiry_date/yield_rate/scrap_quantity plus the audit envelope with created_by and row_version.",
+    "validation_method": "schema",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_fact_inspection_lot",
+    "source": "ind200.sqlite (read-only)",
+    "query": "SELECT group_concat(name,', ') FROM pragma_table_info('fact_inspection_lot');",
+    "result": "inspection_no/sample_size/characteristic_code/measured_value/upper_limit/disposition plus base_quantity and the audit envelope with posting_date.",
+    "validation_method": "schema",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_fact_inspection_result",
+    "source": "ind200.sqlite (read-only)",
+    "query": "SELECT disposition,COUNT(*) FROM fact_inspection_result GROUP BY 1;",
+    "result": "disposition 返工 117 / 让步接收 93 / (empty) 13494. '让步接收' present; the empty bucket is large so a bare disposition filter must tolerate blanks.",
+    "validation_method": "enumeration",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_fact_customer_complaint",
+    "source": "ind200.sqlite (read-only)",
+    "query": "SELECT disposition,COUNT(*) FROM fact_customer_complaint GROUP BY 1;",
+    "result": "disposition 催交 177 / 退货 83. '催交' present. Table also carries closed_date and response_due_date as distinct date roles.",
+    "validation_method": "enumeration + schema",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_fact_equipment_runtime",
+    "source": "ind200.sqlite (read-only)",
+    "query": "SELECT downtime_reason,COUNT(*) FROM fact_equipment_runtime GROUP BY 1 ORDER BY 2 DESC;",
+    "result": "3935 rows: empty 3120 / 换产清机 1698 / 设备故障 523 / 滤网更换 340 / 质量异常 223 / 物料短缺 148 / 人员不足 84 / 能源中断 79. '滤网更换' present. Note this table is keyed by line_id + record_date, not by equipment_id.",
+    "validation_method": "enumeration + schema",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_fact_downtime",
+    "source": "ind200.sqlite (read-only)",
+    "query": "SELECT reason_code,COUNT(*) FROM fact_downtime GROUP BY 1;",
+    "result": "reason_code holds integer ids 1..8 referencing dim_downtime_reason, unlike fact_equipment_runtime which stores the Chinese name.",
+    "validation_method": "enumeration",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_fact_condition_monitoring",
+    "source": "ind200.sqlite (read-only)",
+    "query": "SELECT condition_monitoring_id,equipment_id,sensor_id,reading_value,reading_unit,upper_threshold FROM fact_condition_monitoring LIMIT 5;",
+    "result": "equipment_id/sensor_id/sensor_code/reading_value/reading_unit/lower_threshold/upper_threshold/health_index/remaining_life_hours. Sample readings 42.674-60.298 with unit ℃ and upper_threshold 85.0. Documented as one-to-one with the sensor acquisition stream.",
+    "validation_method": "row sampling + schema",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_fact_iot_data",
+    "source": "ind200.sqlite (read-only)",
+    "query": "SELECT * FROM fact_iot_data LIMIT 3;",
+    "result": "data_id/sensor_id/timestamp/value/unit/quality_flag. First rows duplicate the condition-monitoring readings (42.674 / 46.139 / 54.893) but expose the measure as value rather than reading_value.",
+    "validation_method": "row comparison against fact_condition_monitoring",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_fact_predictive_alert",
+    "source": "ind200.sqlite (read-only)",
+    "query": "SELECT reading_value,reading_unit FROM fact_predictive_alert LIMIT 4;",
+    "result": "reading_value with reading_unit in ℃/A/%/…, plus alarm_code/health_index/remaining_life_hours/failure_mode. 读数单位 is reading_unit.",
+    "validation_method": "row sampling + schema",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_fact_maintenance_task",
+    "source": "ind200.sqlite (read-only)",
+    "query": "SELECT group_concat(name,', ') FROM pragma_table_info('fact_maintenance_task');",
+    "result": "wo_id/emp_id/task_type/failure_mode/labor_hours/result_code/operator_code/maintenance_type/downtime_minutes plus the audit envelope with posting_date and data_quality_score.",
+    "validation_method": "schema",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_fact_spare_part_issue",
+    "source": "ind200.sqlite (read-only)",
+    "query": "SELECT group_concat(name,', ') FROM pragma_table_info('fact_spare_part_issue');",
+    "result": "equipment_id/part_id/part_code/issue_type/stock_before/stock_after/requester_code plus the audit envelope with approved_by.",
+    "validation_method": "schema",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_fact_transfer_order",
+    "source": "ind200.sqlite (read-only)",
+    "query": "SELECT status,COUNT(*) FROM fact_transfer_order GROUP BY 1; SELECT movement_type,COUNT(*) FROM fact_transfer_order GROUP BY 1; SELECT reason_code,COUNT(*) FROM fact_transfer_order GROUP BY 1;",
+    "result": "CLOSED 819 / APPROVED 48; movement_type constant '301 仓间调拨' (867); reason_code constant 'OTHER' (867). ship_to_city carries the destination city (e.g. 合肥).",
+    "validation_method": "enumeration on three columns",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_fact_transfer_order_line",
+    "source": "ind200.sqlite (read-only)",
+    "query": "SELECT reason_code,COUNT(*) FROM fact_transfer_order_line GROUP BY 1;",
+    "result": "4349 rows, reason_code constant 'OTHER'. Carries reserved_quantity/available_quantity and row_version. So a '调拨原因' question cannot discriminate on reason_code.",
+    "validation_method": "enumeration + schema",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_fact_lot_trace",
+    "source": "ind200.sqlite (read-only)",
+    "query": "SELECT group_concat(name,', ') FROM pragma_table_info('fact_lot_trace');",
+    "result": "material_id/order_id/lot_no/batch_no/manufacture_date/expiry_date/bom_qty_per_ton/standard_quantity/usage_variance_rate/issue_type/issue_warehouse. 领用仓库 is issue_warehouse.",
+    "validation_method": "schema",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_fact_energy_consumption",
+    "source": "ind200.sqlite (read-only)",
+    "query": "SELECT group_concat(name,', ') FROM pragma_table_info('fact_energy_consumption');",
+    "result": "line_id/workshop_id/record_date/electricity_kwh/water_tons/gas_m3/steam_tons/unit_energy_consumption. Workshop filter goes through workshop_id.",
+    "validation_method": "schema",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_fact_emission_event",
+    "source": "ind200.sqlite (read-only)",
+    "query": "SELECT evidence_reference,COUNT(*) FROM fact_emission_event GROUP BY 1 ORDER BY 2 DESC LIMIT 8;",
+    "result": "evidence_reference values are report identifiers such as 月度监测报告-202606 / -202512 / -202511, one row per report. 证据参考 is evidence_reference.",
+    "validation_method": "enumeration",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_fact_incident",
+    "source": "ind200.sqlite (read-only)",
+    "query": "SELECT description,COUNT(*) FROM fact_incident GROUP BY 1 ORDER BY 2 DESC LIMIT 6;",
+    "result": "description values 车辆伤害事件,已现场处置 5 / 机械伤害事件,已现场处置 5 / 高处坠落未遂事件,已现场处置 4 / 灼烫事件,已现场处置 4 / ... The workload's '触电事件,已现场处置' pattern matches this column.",
+    "validation_method": "enumeration",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_fact_hazard_observation",
+    "source": "ind200.sqlite (read-only)",
+    "query": "SELECT hazard_type,COUNT(*) FROM fact_hazard_observation GROUP BY 1;",
+    "result": "hazard_type 物理性 201 / 化学性 99 / 人机工程 34; also hazard_id/observation_no/severity/likelihood/risk_score/control_measure/action_due_date/closed_date/score_value.",
+    "validation_method": "enumeration + schema",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_fact_safety_action",
+    "source": "ind200.sqlite (read-only)",
+    "query": "SELECT control_measure,COUNT(*) FROM fact_safety_action GROUP BY 1;",
+    "result": "control_measure 管理控制 72 / 工程控制 55 / 个体防护 49. '个体防护' present. Carries action_due_date.",
+    "validation_method": "enumeration + schema",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_fact_safety_audit",
+    "source": "ind200.sqlite (read-only)",
+    "query": "SELECT audit_type,COUNT(*) FROM fact_safety_audit GROUP BY 1;",
+    "result": "audit_type 专项审计 18 / 月度安全审计 18. '月度安全审计' present. Carries workshop_id and score.",
+    "validation_method": "enumeration + schema",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_fact_safety_objective",
+    "source": "ind200.sqlite (read-only)",
+    "query": "SELECT group_concat(name,', ') FROM pragma_table_info('fact_safety_objective');",
+    "result": "obj_id/plan_id/obj_desc/target_value/unit/deadline/responsible_dept_id. 目标值 is target_value; 责任部门 is responsible_dept_id.",
+    "validation_method": "schema",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_fact_safety_training",
+    "source": "ind200.sqlite (read-only)",
+    "query": "SELECT * FROM fact_safety_training LIMIT 4;",
+    "result": "training_no/training_type/trainer_id/training_date/duration_hours/attendee_count/topic/score_avg. 讲师 is trainer_id and 时长 is duration_hours, so 累计培训时长 sums duration_hours per trainer_id.",
+    "validation_method": "row sampling + schema",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_fact_training_attendance",
+    "source": "ind200.sqlite (read-only)",
+    "query": "SELECT group_concat(name,', ') FROM pragma_table_info('fact_training_attendance');",
+    "result": "Carries the audit envelope including approved_by/approved_at, so '由 U0010 审批的安全培训签到' is grounded here.",
+    "validation_method": "schema",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_fact_employee_assignment",
+    "source": "ind200.sqlite (read-only)",
+    "query": "SELECT status,COUNT(*) FROM fact_employee_assignment GROUP BY 1;",
+    "result": "APPROVED 121 / CLOSED 1. NOTE: this table is not covered by the dim_column_metadata audit-envelope description, yet it does expose status.",
+    "validation_method": "enumeration",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_fact_certification_record",
+    "source": "ind200.sqlite (read-only)",
+    "query": "SELECT group_concat(name,', ') FROM pragma_table_info('fact_certification_record');",
+    "result": "emp_id/certification_id/certificate_no/skill_level/assessment_score/assessor_code/valid_from/expiry_date plus the generic measure subset incl. cost_amount.",
+    "validation_method": "schema",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_fact_skill_assessment",
+    "source": "ind200.sqlite (read-only)",
+    "query": "SELECT remarks,COUNT(*) FROM fact_skill_assessment GROUP BY 1 ORDER BY 2 DESC LIMIT 6; SELECT employee_no,COUNT(*) FROM fact_skill_assessment GROUP BY 1 ORDER BY 2 DESC LIMIT 3;",
+    "result": "178 rows; remarks includes 补录 1 and other vocabulary tokens; employee_no values are E-codes (E0120 2, E0119 2, ...). Carries skill_id, priority and score_value.",
+    "validation_method": "enumeration + schema",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_fact_overtime",
+    "source": "ind200.sqlite (read-only)",
+    "query": "SELECT group_concat(name,', ') FROM pragma_table_info('fact_overtime');",
+    "result": "emp_id/dept_id/employee_no/work_date/shift_code/overtime_hours/attendance_result/supervisor_code plus the audit envelope with created_by.",
+    "validation_method": "schema",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_fact_kpi_snapshot",
+    "source": "ind200.sqlite (read-only)",
+    "query": "SELECT group_concat(name,', ') FROM pragma_table_info('fact_kpi_snapshot');",
+    "result": "emp_id/dept_id/kpi_code/kpi_name/target_value/actual_value/achievement_rate/period_type/planning_period/evaluator_code plus the audit envelope with approved_by/approved_at.",
+    "validation_method": "schema",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_fact_data_quality_issue",
+    "source": "ind200.sqlite (read-only)",
+    "query": "SELECT group_concat(name,', ') FROM pragma_table_info('fact_data_quality_issue');",
+    "result": "dataset_release_id/validation_case_id/rule_code/check_name/severity/detected_at/resolved_at/exception_count/owner_team/resolution_status plus the audit envelope with posting_date, approved_at and data_quality_score.",
+    "validation_method": "schema",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_table_catalog",
+    "source": "ind200.sqlite (read-only)",
+    "query": "SELECT table_name,table_name_cn,table_category,table_desc FROM dim_table_metadata;",
+    "result": "Full 200-table catalog with Chinese names, categories (事实表/维度表/汇总表) and business descriptions. Every term's grounding table name and Chinese meaning in this ontology was taken from this catalog and then checked against real columns and values.",
+    "validation_method": "catalog read + per-table spot verification",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_dim_sensor",
+    "source": "ind200.sqlite (read-only)",
+    "query": "SELECT COUNT(*),COUNT(DISTINCT sensor_type),GROUP_CONCAT(DISTINCT unit) FROM dim_sensor; SELECT COUNT(*),COUNT(DISTINCT sensor_id),ROUND(SUM(reading_value),1) FROM fact_condition_monitoring; ... SUM(value) FROM fact_iot_data; SELECT COUNT(*),ROUND(SUM(reading_value),1) FROM fact_predictive_alert;",
+    "result": "dim_sensor has 180 rows (sensor_code SN010xx, sensor_name like '混合温度-PP挤出1线', equipment_id, sensor_type in 温度/电流/振动/流量/料位/压力/转速/重量/速度, unit in ℃/A/mm/s/kg/h/%/MPa/rpm/kg/包/h, accuracy). sensor_id is carried by fact_condition_monitoring, fact_iot_data and fact_predictive_alert. fact_condition_monitoring and fact_iot_data hold exactly the same readings (both 28758 rows over 180 sensors, SUM 5151284.7), while fact_predictive_alert holds a different, much smaller set (354 rows, SUM 84147.1).",
+    "validation_method": "schema inspection and cross-table aggregate comparison",
+    "timestamp": "2026-10-10"
+  }
+]

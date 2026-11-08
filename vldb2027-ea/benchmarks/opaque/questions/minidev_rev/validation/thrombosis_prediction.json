@@ -1,0 +1,68 @@
+{
+ "db_id": "thrombosis_prediction",
+ "questions": [
+  {
+   "question_id": 1265,
+   "db_id": "thrombosis_prediction",
+   "question": "How many patients have a normal level of anti-ribonuclear protein and have been admitted to the hospital?",
+   "evidence": "normal level of anti-ribonuclear protein refers to fld054 = '-', '+-'; And'-' means 'negative'; '+-' refers to '0'; admitted to the hospital refers to fld018 = '+'; Should consider DISTINCT in the final result;",
+   "SQL": "SELECT COUNT(DISTINCT T1.fld001) FROM tab02 AS T1 INNER JOIN tab03 AS T2 ON T1.fld001 = T2.fld001 WHERE T2.fld054 = 'negative' OR T2.fld054 = '0' AND T1.fld018 = '+'",
+   "difficulty": "moderate",
+   "SQL_original": "SELECT COUNT(DISTINCT T1.ID) FROM Patient AS T1 INNER JOIN Laboratory AS T2 ON T1.ID = T2.ID WHERE T2.RNP = 'negative' OR T2.RNP = '0' AND T1.Admission = '+'"
+  },
+  {
+   "question_id": 1247,
+   "db_id": "thrombosis_prediction",
+   "question": "Among the male patients who have a normal level of white blood cells, how many of them have an abnormal fibrinogen level?",
+   "evidence": "male patients refers to fld014 = 'M'; normal level of white blood cells refers to fld034 > 3.5 and fld034 <9.0; abnormal fibrinogen level refers to fld041 < = 150 or fld041 > = 450; Don't compute repetitive ones.",
+   "SQL": "SELECT COUNT(DISTINCT T1.fld001) FROM tab02 AS T1 INNER JOIN tab03 AS T2 ON T1.fld001 = T2.fld001 WHERE T2.fld041 <= 150 OR T2.fld041 >= 450 AND T2.fld034 > 3.5 AND T2.fld034 < 9.0 AND T1.fld014 = 'M'",
+   "difficulty": "challenging",
+   "SQL_original": "SELECT COUNT(DISTINCT T1.ID) FROM Patient AS T1 INNER JOIN Laboratory AS T2 ON T1.ID = T2.ID WHERE T2.FG <= 150 OR T2.FG >= 450 AND T2.WBC > 3.5 AND T2.WBC < 9.0 AND T1.SEX = 'M'"
+  },
+  {
+   "question_id": 1168,
+   "db_id": "thrombosis_prediction",
+   "question": "The oldest SJS patient's medical laboratory work was completed on what date, and what age was the patient when they initially arrived at the hospital?",
+   "evidence": "The larger the birthday value, the younger the person is, and vice versa; 'SJS' refers to diagnosis; (SUBTRACT(year(fld017)), year(fld015)); age of the patients when they initially arrived at the hospital refers to year(fld015)",
+   "SQL": "SELECT T1.fld019, STRFTIME('%Y', T2.fld017) - STRFTIME('%Y', T2.fld015), T2.fld015 FROM tab03 AS T1 INNER JOIN tab02 AS T2 ON T1.fld001 = T2.fld001 WHERE T2.fld008 = 'SJS' AND NOT T2.fld015 IS NULL ORDER BY T2.fld015 ASC LIMIT 1",
+   "difficulty": "challenging",
+   "SQL_original": "SELECT T1.Date, STRFTIME('%Y', T2.`First Date`) - STRFTIME('%Y', T2.Birthday),T2.Birthday FROM Laboratory AS T1 INNER JOIN Patient AS T2 ON T1.ID = T2.ID WHERE T2.Diagnosis = 'SJS' AND T2.Birthday IS NOT NULL ORDER BY T2.Birthday ASC LIMIT 1"
+  },
+  {
+   "question_id": 1209,
+   "db_id": "thrombosis_prediction",
+   "question": "Please provide the diagnosis of patients with ALT glutamic pylvic transaminase beyond the normal range by ascending order of their date of birth.",
+   "evidence": "ALT glutamic pylvic transaminase beyond the normal range refers to fld021 > 60; The larger the birthday value, the younger the person is, and vice versa; ",
+   "SQL": "SELECT DISTINCT T1.fld008 FROM tab02 AS T1 INNER JOIN tab03 AS T2 ON T1.fld001 = T2.fld001 WHERE T2.fld021 > 60 ORDER BY T1.fld015 ASC",
+   "difficulty": "moderate",
+   "SQL_original": "SELECT DISTINCT T1.Diagnosis FROM Patient AS T1 INNER JOIN Laboratory AS T2 ON T1.ID = T2.ID WHERE T2.GPT > 60 ORDER BY T1.Birthday ASC"
+  },
+  {
+   "question_id": 1192,
+   "db_id": "thrombosis_prediction",
+   "question": "List all patients who were followed up at the outpatient clinic who underwent a laboratory test in October 1991 and had a total blood bilirubin level within the normal range.",
+   "evidence": "followed up at the outpatient clinic refers to fld018 = '-'; laboratory test in April 1981 refers to fld019 like '1991-10%'; blood bilirubin level within the normal range refers to T-BIL < 2.0; ",
+   "SQL": "SELECT DISTINCT T1.fld001 FROM tab02 AS T1 INNER JOIN tab03 AS T2 ON T1.fld001 = T2.fld001 WHERE T1.fld018 = '-' AND T2.fld029 < 2.0 AND T2.fld019 LIKE '1991-10-%'",
+   "difficulty": "challenging",
+   "SQL_original": "SELECT DISTINCT T1.ID FROM Patient AS T1 INNER JOIN Laboratory AS T2 ON T1.ID = T2.ID WHERE T1.Admission = '-' AND T2.`T-BIL` < 2.0 AND T2.Date LIKE '1991-10-%'"
+  },
+  {
+   "question_id": 1238,
+   "db_id": "thrombosis_prediction",
+   "question": "Among the patients who were diagnosed with SLE, who is the oldest with normal hemoglobin level. Provide the ID and sex.",
+   "evidence": "diagnosed with SLE refers to fld008 = 'SLE'; The larger the birthday value, the younger the person is, and vice versa; normal hemoglobin level refers to 10 < fld036 < 17;",
+   "SQL": "SELECT T1.fld001, T1.fld014 FROM tab02 AS T1 INNER JOIN tab03 AS T2 ON T1.fld001 = T2.fld001 WHERE T1.fld008 = 'SLE' AND T2.fld036 > 10 AND T2.fld036 < 17 ORDER BY T1.fld015 ASC LIMIT 1",
+   "difficulty": "moderate",
+   "SQL_original": "SELECT T1.ID, T1.SEX FROM Patient AS T1 INNER JOIN Laboratory AS T2 ON T1.ID = T2.ID WHERE T1.Diagnosis = 'SLE' AND T2.HGB > 10 AND T2.HGB < 17 ORDER BY T1.Birthday ASC LIMIT 1"
+  },
+  {
+   "question_id": 1229,
+   "db_id": "thrombosis_prediction",
+   "question": "For all patients with triglyceride (TG) level beyond the normal range, how many are age more than 50 years?",
+   "evidence": "triglyceride (fld031) level beyond the normal range refers to fld031 > = 200; more than 50 years of age = SUBTRACT(year(current_timestamp), year(fld015)) > 50; Should consider DISTINCT in the final result;",
+   "SQL": "SELECT COUNT(DISTINCT T1.fld001) FROM tab02 AS T1 INNER JOIN tab03 AS T2 ON T1.fld001 = T2.fld001 WHERE T2.fld031 >= 200 AND STRFTIME('%Y', CURRENT_TIMESTAMP) - STRFTIME('%Y', T1.fld015) > 50",
+   "difficulty": "moderate",
+   "SQL_original": "SELECT COUNT(DISTINCT T1.ID) FROM Patient AS T1 INNER JOIN Laboratory AS T2 ON T1.ID = T2.ID WHERE T2.TG >= 200 AND STRFTIME('%Y', CURRENT_TIMESTAMP) - STRFTIME('%Y', T1.Birthday) > 50"
+  }
+ ]
+}

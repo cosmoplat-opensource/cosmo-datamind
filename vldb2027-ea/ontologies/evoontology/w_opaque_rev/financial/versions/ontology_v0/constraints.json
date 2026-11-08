@@ -1,0 +1,431 @@
+[
+  {
+    "id": "con_gender_enum",
+    "target": "term_gender",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "female",
+      "male",
+      "F",
+      "M",
+      "gender",
+      "sex",
+      "woman",
+      "man"
+    ],
+    "severity": "block",
+    "scope": "Any filter or grouping on client gender.",
+    "confidence": "high",
+    "description": "Gender is encoded as the single letters 'F' (female) and 'M' (male). These are the only observed values: F 2,645 and M 2,724 clients.",
+    "evidence": [
+      "ev_gender"
+    ]
+  },
+  {
+    "id": "con_district_role",
+    "target": "term_district_residence",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "district",
+      "branch",
+      "stayed in",
+      "residence",
+      "branch location",
+      "district of the client",
+      "district of the branch"
+    ],
+    "severity": "block",
+    "scope": "Any question that mentions both a client's district and an account's branch.",
+    "confidence": "high",
+    "description": "The client's residence district (tab03.fld002) and the account's branch district (tab01.fld002) draw on the same 77-value district identifier domain but are different role-scoped attributes. Among 5,369 holder records, 494 link a client whose residence district differs from the account's branch district. Selecting the wrong column changes results; do not substitute one for the other.",
+    "evidence": [
+      "ev_district_vs_branch"
+    ]
+  },
+  {
+    "id": "con_loan_status",
+    "target": "term_loan_status",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "running contract",
+      "still running",
+      "in debt",
+      "loan status",
+      "contract status",
+      "finished contract"
+    ],
+    "severity": "block",
+    "scope": "Interpreting or filtering loan status codes.",
+    "confidence": "high",
+    "description": "Status 'C' means a running contract, OK so far (403 loans); 'D' means a running contract in debt (45 loans). Both C and D are running contracts. 'A' (203) and 'B' (31) are non-running statuses, but the available workload evidence does not establish their precise meaning.",
+    "evidence": [
+      "ev_loan_status"
+    ]
+  },
+  {
+    "id": "con_statement_frequency",
+    "target": "term_statement_frequency",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "statement issuance",
+      "issuance after transaction",
+      "POPLATEK PO OBRATU",
+      "statement frequency",
+      "monthly statement",
+      "weekly statement"
+    ],
+    "severity": "block",
+    "scope": "Interpreting account statement issuance codes.",
+    "confidence": "high",
+    "description": "'POPLATEK PO OBRATU' means statements are issued after each transaction (93 accounts). 'POPLATEK MESICNE' means monthly (4,167) and 'POPLATEK TYDNE' means weekly (240).",
+    "evidence": [
+      "ev_freq"
+    ]
+  },
+  {
+    "id": "con_card_type",
+    "target": "term_card_type",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "high level credit card",
+      "gold",
+      "card type",
+      "card level",
+      "junior",
+      "classic"
+    ],
+    "severity": "block",
+    "scope": "Selecting cards by product level.",
+    "confidence": "high",
+    "description": "Card levels are 'junior' (145), 'classic' (659) and 'gold' (88). 'Gold' is the high-level card. All 88 gold cards in this dataset are attached to OWNER holder records.",
+    "evidence": [
+      "ev_cardtype"
+    ]
+  },
+  {
+    "id": "con_holder_owner",
+    "target": "term_account_holder",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "account holder",
+      "owner",
+      "eligible for loans",
+      "disponent",
+      "holder record"
+    ],
+    "severity": "block",
+    "scope": "Identifying an account's primary holder or interpreting 'eligible for loans'.",
+    "confidence": "high",
+    "description": "Every one of the 4,500 accounts has exactly one OWNER holder record. DISPONENT records (869) are additional authorized holders. A client is never attached to an account directly; the holder record is the only link.",
+    "evidence": [
+      "ev_disposition"
+    ]
+  },
+  {
+    "id": "con_population_text",
+    "target": "term_population",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "inhabitants",
+      "population",
+      "biggest number of inhabitants",
+      "most populous"
+    ],
+    "severity": "warning",
+    "scope": "Ranking or comparing districts by population.",
+    "confidence": "high",
+    "description": "District inhabitants (tab05.fld014) are stored as TEXT for all 77 rows. Numeric ranking or threshold comparison requires a numeric conversion; text ordering would produce wrong results. Values range from 42,821 to 1,204,953.",
+    "evidence": [
+      "ev_population"
+    ]
+  },
+  {
+    "id": "con_unemployment_year",
+    "target": "term_unemployment_1995",
+    "constraint_type": "scope",
+    "trigger_keywords": [
+      "unemployment rate",
+      "1995",
+      "1996",
+      "increment",
+      "percentage",
+      "unemployment rate 2015",
+      "unemployment rate 2016"
+    ],
+    "severity": "warning",
+    "scope": "Interpreting and comparing the two district unemployment columns.",
+    "confidence": "medium",
+    "description": "fld022 and fld023 are the two consecutive-year district unemployment columns: fld022 is the earlier year (1995) and fld023 the later year (1996). Workload evidence labels them 2015/2016, but the question text and the dataset's 1993-1998 span identify them as 1995/1996. Both are percentages, not fractions (observed 0.2-7.3 and 0.43-9.4).",
+    "evidence": [
+      "ev_unemployment"
+    ]
+  },
+  {
+    "id": "con_null_unemployment",
+    "target": "term_unemployment_1995",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "unemployment",
+      "missing",
+      "null",
+      "Jesenik",
+      "1995"
+    ],
+    "severity": "warning",
+    "scope": "Averaging or filtering on 1995 unemployment across districts.",
+    "confidence": "high",
+    "description": "District 69 (Jesenik, north Moravia) has a NULL 1995 unemployment rate; only 76 of 77 districts have a value. Any filter on fld022 silently excludes Jesenik.",
+    "evidence": [
+      "ev_unemployment"
+    ]
+  },
+  {
+    "id": "con_null_crimes",
+    "target": "term_crime_1995",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "crimes",
+      "crimes committed in 1995",
+      "number of crimes",
+      "missing",
+      "Jesenik"
+    ],
+    "severity": "warning",
+    "scope": "Filtering or averaging 1995 crime counts across districts.",
+    "confidence": "high",
+    "description": "District 69 (Jesenik) has a NULL 1995 crime count; only 76 of 77 districts have a value, and the same district is also missing its 1995 unemployment rate. The 1996 column fld026 is complete. 26 districts exceed 4,000 crimes in 1995.",
+    "evidence": [
+      "ev_crimes"
+    ]
+  },
+  {
+    "id": "con_birth_older",
+    "target": "term_birth_date",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "oldest",
+      "born before",
+      "birth date",
+      "older",
+      "youngest"
+    ],
+    "severity": "block",
+    "scope": "Age comparisons and 'oldest' selection.",
+    "confidence": "high",
+    "description": "An earlier birth date denotes an older person. 'Oldest' corresponds to the minimum birth date, and 'born before 1950' corresponds to a birth date earlier than 1950-01-01. The oldest female client was born on 1914-03-01.",
+    "evidence": [
+      "ev_birth"
+    ]
+  },
+  {
+    "id": "con_age_reference",
+    "target": "term_age",
+    "constraint_type": "scope",
+    "trigger_keywords": [
+      "age",
+      "how old",
+      "years old",
+      "client age"
+    ],
+    "severity": "warning",
+    "scope": "Any question requesting a client's age.",
+    "confidence": "medium",
+    "description": "No age column exists. Age must be derived from the birth date, but the data does not define a reference date: the latest observed dates are 1998-12-31 (transactions) and 1998-12-08 (loans), while the question may assume another reference. Age values therefore depend on an explicit reference-date assumption.",
+    "evidence": [
+      "ev_age_absence"
+    ]
+  },
+  {
+    "id": "con_account_number",
+    "target": "term_account_id",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "account number",
+      "account numbers",
+      "account id",
+      "account identifier"
+    ],
+    "severity": "info",
+    "scope": "Returning account numbers.",
+    "confidence": "high",
+    "description": "The only account identifier is the surrogate key tab01.fld001; there is no external account-number string. It must not be confused with the client identifier (tab03.fld009) or the holder record identifier (tab04.fld006).",
+    "evidence": [
+      "ev_client_key",
+      "ev_disposition"
+    ]
+  },
+  {
+    "id": "con_client_id_scope",
+    "target": "term_client_id",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "account holder identification number",
+      "client id",
+      "identification numbers",
+      "customer id"
+    ],
+    "severity": "block",
+    "scope": "Interpreting requests for 'account holder identification numbers'.",
+    "confidence": "high",
+    "description": "tab03.fld009 identifies a person, tab04.fld006 identifies the client-account holder record, and tab01.fld001 identifies the account. They are three different identifier spaces; an 'account holder identification number' is the client identifier reached through a holder record.",
+    "evidence": [
+      "ev_client_key",
+      "ev_disposition"
+    ]
+  },
+  {
+    "id": "con_loan_amount_scope",
+    "target": "term_loan_amount",
+    "constraint_type": "scope",
+    "trigger_keywords": [
+      "loan amount",
+      "amount of loan",
+      "average amount",
+      "loan principal"
+    ],
+    "severity": "block",
+    "scope": "Any amount computation that spans more than one table.",
+    "confidence": "high",
+    "description": "tab06.fld028 is the loan principal. tab08.fld028 is a transaction amount and tab07.fld028 an order amount; the same field name carries different meanings per table. Use the loan table for loan amounts.",
+    "evidence": [
+      "ev_loan_amount",
+      "ev_txn_amount"
+    ]
+  },
+  {
+    "id": "con_txn_amount_avg",
+    "target": "term_transaction_amount",
+    "constraint_type": "scope",
+    "trigger_keywords": [
+      "amount",
+      "less than the average",
+      "average amount",
+      "transaction amount"
+    ],
+    "severity": "warning",
+    "scope": "Evaluating 'amount less than the average' thresholds.",
+    "confidence": "medium",
+    "description": "All 1,056,320 transaction amounts are non-negative, ranging from 0 to 87,400. The comparison 'less than the average' depends on the reference set: the mean over all transactions is 5,924.21, the mean over all credit-card withdrawals is 2,261.12, and the mean over 1998 credit-card withdrawals is 2,270.94. The question does not state which set is intended.",
+    "evidence": [
+      "ev_txn_amount"
+    ]
+  },
+  {
+    "id": "con_credit_card_operation",
+    "target": "term_transaction_operation",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "credit card",
+      "VYBER KARTOU",
+      "credit card withdrawal",
+      "transactions on the credit card",
+      "card transaction"
+    ],
+    "severity": "block",
+    "scope": "Identifying credit-card transactions.",
+    "confidence": "high",
+    "description": "'VYBER KARTOU' is the credit-card withdrawal operation (8,036 rows) and is classified under transaction type 'VYDAJ'. No transaction row references a card; card activity is identifiable only through this operation code, and the account holder is reached from the account through holder records.",
+    "evidence": [
+      "ev_credit_card",
+      "ev_type_operation_cross"
+    ]
+  },
+  {
+    "id": "con_type_operation",
+    "target": "term_transaction_type",
+    "constraint_type": "scope",
+    "trigger_keywords": [
+      "PRIJEM",
+      "VYDAJ",
+      "VYBER",
+      "transaction type",
+      "operation",
+      "deposit",
+      "withdrawal"
+    ],
+    "severity": "warning",
+    "scope": "Choosing between the coarse type column and the detailed operation column.",
+    "confidence": "high",
+    "description": "Type and operation are parallel classifications, not a hierarchy. VYDAJ (634,571 rows) contains VYBER, VYBER KARTOU and PREVOD NA UCET; PRIJEM (405,083) contains VKLAD, PREVOD Z UCTU and 183,114 rows with NULL operation. The type code VYBER (16,666) is much narrower than the operation code VYBER (434,918).",
+    "evidence": [
+      "ev_type_operation_cross",
+      "ev_txn_type"
+    ]
+  },
+  {
+    "id": "con_region_district",
+    "target": "term_region",
+    "constraint_type": "scope",
+    "trigger_keywords": [
+      "region",
+      "district",
+      "regions",
+      "average number of crimes",
+      "south Bohemia"
+    ],
+    "severity": "warning",
+    "scope": "Questions that say 'region' while the statistic is stored per district.",
+    "confidence": "high",
+    "description": "fld013 holds 8 region names across 77 district rows: Prague 1, central Bohemia 12, east Bohemia 11, north Bohemia 10, north Moravia 11, south Bohemia 8, south Moravia 14, west Bohemia 10. District statistics such as crimes and unemployment are per district, so 'region' in a question may refer to the district row unless aggregation over the region is explicitly intended.",
+    "evidence": [
+      "ev_region"
+    ]
+  },
+  {
+    "id": "con_avg_salary_level",
+    "target": "term_avg_salary",
+    "constraint_type": "scope",
+    "trigger_keywords": [
+      "average salary",
+      "salary",
+      "lowest average salary",
+      "highest average salary"
+    ],
+    "severity": "block",
+    "scope": "Attaching a salary to a client or comparing districts by salary.",
+    "confidence": "high",
+    "description": "fld021 is a district-level average salary, not an individual client salary. A client's salary level is the average salary of the client's district of residence (tab03.fld002), not of the account's branch district.",
+    "evidence": [
+      "ev_salary",
+      "ev_district_vs_branch"
+    ]
+  },
+  {
+    "id": "con_account_open_range",
+    "target": "term_account_open_date",
+    "constraint_type": "scope",
+    "trigger_keywords": [
+      "account opened",
+      "opened starting 1997",
+      "opening date",
+      "accounts that are opened"
+    ],
+    "severity": "info",
+    "scope": "Time filters on account opening.",
+    "confidence": "high",
+    "description": "Account opening dates span 1993-01-01 to 1997-12-29, with 1,139/439/661/1,363/898 openings in 1993-1997. No account opens in 1998 even though transactions and loans continue through 1998.",
+    "evidence": [
+      "ev_account_open_years"
+    ]
+  },
+  {
+    "id": "con_branch_region",
+    "target": "term_branch_location",
+    "constraint_type": "scope",
+    "trigger_keywords": [
+      "branch",
+      "south Bohemia",
+      "inhabitants",
+      "branch location",
+      "branch in region"
+    ],
+    "severity": "warning",
+    "scope": "Locating a branch in a region or ranking branches by population.",
+    "confidence": "high",
+    "description": "A branch location is a district, so its region is the district's region (tab05.fld013) and its population is the district's population (tab05.fld014). Population describes the district, not the branch's client base; client counts must be computed from accounts. In south Bohemia the most populous district is Ceske Budejovice (district 14, 177,686 inhabitants).",
+    "evidence": [
+      "ev_population",
+      "ev_region"
+    ]
+  }
+]

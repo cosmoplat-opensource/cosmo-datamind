@@ -1,0 +1,233 @@
+[
+  {
+    "id": "mapping_superhero_id",
+    "term_id": "term_superhero",
+    "database_source": "superhero",
+    "table": "superhero",
+    "column": "id",
+    "semantic_filter": "",
+    "aggregation_semantics": "count of distinct character identifiers",
+    "grain": "one row per character",
+    "validation": "750 rows, unique primary key"
+  },
+  {
+    "id": "mapping_superhero_name",
+    "term_id": "term_superhero_name",
+    "database_source": "superhero",
+    "table": "superhero",
+    "column": "superhero_name",
+    "semantic_filter": "always populated; repeated across distinct characters, so it is a label rather than a key",
+    "aggregation_semantics": "count of characters per label",
+    "grain": "one row per character",
+    "validation": "750 non-null values, repeated names confirmed"
+  },
+  {
+    "id": "mapping_full_name",
+    "term_id": "term_full_name",
+    "database_source": "superhero",
+    "table": "superhero",
+    "column": "full_name",
+    "semantic_filter": "only rows where the value is neither NULL nor '-' represent a recorded real name",
+    "aggregation_semantics": "count of characters with a recorded real name",
+    "grain": "one row per character",
+    "validation": "503 recorded, 125 dashes, 122 nulls"
+  },
+  {
+    "id": "mapping_publisher_name",
+    "term_id": "term_publisher",
+    "database_source": "superhero",
+    "table": "publisher",
+    "column": "publisher_name",
+    "semantic_filter": "one lookup row has an empty publisher_name and represents an unknown publisher",
+    "aggregation_semantics": "count of characters per publisher",
+    "grain": "one row per publisher",
+    "validation": "25 publisher rows"
+  },
+  {
+    "id": "mapping_attribute_name",
+    "term_id": "term_attribute",
+    "database_source": "superhero",
+    "table": "attribute",
+    "column": "attribute_name",
+    "semantic_filter": "",
+    "aggregation_semantics": "not aggregated; used to group scores",
+    "grain": "one row per attribute",
+    "validation": "6 attributes"
+  },
+  {
+    "id": "mapping_attribute_score",
+    "term_id": "term_attribute_score",
+    "database_source": "superhero",
+    "table": "hero_attribute",
+    "column": "attribute_value",
+    "semantic_filter": "always populated; only defined for characters present in this table",
+    "aggregation_semantics": "mean or sum computed within a single attribute, never across attributes",
+    "grain": "one row per character-attribute pair",
+    "validation": "3738 rows, 623 characters, 6 attributes, no duplicate pairs"
+  },
+  {
+    "id": "mapping_power_name",
+    "term_id": "term_superpower",
+    "database_source": "superhero",
+    "table": "superpower",
+    "column": "power_name",
+    "semantic_filter": "",
+    "aggregation_semantics": "count of characters holding the power",
+    "grain": "one row per power",
+    "validation": "167 powers"
+  },
+  {
+    "id": "mapping_power_count",
+    "term_id": "term_power_count",
+    "database_source": "superhero",
+    "table": "hero_power",
+    "column": "power_id",
+    "semantic_filter": "",
+    "aggregation_semantics": "count of distinct powers associated with one character",
+    "grain": "per character (derived)",
+    "validation": "5825 association rows over 652 characters"
+  },
+  {
+    "id": "mapping_overall_attribute_score",
+    "term_id": "term_overall_attribute_score",
+    "database_source": "superhero",
+    "table": "hero_attribute",
+    "column": "attribute_value",
+    "semantic_filter": "only for the 623 characters carrying attribute scores",
+    "aggregation_semantics": "aggregate of a character's six attribute values into one summary figure",
+    "grain": "per character (derived)",
+    "validation": "623 characters carry exactly six values each"
+  },
+  {
+    "id": "mapping_race",
+    "term_id": "term_race",
+    "database_source": "superhero",
+    "table": "race",
+    "column": "race",
+    "semantic_filter": "the value '-' denotes an unclassified race and must not be treated as a species",
+    "aggregation_semantics": "count of characters per species",
+    "grain": "one row per race value",
+    "validation": "61 race rows; dash used by 295 characters; 4 characters null"
+  },
+  {
+    "id": "mapping_alignment",
+    "term_id": "term_alignment",
+    "database_source": "superhero",
+    "table": "alignment",
+    "column": "alignment",
+    "semantic_filter": "the 'N/A' entry exists in the vocabulary but is used by no character; characters with a null alignment_id are unclassified",
+    "aggregation_semantics": "count of characters per alignment",
+    "grain": "one row per alignment",
+    "validation": "4 alignment rows; Good 504, Bad 212, Neutral 28, N/A 0, null 6"
+  },
+  {
+    "id": "mapping_gender",
+    "term_id": "term_gender",
+    "database_source": "superhero",
+    "table": "gender",
+    "column": "gender",
+    "semantic_filter": "the value 'N/A' denotes unspecified gender",
+    "aggregation_semantics": "count of characters per gender",
+    "grain": "one row per gender",
+    "validation": "3 gender rows; Male 519, Female 203, N/A 28"
+  },
+  {
+    "id": "mapping_colour",
+    "term_id": "term_colour",
+    "database_source": "superhero",
+    "table": "colour",
+    "column": "colour",
+    "semantic_filter": "the value 'No Colour' denotes the absence of a colour rather than a colour",
+    "aggregation_semantics": "count of characters per colour within one facet",
+    "grain": "one row per colour value",
+    "validation": "35 colour values shared by three facets"
+  },
+  {
+    "id": "mapping_eye_colour",
+    "term_id": "term_eye_colour",
+    "database_source": "superhero",
+    "table": "superhero",
+    "column": "eye_colour_id",
+    "semantic_filter": "references the shared colour vocabulary; 'No Colour' applies to 169 characters",
+    "aggregation_semantics": "count of characters per eye colour",
+    "grain": "one colour per character",
+    "validation": "750 non-null values, no orphans"
+  },
+  {
+    "id": "mapping_hair_colour",
+    "term_id": "term_hair_colour",
+    "database_source": "superhero",
+    "table": "superhero",
+    "column": "hair_colour_id",
+    "semantic_filter": "references the shared colour vocabulary; 'No Colour' applies to 246 characters",
+    "aggregation_semantics": "count of characters per hair colour",
+    "grain": "one colour per character",
+    "validation": "750 non-null values, no orphans"
+  },
+  {
+    "id": "mapping_skin_colour",
+    "term_id": "term_skin_colour",
+    "database_source": "superhero",
+    "table": "superhero",
+    "column": "skin_colour_id",
+    "semantic_filter": "references the shared colour vocabulary; 'No Colour' applies to 681 characters and dominates this facet",
+    "aggregation_semantics": "count of characters per skin colour",
+    "grain": "one colour per character",
+    "validation": "750 non-null values, no orphans"
+  },
+  {
+    "id": "mapping_height",
+    "term_id": "term_height",
+    "database_source": "superhero",
+    "table": "superhero",
+    "column": "height_cm",
+    "semantic_filter": "exclude both NULL and 0, which mean unrecorded; extreme values above 1000 cm are genuine for colossal characters",
+    "aggregation_semantics": "mean or median height over characters with a recorded value",
+    "grain": "one measurement per character",
+    "validation": "692 non-null, 155 stored zeros, 58 nulls"
+  },
+  {
+    "id": "mapping_weight",
+    "term_id": "term_weight",
+    "database_source": "superhero",
+    "table": "superhero",
+    "column": "weight_kg",
+    "semantic_filter": "exclude both NULL and 0, which mean unrecorded; extreme values above 1000 kg are genuine for colossal characters",
+    "aggregation_semantics": "mean or median weight over characters with a recorded value",
+    "grain": "one measurement per character",
+    "validation": "686 non-null, 172 stored zeros, 64 nulls"
+  },
+  {
+    "id": "mapping_hero_count",
+    "term_id": "term_hero_count",
+    "database_source": "superhero",
+    "table": "superhero",
+    "column": "id",
+    "semantic_filter": "",
+    "aggregation_semantics": "count of distinct characters",
+    "grain": "whole table",
+    "validation": "750"
+  },
+  {
+    "id": "mapping_dash_sentinel",
+    "term_id": "term_missing_dash_sentinel",
+    "database_source": "superhero",
+    "table": "superhero",
+    "column": "full_name",
+    "semantic_filter": "the literal '-' denotes an unrecorded value",
+    "aggregation_semantics": "not aggregated",
+    "grain": "one row per character",
+    "validation": "125 dash values in full_name; also used as the race value id 1"
+  },
+  {
+    "id": "mapping_na_sentinel",
+    "term_id": "term_missing_na_sentinel",
+    "database_source": "superhero",
+    "table": "gender",
+    "column": "gender",
+    "semantic_filter": "the value 'N/A' denotes unspecified",
+    "aggregation_semantics": "count of characters with unspecified value",
+    "grain": "one row per category",
+    "validation": "gender 'N/A' 28 characters; colour 'No Colour' 681/246/169; empty publisher_name 17 characters"
+  }
+]

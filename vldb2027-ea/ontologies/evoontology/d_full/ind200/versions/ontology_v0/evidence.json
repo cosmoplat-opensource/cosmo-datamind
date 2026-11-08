@@ -1,0 +1,250 @@
+[
+  {
+    "id": "ev_01",
+    "source": "ind200 / sqlite_master + dim_table_metadata",
+    "query": "SELECT type, count(*) FROM sqlite_master WHERE type='table'; SELECT table_category, table_level, count(*) FROM dim_table_metadata GROUP BY 1,2;",
+    "result": "共 200 张表。按 dim_table_metadata 分类:事实表 115(67 contract_validation + 48 core)、维度表 69(25 contract_validation + 44 core)、汇总表 16(全部 core)。表名规律:dim_* 主数据、fact_* 明细事实、DWS_*_DAILY 与 agg_metric_monthly 汇总。",
+    "validation_method": "结构元数据核对",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_02",
+    "source": "ind200 / dim_table_metadata + dim_column_metadata",
+    "query": "SELECT table_name, table_name_cn, table_desc FROM dim_table_metadata WHERE table_category='汇总表';",
+    "result": "16 张汇总表均带中文名与明确粒度说明。例如 DWS_PRODUCTION_DAILY(生产日汇总)『按产线×日×产品:计划与实际产量、成材率(产出/投料)、优等品率、工单数、投料与损耗、运行与停机时长、OEE、利用率、用电与单耗、计划达成率、检验批合格率。由明细表汇总生成,可与明细对账。』",
+    "validation_method": "库内自述元数据",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_03",
+    "source": "ind200 / DWS_PRODUCTION_DAILY",
+    "query": "SELECT count(*), min(date), max(date), count(DISTINCT date), count(DISTINCT dim_line_id), count(DISTINCT dim_prod_id) FROM DWS_PRODUCTION_DAILY; SELECT count(*), count(DISTINCT date||'|'||dim_line_id||'|'||dim_workshop_id||'|'||dim_prod_id) FROM DWS_PRODUCTION_DAILY;",
+    "result": "7974 行;7974 个唯一 (date, dim_line_id, dim_workshop_id, dim_prod_id) 组合,与行数相等,确认粒度。日期 2025-01-01 至 2026-06-30,546 个不同日期,12 条产线,15 个产品。dim_line_id/dim_workshop_id/dim_prod_id 对 dim_production_line/dim_workshop/dim_product 的孤立引用均为 0。line_name 与 dim_production_line.line_name 不符 0 行。",
+    "validation_method": "粒度与引用完整性核对",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_04",
+    "source": "ind200 / DWS_PRODUCTION_DAILY",
+    "query": "SELECT sum(actual_quantity=0), sum(planned_quantity=0), sum(order_count=0), count(*) FROM DWS_PRODUCTION_DAILY;",
+    "result": "7974 行中 5089 行的 actual_quantity、planned_quantity、order_count 同时为 0(占 63.8%),即无生产发生的零填充网格行;有产量的 2885 行恰好等于明细聚合出的组合数。",
+    "validation_method": "零值分布统计",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_05",
+    "source": "ind200 / DWS_PRODUCTION_DAILY 与 fact_production_output + fact_production_order",
+    "query": "WITH det AS (SELECT o.line_id, o.prod_id, f.output_date d, sum(f.quantity) qty FROM fact_production_output f JOIN fact_production_order o ON o.order_id=f.order_id GROUP BY 1,2,3) SELECT (SELECT count(*) FROM DWS_PRODUCTION_DAILY), (SELECT count(*) FROM det), (SELECT count(*) FROM DWS_PRODUCTION_DAILY x JOIN det y ON y.line_id=x.dim_line_id AND y.d=x.date AND y.prod_id=x.dim_prod_id), (SELECT count(*) FROM ... WHERE abs(x.actual_quantity-y.qty)<0.01);",
+    "result": "汇总层 7974 行;明细聚合 2885 组;匹配 2885 组;实际产量完全一致 2885 组(0 处不符)。确认汇总层的实际产量由明细派生且可与明细对账,同时确认汇总层额外包含 5089 行无明细对应的零值行。",
+    "validation_method": "跨层逐组对账",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_06",
+    "source": "ind200 / dim_table_metadata",
+    "query": "SELECT table_name, table_name_cn, table_desc FROM dim_table_metadata WHERE table_name='DWS_FINANCE_DAILY';",
+    "result": "DWS_FINANCE_DAILY 中文名『财务月汇总』,描述『按成本中心×月末日:预算与实际、销售费用、产品成本(材料/人工/制造费用)、折旧。由明细表汇总生成,可与明细对账。』",
+    "validation_method": "库内自述元数据",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_07",
+    "source": "ind200 / DWS_FINANCE_DAILY",
+    "query": "SELECT count(*), count(DISTINCT date), count(DISTINCT dim_cc_id), count(DISTINCT cc_name) FROM DWS_FINANCE_DAILY; SELECT DISTINCT date FROM DWS_FINANCE_DAILY ORDER BY date LIMIT 5;",
+    "result": "180 行 = 18 个日期 × 10 个成本中心,唯一(date,dim_cc_id)组合 180 个。日期取值 2025-01-31、2025-02-28、2025-03-31、2025-04-30、2025-05-31 等,均为各月月末,范围 2025-01-31 至 2026-06-30。确认为月度粒度,与 _DAILY 命名不符。",
+    "validation_method": "粒度核对",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_08",
+    "source": "ind200 / agg_metric_monthly",
+    "query": "SELECT count(*), min(year*100+month), max(year*100+month) FROM agg_metric_monthly;",
+    "result": "441 行,期间 202501 至 202606,即 441 个『业务员×月』组合。列结构为组织业绩(销量/销售额/毛利/发货/费用/回款/应收余额)、售前(商机/送样)、售中(订单)、售后(退货)与目标(销量目标/毛利目标)四段宽表。",
+    "validation_method": "行数与期间核对",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_09",
+    "source": "ind200 / dim_metric_catalog",
+    "query": "SELECT category, count(*) FROM dim_metric_catalog GROUP BY 1; SELECT metric_id, metric_name, category, description, dws_table, date_column, value_column FROM dim_metric_catalog;",
+    "result": "107 个指标:原子指标 75、派生指标 23、复合指标 9。75 个原子指标全部带 dws_table/date_column/value_column 指向具体汇总列;23 个派生指标的 dws_table 为 NULL(不指向物理列),语义为聚合方法;9 个复合指标的 dws_table 为空字符串,语义为公式组合。",
+    "validation_method": "指标目录分类与字段完整性核对",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_10",
+    "source": "ind200 / dim_metric_catalog",
+    "query": "SELECT perspective, count(*) FROM dim_metric_catalog GROUP BY 1;",
+    "result": "8 个视角:1.营销与客户 20、2.采购与供应 10、3.生产与制造 14、4.设备与资产 11、5.财务与成本 12、6.安全与环保 11、7.组织与人力 20、综合 9,合计 107,与指标总数一致。",
+    "validation_method": "视角覆盖统计",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_11",
+    "source": "ind200 / dim_derived_metric_config",
+    "query": "SELECT * FROM dim_derived_metric_config;",
+    "result": "23 条派生指标配置,字段为 derived_metric_name、atomic_metric_names、calc_method(SUM/MAX/AVG)、group_by_columns。分组维度覆盖 dim_line_id、dim_emp_id、dim_supplier_id、dim_equipment_id、dim_workshop_id、dim_cc_id。例:累计产量=SUM(实际产量) group by dim_line_id;平均合格率=AVG(来料检验合格率) group by dim_supplier_id;总成本=SUM(产品总成本) group by dim_cc_id。",
+    "validation_method": "派生指标配置全量核对",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_12",
+    "source": "ind200 / dim_composite_metric_config",
+    "query": "SELECT * FROM dim_composite_metric_config;",
+    "result": "9 条复合指标公式,分母均带 NULLIF(...,0) 保护:投入产出比=累计接单金额/累计采购额*100;经营利润率=(累计接单金额-总成本)/累计接单金额*100(描述注明未扣期间费用);设备可用率=总运行小时/(总运行小时+总停机时长)*100;一次合格率=平均合格率(明确为按天简单平均、未按批次加权);安全健康度=100-累计事故数*10+(平均审计分-80)*0.5;能耗效率=累计产量/累计用电量;维保强度=总维护次数/总运行小时*1000;预算偏差度=(累计实际支出-累计预算)/累计预算*100;单位产出成本=总成本/累计产量。",
+    "validation_method": "复合指标公式全量核对",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_13",
+    "source": "ind200 / DWS_SAFETY_DAILY 与 fact_incident",
+    "query": "SELECT (SELECT sum(incident_count) FROM DWS_SAFETY_DAILY), (SELECT count(*) FROM fact_incident WHERE severity<>'near_miss'), (SELECT sum(near_miss_count) FROM DWS_SAFETY_DAILY), (SELECT count(*) FROM fact_incident WHERE severity='near_miss');",
+    "result": "汇总 incident_count 合计 21 = 明细 severity<>'near_miss' 的 21 条;汇总 near_miss_count 合计 11 = 明细 severity='near_miss' 的 11 条。确认事故数不含未遂,且未遂标记位落在 severity 列而非 incident_type。",
+    "validation_method": "汇总与明细互斥口径对账",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_14",
+    "source": "ind200 / DWS_SAFETY_DAILY 与 fact_risk_assessment",
+    "query": "SELECT (SELECT sum(high_risk_count) FROM DWS_SAFETY_DAILY), (SELECT count(*) FROM fact_risk_assessment WHERE risk_level IN ('L3','L4')), (SELECT sum(risk_assessment_count) FROM DWS_SAFETY_DAILY);",
+    "result": "high_risk_count 合计 16 = 明细 risk_level in (L3,L4) 的 16 条;risk_assessment_count 合计 30 = 全部评估记录 30 条(L1 1 + L2 13 + L3 9 + L4 7)。确认高风险口径为 L3 及以上。",
+    "validation_method": "阈值口径对账",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_15",
+    "source": "ind200 / dim_risk_level",
+    "query": "SELECT * FROM dim_risk_level;",
+    "result": "4 级:L1 可接受(风险低,现有控制措施有效)、L2 可容忍(风险中等,需关注)、L3 不可容忍(风险较高,须限期整改)、L4 重大(重大风险,可能导致严重后果);各级带 action_required 说明。",
+    "validation_method": "枚举主数据核验",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_16",
+    "source": "ind200 / DWS_MARKET_DAILY 与 dim_customer",
+    "query": "SELECT max(existing_customer_count), max(new_customer_count), max(dormant_customer_count), max(lost_customer_count), max(risk_customer_count) FROM DWS_MARKET_DAILY; SELECT m.dim_cust_id, c.status, (m.existing_customer_count*1+m.new_customer_count*2+m.dormant_customer_count*4+m.lost_customer_count*8+m.risk_customer_count*16) FROM DWS_MARKET_DAILY m JOIN dim_customer c ON c.cust_id=m.dim_cust_id WHERE m.date=(SELECT max(date) FROM DWS_MARKET_DAILY);",
+    "result": "5 个状态列的最大值均为 1,确认每行至多一个标记为 1。在最后一个日期上,标记为 dormant 的客户其 dim_customer.status 均为 dormant(如 cust 9),标记为 lost 的均为 lost(如 cust 14、21),标记为 existing 的均为 active,共 25 个客户,与 dim_customer 行数一致。13650 行 = 546 日 × 25 客户,无重复。",
+    "validation_method": "标记列与枚举列交叉核对",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_17",
+    "source": "ind200 / dim_customer, dim_employee",
+    "query": "SELECT status, count(*) FROM dim_customer GROUP BY 1; SELECT status, count(*) FROM dim_employee GROUP BY 1;",
+    "result": "dim_customer.status:active 22、dormant 1、lost 2(共 25,多于表注释所列 active/inactive 二值)。dim_employee.status:active 121、inactive 1(共 122)。",
+    "validation_method": "维度枚举取值统计",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_18",
+    "source": "ind200 / fact_ar_aging",
+    "query": "SELECT sql FROM sqlite_master WHERE name='fact_ar_aging';",
+    "result": "列含 cust_id、emp_id、invoice_id、due_date、balance_amount(未清余额)、current_month(当前账龄月数)、8 段账龄列 aging_1m/aging_2m/aging_3m/aging_4m/aging_5m/aging_6m/aging_6_12m/aging_12m_plus、is_overdue、overdue_months。",
+    "validation_method": "表结构核验",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_19",
+    "source": "ind200 / DWS_RISK_DAILY 与 dim_table_metadata",
+    "query": "SELECT count(*), sum(overdue_inventory_qty=0 AND negative_margin_qty=0 AND overdue_ar_amt=0) FROM DWS_RISK_DAILY;",
+    "result": "18184 行,其中三个风险指标同时为 0 的行数为 0,即全部为有风险组合,与表描述『只保留有风险的组合』一致。表描述另明确超期库存为『在库超过 90 天的成品』(归属该产品近一年销量最大的业务员),负毛利为当日负毛利订单量,超期应收为当日末超期应收。",
+    "validation_method": "全零行分布 + 库内自述元数据",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_20",
+    "source": "ind200 / DWS_PROCUREMENT_DAILY 与 dim_table_metadata",
+    "query": "SELECT count(*) FROM DWS_PROCUREMENT_DAILY; SELECT table_desc FROM dim_table_metadata WHERE table_name='DWS_PROCUREMENT_DAILY';",
+    "result": "1812 行。表描述『按供应商×日(只保留有业务的日子):下单数与金额、收货批次与数量、来料检验合格率(%)、新增应付(含税)、付款金额』,自带活跃日过滤。",
+    "validation_method": "行数与库内自述元数据",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_21",
+    "source": "ind200 / DWS_ORG_TARGET_DAILY 与 fact_sales_target",
+    "query": "WITH t AS (SELECT dim_emp_id, substr(date,1,7) ym, sum(sales_quantity_target) tot, count(*) nd FROM DWS_ORG_TARGET_DAILY GROUP BY 1,2) SELECT count(*), sum(abs(tot-monthly)>0.01), round(avg(nd),1) FROM t;",
+    "result": "441 个业务员×月组合,0 处不符(按日目标之和 = fact_sales_target 的月度目标),平均 30.3 个日值/月。确认日汇总中的目标为月度目标按当月经天数折算。",
+    "validation_method": "折算口径对账",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_22",
+    "source": "ind200 / dim_cost_center 与 dim_workshop",
+    "query": "SELECT * FROM dim_cost_center; SELECT * FROM dim_workshop;",
+    "result": "dim_cost_center 10 行,cc_type 为 production(1-5)、quality(6)、equipment(7)、sales(8,9)、rd(10)。5 个 production 成本中心名称(PP改性车间、PA改性车间、ABS/PC合金车间、阻燃材料车间、特种工程塑料车间)与 dim_workshop 的 5 个车间名称逐一同名,但 cc_id 与 workshop_id 为独立主键、无外键约束。成本中心另有 dept_id 与 bu_id 指向部门与业务单元。",
+    "validation_method": "跨表名称与键结构核对",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_23",
+    "source": "ind200 / fact_sales_order",
+    "query": "SELECT status, count(*) FROM fact_sales_order GROUP BY 1; SELECT is_negative_margin, count(*) FROM fact_sales_order GROUP BY 1; SELECT count(*), sum(abs(amount-actual_cost_amount-gross_profit_actual)>0.01) FROM fact_sales_order;",
+    "result": "4731 行。status:delivered 4576、undelivered 152、returned 3。is_negative_margin:0 为 4690、1 为 41。amount - actual_cost_amount 与 gross_profit_actual 的偏差大于 0.01 的行数为 0,确认实际毛利 = 金额 - 实际成本。另含 gross_profit_standard(标准口径)与 guide_price 指导价。",
+    "validation_method": "枚举统计与派生列恒等式核验",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_24",
+    "source": "ind200 / dim_column_metadata",
+    "query": "SELECT count(*), count(DISTINCT table_name), sum(column_desc IS NOT NULL AND column_desc<>'') FROM dim_column_metadata;",
+    "result": "5002 个列定义,覆盖全部 200 张表,且全部带非空中文说明(如 DWS_PRODUCTION_DAILY.actual_quantity = 实际产量(吨))。是列级语义的权威库内来源。",
+    "validation_method": "元数据完整性统计",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_25",
+    "source": "ind200 / 各主数据表",
+    "query": "SELECT count(*) FROM dim_customer/dim_employee/dim_equipment/dim_product/dim_supplier/dim_cost_center/dim_workshop/dim_calendar/dim_region/dim_factory; 以及 dim_production_line、dim_product_line 全量;",
+    "result": "客户 25、业务员 122、设备 60、产品 15、供应商 12、成本中心 10、车间 5、日历 547、区域 6、工厂 3。dim_production_line 12 条(6 个品类群,分属 5 个车间);dim_product_line 4 条(PP改性/PA改性/ABS-PC合金/特种工程塑料系列);dim_equipment 60 台分布覆盖全部 12 条产线。组织层级:工厂→车间→产线→设备,部门→业务员。",
+    "validation_method": "维度规模与层级结构核验",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_26",
+    "source": "ind200 / dim_table_metadata",
+    "query": "SELECT table_category, table_level, count(*) FROM dim_table_metadata GROUP BY 1,2;",
+    "result": "92 张表为 table_level='contract_validation'(事实表 67、维度表 25),其 table_desc 使用统一模板(『每行一条…记录;关联…;合成数据,不对应真实业务记录』);其余 108 张为 core(事实表 48、维度表 44、汇总表 16),描述为具体业务口径。contract_validation 表字段为通用契约字段(document_no、business_date、posting_date、event_time、status 状态机、etl_batch_id、trace_id、tenant_code、row_version、data_quality_score、is_deleted、local_amount、tax_amount、currency_code、exchange_rate)。",
+    "validation_method": "表级别分布与描述文本比对",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_27",
+    "source": "ind200 / dim_calendar 与各汇总表",
+    "query": "SELECT min(calendar_date), max(calendar_date), count(*) FROM dim_calendar WHERE is_deleted=0; SELECT min(date), max(date) FROM DWS_PRODUCTION_DAILY;",
+    "result": "dim_calendar 547 行,2025-01-01 至 2026-07-01;日历属性含 calendar_year/quarter/month/week、is_workday、is_holiday、holiday_name、fiscal_year、fiscal_period、month_end_flag。工作性分布:is_workday=1 共 369 天,is_workday=0 且 is_holiday=0 共 139 天,is_workday=0 且 is_holiday=1 共 39 天。month_end_flag=1 共 18 天(对应 18 个自然月末)。事实数据窗口为 2025-01-01 至 2026-06-30。",
+    "validation_method": "日历覆盖与事实窗口对照",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_28",
+    "source": "ind200 / fact_incident",
+    "query": "SELECT severity, count(*) FROM fact_incident GROUP BY 1; SELECT incident_type, severity, count(*) FROM fact_incident GROUP BY 1,2; SELECT status, count(*) FROM fact_incident GROUP BY 1;",
+    "result": "32 条事故记录。severity:fa 14、mtc 7、near_miss 11。incident_type 取值均为事故类型(机械伤害、灼烫、物体打击、触电、车辆伤害、高处坠落),与 severity 交叉分布,不含未遂语义。status:closed 29、investigating 1、reported 2。",
+    "validation_method": "枚举交叉统计",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_29",
+    "source": "ind200 / DWS_EQUIPMENT_DAILY 与 dim_table_metadata",
+    "query": "SELECT table_desc FROM dim_table_metadata WHERE table_name='DWS_EQUIPMENT_DAILY';",
+    "result": "DWS_EQUIPMENT_DAILY 描述『按设备×日(所在产线当日有运行或停机):运行时长、本设备停机时长与次数、报警数、维护工单新建与完成数、产线 OEE』,自带活跃过滤条件。配套明细 fact_downtime 3741 条(含 reason_code 指向 dim_downtime_reason 的 reason_code/category)。",
+    "validation_method": "库内自述元数据与明细规模核对",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_30",
+    "source": "ind200 / dim_metric_catalog",
+    "query": "SELECT metric_id, metric_name, description, dws_table, date_column, value_column FROM dim_metric_catalog WHERE metric_name IN ('接单金额','销量','预算金额','超期货款金额');",
+    "result": "接单金额(id 81,原子指标,金额)描述『按下单日汇总的订单金额(不含税),含未交付与后续退货部分;与按发货或开票确认的收入不同』,指向 DWS_ORG_PERFORMANCE_DAILY.sales_amount。销量(id 80)『销售订单量合计』指向 sales_quantity。预算金额(id 60)指向 DWS_FINANCE_DAILY.budget_amount,预算实际金额(id 61)指向 actual_amount。超期货款金额(id 94)指向 DWS_RISK_DAILY.overdue_ar_amt。",
+    "validation_method": "指标目录口径文本核验",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_31",
+    "source": "ind200 / DWS_ORG_PERFORMANCE_DAILY, DWS_PROCUREMENT_DAILY, DWS_EQUIPMENT_DAILY",
+    "query": "SELECT sql FROM sqlite_master WHERE name IN ('DWS_ORG_PERFORMANCE_DAILY','DWS_PROCUREMENT_DAILY','DWS_EQUIPMENT_DAILY');",
+    "result": "列名核验:DWS_ORG_PERFORMANCE_DAILY 的应收列为 accounts_receivable(列注释『应收账款(元)』),销售金额列为 sales_amount(列注释『销售收入(元)』)、毛利列为 gross_profit_actual/gross_profit_standard、销量列为 sales_quantity,并冗余 emp_name/dept_name/region_name。DWS_PROCUREMENT_DAILY 的合格率列为 inspection_pass_rate,另有 po_count/po_amount/gr_count/gr_quantity/ap_amount/payment_amount。DWS_EQUIPMENT_DAILY 的 OEE 列为 oee,另有 actual_run_hours/downtime_hours/downtime_count/alarm_count/maint_wo_count/maint_completed_count。同一列 DWS_ORG_PERFORMANCE_DAILY.sales_amount 的列注释(销售收入)与指标目录定义(接单金额,下单日、不含税)不一致,构成口径张力。",
+    "validation_method": "列级结构核验与元数据交叉比对",
+    "timestamp": "2026-10-10"
+  }
+]

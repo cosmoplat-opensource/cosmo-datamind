@@ -1,0 +1,420 @@
+[
+  {
+    "id": "constraint_uric_acid_sex_threshold",
+    "target": "term_uric_acid",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "uric acid",
+      "UA",
+      "normal range",
+      "within a normal range",
+      "abnormal uric acid",
+      "abnormal uric acid counts"
+    ],
+    "severity": "block",
+    "scope": "Applies whenever uric acid is judged against a normal band; the band cannot be applied without the sex of the patient.",
+    "confidence": "medium",
+    "description": "The workload applies a sex-specific uric acid cutoff pair of 8.0 for male patients and 6.5 for female patients. The same cutoff pair is attached both to the phrase 'within a normal range' and to the phrase 'abnormal uric acid', so which side of the cutoff counts as normal or abnormal follows the wording of the question rather than the data. Values are compared against the cutoff of the patient's own sex, which requires the patient record of the laboratory row.",
+    "evidence": [
+      "ev_ua_thresholds"
+    ]
+  },
+  {
+    "id": "constraint_iga_normal_band",
+    "target": "term_immunoglobulin_a",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "Ig A",
+      "IGA",
+      "IgA level",
+      "immunoglobulin A",
+      "normal Ig A level",
+      "normal range"
+    ],
+    "severity": "block",
+    "scope": "Applies when immunoglobulin A is judged normal or not.",
+    "confidence": "high",
+    "description": "The normal immunoglobulin A band used by the workload is two-sided and open: strictly greater than 80 and strictly less than 500. Values at or below 80 and values at or above 500 fall outside the normal band.",
+    "evidence": [
+      "ev_lab_threshold_counts"
+    ]
+  },
+  {
+    "id": "constraint_hematocrit_elevated_threshold",
+    "target": "term_hematocrit",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "hematocrit",
+      "hematoclit",
+      "HCT",
+      "exceeded the normal range",
+      "exceeded"
+    ],
+    "severity": "block",
+    "scope": "Applies when hematocrit is described as exceeding or lying beyond the normal range.",
+    "confidence": "high",
+    "description": "Hematocrit is treated as exceeding the normal range at values of 52 or above, on the inclusive side of the boundary.",
+    "evidence": [
+      "ev_lab_threshold_counts"
+    ]
+  },
+  {
+    "id": "constraint_red_blood_cell_low_threshold",
+    "target": "term_red_blood_cell_count",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "red blood cell",
+      "red blood cells",
+      "RBC",
+      "lower red blood cell"
+    ],
+    "severity": "block",
+    "scope": "Applies when the red blood cell count is described as lower or low.",
+    "confidence": "high",
+    "description": "A red blood cell count below 3.5 is treated as lower than the normal range.",
+    "evidence": [
+      "ev_lab_threshold_counts"
+    ]
+  },
+  {
+    "id": "constraint_ldh_elevated_threshold",
+    "target": "term_lactate_dehydrogenase",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "LDH",
+      "lactate dehydrogenase",
+      "beyond normal range",
+      "beyond the normal range"
+    ],
+    "severity": "block",
+    "scope": "Applies when lactate dehydrogenase is described as beyond the normal range.",
+    "confidence": "high",
+    "description": "Lactate dehydrogenase is treated as beyond the normal range at values above 500, on the exclusive side of the boundary.",
+    "evidence": [
+      "ev_lab_threshold_counts"
+    ]
+  },
+  {
+    "id": "constraint_prothrombin_time_abnormal_threshold",
+    "target": "term_prothrombin_time",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "prothrombin time",
+      "PT",
+      "abnormal prothrombin time",
+      "abnormal PT"
+    ],
+    "severity": "block",
+    "scope": "Applies when prothrombin time is described as abnormal or prolonged.",
+    "confidence": "high",
+    "description": "Prothrombin time is treated as abnormal at values of 14 or above, on the inclusive side of the boundary. The measurement exists for only a small share of laboratory panels, so any count over it is limited by those panels rather than by the patient population.",
+    "evidence": [
+      "ev_lab_threshold_counts",
+      "ev_lab_sparsity"
+    ]
+  },
+  {
+    "id": "constraint_anti_sm_value_encoding",
+    "target": "term_anti_sm_antibody",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "anti-SM",
+      "SM",
+      "anti-Sm antibody",
+      "normal anti-SM",
+      "negative",
+      "positive"
+    ],
+    "severity": "block",
+    "scope": "Applies whenever an anti-SM result is read, filtered or compared.",
+    "confidence": "medium",
+    "description": "The anti-SM column is text that mixes qualitative words with numeric codes rather than holding a plain negative/positive flag. Its non-empty values are the word 'negative' and the numbers 0, 1, 2 and 8. The workload maps the word 'negative' to the result '-', the code 0 to the weak result '+-', and the code 1 to '+' , and treats a result in {'negative', 0} as the non-positive band counted as normal anti-SM. An empty value means the test was not performed on that date and is not itself a normal result. Because the codes and the word overlap in meaning, filtering only on the numeric code or only on the word 'negative' gives a different population.",
+    "evidence": [
+      "ev_sm_domain"
+    ]
+  },
+  {
+    "id": "constraint_thrombosis_severity_encoding",
+    "target": "term_thrombosis_severity",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "thrombosis",
+      "Thrombosis",
+      "severe degree of thrombosis",
+      "most serious thrombosis",
+      "does not have thrombosis"
+    ],
+    "severity": "block",
+    "scope": "Applies when selecting patients by thrombosis severity.",
+    "confidence": "medium",
+    "description": "Thrombosis is an ordinal code with observed values 0, 1, 2 and 3. The code 0 means the patient does not have thrombosis and is the unambiguous anchor used by questions that ask for patients without thrombosis. The ordering among the non-zero codes is not consistently expressed by the workload: one question maps 'severe degree of thrombosis' to code 2 while another maps 'the most serious thrombosis' to code 1, so a severity-phrased filter should state which code it intends rather than assume a single scale.",
+    "evidence": [
+      "ev_thrombosis_domain"
+    ]
+  },
+  {
+    "id": "constraint_admission_symbol_semantics",
+    "target": "term_admission_status",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "Admission",
+      "admitted",
+      "outpatient clinic",
+      "immediately followed at the outpatient clinic",
+      "inpatient",
+      "followed at the clinic"
+    ],
+    "severity": "block",
+    "scope": "Applies when a question distinguishes inpatient admission from outpatient follow-up.",
+    "confidence": "high",
+    "description": "The admission indicator is symbolic: the run-on symbol marks a patient who was followed at the outpatient clinic rather than admitted as an inpatient, while the other symbol marks inpatient admission. The workload ties the phrase 'immediately followed at the outpatient clinic' to the run-on symbol. A few rows are empty or carry a compound value, so the flag is not a strictly two-valued field.",
+    "evidence": [
+      "ev_admission_domain"
+    ]
+  },
+  {
+    "id": "constraint_diagnosis_multi_value",
+    "target": "term_patient_diagnosis",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "diagnosis",
+      "diagnosed with",
+      "disease",
+      "SLE",
+      "RA",
+      "APS",
+      "SJS",
+      "Sjogren",
+      "Behcet"
+    ],
+    "severity": "block",
+    "scope": "Applies when a question names a disease and expects patients or examinations having that diagnosis.",
+    "confidence": "high",
+    "description": "A diagnosis field holds one text value that may pack several comma-separated disease codes, so a record can carry a combination such as a primary disease together with secondary diseases or conditions. Comparing the field to a single code returns only the records whose entire text equals that code and silently drops combination records; a large share of patient records carry more than one code. Separators are not perfectly regular: a doubled space appears in place of a comma in at least one record.",
+    "evidence": [
+      "ev_diagnosis_multivalue",
+      "ev_patient_diagnosis_vocab"
+    ]
+  },
+  {
+    "id": "constraint_diagnosis_substring_hazard",
+    "target": "term_patient_diagnosis",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "diagnosis",
+      "diagnosed with",
+      "SLE",
+      "RA",
+      "APS",
+      "SJS",
+      "disease"
+    ],
+    "severity": "warning",
+    "scope": "Applies when a disease code is matched against the diagnosis text.",
+    "confidence": "high",
+    "description": "Matching a disease code as a loose substring of the diagnosis text produces false positives, because two-letter and three-letter codes also occur inside other codes and inside ordinary words in the same field. The code for rheumatoid arthritis matches a distinct related code, a juvenile form of the same abbreviation, and also the words 'generalized morphea' and 'arthralgia'; the lupus code matches suspected lupus entries. Counting records by loose substring therefore yields substantially larger numbers than counting records whose text carries the code as a standalone token.",
+    "evidence": [
+      "ev_diagnosis_token_counts"
+    ]
+  },
+  {
+    "id": "constraint_diagnosis_vocabulary_variance",
+    "target": "term_examination_diagnosis",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "diagnosis",
+      "Sjogren",
+      "SJS",
+      "SjS",
+      "Behcet",
+      "Adult Still",
+      "disease"
+    ],
+    "severity": "warning",
+    "scope": "Applies when the same disease is looked for in both diagnosis fields.",
+    "confidence": "high",
+    "description": "The same diseases are written differently in the two diagnosis fields: the patient record uses an all-caps abbreviation for Sjogren's syndrome and all-caps disease names, while the examination record uses a mixed-case spelling of the same abbreviation and different capitalisation of the same disease names. The examination field additionally admits findings that are not diseases at all, such as a symptom, an acute cardiac event, a pregnancy outcome, a haematological condition and a coagulation-result annotation, so its vocabulary is broader than a disease list.",
+    "evidence": [
+      "ev_diagnosis_spelling_variance",
+      "ev_examination_diagnosis_vocab"
+    ]
+  },
+  {
+    "id": "constraint_suspected_diagnosis_qualifier",
+    "target": "term_suspected_diagnosis",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "susp",
+      "suspected",
+      "suspected diagnosis",
+      "diagnosis"
+    ],
+    "severity": "block",
+    "scope": "Applies whenever a diagnosis code is read from either diagnosis field.",
+    "confidence": "high",
+    "description": "A diagnosis code may carry a trailing qualifier marking it as suspected rather than confirmed, appended to the code inside the same text value. A question that names a disease without qualification does not by itself exclude the suspected entries, and the qualifier also appears on codes inside multi-code values, so the decision to include or exclude suspected entries has to be made explicitly and applied consistently.",
+    "evidence": [
+      "ev_susp_counts"
+    ]
+  },
+  {
+    "id": "constraint_description_column_is_a_date",
+    "target": "term_diagnosis_date",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "Description",
+      "diagnosed on",
+      "came at the hospital in",
+      "visit date",
+      "date of diagnosis"
+    ],
+    "severity": "warning",
+    "scope": "Applies when the patient encounter date is needed.",
+    "confidence": "high",
+    "description": "The patient encounter date is held in a column whose name suggests descriptive prose but whose content is a calendar date. In the workload it serves two distinct roles: the date a diagnosis was made and the date the patient came to the hospital, with the year taken from it. It is empty for a substantial minority of patients and covers only the later years of the cohort.",
+    "evidence": [
+      "ev_description_is_date"
+    ]
+  },
+  {
+    "id": "constraint_examination_patient_join_coverage",
+    "target": "term_examination",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "examination",
+      "thrombosis",
+      "symptoms",
+      "join",
+      "patient sex",
+      "patient age",
+      "diagnosis of patients with"
+    ],
+    "severity": "block",
+    "scope": "Applies to any question that combines examination findings with patient attributes.",
+    "confidence": "high",
+    "description": "Examination identifiers overlap only slightly with patient identifiers in this database: of the distinct examination identifiers that are not empty, only a small minority also occur as patient identifiers, covering a comparable handful of examination rows, and a set of rows carries no identifier at all. Any question that needs a patient attribute such as sex, birthday or the patient-level diagnosis alongside an examination finding such as thrombosis severity, observed symptoms or the anti-cardiolipin concentration therefore keeps only those few examination rows, even though many more such rows exist in the examination table alone. By contrast every laboratory row does resolve to a patient.",
+    "evidence": [
+      "ev_exam_coverage",
+      "ev_lab_grain"
+    ]
+  },
+  {
+    "id": "constraint_laboratory_panel_sparsity",
+    "target": "term_laboratory_record",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "laboratory",
+      "lab test",
+      "laboratory examination",
+      "PT",
+      "Ig A",
+      "SM",
+      "missing",
+      "not tested"
+    ],
+    "severity": "warning",
+    "scope": "Applies whenever a measurement is read from a laboratory panel.",
+    "confidence": "high",
+    "description": "A laboratory panel is wide but sparsely filled: each panel row has a slot for every measurement, yet many slots are empty because the test was not performed on that date. The degree of sparsity differs sharply by measurement, from measurements present in most panels to measurements present in a small fraction of them. An empty measurement means the test was not performed and must not be read as a zero or as a normal value.",
+    "evidence": [
+      "ev_lab_sparsity"
+    ]
+  },
+  {
+    "id": "constraint_duplicate_examination_rows",
+    "target": "term_examination",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "examination",
+      "count",
+      "repeated examinations",
+      "number of examinations"
+    ],
+    "severity": "warning",
+    "scope": "Applies when examinations are counted per patient.",
+    "confidence": "high",
+    "description": "A small number of examination identifier and examination date pairs occur more than once, and a set of examination rows carries no identifier, so counting examinations per patient by row count is not exactly the same as counting distinct examination events. Laboratory panels have no duplicated identifier and test date pairs, so counting laboratory examinations is unambiguous, and the workload's phrase 'laboratory examination' refers to that stream.",
+    "evidence": [
+      "ev_examination_grain",
+      "ev_lab_grain"
+    ]
+  },
+  {
+    "id": "constraint_encounter_date_coverage",
+    "target": "term_examination_date",
+    "constraint_type": "scope",
+    "trigger_keywords": [
+      "year",
+      "period",
+      "1990",
+      "1997",
+      "after",
+      "between"
+    ],
+    "severity": "warning",
+    "scope": "Applies when a question restricts an analysis to a year or period.",
+    "confidence": "high",
+    "description": "The several encounter dates of the database do not cover the same years, so a year filter must use the date field belonging to the event being counted. Examination dates cover roughly a decade beginning at the end of the 1980s, laboratory test dates extend a few years further at both ends, the first visit date reaches back two decades earlier, and the patient encounter date covers only the later years of the cohort. A year with no rows in one stream may have rows in another.",
+    "evidence": [
+      "ev_time_coverage"
+    ]
+  },
+  {
+    "id": "constraint_anticardiolipin_concentration_scale",
+    "target": "term_anticardiolipin_igm",
+    "constraint_type": "unit",
+    "trigger_keywords": [
+      "anti-Cardiolipin",
+      "aCL",
+      "aCL IgM",
+      "concentration",
+      "antibody concentration"
+    ],
+    "severity": "warning",
+    "scope": "Applies when the anti-cardiolipin IgM concentration is read or compared.",
+    "confidence": "medium",
+    "description": "The anti-cardiolipin IgM measurement is a numeric concentration whose values are strongly right-skewed: most results cluster in the low single digits, a small number of results are far larger, and a set of results is exactly zero. An exact zero is a measured result meaning no detectable antibody and must not be treated as a missing value, while an empty cell does mean the measurement is absent.",
+    "evidence": [
+      "ev_acl_igm_domain"
+    ]
+  },
+  {
+    "id": "constraint_age_derivation_rule",
+    "target": "term_age",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "age",
+      "underage",
+      "older than",
+      "years old",
+      "age of patient"
+    ],
+    "severity": "block",
+    "scope": "Applies whenever a question refers to the age of a patient.",
+    "confidence": "high",
+    "description": "Age is not stored anywhere in the database. It is derived from the date of birth as the difference between the calendar year of the reference date of the question and the calendar year of birth of the patient, which makes the reported age depend on the reference date chosen. Ages in the workload are requested at the granularity of whole years, and the cohort's dates of birth span nearly a century, so at least one birth date lies after the latest encounter date and cannot belong to a patient seen in the covered period.",
+    "evidence": [
+      "ev_age_derivation",
+      "ev_date_formats"
+    ]
+  },
+  {
+    "id": "constraint_lab_value_change_rate_definition",
+    "target": "term_lab_value_change_rate",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "decrease rate",
+      "change rate",
+      "percentage change",
+      "from November to December",
+      "rate"
+    ],
+    "severity": "warning",
+    "scope": "Applies when a question asks for the change of a measurement of one patient between two dates.",
+    "confidence": "medium",
+    "description": "The workload defines the decrease rate of a laboratory measurement between two dates as the difference between the earlier and the later measurement divided by the later measurement. This makes the denominator the later value rather than the earlier one, so the sign and magnitude differ from a conventional growth rate, and the definition is stated only for a decrease from the earlier to the later date. Because a patient may have several measurements in the same month, the choice of which measurement represents each month also affects the result.",
+    "evidence": [
+      "ev_cholesterol_series"
+    ]
+  }
+]

@@ -1,0 +1,182 @@
+[
+  {
+    "id": "rel_patient_examination_records",
+    "source": "term_patient",
+    "relation_type": "composition",
+    "target": "term_examination_record",
+    "connection_condition": "Examination.ID carries the value of Patient.ID for the patient the examination belongs to",
+    "description": "A patient is composed of examination events; an examination record has no meaning without the patient it describes.",
+    "evidence": "evidence_id_overlap"
+  },
+  {
+    "id": "rel_patient_laboratory_records",
+    "source": "term_patient",
+    "relation_type": "composition",
+    "target": "term_laboratory_record",
+    "connection_condition": "Laboratory.ID carries the value of Patient.ID for the patient the panel belongs to",
+    "description": "A patient is composed of laboratory records; every laboratory record in the environment resolves to a patient through its identifier.",
+    "evidence": "evidence_id_overlap"
+  },
+  {
+    "id": "rel_examination_laboratory_records",
+    "source": "term_examination_record",
+    "relation_type": "association",
+    "target": "term_laboratory_record",
+    "connection_condition": "the two record families are connected only through a shared patient identifier, and only 20 identifiers are common to both in this environment",
+    "description": "Examination events and laboratory panels describe the same patient at different times but are not directly linked to one another.",
+    "evidence": "evidence_id_overlap"
+  },
+  {
+    "id": "rel_thrombotic_event_is_grade",
+    "source": "term_thrombosis_grade",
+    "relation_type": "hierarchy",
+    "target": "term_thrombotic_event",
+    "connection_condition": "the event class corresponds to the grades 1, 2 and 3, a proper subset of the codes 0, 1, 2 and 3",
+    "description": "A thrombotic event is the instance class of examination records whose thrombosis grade is greater than zero; its value domain is a subset of the full grade domain.",
+    "evidence": "evidence_thrombosis_distribution"
+  },
+  {
+    "id": "rel_textual_manifestation_is_event",
+    "source": "term_thrombotic_event",
+    "relation_type": "equivalence",
+    "target": "term_textual_thrombotic_manifestation",
+    "connection_condition": "the same clinical phenomenon is expressed either as the ordinal Thrombosis code or as free text in the Symptoms field and in the Diagnosis labels, without a guaranteed one-to-one record alignment",
+    "description": "The ordinal thrombosis code and the textual thrombotic manifestation are two representations of the same clinical phenomenon; they overlap in meaning but not necessarily in record coverage.",
+    "evidence": "evidence_thrombotic_text_labels"
+  },
+  {
+    "id": "rel_thrombotic_event_symptom",
+    "source": "term_thrombotic_event",
+    "relation_type": "association",
+    "target": "term_thrombosis_symptom",
+    "connection_condition": "the symptom text is populated exactly on the examination records whose thrombosis grade is greater than zero",
+    "description": "The recorded symptom description accompanies the presence of a thrombotic event and characterises its clinical form.",
+    "evidence": "evidence_symptoms_thrombosis_crosstab"
+  },
+  {
+    "id": "rel_lupus_anticoagulant_is_apl",
+    "source": "term_antiphospholipid_antibody",
+    "relation_type": "hierarchy",
+    "target": "term_lupus_anticoagulant",
+    "connection_condition": "",
+    "description": "Lupus anticoagulant is one specific type of antiphospholipid antibody determination within the antiphospholipid antibody family.",
+    "evidence": "evidence_lac_kct_rvvt_crosstab"
+  },
+  {
+    "id": "rel_anticardiolipin_is_apl",
+    "source": "term_antiphospholipid_antibody",
+    "relation_type": "hierarchy",
+    "target": "term_anticardiolipin_antibody",
+    "connection_condition": "",
+    "description": "Anticardiolipin antibody is one specific type of antiphospholipid antibody determination within the antiphospholipid antibody family.",
+    "evidence": "evidence_acl_ranges"
+  },
+  {
+    "id": "rel_lac_kct_rvvt",
+    "source": "term_lupus_anticoagulant",
+    "relation_type": "association",
+    "target": "term_antiphospholipid_antibody",
+    "connection_condition": "LAC is the qualitative determination while KCT and RVVT are the phospholipid-dependent clotting assays recorded alongside it; they agree in most but not all records",
+    "description": "The recorded lupus anticoagulant result and the phospholipid-dependent clotting assay results are related determinations of the same antiphospholipid activity but are not interchangeable: 17 records are positive for lupus anticoagulant with both assays unperformed and 2 are positive with both assays negative.",
+    "evidence": "evidence_lac_kct_rvvt_crosstab"
+  },
+  {
+    "id": "rel_apl_thrombotic_event",
+    "source": "term_antiphospholipid_antibody",
+    "relation_type": "association",
+    "target": "term_thrombotic_event",
+    "connection_condition": "both are recorded on the same examination record, so their co-occurrence can be compared within examination records",
+    "description": "Antiphospholipid antibody determinations and recorded thrombotic events are clinically related and are jointly recorded on examination records, which is what makes a within-record comparison possible.",
+    "evidence": "evidence_apl_crosstab"
+  },
+  {
+    "id": "rel_coagulation_thrombotic_event",
+    "source": "term_coagulation_panel",
+    "relation_type": "association",
+    "target": "term_thrombotic_event",
+    "connection_condition": "connection must pass through the shared patient identifier, which is common to only a small number of patients",
+    "description": "Coagulation and fibrinolysis measurements characterise haemostatic activity that is expected to relate to thrombotic events, but they are recorded in a different table and cannot be joined to an examination event directly.",
+    "evidence": "evidence_coag_lab_domain"
+  },
+  {
+    "id": "rel_platelet_thrombotic_event",
+    "source": "term_platelet_count",
+    "relation_type": "association",
+    "target": "term_thrombotic_event",
+    "connection_condition": "connection must pass through the shared patient identifier",
+    "description": "Platelet count is a haemostatic quantity expected to relate to thrombotic events, recorded in the laboratory table at dates independent of the examination event.",
+    "evidence": "evidence_coag_lab_domain"
+  },
+  {
+    "id": "rel_ana_titer_pattern",
+    "source": "term_antinuclear_antibody_titer",
+    "relation_type": "association",
+    "target": "term_ana_staining_pattern",
+    "connection_condition": "both values are recorded on the same examination record",
+    "description": "An antinuclear antibody titre and its staining pattern are recorded together on an examination record and are interpretable only in combination.",
+    "evidence": "evidence_ana_pattern_domain"
+  },
+  {
+    "id": "rel_ana_titer_diagnosis",
+    "source": "term_antinuclear_antibody_titer",
+    "relation_type": "association",
+    "target": "term_autoimmune_diagnosis",
+    "connection_condition": "both occur on the same examination record for the examination diagnosis, and can otherwise be related only through the shared patient identifier",
+    "description": "Antinuclear antibody titre is a serological expression of the autoimmune disease context in which the examination was performed.",
+    "evidence": "evidence_ana_domain"
+  },
+  {
+    "id": "rel_autoantibody_panel_diagnosis",
+    "source": "term_autoantibody_panel",
+    "relation_type": "association",
+    "target": "term_autoimmune_diagnosis",
+    "connection_condition": "connection must pass through the shared patient identifier",
+    "description": "Extractable nuclear antigen autoantibody specificities are serological markers associated with the autoimmune disease groups recorded as diagnoses.",
+    "evidence": "evidence_autoantibody_text_domain"
+  },
+  {
+    "id": "rel_anti_dsdna_diagnosis",
+    "source": "term_anti_dsdna_antibody",
+    "relation_type": "association",
+    "target": "term_autoimmune_diagnosis",
+    "connection_condition": "connection must pass through the shared patient identifier",
+    "description": "Anti-double-stranded-DNA antibody is a serological marker associated with autoimmune disease diagnosis groups.",
+    "evidence": "evidence_dna_fields"
+  },
+  {
+    "id": "rel_complement_diagnosis",
+    "source": "term_complement_component",
+    "relation_type": "association",
+    "target": "term_autoimmune_diagnosis",
+    "connection_condition": "connection must pass through the shared patient identifier",
+    "description": "Complement component levels are laboratory markers associated with autoimmune disease activity and diagnosis groups.",
+    "evidence": "evidence_null_counts"
+  },
+  {
+    "id": "rel_crp_diagnosis",
+    "source": "term_inflammatory_marker_crp",
+    "relation_type": "association",
+    "target": "term_autoimmune_diagnosis",
+    "connection_condition": "connection must pass through the shared patient identifier",
+    "description": "C-reactive protein is an acute-phase marker associated with the inflammatory activity of the recorded autoimmune disease.",
+    "evidence": "evidence_crp_text_domain"
+  },
+  {
+    "id": "rel_urinary_protein_diagnosis",
+    "source": "term_urinary_protein",
+    "relation_type": "association",
+    "target": "term_autoimmune_diagnosis",
+    "connection_condition": "connection must pass through the shared patient identifier",
+    "description": "Urinary protein is a laboratory marker of renal involvement associated with the recorded autoimmune disease.",
+    "evidence": "evidence_upro_domain"
+  },
+  {
+    "id": "rel_age_derivation",
+    "source": "term_first_visit_date",
+    "relation_type": "derivation",
+    "target": "term_age_at_first_visit",
+    "connection_condition": "the age is computed from the patient birth date against the first visit date",
+    "description": "Age at first visit is derived from the patient birth date and the first visit date; it does not exist as a stored value.",
+    "evidence": "evidence_date_consistency"
+  }
+]

@@ -1,0 +1,410 @@
+[
+  {
+    "id": "ev_table_meta",
+    "source": "ind108.sqlite / dim_table_metadata",
+    "query": "SELECT table_name, table_name_cn, table_category, table_desc FROM dim_table_metadata",
+    "result": "108张表，每张表带中文名与业务描述；分类为 汇总表 / 维度表 / 事实表。据此确定 dim_*/fact_*/DWS_* 三层结构与各表业务含义。",
+    "validation_method": "库内置元数据目录直接读取，逐表核对表描述",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_column_meta",
+    "source": "ind108.sqlite / dim_column_metadata",
+    "query": "SELECT table_name, column_name, column_name_cn, column_desc, ordinal FROM dim_column_metadata",
+    "result": "876条字段说明，含中文名、业务描述与枚举取值域（如 credit_level 取值 A/AA/B、status 取值 closed/open），是字段语义与枚举口径的主要依据。",
+    "validation_method": "逐字段读取并与 actual 值分布抽样比对",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_supplier_credit",
+    "source": "ind108.sqlite / dim_supplier",
+    "query": "SELECT credit_level, COUNT(*) FROM dim_supplier GROUP BY 1",
+    "result": "A=7, AA=2, B=3（合计12家供应商）",
+    "validation_method": "分组计数，与 dim_column_metadata 中 credit_level 的取值说明一致",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_supplier_grade",
+    "source": "ind108.sqlite / fact_supplier_eval",
+    "query": "SELECT grade, COUNT(*) FROM fact_supplier_eval GROUP BY 1",
+    "result": "AA=54, A=12（合计66条评估记录），无 B/C",
+    "validation_method": "分组计数，确认与信用等级是不同的取值域",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_supplier_cat",
+    "source": "ind108.sqlite / dim_supplier_category",
+    "query": "SELECT category_id, category_name, parent_id FROM dim_supplier_category",
+    "result": "一级：1 树脂供应商 / 2 助剂供应商 / 3 增强填充供应商 / 4 包装材料供应商（parent_id 为空）；二级：11 通用树脂 / 12 工程塑料树脂（父1），21 阻燃剂 / 22 增韧剂与抗氧剂（父2）",
+    "validation_method": "全量读取类别字典并核对父子关系",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_supplier_eval_period",
+    "source": "ind108.sqlite / fact_supplier_eval",
+    "query": "SELECT eval_period, COUNT(*) FROM fact_supplier_eval GROUP BY 1; SELECT MIN(eval_date), MAX(eval_date) FROM fact_supplier_eval",
+    "result": "2025-Q1..2026-Q2 六个季度，每季11条；eval_date 范围 2025-04-06 至 2026-07-06",
+    "validation_method": "分组计数与极值检查",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_workshop_line",
+    "source": "ind108.sqlite / dim_workshop, dim_production_line, dim_factory",
+    "query": "SELECT workshop_id, workshop_name, location FROM dim_workshop; SELECT line_id, line_name, workshop_id FROM dim_production_line",
+    "result": "5个车间及其位置描述：PP改性车间/青岛一厂A栋，PA改性车间/青岛一厂B栋，ABS-PC合金车间/青岛二厂A栋，阻燃材料车间/青岛二厂B栋，特种工程塑料车间/合肥工厂A栋；12条产线按 workshop_id 归属到车间（PP挤出1-3线→1，PA挤出1-3线→2，合金挤出1-2线→3，阻燃挤出1-2线→4，特塑挤出1-2线→5）",
+    "validation_method": "全量读取并核对外键归属",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_product_line",
+    "source": "ind108.sqlite / dim_product_line, dim_product",
+    "query": "SELECT * FROM dim_product_line; SELECT prod_id, prod_name, prod_line_id FROM dim_product",
+    "result": "4条产品线：PP改性系列/PA改性系列/ABS-PC合金系列/特种工程塑料系列；15个产品经 prod_line_id 归属产品线",
+    "validation_method": "全量读取维表",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_customer_enum",
+    "source": "ind108.sqlite / dim_customer",
+    "query": "SELECT industry, COUNT(*) FROM dim_customer GROUP BY 1; SELECT cust_id, cust_name, last_deal_date, status, industry FROM dim_customer ORDER BY last_deal_date DESC LIMIT 5; SELECT COUNT(*) FROM dim_customer WHERE last_deal_date='2026-06-23'",
+    "result": "行业分布 家电6/建材3/汽车6/电动工具3/电子电气7（25个客户）；最近交易日期最大值 2026-06-30，last_deal_date='2026-06-23' 恰好对应1个客户；客户状态语义见字段说明",
+    "validation_method": "分组计数、排序抽样与精确匹配计数",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_employee_status",
+    "source": "ind108.sqlite / dim_employee",
+    "query": "SELECT status, COUNT(*) FROM dim_employee GROUP BY 1",
+    "result": "active=121, inactive=1（合计122名员工）",
+    "validation_method": "分组计数与字段说明一致（active=在职, inactive=离职）",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_sales_order_status",
+    "source": "ind108.sqlite / fact_sales_order",
+    "query": "SELECT status, COUNT(*) FROM fact_sales_order GROUP BY 1; SELECT MIN(order_date), MAX(order_date) FROM fact_sales_order",
+    "result": "delivered=4576, returned=3, undelivered=152（合计4731条）；order_date 范围 2025-01-02 至 2026-06-30",
+    "validation_method": "分组计数与日期极值",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_return_reason",
+    "source": "ind108.sqlite / fact_return",
+    "query": "SELECT reason, COUNT(*) FROM fact_return GROUP BY 1; SELECT MIN(return_date), MAX(return_date) FROM fact_return",
+    "result": "产品质量问题:冲击强度偏低=31，包装破损受潮=9，客户订单变更取消=12，规格型号发错=9，颜色与样板不符=22（83条）；return_date 范围 2025-02-04 至 2026-06-29",
+    "validation_method": "分组计数与日期极值",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_invoice_rule",
+    "source": "ind108.sqlite / fact_invoice + dim_column_metadata",
+    "query": "SELECT COUNT(*) FROM fact_invoice; SELECT table_desc FROM dim_table_metadata WHERE table_name='fact_invoice'",
+    "result": "5162行发票；表描述确认“蓝字发票与发货单一一对应，不含税金额=发货金额，税额按13%增值税；退货开具红字发票（金额为负）冲减原发票应收”；字段说明确认 tax_amount=不含税×13%、total_amount=价税合计、days_to_invoice=开票日期-发货日期",
+    "validation_method": "元数据与行数核对",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_invoice_range",
+    "source": "ind108.sqlite / fact_invoice",
+    "query": "SELECT MIN(invoice_date), MAX(invoice_date) FROM fact_invoice",
+    "result": "2025-01-07 至 2026-06-30",
+    "validation_method": "日期极值",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_payment_out",
+    "source": "ind108.sqlite / fact_payment_out",
+    "query": "SELECT payment_method, COUNT(*) FROM fact_payment_out GROUP BY 1; SELECT MIN(payment_date), MAX(payment_date) FROM fact_payment_out",
+    "result": "bank_transfer=599, letter_of_credit=280（合计879笔付款，与 fact_ap.status='closed' 的879条一致）；payment_date 范围 2025-03-02 至 2026-06-30",
+    "validation_method": "分组计数、日期极值，并与应付已付清条数交叉核对",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_payment_type",
+    "source": "ind108.sqlite / fact_payment",
+    "query": "SELECT payment_type, COUNT(*) FROM fact_payment GROUP BY 1",
+    "result": "电汇=3239, 银承=1705（合计4944笔收款）",
+    "validation_method": "分组计数",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_ap_status",
+    "source": "ind108.sqlite / fact_ap",
+    "query": "SELECT status, COUNT(*) FROM fact_ap GROUP BY 1; SELECT COUNT(*) FROM fact_ap a JOIN fact_goods_receipt g ON a.gr_id=g.gr_id",
+    "result": "closed=879, open=122（合计1001条）；与 fact_goods_receipt 连接命中1001条，确认应付与收货单一对一",
+    "validation_method": "分组计数与连接命中数核对，结合表描述“每张合格收货单一条”",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_po_enum",
+    "source": "ind108.sqlite / fact_purchase_order",
+    "query": "SELECT status, COUNT(*) FROM fact_purchase_order GROUP BY 1; SELECT payment_terms, COUNT(*) FROM fact_purchase_order GROUP BY 1; SELECT MIN(po_date), MAX(po_date), MIN(delivery_date), MAX(delivery_date) FROM fact_purchase_order",
+    "result": "status: closed=777, confirmed=10, received=108；payment_terms: 月结30天=372, 月结45天=322, 月结60天=201；po_date 范围 2025-01-07 至 2026-06-24，delivery_date 范围 2025-01-19 至 2026-07-07",
+    "validation_method": "分组计数与日期极值",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_gr_inspection",
+    "source": "ind108.sqlite / fact_goods_receipt",
+    "query": "SELECT inspection_result, COUNT(*) FROM fact_goods_receipt GROUP BY 1; SELECT status, COUNT(*) FROM fact_goods_receipt GROUP BY 1",
+    "result": "inspection_result: pass=1001, fail=16；status: posted=1001, inspected=16（合计1017张）。pass 收货单数与应付条数1001一致",
+    "validation_method": "分组计数并与应付条数交叉核对",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_prod_order_status",
+    "source": "ind108.sqlite / fact_production_order",
+    "query": "SELECT status, COUNT(*) FROM fact_production_order GROUP BY 1; SELECT MIN(order_date), MAX(order_date) FROM fact_production_order",
+    "result": "已完成=2930, 待生产=27, 生产中=12（合计2969个工单）；order_date 范围 2025-01-01 至 2026-06-30",
+    "validation_method": "分组计数与日期极值",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_output_grade",
+    "source": "ind108.sqlite / fact_production_output",
+    "query": "SELECT grade, is_first_grade, COUNT(*) FROM fact_production_output GROUP BY 1,2",
+    "result": "一等品→is_first_grade=0（2721条），优等品→is_first_grade=1（2721条），合格品→0（93条），返工品→0（116条）",
+    "validation_method": "按等级与标记交叉分组，确认一等品不属优等品",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_manufacturer",
+    "source": "ind108.sqlite / dim_equipment",
+    "query": "SELECT manufacturer, COUNT(*) FROM dim_equipment GROUP BY 1; SELECT status, COUNT(*) FROM dim_equipment GROUP BY 1",
+    "result": "示例机械A=12, B=12, C=12, D=12, E=7, F=5（合计60台）；status 全部为 running",
+    "validation_method": "分组计数",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_sensor_unit",
+    "source": "ind108.sqlite / dim_sensor, fact_iot_data",
+    "query": "SELECT unit, COUNT(*) FROM dim_sensor GROUP BY 1; SELECT unit, COUNT(*) FROM fact_iot_data GROUP BY 1",
+    "result": "dim_sensor.unit: ℃=38, A=60, mm/s=24, %/MPa/kg/h/rpm=12, 包/h=5；fact_iot_data.unit 取值域相同：A=9586, ℃=7988, MPa=6090, mm/s=1748, %/kg/h/rpm=874, 包/h=362, kg=362",
+    "validation_method": "两表分组计数并比对取值域一致性",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_runtime_grain",
+    "source": "ind108.sqlite / fact_equipment_runtime, DWS_EQUIPMENT_DAILY",
+    "query": "SELECT line_id, ROUND(SUM(actual_run_hours),2) FROM fact_equipment_runtime GROUP BY 1 ORDER BY 2 DESC LIMIT 3; SELECT dim_line_id, ROUND(SUM(actual_run_hours),2) FROM DWS_EQUIPMENT_DAILY GROUP BY 1 ORDER BY 2 DESC LIMIT 3",
+    "result": "明细表按产线汇总前三位为 line 12=11898.0、line 11=11808.61、line 10=11582.64；汇总表按产线汇总为 line 12=59490.0、line 11=59043.05、line 10=57913.2，约为明细表口径的5倍。排序一致但量级不同，说明二者粒度分别为产线×日与设备×日",
+    "validation_method": "两源同维度聚合对比，用排序一致性排除数据缺失、用量级差异确认粒度不同",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_downtime_reason",
+    "source": "ind108.sqlite / fact_downtime, dim_downtime_reason",
+    "query": "SELECT reason_code, COUNT(*) FROM fact_downtime GROUP BY 1; 读取 dim_downtime_reason 字典",
+    "result": "reason_code 取值为整数1~8（1=639, 2=1851, 3=211, 4=191, 5=257, 6=103, 7=92, 8=397，合计3741条）；字典8个原因：设备故障/模具更换/计划停机/物料短缺/质量异常/能源中断/人员不足/清理清洁",
+    "validation_method": "分组计数与字典行数核对，确认存的是主键ID而非文本编码",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_incident_enum",
+    "source": "ind108.sqlite / fact_incident",
+    "query": "SELECT incident_type, COUNT(*) ...; SELECT status, COUNT(*) ...; SELECT severity, COUNT(*) ...; SELECT MIN(incident_date), MAX(incident_date)",
+    "result": "类型：机械伤害8/灼烫5/物体打击3/触电4/车辆伤害5/高处坠落7（32起）；状态：closed=29, investigating=1, reported=2；严重度：fa=14, mtc=7, near_miss=11；日期 2025-03-09 至 2026-06-10",
+    "validation_method": "分组计数与日期极值，并与字段说明的取值列表比对（fatality/lti 未出现）",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_risk_enum",
+    "source": "ind108.sqlite / fact_risk_assessment, dim_hazard, dim_risk_level",
+    "query": "SELECT risk_level, COUNT(*) ...; SELECT consequence, COUNT(*) ...; SELECT likelihood, COUNT(*) ...; SELECT risk_level, COUNT(*) FROM dim_hazard GROUP BY 1",
+    "result": "评估风险等级 L1=1/L2=13/L3=9/L4=7；后果等级 minor=3/moderate=7/major=15/catastrophic=5；可能性 unlikely=8/possible=15/likely=7；危险源固有风险等级为 high=5/medium=3/low=2，取值域不同；评估日期 2025-01-14 至 2026-02-03",
+    "validation_method": "分组计数，并对比危险源表与评估表的等级取值域差异",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_audit_type",
+    "source": "ind108.sqlite / fact_safety_audit",
+    "query": "SELECT audit_type, COUNT(*) FROM fact_safety_audit GROUP BY 1; SELECT status, COUNT(*) FROM fact_safety_audit GROUP BY 1",
+    "result": "专项审计=18, 月度安全审计=18（合计36条）；status 全部 completed；audit_date 范围 2025-01-08 至 2026-06-20",
+    "validation_method": "分组计数",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_training_type",
+    "source": "ind108.sqlite / fact_safety_training",
+    "query": "SELECT training_type, COUNT(*) FROM fact_safety_training GROUP BY 1; SELECT MIN(training_date), MAX(training_date)",
+    "result": "危险化学品=7, 岗位安全复训=6, 应急演练=6, 机械安全=3, 消防安全=3, 新员工三级安全教育=1, 职业健康=1（合计27场）；日期 2025-01-17 至 2026-06-13",
+    "validation_method": "分组计数与日期极值",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_safety_plan",
+    "source": "ind108.sqlite / fact_safety_plan",
+    "query": "SELECT * FROM fact_safety_plan",
+    "result": "仅2条，plan_type 均为 annual，status 为 active/closed，issued_date 为 2025-01-08 与 2026-01-06",
+    "validation_method": "全表读取",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_env_enum",
+    "source": "ind108.sqlite / fact_env_record",
+    "query": "SELECT unit, COUNT(*) ...; SELECT emission_type, COUNT(*) ...; SELECT MIN(record_date), MAX(record_date)",
+    "result": "单位 mg/L=36, mg/m³=36, dB(A)=18（合计90条 = 5种排放物×18）；排放物 COD/氨氮/VOCs/颗粒物/噪声各18；日期 2025-01-15 至 2026-06-15",
+    "validation_method": "分组计数与日期极值，并与传感器单位域比对确认不同",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_contract_dates",
+    "source": "ind108.sqlite / fact_contract",
+    "query": "SELECT start_date, COUNT(*) FROM fact_contract GROUP BY 1; SELECT MIN(end_date), MAX(end_date) FROM fact_contract; SELECT contract_type, COUNT(*), status, COUNT(*) ...",
+    "result": "start_date 全部19行为 2025-01-01；end_date 范围 2026-03-12 至 2026-12-31；contract_type: purchase=11, sales=8；status: active=18, terminated=1",
+    "validation_method": "分组计数与极值，确认生效日期无区分度",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_opportunity_dates",
+    "source": "ind108.sqlite / fact_opportunity",
+    "query": "SELECT status, COUNT(*) ...; SELECT MIN(create_date), MAX(create_date), MIN(close_date), MAX(close_date)",
+    "result": "status: open=22, won=36, lost=20, stalled=6（合计84）；create_date 2025-01-30 至 2026-06-04；close_date 2025-03-13 至 2026-06-27",
+    "validation_method": "分组计数与两个日期的极值分别检查",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_sample_feedback",
+    "source": "ind108.sqlite / fact_sample",
+    "query": "SELECT is_feedback, feedback_result, COUNT(*) FROM fact_sample GROUP BY 1,2; SELECT MIN(sample_date), MAX(sample_date)",
+    "result": "is_feedback=1 → success=20, fail=22；is_feedback=0 → feedback_result 为空串8条（合计50条）；sample_date 2025-02-03 至 2026-06-16",
+    "validation_method": "按反馈标记与结果交叉分组，确认未反馈记录结果为空",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_ar_aging",
+    "source": "ind108.sqlite / fact_ar_aging",
+    "query": "SELECT is_overdue, COUNT(*) FROM fact_ar_aging GROUP BY 1; SELECT SUM(is_overdue), SUM(overdue_months>0) FROM fact_ar_aging",
+    "result": "is_overdue=0 → 5043条，is_overdue=1 → 119条；is_overdue 合计119 与 overdue_months>0 的记录数119完全一致（合计5162条）",
+    "validation_method": "分组计数与两列交叉一致性检查",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_join_paths",
+    "source": "ind108.sqlite 多表连接验证",
+    "query": "supplier↔eval/ap/po/material、customer↔so/ar/sample/opp、so↔delivery/return、delivery↔invoice、ar↔payment、workshop↔line、line↔equipment/downtime/runtime 等外键连接计数",
+    "result": "关键连接均可用外键命中：dim_supplier.supplier_id、fact_*.cust_id/supplier_id/order_id/ap_id/ar_id/gr_id/line_id/equipment_id/sensor_id/workshop_id/prod_id 等成对对应；员工维度经 emp_id/inspector_id/trainer_id/assessor_id 出现在销售、送样、应收、商机、报价、收货、培训、风险等表",
+    "validation_method": "逐条外键连接计数与字段说明中的“外键，关联X”注释比对",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_joins_equipment",
+    "source": "ind108.sqlite / dim_equipment, dim_sensor, fact_iot_data",
+    "query": "SELECT COUNT(*) FROM dim_equipment e JOIN dim_sensor s ON s.equipment_id=e.equipment_id JOIN fact_iot_data d ON d.sensor_id=s.sensor_id WHERE e.manufacturer='示例机械F'",
+    "result": "示例机械F 的5台设备下传感器共产生1086条IoT数据；同一路径对 示例机械B 可复算",
+    "validation_method": "三表连接计数，验证 设备—传感器—IoT数据 链路可用",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_joins_material",
+    "source": "ind108.sqlite / dim_material, dim_supplier, fact_po_line, fact_purchase_order",
+    "query": "SELECT COUNT(*) FROM fact_po_line l JOIN dim_material m ON l.material_id=m.material_id JOIN dim_supplier s ON m.supplier_id=s.supplier_id WHERE s.credit_level='AA'; 以及经 fact_purchase_order.supplier_id 的等价路径",
+    "result": "经 material.supplier_id 命中201条订单行；经 fact_purchase_order.supplier_id 同样命中201条，两条路径在本库一致。供应商类别为通用树脂的供应商仅1家",
+    "validation_method": "两条独立连接路径计数比对，确认“供应商所供原材料”的业务含义可由主供应商关联表达",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_time_span",
+    "source": "ind108.sqlite 全库日期列",
+    "query": "对各事实表业务日期列求 MIN/MAX（销售订单、发货、付款、采购下单与预计交付、工单、合同起止、维护、培训、事故、供应商评估、报价、退货、送样、商机创建与关闭、风险评估、安全审计、环境监测、发票、安全计划签发、收款）",
+    "result": "全库覆盖 2025-01-01 至 2026-07-07；各表范围不同：发票 2025-01-07..2026-06-30、采购预计交付至 2026-07-07、风险评估止于 2026-02-03、安全计划签发仅 2025-01-08/2026-01-06、合同生效日恒为 2025-01-01",
+    "validation_method": "逐表日期极值扫描",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_dws_scope",
+    "source": "ind108.sqlite / dim_table_metadata",
+    "query": "SELECT table_name, table_name_cn, table_desc FROM dim_table_metadata WHERE table_name LIKE 'DWS%' OR table_name='agg_metric_monthly'",
+    "result": "15张汇总表，粒度分别为 人×日（售后/变现/售中/KPI/组织业绩/组织目标/售前/费用预算）、设备×日（设备日汇总）、产线×日（生产日汇总）、车间×日（安全日汇总）、客户×日（市场客户日汇总）、供应商×日（采购日汇总）、成本中心×月末日（财务月汇总）、业务员×月（月度绩效聚合）；均注明“由明细表汇总生成，可与明细对账”",
+    "validation_method": "元数据分类与粒度描述逐表核对",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_quality_result",
+    "source": "ind108.sqlite / fact_quality_inspection",
+    "query": "SELECT result, COUNT(*) FROM fact_quality_inspection GROUP BY 1",
+    "result": "合格=13494, 不合格=117, 让步接收=93（合计13704条）",
+    "validation_method": "分组计数，与收货检验结果的 pass/fail 域对比确认不同",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_quotation_status",
+    "source": "ind108.sqlite / fact_quotation",
+    "query": "SELECT status, COUNT(*) FROM fact_quotation GROUP BY 1; SELECT MIN(quotation_date), MAX(quotation_date)",
+    "result": "won=357, lost=113, draft=6（合计476条），无 sent；quotation_date 2025-01-01 至 2026-06-26",
+    "validation_method": "分组计数与日期极值",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_maintenance_wo",
+    "source": "ind108.sqlite / fact_maintenance_wo, fact_maintenance_plan, fact_maintenance_record",
+    "query": "SELECT maint_type, COUNT(*) FROM fact_maintenance_wo GROUP BY 1; SELECT status, COUNT(*) ...; SELECT maint_type, COUNT(*) FROM fact_maintenance_plan GROUP BY 1",
+    "result": "工单类型 月度检修=993/故障维修=639/季度大修=68；工单状态 completed=1694/created=6；计划类型 月度检修=60/季度大修=12；维护记录1694条、维护计划72条",
+    "validation_method": "多表分组计数，确认计划与工单类型取值不完全一致",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_alarm_type",
+    "source": "ind108.sqlite / fact_alarm",
+    "query": "SELECT alarm_type, COUNT(*) FROM fact_alarm GROUP BY 1; SELECT severity, COUNT(*) ...",
+    "result": "过电流=1034, 超温=727, 振动异常=330, 料位异常=184, 转速异常=184, 喂料波动=183, 速度异常=80, 称重偏差=66（合计3109条，表说明中列出的9类中 超压 未出现）；severity 取值 critical/warning",
+    "validation_method": "分组计数与表说明的取值列表比对",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_energy",
+    "source": "ind108.sqlite / fact_energy_consumption",
+    "query": "SELECT MIN(record_date), MAX(record_date) FROM fact_energy_consumption; 读取字段说明",
+    "result": "fact_energy_consumption 按产线×车间×日记录用电量(kWh)、用水量(吨)、天然气(m³)、蒸汽(吨)与单位能耗；日期 2025-01-01 至 2026-06-30；蒸汽列为 steam_tons（吨）",
+    "validation_method": "字段说明与日期范围核对",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_inventory",
+    "source": "ind108.sqlite / fact_inventory, dim_product",
+    "query": "SELECT COUNT(*) FROM fact_inventory; 连接 dim_product 后按 prod_line_id 分组",
+    "result": "fact_inventory 共37行，仅登记 prod_id 与批次，产品线需经 dim_product.prod_line_id 归属；无产销线列",
+    "validation_method": "行数核对与连接可行性验证",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_cost",
+    "source": "ind108.sqlite / fact_product_cost, dim_product",
+    "query": "SELECT p.prod_name, ROUND(SUM(c.total_cost),2) FROM fact_product_cost c JOIN dim_product p ON c.product_id=p.prod_id GROUP BY 1 ORDER BY 2 DESC LIMIT 2",
+    "result": "总成本最高的产品为 PC/ABS（293574776.13元），其次 PP-FR（196311382.6元）；fact_product_cost 共2930行，产品列名为 product_id",
+    "validation_method": "连接聚合排序，确认 product_id 与 dim_product.prod_id 可连接",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_po_line_1to1",
+    "source": "ind108.sqlite / fact_po_line, fact_purchase_order",
+    "query": "SELECT COUNT(*) FROM fact_po_line; SELECT COUNT(*) FROM fact_purchase_order; SELECT COUNT(*) FROM fact_po_line l JOIN fact_purchase_order p ON l.po_id=p.po_id",
+    "result": "订单行895、采购订单895，连接命中895，一一对应",
+    "validation_method": "行数与连接命中数三方一致",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_bank_account",
+    "source": "ind108.sqlite / fact_payment_out",
+    "query": "SELECT DISTINCT bank_account FROM fact_payment_out",
+    "result": "形如 SYN-ACCOUNT-0001.. 的合成账号标识文本",
+    "validation_method": "取值抽样（问题中出现 SYN-ACCOUNT-0011 与 SYN-ACCOUNT-0002 两个具体账号）",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_equipment_status",
+    "source": "ind108.sqlite / dim_equipment",
+    "query": "SELECT status, COUNT(*) FROM dim_equipment GROUP BY 1",
+    "result": "全部60台设备 status='running'，该列无区分度",
+    "validation_method": "分组计数",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_material_cat",
+    "source": "ind108.sqlite / dim_material_category",
+    "query": "SELECT category_id, category_name, parent_id FROM dim_material_category",
+    "result": "6个物料类别：通用树脂/工程塑料树脂/特种工程塑料树脂/增强与填充/助剂/树脂。其中“通用树脂”与供应商二级类别同名，需按表区分",
+    "validation_method": "全量读取类别字典并与供应商类别比对",
+    "timestamp": "2026-10-10"
+  }
+]

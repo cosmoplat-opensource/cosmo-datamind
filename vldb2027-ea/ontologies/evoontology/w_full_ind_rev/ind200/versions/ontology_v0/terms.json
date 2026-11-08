@@ -1,0 +1,2644 @@
+[
+  {
+    "id": "term_audit_envelope",
+    "name": "审计治理信封",
+    "type": "concept",
+    "definition": "同一套字段在 92 张中台事实表上统一出现：created_by/created_at/updated_by/updated_at/approved_by/approved_at/status/priority/reason_code/row_version/data_quality_score/is_deleted/remarks/document_no/tenant_code 等。这些列承载“谁在何时做了这个单据动作”和治理质量信息，语义跨业务域一致。",
+    "scope": "适用于 92 张带审计信封的明细事实表；对这些列的解读不依赖具体业务域。",
+    "aliases": [
+      "审计字段",
+      "治理字段",
+      "中台单据字段"
+    ],
+    "evidence": [
+      "evidence_envelope_scan"
+    ]
+  },
+  {
+    "id": "term_system_user_code",
+    "name": "系统用户工号(U码)",
+    "type": "entity",
+    "definition": "审计列的取值是系统用户工号，形如 U0001..U0012，共 12 个用户。它标识“操作系统的人”，不是业务实体 dim_employee 中的员工（dim_employee.emp_id 为整数、emp_name 形如“合成员工0086”）。",
+    "scope": "用于 created_by/updated_by/approved_by 三列的取值与过滤。",
+    "aliases": [
+      "U码",
+      "用户编码",
+      "操作人编码"
+    ],
+    "evidence": [
+      "evidence_system_user_codes"
+    ]
+  },
+  {
+    "id": "term_created_by",
+    "name": "创建人",
+    "type": "dimension",
+    "definition": "单据的创建操作人，取值为 U 码系统用户。问题中的“创建人为 U0004”“由 U0003 创建”指向本列。",
+    "scope": "存在于 92 张带审计信封的事实表。",
+    "aliases": [
+      "创建者",
+      "建单人"
+    ],
+    "evidence": [
+      "evidence_envelope_scan"
+    ]
+  },
+  {
+    "id": "term_updated_by",
+    "name": "更新人",
+    "type": "dimension",
+    "definition": "单据最后一次更新操作人，取值为 U 码系统用户。问题中的“由 U0002 更新”“由员工 U0006 更新”指向本列。",
+    "scope": "存在于 92 张带审计信封的事实表。",
+    "aliases": [
+      "更新者",
+      "修改人"
+    ],
+    "evidence": [
+      "evidence_envelope_scan"
+    ]
+  },
+  {
+    "id": "term_approved_by",
+    "name": "审批人",
+    "type": "dimension",
+    "definition": "单据审批操作人，取值为 U 码系统用户。问题中的“由 U0007 审批”“审批人为 U0007”指向本列。",
+    "scope": "存在于 92 张带审计信封的事实表以及 67 张带行版本/审批时间的工作流表。",
+    "aliases": [
+      "审核人",
+      "批准人"
+    ],
+    "evidence": [
+      "evidence_envelope_scan"
+    ]
+  },
+  {
+    "id": "term_created_at",
+    "name": "创建时间",
+    "type": "dimension",
+    "definition": "单据创建的时间戳，粒度到秒。作为“创建”口径年度过滤的时间列。",
+    "scope": "92 张带审计信封的事实表。",
+    "aliases": [
+      "建单时间"
+    ],
+    "evidence": [
+      "evidence_envelope_scan"
+    ]
+  },
+  {
+    "id": "term_updated_at",
+    "name": "更新时间",
+    "type": "dimension",
+    "definition": "单据最后更新的时间戳。作为“更新”口径年度过滤的时间列。",
+    "scope": "92 张带审计信封的事实表。",
+    "aliases": [
+      "修改时间"
+    ],
+    "evidence": [
+      "evidence_envelope_scan"
+    ]
+  },
+  {
+    "id": "term_approved_at",
+    "name": "审批时间",
+    "type": "dimension",
+    "definition": "单据审批的时间戳。作为“审批”口径年度过滤与分组的时间列。",
+    "scope": "92 张带审计信封的事实表。",
+    "aliases": [
+      "审核时间",
+      "批准时间"
+    ],
+    "evidence": [
+      "evidence_envelope_scan"
+    ]
+  },
+  {
+    "id": "term_record_status",
+    "name": "单据状态",
+    "type": "dimension",
+    "definition": "单据的业务状态枚举列。取值域按业务族不同：审批流转类 取 APPROVED/CLOSED；商机报价类 取 draft/sent/won/lost/stalled/open；订单交付类 取 delivered/undelivered/returned；应付 取 open/closed；主数据客户 取 active/dormant/lost；主数据员工 取 active/inactive。",
+    "scope": "118 张表具有 status 列，是本库最常见的状态口径。",
+    "aliases": [
+      "状态",
+      "单据状态码"
+    ],
+    "evidence": [
+      "evidence_status_enums"
+    ]
+  },
+  {
+    "id": "term_priority",
+    "name": "优先级",
+    "type": "metric",
+    "definition": "单据优先级（整数）。在多个问题中被直接作为可聚合度量（“优先级合计”），而不仅是排序键。",
+    "scope": "68 张表具有 priority 列（审计信封成员）。",
+    "aliases": [
+      "优先级别"
+    ],
+    "evidence": [
+      "evidence_measure_universality"
+    ]
+  },
+  {
+    "id": "term_row_version",
+    "name": "行版本",
+    "type": "metric",
+    "definition": "业务行版本号（整数，小基数，常见 1-3）。注意：在本库中它被直接当作可聚合度量使用（“行版本合计”“行版本平均值”“按行版本合计排序”），并非仅用于并发控制。",
+    "scope": "67 张带工作流行版本的事实表。",
+    "aliases": [
+      "版本号",
+      "行版本号"
+    ],
+    "evidence": [
+      "evidence_row_version_usage"
+    ]
+  },
+  {
+    "id": "term_data_quality_score",
+    "name": "数据质量分",
+    "type": "metric",
+    "definition": "记录级数据质量评分，取值 0..1 的实数。在问题中被聚合（“数据质量分合计/平均值”）。",
+    "scope": "92 张带审计信封的事实表以及各维度/主数据表。",
+    "aliases": [
+      "质量分",
+      "数据质量评分"
+    ],
+    "evidence": [
+      "evidence_measure_universality"
+    ]
+  },
+  {
+    "id": "term_remarks",
+    "name": "备注",
+    "type": "dimension",
+    "definition": "自由文本备注，但在本库中取值来自一个小词表：加急 / 补录 / 已电话确认 / 客户指定批次 / 跨月处理，且大量行为空。问题中的“备注为‘补录’”“备注是‘已电话确认’”“备注为‘加急’”指向本列。",
+    "scope": "92 张带审计信封的事实表。",
+    "aliases": [
+      "备注说明",
+      "remark"
+    ],
+    "evidence": [
+      "evidence_remarks_vocab"
+    ]
+  },
+  {
+    "id": "term_is_deleted",
+    "name": "逻辑删除标记",
+    "type": "dimension",
+    "definition": "逻辑删除标记（0/1）。取值为 1 的记录属于已删除数据。",
+    "scope": "92 张带审计信封的事实表。",
+    "aliases": [
+      "删除标记",
+      "is_deleted"
+    ],
+    "evidence": [
+      "evidence_envelope_scan"
+    ]
+  },
+  {
+    "id": "term_document_no",
+    "name": "单据号",
+    "type": "dimension",
+    "definition": "单据的业务编号（文本），如工单号、合同号、发票号。",
+    "scope": "67 张带工作流字段的事实表。",
+    "aliases": [
+      "单号",
+      "单据编号"
+    ],
+    "evidence": [
+      "evidence_envelope_scan"
+    ]
+  },
+  {
+    "id": "term_quantity",
+    "name": "数量",
+    "type": "metric",
+    "definition": "通用数量列（实数），按各表计量单位。问题中的“数量”多指本列。",
+    "scope": "作为跨表复用的通用度量列存在。",
+    "aliases": [
+      "数量列"
+    ],
+    "evidence": [
+      "evidence_measure_universality"
+    ]
+  },
+  {
+    "id": "term_base_quantity",
+    "name": "基本单位数量",
+    "type": "metric",
+    "definition": "以基本计量单位折算的数量（实数）。问题中的“基本单位数量”指向本列，常被合计/求平均。",
+    "scope": "作为跨表复用的通用度量列存在。",
+    "aliases": [
+      "基本数量"
+    ],
+    "evidence": [
+      "evidence_measure_universality"
+    ]
+  },
+  {
+    "id": "term_planned_quantity",
+    "name": "计划数量",
+    "type": "metric",
+    "definition": "计划/目标数量。注意部分表中该列语义被复用为“计划产量”“配方用量”。",
+    "scope": "作为跨表复用的通用度量列存在。",
+    "aliases": [
+      "计划量"
+    ],
+    "evidence": [
+      "evidence_measure_universality"
+    ]
+  },
+  {
+    "id": "term_actual_quantity",
+    "name": "实际数量",
+    "type": "metric",
+    "definition": "实际发生数量。",
+    "scope": "作为跨表复用的通用度量列存在。",
+    "aliases": [
+      "实际量"
+    ],
+    "evidence": [
+      "evidence_measure_universality"
+    ]
+  },
+  {
+    "id": "term_qualified_quantity",
+    "name": "合格数量",
+    "type": "metric",
+    "definition": "检验合格数量。",
+    "scope": "作为跨表复用的通用度量列存在。",
+    "aliases": [
+      "合格量"
+    ],
+    "evidence": [
+      "evidence_measure_universality"
+    ]
+  },
+  {
+    "id": "term_rejected_quantity",
+    "name": "不合格数量",
+    "type": "metric",
+    "definition": "检验不合格数量。问题中的“不合格数量”指向本列。",
+    "scope": "作为跨表复用的通用度量列存在。",
+    "aliases": [
+      "不合格量",
+      "拒收数量"
+    ],
+    "evidence": [
+      "evidence_measure_universality"
+    ]
+  },
+  {
+    "id": "term_amount",
+    "name": "金额",
+    "type": "metric",
+    "definition": "单据金额（实数）。注意在 fact_payment/ fact_return 等表上 amount 的具体业务名不同（收款金额/退货金额/应付金额/付款金额）。",
+    "scope": "作为跨表复用的通用度量列存在。",
+    "aliases": [
+      "金额列"
+    ],
+    "evidence": [
+      "evidence_measure_universality"
+    ]
+  },
+  {
+    "id": "term_local_amount",
+    "name": "本位币金额",
+    "type": "metric",
+    "definition": "按汇率折算后的本币（人民币）金额。问题中的“本位币金额”指向本列。",
+    "scope": "作为跨表复用的通用度量列存在。",
+    "aliases": [
+      "本币金额"
+    ],
+    "evidence": [
+      "evidence_measure_universality"
+    ]
+  },
+  {
+    "id": "term_tax_amount",
+    "name": "税额",
+    "type": "metric",
+    "definition": "单据税额。问题中的“税额合计/平均值”指向本列。",
+    "scope": "作为跨表复用的通用度量列存在。",
+    "aliases": [
+      "税金"
+    ],
+    "evidence": [
+      "evidence_measure_universality"
+    ]
+  },
+  {
+    "id": "term_cost_amount",
+    "name": "成本金额",
+    "type": "metric",
+    "definition": "成本金额列。注意 fact_sales_order 上的成本口径另有 tech_cost_amount/standard_cost_amount/actual_cost_amount 三列，与通用 cost_amount 不同。",
+    "scope": "作为跨表复用的通用度量列存在。",
+    "aliases": [
+      "成本列"
+    ],
+    "evidence": [
+      "evidence_measure_universality"
+    ]
+  },
+  {
+    "id": "term_unit_price",
+    "name": "单价",
+    "type": "metric",
+    "definition": "单价列；在 dim_material 上语义为“最近采购参考价”。",
+    "scope": "作为跨表复用的通用度量列存在。",
+    "aliases": [
+      "价格",
+      "参考单价"
+    ],
+    "evidence": [
+      "evidence_measure_universality"
+    ]
+  },
+  {
+    "id": "term_exchange_rate",
+    "name": "汇率",
+    "type": "metric",
+    "definition": "币种换算汇率（实数）。问题中的“按汇率合计”即对本列求和。",
+    "scope": "作为跨表复用的通用度量列存在。",
+    "aliases": [
+      "汇率列"
+    ],
+    "evidence": [
+      "evidence_measure_universality"
+    ]
+  },
+  {
+    "id": "term_currency_code",
+    "name": "币种",
+    "type": "metric",
+    "definition": "币种代码（CNY/USD/EUR/JPY），与 dim_currency.currency_code 取值一致。",
+    "scope": "作为跨表复用的通用度量列存在。",
+    "aliases": [
+      "货币",
+      "币种代码"
+    ],
+    "evidence": [
+      "evidence_measure_universality"
+    ]
+  },
+  {
+    "id": "term_rate_value",
+    "name": "比率值",
+    "type": "metric",
+    "definition": "通用比率度量列（实数）。",
+    "scope": "作为跨表复用的通用度量列存在。",
+    "aliases": [
+      "比率列"
+    ],
+    "evidence": [
+      "evidence_measure_universality"
+    ]
+  },
+  {
+    "id": "term_score_value",
+    "name": "评分",
+    "type": "metric",
+    "definition": "通用评分度量列（实数）。问题中的“观察评分合计”“评分合计”指向相关表上的本列。",
+    "scope": "作为跨表复用的通用度量列存在。",
+    "aliases": [
+      "评分列",
+      "得分"
+    ],
+    "evidence": [
+      "evidence_measure_universality"
+    ]
+  },
+  {
+    "id": "term_duration_minutes",
+    "name": "时长(分钟)",
+    "type": "metric",
+    "definition": "通用时长度量（分钟）。",
+    "scope": "作为跨表复用的通用度量列存在。",
+    "aliases": [
+      "时长"
+    ],
+    "evidence": [
+      "evidence_measure_universality"
+    ]
+  },
+  {
+    "id": "term_business_date",
+    "name": "业务日期",
+    "type": "dimension",
+    "definition": "业务发生日期，与 posting_date/event_time 同期出现在 67 张事实表上，通常与日历 dim_calendar.calendar_date 可直接对齐。",
+    "scope": "67 张带工作流字段的事实表。",
+    "aliases": [
+      "业务发生日期"
+    ],
+    "evidence": [
+      "evidence_date_columns"
+    ]
+  },
+  {
+    "id": "term_posting_date",
+    "name": "过账日期",
+    "type": "dimension",
+    "definition": "账务/业务过账日期。问题中的“2026年过账的检验批”“2025年过账的维修任务”“2026年过账的数据质量问题”以本列的年份为过滤口径。",
+    "scope": "67 张带工作流字段的事实表。",
+    "aliases": [
+      "记账日期",
+      "入账日期"
+    ],
+    "evidence": [
+      "evidence_date_columns"
+    ]
+  },
+  {
+    "id": "term_event_time",
+    "name": "发生时间",
+    "type": "dimension",
+    "definition": "事件发生的时间戳（到秒），与业务日期同源但精度更高。",
+    "scope": "67 张带工作流字段的事实表。",
+    "aliases": [
+      "发生时刻"
+    ],
+    "evidence": [
+      "evidence_date_columns"
+    ]
+  },
+  {
+    "id": "term_calendar",
+    "name": "日历",
+    "type": "entity",
+    "definition": "全库统一日历主数据，逐日一行，覆盖 2025-01-01..2026-07-01。用日历日期与事实表日期对齐后可取得“名称/节假日名称”等日历属性。",
+    "scope": "跨全库的日期到名称/节假日映射。",
+    "aliases": [
+      "dim_calendar",
+      "日历维度"
+    ],
+    "evidence": [
+      "evidence_calendar"
+    ]
+  },
+  {
+    "id": "term_calendar_date",
+    "name": "日历日期",
+    "type": "dimension",
+    "definition": "日历表中的日期键（dim_calendar.calendar_date）。",
+    "scope": "dim_calendar。",
+    "aliases": [
+      "日历日"
+    ],
+    "evidence": [
+      "evidence_calendar"
+    ]
+  },
+  {
+    "id": "term_holiday_name",
+    "name": "节假日名称",
+    "type": "dimension",
+    "definition": "日历表中的节假日名称（dim_calendar.holiday_name），非节假日为空串。取值：元旦/春节/清明节/劳动节/端午节/中秋节/国庆节/法定节假日，共 40 天非空。问题中的“国庆节当天”“对应的节假日名称”指向本列。",
+    "scope": "dim_calendar，仅 40 行非空。",
+    "aliases": [
+      "节日名称",
+      "假日名称"
+    ],
+    "evidence": [
+      "evidence_calendar_holidays"
+    ]
+  },
+  {
+    "id": "term_fiscal_period",
+    "name": "会计期间/年度",
+    "type": "dimension",
+    "definition": "财务类表的会计年度与会计期间列（fiscal_year/fiscal_period）；另 fact_production_plan 用 year/month、fact_payment_target 用 year 表达期间。",
+    "scope": "财务域事实表与计划类表。",
+    "aliases": [
+      "会计年度",
+      "期间",
+      "年度"
+    ],
+    "evidence": [
+      "evidence_date_columns"
+    ]
+  },
+  {
+    "id": "term_due_date",
+    "name": "到期日",
+    "type": "dimension",
+    "definition": "到期日，与账期相关；问题中的“2026年到期且状态为 open 的应付账款”以本列年份过滤。",
+    "scope": "按业务域限定其所在表。",
+    "aliases": [
+      "应付到期日",
+      "付款到期日"
+    ],
+    "evidence": [
+      "evidence_date_columns"
+    ]
+  },
+  {
+    "id": "term_action_due_date",
+    "name": "整改期限",
+    "type": "dimension",
+    "definition": "安全整改/危险源观察的整改期限日期；问题中的“2026年整改期限的安全整改措施”以本列年份过滤。",
+    "scope": "按业务域限定其所在表。",
+    "aliases": [
+      "整改截止日期"
+    ],
+    "evidence": [
+      "evidence_date_columns"
+    ]
+  },
+  {
+    "id": "term_closed_date",
+    "name": "关闭日期",
+    "type": "dimension",
+    "definition": "单据业务关闭日期。问题中的“2026年关闭的危险源观察/客户投诉”以本列年份过滤，而不是 status 列。",
+    "scope": "按业务域限定其所在表。",
+    "aliases": [
+      "完结日期"
+    ],
+    "evidence": [
+      "evidence_date_columns"
+    ]
+  },
+  {
+    "id": "term_requested_delivery_date",
+    "name": "要求交货日期",
+    "type": "dimension",
+    "definition": "客户要求的交货日期；问题中的“2026年要求交货的销售合同明细”以本列年份过滤。",
+    "scope": "按业务域限定其所在表。",
+    "aliases": [
+      "要求交期"
+    ],
+    "evidence": [
+      "evidence_date_columns"
+    ]
+  },
+  {
+    "id": "term_promised_delivery_date",
+    "name": "承诺交货日期",
+    "type": "dimension",
+    "definition": "己方承诺的交货日期。",
+    "scope": "按业务域限定其所在表。",
+    "aliases": [
+      "承诺交期"
+    ],
+    "evidence": [
+      "evidence_date_columns"
+    ]
+  },
+  {
+    "id": "term_manufacture_date",
+    "name": "生产日期",
+    "type": "dimension",
+    "definition": "批次的制造日期；问题中的“2026年生产日期中...在制品快照”以本列年份过滤。",
+    "scope": "按业务域限定其所在表。",
+    "aliases": [
+      "制造日期"
+    ],
+    "evidence": [
+      "evidence_date_columns"
+    ]
+  },
+  {
+    "id": "term_expiry_date",
+    "name": "失效日期",
+    "type": "dimension",
+    "definition": "批次/证照的失效日期；问题中的“失效日期在 2028 年的批次追溯记录”以本列过滤。",
+    "scope": "按业务域限定其所在表。",
+    "aliases": [
+      "有效期至"
+    ],
+    "evidence": [
+      "evidence_date_columns"
+    ]
+  },
+  {
+    "id": "term_requested_date",
+    "name": "需求日期",
+    "type": "dimension",
+    "definition": "采购域的需求日期。",
+    "scope": "按业务域限定其所在表。",
+    "aliases": [
+      "需求到货日"
+    ],
+    "evidence": [
+      "evidence_date_columns"
+    ]
+  },
+  {
+    "id": "term_promised_date",
+    "name": "承诺日期",
+    "type": "dimension",
+    "definition": "采购域供应商承诺日期；问题中的“2025年承诺的到货预告”以本列年份过滤。",
+    "scope": "按业务域限定其所在表。",
+    "aliases": [
+      "供应商承诺日"
+    ],
+    "evidence": [
+      "evidence_date_columns"
+    ]
+  },
+  {
+    "id": "term_received_date",
+    "name": "到货日期",
+    "type": "dimension",
+    "definition": "采购域实际到货日期。",
+    "scope": "按业务域限定其所在表。",
+    "aliases": [
+      "实际到货日"
+    ],
+    "evidence": [
+      "evidence_date_columns"
+    ]
+  },
+  {
+    "id": "term_employee",
+    "name": "员工",
+    "type": "entity",
+    "definition": "员工/业务员主数据（122 行），emp_id 为整数主键，emp_name 形如“合成员工0086”。业务问题中的“业务员”“申请人”“审计人”“讲师”“检验员”等 *_id 列指向本表 emp_id。",
+    "scope": "主数据/维度实体。",
+    "aliases": [
+      "业务员",
+      "人员",
+      "职工"
+    ],
+    "evidence": [
+      "evidence_dim_employee",
+      "evidence_system_user_codes"
+    ]
+  },
+  {
+    "id": "term_department",
+    "name": "部门",
+    "type": "entity",
+    "definition": "企业职能部门（17 个：销售部/生产部/质量部/设备部/采购部/财务部/安全环保部/计划部/研发中心…），dept_id 为整数主键。",
+    "scope": "主数据/维度实体。",
+    "aliases": [
+      "职能部门"
+    ],
+    "evidence": [
+      "evidence_dim_employee"
+    ]
+  },
+  {
+    "id": "term_job_position",
+    "name": "岗位",
+    "type": "entity",
+    "definition": "岗位主数据，关联部门。",
+    "scope": "主数据/维度实体。",
+    "aliases": [
+      "职位"
+    ],
+    "evidence": [
+      "evidence_table_catalog"
+    ]
+  },
+  {
+    "id": "term_skill",
+    "name": "岗位技能",
+    "type": "entity",
+    "definition": "岗位技能主数据（20 条），含 code(SKILL-0xx)/name/short_name。问题“给出该岗位技能的简称”指向 short_name。",
+    "scope": "主数据/维度实体。",
+    "aliases": [
+      "技能",
+      "skill"
+    ],
+    "evidence": [
+      "evidence_dim_skill"
+    ]
+  },
+  {
+    "id": "term_customer",
+    "name": "客户",
+    "type": "entity",
+    "definition": "客户主数据，含 status(active/dormant/lost)。问题中的“状态为 lost 的客户”“哪个客户”指向本表。",
+    "scope": "主数据/维度实体。",
+    "aliases": [
+      "客户维度",
+      "cust"
+    ],
+    "evidence": [
+      "evidence_status_enums"
+    ]
+  },
+  {
+    "id": "term_region",
+    "name": "区域",
+    "type": "entity",
+    "definition": "销售区域主数据（6 个：华东/华南/华北/西南/华中/西北）。事实表同时冗余了同名文本列 sales_region，二者取值域一致。",
+    "scope": "主数据/维度实体。",
+    "aliases": [
+      "销售区域",
+      "大区"
+    ],
+    "evidence": [
+      "evidence_dim_region"
+    ]
+  },
+  {
+    "id": "term_supplier",
+    "name": "供应商",
+    "type": "entity",
+    "definition": "供应商主数据，含 category_id/province/city/cooperation_since(合作起始日期)/credit_level/status。问题“合作起始日期为 2013-01-01 的供应商”指向 cooperation_since。",
+    "scope": "主数据/维度实体。",
+    "aliases": [
+      "供应商维度",
+      "vendor"
+    ],
+    "evidence": [
+      "evidence_dim_supplier"
+    ]
+  },
+  {
+    "id": "term_supplier_category",
+    "name": "供应商类别",
+    "type": "entity",
+    "definition": "供应商分类主数据（树脂供应商/助剂供应商/包装…）。",
+    "scope": "主数据/维度实体。",
+    "aliases": [
+      "供应商分类"
+    ],
+    "evidence": [
+      "evidence_table_catalog"
+    ]
+  },
+  {
+    "id": "term_product",
+    "name": "产品",
+    "type": "entity",
+    "definition": "产品/成品主数据，含 prod_name/spec/prod_line_id/standard_cost/tech_cost/guide_price。经 prod_line_id 上挂产品线。",
+    "scope": "主数据/维度实体。",
+    "aliases": [
+      "产品维度",
+      "成品"
+    ],
+    "evidence": [
+      "evidence_dim_product"
+    ]
+  },
+  {
+    "id": "term_product_line",
+    "name": "产品线",
+    "type": "entity",
+    "definition": "产品大类（4 个：PP改性系列/PA改性系列/ABS-PC合金系列/特种工程塑料系列）。问题中的“产品线名称为 PA改性系列”指向本表。",
+    "scope": "主数据/维度实体。",
+    "aliases": [
+      "产品大类",
+      "系列"
+    ],
+    "evidence": [
+      "evidence_dim_product_line"
+    ]
+  },
+  {
+    "id": "term_material",
+    "name": "原材料",
+    "type": "entity",
+    "definition": "原材料/物料主数据（含 material_code/material_name/category_id/unit_price 参考单价）。大量采购/库存/质量/生产事实表以 material_id 外键引用本表。",
+    "scope": "主数据/维度实体。",
+    "aliases": [
+      "物料",
+      "原料",
+      "material"
+    ],
+    "evidence": [
+      "evidence_table_catalog"
+    ]
+  },
+  {
+    "id": "term_workshop",
+    "name": "车间",
+    "type": "entity",
+    "definition": "生产车间主数据（5 个：PP改性车间/PA改性车间/ABS-PC合金车间/阻燃材料车间/特种工程塑料车间），含 factory_name。",
+    "scope": "主数据/维度实体。",
+    "aliases": [
+      "生产车间"
+    ],
+    "evidence": [
+      "evidence_dim_workshop"
+    ]
+  },
+  {
+    "id": "term_production_line",
+    "name": "产线",
+    "type": "entity",
+    "definition": "生产线主数据，含 line_name/workshop_id/product_type/capacity_tph/status。经 workshop_id 上挂车间。",
+    "scope": "主数据/维度实体。",
+    "aliases": [
+      "生产线",
+      "挤出线"
+    ],
+    "evidence": [
+      "evidence_dim_production_line"
+    ]
+  },
+  {
+    "id": "term_factory",
+    "name": "工厂",
+    "type": "entity",
+    "definition": "生产基地主数据（青岛一厂/青岛二厂/合肥工厂）。",
+    "scope": "主数据/维度实体。",
+    "aliases": [
+      "生产基地"
+    ],
+    "evidence": [
+      "evidence_dim_warehouse"
+    ]
+  },
+  {
+    "id": "term_warehouse",
+    "name": "仓库",
+    "type": "entity",
+    "definition": "仓库主数据（一厂原料仓/一厂成品仓/一厂备件仓/二厂原料仓/二厂成品仓/合肥原料仓/合肥成品仓），含 warehouse_type/factory_name/capacity_tons。问题“领用仓库是‘二厂原料仓’”指向本表名称。",
+    "scope": "主数据/维度实体。",
+    "aliases": [
+      "库房",
+      "warehouse"
+    ],
+    "evidence": [
+      "evidence_dim_warehouse"
+    ]
+  },
+  {
+    "id": "term_equipment",
+    "name": "设备",
+    "type": "entity",
+    "definition": "生产设备主数据。工艺参数记录/预测性维护告警/备件领用/维修任务等以 equipment_id 引用本表。",
+    "scope": "主数据/维度实体。",
+    "aliases": [
+      "机器",
+      "device"
+    ],
+    "evidence": [
+      "evidence_table_catalog"
+    ]
+  },
+  {
+    "id": "term_sensor",
+    "name": "传感器",
+    "type": "entity",
+    "definition": "设备传感器主数据（含 sensor_code/sensor_name/equipment_id/sensor_type/unit/accuracy）。设备状态监测、IoT 数据、预测性告警以 sensor_id 引用本表。",
+    "scope": "主数据/维度实体。",
+    "aliases": [
+      "测点"
+    ],
+    "evidence": [
+      "evidence_dim_sensor"
+    ]
+  },
+  {
+    "id": "term_currency",
+    "name": "币种",
+    "type": "entity",
+    "definition": "币种主数据（CNY/USD/EUR/JPY），含 exchange_rate 中间价与小数位。事实表以 currency_code 文本列冗余引用。",
+    "scope": "主数据/维度实体。",
+    "aliases": [
+      "货币",
+      "currency"
+    ],
+    "evidence": [
+      "evidence_dim_currency"
+    ]
+  },
+  {
+    "id": "term_cost_center",
+    "name": "成本中心",
+    "type": "entity",
+    "definition": "成本中心主数据，含 cc_code/cc_name/dept_id/bu_id/cc_type，经 bu_id 上挂业务单元。",
+    "scope": "主数据/维度实体。",
+    "aliases": [
+      "CC"
+    ],
+    "evidence": [
+      "evidence_dim_cost_center"
+    ]
+  },
+  {
+    "id": "term_profit_center",
+    "name": "利润中心",
+    "type": "entity",
+    "definition": "利润中心主数据，与业务单元关联。",
+    "scope": "主数据/维度实体。",
+    "aliases": [
+      "PC"
+    ],
+    "evidence": [
+      "evidence_table_catalog"
+    ]
+  },
+  {
+    "id": "term_business_unit",
+    "name": "业务单元",
+    "type": "entity",
+    "definition": "事业部下设业务板块（通用改性事业部/工程塑料事业部/特种材料事业部），作为利润中心。问题“特种材料事业部的成本分摊记录”以本表名称为过滤值，经成本中心 bu_id 关联。",
+    "scope": "主数据/维度实体。",
+    "aliases": [
+      "事业部",
+      "BU"
+    ],
+    "evidence": [
+      "evidence_dim_business_unit"
+    ]
+  },
+  {
+    "id": "term_hazard",
+    "name": "危险源",
+    "type": "entity",
+    "definition": "危险源清单，含 hazard_code/hazard_name/hazard_category(物理性/化学性/人机工程)/location/risk_level。问题“危险类型为‘物理性’”可走本表 hazard_category 或事实表冗余列 hazard_type。",
+    "scope": "主数据/维度实体。",
+    "aliases": [
+      "危害源"
+    ],
+    "evidence": [
+      "evidence_dim_hazard"
+    ]
+  },
+  {
+    "id": "term_risk_level",
+    "name": "风险等级",
+    "type": "entity",
+    "definition": "风险等级字典（L1可接受风险/L2可容忍风险…）。",
+    "scope": "主数据/维度实体。",
+    "aliases": [
+      "风险级别"
+    ],
+    "evidence": [
+      "evidence_table_catalog"
+    ]
+  },
+  {
+    "id": "term_reason_code",
+    "name": "原因码",
+    "type": "entity",
+    "definition": "通用原因码字典（12 条：QUALITY/DELIVERY/COST/EQUIPMENT/SAFETY/ENVIRONMENT/CUSTOMER/SUPPLIER/PROCESS/MATERIAL/SYSTEM/OTHER），含 name/short_name/abbreviation。注意：事实表上的 reason_code 文本列在多数业务域中取值恒定（如转移单全为 OTHER），并非该业务的真实原因列。",
+    "scope": "主数据/维度实体。",
+    "aliases": [
+      "原因",
+      "原因主数据"
+    ],
+    "evidence": [
+      "evidence_dim_reason_code",
+      "evidence_reason_code_constancy"
+    ]
+  },
+  {
+    "id": "term_downtime_reason",
+    "name": "停机原因",
+    "type": "entity",
+    "definition": "停机原因字典（8 条：D001 设备故障/D002 换产清机/D003 计划保养/D004 物料短缺/D005 质量异常/D006 能源中断/D007 人员不足/D008 滤网更换）。存在两种落地：fact_equipment_runtime 存中文名称文本，fact_downtime.reason_code 存整数 ID。",
+    "scope": "主数据/维度实体。",
+    "aliases": [
+      "停机原因码"
+    ],
+    "evidence": [
+      "evidence_dim_downtime_reason"
+    ]
+  },
+  {
+    "id": "term_tool",
+    "name": "工装工具",
+    "type": "entity",
+    "definition": "工装工具主数据。工装使用记录以 tool_id 引用。",
+    "scope": "主数据/维度实体。",
+    "aliases": [
+      "工装",
+      "模具"
+    ],
+    "evidence": [
+      "evidence_table_catalog"
+    ]
+  },
+  {
+    "id": "term_spare_part",
+    "name": "备件",
+    "type": "entity",
+    "definition": "设备备件主数据。备件领用以 part_id 引用。",
+    "scope": "主数据/维度实体。",
+    "aliases": [
+      "零件",
+      "备品备件"
+    ],
+    "evidence": [
+      "evidence_table_catalog"
+    ]
+  },
+  {
+    "id": "term_project",
+    "name": "项目",
+    "type": "entity",
+    "definition": "项目主数据。资本项目成本以 project_id 引用。",
+    "scope": "主数据/维度实体。",
+    "aliases": [
+      "工程项目"
+    ],
+    "evidence": [
+      "evidence_table_catalog"
+    ]
+  },
+  {
+    "id": "term_sales_order",
+    "name": "销售订单",
+    "type": "entity",
+    "definition": "销售订单事实表（一级单据）。每行一笔订单，含 order_date/cust_id/emp_id/prod_id/quantity/amount/tech_cost_amount/standard_cost_amount/actual_cost_amount/gross_profit_*/status(delivered/undelivered/returned)/is_negative_margin。",
+    "scope": "业务单据/记录类型。",
+    "aliases": [
+      "订单",
+      "销售单"
+    ],
+    "evidence": [
+      "evidence_fact_sales_order"
+    ]
+  },
+  {
+    "id": "term_sales_order_line",
+    "name": "销售订单明细",
+    "type": "entity",
+    "definition": "销售订单明细表（每行一张订单的一条明细），含 order_id/prod_id/requested_delivery_date/promised_delivery_date/sales_region。问题“华东地区的销售订单明细”即在明细行上用 sales_region 过滤。",
+    "scope": "业务单据/记录类型。",
+    "aliases": [
+      "订单明细",
+      "订单行"
+    ],
+    "evidence": [
+      "evidence_fact_sales_order_line"
+    ]
+  },
+  {
+    "id": "term_quotation",
+    "name": "报价单",
+    "type": "entity",
+    "definition": "销售报价单。含 quotation_no/cust_id/emp_id/quotation_date/valid_until/product_id/quantity/unit_price/total_amount/status(draft/sent/won/lost)。",
+    "scope": "业务单据/记录类型。",
+    "aliases": [
+      "报价"
+    ],
+    "evidence": [
+      "evidence_fact_quotation"
+    ]
+  },
+  {
+    "id": "term_opportunity",
+    "name": "商机",
+    "type": "entity",
+    "definition": "销售商机。含 opp_name/cust_id/emp_id/create_date/estimated_quantity/estimated_amount/close_date/is_important/status(open/won/lost/stalled)。问题“2025年创建的商机”以 create_date 过滤，“2025年关闭的商机”以 close_date 过滤。",
+    "scope": "业务单据/记录类型。",
+    "aliases": [
+      "销售机会",
+      "lead_opp"
+    ],
+    "evidence": [
+      "evidence_fact_opportunity"
+    ]
+  },
+  {
+    "id": "term_lead",
+    "name": "销售线索",
+    "type": "entity",
+    "definition": "销售线索。含 cust_id/emp_id/sales_channel_id/customer_segment_id/lead_source/opportunity_stage/probability/expected_close_date/sales_region。行版本列 row_version 在此表为 1-3，被用作可聚合度量。",
+    "scope": "业务单据/记录类型。",
+    "aliases": [
+      "线索",
+      "leads"
+    ],
+    "evidence": [
+      "evidence_fact_lead"
+    ]
+  },
+  {
+    "id": "term_customer_contact",
+    "name": "客户接触记录",
+    "type": "entity",
+    "definition": "客户接触/拜访记录。含 cust_id/emp_id/duration_minutes/contact_channel/contact_topic/contact_result/follow_up_date/satisfaction_score/sales_region。问题“备注为加急”“客户的接触记录优先级合计”指向本表 remarks 与 priority。",
+    "scope": "业务单据/记录类型。",
+    "aliases": [
+      "拜访记录",
+      "接触记录"
+    ],
+    "evidence": [
+      "evidence_fact_customer_contact"
+    ]
+  },
+  {
+    "id": "term_sample",
+    "name": "送样",
+    "type": "entity",
+    "definition": "客户送样记录。含 cust_id/emp_id/sample_date/quantity/feedback_date/feedback_result(success/fail)/is_feedback/is_success。问题“送样成功的合计”指向 is_success。",
+    "scope": "业务单据/记录类型。",
+    "aliases": [
+      "样品",
+      "打样"
+    ],
+    "evidence": [
+      "evidence_fact_sample"
+    ]
+  },
+  {
+    "id": "term_sales_forecast",
+    "name": "销售预测",
+    "type": "entity",
+    "definition": "销售预测。含 cust_id/prod_id/market_segment_id/forecast_bucket/sales_region/forecast_method/confidence_level/plan_version/planner_code。问题“销售预测的优先级合计”指向 priority。",
+    "scope": "业务单据/记录类型。",
+    "aliases": [
+      "预测",
+      "forecast"
+    ],
+    "evidence": [
+      "evidence_fact_sales_forecast"
+    ]
+  },
+  {
+    "id": "term_sales_target",
+    "name": "销售目标",
+    "type": "entity",
+    "definition": "销售目标设定表（按业务员×年月）。",
+    "scope": "业务单据/记录类型。",
+    "aliases": [
+      "目标"
+    ],
+    "evidence": [
+      "evidence_table_catalog"
+    ]
+  },
+  {
+    "id": "term_payment_target",
+    "name": "回款目标",
+    "type": "entity",
+    "definition": "回款周转率目标（按业务员×年度）。含 emp_id/year/turnover_rate_target。问题“哪位业务员的周转率目标合计最高”指向 turnover_rate_target。",
+    "scope": "业务单据/记录类型。",
+    "aliases": [
+      "周转率目标",
+      "回款目标"
+    ],
+    "evidence": [
+      "evidence_fact_payment_target"
+    ]
+  },
+  {
+    "id": "term_sales_contract_line",
+    "name": "销售合同明细",
+    "type": "entity",
+    "definition": "销售合同明细行。含 contract_id/prod_id/requested_delivery_date/promised_delivery_date/sales_region/margin_rate 以及通用度量子集。问题“2026年要求交货的销售合同明细，其数据质量分的平均值”同时用到 requested_delivery_date 与 data_quality_score。",
+    "scope": "业务单据/记录类型。",
+    "aliases": [
+      "合同明细",
+      "合同行"
+    ],
+    "evidence": [
+      "evidence_fact_sales_contract_line"
+    ]
+  },
+  {
+    "id": "term_contract",
+    "name": "合同",
+    "type": "entity",
+    "definition": "采购与销售框架合同主表，含合同类型/金额/有效期。",
+    "scope": "业务单据/记录类型。",
+    "aliases": [
+      "框架合同"
+    ],
+    "evidence": [
+      "evidence_table_catalog"
+    ]
+  },
+  {
+    "id": "term_shipment",
+    "name": "发运单",
+    "type": "entity",
+    "definition": "发运单（与交付单一一对应）。含 delivery_id/cust_id/warehouse_id/carrier_id/ship_to_city/freight_amount/requested_delivery_date/promised_delivery_date/sales_region。问题“每个更新人负责了多少张发运单”用 updated_by。",
+    "scope": "业务单据/记录类型。",
+    "aliases": [
+      "发货",
+      "运单"
+    ],
+    "evidence": [
+      "evidence_fact_shipment"
+    ]
+  },
+  {
+    "id": "term_shipment_line",
+    "name": "发运明细",
+    "type": "entity",
+    "definition": "发运明细行。含 shipment_id/sales_order_line_id/prod_id/lot_no/batch_no/base_quantity。问题“按基本单位数量合计排序，哪个原因码名称对应的…最高”在本表按 reason_code 分组。",
+    "scope": "业务单据/记录类型。",
+    "aliases": [
+      "发运行",
+      "发货明细"
+    ],
+    "evidence": [
+      "evidence_fact_shipment_line"
+    ]
+  },
+  {
+    "id": "term_delivery",
+    "name": "发货单",
+    "type": "entity",
+    "definition": "发货/交付记录，关联销售订单。",
+    "scope": "业务单据/记录类型。",
+    "aliases": [
+      "交付单"
+    ],
+    "evidence": [
+      "evidence_table_catalog"
+    ]
+  },
+  {
+    "id": "term_invoice",
+    "name": "发票",
+    "type": "entity",
+    "definition": "销售发票：蓝字发票与发货单一一对应，红字发票冲减。",
+    "scope": "业务单据/记录类型。",
+    "aliases": [
+      "销项发票"
+    ],
+    "evidence": [
+      "evidence_table_catalog"
+    ]
+  },
+  {
+    "id": "term_tax_invoice_line",
+    "name": "税务发票明细",
+    "type": "entity",
+    "definition": "税务发票明细行（只含蓝字发票明细，红字冲销在发票表以负数表示）。含 invoice_id/tax_code_id/fiscal_year/fiscal_period/debit_amount/credit_amount/account_code/tax_rate/due_date。status 取 APPROVED/CLOSED。问题“按发票状态统计各状态分别多少条”“2026年已关闭的税务发票明细”指向本表。",
+    "scope": "业务单据/记录类型。",
+    "aliases": [
+      "发票明细",
+      "税务发票行"
+    ],
+    "evidence": [
+      "evidence_fact_tax_invoice_line"
+    ]
+  },
+  {
+    "id": "term_return",
+    "name": "退货",
+    "type": "entity",
+    "definition": "销售退货：每笔开红字发票冲减原发票应收，退回货物按不合格品报废不进成品库存。含 order_id/return_date/quantity/amount/reason。reason 取值如“包装破损受潮”“产品质量问题:冲击强度偏低”“颜色与样板不符”等。",
+    "scope": "业务单据/记录类型。",
+    "aliases": [
+      "退货单",
+      "销售退回"
+    ],
+    "evidence": [
+      "evidence_fact_return"
+    ]
+  },
+  {
+    "id": "term_payment",
+    "name": "收款",
+    "type": "entity",
+    "definition": "客户回款记录。含 ar_id/payment_date/amount/payment_type(电汇/银承)/is_bank_accepted。问题“收款方式为电汇的收款笔数”指向 payment_type。注意本表是“收款”，与 fact_payment_out（付款）不同。",
+    "scope": "业务单据/记录类型。",
+    "aliases": [
+      "回款",
+      "收款单"
+    ],
+    "evidence": [
+      "evidence_fact_payment"
+    ]
+  },
+  {
+    "id": "term_payment_out",
+    "name": "付款",
+    "type": "entity",
+    "definition": "采购付款记录。含 ap_id/payment_date/amount/payment_method(bank_transfer/letter_of_credit)/bank_account。问题“2026年通过银行转账的付款”“付款方式为 letter_of_credit 的付款”指向本表。",
+    "scope": "业务单据/记录类型。",
+    "aliases": [
+      "付款单",
+      "对外付款"
+    ],
+    "evidence": [
+      "evidence_fact_payment_out"
+    ]
+  },
+  {
+    "id": "term_ap",
+    "name": "应付账款",
+    "type": "entity",
+    "definition": "应付账款：每张合格收货单一条，amount = 收货数量×采购单价×1.13；到期日=收货当月月末+账期天数；付清为 closed 否则 open。含 gr_id/supplier_id/amount/due_date/paid_amount/status。",
+    "scope": "业务单据/记录类型。",
+    "aliases": [
+      "应付",
+      "AP"
+    ],
+    "evidence": [
+      "evidence_fact_ap"
+    ]
+  },
+  {
+    "id": "term_ar_aging",
+    "name": "应收账款账龄",
+    "type": "entity",
+    "definition": "应收账款账龄分析表（按客户+业务员）。含 invoice_id/due_date/balance_amount/current_month(当前账龄月)/aging_1m..aging_12m_plus/is_overdue/overdue_months。问题“状态为 lost 的客户，其当前账龄（月）的合计”指向 current_month。",
+    "scope": "业务单据/记录类型。",
+    "aliases": [
+      "账龄",
+      "应收账龄"
+    ],
+    "evidence": [
+      "evidence_fact_ar_aging"
+    ]
+  },
+  {
+    "id": "term_cash_flow",
+    "name": "现金流记录",
+    "type": "entity",
+    "definition": "银行存款全部收付记录（电汇回款/票据托收/支付货款/费用报销/发放工资/制造费用付款），含客户与供应商双引用。",
+    "scope": "业务单据/记录类型。",
+    "aliases": [
+      "现金流",
+      "资金流水"
+    ],
+    "evidence": [
+      "evidence_fact_cash_flow"
+    ]
+  },
+  {
+    "id": "term_gl_entry",
+    "name": "总账凭证",
+    "type": "entity",
+    "definition": "总账凭证（每天每类业务一张汇总记账凭证，借贷平衡，含 2025-01-01 期初余额凭证）。含 account_id/cc_id/coa_id/voucher_no/fiscal_year/fiscal_period/debit_amount/credit_amount。问题“2026年由 U0002 更新的总账凭证”用 updated_by + updated_at。",
+    "scope": "业务单据/记录类型。",
+    "aliases": [
+      "凭证",
+      "记账凭证"
+    ],
+    "evidence": [
+      "evidence_fact_gl_entry"
+    ]
+  },
+  {
+    "id": "term_gl_entry_line",
+    "name": "总账凭证明细",
+    "type": "entity",
+    "definition": "总账凭证明细行（每行一张凭证的一条明细）。",
+    "scope": "业务单据/记录类型。",
+    "aliases": [
+      "凭证明细"
+    ],
+    "evidence": [
+      "evidence_table_catalog"
+    ]
+  },
+  {
+    "id": "term_cost_allocation",
+    "name": "成本分摊",
+    "type": "entity",
+    "definition": "管理会计成本分摊（单号 CO- 开头，不过总账）。含 source_cc_id/target_pc_id。问题“特种材料事业部的成本分摊记录数”需经成本中心 bu_id 上挂业务单元。",
+    "scope": "业务单据/记录类型。",
+    "aliases": [
+      "分摊",
+      "费用分摊"
+    ],
+    "evidence": [
+      "evidence_fact_cost_allocation"
+    ]
+  },
+  {
+    "id": "term_budget",
+    "name": "预算",
+    "type": "entity",
+    "definition": "全面预算表（按年月×成本中心）。",
+    "scope": "业务单据/记录类型。",
+    "aliases": [
+      "预算表"
+    ],
+    "evidence": [
+      "evidence_table_catalog"
+    ]
+  },
+  {
+    "id": "term_budget_expense",
+    "name": "费用预算",
+    "type": "entity",
+    "definition": "销售费用预算表（早期表，按部门×年月）。",
+    "scope": "业务单据/记录类型。",
+    "aliases": [
+      "费用预算表"
+    ],
+    "evidence": [
+      "evidence_table_catalog"
+    ]
+  },
+  {
+    "id": "term_expense",
+    "name": "费用报销",
+    "type": "entity",
+    "definition": "销售费用报销（差旅/招待/市内交通/通讯）。",
+    "scope": "业务单据/记录类型。",
+    "aliases": [
+      "报销"
+    ],
+    "evidence": [
+      "evidence_table_catalog"
+    ]
+  },
+  {
+    "id": "term_capex_project_cost",
+    "name": "资本项目成本",
+    "type": "entity",
+    "definition": "资本项目成本（记入在建工程，完工当月整笔转固）。含 project_id/asset_id/asset_class_id/capitalized_flag/asset_value_added。问题“按汇率合计排序，排名第一的币种名称”在本表按 currency_code 分组对 exchange_rate 求和。",
+    "scope": "业务单据/记录类型。",
+    "aliases": [
+      "资本支出",
+      "在建工程"
+    ],
+    "evidence": [
+      "evidence_fact_capex_project_cost"
+    ]
+  },
+  {
+    "id": "term_fixed_asset",
+    "name": "固定资产",
+    "type": "entity",
+    "definition": "固定资产卡片，记录设备关联的资产信息。",
+    "scope": "业务单据/记录类型。",
+    "aliases": [
+      "资产",
+      "设备资产"
+    ],
+    "evidence": [
+      "evidence_table_catalog"
+    ]
+  },
+  {
+    "id": "term_depreciation",
+    "name": "折旧",
+    "type": "entity",
+    "definition": "固定资产折旧记录（按资产×期间）。",
+    "scope": "业务单据/记录类型。",
+    "aliases": [
+      "折旧费"
+    ],
+    "evidence": [
+      "evidence_table_catalog"
+    ]
+  },
+  {
+    "id": "term_purchase_requisition",
+    "name": "采购申请",
+    "type": "entity",
+    "definition": "采购申请单。含 pr_no/dept_id/requester_id/required_date/pr_date/total_amount。问题“采购申请总金额合计最高的员工姓名”在本表对 total_amount 按 requester_id 分组后取 dim_employee.emp_name。",
+    "scope": "业务单据/记录类型。",
+    "aliases": [
+      "请购单",
+      "PR"
+    ],
+    "evidence": [
+      "evidence_fact_purchase_requisition"
+    ]
+  },
+  {
+    "id": "term_purchase_order",
+    "name": "采购订单",
+    "type": "entity",
+    "definition": "采购订单一级单据。",
+    "scope": "业务单据/记录类型。",
+    "aliases": [
+      "采购单",
+      "PO"
+    ],
+    "evidence": [
+      "evidence_table_catalog"
+    ]
+  },
+  {
+    "id": "term_po_line",
+    "name": "采购订单行",
+    "type": "entity",
+    "definition": "采购订单明细行。含 po_id/material_id/quantity/unit_price(元/吨)/amount/received_qty。问题“采购订单行中按物料汇总单价合计金额最高的物料名称”在本表对 unit_price 按 material_id 求和。",
+    "scope": "业务单据/记录类型。",
+    "aliases": [
+      "采购行",
+      "采购订单明细"
+    ],
+    "evidence": [
+      "evidence_fact_po_line"
+    ]
+  },
+  {
+    "id": "term_goods_receipt",
+    "name": "收货单",
+    "type": "entity",
+    "definition": "采购收货记录。含 gr_no/po_id/receipt_date/quantity/inspector_id/inspection_result(pass/fail/conditional/pending)。问题“2026年检验结果为 fail 的收货单”指向 inspection_result。",
+    "scope": "业务单据/记录类型。",
+    "aliases": [
+      "收货",
+      "GR"
+    ],
+    "evidence": [
+      "evidence_fact_goods_receipt"
+    ]
+  },
+  {
+    "id": "term_advance_shipping_notice",
+    "name": "到货预告",
+    "type": "entity",
+    "definition": "到货预告一级单据。含 supplier_id/po_id/warehouse_id/supplier_site_id/buyer_code/requested_date/promised_date/received_date/lead_time_days。问题“2025年承诺的到货预告”以 promised_date 过滤，“创建人为 U0004 的到货预告”用 created_by。",
+    "scope": "业务单据/记录类型。",
+    "aliases": [
+      "ASN",
+      "预告单"
+    ],
+    "evidence": [
+      "evidence_fact_advance_shipping_notice"
+    ]
+  },
+  {
+    "id": "term_asn_line",
+    "name": "到货预告明细",
+    "type": "entity",
+    "definition": "到货预告明细行。含 advance_shipping_notice_id/material_id/po_line_id。status 取 APPROVED/CLOSED。问题“每个审批人分别审批了多少条到货预告明细”用 approved_by；“2026年生产且状态为 CLOSED 的到货预告明细”用 status。",
+    "scope": "业务单据/记录类型。",
+    "aliases": [
+      "预告明细",
+      "ASN行"
+    ],
+    "evidence": [
+      "evidence_fact_asn_line"
+    ]
+  },
+  {
+    "id": "term_supplier_contract",
+    "name": "供应商合同",
+    "type": "entity",
+    "definition": "供应商合同主表。",
+    "scope": "业务单据/记录类型。",
+    "aliases": [
+      "采购合同"
+    ],
+    "evidence": [
+      "evidence_table_catalog"
+    ]
+  },
+  {
+    "id": "term_supplier_contract_line",
+    "name": "供应商合同明细",
+    "type": "entity",
+    "definition": "供应商合同明细行。含 supplier_contract_id/material_id/planned_quantity/currency_code。问题“2025年由 U0002 更新的供应商合同明细”用 updated_by+updated_at；“由更新人为 U0008 的币种所对应的…计划数量合计”需经 currency_code 对接到 dim_currency.updated_by。",
+    "scope": "业务单据/记录类型。",
+    "aliases": [
+      "供应商合同行",
+      "合同明细行"
+    ],
+    "evidence": [
+      "evidence_fact_supplier_contract_line"
+    ]
+  },
+  {
+    "id": "term_supplier_quality_issue",
+    "name": "供应商质量问题",
+    "type": "entity",
+    "definition": "供应商质量问题单。含 supplier_id/material_id/defect_code/severity/disposition/claim_type/claim_resolution。问题“哪个供应商的质量问题行版本合计最高”“每个创建人分别记录了多少条”分别用 row_version 与 created_by。",
+    "scope": "业务单据/记录类型。",
+    "aliases": [
+      "供方质量问题",
+      "来料问题"
+    ],
+    "evidence": [
+      "evidence_fact_supplier_quality_issue"
+    ]
+  },
+  {
+    "id": "term_supplier_claim",
+    "name": "供应商索赔",
+    "type": "entity",
+    "definition": "供应商索赔单。",
+    "scope": "业务单据/记录类型。",
+    "aliases": [
+      "索赔"
+    ],
+    "evidence": [
+      "evidence_table_catalog"
+    ]
+  },
+  {
+    "id": "term_supplier_eval",
+    "name": "供应商评估",
+    "type": "entity",
+    "definition": "供应商绩效评估（按季度：交付评分/质量评分等）。",
+    "scope": "业务单据/记录类型。",
+    "aliases": [
+      "供应商评价"
+    ],
+    "evidence": [
+      "evidence_table_catalog"
+    ]
+  },
+  {
+    "id": "term_supply_plan",
+    "name": "供应计划",
+    "type": "entity",
+    "definition": "供应计划。含 prod_id/factory_id/plan_version/planning_period/scenario_code/demand_quantity/supply_quantity/backlog_quantity/safety_stock_quantity/review_status/planner_code。问题“2026年由 U0002 更新的供应计划”用 updated_by+updated_at。",
+    "scope": "业务单据/记录类型。",
+    "aliases": [
+      "供应计划单"
+    ],
+    "evidence": [
+      "evidence_fact_supply_plan"
+    ]
+  },
+  {
+    "id": "term_demand_plan",
+    "name": "需求计划",
+    "type": "entity",
+    "definition": "需求计划。",
+    "scope": "业务单据/记录类型。",
+    "aliases": [
+      "需求单"
+    ],
+    "evidence": [
+      "evidence_table_catalog"
+    ]
+  },
+  {
+    "id": "term_capacity_plan",
+    "name": "产能计划",
+    "type": "entity",
+    "definition": "产能计划。",
+    "scope": "业务单据/记录类型。",
+    "aliases": [
+      "产能"
+    ],
+    "evidence": [
+      "evidence_table_catalog"
+    ]
+  },
+  {
+    "id": "term_production_order",
+    "name": "生产工单",
+    "type": "entity",
+    "definition": "生产工单（生产域一级单据）。含 order_no/order_date/line_id/prod_id/batch_no/planned_quantity(吨)/actual_quantity(吨)/yield_rate(成材率)/start_time/end_time/runtime_hours。问题“产品线名称为 PA改性系列的生产工单”经 prod_id→dim_product.prod_line_id；“特种工程塑料车间的生产工单”经 line_id→dim_production_line.workshop_id。",
+    "scope": "业务单据/记录类型。",
+    "aliases": [
+      "工单",
+      "MO"
+    ],
+    "evidence": [
+      "evidence_fact_production_order"
+    ]
+  },
+  {
+    "id": "term_production_plan",
+    "name": "生产计划",
+    "type": "entity",
+    "definition": "生产计划（按产线×年月）。含 line_id/year/month/planned_quantity/actual_quantity/plan_achievement。问题“计划产量合计最高的产线名称”在本表对 planned_quantity 按 line_id 分组。",
+    "scope": "业务单据/记录类型。",
+    "aliases": [
+      "排产计划"
+    ],
+    "evidence": [
+      "evidence_fact_production_plan"
+    ]
+  },
+  {
+    "id": "term_production_output",
+    "name": "产出记录",
+    "type": "entity",
+    "definition": "生产产出记录。含 order_id/output_date/quantity(吨)/grade(一等品/优等品/合格品/返工品)/is_first_grade/first_grade_rate。问题“各产品等级分别有多少条产出记录”指向 grade。",
+    "scope": "业务单据/记录类型。",
+    "aliases": [
+      "产出",
+      "成品产出"
+    ],
+    "evidence": [
+      "evidence_fact_production_output"
+    ]
+  },
+  {
+    "id": "term_material_consumption",
+    "name": "投料记录",
+    "type": "entity",
+    "definition": "生产投料记录（按工单×原料）。含 order_id/material_id/batch_no/planned_qty(配方用量)/actual_qty(实际投料吨)/scrap_qty(工艺损耗)。问题“实际投料合计最多的原材料”在本表对 actual_qty 按 material_id 分组。",
+    "scope": "业务单据/记录类型。",
+    "aliases": [
+      "投料",
+      "领料"
+    ],
+    "evidence": [
+      "evidence_fact_material_consumption"
+    ]
+  },
+  {
+    "id": "term_work_order_material",
+    "name": "工单物料投用",
+    "type": "entity",
+    "definition": "工单物料投用记录。",
+    "scope": "业务单据/记录类型。",
+    "aliases": [
+      "工单投料"
+    ],
+    "evidence": [
+      "evidence_table_catalog"
+    ]
+  },
+  {
+    "id": "term_legacy_material_issue",
+    "name": "遗留系统领料记录",
+    "type": "entity",
+    "definition": "遗留系统领料记录（历史系统迁移数据）。",
+    "scope": "业务单据/记录类型。",
+    "aliases": [
+      "旧系统领料"
+    ],
+    "evidence": [
+      "evidence_table_catalog"
+    ]
+  },
+  {
+    "id": "term_rework_order",
+    "name": "返工单",
+    "type": "entity",
+    "definition": "返工单（不合格批掺混调整后重新挤出，复检合格后整批放行）。含 order_id/emp_id/process_stage/shift_code/yield_rate/scrap_quantity/disposition。问题“按返工单的本位币金额合计排序，金额合计最高的那一天对应的节假日名称”在本表对 local_amount 按 business_date 分组后对接 dim_calendar.holiday_name。",
+    "scope": "业务单据/记录类型。",
+    "aliases": [
+      "返工",
+      "重工单"
+    ],
+    "evidence": [
+      "evidence_fact_rework_order"
+    ]
+  },
+  {
+    "id": "term_scrap_event",
+    "name": "报废事件",
+    "type": "entity",
+    "definition": "报废事件。含 order_id/prod_id/scrap_quantity/rejected_quantity/defect_code/severity/disposition/root_cause_code/closed_date。问题“哪个报废原因的合计不合格数量最高”需注意本表 reason_code 恒为 QUALITY、defect_code 恒为“开机料与过渡料”、root_cause_code 恒为“法”，真实原因列在本表无区分度。",
+    "scope": "业务单据/记录类型。",
+    "aliases": [
+      "报废",
+      "废品"
+    ],
+    "evidence": [
+      "evidence_fact_scrap_event"
+    ]
+  },
+  {
+    "id": "term_labor_booking",
+    "name": "生产工时报工",
+    "type": "entity",
+    "definition": "生产工时报工（当班班组长为本班运行的工单报工，工时合计等于工单运行时长）。含 order_id/emp_id/shift_id/employee_no(E码)/work_date/setup_minutes/run_minutes/scrap_quantity。问题“备注是已电话确认”“行版本平均值”指向 remarks 与 row_version。",
+    "scope": "业务单据/记录类型。",
+    "aliases": [
+      "报工",
+      "工时上报"
+    ],
+    "evidence": [
+      "evidence_fact_labor_booking"
+    ]
+  },
+  {
+    "id": "term_tool_usage",
+    "name": "工装使用记录",
+    "type": "entity",
+    "definition": "工装使用记录。含 order_id/tool_id/tool_code/used_cycles/remaining_life/wear_rate/operator_code。问题“工装使用记录的基本单位数量合计/平均值”指向 base_quantity。",
+    "scope": "业务单据/记录类型。",
+    "aliases": [
+      "工装使用",
+      "模具使用"
+    ],
+    "evidence": [
+      "evidence_fact_tool_usage"
+    ]
+  },
+  {
+    "id": "term_wip_snapshot",
+    "name": "在制品快照",
+    "type": "entity",
+    "definition": "在制品快照。含 order_id/line_id/process_stage/batch_no/manufacture_date/expiry_date/yield_rate/scrap_quantity。问题“2026年生产日期中，创建人为 U0008 的在制品快照”用 manufacture_date 年份 + created_by。",
+    "scope": "业务单据/记录类型。",
+    "aliases": [
+      "WIP",
+      "在制品"
+    ],
+    "evidence": [
+      "evidence_fact_wip_snapshot"
+    ]
+  },
+  {
+    "id": "term_shift_report",
+    "name": "班次生产报告",
+    "type": "entity",
+    "definition": "班次生产报告。",
+    "scope": "业务单据/记录类型。",
+    "aliases": [
+      "班报"
+    ],
+    "evidence": [
+      "evidence_table_catalog"
+    ]
+  },
+  {
+    "id": "term_work_order_operation",
+    "name": "工单工序执行",
+    "type": "entity",
+    "definition": "工单工序执行记录。",
+    "scope": "业务单据/记录类型。",
+    "aliases": [
+      "工序执行"
+    ],
+    "evidence": [
+      "evidence_table_catalog"
+    ]
+  },
+  {
+    "id": "term_routing",
+    "name": "工艺路线",
+    "type": "entity",
+    "definition": "产品工艺路线主表。",
+    "scope": "业务单据/记录类型。",
+    "aliases": [
+      "工艺路线",
+      "routing"
+    ],
+    "evidence": [
+      "evidence_table_catalog"
+    ]
+  },
+  {
+    "id": "term_inspection_lot",
+    "name": "检验批",
+    "type": "entity",
+    "definition": "检验批。含 order_id/prod_id/inspection_no/sample_size/characteristic_code/measured_value/upper_limit/upper_limit/result_code/defect_code/disposition/manufacture_date/expiry_date。问题“2025年过账的检验批的基本单位数量合计”用 posting_date + base_quantity。",
+    "scope": "业务单据/记录类型。",
+    "aliases": [
+      "检验批次",
+      "IQC批"
+    ],
+    "evidence": [
+      "evidence_fact_inspection_lot"
+    ]
+  },
+  {
+    "id": "term_inspection_result",
+    "name": "检验结果",
+    "type": "entity",
+    "definition": "检验结果明细行（每行一张检验批的一条明细）。含 inspection_lot_id/quality_characteristic_id/inspection_method_id/measured_value/nominal_value/lower_limit/upper_limit/result_code/disposition(让步接收/返工)/defect_code。问题“检验结果的处置是让步接收”指向 disposition。",
+    "scope": "业务单据/记录类型。",
+    "aliases": [
+      "检验明细",
+      "检测结果"
+    ],
+    "evidence": [
+      "evidence_fact_inspection_result"
+    ]
+  },
+  {
+    "id": "term_quality_inspection",
+    "name": "质检记录",
+    "type": "entity",
+    "definition": "质量检验记录（关联生产工单与批次）。",
+    "scope": "业务单据/记录类型。",
+    "aliases": [
+      "质检"
+    ],
+    "evidence": [
+      "evidence_table_catalog"
+    ]
+  },
+  {
+    "id": "term_nonconformance",
+    "name": "不合格记录",
+    "type": "entity",
+    "definition": "不合格品记录。",
+    "scope": "业务单据/记录类型。",
+    "aliases": [
+      "不合格品"
+    ],
+    "evidence": [
+      "evidence_table_catalog"
+    ]
+  },
+  {
+    "id": "term_corrective_action",
+    "name": "纠正措施",
+    "type": "entity",
+    "definition": "纠正措施单。",
+    "scope": "业务单据/记录类型。",
+    "aliases": [
+      "纠偏措施",
+      "CAPA"
+    ],
+    "evidence": [
+      "evidence_table_catalog"
+    ]
+  },
+  {
+    "id": "term_gauge_calibration",
+    "name": "在线仪表校准",
+    "type": "entity",
+    "definition": "在线仪表校准记录。",
+    "scope": "业务单据/记录类型。",
+    "aliases": [
+      "仪表校准"
+    ],
+    "evidence": [
+      "evidence_table_catalog"
+    ]
+  },
+  {
+    "id": "term_batch_quality_hold",
+    "name": "成品批次质量冻结",
+    "type": "entity",
+    "definition": "成品批次质量冻结记录。",
+    "scope": "业务单据/记录类型。",
+    "aliases": [
+      "质量冻结"
+    ],
+    "evidence": [
+      "evidence_table_catalog"
+    ]
+  },
+  {
+    "id": "term_customer_complaint",
+    "name": "客户投诉",
+    "type": "entity",
+    "definition": "客户投诉单。含 cust_id/prod_id/order_id/complaint_channel/complaint_type/defect_code/severity/response_due_date/closed_date/compensation_amount/satisfaction_score/disposition。disposition 取值“催交/退货”。问题“2026年关闭的客户投诉中，处置为催交的”用 closed_date + disposition。",
+    "scope": "业务单据/记录类型。",
+    "aliases": [
+      "投诉单",
+      "客诉"
+    ],
+    "evidence": [
+      "evidence_fact_customer_complaint"
+    ]
+  },
+  {
+    "id": "term_equipment_runtime",
+    "name": "设备运行记录",
+    "type": "entity",
+    "definition": "设备运行台时记录（按产线×日，非严格“设备”粒度）。含 line_id/record_date/plan_run_hours/actual_run_hours/downtime_hours/downtime_reason(中文名称)/oee。问题“停机原因为滤网更换的设备运行记录”直接在本表 downtime_reason 上做文本匹配。",
+    "scope": "业务单据/记录类型。",
+    "aliases": [
+      "运行台时",
+      "设备台账"
+    ],
+    "evidence": [
+      "evidence_fact_equipment_runtime"
+    ]
+  },
+  {
+    "id": "term_downtime",
+    "name": "停机记录",
+    "type": "entity",
+    "definition": "设备停机事件记录。含 equipment_id/line_id/start_time/end_time/duration_hours/reason_code(整数 ID，指向 dim_downtime_reason)。",
+    "scope": "业务单据/记录类型。",
+    "aliases": [
+      "停机"
+    ],
+    "evidence": [
+      "evidence_fact_downtime"
+    ]
+  },
+  {
+    "id": "term_equipment_event",
+    "name": "设备事件",
+    "type": "entity",
+    "definition": "设备事件记录。",
+    "scope": "业务单据/记录类型。",
+    "aliases": [
+      "设备事件"
+    ],
+    "evidence": [
+      "evidence_table_catalog"
+    ]
+  },
+  {
+    "id": "term_condition_monitoring",
+    "name": "设备状态监测",
+    "type": "entity",
+    "definition": "设备状态监测（与传感器采集数据逐条对应）。含 equipment_id/sensor_id/sensor_code/reading_value(读数)/reading_unit/lower_threshold/upper_threshold/health_index/remaining_life_hours。问题“哪个传感器的测量值合计最高”常指向 reading_value；“国庆节当天…上限阈值合计”指向 upper_threshold。",
+    "scope": "业务单据/记录类型。",
+    "aliases": [
+      "状态监测",
+      "监测值"
+    ],
+    "evidence": [
+      "evidence_fact_condition_monitoring"
+    ]
+  },
+  {
+    "id": "term_iot_data",
+    "name": "IoT数据",
+    "type": "entity",
+    "definition": "传感器物联网数据流（含 timestamp/value/quality_flag），与 fact_condition_monitoring 逐条对应但列名为 value 而非 reading_value。",
+    "scope": "业务单据/记录类型。",
+    "aliases": [
+      "物联网数据",
+      "采集数据"
+    ],
+    "evidence": [
+      "evidence_fact_iot_data"
+    ]
+  },
+  {
+    "id": "term_predictive_alert",
+    "name": "预测性维护告警",
+    "type": "entity",
+    "definition": "预测性维护告警。含 equipment_id/sensor_id/reading_value/reading_unit/alarm_code/health_index/remaining_life_hours/failure_mode/maintenance_type。问题“每个读数单位分别有多少条”指向 reading_unit。",
+    "scope": "业务单据/记录类型。",
+    "aliases": [
+      "预测告警",
+      "PdM告警"
+    ],
+    "evidence": [
+      "evidence_fact_predictive_alert"
+    ]
+  },
+  {
+    "id": "term_alarm",
+    "name": "告警",
+    "type": "entity",
+    "definition": "设备告警事件。",
+    "scope": "业务单据/记录类型。",
+    "aliases": [
+      "设备告警"
+    ],
+    "evidence": [
+      "evidence_table_catalog"
+    ]
+  },
+  {
+    "id": "term_maintenance_wo",
+    "name": "维护工单",
+    "type": "entity",
+    "definition": "设备维护工单。",
+    "scope": "业务单据/记录类型。",
+    "aliases": [
+      "维修工单"
+    ],
+    "evidence": [
+      "evidence_table_catalog"
+    ]
+  },
+  {
+    "id": "term_maintenance_task",
+    "name": "维修任务",
+    "type": "entity",
+    "definition": "维修任务。含 wo_id/emp_id/task_type/failure_mode/labor_hours/result_code/maintenance_type/downtime_minutes。问题“2025年过账的维修任务，数据质量分合计”用 posting_date + data_quality_score。",
+    "scope": "业务单据/记录类型。",
+    "aliases": [
+      "维修"
+    ],
+    "evidence": [
+      "evidence_fact_maintenance_task"
+    ]
+  },
+  {
+    "id": "term_maintenance_record",
+    "name": "维护记录",
+    "type": "entity",
+    "definition": "设备维护执行记录。",
+    "scope": "业务单据/记录类型。",
+    "aliases": [
+      "保养记录"
+    ],
+    "evidence": [
+      "evidence_table_catalog"
+    ]
+  },
+  {
+    "id": "term_maintenance_plan",
+    "name": "维护计划",
+    "type": "entity",
+    "definition": "设备维护计划。",
+    "scope": "业务单据/记录类型。",
+    "aliases": [
+      "保养计划"
+    ],
+    "evidence": [
+      "evidence_table_catalog"
+    ]
+  },
+  {
+    "id": "term_spare_part_issue",
+    "name": "备件领用",
+    "type": "entity",
+    "definition": "备件领用单。含 equipment_id/part_id/part_code/issue_type/stock_before/stock_after/requester_code。问题“审批人为 U0007 的备件领用单”用 approved_by。",
+    "scope": "业务单据/记录类型。",
+    "aliases": [
+      "备件出库",
+      "领用单"
+    ],
+    "evidence": [
+      "evidence_fact_spare_part_issue"
+    ]
+  },
+  {
+    "id": "term_inventory",
+    "name": "库存",
+    "type": "entity",
+    "definition": "成品库存表（按产品×批次）。",
+    "scope": "业务单据/记录类型。",
+    "aliases": [
+      "成品库存"
+    ],
+    "evidence": [
+      "evidence_table_catalog"
+    ]
+  },
+  {
+    "id": "term_inventory_movement",
+    "name": "库存移动",
+    "type": "entity",
+    "definition": "库存移动记录。",
+    "scope": "业务单据/记录类型。",
+    "aliases": [
+      "库存流水"
+    ],
+    "evidence": [
+      "evidence_table_catalog"
+    ]
+  },
+  {
+    "id": "term_inventory_snapshot",
+    "name": "库存快照",
+    "type": "entity",
+    "definition": "库存快照记录。",
+    "scope": "业务单据/记录类型。",
+    "aliases": [
+      "库存快照"
+    ],
+    "evidence": [
+      "evidence_table_catalog"
+    ]
+  },
+  {
+    "id": "term_transfer_order",
+    "name": "库存调拨单",
+    "type": "entity",
+    "definition": "库存调拨单。含 source_warehouse_id/target_warehouse_id/ship_to_city/movement_type(301 仓间调拨)/freight_amount。status 取 APPROVED/CLOSED。问题“库存调拨单按状态分组”“发运至城市为合肥的库存调拨单”指向本表。",
+    "scope": "业务单据/记录类型。",
+    "aliases": [
+      "调拨单",
+      "移库单"
+    ],
+    "evidence": [
+      "evidence_fact_transfer_order"
+    ]
+  },
+  {
+    "id": "term_transfer_order_line",
+    "name": "库存调拨明细",
+    "type": "entity",
+    "definition": "库存调拨明细行。含 transfer_order_id/material_id/reserved_quantity/available_quantity。问题“库存调拨明细的平均预留数量”指向 reserved_quantity；“按库存调拨明细的行版本合计排序”指向 row_version。",
+    "scope": "业务单据/记录类型。",
+    "aliases": [
+      "调拨行",
+      "移库明细"
+    ],
+    "evidence": [
+      "evidence_fact_transfer_order_line"
+    ]
+  },
+  {
+    "id": "term_cycle_count",
+    "name": "循环盘点单",
+    "type": "entity",
+    "definition": "循环盘点单。",
+    "scope": "业务单据/记录类型。",
+    "aliases": [
+      "盘点单"
+    ],
+    "evidence": [
+      "evidence_table_catalog"
+    ]
+  },
+  {
+    "id": "term_cycle_count_line",
+    "name": "循环盘点明细",
+    "type": "entity",
+    "definition": "循环盘点明细行。",
+    "scope": "业务单据/记录类型。",
+    "aliases": [
+      "盘点明细"
+    ],
+    "evidence": [
+      "evidence_table_catalog"
+    ]
+  },
+  {
+    "id": "term_lot_trace",
+    "name": "批次追溯",
+    "type": "entity",
+    "definition": "批次追溯记录（原料批次可追溯到收货单）。含 material_id/order_id/lot_no/batch_no/manufacture_date/expiry_date/bom_qty_per_ton/standard_quantity/usage_variance_rate/issue_type/issue_warehouse(领用仓库)。问题“领用仓库是二厂原料仓”“失效日期在 2028 年”分别指向 issue_warehouse 与 expiry_date。",
+    "scope": "业务单据/记录类型。",
+    "aliases": [
+      "追溯",
+      "批次追踪"
+    ],
+    "evidence": [
+      "evidence_fact_lot_trace"
+    ]
+  },
+  {
+    "id": "term_energy_consumption",
+    "name": "能耗记录",
+    "type": "entity",
+    "definition": "能源消耗记录（按产线×车间×日）。含 line_id/workshop_id/record_date/electricity_kwh/water_tons/gas_m3/steam_tons/unit_energy_consumption。问题“阻燃材料车间的能耗记录”经 workshop_id 对接 dim_workshop。",
+    "scope": "业务单据/记录类型。",
+    "aliases": [
+      "能源消耗",
+      "用电记录"
+    ],
+    "evidence": [
+      "evidence_fact_energy_consumption"
+    ]
+  },
+  {
+    "id": "term_energy_meter_reading",
+    "name": "能源计量读数",
+    "type": "entity",
+    "definition": "能源计量读数记录。",
+    "scope": "业务单据/记录类型。",
+    "aliases": [
+      "计量读数"
+    ],
+    "evidence": [
+      "evidence_table_catalog"
+    ]
+  },
+  {
+    "id": "term_env_record",
+    "name": "环境监测",
+    "type": "entity",
+    "definition": "环境监测记录（早期表，无审计信封字段）。含 record_date/record_type/emission_type/measured_value/unit/limit_value/is_compliant。与 fact_environment_measurement 同域但列名与结构不同。",
+    "scope": "业务单据/记录类型。",
+    "aliases": [
+      "环保监测"
+    ],
+    "evidence": [
+      "evidence_env_tables"
+    ]
+  },
+  {
+    "id": "term_environment_measurement",
+    "name": "环境监测记录",
+    "type": "entity",
+    "definition": "环境监测记录（环境域标准表，带完整审计信封）。含 factory_id/emission_type_id/monitoring_point(监测点)/emission_value/limit_value/measurement_unit/exceed_flag/regulatory_clause/evidence_reference/sampling_method。问题“每个监测点分别有多少条环境监测记录”“2025年环境监测记录的数据质量分合计”指向本表 monitoring_point 与 data_quality_score。",
+    "scope": "业务单据/记录类型。",
+    "aliases": [
+      "环境监测标准表",
+      "监测记录"
+    ],
+    "evidence": [
+      "evidence_env_tables"
+    ]
+  },
+  {
+    "id": "term_emission_event",
+    "name": "排放事件",
+    "type": "entity",
+    "definition": "排放事件（关联工厂、排放物类型）。含 factory_id/emission_type_id/monitoring_point/emission_value/limit_value/exceed_flag/evidence_reference(证据参考)。问题“按证据参考统计，每个证据参考对应多少条排放事件”指向 evidence_reference。",
+    "scope": "业务单据/记录类型。",
+    "aliases": [
+      "排污事件",
+      "排放"
+    ],
+    "evidence": [
+      "evidence_fact_emission_event"
+    ]
+  },
+  {
+    "id": "term_emission_type",
+    "name": "排放物类型",
+    "type": "entity",
+    "definition": "排放物类型主数据（COD/氨氮/VOCs/颗粒物/噪声）。",
+    "scope": "业务单据/记录类型。",
+    "aliases": [
+      "污染物类型"
+    ],
+    "evidence": [
+      "evidence_table_catalog"
+    ]
+  },
+  {
+    "id": "term_incident",
+    "name": "事故",
+    "type": "entity",
+    "definition": "安全事故记录。含 incident_no/incident_type/severity(fatality/lti/mtc/fa/near_miss)/incident_date/incident_time/workshop_id/line_id/location_desc/description(事故描述)/injury_count/fatality_count/property_loss/reported_by。问题“有多少起事故的描述是‘触电事件,已现场处置’”在本表 description 上做文本匹配。",
+    "scope": "业务单据/记录类型。",
+    "aliases": [
+      "安全事故",
+      "事件"
+    ],
+    "evidence": [
+      "evidence_fact_incident"
+    ]
+  },
+  {
+    "id": "term_incident_inv",
+    "name": "事故调查",
+    "type": "entity",
+    "definition": "事故调查报告（关联事故）。",
+    "scope": "业务单据/记录类型。",
+    "aliases": [
+      "事故调查记录"
+    ],
+    "evidence": [
+      "evidence_table_catalog"
+    ]
+  },
+  {
+    "id": "term_hazard_observation",
+    "name": "危险源观察",
+    "type": "entity",
+    "definition": "危险源观察记录。含 hazard_id/emp_id/workshop_id/risk_level_id/observation_no/hazard_type(危险类型)/severity/likelihood/risk_score/control_measure/action_due_date(整改期限)/closed_date。问题“哪个危险源的观察评分合计最高”指向 score_value；“2026年关闭的危险类型为物理性的”用 closed_date+hazard_type。",
+    "scope": "业务单据/记录类型。",
+    "aliases": [
+      "隐患观察",
+      "观察记录"
+    ],
+    "evidence": [
+      "evidence_fact_hazard_observation"
+    ]
+  },
+  {
+    "id": "term_safety_action",
+    "name": "安全整改措施",
+    "type": "entity",
+    "definition": "安全整改措施。含 hazard_id/emp_id/risk_level_id/observation_no/hazard_type/severity/likelihood/control_measure(个体防护/工程控制/管理控制)/action_due_date/closed_date/permit_no。问题“2026年整改期限的…控制措施为个体防护”用 action_due_date+control_measure。",
+    "scope": "业务单据/记录类型。",
+    "aliases": [
+      "整改措施",
+      "隐患整改"
+    ],
+    "evidence": [
+      "evidence_fact_safety_action"
+    ]
+  },
+  {
+    "id": "term_safety_audit",
+    "name": "安全审计",
+    "type": "entity",
+    "definition": "安全审计记录。含 audit_no/audit_type(月度安全审计/专项审计)/workshop_id/auditor_id/audit_date/score(评分)/finding_count。问题“2026年审计类型为月度安全审计的安全审计”用 audit_date+audit_type；“哪个车间的安全审计评分合计最高”对 score 按 workshop_id 分组。",
+    "scope": "业务单据/记录类型。",
+    "aliases": [
+      "安全审核",
+      "审核记录"
+    ],
+    "evidence": [
+      "evidence_fact_safety_audit"
+    ]
+  },
+  {
+    "id": "term_safety_objective",
+    "name": "安全目标",
+    "type": "entity",
+    "definition": "安全目标分解。含 plan_id/obj_desc/target_value(目标值)/unit/deadline/responsible_dept_id。问题“哪个部门的安全目标值合计最高”对 target_value 按 responsible_dept_id 分组。",
+    "scope": "业务单据/记录类型。",
+    "aliases": [
+      "目标分解",
+      "安全指标"
+    ],
+    "evidence": [
+      "evidence_fact_safety_objective"
+    ]
+  },
+  {
+    "id": "term_safety_plan",
+    "name": "安全计划",
+    "type": "entity",
+    "definition": "年度安全工作计划。",
+    "scope": "业务单据/记录类型。",
+    "aliases": [
+      "安全年度计划"
+    ],
+    "evidence": [
+      "evidence_table_catalog"
+    ]
+  },
+  {
+    "id": "term_safety_training",
+    "name": "安全培训",
+    "type": "entity",
+    "definition": "安全培训记录。含 training_no/training_type/trainer_id(讲师ID)/training_date/duration_hours(时长小时)/attendee_count/topic/score_avg。问题“累计培训时长最长的安全培训讲师”对 duration_hours 按 trainer_id 分组。",
+    "scope": "业务单据/记录类型。",
+    "aliases": [
+      "培训",
+      "安全教育"
+    ],
+    "evidence": [
+      "evidence_fact_safety_training"
+    ]
+  },
+  {
+    "id": "term_training_attendance",
+    "name": "安全培训签到",
+    "type": "entity",
+    "definition": "安全培训签到记录。问题“2026年由 U0010 审批的安全培训签到”用 approved_by+approved_at。",
+    "scope": "业务单据/记录类型。",
+    "aliases": [
+      "培训签到",
+      "参训记录"
+    ],
+    "evidence": [
+      "evidence_fact_training_attendance"
+    ]
+  },
+  {
+    "id": "term_work_permit",
+    "name": "作业许可",
+    "type": "entity",
+    "definition": "危险作业许可审批（动火/高处等）。",
+    "scope": "业务单据/记录类型。",
+    "aliases": [
+      "作业票",
+      "许可"
+    ],
+    "evidence": [
+      "evidence_table_catalog"
+    ]
+  },
+  {
+    "id": "term_risk_assessment",
+    "name": "风险评估",
+    "type": "entity",
+    "definition": "风险评估记录（危险源/评估人/评估日期）。",
+    "scope": "业务单据/记录类型。",
+    "aliases": [
+      "风评"
+    ],
+    "evidence": [
+      "evidence_table_catalog"
+    ]
+  },
+  {
+    "id": "term_employee_assignment",
+    "name": "员工任职记录",
+    "type": "entity",
+    "definition": "员工任职记录。含 emp_id/dept_id/job_position_id/position_code/valid_from/expiry_date。status 取 APPROVED/CLOSED。问题“有多少条员工任职记录的状态是 APPROVED”指向 status。",
+    "scope": "业务单据/记录类型。",
+    "aliases": [
+      "任职",
+      "人事记录"
+    ],
+    "evidence": [
+      "evidence_fact_employee_assignment"
+    ]
+  },
+  {
+    "id": "term_certification_record",
+    "name": "员工资质记录",
+    "type": "entity",
+    "definition": "员工资质记录。含 emp_id/certification_id/certificate_no/skill_level/assessment_score/valid_from/expiry_date。问题“2025年员工资质记录的成本金额合计”指向 cost_amount。",
+    "scope": "业务单据/记录类型。",
+    "aliases": [
+      "资质",
+      "证书记录"
+    ],
+    "evidence": [
+      "evidence_fact_certification_record"
+    ]
+  },
+  {
+    "id": "term_skill_assessment",
+    "name": "技能评估",
+    "type": "entity",
+    "definition": "技能评估记录。含 emp_id/skill_id/employee_no/skill_level/assessment_score/assessor_code/valid_from/expiry_date/assessment_method。问题“优先级合计最高”对 priority 按 skill_id 分组；“备注是补录”指向 remarks。",
+    "scope": "业务单据/记录类型。",
+    "aliases": [
+      "技能考核",
+      "技能评定"
+    ],
+    "evidence": [
+      "evidence_fact_skill_assessment"
+    ]
+  },
+  {
+    "id": "term_attendance",
+    "name": "考勤记录",
+    "type": "entity",
+    "definition": "考勤记录。",
+    "scope": "业务单据/记录类型。",
+    "aliases": [
+      "出勤"
+    ],
+    "evidence": [
+      "evidence_table_catalog"
+    ]
+  },
+  {
+    "id": "term_overtime",
+    "name": "加班记录",
+    "type": "entity",
+    "definition": "加班记录。含 emp_id/dept_id/employee_no/work_date/shift_code/overtime_hours/attendance_result/supervisor_code。问题“创建人为 U0001 的加班记录”用 created_by。",
+    "scope": "业务单据/记录类型。",
+    "aliases": [
+      "加班",
+      "overtime"
+    ],
+    "evidence": [
+      "evidence_fact_overtime"
+    ]
+  },
+  {
+    "id": "term_kpi_snapshot",
+    "name": "绩效指标快照",
+    "type": "entity",
+    "definition": "绩效指标快照。含 emp_id/dept_id/kpi_code/kpi_name/target_value/actual_value/achievement_rate/period_type/planning_period/evaluator_code。问题“2026年由 U0009 审批的”用 approved_by+approved_at。",
+    "scope": "业务单据/记录类型。",
+    "aliases": [
+      "KPI快照",
+      "绩效快照"
+    ],
+    "evidence": [
+      "evidence_fact_kpi_snapshot"
+    ]
+  },
+  {
+    "id": "term_data_quality_issue",
+    "name": "数据质量问题",
+    "type": "entity",
+    "definition": "数据质量问题记录（关联数据集版本、验证案例）。含 rule_code/check_name/severity/detected_at/resolved_at/expected_value/actual_value/exception_count/owner_team/resolution_status。问题“按审批时间统计，每个审批时间对应有多少个”用 approved_at 分组；“2026年过账的…数据质量分平均值”用 posting_date。",
+    "scope": "业务单据/记录类型。",
+    "aliases": [
+      "质量问题",
+      "数据问题"
+    ],
+    "evidence": [
+      "evidence_fact_data_quality_issue"
+    ]
+  },
+  {
+    "id": "term_validation_case_result",
+    "name": "验证案例执行结果",
+    "type": "entity",
+    "definition": "验证案例执行结果（治理域）。",
+    "scope": "业务单据/记录类型。",
+    "aliases": [
+      "验证结果"
+    ],
+    "evidence": [
+      "evidence_table_catalog"
+    ]
+  },
+  {
+    "id": "term_metric_catalog",
+    "name": "指标目录",
+    "type": "entity",
+    "definition": "指标体系元数据（107 条）：指标名称/分类（原子/派生/复合）/类型（金额/数量/比率/次数/天数）/description/table_source/dws_table/date_column/value_column/unit_code。是 DWS 汇总表的指标口径来源。",
+    "scope": "业务单据/记录类型。",
+    "aliases": [
+      "指标元数据",
+      "metric catalog"
+    ],
+    "evidence": [
+      "evidence_metric_catalog"
+    ]
+  },
+  {
+    "id": "term_dws_summary",
+    "name": "DWS 日/月汇总表",
+    "type": "entity",
+    "definition": "16 张 DWS_* 汇总表（按人/设备/客户/车间×日或月末汇总）。dim_table_metadata 明确其“由明细表汇总生成，可与明细对账”。与明细事实表并存，口径与粒度不同，混用会得到错误计数。",
+    "scope": "业务单据/记录类型。",
+    "aliases": [
+      "汇总表",
+      "DWS表"
+    ],
+    "evidence": [
+      "evidence_dws_tables"
+    ]
+  },
+  {
+    "id": "term_column_metadata",
+    "name": "字段元数据",
+    "type": "entity",
+    "definition": "库内自带的字段元数据表（5002 行）：table_name/column_name/column_name_cn/column_desc/ordinal。是中文业务名到物理列名的权威对照来源。",
+    "scope": "业务单据/记录类型。",
+    "aliases": [
+      "column metadata"
+    ],
+    "evidence": [
+      "evidence_metadata_tables"
+    ]
+  },
+  {
+    "id": "term_table_metadata",
+    "name": "表元数据",
+    "type": "entity",
+    "definition": "库内自带的表元数据表（200 行）：table_name/table_name_cn/table_desc/table_category(事实表/维度表/汇总表)/table_level(core/contract_validation)。",
+    "scope": "业务单据/记录类型。",
+    "aliases": [
+      "table metadata"
+    ],
+    "evidence": [
+      "evidence_metadata_tables"
+    ]
+  },
+  {
+    "id": "term_detail_line",
+    "name": "单据明细行",
+    "type": "concept",
+    "definition": "The line-level records of a business document, as opposed to the one-row-per-document header record. A document's detail lines carry the item-level measures (material, quantity, amount) and share the header's document number, so the same business event is counted once at header grain and many times at line grain.",
+    "scope": "Applies to every document family that is split into a header table and a *_line table (销售订单/发运单/库存调拨单/到货预告/采购订单/供应商合同/税务发票/总账凭证/检验批/盘点单/事故等). Used to decide whether a question asking for a count is asking for documents or for lines.",
+    "aliases": [
+      "明细",
+      "明细行",
+      "单据行",
+      "行项目",
+      "行",
+      "line item"
+    ],
+    "evidence": [
+      "evidence_table_catalog",
+      "evidence_fact_transfer_order_line"
+    ]
+  }
+]

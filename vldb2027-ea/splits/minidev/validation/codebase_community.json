@@ -1,0 +1,61 @@
+{
+ "db_id": "codebase_community",
+ "questions": [
+  {
+   "question_id": 539,
+   "db_id": "codebase_community",
+   "question": "Who is the owner of the post \"Eliciting priors from experts\"?",
+   "evidence": "\"Eliciting priors from experts\" is the Title of post; owner refers to DisplayName",
+   "SQL": "SELECT T2.DisplayName FROM posts AS T1 INNER JOIN users AS T2 ON T1.OwnerUserId = T2.Id WHERE T1.Title = 'Eliciting priors from experts'",
+   "difficulty": "simple"
+  },
+  {
+   "question_id": 633,
+   "db_id": "codebase_community",
+   "question": "Which post by slashnick has the most answers count? State the post ID.",
+   "evidence": "most answers count refers to MAX(AnswerCount); post by slashnick refers to DisplayName = 'slashnick';",
+   "SQL": "SELECT T2.PostId FROM users AS T1 INNER JOIN postHistory AS T2 ON T1.Id = T2.UserId INNER JOIN posts AS T3 ON T2.PostId = T3.Id WHERE T1.DisplayName = 'slashnick' ORDER BY T3.AnswerCount DESC LIMIT 1",
+   "difficulty": "moderate"
+  },
+  {
+   "question_id": 705,
+   "db_id": "codebase_community",
+   "question": "Give the user's reputation and up vote number of the user that commented \"fine, you win :)\".",
+   "evidence": "Text = 'fine, you win :)';",
+   "SQL": "SELECT T2.Reputation, T2.UpVotes FROM comments AS T1 INNER JOIN users AS T2 ON T1.UserId = T2.Id WHERE T1.Text = 'fine, you win :)'",
+   "difficulty": "simple"
+  },
+  {
+   "question_id": 572,
+   "db_id": "codebase_community",
+   "question": "How many views did the post titled 'Integration of Weka and/or RapidMiner into Informatica PowerCenter/Developer' get?",
+   "evidence": "\"Integration of Weka and/or RapidMiner into Informatica PowerCenter/Developer\" is the Title of post; views refers to ViewCount",
+   "SQL": "SELECT ViewCount FROM posts WHERE Title = 'Integration of Weka and/or RapidMiner into Informatica PowerCenter/Developer'",
+   "difficulty": "moderate"
+  },
+  {
+   "question_id": 672,
+   "db_id": "codebase_community",
+   "question": "Among the users located in United Kingdom, how many users whose post have a total favorite amount of 4 or more?",
+   "evidence": "favorite amount of 4 or more refers to FavoriteCount > = 4; Location = 'United Kingdom';",
+   "SQL": "SELECT COUNT(T1.Id) FROM users AS T1 INNER JOIN posts AS T2 ON T1.Id = T2.OwnerUserId WHERE T1.Location = 'United Kingdom' AND T2.FavoriteCount >= 4",
+   "difficulty": "moderate"
+  },
+  {
+   "question_id": 704,
+   "db_id": "codebase_community",
+   "question": "What is the excerpt post ID and wiki post ID of the tag named sample?",
+   "evidence": "tag named sample refers to TagName = 'sample';",
+   "SQL": "SELECT ExcerptPostId, WikiPostId FROM tags WHERE TagName = 'sample'",
+   "difficulty": "simple"
+  },
+  {
+   "question_id": 595,
+   "db_id": "codebase_community",
+   "question": "Which user have only one post history per post and having at least 1000 views?",
+   "evidence": "having at least 1000 view refers to Views > = 1000; user refers to UserId",
+   "SQL": "SELECT T2.UserId FROM users AS T1 INNER JOIN postHistory AS T2 ON T1.Id = T2.UserId INNER JOIN posts AS T3 ON T2.PostId = T3.Id WHERE T3.ViewCount >= 1000 GROUP BY T2.UserId HAVING COUNT(DISTINCT T2.PostHistoryTypeId) = 1",
+   "difficulty": "moderate"
+  }
+ ]
+}

@@ -1,0 +1,68 @@
+{
+ "db_id": "european_football_2",
+ "questions": [
+  {
+   "question_id": 1145,
+   "db_id": "european_football_2",
+   "question": "Which top 4 leagues had the most games in the 2015-2016 season?",
+   "evidence": "in the 2015-2016 season refers to fld075 = '2015/2016'; league with most games refers to tab03.fld048 where MAX(COUNT(fld001))",
+   "SQL": "SELECT t1.fld048 FROM tab03 AS t1 INNER JOIN tab07 AS t2 ON t1.fld001 = t2.fld074 WHERE t2.fld075 = '2015/2016' GROUP BY t1.fld048 ORDER BY COUNT(t2.fld001) DESC LIMIT 4",
+   "difficulty": "simple",
+   "SQL_original": "SELECT t1.name FROM League AS t1 INNER JOIN Match AS t2 ON t1.id = t2.league_id WHERE t2.season = '2015/2016' GROUP BY t1.name ORDER BY COUNT(t2.id) DESC LIMIT 4"
+  },
+  {
+   "question_id": 1113,
+   "db_id": "european_football_2",
+   "question": "For the team \"Hannover 96\", what was its defence aggression class on 2015/9/10?",
+   "evidence": "\"Hannover 96\" refers to fld051 = 'Hannover 96'; on 2015/9/10 refers to fld004 LIKE '2015-09-10%';",
+   "SQL": "SELECT t2.fld070 FROM tab05 AS t1 INNER JOIN tab06 AS t2 ON t1.fld049 = t2.fld049 WHERE t1.fld051 = 'Hannover 96' AND t2.fld004 LIKE '2015-09-10%'",
+   "difficulty": "moderate",
+   "SQL_original": "SELECT t2.defenceAggressionClass FROM Team AS t1 INNER JOIN Team_Attributes AS t2 ON t1.team_api_id = t2.team_api_id WHERE t1.team_long_name = 'Hannover 96' AND t2.`date` LIKE '2015-09-10%'"
+  },
+  {
+   "question_id": 1032,
+   "db_id": "european_football_2",
+   "question": "Give the name of the league with the highest matches of all time and how many matches were played in the said league.",
+   "evidence": " league with highest matches of all time refers to MAX(COUNT(fld074));",
+   "SQL": "SELECT t2.fld048, t1.max_count FROM tab03 AS t2 JOIN (SELECT fld074, MAX(cnt) AS max_count FROM (SELECT fld074, COUNT(fld001) AS cnt FROM tab07 GROUP BY fld074) AS subquery) AS t1 ON t1.fld074 = t2.fld001",
+   "difficulty": "moderate",
+   "SQL_original": "SELECT t2.name, t1.max_count FROM League AS t2 JOIN (SELECT league_id, MAX(cnt) AS max_count FROM (SELECT league_id, COUNT(id) AS cnt FROM Match GROUP BY league_id) AS subquery) AS t1 ON t1.league_id = t2.id"
+  },
+  {
+   "question_id": 1094,
+   "db_id": "european_football_2",
+   "question": "How much higher in percentage is Ariel Borysiuk's overall rating than that of Paulin Puel?",
+   "evidence": "how much higher in percentage = MULTIPLY(DIVIDE(SUBTRACT(fld005 WHERE fld043 = 'Ariel Borysiuk', fld005 WHERE fld043 = 'Paulin Puel'), fld005 WHERE fld043 = 'Paulin Puel'), 100);",
+   "SQL": "SELECT (SUM(CASE WHEN t1.fld043 = 'Ariel Borysiuk' THEN t2.fld005 ELSE 0 END) * 1.0 - SUM(CASE WHEN t1.fld043 = 'Paulin Puel' THEN t2.fld005 ELSE 0 END)) * 100 / SUM(CASE WHEN t1.fld043 = 'Paulin Puel' THEN t2.fld005 ELSE 0 END) FROM tab02 AS t1 INNER JOIN tab01 AS t2 ON t1.fld003 = t2.fld003",
+   "difficulty": "challenging",
+   "SQL_original": "SELECT (SUM(CASE WHEN t1.player_name = 'Ariel Borysiuk' THEN t2.overall_rating ELSE 0 END) * 1.0 - SUM(CASE WHEN t1.player_name = 'Paulin Puel' THEN t2.overall_rating ELSE 0 END)) * 100 / SUM(CASE WHEN t1.player_name = 'Paulin Puel' THEN t2.overall_rating ELSE 0 END) FROM Player AS t1 INNER JOIN Player_Attributes AS t2 ON t1.player_api_id = t2.player_api_id"
+  },
+  {
+   "question_id": 1042,
+   "db_id": "european_football_2",
+   "question": "List the name of leagues in which the average goals by the home team is higher than the away team in the 2009/2010 season.",
+   "evidence": "name of league refers to tab03.fld048; average goals by the home tab05 is higher than the away tab05 = AVG(fld080) > AVG(fld081); AVG(xx_goal) = SUM(xx_goal) / COUNT(DISTINCT tab07.fld001); 2009/2010 season refers to fld075 = '2009/2010'",
+   "SQL": "SELECT t1.fld048 FROM tab03 AS t1 INNER JOIN tab07 AS t2 ON t1.fld001 = t2.fld074 WHERE t2.fld075 = '2009/2010' GROUP BY t1.fld048 HAVING (CAST(SUM(t2.fld080) AS REAL) / COUNT(DISTINCT t2.fld001)) - (CAST(SUM(t2.fld081) AS REAL) / COUNT(DISTINCT t2.fld001)) > 0",
+   "difficulty": "challenging",
+   "SQL_original": "SELECT t1.name FROM League AS t1 INNER JOIN Match AS t2 ON t1.id = t2.league_id WHERE t2.season = '2009/2010' GROUP BY t1.name HAVING (CAST(SUM(t2.home_team_goal) AS REAL) / COUNT(DISTINCT t2.id)) - (CAST(SUM(t2.away_team_goal) AS REAL) / COUNT(DISTINCT t2.id)) > 0"
+  },
+  {
+   "question_id": 1122,
+   "db_id": "european_football_2",
+   "question": "State the name of the most strongest player.",
+   "evidence": "strongest players refers to player has MAX(fld005)",
+   "SQL": "SELECT DISTINCT t1.fld043 FROM tab02 AS t1 INNER JOIN tab01 AS t2 ON t1.fld003 = t2.fld003 WHERE t2.fld005 = (SELECT MAX(fld005) FROM tab01)",
+   "difficulty": "simple",
+   "SQL_original": "SELECT DISTINCT t1.player_name FROM Player AS t1 INNER JOIN Player_Attributes AS t2 ON t1.player_api_id = t2.player_api_id WHERE t2.overall_rating = (SELECT MAX(overall_rating) FROM Player_Attributes)"
+  },
+  {
+   "question_id": 1080,
+   "db_id": "european_football_2",
+   "question": "Among the players whose preferred foot was the left foot when attacking, how many of them would remain in his position when the team attacked?",
+   "evidence": "preferred foot when attacking was the left refers to fld007 = 'left'; players who would remain in his position when the team attacked refers to fld008 = 'low';",
+   "SQL": "SELECT COUNT(fld003) FROM tab01 WHERE fld007 = 'left' AND fld008 = 'low'",
+   "difficulty": "moderate",
+   "SQL_original": "SELECT COUNT(player_api_id) FROM Player_Attributes WHERE preferred_foot = 'left' AND attacking_work_rate = 'low'"
+  }
+ ]
+}

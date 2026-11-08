@@ -1,0 +1,138 @@
+[
+  {
+    "id": "ev_schema_tables",
+    "source": "debit_card_specializing.sqlite",
+    "query": "read schema of all tables (read-only)",
+    "result": "customers(CustomerID, Segment, Currency); gasstations(GasStationID, ChainID, Country, Segment); products(ProductID, Description); transactions_1k(TransactionID, Date, Time, CustomerID, CardID, GasStationID, ProductID, Amount, Price); yearmonth(CustomerID, Date, Consumption, primary key (Date, CustomerID))",
+    "validation_method": "SQLite schema inspection via read-only connection",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_row_counts",
+    "source": "debit_card_specializing.sqlite",
+    "query": "row counts per table",
+    "result": "customers 32461; gasstations 5716; products 591; transactions_1k 1000; yearmonth 383282",
+    "validation_method": "counting query on read-only connection",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_yearmonth_date_codes",
+    "source": "debit_card_specializing.sqlite",
+    "query": "distinct Date values and their length in yearmonth",
+    "result": "21 distinct values, all 6-character text: 201112, 201201 through 201209, 201301 through 201311",
+    "validation_method": "distinct value and length inspection",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_yearmonth_coverage",
+    "source": "debit_card_specializing.sqlite",
+    "query": "distinct month codes grouped by year prefix, and customer counts per month",
+    "result": "2013 has 11 month codes (201301-201311, no December); 2012 has 9 month codes (201201-201209); 2011 has only 201112 with 8 rows. Distinct customers with consumption records: 30566 of 32461",
+    "validation_method": "grouped counting query",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_customer_segment_values",
+    "source": "debit_card_specializing.sqlite",
+    "query": "customer counts grouped by Segment",
+    "result": "KAM 2040; LAM 3658; SME 26763; no nulls; no other values",
+    "validation_method": "distinct value and count inspection",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_customer_currency_values",
+    "source": "debit_card_specializing.sqlite",
+    "query": "customer counts grouped by Currency",
+    "result": "CZK 30459; EUR 2002; no nulls; no other values",
+    "validation_method": "distinct value and count inspection",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_station_country_values",
+    "source": "debit_card_specializing.sqlite",
+    "query": "station counts grouped by Country",
+    "result": "CZE 4836; SVK 880",
+    "validation_method": "distinct value and count inspection",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_station_segment_values",
+    "source": "debit_card_specializing.sqlite",
+    "query": "station counts grouped by Segment and chains with more than one segment value",
+    "result": "Discount 294; Noname 1005; Other 2392; Premium 1428; Value for money 597. No chain contains more than one segment value (0 rows)",
+    "validation_method": "distinct value, count and consistency inspection",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_station_chain_structure",
+    "source": "debit_card_specializing.sqlite",
+    "query": "distinct chain identifiers, size of chain 11, and value domains within chain 11",
+    "result": "233 distinct ChainID values over 5716 stations; chain 11 has 25 stations, all with Country CZE and Segment 'Value for money'",
+    "validation_method": "grouped counting query",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_fk_integrity",
+    "source": "debit_card_specializing.sqlite",
+    "query": "left joins from transactions_1k and yearmonth to their referenced entities, counting unmatched rows",
+    "result": "0 orphan rows for transactions_1k to customers, gasstations and products; 0 orphan rows for yearmonth to customers",
+    "validation_method": "anti-join integrity check",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_transaction_date_coverage",
+    "source": "debit_card_specializing.sqlite",
+    "query": "date and time value shapes in transactions_1k, plus min/max dates",
+    "result": "1000 rows across 4 distinct days from 2012-08-23 to 2012-08-26; Date is 10-character ISO text; Time is 8-character HH:MM:SS text; no transactions in 2013 or in any September",
+    "validation_method": "range, distinct value and format inspection",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_consumption_value_range",
+    "source": "debit_card_specializing.sqlite",
+    "query": "min, max, mean and sign distribution of yearmonth.Consumption",
+    "result": "min -582092.86; max 2052187.11; mean 8911.14; 152 negative values; 28 zero values; no nulls across 383282 rows",
+    "validation_method": "aggregate and sign distribution inspection",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_transaction_amount_range",
+    "source": "debit_card_specializing.sqlite",
+    "query": "min/max of transactions_1k.Amount and count of zero amounts",
+    "result": "integer values from 0 to 264; 91 transactions with amount 0",
+    "validation_method": "aggregate inspection",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_transaction_price_range",
+    "source": "debit_card_specializing.sqlite",
+    "query": "min, mean and max of transactions_1k.Price",
+    "result": "min 1.76; mean 425.58; max 5762.49",
+    "validation_method": "aggregate inspection",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_product_attribution_gap",
+    "source": "debit_card_specializing.sqlite",
+    "query": "check whether consumption records carry product or station attributes, and whether transactions exist outside the August 2012 window",
+    "result": "yearmonth contains only CustomerID, Date, Consumption (no product, station or chain attribute); transactions_1k rows in September 2013: 0",
+    "validation_method": "column inspection and filtered count comparison",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_segment_consumption_join",
+    "source": "debit_card_specializing.sqlite",
+    "query": "consumption records for 2013 grouped by customer Segment and Currency joined from customers",
+    "result": "KAM/CZK 14298 records totalling 1090161479.6; KAM/EUR 550 records totalling 4224041.47; LAM/CZK 28994 records totalling 925527784.43; LAM/EUR 2287 records totalling 4326606.13; SME/CZK 167502 records totalling 977068491.69; SME/EUR 10835 records totalling 7258151.96",
+    "validation_method": "joined grouped aggregation",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_workload_definitions",
+    "source": "construction_workload:debit_card_specializing.json",
+    "query": "read the construction workload questions and their supplied evidence statements",
+    "result": "The workload states: average monthly consumption is AVG(Consumption) / 12; a year is expressed as a month-code range such as 201301 to 201312; percentage increase is (increase or decrease / later-year consumption) * 100; 'pays in euro' means Currency = 'EUR'; the Czech Republic is the Country value 'CZE'; 2012/8/23 denotes 2012-08-23",
+    "validation_method": "workload statement extraction",
+    "timestamp": "2026-10-10"
+  }
+]

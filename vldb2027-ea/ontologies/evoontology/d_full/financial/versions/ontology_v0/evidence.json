@@ -1,0 +1,234 @@
+[
+  {
+    "id": "ev_001_schema_tables",
+    "source": "financial",
+    "query": "SELECT name FROM sqlite_master WHERE type='table'",
+    "result": "Eight tables: account, card, client, disp, district, loan, order, trans. Row counts: district 77, client 5,369, account 4,500, disp 5,369, order 6,471, trans 1,056,320, loan 682, card 892.",
+    "validation_method": "schema inspection and per-table row count",
+    "timestamp": "2026-10-10T00:00:00Z"
+  },
+  {
+    "id": "ev_002_trans_type_domain",
+    "source": "financial",
+    "query": "SELECT type, COUNT(*) FROM trans GROUP BY 1 ORDER BY 2 DESC",
+    "result": "VYDAJ 634,571; PRIJEM 405,083; VYBER 16,666. No other values.",
+    "validation_method": "value-domain enumeration",
+    "timestamp": "2026-10-10T00:00:00Z"
+  },
+  {
+    "id": "ev_003_trans_amount_nonnegative",
+    "source": "financial",
+    "query": "SELECT type, SUM(amount>0), SUM(amount<0), SUM(amount=0), MIN(amount), MAX(amount) FROM trans GROUP BY 1",
+    "result": "PRIJEM: 405,042 positive, 0 negative, 41 zero, range 0 to 74,812. VYBER: 16,666 positive, 0 negative, range 2,001 to 24,997. VYDAJ: 634,450 positive, 0 negative, 121 zero, range 0 to 87,400. Zero negative amounts in the whole table.",
+    "validation_method": "sign distribution per type",
+    "timestamp": "2026-10-10T00:00:00Z"
+  },
+  {
+    "id": "ev_004_operation_domain",
+    "source": "financial",
+    "query": "SELECT operation, COUNT(*) FROM trans GROUP BY 1",
+    "result": "VYBER 434,918; PREVOD NA UCET 208,283; null 183,114; VKLAD 156,743; PREVOD Z UCTU 65,226; VYBER KARTOU 8,036.",
+    "validation_method": "value-domain enumeration including nulls",
+    "timestamp": "2026-10-10T00:00:00Z"
+  },
+  {
+    "id": "ev_005_operation_null_iff_urok",
+    "source": "financial",
+    "query": "SELECT (operation IS NULL), (k_symbol='UROK'), COUNT(*) FROM trans GROUP BY 1,2",
+    "result": "operation null and k_symbol UROK: 183,114 rows. operation non-null and k_symbol not UROK: 391,325 rows. operation non-null and k_symbol UROK: 0 rows. operation null and k_symbol not UROK: 0 rows. The two conditions are exactly equivalent.",
+    "validation_method": "cross-tabulation of two conditions",
+    "timestamp": "2026-10-10T00:00:00Z"
+  },
+  {
+    "id": "ev_006_k_symbol_domain",
+    "source": "financial",
+    "query": "SELECT k_symbol, COUNT(*) FROM trans GROUP BY 1 ORDER BY 2 DESC",
+    "result": "null 481,881; UROK 183,114; SLUZBY 155,832; SIPO 118,065; single-space 53,433; DUCHOD 30,338; POJISTNE 18,500; UVER 13,580; SANKC. UROK 1,577.",
+    "validation_method": "value-domain enumeration including nulls",
+    "timestamp": "2026-10-10T00:00:00Z"
+  },
+  {
+    "id": "ev_007_k_symbol_space_token",
+    "source": "financial",
+    "query": "SELECT COUNT(*) FROM trans WHERE k_symbol=' '; SELECT COUNT(*) FROM trans WHERE k_symbol='';",
+    "result": "53,433 rows carry a single space character as k_symbol. Zero rows carry an empty string. The space token is distinct from null, which covers 481,881 rows. All 53,433 space rows are of type VYDAJ (52,817 with operation PREVOD NA UCET and 616 with operation VYBER).",
+    "validation_method": "exact string comparison and cross-tabulation with type and operation",
+    "timestamp": "2026-10-10T00:00:00Z"
+  },
+  {
+    "id": "ev_008_balance_chain_mismatch",
+    "source": "financial",
+    "query": "WITH t AS (SELECT type, amount, balance, LAG(balance) OVER (PARTITION BY account_id ORDER BY date, trans_id) pb FROM trans) SELECT COUNT(*) pairs, SUM(ABS(ABS(balance-pb)-amount)=0) exact, SUM(ABS(ABS(balance-pb)-amount)<=2) tol2 FROM t WHERE pb IS NOT NULL",
+    "result": "1,051,820 consecutive pairs. The recorded balance change equals the stored amount in 519,531 pairs. Allowing a tolerance of two units raises this to 529,510. Ordering by trans_id alone gives 16,438 matches. Restricting to pairs whose previous row has an earlier date gives 465,558 matches out of 810,268. 220,112 rows share a date with another transaction of the same account. The presented result is the strongest of the tested orderings.",
+    "validation_method": "window-function reconstruction test under three orderings and two tolerances",
+    "timestamp": "2026-10-10T00:00:00Z"
+  },
+  {
+    "id": "ev_009_counterparty_domain",
+    "source": "financial",
+    "query": "SELECT operation, COUNT(*), SUM(\"account\"=account_id), SUM(\"account\"<>account_id) FROM trans WHERE \"account\" IS NOT NULL GROUP BY 1; and a left join of trans.\"account\" to account.account_id",
+    "result": "295,389 rows carry a counterparty account. Zero of them equal the row's own account_id. Only 30 rows resolve to any account.account_id. The column is populated for PREVOD NA UCET (208,282), PREVOD Z UCTU (65,226), VYBER (13,845) and VYBER KARTOU (8,036).",
+    "validation_method": "membership test of one column's value domain inside another table's key domain",
+    "timestamp": "2026-10-10T00:00:00Z"
+  },
+  {
+    "id": "ev_010_bank_code_domain",
+    "source": "financial",
+    "query": "SELECT bank, COUNT(*) FROM trans WHERE bank IS NOT NULL GROUP BY 1 ORDER BY 2 DESC",
+    "result": "13 distinct bank codes, led by QR 22,285, AB 21,720 and ST 21,711. trans.bank is non-null only for operations PREVOD NA UCET (208,282 rows) and PREVOD Z UCTU (65,226 rows); it is null for all VKLAD, VYBER and VYBER KARTOU rows.",
+    "validation_method": "value-domain enumeration and cross-tabulation with operation",
+    "timestamp": "2026-10-10T00:00:00Z"
+  },
+  {
+    "id": "ev_011_loan_status_maturity",
+    "source": "financial",
+    "query": "SELECT status, COUNT(*), SUM(date(date,'+'||duration||' months') <= '1998-12-31') FROM loan GROUP BY 1",
+    "result": "A: 203 contracts, 203 matured on or before 1998-12-31. B: 31 contracts, 31 matured. C: 403 contracts, 403 maturing after 1998-12-31. D: 45 contracts, 45 maturing after. The separation is exhaustive with no counterexample. A and B grant dates stop at 1997-12-28; C and D extend to 1998-12-08.",
+    "validation_method": "derived-maturity cross-tabulation against the observation window end",
+    "timestamp": "2026-10-10T00:00:00Z"
+  },
+  {
+    "id": "ev_012_loan_payments_identity",
+    "source": "financial",
+    "query": "SELECT COUNT(*), SUM(ROUND(payments*duration,2)=amount) FROM loan",
+    "result": "682 of 682 contracts satisfy payments multiplied by duration equals amount exactly. Grouping by duration, the ratio amount/(payments*duration) has minimum, maximum and average all equal to 1.0 in every duration group.",
+    "validation_method": "exact arithmetic identity test",
+    "timestamp": "2026-10-10T00:00:00Z"
+  },
+  {
+    "id": "ev_013_loan_columns",
+    "source": "financial",
+    "query": "SELECT status, COUNT(*), MIN(date), MAX(date), MIN(duration), MAX(duration), MIN(amount), MAX(amount), MIN(payments), MAX(payments) FROM loan GROUP BY 1; and SELECT MAX(c), MIN(c) FROM (SELECT account_id, COUNT(*) c FROM loan GROUP BY 1)",
+    "result": "682 contracts. Durations take only the values 12, 24, 36, 48 and 60 months (131, 138, 130, 138, 145 contracts). Amount ranges 4,980 to 590,820; payments range 304 to 9,910. Exactly one loan per account (maximum and minimum count per account both 1).",
+    "validation_method": "column range and cardinality profiling",
+    "timestamp": "2026-10-10T00:00:00Z"
+  },
+  {
+    "id": "ev_014_disp_domain",
+    "source": "financial",
+    "query": "SELECT type, COUNT(*), COUNT(DISTINCT client_id), COUNT(DISTINCT account_id) FROM disp GROUP BY 1; and MAX/MIN of disposition count per account and per client",
+    "result": "OWNER 4,500 rows with 4,500 distinct clients and 4,500 distinct accounts. DISPONENT 869 rows with 869 distinct clients and 869 distinct accounts. Maximum disposition rows per account is 2 and minimum 1; maximum and minimum per client is 1 and 1. All 4,500 accounts and all 5,369 clients appear in disp, with no orphans.",
+    "validation_method": "cardinality profiling per role type",
+    "timestamp": "2026-10-10T00:00:00Z"
+  },
+  {
+    "id": "ev_015_card_domain",
+    "source": "financial",
+    "query": "SELECT type, COUNT(*) FROM card GROUP BY 1; and joins of card to disp and account",
+    "result": "classic 659; junior 145; gold 88; total 892. Maximum and minimum cards per disp_id both 1. All 892 cards belong to disp rows of type OWNER; none belongs to a DISPONENT. Issue dates run 1993-11-07 to 1998-12-29 and are on or after the associated account opening date in all 892 cases.",
+    "validation_method": "value-domain enumeration, cardinality and date-ordering test",
+    "timestamp": "2026-10-10T00:00:00Z"
+  },
+  {
+    "id": "ev_016_account_frequency",
+    "source": "financial",
+    "query": "SELECT frequency, COUNT(*) FROM account GROUP BY 1 ORDER BY 2 DESC",
+    "result": "POPLATEK MESICNE 4,167; POPLATEK TYDNE 240; POPLATEK PO OBRATU 93.",
+    "validation_method": "value-domain enumeration",
+    "timestamp": "2026-10-10T00:00:00Z"
+  },
+  {
+    "id": "ev_017_client_domain",
+    "source": "financial",
+    "query": "SELECT gender, COUNT(*) FROM client GROUP BY 1; SELECT MIN(birth_date), MAX(birth_date) FROM client",
+    "result": "5,369 clients. F 2,645; M 2,724. Birth dates span 1911-08-20 to 1987-09-27.",
+    "validation_method": "value-domain enumeration and range profiling",
+    "timestamp": "2026-10-10T00:00:00Z"
+  },
+  {
+    "id": "ev_018_district_types",
+    "source": "financial",
+    "query": "SELECT group_concat(DISTINCT typeof(col)) FROM district for each of A2..A16",
+    "result": "A2 text; A3 text; A4 text; A5 text; A6 text; A7 text; A8 integer; A9 integer; A10 real; A11 integer; A12 real with nulls; A13 real; A14 integer; A15 integer with nulls; A16 integer. The stored type matches the declared type in every case.",
+    "validation_method": "runtime type inspection with typeof per column",
+    "timestamp": "2026-10-10T00:00:00Z"
+  },
+  {
+    "id": "ev_019_district_text_order",
+    "source": "financial",
+    "query": "SELECT MIN(A4), MAX(A4) FROM district; SELECT MIN(A4+0), MAX(A4+0) FROM district; SELECT quote(A4) FROM district LIMIT 3",
+    "result": "Text semantics: MIN(A4) returns 102609 and MAX(A4) returns 95907, which is lexicographic ordering. Numeric semantics: MIN(A4+0) is 42821 and MAX(A4+0) is 1204953. Values are stored as clean unpadded numeric strings such as '1204953' and '88884'. The same text typing applies to A5, A6 and A7.",
+    "validation_method": "comparison of text-order and numeric-order results on the same column",
+    "timestamp": "2026-10-10T00:00:00Z"
+  },
+  {
+    "id": "ev_020_district_a10_bounds",
+    "source": "financial",
+    "query": "SELECT MIN(A10), MAX(A10), SUM(A10=100.0) FROM district; SELECT district_id, A2, A4, A8, A9, A10 FROM district WHERE A10=100.0",
+    "result": "A10 ranges from 33.9 to 100.0 and equals exactly 100.0 for district_id 1 (Hl.m. Praha), 26 (Plzen - mesto), 54 (Brno - mesto) and 74 (Ostrava - mesto) - the four districts where A8 equals 1 and A9 equals 1. Numeric ranges of the other integer-coded columns: A9 1 to 11, A11 8,110 to 12,541, A14 81 to 167, A8 0 to 5, A15 818 to 85,677, A16 888 to 99,107.",
+    "validation_method": "range profiling and identification of boundary rows",
+    "timestamp": "2026-10-10T00:00:00Z"
+  },
+  {
+    "id": "ev_021_district_null_pair",
+    "source": "financial",
+    "query": "SELECT SUM(A12 IS NULL), SUM(A15 IS NULL) FROM district; SELECT district_id, A2, A12, A13 FROM district WHERE A13 < A12",
+    "result": "A12 is null for exactly one district and A15 is null for exactly one district, and both nulls occur on the same row, district_id 69. A13 is greater than or equal to A12 for 75 of 77 districts; the exceptions are district_id 71 (A12 5.9, A13 5.57) and district_id 69 where A12 is null.",
+    "validation_method": "null distribution and pairwise ordering test",
+    "timestamp": "2026-10-10T00:00:00Z"
+  },
+  {
+    "id": "ev_022_district_domain",
+    "source": "financial",
+    "query": "SELECT COUNT(DISTINCT A2), COUNT(DISTINCT A3), MIN(district_id), MAX(district_id), COUNT(*) FROM district; SELECT A3, COUNT(*) FROM district GROUP BY 1",
+    "result": "77 districts, district_id spanning 1 to 77 with no gaps. A2 has 77 distinct non-null values, so it is unique per district. A3 has 8 distinct values partitioning the districts: south Moravia 14, central Bohemia 12, north Moravia 11, east Bohemia 11, west Bohemia 10, north Bohemia 10, south Bohemia 8, Prague 1.",
+    "validation_method": "distinct-value and partition checks",
+    "timestamp": "2026-10-10T00:00:00Z"
+  },
+  {
+    "id": "ev_023_order_domain",
+    "source": "financial",
+    "query": "SELECT k_symbol, COUNT(*) FROM \"order\" GROUP BY 1; comparisons of order.account_to and order.account_id against account.account_id",
+    "result": "6,471 standing orders over 3,758 distinct accounts. k_symbol: SIPO 3,502; null 1,379; UVER 717; POJISTNE 532; LEASING 341. Amounts range 1 to 14,882 with mean 3,280.6. bank_to takes 13 distinct values over 6,471 rows. order.account_id resolves to a local account in all 6,471 rows; order.account_to resolves in only 2. All three columns are non-null except k_symbol.",
+    "validation_method": "value-domain enumeration, range profiling and join-coverage test",
+    "timestamp": "2026-10-10T00:00:00Z"
+  },
+  {
+    "id": "ev_024_fk_integrity",
+    "source": "financial",
+    "query": "Left joins of account and client to district, trans, loan and order to account, and card to disp, counting unmatched rows",
+    "result": "Zero orphan rows in every tested relationship: account to district, client to district, trans to account, loan to account, order to account, card to disp. For the 4,500 ownership pairs, account.district_id equals the owning client's district_id in 4,091 cases and differs in 409.",
+    "validation_method": "referential-integrity and cross-column agreement test",
+    "timestamp": "2026-10-10T00:00:00Z"
+  },
+  {
+    "id": "ev_025_account_date_before_trans",
+    "source": "financial",
+    "query": "SELECT SUM(a.date<=t.md), SUM(a.date>t.md), COUNT(*) FROM account a JOIN (SELECT account_id, MIN(date) md FROM trans GROUP BY 1) t USING(account_id)",
+    "result": "For all 4,500 accounts the opening date is on or before the account's first transaction date; zero accounts have a first transaction before their opening date, and all 4,500 accounts have at least one transaction.",
+    "validation_method": "date-ordering test between a parent date and a child minimum date",
+    "timestamp": "2026-10-10T00:00:00Z"
+  },
+  {
+    "id": "ev_026_date_ranges",
+    "source": "financial",
+    "query": "SELECT MIN(date), MAX(date) per table",
+    "result": "account 1993-01-01 to 1997-12-29. trans 1993-01-01 to 1998-12-31. loan 1993-07-05 to 1998-12-08. card issued 1993-11-07 to 1998-12-29. client birth_date 1911-08-20 to 1987-09-27.",
+    "validation_method": "range profiling per date column",
+    "timestamp": "2026-10-10T00:00:00Z"
+  },
+  {
+    "id": "ev_027_balance_negative_rare",
+    "source": "financial",
+    "query": "SELECT SUM(balance<0), SUM(balance=0), SUM(balance>0), COUNT(*) FROM trans",
+    "result": "Negative 2,999; zero 0; positive 1,053,321; total 1,056,320.",
+    "validation_method": "sign distribution of the balance column",
+    "timestamp": "2026-10-10T00:00:00Z"
+  },
+  {
+    "id": "ev_028_loan_uver_link",
+    "source": "financial",
+    "query": "SELECT l.status, COUNT(*), SUM(EXISTS(SELECT 1 FROM trans t WHERE t.account_id=l.account_id AND t.k_symbol='UVER')) FROM loan l GROUP BY 1",
+    "result": "All 682 loans, across all four status codes, belong to an account that carries at least one transaction with purpose code UVER. In total 13,580 transactions carry that code, so the link is not one-to-one.",
+    "validation_method": "existence test between loan accounts and purpose-coded transactions",
+    "timestamp": "2026-10-10T00:00:00Z"
+  },
+  {
+    "id": "ev_029_type_vyber_signature",
+    "source": "financial",
+    "query": "SELECT type, COUNT(*) FROM trans WHERE operation='VYBER' GROUP BY 1; SELECT type, SUM(k_symbol IS NULL), COUNT(*) FROM trans GROUP BY 1",
+    "result": "All 16,666 rows of type VYBER have operation VYBER and a null purpose code, with amounts between 2,001 and 24,997. Of the 434,918 rows with operation VYBER, 418,252 carry type VYDAJ. The same token therefore labels 16,666 rows in one column and 434,918 rows in the other.",
+    "validation_method": "cross-tabulation of type against operation",
+    "timestamp": "2026-10-10T00:00:00Z"
+  }
+]

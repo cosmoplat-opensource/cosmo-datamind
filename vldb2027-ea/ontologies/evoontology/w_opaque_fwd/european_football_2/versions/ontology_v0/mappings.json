@@ -1,0 +1,576 @@
+[
+  {
+    "id": "map_player",
+    "term_id": "term_player",
+    "database_source": "european_football_2.sqlite",
+    "table": "tab02",
+    "column": "fld003",
+    "semantic_filter": "One row per distinct player; fld003 is the unique public player API identifier.",
+    "aggregation_semantics": "Counting players counts distinct rows of this table, not distinct names.",
+    "grain": "one row per player",
+    "validation": {
+      "status": "verified",
+      "method": "row count 11060 equals distinct fld003; primary key fld001 covers rows 1-11075"
+    }
+  },
+  {
+    "id": "map_player_name",
+    "term_id": "term_player_name",
+    "database_source": "european_football_2.sqlite",
+    "table": "tab02",
+    "column": "fld043",
+    "semantic_filter": "",
+    "aggregation_semantics": "Naming only; 10848 distinct names over 11060 players, 163 names shared by multiple players.",
+    "grain": "one value per player",
+    "validation": {
+      "status": "verified",
+      "method": "distinct-value profile and duplicate-name count"
+    }
+  },
+  {
+    "id": "map_player_birthday",
+    "term_id": "term_player_birthday",
+    "database_source": "european_football_2.sqlite",
+    "table": "tab02",
+    "column": "fld044",
+    "semantic_filter": "Stored as 'YYYY-MM-DD 00:00:00'; no nulls in 11060 rows.",
+    "aggregation_semantics": "Not aggregatable; used for age derivation and calendar extraction.",
+    "grain": "one value per player",
+    "validation": {
+      "status": "verified",
+      "method": "min 1967-01-23, max 1999-04-24, zero nulls"
+    }
+  },
+  {
+    "id": "map_player_age",
+    "term_id": "term_player_age",
+    "database_source": "european_football_2.sqlite",
+    "table": "tab02",
+    "column": "fld044",
+    "semantic_filter": "Derived value: age is the elapsed time between a stated reference date and fld044, not a stored column.",
+    "aggregation_semantics": "Per-player derived measure; average age aggregates the derived values.",
+    "grain": "one value per player per reference date",
+    "validation": {
+      "status": "verified",
+      "method": "no age column exists in any table; birthday column present and complete"
+    }
+  },
+  {
+    "id": "map_player_height",
+    "term_id": "term_player_height",
+    "database_source": "european_football_2.sqlite",
+    "table": "tab02",
+    "column": "fld045",
+    "semantic_filter": "Centimetres, decimal, 20 distinct values from 157.48 to 208.28.",
+    "aggregation_semantics": "Numeric comparison and threshold filtering; averaging is meaningful.",
+    "grain": "one value per player",
+    "validation": {
+      "status": "verified",
+      "method": "min/max and distinct-value profile"
+    }
+  },
+  {
+    "id": "map_player_weight",
+    "term_id": "term_player_weight",
+    "database_source": "european_football_2.sqlite",
+    "table": "tab02",
+    "column": "fld046",
+    "semantic_filter": "Pounds, integer, range 117-243.",
+    "aggregation_semantics": "Numeric comparison and ranking (maximum identifies the heaviest player).",
+    "grain": "one value per player",
+    "validation": {
+      "status": "verified",
+      "method": "min/max profile"
+    }
+  },
+  {
+    "id": "map_player_attribute_record",
+    "term_id": "term_player_attribute_record",
+    "database_source": "european_football_2.sqlite",
+    "table": "tab01",
+    "column": "fld001",
+    "semantic_filter": "One row per player per observation date; fld002 and fld003 carry the player identifiers and fld004 the observation date.",
+    "aggregation_semantics": "Player-level summaries over a period aggregate across this table's rows for the player.",
+    "grain": "one player per observation date (197 distinct dates, 2-56 rows per player)",
+    "validation": {
+      "status": "verified",
+      "method": "183978 rows; 11060 distinct player API ids; 197 distinct dates from 2007-02-22 to 2016-07-07"
+    }
+  },
+  {
+    "id": "map_overall_rating",
+    "term_id": "term_overall_rating",
+    "database_source": "european_football_2.sqlite",
+    "table": "tab01",
+    "column": "fld005",
+    "semantic_filter": "",
+    "aggregation_semantics": "Average across a player's snapshots gives a period rating; maximum gives the best recorded rating.",
+    "grain": "one value per player per observation date",
+    "validation": {
+      "status": "verified",
+      "method": "range 33-94, mean 68.6"
+    }
+  },
+  {
+    "id": "map_potential",
+    "term_id": "term_potential",
+    "database_source": "european_football_2.sqlite",
+    "table": "tab01",
+    "column": "fld006",
+    "semantic_filter": "",
+    "aggregation_semantics": "Minimum identifies the lowest-potential players; averaging is meaningful.",
+    "grain": "one value per player per observation date",
+    "validation": {
+      "status": "verified",
+      "method": "range 39-97"
+    }
+  },
+  {
+    "id": "map_preferred_foot",
+    "term_id": "term_preferred_foot",
+    "database_source": "european_football_2.sqlite",
+    "table": "tab01",
+    "column": "fld007",
+    "semantic_filter": "Domain is exactly 'left' and 'right'; 836 rows are null.",
+    "aggregation_semantics": "Categorical filtering and counting; do not treat null as a value.",
+    "grain": "one value per player per observation date",
+    "validation": {
+      "status": "verified",
+      "method": "value counts: right 138409, left 44733, null 836"
+    }
+  },
+  {
+    "id": "map_heading_accuracy",
+    "term_id": "term_heading_accuracy",
+    "database_source": "european_football_2.sqlite",
+    "table": "tab01",
+    "column": "fld012",
+    "semantic_filter": "",
+    "aggregation_semantics": "Average across a player's snapshots gives average heading accuracy.",
+    "grain": "one value per player per observation date",
+    "validation": {
+      "status": "verified",
+      "method": "integer skill score range 1-98"
+    }
+  },
+  {
+    "id": "map_crossing",
+    "term_id": "term_crossing",
+    "database_source": "european_football_2.sqlite",
+    "table": "tab01",
+    "column": "fld010",
+    "semantic_filter": "",
+    "aggregation_semantics": "Maximum across snapshots gives the best recorded crossing score.",
+    "grain": "one value per player per observation date",
+    "validation": {
+      "status": "verified",
+      "method": "integer skill score range 1-95"
+    }
+  },
+  {
+    "id": "map_finishing",
+    "term_id": "term_finishing",
+    "database_source": "european_football_2.sqlite",
+    "table": "tab01",
+    "column": "fld011",
+    "semantic_filter": "",
+    "aggregation_semantics": "Average across snapshots gives a period finishing score.",
+    "grain": "one value per player per observation date",
+    "validation": {
+      "status": "verified",
+      "method": "integer skill score range 1-97"
+    }
+  },
+  {
+    "id": "map_curve",
+    "term_id": "term_curve",
+    "database_source": "european_football_2.sqlite",
+    "table": "tab01",
+    "column": "fld016",
+    "semantic_filter": "",
+    "aggregation_semantics": "Average across snapshots gives a period curve score.",
+    "grain": "one value per player per observation date",
+    "validation": {
+      "status": "verified",
+      "method": "integer skill score range 2-94"
+    }
+  },
+  {
+    "id": "map_sprint_speed",
+    "term_id": "term_sprint_speed",
+    "database_source": "european_football_2.sqlite",
+    "table": "tab01",
+    "column": "fld021",
+    "semantic_filter": "",
+    "aggregation_semantics": "Threshold filtering and maximum ranking over snapshots.",
+    "grain": "one value per player per observation date",
+    "validation": {
+      "status": "verified",
+      "method": "integer skill score range 12-97"
+    }
+  },
+  {
+    "id": "map_jumping",
+    "term_id": "term_jumping",
+    "database_source": "european_football_2.sqlite",
+    "table": "tab01",
+    "column": "fld026",
+    "semantic_filter": "",
+    "aggregation_semantics": "Direct comparison between players requires choosing a snapshot (for example the latest).",
+    "grain": "one value per player per observation date",
+    "validation": {
+      "status": "verified",
+      "method": "integer skill score range 14-96"
+    }
+  },
+  {
+    "id": "map_strength",
+    "term_id": "term_strength",
+    "database_source": "european_football_2.sqlite",
+    "table": "tab01",
+    "column": "fld028",
+    "semantic_filter": "",
+    "aggregation_semantics": "Maximum across snapshots identifies the strongest recorded value.",
+    "grain": "one value per player per observation date",
+    "validation": {
+      "status": "verified",
+      "method": "integer skill score range 10-96"
+    }
+  },
+  {
+    "id": "map_long_shots",
+    "term_id": "term_long_shots",
+    "database_source": "european_football_2.sqlite",
+    "table": "tab01",
+    "column": "fld029",
+    "semantic_filter": "",
+    "aggregation_semantics": "Average across a player's snapshots gives the average long-shot score.",
+    "grain": "one value per player per observation date",
+    "validation": {
+      "status": "verified",
+      "method": "integer skill score range 1-96"
+    }
+  },
+  {
+    "id": "map_team",
+    "term_id": "term_team",
+    "database_source": "european_football_2.sqlite",
+    "table": "tab05",
+    "column": "fld049",
+    "semantic_filter": "One row per distinct team; fld049 is the public team API identifier.",
+    "aggregation_semantics": "Counting teams counts distinct rows of this table.",
+    "grain": "one row per team",
+    "validation": {
+      "status": "verified",
+      "method": "299 rows, 299 distinct fld049"
+    }
+  },
+  {
+    "id": "map_team_long_name",
+    "term_id": "term_team_long_name",
+    "database_source": "european_football_2.sqlite",
+    "table": "tab05",
+    "column": "fld051",
+    "semantic_filter": "",
+    "aggregation_semantics": "Filtering and display; 296 distinct values over 299 teams.",
+    "grain": "one value per team",
+    "validation": {
+      "status": "verified",
+      "method": "distinct count profile"
+    }
+  },
+  {
+    "id": "map_team_short_name",
+    "term_id": "term_team_short_name",
+    "database_source": "european_football_2.sqlite",
+    "table": "tab05",
+    "column": "fld052",
+    "semantic_filter": "",
+    "aggregation_semantics": "Display only; 259 distinct values over 299 teams.",
+    "grain": "one value per team",
+    "validation": {
+      "status": "verified",
+      "method": "distinct count profile"
+    }
+  },
+  {
+    "id": "map_team_api_id",
+    "term_id": "term_team_api_id",
+    "database_source": "european_football_2.sqlite",
+    "table": "tab05",
+    "column": "fld049",
+    "semantic_filter": "Matches reference teams through this identifier on both the home and away side.",
+    "aggregation_semantics": "Join key; not aggregatable.",
+    "grain": "one value per team",
+    "validation": {
+      "status": "verified",
+      "method": "home and away joins both resolve all 25979 matches"
+    }
+  },
+  {
+    "id": "map_team_fifa_id",
+    "term_id": "term_team_fifa_id",
+    "database_source": "european_football_2.sqlite",
+    "table": "tab05",
+    "column": "fld050",
+    "semantic_filter": "Only 285 distinct non-null values over 299 teams; not unique.",
+    "aggregation_semantics": "Join key with duplicate risk.",
+    "grain": "one value per team where present",
+    "validation": {
+      "status": "verified",
+      "method": "285 distinct values; joining team attribute rows on this column produces 1473 rows instead of 1458"
+    }
+  },
+  {
+    "id": "map_team_attribute_record",
+    "term_id": "term_team_attribute_record",
+    "database_source": "european_football_2.sqlite",
+    "table": "tab06",
+    "column": "fld001",
+    "semantic_filter": "One row per team per observation date; fld049 / fld050 carry the team identifiers and fld004 the observation date.",
+    "aggregation_semantics": "Team-level tactical summaries aggregate across the six snapshot dates.",
+    "grain": "one team per observation date (6 distinct dates)",
+    "validation": {
+      "status": "verified",
+      "method": "1458 rows, 288 distinct teams, dates 2010-02-22 to 2015-09-10"
+    }
+  },
+  {
+    "id": "map_build_up_play_speed",
+    "term_id": "term_build_up_play_speed",
+    "database_source": "european_football_2.sqlite",
+    "table": "tab06",
+    "column": "fld053",
+    "semantic_filter": "Numeric tactical score 20-80; the adjacent class column fld054 holds Balanced/Fast/Slow.",
+    "aggregation_semantics": "Maximum across snapshots identifies the highest recorded build-up play speed.",
+    "grain": "one value per team per observation date",
+    "validation": {
+      "status": "verified",
+      "method": "range 20-80, 57 distinct values"
+    }
+  },
+  {
+    "id": "map_chance_creation_passing",
+    "term_id": "term_chance_creation_passing",
+    "database_source": "european_football_2.sqlite",
+    "table": "tab06",
+    "column": "fld060",
+    "semantic_filter": "Numeric tactical score 21-80; the adjacent class column fld061 holds Normal/Risky/Safe.",
+    "aggregation_semantics": "Maximum across snapshots identifies the highest recorded chance creation passing score.",
+    "grain": "one value per team per observation date",
+    "validation": {
+      "status": "verified",
+      "method": "range 21-80, 50 distinct values"
+    }
+  },
+  {
+    "id": "map_league",
+    "term_id": "term_league",
+    "database_source": "european_football_2.sqlite",
+    "table": "tab03",
+    "column": "fld001",
+    "semantic_filter": "One row per league; fld047 carries the host country identifier.",
+    "aggregation_semantics": "Counting leagues counts distinct rows of this table.",
+    "grain": "one row per league",
+    "validation": {
+      "status": "verified",
+      "method": "11 rows"
+    }
+  },
+  {
+    "id": "map_league_name",
+    "term_id": "term_league_name",
+    "database_source": "european_football_2.sqlite",
+    "table": "tab03",
+    "column": "fld048",
+    "semantic_filter": "",
+    "aggregation_semantics": "Exact-name filtering and display.",
+    "grain": "one value per league",
+    "validation": {
+      "status": "verified",
+      "method": "11 distinct values, each prefixed by the country name"
+    }
+  },
+  {
+    "id": "map_country",
+    "term_id": "term_country",
+    "database_source": "european_football_2.sqlite",
+    "table": "tab04",
+    "column": "fld001",
+    "semantic_filter": "One row per country.",
+    "aggregation_semantics": "Counting countries counts distinct rows of this table.",
+    "grain": "one row per country",
+    "validation": {
+      "status": "verified",
+      "method": "11 rows"
+    }
+  },
+  {
+    "id": "map_country_name",
+    "term_id": "term_country_name",
+    "database_source": "european_football_2.sqlite",
+    "table": "tab04",
+    "column": "fld048",
+    "semantic_filter": "",
+    "aggregation_semantics": "Exact-name filtering and grouping.",
+    "grain": "one value per country",
+    "validation": {
+      "status": "verified",
+      "method": "11 distinct values, e.g. 'Poland', 'Belgium', 'England'"
+    }
+  },
+  {
+    "id": "map_match",
+    "term_id": "term_match",
+    "database_source": "european_football_2.sqlite",
+    "table": "tab07",
+    "column": "fld001",
+    "semantic_filter": "One row per fixture; fld047/fld074 identify the country/league, fld078/fld079 the home/away teams.",
+    "aggregation_semantics": "Counting matches counts distinct rows of this table.",
+    "grain": "one row per match",
+    "validation": {
+      "status": "verified",
+      "method": "25979 rows; all team and league references resolve"
+    }
+  },
+  {
+    "id": "map_season",
+    "term_id": "term_season",
+    "database_source": "european_football_2.sqlite",
+    "table": "tab07",
+    "column": "fld075",
+    "semantic_filter": "Text label of the form 'YYYY/YYYY', never null.",
+    "aggregation_semantics": "Grouping matches by season label.",
+    "grain": "one value per match",
+    "validation": {
+      "status": "verified",
+      "method": "8 distinct values 2008/2009 through 2015/2016, 3032-3326 matches each"
+    }
+  },
+  {
+    "id": "map_match_stage",
+    "term_id": "term_match_stage",
+    "database_source": "european_football_2.sqlite",
+    "table": "tab07",
+    "column": "fld076",
+    "semantic_filter": "",
+    "aggregation_semantics": "Grouping and within-season ordering.",
+    "grain": "one value per match",
+    "validation": {
+      "status": "verified",
+      "method": "integer range 1-38"
+    }
+  },
+  {
+    "id": "map_match_date",
+    "term_id": "term_match_date",
+    "database_source": "european_football_2.sqlite",
+    "table": "tab07",
+    "column": "fld004",
+    "semantic_filter": "Stored as 'YYYY-MM-DD 00:00:00'.",
+    "aggregation_semantics": "Date-range and month extraction.",
+    "grain": "one value per match",
+    "validation": {
+      "status": "verified",
+      "method": "1694 distinct dates 2008-07-18 to 2016-05-25"
+    }
+  },
+  {
+    "id": "map_home_team_goal",
+    "term_id": "term_home_team_goal",
+    "database_source": "european_football_2.sqlite",
+    "table": "tab07",
+    "column": "fld080",
+    "semantic_filter": "Never null; distinct values 0-10.",
+    "aggregation_semantics": "Average over a set of matches gives the average home team goal count.",
+    "grain": "one value per match",
+    "validation": {
+      "status": "verified",
+      "method": "range 0-10, 25979 non-null rows"
+    }
+  },
+  {
+    "id": "map_away_team_goal",
+    "term_id": "term_away_team_goal",
+    "database_source": "european_football_2.sqlite",
+    "table": "tab07",
+    "column": "fld081",
+    "semantic_filter": "Never null; distinct values 0-9.",
+    "aggregation_semantics": "Average over a set of matches gives the average away goal count.",
+    "grain": "one value per match",
+    "validation": {
+      "status": "verified",
+      "method": "range 0-9, 25979 non-null rows"
+    }
+  },
+  {
+    "id": "map_match_outcome",
+    "term_id": "term_match_outcome",
+    "database_source": "european_football_2.sqlite",
+    "table": "tab07",
+    "column": "fld080",
+    "semantic_filter": "Not stored: the outcome is derived by comparing fld080 with fld081; equality means a draw.",
+    "aggregation_semantics": "Counting draws counts matches whose two goal columns are equal.",
+    "grain": "one value per match",
+    "validation": {
+      "status": "verified",
+      "method": "no stored result column; equality comparison reproduces plausible draw counts per league"
+    }
+  },
+  {
+    "id": "map_match_event_xml",
+    "term_id": "term_match_event_xml",
+    "database_source": "european_football_2.sqlite",
+    "table": "tab07",
+    "column": "fld148",
+    "semantic_filter": "Block of eight consecutive text columns fld148-fld155, ordered goal, shoton, shotoff, foulcommit, card, cross, corner, possession.",
+    "aggregation_semantics": "Event counts require parsing the XML fragments; direct aggregation is not meaningful.",
+    "grain": "one XML fragment per match per event family",
+    "validation": {
+      "status": "verified",
+      "method": "root element inspected for each of the eight columns"
+    }
+  },
+  {
+    "id": "map_match_betting_odds",
+    "term_id": "term_match_betting_odds",
+    "database_source": "european_football_2.sqlite",
+    "table": "tab07",
+    "column": "fld156",
+    "semantic_filter": "Block of 30 consecutive REAL columns fld156-fld185, arranged as ten bookmakers times home/draw/away.",
+    "aggregation_semantics": "Numeric statistics over non-null odds values only.",
+    "grain": "one value per match per bookmaker per outcome",
+    "validation": {
+      "status": "verified",
+      "method": "all 30 columns REAL; non-null coverage 11168-22592 of 25979"
+    }
+  },
+  {
+    "id": "map_player_api_id",
+    "term_id": "term_player_api_id",
+    "database_source": "european_football_2.sqlite",
+    "table": "tab02",
+    "column": "fld003",
+    "semantic_filter": "Unique per player; carried by player attribute rows and match lineup references.",
+    "aggregation_semantics": "Join key; not aggregatable.",
+    "grain": "one value per player",
+    "validation": {
+      "status": "verified",
+      "method": "11060 distinct values; attribute-table join resolves all 183978 rows"
+    }
+  },
+  {
+    "id": "map_player_fifa_id",
+    "term_id": "term_player_fifa_id",
+    "database_source": "european_football_2.sqlite",
+    "table": "tab02",
+    "column": "fld002",
+    "semantic_filter": "Unique per player in the master table; 2 attribute rows carry an identifier with no master row.",
+    "aggregation_semantics": "Join key; slightly lossy.",
+    "grain": "one value per player",
+    "validation": {
+      "status": "verified",
+      "method": "11060 distinct values; attribute-table join resolves 183929 of 183978 rows"
+    }
+  }
+]

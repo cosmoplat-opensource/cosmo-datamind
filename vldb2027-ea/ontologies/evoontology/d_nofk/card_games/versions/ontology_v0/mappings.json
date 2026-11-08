@@ -1,0 +1,512 @@
+[
+  {
+    "id": "m_card_printing_cards",
+    "term_id": "term_card_printing",
+    "database_source": "card_games",
+    "table": "cards",
+    "column": "uuid",
+    "semantic_filter": "",
+    "aggregation_semantics": "count of printing rows; one row is one card face printing",
+    "grain": "one row per card face printing",
+    "validation": "56822 rows and 56822 distinct uuid values",
+    "evidence_refs": [
+      "ev_cards_grain",
+      "ev_multi_face"
+    ]
+  },
+  {
+    "id": "m_card_name_cards",
+    "term_id": "term_card_name",
+    "database_source": "card_games",
+    "table": "cards",
+    "column": "name",
+    "semantic_filter": "",
+    "aggregation_semantics": "count of distinct names for card-level counts",
+    "grain": "logical card across all printings",
+    "validation": "21738 distinct values over 56822 rows",
+    "evidence_refs": [
+      "ev_cards_grain",
+      "ev_multi_face"
+    ]
+  },
+  {
+    "id": "m_set_sets",
+    "term_id": "term_set",
+    "database_source": "card_games",
+    "table": "sets",
+    "column": "code",
+    "semantic_filter": "",
+    "aggregation_semantics": "count of set rows",
+    "grain": "one row per set or product",
+    "validation": "551 rows, code unique",
+    "evidence_refs": [
+      "ev_sets_fields"
+    ]
+  },
+  {
+    "id": "m_ruling_rulings",
+    "term_id": "term_ruling",
+    "database_source": "card_games",
+    "table": "rulings",
+    "column": "text",
+    "semantic_filter": "",
+    "aggregation_semantics": "count of ruling rows per card; several rulings share one card uuid",
+    "grain": "one row per ruling of one card printing",
+    "validation": "87769 rows over 26141 distinct uuid",
+    "evidence_refs": [
+      "ev_rulings_dates"
+    ]
+  },
+  {
+    "id": "m_foreign_printing_foreign_data",
+    "term_id": "term_foreign_printing",
+    "database_source": "card_games",
+    "table": "foreign_data",
+    "column": "name",
+    "semantic_filter": "",
+    "aggregation_semantics": "count of localized rows per language or per card",
+    "grain": "one row per card printing per language",
+    "validation": "229186 rows over 34056 distinct uuid",
+    "evidence_refs": [
+      "ev_foreign_languages"
+    ]
+  },
+  {
+    "id": "m_set_identifier_cards_setcode",
+    "term_id": "term_set_identifier",
+    "database_source": "card_games",
+    "table": "cards",
+    "column": "setCode",
+    "semantic_filter": "",
+    "aggregation_semantics": "grouping key linking each printing to its set",
+    "grain": "printing-to-set reference",
+    "validation": "536 distinct values, all resolving to a sets.code",
+    "evidence_refs": [
+      "ev_setcode_link"
+    ]
+  },
+  {
+    "id": "m_set_identifier_sets_code",
+    "term_id": "term_set_identifier",
+    "database_source": "card_games",
+    "table": "sets",
+    "column": "code",
+    "semantic_filter": "",
+    "aggregation_semantics": "grouping key identifying a set",
+    "grain": "one value per set",
+    "validation": "unique across 551 sets",
+    "evidence_refs": [
+      "ev_setcode_link",
+      "ev_sets_fields"
+    ]
+  },
+  {
+    "id": "m_format_legality_legalities",
+    "term_id": "term_format_legality",
+    "database_source": "card_games",
+    "table": "legalities",
+    "column": "format",
+    "semantic_filter": "",
+    "aggregation_semantics": "count of legality records per format, per status or per card",
+    "grain": "one row per format and card printing",
+    "validation": "427907 rows across 15 formats",
+    "evidence_refs": [
+      "ev_legality_formats"
+    ]
+  },
+  {
+    "id": "m_legality_status_legalities",
+    "term_id": "term_legality_status",
+    "database_source": "card_games",
+    "table": "legalities",
+    "column": "status",
+    "semantic_filter": "",
+    "aggregation_semantics": "count of records by status",
+    "grain": "one value per legality record",
+    "validation": "only Legal, Banned and Restricted occur",
+    "evidence_refs": [
+      "ev_legality_statuses"
+    ]
+  },
+  {
+    "id": "m_mana_cost_cards",
+    "term_id": "term_mana_cost",
+    "database_source": "card_games",
+    "table": "cards",
+    "column": "manaCost",
+    "semantic_filter": "",
+    "aggregation_semantics": "distribution of cost strings; symbol counting requires parsing the string",
+    "grain": "one value per printing",
+    "validation": "49499 populated, 7323 empty",
+    "evidence_refs": [
+      "ev_mana_cost_empty"
+    ]
+  },
+  {
+    "id": "m_card_availability_cards",
+    "term_id": "term_card_availability",
+    "database_source": "card_games",
+    "table": "cards",
+    "column": "availability",
+    "semantic_filter": "treat the value as a set of platform tokens, because a printing can be available on several platforms",
+    "aggregation_semantics": "count of printings per platform token, not per distinct string",
+    "grain": "one value per printing",
+    "validation": "paper 52089, mtgo 33779, arena 6112 by token",
+    "evidence_refs": [
+      "ev_availability_encoding"
+    ]
+  },
+  {
+    "id": "m_keyword_ability_cards",
+    "term_id": "term_keyword_ability",
+    "database_source": "card_games",
+    "table": "cards",
+    "column": "keywords",
+    "semantic_filter": "treat the value as a list of ability names; only keyworded abilities appear here",
+    "aggregation_semantics": "count of printings per ability name",
+    "grain": "one value per printing",
+    "validation": "20639 populated rows; Flying 3088 highest",
+    "evidence_refs": [
+      "ev_keywords_encoding"
+    ]
+  },
+  {
+    "id": "m_release_date_sets",
+    "term_id": "term_release_date",
+    "database_source": "card_games",
+    "table": "sets",
+    "column": "releaseDate",
+    "semantic_filter": "",
+    "aggregation_semantics": "count of sets or printings grouped by year or period",
+    "grain": "one date per set",
+    "validation": "1993-08-05 to 2021-03-19, no nulls",
+    "evidence_refs": [
+      "ev_sets_fields"
+    ]
+  },
+  {
+    "id": "m_oracle_card_id_cards",
+    "term_id": "term_oracle_card_id",
+    "database_source": "card_games",
+    "table": "cards",
+    "column": "scryfallOracleId",
+    "semantic_filter": "",
+    "aggregation_semantics": "count of distinct identifiers for logical card counts",
+    "grain": "logical card across printings",
+    "validation": "21769 distinct values, none null or empty",
+    "evidence_refs": [
+      "ev_oracle_id"
+    ]
+  },
+  {
+    "id": "m_printing_id_cards",
+    "term_id": "term_printing_id",
+    "database_source": "card_games",
+    "table": "cards",
+    "column": "uuid",
+    "semantic_filter": "",
+    "aggregation_semantics": "identity key for joins",
+    "grain": "one value per printing row",
+    "validation": "unique across all 56822 rows",
+    "evidence_refs": [
+      "ev_cards_grain"
+    ]
+  },
+  {
+    "id": "m_printing_id_legalities",
+    "term_id": "term_printing_id",
+    "database_source": "card_games",
+    "table": "legalities",
+    "column": "uuid",
+    "semantic_filter": "",
+    "aggregation_semantics": "reference to the printing whose legality is recorded",
+    "grain": "repeated once per format for a printing",
+    "validation": "references 55608 card uuid; 9 uuid unresolved",
+    "evidence_refs": [
+      "ev_uuid_joins"
+    ]
+  },
+  {
+    "id": "m_printing_id_rulings",
+    "term_id": "term_printing_id",
+    "database_source": "card_games",
+    "table": "rulings",
+    "column": "uuid",
+    "semantic_filter": "",
+    "aggregation_semantics": "reference to the printing being clarified",
+    "grain": "repeated once per ruling",
+    "validation": "all ruling uuids resolve to cards",
+    "evidence_refs": [
+      "ev_uuid_joins"
+    ]
+  },
+  {
+    "id": "m_printing_id_foreign_data",
+    "term_id": "term_printing_id",
+    "database_source": "card_games",
+    "table": "foreign_data",
+    "column": "uuid",
+    "semantic_filter": "",
+    "aggregation_semantics": "reference to the printing being localized",
+    "grain": "repeated once per language",
+    "validation": "16 of 229186 rows unresolved",
+    "evidence_refs": [
+      "ev_uuid_joins"
+    ]
+  },
+  {
+    "id": "m_reprint_cards",
+    "term_id": "term_reprint",
+    "database_source": "card_games",
+    "table": "cards",
+    "column": "isReprint",
+    "semantic_filter": "",
+    "aggregation_semantics": "count or share of printings flagged as reprints",
+    "grain": "one flag per printing",
+    "validation": "1 for 33657 of 56822 rows",
+    "evidence_refs": [
+      "ev_reprint_identity"
+    ]
+  },
+  {
+    "id": "m_promo_card_cards",
+    "term_id": "term_promo_card",
+    "database_source": "card_games",
+    "table": "cards",
+    "column": "isPromo",
+    "semantic_filter": "",
+    "aggregation_semantics": "count or share of promotional printings; promotion categories come from promoTypes",
+    "grain": "one flag per printing",
+    "validation": "1 for 5588 rows, 9.83 percent",
+    "evidence_refs": [
+      "ev_promo_foil_flags",
+      "ev_promo_types"
+    ]
+  },
+  {
+    "id": "m_foil_availability_cards",
+    "term_id": "term_foil_availability",
+    "database_source": "card_games",
+    "table": "cards",
+    "column": "hasFoil",
+    "semantic_filter": "read together with hasNonFoil, since the two indicators are independent",
+    "aggregation_semantics": "count or share of printings by finish availability",
+    "grain": "one flag per printing",
+    "validation": "hasFoil 34618, hasNonFoil 51413",
+    "evidence_refs": [
+      "ev_promo_foil_flags"
+    ]
+  },
+  {
+    "id": "m_colorless_card_cards",
+    "term_id": "term_colorless_card",
+    "database_source": "card_games",
+    "table": "cards",
+    "column": "colors",
+    "semantic_filter": "the colors value is empty, meaning the card has no colour",
+    "aggregation_semantics": "count of printings whose colour list is empty",
+    "grain": "one value per printing",
+    "validation": "12540 rows with an empty colors value",
+    "evidence_refs": [
+      "ev_colors_encoding"
+    ]
+  },
+  {
+    "id": "m_multicolor_card_cards",
+    "term_id": "term_multicolor_card",
+    "database_source": "card_games",
+    "table": "cards",
+    "column": "colors",
+    "semantic_filter": "the colors value lists more than one colour letter",
+    "aggregation_semantics": "count of printings by number of colours",
+    "grain": "one value per printing",
+    "validation": "4383 two-colour, 813 three-colour, 109 four-or-more-colour rows",
+    "evidence_refs": [
+      "ev_colors_encoding"
+    ]
+  },
+  {
+    "id": "m_rarity_cards",
+    "term_id": "term_rarity",
+    "database_source": "card_games",
+    "table": "cards",
+    "column": "rarity",
+    "semantic_filter": "",
+    "aggregation_semantics": "count or share of printings by rarity",
+    "grain": "one value per printing",
+    "validation": "common, uncommon, rare, mythic only",
+    "evidence_refs": [
+      "ev_rarity_values"
+    ]
+  },
+  {
+    "id": "m_card_color_cards",
+    "term_id": "term_card_color",
+    "database_source": "card_games",
+    "table": "cards",
+    "column": "colors",
+    "semantic_filter": "treat the value as a list of colour letters; empty means colorless",
+    "aggregation_semantics": "count of printings per colour token",
+    "grain": "one value per printing",
+    "validation": "tokens limited to W, U, B, R, G",
+    "evidence_refs": [
+      "ev_colors_encoding"
+    ]
+  },
+  {
+    "id": "m_color_identity_cards",
+    "term_id": "term_color_identity",
+    "database_source": "card_games",
+    "table": "cards",
+    "column": "colorIdentity",
+    "semantic_filter": "do not substitute colors for colorIdentity; the two differ on 1018 rows",
+    "aggregation_semantics": "count of printings per identity token",
+    "grain": "one value per printing",
+    "validation": "empty for 6224 rows; larger token counts than colors",
+    "evidence_refs": [
+      "ev_color_identity_superset"
+    ]
+  },
+  {
+    "id": "m_card_type_cards",
+    "term_id": "term_card_type",
+    "database_source": "card_games",
+    "table": "cards",
+    "column": "types",
+    "semantic_filter": "treat the value as a list of type names, because a card can carry several types",
+    "aggregation_semantics": "count of printings per type token",
+    "grain": "one value per printing",
+    "validation": "Creature 24229 highest; multi-type values such as Artifact,Creature present",
+    "evidence_refs": [
+      "ev_types_encoding"
+    ]
+  },
+  {
+    "id": "m_card_type_line_cards",
+    "term_id": "term_card_type",
+    "database_source": "card_games",
+    "table": "cards",
+    "column": "type",
+    "semantic_filter": "this column holds the whole printed type line including supertypes and subtypes, so it is not equivalent to the types list",
+    "aggregation_semantics": "free-text type line; use only when the printed line is required",
+    "grain": "one value per printing",
+    "validation": "values such as 'Creature — Human Cleric'",
+    "evidence_refs": [
+      "ev_types_encoding"
+    ]
+  },
+  {
+    "id": "m_supertype_cards",
+    "term_id": "term_supertype",
+    "database_source": "card_games",
+    "table": "cards",
+    "column": "supertypes",
+    "semantic_filter": "treat the value as a list; empty for 48982 of 56822 rows",
+    "aggregation_semantics": "count of printings per supertype token",
+    "grain": "one value per printing",
+    "validation": "Legendary 4286, Basic 3269, Snow 142, World 47",
+    "evidence_refs": [
+      "ev_types_encoding",
+      "ev_basic_lands"
+    ]
+  },
+  {
+    "id": "m_set_type_sets",
+    "term_id": "term_set_type",
+    "database_source": "card_games",
+    "table": "sets",
+    "column": "type",
+    "semantic_filter": "",
+    "aggregation_semantics": "count of sets or printings per set type",
+    "grain": "one value per set",
+    "validation": "20 distinct values",
+    "evidence_refs": [
+      "ev_sets_type_values"
+    ]
+  },
+  {
+    "id": "m_language_foreign_data",
+    "term_id": "term_language",
+    "database_source": "card_games",
+    "table": "foreign_data",
+    "column": "language",
+    "semantic_filter": "",
+    "aggregation_semantics": "count of localized rows per language",
+    "grain": "one value per foreign-language row",
+    "validation": "17 distinct values",
+    "evidence_refs": [
+      "ev_foreign_languages"
+    ]
+  },
+  {
+    "id": "m_language_set_translations",
+    "term_id": "term_language",
+    "database_source": "card_games",
+    "table": "set_translations",
+    "column": "language",
+    "semantic_filter": "",
+    "aggregation_semantics": "count of translated set names per language",
+    "grain": "one value per set translation",
+    "validation": "11 distinct values, 121 rows each",
+    "evidence_refs": [
+      "ev_set_translations"
+    ]
+  },
+  {
+    "id": "m_cmc_cards",
+    "term_id": "term_converted_mana_cost",
+    "database_source": "card_games",
+    "table": "cards",
+    "column": "convertedManaCost",
+    "semantic_filter": "exclude the single extreme value when reporting averages or ranges",
+    "aggregation_semantics": "average or sum of the numeric mana value over selected printings",
+    "grain": "one value per printing",
+    "validation": "0 nulls; range 0.0 to 1000000.0 with one joke value",
+    "evidence_refs": [
+      "ev_cmc_field",
+      "ev_creature_cmc"
+    ]
+  },
+  {
+    "id": "m_power_cards",
+    "term_id": "term_power",
+    "database_source": "card_games",
+    "table": "cards",
+    "column": "power",
+    "semantic_filter": "include only values that convert to a number; symbolic values such as star, question mark, infinity and minus one must be excluded or handled separately",
+    "aggregation_semantics": "average or maximum over numerically parseable creature printings",
+    "grain": "one value per printing",
+    "validation": "30624 empty values; non-numeric sentinels observed",
+    "evidence_refs": [
+      "ev_power_toughness_encoding"
+    ]
+  },
+  {
+    "id": "m_toughness_cards",
+    "term_id": "term_toughness",
+    "database_source": "card_games",
+    "table": "cards",
+    "column": "toughness",
+    "semantic_filter": "include only values that convert to a number, as for power",
+    "aggregation_semantics": "average or maximum over numerically parseable creature printings",
+    "grain": "one value per printing",
+    "validation": "same text encoding and sentinels as power",
+    "evidence_refs": [
+      "ev_power_toughness_encoding"
+    ]
+  },
+  {
+    "id": "m_creature_card_cards",
+    "term_id": "term_creature_card",
+    "database_source": "card_games",
+    "table": "cards",
+    "column": "types",
+    "semantic_filter": "the types list contains Creature, whether alone or combined with other types",
+    "aggregation_semantics": "count of creature printings",
+    "grain": "one value per printing",
+    "validation": "26108 matching rows",
+    "evidence_refs": [
+      "ev_creature_cmc"
+    ]
+  }
+]

@@ -1,0 +1,344 @@
+[
+  {
+    "id": "term_molecule",
+    "name": "Molecule",
+    "type": "entity",
+    "definition": "A distinct chemical molecule in the toxicology dataset, identified by a molecule identifier of the form TRxxx. A molecule owns its atoms and bonds, and carcinogenicity is recorded per molecule.",
+    "scope": "Toxicology structural dataset; 444 molecules have atom/bond structure and 343 of them have a carcinogenicity label.",
+    "aliases": [
+      "molecule",
+      "molecules",
+      "compound",
+      "molecule id",
+      "TR molecule"
+    ],
+    "evidence": [
+      "evidence_molecule_population",
+      "evidence_table_inventory"
+    ]
+  },
+  {
+    "id": "term_atom",
+    "name": "Atom",
+    "type": "entity",
+    "definition": "A single atom belonging to exactly one molecule. Its identifier is the molecule identifier followed by '_' and the atom ordinal within that molecule, for example TR004_8 is atom 8 of molecule TR004.",
+    "scope": "One row in the atom table per atom; 12,333 atoms across 444 molecules.",
+    "aliases": [
+      "atom",
+      "atoms",
+      "atom id",
+      "TRxxx_n"
+    ],
+    "evidence": [
+      "evidence_atom_id_format",
+      "evidence_table_inventory"
+    ]
+  },
+  {
+    "id": "term_bond",
+    "name": "Bond",
+    "type": "entity",
+    "definition": "A chemical bond between two atoms of the same molecule. Its identifier is the molecule identifier followed by the ordinals of the two endpoint atoms, for example TR004_8_9 is the bond between atoms 8 and 9 of molecule TR004.",
+    "scope": "One row in the bond table per bond; 12,379 bonds across 444 molecules.",
+    "aliases": [
+      "bond",
+      "bonds",
+      "chemical bond",
+      "bond id"
+    ],
+    "evidence": [
+      "evidence_bond_id_format",
+      "evidence_table_inventory"
+    ]
+  },
+  {
+    "id": "term_atom_bond_incidence",
+    "name": "Atom-Bond Incidence",
+    "type": "concept",
+    "definition": "The participation of one atom in one bond. Each incidence row records an atom, the other atom of the same bond, and the bond identifier. Every bond is stored twice, once from each endpoint.",
+    "scope": "Connectivity relation with 24,758 rows covering all 12,379 bonds and all bonded atoms.",
+    "aliases": [
+      "connection",
+      "connections",
+      "bond incidence",
+      "connectivity",
+      "atom-bond association",
+      "atom participated in bond"
+    ],
+    "evidence": [
+      "evidence_incidence_symmetry",
+      "evidence_incidence_integrity"
+    ]
+  },
+  {
+    "id": "term_element",
+    "name": "Chemical Element",
+    "type": "category",
+    "definition": "The chemical element of an atom, recorded as a lowercase chemical symbol such as c for carbon, h for hydrogen, or cl for chlorine.",
+    "scope": "Atom-level attribute; 21 distinct element symbols across 12,333 atoms.",
+    "aliases": [
+      "element",
+      "elements",
+      "atom element",
+      "chemical element",
+      "element symbol",
+      "toxicology element"
+    ],
+    "evidence": [
+      "evidence_element_domain"
+    ]
+  },
+  {
+    "id": "term_carbon",
+    "name": "Carbon",
+    "type": "category",
+    "definition": "The chemical element carbon, represented by the lowercase atom element symbol 'c'.",
+    "scope": "Subset of atoms whose element symbol is 'c' (4,605 atoms).",
+    "aliases": [
+      "carbon",
+      "carbon atom",
+      "c element"
+    ],
+    "evidence": [
+      "evidence_element_domain"
+    ]
+  },
+  {
+    "id": "term_bond_order",
+    "name": "Bond Order",
+    "type": "category",
+    "definition": "The order or type of a chemical bond: single, double, or triple, encoded as '-', '=', or '#' respectively. Also called bond type.",
+    "scope": "Bond-level attribute; one bond has an unknown order.",
+    "aliases": [
+      "bond order",
+      "bond type",
+      "type of bond",
+      "bonded",
+      "bonded molecule"
+    ],
+    "evidence": [
+      "evidence_bond_order_domain",
+      "evidence_bond_type_missing"
+    ]
+  },
+  {
+    "id": "term_single_bond",
+    "name": "Single Bond",
+    "type": "category",
+    "definition": "A bond of order one, encoded as '-'.",
+    "scope": "Subset of bonds with bond order '-' (10,528 bonds).",
+    "aliases": [
+      "single bond",
+      "single-bonded",
+      "single bonded",
+      "single type bond"
+    ],
+    "evidence": [
+      "evidence_bond_order_domain"
+    ]
+  },
+  {
+    "id": "term_double_bond",
+    "name": "Double Bond",
+    "type": "category",
+    "definition": "A bond of order two, encoded as '='.",
+    "scope": "Subset of bonds with bond order '=' (1,844 bonds).",
+    "aliases": [
+      "double bond",
+      "double-bonded",
+      "double bonded",
+      "double type bond",
+      "double bond molecule"
+    ],
+    "evidence": [
+      "evidence_bond_order_domain"
+    ]
+  },
+  {
+    "id": "term_triple_bond",
+    "name": "Triple Bond",
+    "type": "category",
+    "definition": "A bond of order three, encoded as '#'.",
+    "scope": "Subset of bonds with bond order '#' (6 bonds across 4 molecules).",
+    "aliases": [
+      "triple bond",
+      "triple-bonded",
+      "triple bonded",
+      "triple type bond"
+    ],
+    "evidence": [
+      "evidence_bond_order_domain"
+    ]
+  },
+  {
+    "id": "term_carcinogenicity_label",
+    "name": "Carcinogenicity Label",
+    "type": "dimension",
+    "definition": "The carcinogenicity classification of a molecule: '+' means carcinogenic and '-' means non-carcinogenic.",
+    "scope": "Molecule-level attribute available for 343 of the 444 molecules.",
+    "aliases": [
+      "carcinogenic",
+      "non-carcinogenic",
+      "carcinogenicity",
+      "label",
+      "toxicity label",
+      "toxicology label"
+    ],
+    "evidence": [
+      "evidence_carcinogenicity_domain",
+      "evidence_molecule_population"
+    ]
+  },
+  {
+    "id": "term_atom_ordinal",
+    "name": "Atom Ordinal",
+    "type": "dimension",
+    "definition": "The position of an atom within its molecule, encoded as the numeric suffix of the atom identifier. Ordinals start at 1 and are contiguous up to the molecule's atom count; they may have one, two, or three digits.",
+    "scope": "Derived from the atom identifier suffix; observed molecule sizes range from 4 to 174 atoms.",
+    "aliases": [
+      "atom number",
+      "atom ordinal",
+      "nth atom",
+      "4th atom",
+      "atom 19",
+      "atom 12"
+    ],
+    "evidence": [
+      "evidence_atom_id_format",
+      "evidence_atom_ordinal_digits"
+    ]
+  },
+  {
+    "id": "term_connection_count",
+    "name": "Connection Count",
+    "type": "metric",
+    "definition": "The number of distinct bonds incident to an atom, i.e., how many connections the atom has.",
+    "scope": "Computed per atom from atom-bond incidence; independent of incidence row direction.",
+    "aliases": [
+      "number of connections",
+      "connection count",
+      "how many connections",
+      "degree",
+      "bonds involving atom",
+      "number of bonds involving atom"
+    ],
+    "evidence": [
+      "evidence_incidence_symmetry"
+    ]
+  },
+  {
+    "id": "term_molecule_atom_count",
+    "name": "Molecule Atom Count",
+    "type": "metric",
+    "definition": "The number of atoms belonging to a molecule.",
+    "scope": "Computed per molecule from the atom table; observed range 4 to 174 atoms.",
+    "aliases": [
+      "number of atoms",
+      "atom count",
+      "consisted of atoms",
+      "contains atoms",
+      "how many atoms"
+    ],
+    "evidence": [
+      "evidence_molecule_size"
+    ]
+  },
+  {
+    "id": "term_molecule_bond_count",
+    "name": "Molecule Bond Count",
+    "type": "metric",
+    "definition": "The number of bonds belonging to a molecule.",
+    "scope": "Computed per molecule from the bond table; observed range 2 to 175 bonds.",
+    "aliases": [
+      "number of bonds",
+      "bond count",
+      "bonds in molecule",
+      "how many bonds"
+    ],
+    "evidence": [
+      "evidence_molecule_size"
+    ]
+  },
+  {
+    "id": "term_bond_type_count",
+    "name": "Bond Type Count",
+    "type": "metric",
+    "definition": "The number of bonds of a specified bond order within a molecule or molecule population.",
+    "scope": "Computed by grouping bonds by bond order; supports majority-bond-type and bond-percentage questions.",
+    "aliases": [
+      "count of bond type",
+      "number of double bonds",
+      "number of single bonds",
+      "number of triple bonds",
+      "tally bonds"
+    ],
+    "evidence": [
+      "evidence_bond_order_domain"
+    ]
+  },
+  {
+    "id": "term_bond_type_share",
+    "name": "Bond Type Share",
+    "type": "metric",
+    "definition": "The share of bonds of a specified bond order among the bonds of a molecule or molecule population, usually expressed as a percentage.",
+    "scope": "Computed as the count of bonds of the selected order divided by the total bond count of the population.",
+    "aliases": [
+      "percentage of double bonds",
+      "percentage of single bonds",
+      "proportion of bond type",
+      "share of bonds"
+    ],
+    "evidence": [
+      "evidence_bond_order_domain"
+    ]
+  },
+  {
+    "id": "term_element_share",
+    "name": "Element Share",
+    "type": "metric",
+    "definition": "The share of atoms of a specified element among the atoms of a molecule or molecule population, usually expressed as a percentage.",
+    "scope": "Computed as the count of atoms of the selected element divided by the total atom count of the population.",
+    "aliases": [
+      "percentage of carbon",
+      "proportion of element",
+      "element percentage",
+      "share of atoms"
+    ],
+    "evidence": [
+      "evidence_element_domain"
+    ]
+  },
+  {
+    "id": "term_dominant_bond_order",
+    "name": "Dominant Bond Order",
+    "type": "metric",
+    "definition": "The bond order with the highest bond count in a molecule, used to express the bond type that accounts for the majority of the molecule's bonds.",
+    "scope": "Computed per molecule from bond type counts.",
+    "aliases": [
+      "majority bond type",
+      "most common bond",
+      "dominant bond type",
+      "accounts for the majority"
+    ],
+    "evidence": [
+      "evidence_bond_order_domain"
+    ]
+  },
+  {
+    "id": "term_unconnected_atom",
+    "name": "Unconnected Atom",
+    "type": "concept",
+    "definition": "An atom that participates in no bond, i.e., an atom with no atom-bond incidence record.",
+    "scope": "Atoms present in the atom table but absent from the connectivity relation; 49 atoms.",
+    "aliases": [
+      "atom that cannot bond",
+      "atom cannot bond with any other atoms",
+      "isolated atom",
+      "unconnected atom",
+      "atom with no bonds"
+    ],
+    "evidence": [
+      "evidence_unconnected_atoms"
+    ]
+  }
+]

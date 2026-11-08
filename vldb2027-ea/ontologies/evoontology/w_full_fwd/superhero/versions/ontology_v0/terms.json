@@ -1,0 +1,456 @@
+[
+  {
+    "id": "term_superhero",
+    "name": "Superhero",
+    "type": "entity",
+    "definition": "A superhero character recorded as one row of the superhero table. It is the central entity that publisher, race, gender, alignment, eye/hair/skin colour, body metrics, scored attributes and superpowers all describe.",
+    "scope": "Any analysis that counts, filters, ranks or describes superheroes in the superhero database.",
+    "aliases": [
+      "hero",
+      "character",
+      "superheroes",
+      "which hero"
+    ],
+    "evidence": [
+      "evidence_superhero_schema",
+      "evidence_hero_count_total"
+    ]
+  },
+  {
+    "id": "term_superhero_name",
+    "name": "Superhero Name",
+    "type": "concept",
+    "definition": "The published codename or display name of a superhero, stored in superhero.superhero_name. This is the name a question asks for when it says 'which hero' or 'heroes' names'.",
+    "scope": "Identifying and listing heroes; selecting a hero by name.",
+    "aliases": [
+      "hero name",
+      "codename",
+      "superheroes' names",
+      "which superhero",
+      "who is"
+    ],
+    "evidence": [
+      "evidence_superhero_name_duplicates"
+    ]
+  },
+  {
+    "id": "term_hero_full_name",
+    "name": "Hero Full Name",
+    "type": "concept",
+    "definition": "The civilian or full personal name of a superhero, stored in superhero.full_name, as opposed to the published codename in superhero_name.",
+    "scope": "Questions that ask for a hero's 'full name' or real identity.",
+    "aliases": [
+      "full name",
+      "real name",
+      "civilian name"
+    ],
+    "evidence": [
+      "evidence_full_name_missing"
+    ]
+  },
+  {
+    "id": "term_publisher",
+    "name": "Publisher",
+    "type": "entity",
+    "definition": "The publishing company that owns or distributes a superhero, stored in the publisher table and referenced by superhero.publisher_id.",
+    "scope": "Filtering, grouping, ranking and counting heroes by publisher.",
+    "aliases": [
+      "publisher_name",
+      "comic publisher",
+      "Marvel Comics",
+      "DC Comics",
+      "Dark Horse Comics"
+    ],
+    "evidence": [
+      "evidence_publisher_vocabulary"
+    ]
+  },
+  {
+    "id": "term_superpower",
+    "name": "Superpower",
+    "type": "entity",
+    "definition": "A named ability possessed by a hero, stored in superpower.power_name and linked to heroes through the hero_power table. It is a free-text vocabulary of power names, not a scored trait.",
+    "scope": "Filtering heroes by ability and listing the abilities of a given hero.",
+    "aliases": [
+      "power",
+      "super power",
+      "superpowers",
+      "power_name",
+      "ability",
+      "stealth power"
+    ],
+    "evidence": [
+      "evidence_superpower_vocabulary",
+      "evidence_hero_power_cardinality"
+    ]
+  },
+  {
+    "id": "term_colour",
+    "name": "Colour",
+    "type": "dimension",
+    "definition": "The shared colour value vocabulary held in the colour table. One colour id/name is reused as the value domain for a hero's eye, hair and skin colour, so the same colour id means the same colour in all three positions.",
+    "scope": "Interpreting and comparing colour values of heroes.",
+    "aliases": [
+      "colour",
+      "color",
+      "colour name",
+      "colour id"
+    ],
+    "evidence": [
+      "evidence_colour_vocabulary"
+    ]
+  },
+  {
+    "id": "term_eye_colour",
+    "name": "Eye Colour",
+    "type": "concept",
+    "definition": "The colour of a hero's eyes, held as superhero.eye_colour_id and resolved through the shared colour vocabulary.",
+    "scope": "Filtering or reporting heroes by eye colour.",
+    "aliases": [
+      "eyes",
+      "eye colour",
+      "eye color",
+      "eye_colour_id",
+      "blue eyes"
+    ],
+    "evidence": [
+      "evidence_colour_no_colour_usage",
+      "evidence_colour_enums_for_questions"
+    ]
+  },
+  {
+    "id": "term_hair_colour",
+    "name": "Hair Colour",
+    "type": "concept",
+    "definition": "The colour of a hero's hair, held as superhero.hair_colour_id and resolved through the shared colour vocabulary.",
+    "scope": "Filtering or reporting heroes by hair colour.",
+    "aliases": [
+      "hair",
+      "hair colour",
+      "hair color",
+      "hair_colour_id",
+      "blond hair"
+    ],
+    "evidence": [
+      "evidence_colour_no_colour_usage",
+      "evidence_colour_enums_for_questions"
+    ]
+  },
+  {
+    "id": "term_skin_colour",
+    "name": "Skin Colour",
+    "type": "concept",
+    "definition": "The colour of a hero's skin, held as superhero.skin_colour_id and resolved through the shared colour vocabulary.",
+    "scope": "Reporting hero skin colour and comparing it with eye or hair colour.",
+    "aliases": [
+      "skin",
+      "skin colour",
+      "skin color",
+      "skin_colour_id"
+    ],
+    "evidence": [
+      "evidence_colour_no_colour_usage"
+    ]
+  },
+  {
+    "id": "term_hero_attribute",
+    "name": "Hero Attribute",
+    "type": "entity",
+    "definition": "One of six named traits a hero may be rated on: Intelligence, Strength, Speed, Durability, Power, Combat. The trait name is held in attribute.attribute_name and the hero's rating in hero_attribute.attribute_value.",
+    "scope": "Superlative and comparison questions about a hero's capabilities, such as strongest, dumbest or fastest.",
+    "aliases": [
+      "attribute",
+      "attribute_name",
+      "stat",
+      "rating",
+      "superhero attribute"
+    ],
+    "evidence": [
+      "evidence_attribute_vocabulary",
+      "evidence_hero_attribute_cardinality"
+    ]
+  },
+  {
+    "id": "term_attribute_value",
+    "name": "Attribute Value",
+    "type": "metric",
+    "definition": "The integer rating a hero receives on one hero attribute, stored in hero_attribute.attribute_value. Superlatives are taken over this value for a specified attribute name.",
+    "scope": "Ranking, thresholding or comparing heroes on a scored trait.",
+    "aliases": [
+      "attribute_value",
+      "score",
+      "rating value",
+      "stat value",
+      "highest attribute"
+    ],
+    "evidence": [
+      "evidence_attribute_value_range"
+    ]
+  },
+  {
+    "id": "term_attr_intelligence",
+    "name": "Intelligence Attribute",
+    "type": "category",
+    "definition": "The hero attribute named 'Intelligence' in attribute.attribute_name, measuring mental capability. Low values correspond to the colloquial idea of a 'dumb' hero.",
+    "scope": "Reasoning about how smart or dumb a hero is.",
+    "aliases": [
+      "Intelligence",
+      "dumbest",
+      "smartest",
+      "intelligence rating"
+    ],
+    "evidence": [
+      "evidence_attribute_vocabulary",
+      "evidence_attribute_value_range"
+    ]
+  },
+  {
+    "id": "term_attr_strength",
+    "name": "Strength Attribute",
+    "type": "category",
+    "definition": "The hero attribute named 'Strength' in attribute.attribute_name, measuring physical strength.",
+    "scope": "Reasoning about how strong a hero is.",
+    "aliases": [
+      "Strength",
+      "strongest",
+      "highest strength",
+      "strength rating"
+    ],
+    "evidence": [
+      "evidence_attribute_vocabulary"
+    ]
+  },
+  {
+    "id": "term_attr_speed",
+    "name": "Speed Attribute",
+    "type": "category",
+    "definition": "The hero attribute named 'Speed' in attribute.attribute_name, measuring movement speed as a scored stat. It is distinct from the superpower named 'Super Speed'.",
+    "scope": "Reasoning about how fast a hero is on the scored attribute scale.",
+    "aliases": [
+      "Speed",
+      "fastest",
+      "quickest",
+      "speed rating"
+    ],
+    "evidence": [
+      "evidence_attribute_vocabulary",
+      "evidence_attribute_power_name_overlap"
+    ]
+  },
+  {
+    "id": "term_attr_durability",
+    "name": "Durability Attribute",
+    "type": "category",
+    "definition": "The hero attribute named 'Durability' in attribute.attribute_name, measuring how much damage a hero can withstand.",
+    "scope": "Reasoning about how tough a hero is.",
+    "aliases": [
+      "Durability",
+      "toughest",
+      "durability rating"
+    ],
+    "evidence": [
+      "evidence_attribute_vocabulary",
+      "evidence_attribute_power_name_overlap"
+    ]
+  },
+  {
+    "id": "term_attr_power",
+    "name": "Power Attribute",
+    "type": "category",
+    "definition": "The hero attribute named 'Power' in attribute.attribute_name, measuring raw energy or power output as a scored stat. It is not the same as the superpower vocabulary.",
+    "scope": "Reasoning about a hero's raw power rating.",
+    "aliases": [
+      "Power",
+      "power rating",
+      "energy projection stat"
+    ],
+    "evidence": [
+      "evidence_attribute_vocabulary"
+    ]
+  },
+  {
+    "id": "term_attr_combat",
+    "name": "Combat Attribute",
+    "type": "category",
+    "definition": "The hero attribute named 'Combat' in attribute.attribute_name, measuring hand-to-hand fighting skill.",
+    "scope": "Reasoning about a hero's fighting skill rating.",
+    "aliases": [
+      "Combat",
+      "fighting skill",
+      "combat rating"
+    ],
+    "evidence": [
+      "evidence_attribute_vocabulary"
+    ]
+  },
+  {
+    "id": "term_race",
+    "name": "Race",
+    "type": "entity",
+    "definition": "The species or origin classification of a hero, stored in the race table and referenced by superhero.race_id. Includes mundane origins such as 'Human' as well as alien and cosmic species.",
+    "scope": "Filtering heroes by species or origin.",
+    "aliases": [
+      "race",
+      "species",
+      "human"
+    ],
+    "evidence": [
+      "evidence_race_vocabulary",
+      "evidence_race_case_sensitivity"
+    ]
+  },
+  {
+    "id": "term_gender",
+    "name": "Gender",
+    "type": "category",
+    "definition": "The gender classification of a hero, stored in the gender table and referenced by superhero.gender_id.",
+    "scope": "Filtering or grouping heroes by gender.",
+    "aliases": [
+      "gender",
+      "male",
+      "female",
+      "female superheroes"
+    ],
+    "evidence": [
+      "evidence_gender_vocabulary"
+    ]
+  },
+  {
+    "id": "term_alignment",
+    "name": "Alignment",
+    "type": "category",
+    "definition": "The moral alignment classification of a hero, stored in the alignment table and referenced by superhero.alignment_id.",
+    "scope": "Filtering or grouping heroes as good, bad or neutral.",
+    "aliases": [
+      "alignment",
+      "good",
+      "bad",
+      "neutral",
+      "villain"
+    ],
+    "evidence": [
+      "evidence_alignment_vocabulary"
+    ]
+  },
+  {
+    "id": "term_height",
+    "name": "Height",
+    "type": "metric",
+    "definition": "A hero's height expressed in centimetres and stored in superhero.height_cm. The recorded range spans ordinary human heights and extreme values for giant or cosmic characters.",
+    "scope": "Height ranges, height comparisons and body-size analysis.",
+    "aliases": [
+      "height",
+      "height_cm",
+      "tall",
+      "cm tall"
+    ],
+    "evidence": [
+      "evidence_height_missing_and_range"
+    ]
+  },
+  {
+    "id": "term_weight",
+    "name": "Weight",
+    "type": "metric",
+    "definition": "A hero's weight expressed in kilograms and stored in superhero.weight_kg. The recorded range spans ordinary human weights and extreme values for giant or cosmic characters.",
+    "scope": "Weight ranges, weight comparisons and analysis of heroes whose weight is not recorded.",
+    "aliases": [
+      "weight",
+      "weight_kg",
+      "missing weight"
+    ],
+    "evidence": [
+      "evidence_weight_missing_and_range"
+    ]
+  },
+  {
+    "id": "term_missing_value",
+    "name": "Missing Value Convention",
+    "type": "concept",
+    "definition": "The conventions by which this database records that a value is unknown: SQL NULL, a numeric 0 in height_cm and weight_kg, the text placeholder '-' in full_name and race, and the colour value 'No Colour' for an unrecorded colour. Different columns use different encodings for the same 'unknown' meaning.",
+    "scope": "Any filter, count or aggregate that must include, exclude or explicitly target heroes whose attribute is not recorded.",
+    "aliases": [
+      "missing",
+      "unknown",
+      "no data",
+      "null",
+      "without",
+      "no colour",
+      "not recorded"
+    ],
+    "evidence": [
+      "evidence_full_name_missing",
+      "evidence_height_missing_and_range",
+      "evidence_weight_missing_and_range",
+      "evidence_colour_no_colour_usage",
+      "evidence_race_vocabulary"
+    ]
+  },
+  {
+    "id": "term_hero_count",
+    "name": "Hero Count",
+    "type": "metric",
+    "definition": "The number of superhero records that satisfy a condition, counted over superhero.id. It is the base measure behind questions such as 'how many heroes' and 'which publisher created more'.",
+    "scope": "Counting heroes, in total or within any filtered or grouped population.",
+    "aliases": [
+      "number of superheroes",
+      "count of heroes",
+      "how many heroes",
+      "total superheroes"
+    ],
+    "evidence": [
+      "evidence_hero_count_total",
+      "evidence_publisher_counts_dc_marvel"
+    ]
+  },
+  {
+    "id": "term_colour_popularity",
+    "name": "Colour Popularity",
+    "type": "metric",
+    "definition": "How frequently a colour value occurs among a population of heroes, used to rank colour values from most to least common within that population.",
+    "scope": "Ranking or comparing colour values by how many heroes share them.",
+    "aliases": [
+      "most common colour",
+      "most common color",
+      "colour popularity",
+      "popular eye color"
+    ],
+    "evidence": [
+      "evidence_colour_enums_for_questions",
+      "evidence_colour_no_colour_usage"
+    ]
+  },
+  {
+    "id": "term_percentage_share",
+    "name": "Percentage Share",
+    "type": "metric",
+    "definition": "The proportion of a hero population that belongs to a subgroup, expressed as a percentage of the population total.",
+    "scope": "Stating what fraction of a set of heroes meets a condition.",
+    "aliases": [
+      "percentage",
+      "percent",
+      "share",
+      "proportion"
+    ],
+    "evidence": [
+      "evidence_height_missing_and_range",
+      "evidence_publisher_counts_dc_marvel"
+    ]
+  },
+  {
+    "id": "term_count_difference",
+    "name": "Count Difference",
+    "type": "metric",
+    "definition": "The arithmetic difference between two hero counts computed on a comparable population, used to state how many more or fewer heroes one group has than another.",
+    "scope": "Comparing the size of two hero subgroups.",
+    "aliases": [
+      "difference",
+      "how many more",
+      "how many fewer",
+      "gap"
+    ],
+    "evidence": [
+      "evidence_publisher_counts_dc_marvel"
+    ]
+  }
+]

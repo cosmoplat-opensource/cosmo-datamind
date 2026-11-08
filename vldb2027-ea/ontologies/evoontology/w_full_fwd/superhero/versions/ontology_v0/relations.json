@@ -1,0 +1,226 @@
+[
+  {
+    "id": "rel_intelligence_is_attribute",
+    "source": "term_attr_intelligence",
+    "relation_type": "hierarchy",
+    "target": "term_hero_attribute",
+    "connection_condition": "",
+    "description": "Intelligence is one of the six scored hero attributes; its name is a value of attribute.attribute_name and its ratings occupy the same value scale as the other five traits.",
+    "evidence": [
+      "evidence_attribute_vocabulary"
+    ]
+  },
+  {
+    "id": "rel_strength_is_attribute",
+    "source": "term_attr_strength",
+    "relation_type": "hierarchy",
+    "target": "term_hero_attribute",
+    "connection_condition": "",
+    "description": "Strength is one of the six scored hero attributes, distinguished only by its name value in attribute.attribute_name.",
+    "evidence": [
+      "evidence_attribute_vocabulary"
+    ]
+  },
+  {
+    "id": "rel_speed_is_attribute",
+    "source": "term_attr_speed",
+    "relation_type": "hierarchy",
+    "target": "term_hero_attribute",
+    "connection_condition": "",
+    "description": "Speed is one of the six scored hero attributes, distinguished only by its name value in attribute.attribute_name.",
+    "evidence": [
+      "evidence_attribute_vocabulary"
+    ]
+  },
+  {
+    "id": "rel_durability_is_attribute",
+    "source": "term_attr_durability",
+    "relation_type": "hierarchy",
+    "target": "term_hero_attribute",
+    "connection_condition": "",
+    "description": "Durability is one of the six scored hero attributes, distinguished only by its name value in attribute.attribute_name.",
+    "evidence": [
+      "evidence_attribute_vocabulary"
+    ]
+  },
+  {
+    "id": "rel_power_is_attribute",
+    "source": "term_attr_power",
+    "relation_type": "hierarchy",
+    "target": "term_hero_attribute",
+    "connection_condition": "",
+    "description": "Power is one of the six scored hero attributes, distinguished only by its name value in attribute.attribute_name.",
+    "evidence": [
+      "evidence_attribute_vocabulary"
+    ]
+  },
+  {
+    "id": "rel_combat_is_attribute",
+    "source": "term_attr_combat",
+    "relation_type": "hierarchy",
+    "target": "term_hero_attribute",
+    "connection_condition": "",
+    "description": "Combat is one of the six scored hero attributes, distinguished only by its name value in attribute.attribute_name.",
+    "evidence": [
+      "evidence_attribute_vocabulary"
+    ]
+  },
+  {
+    "id": "rel_eye_colour_uses_colour",
+    "source": "term_eye_colour",
+    "relation_type": "association",
+    "target": "term_colour",
+    "connection_condition": "superhero.eye_colour_id references colour.id, so eye colour values are drawn from the shared colour vocabulary",
+    "description": "Eye colour is one of the three hero colour aspects that draw their values from the single colour vocabulary; this shared domain is what allows colour values to be compared across positions.",
+    "evidence": [
+      "evidence_colour_vocabulary",
+      "evidence_colour_no_colour_usage"
+    ]
+  },
+  {
+    "id": "rel_hair_colour_uses_colour",
+    "source": "term_hair_colour",
+    "relation_type": "association",
+    "target": "term_colour",
+    "connection_condition": "superhero.hair_colour_id references colour.id, so hair colour values are drawn from the shared colour vocabulary",
+    "description": "Hair colour shares the same colour vocabulary as eye and skin colour, so an equal value in two positions means the same colour.",
+    "evidence": [
+      "evidence_colour_vocabulary",
+      "evidence_colour_enums_for_questions"
+    ]
+  },
+  {
+    "id": "rel_skin_colour_uses_colour",
+    "source": "term_skin_colour",
+    "relation_type": "association",
+    "target": "term_colour",
+    "connection_condition": "superhero.skin_colour_id references colour.id, so skin colour values are drawn from the shared colour vocabulary",
+    "description": "Skin colour shares the same colour vocabulary as eye and hair colour; it is the position most often left as the 'No Colour' placeholder.",
+    "evidence": [
+      "evidence_colour_no_colour_usage"
+    ]
+  },
+  {
+    "id": "rel_hero_publisher",
+    "source": "term_superhero",
+    "relation_type": "association",
+    "target": "term_publisher",
+    "connection_condition": "superhero.publisher_id references publisher.id; a few heroes have no publisher reference",
+    "description": "Each hero is published by one publisher, so a publisher groups and accounts for the heroes it owns.",
+    "evidence": [
+      "evidence_publisher_vocabulary"
+    ]
+  },
+  {
+    "id": "rel_hero_superpower",
+    "source": "term_superhero",
+    "relation_type": "association",
+    "target": "term_superpower",
+    "connection_condition": "hero_power links superhero.id to superpower.id in a many-to-many relationship",
+    "description": "A hero possesses zero or more named abilities, and the same ability is shared by many heroes; the ability vocabulary exists independently of any hero.",
+    "evidence": [
+      "evidence_hero_power_cardinality",
+      "evidence_superpower_vocabulary"
+    ]
+  },
+  {
+    "id": "rel_hero_gender",
+    "source": "term_superhero",
+    "relation_type": "association",
+    "target": "term_gender",
+    "connection_condition": "superhero.gender_id references gender.id",
+    "description": "Each hero carries one gender classification used as a filtering dimension.",
+    "evidence": [
+      "evidence_gender_vocabulary"
+    ]
+  },
+  {
+    "id": "rel_hero_race",
+    "source": "term_superhero",
+    "relation_type": "association",
+    "target": "term_race",
+    "connection_condition": "superhero.race_id references race.id",
+    "description": "Each hero carries one species or origin classification used as a filtering dimension.",
+    "evidence": [
+      "evidence_race_vocabulary"
+    ]
+  },
+  {
+    "id": "rel_hero_alignment",
+    "source": "term_superhero",
+    "relation_type": "association",
+    "target": "term_alignment",
+    "connection_condition": "superhero.alignment_id references alignment.id; a few heroes have no alignment reference",
+    "description": "Each hero carries one moral alignment classification.",
+    "evidence": [
+      "evidence_alignment_vocabulary"
+    ]
+  },
+  {
+    "id": "rel_hero_attribute_scores",
+    "source": "term_superhero",
+    "relation_type": "composition",
+    "target": "term_hero_attribute",
+    "connection_condition": "hero_attribute.hero_id references superhero.id; a hero-trait rating cannot exist without its hero",
+    "description": "A hero's scored traits are component measurements of that hero: each rating belongs to exactly one hero, and heroes without ratings simply have none of these components.",
+    "evidence": [
+      "evidence_hero_attribute_cardinality"
+    ]
+  },
+  {
+    "id": "rel_attribute_has_value",
+    "source": "term_hero_attribute",
+    "relation_type": "composition",
+    "target": "term_attribute_value",
+    "connection_condition": "hero_attribute pairs attribute_id with attribute_value in the same row",
+    "description": "A rating value is a component of one hero-attribute measurement; it has no meaning apart from the trait it scores.",
+    "evidence": [
+      "evidence_attribute_value_range",
+      "evidence_attribute_vocabulary"
+    ]
+  },
+  {
+    "id": "rel_attribute_superpower_sibling_traits",
+    "source": "term_hero_attribute",
+    "relation_type": "association",
+    "target": "term_superpower",
+    "connection_condition": "attribute.attribute_name and superpower.power_name are two independent vocabularies; the names 'Intelligence' and 'Durability' occur in both, and 'Super Speed' and 'Super Strength' echo attribute names",
+    "description": "Scored traits and named abilities are two separate trait systems describing a hero. Words such as speed, strength, intelligence and durability appear in both vocabularies, so they must never be treated as the same measure.",
+    "evidence": [
+      "evidence_attribute_power_name_overlap"
+    ]
+  },
+  {
+    "id": "rel_percentage_from_hero_count",
+    "source": "term_hero_count",
+    "relation_type": "derivation",
+    "target": "term_percentage_share",
+    "connection_condition": "",
+    "description": "A percentage share is derived from two hero counts taken on the same population: the subgroup count divided by the population count, scaled to a percentage.",
+    "evidence": [
+      "evidence_height_missing_and_range"
+    ]
+  },
+  {
+    "id": "rel_difference_from_hero_count",
+    "source": "term_hero_count",
+    "relation_type": "derivation",
+    "target": "term_count_difference",
+    "connection_condition": "",
+    "description": "A count difference is derived from two hero counts taken on a comparable population by subtracting one from the other.",
+    "evidence": [
+      "evidence_publisher_counts_dc_marvel"
+    ]
+  },
+  {
+    "id": "rel_popularity_from_hero_count",
+    "source": "term_hero_count",
+    "relation_type": "derivation",
+    "target": "term_colour_popularity",
+    "connection_condition": "",
+    "description": "Colour popularity is derived by counting heroes per colour value within a population and ordering those counts from most to least common.",
+    "evidence": [
+      "evidence_colour_enums_for_questions"
+    ]
+  }
+]

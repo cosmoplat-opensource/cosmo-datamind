@@ -1,0 +1,306 @@
+[
+  {
+    "id": "ev_schema_columns",
+    "source": "codebase_community.readonly_introspection",
+    "query": "PRAGMA table_info / schema listing for all eight tables (badges, comments, postHistory, postLinks, posts, tags, users, votes)",
+    "result": "posts exposes Id, PostTypeId, AcceptedAnswerId, CreaionDate, Score, ViewCount, Body, OwnerUserId, LasActivityDate, Title, Tags, AnswerCount, CommentCount, FavoriteCount, LastEditorUserId, LastEditDate, CommunityOwnedDate, ParentId, ClosedDate, OwnerDisplayName, LastEditorDisplayName. Note the misspelled CreaionDate and LasActivityDate; no CreationDate column exists in posts. users exposes Id, Reputation, CreationDate, DisplayName, LastAccessDate, WebsiteUrl, Location, AboutMe, Views, UpVotes, DownVotes, AccountId, Age, ProfileImageUrl.",
+    "validation_method": "read-only schema introspection",
+    "timestamp": "2026-10-09T17:05:00Z"
+  },
+  {
+    "id": "ev_row_counts",
+    "source": "codebase_community",
+    "query": "row count per table over badges, comments, postHistory, postLinks, posts, tags, users, votes",
+    "result": "users 40325; posts 91966; comments 174285; votes 38930; badges 79851; tags 1032; postLinks 11102; postHistory 303155",
+    "validation_method": "exact aggregate counts",
+    "timestamp": "2026-10-09T17:05:00Z"
+  },
+  {
+    "id": "ev_post_type_enum",
+    "source": "codebase_community",
+    "query": "group posts by post type code with counts, and inspect title/body samples per code",
+    "result": "1 question 42912; 2 answer 47755; 3 orphaned tag wiki 6; 4 tag wiki excerpt 639; 5 tag wiki 640; 6 moderator nomination 9; 7 wiki/help page 5. Codes 4 and 5 hold tag documentation text; code 2 rows carry a parent reference while code 1 rows do not.",
+    "validation_method": "enumeration distribution plus content sampling",
+    "timestamp": "2026-10-09T17:05:00Z"
+  },
+  {
+    "id": "ev_vote_type_enum",
+    "source": "codebase_community",
+    "query": "group votes by vote type code with counts",
+    "result": "1:1451; 2:33323; 3:444; 5:3365; 8:60; 9:59; 10:1; 11:44; 15:72; 16:111",
+    "validation_method": "enumeration distribution",
+    "timestamp": "2026-10-09T17:05:00Z"
+  },
+  {
+    "id": "ev_post_history_type_enum",
+    "source": "codebase_community",
+    "query": "group postHistory by event type code with counts and inspect stored text samples for codes 4 and 5",
+    "result": "1:42909; 2:91974; 3:42921; 4:16008; 5:69413; 6:12731; 7:49; 8:174; 9:38; 10:1798; 11:189; 12:467; 13:470; 14:219; 15:49; 16:2193; 19:45; 24:7017; 25:10320; 33:1215; 34:1043; 35:79; 36:1476; 37:84; 38:274. Event type 5 stores prior body wording and type 4 stores prior title wording.",
+    "validation_method": "enumeration distribution plus content sampling",
+    "timestamp": "2026-10-09T17:05:00Z"
+  },
+  {
+    "id": "ev_link_type_enum",
+    "source": "codebase_community",
+    "query": "group postLinks by link type code with counts",
+    "result": "type 1 plain link: 10186 rows; type 3 duplicate marking: 916 rows; both post references populated on all 11102 rows",
+    "validation_method": "enumeration distribution and nullability check",
+    "timestamp": "2026-10-09T17:05:00Z"
+  },
+  {
+    "id": "ev_tags_format",
+    "source": "codebase_community",
+    "query": "select tags values from posts, and compare tag names in the tag table with their usage",
+    "result": "post tag values are concatenations of bracketed names, e.g. a three-tag post stores '<bayesian><prior><elicitation>'; the tag table stores the bare name 'bayesian'. Stored usage counter for bayesian is 1342 and the bracketed-name match yields 1342 posts; humorous tag stores 4 and matches 4 posts; distributions stores 1880 against 1879 observed.",
+    "validation_method": "value sampling and cross-check against the stored usage counter",
+    "timestamp": "2026-10-09T17:05:00Z"
+  },
+  {
+    "id": "ev_tags_bracket_absence",
+    "source": "codebase_community",
+    "query": "count tag names that themselves contain a leading bracket character",
+    "result": "0 of 1032 tag names contain bracket characters",
+    "validation_method": "exact count",
+    "timestamp": "2026-10-09T17:05:00Z"
+  },
+  {
+    "id": "ev_tag_bayesian",
+    "source": "codebase_community",
+    "query": "select the tag row whose name is bayesian",
+    "result": "tag bayesian has Id 1, usage counter 1342, excerpt reference 20258 and wiki reference 20257",
+    "validation_method": "direct row inspection",
+    "timestamp": "2026-10-09T17:05:00Z"
+  },
+  {
+    "id": "ev_tag_humor",
+    "source": "codebase_community",
+    "query": "select the tag row whose name is humor, and list posts whose tag value carries it",
+    "result": "tag humor has Id 204, usage counter 4, and no excerpt or wiki reference. Four question posts carry humorous tagging, with view counts 288, 64481, 66972 and 1204; one of them additionally carries a second topic tag.",
+    "validation_method": "direct row inspection",
+    "timestamp": "2026-10-09T17:05:00Z"
+  },
+  {
+    "id": "ev_tag_excerpt_targets",
+    "source": "codebase_community",
+    "query": "resolve the excerpt and wiki references of selected tags to the posts they point at",
+    "result": "for tag bayesian the excerpt reference resolves to post 20258 and the wiki reference to post 20257; those posts are tag documentation content (wiki excerpt and wiki respectively), not questions or answers.",
+    "validation_method": "join-based resolution and post type inspection",
+    "timestamp": "2026-10-09T17:05:00Z"
+  },
+  {
+    "id": "ev_tag_excerpt_nullable",
+    "source": "codebase_community",
+    "query": "count tags with no excerpt reference",
+    "result": "436 of 1032 tags have no excerpt reference",
+    "validation_method": "exact count",
+    "timestamp": "2026-10-09T17:05:00Z"
+  },
+  {
+    "id": "ev_user_id_vs_account_id",
+    "source": "codebase_community",
+    "query": "compare user identifier and account identifier columns: distinct counts, equality, and a sample of mismatching rows",
+    "result": "40325 rows with 40325 distinct user identifiers and 40325 distinct account identifiers, but the two agree on only 3 rows; no nulls. Example: the user with identifier 24 has account identifier 85249 and display name 'A Lion'. Identifier -1 is a placeholder platform account.",
+    "validation_method": "distinct counts, equality test and row sampling",
+    "timestamp": "2026-10-09T17:05:00Z"
+  },
+  {
+    "id": "ev_display_name_duplicates",
+    "source": "codebase_community",
+    "query": "count distinct display names against user rows, and list the most repeated labels",
+    "result": "40325 users carry 35644 distinct display names. Most repeated labels: 'Chris' 80, 'John' 64, 'Alex' 63, 'Tom' 57, 'Michael' 52.",
+    "validation_method": "distinct counts and frequency ranking",
+    "timestamp": "2026-10-09T17:05:00Z"
+  },
+  {
+    "id": "ev_display_name_denorm_null",
+    "source": "codebase_community",
+    "query": "count null-or-blank denormalized display-name copies on posts and postHistory",
+    "result": "posts owner-name copy empty on 89457 of 91966 rows; posts last-editor-name copy empty on 91501 of 91966; postHistory author-name copy empty on 298316 of 303155",
+    "validation_method": "exact counts of null and blank values",
+    "timestamp": "2026-10-09T17:05:00Z"
+  },
+  {
+    "id": "ev_comment_author_displayname_null",
+    "source": "codebase_community",
+    "query": "count null-or-blank author-name copies on comments",
+    "result": "171454 of 174285 comment rows have a null or blank denormalized author name, leaving about 2831 rows populated",
+    "validation_method": "exact count of null and blank values",
+    "timestamp": "2026-10-09T17:05:00Z"
+  },
+  {
+    "id": "ev_user_age_null",
+    "source": "codebase_community",
+    "query": "count users with a populated age",
+    "result": "age populated for 8318 of 40325 users; unset for 32007. Observed range 13 to 94.",
+    "validation_method": "exact count and range",
+    "timestamp": "2026-10-09T17:05:00Z"
+  },
+  {
+    "id": "ev_votes_user_null",
+    "source": "codebase_community",
+    "query": "count vote rows with no casting user",
+    "result": "35505 of 38930 vote rows carry no user; 3425 are attributable",
+    "validation_method": "exact count",
+    "timestamp": "2026-10-09T17:05:00Z"
+  },
+  {
+    "id": "ev_votes_date_range",
+    "source": "codebase_community",
+    "query": "min and max vote date, and inspection of stored precision",
+    "result": "vote dates run 2010-07-19 to 2011-05-01 and are stored with day precision only, e.g. '2010-07-19'",
+    "validation_method": "range query and value inspection",
+    "timestamp": "2026-10-09T17:05:00Z"
+  },
+  {
+    "id": "ev_comment_count_vs_rows",
+    "source": "codebase_community",
+    "query": "sum stored comment counters over posts and compare with the number of comment rows",
+    "result": "stored counters sum to 174269 while 174285 comment rows exist, a divergence of 16",
+    "validation_method": "aggregate comparison",
+    "timestamp": "2026-10-09T17:05:00Z"
+  },
+  {
+    "id": "ev_favorite_count_null",
+    "source": "codebase_community",
+    "query": "count questions by whether favorite count is unset, zero, or positive; and by year",
+    "result": "of 42912 questions, 29669 unset, 885 zero, 12358 positive. Unset share by year: 2009 1/3, 2010 384/1485, 2011 2391/5085, 2012 5400/8702, 2013 9513/13187, 2014 11980/14450.",
+    "validation_method": "grouped exact counts",
+    "timestamp": "2026-10-09T17:05:00Z"
+  },
+  {
+    "id": "ev_upvotes_vs_vote_rows",
+    "source": "codebase_community",
+    "query": "sum per-user up-vote and down-vote counters and compare with up-vote and down-vote rows in the vote table",
+    "result": "user counters sum to 265639 up votes and 10521 down votes; the vote table holds 33323 up-vote rows and 444 down-vote rows. The two representations differ by more than an order of magnitude and do not reconcile.",
+    "validation_method": "aggregate comparison across tables",
+    "timestamp": "2026-10-09T17:05:00Z"
+  },
+  {
+    "id": "ev_favorite_vs_vote_rows",
+    "source": "codebase_community",
+    "query": "sum stored favorite counters over posts and compare with the number of favorite-type vote rows",
+    "result": "stored favorite counters sum to 33688 while favorite-type vote rows number 3365",
+    "validation_method": "aggregate comparison across tables",
+    "timestamp": "2026-10-09T17:05:00Z"
+  },
+  {
+    "id": "ev_post_creation_date_revision_match",
+    "source": "codebase_community",
+    "query": "match the post creation timestamp against the initial-revision event timestamp for the same post",
+    "result": "42908 of 42912 questions have a matching initial-revision event timestamp, confirming the post creation timestamp is the post's creation moment",
+    "validation_method": "join-based comparison",
+    "timestamp": "2026-10-09T17:05:00Z"
+  },
+  {
+    "id": "ev_post_nullability",
+    "source": "codebase_community",
+    "query": "count nulls across post content columns, and nulls in the post-to-user and post-to-post reference columns",
+    "result": "of 91966 posts: creation date 0 null, owner reference 1392 null, last-editor reference 47361 null, accepted answer reference 77269 null, answer count 49054 null, comment count 0 null, favorite count 78723 null, view count 49054 null, tags 49054 null, score 0 null",
+    "validation_method": "exact null counts",
+    "timestamp": "2026-10-09T17:05:00Z"
+  },
+  {
+    "id": "ev_post_type_metric_nonnull",
+    "source": "codebase_community",
+    "query": "compare the non-question row count with the null counts of tags, view count, answer count and favorite count",
+    "result": "non-question rows number 49054, exactly matching the null counts of tags, view count and answer count, showing these columns are populated only for question posts",
+    "validation_method": "exact count comparison",
+    "timestamp": "2026-10-09T17:05:00Z"
+  },
+  {
+    "id": "ev_tag_usage_count_check",
+    "source": "codebase_community",
+    "query": "compare stored tag usage counters with the observed number of posts carrying the bracketed tag name",
+    "result": "bayesian stores 1342 and matches 1342 posts exactly; humorous tag stores 4 and matches 4; distributions stores 1880 against 1879 observed, so the stored counter is a materialized copy of actual usage",
+    "validation_method": "aggregate comparison",
+    "timestamp": "2026-10-09T17:05:00Z"
+  },
+  {
+    "id": "ev_score_ranges",
+    "source": "codebase_community",
+    "query": "min and max of post score and comment score",
+    "result": "post score ranges -19 to 192; comment score ranges 0 to 90",
+    "validation_method": "range queries",
+    "timestamp": "2026-10-09T17:05:00Z"
+  },
+  {
+    "id": "ev_badge_names",
+    "source": "codebase_community",
+    "query": "count distinct badge names and rank the most frequent ones",
+    "result": "153 distinct badge names across 79851 awards; most frequent: Student 14847, Supporter 8828, Editor 8453, Scholar 6523, Teacher 4679",
+    "validation_method": "distinct count and frequency ranking",
+    "timestamp": "2026-10-09T17:05:00Z"
+  },
+  {
+    "id": "ev_date_ranges",
+    "source": "codebase_community",
+    "query": "min and max of the timestamp columns across posts, users, badges, votes and postLinks, and count posts before 2010",
+    "result": "posts 2009-02-02 to 2014-09-14 with only 18 rows before 2010; users 2010-07-19 to 2014-09-14; badges 2010-07-19 to 2014-09-14; postLinks 2010-07-21 to 2014-09-13; votes 2010-07-19 to 2011-05-01",
+    "validation_method": "range queries",
+    "timestamp": "2026-10-09T17:05:00Z"
+  },
+  {
+    "id": "ev_answer_parent_linkage",
+    "source": "codebase_community",
+    "query": "check which post types carry a parent reference, and resolve parent references to question-type posts",
+    "result": "only answer-type rows carry a parent reference (47755 of 47755) and 47749 of them resolve to a question-type parent; question-type rows never carry one",
+    "validation_method": "grouped null counts and join-based resolution",
+    "timestamp": "2026-10-09T17:05:00Z"
+  },
+  {
+    "id": "ev_workload_user24",
+    "source": "codebase_community",
+    "query": "count posts owned by user identifier 24 and votes attributable to user identifier 24, broken down by vote type",
+    "result": "user 24 owns 3 posts and has 8 attributable votes, all of the favorite vote type and none of the up-vote type; the user record stores 36 up votes and an unset age",
+    "validation_method": "targeted counts on the referenced user",
+    "timestamp": "2026-10-09T17:05:00Z"
+  },
+  {
+    "id": "ev_workload_named_users",
+    "source": "codebase_community",
+    "query": "resolve the person names appearing in the construction workload to user rows",
+    "result": "'Harvey Motulsky' resolves to user 25, 'Mark Meckes' to user 89, 'Tiago Pasqualini' to user 16160",
+    "validation_method": "name lookup over the user table",
+    "timestamp": "2026-10-09T17:05:00Z"
+  },
+  {
+    "id": "ev_workload_comment53",
+    "source": "codebase_community",
+    "query": "locate the comment whose text is 'thank you user93!' and resolve its author",
+    "result": "comment 53 on post 80 carries author reference 58, whose display name is 'Preets'; the comment row's own denormalized author name is blank",
+    "validation_method": "text search plus author resolution",
+    "timestamp": "2026-10-09T17:05:00Z"
+  },
+  {
+    "id": "ev_workload_title_lookup",
+    "source": "codebase_community",
+    "query": "resolve the post title 'Examples for teaching: Correlation does not mean causation' and inspect its editor attributes",
+    "result": "post 36 carries that exact title, owner reference 8, last-editor reference 43889 and a populated last-edit timestamp; its denormalized owner-name and editor-name copies are both blank",
+    "validation_method": "title lookup and attribute inspection",
+    "timestamp": "2026-10-09T17:05:00Z"
+  },
+  {
+    "id": "ev_workload_student_badges",
+    "source": "codebase_community",
+    "query": "count Student badge awards by award year",
+    "result": "2010: 542; 2011: 1959; 2012: 3349; 2013: 4725; 2014: 4272",
+    "validation_method": "grouped counts by year",
+    "timestamp": "2026-10-09T17:05:00Z"
+  },
+  {
+    "id": "ev_workload_mark_meckes",
+    "source": "codebase_community",
+    "query": "list question posts owned by the user named Mark Meckes that have no comments, with their tag values",
+    "result": "exactly one such post exists, post 414, carrying a single bracketed tag name and a comment count of zero",
+    "validation_method": "filtered lookup on a named user",
+    "timestamp": "2026-10-09T17:05:00Z"
+  },
+  {
+    "id": "ev_workload_time_2010",
+    "source": "codebase_community",
+    "query": "count questions per creation year, and count 2010 questions with two or fewer answers, and posts with views between 100 and 150, and posts with exactly one comment",
+    "result": "questions per year: 2009 3, 2010 1485, 2011 5085, 2012 8702, 2013 13187, 2014 14450; 2010 questions with two or fewer answers 823; posts with views 100 to 150: 5088; posts with exactly one comment: 15091",
+    "validation_method": "grouped and filtered counts",
+    "timestamp": "2026-10-09T17:05:00Z"
+  }
+]

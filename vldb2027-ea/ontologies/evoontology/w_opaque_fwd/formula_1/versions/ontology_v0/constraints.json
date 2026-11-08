@@ -1,0 +1,414 @@
+[
+  {
+    "id": "c_year_columns",
+    "target": "t_race_year",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "in 2009",
+      "year",
+      "season",
+      "from 2000 to 2005",
+      "2007 to 2009"
+    ],
+    "severity": "block",
+    "scope": "Any filtering by year or season",
+    "confidence": "high",
+    "description": "fld020 in tab05 is the season year of a race, while fld020 in tab04 is the season key. Both contain the same 68-year domain 1950-2017 but live in different tables, so always qualify the column by table. tab05.fld022 is the round within the season, not a year.",
+    "evidence": [
+      "ev_24_year_domains"
+    ]
+  },
+  {
+    "id": "c_race_identifier",
+    "target": "t_race",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "race No.",
+      "race number",
+      "race id",
+      "round"
+    ],
+    "severity": "block",
+    "scope": "Identifying a race by number",
+    "confidence": "high",
+    "description": "tab05.fld021 is the race identifier used in questions such as race No. 45 or race No. 872. tab05.fld022 is the round within a season and must not be used as the race number.",
+    "evidence": [
+      "ev_03_race_fields"
+    ]
+  },
+  {
+    "id": "c_result_time_format",
+    "target": "t_race_result",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "time",
+      "race time",
+      "champion",
+      "finished",
+      "gap"
+    ],
+    "severity": "block",
+    "scope": "Interpreting or parsing tab13.fld024",
+    "confidence": "high",
+    "description": "In tab13.fld024 the winner's total race time has a full clock format such as 1:34:50.616, while other classified drivers store a gap string beginning with '+' such as +5.478. NULL means no classified race time. Do not parse a '+gap' value as a full race time.",
+    "evidence": [
+      "ev_10_result_time"
+    ]
+  },
+  {
+    "id": "c_finished_definition",
+    "target": "t_race_completion_rate",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "finished",
+      "completion",
+      "completion rate",
+      "completed",
+      "retired",
+      "DNF"
+    ],
+    "severity": "warning",
+    "scope": "Determining whether a driver finished or completed a race",
+    "confidence": "high",
+    "description": "The workload convention treats fld024 IS NOT NULL in tab13 as finished/completed. The status table tab12.fld041 is an alternative signal: 5 results have a time but a non-Finished status and 10 Finished results have no time, so the two definitions can differ.",
+    "evidence": [
+      "ev_11_status"
+    ]
+  },
+  {
+    "id": "c_lap_time_unit",
+    "target": "t_lap_time_milliseconds",
+    "constraint_type": "unit",
+    "trigger_keywords": [
+      "lap time",
+      "laptime",
+      "milliseconds",
+      "faster",
+      "less than 02:00.00",
+      "average lap time"
+    ],
+    "severity": "block",
+    "scope": "Comparing or averaging lap times",
+    "confidence": "high",
+    "description": "tab09.fld034 is lap duration in milliseconds and tab09.fld024 is the formatted lap time (M:SS.mmm). Compare numeric milliseconds, so 02:00.00 equals 120000 ms. tab13.fld034 is a different quantity (race time in milliseconds) and tab13.fld048 is the driver's fastest lap time.",
+    "evidence": [
+      "ev_17_lap_times"
+    ]
+  },
+  {
+    "id": "c_q3_null",
+    "target": "t_qualifying_q3_time",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "Q3",
+      "qualifying",
+      "third qualifying",
+      "qualifying time",
+      "NULL"
+    ],
+    "severity": "warning",
+    "scope": "Qualifying time analysis",
+    "confidence": "high",
+    "description": "tab11.fld038, fld039 and fld040 are Q1, Q2 and Q3 times. fld040 is NULL when the driver set no Q3 time: 2146 non-null rows of 7397, with 117 rows having Q1/Q2 but no Q3.",
+    "evidence": [
+      "ev_18_qualifying"
+    ]
+  },
+  {
+    "id": "c_dob_ordering",
+    "target": "t_driver_age",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "youngest",
+      "oldest",
+      "born in",
+      "birth year",
+      "age"
+    ],
+    "severity": "block",
+    "scope": "Age-based driver selection",
+    "confidence": "high",
+    "description": "tab03.fld019 is the birth date. The youngest driver has the maximum birth date and the oldest has the minimum. 'born in 1971' and 'born before 1985' refer to the year part of fld019.",
+    "evidence": [
+      "ev_05_birth_dates"
+    ]
+  },
+  {
+    "id": "c_full_name_composition",
+    "target": "t_driver_full_name",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "full name",
+      "name of the driver",
+      "forename",
+      "surname"
+    ],
+    "severity": "block",
+    "scope": "Returning a driver's name",
+    "confidence": "high",
+    "description": "A driver's full name is fld017 (forename) followed by fld018 (surname). fld016 is a three-letter code and fld014 is a reference slug, neither of which is a full name. fld016 may be empty for some historical drivers.",
+    "evidence": [
+      "ev_04_driver_fields"
+    ]
+  },
+  {
+    "id": "c_driver_nationality",
+    "target": "t_driver_nationality",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "Japanese",
+      "German",
+      "French",
+      "Dutch",
+      "Netherlandic",
+      "nationality"
+    ],
+    "severity": "warning",
+    "scope": "Filtering drivers by nationality",
+    "confidence": "high",
+    "description": "tab03.fld012 stores adjective nationality strings. Dutch is the stored value for Netherlands nationality, so Netherlandic maps to Dutch. Values are case-sensitive and include British, German, French and Japanese.",
+    "evidence": [
+      "ev_06_driver_nationality"
+    ]
+  },
+  {
+    "id": "c_constructor_nationality",
+    "target": "t_constructor_nationality",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "Japanese constructors",
+      "constructor nationality",
+      "team nationality"
+    ],
+    "severity": "warning",
+    "scope": "Filtering constructors by nationality",
+    "confidence": "high",
+    "description": "tab02.fld012 stores constructor nationality adjectives. Toyota, Honda, Super Aguri, Maki and Kojima are stored as Japanese.",
+    "evidence": [
+      "ev_21_japanese_constructors"
+    ]
+  },
+  {
+    "id": "c_points_columns",
+    "target": "t_driver_standing_points",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "points",
+      "0 points",
+      "maximum point scores",
+      "point scores"
+    ],
+    "severity": "block",
+    "scope": "Any points aggregation",
+    "confidence": "high",
+    "description": "fld026 is a points column in several tables with different semantics: tab06 is per-race constructor points, tab07 is cumulative constructor points, tab08 is cumulative driver points, and tab13 is per-race driver points. Always qualify the points column by table.",
+    "evidence": [
+      "ev_12_points"
+    ]
+  },
+  {
+    "id": "c_wins_columns",
+    "target": "t_driver_wins",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "most winning",
+      "wins",
+      "victories"
+    ],
+    "severity": "warning",
+    "scope": "Win counts and most-winning analysis",
+    "confidence": "high",
+    "description": "tab08.fld031 is cumulative driver wins after a race, while tab07.fld031 is cumulative constructor wins. Wins can also be counted from tab13 results whose finishing position is 1.",
+    "evidence": [
+      "ev_13_wins"
+    ]
+  },
+  {
+    "id": "c_position_columns",
+    "target": "t_race_position",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "position",
+      "rank",
+      "highest rank",
+      "finishing position"
+    ],
+    "severity": "warning",
+    "scope": "Race finishing order",
+    "confidence": "high",
+    "description": "In tab13, fld029 is the finishing position, fld030 is its text form and fld044 is positionOrder. fld029 and fld044 agree in 13116 of 13129 populated rows and differ in 13; use fld044 for the official classified order. fld047 is a different concept, the fastest-lap rank.",
+    "evidence": [
+      "ev_19_positions"
+    ]
+  },
+  {
+    "id": "c_fastest_lap_rank",
+    "target": "t_fastest_lap_rank",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "rank",
+      "highest rank",
+      "fastest lap rank"
+    ],
+    "severity": "block",
+    "scope": "Interpreting tab13.fld047",
+    "confidence": "high",
+    "description": "tab13.fld047 is the fastest-lap rank within the race, not the race finishing position. It is NULL for 18246 results and 0 for 143 results, with values 1-24 when a fastest lap is ranked. Race finishing order is fld029 or fld044.",
+    "evidence": [
+      "ev_16_fastest_lap_rank"
+    ]
+  },
+  {
+    "id": "c_fastest_lap_number",
+    "target": "t_fastest_lap_number",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "fastest lap number",
+      "lap number",
+      "fastest lap"
+    ],
+    "severity": "warning",
+    "scope": "Fastest lap details",
+    "confidence": "high",
+    "description": "tab13.fld046 is the lap number on which the driver's fastest lap was set, fld048 is its time and fld049 its speed. fld045 is total laps completed and tab09.fld033 is the lap index of each lap record; these are different concepts.",
+    "evidence": [
+      "ev_15_fastest_lap_fields"
+    ]
+  },
+  {
+    "id": "c_champion_definition",
+    "target": "t_season_champion",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "champion",
+      "winner",
+      "race champion",
+      "season champion",
+      "champion in 2009"
+    ],
+    "severity": "block",
+    "scope": "Champion and winner questions",
+    "confidence": "high",
+    "description": "A race champion or winner is the driver with finishing position 1 in that race (tab13.fld029 or fld044 equals 1). A season champion is the driver with standing position 1 (tab08.fld029 equals 1) at the season's final race. A single race result does not establish the season champion.",
+    "evidence": [
+      "ev_14_2009_champion"
+    ]
+  },
+  {
+    "id": "c_circuit_country",
+    "target": "t_circuit_country",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "hosted in Germany",
+      "circuits in Germany",
+      "circuit country",
+      "country"
+    ],
+    "severity": "warning",
+    "scope": "Determining where a race was hosted",
+    "confidence": "high",
+    "description": "Circuit country is tab01.fld005. A race links to its circuit through tab05.fld001 equals tab01.fld001; the race name in tab05.fld003 does not encode the host country. There are 23 European Grand Prix races, 12 of them hosted in Germany.",
+    "evidence": [
+      "ev_09_race_name_country"
+    ]
+  },
+  {
+    "id": "c_percentage_definition",
+    "target": "t_percentage_share",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "percentage",
+      "percent",
+      "share",
+      "rate"
+    ],
+    "severity": "warning",
+    "scope": "Percentage calculations",
+    "confidence": "high",
+    "description": "A percentage is the counted subset divided by the corresponding counted total, multiplied by 100. The denominator must be the total for the same scope, not the whole table.",
+    "evidence": [
+      "ev_09_race_name_country"
+    ]
+  },
+  {
+    "id": "c_laps_meaning",
+    "target": "t_laps_completed",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "laps",
+      "lap numbers over 50",
+      "laps completed"
+    ],
+    "severity": "warning",
+    "scope": "Lap-count questions",
+    "confidence": "high",
+    "description": "tab13.fld045 is the number of laps completed by the driver in the race (0-200). tab09.fld033 is the lap index of a lap record and tab13.fld046 is the fastest-lap number; these are different concepts.",
+    "evidence": [
+      "ev_20_laps"
+    ]
+  },
+  {
+    "id": "c_race_date_format",
+    "target": "t_race_date",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "September 2005",
+      "1983/7/16",
+      "month",
+      "year of race",
+      "date"
+    ],
+    "severity": "block",
+    "scope": "Date filtering of races",
+    "confidence": "high",
+    "description": "tab05.fld023 is a DATE stored as YYYY-MM-DD, for example 1983-07-16. Extract month or year for questions such as September 2005 and compare the date directly for a value such as 1983/7/16.",
+    "evidence": [
+      "ev_03_race_fields"
+    ]
+  },
+  {
+    "id": "c_circuit_coordinates",
+    "target": "t_circuit_coordinates",
+    "constraint_type": "unit",
+    "trigger_keywords": [
+      "coordinates",
+      "coordinate location",
+      "latitude",
+      "longitude",
+      "lat",
+      "lng",
+      "location of circuit"
+    ],
+    "severity": "warning",
+    "scope": "Circuit coordinate questions",
+    "confidence": "high",
+    "description": "tab01.fld006 is latitude and fld007 is longitude, both REAL. fld004 is the city/locality and fld005 the country, so a coordinate-location question refers to the lat/lng pair, not the city.",
+    "evidence": [
+      "ev_08_circuit_attributes"
+    ]
+  },
+  {
+    "id": "c_field_number_reuse",
+    "target": "t_race_name",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "fld003",
+      "fld009",
+      "fld012",
+      "fld020",
+      "fld024",
+      "fld026",
+      "fld027",
+      "fld029",
+      "fld034",
+      "fld045"
+    ],
+    "severity": "block",
+    "scope": "Interpreting opaque column names",
+    "confidence": "high",
+    "description": "Column numbers are reused across tables with different meanings: fld003 is circuit name in tab01, constructor name in tab02 and race name in tab05; fld009 is a URL in several tables; fld012 is nationality in tab02 and tab03; fld020 is season year in tab04 and race year in tab05; fld024 is race time in tab13, lap time in tab09 and pit time in tab10; fld034 is milliseconds in tab09, tab13 and tab10 but with different meanings. Always qualify columns by table.",
+    "evidence": [
+      "ev_01_schema"
+    ]
+  }
+]

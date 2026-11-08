@@ -1,0 +1,217 @@
+[
+  {
+    "id": "rel_question_is_post",
+    "source": "term_question",
+    "relation_type": "hierarchy",
+    "target": "term_post",
+    "connection_condition": "",
+    "description": "A question is a specific kind of post; question records form a subset of the post records discriminated by the post type.",
+    "evidence": [
+      "ev_posttypeid_enum"
+    ]
+  },
+  {
+    "id": "rel_answer_is_post",
+    "source": "term_answer",
+    "relation_type": "hierarchy",
+    "target": "term_post",
+    "connection_condition": "",
+    "description": "An answer is a specific kind of post; answer records form a subset of the post records discriminated by the post type.",
+    "evidence": [
+      "ev_posttypeid_enum"
+    ]
+  },
+  {
+    "id": "rel_user_owns_post",
+    "source": "term_user",
+    "relation_type": "composition",
+    "target": "term_post",
+    "connection_condition": "posts.OwnerUserId corresponds to users.Id",
+    "description": "A user account is composed of the posts it owns; every post carries an author reference to the owning account, and the author reference is absent only where the account record no longer exists.",
+    "evidence": [
+      "ev_post_owner_identity"
+    ]
+  },
+  {
+    "id": "rel_question_has_answer",
+    "source": "term_question",
+    "relation_type": "composition",
+    "target": "term_answer",
+    "connection_condition": "answer posts reference their parent question through posts.ParentId",
+    "description": "A question is composed of the answers given to it; an answer cannot exist without the question it responds to.",
+    "evidence": [
+      "ev_parentid_answers"
+    ]
+  },
+  {
+    "id": "rel_post_has_comment",
+    "source": "term_post",
+    "relation_type": "composition",
+    "target": "term_comment",
+    "connection_condition": "comments.PostId corresponds to posts.Id",
+    "description": "A post is composed of the comments attached to it; a comment has no meaning detached from its post.",
+    "evidence": [
+      "ev_comment_identity_complementarity"
+    ]
+  },
+  {
+    "id": "rel_user_writes_comment",
+    "source": "term_user",
+    "relation_type": "composition",
+    "target": "term_comment",
+    "connection_condition": "comments.UserId corresponds to users.Id",
+    "description": "A user account is composed of the comments it authored; the author reference is present for almost every comment, and it is the authoritative link to the commenting account.",
+    "evidence": [
+      "ev_comment_identity_complementarity",
+      "ev_comment_thankyou_join"
+    ]
+  },
+  {
+    "id": "rel_post_receives_vote",
+    "source": "term_post",
+    "relation_type": "composition",
+    "target": "term_vote",
+    "connection_condition": "votes.PostId corresponds to posts.Id",
+    "description": "A post is composed of the votes cast on it; every vote targets exactly one post.",
+    "evidence": [
+      "ev_votetypeid_enum"
+    ]
+  },
+  {
+    "id": "rel_user_casts_vote",
+    "source": "term_user",
+    "relation_type": "composition",
+    "target": "term_vote",
+    "connection_condition": "votes.UserId corresponds to users.Id, populated only for a small minority of vote records",
+    "description": "A user account is composed of the votes it cast. Unlike authorship, voter attribution is mostly absent: only a small fraction of vote records identify the voter.",
+    "evidence": [
+      "ev_votes_userid_sparse"
+    ]
+  },
+  {
+    "id": "rel_user_earns_badge",
+    "source": "term_user",
+    "relation_type": "composition",
+    "target": "term_badge",
+    "connection_condition": "badges.UserId corresponds to users.Id",
+    "description": "A user account is composed of the badges awarded to it; each badge award belongs to one recipient.",
+    "evidence": [
+      "ev_badge_names"
+    ]
+  },
+  {
+    "id": "rel_post_link_relates_post",
+    "source": "term_post",
+    "relation_type": "composition",
+    "target": "term_post_link",
+    "connection_condition": "postLinks.PostId and postLinks.RelatedPostId both reference posts.Id",
+    "description": "A post is composed of the link records in which it participates, either as the source post or as the related post.",
+    "evidence": [
+      "ev_postlinks_resolution",
+      "ev_postlink_linktype"
+    ]
+  },
+  {
+    "id": "rel_post_tag_equiv_tagname",
+    "source": "term_post_tag",
+    "relation_type": "equivalence",
+    "target": "term_tag",
+    "connection_condition": "the tag tokens embedded in the delimited tag list of a question denote the same tags as tags.TagName, but the two are written in different surface forms",
+    "description": "The tags carried by a question and the tag catalogue entries express the same business concept of a topic label. The embedded tag list uses a delimited token form while the catalogue stores a bare name, so the same tag is represented differently in the two places.",
+    "evidence": [
+      "ev_tags_format",
+      "ev_tag_match_boundary"
+    ]
+  },
+  {
+    "id": "rel_displayname_identifies_user",
+    "source": "term_display_name",
+    "relation_type": "association",
+    "target": "term_user",
+    "connection_condition": "",
+    "description": "A display name is the human-readable label by which a person is named in questions; it is an attribute of a user account rather than a stable identifier, and several accounts may share the same label.",
+    "evidence": [
+      "ev_displayname_not_unique",
+      "ev_named_users"
+    ]
+  },
+  {
+    "id": "rel_creation_date_derives_year",
+    "source": "term_creation_date",
+    "relation_type": "derivation",
+    "target": "term_calendar_year",
+    "connection_condition": "",
+    "description": "The calendar year is derived from the year component of a creation timestamp and is used to bucket records annually.",
+    "evidence": [
+      "ev_creation_year_filter",
+      "ev_datetime_text_format"
+    ]
+  },
+  {
+    "id": "rel_last_access_derives_year",
+    "source": "term_last_access_date",
+    "relation_type": "derivation",
+    "target": "term_calendar_year",
+    "connection_condition": "",
+    "description": "The calendar year for user activity is derived from the year component of the last-access timestamp.",
+    "evidence": [
+      "ev_date_ranges"
+    ]
+  },
+  {
+    "id": "rel_avg_view_count_derived",
+    "source": "term_view_count",
+    "relation_type": "derivation",
+    "target": "term_avg_view_count",
+    "connection_condition": "",
+    "description": "The average view count is derived as the mean of the individual view counters across the qualifying question posts.",
+    "evidence": [
+      "ev_viewcount_questions_only"
+    ]
+  },
+  {
+    "id": "rel_avg_user_age_derived",
+    "source": "term_user_age",
+    "relation_type": "derivation",
+    "target": "term_avg_user_age",
+    "connection_condition": "",
+    "description": "The average user age is derived as the mean of the individual age values across the qualifying users, considering only users whose age is recorded.",
+    "evidence": [
+      "ev_age_distribution",
+      "ev_age_sparse"
+    ]
+  },
+  {
+    "id": "rel_post_vote_ratio_derived",
+    "source": "term_post_count",
+    "relation_type": "derivation",
+    "target": "term_post_vote_ratio",
+    "connection_condition": "",
+    "description": "The post-to-vote ratio is derived by dividing the number of posts attributed to a user by the number of votes attributed to that same user; both terms in the quotient must share one user scope.",
+    "evidence": [
+      "ev_user24_posts_votes"
+    ]
+  },
+  {
+    "id": "rel_badge_year_share_derived",
+    "source": "term_badge_count",
+    "relation_type": "derivation",
+    "target": "term_badge_year_share",
+    "connection_condition": "",
+    "description": "The badge year share is derived by counting awards of one badge kind within a year and dividing by the total count for that badge, so that two years become comparable as percentages.",
+    "evidence": [
+      "ev_badge_student_by_year"
+    ]
+  },
+  {
+    "id": "rel_post_score_vs_comment_score",
+    "source": "term_post_score",
+    "relation_type": "association",
+    "target": "term_comment_score",
+    "connection_condition": "",
+    "description": "Post score and comment score share the same name but measure votes on different entities and live in different tables; they must not be treated as interchangeable when a question says only 'score'.",
+    "evidence": [
+      "ev_score_contexts"
+    ]
+  }
+]

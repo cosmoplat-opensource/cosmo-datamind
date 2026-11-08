@@ -1,0 +1,375 @@
+[
+  {
+    "id": "con_equipment_run_hours_no_sum",
+    "target": "term_equipment_run_hours",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "设备运行小时",
+      "设备运行时长",
+      "运行时长",
+      "OEE",
+      "设备可动率",
+      "按设备汇总",
+      "总运行小时"
+    ],
+    "severity": "block",
+    "scope": "对实际运行时长类指标做按设备或全表汇总时",
+    "confidence": "high",
+    "description": "设备-日汇总层的 actual_run_hours 把所在产线的当日运行时长复制给该产线的每台设备，而每条产线固定有 5 台设备。全表求和得 647698 小时，是产线级真实运行时长 129540 小时的 5.00 倍。跨设备求和运行时长会得到虚高的 5 倍结果；应按产线去重后再汇总，或只在单台设备层面使用该口径。",
+    "evidence": [
+      "ev_equipment_runhours_5x",
+      "ev_equipment_per_line_five",
+      "ev_metric_catalog_scope_notes"
+    ]
+  },
+  {
+    "id": "con_line_vs_equipment_grain",
+    "target": "term_line_run_hours",
+    "constraint_type": "scope",
+    "trigger_keywords": [
+      "运行时长",
+      "产线口径",
+      "设备口径",
+      "按产线",
+      "按设备"
+    ],
+    "severity": "warning",
+    "scope": "涉及运行时长与 OEE 的口径选择时",
+    "confidence": "high",
+    "description": "“设备运行时长”（DWS_PRODUCTION_DAILY，产线-日）与“设备运行小时”（DWS_EQUIPMENT_DAILY，设备-日）名称相近但粒度不同，不可混用或相加。OEE 同样存在这两个口径。回答问题时必须先明确使用产线口径还是设备口径。",
+    "evidence": [
+      "ev_metric_catalog_scope_notes",
+      "ev_oee_two_grains",
+      "ev_equipment_runhours_5x"
+    ]
+  },
+  {
+    "id": "con_ar_balance_timepoint",
+    "target": "term_ar_balance",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "应收账款",
+      "应收余额",
+      "AR",
+      "期末余额",
+      "未清应收",
+      "资金占用"
+    ],
+    "severity": "block",
+    "scope": "跨日期或跨期间的应收账款余额统计",
+    "confidence": "high",
+    "description": "应收账款余额是时点值（当日末未清余额，含税），不是期间发生额。跨日期只能取某一时点（通常为期末最后一天）的值，绝不能按日累加；按日累加会把同一笔未清欠款重复计入，量级将被天数量级地放大。",
+    "evidence": [
+      "ev_metric_catalog_scope_notes",
+      "ev_ar_balance_timepoint_note",
+      "ev_ar_snapshot_daily"
+    ]
+  },
+  {
+    "id": "con_overdue_ar_timepoint",
+    "target": "term_overdue_ar",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "超期",
+      "逾期",
+      "超期货款",
+      "逾期金额",
+      "应收逾期",
+      "账龄"
+    ],
+    "severity": "block",
+    "scope": "跨日期的超期应收统计",
+    "confidence": "high",
+    "description": "DWS_RISK_DAILY 的 overdue_ar_amt 与 overdue_ar_count 是每个自然日的时点快照。单日合计约 3.6–5.6 千万元，与其对应的明细逾期余额 42728977.91 元量级一致；若把 506 个日期的值累加会得到约 187.7 亿元，严重失真。正确做法是取指定时点值或按期求平均。",
+    "evidence": [
+      "ev_ar_snapshot_daily",
+      "ev_ar_aging_buckets",
+      "ev_ar_balance_timepoint_note"
+    ]
+  },
+  {
+    "id": "con_sales_amount_vs_revenue",
+    "target": "term_sales_order_amount",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "销售额",
+      "接单金额",
+      "收入",
+      "营收",
+      "订单金额",
+      "确认收入"
+    ],
+    "severity": "block",
+    "scope": "涉及销售额与收入口径的盈利性分析",
+    "confidence": "high",
+    "description": "接单金额是按下单日汇总的不含税订单金额，包含未交付订单与后续会退货的部分；它与按发货（fact_delivery）或开票（fact_invoice）确认的收入不是同一口径。直接把接单金额当作已实现收入会同时高估收入并错配成本期间。",
+    "evidence": [
+      "ev_metric_catalog_scope_notes",
+      "ev_sales_amount_basis",
+      "ev_negative_margin_orders"
+    ]
+  },
+  {
+    "id": "con_incident_severity_enum",
+    "target": "term_incident_severity",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "fa",
+      "mtc",
+      "near_miss",
+      "未遂",
+      "事故严重度",
+      "事故数",
+      "工亡",
+      "伤亡"
+    ],
+    "severity": "block",
+    "scope": "解释和筛选安全事件严重度时",
+    "confidence": "high",
+    "description": "severity 取值含义：fa=急救（轻微伤害，14 起，对应 injury_count 合计 14）、mtc=医疗处理（7 起，injury_count 合计 7）、near_miss=未遂（11 起，injury_count 全为 0）。fa 不是 fatality 的缩写——全部记录中 fatality_count 均为 0，若把 fa 误读为死亡会得出完全错误的伤亡结论。",
+    "evidence": [
+      "ev_incident_severity_enum"
+    ]
+  },
+  {
+    "id": "con_near_miss_exclusion",
+    "target": "term_incident",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "事故数",
+      "安全事故",
+      "事件数",
+      "未遂",
+      "事故总数"
+    ],
+    "severity": "warning",
+    "scope": "统计事故数量或事故率时",
+    "confidence": "high",
+    "description": "汇总层的“事故数”(incident_count) 为 21，等于 fact_incident 中 severity 不为 near_miss 的记录数；未遂事件 11 起单独计入“未遂事件数”。统计“事故数”时不应包含 near_miss，除非问题明确要求包含未遂事件。",
+    "evidence": [
+      "ev_incident_severity_enum",
+      "ev_safety_daily_reconcile"
+    ]
+  },
+  {
+    "id": "con_high_risk_l3_l4",
+    "target": "term_high_risk",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "高风险",
+      "高风险数",
+      "不可容忍风险",
+      "重大风险",
+      "风险等级"
+    ],
+    "severity": "warning",
+    "scope": "统计高风险项或按风险等级筛选时",
+    "confidence": "high",
+    "description": "风险等级 L1=可接受、L2=可容忍、L3=不可容忍、L4=重大。指标“高风险数”描述为“不可容忍风险数”，其全表求和 16 恰等于 L3（9）与 L4（7）之和，说明高风险口径同时包含 L3 与 L4；仅取 L4 会漏计 L3。",
+    "evidence": [
+      "ev_high_risk_l3l4",
+      "ev_risk_level_dim_actions",
+      "ev_safety_daily_reconcile"
+    ]
+  },
+  {
+    "id": "con_quality_disposition_enum",
+    "target": "term_quality_disposition",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "合格",
+      "不合格",
+      "让步接收",
+      "合格率",
+      "合格品",
+      "返工品",
+      "等级"
+    ],
+    "severity": "block",
+    "scope": "计算合格率或分析产出等级结构时",
+    "confidence": "high",
+    "description": "质量判定有三个取值：合格 13494、不合格 117、让步接收 93。让步接收是经评审后放行的不完全达标品，既不属于合格也不属于不合格；合格率的分母与分子是否包含让步接收会直接改变结果。产出等级为四档：优等品 2721、一等品 2721、合格品 93、返工品 116。",
+    "evidence": [
+      "ev_quality_disposition_enum",
+      "ev_production_grade_enum"
+    ]
+  },
+  {
+    "id": "con_zero_output_null_rates",
+    "target": "term_yield_rate",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "成材率",
+      "优等品率",
+      "比率",
+      "平均",
+      "空值",
+      "产量为0"
+    ],
+    "severity": "warning",
+    "scope": "对成材率、优等品率等比率列求平均时",
+    "confidence": "high",
+    "description": "DWS_PRODUCTION_DAILY 共 7974 行，其中 5089 行 actual_quantity=0 且 yield_rate 等比率列为空值。这些是当日无产出的产线-产品组合，其空值不代表 0。求平均时必须排除空值行，否则比率会被系统性低估；同理也不应把这些行计入产量均值。",
+    "evidence": [
+      "ev_production_null_rates"
+    ]
+  },
+  {
+    "id": "con_finance_daily_is_monthly",
+    "target": "term_budget",
+    "constraint_type": "scope",
+    "trigger_keywords": [
+      "财务",
+      "预算",
+      "成本",
+      "折旧",
+      "月度",
+      "按天",
+      "日粒度"
+    ],
+    "severity": "block",
+    "scope": "对财务与成本类汇总层做时间聚合时",
+    "confidence": "high",
+    "description": "DWS_FINANCE_DAILY 虽以 _DAILY 命名，实际只有 18 个月末日期（2025-01-31 至 2026-06-30），粒度为成本中心-月末。若按“日”理解并与其他日粒度表按日期连接，会因日期对不上而大量丢行；按天平均也会错。需要月度数据时应直接按该表的月末行汇总。",
+    "evidence": [
+      "ev_finance_monthly_grain"
+    ]
+  },
+  {
+    "id": "con_cost_no_double_depreciation",
+    "target": "term_product_total_cost",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "总成本",
+      "成本构成",
+      "制造费用",
+      "折旧",
+      "经营利润率",
+      "单位成本"
+    ],
+    "severity": "warning",
+    "scope": "拆解或重组产品成本时",
+    "confidence": "high",
+    "description": "产品总成本由材料成本、人工成本、制造费用三项构成，其中制造费用已包含折旧。计算利润或单位成本时不应在总额之外再单独扣减折旧额，否则会重复扣减；“经营利润率”的复合指标定义中亦明确该口径。",
+    "evidence": [
+      "ev_cost_component_relation",
+      "ev_metric_formula_composite"
+    ]
+  },
+  {
+    "id": "con_sales_target_grain",
+    "target": "term_sales_target",
+    "constraint_type": "scope",
+    "trigger_keywords": [
+      "目标",
+      "达成率",
+      "销量目标",
+      "毛利目标",
+      "考核"
+    ],
+    "severity": "warning",
+    "scope": "目标达成率计算时",
+    "confidence": "high",
+    "description": "销售目标的粒度为业务员-年-月，覆盖 2025-01 至 2026-06。计算达成率必须与实测值按相同的 emp_id 与年月对齐后再相除，不能在整表层面把目标求和与实测求和直接相比（两表覆盖的业务员与期间范围可能不同）。",
+    "evidence": [
+      "ev_sales_target_grain"
+    ]
+  },
+  {
+    "id": "con_customer_status_enum",
+    "target": "term_customer_status",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "客户状态",
+      "活跃客户",
+      "休眠客户",
+      "流失客户",
+      "客户结构"
+    ],
+    "severity": "info",
+    "scope": "客户活跃度分析时",
+    "confidence": "high",
+    "description": "dim_customer.status 取值为 active（22）/dormant（1）/lost（2）；credit_status 是另一个独立字段，取值为 normal（24）/frozen（1）。冻结信用与流失状态不可混为一谈。",
+    "evidence": [
+      "ev_customer_status_enum",
+      "ev_customer_credit_enum"
+    ]
+  },
+  {
+    "id": "con_opportunity_status_enum",
+    "target": "term_opportunity",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "商机",
+      "商机状态",
+      "丢失商机",
+      "商机转化",
+      "赢单"
+    ],
+    "severity": "info",
+    "scope": "售前漏斗与商机转化分析时",
+    "confidence": "high",
+    "description": "商机状态取值为 won（36）/open（22）/lost（20）/stalled（6）；汇总层的“丢失商机数”对应 lost，“停滞商机”对应 stalled。成交商机可通过 converted_order_id 关联到销售订单，但并非所有 won 商机都必然已生成订单。",
+    "evidence": [
+      "ev_opportunity_status_enum"
+    ]
+  },
+  {
+    "id": "con_payment_type_enum",
+    "target": "term_bank_acceptance_ratio",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "回款",
+      "银承",
+      "电汇",
+      "银行承兑",
+      "回款方式",
+      "现金流"
+    ],
+    "severity": "info",
+    "scope": "回款结构与现金质量分析时",
+    "confidence": "high",
+    "description": "收款方式取值为 银承（银行承兑汇票，1705 笔）与 电汇（3239 笔）；is_bank_accepted=1 与 payment_type='银承' 一一对应。银承比率是银行承兑回款占回款总额的比例，银承并非现金等价物，其比例高低影响回款质量。",
+    "evidence": [
+      "ev_payment_type_enum"
+    ]
+  },
+  {
+    "id": "con_region_scope_sales_only",
+    "target": "term_region",
+    "constraint_type": "scope",
+    "trigger_keywords": [
+      "区域",
+      "大区",
+      "按区域",
+      "华东",
+      "区域绩效"
+    ],
+    "severity": "warning",
+    "scope": "按区域汇总组织或绩效指标时",
+    "confidence": "high",
+    "description": "区域维度仅通过 dim_department.region_id 对 6 个销售部门生效，其余 11 个职能部门（生产、质量、设备、采购、仓储物流、财务、人力资源、安全环保、计划、研发、总经办）的 region_id 为空。对职能部门按区域汇总无业务含义，强行关联会产生空区域或错误归属。",
+    "evidence": [
+      "ev_employee_dept_region_chain"
+    ]
+  },
+  {
+    "id": "con_bom_unit_per_ton",
+    "target": "term_product",
+    "constraint_type": "unit",
+    "trigger_keywords": [
+      "BOM",
+      "配方",
+      "用量",
+      "单耗",
+      "物料清单"
+    ],
+    "severity": "warning",
+    "scope": "BOM 物料用量换算时",
+    "confidence": "high",
+    "description": "dim_bom_line.qty_per_ton 的量纲是“每吨成品用量”，观测值以 1000 为基准（如 3 行各 1000.0），即以千克每吨表达。将其直接当作吨使用会造成千倍量级错误，与投料量（吨）对齐时需统一量纲。",
+    "evidence": [
+      "ev_bom_qty_per_ton"
+    ]
+  }
+]

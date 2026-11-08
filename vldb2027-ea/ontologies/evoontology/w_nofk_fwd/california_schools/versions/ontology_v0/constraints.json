@@ -1,0 +1,503 @@
+[
+  {
+    "id": "constraint_shared_school_agency_records",
+    "target": "term_school",
+    "constraint_type": "scope",
+    "trigger_keywords": [
+      "number of schools",
+      "count schools",
+      "list schools",
+      "school",
+      "all schools",
+      "how many schools"
+    ],
+    "severity": "block",
+    "scope": "Applies to any count, listing or ranking of schools built on the schools table.",
+    "confidence": "high",
+    "description": "The schools table holds 17686 rows of which 1369 are district/agency-level records, identifiable by a school portion of the CDS code equal to 0000000 and an empty School name. These records carry district attributes rather than a school site. Counting rows without excluding them inflates school counts, and they are also the rows that district-level derived values attach to.",
+    "evidence": [
+      "evidence_schools_record_composition"
+    ]
+  },
+  {
+    "id": "constraint_open_date_default_1980",
+    "target": "term_school_open_date",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "opened",
+      "open date",
+      "opened in 1980",
+      "year opened",
+      "opening year",
+      "school opened",
+      "monthly average"
+    ],
+    "severity": "warning",
+    "scope": "Applies whenever schools are filtered or counted by opening date or opening year.",
+    "confidence": "high",
+    "description": "10679 of 17686 schools carry the date 1980-07-01, which is a system default assigned to schools that predate statewide collection rather than a real opening date; a further 1369 records have no open date at all. Consequently an 'opened in 1980' analysis describes default-dated records and cannot be read as a genuine 1980 cohort, and monthly or yearly opening rates computed from this column are dominated by the default.",
+    "evidence": [
+      "evidence_opendate_placeholder"
+    ]
+  },
+  {
+    "id": "constraint_sat_reporting_levels",
+    "target": "term_sat_avg_score",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "SAT",
+      "average score",
+      "Math score",
+      "writing score",
+      "reading score",
+      "test score",
+      "excellence rate"
+    ],
+    "severity": "block",
+    "scope": "Applies to every use of the SAT table.",
+    "confidence": "high",
+    "description": "Each SAT row carries a reporting level: 1749 rows are school-level and 520 are district-level aggregates. District-level rows carry the district's CDS code, so they join to district/agency records rather than to school sites. School-level questions must exclude district-level rows and district-level questions must exclude school-level rows; mixing the two aggregates the same performance twice.",
+    "evidence": [
+      "evidence_sat_rtype_levels"
+    ]
+  },
+  {
+    "id": "constraint_sat_missing_scores",
+    "target": "term_sat_avg_score",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "average score",
+      "no scores",
+      "test takers",
+      "NumTstTakr",
+      "division by zero",
+      "top score"
+    ],
+    "severity": "warning",
+    "scope": "Applies to score comparison, ranking and any computed rate.",
+    "confidence": "high",
+    "description": "596 SAT rows have no reported section averages or NumGE1500, and 218 rows have a test-taker count of zero. Rows without averages must be excluded from score comparisons, and any rate with the test-taker count as denominator is undefined for those rows rather than zero.",
+    "evidence": [
+      "evidence_sat_nulls"
+    ]
+  },
+  {
+    "id": "constraint_excellence_rate_formula",
+    "target": "term_excellence_rate",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "excellence rate",
+      "lowest excellence rate",
+      "highest excellence rate",
+      "1500",
+      "NumGE1500",
+      "excellence"
+    ],
+    "severity": "block",
+    "scope": "Applies whenever an excellence or 1500-rate is requested.",
+    "confidence": "high",
+    "description": "The excellence rate is NumGE1500 divided by NumTstTakr within the same SAT row; no column stores it. Only rows with a non-zero test-taker count yield a defined rate, and because 596 rows lack NumGE1500 they cannot contribute to the ranking either.",
+    "evidence": [
+      "evidence_excellence_rate",
+      "evidence_sat_nulls"
+    ]
+  },
+  {
+    "id": "constraint_eligible_free_rate_formula",
+    "target": "term_eligible_free_rate_k12",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "eligible free rate",
+      "free rate",
+      "free meal rate",
+      "percent eligible free",
+      "free or reduced price meals"
+    ],
+    "severity": "block",
+    "scope": "Applies whenever a meal-eligibility rate is requested or compared.",
+    "confidence": "high",
+    "description": "The eligible free rate is the free meal count divided by the matching enrolment for the same population basis. It must be computed from one consistent basis: the K-12 count over K-12 enrolment, or the ages 5-17 count over ages 5-17 enrolment; combining bases produces a meaningless ratio.",
+    "evidence": [
+      "evidence_percent_columns_are_fractions",
+      "evidence_enrollment_bases"
+    ]
+  },
+  {
+    "id": "constraint_stored_percent_columns_are_fractions",
+    "target": "term_eligible_free_rate_k12",
+    "constraint_type": "unit",
+    "trigger_keywords": [
+      "percent",
+      "percentage",
+      "rate",
+      "eligible free",
+      "eligible FRPM",
+      "Percent (%)"
+    ],
+    "severity": "block",
+    "scope": "Applies to the four columns named 'Percent (%) Eligible ...'.",
+    "confidence": "high",
+    "description": "Despite their names, the four 'Percent (%) Eligible' columns store fractions between 0 and 1, not values between 0 and 100: the observed range is 0.0018 to 1.0, and a value of 0.5198 corresponds to about 52 percent. Values from these columns must be rescaled before being presented as percentages, and rates for a group of schools must be recomputed from summed counts rather than averaged across schools.",
+    "evidence": [
+      "evidence_percent_columns_are_fractions"
+    ]
+  },
+  {
+    "id": "constraint_enrollment_basis_choice",
+    "target": "term_enrollment_k12",
+    "constraint_type": "scope",
+    "trigger_keywords": [
+      "enrollment",
+      "enrolled",
+      "students enrolled",
+      "grades 1 through 12",
+      "ages 5 to 17",
+      "K-12",
+      "largest school",
+      "highest enrolment"
+    ],
+    "severity": "block",
+    "scope": "Applies to every enrolment magnitude, ranking and rate denominator.",
+    "confidence": "high",
+    "description": "Enrolment is reported on two bases in the same row and they disagree for 6460 of 9986 schools: a K-12 grade basis, which is the basis used for wording such as 'grades 1 through 12', and an ages 5-17 basis, which is the basis used when a question is phrased by student age. The question's wording determines the correct basis, and the same basis must be used for a numerator and its denominator.",
+    "evidence": [
+      "evidence_enrollment_bases"
+    ]
+  },
+  {
+    "id": "constraint_free_count_vs_frpm_count",
+    "target": "term_frpm_count_k12",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "free meals",
+      "free or reduced price meals",
+      "FRPM",
+      "reduced price",
+      "free meal count",
+      "meal count"
+    ],
+    "severity": "warning",
+    "scope": "Applies whenever a meal-eligible population is counted.",
+    "confidence": "high",
+    "description": "Two meal populations are recorded per school and basis: the free meal count, which excludes students eligible only for reduced-price meals, and the FRPM count, which combines free and reduced-price eligibility. They differ for 9352 of 9986 schools, so the phrase 'free or reduced price meals' does not automatically select the free meal count; the intended population should be chosen explicitly and, where an evidence hint names a specific count, that count determines the choice.",
+    "evidence": [
+      "evidence_free_meal_vs_frpm"
+    ]
+  },
+  {
+    "id": "constraint_virtual_status_codes",
+    "target": "term_virtual_status",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "virtual",
+      "exclusively virtual",
+      "fully virtual",
+      "online",
+      "Virtual",
+      "partially virtual"
+    ],
+    "severity": "block",
+    "scope": "Applies to any selection or exclusion of virtual schools.",
+    "confidence": "high",
+    "description": "Virtual is a code, not a boolean: the code denoting an exclusively (fully) virtual school is the value F, N denotes a school that is not virtual, P denotes a partially virtual school, and a blank value means the status was not reported (45 of the meal-reporting schools). Selecting virtual schools by a truthy test rather than by the specific code returns the wrong population, and 'exclusively virtual' selects only the F code.",
+    "evidence": [
+      "evidence_virtual_values"
+    ]
+  },
+  {
+    "id": "constraint_magnet_codes",
+    "target": "term_magnet_program",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "magnet",
+      "magnet program",
+      "offers a magnet program",
+      "Magnet"
+    ],
+    "severity": "block",
+    "scope": "Applies to any selection of schools offering a magnet program.",
+    "confidence": "high",
+    "description": "The magnet indicator takes the value 1 when the school offers a magnet program, 0 when it does not, and is blank for 7076 records where the value was not reported. Filtering on a truthy value rather than the specific code of 1 misclassifies the unreported records.",
+    "evidence": [
+      "evidence_magnet_values"
+    ]
+  },
+  {
+    "id": "constraint_nslp_provision_values",
+    "target": "term_nslp_provision_status",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "NSLP",
+      "provision",
+      "provision type",
+      "Multiple Provision Types",
+      "CEP",
+      "meal provision"
+    ],
+    "severity": "block",
+    "scope": "Applies to any selection by meal-provision arrangement.",
+    "confidence": "high",
+    "description": "The provision status is a free-text category rather than a code. Observed values are Provision 1 (7 schools), Provision 2 (1365), Provision 3 (2), Breakfast Provision 2 (285), CEP (172) and Multiple Provision Types (11), with 8139 schools leaving the value blank. The phrase 'Multiple Provision Types' is a distinct value and does not include schools in Provision 2 or Breakfast Provision 2.",
+    "evidence": [
+      "evidence_nslp_values"
+    ]
+  },
+  {
+    "id": "constraint_soc_code_values",
+    "target": "term_school_type_soc",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "school type",
+      "SOC",
+      "Intermediate/Middle School",
+      "middle school",
+      "high school",
+      "elementary school",
+      "Unified School",
+      "public school type"
+    ],
+    "severity": "block",
+    "scope": "Applies to any selection of schools by type of school site.",
+    "confidence": "high",
+    "description": "The school type code classifies school sites only. Common values are 60 Elementary Schools (7591), 66 High Schools (1776), 62 Intermediate/Middle Schools (1652), 68 Continuation High Schools (754), 60-series alternatives, 65 K-12 Schools (438) and 63 Alternative Schools of Choice (500); 1369 records are blank, being the district and agency records. Crucially the code set contains no district-level or 'Unified School' value, so a request phrased with a 'Unified Schools' type refers to the district type code rather than to a school type code.",
+    "evidence": [
+      "evidence_soc_values"
+    ]
+  },
+  {
+    "id": "constraint_doc_code_values",
+    "target": "term_district_type_doc",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "district type",
+      "DOC",
+      "Unified School District",
+      "Unified Schools",
+      "Elementary School District",
+      "High School District",
+      "County Office of Education"
+    ],
+    "severity": "block",
+    "scope": "Applies to any selection of schools by the administrative type of their district.",
+    "confidence": "high",
+    "description": "The district type code classifies the district or agency that operates a school: 54 Unified School District (10190 records), 52 Elementary School District (4378), 00 County Office of Education (1703), 56 High School District (1079), 98 Regional Occupation Center/Program (156), 02 State Board of Education (69), 34 Non-School Locations (49), 58 Community College District (33), 03 Statewide Benefit Charter (11), 99 Administration Only (10), 31 State Special Schools (6) and 42 Joint Powers Authority (2). A request for 'Unified Schools' resolves to the Unified School District code 54, and a request for an 'Elementary School District' resolves to code 52.",
+    "evidence": [
+      "evidence_doc_values"
+    ]
+  },
+  {
+    "id": "constraint_edops_code_values",
+    "target": "term_educational_option_type",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "educational option",
+      "EdOpsCode",
+      "State Special School",
+      "SSS",
+      "continuation school",
+      "special education school",
+      "alternative school of choice"
+    ],
+    "severity": "block",
+    "scope": "Applies to any selection of schools by educational operating model.",
+    "confidence": "high",
+    "description": "The educational option column is a short code paired with a description: TRAD Traditional (10103 records), CON Continuation School (539), COMMDAY Community Day School (486), ALTSOC Alternative School of Choice (320), SPEC Special Education School (228), COMM County Community School (133), JUV Juvenile Court School (94), OPP Opportunity School (47), ROP (6), YTH Youth Authority School (6), HOMHOS Home and Hospital (5), SPECON District Special Education Consortia School (5) and SSS State Special School (3). The code SSS denotes a State Special School and only three such schools exist statewide; 5711 records have no educational option code.",
+    "evidence": [
+      "evidence_edops_values"
+    ]
+  },
+  {
+    "id": "constraint_address_variants",
+    "target": "term_school_address",
+    "constraint_type": "scope",
+    "trigger_keywords": [
+      "address",
+      "full address",
+      "complete address",
+      "communication address",
+      "street",
+      "zip",
+      "mailing address"
+    ],
+    "severity": "warning",
+    "scope": "Applies to any address retrieval or address-based filtering.",
+    "confidence": "high",
+    "description": "Three address representations coexist: a physical street line, an abbreviated form of the same street line that differs from it for 15221 of 17686 records, and a separate mailing address. A complete communication address is assembled from street, city, state and zip values; the mailing variants may point elsewhere and should be used only when mailing delivery is intended. About 293 records have no address values at all.",
+    "evidence": [
+      "evidence_address_fields"
+    ]
+  },
+  {
+    "id": "constraint_administrator_slot_search",
+    "target": "term_administrator",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "administrator",
+      "principal",
+      "managed by",
+      "email address",
+      "contact"
+    ],
+    "severity": "warning",
+    "scope": "Applies to any search for a school by administrator name or for administrator contact details.",
+    "confidence": "high",
+    "description": "Administrator data is held in three parallel slots, each with a first name, last name and e-mail address, and a school may record up to three administrators. Searching only the first slot misses administrators recorded in the second or third slot, so a name search must cover all slots; the e-mail that belongs to a matched administrator is the one in the same numbered slot as the matched name.",
+    "evidence": [
+      "evidence_admin_fields"
+    ]
+  },
+  {
+    "id": "constraint_longitude_sign_convention",
+    "target": "term_school_location",
+    "constraint_type": "unit",
+    "trigger_keywords": [
+      "longitude",
+      "highest longitude",
+      "lowest longitude",
+      "coordinates",
+      "latitude"
+    ],
+    "severity": "block",
+    "scope": "Applies to any coordinate comparison or ordering.",
+    "confidence": "high",
+    "description": "All school longitudes are negative, with the observed range running from -124.281 to -83.781, so a plain ordering ranks locations from east to west and the numerically largest longitude is the easternmost location. A request for the 'highest longitude' is interpreted as the greatest absolute longitude value, which identifies the westernmost school, and analysis must state which convention it applies.",
+    "evidence": [
+      "evidence_coordinates"
+    ]
+  },
+  {
+    "id": "constraint_place_name_county_or_city",
+    "target": "term_county",
+    "constraint_type": "scope",
+    "trigger_keywords": [
+      "Monterey",
+      "county",
+      "in a city",
+      "in a county",
+      "located in",
+      "city of"
+    ],
+    "severity": "warning",
+    "scope": "Applies when a place name in a question may denote either a city or a county.",
+    "confidence": "high",
+    "description": "City and county are separate columns both holding free-text place names, and a name can exist in both roles: for example Monterey is the City of 16 school records and the County of 247 school records. A place-name qualifier therefore has to be resolved against the value domains of both columns rather than assumed to be a city; the two readings return very different populations.",
+    "evidence": [
+      "evidence_city_county_ambiguity"
+    ]
+  },
+  {
+    "id": "constraint_frpm_single_academic_year",
+    "target": "term_academic_year",
+    "constraint_type": "scope",
+    "trigger_keywords": [
+      "academic year",
+      "2014-2015",
+      "which year",
+      "over time",
+      "trend"
+    ],
+    "severity": "block",
+    "scope": "Applies to every enrolment and meal-eligibility fact.",
+    "confidence": "high",
+    "description": "The meal file contains a single academic year, 2014-2015, on all 9986 rows. Enrolment, meal counts and meal-eligibility rates are therefore only available for that one year, and no year-over-year comparison of meal data is possible. The SAT table carries no year column at all, so its reporting period is not stated in the data.",
+    "evidence": [
+      "evidence_academic_year"
+    ]
+  },
+  {
+    "id": "constraint_frpm_agency_rows",
+    "target": "term_enrollment_k12",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "enrollment",
+      "meal count",
+      "school count",
+      "district total"
+    ],
+    "severity": "warning",
+    "scope": "Applies when aggregating or counting meal and enrolment facts.",
+    "confidence": "high",
+    "description": "45 of the 9986 meal-reporting rows belong to district or agency-level records rather than school sites. Including them in a school count or a sum of enrolment double-counts the district alongside its schools.",
+    "evidence": [
+      "evidence_cds_linkage"
+    ]
+  },
+  {
+    "id": "constraint_sat_codes_unmatched",
+    "target": "term_cds_code",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "join",
+      "match",
+      "unmatched",
+      "missing school",
+      "SAT school"
+    ],
+    "severity": "warning",
+    "scope": "Applies when SAT rows are joined to the school register.",
+    "confidence": "high",
+    "description": "211 of the 2269 SAT rows carry a 13-character code that does not appear in the school register, comprising 53 district-level and 158 school-level rows. An inner join against the school register silently drops these rows, so any school-level SAT analysis must state whether unmatched rows are excluded or retained.",
+    "evidence": [
+      "evidence_cds_linkage"
+    ]
+  },
+  {
+    "id": "constraint_cds_code_structure",
+    "target": "term_cds_code",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "CDS code",
+      "CDSCode",
+      "cds",
+      "school code",
+      "identifier"
+    ],
+    "severity": "info",
+    "scope": "Applies when interpreting or matching identifiers across the three tables.",
+    "confidence": "high",
+    "description": "The CDS code concatenates a 2-digit county code, a 5-digit district code and a 7-digit school code, so its first two digits identify the county and its middle five digits the district without any lookup. A school portion of 0000000 denotes the district or agency record rather than a school site, and SAT rows may also appear with only the county and district portions populated.",
+    "evidence": [
+      "evidence_cds_structure"
+    ]
+  },
+  {
+    "id": "constraint_school_status_scope",
+    "target": "term_school_status_type",
+    "constraint_type": "scope",
+    "trigger_keywords": [
+      "active",
+      "closed",
+      "currently operating",
+      "status",
+      "still open",
+      "merged"
+    ],
+    "severity": "warning",
+    "scope": "Applies to every school population definition.",
+    "confidence": "high",
+    "description": "School records carry a status: Active (11708), Closed (4518), Merged (1448) or Pending (12). Closed and merged sites are retained in the register, and the meal file covers 9846 active schools together with 140 closed ones, so whether historical sites belong in a given population depends on the question and should be stated rather than assumed.",
+    "evidence": [
+      "evidence_status_values"
+    ]
+  },
+  {
+    "id": "constraint_grade_span_notation",
+    "target": "term_grade_span_offered",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "grade span",
+      "K-8",
+      "Kindergarten to 8th grade",
+      "grades offered",
+      "grade range",
+      "K-12"
+    ],
+    "severity": "warning",
+    "scope": "Applies to any grade span comparison or grade-based filter.",
+    "confidence": "high",
+    "description": "Grade spans are written as ranges in which K denotes kindergarten, P denotes preschool and numbers denote grade levels, so 'Kindergarten to 8th grade' corresponds to the K-8 span. 3882 schools have no offered span and 5743 no served span, and the served span differs from the offered span for 2487 schools; a grade-span condition should state which of the two it intends.",
+    "evidence": [
+      "evidence_grade_span_values"
+    ]
+  }
+]

@@ -1,0 +1,429 @@
+[
+  {
+    "id": "c_ar_stock_not_flow",
+    "target": "t_accounts_receivable",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "应收",
+      "应收账款",
+      "AR",
+      "应收余额",
+      "应收规模",
+      "时点",
+      "余额",
+      "账龄"
+    ],
+    "severity": "block",
+    "scope": "任何涉及 accounts_receivable 的期间或总量统计",
+    "confidence": "high",
+    "description": "accounts_receivable 是时点存量:2025-01-01 全表合计为 0.0,逐日累积至 2026-06-30 的 317341171.53。直接对整表求和得 148415452120.38,属跨日期重复累加的错误结果。应按目标日期取当日截面(可在员工间求和),或取期初期末差额衡量变动。同类的产品行复制问题也需先去重到产线日,再按日期截面汇总。",
+    "evidence": [
+      "ev_ar_stock"
+    ]
+  },
+  {
+    "id": "c_equipment_replication",
+    "target": "m_oee_equipment",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "OEE",
+      "设备OEE",
+      "设备综合效率",
+      "设备效率",
+      "运行时长",
+      "运行小时",
+      "设备汇总",
+      "停机时长"
+    ],
+    "severity": "block",
+    "scope": "在 DWS_EQUIPMENT_DAILY 上做设备级或产线级汇总时",
+    "confidence": "high",
+    "description": "DWS_EQUIPMENT_DAILY 中 oee 与 actual_run_hours 在同一条产线的同一天内对所有设备行取相同值(6266/6266 个产线日),是对产线值的复制。该表整表 SUM(actual_run_hours) = 647698 小时,而真实产线运行合计为 129540 小时(DWS_PRODUCTION_DAILY 与 fact_equipment_runtime 一致),恰为 5 倍膨胀(每条产线 5 台设备)。设备级汇总必须先去重到产线日,或改用 fact_equipment_runtime。",
+    "evidence": [
+      "ev_equipment_replication",
+      "ev_oee_line_constant"
+    ]
+  },
+  {
+    "id": "c_production_row_replication",
+    "target": "m_electricity_kwh",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "产线日",
+      "产品行",
+      "用电量",
+      "运行时长",
+      "单位能耗",
+      "OEE",
+      "产量汇总"
+    ],
+    "severity": "block",
+    "scope": "在 DWS_PRODUCTION_DAILY 上跨产品行汇总时",
+    "confidence": "high",
+    "description": "DWS_PRODUCTION_DAILY 粒度为 日 × 产线 × 产品,行内列分两类:oee 与 unit_energy_consumption 是产线日口径值,在多个产品行上重复;electricity_kwh、actual_run_hours、downtime_hours 在同一产线日的产品行之间分摊,分组求和才等于产线日总量。因此不能对 oee、unit_energy_consumption 求和,也不能假设每行都是一条独立产线记录。",
+    "evidence": [
+      "ev_oee_line_constant",
+      "ev_energy_reconciliation",
+      "ev_unit_energy_mismatch"
+    ]
+  },
+  {
+    "id": "c_grade_flag_semantics",
+    "target": "t_first_grade_rate",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "优等品",
+      "一等品",
+      "优等品率",
+      "一等品率",
+      "first_grade",
+      "产品等级",
+      "合格品",
+      "返工品",
+      "优品率"
+    ],
+    "severity": "block",
+    "scope": "解释或计算 first_grade_rate、first_grade、产品等级相关指标时",
+    "confidence": "high",
+    "description": "fact_production_output.is_first_grade = 1 仅对应等级 优等品(2721 行);一等品(2721 行)、合格品(93 行)、返工品(116 行)的 is_first_grade 均为 0。因此 first_grade_rate 的分子是 优等品 而非中文名为\"一等品\"的档位,不能把 一等品 当作 first grade。按产线回算 2025-01-01 产线 1 得 92.24%,与 DWS 的 92.23% 一致。",
+    "evidence": [
+      "ev_grade_semantics"
+    ]
+  },
+  {
+    "id": "c_yield_rate_scope",
+    "target": "m_yield_rate",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "成材率",
+      "收率",
+      "yield_rate",
+      "投入产出",
+      "损耗率"
+    ],
+    "severity": "warning",
+    "scope": "计算或对比 yield_rate 时",
+    "confidence": "high",
+    "description": "yield_rate = actual_quantity / material_input_qty × 100(2885/2885 生产行精确成立)。未生产行(planned_quantity = 0,共 5089 行)的 yield_rate 为 NULL,求均值前必须先过滤。跨产线或跨期间汇总应按产量加权,简单平均会低估大产线的低成材率。",
+    "evidence": [
+      "ev_ratio_definitions",
+      "ev_production_grain"
+    ]
+  },
+  {
+    "id": "c_unit_energy_scope",
+    "target": "t_unit_energy_consumption",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "单位能耗",
+      "吨电耗",
+      "能耗强度",
+      "kWh/吨",
+      "能效",
+      "耗电"
+    ],
+    "severity": "warning",
+    "scope": "解释或汇总 unit_energy_consumption 时",
+    "confidence": "high",
+    "description": "unit_energy_consumption 不等于该行 electricity_kwh / actual_quantity(仅 118/2885 生产行相等)。它是产线日口径的能耗强度,在产品行之间近似共享;例如 2025-01-02 产线 3 系统值为 388.3,而该行电量与产量之比仅 127.31。按产品行平均会得到偏低的能耗强度,期间汇总应重新用总电量除以总产量。",
+    "evidence": [
+      "ev_unit_energy_mismatch",
+      "ev_energy_reconciliation"
+    ]
+  },
+  {
+    "id": "c_oee_not_derivable",
+    "target": "t_oee",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "OEE",
+      "设备综合效率",
+      "设备效率",
+      "可用率",
+      "性能率",
+      "质量率"
+    ],
+    "severity": "warning",
+    "scope": "尝试推导或校验 OEE 时",
+    "confidence": "high",
+    "description": "DWS 中的 oee 不能由 utilization_rate、quality_pass_rate 或运行、停机时长推导:2885 个生产行中,oee 等于 utilization_rate × quality_pass_rate / 100 的仅 1 行,等于 utilization_rate 的亦仅 1 行。应把 OEE 当作外部给定的独立观测值,不要用其他比率反算。",
+    "evidence": [
+      "ev_oee_not_derivable"
+    ]
+  },
+  {
+    "id": "c_utilization_denominator",
+    "target": "t_actual_run_hours",
+    "constraint_type": "unit",
+    "trigger_keywords": [
+      "利用率",
+      "utilization",
+      "开动率",
+      "运行时长占比",
+      "运行小时"
+    ],
+    "severity": "info",
+    "scope": "解释 utilization_rate 或与设备可用率对比时",
+    "confidence": "high",
+    "description": "utilization_rate = actual_run_hours / 24 × 100,以自然日 24 小时为分母,而非计划运行时长。因此它与 设备可用率 = 运行/(运行+停机) 的口径不同,两者不可互换。",
+    "evidence": [
+      "ev_ratio_definitions"
+    ]
+  },
+  {
+    "id": "c_market_capacity_repeat",
+    "target": "t_market_share",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "市场容量",
+      "市场份额",
+      "market_capacity",
+      "市占率",
+      "可及市场",
+      "market_share"
+    ],
+    "severity": "block",
+    "scope": "使用 DWS_MARKET_DAILY 做市场总量或份额分析时",
+    "confidence": "high",
+    "description": "DWS_MARKET_DAILY 是 25 客户 × 546 天 的稠密网格。market_capacity 对每个客户是常量并逐日重复:整表 SUM 得 186431700,而按客户去重合计为 341450(dim_customer 口径)。市场容量只能按客户取一次,不能逐日累加。market_share 则是客户日度序列,跨客户不可相加,应做趋势或均值。",
+    "evidence": [
+      "ev_market_metrics"
+    ]
+  },
+  {
+    "id": "c_safety_sparsity",
+    "target": "t_audit_score",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "安全审计",
+      "审计评分",
+      "audit_score",
+      "安全评分",
+      "事故",
+      "未遂事件",
+      "安全健康度"
+    ],
+    "severity": "warning",
+    "scope": "安全指标统计时",
+    "confidence": "high",
+    "description": "DWS_SAFETY_DAILY 为事件驱动:2730 行中 audit_score 有 2694 行为 NULL,仅 177 个日期存在安全活动。对 audit_score 取平均会隐含忽略无审计日,应仅在实际有值记录上统计并说明样本量。全期 incident_count 合计 21 起、near_miss_count 合计 11 起,基数很小,不宜做同比推断。",
+    "evidence": [
+      "ev_safety_sparse"
+    ]
+  },
+  {
+    "id": "c_risk_sparse_and_degenerate",
+    "target": "t_overdue_ar_amt",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "风险",
+      "超期",
+      "逾期",
+      "超期库存",
+      "overdue_inventory",
+      "负毛利",
+      "overdue_ar"
+    ],
+    "severity": "block",
+    "scope": "使用 DWS_RISK_DAILY 做风险统计时",
+    "confidence": "high",
+    "description": "DWS_RISK_DAILY 共 18184 行但仅覆盖 506 个日期(2025-01-03 起),是事件驱动而非稠密日网格,无事件的行缺失不表示取值为零。overdue_inventory_qty 与 overdue_inventory_amt 全表合计均为 0.0,是退化列,不可用于超期库存分析。overdue_ar_amt 整表求和 18769707283.86 属跨事件日重复累加,应按日期截面取用(2026-06-30 单日为 42728977.9)。",
+    "evidence": [
+      "ev_risk_degenerate"
+    ]
+  },
+  {
+    "id": "c_governed_status_and_deletion",
+    "target": "t_inspection_result_code",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "状态",
+      "status",
+      "未删除",
+      "is_deleted",
+      "有效记录",
+      "CLOSED",
+      "APPROVED",
+      "进行中",
+      "租户"
+    ],
+    "severity": "warning",
+    "scope": "查询治理型事实表(带 ETL 元数据的 fact_* 表)时",
+    "confidence": "high",
+    "description": "治理型事实表带 status ∈ {OPEN, IN_PROGRESS, APPROVED, CLOSED, CANCELLED} 与 is_deleted 标记。实测 is_deleted 在所有被检查表中恒为 0,CANCELLED 未出现,分布以 CLOSED 为主并混有 APPROVED/OPEN/IN_PROGRESS(如 fact_sales_order_line:CLOSED 5020、APPROVED 182、OPEN 166、IN_PROGRESS 5)。统计前须明确是否只取已完成记录,否则会混入在途单据。tenant_code 恒为 DEMO_TENANT,无多租户差异。",
+    "evidence": [
+      "ev_governance_metadata"
+    ]
+  },
+  {
+    "id": "c_business_vs_posting_date",
+    "target": "t_business_date",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "业务日期",
+      "记账日期",
+      "business_date",
+      "posting_date",
+      "期间归属",
+      "月份归属",
+      "账期"
+    ],
+    "severity": "warning",
+    "scope": "治理型事实表按期间聚合时",
+    "confidence": "high",
+    "description": "治理型事实表同时存在 business_date 与 posting_date,且约束保证 posting_date 不早于 business_date。fact_sales_order_line 中 3012/5373 行(约 56%)两者不等。按期间归属分析必须显式声明使用哪一个日期,否则月度口径会出现系统性偏移。",
+    "evidence": [
+      "ev_posting_vs_business_date"
+    ]
+  },
+  {
+    "id": "c_gl_double_entry",
+    "target": "t_gl_amount",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "总账",
+      "GL",
+      "借贷",
+      "分录",
+      "debit",
+      "credit",
+      "科目",
+      "凭证"
+    ],
+    "severity": "block",
+    "scope": "使用 fact_gl_entry / fact_gl_entry_line 汇总金额时",
+    "confidence": "high",
+    "description": "fact_gl_entry 每行的 debit_amount 与 credit_amount 恒相等(3996/3996),全期借贷合计同为 14095462266.64。因此借方合计减贷方合计恒为 0,不能据此做平衡校验。提取\"分录金额\"应取借方或贷方之一,借贷相加会翻倍、相减会得零。",
+    "evidence": [
+      "ev_gl_balance"
+    ]
+  },
+  {
+    "id": "c_ratio_not_additive",
+    "target": "m_metric_tier",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "比率",
+      "百分比",
+      "率",
+      "评分",
+      "平均",
+      "不用求和",
+      "加权"
+    ],
+    "severity": "warning",
+    "scope": "汇总任何比率类或评分类指标时",
+    "confidence": "high",
+    "description": "dim_metric_catalog 的 107 条指标中,metric_type 为 比率(18 条)与 评分(3 条)的共 21 条不可跨行相加。成材率、优等品率、OEE、可用率、来料检验合格率、市场份额、能耗强度等均属此类:期间汇总必须重新以分子除以分母,或按量加权平均。",
+    "evidence": [
+      "ev_metric_catalog"
+    ]
+  },
+  {
+    "id": "c_monthly_rollup_available",
+    "target": "t_monthly_sales_amount",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "月度",
+      "月报",
+      "按月汇总",
+      "agg_metric_monthly",
+      "月度口径"
+    ],
+    "severity": "info",
+    "scope": "需要月度粒度接单、目标或费用数据时",
+    "confidence": "high",
+    "description": "agg_metric_monthly 是 DWS_ORG_* 按 员工 × 年月 的精确汇总(逐月抽验相等),可作为月度口径的现成来源,避免重复聚合。其 quantity_target 对应 DWS_ORG_TARGET_DAILY.sales_quantity_target,expense_total 对应 DWS_ORG_EXPENSE_DAILY.sales_expense,payment_total 为回款,ar_balance 为应收余额(存量为月度时点值)。",
+    "evidence": [
+      "ev_monthly_rollup"
+    ]
+  },
+  {
+    "id": "c_sales_scope_includes_all_status",
+    "target": "t_sales_quantity",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "订单状态",
+      "已交付",
+      "未交付",
+      "退货",
+      "delivered",
+      "undelivered",
+      "returned",
+      "销量口径"
+    ],
+    "severity": "warning",
+    "scope": "解释销量或接单金额口径时",
+    "confidence": "high",
+    "description": "fact_sales_order.status 取值 delivered(4576 单)、undelivered(152 单)、returned(3 单)。DWS_ORG_PERFORMANCE_DAILY.sales_quantity 合计 116796.78 吨等于三种状态的全部订单合计,说明销量口径未剔除未交付与退货。若问题限定\"已交付\"或\"实际交付量\",需按状态过滤或改用 fact_delivery(合计 113456.43 吨)。",
+    "evidence": [
+      "ev_sales_order_status",
+      "ev_sales_reconciliation"
+    ]
+  },
+  {
+    "id": "c_negative_margin_marking",
+    "target": "t_negative_margin_qty",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "负毛利",
+      "亏损订单",
+      "is_negative_margin",
+      "毛利为负",
+      "定价失效"
+    ],
+    "severity": "info",
+    "scope": "识别亏损订单时",
+    "confidence": "high",
+    "description": "fact_sales_order.is_negative_margin = 1 共 41/4731 单,是订单级标记。DWS_RISK_DAILY.negative_margin_qty 全期合计 1110.38 吨,为标记订单的销量口径汇总。该标记不改变 DWS_ORG_PERFORMANCE_DAILY 的销量与毛利合计,即负毛利订单仍全额计入销量与毛利。",
+    "evidence": [
+      "ev_negative_margin",
+      "ev_sales_order_status"
+    ]
+  },
+  {
+    "id": "c_coverage_mismatch_across_dws",
+    "target": "m_sales_quantity",
+    "constraint_type": "scope",
+    "trigger_keywords": [
+      "时间范围",
+      "数据区间",
+      "覆盖期间",
+      "2025",
+      "2026",
+      "口径对齐",
+      "期间不一致"
+    ],
+    "severity": "warning",
+    "scope": "跨 DWS 汇总表比较期间指标时",
+    "confidence": "high",
+    "description": "各日汇总表的日期覆盖度不同:DWS_ORG_*/PRODUCTION/MARKET/PRE_SALES/IN_SALES/AFTER_SALES/CASH 覆盖全期 546 天;DWS_PROCUREMENT_DAILY 仅 465 天;DWS_RISK_DAILY 仅 506 天;DWS_SAFETY_DAILY 名义 546 天但仅 177 天有活动;DWS_FINANCE_DAILY 仅有 18 个月末日(180 行),粒度是月而非日。跨表比较期间指标时必须先对齐实际覆盖范围。",
+    "evidence": [
+      "ev_time_coverage",
+      "ev_safety_sparse",
+      "ev_risk_degenerate"
+    ]
+  },
+  {
+    "id": "c_synthetic_provenance",
+    "target": "m_metric_tier",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "合成",
+      "样例",
+      "脱敏",
+      "synthetic",
+      "示例数据",
+      "random_seed",
+      "DEMO"
+    ],
+    "severity": "info",
+    "scope": "本数据集内所有结论的适用范围",
+    "confidence": "high",
+    "description": "库内主体名称均为合成值(合成员工0086、合成客户0012、合成供应商0003),联系电话前缀为 SYN-PHONE-*,tenant_code 恒为 DEMO_TENANT。dim_dataset_release 记录 code=REL-CV200-V3、name=合同验证库 v3、random_seed=20260828、release_date=2026-10-03、owner_team=本体评测,其登记的 table_count=200 与库内实际 198 张表不完全一致。所有分析结论仅在该合成数据集内成立,不可外推为真实经营事实。",
+    "evidence": [
+      "ev_dataset_release",
+      "ev_governance_metadata"
+    ]
+  }
+]

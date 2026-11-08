@@ -1,0 +1,114 @@
+[
+  {
+    "id": "e_schema",
+    "source": "toxicology.sqlite",
+    "query": "SELECT sql FROM sqlite_master WHERE type='table' ORDER BY name",
+    "result": "tab01(fld001 atom id PRIMARY KEY, fld002 molecule reference to tab04.fld002, fld003 element); tab02(fld004 bond id PRIMARY KEY, fld002 molecule reference to tab04.fld002, fld005 bond type); tab03(fld001 atom id, fld006 atom id, fld004 bond id, PRIMARY KEY(fld001,fld006), all three columns referencing tab01/tab01/tab02); tab04(fld002 molecule id PRIMARY KEY, fld007 label)",
+    "validation_method": "Schema inspection via sqlite_master; foreign-key declarations confirm atom->molecule, bond->molecule and incidence->atom/bond links",
+    "timestamp": "2026-11-06T00:00:00Z"
+  },
+  {
+    "id": "e_row_counts",
+    "source": "toxicology.sqlite",
+    "query": "SELECT 'tab01', COUNT(*) FROM tab01 UNION ALL SELECT 'tab02', COUNT(*) FROM tab02 UNION ALL SELECT 'tab03', COUNT(*) FROM tab03 UNION ALL SELECT 'tab04', COUNT(*) FROM tab04",
+    "result": "tab01 = 12,333 atom rows; tab02 = 12,379 bond rows; tab03 = 24,758 incidence rows; tab04 = 343 labeled molecule rows",
+    "validation_method": "Row counts aggregated over all four tables",
+    "timestamp": "2026-11-06T00:00:00Z"
+  },
+  {
+    "id": "e_labels",
+    "source": "toxicology.sqlite",
+    "query": "SELECT fld007, COUNT(*) FROM tab04 GROUP BY fld007",
+    "result": "'+' = 152 molecules; '-' = 191 molecules; no null or empty labels; total 343",
+    "validation_method": "Grouped count plus null check",
+    "timestamp": "2026-11-06T00:00:00Z"
+  },
+  {
+    "id": "e_molecule_coverage",
+    "source": "toxicology.sqlite",
+    "query": "SELECT COUNT(DISTINCT fld002) FROM tab01; SELECT COUNT(DISTINCT fld002) FROM tab02; SELECT COUNT(*) FROM tab04; SELECT COUNT(*) FROM tab01 WHERE fld002 NOT IN (SELECT fld002 FROM tab04); SELECT COUNT(*) FROM tab02 WHERE fld002 NOT IN (SELECT fld002 FROM tab04)",
+    "result": "444 molecules have atoms; 444 molecules have bonds; 343 molecules are labeled. Unlabeled: 101 molecules, 3,222 atoms, 3,223 bonds. Labeled subset: 9,111 atoms and 9,156 bonds. No labeled molecule lacks atoms or bonds.",
+    "validation_method": "Set comparison between structure tables and the label table",
+    "timestamp": "2026-11-06T00:00:00Z"
+  },
+  {
+    "id": "e_elements",
+    "source": "toxicology.sqlite",
+    "query": "SELECT fld003, COUNT(*) AS n, COUNT(DISTINCT fld002) AS molecules FROM tab01 GROUP BY fld003 ORDER BY n DESC",
+    "result": "21 distinct lowercase symbols: h 5,518 (426 molecules); c 4,605 (438); o 1,043 (311); n 480 (233); cl 429 (155); s 113 (70); br 47 (18); na 35 (19); p 31 (28); f 11 (4); i 6 (2); si 4 (2); sn 2 (2); cu 2 (1); zn 1; y 1; te 1; pb 1; k 1; ca 1; b 1",
+    "validation_method": "Grouped counts of atoms and distinct molecules by element symbol",
+    "timestamp": "2026-11-06T00:00:00Z"
+  },
+  {
+    "id": "e_bond_types",
+    "source": "toxicology.sqlite",
+    "query": "SELECT fld005, COUNT(*) FROM tab02 GROUP BY fld005 ORDER BY fld005",
+    "result": "'-' = 10,528; '=' = 1,844; '#' = 6; empty string = 1 (bond TR345_7_10 in unlabeled molecule TR345). Within labeled molecules: '-' = 7,743; '=' = 1,408; '#' = 5.",
+    "validation_method": "Grouped counts over all bonds and over labeled-molecule bonds",
+    "timestamp": "2026-11-06T00:00:00Z"
+  },
+  {
+    "id": "e_incidence",
+    "source": "toxicology.sqlite",
+    "query": "SELECT COUNT(*), COUNT(DISTINCT fld004) FROM tab03; SELECT COUNT(*) FROM (SELECT fld004, COUNT(*) c FROM tab03 GROUP BY fld004 HAVING c <> 2); SELECT COUNT(*) FROM (SELECT fld001, fld006, fld004, COUNT(*) c FROM tab03 GROUP BY 1,2,3 HAVING c > 1)",
+    "result": "24,758 rows for 12,379 distinct bonds; 0 bonds with a row count other than 2; 0 duplicate (atom, counterpart, bond) triples. The incidence table is symmetric: every bond appears once from each endpoint.",
+    "validation_method": "Cardinality and duplicate checks per bond",
+    "timestamp": "2026-11-06T00:00:00Z"
+  },
+  {
+    "id": "e_bond_integrity",
+    "source": "toxicology.sqlite",
+    "query": "SELECT COUNT(*) FROM tab02 WHERE fld004 NOT IN (SELECT fld004 FROM tab03); SELECT COUNT(*) FROM (SELECT DISTINCT fld004 FROM tab03) WHERE fld004 NOT IN (SELECT fld004 FROM tab02); SELECT COUNT(*) FROM tab03 WHERE fld001 NOT IN (SELECT fld001 FROM tab01) OR fld006 NOT IN (SELECT fld001 FROM tab01)",
+    "result": "0 bonds missing incidence rows; 0 incidence bonds missing from the bond table; 0 incidence rows referencing unknown atoms. Every bond has exactly two endpoint atoms of the same molecule.",
+    "validation_method": "Referential integrity checks across tab02, tab03 and tab01",
+    "timestamp": "2026-11-06T00:00:00Z"
+  },
+  {
+    "id": "e_bond_id_parts",
+    "source": "toxicology.sqlite",
+    "query": "WITH p AS (SELECT fld004, fld002, substr(fld004, length(fld002)+2) rest FROM tab02), q AS (SELECT fld004, fld002, substr(rest,1,instr(rest,'_')-1) a, substr(rest,instr(rest,'_')+1) b FROM p), r AS (SELECT q.*, COUNT(DISTINCT CASE WHEN t.fld001=q.fld002||'_'||q.a THEN 1 END) has_a, COUNT(DISTINCT CASE WHEN t.fld001=q.fld002||'_'||q.b THEN 1 END) has_b FROM q LEFT JOIN tab03 t ON t.fld004=q.fld004 GROUP BY q.fld004) SELECT COUNT(*) FROM r WHERE has_a=0 OR has_b=0",
+    "result": "0 bonds whose identifier parts are absent from the incidence table. All 12,379 bond identifiers encode the molecule identifier plus the two endpoint atom sequence numbers, matching the incidence rows.",
+    "validation_method": "Parsed each bond identifier and matched both parts against the incidence atoms",
+    "timestamp": "2026-11-06T00:00:00Z"
+  },
+  {
+    "id": "e_id_structure",
+    "source": "toxicology.sqlite",
+    "query": "SELECT COUNT(*) FROM tab01 WHERE substr(fld001,1,instr(fld001,'_')-1) <> fld002; SELECT COUNT(*) FROM tab02 WHERE substr(fld004,1,instr(fld004,'_')-1) <> fld002; SELECT MIN(fld002), MAX(fld002) FROM tab04",
+    "result": "0 atom prefix mismatches; 0 bond prefix mismatches; molecule identifiers range from TR000 to TR501. Every atom and bond identifier starts with its molecule identifier.",
+    "validation_method": "Prefix consistency check for every atom and bond row",
+    "timestamp": "2026-11-06T00:00:00Z"
+  },
+  {
+    "id": "e_unbonded",
+    "source": "toxicology.sqlite",
+    "query": "SELECT COUNT(*) FROM tab01 a WHERE a.fld001 NOT IN (SELECT fld001 FROM tab03); SELECT a.fld003, COUNT(*) FROM tab01 a WHERE a.fld001 NOT IN (SELECT fld001 FROM tab03) GROUP BY a.fld003; SELECT COUNT(*) FROM tab01 a WHERE a.fld001 NOT IN (SELECT fld001 FROM tab03) AND a.fld002 IN (SELECT fld002 FROM tab04)",
+    "result": "49 atoms have no incidence row: cl 5, h 7, k 1, na 35, zn 1. 38 of them lie in labeled molecules. All 35 sodium atoms are unbonded.",
+    "validation_method": "Anti-join between the atom table and the incidence table, grouped by element and label membership",
+    "timestamp": "2026-11-06T00:00:00Z"
+  },
+  {
+    "id": "e_multibond",
+    "source": "toxicology.sqlite",
+    "query": "SELECT COUNT(*) FROM (SELECT fld001 FROM tab03 GROUP BY fld001 HAVING COUNT(*) > 1); SELECT MAX(c) FROM (SELECT fld001, COUNT(*) c FROM tab03 GROUP BY fld001)",
+    "result": "5,745 atoms appear in more than one incidence row; the maximum number of bond incidences per atom is 4.",
+    "validation_method": "Per-atom incidence counts",
+    "timestamp": "2026-11-06T00:00:00Z"
+  },
+  {
+    "id": "e_presence",
+    "source": "toxicology.sqlite",
+    "query": "SELECT fld003, COUNT(DISTINCT fld002) FROM tab01 GROUP BY fld003; SELECT a.fld002, t.fld007, COUNT(*) FROM tab01 a LEFT JOIN tab04 t ON a.fld002=t.fld002 WHERE a.fld003='f' GROUP BY a.fld002",
+    "result": "Molecules per element: h 426, c 438, o 311, n 233, cl 155, s 70, br 18, na 19, p 28, f 4, i 2, si 2, sn 2, cu 1, zn 1, y 1, te 1, pb 1, k 1, ca 1, b 1. Fluorine occurs in 4 molecules: TR034 (label '-', 3 atoms), TR106 (no label, 1 atom), TR195 (label '-', 3 atoms), TR450 (label '+', 4 atoms). Iodine occurs in TR110 (label '-', 3 atoms) and TR340 (no label, 3 atoms).",
+    "validation_method": "Distinct-molecule counts per element and per-molecule presence inspection",
+    "timestamp": "2026-11-06T00:00:00Z"
+  },
+  {
+    "id": "e_bond_label_crosstab",
+    "source": "toxicology.sqlite",
+    "query": "SELECT b.fld005, t.fld007, COUNT(*) FROM tab02 b JOIN tab04 t ON b.fld002=t.fld002 GROUP BY b.fld005, t.fld007 ORDER BY b.fld005, t.fld007",
+    "result": "single '-' bond: carcinogenic 3,078 / non-carcinogenic 4,665; double '=' bond: carcinogenic 634 / non-carcinogenic 774; triple '#' bond: carcinogenic 3 / non-carcinogenic 2. All 9,156 labeled-molecule bonds carry a known molecule label.",
+    "validation_method": "Cross-tabulation of bond type against molecule label",
+    "timestamp": "2026-11-06T00:00:00Z"
+  }
+]

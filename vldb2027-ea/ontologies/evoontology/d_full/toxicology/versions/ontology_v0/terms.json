@@ -1,0 +1,205 @@
+[
+  {
+    "id": "term_molecule",
+    "name": "Molecule",
+    "type": "entity",
+    "definition": "A chemical compound record identified by a molecule identifier (molecule_id). It is the unit that carries the binary activity label and that owns the atoms and bonds describing its structure.",
+    "scope": "Molecular structure and toxicity screening analysis on the toxicology database",
+    "aliases": [
+      "compound",
+      "chemical",
+      "substance",
+      "molecule record"
+    ],
+    "evidence": [
+      "ev_001",
+      "ev_002",
+      "ev_006"
+    ]
+  },
+  {
+    "id": "term_molecule_activity_label",
+    "name": "Molecule Activity Label",
+    "type": "category",
+    "definition": "The binary categorical label attached to a molecule in the molecule table. It takes exactly two observed symbols, '+' and '-', and is the only outcome-like attribute in the database; molecule structure tables carry no outcome column.",
+    "scope": "Classification, class comparison and class-conditional aggregation over molecules",
+    "aliases": [
+      "label",
+      "activity label",
+      "class label",
+      "outcome",
+      "toxicity class"
+    ],
+    "evidence": [
+      "ev_002",
+      "ev_005"
+    ]
+  },
+  {
+    "id": "term_atom",
+    "name": "Atom",
+    "type": "entity",
+    "definition": "A single atom occurrence inside a molecule. Each atom row records the owning molecule and the chemical element symbol of that atom position.",
+    "scope": "Per-atom composition, element counting and connectivity analysis",
+    "aliases": [
+      "atom occurrence",
+      "atom position",
+      "atomic site"
+    ],
+    "evidence": [
+      "ev_001",
+      "ev_003",
+      "ev_006"
+    ]
+  },
+  {
+    "id": "term_chemical_element",
+    "name": "Chemical Element",
+    "type": "dimension",
+    "definition": "The element identity of an atom, recorded as an element symbol on the atom row. The database stores element identity inline on atoms and has no separate element dimension table.",
+    "scope": "Element composition, element frequency and element-presence analysis",
+    "aliases": [
+      "element",
+      "element symbol",
+      "element type"
+    ],
+    "evidence": [
+      "ev_003",
+      "ev_006"
+    ]
+  },
+  {
+    "id": "term_hydrogen_atom",
+    "name": "Hydrogen Atom",
+    "type": "category",
+    "definition": "An atom whose element symbol is 'h'. Hydrogens are the single most frequent element in the database and are included in the atom table, so total atom counts always include them.",
+    "scope": "Distinguishing hydrogen-inclusive counts from heavy-atom counts",
+    "aliases": [
+      "hydrogen",
+      "h atom",
+      "proton-bearing atom"
+    ],
+    "evidence": [
+      "ev_003",
+      "ev_012"
+    ]
+  },
+  {
+    "id": "term_heavy_atom",
+    "name": "Heavy Atom",
+    "type": "category",
+    "definition": "An atom whose element symbol is anything other than 'h'. Heavy atoms correspond to the non-hydrogen part of a molecule and are the usual basis for molecular skeleton and size comparison.",
+    "scope": "Molecular size and skeleton analysis that excludes hydrogens",
+    "aliases": [
+      "non-hydrogen atom",
+      "heavy-atom count",
+      "skeleton atom"
+    ],
+    "evidence": [
+      "ev_003",
+      "ev_012",
+      "ev_015"
+    ]
+  },
+  {
+    "id": "term_bond",
+    "name": "Chemical Bond",
+    "type": "entity",
+    "definition": "A chemical bond between two atoms of the same molecule, identified by a bond identifier and carrying a bond-type symbol. Each bond row belongs to exactly one molecule.",
+    "scope": "Bond counting, bond-order composition and bond-graph construction",
+    "aliases": [
+      "bond",
+      "chemical bond",
+      "edge"
+    ],
+    "evidence": [
+      "ev_001",
+      "ev_004",
+      "ev_006"
+    ]
+  },
+  {
+    "id": "term_bond_type",
+    "name": "Bond Type",
+    "type": "category",
+    "definition": "The bond-order symbol carried by a bond row. Observed values are '-', '=' and '#', the conventional notations for single, double and triple bond order; the symbol is stored inline on each bond row and no separate bond-type table exists.",
+    "scope": "Bond-order composition and unsaturation analysis",
+    "aliases": [
+      "bond order",
+      "single bond",
+      "double bond",
+      "triple bond",
+      "bond type symbol"
+    ],
+    "evidence": [
+      "ev_004",
+      "ev_005"
+    ]
+  },
+  {
+    "id": "term_atom_connectivity",
+    "name": "Atom Connectivity",
+    "type": "concept",
+    "definition": "The pairwise adjacency relation stating that two atoms of the same molecule are bonded. It is materialised as directed adjacency entries, each entry referencing the bond that produced it.",
+    "scope": "Neighbour and adjacency analysis, bond-graph traversal and degree computation",
+    "aliases": [
+      "connectivity",
+      "adjacency",
+      "connected atoms",
+      "neighbours",
+      "bonded pair"
+    ],
+    "evidence": [
+      "ev_009",
+      "ev_010"
+    ]
+  },
+  {
+    "id": "term_atom_degree",
+    "name": "Atom Degree",
+    "type": "metric",
+    "definition": "The number of distinct atoms bonded to a given atom, obtained by counting that atom's neighbours in the connectivity relation. It is not stored in any column and must be computed.",
+    "scope": "Valence-like neighbourhood analysis over atoms",
+    "aliases": [
+      "degree",
+      "number of neighbours",
+      "neighbour count",
+      "connections per atom"
+    ],
+    "evidence": [
+      "ev_009",
+      "ev_011"
+    ]
+  },
+  {
+    "id": "term_molecule_atom_count",
+    "name": "Molecule Atom Count",
+    "type": "metric",
+    "definition": "The number of atom rows belonging to a molecule, i.e. the size of the molecule expressed in atoms (hydrogens included unless explicitly excluded).",
+    "scope": "Molecular size comparison within and across activity classes",
+    "aliases": [
+      "atom count",
+      "number of atoms",
+      "molecular size in atoms"
+    ],
+    "evidence": [
+      "ev_013",
+      "ev_012"
+    ]
+  },
+  {
+    "id": "term_molecule_bond_count",
+    "name": "Molecule Bond Count",
+    "type": "metric",
+    "definition": "The number of bond rows belonging to a molecule, i.e. the number of chemical bonds in the molecule. It must be counted from the bond table, not from the doubly-stored connectivity entries.",
+    "scope": "Molecular size and bond-count comparison within and across activity classes",
+    "aliases": [
+      "bond count",
+      "number of bonds"
+    ],
+    "evidence": [
+      "ev_013",
+      "ev_009"
+    ]
+  }
+]

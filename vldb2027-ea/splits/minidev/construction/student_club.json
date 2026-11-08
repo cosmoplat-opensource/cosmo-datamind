@@ -1,0 +1,141 @@
+{
+ "db_id": "student_club",
+ "questions": [
+  {
+   "question_id": 1375,
+   "db_id": "student_club",
+   "question": "List all the members of the \"School of Applied Sciences, Technology and Education\" department.",
+   "evidence": "list all members means to list all the full name; full name refers to first_name, last_name;",
+   "SQL": "SELECT T1.first_name, T1.last_name FROM member AS T1 INNER JOIN major AS T2 ON T1.link_to_major = T2.major_id WHERE T2.department = 'School of Applied Sciences, Technology and Education'",
+   "difficulty": "moderate"
+  },
+  {
+   "question_id": 1405,
+   "db_id": "student_club",
+   "question": "Calculate the amount budgeted for 'April Speaker' event. List all the budgeted categories for said event in an ascending order based on their amount budgeted.",
+   "evidence": "'April Speaker' is an event name; amount budgeted refers to SUM(amount); budget categories refers to category",
+   "SQL": "SELECT T2.category, SUM(T2.amount) FROM event AS T1 JOIN budget AS T2 ON T1.event_id = T2.link_to_event WHERE T1.event_name = 'April Speaker' GROUP BY T2.category ORDER BY SUM(T2.amount) ASC",
+   "difficulty": "moderate"
+  },
+  {
+   "question_id": 1422,
+   "db_id": "student_club",
+   "question": "State the category of events were held at MU 215.",
+   "evidence": "'MU 215' is the location of event; ",
+   "SQL": "SELECT DISTINCT T2.category FROM event AS T1 INNER JOIN budget AS T2 ON T1.event_id = T2.link_to_event WHERE T1.location = 'MU 215'",
+   "difficulty": "simple"
+  },
+  {
+   "question_id": 1344,
+   "db_id": "student_club",
+   "question": "What was the notes of the fundraising on 2019/9/14?",
+   "evidence": "fundraising on 2019/9/14 refers to source = 'Fundraising' where date_received = '2019-09-14'",
+   "SQL": "SELECT notes FROM income WHERE source = 'Fundraising' AND date_received = '2019-09-14'",
+   "difficulty": "simple"
+  },
+  {
+   "question_id": 1460,
+   "db_id": "student_club",
+   "question": "Write the full name of the member who spent money for water, veggie tray and supplies and include the cost of it.",
+   "evidence": "full name refers to first_name, last name; spent money for refers expense description; expense_description = 'Water, Veggie tray, supplies'",
+   "SQL": "SELECT T2.first_name, T2.last_name, T1.cost FROM expense AS T1 INNER JOIN member AS T2 ON T1.link_to_member = T2.member_id WHERE T1.expense_description = 'Water, Veggie tray, supplies'",
+   "difficulty": "challenging"
+  },
+  {
+   "question_id": 1409,
+   "db_id": "student_club",
+   "question": "Mention the total expense used on 8/20/2019.",
+   "evidence": "total expense refers SUM(cost) where expense_date = '2019-08-20'",
+   "SQL": "SELECT SUM(cost) FROM expense WHERE expense_date = '2019-08-20'",
+   "difficulty": "simple"
+  },
+  {
+   "question_id": 1340,
+   "db_id": "student_club",
+   "question": "Calculate the difference of the total amount spent in all events by the Student_Club in year 2019 and 2020.",
+   "evidence": "The first 4 strings of the event_date values in the event table can represent year; The difference of the total amount spent = SUBTRACT(spent where YEAR(event_date) = 2019, spent where YEAR(event_date) = 2020)",
+   "SQL": "SELECT SUM(CASE WHEN SUBSTR(T1.event_date, 1, 4) = '2019' THEN T2.spent ELSE 0 END) - SUM(CASE WHEN SUBSTR(T1.event_date, 1, 4) = '2020' THEN T2.spent ELSE 0 END) AS num FROM event AS T1 INNER JOIN budget AS T2 ON T1.event_id = T2.link_to_event",
+   "difficulty": "moderate"
+  },
+  {
+   "question_id": 1426,
+   "db_id": "student_club",
+   "question": "List the last name of members with a major in environmental engineering and include its department and college name.",
+   "evidence": "'Environmental Engineering' is the major_name;",
+   "SQL": "SELECT T2.last_name, T1.department, T1.college FROM major AS T1 INNER JOIN member AS T2 ON T1.major_id = T2.link_to_major WHERE T2.position = 'Member' AND T1.major_name = 'Environmental Engineering'",
+   "difficulty": "moderate"
+  },
+  {
+   "question_id": 1380,
+   "db_id": "student_club",
+   "question": "What is the total amount of money spent for food?",
+   "evidence": "total amount of money spent refers to SUM(spent); spent for food refers to category = 'Food'",
+   "SQL": "SELECT SUM(spent) FROM budget WHERE category = 'Food'",
+   "difficulty": "simple"
+  },
+  {
+   "question_id": 1399,
+   "db_id": "student_club",
+   "question": "Did Maya Mclean attend the 'Women's Soccer' event?",
+   "evidence": "Maya Mclean is the full name; full name refers to first_name, last_name; 'Women's Soccer' is an event_name",
+   "SQL": "SELECT CASE WHEN T3.event_name = 'Women''s Soccer' THEN 'YES' END AS result FROM member AS T1 INNER JOIN attendance AS T2 ON T1.member_id = T2.link_to_member INNER JOIN event AS T3 ON T2.link_to_event = T3.event_id WHERE T1.first_name = 'Maya' AND T1.last_name = 'Mclean'",
+   "difficulty": "moderate"
+  },
+  {
+   "question_id": 1435,
+   "db_id": "student_club",
+   "question": "List the names of closed event as \"game\" that was closed from 3/15/2019 to 3/20/2020.",
+   "evidence": "name of events refers event_name; game event that was closed refers to type = 'Game' where status = 'Closed'; event_date BETWEEN '2019-03-15' and '2020-03-20'; ",
+   "SQL": "SELECT DISTINCT event_name FROM event WHERE type = 'Game' AND date(SUBSTR(event_date, 1, 10)) BETWEEN '2019-03-15' AND '2020-03-20' AND status = 'Closed'",
+   "difficulty": "moderate"
+  },
+  {
+   "question_id": 1464,
+   "db_id": "student_club",
+   "question": "Write the full names of students who received funds on the date of 9/9/2019 and include the amount received.",
+   "evidence": "full name refers to first_name, last_name, amount of funds received refers to amount, received funds on date refers to date_received",
+   "SQL": "SELECT DISTINCT T3.first_name, T3.last_name, T4.amount FROM event AS T1 INNER JOIN attendance AS T2 ON T1.event_id = T2.link_to_event INNER JOIN member AS T3 ON T3.member_id = T2.link_to_member INNER JOIN income AS T4 ON T4.link_to_member = T3.member_id WHERE T4.date_received = '2019-09-09'",
+   "difficulty": "challenging"
+  },
+  {
+   "question_id": 1357,
+   "db_id": "student_club",
+   "question": "State the date Connor Hilton paid his/her dues.",
+   "evidence": "Connor Hilton is the full name; full name refers to first_name, last_name; date the dues was paid refers to date_received where source = 'Dues';",
+   "SQL": "SELECT T2.date_received FROM member AS T1 INNER JOIN income AS T2 ON T1.member_id = T2.link_to_member WHERE T1.first_name = 'Connor' AND T1.last_name = 'Hilton' AND T2.source = 'Dues'",
+   "difficulty": "simple"
+  },
+  {
+   "question_id": 1312,
+   "db_id": "student_club",
+   "question": "What's Angela Sanders's major?",
+   "evidence": "Angela Sanders is the full name; full name refers to first_name, last_name; major refers to major_name.",
+   "SQL": "SELECT T2.major_name FROM member AS T1 INNER JOIN major AS T2 ON T1.link_to_major = T2.major_id WHERE T1.first_name = 'Angela' AND T1.last_name = 'Sanders'",
+   "difficulty": "simple"
+  },
+  {
+   "question_id": 1351,
+   "db_id": "student_club",
+   "question": "What was Brent Thomason's major?",
+   "evidence": "Brent Thomason is the full name; full name refers to first_name, last_name; major refers to major_name",
+   "SQL": "SELECT T2.major_name FROM member AS T1 INNER JOIN major AS T2 ON T1.link_to_major = T2.major_id WHERE T1.first_name = 'Brent' AND T1.last_name = 'Thomason'",
+   "difficulty": "simple"
+  },
+  {
+   "question_id": 1390,
+   "db_id": "student_club",
+   "question": "Based on the total cost for all event, what is the percentage of cost for Yearly Kickoff event?",
+   "evidence": "percentage = DIVIDE(SUM(cost where event_name = 'Yearly Kickoff'), SUM(cost)) * 100",
+   "SQL": "SELECT CAST(SUM(CASE WHEN T1.event_name = 'Yearly Kickoff' THEN T3.cost ELSE 0 END) AS REAL) * 100 / SUM(T3.cost) FROM event AS T1 INNER JOIN budget AS T2 ON T1.event_id = T2.link_to_event INNER JOIN expense AS T3 ON T2.budget_id = T3.link_to_budget",
+   "difficulty": "moderate"
+  },
+  {
+   "question_id": 1432,
+   "db_id": "student_club",
+   "question": "Among the members with t-shirt size of medium, what is the percentage of the amount 50 received by the Student_Club?",
+   "evidence": "t_shirt_size = 'Medium' where position = 'Member'; percentage = DIVIDE(COUNT(amount = 50), COUNT(member_id)) * 100",
+   "SQL": "SELECT CAST(SUM(CASE WHEN T2.amount = 50 THEN 1.0 ELSE 0 END) AS REAL) * 100 / COUNT(T2.income_id) FROM member AS T1 INNER JOIN income AS T2 ON T1.member_id = T2.link_to_member WHERE T1.position = 'Member' AND T1.t_shirt_size = 'Medium'",
+   "difficulty": "moderate"
+  }
+ ]
+}

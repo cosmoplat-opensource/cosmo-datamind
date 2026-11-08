@@ -1,0 +1,154 @@
+[
+  {
+    "id": "evidence_table_inventory",
+    "query": "SELECT name FROM sqlite_master WHERE type='table' ORDER BY name",
+    "result": "Eight tables: tab01, tab02, tab03, tab04, tab05, tab06, tab07, tab08. Foreign keys declared: tab01.fld002->tab07.fld001; tab02.fld005->tab05.fld001, tab02.fld002->tab07.fld001; tab03.fld005->tab05.fld001, tab03.fld002->tab07.fld001; tab04.fld005->tab05.fld001, tab04.fld013->tab05.fld001; tab05.fld027->tab07.fld001, tab05.fld020->tab07.fld001, tab05.fld030->tab05.fld001; tab06.fld036->tab05.fld001; tab08.fld005->tab05.fld001, tab08.fld002->tab07.fld001.",
+    "source": "codebase_community.sqlite",
+    "timestamp": "2026-11-06T01:20:00Z",
+    "validation_method": "Schema inspection via sqlite_master and PRAGMA table_info"
+  },
+  {
+    "id": "evidence_row_counts",
+    "query": "SELECT 'tab01',COUNT(*) FROM tab01 UNION ALL SELECT 'tab02',COUNT(*) FROM tab02 UNION ALL SELECT 'tab03',COUNT(*) FROM tab03 UNION ALL SELECT 'tab04',COUNT(*) FROM tab04 UNION ALL SELECT 'tab05',COUNT(*) FROM tab05 UNION ALL SELECT 'tab06',COUNT(*) FROM tab06 UNION ALL SELECT 'tab07',COUNT(*) FROM tab07 UNION ALL SELECT 'tab08',COUNT(*) FROM tab08",
+    "result": "tab01=79851, tab02=174285, tab03=303155, tab04=11102, tab05=91966, tab06=1032, tab07=40325, tab08=38930",
+    "source": "codebase_community.sqlite",
+    "timestamp": "2026-11-06T01:20:00Z",
+    "validation_method": "Row count per table"
+  },
+  {
+    "id": "evidence_post_columns",
+    "query": "SELECT COUNT(*) total, COUNT(fld022) title_nonnull, COUNT(DISTINCT fld022) title_distinct, COUNT(fld023) tags_nonnull, COUNT(fld018) views_nonnull, COUNT(fld026) favorites_nonnull, COUNT(fld031) closed_nonnull FROM tab05; SELECT COUNT(*), COUNT(fld022), COUNT(fld023) FROM tab05 WHERE fld015=1; SELECT COUNT(*), COUNT(fld022), COUNT(fld023) FROM tab05 WHERE fld015=2",
+    "result": "tab05 has 91,966 posts; title non-null 42,912 with 42,877 distinct values; tags non-null 42,912; views non-null 45,032; favorites non-null 13,243; closed date non-null 1,610. Questions (fld015=1): 42,912 rows, all with title and tags. Answers (fld015=2): 47,755 rows, 0 with title or tags.",
+    "source": "codebase_community.sqlite",
+    "timestamp": "2026-11-06T01:20:00Z",
+    "validation_method": "Null-count profiling and post-type partition"
+  },
+  {
+    "id": "evidence_post_type_distribution",
+    "query": "SELECT fld015, COUNT(*) n, MIN(fld030) min_parent, MAX(fld024) max_answer_count FROM tab05 GROUP BY fld015 ORDER BY n DESC",
+    "result": "fld015=1: 42,912 rows, parent id always null, answer count up to 136 (question). fld015=2: 47,755 rows, parent id always present (answer). fld015=3: 6; fld015=4: 639; fld015=5: 640; fld015=6: 9; fld015=7: 5.",
+    "source": "codebase_community.sqlite",
+    "timestamp": "2026-11-06T01:20:00Z",
+    "validation_method": "Grouped count with structural checks on parent post and answer count"
+  },
+  {
+    "id": "evidence_posts_score_range",
+    "query": "SELECT MIN(fld006), MAX(fld006), COUNT(fld006) FROM tab05",
+    "result": "Score ranges from -19 to 192 with 91,966 non-null values.",
+    "source": "codebase_community.sqlite",
+    "timestamp": "2026-11-06T01:20:00Z",
+    "validation_method": "Min/max/null-count profile"
+  },
+  {
+    "id": "evidence_users_profile",
+    "query": "SELECT COUNT(*) users, COUNT(DISTINCT fld039) distinct_names, MIN(fld038) min_rep, MAX(fld038) max_rep, COUNT(fld048) age_nonnull, SUM(CASE WHEN fld048>65 THEN 1 ELSE 0 END) age_gt65 FROM tab07",
+    "result": "40,325 users; 35,644 distinct display names; reputation 1 to 87,393; age recorded for 8,318 users; 87 users with age greater than 65.",
+    "source": "codebase_community.sqlite",
+    "timestamp": "2026-11-06T01:20:00Z",
+    "validation_method": "Aggregate profile"
+  },
+  {
+    "id": "evidence_user_name_duplicates",
+    "query": "SELECT COUNT(*) dup_name_groups, SUM(c) users_in_dup_groups FROM (SELECT fld039, COUNT(*) c FROM tab07 GROUP BY fld039 HAVING c>1)",
+    "result": "1,563 display names are used by more than one account, covering 6,244 user rows.",
+    "source": "codebase_community.sqlite",
+    "timestamp": "2026-11-06T01:20:00Z",
+    "validation_method": "Group-by duplicate detection"
+  },
+  {
+    "id": "evidence_badges_profile",
+    "query": "SELECT COUNT(*) n, COUNT(DISTINCT fld003) distinct_badges, COUNT(DISTINCT fld002) distinct_users FROM tab01; SELECT fld001,fld002,fld004 FROM tab01 WHERE fld003='Autobiographer' ORDER BY fld004 LIMIT 3; SELECT COUNT(*) FROM (SELECT fld002, COUNT(*) c FROM tab01 GROUP BY fld002 HAVING c>5)",
+    "result": "79,851 badge awards; 153 distinct badge names; 25,078 distinct awarded users. Autobiographer awards begin at 2010-07-19 19:39:09 (user 2). 2,875 users hold more than 5 badge awards.",
+    "source": "codebase_community.sqlite",
+    "timestamp": "2026-11-06T01:20:00Z",
+    "validation_method": "Aggregate profile and ordered sample"
+  },
+  {
+    "id": "evidence_comments_profile",
+    "query": "SELECT COUNT(*) n, SUM(CASE WHEN fld009 IS NULL OR fld009='' THEN 1 ELSE 0 END) empty_name, COUNT(DISTINCT fld009) nd FROM tab02; SELECT * FROM tab02 WHERE fld002=23853 AND fld008 LIKE '2013-07-12 09:08:18%'",
+    "result": "174,285 comments; recorded display name blank for 171,454 rows; sample comment id 123575 on post 64117 by user 23853 at 2013-07-12 09:08:18.0 with text 'Welcome to this site yimon...'. Second sample: comment 185217 on post 89941 by user 3025 at 2014-04-23 20:29:39.0.",
+    "source": "codebase_community.sqlite",
+    "timestamp": "2026-11-06T01:20:00Z",
+    "validation_method": "Null profile and exact-timestamp lookup"
+  },
+  {
+    "id": "evidence_votes_profile",
+    "query": "SELECT fld050, COUNT(*) n, COUNT(fld051) bounty_nonnull, MIN(fld051), MAX(fld051) FROM tab08 GROUP BY fld050 ORDER BY n DESC; SELECT COUNT(fld002), COUNT(DISTINCT fld002) FROM tab08; SELECT * FROM tab08 WHERE fld001=6347",
+    "result": "38,930 vote rows. Type 2 = 33,323; 5 = 3,365; 1 = 1,451; 3 = 444; 16 = 111; 15 = 72; 8 = 60 (bounty 50..200); 9 = 59 (bounty 0..150); 11 = 44; 10 = 1. Only 3,425 rows have a user identifier, covering 509 users. Vote 6347 is on post 1761, type 5, dated 2010-08-22, user 339.",
+    "source": "codebase_community.sqlite",
+    "timestamp": "2026-11-06T01:20:00Z",
+    "validation_method": "Grouped distribution, null-count and identifier lookup"
+  },
+  {
+    "id": "evidence_tags_profile",
+    "query": "SELECT COUNT(*) FROM tab06; SELECT fld034,fld035,fld036,fld037 FROM tab06 WHERE fld034 IN ('r','regression','variance'); SELECT COUNT(*) FROM tab05 WHERE fld023 LIKE '%<r>%'",
+    "result": "1,032 tags. Tag 'r' has usage count 7,244 with excerpt post 2331 and wiki post 2254; 'regression' has count 5,413; 'variance' has count 766. 7,240 question posts contain the token <r>.",
+    "source": "codebase_community.sqlite",
+    "timestamp": "2026-11-06T01:20:00Z",
+    "validation_method": "Catalogue lookup and token match on post tag text"
+  },
+  {
+    "id": "evidence_post_history_profile",
+    "query": "SELECT COUNT(*) n, COUNT(fld002) actor_nonnull, COUNT(fld011) guid_nonnull FROM tab03; SELECT fld010, COUNT(*) n FROM tab03 GROUP BY fld010 ORDER BY n DESC; SELECT fld010, fld001, fld005, substr(fld007,1,60), substr(fld012,1,40) FROM tab03 GROUP BY fld010 LIMIT 30",
+    "result": "303,155 revision rows; actor user identifier present for 281,829; revision GUID present for all. Revision kinds: 2 = 91,974; 5 = 69,413; 3 = 42,921; 1 = 42,909; 4 = 16,008; 6 = 12,731; further kinds 7..38 in smaller numbers. Revision text holds titles for title-kind events, tag strings for tag-kind events, and body text for body-kind events.",
+    "source": "codebase_community.sqlite",
+    "timestamp": "2026-11-06T01:20:00Z",
+    "validation_method": "Grouped distribution and per-kind sampling"
+  },
+  {
+    "id": "evidence_referential_integrity",
+    "query": "Orphan checks: posts whose owner id is absent from users; comments whose post id is absent from posts; votes whose post id is absent from posts; votes whose user id is absent from users; badge awards whose user id is absent from users; revisions whose post id is absent from posts",
+    "result": "0 orphan post owners; 36 orphan comments; 0 orphan votes by post; 0 orphan votes by user; 0 orphan badge awards; 41 orphan revision rows.",
+    "source": "codebase_community.sqlite",
+    "timestamp": "2026-11-06T01:20:00Z",
+    "validation_method": "Anti-join counts against referenced tables"
+  },
+  {
+    "id": "evidence_title_case_and_revisions",
+    "query": "SELECT COUNT(*) FROM tab05 WHERE fld022='Computer Game Datasets'; SELECT COUNT(*) FROM tab05 WHERE fld022 LIKE '%Computer Game Datasets%'; SELECT fld001,fld005,fld010,substr(fld007,1,80) FROM tab03 WHERE fld007 LIKE '%Computer Game Datasets%'",
+    "result": "Exact-case match on 'Computer Game Datasets' returns 0; case-insensitive match returns 1, the post whose stored current title is 'Computer game datasets' (post id 8222). Revision rows for post 8222 record 'Computer Game Datasets' at revision kind 1 and 'Computer game datasets' at revision kind 4. A second quoted title, 'Open source tools for visualizing multi-dimensional data?', matches post 196 exactly.",
+    "source": "codebase_community.sqlite",
+    "timestamp": "2026-11-06T01:20:00Z",
+    "validation_method": "Exact vs case-insensitive comparison and revision-history lookup"
+  },
+  {
+    "id": "evidence_closed_status",
+    "query": "SELECT COUNT(fld031) closed_nonnull, COUNT(fld029) other_date_nonnull FROM tab05; SELECT fld001,fld017,fld028,fld029,fld031 FROM tab05 WHERE fld031 IS NOT NULL LIMIT 5",
+    "result": "1,610 posts have a non-null closed-date value; a further 2,467 carry a different lifecycle date. Example: post 8 created 2010-07-19 19:16:21 has closed date 2010-07-19 20:19:46; post 145 created 2010-07-19 21:50:16 has closed date 2010-07-20 00:21:48. Posts with a null closed date are open.",
+    "source": "codebase_community.sqlite",
+    "timestamp": "2026-11-06T01:20:00Z",
+    "validation_method": "Null-count and per-row timestamp comparison"
+  },
+  {
+    "id": "evidence_post_links_distinction",
+    "query": "SELECT fld014, COUNT(*) FROM tab04 GROUP BY fld014; SELECT * FROM tab04 LIMIT 3",
+    "result": "11,102 rows, each pairing two post identifiers (fld005 and fld013) with a link type code: 1 = 10,186; 3 = 916. This table records links between posts and is distinct from comments, which carry comment text, a single post reference and an author.",
+    "source": "codebase_community.sqlite",
+    "timestamp": "2026-11-06T01:20:00Z",
+    "validation_method": "Grouped distribution and row sampling; candidate rejected as a grounding for comments"
+  },
+  {
+    "id": "evidence_user_registration_dates",
+    "query": "SELECT COUNT(*) n, MIN(fld008) mn, MAX(fld008) mx, SUM(CASE WHEN strftime('%Y',fld008)='2011' THEN 1 ELSE 0 END) y2011 FROM tab07 WHERE fld008 IS NOT NULL",
+    "result": "40,325 users have a registration timestamp; range 2010-07-19 06:55:26.0 to 2014-09-14 01:01:44.0; 4,430 users registered during 2011.",
+    "source": "codebase_community.sqlite",
+    "timestamp": "2026-11-06T01:22:00Z",
+    "validation_method": "Min/max and year-filter counts"
+  },
+  {
+    "id": "evidence_post_dates_and_owner",
+    "query": "SELECT fld001,fld015,fld017,fld021,fld028,fld020,fld027,fld032 FROM tab05 WHERE fld001 IN (1,2,17,118,8222); SELECT COUNT(*) FROM tab05 WHERE fld032 IS NOT NULL AND fld020 IS NULL; SELECT COUNT(*) FROM tab05 WHERE fld032 IS NOT NULL AND fld020 IS NOT NULL",
+    "result": "Post 1 created 2010-07-19 19:12:12, owner id 8, no last-editor id. Post 2 created 2010-07-19 19:12:57, owner id 24, last-editor id 88. Post 17 has no owner id but records owner display name 'user28' and last-editor id 7972. Post 8222 has owner id 37 and last-editor id 88. 1,388 posts have a recorded owner name and no owner id; 1,121 posts have both.",
+    "source": "codebase_community.sqlite",
+    "timestamp": "2026-11-06T01:22:00Z",
+    "validation_method": "Per-row comparison against declared foreign keys"
+  },
+  {
+    "id": "evidence_timestamp_formats",
+    "query": "SELECT fld001,fld008 FROM tab02 LIMIT 2; SELECT fld001,fld008,fld050 FROM tab08 WHERE fld050=8 LIMIT 3; SELECT fld001,fld017 FROM tab05 LIMIT 2; SELECT fld001,fld002,fld004 FROM tab01 WHERE fld003='Autobiographer' ORDER BY fld004 LIMIT 2",
+    "result": "Comment dates look like '2010-07-19 19:15:52.0'; post dates like '2010-07-19 19:12:12.0'; badge dates like '2010-07-19 19:39:09.0'; vote dates look like '2010-07-24' with no time part.",
+    "source": "codebase_community.sqlite",
+    "timestamp": "2026-11-06T01:22:00Z",
+    "validation_method": "Representative value sampling across tables"
+  }
+]

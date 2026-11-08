@@ -1,0 +1,474 @@
+[
+  {
+    "id": "term_card_printing",
+    "name": "Card Printing",
+    "type": "entity",
+    "definition": "A single recorded printing of one card face in one set, represented by one row of the cards table. Its uuid identifies that printing uniquely. Multi-face cards contribute one row per face, so a printing row is a face-level rather than a whole-card unit.",
+    "scope": "Counting, filtering and aggregating cards at the physical-printing grain.",
+    "aliases": [
+      "printing",
+      "card row",
+      "card face printing",
+      "print"
+    ],
+    "evidence": [
+      "ev_cards_grain",
+      "ev_multi_face",
+      "ev_schema_inventory"
+    ]
+  },
+  {
+    "id": "term_card_name",
+    "name": "Card Name",
+    "type": "entity",
+    "definition": "The name by which a card is known, shared by every printing of that card. For a multi-face card the field carries the combined form 'A // B' on both face rows, so the name identifies the whole card rather than an individual face.",
+    "scope": "Identifying the same card across different sets and printings.",
+    "aliases": [
+      "name",
+      "card title",
+      "oracle name"
+    ],
+    "evidence": [
+      "ev_cards_grain",
+      "ev_multi_face",
+      "ev_oracle_id"
+    ]
+  },
+  {
+    "id": "term_set",
+    "name": "Card Set",
+    "type": "entity",
+    "definition": "A released set or product, represented by one row of the sets table and identified by its unique code. A set carries release date, size, block, parent-set and product-type attributes.",
+    "scope": "Grouping printings by release and analysing set-level composition.",
+    "aliases": [
+      "set",
+      "expansion",
+      "product"
+    ],
+    "evidence": [
+      "ev_sets_fields",
+      "ev_sets_type_values",
+      "ev_sets_empty"
+    ]
+  },
+  {
+    "id": "term_ruling",
+    "name": "Card Ruling",
+    "type": "entity",
+    "definition": "An official clarification attached to a card printing, stored in the rulings table with an issue date and clarifying text and linked to the printing through the card uuid.",
+    "scope": "Analysing ruling volume, ruling text and ruling timelines per card.",
+    "aliases": [
+      "ruling",
+      "clarification"
+    ],
+    "evidence": [
+      "ev_rulings_dates",
+      "ev_uuid_joins"
+    ]
+  },
+  {
+    "id": "term_foreign_printing",
+    "name": "Foreign-Language Printing",
+    "type": "entity",
+    "definition": "A localized rendering of a card printing in a specific non-English language, holding the localized name, type line, rules text and flavour text, stored in foreign_data and linked to the printing through the card uuid.",
+    "scope": "Analysing localization coverage per language, per set and per card.",
+    "aliases": [
+      "foreign data",
+      "localized printing",
+      "translation"
+    ],
+    "evidence": [
+      "ev_foreign_languages",
+      "ev_uuid_joins"
+    ]
+  },
+  {
+    "id": "term_set_identifier",
+    "name": "Set Identifier",
+    "type": "concept",
+    "definition": "The short code that names a set. It is the unique key of the sets table and is repeated on every printing row as the printing's set reference, so the same identifier is used from both sides of the printing-to-set link.",
+    "scope": "Joining printings to their set and grouping any analysis by set.",
+    "aliases": [
+      "set code",
+      "setCode",
+      "code"
+    ],
+    "evidence": [
+      "ev_setcode_link",
+      "ev_sets_fields"
+    ]
+  },
+  {
+    "id": "term_format_legality",
+    "name": "Format Legality",
+    "type": "concept",
+    "definition": "The recorded tournament-format status of a card printing: one record per combination of format and card printing, stating whether that printing is legal, banned or restricted in that format.",
+    "scope": "Analysing which cards are playable in a named format and comparing formats.",
+    "aliases": [
+      "legality",
+      "format status",
+      "playable format"
+    ],
+    "evidence": [
+      "ev_legality_formats",
+      "ev_uuid_joins"
+    ]
+  },
+  {
+    "id": "term_legality_status",
+    "name": "Legality Status",
+    "type": "category",
+    "definition": "The value of a format legality record. Only three values occur in the data: Legal, Banned and Restricted. A card that is simply not playable in a format has no record for that format at all rather than a negative status value.",
+    "scope": "Interpreting, filtering and aggregating legality records.",
+    "aliases": [
+      "status",
+      "legal",
+      "banned",
+      "restricted"
+    ],
+    "evidence": [
+      "ev_legality_statuses"
+    ]
+  },
+  {
+    "id": "term_mana_cost",
+    "name": "Mana Cost",
+    "type": "concept",
+    "definition": "The printed mana cost of a card expressed as a symbol string such as '{U}{U}' or '{5}{W}{W}'. The value is empty when the card has no mana cost, which is typical for lands but is not restricted to them.",
+    "scope": "Reasoning about the composition of a card's casting cost.",
+    "aliases": [
+      "manaCost",
+      "cost",
+      "mana symbols"
+    ],
+    "evidence": [
+      "ev_mana_cost_empty",
+      "ev_cmc_field"
+    ]
+  },
+  {
+    "id": "term_card_availability",
+    "name": "Card Availability",
+    "type": "concept",
+    "definition": "The set of platforms on which a printing is available, recorded as a comma-joined list whose tokens include paper, mtgo and arena. A printing can be available on several platforms at once.",
+    "scope": "Filtering printings by physical versus digital availability.",
+    "aliases": [
+      "availability",
+      "paper",
+      "mtgo",
+      "arena",
+      "digital availability"
+    ],
+    "evidence": [
+      "ev_availability_encoding"
+    ]
+  },
+  {
+    "id": "term_keyword_ability",
+    "name": "Keyword Ability",
+    "type": "concept",
+    "definition": "A named keyword ability assigned to a card printing, recorded as a comma-joined list of ability names. Only keyworded abilities are listed; ability text in the rules text field is not decomposed into this field.",
+    "scope": "Analysing keyword usage across cards, types, sets and rarities.",
+    "aliases": [
+      "keyword",
+      "keywords",
+      "ability"
+    ],
+    "evidence": [
+      "ev_keywords_encoding"
+    ]
+  },
+  {
+    "id": "term_release_date",
+    "name": "Release Date",
+    "type": "concept",
+    "definition": "The date on which a set was released, stored as a text date on the set record. Because every printing belongs to exactly one set, this date is the only ordering in the data that places a printing on the release timeline.",
+    "scope": "Building per-year, per-period and time-series release analysis.",
+    "aliases": [
+      "release date",
+      "releaseDate",
+      "date released",
+      "timeline"
+    ],
+    "evidence": [
+      "ev_sets_fields",
+      "ev_rulings_dates"
+    ]
+  },
+  {
+    "id": "term_oracle_card_id",
+    "name": "Oracle Card Identifier",
+    "type": "concept",
+    "definition": "The identifier that groups all printings of the same logical card across sets and products. It is populated on every printing row and is shared by the faces of a multi-face card.",
+    "scope": "Deduplicating printings to the logical card for card-level rather than printing-level analysis.",
+    "aliases": [
+      "scryfallOracleId",
+      "oracle id",
+      "oracle identifier"
+    ],
+    "evidence": [
+      "ev_oracle_id"
+    ]
+  },
+  {
+    "id": "term_printing_id",
+    "name": "Printing Identifier",
+    "type": "concept",
+    "definition": "The globally unique identifier of a card printing, carried by the cards table and repeated by the ruling, legality and foreign-language records that refer to that printing.",
+    "scope": "Joining card printings to their rulings, legality records and foreign-language data.",
+    "aliases": [
+      "uuid",
+      "card uuid"
+    ],
+    "evidence": [
+      "ev_cards_grain",
+      "ev_uuid_joins"
+    ]
+  },
+  {
+    "id": "term_reprint",
+    "name": "Reprint",
+    "type": "concept",
+    "definition": "A printing that reuses a card already released in an earlier set, as flagged by the reprint indicator on the printing row.",
+    "scope": "Analysing reprint behaviour, first printings and reprint-heavy sets.",
+    "aliases": [
+      "reprint",
+      "isReprint",
+      "reissued"
+    ],
+    "evidence": [
+      "ev_reprint_identity",
+      "ev_promo_foil_flags"
+    ]
+  },
+  {
+    "id": "term_promo_card",
+    "name": "Promotional Printing",
+    "type": "category",
+    "definition": "A printing distributed as a promotion rather than through the normal product run, flagged on the printing row and further described by a comma-joined list of promotion categories when present.",
+    "scope": "Excluding, isolating or comparing promotional printings.",
+    "aliases": [
+      "promo",
+      "promotional",
+      "isPromo",
+      "promoTypes"
+    ],
+    "evidence": [
+      "ev_promo_foil_flags",
+      "ev_promo_types"
+    ]
+  },
+  {
+    "id": "term_foil_availability",
+    "name": "Foil Availability",
+    "type": "concept",
+    "definition": "Whether a printing exists in foil and whether it exists in non-foil. The two indicators are independent, so a printing can be foil-only, non-foil-only, both or neither.",
+    "scope": "Analysing finish availability of printings and sets.",
+    "aliases": [
+      "foil",
+      "non-foil",
+      "hasFoil",
+      "hasNonFoil"
+    ],
+    "evidence": [
+      "ev_promo_foil_flags"
+    ]
+  },
+  {
+    "id": "term_colorless_card",
+    "name": "Colorless Card",
+    "type": "category",
+    "definition": "A card printing whose colour characteristic is empty, meaning no colour is recorded for the card itself. Colorless cards include most artifacts and lands but are not limited to them.",
+    "scope": "Colour-mix reporting and colourless-specific analysis.",
+    "aliases": [
+      "colorless",
+      "colourless"
+    ],
+    "evidence": [
+      "ev_colors_encoding"
+    ]
+  },
+  {
+    "id": "term_multicolor_card",
+    "name": "Multicolored Card",
+    "type": "category",
+    "definition": "A card printing whose colour characteristic lists more than one colour.",
+    "scope": "Multicolour analysis by set, rarity, type and format.",
+    "aliases": [
+      "multicolor",
+      "multicolour",
+      "gold card"
+    ],
+    "evidence": [
+      "ev_colors_encoding"
+    ]
+  },
+  {
+    "id": "term_rarity",
+    "name": "Rarity",
+    "type": "dimension",
+    "definition": "The rarity assigned to a card printing. Four values occur in the data: common, uncommon, rare and mythic.",
+    "scope": "Rarity-mix analysis by set, set type, colour, type and release year.",
+    "aliases": [
+      "rarity"
+    ],
+    "evidence": [
+      "ev_rarity_values"
+    ]
+  },
+  {
+    "id": "term_card_color",
+    "name": "Card Color",
+    "type": "dimension",
+    "definition": "The colour characteristic of a card printing, recorded as a comma-joined list of colour letters, empty when the card itself is colorless. This is the colour of the card, as distinct from its colour identity.",
+    "scope": "Grouping and filtering printings by the colour of the card.",
+    "aliases": [
+      "color",
+      "colour",
+      "colors"
+    ],
+    "evidence": [
+      "ev_colors_encoding",
+      "ev_color_identity_superset"
+    ]
+  },
+  {
+    "id": "term_color_identity",
+    "name": "Color Identity",
+    "type": "dimension",
+    "definition": "The colour identity of a card printing, recorded as a comma-joined list of colour letters. It is a superset of the card's colours because it also accounts for coloured mana symbols appearing in the card's rules text, so the two attributes disagree on a non-trivial number of printings.",
+    "scope": "Colour-identity analysis and identity-boundary checks.",
+    "aliases": [
+      "colorIdentity",
+      "colour identity",
+      "identity"
+    ],
+    "evidence": [
+      "ev_color_identity_superset",
+      "ev_colors_encoding"
+    ]
+  },
+  {
+    "id": "term_card_type",
+    "name": "Card Type",
+    "type": "dimension",
+    "definition": "The card type of a printing, recorded as a comma-joined list because a card can have several types at once. The full printed type line, including supertypes and subtypes, is held separately.",
+    "scope": "Filtering and grouping printings by card type.",
+    "aliases": [
+      "type",
+      "types",
+      "card type",
+      "type line"
+    ],
+    "evidence": [
+      "ev_types_encoding"
+    ]
+  },
+  {
+    "id": "term_supertype",
+    "name": "Supertype",
+    "type": "dimension",
+    "definition": "The supertype that precedes a card's types, recorded as a comma-joined list. Observed values include Legendary, Basic, Snow, World, Host and Ongoing, and they combine, for example 'Basic,Snow' and 'Legendary,Snow'.",
+    "scope": "Identifying legendary, basic and snow cards.",
+    "aliases": [
+      "supertypes",
+      "legendary",
+      "basic"
+    ],
+    "evidence": [
+      "ev_types_encoding",
+      "ev_basic_lands"
+    ]
+  },
+  {
+    "id": "term_set_type",
+    "name": "Set Type",
+    "type": "dimension",
+    "definition": "The category of a set, such as core, expansion, promo, masters, memorabilia, commander or duel deck. Twenty distinct values occur.",
+    "scope": "Comparing composition across different kinds of products.",
+    "aliases": [
+      "set type",
+      "product type"
+    ],
+    "evidence": [
+      "ev_sets_type_values"
+    ]
+  },
+  {
+    "id": "term_language",
+    "name": "Language",
+    "type": "dimension",
+    "definition": "A natural language in which localized card or set data is recorded. The same language vocabulary is used by the foreign-language printing data and by the set-name translation data.",
+    "scope": "Grouping and comparing localization data by language.",
+    "aliases": [
+      "language",
+      "locale",
+      "localization"
+    ],
+    "evidence": [
+      "ev_foreign_languages",
+      "ev_set_translations"
+    ]
+  },
+  {
+    "id": "term_converted_mana_cost",
+    "name": "Converted Mana Cost",
+    "type": "metric",
+    "definition": "The numeric total mana value of a card's mana cost, stored as a real number. The field is always populated, including for cards with no mana cost, where it is zero. The distribution contains a single extreme value that is a deliberate game-design joke rather than a cost outlier.",
+    "scope": "Mana-curve, average-cost and cost-threshold analysis, with range guards.",
+    "aliases": [
+      "cmc",
+      "convertedManaCost",
+      "mana value",
+      "mana curve",
+      "cost"
+    ],
+    "evidence": [
+      "ev_cmc_field",
+      "ev_mana_cost_empty",
+      "ev_creature_cmc"
+    ]
+  },
+  {
+    "id": "term_power",
+    "name": "Power",
+    "type": "metric",
+    "definition": "The power characteristic of a creature printing, stored as text. It is numeric for ordinary creatures but can also hold symbolic or variable values, so numeric aggregation requires excluding non-numeric forms.",
+    "scope": "Creature strength analysis at printing level.",
+    "aliases": [
+      "power"
+    ],
+    "evidence": [
+      "ev_power_toughness_encoding",
+      "ev_creature_cmc"
+    ]
+  },
+  {
+    "id": "term_toughness",
+    "name": "Toughness",
+    "type": "metric",
+    "definition": "The toughness characteristic of a creature printing, stored as text with the same variability as power, so numeric aggregation requires excluding non-numeric forms.",
+    "scope": "Creature durability analysis at printing level.",
+    "aliases": [
+      "toughness"
+    ],
+    "evidence": [
+      "ev_power_toughness_encoding"
+    ]
+  },
+  {
+    "id": "term_creature_card",
+    "name": "Creature Card",
+    "type": "category",
+    "definition": "A card printing whose type list contains Creature, whether alone or combined with other types such as Artifact or Enchantment.",
+    "scope": "Restricting creature-specific metrics, keywords and statistics.",
+    "aliases": [
+      "creature",
+      "creatures"
+    ],
+    "evidence": [
+      "ev_creature_cmc",
+      "ev_types_encoding"
+    ]
+  }
+]

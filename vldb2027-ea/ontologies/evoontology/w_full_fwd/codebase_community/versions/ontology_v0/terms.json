@@ -1,0 +1,694 @@
+[
+  {
+    "id": "term_user",
+    "name": "User",
+    "type": "entity",
+    "definition": "A registered participant of the community platform, represented by one row in the users table and identified by users.Id.",
+    "scope": "Community platform account and activity analysis",
+    "aliases": [
+      "user",
+      "member",
+      "account holder",
+      "participant"
+    ],
+    "evidence": [
+      "ev_user_id_vs_account_id",
+      "ev_display_name_duplicates",
+      "ev_user_age_null"
+    ]
+  },
+  {
+    "id": "term_user_id",
+    "name": "User Identifier",
+    "type": "dimension",
+    "definition": "The numeric identifier that uniquely identifies a user across the community database. It is the value carried by users.Id and by every column that references a user.",
+    "scope": "Any analysis that identifies a user by number, or joins user-attributed records together",
+    "aliases": [
+      "UserId",
+      "user id",
+      "user number",
+      "user no.",
+      "user identifier"
+    ],
+    "evidence": [
+      "ev_user_id_vs_account_id",
+      "ev_workload_user24"
+    ]
+  },
+  {
+    "id": "term_post",
+    "name": "Post",
+    "type": "entity",
+    "definition": "A unit of community content. The posts table holds several kinds of content distinguished by the post type, including questions, answers, and tag wiki material.",
+    "scope": "Content-level analysis across all content kinds",
+    "aliases": [
+      "post",
+      "content",
+      "entry"
+    ],
+    "evidence": [
+      "ev_post_nullability",
+      "ev_post_type_enum"
+    ]
+  },
+  {
+    "id": "term_question_post",
+    "name": "Question Post",
+    "type": "category",
+    "definition": "A post that asks a question. Questions carry the title, tag list, view/answer/favorite counters and may have answers attached.",
+    "scope": "Question-level analysis, tagging, and view/answer metrics",
+    "aliases": [
+      "question",
+      "Question post"
+    ],
+    "evidence": [
+      "ev_post_type_enum",
+      "ev_post_type_metric_nonnull"
+    ]
+  },
+  {
+    "id": "term_answer_post",
+    "name": "Answer Post",
+    "type": "category",
+    "definition": "A post that answers a question. An answer is attached to its parent question and may be designated as the accepted answer.",
+    "scope": "Answer-level analysis and question/answer relationship analysis",
+    "aliases": [
+      "answer",
+      "Answer post",
+      "reply"
+    ],
+    "evidence": [
+      "ev_post_type_enum",
+      "ev_answer_parent_linkage"
+    ]
+  },
+  {
+    "id": "term_tag_wiki_post",
+    "name": "Tag Wiki Post",
+    "type": "category",
+    "definition": "A post that carries tag documentation rather than community question/answer content, covering tag wiki excerpts, tag wikis, and orphaned tag wikis.",
+    "scope": "Tag documentation content analysis",
+    "aliases": [
+      "tag wiki",
+      "tag excerpt post",
+      "wiki post"
+    ],
+    "evidence": [
+      "ev_tag_excerpt_targets",
+      "ev_post_type_enum"
+    ]
+  },
+  {
+    "id": "term_tag",
+    "name": "Tag",
+    "type": "entity",
+    "definition": "A topical label used to classify questions. Each tag has a bare name, a usage counter, and optional references to its excerpt and wiki content.",
+    "scope": "Topic classification and tag-level analysis",
+    "aliases": [
+      "tag",
+      "topic",
+      "label"
+    ],
+    "evidence": [
+      "ev_tag_bayesian",
+      "ev_tags_format"
+    ]
+  },
+  {
+    "id": "term_comment",
+    "name": "Comment",
+    "type": "entity",
+    "definition": "A short piece of feedback attached to a post. A comment has its own author, score and text, and always belongs to exactly one post.",
+    "scope": "Comment-level analysis and post discussion analysis",
+    "aliases": [
+      "comment",
+      "remark",
+      "note"
+    ],
+    "evidence": [
+      "ev_comment_count_vs_rows",
+      "ev_comment_author_displayname_null"
+    ]
+  },
+  {
+    "id": "term_vote",
+    "name": "Vote",
+    "type": "entity",
+    "definition": "A recorded reaction cast on a post, distinguished by a vote type such as up vote, down vote or favorite. A vote always belongs to a post; the casting user is recorded only for part of the rows.",
+    "scope": "Voting and content-rating analysis",
+    "aliases": [
+      "vote",
+      "voting record"
+    ],
+    "evidence": [
+      "ev_vote_type_enum",
+      "ev_votes_user_null",
+      "ev_votes_date_range"
+    ]
+  },
+  {
+    "id": "term_badge",
+    "name": "Badge Award",
+    "type": "entity",
+    "definition": "A single award of a named achievement badge to a user on a given date. The same badge name can be awarded to many users on many dates.",
+    "scope": "Achievement and gamification analysis",
+    "aliases": [
+      "badge",
+      "award",
+      "achievement"
+    ],
+    "evidence": [
+      "ev_badge_names",
+      "ev_workload_student_badges"
+    ]
+  },
+  {
+    "id": "term_post_link",
+    "name": "Post Link",
+    "type": "entity",
+    "definition": "A recorded relationship between two posts, such as one post being linked to or marked as a duplicate of another. It always references a source post and a related post.",
+    "scope": "Cross-post relationship analysis",
+    "aliases": [
+      "post link",
+      "link between posts",
+      "related post record"
+    ],
+    "evidence": [
+      "ev_link_type_enum",
+      "ev_post_nullability"
+    ]
+  },
+  {
+    "id": "term_post_revision",
+    "name": "Post Revision",
+    "type": "entity",
+    "definition": "A recorded event in a post's edit history, such as initial creation, title change, body change or tag change. Each event stores the acting user and the value recorded at that point.",
+    "scope": "Edit history and revision analysis",
+    "aliases": [
+      "revision",
+      "post history",
+      "edit event",
+      "history entry"
+    ],
+    "evidence": [
+      "ev_post_history_type_enum",
+      "ev_post_creation_date_revision_match"
+    ]
+  },
+  {
+    "id": "term_post_score",
+    "name": "Post Score",
+    "type": "metric",
+    "definition": "The net rating a post has accumulated, reflecting the balance of positive and negative votes received. The value is a stored counter, not a raw vote count, and can be negative.",
+    "scope": "Content quality and popularity ranking",
+    "aliases": [
+      "score",
+      "post score",
+      "rating"
+    ],
+    "evidence": [
+      "ev_score_ranges",
+      "ev_post_nullability"
+    ]
+  },
+  {
+    "id": "term_view_count",
+    "name": "View Count",
+    "type": "metric",
+    "definition": "The number of times a post has been viewed. Recorded only for content that can be browsed as a standalone page.",
+    "scope": "Traffic and reach analysis",
+    "aliases": [
+      "view count",
+      "views",
+      "number of views"
+    ],
+    "evidence": [
+      "ev_post_type_metric_nonnull",
+      "ev_post_nullability"
+    ]
+  },
+  {
+    "id": "term_favorite_count",
+    "name": "Favorite Count",
+    "type": "metric",
+    "definition": "The number of times a post has been marked as a favorite/bookmark by users. It is a stored counter and is absent for a large share of posts. It is often used as a proxy for how valuable or noteworthy a post is.",
+    "scope": "Content value and bookmarking analysis",
+    "aliases": [
+      "favorite count",
+      "favorites",
+      "most valuable",
+      "bookmarks",
+      "stars"
+    ],
+    "evidence": [
+      "ev_favorite_count_null",
+      "ev_favorite_vs_vote_rows"
+    ]
+  },
+  {
+    "id": "term_answer_count",
+    "name": "Answer Count",
+    "type": "metric",
+    "definition": "The number of answers a question post has received, stored as a counter on the question itself.",
+    "scope": "Question responsiveness analysis",
+    "aliases": [
+      "answer count",
+      "number of answers",
+      "how many answers"
+    ],
+    "evidence": [
+      "ev_post_type_metric_nonnull",
+      "ev_post_nullability"
+    ]
+  },
+  {
+    "id": "term_comment_count",
+    "name": "Comment Count",
+    "type": "metric",
+    "definition": "The number of comments attached to a post, stored as a counter on the post itself. A value of zero indicates a post with no comments.",
+    "scope": "Discussion volume analysis; filtering posts without comments",
+    "aliases": [
+      "comment count",
+      "number of comments",
+      "has no comments",
+      "without comments"
+    ],
+    "evidence": [
+      "ev_comment_count_vs_rows",
+      "ev_workload_mark_meckes"
+    ]
+  },
+  {
+    "id": "term_comment_score",
+    "name": "Comment Score",
+    "type": "metric",
+    "definition": "The net rating of a single comment, reflecting the balance of positive and negative votes on that comment. Observed values are non-negative in this data set.",
+    "scope": "Comment quality or usefulness ranking",
+    "aliases": [
+      "comment score",
+      "score of comment",
+      "comment rating"
+    ],
+    "evidence": [
+      "ev_score_ranges"
+    ]
+  },
+  {
+    "id": "term_user_reputation",
+    "name": "User Reputation",
+    "type": "metric",
+    "definition": "The accumulated reputation points of a user, stored as a single running total on the user record rather than derived from individual vote records.",
+    "scope": "User standing and experience analysis",
+    "aliases": [
+      "reputation",
+      "user reputation",
+      "points"
+    ],
+    "evidence": [
+      "ev_user_id_vs_account_id"
+    ]
+  },
+  {
+    "id": "term_user_upvotes",
+    "name": "User Up Votes",
+    "type": "metric",
+    "definition": "A cumulative per-user counter of positive voting activity stored on the user record. It is a profile total and does not reconcile with individual vote records in the votes table.",
+    "scope": "User engagement analysis; average up votes across a user set",
+    "aliases": [
+      "up votes",
+      "upvotes",
+      "average up votes"
+    ],
+    "evidence": [
+      "ev_upvotes_vs_vote_rows",
+      "ev_workload_user24"
+    ]
+  },
+  {
+    "id": "term_user_downvotes",
+    "name": "User Down Votes",
+    "type": "metric",
+    "definition": "A cumulative per-user counter of negative voting activity stored on the user record, provided as an aggregate total rather than a per-vote record.",
+    "scope": "User engagement analysis",
+    "aliases": [
+      "down votes",
+      "downvotes"
+    ],
+    "evidence": [
+      "ev_upvotes_vs_vote_rows"
+    ]
+  },
+  {
+    "id": "term_user_age",
+    "name": "User Age",
+    "type": "metric",
+    "definition": "The self-reported age of a user, stored as a whole number of years on the user record. It is provided only by a minority of users.",
+    "scope": "Demographic analysis of users; average user age",
+    "aliases": [
+      "age",
+      "user age",
+      "average age"
+    ],
+    "evidence": [
+      "ev_user_age_null"
+    ]
+  },
+  {
+    "id": "term_tag_usage_count",
+    "name": "Tag Usage Count",
+    "type": "metric",
+    "definition": "The number of questions that carry a given tag, stored as a counter on the tag record.",
+    "scope": "Tag popularity analysis",
+    "aliases": [
+      "tag count",
+      "number of tagged posts",
+      "tag usage"
+    ],
+    "evidence": [
+      "ev_tag_usage_count_check"
+    ]
+  },
+  {
+    "id": "term_post_title",
+    "name": "Post Title",
+    "type": "dimension",
+    "definition": "The headline text of a post. Questions always carry a title; other content kinds do not.",
+    "scope": "Locating or displaying content by its headline",
+    "aliases": [
+      "title",
+      "post title",
+      "headline"
+    ],
+    "evidence": [
+      "ev_workload_title_lookup",
+      "ev_post_type_metric_nonnull"
+    ]
+  },
+  {
+    "id": "term_post_body",
+    "name": "Post Body",
+    "type": "dimension",
+    "definition": "The main prose content of a post, holding the question text, answer text, or the documentation text of a tag wiki post.",
+    "scope": "Displaying or searching post content",
+    "aliases": [
+      "body",
+      "post body",
+      "content of the post",
+      "text of the post"
+    ],
+    "evidence": [
+      "ev_tag_excerpt_targets",
+      "ev_post_type_enum"
+    ]
+  },
+  {
+    "id": "term_comment_text",
+    "name": "Comment Text",
+    "type": "dimension",
+    "definition": "The prose content of a single comment, used when a question searches for or displays what a commenter wrote.",
+    "scope": "Searching and displaying comment wording",
+    "aliases": [
+      "comment text",
+      "Text",
+      "contents of comments",
+      "what was commented"
+    ],
+    "evidence": [
+      "ev_workload_comment53"
+    ]
+  },
+  {
+    "id": "term_display_name",
+    "name": "User Display Name",
+    "type": "dimension",
+    "definition": "The human-readable name a user shows on the platform. It is a display label, not a unique key, and the same label can belong to several distinct users.",
+    "scope": "Identifying users in questions phrased with a person's name",
+    "aliases": [
+      "display name",
+      "DisplayName",
+      "user name",
+      "name of the user",
+      "username"
+    ],
+    "evidence": [
+      "ev_display_name_duplicates",
+      "ev_workload_named_users"
+    ]
+  },
+  {
+    "id": "term_post_tags",
+    "name": "Post Tags",
+    "type": "dimension",
+    "definition": "The set of topical labels attached to a question post, serialized into a single text value on the post as a concatenation of bracketed tag names.",
+    "scope": "Identifying which topics a question belongs to",
+    "aliases": [
+      "tags",
+      "Tags",
+      "tagged as",
+      "tag list",
+      "post tags"
+    ],
+    "evidence": [
+      "ev_tags_format",
+      "ev_tags_bracket_absence",
+      "ev_tag_humor"
+    ]
+  },
+  {
+    "id": "term_tag_name",
+    "name": "Tag Name",
+    "type": "dimension",
+    "definition": "The bare name of a tag, stored without any surrounding decoration, used when reasoning about or filtering on a single topic label.",
+    "scope": "Naming and filtering individual topics",
+    "aliases": [
+      "tag name",
+      "TagName",
+      "tag",
+      "topic name"
+    ],
+    "evidence": [
+      "ev_tag_bayesian",
+      "ev_tags_format"
+    ]
+  },
+  {
+    "id": "term_badge_name",
+    "name": "Badge Name",
+    "type": "dimension",
+    "definition": "The name of an achievement badge. Names are free-text labels with fixed capitalization and a broad but finite set of distinct values.",
+    "scope": "Filtering badge awards by achievement type",
+    "aliases": [
+      "badge name",
+      "badge",
+      "achievement name"
+    ],
+    "evidence": [
+      "ev_badge_names",
+      "ev_workload_student_badges"
+    ]
+  },
+  {
+    "id": "term_post_type",
+    "name": "Post Type",
+    "type": "dimension",
+    "definition": "A coded classification on each post that determines what kind of content the row represents, such as question, answer or tag documentation. It governs which other columns are populated.",
+    "scope": "Separating content kinds and interpreting nullable content columns",
+    "aliases": [
+      "post type",
+      "PostTypeId",
+      "type of post",
+      "content kind"
+    ],
+    "evidence": [
+      "ev_post_type_enum",
+      "ev_post_type_metric_nonnull"
+    ]
+  },
+  {
+    "id": "term_vote_type",
+    "name": "Vote Type",
+    "type": "dimension",
+    "definition": "A coded classification describing what kind of reaction a vote record represents, such as an up vote, a down vote or a favorite marking.",
+    "scope": "Interpreting or filtering voting activity by reaction kind",
+    "aliases": [
+      "vote type",
+      "VoteTypeId",
+      "type of vote",
+      "up vote",
+      "down vote",
+      "favorite vote"
+    ],
+    "evidence": [
+      "ev_vote_type_enum"
+    ]
+  },
+  {
+    "id": "term_post_creation_date",
+    "name": "Post Creation Date",
+    "type": "dimension",
+    "definition": "The timestamp at which a post was first created. It is the anchor for all time filtering and year-based grouping of community content.",
+    "scope": "Time filtering and year-based grouping of posts",
+    "aliases": [
+      "creation date",
+      "created",
+      "post date",
+      "date posted",
+      "when posted"
+    ],
+    "evidence": [
+      "ev_post_creation_date_revision_match",
+      "ev_date_ranges"
+    ]
+  },
+  {
+    "id": "term_user_creation_date",
+    "name": "User Account Creation Date",
+    "type": "dimension",
+    "definition": "The timestamp at which a user's account was created on the platform.",
+    "scope": "Account cohort and registration-time analysis",
+    "aliases": [
+      "account created",
+      "creation date",
+      "registered",
+      "joined",
+      "signup date"
+    ],
+    "evidence": [
+      "ev_date_ranges"
+    ]
+  },
+  {
+    "id": "term_last_access_date",
+    "name": "Last Access Date",
+    "type": "dimension",
+    "definition": "The most recent timestamp at which a user visited the platform, recorded on the user record.",
+    "scope": "User recency and activity-window analysis",
+    "aliases": [
+      "last accessed",
+      "last access",
+      "last seen",
+      "last visit"
+    ],
+    "evidence": [
+      "ev_date_ranges"
+    ]
+  },
+  {
+    "id": "term_badge_award_date",
+    "name": "Badge Award Date",
+    "type": "dimension",
+    "definition": "The timestamp at which a badge was awarded to a user.",
+    "scope": "Time-based analysis of badge awards",
+    "aliases": [
+      "badge date",
+      "awarded on",
+      "date of badge"
+    ],
+    "evidence": [
+      "ev_workload_student_badges",
+      "ev_date_ranges"
+    ]
+  },
+  {
+    "id": "term_post_link_creation_date",
+    "name": "Post Link Creation Date",
+    "type": "dimension",
+    "definition": "The timestamp at which a relationship between two posts was recorded.",
+    "scope": "Time-based analysis of cross-post linking activity",
+    "aliases": [
+      "link date",
+      "when linked",
+      "link creation"
+    ],
+    "evidence": [
+      "ev_date_ranges",
+      "ev_link_type_enum"
+    ]
+  },
+  {
+    "id": "term_post_owner",
+    "name": "Post Owner",
+    "type": "concept",
+    "definition": "The user who authored a post and is recorded as its owner. Ownership is the basis for attributing posts to a person, and may be unset for imported or anonymous content.",
+    "scope": "Attributing posts to authors; counting posts owned by a user",
+    "aliases": [
+      "owner",
+      "author",
+      "asked by",
+      "posted by",
+      "OwnerUserId"
+    ],
+    "evidence": [
+      "ev_post_nullability",
+      "ev_workload_named_users"
+    ]
+  },
+  {
+    "id": "term_last_editor",
+    "name": "Last Editor",
+    "type": "concept",
+    "definition": "The user who most recently edited a post. Editing is optional, so many posts have no recorded editor and the post owner is the only attributed user.",
+    "scope": "Edit attribution and editorial activity analysis",
+    "aliases": [
+      "last editor",
+      "editor",
+      "who edited",
+      "LastEditorUserId"
+    ],
+    "evidence": [
+      "ev_display_name_denorm_null",
+      "ev_workload_title_lookup"
+    ]
+  },
+  {
+    "id": "term_comment_author",
+    "name": "Comment Author",
+    "type": "concept",
+    "definition": "The user who wrote a comment. The author is identified by a user reference on the comment record.",
+    "scope": "Attributing comments to users; naming the user who commented",
+    "aliases": [
+      "comment author",
+      "commenter",
+      "who commented",
+      "UserId"
+    ],
+    "evidence": [
+      "ev_workload_comment53",
+      "ev_comment_author_displayname_null"
+    ]
+  },
+  {
+    "id": "term_vote_author",
+    "name": "Vote Author",
+    "type": "concept",
+    "definition": "The user who cast a vote. The casting user is recorded only for a minority of vote rows, so votes cannot always be attributed to a person.",
+    "scope": "Attributing votes to users; counting a user's votes",
+    "aliases": [
+      "voter",
+      "who voted",
+      "user who voted",
+      "UserId"
+    ],
+    "evidence": [
+      "ev_votes_user_null",
+      "ev_workload_user24"
+    ]
+  },
+  {
+    "id": "term_tag_excerpt_post",
+    "name": "Tag Excerpt Source Post",
+    "type": "concept",
+    "definition": "The post that holds a tag's short explanatory excerpt. It is referenced from the tag record, and many tags have no such reference at all.",
+    "scope": "Resolving the documentation content behind a tag name",
+    "aliases": [
+      "excerpt post",
+      "excerpted from",
+      "tag excerpt",
+      "ExcerptPostId"
+    ],
+    "evidence": [
+      "ev_tag_excerpt_targets",
+      "ev_tag_excerpt_nullable"
+    ]
+  }
+]

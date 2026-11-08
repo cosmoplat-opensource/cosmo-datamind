@@ -1,0 +1,392 @@
+[
+  {
+    "id": "mapping_account",
+    "term_id": "term_account",
+    "database_source": "financial.sqlite",
+    "table": "tab01",
+    "column": "fld001",
+    "semantic_filter": "Account entity key; one row per account.",
+    "aggregation_semantics": "Count of distinct account identifiers.",
+    "grain": "one row per account",
+    "validation": {
+      "description": "tab01.fld001 is the primary key of tab01 and is referenced by tab04, tab06, and tab08.",
+      "evidence": [
+        "ev_schema_tables",
+        "ev_row_counts",
+        "ev_fk_integrity"
+      ],
+      "confidence": "high"
+    }
+  },
+  {
+    "id": "mapping_client",
+    "term_id": "term_client",
+    "database_source": "financial.sqlite",
+    "table": "tab03",
+    "column": "fld009",
+    "semantic_filter": "Client entity key; one row per client.",
+    "aggregation_semantics": "Count of distinct client identifiers.",
+    "grain": "one row per client",
+    "validation": {
+      "description": "tab03.fld009 is the primary key of tab03 and is referenced by tab04.fld009.",
+      "evidence": [
+        "ev_schema_tables",
+        "ev_row_counts",
+        "ev_fk_integrity"
+      ],
+      "confidence": "high"
+    }
+  },
+  {
+    "id": "mapping_disposition",
+    "term_id": "term_disposition",
+    "database_source": "financial.sqlite",
+    "table": "tab04",
+    "column": "fld006",
+    "semantic_filter": "One disposition record per client-account relationship.",
+    "aggregation_semantics": "Count of disposition records; count distinct accounts or clients as required.",
+    "grain": "one row per client-account disposition",
+    "validation": {
+      "description": "tab04.fld006 is the primary key; tab04.fld009 references clients and tab04.fld001 references accounts.",
+      "evidence": [
+        "ev_disposition",
+        "ev_schema_tables"
+      ],
+      "confidence": "high"
+    }
+  },
+  {
+    "id": "mapping_district",
+    "term_id": "term_district",
+    "database_source": "financial.sqlite",
+    "table": "tab05",
+    "column": "fld002",
+    "semantic_filter": "District entity key; one row per district.",
+    "aggregation_semantics": "Count of distinct districts.",
+    "grain": "one row per district",
+    "validation": {
+      "description": "tab05.fld002 is the primary key and is referenced by tab01.fld002 and tab03.fld002; all references resolve.",
+      "evidence": [
+        "ev_schema_tables",
+        "ev_district_region",
+        "ev_fk_integrity"
+      ],
+      "confidence": "high"
+    }
+  },
+  {
+    "id": "mapping_loan",
+    "term_id": "term_loan",
+    "database_source": "financial.sqlite",
+    "table": "tab06",
+    "column": "fld027",
+    "semantic_filter": "Loan entity key; one row per loan.",
+    "aggregation_semantics": "Count of loans.",
+    "grain": "one row per loan",
+    "validation": {
+      "description": "tab06.fld027 is the primary key; tab06.fld001 references the account.",
+      "evidence": [
+        "ev_schema_tables",
+        "ev_loan_numeric"
+      ],
+      "confidence": "high"
+    }
+  },
+  {
+    "id": "mapping_transaction",
+    "term_id": "term_transaction",
+    "database_source": "financial.sqlite",
+    "table": "tab08",
+    "column": "fld036",
+    "semantic_filter": "Transaction entity key; one row per transaction.",
+    "aggregation_semantics": "Count of transactions.",
+    "grain": "one row per transaction",
+    "validation": {
+      "description": "tab08.fld036 is the primary key; tab08.fld001 references the account.",
+      "evidence": [
+        "ev_schema_tables",
+        "ev_row_counts"
+      ],
+      "confidence": "high"
+    }
+  },
+  {
+    "id": "mapping_statement_frequency",
+    "term_id": "term_statement_frequency",
+    "database_source": "financial.sqlite",
+    "table": "tab01",
+    "column": "fld003",
+    "semantic_filter": "Statement issuance frequency chosen for the account.",
+    "aggregation_semantics": "Group accounts by the coded frequency value; count distinct accounts per value.",
+    "grain": "one value per account",
+    "validation": {
+      "description": "Three observed codes with counts: POPLATEK MESICNE 4167, POPLATEK TYDNE 240, POPLATEK PO OBRATU 93.",
+      "evidence": [
+        "ev_frequency_values"
+      ],
+      "confidence": "high"
+    }
+  },
+  {
+    "id": "mapping_account_opening_date",
+    "term_id": "term_account_opening_date",
+    "database_source": "financial.sqlite",
+    "table": "tab01",
+    "column": "fld004",
+    "semantic_filter": "Date the account was opened. This fld004 is the account date, not the loan or transaction date.",
+    "aggregation_semantics": "Compare or group by calendar year of the opening date.",
+    "grain": "one date per account",
+    "validation": {
+      "description": "tab01.fld004 ranges 1993-01-01 to 1997-12-29; 1139 accounts open in 1993.",
+      "evidence": [
+        "ev_dates",
+        "ev_date_counts"
+      ],
+      "confidence": "high"
+    }
+  },
+  {
+    "id": "mapping_client_gender",
+    "term_id": "term_client_gender",
+    "database_source": "financial.sqlite",
+    "table": "tab03",
+    "column": "fld010",
+    "semantic_filter": "Client gender code.",
+    "aggregation_semantics": "Count distinct clients per gender code.",
+    "grain": "one value per client",
+    "validation": {
+      "description": "Observed values: F 2645, M 2724.",
+      "evidence": [
+        "ev_gender_values"
+      ],
+      "confidence": "high"
+    }
+  },
+  {
+    "id": "mapping_client_birth_date",
+    "term_id": "term_client_birth_date",
+    "database_source": "financial.sqlite",
+    "table": "tab03",
+    "column": "fld011",
+    "semantic_filter": "Client date of birth.",
+    "aggregation_semantics": "Compare or group by date of birth or birth year.",
+    "grain": "one date per client",
+    "validation": {
+      "description": "tab03.fld011 ranges 1911-08-20 to 1987-09-27.",
+      "evidence": [
+        "ev_dates"
+      ],
+      "confidence": "high"
+    }
+  },
+  {
+    "id": "mapping_district_name",
+    "term_id": "term_district_name",
+    "database_source": "financial.sqlite",
+    "table": "tab05",
+    "column": "fld012",
+    "semantic_filter": "District name, not region.",
+    "aggregation_semantics": "Group or list by district name.",
+    "grain": "one name per district",
+    "validation": {
+      "description": "77 districts have distinct names such as Hl.m. Praha, Benesov, Beroun.",
+      "evidence": [
+        "ev_district_region"
+      ],
+      "confidence": "high"
+    }
+  },
+  {
+    "id": "mapping_region",
+    "term_id": "term_region",
+    "database_source": "financial.sqlite",
+    "table": "tab05",
+    "column": "fld013",
+    "semantic_filter": "Region of the district, not the district name.",
+    "aggregation_semantics": "Group districts and their accounts or clients by region.",
+    "grain": "one region per district",
+    "validation": {
+      "description": "Eight distinct region values observed; each district has exactly one.",
+      "evidence": [
+        "ev_district_region"
+      ],
+      "confidence": "high"
+    }
+  },
+  {
+    "id": "mapping_average_salary",
+    "term_id": "term_average_salary",
+    "database_source": "financial.sqlite",
+    "table": "tab05",
+    "column": "fld021",
+    "semantic_filter": "District-level average salary attribute.",
+    "aggregation_semantics": "Read the stored district value; do not sum it across accounts or clients. For grouped analysis, the district value is repeated at the entity level.",
+    "grain": "one value per district",
+    "validation": {
+      "description": "77 districts range from 8110 to 12541; all exceed 8000 and 8 exceed 10000.",
+      "evidence": [
+        "ev_salary_distribution"
+      ],
+      "confidence": "high"
+    }
+  },
+  {
+    "id": "mapping_loan_approval_date",
+    "term_id": "term_loan_approval_date",
+    "database_source": "financial.sqlite",
+    "table": "tab06",
+    "column": "fld004",
+    "semantic_filter": "Date the loan was approved. This fld004 is the loan date, not the account opening or transaction date.",
+    "aggregation_semantics": "Compare or group by calendar date or year of loan approval.",
+    "grain": "one date per loan",
+    "validation": {
+      "description": "tab06.fld004 ranges 1993-07-05 to 1998-12-08; 403 loans are approved between 1995-01-01 and 1997-12-31.",
+      "evidence": [
+        "ev_dates",
+        "ev_date_counts"
+      ],
+      "confidence": "high"
+    }
+  },
+  {
+    "id": "mapping_loan_duration",
+    "term_id": "term_loan_duration",
+    "database_source": "financial.sqlite",
+    "table": "tab06",
+    "column": "fld029",
+    "semantic_filter": "Loan term measured in months.",
+    "aggregation_semantics": "Compare individual loan durations; do not sum durations.",
+    "grain": "one value per loan",
+    "validation": {
+      "description": "tab06.fld029 ranges 12 to 60 months.",
+      "evidence": [
+        "ev_loan_numeric"
+      ],
+      "confidence": "high"
+    }
+  },
+  {
+    "id": "mapping_loan_status",
+    "term_id": "term_loan_status",
+    "database_source": "financial.sqlite",
+    "table": "tab06",
+    "column": "fld031",
+    "semantic_filter": "Loan contract status code.",
+    "aggregation_semantics": "Count loans or accounts per status code.",
+    "grain": "one value per loan",
+    "validation": {
+      "description": "Observed codes: A 203, B 31, C 403, D 45. Code C is documented as running and OK so far.",
+      "evidence": [
+        "ev_loan_status_values"
+      ],
+      "confidence": "high"
+    }
+  },
+  {
+    "id": "mapping_loan_amount",
+    "term_id": "term_loan_amount",
+    "database_source": "financial.sqlite",
+    "table": "tab06",
+    "column": "fld028",
+    "semantic_filter": "Approved amount from the loan table only (tab06), not fld028 in tab07 or tab08.",
+    "aggregation_semantics": "Compare, sum, or average approved loan amounts across loans.",
+    "grain": "one value per loan",
+    "validation": {
+      "description": "tab06.fld028 ranges 4980 to 590820 with mean about 151410.",
+      "evidence": [
+        "ev_loan_numeric",
+        "ev_amount_column_domains"
+      ],
+      "confidence": "high"
+    }
+  },
+  {
+    "id": "mapping_transaction_operation",
+    "term_id": "term_transaction_operation",
+    "database_source": "financial.sqlite",
+    "table": "tab08",
+    "column": "fld037",
+    "semantic_filter": "Operation kind of the transaction; VYBER denotes withdrawal in cash. NULL values are not operations.",
+    "aggregation_semantics": "Count transactions by operation kind.",
+    "grain": "one value per transaction",
+    "validation": {
+      "description": "Observed operation counts include VYBER 434918, VKLAD 156743, PREVOD NA UCET 208283, PREVOD Z UCTU 65226, VYBER KARTOU 8036, NULL 183114.",
+      "evidence": [
+        "ev_trans_operation",
+        "ev_blank_values"
+      ],
+      "confidence": "high"
+    }
+  },
+  {
+    "id": "mapping_transaction_type",
+    "term_id": "term_transaction_type",
+    "database_source": "financial.sqlite",
+    "table": "tab08",
+    "column": "fld007",
+    "semantic_filter": "Transaction direction type from tab08 only; fld007 in tab02 and tab04 has different domains.",
+    "aggregation_semantics": "Count transactions per type value.",
+    "grain": "one value per transaction",
+    "validation": {
+      "description": "tab08.fld007 values: PRIJEM 405083, VYDAJ 634571, VYBER 16666.",
+      "evidence": [
+        "ev_type_column_domains",
+        "ev_trans_operation"
+      ],
+      "confidence": "high"
+    }
+  },
+  {
+    "id": "mapping_transaction_date",
+    "term_id": "term_transaction_date",
+    "database_source": "financial.sqlite",
+    "table": "tab08",
+    "column": "fld004",
+    "semantic_filter": "Date the transaction was posted. This fld004 is the transaction date, not the account or loan date.",
+    "aggregation_semantics": "Compare or group by transaction date.",
+    "grain": "one date per transaction",
+    "validation": {
+      "description": "tab08.fld004 ranges 1993-01-01 to 1998-12-31.",
+      "evidence": [
+        "ev_dates"
+      ],
+      "confidence": "high"
+    }
+  },
+  {
+    "id": "mapping_transaction_amount",
+    "term_id": "term_transaction_amount",
+    "database_source": "financial.sqlite",
+    "table": "tab08",
+    "column": "fld028",
+    "semantic_filter": "Transaction amount from tab08 only; the same column name in tab06 is the loan amount and in tab07 is the order amount.",
+    "aggregation_semantics": "Sum or average transaction amounts across transactions.",
+    "grain": "one value per transaction",
+    "validation": {
+      "description": "tab08.fld028 ranges 0 to 87400 with mean about 5924.",
+      "evidence": [
+        "ev_trans_operation",
+        "ev_amount_column_domains"
+      ],
+      "confidence": "high"
+    }
+  },
+  {
+    "id": "mapping_disposition_role",
+    "term_id": "term_disposition_role",
+    "database_source": "financial.sqlite",
+    "table": "tab04",
+    "column": "fld007",
+    "semantic_filter": "Role of the client on the account: OWNER or DISPONENT.",
+    "aggregation_semantics": "Count disposition records by role; filter accounts by whether the client is the OWNER.",
+    "grain": "one value per disposition",
+    "validation": {
+      "description": "Observed roles: OWNER 4500, DISPONENT 869; each account has at most one OWNER.",
+      "evidence": [
+        "ev_disposition",
+        "ev_type_column_domains"
+      ],
+      "confidence": "high"
+    }
+  }
+]

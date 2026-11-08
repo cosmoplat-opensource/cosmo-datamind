@@ -1,0 +1,509 @@
+[
+  {
+    "id": "map_patient",
+    "term_id": "term_patient",
+    "database_source": "thrombosis_prediction",
+    "table": "tab02",
+    "column": "fld001",
+    "semantic_filter": "one row per patient",
+    "aggregation_semantics": "count patients by the distinct patient identifier",
+    "grain": "one row per patient",
+    "validation": "tab02 has 1238 rows and 1238 distinct fld001 values",
+    "evidence_refs": [
+      "ev_002_patient_grain"
+    ]
+  },
+  {
+    "id": "map_patient_id",
+    "term_id": "term_patient_id",
+    "database_source": "thrombosis_prediction",
+    "table": "tab02",
+    "column": "fld001",
+    "semantic_filter": "",
+    "aggregation_semantics": "distinct value identifies one patient",
+    "grain": "one row per patient",
+    "validation": "1238 distinct non-null values; declared as the referenced key of tab01.fld001 and tab03.fld001",
+    "evidence_refs": [
+      "ev_002_patient_grain",
+      "ev_001_database_structure"
+    ]
+  },
+  {
+    "id": "map_sex",
+    "term_id": "term_sex",
+    "database_source": "thrombosis_prediction",
+    "table": "tab02",
+    "column": "fld014",
+    "semantic_filter": "",
+    "aggregation_semantics": "count patients per sex code",
+    "grain": "one row per patient",
+    "validation": "F=1023, M=202, blank=13",
+    "evidence_refs": [
+      "ev_003_sex"
+    ]
+  },
+  {
+    "id": "map_birthday",
+    "term_id": "term_birthday",
+    "database_source": "thrombosis_prediction",
+    "table": "tab02",
+    "column": "fld015",
+    "semantic_filter": "",
+    "aggregation_semantics": "year extracted from the stored date",
+    "grain": "one row per patient",
+    "validation": "1912-08-28 to 2007-05-28, ISO date text, 1 null",
+    "evidence_refs": [
+      "ev_004_birthday"
+    ]
+  },
+  {
+    "id": "map_age",
+    "term_id": "term_age",
+    "database_source": "thrombosis_prediction",
+    "table": "tab02",
+    "column": "fld015",
+    "semantic_filter": "birthday must be non-null",
+    "aggregation_semantics": "current calendar year minus the year of birth",
+    "grain": "one value per patient",
+    "validation": "derived metric; no age column exists in any table",
+    "evidence_refs": [
+      "ev_028_age_derivation"
+    ]
+  },
+  {
+    "id": "map_patient_diagnosis",
+    "term_id": "term_patient_diagnosis",
+    "database_source": "thrombosis_prediction",
+    "table": "tab02",
+    "column": "fld008",
+    "semantic_filter": "",
+    "aggregation_semantics": "count patients per distinct diagnosis label; combined labels count as their own string",
+    "grain": "one consolidated label per patient",
+    "validation": "1238 rows, 220 distinct labels, 1 blank",
+    "evidence_refs": [
+      "ev_006_diagnosis_labels"
+    ]
+  },
+  {
+    "id": "map_examination_diagnosis",
+    "term_id": "term_examination_diagnosis",
+    "database_source": "thrombosis_prediction",
+    "table": "tab01",
+    "column": "fld008",
+    "semantic_filter": "",
+    "aggregation_semantics": "count examinations per distinct diagnosis label",
+    "grain": "one diagnosis per examination record",
+    "validation": "475 of 806 rows non-null, 181 distinct labels",
+    "evidence_refs": [
+      "ev_009_exam_grain",
+      "ev_007_diagnosis_two_tables"
+    ]
+  },
+  {
+    "id": "map_examination",
+    "term_id": "term_examination",
+    "database_source": "thrombosis_prediction",
+    "table": "tab01",
+    "column": "fld001",
+    "semantic_filter": "patient identifier must be present",
+    "aggregation_semantics": "count examination records; deduplicate by patient when counting patients",
+    "grain": "one row per examination",
+    "validation": "806 rows, 763 distinct patient IDs, 36 rows with null ID",
+    "evidence_refs": [
+      "ev_009_exam_grain"
+    ]
+  },
+  {
+    "id": "map_examination_date",
+    "term_id": "term_examination_date",
+    "database_source": "thrombosis_prediction",
+    "table": "tab01",
+    "column": "fld002",
+    "semantic_filter": "",
+    "aggregation_semantics": "date range filtering on the stored calendar date",
+    "grain": "one date per examination record",
+    "validation": "1989-04-18 to 1998-04-17, ISO date text, 10 null",
+    "evidence_refs": [
+      "ev_030_date_ranges"
+    ]
+  },
+  {
+    "id": "map_inpatient_status",
+    "term_id": "term_inpatient_status",
+    "database_source": "thrombosis_prediction",
+    "table": "tab02",
+    "column": "fld018",
+    "semantic_filter": "",
+    "aggregation_semantics": "count patients per status code",
+    "grain": "one row per patient",
+    "validation": "'+'=488, '-'=713, blank=34, '+('=3",
+    "evidence_refs": [
+      "ev_005_inpatient_status"
+    ]
+  },
+  {
+    "id": "map_laboratory_test",
+    "term_id": "term_laboratory_test",
+    "database_source": "thrombosis_prediction",
+    "table": "tab03",
+    "column": "fld001",
+    "semantic_filter": "",
+    "aggregation_semantics": "count panels or patients; deduplicate by patient when counting patients",
+    "grain": "one row per patient per test date (composite key fld001 + fld019)",
+    "validation": "13908 rows, 302 patients, no duplicate (patient,date) pair",
+    "evidence_refs": [
+      "ev_008_lab_grain"
+    ]
+  },
+  {
+    "id": "map_lab_test_date",
+    "term_id": "term_lab_test_date",
+    "database_source": "thrombosis_prediction",
+    "table": "tab03",
+    "column": "fld019",
+    "semantic_filter": "",
+    "aggregation_semantics": "date range filtering on the stored calendar date",
+    "grain": "one date per laboratory panel",
+    "validation": "1981-01-27 to 1999-03-04, ISO date text, no nulls",
+    "evidence_refs": [
+      "ev_008_lab_grain",
+      "ev_030_date_ranges"
+    ]
+  },
+  {
+    "id": "map_albumin",
+    "term_id": "term_albumin",
+    "database_source": "thrombosis_prediction",
+    "table": "tab03",
+    "column": "fld025",
+    "semantic_filter": "",
+    "aggregation_semantics": "average or comparison of measured values across panels",
+    "grain": "one value per laboratory panel",
+    "validation": "11068 non-null, range 1.0-5.8 g/dL",
+    "evidence_refs": [
+      "ev_011_albumin"
+    ]
+  },
+  {
+    "id": "map_alt_gpt",
+    "term_id": "term_alt_gpt",
+    "database_source": "thrombosis_prediction",
+    "table": "tab03",
+    "column": "fld021",
+    "semantic_filter": "",
+    "aggregation_semantics": "comparison of measured values across panels",
+    "grain": "one value per laboratory panel",
+    "validation": "11274 non-null, range 1-4780 U/L",
+    "evidence_refs": [
+      "ev_012_gpt"
+    ]
+  },
+  {
+    "id": "map_glucose",
+    "term_id": "term_glucose",
+    "database_source": "thrombosis_prediction",
+    "table": "tab03",
+    "column": "fld033",
+    "semantic_filter": "",
+    "aggregation_semantics": "comparison of measured values against a cutoff",
+    "grain": "one value per laboratory panel",
+    "validation": "1705 non-null, range 62-499 mg/dL",
+    "evidence_refs": [
+      "ev_013_glucose"
+    ]
+  },
+  {
+    "id": "map_total_cholesterol",
+    "term_id": "term_total_cholesterol",
+    "database_source": "thrombosis_prediction",
+    "table": "tab03",
+    "column": "fld030",
+    "semantic_filter": "",
+    "aggregation_semantics": "comparison of measured values against a cutoff",
+    "grain": "one value per laboratory panel",
+    "validation": "10664 non-null, range 37-568 mg/dL",
+    "evidence_refs": [
+      "ev_014_cholesterol"
+    ]
+  },
+  {
+    "id": "map_creatinine",
+    "term_id": "term_creatinine",
+    "database_source": "thrombosis_prediction",
+    "table": "tab03",
+    "column": "fld028",
+    "semantic_filter": "",
+    "aggregation_semantics": "comparison of measured values against a cutoff",
+    "grain": "one value per laboratory panel",
+    "validation": "11253 non-null, range 0.1-17.1 mg/dL",
+    "evidence_refs": [
+      "ev_015_creatinine"
+    ]
+  },
+  {
+    "id": "map_creatine_phosphokinase",
+    "term_id": "term_creatine_phosphokinase",
+    "database_source": "thrombosis_prediction",
+    "table": "tab03",
+    "column": "fld032",
+    "semantic_filter": "",
+    "aggregation_semantics": "comparison of measured values against a cutoff",
+    "grain": "one value per laboratory panel",
+    "validation": "5016 non-null, range 0-10835 U/L",
+    "evidence_refs": [
+      "ev_016_cpk"
+    ]
+  },
+  {
+    "id": "map_urea_nitrogen",
+    "term_id": "term_urea_nitrogen",
+    "database_source": "thrombosis_prediction",
+    "table": "tab03",
+    "column": "fld027",
+    "semantic_filter": "",
+    "aggregation_semantics": "comparison of measured values against a border value",
+    "grain": "one value per laboratory panel",
+    "validation": "11238 non-null, range 0-152 mg/dL",
+    "evidence_refs": [
+      "ev_017_urea_nitrogen"
+    ]
+  },
+  {
+    "id": "map_platelet_count",
+    "term_id": "term_platelet_count",
+    "database_source": "thrombosis_prediction",
+    "table": "tab03",
+    "column": "fld038",
+    "semantic_filter": "",
+    "aggregation_semantics": "comparison of measured values against a cutoff",
+    "grain": "one value per laboratory panel",
+    "validation": "11287 non-null, range 5-5844",
+    "evidence_refs": [
+      "ev_018_platelet"
+    ]
+  },
+  {
+    "id": "map_igg",
+    "term_id": "term_igg",
+    "database_source": "thrombosis_prediction",
+    "table": "tab03",
+    "column": "fld046",
+    "semantic_filter": "",
+    "aggregation_semantics": "comparison of measured values against the normal range",
+    "grain": "one value per laboratory panel",
+    "validation": "2680 non-null, range 3-6510 mg/dL",
+    "evidence_refs": [
+      "ev_019_igg"
+    ]
+  },
+  {
+    "id": "map_igm",
+    "term_id": "term_igm",
+    "database_source": "thrombosis_prediction",
+    "table": "tab03",
+    "column": "fld048",
+    "semantic_filter": "",
+    "aggregation_semantics": "comparison of measured values against the normal range",
+    "grain": "one value per laboratory panel",
+    "validation": "2678 non-null, range 0-1573 mg/dL",
+    "evidence_refs": [
+      "ev_020_igm"
+    ]
+  },
+  {
+    "id": "map_c_reactive_protein",
+    "term_id": "term_c_reactive_protein",
+    "database_source": "thrombosis_prediction",
+    "table": "tab03",
+    "column": "fld049",
+    "semantic_filter": "",
+    "aggregation_semantics": "count of panels with a positive qualitative result",
+    "grain": "one value per laboratory panel",
+    "validation": "11455 non-null, 211 distinct values mixing '+', '-', '<0.2', '<0.3' and numeric strings",
+    "evidence_refs": [
+      "ev_021_crp"
+    ]
+  },
+  {
+    "id": "map_anti_scl70",
+    "term_id": "term_anti_scl70",
+    "database_source": "thrombosis_prediction",
+    "table": "tab03",
+    "column": "fld056",
+    "semantic_filter": "",
+    "aggregation_semantics": "count of panels with a negative or positive result",
+    "grain": "one value per laboratory panel",
+    "validation": "28 non-null: '0'=12, 'negative'=12, titers '1','4','16'",
+    "evidence_refs": [
+      "ev_022_antibodies"
+    ]
+  },
+  {
+    "id": "map_anti_ssb",
+    "term_id": "term_anti_ssb",
+    "database_source": "thrombosis_prediction",
+    "table": "tab03",
+    "column": "fld058",
+    "semantic_filter": "",
+    "aggregation_semantics": "count of panels with a negative or positive result",
+    "grain": "one value per laboratory panel",
+    "validation": "93 non-null: '0'=58, 'negative'=30, titers '1','2','8','32'",
+    "evidence_refs": [
+      "ev_022_antibodies"
+    ]
+  },
+  {
+    "id": "map_anti_centromere",
+    "term_id": "term_anti_centromere",
+    "database_source": "thrombosis_prediction",
+    "table": "tab03",
+    "column": "fld059",
+    "semantic_filter": "",
+    "aggregation_semantics": "count of panels with a negative or positive result",
+    "grain": "one value per laboratory panel",
+    "validation": "15 non-null: '0'=11, 'negative'=4",
+    "evidence_refs": [
+      "ev_022_antibodies"
+    ]
+  },
+  {
+    "id": "map_ana_pattern",
+    "term_id": "term_ana_pattern",
+    "database_source": "thrombosis_prediction",
+    "table": "tab01",
+    "column": "fld006",
+    "semantic_filter": "",
+    "aggregation_semantics": "count examinations per pattern string",
+    "grain": "one pattern per examination record",
+    "validation": "545 non-null; 'S'=252, 'P'=178, 'P,S'=89, 'S,P'=11 and rare combinations",
+    "evidence_refs": [
+      "ev_023_ana"
+    ]
+  },
+  {
+    "id": "map_ana_titer",
+    "term_id": "term_ana_titer",
+    "database_source": "thrombosis_prediction",
+    "table": "tab01",
+    "column": "fld005",
+    "semantic_filter": "",
+    "aggregation_semantics": "comparison of the numeric titer",
+    "grain": "one titer per examination record",
+    "validation": "768 non-null; values 0,4,16,64,256,1024,4096",
+    "evidence_refs": [
+      "ev_023_ana"
+    ]
+  },
+  {
+    "id": "map_anti_cardiolipin_igg",
+    "term_id": "term_anti_cardiolipin",
+    "database_source": "thrombosis_prediction",
+    "table": "tab01",
+    "column": "fld003",
+    "semantic_filter": "IgG isotype",
+    "aggregation_semantics": "average or comparison of measured antibody levels",
+    "grain": "one value per examination record",
+    "validation": "806 non-null, range 0.0-2150.3, 115 distinct values",
+    "evidence_refs": [
+      "ev_032_anti_cardiolipin"
+    ]
+  },
+  {
+    "id": "map_anti_cardiolipin_igm",
+    "term_id": "term_anti_cardiolipin",
+    "database_source": "thrombosis_prediction",
+    "table": "tab01",
+    "column": "fld004",
+    "semantic_filter": "IgM isotype",
+    "aggregation_semantics": "average or comparison of measured antibody levels",
+    "grain": "one value per examination record",
+    "validation": "806 non-null, range 0.0-187122.0, 140 distinct values",
+    "evidence_refs": [
+      "ev_032_anti_cardiolipin"
+    ]
+  },
+  {
+    "id": "map_thrombosis_level",
+    "term_id": "term_thrombosis_level",
+    "database_source": "thrombosis_prediction",
+    "table": "tab01",
+    "column": "fld013",
+    "semantic_filter": "",
+    "aggregation_semantics": "categorical filter or distribution count",
+    "grain": "one value per examination record",
+    "validation": "0=726, 1=57, 2=18, 3=5",
+    "evidence_refs": [
+      "ev_024_thrombosis_level"
+    ]
+  },
+  {
+    "id": "map_coagulation_degree_a",
+    "term_id": "term_coagulation_degree",
+    "database_source": "thrombosis_prediction",
+    "table": "tab01",
+    "column": "fld009",
+    "semantic_filter": "",
+    "aggregation_semantics": "presence of at least one positive flag",
+    "grain": "one flag per examination record",
+    "validation": "'+'=41, '-'=105, null=660",
+    "evidence_refs": [
+      "ev_025_coagulation_flags"
+    ]
+  },
+  {
+    "id": "map_coagulation_degree_b",
+    "term_id": "term_coagulation_degree",
+    "database_source": "thrombosis_prediction",
+    "table": "tab01",
+    "column": "fld010",
+    "semantic_filter": "",
+    "aggregation_semantics": "presence of at least one positive flag",
+    "grain": "one flag per examination record",
+    "validation": "'+'=47, '-'=99, null=660",
+    "evidence_refs": [
+      "ev_025_coagulation_flags"
+    ]
+  },
+  {
+    "id": "map_coagulation_degree_c",
+    "term_id": "term_coagulation_degree",
+    "database_source": "thrombosis_prediction",
+    "table": "tab01",
+    "column": "fld011",
+    "semantic_filter": "",
+    "aggregation_semantics": "presence of at least one positive flag",
+    "grain": "one flag per examination record",
+    "validation": "'+'=75, '-'=147, null=584",
+    "evidence_refs": [
+      "ev_025_coagulation_flags"
+    ]
+  },
+  {
+    "id": "map_symptom_manifestation",
+    "term_id": "term_symptom_manifestation",
+    "database_source": "thrombosis_prediction",
+    "table": "tab01",
+    "column": "fld012",
+    "semantic_filter": "non-null means symptoms were recorded",
+    "aggregation_semantics": "count examinations or patients with a non-null symptom text",
+    "grain": "one free-text value per examination record",
+    "validation": "80 of 806 rows non-null, 39 distinct labels",
+    "evidence_refs": [
+      "ev_026_symptoms"
+    ]
+  },
+  {
+    "id": "map_patient_record_date",
+    "term_id": "term_patient_record_date",
+    "database_source": "thrombosis_prediction",
+    "table": "tab02",
+    "column": "fld016",
+    "semantic_filter": "null means the value was not recorded",
+    "aggregation_semantics": "count patients with or without a recorded value",
+    "grain": "one date per patient",
+    "validation": "1022 non-null, 216 null; range 1991-06-10 to 1998-12-03",
+    "evidence_refs": [
+      "ev_031_patient_dates"
+    ]
+  }
+]

@@ -1,0 +1,174 @@
+[
+  {
+    "id": "rel_client_account",
+    "source": "term_client",
+    "relation_type": "association",
+    "target": "term_account",
+    "connection_condition": "No direct client-to-account column exists; the connection is indirect through account-holder records, where tab04.fld009 links a record to a client and tab04.fld001 links the same record to an account.",
+    "description": "Clients relate to accounts through holder records. One account can have more than one holder, so client and account are not a simple one-to-one pairing.",
+    "evidence": [
+      "ev_disposition",
+      "ev_join_integrity"
+    ]
+  },
+  {
+    "id": "rel_district_residence_district",
+    "source": "term_district_residence",
+    "relation_type": "association",
+    "target": "term_district",
+    "connection_condition": "tab03.fld002 carries a district identifier from the same 77-value domain as tab05.fld002.",
+    "description": "A client's district of residence is a district in the district dimension; the value is role-scoped to the client and must not be conflated with the account's branch district.",
+    "evidence": [
+      "ev_district_vs_branch",
+      "ev_district"
+    ]
+  },
+  {
+    "id": "rel_branch_district",
+    "source": "term_branch_location",
+    "relation_type": "association",
+    "target": "term_district",
+    "connection_condition": "tab01.fld002 carries a district identifier from the same 77-value domain as tab05.fld002; every branch identifier resolves to exactly one district row.",
+    "description": "A branch location is a district; district statistics such as population and region describe the branch's district, while client counts describe the branch's account portfolio.",
+    "evidence": [
+      "ev_branch_domain",
+      "ev_district"
+    ]
+  },
+  {
+    "id": "rel_account_disposition",
+    "source": "term_account",
+    "relation_type": "composition",
+    "target": "term_account_holder",
+    "connection_condition": "tab04.fld001 references tab01.fld001; holder records cannot exist without their account.",
+    "description": "An account is composed of its holder records; every account has exactly one OWNER and may have additional DISPONENT holders.",
+    "evidence": [
+      "ev_disposition"
+    ]
+  },
+  {
+    "id": "rel_disposition_client",
+    "source": "term_account_holder",
+    "relation_type": "association",
+    "target": "term_client",
+    "connection_condition": "tab04.fld009 corresponds to tab03.fld009; every holder record references exactly one client.",
+    "description": "Each holder record names one client and the role that client plays on the account.",
+    "evidence": [
+      "ev_disposition",
+      "ev_client_key"
+    ]
+  },
+  {
+    "id": "rel_disposition_card",
+    "source": "term_account_holder",
+    "relation_type": "composition",
+    "target": "term_card",
+    "connection_condition": "tab02.fld006 references tab04.fld006; each card belongs to exactly one holder record.",
+    "description": "A card is issued to a holder record and cannot exist without it; there is exactly one card per card-issuing holder record.",
+    "evidence": [
+      "ev_card"
+    ]
+  },
+  {
+    "id": "rel_account_loan",
+    "source": "term_account",
+    "relation_type": "composition",
+    "target": "term_loan",
+    "connection_condition": "tab06.fld001 references tab01.fld001; a loan cannot exist without its account.",
+    "description": "A loan contract belongs to one account. In this dataset every loan account has exactly one loan.",
+    "evidence": [
+      "ev_loan",
+      "ev_join_integrity"
+    ]
+  },
+  {
+    "id": "rel_account_transaction",
+    "source": "term_account",
+    "relation_type": "composition",
+    "target": "term_transaction",
+    "connection_condition": "tab08.fld001 references tab01.fld001; a transaction cannot exist without its account.",
+    "description": "Transactions are the movements that make up an account's activity.",
+    "evidence": [
+      "ev_txn",
+      "ev_join_integrity"
+    ]
+  },
+  {
+    "id": "rel_region_district",
+    "source": "term_region",
+    "relation_type": "composition",
+    "target": "term_district",
+    "connection_condition": "tab05.fld013 names the region of each district row; districts group into 8 regions.",
+    "description": "A region is composed of districts. Region-level statistics are aggregations over their district rows, while the per-district statistics remain at district grain.",
+    "evidence": [
+      "ev_region"
+    ]
+  },
+  {
+    "id": "rel_age_derivation",
+    "source": "term_birth_date",
+    "relation_type": "derivation",
+    "target": "term_age",
+    "connection_condition": "",
+    "description": "Age is derived from the birth date relative to a reference date; no age column is stored and the reference date is not defined by the data.",
+    "evidence": [
+      "ev_age_absence",
+      "ev_birth"
+    ]
+  },
+  {
+    "id": "rel_unemp_derivation_1995",
+    "source": "term_unemployment_1995",
+    "relation_type": "derivation",
+    "target": "term_unemployment_increment",
+    "connection_condition": "",
+    "description": "The 1995 unemployment rate is the base value of the increment formula.",
+    "evidence": [
+      "ev_unemployment"
+    ]
+  },
+  {
+    "id": "rel_unemp_derivation_1996",
+    "source": "term_unemployment_1996",
+    "relation_type": "derivation",
+    "target": "term_unemployment_increment",
+    "connection_condition": "",
+    "description": "The 1996 unemployment rate is the comparison value of the increment formula.",
+    "evidence": [
+      "ev_unemployment"
+    ]
+  },
+  {
+    "id": "rel_salary_gap_derivation",
+    "source": "term_avg_salary",
+    "relation_type": "derivation",
+    "target": "term_avg_salary_gap",
+    "connection_condition": "",
+    "description": "The salary gap is derived as the highest district average salary minus the lowest district average salary in the compared set.",
+    "evidence": [
+      "ev_salary"
+    ]
+  },
+  {
+    "id": "rel_gender_male_share",
+    "source": "term_gender",
+    "relation_type": "derivation",
+    "target": "term_male_client_share",
+    "connection_condition": "",
+    "description": "Male client percentage is derived from client gender counts within the selected group.",
+    "evidence": [
+      "ev_gender"
+    ]
+  },
+  {
+    "id": "rel_type_operation",
+    "source": "term_transaction_type",
+    "relation_type": "association",
+    "target": "term_transaction_operation",
+    "connection_condition": "Both columns classify the same transaction row; operation is finer-grained than type.",
+    "description": "Transaction type and transaction operation are parallel classifications, not a hierarchy: VYDAJ includes VYBER, VYBER KARTOU and PREVOD NA UCET, while the type code VYBER is narrower than the operation code VYBER.",
+    "evidence": [
+      "ev_type_operation_cross"
+    ]
+  }
+]

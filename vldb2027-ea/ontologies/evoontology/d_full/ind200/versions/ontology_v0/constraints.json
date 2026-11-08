@@ -1,0 +1,453 @@
+[
+  {
+    "id": "con_data_window",
+    "target": "business_date",
+    "constraint_type": "scope",
+    "trigger_keywords": [
+      "数据范围",
+      "时间范围",
+      "起止日期",
+      "2025",
+      "2026",
+      "数据窗口",
+      "时间跨度",
+      "date range"
+    ],
+    "severity": "block",
+    "scope": "适用于所有涉及时间范围的分析",
+    "confidence": "high",
+    "description": "事实与汇总数据的有效业务日期为 2025-01-01 至 2026-06-30。日历表 dim_calendar 覆盖 2025-01-01 至 2026-07-01(547 行),但事实数据的最后一天为 2026-06-30,分析不得超出该窗口或据日历表推断窗口外的数据可用性。",
+    "evidence": [
+      "ev_27",
+      "ev_03"
+    ]
+  },
+  {
+    "id": "con_dws_dense_zero_grid",
+    "target": "dws_summary_layer",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "汇总表行数",
+      "零值",
+      "空行",
+      "网格",
+      "计数口径",
+      "记录数",
+      "row count",
+      "零填充"
+    ],
+    "severity": "block",
+    "scope": "适用于对 DWS 汇总表做计数、平均或按行统计的分析",
+    "confidence": "high",
+    "description": "部分 DWS 汇总表是稠密零填充网格,包含无业务发生的占位行。DWS_PRODUCTION_DAILY 共 7974 行,其中 5089 行的实际产量、计划产量与工单数同时为 0;有产量的仅 2885 行。因此对该表计数会显著高估业务事件数,统计产量相关指标时应明确是否排除零值行。相反,DWS_RISK_DAILY(18184 行)与 DWS_PROCUREMENT_DAILY(1812 行)只保留有风险的组合或有业务的日子,不含零填充行。",
+    "evidence": [
+      "ev_04",
+      "ev_19",
+      "ev_20"
+    ]
+  },
+  {
+    "id": "con_safety_near_miss_exclusion",
+    "target": "safety_incident_count",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "事故数",
+      "事故",
+      "未遂",
+      "安全事件",
+      "incident",
+      "near miss",
+      "险肇"
+    ],
+    "severity": "block",
+    "scope": "适用于安全事故与未遂事件的统计",
+    "confidence": "high",
+    "description": "事故数与未遂数按 fact_incident.severity 互斥划分:severity='near_miss' 计为未遂事件,其余(fa 急救、mtc 医疗处理)计为事故。未遂事件不得计入事故数。核对:DWS_SAFETY_DAILY 的 incident_count 合计 21,等于 severity<>'near_miss' 的 21 条;near_miss_count 合计 11,等于 severity='near_miss' 的 11 条。注意区分标记落在 severity 而非 incident_type。",
+    "evidence": [
+      "ev_13",
+      "ev_28"
+    ]
+  },
+  {
+    "id": "con_high_risk_l3_threshold",
+    "target": "risk_level",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "高风险",
+      "L3",
+      "重大风险",
+      "风险等级",
+      "high risk",
+      "不可容忍"
+    ],
+    "severity": "block",
+    "scope": "适用于风险评估的高风险筛选",
+    "confidence": "high",
+    "description": "高风险评估的口径为风险等级 L3 及以上。dim_risk_level 定义 L1 可接受、L2 可容忍、L3 不可容忍、L4 重大。核对:fact_risk_assessment 中 L3 与 L4 合计 16 条,与 DWS_SAFETY_DAILY.high_risk_count 合计 16 完全一致;全部评估 30 条与 risk_assessment_count 合计 30 一致。",
+    "evidence": [
+      "ev_14",
+      "ev_15"
+    ]
+  },
+  {
+    "id": "con_sales_amount_not_revenue",
+    "target": "sales_amount",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "销售额",
+      "接单金额",
+      "收入",
+      "营收",
+      "revenue",
+      "sales amount",
+      "订单金额"
+    ],
+    "severity": "block",
+    "scope": "适用于销售额、收入与订单金额口径的判定",
+    "confidence": "high",
+    "description": "接单金额是按订单下单日汇总的订单金额(不含税),指标目录明确其含未交付与后续退货部分,与按发货或开票确认的收入不同。因此接单金额不能等同于营业收入或已实现收入。注意库内自述存在口径张力:同一列 DWS_ORG_PERFORMANCE_DAILY.sales_amount 的列注释写为『销售收入(元)』,而指标目录把该列定义为『接单金额』(下单日、不含税、含未交付与退货),分析时应以指标目录口径为准并显式声明。同类口径区分:DWS_CASH_DAILY 的发出商品金额对应已发货未开票部分。",
+    "evidence": [
+      "ev_30",
+      "ev_09",
+      "ev_31"
+    ]
+  },
+  {
+    "id": "con_target_proration",
+    "target": "monthly_performance_agg",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "目标",
+      "销量目标",
+      "毛利目标",
+      "回款目标",
+      "达成率",
+      "折算",
+      "target"
+    ],
+    "severity": "warning",
+    "scope": "适用于目标达成率与目标口径的分析",
+    "confidence": "high",
+    "description": "组织目标日汇总中的目标值为月度目标按当月天数折算后的日值,不是独立日目标。核对:441 个业务员×月组合中,按日目标求和与 fact_sales_target 的月度目标完全一致(0 处不符)。跨月比较应使用月度目标原值,按日目标累加仅用于月内进度。",
+    "evidence": [
+      "ev_21"
+    ]
+  },
+  {
+    "id": "con_finance_monthly_grain",
+    "target": "budget_amount",
+    "constraint_type": "scope",
+    "trigger_keywords": [
+      "财务汇总",
+      "DWS_FINANCE",
+      "月汇总",
+      "成本中心",
+      "折旧",
+      "月末"
+    ],
+    "severity": "block",
+    "scope": "适用于 DWS_FINANCE_DAILY 的任何按日分析",
+    "confidence": "high",
+    "description": "DWS_FINANCE_DAILY 虽以 _DAILY 命名,实际为月度粒度:表中文名为财务月汇总,含 180 行 = 18 个月末日期 × 10 个成本中心,日期列取值均为各月月末(如 2025-01-31、2025-02-28)。按日、按天数的分析在该表上不成立。",
+    "evidence": [
+      "ev_07",
+      "ev_06"
+    ]
+  },
+  {
+    "id": "con_customer_status_flags",
+    "target": "customer_lifecycle_flag",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "客户状态",
+      "存量客户",
+      "新客户",
+      "休眠客户",
+      "失活客户",
+      "风险客户",
+      "客户数"
+    ],
+    "severity": "warning",
+    "scope": "适用于 DWS_MARKET_DAILY 的客户状态列",
+    "confidence": "high",
+    "description": "DWS_MARKET_DAILY 的客户状态列为 0/1 标记(existing/new/dormant/lost/risk_customer_count),每行至多一列为 1,因此对任一状态列按日求和即得当日的该类客户数,不能把多列相加当作客户总数。已核对 last date:dormant 标记为 1 的客户其 dim_customer.status 均为 dormant,lost 标记同理。",
+    "evidence": [
+      "ev_16",
+      "ev_17"
+    ]
+  },
+  {
+    "id": "con_incident_severity_enum",
+    "target": "incident_severity",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "严重度",
+      "fa",
+      "mtc",
+      "near_miss",
+      "急救",
+      "医疗处理"
+    ],
+    "severity": "warning",
+    "scope": "适用于 fact_incident 的严重度解读",
+    "confidence": "high",
+    "description": "fact_incident.severity 取值为 fa(急救处理,14 条)、mtc(医疗处理,7 条)、near_miss(未遂,11 条)。incident_type 记录的是事故类型(机械伤害、灼烫、物体打击、触电、车辆伤害、高处坠落),不含未遂语义,判定未遂必须使用 severity。",
+    "evidence": [
+      "ev_28"
+    ]
+  },
+  {
+    "id": "con_ar_aging_buckets",
+    "target": "ar_balance",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "账龄",
+      "应收账款",
+      "超期应收",
+      "账龄分段",
+      "aging",
+      "逾期"
+    ],
+    "severity": "warning",
+    "scope": "适用于应收账款与账龄结构分析",
+    "confidence": "high",
+    "description": "fact_ar_aging 提供 8 段账龄余额列(1个月内、1-2、2-3、3-4、4-5、5-6、6-12、12个月以上)以及 balance_amount 未清余额,并有 is_overdue 与 overdue_months 标记。账龄分段列是对同一余额的分档拆分,不能与 balance_amount 相加。超期应收应对齐 is_overdue=1 或使用 DWS_RISK_DAILY.overdue_ar_amt。",
+    "evidence": [
+      "ev_18",
+      "ev_19"
+    ]
+  },
+  {
+    "id": "con_overdue_inventory_90d",
+    "target": "overdue_inventory",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "超期库存",
+      "呆滞",
+      "90天",
+      "在库",
+      "库存超期"
+    ],
+    "severity": "warning",
+    "scope": "适用于超期库存的判定",
+    "confidence": "high",
+    "description": "超期库存的口径为在库超过 90 天的成品,已由 DWS_RISK_DAILY.overdue_inventory_qty/overdue_inventory_amt 预计算。该表仅保留存在风险的业务员×产品组合,不能用作全部库存或全部产品的分母。",
+    "evidence": [
+      "ev_19",
+      "ev_20"
+    ]
+  },
+  {
+    "id": "con_ratio_aggregation",
+    "target": "yield_rate",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "成材率",
+      "合格率",
+      "比率",
+      "平均",
+      "OEE",
+      "率",
+      "百分比"
+    ],
+    "severity": "warning",
+    "scope": "适用于所有以百分比/比率形式存储的指标",
+    "confidence": "high",
+    "description": "汇总表中的比率类指标(成材率、优等品率、OEE、利用率、计划达成率、检验合格率、绩效指数等)已在细粒度上计算完毕,跨维度或跨期汇总时不能直接对这些比率取平均,应先还原分子与分母的总量再行计算。指标目录的复合指标公式(如 设备可用率 = 总运行小时/(总运行小时+总停机时长))体现了这一处理方式。",
+    "evidence": [
+      "ev_12",
+      "ev_11"
+    ]
+  },
+  {
+    "id": "con_derived_metric_no_column",
+    "target": "derived_metric",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "派生指标",
+      "累计",
+      "日均",
+      "平均",
+      "最高",
+      "指标列"
+    ],
+    "severity": "block",
+    "scope": "适用于派生指标的字段定位",
+    "confidence": "high",
+    "description": "派生指标在 dim_metric_catalog 中不指向任何物理表与数值列(dws_table 为空),其语义只描述聚合方法(SUM/MAX/AVG)与分组维度。派生的 累计/日均/平均/最高 类指标必须在原子指标上按 dim_derived_metric_config 的 calc_method 与 group_by_columns 现场计算,不能当作已有列查询。",
+    "evidence": [
+      "ev_11",
+      "ev_09"
+    ]
+  },
+  {
+    "id": "con_ratio_metric_no_dws",
+    "target": "composite_metric",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "复合指标",
+      "投入产出比",
+      "经营利润率",
+      "安全健康度",
+      "能耗效率",
+      "维保强度",
+      "预算偏差度",
+      "单位产出成本"
+    ],
+    "severity": "block",
+    "scope": "适用于复合指标的计算",
+    "confidence": "high",
+    "description": "复合指标无对应物理表或列,必须按 dim_composite_metric_config.formula 由分量指标计算,且分母均带 NULLIF 保护。计算时应先按目标维度对分量指标求和,再套用公式,不可先聚合复合指标值。各视角的复合指标均需跨表取分量(如 经营利润率 需同时取接单金额与总成本)。",
+    "evidence": [
+      "ev_12",
+      "ev_11"
+    ]
+  },
+  {
+    "id": "con_denormalized_name_columns",
+    "target": "dws_summary_layer",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "名称列",
+      "line_name",
+      "workshop_name",
+      "emp_name",
+      "冗余",
+      "维表",
+      "join"
+    ],
+    "severity": "warning",
+    "scope": "适用于 DWS 汇总表与主数据表的一致性判断",
+    "confidence": "high",
+    "description": "汇总表在 id 列之外冗余存储了名称文本列(如 DWS_PRODUCTION_DAILY.line_name/workshop_name/prod_name、DWS_MARKET_DAILY.cust_name、DWS_ORG_TARGET_DAILY.emp_name/dept_name)。这些名称与主数据表一一对应且当前无出入:7974 行生产汇总中 line_name 与 dim_production_line.line_name 不符者 0 行。筛选时应使用 id 列与主数据表连接,名称列仅作展示;若名称与主数据不一致,以主数据为准。",
+    "evidence": [
+      "ev_25",
+      "ev_03"
+    ]
+  },
+  {
+    "id": "con_join_key_naming",
+    "target": "production_line",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "外键",
+      "关联",
+      "join",
+      "dim_line_id",
+      "line_id",
+      "主键",
+      "键名"
+    ],
+    "severity": "warning",
+    "scope": "适用于跨表连接时的键匹配",
+    "confidence": "high",
+    "description": "同一实体的键名在不同层不一致:DWS 汇总表用 dim_ 前缀(dim_line_id、dim_workshop_id、dim_prod_id、dim_cust_id、dim_emp_id、dim_supplier_id、dim_cc_id、dim_prod_id),而主数据表与事实表用业务键名(dim_production_line.line_id、dim_workshop.workshop_id、dim_product.prod_id、dim_customer.cust_id、dim_employee.emp_id、dim_supplier.supplier_id、dim_cost_center.cc_id)。连接时必须按语义匹配而非按列名相同匹配。已核对 dim_line_id/dim_workshop_id/dim_prod_id 在生产汇总表上无孤立引用。",
+    "evidence": [
+      "ev_03",
+      "ev_25"
+    ]
+  },
+  {
+    "id": "con_contract_validation_layer",
+    "target": "detail_fact_layer",
+    "constraint_type": "scope",
+    "trigger_keywords": [
+      "contract_validation",
+      "契约校验",
+      "通用表",
+      "英文表",
+      "明细层范围"
+    ],
+    "severity": "warning",
+    "scope": "适用于表清单与明细层范围的判断",
+    "confidence": "high",
+    "description": "200 张表中有 92 张 table_level='contract_validation'(67 事实表 + 25 维度表),其 table_desc 为同一套通用模板文本(每行一条记录;关联某维度;合成数据),字段为 ERP 通用契约字段(document_no、event_time、etl_batch_id、trace_id、tenant_code、row_version、data_quality_score、is_deleted)。这些表承载的描述性语义远弱于 core 表(108 张),在确定业务口径时应优先使用 core 表与中文注释,并注意合同校验表可能包含 is_deleted 与状态过滤需求。",
+    "evidence": [
+      "ev_26",
+      "ev_24"
+    ]
+  },
+  {
+    "id": "con_activity_only_filters",
+    "target": "dws_summary_layer",
+    "constraint_type": "scope",
+    "trigger_keywords": [
+      "只保留有业务",
+      "有风险",
+      "有运行",
+      "过滤",
+      "分母",
+      "活跃天数"
+    ],
+    "severity": "warning",
+    "scope": "适用于汇总表行数与分母的解释",
+    "confidence": "high",
+    "description": "部分汇总表带内置过滤条件,只保留有活动的组合:DWS_EQUIPMENT_DAILY 仅含所在产线当日有运行或停机的设备行;DWS_PROCUREMENT_DAILY 仅保留有业务的日子(1812 行);DWS_RISK_DAILY 仅保留存在风险的业务员×产品组合(18184 行,无全零行)。用这类表计算覆盖率、活跃天数占比或平均值时,分母口径与全量日历不同,需显式说明。",
+    "evidence": [
+      "ev_29",
+      "ev_20",
+      "ev_19"
+    ]
+  },
+  {
+    "id": "con_supplier_pass_rate_weighting",
+    "target": "incoming_inspection_pass_rate",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "合格率",
+      "来料检验",
+      "平均合格率",
+      "加权",
+      "供应商质量"
+    ],
+    "severity": "warning",
+    "scope": "适用于来料检验合格率的汇总",
+    "confidence": "medium",
+    "description": "派生指标 平均合格率 的配置为按供应商对 来料检验合格率 取 AVG,复合指标 一次合格率 的描述明确该值为按天简单平均、未按批次加权。因此跨期或跨供应商汇总合格率会受批次规模影响,存在口径偏差;批次数量差异大时应按批次或数量加权。",
+    "evidence": [
+      "ev_11",
+      "ev_12"
+    ]
+  },
+  {
+    "id": "con_cost_center_workshop_key",
+    "target": "cost_center",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "成本中心",
+      "车间",
+      "同名",
+      "cc_id",
+      "workshop_id",
+      "对应"
+    ],
+    "severity": "warning",
+    "scope": "适用于生产型成本中心与车间的对应",
+    "confidence": "high",
+    "description": "5 个生产型成本中心(cc_id 1-5)与 5 个车间(workshop_id 1-5)的名称逐一同名,当前 id 取值恰好重合。但两者是独立主键体系,不存在外键约束,不能依赖 id 相等做连接;也不应假定该对应关系在所有环境下都保持成立。",
+    "evidence": [
+      "ev_22"
+    ]
+  },
+  {
+    "id": "con_metric_source_mapping",
+    "target": "atomic_metric",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "指标来源",
+      "指标目录",
+      "原子指标",
+      "来源表",
+      "取值列",
+      "口径"
+    ],
+    "severity": "info",
+    "scope": "适用于指标到物理列的定位",
+    "confidence": "high",
+    "description": "原子指标在 dim_metric_catalog 中直接给出 dws_table、date_column 与 value_column 三列,可据此定位指标所在的汇总表、时间列与数值列;75 个原子指标全部具备这三项。当同一业务概念在明细层与汇总层都有表示时(如实际产量、停机时长、应收余额),应优先按该映射使用汇总列,并与明细对账后再决定口径。",
+    "evidence": [
+      "ev_09",
+      "ev_05"
+    ]
+  }
+]

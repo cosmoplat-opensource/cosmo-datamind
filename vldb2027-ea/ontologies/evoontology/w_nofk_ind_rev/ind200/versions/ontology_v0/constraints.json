@@ -1,0 +1,430 @@
+[
+  {
+    "id": "c_status_lifecycle_enum",
+    "target": "t_record_status",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "状态",
+      "已关闭",
+      "已批准",
+      "已审批",
+      "进行中",
+      "CLOSED",
+      "APPROVED",
+      "OPEN",
+      "CANCELLED"
+    ],
+    "severity": "info",
+    "scope": "使用标准生命周期枚举的事实表",
+    "confidence": 0.95,
+    "description": "标准事实表的 status 受 CHECK 约束,取值仅 OPEN / IN_PROGRESS / APPROVED / CLOSED / CANCELLED。中文“已关闭”→CLOSED,“已批准/已审批”→APPROVED,“进行中”→IN_PROGRESS。同一批表(如检验批、报废事件、库存调拨单)只使用其中的 APPROVED/CLOSED 子集,不要臆造其他状态值。",
+    "evidence": [
+      "e_status_lifecycle"
+    ]
+  },
+  {
+    "id": "c_status_domain_enum",
+    "target": "t_record_status",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "状态",
+      "商机状态",
+      "订单状态",
+      "已交付",
+      "未交付",
+      "已过账",
+      "已检验",
+      "赢单",
+      "丢失",
+      "有效",
+      "活跃",
+      "流失"
+    ],
+    "severity": "warning",
+    "scope": "业务域建模的小写枚举表",
+    "confidence": 0.9,
+    "description": "业务域表使用各自的小写状态词表,与标准生命周期枚举不通用:销售订单 delivered/returned/undelivered(“已交付”→delivered);商机 open/won/lost/stalled;报价单 draft/lost/won;收货单 inspected/posted(“已过账”→posted);应付 open/closed(“open”→未结);员工 active/inactive;客户 active/dormant/lost/risk。按状态筛选时必须使用该表实际存在的取值。",
+    "evidence": [
+      "e_status_domain"
+    ]
+  },
+  {
+    "id": "c_actor_code_space",
+    "target": "t_creator_user",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "创建人",
+      "更新人",
+      "审批人",
+      "负责人",
+      "U0001",
+      "U0002",
+      "U0004",
+      "U0006",
+      "U0007",
+      "U0008",
+      "由某人更新",
+      "由员工"
+    ],
+    "severity": "block",
+    "scope": "created_by / updated_by / approved_by 与 dim_employee.emp_id",
+    "confidence": 0.98,
+    "description": "created_by/updated_by/approved_by 存的是系统用户账号编码 U0001~U0012,与 dim_employee.emp_id(1~122,emp_name 形如“合成员工0086”)不是同一标识空间,不可等值连接,也不可用其中一处去检索另一处。问题用“员工 U0006”措辞时,若列是 *_by 则按账号编码匹配;若确实要员工姓名则须改为关联 emp_id 的事实表或 dim_employee。两处口径冲突时以列所在表的实际取值域为准。",
+    "evidence": [
+      "e_user_codes"
+    ]
+  },
+  {
+    "id": "c_year_column_selection",
+    "target": "t_business_event_date",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "年",
+      "2025年",
+      "2026年",
+      "创建",
+      "更新",
+      "审批",
+      "过账",
+      "生产",
+      "发生",
+      "关闭",
+      "到期",
+      "整改期限",
+      "要求交货",
+      "承诺"
+    ],
+    "severity": "block",
+    "scope": "所有事实表的时间限定",
+    "confidence": 0.9,
+    "description": "中文年份限定必须按动作词选择对应的日期列,不能一律用某一个时间列:创建→created_at(业务域表用领域创建列如 create_date);更新→updated_at;审批→approved_at;过账→posting_date;生产/发生/记录→business_date 或该表的领域日期列;关闭→closed_date/close_date(状态亦须为已关闭);到期/整改期限/失效/要求交货/承诺→due_date 类列。同一批记录上这些列的年份分布可能相近,但语义与筛选结果不同。",
+    "evidence": [
+      "e_year_shift",
+      "e_domain_dates"
+    ]
+  },
+  {
+    "id": "c_legacy_date_column",
+    "target": "t_business_event_date",
+    "constraint_type": "scope",
+    "trigger_keywords": [
+      "年",
+      "日期",
+      "生产日期",
+      "记录日期",
+      "审计日期",
+      "下单日期",
+      "收货日期",
+      "报价日期"
+    ],
+    "severity": "warning",
+    "scope": "无标准审计头的业务域事实表",
+    "confidence": 0.9,
+    "description": "约 50 张业务域事实表没有 created_at/updated_at/posting_date/business_date 审计头,其年度依据来自领域日期列:fact_sales_order.order_date、fact_goods_receipt.receipt_date、fact_safety_audit.audit_date、fact_energy_consumption.record_date、fact_production_output.output_date、fact_quotation.quotation_date、fact_opportunity.create_date/close_date、fact_return.return_date、fact_incident.incident_date、fact_payment.payment_date、fact_wip_snapshot.manufacture_date 等。在这些表上用标准审计列会导致列不存在。",
+    "evidence": [
+      "e_domain_dates",
+      "e_tables_tiers"
+    ]
+  },
+  {
+    "id": "c_reason_dual_meaning",
+    "target": "t_reason_reference",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "原因",
+      "原因码",
+      "原因名称",
+      "原因简称",
+      "停机原因",
+      "报废原因",
+      "退货原因",
+      "调拨原因",
+      "滤网更换"
+    ],
+    "severity": "block",
+    "scope": "reason_code / downtime_reason / reason 与两张原因字典",
+    "confidence": 0.95,
+    "description": "“原因”在本库有三种互不通用的表示:(1) 标准事实表 reason_code 存原因大类编码,值域 dim_reason_code.code(QUALITY/DELIVERY/COST/EQUIPMENT/SAFETY/ENVIRONMENT/CUSTOMER/SUPPLIER/PROCESS/MATERIAL/SYSTEM/OTHER),名称取 dim_reason_code.name 或 short_name;(2) fact_downtime.reason_code 存整数 1~8,语义为 dim_downtime_reason.reason_id(reason_name 如设备故障/滤网更换/换产清机等);(3) fact_equipment_runtime.downtime_reason 直接存中文原因名称。把 (2) 当作 (1) 的编码或把中文名当作编码都会得到空结果。",
+    "evidence": [
+      "e_reason_dual",
+      "e_downtime_reason",
+      "e_reason_code_dim"
+    ]
+  },
+  {
+    "id": "c_soft_delete_filter",
+    "target": "t_soft_delete_flag",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "删除",
+      "有效",
+      "全部",
+      "多少条"
+    ],
+    "severity": "warning",
+    "scope": "67 张标准事实表",
+    "confidence": 0.85,
+    "description": "is_deleted 是逻辑删除标记,is_deleted=1 的记录应视为作废。当前观察期样本 is_deleted 恒为 0,因此加不加该过滤条件结果相同;但统计业务单据时仍应显式排除,以免在后续数据上把作废记录计入。",
+    "evidence": [
+      "e_soft_delete"
+    ]
+  },
+  {
+    "id": "c_dq_score_range",
+    "target": "t_data_quality_score",
+    "constraint_type": "unit",
+    "trigger_keywords": [
+      "数据质量分",
+      "质量分",
+      "平均值",
+      "合计"
+    ],
+    "severity": "info",
+    "scope": "data_quality_score 列",
+    "confidence": 0.9,
+    "description": "data_quality_score 是 0~1 的实数评分(观察期 0.9~1.0),不是百分制;对其求平均值或合计均按实数运算。",
+    "evidence": [
+      "e_ranges"
+    ]
+  },
+  {
+    "id": "c_row_version_metric",
+    "target": "t_row_version",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "行版本",
+      "版本号",
+      "合计",
+      "平均值",
+      "排序"
+    ],
+    "severity": "info",
+    "scope": "row_version 列",
+    "confidence": 0.9,
+    "description": "row_version 是记录被更新的次数(整数,观察期 1~3),是可加性指标。“按行版本合计排序”即对该整数求和后排序。",
+    "evidence": [
+      "e_ranges"
+    ]
+  },
+  {
+    "id": "c_priority_range",
+    "target": "t_record_priority",
+    "constraint_type": "unit",
+    "trigger_keywords": [
+      "优先级",
+      "合计"
+    ],
+    "severity": "info",
+    "scope": "priority 列",
+    "confidence": 0.9,
+    "description": "priority 是 1~5 的整数(观察期恒为 3),为业务优先级而非金额或比率;“优先级合计”即对该整数求和。",
+    "evidence": [
+      "e_ranges"
+    ]
+  },
+  {
+    "id": "c_base_quantity_vs_quantity",
+    "target": "t_base_quantity",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "基本单位数量",
+      "基本单位",
+      "数量",
+      "计划数量",
+      "预留数量"
+    ],
+    "severity": "warning",
+    "scope": "标准事实表的 quantity 与 base_quantity 并列",
+    "confidence": 0.85,
+    "description": "标准事实表同时存在 quantity(单据单位数量)与 base_quantity(基本单位数量)。unit_code='吨' 时二者数值一致,因此部分问题两种取法结果相同;但问题明确写“基本单位数量”时必须取 base_quantity。同时注意“预留数量”是 reserved_quantity、“计划数量”是 planned_quantity,均为独立列。",
+    "evidence": [
+      "e_tables_tiers"
+    ]
+  },
+  {
+    "id": "c_exchange_rate_ratio",
+    "target": "t_exchange_rate",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "汇率",
+      "按汇率",
+      "币种",
+      "本位币"
+    ],
+    "severity": "warning",
+    "scope": "exchange_rate 列与 dim_currency.rate_to_cny",
+    "confidence": 0.85,
+    "description": "exchange_rate 是原币对本位币的折算比率(USD 7.12、EUR 7.78、JPY 0.048),不是可加量。问题要求“按汇率合计并取最高的币种”是业务口径上的求和排序,结果不代表金额;真正用于折算的是 amount × exchange_rate → local_amount。",
+    "evidence": [
+      "e_currency"
+    ]
+  },
+  {
+    "id": "c_name_vs_short_name",
+    "target": "t_skill",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "名称",
+      "简称",
+      "全称",
+      "缩写"
+    ],
+    "severity": "info",
+    "scope": "维表 name / short_name / abbreviation 列",
+    "confidence": 0.85,
+    "description": "维表普遍同时提供 name(全称)、short_name(简称)与 abbreviation(缩写,仅 dim_reason_code 有)。问“简称”要取 short_name,问“名称”取 name。当前观察期 dim_skill 的 name 与 short_name 同值、dim_reason_code 的 name 与 short_name 同值,因此两种取法结果一致,但仍应按问题措辞取列。",
+    "evidence": [
+      "e_reason_code_dim",
+      "e_skill_hazard"
+    ]
+  },
+  {
+    "id": "c_summary_vs_detail",
+    "target": "t_business_record",
+    "constraint_type": "scope",
+    "trigger_keywords": [
+      "明细",
+      "汇总",
+      "日报",
+      "月度",
+      "聚合"
+    ],
+    "severity": "warning",
+    "scope": "DWS_* 与 agg_metric_monthly",
+    "confidence": 0.85,
+    "description": "DWS_*(15 张,按 日期×员工/部门/产线/客户/供应商)与 agg_metric_monthly(按 员工×年×月)是预聚合汇总表,不是业务单据明细。问“多少条明细/多少笔单据”应使用 fact_* 明细表,使用汇总表会把聚合行误计为业务记录。",
+    "evidence": [
+      "e_summary_tables",
+      "e_fk_meta"
+    ]
+  },
+  {
+    "id": "c_region_denormalized",
+    "target": "t_region",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "地区",
+      "区域",
+      "华东",
+      "华南",
+      "华北",
+      "西南",
+      "华中",
+      "西北",
+      "城市",
+      "省"
+    ],
+    "severity": "warning",
+    "scope": "dim_region 与事实表 sales_region 文本列",
+    "confidence": 0.9,
+    "description": "销售区域(华东/华南/华北/西南/华中/西北)既存在于 dim_region,也以文本列 sales_region 冗余在部分销售事实表(如 fact_sales_order_line、fact_sales_forecast、fact_customer_contact、fact_lead)中;两者值域一致,但冗余列无需连接维表即可筛选。客户所在省市在 dim_customer.province/city,是地理口径,与销售区域不是一一对应(例:合肥属华东,但省市级筛选与区域筛选结果不同)。",
+    "evidence": [
+      "e_region_denorm"
+    ]
+  },
+  {
+    "id": "c_calendar_name_vs_holiday",
+    "target": "t_calendar_date",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "日历日期",
+      "日期名称",
+      "节假日",
+      "节假日名称",
+      "国庆节",
+      "元旦",
+      "春节",
+      "中秋节"
+    ],
+    "severity": "info",
+    "scope": "dim_calendar",
+    "confidence": 0.9,
+    "description": "dim_calendar 中 name 是中文日期名(形如“2025年01月01日”),holiday_name 才是节假日名称。问“日历日期对应的名称”取 name;问“节假日名称”取 holiday_name。注意 holiday_name 存在多日同名(2025 年国庆节覆盖 10-01~10-03、10-07、10-08)与“法定节假日”泛称(10-04、10-05),同一节假日名对应多个日期;is_holiday=1 标记节假日。",
+    "evidence": [
+      "e_calendar"
+    ]
+  },
+  {
+    "id": "c_audit_header_scope",
+    "target": "t_creator_user",
+    "constraint_type": "scope",
+    "trigger_keywords": [
+      "创建人",
+      "更新人",
+      "审批人",
+      "行版本",
+      "数据质量分",
+      "备注",
+      "过账日期"
+    ],
+    "severity": "info",
+    "scope": "92 张表含标准审计头",
+    "confidence": 0.9,
+    "description": "标准审计头(created_at/created_by/updated_at/updated_by/approved_at/approved_by/status/remarks/is_deleted/data_quality_score 及扩展的 document_no/business_date/posting_date/row_version/priority 等)仅存在于 67 张标准事实表与 25 张主数据/维表;其余约 50 张业务域事实表与 16 张汇总表只有领域列。按创建人/行版本/数据质量分检索前须确认目标表有该列。",
+    "evidence": [
+      "e_tables_tiers",
+      "e_envelope_cn"
+    ]
+  },
+  {
+    "id": "c_payment_vocabulary",
+    "target": "t_business_record",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "付款方式",
+      "收款方式",
+      "电汇",
+      "银行转账",
+      "letter_of_credit",
+      "信用"
+    ],
+    "severity": "warning",
+    "scope": "fact_payment_out 与 fact_payment",
+    "confidence": 0.9,
+    "description": "收付款方式分属两张表且词表不同:fact_payment_out.payment_method 为英文 bank_transfer / letter_of_credit(“银行转账”→bank_transfer,“信用证”→letter_of_credit);fact_payment.payment_type 为中文“银承 / 电汇”(“电汇”即该列取值)。把“电汇”当作 payment_method 的取值或把 bank_transfer 当作 payment_type 的取值都会得到空结果。",
+    "evidence": [
+      "e_payment_vocab"
+    ]
+  },
+  {
+    "id": "c_control_measure_competing",
+    "target": "t_hazard",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "整改措施",
+      "控制措施",
+      "个体防护",
+      "工程控制",
+      "管理控制",
+      "整改期限"
+    ],
+    "severity": "warning",
+    "scope": "fact_safety_action 与 fact_hazard_observation",
+    "confidence": 0.8,
+    "description": "“安全整改措施/控制措施”存在竞争候选:fact_safety_action.control_measure(工程控制/管理控制/个体防护)与 fact_hazard_observation.control_measure(同值域、另有 action_due_date 与 closed_date)都具备该列;而 fact_corrective_action 没有 control_measure 列,不应作为落点。区分依据是记录主体:独立整改单用 fact_safety_action,危险源观察自身的整改信息用 fact_hazard_observation;两者的“整改期限”分别落在 action_due_date 与 due_date 类列。",
+    "evidence": [
+      "e_control_measure",
+      "e_fk_meta"
+    ]
+  },
+  {
+    "id": "c_remarks_vocabulary",
+    "target": "t_record_remarks",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "备注",
+      "补录",
+      "加急",
+      "跨月处理",
+      "已电话确认",
+      "客户指定批次"
+    ],
+    "severity": "info",
+    "scope": "标准事实表的 remarks 列",
+    "confidence": 0.85,
+    "description": "remarks 虽是自由文本列,但观察期取值来自同一受控词表:补录 / 加急 / 跨月处理 / 已电话确认 / 客户指定批次。筛选“备注为X的记录”应做等值匹配;注意“补录”“加急”等词同时出现在多张表(报工、技能评估、客户接触)中。",
+    "evidence": [
+      "e_remarks"
+    ]
+  }
+]

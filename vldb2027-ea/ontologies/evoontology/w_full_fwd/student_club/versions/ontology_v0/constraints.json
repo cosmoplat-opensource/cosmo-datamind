@@ -1,0 +1,278 @@
+[
+  {
+    "id": "constraint_amount_budgeted_vs_spent",
+    "target": "term_amount_budgeted",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "amount budgeted",
+      "budgeted",
+      "budget amount",
+      "allocated",
+      "amount allocated",
+      "total amount of money spent",
+      "spent",
+      "total spent",
+      "money spent",
+      "how much was spent"
+    ],
+    "severity": "block",
+    "scope": "Interpreting monetary columns of the budget table",
+    "confidence": "high",
+    "description": "The budget table holds two distinct monetary measures: amount is the amount budgeted (planned allocation) for a spending category of an event, while spent is the amount actually spent against that line. Questions phrased as 'amount budgeted' use amount; questions phrased as 'spent'/'money spent' use spent. Substituting one for the other yields incorrect results.",
+    "evidence": [
+      "evidence_april_speaker_budget",
+      "evidence_food_total_spent"
+    ]
+  },
+  {
+    "id": "constraint_full_name",
+    "target": "term_member_full_name",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "full name",
+      "full names",
+      "name of the member",
+      "member name",
+      "student name",
+      "who is",
+      "first name",
+      "last name"
+    ],
+    "severity": "block",
+    "scope": "Matching a person named in a question to the member table",
+    "confidence": "high",
+    "description": "A member's full name is formed from the member's first_name and last_name. A person referred to by full name (for example 'Maya Mclean' or 'Connor Hilton') matches the member whose first_name and last_name are those two tokens. Asking for 'full name' means returning both name parts together; asking for 'last name' means returning last_name only.",
+    "evidence": [
+      "evidence_full_name_parts"
+    ]
+  },
+  {
+    "id": "constraint_event_date_format",
+    "target": "term_event_date",
+    "constraint_type": "unit",
+    "trigger_keywords": [
+      "year",
+      "event date",
+      "date",
+      "closed from",
+      "between",
+      "2019",
+      "2020",
+      "when was"
+    ],
+    "severity": "warning",
+    "scope": "Date filtering, range filtering and year extraction on events",
+    "confidence": "high",
+    "description": "event_date is stored as an ISO-8601 date-time string of the form YYYY-MM-DDTHH:MM:SS (19 characters). The calendar year of an event is the leading four characters of the string. Event dates in the data fall within 2019 and 2020.",
+    "evidence": [
+      "evidence_event_date_format"
+    ]
+  },
+  {
+    "id": "constraint_income_source_enum",
+    "target": "term_income_source",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "dues",
+      "fundraising",
+      "sponsorship",
+      "appropriation",
+      "source",
+      "source of income",
+      "received funds",
+      "funds received"
+    ],
+    "severity": "block",
+    "scope": "Filtering income records by source",
+    "confidence": "high",
+    "description": "income.source takes exactly four values: 'Dues', 'Fundraising', 'School Appropration' and 'Sponsorship'. Note that the third value is spelled 'School Appropration' in the data (missing an 'i'); filters must use the stored spelling. Values are case-sensitive.",
+    "evidence": [
+      "evidence_income_source_values"
+    ]
+  },
+  {
+    "id": "constraint_event_status_enum",
+    "target": "term_event_status",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "closed",
+      "closed event",
+      "open",
+      "planning",
+      "status",
+      "event status"
+    ],
+    "severity": "block",
+    "scope": "Filtering or grouping events by status",
+    "confidence": "high",
+    "description": "event.status takes exactly three values: 'Open', 'Closed' and 'Planning'. A 'closed' event means status='Closed'; values are case-sensitive.",
+    "evidence": [
+      "evidence_event_status_values"
+    ]
+  },
+  {
+    "id": "constraint_event_type_enum",
+    "target": "term_event_type",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "game",
+      "meeting",
+      "guest speaker",
+      "social",
+      "election",
+      "community service",
+      "registration",
+      "type of event",
+      "kind of event"
+    ],
+    "severity": "block",
+    "scope": "Filtering or grouping events by the kind of activity",
+    "confidence": "high",
+    "description": "event.type takes eight values: Budget, Community Service, Election, Game, Guest Speaker, Meeting, Registration and Social. A 'game' event means type='Game'; values are case-sensitive.",
+    "evidence": [
+      "evidence_event_type_values"
+    ]
+  },
+  {
+    "id": "constraint_budget_category_enum",
+    "target": "term_budget_category",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "food",
+      "advertisement",
+      "parking",
+      "speaker gifts",
+      "club t-shirts",
+      "category",
+      "spending category",
+      "spent for"
+    ],
+    "severity": "block",
+    "scope": "Filtering or grouping budget and spending by category",
+    "confidence": "high",
+    "description": "budget.category takes five values: Advertisement, Club T-Shirts, Food, Parking and Speaker Gifts. Spending 'for food' means category='Food'; values are case-sensitive.",
+    "evidence": [
+      "evidence_budget_category_values"
+    ]
+  },
+  {
+    "id": "constraint_event_category_ambiguity",
+    "target": "term_event_type",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "category of events",
+      "category of event",
+      "what category",
+      "event category",
+      "categories of events"
+    ],
+    "severity": "warning",
+    "scope": "Interpreting the word 'category' in questions about events",
+    "confidence": "medium",
+    "description": "The phrase 'category of events' is ambiguous in this database: it can refer to event.type, the kind of activity an event represents (Meeting, Guest Speaker, Game, ...), or to budget.category, the spending category of the event's budget lines (Food, Parking, Advertisement, ...). Both readings are grounded. The intended meaning depends on whether the question concerns the nature of the activity or the budget/spending dimension.",
+    "evidence": [
+      "evidence_mu215_types",
+      "evidence_budget_category_event_type_crosstab"
+    ]
+  },
+  {
+    "id": "constraint_position_enum",
+    "target": "term_member_position",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "member",
+      "members",
+      "position",
+      "role",
+      "officer",
+      "president",
+      "treasurer",
+      "secretary",
+      "active"
+    ],
+    "severity": "warning",
+    "scope": "Interpreting who counts as a 'member' of the club",
+    "confidence": "high",
+    "description": "member.position takes the values 'Member', 'President', 'Vice President', 'Treasurer', 'Secretary' and 'Inactive'. 'Members' in the ordinary sense means position='Member' (regular members, 26 people); officers hold separate position values and 'Inactive' marks former members. Include officers only when the question explicitly asks for them.",
+    "evidence": [
+      "evidence_member_position_values"
+    ]
+  },
+  {
+    "id": "constraint_tshirt_size_enum",
+    "target": "term_t_shirt_size",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "t-shirt size",
+      "shirt size",
+      "size",
+      "medium",
+      "large",
+      "small",
+      "x-large"
+    ],
+    "severity": "info",
+    "scope": "Filtering members by t-shirt size",
+    "confidence": "high",
+    "description": "member.t_shirt_size takes the values 'Small', 'Medium', 'Large' and 'X-Large'. 'Medium' is stored literally as 'Medium'; values are case-sensitive.",
+    "evidence": [
+      "evidence_tshirt_values"
+    ]
+  },
+  {
+    "id": "constraint_attendance_semantics",
+    "target": "term_attendance",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "attend",
+      "attended",
+      "attendance",
+      "did ... attend",
+      "went to",
+      "present at"
+    ],
+    "severity": "block",
+    "scope": "Answering whether a member attended an event",
+    "confidence": "high",
+    "description": "A row in the attendance table for a (member, event) pair means that member attended that event. The absence of a matching row means there is no recorded attendance. Attendance is matched through member identity (first_name plus last_name) and event identity (event_name).",
+    "evidence": [
+      "evidence_attendance_columns",
+      "evidence_maya_attended_soccer"
+    ]
+  },
+  {
+    "id": "constraint_member_major_optional",
+    "target": "term_member",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "major",
+      "all members",
+      "every member",
+      "department of members"
+    ],
+    "severity": "info",
+    "scope": "Joining members to majors, departments and colleges",
+    "confidence": "high",
+    "description": "One of the 33 members has no linked major (link_to_major is empty). Any join from member to major drops that member, which matters when listing 'all' members by academic affiliation.",
+    "evidence": [
+      "evidence_member_major_join"
+    ]
+  },
+  {
+    "id": "constraint_expense_approved",
+    "target": "term_expense",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "approved",
+      "approval",
+      "expense"
+    ],
+    "severity": "info",
+    "scope": "Interpreting the expense table",
+    "confidence": "high",
+    "description": "expense.approved is 'true' for 31 of the 32 expense records and empty for one record; the empty value means no approval value was recorded rather than 'not approved'.",
+    "evidence": [
+      "evidence_expense_columns"
+    ]
+  }
+]

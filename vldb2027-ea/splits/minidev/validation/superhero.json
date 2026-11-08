@@ -1,0 +1,69 @@
+{
+ "db_id": "superhero",
+ "questions": [
+  {
+   "question_id": 791,
+   "db_id": "superhero",
+   "question": "Calculate the average height for all superhero.",
+   "evidence": "average = DIVIDE(SUM(height_cm), COUNT(all heros));",
+   "SQL": "SELECT CAST(SUM(height_cm) AS REAL) / COUNT(id) FROM superhero",
+   "difficulty": "simple"
+  },
+  {
+   "question_id": 739,
+   "db_id": "superhero",
+   "question": "What are the names of the superheroes with the power of death touch?",
+   "evidence": "name of superheroes refers to refers to superhero_name; the power of death touch refers to power_name = 'Death Touch'",
+   "SQL": "SELECT T1.superhero_name FROM superhero AS T1 INNER JOIN hero_power AS T2 ON T1.id = T2.hero_id INNER JOIN superpower AS T3 ON T2.power_id = T3.id WHERE T3.power_name = 'Death Touch'",
+   "difficulty": "moderate"
+  },
+  {
+   "question_id": 806,
+   "db_id": "superhero",
+   "question": "Provide the eye colour of the superhero who has Karen Beecher-Duncan as their full name.",
+   "evidence": "eye colour refers to colour.colour where eye_colour_id = colour.id; Karen Beecher-Duncan is the full name of superhero;",
+   "SQL": "SELECT T2.colour FROM superhero AS T1 INNER JOIN colour AS T2 ON T1.eye_colour_id = T2.id WHERE T1.full_name = 'Karen Beecher-Duncan'",
+   "difficulty": "simple"
+  },
+  {
+   "question_id": 733,
+   "db_id": "superhero",
+   "question": "How many gold-eyed superheroes did Marvel Comics publish?",
+   "evidence": "gold-eyed refers to colour = 'Gold' where eye_colour_id = colour.id; superheroes that Marvel Comics published refers to publisher_name = 'Marvel Comics'",
+   "SQL": "SELECT COUNT(T1.id) FROM superhero AS T1 INNER JOIN publisher AS T2 ON T1.publisher_id = T2.id INNER JOIN colour AS T3 ON T1.eye_colour_id = T3.id WHERE T2.publisher_name = 'Marvel Comics' AND T3.colour = 'Gold'",
+   "difficulty": "moderate"
+  },
+  {
+   "question_id": 785,
+   "db_id": "superhero",
+   "question": "Describe the names of neutral alignment superheroes.",
+   "evidence": "names of superheroes refers to superhero_name; neutral alignment refers to alignment = 'Neutral';",
+   "SQL": "SELECT T1.superhero_name FROM superhero AS T1 INNER JOIN alignment AS T2 ON T1.alignment_id = T2.id WHERE T2.alignment = 'Neutral'",
+   "difficulty": "simple"
+  },
+  {
+   "question_id": 797,
+   "db_id": "superhero",
+   "question": "Which superheroes have blue eyes with brown hair?",
+   "evidence": "which superheroes refers to superhero_name; blue eyes refers to color = 'Blue' and color.id = eye_colour_id; brown hair refers to color = 'Brown' and color.id = hair_colour_id;",
+   "SQL": "SELECT T1.superhero_name FROM superhero AS T1 INNER JOIN colour AS T2 ON T1.eye_colour_id = T2.id INNER JOIN colour AS T3 ON T1.hair_colour_id = T3.id WHERE T2.colour = 'Blue' AND T3.colour = 'Brown'",
+   "difficulty": "moderate"
+  },
+  {
+   "question_id": 726,
+   "db_id": "superhero",
+   "question": "Rank heroes published by Marvel Comics by their height in descending order.",
+   "evidence": "name refers to superhero_name; the tallest hero refers to MAX(height_cm); published by Marvel Comics refers to publisher_name = 'Marvel Comics'",
+   "SQL": "SELECT superhero_name, height_cm, RANK() OVER (ORDER BY height_cm DESC) AS HeightRank FROM superhero INNER JOIN publisher ON superhero.publisher_id = publisher.id WHERE publisher.publisher_name = 'Marvel Comics'",
+   "difficulty": "moderate"
+  },
+  {
+   "question_id": 779,
+   "db_id": "superhero",
+   "question": "How many powers does Amazo hero have?",
+   "evidence": "Amazo hero refers to superhero_name = 'Amazo';",
+   "SQL": "SELECT COUNT(T1.power_id) FROM hero_power AS T1 INNER JOIN superhero AS T2 ON T1.hero_id = T2.id WHERE T2.superhero_name = 'Amazo'",
+   "difficulty": "simple"
+  }
+ ]
+}

@@ -1,0 +1,537 @@
+[
+  {
+    "id": "term_match",
+    "name": "Match",
+    "type": "entity",
+    "definition": "A single football fixture, described by its season, stage, date, the two participating teams and the number of goals each team scored.",
+    "scope": "Match-level goal, draw and fixture-count analysis across leagues and seasons.",
+    "aliases": [
+      "fixture",
+      "game",
+      "match record"
+    ],
+    "evidence": [
+      "ev_001_source_schema",
+      "ev_004_match_date_and_nulls"
+    ]
+  },
+  {
+    "id": "term_league",
+    "name": "League",
+    "type": "entity",
+    "definition": "A named national competition that groups matches and belongs to exactly one country.",
+    "scope": "League-level comparison, league name lookup and grouping fixtures by competition.",
+    "aliases": [
+      "competition",
+      "division",
+      "league name"
+    ],
+    "evidence": [
+      "ev_002_league_country",
+      "ev_008_country_league_values"
+    ]
+  },
+  {
+    "id": "term_country",
+    "name": "Country",
+    "type": "dimension",
+    "definition": "The country whose national competition structure contains a league; it is the dimension used when a question scopes matches to a country such as Poland.",
+    "scope": "Country-scoped match and league analysis.",
+    "aliases": [
+      "nation",
+      "country name"
+    ],
+    "evidence": [
+      "ev_002_league_country",
+      "ev_008_country_league_values"
+    ]
+  },
+  {
+    "id": "term_team",
+    "name": "Team",
+    "type": "entity",
+    "definition": "A football club identified by a long display name, a short name and a team API identifier.",
+    "scope": "Team-level identification, team named lookups and team attribute analysis.",
+    "aliases": [
+      "club",
+      "team_long_name",
+      "team name"
+    ],
+    "evidence": [
+      "ev_019_team_lookup"
+    ]
+  },
+  {
+    "id": "term_player",
+    "name": "Player",
+    "type": "entity",
+    "definition": "A footballer described by a display name, date of birth, height and weight, and linked to dated attribute snapshots.",
+    "scope": "Player-level identification, physical profile analysis and player attribute analysis.",
+    "aliases": [
+      "footballer",
+      "player_name",
+      "player name"
+    ],
+    "evidence": [
+      "ev_009_player_birthday_and_units",
+      "ev_015_player_identifiers"
+    ]
+  },
+  {
+    "id": "term_player_attributes",
+    "name": "Player Attributes Snapshot",
+    "type": "entity",
+    "definition": "A dated FIFA-style attribute record for one player, holding the overall rating, the potential, the preferred foot and the individual skill scores.",
+    "scope": "Player rating, potential, preference and skill-score analysis. One row is one snapshot, not one player.",
+    "aliases": [
+      "player attribute record",
+      "FIFA attributes",
+      "player_attributes row"
+    ],
+    "evidence": [
+      "ev_011_player_attribute_snapshot_dates",
+      "ev_012_player_attribute_duplicates"
+    ]
+  },
+  {
+    "id": "term_team_attributes",
+    "name": "Team Attributes Snapshot",
+    "type": "entity",
+    "definition": "A dated tactical attribute record for one team, holding style scores such as build-up play speed and chance creation passing together with their categorical class labels.",
+    "scope": "Team playing-style analysis. One row is one snapshot, not one team.",
+    "aliases": [
+      "team attribute record",
+      "team_attributes row"
+    ],
+    "evidence": [
+      "ev_017_team_attributes_classes",
+      "ev_018_team_attributes_snapshots"
+    ]
+  },
+  {
+    "id": "term_season",
+    "name": "Season",
+    "type": "dimension",
+    "definition": "A competition period labelled by its opening and closing calendar years in the form YYYY/YYYY, so a single season label spans two calendar years.",
+    "scope": "Seasonal aggregation and filtering of matches.",
+    "aliases": [
+      "season label",
+      "competition year",
+      "season"
+    ],
+    "evidence": [
+      "ev_003_season_values"
+    ]
+  },
+  {
+    "id": "term_match_date",
+    "name": "Match Date",
+    "type": "dimension",
+    "definition": "The calendar date on which a match was played, recorded as a datetime value; the month or year of a match is read from the leading part of this value.",
+    "scope": "Calendar-month and calendar-year filtering of matches, independently of the season label.",
+    "aliases": [
+      "match date",
+      "fixture date",
+      "date"
+    ],
+    "evidence": [
+      "ev_004_match_date_and_nulls"
+    ]
+  },
+  {
+    "id": "term_preferred_foot",
+    "name": "Preferred Foot",
+    "type": "dimension",
+    "definition": "The foot a player prefers to use when attacking, recorded as a small categorical value.",
+    "scope": "Filtering players by attacking foot preference.",
+    "aliases": [
+      "preferred foot",
+      "prefer to use the right foot when attacking",
+      "prefer left foot",
+      "left foot",
+      "right foot"
+    ],
+    "evidence": [
+      "ev_010_preferred_foot"
+    ]
+  },
+  {
+    "id": "term_player_api_id",
+    "name": "Player API Identifier",
+    "type": "dimension",
+    "definition": "The API identifier that uniquely labels a player in this dataset and is used as the player reference from other tables.",
+    "scope": "Joining players to their attribute snapshots and to match participation columns.",
+    "aliases": [
+      "player_api_id",
+      "player ID",
+      "players' IDs"
+    ],
+    "evidence": [
+      "ev_015_player_identifiers",
+      "ev_016_player_attributes_join"
+    ]
+  },
+  {
+    "id": "term_player_fifa_api_id",
+    "name": "Player FIFA Identifier",
+    "type": "dimension",
+    "definition": "The FIFA-side identifier of a player; it is unique per player and one-to-one with the player API identifier, but comes from a different identifier system.",
+    "scope": "Alternate player identification and record-count denominators on attribute snapshots.",
+    "aliases": [
+      "player_fifa_api_id",
+      "FIFA player ID"
+    ],
+    "evidence": [
+      "ev_015_player_identifiers"
+    ]
+  },
+  {
+    "id": "term_player_attributes_row_id",
+    "name": "Player Attributes Row Identifier",
+    "type": "dimension",
+    "definition": "The surrogate row identifier of one player attribute snapshot row; it identifies the snapshot row itself, not the player.",
+    "scope": "Addressing a single attribute snapshot row when a question cites a bare numeric identifier together with an attribute value.",
+    "aliases": [
+      "Player_Attributes.id",
+      "attribute row id"
+    ],
+    "evidence": [
+      "ev_014_player_attribute_row_ids"
+    ]
+  },
+  {
+    "id": "term_home_team_goal",
+    "name": "Home Team Goals",
+    "type": "metric",
+    "definition": "The number of goals scored by the home team in a match.",
+    "scope": "Home-side goal totals and per-match home goal averages.",
+    "aliases": [
+      "home_team_goal",
+      "home team goal",
+      "home goals"
+    ],
+    "evidence": [
+      "ev_004_match_date_and_nulls",
+      "ev_005_poland_2010_2011"
+    ]
+  },
+  {
+    "id": "term_away_team_goal",
+    "name": "Away Team Goals",
+    "type": "metric",
+    "definition": "The number of goals scored by the away team in a match.",
+    "scope": "Away-side goal totals and goal-difference or draw analysis.",
+    "aliases": [
+      "away_team_goal",
+      "away team goal",
+      "away goals"
+    ],
+    "evidence": [
+      "ev_004_match_date_and_nulls"
+    ]
+  },
+  {
+    "id": "term_draw_match",
+    "name": "Drawn Match",
+    "type": "category",
+    "definition": "A match in which both teams scored the same number of goals, so neither team won.",
+    "scope": "Counting matches that ended as a draw within a league or season.",
+    "aliases": [
+      "draw",
+      "drawn match",
+      "matches end as draw",
+      "tie"
+    ],
+    "evidence": [
+      "ev_007_draw_by_league_2015_2016"
+    ]
+  },
+  {
+    "id": "term_height",
+    "name": "Height",
+    "type": "metric",
+    "definition": "A player's physical height, recorded in centimetres on a metric scale.",
+    "scope": "Physical-profile filtering of players, for example players under or above a height threshold.",
+    "aliases": [
+      "height",
+      "tall",
+      "under 180 cm",
+      "heights are above 180"
+    ],
+    "evidence": [
+      "ev_009_player_birthday_and_units"
+    ]
+  },
+  {
+    "id": "term_weight",
+    "name": "Weight",
+    "type": "metric",
+    "definition": "A player's body weight, recorded in pounds.",
+    "scope": "Physical-profile ranking of players, such as finding the heaviest player.",
+    "aliases": [
+      "weight",
+      "heaviest weight"
+    ],
+    "evidence": [
+      "ev_009_player_birthday_and_units",
+      "ev_022_attribute_extremes"
+    ]
+  },
+  {
+    "id": "term_birthday",
+    "name": "Birthday",
+    "type": "dimension",
+    "definition": "A player's date of birth, recorded as a datetime value; a larger value corresponds to a more recent birth and therefore a younger player.",
+    "scope": "Birth-year and birth-month filtering and age derivation.",
+    "aliases": [
+      "birthday",
+      "date of birth",
+      "born",
+      "birthyear",
+      "birthmonth"
+    ],
+    "evidence": [
+      "ev_009_player_birthday_and_units"
+    ]
+  },
+  {
+    "id": "term_player_age",
+    "name": "Player Age",
+    "type": "metric",
+    "definition": "A player's age at a chosen reference instant, obtained by comparing that instant with the player's date of birth.",
+    "scope": "Age comparison and oldest/youngest ranking of players.",
+    "aliases": [
+      "player age",
+      "age",
+      "oldest",
+      "at present"
+    ],
+    "evidence": [
+      "ev_009_player_birthday_and_units",
+      "ev_021_reference_clock"
+    ]
+  },
+  {
+    "id": "term_overall_rating",
+    "name": "Overall Rating",
+    "type": "metric",
+    "definition": "The composite performance rating of a player in a snapshot, on a roughly 0-100 scale; it is the headline overall quality measure of a player.",
+    "scope": "Ranking and threshold filtering of players by overall quality.",
+    "aliases": [
+      "overall_rating",
+      "overall rating",
+      "overall strength",
+      "overall score",
+      "rating"
+    ],
+    "evidence": [
+      "ev_022_attribute_extremes"
+    ]
+  },
+  {
+    "id": "term_potential",
+    "name": "Potential",
+    "type": "metric",
+    "definition": "The projected maximum ability of a player in a snapshot; low values indicate players with the least projected growth.",
+    "scope": "Ranking and threshold filtering of players by projected ability.",
+    "aliases": [
+      "potential",
+      "potential score",
+      "lowest potential",
+      "highest potential"
+    ],
+    "evidence": [
+      "ev_022_attribute_extremes"
+    ]
+  },
+  {
+    "id": "term_heading_accuracy",
+    "name": "Heading Accuracy",
+    "type": "metric",
+    "definition": "A skill score describing how accurate a player is when heading the ball.",
+    "scope": "Player skill-score comparison and averaging.",
+    "aliases": [
+      "heading_accuracy",
+      "heading accuracy"
+    ],
+    "evidence": [
+      "ev_013_player_attribute_nulls"
+    ]
+  },
+  {
+    "id": "term_crossing",
+    "name": "Crossing",
+    "type": "metric",
+    "definition": "A skill score describing how well a player delivers crosses.",
+    "scope": "Player skill-score comparison and ranking.",
+    "aliases": [
+      "crossing",
+      "cross",
+      "potential score for crossing"
+    ],
+    "evidence": [
+      "ev_022_attribute_extremes"
+    ]
+  },
+  {
+    "id": "term_jumping",
+    "name": "Jumping",
+    "type": "metric",
+    "definition": "A skill score describing a player's jumping ability.",
+    "scope": "Player skill-score comparison between individual players.",
+    "aliases": [
+      "jumping",
+      "jumping score"
+    ],
+    "evidence": [
+      "ev_014_player_attribute_row_ids",
+      "ev_013_player_attribute_nulls"
+    ]
+  },
+  {
+    "id": "term_finishing",
+    "name": "Finishing",
+    "type": "metric",
+    "definition": "A skill score describing how well a player finishes scoring chances.",
+    "scope": "Player skill-score comparison.",
+    "aliases": [
+      "finishing",
+      "finishing rate"
+    ],
+    "evidence": [
+      "ev_013_player_attribute_nulls"
+    ]
+  },
+  {
+    "id": "term_curve",
+    "name": "Curve",
+    "type": "metric",
+    "definition": "A skill score describing how much curve a player can put on the ball.",
+    "scope": "Player skill-score comparison.",
+    "aliases": [
+      "curve",
+      "curve score"
+    ],
+    "evidence": [
+      "ev_013_player_attribute_nulls"
+    ]
+  },
+  {
+    "id": "term_long_shots",
+    "name": "Long Shots",
+    "type": "metric",
+    "definition": "A skill score describing a player's ability to shoot from long range.",
+    "scope": "Player skill-score comparison and averaging.",
+    "aliases": [
+      "long_shots",
+      "long shot",
+      "long-shot"
+    ],
+    "evidence": [
+      "ev_013_player_attribute_nulls"
+    ]
+  },
+  {
+    "id": "term_sprint_speed",
+    "name": "Sprint Speed",
+    "type": "metric",
+    "definition": "A skill score describing a player's top sprinting speed.",
+    "scope": "Player skill-score threshold filtering.",
+    "aliases": [
+      "sprint_speed",
+      "sprint speed"
+    ],
+    "evidence": [
+      "ev_022_attribute_extremes"
+    ]
+  },
+  {
+    "id": "term_strength",
+    "name": "Strength",
+    "type": "metric",
+    "definition": "The physical strength skill score of a player. It is a separate skill measure from the composite overall rating even though both share a comparable numeric scale.",
+    "scope": "Player skill-score comparison when the physical strength skill is meant.",
+    "aliases": [
+      "strength",
+      "physical strength"
+    ],
+    "evidence": [
+      "ev_013_player_attribute_nulls"
+    ]
+  },
+  {
+    "id": "term_build_up_play_speed",
+    "name": "Build Up Play Speed",
+    "type": "metric",
+    "definition": "The speed at which a team builds up its attacks, on a roughly 0-100 style scale.",
+    "scope": "Team playing-style ranking and comparison.",
+    "aliases": [
+      "buildUpPlaySpeed",
+      "build up play speed",
+      "speed in which attacks are put together"
+    ],
+    "evidence": [
+      "ev_017_team_attributes_classes"
+    ]
+  },
+  {
+    "id": "term_chance_creation_passing",
+    "name": "Chance Creation Passing",
+    "type": "metric",
+    "definition": "The chance creation through passing score of a team, on a roughly 0-100 style scale.",
+    "scope": "Team playing-style ranking and comparison.",
+    "aliases": [
+      "chanceCreationPassing",
+      "chance creation passing score"
+    ],
+    "evidence": [
+      "ev_017_team_attributes_classes"
+    ]
+  },
+  {
+    "id": "term_build_up_play_speed_class",
+    "name": "Build Up Play Speed Class",
+    "type": "category",
+    "definition": "The categorical band that summarises a team's build-up play speed score.",
+    "scope": "Reading the categorical label attached to a build-up speed score.",
+    "aliases": [
+      "buildUpPlaySpeedClass",
+      "speed class"
+    ],
+    "evidence": [
+      "ev_017_team_attributes_classes"
+    ]
+  },
+  {
+    "id": "term_chance_creation_passing_class",
+    "name": "Chance Creation Passing Class",
+    "type": "category",
+    "definition": "The categorical band that summarises a team's chance creation passing score, answering questions that ask what a score is classified as.",
+    "scope": "Reading the categorical label attached to a chance creation passing score.",
+    "aliases": [
+      "chanceCreationPassingClass",
+      "classified as",
+      "passing class"
+    ],
+    "evidence": [
+      "ev_017_team_attributes_classes"
+    ]
+  },
+  {
+    "id": "term_average_player_attribute",
+    "name": "Average Player Attribute",
+    "type": "metric",
+    "definition": "The average level of a player attribute across the qualifying attribute snapshot records, expressed as the summed attribute value divided by the number of attribute records considered.",
+    "scope": "Averaging a player skill or rating across that player's attribute snapshots when a question asks for an average attribute value.",
+    "aliases": [
+      "average heading accuracy",
+      "average number of long shot",
+      "average attribute",
+      "average overall rating"
+    ],
+    "evidence": [
+      "ev_012_player_attribute_duplicates",
+      "ev_013_player_attribute_nulls"
+    ]
+  }
+]

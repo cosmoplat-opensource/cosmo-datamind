@@ -1,0 +1,432 @@
+[
+  {
+    "id": "constraint_legality_status_values",
+    "target": "legality_status",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "banned",
+      "ban",
+      "legal",
+      "legality",
+      "status",
+      "legal status",
+      "restricted",
+      "banned card"
+    ],
+    "severity": "block",
+    "scope": "Applies whenever legalities are filtered or counted by verdict.",
+    "confidence": "high",
+    "description": "Legality verdicts are stored with exactly three capitalized labels: 'Legal', 'Banned', 'Restricted'. Natural-language questions often write them in lowercase, and text comparison is case sensitive, so a filter written as 'legal' or 'banned' matches no rows. The stored labels must be used.",
+    "evidence": [
+      "ev_legality_status_values"
+    ]
+  },
+  {
+    "id": "constraint_play_format_values",
+    "target": "play_format",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "format",
+      "play format",
+      "commander",
+      "gladiator",
+      "standard",
+      "modern",
+      "legacy",
+      "pauper",
+      "vintage",
+      "brawl",
+      "pioneer"
+    ],
+    "severity": "block",
+    "scope": "Applies whenever legalities are filtered by play format.",
+    "confidence": "high",
+    "description": "Play format names are stored as single lowercase tokens: brawl, commander, duel, future, gladiator, historic, legacy, modern, oldschool, pauper, penny, pioneer, premodern, standard, vintage. Multi-word formats are stored as one token, for example the format known as Commander is stored as 'commander'.",
+    "evidence": [
+      "ev_play_format_values"
+    ]
+  },
+  {
+    "id": "constraint_language_labels",
+    "target": "card_language",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "language",
+      "languages available",
+      "Italian",
+      "French",
+      "German",
+      "Korean",
+      "Japanese",
+      "Russian",
+      "Spanish",
+      "Portuguese",
+      "Brazilian",
+      "Portuguese (Brasil)",
+      "Chinese"
+    ],
+    "severity": "block",
+    "scope": "Applies whenever foreign languages are filtered, listed or counted.",
+    "confidence": "high",
+    "description": "Languages are stored as fixed labels: Japanese, French, German, Italian, Spanish, Portuguese (Brazil), Chinese Simplified, Chinese Traditional, Russian, Korean, plus a few rare one-off languages. Brazilian Portuguese is stored as 'Portuguese (Brazil)' with a 'z' and no rows match the spelling 'Portuguese (Brasil)'. Chinese is split into 'Chinese Simplified' and 'Chinese Traditional' rather than a single 'Chinese' label.",
+    "evidence": [
+      "ev_foreign_language_values"
+    ]
+  },
+  {
+    "id": "constraint_cards_printing_grain",
+    "target": "card_printing",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "the set of cards with",
+      "which set",
+      "cards named",
+      "the set Coldsnap",
+      "all the cards in the set",
+      "the set of cards",
+      "printing",
+      "print cards"
+    ],
+    "severity": "warning",
+    "scope": "Applies whenever a card is identified by name and then related to a set.",
+    "confidence": "high",
+    "description": "The cards table is at printing grain: one row per card per set. A single card name can match several rows in different sets, so a name alone does not determine a set. For example 'Ancestor's Chosen' is printed in 3 sets and 'Angel of Mercy' in 14 sets. Questions of the form 'the set of cards with <name>' are therefore ambiguous unless the intended set is identified by additional context, and a name filter without a set filter counts every printing.",
+    "evidence": [
+      "ev_printing_grain",
+      "ev_angel_of_mercy_sets"
+    ]
+  },
+  {
+    "id": "constraint_power_null_and_variable",
+    "target": "card_power",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "without power",
+      "no power",
+      "power",
+      "power is null",
+      "cards without power",
+      "* power",
+      "variable power"
+    ],
+    "severity": "warning",
+    "scope": "Applies whenever cards are filtered by the presence or value of power.",
+    "confidence": "high",
+    "description": "Power is stored as text. Non-creature cards have no power value at all (NULL, 30624 rows), and some creatures have a variable power stored as the single character '*' (429 rows). 'Cards without power' therefore means either a missing value or the symbolic variable value, and a filter testing only for a missing value undercounts.",
+    "evidence": [
+      "ev_power_values"
+    ]
+  },
+  {
+    "id": "constraint_content_warning_semantics",
+    "target": "content_warning_flag",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "content warning",
+      "hasContentWarning",
+      "missing or degraded",
+      "degraded properties",
+      "missing properties",
+      "without a content warning",
+      "do not have a content warning"
+    ],
+    "severity": "warning",
+    "scope": "Applies whenever the content warning flag is filtered or interpreted.",
+    "confidence": "high",
+    "description": "The content warning flag is an integer 0/1 defaulting to 0. A value of 1 marks a card printing whose properties or values are missing or degraded in the source data, and only 29 card printings carry it; 0 means no such data problem. It is a data-quality marker, not a gameplay or content-advisory attribute, so 'do not have a content warning' selects the 0 rows.",
+    "evidence": [
+      "ev_content_warning_values"
+    ]
+  },
+  {
+    "id": "constraint_story_spotlight_semantics",
+    "target": "story_spotlight_flag",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "story spotlight",
+      "isStorySpotlight",
+      "spotlight card"
+    ],
+    "severity": "info",
+    "scope": "Applies whenever story spotlight cards are selected or counted.",
+    "confidence": "high",
+    "description": "The story spotlight flag is an integer 0/1 defaulting to 0, with 1 marking one of the 104 story spotlight card printings. Story spotlight membership is a property of the printing, not of the card name.",
+    "evidence": [
+      "ev_story_spotlight_values"
+    ]
+  },
+  {
+    "id": "constraint_boolean_flag_encoding",
+    "target": "card_printing",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "has",
+      "is",
+      "flag",
+      "boolean",
+      "hasFoil",
+      "hasNonFoil",
+      "isPromo",
+      "isReprint",
+      "isOnlineOnly",
+      "default"
+    ],
+    "severity": "info",
+    "scope": "Applies to every boolean attribute column on the card printing record.",
+    "confidence": "high",
+    "description": "All card boolean attributes are stored as integers 0 or 1 with a default of 0, and are never stored as text or as NULL. Truth is 1, falsity is 0.",
+    "evidence": [
+      "ev_content_warning_values",
+      "ev_story_spotlight_values"
+    ]
+  },
+  {
+    "id": "constraint_foreign_language_coverage",
+    "target": "foreign_card_text",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "Italian version",
+      "Korean version",
+      "is there a ... version",
+      "languages available",
+      "in French",
+      "in Italian",
+      "translated",
+      "foreign language"
+    ],
+    "severity": "block",
+    "scope": "Applies whenever the availability of a non-English version of a card or set is asked about.",
+    "confidence": "high",
+    "description": "Foreign-language coverage is incomplete and set-dependent. Foreign-language card records cover 229186 card-language pairs but exist only for sets that were physically localized: for example the Coldsnap (CSP) cards have 8 foreign languages while the Archenemy (ARC) cards have none at all, and the 10E printings of 'Ancestor's Chosen' have 8 languages but no Korean record. A missing foreign-language row means the version is absent from the data; it must not be reported as present.",
+    "evidence": [
+      "ev_foreign_language_coverage",
+      "ev_ancestors_chosen_languages"
+    ]
+  },
+  {
+    "id": "constraint_localized_set_name_link",
+    "target": "set_localized_name",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "translation",
+      "translated sets",
+      "localized name",
+      "Italian name of the set",
+      "German set name",
+      "Brazilian Portuguese translated sets",
+      "Hauptset Zehnte Edition"
+    ],
+    "severity": "block",
+    "scope": "Applies whenever a set is identified or described by a non-English name.",
+    "confidence": "high",
+    "description": "Localized set names are stored in the set translations records keyed by the set's short code and a language, one translation per set and language. A localized name identifies the set only through that code, never by text equality with the English name, and the English name is not the translation. Only 121 of 551 sets carry translations, always in the same 10 languages.",
+    "evidence": [
+      "ev_set_translation_lookup",
+      "ev_set_translation_languages",
+      "ev_set_translation_coverage"
+    ]
+  },
+  {
+    "id": "constraint_language_source_choice",
+    "target": "card_language",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "languages available",
+      "which languages",
+      "translated sets",
+      "how many translated sets",
+      "available in the set",
+      "language of a set"
+    ],
+    "severity": "warning",
+    "scope": "Applies when a question asks which languages a set is available or translated in.",
+    "confidence": "medium",
+    "description": "Two different notions of language availability coexist and they must not be conflated. The foreign-language card records state the languages in which a set's individual cards were printed, exist only for localized sets, and are per card. The set translation records state the languages into which a set's name has been translated, exist for 121 sets in exactly 10 languages regardless of whether the cards themselves were localized. A question about the languages available in a named set can therefore be answered from either source with different results, and the intended source must be determined from the question wording.",
+    "evidence": [
+      "ev_foreign_language_coverage",
+      "ev_set_translation_coverage"
+    ]
+  },
+  {
+    "id": "constraint_set_name_similarity",
+    "target": "set_name",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "the set Coldsnap",
+      "known as Archenemy",
+      "the set named",
+      "the set of cards",
+      "set name",
+      "Hauptset Zehnte Edition",
+      "code ARC",
+      "setCode"
+    ],
+    "severity": "warning",
+    "scope": "Applies whenever a set is identified by name.",
+    "confidence": "high",
+    "description": "Set names are not unique in practice: several distinct sets share a stem. The name Coldsnap matches Coldsnap, Coldsnap Theme Decks and Coldsnap Promos, and Archenemy matches Archenemy, Archenemy: Nicol Bolas and the Archenemy Schemes sets. Questions usually pin one set down with an additional identifier such as the set code or marketplace name, and a bare name match may return several sets.",
+    "evidence": [
+      "ev_set_name_variants"
+    ]
+  },
+  {
+    "id": "constraint_mtgo_availability",
+    "target": "set_online_availability",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "MTGO",
+      "Magic: The Gathering Online",
+      "online",
+      "appear on Magic: The Gathering Online",
+      "isOnlineOnly"
+    ],
+    "severity": "warning",
+    "scope": "Applies when a set's availability on Magic: The Gathering Online is asked about.",
+    "confidence": "high",
+    "description": "Availability on Magic: The Gathering Online is recorded by the presence of a non-empty MTGO code on the set record. 160 of 551 sets have one; a set with no MTGO code did not appear there. The concept applies at set level, so it is determined by the set a card belongs to, and a card name spanning several sets may produce a different answer per set.",
+    "evidence": [
+      "ev_mtgo_code_presence"
+    ]
+  },
+  {
+    "id": "constraint_rarity_values",
+    "target": "card_rarity",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "rarity",
+      "mythic",
+      "rare",
+      "uncommon",
+      "common",
+      "mythic rarity"
+    ],
+    "severity": "block",
+    "scope": "Applies whenever cards are filtered by rarity.",
+    "confidence": "high",
+    "description": "Rarity is stored as exactly four lowercase values: common, uncommon, rare, mythic. The rarity wording used in questions, such as 'mythic rarity', maps to the stored value 'mythic'.",
+    "evidence": [
+      "ev_rarity_values"
+    ]
+  },
+  {
+    "id": "constraint_border_color_values",
+    "target": "card_border_color",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "border",
+      "borderColor",
+      "white border",
+      "black border",
+      "gold border",
+      "silver border",
+      "borderless"
+    ],
+    "severity": "block",
+    "scope": "Applies whenever cards are filtered by border treatment.",
+    "confidence": "high",
+    "description": "Border treatments are stored as lowercase tokens: black, white, gold, silver and borderless. 'White border' corresponds to the stored value 'white'.",
+    "evidence": [
+      "ev_border_color_values"
+    ]
+  },
+  {
+    "id": "constraint_artist_name_storage",
+    "target": "card_artist",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "illustrated by",
+      "designed by",
+      "artist",
+      "illustrator",
+      "Stephen Daniele",
+      "Adam Rex"
+    ],
+    "severity": "warning",
+    "scope": "Applies whenever cards are filtered by artist or illustrator.",
+    "confidence": "high",
+    "description": "Artist names are stored exactly as credited on the card and are not normalized. The credited spelling for the artist asked about as 'Stephen Daniel' is 'Stephen Daniele' (74 printings); the unaccented variant matches no rows. Artist is a printing-level attribute, so counts of cards by artist are counts of printings and may exceed the number of distinct card names.",
+    "evidence": [
+      "ev_artist_name_storage"
+    ]
+  },
+  {
+    "id": "constraint_edhrec_rank_semantics",
+    "target": "edhrec_rank",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "EDHRec",
+      "ranked 1st",
+      "rank 1",
+      "rank",
+      "top ranked",
+      "popularity"
+    ],
+    "severity": "warning",
+    "scope": "Applies when cards are selected or ordered by EDHRec rank.",
+    "confidence": "high",
+    "description": "EDHRec rank is a popularity ordering where a smaller number is better, so rank 1 is the single top-ranked card (33 card printings hold rank 1). Unranked cards have no value at all and 4761 rows are unranked, so a rank filter silently excludes them.",
+    "evidence": [
+      "ev_edhrec_rank_range"
+    ]
+  },
+  {
+    "id": "constraint_converted_mana_cost_semantics",
+    "target": "converted_mana_cost",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "converted mana",
+      "cmc",
+      "mana value",
+      "costs more",
+      "convertedManaCost"
+    ],
+    "severity": "info",
+    "scope": "Applies when cards are compared or thresholded by total mana value.",
+    "confidence": "high",
+    "description": "Converted mana cost is a numeric total derived from the printed mana cost, and 'costs more converted mana' means the larger numeric value. It is stored per printing, so one card name may have several values; in the sampled data all printings of a name carried the same value.",
+    "evidence": [
+      "ev_converted_mana_cost_values"
+    ]
+  },
+  {
+    "id": "constraint_percentage_definition",
+    "target": "share_percentage",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "percentage",
+      "percent",
+      "share",
+      "ratio",
+      "proportion",
+      "what percentage of"
+    ],
+    "severity": "warning",
+    "scope": "Applies to any question asking for a percentage or share of cards.",
+    "confidence": "high",
+    "description": "No percentage column is stored. A share is computed as the count of card printings satisfying the condition divided by the count of card printings in the stated reference population, multiplied by 100. The reference population is the denominator the question names, which is not always all cards; for example a question about cards whose language is French 'among the Story Spotlight cards' uses the story spotlight cards as the population rather than all cards.",
+    "evidence": [
+      "ev_share_percentage_examples"
+    ]
+  },
+  {
+    "id": "constraint_original_type_vs_types",
+    "target": "card_original_type",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "original type",
+      "originalType",
+      "Summon",
+      "type line",
+      "subtype",
+      "subtypes",
+      "type"
+    ],
+    "severity": "block",
+    "scope": "Applies whenever cards are filtered by their type line or subtypes.",
+    "confidence": "high",
+    "description": "The originally printed type line is stored separately from the modern type and subtype fields and uses older wording conventions: for example a card with originalType 'Summon - Angel' has types 'Creature' and subtypes 'Angel'. A question about the original type line must read the original type field rather than the modern type field, and subtype comparisons must account for subtypes being a single comma-separated field.",
+    "evidence": [
+      "ev_original_type_and_subtypes"
+    ]
+  }
+]

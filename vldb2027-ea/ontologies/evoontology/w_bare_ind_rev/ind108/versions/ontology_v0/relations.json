@@ -1,0 +1,1302 @@
+[
+  {
+    "id": "rel_receipt_payment_type",
+    "source": "payment_receipt",
+    "relation_type": "composition",
+    "target": "receipt_payment_type",
+    "connection_condition": "fact_payment.payment_type 是每笔收款自身的属性列",
+    "description": "收款方式是一笔收款的组成部分，描述该笔收款的结算方式。",
+    "evidence": [
+      "ev_payment_receipt_enum"
+    ]
+  },
+  {
+    "id": "rel_receipt_ar",
+    "source": "ar_aging",
+    "relation_type": "composition",
+    "target": "payment_receipt",
+    "connection_condition": "fact_payment.ar_id 对应 fact_ar_aging.ar_id",
+    "description": "收款是针对某条应收账款余额的核销记录，离开应收账款则收款记录失去业务含义。",
+    "evidence": [
+      "ev_fk_integrity"
+    ]
+  },
+  {
+    "id": "rel_payment_out_ap",
+    "source": "account_payable",
+    "relation_type": "composition",
+    "target": "payment_out",
+    "connection_condition": "fact_payment_out.ap_id 对应 fact_ap.ap_id",
+    "description": "对外付款是某笔应付账款的付款行为，付款笔数按应付账款归集。",
+    "evidence": [
+      "ev_ap_payment_chain"
+    ]
+  },
+  {
+    "id": "rel_payment_out_bank_account",
+    "source": "payment_out",
+    "relation_type": "composition",
+    "target": "bank_account",
+    "connection_condition": "fact_payment_out.bank_account 是每笔付款自身的属性列",
+    "description": "银行账号是付款记录的组成部分，用于按账号统计付款笔数。",
+    "evidence": [
+      "ev_payment_out_enum"
+    ]
+  },
+  {
+    "id": "rel_payment_out_method",
+    "source": "payment_out",
+    "relation_type": "composition",
+    "target": "outbound_payment_method",
+    "connection_condition": "fact_payment_out.payment_method 是每笔付款自身的属性列",
+    "description": "付款方式是付款记录的组成部分。",
+    "evidence": [
+      "ev_payment_out_enum"
+    ]
+  },
+  {
+    "id": "rel_receipt_vs_payment_out",
+    "source": "payment_receipt",
+    "relation_type": "association",
+    "target": "payment_out",
+    "connection_condition": "两者共享「付款/收款笔数」这一分析语言，但没有直接的列级连接；仅通过应收账款、应付账款与收货链路间接相关",
+    "description": "客户收款与对供应商付款在业务上同属收付管理，但取值列、业务对象与笔数口径互不相同，需按方向区分。",
+    "evidence": [
+      "ev_payment_receipt_enum",
+      "ev_payment_out_enum"
+    ]
+  },
+  {
+    "id": "rel_ap_goods_receipt",
+    "source": "goods_receipt",
+    "relation_type": "composition",
+    "target": "account_payable",
+    "connection_condition": "fact_ap.gr_id 对应 fact_goods_receipt.gr_id",
+    "description": "应付账款由收货单产生，每一条应付账款都对应一张收货单。",
+    "evidence": [
+      "ev_ap_payment_chain"
+    ]
+  },
+  {
+    "id": "rel_gr_purchase_order",
+    "source": "purchase_order",
+    "relation_type": "composition",
+    "target": "goods_receipt",
+    "connection_condition": "fact_goods_receipt.po_id 对应 fact_purchase_order.po_id",
+    "description": "收货单是针对采购订单的收货行为，离开采购订单则收货单失去依据。",
+    "evidence": [
+      "ev_fk_integrity"
+    ]
+  },
+  {
+    "id": "rel_gr_inspection",
+    "source": "goods_receipt",
+    "relation_type": "composition",
+    "target": "inspection_result",
+    "connection_condition": "fact_goods_receipt.inspection_result 是收货单自身属性列",
+    "description": "来料检验结果是收货单的组成部分，pass 与 fail 分别对应 posted 与 inspected 状态。",
+    "evidence": [
+      "ev_goods_receipt_result"
+    ]
+  },
+  {
+    "id": "rel_po_po_line",
+    "source": "purchase_order",
+    "relation_type": "composition",
+    "target": "po_line",
+    "connection_condition": "fact_po_line.po_id 对应 fact_purchase_order.po_id",
+    "description": "采购订单由若干订单行组成，订单行离开订单没有意义。",
+    "evidence": [
+      "ev_fk_integrity"
+    ]
+  },
+  {
+    "id": "rel_po_line_pick_material",
+    "source": "po_line",
+    "relation_type": "composition",
+    "target": "material",
+    "connection_condition": "fact_po_line.material_id 对应 dim_material.material_id",
+    "description": "订单行指向具体物料，累计已收货数量按物料汇总。",
+    "evidence": [
+      "ev_fk_integrity"
+    ]
+  },
+  {
+    "id": "rel_po_line_received",
+    "source": "po_line",
+    "relation_type": "composition",
+    "target": "po_line_received_qty",
+    "connection_condition": "fact_po_line.received_qty 是订单行自身的累计列",
+    "description": "累计已收货数量是订单行的组成部分。",
+    "evidence": [
+      "ev_fk_integrity"
+    ]
+  },
+  {
+    "id": "rel_po_supplier",
+    "source": "purchase_order",
+    "relation_type": "composition",
+    "target": "supplier",
+    "connection_condition": "fact_purchase_order.supplier_id 对应 dim_supplier.supplier_id",
+    "description": "采购订单必须指定供应商，供应商是订单的必要组成方。",
+    "evidence": [
+      "ev_fk_integrity"
+    ]
+  },
+  {
+    "id": "rel_po_payment_terms",
+    "source": "purchase_order",
+    "relation_type": "composition",
+    "target": "po_payment_terms",
+    "connection_condition": "fact_purchase_order.payment_terms 是订单自身属性列",
+    "description": "付款条件随订单条款确定，是订单的组成部分。",
+    "evidence": [
+      "ev_purchase_order_enum"
+    ]
+  },
+  {
+    "id": "rel_supplier_eval_supplier",
+    "source": "supplier",
+    "relation_type": "composition",
+    "target": "supplier_eval",
+    "connection_condition": "fact_supplier_eval.supplier_id 对应 dim_supplier.supplier_id",
+    "description": "供应商评估是对某个供应商的评估，离开供应商则评估记录失去对象。",
+    "evidence": [
+      "ev_fk_integrity"
+    ]
+  },
+  {
+    "id": "rel_supplier_eval_grade",
+    "source": "supplier_eval",
+    "relation_type": "composition",
+    "target": "supplier_grade",
+    "connection_condition": "fact_supplier_eval.grade 是评估记录自身属性列",
+    "description": "评级是评估记录的组成部分。",
+    "evidence": [
+      "ev_supplier_eval_grade"
+    ]
+  },
+  {
+    "id": "rel_supplier_category_hierarchy",
+    "source": "supplier_category",
+    "relation_type": "hierarchy",
+    "target": "supplier",
+    "connection_condition": "dim_supplier.category_id 落入 dim_supplier_category 的类别集合",
+    "description": "每个供应商都是某个供应商类别的一个实例，供应商是类别的下位概念。",
+    "evidence": [
+      "ev_fk_integrity"
+    ]
+  },
+  {
+    "id": "rel_material_category_hierarchy",
+    "source": "material_category",
+    "relation_type": "hierarchy",
+    "target": "material",
+    "connection_condition": "dim_material.category_id 落入 dim_material_category 的类别集合",
+    "description": "每种物料都是某个物料类别的一个实例。",
+    "evidence": [
+      "ev_fk_integrity"
+    ]
+  },
+  {
+    "id": "rel_quotation_customer",
+    "source": "customer",
+    "relation_type": "composition",
+    "target": "quotation",
+    "connection_condition": "fact_quotation.cust_id 对应 dim_customer.cust_id",
+    "description": "报价单面向特定客户，客户是报价单的必要关联方。",
+    "evidence": [
+      "ev_fk_integrity"
+    ]
+  },
+  {
+    "id": "rel_quotation_product",
+    "source": "product",
+    "relation_type": "composition",
+    "target": "quotation",
+    "connection_condition": "fact_quotation.product_id 对应 dim_product.prod_id",
+    "description": "报价单针对具体产品报价，产品是报价单的组成部分。",
+    "evidence": [
+      "ev_fk_integrity"
+    ]
+  },
+  {
+    "id": "rel_quotation_status",
+    "source": "quotation",
+    "relation_type": "composition",
+    "target": "quotation_status",
+    "connection_condition": "fact_quotation.status 是报价单自身属性列",
+    "description": "报价单状态是报价单的组成部分。",
+    "evidence": [
+      "ev_quotation_status"
+    ]
+  },
+  {
+    "id": "rel_sales_order_customer",
+    "source": "customer",
+    "relation_type": "composition",
+    "target": "sales_order",
+    "connection_condition": "fact_sales_order.cust_id 对应 dim_customer.cust_id",
+    "description": "销售订单属于特定客户。",
+    "evidence": [
+      "ev_fk_integrity"
+    ]
+  },
+  {
+    "id": "rel_sales_order_employee",
+    "source": "employee",
+    "relation_type": "composition",
+    "target": "sales_order",
+    "connection_condition": "fact_sales_order.emp_id 对应 dim_employee.emp_id",
+    "description": "销售订单由业务员负责，业务员是订单的归属人。",
+    "evidence": [
+      "ev_fk_integrity"
+    ]
+  },
+  {
+    "id": "rel_sales_order_product",
+    "source": "product",
+    "relation_type": "composition",
+    "target": "sales_order",
+    "connection_condition": "fact_sales_order.prod_id 对应 dim_product.prod_id",
+    "description": "销售订单针对具体产品，产品是订单的组成部分。",
+    "evidence": [
+      "ev_fk_integrity"
+    ]
+  },
+  {
+    "id": "rel_sales_order_status",
+    "source": "sales_order",
+    "relation_type": "composition",
+    "target": "sales_order_status",
+    "connection_condition": "fact_sales_order.status 是订单自身属性列",
+    "description": "订单状态是销售订单的组成部分，决定是否已交付。",
+    "evidence": [
+      "ev_sales_order_status"
+    ]
+  },
+  {
+    "id": "rel_sales_order_delivery",
+    "source": "sales_order",
+    "relation_type": "composition",
+    "target": "delivery",
+    "connection_condition": "fact_delivery.order_id 对应 fact_sales_order.order_id",
+    "description": "发货记录由销售订单产生，发货金额与数量按订单归集。",
+    "evidence": [
+      "ev_fk_integrity"
+    ]
+  },
+  {
+    "id": "rel_delivery_amount",
+    "source": "delivery",
+    "relation_type": "composition",
+    "target": "delivery_amount",
+    "connection_condition": "fact_delivery.amount 是发货行自身属性列",
+    "description": "发货金额是发货记录的组成部分。",
+    "evidence": [
+      "ev_fk_integrity"
+    ]
+  },
+  {
+    "id": "rel_delivery_quantity",
+    "source": "delivery",
+    "relation_type": "composition",
+    "target": "delivery_quantity",
+    "connection_condition": "fact_delivery.quantity 是发货行自身属性列",
+    "description": "发货数量是发货记录的组成部分。",
+    "evidence": [
+      "ev_fk_integrity"
+    ]
+  },
+  {
+    "id": "rel_sales_order_return",
+    "source": "sales_order",
+    "relation_type": "composition",
+    "target": "sales_return",
+    "connection_condition": "fact_return.order_id 对应 fact_sales_order.order_id",
+    "description": "退货单由销售订单产生，退货笔数按订单归集。",
+    "evidence": [
+      "ev_return_reason"
+    ]
+  },
+  {
+    "id": "rel_return_reason",
+    "source": "sales_return",
+    "relation_type": "composition",
+    "target": "return_reason",
+    "connection_condition": "fact_return.reason 是退货行自身属性列",
+    "description": "退货原因是退货单的组成部分。",
+    "evidence": [
+      "ev_return_reason"
+    ]
+  },
+  {
+    "id": "rel_opportunity_customer",
+    "source": "customer",
+    "relation_type": "composition",
+    "target": "opportunity",
+    "connection_condition": "fact_opportunity.cust_id 对应 dim_customer.cust_id",
+    "description": "商机面向特定客户。",
+    "evidence": [
+      "ev_fk_integrity"
+    ]
+  },
+  {
+    "id": "rel_opportunity_employee",
+    "source": "employee",
+    "relation_type": "composition",
+    "target": "opportunity",
+    "connection_condition": "fact_opportunity.emp_id 对应 dim_employee.emp_id",
+    "description": "商机由业务员负责，预估金额与预估销量按业务员汇总。",
+    "evidence": [
+      "ev_fk_integrity"
+    ]
+  },
+  {
+    "id": "rel_opportunity_status",
+    "source": "opportunity",
+    "relation_type": "composition",
+    "target": "opportunity_status",
+    "connection_condition": "fact_opportunity.status 是商机自身属性列",
+    "description": "商机状态是商机的组成部分，商机关闭情况另由其关闭日期体现。",
+    "evidence": [
+      "ev_opportunity_status"
+    ]
+  },
+  {
+    "id": "rel_sample_employee",
+    "source": "employee",
+    "relation_type": "composition",
+    "target": "sample",
+    "connection_condition": "fact_sample.emp_id 对应 dim_employee.emp_id",
+    "description": "送样由业务员发起，送样成功数按业务员归集。",
+    "evidence": [
+      "ev_fk_integrity"
+    ]
+  },
+  {
+    "id": "rel_sample_customer",
+    "source": "customer",
+    "relation_type": "composition",
+    "target": "sample",
+    "connection_condition": "fact_sample.cust_id 对应 dim_customer.cust_id",
+    "description": "送样面向特定客户。",
+    "evidence": [
+      "ev_fk_integrity"
+    ]
+  },
+  {
+    "id": "rel_sample_feedback",
+    "source": "sample",
+    "relation_type": "composition",
+    "target": "sample_feedback_result",
+    "connection_condition": "fact_sample.feedback_result 是送样自身属性列",
+    "description": "反馈结果是送样记录的组成部分，未反馈时为空。",
+    "evidence": [
+      "ev_sample_feedback"
+    ]
+  },
+  {
+    "id": "rel_sample_success_feedback_equiv",
+    "source": "sample_success",
+    "relation_type": "equivalence",
+    "target": "sample_feedback_result",
+    "connection_condition": "fact_sample.is_success = 1 当且仅当 fact_sample.feedback_result = 'success'",
+    "description": "送样成功与反馈结果为 success 表达同一业务事实的两种表示。",
+    "evidence": [
+      "ev_sample_feedback"
+    ]
+  },
+  {
+    "id": "rel_product_product_line",
+    "source": "product_line",
+    "relation_type": "composition",
+    "target": "product",
+    "connection_condition": "dim_product.prod_line_id 对应 dim_product_line.prod_line_id",
+    "description": "产品线由若干产品组成，产品离开产品线没有归属。",
+    "evidence": [
+      "ev_fk_integrity"
+    ]
+  },
+  {
+    "id": "rel_expense_employee",
+    "source": "employee",
+    "relation_type": "composition",
+    "target": "expense",
+    "connection_condition": "fact_expense.emp_id 对应 dim_employee.emp_id",
+    "description": "费用报销由员工发起，报销金额按员工归集。",
+    "evidence": [
+      "ev_expense_type"
+    ]
+  },
+  {
+    "id": "rel_expense_department",
+    "source": "department",
+    "relation_type": "composition",
+    "target": "expense",
+    "connection_condition": "fact_expense.dept_id 对应 dim_department.dept_id",
+    "description": "费用报销归属到部门。",
+    "evidence": [
+      "ev_expense_type"
+    ]
+  },
+  {
+    "id": "rel_expense_type",
+    "source": "expense",
+    "relation_type": "composition",
+    "target": "expense_type",
+    "connection_condition": "fact_expense.expense_type 是报销行自身属性列",
+    "description": "费用类型是费用报销的组成部分。",
+    "evidence": [
+      "ev_expense_type"
+    ]
+  },
+  {
+    "id": "rel_ar_aging_employee",
+    "source": "employee",
+    "relation_type": "composition",
+    "target": "ar_aging",
+    "connection_condition": "fact_ar_aging.emp_id 对应 dim_employee.emp_id",
+    "description": "应收账款账龄按业务员归集，用于按业务员排序账龄金额。",
+    "evidence": [
+      "ev_ar_aging_buckets"
+    ]
+  },
+  {
+    "id": "rel_ar_aging_customer",
+    "source": "customer",
+    "relation_type": "composition",
+    "target": "ar_aging",
+    "connection_condition": "fact_ar_aging.cust_id 对应 dim_customer.cust_id",
+    "description": "应收账款账龄按客户归集。",
+    "evidence": [
+      "ev_ar_aging_buckets"
+    ]
+  },
+  {
+    "id": "rel_ar_aging_bucket",
+    "source": "ar_aging",
+    "relation_type": "composition",
+    "target": "aging_bucket",
+    "connection_condition": "aging_1m..aging_12m_plus 是账龄行上的金额分桶列",
+    "description": "账龄区间是应收账款账龄记录的组成部分。",
+    "evidence": [
+      "ev_ar_aging_buckets"
+    ]
+  },
+  {
+    "id": "rel_cost_center_budget",
+    "source": "cost_center",
+    "relation_type": "composition",
+    "target": "budget",
+    "connection_condition": "fact_budget.cc_id 对应 dim_cost_center.cc_id",
+    "description": "成本中心口径的预算归属于具体成本中心，按成本中心汇总预算金额。",
+    "evidence": [
+      "ev_budget_dual_source"
+    ]
+  },
+  {
+    "id": "rel_department_budget_expense",
+    "source": "department",
+    "relation_type": "composition",
+    "target": "budget_expense",
+    "connection_condition": "fact_budget_expense.dept_id 对应 dim_department.dept_id",
+    "description": "部门口径的费用预算归属于具体部门。",
+    "evidence": [
+      "ev_budget_dual_source"
+    ]
+  },
+  {
+    "id": "rel_region_department",
+    "source": "region",
+    "relation_type": "composition",
+    "target": "department",
+    "connection_condition": "dim_department.region_id 对应 dim_region.region_id；仅销售部门有区域",
+    "description": "区域由销售部门组成，是部门到区域的两跳起点。",
+    "evidence": [
+      "ev_department_region"
+    ]
+  },
+  {
+    "id": "rel_budget_vs_budget_expense",
+    "source": "budget",
+    "relation_type": "association",
+    "target": "budget_expense",
+    "connection_condition": "两者都以年份与月份为时间粒度，但一个按成本中心、一个按部门，无法直接按列连接",
+    "description": "成本中心预算与部门费用预算是不同组织口径的预算概念，分析时须先区分口径再选择来源。",
+    "evidence": [
+      "ev_budget_dual_source"
+    ]
+  },
+  {
+    "id": "rel_product_cost_product",
+    "source": "product",
+    "relation_type": "composition",
+    "target": "product_cost",
+    "connection_condition": "fact_product_cost.product_id 对应 dim_product.prod_id",
+    "description": "产品成本按产品归集，材料成本最高的产品须经产品维度输出名称。",
+    "evidence": [
+      "ev_fk_integrity"
+    ]
+  },
+  {
+    "id": "rel_inventory_product",
+    "source": "product",
+    "relation_type": "composition",
+    "target": "inventory",
+    "connection_condition": "fact_inventory.prod_id 对应 dim_product.prod_id",
+    "description": "库存记录针对具体产品。",
+    "evidence": [
+      "ev_inventory_grain"
+    ]
+  },
+  {
+    "id": "rel_purchase_requisition_department",
+    "source": "department",
+    "relation_type": "composition",
+    "target": "purchase_requisition",
+    "connection_condition": "fact_purchase_requisition.dept_id 对应 dim_department.dept_id",
+    "description": "采购申请由部门提出。",
+    "evidence": [
+      "ev_fk_integrity"
+    ]
+  },
+  {
+    "id": "rel_sales_target_employee",
+    "source": "employee",
+    "relation_type": "composition",
+    "target": "sales_target",
+    "connection_condition": "fact_sales_target.emp_id 对应 dim_employee.emp_id",
+    "description": "销售目标按员工分解。",
+    "evidence": [
+      "ev_metric_config"
+    ]
+  },
+  {
+    "id": "rel_turnover_target_employee",
+    "source": "employee",
+    "relation_type": "composition",
+    "target": "turnover_rate_target",
+    "connection_condition": "fact_payment_target.emp_id 对应 dim_employee.emp_id",
+    "description": "周转率目标按员工与年度设定。",
+    "evidence": [
+      "ev_metric_config"
+    ]
+  },
+  {
+    "id": "rel_production_order_line",
+    "source": "production_line",
+    "relation_type": "composition",
+    "target": "production_order",
+    "connection_condition": "fact_production_order.line_id 对应 dim_production_line.line_id",
+    "description": "生产工单在具体产线上执行，工单运行时长与产量按产线归集。",
+    "evidence": [
+      "ev_fk_integrity"
+    ]
+  },
+  {
+    "id": "rel_production_order_product",
+    "source": "product",
+    "relation_type": "composition",
+    "target": "production_order",
+    "connection_condition": "fact_production_order.prod_id 对应 dim_product.prod_id",
+    "description": "生产工单生产具体产品。",
+    "evidence": [
+      "ev_fk_integrity"
+    ]
+  },
+  {
+    "id": "rel_production_order_status",
+    "source": "production_order",
+    "relation_type": "composition",
+    "target": "production_order_status",
+    "connection_condition": "fact_production_order.status 是工单自身属性列",
+    "description": "工单状态是生产工单的组成部分。",
+    "evidence": [
+      "ev_production_order_status"
+    ]
+  },
+  {
+    "id": "rel_order_runtime",
+    "source": "production_order",
+    "relation_type": "composition",
+    "target": "order_runtime_hours",
+    "connection_condition": "fact_production_order.runtime_hours 是工单自身属性列",
+    "description": "工单运行时长是生产工单的组成部分。",
+    "evidence": [
+      "ev_production_order_status"
+    ]
+  },
+  {
+    "id": "rel_output_production_order",
+    "source": "production_order",
+    "relation_type": "composition",
+    "target": "production_output",
+    "connection_condition": "fact_production_output.order_id 对应 fact_production_order.order_id",
+    "description": "产出记录由生产工单产生。",
+    "evidence": [
+      "ev_output_grade"
+    ]
+  },
+  {
+    "id": "rel_output_grade",
+    "source": "production_output",
+    "relation_type": "composition",
+    "target": "output_grade",
+    "connection_condition": "fact_production_output.grade 是产出记录自身属性列",
+    "description": "产品等级是产出记录的组成部分。",
+    "evidence": [
+      "ev_output_grade"
+    ]
+  },
+  {
+    "id": "rel_line_workshop",
+    "source": "workshop",
+    "relation_type": "composition",
+    "target": "production_line",
+    "connection_condition": "dim_production_line.workshop_id 对应 dim_workshop.workshop_id",
+    "description": "车间由若干产线组成，产线离开车间没有归属。",
+    "evidence": [
+      "ev_equipment_manufacturer"
+    ]
+  },
+  {
+    "id": "rel_equipment_line",
+    "source": "production_line",
+    "relation_type": "composition",
+    "target": "equipment",
+    "connection_condition": "dim_equipment.line_id 对应 dim_production_line.line_id",
+    "description": "产线由设备组成，设备按产线部署。",
+    "evidence": [
+      "ev_equipment_manufacturer"
+    ]
+  },
+  {
+    "id": "rel_equipment_manufacturer",
+    "source": "equipment",
+    "relation_type": "composition",
+    "target": "equipment_manufacturer",
+    "connection_condition": "dim_equipment.manufacturer 是设备自身属性列",
+    "description": "制造商是设备台账的组成部分。",
+    "evidence": [
+      "ev_equipment_manufacturer"
+    ]
+  },
+  {
+    "id": "rel_runtime_line",
+    "source": "production_line",
+    "relation_type": "composition",
+    "target": "equipment_runtime_record",
+    "connection_condition": "fact_equipment_runtime.line_id 对应 dim_production_line.line_id",
+    "description": "设备运行记录按产线与日期归集。",
+    "evidence": [
+      "ev_downtime_volume"
+    ]
+  },
+  {
+    "id": "rel_runtime_actual_hours",
+    "source": "equipment_runtime_record",
+    "relation_type": "composition",
+    "target": "actual_run_hours",
+    "connection_condition": "fact_equipment_runtime.actual_run_hours 是运行记录自身属性列",
+    "description": "实际运行小时数是设备运行记录的组成部分。",
+    "evidence": [
+      "ev_downtime_volume"
+    ]
+  },
+  {
+    "id": "rel_downtime_line",
+    "source": "production_line",
+    "relation_type": "composition",
+    "target": "downtime",
+    "connection_condition": "fact_downtime.line_id 对应 dim_production_line.line_id",
+    "description": "停机事件发生在具体产线，停机时长可按产线汇总。",
+    "evidence": [
+      "ev_downtime_reason"
+    ]
+  },
+  {
+    "id": "rel_downtime_equipment",
+    "source": "equipment",
+    "relation_type": "composition",
+    "target": "downtime",
+    "connection_condition": "fact_downtime.equipment_id 对应 dim_equipment.equipment_id",
+    "description": "停机事件针对具体设备。",
+    "evidence": [
+      "ev_downtime_reason"
+    ]
+  },
+  {
+    "id": "rel_downtime_reason",
+    "source": "downtime",
+    "relation_type": "composition",
+    "target": "downtime_reason",
+    "connection_condition": "fact_downtime.reason_code 取值为 dim_downtime_reason.reason_id",
+    "description": "停机原因是停机记录的组成部分，按原因统计停机次数与时长。",
+    "evidence": [
+      "ev_downtime_reason"
+    ]
+  },
+  {
+    "id": "rel_downtime_reason_hierarchy",
+    "source": "downtime_reason_category",
+    "relation_type": "hierarchy",
+    "target": "downtime_reason",
+    "connection_condition": "dim_downtime_reason.category 把每个原因归入一个大类",
+    "description": "每个具体停机原因是某个停机原因大类的一个实例。",
+    "evidence": [
+      "ev_downtime_reason"
+    ]
+  },
+  {
+    "id": "rel_downtime_hours",
+    "source": "downtime",
+    "relation_type": "composition",
+    "target": "downtime_hours",
+    "connection_condition": "fact_downtime.duration_hours 是停机事件自身属性列",
+    "description": "停机时长是停机记录的组成部分。",
+    "evidence": [
+      "ev_downtime_volume"
+    ]
+  },
+  {
+    "id": "rel_maintenance_plan_equipment",
+    "source": "equipment",
+    "relation_type": "composition",
+    "target": "maintenance_plan",
+    "connection_condition": "fact_maintenance_plan.equipment_id 对应 dim_equipment.equipment_id",
+    "description": "维护计划针对具体设备，维护计划条数按设备与产线归集。",
+    "evidence": [
+      "ev_maintenance_enum"
+    ]
+  },
+  {
+    "id": "rel_maint_type",
+    "source": "maintenance_plan",
+    "relation_type": "composition",
+    "target": "maint_type",
+    "connection_condition": "fact_maintenance_plan.maint_type 是计划自身属性列",
+    "description": "维护类型是维护计划的组成部分。",
+    "evidence": [
+      "ev_maintenance_enum"
+    ]
+  },
+  {
+    "id": "rel_next_maint_date",
+    "source": "maintenance_plan",
+    "relation_type": "composition",
+    "target": "next_maint_date",
+    "connection_condition": "fact_maintenance_plan.next_date 是计划自身属性列",
+    "description": "下次维护日期是维护计划的组成部分。",
+    "evidence": [
+      "ev_maintenance_enum"
+    ]
+  },
+  {
+    "id": "rel_maint_record_equipment",
+    "source": "equipment",
+    "relation_type": "composition",
+    "target": "maintenance_record",
+    "connection_condition": "fact_maintenance_record.equipment_id 对应 dim_equipment.equipment_id",
+    "description": "维护记录针对具体设备，维护记录条数按设备与产线归集。",
+    "evidence": [
+      "ev_equipment_manufacturer"
+    ]
+  },
+  {
+    "id": "rel_maint_labor_hours",
+    "source": "maintenance_record",
+    "relation_type": "composition",
+    "target": "maintenance_labor_hours",
+    "connection_condition": "fact_maintenance_record.labor_hours 是维护记录自身属性列",
+    "description": "维护工时是维护记录的组成部分。",
+    "evidence": [
+      "ev_equipment_manufacturer"
+    ]
+  },
+  {
+    "id": "rel_maint_cost",
+    "source": "maintenance_record",
+    "relation_type": "composition",
+    "target": "maintenance_cost",
+    "connection_condition": "fact_maintenance_record.cost 是维护记录自身属性列",
+    "description": "维护费用是维护记录的组成部分。",
+    "evidence": [
+      "ev_equipment_manufacturer"
+    ]
+  },
+  {
+    "id": "rel_alarm_equipment",
+    "source": "equipment",
+    "relation_type": "composition",
+    "target": "alarm",
+    "connection_condition": "fact_alarm.equipment_id 对应 dim_equipment.equipment_id",
+    "description": "告警由具体设备产生，已处理告警数量按设备统计。",
+    "evidence": [
+      "ev_alarm_severity"
+    ]
+  },
+  {
+    "id": "rel_alarm_severity",
+    "source": "alarm",
+    "relation_type": "composition",
+    "target": "alarm_severity",
+    "connection_condition": "fact_alarm.severity 是告警自身属性列",
+    "description": "告警严重度是告警的组成部分。",
+    "evidence": [
+      "ev_alarm_severity"
+    ]
+  },
+  {
+    "id": "rel_alarm_handled",
+    "source": "alarm",
+    "relation_type": "composition",
+    "target": "handled_alarm",
+    "connection_condition": "fact_alarm.is_handled 是告警自身属性列",
+    "description": "已处理标识是告警的组成部分。",
+    "evidence": [
+      "ev_alarm_severity"
+    ]
+  },
+  {
+    "id": "rel_energy_line",
+    "source": "production_line",
+    "relation_type": "composition",
+    "target": "energy_consumption",
+    "connection_condition": "fact_energy_consumption.line_id 对应 dim_production_line.line_id",
+    "description": "能耗记录按产线归集，用电量、用水量与蒸汽量均按产线汇总。",
+    "evidence": [
+      "ev_energy_columns"
+    ]
+  },
+  {
+    "id": "rel_energy_workshop",
+    "source": "workshop",
+    "relation_type": "composition",
+    "target": "energy_consumption",
+    "connection_condition": "fact_energy_consumption.workshop_id 对应 dim_workshop.workshop_id",
+    "description": "能耗记录同时按车间归集，用电量可按车间排序。",
+    "evidence": [
+      "ev_energy_columns"
+    ]
+  },
+  {
+    "id": "rel_energy_electricity",
+    "source": "energy_consumption",
+    "relation_type": "composition",
+    "target": "electricity_kwh",
+    "connection_condition": "fact_energy_consumption.electricity_kwh 是能耗行自身属性列",
+    "description": "用电量是能耗记录的组成部分。",
+    "evidence": [
+      "ev_energy_columns"
+    ]
+  },
+  {
+    "id": "rel_energy_water",
+    "source": "energy_consumption",
+    "relation_type": "composition",
+    "target": "water_tons",
+    "connection_condition": "fact_energy_consumption.water_tons 是能耗行自身属性列",
+    "description": "用水量是能耗记录的组成部分。",
+    "evidence": [
+      "ev_energy_columns"
+    ]
+  },
+  {
+    "id": "rel_energy_steam",
+    "source": "energy_consumption",
+    "relation_type": "composition",
+    "target": "steam_tons",
+    "connection_condition": "fact_energy_consumption.steam_tons 是能耗行自身属性列",
+    "description": "蒸汽量是能耗记录的组成部分。",
+    "evidence": [
+      "ev_energy_columns"
+    ]
+  },
+  {
+    "id": "rel_incident_workshop",
+    "source": "workshop",
+    "relation_type": "composition",
+    "target": "incident",
+    "connection_condition": "fact_incident.workshop_id 对应 dim_workshop.workshop_id",
+    "description": "事故发生在具体车间，受伤人数按车间归集。",
+    "evidence": [
+      "ev_incident_enum"
+    ]
+  },
+  {
+    "id": "rel_incident_line",
+    "source": "production_line",
+    "relation_type": "composition",
+    "target": "incident",
+    "connection_condition": "fact_incident.line_id 对应 dim_production_line.line_id",
+    "description": "事故可定位到具体产线。",
+    "evidence": [
+      "ev_incident_enum"
+    ]
+  },
+  {
+    "id": "rel_incident_severity",
+    "source": "incident",
+    "relation_type": "composition",
+    "target": "incident_severity",
+    "connection_condition": "fact_incident.severity 是事故自身属性列",
+    "description": "严重度编码是事故的组成部分。",
+    "evidence": [
+      "ev_incident_enum"
+    ]
+  },
+  {
+    "id": "rel_incident_type",
+    "source": "incident",
+    "relation_type": "composition",
+    "target": "incident_type",
+    "connection_condition": "fact_incident.incident_type 是事故自身属性列",
+    "description": "事故类型是事故的组成部分。",
+    "evidence": [
+      "ev_incident_enum"
+    ]
+  },
+  {
+    "id": "rel_incident_injury",
+    "source": "incident",
+    "relation_type": "composition",
+    "target": "injury_count",
+    "connection_condition": "fact_incident.injury_count 是事故自身属性列",
+    "description": "受伤人数是事故的组成部分。",
+    "evidence": [
+      "ev_incident_enum"
+    ]
+  },
+  {
+    "id": "rel_risk_hazard",
+    "source": "hazard",
+    "relation_type": "composition",
+    "target": "risk_assessment",
+    "connection_condition": "fact_risk_assessment.hazard_id 对应 dim_hazard.hazard_id",
+    "description": "风险评估针对具体危险源，按危险源位置可筛选出相关评估。",
+    "evidence": [
+      "ev_hazard_location"
+    ]
+  },
+  {
+    "id": "rel_risk_level",
+    "source": "risk_assessment",
+    "relation_type": "composition",
+    "target": "risk_level",
+    "connection_condition": "fact_risk_assessment.risk_level 是评估自身属性列",
+    "description": "风险等级是风险评估的组成部分。",
+    "evidence": [
+      "ev_risk_assessment_enum"
+    ]
+  },
+  {
+    "id": "rel_risk_likelihood",
+    "source": "risk_assessment",
+    "relation_type": "composition",
+    "target": "likelihood",
+    "connection_condition": "fact_risk_assessment.likelihood 是评估自身属性列",
+    "description": "可能性是风险评估的组成部分。",
+    "evidence": [
+      "ev_risk_assessment_enum"
+    ]
+  },
+  {
+    "id": "rel_risk_consequence",
+    "source": "risk_assessment",
+    "relation_type": "composition",
+    "target": "consequence",
+    "connection_condition": "fact_risk_assessment.consequence 是评估自身属性列",
+    "description": "后果严重性是风险评估的组成部分。",
+    "evidence": [
+      "ev_risk_assessment_enum"
+    ]
+  },
+  {
+    "id": "rel_risk_control",
+    "source": "risk_assessment",
+    "relation_type": "composition",
+    "target": "control_needed",
+    "connection_condition": "fact_risk_assessment.control_needed 是评估自身属性列",
+    "description": "是否需要控制是风险评估的组成部分。",
+    "evidence": [
+      "ev_risk_assessment_enum"
+    ]
+  },
+  {
+    "id": "rel_hazard_location",
+    "source": "hazard",
+    "relation_type": "composition",
+    "target": "hazard_location",
+    "connection_condition": "dim_hazard.location 是危险源自身属性列",
+    "description": "位置描述是危险源的组成部分。",
+    "evidence": [
+      "ev_hazard_location"
+    ]
+  },
+  {
+    "id": "rel_objective_plan",
+    "source": "safety_plan",
+    "relation_type": "composition",
+    "target": "safety_objective",
+    "connection_condition": "fact_safety_objective.plan_id 对应 fact_safety_plan.plan_id",
+    "description": "安全目标隶属于安全计划，目标值合计按计划归集。",
+    "evidence": [
+      "ev_safety_objective_unit"
+    ]
+  },
+  {
+    "id": "rel_objective_value",
+    "source": "safety_objective",
+    "relation_type": "composition",
+    "target": "objective_target_value",
+    "connection_condition": "fact_safety_objective.target_value 是目标行自身属性列",
+    "description": "目标值是安全目标的组成部分。",
+    "evidence": [
+      "ev_safety_objective_unit"
+    ]
+  },
+  {
+    "id": "rel_objective_unit",
+    "source": "safety_objective",
+    "relation_type": "composition",
+    "target": "objective_unit",
+    "connection_condition": "fact_safety_objective.unit 是目标行自身属性列",
+    "description": "计量单位是安全目标的组成部分。",
+    "evidence": [
+      "ev_safety_objective_unit"
+    ]
+  },
+  {
+    "id": "rel_plan_status",
+    "source": "safety_plan",
+    "relation_type": "composition",
+    "target": "safety_plan_status",
+    "connection_condition": "fact_safety_plan.status 是计划自身属性列",
+    "description": "计划状态是安全计划的组成部分。",
+    "evidence": [
+      "ev_time_coverage"
+    ]
+  },
+  {
+    "id": "rel_audit_workshop",
+    "source": "workshop",
+    "relation_type": "composition",
+    "target": "safety_audit",
+    "connection_condition": "fact_safety_audit.workshop_id 对应 dim_workshop.workshop_id",
+    "description": "安全审计针对具体车间。",
+    "evidence": [
+      "ev_time_coverage"
+    ]
+  },
+  {
+    "id": "rel_audit_score",
+    "source": "safety_audit",
+    "relation_type": "composition",
+    "target": "audit_score",
+    "connection_condition": "fact_safety_audit.score 是审计自身属性列",
+    "description": "审计评分是安全审计的组成部分。",
+    "evidence": [
+      "ev_time_coverage"
+    ]
+  },
+  {
+    "id": "rel_audit_findings",
+    "source": "safety_audit",
+    "relation_type": "composition",
+    "target": "audit_finding_count",
+    "connection_condition": "fact_safety_audit.finding_count 是审计自身属性列",
+    "description": "发现项数是安全审计的组成部分。",
+    "evidence": [
+      "ev_time_coverage"
+    ]
+  },
+  {
+    "id": "rel_training_trainer",
+    "source": "safety_training",
+    "relation_type": "composition",
+    "target": "training_trainer",
+    "connection_condition": "fact_safety_training.trainer_id 对应 dim_employee.emp_id",
+    "description": "讲师是安全培训的组成部分，经讲师可关联到员工。",
+    "evidence": [
+      "ev_time_coverage"
+    ]
+  },
+  {
+    "id": "rel_trainer_employee_equiv",
+    "source": "training_trainer",
+    "relation_type": "equivalence",
+    "target": "employee",
+    "connection_condition": "fact_safety_training.trainer_id 与 dim_employee.emp_id 取值域相同",
+    "description": "培训讲师与员工是同一实体在不同角色下的表达，讲师即员工。",
+    "evidence": [
+      "ev_time_coverage"
+    ]
+  },
+  {
+    "id": "rel_training_attendee",
+    "source": "safety_training",
+    "relation_type": "composition",
+    "target": "attendee_count",
+    "connection_condition": "fact_safety_training.attendee_count 是培训自身属性列",
+    "description": "参训人数是安全培训的组成部分。",
+    "evidence": [
+      "ev_time_coverage"
+    ]
+  },
+  {
+    "id": "rel_training_duration",
+    "source": "safety_training",
+    "relation_type": "composition",
+    "target": "training_duration_hours",
+    "connection_condition": "fact_safety_training.duration_hours 是培训自身属性列",
+    "description": "培训时长是安全培训的组成部分。",
+    "evidence": [
+      "ev_time_coverage"
+    ]
+  },
+  {
+    "id": "rel_env_type",
+    "source": "env_record",
+    "relation_type": "composition",
+    "target": "env_record_type",
+    "connection_condition": "fact_env_record.record_type 是监测行自身属性列",
+    "description": "监测类型是环境监测记录的组成部分。",
+    "evidence": [
+      "ev_env_record_enum"
+    ]
+  },
+  {
+    "id": "rel_env_compliant",
+    "source": "env_record",
+    "relation_type": "composition",
+    "target": "env_compliant",
+    "connection_condition": "fact_env_record.is_compliant 是监测行自身属性列",
+    "description": "是否合规是环境监测记录的组成部分。",
+    "evidence": [
+      "ev_env_record_enum"
+    ]
+  },
+  {
+    "id": "rel_iot_quality",
+    "source": "iot_data",
+    "relation_type": "composition",
+    "target": "iot_quality_flag",
+    "connection_condition": "fact_iot_data.quality_flag 是读数行自身属性列",
+    "description": "数据质量标志是 IoT 数据的组成部分。",
+    "evidence": [
+      "ev_iot_quality"
+    ]
+  },
+  {
+    "id": "rel_fixed_asset_dep",
+    "source": "fixed_asset",
+    "relation_type": "composition",
+    "target": "accumulated_dep",
+    "connection_condition": "dim_fixed_asset.accumulated_dep 是资产台账自身属性列",
+    "description": "累计折旧是固定资产台账的组成部分。",
+    "evidence": [
+      "ev_fixed_asset"
+    ]
+  },
+  {
+    "id": "rel_contract_party",
+    "source": "contract",
+    "relation_type": "association",
+    "target": "supplier",
+    "connection_condition": "fact_contract.party_id 在 purchase 类合同上指向供应商、在 sales 类合同上指向客户，没有单一维度表可解析",
+    "description": "合同的交易方与供应商类别相关，但需要先按合同类型区分交易方角色。",
+    "evidence": [
+      "ev_contract_enum"
+    ]
+  },
+  {
+    "id": "rel_customer_return",
+    "source": "customer",
+    "relation_type": "association",
+    "target": "sales_return",
+    "connection_condition": "间接路径：dim_customer.cust_id 经 fact_sales_order.cust_id 到达订单，再由 fact_return.order_id 到达退货",
+    "description": "客户与退货记录之间没有直接外键，需要通过销售订单间接连接才能按客户统计退货笔数。",
+    "evidence": [
+      "ev_fk_integrity",
+      "ev_return_reason"
+    ]
+  },
+  {
+    "id": "rel_gross_profit_derivation",
+    "source": "sales_order",
+    "relation_type": "derivation",
+    "target": "gross_profit_actual",
+    "connection_condition": "实际毛利由订单金额与实际成本在订单行上相减得出",
+    "description": "实际毛利是由销售订单金额与成本派生的指标，不是独立采集的数据。",
+    "evidence": [
+      "ev_fk_integrity"
+    ]
+  },
+  {
+    "id": "rel_storage_days_derivation",
+    "source": "inventory",
+    "relation_type": "derivation",
+    "target": "storage_days",
+    "connection_condition": "在库天数由入库日期与当前日期之差得出",
+    "description": "在库天数由库存的入库日期推算。",
+    "evidence": [
+      "ev_inventory_grain"
+    ]
+  },
+  {
+    "id": "rel_env_compliant_derivation",
+    "source": "env_record",
+    "relation_type": "derivation",
+    "target": "env_compliant",
+    "connection_condition": "合规标识由测定值与该行限值比较得出",
+    "description": "是否合规由环境监测的测定值与限值比较派生。",
+    "evidence": [
+      "ev_env_record_enum"
+    ]
+  },
+  {
+    "id": "rel_accumulated_dep_derivation",
+    "source": "fixed_asset",
+    "relation_type": "derivation",
+    "target": "accumulated_dep",
+    "connection_condition": "累计折旧由各期月折旧额累加得出",
+    "description": "累计折旧是由月折旧额累加派生的指标。",
+    "evidence": [
+      "ev_fixed_asset"
+    ]
+  },
+  {
+    "id": "rel_received_qty_derivation",
+    "source": "po_line",
+    "relation_type": "derivation",
+    "target": "po_line_received_qty",
+    "connection_condition": "累计已收货数量由该订单行历次收货数量累加得出",
+    "description": "累计已收货数量由订单行的收货记录累加派生。",
+    "evidence": [
+      "ev_fk_integrity"
+    ]
+  },
+  {
+    "id": "rel_estimated_amount_quantity",
+    "source": "estimated_amount",
+    "relation_type": "association",
+    "target": "estimated_quantity",
+    "connection_condition": "两个量在同一商机行上并存，金额与数量方向一致但计价口径不同",
+    "description": "商机预估金额与预估销量是同一商机上的两个并列度量，分别用于金额排序与销量排序。",
+    "evidence": [
+      "ev_opportunity_status"
+    ]
+  },
+  {
+    "id": "rel_dws_vs_detail",
+    "source": "dws_aggregate_mart",
+    "relation_type": "association",
+    "target": "payment_receipt",
+    "connection_condition": "预聚合层按日期与维度预计算了明细事实的指标，两者口径相近但粒度不同",
+    "description": "预聚合指标层与明细事实表描述同一批业务但粒度不同，混用会导致口径不一致。",
+    "evidence": [
+      "ev_dws_marts"
+    ]
+  }
+]

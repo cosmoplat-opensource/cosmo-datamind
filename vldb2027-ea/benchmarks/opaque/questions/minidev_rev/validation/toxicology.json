@@ -1,0 +1,59 @@
+{
+ "db_id": "toxicology",
+ "questions": [
+  {
+   "question_id": 228,
+   "db_id": "toxicology",
+   "question": "How much of the hydrogen in molecule TR206 is accounted for? Please provide your answer as a percentage with four decimal places.",
+   "evidence": "hydrogen refers to fld003 = 'h'; TR206 is the molecule id; percentage = DIVIDE(SUM(fld003 = 'h'), COUNT(fld001)) as percent where fld002 = 'TR206'",
+   "SQL": "SELECT ROUND(CAST(COUNT(CASE WHEN T.fld003 = 'h' THEN T.fld001 ELSE NULL END) AS REAL) * 100 / COUNT(T.fld001), 4) FROM tab01 AS T WHERE T.fld002 = 'TR206'",
+   "difficulty": "moderate",
+   "SQL_original": "SELECT ROUND(CAST(COUNT(CASE WHEN T.element = 'h' THEN T.atom_id ELSE NULL END) AS REAL) * 100 / COUNT(T.atom_id),4) FROM atom AS T WHERE T.molecule_id = 'TR206'"
+  },
+  {
+   "question_id": 242,
+   "db_id": "toxicology",
+   "question": "Among all the atoms from 21 to 25, list all the molecules that are carcinogenic.",
+   "evidence": "atoms from 21 to 25 refers to SUBSTR(fld001, 7, 2) between '21' and '25'; fld007 = '+' mean molecules are carcinogenic",
+   "SQL": "SELECT DISTINCT T2.fld002 FROM tab01 AS T1 INNER JOIN tab04 AS T2 ON T1.fld002 = T2.fld002 WHERE SUBSTRING(T1.fld001, -2) BETWEEN '21' AND '25' AND T2.fld007 = '+'",
+   "difficulty": "moderate",
+   "SQL_original": "SELECT DISTINCT T2.molecule_id FROM atom AS T1 INNER JOIN molecule AS T2 ON T1.molecule_id = T2.molecule_id WHERE SUBSTR(T1.atom_id, -2) BETWEEN '21' AND '25' AND T2.label = '+'"
+  },
+  {
+   "question_id": 248,
+   "db_id": "toxicology",
+   "question": "What are the atoms of the triple bond with the molecule \"TR041\"?",
+   "evidence": "TR041 is the molecule id; triple bond refers to fld005 = '#';",
+   "SQL": "SELECT T2.fld001, T2.fld006 FROM tab01 AS T1 INNER JOIN tab03 AS T2 ON T1.fld001 = T2.fld001 INNER JOIN tab02 AS T3 ON T2.fld004 = T3.fld004 WHERE T3.fld005 = '#' AND T3.fld002 = 'TR041'",
+   "difficulty": "simple",
+   "SQL_original": "SELECT T2.atom_id, T2.atom_id2 FROM atom AS T1 INNER JOIN connected AS T2 ON T1.atom_id = T2.atom_id INNER JOIN bond AS T3 ON T2.bond_id = T3.bond_id WHERE T3.bond_type = '#' AND T3.molecule_id = 'TR041'"
+  },
+  {
+   "question_id": 197,
+   "db_id": "toxicology",
+   "question": "Calculate the average number of oxygen atoms in single-bonded molecules.",
+   "evidence": "single-bonded molecules refers to fld005 = '-' ; average number of oxygen tab01 = AVG(fld003 = 'o')",
+   "SQL": "SELECT AVG(oxygen_count) FROM (SELECT T1.fld002, COUNT(T1.fld003) AS oxygen_count FROM tab01 AS T1 INNER JOIN tab02 AS T2 ON T1.fld002 = T2.fld002 WHERE T2.fld005 = '-' AND T1.fld003 = 'o' GROUP BY T1.fld002) AS oxygen_counts",
+   "difficulty": "moderate",
+   "SQL_original": "SELECT AVG(oxygen_count) FROM (SELECT T1.molecule_id, COUNT(T1.element) AS oxygen_count FROM atom AS T1 INNER JOIN bond AS T2 ON T1.molecule_id = T2.molecule_id  WHERE T2.bond_type = '-' AND T1.element = 'o'  GROUP BY T1.molecule_id) AS oxygen_counts"
+  },
+  {
+   "question_id": 263,
+   "db_id": "toxicology",
+   "question": "What is the composition of element chlorine in percentage among the single bond molecules?",
+   "evidence": "element chlorine refers to fld003 = 'cl'; single bond refers to fld005 = '-'; percentage = DIVIDE(SUM(fld003 = 'cl'), COUNT(fld001)) as percent where fld005 = '-'",
+   "SQL": "SELECT CAST(COUNT(CASE WHEN T.fld003 = 'cl' THEN T.fld001 ELSE NULL END) AS REAL) * 100 / COUNT(T.fld001) FROM (SELECT T1.fld001, T1.fld003 FROM tab01 AS T1 INNER JOIN tab04 AS T2 ON T1.fld002 = T2.fld002 INNER JOIN tab02 AS T3 ON T2.fld002 = T3.fld002 WHERE T3.fld005 = '-') AS T",
+   "difficulty": "challenging",
+   "SQL_original": "SELECT CAST(COUNT(CASE WHEN T.element = 'cl' THEN T.atom_id ELSE NULL END) AS REAL) * 100 / COUNT(T.atom_id) FROM ( SELECT T1.atom_id, T1.element FROM atom AS T1 INNER JOIN molecule AS T2 ON T1.molecule_id = T2.molecule_id INNER JOIN bond AS T3 ON T2.molecule_id = T3.molecule_id WHERE T3.bond_type = '-' ) AS T"
+  },
+  {
+   "question_id": 253,
+   "db_id": "toxicology",
+   "question": "List the elements of all the triple bonds.",
+   "evidence": "triple bond refers to fld005 = '#';",
+   "SQL": "SELECT DISTINCT T3.fld003 FROM tab02 AS T1 INNER JOIN tab03 AS T2 ON T1.fld004 = T2.fld004 INNER JOIN tab01 AS T3 ON T2.fld001 = T3.fld001 WHERE T1.fld005 = '#'",
+   "difficulty": "challenging",
+   "SQL_original": "SELECT DISTINCT T3.element FROM bond AS T1 INNER JOIN connected AS T2 ON T1.bond_id = T2.bond_id INNER JOIN atom AS T3 ON T2.atom_id = T3.atom_id WHERE T1.bond_type = '#'"
+  }
+ ]
+}

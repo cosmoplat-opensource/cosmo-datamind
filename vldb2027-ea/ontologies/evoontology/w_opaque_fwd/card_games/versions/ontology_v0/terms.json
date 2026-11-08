@@ -1,0 +1,508 @@
+[
+  {
+    "id": "t_card_printing",
+    "name": "Card Printing",
+    "type": "entity",
+    "definition": "One printed instance of a Magic: The Gathering card in one set, identified by a unique card uuid (tab01.fld072). Different printings of the same card name (different sets, frames, rarities or collector numbers) are distinct rows.",
+    "scope": "Card-level analysis; the row grain that joins to legality, rulings and localized records.",
+    "aliases": [
+      "card",
+      "printing",
+      "card record",
+      "card version"
+    ],
+    "evidence": [
+      "evidence_table_roles",
+      "evidence_uuid_join_graph",
+      "evidence_count_semantics"
+    ]
+  },
+  {
+    "id": "t_card_name",
+    "name": "Card Name (English)",
+    "type": "dimension",
+    "definition": "The English printed name of a card printing (tab01.fld049). One name normally covers many printings across sets; 56822 printings carry 21738 distinct names.",
+    "scope": "Identifying and grouping cards across printings; English-language name only.",
+    "aliases": [
+      "card name",
+      "name",
+      "card"
+    ],
+    "evidence": [
+      "evidence_table_roles",
+      "evidence_count_semantics"
+    ]
+  },
+  {
+    "id": "t_card_set",
+    "name": "Card Set",
+    "type": "entity",
+    "definition": "An expansion, deck, promo or other release product in which printings are published (one row of tab04), keyed by a unique set code (fld081). 551 sets exist.",
+    "scope": "Set-level attributes and set membership of printings.",
+    "aliases": [
+      "set",
+      "expansion",
+      "edition",
+      "release"
+    ],
+    "evidence": [
+      "evidence_set_table",
+      "evidence_set_membership_join"
+    ]
+  },
+  {
+    "id": "t_set_code",
+    "name": "Set Code",
+    "type": "dimension",
+    "definition": "Short alphanumeric identifier of a set (for example ARC, CSP, 10E), unique in tab04.fld081 and used as the set reference on printings (tab01.fld063) and on set-name translations (tab05.fld063).",
+    "scope": "Linking printings and localized set names to sets.",
+    "aliases": [
+      "set code",
+      "code",
+      "set abbreviation"
+    ],
+    "evidence": [
+      "evidence_set_table",
+      "evidence_set_membership_join",
+      "evidence_localized_set_name"
+    ]
+  },
+  {
+    "id": "t_set_name",
+    "name": "Set Name (English)",
+    "type": "dimension",
+    "definition": "The English name of a set. The official name is stored in tab04.fld049 for all 551 sets; tab04.fld088 holds an alternative display name populated for only 201 sets and identical to fld049 except for 4 sets.",
+    "scope": "Identifying a set by name; prefer fld049, treat fld088 as a secondary surface form.",
+    "aliases": [
+      "set name",
+      "set title",
+      "expansion name"
+    ],
+    "evidence": [
+      "evidence_set_table",
+      "evidence_set_name_variant"
+    ]
+  },
+  {
+    "id": "t_set_block",
+    "name": "Set Block",
+    "type": "dimension",
+    "definition": "The story/block grouping that a set belongs to (tab04.fld079), such as Commander, Core Set, Theros. Nullable for 279 of 551 sets.",
+    "scope": "Grouping sets into blocks; not every set has a block.",
+    "aliases": [
+      "block",
+      "set block"
+    ],
+    "evidence": [
+      "evidence_set_block_and_translation_coverage"
+    ]
+  },
+  {
+    "id": "t_mtgo_set_code",
+    "name": "MTGO Set Code",
+    "type": "dimension",
+    "definition": "The Magic: The Gathering Online product code of a set (tab04.fld089). A non-null value indicates the set exists as an MTGO product; 160 of 551 sets have one.",
+    "scope": "Set-level online availability. Distinct from card-level availability recorded on printings.",
+    "aliases": [
+      "MTGO code",
+      "Magic Online code",
+      "online set"
+    ],
+    "evidence": [
+      "evidence_mtgo"
+    ]
+  },
+  {
+    "id": "t_language",
+    "name": "Language",
+    "type": "dimension",
+    "definition": "The language label of a localized record. tab02 uses 12 labels for card-level translations; tab05 uses 10 labels for set-name translations. Labels are exact English names such as 'Portuguese (Brazil)' and 'Chinese Simplified'.",
+    "scope": "Selecting localized names, text, flavor text and set names.",
+    "aliases": [
+      "language",
+      "locale",
+      "translation language"
+    ],
+    "evidence": [
+      "evidence_language_labels",
+      "evidence_localization_grain"
+    ]
+  },
+  {
+    "id": "t_localized_card_record",
+    "name": "Localized Card Record",
+    "type": "concept",
+    "definition": "A translated printing record for one card printing in one language (one row of tab02), carrying translated name, rules text, type line and flavor text. Exactly one row per printing and language.",
+    "scope": "Card-level localization; joins to a printing through tab02.fld072.",
+    "aliases": [
+      "foreign data",
+      "translation record",
+      "localized printing"
+    ],
+    "evidence": [
+      "evidence_localization_grain",
+      "evidence_localized_card_fields"
+    ]
+  },
+  {
+    "id": "t_localized_card_name",
+    "name": "Localized Card Name",
+    "type": "dimension",
+    "definition": "The card name translated into a specific language (tab02.fld049), for example Italian 'Prescelto dell'Antenata' for Ancestor's Chosen.",
+    "scope": "Language-specific card naming; requires selecting a language.",
+    "aliases": [
+      "translated card name",
+      "foreign card name",
+      "name in language"
+    ],
+    "evidence": [
+      "evidence_localized_card_fields"
+    ]
+  },
+  {
+    "id": "t_localized_card_text",
+    "name": "Localized Card Rules Text",
+    "type": "concept",
+    "definition": "The rules text of a card translated into a specific language (tab02.fld068). Empty strings occur when a translation has no rules text.",
+    "scope": "Localized rules text; not the same field as official rulings.",
+    "aliases": [
+      "translated text",
+      "foreign text",
+      "localized rules text",
+      "text in language"
+    ],
+    "evidence": [
+      "evidence_localized_card_fields",
+      "evidence_column_name_collision"
+    ]
+  },
+  {
+    "id": "t_localized_flavor_text",
+    "name": "Localized Flavor Text",
+    "type": "concept",
+    "definition": "The flavor text of a card translated into a specific language (tab02.fld017); may be an empty string.",
+    "scope": "Localized flavor text queries.",
+    "aliases": [
+      "translated flavor text",
+      "foreign flavor text"
+    ],
+    "evidence": [
+      "evidence_localized_card_fields"
+    ]
+  },
+  {
+    "id": "t_localized_set_name",
+    "name": "Localized Set Name",
+    "type": "concept",
+    "definition": "The name of a set translated into a specific language (tab05.fld094), keyed by set code and language, for example German 'Hauptset Zehnte Edition' for set 10E. Only 121 of 551 sets have translations.",
+    "scope": "Set-name localization; distinct from card-name localization.",
+    "aliases": [
+      "translated set name",
+      "set name in language",
+      "foreign set name"
+    ],
+    "evidence": [
+      "evidence_localized_set_name",
+      "evidence_localization_grain"
+    ]
+  },
+  {
+    "id": "t_card_text",
+    "name": "Card Rules Text (English)",
+    "type": "concept",
+    "definition": "The English rules text printed on a card (tab01.fld068), for example Angel of Mercy: 'Flying ... you gain 3 life.'",
+    "scope": "English card text; use localized text fields for translations and ruling fields for official rulings.",
+    "aliases": [
+      "text",
+      "oracle text",
+      "card text",
+      "rules text"
+    ],
+    "evidence": [
+      "evidence_card_text",
+      "evidence_column_name_collision"
+    ]
+  },
+  {
+    "id": "t_flavor_text",
+    "name": "Flavor Text (English)",
+    "type": "concept",
+    "definition": "The English flavor text of a printing (tab01.fld017); null for many printings.",
+    "scope": "English flavor text queries.",
+    "aliases": [
+      "flavor text",
+      "flavour text"
+    ],
+    "evidence": [
+      "evidence_card_text"
+    ]
+  },
+  {
+    "id": "t_card_ruling",
+    "name": "Card Ruling",
+    "type": "concept",
+    "definition": "An official ruling text issued for a card (tab06.fld068). Rulings are stored only in English and are attached to a printing uuid.",
+    "scope": "Rulings questions; not a localized resource.",
+    "aliases": [
+      "ruling",
+      "ruling text",
+      "official ruling"
+    ],
+    "evidence": [
+      "evidence_rulings",
+      "evidence_column_name_collision"
+    ]
+  },
+  {
+    "id": "t_ruling_date",
+    "name": "Ruling Date",
+    "type": "dimension",
+    "definition": "The date on which a ruling was issued (tab06.fld095), stored as YYYY-MM-DD text.",
+    "scope": "Temporal context of rulings.",
+    "aliases": [
+      "ruling date",
+      "date issued"
+    ],
+    "evidence": [
+      "evidence_rulings"
+    ]
+  },
+  {
+    "id": "t_format",
+    "name": "Play Format",
+    "type": "dimension",
+    "definition": "A constructed or limited play format in which legality is assessed (tab03.fld076). 15 lowercase labels including vintage, legacy, commander, modern, standard, pioneer, pauper, penny, historic, gladiator, premodern, duel.",
+    "scope": "Format restrictions and legality questions.",
+    "aliases": [
+      "format",
+      "play format",
+      "game format"
+    ],
+    "evidence": [
+      "evidence_format_values"
+    ]
+  },
+  {
+    "id": "t_legality_status",
+    "name": "Legality Status",
+    "type": "category",
+    "definition": "The legality status of a printing in a format (tab03.fld077): exactly 'Legal', 'Banned' or 'Restricted'.",
+    "scope": "Banned/legal/restricted filtering.",
+    "aliases": [
+      "legality",
+      "status",
+      "legal status",
+      "banned",
+      "restricted"
+    ],
+    "evidence": [
+      "evidence_status_values"
+    ]
+  },
+  {
+    "id": "t_format_legality",
+    "name": "Format Legality Record",
+    "type": "concept",
+    "definition": "The legality determination of one card printing in one format (one row of tab03). There is at most one row per printing and format, and not every printing has legality rows.",
+    "scope": "The join grain between cards and formats/statuses.",
+    "aliases": [
+      "legality entry",
+      "format legality",
+      "card legality"
+    ],
+    "evidence": [
+      "evidence_legality_grain",
+      "evidence_uuid_join_graph"
+    ]
+  },
+  {
+    "id": "t_rarity",
+    "name": "Rarity",
+    "type": "category",
+    "definition": "The rarity of a card printing (tab01.fld059): common, uncommon, rare or mythic, always lowercase.",
+    "scope": "Rarity filtering, including 'mythic rarity printings'.",
+    "aliases": [
+      "rarity",
+      "mythic",
+      "rare",
+      "uncommon",
+      "common"
+    ],
+    "evidence": [
+      "evidence_rarity_border"
+    ]
+  },
+  {
+    "id": "t_border_color",
+    "name": "Border Color",
+    "type": "category",
+    "definition": "The border colour of a card printing (tab01.fld005): black, white, gold, silver or borderless.",
+    "scope": "Border-based filtering such as white border cards.",
+    "aliases": [
+      "border",
+      "border colour",
+      "white border",
+      "black border",
+      "borderless"
+    ],
+    "evidence": [
+      "evidence_rarity_border"
+    ]
+  },
+  {
+    "id": "t_artist",
+    "name": "Card Artist",
+    "type": "entity",
+    "definition": "The illustrator credited on a card printing (tab01.fld002). Artist names are exact text values and are stored per printing; 991 distinct artists occur.",
+    "scope": "Artist-based searches such as cards illustrated or designed by a person.",
+    "aliases": [
+      "artist",
+      "illustrator",
+      "designed by",
+      "illustrated by"
+    ],
+    "evidence": [
+      "evidence_artist"
+    ]
+  },
+  {
+    "id": "t_converted_mana_cost",
+    "name": "Converted Mana Cost",
+    "type": "metric",
+    "definition": "The numeric converted mana cost (mana value) of a card printing (tab01.fld011). Stored as REAL with 19 distinct values including 0.5, non-null for every printing.",
+    "scope": "Comparing casting cost across cards or printings.",
+    "aliases": [
+      "converted mana cost",
+      "mana value",
+      "CMC",
+      "mana cost"
+    ],
+    "evidence": [
+      "evidence_cmc_edhrec"
+    ]
+  },
+  {
+    "id": "t_edhrec_rank",
+    "name": "EDHRec Rank",
+    "type": "metric",
+    "definition": "A popularity rank from EDHRec (tab01.fld013), where 1 is the most popular card. Integer values from 1 to 20900; null for 4761 printings.",
+    "scope": "Popularity ranking questions such as 'ranked 1st on EDHRec'.",
+    "aliases": [
+      "EDHRec rank",
+      "rank",
+      "popularity rank",
+      "ranked 1st"
+    ],
+    "evidence": [
+      "evidence_cmc_edhrec"
+    ]
+  },
+  {
+    "id": "t_story_spotlight",
+    "name": "Story Spotlight Flag",
+    "type": "concept",
+    "definition": "A 0/1 flag on a printing (tab01.fld033) marking cards that are Story Spotlight cards; 1 means the printing is a Story Spotlight card, 0 means it is not.",
+    "scope": "Story Spotlight card filtering.",
+    "aliases": [
+      "story spotlight",
+      "spotlight card"
+    ],
+    "evidence": [
+      "evidence_flags"
+    ]
+  },
+  {
+    "id": "t_content_warning",
+    "name": "Content Warning Flag",
+    "type": "concept",
+    "definition": "A 0/1 flag on a printing (tab01.fld022) marking cards that carry a content warning; 1 means the printing has a content warning, 0 means it has none.",
+    "scope": "Content-warning filtering, including 'cards without a content warning'.",
+    "aliases": [
+      "content warning",
+      "content warning flag",
+      "warning"
+    ],
+    "evidence": [
+      "evidence_flags"
+    ]
+  },
+  {
+    "id": "t_power",
+    "name": "Power",
+    "type": "metric",
+    "definition": "The power characteristic of a creature printing (tab01.fld055), stored as text so that special values ('*', '?', '∞', '-1') can occur. Null when the card has no power characteristic.",
+    "scope": "Power comparisons and 'cards without power' filters.",
+    "aliases": [
+      "power",
+      "creature power"
+    ],
+    "evidence": [
+      "evidence_power"
+    ]
+  },
+  {
+    "id": "t_original_type",
+    "name": "Original Type Line",
+    "type": "concept",
+    "definition": "The historical type wording printed on older cards (tab01.fld053), for example 'Summon - Angel' or 'Enchant Creature', as opposed to the modern type line in fld070.",
+    "scope": "Questions that explicitly say 'original type' or use legacy wording such as 'Summon - Angel'.",
+    "aliases": [
+      "original type",
+      "old type",
+      "printed type",
+      "Summon"
+    ],
+    "evidence": [
+      "evidence_original_type_subtype"
+    ]
+  },
+  {
+    "id": "t_subtype",
+    "name": "Subtype",
+    "type": "dimension",
+    "definition": "The subtype list of a card printing (tab01.fld065), stored as a comma-separated list such as 'Angel', 'Angel,Spirit' or 'Human,Wizard'.",
+    "scope": "Creature/other subtype filtering, including 'subtype other than X'.",
+    "aliases": [
+      "subtype",
+      "creature subtype",
+      "subtype list"
+    ],
+    "evidence": [
+      "evidence_original_type_subtype"
+    ]
+  },
+  {
+    "id": "t_card_count",
+    "name": "Card Count",
+    "type": "metric",
+    "definition": "The number of entities in a filtered population. Because each printing is a row, counts differ depending on whether rows/printings or distinct card names are counted.",
+    "scope": "'How many cards' questions; the counting grain must be stated.",
+    "aliases": [
+      "count",
+      "number of cards",
+      "how many cards",
+      "card count"
+    ],
+    "evidence": [
+      "evidence_count_semantics",
+      "evidence_legality_grain"
+    ]
+  },
+  {
+    "id": "t_percentage_share",
+    "name": "Percentage Share",
+    "type": "metric",
+    "definition": "A ratio metric expressing the share of a qualified subpopulation within a population, conventionally 100 × qualifying count / total count.",
+    "scope": "Percentage questions over cards or sets; not stored directly in any column.",
+    "aliases": [
+      "percentage",
+      "percent",
+      "share",
+      "ratio",
+      "proportion"
+    ],
+    "evidence": [
+      "evidence_count_semantics"
+    ]
+  }
+]

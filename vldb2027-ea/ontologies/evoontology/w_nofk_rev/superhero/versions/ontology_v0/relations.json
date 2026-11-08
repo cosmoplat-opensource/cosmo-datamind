@@ -1,0 +1,131 @@
+[
+  {
+    "id": "rel_superhero_attribute_value",
+    "source": "superhero",
+    "relation_type": "composition",
+    "target": "attribute_value",
+    "connection_condition": "hero_attribute.hero_id corresponds to superhero.id; each capability score row belongs to exactly one character",
+    "description": "A character's capability scores are dependent parts of that character. A score row carries no identity of its own and cannot be interpreted, or exist, without the character it was recorded for.",
+    "evidence": [
+      "ev_hero_attribute_shape",
+      "ev_referential_integrity"
+    ]
+  },
+  {
+    "id": "rel_attribute_value_attribute",
+    "source": "attribute_value",
+    "relation_type": "association",
+    "target": "attribute",
+    "connection_condition": "hero_attribute.attribute_id corresponds to attribute.id; the two columns together form the key under which a score is meaningful",
+    "description": "A capability score and the capability attribute it was scored on are connected through a joint key. Neither an is-a, a part-of, a synonym nor a formula relationship holds between them, but a score is meaningless without knowing which attribute it belongs to.",
+    "evidence": [
+      "ev_hero_attribute_shape"
+    ]
+  },
+  {
+    "id": "rel_superpower_superhero",
+    "source": "superpower",
+    "relation_type": "association",
+    "target": "superhero",
+    "connection_condition": "hero_power.hero_id corresponds to superhero.id and hero_power.power_id corresponds to superpower.id, forming a many-to-many link between characters and abilities",
+    "description": "Named abilities and characters are related many-to-many through an assignment table. An ability is a shared catalogue entry rather than a part of any single character, so the connection is a general business association.",
+    "evidence": [
+      "ev_superpower_references",
+      "ev_association_coverage_gaps"
+    ]
+  },
+  {
+    "id": "rel_publisher_superhero",
+    "source": "publisher",
+    "relation_type": "association",
+    "target": "superhero",
+    "connection_condition": "superhero.publisher_id corresponds to publisher.id; each character is credited to at most one publisher while a publisher is credited for many characters",
+    "description": "Publishers are credited with characters. The publisher is an attributed rights-holder rather than a container that the character record structurally belongs to, so the connection is a general business association.",
+    "evidence": [
+      "ev_publisher_distribution",
+      "ev_referential_integrity"
+    ]
+  },
+  {
+    "id": "rel_gender_superhero",
+    "source": "gender",
+    "relation_type": "association",
+    "target": "superhero",
+    "connection_condition": "superhero.gender_id corresponds to gender.id",
+    "description": "Gender is a categorical descriptor attached to a character.",
+    "evidence": [
+      "ev_gender_values_and_distribution",
+      "ev_referential_integrity"
+    ]
+  },
+  {
+    "id": "rel_alignment_superhero",
+    "source": "alignment",
+    "relation_type": "association",
+    "target": "superhero",
+    "connection_condition": "superhero.alignment_id corresponds to alignment.id",
+    "description": "Alignment is the categorical descriptor that places a character on the heroic-to-villainous spectrum.",
+    "evidence": [
+      "ev_alignment_values_and_distribution",
+      "ev_referential_integrity"
+    ]
+  },
+  {
+    "id": "rel_race_superhero",
+    "source": "race",
+    "relation_type": "association",
+    "target": "superhero",
+    "connection_condition": "superhero.race_id corresponds to race.id",
+    "description": "Race is a categorical descriptor of a character's species or origin.",
+    "evidence": [
+      "ev_race_values_placeholder",
+      "ev_referential_integrity"
+    ]
+  },
+  {
+    "id": "rel_colour_superhero",
+    "source": "colour",
+    "relation_type": "association",
+    "target": "superhero",
+    "connection_condition": "superhero.eye_colour_id, superhero.hair_colour_id and superhero.skin_colour_id each correspond to colour.id, so one colour value can describe three different appearance aspects",
+    "description": "A single colour vocabulary describes several independent appearance aspects of a character. The shared vocabulary does not make the aspects interchangeable: a character's eye colour and skin colour are separately recorded and may hold different values.",
+    "evidence": [
+      "ev_colour_values",
+      "ev_no_colour_usage"
+    ]
+  },
+  {
+    "id": "rel_hero_id_superhero_name",
+    "source": "hero_id",
+    "relation_type": "equivalence",
+    "target": "superhero_name",
+    "connection_condition": "both denote the same character record: superhero.id is the numeric key carried into hero_power.hero_id and hero_attribute.hero_id, while superhero.superhero_name is the human-readable label of the same row",
+    "description": "A character can be addressed either by numeric identifier or by codename, and the two are interchangeable references to one entity. The numeric identifier remains the only unambiguous form because codenames repeat.",
+    "evidence": [
+      "ev_hero_identity_example",
+      "ev_superhero_name_duplicates"
+    ]
+  },
+  {
+    "id": "rel_superhero_name_full_name",
+    "source": "superhero_name",
+    "relation_type": "association",
+    "target": "hero_full_name",
+    "connection_condition": "both are text name fields stored on the same character record; they coincide for 52 records and differ for 576",
+    "description": "Codename and civilian name are two naming conventions for the same character. They are deliberately not recorded as equivalent, because for most characters the two fields hold different values and either may be the one a question uses.",
+    "evidence": [
+      "ev_name_fields_relationship"
+    ]
+  },
+  {
+    "id": "rel_attribute_value_peak",
+    "source": "attribute_value",
+    "relation_type": "derivation",
+    "target": "peak_attribute_score",
+    "connection_condition": "",
+    "description": "The peak score for a named attribute is derived as the maximum attribute value among the characters that have that attribute recorded; taking the minimum instead yields the weakest character on the same scale.",
+    "evidence": [
+      "ev_peak_attribute_value"
+    ]
+  }
+]

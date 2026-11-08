@@ -1,0 +1,417 @@
+[
+  {
+    "id": "c_event_log_coverage",
+    "target": "term_match_event_log",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "event data",
+      "match events",
+      "goal events",
+      "shots",
+      "shots on target",
+      "possession",
+      "cards",
+      "corners",
+      "crosses",
+      "fouls",
+      "missing events"
+    ],
+    "severity": "block",
+    "scope": "Any analysis that counts or aggregates from the goal, shoton, shotoff, foulcommit, card, cross, corner or possession columns",
+    "confidence": "high",
+    "description": "All eight event-detail columns are null or empty on exactly 11762 of the 25979 matches, so only about 55 percent of fixtures have event detail at all. The eight columns are missing together, meaning a match either has the full event feed or none of it. Treating these columns as a complete record of what happened in the league will silently undercount every event family by roughly 45 percent.",
+    "evidence": [
+      "ev_event_column_nulls"
+    ]
+  },
+  {
+    "id": "c_scoreline_authoritative",
+    "target": "term_match_outcome",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "goals scored",
+      "score",
+      "scoreline",
+      "match result",
+      "win",
+      "draw",
+      "loss",
+      "how many goals",
+      "home_team_goal",
+      "away_team_goal",
+      "points"
+    ],
+    "severity": "block",
+    "scope": "Any question about match results, goals, wins, draws, losses or league performance",
+    "confidence": "high",
+    "description": "The two scoreline columns are the authoritative record of a match result. Counting goal events in the goal event feed does not reproduce them: for 5106 of the 14217 matches that have goal events, the per-team event counts disagree with the scoreline, and 1089 matches recorded as 0-0 nevertheless carry non-empty goal events. Match results must be read from the scoreline columns; the event feed may only be used for event-level detail such as goal type or scoring minute.",
+    "evidence": [
+      "ev_goal_xml_vs_scoreline"
+    ]
+  },
+  {
+    "id": "c_goal_type_codes_undocumented",
+    "target": "term_goal_type",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "penalty",
+      "own goal",
+      "goal type",
+      "type of goal",
+      "free kick goal",
+      "header",
+      "set piece"
+    ],
+    "severity": "warning",
+    "scope": "Interpreting or filtering goal events by how the goal was scored",
+    "confidence": "medium",
+    "description": "The goal type element takes seven distinct codes: n with 25104 occurrences, p with 2149, o with 781, npm with 482, dg with 342, rp with 9 and psm with 1. The database contains no lookup table, no code list and no documentation attaching meanings to these codes, so a filter such as 'penalties only' or 'open play only' cannot be justified from the data alone. The counts recorded here are the full observed inventory and can be quoted safely; the meaning of any individual code cannot.",
+    "evidence": [
+      "ev_goal_type_values"
+    ]
+  },
+  {
+    "id": "c_card_type_codes",
+    "target": "term_card_type",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "yellow card",
+      "red card",
+      "booking",
+      "dismissal",
+      "second yellow",
+      "discipline",
+      "cards"
+    ],
+    "severity": "warning",
+    "scope": "Counting or comparing disciplinary events",
+    "confidence": "medium",
+    "description": "The card type element takes three observed codes: y twice 58045, y2 1708 and r 1756, and a further 605 card value elements carry no card type element at all. The coexistence of y and y2 means a single yellow and a second-yellow event are distinguishable in the raw feed, but the database does not state which code means what. Counting all three codes together as 'cards' inflates a disciplinary total, and any red-card count must decide explicitly how to treat the y2 code and the 605 untyped events.",
+    "evidence": [
+      "ev_card_type_values"
+    ]
+  },
+  {
+    "id": "c_work_rate_dirty_values",
+    "target": "term_work_rate",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "work rate",
+      "attacking work rate",
+      "defensive work rate",
+      "high medium low",
+      "player effort"
+    ],
+    "severity": "block",
+    "scope": "Any grouping, filtering or comparison on the two work rate columns",
+    "confidence": "high",
+    "description": "Both work rate columns hold values outside the intended three-level vocabulary. Alongside low, medium and high, the attacking column contains the fragments le 104, norm 348, stoc 89 and y 106 plus the literal string 'None' on 3639 rows and empty strings on 3230 rows; the defensive column contains the fragments _0 2394, o 1550, ean 104, es 106, ormal 348 and tocky 89 plus the digit strings 0 through 9 on 2232 rows. Grouping on these columns without first restricting to the three valid levels produces meaningless categories.",
+    "evidence": [
+      "ev_work_rate_values"
+    ]
+  },
+  {
+    "id": "c_preferred_foot_nulls",
+    "target": "term_preferred_foot",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "preferred foot",
+      "left footed",
+      "right footed",
+      "footedness"
+    ],
+    "severity": "warning",
+    "scope": "Splitting players by preferred foot",
+    "confidence": "high",
+    "description": "Preferred foot is populated as left on 44733 snapshot rows and right on 138409 rows, but 836 rows carry an empty value. Any proportion computed over the column must state whether those 836 rows are excluded, and the same 836 rows also carry no skill scores, so they can bias a foot-based comparison of ability.",
+    "evidence": [
+      "ev_preferred_foot_values"
+    ]
+  },
+  {
+    "id": "c_player_snapshot_grain",
+    "target": "term_player_attribute_snapshot",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "snapshot",
+      "latest rating",
+      "most recent attributes",
+      "current rating",
+      "as of",
+      "player attributes over time",
+      "rating change"
+    ],
+    "severity": "block",
+    "scope": "Any question about a player's rating, skill or physical attributes",
+    "confidence": "high",
+    "description": "Player attributes are stored as dated snapshots, not as a current value. There are 197 distinct snapshot dates between 2007-02-22 and 2016-07-07, and a player may appear on many of them or on none within a given season. Asking for 'the' rating of a player without naming a date is under-specified, and averaging across snapshots averages different career points rather than measuring a stable quantity. The snapshot date must also be used, not today's date, when deriving a player's age at the time of the measurement.",
+    "evidence": [
+      "ev_player_snapshot_dates"
+    ]
+  },
+  {
+    "id": "c_player_snapshot_duplicates",
+    "target": "term_player_attribute_snapshot",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "duplicate attributes",
+      "same date twice",
+      "player snapshot duplicate",
+      "count snapshots"
+    ],
+    "severity": "warning",
+    "scope": "Counting snapshots or joining player attributes on player and date",
+    "confidence": "high",
+    "description": "835 player-and-date combinations appear more than once in the player attribute table, so player plus date is not a unique key. Counting rows per player overstates the number of distinct measurement points, and joining the snapshot table to itself on player and date produces a partial cartesian product on those 835 combinations.",
+    "evidence": [
+      "ev_player_attr_dupes"
+    ]
+  },
+  {
+    "id": "c_league_points_not_stored",
+    "target": "term_league_points",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "points",
+      "points table",
+      "league table",
+      "standings",
+      "three points for a win",
+      "ranking"
+    ],
+    "severity": "warning",
+    "scope": "League table, ranking or points-based comparisons",
+    "confidence": "medium",
+    "description": "The database contains no points column and no standings table, and nothing in the data states how points are awarded. Every points figure therefore comes from a convention the analyst supplies, most commonly three for a win, one for a draw and zero for a loss. Because the convention is an external assumption rather than a stored fact, any points-based ranking must state the assumed rule explicitly.",
+    "evidence": [
+      "ev_league_points_absent"
+    ]
+  },
+  {
+    "id": "c_team_attributes_coverage",
+    "target": "term_team_attribute_snapshot",
+    "constraint_type": "scope",
+    "trigger_keywords": [
+      "team style",
+      "playing style",
+      "tactics",
+      "team attributes",
+      "build up play",
+      "formation style",
+      "defensive line"
+    ],
+    "severity": "block",
+    "scope": "Any analysis relating team tactics to match performance",
+    "confidence": "high",
+    "description": "Team tactical profiles exist on only six dates, 2010-02-22, 2011-02-22, 2012-02-22, 2013-09-20, 2014-09-19 and 2015-09-10, covering 288 of the 299 clubs. There is no profile for the 2008/2009 or 2009/2010 seasons and none after 2015-09-10, and a club's style in an arbitrary month must be carried over from the nearest earlier snapshot rather than observed directly. One club-and-date combination is duplicated, so team plus date is not quite a unique key.",
+    "evidence": [
+      "ev_team_attr_coverage"
+    ]
+  },
+  {
+    "id": "c_team_fifa_id_missing",
+    "target": "term_team_fifa_identifier",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "team fifa id",
+      "join team attributes",
+      "missing team id",
+      "link team"
+    ],
+    "severity": "warning",
+    "scope": "Joining teams to their tactical profiles or to any FIFA-numbered source",
+    "confidence": "high",
+    "description": "Eleven of the 299 clubs have a null FIFA team identifier, and the team attribute table carries 285 distinct FIFA identifiers against 288 distinct API identifiers. A join on the FIFA identifier therefore silently drops clubs, while a join on the API identifier does not. The API identifier is the safe key on both sides.",
+    "evidence": [
+      "ev_team_fifa_nulls"
+    ]
+  },
+  {
+    "id": "c_player_physical_units",
+    "target": "term_player_physical_profile",
+    "constraint_type": "unit",
+    "trigger_keywords": [
+      "height",
+      "weight",
+      "BMI",
+      "physical",
+      "centimetres",
+      "kilograms",
+      "pounds",
+      "inches",
+      "body mass"
+    ],
+    "severity": "block",
+    "scope": "Any use of the height or weight columns, including derived body-mass measures",
+    "confidence": "high",
+    "description": "The two columns use different unit systems and neither carries a unit label. Height is stored in centimetres: all 11060 values equal a whole number of inches multiplied by 2.54, so the stored centimetre figures are exact conversions of whole-inch measurements, ranging from 157.48 to 208.28. Weight is stored in pounds: the values are integers from 117 to 243 with a mean of 168.38, magnitudes that are only plausible as pounds and that would imply a mean body mass of 168 kilograms if read as kilograms. Combining the two columns into a body-mass index without converting one of them produces a meaningless number.",
+    "evidence": [
+      "ev_height_inches_conversion",
+      "ev_weight_units"
+    ]
+  },
+  {
+    "id": "c_skill_attribute_scale",
+    "target": "term_player_skill_attribute",
+    "constraint_type": "scope",
+    "trigger_keywords": [
+      "skill",
+      "ability",
+      "rating scale",
+      "attribute value",
+      "overall rating",
+      "out of 100"
+    ],
+    "severity": "warning",
+    "scope": "Interpreting or comparing the numeric ability columns",
+    "confidence": "high",
+    "description": "The 33 ability columns on a player snapshot are independent bounded scores with no stated scale. Observed values run from 1 to 98 across the skill columns, 33 to 94 for the overall rating and 39 to 97 for potential. There is no stored composite score, so any combined ability measure is an analyst-defined construct rather than a stored quantity, and the goalkeeper columns are populated for every player even though they only carry meaning for goalkeepers.",
+    "evidence": [
+      "ev_skill_column_range"
+    ]
+  },
+  {
+    "id": "c_odds_coverage_and_format",
+    "target": "term_betting_odds",
+    "constraint_type": "scope",
+    "trigger_keywords": [
+      "odds",
+      "betting",
+      "bookmaker",
+      "favourite",
+      "favorite",
+      "home win odds",
+      "market",
+      "prices"
+    ],
+    "severity": "warning",
+    "scope": "Any analysis conditional on pre-match betting prices",
+    "confidence": "high",
+    "description": "Odds coverage is uneven across operators, and the operators are identified only by short column-name prefixes with no name table anywhere in the database. The most complete operator is present on 22592 of 25979 matches and the least complete on 11168, while only 2756 matches carry all eleven operators at once. Within one operator the three outcome columns are always jointly present or jointly absent, so a match never has a partial price triple. Prices are decimal-style values around 1.4 to 7.5 whose reciprocals sum above one, and no currency or format label is stored.",
+    "evidence": [
+      "ev_odds_coverage",
+      "ev_odds_triple_nullability"
+    ]
+  },
+  {
+    "id": "c_implied_probability_margin",
+    "target": "term_implied_probability",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "implied probability",
+      "overround",
+      "bookmaker margin",
+      "market probability",
+      "fair odds",
+      "normalised"
+    ],
+    "severity": "info",
+    "scope": "Converting prices into probabilities or comparing a model against the market",
+    "confidence": "high",
+    "description": "The reciprocals of the three decimal prices for one match sum to about 1.07 to 1.10 in the sampled rows, always above one. Those reciprocals are therefore margin-inflated implied probabilities rather than true probabilities. Comparing them with observed outcome frequencies, or averaging them across matches, requires an explicit normalisation step, otherwise every probability is overstated by the size of the margin.",
+    "evidence": [
+      "ev_odds_overround"
+    ]
+  },
+  {
+    "id": "c_team_class_bounds",
+    "target": "term_team_style_class",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "balanced",
+      "fast",
+      "slow",
+      "style class",
+      "deep",
+      "high",
+      "medium",
+      "press",
+      "contain",
+      "defensive line",
+      "offside trap"
+    ],
+    "severity": "info",
+    "scope": "Reading or filtering the categorical tactical columns on team snapshots",
+    "confidence": "high",
+    "description": "Each categorical tactical column bands its numeric partner into contiguous, non-overlapping levels. Observed bands for build-up play speed are Slow 20 to 33, Balanced 34 to 66 and Fast 67 to 80; observed bands for defensive pressure are Deep 23 to 33, Medium 34 to 66 and High 67 to 72. Because the bands partition the range exactly, the categorical and numeric columns carry the same information up to discretisation, and selecting on one is equivalent to selecting a numeric interval on the other.",
+    "evidence": [
+      "ev_team_class_bounds"
+    ]
+  },
+  {
+    "id": "c_league_season_coverage",
+    "target": "term_season",
+    "constraint_type": "scope",
+    "trigger_keywords": [
+      "season",
+      "2013/2014",
+      "league season",
+      "number of matches",
+      "matches per season",
+      "complete season"
+    ],
+    "severity": "warning",
+    "scope": "Any per-season or per-league aggregation",
+    "confidence": "high",
+    "description": "Season coverage is uneven. League sizes differ, so a single league season holds between 162 and 380 matches depending on the competition. One league season is severely incomplete: the Belgian top division in 2013/2014 has only 12 matches across 6 matchdays and 4 clubs, against 240 to 306 for the same league in other seasons. Averages computed across a season pool that includes this fragment, and any 'matches played' denominator, must exclude or explicitly flag it.",
+    "evidence": [
+      "ev_league_season_coverage"
+    ]
+  },
+  {
+    "id": "c_country_id_duplicates_league",
+    "target": "term_country",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "country",
+      "country_id",
+      "league country",
+      "nation"
+    ],
+    "severity": "warning",
+    "scope": "Using the country reference on matches or leagues as an independent dimension",
+    "confidence": "high",
+    "description": "On every one of the 25979 matches the country reference equals the league reference, and the country and league tables happen to share the same identifier values. Country is therefore not an independent dimension in this data: it is fully determined by the league, and grouping by country or by league yields identical partitions. Treating the two as separate grouping keys manufactures a duplicate dimension rather than a finer breakdown.",
+    "evidence": [
+      "ev_league_country_link"
+    ]
+  },
+  {
+    "id": "c_possession_reading_semantics",
+    "target": "term_possession",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "possession",
+      "ball possession",
+      "homepos",
+      "awaypos",
+      "dominance"
+    ],
+    "severity": "warning",
+    "scope": "Deriving a match-level possession figure",
+    "confidence": "high",
+    "description": "Possession is stored as repeated readings inside the event feed rather than as a match column, and each reading pairs a home share with an away share that sums to exactly 100. Across the sampled readings no pair deviated from 100, so the two figures are complements of one another, not independent measurements. A match-level possession value must be produced from these readings by an explicit choice, such as the last reading or a time-weighted average, and summing readings instead of choosing among them is meaningless.",
+    "evidence": [
+      "ev_possession_sums_100"
+    ]
+  },
+  {
+    "id": "c_lineup_slot_gaps",
+    "target": "term_starting_lineup",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "lineup",
+      "starting eleven",
+      "appearances",
+      "selected players",
+      "minutes played"
+    ],
+    "severity": "warning",
+    "scope": "Counting appearances or linking players to matches",
+    "confidence": "high",
+    "description": "The 22 lineup slots are not always filled: 23632 of 25979 matches have all 22 slots populated, leaving 2347 matches with at least one empty slot. An empty slot means the selection is unrecorded, not that fewer than eleven players appeared. Counting appearances from these slots therefore understates involvement, and the count is also a count of being listed rather than of minutes played, since the database records no substitution or playing-time information.",
+    "evidence": [
+      "ev_lineup_completeness"
+    ]
+  }
+]

@@ -1,0 +1,827 @@
+[
+  {
+    "id": "constraint_payment_direction_split",
+    "target": "term_disbursement",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "收款",
+      "收款方式",
+      "收款笔数",
+      "回款",
+      "付款",
+      "付款笔数",
+      "付款方式",
+      "银行账号",
+      "payment",
+      "电汇",
+      "银承"
+    ],
+    "severity": "block",
+    "scope": "任何涉及收款或付款笔数、金额的问题",
+    "confidence": "high",
+    "description": "收款与付款是两套方向相反、互不重叠的流水表,分别由收款方式与付款银行账号标识。收款表 payment_type 取值为电汇/银承;付款表 payment_method 取值为 bank_transfer/letter_of_credit 并带 bank_account 银行账号。两表主键都叫 payment_id 且都有 payment_date 与 amount,极易误用:按收款方式筛选只能落在收款表,按银行账号或付款方式筛选只能落在付款表",
+    "evidence": [
+      "ev_payment_tables",
+      "ev_payment_enum",
+      "ev_payment_out_enum"
+    ]
+  },
+  {
+    "id": "constraint_receipt_method_enum",
+    "target": "term_receipt_method",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "收款方式",
+      "电汇",
+      "银承",
+      "银行承兑",
+      "结算方式"
+    ],
+    "severity": "block",
+    "scope": "按收款方式筛选或分组收款",
+    "confidence": "high",
+    "description": "收款方式仅有两个取值:电汇与银承(银行承兑汇票),不存在现金取值。is_bank_accepted 标记与收款方式严格对应:取 1 当且仅当收款方式为银承,取 0 当且仅当为电汇。银承即为银行承兑,不应再按其他方式解释",
+    "evidence": [
+      "ev_payment_enum"
+    ]
+  },
+  {
+    "id": "constraint_payment_out_method_enum",
+    "target": "term_disbursement",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "付款方式",
+      "付款银行账号",
+      "bank_transfer",
+      "letter_of_credit",
+      "SYN-ACCOUNT"
+    ],
+    "severity": "warning",
+    "scope": "按付款方式或银行账号分析付款",
+    "confidence": "high",
+    "description": "付款方式实际取值只有 bank_transfer 与 letter_of_credit 两种(字典中提及的 check 未出现)。付款银行账号为 SYN-ACCOUNT-0001 至 SYN-ACCOUNT-0011 形式的文本编码,按账号筛选付款时必须使用该文本等值条件",
+    "evidence": [
+      "ev_payment_out_enum"
+    ]
+  },
+  {
+    "id": "constraint_date_semantics_safety",
+    "target": "term_incident",
+    "constraint_type": "scope",
+    "trigger_keywords": [
+      "年",
+      "事故",
+      "安全审计",
+      "风险评估",
+      "安全计划",
+      "安全目标",
+      "安全培训",
+      "2025年",
+      "2026年"
+    ],
+    "severity": "block",
+    "scope": "安全域问题的年度或日期口径",
+    "confidence": "high",
+    "description": "安全域各实体的时间列各不相同:事故取发生日期,安全审计取审计日期,风险评估取评估日期,安全计划取签发日期(表内另有计划年份列,与签发日期年份一致),安全目标取截止日期,安全培训取培训日期。用年份筛选时应落在上述对应的事件日期列上,而不是查询日期或创建日期",
+    "evidence": [
+      "ev_incident_enum",
+      "ev_safety_plan",
+      "ev_audit",
+      "ev_risk_enum"
+    ]
+  },
+  {
+    "id": "constraint_date_semantics_equipment_production",
+    "target": "term_production_order",
+    "constraint_type": "scope",
+    "trigger_keywords": [
+      "年",
+      "生产工单",
+      "产出记录",
+      "维护记录",
+      "维护计划",
+      "能耗",
+      "停机",
+      "告警",
+      "下次维护日期",
+      "2025年",
+      "2026年"
+    ],
+    "severity": "block",
+    "scope": "生产与设备域问题的年度或日期口径",
+    "confidence": "high",
+    "description": "生产与设备域的时间列:生产工单取下达日期(不是开始或结束时间),产出记录取产出日期,维护记录取维护日期,维护计划取下次维护日期(计划表 72 行的下次维护日期全部落在 2026 年),能耗记录取记录日期,停机记录取停机开始时间,告警取告警时间。设备实际运行小时数问题应落在设备运行记录表或设备日汇总的年度口径上,不应使用工单运行时长替代",
+    "evidence": [
+      "ev_prod_order_status",
+      "ev_maint_plan",
+      "ev_energy",
+      "ev_downtime_reason",
+      "ev_alarm"
+    ]
+  },
+  {
+    "id": "constraint_date_semantics_sales",
+    "target": "term_sales_order",
+    "constraint_type": "scope",
+    "trigger_keywords": [
+      "年",
+      "销售订单",
+      "发货",
+      "报价单",
+      "商机",
+      "送样",
+      "退货",
+      "费用报销",
+      "库存",
+      "入库",
+      "2025年",
+      "2026年"
+    ],
+    "severity": "block",
+    "scope": "销售与客户域问题的年度或日期口径",
+    "confidence": "high",
+    "description": "销售与客户域的时间列:销售订单取下单日期(不是发货或交付日期),发货单取发货日期,报价单取报价日期,商机取创建日期(已关闭商机另有关闭日期,关闭相关年份条件应使用关闭日期),送样取送样日期(反馈相关年份条件应使用反馈日期),退货取退货日期,费用报销取费用发生日期,库存取入库日期。客户最近交易日期为客户维度的静态字段而非事实表日期列",
+    "evidence": [
+      "ev_sales_order_status",
+      "ev_quotation_status",
+      "ev_opportunity_status",
+      "ev_sample_flags",
+      "ev_inventory",
+      "ev_customer"
+    ]
+  },
+  {
+    "id": "constraint_date_semantics_procurement_finance",
+    "target": "term_purchase_order",
+    "constraint_type": "scope",
+    "trigger_keywords": [
+      "年",
+      "采购订单",
+      "采购申请",
+      "收货单",
+      "应付账款",
+      "到期",
+      "收款",
+      "付款",
+      "供应商评估",
+      "预算",
+      "账龄",
+      "合同",
+      "2025年",
+      "2026年",
+      "第三季度"
+    ],
+    "severity": "block",
+    "scope": "采购与财务域问题的年度或日期口径",
+    "confidence": "high",
+    "description": "采购与财务域的时间列:采购订单取下单日期,采购申请取申请日期,收货单取收货日期,应付账款取到期日期(到期的年度条件落在到期日),收款与付款取各自的收付款日期,供应商评估取评估日期,合同取到期日期,预算表按年与月两列存储(不使用日期列),应收账款账龄取到期日期。季度条件(如第三季度)需按日期区间而非按月份数值列匹配",
+    "evidence": [
+      "ev_po_enum",
+      "ev_pr",
+      "ev_ap_enum",
+      "ev_supplier_eval",
+      "ev_budget_tables",
+      "ev_contract"
+    ]
+  },
+  {
+    "id": "constraint_aggregate_layer_boundary",
+    "target": "term_aggregate_metric_layer",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "日汇总",
+      "月汇总",
+      "累计",
+      "日均",
+      "派生指标",
+      "复合指标",
+      "记录条数",
+      "笔数",
+      "多少条"
+    ],
+    "severity": "block",
+    "scope": "汇总指标层与明细事实表的选择",
+    "confidence": "high",
+    "description": "日汇总表与月度聚合表是明细表的汇总结果,与明细可对账,但不承载实体属性(如退货原因、付款条件、制造商、危险源位置)与记录条数的粒度。凡问某个实体的记录条数或笔数,必须使用明细事实表按行计数;用日汇总表行数代替会得到按人×日或工作日折算后的行数,与业务口径不符。累计、日均与复合指标(如投入产出比、经营利润率、设备可用率)才由汇总层承载",
+    "evidence": [
+      "ev_dws_reconcile",
+      "ev_metric_catalog"
+    ]
+  },
+  {
+    "id": "constraint_daily_summary_average_grain",
+    "target": "term_sales_order",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "平均",
+      "均值",
+      "实际毛利",
+      "平均值"
+    ],
+    "severity": "warning",
+    "scope": "对同一指标在明细与日汇总之间选择平均值口径",
+    "confidence": "high",
+    "description": "同一指标在明细表与日汇总表上的平均值口径不同且结果差异显著:2025 年实际毛利按订单明细平均为 85040.7043 元,按人×日汇总平均为 30701.748 元。问每次或每笔的平均值应使用明细表,只有明确要求按天或按月平均时才使用汇总层",
+    "evidence": [
+      "ev_dws_reconcile"
+    ]
+  },
+  {
+    "id": "constraint_procurement_payment_chain",
+    "target": "term_disbursement",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "收货单",
+      "检验结果",
+      "pass",
+      "应付账款",
+      "付款笔数",
+      "供应商城市",
+      "海城"
+    ],
+    "severity": "block",
+    "scope": "经收货单或供应商筛选付款笔数",
+    "confidence": "high",
+    "description": "收货单到付款的关联路径为:收货单的收货单号连接应付账款的收货单号,应付账款再通过应付单号连接付款记录;供应商维度则经应付账款的供应商号上卷。无外键约束,必须按上述标识符路径显式连接",
+    "evidence": [
+      "ev_procurement_chain"
+    ]
+  },
+  {
+    "id": "constraint_goods_receipt_inspection",
+    "target": "term_goods_receipt",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "检验结果",
+      "pass",
+      "fail",
+      "收货单",
+      "来料检验"
+    ],
+    "severity": "warning",
+    "scope": "按来料检验结果筛选收货单",
+    "confidence": "high",
+    "description": "来料检验结果只有 pass(1001 条)与 fail(16 条),对应单据状态为 posted 与 inspected。全部 1001 条应付账款引用的收货单检验结果均为 pass,fail 的 16 条收货单未被任何应付账款或付款记录引用,因此按检验结果为 pass 筛选不会缩小应付与付款集合",
+    "evidence": [
+      "ev_gr_inspection",
+      "ev_procurement_chain"
+    ]
+  },
+  {
+    "id": "constraint_ap_status_enum",
+    "target": "term_accounts_payable",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "应付账款",
+      "已关闭",
+      "closed",
+      "open",
+      "状态",
+      "到期"
+    ],
+    "severity": "block",
+    "scope": "按应付账款状态筛选",
+    "confidence": "high",
+    "description": "应付账款状态只有 open(122 笔)与 closed(879 笔)两个取值,已关闭即 closed,不存在其他中文状态值。全部 879 笔付款记录对应的应付账款均为 closed,且每笔 closed 应付恰好对应一笔付款",
+    "evidence": [
+      "ev_ap_enum",
+      "ev_procurement_chain"
+    ]
+  },
+  {
+    "id": "constraint_incident_severity_enum",
+    "target": "term_incident_severity",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "严重度",
+      "near_miss",
+      "fa",
+      "mtc",
+      "事故",
+      "未遂事件"
+    ],
+    "severity": "block",
+    "scope": "按事故严重度筛选或分组事故",
+    "confidence": "high",
+    "description": "事故严重度取英文缩写值:fa(14 起)、mtc(7 起)、near_miss(11 起)。未遂事件以 near_miss 严重度的记录存放在同一事故表中,日汇总层另以未遂事件数单列计数。近失/未遂等中文表述对应 near_miss,不能按中文值匹配。事故类型为中文文本(机械伤害、灼烫、物体打击、触电、车辆伤害、高处坠落)",
+    "evidence": [
+      "ev_incident_enum"
+    ]
+  },
+  {
+    "id": "constraint_safety_plan_status_and_year",
+    "target": "term_safety_plan",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "安全计划",
+      "状态",
+      "active",
+      "closed",
+      "签发"
+    ],
+    "severity": "block",
+    "scope": "按安全计划状态与签发年份筛选",
+    "confidence": "high",
+    "description": "安全计划状态只有 active 与 closed 两个值,已关闭即 closed。安全计划的年份列与签发日期年份一致;2026 年签发且状态为 active 的计划仅有 1 条。安全计划总数极少(2 条),按年份或状态筛选后结果可能为 0 或 1,不应因结果过小而改用其他表",
+    "evidence": [
+      "ev_safety_plan"
+    ]
+  },
+  {
+    "id": "constraint_safety_objective_unit",
+    "target": "term_safety_objective_unit",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "安全目标",
+      "单位",
+      "起",
+      "‰",
+      "单位为目标值",
+      "计数单位"
+    ],
+    "severity": "block",
+    "scope": "按安全目标单位筛选或分组",
+    "confidence": "high",
+    "description": "安全目标的单位列是文本枚举,取值为 起、‰、% 三种,各 2 条。问单位为某值的记录条数时应直接按该单位文本计数;注意单位为起的目标其目标值为 0,对目标值求和不会因该行增加数值,但仍须计入记录条数",
+    "evidence": [
+      "ev_safety_objective"
+    ]
+  },
+  {
+    "id": "constraint_risk_assessment_enum",
+    "target": "term_risk_assessment",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "风险评估",
+      "风险等级",
+      "L3",
+      "可能性",
+      "unlikely",
+      "后果",
+      "是否需要控制",
+      "control_needed"
+    ],
+    "severity": "block",
+    "scope": "风险评估的取值语义",
+    "confidence": "high",
+    "description": "风险评估三个枚举列均为英文值:可能性为 unlikely/possible/likely,后果为 minor/moderate/major/catastrophic,风险等级为 L1/L2/L3/L4。是否需要控制为 0/1 整型标记,对其求合计即得到需要控制的评估条数。中文描述的风险等级名称需经风险等级字典表按等级编码对齐",
+    "evidence": [
+      "ev_risk_enum"
+    ]
+  },
+  {
+    "id": "constraint_risk_level_semantics",
+    "target": "term_risk_assessment",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "风险等级",
+      "L1",
+      "L2",
+      "L3",
+      "L4",
+      "可接受",
+      "可容忍",
+      "不可容忍",
+      "重大"
+    ],
+    "severity": "info",
+    "scope": "风险等级编码的业务含义",
+    "confidence": "high",
+    "description": "风险等级字典定义:L1 可接受(保持现有控制)、L2 可容忍(三个月内改进)、L3 不可容忍(一个月内整改)、L4 重大(立即停止作业)。事实表风险等级列直接存放 L1-L4 编码而非中文名称",
+    "evidence": [
+      "ev_risk_enum"
+    ]
+  },
+  {
+    "id": "constraint_production_order_status",
+    "target": "term_production_order",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "生产工单",
+      "工单状态",
+      "已完成",
+      "待生产",
+      "生产中"
+    ],
+    "severity": "block",
+    "scope": "按生产工单状态筛选",
+    "confidence": "high",
+    "description": "生产工单状态为中文值:已完成(2930)、待生产(27)、生产中(12)。已完成为唯一表示结束的状态,没有 closed 等英文值。2026 年下达且已完成的工单共 871 张",
+    "evidence": [
+      "ev_prod_order_status"
+    ]
+  },
+  {
+    "id": "constraint_sales_order_status",
+    "target": "term_sales_order",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "销售订单",
+      "订单状态",
+      "delivered",
+      "undelivered",
+      "returned",
+      "已交付"
+    ],
+    "severity": "block",
+    "scope": "按销售订单状态筛选",
+    "confidence": "high",
+    "description": "销售订单状态为英文值:delivered(4576)、undelivered(152)、returned(3)。已交付即 delivered。订单状态与该订单是否存在发货记录不是同一件事:undelivered 订单也可以有发货记录,发货金额合计约 2205789.36 元,不能假设只有已交付订单才发货",
+    "evidence": [
+      "ev_sales_order_status",
+      "ev_delivery_link"
+    ]
+  },
+  {
+    "id": "constraint_quotation_status",
+    "target": "term_quotation",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "报价单",
+      "报价状态",
+      "draft",
+      "won",
+      "lost",
+      "草稿"
+    ],
+    "severity": "block",
+    "scope": "按报价单状态筛选",
+    "confidence": "high",
+    "description": "报价单状态为英文值:draft(6)、won(357)、lost(113),草稿即 draft。2026 年报价单共 142 张,其中草稿 6 张、赢单 105 张。报价单赢单状态与商机赢单状态是两套独立枚举,不可互相替代",
+    "evidence": [
+      "ev_quotation_status"
+    ]
+  },
+  {
+    "id": "constraint_opportunity_status",
+    "target": "term_opportunity",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "商机",
+      "商机状态",
+      "lost",
+      "won",
+      "open",
+      "stalled",
+      "关闭"
+    ],
+    "severity": "block",
+    "scope": "按商机状态与关闭时间筛选",
+    "confidence": "high",
+    "description": "商机状态为英文值:open(22)、won(36)、lost(20)、stalled(6)。已关闭的商机指状态为 won 或 lost,关闭日期仅在 won 与 lost 的商机上非空,open 与 stalled 的关闭日期为空。问某年关闭的商机必须使用关闭日期而非创建日期,且应限定状态为已关闭的两个取值",
+    "evidence": [
+      "ev_opportunity_status"
+    ]
+  },
+  {
+    "id": "constraint_sample_feedback_flags",
+    "target": "term_sample",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "送样",
+      "反馈结果",
+      "success",
+      "fail",
+      "送样成功",
+      "已反馈"
+    ],
+    "severity": "block",
+    "scope": "送样反馈结果与成功标记的解释",
+    "confidence": "high",
+    "description": "送样反馈结果取值为 success(20)或 fail(22),未反馈的 8 条该列为空。成功标记与反馈结果严格一致:成功标记为 1 当且仅当反馈结果为 success;已反馈标记为 0 当且仅当反馈结果为空。送样成功的合计既可按成功标记求和,也可按反馈结果为 success 计数,两者等价;但当问反馈结果为某值的条数时按反馈结果列筛选更直接",
+    "evidence": [
+      "ev_sample_flags"
+    ]
+  },
+  {
+    "id": "constraint_expense_type_enum",
+    "target": "term_expense_type",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "费用类型",
+      "报销",
+      "渠道佣金",
+      "差旅费",
+      "业务招待费",
+      "市场推广费",
+      "运输费"
+    ],
+    "severity": "block",
+    "scope": "按费用类型筛选或分组报销",
+    "confidence": "high",
+    "description": "费用类型为中文文本枚举,实际出现 8 类:差旅费(819)、业务招待费(479)、小车费(409)、运输费(260)、渠道佣金(259)、通讯费(168)、办公费(162)、市场推广费(36)。渠道佣金为独立一类,不与运输费或市场推广费混合",
+    "evidence": [
+      "ev_expense_type"
+    ]
+  },
+  {
+    "id": "constraint_po_status_and_payment_terms",
+    "target": "term_purchase_order",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "采购订单",
+      "付款条件",
+      "月结",
+      "月结45天",
+      "received",
+      "confirmed",
+      "closed",
+      "供应商"
+    ],
+    "severity": "block",
+    "scope": "采购订单付款条件与状态筛选",
+    "confidence": "high",
+    "description": "付款条件为中文文本,取值月结30天(372)、月结45天(322)、月结60天(201),问付款条件为月结45天的订单总金额即按该文本筛选后对表头总金额求和(322 张,合计 655920336.58 元)。采购订单状态取值为 closed(777)、received(108)、confirmed(10),已收货即 received(108 张),其订单行单价合计 2453121.58,注意单价合计需下推到订单行表而不能用表头金额",
+    "evidence": [
+      "ev_po_enum",
+      "ev_po_line"
+    ]
+  },
+  {
+    "id": "constraint_supplier_eval_grade",
+    "target": "term_supplier_grade",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "供应商评估",
+      "评级",
+      "AA",
+      "A",
+      "综合评分",
+      "交付评分"
+    ],
+    "severity": "block",
+    "scope": "供应商评估评级与评分",
+    "confidence": "high",
+    "description": "供应商评估评级只有 A(12 条)与 AA(54 条)两个取值,AA 为更优等级。综合评分是交付评分、质量评分与服务评分之和,问综合评分合计最高的供应商时应对综合评分按供应商求和后比较。评估记录按评估周期(评估期间)分组,2025 年第三季度指评估日期落在 7 月至 9 月区间(11 条)",
+    "evidence": [
+      "ev_supplier_eval"
+    ]
+  },
+  {
+    "id": "constraint_product_grade_vs_first_grade",
+    "target": "term_production_output",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "产品等级",
+      "一等品",
+      "优等品",
+      "合格品",
+      "返工品",
+      "是否优等品",
+      "first_grade"
+    ],
+    "severity": "block",
+    "scope": "产出记录的产品等级筛选",
+    "confidence": "high",
+    "description": "产品等级取值一等品(2721)、优等品(2721)、合格品(93)、返工品(116)。是否优等品标记为 1 的恰好是优等品,而非一等品:一等品与优等品的标记均为 0 与 1 中的不同组合,按标记筛选会把一等品误判为优等品。问产品等级为一等品必须按等级的文本等值条件筛选,不能用是否优等品标记",
+    "evidence": [
+      "ev_output_grade"
+    ]
+  },
+  {
+    "id": "constraint_maintenance_type_enum",
+    "target": "term_maintenance_type",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "维护类型",
+      "维护计划",
+      "季度大修",
+      "月度检修",
+      "维护记录",
+      "维护费用",
+      "维护工时"
+    ],
+    "severity": "block",
+    "scope": "维护计划类型与维护费用/工时归集",
+    "confidence": "high",
+    "description": "维护类型为中文文本,取值季度大修(12)、月度检修(60),2026 年下次维护日期中季度大修的计划共 12 条。维护记录的执行结果全部为 completed,不存在未完成的维护记录;维护费用与维护工时落在维护记录表,维护类型落在维护计划表,两者需经设备关联,不能在同一张表上同时过滤",
+    "evidence": [
+      "ev_maint_plan",
+      "ev_maint_rec_wo"
+    ]
+  },
+  {
+    "id": "constraint_downtime_reason_join_key",
+    "target": "term_downtime_reason",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "停机原因",
+      "停机时长",
+      "停机次数",
+      "设备故障",
+      "换产清机",
+      "计划保养",
+      "滤网更换",
+      "reason_code"
+    ],
+    "severity": "block",
+    "scope": "停机原因归因与停机时长统计",
+    "confidence": "high",
+    "description": "停机事实表的原因列是整数编码 1 至 8,对应停机原因字典表的原因主键(而非字典表中的文本编码 D001 至 D008);按文本编码等值匹配将无法产生任何结果。设备运行记录表中另有一个中文停机原因文本列,空字符串表示当日无停机,且与停机事实表的原因编码不是同一套字段。停机时长合计最高的原因是换产清机(3494.0 小时),其次是计划保养(3452.0 小时),仅按次数统计时换产清机仍最高,两种口径结论不同",
+    "evidence": [
+      "ev_downtime_reason"
+    ]
+  },
+  {
+    "id": "constraint_alarm_handled_flag",
+    "target": "term_alarm",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "告警",
+      "已处理",
+      "is_handled",
+      "告警严重度",
+      "告警数量"
+    ],
+    "severity": "warning",
+    "scope": "告警处理状态与严重度",
+    "confidence": "high",
+    "description": "告警的已处理标记全部为 1,即所有 3109 条告警均已处理,按已处理筛选与不筛选结果相同。告警严重度只有 critical(639)与 warning(2470)两个取值。设备维度的告警数量需经告警表的设备号关联设备表",
+    "evidence": [
+      "ev_alarm"
+    ]
+  },
+  {
+    "id": "constraint_iot_quality_flag",
+    "target": "term_iot_data",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "IoT数据",
+      "数据质量",
+      "good",
+      "uncertain",
+      "传感器",
+      "质量标记"
+    ],
+    "severity": "block",
+    "scope": "IoT数据质量筛选",
+    "confidence": "high",
+    "description": "IoT 数据质量标记只有 good(28476)与 uncertain(282)两个取值,不存在 bad 或异常取值。传感器数据另可经传感器表的设备号关联到设备",
+    "evidence": [
+      "ev_iot"
+    ]
+  },
+  {
+    "id": "constraint_env_record_enum",
+    "target": "term_env_record",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "环境监测",
+      "监测类型",
+      "季度监测",
+      "月度监测",
+      "合规",
+      "合规比例",
+      "排放",
+      "单位"
+    ],
+    "severity": "block",
+    "scope": "环境监测记录的筛选与合规率计算",
+    "confidence": "high",
+    "description": "监测类型为中文文本,取值月度监测(60)与季度监测(30),季度监测即按季度开展的监测(30 条)。合规标记为 0/1 整型,合规比例等于标记为 1 的记录占该范围内记录总数的比例,而不是合规数与限值的比值。计量单位列与污染物列一一对应(噪声对应 dB(A),COD 与氨氮对应 mg/L,VOCs 与颗粒物对应 mg/m³),按单位分组与按污染物分组会得到不同的分组数",
+    "evidence": [
+      "ev_env"
+    ]
+  },
+  {
+    "id": "constraint_ar_aging_buckets",
+    "target": "term_ar_aging",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "账龄",
+      "应收账款",
+      "3-4月",
+      "aging",
+      "未清余额",
+      "超期"
+    ],
+    "severity": "block",
+    "scope": "应收账款账龄分段的理解",
+    "confidence": "high",
+    "description": "应收账款账龄表含 8 个分段余额列,列名后缀与账龄区间的对应关系为:1 个月内、1-2 个月、2-3 个月、3-4 个月、4-5 个月、5-6 个月、6-12 个月、12 个月以上。账龄在 3-4 月对应第四个分段列。另有未清余额列表示该发票的当前未清总额,与各分段金额不是同一口径,不可混用或相加作为账龄结构",
+    "evidence": [
+      "ev_ar_aging"
+    ]
+  },
+  {
+    "id": "constraint_accumulated_dep_grain",
+    "target": "term_accumulated_depreciation",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "累计折旧",
+      "固定资产",
+      "资产名称",
+      "净值",
+      "折旧额"
+    ],
+    "severity": "warning",
+    "scope": "累计折旧的比较与固定资产排名",
+    "confidence": "high",
+    "description": "累计折旧在固定资产卡片上是期末静态值,在折旧记录表中是按期间累计值;同一资产取折旧记录最新期间的值与卡片值一致,两者可互换。固定资产不限于生产设备:69 项资产中生产设备 60 项、房屋建筑 6 项、公用工程 3 项,累计折旧最高的资产是房屋建筑类(青岛一厂主厂房),不应把固定资产等同于设备台账",
+    "evidence": [
+      "ev_fixed_asset",
+      "ev_dep_equivalent"
+    ]
+  },
+  {
+    "id": "constraint_budget_two_tables",
+    "target": "term_budget_cost_center",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "预算",
+      "预算金额",
+      "成本中心",
+      "费用预算",
+      "预算记录",
+      "区域",
+      "华中",
+      "华南"
+    ],
+    "severity": "block",
+    "scope": "预算相关问题的表选择",
+    "confidence": "high",
+    "description": "存在两张预算表且粒度不同:成本中心预算按成本中心×年月登记,以成本中心名称呈现,成本中心预算金额合计最高的为 PP改性车间(35190100.0 元);部门费用预算按部门×年月登记,部门经所属区域上卷后可回答区域口径问题,华中与华南区域各自的费用预算记录均为 18 条。问成本中心名称使用前者,问区域或部门使用后者,两者不可互换",
+    "evidence": [
+      "ev_budget_tables",
+      "ev_dept_region"
+    ]
+  },
+  {
+    "id": "constraint_employee_active_status",
+    "target": "term_employee",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "在职员工",
+      "员工状态",
+      "active",
+      "inactive",
+      "业务员",
+      "讲师"
+    ],
+    "severity": "block",
+    "scope": "按员工在职状态筛选其名下事实",
+    "confidence": "high",
+    "description": "员工状态只有 active(121)与 inactive(1)两个取值,在职员工即 active。员工姓名在员工表中无重复,可直接按姓名归集;在职员工的筛选需先按状态过滤员工再关联其名下事实。按在职员工口径统计送样成功的合计与不按状态统计的合计相同(均为 20),说明离职员工未产生送样",
+    "evidence": [
+      "ev_employee"
+    ]
+  },
+  {
+    "id": "constraint_customer_last_deal_static",
+    "target": "term_customer",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "最近交易日期",
+      "客户",
+      "退货",
+      "首次交易日期"
+    ],
+    "severity": "warning",
+    "scope": "按客户维度属性筛选其实体",
+    "confidence": "high",
+    "description": "客户的最近交易日期是客户维度上的静态字段,不是事实表的日期列。按最近交易日期筛选客户后需经订单链路才能归集退货等下游事实。客户状态取值为 active(22)、dormant(1)、lost(2)",
+    "evidence": [
+      "ev_customer"
+    ]
+  },
+  {
+    "id": "constraint_energy_line_vs_workshop",
+    "target": "term_energy_consumption",
+    "constraint_type": "scope",
+    "trigger_keywords": [
+      "用电量",
+      "用水量",
+      "蒸汽",
+      "能耗",
+      "产线",
+      "车间"
+    ],
+    "severity": "warning",
+    "scope": "能耗指标的分组维度选择",
+    "confidence": "high",
+    "description": "能耗记录同时登记产线与车间两列。问哪条产线的蒸汽或用水量最高应按产线归集;问用电量最高的车间应按车间归集。产线合计与车间合计是两套不同粒度的分组结果,不可互相替代:按车间口径用电量最高的为 PP改性车间",
+    "evidence": [
+      "ev_energy",
+      "ev_workshop"
+    ]
+  },
+  {
+    "id": "constraint_dws_metric_catalog_scope",
+    "target": "term_aggregate_metric_layer",
+    "constraint_type": "info",
+    "trigger_keywords": [
+      "指标目录",
+      "原子指标",
+      "派生指标",
+      "复合指标",
+      "指标定义"
+    ],
+    "severity": "info",
+    "scope": "指标目录表的作用范围",
+    "confidence": "medium",
+    "description": "指标目录登记 107 个指标定义,标注其来源表、日期列与取值列,并区分原子、派生与复合指标;派生指标配置表另登记累计/日均等派生口径的汇总方式与分组列。该目录是汇总层的元数据说明,不包含任何业务事实数据,不能用于回答笔数或金额问题",
+    "evidence": [
+      "ev_metric_catalog"
+    ]
+  }
+]

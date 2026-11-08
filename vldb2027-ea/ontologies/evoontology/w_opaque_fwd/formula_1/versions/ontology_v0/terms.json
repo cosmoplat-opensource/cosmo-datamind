@@ -1,0 +1,683 @@
+[
+  {
+    "id": "t_driver",
+    "name": "Driver",
+    "type": "entity",
+    "definition": "A Formula 1 driver who participates in races; one row per driver in tab03.",
+    "scope": "Driver-centric analysis: identity, nationality, birth date, race participation and results.",
+    "aliases": [
+      "racer",
+      "driver"
+    ],
+    "evidence": [
+      "ev_04_driver_fields",
+      "ev_05_birth_dates",
+      "ev_02_counts"
+    ]
+  },
+  {
+    "id": "t_constructor",
+    "name": "Constructor",
+    "type": "entity",
+    "definition": "A Formula 1 constructor (team or manufacturer); one row per constructor in tab02.",
+    "scope": "Constructor identity, nationality and per-race points.",
+    "aliases": [
+      "team",
+      "manufacturer",
+      "constructor team"
+    ],
+    "evidence": [
+      "ev_21_japanese_constructors",
+      "ev_22_constructor_ref_website"
+    ]
+  },
+  {
+    "id": "t_circuit",
+    "name": "Circuit",
+    "type": "entity",
+    "definition": "A motorsport circuit venue where races are held; one row per circuit in tab01.",
+    "scope": "Venue location, country and coordinates.",
+    "aliases": [
+      "track",
+      "venue"
+    ],
+    "evidence": [
+      "ev_08_circuit_attributes",
+      "ev_07_race_circuit"
+    ]
+  },
+  {
+    "id": "t_race",
+    "name": "Race",
+    "type": "entity",
+    "definition": "A Formula 1 Grand Prix event held in a season at a circuit; one row in tab05.",
+    "scope": "Race identity, season, round, circuit and date.",
+    "aliases": [
+      "Grand Prix",
+      "event",
+      "race event"
+    ],
+    "evidence": [
+      "ev_03_race_fields",
+      "ev_09_race_name_country"
+    ]
+  },
+  {
+    "id": "t_season",
+    "name": "Season",
+    "type": "entity",
+    "definition": "A Formula 1 championship year; one row per year in tab04.",
+    "scope": "Season-level analysis and year filtering.",
+    "aliases": [
+      "year",
+      "championship season"
+    ],
+    "evidence": [
+      "ev_23_seasons",
+      "ev_24_year_domains"
+    ]
+  },
+  {
+    "id": "t_status",
+    "name": "Race Status",
+    "type": "entity",
+    "definition": "The classification status of a race result, such as Finished, Disqualified, Accident, Engine or Collision; tab12.",
+    "scope": "Interpreting why a driver did or did not finish.",
+    "aliases": [
+      "result status",
+      "classification status"
+    ],
+    "evidence": [
+      "ev_11_status"
+    ]
+  },
+  {
+    "id": "t_race_result",
+    "name": "Race Result",
+    "type": "entity",
+    "definition": "One driver's classified result in one race, including finishing position, points, laps and race time; one row per driver per race in tab13.",
+    "scope": "Per-race driver performance and finish analysis.",
+    "aliases": [
+      "result",
+      "race entry result"
+    ],
+    "evidence": [
+      "ev_10_result_time",
+      "ev_19_positions"
+    ]
+  },
+  {
+    "id": "t_driver_standing",
+    "name": "Driver Standing",
+    "type": "entity",
+    "definition": "A driver's cumulative championship standing after a race; one row per driver per race in tab08.",
+    "scope": "Championship points, position and wins over time.",
+    "aliases": [
+      "driver championship standing",
+      "driver standing"
+    ],
+    "evidence": [
+      "ev_13_wins",
+      "ev_14_2009_champion"
+    ]
+  },
+  {
+    "id": "t_constructor_result",
+    "name": "Constructor Race Result",
+    "type": "entity",
+    "definition": "A constructor's aggregated points result for one race; one row per constructor per race in tab06.",
+    "scope": "Per-race constructor points and zero-point races.",
+    "aliases": [
+      "constructor race result"
+    ],
+    "evidence": [
+      "ev_12_points",
+      "ev_21_japanese_constructors"
+    ]
+  },
+  {
+    "id": "t_lap_time_record",
+    "name": "Lap Time Record",
+    "type": "entity",
+    "definition": "One lap completed by one driver in one race, with lap number, position, formatted time and milliseconds; tab09.",
+    "scope": "Lap-by-lap pace, average lap time and fastest lap analysis.",
+    "aliases": [
+      "lap",
+      "lap record"
+    ],
+    "evidence": [
+      "ev_17_lap_times"
+    ]
+  },
+  {
+    "id": "t_qualifying_result",
+    "name": "Qualifying Result",
+    "type": "entity",
+    "definition": "One driver's qualifying session result for a race, including Q1/Q2/Q3 times and qualifying position; tab11.",
+    "scope": "Qualifying pace and grid determination.",
+    "aliases": [
+      "qualifying",
+      "qualifying session result"
+    ],
+    "evidence": [
+      "ev_18_qualifying"
+    ]
+  },
+  {
+    "id": "t_driver_full_name",
+    "name": "Driver Full Name",
+    "type": "dimension",
+    "definition": "The driver's full personal name, formed from forename and surname.",
+    "scope": "Use when a question asks for the name of a driver.",
+    "aliases": [
+      "full name",
+      "driver name",
+      "forename and surname"
+    ],
+    "evidence": [
+      "ev_04_driver_fields"
+    ]
+  },
+  {
+    "id": "t_driver_nationality",
+    "name": "Driver Nationality",
+    "type": "dimension",
+    "definition": "The driver's nationality, stored as an adjective such as British, German, French, Japanese or Dutch.",
+    "scope": "Nationality filtering and counting of drivers.",
+    "aliases": [
+      "nationality",
+      "country of driver"
+    ],
+    "evidence": [
+      "ev_06_driver_nationality"
+    ]
+  },
+  {
+    "id": "t_driver_birth_date",
+    "name": "Driver Birth Date",
+    "type": "dimension",
+    "definition": "The driver's date of birth in YYYY-MM-DD form.",
+    "scope": "Birth-year and age-based selection.",
+    "aliases": [
+      "date of birth",
+      "DOB",
+      "born"
+    ],
+    "evidence": [
+      "ev_05_birth_dates"
+    ]
+  },
+  {
+    "id": "t_driver_age",
+    "name": "Driver Age",
+    "type": "metric",
+    "definition": "Driver age at a reference time, derived from birth date; ordering by birth date determines youngest and oldest drivers, with the youngest having the latest birth date.",
+    "scope": "Age comparisons such as youngest or oldest racer.",
+    "aliases": [
+      "age",
+      "youngest",
+      "oldest"
+    ],
+    "evidence": [
+      "ev_05_birth_dates"
+    ]
+  },
+  {
+    "id": "t_driver_code",
+    "name": "Driver Code",
+    "type": "dimension",
+    "definition": "The driver's short three-letter abbreviation, such as HAM or MSC; it may be empty for some historical drivers.",
+    "scope": "Identifying a driver by abbreviated code.",
+    "aliases": [
+      "code",
+      "abbreviated code",
+      "driver abbreviation"
+    ],
+    "evidence": [
+      "ev_04_driver_fields"
+    ]
+  },
+  {
+    "id": "t_driver_reference_name",
+    "name": "Driver Reference Name",
+    "type": "dimension",
+    "definition": "The driver's reference slug, such as hamilton or michael_schumacher.",
+    "scope": "Identifying a driver by reference name.",
+    "aliases": [
+      "driverRef",
+      "reference name",
+      "reference"
+    ],
+    "evidence": [
+      "ev_04_driver_fields"
+    ]
+  },
+  {
+    "id": "t_constructor_nationality",
+    "name": "Constructor Nationality",
+    "type": "dimension",
+    "definition": "The constructor's nationality, stored as an adjective such as Japanese or German.",
+    "scope": "Nationality filtering and counting of constructors.",
+    "aliases": [
+      "team nationality",
+      "constructor country"
+    ],
+    "evidence": [
+      "ev_21_japanese_constructors"
+    ]
+  },
+  {
+    "id": "t_constructor_reference_name",
+    "name": "Constructor Reference Name",
+    "type": "dimension",
+    "definition": "The constructor's reference slug, such as mclaren or ferrari.",
+    "scope": "Identifying a constructor by reference name.",
+    "aliases": [
+      "constructorRef",
+      "constructor reference"
+    ],
+    "evidence": [
+      "ev_22_constructor_ref_website"
+    ]
+  },
+  {
+    "id": "t_constructor_website",
+    "name": "Constructor Website",
+    "type": "dimension",
+    "definition": "The constructor's website or reference URL.",
+    "scope": "Returning a constructor's website.",
+    "aliases": [
+      "website",
+      "url"
+    ],
+    "evidence": [
+      "ev_22_constructor_ref_website"
+    ]
+  },
+  {
+    "id": "t_circuit_reference_name",
+    "name": "Circuit Reference Name",
+    "type": "dimension",
+    "definition": "The circuit's reference slug, such as marina_bay or sepang.",
+    "scope": "Identifying a circuit by reference name.",
+    "aliases": [
+      "circuitRef",
+      "circuit reference name"
+    ],
+    "evidence": [
+      "ev_08_circuit_attributes"
+    ]
+  },
+  {
+    "id": "t_circuit_location",
+    "name": "Circuit Location",
+    "type": "dimension",
+    "definition": "The city or locality of the circuit.",
+    "scope": "Reporting where a circuit is situated.",
+    "aliases": [
+      "location",
+      "city",
+      "locality"
+    ],
+    "evidence": [
+      "ev_08_circuit_attributes"
+    ]
+  },
+  {
+    "id": "t_circuit_country",
+    "name": "Circuit Country",
+    "type": "dimension",
+    "definition": "The country where the circuit is located; used to determine where a race was hosted.",
+    "scope": "Country-based filtering of circuits and races.",
+    "aliases": [
+      "country",
+      "host country"
+    ],
+    "evidence": [
+      "ev_07_race_circuit",
+      "ev_09_race_name_country"
+    ]
+  },
+  {
+    "id": "t_circuit_coordinates",
+    "name": "Circuit Coordinates",
+    "type": "dimension",
+    "definition": "The geographic coordinates of the circuit: latitude and longitude.",
+    "scope": "Coordinate-location questions about a circuit.",
+    "aliases": [
+      "coordinates",
+      "coordinate location",
+      "latitude",
+      "longitude",
+      "lat",
+      "lng"
+    ],
+    "evidence": [
+      "ev_08_circuit_attributes"
+    ]
+  },
+  {
+    "id": "t_race_name",
+    "name": "Race Name",
+    "type": "dimension",
+    "definition": "The official name of the race, such as European Grand Prix or Singapore Grand Prix.",
+    "scope": "Race-name filtering and reporting.",
+    "aliases": [
+      "race name",
+      "Grand Prix name"
+    ],
+    "evidence": [
+      "ev_09_race_name_country"
+    ]
+  },
+  {
+    "id": "t_race_date",
+    "name": "Race Date",
+    "type": "dimension",
+    "definition": "The calendar date on which the race was held, in YYYY-MM-DD form.",
+    "scope": "Date, month and year filtering of races.",
+    "aliases": [
+      "race date",
+      "date of race",
+      "month",
+      "year of race"
+    ],
+    "evidence": [
+      "ev_03_race_fields"
+    ]
+  },
+  {
+    "id": "t_race_round",
+    "name": "Race Round",
+    "type": "dimension",
+    "definition": "The race's round number within its season.",
+    "scope": "Ordering races inside a season.",
+    "aliases": [
+      "round",
+      "race round"
+    ],
+    "evidence": [
+      "ev_03_race_fields"
+    ]
+  },
+  {
+    "id": "t_race_year",
+    "name": "Race Year",
+    "type": "dimension",
+    "definition": "The championship year in which a race took place (tab05.fld020).",
+    "scope": "Year filtering on race rows.",
+    "aliases": [
+      "year of race",
+      "race season",
+      "season"
+    ],
+    "evidence": [
+      "ev_03_race_fields",
+      "ev_24_year_domains"
+    ]
+  },
+  {
+    "id": "t_season_year",
+    "name": "Season Year",
+    "type": "dimension",
+    "definition": "The championship year key of a season (tab04.fld020).",
+    "scope": "Season-level year filtering and joins from races to seasons.",
+    "aliases": [
+      "season",
+      "year",
+      "championship year"
+    ],
+    "evidence": [
+      "ev_23_seasons",
+      "ev_24_year_domains"
+    ]
+  },
+  {
+    "id": "t_constructor_race_points",
+    "name": "Constructor Race Points",
+    "type": "metric",
+    "definition": "Points scored by a constructor in a single race (tab06.fld026).",
+    "scope": "Per-race constructor scoring and zero-point races.",
+    "aliases": [
+      "constructor points",
+      "points in a race"
+    ],
+    "evidence": [
+      "ev_12_points",
+      "ev_21_japanese_constructors"
+    ]
+  },
+  {
+    "id": "t_driver_standing_points",
+    "name": "Driver Standing Points",
+    "type": "metric",
+    "definition": "Cumulative championship points of a driver after a race (tab08.fld026).",
+    "scope": "Driver championship points and maximum point scores.",
+    "aliases": [
+      "driver points",
+      "point scores",
+      "championship points"
+    ],
+    "evidence": [
+      "ev_13_wins",
+      "ev_14_2009_champion"
+    ]
+  },
+  {
+    "id": "t_standing_position",
+    "name": "Standing Position",
+    "type": "metric",
+    "definition": "A driver's championship position after a race (tab08.fld029).",
+    "scope": "Championship ranking and season champion identification.",
+    "aliases": [
+      "standing position",
+      "championship position",
+      "rank in standings"
+    ],
+    "evidence": [
+      "ev_14_2009_champion"
+    ]
+  },
+  {
+    "id": "t_driver_wins",
+    "name": "Driver Wins",
+    "type": "metric",
+    "definition": "Cumulative number of race wins for a driver (tab08.fld031); it can also be counted from first-place race results.",
+    "scope": "Identifying the most-winning driver.",
+    "aliases": [
+      "wins",
+      "most winning",
+      "victories"
+    ],
+    "evidence": [
+      "ev_13_wins"
+    ]
+  },
+  {
+    "id": "t_race_position",
+    "name": "Race Position",
+    "type": "metric",
+    "definition": "A driver's finishing position in a race (tab13.fld029); positionOrder fld044 gives the official classified order.",
+    "scope": "Race finishing order and winner identification.",
+    "aliases": [
+      "position",
+      "finishing position",
+      "rank",
+      "place"
+    ],
+    "evidence": [
+      "ev_19_positions"
+    ]
+  },
+  {
+    "id": "t_fastest_lap_rank",
+    "name": "Fastest Lap Rank",
+    "type": "metric",
+    "definition": "The rank of a driver's fastest lap within the race (tab13.fld047); it is 0 or NULL when no rank is recorded.",
+    "scope": "Fastest-lap ranking, never race finishing order.",
+    "aliases": [
+      "rank",
+      "fastest lap rank"
+    ],
+    "evidence": [
+      "ev_16_fastest_lap_rank"
+    ]
+  },
+  {
+    "id": "t_fastest_lap_number",
+    "name": "Fastest Lap Number",
+    "type": "metric",
+    "definition": "The lap number on which a driver set their fastest lap (tab13.fld046).",
+    "scope": "Identifying when a fastest lap occurred.",
+    "aliases": [
+      "fastest lap number",
+      "lap number of fastest lap"
+    ],
+    "evidence": [
+      "ev_15_fastest_lap_fields"
+    ]
+  },
+  {
+    "id": "t_fastest_lap_time",
+    "name": "Fastest Lap Time",
+    "type": "metric",
+    "definition": "The fastest lap time recorded by a driver in a race (tab13.fld048, format M:SS.mmm); it can also be derived as the minimum lap time.",
+    "scope": "Fastest-lap comparisons.",
+    "aliases": [
+      "fastest lap",
+      "fastest lap time",
+      "best lap"
+    ],
+    "evidence": [
+      "ev_15_fastest_lap_fields",
+      "ev_17_lap_times"
+    ]
+  },
+  {
+    "id": "t_lap_time_milliseconds",
+    "name": "Lap Time in Milliseconds",
+    "type": "metric",
+    "definition": "A lap's duration expressed in milliseconds (tab09.fld034); the numeric basis for comparing lap times.",
+    "scope": "Numeric lap-time comparison and thresholds.",
+    "aliases": [
+      "lap time",
+      "laptime",
+      "milliseconds",
+      "lap duration"
+    ],
+    "evidence": [
+      "ev_17_lap_times"
+    ]
+  },
+  {
+    "id": "t_average_lap_time",
+    "name": "Average Lap Time",
+    "type": "metric",
+    "definition": "The mean lap duration for a driver in a race, derived from lap milliseconds.",
+    "scope": "Average pace analysis for a driver and race.",
+    "aliases": [
+      "average lap time",
+      "mean lap time"
+    ],
+    "evidence": [
+      "ev_17_lap_times"
+    ]
+  },
+  {
+    "id": "t_laps_completed",
+    "name": "Laps Completed",
+    "type": "metric",
+    "definition": "The number of laps completed by a driver in a race (tab13.fld045).",
+    "scope": "Race distance completed by a driver.",
+    "aliases": [
+      "laps",
+      "lap numbers",
+      "laps completed"
+    ],
+    "evidence": [
+      "ev_20_laps"
+    ]
+  },
+  {
+    "id": "t_race_completion_rate",
+    "name": "Race Completion Rate",
+    "type": "metric",
+    "definition": "The share of race entries that were completed, where completed means having a non-null race time, relative to all entries in scope; usually expressed as a percentage.",
+    "scope": "Completion-rate questions over a driver or race subset.",
+    "aliases": [
+      "race completion",
+      "completion rate",
+      "completion percentage",
+      "finished"
+    ],
+    "evidence": [
+      "ev_10_result_time",
+      "ev_11_status"
+    ]
+  },
+  {
+    "id": "t_percentage_share",
+    "name": "Percentage Share",
+    "type": "metric",
+    "definition": "A ratio of a counted subset to a corresponding total, multiplied by 100 and expressed as a percentage.",
+    "scope": "Percentage questions over races, drivers or results.",
+    "aliases": [
+      "percentage",
+      "percent",
+      "share",
+      "rate"
+    ],
+    "evidence": [
+      "ev_09_race_name_country",
+      "ev_10_result_time"
+    ]
+  },
+  {
+    "id": "t_qualifying_q3_time",
+    "name": "Qualifying Q3 Time",
+    "type": "metric",
+    "definition": "The driver's Q3 lap time in qualifying (tab11.fld040, format M:SS.mmm); it is NULL when no Q3 time was set.",
+    "scope": "Q3 pace and qualifying-order questions.",
+    "aliases": [
+      "Q3 time",
+      "third qualifying time",
+      "qualifying time"
+    ],
+    "evidence": [
+      "ev_18_qualifying"
+    ]
+  },
+  {
+    "id": "t_race_winner",
+    "name": "Race Winner",
+    "type": "concept",
+    "definition": "The driver who finished first in a race, identified by race position or positionOrder equal to 1.",
+    "scope": "Race-level champion/winner questions.",
+    "aliases": [
+      "champion",
+      "winner",
+      "race champion",
+      "first place"
+    ],
+    "evidence": [
+      "ev_10_result_time",
+      "ev_14_2009_champion"
+    ]
+  },
+  {
+    "id": "t_season_champion",
+    "name": "Season Champion",
+    "type": "concept",
+    "definition": "The driver with championship standing position 1 at the final race of a season.",
+    "scope": "Season-level champion questions.",
+    "aliases": [
+      "champion",
+      "season champion",
+      "champion in a year",
+      "world champion"
+    ],
+    "evidence": [
+      "ev_14_2009_champion"
+    ]
+  }
+]

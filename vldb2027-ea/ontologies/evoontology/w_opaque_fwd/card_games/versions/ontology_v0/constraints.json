@@ -1,0 +1,396 @@
+[
+  {
+    "id": "c_status_values",
+    "target": "t_legality_status",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "banned",
+      "legal",
+      "restricted",
+      "status",
+      "legality",
+      "ban"
+    ],
+    "severity": "block",
+    "scope": "Any filter or comparison on legality status.",
+    "confidence": "high",
+    "description": "Legality status is stored with exact capitalisation: 'Legal', 'Banned', 'Restricted'. Lowercase literals do not match.",
+    "evidence": [
+      "evidence_status_values"
+    ]
+  },
+  {
+    "id": "c_format_values",
+    "target": "t_format",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "format",
+      "commander",
+      "gladiator",
+      "vintage",
+      "legacy",
+      "modern",
+      "standard",
+      "pioneer",
+      "pauper",
+      "historic",
+      "premodern",
+      "duel",
+      "penny"
+    ],
+    "severity": "block",
+    "scope": "Any filter on play format.",
+    "confidence": "high",
+    "description": "Format labels are lowercase exact strings (commander, gladiator, vintage, ...). Capitalised or display names such as 'Commander' do not match tab03.fld076.",
+    "evidence": [
+      "evidence_format_values"
+    ]
+  },
+  {
+    "id": "c_language_labels",
+    "target": "t_language",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "language",
+      "Portuguese",
+      "Brazilian",
+      "Brazil",
+      "Brasil",
+      "Italian",
+      "French",
+      "Korean",
+      "Japanese",
+      "Spanish",
+      "German",
+      "Russian",
+      "Chinese",
+      "Phyrexian",
+      "Sanskrit"
+    ],
+    "severity": "block",
+    "scope": "Selecting localized card records or localized set names.",
+    "confidence": "high",
+    "description": "Language labels are exact: 'Portuguese (Brazil)' (not 'Portuguese (Brasil)' or 'Brazilian Portuguese'), 'Chinese Simplified', 'Chinese Traditional'. tab02 has 12 labels including Phyrexian and Sanskrit; tab05 has the 10 main labels only.",
+    "evidence": [
+      "evidence_language_labels"
+    ]
+  },
+  {
+    "id": "c_power_special",
+    "target": "t_power",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "power",
+      "without power",
+      "no power",
+      "missing power",
+      "*",
+      "null power"
+    ],
+    "severity": "block",
+    "scope": "Power filters and comparisons, especially 'cards without power'.",
+    "confidence": "high",
+    "description": "Power is text. 30624 printings have NULL power and 429 have the literal '*' (plus rare '?', '∞', '-1', '*²'). 'Cards without power' must cover NULL and the '*' value rather than testing NULL alone.",
+    "evidence": [
+      "evidence_power"
+    ]
+  },
+  {
+    "id": "c_content_warning_flag",
+    "target": "t_content_warning",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "content warning",
+      "content",
+      "warning",
+      "without a content warning"
+    ],
+    "severity": "block",
+    "scope": "Content-warning filtering.",
+    "confidence": "high",
+    "description": "Content warning is a 0/1 flag: 1 = has a content warning, 0 = no content warning. Only 29 printings (7 distinct names) are flagged.",
+    "evidence": [
+      "evidence_flags"
+    ]
+  },
+  {
+    "id": "c_story_spotlight_flag",
+    "target": "t_story_spotlight",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "story spotlight",
+      "spotlight",
+      "spotlight card"
+    ],
+    "severity": "block",
+    "scope": "Story Spotlight filtering.",
+    "confidence": "high",
+    "description": "Story Spotlight is a 0/1 flag: 1 = is a Story Spotlight card, 0 = is not. 104 printings carry the flag.",
+    "evidence": [
+      "evidence_flags"
+    ]
+  },
+  {
+    "id": "c_rarity_values",
+    "target": "t_rarity",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "rarity",
+      "mythic",
+      "rare",
+      "uncommon",
+      "common"
+    ],
+    "severity": "block",
+    "scope": "Rarity filtering.",
+    "confidence": "high",
+    "description": "Rarity is lowercase: common, uncommon, rare, mythic. 'Mythic rarity' means fld059 = 'mythic'.",
+    "evidence": [
+      "evidence_rarity_border"
+    ]
+  },
+  {
+    "id": "c_border_values",
+    "target": "t_border_color",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "border",
+      "white border",
+      "black border",
+      "borderless",
+      "gold border",
+      "silver border"
+    ],
+    "severity": "block",
+    "scope": "Border colour filtering.",
+    "confidence": "high",
+    "description": "Border colour values are lowercase: black, white, gold, silver, borderless. 'White border' means fld005 = 'white'.",
+    "evidence": [
+      "evidence_rarity_border"
+    ]
+  },
+  {
+    "id": "c_count_grain",
+    "target": "t_card_count",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "how many cards",
+      "how many",
+      "count",
+      "number of cards",
+      "distinct",
+      "printing",
+      "reprint"
+    ],
+    "severity": "block",
+    "scope": "Counting questions over cards, especially when joined to legality or translations.",
+    "confidence": "high",
+    "description": "One row of tab01 is a printing, and one card name can have up to 693 printings. Joining to tab03 multiplies nothing (one row per printing and format) but counts printings, not names. Example: banned white-border cards = 258 printings / 89 distinct printings / 46 distinct card names. State the intended grain; count distinct names when the question asks for cards.",
+    "evidence": [
+      "evidence_count_semantics",
+      "evidence_legality_grain"
+    ]
+  },
+  {
+    "id": "c_column_collision",
+    "target": "t_card_printing",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "name",
+      "text",
+      "type",
+      "language",
+      "code",
+      "column",
+      "field"
+    ],
+    "severity": "warning",
+    "scope": "Interpreting the opaque fld identifiers.",
+    "confidence": "high",
+    "description": "The same fld id carries different meanings across tables: fld049 is card name in tab01/tab02 but set name in tab04; fld068 is English card text (tab01), localized card text (tab02) and ruling text (tab06); fld070 is the full type line (tab01) and set type (tab04); fld075 is language only in tab02/tab05; fld063 is set code in tab01/tab05.",
+    "evidence": [
+      "evidence_column_name_collision"
+    ]
+  },
+  {
+    "id": "c_set_membership",
+    "target": "t_set_code",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "set",
+      "card set",
+      "in the set",
+      "belongs to",
+      "expansion",
+      "set code"
+    ],
+    "severity": "block",
+    "scope": "Mapping a set name to its cards or to translated set names.",
+    "confidence": "high",
+    "description": "Set membership is resolved by set code: card printings carry tab01.fld063, sets are keyed by tab04.fld081, and set-name translations carry tab05.fld063. A set name is matched in tab04.fld049 (official) or tab04.fld088 (secondary display form), then joined by code. 0 unresolved set codes exist.",
+    "evidence": [
+      "evidence_set_membership_join",
+      "evidence_set_table"
+    ]
+  },
+  {
+    "id": "c_set_name_variant",
+    "target": "t_set_name",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "set name",
+      "known as",
+      "named",
+      "Archenemy",
+      "Coldsnap"
+    ],
+    "severity": "warning",
+    "scope": "Resolving a set by its English name.",
+    "confidence": "high",
+    "description": "Prefer tab04.fld049: it is populated for all 551 sets. tab04.fld088 is a secondary display name populated for only 201 sets and differs from fld049 for M19 ('Core 2019' vs 'Core Set 2019'), M20, M21 and DDE. Matching only fld088 silently drops 350 sets.",
+    "evidence": [
+      "evidence_set_name_variant"
+    ]
+  },
+  {
+    "id": "c_mtgo_two_notions",
+    "target": "t_mtgo_set_code",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "MTGO",
+      "Magic: The Gathering Online",
+      "Magic Online",
+      "online",
+      "appeared on",
+      "digital"
+    ],
+    "severity": "warning",
+    "scope": "Questions about online availability.",
+    "confidence": "high",
+    "description": "Two different notions exist: set-level MTGO availability is tab04.fld089 non-null (160 of 551 sets); card-level availability is the comma list tab01.fld004 (36570 printings mention mtgo). The workload's 'appeared on MTG Online' convention uses the set-level fld089 test. Do not substitute one for the other silently.",
+    "evidence": [
+      "evidence_mtgo"
+    ]
+  },
+  {
+    "id": "c_artist_names",
+    "target": "t_artist",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "Stephen Daniel",
+      "Stephen Daniele",
+      "artist",
+      "illustrated by",
+      "designed by",
+      "art by"
+    ],
+    "severity": "warning",
+    "scope": "Artist name matching.",
+    "confidence": "high",
+    "description": "Artist names are exact text. The stored name is 'Stephen Daniele' (74 printings); the variant 'Stephen Daniel' does not exist. Use exact or substring matching deliberately and report the matched stored value.",
+    "evidence": [
+      "evidence_artist"
+    ]
+  },
+  {
+    "id": "c_subtype_list",
+    "target": "t_subtype",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "subtype",
+      "other than",
+      "creature type",
+      "Angel",
+      "type list"
+    ],
+    "severity": "block",
+    "scope": "Subtype filtering, including 'subtype other than X'.",
+    "confidence": "high",
+    "description": "Subtypes are comma-separated lists (e.g. 'Angel', 'Angel,Spirit', 'Angel,Warrior'). Exact equality on the whole list is not the same as membership of a subtype; 'subtype other than Angel' under exact equality includes 'Angel,Spirit' and 'Angel,Warrior'.",
+    "evidence": [
+      "evidence_original_type_subtype"
+    ]
+  },
+  {
+    "id": "c_localized_vs_ruling",
+    "target": "t_card_ruling",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "ruling",
+      "text ruling",
+      "Italian text",
+      "localized text",
+      "flavor text",
+      "translated"
+    ],
+    "severity": "warning",
+    "scope": "Deciding which text field a question about 'text' refers to.",
+    "confidence": "medium",
+    "description": "Rulings (tab06.fld068) exist only in English. A request for non-English 'text' or 'text ruling' must use the localized card text (tab02.fld068) or localized flavor text (tab02.fld017), selected by tab02.fld075. English card text is tab01.fld068.",
+    "evidence": [
+      "evidence_rulings",
+      "evidence_column_name_collision"
+    ]
+  },
+  {
+    "id": "c_edhrec_rank",
+    "target": "t_edhrec_rank",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "EDHRec",
+      "ranked 1st",
+      "rank",
+      "most popular",
+      "popularity"
+    ],
+    "severity": "warning",
+    "scope": "Popularity rank filtering.",
+    "confidence": "high",
+    "description": "Rank 1 is the most popular card; lower values are better. 4761 printings are unranked (NULL) and must not be treated as rank 0 or as worst. Rank is per printing, so several printings of the same card share rank 1.",
+    "evidence": [
+      "evidence_cmc_edhrec"
+    ]
+  },
+  {
+    "id": "c_percentage",
+    "target": "t_percentage_share",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "percentage",
+      "percent",
+      "ratio",
+      "share",
+      "proportion",
+      "what percentage"
+    ],
+    "severity": "warning",
+    "scope": "Percentage questions.",
+    "confidence": "high",
+    "description": "Percentage is 100 × qualifying count / population count, where the population is the set of rows satisfying the question's shared filter. Counts use the same grain (printings) in numerator and denominator.",
+    "evidence": [
+      "evidence_count_semantics"
+    ]
+  },
+  {
+    "id": "c_coverage_missing",
+    "target": "t_card_printing",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "missing",
+      "no ruling",
+      "no legality",
+      "join",
+      "inner join",
+      "appears in"
+    ],
+    "severity": "info",
+    "scope": "Joining printings to dependent tables.",
+    "confidence": "high",
+    "description": "Dependent data is incomplete: 1214 printings have no legality rows, 30681 have no rulings, 22766 have no localized records, and 430 sets have no translations. Inner joins drop these printings; choose join direction deliberately.",
+    "evidence": [
+      "evidence_legality_grain",
+      "evidence_rulings",
+      "evidence_localization_grain"
+    ]
+  }
+]

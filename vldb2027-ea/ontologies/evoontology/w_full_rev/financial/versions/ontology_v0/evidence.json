@@ -1,0 +1,226 @@
+[
+  {
+    "id": "evidence_client_table",
+    "source": "financial",
+    "query": "SELECT COUNT(*) FROM client;",
+    "result": "5369 client rows",
+    "validation_method": "read-only aggregate query against the SQLite file",
+    "timestamp": "2026-10-10T00:00:00Z"
+  },
+  {
+    "id": "evidence_gender_distribution",
+    "source": "financial",
+    "query": "SELECT gender, COUNT(*) FROM client GROUP BY gender;",
+    "result": "F=2645, M=2724; only these two gender codes exist",
+    "validation_method": "read-only value distribution",
+    "timestamp": "2026-10-10T00:00:00Z"
+  },
+  {
+    "id": "evidence_client_birth_range",
+    "source": "financial",
+    "query": "SELECT MIN(birth_date), MAX(birth_date) FROM client;",
+    "result": "1911-08-20 to 1987-09-27, no missing values",
+    "validation_method": "read-only range query",
+    "timestamp": "2026-10-10T00:00:00Z"
+  },
+  {
+    "id": "evidence_district_columns",
+    "source": "financial",
+    "query": "SELECT COUNT(*), COUNT(DISTINCT A2) FROM district; SELECT * FROM district LIMIT 5;",
+    "result": "77 district rows with 77 distinct A2 names; e.g. district 1 = Hl.m. Praha in the Prague region, district 30 = Sokolov in the west Bohemia region",
+    "validation_method": "read-only cardinality and representative row inspection",
+    "timestamp": "2026-10-10T00:00:00Z"
+  },
+  {
+    "id": "evidence_regions",
+    "source": "financial",
+    "query": "SELECT A3, COUNT(*) FROM district GROUP BY A3 ORDER BY COUNT(*) DESC;",
+    "result": "8 distinct regions over 77 districts: south Moravia 14, central Bohemia 12, north Moravia 11, east Bohemia 11, west Bohemia 10, north Bohemia 10, south Bohemia 8, Prague 1",
+    "validation_method": "read-only value distribution",
+    "timestamp": "2026-10-10T00:00:00Z"
+  },
+  {
+    "id": "evidence_district_population_type",
+    "source": "financial",
+    "query": "SELECT typeof(A4) FROM district LIMIT 1; SELECT A2, A4 FROM district ORDER BY A4 DESC LIMIT 3; SELECT A2, A4 FROM district ORDER BY CAST(A4 AS INTEGER) DESC LIMIT 3; SELECT MIN(CAST(A4 AS INTEGER)), MAX(CAST(A4 AS INTEGER)) FROM district;",
+    "result": "A4 is stored with storage class text; text ordering returns Havlickuv Brod 95907, Kolin 95616, Sokolov 94812 whereas numeric ordering returns Hl.m. Praha 1204953, Brno - mesto 387570, Ostrava - mesto 323870; numeric range 42821 to 1204953 with no non-numeric values",
+    "validation_method": "read-only comparison of text and numeric ordering plus storage class inspection",
+    "timestamp": "2026-10-10T00:00:00Z"
+  },
+  {
+    "id": "evidence_district_salary",
+    "source": "financial",
+    "query": "SELECT A2, A11 FROM district ORDER BY A11 DESC LIMIT 3; SELECT MIN(A11), MAX(A11) FROM district;",
+    "result": "highest average salary levels: Hl.m. Praha 12541, Mlada Boleslav 11277, Plzen - mesto 10787; overall range 8110 to 12541",
+    "validation_method": "read-only ranking and range check",
+    "timestamp": "2026-10-10T00:00:00Z"
+  },
+  {
+    "id": "evidence_district_unemployment",
+    "source": "financial",
+    "query": "SELECT A2, A12, A13 FROM district ORDER BY A12 DESC LIMIT 3; SELECT SUM(A13>=A12), COUNT(*) FROM district;",
+    "result": "A12/A13 pairs: Most 7.3 to 9.4, Louny 7.0 to 8.23, Karvina 6.6 to 7.75; A13 is greater than or equal to A12 in 75 of 77 districts, consistent with a 1995 then 1996 time ordering of the two rate columns",
+    "validation_method": "read-only ordering check across the whole district table",
+    "timestamp": "2026-10-10T00:00:00Z"
+  },
+  {
+    "id": "evidence_district_crime",
+    "source": "financial",
+    "query": "SELECT MIN(A15), MAX(A15) FROM district; SELECT COUNT(*) FROM district WHERE A15 > 4000;",
+    "result": "1995 crime counts range from 818 to 85677, and 26 of the 77 districts report more than 4000",
+    "validation_method": "read-only range and threshold count",
+    "timestamp": "2026-10-10T00:00:00Z"
+  },
+  {
+    "id": "evidence_district_nulls",
+    "source": "financial",
+    "query": "SELECT SUM(A12 IS NULL), SUM(A15 IS NULL) FROM district;",
+    "result": "A12 holds 1 missing value and A15 holds 1 missing value among 77 districts; A13 and A16 are complete",
+    "validation_method": "read-only null count per indicator column",
+    "timestamp": "2026-10-10T00:00:00Z"
+  },
+  {
+    "id": "evidence_account_table",
+    "source": "financial",
+    "query": "SELECT COUNT(*) FROM account;",
+    "result": "4500 account rows",
+    "validation_method": "read-only aggregate query",
+    "timestamp": "2026-10-10T00:00:00Z"
+  },
+  {
+    "id": "evidence_account_frequency",
+    "source": "financial",
+    "query": "SELECT frequency, COUNT(*) FROM account GROUP BY frequency;",
+    "result": "POPLATEK MESICNE=4167, POPLATEK TYDNE=240, POPLATEK PO OBRATU=93; these are the only three codes",
+    "validation_method": "read-only value distribution",
+    "timestamp": "2026-10-10T00:00:00Z"
+  },
+  {
+    "id": "evidence_account_dates",
+    "source": "financial",
+    "query": "SELECT MIN(date), MAX(date) FROM account;",
+    "result": "account opening dates span 1993-01-01 to 1997-12-29",
+    "validation_method": "read-only range query",
+    "timestamp": "2026-10-10T00:00:00Z"
+  },
+  {
+    "id": "evidence_disposition_roles",
+    "source": "financial",
+    "query": "SELECT type, COUNT(*) FROM disp GROUP BY type;",
+    "result": "OWNER=4500, DISPONENT=869; these are the only two role codes",
+    "validation_method": "read-only value distribution",
+    "timestamp": "2026-10-10T00:00:00Z"
+  },
+  {
+    "id": "evidence_disposition_uniqueness",
+    "source": "financial",
+    "query": "SELECT COUNT(*) FROM account a WHERE NOT EXISTS (SELECT 1 FROM disp d WHERE d.account_id = a.account_id); SELECT COUNT(*) FROM (SELECT account_id FROM disp WHERE type = 'OWNER' GROUP BY account_id HAVING COUNT(*) > 1); SELECT COUNT(*) FROM (SELECT account_id FROM disp GROUP BY account_id HAVING COUNT(DISTINCT type) > 1);",
+    "result": "no account lacks a disposition (0); no account has more than one owner (0); 869 accounts carry both an owner and a disponent; every client has exactly one disposition",
+    "validation_method": "read-only structural integrity checks",
+    "timestamp": "2026-10-10T00:00:00Z"
+  },
+  {
+    "id": "evidence_district_mismatch",
+    "source": "financial",
+    "query": "SELECT COUNT(*) FROM disp d JOIN client c USING (client_id) JOIN account a USING (account_id) WHERE d.type = 'OWNER' AND c.district_id <> a.district_id;",
+    "result": "409 of the 4500 owned accounts link a client whose residence district differs from the account branch district; the count rises to 494 when all disposition roles are included",
+    "validation_method": "read-only join mismatch count",
+    "timestamp": "2026-10-10T00:00:00Z"
+  },
+  {
+    "id": "evidence_card_types",
+    "source": "financial",
+    "query": "SELECT type, COUNT(*) FROM card GROUP BY type; SELECT disp.type, COUNT(*) FROM card JOIN disp ON disp.disp_id = card.disp_id GROUP BY disp.type;",
+    "result": "card classes: classic=659, junior=145, gold=88, totalling 892 cards; all 892 cards attach to OWNER dispositions and none to a disponent",
+    "validation_method": "read-only value distribution and role join",
+    "timestamp": "2026-10-10T00:00:00Z"
+  },
+  {
+    "id": "evidence_card_withdrawal",
+    "source": "financial",
+    "query": "SELECT COUNT(*) FROM trans WHERE operation = 'VYBER KARTOU'; SELECT COUNT(*), AVG(amount) FROM trans WHERE operation = 'VYBER KARTOU' AND date > '1997-12-31';",
+    "result": "8036 card withdrawals in total, of which 4560 fall in 1998 with an average amount of 2270.94",
+    "validation_method": "read-only filtered count and average",
+    "timestamp": "2026-10-10T00:00:00Z"
+  },
+  {
+    "id": "evidence_transaction_types",
+    "source": "financial",
+    "query": "SELECT type, COUNT(*) FROM trans GROUP BY type;",
+    "result": "VYDAJ=634571, PRIJEM=405083, VYBER=16666; these are the only three direction codes",
+    "validation_method": "read-only value distribution",
+    "timestamp": "2026-10-10T00:00:00Z"
+  },
+  {
+    "id": "evidence_transaction_operations",
+    "source": "financial",
+    "query": "SELECT operation, COUNT(*) FROM trans GROUP BY operation ORDER BY COUNT(*) DESC;",
+    "result": "VYBER=434918, PREVOD NA UCET=208283, empty=183114, VKLAD=156743, PREVOD Z UCTU=65226, VYBER KARTOU=8036",
+    "validation_method": "read-only value distribution including empty values",
+    "timestamp": "2026-10-10T00:00:00Z"
+  },
+  {
+    "id": "evidence_transaction_amount_sign",
+    "source": "financial",
+    "query": "SELECT type, SUM(amount > 0), SUM(amount < 0), SUM(amount = 0) FROM trans GROUP BY type;",
+    "result": "no negative amounts in any direction: PRIJEM 405042 positive, 0 negative, 41 zero; VYBER 16666 positive, 0 negative, 0 zero; VYDAJ 634450 positive, 0 negative, 121 zero",
+    "validation_method": "read-only sign distribution check across the full transaction table",
+    "timestamp": "2026-10-10T00:00:00Z"
+  },
+  {
+    "id": "evidence_order_symbols",
+    "source": "financial",
+    "query": "SELECT k_symbol, COUNT(*) FROM \"order\" GROUP BY k_symbol ORDER BY COUNT(*) DESC;",
+    "result": "SIPO=3502, empty=1379, UVER=717, POJISTNE=532, LEASING=341 across 6471 standing orders",
+    "validation_method": "read-only value distribution",
+    "timestamp": "2026-10-10T00:00:00Z"
+  },
+  {
+    "id": "evidence_symbol_columns",
+    "source": "financial",
+    "query": "SELECT k_symbol, COUNT(*) FROM trans GROUP BY k_symbol ORDER BY COUNT(*) DESC LIMIT 6; SELECT k_symbol, COUNT(*) FROM \"order\" GROUP BY k_symbol ORDER BY COUNT(*) DESC;",
+    "result": "on transactions the symbols are dominated by UROK=183114, SLUZBY=155832, SIPO=118065, DUCHOD=30338, POJISTNE=18500, UVER=13580; on standing orders by SIPO=3502, UVER=717, POJISTNE=532, LEASING=341; the two columns describe different things and overlap only partly",
+    "validation_method": "read-only comparison of the two symbol columns",
+    "timestamp": "2026-10-10T00:00:00Z"
+  },
+  {
+    "id": "evidence_loan_status",
+    "source": "financial",
+    "query": "SELECT status, COUNT(*) FROM loan GROUP BY status; SELECT COUNT(*) FROM loan;",
+    "result": "682 loan contracts: A=203, B=31, C=403, D=45; running contracts therefore total 448",
+    "validation_method": "read-only value distribution",
+    "timestamp": "2026-10-10T00:00:00Z"
+  },
+  {
+    "id": "evidence_loan_dates",
+    "source": "financial",
+    "query": "SELECT MIN(date), MAX(date) FROM loan;",
+    "result": "loan contract dates span 1993-07-05 to 1998-12-08",
+    "validation_method": "read-only range query",
+    "timestamp": "2026-10-10T00:00:00Z"
+  },
+  {
+    "id": "evidence_female_per_district",
+    "source": "financial",
+    "query": "SELECT d.A2, COUNT(*) FROM client c JOIN district d USING (district_id) WHERE c.gender = 'F' GROUP BY d.A2 ORDER BY COUNT(*) DESC LIMIT 3;",
+    "result": "female client counts by residence district: Hl.m. Praha 324, Karvina 88, Ostrava - mesto 84",
+    "validation_method": "read-only grouped count over the residence district join",
+    "timestamp": "2026-10-10T00:00:00Z"
+  },
+  {
+    "id": "evidence_district_reference_integrity",
+    "source": "financial",
+    "query": "SELECT COUNT(*) FROM client c LEFT JOIN district d USING (district_id) WHERE d.A2 IS NULL; SELECT COUNT(*) FROM account a LEFT JOIN district d USING (district_id) WHERE d.A2 IS NULL;",
+    "result": "every client and every account resolves to a district; 0 unresolved district references in both tables",
+    "validation_method": "read-only referential integrity check",
+    "timestamp": "2026-10-10T00:00:00Z"
+  },
+  {
+    "id": "evidence_transaction_dates",
+    "source": "financial",
+    "query": "SELECT MIN(date), MAX(date) FROM trans;",
+    "result": "movement dates span 1993-01-01 to 1998-12-31",
+    "validation_method": "read-only range query",
+    "timestamp": "2026-10-10T00:00:00Z"
+  }
+]

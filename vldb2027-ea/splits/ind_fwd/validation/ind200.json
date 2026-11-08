@@ -1,0 +1,357 @@
+{
+ "db_id": "ind200",
+ "questions": [
+  {
+   "question_id": 200105,
+   "db_id": "ind200",
+   "question": "实际发运数量合计最高的产品名称是什么？",
+   "evidence": "",
+   "SQL": "SELECT p.\"prod_name\" FROM \"fact_shipment_line\" f JOIN \"dim_product\" p ON f.\"prod_id\" = p.\"prod_id\" GROUP BY p.\"prod_id\", p.\"prod_name\" ORDER BY SUM(f.\"actual_quantity\") DESC LIMIT 1",
+   "difficulty": "top_parent"
+  },
+  {
+   "question_id": 200231,
+   "db_id": "ind200",
+   "question": "每个审批人分别审批了多少条能源计量读数？",
+   "evidence": "",
+   "SQL": "SELECT \"approved_by\", COUNT(*) FROM \"fact_energy_meter_reading\" GROUP BY \"approved_by\"",
+   "difficulty": "group_count"
+  },
+  {
+   "question_id": 200296,
+   "db_id": "ind200",
+   "question": "制造商为“示例机械F”的设备，其相关固定资产发生的调拨次数是多少？",
+   "evidence": "",
+   "SQL": "SELECT COUNT(*) FROM \"fact_fixed_asset_transfer\" f JOIN \"dim_fixed_asset\" p ON f.\"asset_id\" = p.\"asset_id\" JOIN \"dim_equipment\" q ON p.\"equipment_id\" = q.\"equipment_id\" WHERE q.\"manufacturer\" = '示例机械F'",
+   "difficulty": "two_hop"
+  },
+  {
+   "question_id": 200089,
+   "db_id": "ind200",
+   "question": "按维修备注统计，每个备注对应多少条维修任务？",
+   "evidence": "",
+   "SQL": "SELECT \"remarks\", COUNT(*) FROM \"fact_maintenance_task\" GROUP BY \"remarks\"",
+   "difficulty": "group_count"
+  },
+  {
+   "question_id": 200200,
+   "db_id": "ind200",
+   "question": "2026年备注为“跨月处理”的供应计划一共有多少条？",
+   "evidence": "",
+   "SQL": "SELECT COUNT(*) FROM \"fact_supply_plan\" WHERE substr(\"business_date\",1,4) = '2026' AND \"remarks\" = '跨月处理'",
+   "difficulty": "year_count"
+  },
+  {
+   "question_id": 200098,
+   "db_id": "ind200",
+   "question": "每个摘要分别对应多少条现金流记录？",
+   "evidence": "",
+   "SQL": "SELECT \"summary_text\", COUNT(*) FROM \"fact_cash_flow\" GROUP BY \"summary_text\"",
+   "difficulty": "group_count"
+  },
+  {
+   "question_id": 200167,
+   "db_id": "ind200",
+   "question": "创建人为 U0009 的供应计划一共有多少条？",
+   "evidence": "",
+   "SQL": "SELECT COUNT(*) FROM \"fact_supply_plan\" WHERE \"created_by\" = 'U0009'",
+   "difficulty": "count_filter"
+  },
+  {
+   "question_id": 200106,
+   "db_id": "ind200",
+   "question": "数据质量分合计最高的原材料名称是什么？",
+   "evidence": "",
+   "SQL": "SELECT p.\"material_name\" FROM \"fact_inventory_movement\" f JOIN \"dim_material\" p ON f.\"material_id\" = p.\"material_id\" GROUP BY p.\"material_id\", p.\"material_name\" ORDER BY SUM(f.\"data_quality_score\") DESC LIMIT 1",
+   "difficulty": "top_parent"
+  },
+  {
+   "question_id": 200245,
+   "db_id": "ind200",
+   "question": "2025年备件领用后的平均库存是多少？",
+   "evidence": "",
+   "SQL": "SELECT AVG(\"stock_after\") FROM \"fact_spare_part_issue\" WHERE substr(\"posting_date\",1,4) = '2025'",
+   "difficulty": "agg_filter_year"
+  },
+  {
+   "question_id": 200179,
+   "db_id": "ind200",
+   "question": "2025年遗留系统领料记录的行版本平均值是多少？",
+   "evidence": "",
+   "SQL": "SELECT AVG(\"row_version\") FROM \"fact_legacy_material_issue\" WHERE substr(\"business_date\",1,4) = '2025'",
+   "difficulty": "agg_filter_year"
+  },
+  {
+   "question_id": 200273,
+   "db_id": "ind200",
+   "question": "2026年由审批人U0002审批的成品批次质量冻结一共有多少笔？",
+   "evidence": "",
+   "SQL": "SELECT COUNT(*) FROM \"fact_batch_quality_hold\" WHERE substr(\"business_date\",1,4) = '2026' AND \"approved_by\" = 'U0002'",
+   "difficulty": "year_count"
+  },
+  {
+   "question_id": 200057,
+   "db_id": "ind200",
+   "question": "2026年通过邮件联系的客户接触记录有多少条？",
+   "evidence": "",
+   "SQL": "SELECT COUNT(*) FROM \"fact_customer_contact\" WHERE substr(\"business_date\",1,4) = '2026' AND \"contact_channel\" = '邮件'",
+   "difficulty": "year_count"
+  },
+  {
+   "question_id": 200163,
+   "db_id": "ind200",
+   "question": "2025年到期的应付账款的应付金额平均值是多少？",
+   "evidence": "",
+   "SQL": "SELECT AVG(\"amount\") FROM \"fact_ap\" WHERE substr(\"due_date\",1,4) = '2025'",
+   "difficulty": "agg_filter_year"
+  },
+  {
+   "question_id": 200274,
+   "db_id": "ind200",
+   "question": "2026年状态为“APPROVED”的班次生产报告一共有多少条？",
+   "evidence": "",
+   "SQL": "SELECT COUNT(*) FROM \"fact_shift_report\" WHERE substr(\"business_date\",1,4) = '2026' AND \"status\" = 'APPROVED'",
+   "difficulty": "year_count"
+  },
+  {
+   "question_id": 200104,
+   "db_id": "ind200",
+   "question": "2026年由U0002审批的现金流记录一共有多少条？",
+   "evidence": "",
+   "SQL": "SELECT COUNT(*) FROM \"fact_cash_flow\" WHERE substr(\"posting_date\",1,4) = '2026' AND \"approved_by\" = 'U0002'",
+   "difficulty": "year_count"
+  },
+  {
+   "question_id": 200177,
+   "db_id": "ind200",
+   "question": "2026年生效的价格调整中，原单价的平均值是多少？",
+   "evidence": "",
+   "SQL": "SELECT AVG(\"old_unit_price\") FROM \"fact_price_adjustment\" WHERE substr(\"effective_date\",1,4) = '2026'",
+   "difficulty": "agg_filter_year"
+  },
+  {
+   "question_id": 200007,
+   "db_id": "ind200",
+   "question": "由创建人为U0001的日历所对应的库存调拨单，其行版本的合计是多少？",
+   "evidence": "",
+   "SQL": "SELECT SUM(f.\"row_version\") FROM \"fact_transfer_order\" f JOIN \"dim_calendar\" p ON f.\"business_date\" = p.\"calendar_date\" WHERE p.\"created_by\" = 'U0001'",
+   "difficulty": "agg_by_parent_attr"
+  },
+  {
+   "question_id": 200043,
+   "db_id": "ind200",
+   "question": "2026年由U0007创建的工艺参数记录一共有多少条？",
+   "evidence": "",
+   "SQL": "SELECT COUNT(*) FROM \"fact_process_parameter_record\" WHERE substr(\"business_date\",1,4) = '2026' AND \"created_by\" = 'U0007'",
+   "difficulty": "year_count"
+  },
+  {
+   "question_id": 200113,
+   "db_id": "ind200",
+   "question": "状态为“active”的检验员所负责的收货单中，收货数量（吨）的合计是多少？",
+   "evidence": "",
+   "SQL": "SELECT SUM(f.\"quantity\") FROM \"fact_goods_receipt\" f JOIN \"dim_employee\" p ON f.\"inspector_id\" = p.\"emp_id\" WHERE p.\"status\" = 'active'",
+   "difficulty": "agg_by_parent_attr"
+  },
+  {
+   "question_id": 200016,
+   "db_id": "ind200",
+   "question": "合金挤出2线的OEE合计是多少？",
+   "evidence": "",
+   "SQL": "SELECT SUM(f.\"oee\") FROM \"fact_equipment_runtime\" f JOIN \"dim_production_line\" p ON f.\"line_id\" = p.\"line_id\" WHERE p.\"line_name\" = '合金挤出2线'",
+   "difficulty": "agg_by_parent_attr"
+  },
+  {
+   "question_id": 200085,
+   "db_id": "ind200",
+   "question": "2026年由审批人U0012审批的在制品快照有多少条？",
+   "evidence": "",
+   "SQL": "SELECT COUNT(*) FROM \"fact_wip_snapshot\" WHERE substr(\"posting_date\",1,4) = '2026' AND \"approved_by\" = 'U0012'",
+   "difficulty": "year_count"
+  },
+  {
+   "question_id": 200238,
+   "db_id": "ind200",
+   "question": "2026年由U0010审批的加班记录一共有多少条？",
+   "evidence": "",
+   "SQL": "SELECT COUNT(*) FROM \"fact_overtime\" WHERE substr(\"business_date\",1,4) = '2026' AND \"approved_by\" = 'U0010'",
+   "difficulty": "year_count"
+  },
+  {
+   "question_id": 200295,
+   "db_id": "ind200",
+   "question": "2025年生产的批次的合格数量平均是多少？",
+   "evidence": "",
+   "SQL": "SELECT AVG(\"qualified_quantity\") FROM \"fact_lot_trace\" WHERE substr(\"manufacture_date\",1,4) = '2025'",
+   "difficulty": "agg_filter_year"
+  },
+  {
+   "question_id": 200137,
+   "db_id": "ind200",
+   "question": "2025年的平均交付评分是多少？",
+   "evidence": "",
+   "SQL": "SELECT AVG(\"delivery_score\") FROM \"fact_supplier_eval\" WHERE substr(\"eval_date\",1,4) = '2025'",
+   "difficulty": "agg_filter_year"
+  },
+  {
+   "question_id": 200114,
+   "db_id": "ind200",
+   "question": "事故类型为“灼烫”的事故一共有多少起？",
+   "evidence": "",
+   "SQL": "SELECT COUNT(*) FROM \"fact_incident\" WHERE \"incident_type\" = '灼烫'",
+   "difficulty": "count_filter"
+  },
+  {
+   "question_id": 200141,
+   "db_id": "ind200",
+   "question": "2026年由U0007创建的加班记录一共有多少条？",
+   "evidence": "",
+   "SQL": "SELECT COUNT(*) FROM \"fact_overtime\" WHERE substr(\"posting_date\",1,4) = '2026' AND \"created_by\" = 'U0007'",
+   "difficulty": "year_count"
+  },
+  {
+   "question_id": 200189,
+   "db_id": "ind200",
+   "question": "2025年的安全培训总时长是多少小时？",
+   "evidence": "",
+   "SQL": "SELECT SUM(\"duration_hours\") FROM \"fact_safety_training\" WHERE substr(\"training_date\",1,4) = '2025'",
+   "difficulty": "agg_filter_year"
+  },
+  {
+   "question_id": 200237,
+   "db_id": "ind200",
+   "question": "2026年由U0008审批的返工单有多少张？",
+   "evidence": "",
+   "SQL": "SELECT COUNT(*) FROM \"fact_rework_order\" WHERE substr(\"business_date\",1,4) = '2026' AND \"approved_by\" = 'U0008'",
+   "difficulty": "year_count"
+  },
+  {
+   "question_id": 200140,
+   "db_id": "ind200",
+   "question": "在职员工的周转率目标合计是多少？",
+   "evidence": "",
+   "SQL": "SELECT SUM(f.\"turnover_rate_target\") FROM \"fact_payment_target\" f JOIN \"dim_employee\" p ON f.\"emp_id\" = p.\"emp_id\" WHERE p.\"status\" = 'active'",
+   "difficulty": "agg_by_parent_attr"
+  },
+  {
+   "question_id": 200278,
+   "db_id": "ind200",
+   "question": "由U0001创建的成本分摊记录一共有多少条？",
+   "evidence": "",
+   "SQL": "SELECT COUNT(*) FROM \"fact_cost_allocation\" WHERE \"created_by\" = 'U0001'",
+   "difficulty": "count_filter"
+  },
+  {
+   "question_id": 200258,
+   "db_id": "ind200",
+   "question": "由员工U0012创建的产能计划一共有多少条？",
+   "evidence": "",
+   "SQL": "SELECT COUNT(*) FROM \"fact_capacity_plan\" WHERE \"created_by\" = 'U0012'",
+   "difficulty": "count_filter"
+  },
+  {
+   "question_id": 200120,
+   "db_id": "ind200",
+   "question": "2025年1月1日9点23分创建的供应商合同有多少条？",
+   "evidence": "",
+   "SQL": "SELECT COUNT(*) FROM \"fact_supplier_contract\" WHERE \"created_at\" = '2025-01-01 09:23:00'",
+   "difficulty": "count_filter"
+  },
+  {
+   "question_id": 200054,
+   "db_id": "ind200",
+   "question": "按监测类型统计环境监测的记录数量分别是多少？",
+   "evidence": "",
+   "SQL": "SELECT \"record_type\", COUNT(*) FROM \"fact_env_record\" GROUP BY \"record_type\"",
+   "difficulty": "group_count"
+  },
+  {
+   "question_id": 200064,
+   "db_id": "ind200",
+   "question": "2025年发运单的基本单位数量合计是多少？",
+   "evidence": "",
+   "SQL": "SELECT SUM(\"base_quantity\") FROM \"fact_shipment\" WHERE substr(\"posting_date\",1,4) = '2025'",
+   "difficulty": "agg_filter_year"
+  },
+  {
+   "question_id": 200009,
+   "db_id": "ind200",
+   "question": "2026年第一季度有多少条供应商评估记录？",
+   "evidence": "",
+   "SQL": "SELECT COUNT(*) FROM \"fact_supplier_eval\" WHERE substr(\"eval_date\",1,4) = '2026' AND \"eval_period\" = '2026-Q1'",
+   "difficulty": "year_count"
+  },
+  {
+   "question_id": 200083,
+   "db_id": "ind200",
+   "question": "哪个原因码对应的标准用量合计最高？",
+   "evidence": "",
+   "SQL": "SELECT p.\"name\" FROM \"fact_lot_trace\" f JOIN \"dim_reason_code\" p ON f.\"reason_code\" = p.\"code\" GROUP BY p.\"code\", p.\"name\" ORDER BY SUM(f.\"standard_quantity\") DESC LIMIT 1",
+   "difficulty": "top_parent"
+  },
+  {
+   "question_id": 200272,
+   "db_id": "ind200",
+   "question": "“一厂成品仓”的发运行版本合计是多少？",
+   "evidence": "",
+   "SQL": "SELECT SUM(f.\"row_version\") FROM \"fact_shipment\" f JOIN \"dim_warehouse\" p ON f.\"warehouse_id\" = p.\"warehouse_id\" WHERE p.\"warehouse_name\" = '一厂成品仓'",
+   "difficulty": "agg_by_parent_attr"
+  },
+  {
+   "question_id": 200122,
+   "db_id": "ind200",
+   "question": "2026年生产日期中，审批人为U0009的在制品快照有多少条？",
+   "evidence": "",
+   "SQL": "SELECT COUNT(*) FROM \"fact_wip_snapshot\" WHERE substr(\"manufacture_date\",1,4) = '2026' AND \"approved_by\" = 'U0009'",
+   "difficulty": "year_count"
+  },
+  {
+   "question_id": 200025,
+   "db_id": "ind200",
+   "question": "“PA挤出2线”的实际产量合计是多少吨？",
+   "evidence": "",
+   "SQL": "SELECT SUM(f.\"actual_quantity\") FROM \"fact_production_order\" f JOIN \"dim_production_line\" p ON f.\"line_id\" = p.\"line_id\" WHERE p.\"line_name\" = 'PA挤出2线'",
+   "difficulty": "agg_by_parent_attr"
+  },
+  {
+   "question_id": 200230,
+   "db_id": "ind200",
+   "question": "2026年由U0001更新的供应计划一共有多少条？",
+   "evidence": "",
+   "SQL": "SELECT COUNT(*) FROM \"fact_supply_plan\" WHERE substr(\"business_date\",1,4) = '2026' AND \"updated_by\" = 'U0001'",
+   "difficulty": "year_count"
+  },
+  {
+   "question_id": 200209,
+   "db_id": "ind200",
+   "question": "审批人为 U0005 的工装使用记录一共有多少条？",
+   "evidence": "",
+   "SQL": "SELECT COUNT(*) FROM \"fact_tool_usage\" WHERE \"approved_by\" = 'U0005'",
+   "difficulty": "count_filter"
+  },
+  {
+   "question_id": 200187,
+   "db_id": "ind200",
+   "question": "2026年到期且状态为已关闭的应付账款有多少笔？",
+   "evidence": "",
+   "SQL": "SELECT COUNT(*) FROM \"fact_ap\" WHERE substr(\"due_date\",1,4) = '2026' AND \"status\" = 'closed'",
+   "difficulty": "year_count"
+  },
+  {
+   "question_id": 200176,
+   "db_id": "ind200",
+   "question": "按评估方法统计，每种评估方法各有多少条员工资质记录？",
+   "evidence": "",
+   "SQL": "SELECT \"assessment_method\", COUNT(*) FROM \"fact_certification_record\" GROUP BY \"assessment_method\"",
+   "difficulty": "group_count"
+  },
+  {
+   "question_id": 200111,
+   "db_id": "ind200",
+   "question": "2025年备件领用的数据质量分合计是多少？",
+   "evidence": "",
+   "SQL": "SELECT SUM(\"data_quality_score\") FROM \"fact_spare_part_issue\" WHERE substr(\"posting_date\",1,4) = '2025'",
+   "difficulty": "agg_filter_year"
+  }
+ ]
+}

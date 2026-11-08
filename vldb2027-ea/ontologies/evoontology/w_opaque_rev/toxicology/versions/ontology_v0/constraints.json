@@ -1,0 +1,249 @@
+[
+  {
+    "id": "constraint_bond_order_enum",
+    "target": "term_bond_order",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "bond type",
+      "bond order",
+      "single bond",
+      "single-bonded",
+      "double bond",
+      "double-bonded",
+      "triple bond",
+      "triple-bonded",
+      "majority bond",
+      "bond type accounted for"
+    ],
+    "severity": "block",
+    "scope": "Interpreting or filtering bonds by type",
+    "confidence": "high",
+    "description": "Bond order is encoded as '-' for single, '=' for double, and '#' for triple. These three symbols are the complete set of known bond type values.",
+    "evidence": [
+      "evidence_bond_order_domain"
+    ]
+  },
+  {
+    "id": "constraint_bond_order_missing",
+    "target": "term_bond_order",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "bond type",
+      "percentage of bonds",
+      "total bonds",
+      "all bonds",
+      "majority",
+      "proportion of bonds"
+    ],
+    "severity": "warning",
+    "scope": "Any count or percentage whose denominator is the total number of bonds",
+    "confidence": "high",
+    "description": "One bond, TR345_7_10 of molecule TR345, has a NULL bond order. It is neither single, double, nor triple, so it is excluded from bond-type filters but is still present when the total number of bonds is counted.",
+    "evidence": [
+      "evidence_bond_type_missing"
+    ]
+  },
+  {
+    "id": "constraint_carcinogenicity_enum",
+    "target": "term_carcinogenicity_label",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "carcinogenic",
+      "non-carcinogenic",
+      "carcinogenicity",
+      "toxicity",
+      "label",
+      "toxicology label"
+    ],
+    "severity": "block",
+    "scope": "Filtering or interpreting molecule carcinogenicity",
+    "confidence": "high",
+    "description": "'+' means carcinogenic and '-' means non-carcinogenic. No other label values exist; the label applies to a molecule, not to an individual atom or bond.",
+    "evidence": [
+      "evidence_carcinogenicity_domain"
+    ]
+  },
+  {
+    "id": "constraint_label_coverage",
+    "target": "term_molecule",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "all molecules",
+      "molecules",
+      "carcinogenic molecules",
+      "non-carcinogenic molecules",
+      "label",
+      "carcinogenic"
+    ],
+    "severity": "block",
+    "scope": "Choosing the molecule population for label-dependent analysis",
+    "confidence": "high",
+    "description": "The structural data contains 444 molecules, but only 343 molecules have a carcinogenicity label. The 101 unlabeled molecules appear in both the atom and bond data but have no molecule-label row. A query about molecules without a label condition may include unlabeled molecules, while a carcinogenic or non-carcinogenic condition can only be satisfied by the 343 labeled molecules.",
+    "evidence": [
+      "evidence_molecule_population"
+    ]
+  },
+  {
+    "id": "constraint_atom_id_format",
+    "target": "term_atom",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "atom",
+      "atom id",
+      "atom 19",
+      "atom 12",
+      "atom number",
+      "4th atom",
+      "nth atom",
+      "TR atom"
+    ],
+    "severity": "block",
+    "scope": "Identifying atoms and their molecule membership",
+    "confidence": "high",
+    "description": "An atom identifier has the form <molecule identifier>_<atom ordinal>, for example TR004_8 is atom 8 of molecule TR004. The molecule part is the prefix before the final underscore and the ordinal part is the full numeric suffix.",
+    "evidence": [
+      "evidence_atom_id_format"
+    ]
+  },
+  {
+    "id": "constraint_atom_ordinal_digits",
+    "target": "term_atom_ordinal",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "4th atom",
+      "nth atom",
+      "atom number",
+      "atom ordinal",
+      "position of atom",
+      "atom 12",
+      "atom 19"
+    ],
+    "severity": "warning",
+    "scope": "Selecting an atom by its position within a molecule",
+    "confidence": "high",
+    "description": "Atom ordinals start at 1 and are contiguous up to each molecule's atom count, but they are not limited to one digit: molecule sizes range from 4 to 174 atoms, so ordinals such as 12, 19, or 100 occur. An ordinal must be read as the complete numeric suffix after the underscore, not as a single character.",
+    "evidence": [
+      "evidence_atom_ordinal_digits"
+    ]
+  },
+  {
+    "id": "constraint_bond_id_format",
+    "target": "term_bond",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "bond",
+      "bond id",
+      "bond atoms",
+      "bond between atoms",
+      "TR004_8_9"
+    ],
+    "severity": "block",
+    "scope": "Identifying bonds and their endpoint atoms",
+    "confidence": "high",
+    "description": "A bond identifier has the form <molecule identifier>_<atom ordinal>_<atom ordinal>, for example TR004_8_9 is the bond between atoms 8 and 9 of molecule TR004. The two trailing numbers are the ordinals of the two endpoint atoms and belong to the same molecule.",
+    "evidence": [
+      "evidence_bond_id_format"
+    ]
+  },
+  {
+    "id": "constraint_bond_endpoints_same_molecule",
+    "target": "term_bond",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "bond atoms",
+      "bond between atoms",
+      "elements in a bond",
+      "endpoint atoms"
+    ],
+    "severity": "info",
+    "scope": "Interpreting the atoms of a bond",
+    "confidence": "high",
+    "description": "Both endpoint atoms of a bond belong to the same molecule; no bond connects atoms of different molecules. A bond identifier's molecule prefix therefore applies to both endpoint atom identifiers.",
+    "evidence": [
+      "evidence_incidence_integrity"
+    ]
+  },
+  {
+    "id": "constraint_incidence_symmetry",
+    "target": "term_atom_bond_incidence",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "connection",
+      "connections",
+      "bonds involving atom",
+      "number of bonds",
+      "degree",
+      "count bonds",
+      "how many bonds"
+    ],
+    "severity": "block",
+    "scope": "Counting bonds incident to an atom",
+    "confidence": "high",
+    "description": "The connectivity relation stores every bond twice, once from each endpoint and with the same bond identifier. Counting all rows that mention an atom across both endpoint columns therefore double-counts its bonds. Counting rows in one endpoint column, or counting distinct bond identifiers across both, yields the atom's true connection count.",
+    "evidence": [
+      "evidence_incidence_symmetry"
+    ]
+  },
+  {
+    "id": "constraint_unconnected_atoms",
+    "target": "term_unconnected_atom",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "cannot bond",
+      "can not bond",
+      "no bonds",
+      "isolated atom",
+      "unconnected atom",
+      "bond with any other atom"
+    ],
+    "severity": "info",
+    "scope": "Identifying atoms with no bonds",
+    "confidence": "high",
+    "description": "49 atoms appear in the atom table but in no connectivity record; these are atoms that bond with no other atom. Their elements are sodium (35), hydrogen (7), chlorine (5), potassium (1), and zinc (1).",
+    "evidence": [
+      "evidence_unconnected_atoms"
+    ]
+  },
+  {
+    "id": "constraint_element_symbols",
+    "target": "term_element",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "element",
+      "elements",
+      "carbon",
+      "hydrogen",
+      "oxygen",
+      "nitrogen",
+      "chlorine",
+      "element symbol"
+    ],
+    "severity": "warning",
+    "scope": "Interpreting or filtering atoms by element",
+    "confidence": "high",
+    "description": "Element symbols are stored in lowercase (c, h, o, n, cl, s, br, na, p, f, i, si, sn, cu, zn, y, te, pb, k, ca, b); there are 21 distinct symbols. Matching must use the lowercase form.",
+    "evidence": [
+      "evidence_element_domain"
+    ]
+  },
+  {
+    "id": "constraint_molecule_bonded_descriptor",
+    "target": "term_bond_order",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "double-bond molecules",
+      "triple-bonded molecules",
+      "double bonded molecules",
+      "single bonded molecules",
+      "molecules with double bonds",
+      "molecules which are double-bonded"
+    ],
+    "severity": "block",
+    "scope": "Classifying molecules by bond type",
+    "confidence": "high",
+    "description": "A molecule is described as single-bonded, double-bonded, or triple-bonded when it contains at least one bond of that order. The description is existential over the molecule's bonds and does not mean that all of its bonds have that order; 370 molecules contain at least one double bond and 4 contain at least one triple bond.",
+    "evidence": [
+      "evidence_bond_order_domain"
+    ]
+  }
+]

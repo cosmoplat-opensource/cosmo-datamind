@@ -1,0 +1,539 @@
+[
+  {
+    "id": "term_client",
+    "name": "Client",
+    "type": "entity",
+    "definition": "A bank customer, identified by client_id, who holds one or more roles on bank accounts and is characterised by gender, birth date and district of residence.",
+    "scope": "Customer demographics and the identity of the person standing behind an account.",
+    "aliases": [
+      "customer",
+      "client",
+      "account holder person",
+      "holder"
+    ],
+    "evidence": [
+      "evidence_client_table",
+      "evidence_gender_distribution"
+    ]
+  },
+  {
+    "id": "term_bank_account",
+    "name": "Bank Account",
+    "type": "entity",
+    "definition": "A bank account, identified by account_id, opened on a date at a branch located in a district and operating under a statement frequency regime.",
+    "scope": "Account-level analysis of ownership, loans, transactions and branch location.",
+    "aliases": [
+      "account",
+      "account number",
+      "bank account"
+    ],
+    "evidence": [
+      "evidence_account_table"
+    ]
+  },
+  {
+    "id": "term_disposition",
+    "name": "Disposition",
+    "type": "entity",
+    "definition": "The link record, identified by disp_id, that connects one client to one account together with the role the client plays on that account.",
+    "scope": "Resolving which client is related to which account and in what role.",
+    "aliases": [
+      "disp",
+      "disposition",
+      "client-account link",
+      "account relationship"
+    ],
+    "evidence": [
+      "evidence_disposition_roles",
+      "evidence_disposition_uniqueness"
+    ]
+  },
+  {
+    "id": "term_account_holder",
+    "name": "Account Holder",
+    "type": "entity",
+    "definition": "A client who holds a role on an account, either as its owner or as an authorised disponent.",
+    "scope": "Statements about account holders, holder identification numbers and who holds an account; the specific role must be resolved through the disposition role value.",
+    "aliases": [
+      "account holder",
+      "holder",
+      "account holder identification number",
+      "account holder number"
+    ],
+    "evidence": [
+      "evidence_disposition_roles"
+    ]
+  },
+  {
+    "id": "term_account_owner",
+    "name": "Account Owner",
+    "type": "entity",
+    "definition": "The client who owns an account; exactly one owner disposition exists for every account.",
+    "scope": "Ownership questions and eligibility conditions expressed through the owner role.",
+    "aliases": [
+      "owner",
+      "account owner",
+      "OWNER"
+    ],
+    "evidence": [
+      "evidence_disposition_roles",
+      "evidence_disposition_uniqueness"
+    ]
+  },
+  {
+    "id": "term_disponent",
+    "name": "Disponent",
+    "type": "entity",
+    "definition": "A client granted authorised access to an account without owning it; optional and additional to the owner.",
+    "scope": "Secondary authorised users of an account.",
+    "aliases": [
+      "disponent",
+      "authorised user",
+      "authorized user",
+      "DISPONENT"
+    ],
+    "evidence": [
+      "evidence_disposition_roles",
+      "evidence_disposition_uniqueness"
+    ]
+  },
+  {
+    "id": "term_payment_card",
+    "name": "Payment Card",
+    "type": "entity",
+    "definition": "A payment card, identified by card_id, issued against a disposition and classified by card class.",
+    "scope": "Card-level questions including card class and card issuance.",
+    "aliases": [
+      "card",
+      "credit card",
+      "payment card"
+    ],
+    "evidence": [
+      "evidence_card_types"
+    ]
+  },
+  {
+    "id": "term_district",
+    "name": "District",
+    "type": "entity",
+    "definition": "A Czech district, identified by district_id and carrying a district name; the geographic unit at which client residences, account branch locations and district statistics are recorded.",
+    "scope": "Geographic grouping of clients, accounts and district-level indicators.",
+    "aliases": [
+      "district",
+      "area",
+      "location",
+      "branch location"
+    ],
+    "evidence": [
+      "evidence_district_columns",
+      "evidence_district_reference_integrity"
+    ]
+  },
+  {
+    "id": "term_region",
+    "name": "Region",
+    "type": "entity",
+    "definition": "A higher-level Czech administrative region that groups several districts, recorded as a region name on each district row.",
+    "scope": "Regional grouping and region-level filtering of districts; the region name is not a district name.",
+    "aliases": [
+      "region",
+      "region name",
+      "state"
+    ],
+    "evidence": [
+      "evidence_regions"
+    ]
+  },
+  {
+    "id": "term_loan_contract",
+    "name": "Loan Contract",
+    "type": "entity",
+    "definition": "A loan granted on an account, identified by loan_id, with an amount, a duration, a payment and a contract status.",
+    "scope": "Loan portfolio and contract-status analysis.",
+    "aliases": [
+      "loan",
+      "contract",
+      "loan contract",
+      "credit"
+    ],
+    "evidence": [
+      "evidence_loan_status",
+      "evidence_loan_dates"
+    ]
+  },
+  {
+    "id": "term_account_transaction",
+    "name": "Account Transaction",
+    "type": "entity",
+    "definition": "A single movement recorded on an account, identified by trans_id and characterised by a direction, an operation, an amount and a date.",
+    "scope": "Transaction-level analysis including withdrawals, deposits, remittances and card payments.",
+    "aliases": [
+      "transaction",
+      "trans",
+      "account movement",
+      "transfer"
+    ],
+    "evidence": [
+      "evidence_transaction_types",
+      "evidence_transaction_operations"
+    ]
+  },
+  {
+    "id": "term_standing_order",
+    "name": "Standing Order",
+    "type": "entity",
+    "definition": "A recurring outbound payment instruction registered on an account, identified by order_id and described by a symbol and a receiving bank.",
+    "scope": "Recurring payment analysis, kept distinct from single transactions.",
+    "aliases": [
+      "order",
+      "standing order",
+      "permanent order",
+      "payment order"
+    ],
+    "evidence": [
+      "evidence_order_symbols"
+    ]
+  },
+  {
+    "id": "term_client_gender",
+    "name": "Client Gender",
+    "type": "dimension",
+    "definition": "The recorded gender of a client, expressed as a single-letter code.",
+    "scope": "Gender-based grouping and filtering of clients.",
+    "aliases": [
+      "gender",
+      "sex",
+      "female",
+      "male",
+      "women",
+      "men"
+    ],
+    "evidence": [
+      "evidence_gender_distribution"
+    ]
+  },
+  {
+    "id": "term_client_birth_date",
+    "name": "Client Birth Date",
+    "type": "dimension",
+    "definition": "The recorded date of birth of a client, from which age and cohort conditions are expressed.",
+    "scope": "Age, cohort and seniority conditions on clients.",
+    "aliases": [
+      "birth date",
+      "birthdate",
+      "date of birth",
+      "born",
+      "dob"
+    ],
+    "evidence": [
+      "evidence_client_birth_range"
+    ]
+  },
+  {
+    "id": "term_client_age",
+    "name": "Client Age",
+    "type": "metric",
+    "definition": "The number of full years elapsed between a client's birth date and a reference date fixed by the analysis.",
+    "scope": "Age conditions and age projections on clients; no age column exists in the data, so a reference date must be chosen explicitly.",
+    "aliases": [
+      "age",
+      "how old",
+      "years old"
+    ],
+    "evidence": [
+      "evidence_client_birth_range"
+    ]
+  },
+  {
+    "id": "term_loan_status",
+    "name": "Loan Contract Status",
+    "type": "dimension",
+    "definition": "The coded state of a loan contract, distinguishing finished contracts from contracts still running and whether the client is in debt.",
+    "scope": "Selecting running or finished loan contracts and expressing debt conditions.",
+    "aliases": [
+      "status",
+      "contract status",
+      "loan status",
+      "finished",
+      "contract state"
+    ],
+    "evidence": [
+      "evidence_loan_status"
+    ]
+  },
+  {
+    "id": "term_running_contract",
+    "name": "Running Contract",
+    "type": "category",
+    "definition": "A loan contract that has not been terminated and is still being serviced, whether or not the client is in debt.",
+    "scope": "Used whenever contracts are described as still running; a subset of the loan contract status values.",
+    "aliases": [
+      "running contract",
+      "still running",
+      "ongoing contract",
+      "active loan"
+    ],
+    "evidence": [
+      "evidence_loan_status"
+    ]
+  },
+  {
+    "id": "term_loan_amount",
+    "name": "Loan Amount",
+    "type": "metric",
+    "definition": "The principal granted for a loan contract.",
+    "scope": "Loan size aggregation and comparison against a portfolio average.",
+    "aliases": [
+      "loan amount",
+      "amount of loan",
+      "principal"
+    ],
+    "evidence": [
+      "evidence_loan_status"
+    ]
+  },
+  {
+    "id": "term_account_opening_date",
+    "name": "Account Opening Date",
+    "type": "dimension",
+    "definition": "The date on which an account was opened.",
+    "scope": "Time filtering on account cohorts, such as accounts opened from a given year.",
+    "aliases": [
+      "account date",
+      "date opened",
+      "opening date",
+      "opened"
+    ],
+    "evidence": [
+      "evidence_account_dates"
+    ]
+  },
+  {
+    "id": "term_account_statement_frequency",
+    "name": "Account Statement Frequency",
+    "type": "dimension",
+    "definition": "The coded statement-issuance regime of an account, describing when account statements are produced.",
+    "scope": "Distinguishing accounts that issue a statement after each transaction from periodic statement accounts.",
+    "aliases": [
+      "frequency",
+      "statement frequency",
+      "statement issuance",
+      "statement mode",
+      "POPLATEK PO OBRATU"
+    ],
+    "evidence": [
+      "evidence_account_frequency"
+    ]
+  },
+  {
+    "id": "term_transaction_direction",
+    "name": "Transaction Direction",
+    "type": "dimension",
+    "definition": "The coded direction of an account movement, indicating whether value enters or leaves the account and through which kind of cash operation.",
+    "scope": "Interpreting whether a movement is an incoming credit or an outgoing debit.",
+    "aliases": [
+      "type",
+      "transaction direction",
+      "credit",
+      "debit",
+      "PRIJEM",
+      "VYDAJ",
+      "VYBER"
+    ],
+    "evidence": [
+      "evidence_transaction_types",
+      "evidence_transaction_amount_sign"
+    ]
+  },
+  {
+    "id": "term_transaction_operation",
+    "name": "Transaction Operation",
+    "type": "dimension",
+    "definition": "The finer-grained coded operation describing the mode of a movement, such as cash withdrawal, cash deposit, remittance, collection or card payment.",
+    "scope": "Distinguishing operation modes, in particular withdrawals made with a payment card.",
+    "aliases": [
+      "operation",
+      "transaction mode",
+      "mode of payment"
+    ],
+    "evidence": [
+      "evidence_transaction_operations"
+    ]
+  },
+  {
+    "id": "term_credit_card_withdrawal",
+    "name": "Credit Card Withdrawal",
+    "type": "category",
+    "definition": "A withdrawal performed with a payment card, as opposed to a cash withdrawal over the counter.",
+    "scope": "Card-usage analysis and filtering of card transactions.",
+    "aliases": [
+      "credit card withdrawal",
+      "card payment",
+      "card transaction",
+      "VYBER KARTOU"
+    ],
+    "evidence": [
+      "evidence_card_withdrawal"
+    ]
+  },
+  {
+    "id": "term_card_type",
+    "name": "Card Type",
+    "type": "category",
+    "definition": "The class of a payment card, ranging from a basic class through higher card levels.",
+    "scope": "Distinguishing card levels, including the high-level card class.",
+    "aliases": [
+      "card type",
+      "card level",
+      "high level credit card",
+      "gold"
+    ],
+    "evidence": [
+      "evidence_card_types"
+    ]
+  },
+  {
+    "id": "term_district_population",
+    "name": "District Population",
+    "type": "metric",
+    "definition": "The number of inhabitants of a district.",
+    "scope": "District size comparisons and selection of the most populated district.",
+    "aliases": [
+      "inhabitants",
+      "population",
+      "number of inhabitants",
+      "people"
+    ],
+    "evidence": [
+      "evidence_district_population_type"
+    ]
+  },
+  {
+    "id": "term_district_average_salary",
+    "name": "District Average Salary",
+    "type": "metric",
+    "definition": "The average salary level recorded for a district.",
+    "scope": "District-level economic comparison and salary-based ranking of clients through the district they live in.",
+    "aliases": [
+      "average salary",
+      "salary",
+      "lowest average salary",
+      "highest average salary"
+    ],
+    "evidence": [
+      "evidence_district_salary"
+    ]
+  },
+  {
+    "id": "term_district_unemployment_rate_1995",
+    "name": "District Unemployment Rate 1995",
+    "type": "metric",
+    "definition": "The district unemployment rate recorded for the year 1995, expressed as a percentage. The workload also refers to this column with a mistyped later year label.",
+    "scope": "Baseline year of the district unemployment comparison.",
+    "aliases": [
+      "unemployment rate 1995",
+      "unemployment rate 2015",
+      "unemployment rate in 1995"
+    ],
+    "evidence": [
+      "evidence_district_unemployment"
+    ]
+  },
+  {
+    "id": "term_district_unemployment_rate_1996",
+    "name": "District Unemployment Rate 1996",
+    "type": "metric",
+    "definition": "The district unemployment rate recorded for the year 1996, expressed as a percentage. The workload also refers to this column with a mistyped later year label.",
+    "scope": "Later year of the district unemployment comparison.",
+    "aliases": [
+      "unemployment rate 1996",
+      "unemployment rate 2016",
+      "unemployment rate in 1996"
+    ],
+    "evidence": [
+      "evidence_district_unemployment"
+    ]
+  },
+  {
+    "id": "term_unemployment_rate_increment",
+    "name": "Unemployment Rate Increment",
+    "type": "metric",
+    "definition": "The relative change of the district unemployment rate between 1995 and 1996, expressed as a percentage of the 1995 rate.",
+    "scope": "District-level change statements about unemployment between the two recorded years.",
+    "aliases": [
+      "unemployment increment",
+      "unemployment increment rate",
+      "percentage unemployment rate increment",
+      "change in unemployment"
+    ],
+    "evidence": [
+      "evidence_district_unemployment"
+    ]
+  },
+  {
+    "id": "term_district_crime_count_1995",
+    "name": "District Crime Count 1995",
+    "type": "metric",
+    "definition": "The number of crimes committed in a district in 1995.",
+    "scope": "District-level crime statistics for the year 1995.",
+    "aliases": [
+      "crimes committed in 1995",
+      "number of crimes 1995",
+      "crime count",
+      "A15"
+    ],
+    "evidence": [
+      "evidence_district_crime"
+    ]
+  },
+  {
+    "id": "term_district_crime_count_1996",
+    "name": "District Crime Count 1996",
+    "type": "metric",
+    "definition": "The number of crimes committed in a district in 1996.",
+    "scope": "District-level crime statistics for the year 1996; the sibling of the 1995 count in the same indicator series.",
+    "aliases": [
+      "crimes committed in 1996",
+      "number of crimes 1996",
+      "crime count 1996",
+      "A16"
+    ],
+    "evidence": [
+      "evidence_district_crime"
+    ]
+  },
+  {
+    "id": "term_gender_proportion",
+    "name": "Gender Proportion",
+    "type": "metric",
+    "definition": "The share of clients of one gender among a defined client population, expressed as a percentage.",
+    "scope": "Composition statements such as the percentage of male clients of a branch district.",
+    "aliases": [
+      "percentage of male clients",
+      "percentage of female clients",
+      "gender percentage",
+      "proportion",
+      "share"
+    ],
+    "evidence": [
+      "evidence_gender_distribution",
+      "evidence_female_per_district"
+    ]
+  },
+  {
+    "id": "term_average_salary_gap",
+    "name": "Average Salary Gap",
+    "type": "metric",
+    "definition": "The difference between the highest and the lowest district average salary levels being compared.",
+    "scope": "Spread statements about district average salary levels.",
+    "aliases": [
+      "gap",
+      "salary gap",
+      "difference between lowest and highest average salary",
+      "spread"
+    ],
+    "evidence": [
+      "evidence_district_salary"
+    ]
+  }
+]

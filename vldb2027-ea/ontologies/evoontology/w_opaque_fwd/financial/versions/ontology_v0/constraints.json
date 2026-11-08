@@ -1,0 +1,380 @@
+[
+  {
+    "id": "constraint_statement_frequency_enum",
+    "target": "term_statement_frequency",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "statement",
+      "statement issuance",
+      "issuance",
+      "frequency",
+      "monthly",
+      "weekly",
+      "after transaction",
+      "POPLATEK",
+      "POPLATEK MESICNE",
+      "POPLATEK TYDNE",
+      "POPLATEK PO OBRATU"
+    ],
+    "severity": "block",
+    "scope": "Interpreting or filtering account statement issuance in tab01.fld003.",
+    "confidence": "high",
+    "description": "The coded values mean: POPLATEK MESICNE = monthly issuance; POPLATEK TYDNE = weekly issuance; POPLATEK PO OBRATU = issuance after transaction. 'Monthly statement', 'weekly issuance statement', and 'issuance after transaction' in questions refer to these codes.",
+    "evidence": [
+      "ev_frequency_values"
+    ]
+  },
+  {
+    "id": "constraint_client_gender_enum",
+    "target": "term_client_gender",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "female",
+      "male",
+      "woman",
+      "women",
+      "man",
+      "men",
+      "gender",
+      "sex",
+      "F",
+      "M"
+    ],
+    "severity": "block",
+    "scope": "Interpreting or filtering client gender in tab03.fld010.",
+    "confidence": "high",
+    "description": "fld010 stores 'F' for female and 'M' for male. Questions using 'women' or 'female' refer to code 'F'; questions using 'men' or 'male' refer to code 'M'.",
+    "evidence": [
+      "ev_gender_values"
+    ]
+  },
+  {
+    "id": "constraint_loan_status_c",
+    "target": "term_loan_status",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "running",
+      "running with no issue",
+      "no issue",
+      "loan status",
+      "contract status",
+      "status",
+      "still running"
+    ],
+    "severity": "block",
+    "scope": "Interpreting loan contract status in tab06.fld031.",
+    "confidence": "high",
+    "description": "'C' denotes a running contract that is OK so far, which is the meaning of 'still running with no issue'. The observed status domain is A, B, C, D; the construction workload does not document the meanings of A, B, or D, so those codes must not be interpreted by assumption.",
+    "evidence": [
+      "ev_loan_status_values"
+    ]
+  },
+  {
+    "id": "constraint_loan_duration_months",
+    "target": "term_loan_duration",
+    "constraint_type": "unit",
+    "trigger_keywords": [
+      "loan validity",
+      "validity",
+      "duration",
+      "term",
+      "months",
+      "more than 12 months"
+    ],
+    "severity": "block",
+    "scope": "Interpreting loan term values in tab06.fld029.",
+    "confidence": "high",
+    "description": "fld029 is the loan duration in months. 'Loan validity more than 12 months' is a numeric comparison on this value, not a comparison on a year count.",
+    "evidence": [
+      "ev_loan_numeric"
+    ]
+  },
+  {
+    "id": "constraint_loan_amount_unit",
+    "target": "term_loan_amount",
+    "constraint_type": "unit",
+    "trigger_keywords": [
+      "loan amount",
+      "approved amount",
+      "amount",
+      "USD",
+      "less than 100,000",
+      "at least 250,000",
+      "threshold"
+    ],
+    "severity": "warn",
+    "scope": "Interpreting monetary thresholds on loan amounts in tab06.fld028.",
+    "confidence": "medium",
+    "description": "fld028 stores a plain numeric amount with no currency column anywhere in the database. Questions express thresholds in USD (for example less than USD100,000 or at least 250,000); these thresholds compare against the numeric fld028 value. No exchange-rate information is present, so no currency conversion can be derived from the data.",
+    "evidence": [
+      "ev_loan_numeric",
+      "ev_schema_tables"
+    ]
+  },
+  {
+    "id": "constraint_region_name_case",
+    "target": "term_region",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "region",
+      "East Bohemia",
+      "North Bohemia",
+      "Bohemia",
+      "Moravia",
+      "Prague",
+      "central Bohemia",
+      "south Bohemia",
+      "west Bohemia"
+    ],
+    "severity": "block",
+    "scope": "Filtering or listing regions from tab05.fld013.",
+    "confidence": "high",
+    "description": "Region values are stored with a lowercase first letter: 'Prague', 'central Bohemia', 'south Bohemia', 'west Bohemia', 'north Bohemia', 'east Bohemia', 'south Moravia', 'north Moravia'. Questions capitalize the first letter ('East Bohemia', 'North Bohemia'); exact string matching must use the stored casing.",
+    "evidence": [
+      "ev_district_region"
+    ]
+  },
+  {
+    "id": "constraint_district_vs_region",
+    "target": "term_district_name",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "district",
+      "district name",
+      "region",
+      "district region",
+      "district id"
+    ],
+    "severity": "block",
+    "scope": "Choosing between district name and region in tab05.",
+    "confidence": "high",
+    "description": "tab05.fld012 is the district name (for example Hl.m. Praha, Benesov) and tab05.fld013 is the region (for example 'east Bohemia'). A request for a district name must be answered from fld012; fld013 is not a district name.",
+    "evidence": [
+      "ev_district_region"
+    ]
+  },
+  {
+    "id": "constraint_dual_district_affiliation",
+    "target": "term_district",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "living",
+      "living in",
+      "reside",
+      "residence",
+      "staying",
+      "opened account",
+      "opened their accounts",
+      "district",
+      "region",
+      "branch"
+    ],
+    "severity": "block",
+    "scope": "Deciding which district affiliation applies when accounts and clients are both linked to tab05.",
+    "confidence": "high",
+    "description": "Two different district affiliations exist. tab01.fld002 is the district recorded on the account, i.e. where the account is held or was opened. tab03.fld002 is the district recorded on the client, i.e. the client's residence. 'Living' or 'staying' in a region refers to the client's district; 'opened their account in a district' refers to the account's district. The two can differ: 409 OWNER client-account pairs have different account and client districts.",
+    "evidence": [
+      "ev_two_district_links",
+      "ev_schema_tables"
+    ]
+  },
+  {
+    "id": "constraint_client_account_link",
+    "target": "term_disposition",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "client's accounts",
+      "customer accounts",
+      "accounts of",
+      "owns",
+      "owner",
+      "account holder",
+      "disposition",
+      "disponent",
+      "client"
+    ],
+    "severity": "block",
+    "scope": "Attributing accounts to clients.",
+    "confidence": "high",
+    "description": "Clients are linked to accounts only through tab04: tab04.fld009 is the client, tab04.fld001 is the account, and tab04.fld007 is the role. Each account has exactly one OWNER disposition and may have additional DISPONENT dispositions. Account rows do not carry a client identifier.",
+    "evidence": [
+      "ev_disposition",
+      "ev_schema_tables"
+    ]
+  },
+  {
+    "id": "constraint_disposition_role_enum",
+    "target": "term_disposition_role",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "owner",
+      "disponent",
+      "disposition role",
+      "account holder",
+      "OWNER",
+      "DISPONENT"
+    ],
+    "severity": "warn",
+    "scope": "Interpreting tab04.fld007.",
+    "confidence": "high",
+    "description": "tab04.fld007 holds OWNER or DISPONENT. This is a disposition role domain and is unrelated to the tab08 transaction type domain that uses the same column name.",
+    "evidence": [
+      "ev_disposition",
+      "ev_type_column_domains"
+    ]
+  },
+  {
+    "id": "constraint_cash_withdrawal_operation",
+    "target": "term_transaction_operation",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "withdrawal",
+      "withdrawals",
+      "withdraw",
+      "cash",
+      "cash withdrawal",
+      "withdrawal in cash",
+      "VYBER"
+    ],
+    "severity": "block",
+    "scope": "Identifying cash withdrawals in tab08.",
+    "confidence": "high",
+    "description": "The workload defines fld037 = 'VYBER' as withdrawal in cash. There are 434,918 transactions with operation VYBER; 16,666 of them carry fld007 = 'VYBER' while 418,252 carry fld007 = 'VYDAJ'. The operation column is the documented marker for cash withdrawal, and the type value VYBER is not a separate operation.",
+    "evidence": [
+      "ev_trans_operation",
+      "ev_type_column_domains"
+    ]
+  },
+  {
+    "id": "constraint_type_column_domains",
+    "target": "term_transaction_type",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "type",
+      "transaction type",
+      "card type",
+      "disposition type",
+      "OWNER",
+      "DISPONENT",
+      "classic",
+      "gold",
+      "junior",
+      "PRIJEM",
+      "VYDAJ",
+      "VYBER"
+    ],
+    "severity": "warn",
+    "scope": "Any use of a column named fld007.",
+    "confidence": "high",
+    "description": "fld007 is reused with unrelated domains: tab02 card type (classic, gold, junior), tab04 disposition role (OWNER, DISPONENT), and tab08 transaction type (PRIJEM, VYDAJ, VYBER). The column name alone is ambiguous; the table must qualify which domain applies.",
+    "evidence": [
+      "ev_type_column_domains"
+    ]
+  },
+  {
+    "id": "constraint_amount_column_domains",
+    "target": "term_loan_amount",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "amount",
+      "loan amount",
+      "transaction amount",
+      "order amount",
+      "approved amount",
+      "fld028"
+    ],
+    "severity": "warn",
+    "scope": "Any use of a column named fld028.",
+    "confidence": "high",
+    "description": "fld028 carries different monetary concepts by table: tab06 approved loan amount (4980 to 590820), tab07 permanent-order amount (1 to 14882), and tab08 transaction amount (0 to 87400). The intended table determines the concept; the column name alone is ambiguous.",
+    "evidence": [
+      "ev_amount_column_domains"
+    ]
+  },
+  {
+    "id": "constraint_date_column_domains",
+    "target": "term_loan_approval_date",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "date",
+      "year",
+      "approved loan date",
+      "account opening date",
+      "transaction date",
+      "between",
+      "before",
+      "after",
+      "opened in",
+      "born"
+    ],
+    "severity": "warn",
+    "scope": "Any use of a column named fld004 or of date-based filters.",
+    "confidence": "high",
+    "description": "fld004 is a date whose meaning depends on the table: tab01 account opening date (1993-01-01 to 1997-12-29), tab06 loan approval date (1993-07-05 to 1998-12-08), and tab08 transaction date (1993-01-01 to 1998-12-31). Dates are stored as ISO 'YYYY-MM-DD' text and compare in that form. tab03.fld011 is the client birth date and tab02.fld008 is the card issue date.",
+    "evidence": [
+      "ev_dates",
+      "ev_date_counts"
+    ]
+  },
+  {
+    "id": "constraint_average_salary_scale",
+    "target": "term_average_salary",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "average salary",
+      "salary",
+      "district salary",
+      "8000",
+      "10000",
+      "greater than 8000",
+      "over 10000"
+    ],
+    "severity": "info",
+    "scope": "Salary-threshold conditions on district average salary.",
+    "confidence": "high",
+    "description": "tab05.fld021 is an integer district-level average salary ranging from 8110 to 12541 across the 77 districts. Every district exceeds 8000, so a condition such as 'average salary greater than 8000' is satisfied by all districts; 8 districts exceed 10000.",
+    "evidence": [
+      "ev_salary_distribution"
+    ]
+  },
+  {
+    "id": "constraint_transaction_blank_values",
+    "target": "term_transaction_operation",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "null",
+      "blank",
+      "missing",
+      "operation",
+      "k_symbol",
+      "empty"
+    ],
+    "severity": "info",
+    "scope": "Interpreting missing values in tab08 text columns.",
+    "confidence": "high",
+    "description": "tab08.fld037 is NULL for 183,114 transactions, which in the observed data all have fld007 = 'PRIJEM'. tab08.fld035 contains NULL for 481,881 rows and a single-space value for 53,433 rows, so blank-looking values are not one consistent missing marker.",
+    "evidence": [
+      "ev_blank_values"
+    ]
+  },
+  {
+    "id": "constraint_percentage_denominator",
+    "target": "term_percentage_share",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "percentage",
+      "percent",
+      "proportion",
+      "share",
+      "ratio",
+      "what percentage"
+    ],
+    "severity": "warn",
+    "scope": "Interpreting percentage questions.",
+    "confidence": "high",
+    "description": "A percentage is a part-to-whole ratio: the numerator is the count of entities in the reference population that satisfy the stated condition, and the denominator is the count of entities in that reference population. The reference population is the one named in the question (for example all accounts, or all clients who requested weekly statements) and is not necessarily the entire entity table.",
+    "evidence": [
+      "ev_percentage_semantics"
+    ]
+  }
+]

@@ -1,0 +1,313 @@
+[
+  {
+    "confidence": "high",
+    "constraint_type": "enum_semantics",
+    "description": "cards.power is a text column with two non-numeric markers. 30624 printings have NULL power, mostly non-creature cards, and 429 printings carry the literal '*'. The construction workload treats 'unknown power' as power IS NULL OR power = '*', and 'infinite power' as power = '*' alone. Any numeric comparison on power must exclude both markers.",
+    "evidence": [
+      "ev_power_dist"
+    ],
+    "id": "c_power_non_numeric",
+    "scope": "Applies whenever a question filters or compares cards by power.",
+    "severity": "block",
+    "target": "t_card_power",
+    "trigger_keywords": [
+      "power",
+      "unknown power",
+      "infinite power",
+      "power is",
+      "powerless"
+    ]
+  },
+  {
+    "confidence": "high",
+    "constraint_type": "enum_semantics",
+    "description": "borderColor takes exactly the values black, borderless, gold, silver and white. 'borderless' is a stored literal value with 241 printings, not the absence of a border, so it must be matched as a value rather than as NULL.",
+    "evidence": [
+      "ev_border_color_dist"
+    ],
+    "id": "c_border_color_literal",
+    "scope": "Applies when filtering cards by border.",
+    "severity": "info",
+    "target": "t_border_color",
+    "trigger_keywords": [
+      "borderless",
+      "border color",
+      "border",
+      "borderless cards"
+    ]
+  },
+  {
+    "confidence": "high",
+    "constraint_type": "enum_semantics",
+    "description": "status takes exactly the values Legal, Banned and Restricted. 'legal for a format' means a row exists for that card and format with status 'Legal', not merely that a legality row exists. Restricted is a state distinct from both Legal and Banned and occurs only in duel, oldschool and vintage.",
+    "evidence": [
+      "ev_legalities_pairs"
+    ],
+    "id": "c_legality_status_semantics",
+    "scope": "Applies to every question that qualifies a card by legality in a format.",
+    "severity": "block",
+    "target": "t_legality_status",
+    "trigger_keywords": [
+      "legal",
+      "legal for",
+      "banned",
+      "restricted",
+      "commander",
+      "format"
+    ]
+  },
+  {
+    "confidence": "high",
+    "constraint_type": "business_rule",
+    "description": "A set is identified by sets.code and named by sets.name. Cards reference sets through cards.setCode, which corresponds to sets.code; all 56822 printings resolve to a set and no printing is orphaned. The set name must therefore be resolved to a code before it can constrain cards. A question naming a set constrains the cards of that set, so set-scoped aggregates use that set's printing count as their population.",
+    "evidence": [
+      "ev_set_join_key",
+      "ev_set_samples"
+    ],
+    "id": "c_set_join_key",
+    "scope": "Applies when a question restricts cards to a named set or asks for a set attribute.",
+    "severity": "block",
+    "target": "t_card_set",
+    "trigger_keywords": [
+      "set",
+      "card set",
+      "in the set",
+      "set name",
+      "Coldsnap",
+      "Eighth Edition",
+      "Hour of Devastation"
+    ]
+  },
+  {
+    "confidence": "high",
+    "constraint_type": "data_quality",
+    "description": "A card name is not unique to a row: 11170 names appear on more than one printing, and 'Adarkar Valkyrie' alone occurs in sets C14, C18, CSP, MMA and PLIST. A question about 'the card <name>' may therefore need several printings reconciled, and a question about 'the set of cards with <name>' is asking about those printings' sets rather than about a single set.",
+    "evidence": [
+      "ev_card_name_duplication",
+      "ev_adarkar_printings"
+    ],
+    "id": "c_card_name_ambiguity",
+    "scope": "Applies when a question identifies a card by its name.",
+    "severity": "warning",
+    "target": "t_card",
+    "trigger_keywords": [
+      "card named",
+      "card name",
+      "the card",
+      "Ancestor's Chosen",
+      "Adarkar Valkyrie"
+    ]
+  },
+  {
+    "confidence": "high",
+    "constraint_type": "business_rule",
+    "description": "Two different tables carry translations and they are not interchangeable. Card-level renditions live in foreign_data, keyed by foreign_data.uuid corresponding to cards.uuid, one row per card and language. Set-name renditions live in set_translations, keyed by set_translations.setCode corresponding to sets.code, one row per set and language. A question about translating a set name must use set_translations; a question about a card being available in a language must use foreign_data.",
+    "evidence": [
+      "ev_fd_join",
+      "ev_set_translation_sample"
+    ],
+    "id": "c_translation_sources_distinct",
+    "scope": "Applies when a question mentions a translation without saying whether it is a card translation or a set-name translation.",
+    "severity": "block",
+    "target": "t_foreign_language_availability",
+    "trigger_keywords": [
+      "translation",
+      "foreign language",
+      "available in",
+      "Italian translation",
+      "Simplified Chinese"
+    ]
+  },
+  {
+    "confidence": "high",
+    "constraint_type": "data_quality",
+    "description": "A language row for a set does not guarantee a translation: 231 of the 1210 set_translations rows carry an empty translation value. The construction workload states explicitly that 'have a translation means translation is not null', so counting sets having a translation must require a non-empty translation rather than the mere presence of a row.",
+    "evidence": [
+      "ev_set_translation_nulls"
+    ],
+    "id": "c_set_translation_nulls",
+    "scope": "Applies when counting sets that have a translation in a language.",
+    "severity": "warning",
+    "target": "t_set_translation",
+    "trigger_keywords": [
+      "translation",
+      "have a translation",
+      "Italian translation",
+      "translated name"
+    ]
+  },
+  {
+    "confidence": "high",
+    "constraint_type": "data_quality",
+    "description": "16 of the 229186 foreign_data rows reference a uuid that is absent from cards. Any count of translations taken from foreign_data without joining to cards can be inflated by these orphans.",
+    "evidence": [
+      "ev_fd_orphans"
+    ],
+    "id": "c_foreign_data_orphans",
+    "scope": "Applies when counting foreign-language rows or joining foreign_data to cards.",
+    "severity": "warning",
+    "target": "t_foreign_language_availability",
+    "trigger_keywords": [
+      "translation",
+      "foreign language",
+      "available in a language"
+    ]
+  },
+  {
+    "confidence": "medium",
+    "constraint_type": "business_rule",
+    "description": "The construction workload defines 'Story Spotlight cards that do not have a text box' as isStorySpotlight = 1 AND isTextless = 0. That reading conflicts with the column's own meaning, under which isTextless = 1 is the flag for a missing text box. The two readings select disjoint populations: the workload's reading returns 104 printings and the literal reading returns none, because no printing is both a Story Spotlight card and flagged textless. The intended definition is unresolved and should not be assumed silently.",
+    "evidence": [
+      "ev_story_spotlight_vs_textless"
+    ],
+    "id": "c_story_spotlight_textless_definition",
+    "scope": "Applies to questions combining Story Spotlight with the absence of a text box.",
+    "severity": "warning",
+    "target": "t_story_spotlight_card",
+    "trigger_keywords": [
+      "Story Spotlight",
+      "text box",
+      "textless",
+      "does not have a text box",
+      "without a text box"
+    ]
+  },
+  {
+    "confidence": "high",
+    "constraint_type": "business_rule",
+    "description": "There is no stored foil flag for this concept. The workload defines a printing as a powerful or incredibly powerful foil when cards.cardKingdomFoilId IS NOT NULL AND cards.cardKingdomId IS NOT NULL, which holds for 25061 of 56822 printings. cardKingdomFoilId is NULL on 27910 rows and cardKingdomId on 13622 rows, so the two columns must be read together.",
+    "evidence": [
+      "ev_card_kingdom_ids",
+      "ev_coldsnap_foil"
+    ],
+    "id": "c_foil_availability_definition",
+    "scope": "Applies to questions about foils or about cards described as powerful or incredibly powerful.",
+    "severity": "warning",
+    "target": "t_card_kingdom_foil_availability",
+    "trigger_keywords": [
+      "foil",
+      "powerful foil",
+      "powerful foils",
+      "incredibly powerful",
+      "cardKingdom"
+    ]
+  },
+  {
+    "confidence": "high",
+    "constraint_type": "scope",
+    "description": "A card percentage is a ratio over card printings, but the denominator is the population the question names and is not always the whole table. A question scoped to a set, such as the percentage of incredibly powerful cards in Coldsnap, divides by that set's 155 printings; an unscoped question, such as the percentage of borderless cards, divides by all 56822 printings. The numerator and denominator must be drawn from the same scope.",
+    "evidence": [
+      "ev_coldsnap_foil",
+      "ev_borderless_percentage"
+    ],
+    "id": "c_percentage_denominator_scope",
+    "scope": "Applies to every percentage question in the workload.",
+    "severity": "block",
+    "target": "t_card_percentage",
+    "trigger_keywords": [
+      "percentage",
+      "percent",
+      "ratio",
+      "of the cards in the set"
+    ]
+  },
+  {
+    "confidence": "high",
+    "constraint_type": "enum_semantics",
+    "description": "Two distinct columns describe a card's frame. cards.frameVersion holds one of five printing eras (1993, 1997, 2003, 2015, future) and is what the workload's 'frame styles' refers to. cards.frameEffects holds a comma-separated list of embellishments such as legendary, showcase, extendedart or sunmoondfc and is NULL for 53864 printings.",
+    "evidence": [
+      "ev_frame_version_dist",
+      "ev_frame_effects_dist"
+    ],
+    "id": "c_frame_version_vs_effects",
+    "scope": "Applies when a question mentions frame styles.",
+    "severity": "warning",
+    "target": "t_frame_version",
+    "trigger_keywords": [
+      "frame style",
+      "frame styles",
+      "frame",
+      "frameVersion",
+      "frameEffects"
+    ]
+  },
+  {
+    "confidence": "medium",
+    "constraint_type": "data_quality",
+    "description": "sets.baseSetSize holds the size of a set's base printing, ranging from 0 to 1694 across 551 sets. The construction workload's own evidence text is internally inconsistent on the threshold: the question says 'base set number of under 100' while the attached evidence defines it as baseSetSize < 10. The intended threshold is unresolved and neither value should be applied without flagging the discrepancy.",
+    "evidence": [
+      "ev_set_base_set_size"
+    ],
+    "id": "c_base_set_size_threshold_unresolved",
+    "scope": "Applies to questions comparing sets by size.",
+    "severity": "warning",
+    "target": "t_card_set",
+    "trigger_keywords": [
+      "base set size",
+      "base set number",
+      "set size",
+      "under 100"
+    ]
+  },
+  {
+    "confidence": "high",
+    "constraint_type": "business_rule",
+    "description": "cards.originalType is the printed type line while cards.types is the normalized type list. originalType = 'Artifact' selects 2093 printings, all of which also carry Artifact in types, but a further 2162 printings carry Artifact only inside a multi-type list such as 'Artifact,Creature' or 'Artifact,Land'. Equality on originalType therefore silently drops multi-type printings, and the two columns must not be treated as interchangeable.",
+    "evidence": [
+      "ev_originaltype_vs_types"
+    ],
+    "id": "c_original_type_vs_types",
+    "scope": "Applies when a question filters cards by a type name.",
+    "severity": "warning",
+    "target": "t_card_original_type",
+    "trigger_keywords": [
+      "artifact",
+      "artifact card",
+      "original type",
+      "types",
+      "supertypes",
+      "subtypes",
+      "type of card"
+    ]
+  },
+  {
+    "confidence": "high",
+    "constraint_type": "data_quality",
+    "description": "cards.text is unstructured free text and phrase questions are substring matches with no controlled vocabulary behind them. Only 53 of 56822 printings contain the phrase 'triggered ability', so a text-scoped question can select a very small population; combining it with another filter, such as unknown power, leaves 35 printings.",
+    "evidence": [
+      "ev_text_triggered"
+    ],
+    "id": "c_text_substring_matching",
+    "scope": "Applies when a question searches card text for a phrase.",
+    "severity": "warning",
+    "target": "t_card_text",
+    "trigger_keywords": [
+      "contains",
+      "text",
+      "card text",
+      "triggered ability",
+      "info about"
+    ]
+  },
+  {
+    "confidence": "high",
+    "constraint_type": "enum_semantics",
+    "description": "Language names are stored as full English names and must be matched exactly, including the distinction between 'Chinese Simplified' and 'Chinese Traditional', which are separate values. The card-level vocabulary holds 16 values and the set-level vocabulary holds 10; the workload's 'Italian translation' corresponds to language = 'Italian' in whichever of the two sources the question is about.",
+    "evidence": [
+      "ev_fd_languages",
+      "ev_st_languages"
+    ],
+    "id": "c_language_vocabulary",
+    "scope": "Applies whenever a question names a language.",
+    "severity": "block",
+    "target": "t_card_translation_language",
+    "trigger_keywords": [
+      "language",
+      "German",
+      "Italian",
+      "Chinese Simplified",
+      "Chinese Traditional",
+      "translation language"
+    ]
+  }
+]

@@ -1,0 +1,267 @@
+[
+  {
+    "id": "rel_post_comment",
+    "source": "term_post",
+    "relation_type": "composition",
+    "target": "term_comment",
+    "connection_condition": "each comment record carries the identifier of the single post it annotates",
+    "description": "A post is composed of its comments; a comment has no meaning without the post it annotates.",
+    "evidence": [
+      "evidence_comments_schema",
+      "evidence_fk_integrity"
+    ]
+  },
+  {
+    "id": "rel_post_vote",
+    "source": "term_post",
+    "relation_type": "composition",
+    "target": "term_vote",
+    "connection_condition": "each vote record carries the identifier of the post it was cast on",
+    "description": "A post accumulates the votes cast on it; a vote record is a component of the post's standing history.",
+    "evidence": [
+      "evidence_votes_schema"
+    ]
+  },
+  {
+    "id": "rel_post_history",
+    "source": "term_post",
+    "relation_type": "composition",
+    "target": "term_post_history",
+    "connection_condition": "each revision record carries the identifier of the post it belongs to",
+    "description": "A post is composed of its revision records; revision records document the life of one post and are meaningless without it.",
+    "evidence": [
+      "evidence_post_history_schema"
+    ]
+  },
+  {
+    "id": "rel_user_badge",
+    "source": "term_user",
+    "relation_type": "composition",
+    "target": "term_badge",
+    "connection_condition": "each badge award record carries the identifier of the user who received it",
+    "description": "A user account accumulates badge awards; an award record exists only as an event on one account.",
+    "evidence": [
+      "evidence_badge_names",
+      "evidence_fk_integrity"
+    ]
+  },
+  {
+    "id": "rel_user_post",
+    "source": "term_user",
+    "relation_type": "composition",
+    "target": "term_post",
+    "connection_condition": "each post carries the identifier of the account that created it",
+    "description": "A user account is composed of the posts it owns; ownership attaches a post to exactly one creating account.",
+    "evidence": [
+      "evidence_fk_integrity",
+      "evidence_community_user"
+    ]
+  },
+  {
+    "id": "rel_question_post_hierarchy",
+    "source": "term_question_post",
+    "relation_type": "hierarchy",
+    "target": "term_post",
+    "connection_condition": "",
+    "description": "A question post is one subtype of post, selected by the post type enumeration; its attribute set is a subset of the post attribute set plus question-only attributes.",
+    "evidence": [
+      "evidence_post_type_distribution"
+    ]
+  },
+  {
+    "id": "rel_answer_post_hierarchy",
+    "source": "term_answer_post",
+    "relation_type": "hierarchy",
+    "target": "term_post",
+    "connection_condition": "",
+    "description": "An answer post is one subtype of post, selected by the post type enumeration; it lacks the question-only attributes of title, tag list and view count.",
+    "evidence": [
+      "evidence_post_type_distribution",
+      "evidence_viewcount_by_posttype"
+    ]
+  },
+  {
+    "id": "rel_post_edit_history_hierarchy",
+    "source": "term_post_edit",
+    "relation_type": "hierarchy",
+    "target": "term_post_history",
+    "connection_condition": "",
+    "description": "A post edit is one subtype of post revision record, selected by the revision type enumeration; the creation records are not edits.",
+    "evidence": [
+      "evidence_post_history_types"
+    ]
+  },
+  {
+    "id": "rel_post_tags_tag_equivalence",
+    "source": "term_post_tags",
+    "relation_type": "equivalence",
+    "target": "term_tag",
+    "connection_condition": "the delimited labels attached to a question correspond to the label text of catalogue tag entries",
+    "description": "The labels attached to a post and the catalogue tag entries express the same topical concept in two physical representations, so a label found on a post can be resolved to its catalogue entry and vice versa.",
+    "evidence": [
+      "evidence_tag_count_vs_occurrence",
+      "evidence_tags_string_format"
+    ]
+  },
+  {
+    "id": "rel_denorm_name_equivalence",
+    "source": "term_denormalized_user_display_name",
+    "relation_type": "equivalence",
+    "target": "term_user_display_name",
+    "connection_condition": "where both are present they carry the same person name; no mismatches were observed between the copies and the account record",
+    "description": "Names stored on activity records are copies of the account display name, so either representation can be used to recognise the same person.",
+    "evidence": [
+      "evidence_denormalized_names"
+    ]
+  },
+  {
+    "id": "rel_badge_count_derivation",
+    "source": "term_badge",
+    "relation_type": "derivation",
+    "target": "term_badge_count",
+    "connection_condition": "",
+    "description": "A user's badge count is derived by counting that user's badge award records.",
+    "evidence": [
+      "evidence_badge_count_gt5"
+    ]
+  },
+  {
+    "id": "rel_influence_derivation",
+    "source": "term_user_reputation",
+    "relation_type": "derivation",
+    "target": "term_user_influence",
+    "connection_condition": "",
+    "description": "Influence is derived from reputation standing: the most influential user is the account holding the greatest reputation value.",
+    "evidence": [
+      "evidence_reputation_range"
+    ]
+  },
+  {
+    "id": "rel_percentage_derivation",
+    "source": "term_post",
+    "relation_type": "derivation",
+    "target": "term_percentage_share",
+    "connection_condition": "",
+    "description": "A percentage share over posts is derived from the count of posts satisfying a stated condition divided by the count of posts in the reference population.",
+    "evidence": [
+      "evidence_percentage_reference_populations"
+    ]
+  },
+  {
+    "id": "rel_first_occurrence_vote_derivation",
+    "source": "term_vote",
+    "relation_type": "derivation",
+    "target": "term_first_occurrence",
+    "connection_condition": "",
+    "description": "A user's first vote is derived as the earliest vote date among that user's vote records.",
+    "evidence": [
+      "evidence_first_vote_lookup",
+      "evidence_vote_date_granularity"
+    ]
+  },
+  {
+    "id": "rel_first_occurrence_badge_derivation",
+    "source": "term_badge",
+    "relation_type": "derivation",
+    "target": "term_first_occurrence",
+    "connection_condition": "",
+    "description": "The first award of a named badge is derived as the earliest award timestamp among records of that badge name.",
+    "evidence": [
+      "evidence_first_badge_date_ties"
+    ]
+  },
+  {
+    "id": "rel_reputation_post_score",
+    "source": "term_user_reputation",
+    "relation_type": "association",
+    "target": "term_post_score",
+    "connection_condition": "reached by combining the post creator with that creator's reputation value; there is no direct structural link between the two columns",
+    "description": "The standing of a user and the standing of the content that user produced are business-related, so cohort questions combine the two.",
+    "evidence": [
+      "evidence_reputation_range",
+      "evidence_score_range"
+    ]
+  },
+  {
+    "id": "rel_views_score",
+    "source": "term_post_view_count",
+    "relation_type": "association",
+    "target": "term_post_score",
+    "connection_condition": "",
+    "description": "Popularity and approval are distinct but related measures of the same post; a post can be highly viewed yet low scoring.",
+    "evidence": [
+      "evidence_viewcount_by_posttype",
+      "evidence_score_range"
+    ]
+  },
+  {
+    "id": "rel_title_tags",
+    "source": "term_post_title",
+    "relation_type": "association",
+    "target": "term_post_tags",
+    "connection_condition": "",
+    "description": "A question's headline words and its attached labels both describe the same topic, so a subject named in a question may be evidenced by either.",
+    "evidence": [
+      "evidence_tags_string_format",
+      "evidence_title_case_sensitivity"
+    ]
+  },
+  {
+    "id": "rel_comment_editing",
+    "source": "term_comment",
+    "relation_type": "association",
+    "target": "term_post_editing",
+    "connection_condition": "reached by combining the acting user of a revision with the comments written by that user; there is no direct column link",
+    "description": "Discussion and editing are both contributions to the same post by identified users, so questions link the editors of a post to the comments on it.",
+    "evidence": [
+      "evidence_post_history_types",
+      "evidence_comments_schema"
+    ]
+  },
+  {
+    "id": "rel_badge_reputation",
+    "source": "term_badge",
+    "relation_type": "association",
+    "target": "term_user_reputation",
+    "connection_condition": "",
+    "description": "Recognition awards and accumulated reputation both measure community standing and tend to co-vary.",
+    "evidence": [
+      "evidence_badge_names",
+      "evidence_reputation_range"
+    ]
+  },
+  {
+    "id": "rel_vote_bounty",
+    "source": "term_vote",
+    "relation_type": "association",
+    "target": "term_bounty_amount",
+    "connection_condition": "",
+    "description": "A bounty is offered through bounty vote records, so the bounty amount is a property carried by a subset of votes rather than by the post.",
+    "evidence": [
+      "evidence_vote_types_bounty"
+    ]
+  },
+  {
+    "id": "rel_ownership_editing",
+    "source": "term_post_ownership",
+    "relation_type": "association",
+    "target": "term_post_editing",
+    "connection_condition": "both roles reference the user table through separate columns on the same post record",
+    "description": "Creation and later editing are two distinct user roles over one post and must not be conflated when attributing a post to a person.",
+    "evidence": [
+      "evidence_last_editor_pointer"
+    ]
+  },
+  {
+    "id": "rel_age_score",
+    "source": "term_user_age",
+    "relation_type": "association",
+    "target": "term_post_score",
+    "connection_condition": "reached by combining the post creator with that creator's age; no direct column link exists",
+    "description": "Age cohorts and content standing are combined in cohort questions about older participants' content.",
+    "evidence": [
+      "evidence_age_nulls",
+      "evidence_score_range"
+    ]
+  }
+]

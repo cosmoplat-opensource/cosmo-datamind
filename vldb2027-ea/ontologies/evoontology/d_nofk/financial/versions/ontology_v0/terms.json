@@ -1,0 +1,604 @@
+[
+  {
+    "id": "term_client",
+    "name": "客户 (Client)",
+    "type": "entity",
+    "definition": "银行零售客户，由 client_id 唯一标识，具有性别与出生日期，并归属一个地区(district_id)。",
+    "scope": "客户维度分析：人口统计、地区归属、账户权属与持卡情况",
+    "aliases": [
+      "client",
+      "customer",
+      "客户",
+      "顾客"
+    ],
+    "evidence": [
+      "e_client_demographics_card_type",
+      "e_referential_integrity"
+    ]
+  },
+  {
+    "id": "term_account",
+    "name": "银行账户 (Account)",
+    "type": "entity",
+    "definition": "银行开立的账户，由 account_id 唯一标识，具有开立日期(account.date)、对账单频率代码(frequency)，并归属一个地区(district_id)。4950 个观测账户全部在 trans 表中至少有一笔交易。",
+    "scope": "账户维度分析：开户、活跃度、交易汇总；也是 loan/order/trans 的事实归属主体",
+    "aliases": [
+      "account",
+      "账户",
+      "账号"
+    ],
+    "evidence": [
+      "e_account_scope",
+      "e_referential_integrity"
+    ]
+  },
+  {
+    "id": "term_disposition",
+    "name": "账户权属关系 (Disposition)",
+    "type": "entity",
+    "definition": "客户与账户之间的权属关联记录，由 disp_id 标识，通过 type 区分所有者(OWNER)与代理人(DISPONENT)。它是 client 与 account 之间的桥接实体。",
+    "scope": "客户-账户权属分析；银行卡挂靠的载体",
+    "aliases": [
+      "disp",
+      "disposition",
+      "权属",
+      "持有人关系"
+    ],
+    "evidence": [
+      "e_disp_cardinality"
+    ]
+  },
+  {
+    "id": "term_card",
+    "name": "银行卡 (Card)",
+    "type": "entity",
+    "definition": "挂靠在某条权属关系(disp_id)上的支付卡，具有卡种(type)与发卡日期(issued)。",
+    "scope": "银行卡持有分析",
+    "aliases": [
+      "card",
+      "银行卡",
+      "支付卡"
+    ],
+    "evidence": [
+      "e_card_owner_only"
+    ]
+  },
+  {
+    "id": "term_transaction",
+    "name": "账户交易流水 (Transaction)",
+    "type": "entity",
+    "definition": "账户对账单中的一条交易记录，由 trans_id 标识，含交易日期、交易类型、操作渠道、金额、交易后余额与对手方信息。",
+    "scope": "交易分析主事实表；时间序列必须以 date 排序",
+    "aliases": [
+      "trans",
+      "transaction",
+      "交易",
+      "流水",
+      "对账单"
+    ],
+    "evidence": [
+      "e_trans_type_distribution",
+      "e_trans_id_not_temporal"
+    ]
+  },
+  {
+    "id": "term_loan",
+    "name": "贷款 (Loan)",
+    "type": "entity",
+    "definition": "授予某账户的贷款，含放款日期、贷款金额(amount)、期限(duration,月)、每期还款额(payments)与状态码(status)。",
+    "scope": "信贷分析：规模、还款计划与状态分组",
+    "aliases": [
+      "loan",
+      "贷款",
+      "信贷"
+    ],
+    "evidence": [
+      "e_loan_status_identity",
+      "e_loan_uver_link"
+    ]
+  },
+  {
+    "id": "term_standing_order",
+    "name": "常设委托 (Standing Order)",
+    "type": "entity",
+    "definition": "账户上登记的长期委托指令(order 表)，含收款方银行代码(bank_to)、收款账号(account_to)、金额与用途符号(k_symbol)。",
+    "scope": "定期扣款/长期委托分析",
+    "aliases": [
+      "order",
+      "standing order",
+      "常设委托",
+      "长期委托",
+      "委托"
+    ],
+    "evidence": [
+      "e_order_distribution"
+    ]
+  },
+  {
+    "id": "term_district",
+    "name": "地区 (District)",
+    "type": "entity",
+    "definition": "账户与客户所属的行政区/地区，由 district_id 唯一标识，含地区名称(A2)、地区分组(A3)，以及一组以 A 编码命名的地区级社会经济属性(A8-A16)。",
+    "scope": "地区维度分析与地区层面属性关联",
+    "aliases": [
+      "district",
+      "地区",
+      "区域"
+    ],
+    "evidence": [
+      "e_district_ranges",
+      "e_referential_integrity"
+    ]
+  },
+  {
+    "id": "term_transaction_type",
+    "name": "交易类型 (Transaction Type)",
+    "type": "category",
+    "definition": "交易的方向类别，观测到 PRIJEM、VYDAJ、VYBER 三个取值。该列是资金方向的主要编码列，金额列本身不带符号。",
+    "scope": "区分入账与出账方向",
+    "aliases": [
+      "trans.type",
+      "type",
+      "交易类型",
+      "PRIJEM",
+      "VYDAJ",
+      "VYBER"
+    ],
+    "evidence": [
+      "e_trans_type_distribution"
+    ]
+  },
+  {
+    "id": "term_transaction_operation",
+    "name": "交易操作渠道 (Transaction Operation)",
+    "type": "category",
+    "definition": "交易的细化操作方式，观测到 VKLAD、PREVOD Z UCTU、PREVOD NA UCET、VYBER、VYBER KARTOU 五个命名取值以及空值。与 trans.type 并非一一对应。",
+    "scope": "区分现金存取、转账、卡取等操作方式",
+    "aliases": [
+      "trans.operation",
+      "operation",
+      "操作",
+      "渠道"
+    ],
+    "evidence": [
+      "e_operation_type_crosstab"
+    ]
+  },
+  {
+    "id": "term_k_symbol",
+    "name": "用途符号 (K_Symbol)",
+    "type": "category",
+    "definition": "交易或常设委托的用途/类别符号。trans.k_symbol 观测到 DUCHOD、POJISTNE、SANKC. UROK、SIPO、SLUZBY、UROK、UVER；order.k_symbol 观测到 SIPO、UVER、POJISTNE、LEASING。两个表的词汇部分重叠，LEASING 仅出现在 order。",
+    "scope": "用途分类分析；缺失值编码在两个表中不统一",
+    "aliases": [
+      "k_symbol",
+      "symbol",
+      "用途",
+      "k符号"
+    ],
+    "evidence": [
+      "e_ksymbol_encoding"
+    ]
+  },
+  {
+    "id": "term_transaction_counterparty_bank",
+    "name": "交易对手方银行代码 (Counterparty Bank Code)",
+    "type": "category",
+    "definition": "trans.bank 中的对手方银行代码，观测到 13 个两字母代码(AB、CD、EF、GH、IJ、KL、MN、OP、QR、ST、UV、WX、YZ)，且仅出现在转账类交易中。",
+    "scope": "跨行交易分析",
+    "aliases": [
+      "trans.bank",
+      "bank",
+      "银行代码",
+      "对手行"
+    ],
+    "evidence": [
+      "e_bank_code_domains",
+      "e_counterparty_external"
+    ]
+  },
+  {
+    "id": "term_standing_order_recipient_bank",
+    "name": "常设委托收款方银行代码 (Recipient Bank Code)",
+    "type": "category",
+    "definition": "order.bank_to 中的收款方银行代码，取值域与 trans.bank 完全一致(同为 13 个代码，双方均无独有值)。",
+    "scope": "常设委托的跨行收款分析",
+    "aliases": [
+      "order.bank_to",
+      "bank_to",
+      "收款银行"
+    ],
+    "evidence": [
+      "e_bank_code_domains"
+    ]
+  },
+  {
+    "id": "term_account_frequency",
+    "name": "对账单频率代码 (Account Frequency)",
+    "type": "category",
+    "definition": "account.frequency 的代码，观测到 POPLATEK MESICNE、POPLATEK TYDNE、POPLATEK PO OBRATU 三个取值。代码为捷克语文本，其具体业务含义无法仅由库内数据验证。",
+    "scope": "账户对账单/计费方式分组",
+    "aliases": [
+      "frequency",
+      "对账频率",
+      "POPLATEK"
+    ],
+    "evidence": [
+      "e_account_frequency_enum"
+    ]
+  },
+  {
+    "id": "term_card_type",
+    "name": "卡种 (Card Type)",
+    "type": "category",
+    "definition": "card.type 的取值：classic、gold、junior。与持卡人年龄存在明显关联(junior 持卡人平均约 19.7 岁，classic/gold 约 43-44 岁)。",
+    "scope": "银行卡产品分组",
+    "aliases": [
+      "card.type",
+      "卡类型",
+      "卡种",
+      "gold",
+      "classic",
+      "junior"
+    ],
+    "evidence": [
+      "e_client_demographics_card_type"
+    ]
+  },
+  {
+    "id": "term_disposition_type",
+    "name": "权属角色 (Disposition Type)",
+    "type": "category",
+    "definition": "disp.type 的取值：OWNER(所有者)与 DISPONENT(代理人)。每个账户恰有一条 OWNER 记录，部分账户另有一条 DISPONENT 记录。",
+    "scope": "客户-账户权属角色区分",
+    "aliases": [
+      "disp.type",
+      "OWNER",
+      "DISPONENT",
+      "所有者",
+      "代理人"
+    ],
+    "evidence": [
+      "e_disp_cardinality"
+    ]
+  },
+  {
+    "id": "term_loan_status",
+    "name": "贷款状态 (Loan Status)",
+    "type": "category",
+    "definition": "loan.status 的取值：A、B、C、D，伴随显著不同的平均贷款金额与期限(A 约 9.16 万/22 月、B 约 14.07 万/26 月、C 约 17.14 万/43 月、D 约 24.93 万/46 月)。字母的具体业务含义无法仅由库内数据验证。",
+    "scope": "贷款规模/状态分组",
+    "aliases": [
+      "loan.status",
+      "status",
+      "贷款状态",
+      "A",
+      "B",
+      "C",
+      "D"
+    ],
+    "evidence": [
+      "e_loan_status_identity"
+    ]
+  },
+  {
+    "id": "term_client_gender",
+    "name": "客户性别 (Gender)",
+    "type": "category",
+    "definition": "client.gender 的取值：F 与 M，分布接近均衡(F=2645，M=2724)。",
+    "scope": "客户人口统计分组",
+    "aliases": [
+      "gender",
+      "性别",
+      "F",
+      "M"
+    ],
+    "evidence": [
+      "e_client_demographics_card_type"
+    ]
+  },
+  {
+    "id": "term_district_region",
+    "name": "地区分组 (Region)",
+    "type": "dimension",
+    "definition": "district.A3 给出的地区分组，观测到 8 个取值(Prague、central Bohemia、south Bohemia、west Bohemia、north Bohemia、east Bohemia、north Moravia、south Moravia)，每个分组含 1 至 14 个地区。",
+    "scope": "地区上卷(roll-up)分析",
+    "aliases": [
+      "A3",
+      "region",
+      "地区分组",
+      "区域"
+    ],
+    "evidence": [
+      "e_district_ranges"
+    ]
+  },
+  {
+    "id": "term_transaction_date",
+    "name": "交易日期 (Transaction Date)",
+    "type": "dimension",
+    "definition": "trans.date，以文本 'YYYY-MM-DD' 存储，覆盖 1993-01-01 至 1998-12-31，是交易唯一可用的时间维度(表内无时间戳)。",
+    "scope": "所有交易时间序列分析必须以该列排序",
+    "aliases": [
+      "trans.date",
+      "date",
+      "交易日期",
+      "时间"
+    ],
+    "evidence": [
+      "e_date_ranges",
+      "e_trans_id_not_temporal"
+    ]
+  },
+  {
+    "id": "term_client_birth_date",
+    "name": "客户出生日期 (Birth Date)",
+    "type": "dimension",
+    "definition": "client.birth_date，以文本 'YYYY-MM-DD' 存储，覆盖 1911-08-20 至 1987-09-27。",
+    "scope": "年龄计算与人口统计分析的输入",
+    "aliases": [
+      "birth_date",
+      "出生日期",
+      "生日"
+    ],
+    "evidence": [
+      "e_client_demographics_card_type"
+    ]
+  },
+  {
+    "id": "term_account_open_date",
+    "name": "账户开立日期 (Account Open Date)",
+    "type": "dimension",
+    "definition": "account.date，账户开立日期，覆盖 1993-01-01 至 1997-12-29。观测到没有任何账户的首笔交易早于其开立日期。",
+    "scope": "账户生命周期与活跃期计算的起点",
+    "aliases": [
+      "account.date",
+      "开立日期",
+      "开户日"
+    ],
+    "evidence": [
+      "e_account_scope"
+    ]
+  },
+  {
+    "id": "term_district_socioeconomic_attribute",
+    "name": "地区社会经济属性 (District Socioeconomic Attributes)",
+    "type": "concept",
+    "definition": "district 表中以 A8-A16 编码命名的地区级属性列。观测到的取值域：A8 0-5、A9 1-11、A10 33.9-100.0(比例尺度)、A11 8110-12541、A12 0.2-7.3(含 1 个空值)、A13 0.43-9.4、A14 81-167、A15 818-85677(含 1 个空值)、A16 888-99107。列名本身不携带语义，其业务含义无法仅由库内数据验证。",
+    "scope": "地区层面属性关联分析；仅可作为地区级属性使用，不可跨地区求和",
+    "aliases": [
+      "A8",
+      "A9",
+      "A10",
+      "A11",
+      "A12",
+      "A13",
+      "A14",
+      "A15",
+      "A16",
+      "地区属性"
+    ],
+    "evidence": [
+      "e_district_ranges"
+    ]
+  },
+  {
+    "id": "term_transaction_amount",
+    "name": "交易金额 (Transaction Amount)",
+    "type": "metric",
+    "definition": "trans.amount，单笔交易的金额，取值恒为非负整数(观测 0 至 87400)。资金方向由 trans.type 而非符号表达。",
+    "scope": "交易规模分析；应按交易类型分别汇总",
+    "aliases": [
+      "amount",
+      "交易金额",
+      "金额"
+    ],
+    "evidence": [
+      "e_trans_amount_sign"
+    ]
+  },
+  {
+    "id": "term_account_balance",
+    "name": "交易后账户余额 (Balance After Transaction)",
+    "type": "metric",
+    "definition": "trans.balance，记录该笔交易发生后的账户余额，观测范围 -41126 至 209637，其中 2999 行为负余额。该列不能由交易金额按时间累加可靠还原。",
+    "scope": "余额水平分析；不可用作交易金额累加的校验依据",
+    "aliases": [
+      "balance",
+      "余额",
+      "交易后余额"
+    ],
+    "evidence": [
+      "e_balance_reconciliation",
+      "e_balance_direction"
+    ]
+  },
+  {
+    "id": "term_client_age",
+    "name": "客户年龄 (Client Age)",
+    "type": "metric",
+    "definition": "由 client.birth_date 相对某一参考日期计算得到的年龄。以库内最晚交易日期 1998-12-31 为参考时，观测范围约 11.3 至 87.4 岁。",
+    "scope": "年龄分组分析；必须显式声明所用参考日期",
+    "aliases": [
+      "age",
+      "年龄"
+    ],
+    "evidence": [
+      "e_client_demographics_card_type",
+      "e_reference_date"
+    ]
+  },
+  {
+    "id": "term_loan_amount",
+    "name": "贷款金额 (Loan Amount)",
+    "type": "metric",
+    "definition": "loan.amount，贷款本金。观测上恒等于 loan.payments 与 loan.duration 的乘积。",
+    "scope": "信贷规模分析",
+    "aliases": [
+      "loan.amount",
+      "贷款金额",
+      "本金"
+    ],
+    "evidence": [
+      "e_loan_status_identity"
+    ]
+  },
+  {
+    "id": "term_loan_payment",
+    "name": "每期还款额 (Loan Payment)",
+    "type": "metric",
+    "definition": "loan.payments，贷款的每期还款额(无空值)。",
+    "scope": "还款计划分析",
+    "aliases": [
+      "payments",
+      "还款额",
+      "月供"
+    ],
+    "evidence": [
+      "e_loan_status_identity"
+    ]
+  },
+  {
+    "id": "term_loan_duration",
+    "name": "贷款期限 (Loan Duration)",
+    "type": "metric",
+    "definition": "loan.duration，贷款期限，以月为单位(观测 12 至 60)。",
+    "scope": "还款计划分析",
+    "aliases": [
+      "duration",
+      "期限"
+    ],
+    "evidence": [
+      "e_loan_status_identity"
+    ]
+  },
+  {
+    "id": "term_transaction_count",
+    "name": "交易笔数 (Transaction Count)",
+    "type": "metric",
+    "definition": "某账户或某分组下的交易记录条数。全库共 1056320 条，4500 个账户，平均每账户 234.7 条，最多 675 条。",
+    "scope": "账户活跃度计数",
+    "aliases": [
+      "count",
+      "笔数",
+      "交易笔数",
+      "活跃度"
+    ],
+    "evidence": [
+      "e_account_scope"
+    ]
+  },
+  {
+    "id": "term_account_activity_span",
+    "name": "账户活跃期 (Account Activity Span)",
+    "type": "metric",
+    "definition": "账户首笔交易日期至末笔交易日期的跨度。以 account.date 为起点衡量时，平均跨度约 1238 天。",
+    "scope": "账户生命周期分析",
+    "aliases": [
+      "活跃期",
+      "存续期",
+      "span"
+    ],
+    "evidence": [
+      "e_account_scope"
+    ]
+  },
+  {
+    "id": "term_account_credit_volume",
+    "name": "账户入账总额 (Account Credit Volume)",
+    "type": "metric",
+    "definition": "某账户所有 type='PRIJEM' 交易的金额合计，反映资金流入规模。",
+    "scope": "账户资金流入分析",
+    "aliases": [
+      "credit volume",
+      "入账",
+      "流入",
+      "收入"
+    ],
+    "evidence": [
+      "e_trans_type_distribution"
+    ]
+  },
+  {
+    "id": "term_account_debit_volume",
+    "name": "账户出账总额 (Account Debit Volume)",
+    "type": "metric",
+    "definition": "某账户所有 type 为 VYDAJ 或 VYBER 交易的金额合计，反映资金流出规模。",
+    "scope": "账户资金流出分析",
+    "aliases": [
+      "debit volume",
+      "出账",
+      "流出",
+      "支出"
+    ],
+    "evidence": [
+      "e_trans_type_distribution",
+      "e_balance_direction"
+    ]
+  },
+  {
+    "id": "term_credit_transaction",
+    "name": "入账交易 (Credit Transaction)",
+    "type": "concept",
+    "definition": "type='PRIJEM' 的交易子集，共 405083 条；在 400583 条可比较记录中有 391784 条(97.8%)使交易后余额上升。",
+    "scope": "资金流入侧的交易子集",
+    "aliases": [
+      "PRIJEM",
+      "入账",
+      "credit",
+      "贷方"
+    ],
+    "evidence": [
+      "e_balance_direction",
+      "e_trans_type_distribution"
+    ]
+  },
+  {
+    "id": "term_debit_transaction",
+    "name": "出账交易 (Debit Transaction)",
+    "type": "concept",
+    "definition": "type 为 VYDAJ 或 VYBER 的交易子集，共 651237 条；多数使交易后余额下降(VYDAJ 467840/634571，VYBER 15819/16666)。",
+    "scope": "资金流出侧的交易子集",
+    "aliases": [
+      "VYDAJ",
+      "VYBER",
+      "出账",
+      "debit",
+      "借方"
+    ],
+    "evidence": [
+      "e_balance_direction",
+      "e_trans_type_distribution"
+    ]
+  },
+  {
+    "id": "term_transaction_counterparty_account",
+    "name": "交易对手方账号 (Counterparty Account Number)",
+    "type": "concept",
+    "definition": "trans.account，转账类交易中对手方的账号。295389 条有值记录中仅 30 条能匹配本库 account 表，说明它属于外部账号编码空间。",
+    "scope": "跨行/对外转账的对手方识别；不可与本库账户直接等同",
+    "aliases": [
+      "trans.account",
+      "对手方账号",
+      "对方账号"
+    ],
+    "evidence": [
+      "e_counterparty_external"
+    ]
+  },
+  {
+    "id": "term_standing_order_recipient_account",
+    "name": "常设委托收款账号 (Standing Order Recipient Account)",
+    "type": "concept",
+    "definition": "order.account_to，常设委托的收款方账号。6471 条中仅 2 条匹配本库 account 表。其取值域与 trans.account 高度重叠(6446 个不同取值中有 6064 个同时出现在 trans.account 中)。",
+    "scope": "常设委托收款方识别；与 trans.account 属于同一外部账号编码空间",
+    "aliases": [
+      "order.account_to",
+      "account_to",
+      "收款账号"
+    ],
+    "evidence": [
+      "e_counterparty_external"
+    ]
+  }
+]

@@ -1,0 +1,239 @@
+{
+ "db_id": "card_games",
+ "questions": [
+  {
+   "question_id": 358,
+   "db_id": "card_games",
+   "question": "What is the border color of card \"Ancestor's Chosen\"?",
+   "evidence": "name of card  = 'Ancestor''s Chosen' ;",
+   "SQL": "SELECT DISTINCT fld005 FROM tab01 WHERE fld049 = 'Ancestor''s Chosen'",
+   "difficulty": "simple",
+   "SQL_original": "SELECT DISTINCT borderColor FROM cards WHERE name = 'Ancestor''s Chosen'"
+  },
+  {
+   "question_id": 474,
+   "db_id": "card_games",
+   "question": "Among the sets of cards that have an Italian translation, how many of them have a base set number of under 100?",
+   "evidence": "Italian translation refers to fld075 = 'Italian'; have a translation means fld094 is not null; base set number of under 100 refers to fld078 < 10",
+   "SQL": "SELECT COUNT(T1.fld001) FROM tab04 AS T1 INNER JOIN tab05 AS T2 ON T2.fld063 = T1.fld081 WHERE NOT T2.fld094 IS NULL AND T1.fld078 < 100 AND T2.fld075 = 'Italian'",
+   "difficulty": "moderate",
+   "SQL_original": "SELECT COUNT(T1.id) FROM sets AS T1 INNER JOIN set_translations AS T2 ON T2.setCode = T1.code WHERE T2.translation IS NOT NULL AND T1.baseSetSize < 100 AND T2.language = 'Italian'"
+  },
+  {
+   "question_id": 468,
+   "db_id": "card_games",
+   "question": "What is the Simplified Chinese translation of the name of the set \"Eighth Edition\"?",
+   "evidence": "Eighth Edition is the name of card set which refers to fld049 = 'Eighth Edition'; Simplified Chinese refers to fld075 = 'Chinese Simplified'; translation of the name refers to translation",
+   "SQL": "SELECT T2.fld094 FROM tab04 AS T1 INNER JOIN tab05 AS T2 ON T2.fld063 = T1.fld081 WHERE T1.fld049 = 'Eighth Edition' AND T2.fld075 = 'Chinese Simplified'",
+   "difficulty": "moderate",
+   "SQL_original": "SELECT T2.translation FROM sets AS T1 INNER JOIN set_translations AS T2 ON T2.setCode = T1.code WHERE T1.name = 'Eighth Edition' AND T2.language = 'Chinese Simplified'"
+  },
+  {
+   "question_id": 346,
+   "db_id": "card_games",
+   "question": "List all the card id and artist with unknown power which are legal for commander play format.",
+   "evidence": "unknown power refers to fld055 = '*' or fld055 IS NULL; commander play format refers to fld076 = 'commander'; legal for commander play format refers to fld076 = 'commander' where fld077 = 'Legal'",
+   "SQL": "SELECT T1.fld001, T1.fld002 FROM tab01 AS T1 INNER JOIN tab03 AS T2 ON T1.fld072 = T2.fld072 WHERE T2.fld077 = 'Legal' AND T2.fld076 = 'commander' AND (T1.fld055 IS NULL OR T1.fld055 = '*')",
+   "difficulty": "moderate",
+   "SQL_original": "SELECT T1.id, T1.artist FROM cards AS T1 INNER JOIN legalities AS T2 ON T1.uuid = T2.uuid WHERE T2.status = 'Legal' AND T2.format = 'commander' AND (T1.power IS NULL OR T1.power = '*')"
+  },
+  {
+   "question_id": 349,
+   "db_id": "card_games",
+   "question": "Name the card and artist with the most ruling information. Also state if the card is a promotional printing.",
+   "evidence": "with the most ruling information refers to Max(count(tab06.fld072)); the card is the promotional printing refers to fld029 = 1;",
+   "SQL": "SELECT T1.fld049, T1.fld002, T1.fld029 FROM tab01 AS T1 INNER JOIN tab06 AS T2 ON T1.fld072 = T2.fld072 WHERE T1.fld029 = 1 AND T1.fld002 = (SELECT fld002 FROM tab01 WHERE fld029 = 1 GROUP BY fld002 HAVING COUNT(DISTINCT fld072) = (SELECT MAX(count_uuid) FROM (SELECT COUNT(DISTINCT fld072) AS count_uuid FROM tab01 WHERE fld029 = 1 GROUP BY fld002))) LIMIT 1",
+   "difficulty": "moderate",
+   "SQL_original": "SELECT T1.name, T1.artist, T1.isPromo FROM cards AS T1 INNER JOIN rulings AS T2 ON T1.uuid = T2.uuid WHERE T1.isPromo = 1 AND T1.artist = (SELECT artist FROM cards WHERE isPromo = 1 GROUP BY artist HAVING COUNT(DISTINCT uuid) = (SELECT MAX(count_uuid) FROM ( SELECT COUNT(DISTINCT uuid) AS count_uuid FROM cards WHERE isPromo = 1 GROUP BY artist ))) LIMIT 1"
+  },
+  {
+   "question_id": 352,
+   "db_id": "card_games",
+   "question": "Calculate the percentage of the cards availabe in Chinese Simplified.",
+   "evidence": "Chinese Simplified' is the language; percentage = Divide(Sum(fld001 where fld075 = 'Chinese Simplified'), Count(fld001)) *100",
+   "SQL": "SELECT CAST(SUM(CASE WHEN T2.fld075 = 'Chinese Simplified' THEN 1 ELSE 0 END) AS REAL) * 100 / COUNT(T1.fld001) FROM tab01 AS T1 INNER JOIN tab02 AS T2 ON T1.fld072 = T2.fld072",
+   "difficulty": "moderate",
+   "SQL_original": "SELECT CAST(SUM(CASE WHEN T2.language = 'Chinese Simplified' THEN 1 ELSE 0 END) AS REAL) * 100 / COUNT(T1.id) FROM cards AS T1 INNER JOIN foreign_data AS T2 ON T1.uuid = T2.uuid"
+  },
+  {
+   "question_id": 530,
+   "db_id": "card_games",
+   "question": "List all the frame styles and cards Allen Williams worked on and find any banned cards if there are any.",
+   "evidence": "frame styles refers to fld019; cards Allen Williams worked on refers to fld002 = 'Allen Williams'; banned cards refers to fld077 = 'Banned'",
+   "SQL": "SELECT DISTINCT T1.fld019, T1.fld049, IIF(T2.fld077 = 'Banned', T1.fld049, 'NO') FROM tab01 AS T1 INNER JOIN tab03 AS T2 ON T1.fld072 = T2.fld072 WHERE T1.fld002 = 'Allen Williams'",
+   "difficulty": "moderate",
+   "SQL_original": "SELECT DISTINCT T1.frameVersion, T1.name , IIF(T2.status = 'Banned', T1.name, 'NO') FROM cards AS T1 INNER JOIN legalities AS T2 ON T1.uuid = T2.uuid WHERE T1.artist = 'Allen Williams'"
+  },
+  {
+   "question_id": 402,
+   "db_id": "card_games",
+   "question": "What is the percentage of Story Spotlight cards that do not have a text box? List them by their ID.",
+   "evidence": "Story Spotlight cards that do not have a text box refers to isStorylight = 1 and fld034 = 0; Percentage = DIVIDE(SUM(count(fld001) where isStorylight = 1 AND fld034 = 0 ), SUM(count(fld001))) * 100",
+   "SQL": "SELECT CAST(SUM(CASE WHEN fld034 = 0 AND fld033 = 1 THEN 1 ELSE 0 END) AS REAL) * 100 / COUNT(fld001) FROM tab01",
+   "difficulty": "moderate",
+   "SQL_original": "SELECT CAST(SUM(CASE WHEN isTextless = 0 AND  isStorySpotlight = 1 THEN 1 ELSE 0 END) AS REAL) * 100 / COUNT(id) FROM cards"
+  },
+  {
+   "question_id": 356,
+   "db_id": "card_games",
+   "question": "How many cards have infinite power?",
+   "evidence": "infinite power refers to fld055 = '*';",
+   "SQL": "SELECT COUNT(*) FROM tab01 WHERE fld055 = '*'",
+   "difficulty": "simple",
+   "SQL_original": "SELECT COUNT(*) FROM cards WHERE power = '*'"
+  },
+  {
+   "question_id": 368,
+   "db_id": "card_games",
+   "question": "What is the percentage of borderless cards?",
+   "evidence": "borderless card refers to fld005 = 'borderless'; percentage = Divide(Count (fld001) where fld005 = 'borderless', Count(fld001)) *100",
+   "SQL": "SELECT CAST(SUM(CASE WHEN fld005 = 'borderless' THEN 1 ELSE 0 END) AS REAL) * 100 / COUNT(fld001) FROM tab01",
+   "difficulty": "simple",
+   "SQL_original": "SELECT CAST(SUM(CASE WHEN borderColor = 'borderless' THEN 1 ELSE 0 END) AS REAL) * 100 / COUNT(id) FROM cards"
+  },
+  {
+   "question_id": 408,
+   "db_id": "card_games",
+   "question": "How many unknown power cards contain info about the triggered ability",
+   "evidence": "unknown power cards refers to fld055 is null or fld055 = '*';contain info about the triggered ability refers to text contains 'triggered ability'",
+   "SQL": "SELECT COUNT(DISTINCT T1.fld001) FROM tab01 AS T1 INNER JOIN tab06 AS T2 ON T1.fld072 = T2.fld072 WHERE (T1.fld055 IS NULL OR T1.fld055 = '*') AND T2.fld068 LIKE '%triggered ability%'",
+   "difficulty": "moderate",
+   "SQL_original": "SELECT Count(DISTINCT T1.id) FROM cards AS T1 INNER JOIN rulings AS T2 ON T1.uuid = T2.uuid WHERE (T1.power IS NULL OR T1.power = '*') AND T2.text LIKE '%triggered ability%'"
+  },
+  {
+   "question_id": 477,
+   "db_id": "card_games",
+   "question": "Which of these artists have designed a card in the set Coldsnap, Jeremy Jarvis, Aaron Miller or Chippy?",
+   "evidence": "card set Coldsnap refers to fld049 = 'Coldsnap'; Jeremy Jarvis, Aaron Miller or Chippy are the name of artists which refers to fld002 IN ('Jeremy Jarvis', 'Aaron Miller','Chippy');",
+   "SQL": "SELECT T1.fld002 FROM tab01 AS T1 INNER JOIN tab04 AS T2 ON T2.fld081 = T1.fld063 WHERE (T2.fld049 = 'Coldsnap' AND T1.fld002 = 'Chippy') OR (T2.fld049 = 'Coldsnap' AND T1.fld002 = 'Aaron Miller') OR (T2.fld049 = 'Coldsnap' AND T1.fld002 = 'Jeremy Jarvis') GROUP BY T1.fld002",
+   "difficulty": "challenging",
+   "SQL_original": "SELECT T1.artist FROM cards AS T1 INNER JOIN sets AS T2 ON T2.code = T1.setCode WHERE (T2.name = 'Coldsnap' AND T1.artist = 'Chippy') OR (T2.name = 'Coldsnap' AND T1.artist = 'Aaron Miller') OR (T2.name = 'Coldsnap' AND T1.artist = 'Jeremy Jarvis') GROUP BY T1.artist"
+  },
+  {
+   "question_id": 341,
+   "db_id": "card_games",
+   "question": "What are the borderless cards available without powerful foils?",
+   "evidence": "borderless' refers to fld005; poweful foils refers to fld006 paired with fld007 AND fld007 is not null",
+   "SQL": "SELECT fld001 FROM tab01 WHERE fld005 = 'borderless' AND (fld007 IS NULL OR fld007 IS NULL)",
+   "difficulty": "simple",
+   "SQL_original": "SELECT id FROM cards WHERE borderColor = 'borderless' AND (cardKingdomId IS NULL OR cardKingdomId IS NULL)"
+  },
+  {
+   "question_id": 407,
+   "db_id": "card_games",
+   "question": "Lists all types of cards in German.",
+   "evidence": "German refer to language; all types refer to the fld065, supertypes; fld065 is not null AND fld066 is not null",
+   "SQL": "SELECT T1.fld065, T1.fld066 FROM tab01 AS T1 INNER JOIN tab02 AS T2 ON T1.fld072 = T2.fld072 WHERE T2.fld075 = 'German' AND NOT T1.fld065 IS NULL AND NOT T1.fld066 IS NULL",
+   "difficulty": "moderate",
+   "SQL_original": "SELECT T1.subtypes, T1.supertypes FROM cards AS T1 INNER JOIN foreign_data AS T2 ON T1.uuid = T2.uuid WHERE T2.language = 'German' AND T1.subtypes IS NOT NULL AND T1.supertypes IS NOT NULL"
+  },
+  {
+   "question_id": 473,
+   "db_id": "card_games",
+   "question": "Is the set of cards with Adarkar Valkyrie only available outside the United States?",
+   "evidence": "card set Adarkar Valkyrie refers to fld049 = 'Adarkar Valkyrie'; fld083 = 1 means only available outside the United States;",
+   "SQL": "SELECT IIF(fld083 = 1, 'YES', 'NO') FROM tab01 AS T1 INNER JOIN tab04 AS T2 ON T2.fld081 = T1.fld063 WHERE T1.fld049 = 'Adarkar Valkyrie'",
+   "difficulty": "moderate",
+   "SQL_original": "SELECT IIF(isForeignOnly = 1, 'YES', 'NO') FROM cards AS T1 INNER JOIN sets AS T2 ON T2.code = T1.setCode WHERE T1.name = 'Adarkar Valkyrie'"
+  },
+  {
+   "question_id": 487,
+   "db_id": "card_games",
+   "question": "What is the percentage of incredibly powerful cards in the set Coldsnap?",
+   "evidence": "card set Coldsnap refers to fld049 = 'Coldsnap'; foil is incredibly powerful refers to fld006 is not null AND fld007 is not null; the percentage of incredibly powerful tab01 in the set refers to DIVIDE(SUM(incredibly powerful), SUM(fld049 = 'Coldsnap'))*100",
+   "SQL": "SELECT CAST(SUM(CASE WHEN NOT T1.fld006 IS NULL AND NOT T1.fld007 IS NULL THEN 1 ELSE 0 END) AS REAL) * 100 / COUNT(T1.fld001) FROM tab01 AS T1 INNER JOIN tab04 AS T2 ON T2.fld081 = T1.fld063 WHERE T2.fld049 = 'Coldsnap'",
+   "difficulty": "challenging",
+   "SQL_original": "SELECT CAST(SUM(CASE WHEN T1.cardKingdomFoilId IS NOT NULL AND T1.cardKingdomId IS NOT NULL THEN 1 ELSE 0 END) AS REAL) * 100 / COUNT(T1.id) FROM cards AS T1 INNER JOIN sets AS T2 ON T2.code = T1.setCode WHERE T2.name = 'Coldsnap'"
+  },
+  {
+   "question_id": 391,
+   "db_id": "card_games",
+   "question": "Among the Artifact cards, which are black color and comes with foreign languague translation?",
+   "evidence": "Artifact card refers to fld053 = 'Artifact'; black color refers to fld010 = 'B'; foreign language refers to fld075 in tab02",
+   "SQL": "SELECT DISTINCT T1.fld049 FROM tab01 AS T1 INNER JOIN tab02 AS T2 ON T1.fld072 = T2.fld072 WHERE T1.fld053 = 'Artifact' AND T1.fld010 = 'B'",
+   "difficulty": "moderate",
+   "SQL_original": "SELECT DISTINCT T1.name FROM cards AS T1 INNER JOIN foreign_data AS T2 ON T1.uuid = T2.uuid WHERE T1.originalType = 'Artifact' AND T1.colors = 'B'"
+  },
+  {
+   "question_id": 528,
+   "db_id": "card_games",
+   "question": "List the names of all the cards in the set Hour of Devastation and find the formats in which these cards are legal.",
+   "evidence": "the set Hour of Devastation refers to set.fld049 = 'Hour of Devastation'; names of all the tab01 in the set refers to tab01.fld049; legal cards refers to fld077 = 'Legal'; the formats refers to format",
+   "SQL": "SELECT DISTINCT T2.fld049, CASE WHEN T1.fld077 = 'Legal' THEN T1.fld076 ELSE NULL END FROM tab03 AS T1 INNER JOIN tab01 AS T2 ON T2.fld072 = T1.fld072 WHERE T2.fld063 IN (SELECT fld081 FROM tab04 WHERE fld049 = 'Hour of Devastation')",
+   "difficulty": "challenging",
+   "SQL_original": "SELECT DISTINCT T2.name , CASE WHEN T1.status = 'Legal' THEN T1.format ELSE NULL END FROM legalities AS T1 INNER JOIN cards AS T2 ON T2.uuid = T1.uuid WHERE T2.setCode IN ( SELECT code FROM sets WHERE name = 'Hour of Devastation' )"
+  },
+  {
+   "question_id": 484,
+   "db_id": "card_games",
+   "question": "Please list the Italian names of the cards in the set Coldsnap with the highest converted mana cost.",
+   "evidence": "card set Coldsnap refers to fld049 = 'Coldsnap'; Italian refers to fld075 = 'Italian'; highest converted mana cost refers to MAX(fld011)",
+   "SQL": "SELECT T2.fld049 FROM tab02 AS T1 INNER JOIN tab01 AS T2 ON T2.fld072 = T1.fld072 INNER JOIN tab04 AS T3 ON T3.fld081 = T2.fld063 WHERE T3.fld049 = 'Coldsnap' AND T1.fld075 = 'Italian' ORDER BY T2.fld011 DESC",
+   "difficulty": "moderate",
+   "SQL_original": "SELECT T2.name FROM foreign_data AS T1 INNER JOIN cards AS T2 ON T2.uuid = T1.uuid INNER JOIN sets AS T3 ON T3.code = T2.setCode WHERE T3.name = 'Coldsnap' AND T1.language = 'Italian' ORDER BY T2.convertedManaCost DESC"
+  },
+  {
+   "question_id": 414,
+   "db_id": "card_games",
+   "question": "What language is the set of 180 cards that belongs to the Ravnica block translated into?",
+   "evidence": "set of 180 cards refers to fld078 = 180",
+   "SQL": "SELECT T2.fld075 FROM tab04 AS T1 INNER JOIN tab05 AS T2 ON T1.fld081 = T2.fld063 WHERE T1.fld079 = 'Ravnica' AND T1.fld078 = 180",
+   "difficulty": "simple",
+   "SQL_original": "SELECT T2.language FROM sets AS T1 INNER JOIN set_translations AS T2 ON T1.code = T2.setCode WHERE T1.block = 'Ravnica' AND T1.baseSetSize = 180"
+  },
+  {
+   "question_id": 397,
+   "db_id": "card_games",
+   "question": "What is the mana cost of cards with a normal layout, a 2003 frame version, with a black border color, and available in paper and mtgo?",
+   "evidence": "available in paper and mtgo refers to fld004 = 'mtgo,paper'; fld019 = 2003;fld005 = 'black'",
+   "SQL": "SELECT fld041 FROM tab01 WHERE fld004 = 'mtgo,paper' AND fld005 = 'black' AND fld019 = 2003 AND fld037 = 'normal'",
+   "difficulty": "moderate",
+   "SQL_original": "SELECT manaCost FROM cards WHERE availability = 'mtgo,paper' AND borderColor = 'black' AND frameVersion = 2003 AND layout = 'normal'"
+  },
+  {
+   "question_id": 529,
+   "db_id": "card_games",
+   "question": "Find and list the names of sets which doesn't have Japanese translation but have Korean translation.",
+   "evidence": "names of sets refers to name; doesn't have Japanese translation refers to language not like '%Japanese%'; have Korean translation refers to fld075 = 'Korean'",
+   "SQL": "SELECT fld049 FROM tab04 WHERE fld081 IN (SELECT fld063 FROM tab05 WHERE fld075 = 'Korean' AND fld075 NOT LIKE '%Japanese%')",
+   "difficulty": "moderate",
+   "SQL_original": "SELECT name FROM sets WHERE code IN ( SELECT setCode FROM set_translations WHERE language = 'Korean' AND language NOT LIKE '%Japanese%' )"
+  },
+  {
+   "question_id": 345,
+   "db_id": "card_games",
+   "question": "For artifact type of cards that do not have multiple faces on the same card, state its legalities status for vintage play format.",
+   "evidence": "Artifact type of cards refers to fld071 = 'Artifact'; card does not have multiple faces on the same card refers to fld064 is NULL'; vintage play format refers to fld076 = 'vintage';",
+   "SQL": "SELECT DISTINCT T2.fld077 FROM tab01 AS T1 INNER JOIN tab03 AS T2 ON T1.fld072 = T2.fld072 WHERE T1.fld070 = 'Artifact' AND T2.fld076 = 'vintage' AND T1.fld064 IS NULL",
+   "difficulty": "moderate",
+   "SQL_original": "SELECT DISTINCT T2.status FROM cards AS T1 INNER JOIN legalities AS T2 ON T1.uuid = T2.uuid WHERE T1.type = 'Artifact' AND T2.format = 'vintage' AND T1.side IS NULL"
+  },
+  {
+   "question_id": 412,
+   "db_id": "card_games",
+   "question": "What is the foreign name of the card in French of type Creature, normal layout and black border color, by artist Matthew D. Wilson?",
+   "evidence": "in French refers to fld075 = 'French'; black border color refers to fld005 = 'black'",
+   "SQL": "SELECT fld049 FROM tab02 WHERE fld072 IN (SELECT fld072 FROM tab01 WHERE fld071 = 'Creature' AND fld037 = 'normal' AND fld005 = 'black' AND fld002 = 'Matthew D. Wilson') AND fld075 = 'French'",
+   "difficulty": "moderate",
+   "SQL_original": "SELECT name FROM foreign_data WHERE uuid IN ( SELECT uuid FROM cards WHERE types = 'Creature' AND layout = 'normal' AND borderColor = 'black' AND artist = 'Matthew D. Wilson' ) AND language = 'French'"
+  },
+  {
+   "question_id": 379,
+   "db_id": "card_games",
+   "question": "What are the cards belong to duel deck a? List the ID.",
+   "evidence": "duel deck a refers to fld012 = a;",
+   "SQL": "SELECT fld001 FROM tab01 WHERE fld012 = 'a'",
+   "difficulty": "simple",
+   "SQL_original": "SELECT id FROM cards WHERE duelDeck = 'a'"
+  },
+  {
+   "question_id": 422,
+   "db_id": "card_games",
+   "question": "What is the language of the card with the multiverse number 149934?",
+   "evidence": "multiverse number 149934 refers to fld048 = 149934;",
+   "SQL": "SELECT fld075 FROM tab02 WHERE fld048 = 149934",
+   "difficulty": "simple",
+   "SQL_original": "SELECT language FROM foreign_data WHERE multiverseid = 149934"
+  }
+ ]
+}

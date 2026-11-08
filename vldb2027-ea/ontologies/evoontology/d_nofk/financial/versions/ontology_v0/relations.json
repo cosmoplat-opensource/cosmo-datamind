@@ -1,0 +1,213 @@
+[
+  {
+    "id": "rel_account_disposition",
+    "source": "term_account",
+    "relation_type": "composition",
+    "target": "term_disposition",
+    "connection_condition": "disp.account_id 对应 account.account_id",
+    "description": "账户由一条或多条权属记录构成；权属记录脱离账户没有意义。4500 个账户中 3631 个有 1 条、869 个有 2 条权属记录。",
+    "evidence": [
+      "e_disp_cardinality"
+    ]
+  },
+  {
+    "id": "rel_client_disposition",
+    "source": "term_client",
+    "relation_type": "composition",
+    "target": "term_disposition",
+    "connection_condition": "disp.client_id 对应 client.client_id",
+    "description": "客户的权属记录是其账户关系的组成部分；观测上每个客户恰有 1 条权属记录。",
+    "evidence": [
+      "e_disp_cardinality"
+    ]
+  },
+  {
+    "id": "rel_disposition_card",
+    "source": "term_disposition",
+    "relation_type": "composition",
+    "target": "term_card",
+    "connection_condition": "card.disp_id 对应 disp.disp_id",
+    "description": "银行卡挂靠在权属记录上；观测到全部 892 张卡都挂靠在 OWNER 类型的权属记录上，DISPONENT 记录没有卡。",
+    "evidence": [
+      "e_card_owner_only"
+    ]
+  },
+  {
+    "id": "rel_account_transaction",
+    "source": "term_account",
+    "relation_type": "composition",
+    "target": "term_transaction",
+    "connection_condition": "trans.account_id 对应 account.account_id",
+    "description": "交易流水按账户归属；4500 个账户均有交易，不存在无交易的账户。",
+    "evidence": [
+      "e_account_scope",
+      "e_referential_integrity"
+    ]
+  },
+  {
+    "id": "rel_account_loan",
+    "source": "term_account",
+    "relation_type": "composition",
+    "target": "term_loan",
+    "connection_condition": "loan.account_id 对应 account.account_id",
+    "description": "贷款归属于单个账户；682 笔贷款分布于 682 个账户。",
+    "evidence": [
+      "e_loan_status_identity"
+    ]
+  },
+  {
+    "id": "rel_account_standing_order",
+    "source": "term_account",
+    "relation_type": "composition",
+    "target": "term_standing_order",
+    "connection_condition": "order.account_id 对应 account.account_id",
+    "description": "常设委托登记在账户上；6471 条委托分布于 3758 个账户。",
+    "evidence": [
+      "e_order_distribution"
+    ]
+  },
+  {
+    "id": "rel_district_account",
+    "source": "term_district",
+    "relation_type": "composition",
+    "target": "term_account",
+    "connection_condition": "account.district_id 对应 district.district_id",
+    "description": "账户归属地区，district_id 非空且无孤儿记录，账户不能脱离地区存在。",
+    "evidence": [
+      "e_referential_integrity"
+    ]
+  },
+  {
+    "id": "rel_district_client",
+    "source": "term_district",
+    "relation_type": "composition",
+    "target": "term_client",
+    "connection_condition": "client.district_id 对应 district.district_id",
+    "description": "客户归属地区，district_id 非空且无孤儿记录。注意客户所属地区与其账户所属地区是两个独立属性，观测上不必然一致。",
+    "evidence": [
+      "e_referential_integrity"
+    ]
+  },
+  {
+    "id": "rel_transaction_credit",
+    "source": "term_transaction",
+    "relation_type": "hierarchy",
+    "target": "term_credit_transaction",
+    "connection_condition": "",
+    "description": "入账交易是交易的一种类型；type='PRIJEM' 的记录集合是全部交易记录的真子集。",
+    "evidence": [
+      "e_trans_type_distribution"
+    ]
+  },
+  {
+    "id": "rel_transaction_debit",
+    "source": "term_transaction",
+    "relation_type": "hierarchy",
+    "target": "term_debit_transaction",
+    "connection_condition": "",
+    "description": "出账交易是交易的一种类型；type 为 VYDAJ 或 VYBER 的记录集合是全部交易记录的真子集。",
+    "evidence": [
+      "e_trans_type_distribution"
+    ]
+  },
+  {
+    "id": "rel_loan_amount_derivation",
+    "source": "term_loan_payment",
+    "relation_type": "derivation",
+    "target": "term_loan_amount",
+    "connection_condition": "loan.amount 与 loan.payments、loan.duration 在同一行内满足乘积关系",
+    "description": "贷款金额由每期还款额与期数(期限)相乘导出；682/682 笔贷款满足该关系(相对偏差 ≤5%，平均偏差 0%)。",
+    "evidence": [
+      "e_loan_status_identity"
+    ]
+  },
+  {
+    "id": "rel_client_age_derivation",
+    "source": "term_client_birth_date",
+    "relation_type": "derivation",
+    "target": "term_client_age",
+    "connection_condition": "年龄由 birth_date 与所选参考日期的差值导出",
+    "description": "客户年龄是由出生日期相对参考日期计算出的派生指标，库内无直接年龄列。",
+    "evidence": [
+      "e_client_demographics_card_type",
+      "e_reference_date"
+    ]
+  },
+  {
+    "id": "rel_account_span_derivation",
+    "source": "term_transaction",
+    "relation_type": "derivation",
+    "target": "term_account_activity_span",
+    "connection_condition": "按 account_id 分组取 trans.date 的最早与最晚值",
+    "description": "账户活跃期由该账户交易日期的最早与最晚值导出，库内无直接的活跃期列。",
+    "evidence": [
+      "e_account_scope"
+    ]
+  },
+  {
+    "id": "rel_credit_volume_derivation",
+    "source": "term_credit_transaction",
+    "relation_type": "derivation",
+    "target": "term_account_credit_volume",
+    "connection_condition": "按 account_id 分组对 inflow 交易金额求和",
+    "description": "账户入账总额由该账户入账交易的金额汇总导出。",
+    "evidence": [
+      "e_trans_type_distribution"
+    ]
+  },
+  {
+    "id": "rel_debit_volume_derivation",
+    "source": "term_debit_transaction",
+    "relation_type": "derivation",
+    "target": "term_account_debit_volume",
+    "connection_condition": "按 account_id 分组对 outflow 交易金额求和",
+    "description": "账户出账总额由该账户出账交易的金额汇总导出。",
+    "evidence": [
+      "e_trans_type_distribution"
+    ]
+  },
+  {
+    "id": "rel_counterparty_bank_equivalence",
+    "source": "term_transaction_counterparty_bank",
+    "relation_type": "equivalence",
+    "target": "term_standing_order_recipient_bank",
+    "connection_condition": "trans.bank 与 order.bank_to 共有全部 13 个代码，两列均无独有取值",
+    "description": "交易对手方银行代码与常设委托收款方银行代码使用同一套两字母银行代码；检索其中一列时应同时考虑另一列。",
+    "evidence": [
+      "e_bank_code_domains"
+    ]
+  },
+  {
+    "id": "rel_counterparty_account_equivalence",
+    "source": "term_transaction_counterparty_account",
+    "relation_type": "equivalence",
+    "target": "term_standing_order_recipient_account",
+    "connection_condition": "order.account_to 的 6446 个不同取值中有 6064 个同样出现在 trans.account 中",
+    "description": "交易对手方账号与常设委托收款账号属于同一外部账号编码空间，且两者都几乎不指向本库账户；可视为同一概念的两种出现位置。",
+    "evidence": [
+      "e_counterparty_external"
+    ]
+  },
+  {
+    "id": "rel_loan_uver_symbol",
+    "source": "term_loan",
+    "relation_type": "association",
+    "target": "term_k_symbol",
+    "connection_condition": "k_symbol='UVER' 出现在 trans 与 order 两表中，与 loan 表之间没有可用的标识列直接连接",
+    "description": "贷款与用途符号 UVER 在业务上相关：682 个有贷款的账户全部同时存在 k_symbol='UVER' 的交易记录与常设委托记录。但反向不成立(717 个 order 侧 UVER 账户中仅 682 个有贷款记录)，且两表之间无标识列连接，故为概念关联而非结构关系。",
+    "evidence": [
+      "e_loan_uver_link"
+    ]
+  },
+  {
+    "id": "rel_transaction_type_operation",
+    "source": "term_transaction_type",
+    "relation_type": "association",
+    "target": "term_transaction_operation",
+    "connection_condition": "",
+    "description": "交易类型与操作渠道是描述同一笔交易的两个不同分类维度，二者既不互为父子也不互相推导，且不是一一对应。",
+    "evidence": [
+      "e_operation_type_crosstab"
+    ]
+  }
+]

@@ -1,0 +1,186 @@
+[
+  {
+    "id": "evidence_schema_tables",
+    "source": "toxicology sqlite (read-only)",
+    "query": "SELECT name, sql FROM sqlite_master WHERE type='table'",
+    "result": "Four tables. molecule(molecule_id PRIMARY KEY, label). atom(atom_id PRIMARY KEY, molecule_id, element) with a foreign key from molecule_id to molecule.molecule_id. bond(bond_id PRIMARY KEY, molecule_id, bond_type) with a foreign key from molecule_id to molecule.molecule_id. connected(atom_id, atom_id2, bond_id) with PRIMARY KEY (atom_id, atom_id2) and foreign keys from both atom columns to atom.atom_id and from bond_id to bond.bond_id.",
+    "validation_method": "schema inspection via sqlite_master",
+    "timestamp": "2026-10-10T00:00:00+00:00"
+  },
+  {
+    "id": "evidence_row_counts",
+    "source": "toxicology sqlite (read-only)",
+    "query": "SELECT (SELECT COUNT(*) FROM molecule), (SELECT COUNT(*) FROM atom), (SELECT COUNT(*) FROM bond), (SELECT COUNT(*) FROM connected)",
+    "result": "molecule 343, atom 12333, bond 12379, connected 24758.",
+    "validation_method": "row count per table",
+    "timestamp": "2026-10-10T00:00:00+00:00"
+  },
+  {
+    "id": "evidence_molecule_label_domain",
+    "source": "toxicology sqlite (read-only)",
+    "query": "SELECT label, COUNT(*) FROM molecule GROUP BY label",
+    "result": "Two label values only: '+' with 152 molecules and '-' with 191 molecules. 152 + 191 = 343, the full molecule table, so no molecule row has a null label.",
+    "validation_method": "value domain enumeration and total reconciliation",
+    "timestamp": "2026-10-10T00:00:00+00:00"
+  },
+  {
+    "id": "evidence_bond_type_domain",
+    "source": "toxicology sqlite (read-only)",
+    "query": "SELECT bond_type, COUNT(*) FROM bond GROUP BY bond_type",
+    "result": "'-' 10528 single bonds, '=' 1844 double bonds, '#' 6 triple bonds, and one NULL group. The three codes account for 12378 of 12379 bonds.",
+    "validation_method": "value domain enumeration",
+    "timestamp": "2026-10-10T00:00:00+00:00"
+  },
+  {
+    "id": "evidence_bond_type_null",
+    "source": "toxicology sqlite (read-only)",
+    "query": "SELECT bond_id, molecule_id, bond_type FROM bond WHERE bond_type IS NULL",
+    "result": "One row: bond TR345_7_10 in molecule TR345 has a NULL bond_type. A comparison against the empty string returns no rows, confirming the value is NULL rather than blank.",
+    "validation_method": "null versus empty-string distinction check",
+    "timestamp": "2026-10-10T00:00:00+00:00"
+  },
+  {
+    "id": "evidence_element_domain",
+    "source": "toxicology sqlite (read-only)",
+    "query": "SELECT element, COUNT(*) FROM atom GROUP BY element ORDER BY COUNT(*) DESC",
+    "result": "21 distinct element codes, all lower-case: h 5518, c 4605, o 1043, n 480, cl 429, s 113, br 47, na 35, p 31, f 11, i 6, si 4, sn 2, cu 2, and single occurrences of zn, y, te, pb, k, ca, b. A case check confirms no element value differs from its lower-cased form.",
+    "validation_method": "value domain enumeration plus case verification",
+    "timestamp": "2026-10-10T00:00:00+00:00"
+  },
+  {
+    "id": "evidence_connected_bidirectional",
+    "source": "toxicology sqlite (read-only)",
+    "query": "SELECT cnt, COUNT(*) FROM (SELECT bond_id, COUNT(*) cnt FROM connected GROUP BY bond_id) GROUP BY cnt; SELECT COUNT(*) FROM connected WHERE atom_id = atom_id2",
+    "result": "Every one of the 12379 bond references appears exactly twice in the connection records, for a total of 24758 rows, which is exactly twice the bond count. No row has both atom columns equal, so the two records of a bond always anchor on two distinct atoms. All 12379 bonds appear in the connection records.",
+    "validation_method": "group-by cardinality check and self-loop check",
+    "timestamp": "2026-10-10T00:00:00+00:00"
+  },
+  {
+    "id": "evidence_or_versus_single_column",
+    "source": "toxicology sqlite (read-only)",
+    "query": "SELECT (SELECT COUNT(*) FROM connected WHERE atom_id='TR009_12' OR atom_id2='TR009_12'), (SELECT COUNT(*) FROM connected WHERE atom_id='TR009_12'), (SELECT COUNT(DISTINCT bond_id) FROM connected WHERE atom_id='TR009_12' OR atom_id2='TR009_12')",
+    "result": "Counting both atom positions returns 6 rows; counting one atom position returns 3 rows; the number of distinct bonds is 3. The both-position count is exactly double because each of the three bonds is stored once per direction.",
+    "validation_method": "direct comparison of single-column, both-column and distinct counts",
+    "timestamp": "2026-10-10T00:00:00+00:00"
+  },
+  {
+    "id": "evidence_connected_prefix_consistency",
+    "source": "toxicology sqlite (read-only)",
+    "query": "SELECT COUNT(*) FROM connected c JOIN bond b ON b.bond_id = c.bond_id WHERE substr(c.atom_id,1,5) <> substr(b.bond_id,1,5) OR substr(c.atom_id2,1,5) <> substr(b.bond_id,1,5)",
+    "result": "Zero mismatches across all 24758 connection rows: the molecule prefix of both connection atoms always equals the molecule prefix of the bond they belong to.",
+    "validation_method": "join-based consistency check",
+    "timestamp": "2026-10-10T00:00:00+00:00"
+  },
+  {
+    "id": "evidence_molecule_id_format",
+    "source": "toxicology sqlite (read-only)",
+    "query": "SELECT COUNT(*) FROM molecule WHERE molecule_id NOT GLOB 'TR[0-9][0-9][0-9]'",
+    "result": "Zero non-conforming molecule identifiers: every molecule_id is TR followed by exactly three digits. Values observed range from TR000 to TR501.",
+    "validation_method": "format pattern check",
+    "timestamp": "2026-10-10T00:00:00+00:00"
+  },
+  {
+    "id": "evidence_atom_id_format",
+    "source": "toxicology sqlite (read-only)",
+    "query": "SELECT COUNT(*) FROM atom WHERE atom_id NOT GLOB 'TR[0-9][0-9][0-9]_*'",
+    "result": "Zero non-conforming atom identifiers: each atom_id is a TRnnn molecule prefix, an underscore, and the atom number. Identifier lengths are 7, 8 or 9 characters, so the atom number occupies one, two or three characters and is not zero-padded.",
+    "validation_method": "format pattern check and identifier length distribution",
+    "timestamp": "2026-10-10T00:00:00+00:00"
+  },
+  {
+    "id": "evidence_atom_number_position",
+    "source": "toxicology sqlite (read-only)",
+    "query": "SELECT substr(atom_id,7,1) AS d7, COUNT(*) FROM atom GROUP BY d7",
+    "result": "The character at offset 7 takes the values 1 through 9 only, never 0: 1 with 4001 atoms, 2 with 2632, 3 with 1623, 4 with 1061, 5 with 822, 6 with 690, 7 with 568, 8 with 492 and 9 with 444. Because atom numbers start at 1 and are not zero-padded, this fixed offset yields the leading digit of the atom number rather than a single atom position.",
+    "validation_method": "character offset distribution check",
+    "timestamp": "2026-10-10T00:00:00+00:00"
+  },
+  {
+    "id": "evidence_molecule_label_coverage",
+    "source": "toxicology sqlite (read-only)",
+    "query": "SELECT COUNT(DISTINCT molecule_id) FROM atom WHERE molecule_id NOT IN (SELECT molecule_id FROM molecule); SELECT COUNT(*) FROM atom a WHERE a.molecule_id NOT IN (SELECT molecule_id FROM molecule)",
+    "result": "The atom table references 444 distinct molecules while the molecule table holds 343 rows. 101 molecules referenced by the structure tables have no molecule row and therefore no carcinogenicity label; 3222 atoms and 3223 bonds belong to those unlabelled molecules. Conversely, every molecule row has at least one atom and at least one bond.",
+    "validation_method": "referential coverage comparison between structure and label tables",
+    "timestamp": "2026-10-10T00:00:00+00:00"
+  },
+  {
+    "id": "evidence_unbonded_atoms",
+    "source": "toxicology sqlite (read-only)",
+    "query": "SELECT COUNT(*) FROM atom WHERE atom_id NOT IN (SELECT atom_id FROM connected) AND atom_id NOT IN (SELECT atom_id2 FROM connected); SELECT DISTINCT element FROM atom WHERE atom_id NOT IN (SELECT atom_id FROM connected) AND atom_id NOT IN (SELECT atom_id2 FROM connected)",
+    "result": "49 atoms appear in no connection record and so participate in no bond. Their elements are na, cl, h, zn and k.",
+    "validation_method": "set difference between the atom table and both connection atom positions",
+    "timestamp": "2026-10-10T00:00:00+00:00"
+  },
+  {
+    "id": "evidence_like_wildcard_escape",
+    "source": "toxicology sqlite (read-only)",
+    "query": "SELECT (SELECT COUNT(*) FROM connected WHERE atom_id LIKE 'TR%_19'), (SELECT COUNT(*) FROM connected WHERE atom_id LIKE 'TR%\\_19' ESCAPE '\\')",
+    "result": "The unescaped pattern returns 498 rows and the escaped pattern returns 497 rows. The extra row comes from the underscore acting as a single-character wildcard, which additionally matches an identifier whose number merely ends in 19.",
+    "validation_method": "escaped versus unescaped pattern comparison",
+    "timestamp": "2026-10-10T00:00:00+00:00"
+  },
+  {
+    "id": "evidence_triple_bonds",
+    "source": "toxicology sqlite (read-only)",
+    "query": "SELECT bond_id, molecule_id FROM bond WHERE bond_type = '#'",
+    "result": "Six triple bonds in total: TR041_7_10 and TR041_8_9 in molecule TR041, TR377_3_5 and TR377_4_6 in TR377, TR447_1_3 in TR447 and TR499_1_2 in TR499. Four distinct molecules contain a triple bond.",
+    "validation_method": "direct enumeration of the triple-bond subset",
+    "timestamp": "2026-10-10T00:00:00+00:00"
+  },
+  {
+    "id": "evidence_tr008_bond_types",
+    "source": "toxicology sqlite (read-only)",
+    "query": "SELECT bond_type, COUNT(*) FROM bond WHERE molecule_id = 'TR008' GROUP BY bond_type",
+    "result": "Molecule TR008 has 26 bonds: 25 single bonds and 1 double bond, so double bonds are 1 of 26 of its bonds.",
+    "validation_method": "per-molecule bond type tally",
+    "timestamp": "2026-10-10T00:00:00+00:00"
+  },
+  {
+    "id": "evidence_tr010_bond_types",
+    "source": "toxicology sqlite (read-only)",
+    "query": "SELECT bond_type, COUNT(*) FROM bond WHERE molecule_id = 'TR010' GROUP BY bond_type ORDER BY COUNT(*) DESC",
+    "result": "Molecule TR010 has 17 bonds: 16 single bonds and 1 double bond. The single bond is the bond type with the largest count.",
+    "validation_method": "per-molecule bond type tally ordered by count",
+    "timestamp": "2026-10-10T00:00:00+00:00"
+  },
+  {
+    "id": "evidence_tr060_composition",
+    "source": "toxicology sqlite (read-only)",
+    "query": "SELECT label FROM molecule WHERE molecule_id='TR060'; SELECT element, COUNT(*) FROM atom WHERE molecule_id='TR060' GROUP BY element ORDER BY COUNT(*) DESC",
+    "result": "Molecule TR060 carries the minus label, marking it non-carcinogenic. Its 103 atoms comprise h 59, c 39, o 2, cl 2 and n 1.",
+    "validation_method": "direct per-molecule label and element composition lookup",
+    "timestamp": "2026-10-10T00:00:00+00:00"
+  },
+  {
+    "id": "evidence_atoms_per_molecule",
+    "source": "toxicology sqlite (read-only)",
+    "query": "SELECT MIN(n), MAX(n), AVG(n) FROM (SELECT COUNT(*) n FROM atom GROUP BY molecule_id)",
+    "result": "Atoms per molecule range from 4 to 174 with a mean of about 27.78. The largest molecule is TR338 with 174 atoms; TR496 has 109 and TR060 has 103.",
+    "validation_method": "per-molecule atom count aggregation",
+    "timestamp": "2026-10-10T00:00:00+00:00"
+  },
+  {
+    "id": "evidence_double_bond_molecules",
+    "source": "toxicology sqlite (read-only)",
+    "query": "SELECT COUNT(DISTINCT molecule_id) FROM bond WHERE bond_type='='; SELECT m.label, COUNT(DISTINCT m.molecule_id) FROM molecule m WHERE m.molecule_id IN (SELECT molecule_id FROM bond WHERE bond_type='=') GROUP BY m.label",
+    "result": "370 distinct molecules contain at least one double bond. Among the labelled ones, 121 are carcinogenic and 170 are non-carcinogenic, leaving the remainder unlabelled under the label coverage gap.",
+    "validation_method": "set size of the qualifying molecules plus label split",
+    "timestamp": "2026-10-10T00:00:00+00:00"
+  },
+  {
+    "id": "evidence_atoms_in_double_bond_molecules",
+    "source": "toxicology sqlite (read-only)",
+    "query": "SELECT COUNT(*) FROM atom WHERE molecule_id IN (SELECT molecule_id FROM bond WHERE bond_type='='); SELECT SUM(element='c') FROM atom WHERE molecule_id IN (SELECT molecule_id FROM bond WHERE bond_type='=')",
+    "result": "The molecules containing at least one double bond hold 10972 atoms in total, of which 4246 are carbon atoms. The carbon count is well under half of the atom count, so the two candidate denominators for a carbon share give very different results.",
+    "validation_method": "scoped atom tally and element tally over the same scope",
+    "timestamp": "2026-10-10T00:00:00+00:00"
+  },
+  {
+    "id": "evidence_tr004_bond_atoms",
+    "source": "toxicology sqlite (read-only)",
+    "query": "SELECT * FROM connected WHERE bond_id = 'TR004_8_9'",
+    "result": "Bond TR004_8_9 is represented by two connection rows, TR004_8 to TR004_9 and TR004_9 to TR004_8, each carrying the same bond reference. The bond joins atoms 8 and 9 of molecule TR004.",
+    "validation_method": "direct lookup of one bond in the connection records",
+    "timestamp": "2026-10-10T00:00:00+00:00"
+  }
+]

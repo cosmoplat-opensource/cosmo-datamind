@@ -1,0 +1,149 @@
+{
+ "db_id": "financial",
+ "questions": [
+  {
+   "question_id": 98,
+   "db_id": "financial",
+   "question": "Among the accounts who have approved loan date in 1997, list out the accounts that have the lowest approved amount and choose weekly issuance statement.",
+   "evidence": "'POPLATEK TYDNE' stands for weekly issuance",
+   "SQL": "SELECT T2.fld001 FROM tab06 AS T1 INNER JOIN tab01 AS T2 ON T1.fld001 = T2.fld001 WHERE STRFTIME('%Y', T1.fld004) = '1997' AND T2.fld003 = 'POPLATEK TYDNE' ORDER BY T1.fld028 LIMIT 1",
+   "difficulty": "moderate",
+   "SQL_original": "SELECT T2.account_id FROM loan AS T1 INNER JOIN account AS T2 ON T1.account_id = T2.account_id WHERE STRFTIME('%Y', T1.date) = '1997' AND T2.frequency = 'POPLATEK TYDNE' ORDER BY T1.amount LIMIT 1"
+  },
+  {
+   "question_id": 89,
+   "db_id": "financial",
+   "question": "How many accounts who choose issuance after transaction are staying in East Bohemia region?",
+   "evidence": "fld013 contains the data of region; 'POPLATEK PO OBRATU' represents for 'issuance after transaction'.",
+   "SQL": "SELECT COUNT(T2.fld001) FROM tab05 AS T1 INNER JOIN tab01 AS T2 ON T1.fld002 = T2.fld002 WHERE T1.fld013 = 'east Bohemia' AND T2.fld003 = 'POPLATEK PO OBRATU'",
+   "difficulty": "moderate",
+   "SQL_original": "SELECT COUNT(T2.account_id) FROM district AS T1 INNER JOIN account AS T2 ON T1.district_id = T2.district_id WHERE T1.A3 = 'east Bohemia' AND T2.frequency = 'POPLATEK PO OBRATU'"
+  },
+  {
+   "question_id": 119,
+   "db_id": "financial",
+   "question": "For accounts in 1993 with statement issued after transaction, list the account ID, district name and district region.",
+   "evidence": "Records about district names could be found in fld012; fld013 contains the information about regions. 'POPLATEK PO OBRATU' stands for issuance after transaction",
+   "SQL": "SELECT T1.fld001, T2.fld012, T2.fld013 FROM tab01 AS T1 INNER JOIN tab05 AS T2 ON T1.fld002 = T2.fld002 WHERE T1.fld003 = 'POPLATEK PO OBRATU' AND STRFTIME('%Y', T1.fld004) = '1993'",
+   "difficulty": "moderate",
+   "SQL_original": "SELECT T1.account_id, T2.A2, T2.A3 FROM account AS T1 INNER JOIN district AS T2 ON T1.district_id = T2.district_id WHERE T1.frequency = 'POPLATEK PO OBRATU' AND STRFTIME('%Y', T1.date)= '1993'"
+  },
+  {
+   "question_id": 159,
+   "db_id": "financial",
+   "question": "List all the withdrawals in cash transactions that the client with the id 3356 makes.",
+   "evidence": "fld037 = 'VYBER' refers to withdrawal in cash",
+   "SQL": "SELECT T4.fld036 FROM tab03 AS T1 INNER JOIN tab04 AS T2 ON T1.fld009 = T2.fld009 INNER JOIN tab01 AS T3 ON T2.fld001 = T3.fld001 INNER JOIN tab08 AS T4 ON T3.fld001 = T4.fld001 WHERE T1.fld009 = 3356 AND T4.fld037 = 'VYBER'",
+   "difficulty": "simple",
+   "SQL_original": "SELECT T4.trans_id FROM client AS T1 INNER JOIN disp AS T2 ON T1.client_id = T2.client_id INNER JOIN account AS T3 ON T2.account_id = T3.account_id INNER JOIN trans AS T4 ON T3.account_id = T4.account_id WHERE T1.client_id = 3356 AND T4.operation = 'VYBER'"
+  },
+  {
+   "question_id": 118,
+   "db_id": "financial",
+   "question": "For loan amount less than USD100,000, what is the percentage of accounts that is still running with no issue.",
+   "evidence": "fld031 = 'C' stands for running contract, ok so far; Percentage of accounts by condition = [(total(fld028) & condition) / (total fld028)] * 100.",
+   "SQL": "SELECT CAST(SUM(fld031 = 'C') AS REAL) * 100 / COUNT(fld001) FROM tab06 WHERE fld028 < 100000",
+   "difficulty": "moderate",
+   "SQL_original": "SELECT CAST(SUM(status = 'C') AS REAL) * 100 / COUNT(account_id) FROM loan WHERE amount < 100000"
+  },
+  {
+   "question_id": 99,
+   "db_id": "financial",
+   "question": "Among the accounts who have loan validity more than 12 months, list out the accounts that have the highest approved amount and have account opening date in 1993.",
+   "evidence": "Loan validity more than 12 months refers to fld029 > 12",
+   "SQL": "SELECT T1.fld001 FROM tab06 AS T1 INNER JOIN tab01 AS T2 ON T1.fld001 = T2.fld001 WHERE STRFTIME('%Y', T2.fld004) = '1993' AND T1.fld029 > 12 ORDER BY T1.fld028 DESC LIMIT 1",
+   "difficulty": "moderate",
+   "SQL_original": "SELECT T1.account_id FROM loan AS T1 INNER JOIN account AS T2 ON T1.account_id = T2.account_id WHERE STRFTIME('%Y', T2.date) = '1993' AND T1.duration > 12 ORDER BY T1.amount DESC LIMIT 1"
+  },
+  {
+   "question_id": 136,
+   "db_id": "financial",
+   "question": "Between 1/1/1995 and 12/31/1997, how many loans in the amount of at least 250,000 per account that chose monthly statement issuance were approved?",
+   "evidence": "fld003 = 'POPLATEK MESICNE' stands for monthly issurance",
+   "SQL": "SELECT COUNT(T1.fld001) FROM tab01 AS T1 INNER JOIN tab06 AS T2 ON T1.fld001 = T2.fld001 WHERE T2.fld004 BETWEEN '1995-01-01' AND '1997-12-31' AND T1.fld003 = 'POPLATEK MESICNE' AND T2.fld028 >= 250000",
+   "difficulty": "moderate",
+   "SQL_original": "SELECT COUNT(T1.account_id) FROM account AS T1 INNER JOIN loan AS T2 ON T1.account_id = T2.account_id WHERE T2.date BETWEEN '1995-01-01' AND '1997-12-31' AND T1.frequency = 'POPLATEK MESICNE' AND T2.amount >= 250000"
+  },
+  {
+   "question_id": 112,
+   "db_id": "financial",
+   "question": "For the female client who was born in 1976/1/29, which district did she opened her account?",
+   "evidence": "Female refers to fld010 = 'F'; fld012 refers to district names",
+   "SQL": "SELECT T1.fld012 FROM tab05 AS T1 INNER JOIN tab03 AS T2 ON T1.fld002 = T2.fld002 WHERE T2.fld011 = '1976-01-29' AND T2.fld010 = 'F'",
+   "difficulty": "simple",
+   "SQL_original": "SELECT T1.A2 FROM district AS T1 INNER JOIN client AS T2 ON T1.district_id = T2.district_id WHERE T2.birth_date = '1976-01-29' AND T2.gender = 'F'"
+  },
+  {
+   "question_id": 186,
+   "db_id": "financial",
+   "question": "What percentage of male clients request for weekly statements to be issued?",
+   "evidence": "Percentage of male clients = [count(male clients who requested weekly statements / count(clients who requested weekly statements)] * 100%; Male means fld010 = 'M'; 'POPLATEK TYDNE' stands for weekly issuance",
+   "SQL": "SELECT CAST(SUM(T1.fld010 = 'M') AS REAL) * 100 / COUNT(T1.fld009) FROM tab03 AS T1 INNER JOIN tab05 AS T3 ON T1.fld002 = T3.fld002 INNER JOIN tab01 AS T2 ON T2.fld002 = T3.fld002 INNER JOIN tab04 AS T4 ON T1.fld009 = T4.fld009 AND T2.fld001 = T4.fld001 WHERE T2.fld003 = 'POPLATEK TYDNE'",
+   "difficulty": "moderate",
+   "SQL_original": "SELECT CAST(SUM(T1.gender = 'M') AS REAL) * 100 / COUNT(T1.client_id) FROM client AS T1 INNER JOIN district AS T3 ON T1.district_id = T3.district_id INNER JOIN account AS T2 ON T2.district_id = T3.district_id INNER JOIN disp as T4 on T1.client_id = T4.client_id AND T2.account_id = T4.account_id WHERE T2.frequency = 'POPLATEK TYDNE'"
+  },
+  {
+   "question_id": 93,
+   "db_id": "financial",
+   "question": "How many male customers who are living in North Bohemia have average salary greater than 8000?",
+   "evidence": "Male means that fld010 = 'M'; fld013 refers to region; fld021 pertains to average salary.",
+   "SQL": "SELECT COUNT(T1.fld009) FROM tab03 AS T1 INNER JOIN tab05 AS T2 ON T1.fld002 = T2.fld002 WHERE T1.fld010 = 'M' AND T2.fld013 = 'north Bohemia' AND T2.fld021 > 8000",
+   "difficulty": "moderate",
+   "SQL_original": "SELECT COUNT(T1.client_id) FROM client AS T1 INNER JOIN district AS T2 ON T1.district_id = T2.district_id WHERE T1.gender = 'M' AND T2.A3 = 'north Bohemia' AND T2.A11 > 8000"
+  },
+  {
+   "question_id": 168,
+   "db_id": "financial",
+   "question": "What percentage of clients who opened their accounts in the district with an average salary of over 10000 are women?",
+   "evidence": "Female refers to fld010 = 'F'; Woman and female are closed; Average salary can be found in fld021",
+   "SQL": "SELECT CAST(SUM(T2.fld010 = 'F') AS REAL) * 100 / COUNT(T2.fld009) FROM tab05 AS T1 INNER JOIN tab03 AS T2 ON T1.fld002 = T2.fld002 WHERE T1.fld021 > 10000",
+   "difficulty": "moderate",
+   "SQL_original": "SELECT CAST(SUM(T2.gender = 'F') AS REAL) * 100 / COUNT(T2.client_id) FROM district AS T1 INNER JOIN client AS T2 ON T1.district_id = T2.district_id WHERE T1.A11 > 10000"
+  },
+  {
+   "question_id": 138,
+   "db_id": "financial",
+   "question": "In the branch where the second-highest number of crimes were committed in 1995 occurred, how many male clients are there?",
+   "evidence": "Male refers to fld010 = 'M'; fld025 stands for no. of commited crimes 1995",
+   "SQL": "SELECT COUNT(T1.fld009) FROM tab03 AS T1 INNER JOIN tab05 AS T2 ON T1.fld002 = T2.fld002 WHERE T1.fld010 = 'M' AND T2.fld025 = (SELECT T3.fld025 FROM tab05 AS T3 ORDER BY T3.fld025 DESC LIMIT 1 OFFSET 1)",
+   "difficulty": "moderate",
+   "SQL_original": "SELECT COUNT(T1.client_id) FROM client AS T1 INNER JOIN district AS T2 ON T1.district_id = T2.district_id WHERE T1.gender = 'M' AND T2.A15 = (SELECT T3.A15 FROM district AS T3 ORDER BY T3.A15 DESC LIMIT 1, 1)"
+  },
+  {
+   "question_id": 173,
+   "db_id": "financial",
+   "question": "How often does account number 3 request an account statement to be released? What was the aim of debiting 3539 in total?",
+   "evidence": "fld035 refers to the purpose of payments",
+   "SQL": "SELECT T1.fld003, T2.fld035 FROM tab01 AS T1 INNER JOIN (SELECT fld001, fld035, SUM(fld028) AS total_amount FROM tab07 GROUP BY fld001, fld035) AS T2 ON T1.fld001 = T2.fld001 WHERE T1.fld001 = 3 AND T2.total_amount = 3539",
+   "difficulty": "challenging",
+   "SQL_original": "SELECT T1.frequency, T2.k_symbol FROM account AS T1 INNER JOIN (SELECT account_id, k_symbol, SUM(amount) AS total_amount FROM `order` GROUP BY account_id, k_symbol) AS T2 ON T1.account_id = T2.account_id WHERE T1.account_id = 3 AND T2.total_amount = 3539"
+  },
+  {
+   "question_id": 117,
+   "db_id": "financial",
+   "question": "What is the percentage of loan amount that has been fully paid with no issue.",
+   "evidence": "Loan paid with no issue means contract finished, no problems; fld031 = 'A' means contract finished, no problems; Percentage of accounts by condition = [(total(fld028) & condition) / (total fld028)] * 100%",
+   "SQL": "SELECT (CAST(SUM(CASE WHEN fld031 = 'A' THEN fld028 ELSE 0 END) AS REAL) * 100) / SUM(fld028) FROM tab06",
+   "difficulty": "moderate",
+   "SQL_original": "SELECT (CAST(SUM(CASE WHEN status = 'A' THEN amount ELSE 0 END) AS REAL) * 100) / SUM(amount) FROM loan"
+  },
+  {
+   "question_id": 95,
+   "db_id": "financial",
+   "question": "List out the account numbers of clients who are youngest and have highest average salary?",
+   "evidence": "If the person A's birthdate < B's birthdate, it means that person B is younger than person A; fld021 refers to average salary",
+   "SQL": "SELECT T1.fld001 FROM tab01 AS T1 INNER JOIN tab04 AS T2 ON T1.fld001 = T2.fld001 INNER JOIN tab03 AS T3 ON T2.fld009 = T3.fld009 INNER JOIN tab05 AS T4 ON T4.fld002 = T1.fld002 WHERE T2.fld009 = (SELECT fld009 FROM tab03 ORDER BY fld011 DESC LIMIT 1) GROUP BY T4.fld021, T1.fld001",
+   "difficulty": "moderate",
+   "SQL_original": "SELECT T1.account_id  FROM account AS T1 INNER JOIN disp AS T2 ON T1.account_id = T2.account_id INNER JOIN client AS T3 ON T2.client_id = T3.client_id INNER JOIN district AS T4 on T4.district_id = T1.district_id WHERE T2.client_id = ( SELECT client_id FROM client ORDER BY birth_date DESC LIMIT 1) GROUP BY T4.A11, T1.account_id"
+  },
+  {
+   "question_id": 120,
+   "db_id": "financial",
+   "question": "From Year 1995 to 2000, who are the accounts holders from 'east Bohemia'. State the account ID the frequency of statement issuance.",
+   "evidence": "Accounts holder refers to the person who own this account.",
+   "SQL": "SELECT T1.fld001, T1.fld003 FROM tab01 AS T1 INNER JOIN tab05 AS T2 ON T1.fld002 = T2.fld002 WHERE T2.fld013 = 'east Bohemia' AND STRFTIME('%Y', T1.fld004) BETWEEN '1995' AND '2000'",
+   "difficulty": "moderate",
+   "SQL_original": "SELECT T1.account_id, T1.frequency FROM account AS T1 INNER JOIN district AS T2 ON T1.district_id = T2.district_id WHERE T2.A3 = 'east Bohemia' AND STRFTIME('%Y', T1.date) BETWEEN '1995' AND '2000'"
+  }
+ ]
+}

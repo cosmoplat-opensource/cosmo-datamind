@@ -1,0 +1,298 @@
+[
+  {
+    "id": "c_attribute_coverage",
+    "target": "attribute_value",
+    "constraint_type": "scope",
+    "trigger_keywords": [
+      "strongest",
+      "fastest",
+      "smartest",
+      "dumbest",
+      "best",
+      "worst",
+      "highest attribute",
+      "lowest attribute",
+      "most powerful",
+      "ranking",
+      "rating"
+    ],
+    "severity": "warning",
+    "scope": "Any aggregate, ranking or extremum computed over rated attribute dimensions",
+    "confidence": "high",
+    "description": "Attribute ratings exist for only 623 of 750 superheroes; 127 heroes have no rating records at all. Extremum and ranking questions over attributes therefore silently exclude unrated heroes, and the number of rated heroes is not the total hero population.",
+    "evidence": [
+      "ev_attr_range"
+    ]
+  },
+  {
+    "id": "c_attribute_extremum_ties",
+    "target": "attribute_extremum_hero",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "highest",
+      "maximum",
+      "best",
+      "strongest",
+      "fastest",
+      "top",
+      "most",
+      "lowest",
+      "minimum",
+      "dumbest"
+    ],
+    "severity": "warning",
+    "scope": "Superlative questions that ask for the single hero with an extreme rating",
+    "confidence": "high",
+    "description": "Extreme ratings are not unique. 63 heroes share the maximum Strength rating of 100, 40 share the maximum Speed rating of 100, and 3 share the minimum Intelligence rating of 35. A superlative question may legitimately match several heroes, and answering with one hero silently discards the other tied heroes.",
+    "evidence": [
+      "ev_extremum_ties"
+    ]
+  },
+  {
+    "id": "c_attribute_scale",
+    "target": "attribute_value",
+    "constraint_type": "unit",
+    "trigger_keywords": [
+      "rating",
+      "score",
+      "attribute value",
+      "scale",
+      "out of 100",
+      "power level"
+    ],
+    "severity": "info",
+    "scope": "Comparison of ratings across different attribute dimensions",
+    "confidence": "high",
+    "description": "All six attribute dimensions share a single 0-100 rating scale, observed range 5-100 with no missing values, so a rating has the same meaning on every dimension and ratings are directly comparable between dimensions.",
+    "evidence": [
+      "ev_attr_range"
+    ]
+  },
+  {
+    "id": "c_height_missing_encoding",
+    "target": "height",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "height",
+      "tall",
+      "cm",
+      "height between",
+      "missing height",
+      "height known"
+    ],
+    "severity": "block",
+    "scope": "Any filter, range, comparison or average over superhero height",
+    "confidence": "high",
+    "description": "An unrecorded height is encoded in two ways: the value 0 (155 heroes) and the null value (58 heroes). A height of 0 is not a real measurement, so including zero-valued rows in a range filter, minimum or average produces incorrect results; conversely, excluding only nulls still leaves 155 fake zero heights.",
+    "evidence": [
+      "ev_height_missing"
+    ]
+  },
+  {
+    "id": "c_weight_missing_encoding",
+    "target": "weight",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "weight",
+      "kg",
+      "missing weight",
+      "weight known",
+      "without weight",
+      "heavy"
+    ],
+    "severity": "block",
+    "scope": "Any filter, range, comparison or missing-data analysis over superhero weight",
+    "confidence": "high",
+    "description": "An unrecorded weight is encoded as 0 (172 heroes) or as the null value (64 heroes), giving 236 heroes with no usable weight. A weight of 0 is not a real measurement; determining whether a hero has missing weight data requires treating both encodings as missing.",
+    "evidence": [
+      "ev_weight_missing"
+    ]
+  },
+  {
+    "id": "c_measurement_units",
+    "target": "height",
+    "constraint_type": "unit",
+    "trigger_keywords": [
+      "height",
+      "weight",
+      "cm",
+      "kg",
+      "tall",
+      "heavy",
+      "range"
+    ],
+    "severity": "info",
+    "scope": "Interpretation of the recorded physical measurements",
+    "confidence": "high",
+    "description": "Physical measurements are recorded in centimetres and kilograms. Values far outside human range are legitimate for giant characters, for example 10800 cm and 90000000 kg for Godzilla and 30480 cm for Surtur, so measurement filters should not assume a human scale.",
+    "evidence": [
+      "ev_height_missing",
+      "ev_weight_missing"
+    ]
+  },
+  {
+    "id": "c_colour_no_colour_sentinel",
+    "target": "colour_vocabulary",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "no colour",
+      "no color",
+      "no eye color",
+      "no eye colour",
+      "without eye colour",
+      "colourless",
+      "missing colour",
+      "unknown colour"
+    ],
+    "severity": "block",
+    "scope": "Interpretation of eye, hair and skin colour values, and any count of heroes lacking a recorded colour",
+    "confidence": "high",
+    "description": "The colour vocabulary contains a sentinel label 'No Colour' that marks an appearance colour which was not recorded; it is not itself a colour. 169 heroes carry it as eye colour and 246 as hair colour. No superhero has a null colour identifier, so 'No Colour' is the only representation of a missing appearance colour, and treating it as an ordinary colour inflates group counts.",
+    "evidence": [
+      "ev_colour_usage",
+      "ev_colour_vocab"
+    ]
+  },
+  {
+    "id": "c_colour_same_vocabulary_comparison",
+    "target": "eye_colour",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "same colour",
+      "same color",
+      "eyes and hair same",
+      "same eyes, hair and skin",
+      "matches",
+      "equal colour"
+    ],
+    "severity": "warning",
+    "scope": "Questions that compare eye, hair and skin colour values for equality",
+    "confidence": "high",
+    "description": "Because eye, hair and skin colour come from one vocabulary, equality between them is testable directly. However 159 heroes share the same value across all three dimensions and 155 of those matches come from the shared sentinel 'No Colour', meaning both colours were simply unrecorded. Genuine colour agreement occurs for only 4 heroes, so sentinel matches should be separated from real colour agreement.",
+    "evidence": [
+      "ev_colour_same_triple"
+    ]
+  },
+  {
+    "id": "c_colour_exact_label",
+    "target": "colour_vocabulary",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "blue eyes",
+      "blond hair",
+      "black hair",
+      "colour",
+      "color",
+      "brown",
+      "white",
+      "eye colour",
+      "hair colour"
+    ],
+    "severity": "block",
+    "scope": "Any filter that matches a colour name",
+    "confidence": "high",
+    "description": "Colour values are exact, capitalised vocabulary labels. Compound labels such as 'Black/Blue', 'Brown/White' and 'Red/Black' are distinct values, so an equality test on 'Black' does not match 'Black/Blue'. The blond label is spelled 'Blond', and 'Strawberry Blond' is a separate value. Matching a colour therefore requires the exact label rather than a loose colour word.",
+    "evidence": [
+      "ev_colour_vocab"
+    ]
+  },
+  {
+    "id": "c_race_exact_label",
+    "target": "race",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "human",
+      "race",
+      "species",
+      "human superhero",
+      "alien",
+      "mutant",
+      "origin"
+    ],
+    "severity": "block",
+    "scope": "Any filter on the species or origin of a superhero",
+    "confidence": "high",
+    "description": "Race values are exact, capitalised labels and there are 61 of them. 'Human' is one value; human-derived origins such as 'Human / Altered', 'Human / Clone', 'Human / Cosmic' and 'Human-Kree' are separate values that do not match the label 'Human'. Because labels are stored in title case, a comparison written in lower case such as 'human' matches no row at all.",
+    "evidence": [
+      "ev_race_values"
+    ]
+  },
+  {
+    "id": "c_gender_values",
+    "target": "gender",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "male",
+      "female",
+      "men",
+      "women",
+      "gender"
+    ],
+    "severity": "warning",
+    "scope": "Gender-based filtering and counting",
+    "confidence": "high",
+    "description": "Gender is stored as the exact labels 'Male' (519 heroes), 'Female' (203 heroes) and 'N/A' (28 heroes, meaning the gender is unknown). There are no null gender references, so the 28 unknown-gender heroes are either excluded or counted as their own group depending on the treatment of 'N/A'.",
+    "evidence": [
+      "ev_gender_values"
+    ]
+  },
+  {
+    "id": "c_publisher_labels",
+    "target": "publisher",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "DC",
+      "Marvel",
+      "publisher",
+      "published by",
+      "comics",
+      "created"
+    ],
+    "severity": "block",
+    "scope": "Publisher filtering, comparison and percentage-of-total analysis",
+    "confidence": "high",
+    "description": "Publisher names are exact labels: the publisher commonly called DC is recorded as 'DC Comics' and Marvel as 'Marvel Comics'. Seventeen heroes reference a publisher row whose name is an empty string and three heroes carry no publisher reference, so publisher-based percentages leave a sizeable other-or-unknown remainder; a share computed against a filtered subset is not automatically a share of all superheroes.",
+    "evidence": [
+      "ev_publisher_values",
+      "ev_counts"
+    ]
+  },
+  {
+    "id": "c_full_name_missing",
+    "target": "full_name",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "without full name",
+      "no full name",
+      "missing full name",
+      "real name",
+      "full name"
+    ],
+    "severity": "warning",
+    "scope": "Counting or filtering heroes by presence of a full name",
+    "confidence": "high",
+    "description": "A missing full name is encoded in two ways: as the null value (122 heroes) and as a single-hyphen placeholder text value (125 heroes). Both denote that the real name is not recorded, so a count of heroes 'without a full name' depends on whether both encodings are treated as missing.",
+    "evidence": [
+      "ev_fullname_missing"
+    ]
+  },
+  {
+    "id": "c_duplicate_superhero_names",
+    "target": "superhero_name",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "who is",
+      "which hero",
+      "superhero name",
+      "hero called",
+      "name"
+    ],
+    "severity": "warning",
+    "scope": "Lookup of a hero by name and any result set grouped by hero name",
+    "confidence": "high",
+    "description": "Five superhero names are not unique: 'Angel', 'Ares', 'Captain Marvel' and 'Chameleon' each appear twice and 'Atlas' appears four times. Duplicate names may belong to different publishers, so a lookup by hero name can legitimately return several distinct heroes and a single-name answer may be incomplete.",
+    "evidence": [
+      "ev_dup_names"
+    ]
+  }
+]

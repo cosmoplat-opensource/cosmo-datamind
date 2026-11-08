@@ -1,0 +1,280 @@
+[
+  {
+    "id": "rel_race_results",
+    "source": "term_race",
+    "relation_type": "composition",
+    "target": "term_race_result",
+    "connection_condition": "tab13.fld021 references tab05.fld021",
+    "description": "A race is composed of one result row per participating driver; a result row cannot exist without its race.",
+    "evidence": [
+      "e_schema",
+      "e_result_rows"
+    ]
+  },
+  {
+    "id": "rel_race_qualifying",
+    "source": "term_race",
+    "relation_type": "composition",
+    "target": "term_qualifying_result",
+    "connection_condition": "tab11.fld021 references tab05.fld021",
+    "description": "A race is composed of its qualifying records, one per participating driver.",
+    "evidence": [
+      "e_schema",
+      "e_qual_rows"
+    ]
+  },
+  {
+    "id": "rel_race_pit_stops",
+    "source": "term_race",
+    "relation_type": "composition",
+    "target": "term_pit_stop",
+    "connection_condition": "tab10.fld021 references tab05.fld021",
+    "description": "Pit stops belong to a race and are keyed by race, driver and stop number.",
+    "evidence": [
+      "e_schema",
+      "e_pit_rows"
+    ]
+  },
+  {
+    "id": "rel_race_lap_times",
+    "source": "term_race",
+    "relation_type": "association",
+    "target": "term_lap_time",
+    "connection_condition": "tab09.fld021 references tab05.fld021",
+    "description": "Lap times are recorded within a race for each driver and lap; lap timing exists for 389 of the 976 races.",
+    "evidence": [
+      "e_lap_rows"
+    ]
+  },
+  {
+    "id": "rel_race_constructor_results",
+    "source": "term_race",
+    "relation_type": "composition",
+    "target": "term_constructor_result",
+    "connection_condition": "tab06.fld021 references tab05.fld021",
+    "description": "Each race produces one constructor-result row per scoring team.",
+    "evidence": [
+      "e_schema",
+      "e_constructor_results_rows"
+    ]
+  },
+  {
+    "id": "rel_race_circuit",
+    "source": "term_race",
+    "relation_type": "association",
+    "target": "term_circuit",
+    "connection_condition": "tab05.fld001 references tab01.fld001",
+    "description": "A race is held at exactly one circuit; the circuit's name, location, country and coordinates describe where the race took place.",
+    "evidence": [
+      "e_schema",
+      "e_circuit_rows"
+    ]
+  },
+  {
+    "id": "rel_driver_results",
+    "source": "term_driver",
+    "relation_type": "association",
+    "target": "term_race_result",
+    "connection_condition": "tab13.fld013 references tab03.fld013",
+    "description": "Each result row belongs to one driver; a driver's participation and outcomes are read from these rows.",
+    "evidence": [
+      "e_schema",
+      "e_participation"
+    ]
+  },
+  {
+    "id": "rel_constructor_results",
+    "source": "term_constructor",
+    "relation_type": "association",
+    "target": "term_race_result",
+    "connection_condition": "tab13.fld010 references tab02.fld010",
+    "description": "Each result row records the constructor that entered the driver in that race.",
+    "evidence": [
+      "e_schema",
+      "e_result_rows"
+    ]
+  },
+  {
+    "id": "rel_status_results",
+    "source": "term_result_status",
+    "relation_type": "association",
+    "target": "term_race_result",
+    "connection_condition": "tab13.fld041 references tab12.fld041",
+    "description": "Every result row carries exactly one status that explains how the entry ended.",
+    "evidence": [
+      "e_schema",
+      "e_status_rows"
+    ]
+  },
+  {
+    "id": "rel_finished_is_status",
+    "source": "term_finished_race",
+    "relation_type": "hierarchy",
+    "target": "term_result_status",
+    "connection_condition": "",
+    "description": "Finished is one status category in the status value domain; all rows with status 1 are instances of it.",
+    "evidence": [
+      "e_status_rows",
+      "e_finish_vs_time"
+    ]
+  },
+  {
+    "id": "rel_accident_is_status",
+    "source": "term_accident",
+    "relation_type": "hierarchy",
+    "target": "term_result_status",
+    "connection_condition": "",
+    "description": "Accident is one status category in the status value domain; Collision and Collision damage are separate categories.",
+    "evidence": [
+      "e_status_rows",
+      "e_accident_rows"
+    ]
+  },
+  {
+    "id": "rel_winner_from_position",
+    "source": "term_finish_position",
+    "relation_type": "derivation",
+    "target": "term_race_winner",
+    "connection_condition": "",
+    "description": "The race winner is the driver whose finishing position equals 1 in that race.",
+    "evidence": [
+      "e_winner_rows"
+    ]
+  },
+  {
+    "id": "rel_gap_from_finish_time",
+    "source": "term_finish_time",
+    "relation_type": "derivation",
+    "target": "term_time_gap",
+    "connection_condition": "",
+    "description": "A time gap is derived from the difference between a driver's race time and the winner's absolute race time; the stored plus-prefixed value expresses that difference.",
+    "evidence": [
+      "e_finish_time_formats",
+      "e_time_gap_sample"
+    ]
+  },
+  {
+    "id": "rel_avg_pit_from_duration",
+    "source": "term_pit_stop_duration",
+    "relation_type": "derivation",
+    "target": "term_average_pit_stop_duration",
+    "connection_condition": "",
+    "description": "A driver's average pit-stop duration is the sum of that driver's individual stop durations divided by the number of stops.",
+    "evidence": [
+      "e_pit_rows"
+    ]
+  },
+  {
+    "id": "rel_age_from_dob",
+    "source": "term_driver_date_of_birth",
+    "relation_type": "derivation",
+    "target": "term_driver_age",
+    "connection_condition": "",
+    "description": "Age at a race is derived from the birth date and the race date.",
+    "evidence": [
+      "e_dob_domain"
+    ]
+  },
+  {
+    "id": "rel_age_from_race_date",
+    "source": "term_race_date",
+    "relation_type": "derivation",
+    "target": "term_driver_age",
+    "connection_condition": "",
+    "description": "Age at a race depends on when the race took place, so the race date is the second input to the derivation.",
+    "evidence": [
+      "e_race_dates"
+    ]
+  },
+  {
+    "id": "rel_elimination_from_period_time",
+    "source": "term_qualifying_period_time",
+    "relation_type": "derivation",
+    "target": "term_qualifying_elimination",
+    "connection_condition": "",
+    "description": "Elimination from the first qualifying period is derived from the ranking of first-period times: the five slowest are eliminated.",
+    "evidence": [
+      "e_qual_elim"
+    ]
+  },
+  {
+    "id": "rel_season_equiv_race_year",
+    "source": "term_season",
+    "relation_type": "equivalence",
+    "target": "term_race_year",
+    "connection_condition": "tab04.fld020 and tab05.fld020 hold the same year values, with tab05.fld020 referencing tab04.fld020",
+    "description": "The season year and the race year express the same business concept in two tables.",
+    "evidence": [
+      "e_season_rows",
+      "e_schema"
+    ]
+  },
+  {
+    "id": "rel_driver_standings",
+    "source": "term_driver",
+    "relation_type": "association",
+    "target": "term_driver_standings_record",
+    "connection_condition": "tab08.fld013 references tab03.fld013",
+    "description": "A driver accumulates one standings snapshot per race entered.",
+    "evidence": [
+      "e_driver_standings_rows",
+      "e_schema"
+    ]
+  },
+  {
+    "id": "rel_constructor_standings",
+    "source": "term_constructor",
+    "relation_type": "association",
+    "target": "term_constructor_standings_record",
+    "connection_condition": "tab07.fld010 references tab02.fld010",
+    "description": "A constructor accumulates one standings snapshot per race entered.",
+    "evidence": [
+      "e_constructor_standings_rows",
+      "e_schema"
+    ]
+  },
+  {
+    "id": "rel_driver_qualifying",
+    "source": "term_driver",
+    "relation_type": "association",
+    "target": "term_qualifying_result",
+    "connection_condition": "tab11.fld013 references tab03.fld013",
+    "description": "Each qualifying record belongs to one driver for one race.",
+    "evidence": [
+      "e_qual_rows"
+    ]
+  },
+  {
+    "id": "rel_driver_pit_stops",
+    "source": "term_driver",
+    "relation_type": "association",
+    "target": "term_pit_stop",
+    "connection_condition": "tab10.fld013 references tab03.fld013",
+    "description": "Each pit stop belongs to one driver within a race.",
+    "evidence": [
+      "e_pit_rows"
+    ]
+  },
+  {
+    "id": "rel_driver_lap_times",
+    "source": "term_driver",
+    "relation_type": "association",
+    "target": "term_lap_time",
+    "connection_condition": "tab09.fld013 references tab03.fld013",
+    "description": "Each lap-time record belongs to one driver within a race.",
+    "evidence": [
+      "e_lap_rows"
+    ]
+  },
+  {
+    "id": "rel_constructor_race_points",
+    "source": "term_constructor",
+    "relation_type": "association",
+    "target": "term_constructor_result",
+    "connection_condition": "tab06.fld010 references tab02.fld010",
+    "description": "A constructor earns one per-race result row for each race in which it scored or was classified.",
+    "evidence": [
+      "e_constructor_results_rows"
+    ]
+  }
+]

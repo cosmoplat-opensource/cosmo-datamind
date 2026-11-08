@@ -1,0 +1,143 @@
+{
+ "db_id": "formula_1",
+ "questions": [
+  {
+   "question_id": 951,
+   "question": "How many Japanese constructors have 0 points in 2 races?",
+   "evidence": "2 races refers to COUNT(raceID) = 2; Japanese refers to constructors.nationality = 'Japanese';",
+   "difficulty": "simple"
+  },
+  {
+   "question_id": 959,
+   "question": "What is the fastest lap number of the champion in 2009?",
+   "evidence": "in 2009 refers to year = 2009; Only the time of the champion shows in the format of \"hour: minutes: seconds.millionsecond\"",
+   "difficulty": "simple"
+  },
+  {
+   "question_id": 909,
+   "question": "Among all European Grand Prix races, what is the percentage of the races were hosted in Germany?",
+   "evidence": "European Grand Prix races refers to races.name = 'European Grand Prix';percentage = divide(COUNT(races where country = Germany and name = 'Europearn Grand Prix'),COUNT(races where name = 'Europearn Grand Prix'))*100",
+   "difficulty": "moderate"
+  },
+  {
+   "question_id": 854,
+   "question": "What is the coordinates location of the circuits for Australian grand prix?",
+   "evidence": "coordinate position/location refers to lat, lng; circuits for Australian grand prix refers to races.name = 'Australian Grand Prix'",
+   "difficulty": "simple"
+  },
+  {
+   "question_id": 897,
+   "question": "Name the driver with the most winning. Mention his nationality and what is his maximum point scores.",
+   "evidence": "Full name of the driver refers to drivers.forename and drivers.surname; the most winning refers to MAX(COUNT(wins)); average point scores refers to MAX(points);",
+   "difficulty": "moderate"
+  },
+  {
+   "question_id": 972,
+   "question": "Which drivers who were born in 1971 and has the fastest lap time on the race? Give id and code of these drivers.",
+   "evidence": "born in 1971 refers to year(dob) = 1971; has the fastest lap time refers to fastestLapTime has values",
+   "difficulty": "moderate"
+  },
+  {
+   "question_id": 971,
+   "question": "Please state the reference name of the oldest German driver.",
+   "evidence": "oldest refers to MIN(year(dob)); reference names appear in drverRef.",
+   "difficulty": "simple"
+  },
+  {
+   "question_id": 895,
+   "question": "What is the average lap time for Lewis Hamilton in the 2009 Malaysian Grand Prix?",
+   "evidence": "average lap time = AVG(milliseconds); 'Lewis Hamilton' refers to the full name of the driver; Full name of the driver refers to drivers.forename and drivers.surname; 'Malaysian Grand Prix' refers to races.name = 'Malaysian Grand Prix'",
+   "difficulty": "moderate"
+  },
+  {
+   "question_id": 1002,
+   "question": "As of the present, what is the full name of the youngest racer? Indicate her nationality and the name of the race to which he/she first joined.",
+   "evidence": "full name refers to forename+surname; Youngest racer = MAX(dob)",
+   "difficulty": "moderate"
+  },
+  {
+   "question_id": 967,
+   "question": "State code numbers of top 3 yougest drivers. How many Netherlandic drivers among them?",
+   "evidence": "youngest driver refers to Max (year(dob)); Netherlandic and Dutch refer to the same country",
+   "difficulty": "simple"
+  },
+  {
+   "question_id": 954,
+   "question": "Please calculate the race completion percentage of Japanese drivers from 2007 to 2009.",
+   "evidence": "from 2007 to 2009 refers to year between 2007 and 2009; race completion refers to time is not null; percentage = Divide(COUNT(DriverID where time is not null and year between 2007 and 2009),Count (DriverID where year between 2007 and 2009))*100; ",
+   "difficulty": "challenging"
+  },
+  {
+   "question_id": 912,
+   "question": "What's the reference name of Marina Bay Street Circuit?",
+   "evidence": "reference name refers to circuitRef; Marina Bay Street Circuit refers to circuits.name = 'Marina Bay Street Circuit'",
+   "difficulty": "simple"
+  },
+  {
+   "question_id": 872,
+   "question": "In the race No. 45, for the driver who had the Q3 time as 0:01:33, what is his abbreviated code?",
+   "evidence": "race number refers to raceId; had the Q3 time as 0:0M:SS refers to q3 LIKE 'M:SS%'",
+   "difficulty": "simple"
+  },
+  {
+   "question_id": 850,
+   "question": "Please give the name of the race held on the circuits in Germany.",
+   "evidence": "Germany is a name of country;",
+   "difficulty": "simple"
+  },
+  {
+   "question_id": 881,
+   "question": "For the drivers who took part in the race in 1983/7/16, what's their race completion rate?",
+   "evidence": "DIVIDE(COUNT(driverid when time has value ), (COUNT(driverid )) as percentage; in 1983/7/16 refers to when date = '1983-07-16'",
+   "difficulty": "moderate"
+  },
+  {
+   "question_id": 877,
+   "question": "For all the drivers who finished the game in race No. 872, who is the youngest?",
+   "evidence": "race number refers to raceId; drivers who finished the race refers to time has value; the youngest is a driver where MAX(dob);",
+   "difficulty": "moderate"
+  },
+  {
+   "question_id": 1001,
+   "question": "What is full name of the racer who ranked 1st in the 3rd qualifying race held in the Marina Bay Street Circuit in 2008?",
+   "evidence": "Ranked 1st in the 3rd qualifying race refer to MIN(q3); 2008 is the year of race; full name of racer = forename, surname",
+   "difficulty": "challenging"
+  },
+  {
+   "question_id": 930,
+   "question": "In which Formula_1 race did Lewis Hamilton rank the highest?",
+   "evidence": "rank the highest refers to min(rank); Lewis Hamilton refers to the full name of the driver; Full name of the driver refers to drivers.forename and drivers.surname;",
+   "difficulty": "simple"
+  },
+  {
+   "question_id": 962,
+   "question": "From 2000 to 2005, what percentage of drivers who were born before 1985 and the lap numbers were over 50?",
+   "evidence": "born before 1985 refers to year(dob)<1985; in 2000 to 2005 refers to year between 2000 and 2005; percentage = Divide(COUNT(driverId where year (dob) <1985 and laps >50),COUNT(DriverID where year between 2000 and 2005) *100;",
+   "difficulty": "challenging"
+  },
+  {
+   "question_id": 990,
+   "question": "What is the constructor reference name of the champion in the 2009 Singapore Grand Prix? Please give its website.",
+   "evidence": "the time of the champion shows in the format of \"minutes: seconds.millionsecond\" in which Max(time); constructor reference name refers to constructorRef; website refers to url",
+   "difficulty": "challenging"
+  },
+  {
+   "question_id": 901,
+   "question": "Name the races along with its circuit name and location for f1 races hosted in September 2005.",
+   "evidence": "in September 2005 refers to MONTH(date) = 9 and YEAR(date) = 2005",
+   "difficulty": "simple"
+  },
+  {
+   "question_id": 904,
+   "question": "State the race and year of race in which Michael Schumacher had his fastest lap.",
+   "evidence": "fastest lap refers to min(milliseconds); Alex Yoong refers to the full name of the driver; Full name of the driver refers to drivers.forename and drivers.surname;",
+   "difficulty": "moderate"
+  },
+  {
+   "question_id": 963,
+   "question": "How many French drivers who obtain the laptime less than 02:00.00?",
+   "evidence": "lap time less than 02:00.00 refers to seconds < 120;",
+   "difficulty": "moderate"
+  }
+ ]
+}

@@ -1,0 +1,351 @@
+[
+  {
+    "id": "map_molecule_id",
+    "term_id": "term_molecule",
+    "database_source": "toxicology",
+    "table": "molecule",
+    "column": "molecule_id",
+    "semantic_filter": "",
+    "aggregation_semantics": "",
+    "grain": "one row per labelled molecule; 343 rows",
+    "validation": {
+      "description": "molecule_id is the primary key of the molecule table",
+      "confidence": "high"
+    },
+    "evidence_refs": [
+      "ev_schema_tables",
+      "ev_row_counts",
+      "ev_molecule_coverage"
+    ]
+  },
+  {
+    "id": "map_molecule_id_from_atom",
+    "term_id": "term_molecule",
+    "database_source": "toxicology",
+    "table": "atom",
+    "column": "molecule_id",
+    "semantic_filter": "",
+    "aggregation_semantics": "distinct molecule identifiers referenced by atom rows",
+    "grain": "one row per atom, molecule identifier repeated",
+    "validation": {
+      "description": "444 distinct molecule ids referenced by 12333 atom rows",
+      "confidence": "high"
+    },
+    "evidence_refs": [
+      "ev_molecule_coverage"
+    ]
+  },
+  {
+    "id": "map_molecule_id_from_bond",
+    "term_id": "term_molecule",
+    "database_source": "toxicology",
+    "table": "bond",
+    "column": "molecule_id",
+    "semantic_filter": "",
+    "aggregation_semantics": "distinct molecule identifiers referenced by bond rows",
+    "grain": "one row per bond, molecule identifier repeated",
+    "validation": {
+      "description": "444 distinct molecule ids referenced by 12379 bond rows",
+      "confidence": "high"
+    },
+    "evidence_refs": [
+      "ev_molecule_coverage"
+    ]
+  },
+  {
+    "id": "map_carcinogenicity_label",
+    "term_id": "term_carcinogenicity_label",
+    "database_source": "toxicology",
+    "table": "molecule",
+    "column": "label",
+    "semantic_filter": "",
+    "aggregation_semantics": "grouping or counting of molecules by label value",
+    "grain": "one label value per molecule row",
+    "validation": {
+      "description": "observed values '+' (152) and '-' (191); no NULL and no other value",
+      "confidence": "high"
+    },
+    "evidence_refs": [
+      "ev_label_values"
+    ]
+  },
+  {
+    "id": "map_atom_id",
+    "term_id": "term_atom",
+    "database_source": "toxicology",
+    "table": "atom",
+    "column": "atom_id",
+    "semantic_filter": "",
+    "aggregation_semantics": "count of atom rows",
+    "grain": "one row per atom; 12333 atoms",
+    "validation": {
+      "description": "atom_id follows TR<3 digits>_<index>; the five-character prefix equals molecule_id for all 12333 rows",
+      "confidence": "high"
+    },
+    "evidence_refs": [
+      "ev_atom_id_format",
+      "ev_row_counts"
+    ]
+  },
+  {
+    "id": "map_atom_element",
+    "term_id": "term_element",
+    "database_source": "toxicology",
+    "table": "atom",
+    "column": "element",
+    "semantic_filter": "",
+    "aggregation_semantics": "count of atoms whose element equals the requested symbol; the share is computed over the reference set of atoms",
+    "grain": "one element symbol per atom row",
+    "validation": {
+      "description": "21 distinct lowercase element symbols observed",
+      "confidence": "high"
+    },
+    "evidence_refs": [
+      "ev_element_values"
+    ]
+  },
+  {
+    "id": "map_bond_id",
+    "term_id": "term_bond",
+    "database_source": "toxicology",
+    "table": "bond",
+    "column": "bond_id",
+    "semantic_filter": "",
+    "aggregation_semantics": "count of bond rows",
+    "grain": "one row per bond; 12379 bonds",
+    "validation": {
+      "description": "bond_id follows TR<3 digits>_<i>_<j>; the five-character prefix equals molecule_id for all rows",
+      "confidence": "high"
+    },
+    "evidence_refs": [
+      "ev_bond_id_format",
+      "ev_row_counts"
+    ]
+  },
+  {
+    "id": "map_bond_type",
+    "term_id": "term_bond_type",
+    "database_source": "toxicology",
+    "table": "bond",
+    "column": "bond_type",
+    "semantic_filter": "",
+    "aggregation_semantics": "count of bonds per bond type symbol",
+    "grain": "one bond type symbol per bond row",
+    "validation": {
+      "description": "observed values '-' 10528, '=' 1844, '#' 6, and one NULL",
+      "confidence": "high"
+    },
+    "evidence_refs": [
+      "ev_bond_type_values"
+    ]
+  },
+  {
+    "id": "map_single_bond",
+    "term_id": "term_single_bond",
+    "database_source": "toxicology",
+    "table": "bond",
+    "column": "bond_type",
+    "semantic_filter": "bond_type is the single-bond symbol",
+    "aggregation_semantics": "count of matching bond rows",
+    "grain": "one row per single bond; 10528 rows",
+    "validation": {
+      "description": "single bonds dominate the bond population",
+      "confidence": "high"
+    },
+    "evidence_refs": [
+      "ev_bond_type_values"
+    ]
+  },
+  {
+    "id": "map_double_bond",
+    "term_id": "term_double_bond",
+    "database_source": "toxicology",
+    "table": "bond",
+    "column": "bond_type",
+    "semantic_filter": "bond_type is the double-bond symbol",
+    "aggregation_semantics": "count of matching bond rows",
+    "grain": "one row per double bond; 1844 rows",
+    "validation": {
+      "description": "double bonds occur in a minority of molecules",
+      "confidence": "high"
+    },
+    "evidence_refs": [
+      "ev_bond_type_values",
+      "ev_extremum_tie"
+    ]
+  },
+  {
+    "id": "map_triple_bond",
+    "term_id": "term_triple_bond",
+    "database_source": "toxicology",
+    "table": "bond",
+    "column": "bond_type",
+    "semantic_filter": "bond_type is the triple-bond symbol",
+    "aggregation_semantics": "count of matching bond rows",
+    "grain": "one row per triple bond; 6 rows",
+    "validation": {
+      "description": "the rarest bond type in the dataset",
+      "confidence": "high"
+    },
+    "evidence_refs": [
+      "ev_bond_type_values",
+      "ev_triple_bond_carcinogenic"
+    ]
+  },
+  {
+    "id": "map_carcinogenic_molecule",
+    "term_id": "term_carcinogenic_molecule",
+    "database_source": "toxicology",
+    "table": "molecule",
+    "column": "label",
+    "semantic_filter": "label equals the positive carcinogenicity symbol",
+    "aggregation_semantics": "count of matching molecule rows",
+    "grain": "one row per carcinogenic molecule; 152 rows",
+    "validation": {
+      "description": "152 of the 343 labelled molecules are carcinogenic",
+      "confidence": "high"
+    },
+    "evidence_refs": [
+      "ev_label_values"
+    ]
+  },
+  {
+    "id": "map_non_carcinogenic_molecule",
+    "term_id": "term_non_carcinogenic_molecule",
+    "database_source": "toxicology",
+    "table": "molecule",
+    "column": "label",
+    "semantic_filter": "label equals the negative carcinogenicity symbol",
+    "aggregation_semantics": "count of matching molecule rows",
+    "grain": "one row per non-carcinogenic molecule; 191 rows",
+    "validation": {
+      "description": "191 of the 343 labelled molecules are non-carcinogenic",
+      "confidence": "high"
+    },
+    "evidence_refs": [
+      "ev_label_values"
+    ]
+  },
+  {
+    "id": "map_connection",
+    "term_id": "term_connection",
+    "database_source": "toxicology",
+    "table": "connected",
+    "column": "atom_id",
+    "semantic_filter": "",
+    "aggregation_semantics": "an atom's connection count is the number of connected rows in which it appears as the first atom; the number of bonds equals half the number of connected rows",
+    "grain": "one row per direction of a bond; 24758 rows for 12379 bonds",
+    "validation": {
+      "description": "each bond_id occurs exactly twice and the table is fully symmetric; atom_id2 and bond_id are the companion columns",
+      "confidence": "high"
+    },
+    "evidence_refs": [
+      "ev_connection_symmetry",
+      "ev_schema_tables",
+      "ev_bond_atom_lookup"
+    ]
+  },
+  {
+    "id": "map_atom_index",
+    "term_id": "term_atom_index",
+    "database_source": "toxicology",
+    "table": "atom",
+    "column": "atom_id",
+    "semantic_filter": "",
+    "aggregation_semantics": "",
+    "grain": "one index per atom, encoded as the suffix of atom_id after the underscore",
+    "validation": {
+      "description": "indices start at 1 and are not zero padded; 8441 of 12333 atoms have an index of 10 or more",
+      "confidence": "high"
+    },
+    "evidence_refs": [
+      "ev_atom_index_digits",
+      "ev_atom_id_format"
+    ]
+  },
+  {
+    "id": "map_molecule_atom_count",
+    "term_id": "term_molecule_atom_count",
+    "database_source": "toxicology",
+    "table": "atom",
+    "column": "atom_id",
+    "semantic_filter": "",
+    "aggregation_semantics": "count of atom rows belonging to the molecule",
+    "grain": "one count per molecule",
+    "validation": {
+      "description": "per-molecule atom count ranges from 4 to 174 with mean 27.777",
+      "confidence": "high"
+    },
+    "evidence_refs": [
+      "ev_molecule_size"
+    ]
+  },
+  {
+    "id": "map_molecule_bond_count",
+    "term_id": "term_molecule_bond_count",
+    "database_source": "toxicology",
+    "table": "bond",
+    "column": "bond_id",
+    "semantic_filter": "",
+    "aggregation_semantics": "count of bond rows belonging to the molecule",
+    "grain": "one count per molecule",
+    "validation": {
+      "description": "per-molecule bond count ranges from 2 to 175 with mean 27.8806",
+      "confidence": "high"
+    },
+    "evidence_refs": [
+      "ev_molecule_size"
+    ]
+  },
+  {
+    "id": "map_element_percentage",
+    "term_id": "term_element_percentage",
+    "database_source": "toxicology",
+    "table": "atom",
+    "column": "element",
+    "semantic_filter": "",
+    "aggregation_semantics": "count of atoms with the target element divided by the count of atoms in the same reference set, scaled to a percent value",
+    "grain": "one ratio per element per reference set",
+    "validation": {
+      "description": "carbon share among atoms of molecules containing a double bond is 38.69851 percent",
+      "confidence": "high"
+    },
+    "evidence_refs": [
+      "ev_percentage_reference"
+    ]
+  },
+  {
+    "id": "map_bond_type_percentage",
+    "term_id": "term_bond_type_percentage",
+    "database_source": "toxicology",
+    "table": "bond",
+    "column": "bond_type",
+    "semantic_filter": "",
+    "aggregation_semantics": "count of bonds with the target bond type divided by the count of bonds in the same reference set, scaled to a percent value",
+    "grain": "one ratio per bond type per reference set",
+    "validation": {
+      "description": "double bond share within molecule TR008 is 3.84615 percent",
+      "confidence": "high"
+    },
+    "evidence_refs": [
+      "ev_percentage_reference"
+    ]
+  },
+  {
+    "id": "map_unconnected_atom",
+    "term_id": "term_unconnected_atom",
+    "database_source": "toxicology",
+    "table": "atom",
+    "column": "atom_id",
+    "semantic_filter": "atom_id appears neither as atom_id nor as atom_id2 in the connected table",
+    "aggregation_semantics": "count of matching atoms, and their distinct element symbols",
+    "grain": "one row per unconnected atom; 49 rows",
+    "validation": {
+      "description": "49 atoms have no connection row",
+      "confidence": "high"
+    },
+    "evidence_refs": [
+      "ev_unconnected_atoms"
+    ]
+  }
+]

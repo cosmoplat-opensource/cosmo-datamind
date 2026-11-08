@@ -1,0 +1,331 @@
+[
+  {
+    "id": "c_percentage_definition",
+    "target": "term_percent_eligible_free_k12",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "percent of eligible free meals",
+      "percent (%) eligible free",
+      "eligible free rate",
+      "free meal rate",
+      "eligible free or reduced price meal rate",
+      "FRPM rate",
+      "free or reduced price meal rate",
+      "rate",
+      "0.18%"
+    ],
+    "severity": "block",
+    "scope": "Interpreting or filtering the K-12 free-meal and FRPM rates in tab01",
+    "confidence": "high",
+    "description": "fld021 (percent eligible free, K-12) equals fld020/fld019 and fld023 (percent eligible FRPM, K-12) equals fld022/fld019. Both are stored as fractions between 0 and 1, not as percentages on a 0-100 scale; the workload's percent formula multiplies by 100. The FRPM rate is defined against K-12 enrollment (fld019), not ages 5-17 enrollment (fld024). A threshold written as a percentage must be placed on the same scale as the rate being compared.",
+    "evidence": "ev_formula_percent"
+  },
+  {
+    "id": "c_district_type_codes",
+    "target": "term_district_type",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "district type",
+      "Unified School District",
+      "Elementary School District",
+      "High School District",
+      "County Office of Education",
+      "district code",
+      "merged Unified",
+      "merged Elementary"
+    ],
+    "severity": "block",
+    "scope": "Interpreting district-type codes and labels",
+    "confidence": "high",
+    "description": "fld065 is a numeric district-type code and fld066 its label. 52 = Elementary School District (4,378 records), 54 = Unified School District (10,190), 56 = High School District (1,079), 00 = County Office of Education (1,703); 12 codes exist in total and code-label pairs are one-to-one. tab01.fld009 carries the label only.",
+    "evidence": "ev_district_type"
+  },
+  {
+    "id": "c_school_type_codes",
+    "target": "term_school_type",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "school type",
+      "ownership code",
+      "code 66",
+      "ownership code 66",
+      "High Schools (Public)",
+      "Elementary Schools (Public)",
+      "K-12 Schools (Public)"
+    ],
+    "severity": "block",
+    "scope": "Interpreting school-type codes and labels",
+    "confidence": "high",
+    "description": "fld067 is a numeric school-type code and fld068 its label. 60 = Elementary Schools (Public) (7,591), 62 = Intermediate/Middle Schools (Public) (1,652), 66 = High Schools (Public) (1,776), 65 = K-12 Schools (Public) (438). fld067 is the only categorical column in the database that contains the value 66; ownership code 66 therefore corresponds to school type code 66.",
+    "evidence": "ev_school_type"
+  },
+  {
+    "id": "c_virtual_semantics",
+    "target": "term_virtual_status",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "virtual",
+      "virtual school",
+      "exclusively virtual",
+      "physical building",
+      "does not offer physical building",
+      "online",
+      "remote instruction"
+    ],
+    "severity": "block",
+    "scope": "Interpreting virtual and physical-building status",
+    "confidence": "high",
+    "description": "fld075 = F denotes exclusively virtual instruction, i.e. the school does not offer a physical building. Observed values are N (9,703), P (1,046), F (69) and NULL (6,868). All 1,448 Merged records are NULL, so a virtual filter selects Active and Closed records only. Only F is established by the workload evidence; the precise meaning of N and P is not established here.",
+    "evidence": "ev_virtual"
+  },
+  {
+    "id": "c_charter_null",
+    "target": "term_charter_status",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "charter",
+      "charter school",
+      "non-chartered",
+      "non-charter",
+      "charter status"
+    ],
+    "severity": "warning",
+    "scope": "Interpreting charter flags",
+    "confidence": "high",
+    "description": "fld062 (tab03) and fld013 (tab01) are 1/0 charter flags. tab03: 1 = 1,729, 0 = 14,588, NULL = 1,369. tab01: 1 = 1,167, 0 = 8,774, NULL = 45. NULL records are administrative or unspecified records; treating only 1 as charter and everything else as non-charter is not the same as the literal 0 filter.",
+    "evidence": "ev_charter"
+  },
+  {
+    "id": "c_school_status_population",
+    "target": "term_school_status",
+    "constraint_type": "scope",
+    "trigger_keywords": [
+      "status",
+      "active",
+      "closed",
+      "merged",
+      "pending",
+      "school count",
+      "number of schools"
+    ],
+    "severity": "warning",
+    "scope": "Counting or filtering schools in the directory",
+    "confidence": "high",
+    "description": "tab03 is a directory of all school records: Active 11,708, Closed 4,518, Merged 1,448, Pending 12. Without a status filter, counts include closed and merged entities. In addition, 1,369 records have NULL school name, school type, charter flag and open date; these are administrative records rather than schools, including 525 Active Elementary School District rows and 344 Active Unified School District rows.",
+    "evidence": "ev_status"
+  },
+  {
+    "id": "c_tab01_tab03_grain",
+    "target": "term_school_cds_code",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "join",
+      "FRPM",
+      "school directory",
+      "school count",
+      "population"
+    ],
+    "severity": "warning",
+    "scope": "Combining FRPM and directory data",
+    "confidence": "high",
+    "description": "tab01 holds one row per school for academic year 2014-2015 (9,986 rows; every CDS code matches tab03 exactly). tab03 is a one-row-per-school directory covering Active, Closed, Merged and Pending records (17,686 rows). The two populations differ, so a count of schools depends on which table supplies it.",
+    "evidence": "ev_thematic_join"
+  },
+  {
+    "id": "c_sat_record_type",
+    "target": "term_sat_report_record_type",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "SAT",
+      "average score",
+      "average math",
+      "average reading",
+      "average writing",
+      "score",
+      "math average",
+      "reading score",
+      "writing score"
+    ],
+    "severity": "block",
+    "scope": "Aggregating or ranking SAT scores",
+    "confidence": "high",
+    "description": "fld031 separates school-level (S, 1,749 records) from district-level (D, 520 records) SAT records; district-level records have no school name. Mixing the two double-counts and includes non-school rows. Score columns fld037-fld039 are NULL for 596 records (498 school-level, 98 district-level).",
+    "evidence": "ev_sat_rtype"
+  },
+  {
+    "id": "c_sat_cds_leading_zero",
+    "target": "term_sat_cds_code",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "SAT",
+      "CDS code",
+      "school code",
+      "join",
+      "school identifier"
+    ],
+    "severity": "block",
+    "scope": "Joining SAT records to schools",
+    "confidence": "high",
+    "description": "fld030 holds 13-character CDS codes for 211 SAT records (leading zero omitted) and 14-character codes for 2,058 records. tab01.fld001 and tab03.fld001 are always 14 characters. An exact-equality join matches 2,058 records; normalizing the leading zero matches all 2,269 records.",
+    "evidence": "ev_cds_join"
+  },
+  {
+    "id": "c_sat_score_labels",
+    "target": "term_sat_average_math_score",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "SAT",
+      "average math score",
+      "average reading score",
+      "average writing score",
+      "math",
+      "reading",
+      "writing"
+    ],
+    "severity": "warning",
+    "scope": "Interpreting the three SAT score columns",
+    "confidence": "medium",
+    "description": "The three SAT score columns are unlabeled in this opaque schema: fld037 (range 308-653), fld038 (289-699) and fld039 (312-671), each populated for 1,673 records. They are the only score columns in tab02. Their assignment to reading, math and writing follows the canonical CDE SAT column order (reading, math, writing) used by this dataset, not an in-database label.",
+    "evidence": "ev_sat_columns"
+  },
+  {
+    "id": "c_address_distinction",
+    "target": "term_mailing_street_address",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "postal street address",
+      "postal address",
+      "mailing address",
+      "mailing street",
+      "street address",
+      "full street address",
+      "address"
+    ],
+    "severity": "block",
+    "scope": "Choosing between physical and mailing addresses",
+    "confidence": "high",
+    "description": "tab03 carries two address sets: physical street fld047 (full) and fld048 (abbreviated), and mailing/postal street fld052 (full) and fld053 (abbreviated). Both are present for 17,392 records and differ for 2,989 of them. Postal street address refers to the mailing street, not the physical street.",
+    "evidence": "ev_address"
+  },
+  {
+    "id": "c_county_city_ambiguity",
+    "target": "term_county",
+    "constraint_type": "scope",
+    "trigger_keywords": [
+      "county",
+      "in Riverside",
+      "city",
+      "county of",
+      "San Diego",
+      "Santa Barbara"
+    ],
+    "severity": "warning",
+    "scope": "Interpreting place-name filters",
+    "confidence": "high",
+    "description": "County (fld044, 58 values) and city (fld049, 1,165 values) are separate dimensions with overlapping names. Riverside County contains 743 school records while Riverside city contains 122. A place-name filter such as in Riverside therefore has two different valid interpretations.",
+    "evidence": "ev_county_city"
+  },
+  {
+    "id": "c_district_name_ambiguity",
+    "target": "term_school_district",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "district",
+      "Fresno Unified",
+      "district name",
+      "school district"
+    ],
+    "severity": "warning",
+    "scope": "Filtering or grouping by district name",
+    "confidence": "high",
+    "description": "District names are not unique across counties: 1,411 distinct names exist and 15 names occur under more than one county (for example Pioneer Union Elementary in Butte and El Dorado, and Central Union High in Fresno and Imperial). A district is identified by its name together with its county.",
+    "evidence": "ev_district_ambiguity"
+  },
+  {
+    "id": "c_academic_year_scope",
+    "target": "term_academic_year",
+    "constraint_type": "scope",
+    "trigger_keywords": [
+      "academic year",
+      "2014-2015",
+      "school year",
+      "year"
+    ],
+    "severity": "info",
+    "scope": "FRPM and enrollment measures",
+    "confidence": "high",
+    "description": "tab01 contains a single academic year, 2014-2015, for all 9,986 rows.",
+    "evidence": "ev_year"
+  },
+  {
+    "id": "c_funding_type_scope",
+    "target": "term_funding_type",
+    "constraint_type": "scope",
+    "trigger_keywords": [
+      "funding type",
+      "charter funding",
+      "directly funded",
+      "locally funded",
+      "funding model"
+    ],
+    "severity": "warning",
+    "scope": "Interpreting charter funding type",
+    "confidence": "high",
+    "description": "Funding type is a charter-related attribute. fld064 is non-null for 1,642 tab03 records and fld015 for 1,167 tab01 records; NULL means no charter funding model was reported. Where both are non-null they agree for 1,148 of 1,167 records. Recorded values are Directly funded, Locally funded and Not in CS funding model.",
+    "evidence": "ev_funding"
+  },
+  {
+    "id": "c_enrollment_populations",
+    "target": "term_enrollment_ages_5_17",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "enrollment",
+      "K-12 enrollment",
+      "ages 5-17 enrollment",
+      "difference in enrollment",
+      "students"
+    ],
+    "severity": "block",
+    "scope": "Comparing the two enrollment measures",
+    "confidence": "high",
+    "description": "fld019 is K-12 enrollment and fld024 is ages 5-17 enrollment; they measure different populations and neither substitutes for the other. In every observed row K-12 enrollment is greater than or equal to ages 5-17 enrollment, and 1,239 schools differ by more than 30 students.",
+    "evidence": "ev_enrollment"
+  },
+  {
+    "id": "c_phone_coverage",
+    "target": "term_phone_number",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "telephone",
+      "phone",
+      "communication number",
+      "contact number",
+      "call"
+    ],
+    "severity": "info",
+    "scope": "Contact information lookup",
+    "confidence": "high",
+    "description": "fld057 holds the telephone number for 11,717 of 17,686 directory records; NULL means no number was reported. Communication number refers to this telephone number.",
+    "evidence": "ev_phone"
+  },
+  {
+    "id": "c_open_close_dates",
+    "target": "term_close_date",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "open date",
+      "close date",
+      "opened after",
+      "closed before",
+      "opened",
+      "closed",
+      "year opened",
+      "year closed"
+    ],
+    "severity": "warning",
+    "scope": "Interpreting school opening and closing dates",
+    "confidence": "high",
+    "description": "fld060 is the open date (16,317 non-null) and fld061 the close date (5,694 non-null). Schools that are still open have no close date, so a NULL close date must not be treated as closed before a given year. 5,083 records were opened after 1991 and 3,600 were closed before 2000.",
+    "evidence": "ev_dates"
+  }
+]

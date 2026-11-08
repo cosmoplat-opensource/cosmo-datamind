@@ -1,0 +1,250 @@
+[
+  {
+    "id": "ev_001_database_structure",
+    "source": "thrombosis_prediction.sqlite",
+    "query": ".tables; .schema",
+    "result": "Three tables: tab01 = 806 rows (examination records; foreign key fld001 -> tab02.fld001), tab02 = 1238 rows (patient records; fld001 primary key), tab03 = 13908 rows (laboratory records; primary key (fld001, fld019); foreign key fld001 -> tab02.fld001). Columns are opaque names fld001..fld061.",
+    "validation_method": "schema inspection with sqlite3 .schema",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "ev_002_patient_grain",
+    "source": "thrombosis_prediction.sqlite",
+    "query": "SELECT COUNT(*), COUNT(DISTINCT fld001) FROM tab02",
+    "result": "1238 rows and 1238 distinct fld001 values, so the table has exactly one row per patient.",
+    "validation_method": "primary key and row-count verification",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "ev_003_sex",
+    "source": "thrombosis_prediction.sqlite",
+    "query": "SELECT fld014, COUNT(*) FROM tab02 GROUP BY 1",
+    "result": "F=1023, M=202, ''=13",
+    "validation_method": "value-domain profiling",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "ev_004_birthday",
+    "source": "thrombosis_prediction.sqlite",
+    "query": "SELECT MIN(fld015), MAX(fld015), SUM(fld015 IS NULL) FROM tab02",
+    "result": "1912-08-28 to 2007-05-28; 1 null; values are ISO YYYY-MM-DD text.",
+    "validation_method": "range, null and format check",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "ev_005_inpatient_status",
+    "source": "thrombosis_prediction.sqlite",
+    "query": "SELECT fld018, COUNT(*) FROM tab02 GROUP BY 1",
+    "result": "'+'=488, '-'=713, ''=34, '+('=3",
+    "validation_method": "value-domain profiling",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "ev_006_diagnosis_labels",
+    "source": "thrombosis_prediction.sqlite",
+    "query": "SELECT COUNT(DISTINCT fld008) FROM tab02; SELECT fld008, COUNT(*) FROM tab02 GROUP BY 1 ORDER BY 2 DESC LIMIT 12",
+    "result": "220 distinct labels and 1 blank. Top labels: SLE=195, SJS=160, RA=152, BEHCET=90, PSS=45, 'SLE, SJS'=35, MCTD=35, 'SJS susp'=26, 'RA, SJS'=25, 'SLE susp'=19, 'RA susp'=19, APS=18. Labels combine diseases with commas and may carry a 'susp' suffix.",
+    "validation_method": "distinct-value and cardinality inspection",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "ev_007_diagnosis_two_tables",
+    "source": "thrombosis_prediction.sqlite",
+    "query": "SELECT COUNT(*), SUM(fld008 IS NULL) FROM tab01; SELECT COUNT(DISTINCT fld008) FROM tab01; compare tab01.fld008 with tab02.fld008 for shared patient IDs",
+    "result": "tab01.fld008 is null in 331 of 806 rows and has 181 distinct labels. For the 69 shared patient IDs the labels agree modulo case and encoding (tab02 uses 'SJS', tab01 uses 'SjS'), and 44 examination rows carry a label different from the patient label because visits add findings.",
+    "validation_method": "cross-table label comparison for shared keys",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "ev_008_lab_grain",
+    "source": "thrombosis_prediction.sqlite",
+    "query": "SELECT COUNT(*), COUNT(DISTINCT fld001), COUNT(DISTINCT fld019) FROM tab03; SELECT MIN(c), MAX(c) FROM (SELECT fld001, COUNT(*) c FROM tab03 GROUP BY 1)",
+    "result": "13908 rows, 302 patients, 3723 distinct test dates, 1 to 226 panels per patient (mean 46.1), no duplicate (patient, date) pair.",
+    "validation_method": "grain and key-uniqueness verification",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "ev_009_exam_grain",
+    "source": "thrombosis_prediction.sqlite",
+    "query": "SELECT COUNT(*), COUNT(DISTINCT fld001), SUM(fld001 IS NULL) FROM tab01; duplicate groups on (fld001, fld002)",
+    "result": "806 rows, 763 distinct patient identifiers, 36 rows with a null identifier; 6 patient/date pairs appear twice.",
+    "validation_method": "grain and duplicate analysis",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "ev_010_join_coverage",
+    "source": "thrombosis_prediction.sqlite",
+    "query": "SELECT COUNT(DISTINCT fld001) FROM tab01 WHERE fld001 IN (SELECT fld001 FROM tab02); same check against tab03; SELECT COUNT(DISTINCT fld001) FROM tab03 WHERE fld001 IN (SELECT fld001 FROM tab02)",
+    "result": "69 of 763 examination patient identifiers exist in tab02 (70 of 806 rows); 20 exist in tab03; all 302 laboratory patient identifiers exist in tab02.",
+    "validation_method": "join-coverage measurement",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "ev_011_albumin",
+    "source": "thrombosis_prediction.sqlite",
+    "query": "SELECT COUNT(*), SUM(fld025<4), MIN(fld025), MAX(fld025) FROM tab03 WHERE fld025 IS NOT NULL",
+    "result": "11068 non-null values, 3287 below 4, range 1.0 to 5.8 g/dL. Adjacent fld024 ranges 0.0 to 9.9 and is a different analyte (total protein).",
+    "validation_method": "range, null and threshold profiling",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "ev_012_gpt",
+    "source": "thrombosis_prediction.sqlite",
+    "query": "SELECT COUNT(*), SUM(fld021>=60), SUM(fld021>30), MIN(fld021), MAX(fld021) FROM tab03 WHERE fld021 IS NOT NULL",
+    "result": "11274 non-null values, 890 at or above 60, 2599 above 30, range 1 to 4780 U/L.",
+    "validation_method": "range and threshold profiling",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "ev_013_glucose",
+    "source": "thrombosis_prediction.sqlite",
+    "query": "SELECT COUNT(*), SUM(fld033>=180), MIN(fld033), MAX(fld033) FROM tab03 WHERE fld033 IS NOT NULL",
+    "result": "1705 non-null values, 129 at or above 180, range 62 to 499 mg/dL.",
+    "validation_method": "range and threshold profiling",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "ev_014_cholesterol",
+    "source": "thrombosis_prediction.sqlite",
+    "query": "SELECT COUNT(*), SUM(fld030>=250), MIN(fld030), MAX(fld030) FROM tab03 WHERE fld030 IS NOT NULL",
+    "result": "10664 non-null values, 1545 at or above 250, range 37 to 568 mg/dL.",
+    "validation_method": "range and threshold profiling",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "ev_015_creatinine",
+    "source": "thrombosis_prediction.sqlite",
+    "query": "SELECT COUNT(*), SUM(fld028>=1.5), MIN(fld028), MAX(fld028) FROM tab03 WHERE fld028 IS NOT NULL",
+    "result": "11253 non-null values, 361 at or above 1.5, range 0.1 to 17.1 mg/dL.",
+    "validation_method": "range and threshold profiling",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "ev_016_cpk",
+    "source": "thrombosis_prediction.sqlite",
+    "query": "SELECT COUNT(*), SUM(fld032>=250), MIN(fld032), MAX(fld032) FROM tab03 WHERE fld032 IS NOT NULL",
+    "result": "5016 non-null values, 288 at or above 250, range 0 to 10835 U/L.",
+    "validation_method": "range and threshold profiling",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "ev_017_urea_nitrogen",
+    "source": "thrombosis_prediction.sqlite",
+    "query": "SELECT COUNT(*), SUM(fld027=29), MIN(fld027), MAX(fld027) FROM tab03 WHERE fld027 IS NOT NULL",
+    "result": "11238 non-null values, 44 equal to 29, range 0 to 152 mg/dL.",
+    "validation_method": "range and value-frequency profiling",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "ev_018_platelet",
+    "source": "thrombosis_prediction.sqlite",
+    "query": "SELECT COUNT(*), SUM(fld038>400), MIN(fld038), MAX(fld038) FROM tab03 WHERE fld038 IS NOT NULL",
+    "result": "11287 non-null values, 875 above 400, range 5 to 5844.",
+    "validation_method": "range and threshold profiling",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "ev_019_igg",
+    "source": "thrombosis_prediction.sqlite",
+    "query": "SELECT COUNT(*), SUM(fld046>900 AND fld046<2000), MIN(fld046), MAX(fld046) FROM tab03 WHERE fld046 IS NOT NULL",
+    "result": "2680 non-null values, 1764 strictly between 900 and 2000, range 3 to 6510 mg/dL.",
+    "validation_method": "range and threshold profiling",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "ev_020_igm",
+    "source": "thrombosis_prediction.sqlite",
+    "query": "SELECT COUNT(*), SUM(fld048<=40 OR fld048>=400), MIN(fld048), MAX(fld048) FROM tab03 WHERE fld048 IS NOT NULL",
+    "result": "2678 non-null values, 208 at or below 40 or at or above 400, range 0 to 1573 mg/dL.",
+    "validation_method": "range and threshold profiling",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "ev_021_crp",
+    "source": "thrombosis_prediction.sqlite",
+    "query": "SELECT fld049, COUNT(*) FROM tab03 GROUP BY 1 ORDER BY 2 DESC",
+    "result": "11455 non-null values across 211 distinct strings: '+'=693, '-'=2991, '<0.2'=1224, '<0.3'=2355, plus numeric strings such as '0.6' and '2.7'.",
+    "validation_method": "value-domain profiling",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "ev_022_antibodies",
+    "source": "thrombosis_prediction.sqlite",
+    "query": "SELECT fld056, COUNT(*) FROM tab03 GROUP BY 1; same for fld058 and fld059",
+    "result": "anti-Scl70 fld056: 28 non-null ('0'=12, 'negative'=12, '1'=1, '4'=2, '16'=1). anti-SSB fld058: 93 non-null ('0'=58, 'negative'=30, '1','2','8','32'). anti-centromere fld059: 15 non-null ('0'=11, 'negative'=4). No '-' or '+-' values occur in these three columns.",
+    "validation_method": "value-domain profiling",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "ev_023_ana",
+    "source": "thrombosis_prediction.sqlite",
+    "query": "SELECT fld005, COUNT(*) FROM tab01 GROUP BY 1; SELECT fld006, COUNT(*) FROM tab01 GROUP BY 1 ORDER BY 2 DESC",
+    "result": "Titer fld005: 0=206, 4=108, 16=155, 64=112, 256=82, 1024=58, 4096=46, 4094=1, null=38. Pattern fld006: 'S'=252, 'P'=178, 'P,S'=89, 'S,P'=11, 'p'=2, 'S,D'=2, 'D,P,S'=2, 'D,P'=2, 'N'=1, null=261. 223 rows have a titer but no pattern; no row has a pattern but no titer.",
+    "validation_method": "value-domain and co-occurrence profiling",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "ev_024_thrombosis_level",
+    "source": "thrombosis_prediction.sqlite",
+    "query": "SELECT fld013, COUNT(*) FROM tab01 GROUP BY 1",
+    "result": "0=726, 1=57, 2=18, 3=5",
+    "validation_method": "value-domain profiling",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "ev_025_coagulation_flags",
+    "source": "thrombosis_prediction.sqlite",
+    "query": "SELECT SUM(fld009='+'), SUM(fld009='-'), SUM(fld010='+'), SUM(fld010='-'), SUM(fld011='+'), SUM(fld011='-') FROM tab01; SELECT COUNT(*) FROM tab01 WHERE fld009='+' OR fld010='+' OR fld011='+'",
+    "result": "146 examination rows carry the flags. fld009: '+'=41, '-'=105; fld010: '+'=47, '-'=99; fld011: '+'=75, '-'=147; the rest are null. 75 rows and 74 distinct patients have at least one '+' flag.",
+    "validation_method": "value-domain and co-occurrence profiling",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "ev_026_symptoms",
+    "source": "thrombosis_prediction.sqlite",
+    "query": "SELECT COUNT(*), COUNT(DISTINCT fld012) FROM tab01 WHERE fld012 IS NOT NULL",
+    "result": "80 of 806 examination rows carry a non-null symptom text with 39 distinct labels, including AMI, CNS lupus, DVT, abortion, thrombocytopenia, thrombosis of lower extremities and brain infarction.",
+    "validation_method": "null and value-domain profiling",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "ev_027_missing_values",
+    "source": "thrombosis_prediction.sqlite",
+    "query": "SELECT COUNT(*) FROM tab03 WHERE fld020 IS NULL AND fld021 IS NULL AND fld025 IS NULL AND fld030 IS NULL AND fld032 IS NULL AND fld033 IS NULL AND fld038 IS NULL AND fld046 IS NULL AND fld048 IS NULL AND fld049 IS NULL; SELECT COUNT(fld061) FROM tab03",
+    "result": "1012 of 13908 panels have all main analytes null. Coverage varies per column: glucose 1705 non-null, IgG 2680, anti-Scl70 28. fld061 is null in all 13908 rows.",
+    "validation_method": "null-coverage profiling",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "ev_028_age_derivation",
+    "source": "thrombosis_prediction.sqlite",
+    "query": "SELECT fld001, 2026 - CAST(substr(fld015,1,4) AS INTEGER) FROM tab02 WHERE fld015 IS NOT NULL LIMIT 5",
+    "result": "Birth years 1934, 1937, 1956, 1953, 1936 produce ages 92, 89, 70, 73, 90 in calendar year 2026. No age column exists in any table.",
+    "validation_method": "derivation check against birthday",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "ev_030_date_ranges",
+    "source": "thrombosis_prediction.sqlite",
+    "query": "SELECT MIN(fld019), MAX(fld019) FROM tab03; SELECT MIN(fld002), MAX(fld002) FROM tab01; SELECT MIN(fld016), MAX(fld016), MIN(fld017), MAX(fld017) FROM tab02",
+    "result": "lab dates 1981-01-27 to 1999-03-04; examination dates 1989-04-18 to 1998-04-17; fld016 1991-06-10 to 1998-12-03; fld017 1972-08-02 to 1998-08-28. All dates are ISO YYYY-MM-DD text.",
+    "validation_method": "range and format check",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "ev_031_patient_dates",
+    "source": "thrombosis_prediction.sqlite",
+    "query": "SELECT SUM(fld016 IS NULL), SUM(fld017 IS NULL) FROM tab02; compare both dates with per-patient laboratory date ranges",
+    "result": "fld016 is non-null for 1022 of 1238 patients and fld017 for 987. fld016 is not earlier than fld017 for 870 of 882 patients with both dates (12 exceptions). Laboratory panels fall before fld017 for 114 of 235 patients and after fld016 for 100 of 244, so neither column is a strict first/last-visit boundary and their clinical meaning cannot be established from the data alone.",
+    "validation_method": "null, ordering and cross-table timing analysis",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "ev_032_anti_cardiolipin",
+    "source": "thrombosis_prediction.sqlite",
+    "query": "SELECT MIN(fld003), MAX(fld003), COUNT(DISTINCT fld003), MIN(fld004), MAX(fld004), COUNT(DISTINCT fld004) FROM tab01",
+    "result": "fld003 ranges 0.0 to 2150.3 with 115 distinct values and fld004 ranges 0.0 to 187122.0 with 140 distinct values. Both are numeric antibody measurements recorded per examination and no other pair of examination columns has this shape.",
+    "validation_method": "range and distinct-value profiling",
+    "timestamp": "2026-11-06"
+  }
+]

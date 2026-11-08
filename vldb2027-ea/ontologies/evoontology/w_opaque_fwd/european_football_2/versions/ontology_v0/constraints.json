@@ -1,0 +1,304 @@
+[
+  {
+    "id": "cons_season_label_mapping",
+    "target": "term_season",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "season",
+      "2016 season",
+      "2015/2016",
+      "2010/2011",
+      "2009 season",
+      "in the 2016 season",
+      "league season",
+      "year"
+    ],
+    "severity": "block",
+    "scope": "Applies whenever a question names a year or season and matches must be filtered by season.",
+    "confidence": "high",
+    "description": "Season is stored as a two-year text label. A bare year in a question maps to the label whose second year equals that year: the '2016 season' is the label '2015/2016', the '2010 season' is '2009/2010', and an explicit label such as '2010/2011' is matched literally. Season labels must not be compared to the calendar year of the match date.",
+    "evidence": [
+      "ev_season_calendar"
+    ]
+  },
+  {
+    "id": "cons_player_height_unit",
+    "target": "term_player_height",
+    "constraint_type": "unit",
+    "trigger_keywords": [
+      "height",
+      "tall",
+      "above 180",
+      "under 180",
+      "180 cm",
+      "centimetres",
+      "cm",
+      "how tall"
+    ],
+    "severity": "block",
+    "scope": "Any height comparison or threshold on players.",
+    "confidence": "high",
+    "description": "Height is stored in centimetres as a decimal (for example 182.88). Thresholds such as 'above 180' or 'under 180 cm' are numeric comparisons against this centimetre value with no unit conversion.",
+    "evidence": [
+      "ev_height_weight_distribution"
+    ]
+  },
+  {
+    "id": "cons_player_weight_unit",
+    "target": "term_player_weight",
+    "constraint_type": "unit",
+    "trigger_keywords": [
+      "weight",
+      "heaviest",
+      "lightest",
+      "pounds",
+      "lbs",
+      "kg",
+      "body weight"
+    ],
+    "severity": "warning",
+    "scope": "Any weight comparison or ranking on players.",
+    "confidence": "high",
+    "description": "Weight is stored in pounds as an integer between 117 and 243. Values must not be interpreted as kilograms; 'heaviest' is the maximum of this column.",
+    "evidence": [
+      "ev_height_weight_distribution"
+    ]
+  },
+  {
+    "id": "cons_attribute_snapshot_grain",
+    "target": "term_player_attribute_record",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "average",
+      "average number",
+      "overall rating",
+      "in year 2011",
+      "between 2013 and 2015",
+      "average heading accuracy",
+      "on 2016/6/23",
+      "attribute over time"
+    ],
+    "severity": "block",
+    "scope": "Any analysis of player ratings or skills, in particular when a year or period is named.",
+    "confidence": "high",
+    "description": "Player attributes are dated snapshots: each player has between 2 and 56 records across 197 observation dates. A value for a single date is a direct filter on the observation date; a value for a year or period requires aggregating across the player's snapshots in that window (for example averaging), and unqualified 'greatest' or 'top' questions must resolve the multi-snapshot ambiguity explicitly rather than assuming one row per player.",
+    "evidence": [
+      "ev_tab01_profile",
+      "ev_player_rows_per_player"
+    ]
+  },
+  {
+    "id": "cons_preferred_foot_domain",
+    "target": "term_preferred_foot",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "prefer left foot",
+      "right foot",
+      "left foot",
+      "left foots",
+      "preferred foot",
+      "foot preference"
+    ],
+    "severity": "block",
+    "scope": "Filtering or counting players by preferred foot.",
+    "confidence": "high",
+    "description": "The preferred foot domain is exactly the lower-case strings 'left' and 'right'. 836 attribute rows have a null value; null means the foot is unrecorded and must not be counted as a preference for either foot, and must not be dropped from an intended denominator without stating so.",
+    "evidence": [
+      "ev_preferred_foot_counts"
+    ]
+  },
+  {
+    "id": "cons_work_rate_values",
+    "target": "term_player_attribute_record",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "work rate",
+      "attacking work rate",
+      "defensive work rate",
+      "workrate"
+    ],
+    "severity": "warning",
+    "scope": "Work-rate columns of the player attribute record.",
+    "confidence": "high",
+    "description": "The attacking and defensive work-rate columns contain the expected low/medium/high labels but also the literal strings 'None' and '0'. These are data-entry artefacts rather than a fourth level and must not be ordered as an intensity level.",
+    "evidence": [
+      "ev_work_rate_values"
+    ]
+  },
+  {
+    "id": "cons_draw_definition",
+    "target": "term_match_outcome",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "draw",
+      "ended as draw",
+      "tie",
+      "most matches end as draw",
+      "result",
+      "win"
+    ],
+    "severity": "block",
+    "scope": "Match result classification and win/draw/loss counts.",
+    "confidence": "high",
+    "description": "There is no stored result column. A match is a draw exactly when the home goal count equals the away goal count; a home win is when the home count is greater and an away win when it is smaller. Counting draws therefore counts matches with equal goal columns, and such counts are typically grouped by league or season.",
+    "evidence": [
+      "ev_draw_by_league"
+    ]
+  },
+  {
+    "id": "cons_league_name_embeds_country",
+    "target": "term_league_name",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "country of Poland",
+      "Poland",
+      "Belgium Jupiler League",
+      "Poland Ekstraklasa",
+      "league name",
+      "country"
+    ],
+    "severity": "warning",
+    "scope": "Filtering matches by country or league.",
+    "confidence": "high",
+    "description": "Every league name begins with the host country name, so string matching on the league name can appear to answer a country question. The structural country reference is a separate country row; use it when a question names a country, and treat name-prefix matching as an approximation that agrees with the structure only because there is exactly one league per country here.",
+    "evidence": [
+      "ev_tab03_tab04_profile"
+    ]
+  },
+  {
+    "id": "cons_country_league_id_alignment",
+    "target": "term_match",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "league id",
+      "country id",
+      "join match to league",
+      "join match to country"
+    ],
+    "severity": "warning",
+    "scope": "Joining matches to league or country.",
+    "confidence": "high",
+    "description": "In this dataset the league identifiers coincide exactly with the country identifiers, and the match country-identifier column equals the match league-identifier column for all 25,979 matches. Both columns therefore resolve against both reference tables, and neither column alone can be distinguished by its values.",
+    "evidence": [
+      "ev_join_integrity"
+    ]
+  },
+  {
+    "id": "cons_placeholder_columns",
+    "target": "term_match",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "match statistics",
+      "unknown columns",
+      "fld082",
+      "shot statistics",
+      "match stats"
+    ],
+    "severity": "warning",
+    "scope": "The 44 integer columns fld082-fld125 of the match table.",
+    "confidence": "medium",
+    "description": "These 44 integer columns hold small patterned placeholder values (mostly 1, 2, 4, 6 or 8) with no documented football meaning and no relationship to match events or scores. Treat them as undecoded fields and do not present them as match statistics.",
+    "evidence": [
+      "ev_placeholder_columns"
+    ]
+  },
+  {
+    "id": "cons_team_class_labels",
+    "target": "term_team_attribute_record",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "classified",
+      "classification",
+      "class",
+      "build up play speed class",
+      "chance creation passing class",
+      "tactical style"
+    ],
+    "severity": "warning",
+    "scope": "Team attribute records where a numeric tactical score has a paired qualitative label.",
+    "confidence": "high",
+    "description": "Each numeric tactical score is paired with an adjacent qualitative class column: build-up play speed with Balanced/Fast/Slow, dribbling with Little/Normal/Lots, build-up passing with Mixed/Long/Short, positioning with Organised/Free Form, chance creation passing with Normal/Risky/Safe, crossing and shooting with Little/Normal/Lots, pressure with Deep/Medium/High, aggression with Contain/Press/Double, team width with Narrow/Normal/Wide, and defender line with Cover/Offside Trap. A question asking what a score 'is classified as' refers to the class column immediately paired with that score, not to another score.",
+    "evidence": [
+      "ev_team_class_labels"
+    ]
+  },
+  {
+    "id": "cons_team_attribute_scope",
+    "target": "term_team_attribute_record",
+    "constraint_type": "scope",
+    "trigger_keywords": [
+      "team attributes",
+      "team style",
+      "Ajax",
+      "current style",
+      "latest team attributes",
+      "build up play"
+    ],
+    "severity": "warning",
+    "scope": "Team tactical analysis.",
+    "confidence": "high",
+    "description": "Team attributes exist only for six observation dates between 2010-02-22 and 2015-09-10 and cover 288 teams. A team's tactical scores change between snapshots, so multi-date questions such as 'highest' or 'top' require an explicit aggregation across snapshots, and there is no single undated team style.",
+    "evidence": [
+      "ev_tab06_profile",
+      "ev_team_class_labels"
+    ]
+  },
+  {
+    "id": "cons_event_xml_coverage",
+    "target": "term_match_event_xml",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "match events",
+      "goal events",
+      "cards",
+      "possession",
+      "crosses",
+      "corners",
+      "shots"
+    ],
+    "severity": "warning",
+    "scope": "Event-level match analysis from the XML columns.",
+    "confidence": "high",
+    "description": "The eight event columns are populated for only 14,217 of 25,979 matches and are stored as XML text, not counts. A missing fragment means no event data was recorded, not that no event occurred; event counts require parsing and the resulting figures cover a subset of matches.",
+    "evidence": [
+      "ev_event_xml_tags"
+    ]
+  },
+  {
+    "id": "cons_player_name_ambiguity",
+    "target": "term_player_name",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "player name",
+      "Gabriel Tamas",
+      "Ahmed Samir Farag",
+      "named",
+      "who was"
+    ],
+    "severity": "warning",
+    "scope": "Filtering players by name.",
+    "confidence": "high",
+    "description": "Player names are not unique: 163 names are shared by more than one player across the 11,060 players. A name-only filter can return several players, so a name lookup should be resolved together with the player identifier or attribute values stated in the question.",
+    "evidence": [
+      "ev_tab02_profile"
+    ]
+  },
+  {
+    "id": "cons_betting_odds_coverage",
+    "target": "term_match_betting_odds",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "betting odds",
+      "odds",
+      "bookmaker",
+      "B365"
+    ],
+    "severity": "info",
+    "scope": "Odds columns of the match table.",
+    "confidence": "high",
+    "description": "Odds coverage differs strongly by bookmaker column, from 11,168 to 22,592 of the 25,979 matches. Averaging odds across a column implicitly averages over a different match subset than a full-match aggregate.",
+    "evidence": [
+      "ev_odds_coverage"
+    ]
+  }
+]

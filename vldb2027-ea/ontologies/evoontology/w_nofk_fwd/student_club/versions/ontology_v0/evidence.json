@@ -1,0 +1,130 @@
+[
+  {
+    "id": "evidence_001_schema_inventory",
+    "source": "student_club.sqlite",
+    "query": "sqlite3 -readonly student_club.sqlite \".tables\" ; \".schema\" ; per-table SELECT COUNT(*)",
+    "result": "8 tables. attendance(link_to_event, link_to_member); budget(budget_id, category, spent, remaining, amount, event_status, link_to_event); event(event_id, event_name, event_date, type, notes, location, status); expense(expense_id, expense_description, expense_date, cost, approved, link_to_member, link_to_budget); income(income_id, date_received, amount, source, notes, link_to_member); major(major_id, major_name, department, college); member(member_id, first_name, last_name, email, position, t_shirt_size, phone, zip, link_to_major); zip_code(zip_code, type, city, county, state, short_state). Row counts: member 33, major 113, event 42, budget 52, expense 32, income 36, attendance 326, zip_code 41877.",
+    "validation_method": "read-only schema dump and per-table row counts",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_002_member_distinct_values",
+    "source": "student_club.sqlite",
+    "query": "SELECT position, COUNT(*) FROM member GROUP BY position; SELECT t_shirt_size, COUNT(*) FROM member GROUP BY t_shirt_size;",
+    "result": "position: Member 26, Inactive 3, President 1, Vice President 1, Secretary 1, Treasurer 1. t_shirt_size: Large 13, Medium 10, X-Large 8, Small 2.",
+    "validation_method": "distinct-value distribution",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_003_income_source_and_amounts",
+    "source": "student_club.sqlite",
+    "query": "SELECT source, COUNT(*) FROM income GROUP BY source; SELECT amount, COUNT(*) FROM income GROUP BY amount ORDER BY 2 DESC; SELECT DISTINCT quote(source) FROM income;",
+    "result": "source: Dues 33, Fundraising 1, School Appropration 1, Sponsorship 1. amount: 50 on 33 rows, 3000 on the School Appropration receipt, 1000 on the Sponsorship receipt, 200 on the Fundraising receipt. The stored literal is 'School Appropration', misspelled relative to 'Appropriation'.",
+    "validation_method": "distinct-value verification",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_004_budget_category_and_amounts",
+    "source": "student_club.sqlite",
+    "query": "SELECT category, COUNT(*), SUM(amount), SUM(spent) FROM budget GROUP BY category;",
+    "result": "All budget rows: SUM(amount)=4200, SUM(spent)=2086.05. Food: 22 rows, allocated 2595, spent 1234.73. Category values observed: Food, Advertisement, Speaker Gifts, Parking, Club T-Shirts.",
+    "validation_method": "grouped aggregation and distinct-value verification",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_005_event_type_status_location",
+    "source": "student_club.sqlite",
+    "query": "SELECT type, COUNT(*) FROM event GROUP BY type; SELECT status, COUNT(*) FROM event GROUP BY status; SELECT location, COUNT(*) FROM event GROUP BY location;",
+    "result": "type: Meeting 16, Guest Speaker 7, Game 6, Community Service 4, Social 4, Budget 2, Election 2, Registration 1. status: Closed 18, Open 13, Planning 11. location: 'MU 215' appears on 19 events, 11 further venue strings exist, and 6 events have an empty location.",
+    "validation_method": "distinct-value distribution",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_006_major_hierarchy",
+    "source": "student_club.sqlite",
+    "query": "SELECT COUNT(*) FROM (SELECT department FROM major GROUP BY department HAVING COUNT(DISTINCT college)>1); SELECT COUNT(*) FROM (SELECT major_name FROM major GROUP BY major_name HAVING COUNT(DISTINCT department)>1);",
+    "result": "Both functional-dependency checks return 0: every department value maps to exactly one college, and every major_name maps to exactly one department. 113 majors, 47 distinct departments, 8 distinct colleges. Example chain: 'Environmental Engineering' -> 'Civil and Environmental Engineering Department' -> 'College of Engineering'.",
+    "validation_method": "functional-dependency check over distinct values",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_007_referential_integrity",
+    "source": "student_club.sqlite",
+    "query": "LEFT JOIN anti-join checks and NULL counts for attendance->event, attendance->member, budget->event, expense->budget, expense->member.",
+    "result": "No orphans and no empty foreign keys: all 326 attendance rows resolve to both an event and a member; all 52 budget rows resolve to an event; all 32 expense rows resolve to both a budget line and a member.",
+    "validation_method": "anti-join referential-integrity check",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_008_income_member_link_optional",
+    "source": "student_club.sqlite",
+    "query": "SELECT COUNT(*) FROM income WHERE link_to_member IS NULL OR link_to_member=''; SELECT i.*, m.first_name, m.last_name FROM income i JOIN member m ON m.member_id=i.link_to_member WHERE i.date_received='2019-09-09';",
+    "result": "3 income rows carry no member link: the Fundraising (200), School Appropration (3000) and Sponsorship (1000) receipts. All 33 Dues receipts are linked to a member; e.g. the two receipts dated 2019-09-09 belong to Sacha Harrison and Carlo Jacobs.",
+    "validation_method": "NULL-count and join inspection",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_009_event_date_format",
+    "source": "student_club.sqlite",
+    "query": "SELECT event_id, event_name, event_date FROM event ORDER BY event_date;",
+    "result": "event_date values are strings of the form YYYY-MM-DDTHH:MM:SS, e.g. '2019-09-01T07:00:00' (Registration) and '2020-04-21T12:00:00' (April Speaker). The leading four characters are the calendar year; event dates span 2019-09-01 to 2020-05-05.",
+    "validation_method": "value-format inspection",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_010_attendance_join",
+    "source": "student_club.sqlite",
+    "query": "SELECT m.first_name, m.last_name FROM attendance a JOIN member m ON m.member_id=a.link_to_member JOIN event e ON e.event_id=a.link_to_event WHERE e.event_name='Women''s Soccer';",
+    "result": "17 members attended 'Women's Soccer' (event rec2N69DMcrqN9PJC, 2019-10-05), including Maya Mclean (member recZ4PkGERzl9ziHO). This confirms attendance links members to events.",
+    "validation_method": "join result inspection",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_011_expense_details",
+    "source": "student_club.sqlite",
+    "query": "SELECT DISTINCT expense_description FROM expense ORDER BY 1; SELECT approved, COUNT(*) FROM expense GROUP BY approved; SELECT expense_id, expense_description, expense_date, cost, link_to_member FROM expense;",
+    "result": "12 distinct descriptions, including 'Pizza', 'Posters', 'Parking', 'Travel Mug', 'Alumni Glass', 'Club shirts', 'Water, Cookies', 'Water, chips, cookies', 'Water, cookies, chips', 'Water, Veggie tray, supplies', 'Bakery - Donuts, muffins', 'Post Cards, Posters'. approved is 'true' on 31 rows and an empty string on 1. Example: 'Water, Veggie tray, supplies' dated 2019-09-03 cost 28.15 with link_to_member recro8T1MPMwRadVH (Elijah Allen).",
+    "validation_method": "distinct-value and row inspection",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_012_cost_reconciliation",
+    "source": "student_club.sqlite",
+    "query": "SELECT SUM(amount), SUM(spent) FROM budget; SELECT SUM(cost) FROM expense; SELECT SUM(x.cost) FROM expense x JOIN budget b ON b.budget_id=x.link_to_budget JOIN event e ON e.event_id=b.link_to_event WHERE e.event_name='Yearly Kickoff'; SELECT SUM(cost) FROM expense WHERE expense_date='2019-08-20';",
+    "result": "SUM(budget.amount)=4200 (allocated); SUM(budget.spent)=2086.05 and SUM(expense.cost)=2086.05 (identical totals). Expense on 2019-08-20 = 122.06. Total cost attributed to 'Yearly Kickoff' = 449.13 out of the 2086.05 total. Food: allocated 2595 versus spent 1234.73.",
+    "validation_method": "aggregate reconciliation across the budget and expense tables",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_013_member_identity",
+    "source": "student_club.sqlite",
+    "query": "SELECT member_id, first_name, last_name, position, link_to_major, zip FROM member; SELECT COUNT(*) FROM member WHERE link_to_major IS NULL OR link_to_major=''; SELECT COUNT(*) FROM member m JOIN zip_code z ON z.zip_code=m.zip;",
+    "result": "33 members, each with distinct first_name and last_name columns that together form the person's name (e.g. 'Angela' + 'Sanders', 'Connor' + 'Hilton', 'Maya' + 'Mclean'). 32 members have a link_to_major; one Inactive member (Randy Woodard, rec2a03QXbFQAUZ7X) has none. All 33 member.zip values resolve to a zip_code row.",
+    "validation_method": "row inspection, NULL-count and join-coverage check",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_014_zip_code_reference",
+    "source": "student_club.sqlite",
+    "query": "SELECT COUNT(*) FROM zip_code; SELECT type, COUNT(*) FROM zip_code GROUP BY type; SELECT COUNT(*) FROM member m JOIN zip_code z ON z.zip_code=m.zip;",
+    "result": "41877 ZIP code rows; type values Standard 29973, PO Box 9438, Unique 2466; each row carries city, county, state and short_state. All 33 members join to a zip_code row on member.zip = zip_code.zip_code.",
+    "validation_method": "join-coverage and distinct-value check",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_015_budget_event_status_alignment",
+    "source": "student_club.sqlite",
+    "query": "SELECT COUNT(*) FROM budget b JOIN event e ON e.event_id=b.link_to_event WHERE b.event_status<>e.status; SELECT event_status, COUNT(*) FROM budget GROUP BY event_status;",
+    "result": "0 mismatches across all 52 budget rows. budget.event_status distribution: Open 23, Closed 22, Planning 7 - the same value domain as event.status.",
+    "validation_method": "cross-table consistency check",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_016_medium_member_dues_share",
+    "source": "student_club.sqlite",
+    "query": "SELECT COUNT(*) FROM member WHERE t_shirt_size='Medium' AND position='Member'; SELECT COUNT(*) FROM income i JOIN member m ON m.member_id=i.link_to_member WHERE i.amount=50 AND m.t_shirt_size='Medium' AND m.position='Member';",
+    "result": "10 members have t_shirt_size 'Medium' together with position 'Member', and 10 income receipts of amount 50 link to those members, so the share is 100%.",
+    "validation_method": "filtered count comparison",
+    "timestamp": "2026-10-10"
+  }
+]

@@ -1,0 +1,322 @@
+[
+  {
+    "confidence": "high",
+    "constraint_type": "enum_semantics",
+    "description": "Post type codes observed: 1 = question (42,912 rows), 2 = answer (47,755 rows), 3 = 6, 4 = 639, 5 = 640, 6 = 9, 7 = 5. Codes other than 1 and 2 are site-specific post kinds and must not be treated as questions or answers.",
+    "evidence": [
+      "evidence_post_type_distribution"
+    ],
+    "id": "constraint_post_type_enum",
+    "scope": "Interpreting the post type code on post rows",
+    "severity": "warning",
+    "target": "term_post_type",
+    "trigger_keywords": [
+      "post type",
+      "question",
+      "answer",
+      "type code",
+      "kind of post"
+    ]
+  },
+  {
+    "confidence": "high",
+    "constraint_type": "data_quality",
+    "description": "Titles and tags are populated only for question posts (post type 1); answer rows have null title and null tags. A title or tag condition therefore implicitly restricts the population to questions.",
+    "evidence": [
+      "evidence_post_columns"
+    ],
+    "id": "constraint_title_tags_question_only",
+    "scope": "Any condition or projection on post titles or tags",
+    "severity": "block",
+    "target": "term_post_title",
+    "trigger_keywords": [
+      "title",
+      "post title",
+      "titled",
+      "tags",
+      "tag",
+      "tagged"
+    ]
+  },
+  {
+    "confidence": "high",
+    "constraint_type": "data_quality",
+    "description": "Stored title text preserves the case of the latest revision and can differ from the case used in a question: the post whose question wording is 'Computer Game Datasets' is stored as 'Computer game datasets', so an exact-case comparison returns no row. Earlier title wording survives only in post revision text.",
+    "evidence": [
+      "evidence_title_case_and_revisions"
+    ],
+    "id": "constraint_title_case_and_revisions",
+    "scope": "Matching a quoted title against stored title text",
+    "severity": "warning",
+    "target": "term_post_title",
+    "trigger_keywords": [
+      "title",
+      "post titled",
+      "title mentioning",
+      "exact title",
+      "name of the post"
+    ]
+  },
+  {
+    "confidence": "high",
+    "constraint_type": "data_quality",
+    "description": "Display names are not unique: 40,325 accounts share 35,644 distinct names, and 1,563 names belong to more than one account (6,244 rows). The user identifier is the reliable key; a name lookup may return several accounts.",
+    "evidence": [
+      "evidence_user_name_duplicates"
+    ],
+    "id": "constraint_display_name_not_unique",
+    "scope": "Identifying users by display name",
+    "severity": "warning",
+    "target": "term_user_display_name",
+    "trigger_keywords": [
+      "user",
+      "display name",
+      "owner",
+      "user name",
+      "user no."
+    ]
+  },
+  {
+    "confidence": "high",
+    "constraint_type": "data_quality",
+    "description": "Only 3,425 of 38,930 vote records carry an acting user identifier (509 distinct users); the remainder are anonymous. Vote-based attribution to users is mostly unavailable.",
+    "evidence": [
+      "evidence_votes_profile"
+    ],
+    "id": "constraint_vote_user_sparse",
+    "scope": "Attributing votes to users",
+    "severity": "warning",
+    "target": "term_vote",
+    "trigger_keywords": [
+      "vote",
+      "voter",
+      "cast a vote",
+      "first vote",
+      "who voted"
+    ]
+  },
+  {
+    "confidence": "high",
+    "constraint_type": "data_quality",
+    "description": "Age is recorded for only 8,318 of 40,325 users (about 21%), and only 87 users exceed 65. Age filters silently exclude accounts with no recorded age.",
+    "evidence": [
+      "evidence_users_profile"
+    ],
+    "id": "constraint_age_sparse",
+    "scope": "Any age-based filter or comparison",
+    "severity": "warning",
+    "target": "term_user_age",
+    "trigger_keywords": [
+      "age",
+      "elder",
+      "elderly",
+      "older user",
+      "over 65"
+    ]
+  },
+  {
+    "confidence": "medium",
+    "constraint_type": "enum_semantics",
+    "description": "Vote type codes observed: 2 = up vote (33,323), 5 = favorite (3,365), 1 = accepted by originator (1,451), 3 = down vote (444), 16 = 111, 15 = 72, 8 = bounty start (60), 9 = bounty close (59), 11 = undeletion (44), 10 = deletion (1). Codes 15 and 16 are not identified from the data.",
+    "evidence": [
+      "evidence_votes_profile"
+    ],
+    "id": "constraint_vote_type_enum",
+    "scope": "Interpreting vote records",
+    "severity": "warning",
+    "target": "term_vote_type",
+    "trigger_keywords": [
+      "vote type",
+      "upvote",
+      "downvote",
+      "favorite",
+      "accepted answer",
+      "bounty"
+    ]
+  },
+  {
+    "confidence": "high",
+    "constraint_type": "business_rule",
+    "description": "A bounty amount is populated only on bounty start (type 8) and bounty close (type 9) vote records; observed values run from 50 to 200 for starts and 0 to 150 for closes. Bounty analysis must restrict to those vote types.",
+    "evidence": [
+      "evidence_votes_profile"
+    ],
+    "id": "constraint_bounty_vote_types",
+    "scope": "Bounty analysis over vote records",
+    "severity": "warning",
+    "target": "term_bounty_amount",
+    "trigger_keywords": [
+      "bounty",
+      "bounty amount",
+      "bounty of 50"
+    ]
+  },
+  {
+    "confidence": "high",
+    "constraint_type": "business_rule",
+    "description": "A post is closed when its closed-date field is non-null and never closed when that field is null. 1,610 of 91,966 posts carry a closed date. 'Not well-finished' means the closed date is null; 'well-finished' means it is present.",
+    "evidence": [
+      "evidence_closed_status"
+    ],
+    "id": "constraint_closed_status",
+    "scope": "Determining whether a post was closed or finished",
+    "severity": "block",
+    "target": "term_post_closed_status",
+    "trigger_keywords": [
+      "closed",
+      "well-finished",
+      "not well-finished",
+      "finished",
+      "open",
+      "unfinished"
+    ]
+  },
+  {
+    "confidence": "high",
+    "constraint_type": "business_rule",
+    "description": "Post tags are stored as angle-bracket-delimited tokens in one text field, for example <bayesian><prior><elicitation>. A tag must be matched as a whole token such as <r>; a plain substring comparison for 'r' also matches unrelated tags. The tag catalogue separately records each tag name and its usage count.",
+    "evidence": [
+      "evidence_tags_profile"
+    ],
+    "id": "constraint_tag_token_matching",
+    "scope": "Filtering posts by tag",
+    "severity": "block",
+    "target": "term_post_tags",
+    "trigger_keywords": [
+      "tag",
+      "tags",
+      "R language",
+      "language",
+      "tagged"
+    ]
+  },
+  {
+    "confidence": "high",
+    "constraint_type": "business_rule",
+    "description": "An elder user is a user whose recorded age is strictly greater than 65. Users without a recorded age are not elder users.",
+    "evidence": [
+      "evidence_users_profile"
+    ],
+    "id": "constraint_elder_user_definition",
+    "scope": "Classifying users as elder",
+    "severity": "block",
+    "target": "term_elder_user",
+    "trigger_keywords": [
+      "elder user",
+      "elderly",
+      "older user",
+      "age over 65"
+    ]
+  },
+  {
+    "confidence": "high",
+    "constraint_type": "data_quality",
+    "description": "Referential checks found 36 comment rows and 41 revision rows whose post identifier has no matching post row; these are orphaned records left by deleted posts and disappear under inner joins.",
+    "evidence": [
+      "evidence_referential_integrity"
+    ],
+    "id": "constraint_orphan_references",
+    "scope": "Joining comments or revisions to posts",
+    "severity": "info",
+    "target": "term_comment",
+    "trigger_keywords": [
+      "comment",
+      "comments",
+      "revision",
+      "edited"
+    ]
+  },
+  {
+    "confidence": "high",
+    "constraint_type": "data_quality",
+    "description": "Reputation ranges from 1 to 87,393 across 40,325 users. The built-in 'Community' account has user identifier -1 and reputation 1. Highest reputation denotes the most influential user.",
+    "evidence": [
+      "evidence_users_profile"
+    ],
+    "id": "constraint_reputation_scale",
+    "scope": "Comparing or ranking users by reputation",
+    "severity": "info",
+    "target": "term_user_reputation",
+    "trigger_keywords": [
+      "reputation",
+      "influential",
+      "most influential",
+      "higher reputation"
+    ]
+  },
+  {
+    "confidence": "high",
+    "constraint_type": "data_quality",
+    "description": "Vote creation dates are stored at day granularity without a time component, whereas comment, post and revision dates carry full timestamps. Comparisons requiring an exact time cannot be made on votes.",
+    "evidence": [
+      "evidence_votes_profile",
+      "evidence_timestamp_formats"
+    ],
+    "id": "constraint_vote_date_granularity",
+    "scope": "Time comparisons on vote records",
+    "severity": "info",
+    "target": "term_vote_creation_time",
+    "trigger_keywords": [
+      "when did",
+      "first vote",
+      "date of vote",
+      "time of vote"
+    ]
+  },
+  {
+    "confidence": "high",
+    "constraint_type": "data_quality",
+    "description": "Recorded display names on comment rows are blank for 171,454 of 174,285 rows. The account's current display name in the user table is the reliable source; the recorded name is a fallback only.",
+    "evidence": [
+      "evidence_comments_profile"
+    ],
+    "id": "constraint_recorded_name_blank",
+    "scope": "Resolving an author name from an action row",
+    "severity": "warning",
+    "target": "term_recorded_user_name",
+    "trigger_keywords": [
+      "display name",
+      "comment author",
+      "editor",
+      "owner"
+    ]
+  },
+  {
+    "confidence": "high",
+    "constraint_type": "data_quality",
+    "description": "Timestamps are stored as text of the form '2013-07-12 09:08:18.0' with a space between the date and the time and a trailing '.0'. Question wording may present the same instant as '9:08:18 on 2013/7/12' or '2014/4/23 20:29:39'; a literal slash-formatted string does not match the stored value. Vote dates omit the time part entirely.",
+    "evidence": [
+      "evidence_timestamp_formats"
+    ],
+    "id": "constraint_timestamp_representation",
+    "scope": "Comparing a quoted date-time with stored timestamps",
+    "severity": "warning",
+    "target": "term_comment_creation_time",
+    "trigger_keywords": [
+      "time",
+      "timestamp",
+      "at 9:08:18",
+      "on 2013/7/12",
+      "date",
+      "when"
+    ]
+  },
+  {
+    "confidence": "high",
+    "constraint_type": "data_quality",
+    "description": "1,392 posts have no owner user identifier. 1,388 of them carry a recorded owner display name instead (often a legacy label such as 'user28'), and 1,121 posts carry a recorded name alongside an owner identifier. The recorded name is a fallback for attribution when the identifier is absent, not a separate user key.",
+    "evidence": [
+      "evidence_post_dates_and_owner"
+    ],
+    "id": "constraint_owner_display_fallback",
+    "scope": "Attributing posts to their authors",
+    "severity": "warning",
+    "target": "term_post_owner",
+    "trigger_keywords": [
+      "owner",
+      "posted by",
+      "author",
+      "owner of the post"
+    ]
+  }
+]

@@ -1,0 +1,407 @@
+[
+  {
+    "id": "r_sales_order_delivery",
+    "source": "sales_order",
+    "relation_type": "composition",
+    "target": "delivery",
+    "connection_condition": "发货记录以订单号为归属标识挂接到销售订单",
+    "description": "发货单是销售订单的履约明细，一张订单可对应多次发货；脱离订单的发货记录在业务上无意义。",
+    "evidence": "e_order_to_cash_chain"
+  },
+  {
+    "id": "r_sales_order_return",
+    "source": "sales_order",
+    "relation_type": "composition",
+    "target": "return_record",
+    "connection_condition": "退货记录以订单号为归属标识挂接到销售订单",
+    "description": "退货单必须对应一张原始销售订单，是订单的逆向履约构成；但订单状态并不随之改变，退货事实独立于订单状态枚举。",
+    "evidence": "e_return_vs_status"
+  },
+  {
+    "id": "r_sales_order_invoice",
+    "source": "sales_order",
+    "relation_type": "composition",
+    "target": "invoice",
+    "connection_condition": "发票以订单号与发货记录对应，一张订单对应一张发票",
+    "description": "发票按订单的实际交付内容开具，是订单结算构成的组成部分；发票不含税金额与发货金额一致。",
+    "evidence": "e_order_to_cash_chain"
+  },
+  {
+    "id": "r_invoice_receivable",
+    "source": "invoice",
+    "relation_type": "composition",
+    "target": "receivable",
+    "connection_condition": "逐笔应收记录与发票一一对应，未清余额承载发票的待收部分",
+    "description": "应收记录是发票形成的未清项，是发票在收款环节的延续；发票含税金额等于回款合计加未清余额。",
+    "evidence": "e_order_to_cash_chain,e_ar_snapshot"
+  },
+  {
+    "id": "r_invoice_payment",
+    "source": "invoice",
+    "relation_type": "composition",
+    "target": "payment",
+    "connection_condition": "回款记录以订单号与发票核销，回款合计与未清余额共同构成发票含税金额",
+    "description": "回款记录是发票的收款核销明细，是发票构成的收讫部分；一笔发票可对应多笔不同回款方式的分次回款。",
+    "evidence": "e_order_to_cash_chain,e_payment_types"
+  },
+  {
+    "id": "r_production_order_output",
+    "source": "production_order",
+    "relation_type": "composition",
+    "target": "production_output",
+    "connection_condition": "产出记录以工单号为归属标识挂接到生产工单",
+    "description": "产出记录是生产工单的产出明细（按等级登记），工单可有多条产出记录；工单自身的实际产量合计与产出记录合计不等，是两个并存口径。",
+    "evidence": "e_dws_production_grounding"
+  },
+  {
+    "id": "r_production_line_equipment",
+    "source": "production_line",
+    "relation_type": "composition",
+    "target": "equipment",
+    "connection_condition": "设备以产线标识归属到产线，每条产线固定配置 5 台设备（12 条产线共 60 台）",
+    "description": "设备是产线的组成部分，设备的运行与停机状态由所属产线决定；产线级汇总值被复制到其下属设备行，按设备汇总需先归一到产线。",
+    "evidence": "e_equipment_dws_grain,e_equipment_dws_duplication"
+  },
+  {
+    "id": "r_neg_margin_order_hierarchy",
+    "source": "negative_margin_order",
+    "relation_type": "hierarchy",
+    "target": "sales_order",
+    "connection_condition": "负毛利订单是销售订单中毛利为负的子集",
+    "description": "负毛利订单是一种销售订单（子集关系），全库共 41 张，其值域是销售订单值域的子集，不是订单的组成部分。",
+    "evidence": "e_sales_order_status"
+  },
+  {
+    "id": "r_near_miss_hierarchy",
+    "source": "near_miss_event",
+    "relation_type": "hierarchy",
+    "target": "incident",
+    "connection_condition": "未遂事件是安全事件记录中严重度为未遂的子集，且没有受伤与财产损失",
+    "description": "未遂事件是一种安全事件（子集关系），共 11 条；它在数量上被安全汇总表的事故数排除在外，与事故是并列统计口径。",
+    "evidence": "e_safety_flow"
+  },
+  {
+    "id": "r_first_grade_output_hierarchy",
+    "source": "first_grade_output",
+    "relation_type": "hierarchy",
+    "target": "production_output",
+    "connection_condition": "优等品产出是产出记录中等级为优等品的子集，对应优等品标记为 1",
+    "description": "优等品产出是一种产出记录（子集关系），共 2721 条；优等品率即以该子集为一等品、合格品、返工品之外的独立分子。",
+    "evidence": "e_production_grade_enum"
+  },
+  {
+    "id": "r_order_amount_equivalence",
+    "source": "sales_order_amount",
+    "relation_type": "equivalence",
+    "target": "order_intake_amount",
+    "connection_condition": "订单事实表的订单金额与业绩日汇总表、月汇总表的销售金额按业务员×日期取值完全相同",
+    "description": "订单金额与接单金额是同一业务概念在不同粒度视图下的两种命名，逐行对账完全一致（2758 行、月汇总 441 行），可按需互换使用。",
+    "evidence": "e_dws_org_perf_recon,e_agg_monthly_recon"
+  },
+  {
+    "id": "r_sales_order_amount_gross_profit",
+    "source": "sales_order_amount",
+    "relation_type": "derivation",
+    "target": "gross_profit_actual",
+    "connection_condition": "",
+    "description": "实际毛利由订单金额与订单成本计算得出，随订单金额同向变动；订单金额为负毛利判定的基础量。",
+    "evidence": "e_sales_order_amount,e_sales_order_status"
+  },
+  {
+    "id": "r_sales_order_amount_gross_profit_standard",
+    "source": "sales_order_amount",
+    "relation_type": "derivation",
+    "target": "gross_profit_standard",
+    "connection_condition": "",
+    "description": "标准毛利由订单金额与标准成本口径计算得出，与按实际成本计算的实际毛利构成同一订单的两种毛利口径。",
+    "evidence": "e_sales_order_amount"
+  },
+  {
+    "id": "r_invoice_ar_balance",
+    "source": "invoice",
+    "relation_type": "derivation",
+    "target": "accounts_receivable_balance",
+    "connection_condition": "",
+    "description": "应收账款余额由发票含税金额扣减已回款累加得到，是发票在结算链上的存量结果。",
+    "evidence": "e_order_to_cash_chain,e_ar_balance_dws_equal"
+  },
+  {
+    "id": "r_ar_balance_overdue",
+    "source": "accounts_receivable_balance",
+    "relation_type": "derivation",
+    "target": "overdue_ar_amount",
+    "connection_condition": "",
+    "description": "超期货款金额由应收余额中到期日晚于基准日的部分筛选汇总得到，是应收余额的子集计量，不超过应收余额总额。",
+    "evidence": "e_ar_snapshot"
+  },
+  {
+    "id": "r_ar_balance_aging",
+    "source": "accounts_receivable_balance",
+    "relation_type": "derivation",
+    "target": "ar_aging_bucket",
+    "connection_condition": "",
+    "description": "账龄分桶按每笔未清余额距基准日的账龄月数归入唯一区间，各区间金额之和还原为应收余额，是对同一存量的互斥分解。",
+    "evidence": "e_ar_aging_buckets"
+  },
+  {
+    "id": "r_payment_bank_acceptance",
+    "source": "payment_amount",
+    "relation_type": "derivation",
+    "target": "bank_acceptance_ratio",
+    "connection_condition": "",
+    "description": "银承比率由回款金额中银承方式的部分占比计算得出，分子分母同为回款金额口径；存在金额口径与 0~100 的比率口径两种表示。",
+    "evidence": "e_payment_types,e_bank_acceptance_dws"
+  },
+  {
+    "id": "r_material_input_scrap",
+    "source": "material_input_quantity",
+    "relation_type": "derivation",
+    "target": "material_scrap_quantity",
+    "connection_condition": "",
+    "description": "原料损耗量是投料量中未转化为合格产出的部分，由投料量与实际产出量之差衡量；两者必须换算到同一单位后比较。",
+    "evidence": "e_material_input,e_scrap_unit_mismatch"
+  },
+  {
+    "id": "r_output_yield_rate",
+    "source": "production_actual_quantity",
+    "relation_type": "derivation",
+    "target": "yield_rate",
+    "connection_condition": "",
+    "description": "成材率由产出量除以投料量计算得出，分子必须使用产出记录口径的产量，与投料量配比才闭合。",
+    "evidence": "e_dws_production_grounding,e_material_input"
+  },
+  {
+    "id": "r_first_grade_rate_derivation",
+    "source": "first_grade_output",
+    "relation_type": "derivation",
+    "target": "first_grade_rate",
+    "connection_condition": "",
+    "description": "优等品率由优等品产出量除以产出总量计算得出，其分子是产出记录按等级划分后的一个子集。",
+    "evidence": "e_production_grade_enum,e_dws_production_grounding"
+  },
+  {
+    "id": "r_downtime_oee",
+    "source": "downtime_hours",
+    "relation_type": "derivation",
+    "target": "oee",
+    "connection_condition": "",
+    "description": "设备综合效率的可用率部分由停机时长与计划运行时长之比决定，停机时长增加会直接拉低设备综合效率。",
+    "evidence": "e_downtime_reason_join,e_equipment_dws_duplication"
+  },
+  {
+    "id": "r_cost_unit_cost",
+    "source": "product_total_cost",
+    "relation_type": "derivation",
+    "target": "unit_product_cost",
+    "connection_condition": "",
+    "description": "单位产出成本由产品总成本除以产出量计算得出，与总成本同向变动、与产出量反向变动；总分项恒等于材料、人工、制造费用之和。",
+    "evidence": "e_product_cost_identity"
+  },
+  {
+    "id": "r_budget_deviation",
+    "source": "budget_amount",
+    "relation_type": "derivation",
+    "target": "budget_deviation",
+    "connection_condition": "",
+    "description": "预算偏差度由实际发生额与预算金额的差额相对预算金额计算得出，是预算金额的派生计量。",
+    "evidence": "e_finance_dws_monthly"
+  },
+  {
+    "id": "r_supplier_score_rate",
+    "source": "supplier_eval_total_score",
+    "relation_type": "derivation",
+    "target": "incoming_inspection_pass_rate",
+    "connection_condition": "",
+    "description": "供应商评估总分中的质量分项与来料检验合格率反映同一供应商的来料质量表现，两者从不同角度计量同一业务属性。",
+    "evidence": "e_supplier_eval_formula"
+  },
+  {
+    "id": "r_customer_sales_order",
+    "source": "customer",
+    "relation_type": "association",
+    "target": "sales_order",
+    "connection_condition": "订单通过客户号关联到客户（直接结构关联）",
+    "description": "客户与销售订单在业务上直接相关，但订单并非客户的组成部分，也不构成类型层次，故记为一般业务关联。",
+    "evidence": "e_sales_order_status"
+  },
+  {
+    "id": "r_customer_opportunity",
+    "source": "customer",
+    "relation_type": "association",
+    "target": "opportunity",
+    "connection_condition": "商机通过客户号关联到客户",
+    "description": "商机是面向客户的销售机会，与客户在业务上直接相关；商机赢单后转化为订单，与客户之间是营销过程关联。",
+    "evidence": "e_opportunity_funnel"
+  },
+  {
+    "id": "r_customer_sample",
+    "source": "customer",
+    "relation_type": "association",
+    "target": "sample_record",
+    "connection_condition": "送样记录通过客户号关联到客户",
+    "description": "送样记录是面向客户的售前样品往来，与客户直接相关但不属于客户的组成部分。",
+    "evidence": "e_sample_funnel"
+  },
+  {
+    "id": "r_customer_receivable",
+    "source": "customer",
+    "relation_type": "association",
+    "target": "receivable",
+    "connection_condition": "应收记录通过客户号关联到客户",
+    "description": "应收余额按客户归集，客户是应收分析与信用管理的主要归口；关联通过客户标识建立。",
+    "evidence": "e_ar_snapshot,e_customer_credit"
+  },
+  {
+    "id": "r_sales_rep_customer",
+    "source": "sales_rep",
+    "relation_type": "association",
+    "target": "customer",
+    "connection_condition": "客户主数据记录归属业务员",
+    "description": "客户由业务员维护归属关系，一个业务员负责多家客户，用于按业务员分析客户结构。",
+    "evidence": "e_customer_status_semantics"
+  },
+  {
+    "id": "r_sales_rep_sales_order",
+    "source": "sales_rep",
+    "relation_type": "association",
+    "target": "sales_order",
+    "connection_condition": "订单通过业务员标识关联到业务员",
+    "description": "订单按业务员归属业绩，业绩日汇总表即以业务员×日期为主键；关联是责任归属关系而非部分整体关系。",
+    "evidence": "e_dws_org_perf_recon"
+  },
+  {
+    "id": "r_product_sales_order",
+    "source": "product",
+    "relation_type": "association",
+    "target": "sales_order",
+    "connection_condition": "订单通过产品标识关联到产品",
+    "description": "订单按产品销售，产品是订单的标称对象；订单与产品之间通过产品标识关联。",
+    "evidence": "e_sales_order_amount"
+  },
+  {
+    "id": "r_product_production_output",
+    "source": "product",
+    "relation_type": "association",
+    "target": "production_output",
+    "connection_condition": "产出记录经生产工单关联到产品",
+    "description": "产出记录按产品登记产量与等级，用于按产品维度分析质量与产出结构。",
+    "evidence": "e_dws_production_grounding"
+  },
+  {
+    "id": "r_supplier_purchase_amount",
+    "source": "supplier",
+    "relation_type": "association",
+    "target": "purchase_amount",
+    "connection_condition": "采购订单通过供应商标识关联到供应商，采购金额按供应商汇总",
+    "description": "采购金额按供应商归集，是供应商采购规模分析的口径；关联通过供应商标识建立。",
+    "evidence": "e_po_recon"
+  },
+  {
+    "id": "r_supplier_incoming_pass_rate",
+    "source": "supplier",
+    "relation_type": "association",
+    "target": "incoming_inspection_pass_rate",
+    "connection_condition": "来料检验记录经收货单关联到采购订单，进而归属供应商",
+    "description": "来料检验合格率按供应商统计其到货批次的质量表现，是供应商评估质量分项的来源之一。",
+    "evidence": "e_supplier_eval_formula"
+  },
+  {
+    "id": "r_production_line_order",
+    "source": "production_line",
+    "relation_type": "association",
+    "target": "production_order",
+    "connection_condition": "生产工单通过产线标识关联到产线",
+    "description": "生产工单在产线上执行，产线是产能与效率分析的归口维度；两者通过产线标识关联。",
+    "evidence": "e_dws_production_grounding"
+  },
+  {
+    "id": "r_equipment_downtime",
+    "source": "equipment",
+    "relation_type": "association",
+    "target": "downtime_hours",
+    "connection_condition": "停机明细与设备运行记录以设备或产线标识关联",
+    "description": "停机时长按设备与产线归集，是设备可用性分析的基础；停机明细经停机原因维度进一步细分。",
+    "evidence": "e_downtime_reason_join"
+  },
+  {
+    "id": "r_downtime_reason_hours",
+    "source": "downtime_reason",
+    "relation_type": "association",
+    "target": "downtime_hours",
+    "connection_condition": "停机明细的原因列存储停机原因主键，据此关联到停机原因主数据",
+    "description": "停机原因是对停机时长的分类维度，用于识别停机的主要成因；原因编码与实际存储值不一致是已知陷阱。",
+    "evidence": "e_downtime_reason_join"
+  },
+  {
+    "id": "r_cost_center_total_cost",
+    "source": "cost_center",
+    "relation_type": "association",
+    "target": "product_total_cost",
+    "connection_condition": "成本中心通过成本中心标识归集成本",
+    "description": "财务口径的成本按成本中心归集，成本中心是费用与预算分析的组织维度；产品级成本不以成本中心为维度。",
+    "evidence": "e_finance_dws_monthly"
+  },
+  {
+    "id": "r_cost_center_budget",
+    "source": "cost_center",
+    "relation_type": "association",
+    "target": "budget_amount",
+    "connection_condition": "预算记录通过成本中心标识归集",
+    "description": "预算按成本中心编制与考核，预算偏差分析通常在成本中心×月粒度上进行。",
+    "evidence": "e_finance_dws_monthly"
+  },
+  {
+    "id": "r_incident_negative_margin",
+    "source": "incident",
+    "relation_type": "association",
+    "target": "negative_margin_order",
+    "connection_condition": "",
+    "description": "安全事故与负毛利订单同属风险类观察对象，常在风险汇总视图中并列出现，但两者之间无直接数据关联。",
+    "evidence": "e_risk_dws"
+  },
+  {
+    "id": "r_negative_margin_qty_order",
+    "source": "negative_margin_quantity",
+    "relation_type": "association",
+    "target": "negative_margin_order",
+    "connection_condition": "负毛利销量按业务员×产品×日期汇总自负毛利订单事实",
+    "description": "负毛利销量是负毛利订单在数量维度的度量，两者互为口径与度量的关系；汇总表中该指标仅在有负毛利的日期取值。",
+    "evidence": "e_risk_dws"
+  },
+  {
+    "id": "r_opportunity_order",
+    "source": "opportunity",
+    "relation_type": "association",
+    "target": "sales_order",
+    "connection_condition": "赢单商机通过转化订单号关联到销售订单，36 条赢单商机全部可关联",
+    "description": "商机赢单后转化为销售订单，是订单的来源环节；关联通过转化订单标识建立，仅赢单商机具备该关联。",
+    "evidence": "e_opportunity_funnel"
+  },
+  {
+    "id": "r_opportunity_sample",
+    "source": "opportunity",
+    "relation_type": "association",
+    "target": "sample_record",
+    "connection_condition": "",
+    "description": "送样是商机推进过程中的技术验证环节，与商机同属售前阶段；两者之间无直接标识关联。",
+    "evidence": "e_sample_funnel"
+  },
+  {
+    "id": "r_reporting_period_ar",
+    "source": "reporting_period",
+    "relation_type": "association",
+    "target": "accounts_receivable_balance",
+    "connection_condition": "应收超期判定以报告期末为基准日",
+    "description": "应收账款余额、超期判定与账龄分桶均依赖报告期末基准日（2026-06-30），该维度为时点类指标提供统一的时间参照。",
+    "evidence": "e_ar_snapshot"
+  },
+  {
+    "id": "r_customer_status_credit",
+    "source": "customer_status",
+    "relation_type": "association",
+    "target": "customer",
+    "connection_condition": "客户状态由客户最近成交日期相对期末的天数推导，登记在客户主数据上",
+    "description": "客户状态是客户主数据上的时点分类属性，与客户的信用状态、额度占用共同用于客户结构分析；状态取值随基准日变化。",
+    "evidence": "e_customer_status_semantics,e_customer_credit"
+  }
+]

@@ -1,0 +1,386 @@
+[
+  {
+    "id": "constraint_amount_carries_no_direction",
+    "target": "transaction_amount",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "transaction amount",
+      "inflow",
+      "outflow",
+      "credit",
+      "debit",
+      "deposit",
+      "withdrawal",
+      "net",
+      "sum of amount",
+      "cash flow"
+    ],
+    "severity": "block",
+    "scope": "Every aggregation of trans.amount",
+    "confidence": "high",
+    "description": "trans.amount is non-negative for all 1,056,320 rows (minimum 0, maximum 87,400, zero negative values). Direction is carried only by trans.type: PRIJEM increases the account, VYDAJ and VYBER decrease it. Summing amount without splitting by type mixes inflows and outflows; the signed value must be derived from type and amount.",
+    "evidence": "ev_003_trans_amount_nonnegative, ev_002_trans_type_domain"
+  },
+  {
+    "id": "constraint_operation_null_means_interest",
+    "target": "transaction_operation",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "operation",
+      "interest",
+      "UROK",
+      "null operation",
+      "missing operation",
+      "monthly credit"
+    ],
+    "severity": "warning",
+    "scope": "Filtering transactions by operation",
+    "confidence": "high",
+    "description": "trans.operation is null for exactly 183,114 rows, and those are exactly the rows whose trans.k_symbol is UROK. The mapping is a strict biconditional: no row has a null operation with another purpose code, and no UROK row has a non-null operation. Treating null operation as generally missing data is wrong.",
+    "evidence": "ev_005_operation_null_iff_urok, ev_004_operation_domain"
+  },
+  {
+    "id": "constraint_purpose_space_placeholder",
+    "target": "payment_purpose_code",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "k_symbol",
+      "purpose",
+      "unspecified",
+      "unknown purpose",
+      "blank",
+      "missing purpose"
+    ],
+    "severity": "block",
+    "scope": "Grouping or filtering by trans.k_symbol",
+    "confidence": "high",
+    "description": "trans.k_symbol contains 53,433 rows whose value is a single space character, which is not null and not an empty string. Any purpose breakdown that does not treat the single-space value as unspecified will report it as a distinct real category. Including it in a top-N purpose ranking is misleading.",
+    "evidence": "ev_007_k_symbol_space_token, ev_006_k_symbol_domain"
+  },
+  {
+    "id": "constraint_balance_not_reconstructible",
+    "target": "account_balance",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "balance",
+      "running balance",
+      "account balance",
+      "reconstruct balance",
+      "cumulative sum",
+      "balance after transaction"
+    ],
+    "severity": "block",
+    "scope": "Any computation of balances or balance changes",
+    "confidence": "high",
+    "description": "trans.balance cannot be reproduced from the transaction stream. Ordering the rows of an account by date and trans_id reproduces the recorded balance change in only 519,531 of 1,051,820 consecutive pairs; allowing a tolerance of two units raises this only to 529,510. Several rows share a date within an account, and their true posting order is not recoverable. Use the stored balance column for balance questions; do not derive it by cumulative summation of amounts, and do not verify balances against a sum of amounts.",
+    "evidence": "ev_008_balance_chain_mismatch, ev_027_balance_negative_rare"
+  },
+  {
+    "id": "constraint_counterparty_account_external",
+    "target": "counterparty_account_number",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "counterparty account",
+      "account_to",
+      "trans.account",
+      "other account",
+      "recipient account",
+      "transfer to account"
+    ],
+    "severity": "block",
+    "scope": "trans.account and order.account_to",
+    "confidence": "high",
+    "description": "The counterparty account number is not a local account key. Of 295,389 non-null trans.account values, zero equal the row's own account_id and only 30 resolve to any account.account_id; of 6,471 order.account_to values only 2 resolve. Joining either column to account.account_id produces near-empty results and must not be presented as a valid link to local accounts.",
+    "evidence": "ev_009_counterparty_domain, ev_023_order_domain"
+  },
+  {
+    "id": "constraint_bank_code_scope",
+    "target": "bank_code",
+    "constraint_type": "scope",
+    "trigger_keywords": [
+      "bank",
+      "bank_to",
+      "counterparty bank",
+      "inter-bank transfer",
+      "bank code"
+    ],
+    "severity": "block",
+    "scope": "trans.bank",
+    "confidence": "high",
+    "description": "trans.bank is populated only for the transfer operations PREVOD NA UCET and PREVOD Z UCTU. It is null for all cash deposits, all cash withdrawals and all card withdrawals. A counterparty-bank breakdown therefore covers inter-account transfers only and must not be described as covering all transactions.",
+    "evidence": "ev_010_bank_code_domain, ev_004_operation_domain"
+  },
+  {
+    "id": "constraint_loan_status_maturity",
+    "target": "loan_status",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "loan status",
+      "finished loan",
+      "running loan",
+      "matured",
+      "outstanding loan",
+      "status A",
+      "status B",
+      "status C",
+      "status D"
+    ],
+    "severity": "warning",
+    "scope": "Interpreting or grouping loan.status",
+    "confidence": "high",
+    "description": "Codes A and B identify contracts whose scheduled maturity (grant date plus duration months) falls within the observation window: 203 of 203 A rows and 31 of 31 B rows. Codes C and D identify contracts maturing after 1998-12-31: 403 of 403 C rows and 45 of 45 D rows. The split is exhaustive with no counterexample. Note that C and D also hold the largest principals, so a status grouping mixes terminal state with loan size. The distinction between the two codes inside each pair is not verifiable from the tables available here, because no repayment or instalment table exists in this database.",
+    "evidence": "ev_011_loan_status_maturity"
+  },
+  {
+    "id": "constraint_loan_payments_identity",
+    "target": "loan_payments",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "loan payment",
+      "instalment",
+      "monthly payment",
+      "repayment",
+      "interest rate",
+      "loan amount",
+      "duration"
+    ],
+    "severity": "warning",
+    "scope": "loan.amount, loan.duration, loan.payments",
+    "confidence": "high",
+    "description": "For all 682 loans, payments multiplied by duration equals amount exactly. The stored instalment therefore contains no interest component, and a question about loan cost or interest loading cannot be answered from these three columns alone.",
+    "evidence": "ev_012_loan_payments_identity, ev_013_loan_columns"
+  },
+  {
+    "id": "constraint_loan_duration_values",
+    "target": "loan_duration",
+    "constraint_type": "scope",
+    "trigger_keywords": [
+      "loan duration",
+      "term",
+      "months",
+      "12 months",
+      "60 months"
+    ],
+    "severity": "info",
+    "scope": "loan.duration",
+    "confidence": "high",
+    "description": "Only five durations occur: 12, 24, 36, 48 and 60 months. Bucketing durations below one year or above five years is meaningless, and there is at most one loan per account.",
+    "evidence": "ev_013_loan_columns"
+  },
+  {
+    "id": "constraint_disp_ownership_cardinality",
+    "target": "disp",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "owner",
+      "disponent",
+      "account holder",
+      "authorised person",
+      "joint account",
+      "how many clients per account"
+    ],
+    "severity": "warning",
+    "scope": "disp",
+    "confidence": "high",
+    "description": "Each of the 4,500 accounts has exactly one OWNER disposition record and at most one DISPONENT record (869 accounts have one). Each of the 5,369 clients appears in exactly one disposition row, so a client holds exactly one account. Counting disposition rows therefore counts clients, not accounts, and a client-to-account ratio computed without deduplicating will be wrong.",
+    "evidence": "ev_014_disp_domain"
+  },
+  {
+    "id": "constraint_card_issued_after_account",
+    "target": "card",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "card issued",
+      "card issue date",
+      "card before account",
+      "card opening"
+    ],
+    "severity": "info",
+    "scope": "card.issued",
+    "confidence": "high",
+    "description": "For all 892 cards the issue date is on or after the opening date of the associated account, so issue dates can be used as a lower bound for account tenure. All 892 cards belong to OWNER dispositions; no DISPONENT holds a card.",
+    "evidence": "ev_015_card_domain"
+  },
+  {
+    "id": "constraint_district_text_numeric_columns",
+    "target": "district_indicator_code",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "district A4",
+      "district A5",
+      "district A6",
+      "district A7",
+      "population",
+      "sort district attribute",
+      "min district",
+      "max district",
+      "aggregate district code"
+    ],
+    "severity": "block",
+    "scope": "district columns A4, A5, A6 and A7",
+    "confidence": "high",
+    "description": "Columns A4 through A7 are declared and stored as text even though their contents are numeric strings. Ordering, minimum, maximum and comparison operators therefore act lexicographically: minimum of A4 is the text value 102609 and maximum is 95907, whereas the numeric minimum is 42821 and the numeric maximum 1204953. Any ranking, bucket or min/max over these four columns must cast them to a number first. Columns A8, A9, A11, A14 and A16 are integers and A10, A12 and A13 are reals.",
+    "evidence": "ev_019_district_text_order, ev_018_district_types"
+  },
+  {
+    "id": "constraint_district_indicator_semantics_undocumented",
+    "target": "district_indicator_code",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "district indicator",
+      "A10",
+      "A11",
+      "A12",
+      "A13",
+      "A14",
+      "A15",
+      "A16",
+      "unemployment",
+      "salary",
+      "crime",
+      "population of district",
+      "district attribute meaning"
+    ],
+    "severity": "warning",
+    "scope": "district columns A4 through A16",
+    "confidence": "high",
+    "description": "The database contains no data dictionary, lookup table, comment or metadata that names the meaning of the A4 to A16 codes; only A2 (a text label unique per district) and A3 (an 8-value text grouping) are self-describing. Observed structure is limited to the following: A4 to A7 are numeric strings, A8 to A11 and A14 to A16 hold values of the order of counts and rates, A10 is bounded between 33.9 and 100.0 and equals exactly 100.0 for the four districts that consist of a single high-count unit, and A4 correlates with district size. Business meanings must not be asserted from the column letters alone; treat any named interpretation as a hypothesis and state the assumption in the answer.",
+    "evidence": "ev_018_district_types, ev_020_district_a10_bounds, ev_021_district_null_pair"
+  },
+  {
+    "id": "constraint_district_null_pair",
+    "target": "district_indicator_code",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "missing district value",
+      "null indicator",
+      "district 69",
+      "incomplete district row",
+      "which districts have missing values"
+    ],
+    "severity": "warning",
+    "scope": "district columns A12 and A15",
+    "confidence": "high",
+    "description": "A12 and A15 are the only nullable indicator columns and they are null together, for the same single district (district_id 69). Every other district has both populated. A join or aggregate that averages these columns silently skips that district.",
+    "evidence": "ev_021_district_null_pair"
+  },
+  {
+    "id": "constraint_district_indicator_pair_ordering",
+    "target": "district_indicator_code",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "A12 and A13",
+      "two annual values",
+      "year over year district",
+      "increase between district columns"
+    ],
+    "severity": "info",
+    "scope": "district columns A12 and A13",
+    "confidence": "medium",
+    "description": "A13 is greater than or equal to A12 for 75 of the 77 districts; the two exceptions are district_id 71 and the district where A12 is null. The pairing is consistent with two successive annual readings of the same quantity, but this reading is an inference from the data pattern and not documented anywhere in the database.",
+    "evidence": "ev_021_district_null_pair"
+  },
+  {
+    "id": "constraint_district_id_means_different_things",
+    "target": "district",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "client district",
+      "account district",
+      "district of account",
+      "same district",
+      "district_id",
+      "home district"
+    ],
+    "severity": "block",
+    "scope": "account.district_id and client.district_id",
+    "confidence": "high",
+    "description": "Both account and client carry a column named district_id referencing the same district table, but they are not interchangeable. For the 4,500 ownership pairs the account district and the owner's client district differ in 409 cases. A question about where a client lives must use client.district_id; a question about where an account is held must use account.district_id.",
+    "evidence": "ev_024_fk_integrity, ev_014_disp_domain"
+  },
+  {
+    "id": "constraint_transaction_type_vyber_signature",
+    "target": "transaction_type",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "VYBER",
+      "withdrawal type",
+      "cash withdrawal",
+      "type VYBER",
+      "operation VYBER"
+    ],
+    "severity": "warning",
+    "scope": "trans.type and trans.operation",
+    "confidence": "high",
+    "description": "The token VYBER appears in both trans.type and trans.operation with different scopes and very different volumes: 16,666 rows have type VYBER (all with operation VYBER and a null purpose code), while 434,918 rows have operation VYBER under primarily type VYDAJ. A filter written against the wrong column changes the result by a factor of about 26. The two columns must not be treated as synonyms.",
+    "evidence": "ev_029_type_vyber_signature, ev_004_operation_domain, ev_002_trans_type_domain"
+  },
+  {
+    "id": "constraint_account_opening_precedes_transactions",
+    "target": "account_opening_date",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "account opened",
+      "account tenure",
+      "first transaction",
+      "account age",
+      "history start"
+    ],
+    "severity": "info",
+    "scope": "account.date versus the first transaction date",
+    "confidence": "high",
+    "description": "account.date precedes or equals the first transaction date for all 4,500 accounts, so it is a safe lower bound for account tenure. Transaction data runs to 1998-12-31 while account opening dates stop at 1997-12-29.",
+    "evidence": "ev_025_account_date_before_trans, ev_026_date_ranges"
+  },
+  {
+    "id": "constraint_client_age_reference_date",
+    "target": "client_age",
+    "constraint_type": "unit",
+    "trigger_keywords": [
+      "age",
+      "age distribution",
+      "how old",
+      "young",
+      "senior",
+      "birth date",
+      "generation"
+    ],
+    "severity": "warning",
+    "scope": "client.birth_date",
+    "confidence": "high",
+    "description": "Birth dates span 1911-08-20 to 1987-09-27 and no age is stored. Age always depends on the reference date: at the end of the transaction window (1998-12-31) clients are roughly 11 to 87 years old, but using today's date would add about 27 years to every client. State the reference date used, and prefer the observation window when the question concerns account behaviour.",
+    "evidence": "ev_017_client_domain, ev_026_date_ranges"
+  },
+  {
+    "id": "constraint_balance_negative_rare",
+    "target": "account_balance",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "negative balance",
+      "overdraft",
+      "below zero",
+      "balance sign"
+    ],
+    "severity": "info",
+    "scope": "trans.balance",
+    "confidence": "high",
+    "description": "Only 2,999 of 1,056,320 recorded balances are negative and none is exactly zero. Any statement about overdrawn accounts concerns a very small part of the data, and a test of the form balance <= 0 behaves the same as balance < 0 here.",
+    "evidence": "ev_027_balance_negative_rare"
+  },
+  {
+    "id": "constraint_loan_linked_to_account_instalments",
+    "target": "loan",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "loan instalment payment",
+      "UVER transaction",
+      "loan disbursement",
+      "loan and transaction"
+    ],
+    "severity": "info",
+    "scope": "loan and trans",
+    "confidence": "medium",
+    "description": "Every one of the 682 loans belongs to an account that also carries at least one transaction with purpose code UVER, and 13,580 transactions in total carry that code, so UVER transactions are not a one-to-one proxy for loans. Matching loans to their own posted instalments is therefore not possible with a simple purpose-code filter.",
+    "evidence": "ev_028_loan_uver_link, ev_006_k_symbol_domain"
+  }
+]

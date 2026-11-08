@@ -1,0 +1,327 @@
+[
+  {
+    "id": "term_molecule",
+    "name": "Molecule",
+    "type": "entity",
+    "definition": "A chemical compound record in the toxicology dataset, identified by a molecule_id of the form TR followed by three digits (e.g. TR060). A molecule is the top-level entity to which atoms, bonds and a carcinogenicity label belong.",
+    "scope": "All molecule-level analysis: identifying a compound, counting its atoms or bonds, and reading its carcinogenicity classification.",
+    "aliases": [
+      "compound",
+      "molecule id",
+      "molecule_id",
+      "TR number"
+    ],
+    "evidence": [
+      "evidence_schema_tables",
+      "evidence_molecule_id_format",
+      "evidence_row_counts"
+    ]
+  },
+  {
+    "id": "term_molecule_identifier",
+    "name": "Molecule Identifier Reference",
+    "type": "concept",
+    "definition": "The TRnnn molecule key as it is carried by structure records. It appears as molecule.molecule_id, is repeated on atom.molecule_id and bond.molecule_id, and is embedded as the leading TRnnn segment of atom_id and bond_id values.",
+    "scope": "Linking atoms and bonds back to their owning molecule, and deriving a molecule key from a structural identifier.",
+    "aliases": [
+      "TR code",
+      "molecule prefix",
+      "TR prefix",
+      "compound key"
+    ],
+    "evidence": [
+      "evidence_connected_prefix_consistency",
+      "evidence_molecule_id_format",
+      "evidence_atom_id_format"
+    ]
+  },
+  {
+    "id": "term_molecule_label",
+    "name": "Carcinogenicity Label",
+    "type": "dimension",
+    "definition": "The classification attribute carried by a molecule record that states whether the compound is carcinogenic. It is stored as a single-character code.",
+    "scope": "Any question that filters, counts or reports compounds by carcinogenicity.",
+    "aliases": [
+      "label",
+      "classification",
+      "toxicology label",
+      "cancer label"
+    ],
+    "evidence": [
+      "evidence_molecule_label_domain",
+      "evidence_schema_tables"
+    ]
+  },
+  {
+    "id": "term_carcinogenic_molecule",
+    "name": "Carcinogenic Molecule",
+    "type": "category",
+    "definition": "The subset of molecules whose carcinogenicity label marks them as carcinogenic (positive label). These compounds are the ones described as carcinogenic, cancerous or toxic-positive in analytical questions.",
+    "scope": "Filtering or scoping analysis to cancer-causing compounds only.",
+    "aliases": [
+      "carcinogenic",
+      "cancer-causing molecule",
+      "toxic molecule",
+      "positive label molecule"
+    ],
+    "evidence": [
+      "evidence_molecule_label_domain",
+      "evidence_molecule_label_coverage"
+    ]
+  },
+  {
+    "id": "term_non_carcinogenic_molecule",
+    "name": "Non-Carcinogenic Molecule",
+    "type": "category",
+    "definition": "The subset of molecules whose carcinogenicity label marks them as not carcinogenic (negative label).",
+    "scope": "Filtering or scoping analysis to compounds that are not cancer-causing.",
+    "aliases": [
+      "non-carcinogenic",
+      "non-carcinogenic molecule",
+      "negative label molecule",
+      "safe molecule"
+    ],
+    "evidence": [
+      "evidence_molecule_label_domain",
+      "evidence_molecule_label_coverage"
+    ]
+  },
+  {
+    "id": "term_atom",
+    "name": "Atom",
+    "type": "entity",
+    "definition": "An atom belonging to a molecule, identified by an atom_id composed of the owning molecule identifier, an underscore, and a within-molecule atom number (e.g. TR060_19). Each atom carries exactly one chemical element.",
+    "scope": "Atom-level analysis: locating an atom inside a molecule, reading its element, and counting atoms per molecule.",
+    "aliases": [
+      "atom_id",
+      "atom number",
+      "TR atom"
+    ],
+    "evidence": [
+      "evidence_schema_tables",
+      "evidence_atom_id_format",
+      "evidence_row_counts"
+    ]
+  },
+  {
+    "id": "term_atom_number",
+    "name": "Atom Number Within Molecule",
+    "type": "dimension",
+    "definition": "The integer position of an atom inside its own molecule, encoded as the numeric suffix of atom_id. Numbering restarts at 1 for every molecule and is not zero-padded, so the position and the character offset within atom_id are different things.",
+    "scope": "Questions referring to the nth atom, the first/last atom, or a specific atom position of every molecule.",
+    "aliases": [
+      "nth atom",
+      "4th atom",
+      "atom position",
+      "atom index",
+      "atom suffix"
+    ],
+    "evidence": [
+      "evidence_atom_id_format",
+      "evidence_atom_number_position"
+    ]
+  },
+  {
+    "id": "term_element",
+    "name": "Chemical Element",
+    "type": "dimension",
+    "definition": "The chemical element of an atom, recorded as a lower-case chemical symbol code (for example c for carbon, h for hydrogen, cl for chlorine).",
+    "scope": "Element composition analysis, tallying elements across atoms or across bonds.",
+    "aliases": [
+      "element",
+      "element symbol",
+      "carbon",
+      "chemical element"
+    ],
+    "evidence": [
+      "evidence_element_domain",
+      "evidence_schema_tables"
+    ]
+  },
+  {
+    "id": "term_bond",
+    "name": "Bond",
+    "type": "entity",
+    "definition": "A chemical bond in a molecule, identified by a bond_id of the form molecule identifier plus the numbers of the two atoms it joins (e.g. TR004_8_9). Each bond belongs to exactly one molecule and has exactly one bond type.",
+    "scope": "Bond-level analysis: locating a bond, counting bonds per molecule, and reading its bond type.",
+    "aliases": [
+      "bond_id",
+      "chemical bond",
+      "linkage"
+    ],
+    "evidence": [
+      "evidence_schema_tables",
+      "evidence_connected_prefix_consistency",
+      "evidence_row_counts"
+    ]
+  },
+  {
+    "id": "term_bond_type",
+    "name": "Bond Type",
+    "type": "dimension",
+    "definition": "The bond order of a bond, recorded as a single-character code that distinguishes single, double and triple bonds.",
+    "scope": "Any question that filters, counts or compares bonds by bond order, including molecular bond-type distributions.",
+    "aliases": [
+      "bond_type",
+      "bond order",
+      "bond kind"
+    ],
+    "evidence": [
+      "evidence_bond_type_domain",
+      "evidence_schema_tables"
+    ]
+  },
+  {
+    "id": "term_single_bond",
+    "name": "Single Bond",
+    "type": "category",
+    "definition": "The subset of bonds whose bond type is the single-bond code. Single bonds are the most common bond order in this dataset.",
+    "scope": "Analysis restricted to single-bonded atoms or molecules.",
+    "aliases": [
+      "single bond",
+      "single-bonded",
+      "single type bond"
+    ],
+    "evidence": [
+      "evidence_bond_type_domain"
+    ]
+  },
+  {
+    "id": "term_double_bond",
+    "name": "Double Bond",
+    "type": "category",
+    "definition": "The subset of bonds whose bond type is the double-bond code. A molecule described as a double-bond molecule is a molecule that contains at least one such bond.",
+    "scope": "Analysis restricted to double-bonded atoms or to molecules containing at least one double bond.",
+    "aliases": [
+      "double bond",
+      "double-bonded",
+      "double type bond",
+      "="
+    ],
+    "evidence": [
+      "evidence_bond_type_domain",
+      "evidence_double_bond_molecules"
+    ]
+  },
+  {
+    "id": "term_triple_bond",
+    "name": "Triple Bond",
+    "type": "category",
+    "definition": "The subset of bonds whose bond type is the triple-bond code. It is the rarest bond order in this dataset, occurring in only a handful of bonds.",
+    "scope": "Analysis restricted to triple-bonded molecules.",
+    "aliases": [
+      "triple bond",
+      "triple-bonded",
+      "#"
+    ],
+    "evidence": [
+      "evidence_bond_type_domain",
+      "evidence_triple_bonds"
+    ]
+  },
+  {
+    "id": "term_atom_bond_connection",
+    "name": "Atom-Bond Connection",
+    "type": "concept",
+    "definition": "The incidence of an atom in a bond: one atom participating at one end of one bond. This is what analytical questions call the connections or bonds of an atom. Each bond generates exactly two such incidences, one per participating atom.",
+    "scope": "Counting or listing the bonds that involve a given atom, and resolving which atoms a bond joins.",
+    "aliases": [
+      "connection",
+      "connections",
+      "connected",
+      "atom connections",
+      "bond incidence",
+      "degree"
+    ],
+    "evidence": [
+      "evidence_connected_bidirectional",
+      "evidence_connected_prefix_consistency",
+      "evidence_or_versus_single_column"
+    ]
+  },
+  {
+    "id": "term_unbonded_atom",
+    "name": "Unbonded Atom",
+    "type": "category",
+    "definition": "The subset of atoms that participate in no bond at all. Such atoms never appear in the atom-bond connection records in either atom position.",
+    "scope": "Identifying atoms that cannot bond with any other atom, and reporting their elements.",
+    "aliases": [
+      "unbonded atom",
+      "isolated atom",
+      "lone atom",
+      "atom with no bonds",
+      "cannot bond"
+    ],
+    "evidence": [
+      "evidence_unbonded_atoms"
+    ]
+  },
+  {
+    "id": "term_molecule_atom_count",
+    "name": "Molecule Atom Count",
+    "type": "metric",
+    "definition": "The number of atoms that belong to a molecule, obtained by counting the atoms grouped by their owning molecule. It expresses molecular size and is the quantity compared in questions about molecules that consist of more than a given number of atoms.",
+    "scope": "Molecular size comparison and filtering molecules by atom count.",
+    "aliases": [
+      "number of atoms",
+      "atom count",
+      "molecule size",
+      "consisted of atoms"
+    ],
+    "evidence": [
+      "evidence_atoms_per_molecule",
+      "evidence_row_counts"
+    ]
+  },
+  {
+    "id": "term_bond_type_share",
+    "name": "Bond Type Share",
+    "type": "metric",
+    "definition": "The proportion of bonds of one bond type among a defined set of bonds, expressed as the count of bonds of that type divided by the total count of bonds in the same set. Reported as a percentage, the value is that proportion scaled by one hundred.",
+    "scope": "Questions asking what percentage or fraction of bonds in a molecule, or in the whole dataset, is of a given bond type.",
+    "aliases": [
+      "percentage of bonds",
+      "proportion of bonds",
+      "bond fraction",
+      "percentage of double bonds"
+    ],
+    "evidence": [
+      "evidence_tr008_bond_types",
+      "evidence_tr010_bond_types"
+    ]
+  },
+  {
+    "id": "term_element_share",
+    "name": "Element Share",
+    "type": "metric",
+    "definition": "The proportion of atoms of one element among a defined set of atoms, expressed as the count of atoms of that element divided by the total count of atoms in the same set. Questions phrased as the percentage of carbon, or the average number of an element per bond, refer to this ratio.",
+    "scope": "Questions asking what percentage or average proportion of atoms in a molecule, bond or molecule group is of a given element.",
+    "aliases": [
+      "percentage of carbon",
+      "proportion of element",
+      "element fraction",
+      "average element"
+    ],
+    "evidence": [
+      "evidence_atoms_in_double_bond_molecules",
+      "evidence_element_domain"
+    ]
+  },
+  {
+    "id": "term_majority_bond_type",
+    "name": "Majority Bond Type",
+    "type": "metric",
+    "definition": "The bond type that occurs most often within a defined set of bonds, that is the bond type accounting for the largest number of bonds in that set.",
+    "scope": "Questions asking which bond type accounts for the majority of the bonds of a molecule or of a bond group.",
+    "aliases": [
+      "majority bond",
+      "most common bond type",
+      "dominant bond type",
+      "bond type with most bonds"
+    ],
+    "evidence": [
+      "evidence_tr010_bond_types",
+      "evidence_bond_type_domain"
+    ]
+  }
+]

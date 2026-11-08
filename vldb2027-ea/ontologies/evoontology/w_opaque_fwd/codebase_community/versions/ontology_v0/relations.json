@@ -1,0 +1,193 @@
+[
+  {
+    "id": "rel_question_is_post",
+    "source": "question",
+    "relation_type": "hierarchy",
+    "target": "post",
+    "connection_condition": "question records are post records restricted to post type value 1",
+    "description": "A question is a specific kind of post; its records form a subset of the post table distinguished by the post type discriminator.",
+    "evidence": [
+      "ev_02_post_type_enum"
+    ]
+  },
+  {
+    "id": "rel_answer_is_post",
+    "source": "answer",
+    "relation_type": "hierarchy",
+    "target": "post",
+    "connection_condition": "answer records are post records restricted to post type value 2",
+    "description": "An answer is a specific kind of post; answer records are a subset of the post table, each carrying a parent question.",
+    "evidence": [
+      "ev_02_post_type_enum",
+      "ev_14_answer_count_consistency"
+    ]
+  },
+  {
+    "id": "rel_post_owned_by_user",
+    "source": "post",
+    "relation_type": "association",
+    "target": "user_account",
+    "connection_condition": "the post owner identifier corresponds to the user account identifier",
+    "description": "Each post is authored by at most one user account; a user owns many posts. The owner column is nullable for posts without a registered author.",
+    "evidence": [
+      "ev_16_post_owner_null"
+    ]
+  },
+  {
+    "id": "rel_comment_belongs_to_post",
+    "source": "comment",
+    "relation_type": "composition",
+    "target": "post",
+    "connection_condition": "the comment's post identifier corresponds to the post identifier",
+    "description": "A comment is a component of the post it is attached to and cannot exist without that post.",
+    "evidence": [
+      "ev_01_schema_inventory",
+      "ev_13_comment_count_mismatch"
+    ]
+  },
+  {
+    "id": "rel_vote_belongs_to_post",
+    "source": "vote",
+    "relation_type": "composition",
+    "target": "post",
+    "connection_condition": "the vote's post identifier corresponds to the post identifier",
+    "description": "A vote record is a component of the post it targets and cannot exist without that post.",
+    "evidence": [
+      "ev_03_vote_type_enum"
+    ]
+  },
+  {
+    "id": "rel_vote_cast_by_user",
+    "source": "vote",
+    "relation_type": "association",
+    "target": "user_account",
+    "connection_condition": "the vote caster identifier corresponds to the user account identifier, but is null for almost all vote types",
+    "description": "A vote may be attributed to a user account; attribution is sparse because most vote records do not carry a user identifier.",
+    "evidence": [
+      "ev_04_vote_user_attribution"
+    ]
+  },
+  {
+    "id": "rel_badge_awarded_to_user",
+    "source": "badge",
+    "relation_type": "composition",
+    "target": "user_account",
+    "connection_condition": "the badge recipient identifier corresponds to the user account identifier",
+    "description": "A badge award belongs to exactly one user account; an award cannot exist without its recipient.",
+    "evidence": [
+      "ev_19_badge_names"
+    ]
+  },
+  {
+    "id": "rel_post_tagged_with_tag",
+    "source": "post",
+    "relation_type": "association",
+    "target": "tag",
+    "connection_condition": "the tag tokens embedded in the post tag list correspond to tag names in the tag vocabulary",
+    "description": "Question posts carry a set of tags. The connection is many-to-many and is encoded as delimited text on the post rather than as a join table.",
+    "evidence": [
+      "ev_07_tag_token_format",
+      "ev_08_tag_count_match"
+    ]
+  },
+  {
+    "id": "rel_comment_authored_by_user",
+    "source": "comment",
+    "relation_type": "association",
+    "target": "user_account",
+    "connection_condition": "the comment author identifier corresponds to the user account identifier",
+    "description": "A comment is written by one user account; a user may write many comments.",
+    "evidence": [
+      "ev_06_comment_author_display"
+    ]
+  },
+  {
+    "id": "rel_tag_excerpt_source_post",
+    "source": "tag",
+    "relation_type": "association",
+    "target": "post",
+    "connection_condition": "the tag excerpt post identifier corresponds to a post identifier",
+    "description": "A tag's excerpt text is held in a designated post; not every tag has one.",
+    "evidence": [
+      "ev_15_tag_excerpt_nullable"
+    ]
+  },
+  {
+    "id": "rel_post_link_source_post_rel",
+    "source": "post_link",
+    "relation_type": "composition",
+    "target": "post",
+    "connection_condition": "the link source post identifier corresponds to a post identifier",
+    "description": "A post link is a component anchored on the source post; the link cannot exist without that post.",
+    "evidence": [
+      "ev_17_link_type_enum"
+    ]
+  },
+  {
+    "id": "rel_post_link_related_post_rel",
+    "source": "post_link",
+    "relation_type": "composition",
+    "target": "post",
+    "connection_condition": "the link related post identifier corresponds to a post identifier",
+    "description": "A post link points at a related post and cannot exist without it.",
+    "evidence": [
+      "ev_17_link_type_enum"
+    ]
+  },
+  {
+    "id": "rel_tag_name_equivalent_post_tags",
+    "source": "tag_name",
+    "relation_type": "equivalence",
+    "target": "post_tags",
+    "connection_condition": "each angle-bracket token inside the post tag list names a tag whose bare name appears in the tag vocabulary",
+    "description": "Tag names in the tag vocabulary and tag tokens embedded in post tag lists express the same tag concepts, differing only in encoding.",
+    "evidence": [
+      "ev_07_tag_token_format",
+      "ev_08_tag_count_match"
+    ]
+  },
+  {
+    "id": "rel_comment_author_display_equivalent_user_display_name",
+    "source": "comment_author_display_name",
+    "relation_type": "equivalence",
+    "target": "user_display_name",
+    "connection_condition": "the comment's stored display name corresponds to the display name of the comment's author account",
+    "description": "The denormalized author display name on a comment expresses the same concept as the user account display name, verified with zero mismatches wherever it is populated.",
+    "evidence": [
+      "ev_06_comment_author_display"
+    ]
+  },
+  {
+    "id": "rel_post_comment_count_derived",
+    "source": "comment",
+    "relation_type": "derivation",
+    "target": "post_comment_count",
+    "connection_condition": "the stored comment count equals the number of comment records whose post identifier matches the post",
+    "description": "The post comment count is derivable by counting the comments attached to the post; the stored value agrees except for a small number of rows.",
+    "evidence": [
+      "ev_13_comment_count_mismatch"
+    ]
+  },
+  {
+    "id": "rel_post_answer_count_derived",
+    "source": "answer",
+    "relation_type": "derivation",
+    "target": "post_answer_count",
+    "connection_condition": "the stored answer count equals the number of answer posts whose parent identifier matches the question",
+    "description": "The question answer count is derivable by counting the answers whose parent is that question; the stored value agrees exactly.",
+    "evidence": [
+      "ev_14_answer_count_consistency"
+    ]
+  },
+  {
+    "id": "rel_tag_post_count_derived",
+    "source": "post_tags",
+    "relation_type": "derivation",
+    "target": "tag_post_count",
+    "connection_condition": "the stored tag count equals the number of question posts whose tag list contains that tag",
+    "description": "The tag usage count is derivable by counting question posts that carry the tag; the stored value matched the observed counts for the tags checked.",
+    "evidence": [
+      "ev_08_tag_count_match"
+    ]
+  }
+]

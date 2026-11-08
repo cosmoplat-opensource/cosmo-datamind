@@ -1,0 +1,495 @@
+[
+  {
+    "id": "player",
+    "name": "Player",
+    "type": "entity",
+    "definition": "An individual footballer. Each player appears once in the roster table; time-varying ability ratings live in a separate snapshot table.",
+    "scope": "Player identity, naming and physical measurements across all leagues and seasons.",
+    "aliases": [
+      "footballer",
+      "soccer player",
+      "player record"
+    ],
+    "evidence": [
+      "evidence_table_inventory",
+      "evidence_player_roster"
+    ]
+  },
+  {
+    "id": "player_name",
+    "name": "Player Name",
+    "type": "dimension",
+    "definition": "The player's full display name, held in one text column. There is no separate first-name or last-name field.",
+    "scope": "Name-based lookup and filtering of players.",
+    "aliases": [
+      "name",
+      "full name",
+      "player full name",
+      "first name"
+    ],
+    "evidence": [
+      "evidence_player_roster",
+      "evidence_player_name_format",
+      "evidence_player_name_duplicates"
+    ]
+  },
+  {
+    "id": "player_birthdate",
+    "name": "Player Birthdate",
+    "type": "dimension",
+    "definition": "Player date of birth, stored as a text timestamp, used for age and born-before/born-after-year filters.",
+    "scope": "Birth-year and age comparisons.",
+    "aliases": [
+      "birthday",
+      "date of birth",
+      "born",
+      "birth year"
+    ],
+    "evidence": [
+      "evidence_player_roster"
+    ]
+  },
+  {
+    "id": "player_height",
+    "name": "Player Height",
+    "type": "dimension",
+    "definition": "Player height in centimetres.",
+    "scope": "Tallest, shortest and height-threshold questions.",
+    "aliases": [
+      "height",
+      "how tall",
+      "tallest",
+      "shortest"
+    ],
+    "evidence": [
+      "evidence_player_measurements"
+    ]
+  },
+  {
+    "id": "player_attribute_snapshot",
+    "name": "Player Attribute Snapshot",
+    "type": "concept",
+    "definition": "A dated snapshot of one player's ability ratings. The same player has many snapshots over time, so the table is a history, not one row per player.",
+    "scope": "Questions about a player's abilities at a point in time or averaged over a period.",
+    "aliases": [
+      "player attributes",
+      "player ratings",
+      "attribute history",
+      "player rating snapshot"
+    ],
+    "evidence": [
+      "evidence_player_attr_snapshots"
+    ]
+  },
+  {
+    "id": "overall_rating",
+    "name": "Overall Rating",
+    "type": "metric",
+    "definition": "The player's overall ability score in a snapshot; a bounded numeric rating where higher is better.",
+    "scope": "Rating comparisons, averages and point-in-time lookups.",
+    "aliases": [
+      "overall rating",
+      "rating",
+      "overall"
+    ],
+    "evidence": [
+      "evidence_attribute_ranges"
+    ]
+  },
+  {
+    "id": "finishing",
+    "name": "Finishing",
+    "type": "metric",
+    "definition": "The player's finishing ability score in a snapshot.",
+    "scope": "Player scoring-ability comparisons.",
+    "aliases": [
+      "finishing",
+      "finishing rate",
+      "finishing score"
+    ],
+    "evidence": [
+      "evidence_attribute_ranges"
+    ]
+  },
+  {
+    "id": "volley",
+    "name": "Volley",
+    "type": "metric",
+    "definition": "The player's volley ability score in a snapshot.",
+    "scope": "Player technical-ability filtering.",
+    "aliases": [
+      "volley",
+      "volley score",
+      "volleys"
+    ],
+    "evidence": [
+      "evidence_attribute_ranges"
+    ]
+  },
+  {
+    "id": "dribbling",
+    "name": "Dribbling",
+    "type": "metric",
+    "definition": "The player's dribbling ability score in a snapshot.",
+    "scope": "Player technical-ability filtering.",
+    "aliases": [
+      "dribbling",
+      "dribbling score",
+      "dribble"
+    ],
+    "evidence": [
+      "evidence_attribute_ranges"
+    ]
+  },
+  {
+    "id": "attacking_work_rate",
+    "name": "Attacking Work Rate",
+    "type": "dimension",
+    "definition": "Categorical rating of how often a player joins the attack when the team attacks.",
+    "scope": "Distinguishing attack-minded players.",
+    "aliases": [
+      "attacking work rate",
+      "attack work rate",
+      "tends to attack",
+      "attacking when mates attack"
+    ],
+    "evidence": [
+      "evidence_work_rate_values",
+      "evidence_work_rate_meaning"
+    ]
+  },
+  {
+    "id": "defensive_work_rate",
+    "name": "Defensive Work Rate",
+    "type": "dimension",
+    "definition": "Categorical rating of how often a player holds position and defends while the team attacks.",
+    "scope": "Distinguishing defensively disciplined players.",
+    "aliases": [
+      "defensive work rate",
+      "defence work rate",
+      "remains in position",
+      "defensive while team attacks"
+    ],
+    "evidence": [
+      "evidence_work_rate_values",
+      "evidence_work_rate_meaning"
+    ]
+  },
+  {
+    "id": "team",
+    "name": "Team",
+    "type": "entity",
+    "definition": "A football club. Each team appears once in the team table with two alternative identifier systems.",
+    "scope": "Team identity and naming.",
+    "aliases": [
+      "club",
+      "team record",
+      "side"
+    ],
+    "evidence": [
+      "evidence_team_roster",
+      "evidence_team_id_systems"
+    ]
+  },
+  {
+    "id": "team_long_name",
+    "name": "Team Long Name",
+    "type": "dimension",
+    "definition": "The club's full display name.",
+    "scope": "Team lookup and presentation.",
+    "aliases": [
+      "long name",
+      "team name",
+      "full team name"
+    ],
+    "evidence": [
+      "evidence_team_roster",
+      "evidence_team_name_duplicates"
+    ]
+  },
+  {
+    "id": "team_short_name",
+    "name": "Team Short Name",
+    "type": "dimension",
+    "definition": "The club's abbreviated three-letter code.",
+    "scope": "Compact team identification; not unique across teams.",
+    "aliases": [
+      "short name",
+      "team abbreviation",
+      "team code"
+    ],
+    "evidence": [
+      "evidence_team_roster",
+      "evidence_team_name_duplicates"
+    ]
+  },
+  {
+    "id": "team_attribute_snapshot",
+    "name": "Team Attribute Snapshot",
+    "type": "concept",
+    "definition": "A dated snapshot of one team's playing-style attributes covering build-up play, chance creation and defence. A team has up to six snapshots.",
+    "scope": "Team style questions, including year-qualified ones.",
+    "aliases": [
+      "team attributes",
+      "team style",
+      "team tactics",
+      "team attribute snapshot"
+    ],
+    "evidence": [
+      "evidence_team_attr_snapshots"
+    ]
+  },
+  {
+    "id": "build_up_play_speed",
+    "name": "Build-up Play Speed",
+    "type": "metric",
+    "definition": "Numeric speed of a team's build-up play on a 0-100 style scale (observed 20-80), paired with a Balanced/Fast/Slow class.",
+    "scope": "Team playing-style comparisons.",
+    "aliases": [
+      "build-up play speed",
+      "build up speed",
+      "build-up speed"
+    ],
+    "evidence": [
+      "evidence_team_attr_ranges",
+      "evidence_class_pairs"
+    ]
+  },
+  {
+    "id": "build_up_play_passing",
+    "name": "Build-up Play Passing",
+    "type": "metric",
+    "definition": "Numeric quality and length tendency of a team's build-up passing (observed 20-80), paired with a Mixed/Short/Long class.",
+    "scope": "Team passing-style comparisons and above-average filtering.",
+    "aliases": [
+      "build-up play passing",
+      "build up passing",
+      "build-up passing"
+    ],
+    "evidence": [
+      "evidence_team_attr_ranges",
+      "evidence_class_pairs"
+    ]
+  },
+  {
+    "id": "chance_creation_passing",
+    "name": "Chance Creation Passing",
+    "type": "metric",
+    "definition": "Numeric propensity of a team to create chances through passing (observed 21-80), paired with a Safe/Normal/Risky class.",
+    "scope": "Team chance-creation style comparisons.",
+    "aliases": [
+      "chance creation passing",
+      "creating chance of passing",
+      "chance creation"
+    ],
+    "evidence": [
+      "evidence_team_attr_ranges",
+      "evidence_class_pairs"
+    ]
+  },
+  {
+    "id": "chance_creation_passing_style",
+    "name": "Chance Creation Passing Style",
+    "type": "dimension",
+    "definition": "Categorical bucket of a team's chance-creation passing: Safe, Normal or Risky.",
+    "scope": "Questions about playing safe or risky when creating chances.",
+    "aliases": [
+      "safe",
+      "played safe",
+      "risky",
+      "normal",
+      "passing style",
+      "chance creation class"
+    ],
+    "evidence": [
+      "evidence_class_domains",
+      "evidence_class_pairs"
+    ]
+  },
+  {
+    "id": "league",
+    "name": "League",
+    "type": "entity",
+    "definition": "A domestic league competition, named and linked to its country.",
+    "scope": "League-level aggregation and filtering.",
+    "aliases": [
+      "league",
+      "competition",
+      "division",
+      "league name"
+    ],
+    "evidence": [
+      "evidence_league_country",
+      "evidence_league_names"
+    ]
+  },
+  {
+    "id": "country",
+    "name": "Country",
+    "type": "entity",
+    "definition": "The country a league belongs to.",
+    "scope": "Country attribution of leagues and matches.",
+    "aliases": [
+      "country",
+      "nation"
+    ],
+    "evidence": [
+      "evidence_league_country"
+    ]
+  },
+  {
+    "id": "season",
+    "name": "Season",
+    "type": "dimension",
+    "definition": "The competition season label, written as two consecutive years (for example 2015/2016), naming the year the season started.",
+    "scope": "Season-scoped filters on matches.",
+    "aliases": [
+      "season",
+      "season year",
+      "2016 season",
+      "2010 season"
+    ],
+    "evidence": [
+      "evidence_seasons"
+    ]
+  },
+  {
+    "id": "match",
+    "name": "Match",
+    "type": "entity",
+    "definition": "A single league fixture between a home and an away team, carrying goals, season, stage and competition context.",
+    "scope": "Match counting and goal aggregation.",
+    "aliases": [
+      "match",
+      "game",
+      "fixture"
+    ],
+    "evidence": [
+      "evidence_match_table"
+    ]
+  },
+  {
+    "id": "home_team",
+    "name": "Home Team",
+    "type": "concept",
+    "definition": "The team playing at home in a match.",
+    "scope": "Home-side identification in match rows.",
+    "aliases": [
+      "home team",
+      "home side",
+      "host team"
+    ],
+    "evidence": [
+      "evidence_match_table"
+    ]
+  },
+  {
+    "id": "away_team",
+    "name": "Away Team",
+    "type": "concept",
+    "definition": "The team playing away in a match.",
+    "scope": "Away-side identification in match rows.",
+    "aliases": [
+      "away team",
+      "away side",
+      "visiting team",
+      "visitor"
+    ],
+    "evidence": [
+      "evidence_match_table"
+    ]
+  },
+  {
+    "id": "home_goals",
+    "name": "Home Goals",
+    "type": "metric",
+    "definition": "Goals scored by the home team in a match.",
+    "scope": "Match scoring and goal totals.",
+    "aliases": [
+      "home goals",
+      "home team goals",
+      "home score"
+    ],
+    "evidence": [
+      "evidence_goal_ranges"
+    ]
+  },
+  {
+    "id": "away_goals",
+    "name": "Away Goals",
+    "type": "metric",
+    "definition": "Goals scored by the away team in a match.",
+    "scope": "Match scoring and goal totals.",
+    "aliases": [
+      "away goals",
+      "away team goals",
+      "away score"
+    ],
+    "evidence": [
+      "evidence_goal_ranges"
+    ]
+  },
+  {
+    "id": "total_goals",
+    "name": "Total Goals",
+    "type": "metric",
+    "definition": "Total goals scored in a match, derived from the home and away goal counts.",
+    "scope": "Goal-total aggregation at match, team, league or season level.",
+    "aliases": [
+      "goals",
+      "total goals",
+      "goals scored",
+      "goal count"
+    ],
+    "evidence": [
+      "evidence_goal_ranges"
+    ]
+  },
+  {
+    "id": "match_result",
+    "name": "Match Result",
+    "type": "category",
+    "definition": "The outcome of a match - home win, draw or away win - determined by comparing the two goal totals.",
+    "scope": "Win, loss and draw counting.",
+    "aliases": [
+      "result",
+      "outcome",
+      "won",
+      "win",
+      "victory",
+      "draw"
+    ],
+    "evidence": [
+      "evidence_goal_ranges"
+    ]
+  },
+  {
+    "id": "team_fifa_api_id",
+    "name": "Team FIFA API Identifier",
+    "type": "dimension",
+    "definition": "The team's FIFA-API identifier; match rows and team-attribute rows use it to reference a team.",
+    "scope": "Team identity when joining matches or team attributes, and when an identifier is explicitly requested.",
+    "aliases": [
+      "team_fifa_api_id",
+      "fifa team id",
+      "team fifa id"
+    ],
+    "evidence": [
+      "evidence_team_id_systems"
+    ]
+  },
+  {
+    "id": "team_api_id",
+    "name": "Team API Identifier",
+    "type": "dimension",
+    "definition": "An alternative team identifier held only in the team table; it uses a different, disjoint value space from the FIFA-API identifier and is null for eleven teams.",
+    "scope": "Team identity only when explicitly requested; not used by match or team-attribute rows.",
+    "aliases": [
+      "team_api_id",
+      "team api id"
+    ],
+    "evidence": [
+      "evidence_team_id_systems"
+    ]
+  }
+]

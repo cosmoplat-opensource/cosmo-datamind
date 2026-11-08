@@ -1,0 +1,200 @@
+[
+  {
+    "id": "mapping_molecule_labeled",
+    "term_id": "term_molecule",
+    "database_source": "toxicology",
+    "table": "tab04",
+    "column": "fld002",
+    "semantic_filter": "Molecule appears in the molecule label table, which lists the labeled molecules.",
+    "aggregation_semantics": "One value per molecule; the grain is the individual labeled molecule.",
+    "grain": "one row per labeled molecule (343 rows)",
+    "validation": "Primary key of the label table. 343 distinct values, no duplicates, range TR000 to TR501."
+  },
+  {
+    "id": "mapping_molecule_in_atoms",
+    "term_id": "term_molecule",
+    "database_source": "toxicology",
+    "table": "tab01",
+    "column": "fld002",
+    "semantic_filter": "Molecule owns at least one atom.",
+    "aggregation_semantics": "Molecule reference repeated once per atom row.",
+    "grain": "one value per atom row; 444 distinct molecules",
+    "validation": "All values are well-formed molecule identifiers; every labeled molecule has atoms."
+  },
+  {
+    "id": "mapping_molecule_in_bonds",
+    "term_id": "term_molecule",
+    "database_source": "toxicology",
+    "table": "tab02",
+    "column": "fld002",
+    "semantic_filter": "Molecule owns at least one bond.",
+    "aggregation_semantics": "Molecule reference repeated once per bond row.",
+    "grain": "one value per bond row; 444 distinct molecules",
+    "validation": "Matches the molecule set of the atom table exactly; every labeled molecule has bonds."
+  },
+  {
+    "id": "mapping_atom_identifier",
+    "term_id": "term_atom",
+    "database_source": "toxicology",
+    "table": "tab01",
+    "column": "fld001",
+    "semantic_filter": "",
+    "aggregation_semantics": "One value per atom; no aggregation.",
+    "grain": "one row per atom (12,333 atoms)",
+    "validation": "Primary key. Every identifier begins with its molecule identifier followed by an underscore; 0 mismatches."
+  },
+  {
+    "id": "mapping_atom_element",
+    "term_id": "term_chemical_element",
+    "database_source": "toxicology",
+    "table": "tab01",
+    "column": "fld003",
+    "semantic_filter": "",
+    "aggregation_semantics": "Element symbol per atom; counts group atoms by symbol.",
+    "grain": "one element symbol per atom",
+    "validation": "21 distinct lowercase symbols; no nulls."
+  },
+  {
+    "id": "mapping_bond_identifier",
+    "term_id": "term_bond",
+    "database_source": "toxicology",
+    "table": "tab02",
+    "column": "fld004",
+    "semantic_filter": "",
+    "aggregation_semantics": "One value per bond; no aggregation.",
+    "grain": "one row per bond (12,379 bonds)",
+    "validation": "Primary key. Every identifier starts with its molecule identifier; every bond also appears in the incidence table."
+  },
+  {
+    "id": "mapping_bond_type_value",
+    "term_id": "term_bond_type",
+    "database_source": "toxicology",
+    "table": "tab02",
+    "column": "fld005",
+    "semantic_filter": "",
+    "aggregation_semantics": "One bond type per bond; distributions count bonds by type.",
+    "grain": "one type symbol per bond",
+    "validation": "Values observed: '-' (10,528), '=' (1,844), '#' (6), empty string (1)."
+  },
+  {
+    "id": "mapping_carcinogenicity_label_value",
+    "term_id": "term_carcinogenicity_label",
+    "database_source": "toxicology",
+    "table": "tab04",
+    "column": "fld007",
+    "semantic_filter": "",
+    "aggregation_semantics": "One label per molecule; distributions count molecules by label.",
+    "grain": "one label per labeled molecule",
+    "validation": "343 non-null values: 152 '+' and 191 '-'."
+  },
+  {
+    "id": "mapping_carcinogenic_filter",
+    "term_id": "term_carcinogenic_molecule",
+    "database_source": "toxicology",
+    "table": "tab04",
+    "column": "fld007",
+    "semantic_filter": "Label value denotes a carcinogenic molecule (the '+' value).",
+    "aggregation_semantics": "Molecule count; the rows selected are the carcinogenic molecules.",
+    "grain": "one row per carcinogenic molecule (152 rows)",
+    "validation": "Count verified against the label distribution."
+  },
+  {
+    "id": "mapping_non_carcinogenic_filter",
+    "term_id": "term_non_carcinogenic_molecule",
+    "database_source": "toxicology",
+    "table": "tab04",
+    "column": "fld007",
+    "semantic_filter": "Label value denotes a non-carcinogenic molecule (the '-' value).",
+    "aggregation_semantics": "Molecule count; the rows selected are the non-carcinogenic molecules.",
+    "grain": "one row per non-carcinogenic molecule (191 rows)",
+    "validation": "Count verified against the label distribution."
+  },
+  {
+    "id": "mapping_bond_atom_incidence",
+    "term_id": "term_bond_atom_incidence",
+    "database_source": "toxicology",
+    "table": "tab03",
+    "column": "fld004 (bond), fld001 (atom), fld006 (counterpart atom)",
+    "semantic_filter": "",
+    "aggregation_semantics": "Distinct bonds per atom are counted from distinct bond identifiers; each bond contributes exactly two rows.",
+    "grain": "one row per directed bond-to-atom pair (24,758 rows for 12,379 bonds)",
+    "validation": "Every bond has exactly 2 rows; no duplicate (atom, counterpart, bond) triples; every referenced atom and bond exists."
+  },
+  {
+    "id": "mapping_molecule_element_composition",
+    "term_id": "term_molecule_element_composition",
+    "database_source": "toxicology",
+    "table": "tab01",
+    "column": "fld002 (molecule), fld003 (element)",
+    "semantic_filter": "",
+    "aggregation_semantics": "Count of atoms grouped by molecule and element symbol.",
+    "grain": "one count per molecule-element pair",
+    "validation": "Summing the counts for a molecule reproduces its atom count."
+  },
+  {
+    "id": "mapping_atom_bond_count",
+    "term_id": "term_atom_bond_count",
+    "database_source": "toxicology",
+    "table": "tab03",
+    "column": "fld001 (atom), fld004 (bond)",
+    "semantic_filter": "",
+    "aggregation_semantics": "Count of distinct bonds per atom; atoms absent from the incidence table have zero.",
+    "grain": "one count per atom",
+    "validation": "Maximum observed value 4; 49 atoms have no incidence rows."
+  },
+  {
+    "id": "mapping_element_atom_count",
+    "term_id": "term_element_atom_count",
+    "database_source": "toxicology",
+    "table": "tab01",
+    "column": "fld003",
+    "semantic_filter": "Optionally restricted to atoms whose molecule carries a given carcinogenicity label.",
+    "aggregation_semantics": "Count of distinct atom identifiers grouped by element symbol over a molecule population.",
+    "grain": "one count per element per population",
+    "validation": "Element totals sum to the atom count of the population."
+  },
+  {
+    "id": "mapping_element_presence",
+    "term_id": "term_element_presence",
+    "database_source": "toxicology",
+    "table": "tab01",
+    "column": "fld002 (molecule), fld003 (element)",
+    "semantic_filter": "",
+    "aggregation_semantics": "A molecule-element pair is present when at least one atom row exists for that pair.",
+    "grain": "one presence flag per molecule-element pair",
+    "validation": "Every labeled molecule has at least one atom row; 4 molecules contain fluorine overall."
+  },
+  {
+    "id": "mapping_carcinogenic_molecule_percentage",
+    "term_id": "term_carcinogenic_molecule_percentage",
+    "database_source": "toxicology",
+    "table": "tab04",
+    "column": "fld007",
+    "semantic_filter": "Population restricted to molecules that carry a label.",
+    "aggregation_semantics": "Count of '+' labels divided by the count of labeled molecules, multiplied by 100.",
+    "grain": "one percentage per molecule population",
+    "validation": "152 of 343 labeled molecules; no null labels."
+  },
+  {
+    "id": "mapping_element_percentage",
+    "term_id": "term_element_percentage",
+    "database_source": "toxicology",
+    "table": "tab01",
+    "column": "fld003",
+    "semantic_filter": "Population restricted to molecules of the requested carcinogenicity status or to a single molecule.",
+    "aggregation_semantics": "Count of atoms of the element divided by the chosen population size, multiplied by 100; the denominator may be the population's atom count or its molecule count.",
+    "grain": "one percentage per element per population",
+    "validation": "Element counts verified per label group (for example 116 chlorine atoms in carcinogenic molecules among 2,880 atoms)."
+  },
+  {
+    "id": "mapping_bond_type_percentage",
+    "term_id": "term_bond_type_percentage",
+    "database_source": "toxicology",
+    "table": "tab02",
+    "column": "fld005",
+    "semantic_filter": "Population may be restricted to bonds whose molecule carries a given carcinogenicity label.",
+    "aggregation_semantics": "Count of bonds of the type divided by the relevant bond population, multiplied by 100.",
+    "grain": "one percentage per bond type per population",
+    "validation": "Cross-tab of bond type by label verified: single '+' 3,078 and '-' 4,665; double '+' 634 and '-' 774; triple '+' 3 and '-' 2."
+  }
+]

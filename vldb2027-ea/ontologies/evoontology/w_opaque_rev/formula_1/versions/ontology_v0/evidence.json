@@ -1,0 +1,298 @@
+[
+  {
+    "id": "e_schema",
+    "source": "formula_1 sqlite database",
+    "query": "SELECT name, sql FROM sqlite_master WHERE type='table' ORDER BY name",
+    "result": "13 data tables tab01-tab13. Foreign keys: tab05.fld001 -> tab01.fld001; tab05.fld020 -> tab04.fld020; tab06, tab07, tab08, tab09, tab10, tab11 and tab13 reference tab05.fld021; tab06, tab07, tab11 and tab13 reference tab02.fld010; tab08, tab09, tab10, tab11 and tab13 reference tab03.fld013; tab13.fld041 -> tab12.fld041.",
+    "validation_method": "read-only schema inspection",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "e_row_counts",
+    "source": "formula_1 sqlite database",
+    "query": "SELECT 'tab01', COUNT(*) FROM tab01 UNION ALL SELECT 'tab02', COUNT(*) FROM tab02 ... SELECT 'tab13', COUNT(*) FROM tab13",
+    "result": "tab01 72; tab02 208; tab03 840; tab04 68; tab05 976; tab06 11082; tab07 11836; tab08 31578; tab09 420369; tab10 6070; tab11 7397; tab12 134; tab13 23657.",
+    "validation_method": "row-count check per table",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "e_circuit_rows",
+    "source": "formula_1 sqlite database",
+    "query": "SELECT fld001, fld003, fld004, fld005, fld006, fld007 FROM tab01 WHERE fld003 IN ('Silverstone Circuit','A1-Ring','Zeltweg','Red Bull Ring') OR fld001 = 24",
+    "result": "9|Silverstone Circuit|Silverstone|UK|52.0786|-1.01694; 23|A1-Ring|Spielburg|Austria|47.2197|14.7647; 57|Zeltweg|Styria|Austria|47.2039|14.7478; 70|Red Bull Ring|Spielburg|Austria|47.2197|14.7647; 24|Yas Marina Circuit|Abu Dhabi|UAE|24.4672|54.6031.",
+    "validation_method": "representative row inspection; coordinate values are plausible for the stated locations",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "e_circuit_country_domain",
+    "source": "formula_1 sqlite database",
+    "query": "SELECT COUNT(*), COUNT(DISTINCT fld005) FROM tab01; SELECT fld005, COUNT(*) FROM tab01 GROUP BY fld005 ORDER BY 2 DESC LIMIT 8",
+    "result": "72 circuits and 32 distinct country labels. Top counts: USA 11, France 7, Spain 6, UK 4, Japan 3, Portugal 3, Italy 3, Germany 3. Short forms UK and USA coexist with full names such as Austria.",
+    "validation_method": "value-domain inspection",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "e_circuit_coverage",
+    "source": "formula_1 sqlite database",
+    "query": "SELECT COUNT(*) FROM tab01 WHERE fld006 IS NULL OR fld007 IS NULL; SELECT COUNT(*) FROM tab01 WHERE fld008 IS NOT NULL",
+    "result": "0 circuits are missing latitude or longitude; 0 circuits have an altitude value.",
+    "validation_method": "null-coverage check",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "e_race_rows",
+    "source": "formula_1 sqlite database",
+    "query": "SELECT fld021, fld020, fld022, fld001, fld003, fld023, fld024 FROM tab05 ORDER BY fld021 LIMIT 3",
+    "result": "1|2009|1|1|Australian Grand Prix|2009-03-29|06:00:00; 2|2009|2|2|Malaysian Grand Prix|2009-04-05|09:00:00; 3|2009|3|17|Chinese Grand Prix|2009-04-19|07:00:00.",
+    "validation_method": "representative row inspection",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "e_race_nonchronological",
+    "source": "formula_1 sqlite database",
+    "query": "SELECT MIN(fld021), MAX(fld021), COUNT(*) FROM tab05; SELECT fld021, fld020, fld003 FROM tab05 WHERE fld021 IN (1,24,291,592,833)",
+    "result": "Race ids span 1..976 over 976 races. 1|2009|Australian Grand Prix; 24|2008|Canadian Grand Prix; 291|1992|Brazilian Grand Prix; 592|1974|South African Grand Prix; 833|1950|British Grand Prix. Numeric race-id order is not chronological.",
+    "validation_method": "identifier-to-date cross-check",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "e_race_name_dupes",
+    "source": "formula_1 sqlite database",
+    "query": "SELECT fld003, COUNT(*) FROM tab05 GROUP BY fld003 ORDER BY 2 DESC LIMIT 3",
+    "result": "Italian Grand Prix 68; British Grand Prix 68; Monaco Grand Prix 64; Canadian Grand Prix 48. Each Grand Prix name recurs once per season.",
+    "validation_method": "duplicate-value check on the race name column",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "e_race_dates",
+    "source": "formula_1 sqlite database",
+    "query": "SELECT fld020, fld003, fld023 FROM tab05 ORDER BY fld023 ASC LIMIT 3; SELECT MIN(fld023), MAX(fld023) FROM tab05",
+    "result": "1950|British Grand Prix|1950-05-13; 1950|Monaco Grand Prix|1950-05-21; 1950|Indianapolis 500|1950-05-30. Date range 1950-05-13 to 2017-11-26.",
+    "validation_method": "chronological ordering check",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "e_season_rows",
+    "source": "formula_1 sqlite database",
+    "query": "SELECT * FROM tab04 ORDER BY fld020 LIMIT 3; SELECT COUNT(*) FROM tab04",
+    "result": "1950|http://en.wikipedia.org/wiki/1950_Formula_One_season; 1951 and 1952 follow the same pattern; 68 season rows. tab05.fld020 covers 1950..2017 and references this year domain.",
+    "validation_method": "row inspection and foreign-key check",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "e_driver_rows",
+    "source": "formula_1 sqlite database",
+    "query": "SELECT * FROM tab03 LIMIT 3",
+    "result": "1|hamilton|44|HAM|Lewis|Hamilton|1985-01-07|British|http://en.wikipedia.org/wiki/Lewis_Hamilton; 2|heidfeld|NULL|HEI|Nick|Heidfeld|1977-05-10|German|...; 3|rosberg|6|ROS|Nico|Rosberg|1985-06-27|German|... .",
+    "validation_method": "representative row inspection",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "e_driver_ref",
+    "source": "formula_1 sqlite database",
+    "query": "SELECT COUNT(*), COUNT(DISTINCT fld014) FROM tab03; SELECT fld013, fld014, fld017, fld018 FROM tab03 WHERE fld018 IN ('Senna','Yoong')",
+    "result": "840 driver rows and 840 distinct reference names. 102|senna|Ayrton|Senna; 811|bruno_senna|Bruno|Senna; 62|yoong|Alex|Yoong. Reference names are unique while surnames are not.",
+    "validation_method": "uniqueness check plus ambiguous-surname inspection",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "e_driver_nationality",
+    "source": "formula_1 sqlite database",
+    "query": "SELECT COUNT(DISTINCT fld012) FROM tab03; SELECT DISTINCT fld012 FROM tab03 ORDER BY fld012 LIMIT 12",
+    "result": "41 distinct nationality adjectives, including American, Australian, Austrian, Belgian, Brazilian, British, Canadian, Colombian, Danish, Dutch, Finnish and French.",
+    "validation_method": "value-domain inspection",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "e_constructor_nationality",
+    "source": "formula_1 sqlite database",
+    "query": "SELECT COUNT(DISTINCT fld012) FROM tab02; SELECT DISTINCT fld012 FROM tab02 ORDER BY fld012 LIMIT 12",
+    "result": "24 distinct nationality adjectives, including Austrian, British, Canadian, Dutch, French, German, Indian, Irish, Italian, Japanese, Russian and Swiss.",
+    "validation_method": "value-domain inspection",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "e_dob_domain",
+    "source": "formula_1 sqlite database",
+    "query": "SELECT fld017, fld018, fld019 FROM tab03 LIMIT 3; SELECT COUNT(*) FROM tab03 WHERE fld012='German' AND fld019 BETWEEN '1980-01-01' AND '1985-12-31'",
+    "result": "1985-01-07 Lewis Hamilton, 1977-05-10 Nick Heidfeld, 1985-06-27 Nico Rosberg. 5 German drivers were born between 1980 and 1985.",
+    "validation_method": "date-format and range check",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "e_constructor_rows",
+    "source": "formula_1 sqlite database",
+    "query": "SELECT * FROM tab02 LIMIT 3",
+    "result": "1|mclaren|McLaren|British|http://en.wikipedia.org/wiki/McLaren; 2|bmw_sauber|BMW Sauber|German|...; 3|williams|Williams|British|...; 208 constructors in total.",
+    "validation_method": "representative row inspection",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "e_status_rows",
+    "source": "formula_1 sqlite database",
+    "query": "SELECT fld041, fld027 FROM tab12 ORDER BY fld041",
+    "result": "134 status rows: 1|Finished, 2|Disqualified, 3|Accident, 4|Collision, 5|Engine, 6|Gearbox, 7|Transmission, 8|Clutch, 9|Hydraulics, 10|Electrical, 11|+1 Lap, 12|+2 Laps, ... 130|Collision damage, ... 136|Seat.",
+    "validation_method": "full enumeration of the status lookup",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "e_accident_rows",
+    "source": "formula_1 sqlite database",
+    "query": "SELECT COUNT(*) FROM tab13 WHERE fld041=3; SELECT COUNT(*) FROM tab13 WHERE fld041 IN (4,130)",
+    "result": "Accident (id 3): 1007 result rows. Collision (id 4) plus Collision damage (id 130): 773 result rows. The categories are disjoint.",
+    "validation_method": "status-grouped count",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "e_result_rows",
+    "source": "formula_1 sqlite database",
+    "query": "SELECT * FROM tab13 WHERE fld021=18 ORDER BY fld044 LIMIT 3",
+    "result": "1|18|1|1|22|1|1|1|1|10.0|58|1:34:50.616|5690616|39|2|1:27.452|218.300|1; 2|18|2|2|3|5|2|2|2|8.0|58|+5.478|5696094|41|3|1:27.739|217.586|1; 3|18|3|3|7|7|3|3|3|6.0|58|+8.163|5698779|41|5|1:28.090|216.719|1. Race 18 is the 2008 Australian Grand Prix.",
+    "validation_method": "representative row inspection",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "e_position_null",
+    "source": "formula_1 sqlite database",
+    "query": "SELECT COUNT(*) FROM tab13; SELECT SUM(fld029 IS NULL), SUM(fld024 IS NULL) FROM tab13",
+    "result": "23657 result rows; 17696 have an empty finishing position and the same 17696 have an empty finish time; those rows carry position text R.",
+    "validation_method": "null-coverage check",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "e_finish_time_formats",
+    "source": "formula_1 sqlite database",
+    "query": "SELECT COUNT(*), COUNT(fld024), SUM(fld024 LIKE '%:%:%'), SUM(fld024 LIKE '+%') FROM tab13",
+    "result": "23657 rows; 5961 non-empty times; 970 absolute H:MM:SS.mmm values, one per race with a recorded winning time; 4989 relative plus-prefixed values; 17696 empty values.",
+    "validation_method": "format-pattern counting",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "e_finish_vs_time",
+    "source": "formula_1 sqlite database",
+    "query": "SELECT COUNT(*) FROM tab13 WHERE fld041=1 AND fld024 IS NULL; SELECT COUNT(*) FROM tab13 WHERE fld041<>1 AND fld024 IS NOT NULL; SELECT COUNT(*) FROM tab13 WHERE fld041=1",
+    "result": "10 rows are status Finished with an empty time (9 in race 940, the 2015 Japanese Grand Prix, and 1 in race 839, the 1950 Italian Grand Prix); 5 rows have a non-Finished status but a non-empty time (Disqualified, +1 Lap, Power Unit); 5966 rows carry status Finished.",
+    "validation_method": "cross-tabulation of status against time presence",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "e_speed_lexical",
+    "source": "formula_1 sqlite database",
+    "query": "SELECT MAX(fld049), MIN(fld049), MAX(CAST(fld049 AS REAL)), MIN(CAST(fld049 AS REAL)) FROM tab13 WHERE fld049 IS NOT NULL",
+    "result": "Text comparison returns MAX 91.610 and MIN 100.615; numeric comparison returns MAX 257.32 and MIN 89.54. 5268 rows have a speed value.",
+    "validation_method": "text versus numeric comparison check",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "e_fastest_lap_rows",
+    "source": "formula_1 sqlite database",
+    "query": "SELECT COUNT(DISTINCT fld021), COUNT(*), SUM(fld047=1) FROM tab13 WHERE fld049 IS NOT NULL; SELECT fld013, fld029, fld047, fld048, fld049 FROM tab13 WHERE fld021=5 ORDER BY fld047 LIMIT 8",
+    "result": "Fastest-lap data exists for 256 races and 5268 result rows, with exactly one rank-1 row per such race (256 rank-1 rows). Race 5 sample: driver 22 position 2 rank 1 at 202.484 km/h, driver 18 position 1 rank 2 at 202.149 km/h. 18389 rows have no fastest-lap data.",
+    "validation_method": "rank distribution and cross-race check",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "e_pit_rows",
+    "source": "formula_1 sqlite database",
+    "query": "SELECT COUNT(*), MIN(fld036), MAX(fld036), SUM(fld036 IS NULL) FROM tab10; SELECT * FROM tab10 LIMIT 3",
+    "result": "6070 stops; durations as text from 12.897 to 59.555 seconds; no empty durations. Sample rows: 841|1|1|16|17:28:24|23.227|23227 and 841|1|2|36|17:59:29|23.199|23199.",
+    "validation_method": "range and null check plus row inspection",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "e_lap_rows",
+    "source": "formula_1 sqlite database",
+    "query": "SELECT * FROM tab09 LIMIT 3; SELECT COUNT(*), COUNT(DISTINCT fld021) FROM tab09",
+    "result": "1|1|1|13|1:49.088|109088; 1|1|2|12|1:33.740|93740; 1|1|3|11|1:31.600|91600. 420369 lap records across 389 races.",
+    "validation_method": "representative row inspection and race coverage count",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "e_lap_formats",
+    "source": "formula_1 sqlite database",
+    "query": "SELECT COUNT(*), SUM(fld024 LIKE '%:%:%') FROM tab09",
+    "result": "420369 lap times; 43 are hour-long H:MM:SS.mmm values such as 2:05:07.547; the remaining 420326 are M:SS.mmm values.",
+    "validation_method": "format-pattern counting",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "e_qual_rows",
+    "source": "formula_1 sqlite database",
+    "query": "SELECT fld013, fld029, fld038, fld039, fld040 FROM tab11 WHERE fld021=20 ORDER BY fld029 LIMIT 12; SELECT COUNT(*) FROM tab11",
+    "result": "Race 20 (2008 Bahrain Grand Prix): position 1 driver 9 with 1:32.893 / 1:31.745 / 1:33.096; position 11 driver 17 with 1:33.194 / 1:32.371 / empty; position 17 driver 14 with 1:33.433 and two empty values. 7397 qualifying rows; 117 rows have an empty Q1.",
+    "validation_method": "representative row inspection plus null count",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "e_qual_elim",
+    "source": "formula_1 sqlite database",
+    "query": "SELECT fld013, fld029, fld038, fld039 FROM tab11 WHERE fld021=20 AND fld039 IS NULL ORDER BY fld038 DESC",
+    "result": "Six drivers have an empty Q2 time. Sorted by Q1 time: 1:35.725 (driver 11), 1:34.140 (driver 19), 1:34.127 (driver 20), 1:33.562 (driver 16), 1:33.501 (driver 21), 1:33.433 (driver 14). The five slowest Q1 times are the eliminated drivers; driver 14 also has no Q2 time.",
+    "validation_method": "cross-check of Q1 ranking against Q2 presence",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "e_points_sources",
+    "source": "formula_1 sqlite database",
+    "query": "SELECT fld021, fld010, fld026 FROM tab06 WHERE fld021=24 ORDER BY fld026 DESC LIMIT 3; SELECT fld021, fld010, fld026, fld029 FROM tab07 WHERE fld021=24 ORDER BY fld029 LIMIT 3; SELECT fld021, fld013, fld026, fld029 FROM tab08 WHERE fld021=24 ORDER BY fld029 LIMIT 3; SELECT SUM(fld026) FROM tab06 WHERE fld010=1; SELECT fld026 FROM tab07 WHERE fld010=1 ORDER BY fld021 DESC LIMIT 1",
+    "result": "Race 24 per-race constructor points: constructor 2 = 18.0, constructor 7 = 8.0, constructor 9 = 6.0, constructor 6 = 4.0. Race 24 constructor standings: constructor 6 = 73.0 at position 1, constructor 2 = 70.0 at position 2. Race 24 driver standings: driver 9 = 42.0 at position 1, driver 1 = 38.0 at position 2. Summing per-race constructor points for constructor 1 over all seasons gives 5232.5 while its last standings value is 17.0.",
+    "validation_method": "cross-table comparison of the three points sources",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "e_constructor_results_rows",
+    "source": "formula_1 sqlite database",
+    "query": "SELECT * FROM tab06 WHERE fld021=24 ORDER BY fld026 DESC LIMIT 5; SELECT COUNT(*) FROM tab06",
+    "result": "24|2|18.0; 24|7|8.0; 24|9|6.0; 24|6|4.0; 24|11|2.0. 11082 constructor-result rows in total.",
+    "validation_method": "representative row inspection",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "e_constructor_standings_rows",
+    "source": "formula_1 sqlite database",
+    "query": "SELECT * FROM tab07 WHERE fld021=24 ORDER BY fld029 LIMIT 5; SELECT MIN(c), MAX(c) FROM (SELECT COUNT(*) c FROM tab07 GROUP BY fld021)",
+    "result": "24|6|73.0|1|'1'|4; 24|2|70.0|2|'2'|1; 24|1|53.0|3|'3'|2; 24|9|21.0|4|'4'|0; 24|7|17.0|5|'5'|0. Each race has between 3 and 22 constructor snapshots.",
+    "validation_method": "row inspection and per-race cardinality check",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "e_driver_standings_rows",
+    "source": "formula_1 sqlite database",
+    "query": "SELECT * FROM tab08 WHERE fld021=24 ORDER BY fld029 LIMIT 5; SELECT MIN(c), MAX(c) FROM (SELECT COUNT(*) c FROM tab08 GROUP BY fld021)",
+    "result": "24|9|42.0|1|'1'|1; 24|1|38.0|2|'2'|2; 24|13|38.0|3|'3'|2; 24|8|35.0|4|'4'|2; 24|2|28.0|5|'5'|0. Each race has between 7 and 108 driver snapshots.",
+    "validation_method": "row inspection and per-race cardinality check",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "e_participation",
+    "source": "formula_1 sqlite database",
+    "query": "SELECT COUNT(*) FROM tab03 WHERE fld013 NOT IN (SELECT DISTINCT fld013 FROM tab13); SELECT COUNT(*) FROM tab13 WHERE fld013=1",
+    "result": "0 drivers lack result rows; all 840 drivers appear at least once. Driver 1 has 202 result rows.",
+    "validation_method": "referential coverage and per-driver count",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "e_winner_rows",
+    "source": "formula_1 sqlite database",
+    "query": "SELECT COUNT(*) FROM tab13 WHERE fld029=1; SELECT COUNT(*) FROM tab13 WHERE fld021=24 AND fld029=1",
+    "result": "973 result rows have finishing position 1 across 976 races; in race 24 the single position-1 row is Robert Kubica with time 1:36:24.227.",
+    "validation_method": "per-race winner cardinality check",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "e_austria_runs",
+    "source": "formula_1 sqlite database",
+    "query": "SELECT c.fld001, c.fld003, c.fld004, c.fld006, c.fld007, COUNT(*) FROM tab05 ra JOIN tab01 c ON c.fld001=ra.fld001 WHERE c.fld005='Austria' GROUP BY c.fld001",
+    "result": "23|A1-Ring|Spielburg|47.2197|14.7647|25; 57|Zeltweg|Styria|47.2039|14.7478|1; 70|Red Bull Ring|Spielburg|47.2197|14.7647|4. Three Austrian circuits holding 30 races in total.",
+    "validation_method": "country-to-race aggregation",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "e_time_gap_sample",
+    "source": "formula_1 sqlite database",
+    "query": "SELECT fld024, fld030, fld029 FROM tab13 WHERE fld021=24 ORDER BY fld044 LIMIT 12",
+    "result": "1:36:24.227 for position 1; +16.495, +23.352, +42.627, +43.934, +47.775, +53.597, +54.120, +54.433, +54.749, +1:07.540 and +1:11.299 for positions 2 to 12.",
+    "validation_method": "format and ordering inspection within one race",
+    "timestamp": "2026-11-06"
+  }
+]

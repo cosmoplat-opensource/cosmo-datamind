@@ -1,0 +1,259 @@
+[
+  {
+    "id": "constraint_weight_missing_values",
+    "target": "term_weight",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "missing weight",
+      "missing weight data",
+      "weight data",
+      "no weight",
+      "unknown weight",
+      "without weight",
+      "weight is 0",
+      "weight null"
+    ],
+    "severity": "block",
+    "scope": "Any count, filter or comparison involving hero weight",
+    "confidence": "high",
+    "description": "Hero weight is stored in kilograms. Weight 0 and NULL both mean the weight is not recorded: 172 heroes have weight 0 and 64 have NULL, 236 of 750 in total. Zero is not a real body weight and treating it as measured weight distorts counts and averages. The smallest recorded positive weight is 14 kg.",
+    "evidence": [
+      "ev_010"
+    ]
+  },
+  {
+    "id": "constraint_height_missing_values",
+    "target": "term_height",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "missing height",
+      "height 0",
+      "unknown height",
+      "without height",
+      "height null",
+      "height between"
+    ],
+    "severity": "warning",
+    "scope": "Any count, filter or range over hero height",
+    "confidence": "high",
+    "description": "Hero height is stored in centimetres. 155 heroes have height 0 and 58 have NULL, both meaning unrecorded height. Extreme values up to 30480 occur for giant characters and are stored as recorded rather than being errors.",
+    "evidence": [
+      "ev_011"
+    ]
+  },
+  {
+    "id": "constraint_no_colour_enum",
+    "target": "term_colour",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "no eye color",
+      "no eye colour",
+      "no colour",
+      "no color",
+      "without eye colour",
+      "No Colour",
+      "no hair colour",
+      "no skin colour",
+      "missing colour"
+    ],
+    "severity": "block",
+    "scope": "Filtering or interpreting eye, hair and skin colour values",
+    "confidence": "high",
+    "description": "Colour identifier 1 has the label No Colour and denotes an unrecorded or absent colour, not a literal colour. It is used for 169 hero eye colours, 246 hair colours and 681 skin colours. Colour labels are stored capitalised, for example Blue, Black and Blond. No Colour must not be counted as a real colour but is the value that represents no eye color.",
+    "evidence": [
+      "ev_007",
+      "ev_013"
+    ]
+  },
+  {
+    "id": "constraint_full_name_missing",
+    "target": "term_full_name",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "without full name",
+      "missing full name",
+      "no full name",
+      "full name null",
+      "full name dash",
+      "unnamed"
+    ],
+    "severity": "warning",
+    "scope": "Counting or filtering heroes by presence of a full name",
+    "confidence": "high",
+    "description": "A full name is not recorded for 247 of 750 heroes using two markers: 122 NULL values and 125 literal dash strings. 503 heroes have a substantive full name. Conditions for heroes without a full name must account for both encodings.",
+    "evidence": [
+      "ev_012"
+    ]
+  },
+  {
+    "id": "constraint_attribute_score_scale",
+    "target": "term_attribute_score",
+    "constraint_type": "unit",
+    "trigger_keywords": [
+      "attribute score",
+      "rating",
+      "score",
+      "score scale",
+      "strength",
+      "speed",
+      "intelligence",
+      "durability",
+      "power",
+      "combat"
+    ],
+    "severity": "info",
+    "scope": "Interpreting attribute score values and extremes",
+    "confidence": "high",
+    "description": "Attribute scores are integers on a 0 to 100 scale; the observed range is 5 to 100 and zero never occurs. A higher score means the hero is stronger in that attribute, so highest Strength is the maximum score and dumbest is the minimum Intelligence score.",
+    "evidence": [
+      "ev_009"
+    ]
+  },
+  {
+    "id": "constraint_attribute_coverage",
+    "target": "term_attribute_score",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "strongest",
+      "fastest",
+      "dumbest",
+      "highest attribute",
+      "top hero",
+      "best",
+      "worst",
+      "rank heroes"
+    ],
+    "severity": "warning",
+    "scope": "Ranking or counting heroes by any attribute",
+    "confidence": "high",
+    "description": "Only 623 of 750 heroes have attribute score rows, and each rated hero has exactly one score for each of the six attributes. The other 127 heroes cannot appear in any attribute-based ranking, so counts over heroes and counts over hero-attribute rows differ.",
+    "evidence": [
+      "ev_009"
+    ]
+  },
+  {
+    "id": "constraint_publisher_label_semantics",
+    "target": "term_publisher",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "publisher",
+      "DC",
+      "Marvel",
+      "DC Comics",
+      "Marvel Comics",
+      "published by",
+      "created by"
+    ],
+    "severity": "warning",
+    "scope": "Filtering heroes by publisher or comparing publisher counts",
+    "confidence": "high",
+    "description": "Publisher labels are full stored strings. Publisher id 4 is DC Comics with 224 heroes and id 13 is Marvel Comics with 387 heroes; there are no standalone DC or Marvel labels. Publisher id 1 has a blank label and covers 17 heroes, and 3 heroes have no publisher at all. Labels are stored capitalised.",
+    "evidence": [
+      "ev_004",
+      "ev_016"
+    ]
+  },
+  {
+    "id": "constraint_gender_enum",
+    "target": "term_gender",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "male",
+      "female",
+      "gender",
+      "N/A",
+      "men",
+      "women"
+    ],
+    "severity": "info",
+    "scope": "Filtering or grouping heroes by gender",
+    "confidence": "high",
+    "description": "Gender labels are Male with 519 heroes, Female with 203 and N/A with 28. Matching is on the capitalised stored label.",
+    "evidence": [
+      "ev_005"
+    ]
+  },
+  {
+    "id": "constraint_race_label_semantics",
+    "target": "term_race",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "human",
+      "race",
+      "species",
+      "mutant",
+      "kryptonian",
+      "alien"
+    ],
+    "severity": "warning",
+    "scope": "Filtering heroes by race or species",
+    "confidence": "high",
+    "description": "Race labels are stored capitalised: Human covers 219 heroes, Mutant 63, and 58 further species exist. The dash label covers 295 heroes and means the race is not recorded. Lowercase matching such as human will not match the stored Human.",
+    "evidence": [
+      "ev_006"
+    ]
+  },
+  {
+    "id": "constraint_superpower_coverage",
+    "target": "term_superpower",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "superpower",
+      "powers",
+      "has power",
+      "stealth",
+      "agility",
+      "telepathy",
+      "flight",
+      "which powers",
+      "how many heroes have"
+    ],
+    "severity": "warning",
+    "scope": "Counting or filtering heroes by superpower",
+    "confidence": "high",
+    "description": "167 distinct powers are defined and 5825 hero-power assignments exist with unique hero-power pairs. Only 652 of 750 heroes have at least one power, and 98 have none, so power-based counts must start from the assignment records or filter hero existence explicitly.",
+    "evidence": [
+      "ev_008"
+    ]
+  },
+  {
+    "id": "constraint_hero_name_not_unique",
+    "target": "term_hero_name",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "which hero",
+      "hero name",
+      "same name",
+      "duplicate name",
+      "named"
+    ],
+    "severity": "warning",
+    "scope": "Filtering a single hero by name or listing heroes by name",
+    "confidence": "high",
+    "description": "Hero names are not unique: 750 hero rows share 743 distinct names. Atlas occurs 4 times, and Chameleon, Captain Marvel, Ares and Angel occur twice each. Name-based filters can return multiple hero records; use the hero identifier when a single hero is intended.",
+    "evidence": [
+      "ev_014"
+    ]
+  },
+  {
+    "id": "constraint_duplicate_stat_columns",
+    "target": "term_attribute_score",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "speed",
+      "durability",
+      "power",
+      "combat",
+      "compare attributes",
+      "fastest",
+      "most durable"
+    ],
+    "severity": "info",
+    "scope": "Cross-attribute comparison involving Speed, Durability, Power or Combat",
+    "confidence": "high",
+    "description": "For all 623 rated heroes the Speed, Durability, Power and Combat scores are identical to each other; only Intelligence and Strength differ. Comparisons among those four attributes are therefore not informative.",
+    "evidence": [
+      "ev_015"
+    ]
+  }
+]

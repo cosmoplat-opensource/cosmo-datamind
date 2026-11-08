@@ -1,0 +1,130 @@
+[
+  {
+    "id": "ev_schema_structure",
+    "source": "sqlite: debit_card_specializing.sqlite (read-only)",
+    "query": "SELECT name, sql FROM sqlite_master WHERE type='table'",
+    "result": "Five tables: tab01(fld001 PK, fld002 TEXT, fld003 TEXT); tab02(fld004 PK, fld005 INTEGER, fld006 TEXT, fld002 TEXT); tab03(fld007 PK, fld008 TEXT); tab04(fld009 PK autoincrement, fld010 DATE, fld011 TEXT, fld001 INTEGER, fld012 INTEGER, fld004 INTEGER, fld007 INTEGER, fld013 INTEGER, fld014 REAL); tab05(fld001 INTEGER, fld010 TEXT, fld015 REAL, PK(fld010, fld001)).",
+    "validation_method": "Schema inspection via sqlite_master on the read-only database.",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "ev_row_counts",
+    "source": "sqlite: debit_card_specializing.sqlite (read-only)",
+    "query": "SELECT COUNT(*) FROM tab01/tab02/tab03/tab04/tab05",
+    "result": "tab01=32461, tab02=5716, tab03=591, tab04=1000, tab05=383282.",
+    "validation_method": "Row-count aggregation per table.",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "ev_tab01_profile",
+    "source": "sqlite: debit_card_specializing.sqlite (read-only)",
+    "query": "SELECT COUNT(*), COUNT(DISTINCT fld001), MIN(fld001), MAX(fld001) FROM tab01; SELECT fld002, COUNT(*) FROM tab01 GROUP BY fld002; SELECT fld003, COUNT(*) FROM tab01 GROUP BY fld003",
+    "result": "32461 rows, 32461 distinct fld001 (range 3-53314). fld002: KAM 2040, LAM 3658, SME 26763. fld003: CZK 30459, EUR 2002. No nulls in fld002 or fld003.",
+    "validation_method": "Cardinality, distinct-value and null profiling.",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "ev_tab02_profile",
+    "source": "sqlite: debit_card_specializing.sqlite (read-only)",
+    "query": "SELECT COUNT(*), COUNT(DISTINCT fld004), MIN(fld004), MAX(fld004), MIN(fld005), MAX(fld005) FROM tab02; SELECT fld006, COUNT(*) FROM tab02 GROUP BY fld006; SELECT fld002, COUNT(*) FROM tab02 GROUP BY fld002",
+    "result": "5716 rows and 5716 distinct fld004 (range 44-5772); fld005 chain identifiers range 1-290. fld006: CZE 4836, SVK 880. fld002: Discount 294, Noname 1005, Other 2392, Premium 1428, Value for money 597. No nulls.",
+    "validation_method": "Cardinality, distinct-value and null profiling.",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "ev_tab03_profile",
+    "source": "sqlite: debit_card_specializing.sqlite (read-only)",
+    "query": "SELECT COUNT(*), COUNT(DISTINCT fld007), COUNT(DISTINCT fld008) FROM tab03; SELECT fld007, fld008 FROM tab03 ORDER BY fld007 LIMIT 12; SELECT COUNT(DISTINCT fld007) FROM tab04",
+    "result": "591 rows and 591 distinct fld007; 591 non-null descriptions. Examples: 'Rucní zadání', 'Nafta', 'Special', 'Super', 'Natural', 'Mix', 'Oleje,tuky'. 28 distinct product ids occur in tab04.",
+    "validation_method": "Cardinality and representative-value inspection.",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "ev_tab04_profile",
+    "source": "sqlite: debit_card_specializing.sqlite (read-only)",
+    "query": "SELECT COUNT(*), COUNT(DISTINCT fld009), COUNT(DISTINCT fld001), COUNT(DISTINCT fld004), COUNT(DISTINCT fld007), COUNT(DISTINCT fld012), MIN(fld010), MAX(fld010), MIN(fld011), MAX(fld011), MIN(fld013), MAX(fld013), MIN(fld014), MAX(fld014) FROM tab04; SELECT COUNT(*) FROM tab04 WHERE fld013=0",
+    "result": "1000 rows; 1000 distinct fld009; 517 customers; 437 stations; 28 products; 902 distinct card identifiers. fld010 text dates 2012-08-23 to 2012-08-26; fld011 text times 00:07:00 to 23:20:00; fld013 0-264 with 91 zeros; fld014 1.76-5762.49 with no nulls.",
+    "validation_method": "Cardinality, range, storage-type and zero-value profiling.",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "ev_tab05_profile",
+    "source": "sqlite: debit_card_specializing.sqlite (read-only)",
+    "query": "SELECT COUNT(*), COUNT(DISTINCT fld001), COUNT(DISTINCT fld010), MIN(fld010), MAX(fld010), MIN(fld015), MAX(fld015), AVG(fld015) FROM tab05; SELECT COUNT(*) FROM tab05 WHERE fld015<0; SELECT COUNT(*) FROM tab05 WHERE fld015=0; SELECT MIN(c), MAX(c), AVG(c) FROM (SELECT fld001, COUNT(*) c FROM tab05 GROUP BY fld001)",
+    "result": "383282 rows; 30566 distinct customers; 21 distinct months from 201112 to 201311; fld015 range -582092.86 to 2052187.11, mean 8911.14; 152 negative rows across 140 customers; 28 zeros; 1-20 rows per customer (average about 12.5).",
+    "validation_method": "Cardinality, range, distribution and data-quality profiling.",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "ev_fk_integrity",
+    "source": "sqlite: debit_card_specializing.sqlite (read-only)",
+    "query": "Orphan checks: tab04.fld001 NOT IN tab01.fld001; tab04.fld004 NOT IN tab02.fld004; tab04.fld007 NOT IN tab03.fld007; tab05.fld001 NOT IN tab01.fld001",
+    "result": "All four orphan counts are 0; transaction and consumption rows consistently reference customers, stations and products in the dimension tables.",
+    "validation_method": "Set-membership referential-integrity check.",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "ev_currency_semantics",
+    "source": "sqlite: debit_card_specializing.sqlite (read-only) and construction workload",
+    "query": "SELECT fld003, COUNT(*) FROM tab01 GROUP BY fld003",
+    "result": "Exactly two values: CZK (30459 customers) and EUR (2002 customers). The construction questions use 'pay in EUR', 'pay in CZK', 'Czech koruna' and 'euros', identifying CZK as Czech koruna and EUR as euro.",
+    "validation_method": "Distinct-value enumeration cross-checked against workload wording.",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "ev_country_semantics",
+    "source": "sqlite: debit_card_specializing.sqlite (read-only) and construction workload",
+    "query": "SELECT fld006, COUNT(*) FROM tab02 GROUP BY fld006",
+    "result": "Exactly two values: CZE (4836 stations) and SVK (880 stations). The construction workload evidence states that Czech Republic is Country 'CZE' and Slovakia is Country 'SVK'.",
+    "validation_method": "Distinct-value enumeration cross-checked against workload evidence.",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "ev_date_time_formats",
+    "source": "sqlite: debit_card_specializing.sqlite (read-only)",
+    "query": "SELECT typeof(fld010), typeof(fld011), MIN(fld010), MAX(fld010), MIN(fld011), MAX(fld011) FROM tab04; SELECT DISTINCT LENGTH(fld010), MIN(fld010), MAX(fld010) FROM tab05",
+    "result": "tab04.fld010 and fld011 are text: dates are 10-character YYYY-MM-DD values from 2012-08-23 to 2012-08-26; times are 8-character HH:MM:SS values from 00:07:00 to 23:20:00. tab05.fld010 is six-character YYYYMM text from 201112 to 201311.",
+    "validation_method": "Storage-type, length and format-range inspection.",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "ev_amount_zero",
+    "source": "sqlite: debit_card_specializing.sqlite (read-only)",
+    "query": "SELECT COUNT(*) FROM tab04 WHERE fld013 = 0",
+    "result": "91 of 1000 transaction lines have quantity 0.",
+    "validation_method": "Conditional row count.",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "ev_avg_unit_price_definition",
+    "source": "construction workload question 1531 and sqlite column profile",
+    "query": "Column profile of tab04.fld013 (quantity) and tab04.fld014 (price)",
+    "result": "The workload evidence defines average price per single item as total fld014 divided by total fld013. fld013 is an integer quantity (0-264, 91 zeros) and fld014 is a real price (1.76-5762.49).",
+    "validation_method": "Workload definition cross-checked against column profiles.",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "ev_customer_spending_definition",
+    "source": "construction workload question 1531 and sqlite column profile",
+    "query": "Column profile of tab04.fld001 (customer) and tab04.fld014 (price)",
+    "result": "tab04.fld001 identifies the customer of each transaction line, tab04.fld014 holds the line price, and every customer identifier resolves to tab01. Customer spending is therefore summable per customer.",
+    "validation_method": "Workload requirement cross-checked against column roles and referential integrity.",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "ev_transaction_scope",
+    "source": "sqlite: debit_card_specializing.sqlite (read-only)",
+    "query": "SELECT fld010, COUNT(*) FROM tab04 GROUP BY fld010 ORDER BY fld010",
+    "result": "2012-08-23: 10 rows; 2012-08-24: 492; 2012-08-25: 425; 2012-08-26: 73. No rows exist outside August 2012, so the transaction table has no 2013 coverage.",
+    "validation_method": "Date-grouped row counts.",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "ev_consumption_scope",
+    "source": "sqlite: debit_card_specializing.sqlite (read-only)",
+    "query": "SELECT COUNT(DISTINCT fld010), MIN(fld010), MAX(fld010), COUNT(DISTINCT fld001) FROM tab05; SELECT COUNT(*) FROM tab01",
+    "result": "21 distinct months from 201112 to 201311; 30566 customers with consumption records versus 32461 customers in tab01, so 1895 customers have no monthly record.",
+    "validation_method": "Coverage comparison between tab05 and tab01.",
+    "timestamp": "2026-11-06"
+  }
+]

@@ -1,0 +1,141 @@
+{
+ "db_id": "codebase_community",
+ "questions": [
+  {
+   "question_id": 571,
+   "db_id": "codebase_community",
+   "question": "For the user No.24, how many times is the number of his/her posts compared to his/her votes?",
+   "evidence": "user no. 24 refers to UserId = OwnerUserId = '24'; times of his/her post than votes = Divide (Count(post.Id), Count(votes.Id))",
+   "SQL": "SELECT CAST(COUNT(DISTINCT T2.Id) AS REAL) / COUNT(DISTINCT T1.Id) FROM votes AS T1 INNER JOIN posts AS T2 ON T1.UserId = T2.OwnerUserId WHERE T1.UserId = 24",
+   "difficulty": "moderate"
+  },
+  {
+   "question_id": 576,
+   "db_id": "codebase_community",
+   "question": "Name the user that commented 'thank you user93!'",
+   "evidence": "\"thank you user93\" is the Text of comment; user refers to DisplayName",
+   "SQL": "SELECT T1.DisplayName FROM users AS T1 INNER JOIN comments AS T2 ON T1.Id = T2.UserId WHERE T2.Text = 'thank you user93!'",
+   "difficulty": "simple"
+  },
+  {
+   "question_id": 549,
+   "db_id": "codebase_community",
+   "question": "From which post is the tag \"bayesian\" excerpted from? Please give the body of the post.",
+   "evidence": "\"bayesian\" is the TagName; excerpt from refers to ExcerptPostId",
+   "SQL": "SELECT T2.Body FROM tags AS T1 INNER JOIN posts AS T2 ON T2.Id = T1.ExcerptPostId WHERE T1.TagName = 'bayesian'",
+   "difficulty": "simple"
+  },
+  {
+   "question_id": 604,
+   "db_id": "codebase_community",
+   "question": "What is the average of the up votes and the average user age for users creating more than 10 posts?",
+   "evidence": "creating more than 10 post refers to Count (UserId) > 10; average of the up votes = Divide (Sum(UpVotes), Count (UserId)); average age = Divide (Sum(Age), Count(UserId))",
+   "SQL": "SELECT AVG(T1.UpVotes), AVG(T1.Age) FROM users AS T1 INNER JOIN ( SELECT OwnerUserId, COUNT(*) AS post_count FROM posts GROUP BY OwnerUserId HAVING post_count > 10) AS T2 ON T1.Id = T2.OwnerUserId",
+   "difficulty": "moderate"
+  },
+  {
+   "question_id": 587,
+   "db_id": "codebase_community",
+   "question": "Calculate the average view count of each post tagged as 'humor' and list the title and the comment of each post.",
+   "evidence": "tagged as  'humor' refers to tag = '<humor>'; comment of the post refers to Text; average view count = AVG(ViewCount)",
+   "SQL": "SELECT AVG(T2.ViewCount), T2.Title, T1.Text FROM comments AS T1 INNER JOIN posts AS T2 ON T2.Id = T1.PostId  WHERE T2.Tags = '<humor>' GROUP BY T2.Title, T1.Text ",
+   "difficulty": "moderate"
+  },
+  {
+   "question_id": 544,
+   "db_id": "codebase_community",
+   "question": "What is the display name of the user who last edited the post \"Examples for teaching: Correlation does not mean causation\"?",
+   "evidence": "\"Examples for teaching: Correlation does not mean causation\" is the Title of post; user who last edited refers to LastEditorUserId",
+   "SQL": "SELECT T2.DisplayName FROM posts AS T1 INNER JOIN users AS T2 ON T1.LastEditorUserId = T2.Id WHERE T1.Title = 'Examples for teaching: Correlation does not mean causation'",
+   "difficulty": "moderate"
+  },
+  {
+   "question_id": 567,
+   "db_id": "codebase_community",
+   "question": "For the user with the display name of \"Tiago Pasqualini\", how many posts did he/she own?",
+   "evidence": "\"Tiago Pasqualini\" is the DisplayName;",
+   "SQL": "SELECT COUNT(T1.Id) FROM users AS T1 INNER JOIN posts AS T2 ON T1.Id = T2.OwnerUserId WHERE T1.DisplayName = 'Tiago Pasqualini'",
+   "difficulty": "simple"
+  },
+  {
+   "question_id": 637,
+   "db_id": "codebase_community",
+   "question": "State all the tags used by Mark Meckes in his posts that doesn't have comments.",
+   "evidence": "used by Mark Meckes refers to DisplayName = 'Mark Meckes'; Doen't have comments refers to CommentCount = 0;",
+   "SQL": "SELECT T3.Tags FROM users AS T1 INNER JOIN postHistory AS T2 ON T1.Id = T2.UserId INNER JOIN posts AS T3 ON T3.Id = T2.PostId WHERE T1.DisplayName = 'Mark Meckes' AND T3.CommentCount = 0",
+   "difficulty": "moderate"
+  },
+  {
+   "question_id": 682,
+   "db_id": "codebase_community",
+   "question": "Which is the most valuable post in 2010? Please give its id and the owner's display name.",
+   "evidence": "the most valuable post in 2010 refers to MAX(FavoriteCount) where year(CreationDate) = 2010;",
+   "SQL": "SELECT T2.OwnerUserId, T1.DisplayName FROM users AS T1 INNER JOIN posts AS T2 ON T1.Id = T2.OwnerUserId WHERE STRFTIME('%Y', T1.CreationDate) = '2010' ORDER BY T2.FavoriteCount DESC LIMIT 1",
+   "difficulty": "moderate"
+  },
+  {
+   "question_id": 533,
+   "db_id": "codebase_community",
+   "question": "How many users last accessed the website after 2014/9/1?",
+   "evidence": "last accessed after 2014/9/1 refers to LastAccessDate > '2014-09-01'",
+   "SQL": "SELECT COUNT(Id) FROM users WHERE date(LastAccessDate) > '2014-09-01'",
+   "difficulty": "simple"
+  },
+  {
+   "question_id": 532,
+   "db_id": "codebase_community",
+   "question": "Please list the display names of all the users whose accounts were created in the year 2011.",
+   "evidence": "account created in the year 2011 refers to year(CreationDate) = 2011",
+   "SQL": "SELECT DisplayName FROM users WHERE STRFTIME('%Y', CreationDate) = '2011'",
+   "difficulty": "simple"
+  },
+  {
+   "question_id": 707,
+   "db_id": "codebase_community",
+   "question": "Among the posts with views ranging from 100 to 150, what is the comment with the highest score?",
+   "evidence": "views ranging from 100 to 150 refers to ViewCount BETWEEN 100 and 150; comment with the highest score refers to Text where MAX(Score);",
+   "SQL": "SELECT Text FROM comments WHERE PostId IN ( SELECT Id FROM posts WHERE ViewCount BETWEEN 100 AND 150 ) ORDER BY Score DESC LIMIT 1",
+   "difficulty": "moderate"
+  },
+  {
+   "question_id": 573,
+   "db_id": "codebase_community",
+   "question": "Write the contents of comments with a score of 17.",
+   "evidence": "score of 17 refers to Score = 17; contents of comments refers to Text",
+   "SQL": "SELECT Text FROM comments WHERE Score = 17",
+   "difficulty": "simple"
+  },
+  {
+   "question_id": 665,
+   "db_id": "codebase_community",
+   "question": "What is the average monthly number of links created in 2010 for posts that have no more than 2 answers?",
+   "evidence": "calculation = DIVIDE(COUNT(Id where YEAR(CreationDate) = 2010 and AnswerCount < = 2), 12)",
+   "SQL": "SELECT CAST(COUNT(T1.Id) AS REAL) / 12 FROM postLinks AS T1 INNER JOIN posts AS T2 ON T1.PostId = T2.Id WHERE T2.AnswerCount <= 2 AND STRFTIME('%Y', T1.CreationDate) = '2010'",
+   "difficulty": "moderate"
+  },
+  {
+   "question_id": 678,
+   "db_id": "codebase_community",
+   "question": "Which post by Harvey Motulsky has the most views? Please give the id and title of this post.",
+   "evidence": "DisplayName = 'Harvey Motulsky'; the most views refer to MAX(ViewCount);",
+   "SQL": "SELECT T2.Id, T2.Title FROM users AS T1 INNER JOIN posts AS T2 ON T1.Id = T2.OwnerUserId WHERE T1.DisplayName = 'Harvey Motulsky' ORDER BY T2.ViewCount DESC LIMIT 1",
+   "difficulty": "simple"
+  },
+  {
+   "question_id": 710,
+   "db_id": "codebase_community",
+   "question": "In posts with 1 comment, how many of the comments have 0 score?",
+   "evidence": "in posts with 1 comment refers to CommentCount = 1;",
+   "SQL": "SELECT COUNT(T1.id) FROM comments AS T1 INNER JOIN posts AS T2 ON T1.PostId = T2.Id WHERE T2.CommentCount = 1 AND T2.Score = 0",
+   "difficulty": "simple"
+  },
+  {
+   "question_id": 598,
+   "db_id": "codebase_community",
+   "question": "What is the percentage difference of student badges given during 2010 and 2011?",
+   "evidence": "student badges refers to badge's name = 'Student'; during 2010 refers to Year(Date) = 2010; during 2011 refers to Year(Date) = 2011; percentage difference = Subtract (Divide(Count(Name where Year(Date) = 2010), Count (Name)) *100, Divide(Count(Name where Year(Date) = 2011), Count(Name)) * 100)",
+   "SQL": "SELECT CAST(SUM(IIF(STRFTIME('%Y', Date) = '2010', 1, 0)) AS REAL) * 100 / COUNT(Id) - CAST(SUM(IIF(STRFTIME('%Y', Date) = '2011', 1, 0)) AS REAL) * 100 / COUNT(Id) FROM badges WHERE Name = 'Student'",
+   "difficulty": "challenging"
+  }
+ ]
+}

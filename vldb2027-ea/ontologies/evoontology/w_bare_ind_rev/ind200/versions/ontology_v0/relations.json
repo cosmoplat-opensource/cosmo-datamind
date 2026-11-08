@@ -1,0 +1,1257 @@
+[
+  {
+    "id": "rel_doc_sales_order__doc_sales_order_line",
+    "source": "doc_sales_order",
+    "relation_type": "composition",
+    "target": "doc_sales_order_line",
+    "connection_condition": "fact_sales_order_line.order_id 引用 fact_sales_order.order_id",
+    "description": "销售订单由多条订单明细组成；明细不能脱离订单头存在（外键孤儿行 0）。",
+    "evidence": [
+      "ev_fk_integrity"
+    ]
+  },
+  {
+    "id": "rel_doc_transfer_order__doc_transfer_order_line",
+    "source": "doc_transfer_order",
+    "relation_type": "composition",
+    "target": "doc_transfer_order_line",
+    "connection_condition": "fact_transfer_order_line.transfer_order_id 引用 fact_transfer_order.transfer_order_id",
+    "description": "库存调拨单由多条调拨明细组成。",
+    "evidence": [
+      "ev_fk_integrity"
+    ]
+  },
+  {
+    "id": "rel_doc_advance_shipping_notice__doc_asn_line",
+    "source": "doc_advance_shipping_notice",
+    "relation_type": "composition",
+    "target": "doc_asn_line",
+    "connection_condition": "fact_asn_line.advance_shipping_notice_id 引用 fact_advance_shipping_notice.advance_shipping_notice_id",
+    "description": "到货预告由多条预告明细组成（1017 行明细全部可回溯）。",
+    "evidence": [
+      "ev_shipping_docs"
+    ]
+  },
+  {
+    "id": "rel_doc_shipment__doc_shipment_line",
+    "source": "doc_shipment",
+    "relation_type": "composition",
+    "target": "doc_shipment_line",
+    "connection_condition": "fact_shipment_line.shipment_id 引用 fact_shipment.shipment_id",
+    "description": "发运单由多条发运明细组成。",
+    "evidence": [
+      "ev_fk_integrity"
+    ]
+  },
+  {
+    "id": "rel_doc_invoice__doc_tax_invoice_line",
+    "source": "doc_invoice",
+    "relation_type": "composition",
+    "target": "doc_tax_invoice_line",
+    "connection_condition": "fact_tax_invoice_line.invoice_id 引用 fact_invoice.invoice_id",
+    "description": "发票头由多条税务发票明细组成。",
+    "evidence": [
+      "ev_fk_integrity"
+    ]
+  },
+  {
+    "id": "rel_doc_inspection_lot__doc_inspection_result",
+    "source": "doc_inspection_lot",
+    "relation_type": "composition",
+    "target": "doc_inspection_result",
+    "connection_condition": "fact_inspection_result.inspection_lot_id 引用 fact_inspection_lot.inspection_lot_id",
+    "description": "检验批由多条检验结果行组成。",
+    "evidence": [
+      "ev_fk_integrity"
+    ]
+  },
+  {
+    "id": "rel_doc_production_order__doc_production_output",
+    "source": "doc_production_order",
+    "relation_type": "composition",
+    "target": "doc_production_output",
+    "connection_condition": "fact_production_output.order_id 引用 fact_production_order.order_id",
+    "description": "生产工单产生多条产出记录。",
+    "evidence": [
+      "ev_fk_integrity"
+    ]
+  },
+  {
+    "id": "rel_doc_production_order__doc_wip_snapshot",
+    "source": "doc_production_order",
+    "relation_type": "composition",
+    "target": "doc_wip_snapshot",
+    "connection_condition": "fact_wip_snapshot.order_id 引用 fact_production_order.order_id",
+    "description": "生产工单对应多条在制品快照。",
+    "evidence": [
+      "ev_fk_integrity"
+    ]
+  },
+  {
+    "id": "rel_doc_production_order__doc_material_consumption",
+    "source": "doc_production_order",
+    "relation_type": "composition",
+    "target": "doc_material_consumption",
+    "connection_condition": "fact_material_consumption.order_id 引用 fact_production_order.order_id",
+    "description": "生产工单对应多条投料/领料记录。",
+    "evidence": [
+      "ev_fk_integrity"
+    ]
+  },
+  {
+    "id": "rel_doc_production_order__doc_scrap_event",
+    "source": "doc_production_order",
+    "relation_type": "composition",
+    "target": "doc_scrap_event",
+    "connection_condition": "fact_scrap_event.order_id 引用 fact_production_order.order_id",
+    "description": "生产工单对应多条报废事件。",
+    "evidence": [
+      "ev_fk_integrity"
+    ]
+  },
+  {
+    "id": "rel_doc_production_order__doc_rework_order",
+    "source": "doc_production_order",
+    "relation_type": "composition",
+    "target": "doc_rework_order",
+    "connection_condition": "fact_rework_order.order_id 引用 fact_production_order.order_id",
+    "description": "生产工单对应多张返工单。",
+    "evidence": [
+      "ev_fk_integrity"
+    ]
+  },
+  {
+    "id": "rel_doc_production_order__doc_labor_booking",
+    "source": "doc_production_order",
+    "relation_type": "composition",
+    "target": "doc_labor_booking",
+    "connection_condition": "fact_labor_booking.order_id 引用 fact_production_order.order_id",
+    "description": "生产工单对应多条报工记录。",
+    "evidence": [
+      "ev_fk_integrity"
+    ]
+  },
+  {
+    "id": "rel_doc_production_order__doc_tool_usage",
+    "source": "doc_production_order",
+    "relation_type": "composition",
+    "target": "doc_tool_usage",
+    "connection_condition": "fact_tool_usage.order_id 引用 fact_production_order.order_id",
+    "description": "生产工单对应多条工装使用记录。",
+    "evidence": [
+      "ev_fk_integrity"
+    ]
+  },
+  {
+    "id": "rel_doc_sales_order__doc_return",
+    "source": "doc_sales_order",
+    "relation_type": "composition",
+    "target": "doc_return",
+    "connection_condition": "fact_return.order_id 引用 fact_sales_order.order_id",
+    "description": "销售订单对应退货记录。",
+    "evidence": [
+      "ev_return_reason"
+    ]
+  },
+  {
+    "id": "rel_doc_sales_order__doc_customer_complaint",
+    "source": "doc_sales_order",
+    "relation_type": "composition",
+    "target": "doc_customer_complaint",
+    "connection_condition": "fact_customer_complaint.order_id 引用 fact_sales_order.order_id",
+    "description": "销售订单可关联客户投诉。",
+    "evidence": [
+      "ev_disposition"
+    ]
+  },
+  {
+    "id": "rel_doc_sales_order_line__doc_shipment_line",
+    "source": "doc_sales_order_line",
+    "relation_type": "composition",
+    "target": "doc_shipment_line",
+    "connection_condition": "fact_shipment_line.sales_order_line_id 引用 fact_sales_order_line.sales_order_line_id",
+    "description": "发运明细是销售订单明细的履约子记录。",
+    "evidence": [
+      "ev_fk_integrity"
+    ]
+  },
+  {
+    "id": "rel_doc_purchase_order__doc_po_line",
+    "source": "doc_purchase_order",
+    "relation_type": "composition",
+    "target": "doc_po_line",
+    "connection_condition": "fact_po_line.po_id 引用 fact_purchase_order.po_id",
+    "description": "采购订单由多条订单行组成。",
+    "evidence": [
+      "ev_fk_integrity"
+    ]
+  },
+  {
+    "id": "rel_doc_safety_training__doc_training_attendance",
+    "source": "doc_safety_training",
+    "relation_type": "composition",
+    "target": "doc_training_attendance",
+    "connection_condition": "fact_training_attendance.training_id 引用 fact_safety_training.training_id",
+    "description": "安全培训场次由多条签到记录组成。",
+    "evidence": [
+      "ev_fk_integrity"
+    ]
+  },
+  {
+    "id": "rel_doc_payment__doc_ar_aging",
+    "source": "doc_payment",
+    "relation_type": "composition",
+    "target": "doc_ar_aging",
+    "connection_condition": "fact_payment.ar_id 引用 fact_ar_aging.ar_id",
+    "description": "收款流水是应收账款账龄记录下的收款项（孤儿行 0）。",
+    "evidence": [
+      "ev_fk_integrity"
+    ]
+  },
+  {
+    "id": "rel_dim_workshop__dim_production_line",
+    "source": "dim_workshop",
+    "relation_type": "composition",
+    "target": "dim_production_line",
+    "connection_condition": "dim_production_line.workshop_id 引用 dim_workshop.workshop_id",
+    "description": "车间由多条产线组成；产线的车间归属是分析“某车间的单据”的唯一路径。",
+    "evidence": [
+      "ev_fk_integrity"
+    ]
+  },
+  {
+    "id": "rel_dim_product_line__dim_product",
+    "source": "dim_product_line",
+    "relation_type": "composition",
+    "target": "dim_product",
+    "connection_condition": "dim_product.prod_line_id 引用 dim_product_line.prod_line_id",
+    "description": "产品线由多个产品组成；产品必须归属产品线。",
+    "evidence": [
+      "ev_fk_integrity"
+    ]
+  },
+  {
+    "id": "rel_dim_business_unit__dim_cost_center",
+    "source": "dim_business_unit",
+    "relation_type": "composition",
+    "target": "dim_cost_center",
+    "connection_condition": "dim_cost_center.bu_id 引用 dim_business_unit.bu_id",
+    "description": "事业部由多个成本中心构成。",
+    "evidence": [
+      "ev_fk_integrity"
+    ]
+  },
+  {
+    "id": "rel_dim_business_unit__dim_profit_center",
+    "source": "dim_business_unit",
+    "relation_type": "composition",
+    "target": "dim_profit_center",
+    "connection_condition": "dim_profit_center.bu_id 引用 dim_business_unit.bu_id",
+    "description": "事业部由多个利润中心构成。",
+    "evidence": [
+      "ev_fk_integrity"
+    ]
+  },
+  {
+    "id": "rel_dim_production_line__dim_equipment",
+    "source": "dim_production_line",
+    "relation_type": "composition",
+    "target": "dim_equipment",
+    "connection_condition": "dim_equipment.line_id 引用 dim_production_line.line_id",
+    "description": "产线由多台设备组成。",
+    "evidence": [
+      "ev_fk_integrity"
+    ]
+  },
+  {
+    "id": "rel_dim_material_category__dim_material",
+    "source": "dim_material_category",
+    "relation_type": "composition",
+    "target": "dim_material",
+    "connection_condition": "dim_material.category_id 引用 dim_material_category.category_id",
+    "description": "物料分类下辖多个物料。",
+    "evidence": [
+      "ev_material_category"
+    ]
+  },
+  {
+    "id": "rel_dim_material__dim_material_category",
+    "source": "dim_material",
+    "relation_type": "hierarchy",
+    "target": "dim_material_category",
+    "connection_condition": "",
+    "description": "每种物料是某个物料分类的实例（如 PP均聚 T30S is-a 树脂类物料），物料取值的值域是分类值域的子集。",
+    "evidence": [
+      "ev_material_category"
+    ]
+  },
+  {
+    "id": "rel_dim_hazard__cat_hazard_category",
+    "source": "dim_hazard",
+    "relation_type": "hierarchy",
+    "target": "cat_hazard_category",
+    "connection_condition": "",
+    "description": "每个危险源是某个危险类别的实例（如 熔体高温烫伤 is-a 物理性危险源）。",
+    "evidence": [
+      "ev_hazard"
+    ]
+  },
+  {
+    "id": "rel_metric_amount__attr_total_amount",
+    "source": "metric_amount",
+    "relation_type": "equivalence",
+    "target": "attr_total_amount",
+    "connection_condition": "fact_purchase_order.total_amount 与标准模板的 amount/local_amount 同属金额概念，仅命名与粒度不同（订单头 vs 单据行）",
+    "description": "采购类表把金额列命名为 total_amount，标准模板表命名为 amount；分析金额时需把两者视为同一概念的不同物理列。",
+    "evidence": [
+      "ev_naming_variants"
+    ]
+  },
+  {
+    "id": "rel_attr_hazard_type__cat_hazard_category",
+    "source": "attr_hazard_type",
+    "relation_type": "equivalence",
+    "target": "cat_hazard_category",
+    "connection_condition": "fact_hazard_observation.hazard_type 与 dim_hazard.hazard_category 取值域一致",
+    "description": "危险类型既作为事实表上的文本列，也作为危险源主数据的类别列存在，两者表达同一概念。",
+    "evidence": [
+      "ev_hazard"
+    ]
+  },
+  {
+    "id": "rel_attr_reason_code__dim_reason_code_master",
+    "source": "attr_reason_code",
+    "relation_type": "equivalence",
+    "target": "dim_reason_code_master",
+    "connection_condition": "事实表 reason_code 列取值等于 dim_reason_code.code",
+    "description": "单据上的原因码列与原因码主数据 code 属于同一编码体系，需经主数据翻译成中文名称。",
+    "evidence": [
+      "ev_reason_code"
+    ]
+  },
+  {
+    "id": "rel_metric_exchange_rate__dim_currency",
+    "source": "metric_exchange_rate",
+    "relation_type": "equivalence",
+    "target": "dim_currency",
+    "connection_condition": "dim_currency.rate_to_cny 与事实表 exchange_rate 表达同一折算关系",
+    "description": "汇率既可从单据行读取，也可从币种主数据取得本位币折算率快照（CNY=1.0）。",
+    "evidence": [
+      "ev_currency",
+      "ev_deriv_local"
+    ]
+  },
+  {
+    "id": "rel_dim_downtime_reason__attr_downtime_reason",
+    "source": "dim_downtime_reason",
+    "relation_type": "equivalence",
+    "target": "attr_downtime_reason",
+    "connection_condition": "",
+    "description": "停机原因存在两套表达：主数据 dim_downtime_reason 为编码字典，设备运行记录 downtime_reason 为中文本地化文本，语义等价但取值形态不同。",
+    "evidence": [
+      "ev_downtime_reason"
+    ]
+  },
+  {
+    "id": "rel_metric_amount__metric_local_amount",
+    "source": "metric_amount",
+    "relation_type": "derivation",
+    "target": "metric_local_amount",
+    "connection_condition": "local_amount = amount × exchange_rate",
+    "description": "本位币金额由单据金额按汇率折算得到（fact_rework_order 与 fact_sales_order_line 全量验证成立）。",
+    "evidence": [
+      "ev_deriv_local"
+    ]
+  },
+  {
+    "id": "rel_metric_unit_price__metric_amount",
+    "source": "metric_unit_price",
+    "relation_type": "derivation",
+    "target": "metric_amount",
+    "connection_condition": "amount = unit_price × quantity",
+    "description": "单据金额由单价与数量相乘得到（fact_sales_order_line 5373/5373 行成立）。",
+    "evidence": [
+      "ev_deriv_amount"
+    ]
+  },
+  {
+    "id": "rel_metric_quantity__metric_base_quantity",
+    "source": "metric_quantity",
+    "relation_type": "derivation",
+    "target": "metric_base_quantity",
+    "connection_condition": "base_quantity = quantity × 单位换算系数；当单据计量单位为基本单位时两者相等",
+    "description": "基本单位数量是按物料基本计量单位换算后的数量（fact_tool_usage 中两者合计均为 8790）。",
+    "evidence": [
+      "ev_deriv_base_qty"
+    ]
+  },
+  {
+    "id": "rel_metric_actual_quantity__metric_rejected_quantity",
+    "source": "metric_actual_quantity",
+    "relation_type": "derivation",
+    "target": "metric_rejected_quantity",
+    "connection_condition": "rejected_quantity ≈ actual_quantity − qualified_quantity（表级约束要求 qualified + rejected ≤ actual）",
+    "description": "不合格数量可由实际数量与合格数量之差口径理解，用于报废/让步场景的缺口分析。",
+    "evidence": [
+      "ev_fact_template"
+    ]
+  },
+  {
+    "id": "rel_doc_sales_order__dim_agg_daily",
+    "source": "doc_sales_order",
+    "relation_type": "derivation",
+    "target": "dim_agg_daily",
+    "connection_condition": "DWS_IN_SALES_DAILY.order_count / undelivered_order_count 由销售订单按日期与员工聚合得到",
+    "description": "日汇总表是事实表的派生口径，可用于快速取“按天/按人”的订单量，但会丢失订单行级细节。",
+    "evidence": [
+      "ev_dws_family"
+    ]
+  },
+  {
+    "id": "rel_doc_sales_order_line__dim_product",
+    "source": "doc_sales_order_line",
+    "relation_type": "association",
+    "target": "dim_product",
+    "connection_condition": "fact_sales_order_line.prod_id 对应 dim_product.prod_id",
+    "description": "销售订单明细指向所售产品；产品再指向产品线，是“按产品线统计订单”的两跳路径。",
+    "evidence": [
+      "ev_fk_integrity"
+    ]
+  },
+  {
+    "id": "rel_doc_sales_order__dim_customer",
+    "source": "doc_sales_order",
+    "relation_type": "association",
+    "target": "dim_customer",
+    "connection_condition": "fact_sales_order.cust_id 对应 dim_customer.cust_id",
+    "description": "销售订单归属客户。",
+    "evidence": [
+      "ev_fk_integrity"
+    ]
+  },
+  {
+    "id": "rel_doc_sales_order__dim_employee",
+    "source": "doc_sales_order",
+    "relation_type": "association",
+    "target": "dim_employee",
+    "connection_condition": "fact_sales_order.emp_id 对应 dim_employee.emp_id",
+    "description": "销售订单归属业务员。",
+    "evidence": [
+      "ev_fk_integrity"
+    ]
+  },
+  {
+    "id": "rel_doc_production_order__dim_product",
+    "source": "doc_production_order",
+    "relation_type": "association",
+    "target": "dim_product",
+    "connection_condition": "fact_production_order.prod_id 对应 dim_product.prod_id",
+    "description": "生产工单生产某产品；产品线口径需经此关联。",
+    "evidence": [
+      "ev_fk_integrity"
+    ]
+  },
+  {
+    "id": "rel_doc_production_order__dim_production_line",
+    "source": "doc_production_order",
+    "relation_type": "association",
+    "target": "dim_production_line",
+    "connection_condition": "fact_production_order.line_id 对应 dim_production_line.line_id",
+    "description": "生产工单在产线上执行；车间口径需再经产线关联。",
+    "evidence": [
+      "ev_fk_integrity"
+    ]
+  },
+  {
+    "id": "rel_doc_production_output__dim_product",
+    "source": "doc_production_output",
+    "relation_type": "association",
+    "target": "dim_product",
+    "connection_condition": "经 fact_production_output.order_id → fact_production_order.prod_id 间接关联（无直接外键）",
+    "description": "产出记录本身不含产品列，需经生产工单间接得到产品。",
+    "evidence": [
+      "ev_fk_integrity"
+    ]
+  },
+  {
+    "id": "rel_doc_production_output__doc_production_order",
+    "source": "doc_production_output",
+    "relation_type": "association",
+    "target": "doc_production_order",
+    "connection_condition": "fact_production_output.order_id 对应 fact_production_order.order_id",
+    "description": "产出记录归属生产工单。",
+    "evidence": [
+      "ev_fk_integrity"
+    ]
+  },
+  {
+    "id": "rel_doc_safety_audit__dim_workshop",
+    "source": "doc_safety_audit",
+    "relation_type": "association",
+    "target": "dim_workshop",
+    "connection_condition": "fact_safety_audit.workshop_id 对应 dim_workshop.workshop_id",
+    "description": "安全审计针对具体车间。",
+    "evidence": [
+      "ev_fk_integrity"
+    ]
+  },
+  {
+    "id": "rel_doc_condition_monitoring__dim_sensor",
+    "source": "doc_condition_monitoring",
+    "relation_type": "association",
+    "target": "dim_sensor",
+    "connection_condition": "fact_condition_monitoring.sensor_id 对应 dim_sensor.sensor_id",
+    "description": "状态监测读数归属传感器。",
+    "evidence": [
+      "ev_fk_integrity"
+    ]
+  },
+  {
+    "id": "rel_doc_condition_monitoring__dim_equipment",
+    "source": "doc_condition_monitoring",
+    "relation_type": "association",
+    "target": "dim_equipment",
+    "connection_condition": "fact_condition_monitoring.equipment_id 对应 dim_equipment.equipment_id",
+    "description": "状态监测读数归属设备。",
+    "evidence": [
+      "ev_fk_integrity"
+    ]
+  },
+  {
+    "id": "rel_doc_predictive_alert__dim_sensor",
+    "source": "doc_predictive_alert",
+    "relation_type": "association",
+    "target": "dim_sensor",
+    "connection_condition": "fact_predictive_alert.sensor_id 对应 dim_sensor.sensor_id",
+    "description": "预测性维护告警归属传感器。",
+    "evidence": [
+      "ev_fk_integrity"
+    ]
+  },
+  {
+    "id": "rel_doc_lot_trace__dim_material",
+    "source": "doc_lot_trace",
+    "relation_type": "association",
+    "target": "dim_material",
+    "connection_condition": "fact_lot_trace.material_id 对应 dim_material.material_id",
+    "description": "批次追溯记录针对具体物料。",
+    "evidence": [
+      "ev_fk_integrity"
+    ]
+  },
+  {
+    "id": "rel_doc_material_consumption__dim_material",
+    "source": "doc_material_consumption",
+    "relation_type": "association",
+    "target": "dim_material",
+    "connection_condition": "fact_material_consumption.material_id 对应 dim_material.material_id",
+    "description": "投料记录针对具体原材料。",
+    "evidence": [
+      "ev_fk_integrity"
+    ]
+  },
+  {
+    "id": "rel_doc_payment_out__doc_ap",
+    "source": "doc_payment_out",
+    "relation_type": "association",
+    "target": "doc_ap",
+    "connection_condition": "fact_payment_out.ap_id 对应 fact_ap.ap_id",
+    "description": "付款流水是应付账款下的付款。",
+    "evidence": [
+      "ev_fk_integrity"
+    ]
+  },
+  {
+    "id": "rel_doc_ap__dim_supplier",
+    "source": "doc_ap",
+    "relation_type": "association",
+    "target": "dim_supplier",
+    "connection_condition": "fact_ap.supplier_id 对应 dim_supplier.supplier_id",
+    "description": "应付账款归属供应商，是“供应商→付款笔数”链路的中间环节。",
+    "evidence": [
+      "ev_fk_integrity"
+    ]
+  },
+  {
+    "id": "rel_doc_po_line__dim_material",
+    "source": "doc_po_line",
+    "relation_type": "association",
+    "target": "dim_material",
+    "connection_condition": "fact_po_line.material_id 对应 dim_material.material_id",
+    "description": "采购订单行针对具体物料。",
+    "evidence": [
+      "ev_fk_integrity"
+    ]
+  },
+  {
+    "id": "rel_doc_purchase_order__dim_supplier",
+    "source": "doc_purchase_order",
+    "relation_type": "association",
+    "target": "dim_supplier",
+    "connection_condition": "fact_purchase_order.supplier_id 对应 dim_supplier.supplier_id",
+    "description": "采购订单归属供应商。",
+    "evidence": [
+      "ev_fk_integrity"
+    ]
+  },
+  {
+    "id": "rel_doc_supplier_contract_line__dim_material",
+    "source": "doc_supplier_contract_line",
+    "relation_type": "association",
+    "target": "dim_material",
+    "connection_condition": "fact_supplier_contract_line.material_id 对应 dim_material.material_id",
+    "description": "供应商合同行针对具体物料。",
+    "evidence": [
+      "ev_fk_integrity"
+    ]
+  },
+  {
+    "id": "rel_doc_advance_shipping_notice__dim_supplier",
+    "source": "doc_advance_shipping_notice",
+    "relation_type": "association",
+    "target": "dim_supplier",
+    "connection_condition": "fact_advance_shipping_notice.supplier_id 对应 dim_supplier.supplier_id",
+    "description": "到货预告由供应商发出。",
+    "evidence": [
+      "ev_shipping_docs"
+    ]
+  },
+  {
+    "id": "rel_doc_supplier_quality_issue__dim_supplier",
+    "source": "doc_supplier_quality_issue",
+    "relation_type": "association",
+    "target": "dim_supplier",
+    "connection_condition": "fact_supplier_quality_issue.supplier_id 对应 dim_supplier.supplier_id",
+    "description": "供应商质量问题归属供应商。",
+    "evidence": [
+      "ev_fk_integrity"
+    ]
+  },
+  {
+    "id": "rel_doc_supplier_quality_issue__dim_material",
+    "source": "doc_supplier_quality_issue",
+    "relation_type": "association",
+    "target": "dim_material",
+    "connection_condition": "fact_supplier_quality_issue.material_id 对应 dim_material.material_id",
+    "description": "供应商质量问题针对具体物料。",
+    "evidence": [
+      "ev_fk_integrity"
+    ]
+  },
+  {
+    "id": "rel_doc_gl_entry__dim_cost_center",
+    "source": "doc_gl_entry",
+    "relation_type": "association",
+    "target": "dim_cost_center",
+    "connection_condition": "fact_gl_entry.cc_id 对应 dim_cost_center.cc_id",
+    "description": "总账凭证归属成本中心。",
+    "evidence": [
+      "ev_fk_integrity"
+    ]
+  },
+  {
+    "id": "rel_doc_cash_flow__dim_customer",
+    "source": "doc_cash_flow",
+    "relation_type": "association",
+    "target": "dim_customer",
+    "connection_condition": "fact_cash_flow.cust_id 对应 dim_customer.cust_id",
+    "description": "现金流记录可归属客户。",
+    "evidence": [
+      "ev_fk_integrity"
+    ]
+  },
+  {
+    "id": "rel_doc_cost_allocation__dim_cost_center",
+    "source": "doc_cost_allocation",
+    "relation_type": "association",
+    "target": "dim_cost_center",
+    "connection_condition": "fact_cost_allocation.source_cc_id 对应 dim_cost_center.cc_id",
+    "description": "成本分摊的来源成本中心。",
+    "evidence": [
+      "ev_business_unit"
+    ]
+  },
+  {
+    "id": "rel_doc_cost_allocation__dim_profit_center",
+    "source": "doc_cost_allocation",
+    "relation_type": "association",
+    "target": "dim_profit_center",
+    "connection_condition": "fact_cost_allocation.target_pc_id 对应 dim_profit_center.pc_id",
+    "description": "成本分摊的目标利润中心；“特种材料事业部的成本分摊”需经利润中心或成本中心回到事业部。",
+    "evidence": [
+      "ev_business_unit"
+    ]
+  },
+  {
+    "id": "rel_doc_capex_project_cost__dim_project",
+    "source": "doc_capex_project_cost",
+    "relation_type": "association",
+    "target": "dim_project",
+    "connection_condition": "fact_capex_project_cost.project_id 对应 dim_project.project_id",
+    "description": "资本项目成本归属项目。",
+    "evidence": [
+      "ev_fk_integrity"
+    ]
+  },
+  {
+    "id": "rel_doc_product_cost__dim_product",
+    "source": "doc_product_cost",
+    "relation_type": "association",
+    "target": "dim_product",
+    "connection_condition": "fact_product_cost.product_id 对应 dim_product.prod_id（列名不同）",
+    "description": "产品成本记录针对具体产品；产品线口径需再经产品。",
+    "evidence": [
+      "ev_naming_variants"
+    ]
+  },
+  {
+    "id": "rel_doc_customer_complaint__dim_customer",
+    "source": "doc_customer_complaint",
+    "relation_type": "association",
+    "target": "dim_customer",
+    "connection_condition": "fact_customer_complaint.cust_id 对应 dim_customer.cust_id",
+    "description": "客户投诉归属客户。",
+    "evidence": [
+      "ev_fk_integrity"
+    ]
+  },
+  {
+    "id": "rel_doc_customer_contact__dim_customer",
+    "source": "doc_customer_contact",
+    "relation_type": "association",
+    "target": "dim_customer",
+    "connection_condition": "fact_customer_contact.cust_id 对应 dim_customer.cust_id",
+    "description": "客户接触记录归属客户，是“按客户汇总优先级”的分组键。",
+    "evidence": [
+      "ev_fk_integrity"
+    ]
+  },
+  {
+    "id": "rel_doc_customer_contact__dim_employee",
+    "source": "doc_customer_contact",
+    "relation_type": "association",
+    "target": "dim_employee",
+    "connection_condition": "fact_customer_contact.emp_id 对应 dim_employee.emp_id",
+    "description": "客户接触记录归属负责员工。",
+    "evidence": [
+      "ev_fk_integrity"
+    ]
+  },
+  {
+    "id": "rel_doc_opportunity__dim_customer",
+    "source": "doc_opportunity",
+    "relation_type": "association",
+    "target": "dim_customer",
+    "connection_condition": "fact_opportunity.cust_id 对应 dim_customer.cust_id",
+    "description": "商机归属客户。",
+    "evidence": [
+      "ev_fk_integrity"
+    ]
+  },
+  {
+    "id": "rel_doc_opportunity__dim_employee",
+    "source": "doc_opportunity",
+    "relation_type": "association",
+    "target": "dim_employee",
+    "connection_condition": "fact_opportunity.emp_id 对应 dim_employee.emp_id",
+    "description": "商机归属负责人。",
+    "evidence": [
+      "ev_fk_integrity"
+    ]
+  },
+  {
+    "id": "rel_doc_lead__dim_customer",
+    "source": "doc_lead",
+    "relation_type": "association",
+    "target": "dim_customer",
+    "connection_condition": "fact_lead.cust_id 对应 dim_customer.cust_id",
+    "description": "销售线索归属客户。",
+    "evidence": [
+      "ev_fk_integrity"
+    ]
+  },
+  {
+    "id": "rel_doc_lead__dim_employee",
+    "source": "doc_lead",
+    "relation_type": "association",
+    "target": "dim_employee",
+    "connection_condition": "fact_lead.emp_id 对应 dim_employee.emp_id",
+    "description": "销售线索归属员工。",
+    "evidence": [
+      "ev_fk_integrity"
+    ]
+  },
+  {
+    "id": "rel_doc_sales_forecast__dim_customer",
+    "source": "doc_sales_forecast",
+    "relation_type": "association",
+    "target": "dim_customer",
+    "connection_condition": "fact_sales_forecast.cust_id 对应 dim_customer.cust_id",
+    "description": "销售预测归属客户。",
+    "evidence": [
+      "ev_fk_integrity"
+    ]
+  },
+  {
+    "id": "rel_doc_sales_forecast__dim_product",
+    "source": "doc_sales_forecast",
+    "relation_type": "association",
+    "target": "dim_product",
+    "connection_condition": "fact_sales_forecast.prod_id 对应 dim_product.prod_id",
+    "description": "销售预测针对具体产品。",
+    "evidence": [
+      "ev_fk_integrity"
+    ]
+  },
+  {
+    "id": "rel_doc_price_adjustment__dim_customer",
+    "source": "doc_price_adjustment",
+    "relation_type": "association",
+    "target": "dim_customer",
+    "connection_condition": "fact_price_adjustment.cust_id 对应 dim_customer.cust_id",
+    "description": "价格调整针对客户。",
+    "evidence": [
+      "ev_fk_integrity"
+    ]
+  },
+  {
+    "id": "rel_doc_price_adjustment__dim_product",
+    "source": "doc_price_adjustment",
+    "relation_type": "association",
+    "target": "dim_product",
+    "connection_condition": "fact_price_adjustment.prod_id 对应 dim_product.prod_id",
+    "description": "价格调整针对产品。",
+    "evidence": [
+      "ev_fk_integrity"
+    ]
+  },
+  {
+    "id": "rel_doc_shipment__dim_customer",
+    "source": "doc_shipment",
+    "relation_type": "association",
+    "target": "dim_customer",
+    "connection_condition": "fact_shipment.cust_id 对应 dim_customer.cust_id",
+    "description": "发运单归属客户。",
+    "evidence": [
+      "ev_fk_integrity"
+    ]
+  },
+  {
+    "id": "rel_doc_shipment__dim_warehouse",
+    "source": "doc_shipment",
+    "relation_type": "association",
+    "target": "dim_warehouse",
+    "connection_condition": "fact_shipment.warehouse_id 对应 dim_warehouse.warehouse_id",
+    "description": "发运单从具体仓库发出。",
+    "evidence": [
+      "ev_fk_integrity"
+    ]
+  },
+  {
+    "id": "rel_doc_transfer_order__dim_warehouse",
+    "source": "doc_transfer_order",
+    "relation_type": "association",
+    "target": "dim_warehouse",
+    "connection_condition": "fact_transfer_order.source_warehouse_id / target_warehouse_id 对应 dim_warehouse.warehouse_id",
+    "description": "调拨单涉及调出与调入两个仓库。",
+    "evidence": [
+      "ev_fk_integrity"
+    ]
+  },
+  {
+    "id": "rel_doc_return__dim_customer",
+    "source": "doc_return",
+    "relation_type": "association",
+    "target": "dim_customer",
+    "connection_condition": "经 fact_return.order_id → fact_sales_order.cust_id 间接关联",
+    "description": "退货记录本身不含客户列，需经原销售订单间接得到客户。",
+    "evidence": [
+      "ev_return_reason"
+    ]
+  },
+  {
+    "id": "rel_doc_scrap_event__dim_product",
+    "source": "doc_scrap_event",
+    "relation_type": "association",
+    "target": "dim_product",
+    "connection_condition": "fact_scrap_event.prod_id 对应 dim_product.prod_id",
+    "description": "报废事件针对具体产品。",
+    "evidence": [
+      "ev_fk_integrity"
+    ]
+  },
+  {
+    "id": "rel_doc_equipment_runtime__dim_production_line",
+    "source": "doc_equipment_runtime",
+    "relation_type": "association",
+    "target": "dim_production_line",
+    "connection_condition": "fact_equipment_runtime.line_id 对应 dim_production_line.line_id",
+    "description": "设备运行记录按产线记录。",
+    "evidence": [
+      "ev_fk_integrity"
+    ]
+  },
+  {
+    "id": "rel_doc_spare_part_issue__dim_equipment",
+    "source": "doc_spare_part_issue",
+    "relation_type": "association",
+    "target": "dim_equipment",
+    "connection_condition": "fact_spare_part_issue.equipment_id 对应 dim_equipment.equipment_id",
+    "description": "备件领用针对具体设备。",
+    "evidence": [
+      "ev_fk_integrity"
+    ]
+  },
+  {
+    "id": "rel_doc_process_parameter_record__dim_equipment",
+    "source": "doc_process_parameter_record",
+    "relation_type": "association",
+    "target": "dim_equipment",
+    "connection_condition": "fact_process_parameter_record.equipment_id 对应 dim_equipment.equipment_id",
+    "description": "工艺参数记录归属设备，是“按设备汇总”的分组键。",
+    "evidence": [
+      "ev_fk_integrity"
+    ]
+  },
+  {
+    "id": "rel_doc_labor_booking__dim_employee",
+    "source": "doc_labor_booking",
+    "relation_type": "association",
+    "target": "dim_employee",
+    "connection_condition": "fact_labor_booking.emp_id 对应 dim_employee.emp_id",
+    "description": "报工记录归属员工。",
+    "evidence": [
+      "ev_fk_integrity"
+    ]
+  },
+  {
+    "id": "rel_doc_overtime__dim_employee",
+    "source": "doc_overtime",
+    "relation_type": "association",
+    "target": "dim_employee",
+    "connection_condition": "fact_overtime.emp_id 对应 dim_employee.emp_id",
+    "description": "加班记录归属员工。",
+    "evidence": [
+      "ev_fk_integrity"
+    ]
+  },
+  {
+    "id": "rel_doc_overtime__dim_department",
+    "source": "doc_overtime",
+    "relation_type": "association",
+    "target": "dim_department",
+    "connection_condition": "fact_overtime.dept_id 对应 dim_department.dept_id",
+    "description": "加班记录归属部门。",
+    "evidence": [
+      "ev_fk_integrity"
+    ]
+  },
+  {
+    "id": "rel_doc_production_plan__dim_production_line",
+    "source": "doc_production_plan",
+    "relation_type": "association",
+    "target": "dim_production_line",
+    "connection_condition": "fact_production_plan.line_id 对应 dim_production_line.line_id",
+    "description": "生产计划按产线制定；“计划产量最高的产线”由此分组。",
+    "evidence": [
+      "ev_fk_integrity"
+    ]
+  },
+  {
+    "id": "rel_doc_wip_snapshot__dim_production_line",
+    "source": "doc_wip_snapshot",
+    "relation_type": "association",
+    "target": "dim_production_line",
+    "connection_condition": "fact_wip_snapshot.line_id 对应 dim_production_line.line_id",
+    "description": "在制品快照按产线记录。",
+    "evidence": [
+      "ev_fk_integrity"
+    ]
+  },
+  {
+    "id": "rel_doc_sample__dim_customer",
+    "source": "doc_sample",
+    "relation_type": "association",
+    "target": "dim_customer",
+    "connection_condition": "fact_sample.cust_id 对应 dim_customer.cust_id",
+    "description": "送样记录针对客户。",
+    "evidence": [
+      "ev_fk_integrity"
+    ]
+  },
+  {
+    "id": "rel_doc_sample__dim_employee",
+    "source": "doc_sample",
+    "relation_type": "association",
+    "target": "dim_employee",
+    "connection_condition": "fact_sample.emp_id 对应 dim_employee.emp_id",
+    "description": "送样记录归属业务员。",
+    "evidence": [
+      "ev_fk_integrity"
+    ]
+  },
+  {
+    "id": "rel_doc_payment_target__dim_employee",
+    "source": "doc_payment_target",
+    "relation_type": "association",
+    "target": "dim_employee",
+    "connection_condition": "fact_payment_target.emp_id 对应 dim_employee.emp_id",
+    "description": "周转率目标按业务员设定。",
+    "evidence": [
+      "ev_payment_target"
+    ]
+  },
+  {
+    "id": "rel_doc_skill_assessment__dim_employee",
+    "source": "doc_skill_assessment",
+    "relation_type": "association",
+    "target": "dim_employee",
+    "connection_condition": "fact_skill_assessment.emp_id 对应 dim_employee.emp_id",
+    "description": "技能评估针对员工。",
+    "evidence": [
+      "ev_fk_integrity"
+    ]
+  },
+  {
+    "id": "rel_doc_skill_assessment__dim_skill",
+    "source": "doc_skill_assessment",
+    "relation_type": "association",
+    "target": "dim_skill",
+    "connection_condition": "fact_skill_assessment.skill_id 对应 dim_skill.skill_id",
+    "description": "技能评估针对岗位技能；“优先级合计最高”按技能分组。",
+    "evidence": [
+      "ev_fk_integrity"
+    ]
+  },
+  {
+    "id": "rel_doc_certification_record__dim_employee",
+    "source": "doc_certification_record",
+    "relation_type": "association",
+    "target": "dim_employee",
+    "connection_condition": "fact_certification_record.emp_id 对应 dim_employee.emp_id",
+    "description": "资质记录针对员工。",
+    "evidence": [
+      "ev_fk_integrity"
+    ]
+  },
+  {
+    "id": "rel_doc_employee_assignment__dim_employee",
+    "source": "doc_employee_assignment",
+    "relation_type": "association",
+    "target": "dim_employee",
+    "connection_condition": "fact_employee_assignment.emp_id 对应 dim_employee.emp_id",
+    "description": "任职记录针对员工。",
+    "evidence": [
+      "ev_fk_integrity"
+    ]
+  },
+  {
+    "id": "rel_doc_employee_assignment__dim_department",
+    "source": "doc_employee_assignment",
+    "relation_type": "association",
+    "target": "dim_department",
+    "connection_condition": "fact_employee_assignment.dept_id 对应 dim_department.dept_id",
+    "description": "任职记录归属部门。",
+    "evidence": [
+      "ev_fk_integrity"
+    ]
+  },
+  {
+    "id": "rel_doc_training_attendance__dim_employee",
+    "source": "doc_training_attendance",
+    "relation_type": "association",
+    "target": "dim_employee",
+    "connection_condition": "fact_training_attendance.emp_id 对应 dim_employee.emp_id",
+    "description": "签到记录针对员工。",
+    "evidence": [
+      "ev_fk_integrity"
+    ]
+  },
+  {
+    "id": "rel_doc_safety_training__dim_employee",
+    "source": "doc_safety_training",
+    "relation_type": "association",
+    "target": "dim_employee",
+    "connection_condition": "fact_safety_training.trainer_id 对应 dim_employee.emp_id",
+    "description": "安全培训归属讲师；“累计培训时长最长的讲师”由此分组。",
+    "evidence": [
+      "ev_fk_integrity"
+    ]
+  },
+  {
+    "id": "rel_doc_safety_objective__dim_department",
+    "source": "doc_safety_objective",
+    "relation_type": "association",
+    "target": "dim_department",
+    "connection_condition": "fact_safety_objective.responsible_dept_id 对应 dim_department.dept_id",
+    "description": "安全目标归属责任部门；“部门安全目标值合计”由此分组。",
+    "evidence": [
+      "ev_fk_integrity"
+    ]
+  },
+  {
+    "id": "rel_doc_safety_action__dim_hazard",
+    "source": "doc_safety_action",
+    "relation_type": "association",
+    "target": "dim_hazard",
+    "connection_condition": "fact_safety_action.hazard_id 对应 dim_hazard.hazard_id",
+    "description": "安全整改措施针对危险源。",
+    "evidence": [
+      "ev_fk_integrity"
+    ]
+  },
+  {
+    "id": "rel_doc_hazard_observation__dim_hazard",
+    "source": "doc_hazard_observation",
+    "relation_type": "association",
+    "target": "dim_hazard",
+    "connection_condition": "fact_hazard_observation.hazard_id 对应 dim_hazard.hazard_id",
+    "description": "危险源观察针对具体危险源；“观察评分合计最高”由此分组。",
+    "evidence": [
+      "ev_hazard"
+    ]
+  },
+  {
+    "id": "rel_doc_hazard_observation__dim_workshop",
+    "source": "doc_hazard_observation",
+    "relation_type": "association",
+    "target": "dim_workshop",
+    "connection_condition": "fact_hazard_observation.workshop_id 对应 dim_workshop.workshop_id",
+    "description": "危险源观察发生在具体车间。",
+    "evidence": [
+      "ev_fk_integrity"
+    ]
+  },
+  {
+    "id": "rel_doc_incident__dim_workshop",
+    "source": "doc_incident",
+    "relation_type": "association",
+    "target": "dim_workshop",
+    "connection_condition": "fact_incident.workshop_id 对应 dim_workshop.workshop_id",
+    "description": "事故发生在具体车间。",
+    "evidence": [
+      "ev_fk_integrity"
+    ]
+  },
+  {
+    "id": "rel_doc_emission_event__dim_factory",
+    "source": "doc_emission_event",
+    "relation_type": "association",
+    "target": "dim_factory",
+    "connection_condition": "fact_emission_event.factory_id 对应 dim_factory.factory_id",
+    "description": "排放事件归属工厂。",
+    "evidence": [
+      "ev_fk_integrity"
+    ]
+  },
+  {
+    "id": "rel_doc_emission_event__dim_emission_type",
+    "source": "doc_emission_event",
+    "relation_type": "association",
+    "target": "dim_emission_type",
+    "connection_condition": "fact_emission_event.emission_type_id 对应 dim_emission_type.emission_type_id",
+    "description": "排放事件归属排放类型。",
+    "evidence": [
+      "ev_fk_integrity"
+    ]
+  },
+  {
+    "id": "rel_doc_environment_measurement__dim_factory",
+    "source": "doc_environment_measurement",
+    "relation_type": "association",
+    "target": "dim_factory",
+    "connection_condition": "fact_environment_measurement.factory_id 对应 dim_factory.factory_id",
+    "description": "环境监测记录归属工厂。",
+    "evidence": [
+      "ev_fk_integrity"
+    ]
+  },
+  {
+    "id": "rel_doc_environment_measurement__dim_emission_type",
+    "source": "doc_environment_measurement",
+    "relation_type": "association",
+    "target": "dim_emission_type",
+    "connection_condition": "fact_environment_measurement.emission_type_id 对应 dim_emission_type.emission_type_id",
+    "description": "环境监测记录归属排放类型。",
+    "evidence": [
+      "ev_fk_integrity"
+    ]
+  },
+  {
+    "id": "rel_doc_energy_consumption__dim_workshop",
+    "source": "doc_energy_consumption",
+    "relation_type": "association",
+    "target": "dim_workshop",
+    "connection_condition": "fact_energy_consumption.workshop_id 对应 dim_workshop.workshop_id",
+    "description": "能耗记录按车间归集；“某车间的能耗记录”由此筛选。",
+    "evidence": [
+      "ev_fk_integrity"
+    ]
+  },
+  {
+    "id": "rel_doc_energy_consumption__dim_production_line",
+    "source": "doc_energy_consumption",
+    "relation_type": "association",
+    "target": "dim_production_line",
+    "connection_condition": "fact_energy_consumption.line_id 对应 dim_production_line.line_id",
+    "description": "能耗记录同时按产线归集。",
+    "evidence": [
+      "ev_fk_integrity"
+    ]
+  },
+  {
+    "id": "rel_doc_kpi_snapshot__dim_employee",
+    "source": "doc_kpi_snapshot",
+    "relation_type": "association",
+    "target": "dim_employee",
+    "connection_condition": "fact_kpi_snapshot.emp_id 对应 dim_employee.emp_id",
+    "description": "绩效快照针对员工。",
+    "evidence": [
+      "ev_fk_integrity"
+    ]
+  },
+  {
+    "id": "rel_doc_kpi_snapshot__dim_department",
+    "source": "doc_kpi_snapshot",
+    "relation_type": "association",
+    "target": "dim_department",
+    "connection_condition": "fact_kpi_snapshot.dept_id 对应 dim_department.dept_id",
+    "description": "绩效快照归属部门。",
+    "evidence": [
+      "ev_fk_integrity"
+    ]
+  },
+  {
+    "id": "rel_dim_employee__dim_department",
+    "source": "dim_employee",
+    "relation_type": "association",
+    "target": "dim_department",
+    "connection_condition": "dim_employee.dept_id 对应 dim_department.dept_id",
+    "description": "员工的部门归属。",
+    "evidence": [
+      "ev_fk_integrity"
+    ]
+  },
+  {
+    "id": "rel_dim_department__dim_business_unit",
+    "source": "dim_department",
+    "relation_type": "association",
+    "target": "dim_business_unit",
+    "connection_condition": "经 dim_cost_center.dept_id / dim_profit_center 间接关联事业部",
+    "description": "部门的业绩/成本口径经成本中心或利润中心回溯到事业部。",
+    "evidence": [
+      "ev_business_unit"
+    ]
+  },
+  {
+    "id": "rel_doc_data_quality_issue__dim_agg_daily",
+    "source": "doc_data_quality_issue",
+    "relation_type": "association",
+    "target": "dim_agg_daily",
+    "connection_condition": "经 dataset_release 与 validation_case 记录规则校验结果，与日汇总口径无直接数据连接",
+    "description": "数据质量问题记录描述治理校验发现的问题，与业务日汇总表仅在同一数据发布上下文中相关。",
+    "evidence": [
+      "ev_dq_issue"
+    ]
+  }
+]

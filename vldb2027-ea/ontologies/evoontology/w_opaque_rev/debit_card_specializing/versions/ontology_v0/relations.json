@@ -1,0 +1,185 @@
+[
+  {
+    "id": "rel_transaction_customer",
+    "source": "term_transaction",
+    "relation_type": "composition",
+    "target": "term_customer",
+    "connection_condition": "tab04.fld001 corresponds to tab01.fld001; every transaction customer exists in the customer table.",
+    "description": "A transaction is recorded for a customer and cannot exist without that customer.",
+    "evidence": [
+      "ev_fk_integrity",
+      "ev_tab04_profile"
+    ]
+  },
+  {
+    "id": "rel_transaction_gas_station",
+    "source": "term_transaction",
+    "relation_type": "composition",
+    "target": "term_gas_station",
+    "connection_condition": "tab04.fld004 corresponds to tab02.fld004; every transaction station exists in the station table.",
+    "description": "A transaction takes place at a gas station and cannot exist without one.",
+    "evidence": [
+      "ev_fk_integrity",
+      "ev_tab04_profile"
+    ]
+  },
+  {
+    "id": "rel_transaction_product",
+    "source": "term_transaction",
+    "relation_type": "composition",
+    "target": "term_product",
+    "connection_condition": "tab04.fld007 corresponds to tab03.fld007; every transaction product exists in the product table.",
+    "description": "A transaction line is a purchase of a product and cannot exist without one.",
+    "evidence": [
+      "ev_fk_integrity",
+      "ev_tab03_profile"
+    ]
+  },
+  {
+    "id": "rel_monthly_consumption_customer",
+    "source": "term_monthly_consumption",
+    "relation_type": "composition",
+    "target": "term_customer",
+    "connection_condition": "tab05.fld001 corresponds to tab01.fld001.",
+    "description": "Each monthly consumption record is attributed to a customer and cannot exist without that customer.",
+    "evidence": [
+      "ev_fk_integrity",
+      "ev_tab05_profile"
+    ]
+  },
+  {
+    "id": "rel_customer_segment",
+    "source": "term_customer",
+    "relation_type": "association",
+    "target": "term_customer_segment",
+    "connection_condition": "tab01.fld002 carries the customer's segment value on the customer record.",
+    "description": "Each customer is classified into one customer segment.",
+    "evidence": [
+      "ev_tab01_profile"
+    ]
+  },
+  {
+    "id": "rel_customer_payment_currency",
+    "source": "term_customer",
+    "relation_type": "association",
+    "target": "term_payment_currency",
+    "connection_condition": "tab01.fld003 carries the customer's currency value on the customer record.",
+    "description": "Each customer pays in one currency; currency is a customer-level attribute.",
+    "evidence": [
+      "ev_tab01_profile",
+      "ev_currency_semantics"
+    ]
+  },
+  {
+    "id": "rel_gas_station_country",
+    "source": "term_gas_station",
+    "relation_type": "association",
+    "target": "term_gas_station_country",
+    "connection_condition": "tab02.fld006 carries the station's country on the station record.",
+    "description": "Each gas station is located in one country.",
+    "evidence": [
+      "ev_tab02_profile",
+      "ev_country_semantics"
+    ]
+  },
+  {
+    "id": "rel_gas_station_segment",
+    "source": "term_gas_station",
+    "relation_type": "association",
+    "target": "term_gas_station_segment",
+    "connection_condition": "tab02.fld002 carries the station's segment on the station record.",
+    "description": "Each gas station belongs to one market segment.",
+    "evidence": [
+      "ev_tab02_profile"
+    ]
+  },
+  {
+    "id": "rel_product_description",
+    "source": "term_product",
+    "relation_type": "composition",
+    "target": "term_product_description",
+    "connection_condition": "tab03.fld008 describes the product identified by tab03.fld007.",
+    "description": "A product description is part of a product record and cannot exist without the product.",
+    "evidence": [
+      "ev_tab03_profile"
+    ]
+  },
+  {
+    "id": "rel_transaction_date",
+    "source": "term_transaction",
+    "relation_type": "association",
+    "target": "term_transaction_date",
+    "connection_condition": "tab04.fld010 is the date attribute of a transaction line.",
+    "description": "Each transaction occurs on one calendar date.",
+    "evidence": [
+      "ev_date_time_formats"
+    ]
+  },
+  {
+    "id": "rel_transaction_time",
+    "source": "term_transaction",
+    "relation_type": "association",
+    "target": "term_transaction_time",
+    "connection_condition": "tab04.fld011 is the time attribute of a transaction line.",
+    "description": "Each transaction occurs at one time of day.",
+    "evidence": [
+      "ev_date_time_formats"
+    ]
+  },
+  {
+    "id": "rel_avg_unit_price_from_price",
+    "source": "term_transaction_price",
+    "relation_type": "derivation",
+    "target": "term_avg_unit_price",
+    "connection_condition": "",
+    "description": "Average unit price is computed from transaction prices: total price divided by total quantity over the considered scope.",
+    "evidence": [
+      "ev_avg_unit_price_definition"
+    ]
+  },
+  {
+    "id": "rel_avg_unit_price_from_quantity",
+    "source": "term_transaction_quantity",
+    "relation_type": "derivation",
+    "target": "term_avg_unit_price",
+    "connection_condition": "",
+    "description": "Average unit price uses transaction quantity as the denominator: total price divided by total quantity over the considered scope.",
+    "evidence": [
+      "ev_avg_unit_price_definition"
+    ]
+  },
+  {
+    "id": "rel_customer_spending_from_price",
+    "source": "term_transaction_price",
+    "relation_type": "derivation",
+    "target": "term_customer_spending",
+    "connection_condition": "",
+    "description": "Customer spending is the sum of transaction-line prices for the customer.",
+    "evidence": [
+      "ev_customer_spending_definition"
+    ]
+  },
+  {
+    "id": "rel_consumption_currency",
+    "source": "term_monthly_consumption",
+    "relation_type": "association",
+    "target": "term_payment_currency",
+    "connection_condition": "The link is indirect: tab05.fld001 (customer) corresponds to tab01.fld001, where fld003 records the customer's currency.",
+    "description": "Consumption can be compared between CZK-paying and EUR-paying customers through the customer's currency attribute.",
+    "evidence": [
+      "ev_currency_semantics",
+      "ev_fk_integrity"
+    ]
+  },
+  {
+    "id": "rel_year_month_consumption",
+    "source": "term_year_month",
+    "relation_type": "association",
+    "target": "term_monthly_consumption",
+    "connection_condition": "tab05.fld010 is the month key on the same record as tab05.fld015.",
+    "description": "Monthly consumption is keyed by the customer-month period in tab05.fld010.",
+    "evidence": [
+      "ev_tab05_profile"
+    ]
+  }
+]

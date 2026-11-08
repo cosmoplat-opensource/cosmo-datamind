@@ -1,0 +1,474 @@
+[
+  {
+    "id": "evidence_synthetic_fact_family",
+    "query": "SELECT c.table_name, c.column_name FROM dim_column_metadata c JOIN dim_table_metadata t ON t.table_name=c.table_name WHERE t.table_category='事实表'",
+    "result": "67 张事实表共享同一治理/审计列块(document_no, business_date, event_time, posting_date, status, priority, reason_code, source_system, source_record_id, etl_batch_id, trace_id, tenant_code, created_at, updated_at, created_by, updated_by, approved_by, approved_at, row_version, data_quality_score, is_deleted, remarks),其后接一个共享度量块(unit_code, quantity, base_quantity, planned_quantity, actual_quantity, qualified_quantity, rejected_quantity, currency_code, exchange_rate, unit_price, amount, local_amount, tax_amount, cost_amount, budget_amount)。",
+    "source": "ind200.sqlite",
+    "timestamp": "2026-10-10",
+    "validation_method": "元数据表结构核对"
+  },
+  {
+    "id": "evidence_business_date_family",
+    "query": "SELECT count(*) FROM dim_column_metadata WHERE column_name='business_date'",
+    "result": "67 张事实表含 business_date(业务日期);同样有 67 张表含 created_by/updated_by/approved_by。",
+    "source": "ind200.sqlite",
+    "timestamp": "2026-10-10",
+    "validation_method": "元数据计数"
+  },
+  {
+    "id": "evidence_business_date_range",
+    "query": "SELECT min(business_date),max(business_date) FROM fact_equipment_event; SELECT substr(business_date,1,4) y,count(*) FROM fact_equipment_event GROUP BY y",
+    "result": "2025-01-01..2026-06-30;2025年 2462 条,2026年 1279 条。event_time 的年度分布与 business_date 完全一致(2025:2462, 2026:1279)。",
+    "source": "ind200.sqlite",
+    "timestamp": "2026-10-10",
+    "validation_method": "取值域与分组核对"
+  },
+  {
+    "id": "evidence_business_core_dates",
+    "query": "pragma_table_info 日期列枚举 / dim_column_metadata",
+    "result": "fact_purchase_order: po_date, delivery_date;fact_sales_order: order_date;fact_goods_receipt: receipt_date;fact_inventory: warehouse_date;fact_quotation: quotation_date, valid_until;fact_risk_assessment: assess_date;fact_production_order: order_date;fact_production_output: output_date;fact_supplier_eval: eval_date;fact_safety_audit: audit_date;fact_delivery: delivery_date;fact_maintenance_plan: next_date —— 这些表均无 business_date。",
+    "source": "ind200.sqlite",
+    "timestamp": "2026-10-10",
+    "validation_method": "pragma_table_info 与元数据交叉核对"
+  },
+  {
+    "id": "evidence_operator_codes",
+    "query": "SELECT group_concat(DISTINCT updated_by) FROM (SELECT updated_by FROM fact_equipment_event LIMIT 200000); SELECT DISTINCT created_by FROM fact_validation_case_result",
+    "result": "两个独立表的人员编码取值域均为 U0001..U0012(共 12 个代码)。",
+    "source": "ind200.sqlite",
+    "timestamp": "2026-10-10",
+    "validation_method": "跨表取值域一致性验证"
+  },
+  {
+    "id": "evidence_record_status_vocab",
+    "query": "SELECT group_concat(DISTINCT status) FROM fact_inventory_snapshot / fact_cycle_count_line / fact_wip_snapshot / fact_transfer_order",
+    "result": "inventory_snapshot {APPROVED,CLOSED};cycle_count_line {APPROVED,CLOSED};wip_snapshot {APPROVED,CLOSED};transfer_order {APPROVED,CLOSED};sales_order_line {APPROVED,CLOSED,IN_PROGRESS,OPEN}。同一批表还含无业务含义的 priority 与共享 remarks 词表。",
+    "source": "ind200.sqlite",
+    "timestamp": "2026-10-10",
+    "validation_method": "取值域枚举"
+  },
+  {
+    "id": "evidence_po_status",
+    "query": "SELECT group_concat(DISTINCT status) FROM fact_purchase_order",
+    "result": "closed, received, confirmed(无 draft)。",
+    "source": "ind200.sqlite",
+    "timestamp": "2026-10-10",
+    "validation_method": "取值域枚举"
+  },
+  {
+    "id": "evidence_so_status",
+    "query": "SELECT group_concat(DISTINCT status) FROM fact_sales_order",
+    "result": "delivered, returned, undelivered。",
+    "source": "ind200.sqlite",
+    "timestamp": "2026-10-10",
+    "validation_method": "取值域枚举"
+  },
+  {
+    "id": "evidence_production_order_status",
+    "query": "SELECT status,count(*) FROM fact_production_order GROUP BY 1",
+    "result": "已完成 2930,待生产 27,生产中 12。",
+    "source": "ind200.sqlite",
+    "timestamp": "2026-10-10",
+    "validation_method": "分组计数"
+  },
+  {
+    "id": "evidence_quotation_status",
+    "query": "SELECT group_concat(DISTINCT status) FROM fact_quotation",
+    "result": "won, lost, draft。",
+    "source": "ind200.sqlite",
+    "timestamp": "2026-10-10",
+    "validation_method": "取值域枚举"
+  },
+  {
+    "id": "evidence_ap_status",
+    "query": "SELECT group_concat(DISTINCT status) FROM fact_ap",
+    "result": "closed, open。",
+    "source": "ind200.sqlite",
+    "timestamp": "2026-10-10",
+    "validation_method": "取值域枚举"
+  },
+  {
+    "id": "evidence_safety_plan_status",
+    "query": "SELECT group_concat(DISTINCT status) FROM fact_safety_plan",
+    "result": "closed, active。",
+    "source": "ind200.sqlite",
+    "timestamp": "2026-10-10",
+    "validation_method": "取值域枚举"
+  },
+  {
+    "id": "evidence_gl_status",
+    "query": "SELECT group_concat(DISTINCT status) FROM fact_gl_entry",
+    "result": "APPROVED, CLOSED。",
+    "source": "ind200.sqlite",
+    "timestamp": "2026-10-10",
+    "validation_method": "取值域枚举"
+  },
+  {
+    "id": "evidence_capex_status",
+    "query": "SELECT group_concat(DISTINCT status) FROM fact_capex_project_cost",
+    "result": "APPROVED, CLOSED。",
+    "source": "ind200.sqlite",
+    "timestamp": "2026-10-10",
+    "validation_method": "取值域枚举"
+  },
+  {
+    "id": "evidence_safety_action_status",
+    "query": "SELECT group_concat(DISTINCT status) FROM fact_safety_action",
+    "result": "CLOSED, IN_PROGRESS。",
+    "source": "ind200.sqlite",
+    "timestamp": "2026-10-10",
+    "validation_method": "取值域枚举"
+  },
+  {
+    "id": "evidence_remarks_vocab",
+    "query": "SELECT group_concat(DISTINCT remarks) FROM fact_equipment_event; SELECT group_concat(DISTINCT remarks) FROM fact_inventory_snapshot; SELECT group_concat(DISTINCT remarks) FROM fact_attendance",
+    "result": "三张表中 remarks 的取值集合相同且均为 {已电话确认, 加急, 客户指定批次, 补录, 跨月处理}。",
+    "source": "ind200.sqlite",
+    "timestamp": "2026-10-10",
+    "validation_method": "跨表取值域一致性验证"
+  },
+  {
+    "id": "evidence_inventory_snapshot_remarks",
+    "query": "SELECT DISTINCT remarks FROM fact_inventory_snapshot",
+    "result": "已电话确认, 补录, 加急, 客户指定批次, 跨月处理 —— 含“补录”。",
+    "source": "ind200.sqlite",
+    "timestamp": "2026-10-10",
+    "validation_method": "取值域枚举"
+  },
+  {
+    "id": "evidence_attendance_remarks",
+    "query": "SELECT DISTINCT remarks FROM fact_attendance",
+    "result": "已电话确认, 加急, 客户指定批次, 补录, 跨月处理 —— 与设备事件/库存快照同一词表。",
+    "source": "ind200.sqlite",
+    "timestamp": "2026-10-10",
+    "validation_method": "取值域枚举"
+  },
+  {
+    "id": "evidence_currency_master",
+    "query": "SELECT currency_id,code,short_name FROM dim_currency",
+    "result": "1|CNY|人民币, 2|USD|美元, 3|EUR|欧元, 4|JPY|日元。",
+    "source": "ind200.sqlite",
+    "timestamp": "2026-10-10",
+    "validation_method": "主数据枚举"
+  },
+  {
+    "id": "evidence_currency_uniform",
+    "query": "SELECT group_concat(DISTINCT currency_code) FROM fact_gl_entry / fact_inventory_movement / fact_scrap_event / fact_transfer_order_line / fact_work_order_material / fact_sales_order_line",
+    "result": "上述合成事实表的 currency_code 去重后均只有 CNY 一个值。",
+    "source": "ind200.sqlite",
+    "timestamp": "2026-10-10",
+    "validation_method": "跨表取值域枚举"
+  },
+  {
+    "id": "evidence_reason_code_master",
+    "query": "SELECT reason_code_id,code,short_name,abbreviation FROM dim_reason_code",
+    "result": "12 行:QUALITY|质量原因|QUA, DELIVERY|交付原因|DEL, COST|成本原因|COS, EQUIPMENT|设备原因|EQU, SAFETY|安全原因|SAF, ENVIRONMENT|环境原因|ENV, CUSTOMER|客户原因|CUS, SUPPLIER|供应商原因|SUP, PROCESS|工艺原因|PRO, MATERIAL|物料原因|MAT, SYSTEM|系统原因|SYS, OTHER|常规业务(无#|OTH。",
+    "source": "ind200.sqlite",
+    "timestamp": "2026-10-10",
+    "validation_method": "主数据枚举"
+  },
+  {
+    "id": "evidence_reason_code_usage",
+    "query": "SELECT reason_code,count(*) FROM fact_equipment_event GROUP BY 1; SELECT reason_code,sum(reading_value) FROM fact_condition_monitoring GROUP BY 1",
+    "result": "设备事件 reason_code 取值为 QUALITY/EQUIPMENT/PROCESS/MATERIAL/ENVIRONMENT/OTHER 六种;设备状态监测 28758 行 reason_code 全为 OTHER,readings 合计 5151284.657。",
+    "source": "ind200.sqlite",
+    "timestamp": "2026-10-10",
+    "validation_method": "分组计数与求和"
+  },
+  {
+    "id": "evidence_gauge_calibration",
+    "query": "SELECT reason_code,sum(is_deleted),count(*) FROM fact_gauge_calibration GROUP BY 1",
+    "result": "OTHER|0|150 —— 仅一种原因码,逻辑删除标记合计为 0。",
+    "source": "ind200.sqlite",
+    "timestamp": "2026-10-10",
+    "validation_method": "分组求和"
+  },
+  {
+    "id": "evidence_condition_monitoring",
+    "query": "SELECT count(*) FROM fact_condition_monitoring",
+    "result": "28758 行,与 fact_iot_data 行数一致(两表逐条对应)。",
+    "source": "ind200.sqlite",
+    "timestamp": "2026-10-10",
+    "validation_method": "行数核对"
+  },
+  {
+    "id": "evidence_goods_receipt",
+    "query": "SELECT group_concat(DISTINCT inspection_result) FROM fact_goods_receipt",
+    "result": "pass, fail。",
+    "source": "ind200.sqlite",
+    "timestamp": "2026-10-10",
+    "validation_method": "取值域枚举"
+  },
+  {
+    "id": "evidence_sample_result",
+    "query": "SELECT group_concat(DISTINCT feedback_result) FROM fact_sample",
+    "result": "success, fail。",
+    "source": "ind200.sqlite",
+    "timestamp": "2026-10-10",
+    "validation_method": "取值域枚举"
+  },
+  {
+    "id": "evidence_production_grade",
+    "query": "SELECT group_concat(DISTINCT grade) FROM fact_production_output",
+    "result": "优等品, 一等品, 返工品, 合格品。",
+    "source": "ind200.sqlite",
+    "timestamp": "2026-10-10",
+    "validation_method": "取值域枚举"
+  },
+  {
+    "id": "evidence_risk_consequence",
+    "query": "SELECT group_concat(DISTINCT consequence), group_concat(DISTINCT risk_level) FROM fact_risk_assessment",
+    "result": "consequence={moderate,major,catastrophic,minor};risk_level={L1,L2,L3,L4}。",
+    "source": "ind200.sqlite",
+    "timestamp": "2026-10-10",
+    "validation_method": "取值域枚举"
+  },
+  {
+    "id": "evidence_absence_type",
+    "query": "SELECT group_concat(DISTINCT absence_type) FROM fact_attendance",
+    "result": "年假, 病假, 事假。",
+    "source": "ind200.sqlite",
+    "timestamp": "2026-10-10",
+    "validation_method": "取值域枚举"
+  },
+  {
+    "id": "evidence_employee_status",
+    "query": "SELECT group_concat(DISTINCT status) FROM dim_employee; SELECT DISTINCT industry FROM dim_customer",
+    "result": "dim_employee.status = {active,inactive};dim_customer.industry = {汽车,家电,电子电气,电动工具,建材}。",
+    "source": "ind200.sqlite",
+    "timestamp": "2026-10-10",
+    "validation_method": "取值域枚举"
+  },
+  {
+    "id": "evidence_audit_type",
+    "query": "SELECT group_concat(DISTINCT audit_type) FROM fact_safety_audit",
+    "result": "月度安全审计, 专项审计。",
+    "source": "ind200.sqlite",
+    "timestamp": "2026-10-10",
+    "validation_method": "取值域枚举"
+  },
+  {
+    "id": "evidence_batch_disposition",
+    "query": "SELECT group_concat(DISTINCT disposition) FROM fact_batch_quality_hold",
+    "result": "返工, 让步接收。",
+    "source": "ind200.sqlite",
+    "timestamp": "2026-10-10",
+    "validation_method": "取值域枚举"
+  },
+  {
+    "id": "evidence_iot_unit",
+    "query": "SELECT group_concat(DISTINCT unit) FROM fact_iot_data",
+    "result": "℃, A, mm/s, kg/h, %, MPa, rpm, kg, 包/h。",
+    "source": "ind200.sqlite",
+    "timestamp": "2026-10-10",
+    "validation_method": "取值域枚举"
+  },
+  {
+    "id": "evidence_sensor_type",
+    "query": "SELECT DISTINCT sensor_type FROM dim_sensor",
+    "result": "温度, 电流, 振动, 流量, 料位, 压力, 转速, 重量, 速度。",
+    "source": "ind200.sqlite",
+    "timestamp": "2026-10-10",
+    "validation_method": "取值域枚举"
+  },
+  {
+    "id": "evidence_region_values",
+    "query": "SELECT DISTINCT sales_region FROM fact_sales_order_line; SELECT DISTINCT sales_region FROM fact_price_adjustment",
+    "result": "两表取值相同:{华东,华南,西北,华中,西南,华北}。",
+    "source": "ind200.sqlite",
+    "timestamp": "2026-10-10",
+    "validation_method": "跨表取值域一致性验证"
+  },
+  {
+    "id": "evidence_customer_industry",
+    "query": "SELECT DISTINCT industry FROM dim_customer",
+    "result": "汽车, 家电, 电子电气, 电动工具, 建材。",
+    "source": "ind200.sqlite",
+    "timestamp": "2026-10-10",
+    "validation_method": "取值域枚举"
+  },
+  {
+    "id": "evidence_factory_workshop",
+    "query": "SELECT workshop_id,workshop_name,location FROM dim_workshop; SELECT factory_id,factory_name FROM dim_factory; SELECT DISTINCT location FROM dim_hazard",
+    "result": "车间:1|PP改性车间|青岛一厂A栋, 2|PA改性车间|青岛一厂B栋, 3|ABS/PC合金车间|青岛二厂A栋, 4|阻燃材料车间|青岛二厂B栋, 5|特种工程塑料车间|合肥工厂A栋。工厂:青岛一厂/青岛二厂/合肥工厂。dim_hazard.location 为“车间名+区域”文本(如 PP改性车间挤出区)。",
+    "source": "ind200.sqlite",
+    "timestamp": "2026-10-10",
+    "validation_method": "主数据枚举与粒度比对"
+  },
+  {
+    "id": "evidence_department",
+    "query": "SELECT group_concat(dept_name) FROM dim_department",
+    "result": "华东销售部,华南销售部,华北销售部,西南销售部,华中销售部,西北销售部,生产部,质量部,设备部,采购部,仓储物流部,财务部,人力资源部,安全环保部,计划部,研发中心,总经办。",
+    "source": "ind200.sqlite",
+    "timestamp": "2026-10-10",
+    "validation_method": "主数据枚举"
+  },
+  {
+    "id": "evidence_product_line_join",
+    "query": "SELECT pl.prod_line_name,count(*) FROM fact_batch_quality_hold h JOIN dim_product p ON p.prod_id=h.prod_id JOIN dim_product_line pl ON pl.prod_line_id=p.prod_line_id GROUP BY 1",
+    "result": "ABS/PC合金系列 47, PA改性系列 44, PP改性系列 53, 特种工程塑料系列 65 —— 两跳路径可用。",
+    "source": "ind200.sqlite",
+    "timestamp": "2026-10-10",
+    "validation_method": "连接结果计数验证"
+  },
+  {
+    "id": "evidence_equipment_type_join",
+    "query": "SELECT et.type_name,count(*) FROM fact_maintenance_plan m JOIN dim_equipment e ON e.equipment_id=m.equipment_id JOIN dim_equipment_type et ON et.type_id=e.type_id GROUP BY 1",
+    "result": "双螺杆挤出机 24, 高速混合机 12, 切粒机 12, 失重式喂料机 12, 除湿干燥机 7, 自动包装机 5 —— 两跳路径可用。",
+    "source": "ind200.sqlite",
+    "timestamp": "2026-10-10",
+    "validation_method": "连接结果计数验证"
+  },
+  {
+    "id": "evidence_material_category_join",
+    "query": "fact_po_line.material_id → dim_material.category_id → dim_material_category.category_id",
+    "result": "dim_material 含 category_id,dim_material_category 含 parent_id 形成层级;物料类别取值含 工程塑料树脂。",
+    "source": "ind200.sqlite",
+    "timestamp": "2026-10-10",
+    "validation_method": "外键路径与主数据核对"
+  },
+  {
+    "id": "evidence_production_line_join",
+    "query": "SELECT l.line_name,count(*) FROM fact_wip_snapshot w JOIN dim_production_line l ON l.line_id=w.line_id GROUP BY 2 ORDER BY 3 DESC; SELECT l.line_name,count(*) FROM fact_material_consumption c JOIN fact_production_order o ON o.order_id=c.order_id JOIN dim_production_line l ON l.line_id=o.line_id GROUP BY 2 ORDER BY 3 DESC",
+    "result": "fact_wip_snapshot 自带 line_id,到产线只需一跳,前三:特塑挤出2线 18 / 阻燃挤出2线 16 / 阻燃挤出1线 16。fact_material_consumption 只有 order_id,到产线需经生产工单两跳,前三:阻燃挤出1线 1555 / 合金挤出1线 1302 / 阻燃挤出2线 1216。两表到产线的路径深度不同。",
+    "source": "ind200.sqlite",
+    "timestamp": "2026-10-10",
+    "validation_method": "连接结果计数验证"
+  },
+  {
+    "id": "evidence_sensor_vibration",
+    "query": "SELECT sum(m.reading_value) FROM fact_condition_monitoring m JOIN dim_sensor s ON s.sensor_id=m.sensor_id WHERE s.sensor_type='振动'",
+    "result": "4854.395 —— 传感器类型筛选可经 dim_sensor 关联读数表。",
+    "source": "ind200.sqlite",
+    "timestamp": "2026-10-10",
+    "validation_method": "连接聚合验证"
+  },
+  {
+    "id": "evidence_alarm_sensor",
+    "query": "SELECT s.sensor_name,sum(a.is_handled) FROM fact_alarm a JOIN dim_sensor s ON s.sensor_id=a.sensor_id GROUP BY 1 ORDER BY 2 DESC LIMIT 3",
+    "result": "电机电流-PP挤出3线 58, 电机电流-阻燃挤出1线 46, 电机电流-PP挤出1线 44 —— 告警经 sensor_id 关联传感器名称。",
+    "source": "ind200.sqlite",
+    "timestamp": "2026-10-10",
+    "validation_method": "连接聚合验证"
+  },
+  {
+    "id": "evidence_calendar_range",
+    "query": "SELECT count(*),min(calendar_date),max(calendar_date) FROM dim_calendar; SELECT created_by,count(*) FROM dim_calendar GROUP BY 1",
+    "result": "547 行,2025-01-01..2026-07-01;created_by 分布 U0001..U0012(42~53 行不等)。",
+    "source": "ind200.sqlite",
+    "timestamp": "2026-10-10",
+    "validation_method": "范围与分组核对"
+  },
+  {
+    "id": "evidence_calendar_join",
+    "query": "SELECT sum(l.priority) FROM fact_legacy_material_issue l WHERE l.business_date IN (SELECT calendar_date FROM dim_calendar WHERE created_by='U0003')",
+    "result": "186 —— 日历与事实表没有标识符外键,但可按 calendar_date = business_date 的日期值对齐。",
+    "source": "ind200.sqlite",
+    "timestamp": "2026-10-10",
+    "validation_method": "日期值对齐验证"
+  },
+  {
+    "id": "evidence_inventory_storage_days",
+    "query": "SELECT min(storage_days),max(storage_days),count(*) FROM fact_inventory; SELECT DISTINCT storage_days FROM fact_inventory",
+    "result": "37 行;storage_days 取值 0,2,3,4,5,6,7,8,9,10,11,13,15。",
+    "source": "ind200.sqlite",
+    "timestamp": "2026-10-10",
+    "validation_method": "范围与取值域核对"
+  },
+  {
+    "id": "evidence_hazard_observation",
+    "query": "SELECT group_concat(DISTINCT likelihood), group_concat(DISTINCT risk_score) FROM fact_hazard_observation",
+    "result": "likelihood ∈ {1,2,3};risk_score ∈ {1,2,3,4,5,6,8,9,10,12,15}。",
+    "source": "ind200.sqlite",
+    "timestamp": "2026-10-10",
+    "validation_method": "取值域枚举"
+  },
+  {
+    "id": "evidence_hazard_row_version",
+    "query": "fact_hazard_observation 含 row_version 与 action_due_date 列",
+    "result": "该表同时具备 business_date、action_due_date(整改期限)与 row_version,支持“整改期限在某年 + 行版本平均”的组合。",
+    "source": "ind200.sqlite",
+    "timestamp": "2026-10-10",
+    "validation_method": "列存在性核对"
+  },
+  {
+    "id": "evidence_inspection_limits",
+    "query": "fact_inspection_lot 含 lower_limit / upper_limit;fact_inspection_result 亦有同名列",
+    "result": "检验批与检验结果表均含 下限/上限 规格限列,支持“检验批下限合计”。",
+    "source": "ind200.sqlite",
+    "timestamp": "2026-10-10",
+    "validation_method": "列存在性核对"
+  },
+  {
+    "id": "evidence_maintenance_plan",
+    "query": "fact_maintenance_plan 含 interval_days / interval_hours / next_date / maint_type",
+    "result": "维护计划以 next_date 为下次维护日期,间隔天数与间隔小时为两个独立列。",
+    "source": "ind200.sqlite",
+    "timestamp": "2026-10-10",
+    "validation_method": "列存在性核对"
+  },
+  {
+    "id": "evidence_environment_measurement",
+    "query": "SELECT group_concat(DISTINCT measurement_unit),count(*) FROM fact_environment_measurement",
+    "result": "270 行;单位 mg/L, mg/m³, dB(A);含 limit_value(限值) 与 exceed_flag。",
+    "source": "ind200.sqlite",
+    "timestamp": "2026-10-10",
+    "validation_method": "行数与取值域核对"
+  },
+  {
+    "id": "evidence_data_quality_issue",
+    "query": "fact_data_quality_issue 含 dataset_release_id / validation_case_id / exception_count / resolution_status",
+    "result": "数据质量问题经 dataset_release_id 与 validation_case_id 关联治理域,含异常数列。",
+    "source": "ind200.sqlite",
+    "timestamp": "2026-10-10",
+    "validation_method": "列存在性核对"
+  },
+  {
+    "id": "evidence_return_reason",
+    "query": "SELECT group_concat(DISTINCT reason) FROM fact_return",
+    "result": "产品质量问题:冲击强度偏低, 客户订单变更取消, 颜色与样板不符, 规格型号发错, 包装破损受潮。",
+    "source": "ind200.sqlite",
+    "timestamp": "2026-10-10",
+    "validation_method": "取值域枚举"
+  },
+  {
+    "id": "evidence_regular_hours_by_line",
+    "query": "SELECT l.line_name,sum(b.regular_hours) FROM fact_labor_booking b JOIN fact_production_order o ON o.order_id=b.order_id JOIN dim_production_line l ON l.line_id=o.line_id GROUP BY 1 ORDER BY 2 DESC",
+    "result": "特塑挤出2线 12142.48, 特塑挤出1线 12068.94, 阻燃挤出2线 11869.05 —— 报工经工单两跳到产线。",
+    "source": "ind200.sqlite",
+    "timestamp": "2026-10-10",
+    "validation_method": "连接聚合验证"
+  },
+  {
+    "id": "evidence_qualified_by_product",
+    "query": "SELECT p.prod_name,sum(x.qualified_quantity) FROM fact_batch_quality_hold x JOIN dim_product p ON p.prod_id=x.prod_id GROUP BY 1 ORDER BY 2 DESC LIMIT 3",
+    "result": "PA66-GF30 576.77, PP-GF30 434.82, PC/ABS 369.37。",
+    "source": "ind200.sqlite",
+    "timestamp": "2026-10-10",
+    "validation_method": "连接聚合验证"
+  },
+  {
+    "id": "evidence_cycle_count_priority",
+    "query": "fact_cycle_count 含 warehouse_id / posting_date / priority",
+    "result": "循环盘点单可按仓库对 priority 求和,并按 posting_date 过滤年份/日期。",
+    "source": "ind200.sqlite",
+    "timestamp": "2026-10-10",
+    "validation_method": "列存在性核对"
+  },
+  {
+    "id": "evidence_column_blocks",
+    "query": "SELECT column_name,column_name_cn FROM dim_column_metadata WHERE table_name=? ORDER BY ordinal",
+    "result": "各合成事实表在治理块之后附加共享度量列的一个子集(unit_code/quantity/base_quantity/planned_quantity/actual_quantity/qualified_quantity/rejected_quantity/currency_code/exchange_rate/unit_price/amount/local_amount/tax_amount/cost_amount/budget_amount),再附加表特有列。",
+    "source": "ind200.sqlite",
+    "timestamp": "2026-10-10",
+    "validation_method": "元数据列序核对"
+  },
+  {
+    "id": "evidence_question_date_columns",
+    "query": "构造工作负载问题的日期措辞统计",
+    "result": "问题中出现的期间措辞包括“YYYY年”(隐含 business_date)、“业务日期”、“过账日期”、“发生时间”、“下次维护日期”、“整改期限”、“入库日期”、“下单”、“评估日期” —— 说明年度过滤需要按表选择日期列。",
+    "source": "ind200.sqlite",
+    "timestamp": "2026-10-10",
+    "validation_method": "工作负载措辞归类"
+  }
+]

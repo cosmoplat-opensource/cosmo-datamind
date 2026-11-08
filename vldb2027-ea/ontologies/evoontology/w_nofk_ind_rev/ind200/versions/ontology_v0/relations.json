@@ -1,0 +1,194 @@
+[
+  {
+    "id": "r_workshop_line",
+    "source": "t_workshop",
+    "relation_type": "composition",
+    "target": "t_production_line",
+    "connection_condition": "dim_production_line.workshop_id → dim_workshop.workshop_id",
+    "description": "车间由多条产线组成;产线不能脱离车间独立存在,车间是整体、产线是部分。",
+    "evidence": [
+      "e_org_hierarchy",
+      "e_fk_meta"
+    ]
+  },
+  {
+    "id": "r_line_equipment",
+    "source": "t_production_line",
+    "relation_type": "composition",
+    "target": "t_equipment",
+    "connection_condition": "dim_equipment.line_id → dim_production_line.line_id",
+    "description": "产线由多条设备组成,设备归属唯一产线。",
+    "evidence": [
+      "e_fk_meta"
+    ]
+  },
+  {
+    "id": "r_equipment_sensor",
+    "source": "t_equipment",
+    "relation_type": "composition",
+    "target": "t_sensor",
+    "connection_condition": "dim_sensor.equipment_id → dim_equipment.equipment_id",
+    "description": "设备装配多个传感器,传感器不能独立于设备存在。",
+    "evidence": [
+      "e_fk_meta"
+    ]
+  },
+  {
+    "id": "r_productline_product",
+    "source": "t_product_line",
+    "relation_type": "composition",
+    "target": "t_product",
+    "connection_condition": "dim_product.prod_line_id → dim_product_line.prod_line_id",
+    "description": "产品线由同系列产品组成;产品归属唯一产品线。",
+    "evidence": [
+      "e_org_hierarchy",
+      "e_fk_meta"
+    ]
+  },
+  {
+    "id": "r_department_employee",
+    "source": "t_department",
+    "relation_type": "composition",
+    "target": "t_employee",
+    "connection_condition": "dim_employee.dept_id → dim_department.dept_id",
+    "description": "部门由员工组成,员工的“所属部门”即该组成关系。",
+    "evidence": [
+      "e_fk_meta"
+    ]
+  },
+  {
+    "id": "r_record_status",
+    "source": "t_business_record",
+    "relation_type": "association",
+    "target": "t_record_status",
+    "connection_condition": "每条业务记录携带一个 status",
+    "description": "每条业务单据有一个生命周期状态,状态决定“已关闭/已交付/已过账”等口径。",
+    "evidence": [
+      "e_status_lifecycle",
+      "e_status_domain"
+    ]
+  },
+  {
+    "id": "r_record_creator",
+    "source": "t_business_record",
+    "relation_type": "association",
+    "target": "t_creator_user",
+    "connection_condition": "记录的 created_by 字段",
+    "description": "每条记录由一个系统账号创建,创建人是记录属性而非员工实体。",
+    "evidence": [
+      "e_user_codes"
+    ]
+  },
+  {
+    "id": "r_record_updater",
+    "source": "t_business_record",
+    "relation_type": "association",
+    "target": "t_updater_user",
+    "connection_condition": "记录的 updated_by 字段",
+    "description": "每条记录最后被一个系统账号更新。",
+    "evidence": [
+      "e_user_codes"
+    ]
+  },
+  {
+    "id": "r_record_approver",
+    "source": "t_business_record",
+    "relation_type": "association",
+    "target": "t_approver_user",
+    "connection_condition": "记录的 approved_by 字段",
+    "description": "带审批语义的记录有一个审批账号。",
+    "evidence": [
+      "e_user_codes"
+    ]
+  },
+  {
+    "id": "r_record_reason",
+    "source": "t_business_record",
+    "relation_type": "association",
+    "target": "t_reason_reference",
+    "connection_condition": "记录的 reason_code / reason / downtime_reason 字段",
+    "description": "记录可携带业务原因;原因的表现形式与取值域随表而异。",
+    "evidence": [
+      "e_reason_dual",
+      "e_reason_code_dim"
+    ]
+  },
+  {
+    "id": "r_record_event_date",
+    "source": "t_business_record",
+    "relation_type": "association",
+    "target": "t_business_event_date",
+    "connection_condition": "每条记录对应一个业务发生日期",
+    "description": "业务记录与业务发生日期之间的关联,是“X年”限定的一般落点。",
+    "evidence": [
+      "e_domain_dates"
+    ]
+  },
+  {
+    "id": "r_eventdate_calendar",
+    "source": "t_business_event_date",
+    "relation_type": "association",
+    "target": "t_calendar_date",
+    "connection_condition": "dim_calendar.calendar_date = 业务发生日期",
+    "description": "业务日期可映射到日历维度以获得日期名称与节假日名称。",
+    "evidence": [
+      "e_calendar"
+    ]
+  },
+  {
+    "id": "r_material_supplier",
+    "source": "t_material",
+    "relation_type": "association",
+    "target": "t_supplier",
+    "connection_condition": "dim_material.supplier_id → dim_supplier.supplier_id",
+    "description": "物料有主供应商;供应关系是多对一,不构成组成或父子关系。",
+    "evidence": [
+      "e_fk_meta"
+    ]
+  },
+  {
+    "id": "r_department_region",
+    "source": "t_department",
+    "relation_type": "association",
+    "target": "t_region",
+    "connection_condition": "dim_department.region_id → dim_region.region_id",
+    "description": "部门可归属销售区域;仅销售类部门填充该关联,是组织与区域的对应而非包含关系。",
+    "evidence": [
+      "e_region_denorm"
+    ]
+  },
+  {
+    "id": "r_amount_currency",
+    "source": "t_amount",
+    "relation_type": "association",
+    "target": "t_currency",
+    "connection_condition": "各事实表 currency_code → dim_currency.code",
+    "description": "金额以币种计价;原币金额与币种绑定,折算为本位币需汇率。",
+    "evidence": [
+      "e_currency"
+    ]
+  },
+  {
+    "id": "r_local_amount_derivation",
+    "source": "t_amount",
+    "relation_type": "derivation",
+    "target": "t_local_amount",
+    "connection_condition": "local_amount = amount × exchange_rate",
+    "description": "本位币金额由原币金额按汇率折算得到,是金额的派生量,不能与原币金额并列相加。",
+    "evidence": [
+      "e_currency"
+    ]
+  },
+  {
+    "id": "r_tax_amount_derivation",
+    "source": "t_amount",
+    "relation_type": "derivation",
+    "target": "t_tax_amount",
+    "connection_condition": "tax_amount 由计税金额与税率计算",
+    "description": "税额由单据金额按税率计算得到,是金额的派生量。",
+    "evidence": [
+      "e_tables_tiers",
+      "e_currency"
+    ]
+  }
+]

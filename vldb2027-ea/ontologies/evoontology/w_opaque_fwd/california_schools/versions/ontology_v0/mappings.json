@@ -1,0 +1,845 @@
+[
+  {
+    "id": "map_school_directory",
+    "term_id": "term_school",
+    "database_source": "california_schools",
+    "table": "tab03",
+    "column": "fld001",
+    "semantic_filter": "",
+    "aggregation_semantics": "One record per school or agency; a count of schools is a row count after deciding how to treat agency rows with blank school names.",
+    "grain": "one row per CDS code",
+    "validation": {
+      "description": "17686 rows with 17686 distinct 14-character CDS codes; 1369 rows are district/agency records with blank school name.",
+      "confidence": "high",
+      "evidence": [
+        "ev_school_id_uniqueness",
+        "ev_blank_school_names"
+      ]
+    }
+  },
+  {
+    "id": "map_district_name_schools",
+    "term_id": "term_school_district",
+    "database_source": "california_schools",
+    "table": "tab03",
+    "column": "fld045",
+    "semantic_filter": "",
+    "aggregation_semantics": "Distinct district names; counting schools per district counts directory rows, not distinct districts.",
+    "grain": "district name repeated on each school row",
+    "validation": {
+      "description": "1411 distinct district names, no nulls.",
+      "confidence": "high",
+      "evidence": [
+        "ev_blank_school_names"
+      ]
+    }
+  },
+  {
+    "id": "map_district_name_sat",
+    "term_id": "term_school_district",
+    "database_source": "california_schools",
+    "table": "tab02",
+    "column": "fld033",
+    "semantic_filter": "",
+    "aggregation_semantics": "Reporting district of a SAT record.",
+    "grain": "one value per SAT record",
+    "validation": {
+      "description": "District name present on all 2269 SAT records.",
+      "confidence": "high",
+      "evidence": [
+        "ev_sat_rtype"
+      ]
+    }
+  },
+  {
+    "id": "map_district_name_frpm",
+    "term_id": "term_school_district",
+    "database_source": "california_schools",
+    "table": "tab01",
+    "column": "fld007",
+    "semantic_filter": "",
+    "aggregation_semantics": "Operating district of the meal report row.",
+    "grain": "one value per meal report row",
+    "validation": {
+      "description": "District name present on all 9986 meal rows.",
+      "confidence": "high",
+      "evidence": [
+        "ev_frpm_year"
+      ]
+    }
+  },
+  {
+    "id": "map_county_schools",
+    "term_id": "term_county",
+    "database_source": "california_schools",
+    "table": "tab03",
+    "column": "fld044",
+    "semantic_filter": "",
+    "aggregation_semantics": "County groups schools and districts; do not confuse with a city of the same name.",
+    "grain": "one value per school row",
+    "validation": {
+      "description": "58 distinct counties, no nulls.",
+      "confidence": "high",
+      "evidence": [
+        "ev_blank_school_names"
+      ]
+    }
+  },
+  {
+    "id": "map_county_sat",
+    "term_id": "term_county",
+    "database_source": "california_schools",
+    "table": "tab02",
+    "column": "fld034",
+    "semantic_filter": "",
+    "aggregation_semantics": "County of the SAT reporting unit.",
+    "grain": "one value per SAT record",
+    "validation": {
+      "description": "County present on all SAT records.",
+      "confidence": "high",
+      "evidence": [
+        "ev_sat_rtype"
+      ]
+    }
+  },
+  {
+    "id": "map_county_frpm",
+    "term_id": "term_county",
+    "database_source": "california_schools",
+    "table": "tab01",
+    "column": "fld006",
+    "semantic_filter": "",
+    "aggregation_semantics": "County of the meal report row.",
+    "grain": "one value per meal report row",
+    "validation": {
+      "description": "County present on all meal rows.",
+      "confidence": "high",
+      "evidence": [
+        "ev_frpm_year"
+      ]
+    }
+  },
+  {
+    "id": "map_city_schools",
+    "term_id": "term_city",
+    "database_source": "california_schools",
+    "table": "tab03",
+    "column": "fld049",
+    "semantic_filter": "",
+    "aggregation_semantics": "Distinct city values; a city may appear in several counties.",
+    "grain": "one value per school row",
+    "validation": {
+      "description": "1165 distinct cities; 293 blank values.",
+      "confidence": "high",
+      "evidence": [
+        "ev_blank_school_names",
+        "ev_place_ambiguity"
+      ]
+    }
+  },
+  {
+    "id": "map_cds_schools",
+    "term_id": "term_school_cds_code",
+    "database_source": "california_schools",
+    "table": "tab03",
+    "column": "fld001",
+    "semantic_filter": "",
+    "aggregation_semantics": "Identifier only; not additive.",
+    "grain": "one CDS code per directory row",
+    "validation": {
+      "description": "17686 rows, all 14 characters, all unique.",
+      "confidence": "high",
+      "evidence": [
+        "ev_school_id_uniqueness",
+        "ev_id_lengths"
+      ]
+    }
+  },
+  {
+    "id": "map_cds_frpm",
+    "term_id": "term_school_cds_code",
+    "database_source": "california_schools",
+    "table": "tab01",
+    "column": "fld001",
+    "semantic_filter": "",
+    "aggregation_semantics": "Identifier only; not additive.",
+    "grain": "one CDS code per meal report row",
+    "validation": {
+      "description": "9986 rows, all 14 characters and one per school; every value matches a directory CDS code.",
+      "confidence": "high",
+      "evidence": [
+        "ev_id_lengths",
+        "ev_join_frpm"
+      ]
+    }
+  },
+  {
+    "id": "map_cds_sat",
+    "term_id": "term_sat_cds_code",
+    "database_source": "california_schools",
+    "table": "tab02",
+    "column": "fld030",
+    "semantic_filter": "Normalize leading zeros before comparing with directory CDS codes.",
+    "aggregation_semantics": "Identifier only; not additive.",
+    "grain": "one CDS code per SAT record",
+    "validation": {
+      "description": "2269 records: 2058 codes of 14 characters and 211 of 13 characters; all match a directory CDS after leading-zero normalization.",
+      "confidence": "high",
+      "evidence": [
+        "ev_id_lengths",
+        "ev_join_sat"
+      ]
+    }
+  },
+  {
+    "id": "map_school_status",
+    "term_id": "term_school_status",
+    "database_source": "california_schools",
+    "table": "tab03",
+    "column": "fld043",
+    "semantic_filter": "",
+    "aggregation_semantics": "Categorical; count rows per status.",
+    "grain": "one value per school row",
+    "validation": {
+      "description": "Active 11708, Closed 4518, Merged 1448, Pending 12.",
+      "confidence": "high",
+      "evidence": [
+        "ev_school_status"
+      ]
+    }
+  },
+  {
+    "id": "map_school_type_code",
+    "term_id": "term_school_type",
+    "database_source": "california_schools",
+    "table": "tab03",
+    "column": "fld067",
+    "semantic_filter": "",
+    "aggregation_semantics": "Categorical code; pair with fld068 for the label.",
+    "grain": "one value per school row",
+    "validation": {
+      "description": "21 distinct codes; blank for the 1369 agency rows. 66 = High Schools (Public), 62 = Intermediate/Middle Schools (Public).",
+      "confidence": "high",
+      "evidence": [
+        "ev_school_type"
+      ]
+    }
+  },
+  {
+    "id": "map_school_type_description",
+    "term_id": "term_school_type",
+    "database_source": "california_schools",
+    "table": "tab03",
+    "column": "fld068",
+    "semantic_filter": "",
+    "aggregation_semantics": "Categorical label; exact string comparison is safest.",
+    "grain": "one value per school row",
+    "validation": {
+      "description": "Descriptive label paired one-to-one with fld067 in every non-blank row.",
+      "confidence": "high",
+      "evidence": [
+        "ev_school_type"
+      ]
+    }
+  },
+  {
+    "id": "map_district_type_code",
+    "term_id": "term_district_type",
+    "database_source": "california_schools",
+    "table": "tab03",
+    "column": "fld065",
+    "semantic_filter": "",
+    "aggregation_semantics": "Categorical code; pair with fld066 for the label.",
+    "grain": "one value per school row (district attribute)",
+    "validation": {
+      "description": "12 distinct codes. 54 = Unified School District, 52 = Elementary School District, 56 = High School District, 00 = County Office of Education.",
+      "confidence": "high",
+      "evidence": [
+        "ev_district_type"
+      ]
+    }
+  },
+  {
+    "id": "map_district_type_description",
+    "term_id": "term_district_type",
+    "database_source": "california_schools",
+    "table": "tab03",
+    "column": "fld066",
+    "semantic_filter": "",
+    "aggregation_semantics": "Categorical label.",
+    "grain": "one value per school row (district attribute)",
+    "validation": {
+      "description": "Label paired one-to-one with fld065, no nulls.",
+      "confidence": "high",
+      "evidence": [
+        "ev_district_type"
+      ]
+    }
+  },
+  {
+    "id": "map_educational_option_code",
+    "term_id": "term_educational_option_type",
+    "database_source": "california_schools",
+    "table": "tab03",
+    "column": "fld069",
+    "semantic_filter": "",
+    "aggregation_semantics": "Categorical code; pair with fld070 for the label.",
+    "grain": "one value per school row",
+    "validation": {
+      "description": "14 distinct codes; SSS = State Special School (3 rows); blank for 5711 rows.",
+      "confidence": "high",
+      "evidence": [
+        "ev_educational_option"
+      ]
+    }
+  },
+  {
+    "id": "map_educational_option_description",
+    "term_id": "term_educational_option_type",
+    "database_source": "california_schools",
+    "table": "tab03",
+    "column": "fld070",
+    "semantic_filter": "",
+    "aggregation_semantics": "Categorical label.",
+    "grain": "one value per school row",
+    "validation": {
+      "description": "Label paired one-to-one with fld069.",
+      "confidence": "high",
+      "evidence": [
+        "ev_educational_option"
+      ]
+    }
+  },
+  {
+    "id": "map_state_special_school",
+    "term_id": "term_state_special_school",
+    "database_source": "california_schools",
+    "table": "tab03",
+    "column": "fld069",
+    "semantic_filter": "fld069 = 'SSS'",
+    "aggregation_semantics": "Count matching school rows.",
+    "grain": "one row per State Special School",
+    "validation": {
+      "description": "3 rows, all with school type 31 and educational option SSS.",
+      "confidence": "high",
+      "evidence": [
+        "ev_sss_schools"
+      ]
+    }
+  },
+  {
+    "id": "map_high_school",
+    "term_id": "term_high_school",
+    "database_source": "california_schools",
+    "table": "tab03",
+    "column": "fld067",
+    "semantic_filter": "fld067 = '66'",
+    "aggregation_semantics": "Count matching school rows.",
+    "grain": "one row per High School (Public)",
+    "validation": {
+      "description": "1776 rows with code 66.",
+      "confidence": "high",
+      "evidence": [
+        "ev_school_type"
+      ]
+    }
+  },
+  {
+    "id": "map_grade_span",
+    "term_id": "term_grade_span",
+    "database_source": "california_schools",
+    "table": "tab03",
+    "column": "fld073",
+    "semantic_filter": "",
+    "aggregation_semantics": "Categorical text; compare exact spans such as K-8 or count rows per span.",
+    "grain": "one value per school row",
+    "validation": {
+      "description": "13804 non-blank values; K-8 appears for 1292 schools; blank for 3882 rows.",
+      "confidence": "high",
+      "evidence": [
+        "ev_grade_span"
+      ]
+    }
+  },
+  {
+    "id": "map_alternate_grade_span",
+    "term_id": "term_alternate_grade_span",
+    "database_source": "california_schools",
+    "table": "tab03",
+    "column": "fld074",
+    "semantic_filter": "",
+    "aggregation_semantics": "Categorical text; secondary representation of the grade span.",
+    "grain": "one value per school row",
+    "validation": {
+      "description": "11943 non-blank values; differs from fld073 for 2487 rows; never populated when fld073 is blank.",
+      "confidence": "high",
+      "evidence": [
+        "ev_grade_span"
+      ]
+    }
+  },
+  {
+    "id": "map_magnet_program",
+    "term_id": "term_magnet_program",
+    "database_source": "california_schools",
+    "table": "tab03",
+    "column": "fld076",
+    "semantic_filter": "",
+    "aggregation_semantics": "Count rows where the indicator equals 1; treat blank as not reported.",
+    "grain": "one value per school row",
+    "validation": {
+      "description": "1 = 519 schools, 0 = 10091, blank = 7076.",
+      "confidence": "high",
+      "evidence": [
+        "ev_magnet"
+      ]
+    }
+  },
+  {
+    "id": "map_virtual_status",
+    "term_id": "term_virtual_status",
+    "database_source": "california_schools",
+    "table": "tab03",
+    "column": "fld075",
+    "semantic_filter": "",
+    "aggregation_semantics": "Count rows by status code.",
+    "grain": "one value per school row",
+    "validation": {
+      "description": "N = 9703, P = 1046, F = 69, blank = 6868.",
+      "confidence": "high",
+      "evidence": [
+        "ev_virtual"
+      ]
+    }
+  },
+  {
+    "id": "map_address_street",
+    "term_id": "term_school_address",
+    "database_source": "california_schools",
+    "table": "tab03",
+    "column": "fld047",
+    "semantic_filter": "",
+    "aggregation_semantics": "Concatenate address components for display; not additive.",
+    "grain": "one street line per school row",
+    "validation": {
+      "description": "Street line; blank on agency rows.",
+      "confidence": "high",
+      "evidence": [
+        "ev_blank_school_names"
+      ]
+    }
+  },
+  {
+    "id": "map_address_city",
+    "term_id": "term_school_address",
+    "database_source": "california_schools",
+    "table": "tab03",
+    "column": "fld049",
+    "semantic_filter": "",
+    "aggregation_semantics": "Address component.",
+    "grain": "one city per school row",
+    "validation": {
+      "description": "293 blank values.",
+      "confidence": "high",
+      "evidence": [
+        "ev_blank_school_names"
+      ]
+    }
+  },
+  {
+    "id": "map_address_state",
+    "term_id": "term_school_address",
+    "database_source": "california_schools",
+    "table": "tab03",
+    "column": "fld051",
+    "semantic_filter": "",
+    "aggregation_semantics": "Address component; value CA for 17393 rows.",
+    "grain": "one state code per school row",
+    "validation": {
+      "description": "CA = 17393, blank = 293.",
+      "confidence": "high",
+      "evidence": [
+        "ev_blank_school_names"
+      ]
+    }
+  },
+  {
+    "id": "map_address_zip",
+    "term_id": "term_school_address",
+    "database_source": "california_schools",
+    "table": "tab03",
+    "column": "fld050",
+    "semantic_filter": "",
+    "aggregation_semantics": "Address component stored as ZIP or ZIP+4 text.",
+    "grain": "one ZIP code per school row",
+    "validation": {
+      "description": "Values such as 94544-1136; blank on agency rows.",
+      "confidence": "high",
+      "evidence": [
+        "ev_blank_school_names"
+      ]
+    }
+  },
+  {
+    "id": "map_latitude",
+    "term_id": "term_school_location",
+    "database_source": "california_schools",
+    "table": "tab03",
+    "column": "fld077",
+    "semantic_filter": "",
+    "aggregation_semantics": "Coordinate used for ordering or distance, not for aggregation.",
+    "grain": "one latitude per school row",
+    "validation": {
+      "description": "Observed 32.547737 to 44.219305; 4823 null values; 2 values outside California bounds.",
+      "confidence": "high",
+      "evidence": [
+        "ev_geo"
+      ]
+    }
+  },
+  {
+    "id": "map_longitude",
+    "term_id": "term_school_location",
+    "database_source": "california_schools",
+    "table": "tab03",
+    "column": "fld078",
+    "semantic_filter": "",
+    "aggregation_semantics": "Coordinate used for ordering or distance, not for aggregation.",
+    "grain": "one longitude per school row",
+    "validation": {
+      "description": "Observed -124.28481 to -83.781133; 4823 null values; 6 values outside California bounds.",
+      "confidence": "high",
+      "evidence": [
+        "ev_geo"
+      ]
+    }
+  },
+  {
+    "id": "map_admin_first_name",
+    "term_id": "term_school_administrator",
+    "database_source": "california_schools",
+    "table": "tab03",
+    "column": "fld079",
+    "semantic_filter": "",
+    "aggregation_semantics": "Contact attribute; not additive.",
+    "grain": "one value per school row",
+    "validation": {
+      "description": "Present for 11700 rows.",
+      "confidence": "high",
+      "evidence": [
+        "ev_admin"
+      ]
+    }
+  },
+  {
+    "id": "map_admin_last_name",
+    "term_id": "term_school_administrator",
+    "database_source": "california_schools",
+    "table": "tab03",
+    "column": "fld080",
+    "semantic_filter": "",
+    "aggregation_semantics": "Contact attribute; not additive.",
+    "grain": "one value per school row",
+    "validation": {
+      "description": "Present for 11700 rows.",
+      "confidence": "high",
+      "evidence": [
+        "ev_admin"
+      ]
+    }
+  },
+  {
+    "id": "map_admin_email",
+    "term_id": "term_school_administrator",
+    "database_source": "california_schools",
+    "table": "tab03",
+    "column": "fld081",
+    "semantic_filter": "",
+    "aggregation_semantics": "Contact attribute; return distinct values when one administrator covers several schools.",
+    "grain": "one e-mail per school row",
+    "validation": {
+      "description": "Present for 11674 rows; e.g. lkmonroe@acoe.org.",
+      "confidence": "high",
+      "evidence": [
+        "ev_admin"
+      ]
+    }
+  },
+  {
+    "id": "map_school_open_date",
+    "term_id": "term_school_open_date",
+    "database_source": "california_schools",
+    "table": "tab03",
+    "column": "fld060",
+    "semantic_filter": "",
+    "aggregation_semantics": "Date filter or grouping by year.",
+    "grain": "one date per school row",
+    "validation": {
+      "description": "Text dates from 1850-07-01 to 2017-09-22; blank for 1369 rows.",
+      "confidence": "high",
+      "evidence": [
+        "ev_open_date"
+      ]
+    }
+  },
+  {
+    "id": "map_sat_report",
+    "term_id": "term_sat_report",
+    "database_source": "california_schools",
+    "table": "tab02",
+    "column": "fld030",
+    "semantic_filter": "",
+    "aggregation_semantics": "One record per reporting unit; filter by fld031 before aggregating across units.",
+    "grain": "one row per school or district SAT report",
+    "validation": {
+      "description": "2269 records; 1749 school-level and 520 district-level.",
+      "confidence": "high",
+      "evidence": [
+        "ev_sat_rtype"
+      ]
+    }
+  },
+  {
+    "id": "map_sat_record_type",
+    "term_id": "term_sat_record_type",
+    "database_source": "california_schools",
+    "table": "tab02",
+    "column": "fld031",
+    "semantic_filter": "",
+    "aggregation_semantics": "Categorical split of the SAT table; S rows are schools, D rows are districts.",
+    "grain": "one value per SAT record",
+    "validation": {
+      "description": "S = 1749 with non-blank school names; D = 520 with blank school names.",
+      "confidence": "high",
+      "evidence": [
+        "ev_sat_rtype"
+      ]
+    }
+  },
+  {
+    "id": "map_sat_test_taker_count",
+    "term_id": "term_sat_test_taker_count",
+    "database_source": "california_schools",
+    "table": "tab02",
+    "column": "fld036",
+    "semantic_filter": "",
+    "aggregation_semantics": "Sum across selected reporting units for a total; per-record value otherwise.",
+    "grain": "one count per SAT record",
+    "validation": {
+      "description": "0-24305; 218 records equal zero.",
+      "confidence": "high",
+      "evidence": [
+        "ev_sat_ranges"
+      ]
+    }
+  },
+  {
+    "id": "map_sat_avg_reading_score",
+    "term_id": "term_sat_avg_reading_score",
+    "database_source": "california_schools",
+    "table": "tab02",
+    "column": "fld037",
+    "semantic_filter": "",
+    "aggregation_semantics": "Average across units should be weighted by test takers; a plain mean over unweighted records is not the cohort average.",
+    "grain": "one score per SAT record",
+    "validation": {
+      "description": "308-653; null for 596 records.",
+      "confidence": "high",
+      "evidence": [
+        "ev_sat_ranges"
+      ]
+    }
+  },
+  {
+    "id": "map_sat_avg_math_score",
+    "term_id": "term_sat_avg_math_score",
+    "database_source": "california_schools",
+    "table": "tab02",
+    "column": "fld038",
+    "semantic_filter": "",
+    "aggregation_semantics": "Per-record average score; weight by test takers when combining units.",
+    "grain": "one score per SAT record",
+    "validation": {
+      "description": "289-699; null for 596 records.",
+      "confidence": "high",
+      "evidence": [
+        "ev_sat_ranges"
+      ]
+    }
+  },
+  {
+    "id": "map_sat_avg_writing_score",
+    "term_id": "term_sat_avg_writing_score",
+    "database_source": "california_schools",
+    "table": "tab02",
+    "column": "fld039",
+    "semantic_filter": "",
+    "aggregation_semantics": "Per-record average score; weight by test takers when combining units.",
+    "grain": "one score per SAT record",
+    "validation": {
+      "description": "312-671; null for 596 records.",
+      "confidence": "high",
+      "evidence": [
+        "ev_sat_ranges"
+      ]
+    }
+  },
+  {
+    "id": "map_sat_ge1500_count",
+    "term_id": "term_sat_ge1500_count",
+    "database_source": "california_schools",
+    "table": "tab02",
+    "column": "fld040",
+    "semantic_filter": "",
+    "aggregation_semantics": "Sum across selected reporting units.",
+    "grain": "one count per SAT record",
+    "validation": {
+      "description": "0-5837.",
+      "confidence": "high",
+      "evidence": [
+        "ev_sat_ranges"
+      ]
+    }
+  },
+  {
+    "id": "map_frpm_report",
+    "term_id": "term_frpm_report",
+    "database_source": "california_schools",
+    "table": "tab01",
+    "column": "fld001",
+    "semantic_filter": "",
+    "aggregation_semantics": "One record per school for the academic year.",
+    "grain": "one row per school per academic year",
+    "validation": {
+      "description": "9986 rows, one per CDS, all year 2014-2015.",
+      "confidence": "high",
+      "evidence": [
+        "ev_frpm_year",
+        "ev_join_frpm"
+      ]
+    }
+  },
+  {
+    "id": "map_academic_year",
+    "term_id": "term_academic_year",
+    "database_source": "california_schools",
+    "table": "tab01",
+    "column": "fld002",
+    "semantic_filter": "",
+    "aggregation_semantics": "Categorical filter; only one value exists.",
+    "grain": "one value per meal report row",
+    "validation": {
+      "description": "2014-2015 for all 9986 rows.",
+      "confidence": "high",
+      "evidence": [
+        "ev_frpm_year"
+      ]
+    }
+  },
+  {
+    "id": "map_enrollment_k12",
+    "term_id": "term_enrollment_k12",
+    "database_source": "california_schools",
+    "table": "tab01",
+    "column": "fld019",
+    "semantic_filter": "",
+    "aggregation_semantics": "Sum across schools for a total enrollment; per-school value otherwise.",
+    "grain": "one count per school per year",
+    "validation": {
+      "description": "No nulls; range 1-5333.",
+      "confidence": "high",
+      "evidence": [
+        "ev_frpm_rate_identity",
+        "ev_frpm_nulls"
+      ]
+    }
+  },
+  {
+    "id": "map_free_meal_count_k12",
+    "term_id": "term_free_meal_count_k12",
+    "database_source": "california_schools",
+    "table": "tab01",
+    "column": "fld020",
+    "semantic_filter": "",
+    "aggregation_semantics": "Sum across schools for a total count.",
+    "grain": "one count per school per year",
+    "validation": {
+      "description": "Range 1-3927; null for 56 rows; never above the FRPM count.",
+      "confidence": "high",
+      "evidence": [
+        "ev_meal_subset",
+        "ev_frpm_nulls"
+      ]
+    }
+  },
+  {
+    "id": "map_eligible_free_rate_k12",
+    "term_id": "term_eligible_free_rate_k12",
+    "database_source": "california_schools",
+    "table": "tab01",
+    "column": "fld021",
+    "semantic_filter": "Enrollment (fld019) is greater than zero.",
+    "aggregation_semantics": "Ratio of free meal count to enrollment; not additive across schools (recompute from summed counts instead).",
+    "grain": "one rate per school per year",
+    "validation": {
+      "description": "Equals fld020/fld019 for 9930 of 9986 rows (small rounding differences elsewhere); stored as a 0-1 fraction.",
+      "confidence": "high",
+      "evidence": [
+        "ev_frpm_rate_identity"
+      ]
+    }
+  },
+  {
+    "id": "map_enrollment_ages_5_17",
+    "term_id": "term_enrollment_ages_5_17",
+    "database_source": "california_schools",
+    "table": "tab01",
+    "column": "fld024",
+    "semantic_filter": "",
+    "aggregation_semantics": "Sum across schools for a total count.",
+    "grain": "one count per school per year",
+    "validation": {
+      "description": "Range 1-5271; never exceeds K-12 enrollment; null for 14 rows.",
+      "confidence": "high",
+      "evidence": [
+        "ev_enrollment_subset",
+        "ev_frpm_nulls"
+      ]
+    }
+  },
+  {
+    "id": "map_frpm_count_ages_5_17",
+    "term_id": "term_frpm_count_ages_5_17",
+    "database_source": "california_schools",
+    "table": "tab01",
+    "column": "fld027",
+    "semantic_filter": "",
+    "aggregation_semantics": "Sum across schools for a total count.",
+    "grain": "one count per school per year",
+    "validation": {
+      "description": "Null for 72 rows; paired with fld024/fld028 through the rate identity.",
+      "confidence": "high",
+      "evidence": [
+        "ev_frpm_rate_identity",
+        "ev_frpm_nulls"
+      ]
+    }
+  },
+  {
+    "id": "map_nslp_provision_status",
+    "term_id": "term_nslp_provision_status",
+    "database_source": "california_schools",
+    "table": "tab01",
+    "column": "fld012",
+    "semantic_filter": "",
+    "aggregation_semantics": "Categorical; count rows per provision type.",
+    "grain": "one value per meal report row",
+    "validation": {
+      "description": "8 distinct non-blank values; 'Multiple Provision Types' on 11 rows; blank on 8139 rows.",
+      "confidence": "high",
+      "evidence": [
+        "ev_provision"
+      ]
+    }
+  }
+]

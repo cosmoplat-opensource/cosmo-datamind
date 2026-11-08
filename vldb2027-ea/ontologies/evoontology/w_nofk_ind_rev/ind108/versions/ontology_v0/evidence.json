@@ -1,0 +1,434 @@
+[
+  {
+    "id": "ev_payment_tables",
+    "source": "ind108.sqlite",
+    "query": "SELECT (SELECT COUNT(*) FROM fact_payment) AS receipts, (SELECT COUNT(*) FROM fact_payment_out) AS disbursements, (SELECT MIN(payment_date) FROM fact_payment) AS r_min, (SELECT MAX(payment_date) FROM fact_payment) AS r_max, (SELECT MIN(payment_date) FROM fact_payment_out) AS d_min, (SELECT MAX(payment_date) FROM fact_payment_out) AS d_max",
+    "result": "receipts=4944(2025-02-09 至 2026-06-30),disbursements=879(2025-03-02 至 2026-06-30);两表主键同名 payment_id 且均含 payment_date、amount 列",
+    "validation_method": "表行数、列结构与日期范围对照,确认两表为互不重叠的两套流水",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_payment_enum",
+    "source": "ind108.sqlite",
+    "query": "SELECT payment_type, is_bank_accepted, COUNT(*) FROM fact_payment GROUP BY 1,2",
+    "result": "电汇/0 = 3239,银承/1 = 1705;无现金取值;银承比重合计 1705/4944",
+    "validation_method": "枚举取值分布与标记列交叉验证,确认标识一一对应",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_payment_out_enum",
+    "source": "ind108.sqlite",
+    "query": "SELECT payment_method, COUNT(*) FROM fact_payment_out GROUP BY 1; SELECT bank_account, COUNT(*) FROM fact_payment_out GROUP BY 1",
+    "result": "bank_transfer=599、letter_of_credit=280;银行账号 11 个,SYN-ACCOUNT-0010=63 笔、SYN-ACCOUNT-0011=72 笔",
+    "validation_method": "枚举取值分布与银行账号分组计数",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_procurement_chain",
+    "source": "ind108.sqlite",
+    "query": "SELECT COUNT(*) FROM fact_ap WHERE gr_id IS NULL; SELECT g.inspection_result, COUNT(*) FROM fact_ap a JOIN fact_goods_receipt g ON a.gr_id=g.gr_id GROUP BY 1; SELECT a.status, COUNT(*) FROM fact_payment_out p JOIN fact_ap a ON p.ap_id=a.ap_id GROUP BY 1",
+    "result": "应付账款 1001 行且 gr_id 无空值;其引用收货单检验结果全部为 pass(1001);付款记录关联的应付状态全部为 closed(879)",
+    "validation_method": "连接路径计数与空值检查",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_gr_inspection",
+    "source": "ind108.sqlite",
+    "query": "SELECT inspection_result, COUNT(*) FROM fact_goods_receipt GROUP BY 1; SELECT status, COUNT(*) FROM fact_goods_receipt GROUP BY 1",
+    "result": "检验结果 pass=1001、fail=16;收货单状态 posted=1001、inspected=16。fail 的 16 条未被任何应付账款引用",
+    "validation_method": "枚举分布对照与连接覆盖检查",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_ap_enum",
+    "source": "ind108.sqlite",
+    "query": "SELECT status, COUNT(*) FROM fact_ap GROUP BY 1; SELECT substr(due_date,1,4) y, COUNT(*) FROM fact_ap GROUP BY 1",
+    "result": "open=122、closed=879;到期日 2025 年 576 笔、2026 年 425 笔;2026 年且 closed 共 303 笔",
+    "validation_method": "枚举分布与年度分布统计",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_ar_aging",
+    "source": "ind108.sqlite",
+    "query": "SELECT COUNT(*) FROM fact_ar_aging; SELECT e.emp_name, SUM(a.aging_4m) s FROM fact_ar_aging a JOIN dim_employee e ON a.emp_id=e.emp_id GROUP BY 1 ORDER BY s DESC LIMIT 3",
+    "result": "5162 行;3-4 月账龄合计最高为郑浩然 6864401.81,其次何芳 2127360.29",
+    "validation_method": "账龄分段列求和与业务员排名,确认列与账龄区间对应",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_expense_type",
+    "source": "ind108.sqlite",
+    "query": "SELECT expense_type, COUNT(*) FROM fact_expense GROUP BY 1",
+    "result": "差旅费 819、业务招待费 479、小车费 409、运输费 260、渠道佣金 259、通讯费 168、办公费 162、市场推广费 36;合计 2592 笔、35866792.64 元",
+    "validation_method": "枚举分布统计",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_budget_tables",
+    "source": "ind108.sqlite",
+    "query": "SELECT cc_id, SUM(budget_amount) s FROM fact_budget GROUP BY 1 ORDER BY s DESC LIMIT 4; SELECT dept_id, COUNT(*), SUM(budget_amount) FROM fact_budget_expense GROUP BY 1",
+    "result": "成本中心预算 180 行,cc_id=1(PP改性车间)合计 35190100.0 最高;部门费用预算 108 行,6 个销售部门各 18 行",
+    "validation_method": "成本中心与部门两种粒度的分组合计对照",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_dept_region",
+    "source": "ind108.sqlite",
+    "query": "SELECT d.dept_id, d.dept_name, r.region_name FROM dim_department d LEFT JOIN dim_region r ON d.region_id=r.region_id",
+    "result": "17 个部门中仅 1-6 号销售部门有区域(华东/华南/华北/西南/华中/西北),其余 11 个职能部门区域为空;华中与华南区域对应部门 5 与 2",
+    "validation_method": "维度表外连接检查与区域覆盖核对",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_fixed_asset",
+    "source": "ind108.sqlite",
+    "query": "SELECT asset_id, asset_name, equipment_id, accumulated_dep FROM dim_fixed_asset ORDER BY accumulated_dep DESC LIMIT 8; SELECT asset_type, COUNT(*) FROM dim_fixed_asset GROUP BY 1",
+    "result": "69 行:production_equipment=60、building=6、utility=3;累计折旧最高为青岛一厂主厂房 51870000.0",
+    "validation_method": "资产类型分布与累计折旧降序核对",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_dep_equivalent",
+    "source": "ind108.sqlite",
+    "query": "SELECT a.asset_id, a.accumulated_dep, (SELECT d.accumulated_dep FROM fact_depreciation d WHERE d.asset_id=a.asset_id ORDER BY d.period DESC LIMIT 1) FROM dim_fixed_asset a ORDER BY a.accumulated_dep DESC LIMIT 5",
+    "result": "卡片累计折旧与折旧记录最新期间累计折旧对每项资产均一致",
+    "validation_method": "同资产两来源逐项对账",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_contract",
+    "source": "ind108.sqlite",
+    "query": "SELECT contract_type, status, COUNT(*) FROM fact_contract GROUP BY 1,2; SELECT end_date, COUNT(*) FROM fact_contract GROUP BY 1",
+    "result": "19 行:purchase/active=11、sales/active=7、sales/terminated=1;到期日 2026-12-31 共 18 份、2026-03-12 共 1 份",
+    "validation_method": "类型与状态交叉分布及到期日分布统计",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_inventory",
+    "source": "ind108.sqlite",
+    "query": "SELECT MIN(warehouse_date), MAX(warehouse_date), COUNT(*) FROM fact_inventory; SELECT ROUND(AVG(storage_days),4) FROM fact_inventory WHERE substr(warehouse_date,1,4)=2026",
+    "result": "37 行,入库日期全部在 2026-06-15 至 2026-06-30;平均在库天数 5.4595",
+    "validation_method": "日期范围与在库天数均值统计",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_payment_target",
+    "source": "ind108.sqlite",
+    "query": "SELECT t.emp_id, e.emp_name, SUM(t.turnover_rate_target) s FROM fact_payment_target t JOIN dim_employee e ON t.emp_id=e.emp_id GROUP BY 1,2 ORDER BY s DESC LIMIT 3",
+    "result": "50 行;合计最高为胡丽娟 14.07,其次唐刚 14.05、韩欣怡 13.87",
+    "validation_method": "按业务员合计与排名",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_sales_order_status",
+    "source": "ind108.sqlite",
+    "query": "SELECT status, COUNT(*) FROM fact_sales_order GROUP BY 1; SELECT substr(order_date,1,4), COUNT(*) FROM fact_sales_order WHERE status=delivered GROUP BY 1",
+    "result": "delivered=4576、undelivered=152、returned=3;2026 年下达且 delivered 共 1348 笔",
+    "validation_method": "状态分布与年度交叉统计",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_delivery_link",
+    "source": "ind108.sqlite",
+    "query": "SELECT ROUND(SUM(d.amount),2) FROM fact_delivery d JOIN fact_sales_order o ON d.order_id=o.order_id WHERE o.status='delivered'; ... WHERE o.status='undelivered'",
+    "result": "delivered 订单发货金额 2088825972.07 元;undelivered 订单发货金额 2205789.36 元(非零)",
+    "validation_method": "按订单状态分组对发货金额汇总,验证未交付订单也存在发货记录",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_quotation_status",
+    "source": "ind108.sqlite",
+    "query": "SELECT status, COUNT(*) FROM fact_quotation GROUP BY 1; SELECT COUNT(*) FROM fact_quotation WHERE substr(quotation_date,1,4)=2026 AND status='draft'",
+    "result": "draft=6、won=357、lost=113;2026 年草稿 6 张、赢单 105 张;2025 年报价单价平均 20795.355",
+    "validation_method": "状态分布与年度交叉统计",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_opportunity_status",
+    "source": "ind108.sqlite",
+    "query": "SELECT status, COUNT(*) FROM fact_opportunity GROUP BY 1; SELECT substr(close_date,1,4), status, COUNT(*) FROM fact_opportunity GROUP BY 1,2",
+    "result": "open=22、won=36、lost=20、stalled=6;关闭日期仅在 won/lost 上非空,2026 年关闭的 lost 商机 10 个;按业务员预估销量最高谢嘉豪 3884.2 吨,按客户预估金额最高示例电子B股份有限公司 30563660.0 元",
+    "validation_method": "状态分布、关闭日期空值结构与两个指标维度的排名",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_sample_flags",
+    "source": "ind108.sqlite",
+    "query": "SELECT is_success, feedback_result, COUNT(*) FROM fact_sample GROUP BY 1,2; SELECT SUM(s.is_success) FROM fact_sample s JOIN dim_employee e ON s.emp_id=e.emp_id WHERE e.status='active'",
+    "result": "成功标记 1 与反馈结果 success 完全对应(20 条);反馈结果 fail 22 条;未反馈 8 条反馈结果为空;在职员工送样成功合计 20",
+    "validation_method": "标记列与反馈结果列交叉验证及状态口径对照",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_return_reason",
+    "source": "ind108.sqlite",
+    "query": "SELECT reason, COUNT(*) FROM fact_return GROUP BY 1; SELECT COUNT(*) FROM fact_return r JOIN fact_sales_order o ON r.order_id=o.order_id WHERE o.cust_id=14",
+    "result": "83 张退货单:产品质量问题 31、颜色与样板不符 22、客户订单变更取消 12、包装破损受潮 9、规格型号发错 9;最近交易日期为 2025-09-24 的客户(客户 14)产生 2 笔退货",
+    "validation_method": "原因分布统计与客户口径连接计数",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_product_cost",
+    "source": "ind108.sqlite",
+    "query": "SELECT p.prod_name, SUM(c.material_cost) s FROM fact_product_cost c JOIN dim_product p ON c.product_id=p.prod_id GROUP BY 1 ORDER BY s DESC LIMIT 3",
+    "result": "材料成本合计最高为 PC/ABS 273135300.21,其次 PP-FR 185545106.48、PA66-GF30 172281060.26",
+    "validation_method": "按产品对材料成本求和并排名",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_po_enum",
+    "source": "ind108.sqlite",
+    "query": "SELECT payment_terms, COUNT(*) FROM fact_purchase_order GROUP BY 1; SELECT status, COUNT(*) FROM fact_purchase_order GROUP BY 1; SELECT ROUND(SUM(total_amount),2) FROM fact_purchase_order WHERE payment_terms='月结45天'",
+    "result": "付款条件月结30天=372、月结45天=322、月结60天=201;状态 closed=777、received=108、confirmed=10;月结45天订单总金额 655920336.58 元",
+    "validation_method": "两个枚举列分布与条件合计",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_po_line",
+    "source": "ind108.sqlite",
+    "query": "SELECT ROUND(SUM(l.unit_price),2) FROM fact_po_line l JOIN fact_purchase_order p ON l.po_id=p.po_id WHERE p.status='received'; SELECT m.material_name, SUM(l.received_qty) s FROM fact_po_line l JOIN dim_material m ON l.material_id=m.material_id GROUP BY 1 ORDER BY s DESC LIMIT 3",
+    "result": "received 订单的订单行单价合计 2453121.58(108 行);累计已收货数量最高为 PP均聚 T30S 24845.0 吨,其次 ABS 757K 19320.0",
+    "validation_method": "订单状态过滤后下推到订单行汇总;按物料汇总收货量排名",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_pr",
+    "source": "ind108.sqlite",
+    "query": "SELECT ROUND(AVG(total_amount),2), ROUND(SUM(total_amount),2) FROM fact_purchase_requisition WHERE substr(pr_date,1,4)=2025",
+    "result": "2025 年采购申请 895 行中的该年度记录:平均总金额 1757608.35 元、合计 1094990000.0 元",
+    "validation_method": "年度过滤后求平均与合计",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_supplier_eval",
+    "source": "ind108.sqlite",
+    "query": "SELECT grade, COUNT(*) FROM fact_supplier_eval GROUP BY 1; SELECT s.supplier_name, ROUND(SUM(se.total_score),2) v FROM fact_supplier_eval se JOIN dim_supplier s ON se.supplier_id=s.supplier_id GROUP BY 1 ORDER BY v DESC LIMIT 3; SELECT COUNT(*) FROM fact_supplier_eval WHERE eval_date BETWEEN '2025-07-01' AND '2025-09-30'",
+    "result": "AA=54、A=12;综合评分合计最高为示例弹性体G有限公司 572.05;2025 年第三季度 11 条",
+    "validation_method": "评级分布、按供应商评分合计与季度区间计数",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_supplier_cat",
+    "source": "ind108.sqlite",
+    "query": "SELECT * FROM dim_supplier_category; SELECT COUNT(*) FROM fact_supplier_eval se JOIN dim_supplier s ON se.supplier_id=s.supplier_id JOIN dim_supplier_category c ON s.category_id=c.category_id WHERE c.category_name='工程塑料树脂'",
+    "result": "8 个类别(4 个父类 + 4 个子类),工程塑料树脂 category_id=12、parent_id=1;该类别下供应商评估 24 条",
+    "validation_method": "分类表父子结构检查与经类别的评估计数",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_supplier",
+    "source": "ind108.sqlite",
+    "query": "SELECT supplier_id, supplier_name, city, category_id FROM dim_supplier; SELECT COUNT(*) FROM fact_payment_out p JOIN fact_ap a ON p.ap_id=a.ap_id JOIN dim_supplier s ON a.supplier_id=s.supplier_id WHERE s.city='海城'",
+    "result": "12 个供应商;城市为海城的仅供应商 7(示例矿业D有限公司),其应付对应的付款 42 笔",
+    "validation_method": "维度属性筛选后经应付连接付款计数",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_customer",
+    "source": "ind108.sqlite",
+    "query": "SELECT status, COUNT(*) FROM dim_customer GROUP BY 1; SELECT cust_id, cust_name, last_deal_date FROM dim_customer WHERE last_deal_date='2025-09-24'",
+    "result": "active=22、dormant=1、lost=2;最近交易日期 2025-09-24 仅客户 14(示例通讯D有限公司)",
+    "validation_method": "客户状态分布与最近交易日期精确匹配",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_employee",
+    "source": "ind108.sqlite",
+    "query": "SELECT status, COUNT(*) FROM dim_employee GROUP BY 1; SELECT emp_name, COUNT(*) FROM dim_employee GROUP BY 1 HAVING COUNT(*)>1",
+    "result": "active=121、inactive=1;员工姓名无重复",
+    "validation_method": "状态分布与姓名唯一性检查",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_prod_order_status",
+    "source": "ind108.sqlite",
+    "query": "SELECT status, COUNT(*) FROM fact_production_order GROUP BY 1; SELECT substr(order_date,1,4), COUNT(*) FROM fact_production_order GROUP BY 1; SELECT COUNT(*) FROM fact_production_order WHERE substr(order_date,1,4)=2026 AND status='已完成'",
+    "result": "已完成=2930、待生产=27、生产中=12;按下达日期 2025 年 2059、2026 年 910;2026 年已完成 871 张",
+    "validation_method": "状态分布与年度交叉统计",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_output_grade",
+    "source": "ind108.sqlite",
+    "query": "SELECT grade, is_first_grade, COUNT(*) FROM fact_production_output GROUP BY 1,2; SELECT COUNT(*) FROM fact_production_output WHERE substr(output_date,1,4)=2026 AND grade='一等品'",
+    "result": "一等品/标记0=2721、优等品/标记1=2721、合格品/标记0=93、返工品/标记0=116;2026 年一等品 912 条",
+    "validation_method": "等级与优等品标记交叉分布,确认标记 1 仅对应优等品",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_equipment_mfr",
+    "source": "ind108.sqlite",
+    "query": "SELECT manufacturer, COUNT(*) FROM dim_equipment GROUP BY 1; SELECT ROUND(SUM(r.labor_hours),2) FROM fact_maintenance_record r JOIN dim_equipment e ON r.equipment_id=e.equipment_id WHERE e.manufacturer='示例机械F'; ... SUM(r.cost) ... WHERE e.manufacturer='示例机械D'",
+    "result": "示例机械A/B/C/D 各 12 台,E 7 台,F 5 台;示例机械F 设备维护工时合计 441.9;示例机械D 设备维护费用合计 835176.0",
+    "validation_method": "制造商分布统计与经制造商过滤的维护指标汇总",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_line_equipment",
+    "source": "ind108.sqlite",
+    "query": "SELECT equipment_id, equipment_name, line_id FROM dim_equipment WHERE line_id=1; SELECT COUNT(*) FROM fact_maintenance_record r JOIN dim_equipment e ON r.equipment_id=e.equipment_id WHERE e.line_id=1",
+    "result": "每条产线 5 台设备(混合机/喂料机/挤出机/切粒机/包装机);PP挤出1线 维护记录 167 条",
+    "validation_method": "产线到设备的从属检查与经产线口径的维护记录计数",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_line",
+    "source": "ind108.sqlite",
+    "query": "SELECT * FROM dim_production_line; SELECT l.line_name, ROUND(SUM(o.runtime_hours),1) s FROM fact_production_order o JOIN dim_production_line l ON o.line_id=l.line_id GROUP BY 1 ORDER BY s DESC LIMIT 3",
+    "result": "12 条产线分属 5 个车间;工单运行时长合计最高为特塑挤出2线 11898.0 小时,其次特塑挤出1线 11808.5",
+    "validation_method": "产线台账检查与产线维度运行时长排名",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_workshop",
+    "source": "ind108.sqlite",
+    "query": "SELECT * FROM dim_workshop; SELECT SUM(i.injury_count) FROM fact_incident i JOIN dim_workshop w ON i.workshop_id=w.workshop_id WHERE w.workshop_name='PA改性车间'",
+    "result": "5 个车间;PA改性车间受伤人数合计 3;按车间用电量最高为 PP改性车间 13711669.9 kWh",
+    "validation_method": "车间台账检查与车间口径事故指标汇总",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_maint_rec_wo",
+    "source": "ind108.sqlite",
+    "query": "SELECT (SELECT COUNT(*) FROM fact_maintenance_record r JOIN dim_equipment e ON r.equipment_id=e.equipment_id WHERE e.line_id=1) rec, (SELECT COUNT(*) FROM fact_maintenance_wo w JOIN dim_equipment e ON w.equipment_id=e.equipment_id WHERE e.line_id=1) wo; SELECT result, COUNT(*) FROM fact_maintenance_record GROUP BY 1",
+    "result": "PP挤出1线 维护记录 167 条、维护工单 167 条,两种口径按设备计数一致;维护记录执行结果全部为 completed(1694)",
+    "validation_method": "两表按同口径计数对照与执行结果分布检查",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_maint_plan",
+    "source": "ind108.sqlite",
+    "query": "SELECT maint_type, COUNT(*) FROM fact_maintenance_plan GROUP BY 1; SELECT substr(next_date,1,4), COUNT(*) FROM fact_maintenance_plan GROUP BY 1; SELECT COUNT(*) FROM fact_maintenance_plan p JOIN dim_equipment e ON p.equipment_id=e.equipment_id WHERE e.line_id=6",
+    "result": "季度大修 12、月度检修 60;下次维护日期全部在 2026 年(72 条);PA挤出3线 维护计划 6 条",
+    "validation_method": "维护类型分布、下次维护日期年度分布与产线口径计数",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_downtime_reason",
+    "source": "ind108.sqlite",
+    "query": "SELECT reason_code, COUNT(*), ROUND(SUM(duration_hours),1) FROM fact_downtime GROUP BY 1; SELECT r.reason_name, ROUND(SUM(d.duration_hours),1) s FROM fact_downtime d JOIN dim_downtime_reason r ON d.reason_code=r.reason_id GROUP BY 1 ORDER BY s DESC LIMIT 3; SELECT l.line_name, ROUND(SUM(d.duration_hours),1) s FROM fact_downtime d JOIN dim_production_line l ON d.line_id=l.line_id GROUP BY 1 ORDER BY s DESC LIMIT 3",
+    "result": "原因编码 1-8 分布:2 号 1851 次/3494.0 小时、3 号 211 次/3452.0 小时、1 号 639 次/1514.0 小时;映射后停机时长最高为换产清机 3494.0、计划保养 3452.0、设备故障 1514.0;产线维度最高 PP挤出1线 1059.8 小时",
+    "validation_method": "整数原因编码与字典主键的连接验证,以及原因与产线两种口径的时长排名",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_alarm",
+    "source": "ind108.sqlite",
+    "query": "SELECT severity, COUNT(*) FROM fact_alarm GROUP BY 1; SELECT is_handled, COUNT(*) FROM fact_alarm GROUP BY 1; SELECT e.equipment_name, COUNT(*) c FROM fact_alarm a JOIN dim_equipment e ON a.equipment_id=e.equipment_id WHERE a.is_handled=1 GROUP BY 1 ORDER BY c DESC LIMIT 3",
+    "result": "critical=639、warning=2470;is_handled 全部为 1(3109);已处理告警最多的设备为双螺杆挤出机-PP挤出1线 96 条",
+    "validation_method": "严重度分布、处理标记分布与设备维度排名",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_iot",
+    "source": "ind108.sqlite",
+    "query": "SELECT quality_flag, COUNT(*) FROM fact_iot_data GROUP BY 1; SELECT COUNT(*) FROM fact_iot_data i JOIN dim_sensor s ON i.sensor_id=s.sensor_id JOIN dim_equipment e ON s.equipment_id=e.equipment_id",
+    "result": "good=28476、uncertain=282;全部 28758 条采样均可经传感器关联到设备",
+    "validation_method": "质量标记分布与关联覆盖率检查",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_energy",
+    "source": "ind108.sqlite",
+    "query": "SELECT l.line_name, ROUND(SUM(e.steam_tons),1) s FROM fact_energy_consumption e JOIN dim_production_line l ON e.line_id=l.line_id GROUP BY 1 ORDER BY s DESC LIMIT 3; SELECT w.workshop_name, ROUND(SUM(e.electricity_kwh),1) s FROM fact_energy_consumption e JOIN dim_workshop w ON e.workshop_id=w.workshop_id GROUP BY 1 ORDER BY s DESC LIMIT 3",
+    "result": "蒸汽按产线最高为 PA挤出2线 740.0 吨,其次 PA挤出3线 728.9;用电量按车间最高为 PP改性车间 13711669.9 kWh,其次 ABS/PC合金车间 12068305.9",
+    "validation_method": "产线口径与车间口径分别汇总并排名,确认两种粒度结论不同",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_env",
+    "source": "ind108.sqlite",
+    "query": "SELECT record_type, COUNT(*) FROM fact_env_record GROUP BY 1; SELECT is_compliant, COUNT(*) FROM fact_env_record GROUP BY 1; SELECT unit, emission_type, COUNT(*) FROM fact_env_record GROUP BY 1,2; SELECT substr(record_date,1,4), COUNT(*) FROM fact_env_record GROUP BY 1",
+    "result": "月度监测 60、季度监测 30;合规 85 条、不合规 5 条;计量单位与污染物一一对应(噪声-dB(A)、COD/氨氮-mg/L、VOCs/颗粒物-mg/m³);2025 年 60 条、2026 年 30 条",
+    "validation_method": "监测类型、合规标记、单位与污染物交叉分布及年度分布统计",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_safety_plan",
+    "source": "ind108.sqlite",
+    "query": "SELECT * FROM fact_safety_plan",
+    "result": "2 行:SP2025(2025 年、closed、签发 2025-01-08)、SP2026(2026 年、active、签发 2026-01-06);年份列与签发日期年份一致",
+    "validation_method": "全表读取核对年份列与签发日期的一致性",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_safety_objective",
+    "source": "ind108.sqlite",
+    "query": "SELECT * FROM fact_safety_objective",
+    "result": "6 行,分属计划 1 与 2;单位为起(目标值 0.0)、‰(0.5)、%(100.0) 各 2 条;计划 1 的目标值合计 100.5",
+    "validation_method": "全表读取核对计划归属、单位取值与目标值",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_incident_enum",
+    "source": "ind108.sqlite",
+    "query": "SELECT severity, COUNT(*) FROM fact_incident GROUP BY 1; SELECT incident_type, COUNT(*) FROM fact_incident GROUP BY 1; SELECT substr(incident_date,1,4), severity, COUNT(*) FROM fact_incident GROUP BY 1,2; SELECT SUM(injury_count) FROM fact_incident WHERE substr(incident_date,1,4)=2025",
+    "result": "严重度 fa=14、mtc=7、near_miss=11;类型为 6 类中文文本;2026 年 fa 7 起、near_miss 5 起;2025 年受伤人数合计 9 人(2025 年 15 起)",
+    "validation_method": "严重度与类型分布、年度与严重度交叉统计及受伤人数合计",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_risk_enum",
+    "source": "ind108.sqlite",
+    "query": "SELECT likelihood, consequence, risk_level, control_needed, COUNT(*) FROM fact_risk_assessment GROUP BY 1,2,3,4; SELECT * FROM dim_risk_level; SELECT SUM(r.control_needed) FROM fact_risk_assessment r JOIN dim_hazard h ON r.hazard_id=h.hazard_id WHERE h.location='PP改性车间挤出区'",
+    "result": "30 条评估构成 10 种组合,风险等级 L1-L4 与字典等级编码一致;PP改性车间挤出区危险源的控制需求合计 6",
+    "validation_method": "四个枚举列的交叉分布、字典编码对齐与危险源位置口径汇总",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_audit",
+    "source": "ind108.sqlite",
+    "query": "SELECT substr(audit_date,1,4), COUNT(*), ROUND(AVG(score),2), SUM(finding_count) FROM fact_safety_audit GROUP BY 1",
+    "result": "2025 年 24 次、平均 88.8 分、发现项合计 78;2026 年 12 次、平均 87.88 分",
+    "validation_method": "年度分组统计评分均值与发现项合计",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_training",
+    "source": "ind108.sqlite",
+    "query": "SELECT ROUND(SUM(t.duration_hours),2) FROM fact_safety_training t JOIN dim_employee e ON t.trainer_id=e.emp_id WHERE e.status='active'; SELECT e.emp_name, SUM(t.attendee_count) s FROM fact_safety_training t JOIN dim_employee e ON t.trainer_id=e.emp_id GROUP BY 1 ORDER BY s DESC LIMIT 3",
+    "result": "27 次培训;在职讲师培训总时长 97.0 小时;参训人数合计最高为朱超 254,其次彭杰 243、马丽娟 241",
+    "validation_method": "讲师在职状态过滤后的时长合计与讲师维度参训人数排名",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_material",
+    "source": "ind108.sqlite",
+    "query": "SELECT material_id, material_name, category_id, supplier_id, unit FROM dim_material",
+    "result": "15 种原材料,计量单位均为吨;名称如 PP均聚 T30S、ABS 757K、PC 1100",
+    "validation_method": "物料台账读取核对名称、类别与单位",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_product",
+    "source": "ind108.sqlite",
+    "query": "SELECT prod_id, prod_name, prod_line_id FROM dim_product",
+    "result": "15 种产品,分属 4 条产品线;PC/ABS 为材料成本最高的产品",
+    "validation_method": "产品台账读取与成本排名交叉核对",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_product_line",
+    "source": "ind108.sqlite",
+    "query": "SELECT * FROM dim_product_line; SELECT COUNT(*) FROM fact_sales_order o JOIN dim_product p ON o.prod_id=p.prod_id JOIN dim_product_line pl ON p.prod_line_id=pl.prod_line_id WHERE pl.prod_line_name='PA改性系列'",
+    "result": "4 条产品线;PA改性系列 745 张销售订单",
+    "validation_method": "产品线台账检查与两跳口径订单计数",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_metric_catalog",
+    "source": "ind108.sqlite",
+    "query": "SELECT metric_id, metric_name, category, table_source, dws_table, date_column, value_column FROM dim_metric_catalog",
+    "result": "107 个指标定义,标注类别(原子/派生/复合)、来源表、汇总表、日期列与取值列;派生指标配置另含累计/日均的汇总方式与分组列",
+    "validation_method": "指标目录读取与派生指标配置表结构核对",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_dws_reconcile",
+    "source": "ind108.sqlite",
+    "query": "SELECT (SELECT ROUND(SUM(sales_amount),2) FROM DWS_ORG_PERFORMANCE_DAILY) dws, (SELECT ROUND(SUM(amount),2) FROM fact_sales_order) fact; SELECT (SELECT ROUND(AVG(score),4) FROM fact_safety_audit), (SELECT ROUND(AVG(audit_score),4) FROM DWS_SAFETY_DAILY); SELECT (SELECT ROUND(SUM(amount),2) FROM fact_payment_out) f, (SELECT ROUND(SUM(payment_amount),2) FROM DWS_PROCUREMENT_DAILY) d; SELECT (SELECT ROUND(SUM(actual_quantity),2) FROM fact_production_order) f, (SELECT ROUND(SUM(actual_quantity),2) FROM DWS_PRODUCTION_DAILY) d, (SELECT ROUND(SUM(actual_quantity),2) FROM fact_production_plan) p; SELECT (SELECT ROUND(AVG(gross_profit_actual),4) FROM fact_sales_order WHERE substr(order_date,1,4)=2025) f, (SELECT ROUND(AVG(gross_profit_actual),4) FROM DWS_ORG_PERFORMANCE_DAILY WHERE substr(date,1,4)=2025) d",
+    "result": "收入合计 2166039729.04 与明细一致;审计评分日均 88.4917 与明细均分一致;付款金额 1541601885.66 与付款明细一致;售后退货次数合计 83 与退货行数一致;商机预估销量按人合计与明细一致。反例:生产产量日汇总 114351.2 与生产计划表一致而与工单表 114733.13 不同;实际毛利按订单平均 85040.7043 与按人×日平均 30701.748 差异显著",
+    "validation_method": "逐项对照汇总层与明细表的合计或均值,并记录不一致项",
+    "timestamp": "2026-10-10"
+  }
+]

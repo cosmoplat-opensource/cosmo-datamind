@@ -1,0 +1,211 @@
+[
+  {
+    "id": "rel_team_identifier_equivalence",
+    "source": "term_team_api_id",
+    "relation_type": "equivalence",
+    "target": "term_team_fifa_api_id",
+    "connection_condition": "Team.team_api_id and Team.team_fifa_api_id identify the same team row; Team_Attributes carries both columns, while Match carries only team_api_id",
+    "description": "The internal and the FIFA team identifier are alternative identifiers of the same team. Questions that ask for a team's FIFA identifier must read team_fifa_api_id even when the filter comes from a table that only carries team_api_id.",
+    "evidence": [
+      "ev_team_id_integrity"
+    ]
+  },
+  {
+    "id": "rel_team_playing_style_composition",
+    "source": "term_team",
+    "relation_type": "composition",
+    "target": "term_team_playing_style_profile",
+    "connection_condition": "Team_Attributes.team_api_id corresponds to Team.team_api_id",
+    "description": "A team is composed of its dated playing-style profiles; a playing-style profile has no meaning without the team it describes.",
+    "evidence": [
+      "ev_team_attr_snapshot_dates"
+    ]
+  },
+  {
+    "id": "rel_player_ability_composition",
+    "source": "term_player",
+    "relation_type": "composition",
+    "target": "term_player_ability_profile",
+    "connection_condition": "Player_Attributes.player_api_id corresponds to Player.player_api_id",
+    "description": "A player is composed of their dated ability profiles; an ability profile has no meaning without the player it describes.",
+    "evidence": [
+      "ev_player_attr_dup_rows"
+    ]
+  },
+  {
+    "id": "rel_team_profile_snapshot_date_composition",
+    "source": "term_team_playing_style_profile",
+    "relation_type": "composition",
+    "target": "term_team_attribute_snapshot_date",
+    "connection_condition": "Team_Attributes.date is one of the identifying columns of the profile row",
+    "description": "Each team playing-style profile is identified by its team together with its snapshot date, so the date is a required component of the profile identity rather than a free attribute.",
+    "evidence": [
+      "ev_team_attr_snapshot_dates"
+    ]
+  },
+  {
+    "id": "rel_player_profile_snapshot_date_composition",
+    "source": "term_player_ability_profile",
+    "relation_type": "composition",
+    "target": "term_player_attribute_snapshot_date",
+    "connection_condition": "Player_Attributes.date is one of the identifying columns of the profile row",
+    "description": "Each player ability profile is identified by its player together with its snapshot date, so the date is a required component of the profile identity rather than a free attribute.",
+    "evidence": [
+      "ev_attribute_date_format"
+    ]
+  },
+  {
+    "id": "rel_season_match_composition",
+    "source": "term_season",
+    "relation_type": "composition",
+    "target": "term_match",
+    "connection_condition": "Match.season groups the fixtures belonging to that season",
+    "description": "A season is composed of the matches played in it; every match carries exactly one season label.",
+    "evidence": [
+      "ev_season_values"
+    ]
+  },
+  {
+    "id": "rel_league_match_composition",
+    "source": "term_league",
+    "relation_type": "composition",
+    "target": "term_match",
+    "connection_condition": "Match.league_id corresponds to League.id",
+    "description": "A league is composed of the matches played in it; a match cannot exist without the league that staged it.",
+    "evidence": [
+      "ev_match_league_counts"
+    ]
+  },
+  {
+    "id": "rel_country_league_composition",
+    "source": "term_country",
+    "relation_type": "composition",
+    "target": "term_league",
+    "connection_condition": "League.country_id corresponds to Country.id",
+    "description": "A country is composed of the leagues staged in it; each league belongs to exactly one country.",
+    "evidence": [
+      "ev_league_names"
+    ]
+  },
+  {
+    "id": "rel_birth_year_derivation",
+    "source": "term_birthday",
+    "relation_type": "derivation",
+    "target": "term_birth_year",
+    "connection_condition": "",
+    "description": "The birth year is derived from the calendar year part of the birthday value, which is what cohort statements such as being born before a given year or after a given decade compare.",
+    "evidence": [
+      "ev_birthday_format"
+    ]
+  },
+  {
+    "id": "rel_total_goals_from_home",
+    "source": "term_home_team_goal",
+    "relation_type": "derivation",
+    "target": "term_total_goals",
+    "connection_condition": "",
+    "description": "Total match goals include the home team's goals.",
+    "evidence": [
+      "ev_schema_inventory"
+    ]
+  },
+  {
+    "id": "rel_total_goals_from_away",
+    "source": "term_away_team_goal",
+    "relation_type": "derivation",
+    "target": "term_total_goals",
+    "connection_condition": "",
+    "description": "Total match goals include the away team's goals.",
+    "evidence": [
+      "ev_schema_inventory"
+    ]
+  },
+  {
+    "id": "rel_away_win_derivation",
+    "source": "term_away_team_goal",
+    "relation_type": "derivation",
+    "target": "term_away_win",
+    "connection_condition": "compared against Match.home_team_goal of the same match",
+    "description": "An away win is derived by comparing the away team's goals with the home team's goals in the same match; the away team wins only when its goal count is strictly greater.",
+    "evidence": [
+      "ev_match_league_counts"
+    ]
+  },
+  {
+    "id": "rel_match_count_derivation",
+    "source": "term_match",
+    "relation_type": "derivation",
+    "target": "term_match_count",
+    "connection_condition": "",
+    "description": "The number of matches for a league or season is derived by counting the qualifying match records.",
+    "evidence": [
+      "ev_match_league_counts"
+    ]
+  },
+  {
+    "id": "rel_buildup_play_speed_class_derivation",
+    "source": "term_buildup_play_speed",
+    "relation_type": "derivation",
+    "target": "term_buildup_play_speed_class",
+    "connection_condition": "",
+    "description": "The speed class label is derived by banding the numeric build-up play speed of the same profile row into Slow, Balanced and Fast.",
+    "evidence": [
+      "ev_style_class_banding"
+    ]
+  },
+  {
+    "id": "rel_chance_creation_passing_class_derivation",
+    "source": "term_buildup_play_passing",
+    "relation_type": "derivation",
+    "target": "term_chance_creation_passing_class",
+    "connection_condition": "the class column bands the numeric chance-creation passing rating of the same profile row",
+    "description": "The chance-creation passing class is a categorical banding of the numeric chance-creation passing rating into Safe, Normal and Risky.",
+    "evidence": [
+      "ev_style_class_banding"
+    ]
+  },
+  {
+    "id": "rel_attacking_work_rate_hierarchy",
+    "source": "term_attacking_work_rate",
+    "relation_type": "hierarchy",
+    "target": "term_work_rate_level",
+    "connection_condition": "",
+    "description": "Attacking work rate is a use of the shared work-rate scale, and its valid value domain is the subset low, medium and high of the work-rate levels.",
+    "evidence": [
+      "ev_work_rate_values"
+    ]
+  },
+  {
+    "id": "rel_defensive_work_rate_hierarchy",
+    "source": "term_defensive_work_rate",
+    "relation_type": "hierarchy",
+    "target": "term_work_rate_level",
+    "connection_condition": "",
+    "description": "Defensive work rate is a use of the shared work-rate scale, and its valid value domain is the subset low, medium and high of the work-rate levels.",
+    "evidence": [
+      "ev_work_rate_values"
+    ]
+  },
+  {
+    "id": "rel_player_team_association",
+    "source": "term_player",
+    "relation_type": "association",
+    "target": "term_team",
+    "connection_condition": "indirect: only through the home_player_1..11 and away_player_1..11 slots of Match, which hold player_api_id values",
+    "description": "Players and teams are related through match participation; no identifier links a player directly to a team, because squad membership is recorded only as player slots on match records.",
+    "evidence": [
+      "ev_player_team_link"
+    ]
+  },
+  {
+    "id": "rel_match_team_association",
+    "source": "term_match",
+    "relation_type": "association",
+    "target": "term_team",
+    "connection_condition": "Match.home_team_api_id and Match.away_team_api_id correspond to Team.team_api_id",
+    "description": "A match is played by a home team and an away team; the two sides are roles that a team takes in a match rather than components of it.",
+    "evidence": [
+      "ev_team_id_integrity"
+    ]
+  }
+]

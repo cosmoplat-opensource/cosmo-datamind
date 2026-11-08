@@ -1,0 +1,302 @@
+[
+  {
+    "id": "rel_question_is_post",
+    "source": "term_question_post",
+    "relation_type": "hierarchy",
+    "target": "term_post",
+    "connection_condition": "Question posts are rows of the same posts store as every other content kind, distinguished by the post type code",
+    "description": "A question post is a specific kind of post. Its value domain is a subset of all posts, and it adds question-only attributes such as title, tags and answer counters.",
+    "evidence": [
+      "ev_post_type_enum",
+      "ev_post_type_metric_nonnull"
+    ]
+  },
+  {
+    "id": "rel_answer_is_post",
+    "source": "term_answer_post",
+    "relation_type": "hierarchy",
+    "target": "term_post",
+    "connection_condition": "Answer posts are rows of the same posts store as every other content kind, distinguished by the post type code",
+    "description": "An answer post is a specific kind of post. It shares the post identity space and adds answer-specific attributes such as its parent question reference.",
+    "evidence": [
+      "ev_post_type_enum",
+      "ev_answer_parent_linkage"
+    ]
+  },
+  {
+    "id": "rel_tag_wiki_is_post",
+    "source": "term_tag_wiki_post",
+    "relation_type": "hierarchy",
+    "target": "term_post",
+    "connection_condition": "Tag documentation posts are rows of the same posts store, distinguished by their post type codes",
+    "description": "A tag wiki post is a specific kind of post whose content documents a tag rather than asking or answering a question.",
+    "evidence": [
+      "ev_post_type_enum",
+      "ev_tag_excerpt_targets"
+    ]
+  },
+  {
+    "id": "rel_post_comments",
+    "source": "term_post",
+    "relation_type": "composition",
+    "target": "term_comment",
+    "connection_condition": "comments.PostId references posts.Id, and is populated on every comment",
+    "description": "A post is composed of the comments attached to it. A comment cannot exist without its post.",
+    "evidence": [
+      "ev_comment_count_vs_rows"
+    ]
+  },
+  {
+    "id": "rel_question_answers",
+    "source": "term_question_post",
+    "relation_type": "composition",
+    "target": "term_answer_post",
+    "connection_condition": "an answer post carries a reference to the question post it responds to; questions carry no such reference",
+    "description": "A question is composed of the answers submitted to it. An answer is only meaningful as a response to its question.",
+    "evidence": [
+      "ev_answer_parent_linkage",
+      "ev_post_type_enum"
+    ]
+  },
+  {
+    "id": "rel_post_votes",
+    "source": "term_post",
+    "relation_type": "composition",
+    "target": "term_vote",
+    "connection_condition": "votes.PostId references posts.Id, and is populated on every vote",
+    "description": "A post is composed of the votes cast on it. A vote cannot exist without the post it rates.",
+    "evidence": [
+      "ev_votes_user_null"
+    ]
+  },
+  {
+    "id": "rel_post_revisions",
+    "source": "term_post",
+    "relation_type": "composition",
+    "target": "term_post_revision",
+    "connection_condition": "postHistory.PostId references posts.Id, and is populated on every revision event",
+    "description": "A post is composed of its revision events. A revision is only meaningful as a state of its post.",
+    "evidence": [
+      "ev_post_history_type_enum"
+    ]
+  },
+  {
+    "id": "rel_post_links",
+    "source": "term_post",
+    "relation_type": "composition",
+    "target": "term_post_link",
+    "connection_condition": "postLinks.PostId references posts.Id, and is populated on every post link",
+    "description": "A post is composed of the link records that originate from it. A link record cannot exist without its originating post.",
+    "evidence": [
+      "ev_link_type_enum"
+    ]
+  },
+  {
+    "id": "rel_user_badges",
+    "source": "term_user",
+    "relation_type": "composition",
+    "target": "term_badge",
+    "connection_condition": "badges.UserId references users.Id, and is populated on every badge award",
+    "description": "A user is composed of the badge awards granted to them. A badge award cannot exist without a user.",
+    "evidence": [
+      "ev_badge_names"
+    ]
+  },
+  {
+    "id": "rel_tag_wiki_posts",
+    "source": "term_tag",
+    "relation_type": "composition",
+    "target": "term_tag_wiki_post",
+    "connection_condition": "tags.ExcerptPostId and tags.WikiPostId reference posts holding the tag's documentation",
+    "description": "A tag is composed of its documentation content, held as dedicated posts. That documentation cannot exist without the tag it describes.",
+    "evidence": [
+      "ev_tag_excerpt_targets",
+      "ev_tag_excerpt_nullable"
+    ]
+  },
+  {
+    "id": "rel_owner_is_user_id",
+    "source": "term_post_owner",
+    "relation_type": "equivalence",
+    "target": "term_user_id",
+    "connection_condition": "posts.OwnerUserId carries the same identifier values as users.Id",
+    "description": "The post owner reference and the canonical user identifier are the same concept expressed in different places; the owner value is a user identifier.",
+    "evidence": [
+      "ev_user_id_vs_account_id",
+      "ev_workload_named_users"
+    ]
+  },
+  {
+    "id": "rel_comment_author_is_user_id",
+    "source": "term_comment_author",
+    "relation_type": "equivalence",
+    "target": "term_user_id",
+    "connection_condition": "comments.UserId carries the same identifier values as users.Id",
+    "description": "The comment author reference and the canonical user identifier are the same concept expressed in different places.",
+    "evidence": [
+      "ev_workload_comment53",
+      "ev_user_id_vs_account_id"
+    ]
+  },
+  {
+    "id": "rel_vote_author_is_user_id",
+    "source": "term_vote_author",
+    "relation_type": "equivalence",
+    "target": "term_user_id",
+    "connection_condition": "votes.UserId carries the same identifier values as users.Id",
+    "description": "The vote author reference and the canonical user identifier are the same concept expressed in different places.",
+    "evidence": [
+      "ev_workload_user24",
+      "ev_user_id_vs_account_id"
+    ]
+  },
+  {
+    "id": "rel_last_editor_is_user_id",
+    "source": "term_last_editor",
+    "relation_type": "equivalence",
+    "target": "term_user_id",
+    "connection_condition": "posts.LastEditorUserId carries the same identifier values as users.Id",
+    "description": "The last-editor reference and the canonical user identifier are the same concept expressed in different places.",
+    "evidence": [
+      "ev_workload_title_lookup",
+      "ev_user_id_vs_account_id"
+    ]
+  },
+  {
+    "id": "rel_comment_count_from_comments",
+    "source": "term_comment",
+    "relation_type": "derivation",
+    "target": "term_comment_count",
+    "connection_condition": "the stored comment counter on a post corresponds to the number of comment records referencing that post",
+    "description": "A post's comment count is derived by counting the comments attached to it. The stored counter is a materialized copy of that count.",
+    "evidence": [
+      "ev_comment_count_vs_rows"
+    ]
+  },
+  {
+    "id": "rel_answer_count_from_answers",
+    "source": "term_answer_post",
+    "relation_type": "derivation",
+    "target": "term_answer_count",
+    "connection_condition": "the stored answer counter on a question corresponds to the number of answer posts referencing it",
+    "description": "A question's answer count is derived by counting its answer posts.",
+    "evidence": [
+      "ev_answer_parent_linkage",
+      "ev_post_type_metric_nonnull"
+    ]
+  },
+  {
+    "id": "rel_tag_usage_from_post_tags",
+    "source": "term_post_tags",
+    "relation_type": "derivation",
+    "target": "term_tag_usage_count",
+    "connection_condition": "the stored tag usage counter corresponds to the number of question posts whose serialized tag value carries that tag",
+    "description": "A tag's usage count is derived by counting the questions carrying that tag. The stored counter is a materialized copy.",
+    "evidence": [
+      "ev_tag_usage_count_check"
+    ]
+  },
+  {
+    "id": "rel_post_score_from_votes",
+    "source": "term_vote",
+    "relation_type": "derivation",
+    "target": "term_post_score",
+    "connection_condition": "the stored per-post rating is sustained by the positive and negative vote records the post has received",
+    "description": "A post score is derived from the net effect of the votes cast on the post. It is stored as a materialized rating rather than recomputed from vote rows.",
+    "evidence": [
+      "ev_score_ranges",
+      "ev_vote_type_enum"
+    ]
+  },
+  {
+    "id": "rel_post_tags_from_tag_names",
+    "source": "term_tag_name",
+    "relation_type": "derivation",
+    "target": "term_post_tags",
+    "connection_condition": "a post's serialized tag value is formed by concatenating its tag names, each wrapped in bracket characters",
+    "description": "The tag value stored on a post is derived by concatenating the names of the tags applied to it, so membership tests must account for the bracketed encoding rather than the bare tag name.",
+    "evidence": [
+      "ev_tags_format",
+      "ev_tags_bracket_absence"
+    ]
+  },
+  {
+    "id": "rel_user_posts",
+    "source": "term_user",
+    "relation_type": "association",
+    "target": "term_post",
+    "connection_condition": "a post may reference its authoring user, but the reference is absent for imported or anonymous content",
+    "description": "Users author posts. The authorship link is optional, so posts are not strictly dependent on a user record.",
+    "evidence": [
+      "ev_post_nullability",
+      "ev_workload_named_users"
+    ]
+  },
+  {
+    "id": "rel_user_comments",
+    "source": "term_user",
+    "relation_type": "association",
+    "target": "term_comment",
+    "connection_condition": "a comment may reference its authoring user, but the reference is absent for some rows",
+    "description": "Users write comments. The authorship link is optional and must be handled as missing for part of the rows.",
+    "evidence": [
+      "ev_comment_author_displayname_null"
+    ]
+  },
+  {
+    "id": "rel_user_votes",
+    "source": "term_user",
+    "relation_type": "association",
+    "target": "term_vote",
+    "connection_condition": "a vote may reference the user who cast it, but the reference is absent for most rows",
+    "description": "Users cast votes. Because the casting user is recorded only for a minority of rows, the association holds in principle but not reliably at the data level.",
+    "evidence": [
+      "ev_votes_user_null"
+    ]
+  },
+  {
+    "id": "rel_post_link_related_post",
+    "source": "term_post_link",
+    "relation_type": "association",
+    "target": "term_post",
+    "connection_condition": "the related-post reference on a link record points at another post",
+    "description": "A post link connects two posts, so a link record is associated with the post on its related side in addition to the post it originates from.",
+    "evidence": [
+      "ev_link_type_enum"
+    ]
+  },
+  {
+    "id": "rel_tag_posts",
+    "source": "term_tag",
+    "relation_type": "association",
+    "target": "term_post",
+    "connection_condition": "a question carries tag names in its serialized tag value; there is no identifier-based join between the tag and the post",
+    "description": "Tags classify questions, but the link is carried as serialized text on the post rather than as a structural reference, so it is a semantic association at the concept level.",
+    "evidence": [
+      "ev_tags_format",
+      "ev_tag_humor"
+    ]
+  },
+  {
+    "id": "rel_tag_excerpt_is_wiki_post",
+    "source": "term_tag_excerpt_post",
+    "relation_type": "association",
+    "target": "term_tag_wiki_post",
+    "connection_condition": "the excerpt reference on a tag resolves to a post holding tag documentation content",
+    "description": "A tag's excerpt source resolves to the tag documentation content stored as a post, linking the tag-level concept to the documentation post it points at.",
+    "evidence": [
+      "ev_tag_excerpt_targets"
+    ]
+  },
+  {
+    "id": "rel_revision_author_user",
+    "source": "term_post_revision",
+    "relation_type": "association",
+    "target": "term_user",
+    "connection_condition": "a revision event may reference the user who performed it, but the reference is absent for some events",
+    "description": "Revision events are performed by users, providing an audit trail of editing activity alongside the post-level last-editor reference.",
+    "evidence": [
+      "ev_post_history_type_enum"
+    ]
+  }
+]

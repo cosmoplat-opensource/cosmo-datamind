@@ -1,0 +1,393 @@
+[
+  {
+    "id": "constraint_legality_status_enum",
+    "target": "legality_status",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "banned",
+      "banned card",
+      "legal status",
+      "legal",
+      "restricted",
+      "status"
+    ],
+    "severity": "block",
+    "scope": "Applies whenever legality status is filtered or reported.",
+    "confidence": "high",
+    "description": "Legality status takes exactly three capitalised values: 'Legal', 'Banned' and 'Restricted'. Filters must match that capitalisation; a lower-case comparison such as 'legal' does not match the stored value.",
+    "evidence": [
+      "evidence_legality_status"
+    ]
+  },
+  {
+    "id": "constraint_format_enum",
+    "target": "format",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "format",
+      "play format",
+      "commander",
+      "gladiator",
+      "banned in",
+      "in the format"
+    ],
+    "severity": "block",
+    "scope": "Applies whenever a play format is named in a question.",
+    "confidence": "high",
+    "description": "Play format labels are stored in lower case; 15 formats exist, including commander, gladiator, legacy, vintage, duel, modern, pauper, pioneer, historic, standard, future, brawl, penny, premodern and oldschool. A format name in a question must be normalised to its stored lower-case label.",
+    "evidence": [
+      "evidence_legality_formats"
+    ]
+  },
+  {
+    "id": "constraint_portuguese_brazil_label",
+    "target": "card_language",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "Portuguese",
+      "Brazilian Portuguese",
+      "Brasil",
+      "Brazil",
+      "Portuguese (Brasil)",
+      "language"
+    ],
+    "severity": "block",
+    "scope": "Applies to both card-text language and set-name language values.",
+    "confidence": "high",
+    "description": "The Brazilian Portuguese language is stored as the exact label 'Portuguese (Brazil)'. The form 'Portuguese (Brasil)' does not occur anywhere in the data and matches zero rows, although it is the label used in workload phrasing.",
+    "evidence": [
+      "evidence_portuguese_brasil_absent",
+      "evidence_foreign_languages",
+      "evidence_set_translation_languages"
+    ]
+  },
+  {
+    "id": "constraint_power_missing",
+    "target": "power",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "without power",
+      "no power",
+      "cards without power",
+      "missing power",
+      "power is null",
+      "powerless",
+      "does not have power"
+    ],
+    "severity": "block",
+    "scope": "Applies whenever a question refers to cards that have no power.",
+    "confidence": "high",
+    "description": "Power is a text attribute. A printing counts as having no power when the power value is null or is the special symbol '*'. 30624 printings have a null power and 429 have the value '*', giving 31053 printings without power. Checking only for null undercounts by 429.",
+    "evidence": [
+      "evidence_power_missing"
+    ]
+  },
+  {
+    "id": "constraint_printing_vs_card_grain",
+    "target": "card_printing",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "how many cards",
+      "number of cards",
+      "count cards",
+      "percentage of cards",
+      "list all cards",
+      "distinct card"
+    ],
+    "severity": "warning",
+    "scope": "Applies to any count, list or proportion stated over 'cards'.",
+    "confidence": "high",
+    "description": "The cards table holds one row per printing, so 56822 rows describe only 21738 distinct card names and every card that was reprinted appears many times. Counting, listing or averaging without deciding whether the unit of analysis is the printing or the card produces inflated and duplicated results. A single card name can also map to several oracle identifiers for the un-sets.",
+    "evidence": [
+      "evidence_card_table_grain",
+      "evidence_card_identity",
+      "evidence_edhrec1_banned"
+    ]
+  },
+  {
+    "id": "constraint_content_warning_flag",
+    "target": "content_warning",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "content warning",
+      "do not have a content warning",
+      "no content warning",
+      "missing or degraded properties and values",
+      "degraded properties"
+    ],
+    "severity": "block",
+    "scope": "Applies whenever a content warning is mentioned.",
+    "confidence": "high",
+    "description": "hasContentWarning is a 0/1 flag. Value 1 marks a printing whose properties or values are missing or degraded and which therefore carries a content warning; value 0 means no content warning. Only 29 printings carry the flag, so 'cards that do not have a content warning' selects almost the whole table and is normally the numerator or denominator of a large proportion rather than a rare subset.",
+    "evidence": [
+      "evidence_content_warning"
+    ]
+  },
+  {
+    "id": "constraint_story_spotlight_flag",
+    "target": "story_spotlight",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "story spotlight",
+      "spotlight card",
+      "isStorySpotlight"
+    ],
+    "severity": "block",
+    "scope": "Applies whenever story spotlight cards are mentioned.",
+    "confidence": "high",
+    "description": "isStorySpotlight is a 0/1 flag; exactly 104 printings are story spotlight cards and the flag is the only way to identify them.",
+    "evidence": [
+      "evidence_story_spotlight"
+    ]
+  },
+  {
+    "id": "constraint_edhrec_rank_semantics",
+    "target": "edhrec_rank",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "EDHRec",
+      "ranked 1st",
+      "rank",
+      "edhrecRank",
+      "most played"
+    ],
+    "severity": "warning",
+    "scope": "Applies whenever EDHRec ranking is used.",
+    "confidence": "high",
+    "description": "edhrecRank is an integer popularity rank where the smallest value is the most played; 'ranked 1st' means edhrecRank = 1, which is true for 33 printings. The value is null for 4761 printings, and because it is stored per printing the same card contributes several rows with the same rank.",
+    "evidence": [
+      "evidence_edhrec_rank",
+      "evidence_edhrec1_banned"
+    ]
+  },
+  {
+    "id": "constraint_mtgo_availability_semantics",
+    "target": "mtgo_availability",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "Magic: The Gathering Online",
+      "MTGO",
+      "online",
+      "appear on Magic",
+      "mtgoCode"
+    ],
+    "severity": "block",
+    "scope": "Applies when a set or a card is asked about in connection with Magic: The Gathering Online.",
+    "confidence": "high",
+    "description": "Release on Magic: The Gathering Online is recorded only as the presence of a non-null mtgoCode on the set. Only 160 of 551 sets carry one, and the code is null for many sets even when other sets of the same card were released online, so a per-printing question must be resolved at set level and answered over all sets in which the card was printed.",
+    "evidence": [
+      "evidence_mtgo_sets",
+      "evidence_angel_of_mercy"
+    ]
+  },
+  {
+    "id": "constraint_set_name_sources",
+    "target": "set_name",
+    "constraint_type": "scope",
+    "trigger_keywords": [
+      "set name",
+      "known as",
+      "called",
+      "set translation",
+      "translated set",
+      "set code"
+    ],
+    "severity": "block",
+    "scope": "Applies whenever a set is identified by a name rather than by its code.",
+    "confidence": "high",
+    "description": "A set can be named by its official English name, by a marketplace name, or by a localized name in ten non-English languages. Only 121 of 551 sets have localized names, and a localized name must be resolved to a set code before it can be joined to cards. The same string can also match both the official and the marketplace name.",
+    "evidence": [
+      "evidence_set_translation_coverage",
+      "evidence_set_name_lookup",
+      "evidence_set_name_variants"
+    ]
+  },
+  {
+    "id": "constraint_language_scope_split",
+    "target": "card_language",
+    "constraint_type": "scope",
+    "trigger_keywords": [
+      "language",
+      "in Italian",
+      "in French",
+      "Korean version",
+      "version",
+      "translated",
+      "available in"
+    ],
+    "severity": "block",
+    "scope": "Applies whenever a question mentions a language.",
+    "confidence": "high",
+    "description": "Two different language attributes exist. The language of a card's own text lives on the localized card record and covers 16 languages at printing level. The language of a set's localized name lives on the set translation record and covers only the 10 languages with 121 sets each. A question about a language version of a card concerns card-language coverage; a question about translated sets concerns set-name-language coverage. Both use the same labels, but coverage differs sharply, and coverage is per printing, so the absence of a language for one printing of a card does not imply the language is absent for the card as a whole.",
+    "evidence": [
+      "evidence_foreign_languages",
+      "evidence_set_translation_languages",
+      "evidence_ancestors_chosen_languages"
+    ]
+  },
+  {
+    "id": "constraint_ruling_vs_card_text",
+    "target": "ruling",
+    "constraint_type": "scope",
+    "trigger_keywords": [
+      "ruling",
+      "text of the ruling",
+      "rule of playing card",
+      "official ruling",
+      "card text",
+      "rules text"
+    ],
+    "severity": "block",
+    "scope": "Applies when a question asks for the text or the rule of a card.",
+    "confidence": "medium",
+    "description": "Two distinct text sources can be meant. An official ruling is dated English text attached to a printing and exists only for some cards. Card rules text is the text printed on the card and is available per language on the localized card record. A request that names a language, such as Italian text of a card in a set, refers to the language-specific card rules text; a request for the rule or ruling of a card without a language refers to the official ruling text when a ruling exists. The two must not be substituted for one another, and ruling coverage is not guaranteed for every card.",
+    "evidence": [
+      "evidence_rulings_join",
+      "evidence_coldsnap_italian_text",
+      "evidence_uuid_foreign_join"
+    ]
+  },
+  {
+    "id": "constraint_legality_join_orphans",
+    "target": "legality",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "banned",
+      "legalities",
+      "join",
+      "legal in",
+      "banned in"
+    ],
+    "severity": "warning",
+    "scope": "Applies when legality records are joined to card attributes.",
+    "confidence": "high",
+    "description": "72 legality rows reference a uuid that is absent from the cards table, and 16 localized card rows reference a uuid that is absent from cards. Inner joins silently drop these rows; the drop must be deliberate and reported when it affects a count.",
+    "evidence": [
+      "evidence_legality_orphans",
+      "evidence_foreign_join_orphans"
+    ]
+  },
+  {
+    "id": "constraint_converted_mana_cost_semantics",
+    "target": "converted_mana_cost",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "converted mana",
+      "mana cost",
+      "mana value",
+      "costs more",
+      "expensive"
+    ],
+    "severity": "info",
+    "scope": "Applies to card cost comparisons.",
+    "confidence": "high",
+    "description": "Converted mana cost equals the number of mana symbols in the mana cost. Printings with no mana cost have a value of zero rather than a null, and cost comparisons are made on the numeric value: a larger value means a more expensive card.",
+    "evidence": [
+      "evidence_converted_mana_cost",
+      "evidence_cmc_zero",
+      "evidence_serra_shrine"
+    ]
+  },
+  {
+    "id": "constraint_border_color_enum",
+    "target": "border_color",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "white border",
+      "white-bordered",
+      "border",
+      "borderColor",
+      "black border"
+    ],
+    "severity": "block",
+    "scope": "Applies when a border colour is mentioned.",
+    "confidence": "high",
+    "description": "Border colour takes the values black, white, gold, silver and borderless, stored in lower case. A white-bordered card means borderColor = 'white', which holds for 5017 printings.",
+    "evidence": [
+      "evidence_border_color"
+    ]
+  },
+  {
+    "id": "constraint_rarity_enum",
+    "target": "rarity",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "mythic",
+      "mythic rarity",
+      "rarity",
+      "common",
+      "uncommon",
+      "rare"
+    ],
+    "severity": "block",
+    "scope": "Applies whenever rarity is used as a filter.",
+    "confidence": "high",
+    "description": "Rarity takes exactly four lower-case values: common, uncommon, rare and mythic. 'Mythic rarity' means rarity = 'mythic', which holds for 3200 printings.",
+    "evidence": [
+      "evidence_rarity",
+      "evidence_gladiator_mythic_banned"
+    ]
+  },
+  {
+    "id": "constraint_artist_name_exact",
+    "target": "artist",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "illustrated by",
+      "illustrator",
+      "designed by",
+      "artist",
+      "art by"
+    ],
+    "severity": "warning",
+    "scope": "Applies when a person is named as the illustrator or designer of a card.",
+    "confidence": "high",
+    "description": "Artist values are exact strings and are credited per printing. The workload spelling 'Stephen Daniel' matches nothing, while the stored spelling is 'Stephen Daniele'. Names must therefore be verified against the stored values, and because the credit is per printing, one artist can be credited on many printings of the same card.",
+    "evidence": [
+      "evidence_artist_values",
+      "evidence_adam_rex"
+    ]
+  },
+  {
+    "id": "constraint_percentage_base_population",
+    "target": "percentage",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "percentage",
+      "percent",
+      "proportion",
+      "ratio",
+      "share",
+      "what fraction"
+    ],
+    "severity": "block",
+    "scope": "Applies to every proportion question.",
+    "confidence": "high",
+    "description": "A percentage is the ratio of a matching count to a declared base population, scaled to 100. The base population is usually stated as a subset, such as cards in a format with a given legality status, or story spotlight cards, and choosing the wrong base changes the result. Both parts of the ratio must be counted over the same unit, either printings or distinct cards, and the unit must be chosen consistently.",
+    "evidence": [
+      "evidence_commander_legal",
+      "evidence_story_spotlight",
+      "evidence_content_warning",
+      "evidence_card_table_grain"
+    ]
+  },
+  {
+    "id": "constraint_subtype_string_semantics",
+    "target": "subtype",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "subtype",
+      "subtypes",
+      "other than",
+      "creature type",
+      "Summon"
+    ],
+    "severity": "warning",
+    "scope": "Applies when card subtypes are filtered or compared.",
+    "confidence": "high",
+    "description": "Subtypes are stored as one comma-separated string per printing, so a single subtype token must be matched inside the list rather than compared to the whole value. Historic type lines such as 'Summon - Angel' belong to originalType, which is null for 14766 printings, so subtype and type-line questions may need to combine both columns.",
+    "evidence": [
+      "evidence_original_type_angel"
+    ]
+  }
+]

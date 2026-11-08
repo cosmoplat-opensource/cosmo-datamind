@@ -1,0 +1,210 @@
+[
+  {
+    "id": "evidence_schema",
+    "source": "card_games sqlite database",
+    "query": "sqlite3 -readonly <db> \".schema\"",
+    "result": "Six tables: cards, foreign_data, legalities, sets, set_translations, rulings. No FOREIGN KEY constraint is declared in any CREATE TABLE statement.",
+    "validation_method": "DDL inspection",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_card_grain",
+    "source": "card_games sqlite database",
+    "query": "select count(*), count(distinct uuid) from cards; select count(*) from (select name, count(*) c from cards group by 1 having c > 1);",
+    "result": "56822 rows and 56822 distinct uuid, so uuid is unique per row; 11170 card names occur in more than one row.",
+    "validation_method": "row count against distinct-value count",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_uuid_join",
+    "source": "card_games sqlite database",
+    "query": "select 'cards', count(distinct uuid) from cards union all select 'legalities', count(distinct uuid) from legalities union all select 'foreign_data', count(distinct uuid) from foreign_data union all select 'rulings', count(distinct uuid) from rulings; plus anti-joins against cards.uuid",
+    "result": "cards 56822; legalities 55608 distinct uuid with 9 absent from cards; foreign_data 34056 distinct uuid with 3 absent from cards; rulings 26141 distinct uuid with 0 absent from cards.",
+    "validation_method": "distinct-value and anti-join comparison",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_setcode_join",
+    "source": "card_games sqlite database",
+    "query": "select count(*) from (select distinct setCode from cards) c where c.setCode not in (select code from sets); select count(*) from set_translations where setCode not in (select code from sets);",
+    "result": "0 card setCode values are missing from sets.code, and 0 set_translations rows reference an unknown setCode.",
+    "validation_method": "anti-join over distinct key values",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_border_color",
+    "source": "card_games sqlite database",
+    "query": "select borderColor, count(*) from cards group by 1 order by 2 desc;",
+    "result": "black 49729; white 5017; gold 1244; silver 591; borderless 241. No row has a missing border colour.",
+    "validation_method": "value-domain enumeration",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_power_domain",
+    "source": "card_games sqlite database",
+    "query": "select power, count(*) from cards group by 1 order by 2 desc limit 15; select sum(power is null), sum(power = '*') from cards;",
+    "result": "The infinite marker '*' appears 429 times; 30624 rows have no power value; remaining rows hold numeric text led by 2 (7815), 1 (5579), 3 (4414), 4 (2855).",
+    "validation_method": "value-domain enumeration",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_power_null_nature",
+    "source": "card_games sqlite database",
+    "query": "select case when type like '%Creature%' then 'creature' else 'non-creature' end, count(*) from cards where power is null group by 1;",
+    "result": "non-creature 30623, creature 1. A missing power value overwhelmingly marks a card with no power characteristic rather than a creature with an unknown power.",
+    "validation_method": "cross-tabulation against the type line",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_colors",
+    "source": "card_games sqlite database",
+    "query": "select colors, count(*) from cards group by 1 order by 2 desc limit 12; select sum(colors is null), sum(colors = '') from cards;",
+    "result": "12540 rows have no colour value and none hold an empty string. Single codes led by G 8066, B 7807, R 7793, W 7681, U 7630; multi-colour values are comma separated such as 'G,W' 505, 'G,R' 492, 'U,W' 471. Rows without a colour are dominated by Artifact and Land type lines.",
+    "validation_method": "value-domain enumeration with null accounting",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_types_scope",
+    "source": "card_games sqlite database",
+    "query": "select sum(types is not null and types <> ''), sum(supertypes is not null and supertypes <> ''), sum(subtypes is not null and subtypes <> ''), count(*) from cards;",
+    "result": "types populated for 56822 of 56822 rows, supertypes for 7840, subtypes for 34594. Supertype values observed include Legendary 4286, Basic 3269, Snow 142, World 47.",
+    "validation_method": "coverage comparison across type-line columns",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_originaltype",
+    "source": "card_games sqlite database",
+    "query": "select sum(originalType is null), sum(originalType = '') from cards; select originalType, count(*) from cards group by 1 order by 2 desc limit 12;",
+    "result": "14766 rows have no originally printed type line and none hold an empty string. Leading values are Instant 4745, Sorcery 4576, Land 2432, Enchantment 2295, Artifact 2093, plus composite lines such as 'Enchantment — Aura' 811 and 'Artifact — Equipment' 398.",
+    "validation_method": "null accounting and value-domain enumeration",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_card_languages",
+    "source": "card_games sqlite database",
+    "query": "select language, count(*) from foreign_data group by 1 order by 2 desc;",
+    "result": "16 distinct languages: Japanese 31226, French 29301, German 28891, Italian 28698, Spanish 28639, Portuguese (Brazil) 25641, Chinese Simplified 20106, Russian 15878, Chinese Traditional 11106, Korean 9692, then singletons Phyrexian 3, Sanskrit 1, Latin 1, Hebrew 1, Arabic 1, Ancient Greek 1.",
+    "validation_method": "value-domain enumeration",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_set_languages",
+    "source": "card_games sqlite database",
+    "query": "select language, count(*) from set_translations group by 1 order by 2 desc;",
+    "result": "10 distinct languages, exactly 121 rows each: Spanish, Russian, Portuguese (Brazil), Korean, Japanese, Italian, German, French, Chinese Traditional, Chinese Simplified.",
+    "validation_method": "value-domain enumeration",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_fd_grain",
+    "source": "card_games sqlite database",
+    "query": "select count(*), count(distinct uuid || '|' || language) from foreign_data;",
+    "result": "229186 rows and 229186 distinct card-and-language pairs, so there is one translation row per card per language.",
+    "validation_method": "row count against composite distinct-value count",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_set_translation_coverage",
+    "source": "card_games sqlite database",
+    "query": "select count(*) from sets where code in (select setCode from set_translations); select count(*) from sets;",
+    "result": "121 of 551 sets have any set-name translation, and each of those has exactly ten language rows.",
+    "validation_method": "coverage comparison",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_set_name_collision",
+    "source": "card_games sqlite database",
+    "query": "select count(*) from sets a join sets b on b.name like a.name || '%' and a.name <> b.name; select count(*) from (select distinct name from cards) c where c.name in (select name from sets);",
+    "result": "176 set names are a strict prefix of another set name, including 'Eighth Edition' against 'Eighth Edition Promos', 'Coldsnap' against 'Coldsnap Theme Decks' and 'Hour of Devastation' against 'Hour of Devastation Promos'. 14 names occur both as a card name and as a set name, including 'Hour of Devastation', 'Conflux' and 'Future Sight'.",
+    "validation_method": "prefix join and cross-table name intersection",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_legality_status",
+    "source": "card_games sqlite database",
+    "query": "select status, count(*) from legalities group by 1 order by 2 desc; select format, count(*) from legalities group by 1 order by 2 desc;",
+    "result": "Legal 424958, Banned 2313, Restricted 636. 15 formats, led by vintage, legacy and commander at 55576 rows each down to oldschool at 4621. Within commander, Legal 55244 and Banned 332.",
+    "validation_method": "value-domain enumeration",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_rulings_grain",
+    "source": "card_games sqlite database",
+    "query": "select count(*), count(distinct uuid) from rulings; select uuid, count(*) c from rulings group by 1 order by c desc limit 5;",
+    "result": "87769 ruling rows over 26141 distinct cards; the largest number of rulings recorded for one card is 27. Ruling dates span 2004-10-04 to 2021-02-05.",
+    "validation_method": "row count, distinct-value count and grouped maximum",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_textless_text",
+    "source": "card_games sqlite database",
+    "query": "select isTextless, text is null, count(*) from cards group by 1, 2;",
+    "result": "Not textless with text present 55752; not textless with no text 955; textless with text present 115; textless with no text 0.",
+    "validation_method": "cross-tabulation of flag against text presence",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_flags",
+    "source": "card_games sqlite database",
+    "query": "select sum(isPromo), sum(isStorySpotlight), sum(isTextless), sum(isOversized), sum(isReprint), sum(isFullArt) from cards;",
+    "result": "Of 56822 printings: promotional 5588, Story Spotlight 104, textless 115, oversized 402, reprint 33657, full art 486.",
+    "validation_method": "flag aggregation",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_frame_version",
+    "source": "card_games sqlite database",
+    "query": "select frameVersion, count(*) from cards group by 1 order by 2 desc;",
+    "result": "2015: 25500; 2003: 16462; 1997: 9257; 1993: 5510; future: 93.",
+    "validation_method": "value-domain enumeration",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_kingdom_foil",
+    "source": "card_games sqlite database",
+    "query": "select sum(cardKingdomId is null), sum(cardKingdomFoilId is null), count(*) from cards;",
+    "result": "cardKingdomId missing for 13622 printings and cardKingdomFoilId missing for 27910, out of 56822.",
+    "validation_method": "null accounting",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_basesetsize",
+    "source": "card_games sqlite database",
+    "query": "select min(baseSetSize), max(baseSetSize), round(avg(baseSetSize), 1), sum(baseSetSize is null) from sets; select count(*) from sets where baseSetSize < 100;",
+    "result": "Minimum 0, maximum 1694, mean 99.6, no missing values; 356 of 551 sets are below 100.",
+    "validation_method": "distribution summary",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_isforeignonly",
+    "source": "card_games sqlite database",
+    "query": "select count(*) from sets where isForeignOnly = 1;",
+    "result": "16 of 551 sets carry the foreign-only flag.",
+    "validation_method": "flag aggregation",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_artists",
+    "source": "card_games sqlite database",
+    "query": "select count(distinct artist), sum(artist is null) from cards;",
+    "result": "991 distinct artist values; 3 printing rows have no artist.",
+    "validation_method": "distinct-value and null accounting",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_number_star",
+    "source": "card_games sqlite database",
+    "query": "select sum(number like '%★%'), count(*) from cards;",
+    "result": "428 of 56822 printings carry a variant marker in the collector number.",
+    "validation_method": "pattern match aggregation",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "evidence_availability",
+    "source": "card_games sqlite database",
+    "query": "select availability, count(*) from cards group by 1 order by 2 desc limit 20;",
+    "result": "Distribution channel lists led by 'mtgo,paper' 25459, 'paper' 21531, 'arena,mtgo,paper' 4609, 'mtgo' 3697, 'arena' 999, 'arena,paper' 490, plus rare values shandalar 12 and dreamcast 10; one row has no value.",
+    "validation_method": "value-domain enumeration",
+    "timestamp": "2026-10-10"
+  }
+]
