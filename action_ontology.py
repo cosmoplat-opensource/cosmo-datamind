@@ -48,7 +48,7 @@ def _targets(objects, action):
     return out
 
 
-def project_registered_actions(ir, action_types):
+def project_registered_actions(ir, action_types, skip_if_no_binding=False):
     """原位投影启用动作，并返回统计；重复调用保持幂等。
 
     关系使用 ``candidate``，因为注册表绑定可以证明“已配置”，却不能替代领域专家对
@@ -70,6 +70,13 @@ def project_registered_actions(ir, action_types):
         for rel in relations
     }
     added_nodes = added_relations = enriched_nodes = 0
+    enabled = [raw for raw in action_types or [] if isinstance(raw, dict) and raw.get("enabled") is not False]
+    if skip_if_no_binding and enabled and not any(_targets(objects, raw) for raw in enabled):
+        # DR-093:注册表里没有一个动作能绑定到本库的对象(另一领域的库,如 BIRD 之于制造动作),不投影,免得注入无关动作节点
+        scenario = ir.setdefault("scenario", {})
+        scenario["action_projection"] = {"source": "action_registry", "added_nodes": 0, "enriched_nodes": 0,
+                                         "added_relations": 0, "skipped": "no registered action binds to this database"}
+        return scenario["action_projection"]
 
     for raw in action_types or []:
         if not isinstance(raw, dict) or raw.get("enabled") is False:

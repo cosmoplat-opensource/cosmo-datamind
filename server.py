@@ -1128,11 +1128,18 @@ def _ext_dict_path(db_path):
         return ""
 
 
+def _ablated(name):
+    """实验消融开关:环境变量 DATAMIND_ABLATE 为逗号分隔的名单(dict/gate_rel/intent);生产环境不设,全部开启。"""
+    return name in {x.strip() for x in (os.environ.get("DATAMIND_ABLATE") or "").split(",") if x.strip()}
+
+
 def _ext_dict(table):
     """外部数据字典里某表的字段说明 {列小写: {"desc", "values"}}(DR-083)。
 
     库里没有注释、说明另有文件时(如 BIRD 的 database_description,企业的数据字典表格),
     登记数据源时可一并导入;问数上下文用它补字段含义与取值含义。没有登记时为空。"""
+    if _ablated("dict"):
+        return {}
     raw = (table or "").lower()
     db_path, t = (UPLOAD_DB, raw[3:]) if raw.startswith("up.") else (_qa_db(), raw)
     key = (db_path, t)
@@ -1163,6 +1170,8 @@ def _ext_dict(table):
 
 def _dict_cn(table):
     """库内数据字典里的字段中文名(dim_column_metadata.column_name_cn);没有字典时为空。"""
+    if _ablated("dict"):
+        return {}
     raw = (table or "").lower()
     db_path, t = (UPLOAD_DB, raw[3:]) if raw.startswith("up.") else (_qa_db(), raw)   # 本体来自登记数据源时读该库
     key = (db_path, t)
@@ -2088,6 +2097,8 @@ def _qa_validate_sql(sql, ir, strict=False, focus_tables=None):
         finally:
             if con is not None:
                 con.close()
+    if _ablated("gate_rel"):          # 消融:只保留上面的表范围检查,不做关系键、范围条件与扇出检查
+        return True, ""
     if not strict:
         return _validate_sql_ontology(sql, ir)
     try:
@@ -4460,6 +4471,65 @@ def chat():
         _ANSWER_STYLE.reset(style)
 
 
+
+@app.post("/api/ont/compile")
+def ont_compile():
+    """Ontology-compiled context for one question (experiments: consumption by an external agent).
+
+    Same assembly as /api/chat before planning: build_context over the anchored ontology, cleaning rules and concepts.
+    Exemplars are included only when the request sets "exemplars": true. Returns the text and a compact anchor view."""
+    body = request.json or {}
+    question = str(body.get("q") or "").strip()
+    focus_tables, graph_keys = _qa_scope(body)
+    if not question or not graph_keys:
+        return jsonify({"error": "q and graphs required"}), 400
+    token = _with_qa_source(graph_keys)
+    try:
+        ir_gate, gate_keys, fallback, qa_profile = _qa_anchor_ir(graph_keys)
+        scope_error = _qa_scope_error(graph_keys, gate_keys, fallback, qa_profile)
+        if scope_error:
+            return jsonify({"error": scope_error}), 422
+        anchor = {"objects": [], "relations": [], "metrics": [], "scoped": False, "graphs": graph_keys,
+                  "focus_n": len(focus_tables), "question": question}
+        ctx = build_context(question, focus_tables=focus_tables, trace=anchor, graph_keys=graph_keys)
+        ctext = build_cleaning.context_text(build_cleaning.rules_by_table(ir_gate),
+                                            [o.get("table") for o in anchor.get("objects") or []])
+        if ctext:
+            ctx += "\n\n" + ctext
+        ctx2, _n = _concept_text(question, ir_gate)
+        if _n:
+            ctx += "\n\n" + ctx2
+        if body.get("exemplars"):
+            xtext, xn = _exemplar_text(question)
+            if xn:
+                ctx += "\n\n" + xtext
+        return jsonify({"context": ctx, "anchor": _compact_anchor_view(anchor)})
+    finally:
+        _reset_qa_source(token)
+
+
+@app.post("/api/ont/check")
+def ont_check():
+    """Check one SQL query against the anchored ontology (table scope, join keys, scope conditions, fan-out)."""
+    body = request.json or {}
+    sql = str(body.get("sql") or "").strip()
+    _ft, graph_keys = _qa_scope(body)
+    if not sql or not graph_keys:
+        return jsonify({"error": "sql and graphs required"}), 400
+    token = _with_qa_source(graph_keys)
+    try:
+        ir_gate, gate_keys, fallback, _profile = _qa_anchor_ir(graph_keys)
+        ok, reason = _qa_validate_sql(sql, ir_gate, strict=bool(graph_keys and gate_keys != ["demo"] and not fallback))
+        return jsonify({"ok": bool(ok), "reason": reason})
+    finally:
+        _reset_qa_source(token)
+
+
+def _compact_anchor_view(anchor):
+    rels = [x for x in anchor.get("relations") or [] if isinstance(x, dict)]
+    return {"objects": [o.get("table") if isinstance(o, dict) else o for o in anchor.get("objects") or []][:20],
+            "relations": len(rels), "keys": [str(x.get("key"))[:120] for x in rels if x.get("has_key")][:12]}
+
 def _chat_impl():
     body = request.json or {}
     question = body.get("q", "").strip()
@@ -4543,6 +4613,8 @@ def _chat_impl():
         try:
             import intent_check, usage_stat
             _ic = intent_check.cross_check(question, sql, ir_gate)
+            if _ablated("intent"):          # 消融:不做意图核对与据此重写
+                _ic = {**_ic, "verdict": "unknown"}
             if _ic["verdict"] == "mismatch" and engine_plan:
                 # DR-073 答非所问:改用问句提到的对象的表重写一次,改后照样过本体约束校验
                 steps.append(intent_check.step_of(_ic))
@@ -7377,14 +7449,48 @@ def _llm_ask(prompt, timeout=240):
     return ""
 
 
-def _workload_concepts(db, ir, workload):
+def _workload_concepts(db, ir, workload, grounded=None):
     import data_catalog
     import workload_concepts
     con = ro_connect(db)
     try:
-        return workload_concepts.build(con, ir, data_catalog.doc_dictionary(con), workload, _llm_ask, llm_json.extract)
+        g = grounded or {}
+        return workload_concepts.build(con, ir, data_catalog.doc_dictionary(con), workload, _llm_ask, llm_json.extract,
+                                       profile=g.get("profile"), labels=g.get("labels"), groundings=g.get("groundings"))
     finally:
         con.close()
+
+
+def _data_grounding(db, ir, workload):
+    """DR-093 按数据命名与术语接地:取值画像 → 问题 evidence 里的"用语 → 列"(数据核验)→ 按取值反查 →
+    按画像为代码名/空泛名的表与列起候选名(依据须能在数据中找到)。返回给概念层用的画像、候选名与接地结果。"""
+    import grounding
+    con = ro_connect(db)
+    try:
+        prof = grounding.profile_db(con, [o["table"] for o in ir.get("objects") or [] if o.get("table") and o.get("kind") != "action"])
+        eg = grounding.evidence_groundings(con, workload or [], prof)
+        vidx = grounding.value_index(con, prof)
+        vg = grounding.value_groundings(con, workload or [], vidx)
+        vs = [] if _ablated("value_semantics") else grounding.value_semantics(con, workload or [], prof, eg["groundings"], vidx)
+        sets = grounding.code_sets(prof, vs)
+    finally:
+        con.close()
+    ir["value_semantics"] = vs                           # DR-094 代码取值的含义(来自问题 evidence,经数据核验)
+    vs_caveats, by_col = [], {}
+    for v in vs:
+        by_col.setdefault((v["table"], v["column"]), []).append(v)
+    for (t, c), items in by_col.items():
+        means = "; ".join(f"{v['value']!r} = {v['meaning']}" for v in items[:12])
+        stored = sets.get((t, c))
+        vs_caveats.append({"statement": f"Stored codes in {t}.{c}: {means}"
+                                        + (f". All stored values (sample counts): " + ", ".join(f"{x} ({k})" for x, k in stored) if stored else ""),
+                           "check_sql": f'SELECT "{c}", COUNT(*) FROM "{t}" GROUP BY 1 ORDER BY 2 DESC LIMIT 12',
+                           "evidence": {"result": f"{sum(v['rows'] for v in items)} rows carry these codes"}, "origin": "value_semantics"})
+    nm = grounding.name_objects(ir, prof, eg["groundings"], vg, _llm_ask, llm_json.extract)
+    ir["term_groundings"] = {"evidence": eg["groundings"], "value": vg, "rejected": eg["rejected"][:200],
+                             "naming_rejected": nm["rejected"][:200]}
+    return {"profile": prof, "labels": grounding.labels_of(ir), "groundings": eg["groundings"], "values": vg, "naming": nm,
+            "value_semantics": vs, "vs_caveats": vs_caveats}
 
 
 def _attach_data_catalog(db, ir):
@@ -8370,10 +8476,28 @@ def build_inquire():
                     yield push("data_catalog", True, f"数据目录 · 库内文档表说明 {_ndoc} 张表 · 名称-取值型表取值目录 {_ncat} 张")
             except Exception as exc:
                 yield push("data_catalog", False, f"数据目录失败:{type(exc).__name__}")
+            _grounded = None
+            if not _ablated("grounding"):                # DR-093 按数据命名与术语接地(语义贫乏库:代码名、无字典)
+                yield sse({"type": "status", "text": "按数据命名与术语接地:取值画像、问题用语 → 列、按取值反查…"})
+                try:
+                    _grounded = _data_grounding(db, ir, workload)
+                    _nm = _grounded["naming"]
+                    yield push("data_grounding", True,
+                               f"数据接地 · 问题用语 → 列 {len(_grounded['groundings'])} 条(数据核验)· 取值反查 {len(_grounded['values'])} 条 · "
+                               f"候选名:表 {_nm['tables_named']}/{_nm['tables_considered']}、列 {_nm['columns_named']} · 依据不足未采用 {len(_nm['rejected'])} 条 · "
+                               f"取值含义 {len(_grounded['value_semantics'])} 条")
+                except Exception as exc:
+                    yield push("data_grounding", False, f"数据接地失败:{type(exc).__name__}: {str(exc)[:80]}")
             if workload:                                 # DR-088 按业务问题样本补概念层:模型提议,数据裁决
                 yield sse({"type": "status", "text": f"按 {len(workload)} 条业务问题补充概念与使用提醒…"})
                 try:
-                    _wc = _workload_concepts(db, ir, workload)
+                    _wc = _workload_concepts(db, ir, workload, _grounded)
+                    if _grounded:                        # DR-093 数据核验成立的"问题用语 → 列"直接进概念层(与模型提议去重)
+                        import grounding as _gmod
+                        _have = {(c["table"], c["column"], c["filter"].lower()) for c in _wc["concepts"]} | {c["name"].lower() for c in _wc["concepts"]}
+                        _wc["concepts"] += [c for c in _gmod.groundings_as_concepts(_grounded["groundings"])
+                                            if (c["table"], c["column"], c["filter"].lower()) not in _have]
+                        _wc["caveats"] += _grounded.get("vs_caveats") or []      # DR-094 取值含义作为使用提醒(问数时进上下文)
                     _prev = base_ir or {}                # 分轮构建:保留前几轮的概念与提醒,按名称/陈述去重
                     _seen_c = {c["name"].lower() for c in _prev.get("concepts") or []}
                     _seen_v = {c["statement"].lower() for c in _prev.get("caveats") or []}
@@ -8459,7 +8583,7 @@ def build_inquire():
                 yield push("concept_families", True,
                            f"表族归并 · {_fa['objects']} 个对象挂上同族成员表"
                            + (f" · {_fa['duplicates']} 个对象与已有对象同族,已标注待合并" if _fa["duplicates"] else ""))
-        action_projection = action_ontology.project_registered_actions(ir, _load_ats())
+        action_projection = action_ontology.project_registered_actions(ir, _load_ats(), skip_if_no_binding=True)
         if action_projection["added_nodes"] or action_projection["enriched_nodes"]:
             yield push("action_projection", True,
                        f"动作注册表投影 · 动作节点 {ir['scenario']['action_count']} 个 · "

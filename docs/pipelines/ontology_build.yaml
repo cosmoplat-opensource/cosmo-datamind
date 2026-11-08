@@ -104,6 +104,24 @@ nodes:
     code: "dao_core.py:overlap_pct / name_ok / should_reverse / classify"
     desc: 固定阈值 + 父键唯一 + 命名/父表证据 + 方向反证;复合键按元组联合裁决
 
+  - id: data_catalog
+    type: deterministic
+    code: "server.py:_attach_data_catalog"
+    desc: 对象带上库内文档表的列说明与名称-取值型表的取值目录(DR-087)
+    sse_steps: [data_catalog]
+
+  - id: data_grounding
+    type: deterministic_proposal
+    code: "grounding.py:profile_db / evidence_groundings / value_groundings / value_semantics / name_objects"
+    desc: 取值画像;构建问题 evidence 中的「用语 → 列」与代码含义,数据核验命中才保留;代码名/空泛名的表与列按画像起候选名,依据须在该表数据中出现,状态为 candidate(DR-093/094)
+    sse_steps: [data_grounding]
+
+  - id: workload_concepts
+    type: llm_proposal
+    code: "workload_concepts.py:build"
+    desc: 按构建问题补概念、派生指标、主题与使用提醒;模型提议、数据裁决,未通过的带原因与真实结构重提至多 2 轮(DR-088/093)
+    sse_steps: [workload_concepts]
+
   - id: quick_build_fallback
     type: deterministic_fallback
     code: "quick_build.py:build"
@@ -216,7 +234,10 @@ edges:
   - [quick_build_fallback, complete_sql_evidence]
   - [complete_sql_evidence, adjudication_core]
   - [proposal, quick_build_fallback]
-  - [adjudication_core, mapping_enrichment]
+  - [adjudication_core, data_catalog]
+  - [data_catalog, data_grounding]
+  - [data_grounding, workload_concepts]
+  - [workload_concepts, mapping_enrichment]
   - [quick_build_fallback, mapping_enrichment]
   - [mapping_enrichment, action_projection]
   - [action_projection, iteration_merge]

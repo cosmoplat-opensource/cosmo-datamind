@@ -85,8 +85,37 @@ REJECTED: list = []          # 未通过核验的提议与原因(构建日志与
 
 def _reject(c: dict, why: str):
     REJECTED.append({"name": str(c.get("name") or c.get("statement") or "")[:80], "why": why,
-                     "table": c.get("table"), "filter": str(c.get("filter") or c.get("check_sql") or "")[:200]})
+                     "table": c.get("table"), "column": c.get("column") or c.get("name_col"),
+                     "filter": str(c.get("filter") or c.get("check_sql") or "")[:200], "_raw": c})
     return None
+
+
+FIXABLE = ("表不存在", "列不存在", "名称列不存在", "筛选条件命中 0 行", "筛选条件无法执行")
+REPAIR_ROUNDS = 2
+
+REPAIR_PROMPT = """上一轮提议的下列概念没有通过数据核验(原因见每条)。请对照下面给出的真实表结构与取值画像,
+以及已经由数据核验成立的"问题用语 → 列"对应,重新提议这些概念:表名、列名、取值必须取自下面的内容;
+确实找不到对应数据的概念就不要再提。只输出一个 JSON:{{"concepts":[同上一轮的概念格式]}}
+
+未通过的概念:
+{failed}
+
+相关表的真实结构与取值画像(〔〕内为由数据推出的候选名):
+{tables}
+
+已核验的问题用语 → 列:
+{groundings}
+"""
+
+
+def _related_tables(failed: list, groundings: list, prof: dict, k: int = 8) -> list:
+    """repair context: the proposed tables plus tables whose grounded phrases share words with the failed concepts."""
+    out = [str(f.get("table") or "") for f in failed if str(f.get("table") or "") in prof]
+    words = {w for f in failed for w in re.findall(r"[a-z]{4,}", re.sub(r"([a-z])([A-Z])", r"\1 \2", str(f.get("name") or "")).lower())}
+    for g in groundings:
+        if words & set(re.findall(r"[a-z]{4,}", g["term"].lower())):
+            out.append(g["table"])
+    return list(dict.fromkeys(out))[:k]
 
 
 def verify_concept(con: sqlite3.Connection, c: dict, tables: dict, entity_col: str | None = None) -> dict | None:
@@ -156,31 +185,63 @@ def verify_caveat(con: sqlite3.Connection, c: dict) -> dict | None:
 
 
 def build(con: sqlite3.Connection, ir: dict, docs: dict, questions: list, ask: Callable[[str], str],
-          extract: Callable[[str], dict | None]) -> dict:
+          extract: Callable[[str], dict | None], profile: dict | None = None, labels: dict | None = None,
+          groundings: list | None = None) -> dict:
     """返回 {"concepts": [...], "caveats": [...], "proposed": n, "dropped": m}。"""
     REJECTED.clear()
     qs = [str(q).strip() for q in questions if str(q).strip()][:MAX_Q]
     if not qs:
         return {"concepts": [], "caveats": [], "proposed": 0, "dropped": 0}
     tables = {r[0].lower(): r[0] for r in con.execute("SELECT name FROM sqlite_master WHERE type='table'")}
-    brief = schema_brief(con, ir, docs)
+    if profile:                                       # DR-093:有取值画像时,结构摘要带类型、去重数、常见取值与候选名
+        import grounding as _g
+        brief = _g.profile_brief(profile, labels)
+        if groundings:
+            brief += "\n\n已由数据核验的问题用语 → 列(可直接采用):\n" + "\n".join(
+                f"- '{g['term']}' -> {g['table']}.{g['column']}{' WHERE ' + g['filter'] if g['filter'] else ''}"
+                for g in groundings[:300])
+    else:
+        brief = schema_brief(con, ir, docs)
+    groundings = groundings or []
+    repaired = {"rounds": 0, "resubmitted": 0, "recovered": 0}
     concepts, caveats, seen, seen_map, proposed = [], [], set(), set(), 0
     pending_derived: list = []
     themes: list = []
     entity_of = {o["table"].lower(): (o.get("catalog") or {}).get("entity_col")
                  for o in ir.get("objects") or [] if o.get("table") and (o.get("catalog") or {}).get("entity_col")}
     for i in range(0, len(qs), BATCH):
-        reply = ask(PROMPT.format(schema=brief[:24000], questions="\n".join(f"- {q[:300]}" for q in qs[i:i + BATCH])))
+        reply = ask(PROMPT.format(schema=brief[:(90000 if profile else 24000)], questions="\n".join(f"- {q[:300]}" for q in qs[i:i + BATCH])))
         d = extract(reply or "") or {}
-        for c in d.get("concepts") or []:
-            proposed += 1
-            ent = entity_of.get(str((c or {}).get("table") or "").lower()) if isinstance(c, dict) else None
-            v = verify_concept(con, c, tables, ent) if isinstance(c, dict) else None
-            sig = (v["table"], v["column"], re.sub(r"\s+", " ", v["filter"]).lower()) if v else None
-            if v and v["name"] and v["name"].lower() not in seen and sig not in seen_map:   # 名称或取数方式重复的不再收
-                seen.add(v["name"].lower())
-                seen_map.add(sig)
-                concepts.append(v)
+        todo = [c for c in d.get("concepts") or []]
+        for rnd in range(REPAIR_ROUNDS + 1):              # DR-093:未通过核验的概念带着原因与真实结构重提,至多 2 轮
+            before = len(REJECTED)
+            for c in todo:
+                proposed += 1 if rnd == 0 else 0
+                ent = entity_of.get(str((c or {}).get("table") or "").lower()) if isinstance(c, dict) else None
+                v = verify_concept(con, c, tables, ent) if isinstance(c, dict) else None
+                sig = (v["table"], v["column"], re.sub(r"\s+", " ", v["filter"]).lower()) if v else None
+                if v and v["name"] and v["name"].lower() not in seen and sig not in seen_map:   # 名称或取数方式重复的不再收
+                    seen.add(v["name"].lower())
+                    seen_map.add(sig)
+                    if rnd:
+                        v["repaired_round"] = rnd
+                        repaired["recovered"] += 1
+                    concepts.append(v)
+            failed = [r for r in REJECTED[before:] if r["why"].startswith(FIXABLE) and isinstance(r.get("_raw"), dict)
+                      and "codes" not in r["_raw"]]
+            if not profile or rnd == REPAIR_ROUNDS or not failed:
+                break
+            rel = _related_tables(failed, groundings, profile)
+            fl = "\n".join(f"- {f['name']}: 提议 {f.get('table')}.{f.get('column') or ''}"
+                           + (f" WHERE {f['filter']}" if f.get('filter') else "") + f" → {f['why']}" for f in failed[:40])
+            gl = "\n".join(f"- '{g['term']}' -> {g['table']}.{g['column']}{' WHERE ' + g['filter'] if g['filter'] else ''}"
+                           for g in groundings if g["table"] in rel)[:8000]
+            reply = ask(REPAIR_PROMPT.format(failed=fl, tables=_g.profile_brief(profile, labels, rel), groundings=gl or "(无)"))
+            todo = [c for c in (extract(reply or "") or {}).get("concepts") or [] if isinstance(c, dict)]
+            repaired["rounds"] += 1
+            repaired["resubmitted"] += len(todo)
+            for f in failed:
+                f["repair_round"] = rnd + 1
         pending_derived += [c for c in d.get("derived") or [] if isinstance(c, dict)]
         for th in d.get("themes") or []:               # 主题:代码逐个在库中核验,存在的才保留,并记录覆盖实体数
             if not isinstance(th, dict):
@@ -205,7 +266,11 @@ def build(con: sqlite3.Connection, ir: dict, docs: dict, questions: list, ask: C
                             "formula": str(c["formula"])[:300], "uses": uses,
                             "inputs": [{"name": u, "table": names[u.lower()]["table"], "column": names[u.lower()]["column"],
                                         "filter": names[u.lower()]["filter"]} for u in uses]})
-    return {"concepts": concepts, "derived": derived, "themes": themes, "caveats": caveats, "proposed": proposed, "rejected": list(REJECTED),
+    kept_names = {c["name"].lower() for c in concepts}
+    rejected = [dict({k: v for k, v in r.items() if k != "_raw"}, recovered=True) if str(r.get("name") or "").lower() in kept_names
+                else {k: v for k, v in r.items() if k != "_raw"} for r in REJECTED]
+    return {"concepts": concepts, "derived": derived, "themes": themes, "caveats": caveats, "proposed": proposed, "rejected": rejected,
+            "repair": repaired,
             "dropped": proposed - len(concepts) - len(caveats) - len(derived) - len(themes)}
 
 

@@ -90,3 +90,22 @@ def test_graph_projection_keeps_action_binding_for_ui_invocation():
     edge = next(item for item in graph["edges"] if item["s"] == node["id"])
     assert edge["evidence_status"] == "configured"
     assert edge["semantic_status"] == "not_reviewed"
+
+
+def test_build_skips_registry_when_no_action_binds_to_this_database():
+    """DR-093: a database from another domain (e.g. BIRD for manufacturing actions) gets no action nodes."""
+    ir = _ir()
+    actions = _actions()
+    for a in actions:
+        a["object"] = "不存在对象"
+        a["object_table"] = "missing_table"
+    info = action_ontology.project_registered_actions(ir, actions, skip_if_no_binding=True)
+    assert info["added_nodes"] == 0 and info.get("skipped")
+    assert not any(obj.get("kind") == "action" for obj in ir["objects"])
+
+
+def test_build_keeps_unbound_actions_when_some_action_binds():
+    ir = _ir()
+    actions = _actions() + [dict(_actions()[0], id="other_action", object="不存在对象", object_table="missing_table")]
+    action_ontology.project_registered_actions(ir, actions, skip_if_no_binding=True)
+    assert any(obj.get("action_id") == "other_action" for obj in ir["objects"])
