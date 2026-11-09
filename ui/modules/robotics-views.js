@@ -100,7 +100,7 @@
     function render() {
       const tree=view==='behavior-tree';selectedTree=tree?data.main_tree:null;
       host.innerHTML=`<a class="ra-back" href="${escape(global.RoboticsAssets.versionLink(oid,vid))}">← 返回本体详情</a>
-        <header class="rt-heading"><div><span class="rt-eyebrow">机器人本体 · ${tree?'行为树视图':'关系图'}</span><h2>${escape(data.name)}</h2><p>当前：版本 ${escape(data.version_number)} · 只读浏览</p></div><a class="ra-button" href="${escape(link(oid,vid,tree?'relations':'behavior-tree'))}">${tree?'打开本体关系图':'打开行为树视图'} →</a></header>
+        <header class="rt-heading"><div><span class="rt-eyebrow">机器人本体 · ${tree?'行为树视图':'关系图'}</span><h2>${escape(data.name)}</h2><p>当前：版本 ${escape(data.version_number)} · 只读浏览</p></div></header>
         <p class="rv-help">${tree?'本体流程 · 非任务生成结果。显示本体保存的流程与参数绑定；具体任务的参数以生成结果为准。':'展示本体中的命名对象及其关系。筛选可聚焦业务对象或技能流程；OWL 类定义、匿名约束及审计记录不在此图中。'}</p>
         <section class="card rv-toolbar">${tree?`<label>行为树<select id="rv_tree" aria-label="行为树">${data.trees.map(t=>`<option value="${escape(t.name)}">${escape(t.name)}${t.name===data.main_tree?' · 主流程':' · 子树'}</option>`).join('')}</select></label>`:'<label>展示范围<select id="rv_group" aria-label="展示范围"><option value="business">业务对象与配置</option><option value="skills">技能与流程</option><option value="all">全部对象</option></select></label>'}
         <form id="rv_search"><label>查找节点<input id="rv_query" placeholder="输入节点名称" autocomplete="off"></label><button class="ghost" type="submit">查找</button></form><span id="rv_search_result" role="status"></span>
@@ -128,6 +128,11 @@
     (async()=>{
       try {
         if(!oid||!vid||!['relations','behavior-tree'].includes(view))throw Error('缺少本体、版本或有效视图，请从本体库重新打开。');
+        // DR-068 scope update: source workflows are not user-facing task results.
+        if(view==='behavior-tree'){
+          host.innerHTML=`<section class="card ra-overview"><h2>请在任务生成完成后查看行为树</h2><p class="rv-help" role="status">本体构建来源中的流程暂不展示。请进入本体详情，输入任务描述并生成行为树。</p><div class="ra-detail-actions"><a class="ra-button" href="${escape(global.RoboticsAssets.versionLink(oid,vid))}">返回本体详情</a><a class="ra-button" href="${escape(link(oid,vid))}">打开本体图谱</a></div></section>`;
+          return;
+        }
         const response=await global.fetch('/api/ontology-assets/'+encodeURIComponent(oid)+'/versions/'+encodeURIComponent(vid)+'/views/'+view,{signal:abort.signal});
         const body=await response.json();if(current!==token)return;
         if(!response.ok)throw Error(body.error?.message||`读取失败（HTTP ${response.status}）`);

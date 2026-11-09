@@ -1333,7 +1333,7 @@
     {
       "id": "RGV-01",
       "iteration": "IR-022",
-      "criterion": "机器人本体库打开关系图，详情打开本体行为树；固定版本只读展示，实例关系/流程顺序及参数真实可追溯，不改变任务结果或数据图谱。 本体卡片仅保留图谱入口，选中节点后仍可真实缩放，进入子树可返回。",
+      "criterion": "机器人本体库只提供固定版本关系图，关系、属性与配置名称准确，缩放可用；暂不展示构建来源行为树，旧链接引导任务生成，任务结果预览与下载保留。",
       "status": "green-awaiting-human-delivery",
       "tests": [
         "tests/unit/test_robotics_graph_views.py::test_relations_preserve_identity_labels_literal_properties_and_real_edges",
@@ -1341,12 +1341,13 @@
         "tests/unit/test_robotics_graph_views.py::test_empty_and_oversized_relations_are_explicit_not_truncated",
         "tests/unit/test_robotics_graph_views.py::test_views_http_are_version_pinned_read_only_and_integrity_checked",
         "tests/unit/test_robotics_graph_views.py::test_views_http_reject_cross_asset_data_domain_and_incomplete_tree",
-        "tests/frontend/robotics-build-browser.py::test_fixed_robotics_relationship_and_behavior_tree_views",
+        "tests/frontend/robotics-build-browser.py::test_fixed_robotics_relationship_view",
         "tests/frontend/robotics-build-browser.py::test_view_zoom_remains_effective_after_node_selection",
-        "tests/frontend/robotics-build-browser.py::test_catalog_single_graph_entry_and_subtree_back_navigation",
-        "tests/frontend/robotics-build-browser.py::test_legacy_configuration_names_match_task_page_without_changing_owl"
+        "tests/frontend/robotics-build-browser.py::test_catalog_hides_source_tree_and_old_tree_link_cannot_display_it",
+        "tests/frontend/robotics-build-browser.py::test_legacy_configuration_names_match_task_page_without_changing_owl",
+        "tests/frontend/robotics-task-browser.py::test_real_build_to_inline_completion_generation_download_and_restart"
       ],
-      "notes": "全量检查中维护入口可访问名称问题已修复，受影响的完整浏览器套件复跑16项通过；其余检查段通过。最终专项5项通过。详见IR-022验证记录。"
+      "notes": "按用户范围调整暂停来源行为树 UI，关系图保留；旧链接及刷新不加载来源树。构建/图谱18项、任务流程10项浏览器检查通过。底层投影测试保留，详见IR-022 T06审计。"
     }
   ],
   "planned_requirements": []
