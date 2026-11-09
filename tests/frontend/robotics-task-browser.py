@@ -383,3 +383,62 @@ if __name__ == '__main__':
     command = [str(Path(__file__).resolve()), '-q', '-ra', '--junitxml=' + str(args.output / 'junit.xml')]
     if args.case: command += ['-k', args.case]
     raise SystemExit(pytest.main(command))
+
+
+def test_task_application_history_retains_two_generations_and_reopens_without_model(live):
+    """DR-069: one ontology, independent tasks, discoverable fixed results after restart."""
+    from tests.robotics_task_support import fixture
+    site, page, calls = live
+    _, version, _ = fixture(site.root, ready=True)
+    page.goto(site.url + '/#robotics-task')
+    expect(page.locator('.nav-group').filter(has_text='本体应用').get_by_text('行为树生成', exact=True)).to_be_visible()
+    expect(page.get_by_role('heading', name='从一句任务，到行为树', exact=True)).to_be_visible()
+    assert site.posts() == [] and calls == []
+    page.get_by_label('选择机器人本体', exact=True).select_option(version['ontology_id'])
+    page.get_by_role('button', name='开始新任务', exact=True).click()
+    panel = page.get_by_test_id('robotics-task')
+    expect(panel).to_have_attribute('data-version-id', version['version_id'])
+    first = submit_task(page, panel)
+    assert first['status'] == 'generated'
+    panel.get_by_role('button', name='新任务', exact=True).click()
+    expect(panel).to_have_attribute('data-status', 'idle')
+    second = submit_task(page, panel)
+    assert second['status'] == 'generated' and second['session_id'] != first['session_id']
+    history = page.get_by_test_id('robotics-task-history')
+    expect(history.locator('[data-history-run]')).to_have_count(2)
+    expect(history).to_contain_text(first['asset_name'])
+    before_calls, before_posts = len(calls), len(site.posts())
+    history.locator('[data-history-run="' + first['run_id'] + '"]').click()
+    result = page.get_by_test_id('robotics-generation-history')
+    expect(result).to_have_attribute('data-run-id', first['run_id'])
+    expect(result.get_by_test_id('task-tree')).to_be_visible()
+    expect(result).to_contain_text(first['asset_name'])
+    with page.expect_download() as download:
+        result.get_by_role('link', name='下载行为树 XML', exact=True).click()
+    assert Path(download.value.path()).read_bytes() == assert_generated(site.root, first)
+    route = page.url
+    site.restart()
+    page.goto(route)
+    expect(page.get_by_test_id('robotics-generation-history')).to_have_attribute('data-run-id', first['run_id'])
+    assert len(calls) == before_calls and len(site.posts()) == before_posts
+    page.get_by_label('搜索生成记录', exact=True).fill('不存在的记录')
+    expect(page.get_by_test_id('robotics-task-history')).to_contain_text('没有匹配的记录')
+    page.set_viewport_size({'width': 390, 'height': 844})
+    assert page.locator('#p_robotics-task').evaluate('el=>el.scrollWidth<=el.clientWidth+1')
+    page.set_viewport_size({'width': 1440, 'height': 1000})
+    page.goto(site.url + '/#chat')
+    expect(page.locator('#chat_q')).to_be_visible()
+    done(site)
+
+
+def test_graph_starts_task_with_selected_ontology_version(live):
+    site, page, calls = live
+    ref = site.submit()['output_asset_ref']
+    page.goto(site.url + '/#robotics-view?asset=' + ref['ontology_id'] + '&version=' + ref['version_id'] + '&view=relations')
+    page.get_by_role('link', name='基于此本体生成行为树', exact=True).click()
+    panel = page.get_by_test_id('robotics-task')
+    expect(panel).to_have_attribute('data-ontology-id', ref['ontology_id'])
+    expect(panel).to_have_attribute('data-version-id', ref['version_id'])
+    assert calls == []
+    expect(page.get_by_test_id('robotics-task-history')).to_contain_text('未开始')
+    done(site)
