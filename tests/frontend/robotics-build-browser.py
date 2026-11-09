@@ -369,7 +369,7 @@ if __name__ == '__main__':
     raise SystemExit(pytest.main(command))
 
 
-def test_fixed_robotics_relationship_and_behavior_tree_views(live):
+def test_fixed_robotics_relationship_view(live):
     """DR-068: real RDF endpoints, navigation, keyboard details and read-only refresh."""
     site, page = live
     choose_robotics(page, site)
@@ -389,18 +389,6 @@ def test_fixed_robotics_relationship_and_behavior_tree_views(live):
     page.get_by_label('节点详情', exact=True).select_option(index=1)
     expect(page.locator('#rv_properties h3')).to_be_visible()
     page.get_by_role('button', name='适应画布', exact=True).click()
-    page.get_by_role('link', name='← 返回本体详情', exact=True).click()
-    page.get_by_role('link', name='打开行为树视图', exact=True).click()
-    expect(page.locator('#rv_canvas canvas')).to_be_visible()
-    expect(page.locator('#rv_host')).to_contain_text('本体流程 · 非任务生成结果')
-    expect(page.locator('#rv_tree')).to_have_value('main')
-    page.get_by_label('查找节点', exact=True).fill('SubTree · Perception')
-    page.get_by_role('button', name='查找', exact=True).click()
-    expect(page.locator('#rv_properties')).to_contain_text('Perception')
-    page.get_by_role('button', name='查看子树 Perception', exact=True).click()
-    expect(page.locator('#rv_tree')).to_have_value('Perception')
-    page.get_by_label('节点详情', exact=True).select_option(index=3)
-    expect(page.locator('#rv_properties dl')).to_be_visible()
     before_url = page.url
     page.reload()
     expect(page.locator('#rv_canvas canvas')).to_be_visible()
@@ -413,7 +401,7 @@ def test_fixed_robotics_relationship_and_behavior_tree_views(live):
     assert len(site.posts()) == posts
 
 
-@pytest.mark.parametrize('view', ['relations', 'behavior-tree'])
+@pytest.mark.parametrize('view', ['relations'])
 def test_view_zoom_remains_effective_after_node_selection(live, view):
     """DR-068: measure the real G6 viewport, not just successful button clicks."""
     site, page = live
@@ -460,29 +448,30 @@ def test_view_zoom_remains_effective_after_node_selection(live, view):
     done(site)
 
 
-def test_catalog_single_graph_entry_and_subtree_back_navigation(live):
-    """DR-068: one card action, detail access, and return to the actual parent tree."""
+def test_catalog_hides_source_tree_and_old_tree_link_cannot_display_it(live):
+    """DR-068 scope update: only generated task results expose a behavior tree UI."""
     site, page = live
     ref = site.submit()['output_asset_ref']
     page.goto(site.url + '/#library')
     card = page.locator(f'[data-ontology-id="{ref["ontology_id"]}"]')
     expect(card.get_by_role('link')).to_have_count(1)
     card.get_by_role('link', name='打开图谱', exact=True).click()
+    expect(page.locator('#rv_canvas canvas')).to_be_visible()
+    expect(page.locator('#rv_host a[href*="view=behavior-tree"]')).to_have_count(0)
     page.get_by_role('link', name='← 返回本体详情', exact=True).click()
     expect(page.get_by_role('link', name='生成行为树', exact=True)).to_be_visible()
-    page.get_by_role('link', name='打开行为树视图', exact=True).click()
-    page.get_by_label('查找节点', exact=True).fill('SubTree · Perception')
-    page.get_by_role('button', name='查找', exact=True).click()
-    selected = page.locator('#rv_node').input_value()
-    page.get_by_role('button', name='查看子树 Perception', exact=True).click()
-    expect(page.locator('#rv_tree')).to_have_value('Perception')
-    page.get_by_role('button', name='返回上一级', exact=True).click()
-    expect(page.locator('#rv_tree')).to_have_value('main')
-    expect(page.locator('#rv_node')).to_have_value(selected)
-    expect(page.locator('#rv_properties')).to_contain_text('Perception')
-    page.get_by_label('行为树', exact=True).select_option('Place')
-    page.get_by_role('button', name='返回主流程', exact=True).click()
-    expect(page.locator('#rv_tree')).to_have_value('main')
+    expect(page.get_by_role('link', name='打开行为树视图', exact=True)).to_have_count(0)
+    requests = []
+    page.on('request', lambda request: requests.append(request.url))
+    old_link = site.url + '/#robotics-view?asset=' + ref['ontology_id'] + '&version=' + ref['version_id'] + '&view=behavior-tree'
+    for reload in [False, True]:
+        page.reload() if reload else page.goto(old_link)
+        expect(page.locator('#rv_host')).to_contain_text('请在任务生成完成后查看行为树')
+        expect(page.locator('#rv_canvas')).to_have_count(0)
+        assert not any('/views/behavior-tree' in url for url in requests)
+    page.get_by_role('link', name='打开本体图谱', exact=True).click()
+    expect(page.locator('#rv_canvas canvas')).to_be_visible()
+    assert site.posts() == []
     done(site)
 
 
