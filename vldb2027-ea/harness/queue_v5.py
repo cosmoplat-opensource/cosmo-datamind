@@ -9,7 +9,9 @@ A  component ablation of EvoOntology on BIRD-opaque-merged (MG), stores built by
      evo_nomap  term-to-column mappings removed (relations kept)
 B  turn budget on MG: none_t60, evo_t60 (max_turns 60 instead of 30; configs deepseek_*_t60.yaml)
 C  BIRD-readable-merged (MGR; make_readable_merged.py): none, doc, evo, evodoc, dm, dmdoc; the ontology conditions are
-   planned once their stores exist (build_evo_v2.py / build_dm_v2.py + dm2evo.py with --S readable_merged)
+   planned once their stores exist (build_evo_v2.py / build_dm_v2.py + dm2evo.py with --S readable_merged);
+   dm_b9 / dmdoc_b9: DataMind ontology rebuilt with the code of the opaque-merged builds (commit b9fa576,
+   DM_CODE_ROOT, DM_ROOT_SUFFIX=_b9fa576), so that the readable-versus-opaque comparison uses the same builder
 Output runs/v5/qa/<setting>_<fold>/<condition>_r<rep>; scoring with score_react_dir.py (strict and column-tolerant EX).
 """
 from __future__ import annotations
@@ -27,7 +29,8 @@ V5 = EXP / "runs" / "v5"
 def mgr_paths(fold):
     v = EXP / "variants/readable_merged"
     return dict(qdir=v / f"questions/{SR[fold]}", dbr=v / "dev_databases", doc=v / "dictionaries",
-                evo=EXP / f"runs/v2/evo/w_readable_merged_{fold}", dm2evo=EXP / f"runs/v2/dm2evo/w_readable_merged_{fold}")
+                evo=EXP / f"runs/v2/evo/w_readable_merged_{fold}", dm2evo=EXP / f"runs/v2/dm2evo/w_readable_merged_{fold}",
+                dm2evo_b9=EXP / f"runs/v2/dm2evo/w_readable_merged_{fold}_b9fa576")
 
 
 def job(S, fold, cond, rep, sem, env_extra=None):
@@ -55,7 +58,8 @@ def plan(_a=None):
             m = mgr_paths(fold)
             jobs.append(job("MGR", fold, "none", rep, "-"))
             jobs.append(job("MGR", fold, "doc", rep, "-"))
-            for cond, key in (("evo", "evo"), ("evodoc", "evo"), ("dm", "dm2evo"), ("dmdoc", "dm2evo")):
+            for cond, key in (("evo", "evo"), ("evodoc", "evo"), ("dm", "dm2evo"), ("dmdoc", "dm2evo"),
+                              ("dm_b9", "dm2evo_b9"), ("dmdoc_b9", "dm2evo_b9")):
                 if (m[key] / "bird_merged" / "active.json").exists():
                     jobs.append(job("MGR", fold, cond, rep, m[key]))
     V5.mkdir(parents=True, exist_ok=True)

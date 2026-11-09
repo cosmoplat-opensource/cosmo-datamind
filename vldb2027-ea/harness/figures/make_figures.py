@@ -457,7 +457,7 @@ def v5():
     conds = [("none", "No ontology"), ("doc", "Documentation"), ("evo", "EvoOntology"), ("dm", "DataMind")]
     ys2 = list(range(len(conds)))[::-1]
     for y, (c, lab) in zip(ys2, conds):
-        a, b = cd[f"MG:{c}"], cd[f"MGR:{c}"]
+        a, b = cd[f"MG:{c}"], cd[f"MGR:{c}_b9"] if c == "dm" and "MGR:dm_b9" in cd else cd[f"MGR:{c}"]   # DataMind: same builder code on both schemas
         ax2.plot([a["tolerant"], b["tolerant"]], [y, y], color=GRID, lw=2.2, zorder=1, solid_capstyle="round")
         ax2.plot([a["tolerant"]], [y], "o", ms=5.5, color="white", mec=C[c], mew=1.3, zorder=4)
         lo, hi = b["tolerant_ci"]

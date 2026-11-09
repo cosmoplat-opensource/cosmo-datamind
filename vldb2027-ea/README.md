@@ -93,7 +93,10 @@ released (`rescore.json`), `stats_v4.py`, `stats_dr093.py` and `analysis_ablatio
    `build_evo_v2.py bird_merged --track w --S readable_merged --dir fwd|rev` and
    `DATAMIND_ABLATE=grounding,value_semantics build_dm_v2.py --track w --S readable_merged --dir fwd|rev bird_merged`
    (one DataMind build at a time), converted with `DM_DBDIR=variants/readable_merged/dev_databases DM2EVO_FULL=1 dm2evo.py`;
-   then `queue_v5.py plan` and `queue_v5.py run`, `score_v5_all.sh`, `stats_v5.py`. The 60-turn runs select the
+   then `queue_v5.py plan` and `queue_v5.py run`, `score_v5_all.sh`, `stats_v5.py`.
+   The DataMind ontologies of BIRD-readable-merged used in the paper (conditions `dm_b9`, `dmdoc_b9`) were built with
+   the code of the opaque-merged builds: a worktree of this branch at commit `b9fa576` passed as `DM_CODE_ROOT`, with
+   `DM_ROOT_SUFFIX=_b9fa576` and no `DATAMIND_ABLATE`; the conditions `dm`, `dmdoc` keep the earlier build with later code. The 60-turn runs select the
    configurations `deepseek_*_t60.yaml` through `EVO_CFG_SUFFIX=_t60` in `run_method.sh`.
 
 Model outputs vary between runs; the paper reports three repeats per configuration and the released predictions are the

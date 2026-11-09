@@ -30,7 +30,7 @@ ORIG_DBDIR = DATA / "mini_dev_data" / "dev_databases"
 HARNESS = EXP / "bird_datamind.py"
 SHARED_GRAPHS = EXP / "runs" / "datamind" / "graphs.json"
 WORKDIR = EXP / "runs" / "datamind" / "workdir"
-EXP_ROOT = EXP.parent / "cosmo-datamind-exp"       # DR-088 工作负载概念层只在实验分支(exp/catalog)实现;主仓 D8 代码没有 workload 入口
+EXP_ROOT = Path(os.environ["DM_CODE_ROOT"]) if os.environ.get("DM_CODE_ROOT") else EXP.parent / "cosmo-datamind-exp"   # DR-088 工作负载概念层只在实验分支实现;协议 v5 可用 DM_CODE_ROOT 指向固定提交的工作树
 SPLITROOT = {"fwd": "minidev", "rev": "minidev_rev", "ind_fwd": "ind_fwd", "ind_rev": "ind_rev"}
 BIRD_DBS = ["california_schools", "card_games", "codebase_community", "debit_card_specializing", "european_football_2",
             "financial", "formula_1", "student_club", "superhero", "thrombosis_prediction", "toxicology"]

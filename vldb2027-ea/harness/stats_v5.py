@@ -18,7 +18,7 @@ EXP = Path(__file__).resolve().parent
 V4, V5 = EXP / "runs/v4/qa", EXP / "runs/v5/qa"
 UNITS = {("MG", c): V4 for c in ("none", "doc", "evo", "evodoc", "dm", "dmdoc")}
 UNITS.update({("MG", c): V5 for c in ("evo_norel", "evo_nomap", "none_t60", "evo_t60")})
-UNITS.update({("MGR", c): V5 for c in ("none", "doc", "evo", "evodoc", "dm", "dmdoc")})
+UNITS.update({("MGR", c): V5 for c in ("none", "doc", "evo", "evodoc", "dm", "dmdoc", "dm_b9", "dmdoc_b9")})
 CAP = {"none_t60": 60, "evo_t60": 60}
 
 
@@ -64,16 +64,17 @@ def main():
     pairs = [("MG:evo_norel", "MG:none"), ("MG:evo_nomap", "MG:none"), ("MG:evo", "MG:evo_norel"), ("MG:evo", "MG:evo_nomap"),
              ("MG:evo_norel", "MG:evo_nomap"), ("MG:none_t60", "MG:none"), ("MG:evo_t60", "MG:evo"), ("MG:evo_t60", "MG:none_t60"),
              ("MGR:doc", "MGR:none"), ("MGR:evo", "MGR:none"), ("MGR:dm", "MGR:none"), ("MGR:evo", "MGR:dm"),
-             ("MGR:evodoc", "MGR:doc"), ("MGR:dmdoc", "MGR:doc"), ("MGR:none", "MG:none"), ("MGR:doc", "MG:doc")]
+             ("MGR:evodoc", "MGR:doc"), ("MGR:dmdoc", "MGR:doc"), ("MGR:none", "MG:none"), ("MGR:doc", "MG:doc"),
+             ("MGR:dm_b9", "MGR:none"), ("MGR:dmdoc_b9", "MGR:doc"), ("MGR:evo", "MGR:dm_b9"), ("MGR:dm_b9", "MGR:dm")]
     for a, b in pairs:
         for j, nm in ((0, "strict"), (1, "tolerant")):
             out["pairs"][f"{a} - {b}:{nm}"] = {"diff": round(mean(a, keys, j) - mean(b, keys, j), 1),
                                               "ci": ci([mean(a, ks, j) - mean(b, ks, j) for ks in samples])}
     # does the gain of an ontology (or of documentation) differ between the opaque and the readable merged schema?
-    for c in ("evo", "dm", "doc"):
+    for c, cr in (("evo", "evo"), ("dm", "dm"), ("doc", "doc"), ("dm", "dm_b9")):
         for j, nm in ((0, "strict"), (1, "tolerant")):
-            g = lambda ks: (mean(f"MG:{c}", ks, j) - mean("MG:none", ks, j)) - (mean(f"MGR:{c}", ks, j) - mean("MGR:none", ks, j))
-            out["interactions"][f"gain({c}) MG minus MGR:{nm}"] = {"diff": round(g(keys), 1), "ci": ci([g(ks) for ks in samples])}
+            g = lambda ks: (mean(f"MG:{c}", ks, j) - mean("MG:none", ks, j)) - (mean(f"MGR:{cr}", ks, j) - mean("MGR:none", ks, j))
+            out["interactions"][f"gain({c}) MG minus MGR({cr}):{nm}"] = {"diff": round(g(keys), 1), "ci": ci([g(ks) for ks in samples])}
     (EXP / "runs/v5/stats_v5.json").write_text(json.dumps(out, ensure_ascii=False, indent=1))
     for c, v in out["conditions"].items():
         print(f"{c:16s} tol {v['tolerant']:5.1f} {v['tolerant_ci']} strict {v['strict']:5.1f} tools {v['tool_use_pct']:5.1f}% cap {v['turn_cap_pct']:5.1f}%")

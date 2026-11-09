@@ -1,0 +1,2922 @@
+[
+  {
+    "id": "ev_schema_hero_attribute",
+    "source": "bird_merged.sqlite",
+    "query": "PRAGMA table_info(hero_attribute)",
+    "result": "Table hero_attribute(hero_id, attribute_id, attribute_value)",
+    "validation_method": "schema inspection",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_schema_attribute",
+    "source": "bird_merged.sqlite",
+    "query": "PRAGMA table_info(attribute)",
+    "result": "Table attribute(id, attribute_name)",
+    "validation_method": "schema inspection",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_values_attribute__attribute_name",
+    "source": "bird_merged.sqlite",
+    "query": "SELECT DISTINCT attribute_name FROM attribute",
+    "result": "Combat / Durability / Intelligence / Power / Speed / Strength",
+    "validation_method": "distinct value inspection",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_schema_hero_power",
+    "source": "bird_merged.sqlite",
+    "query": "PRAGMA table_info(hero_power)",
+    "result": "Table hero_power(hero_id, power_id)",
+    "validation_method": "schema inspection",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_schema_account",
+    "source": "bird_merged.sqlite",
+    "query": "PRAGMA table_info(account)",
+    "result": "Table account(account_id, district_id, frequency, date)",
+    "validation_method": "schema inspection",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_values_account__frequency",
+    "source": "bird_merged.sqlite",
+    "query": "SELECT DISTINCT frequency FROM account",
+    "result": "POPLATEK MESICNE / POPLATEK PO OBRATU / POPLATEK TYDNE",
+    "validation_method": "distinct value inspection",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_schema_district",
+    "source": "bird_merged.sqlite",
+    "query": "PRAGMA table_info(district)",
+    "result": "Table district(district_id, A2, A3, A4, A5, A6, A7, A8, A9, A10, A11, A12, A13, A14, A15, A16)",
+    "validation_method": "schema inspection",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_values_district__a3",
+    "source": "bird_merged.sqlite",
+    "query": "SELECT DISTINCT A3 FROM district",
+    "result": "Prague / central Bohemia / east Bohemia / north Bohemia / north Moravia / south Bohemia / south Moravia / west Bohemia",
+    "validation_method": "distinct value inspection",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_values_district__a8",
+    "source": "bird_merged.sqlite",
+    "query": "SELECT DISTINCT A8 FROM district",
+    "result": "0 / 1 / 2 / 3 / 4 / 5",
+    "validation_method": "distinct value inspection",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_schema_client",
+    "source": "bird_merged.sqlite",
+    "query": "PRAGMA table_info(client)",
+    "result": "Table client(client_id, gender, birth_date, district_id)",
+    "validation_method": "schema inspection",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_values_client__gender",
+    "source": "bird_merged.sqlite",
+    "query": "SELECT DISTINCT gender FROM client",
+    "result": "F / M",
+    "validation_method": "distinct value inspection",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_schema_disp",
+    "source": "bird_merged.sqlite",
+    "query": "PRAGMA table_info(disp)",
+    "result": "Table disp(disp_id, client_id, account_id, type)",
+    "validation_method": "schema inspection",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_values_disp__type",
+    "source": "bird_merged.sqlite",
+    "query": "SELECT DISTINCT type FROM disp",
+    "result": "DISPONENT / OWNER",
+    "validation_method": "distinct value inspection",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_schema_card",
+    "source": "bird_merged.sqlite",
+    "query": "PRAGMA table_info(card)",
+    "result": "Table card(card_id, disp_id, type, issued)",
+    "validation_method": "schema inspection",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_values_card__type",
+    "source": "bird_merged.sqlite",
+    "query": "SELECT DISTINCT type FROM card",
+    "result": "classic / gold / junior",
+    "validation_method": "distinct value inspection",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_schema_loan",
+    "source": "bird_merged.sqlite",
+    "query": "PRAGMA table_info(loan)",
+    "result": "Table loan(loan_id, account_id, date, amount, duration, payments, status)",
+    "validation_method": "schema inspection",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_values_loan__duration",
+    "source": "bird_merged.sqlite",
+    "query": "SELECT DISTINCT duration FROM loan",
+    "result": "12 / 24 / 36 / 48 / 60",
+    "validation_method": "distinct value inspection",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_values_loan__status",
+    "source": "bird_merged.sqlite",
+    "query": "SELECT DISTINCT status FROM loan",
+    "result": "A / B / C / D",
+    "validation_method": "distinct value inspection",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_schema_order",
+    "source": "bird_merged.sqlite",
+    "query": "PRAGMA table_info(order)",
+    "result": "Table order(order_id, account_id, bank_to, account_to, amount, k_symbol)",
+    "validation_method": "schema inspection",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_schema_molecule",
+    "source": "bird_merged.sqlite",
+    "query": "PRAGMA table_info(molecule)",
+    "result": "Table molecule(molecule_id, label)",
+    "validation_method": "schema inspection",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_values_molecule__label",
+    "source": "bird_merged.sqlite",
+    "query": "SELECT DISTINCT label FROM molecule",
+    "result": "+ / -",
+    "validation_method": "distinct value inspection",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_schema_atom",
+    "source": "bird_merged.sqlite",
+    "query": "PRAGMA table_info(atom)",
+    "result": "Table atom(atom_id, molecule_id, element)",
+    "validation_method": "schema inspection",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_schema_bond",
+    "source": "bird_merged.sqlite",
+    "query": "PRAGMA table_info(bond)",
+    "result": "Table bond(bond_id, molecule_id, bond_type)",
+    "validation_method": "schema inspection",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_values_bond__bond_type",
+    "source": "bird_merged.sqlite",
+    "query": "SELECT DISTINCT bond_type FROM bond",
+    "result": "# / - / =",
+    "validation_method": "distinct value inspection",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_schema_connected",
+    "source": "bird_merged.sqlite",
+    "query": "PRAGMA table_info(connected)",
+    "result": "Table connected(atom_id, atom_id2, bond_id)",
+    "validation_method": "schema inspection",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_schema_alignment",
+    "source": "bird_merged.sqlite",
+    "query": "PRAGMA table_info(alignment)",
+    "result": "Table alignment(id, alignment)",
+    "validation_method": "schema inspection",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_values_alignment__alignment",
+    "source": "bird_merged.sqlite",
+    "query": "SELECT DISTINCT alignment FROM alignment",
+    "result": "Bad / Good / N/A / Neutral",
+    "validation_method": "distinct value inspection",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_schema_colour",
+    "source": "bird_merged.sqlite",
+    "query": "PRAGMA table_info(colour)",
+    "result": "Table colour(id, colour)",
+    "validation_method": "schema inspection",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_schema_gender",
+    "source": "bird_merged.sqlite",
+    "query": "PRAGMA table_info(gender)",
+    "result": "Table gender(id, gender)",
+    "validation_method": "schema inspection",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_values_gender__gender",
+    "source": "bird_merged.sqlite",
+    "query": "SELECT DISTINCT gender FROM gender",
+    "result": "Female / Male / N/A",
+    "validation_method": "distinct value inspection",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_schema_cards",
+    "source": "bird_merged.sqlite",
+    "query": "PRAGMA table_info(cards)",
+    "result": "Table cards(id, artist, asciiName, availability, borderColor, cardKingdomFoilId, cardKingdomId, colorIdentity, colorIndicator, colors, convertedManaCost, duelDeck, edhrecRank, faceConvertedManaCost, faceName, flavorName, flavorText, frameEffects, frameVersion, hand, hasAlternativeDeckLimit, hasContentWarning, hasFoil, hasNonFoil, isAlternative, isFullArt, isOnlineOnly, isOversized, isPromo, isReprint, isReserved, isStarter, isStorySpotlight, isTextless, isTimeshifted, keywords, layout, leadershipSkills, life, loyalty, manaCost, mcmId, mcmMetaId, mtgArenaId, mtgjsonV4Id, mtgoFoilId, mtgoId, multiverseId, name, number, originalReleaseDate, originalText, originalType, otherFaceIds, power, printings, promoTypes, purchaseUrls, rarity, scryfallId, scryfallIllustrationId, scryfallOracleId, setCode, side, subtypes, supertypes, tcgplayerProductId, text, toughness, type, types, uuid, variations, watermark)",
+    "validation_method": "schema inspection",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_values_cards__availability",
+    "source": "bird_merged.sqlite",
+    "query": "SELECT DISTINCT availability FROM cards",
+    "result": "arena / arena,mtgo / arena,mtgo,paper / arena,paper / dreamcast / mtgo / mtgo,paper / paper / shandalar",
+    "validation_method": "distinct value inspection",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_values_cards__bordercolor",
+    "source": "bird_merged.sqlite",
+    "query": "SELECT DISTINCT borderColor FROM cards",
+    "result": "black / borderless / gold / silver / white",
+    "validation_method": "distinct value inspection",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_values_cards__colorindicator",
+    "source": "bird_merged.sqlite",
+    "query": "SELECT DISTINCT colorIndicator FROM cards",
+    "result": "B / B,G / B,R,U / G / G,R / G,R,W / R / U / W",
+    "validation_method": "distinct value inspection",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_values_cards__dueldeck",
+    "source": "bird_merged.sqlite",
+    "query": "SELECT DISTINCT duelDeck FROM cards",
+    "result": "a / b",
+    "validation_method": "distinct value inspection",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_values_cards__frameversion",
+    "source": "bird_merged.sqlite",
+    "query": "SELECT DISTINCT frameVersion FROM cards",
+    "result": "1993 / 1997 / 2003 / 2015 / future",
+    "validation_method": "distinct value inspection",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_values_cards__hand",
+    "source": "bird_merged.sqlite",
+    "query": "SELECT DISTINCT hand FROM cards",
+    "result": "-1 / -2 / -3 / -4 / 0 / 1 / 2 / 3",
+    "validation_method": "distinct value inspection",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_values_cards__hasalternativedecklimit",
+    "source": "bird_merged.sqlite",
+    "query": "SELECT DISTINCT hasAlternativeDeckLimit FROM cards",
+    "result": "0 / 1",
+    "validation_method": "distinct value inspection",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_values_cards__hascontentwarning",
+    "source": "bird_merged.sqlite",
+    "query": "SELECT DISTINCT hasContentWarning FROM cards",
+    "result": "0 / 1",
+    "validation_method": "distinct value inspection",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_values_cards__hasfoil",
+    "source": "bird_merged.sqlite",
+    "query": "SELECT DISTINCT hasFoil FROM cards",
+    "result": "0 / 1",
+    "validation_method": "distinct value inspection",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_values_cards__hasnonfoil",
+    "source": "bird_merged.sqlite",
+    "query": "SELECT DISTINCT hasNonFoil FROM cards",
+    "result": "0 / 1",
+    "validation_method": "distinct value inspection",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_values_cards__isalternative",
+    "source": "bird_merged.sqlite",
+    "query": "SELECT DISTINCT isAlternative FROM cards",
+    "result": "0 / 1",
+    "validation_method": "distinct value inspection",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_values_cards__isfullart",
+    "source": "bird_merged.sqlite",
+    "query": "SELECT DISTINCT isFullArt FROM cards",
+    "result": "0 / 1",
+    "validation_method": "distinct value inspection",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_values_cards__isonlineonly",
+    "source": "bird_merged.sqlite",
+    "query": "SELECT DISTINCT isOnlineOnly FROM cards",
+    "result": "0 / 1",
+    "validation_method": "distinct value inspection",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_values_cards__isoversized",
+    "source": "bird_merged.sqlite",
+    "query": "SELECT DISTINCT isOversized FROM cards",
+    "result": "0 / 1",
+    "validation_method": "distinct value inspection",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_values_cards__ispromo",
+    "source": "bird_merged.sqlite",
+    "query": "SELECT DISTINCT isPromo FROM cards",
+    "result": "0 / 1",
+    "validation_method": "distinct value inspection",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_values_cards__isreprint",
+    "source": "bird_merged.sqlite",
+    "query": "SELECT DISTINCT isReprint FROM cards",
+    "result": "0 / 1",
+    "validation_method": "distinct value inspection",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_values_cards__isreserved",
+    "source": "bird_merged.sqlite",
+    "query": "SELECT DISTINCT isReserved FROM cards",
+    "result": "0 / 1",
+    "validation_method": "distinct value inspection",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_values_cards__isstarter",
+    "source": "bird_merged.sqlite",
+    "query": "SELECT DISTINCT isStarter FROM cards",
+    "result": "0 / 1",
+    "validation_method": "distinct value inspection",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_values_cards__isstoryspotlight",
+    "source": "bird_merged.sqlite",
+    "query": "SELECT DISTINCT isStorySpotlight FROM cards",
+    "result": "0 / 1",
+    "validation_method": "distinct value inspection",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_values_cards__istextless",
+    "source": "bird_merged.sqlite",
+    "query": "SELECT DISTINCT isTextless FROM cards",
+    "result": "0 / 1",
+    "validation_method": "distinct value inspection",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_values_cards__istimeshifted",
+    "source": "bird_merged.sqlite",
+    "query": "SELECT DISTINCT isTimeshifted FROM cards",
+    "result": "0 / 1",
+    "validation_method": "distinct value inspection",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_values_cards__rarity",
+    "source": "bird_merged.sqlite",
+    "query": "SELECT DISTINCT rarity FROM cards",
+    "result": "common / mythic / rare / uncommon",
+    "validation_method": "distinct value inspection",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_values_cards__side",
+    "source": "bird_merged.sqlite",
+    "query": "SELECT DISTINCT side FROM cards",
+    "result": "a / b / c / d / e",
+    "validation_method": "distinct value inspection",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_values_cards__supertypes",
+    "source": "bird_merged.sqlite",
+    "query": "SELECT DISTINCT supertypes FROM cards",
+    "result": "Basic / Basic,Snow / Host / Legendary / Legendary,Snow / Ongoing / Snow / World",
+    "validation_method": "distinct value inspection",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_schema_publisher",
+    "source": "bird_merged.sqlite",
+    "query": "PRAGMA table_info(publisher)",
+    "result": "Table publisher(id, publisher_name)",
+    "validation_method": "schema inspection",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_schema_race",
+    "source": "bird_merged.sqlite",
+    "query": "PRAGMA table_info(race)",
+    "result": "Table race(id, race)",
+    "validation_method": "schema inspection",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_schema_races",
+    "source": "bird_merged.sqlite",
+    "query": "PRAGMA table_info(races)",
+    "result": "Table races(raceId, year, round, circuitId, name, date, time, url)",
+    "validation_method": "schema inspection",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_schema_attendance",
+    "source": "bird_merged.sqlite",
+    "query": "PRAGMA table_info(attendance)",
+    "result": "Table attendance(link_to_event, link_to_member)",
+    "validation_method": "schema inspection",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_schema_budget",
+    "source": "bird_merged.sqlite",
+    "query": "PRAGMA table_info(budget)",
+    "result": "Table budget(budget_id, category, spent, remaining, amount, event_status, link_to_event)",
+    "validation_method": "schema inspection",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_values_budget__category",
+    "source": "bird_merged.sqlite",
+    "query": "SELECT DISTINCT category FROM budget",
+    "result": "Advertisement / Club T-Shirts / Food / Parking / Speaker Gifts",
+    "validation_method": "distinct value inspection",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_values_budget__amount",
+    "source": "bird_merged.sqlite",
+    "query": "SELECT DISTINCT amount FROM budget",
+    "result": "10 / 150 / 155 / 20 / 25 / 300 / 350 / 55 / 75",
+    "validation_method": "distinct value inspection",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_values_budget__event_status",
+    "source": "bird_merged.sqlite",
+    "query": "SELECT DISTINCT event_status FROM budget",
+    "result": "Closed / Open / Planning",
+    "validation_method": "distinct value inspection",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_schema_circuits",
+    "source": "bird_merged.sqlite",
+    "query": "PRAGMA table_info(circuits)",
+    "result": "Table circuits(circuitId, circuitRef, name, location, country, lat, lng, alt, url)",
+    "validation_method": "schema inspection",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_schema_constructorresults",
+    "source": "bird_merged.sqlite",
+    "query": "PRAGMA table_info(constructorResults)",
+    "result": "Table constructorResults(constructorResultsId, raceId, constructorId, points, status)",
+    "validation_method": "schema inspection",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_values_constructorresults__status",
+    "source": "bird_merged.sqlite",
+    "query": "SELECT DISTINCT status FROM constructorResults",
+    "result": "D",
+    "validation_method": "distinct value inspection",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_schema_constructors",
+    "source": "bird_merged.sqlite",
+    "query": "PRAGMA table_info(constructors)",
+    "result": "Table constructors(constructorId, constructorRef, name, nationality, url)",
+    "validation_method": "schema inspection",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_schema_constructorstandings",
+    "source": "bird_merged.sqlite",
+    "query": "PRAGMA table_info(constructorStandings)",
+    "result": "Table constructorStandings(constructorStandingsId, raceId, constructorId, points, position, positionText, wins)",
+    "validation_method": "schema inspection",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_schema_customers",
+    "source": "bird_merged.sqlite",
+    "query": "PRAGMA table_info(customers)",
+    "result": "Table customers(CustomerID, Segment, Currency)",
+    "validation_method": "schema inspection",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_values_customers__segment",
+    "source": "bird_merged.sqlite",
+    "query": "SELECT DISTINCT Segment FROM customers",
+    "result": "KAM / LAM / SME",
+    "validation_method": "distinct value inspection",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_values_customers__currency",
+    "source": "bird_merged.sqlite",
+    "query": "SELECT DISTINCT Currency FROM customers",
+    "result": "CZK / EUR",
+    "validation_method": "distinct value inspection",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_schema_drivers",
+    "source": "bird_merged.sqlite",
+    "query": "PRAGMA table_info(drivers)",
+    "result": "Table drivers(driverId, driverRef, number, code, forename, surname, dob, nationality, url)",
+    "validation_method": "schema inspection",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_schema_driverstandings",
+    "source": "bird_merged.sqlite",
+    "query": "PRAGMA table_info(driverStandings)",
+    "result": "Table driverStandings(driverStandingsId, raceId, driverId, points, position, positionText, wins)",
+    "validation_method": "schema inspection",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_schema_event",
+    "source": "bird_merged.sqlite",
+    "query": "PRAGMA table_info(event)",
+    "result": "Table event(event_id, event_name, event_date, type, notes, location, status)",
+    "validation_method": "schema inspection",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_values_event__type",
+    "source": "bird_merged.sqlite",
+    "query": "SELECT DISTINCT type FROM event",
+    "result": "Budget / Community Service / Election / Game / Guest Speaker / Meeting / Registration / Social",
+    "validation_method": "distinct value inspection",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_values_event__status",
+    "source": "bird_merged.sqlite",
+    "query": "SELECT DISTINCT status FROM event",
+    "result": "Closed / Open / Planning",
+    "validation_method": "distinct value inspection",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_schema_examination",
+    "source": "bird_merged.sqlite",
+    "query": "PRAGMA table_info(Examination)",
+    "result": "Table Examination(ID, Examination Date, aCL IgG, aCL IgM, ANA, ANA Pattern, aCL IgA, Diagnosis, KCT, RVVT, LAC, Symptoms, Thrombosis)",
+    "validation_method": "schema inspection",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_values_examination__ana",
+    "source": "bird_merged.sqlite",
+    "query": "SELECT DISTINCT ANA FROM Examination",
+    "result": "0 / 1024 / 16 / 256 / 4 / 4094 / 4096 / 64",
+    "validation_method": "distinct value inspection",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_values_examination__kct",
+    "source": "bird_merged.sqlite",
+    "query": "SELECT DISTINCT KCT FROM Examination",
+    "result": "+ / -",
+    "validation_method": "distinct value inspection",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_values_examination__rvvt",
+    "source": "bird_merged.sqlite",
+    "query": "SELECT DISTINCT RVVT FROM Examination",
+    "result": "+ / -",
+    "validation_method": "distinct value inspection",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_values_examination__lac",
+    "source": "bird_merged.sqlite",
+    "query": "SELECT DISTINCT LAC FROM Examination",
+    "result": "+ / -",
+    "validation_method": "distinct value inspection",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_values_examination__thrombosis",
+    "source": "bird_merged.sqlite",
+    "query": "SELECT DISTINCT Thrombosis FROM Examination",
+    "result": "0 / 1 / 2 / 3",
+    "validation_method": "distinct value inspection",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_schema_expense",
+    "source": "bird_merged.sqlite",
+    "query": "PRAGMA table_info(expense)",
+    "result": "Table expense(expense_id, expense_description, expense_date, cost, approved, link_to_member, link_to_budget)",
+    "validation_method": "schema inspection",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_values_expense__approved",
+    "source": "bird_merged.sqlite",
+    "query": "SELECT DISTINCT approved FROM expense",
+    "result": "true",
+    "validation_method": "distinct value inspection",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_values_expense__link_to_member",
+    "source": "bird_merged.sqlite",
+    "query": "SELECT DISTINCT link_to_member FROM expense",
+    "result": "rec4BLdZHS2Blfp4v / recD078PnS3x2doBe / recro8T1MPMwRadVH",
+    "validation_method": "distinct value inspection",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_schema_foreign_data",
+    "source": "bird_merged.sqlite",
+    "query": "PRAGMA table_info(foreign_data)",
+    "result": "Table foreign_data(id, flavorText, language, multiverseid, name, text, type, uuid)",
+    "validation_method": "schema inspection",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_schema_frpm",
+    "source": "bird_merged.sqlite",
+    "query": "PRAGMA table_info(frpm)",
+    "result": "Table frpm(CDSCode, Academic Year, County Code, District Code, School Code, County Name, District Name, School Name, District Type, School Type, Educational Option Type, NSLP Provision Status, Charter School (Y/N), Charter School Number, Charter Funding Type, IRC, Low Grade, High Grade, Enrollment (K-12), Free Meal Count (K-12), Percent (%) Eligible Free (K-12), FRPM Count (K-12), Percent (%) Eligible FRPM (K-12), Enrollment (Ages 5-17), Free Meal Count (Ages 5-17), Percent (%) Eligible Free (Ages 5-17), FRPM Count (Ages 5-17), Percent (%) Eligible FRPM (Ages 5-17), 2013-14 CALPADS Fall 1 Certification Status)",
+    "validation_method": "schema inspection",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_values_frpm__academic_year",
+    "source": "bird_merged.sqlite",
+    "query": "SELECT DISTINCT Academic Year FROM frpm",
+    "result": "2014-2015",
+    "validation_method": "distinct value inspection",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_values_frpm__nslp_provision_status",
+    "source": "bird_merged.sqlite",
+    "query": "SELECT DISTINCT NSLP Provision Status FROM frpm",
+    "result": "Breakfast Provision 2 / CEP / Lunch Provision 2 / Multiple Provision Types / Provision 1 / Provision 2 / Provision 3",
+    "validation_method": "distinct value inspection",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_values_frpm__charter_school_y_n",
+    "source": "bird_merged.sqlite",
+    "query": "SELECT DISTINCT Charter School (Y/N) FROM frpm",
+    "result": "0 / 1",
+    "validation_method": "distinct value inspection",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_values_frpm__charter_funding_type",
+    "source": "bird_merged.sqlite",
+    "query": "SELECT DISTINCT Charter Funding Type FROM frpm",
+    "result": "Directly funded / Locally funded / Not in CS funding model",
+    "validation_method": "distinct value inspection",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_values_frpm__irc",
+    "source": "bird_merged.sqlite",
+    "query": "SELECT DISTINCT IRC FROM frpm",
+    "result": "0 / 1",
+    "validation_method": "distinct value inspection",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_values_frpm__2013_14_calpads_fall_1_certification_status",
+    "source": "bird_merged.sqlite",
+    "query": "SELECT DISTINCT 2013-14 CALPADS Fall 1 Certification Status FROM frpm",
+    "result": "1",
+    "validation_method": "distinct value inspection",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_schema_gasstations",
+    "source": "bird_merged.sqlite",
+    "query": "PRAGMA table_info(gasstations)",
+    "result": "Table gasstations(GasStationID, ChainID, Country, Segment)",
+    "validation_method": "schema inspection",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_values_gasstations__country",
+    "source": "bird_merged.sqlite",
+    "query": "SELECT DISTINCT Country FROM gasstations",
+    "result": "CZE / SVK",
+    "validation_method": "distinct value inspection",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_values_gasstations__segment",
+    "source": "bird_merged.sqlite",
+    "query": "SELECT DISTINCT Segment FROM gasstations",
+    "result": "Discount / Noname / Other / Premium / Value for money",
+    "validation_method": "distinct value inspection",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_schema_income",
+    "source": "bird_merged.sqlite",
+    "query": "PRAGMA table_info(income)",
+    "result": "Table income(income_id, date_received, amount, source, notes, link_to_member)",
+    "validation_method": "schema inspection",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_values_income__amount",
+    "source": "bird_merged.sqlite",
+    "query": "SELECT DISTINCT amount FROM income",
+    "result": "1000 / 200 / 3000 / 50",
+    "validation_method": "distinct value inspection",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_values_income__source",
+    "source": "bird_merged.sqlite",
+    "query": "SELECT DISTINCT source FROM income",
+    "result": "Dues / Fundraising / School Appropration / Sponsorship",
+    "validation_method": "distinct value inspection",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_schema_laboratory",
+    "source": "bird_merged.sqlite",
+    "query": "PRAGMA table_info(Laboratory)",
+    "result": "Table Laboratory(ID, Date, GOT, GPT, LDH, ALP, TP, ALB, UA, UN, CRE, T-BIL, T-CHO, TG, CPK, GLU, WBC, RBC, HGB, HCT, PLT, PT, APTT, FG, PIC, TAT, TAT2, U-PRO, IGG, IGA, IGM, CRP, RA, RF, C3, C4, RNP, SM, SC170, SSA, SSB, CENTROMEA, DNA, DNA-II)",
+    "validation_method": "schema inspection",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_values_laboratory__ra",
+    "source": "bird_merged.sqlite",
+    "query": "SELECT DISTINCT RA FROM Laboratory",
+    "result": "+ / +- / - / 2+ / 7-",
+    "validation_method": "distinct value inspection",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_values_laboratory__rnp",
+    "source": "bird_merged.sqlite",
+    "query": "SELECT DISTINCT RNP FROM Laboratory",
+    "result": "0 / 1 / 15 / 16 / 256 / 4 / 64 / negative",
+    "validation_method": "distinct value inspection",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_values_laboratory__sm",
+    "source": "bird_merged.sqlite",
+    "query": "SELECT DISTINCT SM FROM Laboratory",
+    "result": "0 / 1 / 2 / 8 / negative",
+    "validation_method": "distinct value inspection",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_values_laboratory__sc170",
+    "source": "bird_merged.sqlite",
+    "query": "SELECT DISTINCT SC170 FROM Laboratory",
+    "result": "0 / 1 / 16 / 4 / negative",
+    "validation_method": "distinct value inspection",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_values_laboratory__ssa",
+    "source": "bird_merged.sqlite",
+    "query": "SELECT DISTINCT SSA FROM Laboratory",
+    "result": "0 / 1 / 16 / 256 / 4 / 64 / negative",
+    "validation_method": "distinct value inspection",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_values_laboratory__ssb",
+    "source": "bird_merged.sqlite",
+    "query": "SELECT DISTINCT SSB FROM Laboratory",
+    "result": "0 / 1 / 2 / 32 / 8 / negative",
+    "validation_method": "distinct value inspection",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_values_laboratory__centromea",
+    "source": "bird_merged.sqlite",
+    "query": "SELECT DISTINCT CENTROMEA FROM Laboratory",
+    "result": "0 / negative",
+    "validation_method": "distinct value inspection",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_schema_laptimes",
+    "source": "bird_merged.sqlite",
+    "query": "PRAGMA table_info(lapTimes)",
+    "result": "Table lapTimes(raceId, driverId, lap, position, time, milliseconds)",
+    "validation_method": "schema inspection",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_schema_legalities",
+    "source": "bird_merged.sqlite",
+    "query": "PRAGMA table_info(legalities)",
+    "result": "Table legalities(id, format, status, uuid)",
+    "validation_method": "schema inspection",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_values_legalities__status",
+    "source": "bird_merged.sqlite",
+    "query": "SELECT DISTINCT status FROM legalities",
+    "result": "Banned / Legal / Restricted",
+    "validation_method": "distinct value inspection",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_schema_major",
+    "source": "bird_merged.sqlite",
+    "query": "PRAGMA table_info(major)",
+    "result": "Table major(major_id, major_name, department, college)",
+    "validation_method": "schema inspection",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_schema_member",
+    "source": "bird_merged.sqlite",
+    "query": "PRAGMA table_info(member)",
+    "result": "Table member(member_id, first_name, last_name, email, position, t_shirt_size, phone, zip, link_to_major)",
+    "validation_method": "schema inspection",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_values_member__position",
+    "source": "bird_merged.sqlite",
+    "query": "SELECT DISTINCT position FROM member",
+    "result": "Inactive / Member / President / Secretary / Treasurer / Vice President",
+    "validation_method": "distinct value inspection",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_values_member__t_shirt_size",
+    "source": "bird_merged.sqlite",
+    "query": "SELECT DISTINCT t_shirt_size FROM member",
+    "result": "Large / Medium / Small / X-Large",
+    "validation_method": "distinct value inspection",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_schema_patient",
+    "source": "bird_merged.sqlite",
+    "query": "PRAGMA table_info(Patient)",
+    "result": "Table Patient(ID, SEX, Birthday, Description, First Date, Admission, Diagnosis)",
+    "validation_method": "schema inspection",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_schema_pitstops",
+    "source": "bird_merged.sqlite",
+    "query": "PRAGMA table_info(pitStops)",
+    "result": "Table pitStops(raceId, driverId, stop, lap, time, duration, milliseconds)",
+    "validation_method": "schema inspection",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_values_pitstops__stop",
+    "source": "bird_merged.sqlite",
+    "query": "SELECT DISTINCT stop FROM pitStops",
+    "result": "1 / 2 / 3 / 4 / 5 / 6",
+    "validation_method": "distinct value inspection",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_schema_products",
+    "source": "bird_merged.sqlite",
+    "query": "PRAGMA table_info(products)",
+    "result": "Table products(ProductID, Description)",
+    "validation_method": "schema inspection",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_schema_qualifying",
+    "source": "bird_merged.sqlite",
+    "query": "PRAGMA table_info(qualifying)",
+    "result": "Table qualifying(qualifyId, raceId, driverId, constructorId, number, position, q1, q2, q3)",
+    "validation_method": "schema inspection",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_schema_results",
+    "source": "bird_merged.sqlite",
+    "query": "PRAGMA table_info(results)",
+    "result": "Table results(resultId, raceId, driverId, constructorId, number, grid, position, positionText, positionOrder, points, laps, time, milliseconds, fastestLap, rank, fastestLapTime, fastestLapSpeed, statusId)",
+    "validation_method": "schema inspection",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_schema_rulings",
+    "source": "bird_merged.sqlite",
+    "query": "PRAGMA table_info(rulings)",
+    "result": "Table rulings(id, date, text, uuid)",
+    "validation_method": "schema inspection",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_schema_satscores",
+    "source": "bird_merged.sqlite",
+    "query": "PRAGMA table_info(satscores)",
+    "result": "Table satscores(cds, rtype, sname, dname, cname, enroll12, NumTstTakr, AvgScrRead, AvgScrMath, AvgScrWrite, NumGE1500)",
+    "validation_method": "schema inspection",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_values_satscores__rtype",
+    "source": "bird_merged.sqlite",
+    "query": "SELECT DISTINCT rtype FROM satscores",
+    "result": "D / S",
+    "validation_method": "distinct value inspection",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_schema_schools",
+    "source": "bird_merged.sqlite",
+    "query": "PRAGMA table_info(schools)",
+    "result": "Table schools(CDSCode, NCESDist, NCESSchool, StatusType, County, District, School, Street, StreetAbr, City, Zip, State, MailStreet, MailStrAbr, MailCity, MailZip, MailState, Phone, Ext, Website, OpenDate, ClosedDate, Charter, CharterNum, FundingType, DOC, DOCType, SOC, SOCType, EdOpsCode, EdOpsName, EILCode, EILName, GSoffered, GSserved, Virtual, Magnet, Latitude, Longitude, AdmFName1, AdmLName1, AdmEmail1, AdmFName2, AdmLName2, AdmEmail2, AdmFName3, AdmLName3, AdmEmail3, LastUpdate)",
+    "validation_method": "schema inspection",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_values_schools__statustype",
+    "source": "bird_merged.sqlite",
+    "query": "SELECT DISTINCT StatusType FROM schools",
+    "result": "Active / Closed / Merged / Pending",
+    "validation_method": "distinct value inspection",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_values_schools__state",
+    "source": "bird_merged.sqlite",
+    "query": "SELECT DISTINCT State FROM schools",
+    "result": "CA",
+    "validation_method": "distinct value inspection",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_values_schools__mailstate",
+    "source": "bird_merged.sqlite",
+    "query": "SELECT DISTINCT MailState FROM schools",
+    "result": "CA",
+    "validation_method": "distinct value inspection",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_values_schools__charter",
+    "source": "bird_merged.sqlite",
+    "query": "SELECT DISTINCT Charter FROM schools",
+    "result": "0 / 1",
+    "validation_method": "distinct value inspection",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_values_schools__fundingtype",
+    "source": "bird_merged.sqlite",
+    "query": "SELECT DISTINCT FundingType FROM schools",
+    "result": "Directly funded / Locally funded / Not in CS funding model",
+    "validation_method": "distinct value inspection",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_values_schools__eilcode",
+    "source": "bird_merged.sqlite",
+    "query": "SELECT DISTINCT EILCode FROM schools",
+    "result": "A / ELEM / ELEMHIGH / HS / INTMIDJR / PS / UG",
+    "validation_method": "distinct value inspection",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_values_schools__virtual",
+    "source": "bird_merged.sqlite",
+    "query": "SELECT DISTINCT Virtual FROM schools",
+    "result": "F / N / P",
+    "validation_method": "distinct value inspection",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_values_schools__magnet",
+    "source": "bird_merged.sqlite",
+    "query": "SELECT DISTINCT Magnet FROM schools",
+    "result": "0 / 1",
+    "validation_method": "distinct value inspection",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_schema_seasons",
+    "source": "bird_merged.sqlite",
+    "query": "PRAGMA table_info(seasons)",
+    "result": "Table seasons(year, url)",
+    "validation_method": "schema inspection",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_schema_sets",
+    "source": "bird_merged.sqlite",
+    "query": "PRAGMA table_info(sets)",
+    "result": "Table sets(id, baseSetSize, block, booster, code, isFoilOnly, isForeignOnly, isNonFoilOnly, isOnlineOnly, isPartialPreview, keyruneCode, mcmId, mcmIdExtras, mcmName, mtgoCode, name, parentCode, releaseDate, tcgplayerGroupId, totalSetSize, type)",
+    "validation_method": "schema inspection",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_values_sets__isfoilonly",
+    "source": "bird_merged.sqlite",
+    "query": "SELECT DISTINCT isFoilOnly FROM sets",
+    "result": "0 / 1",
+    "validation_method": "distinct value inspection",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_values_sets__isforeignonly",
+    "source": "bird_merged.sqlite",
+    "query": "SELECT DISTINCT isForeignOnly FROM sets",
+    "result": "0 / 1",
+    "validation_method": "distinct value inspection",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_values_sets__isnonfoilonly",
+    "source": "bird_merged.sqlite",
+    "query": "SELECT DISTINCT isNonFoilOnly FROM sets",
+    "result": "0 / 1",
+    "validation_method": "distinct value inspection",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_values_sets__isonlineonly",
+    "source": "bird_merged.sqlite",
+    "query": "SELECT DISTINCT isOnlineOnly FROM sets",
+    "result": "0 / 1",
+    "validation_method": "distinct value inspection",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_values_sets__ispartialpreview",
+    "source": "bird_merged.sqlite",
+    "query": "SELECT DISTINCT isPartialPreview FROM sets",
+    "result": "0 / 1",
+    "validation_method": "distinct value inspection",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_values_sets__mcmidextras",
+    "source": "bird_merged.sqlite",
+    "query": "SELECT DISTINCT mcmIdExtras FROM sets",
+    "result": "2371 / 2419 / 2451 / 2587 / 2961 / 3113 / 3209 / 3459 / 3474 / 3680",
+    "validation_method": "distinct value inspection",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_schema_set_translations",
+    "source": "bird_merged.sqlite",
+    "query": "PRAGMA table_info(set_translations)",
+    "result": "Table set_translations(id, language, setCode, translation)",
+    "validation_method": "schema inspection",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_values_set_translations__language",
+    "source": "bird_merged.sqlite",
+    "query": "SELECT DISTINCT language FROM set_translations",
+    "result": "Chinese Simplified / Chinese Traditional / French / German / Italian / Japanese / Korean / Portuguese (Brazil) / Russian / Spanish",
+    "validation_method": "distinct value inspection",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_schema_status",
+    "source": "bird_merged.sqlite",
+    "query": "PRAGMA table_info(status)",
+    "result": "Table status(statusId, status)",
+    "validation_method": "schema inspection",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_schema_superhero",
+    "source": "bird_merged.sqlite",
+    "query": "PRAGMA table_info(superhero)",
+    "result": "Table superhero(id, superhero_name, full_name, gender_id, eye_colour_id, hair_colour_id, skin_colour_id, race_id, publisher_id, alignment_id, height_cm, weight_kg)",
+    "validation_method": "schema inspection",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_schema_superpower",
+    "source": "bird_merged.sqlite",
+    "query": "PRAGMA table_info(superpower)",
+    "result": "Table superpower(id, power_name)",
+    "validation_method": "schema inspection",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_schema_trans",
+    "source": "bird_merged.sqlite",
+    "query": "PRAGMA table_info(trans)",
+    "result": "Table trans(trans_id, account_id, date, type, operation, amount, balance, k_symbol, bank, account)",
+    "validation_method": "schema inspection",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_values_trans__type",
+    "source": "bird_merged.sqlite",
+    "query": "SELECT DISTINCT type FROM trans",
+    "result": "PRIJEM / VYBER / VYDAJ",
+    "validation_method": "distinct value inspection",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_values_trans__operation",
+    "source": "bird_merged.sqlite",
+    "query": "SELECT DISTINCT operation FROM trans",
+    "result": "PREVOD NA UCET / PREVOD Z UCTU / VKLAD / VYBER / VYBER KARTOU",
+    "validation_method": "distinct value inspection",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_schema_transactions_1k",
+    "source": "bird_merged.sqlite",
+    "query": "PRAGMA table_info(transactions_1k)",
+    "result": "Table transactions_1k(TransactionID, Date, Time, CustomerID, CardID, GasStationID, ProductID, Amount, Price)",
+    "validation_method": "schema inspection",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_schema_yearmonth",
+    "source": "bird_merged.sqlite",
+    "query": "PRAGMA table_info(yearmonth)",
+    "result": "Table yearmonth(CustomerID, Date, Consumption)",
+    "validation_method": "schema inspection",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_schema_zip_code",
+    "source": "bird_merged.sqlite",
+    "query": "PRAGMA table_info(zip_code)",
+    "result": "Table zip_code(zip_code, type, city, county, state, short_state)",
+    "validation_method": "schema inspection",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_values_zip_code__type",
+    "source": "bird_merged.sqlite",
+    "query": "SELECT DISTINCT type FROM zip_code",
+    "result": "PO Box / Standard / Unique",
+    "validation_method": "distinct value inspection",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_concept_schoolenrollmentk12",
+    "source": "bird_merged.sqlite",
+    "query": "SELECT COUNT(*) FROM frpm",
+    "result": "9986 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_concept_freemealcountk12",
+    "source": "bird_merged.sqlite",
+    "query": "SELECT COUNT(*) FROM frpm",
+    "result": "9986 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_concept_frpmcountk12",
+    "source": "bird_merged.sqlite",
+    "query": "SELECT COUNT(*) FROM frpm",
+    "result": "9986 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_concept_schooltype",
+    "source": "bird_merged.sqlite",
+    "query": "SELECT COUNT(*) FROM frpm",
+    "result": "9986 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_concept_districttype",
+    "source": "bird_merged.sqlite",
+    "query": "SELECT COUNT(*) FROM frpm",
+    "result": "9986 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_concept_educationaloptiontype",
+    "source": "bird_merged.sqlite",
+    "query": "SELECT COUNT(*) FROM frpm",
+    "result": "9986 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_concept_charterschoolflag",
+    "source": "bird_merged.sqlite",
+    "query": "SELECT COUNT(*) FROM frpm",
+    "result": "9986 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_concept_lowgrade",
+    "source": "bird_merged.sqlite",
+    "query": "SELECT COUNT(*) FROM frpm",
+    "result": "9986 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_concept_highgrade",
+    "source": "bird_merged.sqlite",
+    "query": "SELECT COUNT(*) FROM frpm",
+    "result": "9986 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_concept_schoolname",
+    "source": "bird_merged.sqlite",
+    "query": "SELECT COUNT(*) FROM frpm",
+    "result": "9986 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_concept_countyname",
+    "source": "bird_merged.sqlite",
+    "query": "SELECT COUNT(*) FROM frpm",
+    "result": "9986 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_concept_cardname",
+    "source": "bird_merged.sqlite",
+    "query": "SELECT COUNT(*) FROM cards",
+    "result": "56822 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_concept_cardlanguage",
+    "source": "bird_merged.sqlite",
+    "query": "SELECT COUNT(*) FROM foreign_data",
+    "result": "229186 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_concept_cardrarity",
+    "source": "bird_merged.sqlite",
+    "query": "SELECT COUNT(*) FROM cards",
+    "result": "56822 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_concept_cardformat",
+    "source": "bird_merged.sqlite",
+    "query": "SELECT COUNT(*) FROM legalities",
+    "result": "427907 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_concept_cardlegalitystatus",
+    "source": "bird_merged.sqlite",
+    "query": "SELECT COUNT(*) FROM legalities",
+    "result": "427907 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_concept_hascontentwarning",
+    "source": "bird_merged.sqlite",
+    "query": "SELECT COUNT(*) FROM cards",
+    "result": "56822 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_concept_edhrank",
+    "source": "bird_merged.sqlite",
+    "query": "SELECT COUNT(*) FROM cards",
+    "result": "56822 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_concept_isstoryspotlight",
+    "source": "bird_merged.sqlite",
+    "query": "SELECT COUNT(*) FROM cards",
+    "result": "56822 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_concept_bordercolor",
+    "source": "bird_merged.sqlite",
+    "query": "SELECT COUNT(*) FROM cards",
+    "result": "56822 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_concept_artist",
+    "source": "bird_merged.sqlite",
+    "query": "SELECT COUNT(*) FROM cards",
+    "result": "56822 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_concept_convertedmanacost",
+    "source": "bird_merged.sqlite",
+    "query": "SELECT COUNT(*) FROM cards",
+    "result": "56822 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_concept_power",
+    "source": "bird_merged.sqlite",
+    "query": "SELECT COUNT(*) FROM cards",
+    "result": "56822 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_concept_cardtype",
+    "source": "bird_merged.sqlite",
+    "query": "SELECT COUNT(*) FROM cards",
+    "result": "56822 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_concept_cardtext",
+    "source": "bird_merged.sqlite",
+    "query": "SELECT COUNT(*) FROM cards",
+    "result": "56822 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_concept_setcode",
+    "source": "bird_merged.sqlite",
+    "query": "SELECT COUNT(*) FROM cards",
+    "result": "56822 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_concept_gasconsumption",
+    "source": "bird_merged.sqlite",
+    "query": "SELECT COUNT(*) FROM yearmonth",
+    "result": "383282 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_concept_customersegment",
+    "source": "bird_merged.sqlite",
+    "query": "SELECT COUNT(*) FROM customers",
+    "result": "32461 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_concept_currency",
+    "source": "bird_merged.sqlite",
+    "query": "SELECT COUNT(*) FROM customers",
+    "result": "32461 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_concept_yearmonth",
+    "source": "bird_merged.sqlite",
+    "query": "SELECT COUNT(*) FROM yearmonth",
+    "result": "383282 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_concept_gasstationchain",
+    "source": "bird_merged.sqlite",
+    "query": "SELECT COUNT(*) FROM gasstations",
+    "result": "5716 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_concept_gasstationcountry",
+    "source": "bird_merged.sqlite",
+    "query": "SELECT COUNT(*) FROM gasstations",
+    "result": "5716 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_concept_productdescription",
+    "source": "bird_merged.sqlite",
+    "query": "SELECT COUNT(*) FROM products",
+    "result": "591 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_concept_loanamount",
+    "source": "bird_merged.sqlite",
+    "query": "SELECT COUNT(*) FROM loan",
+    "result": "682 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_concept_loandate",
+    "source": "bird_merged.sqlite",
+    "query": "SELECT COUNT(*) FROM loan",
+    "result": "682 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_concept_loanstatus",
+    "source": "bird_merged.sqlite",
+    "query": "SELECT COUNT(*) FROM loan",
+    "result": "682 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_concept_accountfrequency",
+    "source": "bird_merged.sqlite",
+    "query": "SELECT COUNT(*) FROM account",
+    "result": "4500 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_concept_districtregion",
+    "source": "bird_merged.sqlite",
+    "query": "SELECT COUNT(*) FROM district",
+    "result": "77 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_concept_district",
+    "source": "bird_merged.sqlite",
+    "query": "SELECT COUNT(*) FROM district",
+    "result": "77 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_concept_clientgender",
+    "source": "bird_merged.sqlite",
+    "query": "SELECT COUNT(*) FROM client",
+    "result": "5369 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_concept_cardissueddate",
+    "source": "bird_merged.sqlite",
+    "query": "SELECT COUNT(*) FROM card",
+    "result": "892 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_concept_disptype",
+    "source": "bird_merged.sqlite",
+    "query": "SELECT COUNT(*) FROM disp",
+    "result": "5369 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_concept_account",
+    "source": "bird_merged.sqlite",
+    "query": "SELECT COUNT(*) FROM account",
+    "result": "4500 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_concept_accountopeningdate",
+    "source": "bird_merged.sqlite",
+    "query": "SELECT COUNT(*) FROM account",
+    "result": "4500 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_concept_clientbirthdate",
+    "source": "bird_merged.sqlite",
+    "query": "SELECT COUNT(*) FROM client",
+    "result": "5369 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_concept_districtname",
+    "source": "bird_merged.sqlite",
+    "query": "SELECT COUNT(*) FROM district",
+    "result": "77 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_concept_districtaveragesalary",
+    "source": "bird_merged.sqlite",
+    "query": "SELECT COUNT(*) FROM district",
+    "result": "77 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_concept_transactiontype",
+    "source": "bird_merged.sqlite",
+    "query": "SELECT COUNT(*) FROM trans",
+    "result": "1056320 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_concept_loanduration",
+    "source": "bird_merged.sqlite",
+    "query": "SELECT COUNT(*) FROM loan",
+    "result": "682 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_concept_driver",
+    "source": "bird_merged.sqlite",
+    "query": "SELECT COUNT(*) FROM drivers",
+    "result": "840 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_concept_driverfullname",
+    "source": "bird_merged.sqlite",
+    "query": "SELECT COUNT(*) FROM drivers",
+    "result": "840 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_concept_drivernationality",
+    "source": "bird_merged.sqlite",
+    "query": "SELECT COUNT(*) FROM drivers",
+    "result": "840 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_concept_driverbirthdate",
+    "source": "bird_merged.sqlite",
+    "query": "SELECT COUNT(*) FROM drivers",
+    "result": "840 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_concept_driverref",
+    "source": "bird_merged.sqlite",
+    "query": "SELECT COUNT(*) FROM drivers",
+    "result": "840 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_concept_race",
+    "source": "bird_merged.sqlite",
+    "query": "SELECT COUNT(*) FROM races",
+    "result": "976 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_concept_racename",
+    "source": "bird_merged.sqlite",
+    "query": "SELECT COUNT(*) FROM races",
+    "result": "976 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_concept_racedate",
+    "source": "bird_merged.sqlite",
+    "query": "SELECT COUNT(*) FROM races",
+    "result": "976 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_concept_circuit",
+    "source": "bird_merged.sqlite",
+    "query": "SELECT COUNT(*) FROM circuits",
+    "result": "72 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_concept_circuitcountry",
+    "source": "bird_merged.sqlite",
+    "query": "SELECT COUNT(*) FROM circuits",
+    "result": "72 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_concept_circuitcoordinates",
+    "source": "bird_merged.sqlite",
+    "query": "SELECT COUNT(*) FROM circuits",
+    "result": "72 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_concept_constructor",
+    "source": "bird_merged.sqlite",
+    "query": "SELECT COUNT(*) FROM constructors",
+    "result": "208 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_concept_constructornationality",
+    "source": "bird_merged.sqlite",
+    "query": "SELECT COUNT(*) FROM constructors",
+    "result": "208 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_concept_constructorref",
+    "source": "bird_merged.sqlite",
+    "query": "SELECT COUNT(*) FROM constructors",
+    "result": "208 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_concept_constructorpoints",
+    "source": "bird_merged.sqlite",
+    "query": "SELECT COUNT(*) FROM constructorResults",
+    "result": "11082 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_concept_driverpoints",
+    "source": "bird_merged.sqlite",
+    "query": "SELECT COUNT(*) FROM driverStandings",
+    "result": "31578 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_concept_driverwins",
+    "source": "bird_merged.sqlite",
+    "query": "SELECT COUNT(*) FROM driverStandings",
+    "result": "31578 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_concept_laptime",
+    "source": "bird_merged.sqlite",
+    "query": "SELECT COUNT(*) FROM lapTimes",
+    "result": "420369 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_concept_lapnumber",
+    "source": "bird_merged.sqlite",
+    "query": "SELECT COUNT(*) FROM lapTimes",
+    "result": "420369 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_concept_racecompletion",
+    "source": "bird_merged.sqlite",
+    "query": "SELECT COUNT(*) FROM lapTimes WHERE time IS NOT NULL",
+    "result": "420369 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_concept_qualifyingrank",
+    "source": "bird_merged.sqlite",
+    "query": "SELECT COUNT(*) FROM qualifying",
+    "result": "7397 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_concept_event",
+    "source": "bird_merged.sqlite",
+    "query": "SELECT COUNT(*) FROM event",
+    "result": "42 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_concept_eventname",
+    "source": "bird_merged.sqlite",
+    "query": "SELECT COUNT(*) FROM event",
+    "result": "42 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_concept_eventlocation",
+    "source": "bird_merged.sqlite",
+    "query": "SELECT COUNT(*) FROM event",
+    "result": "42 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_concept_eventdate",
+    "source": "bird_merged.sqlite",
+    "query": "SELECT COUNT(*) FROM event",
+    "result": "42 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_concept_budgetamount",
+    "source": "bird_merged.sqlite",
+    "query": "SELECT COUNT(*) FROM budget",
+    "result": "52 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_concept_budgetcategory",
+    "source": "bird_merged.sqlite",
+    "query": "SELECT COUNT(*) FROM budget",
+    "result": "52 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_concept_expensecost",
+    "source": "bird_merged.sqlite",
+    "query": "SELECT COUNT(*) FROM expense",
+    "result": "32 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_concept_expensedescription",
+    "source": "bird_merged.sqlite",
+    "query": "SELECT COUNT(*) FROM expense",
+    "result": "32 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_concept_expensedate",
+    "source": "bird_merged.sqlite",
+    "query": "SELECT COUNT(*) FROM expense",
+    "result": "32 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_concept_incomesource",
+    "source": "bird_merged.sqlite",
+    "query": "SELECT COUNT(*) FROM income",
+    "result": "36 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_concept_incomedate",
+    "source": "bird_merged.sqlite",
+    "query": "SELECT COUNT(*) FROM income",
+    "result": "36 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_concept_incomenotes",
+    "source": "bird_merged.sqlite",
+    "query": "SELECT COUNT(*) FROM income",
+    "result": "36 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_concept_member",
+    "source": "bird_merged.sqlite",
+    "query": "SELECT COUNT(*) FROM member",
+    "result": "33 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_concept_memberfullname",
+    "source": "bird_merged.sqlite",
+    "query": "SELECT COUNT(*) FROM member",
+    "result": "33 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_concept_major",
+    "source": "bird_merged.sqlite",
+    "query": "SELECT COUNT(*) FROM major",
+    "result": "113 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_concept_department",
+    "source": "bird_merged.sqlite",
+    "query": "SELECT COUNT(*) FROM major",
+    "result": "113 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_concept_college",
+    "source": "bird_merged.sqlite",
+    "query": "SELECT COUNT(*) FROM major",
+    "result": "113 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_concept_eventtype",
+    "source": "bird_merged.sqlite",
+    "query": "SELECT COUNT(*) FROM event",
+    "result": "42 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_concept_eventstatus",
+    "source": "bird_merged.sqlite",
+    "query": "SELECT COUNT(*) FROM event",
+    "result": "42 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_concept_membertshirtsize",
+    "source": "bird_merged.sqlite",
+    "query": "SELECT COUNT(*) FROM member",
+    "result": "33 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_concept_memberposition",
+    "source": "bird_merged.sqlite",
+    "query": "SELECT COUNT(*) FROM member",
+    "result": "33 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_concept_incomeamount",
+    "source": "bird_merged.sqlite",
+    "query": "SELECT COUNT(*) FROM income",
+    "result": "36 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_concept_heroattributevalue",
+    "source": "bird_merged.sqlite",
+    "query": "SELECT COUNT(*) FROM hero_attribute",
+    "result": "3738 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_concept_heroattributename",
+    "source": "bird_merged.sqlite",
+    "query": "SELECT COUNT(*) FROM attribute",
+    "result": "6 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_concept_publishername",
+    "source": "bird_merged.sqlite",
+    "query": "SELECT COUNT(*) FROM publisher",
+    "result": "25 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_concept_herogender",
+    "source": "bird_merged.sqlite",
+    "query": "SELECT COUNT(*) FROM gender",
+    "result": "3 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_concept_eyecolour",
+    "source": "bird_merged.sqlite",
+    "query": "SELECT COUNT(*) FROM colour",
+    "result": "35 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_concept_herorace",
+    "source": "bird_merged.sqlite",
+    "query": "SELECT COUNT(*) FROM race",
+    "result": "61 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_concept_patientsex",
+    "source": "bird_merged.sqlite",
+    "query": "SELECT COUNT(*) FROM Patient",
+    "result": "1238 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_concept_patientbirthday",
+    "source": "bird_merged.sqlite",
+    "query": "SELECT COUNT(*) FROM Patient",
+    "result": "1238 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_concept_patientdiagnosis",
+    "source": "bird_merged.sqlite",
+    "query": "SELECT COUNT(*) FROM Patient",
+    "result": "1238 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_concept_patientdescription",
+    "source": "bird_merged.sqlite",
+    "query": "SELECT COUNT(*) FROM Patient",
+    "result": "1238 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_concept_labdate",
+    "source": "bird_merged.sqlite",
+    "query": "SELECT COUNT(*) FROM Laboratory",
+    "result": "13908 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_concept_labalb",
+    "source": "bird_merged.sqlite",
+    "query": "SELECT COUNT(*) FROM Laboratory",
+    "result": "13908 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_concept_labgpt",
+    "source": "bird_merged.sqlite",
+    "query": "SELECT COUNT(*) FROM Laboratory",
+    "result": "13908 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_concept_labplt",
+    "source": "bird_merged.sqlite",
+    "query": "SELECT COUNT(*) FROM Laboratory",
+    "result": "13908 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_concept_labglu",
+    "source": "bird_merged.sqlite",
+    "query": "SELECT COUNT(*) FROM Laboratory",
+    "result": "13908 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_concept_labtcho",
+    "source": "bird_merged.sqlite",
+    "query": "SELECT COUNT(*) FROM Laboratory",
+    "result": "13908 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_concept_labigm",
+    "source": "bird_merged.sqlite",
+    "query": "SELECT COUNT(*) FROM Laboratory",
+    "result": "13908 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_concept_labcpk",
+    "source": "bird_merged.sqlite",
+    "query": "SELECT COUNT(*) FROM Laboratory",
+    "result": "13908 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_concept_labcre",
+    "source": "bird_merged.sqlite",
+    "query": "SELECT COUNT(*) FROM Laboratory",
+    "result": "13908 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_concept_labcrp",
+    "source": "bird_merged.sqlite",
+    "query": "SELECT COUNT(*) FROM Laboratory",
+    "result": "13908 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_concept_labun",
+    "source": "bird_merged.sqlite",
+    "query": "SELECT COUNT(*) FROM Laboratory",
+    "result": "13908 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_concept_thrombosislevel",
+    "source": "bird_merged.sqlite",
+    "query": "SELECT COUNT(*) FROM Examination",
+    "result": "806 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_concept_admissiontype",
+    "source": "bird_merged.sqlite",
+    "query": "SELECT COUNT(*) FROM Patient",
+    "result": "1238 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_concept_cholesterol",
+    "source": "bird_merged.sqlite",
+    "query": "SELECT COUNT(*) FROM Laboratory WHERE `T-CHO` >= 250",
+    "result": "1545 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_concept_igglevel",
+    "source": "bird_merged.sqlite",
+    "query": "SELECT COUNT(*) FROM Laboratory WHERE IGG > 900 AND IGG < 2000",
+    "result": "1764 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_concept_antiscl70",
+    "source": "bird_merged.sqlite",
+    "query": "SELECT COUNT(*) FROM Laboratory WHERE SC170 IN ('negative','0')",
+    "result": "24 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_concept_moleculelabel",
+    "source": "bird_merged.sqlite",
+    "query": "SELECT COUNT(*) FROM molecule",
+    "result": "343 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_concept_element",
+    "source": "bird_merged.sqlite",
+    "query": "SELECT COUNT(*) FROM atom",
+    "result": "12333 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_concept_bondtype",
+    "source": "bird_merged.sqlite",
+    "query": "SELECT COUNT(*) FROM bond",
+    "result": "12379 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_concept_atomcount",
+    "source": "bird_merged.sqlite",
+    "query": "SELECT COUNT(*) FROM atom",
+    "result": "12333 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_concept_bondcount",
+    "source": "bird_merged.sqlite",
+    "query": "SELECT COUNT(*) FROM bond",
+    "result": "12379 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_concept_moleculecount",
+    "source": "bird_merged.sqlite",
+    "query": "SELECT COUNT(*) FROM molecule",
+    "result": "343 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_caveat_0",
+    "source": "bird_merged.sqlite",
+    "query": "SELECT COUNT(*) FROM frpm WHERE `Enrollment (K-12)` IS NULL OR `Enrollment (Ages 5-17)` IS NULL;",
+    "result": "[[14]]",
+    "validation_method": "caveat check query returned supporting rows",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_caveat_1",
+    "source": "bird_merged.sqlite",
+    "query": "SELECT COUNT(*) FROM cards WHERE power IS NULL OR power = '*';",
+    "result": "[[31053]]",
+    "validation_method": "caveat check query returned supporting rows",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_caveat_2",
+    "source": "bird_merged.sqlite",
+    "query": "SELECT Date FROM yearmonth LIMIT 5;",
+    "result": "[[\"201112\"], [\"201112\"], [\"201112\"]]",
+    "validation_method": "caveat check query returned supporting rows",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_caveat_3",
+    "source": "bird_merged.sqlite",
+    "query": "SELECT COUNT(*) FROM customers WHERE Currency = 'EUR';",
+    "result": "[[2002]]",
+    "validation_method": "caveat check query returned supporting rows",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_caveat_4",
+    "source": "bird_merged.sqlite",
+    "query": "SELECT DISTINCT frequency FROM account;",
+    "result": "[[\"POPLATEK MESICNE\"], [\"POPLATEK TYDNE\"], [\"POPLATEK PO OBRATU\"]]",
+    "validation_method": "caveat check query returned supporting rows",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_caveat_5",
+    "source": "bird_merged.sqlite",
+    "query": "SELECT status, COUNT(*) FROM loan GROUP BY status",
+    "result": "[[\"A\", 203], [\"B\", 31], [\"C\", 403]]",
+    "validation_method": "caveat check query returned supporting rows",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_caveat_6",
+    "source": "bird_merged.sqlite",
+    "query": "SELECT frequency, COUNT(*) FROM account GROUP BY frequency",
+    "result": "[[\"POPLATEK MESICNE\", 4167], [\"POPLATEK PO OBRATU\", 93], [\"POPLATEK TYDNE\", 240]]",
+    "validation_method": "caveat check query returned supporting rows",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_caveat_7",
+    "source": "bird_merged.sqlite",
+    "query": "SELECT type, COUNT(*) FROM trans GROUP BY type",
+    "result": "[[\"PRIJEM\", 405083], [\"VYBER\", 16666], [\"VYDAJ\", 634571]]",
+    "validation_method": "caveat check query returned supporting rows",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_caveat_8",
+    "source": "bird_merged.sqlite",
+    "query": "SELECT A2, A3, A11 FROM district LIMIT 5",
+    "result": "[[\"Hl.m. Praha\", \"Prague\", 12541], [\"Benesov\", \"central Bohemia\", 8507], [\"Beroun\", \"central Bohemia\", 8980]]",
+    "validation_method": "caveat check query returned supporting rows",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_caveat_9",
+    "source": "bird_merged.sqlite",
+    "query": "SELECT forename, surname FROM drivers LIMIT 5",
+    "result": "[[\"Lewis\", \"Hamilton\"], [\"Nick\", \"Heidfeld\"], [\"Nico\", \"Rosberg\"]]",
+    "validation_method": "caveat check query returned supporting rows",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_caveat_10",
+    "source": "bird_merged.sqlite",
+    "query": "SELECT time, milliseconds FROM lapTimes LIMIT 5",
+    "result": "[[\"1:49.088\", 109088], [\"1:33.740\", 93740], [\"1:31.600\", 91600]]",
+    "validation_method": "caveat check query returned supporting rows",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_caveat_11",
+    "source": "bird_merged.sqlite",
+    "query": "SELECT DISTINCT nationality FROM drivers",
+    "result": "[[\"British\"], [\"German\"], [\"Spanish\"]]",
+    "validation_method": "caveat check query returned supporting rows",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_caveat_12",
+    "source": "bird_merged.sqlite",
+    "query": "SELECT event_date FROM event LIMIT 5",
+    "result": "[[\"2020-03-10T12:00:00\"], [\"2020-01-14T09:30:00\"], [\"2019-11-24T09:00:00\"]]",
+    "validation_method": "caveat check query returned supporting rows",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_caveat_13",
+    "source": "bird_merged.sqlite",
+    "query": "SELECT b.budget_id, e.expense_id FROM budget b JOIN expense e ON e.link_to_budget=b.budget_id LIMIT 5",
+    "result": "[[\"recvKTAWAFKkVNnXQ\", \"rec017x6R3hQqkLAo\"], [\"recy8KY5bUdzF81vv\", \"rec1nIjoZKTYayqZ6\"], [\"recwXIiKoBMjXJsGZ\", \"rec1oMgNFt7Y0G40x\"]]",
+    "validation_method": "caveat check query returned supporting rows",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_caveat_14",
+    "source": "bird_merged.sqlite",
+    "query": "SELECT COUNT(*) FROM Patient WHERE Description IS NULL",
+    "result": "[[216]]",
+    "validation_method": "caveat check query returned supporting rows",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_caveat_15",
+    "source": "bird_merged.sqlite",
+    "query": "SELECT DISTINCT source FROM income",
+    "result": "[[\"Dues\"], [\"Fundraising\"], [\"School Appropration\"]]",
+    "validation_method": "caveat check query returned supporting rows",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_caveat_16",
+    "source": "bird_merged.sqlite",
+    "query": "SELECT DISTINCT status, type FROM event",
+    "result": "[[\"Open\", \"Meeting\"], [\"Open\", \"Election\"], [\"Planning\", \"Meeting\"]]",
+    "validation_method": "caveat check query returned supporting rows",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_caveat_17",
+    "source": "bird_merged.sqlite",
+    "query": "SELECT Birthday FROM Patient LIMIT 5",
+    "result": "[[\"1934-02-13\"], [\"1937-05-02\"], [\"1956-04-14\"]]",
+    "validation_method": "caveat check query returned supporting rows",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_caveat_18",
+    "source": "bird_merged.sqlite",
+    "query": "SELECT COUNT(*) AS lab_rows, COUNT(DISTINCT ID) AS distinct_ids FROM Laboratory",
+    "result": "[[13908, 302]]",
+    "validation_method": "caveat check query returned supporting rows",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_caveat_19",
+    "source": "bird_merged.sqlite",
+    "query": "SELECT element, COUNT(*) FROM atom GROUP BY element ORDER BY 2 DESC LIMIT 10",
+    "result": "[[\"h\", 5518], [\"c\", 4605], [\"o\", 1043]]",
+    "validation_method": "caveat check query returned supporting rows",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_caveat_20",
+    "source": "bird_merged.sqlite",
+    "query": "SELECT bond_type, COUNT(*) FROM bond GROUP BY bond_type",
+    "result": "[[null, 1], [\"#\", 6], [\"-\", 10528]]",
+    "validation_method": "caveat check query returned supporting rows",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_caveat_21",
+    "source": "bird_merged.sqlite",
+    "query": "SELECT label, COUNT(*) FROM molecule GROUP BY label",
+    "result": "[[\"+\", 152], [\"-\", 191]]",
+    "validation_method": "caveat check query returned supporting rows",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_caveat_22",
+    "source": "bird_merged.sqlite",
+    "query": "SELECT CENTROMEA, COUNT(*) FROM Laboratory GROUP BY CENTROMEA",
+    "result": "[[null, 13893], [\"0\", 11], [\"negative\", 4]]",
+    "validation_method": "caveat check query returned supporting rows",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_caveat_23",
+    "source": "bird_merged.sqlite",
+    "query": "SELECT SC170, COUNT(*) FROM Laboratory GROUP BY SC170",
+    "result": "[[null, 13880], [\"0\", 12], [\"1\", 1]]",
+    "validation_method": "caveat check query returned supporting rows",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_caveat_24",
+    "source": "bird_merged.sqlite",
+    "query": "SELECT COUNT(*) FROM Laboratory WHERE `T-CHO` >= 250",
+    "result": "[[1545]]",
+    "validation_method": "caveat check query returned supporting rows",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_rel_attribute__hero_attribute__attribute_id",
+    "source": "bird_merged.sqlite",
+    "query": "distinct values of hero_attribute.attribute_id contained in attribute.id",
+    "result": "overlap 100.0% (6/6 distinct child values); parent key unique: True; child rows 3738, parent rows 6",
+    "validation_method": "data adjudication: value overlap and parent-key uniqueness",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_rel_district__account__district_id",
+    "source": "bird_merged.sqlite",
+    "query": "distinct values of account.district_id contained in district.district_id",
+    "result": "overlap 100.0% (77/77 distinct child values); parent key unique: True; child rows 4500, parent rows 77",
+    "validation_method": "data adjudication: value overlap and parent-key uniqueness",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_rel_district__client__district_id",
+    "source": "bird_merged.sqlite",
+    "query": "distinct values of client.district_id contained in district.district_id",
+    "result": "overlap 100.0% (77/77 distinct child values); parent key unique: True; child rows 5369, parent rows 77",
+    "validation_method": "data adjudication: value overlap and parent-key uniqueness",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_rel_client__disp__client_id",
+    "source": "bird_merged.sqlite",
+    "query": "distinct values of disp.client_id contained in client.client_id",
+    "result": "overlap 100.0% (5369/5369 distinct child values); parent key unique: True; child rows 5369, parent rows 5369",
+    "validation_method": "data adjudication: value overlap and parent-key uniqueness",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_rel_account__disp__account_id",
+    "source": "bird_merged.sqlite",
+    "query": "distinct values of disp.account_id contained in account.account_id",
+    "result": "overlap 100.0% (4500/4500 distinct child values); parent key unique: True; child rows 5369, parent rows 4500",
+    "validation_method": "data adjudication: value overlap and parent-key uniqueness",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_rel_disp__card__disp_id",
+    "source": "bird_merged.sqlite",
+    "query": "distinct values of card.disp_id contained in disp.disp_id",
+    "result": "overlap 100.0% (892/892 distinct child values); parent key unique: True; child rows 892, parent rows 5369",
+    "validation_method": "data adjudication: value overlap and parent-key uniqueness",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_rel_account__loan__account_id",
+    "source": "bird_merged.sqlite",
+    "query": "distinct values of loan.account_id contained in account.account_id",
+    "result": "overlap 100.0% (682/682 distinct child values); parent key unique: True; child rows 682, parent rows 4500",
+    "validation_method": "data adjudication: value overlap and parent-key uniqueness",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_rel_account__order__account_id",
+    "source": "bird_merged.sqlite",
+    "query": "distinct values of order.account_id contained in account.account_id",
+    "result": "overlap 100.0% (3758/3758 distinct child values); parent key unique: True; child rows 6471, parent rows 4500",
+    "validation_method": "data adjudication: value overlap and parent-key uniqueness",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_rel_molecule__atom__molecule_id",
+    "source": "bird_merged.sqlite",
+    "query": "distinct values of atom.molecule_id contained in molecule.molecule_id",
+    "result": "overlap 77.3% (343/444 distinct child values); parent key unique: True; child rows 12333, parent rows 343",
+    "validation_method": "data adjudication: value overlap and parent-key uniqueness",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_rel_molecule__bond__molecule_id",
+    "source": "bird_merged.sqlite",
+    "query": "distinct values of bond.molecule_id contained in molecule.molecule_id",
+    "result": "overlap 77.3% (343/444 distinct child values); parent key unique: True; child rows 12379, parent rows 343",
+    "validation_method": "data adjudication: value overlap and parent-key uniqueness",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_rel_atom__connected__atom_id2",
+    "source": "bird_merged.sqlite",
+    "query": "distinct values of connected.atom_id2 contained in atom.atom_id",
+    "result": "overlap 100.0% (12284/12284 distinct child values); parent key unique: True; child rows 24758, parent rows 12333",
+    "validation_method": "data adjudication: value overlap and parent-key uniqueness",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_rel_atom__connected__atom_id2__atom_id",
+    "source": "bird_merged.sqlite",
+    "query": "distinct values of connected.atom_id contained in atom.atom_id",
+    "result": "overlap 100.0%; parent key unique: True",
+    "validation_method": "data adjudication: value overlap and parent-key uniqueness",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_rel_bond__connected__bond_id",
+    "source": "bird_merged.sqlite",
+    "query": "distinct values of connected.bond_id contained in bond.bond_id",
+    "result": "overlap 100.0% (12379/12379 distinct child values); parent key unique: True; child rows 24758, parent rows 12379",
+    "validation_method": "data adjudication: value overlap and parent-key uniqueness",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_rel_races__constructorresults__raceid",
+    "source": "bird_merged.sqlite",
+    "query": "distinct values of constructorResults.raceId contained in races.raceId",
+    "result": "overlap 100.0% (907/907 distinct child values); parent key unique: True; child rows 11082, parent rows 976",
+    "validation_method": "data adjudication: value overlap and parent-key uniqueness",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_rel_constructors__constructorresults__constructorid",
+    "source": "bird_merged.sqlite",
+    "query": "distinct values of constructorResults.constructorId contained in constructors.constructorId",
+    "result": "overlap 100.0% (172/172 distinct child values); parent key unique: True; child rows 11082, parent rows 208",
+    "validation_method": "data adjudication: value overlap and parent-key uniqueness",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_rel_races__constructorstandings__raceid",
+    "source": "bird_merged.sqlite",
+    "query": "distinct values of constructorStandings.raceId contained in races.raceId",
+    "result": "overlap 100.0% (906/906 distinct child values); parent key unique: True; child rows 11836, parent rows 976",
+    "validation_method": "data adjudication: value overlap and parent-key uniqueness",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_rel_constructors__constructorstandings__constructorid",
+    "source": "bird_merged.sqlite",
+    "query": "distinct values of constructorStandings.constructorId contained in constructors.constructorId",
+    "result": "overlap 100.0% (156/156 distinct child values); parent key unique: True; child rows 11836, parent rows 208",
+    "validation_method": "data adjudication: value overlap and parent-key uniqueness",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_rel_races__driverstandings__raceid",
+    "source": "bird_merged.sqlite",
+    "query": "distinct values of driverStandings.raceId contained in races.raceId",
+    "result": "overlap 100.0% (970/970 distinct child values); parent key unique: True; child rows 31578, parent rows 976",
+    "validation_method": "data adjudication: value overlap and parent-key uniqueness",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_rel_drivers__driverstandings__driverid",
+    "source": "bird_merged.sqlite",
+    "query": "distinct values of driverStandings.driverId contained in drivers.driverId",
+    "result": "overlap 100.0% (833/833 distinct child values); parent key unique: True; child rows 31578, parent rows 840",
+    "validation_method": "data adjudication: value overlap and parent-key uniqueness",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_rel_races__laptimes__raceid",
+    "source": "bird_merged.sqlite",
+    "query": "distinct values of lapTimes.raceId contained in races.raceId",
+    "result": "overlap 100.0% (389/389 distinct child values); parent key unique: True; child rows 420369, parent rows 976",
+    "validation_method": "data adjudication: value overlap and parent-key uniqueness",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_rel_drivers__laptimes__driverid",
+    "source": "bird_merged.sqlite",
+    "query": "distinct values of lapTimes.driverId contained in drivers.driverId",
+    "result": "overlap 100.0% (121/121 distinct child values); parent key unique: True; child rows 420369, parent rows 840",
+    "validation_method": "data adjudication: value overlap and parent-key uniqueness",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_rel_races__pitstops__raceid",
+    "source": "bird_merged.sqlite",
+    "query": "distinct values of pitStops.raceId contained in races.raceId",
+    "result": "overlap 100.0% (131/131 distinct child values); parent key unique: True; child rows 6070, parent rows 976",
+    "validation_method": "data adjudication: value overlap and parent-key uniqueness",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_rel_drivers__pitstops__driverid",
+    "source": "bird_merged.sqlite",
+    "query": "distinct values of pitStops.driverId contained in drivers.driverId",
+    "result": "overlap 100.0% (54/54 distinct child values); parent key unique: True; child rows 6070, parent rows 840",
+    "validation_method": "data adjudication: value overlap and parent-key uniqueness",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_rel_patient__laboratory__id",
+    "source": "bird_merged.sqlite",
+    "query": "distinct values of Laboratory.ID contained in Patient.ID",
+    "result": "overlap 100.0% (302/302 distinct child values); parent key unique: True; child rows 13908, parent rows 1238",
+    "validation_method": "data adjudication: value overlap and parent-key uniqueness",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_rel_member__attendance__link_to_member",
+    "source": "bird_merged.sqlite",
+    "query": "distinct values of attendance.link_to_member contained in member.member_id",
+    "result": "overlap 100.0% (30/30 distinct child values); parent key unique: True; child rows 326, parent rows 33",
+    "validation_method": "data adjudication: value overlap and parent-key uniqueness",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_rel_event__attendance__link_to_event",
+    "source": "bird_merged.sqlite",
+    "query": "distinct values of attendance.link_to_event contained in event.event_id",
+    "result": "overlap 100.0% (17/17 distinct child values); parent key unique: True; child rows 326, parent rows 42",
+    "validation_method": "data adjudication: value overlap and parent-key uniqueness",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_rel_event__budget__link_to_event",
+    "source": "bird_merged.sqlite",
+    "query": "distinct values of budget.link_to_event contained in event.event_id",
+    "result": "overlap 100.0% (23/23 distinct child values); parent key unique: True; child rows 52, parent rows 42",
+    "validation_method": "data adjudication: value overlap and parent-key uniqueness",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_rel_member__expense__link_to_member",
+    "source": "bird_merged.sqlite",
+    "query": "distinct values of expense.link_to_member contained in member.member_id",
+    "result": "overlap 100.0% (3/3 distinct child values); parent key unique: True; child rows 32, parent rows 33",
+    "validation_method": "data adjudication: value overlap and parent-key uniqueness",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_rel_budget__expense__link_to_budget",
+    "source": "bird_merged.sqlite",
+    "query": "distinct values of expense.link_to_budget contained in budget.budget_id",
+    "result": "overlap 100.0% (24/24 distinct child values); parent key unique: True; child rows 32, parent rows 52",
+    "validation_method": "data adjudication: value overlap and parent-key uniqueness",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_rel_member__income__link_to_member",
+    "source": "bird_merged.sqlite",
+    "query": "distinct values of income.link_to_member contained in member.member_id",
+    "result": "overlap 100.0% (31/31 distinct child values); parent key unique: True; child rows 36, parent rows 33",
+    "validation_method": "data adjudication: value overlap and parent-key uniqueness",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_rel_major__member__link_to_major",
+    "source": "bird_merged.sqlite",
+    "query": "distinct values of member.link_to_major contained in major.major_id",
+    "result": "overlap 100.0% (26/26 distinct child values); parent key unique: True; child rows 33, parent rows 113",
+    "validation_method": "data adjudication: value overlap and parent-key uniqueness",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_rel_cards__foreign_data__uuid",
+    "source": "bird_merged.sqlite",
+    "query": "distinct values of foreign_data.uuid contained in cards.uuid",
+    "result": "overlap 100.0% (34053/34056 distinct child values); parent key unique: True; child rows 229186, parent rows 56822",
+    "validation_method": "data adjudication: value overlap and parent-key uniqueness",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_rel_cards__legalities__uuid",
+    "source": "bird_merged.sqlite",
+    "query": "distinct values of legalities.uuid contained in cards.uuid",
+    "result": "overlap 100.0% (55599/55608 distinct child values); parent key unique: True; child rows 427907, parent rows 56822",
+    "validation_method": "data adjudication: value overlap and parent-key uniqueness",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_rel_circuits__races__circuitid",
+    "source": "bird_merged.sqlite",
+    "query": "distinct values of races.circuitId contained in circuits.circuitId",
+    "result": "overlap 98.6% (71/72 distinct child values); parent key unique: True; child rows 976, parent rows 72",
+    "validation_method": "data adjudication: value overlap and parent-key uniqueness",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_rel_patient__examination__id",
+    "source": "bird_merged.sqlite",
+    "query": "distinct values of Examination.ID contained in Patient.ID",
+    "result": "overlap 9.0% (69/763 distinct child values); parent key unique: True; child rows 806, parent rows 1238",
+    "validation_method": "data adjudication: value overlap and parent-key uniqueness",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_rel_races__qualifying__raceid",
+    "source": "bird_merged.sqlite",
+    "query": "distinct values of qualifying.raceId contained in races.raceId",
+    "result": "overlap 100.0% (339/339 distinct child values); parent key unique: True; child rows 7397, parent rows 976",
+    "validation_method": "data adjudication: value overlap and parent-key uniqueness",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_rel_drivers__qualifying__driverid",
+    "source": "bird_merged.sqlite",
+    "query": "distinct values of qualifying.driverId contained in drivers.driverId",
+    "result": "overlap 100.0% (151/151 distinct child values); parent key unique: True; child rows 7397, parent rows 840",
+    "validation_method": "data adjudication: value overlap and parent-key uniqueness",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_rel_constructors__qualifying__constructorid",
+    "source": "bird_merged.sqlite",
+    "query": "distinct values of qualifying.constructorId contained in constructors.constructorId",
+    "result": "overlap 100.0% (41/41 distinct child values); parent key unique: True; child rows 7397, parent rows 208",
+    "validation_method": "data adjudication: value overlap and parent-key uniqueness",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_rel_races__results__raceid",
+    "source": "bird_merged.sqlite",
+    "query": "distinct values of results.raceId contained in races.raceId",
+    "result": "overlap 100.0% (970/970 distinct child values); parent key unique: True; child rows 23657, parent rows 976",
+    "validation_method": "data adjudication: value overlap and parent-key uniqueness",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_rel_drivers__results__driverid",
+    "source": "bird_merged.sqlite",
+    "query": "distinct values of results.driverId contained in drivers.driverId",
+    "result": "overlap 100.0% (840/840 distinct child values); parent key unique: True; child rows 23657, parent rows 840",
+    "validation_method": "data adjudication: value overlap and parent-key uniqueness",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_rel_constructors__results__constructorid",
+    "source": "bird_merged.sqlite",
+    "query": "distinct values of results.constructorId contained in constructors.constructorId",
+    "result": "overlap 100.0% (207/207 distinct child values); parent key unique: True; child rows 23657, parent rows 208",
+    "validation_method": "data adjudication: value overlap and parent-key uniqueness",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_rel_status__results__statusid",
+    "source": "bird_merged.sqlite",
+    "query": "distinct values of results.statusId contained in status.statusId",
+    "result": "overlap 100.0% (132/132 distinct child values); parent key unique: True; child rows 23657, parent rows 134",
+    "validation_method": "data adjudication: value overlap and parent-key uniqueness",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_rel_schools__satscores__cds",
+    "source": "bird_merged.sqlite",
+    "query": "distinct values of satscores.cds contained in schools.CDSCode",
+    "result": "overlap 90.7% (2058/2269 distinct child values); parent key unique: True; child rows 2269, parent rows 17686",
+    "validation_method": "data adjudication: value overlap and parent-key uniqueness",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_rel_publisher__superhero__publisher_id",
+    "source": "bird_merged.sqlite",
+    "query": "distinct values of superhero.publisher_id contained in publisher.id",
+    "result": "overlap 100.0% (25/25 distinct child values); parent key unique: True; child rows 750, parent rows 25",
+    "validation_method": "data adjudication: value overlap and parent-key uniqueness",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_rel_gender__superhero__gender_id",
+    "source": "bird_merged.sqlite",
+    "query": "distinct values of superhero.gender_id contained in gender.id",
+    "result": "overlap 100.0% (3/3 distinct child values); parent key unique: True; child rows 750, parent rows 3",
+    "validation_method": "data adjudication: value overlap and parent-key uniqueness",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_rel_colour__superhero__skin_colour_id",
+    "source": "bird_merged.sqlite",
+    "query": "distinct values of superhero.skin_colour_id contained in colour.id",
+    "result": "overlap 100.0% (16/16 distinct child values); parent key unique: True; child rows 750, parent rows 35",
+    "validation_method": "data adjudication: value overlap and parent-key uniqueness",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_rel_colour__superhero__skin_colour_id__eye_colour_id",
+    "source": "bird_merged.sqlite",
+    "query": "distinct values of superhero.eye_colour_id contained in colour.id",
+    "result": "overlap 100.0%; parent key unique: True",
+    "validation_method": "data adjudication: value overlap and parent-key uniqueness",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_rel_colour__superhero__skin_colour_id__hair_colour_id",
+    "source": "bird_merged.sqlite",
+    "query": "distinct values of superhero.hair_colour_id contained in colour.id",
+    "result": "overlap 100.0%; parent key unique: True",
+    "validation_method": "data adjudication: value overlap and parent-key uniqueness",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_rel_race__superhero__race_id",
+    "source": "bird_merged.sqlite",
+    "query": "distinct values of superhero.race_id contained in race.id",
+    "result": "overlap 100.0% (61/61 distinct child values); parent key unique: True; child rows 750, parent rows 61",
+    "validation_method": "data adjudication: value overlap and parent-key uniqueness",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_rel_alignment__superhero__alignment_id",
+    "source": "bird_merged.sqlite",
+    "query": "distinct values of superhero.alignment_id contained in alignment.id",
+    "result": "overlap 100.0% (3/3 distinct child values); parent key unique: True; child rows 750, parent rows 4",
+    "validation_method": "data adjudication: value overlap and parent-key uniqueness",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_rel_account__trans__account_id",
+    "source": "bird_merged.sqlite",
+    "query": "distinct values of trans.account_id contained in account.account_id",
+    "result": "overlap 100.0% (4500/4500 distinct child values); parent key unique: True; child rows 1056320, parent rows 4500",
+    "validation_method": "data adjudication: value overlap and parent-key uniqueness",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_rel_customers__transactions_1k__customerid",
+    "source": "bird_merged.sqlite",
+    "query": "distinct values of transactions_1k.CustomerID contained in customers.CustomerID",
+    "result": "overlap 100.0% (517/517 distinct child values); parent key unique: True; child rows 1000, parent rows 32461",
+    "validation_method": "data adjudication: value overlap and parent-key uniqueness",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_rel_gasstations__transactions_1k__gasstationid",
+    "source": "bird_merged.sqlite",
+    "query": "distinct values of transactions_1k.GasStationID contained in gasstations.GasStationID",
+    "result": "overlap 100.0% (437/437 distinct child values); parent key unique: True; child rows 1000, parent rows 5716",
+    "validation_method": "data adjudication: value overlap and parent-key uniqueness",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_rel_products__transactions_1k__productid",
+    "source": "bird_merged.sqlite",
+    "query": "distinct values of transactions_1k.ProductID contained in products.ProductID",
+    "result": "overlap 100.0% (28/28 distinct child values); parent key unique: True; child rows 1000, parent rows 591",
+    "validation_method": "data adjudication: value overlap and parent-key uniqueness",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_rel_customers__yearmonth__customerid",
+    "source": "bird_merged.sqlite",
+    "query": "distinct values of yearmonth.CustomerID contained in customers.CustomerID",
+    "result": "overlap 100.0% (30566/30566 distinct child values); parent key unique: True; child rows 383282, parent rows 32461",
+    "validation_method": "data adjudication: value overlap and parent-key uniqueness",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_rel_sets__set_translations__setcode",
+    "source": "bird_merged.sqlite",
+    "query": "distinct values of set_translations.setCode contained in sets.code",
+    "result": "overlap 100.0% (121/121 distinct child values); parent key unique: True; child rows 1210, parent rows 551",
+    "validation_method": "data adjudication: value overlap and parent-key uniqueness",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_rel_sets__cards__setcode",
+    "source": "bird_merged.sqlite",
+    "query": "distinct values of cards.setCode contained in sets.code",
+    "result": "overlap 100.0% (536/536 distinct child values); parent key unique: True; child rows 56822, parent rows 551",
+    "validation_method": "data adjudication: value overlap and parent-key uniqueness",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_rel_schools__frpm__cdscode",
+    "source": "bird_merged.sqlite",
+    "query": "distinct values of frpm.CDSCode contained in schools.CDSCode",
+    "result": "overlap 100.0% (9986/9986 distinct child values); parent key unique: True; child rows 9986, parent rows 17686",
+    "validation_method": "data adjudication: value overlap and parent-key uniqueness",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_rel_superhero__hero_attribute__hero_id",
+    "source": "bird_merged.sqlite",
+    "query": "distinct values of hero_attribute.hero_id contained in superhero.id",
+    "result": "overlap 100.0% (623/623 distinct child values); parent key unique: True; child rows 3738, parent rows 750",
+    "validation_method": "data adjudication: value overlap and parent-key uniqueness",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_rel_superpower__hero_power__power_id",
+    "source": "bird_merged.sqlite",
+    "query": "distinct values of hero_power.power_id contained in superpower.id",
+    "result": "overlap 100.0% (167/167 distinct child values); parent key unique: True; child rows 5825, parent rows 167",
+    "validation_method": "data adjudication: value overlap and parent-key uniqueness",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_rel_superhero__hero_power__hero_id",
+    "source": "bird_merged.sqlite",
+    "query": "distinct values of hero_power.hero_id contained in superhero.id",
+    "result": "overlap 100.0% (652/652 distinct child values); parent key unique: True; child rows 5825, parent rows 750",
+    "validation_method": "data adjudication: value overlap and parent-key uniqueness",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_rel_zip_code__member__zip",
+    "source": "bird_merged.sqlite",
+    "query": "distinct values of member.zip contained in zip_code.zip_code",
+    "result": "overlap 100.0% (33/33 distinct child values); parent key unique: True; child rows 33, parent rows 41877",
+    "validation_method": "data adjudication: value overlap and parent-key uniqueness",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_rel_seasons__races__year",
+    "source": "bird_merged.sqlite",
+    "query": "distinct values of races.year contained in seasons.year",
+    "result": "overlap 100.0% (68/68 distinct child values); parent key unique: True; child rows 976, parent rows 68",
+    "validation_method": "data adjudication: value overlap and parent-key uniqueness",
+    "timestamp": "2026-11-10"
+  },
+  {
+    "id": "ev_rel_cards__rulings__uuid",
+    "source": "bird_merged.sqlite",
+    "query": "distinct values of rulings.uuid contained in cards.uuid",
+    "result": "overlap 100.0% (26141/26141 distinct child values); parent key unique: True; child rows 87769, parent rows 56822",
+    "validation_method": "data adjudication: value overlap and parent-key uniqueness",
+    "timestamp": "2026-11-10"
+  }
+]
