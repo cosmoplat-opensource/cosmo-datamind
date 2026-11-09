@@ -133,6 +133,8 @@ def init_app(app, runtime):
     @bp.errorhandler(GovernanceError)
     def governance_error(exc):
         if exc.code == 'not_found': return not_found(exc)
+        if exc.code == 'view_unavailable':
+            return request_error(BuildRequestError(exc.code, str(exc), 422))
         if exc.code == 'invalid_request':
             return request_error(BuildRequestError('domain_validation', '知识、证据或本体结构不符合领域约束。', 422))
         messages = {'head_conflict': '工作头已变化，请保留输入并比较新版本。',
@@ -174,6 +176,13 @@ def init_app(app, runtime):
     def knowledge(ontology_id, version_id):
         if request.args: raise invalid()
         return response(service(ontology_id).inspect(ontology_id, version_id))
+
+    @bp.get(prefix + '/versions/<version_id>/views/<view>')
+    def visualization(ontology_id, version_id, view):
+        # DR-068: GET only, fixed version, same read-only integrity boundary.
+        if request.args or view not in {'relations', 'behavior-tree'}:
+            raise invalid()
+        return response(service(ontology_id).visualize(ontology_id, version_id, view))
 
     @bp.post(prefix + '/drafts')
     def save(ontology_id):
