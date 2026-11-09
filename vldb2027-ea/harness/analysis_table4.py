@@ -3,7 +3,7 @@
 Terms, terms whose name contains an opaque code (tbNNN / clNNNN), column-level mappings, those attached to a term with a
 business name, and relations (DataMind: total and verified, from the IR; EvoOntology: count).
 DataMind ontologies are counted after conversion to EvoOntology's record format (dm2evo.py, DM2EVO_FULL=1), the form
-the agent consumed. Writes runs/v4/analysis_table4.json."""
+the agent consumed; "datamind_dr093" is the rebuilt ontology of Section 6.2. Writes runs/v4/analysis_table4.json."""
 import json
 import re
 from pathlib import Path
@@ -33,6 +33,9 @@ def main():
         dm["ir_relations"] = len(rel)
         dm["ir_relations_verified"] = sum(1 for r in rel if r.get("status") == "verified")
         out[fold] = {"evoontology": evo, "datamind": dm}
+        rebuilt = EXP / f"runs/v2/dm2evo/w_opaque_merged_{fold}_dr093b/bird_merged/versions/ontology_v0"
+        if rebuilt.exists():                         # Section 6.2 frozen version, converted with DM2EVO_DEDUP/READABLE
+            out[fold]["datamind_dr093"] = counts(rebuilt)
     (EXP / "runs/v4/analysis_table4.json").write_text(json.dumps(out, indent=1))
     print(json.dumps(out, indent=1))
 

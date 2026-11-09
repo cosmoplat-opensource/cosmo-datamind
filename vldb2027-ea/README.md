@@ -7,14 +7,14 @@ released predictions, and to rerun the experiments from scratch.
 
 | Directory | What it holds |
 |---|---|
-| `harness/` | Experiment and analysis scripts (run with Python 3.13; standard library plus `sqlglot` for `make_opaque*.py`). |
+| `harness/` | Experiment and analysis scripts (run with Python 3.13; standard library plus `sqlglot` for `make_opaque*.py`). `harness/figures/make_figures.py` draws Figures 3–11 (matplotlib; it reads the experiment-root layout described below, with `make_figures.py` placed in `<root>/paper_vldb/`). |
 | `evoontology_changes/` | Our changes to EvoOntology's BIRD benchmark runner, as a patch against the commit in `BASE_COMMIT`, plus new files (DeepSeek configuration, documentation context modes, the compiled-ontology gate). |
 | `splits/` | The frozen question splits: `minidev` (fold A→B) and `minidev_rev` (B→A) of BIRD Mini-Dev, `ind_fwd` / `ind_rev` of the two industrial databases. Each has `construction/`, `validation/`, `test/` and a `split_manifest.json`. |
 | `benchmarks/` | BIRD-opaque and BIRD-opaque-merged without the databases: name mappings, rewritten questions and gold SQL, re-keyed documentation, construction workloads and `verify.json` (result check of every rewritten gold query). `nofk/` and `bare/` hold the checks of the earlier schema variants. |
 | `ontologies/` | Every ontology used: `evoontology/<build>/<db>/versions/...` (EvoOntology record format), `datamind/<build>/ir/<db>.json` (DataMind IR with relation evidence), `datamind_converted/` (DataMind ontologies for the merged schema in EvoOntology's format, as consumed by the agent). |
-| `results/v4/` | Main matrix (Tables 2, 3, 6, 7): `predictions/<setting>_<fold>/<condition>_r<repeat>/all_results.json.gz` (predicted SQL, turns, ontology tool calls) and `rescore.json` (per question: [strict, column-tolerant]); statistics and audits; `dr093_frozen_code/` (code behind Table 5). |
-| `results/v2/`, `results/v3/` | Per-question scores of the matched comparison (Table 1) and of the DataMind-chain runs (Table 8); raw outputs of the DataMind chain in `*_datamind_chain_outputs.tar.xz`. |
-| `results/v3_validation/` | Validation runs used during development (numbers marked "validation" in Section 6). |
+| `results/v4/` | Main matrix (Table 2, Figures 5, 6, 9, 10): `predictions/<setting>_<fold>/<condition>_r<repeat>/all_results.json.gz` (predicted SQL, turns, ontology tool calls) and `rescore.json` (per question: [strict, column-tolerant]); statistics and audits; `dr093_frozen_code/` (code behind Figure 8); `discarded_infra/` (the eight units discarded by the infrastructure audit of Section 3.2 and rerun; kept for inspection, used in no statistic). |
+| `results/v2/`, `results/v3/` | Per-question scores of the matched comparison (Table 1, Figure 3) and of the DataMind-chain runs (Figure 11); each system's own-scorer statistics in `results/v2/completion/`; raw outputs of the DataMind chain in `*_datamind_chain_outputs.tar.xz`. |
+| `results/v3_validation/` | Validation runs used during development (numbers marked "validation" in Sections 6.1–6.2); their counts in `val_mg_summary.json`; the ontology tool responses of the converted Section 6.2 ontology in `mg_reactdm94_fwd_val_traces.tar.xz`. |
 
 Setting names: `R` readable BIRD Mini-Dev, `O` BIRD-opaque, `MG` BIRD-opaque-merged. Conditions: `none`, `doc`
 (documentation), `evo`, `evodoc`, `dm`, `dmdoc`, `M` (compiled DataMind ontology with check), `dm93` / `M93` (Section 6.2).
@@ -23,15 +23,20 @@ Setting names: `R` readable BIRD Mini-Dev, `O` BIRD-opaque, `MG` BIRD-opaque-mer
 
 | Paper | Script | Output |
 |---|---|---|
-| Table 1, rows 1–2; Section 3.3 | `rescore_v2.py`, `stats_v3.py` | `results/v2/rescore/统计_v3.md` (Chinese headings; "strict"/"tolerant" sections), `results/v2/rescore/check.json` |
-| Table 1, row 3; Section 3.4; +1.6 [−1.1, +3.8] | `rescore_v3.py`, `analysis_sec3.py` | `results/v4/analysis_sec3.json` |
-| Section 4 (benchmark checks, leakage audit) | `make_opaque.py`, `make_opaque_merged.py`, `audit_evo_builds.py` | `benchmarks/*/verify.json`, `results/v4/evo_build_audit.json` |
-| Tables 2–3 | `queue_v4.py` (runs), `score_v4_all.sh` → `score_react_dir.py`, `stats_v4.py` | `results/v4/统计_v4.md`, `results/v4/stats_v4.json` |
-| Table 4 | `analysis_table4.py` | `results/v4/analysis_table4.json` |
-| Table 5 | `stats_dr093.py`; code in `results/v4/dr093_frozen_code/` | `results/v4/stats_dr093.json` |
-| Section 6.3, Tables 6–7 | `analysis_sec6.py` | `results/v4/analysis_sec6.json` |
-| Table 8 | `rescore_v3.py`, `analysis_ablation_v3.py` | `results/v4/analysis_ablation_v3.json` |
-| Section 7 (prior-knowledge case) | `audit_prior_knowledge.py` | `results/v4/prior_knowledge_audit.json` |
+| Table 1, column 1; Figure 3, first bar | each system's own scorer | `results/v2/completion/最终统计与恢复披露.md` (Chinese headings) |
+| Table 1, rows 1–2, columns 2–3; Section 3.3; Figure 3 | `rescore_v2.py`, `stats_v3.py` | `results/v2/rescore/统计_v3.md` ("strict"/"tolerant" sections), `results/v2/rescore/check.json` |
+| Table 1, row 3 and note (+7.5, +1.6); Section 3.4; Figure 3, last bar | `rescore_v3.py`, `analysis_sec3.py` | `results/v4/analysis_sec3.json` |
+| Figure 2 | — | schematic with illustrative values |
+| Section 3.2 (reruns after the infrastructure audit) | `audit_infra_v4.py` | `results/v4/discarded_infra/` |
+| Section 4, Figure 4 (benchmark checks, leakage audit) | `make_opaque.py`, `make_opaque_merged.py`, `audit_evo_builds.py` | `benchmarks/*/verify.json`, `benchmarks/opaque_merged/mapping.json`, `results/v4/evo_build_audit.json` |
+| Table 2, Figure 5, Section 5 | `queue_v4.py` (runs), `score_v4_all.sh` → `score_react_dir.py`, `stats_v4.py` | `results/v4/统计_v4.md`, `results/v4/stats_v4.json` |
+| Figure 6 (per source database) | `analysis_perdb.py` | `results/v4/analysis_perdb.json` |
+| Section 6.1, Figure 7 | `analysis_table4.py` | `results/v4/analysis_table4.json` |
+| Sections 6.1–6.2, validation counts (61 questions of fold A→B; 28 of 61 tool responses) | `analysis_val_mg.py` | `results/v3_validation/val_mg_summary.json` |
+| Section 6.2, Figure 8 | `stats_dr093.py`; code in `results/v4/dr093_frozen_code/` | `results/v4/stats_dr093.json` |
+| Sections 6.3–6.5, Figures 9–10 | `analysis_sec6.py` | `results/v4/analysis_sec6.json` |
+| Section 6.6, Figure 11 | `rescore_v3.py`, `analysis_ablation_v3.py` | `results/v4/analysis_ablation_v3.json` |
+| Section 7 (prior-knowledge check) | `audit_prior_knowledge.py` | `results/v4/prior_knowledge_audit.json` |
 
 All intervals: 95% bootstrap, 10,000 resamples, fixed seeds in the scripts; database-cluster resampling for BIRD and
 BIRD-opaque, question-level resampling stratified by source database for the merged schema and the industrial databases.
@@ -52,7 +57,9 @@ The scripts expect one experiment root with this layout (paths are relative to t
 ```
 
 Re-scoring needs the databases, because predicted and gold SQL are executed. With the per-question scores already
-released (`rescore.json`), `stats_v4.py`, `stats_dr093.py` and `analysis_ablation_v3.py` run without databases.
+released (`rescore.json`), `stats_v4.py`, `stats_dr093.py` and `analysis_ablation_v3.py` run without databases;
+`analysis_perdb.py` needs the BIRD databases only to count tables. `analysis_val_mg.py` expects the validation runs under
+`runs/v3/dev/<run>/rescore.json` and the extracted traces under `runs/v3/dev/mg_reactdm94_fwd_val/`.
 
 ## Rerunning the experiments
 
@@ -82,7 +89,8 @@ released (`rescore.json`), `stats_v4.py`, `stats_dr093.py` and `analysis_ablatio
 Model outputs vary between runs; the paper reports three repeats per configuration and the released predictions are the
 ones behind every number.
 
-Not included: the per-question agent traces of the runs (about 1.9 GB compressed), the ontology builders' session logs,
+Not included: the per-question agent traces of the runs (about 1.9 GB compressed; the traces needed for the 28-of-61
+count of Section 6.2 are included), the ontology builders' session logs,
 and the databases. They are available from the authors on request.
 
 ## Licences
