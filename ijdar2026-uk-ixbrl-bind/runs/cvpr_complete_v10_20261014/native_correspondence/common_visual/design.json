@@ -1,0 +1,20 @@
+{
+  "model": "deepseek-flash",
+  "thinking": "disabled",
+  "temperature": 0,
+  "max_output_tokens": 5000,
+  "targets_per_batch": 4,
+  "maximum_images": 5,
+  "maximum_transport_attempts": 4,
+  "format_errors_not_retried": true,
+  "component_failures_preserved_as_unknown": true,
+  "expected_targets": 840,
+  "expected_batches": 283,
+  "prompt": "Image 0 is the unchanged full report page. Following images are exact original-pixel target crops in crop_image_index order. Identify each pointed cell's visible meaning and supporting headers. You are NOT given its target taxonomy field or unit multiplier. Candidate field cards come from public-schema retrieval and can all be wrong. Do not force a field match or use report year as the cell's period.\nRead literal numeric glyphs without applying a unit or canonical sign. Keep ambiguous locale parses. A dash is not automatically zero. Read row meaning, local statement title, period, units, entity/group and dimensions from their own visible evidence. A page can contain different tables and unit conventions; a global monetary scale may not apply to per-share amounts, rates or counts. Header coverage is a hypothesis: preserve ambiguous or unknown ranges. Never invent an exact date from a year alone. Do not infer hidden taxonomy semantics from an opaque target ID.\nReturn JSON {\"targets\":[{\"task_id\":\"...\",\"literal_readings\":[\"printed numeric glyph\"],\"row_text\":\"visible row label or unknown\",\"section_text\":\"visible title or unknown\",\"presentation\":\"income_statement|cashflow_statement|balance_sheet|equity_change|note|other|unknown\",\"quantity_role\":\"standalone_amount|component_contribution|net_change|rate|count|unknown\",\"field_candidates\":[\"f00001\"],\"headers\":[{\"id\":\"h0\",\"kind\":\"field|unit|period|entity|dimension|version|other\",\"text\":\"exact visible text\",\"box\":[left,top,right,bottom],\"scope_boxes\":[[left,top,right,bottom]],\"uncertain\":true}],\"unit_candidates\":[{\"header_id\":\"h0\",\"kind\":\"monetary|currency_per_share|rate|count|shares|other|unknown\",\"currency\":\"GBP|USD|EUR|AUD|other|unknown\",\"multiplier\":\"1000000 or null\",\"uncertain\":true}],\"period_candidates\":[{\"header_id\":\"h0\",\"kind\":\"instant|duration|unknown\",\"displayed_year\":2023,\"start_date\":\"YYYY-MM-DD or null\",\"end_date\":\"YYYY-MM-DD or null\",\"uncertain\":true}],\"entity_text\":\"visible text or unknown\",\"dimension_text\":\"visible text or unknown\",\"version_text\":\"visible text or unknown\",\"context_box\":[left,top,right,bottom] or null,\"uncertain\":true}]}.\nAll boxes use normalized FULL PAGE coordinates. All requested IDs appear exactly once. Max 3 field candidates, 10 headers, 4 unit candidates, 4 period candidates, 4 literal readings per target. Header IDs are local to each target. Dates, multipliers, boxes and displayed_year may be null when unknown. All field, scope and semantic assignments remain hypotheses, not certified matches.\n",
+  "public_tasks_sha256": "916bd73849769334ee35552f5e901d7ac0c71b708ddb50a62d7df8a90ce614f8",
+  "runner_sha256": "1737906df599f48173375f4049891f3dd7e20d2013388dcec83f34c93cb0fca0",
+  "same_raw_visual_responses_for_all_controls": true,
+  "private_teacher_or_reference_files_read": false,
+  "target_field_or_multiplier_given": false,
+  "human_runtime_confirmations": 0
+}
